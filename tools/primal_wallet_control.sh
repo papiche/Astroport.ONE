@@ -139,11 +139,11 @@ send_alert_email() {
         "intrusion")
             template_file="${MY_PATH}/../templates/NOSTR/wallet_alert.html"
             ;;
-        "termination")
-            template_file="${MY_PATH}/../templates/NOSTR/wallet_termination.html"
+        "redirection")
+            template_file="${MY_PATH}/../templates/NOSTR/wallet_redirection.html"
             ;;
         *)
-            echo "Unknown alert type: $alert_type"
+            echo "Unknown alert type: $alert_type (supported: intrusion, redirection)"
             return 1
             ;;
     esac
@@ -167,30 +167,8 @@ send_alert_email() {
     fi
 }
 
-# Function to empty wallet and terminate account
-terminate_wallet() {
-    local wallet_dunikey="$1"
-    local wallet_pubkey="$2"
-    local player_email="$3"
-    local master_primal="$4"
-    local intrusion_count="$5"
-
-    echo "TERMINATING WALLET due to $intrusion_count intrusions"
-
-    # Get current balance
-    local balance=$(silkaj --json money balance ${wallet_pubkey} 2>/dev/null | jq -r '.balances.total // 0')
-
-    if [[ -n "$balance" && "$balance" != "null" && $(echo "$balance > 0" | bc -l) -eq 1 ]]; then
-        # Send remaining balance to master primal
-        ${MY_PATH}/PAYforSURE.sh "${wallet_dunikey}" "${balance}" "${master_primal}" "WALLET:TERMINATION:INTRUSION:${intrusion_count}" 2>/dev/null
-        if [[ $? -eq 0 ]]; then
-            echo "Wallet emptied: ${balance} G1 sent to master ${master_primal:0:8}"
-        fi
-    fi
-
-    # Send termination alert
-    send_alert_email "${player_email}" "${wallet_pubkey}" "" "${balance}" "${master_primal}" "${intrusion_count}" "termination"
-}
+# Note: terminate_wallet function removed - no longer needed with redirection approach
+# All repeat intrusions are now redirected to UPLANETNAME.G1 instead of terminating wallets
 
 # Function to count existing intrusions from transaction history
 count_existing_intrusions() {
@@ -246,7 +224,6 @@ control_primal_transactions() {
     local wallet_pubkey="$2"       # Wallet public key
     local master_primal="$3"       # Expected master primal source
     local player_email="$4"        # Player email for alerts
-    local max_intrusions=3         # Fixed maximum intrusions before termination
 
     [[ -z "$wallet_dunikey" || -z "$wallet_pubkey" || -z "$master_primal" || -z "$player_email" ]] && {
         echo "ERROR: Missing required parameters"
@@ -281,14 +258,8 @@ control_primal_transactions() {
 
     # Count existing intrusions from transaction history (no cache dependency)
     local existing_intrusions=$(count_existing_intrusions "${wallet_pubkey}" "${master_primal}" "$temp_history_file")
-    echo "Existing intrusions detected from history: $existing_intrusions/$max_intrusions"
-
-    # Check if wallet should be terminated based on existing intrusions
-    if [[ $existing_intrusions -ge $max_intrusions ]]; then
-        echo "WALLET ALREADY TERMINATED due to maximum intrusions reached ($existing_intrusions/$max_intrusions)"
-        rm -f "$temp_history_file"
-        return 0
-    fi
+    echo "Existing intrusions detected from history: $existing_intrusions"
+    echo "Policy: First intrusion = REFUND, All others = REDIRECT to UPLANETNAME.G1"
 
     # Convert JSON to inline format for processing new transactions
     local inline_history_file=$(mktemp)
@@ -337,35 +308,44 @@ control_primal_transactions() {
             if [[ "$is_valid_primal" == false ]]; then
                 echo "PRIMAL WALLET INTRUSION ALERT for ${wallet_pubkey:0:8} from ${TXIPUBKEY:0:8} (primal: ${tx_primal:0:8})"
 
-                # Check if we've already reached the maximum intrusions
+                # Check if this is the first intrusion or a repeat intrusion
                 local current_total=$((existing_intrusions + new_intrusions))
-                if [[ $current_total -ge $max_intrusions ]]; then
-                    echo "MAXIMUM INTRUSIONS ALREADY REACHED ($current_total/$max_intrusions) - TERMINATING WALLET"
-                    terminate_wallet "${wallet_dunikey}" "${wallet_pubkey}" "${player_email}" "${master_primal}" "$current_total"
-                    rm -f "$temp_history_file" "$inline_history_file"
-                    return 0
-                fi
+                
+                if [[ $current_total -eq 0 ]]; then
+                    # PREMIÈRE INTRUSION SEULEMENT: Refund avec message éducatif
+                    echo "💡 INFO: Versements Ğ1 doivent être faits vers UPLANETNAME.G1 uniquement"
+                    echo "🔄 PREMIÈRE INTRUSION: Refund automatique vers l'expéditeur"
+                    
+                    ${MY_PATH}/PAYforSURE.sh "${wallet_dunikey}" "${TXIAMOUNT}" "${TXIPUBKEY}" "PRIMAL:${master_primal:0:8}:INTRUSION:REFUND" 2>/dev/null
 
-                # Refund the transaction
-                ${MY_PATH}/PAYforSURE.sh "${wallet_dunikey}" "${TXIAMOUNT}" "${TXIPUBKEY}" "PRIMAL:${master_primal:0:8}:INTRUSION" 2>/dev/null
+                    if [[ $? -eq 0 ]]; then
+                        echo "INTRUSION REFUNDED: ${TXIAMOUNT} G1 sent back to ${TXIPUBKEY:0:8}"
+                        new_intrusions=$((new_intrusions + 1))
 
-                if [[ $? -eq 0 ]]; then
-                    echo "INTRUSION REFUNDED: ${TXIAMOUNT} G1 sent back to ${TXIPUBKEY:0:8}"
-                    new_intrusions=$((new_intrusions + 1))
-
-                    # Send intrusion alert
-                    local total_intrusions=$((existing_intrusions + new_intrusions))
-                    send_alert_email "${player_email}" "${wallet_pubkey}" "${TXIPUBKEY}" "${TXIAMOUNT}" "${master_primal}" "$total_intrusions" "intrusion"
-
-                    # Check if this refund reaches the maximum
-                    if [[ $total_intrusions -ge $max_intrusions ]]; then
-                        echo "MAXIMUM INTRUSIONS REACHED ($total_intrusions/$max_intrusions) - TERMINATING WALLET"
-                        terminate_wallet "${wallet_dunikey}" "${wallet_pubkey}" "${player_email}" "${master_primal}" "$total_intrusions"
-                        rm -f "$temp_history_file" "$inline_history_file"
-                        return 0
+                        # Send intrusion alert
+                        local total_intrusions=$((existing_intrusions + new_intrusions))
+                        send_alert_email "${player_email}" "${wallet_pubkey}" "${TXIPUBKEY}" "${TXIAMOUNT}" "${master_primal}" "$total_intrusions" "intrusion"
+                    else
+                        echo "ERROR: Failed to refund intrusion transaction"
                     fi
                 else
-                    echo "ERROR: Failed to refund intrusion transaction"
+                    # TOUTES LES AUTRES INTRUSIONS (2+): Redirection vers UPLANETNAME.G1
+                    echo "REPEAT INTRUSION DETECTED ($((current_total + 1))) - REDIRECTING TO UPLANETNAME.G1"
+                    echo "💡 INFO: Versements Ğ1 doivent être faits vers UPLANETNAME.G1 uniquement"
+                    
+                    # Rediriger les fonds vers UPLANETNAME.G1 (master_primal)
+                    ${MY_PATH}/PAYforSURE.sh "${wallet_dunikey}" "${TXIAMOUNT}" "${master_primal}" "INTRUSION:REDIRECT:UPLANETNAME.G1:${TXIPUBKEY:0:8}" 2>/dev/null
+                    
+                    if [[ $? -eq 0 ]]; then
+                        echo "INTRUSION REDIRECTED: ${TXIAMOUNT} G1 sent to UPLANETNAME.G1 (${master_primal:0:8})"
+                        echo "💰 Fonds intrusifs récupérés par la coopérative UPlanet"
+                        new_intrusions=$((new_intrusions + 1))
+                        
+                        # Send alert for redirection
+                        send_alert_email "${player_email}" "${wallet_pubkey}" "${TXIPUBKEY}" "${TXIAMOUNT}" "${master_primal}" "$((current_total + 1))" "redirection"
+                    else
+                        echo "ERROR: Failed to redirect intrusion to UPLANETNAME.G1"
+                    fi
                 fi
             else
                 if [[ "$is_captain" == true ]]; then
@@ -382,9 +362,16 @@ control_primal_transactions() {
     # Final summary
     local total_intrusions=$((existing_intrusions + new_intrusions))
     if [[ $new_intrusions -gt 0 ]]; then
-        echo "NEW INTRUSIONS DETECTED: $new_intrusions (Total: $total_intrusions/$max_intrusions)"
+        echo "NEW INTRUSIONS DETECTED: $new_intrusions (Total: $total_intrusions)"
+        if [[ $total_intrusions -eq 1 ]]; then
+            echo "💡 INFO: Première intrusion - Refund effectué vers l'expéditeur"
+            echo "💡 INFO: Versements Ğ1 doivent être faits vers UPLANETNAME.G1 uniquement"
+        else
+            echo "💡 INFO: Intrusions répétitives - Redirection automatique vers UPLANETNAME.G1"
+            echo "💰 Fonds intrusifs récupérés par la coopérative UPlanet"
+        fi
     else
-        echo "NO NEW INTRUSIONS DETECTED (Total: $total_intrusions/$max_intrusions)"
+        echo "NO NEW INTRUSIONS DETECTED (Total: $total_intrusions)"
     fi
 
     # Cleanup

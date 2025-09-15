@@ -151,6 +151,59 @@ fi
 
 
 #######################################################################
+# PRIMAL WALLET CONTROL - Protect cooperative wallets from intrusions
+# Ensure all cooperative wallets only receive funds from authorized sources
+#######################################################################
+echo "ZEN ECONOMY: Checking primal wallet control for cooperative wallets..."
+
+# Define cooperative wallets to protect
+declare -A COOPERATIVE_WALLETS=(
+    ["UPLANETNAME"]="$HOME/.zen/game/uplanet.dunikey"
+    ["UPLANETNAME.SOCIETY"]="$HOME/.zen/game/uplanet.SOCIETY.dunikey"
+    ["UPLANETNAME.CASH"]="$HOME/.zen/game/uplanet.CASH.dunikey"
+    ["UPLANETNAME.RND"]="$HOME/.zen/game/uplanet.RnD.dunikey"
+    ["UPLANETNAME.ASSETS"]="$HOME/.zen/game/uplanet.ASSETS.dunikey"
+    ["UPLANETNAME.IMPOT"]="$HOME/.zen/game/uplanet.IMPOT.dunikey"
+)
+
+# Master primal source for cooperative wallets (UPLANETG1PUB is the authorized source)
+COOPERATIVE_MASTER_PRIMAL="$UPLANETG1PUB"
+COOPERATIVE_ADMIN_EMAIL="${CAPTAINEMAIL:-support@qo-op.com}"
+
+# Check each cooperative wallet for primal compliance
+for wallet_name in "${!COOPERATIVE_WALLETS[@]}"; do
+    wallet_dunikey="${COOPERATIVE_WALLETS[$wallet_name]}"
+    
+    if [[ -f "$wallet_dunikey" ]]; then
+        # Extract public key from dunikey file
+        wallet_pubkey=$(cat "$wallet_dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+        
+        if [[ -n "$wallet_pubkey" ]]; then
+            echo "ZEN ECONOMY: Checking primal control for $wallet_name (${wallet_pubkey:0:8}...)"
+            
+            # Run primal wallet control for this cooperative wallet
+            ${MY_PATH}/../tools/primal_wallet_control.sh \
+                "$wallet_dunikey" \
+                "$wallet_pubkey" \
+                "$COOPERATIVE_MASTER_PRIMAL" \
+                "$COOPERATIVE_ADMIN_EMAIL"
+                
+            if [[ $? -eq 0 ]]; then
+                echo "ZEN ECONOMY: ✅ Primal control OK for $wallet_name"
+            else
+                echo "ZEN ECONOMY: ⚠️  Primal control issues detected for $wallet_name"
+            fi
+        else
+            echo "ZEN ECONOMY: ⚠️  Could not extract public key from $wallet_name"
+        fi
+    else
+        echo "ZEN ECONOMY: ⚠️  Wallet file not found: $wallet_name ($wallet_dunikey)"
+    fi
+done
+
+echo "ZEN ECONOMY: Primal wallet control completed for all cooperative wallets"
+
+#######################################################################
 # Cooperative allocation check - trigger 3x1/3 allocation if conditions are met
 # This will be executed after PAF payment to ensure proper economic flow
 #######################################################################

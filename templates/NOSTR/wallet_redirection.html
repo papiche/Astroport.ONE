@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UPlanet - Redirection Automatique de Fonds</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+        }
+        .alert-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .info-box {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .success-box {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .details {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 0.9em;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .code {
+            font-family: 'Courier New', monospace;
+            background: #f1f1f1;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔄 Redirection Automatique de Fonds</h1>
+            <p>Système de Protection UPlanet ẐEN</p>
+        </div>
+
+        <div class="alert-box">
+            <h3>⚠️ Intrusion Répétitive Détectée</h3>
+            <p>Une nouvelle tentative d'intrusion a été détectée sur votre portefeuille UPlanet. 
+            Conformément à notre politique de sécurité, les fonds ont été automatiquement redirigés vers la coopérative.</p>
+        </div>
+
+        <div class="details">
+            <h3>📊 Détails de la Redirection</h3>
+            <ul>
+                <li><strong>Compte concerné :</strong> {PLAYER}</li>
+                <li><strong>Portefeuille :</strong> <span class="code">{WALLET_PUBKEY}...</span></li>
+                <li><strong>Source intrusive :</strong> <span class="code">{INTRUSION_PUBKEY}...</span></li>
+                <li><strong>Montant redirigé :</strong> <strong>{AMOUNT} Ğ1</strong></li>
+                <li><strong>Destination :</strong> UPLANETNAME.G1 (Coopérative)</li>
+                <li><strong>Nombre total d'intrusions :</strong> {INTRUSION_COUNT}</li>
+            </ul>
+        </div>
+
+        <div class="info-box">
+            <h3>💡 Nouvelle Politique de Sécurité</h3>
+            <p><strong>Versements Ğ1 doivent être faits vers UPLANETNAME.G1 uniquement</strong></p>
+            <p>À partir de la 3ème intrusion, notre système ne détruit plus les portefeuilles mais redirige automatiquement 
+            tous les fonds intrusifs vers la coopérative UPlanet. Cette approche :</p>
+            <ul>
+                <li>✅ Préserve votre compte et vos services</li>
+                <li>✅ Protège l'écosystème contre la pollution comptable</li>
+                <li>✅ Récupère les fonds intrusifs pour la coopérative</li>
+                <li>✅ Évite la destruction de portefeuilles</li>
+            </ul>
+        </div>
+
+        <div class="success-box">
+            <h3>💰 Fonds Récupérés par la Coopérative</h3>
+            <p>Les <strong>{AMOUNT} Ğ1</strong> ont été automatiquement transférés vers le portefeuille de la coopérative UPlanet 
+            (<span class="code">{MASTER_PRIMAL}...</span>). Ces fonds contribueront au développement de l'écosystème ẐEN.</p>
+        </div>
+
+        <div class="info-box">
+            <h3>🔧 Actions Recommandées</h3>
+            <ol>
+                <li><strong>Informez vos contacts :</strong> Tous les versements Ğ1 doivent être faits vers UPLANETNAME.G1</li>
+                <li><strong>Vérifiez vos processus :</strong> Assurez-vous d'utiliser les bons portefeuilles</li>
+                <li><strong>Contactez le support :</strong> En cas de questions sur cette redirection</li>
+                <li><strong>Continuez à utiliser vos services :</strong> Votre compte reste actif et fonctionnel</li>
+            </ol>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{myIPFS}/ipns/{MASTER_PRIMAL}" class="btn">🌐 Accéder à votre Espace UPlanet</a>
+        </div>
+
+        <div class="footer">
+            <p><strong>UPlanet Coopérative ẐEN</strong></p>
+            <p>Système de protection automatique des portefeuilles</p>
+            <p>Cette redirection garantit la sécurité et la conformité de l'écosystème</p>
+            <p><em>Message automatique - Ne pas répondre</em></p>
+        </div>
+    </div>
+</body>
+</html>
