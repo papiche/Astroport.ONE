@@ -45,18 +45,21 @@ show_help() {
     echo "Options:"
     echo "  -l, --locataire EMAIL     Virement pour locataire (recharge MULTIPASS)"
     echo "  -s, --societaire EMAIL    Virement pour sociétaire (parts sociales)"
-    echo "  -t, --type TYPE           Type de sociétaire: satellite|constellation"
+    echo "  -t, --type TYPE           Type de sociétaire: satellite|constellation|infrastructure"
+    echo "  -i, --infrastructure      Apport capital infrastructure (CAPTAIN → NODE)"
     echo "  -m, --montant MONTANT     Montant en euros (optionnel, auto-calculé par défaut)"
     echo "  -h, --help                Affiche cette aide"
     echo ""
     echo "Exemples:"
-    echo "  $0 -l user@example.com -m 20             # Recharge MULTIPASS locataire"
-    echo "  $0 -s user@example.com -t satellite      # Parts sociales satellite"
-    echo "  $0 -s user@example.com -t constellation  # Parts sociales constellation"
+    echo "  $0 -l user@example.com -m 20                  # Recharge MULTIPASS locataire"
+    echo "  $0 -s user@example.com -t satellite           # Parts sociales satellite"
+    echo "  $0 -s user@example.com -t constellation       # Parts sociales constellation"
+    echo "  $0 -i -m 500                               # Apport capital infrastructure (500€)"
     echo ""
     echo "Types de sociétaires:"
     echo "  satellite     : 50€/an (sans IA)"
     echo "  constellation : 540€/3ans (avec IA)"
+    echo "  infrastructure: 500€ (apport capital machine, direct vers NODE)"
 }
 
 # Fonction pour vérifier le solde d'un portefeuille avec gestion du pending
@@ -169,6 +172,9 @@ calculate_societaire_amount() {
         "constellation")
             echo "${ZENCARD_CONSTELLATION:-540}" # 540€ = 540 Ẑen (valeur par défaut)
             ;;
+        "infrastructure")
+            echo "${MACHINE_VALUE_ZEN:-500}" # 500€ = 500 Ẑen (apport capital machine)
+            ;;
         *)
             echo "0"
             ;;
@@ -232,12 +238,96 @@ process_locataire() {
 }
 
 ################################################################################
+# Fonction pour apport capital infrastructure (pas de 3x1/3)
+################################################################################
+process_infrastructure() {
+    local email="$1"
+    local montant_euros="${2:-$(calculate_societaire_amount "infrastructure")}"
+    
+    echo -e "${BLUE}⚙️ Traitement APPORT CAPITAL INFRASTRUCTURE pour: ${email}${NC}"
+    echo -e "${CYAN}💰 Montant: ${montant_euros}€ (${montant_euros} Ẑen) - DIRECT vers NODE${NC}"
+    
+    # Vérifier que les portefeuilles existent
+    if [[ ! -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
+        echo -e "${RED}❌ Portefeuille UPLANETNAME.G1 non configuré${NC}"
+        echo "💡 Utilisez zen.sh → UPLANETNAME.G1 pour configurer"
+        return 1
+    fi
+    
+    # Récupérer les clés publiques
+    local g1_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_G1")
+    
+    # Récupérer la clé ZEN Card du capitaine
+    local zencard_pubkey=""
+    local zencard_dunikey="$HOME/.zen/game/players/${email}/secret.dunikey"
+    local zencard_g1pub="$HOME/.zen/game/players/${email}/.g1pub"
+    
+    if [[ -f "$zencard_dunikey" ]]; then
+        zencard_pubkey=$(cat "$zencard_dunikey" | grep "pub:" | cut -d ' ' -f 2)
+        echo -e "${GREEN}✅ ZEN Card trouvée: ${zencard_pubkey:0:8}...${NC}"
+    elif [[ -f "$zencard_g1pub" ]]; then
+        zencard_pubkey=$(cat "$zencard_g1pub")
+        echo -e "${GREEN}✅ ZEN Card trouvée (g1pub): ${zencard_pubkey:0:8}...${NC}"
+    else
+        echo -e "${RED}❌ ZEN Card non trouvée pour ${email}${NC}"
+        echo -e "${CYAN}💡 Vérifiez que le dossier ~/.zen/game/players/${email}/ existe${NC}"
+        return 1
+    fi
+    
+    # Récupérer la clé NODE
+    local node_pubkey=""
+    if [[ -f "$HOME/.zen/game/secret.NODE.dunikey" ]]; then
+        node_pubkey=$(cat "$HOME/.zen/game/secret.NODE.dunikey" | grep "pub:" | cut -d ' ' -f 2)
+        echo -e "${GREEN}✅ NODE trouvé: ${node_pubkey:0:8}...${NC}"
+    else
+        echo -e "${RED}❌ Portefeuille NODE non trouvé: ~/.zen/game/secret.NODE.dunikey${NC}"
+        echo -e "${CYAN}💡 Exécutez UPLANET.init.sh pour créer le portefeuille NODE${NC}"
+        return 1
+    fi
+    
+    echo -e "${YELLOW}🔑 Portefeuilles identifiés:${NC}"
+    echo -e "  UPLANETNAME.G1: ${g1_pubkey:0:8}..."
+    echo -e "  ZEN Card ${email}: ${zencard_pubkey:0:8}..."
+    echo -e "  NODE (Armateur): ${node_pubkey:0:8}..."
+    
+    # Étape 1: UPLANETNAME.G1 -> ZEN Card
+    echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME.G1 → ZEN Card ${email}${NC}"
+    if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$zencard_pubkey" "$montant_euros" "Apport capital infrastructure ${email}"; then
+        echo -e "${RED}❌ Échec de l'étape 1${NC}"
+        return 1
+    fi
+    
+    # Étape 2: ZEN Card -> NODE (DIRECT, pas de 3x1/3)
+    echo -e "${BLUE}📤 Étape 2: Transfert ZEN Card → NODE (APPORT CAPITAL)${NC}"
+    if ! transfer_and_verify "$zencard_dunikey" "$node_pubkey" "$montant_euros" "Apport capital machine infrastructure"; then
+        echo -e "${RED}❌ Échec de l'étape 2${NC}"
+        return 1
+    fi
+    
+    echo -e "${GREEN}🎉 Apport capital infrastructure terminé avec succès!${NC}"
+    echo -e "${CYAN}📊 Résumé:${NC}"
+    echo -e "  • ${montant_euros} Ẑen transférés directement au NODE"
+    echo -e "  • Apport au capital (non distribuable 3x1/3)"
+    echo -e "  • Valorisation infrastructure/machine enregistrée"
+    echo -e "  • Toutes les transactions confirmées sur la blockchain"
+    echo -e "  • ✅ Cohérence avec OpenCollective UPlanet Ẑen maintenue"
+    
+    return 0
+}
+
+################################################################################
 # Fonction principale pour virement sociétaire
 ################################################################################
 process_societaire() {
     local email="$1"
     local type="$2"
     local montant_euros="${3:-$(calculate_societaire_amount "$type")}"
+    
+    # Cas spécial : apport capital infrastructure (pas de 3x1/3)
+    if [[ "$type" == "infrastructure" ]]; then
+        process_infrastructure "$email" "$montant_euros"
+        return $?
+    fi
     
     echo -e "${BLUE}👑 Traitement virement SOCIÉTAIRE pour: ${email}${NC}"
     echo -e "${CYAN}💰 Type: ${type} - Montant: ${montant_euros}€ (${montant_euros} Ẑen)${NC}"
@@ -382,9 +472,10 @@ show_menu() {
     echo "1. Virement LOCATAIRE (recharge MULTIPASS)"
     echo "2. Virement SOCIÉTAIRE Satellite (50€/an)"
     echo "3. Virement SOCIÉTAIRE Constellation (540€/3ans)"
-    echo "4. Quitter"
+    echo "4. Apport CAPITAL INFRASTRUCTURE (CAPTAIN → NODE)"
+    echo "5. Quitter"
     echo ""
-    read -p "Choisissez une option (1-4): " choice
+    read -p "Choisissez une option (1-5): " choice
     
     case $choice in
         1)
@@ -412,6 +503,21 @@ show_menu() {
             fi
             ;;
         4)
+            if [[ -n "$CAPTAINEMAIL" ]]; then
+                # Vérifier si MACHINE_VALUE_ZEN est définie, sinon la demander
+                local machine_value="${MACHINE_VALUE_ZEN}"
+                if [[ -z "$machine_value" ]]; then
+                    read -p "Valeur de la machine en Ẑen (défaut: 500): " machine_value
+                    machine_value="${machine_value:-500}"
+                fi
+                echo -e "${CYAN}💰 Apport capital pour: ${CAPTAINEMAIL} (${machine_value} Ẑen)${NC}"
+                process_infrastructure "$CAPTAINEMAIL" "$machine_value"
+            else
+                echo -e "${RED}❌ CAPTAINEMAIL non défini dans l'environnement${NC}"
+                echo -e "${CYAN}💡 Configurez votre email de capitaine dans my.sh${NC}"
+            fi
+            ;;
+        5)
             echo -e "${GREEN}👋 Au revoir!${NC}"
             exit 0
             ;;
@@ -460,6 +566,17 @@ main() {
                     process_societaire "$2" "$type" "$3"
                 else
                     echo -e "${RED}❌ Email requis pour l'option --societaire${NC}"
+                    exit 1
+                fi
+                ;;
+            -i|--infrastructure)
+                if [[ -n "$CAPTAINEMAIL" ]]; then
+                    local machine_value="${MACHINE_VALUE_ZEN:-500}"
+                    echo -e "${CYAN}💰 Apport capital infrastructure: ${CAPTAINEMAIL} (${machine_value} Ẑen)${NC}"
+                    process_infrastructure "$CAPTAINEMAIL" "$machine_value"
+                else
+                    echo -e "${RED}❌ CAPTAINEMAIL non défini dans l'environnement${NC}"
+                    echo -e "${CYAN}💡 Configurez votre email de capitaine dans my.sh${NC}"
                     exit 1
                 fi
                 ;;

@@ -1,24 +1,45 @@
-# UPLANET.INIT.SH - Initialisation des Portefeuilles Coopératifs
+# UPLANET.INIT.SH - Initialisation Infrastructure UPlanet ẐEN
 
 ## 📋 Description
 
-`UPLANET.init.sh` est un script d'initialisation automatique des portefeuilles coopératifs de l'écosystème UPlanet ẐEN. Il vérifie l'état des portefeuilles système et les initialise si nécessaire en transférant 1 Ğ1 depuis un portefeuille source.
+`UPLANET.init.sh` est le script **FONDAMENTAL** d'initialisation de l'infrastructure complète UPlanet ẐEN. Il crée et initialise tous les portefeuilles coopératifs, opérationnels et de gouvernance nécessaires au fonctionnement de l'écosystème, en respectant la source primale unique `UPLANETNAME.G1`.
 
-## 🎯 Objectif
+## 🎯 Objectifs
 
-Assurer que tous les portefeuilles coopératifs disposent d'un solde minimum pour fonctionner correctement dans l'écosystème UPlanet ẐEN, en respectant les contraintes de solde disponibles.
+1. **Initialisation complète** : Créer tous les portefeuilles depuis la source primale unique
+2. **Sécurité primale** : Garantir la traçabilité et l'anti-intrusion
+3. **Infrastructure opérationnelle** : NODE (Armateur) et CAPTAIN (MULTIPASS/ZEN Card)
+4. **Gouvernance coopérative** : Portefeuilles de répartition 3x1/3 et fiscalité
+5. **Compatibilité modes** : Fonctionnement ORIGIN (niveau X) et ẐEN (niveau Y)
 
-## 🏛️ Portefeuilles Coopératifs Gérés
+## 🏛️ Infrastructure Complète Initialisée
 
-Le script vérifie et initialise les portefeuilles suivants :
+Le script crée et initialise l'infrastructure complète UPlanet ẐEN :
 
-| Portefeuille | Fichier Dunikey | Description |
-|---------------|------------------|-------------|
-| `UPLANETNAME` | `uplanet.dunikey` | Compte d'exploitation principal |
-| `UPLANETNAME.SOCIETY` | `uplanet.SOCIETY.dunikey` | Capital social et adhésions |
-| `UPLANETNAME.CASH` | `uplanet.CASH.dunikey` | Trésorerie (33.33% du surplus) |
-| `UPLANETNAME.RND` | `uplanet.RnD.dunikey` | Recherche & Développement (33.33% du surplus) |
-| `UPLANETNAME.ASSETS` | `uplanet.ASSETS.dunikey` | Actifs et investissements (33.34% du surplus) |
+### **🏦 Portefeuilles Coopératifs de Base**
+
+| Portefeuille | Fichier Dunikey | Rôle dans l'Écosystème |
+|---------------|------------------|------------------------|
+| **`UPLANETNAME.G1`** | `uplanet.G1.dunikey` | **Source primale principale** - Réserve Ğ1 de l'écosystème |
+| **`UPLANETNAME`** | `uplanet.dunikey` | **Services locaux** - Gestion revenus MULTIPASS |
+| **`UPLANETNAME.SOCIETY`** | `uplanet.SOCIETY.dunikey` | **Capital social** - Émission parts sociales ZEN Cards |
+
+### **🏛️ Portefeuilles de Gouvernance Coopérative (3x1/3)**
+
+| Portefeuille | Fichier Dunikey | Allocation Coopérative |
+|---------------|------------------|------------------------|
+| **`UPLANETNAME.CASH`** | `uplanet.CASH.dunikey` | **Trésorerie** (33.33% du surplus) |
+| **`UPLANETNAME.RND`** | `uplanet.RnD.dunikey` | **R&D** (33.33% du surplus) |
+| **`UPLANETNAME.ASSETS`** | `uplanet.ASSETS.dunikey` | **Actifs** (33.34% du surplus) |
+| **`UPLANETNAME.IMPOT`** | `uplanet.IMPOT.dunikey` | **Fiscalité** (TVA + IS) |
+
+### **⚙️ Infrastructure Opérationnelle**
+
+| Portefeuille | Fichier Dunikey | Fonction Opérationnelle |
+|---------------|------------------|-------------------------|
+| **`NODE`** | `secret.NODE.dunikey` | **Armateur** - Reçoit PAF et apport capital machine |
+| **`CAPTAIN.MULTIPASS`** | `~/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey` | **MULTIPASS Captain** - Services NOSTR (1Ẑ/semaine) |
+| **`CAPTAIN.ZENCARD`** | `~/.zen/game/players/$CAPTAINEMAIL/secret.dunikey` | **ZEN Card Captain** - Parts sociales (valorisation machine) |
 
 ## 🔧 Fonctionnement
 
@@ -26,14 +47,37 @@ Le script vérifie et initialise les portefeuilles suivants :
 - Outils requis : `silkaj`, `jq`, `bc`, `G1check.sh`
 - Portefeuille source disponible avec solde suffisant
 
-### 2. Détection du Portefeuille Source
-Le script recherche automatiquement un portefeuille source dans l'ordre suivant :
-1. `~/.zen/game/uplanet.G1.dunikey` (portefeuille de réserve principal)
-2. `~/.zen/game/uplanet.g1.dunikey`
-3. `~/.zen/game/secret.G1.dunikey`
-4. `~/.zen/game/secret.dunikey`
+### 2. Source Primale Unique : UPLANETNAME.G1
 
-**Note** : `uplanet.G1.dunikey` est le portefeuille de réserve et de stabilité de l'écosystème UPlanet, conçu spécifiquement pour les transactions primaires et l'émission de Ẑen. Il est donc prioritaire pour l'initialisation des portefeuilles coopératifs.
+Le script utilise **exclusivement** `UPLANETNAME.G1` comme source primale pour garantir :
+
+#### **🔐 Sécurité et Traçabilité**
+- **Source unique** : Tous les portefeuilles proviennent de `UPLANETNAME.G1`
+- **Chaîne primale** : Traçabilité complète des fonds
+- **Anti-intrusion** : Protection contre les fonds non autorisés
+- **Cohérence économique** : Respect de la Constitution ẐEN
+
+#### **🎯 Modes UPlanet Supportés**
+
+**🌍 Mode ORIGIN (Niveau X) :**
+- `UPLANETNAME = "EnfinLibre"` (fixe)
+- Source primale : `EnfinLibre.G1`
+- Réseau IPFS public
+
+**🏴‍☠️ Mode ẐEN (Niveau Y) :**
+- `UPLANETNAME = $(cat ~/.ipfs/swarm.key)` (dynamique)
+- Source primale : `$(cat ~/.ipfs/swarm.key).G1`
+- Réseau IPFS privé avec swarm.key
+
+#### **📍 Détection Automatique du Mode**
+```bash
+# Le script détecte automatiquement le mode :
+if [[ -f ~/.ipfs/swarm.key ]]; then
+    UPLANETNAME=$(cat ~/.ipfs/swarm.key)  # Mode ẐEN
+else
+    UPLANETNAME="EnfinLibre"              # Mode ORIGIN
+fi
+```
 
 ### 3. Calcul de la Capacité d'Initialisation
 - **Solde minimum** : 1 Ğ1 requis pour commencer
@@ -151,20 +195,82 @@ Si le solde est insuffisant :
 ./UPLANET.init.sh --force
 ```
 
-## 🔗 Intégration avec l'Écosystème
+---
 
-### Scripts Associés
-- **`UPLANET.official.sh`** : Gestion des transferts officiels
-- **`ZEN.COOPERATIVE.3x1-3.sh`** : Allocation hebdomadaire du surplus (utilise les mêmes fichiers dunikey)
-- **`zen.sh`** : Gestionnaire principal de la station ẐEN
+## 🔗 **INTÉGRATION AVEC L'ÉCOSYSTÈME UPLANET ẐEN**
 
-**Note de cohérence** : Les noms des fichiers dunikey des portefeuilles coopératifs sont identiques à ceux utilisés dans `ZEN.COOPERATIVE.3x1-3.sh`, garantissant une parfaite cohérence dans l'écosystème UPlanet.
+### **🚀 Flux d'Embarquement**
+```
+install.sh → uplanet_onboarding.sh → UPLANET.init.sh → captain.sh
+     ↓              ↓                      ↓              ↓
+Installation → Configuration → Initialisation → Identité Capitaine
+```
 
-### Workflow Typique
-1. **Initialisation** : `UPLANET.init.sh` (ce script)
-2. **Fonctionnement** : `UPLANET.official.sh` pour les transferts
-3. **Maintenance** : `ZEN.COOPERATIVE.3x1-3.sh` pour l'allocation
-4. **Surveillance** : `zen.sh` pour le monitoring
+### **🏛️ Scripts Économiques Associés**
+
+| Script | Rôle | Relation avec UPLANET.init.sh |
+|--------|------|-------------------------------|
+| **`UPLANET.official.sh`** | Virements officiels | Utilise les portefeuilles initialisés |
+| **`ZEN.ECONOMY.sh`** | Paiement PAF + Burn | Utilise NODE et portefeuilles coopératifs |
+| **`ZEN.COOPERATIVE.3x1-3.sh`** | Allocation 3x1/3 | Utilise CASH, RND, ASSETS |
+| **`NOSTRCARD.refresh.sh`** | Collecte MULTIPASS | Utilise UPLANETNAME et IMPOT |
+| **`PLAYER.refresh.sh`** | Collecte ZEN Cards | Utilise UPLANETNAME.SOCIETY et IMPOT |
+
+### **🔧 Scripts de Configuration**
+
+| Script | Rôle | Intégration |
+|--------|------|-------------|
+| **`uplanet_onboarding.sh`** | Embarquement complet | Lance UPLANET.init.sh automatiquement |
+| **`update_config.sh`** | Migration et mise à jour | Peut relancer UPLANET.init.sh si nécessaire |
+| **`heartbox_analysis.sh`** | Analyse système | Fournit les capacités pour la valorisation |
+
+### **🛡️ Sécurité et Contrôle**
+
+| Script | Rôle | Protection Assurée |
+|--------|------|-------------------|
+| **`primal_wallet_control.sh`** | Anti-intrusion | Protège tous les portefeuilles initialisés |
+| **`nostr_DESTROY_TW.sh`** | Désinscription MULTIPASS | Utilisé lors des migrations ORIGIN → ẐEN |
+| **`PLAYER.unplug.sh`** | Désinscription ZEN Card | Utilisé lors des migrations ORIGIN → ẐEN |
+
+---
+
+## 🎯 **WORKFLOW COMPLET D'INITIALISATION**
+
+### **🆕 Nouveau Capitaine (Installation Fraîche)**
+1. **`install.sh`** : Installation Astroport.ONE
+2. **`uplanet_onboarding.sh`** : Configuration et choix du mode
+3. **`UPLANET.init.sh`** : **Initialisation automatique** de l'infrastructure
+4. **`captain.sh`** : Création identité capitaine
+
+### **🔄 Migration ORIGIN → ẐEN**
+1. **`update_config.sh`** : Détection mode et migration
+2. **Désinscription automatique** : `nostr_DESTROY_TW.sh` + `PLAYER.unplug.sh`
+3. **`UPLANET.init.sh`** : **Réinitialisation** avec nouvelle source primale ẐEN
+4. **`uplanet_onboarding.sh`** : Configuration ẐEN complète
+
+### **🔍 Maintenance et Vérification**
+1. **`UPLANET.init.sh --dry-run`** : Vérification état des portefeuilles
+2. **`heartbox_analysis.sh`** : Analyse capacités système
+3. **`zen.sh`** : Diagnostic économique complet
+4. **`dashboard.sh`** : Monitoring quotidien
+
+---
+
+## 📚 **DOCUMENTATION CONNEXE**
+
+### **📖 Guides Principaux**
+- **[EMBARQUEMENT.md](EMBARQUEMENT.md)** : Guide complet d'embarquement UPlanet ẐEN
+- **[SCRIPTS.ROLES.md](SCRIPTS.ROLES.md)** : Rôles de tous les scripts de l'écosystème
+
+### **🏛️ Constitution Économique**
+- **[RUNTIME/ZEN.ECONOMY.readme.md](RUNTIME/ZEN.ECONOMY.readme.md)** : Constitution économique complète
+- **[RUNTIME/ZEN.INTRUSION.POLICY.md](RUNTIME/ZEN.INTRUSION.POLICY.md)** : Politique anti-intrusion
+
+### **🔧 Configuration**
+- **[.env.template](.env.template)** : Template de configuration avec toutes les variables
+- **Configuration dynamique** via `heartbox_analysis.sh`
+
+**Note de cohérence** : Les noms des fichiers dunikey sont **identiques** à ceux utilisés dans tous les scripts économiques (`ZEN.ECONOMY.sh`, `ZEN.COOPERATIVE.3x1-3.sh`, etc.), garantissant une **parfaite cohérence** dans l'écosystème UPlanet ẐEN.
 
 ## 🛠️ Dépannage
 
@@ -232,7 +338,22 @@ ls -la ~/.zen/game/*.dunikey
 
 ---
 
-**Version** : 1.0  
-**Dernière mise à jour** : $(date +%Y-%m-%d)  
+## 🎯 **RÉSUMÉ EXÉCUTIF**
+
+`UPLANET.init.sh` est le **script fondamental** qui transforme une installation Astroport.ONE en infrastructure UPlanet ẐEN complète. Il :
+
+1. **🔐 Garantit la sécurité** via la source primale unique `UPLANETNAME.G1`
+2. **🏛️ Crée l'infrastructure** complète (8 portefeuilles + NODE + CAPTAIN)
+3. **🎯 S'adapte automatiquement** au mode choisi (ORIGIN ou ẐEN)
+4. **🔄 Intègre parfaitement** avec tous les scripts économiques
+5. **🛡️ Assure la cohérence** de l'écosystème coopératif
+
+**Usage recommandé** : Laisser `uplanet_onboarding.sh` l'exécuter automatiquement lors de l'embarquement, ou utiliser `--dry-run` pour vérifier l'état des portefeuilles.
+
+---
+
+**Version** : 2.0 (Architecture ORIGIN/ẐEN)  
+**Dernière mise à jour** : Décembre 2024  
 **Auteur** : Équipe UPlanet ẐEN  
 **Licence** : Conforme à LEGAL.md
+**Documentation** : Partie intégrante de l'écosystème UPlanet ẐEN

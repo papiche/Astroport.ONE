@@ -110,32 +110,46 @@ for PLAYER in ${PLAYERONE[@]}; do
                 TVA_AMOUNT=$(echo "scale=4; $Gpaf * $TVA_RATE / 100" | bc -l)
                 TVA_AMOUNT=$(makecoord $TVA_AMOUNT)
 
-                echo "[7 DAYS CYCLE] TVA provision: $TVA_AMOUNT ẐEN (${TVA_RATE}% of $Gpaf ẐEN)"
+                echo "[7 DAYS CYCLE] ZENCard payment - Direct TVA split: $Gpaf ẐEN to CAPTAIN + $TVA_AMOUNT ẐEN to IMPOTS"
 
-                # Main ZENCard MULTIPASS payment to CAPTAIN
-                payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET${UPLANETG1PUB:0:8}:${YOUSER}:ZCARD" 2>/dev/null)
-                payment_success=$?
-
-                # CAPTAIN pay for TVA provision to UPlanet IMPOTS wallet (only if main payment succeeded)
-                if [[ $payment_success -eq 0 && $(echo "$TVA_AMOUNT > 0" | bc -l) -eq 1 ]]; then
-                    # Ensure IMPOTS wallet exists
+                # Ensure IMPOTS wallet exists before any payment
                     if [[ ! -s ~/.zen/game/uplanet.IMPOT.dunikey ]]; then
                         ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.IMPOT.dunikey "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT"
                         chmod 600 ~/.zen/game/uplanet.IMPOT.dunikey
                     fi
 
                     # Get IMPOTS wallet G1PUB
-                    IMPOTSG1PUB=$(cat $HOME/.zen/game/uplanet.IMPOT.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+                IMPOTS_G1PUB=$(cat $HOME/.zen/game/uplanet.IMPOT.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
 
-                    if [[ -n "$IMPOTS_G1PUB" ]]; then
-                        ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${CAPTAINEMAIL}/.secret.dunikey" "$TVA_AMOUNT" "${IMPOTS_G1PUB}" "UPLANET${UPLANETG1PUB:0:8}:CAPTAIN:${YOUSER}:TVA" 2>/dev/null
-                        echo "✅ TVA provision sent to IMPOTS wallet: $TVA_AMOUNT ẐEN"
+                # Main ZENCard payment to CAPTAIN (HT amount only)
+                payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET${UPLANETG1PUB:0:8}:${YOUSER}:ZCARD:HT" 2>/dev/null)
+                payment_success=$?
+
+                # TVA provision directly from PLAYER to IMPOTS (fiscally correct)
+                tva_success=0
+                if [[ $payment_success -eq 0 && $(echo "$TVA_AMOUNT > 0" | bc -l) -eq 1 && -n "$IMPOTS_G1PUB" ]]; then
+                    tva_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$TVA_AMOUNT" "${IMPOTS_G1PUB}" "UPLANET${UPLANETG1PUB:0:8}:${YOUSER}:TVA" 2>/dev/null)
+                    tva_success=$?
+                    if [[ $tva_success -eq 0 ]]; then
+                        echo "✅ TVA provision recorded directly from ZENCard for ${PLAYER} on $TODATE ($TVA_AMOUNT ẐEN)"
+                    else
+                        echo "❌ TVA provision failed for ${PLAYER} on $TODATE ($TVA_AMOUNT ẐEN)"
+                    fi
                     else
                         echo "❌ IMPOTS wallet not found for TVA provision"
+                fi
+
+                # Check if both payments succeeded
+                if [[ $payment_success -eq 0 && ($tva_success -eq 0 || $(echo "$TVA_AMOUNT == 0" | bc -l) -eq 1) ]]; then
+                    echo "✅ Weekly ZENCard payment recorded for ${PLAYER} on $TODATE ($Gpaf ẐEN HT + $TVA_AMOUNT ẐEN TVA) - Fiscally compliant split"
+                else
+                    # Payment failed - send error email
+                    if [[ $payment_success -ne 0 ]]; then
+                        echo "❌ Main ZENCard payment failed for ${PLAYER} on $TODATE ($Gpaf ẐEN)"
                     fi
-                elif [[ $payment_success -ne 0 ]]; then
-                    # Main payment failed - send error email
-                    echo "❌ Main ZENCard payment failed for ${PLAYER} on $TODATE ($Gpaf ẐEN)"
+                    if [[ $tva_success -ne 0 && $(echo "$TVA_AMOUNT > 0" | bc -l) -eq 1 ]]; then
+                        echo "❌ TVA provision failed for ${PLAYER} on $TODATE ($TVA_AMOUNT ẐEN)"
+                    fi
 
                     # Send error email via mailjet
                     error_message="<html><head><meta charset='UTF-8'>
@@ -148,11 +162,12 @@ for PLAYER in ${PLAYERONE[@]}; do
 <div class='details'>
 <p><strong>Player:</strong> ${PLAYER}</p>
 <p><strong>Date:</strong> $TODATE</p>
-<p><strong>Amount:</strong> $Gpaf ẐEN</p>
-<p><strong>Error:</strong> Main payment to CAPTAIN failed</p>
+<p><strong>Amount HT:</strong> $Gpaf ẐEN</p>
+<p><strong>TVA Amount:</strong> $TVA_AMOUNT ẐEN</p>
+<p><strong>Payment Status:</strong> Main: $([ $payment_success -eq 0 ] && echo "✅" || echo "❌") | TVA: $([ $tva_success -eq 0 ] && echo "✅" || echo "❌")</p>
 <p><strong>Balance:</strong> $COINS G1 ($ZEN ẐEN)</p>
 </div>
-<p>TVA provision was not processed due to main payment failure.</p>
+<p>Both payments must succeed for fiscal compliance.</p>
 </body></html>"
 
                     ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" <(echo "$error_message") "ZENCard Payment Error - $TODATE"

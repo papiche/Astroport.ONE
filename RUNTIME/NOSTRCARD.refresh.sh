@@ -452,9 +452,9 @@ for PLAYER in "${NOSTR[@]}"; do
         if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "${primal}" == "" ]]; then
             ## 2nd day+ MULTIPASS should have received PRIMAL RX by now
             if [[ ${TODATE} != ${BIRTHDATE} ]]; then
-                # Send PRIMO TX for initializing UPlanet ORIGIN SERVICES Access
-                log "INFO" "UPlanet ORIGIN : Send Primo RX from UPlanet : MULTIPASS activation for $G1PUBNOSTR"
-                payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.dunikey" "${G1LEVEL1}" "${G1PUBNOSTR}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:${YOUSER}:MULTIPASS" 2>/dev/null)
+                # Send PRIMO TX for initializing UPlanet SERVICES Access (source primale unique)
+                log "INFO" "UPlanet ẐEN : Send Primo RX from UPLANETNAME.G1 : MULTIPASS activation for $G1PUBNOSTR"
+                payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.G1.dunikey" "${G1LEVEL1}" "${G1PUBNOSTR}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:${YOUSER}:MULTIPASS" 2>/dev/null)
                 if [[ $? -eq 0 ]]; then
                     echo "${UPLANETG1PUB}" > ~/.zen/game/nostr/${PLAYER}/G1PRIME
                     log "INFO" "PRIMO TX sent successfully - PRIMAL marked from ${UPLANETG1PUB}" wallet
@@ -525,39 +525,54 @@ for PLAYER in "${NOSTR[@]}"; do
                             TVA_AMOUNT=$(echo "scale=4; $Npaf * $TVA_RATE / 100" | bc -l)
                             TVA_AMOUNT=$(makecoord $TVA_AMOUNT)
 
-                            log "INFO" "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS G1) + TVA $TVA_AMOUNT ẐEN"
+                            log "INFO" "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS G1) - Direct TVA split: $Npaf ẐEN to CAPTAIN + $TVA_AMOUNT ẐEN to IMPOTS"
 
-                            # Main rental payment to CAPTAIN
-                            payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Npaf" "${CAPTAING1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:NCARD" 2>/dev/null)
+                            # Ensure IMPOTS wallet exists before any payment
+                            if [[ ! -s ~/.zen/game/uplanet.IMPOT.dunikey ]]; then
+                                ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.IMPOT.dunikey "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT"
+                                chmod 600 ~/.zen/game/uplanet.IMPOT.dunikey
+                            fi
+
+                            # Get IMPOTS wallet G1PUB
+                            IMPOTS_G1PUB=$(cat ~/.zen/game/uplanet.IMPOT.dunikey |  grep "pub:" | cut -d ' ' -f 2)
+
+                            # Main rental payment to CAPTAIN (HT amount only)
+                            payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Npaf" "${CAPTAING1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:NCARD:HT" 2>/dev/null)
                             payment_success=$?
 
-                            # TVA provision to UPlanet IMPOTS wallet (only if main payment succeeded)
-                            if [[ $payment_success -eq 0 && $(echo "$TVA_AMOUNT > 0" | bc -l) -eq 1 ]]; then
-                                # Ensure IMPOTS wallet exists
-                                if [[ ! -s ~/.zen/game/uplanet.IMPOT.dunikey ]]; then
-                                    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.IMPOT.dunikey "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT"
-                                    chmod 600 ~/.zen/game/uplanet.IMPOT.dunikey
-                                fi
-
-                                # Get IMPOTS wallet G1PUB
-                                IMPOTS_G1PUB=$(cat ~/.zen/game/uplanet.IMPOT.dunikey |  grep "pub:" | cut -d ' ' -f 2)
-
-                                if [[ -n "$IMPOTS_G1PUB" ]]; then
-                                    tva_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${CAPTAINEMAIL}/.secret.dunikey" "$TVA_AMOUNT" "${IMPOTS_G1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:TVA" 2>/dev/null)
-                                    if [[ $? -eq 0 ]]; then
-                                        log "INFO" "✅ TVA provision recorded for ${PLAYER} on $TODATE ($TVA_AMOUNT ẐEN)"
-                                        log_metric "TVA_PROVISION_SUCCESS" "$TVA_AMOUNT" "${PLAYER}"
-                                    else
-                                        log "WARN" "❌ TVA provision failed for ${PLAYER} on $TODATE ($TVA_AMOUNT ẐEN)"
-                                        log_metric "TVA_PROVISION_FAILED" "$TVA_AMOUNT" "${PLAYER}"
-                                    fi
+                            # TVA provision directly from MULTIPASS to IMPOTS (fiscally correct)
+                            tva_success=0
+                            if [[ $payment_success -eq 0 && $(echo "$TVA_AMOUNT > 0" | bc -l) -eq 1 && -n "$IMPOTS_G1PUB" ]]; then
+                                tva_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$TVA_AMOUNT" "${IMPOTS_G1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:TVA" 2>/dev/null)
+                                tva_success=$?
+                                if [[ $tva_success -eq 0 ]]; then
+                                    log "INFO" "✅ TVA provision recorded directly from MULTIPASS for ${PLAYER} on $TODATE ($TVA_AMOUNT ẐEN)"
+                                    log_metric "TVA_PROVISION_SUCCESS" "$TVA_AMOUNT" "${PLAYER}"
                                 else
-                                    log "ERROR" "❌ IMPOTS wallet not found for TVA provision"
+                                    log "WARN" "❌ TVA provision failed for ${PLAYER} on $TODATE ($TVA_AMOUNT ẐEN)"
+                                    log_metric "TVA_PROVISION_FAILED" "$TVA_AMOUNT" "${PLAYER}"
                                 fi
-                            elif [[ $payment_success -ne 0 ]]; then
-                                # Main payment failed - send error email
-                                log "ERROR" "❌ Main MULTIPASS payment failed for ${PLAYER} on $TODATE ($Npaf ẐEN)"
-                                log_metric "PAYMENT_FAILED" "$Npaf" "${PLAYER}"
+                            else
+                                log "ERROR" "❌ IMPOTS wallet not found for TVA provision"
+                            fi
+
+                            # Check if both payments succeeded
+                            if [[ $payment_success -eq 0 && ($tva_success -eq 0 || $(echo "$TVA_AMOUNT == 0" | bc -l) -eq 1) ]]; then
+                                # Record successful payment
+                                echo "$TODATE" > "$last_payment_file"
+                                log "INFO" "✅ Weekly payment recorded for ${PLAYER} on $TODATE ($Npaf ẐEN HT + $TVA_AMOUNT ẐEN TVA) - Fiscally compliant split"
+                                log_metric "PAYMENT_SUCCESS" "$Npaf" "${PLAYER}"
+                                PAYMENTS_PROCESSED=$((PAYMENTS_PROCESSED + 1))
+                            else
+                                # Payment failed - send error email
+                                if [[ $payment_success -ne 0 ]]; then
+                                    log "ERROR" "❌ Main MULTIPASS payment failed for ${PLAYER} on $TODATE ($Npaf ẐEN)"
+                                    log_metric "PAYMENT_FAILED" "$Npaf" "${PLAYER}"
+                                fi
+                                if [[ $tva_success -ne 0 && $(echo "$TVA_AMOUNT > 0" | bc -l) -eq 1 ]]; then
+                                    log "ERROR" "❌ TVA provision failed for ${PLAYER} on $TODATE ($TVA_AMOUNT ẐEN)"
+                                    log_metric "TVA_PROVISION_FAILED" "$TVA_AMOUNT" "${PLAYER}"
+                                fi
 
                                 # Send error email via mailjet
                                 error_message="<html><head><meta charset='UTF-8'>
@@ -570,23 +585,16 @@ for PLAYER in "${NOSTR[@]}"; do
 <div class='details'>
 <p><strong>Player:</strong> ${PLAYER}</p>
 <p><strong>Date:</strong> $TODATE</p>
-<p><strong>Amount:</strong> $Npaf ẐEN</p>
-<p><strong>Error:</strong> Main payment to CAPTAIN failed</p>
+<p><strong>Amount HT:</strong> $Npaf ẐEN</p>
+<p><strong>TVA Amount:</strong> $TVA_AMOUNT ẐEN</p>
+<p><strong>Payment Status:</strong> Main: $([ $payment_success -eq 0 ] && echo "✅" || echo "❌") | TVA: $([ $tva_success -eq 0 ] && echo "✅" || echo "❌")</p>
 <p><strong>Balance:</strong> $COINS G1 ($ZEN ẐEN)</p>
 </div>
-<p>TVA provision was not processed due to main payment failure.</p>
+<p>Both payments must succeed for fiscal compliance.</p>
 </body></html>"
 
                                 ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" <(echo "$error_message") "MULTIPASS Payment Error - $TODATE"
                                 log "INFO" "Error email sent to ${PLAYER} for payment failure"
-                            fi
-
-                            if [[ $payment_success -eq 0 ]]; then
-                                # Record successful payment
-                                echo "$TODATE" > "$last_payment_file"
-                                log "INFO" "✅ Weekly payment recorded for ${PLAYER} on $TODATE ($Npaf ẐEN + TVA $TVA_AMOUNT ẐEN)"
-                                log_metric "PAYMENT_SUCCESS" "$Npaf" "${PLAYER}"
-                                PAYMENTS_PROCESSED=$((PAYMENTS_PROCESSED + 1))
                             fi
                         else
                             log "WARN" "[7 DAYS CYCLE] NOSTR Card ($COINS G1) - insufficient funds! Destroying if not captain"
@@ -862,11 +870,11 @@ for PLAYER in "${NOSTR[@]}"; do
             fi
         fi
         echo "## CONTROL TRANSACTIONS PRIMAL CONFORMITY..."
-        # Call the generic primal wallet control function
+        # Call the generic primal wallet control function (using UPLANETNAME_G1 as unique primal source)
         ${MY_PATH}/../tools/primal_wallet_control.sh \
             "${HOME}/.zen/game/nostr/${PLAYER}/.secret.dunikey" \
             "${G1PUBNOSTR}" \
-            "${UPLANETG1PUB}" \
+            "${UPLANETNAME_G1}" \
             "${PLAYER}"
 
     else

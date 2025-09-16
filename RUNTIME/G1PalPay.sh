@@ -69,11 +69,11 @@ echo "## CONTROL WALLET PRIMAL RX"
 if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
     echo "CONTROL UPLANET ZEN - ZenCard primal control"
     
-    # For ZenCard wallets, use UPLANETNAME.SOCIETY as expected primal source
+    # For ZenCard wallets, use UPLANETNAME_G1 as unique primal source (unified architecture)
     ${MY_PATH}/../tools/primal_wallet_control.sh \
         "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" \
         "${G1PUB}" \
-        "${UPLANETNAME_SOCIETY}" \
+        "${UPLANETNAME_G1}" \
         "${PLAYER}"
 
 else

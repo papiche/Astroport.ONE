@@ -200,7 +200,7 @@ export_json() {
     local node_id="${IPFSNODEID:-unknown}"
     local captain=$(cat ~/.zen/game/players/.current/.player 2>/dev/null || echo "unknown")
     local node_type="standard"
-    if [[ -f ~/.zen/game/secret.dunikey ]]; then
+    if [[ -f ~/.zen/game/secret.NODE.dunikey ]]; then
         node_type="y_level"
     fi
     

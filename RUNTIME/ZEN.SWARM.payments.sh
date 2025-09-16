@@ -94,9 +94,9 @@ jq -c '.subscriptions[] | select(.status == "active")' "$SUBSCRIPTIONS_FILE" | w
             echo "Target Node G1PUB: $TARGET_NODEG1PUB"
             
             # Déterminer la source de paiement
-            if [[ "$PAYMENT_SOURCE" == "Node (Y Level)" && -f ~/.zen/game/secret.dunikey ]]; then
+            if [[ "$PAYMENT_SOURCE" == "Node (Y Level)" && -f ~/.zen/game/secret.NODE.dunikey ]]; then
                 # Paiement depuis le portefeuille du Node
-                PAYMENT_KEY="$HOME/.zen/game/secret.dunikey"
+                PAYMENT_KEY="$HOME/.zen/game/secret.NODE.dunikey"
                 echo "Paying from Node wallet (Y Level)"
             elif [[ -f ~/.zen/game/players/.current/secret.dunikey ]]; then
                 # Paiement depuis le portefeuille du Capitaine

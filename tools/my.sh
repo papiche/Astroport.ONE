@@ -501,7 +501,7 @@ isLAN="$(isLan)"
 myIP="$(myIp)" # "127.0.0.1"
 
 ## SEE https://pad.p2p.legal/s/keygen
-NODEG1PUB=$(cat $HOME/.zen/game/secret.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+NODEG1PUB=$(cat $HOME/.zen/game/secret.NODE.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
 
 ## PATCH
 myIP=$(hostname -I | awk '{print $1}' | head -n 1)

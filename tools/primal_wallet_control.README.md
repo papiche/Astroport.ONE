@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `primal_wallet_control.sh` script provides a generic solution for monitoring wallet transactions and ensuring that incoming transactions come from wallets with the same primal source. This implements a security system that detects unauthorized transactions and automatically handles refunds and account termination.
+The `primal_wallet_control.sh` script provides a generic solution for monitoring wallet transactions and ensuring that incoming transactions come from wallets with the same primal source. This implements a security system that detects unauthorized transactions and automatically redirects them to UPLANETNAME_G1 to prevent transaction loops.
 
 ## Context and Purpose
 
@@ -172,15 +172,15 @@ This implementation extracts and generalizes the primal transaction control func
 - **Real-time Verification**: Uses `silkaj --json money primal` for live primal source verification
 - **Smart Cache Usage**: Uses existing cache files when available and recent for performance optimization
 - **History-based Detection**: Analyzes transaction history to count existing intrusions without cache dependency
-- **Automatic Refund**: Immediately refunds unauthorized transactions
-- **Intrusion Tracking**: Counts intrusion attempts with fixed threshold
-- **Account Termination**: Automatically terminates accounts after maximum intrusions
+- **Automatic Redirection**: Immediately redirects unauthorized transactions to UPLANETNAME_G1
+- **Intrusion Tracking**: Counts intrusion attempts for monitoring and alerts
+- **Loop Prevention**: Avoids transaction loops by redirecting instead of refunding
 
 #### 2. Security Enhancements
-- **Progressive Penalties**: Tracks intrusion count with termination at threshold
-- **Email Alerts**: Sends detailed alerts for intrusions and terminations
-- **Wallet Emptying**: Transfers remaining balance to master primal before termination
-- **Fixed Threshold**: Maximum 3 intrusions before termination
+- **Systematic Redirection**: All intrusions redirected to UPLANETNAME_G1 for cooperative recovery
+- **Email Alerts**: Sends detailed alerts for all intrusions with redirection notifications
+- **Fund Recovery**: Transfers intrusive amounts to cooperative treasury (UPLANETNAME_G1)
+- **Loop Prevention**: No refunds to sender to avoid potential transaction loops
 - **History-based Detection**: Analyzes transaction history to count existing intrusions without cache
 
 #### 3. Integration Points
@@ -191,12 +191,12 @@ This implementation extracts and generalizes the primal transaction control func
 ## Features
 
 - **Primal Transaction Verification**: Uses `silkaj --json money primal` to verify the primal source of incoming transactions
-- **Automatic Refund**: Automatically refunds unauthorized transactions
-- **Intrusion Detection**: Tracks intrusion attempts and terminates accounts after a configurable threshold
-- **Email Alerts**: Sends detailed alerts for intrusions and account terminations
+- **Automatic Redirection**: Automatically redirects unauthorized transactions to UPLANETNAME_G1
+- **Intrusion Detection**: Tracks intrusion attempts for monitoring and cooperative fund recovery
+- **Email Alerts**: Sends detailed alerts for all intrusions with redirection notifications
 - **Smart Cache Usage**: Uses existing cache files when available and recent for performance optimization
 - **History-based Detection**: Analyzes transaction history to count existing intrusions without cache dependency
-- **Fixed Threshold**: Maximum 3 intrusions before account termination
+- **Loop Prevention**: Eliminates transaction loops by redirecting instead of refunding to sender
 
 ## Technical Implementation
 
@@ -205,20 +205,19 @@ This implementation extracts and generalizes the primal transaction control func
 1. **`get_primal_source()`** - Retrieves primal source using silkaj
 2. **`get_wallet_history()`** - Gets transaction history with retry logic
 3. **`send_alert_email()`** - Sends email alerts using templates
-4. **`terminate_wallet()`** - Empties wallet and terminates account
-5. **`count_existing_intrusions()`** - Analyzes transaction history to count existing intrusion refunds
-6. **`control_primal_transactions()`** - Main control function
+4. **`count_existing_intrusions()`** - Analyzes transaction history to count existing intrusion transactions
+5. **`control_primal_transactions()`** - Main control function with redirection logic
 
 ### How It Works
 
 1. **Cache Check**: Checks for existing cache files (`~/.zen/tmp/coucou/$pubkey.primal` and `~/.zen/tmp/coucou/$pubkey.history`)
 2. **Transaction History Retrieval**: Gets the wallet's complete transaction history using `silkaj --json money history` (or from cache if recent)
-3. **Existing Intrusion Analysis**: Scans transaction history for existing intrusion refunds to avoid cache dependency
+3. **Existing Intrusion Analysis**: Scans transaction history for existing intrusion transactions to avoid cache dependency
 4. **Primal Source Verification**: For each incoming transaction, verifies the primal source using `silkaj --json money primal` (or from cache if recent)
 5. **Intrusion Detection**: Compares the primal source with the expected master primal
-6. **Automatic Refund**: If an intrusion is detected, automatically refunds the transaction
-7. **Alert System**: Sends email alerts for intrusions and account terminations
-8. **Account Termination**: After reaching the maximum intrusion threshold, empties the wallet and terminates the account
+6. **Automatic Redirection**: If an intrusion is detected, automatically redirects the transaction to UPLANETNAME_G1
+7. **Alert System**: Sends email alerts for all intrusions with redirection notifications
+8. **Fund Recovery**: All intrusive amounts are recovered by the cooperative treasury
 
 ## Usage
 
@@ -258,7 +257,7 @@ control_primal_transactions \
 ${MY_PATH}/../tools/primal_wallet_control.sh \
     "${HOME}/.zen/game/nostr/${PLAYER}/.secret.dunikey" \
     "${G1PUBNOSTR}" \
-    "${UPLANETG1PUB}" \
+    "${UPLANETNAME_G1}" \
     "${EMAIL}"
 ```
 
@@ -269,7 +268,7 @@ ${MY_PATH}/../tools/primal_wallet_control.sh \
 ${MY_PATH}/../tools/primal_wallet_control.sh \
     "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" \
     "${G1PUB}" \
-    "${UPLANETG1PUB}" \
+    "${UPLANETNAME_G1}" \
     "${EMAIL}"
 ```
 
@@ -278,10 +277,10 @@ ${MY_PATH}/../tools/primal_wallet_control.sh \
 - **Smart Cache Usage**: Uses existing cache files when available and recent for performance optimization
 - **Real-time Fallback**: Falls back to live verification when cache is not available or outdated
 - **History-based Intrusion Detection**: Analyzes transaction history to count existing intrusions without cache dependency
-- **Automatic Refund**: Unauthorized transactions are immediately refunded
-- **Progressive Penalties**: Intrusion count tracking with fixed termination threshold (3 intrusions)
-- **Email Notifications**: Detailed alerts for security events
-- **Wallet Termination**: Automatic account termination with balance transfer to master
+- **Automatic Redirection**: Unauthorized transactions are immediately redirected to UPLANETNAME_G1
+- **Loop Prevention**: No refunds to sender to avoid potential transaction loops
+- **Email Notifications**: Detailed alerts for all security events with redirection notifications
+- **Fund Recovery**: All intrusive amounts recovered by cooperative treasury (UPLANETNAME_G1)
 
 ## Dependencies
 
@@ -302,8 +301,8 @@ The script uses existing cache files for performance optimization:
 ### Templates
 The script uses HTML templates for email alerts:
 
-- `templates/NOSTR/wallet_alert.html` - For intrusion alerts
-- `templates/NOSTR/wallet_termination.html` - For account termination alerts
+- `templates/NOSTR/wallet_alert.html` - For intrusion alerts (first intrusion)
+- `templates/NOSTR/wallet_redirection.html` - For redirection notifications (all intrusions)
 
 ## Benefits Achieved
 
@@ -316,8 +315,8 @@ The script uses HTML templates for email alerts:
 - **Real-time Verification**: Uses live data when cache is not available or outdated
 - **Smart Cache Usage**: Leverages existing cache for performance while maintaining security
 - **History-based Detection**: Eliminates cache dependency for intrusion counting
-- **Automatic Response**: Immediate refund and alert system
-- **Progressive Protection**: Escalating security measures
+- **Automatic Response**: Immediate redirection and alert system
+- **Loop Prevention**: Eliminates transaction loops by redirecting instead of refunding
 
 ### 3. Improved Reliability
 - **Retry Logic**: Handles network failures gracefully
@@ -326,8 +325,8 @@ The script uses HTML templates for email alerts:
 - **Cache Management**: Automatic cache creation and validation
 
 ### 4. Flexibility
-- **Fixed Security Level**: Consistent 3-intrusion threshold across all use cases
-- **Template System**: Customizable email alerts
+- **Simplified Logic**: Single redirection rule for all intrusions
+- **Template System**: Customizable email alerts for different intrusion types
 - **Extensible Design**: Easy to add new wallet types
 
 ## Error Handling
@@ -343,15 +342,15 @@ The script provides detailed logging for:
 - Transaction processing
 - Primal verification results
 - Intrusion detection
-- Refund operations
-- Account termination
+- Redirection operations
+- Fund recovery to cooperative treasury
 
 ## Security Considerations
 
 - **Private Key Security**: Ensure dunikey files have appropriate permissions (600)
 - **Email Security**: Verify email addresses to prevent alert spoofing
 - **Network Security**: Use secure connections for blockchain operations
-- **File Permissions**: Protect intrusion count and check files from unauthorized access
+- **File Permissions**: Protect cache files and transaction logs from unauthorized access
 
 ## Troubleshooting
 

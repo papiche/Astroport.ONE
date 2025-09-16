@@ -634,23 +634,22 @@ cat ${ZINE} \
 
 $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/UPlanetZine.html "... ẐEN Card activated ..."
 
-### SEND INITIAL G1 - PRIMO TRANSACTION FROM UPLANETNAME.SOCIETY FOR ZENCARD
+### SEND INITIAL G1 - PRIMO TRANSACTION FROM UPLANETNAME.G1 FOR ZENCARD
 
 YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
 
-# For any UPlanet ORIGIN/Ẑen, send primo transaction from UPLANETNAME.SOCIETY wallet
-echo "UPlanet ZEN : Sending PRIMO TX from UPLANETNAME.SOCIETY to ZenCard"
+# For any UPlanet ORIGIN/Ẑen, send primo transaction from UPLANETNAME.G1 wallet (source primale unique)
+echo "UPlanet ẐEN : Sending PRIMO TX from UPLANETNAME.G1 to ZenCard"
 
-# Create or get UPLANETNAME.SOCIETY dunikey
-SOCIETY_DUNIKEY="~/.zen/game/uplanet.SOCIETY.dunikey"
-if [[ ! -f "$SOCIETY_DUNIKEY" ]]; then
-    ${MY_PATH}/../tools/keygen -t duniter -o "$SOCIETY_DUNIKEY" "${UPLANETNAME}.SOCIETY" "${UPLANETNAME}.SOCIETY"
-    chmod 600 "$SOCIETY_DUNIKEY"
+# Ensure UPLANETNAME.G1 dunikey exists (source primale unique)
+if [[ ! -f ~/.zen/game/uplanet.G1.dunikey ]]; then
+    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.G1.dunikey "${UPLANETNAME}.G1" "${UPLANETNAME}.G1"
+    chmod 600 ~/.zen/game/uplanet.G1.dunikey
 fi
 
-# Send primo transaction from UPLANETNAME.SOCIETY to establish primal chain
-${MY_PATH}/../tools/PAYforSURE.sh "$SOCIETY_DUNIKEY" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:SOCIETY:PRIMO" 2>/dev/null \
-&& echo "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:SOCIETY:PRIMO" && echo "(⌐■_■) ~~~ SOCIETY PRIMO TX ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS"
+# Send primo transaction from UPLANETNAME.G1 to establish primal chain (consistent with MULTIPASS)
+${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.G1.dunikey" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:PRIMO" 2>/dev/null \
+&& echo "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:PRIMO" && echo "(⌐■_■) ~~~ G1 PRIMO TX ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS"
 
 ## CLEANING CACHE
 rm -Rf ~/.zen/tmp/${MOATS}

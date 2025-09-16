@@ -334,9 +334,11 @@ show_quick_actions() {
     echo -e "  ${GREEN}r${NC} - 🔄 Redémarrer tous les services"
     echo -e "  ${GREEN}s${NC} - 🔍 Découvrir l'essaim"
     echo -e "  ${GREEN}v${NC} - 🎫 Imprimer ma VISA"
-    echo -e "  ${GREEN}z${NC} - 💰 Gestion économique (zen.sh)"
+    echo -e "  ${GREEN}o${NC} - 🏛️  Virements officiels (UPLANET.official.sh)"
+    echo -e "  ${GREEN}z${NC} - 💰 Analyse économique (zen.sh)"
     echo -e "  ${GREEN}c${NC} - 🏴‍☠️ Changer de capitaine"
     echo -e "  ${GREEN}n${NC} - 🆕 Nouvel embarquement (captain.sh)"
+    echo -e "  ${GREEN}u${NC} - 🚀 Assistant UPlanet ẐEN (uplanet_onboarding.sh)"
     echo -e "  ${GREEN}h${NC} - ❓ Aide UPlanet"
     echo ""
     echo -e "  ${CYAN}1${NC} - 📊 Monitoring avancé"
@@ -415,8 +417,19 @@ print_captain_visa() {
     read -p "Appuyez sur ENTRÉE pour continuer..."
 }
 
+launch_uplanet_official() {
+    echo -e "${CYAN}🏛️  Lancement des virements officiels UPLANET.official.sh...${NC}"
+    echo ""
+    if [[ -x "${SCRIPT_DIR}/../UPLANET.official.sh" ]]; then
+        "${SCRIPT_DIR}/../UPLANET.official.sh"
+    else
+        echo -e "${RED}❌ Script UPLANET.official.sh non trouvé${NC}"
+        read -p "Appuyez sur ENTRÉE pour continuer..."
+    fi
+}
+
 launch_zen_manager() {
-    echo -e "${CYAN}💰 Lancement du gestionnaire économique zen.sh...${NC}"
+    echo -e "${CYAN}💰 Lancement de l'analyse économique zen.sh...${NC}"
     echo ""
     if [[ -x "${SCRIPT_DIR}/zen.sh" ]]; then
         "${SCRIPT_DIR}/zen.sh"
@@ -489,6 +502,17 @@ launch_captain_onboarding() {
     fi
 }
 
+launch_uplanet_onboarding() {
+    echo -e "${CYAN}🚀 Lancement de l'assistant d'embarquement UPlanet ẐEN...${NC}"
+    echo ""
+    if [[ -x "${SCRIPT_DIR}/../uplanet_onboarding.sh" ]]; then
+        "${SCRIPT_DIR}/../uplanet_onboarding.sh"
+    else
+        echo -e "${RED}❌ Script uplanet_onboarding.sh non trouvé${NC}"
+        read -p "Appuyez sur ENTRÉE pour continuer..."
+    fi
+}
+
 show_uplanet_help() {
     clear
     echo -e "${BLUE}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
@@ -520,7 +544,8 @@ show_uplanet_help() {
     echo -e "${CYAN}🎯 Scripts spécialisés${NC}"
     echo "  • dashboard.sh: Vue d'ensemble (ce script)"
     echo "  • captain.sh: Embarquement nouveaux utilisateurs"
-    echo "  • zen.sh: Gestion économique et transactions"
+    echo "  • UPLANET.official.sh: Virements officiels automatisés"
+    echo "  • zen.sh: Analyse économique et transactions manuelles"
     echo "  • command.sh: Interface principale complète"
     echo ""
     
@@ -556,9 +581,11 @@ main_loop() {
             "r") restart_all_services ;;
             "s") quick_swarm_discover ;;
             "v") print_captain_visa ;;
+            "o") launch_uplanet_official ;;
             "z") launch_zen_manager ;;
             "c") change_captain ;;
             "n") launch_captain_onboarding ;;
+            "u") launch_uplanet_onboarding ;;
             "h") show_uplanet_help ;;
             
             # Menu technique (conservé mais simplifié)
@@ -583,7 +610,7 @@ main_loop() {
                 echo -e "${CYAN}⚙️  Configuration simplifiée${NC}"
                 echo -e "Node ID: ${IPFSNODEID:-'Non configuré'}"
                 echo -e "Capitaine: $(cat ~/.zen/game/players/.current/.player 2>/dev/null || echo 'Non configuré')"
-                echo -e "Type: $(if [[ -f ~/.zen/game/secret.dunikey ]]; then echo "Y Level (Autonome)"; else echo "Standard"; fi)"
+                echo -e "Type: $(if [[ -f ~/.zen/game/secret.NODE.dunikey ]]; then echo "Y Level (Autonome)"; else echo "Standard"; fi)"
                 echo ""
                 read -p "Appuyez sur ENTRÉE..."
                 ;;

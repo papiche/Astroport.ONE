@@ -106,7 +106,7 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
         ## Creating IPNSNODEID from SECRETS
         ~/.zen/Astroport.ONE/tools/keygen -t ipfs -o ~/.zen/game/secret.ipns "$SECRET1" "$SECRET2"
         ## Convert IPFS key to Duniter key (G1 Wallet)
-        ~/.zen/Astroport.ONE/tools/keygen -i ~/.zen/game/secret.ipns -t duniter -o ~/.zen/game/secret.dunikey
+        ~/.zen/Astroport.ONE/tools/keygen -i ~/.zen/game/secret.ipns -t duniter -o ~/.zen/game/secret.NODE.dunikey
 
         ## Creating SSH from SECRETS
         ~/.zen/Astroport.ONE/tools/keygen -t ssh -o ~/.zen/game/id_ssh "$SECRET1" "$SECRET2"
@@ -183,7 +183,7 @@ uSPOT=$uSPOT
 
     fi
 
-    NODEG1PUB=$(cat ~/.zen/game/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
+    NODEG1PUB=$(cat ~/.zen/game/secret.NODE.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     echo "NODEG1PUB=${NODEG1PUB}"
     cat ~/.zen/Astroport.ONE/.env
 

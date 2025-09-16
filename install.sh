@@ -221,9 +221,66 @@ echo "#############################################"
 echo "### ASK FOR SUPPORT #########################"
 echo "### support@qo-op.com"
 echo "#############################################"
-echo "## TAKE CONTROL #################################"
-echo "* WEB : http://astroport.localhost/ipns/copylaradio.com"
-echo "* CLI : ~/.zen/Astroport.ONE/captain.sh"
+
+echo
+echo "╔══════════════════════════════════════════════════════════════════════════════╗"
+echo "║                    🏴‍☠️ INSTALLATION TERMINÉE 🏴‍☠️                            ║"
+echo "║                                                                              ║"
+echo "║  Félicitations ! Astroport.ONE est maintenant installé sur votre machine.   ║"
+echo "║                                                                              ║"
+echo "║  🎯 PROCHAINES ÉTAPES:                                                       ║"
+echo "║                                                                              ║"
+echo "║  1. 🚀 EMBARQUEMENT UPLANET ẐEN (Recommandé)                                ║"
+echo "║     Rejoignez la coopérative des autohébergeurs                             ║"
+echo "║     → ~/.zen/Astroport.ONE/uplanet_onboarding.sh                            ║"
+echo "║                                                                              ║"
+echo "║  2. 🏴‍☠️ EMBARQUEMENT CAPITAINE SIMPLE                                        ║"
+echo "║     Configuration basique pour commencer                                    ║"
+echo "║     → ~/.zen/Astroport.ONE/captain.sh                                       ║"
+echo "║                                                                              ║"
+echo "║  3. 📊 TABLEAU DE BORD                                                       ║"
+echo "║     Interface principale de gestion                                         ║"
+echo "║     → ~/.zen/Astroport.ONE/tools/dashboard.sh                               ║"
+echo "║                                                                              ║"
+echo "║  4. 🌐 INTERFACE WEB                                                         ║"
+echo "║     → http://astroport.localhost/ipns/copylaradio.com                       ║"
+echo "║                                                                              ║"
+echo "╚══════════════════════════════════════════════════════════════════════════════╝"
+echo
+
+# Proposer l'embarquement UPlanet ẐEN
+echo "🎯 VOULEZ-VOUS REJOINDRE LA COOPÉRATIVE UPLANET ẐEN ?"
+echo
+echo "La coopérative UPlanet ẐEN vous permet de:"
+echo "• 💰 Monétiser votre infrastructure (hébergement, stockage, calcul)"
+echo "• 🤝 Participer à une économie décentralisée et équitable"
+echo "• 🏛️  Devenir sociétaire d'une coopérative technologique"
+echo "• 🌍 Contribuer à un internet libre et décentralisé"
+echo
+echo "L'assistant d'embarquement vous guidera pour:"
+echo "• Configurer vos paramètres économiques (PAF, tarifs)"
+echo "• Valoriser votre machine comme capital social"
+echo "• Rejoindre le réseau swarm UPlanet"
+echo "• Initialiser votre infrastructure économique"
+echo "• Passer au niveau Y (autonome)"
+echo
+
+read -p "🚀 Lancer l'assistant d'embarquement UPlanet ẐEN maintenant ? (O/n): " launch_onboarding
+
+if [[ "$launch_onboarding" != "n" && "$launch_onboarding" != "N" ]]; then
+    echo
+    echo "🏴‍☠️ Lancement de l'assistant d'embarquement UPlanet ẐEN..."
+    echo
+    ~/.zen/Astroport.ONE/uplanet_onboarding.sh
+else
+    echo
+    echo "📋 MÉMO POUR PLUS TARD:"
+    echo "• Embarquement UPlanet ẐEN: ~/.zen/Astroport.ONE/uplanet_onboarding.sh"
+    echo "• Embarquement simple: ~/.zen/Astroport.ONE/captain.sh"
+    echo "• Tableau de bord: ~/.zen/Astroport.ONE/tools/dashboard.sh"
+    echo
+fi
+
 echo "#############################################"
 . ~/.bashrc
 

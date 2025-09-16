@@ -27,6 +27,16 @@ UPLANETNAME.G1 → UPLANETNAME.SOCIETY → ZEN Card[email] → 3x1/3
   - 1/3 R&D (`~/.zen/game/uplanet.RnD.dunikey`)
   - 1/3 Assets (`~/.zen/game/uplanet.ASSETS.dunikey`)
 
+### **3. Apport CAPITAL INFRASTRUCTURE (Valorisation Machine)**
+```
+UPLANETNAME.G1 → ZEN Card[CAPTAIN] → NODE
+```
+- **Type** : Infrastructure (500€ par défaut)
+- **Objectif** : Apport au capital fixe (valorisation machine du capitaine)
+- **Spécificité** : **PAS de répartition 3x1/3** (apport au capital non distribuable)
+- **Email automatique** : Utilise `$CAPTAINEMAIL` depuis `my.sh`
+- **Valeur** : `$MACHINE_VALUE_ZEN` ou saisie interactive
+
 ## 🚀 **Utilisation**
 
 ### **Mode Ligne de Commande**
@@ -50,6 +60,14 @@ UPLANETNAME.G1 → UPLANETNAME.SOCIETY → ZEN Card[email] → 3x1/3
 
 # Montant personnalisé
 ./UPLANET.official.sh -s user@example.com -t satellite -m 100
+```
+
+#### **Apport Capital Infrastructure**
+```bash
+# Apport capital avec valeur par défaut (MACHINE_VALUE_ZEN ou 500€)
+./UPLANET.official.sh -i
+
+# Note: Email automatique depuis $CAPTAINEMAIL (my.sh)
 ```
 
 ### **Mode Interactif**

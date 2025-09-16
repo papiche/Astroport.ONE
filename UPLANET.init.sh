@@ -45,6 +45,13 @@ declare -A COOPERATIVE_WALLETS=(
     ["UPLANETNAME.CASH"]="$HOME/.zen/game/uplanet.CASH.dunikey"
     ["UPLANETNAME.RND"]="$HOME/.zen/game/uplanet.RnD.dunikey"
     ["UPLANETNAME.ASSETS"]="$HOME/.zen/game/uplanet.ASSETS.dunikey"
+    ["UPLANETNAME.IMPOT"]="$HOME/.zen/game/uplanet.IMPOT.dunikey"
+    ["UPLANETNAME.CAPTAIN"]="$HOME/.zen/game/uplanet.captain.dunikey"
+)
+
+# Node and Captain wallets to check and initialize (if they exist)
+declare -A NODE_CAPTAIN_WALLETS=(
+    ["NODE"]="$HOME/.zen/game/secret.NODE.dunikey"
 )
 
 # Source wallet for initialization (uplanet.G1.dunikey is the primary source for primal transactions)
@@ -62,6 +69,10 @@ usage() {
     echo -e "  • UPLANETNAME.CASH (Trésorerie)"
     echo -e "  • UPLANETNAME.RND (R&D)"
     echo -e "  • UPLANETNAME.ASSETS (Actifs)"
+    echo -e "  • UPLANETNAME.IMPOT (Fiscalité)"
+    echo -e "  • UPLANETNAME.CAPTAIN (Rémunération capitaine)"
+    echo -e "  • NODE (Armateur - si existant)"
+    echo -e "  • CAPTAIN (si configuré)"
     echo ""
     echo -e "${BLUE}Options:${NC}"
     echo -e "  ${CYAN}--force${NC}     Forcer l'initialisation même si les portefeuilles ont des fonds"
@@ -87,11 +98,6 @@ check_requirements() {
     # Check G1check.sh
     if [[ ! -f "${MY_PATH}/tools/G1check.sh" ]]; then
         missing_tools+=("G1check.sh")
-    fi
-    
-    # Check silkaj
-    if ! command -v silkaj >/dev/null 2>&1; then
-        missing_tools+=("silkaj")
     fi
     
     # Check bc
@@ -143,16 +149,16 @@ check_source_wallet() {
     
     echo -e "${BLUE}Solde actuel:${NC} ${YELLOW}$source_balance Ğ1${NC}"
     
-    # Calculate required amount (5 wallets * 1 Ğ1 each)
-    local required_amount=5
+    # Calculate required amount (6 cooperative wallets + potential node/captain)
+    local required_amount=6
     local available_balance=$(echo "$source_balance" | bc -l 2>/dev/null || echo "0")
     
     # Calculate how many wallets can be initialized
     WALLETS_TO_INITIALIZE=$(echo "$available_balance" | bc -l | cut -d. -f1)
     if [[ -z "$WALLETS_TO_INITIALIZE" ]] || [[ "$WALLETS_TO_INITIALIZE" -lt 1 ]]; then
         WALLETS_TO_INITIALIZE=0
-    elif [[ "$WALLETS_TO_INITIALIZE" -gt 5 ]]; then
-        WALLETS_TO_INITIALIZE=5
+    elif [[ "$WALLETS_TO_INITIALIZE" -gt 8 ]]; then
+        WALLETS_TO_INITIALIZE=8  # Max: 6 cooperative + NODE + CAPTAIN
     fi
     
     if (( $(echo "$available_balance < 1" | bc -l) )); then
@@ -164,8 +170,8 @@ check_source_wallet() {
     fi
     
     echo -e "${GREEN}✅ Portefeuille source vérifié avec succès${NC}"
-    if [[ "$WALLETS_TO_INITIALIZE" -eq 5 ]]; then
-        echo -e "${BLUE}Solde suffisant pour initialiser ${CYAN}tous les portefeuilles${NC}"
+    if [[ "$WALLETS_TO_INITIALIZE" -ge 6 ]]; then
+        echo -e "${BLUE}Solde suffisant pour initialiser ${CYAN}tous les portefeuilles coopératifs${NC}"
     else
         echo -e "${BLUE}Solde suffisant pour initialiser ${CYAN}$WALLETS_TO_INITIALIZE portefeuilles${NC}"
         echo -e "${YELLOW}⚠️  Initialisation partielle (solde limité)${NC}"
@@ -224,11 +230,17 @@ create_missing_wallet() {
         "UPLANETNAME.ASSETS")
             "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.ASSETS" "${UPLANETNAME}.ASSETS"
             ;;
+        "UPLANETNAME.IMPOT")
+            "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT"
+            ;;
         "UPLANETNAME.SOCIETY")
             "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.SOCIETY" "${UPLANETNAME}.SOCIETY"
             ;;
         "UPLANETNAME")
             "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}" "${UPLANETNAME}"
+            ;;
+        "UPLANETNAME.CAPTAIN")
+            "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.${CAPTAINEMAIL}" "${UPLANETNAME}.${CAPTAINEMAIL}"
             ;;
         *)
             echo -e "${RED}❌ Type de portefeuille non reconnu: $wallet_name${NC}"
@@ -247,6 +259,93 @@ create_missing_wallet() {
     else
         echo -e "${RED}❌ Échec de la création du portefeuille $wallet_name${NC}"
         return 1
+    fi
+}
+
+# Function to get captain email
+get_captain_email() {
+    local captain_email=""
+    if [[ -f "$HOME/.zen/game/players/.current/.player" ]]; then
+        captain_email=$(cat "$HOME/.zen/game/players/.current/.player" 2>/dev/null)
+    fi
+    echo "$captain_email"
+}
+
+# Function to check node and captain wallets
+check_node_captain_wallets() {
+    echo -e "${CYAN}🚀 VÉRIFICATION DES PORTEFEUILLES NODE ET CAPTAIN${NC}"
+    echo -e "${YELLOW}=============================================${NC}"
+    
+    local wallets_to_initialize=()
+    local captain_email=$(get_captain_email)
+    
+    # Check NODE wallet
+    if [[ -f "${NODE_CAPTAIN_WALLETS["NODE"]}" ]]; then
+        local node_pubkey=$(get_wallet_public_key "${NODE_CAPTAIN_WALLETS["NODE"]}")
+        if [[ -n "$node_pubkey" ]]; then
+            local balance=$(get_wallet_balance "$node_pubkey")
+            if (( $(echo "$balance < $MIN_BALANCE" | bc -l) )); then
+                echo -e "${YELLOW}📡 NODE wallet needs initialization: ${balance} Ğ1${NC}"
+                wallets_to_initialize+=("NODE")
+            else
+                echo -e "${GREEN}✅ NODE wallet OK: ${balance} Ğ1${NC}"
+            fi
+        fi
+    else
+        echo -e "${BLUE}ℹ️  NODE wallet not found (normal for non-Y-level nodes)${NC}"
+    fi
+    
+    # Check CAPTAIN wallets if captain is configured
+    if [[ -n "$captain_email" ]]; then
+        echo -e "${BLUE}👑 Captain configuré: ${captain_email}${NC}"
+        
+        # Check CAPTAIN MULTIPASS
+        local captain_multipass="$HOME/.zen/game/nostr/${captain_email}/.secret.dunikey"
+        if [[ -f "$captain_multipass" ]]; then
+            local multipass_pubkey=$(get_wallet_public_key "$captain_multipass")
+            if [[ -n "$multipass_pubkey" ]]; then
+                local balance=$(get_wallet_balance "$multipass_pubkey")
+                if (( $(echo "$balance < $MIN_BALANCE" | bc -l) )); then
+                    echo -e "${YELLOW}📱 CAPTAIN MULTIPASS needs initialization: ${balance} Ğ1${NC}"
+                    wallets_to_initialize+=("CAPTAIN_MULTIPASS")
+                else
+                    echo -e "${GREEN}✅ CAPTAIN MULTIPASS OK: ${balance} Ğ1${NC}"
+                fi
+            fi
+        else
+            echo -e "${BLUE}ℹ️  CAPTAIN MULTIPASS not found${NC}"
+        fi
+        
+        # Check CAPTAIN ZEN Card
+        local captain_zencard="$HOME/.zen/game/players/${captain_email}/secret.dunikey"
+        if [[ -f "$captain_zencard" ]]; then
+            local zencard_pubkey=$(get_wallet_public_key "$captain_zencard")
+            if [[ -n "$zencard_pubkey" ]]; then
+                local balance=$(get_wallet_balance "$zencard_pubkey")
+                if (( $(echo "$balance < $MIN_BALANCE" | bc -l) )); then
+                    echo -e "${YELLOW}💳 CAPTAIN ZEN Card needs initialization: ${balance} Ğ1${NC}"
+                    wallets_to_initialize+=("CAPTAIN_ZENCARD")
+                else
+                    echo -e "${GREEN}✅ CAPTAIN ZEN Card OK: ${balance} Ğ1${NC}"
+                fi
+            fi
+        else
+            echo -e "${BLUE}ℹ️  CAPTAIN ZEN Card not found${NC}"
+        fi
+    else
+        echo -e "${BLUE}ℹ️  No captain configured${NC}"
+    fi
+    
+    # Store wallets to initialize for later use
+    NODE_CAPTAIN_TO_INITIALIZE=("${wallets_to_initialize[@]}")
+    
+    echo ""
+    if [[ ${#wallets_to_initialize[@]} -gt 0 ]]; then
+        echo -e "${YELLOW}⚠️  ${#wallets_to_initialize[@]} portefeuille(s) NODE/CAPTAIN à initialiser${NC}"
+        return 1
+    else
+        echo -e "${GREEN}✅ Tous les portefeuilles NODE/CAPTAIN sont OK${NC}"
+        return 0
     fi
 }
 
@@ -344,6 +443,75 @@ check_cooperative_wallets() {
             echo -e "${YELLOW}🔍 MODE SIMULATION - Aucune transaction ne sera effectuée${NC}"
         fi
         
+        return 1
+    fi
+}
+
+# Function to initialize a node or captain wallet
+initialize_node_captain_wallet() {
+    local wallet_type="$1"
+    local captain_email=$(get_captain_email)
+    
+    echo -e "\n${CYAN}🚀 INITIALISATION DE $wallet_type${NC}"
+    echo -e "${YELLOW}================================${NC}"
+    
+    local dunikey_file=""
+    local pubkey=""
+    local description=""
+    
+    case "$wallet_type" in
+        "NODE")
+            dunikey_file="${NODE_CAPTAIN_WALLETS["NODE"]}"
+            description="Initialisation NODE (Armateur)"
+            ;;
+        "CAPTAIN_MULTIPASS")
+            dunikey_file="$HOME/.zen/game/nostr/${captain_email}/.secret.dunikey"
+            description="Initialisation CAPTAIN MULTIPASS"
+            ;;
+        "CAPTAIN_ZENCARD")
+            dunikey_file="$HOME/.zen/game/players/${captain_email}/secret.dunikey"
+            description="Initialisation CAPTAIN ZEN Card"
+            ;;
+        *)
+            echo -e "${RED}❌ Type de portefeuille non reconnu: $wallet_type${NC}"
+            return 1
+            ;;
+    esac
+    
+    # Get destination public key
+    pubkey=$(get_wallet_public_key "$dunikey_file")
+    if [[ -z "$pubkey" ]]; then
+        echo -e "${RED}❌ Impossible de récupérer la clé publique de $wallet_type${NC}"
+        return 1
+    fi
+    
+    echo -e "${BLUE}Portefeuille:${NC} $wallet_type"
+    echo -e "${BLUE}Clé publique:${NC} ${CYAN}${pubkey:0:8}...${NC}"
+    echo -e "${BLUE}Montant:${NC} ${YELLOW}$INIT_AMOUNT Ğ1${NC}"
+    echo -e "${BLUE}Source:${NC} ${CYAN}uplanet.G1.dunikey${NC}"
+    
+    if [[ "$DRY_RUN" == true ]]; then
+        echo -e "${YELLOW}🔍 SIMULATION: Transaction de $INIT_AMOUNT Ğ1 vers $wallet_type${NC}"
+        return 0
+    fi
+    
+    # Execute transaction using PAYforSURE.sh
+    echo -e "${YELLOW}Exécution de la transaction...${NC}"
+    
+    # Convert amount to G1 for PAYforSURE.sh
+    local transfer_amount_g1=$(echo "scale=2; $INIT_AMOUNT" | bc -l)
+    
+    # Use PAYforSURE.sh
+    local transfer_result
+    transfer_result=$("${MY_PATH}/tools/PAYforSURE.sh" "$SOURCE_WALLET" "$transfer_amount_g1" "$pubkey" "UPLANET:INIT:$wallet_type" 2>/dev/null)
+    
+    if [[ $? -eq 0 ]]; then
+        echo -e "${GREEN}✅ Transaction réussie pour $wallet_type${NC}"
+        echo -e "${GREEN}✅ $wallet_type initialisé avec succès${NC}"
+        return 0
+    else
+        echo -e "${RED}❌ Échec de la transaction pour $wallet_type${NC}"
+        echo "$transfer_result"
         return 1
     fi
 }
@@ -484,12 +652,75 @@ initialize_cooperative_wallets() {
     fi
 }
 
+# Function to initialize node and captain wallets
+initialize_node_captain_wallets() {
+    echo -e "\n${CYAN}🚀 INITIALISATION DES PORTEFEUILLES NODE ET CAPTAIN${NC}"
+    echo -e "${YELLOW}=================================================${NC}"
+    
+    if [[ ${#NODE_CAPTAIN_TO_INITIALIZE[@]} -eq 0 ]]; then
+        echo -e "${GREEN}✅ Aucun portefeuille NODE/CAPTAIN à initialiser${NC}"
+        return 0
+    fi
+    
+    echo -e "${BLUE}Portefeuilles à initialiser:${NC} ${CYAN}${#NODE_CAPTAIN_TO_INITIALIZE[@]}${NC}"
+    echo ""
+    
+    # Confirm initialization
+    if [[ "$FORCE" != true ]]; then
+        echo -e "${YELLOW}⚠️  CONFIRMATION REQUISE${NC}"
+        echo -e "${BLUE}Ce processus va:${NC}"
+        echo -e "  • Transférer ${YELLOW}$INIT_AMOUNT Ğ1${NC} vers chaque portefeuille vide"
+        echo -e "  • Initialiser ${CYAN}${#NODE_CAPTAIN_TO_INITIALIZE[@]} portefeuilles${NC} NODE/CAPTAIN"
+        echo -e "  • Utiliser ${CYAN}$(basename "$SOURCE_WALLET")${NC} comme source"
+        echo ""
+        read -p "Confirmer l'initialisation? (y/N): " confirm
+        
+        if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+            echo -e "${YELLOW}Initialisation annulée.${NC}"
+            return 0
+        fi
+    fi
+    
+    # Initialize wallets
+    local success_count=0
+    local failure_count=0
+    
+    for wallet_type in "${NODE_CAPTAIN_TO_INITIALIZE[@]}"; do
+        if initialize_node_captain_wallet "$wallet_type"; then
+            ((success_count++))
+        else
+            ((failure_count++))
+        fi
+        
+        # Small delay between transactions
+        if [[ $success_count -lt ${#NODE_CAPTAIN_TO_INITIALIZE[@]} ]]; then
+            echo -e "${YELLOW}⏳ Pause entre transactions...${NC}"
+            sleep 3
+        fi
+    done
+    
+    # Summary
+    echo -e "\n${CYAN}📊 RÉSUMÉ DE L'INITIALISATION NODE/CAPTAIN${NC}"
+    echo -e "${YELLOW}=========================================${NC}"
+    echo -e "${BLUE}Portefeuilles traités:${NC} ${CYAN}${#NODE_CAPTAIN_TO_INITIALIZE[@]}${NC}"
+    echo -e "${BLUE}Succès:${NC} ${GREEN}$success_count${NC}"
+    echo -e "${BLUE}Échecs:${NC} ${RED}$failure_count${NC}"
+    
+    if [[ $failure_count -eq 0 ]]; then
+        echo -e "\n${GREEN}🎉 Tous les portefeuilles NODE/CAPTAIN ont été initialisés avec succès !${NC}"
+        echo -e "${GREEN}Chaque portefeuille dispose maintenant de 1 Ğ1 pour les transactions primales.${NC}"
+    else
+        echo -e "\n${YELLOW}⚠️  Certains portefeuilles n'ont pas pu être initialisés.${NC}"
+        echo -e "${YELLOW}Vérifiez les erreurs ci-dessus et réessayez si nécessaire.${NC}"
+    fi
+}
+
 # Function to display final status
 display_final_status() {
-    echo -e "\n${CYAN}📊 STATUT FINAL DES PORTEFEUILLES COOPÉRATIFS${NC}"
-    echo -e "${YELLOW}=============================================${NC}"
+    echo -e "\n${CYAN}📊 STATUT FINAL DE TOUS LES PORTEFEUILLES${NC}"
+    echo -e "${YELLOW}=========================================${NC}"
     
-    echo -e "${BLUE}Portefeuilles:${NC}"
+    echo -e "${BLUE}Portefeuilles Coopératifs:${NC}"
     printf "%-25s %-15s %-15s\n" "PORTEFEUILLE" "SOLDE ACTUEL" "STATUT"
     printf "%.0s-" {1..60}
     echo ""
@@ -522,6 +753,81 @@ display_final_status() {
             "$balance Ğ1" \
             "$status"
     done
+    
+    printf "%.0s-" {1..60}
+    echo ""
+    
+    # Display Node and Captain status
+    echo -e "${BLUE}Portefeuilles Node et Captain:${NC}"
+    printf "%-25s %-15s %-15s\n" "PORTEFEUILLE" "SOLDE ACTUEL" "STATUT"
+    printf "%.0s-" {1..60}
+    echo ""
+    
+    # NODE wallet
+    local node_dunikey="${NODE_CAPTAIN_WALLETS["NODE"]}"
+    if [[ -f "$node_dunikey" ]]; then
+        local node_pubkey=$(get_wallet_public_key "$node_dunikey")
+        if [[ -n "$node_pubkey" ]]; then
+            local balance=$(get_wallet_balance "$node_pubkey")
+            local status=""
+            if (( $(echo "$balance >= $MIN_BALANCE" | bc -l) )); then
+                status="✓ Initialisé"
+            else
+                status="✗ Vide"
+            fi
+            printf "%-25s %-15s %-15s\n" "NODE (Armateur)" "$balance Ğ1" "$status"
+        else
+            printf "%-25s %-15s %-15s\n" "NODE (Armateur)" "0 Ğ1" "✗ Erreur clé"
+        fi
+    else
+        printf "%-25s %-15s %-15s\n" "NODE (Armateur)" "N/A" "- Non Y-level"
+    fi
+    
+    # CAPTAIN wallets
+    local captain_email=$(get_captain_email)
+    if [[ -n "$captain_email" ]]; then
+        # CAPTAIN MULTIPASS
+        local captain_multipass="$HOME/.zen/game/nostr/${captain_email}/.secret.dunikey"
+        if [[ -f "$captain_multipass" ]]; then
+            local multipass_pubkey=$(get_wallet_public_key "$captain_multipass")
+            if [[ -n "$multipass_pubkey" ]]; then
+                local balance=$(get_wallet_balance "$multipass_pubkey")
+                local status=""
+                if (( $(echo "$balance >= $MIN_BALANCE" | bc -l) )); then
+                    status="✓ Initialisé"
+                else
+                    status="✗ Vide"
+                fi
+                printf "%-25s %-15s %-15s\n" "CAPTAIN MULTIPASS" "$balance Ğ1" "$status"
+            else
+                printf "%-25s %-15s %-15s\n" "CAPTAIN MULTIPASS" "0 Ğ1" "✗ Erreur clé"
+            fi
+        else
+            printf "%-25s %-15s %-15s\n" "CAPTAIN MULTIPASS" "N/A" "- Non trouvé"
+        fi
+        
+        # CAPTAIN ZEN Card
+        local captain_zencard="$HOME/.zen/game/players/${captain_email}/secret.dunikey"
+        if [[ -f "$captain_zencard" ]]; then
+            local zencard_pubkey=$(get_wallet_public_key "$captain_zencard")
+            if [[ -n "$zencard_pubkey" ]]; then
+                local balance=$(get_wallet_balance "$zencard_pubkey")
+                local status=""
+                if (( $(echo "$balance >= $MIN_BALANCE" | bc -l) )); then
+                    status="✓ Initialisé"
+                else
+                    status="✗ Vide"
+                fi
+                printf "%-25s %-15s %-15s\n" "CAPTAIN ZEN Card" "$balance Ğ1" "$status"
+            else
+                printf "%-25s %-15s %-15s\n" "CAPTAIN ZEN Card" "0 Ğ1" "✗ Erreur clé"
+            fi
+        else
+            printf "%-25s %-15s %-15s\n" "CAPTAIN ZEN Card" "N/A" "- Non trouvé"
+        fi
+    else
+        printf "%-25s %-15s %-15s\n" "CAPTAIN" "N/A" "- Non configuré"
+    fi
     
     printf "%.0s-" {1..60}
     echo ""
@@ -562,14 +868,33 @@ main() {
     check_source_wallet
     
     # Check cooperative wallet status
-    if check_cooperative_wallets; then
+    cooperative_needs_init=false
+    if ! check_cooperative_wallets; then
+        cooperative_needs_init=true
+    fi
+    
+    # Check node and captain wallet status
+    node_captain_needs_init=false
+    if ! check_node_captain_wallets; then
+        node_captain_needs_init=true
+    fi
+    
+    # If nothing needs initialization, exit
+    if [[ "$cooperative_needs_init" == false && "$node_captain_needs_init" == false ]]; then
         echo -e "${GREEN}✅ Tous les portefeuilles sont déjà initialisés${NC}"
         display_final_status
         exit 0
     fi
     
     # Initialize cooperative wallets
+    if [[ "$cooperative_needs_init" == true ]]; then
     initialize_cooperative_wallets
+    fi
+    
+    # Initialize node and captain wallets
+    if [[ "$node_captain_needs_init" == true ]]; then
+        initialize_node_captain_wallets
+    fi
     
     # Display final status
     display_final_status

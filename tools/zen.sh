@@ -246,22 +246,26 @@ usage() {
     echo ""
     echo -e "${YELLOW}🎯 GUIDE CAPITAINE - Gestionnaire de Transactions Zen${NC}"
     echo ""
-    echo -e "${GREEN}Ce script vous permet de gérer l'économie UPlanet en toute sécurité:${NC}"
+    echo -e "${GREEN}Ce script se concentre sur l'analyse et le diagnostic économique:${NC}"
     echo ""
-    echo -e "${BLUE}📊 TABLEAU DE BORD:${NC}"
-    echo -e "   • Vision synthétique des utilisateurs et échéances"
-    echo -e "   • Alertes automatiques pour les paiements en retard"
-    echo -e "   • Suivi des revenus hebdomadaires"
+    echo -e "${BLUE}🔍 ANALYSE & DIAGNOSTIC:${NC}"
+    echo -e "   • Analyse détaillée des portefeuilles utilisateurs"
+    echo -e "   • Historique des transactions et chaînes primales"
+    echo -e "   • Diagnostic de la santé économique"
     echo ""
-    echo -e "${BLUE}💰 REPORTING OPENCOLLECTIVE:${NC}"
-    echo -e "   • Identification automatique des paiements à reporter"
-    echo -e "   • Instructions étape par étape pour OpenCollective"
-    echo -e "   • Génération de rapports de suivi"
+    echo -e "${BLUE}💰 REPORTING & COMPTABILITÉ:${NC}"
+    echo -e "   • Reporting OpenCollective automatisé"
+    echo -e "   • Retranscription des versements par source"
+    echo -e "   • Génération de rapports comptables et exports CSV"
     echo ""
-    echo -e "${BLUE}🏛️  PORTEFEUILLES SYSTÈME:${NC}"
-    echo -e "   • UPLANETNAME.G1: Réserves et donations Ğ1"
-    echo -e "   • UPLANETNAME: Services et MULTIPASS"
-    echo -e "   • UPLANETNAME.SOCIETY: Capital social et ZenCard"
+    echo -e "${BLUE}🏛️  TRANSACTIONS MANUELLES:${NC}"
+    echo -e "   • Corrections comptables d'urgence"
+    echo -e "   • Gestion avancée des portefeuilles système"
+    echo -e "   • Transactions exceptionnelles hors processus standard"
+    echo ""
+    echo -e "${YELLOW}💡 VIREMENTS OFFICIELS:${NC}"
+    echo -e "   • Pour les virements locataires/sociétaires: ${CYAN}UPLANET.official.sh${NC}"
+    echo -e "   • Processus automatisés conformes à la Constitution ẐEN"
     echo ""
     echo -e "${GREEN}Options:${NC}"
     echo -e "  ${CYAN}--detailed${NC}  Affichage détaillé de tous les utilisateurs"
@@ -3352,47 +3356,45 @@ main() {
         echo -e "\n${CYAN}🎯 MENU PRINCIPAL - GESTION DE LA STATION${NC}"
         echo -e "${YELLOW}===========================================${NC}"
         
-        echo -e "${BLUE}1. 🏛️  PORTEFEUILLES SYSTÈME${NC} - Gestion des comptes centraux"
-        echo -e "   • UPLANETNAME.G1 (Réserves Ğ1)"
-        echo -e "   • UPLANETNAME (Services & MULTIPASS)"
-        echo -e "   • UPLANETNAME.SOCIETY (Capital social)"
-        echo ""
-        
-        echo -e "${BLUE}2. 👥 GESTION DES UTILISATEURS${NC} - Suivi et paiements"
-        echo -e "   • Tableau de bord des utilisateurs"
-        echo -e "   • Gestion des paiements en retard"
-        echo -e "   • Création de comptes utilisateurs"
-        echo ""
-        
-        echo -e "${BLUE}3. 💰 REPORTING & COMPTABILITÉ${NC} - Suivi financier"
-        echo -e "   • Reporting OpenCollective"
-        echo -e "   • Retranscription des versements"
-        echo -e "   • Rapports comptables"
-        echo ""
-        
-        echo -e "${BLUE}4. 🔍 ANALYSE & DIAGNOSTIC${NC} - Outils avancés"
-        echo -e "   • Analyse des portefeuilles"
+        echo -e "${BLUE}1. 🔍 ANALYSE & DIAGNOSTIC${NC} - Outils avancés"
+        echo -e "   • Analyse détaillée des portefeuilles"
         echo -e "   • Historique des transactions"
         echo -e "   • Diagnostic de la chaîne primale"
         echo ""
         
-        echo -e "${BLUE}5. ⚙️  CONFIGURATION & MAINTENANCE${NC} - Administration"
-        echo -e "   • Configuration de la station"
-        echo -e "   • Maintenance système"
+        echo -e "${BLUE}2. 💰 REPORTING & COMPTABILITÉ${NC} - Suivi financier"
+        echo -e "   • Reporting OpenCollective"
+        echo -e "   • Retranscription des versements"
+        echo -e "   • Rapports comptables et exports"
+        echo ""
+        
+        echo -e "${BLUE}3. 🏛️  TRANSACTIONS MANUELLES${NC} - Cas exceptionnels"
+        echo -e "   • Transactions système d'urgence"
+        echo -e "   • Corrections comptables"
+        echo -e "   • Gestion des portefeuilles système"
+        echo ""
+        
+        echo -e "${BLUE}4. ⚙️  MAINTENANCE & CONFIGURATION${NC} - Administration"
+        echo -e "   • Maintenance système et cache"
+        echo -e "   • Configuration avancée"
         echo -e "   • Santé de la station"
         echo ""
         
-        echo -e "${BLUE}6. 📚 AIDE & DOCUMENTATION${NC} - Guide et conseils"
+        echo -e "${BLUE}5. 📚 AIDE & DOCUMENTATION${NC} - Guide et conseils"
         echo -e "   • Guide du capitaine"
         echo -e "   • Documentation ẐEN"
         echo -e "   • Bonnes pratiques"
+        echo ""
+        
+        echo -e "${YELLOW}💡 Pour les virements officiels (locataires/sociétaires), utilisez:${NC}"
+        echo -e "   ${CYAN}UPLANET.official.sh${NC} - Virements automatisés conformes"
         echo ""
         
         echo -e "${BLUE}0. 🚪 QUITTER${NC} - Sortir du gestionnaire"
         echo ""
         
         # Get user selection
-        read -p "Sélectionnez une option (0-6): " choice
+        read -p "Sélectionnez une option (0-5): " choice
         
         case "$choice" in
             0)
@@ -3400,25 +3402,22 @@ main() {
                 exit 0
                 ;;
             1)
-                handle_system_wallets
-                ;;
-            2)
-                handle_user_management
-                ;;
-            3)
-                handle_reporting_accounting
-                ;;
-            4)
                 handle_analysis_diagnostics
                 ;;
-            5)
+            2)
+                handle_reporting_accounting
+                ;;
+            3)
+                handle_system_wallets
+                ;;
+            4)
                 handle_configuration_maintenance
                 ;;
-            6)
+            5)
                 handle_help_documentation
                 ;;
             *)
-                echo -e "${RED}Sélection invalide. Veuillez choisir 0-6.${NC}"
+                echo -e "${RED}Sélection invalide. Veuillez choisir 0-5.${NC}"
                 echo ""
                 read -p "Appuyez sur Entrée pour continuer..." 
                 ;;
@@ -3472,53 +3471,6 @@ handle_system_wallets() {
     done
 }
 
-# Function to handle user management
-handle_user_management() {
-    while true; do
-        clear
-        echo -e "${CYAN}👥 GESTION DES UTILISATEURS${NC}"
-        echo -e "${YELLOW}===========================${NC}"
-        echo -e "${GREEN}Gérez les utilisateurs et suivez leurs paiements${NC}"
-        
-        echo -e "\n${BLUE}OPTIONS DISPONIBLES:${NC}"
-        echo -e "  1. 📊 Tableau de bord des utilisateurs"
-        echo -e "  2. 🚨 Gestion des paiements en retard"
-        echo -e "  3. ➕ Créer un nouveau compte utilisateur"
-        echo -e "  4. 🔍 Rechercher un utilisateur spécifique"
-        echo -e "  5. 📧 Envoyer des rappels de paiement"
-        echo -e "  0. 🔙 Retour au menu principal"
-        
-        read -p "Sélectionnez une option (0-5): " user_choice
-        
-        case "$user_choice" in
-            0)
-                return 0
-                ;;
-            1)
-                display_users_summary
-                echo ""
-                read -p "Appuyez sur Entrée pour continuer..." 
-                ;;
-            2)
-                handle_overdue_payments
-                ;;
-            3)
-                create_new_user_account
-                ;;
-            4)
-                search_user_account
-                ;;
-            5)
-                send_payment_reminders
-                ;;
-            *)
-                echo -e "${RED}Sélection invalide. Veuillez choisir 0-5.${NC}"
-                echo ""
-                read -p "Appuyez sur Entrée pour continuer..." 
-                ;;
-        esac
-    done
-}
 
 # Function to handle reporting and accounting
 handle_reporting_accounting() {
@@ -3758,49 +3710,6 @@ initialize_missing_wallets() {
     read -p "Appuyez sur Entrée pour continuer..." 
 }
 
-# Function to handle overdue payments
-handle_overdue_payments() {
-    echo -e "\n${CYAN}🚨 GESTION DES PAIEMENTS EN RETARD${NC}"
-    echo -e "${YELLOW}=====================================${NC}"
-    
-    # This function would implement overdue payment management
-    echo -e "${GREEN}Fonctionnalité en cours de développement...${NC}"
-    echo ""
-    read -p "Appuyez sur Entrée pour continuer..." 
-}
-
-# Function to create new user account
-create_new_user_account() {
-    echo -e "\n${CYAN}➕ CRÉATION D'UN NOUVEAU COMPTE UTILISATEUR${NC}"
-    echo -e "${YELLOW}===========================================${NC}"
-    
-    # This function would implement user account creation
-    echo -e "${GREEN}Fonctionnalité en cours de développement...${NC}"
-    echo ""
-    read -p "Appuyez sur Entrée pour continuer..." 
-}
-
-# Function to search user account
-search_user_account() {
-    echo -e "\n${CYAN}🔍 RECHERCHE D'UN COMPTE UTILISATEUR${NC}"
-    echo -e "${YELLOW}=====================================${NC}"
-    
-    # This function would implement user account search
-    echo -e "${GREEN}Fonctionnalité en cours de développement...${NC}"
-    echo ""
-    read -p "Appuyez sur Entrée pour continuer..." 
-}
-
-# Function to send payment reminders
-send_payment_reminders() {
-    echo -e "\n${CYAN}📧 ENVOI DE RAPPELS DE PAIEMENT${NC}"
-    echo -e "${YELLOW}===================================${NC}"
-    
-    # This function would implement payment reminder sending
-    echo -e "${GREEN}Fonctionnalité en cours de développement...${NC}"
-    echo ""
-    read -p "Appuyez sur Entrée pour continuer..." 
-}
 
 # Function to generate accounting reports
 generate_accounting_reports() {

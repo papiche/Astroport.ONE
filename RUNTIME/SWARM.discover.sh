@@ -203,7 +203,7 @@ subscribe_to_node() {
     local available_zen=0
     local payment_source=""
 
-    if [[ -f ~/.zen/game/secret.dunikey ]]; then
+    if [[ -f ~/.zen/game/secret.NODE.dunikey ]]; then
         # Node niveau Y
         local node_coins=$(${MY_PATH}/../tools/G1check.sh ${NODEG1PUB} | tail -n 1)
         local node_zen=$(echo "($node_coins - 1) * 10" | bc | cut -d '.' -f 1)

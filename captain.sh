@@ -394,11 +394,11 @@ show_captain_dashboard() {
         local g1_balance=$(get_wallet_balance "$uplanet_g1_pubkey")
         echo -e "${BLUE}🏛️  UPLANETNAME.G1 (Réserve Ğ1):${NC}"
         echo -e "  💰 Solde: ${YELLOW}$g1_balance Ğ1${NC}"
-        echo -e "  📝 Usage: Alimentation des autres portefeuilles en Ẑen"
+        echo -e "  📝 Usage: Source primale - Alimentation de tous les portefeuilles"
         echo ""
     else
         echo -e "${RED}🏛️  UPLANETNAME.G1: ${YELLOW}Non configuré${NC}"
-        echo -e "  💡 Pour configurer: Utilisez zen.sh → UPLANETNAME.G1"
+        echo -e "  💡 Pour configurer: Lancez UPLANET.init.sh"
         echo ""
     fi
     
@@ -411,13 +411,13 @@ show_captain_dashboard() {
     if [[ -n "$uplanet_services_pubkey" ]]; then
         local services_balance=$(get_wallet_balance "$uplanet_services_pubkey")
         local services_zen=$(calculate_zen "$services_balance")
-        echo -e "${BLUE}💼 UPLANETG1PUB (Services & Cash-Flow):${NC}"
+        echo -e "${BLUE}💼 UPLANETNAME (Services & MULTIPASS):${NC}"
         echo -e "  💰 Solde: ${YELLOW}$services_balance Ğ1${NC} (${CYAN}$services_zen Ẑen${NC})"
-        echo -e "  📝 Usage: Investissements satellites + services locataires"
+        echo -e "  📝 Usage: Revenus locatifs MULTIPASS + services"
         echo ""
     else
-        echo -e "${RED}💼 UPLANETG1PUB: ${YELLOW}Non configuré${NC}"
-        echo -e "  💡 Pour configurer: Utilisez zen.sh → UPLANETNAME"
+        echo -e "${RED}💼 UPLANETNAME: ${YELLOW}Non configuré${NC}"
+        echo -e "  💡 Pour configurer: Lancez UPLANET.init.sh"
         echo ""
     fi
     
@@ -432,13 +432,100 @@ show_captain_dashboard() {
         local society_zen=$(calculate_zen "$society_balance")
         echo -e "${BLUE}⭐ UPLANETNAME.SOCIETY (Capital Social):${NC}"
         echo -e "  💰 Solde: ${YELLOW}$society_balance Ğ1${NC} (${CYAN}$society_zen Ẑen${NC})"
-        echo -e "  📝 Usage: Distribution aux sociétaires"
+        echo -e "  📝 Usage: Émission parts sociales ZEN Cards"
         echo ""
     else
         echo -e "${RED}⭐ UPLANETNAME.SOCIETY: ${YELLOW}Non configuré${NC}"
-        echo -e "  💡 Pour configurer: Utilisez zen.sh → UPLANETNAME.SOCIETY"
+        echo -e "  💡 Pour configurer: Lancez UPLANET.init.sh"
         echo ""
     fi
+    
+    # NODE (Armateur - Infrastructure)
+    local node_pubkey=""
+    if [[ -f "$HOME/.zen/game/secret.NODE.dunikey" ]]; then
+        node_pubkey=$(cat "$HOME/.zen/game/secret.NODE.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+    fi
+    
+    if [[ -n "$node_pubkey" ]]; then
+        local node_balance=$(get_wallet_balance "$node_pubkey")
+        local node_zen=$(calculate_zen "$node_balance")
+        echo -e "${BLUE}🖥️  NODE (Armateur - Infrastructure):${NC}"
+        echo -e "  💰 Solde: ${YELLOW}$node_balance Ğ1${NC} (${CYAN}$node_zen Ẑen${NC})"
+        echo -e "  📝 Usage: Réception PAF + Burn 4-semaines → OpenCollective"
+        echo ""
+    else
+        echo -e "${RED}🖥️  NODE: ${YELLOW}Non configuré${NC}"
+        echo -e "  💡 Pour configurer: Lancez UPLANET.init.sh"
+        echo ""
+    fi
+    
+    # Portefeuilles Coopératifs
+    print_section "PORTEFEUILLES COOPÉRATIFS (3x1/3)"
+    
+    # CASH (Trésorerie)
+    local cash_pubkey=""
+    if [[ -f "$HOME/.zen/game/uplanet.CASH.dunikey" ]]; then
+        cash_pubkey=$(cat "$HOME/.zen/game/uplanet.CASH.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+    fi
+    
+    if [[ -n "$cash_pubkey" ]]; then
+        local cash_balance=$(get_wallet_balance "$cash_pubkey")
+        local cash_zen=$(calculate_zen "$cash_balance")
+        echo -e "${GREEN}💰 UPLANETNAME.CASH (Trésorerie 1/3):${NC}"
+        echo -e "  💰 Solde: ${YELLOW}$cash_balance Ğ1${NC} (${CYAN}$cash_zen Ẑen${NC})"
+        echo -e "  📝 Usage: Solidarité PAF + réserve opérationnelle"
+    else
+        echo -e "${RED}💰 UPLANETNAME.CASH: ${YELLOW}Non configuré${NC}"
+    fi
+    
+    # RND (R&D)
+    local rnd_pubkey=""
+    if [[ -f "$HOME/.zen/game/uplanet.RnD.dunikey" ]]; then
+        rnd_pubkey=$(cat "$HOME/.zen/game/uplanet.RnD.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+    fi
+    
+    if [[ -n "$rnd_pubkey" ]]; then
+        local rnd_balance=$(get_wallet_balance "$rnd_pubkey")
+        local rnd_zen=$(calculate_zen "$rnd_balance")
+        echo -e "${CYAN}🔬 UPLANETNAME.RND (R&D 1/3):${NC}"
+        echo -e "  💰 Solde: ${YELLOW}$rnd_balance Ğ1${NC} (${CYAN}$rnd_zen Ẑen${NC})"
+        echo -e "  📝 Usage: Développement + innovation"
+    else
+        echo -e "${RED}🔬 UPLANETNAME.RND: ${YELLOW}Non configuré${NC}"
+    fi
+    
+    # ASSETS (Actifs)
+    local assets_pubkey=""
+    if [[ -f "$HOME/.zen/game/uplanet.ASSETS.dunikey" ]]; then
+        assets_pubkey=$(cat "$HOME/.zen/game/uplanet.ASSETS.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+    fi
+    
+    if [[ -n "$assets_pubkey" ]]; then
+        local assets_balance=$(get_wallet_balance "$assets_pubkey")
+        local assets_zen=$(calculate_zen "$assets_balance")
+        echo -e "${YELLOW}🌳 UPLANETNAME.ASSETS (Actifs 1/3):${NC}"
+        echo -e "  💰 Solde: ${YELLOW}$assets_balance Ğ1${NC} (${CYAN}$assets_zen Ẑen${NC})"
+        echo -e "  📝 Usage: Forêts jardins + impact écologique"
+    else
+        echo -e "${RED}🌳 UPLANETNAME.ASSETS: ${YELLOW}Non configuré${NC}"
+    fi
+    
+    # IMPOT (Fiscalité)
+    local impot_pubkey=""
+    if [[ -f "$HOME/.zen/game/uplanet.IMPOT.dunikey" ]]; then
+        impot_pubkey=$(cat "$HOME/.zen/game/uplanet.IMPOT.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+    fi
+    
+    if [[ -n "$impot_pubkey" ]]; then
+        local impot_balance=$(get_wallet_balance "$impot_pubkey")
+        local impot_zen=$(calculate_zen "$impot_balance")
+        echo -e "${PURPLE}🏛️  UPLANETNAME.IMPOT (Fiscalité):${NC}"
+        echo -e "  💰 Solde: ${YELLOW}$impot_balance Ğ1${NC} (${CYAN}$impot_zen Ẑen${NC})"
+        echo -e "  📝 Usage: TVA collectée + provision IS"
+    else
+        echo -e "${RED}🏛️  UPLANETNAME.IMPOT: ${YELLOW}Non configuré${NC}"
+    fi
+    echo ""
     
     # Statistiques des utilisateurs
     print_section "STATISTIQUES DES UTILISATEURS"
@@ -623,25 +710,37 @@ show_captain_navigation_menu() {
     echo -e "   • Gestion des investissements et répartitions"
     echo ""
     
-    echo -e "${GREEN}2. 🎮 Interface Principale (command.sh)${NC}"
+    echo -e "${GREEN}2. 🏛️  Infrastructure UPLANET (UPLANET.init.sh)${NC}"
+    echo -e "   • Initialisation complète des portefeuilles coopératifs"
+    echo -e "   • Configuration NODE, CASH, RND, ASSETS, IMPOT"
+    echo -e "   • Vérification de l'architecture ẐEN ECONOMY"
+    echo ""
+    
+    echo -e "${GREEN}3. ⚡ Scripts Économiques Automatisés${NC}"
+    echo -e "   • ZEN.ECONOMY.sh : PAF + Burn 4-semaines + Apport capital"
+    echo -e "   • ZEN.COOPERATIVE.3x1-3.sh : Allocation coopérative"
+    echo -e "   • NOSTRCARD/PLAYER.refresh.sh : Collecte loyers + TVA"
+    echo ""
+    
+    echo -e "${GREEN}4. 🎮 Interface Principale (command.sh)${NC}"
     echo -e "   • Gestion des identités MULTIPASS & ZEN Card"
     echo -e "   • Connexion swarm et statut des services"
     echo -e "   • Applications et configuration système"
     echo ""
     
-    echo -e "${GREEN}3. 📊 Tableau de Bord Détaillé${NC}"
+    echo -e "${GREEN}5. 📊 Tableau de Bord Détaillé${NC}"
     echo -e "   • Solde détaillé de tous les portefeuilles"
     echo -e "   • Historique des transactions"
     echo -e "   • Analyse des flux économiques"
     echo ""
     
-    echo -e "${GREEN}4. 🔄 Actualiser les Données${NC}"
+    echo -e "${GREEN}6. 🔄 Actualiser les Données${NC}"
     echo -e "   • Mise à jour des soldes et cache"
     echo -e "   • Synchronisation avec le réseau Ğ1"
     echo -e "   • Actualisation des statistiques"
     echo ""
     
-    echo -e "${GREEN}5. 📋 Nouvel Embarquement${NC}"
+    echo -e "${GREEN}7. 📋 Nouvel Embarquement${NC}"
     echo -e "   • Créer un nouveau MULTIPASS ou ZEN Card"
     echo -e "   • Configuration d'un nouvel utilisateur"
     echo -e "   • Intégration dans l'écosystème"
@@ -659,17 +758,25 @@ show_captain_navigation_menu() {
             "${MY_PATH}/tools/zen.sh"
             ;;
         2)
+            print_info "Lancement de UPLANET.init.sh..."
+            echo ""
+            "${MY_PATH}/UPLANET.init.sh"
+            ;;
+        3)
+            show_economic_scripts_menu
+            ;;
+        4)
             print_info "Lancement de command.sh..."
             echo ""
             "${MY_PATH}/command.sh"
             ;;
-        3)
+        5)
             show_detailed_dashboard
             ;;
-        4)
+        6)
             refresh_data
             ;;
-        5)
+        7)
             embark_captain
             ;;
         0)
@@ -682,6 +789,92 @@ show_captain_navigation_menu() {
             show_captain_dashboard
             ;;
     esac
+}
+
+# Fonction pour afficher le menu des scripts économiques
+show_economic_scripts_menu() {
+    print_header "SCRIPTS ÉCONOMIQUES AUTOMATISÉS"
+    
+    echo -e "${CYAN}Choisissez le script à exécuter:${NC}"
+    echo ""
+    
+    echo -e "${GREEN}1. 💰 ZEN.ECONOMY.sh${NC}"
+    echo -e "   • Paiement PAF hebdomadaire (Captain → NODE)"
+    echo -e "   • Burn 4-semaines (NODE → UPLANETNAME.G1 → OpenCollective)"
+    echo -e "   • Apport capital machine (ZEN Card → NODE, une fois)"
+    echo -e "   • Contrôle primal des portefeuilles coopératifs"
+    echo ""
+    
+    echo -e "${GREEN}2. 🤝 ZEN.COOPERATIVE.3x1-3.sh${NC}"
+    echo -e "   • Calcul et allocation du surplus coopératif"
+    echo -e "   • Répartition 3x1/3 : CASH, RND, ASSETS"
+    echo -e "   • Provision fiscale (IS) vers IMPOT"
+    echo ""
+    
+    echo -e "${GREEN}3. 👥 NOSTRCARD.refresh.sh${NC}"
+    echo -e "   • Collecte loyers MULTIPASS (1Ẑ HT + 0.2Ẑ TVA)"
+    echo -e "   • Paiement direct TVA → IMPOT"
+    echo -e "   • Revenus HT → Captain MULTIPASS"
+    echo ""
+    
+    echo -e "${GREEN}4. 🎫 PLAYER.refresh.sh${NC}"
+    echo -e "   • Collecte loyers ZEN Cards (4Ẑ HT + 0.8Ẑ TVA)"
+    echo -e "   • Paiement direct TVA → IMPOT"
+    echo -e "   • Revenus HT → Captain MULTIPASS"
+    echo ""
+    
+    echo -e "${GREEN}5. 🏛️  UPLANET.official.sh${NC}"
+    echo -e "   • Émission officielle de Ẑen"
+    echo -e "   • Création MULTIPASS et ZEN Cards"
+    echo -e "   • Gestion des parts sociales"
+    echo ""
+    
+    echo -e "${GREEN}0. ⬅️  Retour au tableau de bord${NC}"
+    echo ""
+    
+    read -p "Votre choix: " script_choice
+    
+    case $script_choice in
+        1)
+            print_info "Lancement de ZEN.ECONOMY.sh..."
+            echo ""
+            "${MY_PATH}/RUNTIME/ZEN.ECONOMY.sh"
+            ;;
+        2)
+            print_info "Lancement de ZEN.COOPERATIVE.3x1-3.sh..."
+            echo ""
+            "${MY_PATH}/RUNTIME/ZEN.COOPERATIVE.3x1-3.sh"
+            ;;
+        3)
+            print_info "Lancement de NOSTRCARD.refresh.sh..."
+            echo ""
+            "${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh"
+            ;;
+        4)
+            print_info "Lancement de PLAYER.refresh.sh..."
+            echo ""
+            "${MY_PATH}/RUNTIME/PLAYER.refresh.sh"
+            ;;
+        5)
+            print_info "Lancement de UPLANET.official.sh..."
+            echo ""
+            "${MY_PATH}/UPLANET.official.sh"
+            ;;
+        0)
+            show_captain_dashboard
+            return
+            ;;
+        *)
+            print_error "Choix invalide"
+            sleep 1
+            show_economic_scripts_menu
+            ;;
+    esac
+    
+    if [[ "$script_choice" != "0" ]]; then
+        read -p "Appuyez sur ENTRÉE pour continuer..."
+        show_captain_dashboard
+    fi
 }
 
 # Fonction pour afficher un tableau de bord détaillé
@@ -817,21 +1010,82 @@ refresh_data() {
     echo ""
 }
 
+# Fonction pour vérifier et initialiser l'infrastructure UPLANET
+check_and_init_uplanet_infrastructure() {
+    print_section "VÉRIFICATION DE L'INFRASTRUCTURE UPLANET"
+    
+    # Vérifier si UPLANET.init.sh existe
+    if [[ ! -f "${MY_PATH}/UPLANET.init.sh" ]]; then
+        print_error "UPLANET.init.sh non trouvé. Infrastructure manquante."
+        return 1
+    fi
+    
+    # Vérifier si les portefeuilles UPLANET sont initialisés
+    local uplanet_initialized=true
+    
+    # Vérifier UPLANETNAME.G1 (réserve principale)
+    if [[ ! -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
+        uplanet_initialized=false
+        print_warning "UPLANETNAME.G1 (Réserve Ğ1) non initialisé"
+    fi
+    
+    # Vérifier les portefeuilles coopératifs
+    local coop_wallets=("uplanet.CASH.dunikey" "uplanet.RnD.dunikey" "uplanet.ASSETS.dunikey" "uplanet.IMPOT.dunikey")
+    for wallet in "${coop_wallets[@]}"; do
+        if [[ ! -f "$HOME/.zen/game/$wallet" ]]; then
+            uplanet_initialized=false
+            print_warning "Portefeuille coopératif $wallet non initialisé"
+        fi
+    done
+    
+    # Vérifier le portefeuille NODE (Armateur)
+    if [[ ! -f "$HOME/.zen/game/secret.NODE.dunikey" ]]; then
+        uplanet_initialized=false
+        print_warning "Portefeuille NODE (Armateur) non initialisé"
+    fi
+    
+    if [[ "$uplanet_initialized" == "false" ]]; then
+        print_info "Initialisation de l'infrastructure UPLANET requise..."
+        
+        if [[ "$AUTO_MODE" == "false" ]]; then
+            read -p "Voulez-vous initialiser l'infrastructure UPLANET maintenant ? (oui/non): " init_uplanet
+            if [[ "$init_uplanet" != "oui" && "$init_uplanet" != "o" && "$init_uplanet" != "y" && "$init_uplanet" != "yes" ]]; then
+                print_error "Infrastructure UPLANET requise pour continuer"
+                return 1
+            fi
+        fi
+        
+        print_info "Lancement de UPLANET.init.sh..."
+        if "${MY_PATH}/UPLANET.init.sh"; then
+            print_success "Infrastructure UPLANET initialisée avec succès !"
+        else
+            print_error "Échec de l'initialisation UPLANET"
+            return 1
+        fi
+    else
+        print_success "Infrastructure UPLANET déjà initialisée !"
+    fi
+    
+    return 0
+}
+
 # Fonction principale d'embarquement
 embark_captain() {
     print_header "BIENVENUE SUR ASTROPORT.ONE - EMBARQUEMENT DU CAPITAINE"
     
     echo -e "${GREEN}🎉 Félicitations! Votre station Astroport.ONE est prête.${NC}"
     echo ""
-    echo -e "${CYAN}Nous allons vous guider pour créer votre première identité numérique:${NC}"
-    echo "  1. Créer un compte MULTIPASS (interface CLI)"
-    echo "  2. Créer une ZEN Card (interface CLI)"
+    echo -e "${CYAN}Nous allons vous guider pour créer votre écosystème ẐEN complet:${NC}"
+    echo "  1. Initialiser l'infrastructure UPLANET (portefeuilles coopératifs)"
+    echo "  2. Créer un compte MULTIPASS (interface CLI)"
+    echo "  3. Créer une ZEN Card (interface CLI)"
     echo ""
     echo -e "${YELLOW}Cette configuration vous permettra de:${NC}"
+    echo "  • Gérer une constellation locale UPlanet"
     echo "  • Participer au réseau social NOSTR"
     echo "  • Stocker et partager des fichiers sur IPFS"
-    echo "  • Gagner des récompenses G1"
-    echo "  • Rejoindre la communauté UPlanet"
+    echo "  • Gagner des récompenses Ẑen et Ğ1"
+    echo "  • Administrer l'économie coopérative automatisée"
     echo ""
     
     if [[ "$AUTO_MODE" == "false" ]]; then
@@ -841,6 +1095,12 @@ embark_captain() {
             print_info "Configuration reportée. Vous pourrez la faire plus tard."
             return 1
         fi
+    fi
+    
+    # Étape 0: Vérifier et initialiser l'infrastructure UPLANET
+    if ! check_and_init_uplanet_infrastructure; then
+        print_error "Impossible de continuer sans infrastructure UPLANET"
+        return 1
     fi
     
     # Étape 1: Création MULTIPASS

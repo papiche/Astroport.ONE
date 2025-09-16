@@ -67,22 +67,22 @@ fi
 echo "ZEN COOPERATIVE: Starting weekly allocation process (captain's birthday: $CAPTAIN_BIRTHDAY)"
 
 #######################################################################
-# Création et vérification du portefeuille CAPTAIN dédié
+# Vérification du portefeuille CAPTAIN dédié (géré par ZEN.ECONOMY.sh)
 #######################################################################
-echo "🔄 Processing Captain dedicated wallet..."
+echo "🔄 Checking Captain dedicated wallet..."
 
-# Créer le portefeuille CAPTAIN s'il n'existe pas
-if [[ ! -s ~/.zen/game/uplanet.captain.dunikey ]]; then
-    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.captain.dunikey "${UPLANETNAME}.${CAPTAINEMAIL}" "${UPLANETNAME}.${CAPTAINEMAIL}"
-    chmod 600 ~/.zen/game/uplanet.captain.dunikey
+# Le portefeuille CAPTAIN dédié est maintenant géré par ZEN.ECONOMY.sh
+# Vérifier s'il existe (créé par ZEN.ECONOMY.sh ou UPLANET.init.sh)
+if [[ -s ~/.zen/game/uplanet.captain.dunikey ]]; then
+    CAPTAING1PUB_DEDICATED=$(cat $HOME/.zen/game/uplanet.captain.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+    CAPTAIN_DEDICATED_COIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAING1PUB_DEDICATED} | tail -n 1)
+    CAPTAIN_DEDICATED_ZEN=$(echo "($CAPTAIN_DEDICATED_COIN - 1) * 10" | bc | cut -d '.' -f 1)
+    echo "Captain dedicated wallet balance: $CAPTAIN_DEDICATED_ZEN Ẑen"
+else
+    echo "Captain dedicated wallet not found (will be created by ZEN.ECONOMY.sh)"
+    CAPTAING1PUB_DEDICATED=""
+    CAPTAIN_DEDICATED_ZEN=0
 fi
-
-CAPTAING1PUB_DEDICATED=$(cat $HOME/.zen/game/uplanet.captain.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
-
-# Vérifier le solde du portefeuille CAPTAIN dédié
-CAPTAIN_DEDICATED_COIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAING1PUB_DEDICATED} | tail -n 1)
-CAPTAIN_DEDICATED_ZEN=$(echo "($CAPTAIN_DEDICATED_COIN - 1) * 10" | bc | cut -d '.' -f 1)
-echo "Captain dedicated wallet balance: $CAPTAIN_DEDICATED_ZEN Ẑen"
 
 #######################################################################
 # Vérification du solde du compte MULTIPASS du Capitaine
@@ -94,9 +94,7 @@ echo "Captain MULTIPASS balance: $CAPTAINZEN Ẑen"
 
 # Configuration de la PAF hebdomadaire
 [[ -z $PAF ]] && PAF=14  # PAF hebdomadaire par défaut
-CAPTAIN_SHARE_TARGET=$(echo "$PAF * 2" | bc -l)  # Part cible du capitaine (2x PAF)
 
-echo "Captain share target (2x PAF): $CAPTAIN_SHARE_TARGET Ẑen"
 echo "Captain MULTIPASS balance: $CAPTAINZEN Ẑen"
 
 # Vérification du solde minimum pour allocation
@@ -106,56 +104,18 @@ if [[ $(echo "$CAPTAINZEN <= 0" | bc -l) -eq 1 ]]; then
     exit 0
 fi
 
-#######################################################################
-# Adaptation de la part du Capitaine au solde disponible
-#######################################################################
-# Calculer la part réelle que le capitaine peut recevoir
-if [[ $(echo "$CAPTAINZEN >= $CAPTAIN_SHARE_TARGET" | bc -l) -eq 1 ]]; then
-    # Le capitaine peut recevoir sa part complète (2x PAF)
-    CAPTAIN_SHARE=$CAPTAIN_SHARE_TARGET
-    echo "✅ Captain can receive full share: $CAPTAIN_SHARE Ẑen"
-else
-    # Le capitaine reçoit tout ce qui est disponible (même si < 2x PAF)
-    CAPTAIN_SHARE=$CAPTAINZEN
-    echo "⚠️  Captain receives available balance: $CAPTAIN_SHARE Ẑen (less than target $CAPTAIN_SHARE_TARGET Ẑen)"
-fi
+# Note: La rémunération du capitaine (2x PAF) est maintenant gérée par ZEN.ECONOMY.sh
+# Ce script se contente de gérer la répartition coopérative du surplus restant
 
 #######################################################################
-# Transfert de la part du Capitaine vers son portefeuille dédié
+# Vérification du solde pour allocation coopérative
 #######################################################################
-echo "🔄 Transferring Captain's share ($CAPTAIN_SHARE Ẑen) to dedicated wallet..."
+REMAINING_BALANCE=$CAPTAINZEN
+echo "Balance available for cooperative allocation: $REMAINING_BALANCE Ẑen"
 
-# Calculer le montant à transférer
-TRANSFER_AMOUNT_G1=$(echo "scale=2; $CAPTAIN_SHARE / 10" | bc -l)
-
-# Transfert depuis le MULTIPASS vers le portefeuille dédié
-captain_share_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$TRANSFER_AMOUNT_G1" "${CAPTAING1PUB_DEDICATED}" "UPLANET:${UPLANETG1PUB:0:8}:CAPTAIN:2xPAF" 2>/dev/null)
-
-if [[ $? -eq 0 ]]; then
-    if [[ $(echo "$CAPTAIN_SHARE == $CAPTAIN_SHARE_TARGET" | bc -l) -eq 1 ]]; then
-        echo "✅ Captain's full share transferred: $CAPTAIN_SHARE Ẑen ($TRANSFER_AMOUNT_G1 G1)"
-    else
-        echo "✅ Captain's partial share transferred: $CAPTAIN_SHARE Ẑen ($TRANSFER_AMOUNT_G1 G1) of $CAPTAIN_SHARE_TARGET Ẑen target"
-    fi
-    # Mettre à jour le solde après transfert
-    CAPTAINZEN=$(echo "scale=2; $CAPTAINZEN - $CAPTAIN_SHARE" | bc -l)
-    echo "Captain MULTIPASS remaining balance: $CAPTAINZEN Ẑen"
-else
-    echo "❌ Captain's share transfer failed"
-    echo "Skipping allocation process..."
-    exit 0
-fi
-
-#######################################################################
-# Vérification du solde restant pour allocation coopérative
-#######################################################################
-REMAINING_BALANCE=$(echo "scale=2; $CAPTAINZEN - $CAPTAIN_SHARE" | bc -l)
-echo "Remaining balance after Captain's share: $REMAINING_BALANCE Ẑen"
-
-# Si le solde restant est insuffisant pour l'allocation coopérative,
-# le capitaine garde tout et on arrête le processus
+# Si le solde est insuffisant pour l'allocation coopérative, on arrête
 if [[ $(echo "$REMAINING_BALANCE <= 0" | bc -l) -eq 1 ]]; then
-    echo "ZEN COOPERATIVE: No remaining balance for cooperative allocation"
+    echo "ZEN COOPERATIVE: No balance available for cooperative allocation"
     echo "Captain keeps all available balance on MULTIPASS"
     exit 0
 fi
@@ -229,6 +189,12 @@ fi
 # Calcul du surplus net après provision fiscale
 NET_SURPLUS=$(echo "scale=2; $REMAINING_BALANCE - $TAX_PROVISION" | bc -l)
 echo "Net surplus after tax provision: $NET_SURPLUS Ẑen"
+
+# Si le surplus net est insuffisant, on arrête
+if [[ $(echo "$NET_SURPLUS <= 0" | bc -l) -eq 1 ]]; then
+    echo "ZEN COOPERATIVE: No net surplus for cooperative allocation after tax provision"
+    exit 0
+fi
 
 #######################################################################
 # Configuration des paramètres d'allocation (sur le surplus net)
@@ -324,13 +290,9 @@ fi
 # Rapport d'allocation avec conformité fiscale
 #######################################################################
 echo "============================================ COOPERATIVE ALLOCATION SUMMARY"
-echo "📊 Initial Captain MULTIPASS balance: $(echo "scale=2; $CAPTAINZEN + $CAPTAIN_SHARE + $TAX_PROVISION" | bc -l) Ẑen"
-if [[ $(echo "$CAPTAIN_SHARE == $CAPTAIN_SHARE_TARGET" | bc -l) -eq 1 ]]; then
-    echo "👨‍✈️ Captain's earning (full 2x PAF): $CAPTAIN_SHARE Ẑen"
-else
-    echo "👨‍✈️ Captain's earning (partial): $CAPTAIN_SHARE Ẑen of $CAPTAIN_SHARE_TARGET Ẑen target"
-fi
-echo "📊 Remaining surplus for allocation: $REMAINING_BALANCE Ẑen"
+echo "📊 Initial Captain MULTIPASS balance: $(echo "scale=2; $CAPTAINZEN + $TAX_PROVISION" | bc -l) Ẑen"
+echo "💡 Note: Captain remuneration (2x PAF) is handled by ZEN.ECONOMY.sh"
+echo "📊 Balance for cooperative allocation: $REMAINING_BALANCE Ẑen"
 echo "💰 Tax provision (${TAX_RATE_USED}%): $TAX_PROVISION Ẑen"
 echo "📈 Net surplus allocated: $NET_SURPLUS Ẑen"
 echo "🏦 Treasury (1/3): $TREASURY_AMOUNT Ẑen"
@@ -355,10 +317,9 @@ Period: $TODATE (Captain's birthday: $CAPTAIN_BIRTHDAY)
 UPlanet: ${UPLANETG1PUB:0:8}
 
 ECONOMIC DATA:
-- Initial Captain MULTIPASS balance: $(echo "scale=2; $CAPTAINZEN + $CAPTAIN_SHARE + $TAX_PROVISION" | bc -l) Ẑen
-- Captain share target (2x PAF): $CAPTAIN_SHARE_TARGET Ẑen
-- Captain's share transferred: $CAPTAIN_SHARE Ẑen
-- Remaining surplus for allocation: $REMAINING_BALANCE Ẑen
+- Initial Captain MULTIPASS balance: $(echo "scale=2; $CAPTAINZEN + $TAX_PROVISION" | bc -l) Ẑen
+- Note: Captain remuneration (2x PAF) handled by ZEN.ECONOMY.sh
+- Balance for cooperative allocation: $REMAINING_BALANCE Ẑen
 
 TAX PROVISION:
 - Tax rate applied: ${TAX_RATE_USED}%
