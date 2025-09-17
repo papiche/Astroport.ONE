@@ -77,8 +77,9 @@ for PLAYER in ${PLAYERONE[@]}; do
     ######## ZEN ECONOMY INTEGRATION - MULTIPASS used for ZEN Card service level payment
     ######################################################################################
     [[ -z ${BIRTHDATE} ]] && BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/TODATE 2>/dev/null)
-    [[ -z $BIRTHDATE ]] \
+    [[ -z ${BIRTHDATE} ]] \
         && BIRTHDATE="$TODATE" \
+        && echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/TODATE \
         && echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.birthdate ## INIT BIRTHDATE
     ####################################################################
 
@@ -175,7 +176,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 fi
             else
                 echo "[7 DAYS CYCLE] ZENCARD ($COINS G1) UNPLUG !!"
-                $MY_PATH/../tools/mailjet.sh "${PLAYER}" "$COINS Ğ1" "ZEN Card is missing Ẑen..."
+                $MY_PATH/../tools/mailjet.sh "${PLAYER}" "$COINS Ğ1" "MULTIPASS is missing Ẑen for paying ZEN Card..."
                 if [[ ${PLAYER} != ${CAPTAINEMAIL} ]]; then
                     ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.hEtml ${PLAYER} "ALL"
                 fi
@@ -187,14 +188,13 @@ for PLAYER in ${PLAYERONE[@]}; do
     #~ ## ZENCARD ARE ACTIVATED WITH 1 G1
     echo "## >>>>>>>>>>>>>>>> REFRESH ASTRONAUTE TW"
     ## REFRESH ASTRONAUTE TW
-    ASTRONAUTENS=$(ipfs key list -l | grep -w ${G1PUB} | head -n1 | cut -d ' ' -f1)
+    ASTRONAUTENS=$(ipfs key list -l | grep -w ${PLAYER} | head -n1 | cut -d ' ' -f1)
 
     ############### CANNOT FIND PLAYER KEY ###########
     if [[ ! ${ASTRONAUTENS} ]]; then
 
         echo "${PLAYER} TW IS DISCONNECTED... RECREATING IPNS KEYS"
         ## TODO : EXTRACT & DECRYPT secret.june FROM TW
-        ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/secret.player
         ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/secret.player
 
         ipfs key rm "${PLAYER}_feed" 2>/dev/null
