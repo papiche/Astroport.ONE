@@ -316,8 +316,8 @@ $(echo "${MAGIX[@]}" | tr -d '\n ' | head -c 64)" > swarm.key
 #### **⚡ Prérequis Techniques**
 
 - **Niveau Y** : Station autonome avec concordance SSH ↔ IPFS
-- **Connectivité WAN** : Adresse IP publique (pas de NAT strict)
-- **Ports ouverts** : IPFS (4001), Astroport (1234), SSH (22)
+- **Connectivité WAN** : Adresse IP publique (ou règles NAT)
+- **Ports ouverts** : IPFS (4001), Astroport (1234), SSH (22), /12345, :54321
 - **GPS activé** : Coordonnées géographiques disponibles
 
 ---
