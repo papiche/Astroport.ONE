@@ -148,10 +148,10 @@ UPLANETZEN=$(echo "($UPLANETCOINS - 1) * 10" | bc | cut -d '.' -f 1)
 
 ## CREATE UPLANET ECOSYSTEM WALLETS IF NOT EXISTS AND GET PUBKEYS
 # UPLANETNAME.TREASURY wallet
-[[ ! -s ~/.zen/game/uplanet.TREASURY.dunikey ]] \
-    && ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/uplanet.TREASURY.dunikey "${UPLANETNAME}.TREASURY" "${UPLANETNAME}.TREASURY" \
-    && chmod 600 ~/.zen/game/uplanet.TREASURY.dunikey
-UPLANETNAME_TREASURY=$(cat ~/.zen/game/uplanet.TREASURY.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+[[ ! -s ~/.zen/game/uplanet.CASH.dunikey ]] \
+    && ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/uplanet.CASH.dunikey "${UPLANETNAME}.TREASURY" "${UPLANETNAME}.TREASURY" \
+    && chmod 600 ~/.zen/game/uplanet.CASH.dunikey
+UPLANETNAME_TREASURY=$(cat ~/.zen/game/uplanet.CASH.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
 
 # UPLANETNAME.RND wallet
 [[ ! -s ~/.zen/game/uplanet.RnD.dunikey ]] \
