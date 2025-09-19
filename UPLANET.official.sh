@@ -120,20 +120,29 @@ check_balance() {
     return 1
 }
 
+# Fonction pour convertir Ẑen en Ğ1 (1 Ẑen = 0.1 Ğ1)
+zen_to_g1() {
+    local zen_amount="$1"
+    echo "scale=2; $zen_amount / 10" | bc -l
+}
+
 # Fonction pour effectuer un transfert et vérifier sa confirmation
 transfer_and_verify() {
     local dunikey_file="$1"
     local to_wallet="$2"
-    local amount="$3"
+    local zen_amount="$3"
     local description="$4"
     
-    echo -e "${BLUE}💰 Transfert: ${amount} Ğ1 vers ${to_wallet:0:8}${NC}"
+    # Convertir Ẑen en Ğ1 (1 Ẑen = 0.1 Ğ1)
+    local g1_amount=$(zen_to_g1 "$zen_amount")
+    
+    echo -e "${BLUE}💰 Transfert: ${zen_amount} Ẑen (${g1_amount} Ğ1) vers ${to_wallet:0:8}${NC}"
     echo -e "${CYAN}📝 Description: ${description}${NC}"
     
     # Effectuer le transfert avec silkaj en utilisant le fichier dunikey
     local transfer_result
     if [[ -n "$dunikey_file" && -f "$dunikey_file" ]]; then
-        transfer_result=$(silkaj --json --dunikey-file "$dunikey_file" money transfer -r "$to_wallet" -a "$amount" --reference "$description" --yes 2>/dev/null)
+        transfer_result=$(silkaj --json --dunikey-file "$dunikey_file" money transfer -r "$to_wallet" -a "$g1_amount" --reference "$description" --yes 2>/dev/null)
     else
         echo -e "${RED}❌ Fichier dunikey manquant ou invalide: $dunikey_file${NC}"
         return 1
@@ -187,9 +196,10 @@ calculate_societaire_amount() {
 process_locataire() {
     local email="$1"
     local montant_euros="${2:-$NCARD}}"
+    local montant_g1=$(zen_to_g1 "$montant_euros")
     
     echo -e "${BLUE}🏠 Traitement virement LOCATAIRE pour: ${email}${NC}"
-    echo -e "${CYAN}💰 Montant: ${montant_euros}€ (${montant_euros} Ẑen)${NC}"
+    echo -e "${CYAN}💰 Montant: ${montant_euros}€ (${montant_euros} Ẑen = ${montant_g1} Ğ1)${NC}"
     
     # Vérifier que les portefeuilles existent
     if [[ ! -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
@@ -230,7 +240,7 @@ process_locataire() {
     
     echo -e "${GREEN}🎉 Virement locataire terminé avec succès!${NC}"
     echo -e "${CYAN}📊 Résumé:${NC}"
-    echo -e "  • ${montant_euros} Ẑen transférés vers MULTIPASS ${email}"
+    echo -e "  • ${montant_euros} Ẑen (${montant_g1} Ğ1) transférés vers MULTIPASS ${email}"
     echo -e "  • Recharge de service hebdomadaire effectuée"
     echo -e "  • Toutes les transactions confirmées sur la blockchain"
     
@@ -243,9 +253,10 @@ process_locataire() {
 process_infrastructure() {
     local email="$1"
     local montant_euros="${2:-$(calculate_societaire_amount "infrastructure")}"
+    local montant_g1=$(zen_to_g1 "$montant_euros")
     
     echo -e "${BLUE}⚙️ Traitement APPORT CAPITAL INFRASTRUCTURE pour: ${email}${NC}"
-    echo -e "${CYAN}💰 Montant: ${montant_euros}€ (${montant_euros} Ẑen) - DIRECT vers NODE${NC}"
+    echo -e "${CYAN}💰 Montant: ${montant_euros}€ (${montant_euros} Ẑen = ${montant_g1} Ğ1) - DIRECT vers NODE${NC}"
     
     # Vérifier que les portefeuilles existent
     if [[ ! -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
@@ -306,7 +317,7 @@ process_infrastructure() {
     
     echo -e "${GREEN}🎉 Apport capital infrastructure terminé avec succès!${NC}"
     echo -e "${CYAN}📊 Résumé:${NC}"
-    echo -e "  • ${montant_euros} Ẑen transférés directement au NODE"
+    echo -e "  • ${montant_euros} Ẑen (${montant_g1} Ğ1) transférés directement au NODE"
     echo -e "  • Apport au capital (non distribuable 3x1/3)"
     echo -e "  • Valorisation infrastructure/machine enregistrée"
     echo -e "  • Toutes les transactions confirmées sur la blockchain"
@@ -329,8 +340,10 @@ process_societaire() {
         return $?
     fi
     
+    local montant_g1=$(zen_to_g1 "$montant_euros")
+    
     echo -e "${BLUE}👑 Traitement virement SOCIÉTAIRE pour: ${email}${NC}"
-    echo -e "${CYAN}💰 Type: ${type} - Montant: ${montant_euros}€ (${montant_euros} Ẑen)${NC}"
+    echo -e "${CYAN}💰 Type: ${type} - Montant: ${montant_euros}€ (${montant_euros} Ẑen = ${montant_g1} Ğ1)${NC}"
     
     # Vérifier que les portefeuilles existent
     if [[ ! -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
@@ -388,11 +401,11 @@ process_societaire() {
     # Étape 3: Répartition 3x1/3 depuis ZEN Card
     echo -e "${BLUE}📤 Étape 3: Répartition 3x1/3 depuis ZEN Card${NC}"
     
-    # Calculer les montants de répartition
+    # Calculer les montants de répartition (en Ẑen pour l'affichage, en Ğ1 pour les transferts)
     local montant_zen=$montant_euros
-    local part_treasury=$(echo "scale=2; $montant_zen / 3" | bc)
-    local part_rnd=$(echo "scale=2; $montant_zen / 3" | bc)
-    local part_assets=$(echo "scale=2; $montant_zen - $part_treasury - $part_rnd" | bc)
+    local part_treasury_zen=$(echo "scale=2; $montant_zen / 3" | bc)
+    local part_rnd_zen=$(echo "scale=2; $montant_zen / 3" | bc)
+    local part_assets_zen=$(echo "scale=2; $montant_zen - $part_treasury_zen - $part_rnd_zen" | bc)
     
     # Utiliser les mêmes portefeuilles que ZEN.COOPERATIVE.3x1-3.sh
     local treasury_pubkey=""
@@ -430,22 +443,22 @@ process_societaire() {
     fi
     
     # Transfert vers Treasury (1/3)
-    echo -e "${CYAN}  📤 Treasury (1/3): ${part_treasury} Ẑen${NC}"
-    if ! transfer_and_verify "$zencard_dunikey" "$treasury_pubkey" "$part_treasury" "Allocation Treasury sociétaire ${type}"; then
+    echo -e "${CYAN}  📤 Treasury (1/3): ${part_treasury_zen} Ẑen${NC}"
+    if ! transfer_and_verify "$zencard_dunikey" "$treasury_pubkey" "$part_treasury_zen" "Allocation Treasury sociétaire ${type}"; then
         echo -e "${RED}❌ Échec transfert Treasury${NC}"
         return 1
     fi
     
     # Transfert vers R&D (1/3)
-    echo -e "${CYAN}  📤 R&D (1/3): ${part_rnd} Ẑen${NC}"
-    if ! transfer_and_verify "$zencard_dunikey" "$rnd_pubkey" "$part_rnd" "Allocation R&D sociétaire ${type}"; then
+    echo -e "${CYAN}  📤 R&D (1/3): ${part_rnd_zen} Ẑen${NC}"
+    if ! transfer_and_verify "$zencard_dunikey" "$rnd_pubkey" "$part_rnd_zen" "Allocation R&D sociétaire ${type}"; then
         echo -e "${RED}❌ Échec transfert R&D${NC}"
         return 1
     fi
     
     # Transfert vers Assets (1/3)
-    echo -e "${CYAN}  📤 Assets (1/3): ${part_assets} Ẑen${NC}"
-    if ! transfer_and_verify "$zencard_dunikey" "$assets_pubkey" "$part_assets" "Allocation Assets sociétaire ${type}"; then
+    echo -e "${CYAN}  📤 Assets (1/3): ${part_assets_zen} Ẑen${NC}"
+    if ! transfer_and_verify "$zencard_dunikey" "$assets_pubkey" "$part_assets_zen" "Allocation Assets sociétaire ${type}"; then
         echo -e "${RED}❌ Échec transfert Assets${NC}"
         return 1
     fi
@@ -455,9 +468,9 @@ process_societaire() {
     echo -e "  • ${montant_euros} Ẑen transférés vers ZEN Card ${email}"
     echo -e "  • Parts sociales attribuées (type: ${type})"
     echo -e "  • Répartition 3x1/3 effectuée:"
-    echo -e "    - Treasury: ${part_treasury} Ẑen"
-    echo -e "    - R&D: ${part_rnd} Ẑen"
-    echo -e "    - Assets: ${part_assets} Ẑen"
+    echo -e "    - Treasury: ${part_treasury_zen} Ẑen"
+    echo -e "    - R&D: ${part_rnd_zen} Ẑen"
+    echo -e "    - Assets: ${part_assets_zen} Ẑen"
     echo -e "  • Toutes les transactions confirmées sur la blockchain"
     
     return 0
@@ -551,27 +564,81 @@ main() {
     
     # Traitement des arguments en ligne de commande
     if [[ $# -gt 0 ]]; then
-        case "$1" in
-            -l|--locataire)
-                if [[ -n "$2" ]]; then
-                    process_locataire "$2" "$3"
+        # Parse arguments
+        local email=""
+        local type="satellite"
+        local montant=""
+        local mode=""
+        
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                -l|--locataire)
+                    mode="locataire"
+                    shift
+                    if [[ -n "$1" && ! "$1" =~ ^- ]]; then
+                        email="$1"
+                        shift
+                    fi
+                    ;;
+                -s|--societaire)
+                    mode="societaire"
+                    shift
+                    if [[ -n "$1" && ! "$1" =~ ^- ]]; then
+                        email="$1"
+                        shift
+                    fi
+                    ;;
+                -i|--infrastructure)
+                    mode="infrastructure"
+                    shift
+                    ;;
+                -t|--type)
+                    shift
+                    if [[ -n "$1" && ! "$1" =~ ^- ]]; then
+                        type="$1"
+                        shift
+                    fi
+                    ;;
+                -m|--montant)
+                    shift
+                    if [[ -n "$1" && ! "$1" =~ ^- ]]; then
+                        montant="$1"
+                        shift
+                    fi
+                    ;;
+                -h|--help)
+                    show_help
+                    exit 0
+                    ;;
+                *)
+                    echo -e "${RED}❌ Option inconnue: $1${NC}"
+                    show_help
+                    exit 1
+                    ;;
+            esac
+        done
+        
+        # Execute based on mode
+        case "$mode" in
+            "locataire")
+                if [[ -n "$email" ]]; then
+                    process_locataire "$email" "$montant"
                 else
                     echo -e "${RED}❌ Email requis pour l'option --locataire${NC}"
                     exit 1
                 fi
                 ;;
-            -s|--societaire)
-                if [[ -n "$2" ]]; then
-                    local type="${4:-satellite}"
-                    process_societaire "$2" "$type" "$3"
+            "societaire")
+                if [[ -n "$email" ]]; then
+                    process_societaire "$email" "$type" "$montant"
                 else
                     echo -e "${RED}❌ Email requis pour l'option --societaire${NC}"
                     exit 1
                 fi
                 ;;
-            -i|--infrastructure)
+            "infrastructure")
                 if [[ -n "$CAPTAINEMAIL" ]]; then
-                    local machine_value="${MACHINE_VALUE_ZEN:-500}"
+                    local machine_value="${montant:-${MACHINE_VALUE_ZEN:-500}}"
                     echo -e "${CYAN}💰 Apport capital infrastructure: ${CAPTAINEMAIL} (${machine_value} Ẑen)${NC}"
                     process_infrastructure "$CAPTAINEMAIL" "$machine_value"
                 else
@@ -580,20 +647,8 @@ main() {
                     exit 1
                 fi
                 ;;
-            -t|--type)
-                echo -e "${YELLOW}⚠️  L'option --type doit être utilisée avec --societaire${NC}"
-                exit 1
-                ;;
-            -m|--montant)
-                echo -e "${YELLOW}⚠️  L'option --montant doit être utilisée avec --locataire ou --societaire${NC}"
-                exit 1
-                ;;
-            -h|--help)
-                show_help
-                exit 0
-                ;;
             *)
-                echo -e "${RED}❌ Option inconnue: $1${NC}"
+                echo -e "${RED}❌ Mode non spécifié${NC}"
                 show_help
                 exit 1
                 ;;
