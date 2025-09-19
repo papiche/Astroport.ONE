@@ -69,7 +69,7 @@ fi
 intrusion_pubkey=$(cat "$HOME/.zen/game/uplanet.INTRUSION.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
 
 # Redirection vers UPLANETNAME.INTRUSION
-PAYforSURE.sh "${wallet}" "${amount}" "${intrusion_pubkey}" "INTRUSION:REDIRECT:UPLANETNAME.INTRUSION:${sender:0:8}"
+PAYforSURE.sh "${wallet}" "${amount}" "${intrusion_pubkey}" "UPLANET:${UPLANETG1PUB:0:8}:INTRUSION:${sender:0:8}"
 send_alert_email "${email}" "${wallet}" "${sender}" "${amount}" "${primal}" "$total" "redirection"
 ```
 
@@ -102,23 +102,9 @@ primal_wallet_control.sh "${HOME}/.zen/game/nostr/${PLAYER}/.secret.dunikey" "${
 primal_wallet_control.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${G1PUB}" "${UPLANETNAME_SOCIETY}" "${PLAYER}"
 ```
 
-## **📊 Flux Économiques**
+## **📊 Référence Économique**
 
-### **Revenus Hebdomadaires**
-- **MULTIPASS** : 1Ẑ/sem × N utilisateurs → `UPLANETNAME`
-- **ZEN Cards** : 50Ẑ parts sociales → `UPLANETNAME.SOCIETY` → 3x1/3
-
-### **Coûts Hebdomadaires**
-- **PAF NODE** : 14Ẑ/sem (CAPTAIN → NODE)
-- **CAPTAIN** : 28Ẑ/sem (UPLANETNAME → CAPTAIN)
-- **TVA** : 20% revenus → `UPLANETNAME.IMPOT`
-
-### **Répartition Coopérative**
-```
-Surplus → UPLANETNAME.CASH (33.33%)
-       → UPLANETNAME.RND (33.33%)
-       → UPLANETNAME.ASSETS (33.34%)
-```
+> **Note** : Les détails complets des flux économiques, transactions autorisées et conformité fiscale sont documentés dans `ZEN.ECONOMY.readme.md`. Ce document se concentre sur la politique anti-intrusion.
 
 ## **💰 Impact Économique**
 

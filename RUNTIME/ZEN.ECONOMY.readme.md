@@ -80,6 +80,101 @@ Le surplus net de la coopérative (après provision de l'Impôt sur les Sociét�
 | `PLAYER.refresh.sh` | Collecte loyers ZEN Cards (4Ẑ HT + 0.8Ẑ TVA) | Hebdomadaire |
 | `UPLANET.official.sh` | Émission Ẑen officielle (Locataires & Sociétaires) | À la demande |
 
+### **🔄 FLUX ÉCONOMIQUES DÉTAILLÉS (Cycle 7 jours)**
+
+#### **MULTIPASS (NOSTR Cards) - `NOSTRCARD.refresh.sh`**
+```
+Loyer MULTIPASS : 1 Ẑ HT/semaine + 0.2 Ẑ TVA (20%)
+├── 1.0 Ẑ → CAPTAIN (service hosting)
+└── 0.2 Ẑ → UPLANETNAME.IMPOT (provision TVA)
+```
+- **Gestion** : Paiement automatique tous les 7 jours depuis la date de naissance
+- **Heure** : Aléatoire par utilisateur (éviter simultanéité)
+- **Contrôle** : Destruction automatique si fonds insuffisants
+
+#### **ZEN Cards - `PLAYER.refresh.sh`**
+```
+Loyer ZEN Card : 4 Ẑ HT/semaine + 0.8 Ẑ TVA (20%)
+├── 4.0 Ẑ → CAPTAIN (service premium)
+└── 0.8 Ẑ → UPLANETNAME.IMPOT (provision TVA)
+```
+- **Services** : Accès TiddlyWiki + 128Go stockage
+- **Gestion** : Cycle 7 jours depuis BIRTHDATE
+- **Contrôle** : Déconnexion si solde < 6.8 Ẑ (4+0.8+1 sécurité)
+
+#### **Sociétaires U.SOCIETY - Statut Spécial**
+```
+Parts Sociales : 50 Ẑ (paiement unique)
+├── Services Premium : 128Go NextCloud inclus
+├── Statut : Co-propriétaire avec droit de vote
+└── Exemption : Pas de loyer hebdomadaire (1 an)
+```
+- **Fichier** : `~/.zen/game/players/${PLAYER}/U.SOCIETY`
+- **Validité** : 365 jours depuis inscription
+- **Renouvellement** : Automatique ou manuel
+
+#### **💰 Coûts Hebdomadaires (PAF - Participation Aux Frais)**
+
+##### **Infrastructure NODE - `ZEN.ECONOMY.sh`**
+```
+PAF Hebdomadaire : 14 Ẑ/semaine (1.4 Ğ1)
+├── Priorité 1 : CAPTAIN MULTIPASS → NODE
+├── Priorité 2 : UPLANETNAME.TREASURY → NODE (si CAPTAIN insuffisant)
+└── Objectif : Électricité + Internet + Maintenance
+```
+
+##### **Rémunération CAPTAIN**
+```
+Salaire Gérant : 28 Ẑ/semaine (2x PAF)
+├── Source : UPLANETNAME → CAPTAIN wallet dédié
+├── Nature : Rémunération de gérant (BNC)
+└── Périodicité : Hebdomadaire (birthday CAPTAIN)
+```
+
+##### **Conversion Fiat (Burn PAF)**
+```
+Burn Mensuel : 56 Ẑ (4 semaines × 14 Ẑ)
+├── NODE → OpenCollective (transparence)
+├── Usage : Paiement charges réelles (€)
+└── Conformité : ACPR + comptabilité publique
+```
+
+#### **🏛️ Provisions Fiscales Automatiques**
+
+##### **TVA Collectée**
+```
+UPLANETNAME.IMPOT : 20% × (MULTIPASS + ZEN Cards)
+├── MULTIPASS : 0.2 Ẑ × N utilisateurs/semaine
+├── ZEN Cards : 0.8 Ẑ × N cartes/semaine
+└── Déclaration : Mensuelle (CA3)
+```
+
+##### **Répartition Coopérative 3x1/3 - `ZEN.COOPERATIVE.3x1-3.sh`**
+```
+Surplus Hebdomadaire → Allocation Automatique :
+├── UPLANETNAME.TREASURY (33.33%) : Trésorerie opérationnelle
+├── UPLANETNAME.RND (33.33%) : Recherche & Développement
+└── UPLANETNAME.ASSETS (33.34%) : Investissements durables
+```
+
+#### **📈 Modèle Économique par Utilisateur**
+
+##### **Locataire Standard (MULTIPASS + ZEN Card)**
+```
+Coût Total : 5 Ẑ HT + 1 Ẑ TVA = 6 Ẑ/semaine
+├── Services : 128Go + TiddlyWiki + NOSTR
+├── Revenus UPlanet : 6 Ẑ/semaine
+└── Contribution Coopérative : Surplus après PAF
+```
+
+##### **Sociétaire U.SOCIETY**
+```
+Investissement : 50 Ẑ (parts sociales)
+├── Services : 128Go + Premium + Droits de vote
+├── Période : 365 jours sans loyer
+└── ROI : Participation aux bénéfices coopératifs
+```
+
 ### **CONFIGURATION**
 Les variables (`PAF`, `TVA_RATE`, `MACHINE_VALUE_ZEN`, etc.) sont définies dans un fichier `.env`. Les portefeuilles sont initialisés automatiquement par `UPLANET.init.sh` avec source primale unique `UPLANETNAME.G1`.
 
@@ -88,6 +183,163 @@ Les variables (`PAF`, `TVA_RATE`, `MACHINE_VALUE_ZEN`, etc.) sont définies dans
 - **Apport capital machine** : ZEN Card → NODE (une seule fois, valeur machine en Ẑen)
 - **TVA fiscalement correcte** : Répartition directe MULTIPASS → CAPTAIN HT + IMPOTS TVA
 - **Initialisation cohérente** : Tous les portefeuilles initialisés depuis `UPLANETNAME.G1`
+
+### **💼 TRANSACTIONS AUTORISÉES - CADRE LÉGAL ET FISCAL**
+
+#### **🏛️ Transactions Économiques Hebdomadaires**
+
+##### **PAF (Participation Aux Frais) - Frais de Fonctionnement**
+```
+UPLANET:${UPLANETG1PUB:0:8}:$CAPTYOUSER:WEEKLYPAF
+UPLANET:${UPLANETG1PUB:0:8}:TREASURY:WEEKLYPAF
+```
+- **Nature juridique** : Charges d'exploitation (électricité, internet, maintenance)
+- **Comptabilité** : Compte 61 - Services extérieurs
+- **TVA** : Non applicable (frais internes coopérative)
+- **Périodicité** : Hebdomadaire (52 paiements/an)
+
+##### **Rémunération CAPTAIN - Salaire de Gestion**
+```
+UPLANET:${UPLANETG1PUB:0:8}:CAPTAIN:2xPAF
+```
+- **Nature juridique** : Rémunération de gérant (2x PAF hebdomadaire)
+- **Comptabilité** : Compte 64 - Charges de personnel
+- **Fiscalité** : Revenus BNC (Bénéfices Non Commerciaux)
+- **Social** : Cotisations sociales applicables selon statut
+
+##### **Burn PAF - Conversion Monétaire**
+```
+UPLANET:${UPLANETG1PUB:0:8}:NODE:BURN_PAF_4WEEKS:$period_key:${FOURWEEKS_PAF}ZEN
+```
+- **Nature juridique** : Conversion crypto → fiat pour paiement charges réelles
+- **Comptabilité** : Compte 627 - Services bancaires et assimilés
+- **Régulation** : Conforme ACPR (Autorité de Contrôle Prudentiel)
+- **OpenCollective** : Transparence financière publique
+
+#### **🎯 Transactions d'Initialisation - Apports en Capital**
+
+##### **Apport Capital Machine**
+```
+UPLANET:${UPLANETG1PUB:0:8}:$CAPTYOUSER:APPORT_CAPITAL_MACHINE:${MACHINE_VALUE_ZEN}ZEN
+```
+- **Nature juridique** : Apport en nature (matériel informatique)
+- **Comptabilité** : Compte 21 - Immobilisations corporelles
+- **Fiscal** : Amortissement dégressif sur 3 ans
+- **Évaluation** : Valeur vénale au moment de l'apport
+
+##### **Initialisation Portefeuilles Système**
+```
+UPLANET:${UPLANETG1PUB:0:8}:INIT:$wallet_name
+UPLANET:${UPLANETG1PUB:0:8}:$IPFSNODEID:NODEINIT
+```
+- **Nature juridique** : Dotation initiale de fonctionnement (1 Ğ1 = 0 Ẑen)
+- **Comptabilité** : Compte 512 - Banques (virements internes)
+- **Fiscal** : Neutre (pas de création de valeur)
+
+#### **📱 Transactions de Services - Abonnements**
+
+##### **MULTIPASS (NOSTR) - Abonnement Mensuel**
+```
+UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:MULTIPASS (Transaction primale)
+UPLANET:${UPLANETG1PUB:0:8}:$YOUSER:NCARD:HT (Abonnement HT)
+UPLANET:${UPLANETG1PUB:0:8}:$YOUSER:TVA (TVA 20%)
+```
+- **Nature juridique** : Prestation de services numériques
+- **Comptabilité** : Compte 706 - Prestations de services
+- **TVA** : 20% (services numériques B2C France)
+- **Tarif** : 1 Ẑ/semaine HT + TVA
+
+##### **ZEN Cards - Parts Sociales + Abonnement**
+```
+UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:PRIMO (Transaction primale)
+UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZCARD:HT (Abonnement HT)
+UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:TVA (TVA 20%)
+```
+- **Nature juridique** : Parts sociales (50 Ẑ) + abonnement services
+- **Comptabilité** : Compte 101 - Capital social + Compte 706 - Services
+- **Fiscal** : Parts = capital (non imposable) / Services = CA (imposable)
+- **Coopérative** : Droits de vote et participation aux bénéfices
+
+#### **🏦 Transactions Coopératives - Répartition 3x1/3**
+
+##### **Provision Fiscale**
+```
+UPLANET:${UPLANETG1PUB:0:8}:COOPERATIVE:TAX_PROVISION
+```
+- **Nature juridique** : Provision pour impôts (IS + CVAE)
+- **Comptabilité** : Compte 1512 - Provisions pour impôts
+- **Taux** : 15%/25% IS (selon CA) + 0.5% CVAE (estimation)
+
+##### **Trésorerie Coopérative**
+```
+UPLANET:${UPLANETG1PUB:0:8}:COOPERATIVE:TREASURY
+```
+- **Nature juridique** : Réserves de trésorerie (33.33%)
+- **Comptabilité** : Compte 512 - Banques
+- **Usage** : Fonds de roulement et investissements
+
+##### **R&D (Recherche & Développement)**
+```
+UPLANET:${UPLANETG1PUB:0:8}:COOPERATIVE:RND
+```
+- **Nature juridique** : Investissement R&D (33.33%)
+- **Comptabilité** : Compte 20 - Immobilisations incorporelles
+- **Fiscal** : Crédit d'impôt recherche (CIR) applicable
+
+##### **Gestion d'Actifs**
+```
+UPLANET:${UPLANETG1PUB:0:8}:COOPERATIVE:ASSETS
+```
+- **Nature juridique** : Portefeuille d'investissement (33.34%)
+- **Comptabilité** : Compte 50 - Valeurs mobilières de placement
+- **Fiscal** : Plus-values soumises à IS
+
+#### **🎮 Transactions Ludiques - Économie Circulaire**
+
+##### **PalPay - Redistribution de Jeu**
+```
+UPLANET:${UPLANETG1PUB:0:8}:PALPAY:${PLAYER}
+```
+- **Nature juridique** : Redistribution gains de jeu (économie circulaire)
+- **Comptabilité** : Compte 658 - Charges diverses de gestion courante
+- **Fiscal** : Non imposable (redistribution interne)
+
+##### **Épinglage PIN**
+```
+UPLANET:${UPLANETG1PUB:0:8}:PIN:${TOPIN}:${PLAYER}
+```
+- **Nature juridique** : Service de mise en avant de contenu
+- **Comptabilité** : Compte 706 - Prestations de services
+- **TVA** : 20% (service numérique)
+
+#### **🛡️ Transactions de Sécurité - Gestion des Intrusions**
+
+##### **Redirection Fonds Intrusifs**
+```
+UPLANET:${UPLANETG1PUB:0:8}:INTRUSION:${TXIPUBKEY:0:8}
+```
+- **Nature juridique** : Récupération de fonds non autorisés
+- **Comptabilité** : Compte 758 - Produits divers de gestion courante
+- **Fiscal** : Imposable comme produit exceptionnel
+- **Légal** : Conforme protection des systèmes d'information (Art. 323-1 CP)
+
+#### **📋 Conformité Réglementaire**
+
+##### **Traçabilité Obligatoire**
+- **Format standardisé** : `UPLANET:${UPLANETG1PUB:0:8}:TYPE:DETAILS`
+- **Limite** : 256 caractères (optimisation blockchain)
+- **Audit** : Traçabilité complète pour contrôles fiscaux
+
+##### **Déclarations Fiscales**
+- **TVA** : Déclaration mensuelle (CA3)
+- **IS** : Impôt sur les sociétés (15% si CA < 250k€, 25% au-delà)
+- **CVAE** : Cotisation sur la valeur ajoutée des entreprises
+- **Social** : URSSAF pour rémunérations
+
+##### **Conformité Crypto**
+- **PACTE** : Loi relative à la croissance et la transformation des entreprises
+- **AMF** : Autorité des Marchés Financiers (prestataires crypto)
+- **ACPR** : Contrôle prudentiel (conversion fiat)
 
 ### **LE PONT DE LIQUIDITÉ : CONVERSION ẐEN → EUROS**
 C'est un service de rachat offert par la coopérative.

@@ -508,7 +508,7 @@ initialize_node_captain_wallet() {
     
     # Use PAYforSURE.sh
     local transfer_result
-    transfer_result=$("${MY_PATH}/tools/PAYforSURE.sh" "$SOURCE_WALLET" "$transfer_amount_g1" "$pubkey" "UPLANET:INIT:$wallet_type" 2>/dev/null)
+    transfer_result=$("${MY_PATH}/tools/PAYforSURE.sh" "$SOURCE_WALLET" "$transfer_amount_g1" "$pubkey" "UPLANET:${UPLANETG1PUB:0:8}:INIT:$wallet_type" 2>/dev/null)
     
     if [[ $? -eq 0 ]]; then
         echo -e "${GREEN}✅ Transaction réussie pour $wallet_type${NC}"
@@ -555,7 +555,7 @@ initialize_wallet() {
     
     # Use PAYforSURE.sh like in the cooperative script
     local transfer_result
-    transfer_result=$("${MY_PATH}/tools/PAYforSURE.sh" "$SOURCE_WALLET" "$transfer_amount_g1" "$pubkey" "UPLANET:INIT:$wallet_name" 2>/dev/null)
+    transfer_result=$("${MY_PATH}/tools/PAYforSURE.sh" "$SOURCE_WALLET" "$transfer_amount_g1" "$pubkey" "UPLANET:${UPLANETG1PUB:0:8}:INIT:$wallet_name" 2>/dev/null)
     
     if [[ $? -eq 0 ]]; then
         echo -e "${GREEN}✅ Transaction réussie pour $wallet_name${NC}"

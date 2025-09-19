@@ -362,7 +362,7 @@ control_primal_transactions() {
                 fi
                 
                 # Rediriger les fonds vers UPLANETNAME.INTRUSION
-                ${MY_PATH}/PAYforSURE.sh "${wallet_dunikey}" "${TXIAMOUNT}" "${intrusion_pubkey}" "INTRUSION:REDIRECT:UPLANETNAME.INTRUSION:${TXIPUBKEY:0:8}" 2>/dev/null
+                ${MY_PATH}/PAYforSURE.sh "${wallet_dunikey}" "${TXIAMOUNT}" "${intrusion_pubkey}" "UPLANET:${UPLANETG1PUB:0:8}:INTRUSION:${TXIPUBKEY:0:8}" 2>/dev/null
                 
                 if [[ $? -eq 0 ]]; then
                     echo "INTRUSION REDIRECTED: ${TXIAMOUNT} G1 sent to UPLANETNAME.INTRUSION (${intrusion_pubkey:0:8})"

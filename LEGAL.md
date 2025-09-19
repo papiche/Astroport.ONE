@@ -56,7 +56,7 @@ La coopérative peut mandater des **hôtes fiscaux** (tels que OpenCollective) p
 ### **Article 7 : La Participation Aux Frais (PAF) et la Rémunération du Capitaine**
 1.  **PAF de l'Armateur :** Le Capitaine paie une PAF hebdomadaire de **14 Ẑen** au NODE (Armateur) pour couvrir les coûts d'infrastructure.
 2.  **Rémunération du Capitaine :** Le Capitaine est rémunéré pour son travail de maintenance à hauteur de **2x la PAF (28 Ẑen)** par semaine, versée sur son **portefeuille CAPTAIN dédié**.
-3.  **Hiérarchie de Paiement :** La PAF est prélevée en priorité sur le **MULTIPASS** (revenus) du Capitaine. Si insuffisant, le solde est prélevé sur la **trésorerie coopérative** (`UPLANET.CASH`). La **ZenCard** (capital social) ne sert plus aux charges opérationnelles.
+3.  **Hiérarchie de Paiement :** La PAF est prélevée en priorité sur le **MULTIPASS** (revenus) du Capitaine. Si insuffisant, le solde est prélevé sur la **trésorerie coopérative** (`UPLANETNAME.TREASURY`). La **ZenCard** (capital social) ne sert plus aux charges opérationnelles.
 
 ### **Article 8 : Gestion du Surplus**
 Si les revenus locatifs collectés par un Capitaine excèdent ses charges (TVA + PAF), après versement de sa rémunération (2x PAF) sur son **portefeuille CAPTAIN dédié**, le **surplus est automatiquement transféré** au portefeuille d'exploitation de la coopérative (`UPLANETNAME`).
@@ -67,11 +67,14 @@ La conversion des Ẑen en Euros est un service offert par la coopérative. Pour
 ### **Article 10 : Provision Fiscale Automatique**
 La coopérative provisionne automatiquement la **TVA (20%)** sur les services et l'**Impôt sur les Sociétés (15%/25%)** sur les bénéfices dans le portefeuille `UPLANETNAME.IMPOT`.
 
+### **Article 11 : Sécurité Anti-Intrusion**
+Toutes les transactions vers les portefeuilles coopératifs doivent provenir de **sources primales autorisées**. Les fonds provenant de sources non autorisées sont automatiquement redirigés vers `UPLANETNAME.INTRUSION` pour centraliser leur gestion et garantir la pureté comptable de l'écosystème.
+
 ---
 
 ## **TITRE IV : PORTEFEUILLES ET RÔLES**
 
-### **Article 11 : Portefeuilles Centraux**
+### **Article 12 : Portefeuilles Centraux**
 | Portefeuille | Rôle | Fonction |
 | :--- | :--- | :--- |
 | **`UPLANETNAME.G1`** | **Réserve & Stabilité** | Émet et "brûle" les Ẑen lors des conversions avec l'Euro. |
@@ -82,8 +85,9 @@ La coopérative provisionne automatiquement la **TVA (20%)** sur les services et
 | **`UPLANETNAME.RND`** | **R&D (1/3)** | Financement du G1FabLab. |
 | **`UPLANETNAME.ASSETS`** | **Actifs Réels (1/3)** | Acquisition des forêts-jardins. |
 | **`UPLANETNAME.CAPTAIN`** | **Rémunération Capitaine** | Stocke la rémunération hebdomadaire du capitaine. |
+| **`UPLANETNAME.INTRUSION`** | **Sécurité Anti-Intrusion** | Centralise les fonds provenant de transactions non autorisées. |
 
-### **Article 12 : Portefeuilles Membres**
+### **Article 13 : Portefeuilles Membres**
 | Portefeuille | Rôle | Fonction |
 | :--- | :--- | :--- |
 | **`MULTIPASS`** | **Compte Courant d'Activité** | Reçoit les revenus (likes, services), collecte les loyers, paie les charges. |
@@ -94,7 +98,7 @@ La coopérative provisionne automatiquement la **TVA (20%)** sur les services et
 
 ## **TITRE V : LE PONT DE LIQUIDITÉ**
 
-### **Article 13 : Principe et Processus**
+### **Article 14 : Principe et Processus**
 La coopérative propose un service de **rachat de Ẑen en Euros**, conditionné par la trésorerie disponible et les règles statutaires. Le processus est le suivant :
 1.  **Demande & Justification** (via Terminal Astroport)
 2.  **Validation Automatisée** (conformité, fonds, règle du 1/3)
@@ -105,10 +109,10 @@ La coopérative propose un service de **rachat de Ẑen en Euros**, conditionné
 
 ## **TITRE VI : GOUVERNANCE ET EXPANSION**
 
-### **Article 14 : Actes Fondateurs**
+### **Article 15 : Actes Fondateurs**
 La **Primo Transaction** est l'acte notarié décentralisé qui lie un membre à un contrat IPFS via la blockchain. Le **UPassport** est le titre de propriété numérique du sociétaire.
 
-### **Article 15 : Expansion Fractale**
+### **Article 16 : Expansion Fractale**
 Lorsque les fonds d'allocation (`.RND`, `.ASSETS`) atteignent une masse critique, l'Assemblée Générale peut voter la **création d'une SCIC "fille"** autonome, créant un écosystème de coopératives interdépendantes.
 
 ---
@@ -150,6 +154,7 @@ graph TD
         UPLANETNAME_TREASURY["UPLANETNAME.TREASURY<br><b>Trésorerie (1/3)</b>"]:::allocationType
         UPLANETNAME_ASSETS["UPLANETNAME.ASSETS<br><b>Projets (1/3)</b>"]:::allocationType
         UPLANETNAME_RND["UPLANETNAME.RND<br><b>R&D (1/3)</b>"]:::allocationType
+        UPLANETNAME_INTRUSION["UPLANETNAME.INTRUSION<br><b>Sécurité Anti-Intrusion</b>"]:::cooperativeCentral
         
         MB_SCIC -- "2. Échange € → Ẑen" --> UPLANETNAME_G1
         UPLANETNAME_G1 -- "3. Émission Ẑen" --> UPLANETNAME_SOCIETY
