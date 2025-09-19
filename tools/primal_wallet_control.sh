@@ -9,7 +9,7 @@
 ################################################################################
 # This script monitors wallet transactions and controls that incoming
 # transactions come from wallets with the same primal source.
-# It implements intrusion detection with automatic redirection to UPLANETNAME_G1.
+# It implements intrusion detection with automatic redirection to UPLANETNAME.INTRUSION.
 ################################################################################
 
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -124,6 +124,43 @@ get_wallet_history() {
     return $([[ $success == true ]])
 }
 
+# Function to create INTRUSION wallet if it doesn't exist
+create_intrusion_wallet() {
+    local intrusion_dunikey="$HOME/.zen/game/uplanet.INTRUSION.dunikey"
+    
+    # Check if wallet already exists
+    if [[ -f "$intrusion_dunikey" ]]; then
+        return 0  # Wallet already exists
+    fi
+    
+    echo "Creating UPLANETNAME.INTRUSION wallet..."
+    
+    # Create directory if it doesn't exist
+    local wallet_dir=$(dirname "$intrusion_dunikey")
+    [[ ! -d "$wallet_dir" ]] && mkdir -p "$wallet_dir"
+    
+    # Create wallet using keygen (same pattern as UPLANET.init.sh)
+    if [[ -x "${MY_PATH}/keygen" ]]; then
+        "${MY_PATH}/keygen" -t duniter -o "$intrusion_dunikey" "${UPLANETNAME}.INTRUSION" "${UPLANETNAME}.INTRUSION"
+    else
+        echo "ERROR: keygen tool not found at ${MY_PATH}/keygen"
+        return 1
+    fi
+    
+    # Set proper permissions
+    chmod 600 "$intrusion_dunikey" 2>/dev/null
+    
+    if [[ -f "$intrusion_dunikey" ]]; then
+        local pubkey=$(cat "$intrusion_dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+        echo "✅ UPLANETNAME.INTRUSION wallet created successfully"
+        echo "🔑 Public key: ${pubkey:0:8}..."
+        return 0
+    else
+        echo "❌ Failed to create UPLANETNAME.INTRUSION wallet"
+        return 1
+    fi
+}
+
 # Function to send alert email
 send_alert_email() {
     local player_email="$1"
@@ -167,7 +204,7 @@ send_alert_email() {
     fi
 }
 
-# Note: All intrusions are redirected to UPLANETNAME_G1 to avoid loops and simplify logic
+# Note: All intrusions are redirected to UPLANETNAME.INTRUSION to centralize intrusion management
 # No refunds to sender to prevent potential transaction loops
 
 # Function to count existing intrusions from transaction history
@@ -255,7 +292,7 @@ control_primal_transactions() {
     # Count existing intrusions from transaction history (no cache dependency)
     local existing_intrusions=$(count_existing_intrusions "${wallet_pubkey}" "${master_primal}" "$temp_history_file")
     echo "Existing intrusions detected from history: $existing_intrusions"
-    echo "Policy: ALL intrusions = REDIRECT to UPLANETNAME_G1 (no refunds to avoid loops)"
+    echo "Policy: ALL intrusions = REDIRECT to UPLANETNAME.INTRUSION (no refunds to avoid loops)"
 
     # Convert JSON to inline format for processing new transactions
     local inline_history_file=$(mktemp)
@@ -305,23 +342,37 @@ control_primal_transactions() {
             if [[ "$is_valid_primal" == false ]]; then
                 echo "PRIMAL WALLET INTRUSION ALERT for ${wallet_pubkey:0:8} from ${TXIPUBKEY:0:8} (primal: ${tx_primal:0:8})"
 
-                # TOUTES LES INTRUSIONS: Redirection directe vers UPLANETNAME_G1 (évite les boucles)
+                # TOUTES LES INTRUSIONS: Redirection directe vers UPLANETNAME.INTRUSION (centralise la gestion)
                 local current_total=$((existing_intrusions + new_intrusions + 1))
-                echo "INTRUSION DETECTED ($current_total) - REDIRECTING TO UPLANETNAME_G1"
+                echo "INTRUSION DETECTED ($current_total) - REDIRECTING TO UPLANETNAME.INTRUSION"
                 echo "💡 INFO: Versements Ğ1 doivent être faits vers UPLANETNAME_G1 uniquement"
                 
-                # Rediriger les fonds vers UPLANETNAME_G1 (master_primal)
-                ${MY_PATH}/PAYforSURE.sh "${wallet_dunikey}" "${TXIAMOUNT}" "${master_primal}" "INTRUSION:REDIRECT:UPLANETNAME_G1:${TXIPUBKEY:0:8}" 2>/dev/null
+                # Ensure INTRUSION wallet exists, create if necessary
+                if ! create_intrusion_wallet; then
+                    echo "ERROR: Cannot create INTRUSION wallet, aborting intrusion handling"
+                    continue
+                fi
+                
+                # Get INTRUSION wallet public key
+                local intrusion_pubkey=$(cat "$HOME/.zen/game/uplanet.INTRUSION.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+                
+                if [[ -z "$intrusion_pubkey" ]]; then
+                    echo "ERROR: Cannot extract public key from INTRUSION wallet"
+                    continue
+                fi
+                
+                # Rediriger les fonds vers UPLANETNAME.INTRUSION
+                ${MY_PATH}/PAYforSURE.sh "${wallet_dunikey}" "${TXIAMOUNT}" "${intrusion_pubkey}" "INTRUSION:REDIRECT:UPLANETNAME.INTRUSION:${TXIPUBKEY:0:8}" 2>/dev/null
                 
                 if [[ $? -eq 0 ]]; then
-                    echo "INTRUSION REDIRECTED: ${TXIAMOUNT} G1 sent to UPLANETNAME_G1 (${master_primal:0:8})"
-                    echo "💰 Fonds intrusifs récupérés par la coopérative UPlanet"
+                    echo "INTRUSION REDIRECTED: ${TXIAMOUNT} G1 sent to UPLANETNAME.INTRUSION (${intrusion_pubkey:0:8})"
+                    echo "💰 Fonds intrusifs centralisés dans le portefeuille INTRUSION"
                     new_intrusions=$((new_intrusions + 1))
                     
                     # Send alert for redirection (always notify)
                     send_alert_email "${player_email}" "${wallet_pubkey}" "${TXIPUBKEY}" "${TXIAMOUNT}" "${master_primal}" "$current_total" "redirection"
                 else
-                    echo "ERROR: Failed to redirect intrusion to UPLANETNAME_G1"
+                    echo "ERROR: Failed to redirect intrusion to UPLANETNAME.INTRUSION"
                 fi
             else
                 if [[ "$is_captain" == true ]]; then
@@ -339,7 +390,7 @@ control_primal_transactions() {
     local total_intrusions=$((existing_intrusions + new_intrusions))
     if [[ $new_intrusions -gt 0 ]]; then
         echo "NEW INTRUSIONS DETECTED: $new_intrusions (Total: $total_intrusions)"
-        echo "💡 INFO: Toutes les intrusions redirigées vers UPLANETNAME_G1"
+        echo "💡 INFO: Toutes les intrusions redirigées vers UPLANETNAME.INTRUSION"
         echo "💰 Fonds intrusifs récupérés par la coopérative UPlanet"
         echo "📧 Alertes email envoyées à ${player_email}"
     else

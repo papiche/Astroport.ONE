@@ -47,6 +47,7 @@ declare -A COOPERATIVE_WALLETS=(
     ["UPLANETNAME.ASSETS"]="$HOME/.zen/game/uplanet.ASSETS.dunikey"
     ["UPLANETNAME.IMPOT"]="$HOME/.zen/game/uplanet.IMPOT.dunikey"
     ["UPLANETNAME.CAPTAIN"]="$HOME/.zen/game/uplanet.captain.dunikey"
+    ["UPLANETNAME.INTRUSION"]="$HOME/.zen/game/uplanet.INTRUSION.dunikey"
 )
 
 # Node and Captain wallets to check and initialize (if they exist)
@@ -71,6 +72,7 @@ usage() {
     echo -e "  • UPLANETNAME.ASSETS (Actifs)"
     echo -e "  • UPLANETNAME.IMPOT (Fiscalité)"
     echo -e "  • UPLANETNAME.CAPTAIN (Rémunération capitaine)"
+    echo -e "  • UPLANETNAME.INTRUSION (Fonds d'intrusions détectées)"
     echo -e "  • NODE (Armateur - si existant)"
     echo -e "  • CAPTAIN (si configuré)"
     echo ""
@@ -149,16 +151,16 @@ check_source_wallet() {
     
     echo -e "${BLUE}Solde actuel:${NC} ${YELLOW}$source_balance Ğ1${NC}"
     
-    # Calculate required amount (6 cooperative wallets + potential node/captain)
-    local required_amount=6
+    # Calculate required amount (8 cooperative wallets + potential node/captain)
+    local required_amount=8
     local available_balance=$(echo "$source_balance" | bc -l 2>/dev/null || echo "0")
     
     # Calculate how many wallets can be initialized
     WALLETS_TO_INITIALIZE=$(echo "$available_balance" | bc -l | cut -d. -f1)
     if [[ -z "$WALLETS_TO_INITIALIZE" ]] || [[ "$WALLETS_TO_INITIALIZE" -lt 1 ]]; then
         WALLETS_TO_INITIALIZE=0
-    elif [[ "$WALLETS_TO_INITIALIZE" -gt 8 ]]; then
-        WALLETS_TO_INITIALIZE=8  # Max: 6 cooperative + NODE + CAPTAIN
+    elif [[ "$WALLETS_TO_INITIALIZE" -gt 10 ]]; then
+        WALLETS_TO_INITIALIZE=10  # Max: 8 cooperative + NODE + CAPTAIN
     fi
     
     if (( $(echo "$available_balance < 1" | bc -l) )); then
@@ -170,7 +172,7 @@ check_source_wallet() {
     fi
     
     echo -e "${GREEN}✅ Portefeuille source vérifié avec succès${NC}"
-    if [[ "$WALLETS_TO_INITIALIZE" -ge 6 ]]; then
+    if [[ "$WALLETS_TO_INITIALIZE" -ge 8 ]]; then
         echo -e "${BLUE}Solde suffisant pour initialiser ${CYAN}tous les portefeuilles coopératifs${NC}"
     else
         echo -e "${BLUE}Solde suffisant pour initialiser ${CYAN}$WALLETS_TO_INITIALIZE portefeuilles${NC}"
@@ -241,6 +243,9 @@ create_missing_wallet() {
             ;;
         "UPLANETNAME.CAPTAIN")
             "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.${CAPTAINEMAIL}" "${UPLANETNAME}.${CAPTAINEMAIL}"
+            ;;
+        "UPLANETNAME.INTRUSION")
+            "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.INTRUSION" "${UPLANETNAME}.INTRUSION"
             ;;
         *)
             echo -e "${RED}❌ Type de portefeuille non reconnu: $wallet_name${NC}"

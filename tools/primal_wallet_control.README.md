@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `primal_wallet_control.sh` script provides a generic solution for monitoring wallet transactions and ensuring that incoming transactions come from wallets with the same primal source. This implements a security system that detects unauthorized transactions and automatically redirects them to UPLANETNAME_G1 to prevent transaction loops.
+The `primal_wallet_control.sh` script provides a generic solution for monitoring wallet transactions and ensuring that incoming transactions come from wallets with the same primal source. This implements a security system that detects unauthorized transactions and automatically redirects them to a dedicated UPLANETNAME.INTRUSION wallet for centralized intrusion management.
 
 ## Context and Purpose
 
@@ -177,9 +177,10 @@ This implementation extracts and generalizes the primal transaction control func
 - **Loop Prevention**: Avoids transaction loops by redirecting instead of refunding
 
 #### 2. Security Enhancements
-- **Systematic Redirection**: All intrusions redirected to UPLANETNAME_G1 for cooperative recovery
+- **Systematic Redirection**: All intrusions redirected to UPLANETNAME.INTRUSION for centralized management
+- **Automatic Wallet Creation**: Creates UPLANETNAME.INTRUSION wallet automatically if it doesn't exist
 - **Email Alerts**: Sends detailed alerts for all intrusions with redirection notifications
-- **Fund Recovery**: Transfers intrusive amounts to cooperative treasury (UPLANETNAME_G1)
+- **Fund Centralization**: Transfers intrusive amounts to dedicated INTRUSION wallet for analysis
 - **Loop Prevention**: No refunds to sender to avoid potential transaction loops
 - **History-based Detection**: Analyzes transaction history to count existing intrusions without cache
 
@@ -191,7 +192,7 @@ This implementation extracts and generalizes the primal transaction control func
 ## Features
 
 - **Primal Transaction Verification**: Uses `silkaj --json money primal` to verify the primal source of incoming transactions
-- **Automatic Redirection**: Automatically redirects unauthorized transactions to UPLANETNAME_G1
+- **Automatic Redirection**: Automatically redirects unauthorized transactions to UPLANETNAME.INTRUSION
 - **Intrusion Detection**: Tracks intrusion attempts for monitoring and cooperative fund recovery
 - **Email Alerts**: Sends detailed alerts for all intrusions with redirection notifications
 - **Smart Cache Usage**: Uses existing cache files when available and recent for performance optimization
@@ -204,9 +205,10 @@ This implementation extracts and generalizes the primal transaction control func
 
 1. **`get_primal_source()`** - Retrieves primal source using silkaj
 2. **`get_wallet_history()`** - Gets transaction history with retry logic
-3. **`send_alert_email()`** - Sends email alerts using templates
-4. **`count_existing_intrusions()`** - Analyzes transaction history to count existing intrusion transactions
-5. **`control_primal_transactions()`** - Main control function with redirection logic
+3. **`create_intrusion_wallet()`** - Creates UPLANETNAME.INTRUSION wallet if it doesn't exist
+4. **`send_alert_email()`** - Sends email alerts using templates
+5. **`count_existing_intrusions()`** - Analyzes transaction history to count existing intrusion transactions
+6. **`control_primal_transactions()`** - Main control function with redirection logic
 
 ### How It Works
 
@@ -215,9 +217,10 @@ This implementation extracts and generalizes the primal transaction control func
 3. **Existing Intrusion Analysis**: Scans transaction history for existing intrusion transactions to avoid cache dependency
 4. **Primal Source Verification**: For each incoming transaction, verifies the primal source using `silkaj --json money primal` (or from cache if recent)
 5. **Intrusion Detection**: Compares the primal source with the expected master primal
-6. **Automatic Redirection**: If an intrusion is detected, automatically redirects the transaction to UPLANETNAME_G1
-7. **Alert System**: Sends email alerts for all intrusions with redirection notifications
-8. **Fund Recovery**: All intrusive amounts are recovered by the cooperative treasury
+6. **INTRUSION Wallet Creation**: Automatically creates UPLANETNAME.INTRUSION wallet if it doesn't exist
+7. **Automatic Redirection**: If an intrusion is detected, automatically redirects the transaction to UPLANETNAME.INTRUSION
+8. **Alert System**: Sends email alerts for all intrusions with redirection notifications
+9. **Fund Centralization**: All intrusive amounts are centralized in the dedicated INTRUSION wallet
 
 ## Usage
 
@@ -277,10 +280,11 @@ ${MY_PATH}/../tools/primal_wallet_control.sh \
 - **Smart Cache Usage**: Uses existing cache files when available and recent for performance optimization
 - **Real-time Fallback**: Falls back to live verification when cache is not available or outdated
 - **History-based Intrusion Detection**: Analyzes transaction history to count existing intrusions without cache dependency
-- **Automatic Redirection**: Unauthorized transactions are immediately redirected to UPLANETNAME_G1
+- **Automatic Wallet Creation**: Creates UPLANETNAME.INTRUSION wallet automatically if needed
+- **Automatic Redirection**: Unauthorized transactions are immediately redirected to UPLANETNAME.INTRUSION
 - **Loop Prevention**: No refunds to sender to avoid potential transaction loops
 - **Email Notifications**: Detailed alerts for all security events with redirection notifications
-- **Fund Recovery**: All intrusive amounts recovered by cooperative treasury (UPLANETNAME_G1)
+- **Fund Centralization**: All intrusive amounts centralized in dedicated INTRUSION wallet for analysis
 
 ## Dependencies
 
@@ -291,6 +295,7 @@ ${MY_PATH}/../tools/primal_wallet_control.sh \
 - `mailjet.sh` - Email notifications
 - `PAYforSURE.sh` - Secure payments
 - `duniter_getnode.sh` - BMAS node discovery
+- `keygen` - Wallet creation tool
 
 ### Cache Files
 The script uses existing cache files for performance optimization:
@@ -343,7 +348,7 @@ The script provides detailed logging for:
 - Primal verification results
 - Intrusion detection
 - Redirection operations
-- Fund recovery to cooperative treasury
+- Fund centralization to INTRUSION wallet
 
 ## Security Considerations
 

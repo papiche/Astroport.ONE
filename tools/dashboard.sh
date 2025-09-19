@@ -203,6 +203,26 @@ show_system_wallets_summary() {
             echo -e "  ⭐ UPLANETNAME.SOCIETY: ${YELLOW}$society_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC})"
         fi
     fi
+    
+    # UPLANETNAME.INTRUSION (Fonds d'intrusions détectées)
+    if [[ -f "$HOME/.zen/game/uplanet.INTRUSION.dunikey" ]]; then
+        local intrusion_pubkey=$(cat "$HOME/.zen/game/uplanet.INTRUSION.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+        if [[ -n "$intrusion_pubkey" ]]; then
+            local intrusion_balance=$(get_wallet_balance "$intrusion_pubkey")
+            local intrusion_zen=$(calculate_zen_balance "$intrusion_balance")
+            local intrusion_str=$(safe_printf "%.2f" "$intrusion_balance")
+            local zen_str=$(safe_printf "%.0f" "$intrusion_zen")
+            
+            # Highlight if there are intrusion funds
+            if (( $(echo "$intrusion_balance > 1" | bc -l 2>/dev/null || echo 0) )); then
+                echo -e "  🚨 UPLANETNAME.INTRUSION: ${RED}$intrusion_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC}) ${YELLOW}⚠️${NC}"
+            else
+                echo -e "  🛡️  UPLANETNAME.INTRUSION: ${GREEN}$intrusion_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC})"
+            fi
+        fi
+    else
+        echo -e "  🚨 UPLANETNAME.INTRUSION: ${RED}Non initialisé${NC} ${YELLOW}⚠️${NC}"
+    fi
 }
 
 show_user_statistics() {
@@ -312,6 +332,20 @@ show_captain_alerts() {
     # Vérification portefeuilles système
     if [[ ! -f "$HOME/.zen/tmp/UPLANETG1PUB" ]]; then
         alerts+=("💰 Portefeuille UPLANETG1PUB non configuré")
+    fi
+    
+    # Vérification portefeuille INTRUSION
+    if [[ ! -f "$HOME/.zen/game/uplanet.INTRUSION.dunikey" ]]; then
+        alerts+=("🚨 Portefeuille INTRUSION non initialisé")
+    else
+        local intrusion_pubkey=$(cat "$HOME/.zen/game/uplanet.INTRUSION.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+        if [[ -n "$intrusion_pubkey" ]]; then
+            local intrusion_balance=$(get_wallet_balance "$intrusion_pubkey")
+            if (( $(echo "$intrusion_balance > 1" | bc -l 2>/dev/null || echo 0) )); then
+                local intrusion_str=$(safe_printf "%.2f" "$intrusion_balance")
+                alerts+=("🚨 Intrusions détectées: ${intrusion_str} Ğ1 collectés")
+            fi
+        fi
     fi
     
     # Affichage des alertes
