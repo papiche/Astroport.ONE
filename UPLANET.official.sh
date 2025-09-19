@@ -77,8 +77,16 @@ check_balance() {
     local initial_pending=0
     
     if [[ $? -eq 0 ]]; then
-        initial_blockchain=$(echo "$initial_balance_json" | jq -r '.balances.blockchain // 0' 2>/dev/null)
-        initial_pending=$(echo "$initial_balance_json" | jq -r '.balances.pending // 0' 2>/dev/null)
+        # silkaj retourne les montants en centimes, il faut diviser par 100
+        local initial_blockchain_centimes=$(echo "$initial_balance_json" | jq -r '.balances.blockchain // 0' 2>/dev/null)
+        local initial_pending_centimes=$(echo "$initial_balance_json" | jq -r '.balances.pending // 0' 2>/dev/null)
+        
+        # Valider les valeurs avant de les passer à bc
+        [[ -z "$initial_blockchain_centimes" || "$initial_blockchain_centimes" == "null" ]] && initial_blockchain_centimes="0"
+        [[ -z "$initial_pending_centimes" || "$initial_pending_centimes" == "null" ]] && initial_pending_centimes="0"
+        
+        initial_blockchain=$(echo "scale=2; $initial_blockchain_centimes / 100" | bc -l)
+        initial_pending=$(echo "scale=2; $initial_pending_centimes / 100" | bc -l)
         echo -e "${CYAN}📊 Solde initial - Blockchain: ${initial_blockchain} Ğ1, Pending: ${initial_pending} Ğ1${NC}"
     else
         echo -e "${RED}❌ Impossible de récupérer le solde initial${NC}"
@@ -89,22 +97,25 @@ check_balance() {
         local balance_json=$(silkaj --json money balance "$wallet_pubkey" 2>/dev/null)
         
         if [[ $? -eq 0 ]]; then
-            local pending=$(echo "$balance_json" | jq -r '.balances.pending // 0' 2>/dev/null)
-            local total=$(echo "$balance_json" | jq -r '.balances.total // 0' 2>/dev/null)
-            local blockchain=$(echo "$balance_json" | jq -r '.balances.blockchain // 0' 2>/dev/null)
+            # silkaj retourne les montants en centimes, il faut diviser par 100
+            local pending_centimes=$(echo "$balance_json" | jq -r '.balances.pending // 0' 2>/dev/null)
+            local total_centimes=$(echo "$balance_json" | jq -r '.balances.total // 0' 2>/dev/null)
+            local blockchain_centimes=$(echo "$balance_json" | jq -r '.balances.blockchain // 0' 2>/dev/null)
             
-            if [[ "$pending" == "0" || "$pending" == "null" ]]; then
-                # Calculer le solde attendu : blockchain initial - pending initial
-                local expected_balance=$(echo "scale=2; $initial_blockchain - $initial_pending" | bc -l)
-                local tolerance=0.01  # Tolérance de 0.01 Ğ1 pour les arrondis
-                
-                if (( $(echo "scale=2; $total >= ($expected_balance - $tolerance)" | bc -l) )) && \
-                   (( $(echo "scale=2; $total <= ($expected_balance + $tolerance)" | bc -l) )); then
-                    echo -e "${GREEN}✅ Transaction confirmée - Solde: ${total} Ğ1 (${expected_balance} Ğ1 attendus)${NC}"
-                    return 0
-                else
-                    echo -e "${YELLOW}⏳ Transaction en cours... Solde: ${total} Ğ1, Attendu: ${expected_balance} Ğ1 (attente: ${wait_time}s)${NC}"
-                fi
+            # Valider les valeurs avant de les passer à bc
+            [[ -z "$pending_centimes" || "$pending_centimes" == "null" ]] && pending_centimes="0"
+            [[ -z "$total_centimes" || "$total_centimes" == "null" ]] && total_centimes="0"
+            [[ -z "$blockchain_centimes" || "$blockchain_centimes" == "null" ]] && blockchain_centimes="0"
+            
+            local pending=$(echo "scale=2; $pending_centimes / 100" | bc -l)
+            local total=$(echo "scale=2; $total_centimes / 100" | bc -l)
+            local blockchain=$(echo "scale=2; $blockchain_centimes / 100" | bc -l)
+            
+            if [[ "$pending" == "0" || "$pending" == "null" || "$pending" == "0.00" ]]; then
+                # Quand pending = 0, la transaction est confirmée
+                # Le solde total devrait être stable
+                echo -e "${GREEN}✅ Transaction confirmée - Solde: ${total} Ğ1${NC}"
+                return 0
             else
                 echo -e "${YELLOW}⏳ Transaction en cours... Pending: ${pending} Ğ1, Total: ${total} Ğ1 (attente: ${wait_time}s)${NC}"
             fi
@@ -117,6 +128,10 @@ check_balance() {
     done
     
     echo -e "${RED}❌ Timeout: La transaction n'a pas été confirmée dans les 20 minutes${NC}"
+    
+    # Envoyer une alerte de timeout
+    send_alert "BLOCKCHAIN_TIMEOUT" "$USER_EMAIL" "$TRANSACTION_TYPE" "$TRANSACTION_AMOUNT" "$CURRENT_STEP" "Transaction timeout after ${max_wait} seconds. Wallet: ${wallet_pubkey:0:8}..."
+    
     return 1
 }
 
@@ -126,12 +141,100 @@ zen_to_g1() {
     echo "scale=2; $zen_amount / 10" | bc -l
 }
 
+# Fonction pour envoyer une alerte par email au CAPTAINEMAIL
+send_alert() {
+    local alert_type="$1"
+    local email="$2"
+    local type="$3"
+    local montant="$4"
+    local step="$5"
+    local error_details="$6"
+    
+    # Vérifier que CAPTAINEMAIL est défini
+    if [[ -z "$CAPTAINEMAIL" ]]; then
+        echo -e "${YELLOW}⚠️  CAPTAINEMAIL non défini, impossible d'envoyer l'alerte${NC}"
+        return 1
+    fi
+    
+    # Créer le fichier d'alerte HTML
+    local alert_file="$HOME/.zen/tmp/uplanet_alert_$(date +%Y%m%d_%H%M%S).html"
+    
+    cat > "$alert_file" << EOF
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>🚨 UPLANET Transaction Alert</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .alert { background-color: #ffebee; border-left: 5px solid #f44336; padding: 15px; margin: 10px 0; }
+        .info { background-color: #e3f2fd; border-left: 5px solid #2196f3; padding: 15px; margin: 10px 0; }
+        .details { background-color: #f5f5f5; padding: 10px; border-radius: 5px; font-family: monospace; }
+        h1 { color: #f44336; }
+        h2 { color: #1976d2; }
+    </style>
+</head>
+<body>
+    <h1>🚨 ALERTE TRANSACTION UPLANET</h1>
+    
+    <div class="alert">
+        <h2>Échec de Transaction</h2>
+        <p><strong>Type d'alerte:</strong> ${alert_type}</p>
+        <p><strong>Date/Heure:</strong> $(date '+%Y-%m-%d %H:%M:%S UTC')</p>
+    </div>
+    
+    <div class="info">
+        <h2>Détails de la Transaction</h2>
+        <p><strong>Email utilisateur:</strong> ${email}</p>
+        <p><strong>Type de virement:</strong> ${type}</p>
+        <p><strong>Montant:</strong> ${montant} Ẑen ($(zen_to_g1 "$montant") Ğ1)</p>
+        <p><strong>Étape échouée:</strong> ${step}</p>
+    </div>
+    
+    <div class="details">
+        <h2>Détails de l'Erreur</h2>
+        <pre>${error_details}</pre>
+    </div>
+    
+    <div class="info">
+        <h2>Actions Recommandées</h2>
+        <ul>
+            <li>Vérifier la connectivité blockchain</li>
+            <li>Contrôler les soldes des portefeuilles intermédiaires</li>
+            <li>Reprendre manuellement la transaction si nécessaire</li>
+            <li>Contacter l'utilisateur: ${email}</li>
+        </ul>
+    </div>
+    
+    <hr>
+    <p><small>Alerte générée automatiquement par UPLANET.official.sh</small></p>
+</body>
+</html>
+EOF
+    
+    # Envoyer l'alerte via mailjet.sh
+    echo -e "${YELLOW}📧 Envoi d'alerte à ${CAPTAINEMAIL}...${NC}"
+    if "${MY_PATH}/tools/mailjet.sh" "$CAPTAINEMAIL" "$alert_file" "🚨 UPLANET Transaction Failed - ${alert_type}"; then
+        echo -e "${GREEN}✅ Alerte envoyée avec succès à ${CAPTAINEMAIL}${NC}"
+        # Garder le fichier d'alerte pour les logs
+        mkdir -p "$HOME/.zen/tmp/alerts/"
+        mv "$alert_file" "$HOME/.zen/tmp/alerts/"
+        return 0
+    else
+        echo -e "${RED}❌ Échec de l'envoi d'alerte à ${CAPTAINEMAIL}${NC}"
+        return 1
+    fi
+}
+
 # Fonction pour effectuer un transfert et vérifier sa confirmation
 transfer_and_verify() {
     local dunikey_file="$1"
     local to_wallet="$2"
     local zen_amount="$3"
     local description="$4"
+    local user_email="$5"
+    local transaction_type="$6"
+    local step_name="$7"
     
     # Convertir Ẑen en Ğ1 (1 Ẑen = 0.1 Ğ1)
     local g1_amount=$(zen_to_g1 "$zen_amount")
@@ -145,6 +248,7 @@ transfer_and_verify() {
         transfer_result=$(silkaj --json --dunikey-file "$dunikey_file" money transfer -r "$to_wallet" -a "$g1_amount" --reference "$description" --yes 2>/dev/null)
     else
         echo -e "${RED}❌ Fichier dunikey manquant ou invalide: $dunikey_file${NC}"
+        send_alert "DUNIKEY_ERROR" "$user_email" "$transaction_type" "$zen_amount" "$step_name" "Fichier dunikey manquant ou invalide: $dunikey_file"
         return 1
     fi
     
@@ -154,6 +258,12 @@ transfer_and_verify() {
         # Attendre la confirmation sur le wallet source
         local source_pubkey=$(cat "$dunikey_file" | grep 'pub:' | cut -d ' ' -f 2)
         if [[ -n "$source_pubkey" ]]; then
+            # Définir les variables globales pour check_balance
+            export USER_EMAIL="$user_email"
+            export TRANSACTION_TYPE="$transaction_type"
+            export TRANSACTION_AMOUNT="$zen_amount"
+            export CURRENT_STEP="$step_name"
+            
             if check_balance "$source_pubkey"; then
                 return 0
             else
@@ -161,11 +271,13 @@ transfer_and_verify() {
             fi
         else
             echo -e "${RED}❌ Impossible de récupérer la clé publique depuis le fichier dunikey${NC}"
+            send_alert "PUBKEY_ERROR" "$user_email" "$transaction_type" "$zen_amount" "$step_name" "Impossible de récupérer la clé publique depuis: $dunikey_file"
             return 1
         fi
     else
         echo -e "${RED}❌ Erreur lors du transfert${NC}"
         echo "$transfer_result"
+        send_alert "TRANSFER_ERROR" "$user_email" "$transaction_type" "$zen_amount" "$step_name" "Erreur silkaj: $transfer_result"
         return 1
     fi
 }
@@ -226,14 +338,14 @@ process_locataire() {
     
     # Étape 1: UPLANETNAME.G1 -> UPLANETNAME
     echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME.G1 → UPLANETNAME${NC}"
-    if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$uplanet_pubkey" "$montant_euros" "Recharge locataire ${email}"; then
+    if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$uplanet_pubkey" "$montant_euros" "Recharge locataire ${email}" "$email" "LOCATAIRE" "Étape 1: G1→UPLANET"; then
         echo -e "${RED}❌ Échec de l'étape 1${NC}"
         return 1
     fi
     
     # Étape 2: UPLANETNAME -> MULTIPASS
     echo -e "${BLUE}📤 Étape 2: Transfert UPLANETNAME → MULTIPASS ${email}${NC}"
-    if ! transfer_and_verify "$HOME/.zen/game/uplanet.dunikey" "$multipass_pubkey" "$montant_euros" "Recharge MULTIPASS locataire"; then
+    if ! transfer_and_verify "$HOME/.zen/game/uplanet.dunikey" "$multipass_pubkey" "$montant_euros" "Recharge MULTIPASS locataire" "$email" "LOCATAIRE" "Étape 2: UPLANET→MULTIPASS"; then
         echo -e "${RED}❌ Échec de l'étape 2${NC}"
         return 1
     fi
@@ -303,14 +415,14 @@ process_infrastructure() {
     
     # Étape 1: UPLANETNAME.G1 -> ZEN Card
     echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME.G1 → ZEN Card ${email}${NC}"
-    if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$zencard_pubkey" "$montant_euros" "Apport capital infrastructure ${email}"; then
+    if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$zencard_pubkey" "$montant_euros" "Apport capital infrastructure ${email}" "$email" "INFRASTRUCTURE" "Étape 1: G1→ZENCARD"; then
         echo -e "${RED}❌ Échec de l'étape 1${NC}"
         return 1
     fi
     
     # Étape 2: ZEN Card -> NODE (DIRECT, pas de 3x1/3)
     echo -e "${BLUE}📤 Étape 2: Transfert ZEN Card → NODE (APPORT CAPITAL)${NC}"
-    if ! transfer_and_verify "$zencard_dunikey" "$node_pubkey" "$montant_euros" "Apport capital machine infrastructure"; then
+    if ! transfer_and_verify "$zencard_dunikey" "$node_pubkey" "$montant_euros" "Apport capital machine infrastructure" "$email" "INFRASTRUCTURE" "Étape 2: ZENCARD→NODE"; then
         echo -e "${RED}❌ Échec de l'étape 2${NC}"
         return 1
     fi
@@ -386,14 +498,14 @@ process_societaire() {
     
     # Étape 1: UPLANETNAME.G1 -> UPLANETNAME.SOCIETY
     echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME.G1 → UPLANETNAME.SOCIETY${NC}"
-    if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$society_pubkey" "$montant_euros" "Parts sociales ${email} ${type}"; then
+    if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$society_pubkey" "$montant_euros" "Parts sociales ${email} ${type}" "$email" "SOCIETAIRE_${type^^}" "Étape 1: G1→SOCIETY"; then
         echo -e "${RED}❌ Échec de l'étape 1${NC}"
         return 1
     fi
     
     # Étape 2: UPLANETNAME.SOCIETY -> ZEN Card
     echo -e "${BLUE}📤 Étape 2: Transfert UPLANETNAME.SOCIETY → ZEN Card ${email}${NC}"
-    if ! transfer_and_verify "$HOME/.zen/game/uplanet.SOCIETY.dunikey" "$zencard_pubkey" "$montant_euros" "Attribution parts sociales ${type}"; then
+    if ! transfer_and_verify "$HOME/.zen/game/uplanet.SOCIETY.dunikey" "$zencard_pubkey" "$montant_euros" "Attribution parts sociales ${type}" "$email" "SOCIETAIRE_${type^^}" "Étape 2: SOCIETY→ZENCARD"; then
         echo -e "${RED}❌ Échec de l'étape 2${NC}"
         return 1
     fi
@@ -444,21 +556,21 @@ process_societaire() {
     
     # Transfert vers Treasury (1/3)
     echo -e "${CYAN}  📤 Treasury (1/3): ${part_treasury_zen} Ẑen${NC}"
-    if ! transfer_and_verify "$zencard_dunikey" "$treasury_pubkey" "$part_treasury_zen" "Allocation Treasury sociétaire ${type}"; then
+    if ! transfer_and_verify "$zencard_dunikey" "$treasury_pubkey" "$part_treasury_zen" "Allocation Treasury sociétaire ${type}" "$email" "SOCIETAIRE_${type^^}" "Étape 3a: ZENCARD→TREASURY"; then
         echo -e "${RED}❌ Échec transfert Treasury${NC}"
         return 1
     fi
     
     # Transfert vers R&D (1/3)
     echo -e "${CYAN}  📤 R&D (1/3): ${part_rnd_zen} Ẑen${NC}"
-    if ! transfer_and_verify "$zencard_dunikey" "$rnd_pubkey" "$part_rnd_zen" "Allocation R&D sociétaire ${type}"; then
+    if ! transfer_and_verify "$zencard_dunikey" "$rnd_pubkey" "$part_rnd_zen" "Allocation R&D sociétaire ${type}" "$email" "SOCIETAIRE_${type^^}" "Étape 3b: ZENCARD→RND"; then
         echo -e "${RED}❌ Échec transfert R&D${NC}"
         return 1
     fi
     
     # Transfert vers Assets (1/3)
     echo -e "${CYAN}  📤 Assets (1/3): ${part_assets_zen} Ẑen${NC}"
-    if ! transfer_and_verify "$zencard_dunikey" "$assets_pubkey" "$part_assets_zen" "Allocation Assets sociétaire ${type}"; then
+    if ! transfer_and_verify "$zencard_dunikey" "$assets_pubkey" "$part_assets_zen" "Allocation Assets sociétaire ${type}" "$email" "SOCIETAIRE_${type^^}" "Étape 3c: ZENCARD→ASSETS"; then
         echo -e "${RED}❌ Échec transfert Assets${NC}"
         return 1
     fi
