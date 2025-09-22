@@ -338,14 +338,14 @@ process_locataire() {
     
     # Étape 1: UPLANETNAME.G1 -> UPLANETNAME
     echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME.G1 → UPLANETNAME${NC}"
-    if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$uplanet_pubkey" "$montant_euros" "Recharge locataire ${email}" "$email" "LOCATAIRE" "Étape 1: G1→UPLANET"; then
+    if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$uplanet_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:RENTAL:${email}" "$email" "LOCATAIRE" "Étape 1: G1→UPLANET"; then
         echo -e "${RED}❌ Échec de l'étape 1${NC}"
         return 1
     fi
     
     # Étape 2: UPLANETNAME -> MULTIPASS
     echo -e "${BLUE}📤 Étape 2: Transfert UPLANETNAME → MULTIPASS ${email}${NC}"
-    if ! transfer_and_verify "$HOME/.zen/game/uplanet.dunikey" "$multipass_pubkey" "$montant_euros" "Recharge MULTIPASS locataire" "$email" "LOCATAIRE" "Étape 2: UPLANET→MULTIPASS"; then
+    if ! transfer_and_verify "$HOME/.zen/game/uplanet.dunikey" "$multipass_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:RENTAL:${email}" "$email" "LOCATAIRE" "Étape 2: UPLANET→MULTIPASS"; then
         echo -e "${RED}❌ Échec de l'étape 2${NC}"
         return 1
     fi
@@ -415,14 +415,14 @@ process_infrastructure() {
     
     # Étape 1: UPLANETNAME.G1 -> ZEN Card
     echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME.G1 → ZEN Card ${email}${NC}"
-    if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$zencard_pubkey" "$montant_euros" "Apport capital infrastructure ${email}" "$email" "INFRASTRUCTURE" "Étape 1: G1→ZENCARD"; then
+    if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$zencard_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:CAPITAL:${email}" "$email" "INFRASTRUCTURE" "Étape 1: G1→ZENCARD"; then
         echo -e "${RED}❌ Échec de l'étape 1${NC}"
         return 1
     fi
     
     # Étape 2: ZEN Card -> NODE (DIRECT, pas de 3x1/3)
     echo -e "${BLUE}📤 Étape 2: Transfert ZEN Card → NODE (APPORT CAPITAL)${NC}"
-    if ! transfer_and_verify "$zencard_dunikey" "$node_pubkey" "$montant_euros" "Apport capital machine infrastructure" "$email" "INFRASTRUCTURE" "Étape 2: ZENCARD→NODE"; then
+    if ! transfer_and_verify "$zencard_dunikey" "$node_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:CAPITAL:${email}" "$email" "INFRASTRUCTURE" "Étape 2: ZENCARD→NODE"; then
         echo -e "${RED}❌ Échec de l'étape 2${NC}"
         return 1
     fi
@@ -498,14 +498,14 @@ process_societaire() {
     
     # Étape 1: UPLANETNAME.G1 -> UPLANETNAME.SOCIETY
     echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME.G1 → UPLANETNAME.SOCIETY${NC}"
-    if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$society_pubkey" "$montant_euros" "Parts sociales ${email} ${type}" "$email" "SOCIETAIRE_${type^^}" "Étape 1: G1→SOCIETY"; then
+    if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$society_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:SOCIETY:${email}:${type}" "$email" "SOCIETAIRE_${type^^}" "Étape 1: G1→SOCIETY"; then
         echo -e "${RED}❌ Échec de l'étape 1${NC}"
         return 1
     fi
     
     # Étape 2: UPLANETNAME.SOCIETY -> ZEN Card
     echo -e "${BLUE}📤 Étape 2: Transfert UPLANETNAME.SOCIETY → ZEN Card ${email}${NC}"
-    if ! transfer_and_verify "$HOME/.zen/game/uplanet.SOCIETY.dunikey" "$zencard_pubkey" "$montant_euros" "Attribution parts sociales ${type}" "$email" "SOCIETAIRE_${type^^}" "Étape 2: SOCIETY→ZENCARD"; then
+    if ! transfer_and_verify "$HOME/.zen/game/uplanet.SOCIETY.dunikey" "$zencard_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:SOCIETY:${email}:${type}" "$email" "SOCIETAIRE_${type^^}" "Étape 2: SOCIETY→ZENCARD"; then
         echo -e "${RED}❌ Échec de l'étape 2${NC}"
         return 1
     fi
@@ -556,21 +556,21 @@ process_societaire() {
     
     # Transfert vers Treasury (1/3)
     echo -e "${CYAN}  📤 Treasury (1/3): ${part_treasury_zen} Ẑen${NC}"
-    if ! transfer_and_verify "$zencard_dunikey" "$treasury_pubkey" "$part_treasury_zen" "Allocation Treasury sociétaire ${type}" "$email" "SOCIETAIRE_${type^^}" "Étape 3a: ZENCARD→TREASURY"; then
+    if ! transfer_and_verify "$zencard_dunikey" "$treasury_pubkey" "$part_treasury_zen" "UPLANET:${UPLANETG1PUB:0:8}:TREASURY:${email}:${type}" "$email" "SOCIETAIRE_${type^^}" "Étape 3a: ZENCARD→TREASURY"; then
         echo -e "${RED}❌ Échec transfert Treasury${NC}"
         return 1
     fi
     
     # Transfert vers R&D (1/3)
     echo -e "${CYAN}  📤 R&D (1/3): ${part_rnd_zen} Ẑen${NC}"
-    if ! transfer_and_verify "$zencard_dunikey" "$rnd_pubkey" "$part_rnd_zen" "Allocation R&D sociétaire ${type}" "$email" "SOCIETAIRE_${type^^}" "Étape 3b: ZENCARD→RND"; then
+    if ! transfer_and_verify "$zencard_dunikey" "$rnd_pubkey" "$part_rnd_zen" "UPLANET:${UPLANETG1PUB:0:8}:RnD:${email}:${type}" "$email" "SOCIETAIRE_${type^^}" "Étape 3b: ZENCARD→RND"; then
         echo -e "${RED}❌ Échec transfert R&D${NC}"
         return 1
     fi
     
     # Transfert vers Assets (1/3)
     echo -e "${CYAN}  📤 Assets (1/3): ${part_assets_zen} Ẑen${NC}"
-    if ! transfer_and_verify "$zencard_dunikey" "$assets_pubkey" "$part_assets_zen" "Allocation Assets sociétaire ${type}" "$email" "SOCIETAIRE_${type^^}" "Étape 3c: ZENCARD→ASSETS"; then
+    if ! transfer_and_verify "$zencard_dunikey" "$assets_pubkey" "$part_assets_zen" "UPLANET:${UPLANETG1PUB:0:8}:ASSETS:${email}:${type}" "$email" "SOCIETAIRE_${type^^}" "Étape 3c: ZENCARD→ASSETS"; then
         echo -e "${RED}❌ Échec transfert Assets${NC}"
         return 1
     fi
