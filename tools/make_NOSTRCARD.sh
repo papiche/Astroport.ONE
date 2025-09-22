@@ -349,6 +349,21 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         set --name "${YOUSER} MULTIPASS" --avatar "$HOME/.zen/game/nostr/${EMAIL}/IPNS.QR.png" \
         --site "$myIPFS/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" -d "UPlanet ${UPLANETG1PUB:0:8} MULTIPASS ($HEX)" &>/dev/null
 
+    ## SEND PRIMO TRANSACTION FROM UPLANETNAME.G1 (source primale unique)
+    echo "UPlanet ẐEN : Sending PRIMO TX from UPLANETNAME.G1 to MULTIPASS"
+    
+    # Ensure UPLANETNAME.G1 dunikey exists (source primale unique)
+    if [[ ! -f ~/.zen/game/uplanet.G1.dunikey ]]; then
+        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.G1.dunikey "${UPLANETNAME}.G1" "${UPLANETNAME}.G1"
+        chmod 600 ~/.zen/game/uplanet.G1.dunikey
+    fi
+    
+    # Send primo transaction from UPLANETNAME.G1 to establish primal chain for MULTIPASS
+    ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.G1.dunikey" "1" "${G1PUBNOSTR}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:MULTIPASS:PRIMO" 2>/dev/null \
+    && echo "${UPLANETG1PUB}" > ~/.zen/game/nostr/${EMAIL}/G1PRIME \
+    && echo "✅ PRIMO TX sent successfully - PRIMAL marked from ${UPLANETG1PUB} wallet" \
+    || echo "⚠️ PRIMO TX failed for MULTIPASS ${EMAIL}"
+
     ## CLEAN CACHE
     rm -Rf ~/.zen/tmp/${MOATS-null}
     ### UNCOMMENT for DEBUG

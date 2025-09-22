@@ -804,13 +804,13 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "(☉_☉ ) (☉_☉ ) (☉_☉ )"
 
     #####################################################################
-    ## DAY=1 : CONTROL ${G1LEVEL1} G1 SENT to PLAYER
+    ## DAY=1 : CONTROL 1 G1 SENT to PLAYER
     if [[ -s ~/.ipfs/swarm.key ]]; then
-        if [[ $(echo "$COINS < ${G1LEVEL1}" | bc -l) -eq 1 ]]; then
+        if [[ $(echo "$COINS < 1" | bc -l) -eq 1 ]]; then
             [[ ${days} -eq 1 && "${CURRENT}" != "${PLAYER}" && "${CURRENT}" != "" ]] \
                 && echo "1 DAY. ZENCARD  PRIMAL RX .SOCIETY" \
                 && ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${MOATS}.key "${UPLANETNAME}.SOCIETY" "${UPLANETNAME}.SOCIETY" \
-                && ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:INIT2" 2>/dev/null \
+                && ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/tmp/${MOATS}/${MOATS}.key" "1" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:INIT2" 2>/dev/null \
                 && echo "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:INIT2" && echo "(⌐■_■) ~~~ OFFICIAL ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS" \
                 && rm ~/.zen/tmp/${MOATS}/${MOATS}.key
         fi

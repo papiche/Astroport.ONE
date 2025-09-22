@@ -648,7 +648,7 @@ if [[ ! -f ~/.zen/game/uplanet.G1.dunikey ]]; then
 fi
 
 # Send primo transaction from UPLANETNAME.G1 to establish primal chain (consistent with MULTIPASS)
-${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.G1.dunikey" "${G1LEVEL1}" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:PRIMO" 2>/dev/null \
+${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.G1.dunikey" "1" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:PRIMO" 2>/dev/null \
 && echo "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:PRIMO" && echo "(⌐■_■) ~~~ G1 PRIMO TX ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS"
 
 ## CLEANING CACHE

@@ -299,6 +299,7 @@ control_primal_transactions() {
     cat "$temp_history_file" | jq -rc '.[]' > "$inline_history_file"
 
     local new_intrusions=0
+    local incoming_tx_count=0
 
     # Process each transaction for new intrusions
     while read LINE; do
@@ -317,6 +318,18 @@ control_primal_transactions() {
 
         # Skip outgoing transactions (refunds)
         [[ $(echo "$TXIAMOUNT < 0" | bc -l) -eq 1 ]] && continue
+
+        # Count incoming transactions
+        incoming_tx_count=$((incoming_tx_count + 1))
+
+        # WoT Dragon Identification Exception: Allow 0.01 Ğ1 transactions ONLY as second transaction
+        # This allows NODE wallet to receive WoT identification from Dragon captains
+        local is_wot_identification=false
+        if [[ $(echo "$TXIAMOUNT == 0.01" | bc -l) -eq 1 && $incoming_tx_count -eq 2 ]]; then
+            is_wot_identification=true
+            echo "# WoT Dragon Identification VALID: 0.01 Ğ1 from ${TXIPUBKEY:0:8} - SECOND TRANSACTION - AUTHORIZED"
+            continue  # Skip primal control for WoT identification transactions
+        fi
 
         # Check primal transaction for incoming transaction
         echo "# RX from ${TXIPUBKEY:0:8}.... checking primal transaction..."

@@ -144,10 +144,6 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
         fi
     else
         echo "NODE $NODECOIN G1 is NOT INITIALIZED !! UPlanet send 1 G1 to NODE"
-        if [[ ! -s ~/.zen/game/uplanet.dunikey ]]; then
-            ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}"
-            chmod 600 ~/.zen/game/uplanet.dunikey
-        fi
         ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.G1.dunikey" "1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:$IPFSNODEID:NODEINIT" 2>/dev/null
     fi
 fi
@@ -449,6 +445,7 @@ declare -A COOPERATIVE_WALLETS=(
     ["UPLANETNAME.IMPOT"]="$HOME/.zen/game/uplanet.IMPOT.dunikey"
     ["UPLANETNAME.CAPTAIN"]="$HOME/.zen/game/uplanet.captain.dunikey"
     ["UPLANETNAME.INTRUSION"]="$HOME/.zen/game/uplanet.INTRUSION.dunikey"
+    ["NODE"]="$HOME/.zen/game/secret.NODE.dunikey"
 )
 
 # Master primal source for cooperative wallets (UPLANETNAME_G1 is the unique primal source)

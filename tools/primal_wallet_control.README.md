@@ -19,10 +19,11 @@ The UPlanet ecosystem operates on two distinct levels with different security re
 
 #### **UPlanet Ẑen (Private Network)**
 - **Level**: Advanced level requiring Y-level activation (SSH<->IPFS key twin)
-- **Security**: Enhanced primal transaction control with intrusion detection
+- **Security**: Enhanced primal transaction control with intrusion detection + **WoT Dragon Identification**
 - **Swarm Key**: Uses private `~/.ipfs/swarm.key` for secure network isolation
 - **Control**: **Real-time token capitalization tool** - controls input € = output Ẑen emissions
 - **Purpose**: Secure financial operations and advanced services
+- **WoT Integration**: Links stations to WoT Dragon network via captain identification
 
 ### Custom Token Valuation in UPlanet Ẑen
 
@@ -192,12 +193,14 @@ This implementation extracts and generalizes the primal transaction control func
 ## Features
 
 - **Primal Transaction Verification**: Uses `silkaj --json money primal` to verify the primal source of incoming transactions
+- **WoT Dragon Identification Exception**: Allows 0.01 Ğ1 transactions ONLY as second incoming transaction for WoT captain identification without primal control
 - **Automatic Redirection**: Automatically redirects unauthorized transactions to UPLANETNAME.INTRUSION
 - **Intrusion Detection**: Tracks intrusion attempts for monitoring and cooperative fund recovery
 - **Email Alerts**: Sends detailed alerts for all intrusions with redirection notifications
 - **Smart Cache Usage**: Uses existing cache files when available and recent for performance optimization
 - **History-based Detection**: Analyzes transaction history to count existing intrusions without cache dependency
 - **Loop Prevention**: Eliminates transaction loops by redirecting instead of refunding to sender
+- **NODE Wallet Protection**: Now includes NODE wallet in cooperative wallet protection system
 
 ## Technical Implementation
 
@@ -215,12 +218,60 @@ This implementation extracts and generalizes the primal transaction control func
 1. **Cache Check**: Checks for existing cache files (`~/.zen/tmp/coucou/$pubkey.primal` and `~/.zen/tmp/coucou/$pubkey.history`)
 2. **Transaction History Retrieval**: Gets the wallet's complete transaction history using `silkaj --json money history` (or from cache if recent)
 3. **Existing Intrusion Analysis**: Scans transaction history for existing intrusion transactions to avoid cache dependency
-4. **Primal Source Verification**: For each incoming transaction, verifies the primal source using `silkaj --json money primal` (or from cache if recent)
-5. **Intrusion Detection**: Compares the primal source with the expected master primal
-6. **INTRUSION Wallet Creation**: Automatically creates UPLANETNAME.INTRUSION wallet if it doesn't exist
-7. **Automatic Redirection**: If an intrusion is detected, automatically redirects the transaction to UPLANETNAME.INTRUSION
-8. **Alert System**: Sends email alerts for all intrusions with redirection notifications
-9. **Fund Centralization**: All intrusive amounts are centralized in the dedicated INTRUSION wallet
+4. **WoT Dragon Exception**: if transaction is exactly 0.01 Ğ1 AND is the second incoming transaction it informs about WoT member identification.
+5. **Primal Source Verification**: For each incoming transaction, verifies the primal source using `silkaj --json money primal` (or from cache if recent)
+6. **Intrusion Detection**: Compares the primal source with the expected master primal
+7. **INTRUSION Wallet Creation**: Automatically creates UPLANETNAME.INTRUSION wallet if it doesn't exist
+8. **Automatic Redirection**: If an intrusion is detected, automatically redirects the transaction to UPLANETNAME.INTRUSION
+9. **Alert System**: Sends email alerts for all intrusions with redirection notifications
+10. **Fund Centralization**: All intrusive amounts are centralized in the dedicated INTRUSION wallet
+
+### WoT Dragon Identification Protocol
+
+The system supports a **two-step identification protocol** for linking UPlanet stations to the WoT Dragon network:
+
+#### **Step 1: Primal Transaction (Initialization)**
+- **Source**: UPLANETNAME.G1 (unified primal source)
+- **Destination**: NODE wallet
+- **Amount**: **Exactly 1 Ğ1** (initialization transaction)
+- **Purpose**: Initializes NODE wallet (1 Ğ1 = 0 ẐEN) and establishes primal source
+- **Comment**: `UPLANET:${UPLANETG1PUB:0:8}:$IPFSNODEID:NODEINIT`
+- **Location**: `ZEN.ECONOMY.sh` line 151
+- **Security**: **Standard primal control** - must match UPLANETNAME_G1 primal
+
+#### **Step 2: WoT Identification (Exception)**
+- **Source**: WoT Dragon Snipe (any Ğ1 member)
+- **Destination**: Any wallet  
+- **Amount**: **Exactly 0.01 Ğ1** (identification marker)
+- **Position**: **ONLY apply to the 2nd incoming transaction** in wallet history
+- **Purpose**: Links station to WoT Dragon network to Ğ1 member WoT identity
+- **Security**: **Bypasses primal control** - no intrusion alert triggered
+- **Validation**: Any other transaction (not respecting same UPLANETNAME_G1 primal) will be rejected as intrusion
+
+```mermaid
+graph TD
+    subgraph "WoT Dragon Identification Protocol"
+        UG1[UPLANETNAME.G1<br/>Unified Primal Source]
+        CAPT[👨‍💼 WoT Dragon Captain<br/>Any Ğ1 Member]
+        NODE[🖥️ NODE Wallet<br/>Now Protected]
+    end
+    
+    subgraph "Transaction Sequence"
+        TX1[1️⃣ First TX (Init)<br/>UPLANETNAME.G1 → NODE<br/>Amount: 1 Ğ1<br/>✅ NODEINIT Standard Control]
+        TX2[2️⃣ Second TX (WoT ID)<br/>WoT Member → NODE<br/>Amount: 0.01 Ğ1<br/>🔓 Exception Bypass]
+        TX3[3️⃣+ Other TX<br/>Any → NODE<br/>Amount: 0.01 Ğ1<br/>❌ Rejected as Intrusion]
+    end
+    
+    UG1 -->|Establishes primal| TX1
+    CAPT -->|WoT identification| TX2
+    TX1 --> NODE
+    TX2 --> NODE
+    TX3 -.->|Rejected| NODE
+    
+    style TX2 fill:#fff3e0,stroke:#ff9800,stroke-width:3px
+    style TX3 fill:#ffebee,stroke:#f44336,stroke-width:2px
+    style NODE fill:#e8f5e8,stroke:#4caf50,stroke-width:3px
+```
 
 ## Usage
 
@@ -273,6 +324,46 @@ ${MY_PATH}/../tools/primal_wallet_control.sh \
     "${G1PUB}" \
     "${UPLANETNAME_G1}" \
     "${EMAIL}"
+```
+
+### NODE Wallet Integration (NEW)
+
+```bash
+# In ZEN.ECONOMY.sh - NODE wallet is now protected
+declare -A COOPERATIVE_WALLETS=(
+    # ... other wallets ...
+    ["NODE"]="$HOME/.zen/game/secret.NODE.dunikey"
+)
+
+# NODE Initialization Logic (ZEN.ECONOMY.sh line 146-151)
+if [[ $(echo "$NODECOIN < 1" | bc -l) -eq 1 ]]; then
+    echo "NODE $NODECOIN G1 is NOT INITIALIZED !! UPlanet send 1 G1 to NODE"
+    ${MY_PATH}/../tools/PAYforSURE.sh \
+        "$HOME/.zen/game/uplanet.G1.dunikey" \
+        "1" \
+        "${NODEG1PUB}" \
+        "UPLANET:${UPLANETG1PUB:0:8}:$IPFSNODEID:NODEINIT"
+fi
+
+# Automatic primal control for NODE wallet
+${MY_PATH}/../tools/primal_wallet_control.sh \
+    "$HOME/.zen/game/secret.NODE.dunikey" \
+    "${NODEG1PUB}" \
+    "${UPLANETNAME_G1}" \
+    "${CAPTAINEMAIL}"
+```
+
+### WoT Dragon Captain Identification
+
+```bash
+# Captain sends WoT identification to NODE
+silkaj money transfer \
+    -r ${NODEG1PUB} \
+    -a 0.01 \
+    --reference "WoT Dragon Captain Identification: ${CAPTAIN_EMAIL}"
+
+# This 0.01 Ğ1 transaction will bypass primal control
+# and establish the WoT Dragon link for the station
 ```
 
 ## Security Features

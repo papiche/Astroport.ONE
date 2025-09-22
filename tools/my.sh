@@ -618,7 +618,7 @@ CAPTAING1PUB=$(cat $HOME/.zen/game/nostr/${CAPTAINEMAIL}/G1PUBNOSTR 2>/dev/null)
 
 ## ADD "UPLANETNAME.G1" WALLET LINK FOR Ğ1 DONATION 
 [[ ! -s $HOME/.zen/game/uplanet.G1.dunikey ]] \
-    && UPLANETNAME_G1=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.G1.dunikey "${UPLANETNAME}.G1" "${UPLANETNAME}.G1") \
+    && $HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.G1.dunikey "${UPLANETNAME}.G1" "${UPLANETNAME}.G1" \
     && UPLANETNAME_G1=$(cat $HOME/.zen/game/uplanet.G1.dunikey | grep "pub" | cut -d " " -f 2) \
     && echo $UPLANETNAME_G1 > $HOME/.zen/tmp/UPLANETNAME_G1
 
@@ -627,7 +627,7 @@ echo $UPLANETNAME_G1 > $HOME/.zen/tmp/UPLANETNAME_G1
 
 ## UPLANETNAME Ẑen wallet for Locative Service Layer
 [[ ! -s $HOME/.zen/game/uplanet.dunikey ]] \
-    && UPLANETG1PUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}") \
+    && $HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}" \
     && UPLANETG1PUB=$(cat $HOME/.zen/game/uplanet.dunikey | grep "pub" | cut -d " " -f 2) \
     && echo ${UPLANETG1PUB} > $HOME/.zen/tmp/UPLANETG1PUB
 
@@ -636,7 +636,7 @@ echo ${UPLANETG1PUB} > $HOME/.zen/tmp/UPLANETG1PUB
 
 ## UPLANETNAME_SOCIETY wallet for Cooperative Holders 
 [[ ! -s $HOME/.zen/game/uplanet.SOCIETY.dunikey ]] \
-    && UPLANETNAME_SOCIETY=$($HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.SOCIETY.dunikey "${UPLANETNAME}.SOCIETY" "${UPLANETNAME}.SOCIETY") \
+    && $HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.SOCIETY.dunikey "${UPLANETNAME}.SOCIETY" "${UPLANETNAME}.SOCIETY" \
     && UPLANETNAME_SOCIETY=$(cat $HOME/.zen/game/uplanet.SOCIETY.dunikey | grep "pub" | cut -d " " -f 2) \
     && echo ${UPLANETNAME_SOCIETY} > $HOME/.zen/tmp/UPLANETNAME_SOCIETY
 
@@ -647,10 +647,6 @@ echo ${UPLANETNAME_SOCIETY} > $HOME/.zen/tmp/UPLANETNAME_SOCIETY
     && STRAPFILE="${HOME}/.zen/game/MY_boostrap_nodes.txt" \
     || STRAPFILE="${HOME}/.zen/Astroport.ONE/A_boostrap_nodes.txt"
 
-## DEV support@qo-op.com UPlanet ORIGIN Code Maker.
-[[ ${CAPTAING1PUB} == "" ]] \
-    && CAPTAING1PUB="2L8vaYixCf97DMT8SistvQFeBj7vb6RQL7tvwyiv1XVH" # fred@g1sms.fr G1FabLab Wallet
-
 ## when UPlanetSharedSecret is set.
 ## All TW wallet are created with 1 G1 "primal transaction"
 ## making UPlanet blockchains secured.
@@ -659,6 +655,3 @@ TODATE=$(date -d "today 13:00" '+%Y-%m-%d')
 YESTERDATE=$(date -d "yesterday 13:00" '+%Y-%m-%d')
 DEMAINDATE=$(date -d "tomorrow 13:00" '+%Y-%m-%d')
 
-## HOW MANY G1 TO SEND FOR PRIMAL TX (used in PLAYER.refresh.sh)
-## TODO ZEN TTX LEVEL
-G1LEVEL1="1"

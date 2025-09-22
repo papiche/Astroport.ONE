@@ -13,10 +13,6 @@
 #    - Chaque carte a une heure de paiement aléatoire stockée dans .refresh_time
 #    - Les paiements ne sont traités qu'après l'heure programmée pour éviter la simultanéité
 # 3. Implémente le système de distribution des bénéfices
-# 4. Évolue le compte selon le type de PRIMAL :
-#    - PRIMAL = UPlanet wallet : Compte UPlanet ORIGIN (EnfinLibre)
-#    - PRIMAL = Membre G1 : Compte UPlanet ZEN avec UPassport N1
-# 5. Crée ZenCard pour les comptes UPlanet ZEN (primo transaction membre Ğ1)
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -133,47 +129,6 @@ initialize_account() {
     echo "Account ${PLAYER} initialized with refresh time: ${random_time}"
 }
 
-function get_primal_transaction() {
-    local g1pub="$1"
-    local attempts=0
-    local success=false
-    local result=""
-    local g1prime=""
-
-    # Validate G1PUB format and convert to IPFS to ensure it's valid
-    local g1pub_ipfs=$(${MY_PATH}/../tools/g1_to_ipfs.py ${g1pub} 2>/dev/null)
-    if [[ -z $g1pub_ipfs ]]; then
-        echo "ERROR: INVALID G1PUB: $g1pub" >&2
-        return 1
-    fi
-
-    while [[ $attempts -lt 3 && $success == false ]]; do
-        BMAS_NODE=$(${MY_PATH}/../tools/duniter_getnode.sh BMAS | tail -n 1)
-        if [[ ! -z $BMAS_NODE ]]; then
-            echo "Trying primal check with BMAS NODE: $BMAS_NODE (attempt $attempts)" >&2
-            silkaj_output=$(silkaj --endpoint "$BMAS_NODE" --json money primal ${g1pub} 2>/dev/null)
-            g1prime=$(echo "$silkaj_output" | jq -r '.primal_source_pubkey' 2>/dev/null)
-            if [[ -n "${g1prime}" && "${g1prime}" != "null" ]]; then
-                # Validate primal G1PUB as well
-                local primal_ipfs=$(${MY_PATH}/../tools/g1_to_ipfs.py ${g1prime} 2>/dev/null)
-                if [[ -n "${primal_ipfs}" ]]; then
-                    success=true
-                    break
-                else
-                    echo "Warning: Invalid ${g1pub} primal: $g1prime" >&2
-                    g1prime=""
-                fi
-            fi
-        fi
-
-        attempts=$((attempts + 1))
-        if [[ $attempts -lt 3 ]]; then
-            sleep 2
-        fi
-    done
-
-    echo "$g1prime"
-}
 
 # Fonction pour vérifier si le rafraîchissement est nécessaire
 should_refresh() {
@@ -280,10 +235,6 @@ should_refresh() {
 [[ ${UPLANETG1PUB:0:8} == "AwdjhpJN" ]] && ORIGIN="ORIGIN" || ORIGIN="${UPLANETG1PUB:0:8}"
 
 ########################################################################
-#  PRIMAL RX source determine the MULTIPASS owner
-#  on UPLanet ORIGIN (can be UPLANETG1PUB or Ğ1 member) 1Ẑ = 0.1Ğ1
-#  on UPlanet Ẑen (can be member only) 1Ẑ = 1€ !!
-########################################################################
 # Get all emails from ~/.zen/game/nostr/
 NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 
@@ -337,59 +288,9 @@ for PLAYER in "${NOSTR[@]}"; do
     log "INFO" "${G1PUBNOSTR} AMOUNT = ${COINS} G1 -> ${ZEN} ZEN"
     log_metric "WALLET_BALANCE" "${COINS}" "${PLAYER}"
 
-    # PRIMAL TIMING LOGIC: Respect MULTIPASS workflow
-    # Day 1: No PRIMAL yet (waiting for member TX)
-    # Day 2+: If still no PRIMAL, UPlanet sends PRIMO TX (marks PRIMAL)
-    # Only then: PRIMAL becomes available for caching
-
     BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/TODATE 2>/dev/null)
     [[ ! -s ~/.zen/game/nostr/${PLAYER}/.birthdate ]] \
         && echo $BIRTHDATE > ~/.zen/game/nostr/${PLAYER}/.birthdate
-    primal=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null)
-
-    # Check if we're still on the first day (PRIMAL not ready yet)
-    if [[ "${TODATE}" == "${BIRTHDATE}" ]]; then
-        log "DEBUG" "MULTIPASS first day - ${BIRTHDATE} : Waiting to receive Primo TX on $G1PUBNOSTR"
-        log_metric "PRIMAL_FIRST_DAY" "1" "${PLAYER}"
-        primal=""
-    # Check if PRIMAL already cached (blockchain immutable)
-    elif [[ -n "$primal" && "$primal" != "null" ]]; then
-        log_metric "PRIMAL_CACHED" "1" "${PLAYER}"
-    # Day 2+: Check if UPlanet PRIMO TX sent (G1PRIME file exists) or sufficient time passed
-    elif [[ ${COINS} != "null" && $(echo "$COINS > 0" | bc -l) -eq 1 ]]; then
-        log "INFO" "MULTIPASS day 2+ - checking for PRIMAL transaction"
-        g1prime=$(get_primal_transaction "${G1PUBNOSTR}" 2>/dev/null | tail -n 1)
-        if [[ $? -eq 0 && ! -z ${g1prime} && ${g1prime} != "null" ]]; then
-            # Validate format before permanent caching
-            g1primetest=$(${MY_PATH}/../tools/g1_to_ipfs.py ${g1prime} 2>/dev/null)
-            if [[ -n $g1primetest ]]; then
-                echo "${g1prime}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal
-                primal=${g1prime}
-                log "INFO" "PRIMAL discovered and permanently cached: $G1PUBNOSTR -> $primal"
-                log_metric "PRIMAL_DISCOVERED" "1" "${PLAYER}"
-            else
-                log "WARN" "Invalid PRIMAL format received: $g1prime"
-                primal=""
-            fi
-        fi
-    else
-        log "DEBUG" "MULTIPASS has no funds yet - PRIMAL check skipped"
-        primal=""
-    fi
-
-    ## OPTIMIZED PRIMAL COINS from "coucou" cache
-    if [[ -n "$primal" && "$primal" != "null" ]]; then
-        pcoins=$(cat ~/.zen/tmp/coucou/${primal}.COINS 2>/dev/null)
-        if [[ -z "$pcoins" || "$pcoins" == "null" || ! "$pcoins" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
-            log "DEBUG" "Cache miss for PRIMAL $primal, refreshing with G1check.sh"
-            pcoins=$(${MY_PATH}/../tools/G1check.sh ${primal} 2>/dev/null | tail -n 1)
-            log_metric "PRIMAL_CACHE_MISS" "1" "${PLAYER}"
-        else
-            log_metric "PRIMAL_CACHE_HIT" "1" "${PLAYER}"
-        fi
-    else
-        pcoins=""
-    fi
 
     ################################################################# ~/.zen/game/uplanet.dunikey
     [[ ! -s ~/.zen/game/uplanet.dunikey ]] \
@@ -424,7 +325,6 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
     ##################################################### DISCO DECODED
     ## NOW salt & pepper are valid, we can generate NSEC & NPUB
-    # BIRTHDATE already read above for PRIMAL timing logic
     ## s=/?email
     echo $s
 
@@ -444,41 +344,22 @@ for PLAYER in "${NOSTR[@]}"; do
         chmod 600 ~/.zen/game/nostr/${PLAYER}/.secret.dunikey
     fi
     ########################################################################
-    #~ EMPTY WALLET or without PRIMAL or COIN ? (NOT TODATE)
-    ############################################################ BLOCKING
     YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
     ########################################################################
-    if [[ ! -s ~/.zen/game/nostr/${PLAYER}/G1PRIME ]]; then
-        if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" || "${primal}" == "" ]]; then
-            ## 2nd day+ MULTIPASS should have received PRIMAL RX by now
-            if [[ ${TODATE} != ${BIRTHDATE} ]]; then
-                # Send PRIMO TX for initializing UPlanet SERVICES Access (source primale unique)
-                log "INFO" "UPlanet ẐEN : Send Primo RX from UPLANETNAME.G1 : MULTIPASS activation for $G1PUBNOSTR"
-                payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.G1.dunikey" "${G1LEVEL1}" "${G1PUBNOSTR}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:${YOUSER}:MULTIPASS" 2>/dev/null)
-                if [[ $? -eq 0 ]]; then
-                    echo "${UPLANETG1PUB}" > ~/.zen/game/nostr/${PLAYER}/G1PRIME
-                    log "INFO" "PRIMO TX sent successfully - PRIMAL marked from ${UPLANETG1PUB}" wallet
-                    log_metric "PRIMO_TX_SENT" "${G1LEVEL1}" "${PLAYER}"
-                else
-                    log "WARN" "PRIMO TX failed for ${PLAYER}"
-                    log_metric "PRIMO_TX_FAILED" "1" "${PLAYER}"
-                fi
-            else
-                ## 1st Day send welcome EMAIL...
-                if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.welcome.html ]]; then
-                    cp ${MY_PATH}/../templates/NOSTR/welcome.html ~/.zen/game/nostr/${PLAYER}/.welcome.html \
-                    && sed -i "s/http:\/\/127.0.0.1:8080/${myIPFS}/g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
-                    && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${HOME}/.zen/game/nostr/${PLAYER}/.welcome.html" "WELCOME $YOUSER"
-                    log "INFO" "Welcome email sent to new MULTIPASS: ${PLAYER}"
-                    log_metric "WELCOME_EMAIL_SENT" "1" "${PLAYER}"
-                else
-                    log "INFO" "Welcome message sent... Waiting for PRIMAL TX : $TODATE"
-                fi
-            fi
-            rm -Rf ~/.zen/tmp/${MOATS}
-            continue
+    # Send welcome message on 1st day
+    if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" ]]; then
+        if [[ ${TODATE} == ${BIRTHDATE} ]]; then
+            ## 1st Day send welcome EMAIL...
+            if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.welcome.html ]]; then
+                cp ${MY_PATH}/../templates/NOSTR/welcome.html ~/.zen/game/nostr/${PLAYER}/.welcome.html \
+                && sed -i "s/http:\/\/127.0.0.1:8080/${myIPFS}/g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
+                && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${HOME}/.zen/game/nostr/${PLAYER}/.welcome.html" "WELCOME $YOUSER"
+                log "INFO" "Welcome email sent to new MULTIPASS: ${PLAYER}"
+                log_metric "WELCOME_EMAIL_SENT" "1" "${PLAYER}"
+             fi
         fi
     fi
+
     ####################################################################
     ## EVERY 7 DAYS NOSTR CARD is PAYING CAPTAIN
     TODATE_SECONDS=$(date -d "$TODATE" +%s)
@@ -637,164 +518,32 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     ########################################################################
-    echo ">>> VALID MULTIPASS ($pcoins G1) : ${primal}"
+    echo ">>> CHECKING MULTIPASS ($pcoins G1)"
     ########################################################################
     ## ACTIVATED NOSTR CARD
     NOSTRNS=$(cat ~/.zen/game/nostr/${PLAYER}/NOSTRNS)
     echo "uDRIVE : ${myIPFS}${NOSTRNS}/${PLAYER}/APP/uDRIVE"
 
-    ## FILL UP NOSTRCard/PRIMAL
-    if [[ ${primal} != "" && ${primal} != "null"  ]]; then
-        if [[ ! -d ~/.zen/game/nostr/${PLAYER}/PRIMAL ]]; then
-            mkdir -p ~/.zen/game/nostr/${PLAYER}/PRIMAL
-            ## ONLY FOR UPlanet Zen (Get Cesium+ Profile)
-            if [[ ${primal} != ${UPLANETG1PUB} ]]; then
-                ## SCAN CESIUM/GCHANGE PRIMAL STATUS
-                ${MY_PATH}/../tools/GetGCAttributesFromG1PUB.sh ${primal}
-                #######################################################################
-                ## COPY PRIMAL DUNITER/CESIUM METADATA (from "coucou" cache)
-                cp ~/.zen/tmp/coucou/${primal}* ~/.zen/game/nostr/${PLAYER}/PRIMAL/
-                echo ${primal} > ~/.zen/game/nostr/${PLAYER}/G1PRIME # G1PRIME
-            fi
-        fi
-        [[ ! -s ~/.zen/game/nostr/${PLAYER}/G1PRIME ]] \
-            && echo ${primal} > ~/.zen/game/nostr/${PLAYER}/G1PRIME # G1PRIME fixing
-    fi
-
-    ## PRIMAL RX SOURCE ?!
-    G1PRIME=$(cat ~/.zen/game/nostr/${PLAYER}/G1PRIME 2>/dev/null)
-
-    ## Validate and clean G1PRIME if it contains debug output
-    if [[ -n "$G1PRIME" && ("$G1PRIME" =~ "Trying primal check" || "$G1PRIME" =~ "BMAS NODE") ]]; then
-        echo "Cleaning corrupted G1PRIME file for ${PLAYER}"
-        # Extract only the G1PUB part (last line should be the G1PUB)
-        G1PRIME=$(echo "$G1PRIME" | tail -n 1 | tr -d ' ')
-        echo "$G1PRIME" > ~/.zen/game/nostr/${PLAYER}/G1PRIME
-    fi
-
-    ## CHECKING PRIMAL IPFS conversion (correction)
-    # Validate G1PUB format (should be base58 encoded, typically 44 characters)
-    if [[ -n "$G1PRIME" && ${#G1PRIME} -eq 44 && "$G1PRIME" =~ ^[1-9A-HJ-NP-Za-km-z]+$ ]]; then
-        G1PRIME_IPFS=$(${MY_PATH}/../tools/g1_to_ipfs.py ${G1PRIME} 2>/dev/null)
-        if [[ -z $G1PRIME_IPFS ]]; then
-            echo "G1PRIME BAD FORMAT: $G1PRIME" >> ~/.zen/game/nostr/${PLAYER}/ERROR
-            echo "ERROR G1PRIME BAD FORMAT: $G1PRIME" && continue
-        fi
-    else
-        echo "G1PRIME INVALID FORMAT: $G1PRIME" >> ~/.zen/game/nostr/${PLAYER}/ERROR
-        echo "ERROR G1PRIME INVALID FORMAT: $G1PRIME" && continue
-    fi
-
-    ########################################################################
-    ## STATION OFFICIAL UPASSPORT = UPassport + 1 G1 RX (from WoT member)
-    if [[ ! -s ~/.zen/game/passport/${primal} ]]; then
-        ## PRIMAL EXISTS ?
-        if [[ ${primal} != "" && ${primal} != "null" ]]; then
-            ## MAKE /upassport API make /PRIMAL/_upassport.html
-            if [[ ! -s ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html ]]; then
-                echo "CREATING UPASSPORT FOR PRIMAL=${primal}"
-                curl -s -X POST \
-                        -F "parametre=${primal}" \
-                        -F "zlat=${LAT}" \
-                        -F "zlon=${LON}" \
-                        http://127.0.0.1:54321/upassport \
-                    > ~/.zen/game/nostr/${PLAYER}/PRIMAL/_index.html
-                [[ ! $? -eq 0 ]] \
-                    && rm ~/.zen/game/nostr/${PLAYER}/PRIMAL/_index.html 2>/dev/null
-                ################################################
-                ## PRIMAL IS MEMBER : COPY UPassport /N1
-                if [[ -d ~/.zen/UPassport/pdf/${primal}/N1 ]]; then
-                    cp -Rf ~/.zen/UPassport/pdf/${primal}/N1 \
-                        ~/.zen/game/nostr/${PLAYER}/PRIMAL/
-                    cp ~/.zen/UPassport/pdf/${primal}/*.* \
-                        ~/.zen/game/nostr/${PLAYER}/PRIMAL/
-                fi
-                ## INFORM UPASSPORT TRY DONE (N1 or not, then Uplanet Wallet Amount)
-                mv ~/.zen/game/nostr/${PLAYER}/PRIMAL/_index.html \
-                    ~/.zen/game/nostr/${PLAYER}/PRIMAL/_upassport.html
-                ###############################################
-                ## SENDING CESIUM+ MESSAGE to G1PRIME
-                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/nostr/${PLAYER}/.secret.dunikey -n ${myCESIUM} send -d "${G1PRIME}" -t "MULTIPASS" -m "uDRIVE : $myIPFS${NOSTRNS}/${PLAYER}/APP/uDRIVE"
-                ## TODO CONVERT SEND NOSTR MULTIPASS MESSAGE
-            else
-                echo "## /PRIMAL file structure existing"
-                ## SENDING MESSAGE TO N1 (P2P: peer to peer, P21 : peer to one, 12P : one to peer ) RELATIONS in manifest.json
-                json_file="$HOME/.zen/game/nostr/${PLAYER}/PRIMAL/N1/manifest.json"
-                if [[ -s "$json_file" ]]; then
-                    echo ">>> UPassport N1 : $json_file"
-                    # Parcourir chaque clé (p2p, certin, certout) et extraire les valeurs
-                    jq -r '.[][] | select(. != null) | capture("(?<G1PUB>[^.]+)\\.(?<PSEUDO>[^.]+)\\.(?<KEY>[^.]+)") | "\(.G1PUB) \(.PSEUDO) \(.KEY)"' "$json_file" | while read -r G1PUB PSEUDO KEY; do
-                        # Vérifier si le message existe déjà
-                        if [[ ! -s ~/.zen/game/nostr/${PLAYER}/PRIMAL/$G1PUB.txt ]]; then
-                            # Définir le message en fonction de la clé
-                            if [[ "$KEY" == "certin" ]]; then
-                                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/nostr/${PLAYER}/.secret.dunikey -n ${myCESIUM} send -d "$G1PRIME" -t " ¯\_༼qO͡〰op༽_/¯ 12P ?" -m "BRO Certification <=> $G1PUB"
-                                sleep 1
-                            elif [[ "$KEY" == "certout" ]]; then
-                                $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/nostr/${PLAYER}/.secret.dunikey -n ${myCESIUM} send -d "$G1PUB" -t " ¯\_༼qO͡〰op༽_/¯ P21 ?" -m "BRO Certification <=> $G1PRIME"
-                                sleep 1
-                            fi
-                            MESSAGE="$G1PRIME est inscrit sur UPlanet --- UPlanet : $myIPFS/ipns/copylaradio.com"
-                            $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/nostr/${PLAYER}/.secret.dunikey -n ${myCESIUM} send -d "$G1PUB" -t " ¯\_༼qO͡〰op༽_/¯ " -m "$MESSAGE"
-                            echo "$MESSAGE" > ~/.zen/game/nostr/${PLAYER}/PRIMAL/$G1PUB.txt
-                            sleep 2
-                        fi
-                    done
-                fi
-
-            fi
-        fi
-    else
-        #### UPASSPORT DU : Cooperative Real Member
-        echo "## OFFICIAL PDF UPASSPORT : ${primal} is STATION co OWNER !! MULTIPASS + ZENCARD + UPASSPORT"
-    fi
-
     ########################################################################
     ######### NOSTR PROFILE SETTING
     if [[ ! -s ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile ]]; then
-        echo "######################################## STEP 1"
-        echo "## NOSTR PROFILE PRIMAL LINKING"
-        ls ~/.zen/game/nostr/${PLAYER}/PRIMAL/
+        echo "######################################## SETUP NOSTR PROFILE"
 
-        ## EXTACT PRIMAL CESIUM PROFILE
-        zlat=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.geoPoint.lat)
-        LAT=$(makecoord $zlat)
-        zlon=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.geoPoint.lon)
-        LON=$(makecoord $zlon)
-        title=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.title)
-        [[ -z $title ]] && title="$YOUSER"
-        city=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.city)
-        [[ -z $city ]] && city="UPlanet ${ORIGIN}"
-        description=$(cat ~/.zen/game/nostr/${PLAYER}/PRIMAL/${primal}.cesium.json 2>/dev/null | jq -r ._source.description)
-        [[ -z $description ]] && description="💬 ${uSPOT}/nostr + ❤️ = Ẑen : ${uSPOT}/check_balance?g1pub=${PLAYER}"
-
-        ## GET CESIUM AVATAR
-        if [[ -s "$HOME/.zen/tmp/coucou/${G1PUB}.cesium.avatar.png" ]]; then
-            zavatar="/ipfs/"$(ipfs --timeout 10s add -q "$HOME/.zen/tmp/coucou/${G1PUB}.cesium.avatar.png" 2>/dev/null)
-        else
-            ## OR NOSTR(+PICTURE) G1PUB QRCODE
-            zavatar="/ipfs/"$(cat ${HOME}/.zen/game/nostr/${PLAYER}/MULTIPASS.QR.png.cid 2>/dev/null)
-        fi
+        ## SETUP PROFILE VARIABLES
+        title="$YOUSER"
+        city="UPlanet ${ORIGIN}"
+        description="💬 ${uSPOT}/nostr + ❤️ = Ẑen : ${uSPOT}/check_balance?g1pub=${PLAYER}"
+        zavatar="/ipfs/"$(cat ${HOME}/.zen/game/nostr/${PLAYER}/MULTIPASS.QR.png.cid 2>/dev/null)
         ## ELSE ASTROPORT LOGO
         [[ $zavatar == "/ipfs/" ]] \
             && zavatar="/ipfs/QmbMndPqRHtrG2Wxtzv6eiShwj3XsKfverHEjXJicYMx8H/logo.png"
 
-        ## Indicate "G1PUBNOSTR:primal" into nostr profile
-        if [[ -d ~/.zen/game/nostr/${PLAYER}/PRIMAL/N1 ]]; then
-            # Member Wallet
-            PoH=":${primal}"
-        else
-            # REGULAR Wallet
-            PoH=""
-        fi
-
         ZENCARDG1=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
-
-        g1pubnostr=$(cat ${HOME}/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
+        G1PUBNOSTR=$(cat ${HOME}/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
         ### SEND PROFILE TO NOSTR RELAYS
         ${MY_PATH}/../tools/nostr_setup_profile.py \
             "$NSEC" \
-            "✌(◕‿-)✌ $title" "$g1pubnostr$PoH" \
+            "✌(◕‿-)✌ $title" "$G1PUBNOSTR" \
             "$description - $city" \
             "$myIPFS/$zavatar" \
             "$myIPFS/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
@@ -808,9 +557,6 @@ for PLAYER in "${NOSTR[@]}"; do
         ## DOES COMMAND SUCCEED ?
         [[ ! $? -eq 0 ]] \
             && rm ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile 2>/dev/null
-
-        ## RECORD GPS (for ZenCard activation)
-        [[ -n $LAT && -n $LON ]] && echo "LAT=$LAT; LON=$LON;" > ~/.zen/game/nostr/${PLAYER}/GPS
 
     else
         # echo "## MULTIPASS nostr PROFILE EXISTING"
@@ -858,28 +604,23 @@ for PLAYER in "${NOSTR[@]}"; do
 
     ########################################################################################
     # Use the generic primal wallet control function
-    if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
-        echo "Checking MULTIPASS wallet for $PLAYER: $G1PUBNOSTR"
-        # Get DISCO from PLAYER to create dunikey if needed
-        if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.dunikey ]]; then
-            DISCO=$(cat ~/.zen/game/nostr/${PLAYER}/.secret.disco)
-            IFS='=&' read -r s salt p pepper <<< "$DISCO"
-            # Create secret.dunikey from DISCO
-            if [[ -n $salt && -n $pepper ]]; then
-                ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/nostr/${PLAYER}/.secret.dunikey "${salt}" "${pepper}"
-            fi
+    echo "Checking MULTIPASS wallet for $PLAYER: $G1PUBNOSTR"
+    # Get DISCO from MULTIPASS to create dunikey if needed
+    if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.dunikey ]]; then
+        DISCO=$(cat ~/.zen/game/nostr/${PLAYER}/.secret.disco)
+        IFS='=&' read -r s salt p pepper <<< "$DISCO"
+        # Create secret.dunikey from DISCO
+        if [[ -n $salt && -n $pepper ]]; then
+            ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/nostr/${PLAYER}/.secret.dunikey "${salt}" "${pepper}"
         fi
-        echo "## CONTROL TRANSACTIONS PRIMAL CONFORMITY..."
-        # Call the generic primal wallet control function (using UPLANETNAME_G1 as unique primal source)
-        ${MY_PATH}/../tools/primal_wallet_control.sh \
-            "${HOME}/.zen/game/nostr/${PLAYER}/.secret.dunikey" \
-            "${G1PUBNOSTR}" \
-            "${UPLANETNAME_G1}" \
-            "${PLAYER}"
-
-    else
-        echo "UPlanet ORIGIN - No primal control"
     fi
+    echo "## CONTROL TRANSACTIONS PRIMAL CONFORMITY..."
+    # Call the generic primal wallet control function (using UPLANETNAME_G1 as unique primal source)
+    ${MY_PATH}/../tools/primal_wallet_control.sh \
+        "${HOME}/.zen/game/nostr/${PLAYER}/.secret.dunikey" \
+        "${G1PUBNOSTR}" \
+        "${UPLANETNAME_G1}" \
+        "${PLAYER}"
 
     ## ADD AMIS of AMIS -- friends of registered MULTIPASS can use our nostr relay
     fof_list=($($MY_PATH/../tools/nostr_get_N1.sh $HEX 2>/dev/null))
