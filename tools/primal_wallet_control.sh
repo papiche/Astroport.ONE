@@ -161,29 +161,16 @@ create_intrusion_wallet() {
     fi
 }
 
-# Function to send alert email
-send_alert_email() {
+# Function to send redirection alert email
+send_redirection_alert() {
     local player_email="$1"
     local wallet_pubkey="$2"
     local intrusion_pubkey="$3"
     local amount="$4"
     local master_primal="$5"
     local intrusion_count="$6"
-    local alert_type="$7"
 
-    local template_file=""
-    case "$alert_type" in
-        "intrusion")
-            template_file="${MY_PATH}/../templates/NOSTR/wallet_alert.html"
-            ;;
-        "redirection")
-            template_file="${MY_PATH}/../templates/NOSTR/wallet_redirection.html"
-            ;;
-        *)
-            echo "Unknown alert type: $alert_type (supported: intrusion, redirection)"
-            return 1
-            ;;
-    esac
+    local template_file="${MY_PATH}/../templates/NOSTR/wallet_redirection.html"
 
     if [[ -f "$template_file" ]]; then
         # Replace placeholders in template
@@ -197,9 +184,9 @@ send_alert_email() {
             "$template_file" > ~/.zen/tmp/primal_alert.html
 
         # Send alert
-        ${MY_PATH}/mailjet.sh "${player_email}" ~/.zen/tmp/primal_alert.html "PRIMAL WALLET ${alert_type^^} ALERT"
+        ${MY_PATH}/mailjet.sh "${player_email}" ~/.zen/tmp/primal_alert.html "PRIMAL WALLET REDIRECTION ALERT"
     else
-        echo "Alert template not found: $template_file"
+        echo "Redirection template not found: $template_file"
         return 1
     fi
 }
@@ -328,6 +315,13 @@ control_primal_transactions() {
         if [[ $(echo "$TXIAMOUNT == 0.01" | bc -l) -eq 1 && $incoming_tx_count -eq 2 ]]; then
             is_wot_identification=true
             echo "# WoT Dragon Identification VALID: 0.01 Ğ1 from ${TXIPUBKEY:0:8} - SECOND TRANSACTION - AUTHORIZED"
+            
+            # Cache second transaction detection
+            local cache_2nd_file="$HOME/.zen/tmp/coucou/${wallet_pubkey}.2nd"
+            mkdir -p "$HOME/.zen/tmp/coucou"
+            echo "${TXIPUBKEY}" > "$cache_2nd_file"
+            echo "📝 Second transaction cached: $cache_2nd_file"
+            
             continue  # Skip primal control for WoT identification transactions
         fi
 
@@ -383,7 +377,7 @@ control_primal_transactions() {
                     new_intrusions=$((new_intrusions + 1))
                     
                     # Send alert for redirection (always notify)
-                    send_alert_email "${player_email}" "${wallet_pubkey}" "${TXIPUBKEY}" "${TXIAMOUNT}" "${master_primal}" "$current_total" "redirection"
+                    send_redirection_alert "${player_email}" "${wallet_pubkey}" "${TXIPUBKEY}" "${TXIAMOUNT}" "${master_primal}" "$current_total"
                 else
                     echo "ERROR: Failed to redirect intrusion to UPLANETNAME.INTRUSION"
                 fi

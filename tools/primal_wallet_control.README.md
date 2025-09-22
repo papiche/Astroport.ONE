@@ -246,32 +246,8 @@ The system supports a **two-step identification protocol** for linking UPlanet s
 - **Position**: **ONLY apply to the 2nd incoming transaction** in wallet history
 - **Purpose**: Links station to WoT Dragon network to Ğ1 member WoT identity
 - **Security**: **Bypasses primal control** - no intrusion alert triggered
+- **Cache**: Creates `~/.zen/tmp/coucou/$pubkey.2nd` with format `sender_pubkey:amount:date`
 - **Validation**: Any other transaction (not respecting same UPLANETNAME_G1 primal) will be rejected as intrusion
-
-```mermaid
-graph TD
-    subgraph "WoT Dragon Identification Protocol"
-        UG1[UPLANETNAME.G1<br/>Unified Primal Source]
-        CAPT[👨‍💼 WoT Dragon Captain<br/>Any Ğ1 Member]
-        NODE[🖥️ NODE Wallet<br/>Now Protected]
-    end
-    
-    subgraph "Transaction Sequence"
-        TX1[1️⃣ First TX (Init)<br/>UPLANETNAME.G1 → NODE<br/>Amount: 1 Ğ1<br/>✅ NODEINIT Standard Control]
-        TX2[2️⃣ Second TX (WoT ID)<br/>WoT Member → NODE<br/>Amount: 0.01 Ğ1<br/>🔓 Exception Bypass]
-        TX3[3️⃣+ Other TX<br/>Any → NODE<br/>Amount: 0.01 Ğ1<br/>❌ Rejected as Intrusion]
-    end
-    
-    UG1 -->|Establishes primal| TX1
-    CAPT -->|WoT identification| TX2
-    TX1 --> NODE
-    TX2 --> NODE
-    TX3 -.->|Rejected| NODE
-    
-    style TX2 fill:#fff3e0,stroke:#ff9800,stroke-width:3px
-    style TX3 fill:#ffebee,stroke:#f44336,stroke-width:2px
-    style NODE fill:#e8f5e8,stroke:#4caf50,stroke-width:3px
-```
 
 ## Usage
 
@@ -326,46 +302,6 @@ ${MY_PATH}/../tools/primal_wallet_control.sh \
     "${EMAIL}"
 ```
 
-### NODE Wallet Integration (NEW)
-
-```bash
-# In ZEN.ECONOMY.sh - NODE wallet is now protected
-declare -A COOPERATIVE_WALLETS=(
-    # ... other wallets ...
-    ["NODE"]="$HOME/.zen/game/secret.NODE.dunikey"
-)
-
-# NODE Initialization Logic (ZEN.ECONOMY.sh line 146-151)
-if [[ $(echo "$NODECOIN < 1" | bc -l) -eq 1 ]]; then
-    echo "NODE $NODECOIN G1 is NOT INITIALIZED !! UPlanet send 1 G1 to NODE"
-    ${MY_PATH}/../tools/PAYforSURE.sh \
-        "$HOME/.zen/game/uplanet.G1.dunikey" \
-        "1" \
-        "${NODEG1PUB}" \
-        "UPLANET:${UPLANETG1PUB:0:8}:$IPFSNODEID:NODEINIT"
-fi
-
-# Automatic primal control for NODE wallet
-${MY_PATH}/../tools/primal_wallet_control.sh \
-    "$HOME/.zen/game/secret.NODE.dunikey" \
-    "${NODEG1PUB}" \
-    "${UPLANETNAME_G1}" \
-    "${CAPTAINEMAIL}"
-```
-
-### WoT Dragon Captain Identification
-
-```bash
-# Captain sends WoT identification to NODE
-silkaj money transfer \
-    -r ${NODEG1PUB} \
-    -a 0.01 \
-    --reference "WoT Dragon Captain Identification: ${CAPTAIN_EMAIL}"
-
-# This 0.01 Ğ1 transaction will bypass primal control
-# and establish the WoT Dragon link for the station
-```
-
 ## Security Features
 
 - **Smart Cache Usage**: Uses existing cache files when available and recent for performance optimization
@@ -393,11 +329,11 @@ The script uses existing cache files for performance optimization:
 
 - `~/.zen/tmp/coucou/$pubkey.primal` - Cached primal source (permanently valid)
 - `~/.zen/tmp/coucou/$pubkey.history` - Cached transaction history (valid for 30 minutes)
+- `~/.zen/tmp/coucou/$pubkey.2nd` - Second transaction detection cache (WoT Dragon member pubkey Identification)
 
 ### Templates
-The script uses HTML templates for email alerts:
+The script uses HTML template for email alerts:
 
-- `templates/NOSTR/wallet_alert.html` - For intrusion alerts (first intrusion)
 - `templates/NOSTR/wallet_redirection.html` - For redirection notifications (all intrusions)
 
 ## Benefits Achieved
