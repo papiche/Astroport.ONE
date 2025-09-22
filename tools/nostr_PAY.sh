@@ -237,8 +237,8 @@ select_nostr_account() {
                                     match=true
                                 fi
                                 ;;
-                            2) # G1 Public Key - recherche dans NOSTRG1PUB
-                                local nostr_g1pub_file="$HOME/.zen/game/nostr/${account_name}/NOSTRG1PUB"
+                            2) # G1 Public Key - recherche dans G1PUBNOSTR
+                                local nostr_g1pub_file="$HOME/.zen/game/nostr/${account_name}/G1PUBNOSTR"
                                 if [[ -f "$nostr_g1pub_file" ]]; then
                                     local nostr_g1pub=$(cat "$nostr_g1pub_file" 2>/dev/null)
                                     if [[ "$nostr_g1pub" == *"$search_term"* ]]; then
