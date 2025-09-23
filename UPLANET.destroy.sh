@@ -19,7 +19,7 @@
 # ⚠️  ATTENTION : CE SCRIPT DÉTRUIT LA COMPTABILITÉ UPLANET ⚠️
 # ⚠️  UTILISATION UNIQUEMENT EN CAS DE FERMETURE DÉFINITIVE ⚠️
 #
-# Usage: ./UPLANET.destroy.sh [--dry-run] [--force]
+# Usage: ./UPLANET.destroy.sh [--force]
 ################################################################################
 
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -40,7 +40,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 MIN_BALANCE="0.01"  # Solde minimum pour considérer un portefeuille non vide
-DRY_RUN=false
+DRY_RUN=true        # Par défaut en mode simulation
 FORCE=false
 DESTINATION_PUBKEY=""
 
@@ -84,8 +84,7 @@ show_help() {
     echo "  $0 [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  --dry-run     Simulation sans effectuer de transactions"
-    echo "  --force       Ignorer les confirmations de sécurité"
+    echo "  --force       Effectuer les vraies transactions (par défaut: simulation)"
     echo "  -h, --help    Affiche cette aide"
     echo ""
     echo -e "${YELLOW}Portefeuilles concernés :${NC}"
@@ -522,11 +521,8 @@ main() {
     # Traitement des arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
-            --dry-run)
-                DRY_RUN=true
-                shift
-                ;;
             --force)
+                DRY_RUN=false
                 FORCE=true
                 shift
                 ;;
@@ -553,8 +549,13 @@ main() {
         exit 1
     fi
     
-    # Demander la clé publique de destination
-    if [[ "$DRY_RUN" != true ]]; then
+    # Afficher le mode actuel
+    if [[ "$DRY_RUN" == true ]]; then
+        echo -e "${YELLOW}🔍 MODE SIMULATION ACTIVÉ (par défaut)${NC}"
+        echo -e "${CYAN}Pour effectuer les vraies transactions, utilisez: --force${NC}"
+        DESTINATION_PUBKEY="SIMULATION_MODE"
+    else
+        echo -e "${RED}${BOLD}⚠️  MODE DESTRUCTION RÉEL ACTIVÉ ⚠️${NC}"
         echo -e "${CYAN}🎯 DESTINATION DES FONDS${NC}"
         echo -e "${YELLOW}========================${NC}"
         echo -e "${WHITE}Entrez la clé publique de destination (44 caractères):${NC}"
@@ -572,9 +573,6 @@ main() {
         
         # Confirmation de sécurité
         security_confirmation
-    else
-        DESTINATION_PUBKEY="SIMULATION_MODE"
-        echo -e "${YELLOW}🔍 MODE SIMULATION ACTIVÉ${NC}"
     fi
     
     # Initialiser les compteurs
