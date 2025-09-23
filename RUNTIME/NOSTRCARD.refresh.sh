@@ -396,7 +396,7 @@ for PLAYER in "${NOSTR[@]}"; do
 
                     # Only process payment if current time has passed the refresh time
                     if [[ $current_seconds -ge $refresh_seconds ]]; then
-                        if [[ $(echo "$COINS > 1" | bc -l) -eq 1 ]]; then
+                        if [[ $(echo "$COINS >= 1" | bc -l) -eq 1 ]]; then
                             ## Pay NCARD to CAPTAIN with TVA provision
                             [[ -z $NCARD ]] && NCARD=1
                             Npaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
@@ -478,6 +478,12 @@ for PLAYER in "${NOSTR[@]}"; do
                                 log "INFO" "Error email sent to ${PLAYER} for payment failure"
                             fi
                         else
+                            # Check if MULTIPASS is less than 7 days old (grace period)
+                            if [[ $DIFF_DAYS -lt 7 ]]; then
+                                log "INFO" "[7 DAYS CYCLE] NOSTR Card ($COINS G1) - Grace period for new MULTIPASS (${DIFF_DAYS} days old)"
+                                continue
+                            fi
+                            
                             log "WARN" "[7 DAYS CYCLE] NOSTR Card ($COINS G1) - insufficient funds! Destroying if not captain"
                             if [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]]; then
                                 ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}"
