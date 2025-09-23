@@ -124,18 +124,18 @@ Astroport.ONE/
 │   ├── my.sh             # Bibliothèque de fonctions
 │   ├── keygen            # Générateur de clés
 │   └── heartbox_analysis.sh # Analyse système
-├── API/                   # Endpoints spécialisés
+├── API/                   # API Sandbox Examples
 │   ├── QRCODE.sh         # Gestion QR codes
 │   ├── SALT.sh           # Authentification
 │   └── UPLANET.sh        # Données UPlanet
 ├── RUNTIME/               # Services en arrière-plan
 │   ├── G1PalPay.sh       # Surveillance Ğ1
-│   ├── NOSTRCARD.refresh.sh # Cartes NOSTR
-│   └── PLAYER.refresh.sh # Rafraîchissement joueurs
-├── ASTROBOT/              # Automatisation
+│   ├── NOSTRCARD.refresh.sh # Comptes MULTIPASS
+│   └── PLAYER.refresh.sh # Comptes ZEN Cards
+├── ASTROBOT/              # Automatisation  (Players Smart Contract)
 │   └── N1*.sh            # Commandes N1
 ├── templates/             # Templates HTML
-└── docker/               # Configuration Docker
+└── _DOCKER/               # Official Docker Compose (Duniter, NextCloud, PeerTube, ...)
 ```
 
 ---
@@ -182,7 +182,7 @@ flowchart TD
 
 ### 3. Flux de Requête API Typique
 
-cf. Dépot de code /UPassport 
+cf. [Dépot de code /UPassport](/papiche/UPassport/) 
 
 ---
 
@@ -194,8 +194,8 @@ cf. Dépot de code /UPassport
 |-------------|--------|-------|----------|
 | **Zen Card** | Ẑen | Paiements et transactions | `~/.zen/game/players/*/secret.dunikey` |
 | **IPFS Key** | IPFS | Identité décentralisée | `~/.ipfs/keystore/` |
-| **NOSTR Key** | NOSTR | Réseau social | `~/.zen/game/nostr/*/.secret.nostr` |
-| **SSSS Keys** | Shamir | Partage de secrets | `~/.zen/game/nostr/*/.secret.disco` |
+| **MULTIPASS Key** | NOSTR | Réseau social | `~/.zen/game/nostr/*/.secret.nostr` |
+| **SSSS Keys** | Shamir | Seed source | `~/.zen/game/nostr/*/.secret.disco` |
 
 ### 2. Validation des Transactions
 
@@ -219,8 +219,8 @@ function validate_primal_transaction() {
 
 ### 3. Système de Chiffrement
 
-- **Clés Géographiques** : Génération basée sur coordonnées GPS
-- **Stargates** : Distribution sécurisée des clés de chiffrement
+- **Clés Géographiques** : Génération basée sur coordonnées GPS (UMAP 1km, SECTOR 10km, REGION 100km)
+- **Stargates** : Distribution des messages NOSTR (protocole N²)
 - **Communs Cryptographiques** : Partage de ressources cryptographiques
 
 ---
@@ -286,7 +286,7 @@ function monitor_g1_transactions() {
 ├── nostr/               # Données NOSTR
 │   └── */               # Données par MULTIPASS (@, UMAP, ZCARD, ...)
 └── tmp/                 # Cache temporaire
-│   ├── coucou/          # Cache Metadonnées Profil : .COINS, .primal, .cesium, .gchange, ...
+│   ├── coucou/          # Cache Metadonnées Profil : .COINS, .primal, .2nd, .cesium, .gchange, ...
 │   ├── ${IPFSNODEID]/   # Balise IPNS de la Station
 │   ├── swarm/           # Capture des balises des stations de l'essaim
 ```
@@ -295,7 +295,7 @@ function monitor_g1_transactions() {
 
 - **Cache Local** : `~/.zen/tmp/` pour les données temporaires
 - **Cache IPFS** : Stockage local IPFS du TW de la ZenCard
-- **Cache NOSTR** : Stockage local + N1 des événements NOSTR
+- **Cache NOSTR** : Stockage local + synchro N² des événements NOSTR
 
 ### 3. Synchronisation
 
@@ -307,7 +307,7 @@ function monitor_g1_transactions() {
 
 ## 🔌 APIs et Services
 
-### 1. API Gateway (Port 1234) - script debug zone - you can break it ;)
+### 1. API Gateway (Port 1234) - script example zone - you can break it ;)
 
 ```bash
 # Point d'entrée principal
@@ -317,7 +317,7 @@ GET /?cmd=action&param=value
 # Exécution des services API/
 ```
 
-### 2. Station Map (Port 12345) - /12345 ssl mapping -
+### 2. Station Map (Port 12345) - /12345 ssl mapping (Node Swarm Info)
 
 ```bash
 # Cartographie des stations UPlanet
@@ -325,7 +325,7 @@ GET / - Interface de cartographie
 Données JSON des stations
 ```
 
-### 3. UPassport API (Port 54321) - u. ssl mapping -
+### 3. UPassport API (Port 54321) - u. ssl mapping - (Production API)
 
 ```bash
 # API d'identité numérique
@@ -371,7 +371,7 @@ send_maintenance_report
 
 ### 3. Logs et Debugging
 
-- **Logs UPassport** : `journalctl -fu upassport`
+- **Logs UPassport API** : `journalctl -fu upassport`
 - **Logs NOSTR** : `~/.zen/tmp/nostr_*.log`
 - **Logs UPlanet** : `~/.zen/tmp/uplanet_*.log`
 - **Logs IA** : `~/.zen/tmp/IA.log`
@@ -398,7 +398,7 @@ cd ~/.zen/Astroport.ONE
 # Configuration IPFS
 ~/.zen/Astroport.ONE/ipfs_setup.sh
 
-# Configuration NOSTR
+# Configuration RELAI NOSTR (strfry)
 ~/.zen/workspace/NIP-101/setup.sh
 
 # Configuration UPassport
@@ -475,29 +475,6 @@ curl -F "file=@photo.jpg" \
      -F "npub=npub1..." \
      http://localhost:54321/api/upload
 ```
-
----
-
-## 📊 Métriques et Performance - Try & Update -
-
-### 1. Indicateurs Clés
-
-- **Uptime** : Disponibilité des services
-- **Latence** : Temps de réponse des APIs
-- **Stockage** : Utilisation IPFS et cache
-- **Transactions** : Volume de transactions Ğ1
-
-### 2. Monitoring Prometheus
-
-- **Exporters** : Métriques système et application
-- **Dashboards** : Visualisation des performances
-- **Alertes** : Notifications automatiques
-
-### 3. Optimisation
-
-- **Cache IPFS** : Optimisation des accès fréquents
-- **Compression** : Réduction de la bande passante
-- **Load Balancing** : Répartition de charge
 
 ---
 
