@@ -38,9 +38,34 @@ NPUB="$8"
 HEX="$9"
 
 if [[ -z $NPUB || -z $HEX ]]; then
-    source ~/.zen/game/nostr/$PLAYER/.secret.nostr
+    source ~/.zen/game/nostr/$PLAYER/.secret.nostr 2>/dev/null
 fi
-[[ -z $NPUB || -z $HEX ]] && echo "FATAL ERROR : missing MULTIPASS ~/.zen/game/nostr/$PLAYER" && exit 1
+
+# STRICT MULTIPASS VERIFICATION - Required for ZEN Card creation
+if [[ -z $NPUB || -z $HEX || ! -d ~/.zen/game/nostr/$PLAYER || ! -s ~/.zen/game/nostr/$PLAYER/G1PUBNOSTR ]]; then
+    echo "❌ MULTIPASS REQUIRED: ZEN Card creation blocked for security"
+    echo "📧 Sending restriction notification to $PLAYER"
+    
+    # Create restriction email from template
+    RESTRICTION_EMAIL=$(mktemp)
+    cat "${MY_PATH}/../templates/NOSTR/multipass_required.html" \
+        | sed -e "s/{PLAYER_EMAIL}/$PLAYER/g" \
+               -e "s/{RELAY_URL}/$myRELAY/g" \
+               -e "s/{myIPFS}/$myIPFS/g" \
+               -e "s/{uSPOT}/$uSPOT/g" \
+        > "$RESTRICTION_EMAIL"
+    
+    # Send restriction notification
+    ${MY_PATH}/../tools/mailjet.sh "$PLAYER" "$RESTRICTION_EMAIL" "🚫 MULTIPASS Requis - Création ZEN Card Bloquée"
+    
+    # Log the restriction
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ZEN Card creation blocked for $PLAYER - MULTIPASS required" >> ~/.zen/tmp/zencard_restrictions.log
+    
+    # Clean up and exit
+    rm -f "$RESTRICTION_EMAIL"
+    echo "FATAL ERROR : MULTIPASS required for ZEN Card creation - Email sent to $PLAYER"
+    exit 1
+fi
 
 ################################################################################
 YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
@@ -296,7 +321,7 @@ if [[ -z $HEX && -z $NPUB ]]; then
     # tools/search_for_this_email_in_nostr.sh example@email.com
     # export source=LOCAL HEX=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef LAT= LON= EMAIL=example@email.com G1PUBNOSTR=ExampleG1PubKeyABCDEFGHIJKLMNOPQRSTUVWXYZ123456789 NPUB=npub1example0123456789abcdef0123456789abcdef0123456789abcdef0123456 RELAY=ws://127.0.0.1:7777
     $(${MY_PATH}/../tools/search_for_this_email_in_nostr.sh "$PLAYER" | tail -n 1)
-    
+    source ~/.zen/game/nostr/${PLAYER}/GPS
 else
     ## NO MULTIPASS FOUND - SET EMPTY VALUES
     NPUB=""

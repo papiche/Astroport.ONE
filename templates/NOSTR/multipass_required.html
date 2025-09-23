@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MULTIPASS Requis - UPlanet</title>
+    <style>
+        :root {
+            --primary-color: #e74c3c;
+            --secondary-color: #3498db;
+            --text-color: #333;
+            --bg-color: #f5f5f5;
+            --container-bg: white;
+            --border-color: #e9ecef;
+            --warning-bg: #fff3cd;
+            --warning-border: #ffc107;
+            --info-bg: #d1ecf1;
+            --info-border: #bee5eb;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: var(--container-bg);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        .header .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .warning-box {
+            background-color: var(--warning-bg);
+            border: 1px solid var(--warning-border);
+            border-left: 4px solid var(--warning-border);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .warning-box h2 {
+            color: #856404;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .info-box {
+            background-color: var(--info-bg);
+            border: 1px solid var(--info-border);
+            border-left: 4px solid var(--secondary-color);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .info-box h2 {
+            color: var(--secondary-color);
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .steps {
+            margin: 30px 0;
+        }
+
+        .step {
+            background-color: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            position: relative;
+        }
+
+        .step-number {
+            background-color: var(--secondary-color);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            position: absolute;
+            top: -15px;
+            left: 20px;
+        }
+
+        .step h3 {
+            color: var(--secondary-color);
+            margin-top: 0;
+            margin-left: 40px;
+        }
+
+        .step p {
+            margin-left: 40px;
+        }
+
+        .highlight {
+            background-color: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 10px 5px;
+            transition: background-color 0.3s;
+        }
+
+        .button:hover {
+            background-color: #2980b9;
+        }
+
+        .button.primary {
+            background-color: var(--primary-color);
+        }
+
+        .button.primary:hover {
+            background-color: #c0392b;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .contact-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .step {
+                padding: 15px;
+            }
+            
+            .step h3, .step p {
+                margin-left: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚫 MULTIPASS Requis</h1>
+            <p class="subtitle">Création de ZEN Card impossible</p>
+        </div>
+
+        <div class="warning-box">
+            <h2>⚠️ Accès Restreint</h2>
+            <p><strong>Votre demande de création de ZEN Card a été refusée.</strong></p>
+            <p>Depuis la mise à jour de sécurité UPlanet, la création d'une ZEN Card nécessite obligatoirement de posséder un <strong>MULTIPASS</strong> actif et validé.</p>
+        </div>
+
+        <div class="info-box">
+            <h2>📋 Nouvelle Politique de Sécurité</h2>
+            <p>Cette restriction a été mise en place pour :</p>
+            <ul>
+                <li><strong>Renforcer la sécurité</strong> de l'écosystème UPlanet</li>
+                <li><strong>Éviter les comptes multiples</strong> et les abus</li>
+                <li><strong>Garantir l'authenticité</strong> des identités numériques</li>
+                <li><strong>Maintenir la cohérence</strong> du système NOSTR/G1</li>
+            </ul>
+        </div>
+
+        <div class="steps">
+            <h2>🔧 Comment Procéder</h2>
+            
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Créer votre MULTIPASS</h3>
+                <p>Commencez par créer votre identité NOSTR MULTIPASS. C'est votre passeport numérique dans l'écosystème UPlanet.</p>
+                <p><strong>Email utilisé :</strong> <span class="highlight">{PLAYER_EMAIL}</span></p>
+            </div>
+
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>Activer votre MULTIPASS</h3>
+                <p>Envoyez <strong>au minimum 1 Ğ1</strong> vers votre adresse MULTIPASS pour l'activer. Cette transaction :</p>
+                <ul>
+                    <li>Établit votre propriété cryptographique</li>
+                    <li>Active tous les services UPlanet</li>
+                    <li>Vous donne accès à la création de ZEN Card</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>Créer votre ZEN Card</h3>
+                <p>Une fois votre MULTIPASS actif, vous pourrez créer votre ZEN Card sans restriction.</p>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h2>🎯 Avantages du MULTIPASS</h2>
+            <p>En créant d'abord votre MULTIPASS, vous bénéficiez de :</p>
+            <ul>
+                <li><strong>Identité NOSTR</strong> - Votre profil sur le réseau décentralisé</li>
+                <li><strong>uDRIVE</strong> - 10 Go de stockage IPFS personnel</li>
+                <li><strong>Portefeuille intégré</strong> - Gestion G1 et ẐEN</li>
+                <li><strong>Réseau social</strong> - Connexion au réseau NOSTR</li>
+                <li><strong>Applications décentralisées</strong> - Accès à l'écosystème complet</li>
+            </ul>
+        </div>
+
+        <div class="contact-info">
+            <h3>📞 Besoin d'Aide ?</h3>
+            <p>Si vous avez des questions ou rencontrez des difficultés :</p>
+            <ul>
+                <li><strong>Email :</strong> support@copylaradio.com</li>
+                <li><strong>NOSTR :</strong> Rejoignez notre relai <span class="highlight">{RELAY_URL}</span></li>
+                <li><strong>Documentation :</strong> <a href="{myIPFS}/ipns/copylaradio.com" target="_blank">Guide UPlanet</a></li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{uSPOT}/g1" class="button primary">Créer mon MULTIPASS</a>
+            <a href="{myIPFS}/ipns/copylaradio.com" class="button">Documentation</a>
+        </div>
+
+        <div class="footer">
+            <p><strong>UPlanet ẐEN</strong> - Système d'information libre et décentralisé</p>
+            <p>CopyLaRadio SCIC - Société Coopérative d'Intérêt Collectif</p>
+            <p><em>Cette restriction garantit la sécurité et l'intégrité de votre écosystème numérique.</em></p>
+        </div>
+    </div>
+</body>
+</html>
