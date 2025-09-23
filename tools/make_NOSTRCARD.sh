@@ -360,9 +360,15 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     
     # Send primo transaction from UPLANETNAME.G1 to establish primal chain for MULTIPASS
     ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.G1.dunikey" "1" "${G1PUBNOSTR}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:MULTIPASS:PRIMO" 2>/dev/null \
-    && echo "${UPLANETG1PUB}" > ~/.zen/game/nostr/${EMAIL}/G1PRIME \
-    && echo "✅ PRIMO TX sent successfully - PRIMAL marked from ${UPLANETG1PUB} wallet" \
+    && echo "${UPLANETNAME_G1}" > ~/.zen/game/nostr/${EMAIL}/G1PRIME \
+    && echo "✅ PRIMO TX sent successfully - PRIMAL marked from ${UPLANETNAME_G1} wallet" \
     || echo "⚠️ PRIMO TX failed for MULTIPASS ${EMAIL}"
+
+    ## SEND ZINE TO EMAIL USING MAILJET
+    echo "Sending NOSTR zine to ${EMAIL} via mailjet..."
+    ${MY_PATH}/mailjet.sh "${EMAIL}" "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html" "MULTIPASS - ${YOUSER}" 2>/dev/null \
+        && echo "✅ NOSTR zine sent successfully to ${EMAIL}" \
+        || echo "⚠️ Failed to send NOSTR zine to ${EMAIL}"
 
     ## CLEAN CACHE
     rm -Rf ~/.zen/tmp/${MOATS-null}

@@ -630,9 +630,9 @@ cat ${ZINE} \
             -e "s~_SECTOR_~${SECTOR}~g" \
             -e "s~_SLAT_~${SLAT}~g" \
             -e "s~_SLON_~${SLON}~g" \
-        > ~/.zen/tmp/${MOATS}/UPlanetZine.html
+        > ~/.zen/game/players/${PLAYER}/.ZENCard.html
 
-$MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/UPlanetZine.html "... ẐEN Card activated ..."
+$MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/game/players/${PLAYER}/.ZENCard.html "✅ ẐEN Card activated"
 
 ### SEND INITIAL G1 - PRIMO TRANSACTION FROM UPLANETNAME.G1 FOR ZENCARD
 
