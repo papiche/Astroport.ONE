@@ -241,6 +241,58 @@
             </div>
             
             <div class="info-box">
+                <h3>🔐 UPlanet Secret Recovery Information</h3>
+                <p>As part of this migration, we're revealing the <strong>UPLANET shared secret</strong> that was used to generate all cooperative wallets:</p>
+                <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; margin: 10px 0; font-family: monospace; word-break: break-all;">
+                    <strong>UPLANET Secret:</strong> _UPLANET_SECRET_
+                </div>
+                <p><small>This secret was stored in <code>~/.ipfs/swarm.key</code> on UPlanet nodes and used to generate all cooperative wallets (SOCIETY, CASH, RND, ASSETS, etc.)</small></p>
+            </div>
+            
+            <div class="timeline">
+                <h3>💎 Hidden Treasure Recovery Guide</h3>
+                <p>Some <strong>GeoKey wallets</strong> are still existing and could contain hidden funds! Here's how to recover them:</p>
+                
+                <h4>🗝️ GeoKey Generation Method:</h4>
+                <ol>
+                    <li><strong>Geographic Coordinates:</strong> GeoKeys were generated using specific latitude/longitude coordinates</li>
+                    <li><strong>Precision Levels:</strong> Different precision levels created different wallet types:
+                        <ul>
+                            <li><strong>UMAP:</strong> 0.01° precision (±1.1km)</li>
+                            <li><strong>SECTOR:</strong> 0.1° precision (±11km)</li>
+                            <li><strong>REGION:</strong> 1.0° precision (±111km)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Key Generation Formula:</strong>
+                        <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px; margin: 10px 0; font-family: monospace;">
+                            keygen -t duniter -o geokey.dunikey "UPLANETNAME_LAT_LON_PRECISION" "UPLANETNAME_LAT_LON_PRECISION"
+                        </div>
+                    </li>
+                </ol>
+                
+                <h4>🔍 Example Recovery Commands:</h4>
+                <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px; margin: 10px 0; font-family: monospace; font-size: 0.9em;">
+                    # For coordinates 48.8534, 2.3412 (Paris)<br>
+                    # UMAP level (0.01° precision):<br>
+                    keygen -t duniter -o umap.dunikey "_UPLANET_SECRET__48.85_2.34_2" "_UPLANET_SECRET__48.85_2.34_2"<br><br>
+                    
+                    # SECTOR level (0.1° precision):<br>
+                    keygen -t duniter -o sector.dunikey "_UPLANET_SECRET__48.8_2.3_1" "_UPLANET_SECRET__48.8_2.3_1"<br><br>
+                    
+                    # REGION level (1.0° precision):<br>
+                    keygen -t duniter -o region.dunikey "_UPLANET_SECRET__49_2_0" "_UPLANET_SECRET__49_2_0"
+                </div>
+                
+                <h4>💰 Checking for Funds:</h4>
+                <p>Once you generate a GeoKey wallet, check its balance using:</p>
+                <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px; margin: 10px 0; font-family: monospace;">
+                    silkaj money balance $(cat geokey.dunikey | grep 'pub:' | cut -d ' ' -f 2)
+                </div>
+                
+                <p><strong>🎯 Pro Tip:</strong> Try coordinates of places you've visited, lived, or have significance to you. Some GeoKeys may contain unclaimed funds from the old UPlanet ecosystem!</p>
+            </div>
+            
+            <div class="info-box">
                 <h3>🤝 Community Support</h3>
                 <p>We understand that system migrations can be concerning. Rest assured that:</p>
                 <ul>

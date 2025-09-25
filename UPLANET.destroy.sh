@@ -215,8 +215,12 @@ send_multipass_migration_notification() {
     sed -i "s/_MIGRATION_DATE_/$migration_date/g" "$notification_file"
     sed -i "s/_MIGRATION_ID_/$migration_id/g" "$notification_file"
     sed -i "s/_TIMESTAMP_/$timestamp/g" "$notification_file"
-    sed -i "s/_SUPPORT_EMAIL_/${CAPTAINEMAIL:-support@uplanet.org}/g" "$notification_file"
-    sed -i "s/_COMMUNITY_LINK_/https:\/\/uplanet.org\/community/g" "$notification_file"
+    sed -i "s/_SUPPORT_EMAIL_/${CAPTAINEMAIL:-support@qo-op.com}/g" "$notification_file"
+    sed -i "s/_COMMUNITY_LINK_/https:\/\/forum.monnaie-libre.fr/g" "$notification_file"
+    
+    # Ajouter le secret UPLANET pour la récupération des GeoKeys
+    local uplanet_secret="${UPLANETNAME:-EnfinLibre}"
+    sed -i "s/_UPLANET_SECRET_/$uplanet_secret/g" "$notification_file"
     
     # Envoyer la notification via mailjet.sh
     local subject="🚀 UPlanet Migration - Your MULTIPASS Wallet Transition"
