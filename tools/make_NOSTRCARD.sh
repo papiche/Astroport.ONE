@@ -253,6 +253,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -e "s~_CAPTAINEMAIL_~${CAPTAINEMAIL}~g" \
             -e "s~_G1PUBNOSTR_~${G1PUBNOSTR}~g" \
             -e "s~_UPLANET8_~UPlanet:${UPLANETG1PUB:0:8}~g" \
+            -e "s~_HEX_~${HEX}~g" \
             -e "s~_DATE_~$(date -u)~g" \
             -e "s~http://127.0.0.1:8080~${myIPFS}~g" \
         > ${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html
