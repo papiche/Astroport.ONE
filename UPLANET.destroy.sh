@@ -49,6 +49,8 @@ TOTAL_WALLETS=0
 TOTAL_AMOUNT="0"
 SUCCESS_COUNT=0
 FAILURE_COUNT=0
+MIGRATION_NOTIFICATIONS_SENT=0
+MIGRATION_NOTIFICATIONS_FAILED=0
 
 # Portefeuilles coopératifs (basés sur UPLANET.init.sh)
 declare -A COOPERATIVE_WALLETS=(
@@ -150,13 +152,14 @@ empty_wallet() {
     # On peut transférer la totalité du solde
     local transfer_amount="$balance"
     
-    # Effectuer le transfert avec silkaj
+    # Effectuer le transfert avec PAYforSURE.sh
     echo -e "${YELLOW}Transfert de $transfer_amount Ğ1...${NC}"
     
-    local transfer_result
-    transfer_result=$(silkaj --json --dunikey-file "$dunikey_file" money transfer -r "$DESTINATION_PUBKEY" -a "$transfer_amount" --reference "UPLANET:DESTROY:$wallet_name" --yes 2>/dev/null)
+    # PAYforSURE.sh parameters: <keyfile> <amount> <g1pub> [comment] [moats]
+    local comment="UPLANET:DESTROY:$wallet_name"
+    local moats=$(date -u +"%Y%m%d%H%M%S%4N")
     
-    if [[ $? -eq 0 ]]; then
+    if "${MY_PATH}/tools/PAYforSURE.sh" "$dunikey_file" "$transfer_amount" "$DESTINATION_PUBKEY" "$comment" "$moats" >/dev/null 2>&1; then
         echo -e "${GREEN}✅ Transfert réussi: $transfer_amount Ğ1${NC}"
         ((SUCCESS_COUNT++))
         TOTAL_AMOUNT=$(echo "scale=2; $TOTAL_AMOUNT + $transfer_amount" | bc -l)
@@ -169,13 +172,78 @@ empty_wallet() {
         return 0
     else
         echo -e "${RED}❌ Échec du transfert${NC}"
-        echo "$transfer_result"
+        echo "PAYforSURE.sh failed for $wallet_name"
         ((FAILURE_COUNT++))
         
         # Envoyer une alerte d'échec au CAPTAINEMAIL
         if [[ -n "$CAPTAINEMAIL" ]]; then
-            send_destruction_alert "$wallet_name" "$transfer_amount" "FAILURE" "$transfer_result"
+            send_destruction_alert "$wallet_name" "$transfer_amount" "FAILURE" "PAYforSURE.sh transfer failed"
         fi
+        
+        return 1
+    fi
+}
+
+# Fonction pour envoyer une notification de migration MULTIPASS
+send_multipass_migration_notification() {
+    local email="$1"
+    local pubkey="$2"
+    local amount="$3"
+    local status="$4"
+    
+    # Vérifier que l'email est valide
+    if [[ -z "$email" || ! "$email" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+        echo -e "${YELLOW}⚠️  Email invalide pour la notification: $email${NC}"
+        return 1
+    fi
+    
+    # Générer un ID de migration unique
+    local migration_id="UPLANET-$(date +%Y%m%d)-$(echo "$email" | md5sum | cut -c1-8)"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S UTC')
+    local migration_date=$(date '+%Y-%m-%d')
+    
+    # Créer le fichier de notification HTML basé sur le template
+    local notification_file="$HOME/.zen/tmp/multipass_migration_${email//[@.]/_}_$(date +%Y%m%d_%H%M%S).html"
+    
+    # Copier le template et remplacer les variables
+    cp "${MY_PATH}/templates/MULTIPASS/migration_notification.html" "$notification_file"
+    
+    # Remplacer les variables dans le template [[memory:7094165]]
+    sed -i "s/_EMAIL_/$email/g" "$notification_file"
+    sed -i "s/_PUBKEY_/${pubkey:0:8}...${pubkey: -8}/g" "$notification_file"
+    sed -i "s/_AMOUNT_/$amount/g" "$notification_file"
+    sed -i "s/_MIGRATION_DATE_/$migration_date/g" "$notification_file"
+    sed -i "s/_MIGRATION_ID_/$migration_id/g" "$notification_file"
+    sed -i "s/_TIMESTAMP_/$timestamp/g" "$notification_file"
+    sed -i "s/_SUPPORT_EMAIL_/${CAPTAINEMAIL:-support@uplanet.org}/g" "$notification_file"
+    sed -i "s/_COMMUNITY_LINK_/https:\/\/uplanet.org\/community/g" "$notification_file"
+    
+    # Envoyer la notification via mailjet.sh
+    local subject="🚀 UPlanet Migration - Your MULTIPASS Wallet Transition"
+    if [[ "$status" == "SUCCESS" ]]; then
+        subject="🚀 UPlanet Migration - Successful Transfer ($amount Ğ1)"
+    else
+        subject="⚠️ UPlanet Migration - Transfer Issue ($email)"
+    fi
+    
+    echo -e "${CYAN}📧 Sending migration notification to: $email${NC}"
+    
+    if "${MY_PATH}/tools/mailjet.sh" "$email" "$notification_file" "$subject" >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ Migration notification sent successfully${NC}"
+        ((MIGRATION_NOTIFICATIONS_SENT++))
+        
+        # Garder le fichier de notification pour les logs
+        mkdir -p "$HOME/.zen/tmp/migration_notifications/"
+        mv "$notification_file" "$HOME/.zen/tmp/migration_notifications/" 2>/dev/null
+        
+        return 0
+    else
+        echo -e "${RED}❌ Failed to send migration notification${NC}"
+        ((MIGRATION_NOTIFICATIONS_FAILED++))
+        
+        # Garder le fichier même en cas d'échec pour debug
+        mkdir -p "$HOME/.zen/tmp/migration_notifications/failed/"
+        mv "$notification_file" "$HOME/.zen/tmp/migration_notifications/failed/" 2>/dev/null
         
         return 1
     fi
@@ -361,13 +429,26 @@ destroy_multipass_wallets() {
                         if (( $(echo "$balance > $MIN_BALANCE" | bc -l) )); then
                             ((wallets_found++))
                             ((TOTAL_WALLETS++))
-                            empty_wallet "MULTIPASS_$email" "$secret_dunikey" "$pubkey" "$balance"
+                            
+                            # Vider le portefeuille
+                            if empty_wallet "MULTIPASS_$email" "$secret_dunikey" "$pubkey" "$balance"; then
+                                # Envoyer la notification de migration à l'utilisateur
+                                send_multipass_migration_notification "$email" "$pubkey" "$balance" "SUCCESS"
+                            else
+                                # Envoyer la notification d'échec
+                                send_multipass_migration_notification "$email" "$pubkey" "$balance" "FAILURE"
+                            fi
                             
                             if [[ "$DRY_RUN" != true ]]; then
                                 sleep 2
                             fi
                         else
                             echo -e "${BLUE}ℹ️  MULTIPASS $email: Vide ($balance Ğ1)${NC}"
+                            
+                            # Même pour les portefeuilles vides, envoyer une notification de migration
+                            if [[ "$DRY_RUN" != true ]]; then
+                                send_multipass_migration_notification "$email" "$pubkey" "$balance" "SUCCESS"
+                            fi
                         fi
                     fi
                 fi
@@ -580,6 +661,8 @@ main() {
     TOTAL_AMOUNT="0"
     SUCCESS_COUNT=0
     FAILURE_COUNT=0
+    MIGRATION_NOTIFICATIONS_SENT=0
+    MIGRATION_NOTIFICATIONS_FAILED=0
     
     # Détruire tous les portefeuilles
     destroy_cooperative_wallets
@@ -594,6 +677,8 @@ main() {
     echo -e "${BLUE}Transferts réussis:${NC} ${GREEN}$SUCCESS_COUNT${NC}"
     echo -e "${BLUE}Transferts échoués:${NC} ${RED}$FAILURE_COUNT${NC}"
     echo -e "${BLUE}Montant total transféré:${NC} ${YELLOW}$TOTAL_AMOUNT Ğ1${NC}"
+    echo -e "${BLUE}Notifications de migration envoyées:${NC} ${GREEN}$MIGRATION_NOTIFICATIONS_SENT${NC}"
+    echo -e "${BLUE}Notifications de migration échouées:${NC} ${RED}$MIGRATION_NOTIFICATIONS_FAILED${NC}"
     
     if [[ "$DRY_RUN" != true ]]; then
         echo -e "${BLUE}Destination:${NC} ${CYAN}$DESTINATION_PUBKEY${NC}"
