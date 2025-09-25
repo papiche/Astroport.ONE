@@ -579,6 +579,7 @@ VDONINJA="https://vdo.copylaradio.com"
 ## https://cesium.app
 CESIUMIPFS="/ipfs/QmXex8PTnQehx4dELrDYuZ2t5ag85crYCBxm3fcTjVWo2k" # v1.7.10
 CESIUMIPFS="/ipfs/QmUJbCUcZKEsyRJie6NKiyKdseYtNNAGp1vEiSZqg5VL7i" # v1.7.13 - changed init scan
+CESIUMIPFS="https://cesium.copylaradio.com"  ## DNSLink /ipns/cesium.copylaradio.com
 
 ## GCHANGE HACK (bof)
 HACKGIPFS="/ipfs/Qmemnmd9V4WQEQF1wjKomeBJSuvAoqFBS7Hoq4sBDxvV2F"
