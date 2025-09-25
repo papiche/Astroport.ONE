@@ -16,6 +16,27 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/my.sh"
 
+# Function to generate Cesium wallet link
+generate_cesium_link() {
+    local pubkey="$1"
+    echo "$CESIUMIPFS/#/app/wot/${pubkey}/"
+}
+
+# Function to display wallet information with Cesium links
+display_wallet_info() {
+    local title="$1"
+    local pubkey="$2"
+    local description="$3"
+    
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "🏦 $title"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "📋 Description: $description"
+    echo "🔑 Public Key: $pubkey"
+    echo "🔗 Cesium Link: $(generate_cesium_link "$pubkey")"
+    echo ""
+}
+
 # Function to get primal source of a wallet
 get_primal_source() {
     local wallet_pubkey="$1"
@@ -29,6 +50,7 @@ get_primal_source() {
         local cached_primal=$(cat "$cache_file" 2>/dev/null)
         if [[ -n "$cached_primal" && "$cached_primal" != "null" ]]; then
             echo "Using cached primal source for ${wallet_pubkey:0:8}"
+            echo "🔗 Cesium: $(generate_cesium_link "$wallet_pubkey")"
             echo "$cached_primal"
             return 0
         fi
@@ -47,6 +69,7 @@ get_primal_source() {
                     # Cache the result (permanently valid)
                     mkdir -p "$HOME/.zen/tmp/coucou"
                     echo "$result" > "$cache_file"
+                    echo "🔗 Cesium: $(generate_cesium_link "$wallet_pubkey")"
                     break
                 fi
             else
@@ -165,26 +188,57 @@ create_intrusion_wallet() {
 send_redirection_alert() {
     local player_email="$1"
     local wallet_pubkey="$2"
-    local intrusion_pubkey="$3"
-    local amount="$4"
-    local master_primal="$5"
-    local intrusion_count="$6"
+    local intrusion_sender_pubkey="$3"
+    local intrusion_primal_pubkey="$4"
+    local amount="$5"
+    local master_primal="$6"
+    local intrusion_count="$7"
+    local intrusion_wallet_pubkey="$8"
 
     local template_file="${MY_PATH}/../templates/NOSTR/wallet_redirection.html"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
 
     if [[ -f "$template_file" ]]; then
+        # Generate Cesium links
+        local wallet_cesium_link=$(generate_cesium_link "$wallet_pubkey")
+        local sender_cesium_link=$(generate_cesium_link "$intrusion_sender_pubkey")
+        local primal_cesium_link=$(generate_cesium_link "$intrusion_primal_pubkey")
+        local master_cesium_link=$(generate_cesium_link "$master_primal")
+        local intrusion_cesium_link=$(generate_cesium_link "$intrusion_wallet_pubkey")
+        local uplanet_g1_cesium_link=""
+        
+        # Get UPLANET G1 wallet info if available
+        if [[ -n "$UPLANETNAME_G1" ]]; then
+            uplanet_g1_cesium_link=$(generate_cesium_link "$UPLANETNAME_G1")
+        fi
+
         # Replace placeholders in template
         sed -e "s/{PLAYER}/$player_email/g" \
+            -e "s/{TIMESTAMP}/$timestamp/g" \
             -e "s/{WALLET_PUBKEY}/${wallet_pubkey:0:8}/g" \
-            -e "s/{INTRUSION_PUBKEY}/${intrusion_pubkey:0:8}/g" \
+            -e "s|{WALLET_CESIUM_LINK}|$wallet_cesium_link|g" \
+            -e "s/{INTRUSION_SENDER_PUBKEY}/${intrusion_sender_pubkey:0:8}/g" \
+            -e "s|{SENDER_CESIUM_LINK}|$sender_cesium_link|g" \
+            -e "s/{INTRUSION_PRIMAL_PUBKEY}/${intrusion_primal_pubkey:0:8}/g" \
+            -e "s|{PRIMAL_CESIUM_LINK}|$primal_cesium_link|g" \
             -e "s/{AMOUNT}/$amount/g" \
             -e "s/{MASTER_PRIMAL}/${master_primal:0:8}/g" \
+            -e "s|{MASTER_CESIUM_LINK}|$master_cesium_link|g" \
             -e "s/{INTRUSION_COUNT}/$intrusion_count/g" \
+            -e "s/{INTRUSION_WALLET_PUBKEY}/${intrusion_wallet_pubkey:0:8}/g" \
+            -e "s|{INTRUSION_CESIUM_LINK}|$intrusion_cesium_link|g" \
+            -e "s/{UPLANET_G1_PUBKEY}/${UPLANETNAME_G1:0:8}/g" \
+            -e "s|{UPLANET_G1_CESIUM_LINK}|$uplanet_g1_cesium_link|g" \
             -e "s|{myIPFS}|$myIPFS|g" \
             "$template_file" > ~/.zen/tmp/primal_alert.html
 
+        # Enhanced email title with more context
+        local email_title="🚨 INTRUSION #${intrusion_count} - ${amount} Ğ1 redirigés vers UPLANETNAME.INTRUSION - ${wallet_pubkey:0:8}"
+        
         # Send alert
-        ${MY_PATH}/mailjet.sh "${player_email}" ~/.zen/tmp/primal_alert.html "PRIMAL WALLET REDIRECTION ALERT"
+        ${MY_PATH}/mailjet.sh "${player_email}" ~/.zen/tmp/primal_alert.html "$email_title"
+        
+        echo "📧 Enhanced alert email sent to $player_email with title: $email_title"
     else
         echo "Redirection template not found: $template_file"
         return 1
@@ -260,11 +314,31 @@ control_primal_transactions() {
     local is_captain=false
     if [[ "$player_email" == "$CAPTAINEMAIL" ]]; then
         is_captain=true
-        echo "CAPTAIN DETECTED: Authorizing UPLANET sources as valid primal"
+        echo "🎖️ CAPTAIN DETECTED: Authorizing UPLANET sources as valid primal"
+        
+        # Display UPLANET system wallets for CAPTAIN
+        echo ""
+        echo "🌍 UPLANET SYSTEM WALLETS (CAPTAIN AUTHORIZED SOURCES):"
+        echo "────────────────────────────────────────────────────────────────────────────"
+        
+        if [[ -n "$UPLANETG1PUB" ]]; then
+            display_wallet_info "UPLANET MAIN WALLET" "$UPLANETG1PUB" "Main UPLANET wallet for locative services"
+        fi
+        
+        if [[ -n "$UPLANETNAME_SOCIETY" ]]; then
+            display_wallet_info "UPLANET SOCIETY WALLET" "$UPLANETNAME_SOCIETY" "Cooperative holders wallet"
+        fi
+        
+        if [[ -n "$UPLANETNAME_G1" ]]; then
+            display_wallet_info "UPLANET G1 DONATION WALLET" "$UPLANETNAME_G1" "Ğ1 donation wallet"
+        fi
     fi
 
-    echo "Checking primal transactions for wallet ${wallet_pubkey:0:8}"
-    echo "Master primal: ${master_primal:0:8}"
+    # Display wallet information with Cesium links
+    display_wallet_info "MONITORED WALLET" "$wallet_pubkey" "Player wallet under primal transaction control"
+    display_wallet_info "MASTER PRIMAL SOURCE" "$master_primal" "Expected primal source for valid transactions"
+    
+    echo "🔍 Starting primal transaction analysis..."
 
     # Get wallet transaction history first
     local temp_history_file=$(mktemp)
@@ -327,6 +401,7 @@ control_primal_transactions() {
 
         # Check primal transaction for incoming transaction
         echo "# RX from ${TXIPUBKEY:0:8}.... checking primal transaction..."
+        echo "🔗 Sender Cesium: $(generate_cesium_link "$TXIPUBKEY")"
         local tx_primal=$(get_primal_source "${TXIPUBKEY}")
 
         if [[ -n "$tx_primal" && "$tx_primal" != "null" ]]; then
@@ -348,6 +423,7 @@ control_primal_transactions() {
             # Verify if transaction is from a valid wallet with same primal
             if [[ "$is_valid_primal" == false ]]; then
                 echo "PRIMAL WALLET INTRUSION ALERT for ${wallet_pubkey:0:8} from ${TXIPUBKEY:0:8} (primal: ${tx_primal:0:8})"
+                echo "🔗 Intrusion Source Cesium: $(generate_cesium_link "$tx_primal")"
 
                 # TOUTES LES INTRUSIONS: Redirection directe vers UPLANETNAME.INTRUSION (centralise la gestion)
                 local current_total=$((existing_intrusions + new_intrusions + 1))
@@ -368,6 +444,8 @@ control_primal_transactions() {
                     continue
                 fi
                 
+                echo "🔗 INTRUSION Wallet Cesium: $(generate_cesium_link "$intrusion_pubkey")"
+                
                 # Rediriger les fonds vers UPLANETNAME.INTRUSION
                 ${MY_PATH}/PAYforSURE.sh "${wallet_dunikey}" "${TXIAMOUNT}" "${intrusion_pubkey}" "UPLANET:${UPLANETG1PUB:0:8}:INTRUSION:${TXIPUBKEY:0:8}" 2>/dev/null
                 
@@ -377,7 +455,7 @@ control_primal_transactions() {
                     new_intrusions=$((new_intrusions + 1))
                     
                     # Send alert for redirection (always notify)
-                    send_redirection_alert "${player_email}" "${wallet_pubkey}" "${TXIPUBKEY}" "${TXIAMOUNT}" "${master_primal}" "$current_total"
+                    send_redirection_alert "${player_email}" "${wallet_pubkey}" "${TXIPUBKEY}" "${tx_primal}" "${TXIAMOUNT}" "${master_primal}" "$current_total" "${intrusion_pubkey}"
                 else
                     echo "ERROR: Failed to redirect intrusion to UPLANETNAME.INTRUSION"
                 fi
@@ -393,16 +471,41 @@ control_primal_transactions() {
         fi
     done < "$inline_history_file"
 
-    # Final summary
+    # Final summary with affected wallets report
     local total_intrusions=$((existing_intrusions + new_intrusions))
+    
+    echo ""
+    echo "═══════════════════════════════════════════════════════════════════════════════"
+    echo "📊 PRIMAL TRANSACTION CONTROL REPORT"
+    echo "═══════════════════════════════════════════════════════════════════════════════"
+    echo "👤 Player: $player_email"
+    echo "📅 Analysis Date: $(date '+%Y-%m-%d %H:%M:%S')"
+    echo "🔢 Existing Intrusions: $existing_intrusions"
+    echo "🆕 New Intrusions: $new_intrusions"
+    echo "📊 Total Intrusions: $total_intrusions"
+    echo ""
+    
     if [[ $new_intrusions -gt 0 ]]; then
-        echo "NEW INTRUSIONS DETECTED: $new_intrusions (Total: $total_intrusions)"
-        echo "💡 INFO: Toutes les intrusions redirigées vers UPLANETNAME.INTRUSION"
-        echo "💰 Fonds intrusifs récupérés par la coopérative UPlanet"
-        echo "📧 Alertes email envoyées à ${player_email}"
+        echo "🚨 NEW INTRUSIONS DETECTED: $new_intrusions"
+        echo "💡 INFO: All intrusions redirected to UPLANETNAME.INTRUSION"
+        echo "💰 Intrusive funds recovered by UPlanet cooperative"
+        echo "📧 Email alerts sent to ${player_email}"
+        
+        # Display INTRUSION wallet info if it exists
+        local intrusion_dunikey="$HOME/.zen/game/uplanet.INTRUSION.dunikey"
+        if [[ -f "$intrusion_dunikey" ]]; then
+            local intrusion_pubkey=$(cat "$intrusion_dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+            if [[ -n "$intrusion_pubkey" ]]; then
+                echo ""
+                display_wallet_info "INTRUSION WALLET" "$intrusion_pubkey" "Centralized wallet for all redirected intrusive funds"
+            fi
+        fi
     else
-        echo "NO NEW INTRUSIONS DETECTED (Total: $total_intrusions)"
+        echo "✅ NO NEW INTRUSIONS DETECTED"
+        echo "🛡️ Wallet security maintained"
     fi
+    
+    echo "═══════════════════════════════════════════════════════════════════════════════"
 
     # Cleanup
     rm -f "$temp_history_file" "$inline_history_file"

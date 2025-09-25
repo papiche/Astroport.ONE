@@ -102,10 +102,19 @@
             <h3>📊 Détails de la Redirection</h3>
             <ul>
                 <li><strong>Compte concerné :</strong> {PLAYER}</li>
-                <li><strong>Portefeuille :</strong> <span class="code">{WALLET_PUBKEY}...</span></li>
-                <li><strong>Source intrusive :</strong> <span class="code">{INTRUSION_PUBKEY}...</span></li>
+                <li><strong>Date/Heure :</strong> {TIMESTAMP}</li>
+                <li><strong>Portefeuille surveillé :</strong> <span class="code">{WALLET_PUBKEY}...</span>
+                    <br><a href="{WALLET_CESIUM_LINK}" class="btn" target="_blank">🔗 Voir sur Cesium</a></li>
+                <li><strong>Source intrusive :</strong> <span class="code">{INTRUSION_SENDER_PUBKEY}...</span>
+                    <br><a href="{SENDER_CESIUM_LINK}" class="btn" target="_blank">🔗 Voir expéditeur sur Cesium</a></li>
+                <li><strong>Source primale intrusive :</strong> <span class="code">{INTRUSION_PRIMAL_PUBKEY}...</span>
+                    <br><a href="{PRIMAL_CESIUM_LINK}" class="btn" target="_blank">🔗 Voir source primale sur Cesium</a></li>
+                <li><strong>Source primale attendue :</strong> <span class="code">{MASTER_PRIMAL}...</span>
+                    <br><a href="{MASTER_CESIUM_LINK}" class="btn" target="_blank">🔗 Voir source autorisée sur Cesium</a></li>
                 <li><strong>Montant redirigé :</strong> <strong>{AMOUNT} Ğ1</strong></li>
-                <li><strong>Destination :</strong> UPLANETNAME.INTRUSION (Coopérative)</li>
+                <li><strong>Destination :</strong> UPLANETNAME.INTRUSION (Coopérative)
+                    <br><span class="code">{INTRUSION_WALLET_PUBKEY}...</span>
+                    <br><a href="{INTRUSION_CESIUM_LINK}" class="btn" target="_blank">🔗 Voir portefeuille INTRUSION sur Cesium</a></li>
                 <li><strong>Nombre total d'intrusions :</strong> {INTRUSION_COUNT}</li>
             </ul>
         </div>
@@ -120,11 +129,21 @@
         <div class="info-box">
             <h3>🔧 Actions Recommandées</h3>
             <ol>
-                <li><strong>Informez vos contacts :</strong> Tous les versements Ğ1 doivent être faits vers UPLANETNAME.G1 (source primale unifiée)</li>
+                <li><strong>Informez vos contacts :</strong> Tous les versements Ğ1 doivent être faits vers UPLANETNAME.G1 (source primale unifiée)
+                    <br><span class="code">{UPLANET_G1_PUBKEY}...</span>
+                    <br><a href="{UPLANET_G1_CESIUM_LINK}" class="btn" target="_blank">🔗 Voir UPLANETNAME.G1 sur Cesium</a></li>
                 <li><strong>Vérifiez vos processus :</strong> Assurez-vous d'utiliser les bons portefeuilles avec la même source primale</li>
                 <li><strong>Exception WoT Dragon :</strong> Seules les transactions de 0.01 Ğ1 en 2ème position sont autorisées pour l'identification</li>
+                <li><strong>Consultez les portefeuilles :</strong> Utilisez les liens Cesium ci-dessus pour analyser les transactions</li>
                 <li><strong>Contactez le support :</strong> En cas de questions sur cette redirection ou le contrôle primal</li>
             </ol>
+        </div>
+
+        <div class="alert-box">
+            <h3>📈 Statistiques de Sécurité</h3>
+            <p><strong>Système de protection actif :</strong> Cette intrusion fait partie des {INTRUSION_COUNT} détectées sur ce portefeuille.</p>
+            <p><strong>Politique de redirection :</strong> Toutes les intrusions sont centralisées dans le portefeuille INTRUSION pour une gestion unifiée.</p>
+            <p><strong>Aucun remboursement :</strong> Les fonds intrusifs ne sont pas remboursés pour éviter les boucles de transaction.</p>
         </div>
 
         <div class="footer">
