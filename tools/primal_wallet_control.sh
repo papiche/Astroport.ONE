@@ -10,6 +10,11 @@
 # This script monitors wallet transactions and controls that incoming
 # transactions come from wallets with the same primal source.
 # It implements intrusion detection with automatic redirection to UPLANETNAME.INTRUSION.
+# 
+# INTRUSION PAIRING SYSTEM:
+# - Each intrusive transaction gets a unique ID based on its date/time
+# - Redirection transactions include this ID in their comment for precise pairing
+# - This prevents double detection and enables accurate tracking of processed intrusions
 ################################################################################
 
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -261,7 +266,7 @@ count_existing_intrusions() {
         local inline_history_file=$(mktemp)
         cat "$temp_history_file" | jq -rc '.[]' > "$inline_history_file"
 
-        # Count refund transactions that match intrusion pattern
+        # Count redirection transactions that match intrusion pattern
         while read LINE; do
             [[ -z "$LINE" ]] && continue
 
@@ -276,11 +281,16 @@ count_existing_intrusions() {
                 continue
             fi
 
-            # Look for outgoing transactions (negative amount) with intrusion comments
+            # Look for outgoing transactions (negative amount) with intrusion redirection comments
             if [[ $(echo "$TXIAMOUNT < 0" | bc -l) -eq 1 ]]; then
-                # Check if this is an intrusion-related transaction (refund or redirect)
-                if [[ "$COMMENT" == *"INTRUSION"* ]]; then
-                    echo "Found existing intrusion transaction: ${TXIAMOUNT} G1 to ${TXIPUBKEY:0:8} (${COMMENT})" >&2
+                # Check if this is an intrusion redirection transaction (contains ID for pairing)
+                if [[ "$COMMENT" == *"INTRUSION"* && "$COMMENT" == *"ID:"* ]]; then
+                    local tx_id=$(echo "$COMMENT" | grep -o 'ID:[^:]*' | cut -d: -f2)
+                    echo "Found existing intrusion redirection: ${TXIAMOUNT} G1 to ${TXIPUBKEY:0:8} (ID: ${tx_id})" >&2
+                    intrusion_count=$((intrusion_count + 1))
+                elif [[ "$COMMENT" == *"INTRUSION"* ]]; then
+                    # Legacy intrusion without ID (for backward compatibility)
+                    echo "Found legacy intrusion transaction: ${TXIAMOUNT} G1 to ${TXIPUBKEY:0:8} (${COMMENT})" >&2
                     intrusion_count=$((intrusion_count + 1))
                 fi
             fi
@@ -422,42 +432,60 @@ control_primal_transactions() {
 
             # Verify if transaction is from a valid wallet with same primal
             if [[ "$is_valid_primal" == false ]]; then
-                echo "PRIMAL WALLET INTRUSION ALERT for ${wallet_pubkey:0:8} from ${TXIPUBKEY:0:8} (primal: ${tx_primal:0:8})"
-                echo "🔗 Intrusion Source Cesium: $(generate_cesium_link "$tx_primal")"
+                # Create unique transaction ID for pairing (date-based ID for precise matching)
+                local tx_id=$(echo "${TXIDATE}" | tr -d ':-' | tr ' ' '_')
+                local intrusion_comment="UPLANET:${UPLANETG1PUB:0:8}:INTRUSION:${TXIPUBKEY:0:8}:ID:${tx_id}"
+                
+                # Check if this intrusion has already been processed by looking for the paired redirection
+                local already_processed=false
+                if [[ -s "$temp_history_file" ]]; then
+                    # Look for existing redirection with same transaction ID
+                    if jq -r '.[] | select(.amount < 0 and (.comment // "") | contains("ID:'${tx_id}'")) | .comment' "$temp_history_file" 2>/dev/null | grep -q "ID:${tx_id}"; then
+                        already_processed=true
+                        echo "INTRUSION ALREADY PROCESSED: Found paired redirection for transaction ID ${tx_id}"
+                    fi
+                fi
+                
+                if [[ "$already_processed" == false ]]; then
+                    echo "PRIMAL WALLET INTRUSION ALERT for ${wallet_pubkey:0:8} from ${TXIPUBKEY:0:8} (primal: ${tx_primal:0:8})"
+                    echo "🔗 Intrusion Source Cesium: $(generate_cesium_link "$tx_primal")"
 
-                # TOUTES LES INTRUSIONS: Redirection directe vers UPLANETNAME.INTRUSION (centralise la gestion)
-                local current_total=$((existing_intrusions + new_intrusions + 1))
-                echo "INTRUSION DETECTED ($current_total) - REDIRECTING TO UPLANETNAME.INTRUSION"
-                echo "💡 INFO: Versements Ğ1 doivent être faits vers UPLANETNAME_G1 uniquement"
-                
-                # Ensure INTRUSION wallet exists, create if necessary
-                if ! create_intrusion_wallet; then
-                    echo "ERROR: Cannot create INTRUSION wallet, aborting intrusion handling"
-                    continue
-                fi
-                
-                # Get INTRUSION wallet public key
-                local intrusion_pubkey=$(cat "$HOME/.zen/game/uplanet.INTRUSION.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
-                
-                if [[ -z "$intrusion_pubkey" ]]; then
-                    echo "ERROR: Cannot extract public key from INTRUSION wallet"
-                    continue
-                fi
-                
-                echo "🔗 INTRUSION Wallet Cesium: $(generate_cesium_link "$intrusion_pubkey")"
-                
-                # Rediriger les fonds vers UPLANETNAME.INTRUSION
-                ${MY_PATH}/PAYforSURE.sh "${wallet_dunikey}" "${TXIAMOUNT}" "${intrusion_pubkey}" "UPLANET:${UPLANETG1PUB:0:8}:INTRUSION:${TXIPUBKEY:0:8}" 2>/dev/null
-                
-                if [[ $? -eq 0 ]]; then
-                    echo "INTRUSION REDIRECTED: ${TXIAMOUNT} G1 sent to UPLANETNAME.INTRUSION (${intrusion_pubkey:0:8})"
-                    echo "💰 Fonds intrusifs centralisés dans le portefeuille INTRUSION"
-                    new_intrusions=$((new_intrusions + 1))
+                    # TOUTES LES INTRUSIONS: Redirection directe vers UPLANETNAME.INTRUSION (centralise la gestion)
+                    local current_total=$((existing_intrusions + new_intrusions + 1))
+                    echo "INTRUSION DETECTED ($current_total) - REDIRECTING TO UPLANETNAME.INTRUSION"
+                    echo "💡 INFO: Versements Ğ1 doivent être faits vers UPLANETNAME_G1 uniquement"
+                    echo "🆔 Transaction ID: ${tx_id} (for pairing verification)"
                     
-                    # Send alert for redirection (always notify)
-                    send_redirection_alert "${player_email}" "${wallet_pubkey}" "${TXIPUBKEY}" "${tx_primal}" "${TXIAMOUNT}" "${master_primal}" "$current_total" "${intrusion_pubkey}"
-                else
-                    echo "ERROR: Failed to redirect intrusion to UPLANETNAME.INTRUSION"
+                    # Ensure INTRUSION wallet exists, create if necessary
+                    if ! create_intrusion_wallet; then
+                        echo "ERROR: Cannot create INTRUSION wallet, aborting intrusion handling"
+                        continue
+                    fi
+                    
+                    # Get INTRUSION wallet public key
+                    local intrusion_pubkey=$(cat "$HOME/.zen/game/uplanet.INTRUSION.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+                    
+                    if [[ -z "$intrusion_pubkey" ]]; then
+                        echo "ERROR: Cannot extract public key from INTRUSION wallet"
+                        continue
+                    fi
+                    
+                    echo "🔗 INTRUSION Wallet Cesium: $(generate_cesium_link "$intrusion_pubkey")"
+                    
+                    # Rediriger les fonds vers UPLANETNAME.INTRUSION avec ID de transaction pour appairage
+                    ${MY_PATH}/PAYforSURE.sh "${wallet_dunikey}" "${TXIAMOUNT}" "${intrusion_pubkey}" "${intrusion_comment}" 2>/dev/null
+                    
+                    if [[ $? -eq 0 ]]; then
+                        echo "INTRUSION REDIRECTED: ${TXIAMOUNT} G1 sent to UPLANETNAME.INTRUSION (${intrusion_pubkey:0:8})"
+                        echo "💰 Fonds intrusifs centralisés dans le portefeuille INTRUSION"
+                        echo "🆔 Paired with transaction ID: ${tx_id}"
+                        new_intrusions=$((new_intrusions + 1))
+                        
+                        # Send alert for redirection (always notify)
+                        send_redirection_alert "${player_email}" "${wallet_pubkey}" "${TXIPUBKEY}" "${tx_primal}" "${TXIAMOUNT}" "${master_primal}" "$current_total" "${intrusion_pubkey}"
+                    else
+                        echo "ERROR: Failed to redirect intrusion to UPLANETNAME.INTRUSION"
+                    fi
                 fi
             else
                 if [[ "$is_captain" == true ]]; then
