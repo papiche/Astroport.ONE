@@ -464,16 +464,21 @@ for wallet_name in "${!COOPERATIVE_WALLETS[@]}"; do
             echo "ZEN ECONOMY: Checking primal control for $wallet_name (${wallet_pubkey:0:8}...)"
             
             # Run primal wallet control for this cooperative wallet
-            ${MY_PATH}/../tools/primal_wallet_control.sh \
-                "$wallet_dunikey" \
-                "$wallet_pubkey" \
-                "$COOPERATIVE_MASTER_PRIMAL" \
-                "$COOPERATIVE_ADMIN_EMAIL"
-                
-            if [[ $? -eq 0 ]]; then
-                echo "ZEN ECONOMY: ✅ Primal control OK for $wallet_name"
+            if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
+                echo "CONTROL UPLANET ZEN - Cooperative wallet primal control"
+                ${MY_PATH}/../tools/primal_wallet_control.sh \
+                    "$wallet_dunikey" \
+                    "$wallet_pubkey" \
+                    "$COOPERATIVE_MASTER_PRIMAL" \
+                    "$COOPERATIVE_ADMIN_EMAIL"
+                    
+                if [[ $? -eq 0 ]]; then
+                    echo "ZEN ECONOMY: ✅ Primal control OK for $wallet_name"
+                else
+                    echo "ZEN ECONOMY: ⚠️  Primal control issues detected for $wallet_name"
+                fi
             else
-                echo "ZEN ECONOMY: ⚠️  Primal control issues detected for $wallet_name"
+                echo "UPlanet ORIGIN - No Control -"
             fi
         else
             echo "ZEN ECONOMY: ⚠️  Could not extract public key from $wallet_name"
