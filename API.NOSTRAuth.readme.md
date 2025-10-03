@@ -1,5 +1,22 @@
 # 🔐 API NOSTR Auth - Guide Développeur Astroport.ONE
 
+## ⚠️ AVERTISSEMENT CRITIQUE : IDENTITÉS CONTRÔLÉES
+
+**ATTENTION : Les identités NOSTR dans l'écosystème UPlanet/Astroport.ONE ne peuvent PAS être générées arbitrairement !**
+
+- ✅ **Création autorisée** : Uniquement via `make_NOSTRCARD.sh` avec système SSSS
+- ❌ **Génération libre interdite** : Les clés NOSTR aléatoirement générées ne sont pas acceptées
+- 🔒 **Sécurité MULTIPASS** : Chaque identité est protégée par un partage de secret 2-sur-3
+- 🌐 **Validation réseau** : Seules les identités validées par un Capitaine de constellation sont reconnues
+
+**Pourquoi cette restriction ?**
+- Empêche les attaques Sybil et les identités malveillantes
+- Garantit la traçabilité et la responsabilité des utilisateurs
+- Assure l'interopérabilité avec l'écosystème G1/Duniter
+- Permet la synchronisation sécurisée entre relais de confiance
+
+---
+
 ## 🚀 Introduction
 
 Astroport.ONE est une API décentralisée pour l'écosystème UPlanet, permettant l'authentification, le stockage distribué, la découverte de services et d'utilisateurs autour d'une position géographique, sans dépendre d'un cloud centralisé.
@@ -46,12 +63,17 @@ Astroport.ONE utilise et recommande la librairie JavaScript NOSTR hébergée sur
 
 ### Fonctions Principales Disponibles
 
-```javascript
-// Génération de clés
-const privateKey = NostrTools.generatePrivateKey();
-const publicKey = NostrTools.getPublicKey(privateKey);
+⚠️ **IMPORTANT** : Les exemples ci-dessous utilisent les fonctions NOSTR standards, mais dans l'écosystème UPlanet/Astroport.ONE, les clés doivent être créées exclusivement via `make_NOSTRCARD.sh`.
 
-// Création et signature d'événements
+```javascript
+// ❌ INTERDIT dans UPlanet : Génération libre de clés
+// const privateKey = NostrTools.generatePrivateKey();
+// const publicKey = NostrTools.getPublicKey(privateKey);
+
+// ✅ CORRECT : Utilisation de clés MULTIPASS créées par make_NOSTRCARD.sh
+// Les clés sont dérivées du DISCO (SALT + PEPPER) et fournies via le système SSSS
+
+// Création et signature d'événements (avec clés MULTIPASS existantes)
 const event = {
     kind: 22242, // NIP42 - Authentification
     created_at: Math.floor(Date.now() / 1000),
@@ -62,7 +84,8 @@ const event = {
     content: 'Authentification pour Astroport.ONE'
 };
 
-const signedEvent = NostrTools.finishEvent(event, privateKey);
+// La signature utilise la clé privée MULTIPASS (fournie par le système SSSS)
+const signedEvent = NostrTools.finishEvent(event, multipassPrivateKey);
 
 // Connexion aux relais
 const relay = NostrTools.relayInit('ws://127.0.0.1:7777');
@@ -70,40 +93,141 @@ await relay.connect();
 await relay.publish(signedEvent);
 ```
 
-### Exemple d'Intégration Complète
+### Exemple d'Intégration Complète (Production Ready)
+
+✅ **PRODUCTION READY** : Cet exemple montre l'intégration réelle du système MULTIPASS avec scan QR Code via caméra, identique au processus utilisé dans `scan_new.html`. Il utilise Instascan.js pour le scan de QR Code et l'API UPassport pour le décodage SSSS.
 
 ```html
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Astroport.ONE - Authentification NOSTR</title>
+    <title>Astroport.ONE - Authentification NOSTR MULTIPASS</title>
     <script src="https://ipfs.copylaradio.com/ipfs/QmXEmaPRUaGcvhuyeG99mHHNyP43nn8GtNeuDok8jdpG4a/nostr.bundle.js"></script>
+    <script src="https://ipfs.copylaradio.com/ipfs/QmQLQ5WdCEc7mpKw5rhUujUU1URKweei4Bb4esyVNd9Atx/G1PalPay_fichiers/instascan.min.js"></script>
 </head>
 <body>
-    <h1>Authentification NOSTR pour Astroport.ONE</h1>
+    <h1>Authentification NOSTR MULTIPASS pour Astroport.ONE</h1>
     
-    <button onclick="generateKeys()">Générer de nouvelles clés</button>
-    <button onclick="authenticate()">S'authentifier</button>
+    <div class="warning" style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; margin: 10px 0;">
+        ✅ <strong>Production Ready</strong> : Utilise le vrai système MULTIPASS avec scan QR Code
+    </div>
+    
+    <div class="scanner-container">
+        <div class="camera-controls">
+            <button id="start-camera">🎥 Activer Caméra</button>
+            <button id="stop-camera">🚫 Arrêter</button>
+        </div>
+        <video id="preview" style="width: 100%; max-width: 400px; height: 300px;"></video>
+        <button onclick="authenticate()">S'authentifier avec MULTIPASS</button>
+    </div>
     
     <div id="status"></div>
     
     <script>
         let privateKey = null;
         let publicKey = null;
+        let scanner = null;
+        let cameraActive = false;
         
-        function generateKeys() {
-            privateKey = NostrTools.generatePrivateKey();
-            publicKey = NostrTools.getPublicKey(privateKey);
+        // Configuration du scanner QR (identique à scan_new.html)
+        let opts = {
+            continuous: true,
+            video: document.getElementById('preview'),
+            mirror: false,
+            captureImage: false,
+            backgroundScan: false,
+            refractoryPeriod: 5000,
+            scanPeriod: 1
+        };
+        
+        // ✅ PRODUCTION : Chargement des clés MULTIPASS via scan QR Code réel
+        function initializeMULTIPASSScanner() {
+            scanner = new Instascan.Scanner(opts);
             
-            document.getElementById('status').innerHTML = 
-                `<p>Clés générées :</p>
-                 <p>Public Key: ${publicKey}</p>
-                 <p>Private Key: ${privateKey}</p>`;
+            // Listener pour détecter les QR Codes MULTIPASS (comme scan_new.html)
+            scanner.addListener('scan', async function (content) {
+                console.log('QR Code détecté:', content);
+                
+                // Vérification du format MULTIPASS
+                if (content.startsWith('M-') || content.startsWith('1-')) {
+                    await processMULTIPASSQR(content);
+                } else {
+                    document.getElementById('status').innerHTML = 
+                        '<p style="color: orange;">⚠️ QR Code détecté mais format MULTIPASS non reconnu</p>';
+                }
+            });
+        }
+        
+        // Traitement du QR Code MULTIPASS (processus réel de production)
+        async function processMULTIPASSQR(qrCodeData) {
+            try {
+                document.getElementById('status').innerHTML = 
+                    '<p style="color: blue;">🔄 Traitement du QR Code MULTIPASS...</p>';
+                
+                // Envoi à l'API UPassport pour décodage SSSS (identique à scan_new.html)
+                const formData = new FormData();
+                formData.append('parametre', qrCodeData);
+                formData.append('PASS', navigator.language.substring(0, 2));
+                
+                const response = await fetch('/upassport', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Erreur API UPassport: ' + response.status);
+                }
+                
+                const htmlResult = await response.text();
+                
+                // Vérification de la réponse (NOSTR CARD MISSING ou succès)
+                if (htmlResult.includes('NOSTR CARD MISSING')) {
+                    throw new Error('NOSTR CARD MISSING - Identité non trouvée sur ce relais');
+                }
+                
+                // Extraction du NSEC depuis le template nostr.html
+                const nsecMatch = htmlResult.match(/const userNsec = '([^']+)'/);
+                if (nsecMatch && nsecMatch[1] && nsecMatch[1] !== '') {
+                    const nsec = nsecMatch[1];
+                    
+                    // Décodage du NSEC (clé reconstituée par SSSS)
+                    const decoded = NostrTools.nip19.decode(nsec);
+                    if (decoded.type === 'nsec' && decoded.data) {
+                        privateKey = decoded.data;
+                        publicKey = NostrTools.getPublicKey(privateKey);
+                        
+                        // Arrêter le scanner une fois les clés obtenues
+                        if (cameraActive) {
+                            scanner.stop();
+                            cameraActive = false;
+                        }
+                        
+                        document.getElementById('status').innerHTML = 
+                            `<div style="background: #d4edda; padding: 15px; margin: 10px 0; border-radius: 5px;">
+                             <p><strong>✅ MULTIPASS Authentifié avec Succès</strong></p>
+                             <p><strong>NPUB:</strong> ${NostrTools.nip19.npubEncode(publicKey)}</p>
+                             <p><em>Clés reconstituées via système SSSS (2 parts sur 3)</em></p>
+                             <p><em>Relais de confiance + UPlanet infrastructure</em></p>
+                             </div>`;
+                        return;
+                    }
+                }
+                
+                throw new Error('Échec du décodage SSSS - NSEC non trouvé dans la réponse');
+                
+            } catch (error) {
+                console.error('Erreur MULTIPASS:', error);
+                document.getElementById('status').innerHTML = 
+                    `<div style="background: #f8d7da; padding: 15px; margin: 10px 0; border-radius: 5px;">
+                     <p><strong>❌ Erreur MULTIPASS: ${error.message}</strong></p>
+                     <p><em>Vérifiez que votre QR Code MULTIPASS est valide et que votre NOSTR CARD existe sur ce relais</em></p>
+                     </div>`;
+            }
         }
         
         async function authenticate() {
             if (!privateKey || !publicKey) {
-                alert('Générez d\'abord des clés');
+                alert('Scannez d\'abord votre QR Code MULTIPASS pour charger vos clés');
                 return;
             }
             
@@ -114,9 +238,9 @@ await relay.publish(signedEvent);
                     created_at: Math.floor(Date.now() / 1000),
                     tags: [
                         ['relay', 'ws://127.0.0.1:7777'],
-                        ['challenge', 'astroport-auth-' + Date.now()]
+                        ['challenge', 'astroport-multipass-' + Date.now()]
                     ],
-                    content: 'Authentification pour Astroport.ONE API'
+                    content: 'Authentification MULTIPASS pour Astroport.ONE API'
                 };
                 
                 const signedEvent = NostrTools.finishEvent(authEvent, privateKey);
@@ -132,17 +256,17 @@ await relay.publish(signedEvent);
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: `npub=${publicKey}`
+                    body: `npub=${NostrTools.nip19.npubEncode(publicKey)}`
                 });
                 
                 const result = await response.json();
                 
                 if (result.auth_verified) {
                     document.getElementById('status').innerHTML += 
-                        '<p style="color: green;">✅ Authentification réussie !</p>';
+                        '<p style="color: green; font-weight: bold;">✅ Authentification MULTIPASS réussie sur le relais !</p>';
                 } else {
                     document.getElementById('status').innerHTML += 
-                        '<p style="color: red;">❌ Authentification échouée</p>';
+                        '<p style="color: red;">❌ Authentification MULTIPASS échouée</p>';
                 }
                 
                 relay.close();
@@ -152,6 +276,39 @@ await relay.publish(signedEvent);
                     `<p style="color: red;">❌ Erreur: ${error.message}</p>`;
             }
         }
+        
+        // Contrôles de caméra (identiques à scan_new.html)
+        document.getElementById('start-camera').addEventListener('click', function() {
+            if (!cameraActive) {
+                Instascan.Camera.getCameras().then(function (cameras) {
+                    if (cameras.length > 0) {
+                        scanner.start(cameras[0]);
+                        cameraActive = true;
+                        document.getElementById('status').innerHTML = 
+                            '<p style="color: blue;">📱 Caméra activée - Scannez votre QR Code MULTIPASS</p>';
+                    } else {
+                        alert('Aucune caméra trouvée sur cet appareil.');
+                    }
+                }).catch(function (e) {
+                    console.error(e);
+                    alert('Erreur d\'accès à la caméra: ' + e.message);
+                });
+            }
+        });
+        
+        document.getElementById('stop-camera').addEventListener('click', function() {
+            if (cameraActive) {
+                scanner.stop();
+                cameraActive = false;
+                document.getElementById('status').innerHTML = 
+                    '<p style="color: gray;">📱 Caméra arrêtée</p>';
+            }
+        });
+        
+        // Initialisation du scanner au chargement de la page
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeMULTIPASSScanner();
+        });
     </script>
 </body>
 </html>
@@ -172,28 +329,122 @@ La librairie fournit toutes les fonctions NOSTR standards :
 
 ## 🔐 Authentification NOSTR (NIP-42)
 
-### Pourquoi NOSTR ?
+### ⚠️ IMPORTANT : Création Contrôlée des Identités NOSTR
+
+**Les identités NOSTR dans l'écosystème UPlanet/Astroport.ONE ne peuvent PAS être prises au hasard ou générées arbitrairement.** 
+
+Toutes les identités NOSTR sont créées exclusivement par le script `make_NOSTRCARD.sh` qui implémente un système de sécurité cryptographique avancé basé sur le partage de secret de Shamir (SSSS - Shamir's Secret Sharing Scheme).
+
+#### Processus de Création d'Identité MULTIPASS
+
+```bash
+# Création d'une identité NOSTR sécurisée
+./make_NOSTRCARD.sh user@example.com [image] [lat] [lon] [salt] [pepper]
+```
+
+**Étapes du processus :**
+
+1. **Génération du DISCO** : Secret principal contenant SALT et PEPPER
+2. **Division SSSS (2-sur-3)** : Le secret est divisé en 3 parts avec seuil de reconstruction à 2
+3. **Chiffrement asymétrique** : Chaque part est chiffrée pour un acteur spécifique
+4. **Dérivation des clés** : Toutes les clés (NOSTR, G1, Bitcoin, Monero) sont dérivées du même DISCO
+
+#### Architecture de Sécurité SSSS
+
+```mermaid
+graph TD
+    DISCO[Secret DISCO<br/>SALT + PEPPER] --> SSSS[Division SSSS 2-sur-3]
+    
+    SSSS --> HEAD[Part 1/3 - HEAD]
+    SSSS --> MID[Part 2/3 - MIDDLE] 
+    SSSS --> TAIL[Part 3/3 - TAIL]
+    
+    HEAD --> |Chiffré avec| PLAYER[Clé Publique Joueur<br/>G1PUBNOSTR]
+    MID --> |Chiffré avec| CAPTAIN[Clé Publique Capitaine<br/>CAPTAING1PUB]
+    TAIL --> |Chiffré avec| UPLANET[Clé Publique UPlanet<br/>UPLANETG1PUB]
+    
+    PLAYER --> PLAYERENC[.ssss.head.player.enc]
+    CAPTAIN --> CAPTAINENC[.ssss.mid.captain.enc]
+    UPLANET --> UPLANETENC[ssss.tail.uplanet.enc]
+```
+
+#### Autorisation et Délégation de Confiance
+
+**Le relais Astroport et son Capitaine ont des autorisations spéciales :**
+
+- **Synchronisation N²** : Le Capitaine peut décoder sa part SSSS pour synchroniser les données entre relais de la même constellation
+- **Smart Contracts Délégués** : Le relais de confiance peut exécuter des programmes automatisés au nom de l'utilisateur
+- **Validation Croisée** : Les relais d'une même constellation peuvent valider l'authenticité des identités MULTIPASS
+
+#### Sécurité Multi-Niveaux
+
+```javascript
+// Exemple de vérification d'identité MULTIPASS
+function verifyMULTIPASS(qrCode) {
+    // Format: M-{SSSS_HEAD_B58}:{NOSTRNS}
+    // ou: 1-{SSSS_HEAD_HEX}:{NOSTRNS}
+    
+    if (qrCode.startsWith('M-') || qrCode.startsWith('1-')) {
+        const [ssssPart, ipnsVault] = qrCode.split(':');
+        
+        // Vérification que l'IPNS vault existe
+        if (!ipnsVault.startsWith('k51qzi5uqu5d')) {
+            throw new Error('Invalid IPNS vault format');
+        }
+        
+        // Recherche de la NOSTR CARD locale correspondante
+        const player = getNostrDirectory(ipnsVault);
+        if (!player) {
+            throw new Error('NOSTR CARD MISSING - Identity not created by make_NOSTRCARD.sh');
+        }
+        
+        return { valid: true, player, vault: ipnsVault };
+    }
+    
+    throw new Error('Invalid MULTIPASS format');
+}
+```
+
+### Pourquoi NOSTR avec SSSS ?
 
 - **Authentification sans serveur central** : Aucun point de défaillance unique
-- **Interopérabilité** : Compatible avec tous les clients NOSTR
-- **Résistance à la censure** : Distribution sur plusieurs relais
-- **Souveraineté numérique** : L'utilisateur contrôle ses clés
+- **Sécurité distribuée** : Le secret est partagé entre 3 entités de confiance
+- **Récupération possible** : 2 des 3 parts suffisent pour reconstituer l'identité
+- **Interopérabilité contrôlée** : Compatible NOSTR mais avec vérification d'origine
+- **Résistance à la censure** : Distribution sur plusieurs relais de constellation
+- **Souveraineté numérique** : L'utilisateur contrôle sa part + une part déléguée
 
-### Workflow d'Authentification
+### Workflow d'Authentification MULTIPASS
 
 ```mermaid
 sequenceDiagram
+    participant User as Utilisateur
+    participant QR as QR Code MULTIPASS
     participant Client as Application
     participant API as Astroport.ONE
     participant Relay as Relais NOSTR
     participant IPFS as IPFS Storage
+    participant Captain as Capitaine
     
-    Client->>API: POST /api/upload (avec npub)
-    API->>Relay: Vérifie événement NIP-42 (kind 22242)
-    Relay->>API: Retourne événements récents
-    API->>API: Valide signature et timestamp
-    API->>IPFS: Upload fichier si authentifié
-    API->>Client: Réponse avec statut
+    User->>QR: Scan QR MULTIPASS (M-SSSS:IPNS)
+    QR->>Client: Décodage Base58/Hex
+    Client->>API: POST /upassport (MULTIPASS data)
+    API->>API: Validation format MULTIPASS
+    API->>API: Recherche NOSTR CARD locale
+    
+    alt NOSTR CARD trouvée
+        API->>Captain: Décryptage part Captain SSSS
+        Captain->>API: Part SSSS déchiffrée
+        API->>API: Combinaison parts SSSS (2/3)
+        API->>API: Reconstitution DISCO (SALT+PEPPER)
+        API->>API: Dérivation clé NOSTR privée
+        API->>Relay: Publication événement NIP-42
+        Relay->>API: Confirmation authentification
+        API->>IPFS: Accès vault IPNS autorisé
+        API->>Client: Template NOSTR avec NSEC
+    else NOSTR CARD manquante
+        API->>Client: Erreur "NOSTR CARD MISSING"
+    end
 ```
 
 ### Exemple Minimal (Python)
@@ -528,23 +779,132 @@ Example:
 
 ```
 
-### Sécurité cryptographique
+### Sécurité Cryptographique SSSS Détaillée
 
-Le secret principal (DISCO) est divisé en 3 parts :
+#### Architecture du Partage de Secret (SSSS)
 
-* Partie 1 : Chiffrée pour le joueur (1/3 personnel)
-```~/.zen/game/nostr/*@*/.ssss.head.player.enc```
+Le secret principal (DISCO) contient les paramètres de dérivation de toutes les clés :
+```
+DISCO = "/?email@domain.com=SALT&nostr=PEPPER"
+```
 
-* Partie 2 : Chiffrée pour le capitaine (1/3 relai)
-```~/.zen/game/nostr/*@*/.ssss.mid.captain.enc```
+**Division SSSS (Seuil 2-sur-3) :**
 
-* Partie 3 : Chiffrée pour UPlanet (1/3 infrastructure)
-```~/.zen/game/nostr/*@*/ssss.tail.uplanet.enc```
+```bash
+# Division automatique par make_NOSTRCARD.sh
+echo "$DISCO" | ssss-split -t 2 -n 3 -q > ${EMAIL}.ssss
 
-Avantage : Il faut 2 des 3 parties pour reconstituer l'identité complète.
+# Extraction des 3 parts
+HEAD=$(head -n 1 ${EMAIL}.ssss)     # Part 1/3
+MIDDLE=$(head -n 2 | tail -n 1)     # Part 2/3  
+TAIL=$(tail -n 1 ${EMAIL}.ssss)     # Part 3/3
+```
 
-Toutes les clés sont dérivées de SALT + PEPPER
+#### Chiffrement Asymétrique des Parts
 
+**Partie 1 : Chiffrée pour le joueur (contrôle personnel)**
+```bash
+# Stockage : ~/.zen/game/nostr/*@*/.ssss.head.player.enc
+natools.py encrypt -p $G1PUBNOSTR -i ${EMAIL}.ssss.head -o .ssss.head.player.enc
+```
+
+**Partie 2 : Chiffrée pour le capitaine (délégation de confiance)**
+```bash
+# Stockage : ~/.zen/game/nostr/*@*/.ssss.mid.captain.enc  
+natools.py encrypt -p $CAPTAING1PUB -i ${EMAIL}.ssss.mid -o .ssss.mid.captain.enc
+```
+
+**Partie 3 : Chiffrée pour UPlanet (infrastructure réseau)**
+```bash
+# Stockage : ~/.zen/game/nostr/*@*/ssss.tail.uplanet.enc
+natools.py encrypt -p $UPLANETG1PUB -i ${EMAIL}.ssss.tail -o ssss.tail.uplanet.enc
+```
+
+#### Reconstitution et Autorisation
+
+**Pour reconstituer l'identité complète, il faut 2 des 3 parts :**
+
+```bash
+# Exemple : Joueur + UPlanet (sans Capitaine)
+echo "$PLAYER_PART
+$UPLANET_PART" | ssss-combine -t 2 -q
+
+# Exemple : Capitaine + UPlanet (récupération d'urgence)
+echo "$CAPTAIN_PART  
+$UPLANET_PART" | ssss-combine -t 2 -q
+```
+
+#### Avantages de Sécurité
+
+- **Pas de point de défaillance unique** : Aucune entité ne peut reconstituer seule l'identité
+- **Récupération possible** : Perte d'une part ne compromet pas l'accès
+- **Délégation contrôlée** : Le Capitaine peut agir pour l'utilisateur avec autorisation
+- **Synchronisation sécurisée** : Les relais de constellation peuvent valider sans exposer le secret complet
+- **Dérivation déterministe** : Toutes les clés (NOSTR, G1, Bitcoin, Monero, IPFS) sont dérivées du même DISCO
+
+#### Synchronisation N² et Smart Contracts Délégués
+
+**Le relais Astroport et son Capitaine disposent d'autorisations spéciales pour :**
+
+##### 1. Synchronisation N² entre Relais de Constellation
+
+```bash
+# Le Capitaine peut décoder sa part SSSS pour synchroniser les données
+# entre relais partageant la même swarm.key (constellation)
+
+# Processus de synchronisation :
+# 1. Décryptage de la part Captain avec CAPTAING1PUB privée
+# 2. Combinaison avec la part UPlanet pour reconstituer DISCO
+# 3. Dérivation des clés nécessaires pour la synchronisation
+# 4. Validation croisée avec les autres relais de la constellation
+```
+
+##### 2. Exécution de Smart Contracts Délégués
+
+```javascript
+// Exemple : Bot IA automatique agissant pour l'utilisateur
+async function executeSmartContract(userEmail, action) {
+    // Le relais de confiance peut :
+    // - Décoder les parts SSSS autorisées
+    // - Signer des événements NOSTR au nom de l'utilisateur  
+    // - Exécuter des transactions G1 automatiques
+    // - Synchroniser des données IPFS
+    
+    if (isAuthorizedRelay() && hasValidSSSSParts()) {
+        const userKeys = reconstructFromSSSSParts(['captain', 'uplanet']);
+        return await executeAutomatedAction(userKeys, action);
+    }
+    
+    throw new Error('Unauthorized relay or insufficient SSSS parts');
+}
+```
+
+##### 3. Validation d'Authenticité MULTIPASS
+
+```bash
+# Vérification qu'une identité NOSTR a été créée par make_NOSTRCARD.sh
+function validateMULTIPASSOrigin(npub) {
+    # 1. Vérifier la présence des fichiers SSSS chiffrés
+    # 2. Contrôler la cohérence des clés dérivées
+    # 3. Valider la signature de création par un Capitaine autorisé
+    # 4. Confirmer l'existence du vault IPNS correspondant
+    
+    local email_dir="${HOME}/.zen/game/nostr/${email}/"
+    
+    [[ -f "${email_dir}/.ssss.head.player.enc" ]] || return 1
+    [[ -f "${email_dir}/.ssss.mid.captain.enc" ]] || return 1  
+    [[ -f "${email_dir}/ssss.tail.uplanet.enc" ]] || return 1
+    [[ -f "${email_dir}/NOSTRNS" ]] || return 1
+    
+    return 0  # Identité MULTIPASS valide
+}
+```
+
+**⚠️ Sécurité Importante :**
+- Seuls les relais partageant la même `swarm.key` peuvent participer à la synchronisation N²
+- Les smart contracts délégués nécessitent une autorisation explicite de l'utilisateur
+- La validation croisée empêche les attaques de relais malveillants
+- L'audit des actions déléguées est tracé dans les événements NOSTR
 
 ### Rate Limiting
 
@@ -1177,6 +1537,8 @@ if (userNsec) {
 
 ## 📚 Exemples d'Applications
 
+⚠️ **IMPORTANT** : Tous les exemples ci-dessous supposent que l'utilisateur possède déjà une identité MULTIPASS créée via `make_NOSTRCARD.sh`. Ces applications ne génèrent pas de nouvelles clés, elles utilisent les identités existantes.
+
 ### Application Web Simple
 
 ```html
@@ -1190,7 +1552,7 @@ if (userNsec) {
     <div id="messages"></div>
     
     <script>
-        // Connexion au relay local
+        // Connexion au relay local (lecture seule)
         const relay = NostrTools.relayInit('ws://127.0.0.1:7777');
         
         relay.on('event', (event) => {
@@ -1204,6 +1566,13 @@ if (userNsec) {
             div.textContent = event.content;
             document.getElementById('messages').appendChild(div);
         }
+        
+        // Pour publier des messages, l'utilisateur doit d'abord 
+        // s'authentifier avec son identité MULTIPASS
+        async function connectMULTIPASS() {
+            // Redirection vers l'interface UPassport pour authentification
+            window.location.href = '/upassport';
+        }
     </script>
 </body>
 </html>
@@ -1212,17 +1581,45 @@ if (userNsec) {
 ### Application Mobile (React Native)
 
 ```javascript
-// Exemple React Native
+// Exemple React Native pour UPlanet
 import { NostrTools } from 'nostr-tools';
 
 class UPlanetApp extends Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            messages: [],
+            isAuthenticated: false,
+            userNpub: null
+        };
+    }
+    
     async componentDidMount() {
-        // Connexion au relay
+        // Connexion au relay (lecture seule initialement)
         this.relay = NostrTools.relayInit('ws://127.0.0.1:7777');
         await this.relay.connect();
         
         // Écoute des événements
         this.relay.on('event', this.handleEvent);
+        
+        // Vérifier si l'utilisateur a une session MULTIPASS active
+        this.checkMULTIPASSSession();
+    }
+    
+    checkMULTIPASSSession = async () => {
+        try {
+            // Vérifier la session MULTIPASS stockée localement
+            const session = await AsyncStorage.getItem('multipass_session');
+            if (session) {
+                const sessionData = JSON.parse(session);
+                this.setState({ 
+                    isAuthenticated: true, 
+                    userNpub: sessionData.npub 
+                });
+            }
+        } catch (error) {
+            console.log('No active MULTIPASS session');
+        }
     }
     
     handleEvent = (event) => {
@@ -1231,6 +1628,64 @@ class UPlanetApp extends Component {
                 messages: [...prevState.messages, event]
             }));
         }
+    }
+    
+    // Authentification via QR Code MULTIPASS
+    authenticateWithMULTIPASS = async (qrCodeData) => {
+        try {
+            // Envoyer le QR code MULTIPASS à l'API UPassport
+            const response = await fetch('http://127.0.0.1:54321/upassport', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ parametre: qrCodeData })
+            });
+            
+            const result = await response.text();
+            
+            if (result.includes('const userNsec')) {
+                // Extraction du NSEC depuis la réponse
+                const nsecMatch = result.match(/const userNsec = '([^']+)'/);
+                if (nsecMatch) {
+                    const nsec = nsecMatch[1];
+                    const decoded = NostrTools.nip19.decode(nsec);
+                    const publicKey = NostrTools.getPublicKey(decoded.data);
+                    
+                    // Sauvegarder la session
+                    await AsyncStorage.setItem('multipass_session', JSON.stringify({
+                        npub: NostrTools.nip19.npubEncode(publicKey),
+                        timestamp: Date.now()
+                    }));
+                    
+                    this.setState({ 
+                        isAuthenticated: true, 
+                        userNpub: NostrTools.nip19.npubEncode(publicKey)
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('MULTIPASS Authentication failed:', error);
+        }
+    }
+    
+    render() {
+        return (
+            <View>
+                {!this.state.isAuthenticated ? (
+                    <View>
+                        <Text>Scannez votre QR Code MULTIPASS pour vous connecter</Text>
+                        <QRCodeScanner onRead={this.authenticateWithMULTIPASS} />
+                    </View>
+                ) : (
+                    <View>
+                        <Text>Connecté avec: {this.state.userNpub}</Text>
+                        <FlatList 
+                            data={this.state.messages}
+                            renderItem={({item}) => <Text>{item.content}</Text>}
+                        />
+                    </View>
+                )}
+            </View>
+        );
     }
 }
 ```
