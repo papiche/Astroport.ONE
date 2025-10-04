@@ -241,7 +241,7 @@ send_redirection_alert() {
         local email_title="🚨 INTRUSION #${intrusion_count} - ${amount} Ğ1 redirigés vers UPLANETNAME.INTRUSION - ${wallet_pubkey:0:8}"
         
         # Send alert
-        ${MY_PATH}/mailjet.sh "${player_email}" ~/.zen/tmp/primal_alert.html "$email_title"
+        ${MY_PATH}/mailjet.sh "${player_email}" "$HOME/.zen/tmp/primal_alert.html" "$email_title"
         
         echo "📧 Enhanced alert email sent to $player_email with title: $email_title"
     else
