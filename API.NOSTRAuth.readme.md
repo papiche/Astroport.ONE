@@ -376,6 +376,46 @@ graph TD
 - **Smart Contracts Délégués** : Le relais de confiance peut exécuter des programmes automatisés au nom de l'utilisateur
 - **Validation Croisée** : Les relais d'une même constellation peuvent valider l'authenticité des identités MULTIPASS
 
+#### Validation Croisée des Identités MULTIPASS
+
+La validation croisée est assurée par le système de cache swarm (`~/.zen/tmp/swarm`) qui maintient une référence de tous les nœuds de l'essaim partageant la même constellation UPlanet. Cette synchronisation permet aux relais de vérifier l'authenticité des identités MULTIPASS de plusieurs façons :
+
+##### 1. Recherche par Email (`search_for_this_email_in_nostr.sh`)
+
+```bash
+# Le script recherche l'identité dans trois sources hiérarchiques :
+# 1. LOCAL : ~/.zen/game/nostr/${email}/ (identité locale)
+# 2. CACHE : ~/.zen/tmp/${IPFSNODEID}/TW/${email}/ (cache du nœud)
+# 3. SWARM : ~/.zen/tmp/swarm/*/TW/${email}/ (essaim de constellation)
+
+./search_for_this_email_in_nostr.sh user@example.com
+# Retourne : source, HEX, LAT, LON, EMAIL, G1PUBNOSTR, NPUB, RELAY
+
+# Mode JSON pour toutes les identités
+./search_for_this_email_in_nostr.sh --all
+```
+
+**Processus de validation :**
+1. **Vérification locale** : L'identité existe-t-elle sur ce relais ?
+2. **Vérification cache** : L'identité est-elle en cache local ?
+3. **Vérification swarm** : L'identité existe-t-elle sur d'autres relais de la constellation ?
+4. **Validation croisée** : Les métadonnées (GPS, G1PUBNOSTR, NPUB) sont-elles cohérentes ?
+
+##### 2. Recherche par Clé HEX (`search_for_this_hex_in_uplanet.sh`)
+
+```bash
+# Recherche d'une clé HEX spécifique dans l'essaim
+./search_for_this_hex_in_uplanet.sh 1a2b3c4d5e6f...
+
+# Liste toutes les clés HEX disponibles
+./search_for_this_hex_in_uplanet.sh
+```
+
+**Sources de validation :**
+- **SWARM UMAP HEX** : Clés géographiques des zones UPlanet
+- **SWARM PLAYERs HEX** : Clés des joueurs dans l'essaim
+- **LOCAL PLAYERs HEX** : Clés des joueurs locaux
+
 #### Sécurité Multi-Niveaux
 
 ```javascript
