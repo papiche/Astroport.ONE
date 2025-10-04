@@ -94,10 +94,17 @@ done
 
 # Wait a little for the first files to be created
 sleep 3s
-# Wait for all the threads to report they are done
+# Wait for all the threads to report they are done with timeout
+timeout_counter=0
+max_timeout=60  # Maximum 60 seconds (30 * 2s intervals)
 while [ `ls $DIR/*done 2>/dev/null | wc -l` -lt $index ]
 do
     sleep 2s
+    timeout_counter=$((timeout_counter + 1))
+    if [ $timeout_counter -gt $max_timeout ]; then
+        echo "WARNING: Timeout waiting for node responses, proceeding with available results" >&2
+        break
+    fi
 done
 
 # Grab all results - check if files exist first

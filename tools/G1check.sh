@@ -252,8 +252,8 @@ else
             # Small delay to ensure main process has finished
             sleep 1
             
-            # Get BMAS server
-            BMAS_SERVER_BG=$(${MY_PATH}/../tools/duniter_getnode.sh "BMAS" 2>/dev/null | tail -n 1)
+            # Get BMAS server with timeout
+            BMAS_SERVER_BG=$(timeout 120 ${MY_PATH}/../tools/duniter_getnode.sh "BMAS" 2>/dev/null | tail -n 1)
             
             # Try to get fresh balance
             if [[ -n "$BMAS_SERVER_BG" ]]; then
@@ -294,9 +294,14 @@ get_bmas_server() {
         fi
     fi
     
-    # Get fresh BMAS server
+    # Get fresh BMAS server with timeout
     log "Getting fresh BMAS server..."
-    server=$(${MY_PATH}/../tools/duniter_getnode.sh "BMAS" 2>/dev/null | tail -n 1)
+    server=$(timeout 120 ${MY_PATH}/../tools/duniter_getnode.sh "BMAS" 2>/dev/null | tail -n 1)
+    if [[ $? -eq 124 ]]; then
+        log "WARNING: duniter_getnode.sh timed out after 120 seconds"
+        return 1
+    fi
+    
     if [[ -n "$server" && "$server" != "ERROR" ]]; then
         echo "$server" > "$cache_file"
         log "Cached new BMAS server: $server"
