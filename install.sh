@@ -216,7 +216,7 @@ echo Installation time was `expr $end - $start` seconds.
 echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 echo "xXX LOG ERRORS XXx"
-cat ~/.zen/install.errors.log
+echo "~/.zen/install.errors.log"
 echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 echo "xXX please report any errors encountered during install  XXx"
 echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
