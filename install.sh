@@ -132,7 +132,7 @@ echo "#####################################"
 export PATH=$HOME/.local/bin:$PATH
 pipx install duniterpy --include-deps ## keeps own dep
 ## add monero & bitcoin compatible keys
-for i in pip python-dotenv setuptools wheel termcolor amzqr ollama requests beautifulsoup4 pyppeteer cryptography jwcrypto secp256k1 Ed25519 gql base58 pybase64 google silkaj pynacl python-gnupg pgpy pynentry paho-mqtt aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 nostpy-cli; do
+for i in pip python-dotenv setuptools wheel termcolor amzqr ollama requests beautifulsoup4 pyppeteer cryptography jwcrypto secp256k1 Ed25519 gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 nostpy-cli; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         pip install -U $i 2>> ~/.zen/install.errors.log
         # [[ $? != 0 ]] && pipx install $i 2>> ~/.zen/install.errors.log
@@ -179,6 +179,14 @@ echo "INSTALL UPASSPORT : http://localhost:54321"
 echo "######### NIP-101 strfry NOSTR relay ##############"
 echo "INSTALL NOSTR RELAY : wss://localhost:7777"
 bash <(wget -qO- https://github.com/papiche/NIP-101/raw/refs/heads/main/install_strfry.sh)
+
+## silkaj 0.20 + json + primal
+echo "######### silkaj Duniter v1 Client + json output ##############"
+mkdir -p ~/.zen/workspace
+cd ~/.zen/workspace
+git clone --depth 1 https://git.duniter.org/zicmama/silkaj.git
+cd silkaj
+./install_silkaj_json.sh
 
 ## G1BILLET
 echo "######### G1BILLET ##############"
