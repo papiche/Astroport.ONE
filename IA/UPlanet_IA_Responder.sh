@@ -24,6 +24,7 @@
 # - #reset : Effacer la mémoire de conversation
 # - #pierre : Synthèse vocale avec la voix Pierre (Orpheus TTS)
 # - #amelie : Synthèse vocale avec la voix Aurélie (Orpheus TTS)
+# - #plantnet : Reconnaissance de plantes avec PlantNet (image requise)
 ###################################################################
 PUBKEY="$1"
 EVENT="$2"
@@ -128,6 +129,7 @@ TAGS[pierre]=false
 TAGS[amelie]=false
 TAGS[rec2]=false
 TAGS[all]=false
+TAGS[plantnet]=false
 
 # Single pass tag detection
 if [[ "$message_text" =~ \#BRO\  ]]; then TAGS[BRO]=true; fi
@@ -143,6 +145,7 @@ if [[ "$message_text" =~ \#pierre ]]; then TAGS[pierre]=true; fi
 if [[ "$message_text" =~ \#amelie ]]; then TAGS[amelie]=true; fi
 if [[ "$message_text" =~ \#rec2 ]]; then TAGS[rec2]=true; fi
 if [[ "$message_text" =~ \#all ]]; then TAGS[all]=true; fi
+if [[ "$message_text" =~ \#plantnet ]]; then TAGS[plantnet]=true; fi
 
 # Detect memory slot once
 memory_slot=0
@@ -211,6 +214,38 @@ Votre Astroport Captain.
           --relay "$myRELAY" 2>/dev/null
     fi
     ) &
+}
+
+# Function to handle PlantNet recognition in background
+handle_plantnet_background() {
+    local image_url="$1"
+    local latitude="$2"
+    local longitude="$3"
+    local user_id="$4"
+    local event_id="$5"
+    local pubkey="$6"
+    
+    echo "PlantNet: Starting background recognition process..." >&2
+    
+    # Launch PlantNet recognition in background
+    (
+        # Set environment variables for the script
+        export myRELAY="$myRELAY"
+        export CAPTAINEMAIL="$CAPTAINEMAIL"
+        
+        # Call PlantNet recognition script
+        $MY_PATH/plantnet_recognition.py "$image_url" "$latitude" "$longitude" "$user_id" "$event_id" "$pubkey" 2>&1 >> "$HOME/.zen/tmp/plantnet.log"
+        
+        local exit_code=$?
+        if [[ $exit_code -eq 0 ]]; then
+            echo "PlantNet: Background recognition completed successfully" >&2
+        else
+            echo "PlantNet: Background recognition failed with exit code $exit_code" >&2
+        fi
+    ) &
+    
+    # Return immediately with acknowledgment message
+    echo "🌿 Reconnaissance PlantNet lancée en arrière-plan..."
 }
 
 # Function to get an event by ID using strfry scan
@@ -490,6 +525,43 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                         fi
                         KeyANSWER="🎬 Title: $title\n⏱️ Duration: $duration_fmt\n👤 Uploader: $uploader\n🔗 Original: $original_url\n📦 IPFS: $ipfs_url"
                     fi
+                fi
+            elif [[ "${TAGS[plantnet]}" == true ]]; then
+                # PlantNet recognition processing
+                echo "Processing PlantNet recognition request..." >&2
+                
+                # Extract image URL from message or use provided URL
+                local image_url=""
+                if [[ -n "$URL" ]]; then
+                    image_url="$URL"
+                else
+                    # Try to extract image URL from message content
+                    image_url=$(echo "$message_text" | grep -oE 'https?://[^\s]+\.(jpg|jpeg|png|gif|webp)' | head -n1)
+                fi
+                
+                if [[ -n "$image_url" ]]; then
+                    echo "PlantNet: Found image URL: $image_url" >&2
+                    
+                    # Launch PlantNet recognition in background
+                    handle_plantnet_background "$image_url" "$LAT" "$LON" "$user_id" "$EVENT" "$PUBKEY"
+                    
+                    KeyANSWER="🌿 Reconnaissance de plante lancée !
+
+Le processus de reconnaissance PlantNet a été démarré en arrière-plan. Vous recevrez une réponse détaillée avec l'identification de la plante une fois l'analyse terminée.
+
+📍 **Localisation :** ${LAT}, ${LON}
+🔗 **Image :** $image_url
+
+#PlantNet #BRO #jardinage"
+                else
+                    echo "PlantNet: No image URL found in message" >&2
+                    KeyANSWER="❌ Aucune image trouvée pour la reconnaissance PlantNet.
+
+Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #plantnet avec une photo.
+
+**Formats supportés :** JPG, JPEG, PNG, GIF, WEBP
+
+#PlantNet #BRO #jardinage"
                 fi
             elif [[ "${TAGS[pierre]}" == true || "${TAGS[amelie]}" == true ]]; then
                 # Determine voice
