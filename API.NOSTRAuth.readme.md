@@ -337,10 +337,8 @@ Toutes les identités NOSTR sont créées exclusivement par le script `make_NOST
 
 #### Processus de Création d'Identité MULTIPASS
 
-```bash
-# Création d'une identité NOSTR sécurisée
-./make_NOSTRCARD.sh user@example.com [image] [lat] [lon] [salt] [pepper]
-```
+- **Implémentation** : [make_NOSTRCARD.sh](https://github.com/papiche/Astroport.ONE/blob/master/tools/make_NOSTRCARD.sh) - Script de création d'identité NOSTR sécurisée
+- **Usage** : `./make_NOSTRCARD.sh user@example.com [image] [lat] [lon] [salt] [pepper]`
 
 **Étapes du processus :**
 
@@ -373,7 +371,7 @@ graph TD
 **Le relais Astroport et son Capitaine ont des autorisations spéciales :**
 
 - **Synchronisation N²** : Le Capitaine peut décoder sa part SSSS pour synchroniser les données entre relais de la même constellation
-- **Smart Contracts Délégués** : Le relais de confiance peut exécuter des programmes automatisés au nom de l'utilisateur
+- **Scripts de Traitement Délégués** : Le relais de confiance peut exécuter des programmes automatisés au nom de l'utilisateur
 - **Validation Croisée** : Les relais d'une même constellation peuvent valider l'authenticité des identités MULTIPASS
 
 #### Validation Croisée des Identités MULTIPASS
@@ -382,18 +380,14 @@ La validation croisée est assurée par le système de cache swarm (`~/.zen/tmp/
 
 ##### 1. Recherche par Email (`search_for_this_email_in_nostr.sh`)
 
-```bash
-# Le script recherche l'identité dans trois sources hiérarchiques :
-# 1. LOCAL : ~/.zen/game/nostr/${email}/ (identité locale)
-# 2. CACHE : ~/.zen/tmp/${IPFSNODEID}/TW/${email}/ (cache du nœud)
-# 3. SWARM : ~/.zen/tmp/swarm/*/TW/${email}/ (essaim de constellation)
-
-./search_for_this_email_in_nostr.sh user@example.com
-# Retourne : source, HEX, LAT, LON, EMAIL, G1PUBNOSTR, NPUB, RELAY
-
-# Mode JSON pour toutes les identités
-./search_for_this_email_in_nostr.sh --all
-```
+- **Implémentation** : [search_for_this_email_in_nostr.sh](https://github.com/papiche/Astroport.ONE/blob/master/tools/search_for_this_email_in_nostr.sh) - Recherche d'identité par email
+- **Sources hiérarchiques** :
+  - LOCAL : `~/.zen/game/nostr/${email}/` (identité locale)
+  - CACHE : `~/.zen/tmp/${IPFSNODEID}/TW/${email}/` (cache du nœud)
+  - SWARM : `~/.zen/tmp/swarm/*/TW/${email}/` (essaim de constellation)
+- **Usage** : `./search_for_this_email_in_nostr.sh user@example.com`
+- **Retour** : source, HEX, LAT, LON, EMAIL, G1PUBNOSTR, NPUB, RELAY
+- **Mode JSON** : `./search_for_this_email_in_nostr.sh --all` pour toutes les identités
 
 **Processus de validation :**
 1. **Vérification locale** : L'identité existe-t-elle sur ce relais ?
@@ -403,13 +397,9 @@ La validation croisée est assurée par le système de cache swarm (`~/.zen/tmp/
 
 ##### 2. Recherche par Clé HEX (`search_for_this_hex_in_uplanet.sh`)
 
-```bash
-# Recherche d'une clé HEX spécifique dans l'essaim
-./search_for_this_hex_in_uplanet.sh 1a2b3c4d5e6f...
-
-# Liste toutes les clés HEX disponibles
-./search_for_this_hex_in_uplanet.sh
-```
+- **Implémentation** : [search_for_this_hex_in_uplanet.sh](https://github.com/papiche/Astroport.ONE/blob/master/tools/search_for_this_hex_in_uplanet.sh) - Recherche d'identité par clé HEX
+- **Usage** : `./search_for_this_hex_in_uplanet.sh 1a2b3c4d5e6f...` (recherche spécifique)
+- **Liste** : `./search_for_this_hex_in_uplanet.sh` (toutes les clés disponibles)
 
 **Sources de validation :**
 - **SWARM UMAP HEX** : Clés géographiques des zones UPlanet
@@ -860,19 +850,42 @@ natools.py encrypt -p $CAPTAING1PUB -i ${EMAIL}.ssss.mid -o .ssss.mid.captain.en
 natools.py encrypt -p $UPLANETG1PUB -i ${EMAIL}.ssss.tail -o ssss.tail.uplanet.enc
 ```
 
-#### Reconstitution et Autorisation
+#### Activation via Scan QR Code MULTIPASS
 
-**Pour reconstituer l'identité complète, il faut 2 des 3 parts :**
+**Le QR Code sur le MULTIPASS contient la part HEAD (utilisateur) + IPNS Vault :**
 
-```bash
-# Exemple : Joueur + UPlanet (sans Capitaine)
-echo "$PLAYER_PART
-$UPLANET_PART" | ssss-combine -t 2 -q
-
-# Exemple : Capitaine + UPlanet (récupération d'urgence)
-echo "$CAPTAIN_PART  
-$UPLANET_PART" | ssss-combine -t 2 -q
+```mermaid
+graph TD
+    A[QR Code MULTIPASS] --> B[Scan par scan_new.html]
+    B --> C[54321.py API]
+    C --> D[upassport.sh]
+    D --> E[Décodage SSSS]
+    E --> F[Reconstitution DISCO]
+    F --> G[Activation Clé NOSTR]
+    G --> H[Accès à l'essaim UPlanet]
+    
+    I[Relais UPlanet] --> J[Part UPLANET]
+    K[Capitaine] --> L[Part CAPTAIN]
+    
+    E --> M[Combinaison 2-sur-3]
+    M --> N[HEAD + UPLANET]
+    M --> O[HEAD + CAPTAIN]
+    M --> P[UPLANET + CAPTAIN]
 ```
+
+**Processus d'Activation :**
+
+1. **Scan QR Code** : L'utilisateur scanne le QR Code de son MULTIPASS
+2. **Transmission** : Le QR Code contient `M-{SSSS_HEAD_B58}:{IPNS_VAULT}`
+3. **Décodage** : `upassport.sh` décode la part HEAD depuis le QR Code
+4. **Récupération** : Le relais récupère sa part UPLANET depuis `~/.zen/tmp/${IPFSNODEID}/`
+5. **Reconstitution** : Combinaison HEAD + UPLANET pour reconstituer le DISCO
+6. **Activation** : Dérivation de la clé NOSTR et activation dans l'essaim
+
+**Implémentation du Scan :**
+- **Scanner** : [scan_new.html](https://github.com/papiche/UPassport/blob/master/templates/scan_new.html) - Interface de scan QR
+- **API** : [54321.py](https://github.com/papiche/UPassport/blob/master/54321.py) - Traitement des données
+- **Moteur** : [upassport.sh](https://github.com/papiche/UPassport/blob/master/upassport.sh) - Décodage SSSS et activation
 
 #### Avantages de Sécurité
 
@@ -882,63 +895,75 @@ $UPLANET_PART" | ssss-combine -t 2 -q
 - **Synchronisation sécurisée** : Les relais de constellation peuvent valider sans exposer le secret complet
 - **Dérivation déterministe** : Toutes les clés (NOSTR, G1, Bitcoin, Monero, IPFS) sont dérivées du même DISCO
 
-#### Synchronisation N² et Smart Contracts Délégués
+#### Synchronisation N² et Scripts de Traitement Délégués
 
 **Le relais Astroport et son Capitaine disposent d'autorisations spéciales pour :**
 
 ##### 1. Synchronisation N² entre Relais de Constellation
 
-```bash
-# Le Capitaine peut décoder sa part SSSS pour synchroniser les données
-# entre relais partageant la même swarm.key (constellation)
+**Le Capitaine peut décoder sa part SSSS pour synchroniser les données entre relais :**
 
-# Processus de synchronisation :
-# 1. Décryptage de la part Captain avec CAPTAING1PUB privée
-# 2. Combinaison avec la part UPlanet pour reconstituer DISCO
-# 3. Dérivation des clés nécessaires pour la synchronisation
-# 4. Validation croisée avec les autres relais de la constellation
-```
+- **Implémentation** : [Lignes 295-301](https://github.com/papiche/UPassport/blob/master/upassport.sh#L295-L301) - Décryptage de la part Captain
+- **Processus** :
+  1. Décryptage de la part Captain avec `CAPTAING1PUB` privée
+  2. Combinaison avec la part UPlanet pour reconstituer DISCO
+  3. Dérivation des clés nécessaires pour la synchronisation
+  4. Validation croisée avec les autres relais de la constellation
+- **Résultat** : Synchronisation automatique des identités MULTIPASS dans l'essaim
 
-##### 2. Exécution de Smart Contracts Délégués
+##### 1.1. Forward IPFS P2P et Synchronisation N²
 
-```javascript
-// Exemple : Bot IA automatique agissant pour l'utilisateur
-async function executeSmartContract(userEmail, action) {
-    // Le relais de confiance peut :
-    // - Décoder les parts SSSS autorisées
-    // - Signer des événements NOSTR au nom de l'utilisateur  
-    // - Exécuter des transactions G1 automatiques
-    // - Synchroniser des données IPFS
-    
-    if (isAuthorizedRelay() && hasValidSSSSParts()) {
-        const userKeys = reconstructFromSSSSParts(['captain', 'uplanet']);
-        return await executeAutomatedAction(userKeys, action);
-    }
-    
-    throw new Error('Unauthorized relay or insufficient SSSS parts');
-}
-```
+**Le script `DRAGON_p2p_ssh.sh` assure la connectivité et la synchronisation entre stations de l'essaim :**
+
+- **Implémentation** : [DRAGON_p2p_ssh.sh](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/DRAGON_p2p_ssh.sh) - Forward IPFS P2P et synchronisation N²
+- **Fonctionnalités** :
+  - **Forward SSH** : [Lignes 165-189](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/DRAGON_p2p_ssh.sh#L165-L189) - Tunnel SSH via IPFS P2P
+  - **Forward Relay** : [Lignes 314-340](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/DRAGON_p2p_ssh.sh#L314-L340) - Tunnel NOSTR relay via IPFS P2P
+  - **Synchronisation N²** : [Lignes 110-122](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/DRAGON_p2p_ssh.sh#L110-L122) - Follow automatique des nœuds UMAP
+- **Services Forwardés** :
+  - SSH (port 22) → `/x/ssh-${IPFSNODEID}`
+  - NOSTR Relay (port 7777) → `/x/strfry-${IPFSNODEID}`
+  - OLLAMA (port 11434) → `/x/ollama-${IPFSNODEID}`
+  - ComfyUI (port 8188) → `/x/comfyui-${IPFSNODEID}`
+  - Orpheus (port 5005) → `/x/orpheus-${IPFSNODEID}`
+  - Perplexica (port 3001) → `/x/perplexica-${IPFSNODEID}`
+
+**Processus de Synchronisation N² :**
+
+1. **Activation du DRAGON** : Le script s'exécute sur chaque station de l'essaim
+2. **Forward des Services** : Les ports locaux sont exposés via IPFS P2P
+3. **Follow Automatique** : [Lignes 110-122](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/DRAGON_p2p_ssh.sh#L110-L122) - Follow automatique des nœuds UMAP actifs
+4. **Synchronisation des Messages** : Les messages des "amis d'amis" sont automatiquement synchronisés
+5. **Réseau Maillé** : Chaque station peut accéder aux services des autres via IPFS P2P
+
+**Avantages de l'Architecture DRAGON :**
+- **Résilience** : Pas de point de défaillance unique
+- **Décentralisation** : Chaque station est autonome
+- **Synchronisation** : Messages propagés automatiquement dans l'essaim
+- **Sécurité** : Accès SSH sécurisé via IPFS P2P
+- **Scalabilité** : Ajout facile de nouvelles stations à l'essaim
+
+##### 2. Exécution de Scripts de Traitement Délégués
+
+**Le relais de confiance peut exécuter des actions automatisées :**
+
+- **Implémentation** : [Lignes 340-347](https://github.com/papiche/UPassport/blob/master/upassport.sh#L340-L347) - Activation de la clé NOSTR
+- **Capacités** :
+  - Décoder les parts SSSS autorisées
+  - Signer des événements NOSTR au nom de l'utilisateur
+  - Exécuter des transactions G1 automatiques
+  - Synchroniser des données IPFS
+- **Sécurité** : Vérification de l'autorisation du relais et des parts SSSS valides
 
 ##### 3. Validation d'Authenticité MULTIPASS
 
-```bash
-# Vérification qu'une identité NOSTR a été créée par make_NOSTRCARD.sh
-function validateMULTIPASSOrigin(npub) {
-    # 1. Vérifier la présence des fichiers SSSS chiffrés
-    # 2. Contrôler la cohérence des clés dérivées
-    # 3. Valider la signature de création par un Capitaine autorisé
-    # 4. Confirmer l'existence du vault IPNS correspondant
-    
-    local email_dir="${HOME}/.zen/game/nostr/${email}/"
-    
-    [[ -f "${email_dir}/.ssss.head.player.enc" ]] || return 1
-    [[ -f "${email_dir}/.ssss.mid.captain.enc" ]] || return 1  
-    [[ -f "${email_dir}/ssss.tail.uplanet.enc" ]] || return 1
-    [[ -f "${email_dir}/NOSTRNS" ]] || return 1
-    
-    return 0  # Identité MULTIPASS valide
-}
-```
+- **Implémentation** : [Lignes 194-204](https://github.com/papiche/UPassport/blob/master/upassport.sh#L194-L204) - Vérification de l'existence de l'identité
+- **Processus de validation** :
+  1. Vérifier la présence des fichiers SSSS chiffrés
+  2. Contrôler la cohérence des clés dérivées
+  3. Valider la signature de création par un Capitaine autorisé
+  4. Confirmer l'existence du vault IPNS correspondant
+- **Résultat** : Confirmation de l'authenticité de l'identité MULTIPASS
 
 **⚠️ Sécurité Importante :**
 - Seuls les relais partageant la même `swarm.key` peuvent participer à la synchronisation N²
@@ -974,396 +999,48 @@ Le Fat Layer Protocol permet de récupérer automatiquement l'ID du capitaine et
 
 #### Récupération de l'ID du Capitaine
 
-```javascript
-// Récupération automatique du signataire depuis les métadonnées
-async function loadSignerProfile() {
-    try {
-        // Charger les signatures depuis _signatures
-        const signaturesResponse = await fetch('_signatures');
-        const signaturesText = await signaturesResponse.text();
-        const lines = signaturesText.split('\n').filter(line => 
-            line.trim() && !line.startsWith('#')
-        );
-        
-        if (lines.length > 0) {
-            const lastSignature = lines[lines.length - 1];
-            const [timestamp, cid, signer, action] = lastSignature.split('|');
-            
-            console.log(`👨‍✈️ Capitaine détecté: ${signer}`);
-            
-            // Récupérer la clé publique du signataire
-            let signerPubkey = null;
-            try {
-                // Priorité à la clé HEX
-                const hexResponse = await fetch(`frd/multipass/${signer}.hex`);
-                if (hexResponse.ok) {
-                    signerPubkey = await hexResponse.text().trim();
-                    console.log(`🔑 Clé HEX: ${signerPubkey}`);
-                } else {
-                    // Fallback sur NPUB
-                    const npubResponse = await fetch(`frd/multipass/${signer}.npub`);
-                    if (npubResponse.ok) {
-                        signerPubkey = await npubResponse.text().trim();
-                        console.log(`📝 NPUB: ${signerPubkey}`);
-                    }
-                }
-            } catch (e) {
-                console.log(`⚠️ Impossible de charger la clé pour ${signer}`);
-            }
-            
-            // Créer un profil basique
-            const profileData = {
-                name: signer.split('@')[0],
-                display_name: `${signer.split('@')[0]} (${signer})`,
-                about: `✍️ Signataire MULTIPASS Astroport.ONE\n📧 ${signer}\n🕐 ${new Date(timestamp).toLocaleString('fr-FR')}`,
-                picture: null
-            };
-            
-            // Afficher le profil
-            displayUserProfile(profileData, signerPubkey);
-        }
-    } catch (error) {
-        console.error('❌ Erreur chargement profil signataire:', error);
-    }
-}
-```
+- **Implémentation** : [Lignes 570-628](https://github.com/papiche/UPlanet/blob/master/earth/coinflip/index.html#L570-L628) - Fonction `fetchCaptainData()` dans coinflip
+- **Processus** :
+  1. Récupération des données ASTROPORT station via `window.__ASTROPORT_STATION_URL__`
+  2. Extraction du `captainHEX` depuis la réponse JSON
+  3. Récupération du profil et des messages du CAPTAIN
+  4. Affichage des soldes et informations du CAPTAIN
 
 #### Affichage du Profil Utilisateur
 
-```javascript
-// Fonction d'affichage du profil (style coinflip)
-function displayUserProfile(profileData, pubkey = null) {
-    console.log('[Profile] Affichage profil utilisateur:', profileData);
-    
-    // Créer ou mettre à jour le footer
-    let footer = document.querySelector('.footer');
-    if (!footer) {
-        footer = document.createElement('div');
-        footer.className = 'footer';
-        document.body.appendChild(footer);
-    }
-    
-    // Extraire les données du profil
-    const displayPubkey = pubkey || userPubkey || 'unknown';
-    const pubkeyShort = displayPubkey.substring(0, 8) + '...' + displayPubkey.substring(displayPubkey.length - 8);
-    
-    let name = profileData.name || displayPubkey.substring(0, 16);
-    let picture = profileData.picture || '';
-    let about = profileData.about || '';
-    let g1pubFromProfile = '';
-    
-    // Chercher les tags g1pub dans les métadonnées
-    if (profileData.tags && Array.isArray(profileData.tags)) {
-        for (const tag of profileData.tags) {
-            if (Array.isArray(tag) && tag[0] === 'i' && typeof tag[1] === 'string') {
-                if (tag[1].startsWith('g1pub:')) {
-                    g1pubFromProfile = tag[1].slice('g1pub:'.length);
-                } else if (tag[1].startsWith('g1pubv2:') && !g1pubFromProfile) {
-                    g1pubFromProfile = tag[1].slice('g1pubv2:'.length);
-                }
-            }
-        }
-    }
-    
-    // Construire l'URL du profil complet
-    const profileViewerUrl = `/ipns/copylaradio.com/nostr_profile_viewer.html?hex=${displayPubkey}&origin=${displayPubkey}`;
-    
-    // Construire le HTML du profil
-    const profileHtml = `
-        <div class="profile-card">
-            <div class="profile-header">
-                <img src="${picture || 'https://ipfs.copylaradio.com/ipfs/QmQRq211EMmQJ7QE44FrVZt8EMF7JJWnayDXHyKzes4pX1'}" 
-                     alt="Avatar" class="profile-avatar" 
-                     onerror="this.src='https://ipfs.copylaradio.com/ipfs/QmQRq211EMmQJ7QE44FrVZt8EMF7JJWnayDXHyKzes4pX1'">
-                <div class="profile-info">
-                    <h3 class="profile-name">${name}</h3>
-                    <p class="profile-pubkey">${pubkeyShort}</p>
-                    ${g1pubFromProfile ? `<p class="profile-g1">💰 ${g1pubFromProfile.substring(0, 8)}...</p>` : ''}
-                </div>
-            </div>
-            <div class="profile-about">${about}</div>
-            <div class="profile-actions">
-                <a href="${profileViewerUrl}" target="_blank" class="profile-link">👤 Voir Profil</a>
-            </div>
-        </div>
-    `;
-    
-    footer.innerHTML = profileHtml;
-}
-```
+- **Implémentation** : [Lignes 1224-1499](https://github.com/papiche/UPlanet/blob/master/earth/coinflip/index.html#L1224-L1499) - Fonction `fetchAndDisplayProfile()` dans coinflip
+- **Fonctionnalités** :
+  - Affichage du profil utilisateur avec avatar et informations
+  - Gestion des tags G1PUB pour les soldes
+  - Interface utilisateur pour la navigation des profils
+  - Intégration avec le système de paiement ẐEN
 
 #### Récupération du Dernier Message
 
-```javascript
-// Récupération du dernier message NOSTR
-async function fetchLastMessage(pubkey) {
-    try {
-        const pool = new NostrTools.SimplePool();
-        const relays = ['wss://relay.copylaradio.com', 'ws://127.0.0.1:7777'];
-        
-        const events = await pool.list(relays, [{
-            kinds: [1], // Messages texte
-            authors: [pubkey],
-            limit: 1
-        }]);
-        
-        if (events.length > 0) {
-            const lastMessage = events[0];
-            console.log('📝 Dernier message:', lastMessage.content);
-            
-            // Afficher le message
-            displayLastMessage(lastMessage);
-            return lastMessage;
-        } else {
-            console.log('Aucun message trouvé');
-            return null;
-        }
-    } catch (error) {
-        console.error('Erreur récupération message:', error);
-        return null;
-    }
-}
-
-function displayLastMessage(event) {
-    const messageContainer = document.getElementById('last-message');
-    if (messageContainer) {
-        messageContainer.innerHTML = `
-            <div class="message-item">
-                <div class="message-content">${event.content}</div>
-                <div class="message-meta">
-                    ${new Date(event.created_at * 1000).toLocaleString()}
-                </div>
-            </div>
-        `;
-    }
-}
-```
+- **Implémentation** : [nostr_profile_viewer.html](https://github.com/papiche/UPlanet/blob/master/earth/nostr_profile_viewer.html) - Fonctions de récupération des messages
+- **Fonctionnalités** :
+  - Récupération des messages NOSTR (kind 1) depuis les relais
+  - Affichage des messages récents avec métadonnées
+  - Gestion des liens IPFS dans les messages
+  - Interface utilisateur pour la navigation des messages
 
 #### Envoi de Like via NOSTR
 
-```javascript
-// Fonction pour envoyer un like (réaction)
-async function sendLike(eventId, authorPubkey) {
-    try {
-        if (!window.nostr) {
-            throw new Error('Extension NOSTR requise');
-        }
-        
-        // Créer l'événement de réaction (kind 7)
-        const likeEvent = {
-            kind: 7,
-            created_at: Math.floor(Date.now() / 1000),
-            tags: [
-                ['e', eventId], // Référence à l'événement liké
-                ['p', authorPubkey], // Référence à l'auteur
-                ['k', '1'] // Kind de l'événement original
-            ],
-            content: '❤️' // Emoji de réaction
-        };
-        
-        // Signer l'événement
-        const signedEvent = await window.nostr.signEvent(likeEvent);
-        
-        // Publier sur les relais
-        const relays = ['wss://relay.copylaradio.com', 'ws://127.0.0.1:7777'];
-        const results = await Promise.all(
-            relays.map(relay => publishToRelay(relay, signedEvent))
-        );
-        
-        const successCount = results.filter(Boolean).length;
-        console.log(`✅ Like envoyé sur ${successCount}/${relays.length} relais`);
-        
-        return successCount > 0;
-    } catch (error) {
-        console.error('❌ Erreur envoi like:', error);
-        return false;
-    }
-}
-
-// Fonction pour publier sur un relai
-async function publishToRelay(relayUrl, signedEvent) {
-    return new Promise((resolve) => {
-        try {
-            const ws = new WebSocket(relayUrl);
-            
-            ws.onopen = () => {
-                console.log(`📡 Connexion ${relayUrl}`);
-                ws.send(JSON.stringify(['EVENT', signedEvent]));
-            };
-            
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                if (data[0] === 'OK' && data[1] === signedEvent.id) {
-                    console.log(`✅ OK ${relayUrl}`);
-                    ws.close();
-                    resolve(true);
-                } else if (data[0] === 'OK' && data[2] === false) {
-                    console.error(`❌ Rejeté ${relayUrl}:`, data[3]);
-                    ws.close();
-                    resolve(false);
-                }
-            };
-            
-            ws.onerror = (error) => {
-                console.error(`❌ Erreur ${relayUrl}:`, error);
-                resolve(false);
-            };
-            
-            // Timeout après 5 secondes
-            setTimeout(() => {
-                ws.close();
-                resolve(false);
-            }, 5000);
-            
-        } catch (error) {
-            console.error(`❌ Connexion ${relayUrl}:`, error);
-            resolve(false);
-        }
-    });
-}
-```
+- **Implémentation** : [Lignes 837-931](https://github.com/papiche/UPlanet/blob/master/earth/coinflip/index.html#L837-L931) - Fonction `sendLikeToCaptain()` dans coinflip
+- **Fonctionnalités** :
+  - Création d'événements de réaction (kind 7)
+  - Signature et publication sur les relais NOSTR
+  - Gestion des erreurs et timeouts
+  - Intégration avec le système de paiement ẐEN
 
 #### Méthode de Connexion (Style copylaradio.com/coinflip)
 
-```javascript
-// Variables globales pour NOSTR (inspirées de coinflip)
-let DEFAULT_RELAYS = ['wss://relay.copylaradio.com', 'ws://127.0.0.1:7777', 'wss://relay.damus.io'];
-let NOSTRws = '';
-let nostrRelay = null;
-let isNostrConnected = false;
-let userPubkey = null;
-let authEventPublished = false;
-
-// Fonction pour détecter l'URL du relai automatiquement
-function detectNOSTRws() {
-    const currentURL = new URL(window.location.href);
-    const hostname = currentURL.hostname;
-    const port = currentURL.port;
-    const protocol = currentURL.protocol.split(":")[0];
-    
-    let rPort = port;
-    if (port === "8080") { rPort = "7777"; }
-    
-    const rHost = hostname.replace("ipfs", "relay");
-    const wsProtocol = protocol === 'https' ? 'wss' : 'ws';
-    
-    NOSTRws = wsProtocol + "://" + rHost + (rPort ? (":" + rPort) : "");
-    console.log('🔗 NOSTR relay websocket:', NOSTRws);
-}
-
-// Fonction de connexion à NOSTR
-async function connectToNostr() {
-    const connectBtn = document.getElementById('connectBtn');
-    
-    if (!window.nostr || typeof window.nostr.getPublicKey !== 'function') {
-        alert('Extension Nostr requise pour se connecter.');
-        return;
-    }
-    
-    try {
-        console.log('[LOGIN] Démarrage séquence de connexion');
-        connectBtn.disabled = true;
-        connectBtn.textContent = '🔄 Connexion...';
-        
-        const pubkey = await window.nostr.getPublicKey();
-        if (!pubkey) throw new Error('Aucune clé publique retournée');
-        
-        userPubkey = pubkey;
-        console.log('[LOGIN] Clé publique obtenue:', pubkey.substring(0, 8) + '...');
-        
-        connectBtn.textContent = '🔐 Authentification...';
-        console.log('[LOGIN] Connexion au relai...');
-        await connectToRelay();
-        
-        console.log('[LOGIN] Relai connecté, profil sera récupéré automatiquement');
-        
-        // Récupérer et afficher le profil
-        await fetchProfileAndRelays(pubkey);
-        
-        connectBtn.textContent = '✅ Connecté';
-        connectBtn.disabled = true;
-        
-    } catch (e) {
-        console.error('[LOGIN] Connexion échouée:', e);
-        alert('Connexion échouée. Veuillez autoriser dans votre extension Nostr.');
-        connectBtn.disabled = false;
-        connectBtn.textContent = '🔗 Se connecter';
-    }
-}
-
-// Fonction de connexion au relai
-async function connectToRelay() {
-    const relayUrl = NOSTRws || DEFAULT_RELAYS[0];
-    
-    try {
-        nostrRelay = NostrTools.relayInit(relayUrl);
-        
-        nostrRelay.on('connect', () => {
-            isNostrConnected = true;
-            console.log('[NIP-42] Connecté au relai', relayUrl);
-            
-            if (!authEventPublished) {
-                console.log('[NIP-42] Publication événement 22242 proactive');
-                sendProactiveAuth(relayUrl).catch(err => 
-                    console.warn('[NIP-42] Échec publication proactive:', err)
-                );
-            }
-        });
-        
-        nostrRelay.on('error', (err) => {
-            isNostrConnected = false;
-            console.error('Erreur relai', err);
-        });
-        
-        nostrRelay.on('auth', async (challenge) => {
-            console.log('[NIP-42] Challenge d\'authentification reçu:', challenge);
-            await handleAuthChallenge(challenge, relayUrl);
-        });
-        
-        await nostrRelay.connect();
-        
-    } catch (error) {
-        console.error('Erreur connexion relai:', error);
-        throw error;
-    }
-}
-
-// Fonction d'authentification proactive
-async function sendProactiveAuth(relayUrl) {
-    try {
-        if (!userPubkey || !nostrRelay || authEventPublished) return;
-        
-        const challenge = `client-init-${Date.now()}`;
-        const authEvent = {
-            kind: 22242,
-            created_at: Math.floor(Date.now() / 1000),
-            tags: [['relay', relayUrl], ['challenge', challenge]],
-            content: '',
-            pubkey: userPubkey
-        };
-        
-        let signedAuthEvent = null;
-        if (window.nostr && typeof window.nostr.signEvent === 'function') {
-            signedAuthEvent = await window.nostr.signEvent(authEvent);
-        }
-        
-        if (!signedAuthEvent) {
-            console.warn('[NIP-42] signEvent retourné null');
-            return;
-        }
-        
-        // Publier l'événement d'authentification
-        const message = JSON.stringify(['EVENT', signedAuthEvent]);
-        nostrRelay.send(message);
-        
-        authEventPublished = true;
-        console.log('[NIP-42] Événement d\'authentification publié');
-        
-    } catch (error) {
-        console.error('[NIP-42] Erreur authentification proactive:', error);
-    }
-}
-```
+- **Implémentation** : [Lignes 1190-1594](https://github.com/papiche/UPlanet/blob/master/earth/coinflip/index.html#L1190-L1594) - Fonctions de connexion NOSTR dans coinflip
+- **Fonctionnalités** :
+  - Détection automatique des relais NOSTR
+  - Authentification NIP-42 avec événements 22242
+  - Gestion des profils utilisateur et des soldes
+  - Interface utilisateur pour la connexion et l'authentification
 
 ### Mode Scanner QR Code - MULTIPASS SSSS
 
@@ -1371,207 +1048,36 @@ Le mode scanner QR Code permet de traiter les clés SSSS du MULTIPASS pour l'aut
 
 #### Traitement des QR Codes MULTIPASS
 
-```bash
-# Dans upassport.sh - Traitement des QR codes MULTIPASS SSSS
-if [[ ( ${PUBKEY:0:2} == "M-" || ${PUBKEY:0:2} == "1-" ) && ${ZCHK:0:6} == "k51qzi" ]]; then
-    echo "MULTIPASS SSSS KEY verification......"
-    
-    # Décodage Base58 du QR code
-    # ex: M-3geE2ktuVKGUoEuv3FQEtiCAZDa69PN2kiT8d4UhAH3RbMkgPbooz7W:k51qzi5uqu5dhwr9cp52nhe7w13y9g58kg4l7m45ojka0tx92s72bise85sjn0
-    [[ ${PUBKEY:0:2} == "M-" ]] && DECODED_QRCODE=$($HOME/.zen/Astroport.ONE/tools/Mbase58.py decode "${QRCODE:2}")
-    # ex: 1-3601d4a82fc6d8f9033066da40a9d14693737ca12479b3a601a7be319d4b77b2df4477a0d148d7cd:k51qzi5uqu5dhwr9cp52nhe7w13y9g58kg4l7m45ojka0tx92s72bise85sjn0
-    [[ ${PUBKEY:0:2} == "1-" ]] && DECODED_QRCODE="${QRCODE}"
-    
-    SSSS1=$(echo ${DECODED_QRCODE} | cut -d ':' -f 1)
-    IPNSVAULT=$(echo ${DECODED_QRCODE} | cut -d ':' -f 2-)
-    ipnsk51=$(echo "$IPNSVAULT" | grep -oP "(?<=k51qzi5uqu5d)[^/]*")
-    
-    if [[ ${ipnsk51} != "" ]]; then
-        VAULTNS="k51qzi5uqu5d"$ipnsk51
-        
-        # Recherche de la NOSTR CARD locale
-        PLAYER=$(get_NOSTRNS_directory ${VAULTNS})
-        
-        if [[ -z $PLAYER ]]; then
-            # NOSTR CARD manquante
-            cat ${MY_PATH}/templates/message.html \
-            | sed -e "s~_TITLE_~$(date -u) <br> ${IPNSVAULT}~g" \
-                 -e "s~_MESSAGE_~NOSTR CARD MISSING~g" \
-                > ${MY_PATH}/tmp/${MOATS}.out.html
-            echo "${MY_PATH}/tmp/${MOATS}.out.html"
-            exit 0
-        fi
-        
-        # DÉCODAGE DISCO SSSS
-        mkdir -p $HOME/.zen/tmp/$MOATS/$IPNSVAULT/$PLAYER
-        
-        # Décryptage de la partie tail avec la clé UPLANET
-        tmp_player=$(mktemp)
-        echo "$SSSS1" > "$tmp_player"
-        
-        tmp_tail=$(mktemp)
-        $HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/tmp/$MOATS/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}"
-        $HOME/.zen/Astroport.ONE/tools/natools.py decrypt -f pubsec -i "$HOME/.zen/game/nostr/${PLAYER}/ssss.tail.uplanet.enc" \
-                -k $HOME/.zen/tmp/$MOATS/uplanet.dunikey -o "$tmp_tail"
-        
-        rm $HOME/.zen/tmp/$MOATS/uplanet.dunikey
-        
-        # Combinaison des parts SSSS (2 sur 3 requis)
-        DISCO=$(cat "$tmp_player" "$tmp_tail" | ssss-combine -t 2 -q 2>&1 | tail -n 1)
-        
-        IFS='=&' read -r s salt p pepper <<< "$DISCO"
-        
-        if [[ -n $salt && -n $pepper ]]; then
-            rm "$tmp_player" "$tmp_tail"
-            
-            # Génération de la clé NSEC pour l'authentification
-            NSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${salt}" "${pepper}" -s)
-            
-            # Remplissage du template UPassport API avec nsec
-            cat ~/.zen/UPassport/templates/nostr.html \
-                | sed "s/const userNsec = '';/const userNsec = '${NSEC}';/" \
-                > ${MY_PATH}/tmp/${MOATS}.out.html
-            
-            echo "${MY_PATH}/tmp/${MOATS}.out.html"
-            exit 0
-        else
-            echo "ERROR : BAD DISCO DECODING"
-            exit 1
-        fi
-    fi
-fi
-```
+- **Implémentation** : [Lignes 263-318](https://github.com/papiche/UPassport/blob/master/upassport.sh#L263-L318) - Décodage SSSS MULTIPASS dans upassport.sh
+- **Processus** :
+  1. Détection du format QR Code (M- ou 1-)
+  2. Décodage Base58/Hex du QR Code
+  3. Extraction de la part SSSS et du vault IPNS
+  4. Recherche de la NOSTR CARD locale
+  5. Décryptage de la part UPLANET
+  6. Combinaison des parts SSSS (2-sur-3)
+  7. Génération de la clé NSEC pour l'authentification
 
 #### Interface Scanner HTML
 
-```html
-<!-- Dans scan_new.html - Interface de scan QR -->
-<div class="scanner-container">
-    <div class="camera-controls">
-        <button id="start-camera">🎥 ON</button>
-        <button id="stop-camera">🚫 OFF</button>
-        <button id="take-photo">📸 Photo</button>
-    </div>
-    
-    <video id="preview"></video>
-    
-    <form id="qr-form">
-        <input type="text" id="parametre" name="parametre" 
-               placeholder="Email || MULTIPASS QR SCAN" required>
-        <input type="hidden" id="imageData" name="imageData">
-        <input type="password" id="PASS" name="PASS" value="1234">
-        <input type="submit" value="-- OK --">
-    </form>
-</div>
+- **Implémentation** : [scan_new.html](https://github.com/papiche/UPassport/blob/master/templates/scan_new.html) - Interface de scan QR Code pour MULTIPASS
+- **Fonctionnalités** :
+  - Scanner QR Code avec caméra (Instascan.js)
+  - Interface de saisie manuelle avec clavier numérique
+  - Capture d'image du QR Code scanné
+  - Gestion des caméras multiples (front/back)
+  - Intégration avec l'API UPassport (`/upassport`)
+  - Support des codes de destruction "0000"
 
-<script>
-// Initialisation du scanner QR
-let scanner = new Instascan.Scanner({
-    continuous: true,
-    video: document.getElementById('preview'),
-    mirror: false,
-    captureImage: false,
-    backgroundScan: false,
-    refractoryPeriod: 5000,
-    scanPeriod: 1
-});
-
-// Détection automatique du QR Code
-scanner.addListener('scan', function (content) {
-    document.getElementById("parametre").value = content;
-    $('#submitButton').css('background-color', '#0000FF');
-    
-    // Capture de l'image du QR code
-    let video = document.getElementById('preview');
-    let canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-    let imageDataUrl = canvas.toDataURL('image/png');
-    
-    $('#imageData').val(imageDataUrl);
-});
-
-// Soumission du formulaire
-$('#qr-form').submit(function(e) {
-    e.preventDefault();
-    $('#loadingSpinner').show();
-    
-    let formData = new FormData(this);
-    const parametre = document.getElementById('parametre').value;
-    const PASS = document.getElementById('PASS').value;
-    
-    // Traitement spécial pour les codes ZENCARD (~~~~~) ou DELETE (0000)
-    if (parametre.substring(0, 5) === "~~~~~" || PASS === "0000") {
-        if (formData.has('imageData')) {
-            formData.delete('imageData');
-        }
-        formData.append('imageData', PASS);
-        console.log(`PIN saisi : ${PASS}`);
-    }
-    
-    // Envoi vers l'API UPassport
-    $.ajax({
-        url: '/upassport',
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function(response) {
-            $('#loadingSpinner').hide();
-            $('#result-iframe').attr('srcdoc', response);
-            $('.result-container').css('display', 'flex');
-        },
-        error: function() {
-            $('#loadingSpinner').hide();
-            alert('Erreur lors du traitement. Réessayez.');
-        }
-    });
-});
-</script>
-```
 
 #### Template NOSTR pour Paper Wallet
 
-```html
-<!-- Template nostr.html pour l'authentification paper wallet -->
-<script>
-// Configuration automatique avec NSEC du MULTIPASS
-const userNsec = ''; // Remplacé automatiquement par upassport.sh
-
-// Initialisation automatique si NSEC fourni
-if (userNsec) {
-    console.log("NSEC fourni. Initialisation clé locale.");
-    try {
-        const decoded = NostrTools.nip19.decode(userNsec);
-        if (decoded.type !== 'nsec' || !decoded.data) {
-            throw new Error('Format NSEC invalide');
-        }
-        
-        privateKeyHex = decoded.data;
-        publicKey = NostrTools.getPublicKey(privateKeyHex);
-        
-        console.log(`Clé NSEC OK. Pubkey: ${publicKey.slice(0, 10)}...`);
-        
-        // Masquer le bouton de connexion et activer la publication
-        $('#connectButton').hide();
-        $('#postButton').prop('disabled', false);
-        
-        // Récupérer le profil et les messages
-        fetchProfileAndRelays(publicKey);
-        fetchAndDisplayMessages(publicKey);
-        
-    } catch (e) {
-        console.log(`Erreur initialisation NSEC: ${e.message}`);
-        // Fallback sur l'extension
-        checkNostrExtension();
-    }
-} else {
-    // Pas de NSEC, utiliser l'extension
-    checkNostrExtension();
-}
-</script>
-```
+- **Implémentation** : [nostr.html](https://github.com/papiche/Astroport.ONE/blob/master/templates/NOSTR/zine/nostr.html) - Template NOSTR pour l'authentification paper wallet
+- **Fonctionnalités** :
+  - Configuration automatique avec NSEC du MULTIPASS
+  - Initialisation automatique si NSEC fourni
+  - Fallback sur l'extension NOSTR si pas de NSEC
+  - Intégration avec le système de profils et messages
 
 ---
 
@@ -1673,7 +1179,7 @@ Pour créer votre propre API répondant aux tags NOSTR :
 
 ---
 
-## 🏗️ Smart Contracts et Architecture des Clés
+## 🏗️ Scripts de Traitement et Architecture des Clés
 
 ### Hiérarchie des Clés UMAP
 
@@ -1787,38 +1293,38 @@ graph TD
    - Nettoyage des images anciennes (6 mois)
    - Suppression des annonces expirées
 
-### Smart Contracts en Bash et Python
+### Scripts de Traitement en Bash et Python
 
-Les smart contracts UPlanet sont implémentés directement dans le code Astroport.ONE en bash et Python, permettant de forker le projet pour implémenter de nouveaux contrats :
+Les scripts de traitement UPlanet sont implémentés directement dans le code Astroport.ONE en bash et Python. Le système de mise à jour automatique via `20h12.process.sh` charge le code depuis IPFS, permettant de forker le projet pour implémenter de nouveaux traitements :
 
-#### 1. **Smart Contract de Surveillance des Likes**
+#### 1. **Script de Surveillance des Likes**
 - **Implémentation** : [Lignes 696-704](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L696-L704) - Fonction `count_likes()`
 - **Logique** : Utilise `strfry scan` pour détecter les réactions (kind 7)
 - **Seuils** : SECTOR (3 likes), REGION (12 likes)
 
-#### 2. **Smart Contract d'Agrégation SECTOR**
+#### 2. **Script d'Agrégation SECTOR**
 - **Implémentation** : [Lignes 706-798](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L706-L798) - Fonction `create_aggregate_journal()`
 - **Logique** : Agrégation des messages avec ≥ 3 likes dans une zone 10° × 10°
 - **Résumé IA** : Utilise `question.py` si journal > 10 messages ou 3000 caractères
 
-#### 3. **Smart Contract d'Agrégation REGION**
+#### 3. **Script d'Agrégation REGION**
 - **Implémentation** : [Lignes 884-954](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L884-L954) - Fonction `create_region_journal()`
 - **Logique** : Agrégation des messages avec ≥ 12 likes dans une zone 30° × 30°
 - **Coordination** : Gestion inter-SECTOR
 
-#### 4. **Smart Contract de Gestion des Amis**
+#### 4. **Script de Gestion des Amis**
 - **Implémentation** : [Lignes 177-245](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L177-L245) - Fonction `process_friend_messages()`
 - **Logique** : Surveillance de l'activité, suppression des inactifs (4 semaines)
 - **Rappels** : Envoi automatique de messages de rappel
 
-#### 5. **Smart Contract de Nettoyage**
+#### 5. **Script de Nettoyage**
 - **Implémentation** : [Lignes 538-644](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L538-L644) - Fonctions `cleanup_*()`
 - **Logique** : Suppression des contenus orphelins, images anciennes (6 mois)
 - **Maintenance** : Nettoyage automatique des annonces expirées
 
-### Extension des Smart Contracts
+### Extension des Scripts de Traitement
 
-Pour implémenter de nouveaux smart contracts, il suffit de forker Astroport.ONE et d'ajouter les fonctions dans `NOSTR.UMAP.refresh.sh` :
+Pour implémenter de nouveaux scripts de traitement, il suffit de forker Astroport.ONE et d'ajouter les fonctions dans `NOSTR.UMAP.refresh.sh`. Le système `20h12.process.sh` se charge automatiquement de la mise à jour :
 
 #### 1. **Ajout de Nouveaux Tags**
 - **Localisation** : [Lignes 118-148](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L118-L148) - Section détection des tags
@@ -1833,25 +1339,10 @@ Pour implémenter de nouveaux smart contracts, il suffit de forker Astroport.ONE
 - **Géolocalisation** : [Lignes 1246-1341](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1246-L1341) - Fonction `sendGeolocatedMessage()`
 - **Profil NOSTR** : [Lignes 949-1120](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L949-L1120) - Fonction `loadUserProfileAndMessages()`
 
-#### 4. **Exemple d'Extension : Smart Contract de Vote**
-```bash
-# Dans NOSTR.UMAP.refresh.sh - Ajout d'un smart contract de vote
-handle_vote_contract() {
-    local message_id="$1"
-    local voter_npub="$2"
-    local vote_content="$3"
-    
-    # Vérifier l'éligibilité du votant
-    local voter_level=$(get_user_level "$voter_npub")
-    local vote_weight=$(get_vote_weight "$voter_level")
-    
-    # Enregistrer le vote
-    echo "$(date +%s)|$message_id|$voter_npub|$vote_content|$vote_weight" >> votes.log
-    
-    # Calculer le résultat
-    calculate_vote_result "$message_id"
-}
-```
+#### 4. **Exemple d'Extension : Script de Vote**
+- **Localisation** : [Lignes 348-689](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L348-L689) - Section commandes spécialisées
+- **Pattern** : Ajouter votre logique dans la section des commandes spécialisées
+- **Mise à jour** : Le script `20h12.process.sh` charge automatiquement les modifications depuis IPFS
 
 #### 5. **Avantages de l'Architecture Bash/Python**
 - **Fork simple** : Clone du repo et modification directe
@@ -1861,6 +1352,106 @@ handle_vote_contract() {
 - **Intégration native** : Utilise les outils existants (strfry, IPFS, etc.)
 
 ---
+
+## 🎫 Architecture MULTIPASS et Sécurité
+
+### Vue d'ensemble du Système MULTIPASS
+
+```mermaid
+graph TD
+    User[Utilisateur] --> Zine[MULTIPASS Zine]
+    Zine --> QR[QR Code SSSS]
+    QR --> Scan[scan_new.html]
+    Scan --> API[54321.py]
+    API --> Process[upassport.sh]
+    
+    Zine --> NSEC[Clé Privée NSEC]
+    NSEC --> Plugin[NOSTR Connect Plugin]
+    Plugin --> Relay[Relais NOSTR]
+    
+    Process --> Security[Sécurité 0000]
+    Security --> Destroy[Destruction Carte]
+    Destroy --> Recovery[Récupération Ẑen]
+    Recovery --> Blacklist[Blacklist Attaquant]
+```
+
+### Composants du Système MULTIPASS
+
+#### 1. **MULTIPASS Zine** (`nostr.html`)
+- **Fichier** : [Astroport.ONE/templates/NOSTR/zine/nostr.html](https://github.com/papiche/Astroport.ONE/blob/master/templates/NOSTR/zine/nostr.html)
+- **Contenu** : Clé privée NSEC + QR Code SSSS
+- **Usage** : Double authentification (plugin + QR)
+
+#### 2. **Scanner Terminal** (`scan_new.html`)
+- **Fichier** : [UPassport/templates/scan_new.html](https://github.com/papiche/UPassport/blob/master/templates/scan_new.html)
+- **Fonction** : Scan QR Code SSSS + authentification
+- **Sécurité** : Clavier numérique randomisé
+
+#### 3. **API de Traitement** (`54321.py`)
+- **Fichier** : [UPassport/54321.py](https://github.com/papiche/UPassport/blob/master/54321.py)
+- **Endpoints** :
+  - `/scan` : Interface de scan
+  - `/upassport` : Traitement des QR codes
+  - `/nostr` : Interface NOSTR
+
+#### 4. **Moteur de Traitement** (`upassport.sh`)
+- **Fichier** : [UPassport/upassport.sh](https://github.com/papiche/UPassport/blob/master/upassport.sh)
+- **Fonctions** :
+  - Décodage SSSS (2-sur-3)
+  - Gestion des cartes MULTIPASS
+  - Sécurité anti-piratage
+
+### Mécanismes de Sécurité
+
+#### 🔒 **Système SSSS (Shamir's Secret Sharing)**
+- **Implémentation** : [Lignes 990-998](https://github.com/papiche/UPassport/blob/master/upassport.sh#L990-L998) - Partage du secret en 3 parts (2 nécessaires)
+- **Distribution** : [Lignes 992-994](https://github.com/papiche/UPassport/blob/master/upassport.sh#L992-L994) - HEAD (utilisateur), MIDDLE (UPlanet), TAIL (Capitaine)
+- **Test décodage** : [Lignes 995-998](https://github.com/papiche/UPassport/blob/master/upassport.sh#L995-L998) - Vérification du bon fonctionnement
+
+#### 🚨 **Code de Destruction "0000"**
+- **Détection** : [Lignes 207-228](https://github.com/papiche/UPassport/blob/master/upassport.sh#L207-L228) - Vérification du code 0000 et date de création
+- **Destruction sécurisée** : [Lignes 213-217](https://github.com/papiche/UPassport/blob/master/upassport.sh#L213-L217) - Suppression de la carte MULTIPASS
+- **Gestion erreur** : [Lignes 220-227](https://github.com/papiche/UPassport/blob/master/upassport.sh#L220-L227) - Message d'erreur si compte non créé aujourd'hui
+
+#### 💰 **Récupération des Ẑen Détournés**
+- **Génération clé privée** : [Lignes 321-322](https://github.com/papiche/UPassport/blob/master/upassport.sh#L321-L322) - Création de la clé de récupération
+- **Récupération données** : [Lignes 323-325](https://github.com/papiche/UPassport/blob/master/upassport.sh#L323-L325) - Lecture G1PUBNOSTR, G1PRIME et montant
+- **Transfert sécurisé** : [Ligne 328](https://github.com/papiche/UPassport/blob/master/upassport.sh#L328) - PAYforSURE.sh vers le compte primal
+- **Confirmation** : [Lignes 333-337](https://github.com/papiche/UPassport/blob/master/upassport.sh#L333-L337) - Message de confirmation du transfert
+
+### Workflow de Sécurité
+
+```mermaid
+sequenceDiagram
+    participant U as Utilisateur
+    participant S as Scanner
+    participant A as API
+    participant P as upassport.sh
+    participant R as Récupération
+    
+    U->>S: Scan QR Code SSSS
+    S->>A: Envoie données
+    A->>P: Traite avec upassport.sh
+    
+    alt Code 0000 (Piratage détecté)
+        P->>P: Vérifie date création
+        P->>P: Détruit carte
+        P->>R: Récupère Ẑen
+        R->>R: Blacklist attaquant
+    else Code normal
+        P->>P: Décode SSSS
+        P->>P: Active MULTIPASS
+    end
+```
+
+### Avantages du Système
+
+- **🔐 Double Authentification** : Plugin + QR Code
+- **🛡️ Anti-Piratage** : Code 0000 pour destruction
+- **💰 Récupération** : Ẑen automatiquement récupérés
+- **📊 Traçabilité** : Historique complet des transactions
+- **🚫 Blacklist** : Identification rapide des attaquants
+- **🌐 Décentralisé** : Pas de point de défaillance unique
 
 ## 📚 Exemples d'Applications
 
@@ -1878,23 +1469,23 @@ L'application `plantnet.html` démontre l'intégration complète avec les smart 
 - **Connexion NOSTR** : [Lignes 865-893](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L865-L893) - `handleNostrLogin()`
 - **Connexion relay** : [Lignes 914-946](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L914-L946) - `connectToNostrRelay()`
 
-#### 3. **Smart Contracts Intégrés**
+#### 3. **Scripts de Traitement Intégrés**
 - **Upload IPFS** : [Lignes 1150-1211](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1150-L1211) - `uploadPhotoToIPFS()` avec attribution npub
 - **Envoi message** : [Lignes 1246-1341](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1246-L1341) - `sendGeolocatedMessage()` avec tags #BRO #plantnet
 - **Gestion profil** : [Lignes 949-1120](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L949-L1120) - `loadUserProfileAndMessages()`
 
-#### 4. **Traitement par Smart Contracts**
+#### 4. **Traitement par Scripts**
 - **Détection tags** : [Lignes 135-148](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L135-L148) - Détection des tags NOSTR
 - **Traitement PlantNet** : [Lignes 529-565](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L529-L565) - Logique de reconnaissance PlantNet
 - **Analyse IA** : [Lignes 220-249](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L220-L249) - `handle_plantnet_background()`
 
-### Application Mobile avec Smart Contracts
+### Application Mobile avec Scripts de Traitement
 
 #### 1. **Authentification MULTIPASS**
 - **Scan QR Code** : Utilise `scan_new.html` comme référence
 - **Décodage SSSS** : [Lignes 1374-1443](https://github.com/papiche/Astroport.ONE/blob/master/API.NOSTRAuth.readme.md#L1374-L1443) - Traitement des QR codes MULTIPASS
 
-#### 2. **Intégration Smart Contracts**
+#### 2. **Intégration Scripts de Traitement**
 - **Surveillance likes** : [Lignes 696-704](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L696-L704) - Fonction `count_likes()`
 - **Agrégation SECTOR** : [Lignes 706-798](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L706-L798) - Fonction `create_aggregate_journal()`
 - **Agrégation REGION** : [Lignes 884-954](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L884-L954) - Fonction `create_region_journal()`
