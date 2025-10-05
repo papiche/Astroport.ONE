@@ -1575,160 +1575,333 @@ if (userNsec) {
 
 ---
 
+## 🌿 Cas d'Usage : API Personnalisée avec PlantNet
+
+### Application Flora Explorer - Intégration NOSTR + PlantNet
+
+L'application `plantnet.html` démontre comment créer une API personnalisée qui répond aux tags NOSTR reconnus par `UPlanet_IA_Responder.sh`. Cette application permet de cataloguer la flore avec reconnaissance PlantNet et partage sur la UMAP.
+
+#### Architecture de l'Application
+
+```mermaid
+graph TD
+    User[Utilisateur] --> PlantNet[PlantNet App]
+    PlantNet --> Nostr[NOSTR Relay]
+    Nostr --> IA[UPlanet_IA_Responder.sh]
+    IA --> PlantNetAPI[PlantNet API]
+    IA --> IPFS[IPFS Storage]
+    IA --> Response[Réponse IA]
+    Response --> Nostr
+    Nostr --> User
+```
+
+#### Tags NOSTR Supportés
+
+L'application utilise les tags suivants reconnus par `UPlanet_IA_Responder.sh` :
+
+| Tag | Fonction | Description |
+|-----|----------|-------------|
+| `#BRO` | Assistant IA | Active la réponse IA automatique |
+| `#plantnet` | Reconnaissance | Analyse d'image avec PlantNet |
+| `#rec` | Enregistrement | Stockage en mémoire IA |
+| `#mem` | Affichage mémoire | Afficher l'historique |
+
+#### Implémentation JavaScript
+
+Les fonctions principales sont implémentées dans `plantnet.html` :
+
+- **Configuration NOSTR** : [Lignes 810-825](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L810-L825) - Variables globales et configuration des relais
+- **Détection API uSPOT** : [Lignes 832-862](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L832-L862) - `detectUSPOTAPI()` 
+- **Connexion NOSTR** : [Lignes 865-893](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L865-L893) - `handleNostrLogin()`
+- **Connexion relay** : [Lignes 914-946](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L914-L946) - `connectToNostrRelay()`
+- **Upload IPFS** : [Lignes 1150-1211](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1150-L1211) - `uploadPhotoToIPFS()`
+- **Envoi message** : [Lignes 1246-1341](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1246-L1341) - `sendGeolocatedMessage()`
+- **Gestion profil** : [Lignes 949-1120](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L949-L1120) - `loadUserProfileAndMessages()`
+
+#### Traitement par UPlanet_IA_Responder.sh
+
+Quand un message avec les tags `#BRO #plantnet` est reçu, le script `UPlanet_IA_Responder.sh` :
+
+1. **Détection des tags** : [Lignes 135-148](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L135-L148) - Détection des tags NOSTR
+2. **Traitement PlantNet** : [Lignes 529-565](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L529-L565) - Logique de reconnaissance PlantNet
+3. **Analyse en arrière-plan** : [Lignes 220-249](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L220-L249) - `handle_plantnet_background()`
+4. **Script PlantNet** : [plantnet_recognition.py](https://github.com/papiche/Astroport.ONE/blob/master/IA/plantnet_recognition.py) - Script Python pour l'analyse d'images
+
+#### Workflow Complet
+
+```mermaid
+sequenceDiagram
+    participant User as Utilisateur
+    participant App as PlantNet App
+    participant Relay as NOSTR Relay
+    participant IA as UPlanet_IA_Responder
+    participant PlantNet as PlantNet API
+    participant IPFS as IPFS Storage
+    
+    User->>App: 📷 Prend photo + géolocalisation
+    App->>IPFS: Upload photo avec npub
+    IPFS-->>App: URL IPFS retournée
+    App->>Relay: Message #BRO #plantnet + URL
+    Relay->>IA: Déclenchement analyse
+    IA->>PlantNet: Analyse image en arrière-plan
+    PlantNet-->>IA: Résultats reconnaissance
+    IA->>Relay: Réponse avec identification
+    Relay-->>User: 🌿 Plante identifiée
+```
+
+#### Avantages de cette Architecture
+
+1. **Décentralisation** : Aucun serveur central, tout via NOSTR
+2. **Attribution** : Photos liées à l'identité NOSTR de l'utilisateur
+3. **Géolocalisation** : Intégration UMAP pour cartographie de la flore
+4. **IA Distribuée** : Traitement par le réseau UPlanet
+5. **Stockage IPFS** : Images stockées de manière décentralisée
+6. **Extensibilité** : Facile d'ajouter de nouveaux tags et fonctionnalités
+
+#### Création d'APIs Personnalisées
+
+Pour créer votre propre API répondant aux tags NOSTR :
+
+1. **Définir vos tags** : [Lignes 118-148](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L118-L148) - Ajouter vos tags dans la détection
+2. **Implémenter la logique** : [Lignes 348-689](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L348-L689) - Ajouter votre traitement dans la logique principale
+3. **Intégrer avec l'API** : Utiliser les fonctions existantes (IPFS, géolocalisation, etc.)
+4. **Tester avec l'application** : Utiliser `plantnet.html` comme base de test
+
+**Exemple d'ajout de tag personnalisé** :
+- Détection : [Ligne 148](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L148) - Ajouter `if [[ "$message_text" =~ \#myapi ]]; then TAGS[myapi]=true; fi`
+- Traitement : [Lignes 462-601](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L462-L601) - Ajouter votre logique dans la section des commandes spécialisées
+
+---
+
+## 🏗️ Smart Contracts et Architecture des Clés
+
+### Hiérarchie des Clés UMAP
+
+L'écosystème UPlanet utilise une architecture hiérarchique de clés basée sur la géolocalisation et les niveaux de confiance :
+
+```mermaid
+graph TD
+    MULTIPASS[MULTIPASS Identity] --> UMAP[UMAP Key]
+    UMAP --> SECTOR[SECTOR Key]
+    SECTOR --> REGION[REGION Key]
+    REGION --> ZONE[ZONE Key]
+    
+    MULTIPASS --> |"2-sur-3 SSSS"| Validation[Validation Network]
+    UMAP --> |"Geolocation"| SectorActivation[Sector Activation]
+    SECTOR --> |"Like Threshold"| RegionActivation[Region Activation]
+    REGION --> |"Community Trust"| ZoneActivation[Zone Activation]
+```
+
+### Architecture de Diffusion UPlanet
+
+L'architecture UPlanet utilise un système de surveillance et de relais automatique basé sur les likes et la géolocalisation, implémenté dans `NOSTR.UMAP.refresh.sh` :
+
+#### 1. **Clé UMAP (Niveau 0) - Surveillance Locale**
+- **Activation** : Automatique avec identité MULTIPASS validée
+- **Portée** : Position géographique précise (lat/lon)
+- **Fonctions** : 
+  - Surveillance des messages des amis géolocalisés
+  - Création de journaux locaux (max 10 messages ou 3000 caractères)
+  - Résumé IA automatique si dépassement de seuil
+  - Gestion des amis inactifs (suppression après 4 semaines)
+
+#### 2. **Clé SECTOR (Niveau 1) - Agrégation Régionale**
+- **Activation** : Messages avec ≥ 3 likes dans la zone 10° × 10°
+- **Portée** : Zone géographique de 10° × 10°
+- **Fonctions** :
+  - Surveillance automatique des likes sur messages UMAP
+  - Agrégation des messages populaires (≥ 3 likes)
+  - Création de journaux SECTOR avec résumé IA
+  - Publication sur profil NOSTR SECTOR
+  - Mise à jour calendrier IPFS
+
+#### 3. **Clé REGION (Niveau 2) - Diffusion Large**
+- **Activation** : Messages avec ≥ 12 likes dans la zone 30° × 30°
+- **Portée** : Zone géographique de 30° × 30°
+- **Fonctions** :
+  - Surveillance des messages SECTOR populaires
+  - Agrégation des contenus très appréciés (≥ 12 likes)
+  - Création de journaux REGION avec résumé IA
+  - Publication sur profil NOSTR REGION
+  - Coordination inter-SECTOR
+
+#### 4. **Système de Surveillance Automatique**
+- **Script de surveillance** : `NOSTR.UMAP.refresh.sh` s'exécute quotidiennement
+- **Détection des likes** : Utilise `strfry scan` pour détecter les réactions (kind 7)
+- **Seuils adaptatifs** : SECTOR (3 likes), REGION (12 likes)
+- **Résumé IA** : Utilise `question.py` pour résumer les contenus longs
+- **Nettoyage automatique** : Suppression des contenus orphelins et anciens
+
+### Workflow de Surveillance NOSTR.UMAP.refresh.sh
+
+Le script `NOSTR.UMAP.refresh.sh` implémente l'architecture de diffusion réelle :
+
+```mermaid
+graph TD
+    A[UMAP Messages] --> B[Surveillance Likes]
+    B --> C{≥ 3 likes?}
+    C -->|Oui| D[Promotion SECTOR]
+    C -->|Non| E[Resté UMAP]
+    D --> F{≥ 12 likes?}
+    F -->|Oui| G[Promotion REGION]
+    F -->|Non| H[Resté SECTOR]
+    G --> I[Publication REGION]
+    H --> J[Publication SECTOR]
+    E --> K[Journal UMAP]
+    
+    D --> L[Résumé IA si > 10 msgs]
+    G --> M[Résumé IA si > 10 msgs]
+    
+    L --> N[Profil NOSTR SECTOR]
+    M --> O[Profil NOSTR REGION]
+```
+
+#### Fonctionnalités Clés du Script
+
+1. **Surveillance des UMAP** : [Lignes 129-175](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L129-L175)
+   - Traitement des messages UMAP par géolocalisation
+   - Création de journaux locaux avec limites (10 messages, 3000 caractères)
+   - Résumé IA automatique si dépassement
+
+2. **Détection des Likes** : [Lignes 696-704](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L696-L704)
+   - Utilise `strfry scan` pour compter les réactions (kind 7)
+   - Détection des emojis de like : `+`, `👍`, `❤️`, `♥️`
+
+3. **Promotion SECTOR** : [Lignes 706-798](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L706-L798)
+   - Agrégation des messages avec ≥ 3 likes
+   - Création de journaux SECTOR avec résumé IA
+   - Publication sur profil NOSTR SECTOR
+
+4. **Promotion REGION** : [Lignes 884-954](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L884-L954)
+   - Agrégation des messages avec ≥ 12 likes
+   - Création de journaux REGION avec résumé IA
+   - Publication sur profil NOSTR REGION
+
+5. **Gestion des Amis** : [Lignes 177-245](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L177-L245)
+   - Surveillance de l'activité des amis
+   - Suppression des amis inactifs (4 semaines)
+   - Envoi de rappels aux amis peu actifs
+
+6. **Nettoyage Automatique** : [Lignes 538-644](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L538-L644)
+   - Suppression des contenus orphelins
+   - Nettoyage des images anciennes (6 mois)
+   - Suppression des annonces expirées
+
+### Smart Contracts en Bash et Python
+
+Les smart contracts UPlanet sont implémentés directement dans le code Astroport.ONE en bash et Python, permettant de forker le projet pour implémenter de nouveaux contrats :
+
+#### 1. **Smart Contract de Surveillance des Likes**
+- **Implémentation** : [Lignes 696-704](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L696-L704) - Fonction `count_likes()`
+- **Logique** : Utilise `strfry scan` pour détecter les réactions (kind 7)
+- **Seuils** : SECTOR (3 likes), REGION (12 likes)
+
+#### 2. **Smart Contract d'Agrégation SECTOR**
+- **Implémentation** : [Lignes 706-798](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L706-L798) - Fonction `create_aggregate_journal()`
+- **Logique** : Agrégation des messages avec ≥ 3 likes dans une zone 10° × 10°
+- **Résumé IA** : Utilise `question.py` si journal > 10 messages ou 3000 caractères
+
+#### 3. **Smart Contract d'Agrégation REGION**
+- **Implémentation** : [Lignes 884-954](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L884-L954) - Fonction `create_region_journal()`
+- **Logique** : Agrégation des messages avec ≥ 12 likes dans une zone 30° × 30°
+- **Coordination** : Gestion inter-SECTOR
+
+#### 4. **Smart Contract de Gestion des Amis**
+- **Implémentation** : [Lignes 177-245](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L177-L245) - Fonction `process_friend_messages()`
+- **Logique** : Surveillance de l'activité, suppression des inactifs (4 semaines)
+- **Rappels** : Envoi automatique de messages de rappel
+
+#### 5. **Smart Contract de Nettoyage**
+- **Implémentation** : [Lignes 538-644](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L538-L644) - Fonctions `cleanup_*()`
+- **Logique** : Suppression des contenus orphelins, images anciennes (6 mois)
+- **Maintenance** : Nettoyage automatique des annonces expirées
+
+### Extension des Smart Contracts
+
+Pour implémenter de nouveaux smart contracts, il suffit de forker Astroport.ONE et d'ajouter les fonctions dans `NOSTR.UMAP.refresh.sh` :
+
+#### 1. **Ajout de Nouveaux Tags**
+- **Localisation** : [Lignes 118-148](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L118-L148) - Section détection des tags
+- **Exemple** : Ajouter `if [[ "$message_text" =~ \#myapi ]]; then TAGS[myapi]=true; fi`
+
+#### 2. **Implémentation de Nouveaux Contrats**
+- **Localisation** : [Lignes 348-689](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L348-L689) - Section commandes spécialisées
+- **Pattern** : Ajouter votre logique dans la section des commandes spécialisées
+
+#### 3. **Intégration avec l'API**
+- **Upload IPFS** : [Lignes 1150-1211](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1150-L1211) - Fonction `uploadPhotoToIPFS()`
+- **Géolocalisation** : [Lignes 1246-1341](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1246-L1341) - Fonction `sendGeolocatedMessage()`
+- **Profil NOSTR** : [Lignes 949-1120](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L949-L1120) - Fonction `loadUserProfileAndMessages()`
+
+#### 4. **Exemple d'Extension : Smart Contract de Vote**
+```bash
+# Dans NOSTR.UMAP.refresh.sh - Ajout d'un smart contract de vote
+handle_vote_contract() {
+    local message_id="$1"
+    local voter_npub="$2"
+    local vote_content="$3"
+    
+    # Vérifier l'éligibilité du votant
+    local voter_level=$(get_user_level "$voter_npub")
+    local vote_weight=$(get_vote_weight "$voter_level")
+    
+    # Enregistrer le vote
+    echo "$(date +%s)|$message_id|$voter_npub|$vote_content|$vote_weight" >> votes.log
+    
+    # Calculer le résultat
+    calculate_vote_result "$message_id"
+}
+```
+
+#### 5. **Avantages de l'Architecture Bash/Python**
+- **Fork simple** : Clone du repo et modification directe
+- **Déploiement immédiat** : Pas de compilation, exécution directe
+- **Maintenance facile** : Code lisible et modifiable
+- **Extensibilité** : Ajout de nouvelles fonctions sans refactoring
+- **Intégration native** : Utilise les outils existants (strfry, IPFS, etc.)
+
+---
+
 ## 📚 Exemples d'Applications
 
 ⚠️ **IMPORTANT** : Tous les exemples ci-dessous supposent que l'utilisateur possède déjà une identité MULTIPASS créée via `make_NOSTRCARD.sh`. Ces applications ne génèrent pas de nouvelles clés, elles utilisent les identités existantes.
 
-### Application Web Simple
+### Application PlantNet - Exemple Complet
 
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <title>UPlanet App</title>
-    <script src="https://ipfs.copylaradio.com/ipfs/QmXEmaPRUaGcvhuyeG99mHHNyP43nn8GtNeuDok8jdpG4a/nostr.bundle.js"></script>
-</head>
-<body>
-    <div id="messages"></div>
-    
-    <script>
-        // Connexion au relay local (lecture seule)
-        const relay = NostrTools.relayInit('ws://127.0.0.1:7777');
-        
-        relay.on('event', (event) => {
-            if (event.kind === 1) {
-                displayMessage(event);
-            }
-        });
-        
-        function displayMessage(event) {
-            const div = document.createElement('div');
-            div.textContent = event.content;
-            document.getElementById('messages').appendChild(div);
-        }
-        
-        // Pour publier des messages, l'utilisateur doit d'abord 
-        // s'authentifier avec son identité MULTIPASS
-        async function connectMULTIPASS() {
-            // Redirection vers l'interface UPassport pour authentification
-            window.location.href = '/upassport';
-        }
-    </script>
-</body>
-</html>
-```
+L'application `plantnet.html` démontre l'intégration complète avec les smart contracts UPlanet :
 
-### Application Mobile (React Native)
+#### 1. **Configuration NOSTR**
+- **Implémentation** : [Lignes 810-825](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L810-L825) - Variables globales et configuration des relais
+- **Détection API** : [Lignes 832-862](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L832-L862) - `detectUSPOTAPI()`
 
-```javascript
-// Exemple React Native pour UPlanet
-import { NostrTools } from 'nostr-tools';
+#### 2. **Authentification MULTIPASS**
+- **Connexion NOSTR** : [Lignes 865-893](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L865-L893) - `handleNostrLogin()`
+- **Connexion relay** : [Lignes 914-946](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L914-L946) - `connectToNostrRelay()`
 
-class UPlanetApp extends Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            messages: [],
-            isAuthenticated: false,
-            userNpub: null
-        };
-    }
-    
-    async componentDidMount() {
-        // Connexion au relay (lecture seule initialement)
-        this.relay = NostrTools.relayInit('ws://127.0.0.1:7777');
-        await this.relay.connect();
-        
-        // Écoute des événements
-        this.relay.on('event', this.handleEvent);
-        
-        // Vérifier si l'utilisateur a une session MULTIPASS active
-        this.checkMULTIPASSSession();
-    }
-    
-    checkMULTIPASSSession = async () => {
-        try {
-            // Vérifier la session MULTIPASS stockée localement
-            const session = await AsyncStorage.getItem('multipass_session');
-            if (session) {
-                const sessionData = JSON.parse(session);
-                this.setState({ 
-                    isAuthenticated: true, 
-                    userNpub: sessionData.npub 
-                });
-            }
-        } catch (error) {
-            console.log('No active MULTIPASS session');
-        }
-    }
-    
-    handleEvent = (event) => {
-        if (event.kind === 1) {
-            this.setState(prevState => ({
-                messages: [...prevState.messages, event]
-            }));
-        }
-    }
-    
-    // Authentification via QR Code MULTIPASS
-    authenticateWithMULTIPASS = async (qrCodeData) => {
-        try {
-            // Envoyer le QR code MULTIPASS à l'API UPassport
-            const response = await fetch('http://127.0.0.1:54321/upassport', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ parametre: qrCodeData })
-            });
-            
-            const result = await response.text();
-            
-            if (result.includes('const userNsec')) {
-                // Extraction du NSEC depuis la réponse
-                const nsecMatch = result.match(/const userNsec = '([^']+)'/);
-                if (nsecMatch) {
-                    const nsec = nsecMatch[1];
-                    const decoded = NostrTools.nip19.decode(nsec);
-                    const publicKey = NostrTools.getPublicKey(decoded.data);
-                    
-                    // Sauvegarder la session
-                    await AsyncStorage.setItem('multipass_session', JSON.stringify({
-                        npub: NostrTools.nip19.npubEncode(publicKey),
-                        timestamp: Date.now()
-                    }));
-                    
-                    this.setState({ 
-                        isAuthenticated: true, 
-                        userNpub: NostrTools.nip19.npubEncode(publicKey)
-                    });
-                }
-            }
-        } catch (error) {
-            console.error('MULTIPASS Authentication failed:', error);
-        }
-    }
-    
-    render() {
-        return (
-            <View>
-                {!this.state.isAuthenticated ? (
-                    <View>
-                        <Text>Scannez votre QR Code MULTIPASS pour vous connecter</Text>
-                        <QRCodeScanner onRead={this.authenticateWithMULTIPASS} />
-                    </View>
-                ) : (
-                    <View>
-                        <Text>Connecté avec: {this.state.userNpub}</Text>
-                        <FlatList 
-                            data={this.state.messages}
-                            renderItem={({item}) => <Text>{item.content}</Text>}
-                        />
-                    </View>
-                )}
-            </View>
-        );
-    }
-}
-```
+#### 3. **Smart Contracts Intégrés**
+- **Upload IPFS** : [Lignes 1150-1211](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1150-L1211) - `uploadPhotoToIPFS()` avec attribution npub
+- **Envoi message** : [Lignes 1246-1341](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1246-L1341) - `sendGeolocatedMessage()` avec tags #BRO #plantnet
+- **Gestion profil** : [Lignes 949-1120](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L949-L1120) - `loadUserProfileAndMessages()`
+
+#### 4. **Traitement par Smart Contracts**
+- **Détection tags** : [Lignes 135-148](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L135-L148) - Détection des tags NOSTR
+- **Traitement PlantNet** : [Lignes 529-565](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L529-L565) - Logique de reconnaissance PlantNet
+- **Analyse IA** : [Lignes 220-249](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L220-L249) - `handle_plantnet_background()`
+
+### Application Mobile avec Smart Contracts
+
+#### 1. **Authentification MULTIPASS**
+- **Scan QR Code** : Utilise `scan_new.html` comme référence
+- **Décodage SSSS** : [Lignes 1374-1443](https://github.com/papiche/Astroport.ONE/blob/master/API.NOSTRAuth.readme.md#L1374-L1443) - Traitement des QR codes MULTIPASS
+
+#### 2. **Intégration Smart Contracts**
+- **Surveillance likes** : [Lignes 696-704](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L696-L704) - Fonction `count_likes()`
+- **Agrégation SECTOR** : [Lignes 706-798](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L706-L798) - Fonction `create_aggregate_journal()`
+- **Agrégation REGION** : [Lignes 884-954](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/NOSTR.UMAP.refresh.sh#L884-L954) - Fonction `create_region_journal()`
+
+#### 3. **Exemple d'Extension**
+- **Nouveau tag** : [Lignes 118-148](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L118-L148) - Ajouter `if [[ "$message_text" =~ \#myapi ]]; then TAGS[myapi]=true; fi`
+- **Nouvelle logique** : [Lignes 348-689](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L348-L689) - Ajouter votre traitement dans la section des commandes spécialisées
 
 ---
 
