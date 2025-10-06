@@ -7,13 +7,13 @@ import sys
 import argparse
 import json
 
-def describe_image_from_ipfs(ipfs_url, ollama_model="llava", output_json=False):
+def describe_image_from_ipfs(ipfs_url, ollama_model="minicpm-v", output_json=False):
     """
     Downloads an image from an IPFS URL and uses Ollama to generate a description.
 
     Args:
         ipfs_url (str): The IPFS URL of the image.
-        ollama_model (str, optional): The name of the Ollama model to use. Defaults to "llava".
+        ollama_model (str, optional): The name of the Ollama model to use. Defaults to "minicpm-v".
         output_json (bool, optional): Whether to output the description in JSON format. Defaults to False.
 
     Returns:
@@ -81,7 +81,7 @@ def describe_image_from_ipfs(ipfs_url, ollama_model="llava", output_json=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Describe an image from an IPFS URL using Ollama.")
     parser.add_argument("ipfs_image_url", help="The IPFS URL of the image.")
-    parser.add_argument("-m", "--model", dest="ollama_model_name", default="llava", help="The name of the Ollama model to use (default: llava).")
+    parser.add_argument("-m", "--model", dest="ollama_model_name", default="minicpm-v", help="The name of the Ollama model to use (default: minicpm-v).")
     parser.add_argument("--json", action="store_true", help="Output description in JSON format.")
 
     args = parser.parse_args()

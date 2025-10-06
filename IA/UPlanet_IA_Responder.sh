@@ -440,7 +440,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
     #######################################################################
     # Optimisation: Process image description once if needed
     if [[ ! -z $URL && -z "$KeyANSWER" ]]; then
-        echo "Looking at the image (using ollama + llava)..."
+        echo "Looking at the image (using ollama + llava / minicpm-v )..."
         DESC="IMAGE : $("$MY_PATH/describe_image.py" "$URL" --json | jq -r '.description')"
     fi
 
