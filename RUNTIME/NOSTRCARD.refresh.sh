@@ -381,7 +381,8 @@ for PLAYER in "${NOSTR[@]}"; do
     # Check if the difference is a multiple of 7 // Weekly cycle
     if [[ ! -s ~/.zen/game/players/${PLAYER}/U.SOCIETY ]]; then
         if [[ ${CAPTAING1PUB} != ${G1PUBNOSTR} ]]; then
-            if [ $((DIFF_DAYS % 7)) -eq 0 ]; then
+            # First payment only after 7 days minimum (exclude J0 where DIFF_DAYS=0)
+            if [ $DIFF_DAYS -ge 7 ] && [ $((DIFF_DAYS % 7)) -eq 0 ]; then
                 # Check if payment was already made today
                 last_payment_file="${HOME}/.zen/game/nostr/${PLAYER}/.lastpayment"
                 if [[ ! -s "$last_payment_file" || "$(cat "$last_payment_file")" != "$TODATE" ]]; then
@@ -396,17 +397,23 @@ for PLAYER in "${NOSTR[@]}"; do
 
                     # Only process payment if current time has passed the refresh time
                     if [[ $current_seconds -ge $refresh_seconds ]]; then
-                        if [[ $(echo "$COINS >= 1" | bc -l) -eq 1 ]]; then
-                            ## Pay NCARD to CAPTAIN with TVA provision
-                            [[ -z $NCARD ]] && NCARD=1
-                            Npaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
+                        ## Pay NCARD to CAPTAIN with TVA provision
+                        [[ -z $NCARD ]] && NCARD=1
+                        Npaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
 
-                            # Calculate TVA provision (20% of rental payment)
-                            [[ -z $TVA_RATE ]] && TVA_RATE=20
-                            TVA_AMOUNT=$(echo "scale=4; $Npaf * $TVA_RATE / 100" | bc -l)
-                            TVA_AMOUNT=$(makecoord $TVA_AMOUNT)
+                        # Calculate TVA provision (20% of rental payment)
+                        [[ -z $TVA_RATE ]] && TVA_RATE=20
+                        TVA_AMOUNT=$(echo "scale=4; $Npaf * $TVA_RATE / 100" | bc -l)
+                        TVA_AMOUNT=$(makecoord $TVA_AMOUNT)
+                        
+                        # Calculate total payment needed (HT + TVA)
+                        TOTAL_PAYMENT=$(echo "scale=4; $Npaf + $TVA_AMOUNT" | bc -l)
+                        # Minimum balance required: 1 Ğ1 (0 ẐEN threshold) + payment amount
+                        MIN_BALANCE=$(echo "scale=4; 1 + $TOTAL_PAYMENT" | bc -l)
+                        
+                        if [[ $(echo "$COINS >= $MIN_BALANCE" | bc -l) -eq 1 ]]; then
 
-                            log "INFO" "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS G1) - Direct TVA split: $Npaf ẐEN to CAPTAIN + $TVA_AMOUNT ẐEN to IMPOTS"
+                            log "INFO" "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS G1 >= $MIN_BALANCE G1 min) - Direct TVA split: $Npaf ẐEN to CAPTAIN + $TVA_AMOUNT ẐEN to IMPOTS"
 
                             # Ensure IMPOTS wallet exists before any payment
                             if [[ ! -s ~/.zen/game/uplanet.IMPOT.dunikey ]]; then
@@ -484,7 +491,7 @@ for PLAYER in "${NOSTR[@]}"; do
                                 continue
                             fi
                             
-                            log "WARN" "[7 DAYS CYCLE] NOSTR Card ($COINS G1) - insufficient funds! Destroying if not captain"
+                            log "WARN" "[7 DAYS CYCLE] NOSTR Card ($COINS G1) - insufficient funds! Need at least $MIN_BALANCE Ğ1 (1 Ğ1 minimum + $TOTAL_PAYMENT Ğ1 payment). Destroying if not captain"
                             if [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]]; then
                                 ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}"
                             fi
