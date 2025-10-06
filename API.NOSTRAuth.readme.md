@@ -184,6 +184,128 @@ sequenceDiagram
     end
 ```
 
+### Extensions de Profil NOSTR - Métadonnées UPlanet
+
+**Les profils NOSTR créés par `make_NOSTRCARD.sh` incluent des champs supplémentaires spécifiques à l'écosystème UPlanet :**
+
+#### 🏷️ **Champs Standards NOSTR (Kind 0)**
+- **name** : Nom d'affichage de l'utilisateur
+- **about** : Description/biographie
+- **picture** : URL de l'avatar (QR Code MULTIPASS)
+- **banner** : URL de la bannière
+- **nip05** : Identifiant NIP-05 (vérification)
+- **website** : Site web personnel
+- **bot** : `false` (toujours défini pour indiquer un humain)
+
+#### 🌍 **Extensions UPlanet - Tags "i" (Identités Externes)**
+
+Les scripts `nostr_setup_profile.py` et `nostr_update_profile.py` ajoutent des tags `["i", "key:value", ""]` pour identifier les ressources liées à l'utilisateur :
+
+| Tag | Description | Exemple | Script Source |
+|-----|-------------|---------|---------------|
+| **g1pub** | Clé publique Duniter/G1 (MULTIPASS) | `3bJZccBTunFRbHfHMqoXs6TkqAS3zovFQLbjCZiu8sbG` | [make_NOSTRCARD.sh:339](https://github.com/papiche/Astroport.ONE/blob/master/tools/make_NOSTRCARD.sh#L339) |
+| **ipns_vault** | Clé IPNS du vault NOSTR (uDRIVE) | `/ipns/k51qzi5uqu5...` | [make_NOSTRCARD.sh:346](https://github.com/papiche/Astroport.ONE/blob/master/tools/make_NOSTRCARD.sh#L346) |
+| **zencard** | Clé publique G1 du ZenCard (si activé) | `8qFNabRPYFXRPCvzw...` | [nostr_setup_profile.py:48-49](https://github.com/papiche/Astroport.ONE/blob/master/tools/nostr_setup_profile.py#L48-L49) |
+| **ipfs_gw** | Gateway IPFS préféré | `https://ipfs.copylaradio.com` | [nostr_setup_profile.py:44-45](https://github.com/papiche/Astroport.ONE/blob/master/tools/nostr_setup_profile.py#L44-L45) |
+| **tw_feed** | Clé IPNS du flux TiddlyWiki | `/ipns/k51qzi5uqu5...` | [nostr_setup_profile.py:50-51](https://github.com/papiche/Astroport.ONE/blob/master/tools/nostr_setup_profile.py#L50-L51) |
+
+#### 🔗 **Tags Identités Sociales Standards**
+| Tag | Description | Exemple |
+|-----|-------------|---------|
+| **github** | Compte GitHub | `papiche` |
+| **twitter** | Compte Twitter/X | `@uplanet` |
+| **mastodon** | Compte Mastodon | `@user@mastodon.social` |
+| **telegram** | Compte Telegram | `@username` |
+
+#### 📝 **Implémentation des Extensions**
+
+**1. Création de profil avec `nostr_setup_profile.py` :**
+```python
+# Lignes 30-51 de nostr_setup_profile.py
+metadata = {
+    "name": args.name,
+    "about": args.about,
+    "picture": args.avatar_url,    # QR Code MULTIPASS
+    "banner": args.banner_url,
+    "nip05": args.nip05,
+    "website": args.website,       # IPNS vault uDRIVE
+    "bot": False
+}
+
+tags = [
+    ["i", f"g1pub:{args.g1pub}", ""],          # Clé G1 MULTIPASS
+    ["i", f"ipns_vault:{args.ipns_vault}", ""],# Vault NOSTR
+    ["i", f"zencard:{args.zencard}", ""],      # ZenCard G1
+    ["i", f"ipfs_gw:{args.ipfs_gw}", ""],      # Gateway IPFS
+    ["i", f"tw_feed:{args.tw_feed}", ""]       # TiddlyWiki feed
+]
+```
+
+#### 🔍 **Lecture des Extensions depuis les Applications**
+
+**Implémentation de référence : [nostr_profile_viewer.html](https://github.com/papiche/UPlanet/blob/master/earth/nostr_profile_viewer.html)**
+
+**1. Extraction des tags "i" depuis un profil NOSTR :**
+- **Implémentation** : [Lignes 1972-1990 de nostr_profile_viewer.html](https://github.com/papiche/UPlanet/blob/master/earth/nostr_profile_viewer.html#L1972-L1990) - Extraction des tags depuis l'événement kind 0
+```javascript
+// Extraction des champs depuis les tags "i"
+if (event.tags && Array.isArray(event.tags)) {
+    event.tags.forEach(tag => {
+        if (tag.length >= 3 && tag[0] === 'i') {
+            const value = tag[1];
+            if (value.startsWith('g1pub:')) {
+                profileData.g1pub = value.substring(6);
+            } else if (value.startsWith('website:')) {
+                profileData.website = value.substring(8);
+            } else if (value.startsWith('mastodon:')) {
+                profileData.mastodon = value.substring(9);
+            } else if (value.startsWith('zencard:')) {
+                profileData.zencard = value.substring(8);
+            }
+        }
+    });
+}
+```
+
+**2. Vérification des soldes Ğ1/ẐEN :**
+- **Fonction de base** : [Lignes 2454-2483 de nostr_profile_viewer.html](https://github.com/papiche/UPlanet/blob/master/earth/nostr_profile_viewer.html#L2454-L2483) - `checkZenBalance(g1pub)`
+- **Fonction globale** : [Lignes 2486-2520 de nostr_profile_viewer.html](https://github.com/papiche/UPlanet/blob/master/earth/nostr_profile_viewer.html#L2486-L2520) - `checkAllZenBalances(profileData)`
+```javascript
+// Vérifie le solde ẐEN via l'API /check_balance
+async function checkZenBalance(g1pub) {
+    const apiUrl = getApiServerUrl();
+    const response = await fetch(`${apiUrl}/check_balance?g1pub=${g1pub}`);
+    const data = await response.json();
+    
+    // Conversion Ğ1 → ẐEN : (Ğ1_BALANCE - 1) * 10
+    const g1Balance = parseFloat(data.balance);
+    const zenBalance = Math.floor((g1Balance - 1) * 10);
+    
+    return { g1Balance, zenBalance, g1pub: data.g1pub };
+}
+```
+
+**3. Affichage des champs additionnels avec soldes :**
+- **Implémentation** : [Lignes 2140-2206 de nostr_profile_viewer.html](https://github.com/papiche/UPlanet/blob/master/earth/nostr_profile_viewer.html#L2140-L2206) - Affichage des métadonnées UPlanet
+```javascript
+// Affichage du MULTIPASS avec solde ẐEN
+if (profileData.g1pub) {
+    const balanceResults = await checkAllZenBalances(profileData);
+    let balanceInfo = '';
+    if (balanceResults.multipass) {
+        balanceInfo = ` <span class="balance-info">${balanceResults.multipass.zenBalance} ẐEN</span>`;
+    }
+    additionalFields.push(`<span class="profile-field"><strong>🔑 MULTIPASS:</strong> ${g1pub} ${balanceInfo}</span>`);
+}
+```
+
+#### 🎯 **Cas d'Usage des Extensions**
+
+1. **g1pub** : Système de paiement Ẑen, vérification de solde, transactions G1
+2. **ipns_vault** : Accès au stockage personnel IPFS (uDRIVE)
+3. **zencard** : Vérification du statut d'adhésion coopérative
+4. **ipfs_gw** : Résolution des ressources IPFS via le gateway préféré
+5. **tw_feed** : Flux TiddlyWiki personnel pour journalisation
 
 ---
 
@@ -356,6 +478,97 @@ graph TD
 - **Synchronisation** : Messages propagés automatiquement dans l'essaim
 - **Sécurité** : Accès SSH sécurisé via IPFS P2P
 - **Scalabilité** : Ajout facile de nouvelles stations à l'essaim
+
+##### 1.2. Synchronisation Quotidienne des Messages NOSTR (Constellation)
+
+**Le script `constellation_sync_trigger.sh` assure la synchronisation quotidienne des événements NOSTR entre relais de la constellation :**
+
+- **Implémentation** : [constellation_sync_trigger.sh](https://github.com/papiche/NIP-101/blob/master/constellation_sync_trigger.sh) - Déclencheur de synchronisation constellation
+- **Appel automatique** : [Lignes 234-238 de _12345.sh](https://github.com/papiche/Astroport.ONE/blob/master/_12345.sh#L234-L238) - Intégration dans le cycle principal du swarm
+- **Documentation complète** : [CONSTELLATION_SYNC.md](https://github.com/papiche/NIP-101/blob/master/CONSTELLATION_SYNC.md) - Infrastructure NOSTR complète d'Astroport.ONE
+
+**Déclenchement Quotidien :**
+
+```mermaid
+sequenceDiagram
+    participant _12345 as _12345.sh
+    participant Trigger as constellation_sync_trigger.sh
+    participant Backfill as backfill_constellation.sh
+    participant Relay as strfry relay local
+    participant Swarm as Relais Constellation
+    
+    _12345->>Trigger: Appel quotidien (cycle swarm)
+    Trigger->>Trigger: Vérifier heure ≥ 12:00
+    Trigger->>Trigger: Vérifier déjà synchro aujourd'hui ?
+    
+    alt Temps de synchroniser
+        Trigger->>Backfill: Lancer backfill --days 1
+        Backfill->>Swarm: Découvrir relais via IPNS
+        Backfill->>Swarm: Connexion WebSocket
+        Backfill->>Swarm: REQ depuis midi veille
+        Swarm-->>Backfill: Événements JSON (kind 0,1,3,22242)
+        Backfill->>Backfill: Filtrer messages IA
+        Backfill->>Relay: Import via strfry import
+        Backfill-->>Trigger: Synchronisation terminée
+        Trigger->>Trigger: Marquer synchro du jour
+    else Déjà synchronisé
+        Trigger-->>_12345: Skip (déjà fait)
+    end
+```
+
+**Fonctionnalités de Synchronisation Constellation :**
+
+1. **Découverte Automatique des Pairs** : 
+   - Scan du swarm IPNS : `~/.zen/tmp/swarm/*/12345.json`
+   - Extraction des relais NOSTR : `myRELAY` + `ipfsnodeid`
+   - Support des tunnels P2P pour relais locaux non routables
+   - Extension du réseau via `amisOfAmis.txt`
+
+2. **Backfill Intelligent** : [backfill_constellation.sh](https://github.com/papiche/NIP-101/blob/master/backfill_constellation.sh)
+   - Récupération des messages depuis midi de la veille (24h)
+   - Connexion WebSocket directe ou via tunnel IPFS P2P
+   - Filtrage automatique des messages générés par l'IA (`"Hello NOSTR visitor."`)
+   - Support des kinds NOSTR pertinents : 0 (profils), 1 (messages), 3 (contacts), 22242 (auth)
+
+3. **Système de Verrouillage et de Gestion** :
+   - Lock file : `~/.zen/strfry/constellation-sync.lock`
+   - Historique : `~/.zen/strfry/last_constellation_sync`
+   - Logs détaillés : `~/.zen/strfry/constellation-trigger.log` et `constellation-backfill.log`
+   - Timeout de 30 minutes avec gestion d'erreur
+
+4. **Filtrage Avancé et Sécurité** :
+   - Exclusion automatique des messages IA du capitaine
+   - Politique de filtrage par type d'événement (`filter/*.sh`)
+   - Gestion des visiteurs avec système d'avertissement
+   - Blacklist dynamique intégrée
+
+**Connexion entre Relais d'un Même Essaim UPlanet :**
+
+Les relais de constellation se connectent via plusieurs mécanismes complémentaires :
+
+- **Layer IPFS P2P** : Tunnels directs via `DRAGON_p2p_ssh.sh` pour services locaux
+- **WebSocket Direct** : Connexion wss:// pour relais publics routables
+- **Tunnel P2P/WebSocket** : Pour relais locaux (ws://127.0.0.1:7777) via `/x/strfry-{IPFSNODEID}`
+- **Découverte IPNS** : Balises publiées via `/ipns/${IPFSNODEID}/12345.json`
+
+**Cycle d'Intégration avec _12345.sh :**
+
+```bash
+# Lignes 234-238 de _12345.sh
+### NOSTR RELAY SYNCHRO for LAST 24 H
+if [[ -s ~/.zen/workspace/NIP-101/constellation_sync_trigger.sh ]]; then
+    # This script handles locking, daily execution, and error management
+    ~/.zen/workspace/NIP-101/constellation_sync_trigger.sh &
+fi
+```
+
+**Avantages de la Synchronisation Constellation :**
+- **Historique complet** : Tous les messages de la constellation accessibles sur chaque relais
+- **Résilience** : Redondance automatique des événements NOSTR
+- **Performance** : Import optimisé avec filtrage intelligent
+- **Sécurité** : Authentification et validation des sources
+- **Scalabilité** : Extension automatique via découverte IPNS
+- **Intelligence** : Exclusion automatique du bruit (messages IA)
 
 ##### 2. Exécution de Scripts de Traitement Délégués
 
