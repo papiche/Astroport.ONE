@@ -71,12 +71,12 @@ RLON=$(echo ${LON} | cut -d '.' -f 1)
 REGION="_${RLAT}_${RLON}"
 
 # Création de l'arborescence de cache hiérarchique
-BASE_CACHE_DIR="$HOME/.zen/tmp/coucou"
+BASE_CACHE_DIR="$HOME/.zen/tmp/coucou/geonostr"
 REGION_CACHE_DIR="${BASE_CACHE_DIR}/regions"
 SECTOR_CACHE_DIR="${BASE_CACHE_DIR}/sectors"
 UMAP_CACHE_DIR="${BASE_CACHE_DIR}/umaps"
 
-mkdir -p "$REGION_CACHE_DIR" "$SECTOR_CACHE_DIR" "$UMAP_CACHE_DIR"
+mkdir -p "$BASE_CACHE_DIR" "$REGION_CACHE_DIR" "$SECTOR_CACHE_DIR" "$UMAP_CACHE_DIR"
 
 # Fichier de cache final
 FINAL_CACHE_DIR="${BASE_CACHE_DIR}${UMAP}"
