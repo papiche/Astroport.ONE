@@ -737,13 +737,13 @@ L'application utilise les tags suivants reconnus par `UPlanet_IA_Responder.sh` :
 
 Les fonctions principales sont implémentées dans `plantnet.html` :
 
-- **Configuration NOSTR** : [Lignes 810-825](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L810-L825) - Variables globales et configuration des relais
-- **Détection API uSPOT** : [Lignes 832-862](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L832-L862) - `detectUSPOTAPI()` 
-- **Connexion NOSTR** : [Lignes 865-893](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L865-L893) - `handleNostrLogin()`
-- **Connexion relay** : [Lignes 914-946](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L914-L946) - `connectToNostrRelay()`
-- **Upload IPFS** : [Lignes 1150-1211](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1150-L1211) - `uploadPhotoToIPFS()`
-- **Envoi message** : [Lignes 1246-1341](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1246-L1341) - `sendGeolocatedMessage()`
-- **Gestion profil** : [Lignes 949-1120](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L949-L1120) - `loadUserProfileAndMessages()`
+- **Configuration NOSTR** : [Lignes 943-963](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L943-L963) - Variables globales et configuration des relais
+- **Détection API uSPOT** : [Lignes 971-1000](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L971-L1000) - `detectUSPOTAPI()` 
+- **Connexion NOSTR** : [Lignes 1003-1031](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1003-L1031) - `handleNostrLogin()`
+- **Connexion relay** : [Lignes 1055-1094](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1055-L1094) - `connectToNostrRelay()`
+- **Upload IPFS** : [Lignes 1664-1743](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1664-L1743) - `uploadPhotoToIPFS()`
+- **Envoi message** : [Lignes 1780-1878](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1780-L1878) - `sendGeolocatedMessage()`
+- **Gestion profil** : [Lignes 1176-1195](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1176-L1195) - `loadUserProfileAndMessages()`
 
 #### Traitement par UPlanet_IA_Responder.sh
 
@@ -1067,17 +1067,17 @@ sequenceDiagram
 L'application `plantnet.html` démontre l'intégration complète avec les smart contracts UPlanet :
 
 #### 1. **Configuration NOSTR**
-- **Implémentation** : [Lignes 810-825](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L810-L825) - Variables globales et configuration des relais
-- **Détection API** : [Lignes 832-862](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L832-L862) - `detectUSPOTAPI()`
+- **Implémentation** : [Lignes 943-963](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L943-L963) - Variables globales et configuration des relais
+- **Détection API** : [Lignes 971-1000](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L971-L1000) - `detectUSPOTAPI()`
 
 #### 2. **Authentification MULTIPASS**
-- **Connexion NOSTR** : [Lignes 865-893](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L865-L893) - `handleNostrLogin()`
-- **Connexion relay** : [Lignes 914-946](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L914-L946) - `connectToNostrRelay()`
+- **Connexion NOSTR** : [Lignes 1003-1031](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1003-L1031) - `handleNostrLogin()`
+- **Connexion relay** : [Lignes 1055-1094](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1055-L1094) - `connectToNostrRelay()`
 
 #### 3. **Scripts de Traitement Intégrés**
-- **Upload IPFS** : [Lignes 1150-1211](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1150-L1211) - `uploadPhotoToIPFS()` avec attribution npub
-- **Envoi message** : [Lignes 1246-1341](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1246-L1341) - `sendGeolocatedMessage()` avec tags #BRO #plantnet
-- **Gestion profil** : [Lignes 949-1120](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L949-L1120) - `loadUserProfileAndMessages()`
+- **Upload IPFS** : [Lignes 1664-1743](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1664-L1743) - `uploadPhotoToIPFS()` avec attribution npub
+- **Envoi message** : [Lignes 1780-1878](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1780-L1878) - `sendGeolocatedMessage()` avec tags #BRO #plantnet
+- **Gestion profil** : [Lignes 1176-1195](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1176-L1195) - `loadUserProfileAndMessages()`
 
 #### 4. **Traitement par Scripts**
 - **Détection tags** : [Lignes 135-148](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L135-L148) - Détection des tags NOSTR
