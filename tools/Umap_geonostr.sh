@@ -100,7 +100,7 @@ generate_adjacent_umap() {
     local adj_lon=$3
     
     local umap_id="_${adj_lat}_${adj_lon}"
-    local cache_file="${UMAP_CACHE_DIR}${umap_id}.cache"
+    local cache_file="${UMAP_CACHE_DIR}/${umap_id}.cache"
     
     # Vérifier si le cache existe
     if [[ -s "$cache_file" ]]; then
@@ -133,7 +133,7 @@ generate_adjacent_sector() {
     
     # Format SECTOR: _45.7_1.2
     local sector_id="_${sector_lat}_${sector_lon}"
-    local cache_file="${SECTOR_CACHE_DIR}${sector_id}.cache"
+    local cache_file="${SECTOR_CACHE_DIR}/${sector_id}.cache"
     
     # Vérifier si le cache existe
     if [[ -s "$cache_file" ]]; then
@@ -166,7 +166,7 @@ generate_adjacent_region() {
     
     # Format REGION: _45_1
     local region_id="_${region_lat}_${region_lon}"
-    local cache_file="${REGION_CACHE_DIR}${region_id}.cache"
+    local cache_file="${REGION_CACHE_DIR}/${region_id}.cache"
     
     # Vérifier si le cache existe
     if [[ -s "$cache_file" ]]; then
