@@ -754,26 +754,44 @@ Quand un message avec les tags `#BRO #plantnet` est reçu, le script `UPlanet_IA
 3. **Analyse en arrière-plan** : [Lignes 220-249](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L220-L249) - `handle_plantnet_background()`
 4. **Script PlantNet** : [plantnet_recognition.py](https://github.com/papiche/Astroport.ONE/blob/master/IA/plantnet_recognition.py) - Script Python pour l'analyse d'images
 
-#### Workflow Complet
+#### Workflow Complet avec Gestion d'Erreur
 
 ```mermaid
 sequenceDiagram
     participant User as Utilisateur
     participant App as PlantNet App
     participant Relay as NOSTR Relay
+    participant API as Astroport API
     participant IA as UPlanet_IA_Responder
     participant PlantNet as PlantNet API
     participant IPFS as IPFS Storage
     
     User->>App: 📷 Prend photo + géolocalisation
-    App->>IPFS: Upload photo avec npub
-    IPFS-->>App: URL IPFS retournée
-    App->>Relay: Message #BRO #plantnet + URL
-    Relay->>IA: Déclenchement analyse
-    IA->>PlantNet: Analyse image en arrière-plan
-    PlantNet-->>IA: Résultats reconnaissance
-    IA->>Relay: Réponse avec identification
-    Relay-->>User: 🌿 Plante identifiée
+    App->>API: POST /api/upload (npub + photo)
+    
+    alt Auth NIP-42 valide (< 24h)
+        API->>Relay: Vérification NIP-42
+        Relay-->>API: ✅ Auth OK
+        API->>IPFS: Stockage photo
+        IPFS-->>API: CID généré
+        API-->>App: {new_cid, file_path, success:true}
+        App->>App: Construction URL IPFS
+        App->>Relay: Message #BRO #plantnet + URL
+        Relay->>IA: Déclenchement analyse
+        IA->>PlantNet: Analyse image en arrière-plan
+        PlantNet-->>IA: Résultats reconnaissance
+        IA->>Relay: Réponse avec identification
+        Relay-->>User: 🌿 Plante identifiée
+    else Auth NIP-42 manquante/expirée
+        API->>Relay: Vérification NIP-42
+        Relay-->>API: ❌ Aucun event récent
+        API-->>App: 403 Forbidden
+        App->>User: 🔐 Reconnexion requise
+        User->>App: Reconnexion NOSTR
+        App->>Relay: Envoi event NIP-42 (kind 22242)
+        Relay-->>App: Auth stockée
+        User->>App: Réessai upload
+    end
 ```
 
 #### Avantages de cette Architecture
@@ -1075,11 +1093,38 @@ L'application `plantnet.html` démontre l'intégration complète avec les smart 
 - **Connexion relay** : [Lignes 1055-1094](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1055-L1094) - `connectToNostrRelay()`
 
 #### 3. **Scripts de Traitement Intégrés**
-- **Upload IPFS** : [Lignes 1664-1743](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1664-L1743) - `uploadPhotoToIPFS()` avec attribution npub
+- **Upload IPFS** : [Lignes 1664-1781](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1664-L1781) - `uploadPhotoToIPFS()` avec attribution npub
 - **Envoi message** : [Lignes 1780-1878](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1780-L1878) - `sendGeolocatedMessage()` avec tags #BRO #plantnet
 - **Gestion profil** : [Lignes 1176-1195](https://github.com/papiche/UPlanet/blob/main/earth/plantnet.html#L1176-L1195) - `loadUserProfileAndMessages()`
 
-#### 4. **Traitement par Scripts**
+#### 4. **Format de Réponse API `/api/upload`**
+
+L'API `/api/upload` retourne un objet JSON avec les champs suivants :
+
+```json
+{
+  "success": true,
+  "message": "File uploaded successfully",
+  "file_path": "Images/photo.jpg",
+  "file_type": "image/jpeg",
+  "target_directory": "Images",
+  "new_cid": "QmXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "timestamp": "2025-10-06T03:12:25.277000",
+  "auth_verified": true
+}
+```
+
+**Construction de l'URL IPFS** : L'application doit construire l'URL complète à partir de `new_cid` et `file_path` :
+```javascript
+const imageUrl = `${gateway}/ipfs/${uploadResult.new_cid}/${uploadResult.file_path}`;
+```
+
+**Gestion des erreurs d'authentification (403)** :
+- L'événement NIP-42 doit être récent (< 24h)
+- L'utilisateur doit se reconnecter si l'authentification échoue
+- Message clair avec instructions de reconnexion
+
+#### 5. **Traitement par Scripts**
 - **Détection tags** : [Lignes 135-148](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L135-L148) - Détection des tags NOSTR
 - **Traitement PlantNet** : [Lignes 529-565](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L529-L565) - Logique de reconnaissance PlantNet
 - **Analyse IA** : [Lignes 220-249](https://github.com/papiche/Astroport.ONE/blob/master/IA/UPlanet_IA_Responder.sh#L220-L249) - `handle_plantnet_background()`
