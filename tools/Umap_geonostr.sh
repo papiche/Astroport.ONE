@@ -61,12 +61,12 @@ fi
 UMAP="_${LAT}_${LON}"
 THEDATE=""
 
-# Calcul des identifiants SECTOR et REGION
-SLAT="${LAT::-1}"  # Enlever le dernier chiffre pour SECTOR
+# Calcul des coordonnées SECTOR (0.1°) et REGION (1°) du centre
+SLAT="${LAT::-1}"  # Enlever le dernier chiffre pour SECTOR (ex: 43.61 -> 43.6)
 SLON="${LON::-1}"
 SECTOR="_${SLAT}_${SLON}"
 
-RLAT=$(echo ${LAT} | cut -d '.' -f 1)  # Partie entière pour REGION
+RLAT=$(echo ${LAT} | cut -d '.' -f 1)  # Partie entière pour REGION (ex: 43.61 -> 43)
 RLON=$(echo ${LON} | cut -d '.' -f 1)
 REGION="_${RLAT}_${RLON}"
 
@@ -124,16 +124,12 @@ generate_adjacent_umap() {
 # Fonction pour générer ou récupérer une clé SECTOR depuis le cache (0.1°)
 # Paramètres:
 #   $1 - Type de direction (pour le logging)
-#   $2 - Latitude ajustée (format 0.01)
-#   $3 - Longitude ajustée (format 0.01)
+#   $2 - Latitude du secteur (déjà calculée en 0.1°)
+#   $3 - Longitude du secteur (déjà calculée en 0.1°)
 generate_adjacent_sector() {
     local direction=$1
-    local adj_lat=$2
-    local adj_lon=$3
-
-    # Tronquer à 0.1 degré (enlever le dernier chiffre)
-    local sector_lat="${adj_lat::-1}"
-    local sector_lon="${adj_lon::-1}"
+    local sector_lat=$2
+    local sector_lon=$3
     
     # Format SECTOR: _45.7_1.2
     local sector_id="_${sector_lat}_${sector_lon}"
@@ -161,16 +157,12 @@ generate_adjacent_sector() {
 # Fonction pour générer ou récupérer une clé REGION depuis le cache (1°)
 # Paramètres:
 #   $1 - Type de direction (pour le logging)
-#   $2 - Latitude ajustée (format 0.01)
-#   $3 - Longitude ajustée (format 0.01)
+#   $2 - Latitude de la région (déjà calculée en 1°)
+#   $3 - Longitude de la région (déjà calculée en 1°)
 generate_adjacent_region() {
     local direction=$1
-    local adj_lat=$2
-    local adj_lon=$3
-
-    # Extraire la partie entière (avant le point)
-    local region_lat=$(echo ${adj_lat} | cut -d '.' -f 1)
-    local region_lon=$(echo ${adj_lon} | cut -d '.' -f 1)
+    local region_lat=$2
+    local region_lon=$3
     
     # Format REGION: _45_1
     local region_id="_${region_lat}_${region_lon}"
@@ -202,64 +194,112 @@ generate_adjacent_region() {
 
 # Centre (HERE)
 UMAPNS=$(generate_adjacent_umap "HERE" "$LAT" "$LON")
-SECTORNS=$(generate_adjacent_sector "HERE" "$LAT" "$LON")
-REGIONNS=$(generate_adjacent_region "HERE" "$LAT" "$LON")
+SECTORNS=$(generate_adjacent_sector "HERE" "$SLAT" "$SLON")
+REGIONNS=$(generate_adjacent_region "HERE" "$RLAT" "$RLON")
 
-# Nord
-NLAT=$(echo "${LAT} + 0.01" | bc)
-NLON="${LON}"
-NUMAPNS=$(generate_adjacent_umap "NORTH" "$NLAT" "$NLON")
-NSECTORNS=$(generate_adjacent_sector "NORTH" "$NLAT" "$NLON")
-NREGIONNS=$(generate_adjacent_region "NORTH" "$NLAT" "$NLON")
+# Nord (+0.01 pour UMAP, +0.1 pour SECTOR, +1 pour REGION)
+UMAP_NLAT=$(echo "${LAT} + 0.01" | bc)
+UMAP_NLON="${LON}"
+NUMAPNS=$(generate_adjacent_umap "NORTH" "$UMAP_NLAT" "$UMAP_NLON")
 
-# Sud
-SLAT=$(echo "${LAT} - 0.01" | bc)
-SLON="${LON}"
-SUMAPNS=$(generate_adjacent_umap "SOUTH" "$SLAT" "$SLON")
-SSECTORNS=$(generate_adjacent_sector "SOUTH" "$SLAT" "$SLON")
-SREGIONNS=$(generate_adjacent_region "SOUTH" "$SLAT" "$SLON")
+SECTOR_NLAT=$(echo "${SLAT} + 0.1" | bc)
+SECTOR_NLON="${SLON}"
+NSECTORNS=$(generate_adjacent_sector "NORTH" "$SECTOR_NLAT" "$SECTOR_NLON")
+
+REGION_NLAT=$(echo "${RLAT} + 1" | bc)
+REGION_NLON="${RLON}"
+NREGIONNS=$(generate_adjacent_region "NORTH" "$REGION_NLAT" "$REGION_NLON")
+
+# Sud (-0.01 pour UMAP, -0.1 pour SECTOR, -1 pour REGION)
+UMAP_SLAT=$(echo "${LAT} - 0.01" | bc)
+UMAP_SLON="${LON}"
+SUMAPNS=$(generate_adjacent_umap "SOUTH" "$UMAP_SLAT" "$UMAP_SLON")
+
+SECTOR_SLAT=$(echo "${SLAT} - 0.1" | bc)
+SECTOR_SLON="${SLON}"
+SSECTORNS=$(generate_adjacent_sector "SOUTH" "$SECTOR_SLAT" "$SECTOR_SLON")
+
+REGION_SLAT=$(echo "${RLAT} - 1" | bc)
+REGION_SLON="${RLON}"
+SREGIONNS=$(generate_adjacent_region "SOUTH" "$REGION_SLAT" "$REGION_SLON")
 
 # Ouest
-WLAT="${LAT}"
-WLON=$(echo "${LON} - 0.01" | bc)
-WUMAPNS=$(generate_adjacent_umap "WEST" "$WLAT" "$WLON")
-WSECTORNS=$(generate_adjacent_sector "WEST" "$WLAT" "$WLON")
-WREGIONNS=$(generate_adjacent_region "WEST" "$WLAT" "$WLON")
+UMAP_WLAT="${LAT}"
+UMAP_WLON=$(echo "${LON} - 0.01" | bc)
+WUMAPNS=$(generate_adjacent_umap "WEST" "$UMAP_WLAT" "$UMAP_WLON")
+
+SECTOR_WLAT="${SLAT}"
+SECTOR_WLON=$(echo "${SLON} - 0.1" | bc)
+WSECTORNS=$(generate_adjacent_sector "WEST" "$SECTOR_WLAT" "$SECTOR_WLON")
+
+REGION_WLAT="${RLAT}"
+REGION_WLON=$(echo "${RLON} - 1" | bc)
+WREGIONNS=$(generate_adjacent_region "WEST" "$REGION_WLAT" "$REGION_WLON")
 
 # Est
-ELAT="${LAT}"
-ELON=$(echo "${LON} + 0.01" | bc)
-EUMAPNS=$(generate_adjacent_umap "EAST" "$ELAT" "$ELON")
-ESECTORNS=$(generate_adjacent_sector "EAST" "$ELAT" "$ELON")
-EREGIONNS=$(generate_adjacent_region "EAST" "$ELAT" "$ELON")
+UMAP_ELAT="${LAT}"
+UMAP_ELON=$(echo "${LON} + 0.01" | bc)
+EUMAPNS=$(generate_adjacent_umap "EAST" "$UMAP_ELAT" "$UMAP_ELON")
+
+SECTOR_ELAT="${SLAT}"
+SECTOR_ELON=$(echo "${SLON} + 0.1" | bc)
+ESECTORNS=$(generate_adjacent_sector "EAST" "$SECTOR_ELAT" "$SECTOR_ELON")
+
+REGION_ELAT="${RLAT}"
+REGION_ELON=$(echo "${RLON} + 1" | bc)
+EREGIONNS=$(generate_adjacent_region "EAST" "$REGION_ELAT" "$REGION_ELON")
 
 # Sud-Ouest
-SWLAT=$(echo "${LAT} - 0.01" | bc)
-SWLON=$(echo "${LON} - 0.01" | bc)
-SWUMAPNS=$(generate_adjacent_umap "SOUTH WEST" "$SWLAT" "$SWLON")
-SWSECTORNS=$(generate_adjacent_sector "SOUTH WEST" "$SWLAT" "$SWLON")
-SWREGIONNS=$(generate_adjacent_region "SOUTH WEST" "$SWLAT" "$SWLON")
+UMAP_SWLAT=$(echo "${LAT} - 0.01" | bc)
+UMAP_SWLON=$(echo "${LON} - 0.01" | bc)
+SWUMAPNS=$(generate_adjacent_umap "SOUTH WEST" "$UMAP_SWLAT" "$UMAP_SWLON")
+
+SECTOR_SWLAT=$(echo "${SLAT} - 0.1" | bc)
+SECTOR_SWLON=$(echo "${SLON} - 0.1" | bc)
+SWSECTORNS=$(generate_adjacent_sector "SOUTH WEST" "$SECTOR_SWLAT" "$SECTOR_SWLON")
+
+REGION_SWLAT=$(echo "${RLAT} - 1" | bc)
+REGION_SWLON=$(echo "${RLON} - 1" | bc)
+SWREGIONNS=$(generate_adjacent_region "SOUTH WEST" "$REGION_SWLAT" "$REGION_SWLON")
 
 # Nord-Ouest
-NWLAT=$(echo "${LAT} + 0.01" | bc)
-NWLON=$(echo "${LON} - 0.01" | bc)
-NWUMAPNS=$(generate_adjacent_umap "NORTH WEST" "$NWLAT" "$NWLON")
-NWSECTORNS=$(generate_adjacent_sector "NORTH WEST" "$NWLAT" "$NWLON")
-NWREGIONNS=$(generate_adjacent_region "NORTH WEST" "$NWLAT" "$NWLON")
+UMAP_NWLAT=$(echo "${LAT} + 0.01" | bc)
+UMAP_NWLON=$(echo "${LON} - 0.01" | bc)
+NWUMAPNS=$(generate_adjacent_umap "NORTH WEST" "$UMAP_NWLAT" "$UMAP_NWLON")
+
+SECTOR_NWLAT=$(echo "${SLAT} + 0.1" | bc)
+SECTOR_NWLON=$(echo "${SLON} - 0.1" | bc)
+NWSECTORNS=$(generate_adjacent_sector "NORTH WEST" "$SECTOR_NWLAT" "$SECTOR_NWLON")
+
+REGION_NWLAT=$(echo "${RLAT} + 1" | bc)
+REGION_NWLON=$(echo "${RLON} - 1" | bc)
+NWREGIONNS=$(generate_adjacent_region "NORTH WEST" "$REGION_NWLAT" "$REGION_NWLON")
 
 # Nord-Est
-NELAT=$(echo "${LAT} + 0.01" | bc)
-NELON=$(echo "${LON} + 0.01" | bc)
-NEUMAPNS=$(generate_adjacent_umap "NORTH EAST" "$NELAT" "$NELON")
-NESECTORNS=$(generate_adjacent_sector "NORTH EAST" "$NELAT" "$NELON")
-NEREGIONNS=$(generate_adjacent_region "NORTH EAST" "$NELAT" "$NELON")
+UMAP_NELAT=$(echo "${LAT} + 0.01" | bc)
+UMAP_NELON=$(echo "${LON} + 0.01" | bc)
+NEUMAPNS=$(generate_adjacent_umap "NORTH EAST" "$UMAP_NELAT" "$UMAP_NELON")
+
+SECTOR_NELAT=$(echo "${SLAT} + 0.1" | bc)
+SECTOR_NELON=$(echo "${SLON} + 0.1" | bc)
+NESECTORNS=$(generate_adjacent_sector "NORTH EAST" "$SECTOR_NELAT" "$SECTOR_NELON")
+
+REGION_NELAT=$(echo "${RLAT} + 1" | bc)
+REGION_NELON=$(echo "${RLON} + 1" | bc)
+NEREGIONNS=$(generate_adjacent_region "NORTH EAST" "$REGION_NELAT" "$REGION_NELON")
 
 # Sud-Est
-SELAT=$(echo "${LAT} - 0.01" | bc)
-SELON=$(echo "${LON} + 0.01" | bc)
-SEUMAPNS=$(generate_adjacent_umap "SOUTH EAST" "$SELAT" "$SELON")
-SESECTORNS=$(generate_adjacent_sector "SOUTH EAST" "$SELAT" "$SELON")
-SEREGIONNS=$(generate_adjacent_region "SOUTH EAST" "$SELAT" "$SELON")
+UMAP_SELAT=$(echo "${LAT} - 0.01" | bc)
+UMAP_SELON=$(echo "${LON} + 0.01" | bc)
+SEUMAPNS=$(generate_adjacent_umap "SOUTH EAST" "$UMAP_SELAT" "$UMAP_SELON")
+
+SECTOR_SELAT=$(echo "${SLAT} - 0.1" | bc)
+SECTOR_SELON=$(echo "${SLON} + 0.1" | bc)
+SESECTORNS=$(generate_adjacent_sector "SOUTH EAST" "$SECTOR_SELAT" "$SECTOR_SELON")
+
+REGION_SELAT=$(echo "${RLAT} - 1" | bc)
+REGION_SELON=$(echo "${RLON} + 1" | bc)
+SEREGIONNS=$(generate_adjacent_region "SOUTH EAST" "$REGION_SELAT" "$REGION_SELON")
 
 ##############################################################
 ## GENERATION DU FICHIER JSON FINAL
