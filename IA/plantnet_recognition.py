@@ -75,26 +75,27 @@ def call_plantnet_api(image_data):
             log_message(f"Invalid PLANTNET_API_KEY format: {api_key}")
             return None
         
-        log_message("Calling PlantNet API...")
+        log_message(f"Using PlantNet API key: {api_key[:6]}...{api_key[-4:]}")
         
-        # PlantNet API endpoint
-        api_url = "https://my-api.plantnet.org/v2/identify"
+        # PlantNet API endpoint - include API key in URL as per documentation
+        api_url = f"https://my-api.plantnet.org/v2/identify/all?api-key={api_key}"
+        
+        log_message(f"Calling PlantNet API endpoint: {api_url[:60]}...")
         
         # Prepare the request - use a safe filename without spaces or special characters
         files = {
             'images': ('plant_image.jpg', image_data, 'image/jpeg')
         }
         
-        data = {
-            'api-key': api_key,
-            'modifiers': ['crops_fast', 'similar_images', 'plant_details', 'plant_net_id'],
-            'plant-language': 'fr',
-            'plant-details': 'common_names,url,description,image,gbif_id,inaturalist_id,plant_net_id,synonyms,edible_parts,watering',
-            'plant-details-fields': 'common_names,url,description,image,gbif_id,inaturalist_id,plant_net_id,synonyms,edible_parts,watering'
+        # Optional parameters for better results
+        params = {
+            'include-related-images': 'true',
+            'no-reject': 'false',
+            'lang': 'fr'
         }
         
         # Make the API request
-        response = requests.post(api_url, files=files, data=data, timeout=30)
+        response = requests.post(api_url, files=files, params=params, timeout=30)
         
         # Log response details for debugging
         log_message(f"PlantNet API response status: {response.status_code}")
@@ -106,7 +107,8 @@ def call_plantnet_api(image_data):
                 error_content = response.json()
                 log_message(f"PlantNet API error content: {error_content}")
             except:
-                log_message(f"PlantNet API error text: {response.text}")
+                error_text = response.text[:500]  # Limit error text length
+                log_message(f"PlantNet API error text: {error_text}")
             return None
         
         response.raise_for_status()
@@ -437,7 +439,20 @@ La reconnaissance de la plante a échoué.
         print(result)  # Output the result to stdout
     else:
         log_message("Failed to format PlantNet result")
-        sys.exit(1)
+        error_result = f"""🌿 Reconnaissance de plante
+
+❌ **Erreur de formatage**
+
+Une erreur s'est produite lors du formatage du résultat.
+
+📍 **Localisation :** {latitude:.4f}, {longitude:.4f}
+
+🔬 **Source :** PlantNet API
+🌐 **Powered by :** [PlantNet.org](https://plantnet.org)
+
+#PlantNet"""
+        print(error_result)
+        sys.exit(0)
 
 if __name__ == "__main__":
     main()

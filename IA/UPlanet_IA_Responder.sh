@@ -89,12 +89,47 @@ fi
 
 ## Optimisation: Extract URLs once
 if [ -z "$URL" ]; then
-    # Extract image URLs - handle filenames with spaces by matching until next space followed by # or end of line
-    URL=$(echo "$MESSAGE" | grep -oP 'https?://[^\s]+\.(png|gif|jpg|jpeg|webp)(\s+#|\s*$)' | sed 's/\s\+#.*$//' | sed 's/\s*$//' | head -n 1)
-    # If that didn't work, try simpler pattern without space handling (for URLs without spaces)
-    [[ -z "$URL" ]] && URL=$(echo "$MESSAGE" | awk 'match($0, /https?:\/\/[^ ]+\.(png|gif|jpg|jpeg|webp)/) { print substr($0, RSTART, RLENGTH) }' | head -n 1)
-    # Extract 1st URL for general use
-    FIRSTURL=$(echo "$MESSAGE" | grep -oP 'https?://[^\s]+' | head -n 1)
+    # Extract image URLs - handle filenames with spaces by collecting tokens until we hit a hashtag
+    URL=$(echo "$MESSAGE" | awk '{
+        for(i=1; i<=NF; i++) {
+            if ($i ~ /^https?:\/\/.*\.(png|gif|jpg|jpeg|webp|PNG|GIF|JPG|JPEG|WEBP)/) {
+                url = $i
+                # Continue collecting until we hit a # or end
+                for(j=i+1; j<=NF; j++) {
+                    if ($j ~ /^#/) break
+                    url = url " " $j
+                }
+                # Remove any trailing # tags
+                sub(/ *#.*$/, "", url)
+                print url
+                exit
+            }
+        }
+    }' | head -n 1)
+    
+    # If no URL found with extension in first token, try matching across multiple tokens
+    if [[ -z "$URL" ]]; then
+        URL=$(echo "$MESSAGE" | awk '{
+            for(i=1; i<=NF; i++) {
+                if ($i ~ /^https?:\/\//) {
+                    url = $i
+                    # Continue collecting until we hit a # or end or find image extension
+                    for(j=i+1; j<=NF; j++) {
+                        if ($j ~ /^#/) break
+                        url = url " " $j
+                        if (url ~ /\.(png|gif|jpg|jpeg|webp|PNG|GIF|JPG|JPEG|WEBP)/) {
+                            sub(/ *#.*$/, "", url)
+                            print url
+                            exit
+                        }
+                    }
+                }
+            }
+        }' | head -n 1)
+    fi
+    
+    # Extract any URL for general use (first http/https URL found)
+    ANYURL=$(echo "$MESSAGE" | awk 'match($0, /https?:\/\/[^ ]+/) { print substr($0, RSTART, RLENGTH) }' | head -n 1)
 fi
 
 echo "Received parameters:" >&2
