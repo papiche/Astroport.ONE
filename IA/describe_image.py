@@ -6,6 +6,74 @@ import os
 import sys
 import argparse
 import json
+import subprocess
+import socket
+
+def check_ollama_port(port=11434):
+    """
+    Check if the Ollama port is open locally.
+    
+    Args:
+        port (int): The port to check (default: 11434)
+    
+    Returns:
+        bool: True if port is open, False otherwise
+    """
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1)
+        result = sock.connect_ex(('127.0.0.1', port))
+        sock.close()
+        return result == 0
+    except Exception:
+        return False
+
+def ensure_ollama_connection(output_json=False):
+    """
+    Ensure that Ollama connection is available by checking the port
+    and calling ollama.me.sh if needed.
+    
+    Args:
+        output_json (bool): Whether we're in JSON output mode (to suppress debug prints)
+    
+    Returns:
+        bool: True if connection is established, False otherwise
+    """
+    if check_ollama_port():
+        if not output_json:
+            print("Ollama port 11434 is already open.")
+        return True
+    
+    if not output_json:
+        print("Ollama port not open. Attempting to establish tunnel via ollama.me.sh...")
+    
+    # Get the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    ollama_script = os.path.join(script_dir, "ollama.me.sh")
+    
+    if not os.path.exists(ollama_script):
+        if not output_json:
+            print(f"Warning: ollama.me.sh not found at {ollama_script}")
+        return False
+    
+    try:
+        result = subprocess.run([ollama_script], capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            if not output_json:
+                print("Ollama tunnel established successfully.")
+            return True
+        else:
+            if not output_json:
+                print(f"Failed to establish Ollama tunnel: {result.stderr}")
+            return False
+    except subprocess.TimeoutExpired:
+        if not output_json:
+            print("Timeout while establishing Ollama tunnel.")
+        return False
+    except Exception as e:
+        if not output_json:
+            print(f"Error while calling ollama.me.sh: {e}")
+        return False
 
 def describe_image_from_ipfs(ipfs_url, ollama_model="minicpm-v", output_json=False, custom_prompt=None):
     """
@@ -23,6 +91,11 @@ def describe_image_from_ipfs(ipfs_url, ollama_model="minicpm-v", output_json=Fal
                      Otherwise, returns a plain text string.
                      Returns None if an error occurs.
     """
+    # Ensure Ollama connection is available
+    if not ensure_ollama_connection(output_json):
+        if not output_json:
+            print("Warning: Could not establish Ollama connection. Attempting anyway...")
+    
     try:
         if not output_json:
             print(f"Downloading image from IPFS URL: {ipfs_url}")

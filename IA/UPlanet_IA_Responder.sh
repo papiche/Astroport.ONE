@@ -681,8 +681,8 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
 
         # Priority order for response key:
         # 1. User key (KNAME) if available
-        # 2. UMAP key if valid coordinates provided
-        # 3. CAPTAIN key as fallback
+        # + UMAP key follows
+        # 2. CAPTAIN key as fallback
         
         if [[ -s ~/.zen/game/nostr/${KNAME}/.secret.nostr ]]; then
             # UMAP is following if coordinates are provided
@@ -694,7 +694,7 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
             echo "Using USER key for response: ${KNAME}"
             source ~/.zen/game/nostr/${KNAME}/.secret.nostr
         else
-            # PRIORITY 3: CAPTAIN is responding as fallback
+            # CAPTAIN is responding as fallback
             echo "No valid user key, using CAPTAIN key"
             source ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
             ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$PUBKEY" 2>/dev/null
