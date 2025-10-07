@@ -43,7 +43,7 @@ def describe_image_from_ipfs(ipfs_url, ollama_model="minicpm-v", output_json=Fal
             messages=[
                 {
                     'role': 'user',
-                    'content': 'Describe this image.',
+                    'content': 'Décrire cette image.',
                     'images': [temp_image_path],
                 },
             ]

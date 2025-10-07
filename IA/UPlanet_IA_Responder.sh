@@ -542,7 +542,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 echo "Processing PlantNet recognition request..." >&2
                 
                 # Extract image URL from message or use provided URL
-                local image_url=""
+                image_url=""
                 if [[ -n "$URL" ]]; then
                     image_url="$URL"
                 else
