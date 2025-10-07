@@ -89,8 +89,12 @@ fi
 
 ## Optimisation: Extract URLs once
 if [ -z "$URL" ]; then
-    URL=$(echo "$MESSAGE" | awk 'match($0, /https?:\/\/[^ ]+\.(png|gif|jpg|jpeg)/) { print substr($0, RSTART, RLENGTH) }' | head -n 1)
-    ANYURL=$(echo "$MESSAGE" | awk 'match($0, /https?:\/\/[^ ]+/) { print substr($0, RSTART, RLENGTH) }' | head -n 1)
+    # Extract image URLs - handle filenames with spaces by matching until next space followed by # or end of line
+    URL=$(echo "$MESSAGE" | grep -oP 'https?://[^\s]+\.(png|gif|jpg|jpeg|webp)(\s+#|\s*$)' | sed 's/\s\+#.*$//' | sed 's/\s*$//' | head -n 1)
+    # If that didn't work, try simpler pattern without space handling (for URLs without spaces)
+    [[ -z "$URL" ]] && URL=$(echo "$MESSAGE" | awk 'match($0, /https?:\/\/[^ ]+\.(png|gif|jpg|jpeg|webp)/) { print substr($0, RSTART, RLENGTH) }' | head -n 1)
+    # Extract 1st URL for general use
+    FIRSTURL=$(echo "$MESSAGE" | grep -oP 'https?://[^\s]+' | head -n 1)
 fi
 
 echo "Received parameters:" >&2
@@ -100,7 +104,7 @@ echo "  LAT: $LAT" >&2
 echo "  LON: $LON" >&2
 echo "  MESSAGE: $MESSAGE" >&2
 echo "  IMAGE: $URL" >&2
-echo "  ANYURL: $ANYURL" >&2
+echo "  FIRSTURL: $FIRSTURL" >&2
 echo "  KNAME: $KNAME" >&2
 echo "" >&2
 
