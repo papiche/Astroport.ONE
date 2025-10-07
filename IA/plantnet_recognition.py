@@ -13,6 +13,8 @@ import time
 from urllib.parse import urlparse
 import subprocess
 from dotenv import load_dotenv
+from PIL import Image
+import io
 
 # Detect home directory dynamically
 HOME_DIR = os.path.expanduser("~")
@@ -82,12 +84,49 @@ def call_plantnet_api(image_data):
         
         log_message(f"Using PlantNet API key: {api_key[:6]}...{api_key[-4:]}")
         
+        # Convert image to JPEG if it's in WEBP or other unsupported format
+        # PlantNet only accepts JPEG and PNG
+        try:
+            # Try to load the image with PIL
+            img = Image.open(io.BytesIO(image_data))
+            
+            # Get the format
+            img_format = img.format
+            log_message(f"Original image format: {img_format}")
+            
+            # If not JPEG or PNG, convert to JPEG
+            if img_format not in ['JPEG', 'PNG']:
+                log_message(f"Converting {img_format} to JPEG for PlantNet compatibility...")
+                
+                # Convert RGBA to RGB if necessary (for PNG with transparency)
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    # Create a white background
+                    background = Image.new('RGB', img.size, (255, 255, 255))
+                    if img.mode == 'P':
+                        img = img.convert('RGBA')
+                    background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                    img = background
+                elif img.mode != 'RGB':
+                    img = img.convert('RGB')
+                
+                # Save as JPEG in memory
+                img_byte_arr = io.BytesIO()
+                img.save(img_byte_arr, format='JPEG', quality=95)
+                image_data = img_byte_arr.getvalue()
+                
+                log_message(f"Image converted to JPEG: {len(image_data)} bytes")
+            else:
+                log_message(f"Image format {img_format} is already supported by PlantNet")
+                
+        except Exception as e:
+            log_message(f"Warning: Could not convert image format: {e}. Trying original format...")
+        
         # PlantNet API endpoint - include API key in URL as per documentation
         api_url = f"https://my-api.plantnet.org/v2/identify/all?api-key={api_key}"
         
         log_message(f"Calling PlantNet API endpoint: {api_url[:60]}...")
         
-        # Prepare the request - use a safe filename without spaces or special characters
+        # Prepare the request - use JPEG as mime type after conversion
         files = {
             'images': ('plant_image.jpg', image_data, 'image/jpeg')
         }
