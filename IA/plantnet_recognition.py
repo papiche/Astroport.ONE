@@ -38,7 +38,8 @@ def log_message(message):
     with open(log_file, 'a') as f:
         f.write(log_entry)
     
-    print(log_entry.strip())
+    # Print to stderr instead of stdout to avoid polluting the result
+    print(log_entry.strip(), file=sys.stderr)
 
 def download_image(image_url):
     """Download image from URL"""
@@ -258,7 +259,7 @@ def format_plantnet_result(plant_info, latitude, longitude):
                     
                     result_content += f"\n{i}. *{name}*{common_str}\n   {bar} {conf}%"
             
-            result_content += f"""
+            result_content += """
 
 ---
 🔬 **Source :** [PlantNet API](https://plantnet.org)

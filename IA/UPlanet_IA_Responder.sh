@@ -704,14 +704,6 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
 
         # Clean KeyANSWER of BOT and BRO tags
         KeyANSWER=$(echo "$KeyANSWER" | sed 's/#BOT//g; s/#BRO//g; s/#bot//g; s/#bro//g')
-        
-        # Add image URL to response if image was processed
-        if [[ -n "$URL" && -n "$DESC" ]]; then
-            echo "Adding image URL to BRO response" >&2
-            KeyANSWER="$KeyANSWER
-
-📸 Image: $URL"
-        fi
 
         ## SEND REPLY MESSAGE
         if [[ "$SECRET_MODE" == true ]]; then
