@@ -14,11 +14,14 @@ from urllib.parse import urlparse
 import subprocess
 from dotenv import load_dotenv
 
+# Detect home directory dynamically
+HOME_DIR = os.path.expanduser("~")
+
 # Add Astroport.ONE tools to path
-sys.path.append('/home/fred/.zen/Astroport.ONE/tools')
+sys.path.append(f'{HOME_DIR}/.zen/Astroport.ONE/tools')
 
 # Load environment variables
-load_dotenv('/home/fred/.zen/Astroport.ONE/.env')
+load_dotenv(f'{HOME_DIR}/.zen/Astroport.ONE/.env')
 
 def log_message(message):
     """Log message to UPlanet log file"""
@@ -26,9 +29,11 @@ def log_message(message):
     log_entry = f"[{timestamp}] PLANTNET: {message}\n"
     
     # Ensure log directory exists
-    os.makedirs('/home/fred/.zen/tmp', exist_ok=True)
+    log_dir = f'{HOME_DIR}/.zen/tmp'
+    os.makedirs(log_dir, exist_ok=True)
     
-    with open('/home/fred/.zen/tmp/plantnet.log', 'a') as f:
+    log_file = f'{HOME_DIR}/.zen/tmp/plantnet.log'
+    with open(log_file, 'a') as f:
         f.write(log_entry)
     
     print(log_entry.strip())
@@ -223,7 +228,7 @@ def send_nostr_response(pubkey, event_id, plant_info, latitude, longitude):
     try:
         # Load CAPTAIN credentials
         captain_email = os.environ.get('CAPTAINEMAIL', 'captain@uplanet.earth')
-        captain_secret_file = f'/home/fred/.zen/game/nostr/{captain_email}/.secret.nostr'
+        captain_secret_file = f'{HOME_DIR}/.zen/game/nostr/{captain_email}/.secret.nostr'
         
         if not os.path.exists(captain_secret_file):
             log_message(f"CAPTAIN secret file not found: {captain_secret_file}")
@@ -247,7 +252,7 @@ def send_nostr_response(pubkey, event_id, plant_info, latitude, longitude):
         # Convert NSEC to hex
         try:
             result = subprocess.run([
-                '/home/fred/.zen/Astroport.ONE/tools/nostr2hex.py', nsec
+                f'{HOME_DIR}/.zen/Astroport.ONE/tools/nostr2hex.py', nsec
             ], capture_output=True, text=True, timeout=10)
             
             if result.returncode != 0:

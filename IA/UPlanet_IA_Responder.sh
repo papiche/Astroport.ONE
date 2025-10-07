@@ -242,7 +242,7 @@ Le slot 0 reste accessible pour tous les utilisateurs autorisés.
 
 Pour devenir sociétaire : $myIPFS/ipns/copylaradio.com
 
-Votre Astroport Captain.
+Votre Capitaine.
 #CopyLaRadio #mem"
 
         nostpy-cli send_event \
