@@ -75,12 +75,12 @@ def ensure_ollama_connection(output_json=False):
             print(f"Error while calling ollama.me.sh: {e}")
         return False
 
-def describe_image_from_ipfs(ipfs_url, ollama_model="minicpm-v", output_json=False, custom_prompt=None):
+def describe_image_from_ipfs(image_source, ollama_model="minicpm-v", output_json=False, custom_prompt=None):
     """
-    Downloads an image from an IPFS URL and uses Ollama to generate a description.
+    Describes an image using Ollama from either an IPFS URL or a local file path.
 
     Args:
-        ipfs_url (str): The IPFS URL of the image.
+        image_source (str): Either an IPFS URL (http://...) or a local file path.
         ollama_model (str, optional): The name of the Ollama model to use. Defaults to "minicpm-v".
         output_json (bool, optional): Whether to output the description in JSON format. Defaults to False.
         custom_prompt (str, optional): Custom prompt to use instead of default. Defaults to None.
@@ -96,19 +96,38 @@ def describe_image_from_ipfs(ipfs_url, ollama_model="minicpm-v", output_json=Fal
         if not output_json:
             print("Warning: Could not establish Ollama connection. Attempting anyway...")
     
+    temp_image_path = None
+    temp_file_created = False
+    
     try:
-        if not output_json:
-            print(f"Downloading image from IPFS URL: {ipfs_url}")
-        response = requests.get(ipfs_url, stream=True, timeout=10) # Added timeout
-        response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+        # Determine if image_source is a URL or a local file
+        if image_source.startswith('http://') or image_source.startswith('https://'):
+            # Download from IPFS URL
+            if not output_json:
+                print(f"Downloading image from IPFS URL: {image_source}")
+            response = requests.get(image_source, stream=True, timeout=10)
+            response.raise_for_status()
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix="") as tmp_file: # Suffix is important for Ollama to recognize as image
-            for chunk in response.iter_content(chunk_size=8192):
-                tmp_file.write(chunk)
-            temp_image_path = tmp_file.name
+            with tempfile.NamedTemporaryFile(delete=False, suffix="") as tmp_file:
+                for chunk in response.iter_content(chunk_size=8192):
+                    tmp_file.write(chunk)
+                temp_image_path = tmp_file.name
+                temp_file_created = True
 
-        if not output_json:
-            print(f"Image downloaded and saved to temporary file: {temp_image_path}")
+            if not output_json:
+                print(f"Image downloaded and saved to temporary file: {temp_image_path}")
+        else:
+            # Use local file path directly
+            if not os.path.exists(image_source):
+                if not output_json:
+                    print(f"Error: Local file not found: {image_source}")
+                return None
+            
+            temp_image_path = image_source
+            temp_file_created = False
+            
+            if not output_json:
+                print(f"Using local image file: {temp_image_path}")
 
         # Use custom prompt if provided, otherwise use default
         prompt = custom_prompt if custom_prompt else 'Décrire cette image.'
@@ -149,22 +168,23 @@ def describe_image_from_ipfs(ipfs_url, ollama_model="minicpm-v", output_json=Fal
             print(f"An unexpected error occurred: {e}")
         return None
     finally:
-        if 'temp_image_path' in locals() and os.path.exists(temp_image_path):
+        # Only remove the temp file if we created it
+        if temp_file_created and temp_image_path and os.path.exists(temp_image_path):
             os.remove(temp_image_path)
             if not output_json:
                 print(f"Temporary image file '{temp_image_path}' removed.")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Describe an image from an IPFS URL using Ollama.")
-    parser.add_argument("ipfs_image_url", help="The IPFS URL of the image.")
+    parser = argparse.ArgumentParser(description="Describe an image from an IPFS URL or local file using Ollama.")
+    parser.add_argument("image_source", help="Either an IPFS URL (http://...) or a local file path.")
     parser.add_argument("-m", "--model", dest="ollama_model_name", default="minicpm-v", help="The name of the Ollama model to use (default: minicpm-v).")
     parser.add_argument("--json", action="store_true", help="Output description in JSON format.")
     parser.add_argument("-p", "--prompt", dest="custom_prompt", default=None, help="Custom prompt to send to the AI (default: 'Décrire cette image.').")
 
     args = parser.parse_args()
 
-    description_output = describe_image_from_ipfs(args.ipfs_image_url, args.ollama_model_name, args.json, args.custom_prompt)
+    description_output = describe_image_from_ipfs(args.image_source, args.ollama_model_name, args.json, args.custom_prompt)
 
     if description_output:
         if args.json:
