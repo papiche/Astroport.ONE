@@ -267,7 +267,7 @@ def send_nostr_response(pubkey, event_id, plant_info, latitude, longitude):
 🔬 **Source :** PlantNet API
 🌐 **Powered by :** [PlantNet.org](https://plantnet.org)
 
-#PlantNet #BRO #plant #jardinage"""
+#PlantNet"""
             
             # Add additional results if available
             if len(plant_info['results']) > 1:
@@ -296,7 +296,7 @@ La plante n'a pas pu être identifiée avec certitude.
 🔬 **Source :** PlantNet API
 🌐 **Powered by :** [PlantNet.org](https://plantnet.org)
 
-#PlantNet #BRO #plant #jardinage"""
+#PlantNet"""
         
         # Send Nostr event
         try:
@@ -309,9 +309,6 @@ La plante n'a pas pu être identifiée avec certitude.
                     ['e', event_id],
                     ['p', pubkey],
                     ['t', 'PlantNet'],
-                    ['t', 'BRO'],
-                    ['t', 'plant'],
-                    ['t', 'jardinage'],
                     ['g', f'{latitude},{longitude}']
                 ]),
                 '--relay', os.environ.get('myRELAY', 'ws://127.0.0.1:7777')
