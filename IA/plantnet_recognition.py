@@ -36,6 +36,7 @@ def log_message(message):
 def download_image(image_url):
     """Download image from URL"""
     try:
+        # Properly handle URLs with spaces and special characters
         response = requests.get(image_url, timeout=30)
         response.raise_for_status()
         
@@ -71,9 +72,9 @@ def call_plantnet_api(image_data):
         # PlantNet API endpoint
         api_url = "https://my-api.plantnet.org/v2/identify"
         
-        # Prepare the request
+        # Prepare the request - use a safe filename without spaces or special characters
         files = {
-            'images': ('image.jpg', image_data, 'image/jpeg')
+            'images': ('plant_image.jpg', image_data, 'image/jpeg')
         }
         
         data = {
@@ -156,7 +157,7 @@ def format_plantnet_result(plant_info, latitude, longitude):
 🔬 **Source :** PlantNet API
 🌐 **Powered by :** [PlantNet.org](https://plantnet.org)
 
-#PlantNet #BRO #plant #jardinage"""
+#PlantNet"""
             
             # Add additional results if available
             if len(plant_info['results']) > 1:
@@ -187,7 +188,7 @@ La plante n'a pas pu être identifiée avec certitude.
 🔬 **Source :** PlantNet API
 🌐 **Powered by :** [PlantNet.org](https://plantnet.org)
 
-#PlantNet #BRO #plant #jardinage"""
+#PlantNet"""
         
     except Exception as e:
         log_message(f"Error formatting PlantNet result: {e}")

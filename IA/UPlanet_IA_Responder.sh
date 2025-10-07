@@ -89,8 +89,8 @@ fi
 
 ## Optimisation: Extract URLs once
 if [ -z "$URL" ]; then
-    URL=$(echo "$MESSAGE" | grep -oE 'http[s]?://[^ ]+\.(png|gif|jpg|jpeg)' | head -n 1)
-    ANYURL=$(echo "$MESSAGE" | grep -oE 'http[s]?://[^ ]+' | head -n 1)
+    URL=$(echo "$MESSAGE" | awk 'match($0, /https?:\/\/[^ ]+\.(png|gif|jpg|jpeg)/) { print substr($0, RSTART, RLENGTH) }' | head -n 1)
+    ANYURL=$(echo "$MESSAGE" | awk 'match($0, /https?:\/\/[^ ]+/) { print substr($0, RSTART, RLENGTH) }' | head -n 1)
 fi
 
 echo "Received parameters:" >&2
@@ -231,6 +231,7 @@ handle_plantnet_recognition() {
     echo "PlantNet: Getting image description..." >&2
     local image_desc=""
     if [[ -n "$image_url" ]]; then
+        # Properly quote the URL to handle spaces and special characters
         image_desc=$("$MY_PATH/describe_image.py" "$image_url" --json | jq -r '.description' 2>/dev/null)
         if [[ -z "$image_desc" || "$image_desc" == "null" ]]; then
             image_desc="Image analysis failed"
@@ -505,7 +506,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                     KeyANSWER="Désolé, je n'ai pas pu générer la musique demandée."
                 fi
             elif [[ "${TAGS[youtube]}" == true ]]; then
-                youtube_url=$(echo "$message_text" | grep -oE 'http[s]?://(www\.)?(youtube\.com|youtu\.be)/[^ ]+')
+                youtube_url=$(echo "$message_text" | awk 'match($0, /https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/[^ ]+/) { print substr($0, RSTART, RLENGTH) }')
                 if [ -z "$youtube_url" ]; then
                     KeyANSWER="Désolé, Aucune URL YouTube valide trouvée dans votre message."
                 else
@@ -547,7 +548,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                     image_url="$URL"
                 else
                     # Try to extract image URL from message content
-                    image_url=$(echo "$message_text" | grep -oE 'https?://[^\s]+\.(jpg|jpeg|png|gif|webp)' | head -n1)
+                    image_url=$(echo "$message_text" | awk 'match($0, /https?:\/\/[^ ]+\.(jpg|jpeg|png|gif|webp)/) { print substr($0, RSTART, RLENGTH) }' | head -n1)
                 fi
                 
                 if [[ -n "$image_url" ]]; then
@@ -556,12 +557,13 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                     # Call PlantNet recognition with image description
                     KeyANSWER=$(handle_plantnet_recognition "$image_url" "$LAT" "$LON" "$user_id" "$EVENT" "$PUBKEY")
                 else
-                    echo "PlantNet: No image URL found in message" >&2
-                    KeyANSWER="❌ Aucune image trouvée pour la reconnaissance PlantNet.
+                    echo "PlantNet: No valid image URL found in message" >&2
+                    KeyANSWER="❌ Aucune image valide trouvée pour la reconnaissance PlantNet.
 
 Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #plantnet avec une photo.
 
 **Formats supportés :** JPG, JPEG, PNG, GIF, WEBP
+**Note :** Seuls les fichiers image sont analysés. Les autres types de fichiers sont ignorés.
 
 #PlantNet #BRO #jardinage"
                 fi
