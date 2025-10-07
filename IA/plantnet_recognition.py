@@ -201,62 +201,93 @@ def format_plantnet_result(plant_info, latitude, longitude):
             scientific_name = best_match['species']['scientificNameWithoutAuthor']
             common_names = best_match['species'].get('commonNames', [])
             
+            # Format common names
             common_name_str = ""
             if common_names:
-                common_name_str = f" ({', '.join(common_names[:2])})"
+                # Show up to 3 common names
+                names_to_show = common_names[:3]
+                common_name_str = f"\n🏷️  **Noms communs :** {', '.join(names_to_show)}"
             
-            # Determine confidence level
-            if confidence >= 80:
+            # Determine confidence level with more precise categories
+            if confidence >= 70:
                 confidence_emoji = "🟢"
                 confidence_text = "Très probable"
-            elif confidence >= 60:
+            elif confidence >= 50:
                 confidence_emoji = "🟡"
                 confidence_text = "Probable"
-            else:
+            elif confidence >= 30:
                 confidence_emoji = "🟠"
                 confidence_text = "Possible"
+            else:
+                confidence_emoji = "🔴"
+                confidence_text = "Incertain"
             
-            result_content = f"""🌿 Reconnaissance de plante terminée !
+            # Generate Wikipedia link (use scientific name with spaces replaced by underscores)
+            wikipedia_name = scientific_name.replace(' ', '_')
+            wikipedia_url = f"https://fr.wikipedia.org/wiki/{wikipedia_name}"
+            
+            result_content = f"""🌿 **Reconnaissance de plante**
 
-📸 **Plante identifiée :** {scientific_name}{common_name_str}
+✅ **Identification réussie !**
+
+🔬 **Nom scientifique :** *{scientific_name}*{common_name_str}
+
 {confidence_emoji} **Confiance :** {confidence}% ({confidence_text})
 📍 **Localisation :** {latitude:.4f}, {longitude:.4f}
 
-🔬 **Source :** PlantNet API
-🌐 **Powered by :** [PlantNet.org](https://plantnet.org)
-
-#PlantNet"""
+📖 **En savoir plus :** [Wikipedia]({wikipedia_url})
+"""
             
-            # Add additional results if available
+            # Add additional results if available (show top 5 alternatives)
             if len(plant_info['results']) > 1:
-                result_content += "\n\n**Autres possibilités :**"
-                for i, result in enumerate(plant_info['results'][1:4], 2):  # Show top 4
+                result_content += "\n**🔎 Autres possibilités :**\n"
+                for i, result in enumerate(plant_info['results'][1:5], 2):  # Show top 5 (excluding first)
                     conf = int(result['score'] * 100)
                     name = result['species']['scientificNameWithoutAuthor']
                     common = result['species'].get('commonNames', [])
-                    common_str = f" ({common[0]})" if common else ""
-                    result_content += f"\n{i}. {name}{common_str} ({conf}%)"
+                    
+                    # Format alternative entry
+                    if common:
+                        common_str = f" ({common[0]})"
+                    else:
+                        common_str = ""
+                    
+                    # Add confidence bar
+                    bar_length = max(1, conf // 10)  # 10% = 1 bar
+                    bar = "▓" * bar_length + "░" * (10 - bar_length)
+                    
+                    result_content += f"\n{i}. *{name}*{common_str}\n   {bar} {conf}%"
+            
+            result_content += f"""
+
+---
+🔬 **Source :** [PlantNet API](https://plantnet.org)
+💡 **Astuce :** Plus la confiance est élevée, plus l'identification est fiable
+
+#PlantNet #botanique #nature"""
             
             return result_content
         else:
-            return f"""🌿 Reconnaissance de plante
+            return f"""🌿 **Reconnaissance de plante**
 
 ❌ **Aucune correspondance trouvée**
 
-La plante n'a pas pu être identifiée avec certitude. 
+La plante n'a pas pu être identifiée avec certitude dans la base de données PlantNet.
 
 💡 **Conseils pour améliorer la reconnaissance :**
-• Prenez une photo plus claire et nette
-• Assurez-vous que la plante occupe la majeure partie de l'image
-• Évitez les ombres et les reflets
-• Photographiez les feuilles, fleurs ou fruits de près
+• 📸 Prenez une photo plus claire et nette
+• 🌱 Assurez-vous que la plante occupe la majeure partie de l'image
+• ☀️ Évitez les ombres portées et les reflets
+• 🍃 Photographiez les détails : feuilles, fleurs, fruits ou écorce
+• 🔍 Prenez plusieurs angles si possible
 
 📍 **Localisation :** {latitude:.4f}, {longitude:.4f}
 
-🔬 **Source :** PlantNet API
-🌐 **Powered by :** [PlantNet.org](https://plantnet.org)
+---
+🔬 **Source :** [PlantNet API](https://plantnet.org)
+💾 **Base de données :** Plus de 40 000 espèces référencées
 
-#PlantNet"""
+#PlantNet #botanique #nature"""
         
     except Exception as e:
         log_message(f"Error formatting PlantNet result: {e}")
@@ -304,67 +335,8 @@ def send_nostr_response(pubkey, event_id, plant_info, latitude, longitude):
             log_message(f"Error running nostr2hex.py: {e}")
             return False
         
-        # Prepare response content
-        if plant_info and plant_info.get('results'):
-            best_match = plant_info['results'][0]
-            confidence = int(best_match['score'] * 100)
-            scientific_name = best_match['species']['scientificNameWithoutAuthor']
-            common_names = best_match['species'].get('commonNames', [])
-            
-            common_name_str = ""
-            if common_names:
-                common_name_str = f" ({', '.join(common_names[:2])})"
-            
-            # Determine confidence level
-            if confidence >= 80:
-                confidence_emoji = "🟢"
-                confidence_text = "Très probable"
-            elif confidence >= 60:
-                confidence_emoji = "🟡"
-                confidence_text = "Probable"
-            else:
-                confidence_emoji = "🟠"
-                confidence_text = "Possible"
-            
-            response_content = f"""🌿 Reconnaissance de plante terminée !
-
-📸 **Plante identifiée :** {scientific_name}{common_name_str}
-{confidence_emoji} **Confiance :** {confidence}% ({confidence_text})
-📍 **Localisation :** {latitude:.4f}, {longitude:.4f}
-
-🔬 **Source :** PlantNet API
-🌐 **Powered by :** [PlantNet.org](https://plantnet.org)
-
-#PlantNet"""
-            
-            # Add additional results if available
-            if len(plant_info['results']) > 1:
-                response_content += "\n\n**Autres possibilités :**"
-                for i, result in enumerate(plant_info['results'][1:4], 2):  # Show top 4
-                    conf = int(result['score'] * 100)
-                    name = result['species']['scientificNameWithoutAuthor']
-                    common = result['species'].get('commonNames', [])
-                    common_str = f" ({common[0]})" if common else ""
-                    response_content += f"\n{i}. {name}{common_str} ({conf}%)"
-        else:
-            response_content = f"""🌿 Reconnaissance de plante
-
-❌ **Aucune correspondance trouvée**
-
-La plante n'a pas pu être identifiée avec certitude. 
-
-💡 **Conseils pour améliorer la reconnaissance :**
-• Prenez une photo plus claire et nette
-• Assurez-vous que la plante occupe la majeure partie de l'image
-• Évitez les ombres et les reflets
-• Photographiez les feuilles, fleurs ou fruits de près
-
-📍 **Localisation :** {latitude:.4f}, {longitude:.4f}
-
-🔬 **Source :** PlantNet API
-🌐 **Powered by :** [PlantNet.org](https://plantnet.org)
-
-#PlantNet"""
+        # Use the same formatting function for consistency
+        response_content = format_plantnet_result(plant_info, latitude, longitude)
         
         # Send Nostr event
         try:
