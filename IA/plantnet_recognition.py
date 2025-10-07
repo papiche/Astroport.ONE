@@ -54,8 +54,11 @@ def download_image(image_url):
         log_message(f"Image downloaded successfully: {len(response.content)} bytes, type: {content_type}")
         return response.content
         
+    except requests.exceptions.RequestException as e:
+        log_message(f"Network error downloading image: {e}")
+        return None
     except Exception as e:
-        log_message(f"Error downloading image: {e}")
+        log_message(f"Unexpected error downloading image: {e}")
         return None
 
 def call_plantnet_api(image_data):
@@ -65,6 +68,11 @@ def call_plantnet_api(image_data):
         api_key = os.getenv('PLANTNET_API_KEY')
         if not api_key:
             log_message("PLANTNET_API_KEY not found in environment variables")
+            return None
+        
+        # Validate API key format (should be a string)
+        if not isinstance(api_key, str) or len(api_key) < 10:
+            log_message(f"Invalid PLANTNET_API_KEY format: {api_key}")
             return None
         
         log_message("Calling PlantNet API...")
@@ -87,6 +95,20 @@ def call_plantnet_api(image_data):
         
         # Make the API request
         response = requests.post(api_url, files=files, data=data, timeout=30)
+        
+        # Log response details for debugging
+        log_message(f"PlantNet API response status: {response.status_code}")
+        log_message(f"PlantNet API response headers: {dict(response.headers)}")
+        
+        if response.status_code != 200:
+            log_message(f"PlantNet API HTTP error: {response.status_code}")
+            try:
+                error_content = response.json()
+                log_message(f"PlantNet API error content: {error_content}")
+            except:
+                log_message(f"PlantNet API error text: {response.text}")
+            return None
+        
         response.raise_for_status()
         
         # Parse the response
@@ -352,7 +374,27 @@ def main():
     image_data = download_image(image_url)
     if not image_data:
         log_message("Failed to download image")
-        sys.exit(1)
+        # Return formatted error message instead of exiting with error
+        error_result = f"""🌿 Reconnaissance de plante
+
+❌ **Erreur de téléchargement d'image**
+
+Impossible de télécharger l'image depuis l'URL fournie.
+
+💡 **Causes possibles :**
+• URL d'image invalide ou inaccessible
+• Image corrompue ou dans un format non supporté
+• Problème de connexion réseau
+• Image trop grande (limite: 10MB)
+
+📍 **Localisation :** {latitude:.4f}, {longitude:.4f}
+
+🔬 **Source :** PlantNet API
+🌐 **Powered by :** [PlantNet.org](https://plantnet.org)
+
+#PlantNet"""
+        print(error_result)
+        sys.exit(0)
     
     log_message(f"Image downloaded successfully ({len(image_data)} bytes)")
     
@@ -361,7 +403,28 @@ def main():
     plant_info = call_plantnet_api(image_data)
     if not plant_info:
         log_message("PlantNet API call failed")
-        sys.exit(1)
+        # Instead of exiting, return a formatted error message
+        error_result = f"""🌿 Reconnaissance de plante
+
+❌ **Erreur de reconnaissance**
+
+La reconnaissance de la plante a échoué. 
+
+💡 **Causes possibles :**
+• Image de mauvaise qualité ou corrompue
+• Problème de connexion à l'API PlantNet
+• Clé API PlantNet invalide ou expirée
+• Image trop grande ou dans un format non supporté
+
+📍 **Localisation :** {latitude:.4f}, {longitude:.4f}
+
+🔬 **Source :** PlantNet API
+🌐 **Powered by :** [PlantNet.org](https://plantnet.org)
+
+#PlantNet"""
+        print(error_result)
+        # Exit with code 0 to avoid triggering error handling in UPlanet_IA_Responder.sh
+        sys.exit(0)
     
     log_message(f"PlantNet API response: {json.dumps(plant_info, indent=2)}")
     

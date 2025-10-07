@@ -251,11 +251,46 @@ handle_plantnet_recognition() {
         echo "$plantnet_result"
     else
         echo "PlantNet: Recognition failed with exit code $exit_code" >&2
+        echo "PlantNet: Checking for error details in plantnet.log..." >&2
+        
+        # Try to get error details from log
+        local error_details=""
+        if [[ -f "/home/fred/.zen/tmp/plantnet.log" ]]; then
+            error_details=$(tail -5 "/home/fred/.zen/tmp/plantnet.log" | grep -E "(ERROR|Error|error)" | tail -1)
+            echo "PlantNet: Last error from log: $error_details" >&2
+        fi
+        
         # Fallback to image description if PlantNet fails
         if [[ -n "$image_desc" ]]; then
-            echo "🌿 Analyse d'image (PlantNet indisponible): $image_desc"
+            echo "🌿 Analyse d'image (PlantNet indisponible)
+
+📸 **Description de l'image :** $image_desc
+
+❌ **PlantNet API indisponible** (code d'erreur: $exit_code)
+$error_details
+
+📍 **Localisation :** $latitude, $longitude
+
+💡 **Conseils :**
+• Vérifiez que la clé API PlantNet est configurée
+• L'image doit être claire et montrer des parties de plante
+• Formats supportés : JPG, JPEG, PNG, GIF, WEBP
+
+#PlantNet #BRO #jardinage"
         else
-            echo "❌ Erreur lors de l'analyse de l'image"
+            echo "❌ Erreur lors de l'analyse de l'image
+
+❌ **PlantNet API indisponible** (code d'erreur: $exit_code)
+$error_details
+
+📍 **Localisation :** $latitude, $longitude
+
+💡 **Vérifiez :**
+• Que la clé API PlantNet est configurée
+• Que l'image est accessible et valide
+• Les logs pour plus de détails
+
+#PlantNet #BRO #jardinage"
         fi
     fi
 }
@@ -606,14 +641,16 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
         fi
 
         # Check if we have valid geographical coordinates for UMAP response
+        # Use the coordinates from the original message (passed as parameters)
         if [[ "$LAT" != "0.00" && "$LON" != "0.00" && -n "$LAT" && -n "$LON" ]]; then
             # UMAP is responding when geographical coordinates are provided
-            echo "Using UMAP key for geographical location: ${LAT}, ${LON}"
+            echo "Using UMAP key for geographical location from message: ${LAT}, ${LON}"
             UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
             NSEC="$UMAPNSEC"
             ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$PUBKEY" 2>/dev/null
         else
             # BY DEFAULT CAPTAIN is Responding when no valid coordinates
+            echo "No valid coordinates provided, using CAPTAIN key"
             source ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
             ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$PUBKEY" 2>/dev/null
 
