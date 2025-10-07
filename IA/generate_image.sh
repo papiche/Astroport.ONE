@@ -14,6 +14,15 @@ fi
 
 . "${MY_PATH}/../tools/my.sh"
 
+# Activate the virtual environment to access all Python modules
+VENV_DIR="${HOME}/.astro"
+if [ -d "$VENV_DIR" ]; then
+    source "$VENV_DIR/bin/activate"
+    echo "Python environment activated: $VENV_DIR" >&2
+else
+    echo "Warning: Python environment not found at $VENV_DIR" >&2
+fi
+
 # Escape double quotes and backslashes in the prompt
 PROMPT=$(echo "$1" | sed 's/"/\\"/g')
 
