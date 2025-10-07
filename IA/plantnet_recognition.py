@@ -357,11 +357,20 @@ def main():
     """Main function"""
     if len(sys.argv) < 7:
         log_message("Usage: plantnet_recognition.py <image_url> <latitude> <longitude> <user_id> <event_id> <pubkey>")
-        sys.exit(1)
+        print("❌ Erreur: paramètres manquants pour la reconnaissance PlantNet")
+        sys.exit(0)
     
     image_url = sys.argv[1]
-    latitude = float(sys.argv[2])
-    longitude = float(sys.argv[3])
+    
+    # Safe float conversion with error handling
+    try:
+        latitude = float(sys.argv[2])
+        longitude = float(sys.argv[3])
+    except (ValueError, IndexError) as e:
+        log_message(f"Error parsing coordinates: {e}")
+        latitude = 0.0
+        longitude = 0.0
+    
     user_id = sys.argv[4]
     event_id = sys.argv[5]
     pubkey = sys.argv[6]
@@ -437,6 +446,7 @@ La reconnaissance de la plante a échoué.
     if result:
         log_message("PlantNet recognition completed successfully")
         print(result)  # Output the result to stdout
+        sys.exit(0)  # Explicit success exit
     else:
         log_message("Failed to format PlantNet result")
         error_result = f"""🌿 Reconnaissance de plante
@@ -455,4 +465,21 @@ Une erreur s'est produite lors du formatage du résultat.
         sys.exit(0)
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        log_message(f"Unhandled exception in main: {e}")
+        error_result = f"""🌿 Reconnaissance de plante
+
+❌ **Erreur inattendue**
+
+Une erreur inattendue s'est produite: {str(e)}
+
+💡 **Veuillez réessayer ou contacter l'administrateur**
+
+🔬 **Source :** PlantNet API
+🌐 **Powered by :** [PlantNet.org](https://plantnet.org)
+
+#PlantNet"""
+        print(error_result)
+        sys.exit(0)  # Exit with 0 even on error to avoid triggering error handling
