@@ -193,7 +193,7 @@ def call_plantnet_api(image_data):
         log_message(f"Error calling PlantNet API: {e}")
         return None
 
-def format_plantnet_result(plant_info, latitude, longitude):
+def format_plantnet_result(plant_info, latitude, longitude, image_url=None):
     """Format PlantNet result for display"""
     try:
         if plant_info and plant_info.get('results'):
@@ -267,9 +267,13 @@ def format_plantnet_result(plant_info, latitude, longitude):
 
 #PlantNet #botanique #nature"""
             
+            # Add image URL if provided
+            if image_url:
+                result_content += f"\n\n📸 **Image :** {image_url}"
+            
             return result_content
         else:
-            return f"""🌿 **Reconnaissance de plante**
+            result_content = f"""🌿 **Reconnaissance de plante**
 
 ❌ **Aucune correspondance trouvée**
 
@@ -289,86 +293,16 @@ La plante n'a pas pu être identifiée avec certitude dans la base de données P
 💾 **Base de données :** Plus de 40 000 espèces référencées
 
 #PlantNet #botanique #nature"""
+            
+            # Add image URL if provided
+            if image_url:
+                result_content += f"\n\n📸 **Image :** {image_url}"
+            
+            return result_content
         
     except Exception as e:
         log_message(f"Error formatting PlantNet result: {e}")
         return f"❌ Erreur lors du formatage du résultat PlantNet: {e}"
-
-def send_nostr_response(pubkey, event_id, plant_info, latitude, longitude):
-    """Send PlantNet recognition response via Nostr"""
-    try:
-        # Load CAPTAIN credentials
-        captain_email = os.environ.get('CAPTAINEMAIL', 'captain@uplanet.earth')
-        captain_secret_file = f'{HOME_DIR}/.zen/game/nostr/{captain_email}/.secret.nostr'
-        
-        if not os.path.exists(captain_secret_file):
-            log_message(f"CAPTAIN secret file not found: {captain_secret_file}")
-            return False
-        
-        # Source the secret file
-        with open(captain_secret_file, 'r') as f:
-            secret_content = f.read()
-        
-        # Extract NSEC from secret file
-        nsec = None
-        for line in secret_content.split('\n'):
-            if line.startswith('NSEC='):
-                nsec = line.split('=', 1)[1].strip().strip('"')
-                break
-        
-        if not nsec:
-            log_message("NSEC not found in CAPTAIN secret file")
-            return False
-        
-        # Convert NSEC to hex
-        try:
-            result = subprocess.run([
-                f'{HOME_DIR}/.zen/Astroport.ONE/tools/nostr2hex.py', nsec
-            ], capture_output=True, text=True, timeout=10)
-            
-            if result.returncode != 0:
-                log_message(f"Error converting NSEC to hex: {result.stderr}")
-                return False
-            
-            npriv_hex = result.stdout.strip()
-            
-        except Exception as e:
-            log_message(f"Error running nostr2hex.py: {e}")
-            return False
-        
-        # Use the same formatting function for consistency
-        response_content = format_plantnet_result(plant_info, latitude, longitude)
-        
-        # Send Nostr event
-        try:
-            result = subprocess.run([
-                'nostpy-cli', 'send_event',
-                '-privkey', npriv_hex,
-                '-kind', '1',
-                '-content', response_content,
-                '-tags', json.dumps([
-                    ['e', event_id],
-                    ['p', pubkey],
-                    ['t', 'PlantNet'],
-                    ['g', f'{latitude},{longitude}']
-                ]),
-                '--relay', os.environ.get('myRELAY', 'ws://127.0.0.1:7777')
-            ], capture_output=True, text=True, timeout=30)
-            
-            if result.returncode == 0:
-                log_message(f"PlantNet response sent successfully: {result.stdout}")
-                return True
-            else:
-                log_message(f"Error sending Nostr response: {result.stderr}")
-                return False
-                
-        except Exception as e:
-            log_message(f"Error running nostpy-cli: {e}")
-            return False
-            
-    except Exception as e:
-        log_message(f"Error in send_nostr_response: {e}")
-        return False
 
 def main():
     """Main function"""
@@ -389,13 +323,12 @@ def main():
         longitude = 0.0
     
     user_id = sys.argv[4]
-    event_id = sys.argv[5]
-    pubkey = sys.argv[6]
+    # event_id and pubkey are not used in current implementation
+    # (UPlanet_IA_Responder.sh handles Nostr response sending)
     
     log_message(f"Starting PlantNet recognition for {user_id}")
     log_message(f"Image URL: {image_url}")
     log_message(f"Location: {latitude}, {longitude}")
-    log_message(f"Event ID: {event_id}")
     
     # Download image
     log_message("Downloading image...")
@@ -458,7 +391,7 @@ La reconnaissance de la plante a échoué.
     
     # Format and return the result instead of sending via Nostr
     log_message("Formatting PlantNet result...")
-    result = format_plantnet_result(plant_info, latitude, longitude)
+    result = format_plantnet_result(plant_info, latitude, longitude, image_url)
     
     if result:
         log_message("PlantNet recognition completed successfully")
