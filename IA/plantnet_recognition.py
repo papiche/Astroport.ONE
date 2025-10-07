@@ -123,6 +123,76 @@ def call_plantnet_api(image_data):
         log_message(f"Error calling PlantNet API: {e}")
         return None
 
+def format_plantnet_result(plant_info, latitude, longitude):
+    """Format PlantNet result for display"""
+    try:
+        if plant_info and plant_info.get('results'):
+            best_match = plant_info['results'][0]
+            confidence = int(best_match['score'] * 100)
+            scientific_name = best_match['species']['scientificNameWithoutAuthor']
+            common_names = best_match['species'].get('commonNames', [])
+            
+            common_name_str = ""
+            if common_names:
+                common_name_str = f" ({', '.join(common_names[:2])})"
+            
+            # Determine confidence level
+            if confidence >= 80:
+                confidence_emoji = "🟢"
+                confidence_text = "Très probable"
+            elif confidence >= 60:
+                confidence_emoji = "🟡"
+                confidence_text = "Probable"
+            else:
+                confidence_emoji = "🟠"
+                confidence_text = "Possible"
+            
+            result_content = f"""🌿 Reconnaissance de plante terminée !
+
+📸 **Plante identifiée :** {scientific_name}{common_name_str}
+{confidence_emoji} **Confiance :** {confidence}% ({confidence_text})
+📍 **Localisation :** {latitude:.4f}, {longitude:.4f}
+
+🔬 **Source :** PlantNet API
+🌐 **Powered by :** [PlantNet.org](https://plantnet.org)
+
+#PlantNet #BRO #plant #jardinage"""
+            
+            # Add additional results if available
+            if len(plant_info['results']) > 1:
+                result_content += "\n\n**Autres possibilités :**"
+                for i, result in enumerate(plant_info['results'][1:4], 2):  # Show top 4
+                    conf = int(result['score'] * 100)
+                    name = result['species']['scientificNameWithoutAuthor']
+                    common = result['species'].get('commonNames', [])
+                    common_str = f" ({common[0]})" if common else ""
+                    result_content += f"\n{i}. {name}{common_str} ({conf}%)"
+            
+            return result_content
+        else:
+            return f"""🌿 Reconnaissance de plante
+
+❌ **Aucune correspondance trouvée**
+
+La plante n'a pas pu être identifiée avec certitude. 
+
+💡 **Conseils pour améliorer la reconnaissance :**
+• Prenez une photo plus claire et nette
+• Assurez-vous que la plante occupe la majeure partie de l'image
+• Évitez les ombres et les reflets
+• Photographiez les feuilles, fleurs ou fruits de près
+
+📍 **Localisation :** {latitude:.4f}, {longitude:.4f}
+
+🔬 **Source :** PlantNet API
+🌐 **Powered by :** [PlantNet.org](https://plantnet.org)
+
+#PlantNet #BRO #plant #jardinage"""
+        
+    except Exception as e:
+        log_message(f"Error formatting PlantNet result: {e}")
+        return f"❌ Erreur lors du formatage du résultat PlantNet: {e}"
+
 def send_nostr_response(pubkey, event_id, plant_info, latitude, longitude):
     """Send PlantNet recognition response via Nostr"""
     try:
@@ -297,14 +367,15 @@ def main():
     
     log_message(f"PlantNet API response: {json.dumps(plant_info, indent=2)}")
     
-    # Send Nostr response
-    log_message("Sending Nostr response...")
-    success = send_nostr_response(pubkey, event_id, plant_info, latitude, longitude)
+    # Format and return the result instead of sending via Nostr
+    log_message("Formatting PlantNet result...")
+    result = format_plantnet_result(plant_info, latitude, longitude)
     
-    if success:
+    if result:
         log_message("PlantNet recognition completed successfully")
+        print(result)  # Output the result to stdout
     else:
-        log_message("Failed to send PlantNet response")
+        log_message("Failed to format PlantNet result")
         sys.exit(1)
 
 if __name__ == "__main__":

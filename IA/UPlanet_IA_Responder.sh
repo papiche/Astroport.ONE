@@ -216,8 +216,8 @@ Votre Astroport Captain.
     ) &
 }
 
-# Function to handle PlantNet recognition in background
-handle_plantnet_background() {
+# Function to handle PlantNet recognition with image description
+handle_plantnet_recognition() {
     local image_url="$1"
     local latitude="$2"
     local longitude="$3"
@@ -225,27 +225,38 @@ handle_plantnet_background() {
     local event_id="$5"
     local pubkey="$6"
     
-    echo "PlantNet: Starting background recognition process..." >&2
+    echo "PlantNet: Starting recognition process with image description..." >&2
     
-    # Launch PlantNet recognition in background
-    (
-        # Set environment variables for the script
-        export myRELAY="$myRELAY"
-        export CAPTAINEMAIL="$CAPTAINEMAIL"
-        
-        # Call PlantNet recognition script
-        $MY_PATH/plantnet_recognition.py "$image_url" "$latitude" "$longitude" "$user_id" "$event_id" "$pubkey" 2>&1 >> "$HOME/.zen/tmp/plantnet.log"
-        
-        local exit_code=$?
-        if [[ $exit_code -eq 0 ]]; then
-            echo "PlantNet: Background recognition completed successfully" >&2
-        else
-            echo "PlantNet: Background recognition failed with exit code $exit_code" >&2
+    # First, get image description using describe_image.py
+    echo "PlantNet: Getting image description..." >&2
+    local image_desc=""
+    if [[ -n "$image_url" ]]; then
+        image_desc=$("$MY_PATH/describe_image.py" "$image_url" --json | jq -r '.description' 2>/dev/null)
+        if [[ -z "$image_desc" || "$image_desc" == "null" ]]; then
+            image_desc="Image analysis failed"
         fi
-    ) &
+        echo "PlantNet: Image description: $image_desc" >&2
+    fi
     
-    # Return immediately with acknowledgment message
-    echo "🌿 Reconnaissance PlantNet lancée en arrière-plan..."
+    # Call PlantNet recognition script with image description
+    echo "PlantNet: Calling PlantNet API..." >&2
+    local plantnet_result=""
+    plantnet_result=$($MY_PATH/plantnet_recognition.py "$image_url" "$latitude" "$longitude" "$user_id" "$event_id" "$pubkey" 2>/dev/null)
+    
+    local exit_code=$?
+    if [[ $exit_code -eq 0 && -n "$plantnet_result" ]]; then
+        echo "PlantNet: Recognition completed successfully" >&2
+        # Return the actual PlantNet result instead of generic message
+        echo "$plantnet_result"
+    else
+        echo "PlantNet: Recognition failed with exit code $exit_code" >&2
+        # Fallback to image description if PlantNet fails
+        if [[ -n "$image_desc" ]]; then
+            echo "🌿 Analyse d'image (PlantNet indisponible): $image_desc"
+        else
+            echo "❌ Erreur lors de l'analyse de l'image"
+        fi
+    fi
 }
 
 # Function to get an event by ID using strfry scan
@@ -542,17 +553,8 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 if [[ -n "$image_url" ]]; then
                     echo "PlantNet: Found image URL: $image_url" >&2
                     
-                    # Launch PlantNet recognition in background
-                    handle_plantnet_background "$image_url" "$LAT" "$LON" "$user_id" "$EVENT" "$PUBKEY"
-                    
-                    KeyANSWER="🌿 Reconnaissance de plante lancée !
-
-Le processus de reconnaissance PlantNet a été démarré en arrière-plan. Vous recevrez une réponse détaillée avec l'identification de la plante une fois l'analyse terminée.
-
-📍 **Localisation :** ${LAT}, ${LON}
-🔗 **Image :** $image_url
-
-#PlantNet #BRO #jardinage"
+                    # Call PlantNet recognition with image description
+                    KeyANSWER=$(handle_plantnet_recognition "$image_url" "$LAT" "$LON" "$user_id" "$EVENT" "$PUBKEY")
                 else
                     echo "PlantNet: No image URL found in message" >&2
                     KeyANSWER="❌ Aucune image trouvée pour la reconnaissance PlantNet.
