@@ -679,22 +679,25 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
             fi
         fi
 
-        # Check if we have valid geographical coordinates for UMAP response
-        # Use the coordinates from the original message (passed as parameters)
-        if [[ "$LAT" != "0.00" && "$LON" != "0.00" && -n "$LAT" && -n "$LON" ]]; then
-            # UMAP is responding when geographical coordinates are provided
-            echo "Using UMAP key for geographical location from message: ${LAT}, ${LON}"
-            UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
-            NSEC="$UMAPNSEC"
-            ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$PUBKEY" 2>/dev/null
+        # Priority order for response key:
+        # 1. User key (KNAME) if available
+        # 2. UMAP key if valid coordinates provided
+        # 3. CAPTAIN key as fallback
+        
+        if [[ -s ~/.zen/game/nostr/${KNAME}/.secret.nostr ]]; then
+            # UMAP is following if coordinates are provided
+            if [[ "$LAT" != "0.00" && "$LON" != "0.00" && -n "$LAT" && -n "$LON" ]]; then
+                echo "Using UMAP key for geographical location : ${LAT}, ${LON}"
+                UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
+                ${MY_PATH}/../tools/nostr_follow.sh "$UMAPNSEC" "$PUBKEY" 2>/dev/null
+            fi
+            echo "Using USER key for response: ${KNAME}"
+            source ~/.zen/game/nostr/${KNAME}/.secret.nostr
         else
-            # BY DEFAULT CAPTAIN is Responding when no valid coordinates
-            echo "No valid coordinates provided, using CAPTAIN key"
+            # PRIORITY 3: CAPTAIN is responding as fallback
+            echo "No valid user key, using CAPTAIN key"
             source ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
             ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$PUBKEY" 2>/dev/null
-
-            ## but KNAME self RESPONSE is prefered
-            [[ -s ~/.zen/game/nostr/${KNAME}/.secret.nostr ]] && source ~/.zen/game/nostr/${KNAME}/.secret.nostr
         fi
 
         NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
