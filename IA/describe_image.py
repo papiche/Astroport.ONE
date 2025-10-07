@@ -1,9 +1,19 @@
 #!/usr/bin/env python3
+import os
+import sys
+
+# Activate ~/.astro virtual environment to access ollama module
+venv_path = os.path.expanduser("~/.astro")
+if os.path.exists(venv_path):
+    # Add venv site-packages to sys.path
+    python_version = f"python{sys.version_info.major}.{sys.version_info.minor}"
+    site_packages = os.path.join(venv_path, "lib", python_version, "site-packages")
+    if os.path.exists(site_packages):
+        sys.path.insert(0, site_packages)
+
 import requests
 import ollama
 import tempfile
-import os
-import sys
 import argparse
 import json
 import subprocess
