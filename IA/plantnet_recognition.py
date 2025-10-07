@@ -207,7 +207,7 @@ def format_plantnet_result(plant_info, latitude, longitude, image_url=None):
             if common_names:
                 # Show up to 3 common names
                 names_to_show = common_names[:3]
-                common_name_str = f"\n🏷️  **Noms communs :** {', '.join(names_to_show)}"
+                common_name_str = f"\n🏷️  Noms communs : {', '.join(names_to_show)}"
             
             # Determine confidence level with more precise categories
             if confidence >= 70:
@@ -227,21 +227,21 @@ def format_plantnet_result(plant_info, latitude, longitude, image_url=None):
             wikipedia_name = scientific_name.replace(' ', '_')
             wikipedia_url = f"https://fr.wikipedia.org/wiki/{wikipedia_name}"
             
-            result_content = f"""🌿 **Reconnaissance de plante**
+            result_content = f"""🌿 Reconnaissance de plante
 
-✅ **Identification réussie !**
+✅ Identification réussie !
 
-🔬 **Nom scientifique :** *{scientific_name}*{common_name_str}
+🔬 Nom scientifique : {scientific_name}{common_name_str}
 
-{confidence_emoji} **Confiance :** {confidence}% ({confidence_text})
-📍 **Localisation :** {latitude:.4f}, {longitude:.4f}
+{confidence_emoji} Confiance : {confidence}% ({confidence_text})
+📍 Localisation : {latitude:.4f}, {longitude:.4f}
 
-📖 **En savoir plus :** [Wikipedia]({wikipedia_url})
+📖 En savoir plus : {wikipedia_url}
 """
             
             # Add additional results if available (show top 5 alternatives)
             if len(plant_info['results']) > 1:
-                result_content += "\n**🔎 Autres possibilités :**\n"
+                result_content += "\n🔎 Autres possibilités :\n"
                 for i, result in enumerate(plant_info['results'][1:5], 2):  # Show top 5 (excluding first)
                     conf = int(result['score'] * 100)
                     name = result['species']['scientificNameWithoutAuthor']
@@ -257,46 +257,46 @@ def format_plantnet_result(plant_info, latitude, longitude, image_url=None):
                     bar_length = max(1, conf // 10)  # 10% = 1 bar
                     bar = "▓" * bar_length + "░" * (10 - bar_length)
                     
-                    result_content += f"\n{i}. *{name}*{common_str}\n   {bar} {conf}%"
+                    result_content += f"\n{i}. {name}{common_str}\n   {bar} {conf}%"
             
             result_content += """
 
----
-🔬 **Source :** [PlantNet API](https://plantnet.org)
-💡 **Astuce :** Plus la confiance est élevée, plus l'identification est fiable
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔬 Source : https://plantnet.org
+💡 Astuce : Plus la confiance est élevée, plus l'identification est fiable
 
 #PlantNet #botanique #nature"""
             
             # Add image URL if provided
             if image_url:
-                result_content += f"\n\n📸 **Image :** {image_url}"
+                result_content += f"\n\n📸 Image : {image_url}"
             
             return result_content
         else:
-            result_content = f"""🌿 **Reconnaissance de plante**
+            result_content = f"""🌿 Reconnaissance de plante
 
-❌ **Aucune correspondance trouvée**
+❌ Aucune correspondance trouvée
 
 La plante n'a pas pu être identifiée avec certitude dans la base de données PlantNet.
 
-💡 **Conseils pour améliorer la reconnaissance :**
+💡 Conseils pour améliorer la reconnaissance :
 • 📸 Prenez une photo plus claire et nette
 • 🌱 Assurez-vous que la plante occupe la majeure partie de l'image
 • ☀️ Évitez les ombres portées et les reflets
 • 🍃 Photographiez les détails : feuilles, fleurs, fruits ou écorce
 • 🔍 Prenez plusieurs angles si possible
 
-📍 **Localisation :** {latitude:.4f}, {longitude:.4f}
+📍 Localisation : {latitude:.4f}, {longitude:.4f}
 
----
-🔬 **Source :** [PlantNet API](https://plantnet.org)
-💾 **Base de données :** Plus de 40 000 espèces référencées
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔬 Source : https://plantnet.org
+💾 Base de données : Plus de 40 000 espèces référencées
 
 #PlantNet #botanique #nature"""
             
             # Add image URL if provided
             if image_url:
-                result_content += f"\n\n📸 **Image :** {image_url}"
+                result_content += f"\n\n📸 Image : {image_url}"
             
             return result_content
         
@@ -338,20 +338,20 @@ def main():
         # Return formatted error message instead of exiting with error
         error_result = f"""🌿 Reconnaissance de plante
 
-❌ **Erreur de téléchargement d'image**
+❌ Erreur de téléchargement d'image
 
 Impossible de télécharger l'image depuis l'URL fournie.
 
-💡 **Causes possibles :**
+💡 Causes possibles :
 • URL d'image invalide ou inaccessible
 • Image corrompue ou dans un format non supporté
 • Problème de connexion réseau
 • Image trop grande (limite: 10MB)
 
-📍 **Localisation :** {latitude:.4f}, {longitude:.4f}
+📍 Localisation : {latitude:.4f}, {longitude:.4f}
 
-🔬 **Source :** PlantNet API
-🌐 **Powered by :** [PlantNet.org](https://plantnet.org)
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔬 Source : https://plantnet.org
 
 #PlantNet"""
         print(error_result)
@@ -367,20 +367,20 @@ Impossible de télécharger l'image depuis l'URL fournie.
         # Instead of exiting, return a formatted error message
         error_result = f"""🌿 Reconnaissance de plante
 
-❌ **Erreur de reconnaissance**
+❌ Erreur de reconnaissance
 
 La reconnaissance de la plante a échoué. 
 
-💡 **Causes possibles :**
+💡 Causes possibles :
 • Image de mauvaise qualité ou corrompue
 • Problème de connexion à l'API PlantNet
 • Clé API PlantNet invalide ou expirée
 • Image trop grande ou dans un format non supporté
 
-📍 **Localisation :** {latitude:.4f}, {longitude:.4f}
+📍 Localisation : {latitude:.4f}, {longitude:.4f}
 
-🔬 **Source :** PlantNet API
-🌐 **Powered by :** [PlantNet.org](https://plantnet.org)
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔬 Source : https://plantnet.org
 
 #PlantNet"""
         print(error_result)
@@ -401,14 +401,14 @@ La reconnaissance de la plante a échoué.
         log_message("Failed to format PlantNet result")
         error_result = f"""🌿 Reconnaissance de plante
 
-❌ **Erreur de formatage**
+❌ Erreur de formatage
 
 Une erreur s'est produite lors du formatage du résultat.
 
-📍 **Localisation :** {latitude:.4f}, {longitude:.4f}
+📍 Localisation : {latitude:.4f}, {longitude:.4f}
 
-🔬 **Source :** PlantNet API
-🌐 **Powered by :** [PlantNet.org](https://plantnet.org)
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔬 Source : https://plantnet.org
 
 #PlantNet"""
         print(error_result)
@@ -421,14 +421,14 @@ if __name__ == "__main__":
         log_message(f"Unhandled exception in main: {e}")
         error_result = f"""🌿 Reconnaissance de plante
 
-❌ **Erreur inattendue**
+❌ Erreur inattendue
 
 Une erreur inattendue s'est produite: {str(e)}
 
-💡 **Veuillez réessayer ou contacter l'administrateur**
+💡 Veuillez réessayer ou contacter l'administrateur
 
-🔬 **Source :** PlantNet API
-🌐 **Powered by :** [PlantNet.org](https://plantnet.org)
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔬 Source : https://plantnet.org
 
 #PlantNet"""
         print(error_result)
