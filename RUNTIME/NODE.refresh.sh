@@ -262,7 +262,11 @@ sort -u "${HOME}/.zen/strfry/amisOfAmis.txt" -o "${HOME}/.zen/strfry/amisOfAmis.
 echo "Updated blacklist.txt: $(cat $HOME/.zen/strfry/blacklist.txt | wc -l) entries"
 echo "Updated amisOfAmis.txt: $(cat $HOME/.zen/strfry/amisOfAmis.txt | wc -l) entries"
 
-
+########################################################
+### DISPLAY & RENEW strfry synch logs
+cat ~/.zen/strfry/constellation-backfill.log
+echo "" > ~/.zen/strfry/constellation-backfill.log
+echo "" > ~/.zen/strfry/constellation-backfill.log
 
 ########################################################
 if [[ -z $(cat ~/.zen/MJ_APIKEY) ]]; then
