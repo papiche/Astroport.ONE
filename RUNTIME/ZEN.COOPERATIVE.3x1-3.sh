@@ -130,8 +130,20 @@ echo "Cooperative balance: $UPLANETZEN Ẑen"
 
 #######################################################################
 # Configuration des paramètres fiscaux
+#
+# NOTE FISCALE IMPORTANTE :
+# =========================
+# TVA (20%) : Collectée sur le CHIFFRE D'AFFAIRES BRUT
+#             Provisionnée ailleurs (non gérée par ce script)
+#             Fait générateur : Encaissement des locations RENTAL
+#             Portefeuille : UPLANETNAME.IMPOT
+#
+# IS (15%/25%) : Calculé sur le BÉNÉFICE NET (après charges)
+#                Provisionné ICI sur le surplus après Node + Capitaine
+#                Base taxable : Surplus coopératif (revenus - PAF - rémunérations)
+#                Portefeuille : UPLANETNAME.IMPOT
 #######################################################################
-[[ -z $TVA_RATE ]] && TVA_RATE=20  # Taux de TVA (20%)
+[[ -z $TVA_RATE ]] && TVA_RATE=20  # Taux de TVA (20%) - RÉFÉRENCE UNIQUEMENT (provisionnée ailleurs)
 
 # Taux d'Impôt sur les Sociétés selon la réglementation française
 # Source: https://www.impots.gouv.fr/international-professionnel/impot-sur-les-societes
@@ -139,8 +151,8 @@ echo "Cooperative balance: $UPLANETZEN Ẑen"
 [[ -z $IS_RATE_REDUCED ]] && IS_RATE_REDUCED=15  # Taux réduit (15% jusqu'à 42 500 €)
 [[ -z $IS_RATE_NORMAL ]] && IS_RATE_NORMAL=25   # Taux normal (25% au-delà de 42 500 €)
 
-echo "ZEN COOPERATIVE: Tax rates - VAT: $TVA_RATE%"
-echo "ZEN COOPERATIVE: Corporate Tax - Reduced: $IS_RATE_REDUCED% (up to $IS_THRESHOLD €) | Normal: $IS_RATE_NORMAL% (above $IS_THRESHOLD €)"
+echo "ZEN COOPERATIVE: Tax rates - VAT: $TVA_RATE% (reference only, provisioned elsewhere)"
+echo "ZEN COOPERATIVE: Corporate Tax (IS) - Reduced: $IS_RATE_REDUCED% (up to $IS_THRESHOLD €) | Normal: $IS_RATE_NORMAL% (above $IS_THRESHOLD €)"
 
 #######################################################################
 # Provision fiscale automatique (IS sur le surplus avec plafond)
