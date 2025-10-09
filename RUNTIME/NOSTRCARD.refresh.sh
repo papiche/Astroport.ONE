@@ -545,7 +545,7 @@ for PLAYER in "${NOSTR[@]}"; do
         ## SETUP PROFILE VARIABLES
         title="$YOUSER"
         city="UPlanet ${ORIGIN}"
-        description="💬 ${uSPOT}/nostr + ❤️ = Ẑen : ${uSPOT}/check_balance?g1pub=${PLAYER}"
+        description="💬 + ❤️ => Ẑen : ${uSPOT}/check_balance?g1pub=${PLAYER}"
         zavatar="/ipfs/"$(cat ${HOME}/.zen/game/nostr/${PLAYER}/MULTIPASS.QR.png.cid 2>/dev/null)
         ## ELSE ASTROPORT LOGO
         [[ $zavatar == "/ipfs/" ]] \
