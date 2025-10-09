@@ -85,6 +85,32 @@ calculate_zen_balance() {
     fi
 }
 
+# Fonction pour récupérer les données de revenu depuis G1revenue.sh
+get_revenue_data() {
+    local revenue_json=$(${SCRIPT_DIR}/G1revenue.sh 2>/dev/null)
+    
+    if [[ -n "$revenue_json" ]] && echo "$revenue_json" | jq empty 2>/dev/null; then
+        echo "$revenue_json"
+        return 0
+    else
+        echo '{"total_revenue_zen": 0, "total_revenue_g1": 0, "total_transactions": 0}'
+        return 1
+    fi
+}
+
+# Fonction pour récupérer les données de capital social depuis G1society.sh
+get_society_data() {
+    local society_json=$(${SCRIPT_DIR}/G1society.sh 2>/dev/null)
+    
+    if [[ -n "$society_json" ]] && echo "$society_json" | jq empty 2>/dev/null; then
+        echo "$society_json"
+        return 0
+    else
+        echo '{"total_outgoing_zen": 0, "total_outgoing_g1": 0, "total_transfers": 0}'
+        return 1
+    fi
+}
+
 # Formatage sécurisé des nombres
 safe_printf() {
     local format="$1"
@@ -180,27 +206,47 @@ show_system_wallets_summary() {
         fi
     fi
     
-    # UPLANETG1PUB (Services & Cash-Flow)
+    # UPLANETG1PUB (Services & Cash-Flow) - Utilise G1revenue.sh pour l'historique
     if [[ -f "$HOME/.zen/tmp/UPLANETG1PUB" ]]; then
         local services_pubkey=$(cat "$HOME/.zen/tmp/UPLANETG1PUB" 2>/dev/null)
         if [[ -n "$services_pubkey" ]]; then
             local services_balance=$(get_wallet_balance "$services_pubkey")
-            local services_zen=$(calculate_zen_balance "$services_balance")
             local services_str=$(safe_printf "%.2f" "$services_balance")
-            local zen_str=$(safe_printf "%.0f" "$services_zen")
-            echo -e "  💼 UPLANETG1PUB: ${YELLOW}$services_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC})"
+            
+            # Récupérer les données de revenu depuis G1revenue.sh (historique analysé)
+            local revenue_data=$(get_revenue_data)
+            if echo "$revenue_data" | jq empty 2>/dev/null && [[ "$(echo "$revenue_data" | jq -r '.total_revenue_zen // 0')" != "0" ]]; then
+                local revenue_zen=$(echo "$revenue_data" | jq -r '.total_revenue_zen // 0' 2>/dev/null)
+                local revenue_txcount=$(echo "$revenue_data" | jq -r '.total_transactions // 0' 2>/dev/null)
+                local zen_str=$(safe_printf "%.0f" "$revenue_zen")
+                echo -e "  💼 UPLANETG1PUB: ${YELLOW}$services_str Ğ1${NC} (CA: ${CYAN}$zen_str Ẑen${NC}, ${WHITE}$revenue_txcount${NC} ventes)"
+            else
+                local services_zen=$(calculate_zen_balance "$services_balance")
+                local zen_str=$(safe_printf "%.0f" "$services_zen")
+                echo -e "  💼 UPLANETG1PUB: ${YELLOW}$services_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC})"
+            fi
         fi
     fi
     
-    # UPLANETNAME.SOCIETY (Capital Social)
+    # UPLANETNAME.SOCIETY (Capital Social) - Utilise G1society.sh pour l'historique
     if [[ -f "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" ]]; then
         local society_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" 2>/dev/null)
         if [[ -n "$society_pubkey" ]]; then
             local society_balance=$(get_wallet_balance "$society_pubkey")
-            local society_zen=$(calculate_zen_balance "$society_balance")
             local society_str=$(safe_printf "%.2f" "$society_balance")
-            local zen_str=$(safe_printf "%.0f" "$society_zen")
-            echo -e "  ⭐ UPLANETNAME.SOCIETY: ${YELLOW}$society_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC})"
+            
+            # Récupérer les données de capital social depuis G1society.sh (historique analysé)
+            local society_data=$(get_society_data)
+            if echo "$society_data" | jq empty 2>/dev/null && [[ "$(echo "$society_data" | jq -r '.total_outgoing_zen // 0')" != "0" ]]; then
+                local society_zen=$(echo "$society_data" | jq -r '.total_outgoing_zen // 0' 2>/dev/null)
+                local society_txcount=$(echo "$society_data" | jq -r '.total_transfers // 0' 2>/dev/null)
+                local zen_str=$(safe_printf "%.0f" "$society_zen")
+                echo -e "  ⭐ UPLANETNAME.SOCIETY: ${YELLOW}$society_str Ğ1${NC} (Parts: ${CYAN}$zen_str Ẑen${NC}, ${WHITE}$society_txcount${NC} sociétaires)"
+            else
+                local society_zen=$(calculate_zen_balance "$society_balance")
+                local zen_str=$(safe_printf "%.0f" "$society_zen")
+                echo -e "  ⭐ UPLANETNAME.SOCIETY: ${YELLOW}$society_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC})"
+            fi
         fi
     fi
     
