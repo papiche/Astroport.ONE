@@ -299,6 +299,83 @@ UPLANET:${UPLANETG1PUB:0:8}:SOCIETY:${email}:${type}:${IPFSNODEID}
 - Lien vers le nœud IPFS d'origine
 - Historique complet des transactions
 
+#### 3. Chiffre d'Affaires (REVENUE)
+```http
+GET /check_revenue?html={0|1}&year={YYYY}
+```
+
+**Description** : Récupère l'historique du Chiffre d'Affaires depuis les transactions RENTAL. Calcule les revenus totaux depuis le portefeuille `UPLANETNAME` (hub de distribution des services).
+
+**Paramètres** :
+- `html` : Si présent, retourne une page HTML stylisée (optionnel)
+- `year` : Filtre par année (ex: "2024", "2025"). Par défaut: "all" (toutes les années)
+
+**Réponse JSON** :
+```json
+{
+  "g1pub": "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z",
+  "filter_year": "all",
+  "total_revenue_g1": 120.5,
+  "total_revenue_zen": 1195.0,
+  "total_transactions": 24,
+  "yearly_summary": [
+    {
+      "year": "2025",
+      "total_revenue_g1": 85.0,
+      "total_revenue_zen": 840.0,
+      "total_transactions": 17
+    },
+    {
+      "year": "2024",
+      "total_revenue_g1": 35.5,
+      "total_revenue_zen": 355.0,
+      "total_transactions": 7
+    }
+  ],
+  "transactions": [
+    {
+      "date": "2025-10-09 14:20:15",
+      "year": "2025",
+      "customer_email": "frenault@linkeo.com",
+      "amount_g1": 2.0,
+      "amount_zen": 20.0,
+      "transaction_type": "RENTAL",
+      "comment": "Service RENTAL - UPLANET:AwdjhpJN:RENTAL:frenault@linkeo.com"
+    }
+  ],
+  "timestamp": "2025-10-09T16:30:42"
+}
+```
+
+**Filtrage par année** :
+- `GET /check_revenue` : Toutes les années (avec résumé annuel)
+- `GET /check_revenue?year=2025` : Uniquement l'année 2025
+- `GET /check_revenue?year=2024` : Uniquement l'année 2024
+
+**Format des références blockchain** :
+```
+UPLANET:${UPLANETG1PUB:0:8}:RENTAL:${email}
+```
+
+**Calcul du CA** : Le Chiffre d'Affaires est calculé depuis les transactions **INCOMING** (entrantes) vers `UPLANETG1PUB` qui :
+1. Proviennent de `UPLANETNAME_G1` (réserve)
+2. Contiennent "RENTAL" dans la référence (ventes de services)
+
+**Page HTML** : Accessible via `?html=1`, fournit une interface web stylisée avec :
+- Résumé du CA total (ẐEN, Ğ1, nombre de transactions)
+- **Tableau récapitulatif annuel** (mode "all")
+- Boutons pour filtrer par année
+- Historique détaillé des ventes RENTAL avec identification client
+
+**Architecture économique** :
+```
+UPLANETNAME_G1 (Réserve) 
+    ↓ ÉMISSION (CA enregistré)
+UPLANETNAME (UPLANETG1PUB) ← Hub de distribution
+    ↓ DISTRIBUTION
+MULTIPASS / ZEN Card (Services utilisateurs)
+```
+
 ---
 
 ## 🔐 Authentification NOSTR

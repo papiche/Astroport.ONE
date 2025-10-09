@@ -317,7 +317,7 @@ calculate_societaire_amount() {
 ################################################################################
 process_locataire() {
     local email="$1"
-    local montant_euros="${2:-$NCARD}}"
+    local montant_euros="${2:-$NCARD}"
     local montant_g1=$(zen_to_g1 "$montant_euros")
     
     echo -e "${BLUE}🏠 Traitement virement LOCATAIRE pour: ${email}${NC}"
