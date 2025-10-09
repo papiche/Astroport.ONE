@@ -90,7 +90,7 @@ fi
 echo "CAPTAIN G1PUB : ${CAPTAING1PUB}"
 CAPTAINCOIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAING1PUB} | tail -n 1)
 CAPTAINZEN=$(echo "($CAPTAINCOIN - 1) * 10" | bc | cut -d '.' -f 1)
-echo "Captain MULTIPASS balance: $CAPTAINZEN Ẑen"
+echo "Captain MULTIPASS balance: $CAPTAINZEN Ẑen (solde actuel pour répartition)"
 
 # Configuration de la PAF hebdomadaire
 [[ -z $PAF ]] && PAF=14  # PAF hebdomadaire par défaut

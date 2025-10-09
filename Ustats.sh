@@ -307,9 +307,20 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
 
     #######################################
     ## BILAN ZEN ECONOMY
-    COINS=$(cat $HOME/.zen/tmp/coucou/$UPLANETG1PUB.COINS 2>/dev/null)
-    [[ -z $COINS ]] && COINS=$($MY_PATH/tools/G1check.sh $UPLANETG1PUB | tail -n 1)
-    ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1 2>/dev/null)
+    # Utiliser G1revenue.sh pour cohérence avec les dashboards et frontends
+    # Cela garantit que l'API retourne les mêmes valeurs que economy.html
+    REVENUE_JSON=$($MY_PATH/tools/G1revenue.sh 2>/dev/null)
+    if [[ -n "$REVENUE_JSON" ]] && echo "$REVENUE_JSON" | jq empty 2>/dev/null; then
+        ZEN=$(echo "$REVENUE_JSON" | jq -r '.total_revenue_zen // 0')
+        COINS=$(echo "$REVENUE_JSON" | jq -r '.total_revenue_g1 // 0')
+        REVENUE_TRANSACTIONS=$(echo "$REVENUE_JSON" | jq -r '.total_transactions // 0')
+    else
+        # Fallback si G1revenue.sh échoue
+        COINS=$(cat $HOME/.zen/tmp/coucou/$UPLANETG1PUB.COINS 2>/dev/null)
+        [[ -z $COINS ]] && COINS=$($MY_PATH/tools/G1check.sh $UPLANETG1PUB | tail -n 1)
+        ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1 2>/dev/null)
+        REVENUE_TRANSACTIONS=0
+    fi
 
     [[ -z $PAF ]] && PAF=14
     [[ -z $NCARD ]] && NCARD=1
