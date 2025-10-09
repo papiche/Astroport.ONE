@@ -2931,14 +2931,21 @@ display_station_overview() {
         echo -e "  • ${RED}UPLANETNAME.G1: Non configuré${NC}"
     fi
     
-    # UPLANETNAME
+    # UPLANETNAME - Utilise G1revenue.sh pour afficher le CA depuis l'historique
     if [[ -f "$HOME/.zen/tmp/UPLANETG1PUB" ]]; then
         services_pubkey=$(cat "$HOME/.zen/tmp/UPLANETG1PUB" 2>/dev/null)
         if [[ -n "$services_pubkey" ]]; then
-            local status=$(get_wallet_status "$services_pubkey" "UPLANETNAME")
-            services_balance=$(echo "$status" | cut -d '|' -f 1)
-            zen_balance=$(echo "$status" | cut -d '|' -f 3)
-            echo -e "  • ${GREEN}UPLANETNAME:${NC} ${YELLOW}$services_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
+            local services_balance=$(get_wallet_balance "$services_pubkey")
+            
+            # Récupérer les données de revenu depuis G1revenue.sh (historique analysé)
+            local revenue_json=$(${MY_PATH}/G1revenue.sh 2>/dev/null)
+            if [[ -n "$revenue_json" ]] && echo "$revenue_json" | jq empty 2>/dev/null; then
+                local revenue_zen=$(echo "$revenue_json" | jq -r '.total_revenue_zen // 0' 2>/dev/null)
+                echo -e "  • ${GREEN}UPLANETNAME:${NC} ${YELLOW}$services_balance Ğ1${NC} (CA: ${CYAN}$revenue_zen Ẑen${NC})"
+            else
+                local zen_balance=$(echo "($services_balance - 1) * 10" | bc | cut -d '.' -f 1)
+                echo -e "  • ${GREEN}UPLANETNAME:${NC} ${YELLOW}$services_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
+            fi
         else
             echo -e "  • ${RED}UPLANETNAME: Erreur de configuration${NC}"
         fi
@@ -2946,14 +2953,21 @@ display_station_overview() {
         echo -e "  • ${RED}UPLANETNAME: Non configuré${NC}"
     fi
     
-    # UPLANETNAME.SOCIETY
+    # UPLANETNAME.SOCIETY - Utilise G1society.sh pour afficher les parts sociales depuis l'historique
     if [[ -f "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" ]]; then
         society_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" 2>/dev/null)
         if [[ -n "$society_pubkey" ]]; then
-            local status=$(get_wallet_status "$society_pubkey" "UPLANETNAME.SOCIETY")
-            society_balance=$(echo "$status" | cut -d '|' -f 1)
-            zen_balance=$(echo "$status" | cut -d '|' -f 3)
-            echo -e "  • ${GREEN}UPLANETNAME.SOCIETY:${NC} ${YELLOW}$society_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
+            local society_balance=$(get_wallet_balance "$society_pubkey")
+            
+            # Récupérer les données de capital social depuis G1society.sh (historique analysé)
+            local society_json=$(${MY_PATH}/G1society.sh 2>/dev/null)
+            if [[ -n "$society_json" ]] && echo "$society_json" | jq empty 2>/dev/null; then
+                local society_zen=$(echo "$society_json" | jq -r '.total_outgoing_zen // 0' 2>/dev/null)
+                echo -e "  • ${GREEN}UPLANETNAME.SOCIETY:${NC} ${YELLOW}$society_balance Ğ1${NC} (Parts: ${CYAN}$society_zen Ẑen${NC})"
+            else
+                local zen_balance=$(echo "($society_balance - 1) * 10" | bc | cut -d '.' -f 1)
+                echo -e "  • ${GREEN}UPLANETNAME.SOCIETY:${NC} ${YELLOW}$society_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
+            fi
         else
             echo -e "  • ${RED}UPLANETNAME.SOCIETY: Non configuré${NC}"
         fi
@@ -2992,14 +3006,22 @@ display_economic_dashboard() {
         echo -e "   • UPLANETNAME.G1: ${RED}Not configured${NC}"
     fi
     
-    # UPLANETNAME
+    # UPLANETNAME - Utilise G1revenue.sh pour afficher le CA depuis l'historique
     if [[ -f "$HOME/.zen/tmp/UPLANETG1PUB" ]]; then
         services_pubkey=$(cat "$HOME/.zen/tmp/UPLANETG1PUB" 2>/dev/null)
         if [[ -n "$services_pubkey" ]]; then
-            local status=$(get_wallet_status "$services_pubkey" "UPLANETNAME")
-            services_balance=$(echo "$status" | cut -d '|' -f 1)
-            zen_balance=$(echo "$status" | cut -d '|' -f 3)
-            echo -e "   • UPLANETNAME: ${YELLOW}$services_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
+            services_balance=$(get_wallet_balance "$services_pubkey")
+            
+            # Récupérer les données de revenu depuis G1revenue.sh (historique analysé)
+            local revenue_json=$(${MY_PATH}/G1revenue.sh 2>/dev/null)
+            if [[ -n "$revenue_json" ]] && echo "$revenue_json" | jq empty 2>/dev/null; then
+                local revenue_zen=$(echo "$revenue_json" | jq -r '.total_revenue_zen // 0' 2>/dev/null)
+                local revenue_txcount=$(echo "$revenue_json" | jq -r '.total_transactions // 0' 2>/dev/null)
+                echo -e "   • UPLANETNAME: ${YELLOW}$services_balance Ğ1${NC} (CA: ${CYAN}$revenue_zen Ẑen${NC}, ${WHITE}$revenue_txcount${NC} ventes)"
+            else
+                local zen_balance=$(echo "($services_balance - 1) * 10" | bc | cut -d '.' -f 1)
+                echo -e "   • UPLANETNAME: ${YELLOW}$services_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
+            fi
         else
             echo -e "   • UPLANETNAME: ${RED}Invalid keyfile${NC}"
         fi
@@ -3007,14 +3029,22 @@ display_economic_dashboard() {
         echo -e "   • UPLANETNAME: ${RED}Not configured${NC}"
     fi
     
-    # UPLANETNAME.SOCIETY
+    # UPLANETNAME.SOCIETY - Utilise G1society.sh pour afficher les parts sociales depuis l'historique
     if [[ -f "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" ]]; then
         society_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" 2>/dev/null)
         if [[ -n "$society_pubkey" ]]; then
-            local status=$(get_wallet_status "$society_pubkey" "UPLANETNAME.SOCIETY")
-            society_balance=$(echo "$status" | cut -d '|' -f 1)
-            zen_balance=$(echo "$status" | cut -d '|' -f 3)
-            echo -e "   • UPLANETNAME.SOCIETY: ${YELLOW}$society_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
+            society_balance=$(get_wallet_balance "$society_pubkey")
+            
+            # Récupérer les données de capital social depuis G1society.sh (historique analysé)
+            local society_json=$(${MY_PATH}/G1society.sh 2>/dev/null)
+            if [[ -n "$society_json" ]] && echo "$society_json" | jq empty 2>/dev/null; then
+                local society_zen=$(echo "$society_json" | jq -r '.total_outgoing_zen // 0' 2>/dev/null)
+                local society_txcount=$(echo "$society_json" | jq -r '.total_transfers // 0' 2>/dev/null)
+                echo -e "   • UPLANETNAME.SOCIETY: ${YELLOW}$society_balance Ğ1${NC} (Parts: ${CYAN}$society_zen Ẑen${NC}, ${WHITE}$society_txcount${NC} sociétaires)"
+            else
+                local zen_balance=$(echo "($society_balance - 1) * 10" | bc | cut -d '.' -f 1)
+                echo -e "   • UPLANETNAME.SOCIETY: ${YELLOW}$society_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
+            fi
         else
             echo -e "   • UPLANETNAME.SOCIETY: ${RED}Invalid keyfile${NC}"
         fi

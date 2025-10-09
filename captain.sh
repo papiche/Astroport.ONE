@@ -364,6 +364,32 @@ calculate_zen() {
     fi
 }
 
+# Fonction pour récupérer les données de revenu depuis G1revenue.sh
+get_revenue_data() {
+    local revenue_json=$(${MY_PATH}/tools/G1revenue.sh 2>/dev/null)
+    
+    if [[ -n "$revenue_json" ]] && echo "$revenue_json" | jq empty 2>/dev/null; then
+        echo "$revenue_json"
+        return 0
+    else
+        echo '{"total_revenue_zen": 0, "total_revenue_g1": 0, "total_transactions": 0}'
+        return 1
+    fi
+}
+
+# Fonction pour récupérer les données de capital social depuis G1society.sh
+get_society_data() {
+    local society_json=$(${MY_PATH}/tools/G1society.sh 2>/dev/null)
+    
+    if [[ -n "$society_json" ]] && echo "$society_json" | jq empty 2>/dev/null; then
+        echo "$society_json"
+        return 0
+    else
+        echo '{"total_outgoing_zen": 0, "total_outgoing_g1": 0, "total_transfers": 0}'
+        return 1
+    fi
+}
+
 # Fonction pour afficher le tableau de bord économique du capitaine
 show_captain_dashboard() {
     print_header "ASTROPORT.ONE - TABLEAU DE BORD DU CAPITAINE"
@@ -384,7 +410,7 @@ show_captain_dashboard() {
     # Portefeuilles système UPlanet
     print_section "PORTEFEUILLES SYSTÈME UPLANET"
     
-    # UPLANETNAME.G1 (Réserve Ğ1)
+    # UPLANETNAME.G1 (Réserve Ğ1) - Source primale, pas de conversion ẐEN
     local uplanet_g1_pubkey=""
     if [[ -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
         uplanet_g1_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_G1" 2>/dev/null)
@@ -395,6 +421,7 @@ show_captain_dashboard() {
         echo -e "${BLUE}🏛️  UPLANETNAME.G1 (Réserve Ğ1):${NC}"
         echo -e "  💰 Solde: ${YELLOW}$g1_balance Ğ1${NC}"
         echo -e "  📝 Usage: Source primale - Alimentation de tous les portefeuilles"
+        echo -e "  ℹ️  Note: Réserve en Ğ1 pure (non convertie en ẐEN)"
         echo ""
     else
         echo -e "${RED}🏛️  UPLANETNAME.G1: ${YELLOW}Non configuré${NC}"
@@ -402,7 +429,7 @@ show_captain_dashboard() {
         echo ""
     fi
     
-    # UPLANETG1PUB (Services & Cash-Flow)
+    # UPLANETG1PUB (Services & Cash-Flow) - Utilise G1revenue.sh pour l'historique
     local uplanet_services_pubkey=""
     if [[ -f "$HOME/.zen/tmp/UPLANETG1PUB" ]]; then
         uplanet_services_pubkey=$(cat "$HOME/.zen/tmp/UPLANETG1PUB" 2>/dev/null)
@@ -410,9 +437,17 @@ show_captain_dashboard() {
     
     if [[ -n "$uplanet_services_pubkey" ]]; then
         local services_balance=$(get_wallet_balance "$uplanet_services_pubkey")
-        local services_zen=$(calculate_zen "$services_balance")
+        
+        # Récupérer les données de revenu depuis G1revenue.sh (historique analysé)
+        local revenue_data=$(get_revenue_data)
+        local revenue_zen=$(echo "$revenue_data" | jq -r '.total_revenue_zen // 0' 2>/dev/null)
+        local revenue_g1=$(echo "$revenue_data" | jq -r '.total_revenue_g1 // 0' 2>/dev/null)
+        local revenue_txcount=$(echo "$revenue_data" | jq -r '.total_transactions // 0' 2>/dev/null)
+        
         echo -e "${BLUE}💼 UPLANETNAME (Services & MULTIPASS):${NC}"
-        echo -e "  💰 Solde: ${YELLOW}$services_balance Ğ1${NC} (${CYAN}$services_zen Ẑen${NC})"
+        echo -e "  💰 Solde brut: ${YELLOW}$services_balance Ğ1${NC}"
+        echo -e "  📊 Chiffre d'Affaires (historique RENTAL): ${CYAN}$revenue_zen Ẑen${NC} (${YELLOW}$revenue_g1 Ğ1${NC})"
+        echo -e "  📈 Ventes de services: ${WHITE}$revenue_txcount${NC} transactions"
         echo -e "  📝 Usage: Revenus locatifs MULTIPASS + services"
         echo ""
     else
@@ -421,7 +456,7 @@ show_captain_dashboard() {
         echo ""
     fi
     
-    # UPLANETNAME.SOCIETY (Capital Social)
+    # UPLANETNAME.SOCIETY (Capital Social) - Utilise G1society.sh pour l'historique
     local uplanet_society_pubkey=""
     if [[ -f "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" ]]; then
         uplanet_society_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" 2>/dev/null)
@@ -429,9 +464,17 @@ show_captain_dashboard() {
     
     if [[ -n "$uplanet_society_pubkey" ]]; then
         local society_balance=$(get_wallet_balance "$uplanet_society_pubkey")
-        local society_zen=$(calculate_zen "$society_balance")
+        
+        # Récupérer les données de capital social depuis G1society.sh (historique analysé)
+        local society_data=$(get_society_data)
+        local society_zen=$(echo "$society_data" | jq -r '.total_outgoing_zen // 0' 2>/dev/null)
+        local society_g1=$(echo "$society_data" | jq -r '.total_outgoing_g1 // 0' 2>/dev/null)
+        local society_txcount=$(echo "$society_data" | jq -r '.total_transfers // 0' 2>/dev/null)
+        
         echo -e "${BLUE}⭐ UPLANETNAME.SOCIETY (Capital Social):${NC}"
-        echo -e "  💰 Solde: ${YELLOW}$society_balance Ğ1${NC} (${CYAN}$society_zen Ẑen${NC})"
+        echo -e "  💰 Solde brut: ${YELLOW}$society_balance Ğ1${NC}"
+        echo -e "  📊 Parts sociales distribuées (historique): ${CYAN}$society_zen Ẑen${NC} (${YELLOW}$society_g1 Ğ1${NC})"
+        echo -e "  👥 Sociétaires enregistrés: ${WHITE}$society_txcount${NC} membres"
         echo -e "  📝 Usage: Émission parts sociales ZEN Cards"
         echo ""
     else
