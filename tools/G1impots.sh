@@ -22,8 +22,29 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 IMPOT_G1PUB="${UPLANETNAME_IMPOT}"
 
 if [[ -z "$IMPOT_G1PUB" ]]; then
-    echo '{"error": "UPLANETNAME_IMPOT not configured in environment"}' >&2
-    exit 1
+    # Return empty data structure instead of error
+    echo '{
+        "wallet": "N/A",
+        "total_provisions_g1": 0,
+        "total_provisions_zen": 0,
+        "total_transactions": 0,
+        "breakdown": {
+            "tva": {
+                "total_g1": 0,
+                "total_zen": 0,
+                "transactions": 0,
+                "description": "TVA collectée sur locations RENTAL (20%)"
+            },
+            "is": {
+                "total_g1": 0,
+                "total_zen": 0,
+                "transactions": 0,
+                "description": "Impôt sur les Sociétés provisionné (15% ou 25%)"
+            }
+        },
+        "provisions": []
+    }'
+    exit 0
 fi
 
 ################################################################################
@@ -33,32 +54,91 @@ fi
 # Redirect G1history.sh stderr to /dev/null to avoid log pollution in JSON
 HISTORY_JSON=$(${MY_PATH}/G1history.sh "$IMPOT_G1PUB" 2>/dev/null)
 
-if [[ $? -ne 0 ]]; then
-    echo "{\"error\": \"Failed to retrieve history for $IMPOT_G1PUB\", \"details\": \"$HISTORY_JSON\"}" >&2
-    exit 1
+if [[ $? -ne 0 ]] || [[ -z "$HISTORY_JSON" ]]; then
+    # Return empty data structure if history retrieval fails
+    echo '{
+        "wallet": "'"$IMPOT_G1PUB"'",
+        "total_provisions_g1": 0,
+        "total_provisions_zen": 0,
+        "total_transactions": 0,
+        "breakdown": {
+            "tva": {
+                "total_g1": 0,
+                "total_zen": 0,
+                "transactions": 0,
+                "description": "TVA collectée sur locations RENTAL (20%)"
+            },
+            "is": {
+                "total_g1": 0,
+                "total_zen": 0,
+                "transactions": 0,
+                "description": "Impôt sur les Sociétés provisionné (15% ou 25%)"
+            }
+        },
+        "provisions": []
+    }'
+    exit 0
 fi
 
 # Validate JSON
 if ! echo "$HISTORY_JSON" | jq empty 2>/dev/null; then
-    echo '{"error": "Invalid JSON from G1history.sh"}' >&2
-    exit 1
+    # Return empty data structure if JSON is invalid
+    echo '{
+        "wallet": "'"$IMPOT_G1PUB"'",
+        "total_provisions_g1": 0,
+        "total_provisions_zen": 0,
+        "total_transactions": 0,
+        "breakdown": {
+            "tva": {
+                "total_g1": 0,
+                "total_zen": 0,
+                "transactions": 0,
+                "description": "TVA collectée sur locations RENTAL (20%)"
+            },
+            "is": {
+                "total_g1": 0,
+                "total_zen": 0,
+                "transactions": 0,
+                "description": "Impôt sur les Sociétés provisionné (15% ou 25%)"
+            }
+        },
+        "provisions": []
+    }'
+    exit 0
 fi
 
 ################################################################################
-# Filter transactions: INCOMING with "TAX_PROVISION" in comment
+# Filter transactions: INCOMING tax provisions
+# - TVA: UPLANET:ORIGIN:*:TVA (from MULTIPASS initial payments)
+# - IS: UPLANET:*:COOPERATIVE:TAX_PROVISION (from surplus redistribution)
 ################################################################################
 
 FILTERED_JSON=$(echo "$HISTORY_JSON" | jq '[
-    .history.received[] |
-    select(.comment | contains("TAX_PROVISION")) |
-    {
-        date: .time,
-        amount_g1: .amount,
-        comment: .comment,
-        issuer: .issuer,
-        is_tva: (.comment | contains("TVA") or contains("RENTAL")),
-        is_is: (.comment | contains("COOPERATIVE") or contains("IS"))
-    }
+    .history[] |
+    # Extract relevant fields (matching G1history.sh structure)
+    (."Amounts Ğ1" | tonumber) as $amount_g1 |
+    (."Issuers/Recipients" | split(":")[0]) as $issuer |
+    ."Reference" as $reference |
+    ."Date" as $date |
+    
+    # Only process positive amounts (incoming) with TAX markers
+    # Accept either ":TVA" suffix OR "TAX_PROVISION" in reference
+    if ($amount_g1 > 0 and (($reference | endswith(":TVA")) or ($reference | contains("TAX_PROVISION")))) then
+        # Determine tax type (mutually exclusive)
+        (if ($reference | endswith(":TVA")) then "TVA" 
+         elif ($reference | contains("COOPERATIVE") and contains("TAX_PROVISION")) then "IS"
+         else "UNKNOWN" end) as $tax_type |
+        {
+            date: $date,
+            amount_g1: $amount_g1,
+            comment: $reference,
+            issuer: $issuer,
+            is_tva: ($tax_type == "TVA"),
+            is_is: ($tax_type == "IS")
+        }
+    else
+        empty
+    end
 ]')
 
 ################################################################################
@@ -66,20 +146,20 @@ FILTERED_JSON=$(echo "$HISTORY_JSON" | jq '[
 ################################################################################
 
 # TVA provisions (from RENTAL transactions or explicit TVA comment)
-TVA_TOTAL_G1=$(echo "$FILTERED_JSON" | jq '[.[] | select(.is_tva == true) | .amount_g1] | add // 0')
+TVA_TOTAL_G1=$(echo "$FILTERED_JSON" | jq '[.[] | select(.is_tva == true) | .amount_g1] | add // 0 | . * 100 | round | . / 100')
 
 # IS provisions (from COOPERATIVE allocations)
-IS_TOTAL_G1=$(echo "$FILTERED_JSON" | jq '[.[] | select(.is_is == true) | .amount_g1] | add // 0')
+IS_TOTAL_G1=$(echo "$FILTERED_JSON" | jq '[.[] | select(.is_is == true) | .amount_g1] | add // 0 | . * 100 | round | . / 100')
 
 # Overall total
-TOTAL_G1=$(echo "$FILTERED_JSON" | jq '[.[] | .amount_g1] | add // 0')
+TOTAL_G1=$(echo "$FILTERED_JSON" | jq '[.[] | .amount_g1] | add // 0 | . * 100 | round | . / 100')
 
-# Convert to ẐEN (1 Ğ1 - primo_tx) * 10 = ẐEN
-# Note: Primo-transaction (1 Ğ1) is deducted from the wallet balance, not from individual transactions
-# For transaction sums, we just multiply by 10
-TVA_TOTAL_ZEN=$(echo "scale=2; $TVA_TOTAL_G1 * 10" | bc)
-IS_TOTAL_ZEN=$(echo "scale=2; $IS_TOTAL_G1 * 10" | bc)
-TOTAL_ZEN=$(echo "scale=2; $TOTAL_G1 * 10" | bc)
+# Convert to ẐEN: 1 Ğ1 = 10 Ẑ (no primo deduction for individual transactions)
+# Note: Primo-transaction (1 Ğ1) is only deducted from wallet balance, not from transaction history sums
+# Let jq handle rounding to avoid bc floating-point precision issues
+TVA_TOTAL_ZEN=$(echo "$FILTERED_JSON" | jq '[.[] | select(.is_tva == true) | .amount_g1 * 10] | add // 0 | . * 100 | round | . / 100')
+IS_TOTAL_ZEN=$(echo "$FILTERED_JSON" | jq '[.[] | select(.is_is == true) | .amount_g1 * 10] | add // 0 | . * 100 | round | . / 100')
+TOTAL_ZEN=$(echo "$FILTERED_JSON" | jq '[.[] | .amount_g1 * 10] | add // 0 | . * 100 | round | . / 100')
 
 # Count transactions
 TOTAL_TRANSACTIONS=$(echo "$FILTERED_JSON" | jq 'length')
@@ -93,8 +173,8 @@ IS_TRANSACTIONS=$(echo "$FILTERED_JSON" | jq '[.[] | select(.is_is == true)] | l
 TRANSACTIONS_WITH_ZEN=$(echo "$FILTERED_JSON" | jq --argjson tva_total "$TVA_TOTAL_ZEN" --argjson is_total "$IS_TOTAL_ZEN" '
     map({
         date: .date,
-        amount_g1: .amount_g1,
-        amount_zen: (.amount_g1 * 10 | tonumber | . * 100 | floor | . / 100),
+        amount_g1: (.amount_g1 * 100 | round | . / 100),
+        amount_zen: (.amount_g1 * 10 | . * 100 | round | . / 100),
         comment: .comment,
         issuer: .issuer,
         type: (if .is_tva then "TVA" elif .is_is then "IS" else "OTHER" end)
