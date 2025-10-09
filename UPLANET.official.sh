@@ -152,6 +152,13 @@ check_balance() {
 # Exemple : 50Ẑ à transférer = 5Ğ1 sur blockchain (sans 1Ğ1 primo qui est déjà déduit)
 zen_to_g1() {
     local zen_amount="$1"
+    
+    # Valider que l'entrée est un nombre
+    if [[ -z "$zen_amount" ]] || ! [[ "$zen_amount" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+        echo "0"
+        return 1
+    fi
+    
     echo "scale=2; $zen_amount / 10" | bc -l
 }
 
@@ -321,11 +328,19 @@ calculate_societaire_amount() {
 ################################################################################
 process_locataire() {
     local email="$1"
-    local montant_euros="${2:-$NCARD}"
+    local montant_euros="${2:-${NCARD:-50}}"
+    
+    # Valider que le montant est un nombre valide
+    if [[ -z "$montant_euros" ]] || ! [[ "$montant_euros" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+        echo -e "${RED}❌ Montant invalide: '$montant_euros'${NC}"
+        echo -e "${YELLOW}💡 Utilisez un nombre positif (ex: 50)${NC}"
+        return 1
+    fi
+    
     local montant_g1=$(zen_to_g1 "$montant_euros")
     
     echo -e "${BLUE}🏠 Traitement virement LOCATAIRE pour: ${email}${NC}"
-    echo -e "${CYAN}💰 Montant: ${montant_euros}€ (${montant_euros} Ẑen = ${montant_g1} Ğ1)${NC}"
+    echo -e "${CYAN}💰 Montant: ${montant_euros} Ẑen = ${montant_g1} Ğ1${NC}"
     
     # Vérifier que les portefeuilles existent
     if [[ ! -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
@@ -379,10 +394,18 @@ process_locataire() {
 process_infrastructure() {
     local email="$1"
     local montant_euros="${2:-$(calculate_societaire_amount "infrastructure")}"
+    
+    # Valider que le montant est un nombre valide
+    if [[ -z "$montant_euros" ]] || ! [[ "$montant_euros" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+        echo -e "${RED}❌ Montant invalide: '$montant_euros'${NC}"
+        echo -e "${YELLOW}💡 Utilisez un nombre positif (ex: 500)${NC}"
+        return 1
+    fi
+    
     local montant_g1=$(zen_to_g1 "$montant_euros")
     
     echo -e "${BLUE}⚙️ Traitement APPORT CAPITAL INFRASTRUCTURE pour: ${email}${NC}"
-    echo -e "${CYAN}💰 Montant: ${montant_euros}€ (${montant_euros} Ẑen = ${montant_g1} Ğ1) - DIRECT vers NODE${NC}"
+    echo -e "${CYAN}💰 Montant: ${montant_euros} Ẑen = ${montant_g1} Ğ1 - DIRECT vers NODE${NC}"
     
     # Vérifier que les portefeuilles existent
     if [[ ! -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
@@ -460,6 +483,13 @@ process_societaire() {
     local type="$2"
     local montant_euros="${3:-$(calculate_societaire_amount "$type")}"
     
+    # Valider que le montant est un nombre valide
+    if [[ -z "$montant_euros" ]] || ! [[ "$montant_euros" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+        echo -e "${RED}❌ Montant invalide: '$montant_euros'${NC}"
+        echo -e "${YELLOW}💡 Utilisez un nombre positif (ex: 50 pour satellite, 540 pour constellation)${NC}"
+        return 1
+    fi
+    
     # Cas spécial : apport capital infrastructure (pas de 3x1/3)
     if [[ "$type" == "infrastructure" ]]; then
         process_infrastructure "$email" "$montant_euros"
@@ -469,7 +499,7 @@ process_societaire() {
     local montant_g1=$(zen_to_g1 "$montant_euros")
     
     echo -e "${BLUE}👑 Traitement virement SOCIÉTAIRE pour: ${email}${NC}"
-    echo -e "${CYAN}💰 Type: ${type} - Montant: ${montant_euros}€ (${montant_euros} Ẑen = ${montant_g1} Ğ1)${NC}"
+    echo -e "${CYAN}💰 Type: ${type} - Montant: ${montant_euros} Ẑen = ${montant_g1} Ğ1${NC}"
     
     # Vérifier que les portefeuilles existent
     if [[ ! -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
@@ -620,7 +650,15 @@ show_menu() {
         1)
             read -p "Email du locataire: " email
             if [[ -n "$email" ]]; then
-                process_locataire "$email"
+                read -p "Montant en Ẑen (défaut: ${NCARD:-50}): " montant
+                montant="${montant:-${NCARD:-50}}"
+                
+                # Valider que le montant est un nombre
+                if [[ "$montant" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+                    process_locataire "$email" "$montant"
+                else
+                    echo -e "${RED}❌ Montant invalide (nombre requis)${NC}"
+                fi
             else
                 echo -e "${RED}❌ Email requis${NC}"
             fi
@@ -628,7 +666,15 @@ show_menu() {
         2)
             read -p "Email du sociétaire: " email
             if [[ -n "$email" ]]; then
-                process_societaire "$email" "satellite"
+                read -p "Montant en Ẑen (défaut: ${ZENCARD_SATELLITE:-50}): " montant
+                montant="${montant:-${ZENCARD_SATELLITE:-50}}"
+                
+                # Valider que le montant est un nombre
+                if [[ "$montant" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+                    process_societaire "$email" "satellite" "$montant"
+                else
+                    echo -e "${RED}❌ Montant invalide (nombre requis)${NC}"
+                fi
             else
                 echo -e "${RED}❌ Email requis${NC}"
             fi
@@ -636,7 +682,15 @@ show_menu() {
         3)
             read -p "Email du sociétaire: " email
             if [[ -n "$email" ]]; then
-                process_societaire "$email" "constellation"
+                read -p "Montant en Ẑen (défaut: ${ZENCARD_CONSTELLATION:-540}): " montant
+                montant="${montant:-${ZENCARD_CONSTELLATION:-540}}"
+                
+                # Valider que le montant est un nombre
+                if [[ "$montant" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+                    process_societaire "$email" "constellation" "$montant"
+                else
+                    echo -e "${RED}❌ Montant invalide (nombre requis)${NC}"
+                fi
             else
                 echo -e "${RED}❌ Email requis${NC}"
             fi
