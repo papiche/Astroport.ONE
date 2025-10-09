@@ -87,7 +87,9 @@ if .history then
             {
                 is_society_transfer: true,
                 amount_g1: $amount_g1,
-                amount_zen: (if $amount_g1 > 1 then (($amount_g1 - 1) * 10) else 0 end),
+                # Standard rate: 1Ẑ = 0.1Ğ1 (or 10Ẑ = 1Ğ1)
+                # This matches UPLANET.official.sh logic where 50Ẑ satellite = 5Ğ1 on blockchain
+                amount_zen: (if $amount_g1 > 1 then (($amount_g1) * 10) else 0 end),
                 date: ."Date",
                 recipient: (
                     if ($reference | contains("SOCIETY:")) then

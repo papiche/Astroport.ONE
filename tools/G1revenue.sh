@@ -73,7 +73,9 @@ RESULT=$(echo "$HISTORY_JSON" | jq -r --arg source_g1 "$UPLANET_G1_SOURCE" --arg
         {
             is_revenue_transaction: true,
             amount_g1: $amount_g1,
-            amount_zen: (if $amount_g1 > 1 then (($amount_g1 - 1) * 10) else 0 end),
+            # Standard rate: 1Ẑ = 0.1Ğ1 (or 10Ẑ = 1Ğ1)
+            # This matches UPLANET.official.sh logic where 50Ẑ = 5Ğ1 on blockchain
+            amount_zen: (if $amount_g1 > 1 then (($amount_g1) * 10) else 0 end),
             date: $date,
             year: $year,
             customer_email: (

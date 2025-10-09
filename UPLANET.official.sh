@@ -145,7 +145,11 @@ check_balance() {
     return 1
 }
 
-# Fonction pour convertir Ẑen en Ğ1 (1 Ẑen = 0.1 Ğ1)
+# Fonction pour convertir Ẑen en Ğ1
+# Taux standard : 1Ẑ = 0.1Ğ1 (ou 10Ẑ = 1Ğ1)
+# Note : Cette fonction convertit pour les transactions blockchain
+# L'historique déduit automatiquement 1Ğ1 de primo-transaction à la lecture
+# Exemple : 50Ẑ à transférer = 5Ğ1 sur blockchain (sans 1Ğ1 primo qui est déjà déduit)
 zen_to_g1() {
     local zen_amount="$1"
     echo "scale=2; $zen_amount / 10" | bc -l
