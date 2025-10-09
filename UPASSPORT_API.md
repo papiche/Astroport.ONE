@@ -224,6 +224,81 @@ npub=npub1...
 }
 ```
 
+### API Économie UPlanet ẐEN
+
+#### 1. Vérification de Solde Ğ1
+```http
+GET /check_balance?g1pub={G1_PUBLIC_KEY}&html={0|1}
+```
+
+**Paramètres** :
+- `g1pub` : Clé publique Ğ1 (requis)
+- `html` : Si présent, retourne une page HTML au lieu de JSON (optionnel)
+
+**Réponse JSON** :
+```json
+{
+  "g1pub": "XhPsqMeJX2LkPWcHEv3MY2AjEUqm...",
+  "balance": "54.00",
+  "zen": "530.00",
+  "timestamp": "2025-10-09T15:40:47Z"
+}
+```
+
+**Formule de conversion** : `ẐEN = (Ğ1 - 1) × 10`
+
+#### 2. Historique Capital Social (SOCIETY)
+```http
+GET /check_society?html={0|1}
+```
+
+**Description** : Récupère l'historique des parts sociales distribuées depuis le portefeuille SOCIETY. La clé publique est automatiquement récupérée depuis l'environnement (`$UPLANETNAME_SOCIETY`).
+
+**Paramètres** :
+- `html` : Si présent, retourne une page HTML stylisée (optionnel)
+
+**Réponse JSON** :
+```json
+{
+  "g1pub": "MycKxkg9oVBvKeLdtmRwiPpNF48CDMfB7yJwKaoZJfG",
+  "total_outgoing_g1": 55.0,
+  "total_outgoing_zen": 530.0,
+  "total_transfers": 2,
+  "transfers": [
+    {
+      "date": "2025-09-24 00:38:31",
+      "recipient": "support@qo-op.com",
+      "amount_g1": 54.0,
+      "amount_zen": 530.0,
+      "part_type": "constellation",
+      "ipfs_node": "12D3KooWL2FcDJ41U9...",
+      "comment": "Constellation - UPLANET:AwdjhpJN:SOCIETY:support@qo-op.com:constellation:12D3KooW..."
+    }
+  ],
+  "timestamp": "2025-10-09T13:57:21"
+}
+```
+
+**Types de parts sociales** :
+- `constellation` : Parts sociales constellation (540€/3ans avec IA) 🌟
+- `satellite` : Parts sociales satellite (50€/an sans IA) 🛰️
+- `parts` : Parts sociales legacy (ancien format) 📦
+- `other` : Autres types de transactions
+
+**Format des références blockchain** :
+```
+UPLANET:${UPLANETG1PUB:0:8}:SOCIETY:${email}:${type}:${IPFSNODEID}
+```
+
+**Traçabilité** : Chaque transaction inclut l'identifiant IPFS du nœud (`ipfs_node`) pour identifier la machine à l'origine de la transaction.
+
+**Page HTML** : Accessible via `?html=1`, fournit une interface web stylisée avec :
+- Résumé du capital social total distribué
+- Tableau détaillé des parts sociales par sociétaire
+- Type de part avec icône
+- Lien vers le nœud IPFS d'origine
+- Historique complet des transactions
+
 ---
 
 ## 🔐 Authentification NOSTR

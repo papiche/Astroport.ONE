@@ -61,6 +61,8 @@ fi
 # 1. Amount is positive (incoming to SOCIETY)
 # 2. Issuer matches UPLANET_G1PUB (first 8 chars of Issuers/Recipients before ':')
 # 3. Reference contains "SOCIETY"
+# Format attendu: "UPLANET:xxxxxxxx:SOCIETY:email@example.com:type:IPFSNODEID"
+# Legacy format: "UPLANET:xxxxxxxx:SOCIETY:email@example.com:type"
 RESULT=$(echo "$HISTORY_JSON" | jq -r --arg uplanet_g1 "$UPLANET_G1PUB" '
 {
     g1pub: .pubkey,
@@ -97,10 +99,21 @@ if .history then
                 part_type: (
                     if ($reference | contains("constellation")) then
                         "constellation"
+                    elif ($reference | contains("satellite")) then
+                        "satellite"
                     elif ($reference | contains("Parts sociales")) then
                         "parts"
                     else
                         "other"
+                    end
+                ),
+                ipfs_node: (
+                    if ($reference | contains("SOCIETY:")) then
+                        # Format: UPLANET:xxx:SOCIETY:email:type:IPFSNODEID
+                        # Extract last field if exists (IPFSNODEID)
+                        ($reference | split(":") | if length >= 6 then .[-1] else "N/A" end)
+                    else
+                        "N/A"
                     end
                 ),
                 comment: $reference
@@ -125,9 +138,13 @@ if .history then
                 recipient: .recipient,
                 amount_g1: (.amount_g1 | . * 100 | round / 100),
                 amount_zen: (.amount_zen | . * 100 | round / 100),
+                part_type: .part_type,
+                ipfs_node: .ipfs_node,
                 comment: (
                     if .part_type == "constellation" then
                         "Constellation - \(.comment)"
+                    elif .part_type == "satellite" then
+                        "Satellite - \(.comment)"
                     elif .part_type == "parts" then
                         "Parts sociales - \(.comment)"
                     else

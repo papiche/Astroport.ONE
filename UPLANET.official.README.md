@@ -206,6 +206,30 @@ ZENCARD_CONSTELLATION=540    # 540€/3ans
 
 ## 🔍 **Fonctionnement Technique**
 
+### **Format des Références Blockchain**
+
+Toutes les transactions de parts de capital incluent l'identifiant IPFS du nœud (`$IPFSNODEID`) pour assurer la traçabilité :
+
+| Type de Transaction | Format de Référence |
+|---------------------|---------------------|
+| **RENTAL** (Location) | `UPLANET:${UPLANETG1PUB:0:8}:RENTAL:${email}` |
+| **CAPITAL** (Infrastructure) | `UPLANET:${UPLANETG1PUB:0:8}:CAPITAL:${email}:${IPFSNODEID}` |
+| **SOCIETY** (Parts Sociales) | `UPLANET:${UPLANETG1PUB:0:8}:SOCIETY:${email}:${type}:${IPFSNODEID}` |
+| **TREASURY** (1/3 Trésorerie) | `UPLANET:${UPLANETG1PUB:0:8}:TREASURY:${email}:${type}:${IPFSNODEID}` |
+| **RnD** (1/3 R&D) | `UPLANET:${UPLANETG1PUB:0:8}:RnD:${email}:${type}:${IPFSNODEID}` |
+| **ASSETS** (1/3 Actifs) | `UPLANET:${UPLANETG1PUB:0:8}:ASSETS:${email}:${type}:${IPFSNODEID}` |
+
+**Exemple de référence :**
+```
+UPLANET:AwdjhpJN:SOCIETY:support@qo-op.com:constellation:12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u
+```
+
+**Avantages de la traçabilité :**
+- 🔍 **Identification du nœud** : Chaque transaction identifie la machine à l'origine
+- 📊 **Statistiques par infrastructure** : Calcul des contributions par nœud
+- 🏛️ **Gouvernance transparente** : Visibilité sur les apports de capital
+- 🔒 **Auditabilité complète** : Transparence sur les sources de financement
+
 ### **Vérification des Transactions**
 ```bash
 # Le script utilise silkaj --json money balance pour :
@@ -246,7 +270,7 @@ ZENCARD_CONSTELLATION=540    # 540€/3ans
 
 - **Auteur** : Fred (support@qo-op.com)
 - **Licence** : AGPL-3.0
-- **Version** : 1.0
+- **Version** : 1.1
 - **Statut** : ✅ **CONFORME** à la Constitution UPlanet ẐEN
 
 ---
