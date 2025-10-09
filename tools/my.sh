@@ -644,6 +644,15 @@ echo ${UPLANETG1PUB} > $HOME/.zen/tmp/UPLANETG1PUB
 UPLANETNAME_SOCIETY=$(cat $HOME/.zen/game/uplanet.SOCIETY.dunikey | grep "pub" | cut -d " " -f 2)
 echo ${UPLANETNAME_SOCIETY} > $HOME/.zen/tmp/UPLANETNAME_SOCIETY
 
+# UPLANETNAME_INTRUSION -- receives non authorized Ğ1 @primal_wallet_control.sh  
+[[ ! -s $HOME/.zen/game/uplanet.INTRUSION.dunikey ]] \
+    && $HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.INTRUSION.dunikey "${UPLANETNAME}.INTRUSION" "${UPLANETNAME}.INTRUSION" \
+    && UPLANETNAME_INTRUSION=$(cat $HOME/.zen/game/uplanet.INTRUSION.dunikey | grep "pub" | cut -d " " -f 2) \
+    && echo ${UPLANETNAME_INTRUSION} > $HOME/.zen/tmp/UPLANETNAME_INTRUSION
+
+UPLANETNAME_INTRUSION=$(cat $HOME/.zen/game/uplanet.INTRUSION.dunikey | grep "pub" | cut -d " " -f 2)
+echo ${UPLANETNAME_INTRUSION} > $HOME/.zen/tmp/UPLANETNAME_INTRUSION
+
 [[ -s ${HOME}/.zen/game/MY_boostrap_nodes.txt ]] \
     && STRAPFILE="${HOME}/.zen/game/MY_boostrap_nodes.txt" \
     || STRAPFILE="${HOME}/.zen/Astroport.ONE/A_boostrap_nodes.txt"
