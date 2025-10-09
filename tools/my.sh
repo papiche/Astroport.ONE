@@ -653,6 +653,15 @@ echo ${UPLANETNAME_SOCIETY} > $HOME/.zen/tmp/UPLANETNAME_SOCIETY
 UPLANETNAME_INTRUSION=$(cat $HOME/.zen/game/uplanet.INTRUSION.dunikey | grep "pub" | cut -d " " -f 2)
 echo ${UPLANETNAME_INTRUSION} > $HOME/.zen/tmp/UPLANETNAME_INTRUSION
 
+# UPLANETNAME_IMPOT
+[[ ! -s $HOME/.zen/game/uplanet.IMPOT.dunikey ]] \
+    && $HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.IMPOT.dunikey "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT" \
+    && UPLANETNAME_IMPOT=$(cat $HOME/.zen/game/uplanet.IMPOT.dunikey | grep "pub" | cut -d " " -f 2) \
+    && echo ${UPLANETNAME_IMPOT} > $HOME/.zen/tmp/UPLANETNAME_IMPOT
+
+UPLANETNAME_IMPOT=$(cat $HOME/.zen/game/uplanet.IMPOT.dunikey | grep "pub" | cut -d " " -f 2)
+echo ${UPLANETNAME_IMPOT} > $HOME/.zen/tmp/UPLANETNAME_IMPOT
+
 [[ -s ${HOME}/.zen/game/MY_boostrap_nodes.txt ]] \
     && STRAPFILE="${HOME}/.zen/game/MY_boostrap_nodes.txt" \
     || STRAPFILE="${HOME}/.zen/Astroport.ONE/A_boostrap_nodes.txt"
