@@ -157,15 +157,16 @@ process_umap_messages() {
     MAX_MSGS=10
     MAX_SIZE=3000
     if [[ -f "${UMAPPATH}/NOSTR_messages" ]]; then
-        msg_count=$(grep -c '^On ' "${UMAPPATH}/NOSTR_messages")
+        msg_count=$(grep -c '^### 📝' "${UMAPPATH}/NOSTR_messages")
         file_size=$(wc -c < "${UMAPPATH}/NOSTR_messages")
         if [[ $msg_count -gt $MAX_MSGS || $file_size -gt $MAX_SIZE ]]; then
             IA_PROMPT="[TEXT] $(cat ${UMAPPATH}/NOSTR_messages) [/TEXT] --- \
-# 1. Summarize and group messages by profile (author), clearly cite each profile. \
-# 2. For each profile, list the main messages of the day. \
+# 1. Summarize and group messages by profile (author) in Markdown format, clearly cite each profile. \
+# 2. For each profile, list the main messages of the day using Markdown headers and lists. \
 # 3. Add hashtags and emojis for readability. \
-# 4. IMPORTANT: Never omit an author, even if you summarize. \
-# 5. Use the same language as the messages."
+# 4. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
+# 5. IMPORTANT: Never omit an author, even if you summarize. \
+# 6. Use the same language as the messages."
             ANSWER=$($MY_PATH/../IA/question.py "$IA_PROMPT")
             echo "$ANSWER" > "${UMAPPATH}/NOSTR_messages"
         fi
@@ -380,9 +381,11 @@ process_recent_messages() {
         local created_at=$(echo "$message" | jq -r .created_at)
         local date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
 
-        # Format journaliste
-        echo "On $date_str, nostr:$author_nprofile published:" >> ${UMAPPATH}/NOSTR_messages
-        echo "> $content" >> ${UMAPPATH}/NOSTR_messages
+        # Format Markdown with better structure
+        echo "### 📝 $date_str" >> ${UMAPPATH}/NOSTR_messages
+        echo "**Author**: nostr:$author_nprofile" >> ${UMAPPATH}/NOSTR_messages
+        echo "" >> ${UMAPPATH}/NOSTR_messages
+        echo "$content" >> ${UMAPPATH}/NOSTR_messages
         echo "" >> ${UMAPPATH}/NOSTR_messages
 
         # Process #market messages, ensuring they are not processed multiple times
@@ -672,10 +675,19 @@ send_nostr_events() {
         --relay "$myRELAY"
 
     if [[ $(cat ${UMAPPATH}/NOSTR_messages) != "" ]]; then
+        local umap_title="UMAP Journal - ${LAT},${LON}"
+        local umap_content=$(format_content_as_markdown "$(cat ${UMAPPATH}/NOSTR_messages)" "$umap_title" "UMAP" "${LAT}_${LON}")
+        local d_tag="umap-${LAT}-${LON}-${TODATE}"
+        local published_at=$(date +%s)
+        
+        # Add kind 30023 specific tags to TAGS_JSON
+        local article_tags=$(echo "$TAGS_JSON" | jq '. + [["d", "'"$d_tag"'"], ["title", "'"$umap_title"'"], ["published_at", "'"$published_at"'"], ["t", "UPlanet"], ["t", "'"${LAT}_${LON}"'"], ["t", "UMAP"]]')
+        
         send_nostr_event send_event \
             -privkey "$NPRIV_HEX" \
-            -kind 1 \
-            -content "$(cat ${UMAPPATH}/NOSTR_messages) $myIPFS/ipns/copylaradio.com" \
+            -kind 30023 \
+            -content "$umap_content" \
+            -tags "$article_tags" \
             --relay "$myRELAY"
     fi
 }
@@ -764,8 +776,10 @@ create_aggregate_journal() {
                 local author_nprofile=$($MY_PATH/../tools/nostr_hex2nprofile.sh "$author_hex" 2>/dev/null)
                 local date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
                 
-                echo "[$date_str] $author_nprofile ($likes likes) :" >> "$geo_path/${IPFSNODEID: -12}.NOSTR_journal"
-                echo "> $content" >> "$geo_path/${IPFSNODEID: -12}.NOSTR_journal"
+                echo "### 📝 $date_str" >> "$geo_path/${IPFSNODEID: -12}.NOSTR_journal"
+                echo "**Author**: nostr:$author_nprofile | **Likes**: ❤️ $likes" >> "$geo_path/${IPFSNODEID: -12}.NOSTR_journal"
+                echo "" >> "$geo_path/${IPFSNODEID: -12}.NOSTR_journal"
+                echo "$content" >> "$geo_path/${IPFSNODEID: -12}.NOSTR_journal"
                 echo "" >> "$geo_path/${IPFSNODEID: -12}.NOSTR_journal"
                 fi
         fi
@@ -869,10 +883,19 @@ update_sector_nostr_profile() {
         --relay "$myRELAY"
 
     if [[ -s $sectorpath/${IPFSNODEID: -12}.NOSTR_journal ]]; then
+        local sector_title="SECTOR Report - ${sector}"
+        local sector_content=$(format_content_as_markdown "$(cat $sectorpath/${IPFSNODEID: -12}.NOSTR_journal)" "$sector_title" "SECTOR" "$sector")
+        local d_tag="sector-${sector}-${TODATE}"
+        local published_at=$(date +%s)
+        
+        # Build article tags with sector-specific tags
+        local article_tags=$(echo "$TAGS_JSON" | jq '. + [["d", "'"$d_tag"'"], ["title", "'"$sector_title"'"], ["published_at", "'"$published_at"'"], ["t", "UPlanet"], ["t", "SECTOR"], ["g", "'"${slat},${slon}"'"]]')
+        
         send_nostr_event send_event \
             -privkey "$NPRIV_HEX" \
-            -kind 1 \
-            -content "$(cat $sectorpath/${IPFSNODEID: -12}.NOSTR_journal) $myIPFS/ipns/copylaradio.com" \
+            -kind 30023 \
+            -content "$sector_content" \
+            -tags "$article_tags" \
             --relay "$myRELAY"
     fi
 }
@@ -945,11 +968,20 @@ update_region_nostr_profile() {
         -tags "$TAGS_JSON" \
         --relay "$myRELAY"
     
-    ## Publish Report to NOSTR
+    ## Publish Report to NOSTR with kind 30023
+    local region_title="REGION Report - ${region}"
+    local region_content=$(format_content_as_markdown "$content" "$region_title" "REGION" "$region")
+    local d_tag="region-${region}-${TODATE}"
+    local published_at=$(date +%s)
+    
+    # Build article tags with region-specific tags
+    local article_tags=$(echo "$TAGS_JSON" | jq '. + [["d", "'"$d_tag"'"], ["title", "'"$region_title"'"], ["published_at", "'"$published_at"'"], ["t", "UPlanet"], ["t", "REGION"], ["g", "'"${rlat},${rlon}"'"]]')
+    
     send_nostr_event send_event \
         -privkey "$NPRIV_HEX" \
-        -kind 1 \
-    -content "$content $myIPFS/ipns/copylaradio.com" \
+        -kind 30023 \
+        -content "$region_content" \
+        -tags "$article_tags" \
         --relay "$myRELAY"
 }
 
@@ -974,8 +1006,32 @@ update_friends_list() {
 
 generate_ai_summary() {
     local text=$1
-    local QUESTION="[TEXT] $text [/TEXT] --- # 1. Write a summary of [TEXT] # 2. Highlight key points with their authors # 3. Add hastags and emoticons # IMPORTANT : Use the same language as mostly used in [TEXT]."
+    local QUESTION="[TEXT] $text [/TEXT] --- # 1. Write a summary of [TEXT] in Markdown format # 2. Highlight key points with their authors # 3. Add hastags and emoticons # 4. Structure with Markdown headers, lists, and emphasis # IMPORTANT : Use the same language as mostly used in [TEXT]."
     $MY_PATH/../IA/question.py "${QUESTION}"
+}
+
+format_content_as_markdown() {
+    local content=$1
+    local title=$2
+    local geo_type=$3
+    local geo_id=$4
+    
+    cat << EOF
+# ${title}
+
+**Location**: ${geo_type} ${geo_id}  
+**Date**: ${TODATE}  
+**Generated by**: UPlanet Geo Key System
+
+---
+
+${content}
+
+---
+
+*This report was automatically generated from geolocated Nostr messages.*  
+*More info: ${myIPFS}/ipns/copylaradio.com*
+EOF
 }
 
 ################################################################################
