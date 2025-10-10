@@ -91,6 +91,25 @@ for UMAP in ${unique_combined[@]}; do
     UMAPPATH=$HOME/.zen/tmp/${IPFSNODEID}/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}
     echo "UMAPPATH : ${UMAPPATH}"
     ######################################################################################
+    ## Fonction pour vérifier si une image nécessite un refresh
+    needs_refresh() {
+        local file="$1"
+        local max_age_days=7
+        
+        if [[ ! -f "$file" ]] || [[ ! -s "$file" ]]; then
+            return 0  # File doesn't exist or is empty, need to generate
+        fi
+        
+        local file_age=$(($(date +%s) - $(stat -c %Y "$file" 2>/dev/null || echo 0)))
+        local max_age=$((max_age_days * 86400))
+        
+        if [[ $file_age -gt $max_age ]]; then
+            return 0  # Too old, need refresh
+        fi
+        
+        return 1  # No refresh needed
+    }
+    
     ## Fonction pour trouver dans le swarm ou générer une image
     find_or_generate_image() {
         local filename="$1"       # Nom du fichier (ex: Umap.jpg, Usat.jpg)
@@ -118,23 +137,48 @@ for UMAP in ${unique_combined[@]}; do
             echo "${filename} existe déjà."
         fi
     }
-    ## ==== PARTIE 1 : Umap.jpg et Usat.jpg (vue large) ====
-    if [[ ! -s "${UMAPPATH}/Umap.jpg" ]] || [[ ! -s "${UMAPPATH}/Usat.jpg" ]]; then
-        UMAPGEN="/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.1"
-        USATGEN="/ipns/copylaradio.com/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.1"
-
-        find_or_generate_image "Umap.jpg" "${myIPFS}${UMAPGEN}" "*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/Umap.jpg"
-        find_or_generate_image "Usat.jpg" "${myIPFS}${USATGEN}" "*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/Usat.jpg"
-    fi
-
-    ## ==== PARTIE 2 : zUmap.jpg et zUsat.jpg (vue zoomée) ====
-    if [[ ! -s "${UMAPPATH}/zUmap.jpg" ]] || [[ ! -s "${UMAPPATH}/zUsat.jpg" ]]; then
-        UMAPGEN_ZOOM="/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.001"
-        USATGEN_ZOOM="/ipns/copylaradio.com/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.001"
-
-        find_or_generate_image "zUmap.jpg" "${myIPFS}${UMAPGEN_ZOOM}" "*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/Umap.jpg"
-        find_or_generate_image "zUsat.jpg" "${myIPFS}${USATGEN_ZOOM}" "*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/Usat.jpg"
-    fi
+    ## ==== OPTIMIZED: Generate only images needed for NOSTR profile (parallel + cache) ====
+    # PIC_PROFILE : zUmap.jpg (zoomed road map for profile picture)
+    # PIC_BANNER  : Usat.jpg (satellite map for banner)
+    
+    echo "Checking NOSTR images freshness..."
+    
+    generate_nostr_images_optimized() {
+        local pids=()
+        
+        # zUmap.jpg (PROFILE) - Generate if needed
+        if needs_refresh "${UMAPPATH}/zUmap.jpg"; then
+            (
+                echo "Generating/updating zUmap.jpg (NOSTR profile picture)..."
+                UMAPGEN_ZOOM="/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.001"
+                find_or_generate_image "zUmap.jpg" "${myIPFS}${UMAPGEN_ZOOM}" "*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/zUmap.jpg"
+            ) &
+            pids+=($!)
+        else
+            echo "✓ zUmap.jpg is fresh (< 7 days), skipping generation"
+        fi
+        
+        # Usat.jpg (BANNER) - Generate if needed
+        if needs_refresh "${UMAPPATH}/Usat.jpg"; then
+            (
+                echo "Generating/updating Usat.jpg (NOSTR banner)..."
+                USATGEN="/ipns/copylaradio.com/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.1"
+                find_or_generate_image "Usat.jpg" "${myIPFS}${USATGEN}" "*/UPLANET/__/_${RLAT}_${RLON}/_${SLAT}_${SLON}/_${LAT}_${LON}/Usat.jpg"
+            ) &
+            pids+=($!)
+        else
+            echo "✓ Usat.jpg is fresh (< 7 days), skipping generation"
+        fi
+        
+        # Wait for all background processes to complete
+        for pid in "${pids[@]}"; do
+            wait $pid
+        done
+        
+        echo "NOSTR images ready!"
+    }
+    
+    generate_nostr_images_optimized
     ########################################################## COPY OPENSTREET MAPS
 
     ####################################################################################
