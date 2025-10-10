@@ -10,7 +10,6 @@ ME="${0##*/}"
 . "${MY_PATH}/my.sh"
 
 HEX="$1"
-
 # If no HEX is provided, list all found HEXes
 if [ -z "$HEX" ]; then
     echo "To find a G1PUBNOSTR, you need to provide a HEX"
@@ -19,6 +18,14 @@ if [ -z "$HEX" ]; then
     # SWARM UMAP HEX
     echo "SWARM UMAP HEX"
     cat ${HOME}/.zen/tmp/swarm/*/UPLANET/__/*/*/*/HEX 2>/dev/null
+
+    # SWARM UMAP HEX_SECTOR
+    echo "SWARM UMAP HEX_SECTOR" 
+    cat ${HOME}/.zen/tmp/swarm/*/UPLANET/__/*/*/*/HEX_SECTOR 2>/dev/null
+
+    # SWARM UMAP HEX_REGION
+    echo "SWARM UMAP HEX_REGION"
+    cat ${HOME}/.zen/tmp/swarm/*/UPLANET/__/*/*/*/HEX_REGION 2>/dev/null
 
     # SWARM PLAYERs HEX
     echo "SWARM PLAYERs HEX"
@@ -60,21 +67,7 @@ if [ -n "$FOUND_FILE" ]; then
     fi
 fi
 
-# If not found in HEX, search in HEX_REGION
-FOUND_FILE=$(grep -l "$HEX" ${HOME}/.zen/tmp/swarm/*/UPLANET/__/*/*/*/HEX_REGION 2>/dev/null | head -n 1)
-[[ -z "$FOUND_FILE" ]] && FOUND_FILE=$(grep -l "$HEX" ${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/__/*/*/*/HEX_REGION 2>/dev/null | head -n 1)
-
-if [ -n "$FOUND_FILE" ]; then
-    # echo "Found HEX in UPLANET HEX_REGION: $FOUND_FILE"
-    REGIONG1PUB_FILE=$(dirname "$FOUND_FILE")/REGIONG1PUB
-    if [ -f "$REGIONG1PUB_FILE" ]; then
-        # echo "REGIONG1PUB value:"
-        cat "$REGIONG1PUB_FILE"
-        exit 0
-    fi
-fi
-
-# If not found in HEX_REGION, search in HEX_SECTOR
+# If not found any HEX, search in HEX_SECTOR
 FOUND_FILE=$(grep -l "$HEX" ${HOME}/.zen/tmp/swarm/*/UPLANET/__/*/*/*/HEX_SECTOR 2>/dev/null | head -n 1)
 [[ -z "$FOUND_FILE" ]] && FOUND_FILE=$(grep -l "$HEX" ${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/__/*/*/*/HEX_SECTOR 2>/dev/null | head -n 1)
 
@@ -84,6 +77,20 @@ if [ -n "$FOUND_FILE" ]; then
     if [ -f "$SECTORG1PUB_FILE" ]; then
         # echo "SECTORG1PUB value:"
         cat "$SECTORG1PUB_FILE"
+        exit 0
+    fi
+fi
+
+# If not found any HEX, search in HEX_REGION
+FOUND_FILE=$(grep -l "$HEX" ${HOME}/.zen/tmp/swarm/*/UPLANET/__/*/*/*/HEX_REGION 2>/dev/null | head -n 1)
+[[ -z "$FOUND_FILE" ]] && FOUND_FILE=$(grep -l "$HEX" ${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/__/*/*/*/HEX_REGION 2>/dev/null | head -n 1)
+
+if [ -n "$FOUND_FILE" ]; then
+    # echo "Found HEX in UPLANET HEX_REGION: $FOUND_FILE"
+    REGIONG1PUB_FILE=$(dirname "$FOUND_FILE")/REGIONG1PUB
+    if [ -f "$REGIONG1PUB_FILE" ]; then
+        # echo "REGIONG1PUB value:"
+        cat "$REGIONG1PUB_FILE"
         exit 0
     fi
 fi
