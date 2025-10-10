@@ -216,6 +216,13 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     # ipfs pin rm /ipfs/${G1PUBNOSTRQR}
     echo "${G1PUBNOSTRQR}" > ${HOME}/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png.cid
 
+    ## Create NOSTR Profile Viewer QR Code
+    amzqr "${myIPFS}/ipns/copylaradio.com/nostr_profile_viewer.html?hex=${HEX}" -l H -p ${MY_PATH}/../images/lamanostr.png \
+        -c -n PROFILE.QR.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
+
+    PROFILEQR=$(ipfs --timeout 20s add -q ~/.zen/game/nostr/${EMAIL}/PROFILE.QR.png)
+    # ipfs pin rm /ipfs/${PROFILEQR} 2>/dev/null
+
     ## TODATE TIME STAMP
     echo ${TODATE} > ${HOME}/.zen/game/nostr/${EMAIL}/TODATE
     ## ZLAT ZLON
@@ -239,6 +246,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -e "s~Qma4ceUiYD2bAydL174qCSrsnQRoDC3p5WgRGKo9tEgRqH~${G1PUBNOSTRQR}~g" \
             -e "s~Qmeu1LHnTTHNB9vex5oUwu3VVbc7uQZxMb8bYXuX56YAx2~${VAULTNSQR}~g" \
             -e "s~/ipfs/QmNd3abeAoUH1nGzwnaLNafRgtvwTSBCZyKqT8eBnEPQK9/u.scan.qr.png~/ipfs/${uSPOT_QR_ipfs}~g" \
+            -e "s~QmPV9NfaeYfZzYPaQGs9BZvMBY2t3n2SC8jodSH4zsWZak~${PROFILEQR}~g" \
             -e "s~_UPLANETNAME_G1_~${UPLANETNAME_G1}~g" \
             -e "s~_NSECTAIL_~${NPRIV: -33}~g" \
             -e "s~_LAT_~${ZLAT}~g" \
@@ -376,7 +384,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ### UNCOMMENT for DEBUG
     #~ echo "SALT=$SALT PEPPER=$PEPPER \
 #~ NPUBLIC=${NPUBLIC} NPRIV=${NPRIV} EMAIL=${EMAIL} SSSSQR=${SSSSQR} \
-#~ G1PUBNOSTR=${G1PUBNOSTR} G1PUBNOSTRQR=${G1PUBNOSTRQR} VAULTNSQR=${VAULTNSQR} NOSTRNS=${NOSTRNS} \
+#~ G1PUBNOSTR=${G1PUBNOSTR} G1PUBNOSTRQR=${G1PUBNOSTRQR} VAULTNSQR=${VAULTNSQR} PROFILEQR=${PROFILEQR} NOSTRNS=${NOSTRNS} \
 #~ CAPTAINEMAIL=${CAPTAINEMAIL} MOAT=$MOATS"
 
     echo "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html"
