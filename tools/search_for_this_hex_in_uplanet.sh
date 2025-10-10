@@ -28,11 +28,11 @@ if [ -z "$HEX" ]; then
     cat ${HOME}/.zen/tmp/swarm/*/UPLANET/__/*/*/*/HEX_REGION 2>/dev/null | sort -u
 
     # SWARM PLAYERs HEX
-    echo "SWARM PLAYERs HEX"
+    echo "SWARM MULTIPASS HEX"
     cat ${HOME}/.zen/tmp/swarm/*/TW/*/HEX 2>/dev/null | sort -u
     
     # LOCAL TOTAL HEX
-    echo "LOCAL PLAYERs HEX"
+    echo "LOCAL MULTIPASS HEX"
     cat ${HOME}/.zen/game/nostr/*@*.*/HEX 2>/dev/null | sort -u
 
     exit 0
