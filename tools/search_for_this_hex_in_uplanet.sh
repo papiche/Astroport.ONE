@@ -43,13 +43,10 @@ if [ -n "$FOUND_FILE" ]; then
         # echo "G1PUBNOSTR value:"
         cat "$G1PUBNOSTR_FILE"
         exit 0
-    else
-        echo "G1PUBNOSTR file not found in the directory"
-        exit 1
     fi
 fi
 
-# If not found in TW, search in UPLANET sectors
+# If not found in TW, search in UPLANET sectors (HEX, HEX_REGION, HEX_SECTOR)
 FOUND_FILE=$(grep -l "$HEX" ${HOME}/.zen/tmp/swarm/*/UPLANET/__/*/*/*/HEX 2>/dev/null | head -n 1)
 [[ -z "$FOUND_FILE" ]] && FOUND_FILE=$(grep -l "$HEX" ${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/__/*/*/*/HEX 2>/dev/null | head -n 1)
 
@@ -60,14 +57,35 @@ if [ -n "$FOUND_FILE" ]; then
         # echo "G1PUB value:"
         cat "$G1PUB_FILE"
         exit 0
-    else
-        echo "G1PUB file not found in the directory"
-        exit 1
     fi
 fi
 
-# Not found anywhere
-echo "HEX not found in UPLANET directories"
-exit 1
+# If not found in HEX, search in HEX_REGION
+FOUND_FILE=$(grep -l "$HEX" ${HOME}/.zen/tmp/swarm/*/UPLANET/__/*/*/*/HEX_REGION 2>/dev/null | head -n 1)
+[[ -z "$FOUND_FILE" ]] && FOUND_FILE=$(grep -l "$HEX" ${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/__/*/*/*/HEX_REGION 2>/dev/null | head -n 1)
+
+if [ -n "$FOUND_FILE" ]; then
+    # echo "Found HEX in UPLANET HEX_REGION: $FOUND_FILE"
+    REGIONG1PUB_FILE=$(dirname "$FOUND_FILE")/REGIONG1PUB
+    if [ -f "$REGIONG1PUB_FILE" ]; then
+        # echo "REGIONG1PUB value:"
+        cat "$REGIONG1PUB_FILE"
+        exit 0
+    fi
+fi
+
+# If not found in HEX_REGION, search in HEX_SECTOR
+FOUND_FILE=$(grep -l "$HEX" ${HOME}/.zen/tmp/swarm/*/UPLANET/__/*/*/*/HEX_SECTOR 2>/dev/null | head -n 1)
+[[ -z "$FOUND_FILE" ]] && FOUND_FILE=$(grep -l "$HEX" ${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/__/*/*/*/HEX_SECTOR 2>/dev/null | head -n 1)
+
+if [ -n "$FOUND_FILE" ]; then
+    # echo "Found HEX in UPLANET HEX_SECTOR: $FOUND_FILE"
+    SECTORG1PUB_FILE=$(dirname "$FOUND_FILE")/SECTORG1PUB
+    if [ -f "$SECTORG1PUB_FILE" ]; then
+        # echo "SECTORG1PUB value:"
+        cat "$SECTORG1PUB_FILE"
+        exit 0
+    fi
+fi
 
 exit 0
