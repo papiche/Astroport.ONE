@@ -172,7 +172,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
 
     ## QR CODE accès NOSTR VAULTNSQR
-    amzqr "${myIPFS}/ipns/$NOSTRNS/APP/uDRIVE" -l H -p ${MY_PATH}/../templates/img/no_stripfs.png \
+    amzqr "${myIPFS}/ipns/$NOSTRNS/${EMAIL}/APP/uDRIVE" -l H -p ${MY_PATH}/../templates/img/no_stripfs.png \
         -c -n IPNS.QR.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
 
     VAULTNSQR=$(ipfs --timeout 20s add -q ~/.zen/game/nostr/${EMAIL}/IPNS.QR.png)
