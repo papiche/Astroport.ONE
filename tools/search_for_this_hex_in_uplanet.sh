@@ -17,23 +17,23 @@ if [ -z "$HEX" ]; then
 
     # SWARM UMAP HEX
     echo "SWARM UMAP HEX"
-    cat ${HOME}/.zen/tmp/swarm/*/UPLANET/__/*/*/*/HEX 2>/dev/null
+    cat ${HOME}/.zen/tmp/swarm/*/UPLANET/__/*/*/*/HEX 2>/dev/null | sort -u
 
     # SWARM UMAP HEX_SECTOR
     echo "SWARM UMAP HEX_SECTOR" 
-    cat ${HOME}/.zen/tmp/swarm/*/UPLANET/__/*/*/*/HEX_SECTOR 2>/dev/null
+    cat ${HOME}/.zen/tmp/swarm/*/UPLANET/__/*/*/*/HEX_SECTOR 2>/dev/null | sort -u
 
     # SWARM UMAP HEX_REGION
     echo "SWARM UMAP HEX_REGION"
-    cat ${HOME}/.zen/tmp/swarm/*/UPLANET/__/*/*/*/HEX_REGION 2>/dev/null
+    cat ${HOME}/.zen/tmp/swarm/*/UPLANET/__/*/*/*/HEX_REGION 2>/dev/null | sort -u
 
     # SWARM PLAYERs HEX
     echo "SWARM PLAYERs HEX"
-    cat ${HOME}/.zen/tmp/swarm/*/TW/*/HEX 2>/dev/null
+    cat ${HOME}/.zen/tmp/swarm/*/TW/*/HEX 2>/dev/null | sort -u
     
     # LOCAL TOTAL HEX
     echo "LOCAL PLAYERs HEX"
-    cat ${HOME}/.zen/game/nostr/*@*.*/HEX 2>/dev/null
+    cat ${HOME}/.zen/game/nostr/*@*.*/HEX 2>/dev/null | sort -u
 
     exit 0
 fi
