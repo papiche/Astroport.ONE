@@ -210,7 +210,8 @@ Lors de l'exécution de `make_NOSTRCARD.sh` pour une adresse email, les fichiers
 
 ```
 ~/.zen/game/nostr/{EMAIL}/
-├── did.json                                # Document DID principal (accès racine)
+├── did.json                                # Document DID principal (mise à jour dynamique)
+├── did.json.backup.*                       # Sauvegardes automatiques horodatées
 ├── NPUB                                    # Clé publique NOSTR (format npub)
 ├── HEX                                     # Clé publique NOSTR (format hex)
 ├── G1PUBNOSTR                              # Clé publique G1
@@ -228,14 +229,14 @@ Lors de l'exécution de `make_NOSTRCARD.sh` pour une adresse email, les fichiers
 └── APP/
     └── uDRIVE/
         ├── .well-known/
-        │   └── did.json                    # Endpoint DID standard W3C (copie)
+        │   └── did.json                    # Endpoint DID standard W3C (synchronisé)
         ├── Apps/
         │   └── Cesium.v1/                  # Application portefeuille G1
         └── Documents/
             └── README.{YOUSER}.md          # Documentation d'accueil
 ```
 
-**Note** : Les deux fichiers `did.json` contiennent des documents identiques. Cette redondance assure la conformité W3C tout en simplifiant l'accès direct.
+**Note** : Les deux fichiers `did.json` (racine et `.well-known`) sont synchronisés automatiquement lors des mises à jour. Les backups horodatés permettent de tracer l'historique des modifications.
 
 ### 5.3. Résolution du DID
 
@@ -279,6 +280,63 @@ La combinaison de Nostr pour l'identifiant et d'IPNS pour la résolution est par
 - **Légèreté** : Pas besoin d'ancrage coûteux sur blockchain
 - **Résilience** : L'identité persiste même si un service tombe
 - **Mobilité** : L'utilisateur peut changer de fournisseur sans perdre son identité
+
+### 5.4. Mise à Jour Dynamique du DID
+
+Le document DID est **automatiquement mis à jour** lors des transactions UPlanet pour refléter les propriétés et capacités acquises. Cette mise à jour est effectuée par le script [`UPLANET.official.sh`](../UPLANET.official.sh) via la fonction `update_did_document()`.
+
+**Déclencheurs de mise à jour** :
+- ✅ Transaction **LOCATAIRE** : Recharge MULTIPASS (10GB uDRIVE)
+- ✅ Transaction **SOCIÉTAIRE Satellite** : Parts sociales (128GB + NextCloud)
+- ✅ Transaction **SOCIÉTAIRE Constellation** : Parts sociales (128GB + NextCloud + IA)
+- ✅ Transaction **INFRASTRUCTURE** : Apport capital machine
+
+**Métadonnées ajoutées au DID** :
+
+```json
+{
+  "metadata": {
+    "contractStatus": "cooperative_member_satellite",
+    "storageQuota": "128GB",
+    "services": "uDRIVE + NextCloud private storage",
+    "lastPayment": {
+      "amount_zen": "50",
+      "amount_g1": "5.00",
+      "date": "2025-10-11T14:30:00Z",
+      "nodeId": "12D3KooWABC..."
+    },
+    "updated": "2025-10-11T14:30:00Z"
+  }
+}
+```
+
+**Processus de mise à jour** :
+1. **Sauvegarde** : Création automatique d'un backup `did.json.backup.YYYYMMDD_HHMMSS`
+2. **Modification** : Mise à jour des métadonnées via `jq` (sans casser la structure JSON)
+3. **Synchronisation** : Copie vers `.well-known/did.json` pour conformité W3C
+4. **Publication** : Republication automatique sur IPNS (arrière-plan)
+
+**Exemple de cycle de vie** :
+
+```
+1. CRÉATION (make_NOSTRCARD.sh)
+   → DID créé avec status: "active"
+   → Quota: "10GB" (MULTIPASS gratuit 7 jours)
+
+2. UPGRADE SOCIÉTAIRE (UPLANET.official.sh)
+   → Transaction 50Ẑ
+   → DID mis à jour automatiquement
+   → Status: "cooperative_member_satellite"
+   → Quota: "128GB"
+   → Services: "uDRIVE + NextCloud"
+
+3. CONSULTATION
+   → {myIPFS}/ipns/{NOSTRNS}/{EMAIL}/did.json
+   → Métadonnées reflètent les capacités actuelles
+   → Services vérifient les droits via le DID
+```
+
+Cette approche garantit que le **DID reste toujours la source de vérité** pour les capacités et propriétés d'un utilisateur, sans nécessiter de base de données centralisée.
 
 ## 6. Extension UCAN : De la Propriété à la Délégation
 

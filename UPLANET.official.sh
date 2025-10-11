@@ -162,6 +162,115 @@ zen_to_g1() {
     echo "scale=2; $zen_amount / 10" | bc -l
 }
 
+# Fonction pour mettre à jour le document DID avec les nouvelles capacités
+update_did_document() {
+    local email="$1"
+    local contract_type="$2"  # LOCATAIRE, SOCIETAIRE_SATELLITE, SOCIETAIRE_CONSTELLATION, INFRASTRUCTURE
+    local montant_zen="$3"
+    local montant_g1="$4"
+    
+    local did_file="$HOME/.zen/game/nostr/${email}/did.json"
+    local did_wellknown="$HOME/.zen/game/nostr/${email}/APP/uDRIVE/.well-known/did.json"
+    
+    # Vérifier que le fichier DID existe
+    if [[ ! -f "$did_file" ]]; then
+        echo -e "${YELLOW}⚠️  Fichier DID non trouvé pour ${email}, passage ignoré${NC}"
+        return 0
+    fi
+    
+    echo -e "${CYAN}📝 Mise à jour du document DID: ${email}${NC}"
+    
+    # Déterminer les capacités selon le type de contrat
+    local quota=""
+    local services=""
+    local contract_status=""
+    
+    case "$contract_type" in
+        "LOCATAIRE")
+            quota="10GB"
+            services="uDRIVE IPFS storage"
+            contract_status="active_rental"
+            ;;
+        "SOCIETAIRE_SATELLITE")
+            quota="128GB"
+            services="uDRIVE + NextCloud private storage"
+            contract_status="cooperative_member_satellite"
+            ;;
+        "SOCIETAIRE_CONSTELLATION")
+            quota="128GB"
+            services="uDRIVE + NextCloud + AI services"
+            contract_status="cooperative_member_constellation"
+            ;;
+        "INFRASTRUCTURE")
+            quota="N/A"
+            services="Node infrastructure capital"
+            contract_status="infrastructure_contributor"
+            ;;
+        *)
+            quota="10GB"
+            services="Basic uDRIVE"
+            contract_status="active"
+            ;;
+    esac
+    
+    # Créer une sauvegarde du DID original
+    cp "$did_file" "${did_file}.backup.$(date +%Y%m%d_%H%M%S)"
+    
+    # Utiliser jq pour mettre à jour les métadonnées sans casser la structure
+    local temp_did=$(mktemp)
+    
+    jq --arg contract "$contract_status" \
+       --arg quota "$quota" \
+       --arg services "$services" \
+       --arg zen "$montant_zen" \
+       --arg g1 "$montant_g1" \
+       --arg updated "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+       --arg nodeid "$IPFSNODEID" \
+       '.metadata.contractStatus = $contract |
+        .metadata.storageQuota = $quota |
+        .metadata.services = $services |
+        .metadata.lastPayment = {
+          "amount_zen": $zen,
+          "amount_g1": $g1,
+          "date": $updated,
+          "nodeId": $nodeid
+        } |
+        .metadata.updated = $updated' \
+        "$did_file" > "$temp_did"
+    
+    if [[ $? -eq 0 && -s "$temp_did" ]]; then
+        # Remplacer le fichier DID original
+        mv "$temp_did" "$did_file"
+        echo -e "${GREEN}✅ DID racine mis à jour: ${did_file}${NC}"
+        
+        # Mettre à jour aussi le .well-known si le répertoire existe
+        if [[ -d "$(dirname "$did_wellknown")" ]]; then
+            cp "$did_file" "$did_wellknown"
+            echo -e "${GREEN}✅ DID .well-known mis à jour: ${did_wellknown}${NC}"
+        fi
+        
+        # Republier sur IPNS si possible
+        local nostrns_file="$HOME/.zen/game/nostr/${email}/NOSTRNS"
+        if [[ -f "$nostrns_file" ]]; then
+            local nostrns=$(cat "$nostrns_file" | cut -d'/' -f3)
+            local g1pubnostr=$(cat "$HOME/.zen/game/nostr/${email}/G1PUBNOSTR" 2>/dev/null)
+            
+            if [[ -n "$g1pubnostr" ]]; then
+                echo -e "${CYAN}📡 Republication IPNS...${NC}"
+                local nostripfs=$(ipfs add -rq "$HOME/.zen/game/nostr/${email}/" | tail -n 1)
+                ipfs name publish --key "${g1pubnostr}:NOSTR" "/ipfs/${nostripfs}" 2>&1 >/dev/null &
+                echo -e "${GREEN}✅ Publication IPNS lancée en arrière-plan${NC}"
+            fi
+        fi
+        
+        return 0
+    else
+        echo -e "${RED}❌ Erreur lors de la mise à jour du DID${NC}"
+        rm -f "$temp_did"
+        return 1
+    fi
+}
+
 # Fonction pour envoyer une alerte par email au CAPTAINEMAIL
 send_alert() {
     local alert_type="$1"
@@ -385,6 +494,9 @@ process_locataire() {
     echo -e "  • Recharge de service hebdomadaire effectuée"
     echo -e "  • Toutes les transactions confirmées sur la blockchain"
     
+    # Mettre à jour le document DID avec les nouvelles capacités
+    update_did_document "$email" "LOCATAIRE" "$montant_euros" "$montant_g1"
+    
     return 0
 }
 
@@ -471,6 +583,9 @@ process_infrastructure() {
     echo -e "  • Valorisation infrastructure/machine enregistrée"
     echo -e "  • Toutes les transactions confirmées sur la blockchain"
     echo -e "  • ✅ Cohérence avec OpenCollective UPlanet Ẑen maintenue"
+    
+    # Mettre à jour le document DID avec le statut contributeur infrastructure
+    update_did_document "$email" "INFRASTRUCTURE" "$montant_euros" "$montant_g1"
     
     return 0
 }
@@ -628,6 +743,10 @@ process_societaire() {
     echo -e "    - R&D: ${part_rnd_zen} Ẑen"
     echo -e "    - Assets: ${part_assets_zen} Ẑen"
     echo -e "  • Toutes les transactions confirmées sur la blockchain"
+    
+    # Mettre à jour le document DID avec le statut de sociétaire
+    local contract_type="SOCIETAIRE_${type^^}"
+    update_did_document "$email" "$contract_type" "$montant_euros" "$montant_g1"
     
     return 0
 }
