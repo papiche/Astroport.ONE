@@ -10,10 +10,20 @@
 # Fonctionnalités:
 # - Téléchargement de vidéos YouTube avec yt-dlp
 # - Support des formats MP3 et MP4
-# - Gestion automatique des cookies de navigateurs
-# - Fallback sur génération de cookies avec curl
+# - Gestion automatique des cookies :
+#   1. Priorité aux cookies uploadés par l'utilisateur (.cookie.txt)
+#      via l'interface astro_base.html (/api/fileupload)
+#   2. Cookies du navigateur par défaut (chrome, firefox, brave, edge)
+#   3. Fallback sur génération de cookies basiques avec curl
 # - Upload automatique vers IPFS
 # - Limitations de durée (3h max)
+#
+# Cookie Upload:
+# Les utilisateurs peuvent uploader n'importe quel fichier .txt
+# Le système détecte automatiquement le format Netscape (cookies)
+# et le sauvegarde dans ~/.zen/game/nostr/<email>/.cookie.txt
+# Les autres .txt sont placés normalement dans uDRIVE/Documents
+# Les cookies sont utilisés en priorité pour tous les téléchargements YouTube.
 ########################################################################
 # Source my.sh to get all necessary constants and functions
 source "$HOME/.zen/Astroport.ONE/tools/my.sh"
@@ -58,6 +68,21 @@ cleanup() {
     [[ -f "$HOME/.zen/tmp/youtube_cookies.txt" ]] && rm -f "$HOME/.zen/tmp/youtube_cookies.txt"
 }
 trap cleanup EXIT
+
+find_user_cookie_file() {
+    # Search for .cookie.txt in user NOSTR directories
+    local nostr_dir="$HOME/.zen/game/nostr"
+    if [[ -d "$nostr_dir" ]]; then
+        for user_dir in "$nostr_dir"/*@*; do
+            if [[ -f "$user_dir/.cookie.txt" ]]; then
+                log_debug "Found user cookie file: $user_dir/.cookie.txt"
+                echo "--cookies $user_dir/.cookie.txt"
+                return 0
+            fi
+        done
+    fi
+    return 1
+}
 
 get_youtube_cookies() {
     local cookie_file="$HOME/.zen/tmp/youtube_cookies.txt"
@@ -122,26 +147,44 @@ process_youtube() {
     local line=""
     local yid media_title duration uploader
     local filename ipfs_url
+    local user_cookie=""
     log_debug "Start process_youtube: url=$url, media_type=$media_type, temp_dir=$temp_dir"
-    # 1. Try to extract metadata without cookies
-    log_debug "Trying yt-dlp metadata extraction without cookies..."
-    line="$(yt-dlp --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$url" 2>> "$LOGFILE")"
-    log_debug "yt-dlp output: $line"
+    
+    # 0. First, try to use user's uploaded cookie file if available
+    user_cookie=$(find_user_cookie_file)
+    if [[ -n "$user_cookie" ]]; then
+        log_debug "Using user's uploaded cookie file: $user_cookie"
+        browser_cookies="$user_cookie"
+        line="$(yt-dlp $browser_cookies --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$url" 2>> "$LOGFILE")"
+        log_debug "yt-dlp output (user cookies): $line"
+    fi
+    
+    # 1. Try to extract metadata without cookies (if not already done with user cookies)
+    if [[ -z "$line" ]]; then
+        log_debug "Trying yt-dlp metadata extraction without cookies..."
+        line="$(yt-dlp --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$url" 2>> "$LOGFILE")"
+        log_debug "yt-dlp output: $line"
+    fi
+    
     if [[ $? -ne 0 || -z "$line" ]]; then
-        browser_pref=$(xdg-settings get default-web-browser 2>/dev/null | cut -d'.' -f1 | tr 'A-Z' 'a-z')
-        case "$browser_pref" in
-            chromium|chrome) browser_cookies="--cookies-from-browser chrome" ;;
-            firefox) browser_cookies="--cookies-from-browser firefox" ;;
-            brave) browser_cookies="--cookies-from-browser brave" ;;
-            edge) browser_cookies="--cookies-from-browser edge" ;;
-            *) browser_cookies="" ;;
-        esac
-        if [[ -n "$browser_cookies" ]]; then
-            log_debug "Trying yt-dlp metadata extraction with browser cookies: $browser_cookies"
-            line="$(yt-dlp $browser_cookies --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$url" 2>> "$LOGFILE")"
-            log_debug "yt-dlp output (browser cookies): $line"
+        # Try browser cookies if user cookies didn't work
+        if [[ -z "$user_cookie" ]]; then
+            browser_pref=$(xdg-settings get default-web-browser 2>/dev/null | cut -d'.' -f1 | tr 'A-Z' 'a-z')
+            case "$browser_pref" in
+                chromium|chrome) browser_cookies="--cookies-from-browser chrome" ;;
+                firefox) browser_cookies="--cookies-from-browser firefox" ;;
+                brave) browser_cookies="--cookies-from-browser brave" ;;
+                edge) browser_cookies="--cookies-from-browser edge" ;;
+                *) browser_cookies="" ;;
+            esac
+            if [[ -n "$browser_cookies" ]]; then
+                log_debug "Trying yt-dlp metadata extraction with browser cookies: $browser_cookies"
+                line="$(yt-dlp $browser_cookies --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$url" 2>> "$LOGFILE")"
+                log_debug "yt-dlp output (browser cookies): $line"
+            fi
         fi
         if [[ $? -ne 0 || -z "$line" ]]; then
+            # Generate temporary cookies as last resort
             browser_cookies=$(get_youtube_cookies)
             if [[ -n "$browser_cookies" ]]; then
                 log_debug "Trying yt-dlp metadata extraction with generated cookies: $browser_cookies"

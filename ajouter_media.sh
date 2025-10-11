@@ -114,9 +114,38 @@ G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
 ASTRONAUTENS=$(basename $ASTROTW)
 [[ $ASTRONAUTENS == "" ]] && echo "ASTRONAUTE manquant" && espeak "Astronaut Key Missing" && exit 1
 
-BZER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1) ## GET cookies-from-browser
-[[ $BZER ]] && BROWSER="--cookies-from-browser $BZER " || BROWSER=""
-[[ ! $isLAN ]] && BROWSER=""
+# Function to find user uploaded cookie file
+find_user_cookie_file() {
+    # Search for .cookie.txt in user NOSTR directories
+    local nostr_dir="$HOME/.zen/game/nostr"
+    if [[ -d "$nostr_dir" ]]; then
+        # First, try to find cookie for current PLAYER
+        if [[ -n "$PLAYER" && -f "$nostr_dir/$PLAYER/.cookie.txt" ]]; then
+            echo "--cookies $nostr_dir/$PLAYER/.cookie.txt"
+            return 0
+        fi
+        # Otherwise, find any recent cookie file
+        for user_dir in "$nostr_dir"/*@*; do
+            if [[ -f "$user_dir/.cookie.txt" ]]; then
+                echo "--cookies $user_dir/.cookie.txt"
+                return 0
+            fi
+        done
+    fi
+    return 1
+}
+
+# Try user uploaded cookies first (priority)
+USER_COOKIE=$(find_user_cookie_file)
+if [[ -n "$USER_COOKIE" ]]; then
+    BROWSER="$USER_COOKIE"
+    echo "✅ Using user uploaded cookie file"
+else
+    # Fallback to browser cookies
+    BZER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1)
+    [[ $BZER ]] && BROWSER="--cookies-from-browser $BZER " || BROWSER=""
+    [[ ! $isLAN ]] && BROWSER=""
+fi
 
 ###
 if [ $URL ]; then
