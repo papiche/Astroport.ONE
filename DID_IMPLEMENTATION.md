@@ -91,15 +91,43 @@ DISCO = /?{EMAIL}={SALT}&nostr={PEPPER}
 
 Cette approche évite d'avoir à gérer plusieurs clés et renforce la synergie entre la **toile de confiance Ğ1** et d'autres systèmes décentralisés.
 
-### 3.4. Primo-Transaction : Preuve de Propriété et d'Authenticité
+### 3.4. Système de Transactions : Primo et WoT
 
-Une **primo-transaction** est effectué pour activer le compte ẐEN à 0 avec un virement de 1 Ğ1 depuis 🏛️ Réserve Ğ1 (UPLANETNAME_G1). Ensuite une transaction de 0.01 Ğ1 émise par le **compte forgeron** (incluant l'adresse de la ZenCard/MULTIPASS en commentaire). 
-La combinaison de ces paiement dans l'historique du portefeuille joue le rôle de **preuve d'appartenance** en inscrivant sur la blockchain Ğ1 une signature qui relie l'identité de l'utilisateur à sa clé applicative.
+#### Primo-Transaction : Preuve de Propriété et d'Authenticité
 
-**Sécurité et fonctionnalités** :
-- La primo-transaction contient un **commentaire** qui identifie le MULTIPASS
-- Ce mécanisme permet de **vérifier l'authenticité** sans exposer sa partie privée
+Une **primo-transaction** est effectuée pour activer le compte ẐEN à 0 avec un virement de 1 Ğ1 depuis 🏛️ Réserve Ğ1 (UPLANETNAME_G1). 
+
+**Caractéristiques** :
+- **Montant** : 1 Ğ1 (activation initiale)
+- **Source** : UPLANETNAME.G1 (réserve centrale UPlanet)
+- **Destination** : G1PUBNOSTR (portefeuille MULTIPASS)
+- **Commentaire** : `UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:MULTIPASS:PRIMO`
+- **Cache** : `~/.zen/tmp/coucou/${G1PUBNOSTR}.primal` (permanent)
+
+#### Transaction WoT (.2nd) : Identification par Membre Forgeron
+
+La **transaction .2nd** (0.01 Ğ1) permet à un **membre forgeron Duniter** (externe à UPlanet) d'identifier et valider un MULTIPASS. Cette transaction doit être la **deuxième transaction reçue** pour être considérée comme valide.
+
+**Caractéristiques** :
+- **Montant** : 0.01 Ğ1 (montant symbolique)
+- **Position** : Exactement la 2ème transaction reçue (WoT Dragon Identification)
+- **Source** : Membre forgeron Duniter (externe à UPlanet)
+- **Destination** : G1PUBNOSTR (portefeuille MULTIPASS ou NODE)
+- **Cache** : `~/.zen/tmp/coucou/${wallet}.2nd` (permanent)
+- **Effet** : Mise à jour automatique du DID avec `metadata.wotDuniterMember`
+
+**Processus d'identification WoT** :
+1. **Détection** : [`primal_wallet_control.sh`](../tools/primal_wallet_control.sh) surveille les transactions entrantes
+2. **Validation** : Vérifie que c'est exactement la 2ème transaction reçue ET que le montant est 0.01 Ğ1
+3. **Mise à jour DID** : Ajoute la G1PUB du membre forgeron dans le document DID
+4. **Cache permanent** : Enregistre la G1PUB dans `~/.zen/tmp/coucou/${wallet}.2nd`
+5. **Publication** : Le DID mis à jour est republié sur IPNS
+
+**Sécurité et avantages** :
+- La primo-transaction et la transaction .2nd permettent de **vérifier l'authenticité** sans exposer les clés privées
 - La blockchain Ğ1 devient le **registre de confiance** pour valider les identités UPlanet
+- L'identification WoT crée un **lien vérifiable** avec la Web of Trust Duniter
+- Les deux transactions sont **immuables** sur la blockchain (cache permanent valide)
 
 ## 4. Détails d'Implémentation Technique
 
@@ -290,6 +318,7 @@ Le document DID est **automatiquement mis à jour** lors des transactions UPlane
 - ✅ Transaction **SOCIÉTAIRE Satellite** : Parts sociales (128GB + NextCloud)
 - ✅ Transaction **SOCIÉTAIRE Constellation** : Parts sociales (128GB + NextCloud + IA)
 - ✅ Transaction **INFRASTRUCTURE** : Apport capital machine
+- ✅ Transaction **WoT Duniter** (`.2nd`) : Identification par membre forgeron externe (0.01 Ğ1)
 
 **Métadonnées ajoutées au DID** :
 
@@ -305,7 +334,13 @@ Le document DID est **automatiquement mis à jour** lors des transactions UPlane
       "date": "2025-10-11T14:30:00Z",
       "nodeId": "12D3KooWABC..."
     },
-    "updated": "2025-10-11T14:30:00Z"
+    "wotDuniterMember": {
+      "g1pub": "5fTwfbYUtCeoaFLbyzaBYUcq46nBS26rciWJAkBugqpo",
+      "cesiumLink": "https://g1.data.e-is.pro/#/app/wot/5fTwfbYUtCeoaFLbyzaBYUcq46nBS26rciWJAkBugqpo/",
+      "verifiedAt": "2025-10-11T14:35:00Z",
+      "description": "WoT Duniter member forge (external to UPlanet)"
+    },
+    "updated": "2025-10-11T14:35:00Z"
   }
 }
 ```
@@ -322,18 +357,27 @@ Le document DID est **automatiquement mis à jour** lors des transactions UPlane
 1. CRÉATION (make_NOSTRCARD.sh)
    → DID créé avec status: "active"
    → Quota: "10GB" (MULTIPASS gratuit 7 jours)
+   → Primo-transaction: 1Ğ1 UPLANETNAME.G1 → G1PUBNOSTR
 
-2. UPGRADE SOCIÉTAIRE (UPLANET.official.sh)
+2. WoT IDENTIFICATION (primal_wallet_control.sh)
+   → Transaction 0.01Ğ1 depuis membre forgeron Duniter (2ème TX)
+   → DID mis à jour automatiquement
+   → Ajout metadata.wotDuniterMember avec G1PUB du forgeron
+   → Lien vers profil Cesium+ du membre WoT
+   → Cache permanent: ~/.zen/tmp/coucou/${wallet}.2nd
+
+3. UPGRADE SOCIÉTAIRE (UPLANET.official.sh)
    → Transaction 50Ẑ
    → DID mis à jour automatiquement
    → Status: "cooperative_member_satellite"
    → Quota: "128GB"
    → Services: "uDRIVE + NextCloud"
 
-3. CONSULTATION
+4. CONSULTATION
    → {myIPFS}/ipns/{NOSTRNS}/{EMAIL}/did.json
    → Métadonnées reflètent les capacités actuelles
    → Services vérifient les droits via le DID
+   → Identification WoT visible et vérifiable
 ```
 
 Cette approche garantit que le **DID reste toujours la source de vérité** pour les capacités et propriétés d'un utilisateur, sans nécessiter de base de données centralisée.

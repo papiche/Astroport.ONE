@@ -43,42 +43,52 @@ display_wallet_info() {
 }
 
 # Function to get primal source of a wallet
+# This function creates and maintains permanent cache files in ~/.zen/tmp/coucou/
+# Primal source never changes on blockchain, so cache is valid indefinitely
 get_primal_source() {
     local wallet_pubkey="$1"
     local attempts=0
     local success=false
     local result=""
+    local silent_mode="${2:-false}"  # Optional parameter for silent output
+
+    # Ensure cache directory exists
+    mkdir -p "$HOME/.zen/tmp/coucou"
 
     # Check if cache exists (primal source never changes, so cache is permanently valid)
     local cache_file="$HOME/.zen/tmp/coucou/${wallet_pubkey}.primal"
-    if [[ -f "$cache_file" ]]; then
+    if [[ -f "$cache_file" && -s "$cache_file" ]]; then
         local cached_primal=$(cat "$cache_file" 2>/dev/null)
         if [[ -n "$cached_primal" && "$cached_primal" != "null" ]]; then
-            echo "Using cached primal source for ${wallet_pubkey:0:8}"
-            echo "🔗 Cesium: $(generate_cesium_link "$wallet_pubkey")"
+            [[ "$silent_mode" != "true" ]] && echo "Using cached primal source for ${wallet_pubkey:0:8}"
+            [[ "$silent_mode" != "true" ]] && echo "🔗 Cesium: $(generate_cesium_link "$wallet_pubkey")"
             echo "$cached_primal"
             return 0
         fi
     fi
 
+    # No valid cache found, query blockchain
+    [[ "$silent_mode" != "true" ]] && echo "Fetching primal source for ${wallet_pubkey:0:8} from blockchain..."
+    
     while [[ $attempts -lt 3 && $success == false ]]; do
         BMAS_NODE=$(${MY_PATH}/duniter_getnode.sh BMAS | tail -n 1)
         if [[ ! -z $BMAS_NODE ]]; then
-            echo "Trying primal check with BMAS NODE: $BMAS_NODE (attempt $((attempts + 1)))"
+            [[ "$silent_mode" != "true" ]] && echo "Trying primal check with BMAS NODE: $BMAS_NODE (attempt $((attempts + 1)))"
 
             silkaj_output=$(silkaj --endpoint "$BMAS_NODE" --json money primal ${wallet_pubkey} 2>/dev/null)
             if echo "$silkaj_output" | jq empty 2>/dev/null; then
                 result=$(echo "$silkaj_output" | jq -r '.primal_source_pubkey')
                 if [[ ! -z ${result} && ${result} != "null" ]]; then
                     success=true
-                    # Cache the result (permanently valid)
-                    mkdir -p "$HOME/.zen/tmp/coucou"
+                    # Cache the result (permanently valid - primal never changes)
                     echo "$result" > "$cache_file"
-                    echo "🔗 Cesium: $(generate_cesium_link "$wallet_pubkey")"
+                    chmod 644 "$cache_file"
+                    [[ "$silent_mode" != "true" ]] && echo "✅ Primal source cached: $cache_file"
+                    [[ "$silent_mode" != "true" ]] && echo "🔗 Cesium: $(generate_cesium_link "$wallet_pubkey")"
                     break
                 fi
             else
-                echo "Warning: silkaj did not return valid JSON for $wallet_pubkey"
+                [[ "$silent_mode" != "true" ]] && echo "Warning: silkaj did not return valid JSON for $wallet_pubkey"
             fi
         fi
 
@@ -88,7 +98,28 @@ get_primal_source() {
         fi
     done
 
+    if [[ "$success" == false ]]; then
+        [[ "$silent_mode" != "true" ]] && echo "❌ Failed to fetch primal source for ${wallet_pubkey:0:8} after $attempts attempts"
+        # Create empty cache file to indicate failure and avoid repeated queries
+        touch "$cache_file"
+    fi
+
     echo "$result"
+}
+
+# Utility function to ensure primal cache exists for a wallet
+# Can be called by any script that needs primal information
+ensure_primal_cache() {
+    local wallet_pubkey="$1"
+    local cache_file="$HOME/.zen/tmp/coucou/${wallet_pubkey}.primal"
+    
+    # If cache doesn't exist or is empty, fetch it
+    if [[ ! -s "$cache_file" ]]; then
+        get_primal_source "$wallet_pubkey" "true" > /dev/null
+    fi
+    
+    # Return the cached value (may be empty if fetch failed)
+    cat "$cache_file" 2>/dev/null
 }
 
 # Function to get wallet transaction history
@@ -253,6 +284,71 @@ send_redirection_alert() {
 # Note: All intrusions are redirected to UPLANETNAME.INTRUSION to centralize intrusion management
 # No refunds to sender to prevent potential transaction loops
 
+# Function to update DID with WoT Duniter member information
+update_did_wot_member() {
+    local player_email="$1"
+    local wot_g1pub="$2"
+    
+    local did_file="$HOME/.zen/game/nostr/${player_email}/did.json"
+    local did_wellknown="$HOME/.zen/game/nostr/${player_email}/APP/uDRIVE/.well-known/did.json"
+    
+    # Check if DID file exists
+    if [[ ! -f "$did_file" ]]; then
+        echo "⚠️  DID file not found for ${player_email}, skipping WoT member update"
+        return 0
+    fi
+    
+    echo "📝 Updating DID with WoT Duniter member: ${wot_g1pub:0:8}..."
+    
+    # Create backup
+    cp "$did_file" "${did_file}.backup.$(date +%Y%m%d_%H%M%S)"
+    
+    # Use jq to add WoT member information
+    local temp_did=$(mktemp)
+    
+    jq --arg wot "$wot_g1pub" \
+       --arg updated "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+       --arg cesium_link "$(generate_cesium_link "$wot_g1pub")" \
+       '.metadata.wotDuniterMember = {
+          "g1pub": $wot,
+          "cesiumLink": $cesium_link,
+          "verifiedAt": $updated,
+          "description": "WoT Duniter member forge (external to UPlanet)"
+        } |
+        .metadata.updated = $updated' \
+        "$did_file" > "$temp_did"
+    
+    if [[ $? -eq 0 && -s "$temp_did" ]]; then
+        mv "$temp_did" "$did_file"
+        echo "✅ DID updated with WoT member: ${wot_g1pub:0:8}"
+        
+        # Sync to .well-known
+        if [[ -d "$(dirname "$did_wellknown")" ]]; then
+            cp "$did_file" "$did_wellknown"
+            echo "✅ DID .well-known synchronized"
+        fi
+        
+        # Republish on IPNS if possible
+        local nostrns_file="$HOME/.zen/game/nostr/${player_email}/NOSTRNS"
+        if [[ -f "$nostrns_file" ]]; then
+            local g1pubnostr=$(cat "$HOME/.zen/game/nostr/${player_email}/G1PUBNOSTR" 2>/dev/null)
+            
+            if [[ -n "$g1pubnostr" ]]; then
+                echo "📡 Republishing DID on IPNS..."
+                local nostripfs=$(ipfs add -rq "$HOME/.zen/game/nostr/${player_email}/" | tail -n 1)
+                ipfs name publish --key "${g1pubnostr}:NOSTR" "/ipfs/${nostripfs}" 2>&1 >/dev/null &
+                echo "✅ IPNS publication launched in background"
+            fi
+        fi
+        
+        return 0
+    else
+        echo "❌ Failed to update DID with WoT member"
+        rm -f "$temp_did"
+        return 1
+    fi
+}
+
 # Function to count existing intrusions from transaction history
 count_existing_intrusions() {
     local wallet_pubkey="$1"
@@ -405,6 +501,9 @@ control_primal_transactions() {
             mkdir -p "$HOME/.zen/tmp/coucou"
             echo "${TXIPUBKEY}" > "$cache_2nd_file"
             echo "📝 Second transaction cached: $cache_2nd_file"
+            
+            # Update DID document with WoT Duniter G1PUB (external member forge)
+            update_did_wot_member "$player_email" "$TXIPUBKEY"
             
             continue  # Skip primal control for WoT identification transactions
         fi
