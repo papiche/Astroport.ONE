@@ -1,32 +1,40 @@
 #!/bin/bash
 ################################################################################
 # Script: Make_NOSTRCARD.sh
-# Description: Crée une carte NOSTR complète avec système d'identité décentralisé
+# Description: Crée un MULTIPASS - Identité décentralisée universelle
 #
-# Ce script génère une identité NOSTR complète comprenant :
+# Un MULTIPASS est une identité NOSTR complète comprenant :
 # - Une paire de clés NOSTR (secrète/publique)
-# - Un portefeuille cryptographique multi-blockchain (Bitcoin, Monero)
-# - Un espace de stockage IPNS personnel
-# - Des QR codes d'accès sécurisés
+# - Un portefeuille cryptographique multi-blockchain (Bitcoin, Monero, G1)
+# - Un espace de stockage IPNS personnel (uDRIVE)
+# - Des QR codes d'accès sécurisés (SSSS)
 # - Une intégration avec le réseau social décentralisé NOSTR
 # - Une identité Duniter/G1 compatible
+# - Un document DID (Decentralized Identifier) W3C
 #
 # L'identité est créée à partir d'une adresse email et protégée par :
 # - Un sel (salt) et un poivre (pepper) cryptographiques
-# - Un schéma de partage de secret (SSSS) distribué
+# - Un schéma de partage de secret (SSSS) distribué en 3 parts (2 sur 3 requis)
 # - Un chiffrement asymétrique avec les nœuds du réseau
 #
 # Fonctionnalités :
 # - Génération de profils NOSTR avec métadonnées
 # - Publication automatique sur les relais NOSTR
-# - Création d'un espace de stockage IPNS persistant
-# - Génération de QR codes sécurisés
+# - Création d'un espace de stockage IPNS persistant (uDRIVE)
+# - Génération de QR codes sécurisés (MULTIPASS SSSS)
 # - Intégration avec les systèmes UPlanet et G1
+# - Document DID conforme W3C pour interopérabilité
+#
+# Système PASS Codes (utilisable sur n'importe quel terminal UPlanet) :
+# - PASS "0000" : Régénération du MULTIPASS (perte, vol, oubli)
+# - PASS "1111" : Ouverture de l'interface Astro Base complète (messenger)
+# - Par défaut : Interface simple de message NOSTR
 #
 # Sécurité :
 # - Aucune donnée sensible n'est stockée en clair
-# - Utilisation de standards cryptographiques robustes
+# - Utilisation de standards cryptographiques robustes (Ed25519, ECDSA)
 # - Destruction des traces temporaires après exécution
+# - Clé SSSS pour authentification mobile sans stockage navigateur
 #
 # Usage: Voir la fonction usage() pour les détails d'utilisation
 ################################################################################
@@ -35,17 +43,18 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/../tools/my.sh"
 
 usage() {
-  echo "Usage: Make_NOSTRCARD.sh [OPTIONS] <EMAIL> [IMAGE] [LATITUDE] [LONGITUDE] [SALT] [PEPPER]"
+  echo "Usage: Make_NOSTRCARD.sh [OPTIONS] <EMAIL> [IMAGE|PASS] [LATITUDE] [LONGITUDE] [SALT] [PEPPER]"
   echo ""
-  echo "  Generates a NOSTR card and related cryptographic keys, stores them"
-  echo "  locally, and prepares files for a NOSTR application."
+  echo "  Generates a MULTIPASS (universal decentralized identity) with cryptographic keys,"
+  echo "  NOSTR profile, uDRIVE storage, and DID document."
   echo ""
   echo "Arguments:"
-  echo "  <EMAIL>        Email address to associate with the NOSTR card."
+  echo "  <EMAIL>        Email address to associate with the MULTIPASS."
   echo "                 Must be a valid email format."
-  echo "  [IMAGE]        Optional: Path to an image file to use as profile picture."
-  echo "                 Alternatively, a two-letter language code (e.g., 'en', 'fr')"
-  echo "                 to set the language. If omitted, defaults to 'fr'."
+  echo "  [IMAGE|PASS]   Optional: Path to an image file to use as profile picture,"
+  echo "                 a two-letter language code (e.g., 'en', 'fr'), or a 4-digit"
+  echo "                 PASS code for special authentication modes."
+  echo "                 If omitted, defaults to 'fr'."
   echo "  [LATITUDE]     Optional: UMAP Latitude for location data."
   echo "  [LONGITUDE]    Optional: UMAP Longitude for location data."
   echo "  [SALT]         Optional: Salt for key generation. If omitted, a random salt is generated."
@@ -80,7 +89,7 @@ SALT="$5"
 PEPPER="$6"
 
 YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${EMAIL})
-echo "Make_NOSTRCARD.sh >>>>>>>>>> $EMAIL"
+echo "🎫 MULTIPASS Creation for $EMAIL"
 
 [[ -z ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/.zen/tmp/${MOATS}/
@@ -94,7 +103,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     if [[ -z "$PEPPER" ]]; then
         PEPPER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w42 | head -n1)
     fi
-    # Creating a NOSTRCARD for ${EMAIL}
+    # Creating MULTIPASS for ${EMAIL}
     DISCO="/?${EMAIL}=${SALT}&nostr=${PEPPER}"
     #~ echo "DISCO : "$DISCO
 
