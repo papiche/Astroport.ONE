@@ -93,19 +93,12 @@ Cette approche évite d'avoir à gérer plusieurs clés et renforce la synergie 
 
 ### 3.4. Primo-Transaction : Preuve de Propriété et d'Authenticité
 
-Une **primo-transaction** est une transaction spéciale émise par le **compte forgeron de l'Astroport** (UPLANETNAME.G1). Elle joue le rôle de **preuve d'appartenance** en inscrivant sur la blockchain Ğ1 une signature qui relie l'identité de l'utilisateur à sa clé applicative.
-
-**Fonctionnement** :
-```bash
-# Envoi de la primo-transaction depuis UPLANETNAME.G1
-PAYforSURE.sh "${HOME}/.zen/game/uplanet.G1.dunikey" \
-    "1" "${G1PUBNOSTR}" \
-    "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:MULTIPASS:PRIMO"
-```
+Une **primo-transaction** est effectué pour activer le compte ẐEN à 0 avec un virement de 1 Ğ1 depuis 🏛️ Réserve Ğ1 (UPLANETNAME_G1). Ensuite une transaction de 0.01 Ğ1 émise par le **compte forgeron** (incluant l'adresse de la ZenCard/MULTIPASS en commentaire). 
+La combinaison de ces paiement dans l'historique du portefeuille joue le rôle de **preuve d'appartenance** en inscrivant sur la blockchain Ğ1 une signature qui relie l'identité de l'utilisateur à sa clé applicative.
 
 **Sécurité et fonctionnalités** :
 - La primo-transaction contient un **commentaire** qui identifie le MULTIPASS
-- Ce mécanisme permet de **vérifier l'authenticité** d'une ZEN Card sans exposer sa partie privée
+- Ce mécanisme permet de **vérifier l'authenticité** sans exposer sa partie privée
 - La blockchain Ğ1 devient le **registre de confiance** pour valider les identités UPlanet
 
 ## 4. Détails d'Implémentation Technique
@@ -145,8 +138,9 @@ Quatre clés cryptographiques dérivées de la même seed pour différents usage
 - **Clé G1/Duniter** : Clé Ed25519 pour la blockchain Duniter/G1
 - **Clé Bitcoin** : Clé ECDSA Secp256k1 pour les transactions Bitcoin
 - **Clé Monero** : Clé cryptographique spécifique Monero
+- **Autre** : Clé cryptographique crée avec la même seed.
 
-Ces clés jumelles permettent une **interopérabilité sans friction** : une seule identité, utilisable sur plusieurs plateformes.
+Ces clés jumelles permettent une **interopérabilité extensible** : une seule identité, utilisable sur plusieurs plateformes.
 
 #### 3. **Authentification & Autorisation (Fondation UCAN)**
 - `authentication`: Clés pouvant authentifier en tant que ce DID
@@ -159,10 +153,8 @@ Ces sections définissent **qui contrôle quoi** et constituent la base techniqu
 Services décentralisés associés à cette identité - la "propriété numérique" :
 
 - **NOSTR Relay** : Point d'accès au réseau social décentralisé
-- **IPNS Storage** : Espace de stockage personnel persistant
 - **uDRIVE** : Plateforme de stockage et d'applications cloud personnelle
-- **uSPOT** : Service de portefeuille et de credentials UPlanet
-- **Cesium** : Interface de portefeuille G1
+- **uSPOT** : API pour QR Code, portefeuille et credentials UPlanet
 
 Ces endpoints sont les **"terres numériques"** de l'utilisateur, accessibles et vérifiables via son DID.
 
@@ -189,7 +181,7 @@ Lorsqu'un utilisateur crée son MULTIPASS, le script génère l'ensemble de l'é
    - Clé Ğ1 (G1PUBNOSTR)
    - Clé NOSTR (NPUBLIC/NPRIV)
    - Clés Bitcoin et Monero
-   - Clé IPNS pour le stockage
+   - Clé IPNS pour le stockage uDRIVE
 
 3. **Création du partage de secret SSSS (3/2)**
    ```bash
@@ -304,82 +296,8 @@ UCAN est un standard pour les autorisations décentralisées qui permet de **dé
 
 Le MULTIPASS transforme le concept abstrait d'UCAN en un système économique concret de "location" de services :
 
-#### Structure d'un MULTIPASS (Token UCAN)
 
-```json
-{
-  "iss": "did:nostr:{OWNER_HEX}",           // Émetteur (ZEN Card propriétaire)
-  "aud": "did:nostr:{USER_HEX}",            // Destinataire (locataire)
-  "att": [                                   // Attestations (capacités)
-    {
-      "with": "ipns://{NOSTRNS}/uDRIVE/",  // Ressource
-      "can": "storage/write",                // Action autorisée
-      "nb": {                                // Contraintes
-        "quota": "10GB",
-        "duration": "7days"
-      }
-    }
-  ],
-  "prf": ["ipfs://Qm..."],                   // Preuves (chaîne de délégation)
-  "exp": 1698710400,                         // Expiration
-  "fct": [                                   // Faits (contexte économique)
-    {
-      "price": "1",
-      "currency": "ZEN",
-      "period": "week"
-    }
-  ]
-}
-```
-
-#### Flux de Délégation et Location
-
-1. **Le Propriétaire (ZEN Card) offre un service**
-   ```
-   Propriétaire DID: did:nostr:abc123...
-   Service: 10GB stockage uDRIVE
-   Prix: 1Ẑ/semaine
-   ```
-
-2. **Le Locataire demande l'accès**
-   ```
-   Locataire DID: did:nostr:xyz789...
-   Demande: Accès stockage
-   Paiement: Transaction Ğ1 de 0.1Ğ1 (= 1Ẑ)
-   ```
-
-3. **Génération du MULTIPASS**
-   - Le propriétaire signe une capacité UCAN
-   - La transaction Ğ1 sert de preuve de paiement
-   - Le MULTIPASS est envoyé au locataire via NOSTR
-   - Valable pour la durée payée (1 semaine)
-
-4. **Utilisation du Service**
-   - Le locataire présente son MULTIPASS au service uDRIVE
-   - Le service vérifife :
-     * Signature du propriétaire (via DID)
-     * Validité temporelle
-     * Contraintes de quota
-   - Accès accordé sans intervention du propriétaire
-
-#### Chaîne de Délégation
-
-Le pouvoir des UCAN réside dans la **délégation transitive** :
-
-```
-ZEN Card (Propriétaire) 
-  ├─→ MULTIPASS-A (Locataire direct: 10GB)
-  │     └─→ MULTIPASS-B (Sous-locataire: 5GB)
-  │           └─→ MULTIPASS-C (Utilisateur final: 2GB)
-  └─→ MULTIPASS-D (Application: lecture seule)
-```
-
-Chaque MULTIPASS peut déléguer une **sous-capacité** à condition :
-- De ne pas dépasser sa propre capacité
-- De respecter la durée de validité
-- D'être signé par le détenteur actuel
-
-### 6.3. Gestion des Machines comme Propriété en Commun
+### 6.2. Gestion des Machines comme Propriété en Commun
 
 L'article de CopyLaRadio sur le [partage 3x1/3](https://www.copylaradio.com/blog/blog-1/post/relation-de-confiance-decentralisee-a-3-tiers-avec-la-g1-149) décrit comment gérer les machines comme une **propriété mise en commun**. Notre implémentation UCAN/MULTIPASS matérialise cette vision :
 
@@ -407,83 +325,6 @@ L'article de CopyLaRadio sur le [partage 3x1/3](https://www.copylaradio.com/blog
 │   - Clé: .ssss.tail.uplanet.enc                                │
 └─────────────────────────────────────────────────────────────────┘
 ```
-
-#### Cas d'Usage : NextCloud Coopératif
-
-**Scénario** : Un collectif veut héberger une instance NextCloud partagée pour collaboration privée.
-
-1. **Création de l'Infrastructure**
-   ```bash
-   # Génération de la ZEN Card collective
-   ./make_NOSTRCARD.sh collective@nextcloud.coop
-   
-   # Primo-transaction pour validation Ğ1
-   # Installation NextCloud sur relais d'essaim (pas sur uDRIVE IPFS)
-   # Les 3 parts SSSS sont distribuées
-   ```
-
-2. **Niveaux d'Accès et MULTIPASS**
-   
-   **Niveau Public (MULTIPASS IPFS - 10GB)** :
-   ```
-   Membre A: MULTIPASS uDRIVE 10GB pour partage de documents publics
-   Membre B: MULTIPASS uDRIVE 10GB pour site web du collectif
-   Membre C: MULTIPASS uDRIVE 10GB pour applications Web3
-   ```
-   
-   **Niveau Privé (ZEN Card - Illimité)** :
-   ```
-   Membre A: Accès NextCloud 100GB, lecture/écriture/partage
-   Membre B: Accès NextCloud 50GB, lecture/écriture
-   Membre C: Accès NextCloud lecture seule, commentaires
-   ```
-
-3. **Architecture Technique**
-   ```
-   ┌──────────────────────────────────────────────────────────┐
-   │ MULTIPASS IPFS (Public - 10GB max)                      │
-   │ ├─→ uDRIVE: Accessible via IPFS/IPNS                    │
-   │ ├─→ Usage: Site vitrine, documentation publique          │
-   │ └─→ Authentification: NOSTR (npub/nsec)                 │
-   └──────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-   ┌──────────────────────────────────────────────────────────┐
-   │ ZEN Card (Privé - Illimité)                             │
-   │ ├─→ NextCloud: Hébergé sur relais d'essaim              │
-   │ ├─→ Usage: Fichiers privés, collaboration               │
-   │ ├─→ Features: Sync, share, versioning, encryption       │
-   │ └─→ Authentification: SSSS + Primo-transaction Ğ1       │
-   └──────────────────────────────────────────────────────────┘
-   ```
-
-4. **Économie Circulaire**
-   ```
-   Revenus (cotisations ZEN Card, services) → Portefeuille Ğ1 collectif
-   ├─→ 40% réinvestis (maintenance serveurs, upgrade stockage)
-   ├─→ 30% redistribués aux membres actifs (contribution)
-   └─→ 30% fonds communs UPlanet (mutualisation réseau)
-   ```
-
-5. **Gouvernance Décentralisée**
-   - **Décisions votées** via signatures NOSTR
-   - **Quorum** : 2/3 des parts SSSS requis pour changements majeurs
-   - **Chaque ZEN Card active** = 1 voix (pondérée par ancienneté)
-   - **Chaque MULTIPASS IPFS** = 1/10 voix (participation publique)
-
-6. **Cas d'Usage Concrets**
-   
-   **Exemple 1 : Collectif de Créateurs**
-   - **Public (MULTIPASS 10GB)** : Portfolio, blog, boutique en ligne
-   - **Privé (NextCloud)** : Fichiers source, brouillons, comptabilité
-   
-   **Exemple 2 : Association Locale**
-   - **Public (MULTIPASS 10GB)** : Site vitrine, documents administratifs
-   - **Privé (NextCloud)** : PV réunions, projets en cours, archives
-   
-   **Exemple 3 : Équipe Recherche**
-   - **Public (MULTIPASS 10GB)** : Publications, datasets ouverts
-   - **Privé (NextCloud)** : Données sensibles, analyses préliminaires
 
 #### Avantages du Modèle
 
@@ -523,55 +364,24 @@ Le message NOSTR initial inclut :
 - QR codes pour le portefeuille et l'accès à l'identité
 - Primo-transaction sur la blockchain Ğ1
 
-## Example DID Document
+## Exemple de Document DID
 
-```json
-{
-  "@context": [
-    "https://www.w3.org/ns/did/v1",
-    "https://w3id.org/security/suites/ed25519-2020/v1",
-    "https://w3id.org/security/suites/x25519-2020/v1"
-  ],
-  "id": "did:nostr:a1b2c3d4...",
-  "alsoKnownAs": [
-    "mailto:user@example.com",
-    "did:g1:AbCdEf123...",
-    "ipns://QmXyz..."
-  ],
-  "verificationMethod": [
-    {
-      "id": "did:nostr:a1b2c3d4...#nostr-key",
-      "type": "Ed25519VerificationKey2020",
-      "controller": "did:nostr:a1b2c3d4...",
-      "publicKeyMultibase": "npub1...",
-      "publicKeyHex": "a1b2c3d4..."
-    },
-    {
-      "id": "did:nostr:a1b2c3d4...#g1-key",
-      "type": "Ed25519VerificationKey2020",
-      "controller": "did:nostr:a1b2c3d4...",
-      "publicKeyBase58": "AbCdEf123...",
-      "blockchainAccountId": "duniter:g1:AbCdEf123..."
-    }
-  ],
-  "authentication": [
-    "did:nostr:a1b2c3d4...#nostr-key",
-    "did:nostr:a1b2c3d4...#g1-key"
-  ],
-  "service": [
-    {
-      "id": "did:nostr:a1b2c3d4...#nostr-relay",
-      "type": "NostrRelay",
-      "serviceEndpoint": "wss://relay.example.com"
-    },
-    {
-      "id": "did:nostr:a1b2c3d4...#ipns-storage",
-      "type": "DecentralizedWebNode",
-      "serviceEndpoint": "https://ipfs.io/ipns/QmXyz..."
-    }
-  ]
-}
-```
+Le document DID complet est généré lors de la création du MULTIPASS. Voir l'implémentation dans le code source :
+
+📄 **Code source** : [`make_NOSTRCARD.sh` (lignes 246-345)](../tools/make_NOSTRCARD.sh#L246-L345)
+
+Le document généré contient :
+- **Contexte W3C** : Références aux standards DID, Ed25519 et X25519
+- **Identifiant principal** : `did:nostr:{HEX}` (clé publique NOSTR en hexadécimal)
+- **Alias** : Email, `did:g1:{G1PUB}`, IPNS
+- **Méthodes de vérification** : Clés NOSTR, G1, Bitcoin, Monero (twin keys)
+- **Authentification** : Méthodes Ed25519 pour NOSTR et G1
+- **Services** : Endpoints pour relais NOSTR, IPNS, uDRIVE, uSPOT, Cesium+
+- **Métadonnées** : Date de création, coordonnées UMAP, langue, UPlanet d'origine
+
+Le document est stocké à deux emplacements pour compatibilité maximale :
+1. **Accès Direct** : `~/.zen/game/nostr/{EMAIL}/did.json`
+2. **Standard W3C** : `~/.zen/game/nostr/{EMAIL}/APP/uDRIVE/.well-known/did.json`
 
 ## Usage
 
@@ -638,18 +448,15 @@ Le DID se concentre sur l'**identité** (qui vous êtes). Le MULTIPASS, impléme
 
 Cette architecture à deux niveaux crée un système complet :
 - Le `did:nostr` devient l'**émetteur (`issuer`)** des autorisations
-- La **ZEN Card** (clés SSSS) est l'outil qui **signe** ces autorisations
-- Le **MULTIPASS** devient le jeton de capacité (le "UCAN") qui est accordé à une autre personne ou à une machine
+- La **MULTIPASS** (clés SSSS) est l'outil qui **signe** ces autorisations
 
-Le `did.json` ne sert pas seulement à prouver qui vous êtes, **il devient l'autorité racine** qui certifie la validité de chaque MULTIPASS que vous émettez. C'est ce qui permet de "prêter des clés sans jamais faire confiance au relais", car la confiance est entièrement gérée par la cryptographie et la chaîne de délégation qui part de votre DID.
+Le `did.json` ne sert pas seulement à prouver qui vous êtes, **il devient l'autorité racine** qui certifie la validité de chaque MULTIPASS qui sont émis. C'est ce qui permet de "prêter des clés en faisant confiance au capitaine du relais", ce qui permet à votre DID un reconnaissance sur tous les terminaux Astroport d'une même UPlanet.
 
 ### 8.4. Un Pont entre les Mondes : Interopérabilité Pragmatique
 
 L'inclusion de multiples méthodes de vérification (`G1/Duniter`, `Bitcoin`, `Monero`, `NOSTR`) dans un seul document DID est une approche pragmatique et puissante. Plutôt que de créer un système isolé, nous construisons un **pont d'identité**.
 
-Un utilisateur peut ainsi prouver la propriété de ses adresses sur différentes plateformes en utilisant une seule et même identité racine. Cette approche de **clés jumelles Ed25519** (décrite dans l'article de CopyLaRadio) résout un problème majeur de fragmentation de l'identité dans l'écosystème décentralisé.
-
-Le DID UPlanet devient un véritable **agrégateur d'identité souveraine**. La double méthode de résolution (racine et `.well-known`) renforce cette philosophie : elle est à la fois simple pour les membres de l'écosystème et compatible avec les outils standards du web décentralisé.
+Le DID UPlanet accessible sur IPFS devient un véritable **agrégateur d'identité souveraine**. Elle est à la fois simple pour les membres de l'écosystème et compatible avec les outils standards du web décentralisé.
 
 ### 8.5. La Confiance à 3 Tiers : Un Modèle Social
 
@@ -666,7 +473,7 @@ Ce modèle incarne la vision de la **monnaie libre** : l'équilibre entre l'indi
 
 ### 8.6. Vers une Économie de la Location Décentralisée
 
-Les standards **DID** et **UCAN** fournissent une grammaire et une syntaxe communes pour l'identité décentralisée. L'écosystème **UPlanet** utilise cette grammaire pour écrire une histoire bien plus riche : celle de la **propriété numérique souveraine** transformée en modèle économique.
+Le standard **DID** fournit une grammaire et une syntaxe communes pour l'identité décentralisée. L'écosystème **UPlanet** utilise cette grammaire pour écrire une histoire bien plus riche : celle de la **propriété numérique souveraine** transformée en modèle économique.
 
 - La **ZEN Card** n'est pas qu'un identifiant, c'est un **titre de propriété**
 - Le **MULTIPASS** n'est pas qu'une autorisation, c'est un **contrat de location dynamique**
@@ -687,13 +494,12 @@ Nous construisons plus qu'un système technique : nous construisons les **fondat
 C'est la promesse d'UPlanet : un espace où la souveraineté numérique n'est pas un privilège, mais un **droit fondamental**, accessible à tous via un simple email et protégé par la cryptographie moderne.
 
 
-
 ## Security Considerations
 
 1. **Key Management**: Private keys are never included in the DID document
 2. **Access Control**: The `.secret.disco` file remains encrypted and protected
 3. **SSSS Protection**: Secret sharing ensures key recovery without single point of failure
-4. **Multiple Keys**: Different keys for different purposes (authentication, encryption, signing)
+4. **Multiple Keys**: Different keys for different crypto applications (PGP, SSH, ...)
 
 ## Future Enhancements
 
