@@ -234,6 +234,108 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo "$DISCO" > ${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco
     chmod 600 ${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco
 
+    ## Create DID (Decentralized Identifier) Document - W3C Standard
+    # DID follows W3C DID 1.0 specification: https://www.w3.org/TR/did-1.0/
+    cat > ${HOME}/.zen/game/nostr/${EMAIL}/did.json <<EOF
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://w3id.org/security/suites/ed25519-2020/v1",
+    "https://w3id.org/security/suites/x25519-2020/v1"
+  ],
+  "id": "did:nostr:${HEX}",
+  "alsoKnownAs": [
+    "mailto:${EMAIL}",
+    "did:g1:${G1PUBNOSTR}",
+    "ipns://${NOSTRNS}"
+  ],
+  "verificationMethod": [
+    {
+      "id": "did:nostr:${HEX}#nostr-key",
+      "type": "Ed25519VerificationKey2020",
+      "controller": "did:nostr:${HEX}",
+      "publicKeyMultibase": "${NPUBLIC}",
+      "publicKeyHex": "${HEX}"
+    },
+    {
+      "id": "did:nostr:${HEX}#g1-key",
+      "type": "Ed25519VerificationKey2020",
+      "controller": "did:nostr:${HEX}",
+      "publicKeyBase58": "${G1PUBNOSTR}",
+      "blockchainAccountId": "duniter:g1:${G1PUBNOSTR}"
+    },
+    {
+      "id": "did:nostr:${HEX}#bitcoin-key",
+      "type": "EcdsaSecp256k1VerificationKey2019",
+      "controller": "did:nostr:${HEX}",
+      "blockchainAccountId": "bitcoin:mainnet:${BITCOIN}"
+    },
+    {
+      "id": "did:nostr:${HEX}#monero-key",
+      "type": "MoneroVerificationKey",
+      "controller": "did:nostr:${HEX}",
+      "blockchainAccountId": "monero:mainnet:${MONERO}"
+    }
+  ],
+  "authentication": [
+    "did:nostr:${HEX}#nostr-key",
+    "did:nostr:${HEX}#g1-key"
+  ],
+  "assertionMethod": [
+    "did:nostr:${HEX}#nostr-key",
+    "did:nostr:${HEX}#g1-key"
+  ],
+  "keyAgreement": [
+    "did:nostr:${HEX}#nostr-key"
+  ],
+  "service": [
+    {
+      "id": "did:nostr:${HEX}#nostr-relay",
+      "type": "NostrRelay",
+      "serviceEndpoint": "${myRELAY}",
+      "description": "Primary NOSTR relay endpoint"
+    },
+    {
+      "id": "did:nostr:${HEX}#ipns-storage",
+      "type": "DecentralizedWebNode",
+      "serviceEndpoint": "${myIPFS}/ipns/${NOSTRNS}",
+      "description": "IPNS personal storage vault"
+    },
+    {
+      "id": "did:nostr:${HEX}#udrive",
+      "type": "DecentralizedWebNode",
+      "serviceEndpoint": "${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE",
+      "description": "Personal cloud storage and application platform"
+    },
+    {
+      "id": "did:nostr:${HEX}#uspot",
+      "type": "CredentialRegistry",
+      "serviceEndpoint": "${uSPOT}",
+      "description": "UPlanet wallet and credential service"
+    },
+    {
+      "id": "did:nostr:${HEX}#cesium",
+      "type": "CredentialRegistry",
+      "serviceEndpoint": "${myIPFS}/ipfs/QmYZWzSfPgb1y83fWTmKBEHdA9QoxsYBmqLkEJU2KQ1DYW/#/app/wot/${G1PUBNOSTR}/",
+      "description": "G1 Cesium+ wallet interface"
+    }
+  ],
+  "metadata": {
+    "created": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+    "updated": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+    "uplanet": "${UPLANETNAME}",
+    "uplanetG1Pub": "${UPLANETG1PUB:0:8}",
+    "coordinates": {
+      "latitude": "${ZLAT}",
+      "longitude": "${ZLON}"
+    },
+    "language": "${LANG}",
+    "youser": "${YOUSER}"
+  }
+}
+EOF
+    echo "✅ DID document created: ${HOME}/.zen/game/nostr/${EMAIL}/did.json"
+
     ##############################################################
     [[ "$Z" == ":ZEN" ]] && ZenECO="(1Ẑ = 1€)" || ZenECO="(1Ẑ = 0.1Ğ1)"
     ### PREPARE NOSTR ZINE
@@ -275,14 +377,14 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
 
     ### SEND NOSTR MESSAGE WITH QR CODE LINK
-    Mymessage="🎉 ẐEN wallet : ${G1PUBNOSTR}${Z} 🎫 ${uSPOT}/check_balance?g1pub=${EMAIL} 𝄃𝄃𝄂𝄂𝄀𝄁𝄃𝄂𝄂𝄃 ${myIPFS}/ipfs/${G1PUBNOSTRQR} "
+    Mymessage="🎉 ẐEN wallet : ${G1PUBNOSTR}${Z} 🎫 ${uSPOT}/check_balance?g1pub=${EMAIL} 𝄃𝄃𝄂𝄂𝄀𝄁𝄃𝄂𝄂𝄃 ${myIPFS}/ipfs/${G1PUBNOSTRQR} 🆔 DID: did:nostr:${HEX} 📄 ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/did.json"
     NPRIV_HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPRIV)
     HEX_HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPUBLIC)
     nostpy-cli send_event \
         -privkey "$NPRIV_HEX" \
         -kind 1 \
         -content "$Mymessage" \
-        -tags "[['p', '$HEX_HEX']]" \
+        -tags "[['p', '$HEX_HEX'], ['i', 'did:nostr:${HEX}']]" \
         --relay "$myRELAY" &>/dev/null
 
 ## IT MAKES local Astroport publishing to UPlanet ORIGIN relay (i)
@@ -291,7 +393,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             -privkey "$NPRIV_HEX" \
             -kind 1 \
             -content "$Mymessage" \
-            -tags "[['p', '$HEX_HEX']]" \
+            -tags "[['p', '$HEX_HEX'], ['i', 'did:nostr:${HEX}']]" \
             --relay "wss://relay.copylaradio.com" &>/dev/null
     fi
 
@@ -312,6 +414,11 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Documents
     cat "${HOME}/.zen/workspace/UPlanet/UPlanet_Enter_Help.md" \
         > "${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Documents/README.${YOUSER}.md"
+
+    ## Create .well-known/did.json for standard DID resolution (W3C compliant)
+    mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/.well-known
+    cp ${HOME}/.zen/game/nostr/${EMAIL}/did.json ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/.well-known/did.json
+    echo "✅ DID well-known endpoint created for standard resolution"
 
     ## Link generate_ipfs_structure.sh to uDRIVE
     cd ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/
@@ -345,7 +452,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     ${MY_PATH}/../tools/nostr_setup_profile.py \
         "$NPRIV" \
         "[•͡˘㇁•͡˘] $YOUSER" "${G1PUBNOSTR}" \
-        "⏰ UPlanet Ẑen ${ORIGIN} // Waiting for Primo Ğ1 RX // ${myIPFS}/ipns/copylaradio.com" \
+        "⏰ UPlanet Ẑen ${ORIGIN} // Waiting for Primo Ğ1 RX // ${myIPFS}/ipns/copylaradio.com // DID: did:nostr:${HEX}" \
         "$myIPFS/ipfs/${G1PUBNOSTRQR}" \
         "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg" \
         "" "$myIPFS/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" "" "" "" "" \

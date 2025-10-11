@@ -420,15 +420,20 @@ create_current_files_list() {
         basename_file=$(basename "$file")
         relative_path="${file#$SOURCE_DIR/}"
 
-        # Ignorer les fichiers générés par ce script et les fichiers cachés
+        # Ignorer les fichiers générés par ce script et les fichiers cachés (sauf .well-known)
         if [[ "$basename_file" == manifest.json ]] || \
            [[ "$relative_path" == "index.html" ]] || \
            [[ "$basename_file" == upload_test.html ]] || \
            [[ "$basename_file" == generate_ipfs_structure.sh ]] || \
-           [[ "$basename_file" == .* ]] || \
-           [[ "$relative_path" == .* ]] || \
            [[ "$relative_path" == *"__pycache__"* ]]; then
             continue
+        fi
+        
+        # Ignore hidden files/dirs but allow .well-known (W3C standard for metadata)
+        if [[ "$basename_file" == .* ]] || [[ "$relative_path" == .* ]]; then
+            if [[ "$relative_path" != .well-known* ]]; then
+                continue
+            fi
         fi
 
         echo "$relative_path" >> "$temp_file"
@@ -585,11 +590,16 @@ while IFS= read -r -d '' dir; do
     basename_dir=$(basename "$dir")
     relative_path="${dir#$SOURCE_DIR/}"
 
-    # Ignorer le répertoire racine et les répertoires cachés
-    if [[ "$dir" == "$SOURCE_DIR" ]] || \
-       [[ "$basename_dir" == .* ]] || \
-       [[ "$relative_path" == .* ]]; then
+    # Ignorer le répertoire racine et les répertoires cachés (sauf .well-known)
+    if [[ "$dir" == "$SOURCE_DIR" ]]; then
         continue
+    fi
+    
+    # Ignore hidden directories but allow .well-known (W3C standard for metadata)
+    if [[ "$basename_dir" == .* ]] || [[ "$relative_path" == .* ]]; then
+        if [[ "$relative_path" != .well-known* ]]; then
+            continue
+        fi
     fi
 
     # Compter les fichiers dans ce répertoire (non récursif)
@@ -640,7 +650,7 @@ while IFS= read -r -d '' file; do
 
     log_message "🔍 Examen du fichier: $relative_path"
 
-    # Ignorer les fichiers générés par ce script et les fichiers cachés
+    # Ignorer les fichiers générés par ce script et les fichiers cachés (sauf .well-known)
     if [[ "$basename_file" == manifest.json ]]; then
         log_message "   ⏭️  Ignoré: fichier manifest.json (généré par ce script)"
         continue
@@ -653,15 +663,19 @@ while IFS= read -r -d '' file; do
     elif [[ "$basename_file" == generate_ipfs_structure.sh ]]; then
         log_message "   ⏭️  Ignoré: script generate_ipfs_structure.sh"
         continue
-    elif [[ "$basename_file" == .* ]]; then
-        log_message "   ⏭️  Ignoré: fichier caché $basename_file"
-        continue
-    elif [[ "$relative_path" == .* ]]; then
-        log_message "   ⏭️  Ignoré: chemin caché $relative_path"
-        continue
     elif [[ "$relative_path" == *"__pycache__"* ]]; then
         log_message "   ⏭️  Ignoré: cache Python $relative_path"
         continue
+    fi
+    
+    # Ignore hidden files/dirs but allow .well-known (W3C standard for metadata like DID documents)
+    if [[ "$basename_file" == .* ]] || [[ "$relative_path" == .* ]]; then
+        if [[ "$relative_path" != .well-known* ]]; then
+            log_message "   ⏭️  Ignoré: fichier/chemin caché $relative_path"
+            continue
+        else
+            log_message "   ✅ Inclusion du fichier standard W3C: $relative_path"
+        fi
     fi
 
     # Ignorer les répertoires (on ne veut que les fichiers)
