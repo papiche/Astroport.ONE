@@ -22,7 +22,6 @@
 # Les utilisateurs peuvent uploader n'importe quel fichier .txt
 # Le système détecte automatiquement le format Netscape (cookies)
 # et le sauvegarde dans ~/.zen/game/nostr/<email>/.cookie.txt
-# Les autres .txt sont placés normalement dans uDRIVE/Documents
 # Les cookies sont utilisés en priorité pour tous les téléchargements YouTube.
 ########################################################################
 # Source my.sh to get all necessary constants and functions
@@ -221,13 +220,47 @@ process_youtube() {
             fi
         fi
     fi
+    # Extract fields more safely
     yid=$(echo "$line" | cut -d '&' -f 1)
-    media_title=$(echo "$line" | cut -d '&' -f 2 | detox --inline)
+    raw_title=$(echo "$line" | cut -d '&' -f 2)
     duration=$(echo "$line" | cut -d '&' -f 3)
     uploader=$(echo "$line" | cut -d '&' -f 4)
-    [[ -z "$media_title" ]] && media_title="media-$(date +%s)"
+    
+    # Clean title safely
+    if [[ -n "$raw_title" ]]; then
+        media_title=$(echo "$raw_title" | detox --inline)
+    else
+        media_title="media-$(date +%s)"
+    fi
+    
+    # Debug the extracted values
+    log_debug "Extracted fields:"
+    log_debug "  yid: '$yid'"
+    log_debug "  raw_title: '$raw_title'"
+    log_debug "  media_title: '$media_title'"
+    log_debug "  duration: '$duration'"
+    log_debug "  uploader: '$uploader'"
+    
+    # Validate field separation - check if duration contains non-numeric characters
+    if [[ -n "$duration" && ! "$duration" =~ ^[0-9]+$ ]]; then
+        log_debug "Warning: Duration field may be corrupted: '$duration'"
+        log_debug "Raw line was: '$line'"
+        # Try to re-extract with different approach
+        if [[ "$line" =~ ^([^&]+)&(.+)&([0-9]+)&(.+)$ ]]; then
+            yid="${BASH_REMATCH[1]}"
+            raw_title="${BASH_REMATCH[2]}"
+            duration="${BASH_REMATCH[3]}"
+            uploader="${BASH_REMATCH[4]}"
+            log_debug "Re-extracted with regex: yid='$yid', title='$raw_title', duration='$duration', uploader='$uploader'"
+            if [[ -n "$raw_title" ]]; then
+                media_title=$(echo "$raw_title" | detox --inline)
+            else
+                media_title="media-$(date +%s)"
+            fi
+        fi
+    fi
     # If we still don't have a valid title or id, try to extract from YouTube page JSON
-    if [[ -z "$yid" || -z "$media_title" ]]; then
+    if [[ -z "$yid" || -z "$media_title" || "$media_title" == "media-$(date +%s)" ]]; then
         log_debug "yt-dlp metadata extraction failed, trying to extract from YouTube page JSON..."
         page_html=$(curl -sL "$url")
         player_json=$(echo "$page_html" | grep -oP 'var ytInitialPlayerResponse = \\K\\{.*?\\}(?=;)' | head -n1)
@@ -261,11 +294,20 @@ process_youtube() {
     fi
     # Set max duration to 3h (10800s) for both mp3 and mp4
     if [[ -n "$duration" ]]; then
-        if [ "$duration" -gt 10800 ]; then
-            log_debug "Media duration exceeds 3 hour limit."
-            echo '{"error":"Media duration exceeds 3 hour limit"}'
-            return 1
+        # Validate that duration is a number
+        if [[ "$duration" =~ ^[0-9]+$ ]]; then
+            if [ "$duration" -gt 10800 ]; then
+                log_debug "Media duration exceeds 3 hour limit: ${duration}s"
+                echo '{"error":"Media duration exceeds 3 hour limit"}'
+                return 1
+            fi
+            log_debug "Duration validation passed: ${duration}s"
+        else
+            log_debug "Warning: Invalid duration format: '$duration' (not a number)"
+            # Don't fail, just log the warning and continue
         fi
+    else
+        log_debug "No duration information available"
     fi
     # Download according to type, using the last successful browser_cookies (may be empty)
     log_debug "Starting download: $media_type, browser_cookies='$browser_cookies'"
