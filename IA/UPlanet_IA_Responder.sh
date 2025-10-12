@@ -662,11 +662,24 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 if [ -z "$youtube_url" ]; then
                     KeyANSWER="Désolé, Aucune URL YouTube valide trouvée dans votre message."
                 else
-                    # Enable debug mode for YouTube processing
-                    if [[ "$message_text" =~ \#mp3 ]]; then
-                        json=$($MY_PATH/process_youtube.sh --debug "$youtube_url" "mp3")
+                    # Get user uDRIVE path for YouTube downloads
+                    USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
+                    if [ $? -eq 0 ]; then
+                        echo "Using uDRIVE path for YouTube download: $USER_UDRIVE_PATH" >&2
+                        # Pass uDRIVE path to process_youtube.sh (if it supports it)
+                        if [[ "$message_text" =~ \#mp3 ]]; then
+                            json=$($MY_PATH/process_youtube.sh --debug "$youtube_url" "mp3" "$USER_UDRIVE_PATH")
+                        else
+                            json=$($MY_PATH/process_youtube.sh --debug "$youtube_url" "mp4" "$USER_UDRIVE_PATH")
+                        fi
                     else
-                        json=$($MY_PATH/process_youtube.sh --debug "$youtube_url" "mp4")
+                        echo "Warning: Using default location for YouTube download" >&2
+                        # Enable debug mode for YouTube processing
+                        if [[ "$message_text" =~ \#mp3 ]]; then
+                            json=$($MY_PATH/process_youtube.sh --debug "$youtube_url" "mp3")
+                        else
+                            json=$($MY_PATH/process_youtube.sh --debug "$youtube_url" "mp4")
+                        fi
                     fi
                     error=$(echo "$json" | jq -r .error 2>/dev/null)
                     if [[ -n "$error" && "$error" != "null" ]]; then
@@ -674,10 +687,26 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                         error_formatted=$(echo -e "$error")
                         KeyANSWER="$error_formatted"
                     else
-                        # Extract multiple values in one jq call
-                        eval $(echo "$json" | jq -r '"ipfs_url=" + .ipfs_url + ";" + "title=" + (.title | @sh) + ";" + "duration=" + (.duration | tostring) + ";" + "uploader=" + (.uploader | @sh) + ";" + "original_url=" + .original_url')
+                        # Debug: Log the JSON response
+                        echo "YouTube JSON response: $json" >&2
+                        
+                        # Extract values safely with fallbacks
+                        ipfs_url=$(echo "$json" | jq -r '.ipfs_url // empty' 2>/dev/null)
+                        title=$(echo "$json" | jq -r '.title // empty' 2>/dev/null)
+                        duration=$(echo "$json" | jq -r '.duration // empty' 2>/dev/null)
+                        uploader=$(echo "$json" | jq -r '.uploader // empty' 2>/dev/null)
+                        original_url=$(echo "$json" | jq -r '.original_url // empty' 2>/dev/null)
+                        
+                        # Debug: Log extracted values
+                        echo "Extracted values:" >&2
+                        echo "  ipfs_url: '$ipfs_url'" >&2
+                        echo "  title: '$title'" >&2
+                        echo "  duration: '$duration'" >&2
+                        echo "  uploader: '$uploader'" >&2
+                        echo "  original_url: '$original_url'" >&2
                         
                         # Format duration in H:MM:SS if possible
+                        duration_fmt="$duration"
                         if [[ "$duration" =~ ^[0-9]+$ ]]; then
                             hours=$((duration/3600))
                             mins=$(( (duration%3600)/60 ))
@@ -687,10 +716,10 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                             else
                                 duration_fmt=$(printf "%02d:%02d" $mins $secs)
                             fi
-                        else
-                            duration_fmt="$duration"
                         fi
-                        KeyANSWER="🎬 Title: $title\n⏱️ Duration: $duration_fmt\n👤 Uploader: $uploader\n🔗 Original: $original_url\n📦 IPFS: $ipfs_url"
+                        
+                        # Build response with proper escaping
+                        KeyANSWER="🎬 Title: ${title:-'Unknown'}\n⏱️ Duration: ${duration_fmt:-'Unknown'}\n👤 Uploader: ${uploader:-'Unknown'}\n🔗 Original: ${original_url:-'Unknown'}\n📦 IPFS: ${ipfs_url:-'Not available'}"
                     fi
                 fi
             elif [[ "${TAGS[plantnet]}" == true ]]; then

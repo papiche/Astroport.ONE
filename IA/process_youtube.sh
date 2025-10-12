@@ -47,19 +47,31 @@ MY_PATH="$( cd "$MY_PATH" && pwd )"
 
 # Vérifie si les arguments sont fournis
 if [ $# -lt 2 ]; then
-    log_debug "Usage: $0 <url> <format>"
-    echo "Usage: $0 <url> <format>" >&2
+    log_debug "Usage: $0 <url> <format> [udrive_path]"
+    echo "Usage: $0 <url> <format> [udrive_path]" >&2
     exit 1
 fi
 
 URL="$1"
 FORMAT="$2"
+UDRIVE_PATH="$3"
 
 . "$MY_PATH/../tools/my.sh"
 
 # Create temporary directory
 TMP_DIR="$HOME/.zen/tmp/youtube_$(date +%s)"
 mkdir -p "$TMP_DIR"
+
+# Determine output directory
+if [ -n "$UDRIVE_PATH" ] && [ -d "$UDRIVE_PATH" ]; then
+    OUTPUT_DIR="$UDRIVE_PATH"
+    echo "Using uDRIVE directory: $OUTPUT_DIR" >&2
+    log_debug "Using uDRIVE directory: $OUTPUT_DIR"
+else
+    OUTPUT_DIR="$TMP_DIR"
+    echo "Using temporary directory: $OUTPUT_DIR" >&2
+    log_debug "Using temporary directory: $OUTPUT_DIR"
+fi
 
 # Cleanup function
 cleanup() {
@@ -314,15 +326,15 @@ process_youtube() {
     case "$media_type" in
         mp3)
             yt-dlp $browser_cookies -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
-                -o "${temp_dir}/${media_title}.%(ext)s" "$url" 2>> "$LOGFILE"
+                -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" 2>> "$LOGFILE"
             ;;
         mp4)
             yt-dlp $browser_cookies -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best" \
                 --no-mtime --embed-thumbnail --add-metadata \
-                -o "${temp_dir}/${media_title}.%(ext)s" "$url" 2>> "$LOGFILE"
+                -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" 2>> "$LOGFILE"
             ;;
     esac
-    media_file=$(ls "$temp_dir"/${media_title}.* 2>/dev/null | head -n 1)
+    media_file=$(ls "$OUTPUT_DIR"/${media_title}.* 2>/dev/null | head -n 1)
     filename=$(basename "$media_file")
     log_debug "Downloaded file: $media_file"
     if [[ -n "$media_file" ]]; then
@@ -330,6 +342,8 @@ process_youtube() {
         log_debug "IPFS add result: $media_ipfs"
         if [[ -n "$media_ipfs" ]]; then
             ipfs_url="$myIPFS/ipfs/$media_ipfs/$filename"
+            echo "Media saved to: $media_file" >&2
+            log_debug "Media saved to: $media_file"
             echo '{'
             echo '  "ipfs_url": '"\"$ipfs_url\"",'
             echo '  "title": '"\"$media_title\"",'
