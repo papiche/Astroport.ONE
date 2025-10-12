@@ -135,6 +135,26 @@ find_user_cookie_file() {
     return 1
 }
 
+# Function to get user uDRIVE path
+get_user_udrive_path() {
+    local player="$1"
+    if [[ -n "$player" && "$player" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+        # Find user directory by email
+        local nostr_base_path="$HOME/.zen/game/nostr"
+        if [ -d "$nostr_base_path" ]; then
+            for email_dir in "$nostr_base_path"/*; do
+                if [ -d "$email_dir" ] && [[ "$email_dir" == *"$player"* ]]; then
+                    local udrive_path="$email_dir/APP/uDRIVE"
+                    mkdir -p "$udrive_path"
+                    echo "$udrive_path"
+                    return 0
+                fi
+            done
+        fi
+    fi
+    return 1
+}
+
 # Try user uploaded cookies first (priority)
 USER_COOKIE=$(find_user_cookie_file)
 if [[ -n "$USER_COOKIE" ]]; then
@@ -282,74 +302,72 @@ YTURL="$URL"
 [ ! $2 ] && [[ $YTURL == "" ]] && YTURL=$(zenity --entry --width 420 --title "Lien ou identifiant à copier" --text "Indiquez le lien (URL) ou l'ID de la vidéo" --entry-text="")
 [[ $YTURL == "" ]] && echo "URL EMPTY " && exit 1
 
-REVSOURCE="$(echo "$YTURL" | awk -F/ '{print $3}' | rev)_"
-
-# Create TEMP directory to copy $YID_$TITLE.$FILE_EXT
-YTEMP="$HOME/.zen/tmp/$(date -u +%s%N | cut -b1-13)"
-mkdir -p ${YTEMP}
-
-# youtube-dl $YTURL
 echo "VIDEO $YTURL"
 
-LINE="$(yt-dlp $BROWSER --print "%(id)s&%(title)s" "${YTURL}")"
-echo $LINE
-YID=$(echo "$LINE" | cut -d '&' -f 1)
-TITLE=$(echo "$LINE" | cut -d '&' -f 2- | detox --inline)
+# Get user uDRIVE path for YouTube downloads
+USER_UDRIVE_PATH=$(get_user_udrive_path "$PLAYER")
+if [[ $? -eq 0 ]]; then
+    echo "Using uDRIVE path: $USER_UDRIVE_PATH"
+else
+    echo "No uDRIVE path found for player: $PLAYER"
+fi
 
-        yt-dlp -f "(bv*[ext=mp4][height<=720]+ba/b[height<=720])" \
-            --no-playlist \
-            $BROWSER --verbose \
-            --download-archive $HOME/.zen/.yt-dlp.list \
-            -S res,ext:mp4:m4a --recode mp4 --no-mtime --embed-thumbnail --add-metadata \
-            --write-info-json --write-comments \
-            --write-sub --write-auto-sub --sub-langs all --convert-subs vtt \
-            -o "${YTEMP}/$TITLE.%(ext)s" "$YTURL"
+# Use process_youtube.sh for YouTube processing
+echo "Using process_youtube.sh for YouTube download..."
+YOUTUBE_RESULT=$(${MY_PATH}/IA/process_youtube.sh --debug "$YTURL" "mp4" "$USER_UDRIVE_PATH")
 
-        DFILE=$(ls ${YTEMP}/*.mp4)
-        echo "LISTING ${YTEMP} : $DFILE"
+# Check if process_youtube.sh succeeded
+if echo "$YOUTUBE_RESULT" | jq -e '.error' >/dev/null 2>&1; then
+    ERROR_MSG=$(echo "$YOUTUBE_RESULT" | jq -r '.error')
+    echo "YouTube processing failed: $ERROR_MSG"
+    espeak "YouTube processing failed"
+    exit 1
+fi
 
-        if [[ -z $DFILE ]]; then
-            ## SECOND TRY
-            espeak "first download failed... trying again"
-            yt-dlp --no-playlist $BROWSER \
-                    -S res,ext:mp4:m4a --recode mp4 --no-mtime --embed-thumbnail \
-                    --add-metadata --write-info-json --write-comments \
-                    --write-sub --write-auto-sub --sub-langs all --convert-subs vtt \
-                    -o "${YTEMP}/$TITLE.%(ext)s" "$YTURL"
-        fi
+# Extract values from JSON result
+IPFS_URL=$(echo "$YOUTUBE_RESULT" | jq -r '.ipfs_url // empty')
+TITLE=$(echo "$YOUTUBE_RESULT" | jq -r '.title // empty')
+DURATION=$(echo "$YOUTUBE_RESULT" | jq -r '.duration // empty')
+UPLOADER=$(echo "$YOUTUBE_RESULT" | jq -r '.uploader // empty')
+FILENAME=$(echo "$YOUTUBE_RESULT" | jq -r '.filename // empty')
 
-        DFILE=$(ls ${YTEMP}/*.mp4)
-        echo "LISTING ${YTEMP} : $DFILE"
+if [[ -z "$TITLE" || -z "$IPFS_URL" ]]; then
+    echo "Failed to extract required data from YouTube processing"
+    espeak "Failed to extract data"
+    exit 1
+fi
 
-        [[ $DFILE == "" ]] && espeak "cannot find file" && exit 1
+echo "OK $TITLE processed"
+espeak "OK $TITLE processed"
 
-        ZFILE="$TITLE.mp4"
-        echo "$ZFILE"
-
-FILE_NAME="$(basename "${ZFILE}")"
-FILE_EXT="${FILE_NAME##*.}"
-
-echo "OK $ZFILE copied"
-espeak "OK $TITLE copied"
-
+# Create MEDIAID and MEDIAKEY
+REVSOURCE="$(echo "$YTURL" | awk -F/ '{print $3}' | rev)_"
+YID=$(echo "$YTURL" | grep -oE '(?:v=|/)([a-zA-Z0-9_-]{11})' | cut -d'=' -f2 | cut -d'/' -f2)
 MEDIAID="$REVSOURCE${YID}"
 MEDIAKEY="YOUTUBE_${MEDIAID}"
 
+# Create directory structure
 FILE_PATH="$HOME/Astroport/${PLAYER}/youtube/$MEDIAID"
-mkdir -p ${FILE_PATH} && mv -f ${YTEMP}/* ${FILE_PATH}/
+mkdir -p ${FILE_PATH}
 
-FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${FILE_PATH}/${FILE_NAME}" | cut -d "x" -f 2)
+# Create symbolic link to uDRIVE file if available
+if [[ -n "$USER_UDRIVE_PATH" && -f "$USER_UDRIVE_PATH/$FILENAME" ]]; then
+    ln -sf "$USER_UDRIVE_PATH/$FILENAME" "${FILE_PATH}/${FILENAME}"
+    echo "Created symbolic link to uDRIVE file: $USER_UDRIVE_PATH/$FILENAME"
+fi
+
+# Get resolution from downloaded file
+FILE_RES="720"  # Default for YouTube downloads
+if [[ -f "${FILE_PATH}/${FILENAME}" ]]; then
+    FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${FILE_PATH}/${FILENAME}" 2>/dev/null | cut -d "x" -f 2 || echo "720")
+fi
 RES=${FILE_RES%?}0p
 
-## CREATE "~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt" and video.json
-URLENCODE_FILE_NAME=$(echo ${FILE_NAME} | jq -Rr @uri)
-
-## KEEPS KODI COMPATIBILITY (BROKEN astroport.py !! ) : TODO DEBUG
+## CREATE "~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt"
+URLENCODE_FILE_NAME=$(echo ${FILENAME} | jq -Rr @uri)
 echo "youtube;${MEDIAID};$(date -u +%s%N | cut -b1-13);${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$URLENCODE_FILE_NAME" > ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt
 
 # _IPFSREPFILEID_ is replaced later
-
-rm -Rf ${YTEMP}
 
     ;;
 
@@ -566,29 +584,44 @@ echo '[
         
         espeak "OK."
         
-        # Create TEMP directory for download
-        MP3TEMP="$HOME/.zen/tmp/$(date -u +%s%N | cut -b1-13)"
-        mkdir -p ${MP3TEMP}
+        # Get user uDRIVE path for MP3 downloads
+        USER_UDRIVE_PATH=$(get_user_udrive_path "$PLAYER")
+        if [[ $? -eq 0 ]]; then
+            echo "Using uDRIVE path: $USER_UDRIVE_PATH"
+        else
+            echo "No uDRIVE path found for player: $PLAYER"
+        fi
         
-        # Extract YouTube ID and title first (faster than full download)
-        LINE="$(yt-dlp $BROWSER --print "%(id)s&%(title)s" "${URL}")"
-        YOUTUBE_ID=$(echo "$LINE" | cut -d '&' -f 1)
-        FILE_TITLE=$(echo "$LINE" | cut -d '&' -f 2- | detox --inline)
+        # Use process_youtube.sh for MP3 processing
+        echo "Using process_youtube.sh for MP3 download..."
+        MP3_RESULT=$(${MY_PATH}/IA/process_youtube.sh --debug "$URL" "mp3" "$USER_UDRIVE_PATH")
+        
+        # Check if process_youtube.sh succeeded
+        if echo "$MP3_RESULT" | jq -e '.error' >/dev/null 2>&1; then
+            ERROR_MSG=$(echo "$MP3_RESULT" | jq -r '.error')
+            echo "MP3 processing failed: $ERROR_MSG"
+            espeak "MP3 processing failed"
+            exit 1
+        fi
+        
+        # Extract values from JSON result
+        IPFS_URL=$(echo "$MP3_RESULT" | jq -r '.ipfs_url // empty')
+        FILE_TITLE=$(echo "$MP3_RESULT" | jq -r '.title // empty')
+        DURATION=$(echo "$MP3_RESULT" | jq -r '.duration // empty')
+        UPLOADER=$(echo "$MP3_RESULT" | jq -r '.uploader // empty')
+        FILE_NAME=$(echo "$MP3_RESULT" | jq -r '.filename // empty')
+        
+        if [[ -z "$FILE_TITLE" || -z "$IPFS_URL" ]]; then
+            echo "Failed to extract required data from MP3 processing"
+            espeak "Failed to extract data"
+            exit 1
+        fi
         
         # Create MEDIAID and MEDIAKEY using YouTube ID
         REVSOURCE="$(echo "$URL" | awk -F/ '{print $3}' | rev)_"
+        YOUTUBE_ID=$(echo "$URL" | grep -oE '(?:v=|/)([a-zA-Z0-9_-]{11})' | cut -d'=' -f2 | cut -d'/' -f2)
         MEDIAID="${REVSOURCE}${YOUTUBE_ID}"
         MEDIAKEY="MP3_${MEDIAID}"
-        
-        # Download MP3 to temp directory
-        yt-dlp -x --no-mtime --audio-format mp3 --embed-thumbnail --add-metadata -o "${MP3TEMP}/%(autonumber)s_%(title)s.%(ext)s" "$URL"
-        
-        # Find the downloaded file
-        MP3FILE=$(ls ${MP3TEMP}/*.mp3 2>/dev/null | head -n 1)
-        [[ -z $MP3FILE ]] && espeak "No MP3 file found" && exit 1
-        
-        # Extract file info
-        FILE_NAME="$(basename "${MP3FILE}")"
         
         # Initialize missing variables for MP3
         SAISON=""
@@ -599,15 +632,15 @@ echo '[
         FILE_PATH="$HOME/Astroport/${PLAYER}/mp3/$MEDIAID"
         mkdir -p ${FILE_PATH}
         
-        # Move file to proper location
-        mv "${MP3FILE}" "${FILE_PATH}/${FILE_NAME}"
+        # Create symbolic link to uDRIVE file if available
+        if [[ -n "$USER_UDRIVE_PATH" && -f "$USER_UDRIVE_PATH/$FILE_NAME" ]]; then
+            ln -sf "$USER_UDRIVE_PATH/$FILE_NAME" "${FILE_PATH}/${FILE_NAME}"
+            echo "Created symbolic link to uDRIVE file: $USER_UDRIVE_PATH/$FILE_NAME"
+        fi
         
         # Create ajouter_video.txt
         URLENCODE_FILE_NAME=$(echo ${FILE_NAME} | jq -Rr @uri)
         echo "mp3;${MEDIAID};$(date -u +%s%N | cut -b1-13);${FILE_TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$URLENCODE_FILE_NAME" > ~/Astroport/${PLAYER}/mp3/${MEDIAID}/ajouter_video.txt
-        
-        # Clean up temp directory
-        rm -Rf ${MP3TEMP}
         
         espeak "Ready. MP3 file processed"
 
