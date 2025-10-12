@@ -239,6 +239,88 @@ test_browser_fallback() {
     fi
 }
 
+# Function to test access to liked videos (authentication test)
+test_liked_videos() {
+    local cookie_file="$1"
+    local email="$2"
+    
+    echo ""
+    echo "❤️  TEST 5: Accès aux vidéos likées (authentification)"
+    echo "======================================================"
+    
+    # YouTube liked videos playlist ID
+    local liked_playlist="https://www.youtube.com/playlist?list=LL"
+    
+    echo "   Test d'accès aux vidéos likées de l'utilisateur..."
+    echo "   URL: $liked_playlist"
+    echo ""
+    
+    local output
+    output=$(timeout 20 yt-dlp --cookies "$cookie_file" \
+        --flat-playlist \
+        --print-json \
+        --playlist-end 5 \
+        "$liked_playlist" 2>&1)
+    local exit_code=$?
+    
+    # Check for errors
+    if echo "$output" | grep -q "Sign in to confirm"; then
+        echo -e "${RED}❌ ÉCHEC${NC} - Authentification requise"
+        echo "   Les cookies ne permettent pas l'accès aux données privées"
+        return 1
+    fi
+    
+    if echo "$output" | grep -q "This playlist does not exist\|Private playlist\|Unavailable"; then
+        echo -e "${YELLOW}⚠️  INCERTAIN${NC} - Playlist non accessible"
+        echo "   Possible causes:"
+        echo "   • Compte sans vidéos likées"
+        echo "   • Playlist privée ou désactivée"
+        echo "   • Cookies partiellement valides"
+        return 1
+    fi
+    
+    if echo "$output" | grep -q "cookies are no longer valid"; then
+        echo -e "${RED}❌ ÉCHEC${NC} - Cookies expirés"
+        echo "   YouTube a invalidé ces cookies"
+        return 1
+    fi
+    
+    # Try to count videos found
+    local video_count=0
+    if echo "$output" | grep -q '"id":'; then
+        video_count=$(echo "$output" | grep -o '"id":' | wc -l)
+    fi
+    
+    if [[ $exit_code -eq 0 && $video_count -gt 0 ]]; then
+        echo -e "${GREEN}✅ SUCCÈS${NC} - Accès aux vidéos likées confirmé"
+        echo "   Vidéos détectées: $video_count"
+        echo ""
+        echo "   Aperçu des vidéos likées:"
+        
+        # Extract and display video titles
+        echo "$output" | jq -r 'select(.title) | "   • \(.title)"' 2>/dev/null | head -5
+        
+        echo ""
+        echo -e "   ${GREEN}✓${NC} Les cookies donnent accès aux données privées de l'utilisateur"
+        return 0
+    elif [[ $exit_code -eq 0 ]]; then
+        echo -e "${YELLOW}⚠️  PARTIEL${NC} - Authentification possible mais aucune vidéo trouvée"
+        echo "   Le compte n'a peut-être aucune vidéo likée"
+        echo "   Les cookies semblent valides mais le test est non concluant"
+        return 0
+    else
+        echo -e "${RED}❌ ÉCHEC${NC} - Impossible d'accéder à la playlist"
+        echo "   Code de sortie: $exit_code"
+        
+        # Show relevant error lines
+        echo "$output" | grep -E "(ERROR|WARNING|error)" | head -3 | while read line; do
+            echo "   $line"
+        done
+        
+        return 1
+    fi
+}
+
 # Function to generate detailed report
 generate_report() {
     local email="$1"
@@ -247,6 +329,7 @@ generate_report() {
     local test2_result="$4"
     local test3_result="$5"
     local test4_result="$6"
+    local test5_result="$7"
     
     local report_file="$RESULTS_DIR/report_${email//[@.]/_}_${TIMESTAMP}.txt"
     
@@ -267,6 +350,7 @@ TEST 1 - Extraction métadonnées: $test1_result
 TEST 2 - Structure du fichier:   $test2_result
 TEST 3 - Téléchargement réel:    $test3_result
 TEST 4 - Fallback navigateur:    $test4_result
+TEST 5 - Accès vidéos likées:    $test5_result
 
 ----------------------------------------------------
 SCORE GLOBAL
@@ -277,16 +361,22 @@ EOF
     [[ "$test1_result" == "PASS" ]] && score=$((score + 1))
     [[ "$test2_result" == "PASS" ]] && score=$((score + 1))
     [[ "$test3_result" == "PASS" ]] && score=$((score + 1))
+    [[ "$test5_result" == "PASS" ]] && score=$((score + 1))
     
-    echo "Tests réussis: $score/3" >> "$report_file"
+    echo "Tests réussis: $score/4" >> "$report_file"
     echo "" >> "$report_file"
     
-    if [[ $score -eq 3 ]]; then
+    if [[ $score -eq 4 ]]; then
         echo "✅ EXCELLENT - Les cookies sont pleinement fonctionnels" >> "$report_file"
+        echo "   Authentification complète avec accès aux données privées" >> "$report_file"
+    elif [[ $score -eq 3 ]]; then
+        echo "✅ BON - Les cookies fonctionnent bien" >> "$report_file"
+        echo "   Authentification valide pour la plupart des opérations" >> "$report_file"
     elif [[ $score -eq 2 ]]; then
-        echo "⚠️  BON - Les cookies fonctionnent partiellement" >> "$report_file"
+        echo "⚠️  MOYEN - Les cookies fonctionnent partiellement" >> "$report_file"
+        echo "   Certaines fonctionnalités peuvent être limitées" >> "$report_file"
     elif [[ $score -eq 1 ]]; then
-        echo "⚠️  MOYEN - Les cookies ont des limitations" >> "$report_file"
+        echo "⚠️  FAIBLE - Les cookies ont des limitations importantes" >> "$report_file"
     else
         echo "❌ CRITIQUE - Les cookies ne fonctionnent pas" >> "$report_file"
     fi
@@ -296,8 +386,10 @@ EOF
     echo "RECOMMANDATIONS" >> "$report_file"
     echo "----------------------------------------------------" >> "$report_file"
     
-    if [[ $score -lt 2 ]]; then
+    if [[ $score -le 2 ]]; then
         cat >> "$report_file" << EOF
+
+⚠️  ACTION RECOMMANDÉE : Renouveler les cookies
 
 1. Exportez de nouveaux cookies depuis votre navigateur
    Guide: https://ipfs.copylaradio.com/ipns/copylaradio.com/cookie.html
@@ -308,9 +400,27 @@ EOF
 
 4. Uploadez le fichier via: https://u.copylaradio.com/astro
 
+💡 Les cookies actuels ne donnent pas un accès complet aux fonctionnalités.
+
+EOF
+    elif [[ $score -eq 3 ]]; then
+        cat >> "$report_file" << EOF
+
+✅ Les cookies sont fonctionnels pour la plupart des opérations.
+
+💡 Si vous avez besoin d'accéder aux vidéos likées ou à d'autres données 
+   privées, vous pouvez renouveler les cookies pour un accès complet.
+
 EOF
     else
-        echo "Les cookies sont fonctionnels. Aucune action requise." >> "$report_file"
+        cat >> "$report_file" << EOF
+
+✅ Les cookies sont pleinement fonctionnels. Aucune action requise.
+
+Les cookies donnent un accès complet aux fonctionnalités YouTube, y compris
+les données privées de l'utilisateur (vidéos likées, playlists, etc.).
+
+EOF
     fi
     
     cat >> "$report_file" << EOF
@@ -368,6 +478,7 @@ test_account() {
     local test2_result="FAIL"
     local test3_result="FAIL"
     local test4_result="FAIL"
+    local test5_result="FAIL"
     
     if test_metadata_extraction "$cookie_file" "$email"; then
         test1_result="PASS"
@@ -385,12 +496,16 @@ test_account() {
         test4_result="PASS"
     fi
     
+    if test_liked_videos "$cookie_file" "$email"; then
+        test5_result="PASS"
+    fi
+    
     # Generate report
     echo ""
     echo "📊 GÉNÉRATION DU RAPPORT"
     echo "========================"
     
-    local report_file=$(generate_report "$email" "$cookie_file" "$test1_result" "$test2_result" "$test3_result" "$test4_result")
+    local report_file=$(generate_report "$email" "$cookie_file" "$test1_result" "$test2_result" "$test3_result" "$test4_result" "$test5_result")
     
     echo ""
     cat "$report_file"
