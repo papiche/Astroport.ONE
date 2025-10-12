@@ -38,6 +38,57 @@ MY_PATH="$(dirname "$0")"
 MY_PATH="$( cd "$MY_PATH" && pwd )"
 exec 2>&1 >> ~/.zen/tmp/IA.log
 
+# Function to get user uDRIVE directory based on email
+get_user_udrive_path() {
+    local email="$1"
+    if [ -z "$email" ]; then
+        echo "Error: Email required for uDRIVE path" >&2
+        return 1
+    fi
+    
+    # Find user directory by email
+    local nostr_base_path="$HOME/.zen/game/nostr"
+    local user_dir=""
+    
+    if [ -d "$nostr_base_path" ]; then
+        for email_dir in "$nostr_base_path"/*; do
+            if [ -d "$email_dir" ] && [[ "$email_dir" == *"$email"* ]]; then
+                user_dir="$email_dir"
+                break
+            fi
+        done
+    fi
+    
+    if [ -n "$user_dir" ] && [ -d "$user_dir" ]; then
+        local udrive_path="$user_dir/APP/uDRIVE"
+        mkdir -p "$udrive_path"
+        echo "$udrive_path"
+        return 0
+    else
+        echo "Error: User directory not found for email: $email" >&2
+        return 1
+    fi
+}
+
+# Function to get user uDRIVE path from KNAME (email format)
+get_user_udrive_from_kname() {
+    # Check if KNAME is in email format
+    if [[ "$KNAME" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+        local udrive_path=$(get_user_udrive_path "$KNAME")
+        if [ $? -eq 0 ]; then
+            echo "Using uDRIVE path: $udrive_path" >&2
+            echo "$udrive_path"
+            return 0
+        else
+            echo "Warning: Could not get uDRIVE path for email: $KNAME" >&2
+            return 1
+        fi
+    else
+        echo "Warning: KNAME is not in email format: $KNAME" >&2
+        return 1
+    fi
+}
+
 # Optimisation: Pre-compute current timestamp
 CURRENT_TIMESTAMP=$(date +%s)
 CURRENT_TIME_STR=$(date '+%Y-%m-%d %H:%M:%S')
@@ -553,7 +604,16 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#image//g; s/"//g' <<< "$message_text")
                 $MY_PATH/comfyui.me.sh
                 start_time=$(date +%s.%N)
-                IMAGE_URL="$($MY_PATH/generate_image.sh "${cleaned_text}")"
+                
+                # Get user uDRIVE path and generate image
+                USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
+                if [ $? -eq 0 ]; then
+                    IMAGE_URL="$($MY_PATH/generate_image.sh "${cleaned_text}" "$USER_UDRIVE_PATH")"
+                else
+                    echo "Warning: Using default location for image generation" >&2
+                    IMAGE_URL="$($MY_PATH/generate_image.sh "${cleaned_text}")"
+                fi
+                
                 end_time=$(date +%s.%N)
                 execution_time=$(echo "$end_time - $start_time" | bc)
                 if [ -n "$IMAGE_URL" ]; then
@@ -564,7 +624,16 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
             elif [[ "${TAGS[video]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#video//g; s/"//g' <<< "$message_text")
                 $MY_PATH/comfyui.me.sh
-                VIDEO_AI_RETURN="$($MY_PATH/generate_video.sh "${cleaned_text}" "$MY_PATH/workflow/Text2VideoWan2.1.json")"
+                
+                # Get user uDRIVE path and generate video
+                USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
+                if [ $? -eq 0 ]; then
+                    VIDEO_AI_RETURN="$($MY_PATH/generate_video.sh "${cleaned_text}" "$MY_PATH/workflow/Text2VideoWan2.1.json" "$USER_UDRIVE_PATH")"
+                else
+                    echo "Warning: Using default location for video generation" >&2
+                    VIDEO_AI_RETURN="$($MY_PATH/generate_video.sh "${cleaned_text}" "$MY_PATH/workflow/Text2VideoWan2.1.json")"
+                fi
+                
                 if [ -n "$VIDEO_AI_RETURN" ]; then
                     KeyANSWER="$VIDEO_AI_RETURN"
                 else
@@ -573,7 +642,16 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
             elif [[ "${TAGS[music]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#music//g; s/"//g' <<< "$message_text")
                 $MY_PATH/comfyui.me.sh
-                MUSIC_URL="$($MY_PATH/generate_music.sh "${cleaned_text}")"
+                
+                # Get user uDRIVE path and generate music
+                USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
+                if [ $? -eq 0 ]; then
+                    MUSIC_URL="$($MY_PATH/generate_music.sh "${cleaned_text}" "$USER_UDRIVE_PATH")"
+                else
+                    echo "Warning: Using default location for music generation" >&2
+                    MUSIC_URL="$($MY_PATH/generate_music.sh "${cleaned_text}")"
+                fi
+                
                 if [ -n "$MUSIC_URL" ]; then
                     KeyANSWER="$MUSIC_URL"
                 else

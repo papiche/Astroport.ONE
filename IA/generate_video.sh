@@ -8,9 +8,12 @@ ME="${0##*/}"
 
 # Vérifie si les arguments sont fournis
 if [ -z "$1" ] || [ -z "$2" ]; then
-  echo "Usage: $0 <prompt> <workflow_path>" >&2
+  echo "Usage: $0 <prompt> <workflow_path> [udrive_path]" >&2
   exit 1
 fi
+
+# Optional uDRIVE path parameter
+UDRIVE_PATH="$3"
 
 . "${MY_PATH}/../tools/my.sh"
 
@@ -28,14 +31,27 @@ generate_random_seed() {
 TMP_DIR="$HOME/.zen/tmp"
 mkdir -p "$TMP_DIR"
 
+# Déterminer le répertoire de destination
+if [ -n "$UDRIVE_PATH" ] && [ -d "$UDRIVE_PATH" ]; then
+    OUTPUT_DIR="$UDRIVE_PATH"
+    echo "Using uDRIVE directory: $OUTPUT_DIR" >&2
+else
+    OUTPUT_DIR="$TMP_DIR"
+    echo "Using temporary directory: $OUTPUT_DIR" >&2
+fi
+
 # Générer un identifiant unique pour cette exécution
 UNIQUE_ID=$(date +%s)_$(openssl rand -hex 4)
 TMP_WORKFLOW="$TMP_DIR/workflow_${UNIQUE_ID}.json"
-TMP_VIDEO="$TMP_DIR/video_${UNIQUE_ID}.mp4"
+TMP_VIDEO="$OUTPUT_DIR/video_${UNIQUE_ID}.mp4"
 
 # Nettoyage des fichiers temporaires à la sortie
 cleanup() {
-    rm -f "$TMP_WORKFLOW" "$TMP_VIDEO"
+    rm -f "$TMP_WORKFLOW"
+    # Only remove TMP_VIDEO if it's in the temp directory, not in uDRIVE
+    if [[ "$TMP_VIDEO" == "$TMP_DIR"* ]]; then
+        rm -f "$TMP_VIDEO"
+    fi
 }
 trap cleanup EXIT
 
@@ -256,6 +272,7 @@ get_video_result() {
   ipfs_hash=$(ipfs add -wq "$TMP_VIDEO" 2>/dev/null | tail -n 1)
   if [ -n "$ipfs_hash" ]; then
     echo "Vidéo ajoutée à IPFS avec le hash : $ipfs_hash" >&2
+    echo "Video saved to: $TMP_VIDEO" >&2
     # Seule l'URL IPFS est envoyée à stdout, avec le temps de génération
     local minutes=$((elapsed_time / 60))
     local seconds=$((elapsed_time % 60))
