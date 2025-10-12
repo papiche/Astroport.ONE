@@ -72,15 +72,19 @@ trap cleanup EXIT
 find_user_cookie_file() {
     # Search for .cookie.txt in user NOSTR directories
     local nostr_dir="$HOME/.zen/game/nostr"
+    log_debug "Searching for user cookie files in: $nostr_dir"
     if [[ -d "$nostr_dir" ]]; then
         for user_dir in "$nostr_dir"/*@*; do
             if [[ -f "$user_dir/.cookie.txt" ]]; then
-                log_debug "Found user cookie file: $user_dir/.cookie.txt"
+                log_debug "✓ Found user cookie file: $user_dir/.cookie.txt"
+                local cookie_age=$(($(date +%s) - $(stat -c %Y "$user_dir/.cookie.txt" 2>/dev/null || echo 0)))
+                log_debug "  Cookie file age: $((cookie_age / 86400)) days old"
                 echo "--cookies $user_dir/.cookie.txt"
                 return 0
             fi
         done
     fi
+    log_debug "✗ No user cookie file found"
     return 1
 }
 
@@ -148,28 +152,43 @@ process_youtube() {
     local yid media_title duration uploader
     local filename ipfs_url
     local user_cookie=""
-    log_debug "Start process_youtube: url=$url, media_type=$media_type, temp_dir=$temp_dir"
+    log_debug "=========================================="
+    log_debug "START YouTube Processing"
+    log_debug "URL: $url"
+    log_debug "Format: $media_type"
+    log_debug "Temp dir: $temp_dir"
+    log_debug "=========================================="
     
     # 0. First, try to use user's uploaded cookie file if available
+    log_debug "STEP 1: Checking for user-uploaded cookie file..."
     user_cookie=$(find_user_cookie_file)
     if [[ -n "$user_cookie" ]]; then
-        log_debug "Using user's uploaded cookie file: $user_cookie"
+        log_debug "✓ Using user's uploaded cookie file"
         browser_cookies="$user_cookie"
+        log_debug "Attempting metadata extraction with user cookies..."
         line="$(yt-dlp $browser_cookies --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$url" 2>> "$LOGFILE")"
+        local exit_code=$?
+        log_debug "yt-dlp exit code: $exit_code"
         log_debug "yt-dlp output (user cookies): $line"
+    else
+        log_debug "✗ No user cookie file available"
     fi
     
     # 1. Try to extract metadata without cookies (if not already done with user cookies)
     if [[ -z "$line" ]]; then
-        log_debug "Trying yt-dlp metadata extraction without cookies..."
+        log_debug "STEP 2: Trying yt-dlp metadata extraction without cookies..."
         line="$(yt-dlp --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$url" 2>> "$LOGFILE")"
-        log_debug "yt-dlp output: $line"
+        local exit_code=$?
+        log_debug "yt-dlp exit code: $exit_code"
+        log_debug "yt-dlp output (no cookies): $line"
     fi
     
     if [[ $? -ne 0 || -z "$line" ]]; then
         # Try browser cookies if user cookies didn't work
         if [[ -z "$user_cookie" ]]; then
+            log_debug "STEP 3: Trying browser cookies..."
             browser_pref=$(xdg-settings get default-web-browser 2>/dev/null | cut -d'.' -f1 | tr 'A-Z' 'a-z')
+            log_debug "Default browser detected: $browser_pref"
             case "$browser_pref" in
                 chromium|chrome) browser_cookies="--cookies-from-browser chrome" ;;
                 firefox) browser_cookies="--cookies-from-browser firefox" ;;
@@ -178,18 +197,27 @@ process_youtube() {
                 *) browser_cookies="" ;;
             esac
             if [[ -n "$browser_cookies" ]]; then
-                log_debug "Trying yt-dlp metadata extraction with browser cookies: $browser_cookies"
+                log_debug "Attempting metadata extraction with: $browser_cookies"
                 line="$(yt-dlp $browser_cookies --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$url" 2>> "$LOGFILE")"
+                local exit_code=$?
+                log_debug "yt-dlp exit code: $exit_code"
                 log_debug "yt-dlp output (browser cookies): $line"
+            else
+                log_debug "No browser cookies strategy available"
             fi
         fi
         if [[ $? -ne 0 || -z "$line" ]]; then
             # Generate temporary cookies as last resort
+            log_debug "STEP 4: Generating temporary cookies as last resort..."
             browser_cookies=$(get_youtube_cookies)
             if [[ -n "$browser_cookies" ]]; then
-                log_debug "Trying yt-dlp metadata extraction with generated cookies: $browser_cookies"
+                log_debug "Attempting metadata extraction with generated cookies"
                 line="$(yt-dlp $browser_cookies --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$url" 2>> "$LOGFILE")"
+                local exit_code=$?
+                log_debug "yt-dlp exit code: $exit_code"
                 log_debug "yt-dlp output (generated cookies): $line"
+            else
+                log_debug "Failed to generate cookies"
             fi
         fi
     fi
@@ -228,7 +256,7 @@ process_youtube() {
             fi
         fi
         log_debug "Failed to extract video metadata from YouTube page."
-        echo '{"error":"Failed to extract video metadata (title/id) from YouTube. Authentication or consent may be required."}'
+        echo '{"error":"❌ YouTube authentication failed. Please export fresh cookies from your browser.\n\n📖 Guide: https://ipfs.copylaradio.com/ipns/copylaradio.com/UPlanet/earth/cookie.html\n\n💡 Upload your cookies.txt file via https://u.copylaradio.com/astro"}'
         exit 1
     fi
     # Set max duration to 3h (10800s) for both mp3 and mp4
@@ -273,7 +301,7 @@ process_youtube() {
         fi
     fi
     log_debug "Download or IPFS add failed."
-    echo '{"error":"Download or IPFS add failed"}'
+    echo '{"error":"❌ Download or IPFS upload failed.\n\n💡 This might be due to:\n• Expired YouTube cookies\n• Bot detection by YouTube\n• Network issues\n\n📖 Cookie Guide: https://ipfs.copylaradio.com/ipns/copylaradio.com/UPlanet/earth/cookie.html\n💾 Upload cookies: https://u.copylaradio.com/astro"}'
     return 1
 }
 

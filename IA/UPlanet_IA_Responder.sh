@@ -584,14 +584,17 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 if [ -z "$youtube_url" ]; then
                     KeyANSWER="Désolé, Aucune URL YouTube valide trouvée dans votre message."
                 else
+                    # Enable debug mode for YouTube processing
                     if [[ "$message_text" =~ \#mp3 ]]; then
-                        json=$($MY_PATH/process_youtube.sh "$youtube_url" "mp3")
+                        json=$($MY_PATH/process_youtube.sh --debug "$youtube_url" "mp3")
                     else
-                        json=$($MY_PATH/process_youtube.sh "$youtube_url" "mp4")
+                        json=$($MY_PATH/process_youtube.sh --debug "$youtube_url" "mp4")
                     fi
                     error=$(echo "$json" | jq -r .error 2>/dev/null)
                     if [[ -n "$error" && "$error" != "null" ]]; then
-                        KeyANSWER="Désolé, erreur lors du téléchargement : $error"
+                        # Format error message with proper newlines
+                        error_formatted=$(echo -e "$error")
+                        KeyANSWER="$error_formatted"
                     else
                         # Extract multiple values in one jq call
                         eval $(echo "$json" | jq -r '"ipfs_url=" + .ipfs_url + ";" + "title=" + (.title | @sh) + ";" + "duration=" + (.duration | tostring) + ";" + "uploader=" + (.uploader | @sh) + ";" + "original_url=" + .original_url')
