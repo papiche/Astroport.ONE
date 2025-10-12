@@ -232,6 +232,9 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     PROFILEQR=$(ipfs --timeout 20s add -q ~/.zen/game/nostr/${EMAIL}/PROFILE.QR.png)
     # ipfs pin rm /ipfs/${PROFILEQR} 2>/dev/null
 
+    ### PREPARE MULTIPASS PRINT CARD (uSPOT + SSSS QR codes)
+    ${MY_PATH}/MULTIPASS.print.sh "${EMAIL}" &
+
     ## TODATE TIME STAMP
     echo ${TODATE} > ${HOME}/.zen/game/nostr/${EMAIL}/TODATE
     ## ZLAT ZLON
@@ -384,7 +387,6 @@ EOF
 
     fi
 
-
     ### SEND NOSTR MESSAGE WITH QR CODE LINK
     Mymessage="🎉 ẐEN wallet : ${G1PUBNOSTR}${Z} 🎫 ${uSPOT}/check_balance?g1pub=${EMAIL} 𝄃𝄃𝄂𝄂𝄀𝄁𝄃𝄂𝄂𝄃 ${myIPFS}/ipfs/${G1PUBNOSTRQR} 🆔 DID: did:nostr:${HEX} 📄 ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/did.json"
     NPRIV_HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPRIV)
@@ -499,9 +501,9 @@ EOF
     rm -Rf ~/.zen/tmp/${MOATS-null}
     ### UNCOMMENT for DEBUG
     #~ echo "SALT=$SALT PEPPER=$PEPPER \
-#~ NPUBLIC=${NPUBLIC} NPRIV=${NPRIV} EMAIL=${EMAIL} SSSSQR=${SSSSQR} \
-#~ G1PUBNOSTR=${G1PUBNOSTR} G1PUBNOSTRQR=${G1PUBNOSTRQR} VAULTNSQR=${VAULTNSQR} PROFILEQR=${PROFILEQR} NOSTRNS=${NOSTRNS} \
-#~ CAPTAINEMAIL=${CAPTAINEMAIL} MOAT=$MOATS"
+    #~ NPUBLIC=${NPUBLIC} NPRIV=${NPRIV} EMAIL=${EMAIL} SSSSQR=${SSSSQR} \
+    #~ G1PUBNOSTR=${G1PUBNOSTR} G1PUBNOSTRQR=${G1PUBNOSTRQR} VAULTNSQR=${VAULTNSQR} PROFILEQR=${PROFILEQR} NOSTRNS=${NOSTRNS} \
+    #~ CAPTAINEMAIL=${CAPTAINEMAIL} MOAT=$MOATS"
 
     echo "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html"
 
