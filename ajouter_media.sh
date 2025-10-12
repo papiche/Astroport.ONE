@@ -303,6 +303,7 @@ YTURL="$URL"
 [[ $YTURL == "" ]] && echo "URL EMPTY " && exit 1
 
 echo "VIDEO $YTURL"
+echo "Processing URL: $YTURL"
 
 # Get user uDRIVE path for YouTube downloads
 USER_UDRIVE_PATH=$(get_user_udrive_path "$PLAYER")
@@ -314,7 +315,21 @@ fi
 
 # Use process_youtube.sh for YouTube processing
 echo "Using process_youtube.sh for YouTube download..."
+echo "Command: ${MY_PATH}/IA/process_youtube.sh --debug \"$YTURL\" \"mp4\" \"$USER_UDRIVE_PATH\""
 YOUTUBE_RESULT=$(${MY_PATH}/IA/process_youtube.sh --debug "$YTURL" "mp4" "$USER_UDRIVE_PATH")
+YOUTUBE_EXIT_CODE=$?
+echo "process_youtube.sh exit code: $YOUTUBE_EXIT_CODE"
+
+# Debug: Show the raw result
+echo "Raw YOUTUBE_RESULT: $YOUTUBE_RESULT"
+
+# Check if the result is valid JSON
+if ! echo "$YOUTUBE_RESULT" | jq . >/dev/null 2>&1; then
+    echo "Invalid JSON returned from process_youtube.sh"
+    echo "Raw output: $YOUTUBE_RESULT"
+    espeak "Invalid JSON from YouTube processing"
+    exit 1
+fi
 
 # Check if process_youtube.sh succeeded
 if echo "$YOUTUBE_RESULT" | jq -e '.error' >/dev/null 2>&1; then
@@ -324,15 +339,25 @@ if echo "$YOUTUBE_RESULT" | jq -e '.error' >/dev/null 2>&1; then
     exit 1
 fi
 
-# Extract values from JSON result
-IPFS_URL=$(echo "$YOUTUBE_RESULT" | jq -r '.ipfs_url // empty')
-TITLE=$(echo "$YOUTUBE_RESULT" | jq -r '.title // empty')
-DURATION=$(echo "$YOUTUBE_RESULT" | jq -r '.duration // empty')
-UPLOADER=$(echo "$YOUTUBE_RESULT" | jq -r '.uploader // empty')
-FILENAME=$(echo "$YOUTUBE_RESULT" | jq -r '.filename // empty')
+# Extract values from JSON result with better error handling
+IPFS_URL=$(echo "$YOUTUBE_RESULT" | jq -r '.ipfs_url // empty' 2>/dev/null)
+TITLE=$(echo "$YOUTUBE_RESULT" | jq -r '.title // empty' 2>/dev/null)
+DURATION=$(echo "$YOUTUBE_RESULT" | jq -r '.duration // empty' 2>/dev/null)
+UPLOADER=$(echo "$YOUTUBE_RESULT" | jq -r '.uploader // empty' 2>/dev/null)
+FILENAME=$(echo "$YOUTUBE_RESULT" | jq -r '.filename // empty' 2>/dev/null)
+
+# Debug: Show extracted values
+echo "Extracted values:"
+echo "  IPFS_URL: '$IPFS_URL'"
+echo "  TITLE: '$TITLE'"
+echo "  DURATION: '$DURATION'"
+echo "  UPLOADER: '$UPLOADER'"
+echo "  FILENAME: '$FILENAME'"
 
 if [[ -z "$TITLE" || -z "$IPFS_URL" ]]; then
     echo "Failed to extract required data from YouTube processing"
+    echo "TITLE: '$TITLE'"
+    echo "IPFS_URL: '$IPFS_URL'"
     espeak "Failed to extract data"
     exit 1
 fi
@@ -582,6 +607,8 @@ echo '[
         [[ $URL == "" ]] && URL=$(zenity --entry --width 500 --title "Lien Youtube à convertir en MP3" --text "Indiquez le lien (URL)" --entry-text="")
         [[ $URL == "" ]] && echo "URL EMPTY" && exit 1
         
+        echo "Processing URL: $URL"
+        
         espeak "OK."
         
         # Get user uDRIVE path for MP3 downloads
@@ -594,7 +621,35 @@ echo '[
         
         # Use process_youtube.sh for MP3 processing
         echo "Using process_youtube.sh for MP3 download..."
+        echo "Command: ${MY_PATH}/IA/process_youtube.sh --debug \"$URL\" \"mp3\" \"$USER_UDRIVE_PATH\""
+        
+        # Check if process_youtube.sh exists and is executable
+        if [[ ! -f "${MY_PATH}/IA/process_youtube.sh" ]]; then
+            echo "ERROR: process_youtube.sh not found at ${MY_PATH}/IA/process_youtube.sh"
+            espeak "process_youtube.sh not found"
+            exit 1
+        fi
+        
+        if [[ ! -x "${MY_PATH}/IA/process_youtube.sh" ]]; then
+            echo "ERROR: process_youtube.sh is not executable"
+            espeak "process_youtube.sh not executable"
+            exit 1
+        fi
+        
         MP3_RESULT=$(${MY_PATH}/IA/process_youtube.sh --debug "$URL" "mp3" "$USER_UDRIVE_PATH")
+        MP3_EXIT_CODE=$?
+        echo "process_youtube.sh exit code: $MP3_EXIT_CODE"
+        
+        # Debug: Show the raw result
+        echo "Raw MP3_RESULT: $MP3_RESULT"
+        
+        # Check if the result is valid JSON
+        if ! echo "$MP3_RESULT" | jq . >/dev/null 2>&1; then
+            echo "Invalid JSON returned from process_youtube.sh"
+            echo "Raw output: $MP3_RESULT"
+            espeak "Invalid JSON from YouTube processing"
+            exit 1
+        fi
         
         # Check if process_youtube.sh succeeded
         if echo "$MP3_RESULT" | jq -e '.error' >/dev/null 2>&1; then
@@ -604,15 +659,25 @@ echo '[
             exit 1
         fi
         
-        # Extract values from JSON result
-        IPFS_URL=$(echo "$MP3_RESULT" | jq -r '.ipfs_url // empty')
-        FILE_TITLE=$(echo "$MP3_RESULT" | jq -r '.title // empty')
-        DURATION=$(echo "$MP3_RESULT" | jq -r '.duration // empty')
-        UPLOADER=$(echo "$MP3_RESULT" | jq -r '.uploader // empty')
-        FILE_NAME=$(echo "$MP3_RESULT" | jq -r '.filename // empty')
+        # Extract values from JSON result with better error handling
+        IPFS_URL=$(echo "$MP3_RESULT" | jq -r '.ipfs_url // empty' 2>/dev/null)
+        FILE_TITLE=$(echo "$MP3_RESULT" | jq -r '.title // empty' 2>/dev/null)
+        DURATION=$(echo "$MP3_RESULT" | jq -r '.duration // empty' 2>/dev/null)
+        UPLOADER=$(echo "$MP3_RESULT" | jq -r '.uploader // empty' 2>/dev/null)
+        FILE_NAME=$(echo "$MP3_RESULT" | jq -r '.filename // empty' 2>/dev/null)
+        
+        # Debug: Show extracted values
+        echo "Extracted values:"
+        echo "  IPFS_URL: '$IPFS_URL'"
+        echo "  FILE_TITLE: '$FILE_TITLE'"
+        echo "  DURATION: '$DURATION'"
+        echo "  UPLOADER: '$UPLOADER'"
+        echo "  FILE_NAME: '$FILE_NAME'"
         
         if [[ -z "$FILE_TITLE" || -z "$IPFS_URL" ]]; then
             echo "Failed to extract required data from MP3 processing"
+            echo "FILE_TITLE: '$FILE_TITLE'"
+            echo "IPFS_URL: '$IPFS_URL'"
             espeak "Failed to extract data"
             exit 1
         fi

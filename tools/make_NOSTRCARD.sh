@@ -335,8 +335,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
   "metadata": {
     "created": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
     "updated": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-    "uplanet": "${UPLANETNAME}",
-    "uplanetG1Pub": "${UPLANETG1PUB:0:8}",
+    "uplanet": "${UPLANETG1PUB:0:8}",
     "coordinates": {
       "latitude": "${ZLAT}",
       "longitude": "${ZLON}"

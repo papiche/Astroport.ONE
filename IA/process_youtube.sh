@@ -62,15 +62,17 @@ UDRIVE_PATH="$3"
 TMP_DIR="$HOME/.zen/tmp/youtube_$(date +%s)"
 mkdir -p "$TMP_DIR"
 
-# Determine output directory
+# Always use temporary directory for download
+OUTPUT_DIR="$TMP_DIR"
+echo "Using temporary directory for download: $OUTPUT_DIR" >&2
+log_debug "Using temporary directory for download: $OUTPUT_DIR"
+
+# Check if uDRIVE path is provided for final copy
+UDRIVE_COPY_PATH=""
 if [ -n "$UDRIVE_PATH" ] && [ -d "$UDRIVE_PATH" ]; then
-    OUTPUT_DIR="$UDRIVE_PATH"
-    echo "Using uDRIVE directory: $OUTPUT_DIR" >&2
-    log_debug "Using uDRIVE directory: $OUTPUT_DIR"
-else
-    OUTPUT_DIR="$TMP_DIR"
-    echo "Using temporary directory: $OUTPUT_DIR" >&2
-    log_debug "Using temporary directory: $OUTPUT_DIR"
+    UDRIVE_COPY_PATH="$UDRIVE_PATH"
+    echo "Will copy final file to uDRIVE: $UDRIVE_COPY_PATH" >&2
+    log_debug "Will copy final file to uDRIVE: $UDRIVE_COPY_PATH"
 fi
 
 # Cleanup function
@@ -258,7 +260,7 @@ process_youtube() {
         log_debug "Warning: Duration field may be corrupted: '$duration'"
         log_debug "Raw line was: '$line'"
         # Try to re-extract with different approach
-        if [[ "$line" =~ ^([^&]+)&(.+)&([0-9]+)&(.+)$ ]]; then
+        if [[ "$line" =~ ^([^&]+)\&(.+)\&([0-9]+)\&(.+)$ ]]; then
             yid="${BASH_REMATCH[1]}"
             raw_title="${BASH_REMATCH[2]}"
             duration="${BASH_REMATCH[3]}"
@@ -344,6 +346,43 @@ process_youtube() {
             ipfs_url="$myIPFS/ipfs/$media_ipfs/$filename"
             echo "Media saved to: $media_file" >&2
             log_debug "Media saved to: $media_file"
+            
+            # Copy to uDRIVE if path provided
+            if [[ -n "$UDRIVE_COPY_PATH" ]]; then
+                # Determine target directory based on format
+                if [[ "$media_type" == "mp3" ]]; then
+                    # Extract artist from uploader or title
+                    artist=$(echo "$uploader" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 50)
+                    if [[ -z "$artist" || "$artist" == "null" ]]; then
+                        artist="Unknown_Artist"
+                    fi
+                    
+                    # Create Music/Artist directory
+                    music_dir="$UDRIVE_COPY_PATH/Music/$artist"
+                    mkdir -p "$music_dir"
+                    udrive_file="$music_dir/$filename"
+                    
+                    echo "Organizing MP3 in Music/$artist/" >&2
+                    log_debug "Organizing MP3 in Music/$artist/"
+                else
+                    # For MP4 videos, use Videos directory
+                    videos_dir="$UDRIVE_COPY_PATH/Videos"
+                    mkdir -p "$videos_dir"
+                    udrive_file="$videos_dir/$filename"
+                    
+                    echo "Organizing MP4 in Videos/" >&2
+                    log_debug "Organizing MP4 in Videos/"
+                fi
+                
+                if cp "$media_file" "$udrive_file"; then
+                    echo "File copied to uDRIVE: $udrive_file" >&2
+                    log_debug "File copied to uDRIVE: $udrive_file"
+                else
+                    echo "Warning: Failed to copy file to uDRIVE: $udrive_file" >&2
+                    log_debug "Warning: Failed to copy file to uDRIVE: $udrive_file"
+                fi
+            fi
+            
             echo '{'
             echo '  "ipfs_url": '"\"$ipfs_url\"",'
             echo '  "title": '"\"$media_title\"",'
