@@ -27,6 +27,21 @@ generate_cesium_link() {
     echo "$CESIUMIPFS/#/app/wot/${pubkey}/"
 }
 
+# Function to extract and verify ZEN Card owner from transaction comment
+get_zencard_owner() {
+    local comment="$1"
+    local tx_pubkey="$2"
+    
+    # Extract email from comment
+    local email=$(echo "$comment" | grep -o '[a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]*\.[a-zA-Z]{2,}' | head -n 1)
+    
+    # Verify ZEN Card exists and matches
+    if [[ -n "$email" && -f "$HOME/.zen/game/players/${email}/.g1pub" ]]; then
+        local zencard_g1pub=$(cat "$HOME/.zen/game/players/${email}/.g1pub" 2>/dev/null)
+        [[ "$zencard_g1pub" == "$tx_pubkey" ]] && echo "$email"
+    fi
+}
+
 # Function to display wallet information with Cesium links
 display_wallet_info() {
     local title="$1"
@@ -281,73 +296,6 @@ send_redirection_alert() {
     fi
 }
 
-# Note: All intrusions are redirected to UPLANETNAME.INTRUSION to centralize intrusion management
-# No refunds to sender to prevent potential transaction loops
-
-# Function to update DID with WoT Duniter member information
-update_did_wot_member() {
-    local player_email="$1"
-    local wot_g1pub="$2"
-    
-    local did_file="$HOME/.zen/game/nostr/${player_email}/did.json"
-    local did_wellknown="$HOME/.zen/game/nostr/${player_email}/APP/uDRIVE/.well-known/did.json"
-    
-    # Check if DID file exists
-    if [[ ! -f "$did_file" ]]; then
-        echo "⚠️  DID file not found for ${player_email}, skipping WoT member update"
-        return 0
-    fi
-    
-    echo "📝 Updating DID with WoT Duniter member: ${wot_g1pub:0:8}..."
-    
-    # Create backup
-    cp "$did_file" "${did_file}.backup.$(date +%Y%m%d_%H%M%S)"
-    
-    # Use jq to add WoT member information
-    local temp_did=$(mktemp)
-    
-    jq --arg wot "$wot_g1pub" \
-       --arg updated "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-       --arg cesium_link "$(generate_cesium_link "$wot_g1pub")" \
-       '.metadata.wotDuniterMember = {
-          "g1pub": $wot,
-          "cesiumLink": $cesium_link,
-          "verifiedAt": $updated,
-          "description": "WoT Duniter member forge (external to UPlanet)"
-        } |
-        .metadata.updated = $updated' \
-        "$did_file" > "$temp_did"
-    
-    if [[ $? -eq 0 && -s "$temp_did" ]]; then
-        mv "$temp_did" "$did_file"
-        echo "✅ DID updated with WoT member: ${wot_g1pub:0:8}"
-        
-        # Sync to .well-known
-        if [[ -d "$(dirname "$did_wellknown")" ]]; then
-            cp "$did_file" "$did_wellknown"
-            echo "✅ DID .well-known synchronized"
-        fi
-        
-        # Republish on IPNS if possible
-        local nostrns_file="$HOME/.zen/game/nostr/${player_email}/NOSTRNS"
-        if [[ -f "$nostrns_file" ]]; then
-            local g1pubnostr=$(cat "$HOME/.zen/game/nostr/${player_email}/G1PUBNOSTR" 2>/dev/null)
-            
-            if [[ -n "$g1pubnostr" ]]; then
-                echo "📡 Republishing DID on IPNS..."
-                local nostripfs=$(ipfs add -rq "$HOME/.zen/game/nostr/${player_email}/" | tail -n 1)
-                ipfs name publish --key "${g1pubnostr}:NOSTR" "/ipfs/${nostripfs}" 2>&1 >/dev/null &
-                echo "✅ IPNS publication launched in background"
-            fi
-        fi
-        
-        return 0
-    else
-        echo "❌ Failed to update DID with WoT member"
-        rm -f "$temp_did"
-        return 1
-    fi
-}
 
 # Function to count existing intrusions from transaction history
 count_existing_intrusions() {
@@ -502,9 +450,18 @@ control_primal_transactions() {
             echo "${TXIPUBKEY}" > "$cache_2nd_file"
             echo "📝 Second transaction cached: $cache_2nd_file"
             
-            # Update DID document with WoT Duniter G1PUB (external member forge)
-            update_did_wot_member "$player_email" "$TXIPUBKEY"
+            # Extract and verify ZEN Card owner from transaction comment
+            local comment=$(echo "$JSON" | jq -r '.comment // ""')
+            local owner_email=$(get_zencard_owner "$comment" "$TXIPUBKEY")
             
+            if [[ -n "$owner_email" ]]; then
+                echo "✅ ZEN Card verified for ${owner_email}"
+                "${MY_PATH}/../tools/did_manager.sh" update "$owner_email" "WOT_MEMBER" "0" "0" "$TXIPUBKEY"
+            else
+                echo "⚠️  No valid ZEN Card found, using captain email"
+                "${MY_PATH}/../tools/did_manager.sh" update "$player_email" "WOT_MEMBER" "0" "0" "$TXIPUBKEY"
+            fi
+
             continue  # Skip primal control for WoT identification transactions
         fi
 
