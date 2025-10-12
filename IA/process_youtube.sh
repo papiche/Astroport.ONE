@@ -256,7 +256,7 @@ process_youtube() {
             fi
         fi
         log_debug "Failed to extract video metadata from YouTube page."
-        echo '{"error":"❌ YouTube authentication failed. Please export fresh cookies from your browser.\n\n📖 Guide: https://ipfs.copylaradio.com/ipns/copylaradio.com/UPlanet/earth/cookie.html\n\n💡 Upload your cookies.txt file via https://u.copylaradio.com/astro"}'
+        echo '{"error":"❌ YouTube authentication failed. Please export fresh cookies from your browser.\n\n📖 Guide: https://ipfs.copylaradio.com/ipns/copylaradio.com/cookie.html\n\n💡 Upload your cookies.txt file via https://u.copylaradio.com/astro"}'
         exit 1
     fi
     # Set max duration to 3h (10800s) for both mp3 and mp4
@@ -301,7 +301,7 @@ process_youtube() {
         fi
     fi
     log_debug "Download or IPFS add failed."
-    echo '{"error":"❌ Download or IPFS upload failed.\n\n💡 This might be due to:\n• Expired YouTube cookies\n• Bot detection by YouTube\n• Network issues\n\n📖 Cookie Guide: https://ipfs.copylaradio.com/ipns/copylaradio.com/UPlanet/earth/cookie.html\n💾 Upload cookies: https://u.copylaradio.com/astro"}'
+    echo '{"error":"❌ Download or IPFS upload failed.\n\n💡 This might be due to:\n• Expired YouTube cookies\n• Bot detection by YouTube\n• Network issues\n\n📖 Cookie Guide: https://ipfs.copylaradio.com/ipns/copylaradio.com/cookie.html\n💾 Upload cookies: https://u.copylaradio.com/astro"}'
     return 1
 }
 
