@@ -192,11 +192,11 @@ if [[ -n "$HEX" && -n "$NPUB" ]]; then
 
 ${MESSAGESIGN}"
 
-    # Get captain's NSEC from ~/.secret.nostr/$CAPTAINEMAIL/.secret.nostr
+    # Get captain's NSEC from $HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
     SENDER_NSEC=""
-    if [[ -n "$CAPTAINEMAIL" && -s ~/.secret.nostr/$CAPTAINEMAIL/.secret.nostr ]]; then
+    if [[ -n "$CAPTAINEMAIL" && -s "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr" ]]; then
         # Source the captain's NOSTR keys
-        source ~/.secret.nostr/$CAPTAINEMAIL/.secret.nostr
+        source "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
         SENDER_NSEC="$NSEC"
         echo "👨‍✈️ Using captain's NOSTR key: ${NSEC:0:20}..."
     fi
@@ -216,7 +216,7 @@ ${MESSAGESIGN}"
         fi
     else
         echo "⚠️ No captain's NSEC found - skipping NOSTR DM"
-        echo "💡 Ensure ~/.secret.nostr/$CAPTAINEMAIL/.secret.nostr exists with captain's NOSTR keys"
+        echo "💡 Ensure $HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr exists with captain's NOSTR keys"
     fi
 else
     echo "ℹ️ No NOSTR profile found - email only"
