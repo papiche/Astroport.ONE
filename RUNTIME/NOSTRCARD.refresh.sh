@@ -519,6 +519,24 @@ for PLAYER in "${NOSTR[@]}"; do
         DIFF_DAYS=$((DIFF_SECONDS / 86400))
         if [ $DIFF_DAYS -lt 365 ]; then
             echo "OK VALID $((365 - DIFF_DAYS)) days left..."
+            
+            ########################################################################
+            ## YOUTUBE LIKES SYNC FOR SOCIETY MEMBERS
+            ########################################################################
+            # Vérifier si le sociétaire a un fichier cookie YouTube
+            if [[ -s ~/.zen/game/nostr/${PLAYER}/.cookie.txt ]]; then
+                log "INFO" "🎵 Starting YouTube likes sync for society member: ${PLAYER}"
+                log_metric "YOUTUBE_SYNC_START" "1" "${PLAYER}"
+                
+                # Lancer la synchronisation des vidéos likées en arrière-plan
+                ${MY_PATH}/../IA/sync_youtube_likes.sh "${PLAYER}" --debug &
+                YOUTUBE_SYNC_PID=$!
+                
+                log "INFO" "YouTube sync started for ${PLAYER} (PID: $YOUTUBE_SYNC_PID)"
+                log_metric "YOUTUBE_SYNC_PID" "$YOUTUBE_SYNC_PID" "${PLAYER}"
+            else
+                log "DEBUG" "No YouTube cookie file found for society member: ${PLAYER}"
+            fi
         else
             echo "GAME OVER since $((DIFF_DAYS - 365))"
         fi
