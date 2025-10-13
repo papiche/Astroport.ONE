@@ -17,7 +17,7 @@
 # - #image : Générer une image avec ComfyUI
 # - #video : Générer une vidéo avec ComfyUI
 # - #music : Générer une musique avec ComfyUI (#parole pour les paroles)
-# - #youtube : Télécharger une vidéo YouTube (720p max) #mp3 pour convertir en audio (COOKIE PB !)
+# - #youtube : Télécharger une vidéo (YouTube, Rumble, Vimeo, etc.) (720p max) #mp3 pour convertir en audio
 # - #mem : Afficher le contenu de la mémoire de conversation
 # - #rec : Enregistrer le message dans la mémoire IA (utilisateur et UMAP)
 # - #rec2 : Enregistrer automatiquement la réponse du bot dans la mémoire IA
@@ -658,27 +658,28 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                     KeyANSWER="Désolé, je n'ai pas pu générer la musique demandée."
                 fi
             elif [[ "${TAGS[youtube]}" == true ]]; then
-                youtube_url=$(echo "$message_text" | awk 'match($0, /https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/[^ ]+/) { print substr($0, RSTART, RLENGTH) }')
-                if [ -z "$youtube_url" ]; then
-                    KeyANSWER="Désolé, Aucune URL YouTube valide trouvée dans votre message."
+                # Extract any video URL that yt-dlp can handle (YouTube, Rumble, Vimeo, etc.)
+                video_url=$(echo "$message_text" | awk 'match($0, /https?:\/\/[^ ]+/) { print substr($0, RSTART, RLENGTH) }' | head -n1)
+                if [ -z "$video_url" ]; then
+                    KeyANSWER="Désolé, Aucune URL vidéo valide trouvée dans votre message."
                 else
-                    # Get user uDRIVE path for YouTube downloads
+                    # Get user uDRIVE path for video downloads
                     USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
                     if [ $? -eq 0 ]; then
-                        echo "Using uDRIVE path for YouTube download: $USER_UDRIVE_PATH" >&2
-                        # Pass uDRIVE path to process_youtube.sh (if it supports it)
+                        echo "Using uDRIVE path for video download: $USER_UDRIVE_PATH" >&2
+                        # Pass uDRIVE path to process_youtube.sh (supports all yt-dlp platforms)
                         if [[ "$message_text" =~ \#mp3 ]]; then
-                            json=$($MY_PATH/process_youtube.sh --debug "$youtube_url" "mp3" "$USER_UDRIVE_PATH")
+                            json=$($MY_PATH/process_youtube.sh --debug "$video_url" "mp3" "$USER_UDRIVE_PATH")
                         else
-                            json=$($MY_PATH/process_youtube.sh --debug "$youtube_url" "mp4" "$USER_UDRIVE_PATH")
+                            json=$($MY_PATH/process_youtube.sh --debug "$video_url" "mp4" "$USER_UDRIVE_PATH")
                         fi
                     else
-                        echo "Warning: Using default location for YouTube download" >&2
-                        # Enable debug mode for YouTube processing
+                        echo "Warning: Using default location for video download" >&2
+                        # Enable debug mode for video processing (supports all yt-dlp platforms)
                         if [[ "$message_text" =~ \#mp3 ]]; then
-                            json=$($MY_PATH/process_youtube.sh --debug "$youtube_url" "mp3")
+                            json=$($MY_PATH/process_youtube.sh --debug "$video_url" "mp3")
                         else
-                            json=$($MY_PATH/process_youtube.sh --debug "$youtube_url" "mp4")
+                            json=$($MY_PATH/process_youtube.sh --debug "$video_url" "mp4")
                         fi
                     fi
                     # Extract JSON from mixed output (yt-dlp output + JSON)
@@ -700,7 +701,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                         KeyANSWER="$error_formatted"
                     else
                         # Debug: Log the JSON response
-                        echo "YouTube JSON response: $json_only" >&2
+                        echo "Video JSON response: $json_only" >&2
                         
                         # Extract values safely with fallbacks
                         ipfs_url=$(echo "$json_only" | jq -r '.ipfs_url // empty' 2>/dev/null)
