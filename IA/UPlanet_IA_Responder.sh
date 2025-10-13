@@ -681,21 +681,33 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                             json=$($MY_PATH/process_youtube.sh --debug "$youtube_url" "mp4")
                         fi
                     fi
-                    error=$(echo "$json" | jq -r .error 2>/dev/null)
+                    # Extract JSON from mixed output (yt-dlp output + JSON)
+                    # Simple approach: get the last few lines and look for JSON
+                    json_only=$(echo "$json" | tail -n 20 | awk '
+                    BEGIN { json = ""; in_json = 0 }
+                    /^\{/ { json = $0; in_json = 1; next }
+                    in_json == 1 { json = json "\n" $0 }
+                    /^}/ { if (in_json == 1) { print json; exit } }
+                    ')
+                    
+                    # Debug: Log the extracted JSON
+                    echo "Extracted JSON: $json_only" >&2
+                    
+                    error=$(echo "$json_only" | jq -r .error 2>/dev/null)
                     if [[ -n "$error" && "$error" != "null" ]]; then
                         # Format error message with proper newlines
                         error_formatted=$(echo -e "$error")
                         KeyANSWER="$error_formatted"
                     else
                         # Debug: Log the JSON response
-                        echo "YouTube JSON response: $json" >&2
+                        echo "YouTube JSON response: $json_only" >&2
                         
                         # Extract values safely with fallbacks
-                        ipfs_url=$(echo "$json" | jq -r '.ipfs_url // empty' 2>/dev/null)
-                        title=$(echo "$json" | jq -r '.title // empty' 2>/dev/null)
-                        duration=$(echo "$json" | jq -r '.duration // empty' 2>/dev/null)
-                        uploader=$(echo "$json" | jq -r '.uploader // empty' 2>/dev/null)
-                        original_url=$(echo "$json" | jq -r '.original_url // empty' 2>/dev/null)
+                        ipfs_url=$(echo "$json_only" | jq -r '.ipfs_url // empty' 2>/dev/null)
+                        title=$(echo "$json_only" | jq -r '.title // empty' 2>/dev/null)
+                        duration=$(echo "$json_only" | jq -r '.duration // empty' 2>/dev/null)
+                        uploader=$(echo "$json_only" | jq -r '.uploader // empty' 2>/dev/null)
+                        original_url=$(echo "$json_only" | jq -r '.original_url // empty' 2>/dev/null)
                         
                         # Debug: Log extracted values
                         echo "Extracted values:" >&2

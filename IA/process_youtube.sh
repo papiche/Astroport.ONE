@@ -328,12 +328,12 @@ process_youtube() {
     case "$media_type" in
         mp3)
             yt-dlp $browser_cookies -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
-                -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" 2>> "$LOGFILE"
+                -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
             ;;
         mp4)
             yt-dlp $browser_cookies -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best" \
                 --no-mtime --embed-thumbnail --add-metadata \
-                -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" 2>> "$LOGFILE"
+                -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
             ;;
     esac
     media_file=$(ls "$OUTPUT_DIR"/${media_title}.* 2>/dev/null | head -n 1)
