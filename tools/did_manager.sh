@@ -88,7 +88,7 @@ update_did_document() {
             if [[ -n "$wot_g1pub" ]]; then
                 wot_metadata="{
                     \"g1pub\": \"$wot_g1pub\",
-                    \"cesiumLink\": \"$CESIUMIPFS/#/app/wot/$wot_g1pub/\",
+                    \"historyLink\": \"$uSPOT/check_zencard?email=$email\",
                     \"verifiedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
                     \"description\": \"WoT Duniter member forge (external to UPlanet)\"
                 }"

@@ -359,7 +359,7 @@ Le document DID est **automatiquement mis à jour** lors des transactions UPlane
     },
     "wotDuniterMember": {
       "g1pub": "5fTwfbYUtCeoaFLbyzaBYUcq46nBS26rciWJAkBugqpo",
-      "cesiumLink": "https://g1.data.e-is.pro/#/app/wot/5fTwfbYUtCeoaFLbyzaBYUcq46nBS26rciWJAkBugqpo/",
+      "historyLink": "$uSPOT/check_zencard?email=user@example.com",
       "verifiedAt": "2025-10-11T14:35:00Z",
       "description": "WoT Duniter member forge (external to UPlanet)"
     },
