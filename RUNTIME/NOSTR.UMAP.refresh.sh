@@ -523,7 +523,7 @@ process_multipass_summary() {
             local date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
             
             # Extract summary type from tags
-            local summary_type=$(echo "$summary" | jq -r '.tags[] | select(.[0] == "t" and .[1] == "Daily" or .[1] == "Weekly" or .[1] == "Monthly") | .[1]' | head -n 1)
+            local summary_type=$(echo "$summary" | jq -r '.tags[] | select(.[0] == "t" and .[1] == "Daily" or .[1] == "Weekly" or .[1] == "Monthly" or .[1] == "Yearly") | .[1]' | head -n 1)
             if [[ -z "$summary_type" ]]; then
                 summary_type="Summary"
             fi
