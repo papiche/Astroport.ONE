@@ -293,7 +293,7 @@ process_umap_friends() {
     local NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNSEC")
 
     local friends=($($MY_PATH/../tools/nostr_get_N1.sh $hex 2>/dev/null))
-    local SINCE=$(date -d "48 hours ago" +%s)
+    local SINCE=$(date -d "24 hours ago" +%s)
     local WEEK_AGO=$(date -d "7 days ago" +%s)
     local MONTH_AGO=$(date -d "28 days ago" +%s)
 
@@ -303,8 +303,11 @@ process_umap_friends() {
     TAGS=()
     ACTIVE_FRIENDS=()
 
-    # First, get all market messages from friends in the last 48h
+    # First, get all market messages from friends in the last 24h
     process_market_messages_from_friends "${friends[@]}" "$UMAPPATH" "$SINCE"
+
+    # Process MULTIPASS summaries from this UMAP zone
+    process_multipass_summaries "$UMAPPATH" "$SINCE" "$NPRIV_HEX"
 
     for ami in ${friends[@]}; do
         process_friend_messages "$ami" "$UMAPPATH" "$SINCE" "$WEEK_AGO" "$MONTH_AGO" "$NPRIV_HEX"
@@ -432,6 +435,115 @@ send_reminder_message() {
 }
 
 ################################################################################
+# MULTIPASS SUMMARY INTEGRATION
+################################################################################
+# Process MULTIPASS friends summaries that are geolocated to this UMAP zone
+# This allows UMAPs to include relevant MULTIPASS activity summaries as content
+
+# Process MULTIPASS summaries from this UMAP zone
+# Searches for MULTIPASS accounts with GPS coordinates matching this UMAP zone
+# and includes their friends summaries as UMAP content
+process_multipass_summaries() {
+    local UMAPPATH=$1
+    local SINCE=$2
+    local NPRIV_HEX=$3
+    
+    log "🔍 Searching for MULTIPASS summaries in UMAP zone (${LAT}, ${LON})"
+    
+    # Find all MULTIPASS accounts with GPS coordinates matching this UMAP zone
+    local multipass_accounts=()
+    
+    # Search for MULTIPASS accounts in ~/.zen/game/nostr/
+    for player_dir in ~/.zen/game/nostr/*@*/; do
+        if [[ -d "$player_dir" ]]; then
+            local player_name=$(basename "$player_dir")
+            local gps_file="${player_dir}/GPS"
+            
+            # Check if this MULTIPASS has GPS coordinates
+            if [[ -f "$gps_file" ]]; then
+                local player_lat=$(grep "^LAT=" "$gps_file" | tail -1 | cut -d'=' -f2 | tr -d ';' | xargs)
+                local player_lon=$(grep "^LON=" "$gps_file" | tail -1 | cut -d'=' -f2 | tr -d ';' | xargs)
+                
+                # Check if this MULTIPASS is in the current UMAP zone
+                if [[ -n "$player_lat" && -n "$player_lon" && "$player_lat" != "" && "$player_lon" != "" ]]; then
+                    # Create a temporary message JSON to test zone membership
+                    local temp_message="{\"tags\": [[\"latitude\", \"$player_lat\"], [\"longitude\", \"$player_lon\"]]}"
+                    
+                    if is_message_in_umap_zone "$temp_message"; then
+                        multipass_accounts+=("$player_name")
+                        log "📍 Found MULTIPASS in UMAP zone: $player_name ($player_lat, $player_lon)"
+                    fi
+                fi
+            fi
+        fi
+    done
+    
+    # Process each MULTIPASS account found in this UMAP zone
+    for multipass in "${multipass_accounts[@]}"; do
+        process_multipass_summary "$multipass" "$UMAPPATH" "$SINCE" "$NPRIV_HEX"
+    done
+}
+
+# Process a specific MULTIPASS summary for this UMAP
+# Searches for published friends summaries from this MULTIPASS
+process_multipass_summary() {
+    local multipass=$1
+    local UMAPPATH=$2
+    local SINCE=$3
+    local NPRIV_HEX=$3
+    
+    log "📱 Processing MULTIPASS summary: $multipass"
+    
+    # Get MULTIPASS HEX key
+    local multipass_hex_file="${HOME}/.zen/game/nostr/${multipass}/HEX"
+    if [[ ! -f "$multipass_hex_file" ]]; then
+        log "⚠️  No HEX file found for MULTIPASS: $multipass"
+        return 1
+    fi
+    
+    local multipass_hex=$(cat "$multipass_hex_file")
+    
+    # Search for published friends summaries from this MULTIPASS (last 24h)
+    cd ~/.zen/strfry
+    local summaries=$(./strfry scan "{
+        \"kinds\": [30023],
+        \"authors\": [\"$multipass_hex\"],
+        \"since\": $SINCE,
+        \"limit\": 10
+    }" 2>/dev/null | jq -c 'select(.kind == 30023 and (.tags[] | select(.[0] == "t" and .[1] == "FriendsSummary"))) | {id: .id, content: .content, created_at: .created_at, tags: .tags}')
+    cd - >/dev/null
+    
+    if [[ -n "$summaries" ]]; then
+        echo "-----------------------------" >> ${UMAPPATH}/NOSTR_messages
+        echo "📱 MULTIPASS Summary: $multipass" >> ${UMAPPATH}/NOSTR_messages
+        
+        echo "$summaries" | while read -r summary; do
+            local content=$(echo "$summary" | jq -r .content)
+            local created_at=$(echo "$summary" | jq -r .created_at)
+            local date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
+            
+            # Extract summary type from tags
+            local summary_type=$(echo "$summary" | jq -r '.tags[] | select(.[0] == "t" and .[1] == "Daily" or .[1] == "Weekly" or .[1] == "Monthly") | .[1]' | head -n 1)
+            if [[ -z "$summary_type" ]]; then
+                summary_type="Summary"
+            fi
+            
+            echo "### 📱 $date_str ($summary_type)" >> ${UMAPPATH}/NOSTR_messages
+            echo "**Source**: MULTIPASS $multipass" >> ${UMAPPATH}/NOSTR_messages
+            echo "" >> ${UMAPPATH}/NOSTR_messages
+            echo "$content" >> ${UMAPPATH}/NOSTR_messages
+            echo "" >> ${UMAPPATH}/NOSTR_messages
+            echo "---" >> ${UMAPPATH}/NOSTR_messages
+            echo "" >> ${UMAPPATH}/NOSTR_messages
+        done
+        
+        log "✅ Added MULTIPASS summary from $multipass to UMAP journal"
+    else
+        log "ℹ️  No friends summaries found for MULTIPASS: $multipass"
+    fi
+}
+
+################################################################################
 # uMARKET - DECENTRALIZED MARKETPLACE SYSTEM
 ################################################################################
 # The #market tag system enables users to post classified ads/offers on Nostr
@@ -480,7 +592,7 @@ process_market_messages_from_friends() {
     # Create authors JSON array for strfry query
     local authors_json=$(printf '"%s",' "${friends[@]}"); authors_json="[${authors_json%,}]"
 
-    # Get all market messages from friends in the last 48h
+    # Get all market messages from friends in the last 24h
     # Filter: kind=1 (text note) AND content contains "#market"
     ./strfry scan "{
       \"kinds\": [1],
@@ -514,7 +626,7 @@ process_recent_messages() {
     # Récupère le profil source
     local author_nprofile=$($MY_PATH/../tools/nostr_hex2nprofile.sh "$ami" 2>/dev/null)
 
-    # Get all messages from the last 48 hours with tags for geolocation filtering and metadata
+    # Get all messages from the last 24 hours with tags for geolocation filtering and metadata
     ./strfry scan '{
       "kinds": [1],
       "authors": ["'"$ami"'"],
@@ -567,7 +679,7 @@ process_recent_messages() {
                 create_market_ad "$content" "${message_id}" "$UMAPPATH" "$ami" "$created_at"
             fi
         fi
-    done | head -n 100 # limit to 100 messages from 48h from each friend
+    done | head -n 100 # limit to 100 messages from 24h from each friend
 }
 
 # Extract and download images from market message content
@@ -986,7 +1098,7 @@ create_aggregate_journal() {
 
     # 2. Get recently liked message IDs from friends
     local authors_json=$(printf '"%s",' "${unique_friends[@]}"); authors_json="[${authors_json%,}]"
-    local SINCE=$(date -d "48 hours ago" +%s)
+    local SINCE=$(date -d "24 hours ago" +%s)
     cd ~/.zen/strfry
     local liked_event_ids=($(./strfry scan "{\"kinds\": [7], \"authors\": ${authors_json}, \"since\": ${SINCE}}" 2>/dev/null | jq -r '.tags[] | select(.[0] == "e") | .[1]' | sort -u))
     cd - >/dev/null

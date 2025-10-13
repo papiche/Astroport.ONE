@@ -765,6 +765,18 @@ for PLAYER in "${NOSTR[@]}"; do
             echo "**MULTIPASS**: $PLAYER" >> "$summary_file"
             echo "**Period**: $summary_period" >> "$summary_file"
             echo "**Type**: $summary_type" >> "$summary_file"
+            
+            # Add GPS coordinates if available
+            local player_gps_file="${HOME}/.zen/game/nostr/${PLAYER}/GPS"
+            if [[ -f "$player_gps_file" ]]; then
+                local player_lat=$(grep "^LAT=" "$player_gps_file" | tail -1 | cut -d'=' -f2 | tr -d ';' | xargs)
+                local player_lon=$(grep "^LON=" "$player_gps_file" | tail -1 | cut -d'=' -f2 | tr -d ';' | xargs)
+                if [[ -n "$player_lat" && -n "$player_lon" && "$player_lat" != "" && "$player_lon" != "" ]]; then
+                    echo "**Location**: $player_lat, $player_lon" >> "$summary_file"
+                    echo "**UMAP Zone**: ${player_lat}_${player_lon}" >> "$summary_file"
+                fi
+            fi
+            
             echo "" >> "$summary_file"
             
             # For Weekly/Monthly summaries, use published summaries instead of raw messages
