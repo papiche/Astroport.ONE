@@ -319,6 +319,9 @@ Le document DID est **automatiquement mis à jour** lors des transactions UPlane
 - ✅ Transaction **SOCIÉTAIRE Constellation** : Parts sociales (128GB + NextCloud + IA)
 - ✅ Transaction **INFRASTRUCTURE** : Apport capital machine
 - ✅ Transaction **WoT Duniter** (`.2nd`) : Identification par membre forgeron externe (0.01 Ğ1)
+- ✅ Contribution **TREASURY** : Participation au fonds trésorerie coopératif (1/3)
+- ✅ Contribution **R&D** : Participation au fonds recherche & développement (1/3)
+- ✅ Contribution **ASSETS** : Participation au fonds actifs coopératif (1/3)
 
 **Métadonnées ajoutées au DID** :
 
@@ -333,6 +336,26 @@ Le document DID est **automatiquement mis à jour** lors des transactions UPlane
       "amount_g1": "5.00",
       "date": "2025-10-11T14:30:00Z",
       "nodeId": "12D3KooWABC..."
+    },
+    "cooperativeContributions": {
+      "treasury": {
+        "total_zen": "16.67",
+        "total_g1": "1.67",
+        "lastContribution": "2025-10-11T14:30:00Z",
+        "status": "cooperative_treasury_contributor"
+      },
+      "rnd": {
+        "total_zen": "16.67", 
+        "total_g1": "1.67",
+        "lastContribution": "2025-10-11T14:30:00Z",
+        "status": "cooperative_rnd_contributor"
+      },
+      "assets": {
+        "total_zen": "16.66",
+        "total_g1": "1.66", 
+        "lastContribution": "2025-10-11T14:30:00Z",
+        "status": "cooperative_assets_contributor"
+      }
     },
     "wotDuniterMember": {
       "g1pub": "5fTwfbYUtCeoaFLbyzaBYUcq46nBS26rciWJAkBugqpo",

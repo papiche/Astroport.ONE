@@ -72,6 +72,18 @@ update_did_document() {
             services="Node infrastructure capital"
             contract_status="infrastructure_contributor"
             ;;
+        "TREASURY_CONTRIBUTION")
+            # Contribution au fonds trésorerie coopératif
+            contract_status="cooperative_treasury_contributor"
+            ;;
+        "RND_CONTRIBUTION")
+            # Contribution au fonds R&D coopératif
+            contract_status="cooperative_rnd_contributor"
+            ;;
+        "ASSETS_CONTRIBUTION")
+            # Contribution au fonds actifs coopératif
+            contract_status="cooperative_assets_contributor"
+            ;;
         "WOT_MEMBER")
             if [[ -n "$wot_g1pub" ]]; then
                 wot_metadata="{
@@ -249,6 +261,9 @@ show_help() {
     echo "  SOCIETAIRE_SATELLITE        - Parts sociales satellite"
     echo "  SOCIETAIRE_CONSTELLATION    - Parts sociales constellation"
     echo "  INFRASTRUCTURE              - Apport capital infrastructure"
+    echo "  TREASURY_CONTRIBUTION       - Contribution fonds trésorerie"
+    echo "  RND_CONTRIBUTION            - Contribution fonds R&D"
+    echo "  ASSETS_CONTRIBUTION         - Contribution fonds actifs"
     echo "  WOT_MEMBER                  - Identification WoT Duniter"
     echo ""
     echo "Exemples:"

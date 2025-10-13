@@ -625,6 +625,9 @@ process_societaire() {
         return 1
     fi
     
+    # Mettre à jour DID pour contribution Treasury
+    "${MY_PATH}/tools/did_manager.sh" update "$email" "TREASURY_CONTRIBUTION" "$part_treasury_zen" "$(zen_to_g1 "$part_treasury_zen")"
+    
     # Transfert vers R&D (1/3)
     echo -e "${CYAN}  📤 R&D (1/3): ${part_rnd_zen} Ẑen${NC}"
     if ! transfer_and_verify "$zencard_dunikey" "$rnd_pubkey" "$part_rnd_zen" "UPLANET:${UPLANETG1PUB:0:8}:RnD:${email}:${type}:${IPFSNODEID}" "$email" "SOCIETAIRE_${type^^}" "Étape 3b: ZENCARD→RND"; then
@@ -632,12 +635,18 @@ process_societaire() {
         return 1
     fi
     
+    # Mettre à jour DID pour contribution R&D
+    "${MY_PATH}/tools/did_manager.sh" update "$email" "RND_CONTRIBUTION" "$part_rnd_zen" "$(zen_to_g1 "$part_rnd_zen")"
+    
     # Transfert vers Assets (1/3)
     echo -e "${CYAN}  📤 Assets (1/3): ${part_assets_zen} Ẑen${NC}"
     if ! transfer_and_verify "$zencard_dunikey" "$assets_pubkey" "$part_assets_zen" "UPLANET:${UPLANETG1PUB:0:8}:ASSETS:${email}:${type}:${IPFSNODEID}" "$email" "SOCIETAIRE_${type^^}" "Étape 3c: ZENCARD→ASSETS"; then
         echo -e "${RED}❌ Échec transfert Assets${NC}"
         return 1
     fi
+    
+    # Mettre à jour DID pour contribution Assets
+    "${MY_PATH}/tools/did_manager.sh" update "$email" "ASSETS_CONTRIBUTION" "$part_assets_zen" "$(zen_to_g1 "$part_assets_zen")"
     
     echo -e "${GREEN}🎉 Virement sociétaire terminé avec succès!${NC}"
     echo -e "${CYAN}📊 Résumé:${NC}"
