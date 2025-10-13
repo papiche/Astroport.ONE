@@ -89,6 +89,10 @@ PAYMENTS_PROCESSED=0
 PAYMENTS_FAILED=0
 PAYMENTS_ALREADY_DONE=0
 FRIENDS_SUMMARIES_PUBLISHED=0
+DAILY_SUMMARIES=0
+WEEKLY_SUMMARIES=0
+MONTHLY_SUMMARIES=0
+USOCIETY_N2_EXPANSIONS=0
 
 # Fonction pour générer une heure aléatoire de rafraîchissement
 get_random_refresh_time() {
@@ -682,13 +686,70 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     ########################################################################################
-    ## DAILY FRIENDS SUMMARY - Publish friends activity summary to MULTIPASS wall
+    ## FRIENDS SUMMARY - Publish friends activity summary to MULTIPASS wall
+    ## Daily (24h), Weekly (7 days), Monthly (28 days)
     ########################################################################################
     if [[ "$REFRESH_REASON" == "daily_update" ]]; then
-        log "INFO" "📝 Generating daily friends summary for ${PLAYER}"
+        # Determine summary type based on days since birthdate
+        local summary_type=""
+        local summary_period=""
+        local summary_title=""
+        local summary_days=0
+        
+        # Calculate days since birthdate
+        local birthdate_seconds=$(date -d "$BIRTHDATE" +%s)
+        local today_seconds=$(date -d "$TODATE" +%s)
+        local days_since_birth=$(( (today_seconds - birthdate_seconds) / 86400 ))
+        
+        # Determine summary type
+        if [[ $((days_since_birth % 28)) -eq 0 && $days_since_birth -ge 28 ]]; then
+            summary_type="Monthly"
+            summary_period="28 days"
+            summary_days=28
+            summary_title="📅 Monthly Friends Activity Summary - $TODATE"
+        elif [[ $((days_since_birth % 7)) -eq 0 && $days_since_birth -ge 7 ]]; then
+            summary_type="Weekly"
+            summary_period="7 days"
+            summary_days=7
+            summary_title="📊 Weekly Friends Activity Summary - $TODATE"
+        else
+            summary_type="Daily"
+            summary_period="24 hours"
+            summary_days=1
+            summary_title="📝 Daily Friends Activity Summary - $TODATE"
+        fi
+        
+        log "INFO" "📝 Generating $summary_type friends summary for ${PLAYER} (${summary_period})"
         
         # Get friends list for this MULTIPASS
         local friends_list=($(${MY_PATH}/../tools/nostr_get_N1.sh "$HEX" 2>/dev/null))
+        
+        # Check if this is a U.SOCIETY account (has purchased shares via UPLANET.official.sh)
+        local is_usociety=false
+        if [[ -f "$HOME/.zen/game/nostr/${PLAYER}/U.SOCIETY" ]]; then
+            is_usociety=true
+            log "INFO" "U.SOCIETY account detected - activating N² (friends of friends) for ${PLAYER}"
+        fi
+        
+        # For U.SOCIETY accounts, expand to N² (friends of friends) for daily summaries only
+        if [[ "$is_usociety" == true && "$summary_type" == "Daily" ]]; then
+            log "INFO" "N² expansion activated for U.SOCIETY account ${PLAYER} (daily summary)"
+            
+            # Get friends of friends (N²)
+            local n2_friends=()
+            for friend_hex in "${friends_list[@]}"; do
+                local friend_friends=($(${MY_PATH}/../tools/nostr_get_N1.sh "$friend_hex" 2>/dev/null))
+                n2_friends+=("${friend_friends[@]}")
+            done
+            
+            # Remove duplicates and add to friends list
+            local all_friends=("${friends_list[@]}" "${n2_friends[@]}")
+            local unique_friends=($(printf '%s\n' "${all_friends[@]}" | sort -u))
+            friends_list=("${unique_friends[@]}")
+            
+            log "INFO" "N² expansion: ${#friends_list[@]} total friends (N1 + N²) for ${PLAYER}"
+            USOCIETY_N2_EXPANSIONS=$((USOCIETY_N2_EXPANSIONS + 1))
+        fi
         
         if [[ ${#friends_list[@]} -gt 0 ]]; then
             log "INFO" "Found ${#friends_list[@]} friends for ${PLAYER} - generating summary"
@@ -699,70 +760,173 @@ for PLAYER in "${NOSTR[@]}"; do
             
             # Generate friends activity summary
             local summary_file="${summary_dir}/friends_summary.md"
-            echo "# 👥 Daily Friends Activity Summary" > "$summary_file"
+            echo "# $summary_title" > "$summary_file"
             echo "**Date**: $TODATE" >> "$summary_file"
             echo "**MULTIPASS**: $PLAYER" >> "$summary_file"
+            echo "**Period**: $summary_period" >> "$summary_file"
+            echo "**Type**: $summary_type" >> "$summary_file"
             echo "" >> "$summary_file"
             
-            # Get messages from friends in the last 24 hours
-            local since_24h=$(date -d "24 hours ago" +%s)
-            local friends_json=$(printf '"%s",' "${friends_list[@]}"); friends_json="[${friends_json%,}]"
-            
-            cd ~/.zen/strfry
-            local friends_messages=$(./strfry scan "{
-                \"kinds\": [1],
-                \"authors\": ${friends_json},
-                \"since\": ${since_24h},
-                \"limit\": 100
-            }" 2>/dev/null | jq -c 'select(.kind == 1) | {id: .id, content: .content, created_at: .created_at, author: .pubkey, tags: .tags}')
-            cd - >/dev/null
+            # For Weekly/Monthly summaries, use published summaries instead of raw messages
+            if [[ "$summary_type" == "Weekly" ]]; then
+                log "INFO" "Using published daily summaries for $summary_type summary (more efficient)"
+                
+                # Get published daily summaries from this MULTIPASS wall
+                local since_timestamp=$(date -d "${summary_days} days ago" +%s)
+                
+                cd ~/.zen/strfry
+                local daily_summaries=$(./strfry scan "{
+                    \"kinds\": [30023],
+                    \"authors\": [\"$HEX\"],
+                    \"since\": ${since_timestamp},
+                    \"limit\": 100
+                }" 2>/dev/null | jq -c 'select(.kind == 30023 and (.tags[] | select(.[0] == "t" and .[1] == "SummaryType:Daily"))) | {id: .id, content: .content, created_at: .created_at, tags: .tags}')
+                cd - >/dev/null
+                
+                # Process daily summaries instead of raw messages
+                local friends_messages="$daily_summaries"
+            elif [[ "$summary_type" == "Monthly" ]]; then
+                log "INFO" "Using published weekly summaries for $summary_type summary (most efficient)"
+                
+                # Get published weekly summaries from this MULTIPASS wall
+                local since_timestamp=$(date -d "${summary_days} days ago" +%s)
+                
+                cd ~/.zen/strfry
+                local weekly_summaries=$(./strfry scan "{
+                    \"kinds\": [30023],
+                    \"authors\": [\"$HEX\"],
+                    \"since\": ${since_timestamp},
+                    \"limit\": 100
+                }" 2>/dev/null | jq -c 'select(.kind == 30023 and (.tags[] | select(.[0] == "t" and .[1] == "SummaryType:Weekly"))) | {id: .id, content: .content, created_at: .created_at, tags: .tags}')
+                cd - >/dev/null
+                
+                # Process weekly summaries instead of raw messages
+                local friends_messages="$weekly_summaries"
+            else
+                # For Daily summaries, get raw messages from friends
+                local since_timestamp=$(date -d "${summary_days} days ago" +%s)
+                local friends_json=$(printf '"%s",' "${friends_list[@]}"); friends_json="[${friends_json%,}]"
+                
+                cd ~/.zen/strfry
+                local friends_messages=$(./strfry scan "{
+                    \"kinds\": [1],
+                    \"authors\": ${friends_json},
+                    \"since\": ${since_timestamp},
+                    \"limit\": 500
+                }" 2>/dev/null | jq -c 'select(.kind == 1) | {id: .id, content: .content, created_at: .created_at, author: .pubkey, tags: .tags}')
+                cd - >/dev/null
+            fi
             
             if [[ -n "$friends_messages" ]]; then
                 local message_count=0
                 echo "$friends_messages" | while read -r message; do
                     local content=$(echo "$message" | jq -r .content)
-                    local author_hex=$(echo "$message" | jq -r .author)
                     local created_at=$(echo "$message" | jq -r .created_at)
-                    local date_str=$(date -d "@$created_at" '+%H:%M')
+                    local date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
                     
-                    # Get author profile
-                    local author_nprofile=$(${MY_PATH}/../tools/nostr_hex2nprofile.sh "$author_hex" 2>/dev/null)
-                    
-                    # Extract metadata
-                    local message_application=$(echo "$message" | jq -r '.tags[] | select(.[0] == "application") | .[1]' | head -n 1)
-                    local message_latitude=$(echo "$message" | jq -r '.tags[] | select(.[0] == "latitude") | .[1]' | head -n 1)
-                    local message_longitude=$(echo "$message" | jq -r '.tags[] | select(.[0] == "longitude") | .[1]' | head -n 1)
-                    
-                    echo "### 📝 $date_str" >> "$summary_file"
-                    echo "**Author**: nostr:$author_nprofile" >> "$summary_file"
-                    
-                    # Add metadata if available
-                    if [[ -n "$message_application" && "$message_application" != "null" ]]; then
-                        echo "**App**: $message_application" >> "$summary_file"
+                    if [[ "$summary_type" == "Daily" ]]; then
+                        # For daily summaries, process raw friend messages
+                        local author_hex=$(echo "$message" | jq -r .author)
+                        local author_nprofile=$(${MY_PATH}/../tools/nostr_hex2nprofile.sh "$author_hex" 2>/dev/null)
+                        
+                        # Extract metadata
+                        local message_application=$(echo "$message" | jq -r '.tags[] | select(.[0] == "application") | .[1]' | head -n 1)
+                        local message_latitude=$(echo "$message" | jq -r '.tags[] | select(.[0] == "latitude") | .[1]' | head -n 1)
+                        local message_longitude=$(echo "$message" | jq -r '.tags[] | select(.[0] == "longitude") | .[1]' | head -n 1)
+                        
+                        echo "### 📝 $date_str" >> "$summary_file"
+                        echo "**Author**: nostr:$author_nprofile" >> "$summary_file"
+                        
+                        # Add metadata if available
+                        if [[ -n "$message_application" && "$message_application" != "null" ]]; then
+                            echo "**App**: $message_application" >> "$summary_file"
+                        fi
+                        
+                        if [[ -n "$message_latitude" && -n "$message_longitude" && "$message_latitude" != "null" && "$message_longitude" != "null" ]]; then
+                            echo "**Location**: $message_latitude, $message_longitude" >> "$summary_file"
+                        fi
+                        
+                        echo "" >> "$summary_file"
+                        echo "$content" >> "$summary_file"
+                        echo "" >> "$summary_file"
+                    elif [[ "$summary_type" == "Weekly" ]]; then
+                        # For weekly summaries, process daily summaries
+                        echo "### 📅 $date_str" >> "$summary_file"
+                        echo "**Daily Summary**" >> "$summary_file"
+                        echo "" >> "$summary_file"
+                        echo "$content" >> "$summary_file"
+                        echo "" >> "$summary_file"
+                        echo "---" >> "$summary_file"
+                        echo "" >> "$summary_file"
+                    else
+                        # For monthly summaries, process weekly summaries
+                        echo "### 📊 $date_str" >> "$summary_file"
+                        echo "**Weekly Summary**" >> "$summary_file"
+                        echo "" >> "$summary_file"
+                        echo "$content" >> "$summary_file"
+                        echo "" >> "$summary_file"
+                        echo "---" >> "$summary_file"
+                        echo "" >> "$summary_file"
                     fi
-                    
-                    if [[ -n "$message_latitude" && -n "$message_longitude" && "$message_latitude" != "null" && "$message_longitude" != "null" ]]; then
-                        echo "**Location**: $message_latitude, $message_longitude" >> "$summary_file"
-                    fi
-                    
-                    echo "" >> "$summary_file"
-                    echo "$content" >> "$summary_file"
-                    echo "" >> "$summary_file"
                     
                     ((message_count++))
                 done
                 
-                # Add AI summary if too many messages
-                if [[ $message_count -gt 10 ]]; then
-                    log "INFO" "Too many messages ($message_count), generating AI summary for ${PLAYER}"
+                # Add AI summary if too many messages (threshold depends on summary type and account type)
+                local ai_threshold=10
+                if [[ "$summary_type" == "Weekly" ]]; then
+                    ai_threshold=7  # 7 daily summaries = 1 week
+                elif [[ "$summary_type" == "Monthly" ]]; then
+                    ai_threshold=4  # 4 weekly summaries = 1 month
+                fi
+                
+                # Adjust threshold for U.SOCIETY accounts with N² expansion
+                if [[ "$is_usociety" == true && "$summary_type" == "Daily" ]]; then
+                    ai_threshold=25  # Higher threshold for N² expanded networks
+                    log "INFO" "U.SOCIETY N² expansion: adjusted AI threshold to $ai_threshold for ${PLAYER}"
+                fi
+                
+                if [[ $message_count -gt $ai_threshold ]]; then
+                    local source_type="messages"
+                    if [[ "$summary_type" == "Weekly" ]]; then
+                        source_type="daily summaries"
+                    elif [[ "$summary_type" == "Monthly" ]]; then
+                        source_type="weekly summaries"
+                    fi
                     
-                    local ai_prompt="[TEXT] $(cat "$summary_file") [/TEXT] --- \
-# 1. Summarize the friends' activity in the last 24 hours in Markdown format. \
-# 2. Group messages by author and highlight key topics. \
+                    log "INFO" "Too many $source_type ($message_count), generating AI summary for ${PLAYER} ($summary_type)"
+                    
+                    local ai_prompt=""
+                    if [[ "$summary_type" == "Daily" ]]; then
+                        ai_prompt="[TEXT] $(cat "$summary_file") [/TEXT] --- \
+# 1. Summarize the friends' activity over the $summary_period in Markdown format. \
+# 2. Group messages by author and highlight key topics and trends. \
 # 3. Add hashtags and emojis for readability. \
 # 4. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
 # 5. IMPORTANT: Never omit an author, even if you summarize. \
 # 6. Use the same language as mostly used in the messages."
+                    elif [[ "$summary_type" == "Weekly" ]]; then
+                        ai_prompt="[TEXT] $(cat "$summary_file") [/TEXT] --- \
+# 1. Create a comprehensive $summary_type summary by analyzing the daily summaries from the $summary_period. \
+# 2. Identify key trends, patterns, and highlights across all daily summaries. \
+# 3. Group information by themes and time periods. \
+# 4. Add hashtags and emojis for readability. \
+# 5. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
+# 6. Focus on evolution and changes over time. \
+# 7. Create a narrative that shows the progression of activity. \
+# 8. Use the same language as mostly used in the daily summaries."
+                    else
+                        ai_prompt="[TEXT] $(cat "$summary_file") [/TEXT] --- \
+# 1. Create a comprehensive $summary_type summary by analyzing the weekly summaries from the $summary_period. \
+# 2. Identify major trends, patterns, and highlights across all weekly summaries. \
+# 3. Group information by themes and time periods. \
+# 4. Add hashtags and emojis for readability. \
+# 5. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
+# 6. Focus on long-term evolution and major changes over time. \
+# 7. Create a narrative that shows the monthly progression of activity. \
+# 8. Highlight key milestones and significant events. \
+# 9. Use the same language as mostly used in the weekly summaries."
+                    fi
                     
                     local ai_summary=$(${MY_PATH}/../IA/question.py "$ai_prompt")
                     echo "$ai_summary" > "$summary_file"
@@ -770,25 +934,36 @@ for PLAYER in "${NOSTR[@]}"; do
                 
                 # Publish summary to MULTIPASS wall
                 local summary_content=$(cat "$summary_file")
-                local summary_title="👥 Friends Activity Summary - $TODATE"
-                local d_tag="friends-summary-${TODATE}"
+                local d_tag="friends-${summary_type,,}-summary-${TODATE}"
                 local published_at=$(date +%s)
                 
                 # Convert NSEC to HEX for nostpy-cli
                 local NPRIV_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NSEC")
+                
+                # Build tags based on summary type
+                local summary_tags="[['d', '$d_tag'], ['title', '$summary_title'], ['published_at', '$published_at'], ['t', 'FriendsSummary'], ['t', '$summary_type'], ['t', 'UPlanet'], ['t', 'SummaryType:$summary_type']]"
                 
                 # Send as kind 30023 (article) to MULTIPASS wall
                 nostpy-cli send_event \
                     -privkey "$NPRIV_HEX" \
                     -kind 30023 \
                     -content "$summary_content" \
-                    -tags "[['d', '$d_tag'], ['title', '$summary_title'], ['published_at', '$published_at'], ['t', 'FriendsSummary'], ['t', 'Daily'], ['t', 'UPlanet']]" \
+                    -tags "$summary_tags" \
                     --relay "$myRELAY" \
                     >/dev/null 2>&1
                 
-                log "INFO" "✅ Friends summary published to ${PLAYER} wall ($message_count messages)"
+                log "INFO" "✅ $summary_type friends summary published to ${PLAYER} wall ($message_count messages)"
                 log_metric "FRIENDS_SUMMARY_PUBLISHED" "$message_count" "${PLAYER}"
                 FRIENDS_SUMMARIES_PUBLISHED=$((FRIENDS_SUMMARIES_PUBLISHED + 1))
+                
+                # Increment specific counter based on summary type
+                if [[ "$summary_type" == "Daily" ]]; then
+                    DAILY_SUMMARIES=$((DAILY_SUMMARIES + 1))
+                elif [[ "$summary_type" == "Weekly" ]]; then
+                    WEEKLY_SUMMARIES=$((WEEKLY_SUMMARIES + 1))
+                elif [[ "$summary_type" == "Monthly" ]]; then
+                    MONTHLY_SUMMARIES=$((MONTHLY_SUMMARIES + 1))
+                fi
             else
                 log "DEBUG" "No friends messages found for ${PLAYER} in the last 24h"
             fi
@@ -858,7 +1033,8 @@ hours=$((dur / 3600)); minutes=$(( (dur % 3600) / 60 )); seconds=$((dur % 60))
 log "INFO" "============================================ NOSTR REFRESH SUMMARY"
 log "INFO" "📊 Players: ${#NOSTR[@]} total | $DAILY_UPDATES daily | $FILE_UPDATES files | $SKIPPED_PLAYERS skipped"
 log "INFO" "💰 Payments: $PAYMENTS_PROCESSED processed | $PAYMENTS_FAILED failed | $PAYMENTS_ALREADY_DONE already done"
-log "INFO" "👥 Friends Summaries: $FRIENDS_SUMMARIES_PUBLISHED published"
+log "INFO" "👥 Friends Summaries: $FRIENDS_SUMMARIES_PUBLISHED total ($DAILY_SUMMARIES daily | $WEEKLY_SUMMARIES weekly | $MONTHLY_SUMMARIES monthly)"
+log "INFO" "🏛️  U.SOCIETY N² Expansions: $USOCIETY_N2_EXPANSIONS"
 log "INFO" "⏱️  Duration: ${hours}h ${minutes}m ${seconds}s"
 log "INFO" "============================================ NOSTR.refresh DONE."
 
@@ -870,6 +1046,10 @@ log_metric "SKIPPED_PLAYERS" "$SKIPPED_PLAYERS"
 log_metric "PAYMENTS_PROCESSED" "$PAYMENTS_PROCESSED"
 log_metric "PAYMENTS_FAILED" "$PAYMENTS_FAILED"
 log_metric "FRIENDS_SUMMARIES_PUBLISHED" "$FRIENDS_SUMMARIES_PUBLISHED"
+log_metric "DAILY_SUMMARIES" "$DAILY_SUMMARIES"
+log_metric "WEEKLY_SUMMARIES" "$WEEKLY_SUMMARIES"
+log_metric "MONTHLY_SUMMARIES" "$MONTHLY_SUMMARIES"
+log_metric "USOCIETY_N2_EXPANSIONS" "$USOCIETY_N2_EXPANSIONS"
 log_metric "EXECUTION_TIME_SECONDS" "$dur"
 rm -Rf ~/.zen/tmp/${MOATS}
 rm -f "$LOCKFILE"
