@@ -731,7 +731,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                         fi
                         
                         # Build response with proper escaping
-                        KeyANSWER="🎬 Title: ${title:-'Unknown'}\n⏱️ Duration: ${duration_fmt:-'Unknown'}\n👤 Uploader: ${uploader:-'Unknown'}\n🔗 Original: ${original_url:-'Unknown'}\n📦 IPFS: ${ipfs_url:-'Not available'}"
+                        KeyANSWER=$(echo -e "🎬 Title: ${title:-'Unknown'}\n⏱️ Duration: ${duration_fmt:-'Unknown'}\n👤 Uploader: ${uploader:-'Unknown'}\n🔗 Original: ${original_url:-'Unknown'}\n📦 IPFS: ${ipfs_url:-'Not available'}")
                     fi
                 fi
             elif [[ "${TAGS[plantnet]}" == true ]]; then
