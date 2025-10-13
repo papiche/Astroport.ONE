@@ -88,6 +88,7 @@ SKIPPED_PLAYERS=0
 PAYMENTS_PROCESSED=0
 PAYMENTS_FAILED=0
 PAYMENTS_ALREADY_DONE=0
+FRIENDS_SUMMARIES_PUBLISHED=0
 
 # Fonction pour générer une heure aléatoire de rafraîchissement
 get_random_refresh_time() {
@@ -681,6 +682,125 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     ########################################################################################
+    ## DAILY FRIENDS SUMMARY - Publish friends activity summary to MULTIPASS wall
+    ########################################################################################
+    if [[ "$REFRESH_REASON" == "daily_update" ]]; then
+        log "INFO" "📝 Generating daily friends summary for ${PLAYER}"
+        
+        # Get friends list for this MULTIPASS
+        local friends_list=($(${MY_PATH}/../tools/nostr_get_N1.sh "$HEX" 2>/dev/null))
+        
+        if [[ ${#friends_list[@]} -gt 0 ]]; then
+            log "INFO" "Found ${#friends_list[@]} friends for ${PLAYER} - generating summary"
+            
+            # Create temporary directory for summary processing
+            local summary_dir="${HOME}/.zen/tmp/${MOATS}/friends_summary_${PLAYER}"
+            mkdir -p "$summary_dir"
+            
+            # Generate friends activity summary
+            local summary_file="${summary_dir}/friends_summary.md"
+            echo "# 👥 Daily Friends Activity Summary" > "$summary_file"
+            echo "**Date**: $TODATE" >> "$summary_file"
+            echo "**MULTIPASS**: $PLAYER" >> "$summary_file"
+            echo "" >> "$summary_file"
+            
+            # Get messages from friends in the last 24 hours
+            local since_24h=$(date -d "24 hours ago" +%s)
+            local friends_json=$(printf '"%s",' "${friends_list[@]}"); friends_json="[${friends_json%,}]"
+            
+            cd ~/.zen/strfry
+            local friends_messages=$(./strfry scan "{
+                \"kinds\": [1],
+                \"authors\": ${friends_json},
+                \"since\": ${since_24h},
+                \"limit\": 100
+            }" 2>/dev/null | jq -c 'select(.kind == 1) | {id: .id, content: .content, created_at: .created_at, author: .pubkey, tags: .tags}')
+            cd - >/dev/null
+            
+            if [[ -n "$friends_messages" ]]; then
+                local message_count=0
+                echo "$friends_messages" | while read -r message; do
+                    local content=$(echo "$message" | jq -r .content)
+                    local author_hex=$(echo "$message" | jq -r .author)
+                    local created_at=$(echo "$message" | jq -r .created_at)
+                    local date_str=$(date -d "@$created_at" '+%H:%M')
+                    
+                    # Get author profile
+                    local author_nprofile=$(${MY_PATH}/../tools/nostr_hex2nprofile.sh "$author_hex" 2>/dev/null)
+                    
+                    # Extract metadata
+                    local message_application=$(echo "$message" | jq -r '.tags[] | select(.[0] == "application") | .[1]' | head -n 1)
+                    local message_latitude=$(echo "$message" | jq -r '.tags[] | select(.[0] == "latitude") | .[1]' | head -n 1)
+                    local message_longitude=$(echo "$message" | jq -r '.tags[] | select(.[0] == "longitude") | .[1]' | head -n 1)
+                    
+                    echo "### 📝 $date_str" >> "$summary_file"
+                    echo "**Author**: nostr:$author_nprofile" >> "$summary_file"
+                    
+                    # Add metadata if available
+                    if [[ -n "$message_application" && "$message_application" != "null" ]]; then
+                        echo "**App**: $message_application" >> "$summary_file"
+                    fi
+                    
+                    if [[ -n "$message_latitude" && -n "$message_longitude" && "$message_latitude" != "null" && "$message_longitude" != "null" ]]; then
+                        echo "**Location**: $message_latitude, $message_longitude" >> "$summary_file"
+                    fi
+                    
+                    echo "" >> "$summary_file"
+                    echo "$content" >> "$summary_file"
+                    echo "" >> "$summary_file"
+                    
+                    ((message_count++))
+                done
+                
+                # Add AI summary if too many messages
+                if [[ $message_count -gt 10 ]]; then
+                    log "INFO" "Too many messages ($message_count), generating AI summary for ${PLAYER}"
+                    
+                    local ai_prompt="[TEXT] $(cat "$summary_file") [/TEXT] --- \
+# 1. Summarize the friends' activity in the last 24 hours in Markdown format. \
+# 2. Group messages by author and highlight key topics. \
+# 3. Add hashtags and emojis for readability. \
+# 4. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
+# 5. IMPORTANT: Never omit an author, even if you summarize. \
+# 6. Use the same language as mostly used in the messages."
+                    
+                    local ai_summary=$(${MY_PATH}/../IA/question.py "$ai_prompt")
+                    echo "$ai_summary" > "$summary_file"
+                fi
+                
+                # Publish summary to MULTIPASS wall
+                local summary_content=$(cat "$summary_file")
+                local summary_title="👥 Friends Activity Summary - $TODATE"
+                local d_tag="friends-summary-${TODATE}"
+                local published_at=$(date +%s)
+                
+                # Convert NSEC to HEX for nostpy-cli
+                local NPRIV_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NSEC")
+                
+                # Send as kind 30023 (article) to MULTIPASS wall
+                nostpy-cli send_event \
+                    -privkey "$NPRIV_HEX" \
+                    -kind 30023 \
+                    -content "$summary_content" \
+                    -tags "[['d', '$d_tag'], ['title', '$summary_title'], ['published_at', '$published_at'], ['t', 'FriendsSummary'], ['t', 'Daily'], ['t', 'UPlanet']]" \
+                    --relay "$myRELAY" \
+                    >/dev/null 2>&1
+                
+                log "INFO" "✅ Friends summary published to ${PLAYER} wall ($message_count messages)"
+                log_metric "FRIENDS_SUMMARY_PUBLISHED" "$message_count" "${PLAYER}"
+                FRIENDS_SUMMARIES_PUBLISHED=$((FRIENDS_SUMMARIES_PUBLISHED + 1))
+            else
+                log "DEBUG" "No friends messages found for ${PLAYER} in the last 24h"
+            fi
+            
+            # Cleanup temporary directory
+            rm -rf "$summary_dir"
+        else
+            log "DEBUG" "No friends found for ${PLAYER} - skipping summary"
+        fi
+    fi
+
+    ########################################################################################
     ########################################################################################
     ## UPDATE IPNS NOSTRVAULT KEY - Only when refresh is needed
     if [[ $refresh_needed -eq 0 ]]; then
@@ -738,6 +858,7 @@ hours=$((dur / 3600)); minutes=$(( (dur % 3600) / 60 )); seconds=$((dur % 60))
 log "INFO" "============================================ NOSTR REFRESH SUMMARY"
 log "INFO" "📊 Players: ${#NOSTR[@]} total | $DAILY_UPDATES daily | $FILE_UPDATES files | $SKIPPED_PLAYERS skipped"
 log "INFO" "💰 Payments: $PAYMENTS_PROCESSED processed | $PAYMENTS_FAILED failed | $PAYMENTS_ALREADY_DONE already done"
+log "INFO" "👥 Friends Summaries: $FRIENDS_SUMMARIES_PUBLISHED published"
 log "INFO" "⏱️  Duration: ${hours}h ${minutes}m ${seconds}s"
 log "INFO" "============================================ NOSTR.refresh DONE."
 
@@ -748,6 +869,7 @@ log_metric "FILE_UPDATES" "$FILE_UPDATES"
 log_metric "SKIPPED_PLAYERS" "$SKIPPED_PLAYERS"
 log_metric "PAYMENTS_PROCESSED" "$PAYMENTS_PROCESSED"
 log_metric "PAYMENTS_FAILED" "$PAYMENTS_FAILED"
+log_metric "FRIENDS_SUMMARIES_PUBLISHED" "$FRIENDS_SUMMARIES_PUBLISHED"
 log_metric "EXECUTION_TIME_SECONDS" "$dur"
 rm -Rf ~/.zen/tmp/${MOATS}
 rm -f "$LOCKFILE"
