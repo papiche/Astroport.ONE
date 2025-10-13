@@ -101,6 +101,73 @@ done
 # Utility Functions
 ################################################################################
 
+# Check if a message is within the UMAP zone (0.01° precision)
+# Extracts GPS coordinates from Nostr message tags and validates against UMAP bounds
+# Returns: 0 (true) if message is in zone, 1 (false) otherwise
+is_message_in_umap_zone() {
+    local message_json="$1"
+    
+    # Extract GPS coordinates from message tags
+    # Priority: latitude/longitude tags > g tag
+    local message_lat=$(echo "$message_json" | jq -r '.tags[] | select(.[0] == "latitude") | .[1]' | head -n 1)
+    local message_lon=$(echo "$message_json" | jq -r '.tags[] | select(.[0] == "longitude") | .[1]' | head -n 1)
+    
+    # Fallback to "g" tag if latitude/longitude not found
+    if [[ -z "$message_lat" || -z "$message_lon" || "$message_lat" == "null" || "$message_lon" == "null" ]]; then
+        message_lat=$(echo "$message_json" | jq -r '.tags[] | select(.[0] == "g") | .[1]' | head -n 1 | cut -d',' -f1)
+        message_lon=$(echo "$message_json" | jq -r '.tags[] | select(.[0] == "g") | .[1]' | head -n 1 | cut -d',' -f2)
+    fi
+    
+    # If no GPS coordinates found, only include if this is the global UMAP (0.00, 0.00)
+    if [[ -z "$message_lat" || -z "$message_lon" || "$message_lat" == "null" || "$message_lon" == "null" ]]; then
+        # Only the global UMAP (0.00, 0.00) should collect messages without GPS coordinates
+        if [[ "$LAT" == "0.00" && "$LON" == "0.00" ]]; then
+            log "📍 No GPS coordinates in message, including in global UMAP (0.00, 0.00)"
+            return 0
+        else
+            log "📍 No GPS coordinates in message, excluding from UMAP ($LAT, $LON) - only global UMAP (0.00, 0.00) collects non-geolocated messages"
+            return 1
+        fi
+    fi
+    
+    # Validate coordinate format (must be numeric)
+    if ! [[ "$message_lat" =~ ^-?[0-9]+\.?[0-9]*$ ]] || ! [[ "$message_lon" =~ ^-?[0-9]+\.?[0-9]*$ ]]; then
+        log "⚠️  Invalid GPS coordinates format: lat=$message_lat, lon=$message_lon"
+        return 1
+    fi
+    
+    # Calculate UMAP zone boundaries (0.01° precision)
+    # UMAP coordinates are the bottom-left (southwest) corner of a 0.01° x 0.01° zone
+    local umap_lat_bottom="$LAT"
+    local umap_lon_left="$LON"
+    
+    # Special case: Global UMAP (0.00, 0.00) collects all non-geolocated messages
+    if [[ "$LAT" == "0.00" && "$LON" == "0.00" ]]; then
+        # Global UMAP accepts all messages (already handled above for non-GPS messages)
+        # For GPS messages, it should not accept any (they belong to specific UMAPs)
+        log "🌍 Global UMAP (0.00, 0.00) - rejecting geolocated message (belongs to specific UMAP)"
+        return 1
+    fi
+    
+    # Calculate zone boundaries (UMAP coord is bottom-left, so add 0.01° for top-right)
+    local zone_lat_min="$umap_lat_bottom"
+    local zone_lat_max=$(echo "scale=3; $umap_lat_bottom + 0.01" | bc -l)
+    local zone_lon_min="$umap_lon_left"
+    local zone_lon_max=$(echo "scale=3; $umap_lon_left + 0.01" | bc -l)
+    
+    # Check if message coordinates are within UMAP zone
+    local lat_in_zone=$(echo "scale=3; $message_lat >= $zone_lat_min && $message_lat <= $zone_lat_max" | bc -l)
+    local lon_in_zone=$(echo "scale=3; $message_lon >= $zone_lon_min && $message_lon <= $zone_lon_max" | bc -l)
+    
+    if [[ "$lat_in_zone" == "1" && "$lon_in_zone" == "1" ]]; then
+        log "✅ Message in UMAP zone: lat=$message_lat, lon=$message_lon (UMAP bottom-left: $umap_lat_bottom, $umap_lon_left)"
+        return 0
+    else
+        log "❌ Message outside UMAP zone: lat=$message_lat, lon=$message_lon (UMAP bottom-left: $umap_lat_bottom, $umap_lon_left)"
+        return 1
+    fi
+}
+
 log() {
     if [[ "$VERBOSE" == "true" ]]; then
         echo "$1"
@@ -420,11 +487,16 @@ process_market_messages_from_friends() {
       \"authors\": ${authors_json},
       \"since\": ${SINCE},
       \"limit\": 500
-    }" 2>/dev/null | jq -c 'select(.kind == 1 and (.content | contains("#market"))) | {id: .id, content: .content, created_at: .created_at, author: .pubkey}' | while read -r message; do
+    }" 2>/dev/null | jq -c 'select(.kind == 1 and (.content | contains("#market"))) | {id: .id, content: .content, created_at: .created_at, author: .pubkey, tags: .tags}' | while read -r message; do
         local content=$(echo "$message" | jq -r .content)
         local message_id=$(echo "$message" | jq -r .id)
         local author_hex=$(echo "$message" | jq -r .author)
         local created_at=$(echo "$message" | jq -r .created_at)
+
+        # Filter market messages by UMAP zone
+        if ! is_message_in_umap_zone "$message"; then
+            continue  # Skip market message if not in UMAP zone
+        fi
 
         # Check if the ad file already exists to avoid reprocessing
         if [[ ! -f "${UMAPPATH}/APP/uMARKET/ads/${message_id}.json" ]]; then
@@ -442,22 +514,47 @@ process_recent_messages() {
     # Récupère le profil source
     local author_nprofile=$($MY_PATH/../tools/nostr_hex2nprofile.sh "$ami" 2>/dev/null)
 
-    # Get all messages from the last 48 hours
+    # Get all messages from the last 48 hours with tags for geolocation filtering and metadata
     ./strfry scan '{
       "kinds": [1],
       "authors": ["'"$ami"'"],
       "since": '$SINCE'
-    }' 2>/dev/null | jq -c 'select(.kind == 1) | {id: .id, content: .content, created_at: .created_at}' | while read -r message; do
+    }' 2>/dev/null | jq -c 'select(.kind == 1) | {id: .id, content: .content, created_at: .created_at, tags: .tags}' | while read -r message; do
         local content=$(echo "$message" | jq -r .content)
         ## Avoid treating Captain Warning Messages sent to unregistered message publishers
         if [[ "$content" =~ "Hello NOSTR visitor." ]]; then continue; fi  
         local message_id=$(echo "$message" | jq -r .id)
         local created_at=$(echo "$message" | jq -r .created_at)
         local date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
+        
+        # Extract metadata from message tags
+        local message_application=$(echo "$message" | jq -r '.tags[] | select(.[0] == "application") | .[1]' | head -n 1)
+        local message_latitude=$(echo "$message" | jq -r '.tags[] | select(.[0] == "latitude") | .[1]' | head -n 1)
+        local message_longitude=$(echo "$message" | jq -r '.tags[] | select(.[0] == "longitude") | .[1]' | head -n 1)
+        local message_url=$(echo "$message" | jq -r '.tags[] | select(.[0] == "url") | .[1]' | head -n 1)
+        
+        # Extract GPS coordinates from message tags and filter by UMAP zone
+        if ! is_message_in_umap_zone "$message"; then
+            continue  # Skip message if not in UMAP zone
+        fi
 
-        # Format Markdown with better structure
+        # Format Markdown with better structure and metadata
         echo "### 📝 $date_str" >> ${UMAPPATH}/NOSTR_messages
         echo "**Author**: nostr:$author_nprofile" >> ${UMAPPATH}/NOSTR_messages
+        
+        # Add metadata if available
+        if [[ -n "$message_application" && "$message_application" != "null" ]]; then
+            echo "**App**: $message_application" >> ${UMAPPATH}/NOSTR_messages
+        fi
+        
+        if [[ -n "$message_latitude" && -n "$message_longitude" && "$message_latitude" != "null" && "$message_longitude" != "null" ]]; then
+            echo "**Location**: $message_latitude, $message_longitude" >> ${UMAPPATH}/NOSTR_messages
+        fi
+        
+        if [[ -n "$message_url" && "$message_url" != "null" ]]; then
+            echo "**URL**: $message_url" >> ${UMAPPATH}/NOSTR_messages
+        fi
+        
         echo "" >> ${UMAPPATH}/NOSTR_messages
         echo "$content" >> ${UMAPPATH}/NOSTR_messages
         echo "" >> ${UMAPPATH}/NOSTR_messages
