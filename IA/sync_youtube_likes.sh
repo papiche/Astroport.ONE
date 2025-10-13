@@ -6,7 +6,7 @@
 # Usage: $0 <player_email> [--debug]
 #
 # Fonctionnalités:
-# - Récupère les vidéos likées depuis la dernière synchronisation
+# - Récupère les vidéos likées depuis la dernière synchronisation (max 3 par run)
 # - Utilise les cookies du sociétaire pour l'authentification YouTube
 # - Télécharge les nouvelles vidéos via process_youtube.sh
 # - Organise les vidéos dans uDRIVE/Music/ et uDRIVE/Videos/
@@ -77,7 +77,7 @@ log_debug "Starting YouTube likes sync for $PLAYER"
 get_liked_videos() {
     local player="$1"
     local cookie_file="$2"
-    local max_results="${3:-20}"
+    local max_results="${3:-3}"
     
     log_debug "Fetching liked videos for $player (max: $max_results)"
     
@@ -170,8 +170,8 @@ sync_youtube_likes() {
     
     log_debug "Starting YouTube likes synchronization for $player"
     
-    # Récupérer les vidéos likées
-    local liked_videos=$(get_liked_videos "$player" "$cookie_file" 20)
+    # Récupérer les vidéos likées (maximum 3 par run)
+    local liked_videos=$(get_liked_videos "$player" "$cookie_file" 3)
     
     if [[ $? -ne 0 || -z "$liked_videos" ]]; then
         log_debug "No liked videos found or failed to fetch for $player"
@@ -265,8 +265,15 @@ send_sync_notification() {
 </div>
 </body></html>"
 
+    # Créer un fichier temporaire pour le contenu HTML
+    local temp_email_file="$HOME/.zen/tmp/youtube_sync_email_$(date +%Y%m%d_%H%M%S).html"
+    echo "$email_content" > "$temp_email_file"
+    
     # Envoyer l'email via mailjet
-    ${MY_PATH}/../tools/mailjet.sh "${player}" <(echo "$email_content") "🎵 YouTube Sync - $success_count nouvelles vidéos" 2>/dev/null
+    ${MY_PATH}/../tools/mailjet.sh "${player}" "$temp_email_file" "🎵 YouTube Sync - $success_count nouvelles vidéos" 2>/dev/null
+    
+    # Nettoyer le fichier temporaire
+    rm -f "$temp_email_file"
     
     if [[ $? -eq 0 ]]; then
         log_debug "Sync notification sent successfully to $player"
