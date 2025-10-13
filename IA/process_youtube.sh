@@ -289,15 +289,17 @@ process_youtube() {
                 [[ -z "$uploader" ]] && uploader=null || uploader="\"$uploader\""
                 [[ -z "$duration" ]] && duration=null || duration="\"$duration\""
                 [[ -z "$url" ]] && original_url=null || original_url="\"$url\""
-                echo '{'
-                echo '  "ipfs_url": null,'
-                echo '  "title": '$title','
-                echo '  "duration": '$duration','
-                echo '  "uploader": '$uploader','
-                echo '  "original_url": '$original_url','
-                echo '  "filename": null,'
-                echo '  "error": "Download not possible, but metadata extracted from YouTube page."'
-                echo '}'
+                cat << EOF
+{
+  "ipfs_url": null,
+  "title": $title,
+  "duration": $duration,
+  "uploader": $uploader,
+  "original_url": $original_url,
+  "filename": null,
+  "error": "Download not possible, but metadata extracted from YouTube page."
+}
+EOF
                 log_debug "Fallback JSON outputted."
                 exit 0
             fi
@@ -383,14 +385,16 @@ process_youtube() {
                 fi
             fi
             
-            echo '{'
-            echo '  "ipfs_url": '"\"$ipfs_url\"",'
-            echo '  "title": '"\"$media_title\"",'
-            echo '  "duration": '"\"$duration\"",'
-            echo '  "uploader": '"\"$uploader\"",'
-            echo '  "original_url": '"\"$url\"",'
-            echo '  "filename": '"\"$filename\""'
-            echo '}'
+            cat << EOF
+{
+  "ipfs_url": "$ipfs_url",
+  "title": "$media_title",
+  "duration": "$duration",
+  "uploader": "$uploader",
+  "original_url": "$url",
+  "filename": "$filename"
+}
+EOF
             log_debug "Success JSON outputted."
             return 0
         fi
