@@ -2,6 +2,18 @@
 
 ## **Partie I : Le Manifeste (Le "Pourquoi")**
 
+### **Extension des Logiciels de Comptabilité Traditionnels**
+
+UPlanet complète et étend les logiciels de comptabilité traditionnels ("Paheko", "Sage", etc.) en créant tous les jetons qu'ils comptent et en les plaçant dans des **"portefeuilles programmables"**. Cette approche révolutionne la gestion comptable en automatisant les transactions et en offrant une traçabilité blockchain complète.
+
+### **Les Trois Types de Jetons d'Entreprise**
+
+Dans toute entreprise, il existe 3 types de jetons fondamentaux :
+
+1. **Jetons d'Usage** → **MULTIPASS** : Facilitent les transactions quotidiennes et l'accès aux services
+2. **Jetons de Propriété** → **ZEN Card** : Attestent de la propriété d'actifs ou de parts de l'entreprise  
+3. **Jetons de Vote** → **UPassport** : Permettent la participation aux décisions stratégiques
+
 ### **Deux Mondes, Deux Géométries**
 
 Pour comprendre la différence fondamentale entre l'économie du Ẑen et celle de l'Euro, il ne suffit pas de parler de technologie. Il faut parler de **géométrie**. Chaque système monétaire dessine un "monde" avec ses propres règles, ses propres trajectoires et sa propre expérience vécue.
@@ -157,32 +169,56 @@ Surplus Hebdomadaire → Allocation Automatique :
 └── UPLANETNAME.ASSETS (33.34%) : Investissements durables
 ```
 
-#### **📈 Modèle Économique par Utilisateur**
+#### **📈 Modèle Économique par Utilisateur (Immobilier Numérique)**
 
 ##### **Locataire Standard (MULTIPASS + ZEN Card)**
 ```
 Coût Total : 5 Ẑ HT + 1 Ẑ TVA = 6 Ẑ/semaine
-├── Services : 128Go + TiddlyWiki + NOSTR
+├── Services : 128Go NextCloud + TW + NOSTR
+├── Équivalent : Studio + Appartement premium
 ├── Revenus UPlanet : 6 Ẑ/semaine
 └── Contribution Coopérative : Surplus après PAF
 ```
 
-##### **Sociétaire U.SOCIETY**
+##### **Sociétaire U.SOCIETY (Copropriétaire)**
 ```
 Investissement : 50 Ẑ (parts sociales)
 ├── Services : 128Go + Premium + Droits de vote
 ├── Période : 365 jours sans loyer
+├── Équivalent : Copropriétaire avec parts sociales
 └── ROI : Participation aux bénéfices coopératifs
 ```
+
+##### **Capacité Infrastructure par Satellite**
+```
+Raspberry Pi 5 + NVMe 4To (Recommandé)
+├── uDRIVE (10Go) : ~400 appartements possibles
+├── NextCloud (128Go) : ~30 appartements possibles  
+├── Optimisation : Gestion automatique des espaces
+└── Contrainte : Capacité disque limite les locations
+```
+
+**Référence Technique :** [Guide complet Raspberry Pi 5 + NVMe 4To](https://pad.p2p.legal/s/RaspberryPi#)
 
 ### **CONFIGURATION**
 Les variables (`PAF`, `TVA_RATE`, `MACHINE_VALUE_ZEN`, etc.) sont définies dans un fichier `.env`. Les portefeuilles sont initialisés automatiquement par `UPLANET.init.sh` avec source primale unique `UPLANETNAME.G1`.
 
 ### **NOUVEAUTÉS SYSTÈME**
-- **Burn 4-semaines** : NODE → UPLANETNAME.G1 → OpenCollective (56€ toutes les 4 semaines)
+- **Burn 4-semaines** : NODE → UPLANETNAME.G1 → OpenCollective (56Ẑ toutes les 4 semaines)
 - **Apport capital machine** : ZEN Card → NODE (une seule fois, valeur machine en Ẑen)
 - **TVA fiscalement correcte** : Répartition directe MULTIPASS → CAPTAIN HT + IMPOTS TVA
 - **Initialisation cohérente** : Tous les portefeuilles initialisés depuis `UPLANETNAME.G1`
+
+### **RÈGLE DE CONVERSION ẐEN**
+**Parité Fixe :** `0.1Ğ1 = 1Ẑ` est toujours vraie
+**Formule :** `#ZEN = (#G1 - 1) × 10` pour tous les portefeuilles UPlanet
+**Source :** Tous les portefeuilles reçoivent 1Ğ1 depuis `UPLANETNAME.G1` (banque centrale)
+
+### **SIMULATEUR ÉCONOMIQUE**
+Testez le système : https://ipfs.copylaradio.com/ipns/copylaradio.com/economy.html
+- Reflète les programmes disponibles
+- Simulation des flux économiques
+- Calcul automatique des provisions fiscales
 
 ### **💼 TRANSACTIONS AUTORISÉES - CADRE LÉGAL ET FISCAL**
 
@@ -236,29 +272,37 @@ UPLANET:${UPLANETG1PUB:0:8}:$IPFSNODEID:NODEINIT
 - **Comptabilité** : Compte 512 - Banques (virements internes)
 - **Fiscal** : Neutre (pas de création de valeur)
 
-#### **📱 Transactions de Services - Abonnements**
+#### **📱 Transactions de Services - Abonnements (Immobilier Numérique)**
 
-##### **MULTIPASS (NOSTR) - Abonnement Mensuel**
+##### **MULTIPASS (NOSTR) - Location Studio Numérique**
 ```
 UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:MULTIPASS (Transaction primale)
-UPLANET:${UPLANETG1PUB:0:8}:$YOUSER:NCARD:HT (Abonnement HT)
+UPLANET:${UPLANETG1PUB:0:8}:$YOUSER:NCARD:HT (Loyer HT)
 UPLANET:${UPLANETG1PUB:0:8}:$YOUSER:TVA (TVA 20%)
 ```
-- **Nature juridique** : Prestation de services numériques
+- **Nature juridique** : Location d'espace de stockage numérique (uDRIVE 10Go)
 - **Comptabilité** : Compte 706 - Prestations de services
 - **TVA** : 20% (services numériques B2C France)
 - **Tarif** : 1 Ẑ/semaine HT + TVA
+- **Équivalent immobilier** : Studio numérique
 
-##### **ZEN Cards - Parts Sociales + Abonnement**
+##### **ZEN Cards - Copropriété + Location Premium**
 ```
 UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:PRIMO (Transaction primale)
-UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZCARD:HT (Abonnement HT)
+UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZCARD:HT (Loyer HT)
 UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:TVA (TVA 20%)
 ```
-- **Nature juridique** : Parts sociales (50 Ẑ) + abonnement services
+- **Nature juridique** : Parts sociales (50 Ẑ) + location cloud premium (NextCloud 128Go)
 - **Comptabilité** : Compte 101 - Capital social + Compte 706 - Services
 - **Fiscal** : Parts = capital (non imposable) / Services = CA (imposable)
 - **Coopérative** : Droits de vote et participation aux bénéfices
+- **Équivalent immobilier** : Appartement premium avec parts de copropriété
+
+##### **Capacité Infrastructure (Contrainte Immobilière)**
+- **Satellite Raspberry Pi 5** : [NVMe 4To recommandé](https://pad.p2p.legal/s/RaspberryPi#)
+- **Limite physique** : Capacité disque détermine le nombre d'appartements disponibles
+- **Gestion automatique** : Scripts UPlanet gèrent l'allocation des espaces
+- **Optimisation** : Répartition intelligente des ressources selon la demande
 
 #### **🏦 Transactions Coopératives - Répartition 3x1/3**
 
@@ -348,6 +392,63 @@ C'est un service de rachat offert par la coopérative.
 3.  **Validation** par le protocole (conformité, trésorerie, règle du 1/3).
 4.  **Burn** : Le membre transfère ses Ẑen vers `UPLANETNAME.G1` (destruction).
 5.  **Paiement** : Virement SEPA en Euros via l'hôte fiscal.
+
+### **DÉPLOIEMENT SYSTÈME : HUB + 24 SATELLITES**
+
+Le système UPlanet se déploie selon une architecture décentralisée innovante :
+
+#### **🏢 HUB Central (Constellation Principale)**
+- **Rôle** : Centre de coordination et de gestion des flux économiques
+- **Infrastructure** : Serveur principal avec capacités maximales (PC Gamer, 24 Sociétaires, 250+ Locataires)
+- **Fonctions** :
+  - Gestion des flux ẐEN entre satellites
+  - Coordination des paiements PAF
+  - Centralisation des données économiques
+  - Interface avec le monde fiat (OpenCollective)
+
+#### **🛰️ 24 Satellites (Constellations Locales)**
+- **Rôle** : Nœuds décentralisés de l'écosystème
+- **Infrastructure** : [Raspberry Pi 5 + NVMe 4To](https://pad.p2p.legal/s/RaspberryPi#) (10 Sociétaires, 50+ Locataires)
+- **Fonctions** :
+  - Services locaux (MULTIPASS, ZEN Cards)
+  - Collecte des loyers locaux
+  - Gestion des portefeuilles coopératifs locaux
+  - Communication avec le HUB central
+
+#### **🏠 Analogie Immobilière : Appartements Numériques**
+
+Le système UPlanet fonctionne comme de l'**immobilier numérique** :
+
+**Appartements uDRIVE (10 Go) :**
+- **MULTIPASS** : Location à 1Ẑ/semaine
+- **Capacité** : Stockage décentralisé personnel
+- **Équivalent** : Studio numérique
+
+**Appartements NextCloud (128 Go) :**
+- **ZEN Cards** : Location à 5Ẑ/semaine  
+- **Capacité** : Cloud privé premium
+- **Équivalent** : Appartement premium
+
+**Infrastructure Satellite :**
+- **Disque NVMe 4To** : Limite la capacité totale du satellite
+- **Raspberry Pi 5** : Serveur immobilier numérique
+- **Gestion** : Automatique via scripts UPlanet
+
+#### **🔄 Dynamique Économique HUB-Satellites**
+
+```
+HUB Central (1)
+├── Coordonne 24 Satellites
+├── Gère les flux inter-satellites
+├── Interface OpenCollective
+└── Allocation coopérative globale
+
+Satellites (24)
+├── Services locaux MULTIPASS
+├── Collecte loyers ZEN Cards  
+├── Paiement PAF local
+└── Surplus → HUB Central
+```
 
 ### **ARCHITECTURE COMPLÈTE DE L'ÉCOSYSTÈME ẐEN**
 
@@ -520,6 +621,37 @@ Six scripts orchestrent l'ensemble :
 
 ## **Partie IV : Le Guide de l'Entrepreneur (Le "Et Vous ?")**
 
+### **AVANTAGES MULTIPLES DU SYSTÈME UPLANET ẐEN**
+
+#### **🏪 Pour les Commerçants : Programme de Fidélité Révolutionnaire**
+
+**Le Système de Points Fidélité ẐEN :**
+- **Offre** : 5 ou 10 Ẑ à chaque client pour un achat "prix coûtant" (+ marge en Ẑ)
+- **Exemple** : Pot de miel à moitié prix grâce aux points ẐEN
+- **Activation** : Client se connecte à `coracle.copylaradio.com` (rebrandable)
+- **NOSTR Connect** : Interface universelle pour tous les points fidélité
+- **Avantages** :
+  - Fidélisation client renforcée
+  - Réduction des coûts marketing
+  - Écosystème économique local
+  - Traçabilité complète des transactions
+
+#### **👥 Pour les Utilisateurs : Économie Circulaire Participative**
+
+**Gains Multiples :**
+- **1 Like = 1 Ẑ** sur coracle.copylaradio.com
+- **Points fidélité** de tous les commerçants
+- **Services premium** avec ZEN Cards
+- **Participation coopérative** aux bénéfices
+
+#### **🏢 Pour les Entreprises : Automatisation Comptable**
+
+**Extension des Logiciels Traditionnels :**
+- **Paheko/Sage** → **UPlanet** : Création automatique des jetons comptables
+- **Portefeuilles programmables** : Automatisation des provisions fiscales
+- **Traçabilité blockchain** : Audit automatique et transparence
+- **Conformité fiscale** : TVA et IS programmés selon le statut
+
 ### **USER STORIES : LES BÉNÉFICES POUR CHAQUE MEMBRE**
 
 #### **🏠 LE LOCATAIRE : Votre Passeport vers la Souveraineté**
@@ -536,6 +668,16 @@ Six scripts orchestrent l'ensemble :
 > **"Je transforme mon ordinateur en source de revenus et je participe à la construction d'un monde meilleur."**
 *   **Ce que vous obtenez :** Une rémunération de base garantie de **28 Ẑen/semaine (≈ 112€/mois)**, une formation complète et la possibilité de développer votre "essaim" pour augmenter le surplus coopératif.
 *   **Pourquoi ?** Vous monétisez votre compétence technique pour un projet qui a du sens, avec une sécurité de revenu et un impact positif.
+
+#### **🏪 LE COMMERÇANT : Fidélisation et Économie Locale**
+> **"J'offre des points ẐEN à mes clients et je participe à l'économie locale décentralisée."**
+*   **Ce que vous obtenez :** Système de fidélité automatisé, réduction des coûts marketing, participation à l'écosystème économique local.
+*   **Pourquoi ?** Vous créez de la valeur locale tout en bénéficiant de la transparence et de l'automatisation du système.
+
+#### **🏢 L'ENTREPRISE : Comptabilité Automatisée et Transparente**
+> **"Mes jetons comptables sont créés automatiquement et mes provisions fiscales sont programmées."**
+*   **Ce que vous obtenez :** Automatisation complète de la comptabilité, traçabilité blockchain, conformité fiscale automatisée.
+*   **Pourquoi ?** Vous réduisez les coûts de gestion tout en garantissant la transparence et la conformité.
 
 ---
 
