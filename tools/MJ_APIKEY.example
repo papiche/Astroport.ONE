@@ -1,0 +1,7 @@
+# Mailjet API Configuration
+# Copy this file to ~/.zen/MJ_APIKEY and fill in your values
+
+# Mailjet API Keys
+export MJ_APIKEY_PUBLIC='your_mailjet_public_key'
+export MJ_APIKEY_PRIVATE='your_mailjet_private_key'
+export SENDER_EMAIL='your_sender_email@domain.com'

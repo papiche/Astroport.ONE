@@ -34,6 +34,24 @@ ASTROFEED=$FEEDNS
 TW=$TW
 source=$source"
 
+############################################## SEARCH in NOSTR
+echo "🔍 Searching for NOSTR profile for ${mail}..."
+NOSTR_DATA=$($MY_PATH/search_for_this_email_in_nostr.sh ${mail} 2>/dev/null | tail -n 1)
+if [[ -n "$NOSTR_DATA" ]]; then
+    echo "✅ NOSTR profile found:"
+    echo "$NOSTR_DATA"
+    # Source the NOSTR data
+    eval "$NOSTR_DATA"
+    echo "NOSTR_HEX=$HEX"
+    echo "NOSTR_NPUB=$NPUB"
+    echo "NOSTR_RELAY=$RELAY"
+else
+    echo "❌ No NOSTR profile found for ${mail}"
+    HEX=""
+    NPUB=""
+    RELAY=""
+fi
+
 ## Is it UPlanet ORIGIN or Ẑen ?
 [[ $UPLANETNAME != "EnfinLibre" ]] && UPLANET="UPlanet Ẑen ${UPLANETG1PUB:0:8}" || UPLANET="UPlanet ORIGIN"
 
@@ -158,6 +176,51 @@ curl -s \
     https://api.mailjet.com/v3.1/send \
     -H 'Content-Type: application/json' \
     -d "$json_payload"
+
+############################################## SEND NOSTR DM
+if [[ -n "$HEX" && -n "$NPUB" ]]; then
+    echo "📨 Sending NOSTR direct message to ${NPUB}..."
+    
+    # Prepare NOSTR message content
+    NOSTR_MESSAGE="🔔 ${SUBJECT}
+
+📧 Email: ${mail}
+📱 NOSTR: ${NPUB}
+🌐 Relay: ${RELAY}
+
+📄 Message: ${TEXTPART}
+
+${MESSAGESIGN}"
+
+    # Get captain's NSEC from ~/.secret.nostr/$CAPTAINEMAIL/.secret.nostr
+    SENDER_NSEC=""
+    if [[ -n "$CAPTAINEMAIL" && -s ~/.secret.nostr/$CAPTAINEMAIL/.secret.nostr ]]; then
+        # Source the captain's NOSTR keys
+        source ~/.secret.nostr/$CAPTAINEMAIL/.secret.nostr
+        SENDER_NSEC="$NSEC"
+        echo "👨‍✈️ Using captain's NOSTR key: ${NSEC:0:20}..."
+    fi
+    
+    if [[ -n "$SENDER_NSEC" ]]; then
+        # Use the relay from NOSTR data or default
+        NOSTR_RELAY="${RELAY:-$myRELAY}"
+        
+        # Send NOSTR DM
+        echo "🚀 Sending via NOSTR to ${HEX} on ${NOSTR_RELAY}..."
+        python3 $MY_PATH/nostr_send_dm.py "${SENDER_NSEC}" "${HEX}" "${NOSTR_MESSAGE}" "${NOSTR_RELAY}"
+        
+        if [[ $? -eq 0 ]]; then
+            echo "✅ NOSTR message sent successfully"
+        else
+            echo "❌ Failed to send NOSTR message"
+        fi
+    else
+        echo "⚠️ No captain's NSEC found - skipping NOSTR DM"
+        echo "💡 Ensure ~/.secret.nostr/$CAPTAINEMAIL/.secret.nostr exists with captain's NOSTR keys"
+    fi
+else
+    echo "ℹ️ No NOSTR profile found - email only"
+fi
 
 
 # This call sends an email to one recipient.
