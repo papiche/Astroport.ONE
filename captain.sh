@@ -606,15 +606,39 @@ show_captain_details() {
     
     print_section "DÉTAILS DU CAPITAINE"
     
-    # Informations ZEN Card du capitaine
+    # Informations ZEN Card du capitaine (historique des parts sociales)
     local captain_g1pub=$(cat ~/.zen/game/players/$captain_email/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
     local captain_balance=$(get_wallet_balance "$captain_g1pub")
-    local captain_zen=$(calculate_zen "$captain_balance")
     
-    echo -e "${CYAN}🎫 ZEN CARD:${NC}"
+    # Récupérer l'historique des parts sociales via G1zencard_history.sh
+    local zencard_history=""
+    if [[ -n "$captain_g1pub" ]]; then
+        zencard_history=$("${MY_PATH}/tools/G1zencard_history.sh" "$captain_email" "true" 2>/dev/null)
+    fi
+    
+    echo -e "${CYAN}🎫 ZEN CARD (ẐEN Capital - Parts Sociales):${NC}"
     echo -e "  📧 Email: ${WHITE}$captain_email${NC}"
     echo -e "  🔑 G1PUB: ${WHITE}${captain_g1pub:0:20}...${NC}"
-    echo -e "  💰 Solde: ${YELLOW}$captain_balance Ğ1${NC} (${CYAN}$captain_zen Ẑen${NC})"
+    echo -e "  💰 Solde technique: ${YELLOW}$captain_balance Ğ1${NC} (minimum 1Ğ1)"
+    
+    if [[ -n "$zencard_history" ]] && echo "$zencard_history" | jq empty 2>/dev/null; then
+        local total_received_zen=$(echo "$zencard_history" | jq -r '.total_received_zen // 0' 2>/dev/null)
+        local valid_balance_zen=$(echo "$zencard_history" | jq -r '.valid_balance_zen // 0' 2>/dev/null)
+        local total_transfers=$(echo "$zencard_history" | jq -r '.total_transfers // 0' 2>/dev/null)
+        local valid_transfers=$(echo "$zencard_history" | jq -r '.valid_transfers // 0' 2>/dev/null)
+        
+        echo -e "  📊 Capital social reçu: ${CYAN}$total_received_zen Ẑen${NC} (${WHITE}$total_transfers${NC} transferts)"
+        echo -e "  ⭐ Capital social valide: ${GREEN}$valid_balance_zen Ẑen${NC} (${WHITE}$valid_transfers${NC} transferts valides)"
+        
+        if [[ "$valid_balance_zen" -gt 0 ]]; then
+            echo -e "  🎯 Statut: ${GREEN}Sociétaire actif${NC} ($valid_balance_zen Ẑen de parts sociales)"
+        else
+            echo -e "  🎯 Statut: ${YELLOW}Capitaine (Sociétaire par défaut)${NC}"
+        fi
+    else
+        echo -e "  📊 Capital social: ${YELLOW}Non analysé${NC}"
+        echo -e "  🎯 Statut: ${YELLOW}Capitaine (Sociétaire par défaut)${NC}"
+    fi
     
     # Vérifier le statut sociétaire
     if [[ -s ~/.zen/game/players/$captain_email/U.SOCIETY ]]; then
@@ -642,10 +666,11 @@ show_captain_details() {
             local multipass_balance=$(get_wallet_balance "$multipass_g1pub")
             local multipass_zen=$(calculate_zen "$multipass_balance")
             
-            echo -e "${CYAN}👥 MULTIPASS:${NC}"
+            echo -e "${CYAN}👥 MULTIPASS (ẐEN Usage - Solde Utilisable):${NC}"
             echo -e "  📧 Email: ${WHITE}$captain_email${NC}"
             echo -e "  🔑 G1PUB: ${WHITE}${multipass_g1pub:0:20}...${NC}"
-            echo -e "  💰 Solde: ${YELLOW}$multipass_balance Ğ1${NC} (${CYAN}$multipass_zen Ẑen${NC})"
+            echo -e "  💰 Solde utilisable: ${YELLOW}$multipass_balance Ğ1${NC} (${CYAN}$multipass_zen Ẑen${NC})"
+            echo -e "  📝 Usage: Transactions quotidiennes, likes, services"
             
             # Vérifier les fichiers MULTIPASS importants
             local multipass_files=("G1PUBNOSTR" "NPUB" "HEX" "GPS" ".nostr.zine.html")
@@ -682,8 +707,10 @@ show_captain_details() {
     # Résumé économique du capitaine
     local total_captain_g1=0
     local total_captain_zen=0
+    local zencard_capital_zen=0
+    local multipass_usage_zen=0
     
-    # Ajouter le solde ZEN Card
+    # Ajouter le solde ZEN Card (minimum technique)
     total_captain_g1=$(echo "$total_captain_g1 + $captain_balance" | bc -l 2>/dev/null || echo "$total_captain_g1")
     
     # Ajouter le solde MULTIPASS si différent
@@ -691,11 +718,22 @@ show_captain_details() {
         total_captain_g1=$(echo "$total_captain_g1 + $multipass_balance" | bc -l 2>/dev/null || echo "$total_captain_g1")
     fi
     
-    total_captain_zen=$(calculate_zen "$total_captain_g1")
+    # Calculer les ẐEN selon leur nature
+    if [[ -n "$zencard_history" ]] && echo "$zencard_history" | jq empty 2>/dev/null; then
+        zencard_capital_zen=$(echo "$zencard_history" | jq -r '.valid_balance_zen // 0' 2>/dev/null)
+    fi
+    
+    if [[ -n "$multipass_g1pub" ]]; then
+        multipass_usage_zen=$multipass_zen
+    fi
+    
+    total_captain_zen=$(echo "$zencard_capital_zen + $multipass_usage_zen" | bc -l 2>/dev/null || echo "$total_captain_zen")
     
     echo -e "${BLUE}💰 RÉSUMÉ ÉCONOMIQUE DU CAPITAINE:${NC}"
-    echo -e "  Total Ğ1: ${YELLOW}$total_captain_g1${NC}"
-    echo -e "  Total Ẑen: ${CYAN}$total_captain_zen${NC}"
+    echo -e "  💎 Capital social (ZEN Card): ${CYAN}$zencard_capital_zen Ẑen${NC}"
+    echo -e "  💰 Solde utilisable (MULTIPASS): ${CYAN}$multipass_usage_zen Ẑen${NC}"
+    echo -e "  📊 Total Ẑen: ${GREEN}$total_captain_zen Ẑen${NC}"
+    echo -e "  💰 Total Ğ1 technique: ${YELLOW}$total_captain_g1 Ğ1${NC}"
     echo ""
 }
 
