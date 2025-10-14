@@ -2130,7 +2130,7 @@ handle_opencollective_reporting() {
     echo -e "\n${CYAN}💰 REPORTING OPENCOLLECTIVE${NC}"
     echo -e "${YELLOW}===========================${NC}"
     echo -e "${GREEN}Reporter les paiements reçus vers OpenCollective UPlanet${NC}"
-    echo -e "${BLUE}URL: https://opencollective.com/uplanet-zeropar${NC}"
+    echo -e "${BLUE}URL: https://opencollective.com/uplanet-zero${NC}"
     
     # Display current pending payments
     echo -e "\n${CYAN}📋 PAIEMENTS EN ATTENTE DE REPORT:${NC}"
@@ -2846,8 +2846,8 @@ display_station_overview() {
     echo -e "${YELLOW}=====================================${NC}"
     
     # Station identity
-    echo -e "${BLUE}🏛️  IDENTITÉ DE LA STATION:${NC}"
-    echo -e "  • Nom: ${GREEN}$UPLANETNAME${NC}"
+    echo -e "${BLUE}🏛️  IDENTITÉ CAPITAINE :${NC}"
+    echo -e "  • Nom: ${GREEN}[CONFIDENTIEL]${NC}"
     echo -e "  • Capitaine: ${GREEN}$CAPTAINEMAIL${NC}"
     echo -e "  • Date: ${CYAN}$(date +%d/%m/%Y)${NC}"
     echo -e "  • Heure: ${CYAN}$(date +%H:%M:%S)${NC}"
