@@ -8,6 +8,26 @@ Nous ne nous contentons pas de suivre les spécifications W3C ; nous les utiliso
 
 Le script `make_NOSTRCARD.sh` génère des documents DID conformes aux standards [W3C DID 1.0](https://www.w3.org/TR/did-1.0/), mais va bien au-delà en créant un écosystème complet de **ZEN Cards** (identité) et de **MULTIPASS** (autorisations).
 
+## Architecture des Scripts de Gestion
+
+L'écosystème UPlanet repose sur une architecture de scripts spécialisés qui gèrent le cycle de vie complet des identités et des autorisations :
+
+### Scripts de Création
+- **`make_NOSTRCARD.sh`** : Fabrique les MULTIPASS avec documents DID complets
+- **`VISA.new.sh`** : Fabrique les ZEN Card pour les sociétaires
+
+### Scripts de Gestion Opérationnelle  
+- **`NOSTRCARD.refresh.sh`** : Gère le cycle de vie des MULTIPASS (paiements, mises à jour, résumés d'activité)
+- **`PLAYER.refresh.sh`** : Gère le cycle de vie des ZEN Card (paiements, services, intégrations)
+
+### Scripts de Transaction Coopérative
+- **`UPLANET.official.sh`** : Enregistre les transactions coopératives et met à jour les DID
+- **`ZEN.ECONOMY.sh`** : Contrôle les virements automatiques de l'économie Ẑen
+- **`ZEN.COOPERATIVE.3x1-3.sh`** : Gère la répartition coopérative des fonds
+
+### Script de Gestion Centralisée des DID
+- **`did_manager.sh`** : Gestionnaire centralisé des documents DID avec métadonnées enrichies
+
 ## 2. Les deux piliers de notre architecture
 
 ### 2.1. DID : La Fondation de la Propriété Numérique
@@ -186,13 +206,17 @@ Services décentralisés associés à cette identité - la "propriété numériq
 
 Ces endpoints sont les **"terres numériques"** de l'utilisateur, accessibles et vérifiables via son DID.
 
-#### 5. **Métadonnées**
-Informations contextuelles sur l'identité :
-- Timestamps de création/mise à jour
-- Affiliation UPlanet (quel Astroport)
-- Coordonnées géographiques (UMAP)
-- Préférence linguistique
-- Identifiant utilisateur (YOUSER)
+#### 5. **Métadonnées Enrichies**
+Informations contextuelles sur l'identité et les capacités :
+- **Timestamps** : Création/mise à jour automatiques
+- **Affiliation UPlanet** : Astroport d'origine et station IPNS
+- **Coordonnées géographiques** : Position UMAP et secteur
+- **Préférence linguistique** : Langue d'interface utilisateur
+- **Identifiant utilisateur** : YOUSER unique dans l'écosystème
+- **Station Astroport** : Adresse IPNS de la station d'origine
+- **Portefeuilles associés** : MULTIPASS (Ẑ revenue) et ZEN Card (Ẑ society)
+- **Statut contractuel** : Niveau de service et contributions coopératives
+- **Identification WoT** : Validation par membre forgeron Duniter externe
 
 ## 5. Flux Opérationnel : De la Création à l'Utilisation
 
@@ -311,7 +335,16 @@ La combinaison de Nostr pour l'identifiant et d'IPNS pour la résolution est par
 
 ### 5.4. Mise à Jour Dynamique du DID
 
-Le document DID est **automatiquement mis à jour** lors des transactions UPlanet pour refléter les propriétés et capacités acquises. Cette mise à jour est effectuée par le script [`UPLANET.official.sh`](../UPLANET.official.sh) via la fonction `update_did_document()`.
+Le document DID est **automatiquement mis à jour** lors des transactions UPlanet pour refléter les propriétés et capacités acquises. Cette mise à jour est effectuée par plusieurs scripts spécialisés :
+
+#### Scripts de Mise à Jour Automatique
+- **`UPLANET.official.sh`** : Met à jour les DID lors des transactions coopératives
+- **`did_manager.sh`** : Gestionnaire centralisé avec commandes spécialisées
+  - `update` : Mise à jour complète des métadonnées
+  - `validate` : Validation de la structure DID
+  - `sync` : Synchronisation avec les services
+  - `astroport-ipns` : Affichage de l'adresse IPNS de la station
+  - `show-wallets` : Affichage des portefeuilles MULTIPASS et ZEN Card
 
 **Déclencheurs de mise à jour** :
 - ✅ Transaction **LOCATAIRE** : Recharge MULTIPASS (10GB uDRIVE)
@@ -323,7 +356,7 @@ Le document DID est **automatiquement mis à jour** lors des transactions UPlane
 - ✅ Contribution **R&D** : Participation au fonds recherche & développement (1/3)
 - ✅ Contribution **ASSETS** : Participation au fonds actifs coopératif (1/3)
 
-**Métadonnées ajoutées au DID** :
+**Métadonnées enrichies du DID** :
 
 ```json
 {
@@ -336,6 +369,23 @@ Le document DID est **automatiquement mis à jour** lors des transactions UPlane
       "amount_g1": "5.00",
       "date": "2025-10-11T14:30:00Z",
       "nodeId": "12D3KooWABC..."
+    },
+    "astroportStation": {
+      "ipns": "k51qzi5uqu5dgy...",
+      "description": "Astroport station IPNS address",
+      "updatedAt": "2025-10-11T14:30:00Z"
+    },
+    "multipassWallet": {
+      "g1pub": "5fTwfbYUtCeoaFLbyzaBYUcq46nBS26rciWJAkBugqpo",
+      "type": "MULTIPASS",
+      "description": "Ẑ revenue wallet for service operations",
+      "updatedAt": "2025-10-11T14:30:00Z"
+    },
+    "zencardWallet": {
+      "g1pub": "7gTwfbYUtCeoaFLbyzaBYUcq46nBS26rciWJAkBugqpo",
+      "type": "ZEN_CARD",
+      "description": "Ẑ society wallet for cooperative shares",
+      "updatedAt": "2025-10-11T14:30:00Z"
     },
     "cooperativeContributions": {
       "treasury": {
@@ -417,9 +467,26 @@ UCAN est un standard pour les autorisations décentralisées qui permet de **dé
 - La **chaîne de délégation** est vérifiable cryptographiquement
 - Aucune autorité centrale n'est nécessaire pour valider les autorisations
 
-###6.2. MULTIPASS : L'UCAN Incarné
+### 6.2. MULTIPASS : L'UCAN Incarné
 
 Le MULTIPASS transforme le concept abstrait d'UCAN en un système économique concret de "location" de services :
+
+#### Gestion Automatique des MULTIPASS
+Le script `NOSTRCARD.refresh.sh` gère automatiquement :
+- **Cycle de paiement** : Paiements hebdomadaires avec distribution temporelle
+- **Mise à jour des données** : Synchronisation des capacités et services
+- **Résumés d'activité** : Génération automatique de résumés d'amis (quotidien, hebdomadaire, mensuel, annuel)
+- **Expansion N²** : Pour les sociétaires U.SOCIETY, extension aux amis d'amis
+- **Synchronisation YouTube** : Intégration des préférences utilisateur
+- **Gestion fiscale** : Séparation automatique HT/TVA pour conformité
+
+#### Gestion Automatique des ZEN Card
+Le script `PLAYER.refresh.sh` gère automatiquement :
+- **Paiements ZEN Card** : Cycle de paiement pour l'accès aux services
+- **Intégration uDRIVE** : Mise à jour des applications cloud
+- **Synchronisation TiddlyWiki** : Gestion des données personnelles
+- **Réseau social** : Gestion des amis et relations
+- **Services géolocalisés** : Intégration UMAP et secteurs
 
 
 ### 6.2. Gestion des Machines comme Propriété en Commun
@@ -541,11 +608,38 @@ Absolument. Voici mes réflexions, structurées de manière à pouvoir être ajo
 
 ---
 
-## 8. Réflexions Philosophiques : UPlanet, une Nation d'Esprit
+## 8. Architecture Opérationnelle : Scripts et Automatisation
+
+### 8.1. Cycle de Vie Automatisé
+
+L'écosystème UPlanet fonctionne grâce à une architecture de scripts qui automatisent complètement le cycle de vie des identités et des autorisations :
+
+#### Création Initiale
+1. **`make_NOSTRCARD.sh`** → Génère MULTIPASS avec DID complet
+2. **`VISA.new.sh`** → Génère ZEN Card pour les sociétaires
+3. **`did_manager.sh`** → Gère les métadonnées enrichies
+
+#### Gestion Opérationnelle Continue
+1. **`NOSTRCARD.refresh.sh`** → Gère les MULTIPASS (paiements, résumés, N²)
+2. **`PLAYER.refresh.sh`** → Gère les ZEN Card (services, intégrations)
+3. **`UPLANET.official.sh`** → Enregistre les transactions coopératives
+4. **`ZEN.ECONOMY.sh`** → Contrôle les virements automatiques
+5. **`ZEN.COOPERATIVE.3x1-3.sh`** → Répartit les fonds coopératifs
+
+### 8.2. Métadonnées Enrichies et Traçabilité
+
+Le système `did_manager.sh` enrichit automatiquement les documents DID avec :
+- **Station Astroport** : Adresse IPNS de la station d'origine
+- **Portefeuilles MULTIPASS** : Clés G1 pour les revenus Ẑen
+- **Portefeuilles ZEN Card** : Clés G1 pour les parts coopératives
+- **Identification WoT** : Validation par membres forgerons externes
+- **Contributions coopératives** : Traçabilité complète des fonds
+
+## 9. Réflexions Philosophiques : UPlanet, une Nation d'Esprit
 
 Cette implémentation va bien au-delà d'une simple conformité technique avec les standards du W3C. Elle représente une approche pragmatique et philosophique de l'identité numérique souveraine, en parfaite adéquation avec les principes de l'écosystème UPlanet / Astroport.ONE.
 
-### 8.1. Le DID comme Titre de Propriété Numérique
+### 9.1. Le DID comme Titre de Propriété Numérique
 
 Le DID n'est pas juste une carte d'identité ; **c'est l'acte notarié de l'existence numérique d'un individu**.
 
@@ -559,7 +653,7 @@ Ce socle d'identité auto-souveraine et cryptographiquement vérifiable assure u
 
 C'est un **cadastre numérique décentralisé**.
 
-### 8.2. Le Choix Stratégique de `did:nostr` et IPNS
+### 9.2. Le Choix Stratégique de `did:nostr` et IPNS
 
 La combinaison de Nostr pour l'identifiant et d'IPNS pour la résolution est particulièrement judicieuse, comme l'explique l'[article de CopyLaRadio](https://www.copylaradio.com/blog/blog-1/post/relation-de-confiance-decentralisee-a-3-tiers-avec-la-g1-149) :
 
@@ -567,7 +661,7 @@ La combinaison de Nostr pour l'identifiant et d'IPNS pour la résolution est par
 
 **Persistance et Résilience (IPNS)** : Utiliser IPNS pour héberger le `did.json` est une décision stratégique. Cela dissocie l'identifiant de sa localisation. L'utilisateur peut changer de fournisseur de stockage, de serveur ou même passer en mode hors-ligne, son `did:nostr` pointera toujours vers le bon document grâce au pointeur mutable d'IPNS. C'est la garantie de la **persistance de l'identité** au-delà de la durée de vie de n'importe quel service centralisé.
 
-### 8.3. UCAN : De l'Identité aux Autorisations
+### 9.3. UCAN : De l'Identité aux Autorisations
 
 Le DID se concentre sur l'**identité** (qui vous êtes). Le MULTIPASS, implémentation d'UCAN, gère les **autorisations** (ce que vous pouvez faire).
 
@@ -577,13 +671,13 @@ Cette architecture à deux niveaux crée un système complet :
 
 Le `did.json` ne sert pas seulement à prouver qui vous êtes, **il devient l'autorité racine** qui certifie la validité de chaque MULTIPASS qui sont émis. C'est ce qui permet de "prêter des clés en faisant confiance au capitaine du relais", ce qui permet à votre DID un reconnaissance sur tous les terminaux Astroport d'une même UPlanet.
 
-### 8.4. Un Pont entre les Mondes : Interopérabilité Pragmatique
+### 9.4. Un Pont entre les Mondes : Interopérabilité Pragmatique
 
 L'inclusion de multiples méthodes de vérification (`G1/Duniter`, `Bitcoin`, `Monero`, `NOSTR`) dans un seul document DID est une approche pragmatique et puissante. Plutôt que de créer un système isolé, nous construisons un **pont d'identité**.
 
 Le DID UPlanet accessible sur IPFS devient un véritable **agrégateur d'identité souveraine**. Elle est à la fois simple pour les membres de l'écosystème et compatible avec les outils standards du web décentralisé.
 
-### 8.5. La Confiance à 3 Tiers : Un Modèle Social
+### 9.5. La Confiance à 3 Tiers : Un Modèle Social
 
 Le partage de secret SSSS à 3 niveaux n'est pas qu'une solution technique de sécurité, **c'est un modèle social** :
 
@@ -596,7 +690,7 @@ Ce modèle incarne la vision de la **monnaie libre** : l'équilibre entre l'indi
 - **Confiance interpersonnelle** (je fais confiance au Capitaine de mon Astroport)
 - **Confiance systémique** (je fais confiance au réseau UPlanet distribué)
 
-### 8.6. Vers une Économie de la Location Décentralisée
+### 9.6. Vers une Économie de la Location Décentralisée
 
 Le standard **DID** fournit une grammaire et une syntaxe communes pour l'identité décentralisée. L'écosystème **UPlanet** utilise cette grammaire pour écrire une histoire bien plus riche : celle de la **propriété numérique souveraine** transformée en modèle économique.
 
@@ -610,7 +704,7 @@ En intégrant ces concepts, UPlanet démontre comment les standards techniques p
 - Chaque service est une propriété louable
 - Chaque transaction crée de la valeur partagée
 
-### 8.7. Réinventer la Société avec la Monnaie Libre
+### 9.7. Réinventer la Société avec la Monnaie Libre
 
 Comme le conclut l'[article de CopyLaRadio](https://www.copylaradio.com/blog/blog-1/post/relation-de-confiance-decentralisee-a-3-tiers-avec-la-g1-149), cette architecture "fournit une **solution robuste et évolutive** pour renforcer la sécurité et la confiance dans l'écosystème Ğ1."
 
@@ -643,7 +737,7 @@ This implementation follows:
 - [Ed25519 Signature 2020](https://w3c-ccg.github.io/lds-ed25519-2020/)
 - [NOSTR Protocol (NIP-01)](https://github.com/nostr-protocol/nips/blob/master/01.md)
 
-## 9. Références
+## 10. Références
 
 ### Standards et Spécifications
 
@@ -667,7 +761,21 @@ This implementation follows:
 
 ### Outils et Implémentations
 
+#### Scripts de Création et Gestion
 - `make_NOSTRCARD.sh` - Script de génération de MULTIPASS et DID
+- `VISA.new.sh` - Script de génération de ZEN Card
+- `did_manager.sh` - Gestionnaire centralisé des documents DID
+
+#### Scripts de Gestion Opérationnelle
+- `NOSTRCARD.refresh.sh` - Gestionnaire du cycle de vie des MULTIPASS
+- `PLAYER.refresh.sh` - Gestionnaire du cycle de vie des ZEN Card
+- `UPLANET.official.sh` - Enregistrement des transactions coopératives
+
+#### Scripts Économiques
+- `ZEN.ECONOMY.sh` - Contrôle des virements automatiques Ẑen
+- `ZEN.COOPERATIVE.3x1-3.sh` - Répartition coopérative des fonds
+
+#### Outils d'Authentification
 - `upassport.sh` - Script d'authentification et de résolution SSSS
 - `54321.py` - API backend UPassport
 - `scan_new.html` - Terminal de scan MULTIPASS

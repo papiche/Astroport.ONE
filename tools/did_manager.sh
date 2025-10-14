@@ -40,6 +40,23 @@ update_did_document() {
     
     echo -e "${CYAN}📝 Mise à jour DID: ${email} (${update_type})${NC}"
     
+    # Afficher l'adresse IPNS de la station Astroport si disponible
+    if [[ -n "$IPFSNODEID" ]]; then
+        echo -e "${BLUE}🏭 Station Astroport IPNS: ${IPFSNODEID}${NC}"
+    fi
+    
+    # Vérifier et afficher les adresses de portefeuilles disponibles
+    local multipass_g1pub=$(cat "$HOME/.zen/game/nostr/${email}/G1PUBNOSTR" 2>/dev/null)
+    local zencard_g1pub=$(cat "$HOME/.zen/game/players/${email}/.g1pub" 2>/dev/null)
+    
+    if [[ -n "$multipass_g1pub" ]]; then
+        echo -e "${GREEN}💳 MULTIPASS détecté: ${multipass_g1pub:0:8}...${NC}"
+    fi
+    
+    if [[ -n "$zencard_g1pub" ]]; then
+        echo -e "${GREEN}🏦 ZEN Card détecté: ${zencard_g1pub:0:8}...${NC}"
+    fi
+    
     # Créer une sauvegarde avec timestamp
     local backup_file="${did_file}.backup.$(date +%Y%m%d_%H%M%S)"
     cp "$did_file" "$backup_file"
@@ -129,6 +146,37 @@ update_did_document() {
     
     if [[ -n "$wot_metadata" ]]; then
         jq_cmd="$jq_cmd | .metadata.wotDuniterMember = $wot_metadata"
+    fi
+    
+    # Ajouter l'adresse IPNS de la station Astroport
+    if [[ -n "$IPFSNODEID" ]]; then
+        jq_cmd="$jq_cmd | .metadata.astroportStation = {
+            \"ipns\": \"$IPFSNODEID\",
+            \"description\": \"Astroport station IPNS address\",
+            \"updatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+        }"
+    fi
+    
+    # Ajouter l'adresse MULTIPASS (Ẑ revenue) si disponible
+    local multipass_g1pub=$(cat "$HOME/.zen/game/nostr/${email}/G1PUBNOSTR" 2>/dev/null)
+    if [[ -n "$multipass_g1pub" ]]; then
+        jq_cmd="$jq_cmd | .metadata.multipassWallet = {
+            \"g1pub\": \"$multipass_g1pub\",
+            \"type\": \"MULTIPASS\",
+            \"description\": \"Ẑ revenue wallet for service operations\",
+            \"updatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+        }"
+    fi
+    
+    # Ajouter l'adresse ZEN Card (Ẑ society) si disponible
+    local zencard_g1pub=$(cat "$HOME/.zen/game/players/${email}/.g1pub" 2>/dev/null)
+    if [[ -n "$zencard_g1pub" ]]; then
+        jq_cmd="$jq_cmd | .metadata.zencardWallet = {
+            \"g1pub\": \"$zencard_g1pub\",
+            \"type\": \"ZEN_CARD\",
+            \"description\": \"Ẑ society wallet for cooperative shares\",
+            \"updatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+        }"
     fi
     
     # Exécuter la mise à jour
@@ -334,6 +382,63 @@ sync_did_locations() {
 }
 
 ################################################################################
+# Fonction d'affichage de l'adresse IPNS de la station Astroport
+################################################################################
+show_astroport_ipns() {
+    if [[ -n "$IPFSNODEID" ]]; then
+        echo -e "${BLUE}🏭 Station Astroport IPNS: ${IPFSNODEID}${NC}"
+        echo -e "${CYAN}📡 Cette adresse IPNS identifie cette station Astroport dans l'écosystème UPlanet${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Variable IPFSNODEID non définie${NC}"
+        echo -e "${CYAN}💡 Assurez-vous que la variable IPFSNODEID est correctement configurée${NC}"
+    fi
+}
+
+################################################################################
+# Fonction d'affichage des adresses de portefeuilles
+################################################################################
+show_wallet_addresses() {
+    local email="$1"
+    
+    if [[ -z "$email" ]]; then
+        echo -e "${RED}❌ Usage: $0 show-wallets EMAIL${NC}"
+        return 1
+    fi
+    
+    echo -e "${BLUE}🔍 Adresses de portefeuilles pour: ${email}${NC}"
+    echo -e "${YELLOW}================================${NC}"
+    
+    # Vérifier MULTIPASS (Ẑ revenue)
+    local multipass_g1pub=$(cat "$HOME/.zen/game/nostr/${email}/G1PUBNOSTR" 2>/dev/null)
+    if [[ -n "$multipass_g1pub" ]]; then
+        echo -e "${GREEN}💳 MULTIPASS (Ẑ revenue):${NC}"
+        echo -e "   ${CYAN}G1PUB: ${multipass_g1pub}${NC}"
+        echo -e "   ${CYAN}Type: Service operations wallet${NC}"
+    else
+        echo -e "${YELLOW}⚠️  MULTIPASS non trouvé${NC}"
+    fi
+    
+    # Vérifier ZEN Card (Ẑ society)
+    local zencard_g1pub=$(cat "$HOME/.zen/game/players/${email}/.g1pub" 2>/dev/null)
+    if [[ -n "$zencard_g1pub" ]]; then
+        echo -e "${GREEN}🏦 ZEN Card (Ẑ society):${NC}"
+        echo -e "   ${CYAN}G1PUB: ${zencard_g1pub}${NC}"
+        echo -e "   ${CYAN}Type: Cooperative shares wallet${NC}"
+    else
+        echo -e "${YELLOW}⚠️  ZEN Card non trouvé${NC}"
+    fi
+    
+    # Vérifier l'adresse IPNS de la station
+    if [[ -n "$IPFSNODEID" ]]; then
+        echo -e "${GREEN}🏭 Station Astroport:${NC}"
+        echo -e "   ${CYAN}IPNS: ${IPFSNODEID}${NC}"
+        echo -e "   ${CYAN}Type: Station identification${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Station Astroport non configurée${NC}"
+    fi
+}
+
+################################################################################
 # Fonction d'aide
 ################################################################################
 show_help() {
@@ -345,6 +450,8 @@ show_help() {
     echo "  $0 sync EMAIL"
     echo "  $0 republish EMAIL"
     echo "  $0 usociety EMAIL TYPE [MONTANT_ZEN]"
+    echo "  $0 astroport-ipns"
+    echo "  $0 show-wallets EMAIL"
     echo ""
     echo "Types de mise à jour:"
     echo "  LOCATAIRE                    - Recharge MULTIPASS"
@@ -362,6 +469,8 @@ show_help() {
     echo "  $0 validate user@example.com"
     echo "  $0 sync user@example.com"
     echo "  $0 usociety user@example.com SOCIETAIRE_SATELLITE 50"
+    echo "  $0 astroport-ipns"
+    echo "  $0 show-wallets user@example.com"
 }
 
 ################################################################################
@@ -403,6 +512,16 @@ main() {
                 exit 1
             fi
             manage_usociety_file "$2" "$3" "${4:-0}"
+            ;;
+        "astroport-ipns")
+            show_astroport_ipns
+            ;;
+        "show-wallets")
+            if [[ $# -lt 2 ]]; then
+                echo -e "${RED}❌ Usage: $0 show-wallets EMAIL${NC}"
+                exit 1
+            fi
+            show_wallet_addresses "$2"
             ;;
         "help"|"-h"|"--help")
             show_help
