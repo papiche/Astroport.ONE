@@ -456,11 +456,9 @@ tiddlywiki  --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
 --import "${MY_PATH}/../templates/tw/\$ _ipfs_saver_gateway.json" "application/json" \
                     --output ~/.zen/tmp/${MOATS} --render "$:/core/save/all" "tw.html" "text/plain"
 
-    ## COPY TO LOCAL & 12345 IPFSNODEID MAP
+    ## COPY TO LOCAL (TW already published via IPNS)
     [[ -s ~/.zen/tmp/${MOATS}/tw.html ]] \
     && cp -f ~/.zen/tmp/${MOATS}/tw.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
-    && mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER} \
-    && cp ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/ \
     || ( echo "Problem with TW - EXIT" && exit 1 )
 
 ############################################################################ G1TW
@@ -541,6 +539,13 @@ echo "$PSEUDO" > ~/.zen/game/players/${PLAYER}/.pseudo
 echo "$G1PUB" > ~/.zen/game/players/${PLAYER}/.g1pub
 
 echo "${ASTRONAUTENS}" > ~/.zen/game/players/${PLAYER}/.playerns
+
+## CREATE _g1pub FOR IPFS PUBLICATION
+# Create the TW directory structure for IPFS publication
+mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}
+# Copy the G1PUB to _g1pub for IPFS publication (avoid .g1pub filtering)
+echo "$G1PUB" > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/_g1pub
+echo "✅ Created _g1pub for IPFS publication: ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/_g1pub"
 
 #~ echo; echo "Création Clefs et QR codes pour accès au niveau Astroport Ŋ1"; sleep 1
 
