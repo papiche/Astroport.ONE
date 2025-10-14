@@ -8,6 +8,10 @@
 # Récupère l'historique des parts sociales reçues par une ZEN Card
 # Filtre les transactions entrantes depuis UPLANETNAME_SOCIETY
 # Format des références : "UPLANET:xxxxxxxx:SOCIETY:email@example.com:type:IPFSNODEID"
+# 
+# Usage: G1zencard_history.sh <email> [silent]
+#   email: Email de la ZEN Card
+#   silent: "true" pour désactiver les logs (JSON pur uniquement)
 ################################################################################
 
 MY_PATH="`dirname \"$0\"`"
@@ -16,16 +20,26 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 
 # Logging function
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
+    if [[ "$SILENT_MODE" != "true" ]]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
+    fi
+}
+
+# Silent error logging function
+log_error() {
+    if [[ "$SILENT_MODE" != "true" ]]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
+    fi
 }
 
 # Get parameters
 ZENCARD_EMAIL="$1"
+SILENT_MODE="${2:-false}"  # Silent mode for JSON-only output
 FILTER_YEARS=3  # Always retrieve 3 years of history
 
 if [[ -z "$ZENCARD_EMAIL" ]]; then
-    log "ERROR: ZEN Card email required"
-    echo '{"error": "ZEN Card email required", "usage": "G1zencard_history.sh <email>"}'
+    log_error "ERROR: ZEN Card email required"
+    echo '{"error": "ZEN Card email required", "usage": "G1zencard_history.sh <email>", "total_received_g1": 0, "total_received_zen": 0, "total_transfers": 0, "transfers": []}'
     exit 1
 fi
 
@@ -36,7 +50,7 @@ if [[ -f "$HOME/.zen/game/players/${ZENCARD_EMAIL}/secret.dunikey" ]]; then
 elif [[ -f "$HOME/.zen/game/players/${ZENCARD_EMAIL}/.g1pub" ]]; then
     ZENCARD_G1PUB=$(cat "$HOME/.zen/game/players/${ZENCARD_EMAIL}/.g1pub")
 else
-    log "ERROR: ZEN Card not found for email: $ZENCARD_EMAIL"
+    log_error "ERROR: ZEN Card not found for email: $ZENCARD_EMAIL"
     echo "{\"error\": \"ZEN Card not found\", \"email\": \"$ZENCARD_EMAIL\", \"total_received_g1\": 0, \"total_received_zen\": 0, \"total_transfers\": 0, \"transfers\": []}"
     exit 1
 fi
@@ -44,7 +58,7 @@ fi
 # Get SOCIETY wallet public key from environment
 SOCIETY_G1PUB="${UPLANETNAME_SOCIETY:-}"
 if [[ -z "$SOCIETY_G1PUB" ]]; then
-    log "ERROR: UPLANETNAME_SOCIETY not set in environment"
+    log_error "ERROR: UPLANETNAME_SOCIETY not set in environment"
     echo '{"error": "SOCIETY wallet not configured", "total_received_g1": 0, "total_received_zen": 0, "total_transfers": 0, "transfers": []}'
     exit 1
 fi
@@ -58,14 +72,14 @@ log "Filter: Last $FILTER_YEARS year(s)"
 HISTORY_JSON=$(${MY_PATH}/G1history.sh "$ZENCARD_G1PUB" 2>/dev/null)
 
 if [[ -z "$HISTORY_JSON" ]]; then
-    log "ERROR: Failed to retrieve transaction history for ZEN Card"
+    log_error "ERROR: Failed to retrieve transaction history for ZEN Card"
     echo '{"error": "Failed to retrieve history", "total_received_g1": 0, "total_received_zen": 0, "total_transfers": 0, "transfers": []}'
     exit 1
 fi
 
 # Validate JSON
 if ! echo "$HISTORY_JSON" | jq empty 2>/dev/null; then
-    log "ERROR: Invalid JSON from G1history.sh"
+    log_error "ERROR: Invalid JSON from G1history.sh"
     echo '{"error": "Invalid history JSON", "total_received_g1": 0, "total_received_zen": 0, "total_transfers": 0, "transfers": []}'
     exit 1
 fi
