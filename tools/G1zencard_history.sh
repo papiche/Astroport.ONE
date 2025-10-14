@@ -91,7 +91,7 @@ CUTOFF_YEAR=$((CURRENT_YEAR - FILTER_YEARS + 1))
 # Process history JSON with jq to filter and calculate
 # Always analyze 3 years of history
 # Satellite transfers older than 1 year are invalidated from valid balance
-RESULT=$(echo "$HISTORY_JSON" | jq -r --arg society_g1 "$SOCIETY_G1PUB" --arg cutoff_year "$CUTOFF_YEAR" --arg zencard_email "$ZENCARD_EMAIL" --arg current_year "$CURRENT_YEAR" '
+RESULT=$(echo "$HISTORY_JSON" | jq --arg society_g1 "$SOCIETY_G1PUB" --arg cutoff_year "$CUTOFF_YEAR" --arg zencard_email "$ZENCARD_EMAIL" --arg current_year "$CURRENT_YEAR" '
 {
     zencard_email: $zencard_email,
     zencard_g1pub: .pubkey,
