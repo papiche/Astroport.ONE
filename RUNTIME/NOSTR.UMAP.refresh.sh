@@ -1019,21 +1019,45 @@ send_nostr_events() {
         -tags "$TAGS_JSON" \
         --relay "$myRELAY"
 
-    if [[ $(cat ${UMAPPATH}/NOSTR_messages) != "" ]]; then
-        local umap_title="UMAP Journal - ${LAT},${LON}"
-        local umap_content=$(format_content_as_markdown "$(cat ${UMAPPATH}/NOSTR_messages)" "$umap_title" "UMAP" "${LAT}_${LON}")
-        local d_tag="umap-${LAT}-${LON}-${TODATE}"
-        local published_at=$(date +%s)
+    # Only publish UMAP journal if there's actual content (not just headers)
+    local journal_content=$(cat ${UMAPPATH}/NOSTR_messages)
+    if [[ -n "$journal_content" && "$journal_content" != "" ]]; then
+        # Check if there's actual message content (not just empty headers)
+        local has_real_content=false
         
-        # Add kind 30023 specific tags to TAGS_JSON
-        local article_tags=$(echo "$TAGS_JSON" | jq '. + [["d", "'"$d_tag"'"], ["title", "'"$umap_title"'"], ["published_at", "'"$published_at"'"], ["t", "UPlanet"], ["t", "'"${LAT}_${LON}"'"], ["t", "UMAP"]]')
+        # Look for actual message content patterns
+        if echo "$journal_content" | grep -q "### 📝" && echo "$journal_content" | grep -q "Author:"; then
+            has_real_content=true
+        fi
         
-        send_nostr_event send_event \
-            -privkey "$NPRIV_HEX" \
-            -kind 30023 \
-            -content "$umap_content" \
-            -tags "$article_tags" \
-            --relay "$myRELAY"
+        # Also check for MULTIPASS summaries
+        if echo "$journal_content" | grep -q "📱 MULTIPASS Summary"; then
+            has_real_content=true
+        fi
+        
+        # Only publish if there's real content
+        if [[ "$has_real_content" == "true" ]]; then
+            local umap_title="UMAP Journal - ${LAT},${LON}"
+            local umap_content=$(format_content_as_markdown "$journal_content" "$umap_title" "UMAP" "${LAT}_${LON}")
+            local d_tag="umap-${LAT}-${LON}-${TODATE}"
+            local published_at=$(date +%s)
+            
+            # Add kind 30023 specific tags to TAGS_JSON
+            local article_tags=$(echo "$TAGS_JSON" | jq '. + [["d", "'"$d_tag"'"], ["title", "'"$umap_title"'"], ["published_at", "'"$published_at"'"], ["t", "UPlanet"], ["t", "'"${LAT}_${LON}"'"], ["t", "UMAP"]]')
+            
+            send_nostr_event send_event \
+                -privkey "$NPRIV_HEX" \
+                -kind 30023 \
+                -content "$umap_content" \
+                -tags "$article_tags" \
+                --relay "$myRELAY"
+            
+            log "✅ Published UMAP journal for ${LAT},${LON} with content"
+        else
+            log "⏭️  Skipping empty UMAP journal for ${LAT},${LON} (no real content)"
+        fi
+    else
+        log "⏭️  Skipping empty UMAP journal for ${LAT},${LON} (no content)"
     fi
 }
 
