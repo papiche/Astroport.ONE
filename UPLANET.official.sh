@@ -162,19 +162,8 @@ zen_to_g1() {
     echo "scale=2; $zen_amount / 10" | bc -l
 }
 
-# Fonction pour mettre à jour le document DID avec les nouvelles capacités
-# DÉPRÉCIÉE : Utilisez did_manager.sh pour toutes les mises à jour DID
-update_did_document() {
-    local email="$1"
-    local contract_type="$2"  # LOCATAIRE, SOCIETAIRE_SATELLITE, SOCIETAIRE_CONSTELLATION, INFRASTRUCTURE
-    local montant_zen="$3"
-    local montant_g1="$4"
-    
-    echo -e "${YELLOW}⚠️  Utilisation de l'ancienne fonction update_did_document. Migration vers did_manager.sh recommandée.${NC}"
-    
-    # Déléguer au gestionnaire centralisé
-    "${MY_PATH}/tools/did_manager.sh" update "$email" "$contract_type" "$montant_zen" "$montant_g1"
-}
+# Note: Les mises à jour DID sont maintenant gérées directement par did_manager.sh
+# qui inclut automatiquement la création des fichiers U.SOCIETY pour les sociétaires
 
 # Fonction pour envoyer une alerte par email au CAPTAINEMAIL
 send_alert() {
@@ -400,7 +389,7 @@ process_locataire() {
     echo -e "  • Toutes les transactions confirmées sur la blockchain"
     
     # Mettre à jour le document DID avec les nouvelles capacités
-    update_did_document "$email" "LOCATAIRE" "$montant_euros" "$montant_g1"
+    "${MY_PATH}/tools/did_manager.sh" update "$email" "LOCATAIRE" "$montant_euros" "$montant_g1"
     
     return 0
 }
@@ -490,7 +479,7 @@ process_infrastructure() {
     echo -e "  • ✅ Cohérence avec OpenCollective UPlanet Ẑen maintenue"
     
     # Mettre à jour le document DID avec le statut contributeur infrastructure
-    update_did_document "$email" "INFRASTRUCTURE" "$montant_euros" "$montant_g1"
+    "${MY_PATH}/tools/did_manager.sh" update "$email" "INFRASTRUCTURE" "$montant_euros" "$montant_g1"
     
     return 0
 }
@@ -660,7 +649,7 @@ process_societaire() {
     
     # Mettre à jour le document DID avec le statut de sociétaire
     local contract_type="SOCIETAIRE_${type^^}"
-    update_did_document "$email" "$contract_type" "$montant_euros" "$montant_g1"
+    "${MY_PATH}/tools/did_manager.sh" update "$email" "$contract_type" "$montant_euros" "$montant_g1"
     
     return 0
 }

@@ -517,40 +517,105 @@ for PLAYER in "${NOSTR[@]}"; do
         fi
     else
         echo "U SOCIETY MEMBER "
-        UDATE=$(cat ~/.zen/game/players/${PLAYER}/U.SOCIETY)
-        ## CHECK VALIDITY (less than a year ?)
-        TODATE_SECONDS=$(date --date="$TODATE" +%s)
-        UDATE_SECONDS=$(date --date="$UDATE" +%s)
-        DIFF_SECONDS=$((TODATE_SECONDS - UDATE_SECONDS))
-        DIFF_DAYS=$((DIFF_SECONDS / 86400))
-        if [ $DIFF_DAYS -lt 365 ]; then
-            echo "OK VALID $((365 - DIFF_DAYS)) days left..."
-            
-            ########################################################################
-            ## YOUTUBE LIKES SYNC FOR SOCIETY MEMBERS
-            ########################################################################
-            # Vérifier si le sociétaire a un fichier cookie YouTube
-            if [[ -s ~/.zen/game/nostr/${PLAYER}/.cookie.txt ]]; then
-                log "INFO" "🎵 Starting YouTube likes sync for society member: ${PLAYER}"
-                log_metric "YOUTUBE_SYNC_START" "1" "${PLAYER}"
-                
-                # Lancer la synchronisation des vidéos likées en arrière-plan
-                ${MY_PATH}/../IA/sync_youtube_likes.sh "${PLAYER}" --debug &
-                YOUTUBE_SYNC_PID=$!
-                
-                log "INFO" "YouTube sync started for ${PLAYER} (PID: $YOUTUBE_SYNC_PID)"
-                log_metric "YOUTUBE_SYNC_PID" "$YOUTUBE_SYNC_PID" "${PLAYER}"
-            else
-                log "DEBUG" "No YouTube cookie file found for society member: ${PLAYER}"
-            fi
+        UDATE=$(cat ~/.zen/game/players/${PLAYER}/U.SOCIETY 2>/dev/null)
+        UENDDATE=$(cat ~/.zen/game/players/${PLAYER}/U.SOCIETY.end 2>/dev/null)
+        
+        if [[ -z "$UDATE" ]]; then
+            echo "### U SOCIETY FILE MISSING"
+            echo "### REMOVING U SOCIETY STATUS"
+            rm -f ~/.zen/game/players/${PLAYER}/U.SOCIETY
+            rm -f ~/.zen/game/nostr/${PLAYER}/U.SOCIETY
+            rm -f ~/.zen/game/players/${PLAYER}/U.SOCIETY.end
+            rm -f ~/.zen/game/nostr/${PLAYER}/U.SOCIETY.end
         else
-            echo "GAME OVER since $((DIFF_DAYS - 365))"
-        fi
-        if [[ $DIFF_DAYS == 365 ]]; then
-            echo "### ENDING U SOCIETY FREE MODE"
-            rm ~/.zen/game/players/${PLAYER}/U.SOCIETY
-            rm ~/.zen/game/nostr/${PLAYER}/U.SOCIETY
-            ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh "${PLAYER}" "$HOME/.zen/game/passport/${PUBKEY}/.passport.html" "PLEASE RENEW"
+            echo "U SOCIETY REGISTRATION : $UDATE"
+            
+            if [[ -n "$UENDDATE" ]]; then
+                echo "U SOCIETY EXPIRATION : $UENDDATE"
+                
+                # Vérifier si l'abonnement a expiré
+                TODATE_SECONDS=$(date --date="$TODATE" +%s)
+                UENDDATE_SECONDS=$(date --date="$UENDDATE" +%s)
+                
+                if [[ $TODATE_SECONDS -gt $UENDDATE_SECONDS ]]; then
+                    echo "### U SOCIETY SUBSCRIPTION EXPIRED"
+                    echo "### ENDING U SOCIETY FREE MODE"
+                    rm ~/.zen/game/players/${PLAYER}/U.SOCIETY
+                    rm ~/.zen/game/nostr/${PLAYER}/U.SOCIETY
+                    rm ~/.zen/game/players/${PLAYER}/U.SOCIETY.end
+                    rm ~/.zen/game/nostr/${PLAYER}/U.SOCIETY.end
+                    ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh "${PLAYER}" "$HOME/.zen/game/passport/${PUBKEY}/.passport.html" "PLEASE RENEW"
+                else
+                    # Calculer les jours restants
+                    DIFF_DAYS=$(( (UENDDATE_SECONDS - TODATE_SECONDS) / 86400 ))
+                    echo "DAYS UNTIL EXPIRATION : $DIFF_DAYS"
+                    
+                    if [[ $DIFF_DAYS -gt 0 ]]; then
+                        echo "OK VALID $DIFF_DAYS days left..."
+                        
+                        ########################################################################
+                        ## YOUTUBE LIKES SYNC FOR SOCIETY MEMBERS
+                        ########################################################################
+                        # Vérifier si le sociétaire a un fichier cookie YouTube
+                        if [[ -s ~/.zen/game/nostr/${PLAYER}/.cookie.txt ]]; then
+                            log "INFO" "🎵 Starting YouTube likes sync for society member: ${PLAYER}"
+                            log_metric "YOUTUBE_SYNC_START" "1" "${PLAYER}"
+                            
+                            # Lancer la synchronisation des vidéos likées en arrière-plan
+                            ${MY_PATH}/../IA/sync_youtube_likes.sh "${PLAYER}" --debug &
+                            YOUTUBE_SYNC_PID=$!
+                            
+                            log "INFO" "YouTube sync started for ${PLAYER} (PID: $YOUTUBE_SYNC_PID)"
+                            log_metric "YOUTUBE_SYNC_PID" "$YOUTUBE_SYNC_PID" "${PLAYER}"
+                        else
+                            log "DEBUG" "No YouTube cookie file found for society member: ${PLAYER}"
+                        fi
+                        
+                        # Alerte si expiration dans moins de 30 jours
+                        if [[ $DIFF_DAYS -lt 30 ]]; then
+                            echo "### U SOCIETY EXPIRATION WARNING: $DIFF_DAYS days remaining"
+                        fi
+                    fi
+                fi
+            else
+                # Fallback: calculer la date d'expiration (1 an par défaut)
+                echo "### U SOCIETY.end FILE MISSING - USING FALLBACK CALCULATION"
+                TODATE_SECONDS=$(date --date="$TODATE" +%s)
+                UDATE_SECONDS=$(date --date="$UDATE" +%s)
+                DIFF_SECONDS=$((TODATE_SECONDS - UDATE_SECONDS))
+                DIFF_DAYS=$((DIFF_SECONDS / 86400))
+                
+                if [ $DIFF_DAYS -lt 365 ]; then
+                    echo "OK VALID $((365 - DIFF_DAYS)) days left..."
+                    
+                    ########################################################################
+                    ## YOUTUBE LIKES SYNC FOR SOCIETY MEMBERS
+                    ########################################################################
+                    # Vérifier si le sociétaire a un fichier cookie YouTube
+                    if [[ -s ~/.zen/game/nostr/${PLAYER}/.cookie.txt ]]; then
+                        log "INFO" "🎵 Starting YouTube likes sync for society member: ${PLAYER}"
+                        log_metric "YOUTUBE_SYNC_START" "1" "${PLAYER}"
+                        
+                        # Lancer la synchronisation des vidéos likées en arrière-plan
+                        ${MY_PATH}/../IA/sync_youtube_likes.sh "${PLAYER}" --debug &
+                        YOUTUBE_SYNC_PID=$!
+                        
+                        log "INFO" "YouTube sync started for ${PLAYER} (PID: $YOUTUBE_SYNC_PID)"
+                        log_metric "YOUTUBE_SYNC_PID" "$YOUTUBE_SYNC_PID" "${PLAYER}"
+                    else
+                        log "DEBUG" "No YouTube cookie file found for society member: ${PLAYER}"
+                    fi
+                else
+                    echo "GAME OVER since $((DIFF_DAYS - 365))"
+                fi
+                
+                if [[ $DIFF_DAYS == 365 ]]; then
+                    echo "### ENDING U SOCIETY FREE MODE (FALLBACK)"
+                    rm ~/.zen/game/players/${PLAYER}/U.SOCIETY
+                    rm ~/.zen/game/nostr/${PLAYER}/U.SOCIETY
+                    ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh "${PLAYER}" "$HOME/.zen/game/passport/${PUBKEY}/.passport.html" "PLEASE RENEW"
+                fi
+            fi
         fi
     fi
 

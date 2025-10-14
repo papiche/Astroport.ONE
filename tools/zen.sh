@@ -669,81 +669,18 @@ create_usociety_file() {
     local transaction_amount="$2"
     local zen_amount="$3"
     
-    echo -e "\n${CYAN}⭐ CREATING U.SOCIETY FILE FOR SOCIÉTAIRE${NC}"
-    echo -e "${YELLOW}=========================================${NC}"
+    echo -e "\n${YELLOW}⚠️  Utilisation de l'ancienne fonction create_usociety_file. Migration vers UPLANET.official.sh recommandée.${NC}"
+    echo -e "${CYAN}💡 Utilisez UPLANET.official.sh pour les transactions sociétaires officielles${NC}"
     
-    # Check if player has ZenCard
-    if [[ ! -d ~/.zen/game/players/${player_email} ]]; then
-        echo -e "${RED}❌ ZenCard not found for ${player_email}${NC}"
-        return 1
+    # Déléguer à did_manager.sh pour la création des fichiers U.SOCIETY
+    local contract_type="SOCIETAIRE_SATELLITE"  # Par défaut satellite
+    if [[ "$zen_amount" -eq 540 ]]; then
+        contract_type="SOCIETAIRE_CONSTELLATION"
     fi
     
-    # Determine subscription duration based on amount
-    local subscription_type=""
-    local duration_days=""
+    "${MY_PATH}/did_manager.sh" usociety "$player_email" "$contract_type" "$zen_amount"
     
-    # Convert Ğ1 amount to Ẑen for comparison (amount * 10)
-    local total_zen=$(echo "$transaction_amount * 10" | bc | cut -d '.' -f 1)
-    
-    if [[ "$total_zen" -eq 50 ]]; then
-        subscription_type="RPi Share (1 year)"
-        duration_days=365
-    elif [[ "$total_zen" -eq 540 ]]; then
-        subscription_type="PC Share (3 years)"
-        duration_days=1095
-    else
-        echo -e "${YELLOW}⚠ Custom amount: ${total_zen} Ẑen - Default 1 year subscription${NC}"
-        subscription_type="Custom Share (1 year)"
-        duration_days=365
-    fi
-    
-    # Create U.SOCIETY file with current date
-    local society_date="$TODATE"
-    echo "$society_date" > ~/.zen/game/players/${player_email}/U.SOCIETY
-    
-    # Also create in NOSTR directory if exists (create symlink like u.command.sh)
-    if [[ -d ~/.zen/game/nostr/${player_email} ]]; then
-        ln -sf ~/.zen/game/players/${player_email}/U.SOCIETY ~/.zen/game/nostr/${player_email}/U.SOCIETY
-    fi
-    
-    echo -e "${GREEN}✅ U.SOCIETY file created for ${player_email}${NC}"
-    echo -e "${BLUE}Subscription Type:${NC} $subscription_type"
-    echo -e "${BLUE}Start Date:${NC} $society_date"
-    echo -e "${BLUE}Duration:${NC} $duration_days days"
-    echo -e "${BLUE}Amount:${NC} ${YELLOW}$transaction_amount Ğ1${NC} (${CYAN}$total_zen Ẑen${NC})"
-    
-    # Send confirmation email
-    local email_content="<html><head><meta charset='UTF-8'>
-    <style>
-        body { font-family: 'Courier New', monospace; }
-        .header { color: #2E8B57; font-size: 24px; font-weight: bold; }
-        .info { background-color: #f0f8ff; padding: 10px; margin: 10px 0; }
-    </style></head><body>
-    <div class='header'>🎉 Bienvenue dans la Coopérative UPlanet !</div>
-    <div class='info'>
-        <h3>Votre statut de Sociétaire est activé :</h3>
-        <ul>
-            <li><strong>Type :</strong> $subscription_type</li>
-            <li><strong>Date d'activation :</strong> $society_date</li>
-            <li><strong>Durée :</strong> $duration_days jours</li>
-            <li><strong>Montant :</strong> $transaction_amount Ğ1 ($total_zen Ẑen)</li>
-        </ul>
-        <p><strong>Avantages :</strong></p>
-        <ul>
-            <li>✅ Exemption de loyer pendant la durée de votre souscription</li>
-            <li>✅ Droit de vote dans la coopérative</li>
-            <li>✅ Part de propriété sur les biens communs</li>
-            <li>✅ Accès aux services sans frais supplémentaires</li>
-        </ul>
-        <p>Votre ZenCard est maintenant configurée en mode Sociétaire.</p>
-        <p><a href='${myIPFS}/ipns/copylaradio.com'>Accéder à UPlanet</a></p>
-    </div>
-    </body></html>"
-    
-    echo "$email_content" > ~/.zen/tmp/usociety_welcome_${player_email//[@.]/_}.html
-    ${MY_PATH}/mailjet.sh "${player_email}" ~/.zen/tmp/usociety_welcome_${player_email//[@.]/_}.html "🎉 Statut Sociétaire Activé - UPlanet Coopérative"
-    
-    return 0
+    return $?
 }
 
 # Function to execute system wallet transaction

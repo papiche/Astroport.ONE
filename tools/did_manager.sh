@@ -146,6 +146,9 @@ update_did_document() {
         # Republier sur IPNS si possible
         republish_did_ipns "$email"
         
+        # Gérer le fichier U.SOCIETY si nécessaire
+        manage_usociety_file "$email" "$update_type" "$montant_zen"
+        
         # Nettoyer les anciens backups (garder seulement les 5 derniers)
         cleanup_old_backups "$did_file"
         
@@ -222,6 +225,92 @@ validate_did_document() {
 }
 
 ################################################################################
+# Fonction de gestion du fichier U.SOCIETY
+################################################################################
+manage_usociety_file() {
+    local email="$1"
+    local update_type="$2"  # SOCIETAIRE_SATELLITE, SOCIETAIRE_CONSTELLATION, INFRASTRUCTURE
+    local montant_zen="${3:-0}"
+    
+    # Vérifier que le type nécessite la création d'un fichier U.SOCIETY
+    case "$update_type" in
+        "SOCIETAIRE_SATELLITE"|"SOCIETAIRE_CONSTELLATION"|"INFRASTRUCTURE")
+            ;;
+        *)
+            # Pas de fichier U.SOCIETY pour les autres types
+            return 0
+            ;;
+    esac
+    
+    echo -e "${CYAN}📝 Gestion fichier U.SOCIETY: ${email} (${update_type})${NC}"
+    
+    # Vérifier que le dossier player existe
+    if [[ ! -d "$HOME/.zen/game/players/${email}" ]]; then
+        echo -e "${YELLOW}⚠️  Dossier player non trouvé pour ${email}, création du fichier U.SOCIETY ignorée${NC}"
+        return 0
+    fi
+    
+    # Créer le fichier U.SOCIETY avec la date actuelle
+    local society_date=$(date '+%Y-%m-%d')
+    local usociety_file="$HOME/.zen/game/players/${email}/U.SOCIETY"
+    local usociety_end_file="$HOME/.zen/game/players/${email}/U.SOCIETY.end"
+    
+    echo "$society_date" > "$usociety_file"
+    echo -e "${GREEN}✅ Fichier U.SOCIETY créé: ${usociety_file}${NC}"
+    
+    # Calculer et créer la date de fin d'abonnement
+    local end_date
+    case "$update_type" in
+        "SOCIETAIRE_SATELLITE")
+            end_date=$(date -d "$society_date + 365 days" '+%Y-%m-%d')
+            ;;
+        "SOCIETAIRE_CONSTELLATION")
+            end_date=$(date -d "$society_date + 1095 days" '+%Y-%m-%d')  # 3 ans
+            ;;
+        "INFRASTRUCTURE")
+            end_date="9999-12-31"  # Permanent
+            ;;
+    esac
+    
+    echo "$end_date" > "$usociety_end_file"
+    echo -e "${GREEN}✅ Fichier U.SOCIETY.end créé: ${usociety_end_file} (expire: ${end_date})${NC}"
+    
+    # Créer un lien symbolique dans le dossier nostr si il existe
+    if [[ -d "$HOME/.zen/game/nostr/${email}" ]]; then
+        ln -sf "$usociety_file" "$HOME/.zen/game/nostr/${email}/U.SOCIETY"
+        ln -sf "$usociety_end_file" "$HOME/.zen/game/nostr/${email}/U.SOCIETY.end"
+        echo -e "${GREEN}✅ Liens symboliques U.SOCIETY créés dans nostr/${NC}"
+    fi
+    
+    # Déterminer le type d'abonnement et la durée
+    local subscription_type=""
+    local duration_days=""
+    
+    case "$update_type" in
+        "SOCIETAIRE_SATELLITE")
+            subscription_type="RPi Share (1 year)"
+            duration_days=365
+            ;;
+        "SOCIETAIRE_CONSTELLATION")
+            subscription_type="PC Share (3 years)"
+            duration_days=1095
+            ;;
+        "INFRASTRUCTURE")
+            subscription_type="Infrastructure Capital (permanent)"
+            duration_days=999999  # Permanent
+            ;;
+    esac
+    
+    echo -e "${BLUE}📊 Détails U.SOCIETY:${NC}"
+    echo -e "  • Type: ${subscription_type}"
+    echo -e "  • Date début: ${society_date}"
+    echo -e "  • Durée: ${duration_days} jours"
+    echo -e "  • Montant: ${montant_zen} Ẑen"
+    
+    return 0
+}
+
+################################################################################
 # Fonction de synchronisation entre les deux emplacements
 ################################################################################
 sync_did_locations() {
@@ -255,6 +344,7 @@ show_help() {
     echo "  $0 validate EMAIL"
     echo "  $0 sync EMAIL"
     echo "  $0 republish EMAIL"
+    echo "  $0 usociety EMAIL TYPE [MONTANT_ZEN]"
     echo ""
     echo "Types de mise à jour:"
     echo "  LOCATAIRE                    - Recharge MULTIPASS"
@@ -271,6 +361,7 @@ show_help() {
     echo "  $0 update user@example.com WOT_MEMBER 0 0 5fTwfbYUtCeoaFLbyzaBYUcq46nBS26rciWJAkBugqpo"
     echo "  $0 validate user@example.com"
     echo "  $0 sync user@example.com"
+    echo "  $0 usociety user@example.com SOCIETAIRE_SATELLITE 50"
 }
 
 ################################################################################
@@ -305,6 +396,13 @@ main() {
                 exit 1
             fi
             republish_did_ipns "$2"
+            ;;
+        "usociety")
+            if [[ $# -lt 3 ]]; then
+                echo -e "${RED}❌ Usage: $0 usociety EMAIL TYPE [MONTANT_ZEN]${NC}"
+                exit 1
+            fi
+            manage_usociety_file "$2" "$3" "${4:-0}"
             ;;
         "help"|"-h"|"--help")
             show_help
