@@ -493,7 +493,7 @@ curl -F "file=@photo.jpg" \
 
 ### Contact
 - **Email** : support@qo-op.com
-- **Site Web** : https://astroport.copylaradio.com
+- **Site Web** : https://astroport.com
 - **Communauté** : https://copylaradio.com
 
 ---
