@@ -653,6 +653,7 @@ for PLAYER in "${NOSTR[@]}"; do
             "wss://relay.copylaradio.com" "$myRELAY" \
             --ipfs_gw "$myIPFS" \
             --zencard "$ZENCARDG1" \
+            --email "$PLAYER" \
             --ipns_vault "${NOSTRNS}" \
             > ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
 

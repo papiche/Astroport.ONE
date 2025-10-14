@@ -144,28 +144,40 @@ echo ""
 echo "📨 Sending messages..."
 echo "===================="
 
-SUCCESS_COUNT=0
-FAILED_COUNT=0
-TOTAL_COUNT=0
+# Create temporary files for counters
+TEMP_DIR=$(mktemp -d)
+SUCCESS_FILE="$TEMP_DIR/success"
+FAILED_FILE="$TEMP_DIR/failed"
+TOTAL_FILE="$TEMP_DIR/total"
+
+# Initialize counters
+echo "0" > "$SUCCESS_FILE"
+echo "0" > "$FAILED_FILE"
+echo "0" > "$TOTAL_FILE"
 
 # Process each user
 echo "$USERS_JSON" | jq -r '.[] | .hex' 2>/dev/null | while read -r user_hex; do
     if [[ -n "$user_hex" ]]; then
-        TOTAL_COUNT=$((TOTAL_COUNT + 1))
+        # Increment total count
+        current_total=$(cat "$TOTAL_FILE")
+        echo $((current_total + 1)) > "$TOTAL_FILE"
         
         echo -n "📤 Sending to ${user_hex:0:16}... "
         
         if [[ "$DRY_RUN" = true ]]; then
             echo "✅ (DRY RUN)"
-            SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+            current_success=$(cat "$SUCCESS_FILE")
+            echo $((current_success + 1)) > "$SUCCESS_FILE"
         else
             # Send NOSTR DM
             if python3 "$MY_PATH/nostr_send_dm.py" "$NSEC" "$user_hex" "$MESSAGE" "$myRELAY" >/dev/null 2>&1; then
                 echo "✅"
-                SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+                current_success=$(cat "$SUCCESS_FILE")
+                echo $((current_success + 1)) > "$SUCCESS_FILE"
             else
                 echo "❌"
-                FAILED_COUNT=$((FAILED_COUNT + 1))
+                current_failed=$(cat "$FAILED_FILE")
+                echo $((current_failed + 1)) > "$FAILED_FILE"
             fi
         fi
         
@@ -173,6 +185,14 @@ echo "$USERS_JSON" | jq -r '.[] | .hex' 2>/dev/null | while read -r user_hex; do
         sleep 0.5
     fi
 done
+
+# Read final counts
+TOTAL_COUNT=$(cat "$TOTAL_FILE")
+SUCCESS_COUNT=$(cat "$SUCCESS_FILE")
+FAILED_COUNT=$(cat "$FAILED_FILE")
+
+# Clean up temporary files
+rm -rf "$TEMP_DIR"
 
 # Final statistics
 echo ""

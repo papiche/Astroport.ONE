@@ -47,6 +47,8 @@ def nostr_setup_profile(args):
         tags.append(["i", f"ipns_vault:{args.ipns_vault}", ""])
     if args.zencard:
         tags.append(["i", f"zencard:{args.zencard}", ""])
+    if args.email:
+        tags.append(["i", f"email:{args.email}", ""])
     if args.tw_feed:
         tags.append(["i", f"tw_feed:{args.tw_feed}", ""])
 
@@ -91,6 +93,7 @@ if __name__ == "__main__":
     parser.add_argument("--ipfs_gw", help="IPFS Gateway URL", default=None)
     parser.add_argument("--ipns_vault", help="NOSTR Card IPNS vault key", default=None)
     parser.add_argument("--zencard", help="ZenCard wallet address", default=None)
+    parser.add_argument("--email", help="Email address", default=None)
     parser.add_argument("--tw_feed", help="TW Feed IPNS key", default=None)
 
     args = parser.parse_args()

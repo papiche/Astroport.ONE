@@ -827,6 +827,12 @@ show_captain_navigation_menu() {
     echo -e "   • Intégration dans l'écosystème"
     echo ""
     
+    echo -e "${GREEN}8. 📢 Broadcast NOSTR${NC}"
+    echo -e "   • Envoyer un message à tous les utilisateurs MULTIPASS"
+    echo -e "   • Communication réseau via NOSTR"
+    echo -e "   • Diffusion d'annonces importantes"
+    echo ""
+    
     echo -e "${GREEN}0. ❌ Quitter${NC}"
     echo ""
     
@@ -859,6 +865,9 @@ show_captain_navigation_menu() {
             ;;
         7)
             embark_captain
+            ;;
+        8)
+            show_nostr_broadcast_menu
             ;;
         0)
             print_success "Au revoir, Capitaine !"
@@ -1150,6 +1159,216 @@ check_and_init_uplanet_infrastructure() {
     return 0
 }
 
+# Fonction pour afficher le menu de broadcast NOSTR
+show_nostr_broadcast_menu() {
+    print_header "BROADCAST NOSTR - COMMUNICATION RÉSEAU"
+    
+    echo -e "${CYAN}Choisissez votre action de communication:${NC}"
+    echo ""
+    
+    echo -e "${GREEN}1. 📢 Message Personnalisé${NC}"
+    echo -e "   • Saisir un message personnalisé"
+    echo -e "   • Envoi à tous les utilisateurs MULTIPASS"
+    echo -e "   • Mode interactif avec confirmation"
+    echo ""
+    
+    echo -e "${GREEN}2. 🔔 Message de Test${NC}"
+    echo -e "   • Message de test prédéfini"
+    echo -e "   • Vérification de la connectivité réseau"
+    echo -e "   • Test des clés NOSTR du capitaine"
+    echo ""
+    
+    echo -e "${GREEN}3. 📋 Mode Dry-Run${NC}"
+    echo -e "   • Simulation sans envoi réel"
+    echo -e "   • Vérification des destinataires"
+    echo -e "   • Test de la configuration"
+    echo ""
+    
+    echo -e "${GREEN}4. 📊 Statistiques Réseau${NC}"
+    echo -e "   • Nombre d'utilisateurs MULTIPASS"
+    echo -e "   • État de la connectivité NOSTR"
+    echo -e "   • Vérification des clés du capitaine"
+    echo ""
+    
+    echo -e "${GREEN}0. ⬅️  Retour au tableau de bord${NC}"
+    echo ""
+    
+    read -p "Votre choix: " broadcast_choice
+    
+    case $broadcast_choice in
+        1)
+            send_custom_nostr_message
+            ;;
+        2)
+            send_test_nostr_message
+            ;;
+        3)
+            test_nostr_broadcast
+            ;;
+        4)
+            show_network_statistics
+            ;;
+        0)
+            show_captain_dashboard
+            return
+            ;;
+        *)
+            print_error "Choix invalide"
+            sleep 1
+            show_nostr_broadcast_menu
+            ;;
+    esac
+}
+
+# Fonction pour envoyer un message personnalisé
+send_custom_nostr_message() {
+    print_section "ENVOI DE MESSAGE PERSONNALISÉ"
+    
+    echo -e "${CYAN}Saisissez votre message (appuyez sur ENTRÉE pour terminer):${NC}"
+    echo ""
+    
+    # Lire le message sur plusieurs lignes
+    local message=""
+    local line=""
+    while IFS= read -r line; do
+        if [[ -z "$line" ]]; then
+            break
+        fi
+        if [[ -n "$message" ]]; then
+            message="$message"$'\n'"$line"
+        else
+            message="$line"
+        fi
+    done
+    
+    if [[ -z "$message" ]]; then
+        print_error "Message vide"
+        return 1
+    fi
+    
+    echo ""
+    echo -e "${YELLOW}Message à envoyer:${NC}"
+    echo "----------------------------------------"
+    echo "$message"
+    echo "----------------------------------------"
+    echo ""
+    
+    read -p "Confirmer l'envoi ? (oui/non): " confirm
+    if [[ "$confirm" != "oui" && "$confirm" != "o" && "$confirm" != "y" && "$confirm" != "yes" ]]; then
+        print_info "Envoi annulé"
+        return 1
+    fi
+    
+    print_info "Envoi du message personnalisé..."
+    echo ""
+    
+    if "${MY_PATH}/tools/nostr_CAPTAIN_broadcast.sh" "$message" --verbose; then
+        print_success "Message envoyé avec succès !"
+    else
+        print_error "Erreur lors de l'envoi du message"
+    fi
+    
+    echo ""
+    read -p "Appuyez sur ENTRÉE pour continuer..."
+    show_nostr_broadcast_menu
+}
+
+# Fonction pour envoyer un message de test
+send_test_nostr_message() {
+    print_section "ENVOI DE MESSAGE DE TEST"
+    
+    print_info "Envoi d'un message de test à tous les utilisateurs MULTIPASS..."
+    echo ""
+    
+    if "${MY_PATH}/tools/nostr_CAPTAIN_broadcast.sh" --verbose; then
+        print_success "Message de test envoyé avec succès !"
+    else
+        print_error "Erreur lors de l'envoi du message de test"
+    fi
+    
+    echo ""
+    read -p "Appuyez sur ENTRÉE pour continuer..."
+    show_nostr_broadcast_menu
+}
+
+# Fonction pour tester le broadcast sans envoi
+test_nostr_broadcast() {
+    print_section "TEST DRY-RUN DU BROADCAST"
+    
+    print_info "Test de la configuration sans envoi réel..."
+    echo ""
+    
+    if "${MY_PATH}/tools/nostr_CAPTAIN_broadcast.sh" --dry-run --verbose; then
+        print_success "Test réussi ! La configuration est correcte."
+    else
+        print_error "Problème détecté dans la configuration"
+    fi
+    
+    echo ""
+    read -p "Appuyez sur ENTRÉE pour continuer..."
+    show_nostr_broadcast_menu
+}
+
+# Fonction pour afficher les statistiques du réseau
+show_network_statistics() {
+    print_section "STATISTIQUES DU RÉSEAU NOSTR"
+    
+    # Vérifier les clés du capitaine
+    if [[ -z "$CAPTAINEMAIL" ]]; then
+        print_error "CAPTAINEMAIL non défini"
+        return 1
+    fi
+    
+    local captain_nostr_file="$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
+    if [[ -f "$captain_nostr_file" ]]; then
+        print_success "Clés NOSTR du capitaine: Présentes"
+        source "$captain_nostr_file"
+        if [[ -n "$NSEC" ]]; then
+            echo -e "  🔑 NSEC: ${GREEN}${NSEC:0:20}...${NC}"
+        else
+            print_warning "NSEC non trouvé dans les clés"
+        fi
+    else
+        print_error "Clés NOSTR du capitaine: Absentes"
+        echo -e "  📁 Fichier attendu: $captain_nostr_file"
+    fi
+    
+    echo ""
+    
+    # Compter les utilisateurs MULTIPASS
+    local multipass_count=$(ls ~/.zen/game/nostr 2>/dev/null | grep "@" | wc -l)
+    echo -e "${CYAN}👥 Utilisateurs MULTIPASS: ${WHITE}$multipass_count${NC}"
+    
+    # Tester la découverte des utilisateurs
+    print_info "Test de découverte des utilisateurs réseau..."
+    local users_json=$("${MY_PATH}/tools/search_for_this_hex_in_uplanet.sh" --json --multipass 2>/dev/null)
+    
+    if [[ -n "$users_json" ]]; then
+        local user_count=$(echo "$users_json" | jq length 2>/dev/null || echo "0")
+        echo -e "  📊 Utilisateurs découverts: ${GREEN}$user_count${NC}"
+        
+        if [[ "$user_count" -gt 0 ]]; then
+            echo -e "  📋 Détails des utilisateurs:"
+            echo "$users_json" | jq -r '.[] | "    • \(.hex) (\(.source))"' 2>/dev/null
+        fi
+    else
+        print_warning "Aucun utilisateur découvert dans le réseau"
+    fi
+    
+    echo ""
+    
+    # Vérifier la connectivité relay
+    if [[ -n "$myRELAY" ]]; then
+        echo -e "${CYAN}🌐 Relay NOSTR: ${GREEN}$myRELAY${NC}"
+    else
+        print_warning "Relay NOSTR non configuré"
+    fi
+    
+    echo ""
+    read -p "Appuyez sur ENTRÉE pour continuer..."
+    show_nostr_broadcast_menu
+}
+
 # Fonction principale d'embarquement
 embark_captain() {
     print_header "BIENVENUE SUR ASTROPORT.ONE - EMBARQUEMENT DU CAPITAINE"
@@ -1195,7 +1414,7 @@ embark_captain() {
             [[ -z "$email" ]] && { print_error "Email requis"; return 1; }
         else
             print_error "Email requis en mode automatique. Utilisez --email"
-            return 1
+        return 1
         fi
     fi
     

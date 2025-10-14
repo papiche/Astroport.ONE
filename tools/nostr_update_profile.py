@@ -268,7 +268,7 @@ def merge_profile_data(existing_event: Optional[dict], new_args: argparse.Namesp
     
     # Mettre à jour avec les nouveaux tags
     tag_fields = ['g1pub', 'github', 'twitter', 'mastodon', 'telegram',
-                  'ipfs_gw', 'ipns_vault', 'zencard', 'tw_feed']
+                  'ipfs_gw', 'ipns_vault', 'zencard', 'email', 'tw_feed']
     
     for field in tag_fields:
         val = getattr(new_args, field, None)
@@ -377,6 +377,7 @@ async def main():
     parser.add_argument("--ipfs_gw", help="IPFS Gateway URL")
     parser.add_argument("--ipns_vault", help="NOSTR Card IPNS vault key")
     parser.add_argument("--zencard", help="ZenCard wallet address")
+    parser.add_argument("--email", help="Email address")
     parser.add_argument("--tw_feed", help="TW Feed IPNS key")
 
     args, unknown_args = parser.parse_known_args()

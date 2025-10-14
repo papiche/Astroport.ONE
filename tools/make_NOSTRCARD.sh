@@ -468,6 +468,7 @@ EOF
         "" "$myIPFS/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" "" "" "" "" \
         "wss://relay.copylaradio.com" "$myRELAY" \
         --zencard "$ZENCARDG1" \
+        --email "$EMAIL" \
         --ipns_vault "/ipns/${NOSTRNS}" &>/dev/null
 
     ## CREATE CESIUM + PROFILE
