@@ -152,11 +152,6 @@ ${MY_PATH}/youtube-dl.sh # retry install if needed
 yt-dlp -U #Update yt-dlp
 
 ########################################################################
-## DRAGON SSH WOT
-echo "DRAGONS SHIELD OFF"
-${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
-
-########################################################################
 ## PING BOOSTRAP & SWARM NODES
 ${MY_PATH}/ping_bootstrap.sh > /dev/null 2>&1
 
@@ -217,12 +212,16 @@ echo "HIGH. RESTART IPFS"
 sleep 60
 sudo systemctl restart ipfs
 
-#################################
-### DRAGON WOT : SSH P2P RING OPENING
-#################################
+################################ wait for bootstraping....
 sleep 30
+########################################################
+### DRAGON WOT : SSH IPFS P2P SERVICES OPENING
+########################################################
+echo "DRAGONS SHIELD OFF"
+${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
 echo "DRAGONS SHIELD ON"
 ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh
+########################################################
 
 ## RESTART ASTROPORT
 ## CLOSING API PORT
