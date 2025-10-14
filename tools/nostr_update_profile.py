@@ -25,37 +25,39 @@ except ImportError:
     HAS_SECP256K1 = False
 
 def sign_event(event_dict: dict, private_key_hex: str) -> dict:
-    """Signer un événement NOSTR avec une clé privée"""
-    # Créer le message à signer selon NIP-01
-    message = json.dumps([
-        0,  # reserved
-        event_dict["pubkey"],
-        event_dict["created_at"],
-        event_dict["kind"],
-        event_dict["tags"],
-        event_dict["content"]
-    ], separators=(',', ':'), ensure_ascii=False)
-    
-    # Calculer le hash SHA256
-    event_hash = hashlib.sha256(message.encode('utf-8')).digest()
-    
-    if HAS_SECP256K1:
-        # Utiliser secp256k1 si disponible
-        private_key = secp256k1.PrivateKey(bytes.fromhex(private_key_hex))
-        signature = private_key.ecdsa_sign(event_hash)
-        signature_bytes = signature.serialize_compact()
-    else:
-        # Fallback simple - nécessite que l'utilisateur signe manuellement
-        print(f"⚠️ secp256k1 non disponible. Hash à signer: {event_hash.hex()}")
-        print("   Veuillez installer python3-secp256k1 ou signer manuellement")
-        # Pour le test, on va utiliser une signature dummy
-        signature_bytes = b'0' * 64
-    
-    # Ajouter l'ID et la signature
-    event_dict["id"] = event_hash.hex()
-    event_dict["sig"] = signature_bytes.hex()
-    
-    return event_dict
+    """Signer un événement NOSTR avec une clé privée en utilisant pynostr"""
+    try:
+        # Utiliser pynostr comme dans nostr_setup_profile.py
+        from pynostr.event import Event
+        from pynostr.key import PrivateKey
+        
+        # Créer un objet Event avec pynostr
+        event = Event(
+            kind=event_dict["kind"],
+            content=event_dict["content"],
+            tags=event_dict["tags"],
+            pubkey=event_dict["pubkey"],
+            created_at=event_dict["created_at"]
+        )
+        
+        # Signer avec pynostr (comme dans nostr_setup_profile.py)
+        event.sign(private_key_hex)
+        
+        # Retourner le dictionnaire avec l'ID et la signature
+        return {
+            "id": event.id,
+            "pubkey": event.pubkey,
+            "created_at": event.created_at,
+            "kind": event.kind,
+            "tags": event.tags,
+            "content": event.content,
+            "sig": event.sig
+        }
+        
+    except Exception as e:
+        print(f"❌ Erreur lors de la signature avec pynostr: {e}")
+        # Fallback : retourner l'événement non signé
+        return event_dict
 
 def convert_private_key(private_key_input: str) -> tuple[str, str]:
     """Convertir une clé privée (nsec ou hex) et retourner (hex_privkey, hex_pubkey)"""
