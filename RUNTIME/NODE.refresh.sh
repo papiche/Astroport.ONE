@@ -263,12 +263,6 @@ echo "Updated blacklist.txt: $(cat $HOME/.zen/strfry/blacklist.txt | wc -l) entr
 echo "Updated amisOfAmis.txt: $(cat $HOME/.zen/strfry/amisOfAmis.txt | wc -l) entries"
 
 ########################################################
-### DISPLAY & RENEW strfry synch logs
-cat ~/.zen/strfry/constellation-backfill.log
-echo "" > ~/.zen/strfry/constellation-backfill.log
-echo "" > ~/.zen/strfry/constellation-backfill.log
-
-########################################################
 if [[ -z $(cat ~/.zen/MJ_APIKEY) ]]; then
     # Mailjet - UPlanet ORIGIN - edit config to change provider
     ipfs --timeout 30s cat /ipfs/QmVy7FKd1MGZqee4b7B5jmBKNgTJBvKKkoDhodnJWy23oN > ~/.zen/MJ_APIKEY
