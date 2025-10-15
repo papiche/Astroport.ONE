@@ -202,17 +202,14 @@ if [[ -n "$SENDER_NSEC" ]]; then
     echo "📝 Preparing NOSTR public note (kind 1)..."
     
     # Prepare NOSTR message content
-    NOSTR_MESSAGE="🔔 ${SUBJECT}
-
-📧 Email: ${mail}
-${HEX:+📱 NOSTR: ${NPUB}}
-${RELAY:+🌐 Relay: ${RELAY}}
+    NOSTR_MESSAGE="📧 ${SUBJECT}
 
 📄 Message: ${TEXTPART}
 
 ---
-Posted by: ${SENDER_IDENTITY}
-${MESSAGESIGN}"
+${HEX:+📱 NOSTR: ${NPUB}}
+${RELAY:+🌐 Relay: ${RELAY}}
+"
 
     # Discover preferred relays for recipient
     PREFERRED_RELAYS=()
