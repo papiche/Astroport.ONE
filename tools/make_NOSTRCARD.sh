@@ -417,6 +417,8 @@ EOF
     Mymessage="🎉 ẐEN wallet : ${G1PUBNOSTR}${Z} 🎫 ${uSPOT}/check_balance?g1pub=${EMAIL} 𝄃𝄃𝄂𝄂𝄀𝄁𝄃𝄂𝄂𝄃 ${myIPFS}/ipfs/${G1PUBNOSTRQR} 🆔 DID: did:nostr:${HEX} 📄 ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/.well-known/did.json"
     NPRIV_HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPRIV)
     HEX_HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPUBLIC)
+    
+    # Send to local relay first
     nostpy-cli send_event \
         -privkey "$NPRIV_HEX" \
         -kind 1 \
@@ -424,14 +426,17 @@ EOF
         -tags "[['p', '$HEX_HEX'], ['i', 'did:nostr:${HEX}']]" \
         --relay "$myRELAY" &>/dev/null
 
-## IT MAKES local Astroport publishing to UPlanet ORIGIN relay (i)
+    # Send to public relay ONLY if different from local relay AND UPlanet EnfinLibre
     if [[ $myRELAY != "wss://relay.copylaradio.com" && $UPLANETNAME == "EnfinLibre" ]]; then
+        echo "📡 Publishing to public relay (different from local relay)"
         nostpy-cli send_event \
             -privkey "$NPRIV_HEX" \
             -kind 1 \
             -content "$Mymessage" \
             -tags "[['p', '$HEX_HEX'], ['i', 'did:nostr:${HEX}']]" \
             --relay "wss://relay.copylaradio.com" &>/dev/null
+    else
+        echo "📡 Single relay publication (local relay is already public or not EnfinLibre)"
     fi
 
 
