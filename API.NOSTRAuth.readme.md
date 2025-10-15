@@ -481,38 +481,39 @@ graph TD
 
 ##### 1.2. Synchronisation Quotidienne des Messages NOSTR (Constellation)
 
-**Le script `constellation_sync_trigger.sh` assure la synchronisation quotidienne des événements NOSTR entre relais de la constellation :**
+**Le script `backfill_constellation.sh` assure la synchronisation horaire des événements NOSTR entre relais de la constellation :**
 
-- **Implémentation** : [constellation_sync_trigger.sh](https://github.com/papiche/NIP-101/blob/master/constellation_sync_trigger.sh) - Déclencheur de synchronisation constellation
-- **Appel automatique** : [Lignes 234-238 de _12345.sh](https://github.com/papiche/Astroport.ONE/blob/master/_12345.sh#L234-L238) - Intégration dans le cycle principal du swarm
+- **Implémentation** : [backfill_constellation.sh](https://github.com/papiche/NIP-101/blob/master/backfill_constellation.sh) - Script de synchronisation constellation
+- **Appel automatique** : [Lignes 244-247 de _12345.sh](https://github.com/papiche/Astroport.ONE/blob/master/_12345.sh#L244-L247) - Intégration dans le cycle horaire du swarm
 - **Documentation complète** : [CONSTELLATION_SYNC.md](https://github.com/papiche/NIP-101/blob/master/CONSTELLATION_SYNC.md) - Infrastructure NOSTR complète d'Astroport.ONE
 
-**Déclenchement Quotidien :**
+**Déclenchement Horaire avec Lock File :**
 
 ```mermaid
 sequenceDiagram
     participant _12345 as _12345.sh
-    participant Trigger as constellation_sync_trigger.sh
     participant Backfill as backfill_constellation.sh
+    participant Lock as Lock File System
     participant Relay as strfry relay local
     participant Swarm as Relais Constellation
     
-    _12345->>Trigger: Appel quotidien (cycle swarm)
-    Trigger->>Trigger: Vérifier heure ≥ 12:00
-    Trigger->>Trigger: Vérifier déjà synchro aujourd'hui ?
+    _12345->>Backfill: Appel horaire (cycle swarm)
+    Backfill->>Lock: Vérifier lock file
     
-    alt Temps de synchroniser
-        Trigger->>Backfill: Lancer backfill --days 1
+    alt Pas de sync en cours
+        Lock-->>Backfill: Aucun lock détecté
+        Backfill->>Lock: Créer lock (PID)
         Backfill->>Swarm: Découvrir relais via IPNS
         Backfill->>Swarm: Connexion WebSocket
-        Backfill->>Swarm: REQ depuis midi veille
-        Swarm-->>Backfill: Événements JSON (kind 0,1,3,22242)
-        Backfill->>Backfill: Filtrer messages IA
-        Backfill->>Relay: Import via strfry import
-        Backfill-->>Trigger: Synchronisation terminée
-        Trigger->>Trigger: Marquer synchro du jour
-    else Déjà synchronisé
-        Trigger-->>_12345: Skip (déjà fait)
+        Backfill->>Swarm: REQ dernières 24h
+        Swarm-->>Backfill: Événements JSON (kind 0,1,3,4,22242)
+        Backfill->>Backfill: Filtrer "Hello NOSTR visitor."
+        Backfill->>Relay: Import via strfry import --no-verify
+        Backfill->>Lock: Supprimer lock
+        Backfill-->>_12345: Synchronisation terminée
+    else Sync déjà en cours
+        Lock-->>Backfill: Lock détecté (PID existant)
+        Backfill-->>_12345: Skip (déjà en cours)
     end
 ```
 
@@ -531,10 +532,10 @@ sequenceDiagram
    - Support des kinds NOSTR pertinents : 0 (profils), 1 (messages), 3 (contacts), 22242 (auth)
 
 3. **Système de Verrouillage et de Gestion** :
-   - Lock file : `~/.zen/strfry/constellation-sync.lock`
-   - Historique : `~/.zen/strfry/last_constellation_sync`
-   - Logs détaillés : `~/.zen/strfry/constellation-trigger.log` et `constellation-backfill.log`
-   - Timeout de 30 minutes avec gestion d'erreur
+   - Lock file : `~/.zen/strfry/constellation-backfill.lock`
+   - Logs détaillés : `~/.zen/strfry/constellation-backfill.log`
+   - Rotation automatique des logs (10 MB, 5 fichiers)
+   - Protection contre exécutions concurrentes
 
 4. **Filtrage Avancé et Sécurité** :
    - Exclusion automatique des messages IA du capitaine
@@ -554,11 +555,10 @@ Les relais de constellation se connectent via plusieurs mécanismes complémenta
 **Cycle d'Intégration avec _12345.sh :**
 
 ```bash
-# Lignes 234-238 de _12345.sh
-### NOSTR RELAY SYNCHRO for LAST 24 H
-if [[ -s ~/.zen/workspace/NIP-101/constellation_sync_trigger.sh ]]; then
-    # This script handles locking, daily execution, and error management
-    ~/.zen/workspace/NIP-101/constellation_sync_trigger.sh &
+# Lignes 244-247 de _12345.sh
+### NOSTR RELAY SYNCHRO for LAST 24 H (direct call with lock protection)
+if [[ -s ~/.zen/workspace/NIP-101/backfill_constellation.sh ]]; then
+    ~/.zen/workspace/NIP-101/backfill_constellation.sh --days 1 --verbose &
 fi
 ```
 

@@ -241,9 +241,9 @@ while true; do
         ##################################################################################
         ### MULTIPASS refresh
         ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh &
-        ### NOSTR RELAY SYNCHRO for LAST 24 H
-        if [[ -s ~/.zen/workspace/NIP-101/constellation_sync_trigger.sh ]]; then
-            ~/.zen/workspace/NIP-101/constellation_sync_trigger.sh &
+        ### NOSTR RELAY SYNCHRO for LAST 24 H (direct call with lock protection)
+        if [[ -s ~/.zen/workspace/NIP-101/backfill_constellation.sh ]]; then
+            ~/.zen/workspace/NIP-101/backfill_constellation.sh --days 1 --verbose &
         fi
         ##################################################################################
         # Check for IPFS P2P tunnels
