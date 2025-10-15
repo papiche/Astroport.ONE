@@ -523,14 +523,34 @@ migrate_all() {
 migrate_single() {
     local email="$1"
     local did_file="$NOSTR_BASE_DIR/${email}/did.json"
+    local cache_file="$NOSTR_BASE_DIR/${email}/did.json.cache"
     
-    if [[ ! -f "$did_file" ]]; then
-        echo -e "${RED}❌ DID file not found: ${did_file}${NC}"
+    # Check if user directory exists
+    if [[ ! -d "$NOSTR_BASE_DIR/${email}" ]]; then
+        echo -e "${RED}❌ User directory not found: ${NOSTR_BASE_DIR/${email}}${NC}"
+        exit 1
+    fi
+    
+    # Check for Nostr keys
+    if [[ ! -f "$NOSTR_BASE_DIR/${email}/.secret.nostr" ]]; then
+        echo -e "${RED}❌ Nostr keys not found for: ${email}${NC}"
+        echo -e "${CYAN}💡 Expected: ${NOSTR_BASE_DIR}/${email}/.secret.nostr${NC}"
         exit 1
     fi
     
     ((TOTAL_FOUND++))
-    migrate_did "$email" "$did_file"
+    
+    # Try to find existing DID or create from filesystem
+    if [[ -f "$did_file" ]]; then
+        echo -e "${CYAN}📄 Found did.json${NC}"
+        migrate_did "$email" "$did_file" "false"
+    elif [[ -f "$cache_file" ]]; then
+        echo -e "${CYAN}📄 Found did.json.cache${NC}"
+        migrate_did "$email" "$cache_file" "false"
+    else
+        echo -e "${YELLOW}⚠️  No DID found, will create from filesystem${NC}"
+        migrate_did "$email" "$did_file" "true"
+    fi
 }
 
 ################################################################################
@@ -578,7 +598,7 @@ Usage:
 
 Commands:
   all              - Migrate all users (create DIDs if missing) (default)
-  single EMAIL     - Migrate single user's DID
+  single EMAIL     - Migrate single user's DID (create if missing)
   list             - List all users found (no migration)
   existing-only    - Migrate only existing DIDs (no creation)
 
@@ -595,7 +615,7 @@ Examples:
   $0                              # Migrate all users (create DIDs if missing)
   $0 --dry-run                    # Dry run (no changes)
   $0 --force                      # Force re-migration of all DIDs
-  $0 single user@example.com      # Migrate single user
+  $0 single user@example.com      # Migrate single user (create if needed)
   $0 existing-only                # Migrate only existing DIDs
   $0 list                         # List all users
 
