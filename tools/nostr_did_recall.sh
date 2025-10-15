@@ -36,6 +36,9 @@ TOTAL_FAILED=0
 # Dry run mode
 DRY_RUN=0
 
+# Force migration even if DID exists on Nostr
+FORCE_MIGRATION=0
+
 ################################################################################
 # Print banner
 ################################################################################
@@ -103,15 +106,228 @@ get_user_keys() {
 }
 
 ################################################################################
+# Check if DID already exists on Nostr
+################################################################################
+check_did_on_nostr() {
+    local npub="$1"
+    local read_script="${MY_PATH}/nostr_read_did.py"
+    
+    # Check if nostr_read_did.py is available
+    if [[ ! -f "$read_script" ]]; then
+        echo -e "${YELLOW}⚠️  nostr_read_did.py not found, skipping Nostr check${NC}"
+        return 1
+    fi
+    
+    echo -e "${CYAN}🔍 Checking if DID already exists on Nostr...${NC}"
+    
+    # Use nostr_read_did.py to check if DID exists
+    if python3 "$read_script" "$npub" $NOSTR_RELAYS --check-only --quiet 2>/dev/null; then
+        echo -e "${YELLOW}⚠️  DID already exists on Nostr${NC}"
+        
+        # Get more details for display
+        local event_info=$(python3 "$read_script" "$npub" $NOSTR_RELAYS --quiet 2>/dev/null | jq -r '.id // empty' 2>/dev/null | head -1)
+        if [[ -n "$event_info" ]]; then
+            echo -e "${CYAN}   Event ID: ${event_info:0:16}...${NC}"
+        fi
+        
+        return 0  # DID exists
+    else
+        echo -e "${GREEN}✅ No existing DID found on Nostr${NC}"
+        return 1  # DID doesn't exist
+    fi
+}
+
+################################################################################
+# Create DID from filesystem data (like make_NOSTRCARD.sh)
+################################################################################
+create_did_from_filesystem() {
+    local email="$1"
+    local user_dir="$NOSTR_BASE_DIR/${email}"
+    
+    echo -e "${CYAN}📝 Creating DID from filesystem data...${NC}"
+    
+    # Check for required files
+    local required_files=("HEX" "G1PUBNOSTR" "NPUB")
+    for file in "${required_files[@]}"; do
+        if [[ ! -f "$user_dir/$file" ]]; then
+            echo -e "${RED}❌ Missing required file: $file${NC}"
+            return 1
+        fi
+    done
+    
+    # Read data from files
+    local HEX=$(cat "$user_dir/HEX" 2>/dev/null | tr -d '[:space:]')
+    local G1PUBNOSTR=$(cat "$user_dir/G1PUBNOSTR" 2>/dev/null | tr -d '[:space:]')
+    local NPUB=$(cat "$user_dir/NPUB" 2>/dev/null | tr -d '[:space:]')
+    local BITCOIN=$(cat "$user_dir/BITCOIN" 2>/dev/null | tr -d '[:space:]')
+    local MONERO=$(cat "$user_dir/MONERO" 2>/dev/null | tr -d '[:space:]')
+    local NOSTRNS=$(cat "$user_dir/NOSTRNS" 2>/dev/null | tr -d '[:space:]')
+    local LANG=$(cat "$user_dir/LANG" 2>/dev/null | tr -d '[:space:]' || echo "fr")
+    
+    # Get coordinates from GPS or ZUMAP file
+    local ZLAT="0.0"
+    local ZLON="0.0"
+    if [[ -f "$user_dir/GPS" ]]; then
+        source "$user_dir/GPS" 2>/dev/null
+        ZLAT="${LAT:-0.0}"
+        ZLON="${LON:-0.0}"
+    fi
+    
+    # Get YOUSER (username)
+    local YOUSER=$(echo "$email" | cut -d'@' -f1)
+    
+    # Get UPLANETG1PUB from environment or default
+    local UPLANETG1PUB="${UPLANETG1PUB:-AwdjhpJNDQQNMsL8Kqndrz6rkRDsJ8wNDp7MRQJmKLGg}"
+    
+    # Create DID document
+    local did_file="$user_dir/did.json.cache"
+    
+    cat > "$did_file" <<EOF
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://w3id.org/security/suites/ed25519-2020/v1",
+    "https://w3id.org/security/suites/x25519-2020/v1"
+  ],
+  "id": "did:nostr:${HEX}",
+  "alsoKnownAs": [
+    "mailto:${email}",
+    "did:g1:${G1PUBNOSTR}",
+    "ipns://${NOSTRNS}"
+  ],
+  "verificationMethod": [
+    {
+      "id": "did:nostr:${HEX}#nostr-key",
+      "type": "Ed25519VerificationKey2020",
+      "controller": "did:nostr:${HEX}",
+      "publicKeyMultibase": "${NPUB}",
+      "publicKeyHex": "${HEX}"
+    },
+    {
+      "id": "did:nostr:${HEX}#g1-key",
+      "type": "Ed25519VerificationKey2020",
+      "controller": "did:nostr:${HEX}",
+      "publicKeyBase58": "${G1PUBNOSTR}",
+      "blockchainAccountId": "duniter:g1:${G1PUBNOSTR}"
+    }
+EOF
+    
+    # Add Bitcoin key if available
+    if [[ -n "$BITCOIN" ]]; then
+        cat >> "$did_file" <<EOF
+    ,
+    {
+      "id": "did:nostr:${HEX}#bitcoin-key",
+      "type": "EcdsaSecp256k1VerificationKey2019",
+      "controller": "did:nostr:${HEX}",
+      "blockchainAccountId": "bitcoin:mainnet:${BITCOIN}"
+    }
+EOF
+    fi
+    
+    # Add Monero key if available
+    if [[ -n "$MONERO" ]]; then
+        cat >> "$did_file" <<EOF
+    ,
+    {
+      "id": "did:nostr:${HEX}#monero-key",
+      "type": "MoneroVerificationKey",
+      "controller": "did:nostr:${HEX}",
+      "blockchainAccountId": "monero:mainnet:${MONERO}"
+    }
+EOF
+    fi
+    
+    # Close verificationMethod and add rest of DID
+    cat >> "$did_file" <<EOF
+  ],
+  "authentication": [
+    "did:nostr:${HEX}#nostr-key",
+    "did:nostr:${HEX}#g1-key"
+  ],
+  "assertionMethod": [
+    "did:nostr:${HEX}#nostr-key",
+    "did:nostr:${HEX}#g1-key"
+  ],
+  "keyAgreement": [
+    "did:nostr:${HEX}#nostr-key"
+  ],
+  "service": [
+    {
+      "id": "did:nostr:${HEX}#nostr-relay",
+      "type": "NostrRelay",
+      "serviceEndpoint": "${myRELAY:-wss://relay.copylaradio.com}",
+      "description": "Primary NOSTR relay endpoint"
+    },
+    {
+      "id": "did:nostr:${HEX}#ipns-storage",
+      "type": "DecentralizedWebNode",
+      "serviceEndpoint": "${myIPFS:-http://127.0.0.1:8080}/ipns/${NOSTRNS}",
+      "description": "IPNS personal storage vault"
+    },
+    {
+      "id": "did:nostr:${HEX}#udrive",
+      "type": "DecentralizedWebNode",
+      "serviceEndpoint": "${myIPFS:-http://127.0.0.1:8080}/ipns/${NOSTRNS}/${email}/APP/uDRIVE",
+      "description": "Personal cloud storage and application platform"
+    },
+    {
+      "id": "did:nostr:${HEX}#uspot",
+      "type": "CredentialRegistry",
+      "serviceEndpoint": "${uSPOT:-https://copylaradio.com/54321}",
+      "description": "UPlanet wallet and credential service"
+    }
+  ],
+  "metadata": {
+    "created": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+    "updated": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+    "email": "${email}",
+    "uplanet": "${UPLANETG1PUB:0:8}",
+    "coordinates": {
+      "latitude": "${ZLAT}",
+      "longitude": "${ZLON}"
+    },
+    "language": "${LANG}",
+    "youser": "${YOUSER}",
+    "contractStatus": "migrated_from_filesystem"
+  }
+}
+EOF
+    
+    if validate_did "$did_file"; then
+        echo -e "${GREEN}✅ DID created successfully from filesystem${NC}"
+        return 0
+    else
+        echo -e "${RED}❌ Failed to create valid DID${NC}"
+        rm -f "$did_file"
+        return 1
+    fi
+}
+
+################################################################################
 # Migrate single DID
 ################################################################################
 migrate_did() {
     local email="$1"
     local did_file="$2"
+    local create_if_missing="${3:-false}"
     
     echo -e "\n${CYAN}════════════════════════════════════════════════════════════${NC}"
     echo -e "${BLUE}📧 Processing: ${email}${NC}"
     echo -e "${CYAN}────────────────────────────────────────────────────────────${NC}"
+    
+    # If DID file doesn't exist but create_if_missing is true, try to create it
+    if [[ ! -f "$did_file" && "$create_if_missing" == "true" ]]; then
+        echo -e "${YELLOW}⚠️  No did.json found, attempting to create from filesystem...${NC}"
+        if create_did_from_filesystem "$email"; then
+            did_file="$NOSTR_BASE_DIR/${email}/did.json.cache"
+            echo -e "${GREEN}✅ DID created, continuing with migration...${NC}"
+        else
+            echo -e "${RED}❌ Could not create DID from filesystem, skipping${NC}"
+            ((TOTAL_SKIPPED++))
+            return 1
+        fi
+    fi
     
     # Validate DID file
     echo -e "${CYAN}🔍 Validating DID document...${NC}"
@@ -134,6 +350,18 @@ migrate_did() {
     local nsec=$(echo "$keys" | cut -d'|' -f1)
     local npub=$(echo "$keys" | cut -d'|' -f2)
     echo -e "${GREEN}✅ Keys found (npub: ${npub:0:16}...)${NC}"
+    
+    # Check if DID already exists on Nostr (unless --force is used)
+    if [[ $FORCE_MIGRATION -eq 0 ]]; then
+        if check_did_on_nostr "$npub"; then
+            echo -e "${YELLOW}⚠️  DID already migrated to Nostr, skipping${NC}"
+            echo -e "${CYAN}💡 Use --force to force re-migration${NC}"
+            ((TOTAL_SKIPPED++))
+            return 0
+        fi
+    else
+        echo -e "${YELLOW}🔄 Force migration mode enabled, will re-publish${NC}"
+    fi
     
     # Show DID info
     local did_id=$(jq -r '.id' "$did_file" 2>/dev/null)
@@ -185,6 +413,34 @@ migrate_did() {
 }
 
 ################################################################################
+# Find all user directories (with or without did.json)
+################################################################################
+find_all_users() {
+    echo -e "${CYAN}🔍 Scanning for user directories in: ${NOSTR_BASE_DIR}${NC}"
+    
+    local user_dirs=()
+    
+    # Find all directories with .secret.nostr (valid users)
+    while IFS= read -r secret_file; do
+        local user_dir=$(dirname "$secret_file")
+        local email=$(basename "$user_dir")
+        
+        # Validate email format
+        if [[ $email =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+            user_dirs+=("$email")
+            ((TOTAL_FOUND++))
+        fi
+    done < <(find "$NOSTR_BASE_DIR" -type f -name ".secret.nostr" 2>/dev/null)
+    
+    echo -e "${BLUE}📊 Found ${TOTAL_FOUND} user(s) with Nostr keys${NC}"
+    
+    # Return array
+    for user in "${user_dirs[@]}"; do
+        echo "$user"
+    done
+}
+
+################################################################################
 # Find all DID documents
 ################################################################################
 find_all_dids() {
@@ -207,10 +463,9 @@ find_all_dids() {
         fi
         
         did_files+=("$did_file")
-        ((TOTAL_FOUND++))
     done < <(find "$NOSTR_BASE_DIR" -type f -name "did.json" 2>/dev/null)
     
-    echo -e "${BLUE}📊 Found ${TOTAL_FOUND} DID document(s)${NC}"
+    echo -e "${BLUE}📊 Found ${#did_files[@]} existing DID document(s)${NC}"
     
     # Return array
     for file in "${did_files[@]}"; do
@@ -219,29 +474,43 @@ find_all_dids() {
 }
 
 ################################################################################
-# Migrate all DIDs
+# Migrate all DIDs (create if missing)
 ################################################################################
 migrate_all() {
-    local did_files=()
+    local create_if_missing="${1:-true}"
+    local users=()
     
-    # Read all DID files into array
-    while IFS= read -r file; do
-        did_files+=("$file")
-    done < <(find_all_dids)
+    # Read all users into array
+    while IFS= read -r email; do
+        users+=("$email")
+    done < <(find_all_users)
     
-    if [[ ${#did_files[@]} -eq 0 ]]; then
-        echo -e "${YELLOW}⚠️  No DID documents found${NC}"
+    if [[ ${#users[@]} -eq 0 ]]; then
+        echo -e "${YELLOW}⚠️  No users found${NC}"
         return 0
     fi
     
     echo -e "\n${MAGENTA}════════════════════════════════════════════════════════════${NC}"
-    echo -e "${CYAN}Starting migration of ${#did_files[@]} DID document(s)${NC}"
+    echo -e "${CYAN}Starting migration of ${#users[@]} user(s)${NC}"
+    if [[ "$create_if_missing" == "true" ]]; then
+        echo -e "${CYAN}Will create DIDs from filesystem if missing${NC}"
+    fi
     echo -e "${MAGENTA}════════════════════════════════════════════════════════════${NC}"
     
-    # Migrate each DID
-    for did_file in "${did_files[@]}"; do
-        local email=$(basename "$(dirname "$did_file")")
-        migrate_did "$email" "$did_file"
+    # Migrate each user
+    for email in "${users[@]}"; do
+        local did_file="$NOSTR_BASE_DIR/${email}/did.json"
+        local cache_file="$NOSTR_BASE_DIR/${email}/did.json.cache"
+        
+        # Check for existing DID (prefer did.json, fallback to did.json.cache)
+        if [[ -f "$did_file" ]]; then
+            migrate_did "$email" "$did_file" "false"
+        elif [[ -f "$cache_file" ]]; then
+            migrate_did "$email" "$cache_file" "false"
+        else
+            # No DID found, create if requested
+            migrate_did "$email" "$did_file" "$create_if_missing"
+        fi
         
         # Small delay to avoid overwhelming relays
         sleep 1
@@ -281,9 +550,15 @@ print_summary() {
         echo -e "\n${GREEN}✅ Migration completed successfully!${NC}"
         echo -e "${CYAN}📝 Next steps:${NC}"
         echo -e "   1. Verify DIDs on Nostr using: nak req -k 30311 -t d=did <relay>"
-        echo -e "   2. Update scripts to use did_manager_nostr.sh"
+        echo -e "   2. DIDs are now synchronized across constellation relays"
         echo -e "   3. Backups are kept with .pre-nostr-backup suffix"
         echo -e "   4. Original files renamed to .cache for fallback"
+        echo -e "   5. Use did_manager_nostr.sh for future updates"
+    fi
+    
+    if [[ $TOTAL_SKIPPED -gt 0 && $FORCE_MIGRATION -eq 0 ]]; then
+        echo -e "\n${YELLOW}💡 Tip: Some DIDs were skipped (already on Nostr)${NC}"
+        echo -e "${CYAN}   Use --force to re-migrate them if needed${NC}"
     fi
     
     if [[ $TOTAL_FAILED -gt 0 ]]; then
@@ -302,12 +577,14 @@ Usage:
   $0 [OPTIONS] [COMMAND] [EMAIL]
 
 Commands:
-  all              - Migrate all DID documents found (default)
+  all              - Migrate all users (create DIDs if missing) (default)
   single EMAIL     - Migrate single user's DID
-  list             - List all DIDs found (no migration)
+  list             - List all users found (no migration)
+  existing-only    - Migrate only existing DIDs (no creation)
 
 Options:
   --dry-run        - Show what would be migrated without doing it
+  --force          - Force migration even if DID exists on Nostr
   --help, -h       - Show this help message
 
 Environment Variables:
@@ -315,21 +592,34 @@ Environment Variables:
                      (default: ws://127.0.0.1:7777 wss://relay.copylaradio.com)
 
 Examples:
-  $0                              # Migrate all DIDs
+  $0                              # Migrate all users (create DIDs if missing)
   $0 --dry-run                    # Dry run (no changes)
+  $0 --force                      # Force re-migration of all DIDs
   $0 single user@example.com      # Migrate single user
-  $0 list                         # List all DIDs
+  $0 existing-only                # Migrate only existing DIDs
+  $0 list                         # List all users
 
 Safety Features:
+  - Checks if DID already exists on Nostr (skips if found)
   - Validates DID before migration
+  - Creates DIDs from filesystem if missing (compatible with make_NOSTRCARD.sh)
   - Creates .pre-nostr-backup of original
   - Renames original to .cache for fallback
   - Continues on errors (doesn't stop entire batch)
+  - Use --force to override existing DIDs on Nostr
+
+DID Creation:
+  If no did.json exists, script creates one from filesystem data:
+  - HEX, NPUB, G1PUBNOSTR (required)
+  - BITCOIN, MONERO, NOSTRNS (optional)
+  - GPS coordinates, LANG (optional)
+  - Compatible with DID_IMPLEMENTATION.md spec
 
 Requirements:
   - Python 3 with pynostr library
   - nostr_publish_did.py script in same directory
-  - Nostr keys (SECRET, PUBKEY) for each user
+  - nostr_read_did.py script in same directory (for checking existing DIDs)
+  - Nostr keys (.secret.nostr) for each user
 
 EOF
 }
@@ -348,13 +638,25 @@ main() {
                 echo -e "${YELLOW}🔍 DRY RUN MODE: No changes will be made${NC}\n"
                 shift
                 ;;
+            --force)
+                FORCE_MIGRATION=1
+                echo -e "${YELLOW}🔄 FORCE MODE: Will re-migrate existing DIDs${NC}\n"
+                shift
+                ;;
             --help|-h)
                 show_help
                 exit 0
                 ;;
             list)
-                find_all_dids
-                echo -e "\n${BLUE}Total: ${TOTAL_FOUND} DID(s)${NC}"
+                find_all_users
+                echo -e "\n${BLUE}Total: ${TOTAL_FOUND} user(s)${NC}"
+                exit 0
+                ;;
+            existing-only)
+                echo -e "${CYAN}📋 Migration mode: existing DIDs only (no creation)${NC}\n"
+                shift
+                migrate_all "false"
+                print_summary
                 exit 0
                 ;;
             single)
@@ -368,7 +670,7 @@ main() {
                 exit 0
                 ;;
             all|"")
-                migrate_all
+                migrate_all "true"
                 print_summary
                 exit 0
                 ;;
@@ -400,6 +702,12 @@ if [[ ! -f "$NOSTR_PUBLISH_DID_SCRIPT" ]]; then
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         exit 1
     fi
+fi
+
+# Check for nostr_read_did.py (optional but recommended)
+if [[ ! -f "${MY_PATH}/nostr_read_did.py" ]]; then
+    echo -e "${YELLOW}⚠️  Note: nostr_read_did.py not found${NC}"
+    echo -e "${YELLOW}   DID existence check will be skipped (may cause duplicates)${NC}"
 fi
 
 # Execute main
