@@ -672,13 +672,13 @@ create_usociety_file() {
     echo -e "\n${YELLOW}⚠️  Utilisation de l'ancienne fonction create_usociety_file. Migration vers UPLANET.official.sh recommandée.${NC}"
     echo -e "${CYAN}💡 Utilisez UPLANET.official.sh pour les transactions sociétaires officielles${NC}"
     
-    # Déléguer à did_manager.sh pour la création des fichiers U.SOCIETY
+    # Déléguer à did_manager_nostr.sh pour la création des fichiers U.SOCIETY
     local contract_type="SOCIETAIRE_SATELLITE"  # Par défaut satellite
     if [[ "$zen_amount" -eq 540 ]]; then
         contract_type="SOCIETAIRE_CONSTELLATION"
     fi
     
-    "${MY_PATH}/did_manager.sh" usociety "$player_email" "$contract_type" "$zen_amount"
+    "${MY_PATH}/did_manager_nostr.sh" usociety "$player_email" "$contract_type" "$zen_amount"
     
     return $?
 }

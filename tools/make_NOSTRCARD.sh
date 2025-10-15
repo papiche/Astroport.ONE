@@ -125,9 +125,16 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     #~ echo "Nostr Private Key: $NPRIV"
     echo "Nostr Public Key: $NPUBLIC = $HEX"
 
-    # 2. Store the keys in a file or a secure place (avoid printing them to console if possible)
+    # 2. Store the keys in secure files (private keys in hidden files)
     echo "$NPRIV" > ~/.zen/tmp/${MOATS}/${EMAIL}.nostr.priv
     echo "$NPUBLIC" > ~/.zen/tmp/${MOATS}/${EMAIL}.nostr.pub
+    
+    # Store NSEC/NPUB/HEX in .secret.nostr (hidden from IPFS, used by did_manager_nostr.sh)
+    mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/
+    cat > ${HOME}/.zen/game/nostr/${EMAIL}/.secret.nostr <<EOFNOSTR
+NSEC=$NPRIV; NPUB=$NPUBLIC; HEX=$HEX
+EOFNOSTR
+    chmod 600 ${HOME}/.zen/game/nostr/${EMAIL}/.secret.nostr
 
     # Create an G1CARD : G1Wallet waiting for G1 to make key batch running
     ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${EMAIL}.multipass.dunikey "${SALT}" "${PEPPER}"
@@ -140,6 +147,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     [[ "${IMAGE}" =~ ^[a-z]{2}$ ]] && LANG="${IMAGE}" || LANG="fr" ## Contains IMAGE or Navigator language
 
     ##########################################################################
+    ## Public metadata (safe for IPFS publishing)
     echo "${LANG}" > ${HOME}/.zen/game/nostr/${EMAIL}/LANG ## COPY LANG
     echo "$HEX" > ${HOME}/.zen/game/nostr/${EMAIL}/HEX ## COPY HEX
     echo "$NPUBLIC" > ${HOME}/.zen/game/nostr/${EMAIL}/NPUB ## COPY NPUB
@@ -246,9 +254,12 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     echo "$DISCO" > ${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco
     chmod 600 ${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco
 
-    ## Create DID (Decentralized Identifier) Document - W3C Standard
+    ## Create initial DID document (will be managed by did_manager_nostr.sh)
     # DID follows W3C DID 1.0 specification: https://www.w3.org/TR/did-1.0/
-    cat > ${HOME}/.zen/game/nostr/${EMAIL}/did.json <<EOF
+    echo "📝 Creating initial DID document..."
+    
+    # Create comprehensive DID with all blockchain identities
+    cat > ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache <<EOF
 {
   "@context": [
     "https://www.w3.org/ns/did/v1",
@@ -335,17 +346,32 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
   "metadata": {
     "created": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
     "updated": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+    "email": "${EMAIL}",
     "uplanet": "${UPLANETG1PUB:0:8}",
     "coordinates": {
       "latitude": "${ZLAT}",
       "longitude": "${ZLON}"
     },
     "language": "${LANG}",
-    "youser": "${YOUSER}"
+    "youser": "${YOUSER}",
+    "contractStatus": "new_multipass"
   }
 }
 EOF
-    echo "✅ DID document created: ${HOME}/.zen/game/nostr/${EMAIL}/did.json"
+    echo "✅ DID document cache created: ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache"
+    
+    # Publish initial DID to Nostr immediately
+    echo "📡 Publishing initial DID to Nostr relays..."
+    if [[ -f "${MY_PATH}/nostr_publish_did.py" ]]; then
+        python3 "${MY_PATH}/nostr_publish_did.py" \
+            "$NPRIV" \
+            "${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache" \
+            ws://127.0.0.1:7777 wss://relay.copylaradio.com 2>/dev/null \
+            && echo "✅ Initial DID published to Nostr successfully" \
+            || echo "⚠️  DID publication to Nostr will retry on first update"
+    else
+        echo "⚠️  nostr_publish_did.py not found, DID publication deferred"
+    fi
 
     ##############################################################
     [[ "$Z" == ":ZEN" ]] && ZenECO="(1Ẑ = 1€)" || ZenECO="(1Ẑ = 0.1Ğ1)"
@@ -387,7 +413,8 @@ EOF
     fi
 
     ### SEND NOSTR MESSAGE WITH QR CODE LINK
-    Mymessage="🎉 ẐEN wallet : ${G1PUBNOSTR}${Z} 🎫 ${uSPOT}/check_balance?g1pub=${EMAIL} 𝄃𝄃𝄂𝄂𝄀𝄁𝄃𝄂𝄂𝄃 ${myIPFS}/ipfs/${G1PUBNOSTRQR} 🆔 DID: did:nostr:${HEX} 📄 ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/did.json"
+    # DID is accessible via Nostr (source of truth) and IPFS/.well-known (cache)
+    Mymessage="🎉 ẐEN wallet : ${G1PUBNOSTR}${Z} 🎫 ${uSPOT}/check_balance?g1pub=${EMAIL} 𝄃𝄃𝄂𝄂𝄀𝄁𝄃𝄂𝄂𝄃 ${myIPFS}/ipfs/${G1PUBNOSTRQR} 🆔 DID: did:nostr:${HEX} 📄 ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/.well-known/did.json"
     NPRIV_HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPRIV)
     HEX_HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPUBLIC)
     nostpy-cli send_event \
@@ -426,9 +453,16 @@ EOF
         > "${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Documents/README.${YOUSER}.md"
 
     ## Create .well-known/did.json for standard DID resolution (W3C compliant)
+    ## This is the public endpoint for DID resolution via IPFS/IPNS
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/.well-known
-    cp ${HOME}/.zen/game/nostr/${EMAIL}/did.json ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/.well-known/did.json
-    echo "✅ DID well-known endpoint created for standard resolution"
+    
+    # Copy DID cache to .well-known (public, safe for IPFS)
+    if [[ -f ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache ]]; then
+        cp ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/.well-known/did.json
+        echo "✅ DID well-known endpoint created: ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/.well-known/did.json"
+    else
+        echo "⚠️  Warning: DID cache not found, .well-known endpoint will be updated later"
+    fi
 
     ## Link generate_ipfs_structure.sh to uDRIVE
     cd ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/

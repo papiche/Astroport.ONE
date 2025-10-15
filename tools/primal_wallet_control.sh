@@ -456,10 +456,10 @@ control_primal_transactions() {
             
             if [[ -n "$owner_email" ]]; then
                 echo "✅ ZEN Card verified for ${owner_email}"
-                "${MY_PATH}/../tools/did_manager.sh" update "$owner_email" "WOT_MEMBER" "0" "0" "$TXIPUBKEY"
+                "${MY_PATH}/../tools/did_manager_nostr.sh" update "$owner_email" "WOT_MEMBER" "0" "0" "$TXIPUBKEY"
             else
                 echo "⚠️  No valid ZEN Card found, using captain email"
-                "${MY_PATH}/../tools/did_manager.sh" update "$player_email" "WOT_MEMBER" "0" "0" "$TXIPUBKEY"
+                "${MY_PATH}/../tools/did_manager_nostr.sh" update "$player_email" "WOT_MEMBER" "0" "0" "$TXIPUBKEY"
             fi
 
             continue  # Skip primal control for WoT identification transactions

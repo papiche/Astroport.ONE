@@ -25,8 +25,10 @@ L'écosystème UPlanet repose sur une architecture de scripts spécialisés qui 
 - **`ZEN.ECONOMY.sh`** : Contrôle les virements automatiques de l'économie Ẑen
 - **`ZEN.COOPERATIVE.3x1-3.sh`** : Gère la répartition coopérative des fonds
 
-### Script de Gestion Centralisée des DID
-- **`did_manager.sh`** : Gestionnaire centralisé des documents DID avec métadonnées enrichies
+### Script de Gestion Centralisée des DID (Nostr-Native)
+- **`did_manager_nostr.sh`** : Gestionnaire centralisé des documents DID avec Nostr comme source de vérité
+- **`nostr_publish_did.py`** : Publie les DIDs sur les relais Nostr (kind 30311)
+- **`nostr_did_recall.sh`** : Script de migration des DIDs existants vers Nostr
 
 ## 2. Les deux piliers de notre architecture
 
@@ -43,6 +45,15 @@ Un identifiant décentralisé (DID) est la pierre angulaire de toute interaction
 **Notre Méthode : `did:nostr:{HEX_PUBLIC_KEY}`**
 
 Nous lions l'identité décentralisée à la clé publique NOSTR, elle-même dérivée de la même seed que la clé Ğ1 (clés jumelles Ed25519). C'est un choix fondamental : l'identité n'est pas une simple donnée, elle est directement ancrée dans l'écosystème économique et social de la monnaie libre.
+
+**Architecture Nostr-Native (Source de Vérité)**
+
+Les documents DID sont publiés comme **événements Nostr kind 30311** (Parameterized Replaceable Events), garantissant:
+- **Distribution automatique** sur tous les relais Nostr
+- **Mise à jour atomique** (chaque nouvelle version remplace l'ancienne)
+- **Résilience** : réplication sur multiples relais
+- **Censorship-resistance** : aucun point de contrôle central
+- **Cache local** pour performance (`.zen/game/nostr/${EMAIL}/did.json.cache`)
 
 La **ZEN Card** est la manifestation concrète de ce DID. Elle n'est pas juste un "compte", mais un **titre de propriété** sur un espace numérique (stockage, services) au sein d'un Astroport.
 
@@ -262,15 +273,15 @@ Lors de l'exécution de `make_NOSTRCARD.sh` pour une adresse email, les fichiers
 
 ```
 ~/.zen/game/nostr/{EMAIL}/
-├── did.json                                # Document DID principal (mise à jour dynamique)
-├── did.json.backup.*                       # Sauvegardes automatiques horodatées
+├── did.json.cache                          # Cache local du DID (Nostr est la source de vérité)
+├── .secret.nostr                           # NSEC/NPUB/HEX (600 perms) - Clés Nostr privées
+├── .secret.disco                           # Seed DISCO chiffrée (600 perms)
 ├── NPUB                                    # Clé publique NOSTR (format npub)
 ├── HEX                                     # Clé publique NOSTR (format hex)
 ├── G1PUBNOSTR                              # Clé publique G1
 ├── BITCOIN                                 # Adresse Bitcoin
 ├── MONERO                                  # Adresse Monero
 ├── NOSTRNS                                 # Identifiant de clé IPNS
-├── .secret.disco                           # Seed DISCO chiffrée (600 perms)
 ├── ._SSSSQR.png                            # QR Code SSSS (Part 1)
 ├── .ssss.head.player.enc                   # Part 1 chiffrée (utilisateur)
 ├── .ssss.mid.captain.enc                   # Part 2 chiffrée (capitaine)
@@ -281,38 +292,47 @@ Lors de l'exécution de `make_NOSTRCARD.sh` pour une adresse email, les fichiers
 └── APP/
     └── uDRIVE/
         ├── .well-known/
-        │   └── did.json                    # Endpoint DID standard W3C (synchronisé)
+        │   └── did.json                    # Endpoint DID standard W3C (copie du cache)
         ├── Apps/
         │   └── Cesium.v1/                  # Application portefeuille G1
         └── Documents/
             └── README.{YOUSER}.md          # Documentation d'accueil
 ```
 
-**Note** : Les deux fichiers `did.json` (racine et `.well-known`) sont synchronisés automatiquement lors des mises à jour. Les backups horodatés permettent de tracer l'historique des modifications.
+**Architecture Nostr-Native:**
+- **Source de vérité:** Relais Nostr (événements kind 30311 avec tag `["d", "did"]`)
+- **Cache local:** `did.json.cache` (synchronisé depuis Nostr)
+- **Endpoint public:** `.well-known/did.json` (copie du cache, accessible via IPFS/IPNS)
+- **Clés privées:** `.secret.nostr` (format: `NSEC=...; NPUB=...; HEX=...`)
+- **Historique:** Les anciennes versions sont automatiquement remplacées sur Nostr (Replaceable Events)
 
-### 5.3. Résolution du DID
+### 5.3. Résolution du DID (Architecture Nostr-Native)
 
-Le document DID est accessible à **deux emplacements** pour une compatibilité maximale :
+Le document DID est accessible via **trois canaux** pour une résilience maximale :
 
-#### 1. Accès Direct à la Racine
+#### 1. Source de Vérité : Relais Nostr (kind 30311)
+```bash
+# Requête avec nak CLI
+nak req -k 30311 --author <npub> -t d=did ws://127.0.0.1:7777
+
+# Ou avec did_manager_nostr.sh
+./did_manager_nostr.sh fetch user@example.com
 ```
-{myIPFS}/ipns/{NOSTRNS}/{EMAIL}/did.json
-```
 
-**But** : Accès direct rapide au document DID à la racine du répertoire IPNS de l'utilisateur.
+**But** : Accès direct à la source de vérité distribuée sur les relais Nostr.
 
-**Exemple** :
-```
-http://127.0.0.1:8080/ipns/k51qzi5uqu5dgy..../user@example.com/did.json
-https://ipfs.copylaradio.com/ipns/k51qzi5uqu5dgy..../user@example.com/did.json
-```
+**Avantages** :
+- ✅ **Source de vérité** : Version la plus à jour
+- ✅ **Distribué** : Répliqué sur tous les relais
+- ✅ **Automatique** : Les mises à jour remplacent l'ancienne version
+- ✅ **Vérifiabl e** : Signature cryptographique du propriétaire
 
-#### 2. Chemin Standard W3C .well-known
+#### 2. Chemin Standard W3C .well-known (Cache Public via IPFS)
 ```
 {myIPFS}/ipns/{NOSTRNS}/{EMAIL}/APP/uDRIVE/.well-known/did.json
 ```
 
-**But** : Suit la convention W3C `.well-known` pour la résolution DID, compatible avec les résolveurs DID standards et les outils de découverte.
+**But** : Suit la convention W3C `.well-known` pour la résolution DID, compatible avec les résolveurs DID standards.
 
 **Exemple** :
 ```
@@ -320,31 +340,50 @@ http://127.0.0.1:8080/ipns/k51qzi5uqu5dgy..../user@example.com/APP/uDRIVE/.well-
 https://ipfs.copylaradio.com/ipns/k51qzi5uqu5dgy..../user@example.com/APP/uDRIVE/.well-known/did.json
 ```
 
-#### 3. Stratégie de Résolution
+**Note** : Ce fichier est une copie du cache local, synchronisé lors des mises à jour.
 
-Les deux emplacements contiennent le **même document DID**. Cette double localisation garantit :
-- ✅ **Compatibilité** avec les standards W3C (chemin `.well-known`)
-- ✅ **Simplicité** pour l'accès direct (chemin racine)
-- ✅ **Découvrabilité** par les résolveurs DID automatisés
-- ✅ **Flexibilité** pour différents cas d'usage
+#### 3. Cache Local (Performance)
+```bash
+~/.zen/game/nostr/${EMAIL}/did.json.cache
+```
 
-La combinaison de Nostr pour l'identifiant et d'IPNS pour la résolution est particulièrement judicieuse :
-- **Légèreté** : Pas besoin d'ancrage coûteux sur blockchain
-- **Résilience** : L'identité persiste même si un service tombe
-- **Mobilité** : L'utilisateur peut changer de fournisseur sans perdre son identité
+**But** : Cache local pour accès rapide sans interroger Nostr à chaque fois.
+
+**Mise à jour** : Synchronisé automatiquement lors des `update` ou manuellement via `sync`.
+
+#### 4. Stratégie de Résolution Multi-Niveaux
+
+```
+1. Lecture : Cache local (instantané)
+   ↓ (si absent ou expiré)
+2. Lecture : Relais Nostr (1-2s)
+   ↓ (mise à jour cache)
+3. Lecture : IPFS/IPNS (fallback)
+
+Écriture : Toujours vers Nostr → Cache → IPFS
+```
+
+**Avantages de l'architecture Nostr-Native:**
+- ✅ **Performance** : Cache local pour 95% des lectures
+- ✅ **Résilience** : Multiples relais Nostr + IPFS fallback
+- ✅ **Cohérence** : Source de vérité unique (Nostr)
+- ✅ **Censorship-resistant** : Distribution sur relais décentralisés
+- ✅ **Standards W3C** : Compatible via `.well-known`
 
 ### 5.4. Mise à Jour Dynamique du DID
 
 Le document DID est **automatiquement mis à jour** lors des transactions UPlanet pour refléter les propriétés et capacités acquises. Cette mise à jour est effectuée par plusieurs scripts spécialisés :
 
-#### Scripts de Mise à Jour Automatique
+#### Scripts de Mise à Jour Automatique (Nostr-Native)
 - **`UPLANET.official.sh`** : Met à jour les DID lors des transactions coopératives
-- **`did_manager.sh`** : Gestionnaire centralisé avec commandes spécialisées
-  - `update` : Mise à jour complète des métadonnées
+- **`did_manager_nostr.sh`** : Gestionnaire centralisé avec Nostr comme source de vérité
+  - `update` : Mise à jour complète des métadonnées + publication Nostr automatique
+  - `fetch` : Récupération du DID depuis les relais Nostr
+  - `sync` : Synchronisation Nostr → cache local
   - `validate` : Validation de la structure DID
-  - `sync` : Synchronisation avec les services
-  - `astroport-ipns` : Affichage de l'adresse IPNS de la station
   - `show-wallets` : Affichage des portefeuilles MULTIPASS et ZEN Card
+  - `usociety` : Gestion des fichiers U.SOCIETY pour sociétaires
+- **`nostr_publish_did.py`** : Publication directe sur relais Nostr (kind 30311)
 
 **Déclencheurs de mise à jour** :
 - ✅ Transaction **LOCATAIRE** : Recharge MULTIPASS (10GB uDRIVE)
@@ -418,42 +457,68 @@ Le document DID est **automatiquement mis à jour** lors des transactions UPlane
 }
 ```
 
-**Processus de mise à jour** :
-1. **Sauvegarde** : Création automatique d'un backup `did.json.backup.YYYYMMDD_HHMMSS`
+**Processus de mise à jour (Nostr-Native)** :
+1. **Récupération** : Fetch du DID actuel depuis Nostr (ou cache)
 2. **Modification** : Mise à jour des métadonnées via `jq` (sans casser la structure JSON)
-3. **Synchronisation** : Copie vers `.well-known/did.json` pour conformité W3C
-4. **Publication** : Republication automatique sur IPNS (arrière-plan)
+3. **Validation** : Vérification de la structure W3C DID
+4. **Publication Nostr** : Publication kind 30311 (remplace automatiquement l'ancienne version)
+5. **Mise à jour cache** : Copie dans `did.json.cache`
+6. **Synchronisation IPFS** : Copie vers `.well-known/did.json` et republication IPNS (arrière-plan)
 
-**Exemple de cycle de vie** :
+**Commandes `did_manager_nostr.sh`** :
+```bash
+# Mise à jour complète (publie automatiquement sur Nostr)
+./did_manager_nostr.sh update user@example.com LOCATAIRE 50 5.0
+
+# Récupération depuis Nostr
+./did_manager_nostr.sh fetch user@example.com
+
+# Synchronisation cache ← Nostr
+./did_manager_nostr.sh sync user@example.com
+```
+
+**Exemple de cycle de vie (Nostr-Native)** :
 
 ```
 1. CRÉATION (make_NOSTRCARD.sh)
-   → DID créé avec status: "active"
+   → DID créé localement avec status: "new_multipass"
+   → Cache: ~/.zen/game/nostr/${EMAIL}/did.json.cache
+   → Clés: ~/.zen/game/nostr/${EMAIL}/.secret.nostr (NSEC/NPUB/HEX)
    → Quota: "10GB" (MULTIPASS gratuit 7 jours)
    → Primo-transaction: 1Ğ1 UPLANETNAME.G1 → G1PUBNOSTR
+   → Note: Publication Nostr différée au premier update
 
 2. WoT IDENTIFICATION (primal_wallet_control.sh)
    → Transaction 0.01Ğ1 depuis membre forgeron Duniter (2ème TX)
-   → DID mis à jour automatiquement
+   → DID mis à jour via did_manager_nostr.sh
+   → Publication automatique sur Nostr (kind 30311, d=did)
    → Ajout metadata.wotDuniterMember avec G1PUB du forgeron
    → Lien vers profil Cesium+ du membre WoT
    → Cache permanent: ~/.zen/tmp/coucou/${wallet}.2nd
 
 3. UPGRADE SOCIÉTAIRE (UPLANET.official.sh)
    → Transaction 50Ẑ
-   → DID mis à jour automatiquement
+   → DID mis à jour automatiquement (did_manager_nostr.sh)
+   → Publication sur Nostr (remplace version précédente)
    → Status: "cooperative_member_satellite"
    → Quota: "128GB"
    → Services: "uDRIVE + NextCloud"
 
 4. CONSULTATION
-   → {myIPFS}/ipns/{NOSTRNS}/{EMAIL}/did.json
+   → SOURCE: Relais Nostr (kind 30311) - Source de vérité
+   → CACHE: ~/.zen/game/nostr/${EMAIL}/did.json.cache - Performance
+   → PUBLIC: {myIPFS}/ipns/{NOSTRNS}/{EMAIL}/.well-known/did.json - Compatibilité W3C
    → Métadonnées reflètent les capacités actuelles
    → Services vérifient les droits via le DID
    → Identification WoT visible et vérifiable
 ```
 
-Cette approche garantit que le **DID reste toujours la source de vérité** pour les capacités et propriétés d'un utilisateur, sans nécessiter de base de données centralisée.
+**Architecture Nostr garantit:**
+- ✅ **Distribution** : DID répliqué sur tous les relais Nostr
+- ✅ **Mise à jour atomique** : Chaque update remplace l'ancienne version
+- ✅ **Résilience** : Aucun point de défaillance unique
+- ✅ **Performance** : Cache local pour accès rapide
+- ✅ **Compatibilité** : Endpoint W3C via IPFS/IPNS
 
 ## 6. Extension UCAN : De la Propriété à la Délégation
 
@@ -628,12 +693,14 @@ L'écosystème UPlanet fonctionne grâce à une architecture de scripts qui auto
 
 ### 8.2. Métadonnées Enrichies et Traçabilité
 
-Le système `did_manager.sh` enrichit automatiquement les documents DID avec :
+Le système `did_manager_nostr.sh` enrichit automatiquement les documents DID et les publie sur Nostr avec :
 - **Station Astroport** : Adresse IPNS de la station d'origine
 - **Portefeuilles MULTIPASS** : Clés G1 pour les revenus Ẑen
 - **Portefeuilles ZEN Card** : Clés G1 pour les parts coopératives
 - **Identification WoT** : Validation par membres forgerons externes
 - **Contributions coopératives** : Traçabilité complète des fonds
+- **Publication Nostr** : Événement kind 30311 (Parameterized Replaceable Event)
+- **Signature cryptographique** : Vérifiable par la clé NSEC du propriétaire
 
 ## 9. Réflexions Philosophiques : UPlanet, une Nation d'Esprit
 
@@ -761,10 +828,12 @@ This implementation follows:
 
 ### Outils et Implémentations
 
-#### Scripts de Création et Gestion
+#### Scripts de Création et Gestion (Nostr-Native)
 - `make_NOSTRCARD.sh` - Script de génération de MULTIPASS et DID
 - `VISA.new.sh` - Script de génération de ZEN Card
-- `did_manager.sh` - Gestionnaire centralisé des documents DID
+- `did_manager_nostr.sh` - Gestionnaire centralisé avec Nostr comme source de vérité
+- `nostr_publish_did.py` - Publication des DIDs sur relais Nostr (kind 30311)
+- `nostr_did_recall.sh` - Migration des DIDs existants vers Nostr
 
 #### Scripts de Gestion Opérationnelle
 - `NOSTRCARD.refresh.sh` - Gestionnaire du cycle de vie des MULTIPASS

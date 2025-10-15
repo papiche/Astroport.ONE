@@ -162,8 +162,8 @@ zen_to_g1() {
     echo "scale=2; $zen_amount / 10" | bc -l
 }
 
-# Note: Les mises à jour DID sont maintenant gérées directement par did_manager.sh
-# qui inclut automatiquement la création des fichiers U.SOCIETY pour les sociétaires
+# Note: Les mises à jour DID sont maintenant gérées directement par did_manager_nostr.sh
+# qui publie sur Nostr et inclut automatiquement la création des fichiers U.SOCIETY pour les sociétaires
 
 # Fonction pour envoyer une alerte par email au CAPTAINEMAIL
 send_alert() {
@@ -389,7 +389,7 @@ process_locataire() {
     echo -e "  • Toutes les transactions confirmées sur la blockchain"
     
     # Mettre à jour le document DID avec les nouvelles capacités
-    "${MY_PATH}/tools/did_manager.sh" update "$email" "LOCATAIRE" "$montant_euros" "$montant_g1"
+    "${MY_PATH}/tools/did_manager_nostr.sh" update "$email" "LOCATAIRE" "$montant_euros" "$montant_g1"
     
     return 0
 }
@@ -479,7 +479,7 @@ process_infrastructure() {
     echo -e "  • ✅ Cohérence avec OpenCollective UPlanet Ẑen maintenue"
     
     # Mettre à jour le document DID avec le statut contributeur infrastructure
-    "${MY_PATH}/tools/did_manager.sh" update "$email" "INFRASTRUCTURE" "$montant_euros" "$montant_g1"
+    "${MY_PATH}/tools/did_manager_nostr.sh" update "$email" "INFRASTRUCTURE" "$montant_euros" "$montant_g1"
     
     return 0
 }
@@ -615,7 +615,7 @@ process_societaire() {
     fi
     
     # Mettre à jour DID pour contribution Treasury
-    "${MY_PATH}/tools/did_manager.sh" update "$email" "TREASURY_CONTRIBUTION" "$part_treasury_zen" "$(zen_to_g1 "$part_treasury_zen")"
+    "${MY_PATH}/tools/did_manager_nostr.sh" update "$email" "TREASURY_CONTRIBUTION" "$part_treasury_zen" "$(zen_to_g1 "$part_treasury_zen")"
     
     # Transfert vers R&D (1/3)
     echo -e "${CYAN}  📤 R&D (1/3): ${part_rnd_zen} Ẑen${NC}"
@@ -625,7 +625,7 @@ process_societaire() {
     fi
     
     # Mettre à jour DID pour contribution R&D
-    "${MY_PATH}/tools/did_manager.sh" update "$email" "RND_CONTRIBUTION" "$part_rnd_zen" "$(zen_to_g1 "$part_rnd_zen")"
+    "${MY_PATH}/tools/did_manager_nostr.sh" update "$email" "RND_CONTRIBUTION" "$part_rnd_zen" "$(zen_to_g1 "$part_rnd_zen")"
     
     # Transfert vers Assets (1/3)
     echo -e "${CYAN}  📤 Assets (1/3): ${part_assets_zen} Ẑen${NC}"
@@ -635,7 +635,7 @@ process_societaire() {
     fi
     
     # Mettre à jour DID pour contribution Assets
-    "${MY_PATH}/tools/did_manager.sh" update "$email" "ASSETS_CONTRIBUTION" "$part_assets_zen" "$(zen_to_g1 "$part_assets_zen")"
+    "${MY_PATH}/tools/did_manager_nostr.sh" update "$email" "ASSETS_CONTRIBUTION" "$part_assets_zen" "$(zen_to_g1 "$part_assets_zen")"
     
     echo -e "${GREEN}🎉 Virement sociétaire terminé avec succès!${NC}"
     echo -e "${CYAN}📊 Résumé:${NC}"
@@ -649,7 +649,7 @@ process_societaire() {
     
     # Mettre à jour le document DID avec le statut de sociétaire
     local contract_type="SOCIETAIRE_${type^^}"
-    "${MY_PATH}/tools/did_manager.sh" update "$email" "$contract_type" "$montant_euros" "$montant_g1"
+    "${MY_PATH}/tools/did_manager_nostr.sh" update "$email" "$contract_type" "$montant_euros" "$montant_g1"
     
     return 0
 }
