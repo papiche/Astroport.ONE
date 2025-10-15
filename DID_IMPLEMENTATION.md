@@ -312,10 +312,7 @@ Le document DID est accessible via **trois canaux** pour une résilience maximal
 
 #### 1. Source de Vérité : Relais Nostr (kind 30311)
 ```bash
-# Requête avec nak CLI
-nak req -k 30311 --author <npub> -t d=did ws://127.0.0.1:7777
-
-# Ou avec did_manager_nostr.sh
+# Requête avec did_manager_nostr.sh
 ./did_manager_nostr.sh fetch user@example.com
 ```
 

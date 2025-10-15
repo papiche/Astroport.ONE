@@ -123,18 +123,18 @@ fetch_did_from_nostr() {
     echo -e "${CYAN}📡 Fetching DID from Nostr relays for ${email}${NC}"
     echo -e "${BLUE}   NPub: ${npub:0:16}...${NC}"
     
-    # Try to fetch using nak (if available)
-    if command -v nak >/dev/null 2>&1; then
-        echo -e "${CYAN}🔍 Using 'nak' to query relays...${NC}"
+    # Fetch DID using nostr_publish_did.py script (read-only mode)
+    if [[ -f "$NOSTR_PUBLISH_DID_SCRIPT" ]]; then
+        echo -e "${CYAN}🔍 Using nostr_publish_did.py to query relays...${NC}"
         
         local did_content=""
         for relay in $NOSTR_RELAYS; do
             echo -e "${BLUE}   Querying: ${relay}${NC}"
             
-            # Query for kind 30311 with d=did tag
-            did_content=$(nak req -k $DID_EVENT_KIND --author "$npub" -t "d=${DID_TAG_IDENTIFIER}" "$relay" 2>/dev/null | jq -r 'select(.content != null) | .content' | head -1)
+            # Use the publish script in read-only mode to fetch DID
+            did_content=$(python3 "$NOSTR_PUBLISH_DID_SCRIPT" --fetch --relay "$relay" --author "$npub" --kind "$DID_EVENT_KIND" 2>/dev/null)
             
-            if [[ -n "$did_content" ]] && [[ "$did_content" != "null" ]]; then
+            if [[ -n "$did_content" ]] && [[ "$did_content" != "null" ]] && echo "$did_content" | jq empty 2>/dev/null; then
                 echo -e "${GREEN}✅ DID found on ${relay}${NC}"
                 break
             fi
@@ -142,12 +142,6 @@ fetch_did_from_nostr() {
         
         if [[ -z "$did_content" ]] || [[ "$did_content" == "null" ]]; then
             echo -e "${YELLOW}⚠️  No DID found on Nostr relays for ${email}${NC}"
-            return 1
-        fi
-        
-        # Validate JSON
-        if ! echo "$did_content" | jq empty 2>/dev/null; then
-            echo -e "${RED}❌ Invalid JSON received from Nostr${NC}"
             return 1
         fi
         
@@ -161,8 +155,7 @@ fetch_did_from_nostr() {
         
         return 0
     else
-        echo -e "${YELLOW}⚠️  'nak' CLI tool not installed${NC}"
-        echo -e "${CYAN}💡 Install with: go install github.com/fiatjaf/nak@latest${NC}"
+        echo -e "${YELLOW}⚠️  nostr_publish_did.py script not found${NC}"
         echo -e "${CYAN}💡 Falling back to cache...${NC}"
         return 1
     fi
@@ -681,7 +674,6 @@ Examples:
 Requirements:
   - Python 3 with pynostr library
   - nostr_publish_did.py script
-  - Optional: 'nak' CLI tool for fetching (go install github.com/fiatjaf/nak@latest)
 
 Environment Variables:
   NOSTR_RELAYS - Space-separated relay URLs (default: ws://127.0.0.1:7777 wss://relay.copylaradio.com)
