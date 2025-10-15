@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/x-icon" href="https://ipfs.copylaradio.com/ipfs/QmQRq211EMmQJ7QE44FrVZt8EMF7JJWnayDXHyKzes4pX1">
+    <title>UPlanet DID Document Viewer</title>
+    <script src="https://ipfs.copylaradio.com/ipfs/QmQLQ5WdCEc7mpKw5rhUujUU1URKweei4Bb4esyVNd9Atx/G1PalPay_fichiers/jquery-3.6.3.min.js"></script>
+    <style>
+        /* Basic styles - matching nostr.html */
+        body { 
+            font-family: 'Arial', sans-serif; 
+            margin: 0; 
+            padding: 15px; 
+            background-color: #1a1a1a; 
+            color: #e0e0e0; 
+            display: flex; 
+            flex-direction: column; 
+            min-height: 100vh; 
+            box-sizing: border-box; 
+        }
+        .container { 
+            background-color: #2a2a2a; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5); 
+            width: 100%; 
+            max-width: 800px; 
+            margin: 20px auto; 
+            box-sizing: border-box; 
+        }
+        h1 { 
+            background: linear-gradient(to right, #ff6b6b, #ffa500, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            font-size: 1.8em; 
+            text-align: center; 
+            margin-bottom: 20px; 
+        }
+        .warning {
+            background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
+            color: #ffffff;
+            border: 1px solid #ffcc00;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        /* DID-specific styles */
+        .did-info {
+            background-color: #333;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .did-info h3 {
+            color: #4CAF50;
+            margin-top: 0;
+            border-bottom: 1px solid #555;
+            padding-bottom: 5px;
+        }
+        .did-field {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #444;
+        }
+        .did-field:last-child {
+            border-bottom: none;
+        }
+        .did-label {
+            font-weight: bold;
+            color: #cccccc;
+            min-width: 120px;
+        }
+        .did-value {
+            color: #e0e0e0;
+            font-family: monospace;
+            word-break: break-all;
+            text-align: right;
+            flex: 1;
+            margin-left: 10px;
+        }
+        
+        /* JSON display styles */
+        .json-display {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+            overflow-x: auto;
+            background-color: #222;
+            border-color: #555;
+        }
+        .json-display pre {
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.4;
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        /* Status and loading */
+        #status { 
+            margin-top: 15px; 
+            font-weight: bold; 
+            text-align: center; 
+            padding: 10px; 
+            border-radius: 4px; 
+            background-color: #333; 
+            min-height: 20px; 
+            color: #ccc; 
+            word-wrap: break-word; 
+        }
+        .spinner { 
+            display: none; 
+            width: 40px; 
+            height: 40px; 
+            margin: 20px auto; 
+            border: 4px solid #555; 
+            border-top: 4px solid #4CAF50; 
+            border-radius: 50%; 
+            animation: spin 1s linear infinite; 
+        }
+        @keyframes spin { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
+        }
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        
+        /* Service and verification method cards */
+        .service-card, .verification-card {
+            background-color: #383838;
+            border: 1px solid #555;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .service-card h4, .verification-card h4 {
+            color: #4CAF50;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .service-field, .verification-field {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            padding: 3px 0;
+        }
+        .service-field .label, .verification-field .label {
+            color: #aaa;
+            font-weight: bold;
+            min-width: 100px;
+        }
+        .service-field .value, .verification-field .value {
+            color: #e0e0e0;
+            font-family: monospace;
+            word-break: break-all;
+            text-align: right;
+            flex: 1;
+            margin-left: 10px;
+        }
+        
+        /* Metadata section */
+        .metadata-section {
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .metadata-section h4 {
+            color: #2196F3;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        
+        /* Responsive design */
+        @media screen and (max-width: 480px) {
+            .container {
+                padding: 10px;
+                margin: 10px auto;
+            }
+            .did-field {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .did-value {
+                text-align: left;
+                margin-left: 0;
+                margin-top: 5px;
+            }
+            .service-field, .verification-field {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .service-field .value, .verification-field .value {
+                text-align: left;
+                margin-left: 0;
+                margin-top: 3px;
+            }
+        }
+        
+        /* Details/summary styling */
+        details { 
+            background-color: #333; 
+            padding: 5px; 
+            border-radius: 4px; 
+            margin-top: 15px;
+        }
+        details summary { 
+            cursor: pointer; 
+            color: #aaa; 
+            font-size: 0.9em; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="warning">
+            🔐 UPlanet DID Document Viewer 🔐
+        </div>
+        
+        <h1>DID Document Viewer</h1>
+        
+        <div id="status">Loading DID document...</div>
+        <div class="spinner" id="loadingSpinner"></div>
+        
+        <div id="content">
+            <!-- Content will be populated by JavaScript -->
+        </div>
+        
+        <details>
+            <summary>Show Raw JSON</summary>
+            <div id="raw-json" class="json-display">
+                <pre>Loading...</pre>
+            </div>
+        </details>
+    </div>
+
+    <script>
+        // Global variables
+        let didData = null;
+        
+        // Helper functions
+        function log(message) {
+            console.log(message);
+        }
+        
+        function updateStatus(message, isError = false) {
+            const el = $('#status');
+            el.text(message);
+            let bg = '#333', fg = '#ccc';
+            if (isError) {
+                bg = '#5c3a3a';
+                fg = '#ff6b6b';
+            }
+            el.css({ 'background-color': bg, 'color': fg });
+        }
+        
+        function showLoading(show) {
+            $('#loadingSpinner').toggle(show);
+        }
+        
+        // Load DID document
+        async function loadDID() {
+            try {
+                showLoading(true);
+                updateStatus('Loading DID document...');
+                
+                const response = await fetch('./did.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                didData = await response.json();
+                displayDID(didData);
+                updateStatus('DID document loaded successfully');
+                
+            } catch (error) {
+                console.error('Error loading DID:', error);
+                updateStatus(`Error loading DID document: ${error.message}`, true);
+                document.getElementById('content').innerHTML = `
+                    <div class="error">
+                        <strong>Error loading DID document:</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // Display DID information
+        function displayDID(data) {
+            const content = document.getElementById('content');
+            
+            let html = '<div class="did-info">';
+            html += '<h3>📋 Basic Information</h3>';
+            
+            // DID ID
+            if (data.id) {
+                html += `
+                    <div class="did-field">
+                        <span class="did-label">DID ID:</span>
+                        <span class="did-value">${data.id}</span>
+                    </div>
+                `;
+            }
+            
+            // Context
+            if (data['@context']) {
+                const context = Array.isArray(data['@context']) ? data['@context'].join(', ') : data['@context'];
+                html += `
+                    <div class="did-field">
+                        <span class="did-label">Context:</span>
+                        <span class="did-value">${context}</span>
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            
+            // Verification Methods
+            if (data.verificationMethod && data.verificationMethod.length > 0) {
+                html += '<div class="verification-card">';
+                html += '<h4>🔑 Verification Methods</h4>';
+                data.verificationMethod.forEach((method, index) => {
+                    html += `
+                        <div class="verification-field">
+                            <span class="label">ID:</span>
+                            <span class="value">${method.id || 'N/A'}</span>
+                        </div>
+                        <div class="verification-field">
+                            <span class="label">Type:</span>
+                            <span class="value">${method.type || 'N/A'}</span>
+                        </div>
+                        <div class="verification-field">
+                            <span class="label">Controller:</span>
+                            <span class="value">${method.controller || 'N/A'}</span>
+                        </div>
+                    `;
+                    if (method.publicKeyMultibase) {
+                        html += `
+                            <div class="verification-field">
+                                <span class="label">Public Key:</span>
+                                <span class="value">${method.publicKeyMultibase}</span>
+                            </div>
+                        `;
+                    }
+                    if (index < data.verificationMethod.length - 1) {
+                        html += '<hr style="border-color: #555; margin: 10px 0;">';
+                    }
+                });
+                html += '</div>';
+            }
+            
+            // Services
+            if (data.service && data.service.length > 0) {
+                html += '<div class="service-card">';
+                html += '<h4>🌐 Services</h4>';
+                data.service.forEach((service, index) => {
+                    html += `
+                        <div class="service-field">
+                            <span class="label">ID:</span>
+                            <span class="value">${service.id || 'N/A'}</span>
+                        </div>
+                        <div class="service-field">
+                            <span class="label">Type:</span>
+                            <span class="value">${service.type || 'N/A'}</span>
+                        </div>
+                        <div class="service-field">
+                            <span class="label">Endpoint:</span>
+                            <span class="value">${service.serviceEndpoint || 'N/A'}</span>
+                        </div>
+                    `;
+                    if (index < data.service.length - 1) {
+                        html += '<hr style="border-color: #555; margin: 10px 0;">';
+                    }
+                });
+                html += '</div>';
+            }
+            
+            // Authentication
+            if (data.authentication && data.authentication.length > 0) {
+                html += '<div class="did-info">';
+                html += '<h3>🔐 Authentication</h3>';
+                data.authentication.forEach(auth => {
+                    html += `
+                        <div class="did-field">
+                            <span class="did-label">Method:</span>
+                            <span class="did-value">${auth}</span>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+            
+            // Metadata - Enhanced display for UPlanet-specific fields
+            if (data.metadata) {
+                html += '<div class="metadata-section">';
+                html += '<h4>📊 UPlanet Metadata</h4>';
+                
+                // Contract Status (with color coding)
+                if (data.metadata.contractStatus) {
+                    const status = data.metadata.contractStatus;
+                    let statusColor = '#4CAF50'; // Default green
+                    let statusIcon = '✅';
+                    
+                    if (status.includes('rental')) {
+                        statusColor = '#2196F3';
+                        statusIcon = '🏠';
+                    } else if (status.includes('cooperative')) {
+                        statusColor = '#FF9800';
+                        statusIcon = '🏢';
+                    } else if (status.includes('infrastructure')) {
+                        statusColor = '#9C27B0';
+                        statusIcon = '🏭';
+                    } else if (status.includes('contributor')) {
+                        statusColor = '#E91E63';
+                        statusIcon = '💰';
+                    }
+                    
+                    html += `
+                        <div class="did-field">
+                            <span class="did-label">Contract Status:</span>
+                            <span class="did-value" style="color: ${statusColor}; font-weight: bold;">
+                                ${statusIcon} ${status}
+                            </span>
+                        </div>
+                    `;
+                }
+                
+                // Storage Quota
+                if (data.metadata.storageQuota) {
+                    html += `
+                        <div class="did-field">
+                            <span class="did-label">Storage Quota:</span>
+                            <span class="did-value" style="color: #4CAF50; font-weight: bold;">${data.metadata.storageQuota}</span>
+                        </div>
+                    `;
+                }
+                
+                // Services
+                if (data.metadata.services) {
+                    html += `
+                        <div class="did-field">
+                            <span class="did-label">Services:</span>
+                            <span class="did-value">${data.metadata.services}</span>
+                        </div>
+                    `;
+                }
+                
+                // Last Payment
+                if (data.metadata.lastPayment) {
+                    const payment = data.metadata.lastPayment;
+                    html += `
+                        <div class="did-field">
+                            <span class="did-label">Last Payment:</span>
+                            <span class="did-value" style="color: #4CAF50; font-weight: bold;">
+                                ${payment.amount_zen} Ẑ / ${payment.amount_g1} Ğ1
+                            </span>
+                        </div>
+                        <div class="did-field">
+                            <span class="did-label">Payment Date:</span>
+                            <span class="did-value">${new Date(payment.date).toLocaleString()}</span>
+                        </div>
+                    `;
+                }
+                
+                // WoT Duniter Member
+                if (data.metadata.wotDuniterMember) {
+                    const wot = data.metadata.wotDuniterMember;
+                    html += `
+                        <div class="did-field">
+                            <span class="did-label">WoT Member:</span>
+                            <span class="did-value" style="color: #FF9800; font-weight: bold;">${wot.g1pub}</span>
+                        </div>
+                        <div class="did-field">
+                            <span class="did-label">Cesium Link:</span>
+                            <span class="did-value">
+                                <a href="${wot.cesiumLink}" target="_blank" style="color: #2196F3;">${wot.cesiumLink}</a>
+                            </span>
+                        </div>
+                        <div class="did-field">
+                            <span class="did-label">Verified At:</span>
+                            <span class="did-value">${new Date(wot.verifiedAt).toLocaleString()}</span>
+                        </div>
+                    `;
+                }
+                
+                // Astroport Station
+                if (data.metadata.astroportStation) {
+                    const station = data.metadata.astroportStation;
+                    html += `
+                        <div class="did-field">
+                            <span class="did-label">Astroport Station:</span>
+                            <span class="did-value" style="color: #9C27B0; font-weight: bold;">${station.ipns}</span>
+                        </div>
+                    `;
+                }
+                
+                // Multipass Wallet
+                if (data.metadata.multipassWallet) {
+                    const wallet = data.metadata.multipassWallet;
+                    html += `
+                        <div class="did-field">
+                            <span class="did-label">MULTIPASS Wallet:</span>
+                            <span class="did-value" style="color: #4CAF50; font-weight: bold;">${wallet.g1pub}</span>
+                        </div>
+                        <div class="did-field">
+                            <span class="did-label">Wallet Type:</span>
+                            <span class="did-value">${wallet.type} - ${wallet.description}</span>
+                        </div>
+                    `;
+                }
+                
+                // ZEN Card Wallet
+                if (data.metadata.zencardWallet) {
+                    const wallet = data.metadata.zencardWallet;
+                    html += `
+                        <div class="did-field">
+                            <span class="did-label">ZEN Card Wallet:</span>
+                            <span class="did-value" style="color: #2196F3; font-weight: bold;">${wallet.g1pub}</span>
+                        </div>
+                        <div class="did-field">
+                            <span class="did-label">Wallet Type:</span>
+                            <span class="did-value">${wallet.type} - ${wallet.description}</span>
+                        </div>
+                    `;
+                }
+                
+                // Other metadata fields
+                const standardFields = ['updated', 'created', 'version', 'email'];
+                Object.entries(data.metadata).forEach(([key, value]) => {
+                    if (!standardFields.includes(key) && 
+                        !['contractStatus', 'storageQuota', 'services', 'lastPayment', 
+                          'wotDuniterMember', 'astroportStation', 'multipassWallet', 'zencardWallet'].includes(key)) {
+                        if (typeof value === 'object' && value !== null) {
+                            html += `
+                                <div class="did-field">
+                                    <span class="did-label">${key}:</span>
+                                    <span class="did-value">${JSON.stringify(value, null, 2)}</span>
+                                </div>
+                            `;
+                        } else {
+                            html += `
+                                <div class="did-field">
+                                    <span class="did-label">${key}:</span>
+                                    <span class="did-value">${value}</span>
+                                </div>
+                            `;
+                        }
+                    }
+                });
+                
+                html += '</div>';
+            }
+            
+            content.innerHTML = html;
+            
+            // Update raw JSON display
+            document.getElementById('raw-json').querySelector('pre').textContent = JSON.stringify(data, null, 2);
+        }
+        
+        // Initialize when page loads
+        $(document).ready(function() {
+            log('DID Viewer initialized');
+            loadDID();
+        });
+    </script>
+</body>
+</html>

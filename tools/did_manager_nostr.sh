@@ -405,6 +405,9 @@ update_did_document() {
     # Step 6: Additional operations
     echo -e "\n${CYAN}Step 6/6: Additional operations...${NC}"
     
+    # Update APP/uDRIVE/Apps/.well-known/did.json
+    update_udrive_did "$email" "$did_updated"
+    
     # Republish to IPNS (for web access)
     republish_did_ipns "$email"
     
@@ -423,6 +426,51 @@ update_did_document() {
     echo -e "${MAGENTA}${'='*80}${NC}"
     
     return 0
+}
+
+################################################################################
+# Update uDRIVE Apps/.well-known/did.json
+################################################################################
+update_udrive_did() {
+    local email="$1"
+    local did_file="$2"
+    
+    if [[ ! -f "$did_file" ]]; then
+        echo -e "${RED}❌ DID file not found: $did_file${NC}"
+        return 1
+    fi
+    
+    local udrive_did_path="$HOME/.zen/game/nostr/${email}/APP/uDRIVE/Apps/.well-known"
+    local udrive_did_file="$udrive_did_path/did.json"
+    
+    echo -e "${CYAN}📁 Updating uDRIVE Apps/.well-known/did.json...${NC}"
+    
+    # Create directory if it doesn't exist
+    mkdir -p "$udrive_did_path"
+    
+    # Copy updated DID to uDRIVE location
+    if cp "$did_file" "$udrive_did_file"; then
+        echo -e "${GREEN}✅ uDRIVE DID updated: ${udrive_did_file}${NC}"
+        
+        # Update or create the index.html viewer
+        local index_file="$udrive_did_path/index.html"
+        local template_file="$HOME/.zen/Astroport.ONE/templates/NOSTR/did_viewer.html"
+        
+        if [[ -f "$template_file" ]]; then
+            cp "$template_file" "$index_file"
+            echo -e "${GREEN}✅ DID viewer updated with template${NC}"
+        elif [[ -f "$index_file" ]]; then
+            echo -e "${BLUE}📄 DID viewer will show updated content${NC}"
+        else
+            echo -e "${YELLOW}⚠️  DID viewer (index.html) not found${NC}"
+            echo -e "${CYAN}💡 Run make_NOSTRCARD.sh to create the viewer${NC}"
+        fi
+        
+        return 0
+    else
+        echo -e "${RED}❌ Failed to update uDRIVE DID${NC}"
+        return 1
+    fi
 }
 
 ################################################################################
@@ -540,6 +588,10 @@ sync_did_to_cache() {
     
     if fetch_did_from_nostr "$email" "$did_cache"; then
         echo -e "${GREEN}✅ Cache synchronized with Nostr${NC}"
+        
+        # Also update uDRIVE if it exists
+        update_udrive_did "$email" "$did_cache"
+        
         return 0
     else
         echo -e "${YELLOW}⚠️  Failed to sync from Nostr${NC}"
@@ -602,6 +654,7 @@ Usage:
   $0 update EMAIL TYPE [MONTANT_ZEN] [MONTANT_G1] [WOT_G1PUB]
   $0 fetch EMAIL
   $0 sync EMAIL
+  $0 update-udrive EMAIL
   $0 validate FILE
   $0 show-wallets EMAIL
   $0 usociety EMAIL TYPE [MONTANT_ZEN]
@@ -622,6 +675,7 @@ Examples:
   $0 update user@example.com SOCIETAIRE_SATELLITE 512 51.2
   $0 fetch user@example.com
   $0 sync user@example.com
+  $0 update-udrive user@example.com
   $0 show-wallets user@example.com
 
 Requirements:
@@ -661,6 +715,20 @@ main() {
                 exit 1
             fi
             sync_did_to_cache "$2"
+            ;;
+        "update-udrive")
+            if [[ $# -lt 2 ]]; then
+                echo -e "${RED}❌ Usage: $0 update-udrive EMAIL${NC}"
+                exit 1
+            fi
+            local did_cache="$HOME/.zen/game/nostr/$2/did.json.cache"
+            if [[ -f "$did_cache" ]]; then
+                update_udrive_did "$2" "$did_cache"
+            else
+                echo -e "${RED}❌ No DID cache found for $2${NC}"
+                echo -e "${CYAN}💡 Run 'sync $2' first to fetch from Nostr${NC}"
+                exit 1
+            fi
             ;;
         "validate")
             if [[ $# -lt 2 ]]; then

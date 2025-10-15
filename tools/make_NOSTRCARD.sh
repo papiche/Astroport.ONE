@@ -414,7 +414,7 @@ EOF
 
     ### SEND NOSTR MESSAGE WITH QR CODE LINK
     # DID is accessible via Nostr (source of truth) and IPFS/.well-known (cache)
-    Mymessage="🎉 ẐEN wallet : ${G1PUBNOSTR}${Z} 🎫 ${uSPOT}/check_balance?g1pub=${EMAIL} 𝄃𝄃𝄂𝄂𝄀𝄁𝄃𝄂𝄂𝄃 ${myIPFS}/ipfs/${G1PUBNOSTRQR} 🆔 DID: did:nostr:${HEX} 📄 ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/.well-known/did.json"
+    Mymessage="🎉 ẐEN wallet : ${G1PUBNOSTR}${Z} 🎫 ${uSPOT}/check_balance?g1pub=${EMAIL} 𝄃𝄃𝄂𝄂𝄀𝄁𝄃𝄂𝄂𝄃 ${myIPFS}/ipfs/${G1PUBNOSTRQR} 🆔 DID: did:nostr:${HEX} 📄 ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/.well-known/"
     NPRIV_HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPRIV)
     HEX_HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPUBLIC)
     
@@ -459,12 +459,17 @@ EOF
 
     ## Create .well-known/did.json for standard DID resolution (W3C compliant)
     ## This is the public endpoint for DID resolution via IPFS/IPNS
-    mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/.well-known
+    mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known
     
     # Copy DID cache to .well-known (public, safe for IPFS)
     if [[ -f ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache ]]; then
-        cp ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/.well-known/did.json
-        echo "✅ DID well-known endpoint created: ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/.well-known/did.json"
+        cp ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/did.json
+        echo "✅ DID well-known endpoint created: ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/Apps/.well-known/did.json"
+        
+        # Copy DID viewer template
+        cp "${HOME}/.zen/Astroport.ONE/templates/NOSTR/did_viewer.html" ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html
+        echo "✅ DID viewer template copied from templates/NOSTR/did_viewer.html"
+        echo "✅ DID viewer created: ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html"
     else
         echo "⚠️  Warning: DID cache not found, .well-known endpoint will be updated later"
     fi

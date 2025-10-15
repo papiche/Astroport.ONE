@@ -231,7 +231,7 @@ Each MULTIPASS includes a W3C-compliant DID document accessible at:
 
 ```
 {myIPFS}/ipns/{NOSTRNS}/{EMAIL}/did.json
-{myIPFS}/ipns/{NOSTRNS}/{EMAIL}/APP/uDRIVE/.well-known/did.json
+{myIPFS}/ipns/{NOSTRNS}/{EMAIL}/APP/uDRIVE/Apps/.well-known/did.json
 ```
 
 The DID document contains:

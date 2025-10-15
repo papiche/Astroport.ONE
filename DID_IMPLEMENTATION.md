@@ -329,15 +329,15 @@ nak req -k 30311 --author <npub> -t d=did ws://127.0.0.1:7777
 
 #### 2. Chemin Standard W3C .well-known (Cache Public via IPFS)
 ```
-{myIPFS}/ipns/{NOSTRNS}/{EMAIL}/APP/uDRIVE/.well-known/did.json
+{myIPFS}/ipns/{NOSTRNS}/{EMAIL}/APP/uDRIVE/Apps/.well-known/did.json
 ```
 
 **But** : Suit la convention W3C `.well-known` pour la résolution DID, compatible avec les résolveurs DID standards.
 
 **Exemple** :
 ```
-http://127.0.0.1:8080/ipns/k51qzi5uqu5dgy..../user@example.com/APP/uDRIVE/.well-known/did.json
-https://ipfs.copylaradio.com/ipns/k51qzi5uqu5dgy..../user@example.com/APP/uDRIVE/.well-known/did.json
+http://127.0.0.1:8080/ipns/k51qzi5uqu5dgy..../user@example.com/APP/uDRIVE/Apps/.well-known/did.json
+https://ipfs.copylaradio.com/ipns/k51qzi5uqu5dgy..../user@example.com/APP/uDRIVE/Apps/.well-known/did.json
 ```
 
 **Note** : Ce fichier est une copie du cache local, synchronisé lors des mises à jour.
@@ -638,7 +638,7 @@ Le document généré contient :
 
 Le document est stocké à deux emplacements pour compatibilité maximale :
 1. **Accès Direct** : `~/.zen/game/nostr/{EMAIL}/did.json`
-2. **Standard W3C** : `~/.zen/game/nostr/{EMAIL}/APP/uDRIVE/.well-known/did.json`
+2. **Standard W3C** : `~/.zen/game/nostr/{EMAIL}/APP/uDRIVE/Apps/.well-known/did.json`
 
 ## Usage
 
