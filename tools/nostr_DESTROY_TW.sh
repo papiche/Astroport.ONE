@@ -111,8 +111,105 @@ cd - > /dev/null 2>&1
 
 COUNT=$(grep -c '^{' "${OUTPUT_DIR}/nostr_export.json" 2>/dev/null || echo "0")
 echo "Exported ${COUNT} events to ${OUTPUT_DIR}/nostr_export.json"
-NOSTRIFS=$(ipfs add -rwq "${OUTPUT_DIR}"/* | tail -n 1) ## ADD ALL FILES IN OUTPUT_DIR
-ipfs pin rm ${NOSTRIFS}
+
+# Create a simple restore script inside the backup
+cat > "${OUTPUT_DIR}/RESTORE_INSTRUCTIONS.sh" <<'RESTORE_SCRIPT'
+#!/bin/bash
+# Simple restore script for NOSTR backup
+# Usage: ./RESTORE_INSTRUCTIONS.sh
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "   NOSTR Account Restore Instructions"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "This backup contains:"
+echo "  • nostr_export.json - All your Nostr events"
+echo "  • All account files (keys, configs, data)"
+echo ""
+echo "To restore your account to a strfry relay:"
+echo ""
+echo "1. Navigate to your Astroport installation:"
+echo "   cd ~/.zen/Astroport.ONE"
+echo ""
+echo "2. Run the restore script with this backup's IPFS CID:"
+echo "   ./tools/nostr_RESTORE_TW.sh <IPFS_CID>"
+echo ""
+echo "3. Or manually import events:"
+echo "   cd ~/.zen/strfry"
+echo "   jq -c '.[]' nostr_export.json | ./strfry import --no-verify"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+RESTORE_SCRIPT
+chmod +x "${OUTPUT_DIR}/RESTORE_INSTRUCTIONS.sh"
+
+# Create a README file with backup information
+cat > "${OUTPUT_DIR}/README_BACKUP.txt" <<EOF
+╔════════════════════════════════════════════════════════════════╗
+║           NOSTR MULTIPASS BACKUP INFORMATION                   ║
+╚════════════════════════════════════════════════════════════════╝
+
+Backup Date: $(date '+%Y-%m-%d %H:%M:%S')
+Account: ${email}
+Public Key (HEX): ${hex}
+G1 Wallet: ${g1pubnostr}
+
+This backup contains:
+  • nostr_export.json - ${COUNT} Nostr events
+  • All account configuration files (public)
+  • RESTORE_INSTRUCTIONS.sh - Quick restore guide
+
+⚠️  SECURITY: Hidden files (.secret.*, etc.) are NOT included
+   This protects your private keys from accidental exposure
+
+═══════════════════════════════════════════════════════════════
+
+RESTORE METHODS:
+
+Method 1: Using Astroport restore tool (RECOMMENDED)
+  $ cd ~/.zen/Astroport.ONE
+  $ ./tools/nostr_RESTORE_TW.sh <IPFS_CID>
+
+Method 2: Manual import to strfry
+  $ cd ~/.zen/strfry
+  $ jq -c '.[]' nostr_export.json | ./strfry import --no-verify
+
+Method 3: Import to any Nostr relay
+  Use any Nostr client that supports event import with the
+  nostr_export.json file (standard Nostr event format)
+
+═══════════════════════════════════════════════════════════════
+
+SECURITY NOTICE:
+This backup contains ONLY public data and your Nostr events.
+Private keys (.secret.*) are EXCLUDED for security.
+
+To fully restore your account, you will need:
+  1. This backup (for events and public data)
+  2. Your original private keys (from secure storage)
+
+For support: ${CAPTAINEMAIL}
+UPlanet Documentation: https://copylaradio.com
+
+═══════════════════════════════════════════════════════════════
+EOF
+
+# Create ZIP archive of entire player directory (excluding hidden files)
+ZIP_FILE="$HOME/.zen/tmp/${email}_nostr_backup_$(date +%Y%m%d_%H%M%S).zip"
+echo "Creating ZIP archive: ${ZIP_FILE}"
+echo "Excluding hidden files (.*) for security..."
+cd "$(dirname "${OUTPUT_DIR}")"
+# Exclude all hidden files and directories (starting with .)
+zip -r "${ZIP_FILE}" "$(basename "${OUTPUT_DIR}")" -x "*/.*" -x ".*" > /dev/null 2>&1
+cd - > /dev/null 2>&1
+
+# Add ZIP to IPFS
+echo "Adding ZIP to IPFS..."
+NOSTRIFS=$(ipfs add -q "${ZIP_FILE}" | tail -n 1)
+ipfs pin rm ${NOSTRIFS} 2>/dev/null
+echo "Backup ZIP added to IPFS: ${NOSTRIFS}"
+
+# Clean up temporary ZIP file
+rm -f "${ZIP_FILE}"
 
 echo "DELETING ${player} NOSTRCARD : $pubnostr"
 ## 1. REMOVE NOSTR PROFILE
