@@ -177,49 +177,103 @@ curl -s \
     -H 'Content-Type: application/json' \
     -d "$json_payload"
 
-############################################## SEND NOSTR DM
-if [[ -n "$HEX" && -n "$NPUB" ]]; then
-    echo "📨 Sending NOSTR direct message to ${NPUB}..."
+############################################## SEND NOSTR PUBLIC NOTE (Kind 1)
+# Try to use destination's NSEC if available, otherwise use captain's NSEC
+SENDER_NSEC=""
+SENDER_IDENTITY=""
+DEST_EMAIL="${mail}"
+
+# First, try to load destination's NOSTR keys
+if [[ -s "$HOME/.zen/game/nostr/${DEST_EMAIL}/.secret.nostr" ]]; then
+    echo "🔑 Found destination's NOSTR key for ${DEST_EMAIL}"
+    source "$HOME/.zen/game/nostr/${DEST_EMAIL}/.secret.nostr"
+    SENDER_NSEC="$NSEC"
+    SENDER_IDENTITY="${DEST_EMAIL}"
+    echo "👤 Using destination's NOSTR key: ${NSEC:0:20}..."
+elif [[ -n "$CAPTAINEMAIL" && -s "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr" ]]; then
+    echo "🔑 Destination's key not found, using captain's key"
+    source "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
+    SENDER_NSEC="$NSEC"
+    SENDER_IDENTITY="${CAPTAINEMAIL} (Captain)"
+    echo "👨‍✈️ Using captain's NOSTR key: ${NSEC:0:20}..."
+fi
+
+if [[ -n "$SENDER_NSEC" ]]; then
+    echo "📝 Preparing NOSTR public note (kind 1)..."
     
     # Prepare NOSTR message content
     NOSTR_MESSAGE="🔔 ${SUBJECT}
 
 📧 Email: ${mail}
-📱 NOSTR: ${NPUB}
-🌐 Relay: ${RELAY}
+${HEX:+📱 NOSTR: ${NPUB}}
+${RELAY:+🌐 Relay: ${RELAY}}
 
 📄 Message: ${TEXTPART}
 
+---
+Posted by: ${SENDER_IDENTITY}
 ${MESSAGESIGN}"
 
-    # Get captain's NSEC from $HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
-    SENDER_NSEC=""
-    if [[ -n "$CAPTAINEMAIL" && -s "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr" ]]; then
-        # Source the captain's NOSTR keys
-        source "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
-        SENDER_NSEC="$NSEC"
-        echo "👨‍✈️ Using captain's NOSTR key: ${NSEC:0:20}..."
+    # Discover preferred relays for recipient
+    PREFERRED_RELAYS=()
+    if [[ -n "$HEX" ]]; then
+        echo "🔍 Fetching preferred relays for recipient ${HEX:0:16}..."
+        # Query default relay first to find user's relay list
+        QUERY_RELAY="${RELAY:-$myRELAY}"
+        RELAY_LIST=$(python3 $MY_PATH/nostr_get_relays.py "${HEX}" "${QUERY_RELAY}" 2>/dev/null)
+        
+        if [[ $? -eq 0 && -n "$RELAY_LIST" ]]; then
+            # Convert to array
+            readarray -t PREFERRED_RELAYS <<< "$RELAY_LIST"
+            echo "✅ Found ${#PREFERRED_RELAYS[@]} preferred relay(s):"
+            for r in "${PREFERRED_RELAYS[@]}"; do
+                echo "   - $r"
+            done
+        else
+            echo "ℹ️ No preferred relays found, using defaults"
+        fi
     fi
     
-    if [[ -n "$SENDER_NSEC" ]]; then
-        # Use the relay from NOSTR data or default
-        NOSTR_RELAY="${RELAY:-$myRELAY}"
-        
-        # Send NOSTR DM
-        echo "🚀 Sending via NOSTR to ${HEX} on ${NOSTR_RELAY}..."
-        python3 $MY_PATH/nostr_send_dm.py "${SENDER_NSEC}" "${HEX}" "${NOSTR_MESSAGE}" "${NOSTR_RELAY}"
+    # Determine which relays to use
+    if [[ ${#PREFERRED_RELAYS[@]} -gt 0 ]]; then
+        # Use recipient's preferred relays
+        TARGET_RELAYS=("${PREFERRED_RELAYS[@]}")
+    else
+        # Fallback to known relay or default
+        TARGET_RELAYS=("${RELAY:-$myRELAY}")
+    fi
+    
+    # Prepare tags (reference recipient if we have their HEX)
+    TAGS_JSON="[]"
+    if [[ -n "$HEX" ]]; then
+        TAGS_JSON="[[\"p\",\"${HEX}\"]]"
+        echo "🏷️ Adding tag for recipient: ${HEX}"
+    fi
+    
+    # Send NOSTR public note to each relay
+    SUCCESS_COUNT=0
+    for NOSTR_RELAY in "${TARGET_RELAYS[@]}"; do
+        echo "🚀 Sending public note via NOSTR to ${NOSTR_RELAY}..."
+        python3 $MY_PATH/nostr_send_note.py "${SENDER_NSEC}" "${NOSTR_MESSAGE}" "${NOSTR_RELAY}" "${TAGS_JSON}" 2>/dev/null
         
         if [[ $? -eq 0 ]]; then
-            echo "✅ NOSTR message sent successfully"
+            echo "   ✅ Published successfully to ${NOSTR_RELAY}"
+            ((SUCCESS_COUNT++))
         else
-            echo "❌ Failed to send NOSTR message"
+            echo "   ❌ Failed to publish to ${NOSTR_RELAY}"
         fi
+    done
+    
+    if [[ $SUCCESS_COUNT -gt 0 ]]; then
+        echo "✅ NOSTR note published successfully to ${SUCCESS_COUNT}/${#TARGET_RELAYS[@]} relay(s)"
     else
-        echo "⚠️ No captain's NSEC found - skipping NOSTR DM"
-        echo "💡 Ensure $HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr exists with captain's NOSTR keys"
+        echo "❌ Failed to publish NOSTR note to any relay"
     fi
 else
-    echo "ℹ️ No NOSTR profile found - email only"
+    echo "⚠️ No NOSTR keys found - skipping NOSTR notification"
+    echo "💡 Ensure either:"
+    echo "    - $HOME/.zen/game/nostr/${DEST_EMAIL}/.secret.nostr (destination)"
+    echo "    - $HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr (captain)"
 fi
 
 
