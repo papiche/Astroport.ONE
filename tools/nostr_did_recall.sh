@@ -316,12 +316,59 @@ migrate_did() {
     echo -e "${BLUE}📧 Processing: ${email}${NC}"
     echo -e "${CYAN}────────────────────────────────────────────────────────────${NC}"
     
+    # Get user's Nostr keys FIRST (needed for checking Nostr)
+    echo -e "${CYAN}🔑 Fetching Nostr keys...${NC}"
+    local keys=$(get_user_keys "$email")
+    if [[ $? -ne 0 ]]; then
+        echo -e "${RED}❌ Nostr keys not found, skipping${NC}"
+        ((TOTAL_SKIPPED++))
+        return 1
+    fi
+    
+    local nsec=$(echo "$keys" | cut -d'|' -f1)
+    local npub=$(echo "$keys" | cut -d'|' -f2)
+    echo -e "${GREEN}✅ Keys found (npub: ${npub:0:16}...)${NC}"
+    
+    # Check if DID already exists on Nostr EARLY (unless --force is used)
+    if [[ $FORCE_MIGRATION -eq 0 ]]; then
+        if check_did_on_nostr "$npub"; then
+            echo -e "${YELLOW}⚠️  DID already exists on Nostr${NC}"
+            
+            # Try to fetch and display the DID
+            local read_script="${MY_PATH}/nostr_read_did.py"
+            if [[ -f "$read_script" ]]; then
+                echo -e "${CYAN}📥 Fetching DID from Nostr...${NC}"
+                local did_output=$(python3 "$read_script" "$npub" $NOSTR_RELAYS --quiet 2>/dev/null)
+                
+                if [[ -n "$did_output" ]]; then
+                    echo -e "${GREEN}✅ DID retrieved from Nostr:${NC}"
+                    echo -e "${BLUE}────────────────────────────────────────────────────────────${NC}"
+                    echo "$did_output" | jq -C '.' 2>/dev/null || echo "$did_output"
+                    echo -e "${BLUE}────────────────────────────────────────────────────────────${NC}"
+                    
+                    # Save to cache if it doesn't exist
+                    local cache_file="$NOSTR_BASE_DIR/${email}/did.json.cache"
+                    if [[ ! -f "$cache_file" ]]; then
+                        echo "$did_output" | jq '.' > "$cache_file" 2>/dev/null
+                        echo -e "${GREEN}💾 DID saved to cache: ${cache_file}${NC}"
+                    fi
+                fi
+            fi
+            
+            echo -e "${CYAN}💡 Use --force to force re-migration${NC}"
+            ((TOTAL_SKIPPED++))
+            return 0
+        fi
+    else
+        echo -e "${YELLOW}🔄 Force migration mode enabled, will re-publish${NC}"
+    fi
+    
     # If DID file doesn't exist but create_if_missing is true, try to create it
     if [[ ! -f "$did_file" && "$create_if_missing" == "true" ]]; then
-        echo -e "${YELLOW}⚠️  No did.json found, attempting to create from filesystem...${NC}"
+        echo -e "${YELLOW}⚠️  No local DID found, creating from filesystem...${NC}"
         if create_did_from_filesystem "$email"; then
             did_file="$NOSTR_BASE_DIR/${email}/did.json.cache"
-            echo -e "${GREEN}✅ DID created, continuing with migration...${NC}"
+            echo -e "${GREEN}✅ DID created from filesystem${NC}"
         else
             echo -e "${RED}❌ Could not create DID from filesystem, skipping${NC}"
             ((TOTAL_SKIPPED++))
@@ -337,31 +384,6 @@ migrate_did() {
         return 1
     fi
     echo -e "${GREEN}✅ DID document valid${NC}"
-    
-    # Get user's Nostr keys
-    echo -e "${CYAN}🔑 Fetching Nostr keys...${NC}"
-    local keys=$(get_user_keys "$email")
-    if [[ $? -ne 0 ]]; then
-        echo -e "${RED}❌ Nostr keys not found, skipping${NC}"
-        ((TOTAL_SKIPPED++))
-        return 1
-    fi
-    
-    local nsec=$(echo "$keys" | cut -d'|' -f1)
-    local npub=$(echo "$keys" | cut -d'|' -f2)
-    echo -e "${GREEN}✅ Keys found (npub: ${npub:0:16}...)${NC}"
-    
-    # Check if DID already exists on Nostr (unless --force is used)
-    if [[ $FORCE_MIGRATION -eq 0 ]]; then
-        if check_did_on_nostr "$npub"; then
-            echo -e "${YELLOW}⚠️  DID already migrated to Nostr, skipping${NC}"
-            echo -e "${CYAN}💡 Use --force to force re-migration${NC}"
-            ((TOTAL_SKIPPED++))
-            return 0
-        fi
-    else
-        echo -e "${YELLOW}🔄 Force migration mode enabled, will re-publish${NC}"
-    fi
     
     # Show DID info
     local did_id=$(jq -r '.id' "$did_file" 2>/dev/null)
