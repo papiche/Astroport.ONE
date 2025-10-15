@@ -201,8 +201,19 @@ while true; do
     lastrun=$(cat ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats)
     duree=$(expr ${MOATS} - $lastrun)
 
+    ## CHECK IF 12345.json WAS RECENTLY UPDATED (force publication after restart)
+    FORCE_PUBLISH=0
+    if [[ -f ~/.zen/tmp/${IPFSNODEID}/12345.json ]]; then
+        JSON_AGE=$(( $(date +%s) - $(stat -c %Y ~/.zen/tmp/${IPFSNODEID}/12345.json) ))
+        # If 12345.json was updated in last 5 minutes, force publish
+        if [[ $JSON_AGE -lt 300 && $duree -lt 3600000 ]]; then
+            echo "12345.json recently updated ($JSON_AGE seconds ago), forcing publication"
+            FORCE_PUBLISH=1
+        fi
+    fi
+
     ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H in ms )
-    if [[ ${duree} -gt 3600000 || ${duree} == "" ]]; then
+    if [[ ${duree} -gt 3600000 || ${duree} == "" || ${FORCE_PUBLISH} -eq 1 ]]; then
 
         PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
         YIPNS=$(${MY_PATH}/tools/ssh_to_g1ipfs.py "$(cat ~/.ssh/id_ed25519.pub)")
@@ -233,7 +244,6 @@ while true; do
         ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh &
         ### NOSTR RELAY SYNCHRO for LAST 24 H
         if [[ -s ~/.zen/workspace/NIP-101/constellation_sync_trigger.sh ]]; then
-            # This script handles locking, daily execution, and error management
             ~/.zen/workspace/NIP-101/constellation_sync_trigger.sh &
         fi
         ##################################################################################
@@ -404,7 +414,7 @@ while true; do
        remote_moat_self=$(cat ~/.zen/tmp/_${IPFSNODEID}/_MySwarm.moats 2>/dev/null)
 
        if [[ "$BSIZE" != "$NSIZE"  || "$local_moat_self" != "$remote_moat_self" || "$local_moat_self" == "" ]]; then
-            if [[ -s ~/.zen/tmp/${IPFSNODEID}/myIPFS.txt ]]; then
+            if [[ -s ~/.zen/tmp/${IPFSNODEID}/12345.json ]]; then
                 echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
                 MYCACHE=$(ipfs --timeout 180s add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 )
                 echo "PUBLISHING NEW BALISE STATE FOR STATION /ipns/${IPFSNODEID} INDEXES = $BSIZE octets"

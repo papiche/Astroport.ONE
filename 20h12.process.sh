@@ -240,6 +240,22 @@ else
     echo "Astroport processes systemd restart"
 fi
 
+## Wait for _12345.sh to be ready and trigger immediate publication
+echo "Waiting for _12345.sh to start..."
+for i in {1..30}; do
+    if pgrep -au $USER -f '_12345.sh' > /dev/null; then
+        echo "_12345.sh is running"
+        break
+    fi
+    sleep 1
+done
+
+## Force immediate IPNS publication by triggering a cycle
+echo "Triggering immediate IPNS publication of 12345.json..."
+sleep 5  # Give time for HTTP server to initialize
+curl -s -m 5 "http://127.0.0.1:12345" > /dev/null 2>&1 &
+echo "Publication trigger sent"
+
 ## ComfyUI need to get restarted to reduce VRAM
 [[ -s ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh ]] && sudo systemctl restart comfyui
 
