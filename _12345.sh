@@ -27,7 +27,6 @@
 # Auteur: Fred (support@qo-op.com)
 # Notes :
 # Ce script maintien la couche SWARM de l'essaim IPFS reliant les Astroport,
-# PUBLISH AND SYNC ASTROPORT STATIONS SWARM MAPS
 # This script scan Swarm API layer from official bootstraps
 #################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
