@@ -257,6 +257,9 @@
         // Global variables
         let didData = null;
         
+        // Embedded DID JSON data (will be replaced by sed)
+        const _DID_JSON_ = null;
+        
         // Helper functions
         function log(message) {
             console.log(message);
@@ -277,18 +280,19 @@
             $('#loadingSpinner').toggle(show);
         }
         
-        // Load DID document
-        async function loadDID() {
+        // Load DID document from embedded JSON
+        function loadDID() {
             try {
                 showLoading(true);
                 updateStatus('Loading DID document...');
                 
-                const response = await fetch('./did.json');
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                // Get embedded JSON from the page
+                const embeddedJson = _DID_JSON_;
+                if (!embeddedJson) {
+                    throw new Error('No DID JSON data embedded in page');
                 }
                 
-                didData = await response.json();
+                didData = embeddedJson;
                 displayDID(didData);
                 updateStatus('DID document loaded successfully');
                 

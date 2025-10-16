@@ -436,32 +436,35 @@ update_udrive_did() {
     local udrive_did_path="$HOME/.zen/game/nostr/${email}/APP/uDRIVE/Apps/.well-known"
     local udrive_did_file="$udrive_did_path/did.json"
     
-    echo -e "${CYAN}📁 Updating uDRIVE Apps/.well-known/did.json...${NC}"
+    echo -e "${CYAN}📁 Updating uDRIVE Apps/.well-known/index.html with embedded DID...${NC}"
     
     # Create directory if it doesn't exist
     mkdir -p "$udrive_did_path"
     
-    # Copy updated DID to uDRIVE location
-    if cp "$did_file" "$udrive_did_file"; then
-        echo -e "${GREEN}✅ uDRIVE DID updated: ${udrive_did_file}${NC}"
+    # Update the index.html viewer with embedded JSON (no separate did.json file)
+    local index_file="$udrive_did_path/index.html"
+    local template_file="$HOME/.zen/Astroport.ONE/templates/NOSTR/did_viewer.html"
+    
+    if [[ -f "$template_file" ]]; then
+        # Copy template and inject JSON data
+        cp "$template_file" "$index_file"
         
-        # Update or create the index.html viewer
-        local index_file="$udrive_did_path/index.html"
-        local template_file="$HOME/.zen/Astroport.ONE/templates/NOSTR/did_viewer.html"
+        # Inject DID JSON data into the HTML file
+        local did_json_content=$(cat "$did_file")
+        sed -i "s|const _DID_JSON_ = null;|const _DID_JSON_ = $did_json_content;|g" "$index_file"
         
-        if [[ -f "$template_file" ]]; then
-            cp "$template_file" "$index_file"
-            echo -e "${GREEN}✅ DID viewer updated with template${NC}"
-        elif [[ -f "$index_file" ]]; then
-            echo -e "${BLUE}📄 DID viewer will show updated content${NC}"
-        else
-            echo -e "${YELLOW}⚠️  DID viewer (index.html) not found${NC}"
-            echo -e "${CYAN}💡 Run make_NOSTRCARD.sh to create the viewer${NC}"
-        fi
+        echo -e "${GREEN}✅ uDRIVE DID viewer updated with embedded JSON: ${index_file}${NC}"
+        return 0
+    elif [[ -f "$index_file" ]]; then
+        # Update existing file with new JSON data
+        local did_json_content=$(cat "$did_file")
+        sed -i "s|const _DID_JSON_ = .*;|const _DID_JSON_ = $did_json_content;|g" "$index_file"
         
+        echo -e "${GREEN}✅ uDRIVE DID viewer updated with new JSON data${NC}"
         return 0
     else
-        echo -e "${RED}❌ Failed to update uDRIVE DID${NC}"
+        echo -e "${YELLOW}⚠️  DID viewer (index.html) not found${NC}"
+        echo -e "${CYAN}💡 Run make_NOSTRCARD.sh to create the viewer${NC}"
         return 1
     fi
 }

@@ -461,15 +461,16 @@ EOF
     ## This is the public endpoint for DID resolution via IPFS/IPNS
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known
     
-    # Copy DID cache to .well-known (public, safe for IPFS)
+    # Create .well-known directory and inject DID JSON into HTML viewer
     if [[ -f ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache ]]; then
-        cp ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/did.json
-        echo "✅ DID well-known endpoint created: ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/Apps/.well-known/did.json"
-        
         # Copy DID viewer template
         cp "${HOME}/.zen/Astroport.ONE/templates/NOSTR/did_viewer.html" ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html
-        echo "✅ DID viewer template copied from templates/NOSTR/did_viewer.html"
-        echo "✅ DID viewer created: ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html"
+        
+        # Inject DID JSON data into the HTML file
+        local did_json_content=$(cat ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache)
+        sed -i "s|const _DID_JSON_ = null;|const _DID_JSON_ = $did_json_content;|g" ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html
+        
+        echo "✅ DID viewer created with embedded JSON: ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html"
     else
         echo "⚠️  Warning: DID cache not found, .well-known endpoint will be updated later"
     fi
