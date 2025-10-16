@@ -6,12 +6,13 @@ This script sends public notes (kind 1) to NOSTR relays.
 Uses synchronous WebSocket connections.
 
 Usage:
-    python nostr_send_note.py <sender_nsec> <message> <relay_url> [tags_json]
+    python nostr_send_note.py <sender_nsec> <message> <relay_url> [tags_json] [--ephemeral SECONDS]
     python nostr_send_note.py --help
 
 Example:
     python nostr_send_note.py nsec1xyz... "Hello world!" wss://relay.copylaradio.com
     python nostr_send_note.py nsec1xyz... "Reply to event" wss://relay.copylaradio.com '[["e","event_id"],["p","pubkey"]]'
+    python nostr_send_note.py nsec1xyz... "Ephemeral message" wss://relay.copylaradio.com '[]' --ephemeral 3600
 """
 
 import sys
@@ -113,7 +114,8 @@ class NostrWebSocketClient:
 
 def send_public_note_sync(sender_nsec: str, message: str, 
                          relay_url: str = DEFAULT_RELAY,
-                         tags: list = None) -> bool:
+                         tags: list = None,
+                         ephemeral_duration: int = None) -> bool:
     """
     Send a public note (kind 1) to a NOSTR relay (synchronous version).
     
@@ -122,6 +124,7 @@ def send_public_note_sync(sender_nsec: str, message: str,
         message: Message content to send
         relay_url: NOSTR relay URL
         tags: Optional list of tags (e.g., [["e", "event_id"], ["p", "pubkey"]])
+        ephemeral_duration: Optional duration in seconds for ephemeral messages
         
     Returns:
         bool: True if note was sent successfully, False otherwise
@@ -134,6 +137,11 @@ def send_public_note_sync(sender_nsec: str, message: str,
         # Create the event
         if tags is None:
             tags = []
+        
+        # Add ephemeral tag if duration is specified
+        if ephemeral_duration is not None:
+            tags.append(["expiration", str(int(time.time()) + ephemeral_duration)])
+            print(f"⏰ Message will expire in {ephemeral_duration} seconds")
         
         event = Event(
             kind=EventKind.TEXT_NOTE,
@@ -198,6 +206,8 @@ def main():
                        help=f"Relay URL (default: {DEFAULT_RELAY})")
     parser.add_argument("tags_json", nargs="?", default="[]",
                        help='Tags as JSON array (e.g., [["e","id"],["p","pubkey"]])')
+    parser.add_argument("--ephemeral", type=int, metavar="SECONDS",
+                       help="Make message ephemeral with specified duration in seconds")
     
     args = parser.parse_args()
 
@@ -224,7 +234,8 @@ def main():
         args.sender_nsec,
         args.message,
         args.relay_url,
-        tags
+        tags,
+        args.ephemeral
     )
     
     sys.exit(0 if success else 1)

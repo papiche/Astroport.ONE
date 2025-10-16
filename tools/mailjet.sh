@@ -19,8 +19,50 @@ echo '
 # qo-op
 ############# '$MY_PATH/$ME'
 ########################################################################'
+
+# Parse command line arguments
+EPHEMERAL_DURATION=""
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --expire)
+            EPHEMERAL_DURATION="$2"
+            shift 2
+            ;;
+        --help|-h)
+            echo "Usage: $0 [--expire DURATION] EMAIL MESSAGE_FILE SUBJECT [TW_INDEX]"
+            echo ""
+            echo "Options:"
+            echo "  --expire DURATION    Make message ephemeral with duration (e.g., 1h, 1d, 1w, 3d)"
+            echo "  --help, -h          Show this help message"
+            echo ""
+            echo "Examples:"
+            echo "  $0 user@example.com message.html 'Subject'"
+            echo "  $0 user@example.com message.html 'Subject' tw_index.html"
+            echo "  $0 --expire 1h user@example.com message.html 'Ephemeral Subject'"
+            echo "  $0 --expire 3d user@example.com message.html '3-day message' tw_index.html"
+            echo ""
+            echo "Duration formats:"
+            echo "  s = seconds (e.g., 60s)"
+            echo "  m = minutes (e.g., 30m)"
+            echo "  h = hours (e.g., 2h)"
+            echo "  d = days (e.g., 7d)"
+            echo "  w = weeks (e.g., 2w)"
+            exit 0
+            ;;
+        -*)
+            echo "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
 [[ ! $1 ]] \
     && echo "MISSING DESTINATION EMAIL" \
+    && echo "Use --help for usage information" \
     && exit 1
 
 mail="$1" # EMAIL DESTINATAIRE
@@ -68,6 +110,54 @@ messfile="$2" # FICHIER A AJOUTER AU CORPS MESSAGE
 
 ## add a tittle in message
 title="$3"
+
+# Function to convert human-readable duration to seconds
+convert_duration_to_seconds() {
+    local duration="$1"
+    local seconds=0
+    
+    # Remove any whitespace
+    duration=$(echo "$duration" | tr -d ' ')
+    
+    # Check if it's already a number (seconds) or has 's' suffix
+    if [[ "$duration" =~ ^[0-9]+$ ]] || [[ "$duration" =~ ^[0-9]+s$ ]]; then
+        # Remove 's' suffix if present
+        duration=$(echo "$duration" | sed 's/s$//')
+        echo "$duration"
+        return
+    fi
+    
+    # Parse duration with units
+    if [[ "$duration" =~ ^([0-9]+)([smhdw])$ ]]; then
+        local value="${BASH_REMATCH[1]}"
+        local unit="${BASH_REMATCH[2]}"
+        
+        case "$unit" in
+            s) seconds=$((value)) ;;
+            m) seconds=$((value * 60)) ;;
+            h) seconds=$((value * 3600)) ;;
+            d) seconds=$((value * 86400)) ;;
+            w) seconds=$((value * 604800)) ;;
+        esac
+        
+        echo "$seconds"
+    else
+        echo "0"
+    fi
+}
+
+# Convert ephemeral duration to seconds if provided
+if [[ -n "$EPHEMERAL_DURATION" ]]; then
+    ephemeral_duration=$(convert_duration_to_seconds "$EPHEMERAL_DURATION")
+    if [[ "$ephemeral_duration" -eq 0 ]]; then
+        echo "ERROR: Invalid duration format: $EPHEMERAL_DURATION"
+        echo "Valid formats: 60s, 30m, 2h, 7d, 1w"
+        exit 1
+    fi
+    echo "⏰ Ephemeral message duration: $EPHEMERAL_DURATION = ${ephemeral_duration}s"
+else
+    ephemeral_duration=""
+fi
 
 SUBJECT="[UPlanet] ${title}"
 
@@ -209,6 +299,7 @@ if [[ -n "$SENDER_NSEC" ]]; then
 ---
 ${HEX:+📱 NOSTR: ${NPUB}}
 ${RELAY:+🌐 Relay: ${RELAY}}
+${ephemeral_duration:+⏰ Éphémère: ${ephemeral_duration}s}
 "
 
     # Discover preferred relays for recipient
@@ -251,7 +342,12 @@ ${RELAY:+🌐 Relay: ${RELAY}}
     SUCCESS_COUNT=0
     for NOSTR_RELAY in "${TARGET_RELAYS[@]}"; do
         echo "🚀 Sending public note via NOSTR to ${NOSTR_RELAY}..."
-        python3 $MY_PATH/nostr_send_note.py "${SENDER_NSEC}" "${NOSTR_MESSAGE}" "${NOSTR_RELAY}" "${TAGS_JSON}" 2>/dev/null
+        if [[ -n "$ephemeral_duration" ]]; then
+            echo "⏰ Sending ephemeral message (duration: ${ephemeral_duration}s)"
+            python3 $MY_PATH/nostr_send_note.py "${SENDER_NSEC}" "${NOSTR_MESSAGE}" "${NOSTR_RELAY}" "${TAGS_JSON}" --ephemeral "${ephemeral_duration}" 2>/dev/null
+        else
+            python3 $MY_PATH/nostr_send_note.py "${SENDER_NSEC}" "${NOSTR_MESSAGE}" "${NOSTR_RELAY}" "${TAGS_JSON}" 2>/dev/null
+        fi
         
         if [[ $? -eq 0 ]]; then
             echo "   ✅ Published successfully to ${NOSTR_RELAY}"

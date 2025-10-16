@@ -323,7 +323,7 @@ for PLAYER in "${NOSTR[@]}"; do
             # Create temporary file for email content
             local temp_email_file=$(mktemp)
             echo "$balance_celebration" > "$temp_email_file"
-            ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "$temp_email_file" "Seuil de 100 Ẑen Atteint - $TODATE"
+            ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "Seuil de 100 Ẑen Atteint - $TODATE"
             rm -f "$temp_email_file"
             echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.balance_10_notified
             log "INFO" "Balance celebration email sent to ${PLAYER} for reaching 10 G1"
@@ -369,7 +369,7 @@ for PLAYER in "${NOSTR[@]}"; do
             # Create temporary file for email content
             local temp_email_file=$(mktemp)
             echo "$low_balance_warning" > "$temp_email_file"
-            ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "$temp_email_file" "Solde Faible - $TODATE"
+            ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "Solde Faible - $TODATE"
             rm -f "$temp_email_file"
             echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.balance_low_warned
             log "INFO" "Low balance warning email sent to ${PLAYER}"
@@ -425,7 +425,7 @@ for PLAYER in "${NOSTR[@]}"; do
             # Create temporary file for email content
             local temp_email_file=$(mktemp)
             echo "$anniversary_1year" > "$temp_email_file"
-            ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "$temp_email_file" "🎉 1 An avec UPlanet - $TODATE"
+            ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "🎉 1 An avec UPlanet - $TODATE"
             rm -f "$temp_email_file"
             echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.anniversary_1year_notified
             log "INFO" "1-year anniversary email sent to ${PLAYER}"
@@ -454,7 +454,7 @@ for PLAYER in "${NOSTR[@]}"; do
             # Create temporary file for email content
             local temp_email_file=$(mktemp)
             echo "$milestone_6months" > "$temp_email_file"
-            ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "$temp_email_file" "🎯 6 Mois avec UPlanet - $TODATE"
+            ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "🎯 6 Mois avec UPlanet - $TODATE"
             rm -f "$temp_email_file"
             echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.milestone_6months_notified
             log "INFO" "6-month milestone email sent to ${PLAYER}"
@@ -644,7 +644,7 @@ for PLAYER in "${NOSTR[@]}"; do
                                 # Create temporary file for email content
                                 local temp_email_file=$(mktemp)
                                 echo "$success_message" > "$temp_email_file"
-                                ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "$temp_email_file" "Paiement Réussi - $TODATE"
+                                ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "Paiement Réussi - $TODATE"
                                 rm -f "$temp_email_file"
                                 log "INFO" "Success email sent to ${PLAYER} for payment success"
                             else
@@ -680,7 +680,7 @@ for PLAYER in "${NOSTR[@]}"; do
                                 # Create temporary file for email content
                                 local temp_email_file=$(mktemp)
                                 echo "$error_message" > "$temp_email_file"
-                                ${MY_PATH}/../tools/mailjet.sh "${CAPTAINEMAIL}" "$temp_email_file" "MULTIPASS Payment Error - $TODATE"
+                                ${MY_PATH}/../tools/mailjet.sh --expire 72h "${CAPTAINEMAIL}" "$temp_email_file" "MULTIPASS Payment Error - $TODATE"
                                 rm -f "$temp_email_file"
                                 log "INFO" "Error email sent to ${CAPTAINEMAIL} for payment failure of ${PLAYER}"
                             fi
@@ -777,7 +777,7 @@ for PLAYER in "${NOSTR[@]}"; do
                     # Create temporary file for email content
                     local temp_email_file=$(mktemp)
                     echo "$usociety_expired" > "$temp_email_file"
-                    ${MY_PATH}/../tools/mailjet.sh "${CAPTAINEMAIL}" "$temp_email_file" "U.SOCIETY Expiré - Renouvellement Requis"
+                    ${MY_PATH}/../tools/mailjet.sh --expire 72h "${CAPTAINEMAIL}" "$temp_email_file" "U.SOCIETY Expiré - Renouvellement Requis"
                     rm -f "$temp_email_file"
                     log "INFO" "U.SOCIETY expiration email sent to ${CAPTAINEMAIL} for ${PLAYER}"
                 else
@@ -826,7 +826,7 @@ for PLAYER in "${NOSTR[@]}"; do
                             # Create temporary file for email content
                             local temp_email_file=$(mktemp)
                             echo "$usociety_warning_30" > "$temp_email_file"
-                            ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "$temp_email_file" "U.SOCIETY Expire dans $DIFF_DAYS jours"
+                            ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "U.SOCIETY Expire dans $DIFF_DAYS jours"
                             rm -f "$temp_email_file"
                             echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.usociety_30day_warned
                             log "INFO" "U.SOCIETY 30-day warning email sent to ${PLAYER}"
@@ -866,7 +866,7 @@ for PLAYER in "${NOSTR[@]}"; do
                             # Create temporary file for email content
                             local temp_email_file=$(mktemp)
                             echo "$usociety_warning_7" > "$temp_email_file"
-                            ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "$temp_email_file" "URGENT: U.SOCIETY Expire dans $DIFF_DAYS jours"
+                            ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "URGENT: U.SOCIETY Expire dans $DIFF_DAYS jours"
                             rm -f "$temp_email_file"
                             echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.usociety_7day_warned
                             log "INFO" "U.SOCIETY 7-day urgent warning email sent to ${PLAYER}"
@@ -910,7 +910,7 @@ for PLAYER in "${NOSTR[@]}"; do
                     echo "### ENDING U SOCIETY FREE MODE (FALLBACK)"
                     rm ~/.zen/game/players/${PLAYER}/U.SOCIETY
                     rm ~/.zen/game/nostr/${PLAYER}/U.SOCIETY
-                    ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh "${CAPTAINEMAIL}" "$HOME/.zen/game/passport/${PUBKEY}/.passport.html" "U.SOCIETY Fallback Expiration - ${PLAYER}"
+                    ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh --expire 72h "${CAPTAINEMAIL}" "$HOME/.zen/game/passport/${PUBKEY}/.passport.html" "U.SOCIETY Fallback Expiration - ${PLAYER}"
                 fi
             fi
         fi
