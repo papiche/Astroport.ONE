@@ -58,13 +58,15 @@ show_help() {
     echo "  -t, --type TYPE           Type de sociétaire: satellite|constellation|infrastructure"
     echo "  -i, --infrastructure      Apport capital infrastructure (CAPTAIN → NODE)"
     echo "  -m, --montant MONTANT     Montant en euros (optionnel, auto-calculé par défaut)"
+    echo "  -r, --recovery            Mode dépannage: récupération manuelle depuis SOCIETY"
     echo "  -h, --help                Affiche cette aide"
     echo ""
     echo "Exemples:"
     echo "  $0 -l user@example.com -m 20                  # Recharge MULTIPASS locataire"
     echo "  $0 -s user@example.com -t satellite           # Parts sociales satellite"
     echo "  $0 -s user@example.com -t constellation       # Parts sociales constellation"
-    echo "  $0 -i -m 500                               # Apport capital infrastructure (500€)"
+    echo "  $0 -i -m 500                                  # Apport capital infrastructure (500€)"
+    echo "  $0 -r                                         # Mode dépannage transaction SOCIETY"
     echo ""
     echo "Types de sociétaires:"
     echo "  satellite     : 50€/an (sans IA)"
@@ -655,6 +657,209 @@ process_societaire() {
 }
 
 ################################################################################
+# Fonction de dépannage pour récupération manuelle depuis SOCIETY
+################################################################################
+process_recovery() {
+    echo -e "${YELLOW}🔧 MODE DÉPANNAGE - Récupération manuelle depuis SOCIETY${NC}"
+    echo ""
+    
+    # Vérifier que le portefeuille SOCIETY existe
+    if [[ ! -f "$HOME/.zen/game/uplanet.SOCIETY.dunikey" ]]; then
+        echo -e "${RED}❌ Portefeuille UPLANETNAME.SOCIETY non trouvé${NC}"
+        echo -e "${CYAN}💡 Fichier attendu: ~/.zen/game/uplanet.SOCIETY.dunikey${NC}"
+        return 1
+    fi
+    
+    # Récupérer la clé publique SOCIETY
+    local society_pubkey=$(cat "$HOME/.zen/game/uplanet.SOCIETY.dunikey" | grep "pub:" | cut -d ' ' -f 2)
+    if [[ -z "$society_pubkey" ]]; then
+        echo -e "${RED}❌ Impossible de lire la clé publique SOCIETY${NC}"
+        return 1
+    fi
+    
+    echo -e "${CYAN}🔑 Wallet SOCIETY: ${society_pubkey:0:8}...${NC}"
+    echo ""
+    
+    # Afficher le solde du wallet SOCIETY
+    echo -e "${YELLOW}📊 Récupération du solde...${NC}"
+    local balance_json=$(silkaj --json money balance "$society_pubkey" 2>/dev/null)
+    
+    if [[ $? -ne 0 ]]; then
+        echo -e "${RED}❌ Impossible de récupérer le solde du wallet SOCIETY${NC}"
+        return 1
+    fi
+    
+    # Extraire les montants (en centimes, convertir en Ğ1)
+    local blockchain_centimes=$(echo "$balance_json" | jq -r '.balances.blockchain // 0' 2>/dev/null)
+    local pending_centimes=$(echo "$balance_json" | jq -r '.balances.pending // 0' 2>/dev/null)
+    local total_centimes=$(echo "$balance_json" | jq -r '.balances.total // 0' 2>/dev/null)
+    
+    # Valider les valeurs
+    [[ -z "$blockchain_centimes" || "$blockchain_centimes" == "null" ]] && blockchain_centimes="0"
+    [[ -z "$pending_centimes" || "$pending_centimes" == "null" ]] && pending_centimes="0"
+    [[ -z "$total_centimes" || "$total_centimes" == "null" ]] && total_centimes="0"
+    
+    local blockchain_g1=$(echo "scale=2; $blockchain_centimes / 100" | bc -l)
+    local pending_g1=$(echo "scale=2; $pending_centimes / 100" | bc -l)
+    local total_g1=$(echo "scale=2; $total_centimes / 100" | bc -l)
+    
+    # Convertir en Ẑen (1 Ğ1 = 10 Ẑen)
+    local blockchain_zen=$(echo "scale=2; $blockchain_g1 * 10" | bc -l)
+    local pending_zen=$(echo "scale=2; $pending_g1 * 10" | bc -l)
+    local total_zen=$(echo "scale=2; $total_g1 * 10" | bc -l)
+    
+    echo -e "${GREEN}✅ Solde du wallet SOCIETY:${NC}"
+    echo -e "  • Blockchain: ${blockchain_g1} Ğ1 (${blockchain_zen} Ẑen)"
+    echo -e "  • Pending: ${pending_g1} Ğ1 (${pending_zen} Ẑen)"
+    echo -e "  • Total: ${total_g1} Ğ1 (${total_zen} Ẑen)"
+    echo ""
+    
+    # Vérifier qu'il y a des fonds disponibles
+    if [[ $(echo "$blockchain_g1 <= 0" | bc -l) -eq 1 ]]; then
+        echo -e "${YELLOW}⚠️  Aucun fonds disponible dans le wallet SOCIETY${NC}"
+        return 0
+    fi
+    
+    # Menu de sélection du wallet destination
+    echo -e "${BLUE}📋 Sélectionnez le wallet de destination:${NC}"
+    echo "1. TREASURY (CASH)"
+    echo "2. R&D"
+    echo "3. ASSETS"
+    echo "4. Annuler"
+    echo ""
+    read -p "Votre choix (1-4): " wallet_choice
+    
+    local dest_wallet=""
+    local dest_name=""
+    local dest_type=""
+    
+    case $wallet_choice in
+        1)
+            if [[ -f "$HOME/.zen/game/uplanet.CASH.dunikey" ]]; then
+                dest_wallet=$(cat "$HOME/.zen/game/uplanet.CASH.dunikey" | grep "pub:" | cut -d ' ' -f 2)
+                dest_name="TREASURY"
+                dest_type="TREASURY"
+            else
+                echo -e "${RED}❌ Wallet TREASURY non trouvé: ~/.zen/game/uplanet.CASH.dunikey${NC}"
+                return 1
+            fi
+            ;;
+        2)
+            if [[ -f "$HOME/.zen/game/uplanet.RnD.dunikey" ]]; then
+                dest_wallet=$(cat "$HOME/.zen/game/uplanet.RnD.dunikey" | grep "pub:" | cut -d ' ' -f 2)
+                dest_name="R&D"
+                dest_type="RnD"
+            else
+                echo -e "${RED}❌ Wallet R&D non trouvé: ~/.zen/game/uplanet.RnD.dunikey${NC}"
+                return 1
+            fi
+            ;;
+        3)
+            if [[ -f "$HOME/.zen/game/uplanet.ASSETS.dunikey" ]]; then
+                dest_wallet=$(cat "$HOME/.zen/game/uplanet.ASSETS.dunikey" | grep "pub:" | cut -d ' ' -f 2)
+                dest_name="ASSETS"
+                dest_type="ASSETS"
+            else
+                echo -e "${RED}❌ Wallet ASSETS non trouvé: ~/.zen/game/uplanet.ASSETS.dunikey${NC}"
+                return 1
+            fi
+            ;;
+        4)
+            echo -e "${YELLOW}🚫 Opération annulée${NC}"
+            return 0
+            ;;
+        *)
+            echo -e "${RED}❌ Choix invalide${NC}"
+            return 1
+            ;;
+    esac
+    
+    echo ""
+    echo -e "${GREEN}✅ Wallet ${dest_name} sélectionné: ${dest_wallet:0:8}...${NC}"
+    echo ""
+    
+    # Demander le montant à transférer
+    echo -e "${YELLOW}💰 Montant disponible: ${blockchain_g1} Ğ1 (${blockchain_zen} Ẑen)${NC}"
+    read -p "Montant à transférer en Ẑen (ou 'max' pour tout transférer): " amount_input
+    
+    local zen_amount=""
+    if [[ "$amount_input" == "max" ]]; then
+        zen_amount="$blockchain_zen"
+        echo -e "${CYAN}💸 Transfert de tout le solde disponible: ${zen_amount} Ẑen${NC}"
+    else
+        # Valider que c'est un nombre
+        if [[ ! "$amount_input" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+            echo -e "${RED}❌ Montant invalide (nombre ou 'max' requis)${NC}"
+            return 1
+        fi
+        zen_amount="$amount_input"
+        
+        # Vérifier que le montant ne dépasse pas le solde
+        if [[ $(echo "$zen_amount > $blockchain_zen" | bc -l) -eq 1 ]]; then
+            echo -e "${RED}❌ Montant demandé (${zen_amount} Ẑen) supérieur au solde (${blockchain_zen} Ẑen)${NC}"
+            return 1
+        fi
+    fi
+    
+    local g1_amount=$(zen_to_g1 "$zen_amount")
+    
+    echo ""
+    echo -e "${YELLOW}📋 Récapitulatif de l'opération:${NC}"
+    echo -e "  • Source: SOCIETY (${society_pubkey:0:8}...)"
+    echo -e "  • Destination: ${dest_name} (${dest_wallet:0:8}...)"
+    echo -e "  • Montant: ${zen_amount} Ẑen (${g1_amount} Ğ1)"
+    echo ""
+    read -p "Confirmer le transfert? (oui/non): " confirm
+    
+    if [[ "$confirm" != "oui" ]]; then
+        echo -e "${YELLOW}🚫 Transfert annulé${NC}"
+        return 0
+    fi
+    
+    # Demander l'email et le type pour la référence
+    read -p "Email de référence: " email_ref
+    if [[ -z "$email_ref" ]]; then
+        echo -e "${RED}❌ Email requis pour la référence blockchain${NC}"
+        return 1
+    fi
+    
+    read -p "Type de sociétaire (satellite/constellation): " type_ref
+    type_ref="${type_ref:-satellite}"
+    
+    # Effectuer le transfert
+    echo ""
+    echo -e "${BLUE}🚀 Lancement du transfert...${NC}"
+    
+    local reference="UPLANET:${UPLANETG1PUB:0:8}:${dest_type}:${email_ref}:${type_ref}:${IPFSNODEID}"
+    
+    if transfer_and_verify "$HOME/.zen/game/uplanet.SOCIETY.dunikey" "$dest_wallet" "$zen_amount" "$reference" "$email_ref" "RECOVERY" "Recovery: SOCIETY→${dest_name}"; then
+        echo ""
+        echo -e "${GREEN}🎉 Transfert de récupération terminé avec succès!${NC}"
+        echo -e "${CYAN}📊 Résumé:${NC}"
+        echo -e "  • ${zen_amount} Ẑen (${g1_amount} Ğ1) transférés de SOCIETY vers ${dest_name}"
+        echo -e "  • Transaction confirmée sur la blockchain"
+        echo ""
+        
+        # Afficher le nouveau solde
+        echo -e "${YELLOW}📊 Nouveau solde du wallet SOCIETY...${NC}"
+        sleep 2
+        local new_balance_json=$(silkaj --json money balance "$society_pubkey" 2>/dev/null)
+        if [[ $? -eq 0 ]]; then
+            local new_blockchain_centimes=$(echo "$new_balance_json" | jq -r '.balances.blockchain // 0' 2>/dev/null)
+            [[ -z "$new_blockchain_centimes" || "$new_blockchain_centimes" == "null" ]] && new_blockchain_centimes="0"
+            local new_blockchain_g1=$(echo "scale=2; $new_blockchain_centimes / 100" | bc -l)
+            local new_blockchain_zen=$(echo "scale=2; $new_blockchain_g1 * 10" | bc -l)
+            echo -e "${GREEN}✅ Nouveau solde SOCIETY: ${new_blockchain_g1} Ğ1 (${new_blockchain_zen} Ẑen)${NC}"
+        fi
+        
+        return 0
+    else
+        echo -e "${RED}❌ Échec du transfert de récupération${NC}"
+        return 1
+    fi
+}
+
+################################################################################
 # Menu interactif
 ################################################################################
 show_menu() {
@@ -664,9 +869,10 @@ show_menu() {
     echo "2. Virement SOCIÉTAIRE Satellite (50€/an)"
     echo "3. Virement SOCIÉTAIRE Constellation (540€/3ans)"
     echo "4. Apport CAPITAL INFRASTRUCTURE (CAPTAIN → NODE)"
-    echo "5. Quitter"
+    echo "5. 🔧 MODE DÉPANNAGE (récupération 3x1/3 SOCIETY)"
+    echo "6. Quitter"
     echo ""
-    read -p "Choisissez une option (1-5): " choice
+    read -p "Choisissez une option (1-6): " choice
     
     case $choice in
         1)
@@ -733,6 +939,9 @@ show_menu() {
             fi
             ;;
         5)
+            process_recovery
+            ;;
+        6)
             echo -e "${GREEN}👋 Au revoir!${NC}"
             exit 0
             ;;
@@ -794,6 +1003,10 @@ main() {
                     mode="infrastructure"
                     shift
                     ;;
+                -r|--recovery)
+                    mode="recovery"
+                    shift
+                    ;;
                 -t|--type)
                     shift
                     if [[ -n "$1" && ! "$1" =~ ^- ]]; then
@@ -848,6 +1061,9 @@ main() {
                     echo -e "${CYAN}💡 Configurez votre email de capitaine dans my.sh${NC}"
                     exit 1
                 fi
+                ;;
+            "recovery")
+                process_recovery
                 ;;
             *)
                 echo -e "${RED}❌ Mode non spécifié${NC}"
