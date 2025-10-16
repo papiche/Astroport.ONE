@@ -38,11 +38,11 @@ log_debug() {
     fi
 }
 
-# Vérifier que le joueur est sociétaire
-if [[ ! -s ~/.zen/game/players/${PLAYER}/U.SOCIETY ]]; then
-    log_debug "Player $PLAYER is not a society member, skipping YouTube sync"
-    exit 0
-fi
+# Vérifier que le joueur est sociétaire (optionnel - maintenant ouvert à tous)
+# if [[ ! -s ~/.zen/game/players/${PLAYER}/U.SOCIETY ]]; then
+#     log_debug "Player $PLAYER is not a society member, skipping YouTube sync"
+#     exit 0
+# fi
 
 # Vérifier l'existence du fichier cookie
 COOKIE_FILE="$HOME/.zen/game/nostr/${PLAYER}/.cookie.txt"
@@ -259,8 +259,8 @@ send_sync_notification() {
         <p>Les vidéos sont également accessibles via IPFS pour un partage décentralisé.</p>
     </div>
     <div class='footer'>
-        <p>Cette synchronisation est automatique pour les sociétaires CopyLaRadio.</p>
-        <p>Pour désactiver cette fonctionnalité, contactez le support.</p>
+        <p>Cette synchronisation est automatique pour tous les utilisateurs UPlanet avec cookie YouTube.</p>
+        <p>Pour désactiver cette fonctionnalité, supprimez votre fichier .cookie.txt</p>
     </div>
 </div>
 </body></html>"

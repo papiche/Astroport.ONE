@@ -294,9 +294,156 @@ for PLAYER in "${NOSTR[@]}"; do
     log "INFO" "${G1PUBNOSTR} AMOUNT = ${COINS} G1 -> ${ZEN} ZEN"
     log_metric "WALLET_BALANCE" "${COINS}" "${PLAYER}"
 
+    # Check for balance threshold notifications
+    if [[ $(echo "$COINS > 0" | bc -l) -eq 1 ]]; then
+        # Check if this is a new high balance (first time above 10 G1)
+        if [[ $(echo "$ZEN >= 100" | bc -l) -eq 1 && ! -s ~/.zen/game/nostr/${PLAYER}/.balance_10_notified ]]; then
+            balance_celebration="<html><head><meta charset='UTF-8'>
+<style>
+    body { font-family: 'Courier New', monospace; }
+    .celebration { color: #ff6f00; font-weight: bold; }
+    .details { background-color: #fff3e0; padding: 15px; margin: 10px 0; border-left: 4px solid #ff6f00; }
+    .amount { font-size: 1.5em; color: #e65100; }
+</style></head><body>
+<h2 class='celebration'>🎉 Félicitations ! Seuil de $ZEN ẐEN Atteint</h2>
+<div class='details'>
+<p><strong>Joueur:</strong> ${PLAYER}</p>
+<p><strong>Date:</strong> $TODATE</p>
+</div>
+<p>Excellent travail ! Votre MULTIPASS a atteint un solde significatif. Cela signifie que votre contenu génère de la valeur !</p>
+<p><strong>🚀 Prochaines étapes :</strong></p>
+<ul>
+<li>Continuez à créer du contenu de qualité</li>
+<li>Demandez à vos amis de créer leur MULTIPASS</li>
+<li>Devenez sociétaire (50€/an) pour des services illimités</li>
+</ul>
+<p><strong>💡 Rappel :</strong> Chaque like = 1 ẐEN automatique. Plus votre réseau grandit, plus vous gagnez !</p>
+</body></html>"
+
+            ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" <(echo "$balance_celebration") "Seuil de 100 Ẑen Atteint - $TODATE"
+            echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.balance_10_notified
+            log "INFO" "Balance celebration email sent to ${PLAYER} for reaching 10 G1"
+        fi
+        
+        # Check for low balance warning (below 2 G1)
+        if [[ $(echo "$COINS < 2" | bc -l) -eq 1 && ! -s ~/.zen/game/nostr/${PLAYER}/.balance_low_warned ]]; then
+            low_balance_warning="<html><head><meta charset='UTF-8'>
+<style>
+    body { font-family: 'Courier New', monospace; }
+    .warning { color: #d32f2f; font-weight: bold; }
+    .details { background-color: #ffebee; padding: 15px; margin: 10px 0; border-left: 4px solid #d32f2f; }
+    .amount { font-size: 1.2em; color: #c62828; }
+    .recharge { background-color: #e8f5e8; padding: 15px; margin: 10px 0; border-left: 4px solid #4caf50; }
+</style></head><body>
+<h2 class='warning'>⚠️ Solde Faible - Action Recommandée</h2>
+<div class='details'>
+<p><strong>Joueur:</strong> ${PLAYER}</p>
+<p><strong>Solde actuel:</strong> <span class='amount'>$ZEN ẐEN</span></p>
+<p><strong>Date:</strong> $TODATE</p>
+<p><strong>Prochain paiement:</strong> $NEXT_PAYMENT_DATE</p>
+</div>
+<p>Votre solde est faible. Pour éviter l'interruption de service, voici quelques solutions :</p>
+<p><strong>💡 Solutions :</strong></p>
+<ul>
+<li><strong>Créez plus de contenu</strong> - Chaque like = 1 ẐEN</li>
+<li><strong>Invitez vos amis</strong> - Plus de réseau = plus de likes</li>
+<li><strong>Rechargez votre MULTIPASS</strong> - Recharge ponctuelle ou automatique</li>
+</ul>
+<div class='recharge'>
+<h3>🔄 Rechargez Maintenant</h3>
+<p><strong>Options de recharge disponibles :</strong></p>
+<ul>
+<li>💰 <strong>Recharge ponctuelle :</strong> À partir de 5€</li>
+<li>🔄 <strong>Recharge automatique :</strong> À partir de 20€/mois</li>
+<li>🏛️ <strong>Devenez Sociétaire :</strong> 50€/an (plus de paiements hebdomadaires)</li>
+</ul>
+<p><strong>👉 Rechargez sur :</strong> <a href='https://opencollective.com/uplanet-zero/contribute/' target='_blank'>https://opencollective.com/uplanet-zero/contribute/</a></p>
+</div>
+<p><strong>🚨 Important :</strong> Si votre solde tombe à 0, votre MULTIPASS sera suspendu.</p>
+</body></html>"
+
+            ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" <(echo "$low_balance_warning") "Solde Faible - $TODATE"
+            echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.balance_low_warned
+            log "INFO" "Low balance warning email sent to ${PLAYER}"
+        fi
+    fi
+
     BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/TODATE 2>/dev/null)
     [[ ! -s ~/.zen/game/nostr/${PLAYER}/.birthdate ]] \
         && echo $BIRTHDATE > ~/.zen/game/nostr/${PLAYER}/.birthdate
+
+    # Check for MULTIPASS anniversaries
+    if [[ -n "$BIRTHDATE" ]]; then
+        BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s)
+        TODATE_SECONDS=$(date -d "$TODATE" +%s)
+        DAYS_OLD=$(( (TODATE_SECONDS - BIRTHDATE_SECONDS) / 86400 ))
+        
+        # 1 year anniversary
+        if [[ $DAYS_OLD -eq 365 && ! -s ~/.zen/game/nostr/${PLAYER}/.anniversary_1year_notified ]]; then
+            anniversary_1year="<html><head><meta charset='UTF-8'>
+<style>
+    body { font-family: 'Courier New', monospace; }
+    .celebration { color: #4caf50; font-weight: bold; }
+    .details { background-color: #e8f5e8; padding: 15px; margin: 10px 0; border-left: 4px solid #4caf50; }
+    .milestone { background-color: #fff3e0; padding: 15px; margin: 10px 0; border-left: 4px solid #ff9800; }
+</style></head><body>
+<h2 class='celebration'>🎉 Félicitations ! 1 An avec UPlanet</h2>
+<div class='details'>
+<p><strong>MULTIPASS:</strong> ${PLAYER}</p>
+<p><strong>Date de création:</strong> $BIRTHDATE</p>
+<p><strong>Anniversaire:</strong> $TODATE</p>
+<p><strong>Solde actuel:</strong> $ZEN ẐEN </p>
+</div>
+<div class='milestone'>
+<h3>🏆 Votre Parcours UPlanet</h3>
+<p>Depuis 1 an, vous faites partie de l'Internet de confiance !</p>
+<ul>
+<li>✅ Identité numérique décentralisée</li>
+<li>✅ uDRIVE personnel</li>
+<li>✅ IA personnelle</li>
+<li>✅ Réseau social N²</li>
+<li>✅ Économie transparente</li>
+</ul>
+</div>
+<p><strong>🚀 Prochaines étapes :</strong></p>
+<ul>
+<li>Partagez votre expérience avec vos amis</li>
+<li>Devenez Co-Bâtisseur (50€/an)</li>
+<li>Participez à la gouvernance de la coopérative</li>
+</ul>
+<p><strong>💡 Merci</strong> de faire partie de cette révolution numérique !</p>
+</body></html>"
+
+            ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" <(echo "$anniversary_1year") "🎉 1 An avec UPlanet - $TODATE"
+            echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.anniversary_1year_notified
+            log "INFO" "1-year anniversary email sent to ${PLAYER}"
+        fi
+        
+        # 6 months milestone
+        if [[ $DAYS_OLD -eq 182 && ! -s ~/.zen/game/nostr/${PLAYER}/.milestone_6months_notified ]]; then
+            milestone_6months="<html><head><meta charset='UTF-8'>
+<style>
+    body { font-family: 'Courier New', monospace; }
+    .milestone { color: #ff9800; font-weight: bold; }
+    .details { background-color: #fff3e0; padding: 15px; margin: 10px 0; border-left: 4px solid #ff9800; }
+</style></head><body>
+<h2 class='milestone'>🎯 6 Mois avec UPlanet - Excellent Progrès !</h2>
+<div class='details'>
+<p><strong>MULTIPASS:</strong> ${PLAYER}</p>
+<p><strong>Date de création:</strong> $BIRTHDATE</p>
+<p><strong>Milestone:</strong> $TODATE</p>
+<p><strong>Solde actuel:</strong> $ZEN ẐEN</p>
+</div>
+<p>Félicitations ! Vous utilisez UPlanet depuis 6 mois. Votre engagement dans l'Internet de confiance est remarquable !</p>
+<p><strong>💡 Astuce :</strong> Plus vous partagez le MULTIPASS, plus votre réseau grandit et plus vous gagnez de ẐEN.</p>
+<p><strong>🚀 Considérez :</strong> Devenir Co-Bâtisseur pour accéder aux services illimités et participer à la gouvernance.</p>
+</body></html>"
+
+            ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" <(echo "$milestone_6months") "🎯 6 Mois avec UPlanet - $TODATE"
+            echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.milestone_6months_notified
+            log "INFO" "6-month milestone email sent to ${PLAYER}"
+        fi
+    fi
 
     ################################################################# ~/.zen/game/uplanet.dunikey
     [[ ! -s ~/.zen/game/uplanet.dunikey ]] \
@@ -352,18 +499,16 @@ for PLAYER in "${NOSTR[@]}"; do
     ########################################################################
     YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
     ########################################################################
-    # Send welcome message on 1st day
-    if [[ $(echo "$COINS > 0" | bc -l) -eq 0 || "$COINS" == "null" ]]; then
-        if [[ ${TODATE} == ${BIRTHDATE} ]]; then
-            ## 1st Day send welcome EMAIL...
-            if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.welcome.html ]]; then
-                cp ${MY_PATH}/../templates/NOSTR/welcome.html ~/.zen/game/nostr/${PLAYER}/.welcome.html \
-                && sed -i "s/http:\/\/127.0.0.1:8080/${myIPFS}/g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
-                && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${HOME}/.zen/game/nostr/${PLAYER}/.welcome.html" "WELCOME $YOUSER"
-                log "INFO" "Welcome email sent to new MULTIPASS: ${PLAYER}"
-                log_metric "WELCOME_EMAIL_SENT" "1" "${PLAYER}"
-             fi
-        fi
+    # Send welcome message on 1st day (regardless of COINS amount)
+    if [[ ${TODATE} == ${BIRTHDATE} ]]; then
+        ## 1st Day send welcome EMAIL...
+        if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.welcome.html ]]; then
+            cp ${MY_PATH}/../templates/NOSTR/welcome.html ~/.zen/game/nostr/${PLAYER}/.welcome.html \
+            && sed -i "s/http:\/\/127.0.0.1:8080/${myIPFS}/g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
+            && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${HOME}/.zen/game/nostr/${PLAYER}/.welcome.html" "WELCOME $YOUSER"
+            log "INFO" "Welcome email sent to new MULTIPASS: ${PLAYER}"
+            log_metric "WELCOME_EMAIL_SENT" "1" "${PLAYER}"
+         fi
     fi
 
     ####################################################################
@@ -457,6 +602,31 @@ for PLAYER in "${NOSTR[@]}"; do
                                 log "INFO" "✅ Weekly payment recorded for ${PLAYER} on $TODATE ($Npaf ẐEN HT + $TVA_AMOUNT ẐEN TVA) - Fiscally compliant split"
                                 log_metric "PAYMENT_SUCCESS" "$Npaf" "${PLAYER}"
                                 PAYMENTS_PROCESSED=$((PAYMENTS_PROCESSED + 1))
+                                
+                                # Send success email notification
+                                success_message="<html><head><meta charset='UTF-8'>
+<style>
+    body { font-family: 'Courier New', monospace; }
+    .success { color: green; font-weight: bold; }
+    .details { background-color: #f0f8f0; padding: 10px; margin: 10px 0; }
+    .amount { font-size: 1.2em; color: #2e7d32; }
+</style></head><body>
+<h2 class='success'>✅ Paiement Hebdomadaire Réussi</h2>
+<div class='details'>
+<p><strong>Joueur:</strong> ${PLAYER}</p>
+<p><strong>Date:</strong> $TODATE</p>
+<p><strong>Montant HT:</strong> <span class='amount'>$Npaf ẐEN</span></p>
+<p><strong>Montant TVA:</strong> <span class='amount'>$TVA_AMOUNT ẐEN</span></p>
+<p><strong>Total payé:</strong> <span class='amount'>$TOTAL_PAYMENT ẐEN</span></p>
+<p><strong>Solde restant:</strong> $ZEN ẐEN</p>
+<p><strong>Prochain paiement:</strong> $NEXT_PAYMENT_DATE</p>
+</div>
+<p>Votre MULTIPASS est à jour ! Continuez à créer du contenu de qualité pour gagner plus de ẐEN.</p>
+<p><strong>💡 Astuce:</strong> Chaque like sur vos posts = 1 ẐEN automatique dans votre portefeuille.</p>
+</body></html>"
+
+                                ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" <(echo "$success_message") "Paiement Réussi - $TODATE"
+                                log "INFO" "Success email sent to ${PLAYER} for payment success"
                             else
                                 # Payment failed - send error email
                                 if [[ $payment_success -ne 0 ]]; then
@@ -487,8 +657,8 @@ for PLAYER in "${NOSTR[@]}"; do
 <p>Both payments must succeed for fiscal compliance.</p>
 </body></html>"
 
-                                ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" <(echo "$error_message") "MULTIPASS Payment Error - $TODATE"
-                                log "INFO" "Error email sent to ${PLAYER} for payment failure"
+                                ${MY_PATH}/../tools/mailjet.sh "${CAPTAINEMAIL}" <(echo "$error_message") "MULTIPASS Payment Error - $TODATE"
+                                log "INFO" "Error email sent to ${CAPTAINEMAIL} for payment failure of ${PLAYER}"
                             fi
                         else
                             # Check if MULTIPASS is less than 7 days old (grace period)
@@ -544,7 +714,44 @@ for PLAYER in "${NOSTR[@]}"; do
                     rm ~/.zen/game/nostr/${PLAYER}/U.SOCIETY
                     rm ~/.zen/game/players/${PLAYER}/U.SOCIETY.end
                     rm ~/.zen/game/nostr/${PLAYER}/U.SOCIETY.end
-                    ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh "${PLAYER}" "$HOME/.zen/game/passport/${PUBKEY}/.passport.html" "PLEASE RENEW"
+                    
+                    # Send U.SOCIETY expiration email
+                    usociety_expired="<html><head><meta charset='UTF-8'>
+<style>
+    body { font-family: 'Courier New', monospace; }
+    .expired { color: #d32f2f; font-weight: bold; }
+    .details { background-color: #ffebee; padding: 15px; margin: 10px 0; border-left: 4px solid #d32f2f; }
+    .offer { background-color: #e8f5e8; padding: 15px; margin: 10px 0; border-left: 4px solid #4caf50; }
+</style></head><body>
+<h2 class='expired'>🏛️ Abonnement U.SOCIETY Expiré</h2>
+<div class='details'>
+<p><strong>Membre:</strong> ${PLAYER}</p>
+<p><strong>Date d'expiration:</strong> $UENDDATE</p>
+<p><strong>Date actuelle:</strong> $TODATE</p>
+</div>
+<p>Votre abonnement U.SOCIETY a expiré. Vous perdez l'accès aux services premium :</p>
+<ul>
+<li>❌ NextCloud (stockage privé)</li>
+<li>❌ PeerTube (vidéos privées)</li>
+<li>❌ Accès SSH aux relais</li>
+<li>❌ Droit de vote sur les décisions</li>
+</ul>
+<div class='offer'>
+<h3>🔄 Renouvelez Maintenant</h3>
+<p><strong>Avantages du renouvellement :</strong></p>
+<ul>
+<li>✅ Tous les services premium restaurés</li>
+<li>✅ Droit de vote maintenu</li>
+<li>✅ Part de propriété des biens réels</li>
+<li>✅ Plus de paiements hebdomadaires</li>
+</ul>
+<p><strong>Prix :</strong> 50€/an (Welcome Offer)</p>
+</div>
+<p><strong>💡 Note :</strong> Votre MULTIPASS de base reste actif.</p>
+</body></html>"
+
+                    ${MY_PATH}/../tools/mailjet.sh "${CAPTAINEMAIL}" <(echo "$usociety_expired") "U.SOCIETY Expiré - Renouvellement Requis"
+                    log "INFO" "U.SOCIETY expiration email sent to ${CAPTAINEMAIL} for ${PLAYER}"
                 else
                     # Calculer les jours restants
                     DIFF_DAYS=$(( (UENDDATE_SECONDS - TODATE_SECONDS) / 86400 ))
@@ -553,28 +760,82 @@ for PLAYER in "${NOSTR[@]}"; do
                     if [[ $DIFF_DAYS -gt 0 ]]; then
                         echo "OK VALID $DIFF_DAYS days left..."
                         
-                        ########################################################################
-                        ## YOUTUBE LIKES SYNC FOR SOCIETY MEMBERS
-                        ########################################################################
-                        # Vérifier si le sociétaire a un fichier cookie YouTube
-                        if [[ -s ~/.zen/game/nostr/${PLAYER}/.cookie.txt ]]; then
-                            log "INFO" "🎵 Starting YouTube likes sync for society member: ${PLAYER}"
-                            log_metric "YOUTUBE_SYNC_START" "1" "${PLAYER}"
-                            
-                            # Lancer la synchronisation des vidéos likées en arrière-plan
-                            ${MY_PATH}/../IA/sync_youtube_likes.sh "${PLAYER}" --debug &
-                            YOUTUBE_SYNC_PID=$!
-                            
-                            log "INFO" "YouTube sync started for ${PLAYER} (PID: $YOUTUBE_SYNC_PID)"
-                            log_metric "YOUTUBE_SYNC_PID" "$YOUTUBE_SYNC_PID" "${PLAYER}"
-                        else
-                            log "DEBUG" "No YouTube cookie file found for society member: ${PLAYER}"
+                        
+                    # Alerte si expiration dans moins de 30 jours
+                    if [[ $DIFF_DAYS -lt 30 ]]; then
+                        echo "### U SOCIETY EXPIRATION WARNING: $DIFF_DAYS days remaining"
+                        
+                        # Send expiration warning email (only once per warning period)
+                        if [[ $DIFF_DAYS -lt 30 && $DIFF_DAYS -gt 20 && ! -s ~/.zen/game/nostr/${PLAYER}/.usociety_30day_warned ]]; then
+                            usociety_warning_30="<html><head><meta charset='UTF-8'>
+<style>
+    body { font-family: 'Courier New', monospace; }
+    .warning { color: #ff9800; font-weight: bold; }
+    .details { background-color: #fff3e0; padding: 15px; margin: 10px 0; border-left: 4px solid #ff9800; }
+    .offer { background-color: #e8f5e8; padding: 15px; margin: 10px 0; border-left: 4px solid #4caf50; }
+</style></head><body>
+<h2 class='warning'>⚠️ U.SOCIETY Expire dans $DIFF_DAYS jours</h2>
+<div class='details'>
+<p><strong>Membre:</strong> ${PLAYER}</p>
+<p><strong>Date d'expiration:</strong> $UENDDATE</p>
+<p><strong>Jours restants:</strong> $DIFF_DAYS</p>
+</div>
+<p>Votre ZEN Card U.SOCIETY expire bientôt. Renouvelez maintenant pour éviter l'interruption des services premium.</p>
+<div class='offer'>
+<h3>🔄 Renouvellement Recommandé</h3>
+<p><strong>Services qui expireront :</strong></p>
+<ul>
+<li>❌ NextCloud (stockage privé)</li>
+<li>❌ PeerTube (vidéos privées)</li>
+<li>❌ Accès SSH aux relais</li>
+<li>❌ Droit de vote sur les décisions</li>
+</ul>
+<p><strong>Prix :</strong> 50€/an (Welcome Offer)</p>
+</div>
+<p><strong>💡 Note :</strong> Votre MULTIPASS de base restera actif même après expiration.</p>
+</body></html>"
+
+                            ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" <(echo "$usociety_warning_30") "U.SOCIETY Expire dans $DIFF_DAYS jours"
+                            echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.usociety_30day_warned
+                            log "INFO" "U.SOCIETY 30-day warning email sent to ${PLAYER}"
                         fi
                         
-                        # Alerte si expiration dans moins de 30 jours
-                        if [[ $DIFF_DAYS -lt 30 ]]; then
-                            echo "### U SOCIETY EXPIRATION WARNING: $DIFF_DAYS days remaining"
+                        # Send final warning if less than 7 days
+                        if [[ $DIFF_DAYS -lt 7 && ! -s ~/.zen/game/nostr/${PLAYER}/.usociety_7day_warned ]]; then
+                            usociety_warning_7="<html><head><meta charset='UTF-8'>
+<style>
+    body { font-family: 'Courier New', monospace; }
+    .urgent { color: #d32f2f; font-weight: bold; }
+    .details { background-color: #ffebee; padding: 15px; margin: 10px 0; border-left: 4px solid #d32f2f; }
+    .offer { background-color: #e8f5e8; padding: 15px; margin: 10px 0; border-left: 4px solid #4caf50; }
+</style></head><body>
+<h2 class='urgent'>🚨 U.SOCIETY Expire dans $DIFF_DAYS jours - DERNIÈRE CHANCE</h2>
+<div class='details'>
+<p><strong>Membre:</strong> ${PLAYER}</p>
+<p><strong>Date d'expiration:</strong> $UENDDATE</p>
+<p><strong>Jours restants:</strong> $DIFF_DAYS</p>
+</div>
+<p><strong>URGENT :</strong> Votre abonnement U.SOCIETY expire dans $DIFF_DAYS jours !</p>
+<div class='offer'>
+<h3>🔄 Renouvelez IMMÉDIATEMENT</h3>
+<p><strong>Prix :</strong> 50€/an (Welcome Offer)</p>
+<p><strong>Avantages :</strong></p>
+<ul>
+<li>✅ NextCloud (stockage privé)</li>
+<li>✅ PeerTube (vidéos privées)</li>
+<li>✅ Accès SSH aux relais</li>
+<li>✅ Droit de vote sur les décisions</li>
+<li>✅ Plus de paiements hebdomadaires</li>
+</ul>
+</div>
+<p><strong>⚠️ Après expiration :</strong> Vous perdrez l'accès aux services premium mais garderez votre MULTIPASS de base.</p>
+</body></html>"
+
+                            ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" <(echo "$usociety_warning_7") "URGENT: U.SOCIETY Expire dans $DIFF_DAYS jours"
+                            echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.usociety_7day_warned
+                            log "INFO" "U.SOCIETY 7-day urgent warning email sent to ${PLAYER}"
                         fi
+                    fi
                     fi
                 fi
             else
@@ -613,10 +874,28 @@ for PLAYER in "${NOSTR[@]}"; do
                     echo "### ENDING U SOCIETY FREE MODE (FALLBACK)"
                     rm ~/.zen/game/players/${PLAYER}/U.SOCIETY
                     rm ~/.zen/game/nostr/${PLAYER}/U.SOCIETY
-                    ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh "${PLAYER}" "$HOME/.zen/game/passport/${PUBKEY}/.passport.html" "PLEASE RENEW"
+                    ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh "${CAPTAINEMAIL}" "$HOME/.zen/game/passport/${PUBKEY}/.passport.html" "U.SOCIETY Fallback Expiration - ${PLAYER}"
                 fi
             fi
         fi
+    fi
+
+    ########################################################################
+    ## YOUTUBE LIKES SYNC FOR ALL USERS (WITH COOKIE)
+    ########################################################################
+    # Vérifier si l'utilisateur a un fichier cookie YouTube (pour tous les utilisateurs)
+    if [[ -s ~/.zen/game/nostr/${PLAYER}/.cookie.txt ]]; then
+        log "INFO" "🎵 Starting YouTube likes sync for user: ${PLAYER}"
+        log_metric "YOUTUBE_SYNC_START" "1" "${PLAYER}"
+        
+        # Lancer la synchronisation des vidéos likées en arrière-plan
+        ${MY_PATH}/../IA/sync_youtube_likes.sh "${PLAYER}" --debug &
+        YOUTUBE_SYNC_PID=$!
+        
+        log "INFO" "YouTube sync started for ${PLAYER} (PID: $YOUTUBE_SYNC_PID)"
+        log_metric "YOUTUBE_SYNC_PID" "$YOUTUBE_SYNC_PID" "${PLAYER}"
+    else
+        log "DEBUG" "No YouTube cookie file found for user: ${PLAYER} - Visit $uSPOT/cookie to upload your YouTube cookies"
     fi
 
     ########################################################################
