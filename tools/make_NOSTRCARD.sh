@@ -414,21 +414,22 @@ EOF
 
     ### SEND NOSTR MESSAGE WITH QR CODE LINK
     # DID is accessible via Nostr (source of truth) and IPFS/.well-known (cache)
-    Mymessage="🎉 ẐEN wallet : ${G1PUBNOSTR}${Z} 🎫 ${uSPOT}/check_balance?g1pub=${EMAIL} 𝄃𝄃𝄂𝄂𝄀𝄁𝄃𝄂𝄂𝄃 ${myIPFS}/ipfs/${G1PUBNOSTRQR} 🆔 DID: did:nostr:${HEX} 📄 ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/.well-known/"
+    Mymessage="🎉 ẐEN wallet : ${G1PUBNOSTR}${Z} \n 🎫 ${uSPOT}/check_balance?g1pub=${EMAIL} \n  𝄃𝄃𝄂𝄂𝄀𝄁𝄃𝄂𝄂𝄃 ${myIPFS}/ipfs/${G1PUBNOSTRQR} \n 🆔 DID: did:nostr:${HEX} \n 📄 ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/"
     NPRIV_HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPRIV)
     HEX_HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPUBLIC)
     
-    # Send to local relay first
-    nostpy-cli send_event \
-        -privkey "$NPRIV_HEX" \
-        -kind 1 \
-        -content "$Mymessage" \
-        -tags "[['p', '$HEX_HEX'], ['i', 'did:nostr:${HEX}']]" \
-        --relay "$myRELAY" &>/dev/null
+    # Send to relay(s) - avoid duplicates
 
-    # Send to public relay ONLY if different from local relay AND UPlanet EnfinLibre
-    if [[ $myRELAY != "wss://relay.copylaradio.com" && $UPLANETNAME == "EnfinLibre" ]]; then
-        echo "📡 Publishing to public relay (different from local relay)"
+    if [[ $myRELAY != "wss://relay.copylaradio.com" ]]; then
+        echo "📡 Publishing to both local and public relays"
+        # Send to local relay
+        nostpy-cli send_event \
+            -privkey "$NPRIV_HEX" \
+            -kind 1 \
+            -content "$Mymessage" \
+            -tags "[['p', '$HEX_HEX'], ['i', 'did:nostr:${HEX}']]" \
+            --relay "$myRELAY" &>/dev/null
+        # Send to public relay
         nostpy-cli send_event \
             -privkey "$NPRIV_HEX" \
             -kind 1 \
@@ -436,7 +437,14 @@ EOF
             -tags "[['p', '$HEX_HEX'], ['i', 'did:nostr:${HEX}']]" \
             --relay "wss://relay.copylaradio.com" &>/dev/null
     else
-        echo "📡 Single relay publication (local relay is already public or not EnfinLibre)"
+        echo "📡 Publishing to public relay only (local relay is already public)"
+        # Send only to public relay (local is the same)
+        nostpy-cli send_event \
+            -privkey "$NPRIV_HEX" \
+            -kind 1 \
+            -content "$Mymessage" \
+            -tags "[['p', '$HEX_HEX'], ['i', 'did:nostr:${HEX}']]" \
+            --relay "wss://relay.copylaradio.com" &>/dev/null
     fi
 
 
