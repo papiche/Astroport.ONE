@@ -184,11 +184,15 @@ send_nostr_event() {
     if [[ "$VERBOSE" == "true" ]]; then
         nostpy-cli "$@"
     else
+        # Suppress all output except errors
         output=$(nostpy-cli "$@" 2>&1)
-        # Only show errors or important messages
-        if [[ $? -ne 0 ]] || [[ "$output" =~ "ERROR" ]] || [[ "$output" =~ "WARNING" ]]; then
-            echo "$output" >&2
+        local exit_code=$?
+        # Only show actual errors (not success messages or "Already following")
+        if [[ $exit_code -ne 0 ]] && [[ ! "$output" =~ "Already following" ]]; then
+            # Filter out success messages and color codes
+            echo "$output" | grep -i "error\|failed\|warning" | sed 's/\x1b\[[0-9;]*m//g' >&2
         fi
+        return $exit_code
     fi
 }
 
@@ -238,6 +242,7 @@ NOTR.UMAP.refresh.sh'
 process_umap_messages() {
     local hexline=$1
     local hex=$(cat $hexline)
+    local UMAPDIR=$(dirname "$hexline")  # Store UMAP source directory
     
     # Set global coordinates for this UMAP
     LAT=$(makecoord $(echo $hexline | cut -d '_' -f 2))
@@ -260,7 +265,7 @@ process_umap_messages() {
 
     SECTORS+=("_${SLAT}_${SLON}")
 
-    process_umap_friends "$hex" "$UMAPPATH"
+    process_umap_friends "$hex" "$UMAPPATH" "$UMAPDIR"
 
     # Appel IA si journal UMAP trop long
     MAX_MSGS=10
@@ -281,12 +286,18 @@ process_umap_messages() {
         fi
     fi
 
-    setup_umap_identity "$UMAPPATH"
+    # Only setup UMAP identity if NOSTR_messages exists and has content
+    if [[ -f "${UMAPPATH}/NOSTR_messages" && -s "${UMAPPATH}/NOSTR_messages" ]]; then
+        setup_umap_identity "$UMAPPATH"
+    else
+        log "⏭️  No messages to publish for UMAP (${LAT}, ${LON})"
+    fi
 }
 
 process_umap_friends() {
     local hex=$1
     local UMAPPATH=$2
+    local UMAPDIR=$3  # Source directory of UMAP
 
     # Initialize NPRIV_HEX early for this UMAP using global coordinates
     local UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
@@ -317,7 +328,9 @@ process_umap_friends() {
     
     # Check if UMAP has no active friends and clean up cache if needed
     if [[ ${#ACTIVE_FRIENDS[@]} -eq 0 ]]; then
-        rm -Rf "$UMAPPATH" ## Remove UMAP cache if no active friends
+        log_always "⚠️  UMAP (${LAT}, ${LON}) has no active friends, removing all cache"
+        rm -Rf "$UMAPPATH" ## Remove temporary UMAP cache
+        rm -Rf "$UMAPDIR"  ## Remove source UMAP directory
     else
         setup_ipfs_structure "$UMAPPATH" "$NPRIV_HEX"
     fi
@@ -1019,6 +1032,12 @@ send_nostr_events() {
         -tags "$TAGS_JSON" \
         --relay "$myRELAY"
 
+    # Only publish UMAP journal if NOSTR_messages file exists and has content
+    if [[ ! -f "${UMAPPATH}/NOSTR_messages" || ! -s "${UMAPPATH}/NOSTR_messages" ]]; then
+        log "⏭️  Skipping UMAP journal for ${LAT},${LON} (no messages file)"
+        return 0
+    fi
+    
     # Only publish UMAP journal if there's actual content (not just headers)
     local journal_content=$(cat ${UMAPPATH}/NOSTR_messages)
     if [[ -n "$journal_content" && "$journal_content" != "" ]]; then
@@ -1893,10 +1912,14 @@ update_friends_list() {
 
     # Update friends list using nostr_follow.sh
     if [[ ${#friends[@]} -gt 0 ]]; then
-        $MY_PATH/../tools/nostr_follow.sh "$UMAPNSEC" "${friends[@]}" "$myRELAY"
-        echo "(${LAT} ${LON}) Updated friends list with ${#friends[@]} active friends "
+        if [[ "$VERBOSE" == "true" ]]; then
+            $MY_PATH/../tools/nostr_follow.sh "$UMAPNSEC" "${friends[@]}" "$myRELAY"
+        else
+            $MY_PATH/../tools/nostr_follow.sh "$UMAPNSEC" "${friends[@]}" "$myRELAY" 2>&1 | grep -v "Already following" | grep -v "Verification successful" | grep -v "Sending event" | grep -v "Response from" | grep -v "EVENT" | grep -v "Follow list updated" | sed 's/\x1b\[[0-9;]*m//g'
+        fi
+        log_always "(${LAT} ${LON}) Updated friends list with ${#friends[@]} active friends"
     else
-        echo "(${LAT} ${LON}) No active friends to update"
+        log_always "(${LAT} ${LON}) No active friends to update"
     fi
 }
 
