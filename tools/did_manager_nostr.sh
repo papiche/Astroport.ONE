@@ -214,12 +214,12 @@ update_did_document() {
     local did_cache="$HOME/.zen/game/nostr/${email}/did.json.cache"
     local did_temp=$(mktemp)
     
-    echo -e "${MAGENTA}${'='*80}${NC}"
+    echo -e "${MAGENTA}$(printf '=%.0s' {1..80})${NC}"
     echo -e "${CYAN}📝 DID Update Request${NC}"
     echo -e "${BLUE}   Email: ${email}${NC}"
     echo -e "${BLUE}   Type: ${update_type}${NC}"
     echo -e "${BLUE}   Amount: ${montant_zen} Ẑen / ${montant_g1} Ğ1${NC}"
-    echo -e "${MAGENTA}${'='*80}${NC}"
+    echo -e "${MAGENTA}$(printf '=%.0s' {1..80})${NC}"
     
     # Get Nostr keys
     local keys=$(get_nostr_keys "$email")
@@ -411,12 +411,12 @@ update_did_document() {
     rm -f "$did_temp" "$did_updated"
     
     # Final summary
-    echo -e "\n${MAGENTA}${'='*80}${NC}"
+    echo -e "\n${MAGENTA}$(printf '=%.0s' {1..80})${NC}"
     echo -e "${GREEN}✅ DID Update Complete${NC}"
     echo -e "${BLUE}   Email: ${email}${NC}"
     echo -e "${BLUE}   Type: ${update_type}${NC}"
     echo -e "${BLUE}   Status: Published to Nostr + Cached locally${NC}"
-    echo -e "${MAGENTA}${'='*80}${NC}"
+    echo -e "${MAGENTA}$(printf '=%.0s' {1..80})${NC}"
     
     return 0
 }
@@ -607,7 +607,7 @@ show_wallet_addresses() {
     fi
     
     echo -e "${BLUE}🔍 Wallet Addresses for: ${email}${NC}"
-    echo -e "${YELLOW}${'='*60}${NC}"
+    echo -e "${YELLOW}$(printf '=%.0s' {1..60})${NC}"
     
     # MULTIPASS (Ẑ revenue)
     local multipass_g1pub=$(cat "$HOME/.zen/game/nostr/${email}/G1PUBNOSTR" 2>/dev/null)
