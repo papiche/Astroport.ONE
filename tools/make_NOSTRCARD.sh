@@ -412,6 +412,18 @@ EOF
 
     fi
 
+    ### MULTIPASS FOLLOWS CAPTAIN AUTOMATICALLY
+    # New MULTIPASS should follow the CAPTAIN to receive updates and guidance
+    if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/HEX ]]; then
+        CAPTAINHEX=$(cat ~/.zen/game/nostr/${CAPTAINEMAIL}/HEX)
+        echo "👥 MULTIPASS ${EMAIL} following CAPTAIN ${CAPTAINEMAIL} (${CAPTAINHEX})"
+        ${MY_PATH}/../tools/nostr_follow.sh "$NPRIV" "$CAPTAINHEX" "$myRELAY" 2>/dev/null \
+            && echo "✅ MULTIPASS now follows CAPTAIN" \
+            || echo "⚠️  Failed to follow CAPTAIN (will retry later)"
+    else
+        echo "⚠️  CAPTAIN HEX not found at ~/.zen/game/nostr/${CAPTAINEMAIL}/HEX"
+    fi
+
     ### SEND NOSTR MESSAGE WITH QR CODE LINK
     # DID is accessible via Nostr (source of truth) and IPFS/.well-known (cache)
     Mymessage="🎉 ẐEN wallet : ${G1PUBNOSTR}${Z} \n 🎫 ${uSPOT}/check_balance?g1pub=${EMAIL} \n  𝄃𝄃𝄂𝄂𝄀𝄁𝄃𝄂𝄂𝄃 ${myIPFS}/ipfs/${G1PUBNOSTRQR} \n 🆔 DID: did:nostr:${HEX} \n 📄 ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/"
