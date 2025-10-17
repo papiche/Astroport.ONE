@@ -294,11 +294,11 @@ if [[ -n "$SENDER_NSEC" ]]; then
     # Prepare NOSTR message content
     NOSTR_MESSAGE="📧 ${SUBJECT}
 
-📄 Message: ${TEXTPART}
+📄 : ${TEXTPART}
 
 ---
 ${HEX:+📱 NOSTR: ${NPUB}}
-${RELAY:+🌐 Relay: ${RELAY}}
+${RELAY:+🌐 Relay: ${RELAY}} #AstroBOT 
 ${ephemeral_duration:+⏰ Éphémère: ${ephemeral_duration}s}
 "
 
