@@ -215,6 +215,96 @@
             font-family: monospace;
         }
 
+        /* Hero optimizations */
+        .hero-box {
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(52, 152, 219, 0.05));
+            padding: 30px;
+            border-radius: 12px;
+            margin: 30px 0;
+            border: 2px solid var(--primary-color);
+        }
+
+        .benefit-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .benefit-item {
+            display: flex;
+            align-items: start;
+            gap: 12px;
+            padding: 15px;
+            background: var(--container-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .benefit-icon {
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+
+        .benefit-text strong {
+            color: var(--primary-color);
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .cta-primary {
+            background: linear-gradient(135deg, var(--primary-color), #2980b9);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 30px 0;
+            text-decoration: none;
+            display: block;
+            font-size: 1.2em;
+            font-weight: bold;
+            transition: transform 0.3s ease;
+        }
+
+        .cta-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .resource-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: var(--info-box-bg);
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--primary-color);
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+        }
+
+        .resource-link:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-right: 15px;
+        }
+
         .footer {
             margin-top: 30px;
             font-style: italic;
@@ -273,8 +363,57 @@
         <div class="language-section active" id="fr">
             <div class="language-title">Français</div>
             
-            <div class="info-box">
-                <p><strong>🎉 Félicitations !</strong> Votre MULTIPASS UPlanet est maintenant actif. Vous venez de rejoindre l'Internet de confiance, un réseau décentralisé où <strong>vous êtes propriétaire de vos données</strong>.</p>
+            <!-- Hero Section Optimisée -->
+            <div class="hero-box">
+                <h2 style="color: var(--primary-color); text-align: center; margin: 0 0 20px 0; font-size: 2em;">
+                    🎉 Bienvenue dans l'Internet de Confiance !
+                </h2>
+                <p style="text-align: center; font-size: 1.2em; margin-bottom: 30px;">
+                    <strong>Votre MULTIPASS est actif.</strong> Vous ne louez plus Internet, vous en êtes <strong>copropriétaire</strong>.
+                </p>
+                
+                <div class="benefit-grid">
+                    <div class="benefit-item">
+                        <div class="benefit-icon">💰</div>
+                        <div class="benefit-text">
+                            <strong>Vous gagnez de l'argent</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Chaque like = 1Ẑ automatique dans votre portefeuille</span>
+                        </div>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-icon">🤖</div>
+                        <div class="benefit-text">
+                            <strong>Votre IA personnelle</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Bot Astro crée vos journaux quotidiens 24/7</span>
+                        </div>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-icon">🏠</div>
+                        <div class="benefit-text">
+                            <strong>Vous êtes propriétaire</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Plus de loyer éternel, vous possédez vos données</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ressources Essentielles -->
+            <div class="info-box" style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.05));">
+                <h3 style="margin: 0 0 15px 0; color: #27ae60;">📚 Vos Ressources Clés</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <a href="http://127.0.0.1:8080/ipfs/QmZbbuh7XTerEb1XLdMDu2MCbFQw3w1RWzda1swxK6nYJ3" target="_blank" class="resource-link">
+                        🖨️ Imprimer mon MULTIPASS (Zine)
+                    </a>
+                    <a href="http://127.0.0.1:8080/ipns/copylaradio.com/uplanet_com.html" target="_blank" class="resource-link">
+                        🌍 Comprendre UPlanet
+                    </a>
+                    <a href="http://127.0.0.1:8080/ipns/copylaradio.com/nostr_com.html" target="_blank" class="resource-link">
+                        📡 Découvrir Nostr
+                    </a>
+                    <a href="https://coracle.copylaradio.com" target="_blank" class="resource-link">
+                        💬 Rejoindre le Forum
+                    </a>
+                </div>
             </div>
 
             <div class="section">
@@ -298,48 +437,81 @@
             </div>
 
             <div class="section">
-                <h2 class="section-title">🚀 Comment Commencer ?</h2>
-                <p>Votre MULTIPASS est déjà <strong>100% fonctionnel</strong> ! Voici comment l'utiliser :</p>
+                <h2 class="section-title">🗺️ Votre Parcours en 4 Étapes</h2>
+                <p style="text-align: center; font-size: 1.1em; margin-bottom: 30px;">Votre MULTIPASS est déjà <strong>100% fonctionnel</strong> ! Suivez ce guide pour démarrer :</p>
                 
                 <div class="setup-steps">
-                    <div class="setup-step">
-                        <h3>📱 Terminal MULTIPASS</h3>
-                        <p><strong>Accès instantané depuis n'importe où :</strong></p>
+                    <!-- Étape 1 -->
+                    <div class="setup-step" style="border-left: 4px solid var(--primary-color);">
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                            <span class="step-number">1</span>
+                            <h3 style="margin: 0;">📚 Comprendre</h3>
+                        </div>
+                        <p><strong>Lisez vos ressources clés :</strong></p>
                         <ul>
-                            <li>Rendez-vous sur <strong>u.copylaradio.com/scan</strong></li>
-                            <li>Scannez votre <strong>QR code SSSS</strong> (reçu par email)</li>
-                            <li>Entrez votre <strong>code PASS</strong> (ou laissez vide pour un accès rapide)</li>
-                            <li>Profitez de votre <strong>uDRIVE 10GB</strong> et de l'IA personnelle !</li>
+                            <li>🖨️ <strong>Imprimez votre MULTIPASS</strong> (Zine PDF ci-dessus)</li>
+                            <li>🌍 <a href="http://127.0.0.1:8080/ipns/copylaradio.com/uplanet_com.html" target="_blank" style="color: var(--primary-color); font-weight: 600;">Comprendre UPlanet</a> (5 min de lecture)</li>
+                            <li>📡 <a href="http://127.0.0.1:8080/ipns/copylaradio.com/nostr_com.html" target="_blank" style="color: var(--primary-color); font-weight: 600;">Découvrir Nostr</a> (protocole décentralisé)</li>
                         </ul>
                     </div>
-                    <div class="setup-step">
-                        <h3>💬 Réseau Social N²</h3>
-                        <p><strong>Votre mur à vous, pas celui de Facebook :</strong></p>
+                    
+                    <!-- Étape 2 -->
+                    <div class="setup-step" style="border-left: 4px solid var(--primary-color);">
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                            <span class="step-number">2</span>
+                            <h3 style="margin: 0;">🔌 Connecter</h3>
+                        </div>
+                        <p><strong>Accédez à votre terminal MULTIPASS :</strong></p>
                         <ul>
-                            <li>Postez sur <strong>VOTRE mur</strong> (pas celui de Zuckerberg)</li>
-                            <li><strong>Zéro algorithme</strong> : ordre chronologique pur</li>
-                            <li>Les amis de vos amis = votre réseau naturel</li>
-                            <li>Chaque like = <strong>1 ẐEN automatique</strong> dans votre portefeuille</li>
+                            <li>🌐 Allez sur <strong><a href="_USPOT_/scan" target="_blank">/SCAN</a></strong></li>
+                            <li>📱 Scannez votre <strong>QR code SSSS</strong> (dans votre Zine)</li>
+                            <li>🔑 Entrez votre <strong>code PASS</strong> (vide = rapide, 1111 = complet)</li>
+                            <li>✅ Profitez de votre <strong>uDRIVE 10GB</strong> + IA personnelle</li>
                         </ul>
                     </div>
-                    <div class="setup-step">
-                        <h3>🏛️ Devenir Co-Bâtisseur</h3>
-                        <p><strong>Passez de locataire à propriétaire :</strong></p>
+                    
+                    <!-- Étape 3 -->
+                    <div class="setup-step" style="border-left: 4px solid var(--primary-color);">
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                            <span class="step-number">3</span>
+                            <h3 style="margin: 0;">💬 Participer</h3>
+                        </div>
+                        <p><strong>Rejoignez le réseau social N² :</strong></p>
                         <ul>
-                            <li>Investissez <strong>50€/an</strong> pour devenir sociétaire</li>
-                            <li>Plus de "loyer" pour vos services de base</li>
-                            <li>Droit de vote sur l'évolution de la coopérative</li>
-                            <li>Part de propriété sur les <strong>biens réels</strong> (serveurs, forêts...)</li>
+                            <li>🦊 Installez l'extension <strong>NOSTR Connect</strong> (Firefox recommandé)</li>
+                            <li>🔐 Recopiez votre clé <strong>NSec</strong> (dans votre Zine)</li>
+                            <li>💬 Rejoignez <a href="https://coracle.copylaradio.com" target="_blank" style="color: var(--primary-color); font-weight: 600;">Coracle ẐEN</a></li>
+                            <li>💰 Chaque like = <strong>1 ẐEN automatique</strong> dans votre portefeuille</li>
                         </ul>
+                    </div>
+                    
+                    <!-- Étape 4 -->
+                    <div class="setup-step" style="border-left: 4px solid #27ae60; background: linear-gradient(135deg, rgba(46, 204, 113, 0.08), rgba(46, 204, 113, 0.04));">
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                            <span class="step-number" style="background: #27ae60;">4</span>
+                            <h3 style="margin: 0; color: #27ae60;">🏛️ Devenir Co-Propriétaire</h3>
+                        </div>
+                        <p><strong>Passez de locataire à sociétaire :</strong></p>
+                        <ul>
+                            <li>💰 Part sociale <strong>50€/an</strong> (Welcome Offer)</li>
+                            <li>🚫 Plus de loyer hebdomadaire (1 Ẑen/semaine économisé)</li>
+                            <li>🗳️ <strong>Droit de vote</strong> sur les décisions de la coopérative</li>
+                            <li>🌳 Part de propriété des <strong>biens réels</strong> (serveurs, forêts...)</li>
+                        </ul>
+                        <div style="text-align: center; margin-top: 15px;">
+                            <a href="https://opencollective.com/uplanet-zero" target="_blank" class="cta-primary" style="display: inline-block;">
+                                Rejoindre ẐEN[0] Maintenant →
+                            </a>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="warning-box">
+                <div class="warning-box" style="margin-top: 30px;">
                     <p><strong>🔑 Codes PASS de votre MULTIPASS :</strong></p>
-                    <ul>
+                    <ul style="margin: 10px 0 0 20px;">
                         <li><strong>Vide</strong> → Accès rapide (sécurisé pour terminaux publics)</li>
-                        <li><strong>1111</strong> → Accès complet (interface Astro Base complète)</li>
-                        <li><strong>0000</strong> → Ejection d'urgence (si perdu/volé)</li>
+                        <li><strong>1111</strong> → Accès complet (interface Astro Base + Messenger)</li>
+                        <li><strong>0000</strong> → Régénération d'urgence (si perdu/volé)</li>
                     </ul>
                 </div>
             </div>
@@ -364,41 +536,45 @@
                 </div>
             </div>
 
-            <div class="section">
-                <h2 class="section-title">🆚 UPlanet vs GAFAM</h2>
-                <table class="offer-table">
-                    <tr>
-                        <th>Critère</th>
-                        <th>GAFAM</th>
-                        <th>UPlanet</th>
-                    </tr>
-                    <tr>
-                        <td><strong>Propriété</strong></td>
-                        <td>Location infinie</td>
-                        <td><strong>Vous êtes proprio</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Vos données</strong></td>
-                        <td>Scannées pour pub</td>
-                        <td><strong>100% privées</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Gouvernance</strong></td>
-                        <td>0 voix</td>
-                        <td><strong>1 personne = 1 voix</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Comptabilité</strong></td>
-                        <td>Opaque</td>
-                        <td><strong>Blockchain publique</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Revenus</strong></td>
-                        <td>0€ pour vous</td>
-                        <td><strong>Vous gagnez des ẐEN</strong></td>
-                    </tr>
-                </table>
-                <p><strong>En une phrase :</strong> GAFAM = vous êtes le produit. UPlanet = vous êtes le propriétaire.</p>
+            <div class="section" style="background: linear-gradient(135deg, rgba(52, 152, 219, 0.05), rgba(52, 152, 219, 0.02)); border: 2px solid var(--primary-color);">
+                <h2 class="section-title" style="text-align: center;">🆚 Web2 vs Web3 : Résumé en 10 Secondes</h2>
+                
+                <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; max-width: 700px; margin: 30px auto; padding: 20px; background: var(--container-bg); border-radius: 12px;">
+                    <!-- Web2 GAFAM -->
+                    <div style="text-align: right;">
+                        <div style="font-size: 14px; color: var(--text-color); opacity: 0.7; margin-bottom: 8px;">Web2 (GAFAM)</div>
+                        <div style="font-size: 32px; margin-bottom: 8px;">❌</div>
+                        <ul style="text-align: right; list-style: none; padding: 0; font-size: 14px; color: var(--text-color);">
+                            <li>Location</li>
+                            <li>Surveillance</li>
+                            <li>Algorithme</li>
+                            <li>0 revenu</li>
+                            <li>Censure</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- VS -->
+                    <div style="text-align: center; font-size: 24px; font-weight: 700; color: var(--primary-color);">
+                        VS
+                    </div>
+                    
+                    <!-- Web3 UPlanet -->
+                    <div style="text-align: left;">
+                        <div style="font-size: 14px; color: var(--text-color); opacity: 0.7; margin-bottom: 8px;">Web3 (UPlanet)</div>
+                        <div style="font-size: 32px; margin-bottom: 8px;">✅</div>
+                        <ul style="text-align: left; list-style: none; padding: 0; font-size: 14px; color: var(--primary-color); font-weight: 600;">
+                            <li>Propriété</li>
+                            <li>Privé (uDRIVE)</li>
+                            <li>Chronologie</li>
+                            <li>Chaque like = 1Ẑ</li>
+                            <li>Impossible</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <p style="text-align: center; font-size: 1.2em; padding: 20px; background: var(--info-box-bg); border-radius: 8px; margin-top: 20px;">
+                    <strong>En une phrase :</strong> GAFAM = vous êtes le produit. UPlanet = vous êtes le propriétaire.
+                </p>
             </div>
 
             <div class="section">
@@ -462,58 +638,59 @@
                 Gardez précieusement votre QR code SSSS - c'est votre passeport pour l'Internet de confiance.</p>
             </div>
 
-            <div class="section">
-                <h2 class="section-title">🌟 Partagez l'Internet de Confiance</h2>
-                <p>Vous venez de rejoindre une <strong>révolution silencieuse</strong>. Maintenant, aidez vos amis à reprendre le contrôle de leurs données !</p>
+            <div class="section" style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.08), rgba(46, 204, 113, 0.04)); border: 2px solid #27ae60;">
+                <h2 class="section-title" style="color: #27ae60; text-align: center;">🌟 Partagez l'Internet de Confiance</h2>
+                <p style="text-align: center; font-size: 1.1em; margin-bottom: 30px;">Vous venez de rejoindre une <strong>révolution silencieuse</strong>. Maintenant, aidez vos amis à reprendre le contrôle !</p>
                 
-                <div class="setup-steps">
-                    <div class="setup-step">
-                        <h3>💬 "J'ai testé UPlanet, c'est génial !"</h3>
-                        <p><strong>Parlez-en autour de vous :</strong></p>
-                        <ul>
-                            <li>"J'ai mon propre Internet maintenant"</li>
-                            <li>"Mes données me appartiennent vraiment"</li>
-                            <li>"Je gagne de l'argent en créant du contenu"</li>
-                            <li>"Plus de surveillance, plus de pub"</li>
-                        </ul>
+                <div class="benefit-grid" style="margin-bottom: 30px;">
+                    <div class="benefit-item" style="border-left: 4px solid #27ae60;">
+                        <div class="benefit-icon">💬</div>
+                        <div class="benefit-text">
+                            <strong>Parlez-en autour de vous</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">"Je gagne de l'argent en créant du contenu, sans surveillance"</span>
+                        </div>
                     </div>
-                    <div class="setup-step">
-                        <h3>🎁 Invitez vos Amis</h3>
-                        <p><strong>Chaque ami qui rejoint UPlanet :</strong></p>
-                        <ul>
-                            <li>Renforce <strong>votre réseau N²</strong> (amis d'amis)</li>
-                            <li>Augmente la <strong>valeur de votre contenu</strong></li>
-                            <li>Crée un <strong>écosystème local</strong> de confiance</li>
-                            <li>Participe à la <strong>décentralisation</strong> d'Internet</li>
-                        </ul>
+                    <div class="benefit-item" style="border-left: 4px solid #27ae60;">
+                        <div class="benefit-icon">🎁</div>
+                        <div class="benefit-text">
+                            <strong>Invitez vos amis</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Chaque ami renforce votre réseau N² et augmente vos revenus</span>
+                        </div>
                     </div>
-                    <div class="setup-step">
-                        <h3>🚀 Devenez Ambassadeur</h3>
-                        <p><strong>Plus vous partagez, plus vous gagnez :</strong></p>
-                        <ul>
-                            <li>Réseau plus large = plus de likes = plus de ẐEN</li>
-                            <li>Communauté locale = services de proximité</li>
-                            <li>Impact réel sur l'avenir d'Internet</li>
-                            <li>Vous participez à l'<strong>histoire</strong> !</li>
-                        </ul>
+                    <div class="benefit-item" style="border-left: 4px solid #27ae60;">
+                        <div class="benefit-icon">🚀</div>
+                        <div class="benefit-text">
+                            <strong>Devenez ambassadeur</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Plus de réseau = plus de likes = plus de ẐEN. C'est mathématique !</span>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="info-box">
-                    <p><strong>🎯 Votre Mission :</strong> Chaque personne que vous invitez à UPlanet est une brique de plus dans l'Internet de confiance. Vous ne partagez pas juste un service, vous construisez l'avenir !</p>
+                <div class="info-box" style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.15), rgba(46, 204, 113, 0.08)); border-left-color: #27ae60; text-align: center;">
+                    <p style="font-size: 1.1em; margin: 0;"><strong>🎯 Votre Mission :</strong> Chaque personne que vous invitez à UPlanet est une brique de plus dans l'Internet de confiance. Vous ne partagez pas juste un service, <strong>vous construisez l'avenir</strong> !</p>
                 </div>
                 
-                <div class="setup-step" style="grid-column: 1 / -1; background-color: var(--highlight-bg); border: 2px solid var(--primary-color);">
-                    <h3>📱 Partagez Maintenant</h3>
-                    <p><strong>Votre MULTIPASS est prêt à être partagé !</strong></p>
-                    <ul>
-                        <li>Montrez votre <strong>QR code SSSS</strong> à vos amis</li>
-                        <li>Expliquez-leur les <strong>codes PASS</strong> (vide, 1111, 0000)</li>
-                        <li>Invitez-les sur <strong>u.copylaradio.com/scan</strong></li>
-                        <li>Créez ensemble votre <strong>réseau de confiance</strong></li>
-                    </ul>
-                    <p style="text-align: center; font-size: 1.2em; margin-top: 20px;">
-                        <strong>🌍 Ensemble, reprenons le contrôle d'Internet !</strong>
+                <div style="margin-top: 30px; padding: 30px; background: var(--container-bg); border-radius: 12px; border: 2px solid #27ae60;">
+                    <h3 style="text-align: center; color: #27ae60; margin: 0 0 20px 0;">📱 Comment Inviter Vos Amis</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                        <div style="text-align: center; padding: 15px;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">1️⃣</div>
+                            <strong>Partagez nos ressources</strong>
+                            <p style="font-size: 0.9em; opacity: 0.8; margin: 10px 0 0 0;">Montrez-leur <a href="http://127.0.0.1:8080/ipns/copylaradio.com/uplanet_com.html" target="_blank" style="color: var(--primary-color);">#UPlanet ẐEN</a></p>
+                        </div>
+                        <div style="text-align: center; padding: 15px;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">2️⃣</div>
+                            <strong>Créez des MULTIPASS</strong>
+                            <p style="font-size: 0.9em; opacity: 0.8; margin: 10px 0 0 0;">Demandez à vos amis <a href="_USPOT_/g1" target="_blank" style="color: var(--primary-color);"></a>d'ouvrir leur compte</a></p>
+                        </div>
+                        <div style="text-align: center; padding: 15px;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">3️⃣</div>
+                            <strong>Connectez-vous sur Coracle</strong>
+                            <p style="font-size: 0.9em; opacity: 0.8; margin: 10px 0 0 0;">Ensemble sur <a href="https://coracle.copylaradio.com" target="_blank" style="color: var(--primary-color);">Coracle ẐEN</a></p>
+                        </div>
+                    </div>
+                    <p style="text-align: center; font-size: 1.3em; margin: 30px 0 0 0; font-weight: bold; color: #27ae60;">
+                        🌍 Ensemble, reprenons le contrôle d'Internet !
                     </p>
                 </div>
             </div>
@@ -522,8 +699,57 @@
         <div class="language-section" id="en">
             <div class="language-title">English</div>
             
-            <div class="info-box">
-                <p><strong>🎉 Congratulations!</strong> Your UPlanet MULTIPASS is now active. You've just joined the Internet of Trust, a decentralized network where <strong>you own your data</strong>.</p>
+            <!-- Hero Section Optimized -->
+            <div class="hero-box">
+                <h2 style="color: var(--primary-color); text-align: center; margin: 0 0 20px 0; font-size: 2em;">
+                    🎉 Welcome to the Internet of Trust!
+                </h2>
+                <p style="text-align: center; font-size: 1.2em; margin-bottom: 30px;">
+                    <strong>Your MULTIPASS is active.</strong> You no longer rent the Internet, you are a <strong>co-owner</strong>.
+                </p>
+                
+                <div class="benefit-grid">
+                    <div class="benefit-item">
+                        <div class="benefit-icon">💰</div>
+                        <div class="benefit-text">
+                            <strong>You earn money</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Every like = 1Ẑ automatically in your wallet</span>
+                        </div>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-icon">🤖</div>
+                        <div class="benefit-text">
+                            <strong>Your personal AI</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Astro Bot creates your daily journals 24/7</span>
+                        </div>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-icon">🏠</div>
+                        <div class="benefit-text">
+                            <strong>You are the owner</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">No more eternal rent, you own your data</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Essential Resources -->
+            <div class="info-box" style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.05));">
+                <h3 style="margin: 0 0 15px 0; color: #27ae60;">📚 Your Key Resources</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <a href="http://127.0.0.1:8080/ipfs/QmZbbuh7XTerEb1XLdMDu2MCbFQw3w1RWzda1swxK6nYJ3" target="_blank" class="resource-link">
+                        🖨️ Print my MULTIPASS (Zine)
+                    </a>
+                    <a href="http://127.0.0.1:8080/ipns/copylaradio.com/uplanet_com.html" target="_blank" class="resource-link">
+                        🌍 Understand UPlanet
+                    </a>
+                    <a href="http://127.0.0.1:8080/ipns/copylaradio.com/nostr_com.html" target="_blank" class="resource-link">
+                        📡 Discover Nostr
+                    </a>
+                    <a href="https://coracle.copylaradio.com" target="_blank" class="resource-link">
+                        💬 Join the Forum
+                    </a>
+                </div>
             </div>
 
             <div class="section">
@@ -547,47 +773,80 @@
             </div>
 
             <div class="section">
-                <h2 class="section-title">🚀 How to Get Started?</h2>
-                <p>Your MULTIPASS is already <strong>100% functional</strong>! Here's how to use it:</p>
+                <h2 class="section-title">🗺️ Your Journey in 4 Steps</h2>
+                <p style="text-align: center; font-size: 1.1em; margin-bottom: 30px;">Your MULTIPASS is already <strong>100% functional</strong>! Follow this guide to get started:</p>
                 
                 <div class="setup-steps">
-                    <div class="setup-step">
-                        <h3>📱 MULTIPASS Terminal</h3>
-                        <p><strong>Instant access from anywhere:</strong></p>
+                    <!-- Step 1 -->
+                    <div class="setup-step" style="border-left: 4px solid var(--primary-color);">
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                            <span class="step-number">1</span>
+                            <h3 style="margin: 0;">📚 Understand</h3>
+                        </div>
+                        <p><strong>Read your key resources:</strong></p>
                         <ul>
-                            <li>Go to <strong>u.copylaradio.com/scan</strong></li>
-                            <li>Scan your <strong>SSSS QR code</strong> (received by email)</li>
-                            <li>Enter your <strong>PASS code</strong> (or leave empty for quick access)</li>
-                            <li>Enjoy your <strong>10GB uDRIVE</strong> and personal AI!</li>
+                            <li>🖨️ <strong>Print your MULTIPASS</strong> (Zine PDF above)</li>
+                            <li>🌍 <a href="http://127.0.0.1:8080/ipns/copylaradio.com/uplanet_com.html" target="_blank" style="color: var(--primary-color); font-weight: 600;">Understand UPlanet</a> (5 min read)</li>
+                            <li>📡 <a href="http://127.0.0.1:8080/ipns/copylaradio.com/nostr_com.html" target="_blank" style="color: var(--primary-color); font-weight: 600;">Discover Nostr</a> (decentralized protocol)</li>
                         </ul>
                     </div>
-                    <div class="setup-step">
-                        <h3>💬 N² Social Network</h3>
-                        <p><strong>Your wall, not Facebook's:</strong></p>
+                    
+                    <!-- Step 2 -->
+                    <div class="setup-step" style="border-left: 4px solid var(--primary-color);">
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                            <span class="step-number">2</span>
+                            <h3 style="margin: 0;">🔌 Connect</h3>
+                        </div>
+                        <p><strong>Access your MULTIPASS terminal:</strong></p>
                         <ul>
-                            <li>Post on <strong>YOUR wall</strong> (not Zuckerberg's)</li>
-                            <li><strong>Zero algorithms</strong>: pure chronological order</li>
-                            <li>Friends of friends = your natural network</li>
-                            <li>Every like = <strong>1 ẐEN automatically</strong> in your wallet</li>
+                            <li>🌐 Go to <strong><a href="_USPOT_/scan" target="_blank">/SCAN</a></strong></li>
+                            <li>📱 Scan your <strong>SSSS QR code</strong> (in your Zine)</li>
+                            <li>🔑 Enter your <strong>PASS code</strong> (empty = quick, 1111 = complete)</li>
+                            <li>✅ Enjoy your <strong>10GB uDRIVE</strong> + personal AI</li>
                         </ul>
                     </div>
-                    <div class="setup-step">
-                        <h3>🏛️ Become a Co-Builder</h3>
-                        <p><strong>Go from tenant to owner:</strong></p>
+                    
+                    <!-- Step 3 -->
+                    <div class="setup-step" style="border-left: 4px solid var(--primary-color);">
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                            <span class="step-number">3</span>
+                            <h3 style="margin: 0;">💬 Participate</h3>
+                        </div>
+                        <p><strong>Join the N² social network:</strong></p>
                         <ul>
-                            <li>Invest <strong>50€/year</strong> to become a member</li>
-                            <li>No more "rent" for your basic services</li>
-                            <li>Voting rights on cooperative decisions</li>
-                            <li>Share of ownership in <strong>real assets</strong> (servers, forests...)</li>
+                            <li>🦊 Install the <strong>NOSTR Connect</strong> extension (Firefox recommended)</li>
+                            <li>🔐 Copy your <strong>NSec</strong> key (in your Zine)</li>
+                            <li>💬 Join <a href="https://coracle.copylaradio.com" target="_blank" style="color: var(--primary-color); font-weight: 600;">Coracle ẐEN</a></li>
+                            <li>💰 Every like = <strong>1 ẐEN automatically</strong> in your wallet</li>
                         </ul>
+                    </div>
+                    
+                    <!-- Step 4 -->
+                    <div class="setup-step" style="border-left: 4px solid #27ae60; background: linear-gradient(135deg, rgba(46, 204, 113, 0.08), rgba(46, 204, 113, 0.04));">
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                            <span class="step-number" style="background: #27ae60;">4</span>
+                            <h3 style="margin: 0; color: #27ae60;">🏛️ Become a Co-Owner</h3>
+                        </div>
+                        <p><strong>Go from tenant to member:</strong></p>
+                        <ul>
+                            <li>💰 Membership <strong>50€/year</strong> (Welcome Offer)</li>
+                            <li>🚫 No more weekly rent (1 Ẑ/week saved)</li>
+                            <li>🗳️ <strong>Voting rights</strong> on cooperative decisions</li>
+                            <li>🌳 Share of ownership in <strong>real assets</strong> (servers, forests...)</li>
+                        </ul>
+                        <div style="text-align: center; margin-top: 15px;">
+                            <a href="https://opencollective.com/uplanet-zero" target="_blank" class="cta-primary" style="display: inline-block;">
+                                Join ẐEN[0] Now →
+                            </a>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="warning-box">
+                <div class="warning-box" style="margin-top: 30px;">
                     <p><strong>🔑 Your MULTIPASS PASS codes:</strong></p>
-                    <ul>
+                    <ul style="margin: 10px 0 0 20px;">
                         <li><strong>Empty</strong> → Quick access (secure for public terminals)</li>
-                        <li><strong>1111</strong> → Full access (complete Astro Base interface)</li>
+                        <li><strong>1111</strong> → Full access (Astro Base interface + Messenger)</li>
                         <li><strong>0000</strong> → Emergency regeneration (if lost/stolen)</li>
                     </ul>
                 </div>
@@ -613,41 +872,45 @@
                 </div>
             </div>
 
-            <div class="section">
-                <h2 class="section-title">🆚 UPlanet vs GAFAM</h2>
-                <table class="offer-table">
-                    <tr>
-                        <th>Criterion</th>
-                        <th>GAFAM</th>
-                        <th>UPlanet</th>
-                    </tr>
-                    <tr>
-                        <td><strong>Ownership</strong></td>
-                        <td>Infinite rental</td>
-                        <td><strong>You are the owner</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Your data</strong></td>
-                        <td>Scanned for ads</td>
-                        <td><strong>100% private</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Governance</strong></td>
-                        <td>0 votes</td>
-                        <td><strong>1 person = 1 vote</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Accounting</strong></td>
-                        <td>Opaque</td>
-                        <td><strong>Public blockchain</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Revenue</strong></td>
-                        <td>0€ for you</td>
-                        <td><strong>You earn ẐEN</strong></td>
-                    </tr>
-                </table>
-                <p><strong>In one sentence:</strong> GAFAM = you are the product. UPlanet = you are the owner.</p>
+            <div class="section" style="background: linear-gradient(135deg, rgba(52, 152, 219, 0.05), rgba(52, 152, 219, 0.02)); border: 2px solid var(--primary-color);">
+                <h2 class="section-title" style="text-align: center;">🆚 Web2 vs Web3: 10 Second Summary</h2>
+                
+                <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; max-width: 700px; margin: 30px auto; padding: 20px; background: var(--container-bg); border-radius: 12px;">
+                    <!-- Web2 GAFAM -->
+                    <div style="text-align: right;">
+                        <div style="font-size: 14px; color: var(--text-color); opacity: 0.7; margin-bottom: 8px;">Web2 (GAFAM)</div>
+                        <div style="font-size: 32px; margin-bottom: 8px;">❌</div>
+                        <ul style="text-align: right; list-style: none; padding: 0; font-size: 14px; color: var(--text-color);">
+                            <li>Rental</li>
+                            <li>Surveillance</li>
+                            <li>Algorithm</li>
+                            <li>0 revenue</li>
+                            <li>Censorship</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- VS -->
+                    <div style="text-align: center; font-size: 24px; font-weight: 700; color: var(--primary-color);">
+                        VS
+                    </div>
+                    
+                    <!-- Web3 UPlanet -->
+                    <div style="text-align: left;">
+                        <div style="font-size: 14px; color: var(--text-color); opacity: 0.7; margin-bottom: 8px;">Web3 (UPlanet)</div>
+                        <div style="font-size: 32px; margin-bottom: 8px;">✅</div>
+                        <ul style="text-align: left; list-style: none; padding: 0; font-size: 14px; color: var(--primary-color); font-weight: 600;">
+                            <li>Ownership</li>
+                            <li>Private (uDRIVE)</li>
+                            <li>Chronological</li>
+                            <li>Every like = 1Ẑ</li>
+                            <li>Impossible</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <p style="text-align: center; font-size: 1.2em; padding: 20px; background: var(--info-box-bg); border-radius: 8px; margin-top: 20px;">
+                    <strong>In one sentence:</strong> GAFAM = you are the product. UPlanet = you are the owner.
+                </p>
             </div>
 
             <div class="section">
@@ -711,58 +974,59 @@
                 Keep your SSSS QR code safe - it's your passport to the Internet of Trust.</p>
             </div>
 
-            <div class="section">
-                <h2 class="section-title">🌟 Share the Internet of Trust</h2>
-                <p>You've just joined a <strong>silent revolution</strong>. Now, help your friends take back control of their data!</p>
+            <div class="section" style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.08), rgba(46, 204, 113, 0.04)); border: 2px solid #27ae60;">
+                <h2 class="section-title" style="color: #27ae60; text-align: center;">🌟 Share the Internet of Trust</h2>
+                <p style="text-align: center; font-size: 1.1em; margin-bottom: 30px;">You've just joined a <strong>silent revolution</strong>. Now, help your friends take back control!</p>
                 
-                <div class="setup-steps">
-                    <div class="setup-step">
-                        <h3>💬 "I tried UPlanet, it's amazing!"</h3>
-                        <p><strong>Talk about it around you:</strong></p>
-                        <ul>
-                            <li>"I have my own Internet now"</li>
-                            <li>"My data really belongs to me"</li>
-                            <li>"I earn money by creating content"</li>
-                            <li>"No more surveillance, no more ads"</li>
-                        </ul>
+                <div class="benefit-grid" style="margin-bottom: 30px;">
+                    <div class="benefit-item" style="border-left: 4px solid #27ae60;">
+                        <div class="benefit-icon">💬</div>
+                        <div class="benefit-text">
+                            <strong>Talk about it</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">"I earn money creating content, without surveillance"</span>
+                        </div>
                     </div>
-                    <div class="setup-step">
-                        <h3>🎁 Invite Your Friends</h3>
-                        <p><strong>Every friend who joins UPlanet:</strong></p>
-                        <ul>
-                            <li>Strengthens <strong>your N² network</strong> (friends of friends)</li>
-                            <li>Increases the <strong>value of your content</strong></li>
-                            <li>Creates a <strong>local ecosystem</strong> of trust</li>
-                            <li>Participates in the <strong>decentralization</strong> of the Internet</li>
-                        </ul>
+                    <div class="benefit-item" style="border-left: 4px solid #27ae60;">
+                        <div class="benefit-icon">🎁</div>
+                        <div class="benefit-text">
+                            <strong>Invite your friends</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Every friend strengthens your N² network and increases your revenue</span>
+                        </div>
                     </div>
-                    <div class="setup-step">
-                        <h3>🚀 Become an Ambassador</h3>
-                        <p><strong>The more you share, the more you earn:</strong></p>
-                        <ul>
-                            <li>Larger network = more likes = more ẐEN</li>
-                            <li>Local community = proximity services</li>
-                            <li>Real impact on the future of the Internet</li>
-                            <li>You're part of <strong>history</strong>!</li>
-                        </ul>
+                    <div class="benefit-item" style="border-left: 4px solid #27ae60;">
+                        <div class="benefit-icon">🚀</div>
+                        <div class="benefit-text">
+                            <strong>Become an ambassador</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">More network = more likes = more ẐEN. It's mathematical!</span>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="info-box">
-                    <p><strong>🎯 Your Mission:</strong> Every person you invite to UPlanet is another brick in the Internet of Trust. You're not just sharing a service, you're building the future!</p>
+                <div class="info-box" style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.15), rgba(46, 204, 113, 0.08)); border-left-color: #27ae60; text-align: center;">
+                    <p style="font-size: 1.1em; margin: 0;"><strong>🎯 Your Mission:</strong> Every person you invite to UPlanet is another brick in the Internet of Trust. You're not just sharing a service, <strong>you're building the future</strong>!</p>
                 </div>
                 
-                <div class="setup-step" style="grid-column: 1 / -1; background-color: var(--highlight-bg); border: 2px solid var(--primary-color);">
-                    <h3>📱 Share Now</h3>
-                    <p><strong>Your MULTIPASS is ready to be shared!</strong></p>
-                    <ul>
-                        <li>Show your <strong>SSSS QR code</strong> to your friends</li>
-                        <li>Explain the <strong>PASS codes</strong> (empty, 1111, 0000)</li>
-                        <li>Invite them to <strong>u.copylaradio.com/scan</strong></li>
-                        <li>Create together your <strong>trust network</strong></li>
-                    </ul>
-                    <p style="text-align: center; font-size: 1.2em; margin-top: 20px;">
-                        <strong>🌍 Together, let's take back control of the Internet!</strong>
+                <div style="margin-top: 30px; padding: 30px; background: var(--container-bg); border-radius: 12px; border: 2px solid #27ae60;">
+                    <h3 style="text-align: center; color: #27ae60; margin: 0 0 20px 0;">📱 How to Invite Your Friends</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                        <div style="text-align: center; padding: 15px;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">1️⃣</div>
+                            <strong>Share your resources</strong>
+                            <p style="font-size: 0.9em; opacity: 0.8; margin: 10px 0 0 0;">Show them <a href="http://127.0.0.1:8080/ipns/copylaradio.com/uplanet_com.html" target="_blank" style="color: var(--primary-color);">uplanet_com.html</a></p>
+                        </div>
+                        <div style="text-align: center; padding: 15px;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">2️⃣</div>
+                            <strong>Create a MULTIPASS</strong>
+                            <p style="font-size: 0.9em; opacity: 0.8; margin: 10px 0 0 0;">Invite your friends to <a href="_USPOT_/scan" target="_blank" style="color: var(--primary-color);">create their account</a></p>
+                        </div>
+                        <div style="text-align: center; padding: 15px;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">3️⃣</div>
+                            <strong>Connect on Coracle</strong>
+                            <p style="font-size: 0.9em; opacity: 0.8; margin: 10px 0 0 0;">Together on <a href="https://coracle.copylaradio.com" target="_blank" style="color: var(--primary-color);">Coracle ẐEN</a></p>
+                        </div>
+                    </div>
+                    <p style="text-align: center; font-size: 1.3em; margin: 30px 0 0 0; font-weight: bold; color: #27ae60;">
+                        🌍 Together, let's take back control of the Internet!
                     </p>
                 </div>
             </div>
@@ -771,8 +1035,57 @@
         <div class="language-section" id="es">
             <div class="language-title">Español</div>
             
-            <div class="info-box">
-                <p><strong>🎉 ¡Felicidades!</strong> Tu MULTIPASS UPlanet ya está activo. Acabas de unirte a la Internet de Confianza, una red descentralizada donde <strong>tú eres dueño de tus datos</strong>.</p>
+            <!-- Hero Section Optimizada -->
+            <div class="hero-box">
+                <h2 style="color: var(--primary-color); text-align: center; margin: 0 0 20px 0; font-size: 2em;">
+                    🎉 ¡Bienvenido a la Internet de Confianza!
+                </h2>
+                <p style="text-align: center; font-size: 1.2em; margin-bottom: 30px;">
+                    <strong>Tu MULTIPASS está activo.</strong> Ya no alquilas Internet, eres <strong>copropietario</strong>.
+                </p>
+                
+                <div class="benefit-grid">
+                    <div class="benefit-item">
+                        <div class="benefit-icon">💰</div>
+                        <div class="benefit-text">
+                            <strong>Ganas dinero</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Cada like = 1Ẑ automático en tu cartera</span>
+                        </div>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-icon">🤖</div>
+                        <div class="benefit-text">
+                            <strong>Tu IA personal</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Bot Astro crea tus diarios diarios 24/7</span>
+                        </div>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-icon">🏠</div>
+                        <div class="benefit-text">
+                            <strong>Eres propietario</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">No más alquiler eterno, posees tus datos</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recursos Esenciales -->
+            <div class="info-box" style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.05));">
+                <h3 style="margin: 0 0 15px 0; color: #27ae60;">📚 Tus Recursos Clave</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <a href="http://127.0.0.1:8080/ipfs/QmZbbuh7XTerEb1XLdMDu2MCbFQw3w1RWzda1swxK6nYJ3" target="_blank" class="resource-link">
+                        🖨️ Imprimir mi MULTIPASS (Zine)
+                    </a>
+                    <a href="http://127.0.0.1:8080/ipns/copylaradio.com/uplanet_com.html" target="_blank" class="resource-link">
+                        🌍 Comprender UPlanet
+                    </a>
+                    <a href="http://127.0.0.1:8080/ipns/copylaradio.com/nostr_com.html" target="_blank" class="resource-link">
+                        📡 Descubrir Nostr
+                    </a>
+                    <a href="https://coracle.copylaradio.com" target="_blank" class="resource-link">
+                        💬 Unirse al Foro
+                    </a>
+                </div>
             </div>
 
             <div class="section">
@@ -796,47 +1109,80 @@
             </div>
 
             <div class="section">
-                <h2 class="section-title">🚀 ¿Cómo Empezar?</h2>
-                <p>Tu MULTIPASS ya está <strong>100% funcional</strong>! Así es como usarlo:</p>
+                <h2 class="section-title">🗺️ Tu Recorrido en 4 Pasos</h2>
+                <p style="text-align: center; font-size: 1.1em; margin-bottom: 30px;">¡Tu MULTIPASS ya está <strong>100% funcional</strong>! Sigue esta guía para empezar:</p>
                 
                 <div class="setup-steps">
-                    <div class="setup-step">
-                        <h3>📱 Terminal MULTIPASS</h3>
-                        <p><strong>Acceso instantáneo desde cualquier lugar:</strong></p>
+                    <!-- Paso 1 -->
+                    <div class="setup-step" style="border-left: 4px solid var(--primary-color);">
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                            <span class="step-number">1</span>
+                            <h3 style="margin: 0;">📚 Comprender</h3>
+                        </div>
+                        <p><strong>Lee tus recursos clave:</strong></p>
                         <ul>
-                            <li>Ve a <strong>u.copylaradio.com/scan</strong></li>
-                            <li>Escanea tu <strong>código QR SSSS</strong> (recibido por email)</li>
-                            <li>Introduce tu <strong>código PASS</strong> (o déjalo vacío para acceso rápido)</li>
-                            <li>¡Disfruta de tu <strong>uDRIVE 10GB</strong> y IA personal!</li>
+                            <li>🖨️ <strong>Imprime tu MULTIPASS</strong> (Zine PDF arriba)</li>
+                            <li>🌍 <a href="http://127.0.0.1:8080/ipns/copylaradio.com/uplanet_com.html" target="_blank" style="color: var(--primary-color); font-weight: 600;">Comprender UPlanet</a> (5 min de lectura)</li>
+                            <li>📡 <a href="http://127.0.0.1:8080/ipns/copylaradio.com/nostr_com.html" target="_blank" style="color: var(--primary-color); font-weight: 600;">Descubrir Nostr</a> (protocolo descentralizado)</li>
                         </ul>
                     </div>
-                    <div class="setup-step">
-                        <h3>💬 Red Social N²</h3>
-                        <p><strong>Tu muro, no el de Facebook:</strong></p>
+                    
+                    <!-- Paso 2 -->
+                    <div class="setup-step" style="border-left: 4px solid var(--primary-color);">
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                            <span class="step-number">2</span>
+                            <h3 style="margin: 0;">🔌 Conectar</h3>
+                        </div>
+                        <p><strong>Accede a tu terminal MULTIPASS:</strong></p>
                         <ul>
-                            <li>Publica en <strong>TU muro</strong> (no el de Zuckerberg)</li>
-                            <li><strong>Cero algoritmos</strong>: orden cronológico puro</li>
-                            <li>Los amigos de tus amigos = tu red natural</li>
-                            <li>Cada like = <strong>1 ẐEN automáticamente</strong> en tu cartera</li>
+                            <li>🌐 Ve a <strong><a href="_USPOT_/scan" target="_blank">/SCAN</a></strong></li>
+                            <li>📱 Escanea tu <strong>código QR SSSS</strong> (en tu Zine)</li>
+                            <li>🔑 Introduce tu <strong>código PASS</strong> (vacío = rápido, 1111 = completo)</li>
+                            <li>✅ Disfruta de tu <strong>uDRIVE 10GB</strong> + IA personal</li>
                         </ul>
                     </div>
-                    <div class="setup-step">
-                        <h3>🏛️ Convertirse en Co-Constructor</h3>
-                        <p><strong>Pasa de inquilino a propietario:</strong></p>
+                    
+                    <!-- Paso 3 -->
+                    <div class="setup-step" style="border-left: 4px solid var(--primary-color);">
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                            <span class="step-number">3</span>
+                            <h3 style="margin: 0;">💬 Participar</h3>
+                        </div>
+                        <p><strong>Únete a la red social N²:</strong></p>
                         <ul>
-                            <li>Invierte <strong>50€/año</strong> para convertirte en miembro</li>
-                            <li>No más "alquiler" para tus servicios básicos</li>
-                            <li>Derecho a voto en las decisiones cooperativas</li>
-                            <li>Parte de propiedad de los <strong>bienes reales</strong> (servidores, bosques...)</li>
+                            <li>🦊 Instala la extensión <strong>NOSTR Connect</strong> (Firefox recomendado)</li>
+                            <li>🔐 Copia tu clave <strong>NSec</strong> (en tu Zine)</li>
+                            <li>💬 Únete a <a href="https://coracle.copylaradio.com" target="_blank" style="color: var(--primary-color); font-weight: 600;">Coracle ẐEN</a></li>
+                            <li>💰 Cada like = <strong>1 ẐEN automáticamente</strong> en tu cartera</li>
                         </ul>
+                    </div>
+                    
+                    <!-- Paso 4 -->
+                    <div class="setup-step" style="border-left: 4px solid #27ae60; background: linear-gradient(135deg, rgba(46, 204, 113, 0.08), rgba(46, 204, 113, 0.04));">
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                            <span class="step-number" style="background: #27ae60;">4</span>
+                            <h3 style="margin: 0; color: #27ae60;">🏛️ Convertirse en Co-Propietario</h3>
+                        </div>
+                        <p><strong>Pasa de inquilino a miembro:</strong></p>
+                        <ul>
+                            <li>💰 Membresía <strong>50€/año</strong> (Oferta de Bienvenida)</li>
+                            <li>🚫 No más alquiler semanal (1 Ẑ/semana ahorrado)</li>
+                            <li>🗳️ <strong>Derecho a voto</strong> en decisiones cooperativas</li>
+                            <li>🌳 Parte de propiedad de <strong>bienes reales</strong> (servidores, bosques...)</li>
+                        </ul>
+                        <div style="text-align: center; margin-top: 15px;">
+                            <a href="https://opencollective.com/uplanet-zero" target="_blank" class="cta-primary" style="display: inline-block;">
+                                Unirse a ẐEN[0] Ahora →
+                            </a>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="warning-box">
+                <div class="warning-box" style="margin-top: 30px;">
                     <p><strong>🔑 Códigos PASS de tu MULTIPASS:</strong></p>
-                    <ul>
+                    <ul style="margin: 10px 0 0 20px;">
                         <li><strong>Vacío</strong> → Acceso rápido (seguro para terminales públicos)</li>
-                        <li><strong>1111</strong> → Acceso completo (interfaz Astro Base completa)</li>
+                        <li><strong>1111</strong> → Acceso completo (interfaz Astro Base + Messenger)</li>
                         <li><strong>0000</strong> → Regeneración de emergencia (si se pierde/roba)</li>
                     </ul>
                 </div>
@@ -862,41 +1208,45 @@
                 </div>
             </div>
 
-            <div class="section">
-                <h2 class="section-title">🆚 UPlanet vs GAFAM</h2>
-                <table class="offer-table">
-                    <tr>
-                        <th>Criterio</th>
-                        <th>GAFAM</th>
-                        <th>UPlanet</th>
-                    </tr>
-                    <tr>
-                        <td><strong>Propiedad</strong></td>
-                        <td>Alquiler infinito</td>
-                        <td><strong>Tú eres el propietario</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Tus datos</strong></td>
-                        <td>Escaneados para publicidad</td>
-                        <td><strong>100% privados</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Gobernanza</strong></td>
-                        <td>0 votos</td>
-                        <td><strong>1 persona = 1 voto</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Contabilidad</strong></td>
-                        <td>Opaca</td>
-                        <td><strong>Blockchain pública</strong></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Ingresos</strong></td>
-                        <td>0€ para ti</td>
-                        <td><strong>Ganas ẐEN</strong></td>
-                    </tr>
-                </table>
-                <p><strong>En una frase:</strong> GAFAM = tú eres el producto. UPlanet = tú eres el propietario.</p>
+            <div class="section" style="background: linear-gradient(135deg, rgba(52, 152, 219, 0.05), rgba(52, 152, 219, 0.02)); border: 2px solid var(--primary-color);">
+                <h2 class="section-title" style="text-align: center;">🆚 Web2 vs Web3: Resumen en 10 Segundos</h2>
+                
+                <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; max-width: 700px; margin: 30px auto; padding: 20px; background: var(--container-bg); border-radius: 12px;">
+                    <!-- Web2 GAFAM -->
+                    <div style="text-align: right;">
+                        <div style="font-size: 14px; color: var(--text-color); opacity: 0.7; margin-bottom: 8px;">Web2 (GAFAM)</div>
+                        <div style="font-size: 32px; margin-bottom: 8px;">❌</div>
+                        <ul style="text-align: right; list-style: none; padding: 0; font-size: 14px; color: var(--text-color);">
+                            <li>Alquiler</li>
+                            <li>Vigilancia</li>
+                            <li>Algoritmo</li>
+                            <li>0 ingresos</li>
+                            <li>Censura</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- VS -->
+                    <div style="text-align: center; font-size: 24px; font-weight: 700; color: var(--primary-color);">
+                        VS
+                    </div>
+                    
+                    <!-- Web3 UPlanet -->
+                    <div style="text-align: left;">
+                        <div style="font-size: 14px; color: var(--text-color); opacity: 0.7; margin-bottom: 8px;">Web3 (UPlanet)</div>
+                        <div style="font-size: 32px; margin-bottom: 8px;">✅</div>
+                        <ul style="text-align: left; list-style: none; padding: 0; font-size: 14px; color: var(--primary-color); font-weight: 600;">
+                            <li>Propiedad</li>
+                            <li>Privado (uDRIVE)</li>
+                            <li>Cronológico</li>
+                            <li>Cada like = 1Ẑ</li>
+                            <li>Imposible</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <p style="text-align: center; font-size: 1.2em; padding: 20px; background: var(--info-box-bg); border-radius: 8px; margin-top: 20px;">
+                    <strong>En una frase:</strong> GAFAM = tú eres el producto. UPlanet = tú eres el propietario.
+                </p>
             </div>
 
             <div class="section">
@@ -960,58 +1310,59 @@
                 Guarda tu código QR SSSS con cuidado - es tu pasaporte para la Internet de Confianza.</p>
             </div>
 
-            <div class="section">
-                <h2 class="section-title">🌟 Comparte la Internet de Confianza</h2>
-                <p>Acabas de unirte a una <strong>revolución silenciosa</strong>. ¡Ahora ayuda a tus amigos a recuperar el control de sus datos!</p>
+            <div class="section" style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.08), rgba(46, 204, 113, 0.04)); border: 2px solid #27ae60;">
+                <h2 class="section-title" style="color: #27ae60; text-align: center;">🌟 Comparte la Internet de Confianza</h2>
+                <p style="text-align: center; font-size: 1.1em; margin-bottom: 30px;">Acabas de unirte a una <strong>revolución silenciosa</strong>. ¡Ahora ayuda a tus amigos a recuperar el control!</p>
                 
-                <div class="setup-steps">
-                    <div class="setup-step">
-                        <h3>💬 "Probé UPlanet, ¡es increíble!"</h3>
-                        <p><strong>Habla de ello a tu alrededor:</strong></p>
-                        <ul>
-                            <li>"Ahora tengo mi propia Internet"</li>
-                            <li>"Mis datos realmente me pertenecen"</li>
-                            <li>"Gano dinero creando contenido"</li>
-                            <li>"No más vigilancia, no más publicidad"</li>
-                        </ul>
+                <div class="benefit-grid" style="margin-bottom: 30px;">
+                    <div class="benefit-item" style="border-left: 4px solid #27ae60;">
+                        <div class="benefit-icon">💬</div>
+                        <div class="benefit-text">
+                            <strong>Habla de ello</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">"Gano dinero creando contenido, sin vigilancia"</span>
+                        </div>
                     </div>
-                    <div class="setup-step">
-                        <h3>🎁 Invita a tus Amigos</h3>
-                        <p><strong>Cada amigo que se une a UPlanet:</strong></p>
-                        <ul>
-                            <li>Refuerza <strong>tu red N²</strong> (amigos de amigos)</li>
-                            <li>Aumenta el <strong>valor de tu contenido</strong></li>
-                            <li>Crea un <strong>ecosistema local</strong> de confianza</li>
-                            <li>Participa en la <strong>descentralización</strong> de Internet</li>
-                        </ul>
+                    <div class="benefit-item" style="border-left: 4px solid #27ae60;">
+                        <div class="benefit-icon">🎁</div>
+                        <div class="benefit-text">
+                            <strong>Invita a tus amigos</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Cada amigo refuerza tu red N² y aumenta tus ingresos</span>
+                        </div>
                     </div>
-                    <div class="setup-step">
-                        <h3>🚀 Conviértete en Embajador</h3>
-                        <p><strong>Cuanto más compartas, más ganas:</strong></p>
-                        <ul>
-                            <li>Red más amplia = más likes = más ẐEN</li>
-                            <li>Comunidad local = servicios de proximidad</li>
-                            <li>Impacto real en el futuro de Internet</li>
-                            <li>¡Eres parte de la <strong>historia</strong>!</li>
-                        </ul>
+                    <div class="benefit-item" style="border-left: 4px solid #27ae60;">
+                        <div class="benefit-icon">🚀</div>
+                        <div class="benefit-text">
+                            <strong>Conviértete en embajador</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Más red = más likes = más ẐEN. ¡Es matemático!</span>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="info-box">
-                    <p><strong>🎯 Tu Misión:</strong> Cada persona que invites a UPlanet es otra piedra en la Internet de Confianza. No solo compartes un servicio, ¡construyes el futuro!</p>
+                <div class="info-box" style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.15), rgba(46, 204, 113, 0.08)); border-left-color: #27ae60; text-align: center;">
+                    <p style="font-size: 1.1em; margin: 0;"><strong>🎯 Tu Misión:</strong> Cada persona que invites a UPlanet es otra piedra en la Internet de Confianza. No solo compartes un servicio, <strong>¡construyes el futuro</strong>!</p>
                 </div>
                 
-                <div class="setup-step" style="grid-column: 1 / -1; background-color: var(--highlight-bg); border: 2px solid var(--primary-color);">
-                    <h3>📱 Comparte Ahora</h3>
-                    <p><strong>¡Tu MULTIPASS está listo para ser compartido!</strong></p>
-                    <ul>
-                        <li>Muestra tu <strong>código QR SSSS</strong> a tus amigos</li>
-                        <li>Explícales los <strong>códigos PASS</strong> (vacío, 1111, 0000)</li>
-                        <li>Invítalos a <strong>u.copylaradio.com/scan</strong></li>
-                        <li>Crea juntos tu <strong>red de confianza</strong></li>
-                    </ul>
-                    <p style="text-align: center; font-size: 1.2em; margin-top: 20px;">
-                        <strong>🌍 ¡Juntos, recuperemos el control de Internet!</strong>
+                <div style="margin-top: 30px; padding: 30px; background: var(--container-bg); border-radius: 12px; border: 2px solid #27ae60;">
+                    <h3 style="text-align: center; color: #27ae60; margin: 0 0 20px 0;">📱 Cómo Invitar a Tus Amigos</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                        <div style="text-align: center; padding: 15px;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">1️⃣</div>
+                            <strong>Comparte tus recursos</strong>
+                            <p style="font-size: 0.9em; opacity: 0.8; margin: 10px 0 0 0;">Muéstrales <a href="http://127.0.0.1:8080/ipns/copylaradio.com/uplanet_com.html" target="_blank" style="color: var(--primary-color);">uplanet_com.html</a></p>
+                        </div>
+                        <div style="text-align: center; padding: 15px;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">2️⃣</div>
+                            <strong>Crea su MULTIPASS</strong>
+                            <p style="font-size: 0.9em; opacity: 0.8; margin: 10px 0 0 0;">Ayúdales en <a href="_SPOT_/g1" target="_blank" style="color: var(--primary-color);">abrir un acounto</a></p>
+                        </div>
+                        <div style="text-align: center; padding: 15px;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">3️⃣</div>
+                            <strong>Conéctense en Coracle</strong>
+                            <p style="font-size: 0.9em; opacity: 0.8; margin: 10px 0 0 0;">Juntos en <a href="https://coracle.copylaradio.com" target="_blank" style="color: var(--primary-color);">Coracle ẐEN</a></p>
+                        </div>
+                    </div>
+                    <p style="text-align: center; font-size: 1.3em; margin: 30px 0 0 0; font-weight: bold; color: #27ae60;">
+                        🌍 ¡Juntos, recuperemos el control de Internet!
                     </p>
                 </div>
             </div>
