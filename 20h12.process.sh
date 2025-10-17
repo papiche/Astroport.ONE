@@ -30,7 +30,7 @@ fi
 
 . "${MY_PATH}/tools/my.sh"
 start=`date +%s`
-echo "20H12 (♥‿‿♥) $(hostname -f) $(date)"
+echo "20H12 (♥‿‿♥) 🌐 /ipns/$IPFSNODEID 🤓 $CAPTAINEMAIL $(hostname -f) $(date)"
 # espeak "Ding" > /dev/null 2>&1
 
 echo "PATH=$PATH"
