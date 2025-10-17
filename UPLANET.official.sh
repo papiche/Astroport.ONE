@@ -77,7 +77,7 @@ show_help() {
 # Fonction pour vérifier le solde d'un portefeuille avec gestion du pending
 check_balance() {
     local wallet_pubkey="$1"
-    local max_wait="${BLOCKCHAIN_TIMEOUT:-1200}"  # 20 minutes max par défaut
+    local max_wait="${BLOCKCHAIN_TIMEOUT:-2400}"  # 40 minutes max par défaut
     local wait_time=0
     local interval="${VERIFICATION_INTERVAL:-60}"  # 60 secondes par défaut
     
@@ -139,7 +139,7 @@ check_balance() {
         wait_time=$((wait_time + interval))
     done
     
-    echo -e "${RED}❌ Timeout: La transaction n'a pas été confirmée dans les 20 minutes${NC}"
+    echo -e "${RED}❌ Timeout: La transaction n'a pas été confirmée dans les 40 minutes${NC}"
     
     # Envoyer une alerte de timeout
     send_alert "BLOCKCHAIN_TIMEOUT" "$USER_EMAIL" "$TRANSACTION_TYPE" "$TRANSACTION_AMOUNT" "$CURRENT_STEP" "Transaction timeout after ${max_wait} seconds. Wallet: ${wallet_pubkey:0:8}..."
