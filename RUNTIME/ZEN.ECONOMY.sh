@@ -18,6 +18,26 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 start=`date +%s`
 
 #######################################################################
+# Setup logging directory and file
+#######################################################################
+LOG_DIR="$HOME/.zen/tmp/coucou"
+LOG_FILE="$LOG_DIR/zen_economy.txt"
+mkdir -p "$LOG_DIR"
+
+# Function to log both to console and file
+log_output() {
+    echo "$@" | tee -a "$LOG_FILE"
+}
+
+# Start logging session with timestamp and separator
+{
+    echo ""
+    echo "========================================================================"
+    echo " ZEN ECONOMY RUN - $(date '+%Y-%m-%d %H:%M:%S %Z')"
+    echo "========================================================================"
+} >> "$LOG_FILE"
+
+#######################################################################
 # Weekly payment check - ensure payment is made only once per week
 # Check if payment was already done this week using marker file
 #######################################################################
@@ -32,13 +52,14 @@ WEEK_KEY="${CURRENT_YEAR}-W${CURRENT_WEEK}"
 if [[ -f "$PAYMENT_MARKER" ]]; then
     LAST_PAYMENT_WEEK=$(cat "$PAYMENT_MARKER")
     if [[ "$LAST_PAYMENT_WEEK" == "$WEEK_KEY" ]]; then
-        echo "ZEN ECONOMY: Weekly payment already completed this week ($WEEK_KEY)"
-        echo "Skipping payment process..."
+        log_output "ZEN ECONOMY: Weekly payment already completed this week ($WEEK_KEY)"
+        log_output "Skipping payment process..."
+        log_output "========================================================================"
         exit 0
     fi
 fi
 
-echo "ZEN ECONOMY: Starting weekly payment process for week $WEEK_KEY"
+log_output "ZEN ECONOMY: Starting weekly payment process for week $WEEK_KEY"
 
 #######################################################################
 # Vérification des soldes des différents acteurs du système
@@ -46,23 +67,23 @@ echo "ZEN ECONOMY: Starting weekly payment process for week $WEEK_KEY"
 # Node : Le serveur physique (PC Gamer ou RPi5)
 # Captain : Le gestionnaire du Node
 #######################################################################
-echo "UPlanet G1PUB : ${UPLANETG1PUB}"
+log_output "UPlanet G1PUB : ${UPLANETG1PUB}"
 UCOIN=$(${MY_PATH}/../tools/G1check.sh ${UPLANETG1PUB} | tail -n 1)
 UZEN=$(echo "($UCOIN - 1) * 10" | bc | cut -d '.' -f 1)
-echo "$UZEN Ẑen"
+log_output "$UZEN Ẑen"
 
 # Vérification du Node (Astroport)
 NODEG1PUB=$($MY_PATH/../tools/ipfs_to_g1.py ${IPFSNODEID})
-echo "NODE G1PUB : ${NODEG1PUB}"
+log_output "NODE G1PUB : ${NODEG1PUB}"
 NODECOIN=$(${MY_PATH}/../tools/G1check.sh ${NODEG1PUB} | tail -n 1)
 NODEZEN=$(echo "($NODECOIN - 1) * 10" | bc | cut -d '.' -f 1)
-echo "$NODEZEN Ẑen"
+log_output "$NODEZEN Ẑen"
 
 # Vérification du Captain (gestionnaire) - MULTIPASS (NOSTR)
-echo "CAPTAIN G1PUB : ${CAPTAING1PUB}"
+log_output "CAPTAIN G1PUB : ${CAPTAING1PUB}"
 CAPTAINCOIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAING1PUB} | tail -n 1)
 CAPTAINZEN=$(echo "($CAPTAINCOIN - 1) * 10" | bc | cut -d '.' -f 1)
-echo "Captain MULTIPASS balance: $CAPTAINZEN Ẑen"
+log_output "Captain MULTIPASS balance: $CAPTAINZEN Ẑen"
 
 # Vérification de la ZEN Card du Captain (PLAYERS)
 if [[ -n "$CAPTAINEMAIL" ]]; then
@@ -72,18 +93,18 @@ if [[ -n "$CAPTAINEMAIL" ]]; then
         if [[ -n "$CAPTAIN_ZENCARD_PUB" ]]; then
             CAPTAIN_ZENCARD_COIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAIN_ZENCARD_PUB} | tail -n 1)
             CAPTAIN_ZENCARD_ZEN=$(echo "($CAPTAIN_ZENCARD_COIN - 1) * 10" | bc | cut -d '.' -f 1)
-            echo "Captain ZEN Card balance: $CAPTAIN_ZENCARD_ZEN Ẑen"
+            log_output "Captain ZEN Card balance: $CAPTAIN_ZENCARD_ZEN Ẑen"
         else
             CAPTAIN_ZENCARD_ZEN=0
-            echo "Captain ZEN Card not found or invalid"
+            log_output "Captain ZEN Card not found or invalid"
         fi
     else
         CAPTAIN_ZENCARD_ZEN=0
-        echo "Captain ZEN Card not found"
+        log_output "Captain ZEN Card not found"
     fi
 else
     CAPTAIN_ZENCARD_ZEN=0
-    echo "Captain email not configured"
+    log_output "Captain email not configured"
 fi
 
 #######################################################################
@@ -93,7 +114,7 @@ fi
 #######################################################################
 NOSTRS=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 PLAYERS=($(ls -t ~/.zen/game/players/ 2>/dev/null | grep "@" ))
-echo "NODE hosts MULTIPASS : ${#NOSTRS[@]} / ZENCARD : ${#PLAYERS[@]}"
+log_output "NODE hosts MULTIPASS : ${#NOSTRS[@]} / ZENCARD : ${#PLAYERS[@]}"
 
 #######################################################################
 # Configuration des paramètres économiques
@@ -107,7 +128,7 @@ echo "NODE hosts MULTIPASS : ${#NOSTRS[@]} / ZENCARD : ${#PLAYERS[@]}"
 
 # PAF hebdomadaire
 WEEKLYPAF=$PAF
-echo "ZEN ECONOMY : PAF=$WEEKLYPAF ZEN/week :: NCARD=$NCARD // ZCARD=$ZCARD"
+log_output "ZEN ECONOMY : PAF=$WEEKLYPAF ZEN/week :: NCARD=$NCARD // ZCARD=$ZCARD"
 WEEKLYG1=$(makecoord $(echo "$WEEKLYPAF / 10" | bc -l))
 
 ##################################################################################
@@ -124,7 +145,7 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
             ## CAPTAIN MULTIPASS CAN PAY NODE : ECONOMY + (Correct: frais de fonctionnement)
             CAPTYOUSER=$($MY_PATH/../tools/clyuseryomail.sh ${CAPTAINEMAIL})
             ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$WEEKLYG1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:$CAPTYOUSER:WEEKLYPAF" 2>/dev/null
-            echo "✅ CAPTAIN MULTIPASS paid weekly PAF: $WEEKLYPAF ZEN ($WEEKLYG1 G1) to NODE"
+            log_output "✅ CAPTAIN MULTIPASS paid weekly PAF: $WEEKLYPAF ZEN ($WEEKLYG1 G1) to NODE"
         else
             ## UPLANET.CASH PAYS NODE: ECONOMY - (Correct: trésorerie coopérative)
             # Use CASH wallet (treasury) instead of ZEN Card (shares) for operational expenses
@@ -135,15 +156,15 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                 
                 if [[ $(echo "$CASH_ZEN > $WEEKLYPAF" | bc -l) -eq 1 ]]; then
                     ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.CASH.dunikey" "$WEEKLYG1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:TREASURY:WEEKLYPAF" 2>/dev/null
-                    echo "✅ UPLANET.CASH (Treasury) paid weekly PAF: $WEEKLYPAF ZEN ($WEEKLYG1 G1) to NODE"
+                    log_output "✅ UPLANET.CASH (Treasury) paid weekly PAF: $WEEKLYPAF ZEN ($WEEKLYG1 G1) to NODE"
                 else
                     ## ECONOMIC FAILURE ?!
-                    echo "⚠️  UPLANET MISSING CASH to pay weekly PAF: $WEEKLYPAF ZEN ($WEEKLYG1 G1) to NODE (Treasury insufficient)"
+                    log_output "⚠️  UPLANET MISSING CASH to pay weekly PAF: $WEEKLYPAF ZEN ($WEEKLYG1 G1) to NODE (Treasury insufficient)"
                 fi
             fi
         fi
     else
-        echo "NODE $NODECOIN G1 is NOT INITIALIZED !! UPlanet send 1 G1 to NODE"
+        log_output "NODE $NODECOIN G1 is NOT INITIALIZED !! UPlanet send 1 G1 to NODE"
         ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.G1.dunikey" "1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:$IPFSNODEID:NODEINIT" 2>/dev/null
     fi
 fi
@@ -160,23 +181,23 @@ check_machine_capital_contribution() {
     
     # Check if capital contribution was already made
     if [[ -f "$contribution_marker" ]]; then
-        echo "ZEN ECONOMY: Machine capital contribution already recorded"
+        log_output "ZEN ECONOMY: Machine capital contribution already recorded"
         return 0
     fi
     
     # Check if we have a captain with ZEN Card and sufficient balance
     if [[ -n "$CAPTAINEMAIL" && "$CAPTAIN_ZENCARD_ZEN" -gt 0 ]]; then
-        echo "ZEN ECONOMY: Checking machine capital contribution..."
+        log_output "ZEN ECONOMY: Checking machine capital contribution..."
         
         # Get machine value from environment or default (example: 500€ = 500 Ẑen)
         MACHINE_VALUE_ZEN="${MACHINE_VALUE_ZEN:-500}"  # Default 500 Ẑen for a basic setup
         MACHINE_VALUE_G1=$(makecoord $(echo "$MACHINE_VALUE_ZEN / 10" | bc -l))
         
         if [[ $(echo "$CAPTAIN_ZENCARD_ZEN >= $MACHINE_VALUE_ZEN" | bc -l) -eq 1 ]]; then
-            echo "ZEN ECONOMY: Processing machine capital contribution..."
-            echo "  Machine value: $MACHINE_VALUE_ZEN Ẑen ($MACHINE_VALUE_G1 G1)"
-            echo "  From: CAPTAIN ZEN Card (parts sociales)"
-            echo "  To: NODE (apport au capital)"
+            log_output "ZEN ECONOMY: Processing machine capital contribution..."
+            log_output "  Machine value: $MACHINE_VALUE_ZEN Ẑen ($MACHINE_VALUE_G1 G1)"
+            log_output "  From: CAPTAIN ZEN Card (parts sociales)"
+            log_output "  To: NODE (apport au capital)"
             
             # Transfer from CAPTAIN ZEN Card to NODE as capital contribution
             CAPTYOUSER=$($MY_PATH/../tools/clyuseryomail.sh ${CAPTAINEMAIL})
@@ -188,19 +209,19 @@ check_machine_capital_contribution() {
                 2>/dev/null
             
             if [[ $? -eq 0 ]]; then
-                echo "✅ Machine capital contribution completed: $MACHINE_VALUE_ZEN Ẑen"
+                log_output "✅ Machine capital contribution completed: $MACHINE_VALUE_ZEN Ẑen"
                 echo "$(date -u +%Y%m%d%H%M%S) MACHINE_CAPITAL_CONTRIBUTION $MACHINE_VALUE_ZEN ZEN $CAPTYOUSER" > "$contribution_marker"
                 chmod 600 "$contribution_marker"
             else
-                echo "❌ Machine capital contribution failed"
+                log_output "❌ Machine capital contribution failed"
             fi
         else
-            echo "ZEN ECONOMY: Insufficient ZEN Card balance for machine capital contribution."
-            echo "  Required: $MACHINE_VALUE_ZEN Ẑen"
-            echo "  Available: $CAPTAIN_ZENCARD_ZEN Ẑen"
+            log_output "ZEN ECONOMY: Insufficient ZEN Card balance for machine capital contribution."
+            log_output "  Required: $MACHINE_VALUE_ZEN Ẑen"
+            log_output "  Available: $CAPTAIN_ZENCARD_ZEN Ẑen"
         fi
     else
-        echo "ZEN ECONOMY: No captain ZEN Card available for machine capital contribution"
+        log_output "ZEN ECONOMY: No captain ZEN Card available for machine capital contribution"
     fi
 }
 
@@ -213,11 +234,11 @@ check_machine_capital_contribution
 # This is the captain's earning for managing the node
 #######################################################################
 process_captain_remuneration() {
-    echo "ZEN ECONOMY: Processing captain remuneration (2x PAF)..."
+    log_output "ZEN ECONOMY: Processing captain remuneration (2x PAF)..."
     
     # Check if captain is configured
     if [[ -z "$CAPTAINEMAIL" ]]; then
-        echo "ZEN ECONOMY: No captain configured, skipping remuneration"
+        log_output "ZEN ECONOMY: No captain configured, skipping remuneration"
         return 0
     fi
     
@@ -232,7 +253,7 @@ process_captain_remuneration() {
     
     # Calculate captain's remuneration (2x PAF)
     CAPTAIN_SHARE_TARGET=$(echo "$PAF * 2" | bc -l)
-    echo "ZEN ECONOMY: Captain remuneration target: $CAPTAIN_SHARE_TARGET Ẑen (2x PAF)"
+    log_output "ZEN ECONOMY: Captain remuneration target: $CAPTAIN_SHARE_TARGET Ẑen (2x PAF)"
     
     # Check if captain MULTIPASS has sufficient balance
     if [[ $(echo "$CAPTAINZEN > $CAPTAIN_SHARE_TARGET" | bc -l) -eq 1 ]]; then
@@ -247,16 +268,16 @@ process_captain_remuneration() {
             2>/dev/null
         
         if [[ $? -eq 0 ]]; then
-            echo "✅ Captain remuneration completed: $CAPTAIN_SHARE_TARGET Ẑen ($CAPTAIN_SHARE_G1 G1)"
-            echo "   From: CAPTAIN MULTIPASS (operational funds)"
-            echo "   To: CAPTAIN dedicated wallet (personal earnings)"
+            log_output "✅ Captain remuneration completed: $CAPTAIN_SHARE_TARGET Ẑen ($CAPTAIN_SHARE_G1 G1)"
+            log_output "   From: CAPTAIN MULTIPASS (operational funds)"
+            log_output "   To: CAPTAIN dedicated wallet (personal earnings)"
         else
-            echo "❌ Captain remuneration failed"
+            log_output "❌ Captain remuneration failed"
         fi
     else
-        echo "ZEN ECONOMY: Insufficient CAPTAIN MULTIPASS balance for remuneration"
-        echo "  Required: $CAPTAIN_SHARE_TARGET Ẑen"
-        echo "  Available: $CAPTAINZEN Ẑen"
+        log_output "ZEN ECONOMY: Insufficient CAPTAIN MULTIPASS balance for remuneration"
+        log_output "  Required: $CAPTAIN_SHARE_TARGET Ẑen"
+        log_output "  Available: $CAPTAINZEN Ẑen"
     fi
 }
 
@@ -278,7 +299,7 @@ fourweeks_paf_burn_and_convert() {
     
     # Check if burn was already done for this 4-week period
     if [[ -f "$burn_marker" ]]; then
-        echo "ZEN ECONOMY: 4-week PAF burn already completed for period $period_key"
+        log_output "ZEN ECONOMY: 4-week PAF burn already completed for period $period_key"
         return 0
     fi
     
@@ -290,11 +311,11 @@ fourweeks_paf_burn_and_convert() {
         
         # Check if NODE has enough for 4-week burn
         if [[ $(echo "$NODEZEN >= $FOURWEEKS_PAF" | bc -l) -eq 1 ]]; then
-            echo "ZEN ECONOMY: Processing 4-week PAF burn..."
-            echo "  Period: $period_key (4-week cycle)"
-            echo "  4-week PAF: $FOURWEEKS_PAF Ẑen ($FOURWEEKS_PAF_G1 G1)"
-            echo "  From: NODE (operational costs)"
-            echo "  To: UPLANETNAME.G1 (burn & convert)"
+            log_output "ZEN ECONOMY: Processing 4-week PAF burn..."
+            log_output "  Period: $period_key (4-week cycle)"
+            log_output "  4-week PAF: $FOURWEEKS_PAF Ẑen ($FOURWEEKS_PAF_G1 G1)"
+            log_output "  From: NODE (operational costs)"
+            log_output "  To: UPLANETNAME.G1 (burn & convert)"
             
             # Burn: NODE → UPLANETNAME.G1
             if [[ -f "$HOME/.zen/game/secret.NODE.dunikey" ]]; then
@@ -306,7 +327,7 @@ fourweeks_paf_burn_and_convert() {
                     2>/dev/null
                 
                 if [[ $? -eq 0 ]]; then
-                    echo "✅ 4-week PAF burn completed: $FOURWEEKS_PAF Ẑen"
+                    log_output "✅ 4-week PAF burn completed: $FOURWEEKS_PAF Ẑen"
                     
                     # Request OpenCollective conversion (1Ẑ = 1€)
                     request_opencollective_conversion "$FOURWEEKS_PAF" "$period_key"
@@ -315,18 +336,18 @@ fourweeks_paf_burn_and_convert() {
                     echo "$(date -u +%Y%m%d%H%M%S) FOURWEEKS_PAF_BURN $FOURWEEKS_PAF ZEN NODE $period_key" > "$burn_marker"
                     chmod 600 "$burn_marker"
                 else
-                    echo "❌ 4-week PAF burn failed"
+                    log_output "❌ 4-week PAF burn failed"
                 fi
             else
-                echo "ZEN ECONOMY: NODE dunikey not found for burn operation"
+                log_output "ZEN ECONOMY: NODE dunikey not found for burn operation"
             fi
         else
-            echo "ZEN ECONOMY: Insufficient NODE balance for 4-week PAF burn"
-            echo "  Required: $FOURWEEKS_PAF Ẑen"
-            echo "  Available: $NODEZEN Ẑen"
+            log_output "ZEN ECONOMY: Insufficient NODE balance for 4-week PAF burn"
+            log_output "  Required: $FOURWEEKS_PAF Ẑen"
+            log_output "  Available: $NODEZEN Ẑen"
         fi
     else
-        echo "ZEN ECONOMY: NODE not ready for PAF burn (balance: $NODEZEN Ẑen)"
+        log_output "ZEN ECONOMY: NODE not ready for PAF burn (balance: $NODEZEN Ẑen)"
     fi
 }
 
@@ -338,9 +359,9 @@ request_opencollective_conversion() {
     local euro_amount=$(echo "scale=2; $zen_amount * 1" | bc -l)  # 1Ẑ = 1€
     local euro_cents=$(echo "$euro_amount * 100" | bc | cut -d. -f1)
     
-    echo "ZEN ECONOMY: Requesting OpenCollective conversion..."
-    echo "  Amount: $zen_amount Ẑen → $euro_amount €"
-    echo "  Period: $period"
+    log_output "ZEN ECONOMY: Requesting OpenCollective conversion..."
+    log_output "  Amount: $zen_amount Ẑen → $euro_amount €"
+    log_output "  Period: $period"
     
     # Check if OpenCollective Personal Token is configured (GraphQL API)
     if [[ -n "$OPENCOLLECTIVE_PERSONAL_TOKEN" ]]; then
@@ -369,25 +390,25 @@ request_opencollective_conversion() {
             # Check for GraphQL errors
             local errors=$(echo "$response" | jq -r '.errors // empty' 2>/dev/null)
             if [[ -n "$errors" && "$errors" != "null" ]]; then
-                echo "⚠️  OpenCollective GraphQL API errors:"
-                echo "$errors" | jq -r '.[] | "  - \(.message)"' 2>/dev/null || echo "$errors"
+                log_output "⚠️  OpenCollective GraphQL API errors:"
+                echo "$errors" | jq -r '.[] | "  - \(.message)"' 2>/dev/null | tee -a "$LOG_FILE" || log_output "$errors"
             else
                 local expense_id=$(echo "$response" | jq -r '.data.createExpense.id // empty' 2>/dev/null)
                 if [[ -n "$expense_id" ]]; then
-                    echo "✅ OpenCollective expense created: $euro_amount €"
-                    echo "   Expense ID: $expense_id"
-                    echo "   Reference: BURN:PAF:$period:${zen_amount}ZEN"
+                    log_output "✅ OpenCollective expense created: $euro_amount €"
+                    log_output "   Expense ID: $expense_id"
+                    log_output "   Reference: BURN:PAF:$period:${zen_amount}ZEN"
                 else
-                    echo "⚠️  Unexpected response format:"
-                    echo "$response" | head -c 200
+                    log_output "⚠️  Unexpected response format:"
+                    echo "$response" | head -c 200 | tee -a "$LOG_FILE"
                 fi
             fi
         else
-            echo "⚠️  OpenCollective GraphQL API request failed"
+            log_output "⚠️  OpenCollective GraphQL API request failed"
         fi
     elif [[ -n "$OPENCOLLECTIVE_API_KEY" ]]; then
         # Fallback to REST API (deprecated but still supported)
-        echo "⚠️  Using deprecated REST API (configure OPENCOLLECTIVE_PERSONAL_TOKEN for GraphQL)"
+        log_output "⚠️  Using deprecated REST API (configure OPENCOLLECTIVE_PERSONAL_TOKEN for GraphQL)"
         
         local response=$(curl -s -X POST "https://api.opencollective.com/v2/expenses" \
             -H "Authorization: Bearer $OPENCOLLECTIVE_API_KEY" \
@@ -403,15 +424,15 @@ request_opencollective_conversion() {
             }" 2>/dev/null)
         
         if [[ $? -eq 0 && -n "$response" ]]; then
-            echo "✅ OpenCollective REST expense created: $euro_amount €"
-            echo "   Response: $response" | head -c 100
+            log_output "✅ OpenCollective REST expense created: $euro_amount €"
+            echo "   Response: $response" | head -c 100 | tee -a "$LOG_FILE"
         else
-            echo "⚠️  OpenCollective REST API request failed"
+            log_output "⚠️  OpenCollective REST API request failed"
         fi
     else
-        echo "⚠️  No OpenCollective credentials configured"
-        echo "   Configure OPENCOLLECTIVE_PERSONAL_TOKEN (GraphQL) or OPENCOLLECTIVE_API_KEY (REST)"
-        echo "   Manual conversion needed: $zen_amount Ẑen → $euro_amount €"
+        log_output "⚠️  No OpenCollective credentials configured"
+        log_output "   Configure OPENCOLLECTIVE_PERSONAL_TOKEN (GraphQL) or OPENCOLLECTIVE_API_KEY (REST)"
+        log_output "   Manual conversion needed: $zen_amount Ẑen → $euro_amount €"
         
         # Log for manual processing
         echo "$(date -u +%Y%m%d%H%M%S) MANUAL_CONVERSION_NEEDED $zen_amount ZEN $euro_amount EUR $period" >> "$HOME/.zen/game/opencollective_conversion.log"
@@ -433,7 +454,7 @@ fourweeks_paf_burn_and_convert
 # PRIMAL WALLET CONTROL - Protect cooperative wallets from intrusions
 # Ensure all cooperative wallets only receive funds from authorized sources
 #######################################################################
-echo "ZEN ECONOMY: Checking primal wallet control for cooperative wallets..."
+log_output "ZEN ECONOMY: Checking primal wallet control for cooperative wallets..."
 
 # Define cooperative wallets to protect
 declare -A COOPERATIVE_WALLETS=(
@@ -461,11 +482,11 @@ for wallet_name in "${!COOPERATIVE_WALLETS[@]}"; do
         wallet_pubkey=$(cat "$wallet_dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
         
         if [[ -n "$wallet_pubkey" ]]; then
-            echo "ZEN ECONOMY: Checking primal control for $wallet_name (${wallet_pubkey:0:8}...)"
+            log_output "ZEN ECONOMY: Checking primal control for $wallet_name (${wallet_pubkey:0:8}...)"
             
             # Run primal wallet control for this cooperative wallet
             if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
-                echo "CONTROL UPLANET ZEN - Cooperative wallet primal control"
+                log_output "CONTROL UPLANET ZEN - Cooperative wallet primal control"
                 ${MY_PATH}/../tools/primal_wallet_control.sh \
                     "$wallet_dunikey" \
                     "$wallet_pubkey" \
@@ -473,28 +494,28 @@ for wallet_name in "${!COOPERATIVE_WALLETS[@]}"; do
                     "$COOPERATIVE_ADMIN_EMAIL"
                     
                 if [[ $? -eq 0 ]]; then
-                    echo "ZEN ECONOMY: ✅ Primal control OK for $wallet_name"
+                    log_output "ZEN ECONOMY: ✅ Primal control OK for $wallet_name"
                 else
-                    echo "ZEN ECONOMY: ⚠️  Primal control issues detected for $wallet_name"
+                    log_output "ZEN ECONOMY: ⚠️  Primal control issues detected for $wallet_name"
                 fi
             else
-                echo "UPlanet ORIGIN - No Control -"
+                log_output "UPlanet ORIGIN - No Control -"
             fi
         else
-            echo "ZEN ECONOMY: ⚠️  Could not extract public key from $wallet_name"
+            log_output "ZEN ECONOMY: ⚠️  Could not extract public key from $wallet_name"
         fi
     else
-        echo "ZEN ECONOMY: ⚠️  Wallet file not found: $wallet_name ($wallet_dunikey)"
+        log_output "ZEN ECONOMY: ⚠️  Wallet file not found: $wallet_name ($wallet_dunikey)"
     fi
 done
 
-echo "ZEN ECONOMY: Primal wallet control completed for all cooperative wallets"
+log_output "ZEN ECONOMY: Primal wallet control completed for all cooperative wallets"
 
 #######################################################################
 # Cooperative allocation check - trigger 3x1/3 allocation if conditions are met
 # This will be executed after PAF payment to ensure proper economic flow
 #######################################################################
-echo "ZEN ECONOMY: Checking cooperative allocation conditions..."
+log_output "ZEN ECONOMY: Checking cooperative allocation conditions..."
 ${MY_PATH}/ZEN.COOPERATIVE.3x1-3.sh
 
 #######################################################################
@@ -502,6 +523,7 @@ ${MY_PATH}/ZEN.COOPERATIVE.3x1-3.sh
 # Create marker file with current week to prevent duplicate payments
 #######################################################################
 echo "$WEEK_KEY" > "$PAYMENT_MARKER"
-echo "ZEN ECONOMY: Weekly payment completed and marked for week $WEEK_KEY"
+log_output "ZEN ECONOMY: Weekly payment completed and marked for week $WEEK_KEY"
+log_output "========================================================================"
 
 exit 0
