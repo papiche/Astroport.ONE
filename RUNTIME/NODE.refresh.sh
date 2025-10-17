@@ -253,11 +253,22 @@ cp -f "${HOME}/.zen/strfry/amisOfAmis.txt" ~/.zen/tmp/$IPFSNODEID/
 # Merge swarm blacklist and amisOfAmis with local files
 echo "Merging swarm blacklist and amisOfAmis files..."
 cat ~/.zen/tmp/swarm/*/blacklist.txt 2>/dev/null | sort -u >> "$HOME/.zen/strfry/blacklist.txt"
-cat ~/.zen/tmp/swarm/*/amisOfAmis.txt 2>/dev/null | sort -u >> "${HOME}/.zen/strfry/amisOfAmis.txt"
+
+# Clean amisOfAmis.txt: filter out log lines and keep only valid 64-char hex pubkeys
+cat ~/.zen/tmp/swarm/*/amisOfAmis.txt 2>/dev/null | while IFS= read -r line; do
+    # Remove whitespace for validation
+    clean_line=$(echo "$line" | tr -d '[:space:]')
+    # Only keep lines that are exactly 64 hex characters and don't contain log markers
+    if [[ -n "$clean_line" && ${#clean_line} -eq 64 && "$clean_line" =~ ^[0-9a-fA-F]{64}$ && ! "$line" =~ \[|INFO|DEBUG|WARN|ERROR|Connected|Sent|Received|Found|Pong|Average|WebSocket|Local|PING|STRFRY ]]; then
+        echo "$clean_line"
+    fi
+done | sort -u >> "${HOME}/.zen/strfry/amisOfAmis.txt"
 
 # Remove duplicates from merged files
 sort -u "$HOME/.zen/strfry/blacklist.txt" -o "$HOME/.zen/strfry/blacklist.txt"
 sort -u "${HOME}/.zen/strfry/amisOfAmis.txt" -o "${HOME}/.zen/strfry/amisOfAmis.txt"
+
+echo "Cleaned amisOfAmis.txt: removed invalid entries (logs, non-hex lines)"
 
 echo "Updated blacklist.txt: $(cat $HOME/.zen/strfry/blacklist.txt | wc -l) entries"
 echo "Updated amisOfAmis.txt: $(cat $HOME/.zen/strfry/amisOfAmis.txt | wc -l) entries"
