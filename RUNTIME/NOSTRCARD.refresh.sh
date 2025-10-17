@@ -246,7 +246,7 @@ NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 
 ## RUNING FOR ALL LOCAL MULTIPASS (NOSTR Card)
 for PLAYER in "${NOSTR[@]}"; do
-    log "INFO" ">>>>>>>>>>>>>>>>>> Processing MULTIPASS : $PLAYER ============================================"
+    log "INFO" ">>>>>>>>>>>>>>>>>>============================================ Processing MULTIPASS : $PLAYER "
     start=$(date +%s)
     HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX 2>/dev/null)
     [[ -z "$HEX" ]] && log "ERROR" "Missing HEX for $PLAYER" && continue
