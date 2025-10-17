@@ -7,12 +7,20 @@
 # G1zerozen.sh
 # Nettoie les portefeuilles ZEN Card en remettant leur balance à 0 Ẑ (1Ğ1)
 # Transfère le surplus vers UPLANETNAME_G1 (banque centrale)
+# Vérifie l'appartenance à SOCIETY et corrige les fichiers U.SOCIETY/U.SOCIETY.end
 # 
 # Usage: G1zerozen.sh [OPTIONS]
 #   --dry-run        Mode simulation (pas de transfert réel)
 #   --force          Forcer les transferts sans confirmation
 #   --email EMAIL    Traiter seulement un email spécifique
 #   --list-only      Afficher seulement la liste des portefeuilles
+#   --no-publish     Ne pas publier les clés G1
+#
+# Fonctionnalités:
+#   - Vérifie que l'email figure dans l'historique SOCIETY (via G1society.sh)
+#   - Corrige automatiquement les fichiers U.SOCIETY et U.SOCIETY.end manquants/obsolètes
+#   - Calcule les dates de fin d'abonnement (satellite: 1 an, constellation: 3 ans)
+#   - Crée/met à jour les liens symboliques nostr
 ################################################################################
 
 MY_PATH="`dirname \"$0\"`"
@@ -70,9 +78,16 @@ while [[ $# -gt 0 ]]; do
             echo "  --dry-run        Mode simulation (pas de transfert réel)"
             echo "  --force          Forcer les transferts sans confirmation"
             echo "  --email EMAIL    Traiter seulement un email spécifique"
-            echo "  --list-only       Afficher seulement la liste des portefeuilles"
-            echo "  --no-publish      Ne pas publier les clés G1"
-            echo "  --help, -h        Afficher cette aide"
+            echo "  --list-only      Afficher seulement la liste des portefeuilles"
+            echo "  --no-publish     Ne pas publier les clés G1"
+            echo "  --help, -h       Afficher cette aide"
+            echo ""
+            echo "Fonctionnalités:"
+            echo "  • Vérifie l'appartenance à SOCIETY via G1society.sh"
+            echo "  • Corrige les fichiers U.SOCIETY et U.SOCIETY.end manquants/obsolètes"
+            echo "  • Calcule automatiquement les dates de fin d'abonnement"
+            echo "  • Nettoie les portefeuilles ZEN Card (surplus → UPLANET G1)"
+            echo "  • Publie les clés G1 publiques sur IPFS"
             echo ""
             echo "Exemples:"
             echo "  $0 --list-only                    # Lister tous les portefeuilles"
@@ -227,6 +242,147 @@ publish_g1pub() {
     fi
 }
 
+# Fonction pour vérifier si l'email est dans l'historique SOCIETY
+check_society_membership() {
+    local email="$1"
+    local society_script="$HOME/.zen/Astroport.ONE/tools/G1society.sh"
+    
+    if [[ ! -f "$society_script" ]]; then
+        echo -e "${YELLOW}⚠️  G1society.sh non trouvé, vérification SOCIETY ignorée${NC}"
+        return 2  # Code 2 = script non trouvé (non bloquant)
+    fi
+    
+    # Récupérer l'historique SOCIETY
+    local society_json=$("$society_script" --json-only 2>/dev/null)
+    
+    if [[ $? -ne 0 || -z "$society_json" ]]; then
+        echo -e "${YELLOW}⚠️  Impossible de récupérer l'historique SOCIETY${NC}"
+        return 2  # Non bloquant
+    fi
+    
+    # Vérifier si l'email figure dans les transferts
+    local email_found=$(echo "$society_json" | jq -r --arg email "$email" '.transfers[]? | select(.recipient == $email) | .recipient' | head -n 1)
+    
+    if [[ -n "$email_found" && "$email_found" == "$email" ]]; then
+        echo -e "${GREEN}✅ Sociétaire confirmé: ${email}${NC}"
+        return 0  # Trouvé
+    else
+        echo -e "${YELLOW}⚠️  ${email} non trouvé dans l'historique SOCIETY${NC}"
+        return 1  # Non trouvé
+    fi
+}
+
+# Fonction pour corriger les fichiers U.SOCIETY
+fix_usociety_files() {
+    local email="$1"
+    local society_script="$HOME/.zen/Astroport.ONE/tools/G1society.sh"
+    
+    if [[ ! -f "$society_script" ]]; then
+        echo -e "${YELLOW}⚠️  G1society.sh non trouvé, correction U.SOCIETY ignorée${NC}"
+        return 1
+    fi
+    
+    echo -e "${BLUE}🔧 Vérification et correction des fichiers U.SOCIETY pour ${email}...${NC}"
+    
+    # Récupérer l'historique SOCIETY avec l'email
+    local society_json=$("$society_script" --json-only 2>/dev/null)
+    
+    if [[ $? -ne 0 || -z "$society_json" ]]; then
+        echo -e "${YELLOW}⚠️  Impossible de récupérer l'historique SOCIETY pour correction${NC}"
+        return 1
+    fi
+    
+    # Extraire les informations de transaction pour cet email
+    local transaction_date=$(echo "$society_json" | jq -r --arg email "$email" '
+        .transfers[] | 
+        select(.recipient == $email) | 
+        .date
+    ' | sort -r | head -n 1)
+    
+    if [[ -z "$transaction_date" || "$transaction_date" == "null" ]]; then
+        echo -e "${YELLOW}⚠️  Aucune transaction SOCIETY trouvée pour ${email}${NC}"
+        return 1
+    fi
+    
+    # Convertir la date au format YYYY-MM-DD
+    local start_date=$(date -d "$transaction_date" '+%Y-%m-%d' 2>/dev/null || echo "$transaction_date")
+    
+    # Déterminer le type d'abonnement
+    local part_type=$(echo "$society_json" | jq -r --arg email "$email" '
+        .transfers[] | 
+        select(.recipient == $email) | 
+        .part_type
+    ' | head -n 1)
+    
+    # Calculer la date de fin
+    local end_date=""
+    case "$part_type" in
+        "satellite")
+            end_date=$(date -d "$start_date + 365 days" '+%Y-%m-%d')
+            ;;
+        "constellation")
+            end_date=$(date -d "$start_date + 1095 days" '+%Y-%m-%d')  # 3 ans
+            ;;
+        *)
+            end_date=$(date -d "$start_date + 365 days" '+%Y-%m-%d')  # Par défaut 1 an
+            ;;
+    esac
+    
+    # Chemins des fichiers
+    local player_dir="$HOME/.zen/game/players/${email}"
+    local usociety_file="$player_dir/U.SOCIETY"
+    local usociety_end_file="$player_dir/U.SOCIETY.end"
+    local nostr_usociety="$HOME/.zen/game/nostr/${email}/U.SOCIETY"
+    local nostr_usociety_end="$HOME/.zen/game/nostr/${email}/U.SOCIETY.end"
+    
+    local fixed=false
+    
+    # Vérifier et créer/corriger U.SOCIETY
+    if [[ ! -f "$usociety_file" ]]; then
+        echo "$start_date" > "$usociety_file"
+        echo -e "${GREEN}✅ Fichier U.SOCIETY créé: ${start_date}${NC}"
+        fixed=true
+    else
+        local current_date=$(cat "$usociety_file" 2>/dev/null)
+        if [[ "$current_date" != "$start_date" ]]; then
+            echo "$start_date" > "$usociety_file"
+            echo -e "${GREEN}✅ Fichier U.SOCIETY corrigé: ${start_date} (était: ${current_date})${NC}"
+            fixed=true
+        else
+            echo -e "${GREEN}✅ Fichier U.SOCIETY déjà correct: ${start_date}${NC}"
+        fi
+    fi
+    
+    # Vérifier et créer/corriger U.SOCIETY.end
+    if [[ ! -f "$usociety_end_file" ]]; then
+        echo "$end_date" > "$usociety_end_file"
+        echo -e "${GREEN}✅ Fichier U.SOCIETY.end créé: ${end_date}${NC}"
+        fixed=true
+    else
+        local current_end_date=$(cat "$usociety_end_file" 2>/dev/null)
+        if [[ "$current_end_date" != "$end_date" ]]; then
+            echo "$end_date" > "$usociety_end_file"
+            echo -e "${GREEN}✅ Fichier U.SOCIETY.end corrigé: ${end_date} (était: ${current_end_date})${NC}"
+            fixed=true
+        else
+            echo -e "${GREEN}✅ Fichier U.SOCIETY.end déjà correct: ${end_date}${NC}"
+        fi
+    fi
+    
+    # Créer/mettre à jour les liens symboliques dans nostr si le dossier existe
+    if [[ -d "$HOME/.zen/game/nostr/${email}" ]]; then
+        ln -sf "$usociety_file" "$nostr_usociety"
+        ln -sf "$usociety_end_file" "$nostr_usociety_end"
+        echo -e "${GREEN}✅ Liens symboliques nostr mis à jour${NC}"
+    fi
+    
+    if [[ "$fixed" == "true" ]]; then
+        echo -e "${CYAN}📊 Type: ${part_type}, Début: ${start_date}, Fin: ${end_date}${NC}"
+    fi
+    
+    return 0
+}
+
 # Fonction pour traiter un portefeuille
 process_wallet() {
     local email="$1"
@@ -236,6 +392,18 @@ process_wallet() {
     if [[ ! -d "$player_dir" ]]; then
         echo -e "${YELLOW}⚠️  Dossier player non trouvé: ${player_dir}${NC}"
         return 1
+    fi
+    
+    # Vérifier si l'email est dans l'historique SOCIETY
+    check_society_membership "$email"
+    local society_status=$?
+    
+    if [[ $society_status -eq 1 ]]; then
+        echo -e "${YELLOW}⚠️  ${email} n'est pas sociétaire, traitement ignoré${NC}"
+        return 1
+    elif [[ $society_status -eq 0 ]]; then
+        # Corriger les fichiers U.SOCIETY si nécessaire
+        fix_usociety_files "$email"
     fi
     
     # Chercher la clé publique G1
