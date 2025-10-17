@@ -546,7 +546,7 @@ EOF
 
     ## SEND ZINE TO EMAIL USING MAILJET
     echo "Sending NOSTR zine to ${EMAIL} via mailjet..."
-    ${MY_PATH}/mailjet.sh "${EMAIL}" "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html" "MULTIPASS - ${YOUSER}" 2>/dev/null \
+    ${MY_PATH}/mailjet.sh --expire 96h "${EMAIL}" "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html" "MULTIPASS - ${YOUSER}" 2>/dev/null \
         && echo "✅ NOSTR zine sent successfully to ${EMAIL}" \
         || echo "⚠️ Failed to send NOSTR zine to ${EMAIL}"
 
