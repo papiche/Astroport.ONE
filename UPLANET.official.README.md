@@ -37,6 +37,23 @@ UPLANETNAME.G1 → ZEN Card[CAPTAIN] → NODE
 - **Email automatique** : Utilise `$CAPTAINEMAIL` depuis `my.sh`
 - **Valeur** : `$MACHINE_VALUE_ZEN` ou saisie interactive
 
+### **4. 🔧 MODE DÉPANNAGE - Récupération Complète**
+```
+SOCIETY → ZEN Card[email] → 3x1/3 (TREASURY, RnD, ASSETS)
+```
+- **Usage** : Quand des fonds sont bloqués dans SOCIETY
+- **Processus complet** : Effectue les 2 étapes (SOCIETY → ZEN Card → 3x1/3)
+- **Option** : `-r` ou `--recovery`
+
+### **5. 🔧 MODE DÉPANNAGE - Récupération Partielle**
+```
+ZEN Card[email] → 3x1/3 (au choix : TREASURY, RnD, ou ASSETS)
+```
+- **Usage** : Quand la 2ème étape a échoué partiellement
+- **Processus sélectif** : Refaire un seul transfert vers le portefeuille manquant
+- **Option** : `--recovery-3x13`
+- **Cas d'usage** : Réparer les échecs de répartition 3x1/3
+
 ## 🚀 **Utilisation**
 
 ### **Mode Ligne de Commande**
@@ -70,25 +87,43 @@ UPLANETNAME.G1 → ZEN Card[CAPTAIN] → NODE
 # Note: Email automatique depuis $CAPTAINEMAIL (my.sh)
 ```
 
+#### **Modes Dépannage**
+```bash
+# Récupération complète depuis SOCIETY
+./UPLANET.official.sh -r
+
+# Récupération partielle depuis ZEN Card
+./UPLANET.official.sh --recovery-3x13
+```
+
 ### **Mode Interactif**
 ```bash
 ./UPLANET.official.sh
 ```
-Le script affiche un menu interactif permettant de choisir le type de virement.
+
+**Menu disponible :**
+1. Virement LOCATAIRE (recharge MULTIPASS)
+2. Virement SOCIÉTAIRE Satellite (50€/an)
+3. Virement SOCIÉTAIRE Constellation (540€/3ans)
+4. Apport CAPITAL INFRASTRUCTURE (CAPTAIN → NODE)
+5. 🔧 MODE DÉPANNAGE (récupération complète SOCIETY → 3x1/3)
+6. 🔧 MODE DÉPANNAGE (récupération partielle ZEN Card → 3x1/3)
+7. Quitter
 
 ## 🔒 **Sécurité et Conformité**
 
 ### **Vérification des Transactions**
 - **Attente de confirmation** : Le script attend que chaque transaction soit confirmée sur la blockchain
-- **Timeout** : Maximum 20 minutes d'attente par transaction (configurable via `BLOCKCHAIN_TIMEOUT`)
-- **Vérification automatique** : Calcule le solde attendu en soustrayant le pending du solde blockchain initial
-- **Tolérance** : 0.01 Ğ1 pour les arrondis
+- **Timeout** : Maximum **40 minutes** d'attente par transaction (configurable via `BLOCKCHAIN_TIMEOUT`)
+- **Vérification automatique** : Vérifie que le solde pending repasse à 0
+- **Intervalle de vérification** : Toutes les 60 secondes (configurable via `VERIFICATION_INTERVAL`)
 
 ### **Conformité Légale**
 - ✅ Respect de la Constitution de l'Écosystème UPlanet ẐEN
 - ✅ Application automatique de la règle 3x1/3
 - ✅ Utilisation des portefeuilles coopératifs standardisés
 - ✅ Traçabilité complète des flux économiques
+- ✅ Mise à jour automatique des DID via `did_manager_nostr.sh`
 
 ## 📋 **Prérequis**
 
@@ -132,14 +167,36 @@ Le script nécessite que les portefeuilles suivants soient configurés :
 ### **Virement Sociétaire**
 1. **Vérification** : Contrôle de l'existence des portefeuilles
 2. **Étape 1** : Transfert `UPLANETNAME.G1` → `UPLANETNAME.SOCIETY` (via `uplanet.G1.dunikey`)
-3. **Vérification** : Attente confirmation blockchain sur le wallet source
+3. **Vérification** : Attente confirmation blockchain (max 40 minutes)
 4. **Étape 2** : Transfert `UPLANETNAME.SOCIETY` → `ZEN Card[email]` (via `uplanet.SOCIETY.dunikey`)
-5. **Vérification** : Attente confirmation blockchain sur le wallet source
+5. **Vérification** : Attente confirmation blockchain (max 40 minutes)
 6. **Étape 3** : Répartition 3x1/3 depuis ZEN Card (via `secret.dunikey` de l'utilisateur)
-   - Treasury (1/3) → `uplanet.CASH.dunikey`
-   - R&D (1/3) → `uplanet.RnD.dunikey`
-   - Assets (1/3) → `uplanet.ASSETS.dunikey`
-7. **Succès** : Rapport de fin d'opération
+   - Treasury (1/3) → `uplanet.CASH.dunikey` + attente confirmation
+   - R&D (1/3) → `uplanet.RnD.dunikey` + attente confirmation
+   - Assets (1/3) → `uplanet.ASSETS.dunikey` + attente confirmation
+7. **Mise à jour DID** : Enregistrement des contributions pour chaque portefeuille
+8. **Succès** : Rapport de fin d'opération
+
+### **Mode Dépannage - Récupération Complète**
+1. **Affichage du solde SOCIETY** : Vérification des fonds disponibles
+2. **Demande de l'email** : Identification du sociétaire
+3. **Vérification ZEN Card** : Récupération de la clé publique et dunikey
+4. **Vérification portefeuilles 3x1/3** : TREASURY, R&D, ASSETS
+5. **Demande du montant** : Saisie ou 'max' pour tout transférer
+6. **Calcul 3x1/3** : Répartition automatique en 3 parts égales
+7. **Étape 1** : SOCIETY → ZEN Card + attente confirmation (max 40 minutes)
+8. **Étape 2** : ZEN Card → 3x1/3 (3 transferts séquentiels avec confirmation)
+9. **Mise à jour DID** : Enregistrement du statut sociétaire et contributions
+10. **Succès** : Rapport complet avec nouveau solde SOCIETY
+
+### **Mode Dépannage - Récupération Partielle**
+1. **Demande de l'email** : Identification du sociétaire
+2. **Affichage du solde ZEN Card** : Vérification des fonds disponibles
+3. **Menu de sélection** : Choix du portefeuille destination (TREASURY, R&D, ou ASSETS)
+4. **Demande du montant** : Saisie du montant à transférer (en Ẑen)
+5. **Transfert** : ZEN Card → Portefeuille sélectionné + attente confirmation (max 40 minutes)
+6. **Mise à jour DID** : Enregistrement de la contribution spécifique
+7. **Succès** : Rapport avec nouveau solde ZEN Card
 
 ## 🔧 **Configuration et Personnalisation**
 
@@ -151,13 +208,14 @@ Le script charge automatiquement :
 ### **Paramètres Configurables**
 ```bash
 # Timeouts et intervalles
-BLOCKCHAIN_TIMEOUT=1200      # 20 minutes max
+BLOCKCHAIN_TIMEOUT=2400      # 40 minutes max (2400 secondes)
 VERIFICATION_INTERVAL=60      # Vérification toutes les 60 secondes
 
 # Montants par défaut (définis dans my.sh)
 NCARD                        # Recharge MULTIPASS hebdomadaire
 ZENCARD_SATELLITE=50         # 50€/an
 ZENCARD_CONSTELLATION=540    # 540€/3ans
+MACHINE_VALUE_ZEN=500        # Valeur machine par défaut
 ```
 
 ## 📊 **Exemples d'Utilisation**
@@ -192,13 +250,93 @@ ZENCARD_CONSTELLATION=540    # 540€/3ans
 🎉 Virement sociétaire terminé avec succès!
 ```
 
+### **Scénario 3 : Mode Dépannage - Fonds Bloqués dans SOCIETY**
+```bash
+# Situation : Des fonds sont restés bloqués dans SOCIETY après un échec
+./UPLANET.official.sh -r
+
+# Interaction
+Email du sociétaire: jane.smith@example.com
+✅ ZEN Card trouvée: AbCdEf12...
+✅ Treasury trouvé: XyZ789...
+✅ R&D trouvé: QrStUv45...
+✅ Assets trouvé: WxYz67...
+
+💰 Montant disponible dans SOCIETY: 5.0 Ğ1 (50 Ẑen)
+Montant à transférer en Ẑen (ou 'max' pour tout transférer): max
+Type de sociétaire (satellite/constellation): satellite
+
+# Résultat attendu
+📤 Étape 1: Transfert SOCIETY → ZEN Card jane.smith@example.com
+✅ Transaction confirmée - Solde: 5.0 Ğ1
+📤 Étape 2: Répartition 3x1/3 depuis ZEN Card
+  📤 Treasury (1/3): 16.66 Ẑen
+  ✅ Transaction confirmée
+  📤 R&D (1/3): 16.66 Ẑen
+  ✅ Transaction confirmée
+  📤 Assets (1/3): 16.68 Ẑen
+  ✅ Transaction confirmée
+🎉 Transfert de récupération terminé avec succès!
+```
+
+### **Scénario 4 : Mode Dépannage - Réparation Partielle 3x1/3**
+```bash
+# Situation : La 2ème étape a échoué, seul le transfert vers R&D a réussi
+# Il reste des fonds dans la ZEN Card à redistribuer
+./UPLANET.official.sh --recovery-3x13
+
+# Interaction
+Email du sociétaire: jane.smith@example.com
+✅ ZEN Card trouvée: AbCdEf12...
+
+💰 Solde de la ZEN Card: 3.33 Ğ1 (33.3 Ẑen)
+
+📋 Sélectionnez le portefeuille de destination:
+1. TREASURY (CASH)
+2. R&D
+3. ASSETS
+4. Annuler
+Votre choix (1-4): 1
+
+Montant à transférer en Ẑen: 16.65
+Type de sociétaire (satellite/constellation): satellite
+
+# Résultat attendu
+🚀 Lancement du transfert ZEN Card → TREASURY...
+✅ Transaction confirmée - Solde: 1.67 Ğ1
+🎉 Transfert de récupération 3x1/3 terminé avec succès!
+✅ Nouveau solde ZEN Card: 1.67 Ğ1 (16.7 Ẑen)
+
+# On peut maintenant refaire le transfert vers ASSETS
+./UPLANET.official.sh --recovery-3x13
+# Sélectionner ASSETS cette fois...
+```
+
 ## 🚨 **Gestion des Erreurs**
 
 ### **Erreurs Communes**
 - **Portefeuilles non configurés** : Le script vérifie l'existence des fichiers dunikey
 - **Portefeuilles coopératifs manquants** : Message d'aide pour exécuter `ZEN.COOPERATIVE.3x1-3.sh`
-- **Timeout blockchain** : Si une transaction n'est pas confirmée en 20 minutes
+- **Timeout blockchain** : Si une transaction n'est pas confirmée en 40 minutes (configurable)
 - **Dépendances manquantes** : Vérification de `silkaj`, `jq`, `bc`
+- **ZEN Card non trouvée** : Vérifier que le dossier `~/.zen/game/players/${email}/` existe
+- **Solde insuffisant ZEN Card** : Le script vérifie qu'il y a > 1Ğ1 pour effectuer un transfert
+
+### **Modes de Dépannage - Quand les Utiliser ?**
+
+| Situation | Mode à Utiliser | Commande |
+|-----------|----------------|----------|
+| 🔴 Fonds bloqués dans SOCIETY | Récupération Complète | `./UPLANET.official.sh -r` |
+| 🟠 Étape 1 OK, mais 3x1/3 a échoué complètement | Récupération Complète | `./UPLANET.official.sh -r` |
+| 🟡 Étape 1 OK, mais un seul transfert 3x1/3 a échoué | Récupération Partielle | `./UPLANET.official.sh --recovery-3x13` |
+| 🟢 Transaction normale | Virement Sociétaire | `./UPLANET.official.sh -s user@example.com -t satellite` |
+
+### **Alertes Automatiques**
+Le script envoie automatiquement des alertes au CAPTAINEMAIL en cas de :
+- **Timeout blockchain** : Transaction non confirmée après 40 minutes
+- **Erreur de transfert** : Échec lors de l'exécution d'un transfert
+- **Erreur dunikey** : Fichier de clés manquant ou invalide
+- **Erreur pubkey** : Impossible de récupérer la clé publique
 
 ### **Codes de Retour**
 - `0` : Succès
@@ -270,8 +408,16 @@ UPLANET:AwdjhpJN:SOCIETY:support@qo-op.com:constellation:12D3KooWL2FcDJ41U9SyLuv
 
 - **Auteur** : Fred (support@qo-op.com)
 - **Licence** : AGPL-3.0
-- **Version** : 1.1
+- **Version** : 1.2
 - **Statut** : ✅ **CONFORME** à la Constitution UPlanet ẐEN
+
+### **Changelog v1.2**
+- ✅ Timeout de confirmation étendu à 40 minutes (au lieu de 20)
+- ✅ Nouveau mode dépannage complet : Récupération SOCIETY → ZEN Card → 3x1/3
+- ✅ Nouveau mode dépannage partiel : Récupération ZEN Card → 3x1/3 (sélectif)
+- ✅ Mise à jour automatique des DID après chaque contribution
+- ✅ Alertes automatiques par email en cas d'erreur
+- ✅ Amélioration de la traçabilité et du reporting
 
 ---
 
