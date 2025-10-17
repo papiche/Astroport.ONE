@@ -292,13 +292,13 @@ if [[ -n "$SENDER_NSEC" ]]; then
     echo "📝 Preparing NOSTR public note (kind 1)..."
     
     # Prepare NOSTR message content
-    NOSTR_MESSAGE="📧 ${SUBJECT}
+    NOSTR_MESSAGE="📄 : ${SUBJECT}
 
-📄 : ${TEXTPART}
+${TEXTPART}
 
 ---
 ${HEX:+📱 NOSTR: ${NPUB}}
-${RELAY:+🌐 Relay: ${RELAY}} #AstroBOT 
+${RELAY:+🌐 Relay: ${myRELAY}}
 ${ephemeral_duration:+⏰ Éphémère: ${ephemeral_duration}s}
 "
 
