@@ -191,7 +191,10 @@ def publish_did_to_nostr(sender_nsec: str, did_json_path: str,
         did_obj = json.loads(did_content)
         did_id = did_obj.get("id", "unknown")
         
-        # Create tags for the event
+        # Extract email from DID metadata for additional context
+        email = did_obj.get("metadata", {}).get("email", "")
+        
+        # Create tags for the event (DID Nostr spec compliant)
         tags = [
             ["d", DID_TAG_IDENTIFIER],           # Identifier tag (makes it replaceable)
             ["t", "uplanet"],                     # UPlanet ecosystem tag
@@ -199,6 +202,10 @@ def publish_did_to_nostr(sender_nsec: str, did_json_path: str,
             ["published_at", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())],
             ["schema", "https://www.w3.org/TR/did-core/"]
         ]
+        
+        # Add email tag if available
+        if email:
+            tags.append(["email", email])
         
         # Create the event (kind 30311 = Parameterized Replaceable Event)
         event = Event(

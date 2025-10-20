@@ -25,6 +25,7 @@ NC='\033[0m' # No Color
 # Configuration
 NOSTR_BASE_DIR="$HOME/.zen/game/nostr"
 NOSTR_PUBLISH_DID_SCRIPT="${MY_PATH}/nostr_publish_did.py"
+NOSTR_DID_CLIENT_SCRIPT="${MY_PATH}/nostr_did_client.py"
 NOSTR_RELAYS="${NOSTR_RELAYS:-ws://127.0.0.1:7777 wss://relay.copylaradio.com}"
 
 # Migration statistics
@@ -110,22 +111,21 @@ get_user_keys() {
 ################################################################################
 check_did_on_nostr() {
     local npub="$1"
-    local read_script="${MY_PATH}/nostr_read_did.py"
     
-    # Check if nostr_read_did.py is available
-    if [[ ! -f "$read_script" ]]; then
-        echo -e "${YELLOW}⚠️  nostr_read_did.py not found, skipping Nostr check${NC}"
+    # Check if nostr_did_client.py is available
+    if [[ ! -f "$NOSTR_DID_CLIENT_SCRIPT" ]]; then
+        echo -e "${YELLOW}⚠️  nostr_did_client.py not found, skipping Nostr check${NC}"
         return 1
     fi
     
     echo -e "${CYAN}🔍 Checking if DID already exists on Nostr...${NC}"
     
-    # Use nostr_read_did.py to check if DID exists
-    if python3 "$read_script" "$npub" $NOSTR_RELAYS --check-only --quiet 2>/dev/null; then
+    # Use nostr_did_client.py to check if DID exists
+    if python3 "$NOSTR_DID_CLIENT_SCRIPT" check "$npub" $NOSTR_RELAYS -q 2>/dev/null; then
         echo -e "${YELLOW}⚠️  DID already exists on Nostr${NC}"
         
         # Get more details for display
-        local event_info=$(python3 "$read_script" "$npub" $NOSTR_RELAYS --quiet 2>/dev/null | jq -r '.id // empty' 2>/dev/null | head -1)
+        local event_info=$(python3 "$NOSTR_DID_CLIENT_SCRIPT" read "$npub" $NOSTR_RELAYS -q 2>/dev/null | jq -r '.event_id // empty' 2>/dev/null | head -1)
         if [[ -n "$event_info" ]]; then
             echo -e "${CYAN}   Event ID: ${event_info:0:16}...${NC}"
         fi
@@ -190,6 +190,7 @@ create_did_from_filesystem() {
     "https://w3id.org/security/suites/x25519-2020/v1"
   ],
   "id": "did:nostr:${HEX}",
+  "type": "DIDNostr",
   "alsoKnownAs": [
     "mailto:${email}",
     "did:g1:${G1PUBNOSTR}",
@@ -197,11 +198,10 @@ create_did_from_filesystem() {
   ],
   "verificationMethod": [
     {
-      "id": "did:nostr:${HEX}#nostr-key",
-      "type": "Ed25519VerificationKey2020",
+      "id": "did:nostr:${HEX}#key1",
+      "type": "Multikey",
       "controller": "did:nostr:${HEX}",
-      "publicKeyMultibase": "${NPUB}",
-      "publicKeyHex": "${HEX}"
+      "publicKeyMultibase": "fe70102${HEX}"
     },
     {
       "id": "did:nostr:${HEX}#g1-key",
@@ -242,15 +242,15 @@ EOF
     cat >> "$did_file" <<EOF
   ],
   "authentication": [
-    "did:nostr:${HEX}#nostr-key",
+    "did:nostr:${HEX}#key1",
     "did:nostr:${HEX}#g1-key"
   ],
   "assertionMethod": [
-    "did:nostr:${HEX}#nostr-key",
+    "did:nostr:${HEX}#key1",
     "did:nostr:${HEX}#g1-key"
   ],
   "keyAgreement": [
-    "did:nostr:${HEX}#nostr-key"
+    "did:nostr:${HEX}#key1"
   ],
   "service": [
     {
@@ -335,10 +335,9 @@ migrate_did() {
             echo -e "${YELLOW}⚠️  DID already exists on Nostr${NC}"
             
             # Try to fetch and display the DID
-            local read_script="${MY_PATH}/nostr_read_did.py"
-            if [[ -f "$read_script" ]]; then
+            if [[ -f "$NOSTR_DID_CLIENT_SCRIPT" ]]; then
                 echo -e "${CYAN}📥 Fetching DID from Nostr...${NC}"
-                local did_output=$(python3 "$read_script" "$npub" $NOSTR_RELAYS --quiet 2>/dev/null)
+                local did_output=$(python3 "$NOSTR_DID_CLIENT_SCRIPT" read "$npub" $NOSTR_RELAYS -q 2>/dev/null)
                 
                 if [[ -n "$did_output" ]]; then
                     echo -e "${GREEN}✅ DID retrieved from Nostr:${NC}"
@@ -361,6 +360,7 @@ migrate_did() {
         fi
     else
         echo -e "${YELLOW}🔄 Force migration mode enabled, will re-publish${NC}"
+        # Skip the Nostr check in force mode - continue with migration
     fi
     
     # If DID file doesn't exist but create_if_missing is true, try to create it
@@ -660,7 +660,7 @@ DID Creation:
 Requirements:
   - Python 3 with pynostr library
   - nostr_publish_did.py script in same directory
-  - nostr_read_did.py script in same directory (for checking existing DIDs)
+  - nostr_did_client.py script in same directory (for checking existing DIDs)
   - Nostr keys (.secret.nostr) for each user
 
 EOF
@@ -746,9 +746,9 @@ if [[ ! -f "$NOSTR_PUBLISH_DID_SCRIPT" ]]; then
     fi
 fi
 
-# Check for nostr_read_did.py (optional but recommended)
-if [[ ! -f "${MY_PATH}/nostr_read_did.py" ]]; then
-    echo -e "${YELLOW}⚠️  Note: nostr_read_did.py not found${NC}"
+# Check for nostr_did_client.py (optional but recommended)
+if [[ ! -f "$NOSTR_DID_CLIENT_SCRIPT" ]]; then
+    echo -e "${YELLOW}⚠️  Note: nostr_did_client.py not found${NC}"
     echo -e "${YELLOW}   DID existence check will be skipped (may cause duplicates)${NC}"
 fi
 

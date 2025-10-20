@@ -101,7 +101,7 @@ if [[ -d ~/.zen/workspace/UPlanet ]]; then
     AFTER_HASH=$(git rev-parse HEAD)
     # Compare hashes to detect changes
     if [[ "$BEFORE_HASH" != "$AFTER_HASH" ]]; then
-        echo "UPlanet updated from $BEFORE_HASH to $AFTER_HASH"
+        echo "UPlanet updated from $BEFORE_HASH to $AFTER_HASH (ipfs add)"
         ipfs add -rwq ~/.zen/workspace/UPlanet/* > /dev/null
     fi
 else

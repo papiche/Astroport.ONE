@@ -20,6 +20,12 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
 }
 
+# Nostr configuration
+NOSTR_RELAYS="${NOSTR_RELAYS:-ws://127.0.0.1:7777 wss://relay.copylaradio.com}"
+NOSTR_DID_CLIENT_SCRIPT="${MY_PATH}/nostr_did_client.py"
+DID_EVENT_KIND=30311
+DID_TAG_IDENTIFIER="did"
+
 # Couleurs pour l'affichage
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -27,6 +33,211 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
+
+################################################################################
+# Fonction pour récupérer seulement les données DID (mode --did)
+################################################################################
+fetch_did_data_only() {
+    echo -e "${BLUE}🔍 Récupération des données DID uniquement...${NC}"
+    
+    # Scanner les répertoires utilisateurs
+    local emails=$(find ~/.zen/game/nostr -name ".secret.nostr" -exec dirname {} \; | xargs -I {} basename {} | sort -u)
+    
+    if [[ -z "$emails" ]]; then
+        echo -e "${YELLOW}⚠️  Aucun utilisateur Nostr trouvé${NC}"
+        echo "[]"
+        return 0
+    fi
+    
+    local nostr_data="[]"
+    local nostr_count=0
+    
+    # Vérifier si le script nostr_did_client.py existe
+    if [[ ! -f "$NOSTR_DID_CLIENT_SCRIPT" ]]; then
+        echo -e "${YELLOW}⚠️  Script nostr_did_client.py non trouvé${NC}"
+        echo "[]"
+        return 0
+    fi
+    
+    while IFS= read -r email; do
+        if [[ -z "$email" || "$email" == "N/A" ]]; then
+            continue
+        fi
+        
+        echo -e "${CYAN}📧 Récupération DID Nostr pour: ${email}${NC}"
+        
+        # Récupérer les clés Nostr de l'utilisateur
+        local nostr_keys_file="$HOME/.zen/game/nostr/${email}/.secret.nostr"
+        if [[ ! -f "$nostr_keys_file" ]]; then
+            echo -e "${YELLOW}⚠️  Clés Nostr non trouvées pour ${email}${NC}"
+            continue
+        fi
+        
+        # Extraire la clé publique Nostr
+        local npub=""
+        if source "$nostr_keys_file" 2>/dev/null && [[ -n "$NPUB" ]]; then
+            npub="$NPUB"
+        else
+            echo -e "${YELLOW}⚠️  Impossible d'extraire NPUB pour ${email}${NC}"
+            continue
+        fi
+        
+        # Récupérer le DID depuis Nostr
+        local did_content=""
+        for relay in $NOSTR_RELAYS; do
+            echo -e "${BLUE}   Interrogation: ${relay}${NC}"
+            
+            # Utiliser le script de récupération DID
+            did_content=$(python3 "$NOSTR_DID_CLIENT_SCRIPT" fetch --author "$npub" --relay "$relay" --kind "$DID_EVENT_KIND" -q 2>/dev/null)
+            
+            if [[ -n "$did_content" ]] && [[ "$did_content" != "null" ]] && echo "$did_content" | jq empty 2>/dev/null; then
+                echo -e "${GREEN}✅ DID trouvé sur ${relay}${NC}"
+                break
+            fi
+        done
+        
+        if [[ -z "$did_content" ]] || [[ "$did_content" == "null" ]]; then
+            echo -e "${YELLOW}⚠️  Aucun DID trouvé sur Nostr pour ${email}${NC}"
+            continue
+        fi
+        
+        # Extraire les informations pertinentes du DID
+        local did_info=$(echo "$did_content" | jq -r --arg email "$email" '
+        {
+            email: $email,
+            did_id: .id,
+            contract_status: .metadata.contractStatus // "unknown",
+            storage_quota: .metadata.storageQuota // "N/A",
+            services: .metadata.services // "N/A",
+            last_payment: .metadata.lastPayment // null,
+            created: .metadata.created // null,
+            updated: .metadata.updated // null,
+            astroport_station: .metadata.astroportStation // null,
+            multipass_wallet: .metadata.multipassWallet // null,
+            zencard_wallet: .metadata.zencardWallet // null,
+            wot_duniter_member: .metadata.wotDuniterMember // null
+        }
+        ')
+        
+        # Ajouter les informations Nostr aux données
+        nostr_data=$(echo "$nostr_data" | jq --argjson did_info "$did_info" '. + [$did_info]')
+        ((nostr_count++))
+        
+        echo -e "${GREEN}✅ Données Nostr récupérées pour ${email}${NC}"
+        
+    done <<< "$emails"
+    
+    echo -e "${GREEN}📊 ${nostr_count} document(s) DID récupéré(s) depuis Nostr${NC}"
+    
+    # Retourner les données Nostr
+    echo "$nostr_data"
+}
+
+################################################################################
+# Fonction pour récupérer les données Nostr des parts sociales
+################################################################################
+fetch_nostr_society_data() {
+    local transfers_json="$1"
+    
+    echo -e "${BLUE}🔍 Récupération des données Nostr pour les parts sociales...${NC}"
+    
+    # Extraire les emails des transferts ou scanner les répertoires utilisateurs
+    local emails=""
+    if [[ -n "$transfers_json" ]]; then
+        emails=$(echo "$transfers_json" | jq -r '.transfers[]?.recipient // empty' | grep -v "N/A" | sort -u)
+    fi
+    
+    # Si aucun email trouvé dans les transferts, utiliser le script séparé
+    if [[ -z "$emails" ]]; then
+        echo -e "${YELLOW}⚠️  Aucun email trouvé dans les transferts, utilisation du script DID séparé...${NC}"
+        # Utiliser le script séparé pour récupérer les données DID
+        local did_result=$(${MY_PATH}/fetch_did_data.sh 2>/dev/null)
+        echo "$did_result"
+        return 0
+    fi
+    
+    local nostr_data="[]"
+    local nostr_count=0
+    
+    # Vérifier si le script nostr_fetch_did.py existe
+    if [[ ! -f "$NOSTR_DID_CLIENT_SCRIPT" ]]; then
+        echo -e "${YELLOW}⚠️  Script nostr_did_client.py non trouvé, impossible de récupérer les données Nostr${NC}"
+        return 0
+    fi
+    
+    while IFS= read -r email; do
+        if [[ -z "$email" || "$email" == "N/A" ]]; then
+            continue
+        fi
+        
+        echo -e "${CYAN}📧 Récupération DID Nostr pour: ${email}${NC}"
+        
+        # Récupérer les clés Nostr de l'utilisateur
+        local nostr_keys_file="$HOME/.zen/game/nostr/${email}/.secret.nostr"
+        if [[ ! -f "$nostr_keys_file" ]]; then
+            echo -e "${YELLOW}⚠️  Clés Nostr non trouvées pour ${email}${NC}"
+            continue
+        fi
+        
+        # Extraire la clé publique Nostr
+        local npub=""
+        if source "$nostr_keys_file" 2>/dev/null && [[ -n "$NPUB" ]]; then
+            npub="$NPUB"
+        else
+            echo -e "${YELLOW}⚠️  Impossible d'extraire NPUB pour ${email}${NC}"
+            continue
+        fi
+        
+        # Récupérer le DID depuis Nostr
+        local did_content=""
+        for relay in $NOSTR_RELAYS; do
+            echo -e "${BLUE}   Interrogation: ${relay}${NC}"
+            
+            # Utiliser le script de récupération DID
+                did_content=$(python3 "$NOSTR_DID_CLIENT_SCRIPT" fetch --author "$npub" --relay "$relay" --kind "$DID_EVENT_KIND" -q 2>/dev/null)
+            
+            if [[ -n "$did_content" ]] && [[ "$did_content" != "null" ]] && echo "$did_content" | jq empty 2>/dev/null; then
+                echo -e "${GREEN}✅ DID trouvé sur ${relay}${NC}"
+                break
+            fi
+        done
+        
+        if [[ -z "$did_content" ]] || [[ "$did_content" == "null" ]]; then
+            echo -e "${YELLOW}⚠️  Aucun DID trouvé sur Nostr pour ${email}${NC}"
+            continue
+        fi
+        
+        # Extraire les informations pertinentes du DID
+        local did_info=$(echo "$did_content" | jq -r --arg email "$email" '
+        {
+            email: $email,
+            did_id: .id,
+            contract_status: .metadata.contractStatus // "unknown",
+            storage_quota: .metadata.storageQuota // "N/A",
+            services: .metadata.services // "N/A",
+            last_payment: .metadata.lastPayment // null,
+            created: .metadata.created // null,
+            updated: .metadata.updated // null,
+            astroport_station: .metadata.astroportStation // null,
+            multipass_wallet: .metadata.multipassWallet // null,
+            zencard_wallet: .metadata.zencardWallet // null,
+            wot_duniter_member: .metadata.wotDuniterMember // null
+        }
+        ')
+        
+        # Ajouter les informations Nostr aux données
+        nostr_data=$(echo "$nostr_data" | jq --argjson did_info "$did_info" '. + [$did_info]')
+        ((nostr_count++))
+        
+        echo -e "${GREEN}✅ Données Nostr récupérées pour ${email}${NC}"
+        
+    done <<< "$emails"
+    
+    echo -e "${GREEN}📊 ${nostr_count} document(s) DID récupéré(s) depuis Nostr${NC}"
+    
+    # Retourner les données Nostr
+    echo "$nostr_data"
+}
 
 ################################################################################
 # Fonction pour vérifier et corriger les fichiers U.SOCIETY
@@ -201,6 +412,8 @@ check_and_fix_usociety_files() {
 CHECK_USOCIETY=false
 FIX_USOCIETY=false
 JSON_ONLY=false
+INCLUDE_NOSTR=false
+DID_ONLY=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -216,6 +429,14 @@ while [[ $# -gt 0 ]]; do
             JSON_ONLY=true
             shift
             ;;
+        --nostr)
+            INCLUDE_NOSTR=true
+            shift
+            ;;
+        --did)
+            DID_ONLY=true
+            shift
+            ;;
         --help|-h)
             echo "Usage: $0 [OPTIONS]"
             echo ""
@@ -223,6 +444,8 @@ while [[ $# -gt 0 ]]; do
             echo "  --check-usociety    Vérifier les fichiers U.SOCIETY"
             echo "  --fix-usociety      Corriger les fichiers U.SOCIETY manquants/obsolètes"
             echo "  --json-only         Afficher seulement le JSON (pas de vérification U.SOCIETY)"
+            echo "  --nostr             Inclure les données DID depuis Nostr"
+            echo "  --did               Retourner seulement les données DID (pas d'historique portefeuilles)"
             echo "  --help, -h          Afficher cette aide"
             echo ""
             echo "Exemples:"
@@ -230,6 +453,8 @@ while [[ $# -gt 0 ]]; do
             echo "  $0 --check-usociety          # Vérifier les fichiers U.SOCIETY"
             echo "  $0 --fix-usociety            # Corriger les fichiers U.SOCIETY"
             echo "  $0 --json-only               # JSON seulement, pas de vérification"
+            echo "  $0 --nostr                   # Inclure les données Nostr dans le JSON"
+            echo "  $0 --did                     # Seulement les données DID, pas d'historique"
             exit 0
             ;;
         *)
@@ -259,6 +484,33 @@ fi
 log "Starting SOCIETY transaction analysis"
 log "SOCIETY wallet: $SOCIETY_G1PUB"
 log "UPLANET G1 wallet: $UPLANET_G1PUB"
+
+# Si mode --did, retourner seulement les données DID
+if [[ "$DID_ONLY" == "true" ]]; then
+    echo -e "${BLUE}🔍 Mode DID uniquement - Récupération des données DID...${NC}"
+    
+    # Créer un JSON de base pour les données DID
+    base_json='{
+        "g1pub": "'"$SOCIETY_G1PUB"'",
+        "total_outgoing_g1": 0,
+        "total_outgoing_zen": 0,
+        "total_transfers": 0,
+        "transfers": [],
+        "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S)"'"
+    }'
+    
+    # Récupérer les données Nostr (script séparé pour le mode --did)
+    NOSTR_DATA=$(${MY_PATH}/fetch_did_data.sh 2>/dev/null)
+    
+    # Intégrer les données Nostr dans le résultat
+    RESULT=$(echo "$base_json" | jq --argjson nostr_data "$NOSTR_DATA" '. + {nostr_did_data: $nostr_data}')
+    
+    # Output the result
+    echo "$RESULT"
+    
+    log "DID analysis completed: $(echo "$NOSTR_DATA" | jq -r 'length // 0') DID(s) found"
+    exit 0
+fi
 
 # Call G1history.sh to get transaction history
 HISTORY_JSON=$(${MY_PATH}/G1history.sh "$SOCIETY_G1PUB" 2>/dev/null)
@@ -381,6 +633,16 @@ else
     $init
 end
 ')
+
+# Récupérer les données Nostr si demandé
+if [[ "$INCLUDE_NOSTR" == "true" ]]; then
+    echo ""
+    # Utiliser le script séparé pour récupérer les données DID
+    NOSTR_DATA=$(${MY_PATH}/fetch_did_data.sh 2>/dev/null)
+    
+    # Intégrer les données Nostr dans le résultat
+    RESULT=$(echo "$RESULT" | jq --argjson nostr_data "$NOSTR_DATA" '. + {nostr_did_data: $nostr_data}')
+fi
 
 # Output the result
 echo "$RESULT"

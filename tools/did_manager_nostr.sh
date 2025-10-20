@@ -26,6 +26,7 @@ NC='\033[0m' # No Color
 # Nostr configuration
 NOSTR_RELAYS="${NOSTR_RELAYS:-ws://127.0.0.1:7777 wss://relay.copylaradio.com}"
 NOSTR_PUBLISH_DID_SCRIPT="${MY_PATH}/nostr_publish_did.py"
+NOSTR_FETCH_DID_SCRIPT="${MY_PATH}/nostr_fetch_did.py"
 
 # DID Event configuration
 DID_EVENT_KIND=30311
@@ -66,27 +67,46 @@ create_initial_did() {
     
     echo -e "${CYAN}📝 Creating initial DID document for ${email}${NC}"
     
-    # Generate DID ID based on npub
-    local did_id="did:nostr:${npub}"
+    # Convert npub to hex for DID Nostr spec compliance
+    local hex_pubkey=""
+    if command -v python3 &> /dev/null; then
+        # Use nostr2hex.py to convert npub to hex
+        hex_pubkey=$(python3 "${MY_PATH}/nostr2hex.py" "$npub" 2>/dev/null)
+    fi
     
-    # Create minimal DID structure compliant with W3C DID spec
+    if [[ -z "$hex_pubkey" ]]; then
+        echo -e "${RED}❌ Impossible de convertir npub en hex pour le DID${NC}" >&2
+        return 1
+    fi
+    
+    # Generate DID ID based on hex pubkey (DID Nostr spec)
+    local did_id="did:nostr:${hex_pubkey}"
+    
+    # Create Multikey verification method (DID Nostr spec)
+    local multikey_pubkey="fe70102${hex_pubkey}"
+    
+    # Create minimal DID structure compliant with DID Nostr spec
     cat <<EOF
 {
   "@context": [
-    "https://www.w3.org/ns/did/v1",
-    "https://w3id.org/security/suites/ed25519-2020/v1"
+    "https://w3id.org/did/v1",
+    "https://w3id.org/nostr/context"
   ],
   "id": "${did_id}",
+  "type": "DIDNostr",
   "verificationMethod": [
     {
-      "id": "${did_id}#keys-1",
-      "type": "Ed25519VerificationKey2020",
+      "id": "${did_id}#key1",
+      "type": "Multikey",
       "controller": "${did_id}",
-      "publicKeyMultibase": "${npub}"
+      "publicKeyMultibase": "${multikey_pubkey}"
     }
   ],
   "authentication": [
-    "${did_id}#keys-1"
+    "${did_id}#key1"
+  ],
+  "assertionMethod": [
+    "${did_id}#key1"
   ],
   "service": [
     {
@@ -123,16 +143,27 @@ fetch_did_from_nostr() {
     echo -e "${CYAN}📡 Fetching DID from Nostr relays for ${email}${NC}"
     echo -e "${BLUE}   NPub: ${npub:0:16}...${NC}"
     
-    # Fetch DID using nostr_publish_did.py script (read-only mode)
-    if [[ -f "$NOSTR_PUBLISH_DID_SCRIPT" ]]; then
-        echo -e "${CYAN}🔍 Using nostr_publish_did.py to query relays...${NC}"
+    # Convert npub to hex for DID Nostr spec
+    local hex_pubkey=""
+    if command -v python3 &> /dev/null; then
+        hex_pubkey=$(python3 "${MY_PATH}/nostr2hex.py" "$npub" 2>/dev/null)
+    fi
+    
+    if [[ -z "$hex_pubkey" ]]; then
+        echo -e "${RED}❌ Impossible de convertir npub en hex${NC}" >&2
+        return 1
+    fi
+    
+    # Fetch DID using nostr_fetch_did.py script
+    if [[ -f "$NOSTR_FETCH_DID_SCRIPT" ]]; then
+        echo -e "${CYAN}🔍 Using nostr_fetch_did.py to query relays...${NC}"
         
         local did_content=""
         for relay in $NOSTR_RELAYS; do
             echo -e "${BLUE}   Querying: ${relay}${NC}"
             
-            # Use the publish script in read-only mode to fetch DID
-            did_content=$(python3 "$NOSTR_PUBLISH_DID_SCRIPT" --fetch --relay "$relay" --author "$npub" --kind "$DID_EVENT_KIND" 2>/dev/null)
+            # Use the fetch script with hex pubkey
+            did_content=$(python3 "$NOSTR_FETCH_DID_SCRIPT" --author "$npub" --relay "$relay" --kind "$DID_EVENT_KIND" 2>/dev/null)
             
             if [[ -n "$did_content" ]] && [[ "$did_content" != "null" ]] && echo "$did_content" | jq empty 2>/dev/null; then
                 echo -e "${GREEN}✅ DID found on ${relay}${NC}"
@@ -155,7 +186,7 @@ fetch_did_from_nostr() {
         
         return 0
     else
-        echo -e "${YELLOW}⚠️  nostr_publish_did.py script not found${NC}"
+        echo -e "${YELLOW}⚠️  nostr_fetch_did.py script not found${NC}"
         echo -e "${CYAN}💡 Falling back to cache...${NC}"
         return 1
     fi
