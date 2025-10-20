@@ -184,6 +184,72 @@ get_liked_videos() {
     fi
 }
 
+# Fonction pour encoder un titre en URL-safe
+url_encode_title() {
+    local title="$1"
+    # Remplacer les caractères spéciaux par des équivalents URL-safe
+    echo "$title" | sed 's/ /_/g' | \
+        sed 's/[^a-zA-Z0-9._-]/_/g' | \
+        sed 's/__*/_/g' | \
+        sed 's/^_\|_$//g' | \
+        head -c 100
+}
+
+# Fonction pour envoyer une note NOSTR pour une vidéo synchronisée
+send_nostr_note() {
+    local player="$1"
+    local title="$2"
+    local uploader="$3"
+    local ipfs_url="$4"
+    local youtube_url="$5"
+    
+    log_debug "Sending NOSTR note for video: $title"
+    
+    # Vérifier que le script nostr_send_note.py existe
+    local nostr_script="$MY_PATH/../tools/nostr_send_note.py"
+    if [[ ! -f "$nostr_script" ]]; then
+        log_debug "NOSTR script not found: $nostr_script"
+        return 1
+    fi
+    
+    # Vérifier que le fichier NSEC existe pour ce joueur
+    local nsec_file="$HOME/.zen/game/nostr/${player}/.nsec"
+    if [[ ! -f "$nsec_file" ]]; then
+        log_debug "NSEC file not found for $player: $nsec_file"
+        return 1
+    fi
+    
+    # Lire la clé NSEC
+    local nsec_key=$(cat "$nsec_file" 2>/dev/null)
+    if [[ -z "$nsec_key" ]]; then
+        log_debug "Failed to read NSEC key for $player"
+        return 1
+    fi
+    
+    # Construire le message NOSTR
+    local message="🎬 Nouvelle vidéo synchronisée: $title par $uploader
+
+🔗 IPFS: $ipfs_url
+📺 YouTube: $youtube_url
+
+#YouTubeSync #uDRIVE #IPFS"
+    
+    # Envoyer la note NOSTR
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Sending NOSTR note for: $title" >&2
+    local nostr_result=$(python3 "$nostr_script" "$nsec_key" "$message" "ws://127.0.0.1:7777" 2>&1)
+    local nostr_exit_code=$?
+    
+    if [[ $nostr_exit_code -eq 0 ]]; then
+        log_debug "NOSTR note sent successfully for: $title"
+        echo "📡 NOSTR note published for: $title"
+    else
+        log_debug "Failed to send NOSTR note for: $title (exit code: $nostr_exit_code)"
+        echo "⚠️ NOSTR note failed for: $title"
+    fi
+    
+    return $nostr_exit_code
+}
+
 # Fonction pour traiter une vidéo likée
 process_liked_video() {
     local video_id="$1"
@@ -196,12 +262,12 @@ process_liked_video() {
     
     log_debug "Processing liked video: $title by $uploader"
     
-    # Déterminer le format basé sur la durée et le type de contenu
+    # Encoder le titre pour compatibilité URL maximale
+    local url_safe_title=$(url_encode_title "$title")
+    log_debug "URL-safe title: $url_safe_title"
+    
+    # Utiliser uniquement le format MP4 pour toutes les vidéos
     local format="mp4"
-    if [[ "$duration" =~ ^[0-9]+$ ]] && [[ "$duration" -lt 600 ]]; then
-        # Vidéos courtes (< 10 min) - probablement de la musique
-        format="mp3"
-    fi
     
     # Appeler process_youtube.sh pour télécharger la vidéo
     local result=$($MY_PATH/process_youtube.sh --debug "$url" "$format" "$udrive_path" 2>/dev/null)
@@ -210,17 +276,21 @@ process_liked_video() {
         # Extraire l'URL IPFS du résultat JSON
         local ipfs_url=$(echo "$result" | jq -r '.ipfs_url // empty' 2>/dev/null)
         if [[ -n "$ipfs_url" ]]; then
-            log_debug "Successfully processed: $title -> $ipfs_url"
-            echo "✅ $title by $uploader -> $ipfs_url"
+            log_debug "Successfully processed: $url_safe_title -> $ipfs_url"
+            echo "✅ $url_safe_title by $uploader -> $ipfs_url"
+            
+            # Envoyer une note NOSTR pour cette vidéo
+            send_nostr_note "$player" "$url_safe_title" "$uploader" "$ipfs_url" "$url"
+            
             return 0
         else
-            log_debug "Failed to extract IPFS URL for: $title"
-            echo "❌ Failed to process: $title"
+            log_debug "Failed to extract IPFS URL for: $url_safe_title"
+            echo "❌ Failed to process: $url_safe_title"
             return 1
         fi
     else
-        log_debug "process_youtube.sh failed for: $title"
-        echo "❌ Download failed: $title"
+        log_debug "process_youtube.sh failed for: $url_safe_title"
+        echo "❌ Download failed: $url_safe_title"
         return 1
     fi
 }
@@ -254,8 +324,12 @@ sync_youtube_likes() {
             local uploader=$(echo "$line" | cut -d '&' -f 4)
             local url=$(echo "$line" | cut -d '&' -f 5)
             
-            # Nettoyer le titre
-            title=$(echo "$title" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 100)
+            # Nettoyer le titre pour compatibilité URL
+            title=$(echo "$title" | \
+                sed 's/[^a-zA-Z0-9._-]/_/g' | \
+                sed 's/__*/_/g' | \
+                sed 's/^_\|_$//g' | \
+                head -c 100)
             
             log_debug "Processing: $title (ID: $video_id)"
             
@@ -316,14 +390,13 @@ send_sync_notification() {
         </div>
         <p>Vos nouvelles vidéos sont maintenant disponibles dans votre uDRIVE :</p>
         <ul>
-            <li>🎵 <strong>Musique :</strong> uDRIVE/Music/</li>
-            <li>🎬 <strong>Vidéos :</strong> uDRIVE/Videos/</li>
+            <li>🎬 <strong>Vidéos :</strong> uDRIVE/Videos/ (format MP4)</li>
         </ul>
+        <p><strong>🔗 Accéder à votre uDRIVE :</strong> <a href="$myIPFS$(cat ~/.zen/game/nostr/${player}/NOSTRNS 2>/dev/null || echo 'NOSTRNS_NOT_FOUND')/APP/uDRIVE" target="_blank">Ouvrir uDRIVE</a></p>
         <p>Les vidéos sont également accessibles via IPFS pour un partage décentralisé.</p>
     </div>
     <div class='footer'>
-        <p>Cette synchronisation est automatique pour tous les utilisateurs UPlanet avec cookie YouTube.</p>
-        <p>Pour désactiver cette fonctionnalité, supprimez votre fichier .cookie.txt</p>
+        <p>Cette synchronisation est automatique pour tous les utilisateurs UPlanet avec <a href="$uSPOT/cookie" target="_blank">cookie YouTube</a>.</p>
     </div>
 </div>
 </body></html>"
