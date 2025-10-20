@@ -405,8 +405,8 @@ send_sync_notification() {
     local temp_email_file="$HOME/.zen/tmp/youtube_sync_email_$(date +%Y%m%d_%H%M%S).html"
     echo "$email_content" > "$temp_email_file"
     
-    # Envoyer l'email via mailjet
-    ${MY_PATH}/../tools/mailjet.sh "${player}" "$temp_email_file" "🎵 YouTube Sync - $success_count nouvelles vidéos" 2>/dev/null
+    # Envoyer l'email via mailjet avec durée éphémère de 24h
+    ${MY_PATH}/../tools/mailjet.sh --expire 24h "${player}" "$temp_email_file" "🎵 YouTube Sync - $success_count nouvelles vidéos" 2>/dev/null
     
     # Nettoyer le fichier temporaire
     rm -f "$temp_email_file"
