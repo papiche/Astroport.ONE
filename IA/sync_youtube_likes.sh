@@ -13,30 +13,47 @@
 # - Met à jour le fichier de dernière synchronisation
 ########################################################################
 
+# Enhanced logging setup
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting sync_youtube_likes.sh script" >&2
+
 MY_PATH="$(dirname "$0")"
 MY_PATH="$( cd "$MY_PATH" && pwd )"
-source "$HOME/.zen/Astroport.ONE/tools/my.sh"
+
+if [[ -f "$HOME/.zen/Astroport.ONE/tools/my.sh" ]]; then
+    source "$HOME/.zen/Astroport.ONE/tools/my.sh"
+else
+    exit 1
+fi
 
 DEBUG=0
 if [[ "$1" == "--debug" ]]; then
     DEBUG=1
     shift
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] DEBUG mode enabled" >&2
 fi
 
 PLAYER="$1"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Player email: $PLAYER" >&2
+
 if [[ -z "$PLAYER" ]]; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: No player email provided" >&2
     echo "Usage: $0 <player_email> [--debug]"
     exit 1
 fi
 
 LOGFILE="$HOME/.zen/tmp/youtube_sync.log"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Log file: $LOGFILE" >&2
 mkdir -p "$(dirname "$LOGFILE")"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Created log directory: $(dirname "$LOGFILE")" >&2
 
 log_debug() {
     if [[ $DEBUG -eq 1 ]]; then
         echo "[sync_youtube_likes.sh][$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOGFILE" >&2
     fi
 }
+
+# Enhanced logging for all checks
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting validation checks for player: $PLAYER" >&2
 
 # Vérifier que le joueur est sociétaire (optionnel - maintenant ouvert à tous)
 # if [[ ! -s ~/.zen/game/players/${PLAYER}/U.SOCIETY ]]; then
@@ -46,31 +63,57 @@ log_debug() {
 
 # Vérifier l'existence du fichier cookie
 COOKIE_FILE="$HOME/.zen/game/nostr/${PLAYER}/.cookie.txt"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Checking cookie file: $COOKIE_FILE" >&2
 if [[ ! -f "$COOKIE_FILE" ]]; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: No cookie file found for $PLAYER at $COOKIE_FILE" >&2
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Checking if directory exists: $(dirname "$COOKIE_FILE")" >&2
+    if [[ -d "$(dirname "$COOKIE_FILE")" ]]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Directory exists, listing contents:" >&2
+        ls -la "$(dirname "$COOKIE_FILE")" >&2
+    else
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Directory does not exist: $(dirname "$COOKIE_FILE")" >&2
+    fi
     log_debug "No cookie file found for $PLAYER, skipping YouTube sync"
     exit 0
 fi
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cookie file found: $COOKIE_FILE" >&2
 
 # Vérifier l'existence du répertoire uDRIVE
 UDRIVE_PATH="$HOME/.zen/game/nostr/${PLAYER}/APP/uDRIVE"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Checking uDRIVE directory: $UDRIVE_PATH" >&2
 if [[ ! -d "$UDRIVE_PATH" ]]; then
-    log_debug "uDRIVE directory not found for $PLAYER, creating it"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] uDRIVE directory not found for $PLAYER, creating it" >&2
     mkdir -p "$UDRIVE_PATH"
+    if [[ $? -eq 0 ]]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Successfully created uDRIVE directory: $UDRIVE_PATH" >&2
+    else
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: Failed to create uDRIVE directory: $UDRIVE_PATH" >&2
+        exit 1
+    fi
+else
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] uDRIVE directory exists: $UDRIVE_PATH" >&2
 fi
 
 # Fichier de suivi de la dernière synchronisation
 LAST_SYNC_FILE="$HOME/.zen/game/nostr/${PLAYER}/.last_youtube_sync"
 TODAY=$(date '+%Y-%m-%d')
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Today's date: $TODAY" >&2
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Last sync file: $LAST_SYNC_FILE" >&2
 
 # Vérifier si une synchronisation a déjà eu lieu aujourd'hui
 if [[ -f "$LAST_SYNC_FILE" ]]; then
     LAST_SYNC=$(cat "$LAST_SYNC_FILE")
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Last sync date: $LAST_SYNC" >&2
     if [[ "$LAST_SYNC" == "$TODAY" ]]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] YouTube sync already completed today for $PLAYER" >&2
         log_debug "YouTube sync already completed today for $PLAYER"
         exit 0
     fi
+else
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] No previous sync file found for $PLAYER" >&2
 fi
 
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting YouTube likes sync for $PLAYER" >&2
 log_debug "Starting YouTube likes sync for $PLAYER"
 
 # Fonction pour récupérer les vidéos likées via l'API YouTube
@@ -79,13 +122,23 @@ get_liked_videos() {
     local cookie_file="$2"
     local max_results="${3:-3}"
     
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] get_liked_videos: Starting for $player (max: $max_results)" >&2
     log_debug "Fetching liked videos for $player (max: $max_results)"
+    
+    # Vérifier que yt-dlp est disponible
+    if ! command -v yt-dlp &> /dev/null; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: yt-dlp command not found" >&2
+        return 1
+    fi
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] yt-dlp command found" >&2
     
     # Utiliser yt-dlp pour récupérer la playlist "Liked videos"
     # La playlist "LL" correspond aux vidéos likées
     local liked_playlist_url="https://www.youtube.com/playlist?list=LL"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Trying liked videos playlist: $liked_playlist_url" >&2
     
     # Récupérer les métadonnées des vidéos likées avec gestion d'erreur améliorée
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Running yt-dlp command..." >&2
     local videos_json=$(yt-dlp \
         --cookies "$cookie_file" \
         --print '%(id)s&%(title)s&%(duration)s&%(uploader)s&%(webpage_url)s' \
@@ -95,12 +148,17 @@ get_liked_videos() {
         "$liked_playlist_url" 2>/dev/null)
     
     local exit_code=$?
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] yt-dlp exit code: $exit_code" >&2
+    
     if [[ $exit_code -eq 0 && -n "$videos_json" ]]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Successfully fetched liked videos" >&2
         echo "$videos_json"
         return 0
     else
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Failed to fetch liked videos (exit code: $exit_code)" >&2
         log_debug "Failed to fetch liked videos for $player (exit code: $exit_code)"
         # Essayer une approche alternative avec l'historique
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Trying alternative approach with watch history" >&2
         log_debug "Trying alternative approach with watch history"
         local history_url="https://www.youtube.com/feed/history"
         videos_json=$(yt-dlp \
@@ -111,10 +169,15 @@ get_liked_videos() {
             --quiet \
             "$history_url" 2>/dev/null)
         
-        if [[ $? -eq 0 && -n "$videos_json" ]]; then
+        local alt_exit_code=$?
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Alternative yt-dlp exit code: $alt_exit_code" >&2
+        
+        if [[ $alt_exit_code -eq 0 && -n "$videos_json" ]]; then
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Successfully fetched from watch history" >&2
             echo "$videos_json"
             return 0
         else
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Alternative approach also failed" >&2
             log_debug "Alternative approach also failed for $player"
             return 1
         fi
@@ -285,13 +348,13 @@ send_sync_notification() {
 # Fonction de nettoyage des anciens processus
 cleanup_old_sync_processes() {
     local player="$1"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] cleanup_old_sync_processes: Starting for $player" >&2
     log_debug "Cleaning up old YouTube sync processes for $player"
     
-    # Tuer les anciens processus de synchronisation pour ce joueur
-    pkill -f "sync_youtube_likes.sh.*${player}" 2>/dev/null || true
-    
     # Nettoyer les fichiers temporaires
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cleaning temporary files..." >&2
     rm -f "$HOME/.zen/tmp/youtube_sync_${player}_*" 2>/dev/null || true
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] cleanup_old_sync_processes: Completed" >&2
 }
 
 # Fonction de vérification de l'espace disque
@@ -299,37 +362,54 @@ check_disk_space() {
     local udrive_path="$1"
     local required_space_mb=1000  # 1GB minimum
     
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] check_disk_space: Starting for $udrive_path" >&2
+    
     if [[ -d "$udrive_path" ]]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Directory exists, checking disk space..." >&2
         local available_space=$(df "$udrive_path" | awk 'NR==2 {print $4}')
         local available_mb=$((available_space / 1024))
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Available space: ${available_mb}MB, Required: ${required_space_mb}MB" >&2
         
         if [[ $available_mb -lt $required_space_mb ]]; then
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: Insufficient disk space" >&2
             log_debug "Insufficient disk space: ${available_mb}MB available, ${required_space_mb}MB required"
             return 1
         fi
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Disk space check passed" >&2
+    else
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Directory does not exist, skipping disk space check" >&2
     fi
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] check_disk_space: Completed" >&2
     return 0
 }
 
 # Exécution principale
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] ===== MAIN EXECUTION START =====" >&2
 log_debug "Starting YouTube likes sync for sociétaire: $PLAYER"
 log_debug "Cookie file: $COOKIE_FILE"
 log_debug "uDRIVE path: $UDRIVE_PATH"
 
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cleaning up old sync processes for $PLAYER" >&2
 # Nettoyer les anciens processus
 cleanup_old_sync_processes "$PLAYER"
 
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Checking disk space for $UDRIVE_PATH" >&2
 # Vérifier l'espace disque
 if ! check_disk_space "$UDRIVE_PATH"; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: Insufficient disk space, skipping YouTube sync for $PLAYER" >&2
     log_debug "Insufficient disk space, skipping YouTube sync for $PLAYER"
     exit 1
 fi
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Disk space check passed" >&2
 
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting YouTube likes synchronization..." >&2
 # Lancer la synchronisation
 if sync_youtube_likes "$PLAYER" "$COOKIE_FILE" "$UDRIVE_PATH"; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] SUCCESS: YouTube likes sync completed successfully for $PLAYER" >&2
     log_debug "YouTube likes sync completed successfully for $PLAYER"
     exit 0
 else
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: YouTube likes sync failed for $PLAYER" >&2
     log_debug "YouTube likes sync failed for $PLAYER"
     exit 1
 fi
