@@ -305,18 +305,10 @@ YTURL="$URL"
 echo "VIDEO $YTURL"
 echo "Processing URL: $YTURL"
 
-# Get user uDRIVE path for YouTube downloads
-USER_UDRIVE_PATH=$(get_user_udrive_path "$PLAYER")
-if [[ $? -eq 0 ]]; then
-    echo "Using uDRIVE path: $USER_UDRIVE_PATH"
-else
-    echo "No uDRIVE path found for player: $PLAYER"
-fi
-
-# Use process_youtube.sh for YouTube processing
+# Use process_youtube.sh for YouTube processing with player email
 echo "Using process_youtube.sh for YouTube download..."
-echo "Command: ${MY_PATH}/IA/process_youtube.sh --debug \"$YTURL\" \"mp4\" \"$USER_UDRIVE_PATH\""
-YOUTUBE_RESULT=$(${MY_PATH}/IA/process_youtube.sh --debug "$YTURL" "mp4" "$USER_UDRIVE_PATH")
+echo "Command: ${MY_PATH}/IA/process_youtube.sh --debug \"$YTURL\" \"mp4\" \"$PLAYER\""
+YOUTUBE_RESULT=$(${MY_PATH}/IA/process_youtube.sh --debug "$YTURL" "mp4" "$PLAYER")
 YOUTUBE_EXIT_CODE=$?
 echo "process_youtube.sh exit code: $YOUTUBE_EXIT_CODE"
 
@@ -611,17 +603,9 @@ echo '[
         
         espeak "OK."
         
-        # Get user uDRIVE path for MP3 downloads
-        USER_UDRIVE_PATH=$(get_user_udrive_path "$PLAYER")
-        if [[ $? -eq 0 ]]; then
-            echo "Using uDRIVE path: $USER_UDRIVE_PATH"
-        else
-            echo "No uDRIVE path found for player: $PLAYER"
-        fi
-        
-        # Use process_youtube.sh for MP3 processing
+        # Use process_youtube.sh for MP3 processing with player email
         echo "Using process_youtube.sh for MP3 download..."
-        echo "Command: ${MY_PATH}/IA/process_youtube.sh --debug \"$URL\" \"mp3\" \"$USER_UDRIVE_PATH\""
+        echo "Command: ${MY_PATH}/IA/process_youtube.sh --debug \"$URL\" \"mp3\" \"$PLAYER\""
         
         # Check if process_youtube.sh exists and is executable
         if [[ ! -f "${MY_PATH}/IA/process_youtube.sh" ]]; then
@@ -636,7 +620,7 @@ echo '[
             exit 1
         fi
         
-        MP3_RESULT=$(${MY_PATH}/IA/process_youtube.sh --debug "$URL" "mp3" "$USER_UDRIVE_PATH")
+        MP3_RESULT=$(${MY_PATH}/IA/process_youtube.sh --debug "$URL" "mp3" "$PLAYER")
         MP3_EXIT_CODE=$?
         echo "process_youtube.sh exit code: $MP3_EXIT_CODE"
         

@@ -258,7 +258,6 @@ process_liked_video() {
     local uploader="$4"
     local url="$5"
     local player="$6"
-    local udrive_path="$7"
     
     log_debug "Processing liked video: $title by $uploader"
     
@@ -270,7 +269,7 @@ process_liked_video() {
     local format="mp4"
     
     # Appeler process_youtube.sh pour télécharger la vidéo
-    local result=$($MY_PATH/process_youtube.sh --debug "$url" "$format" "$udrive_path" 2>/dev/null)
+    local result=$($MY_PATH/process_youtube.sh --debug "$url" "$format" "$player" 2>/dev/null)
     
     if [[ $? -eq 0 ]]; then
         # Extraire l'URL IPFS du résultat JSON
@@ -299,7 +298,6 @@ process_liked_video() {
 sync_youtube_likes() {
     local player="$1"
     local cookie_file="$2"
-    local udrive_path="$3"
     
     log_debug "Starting YouTube likes synchronization for $player"
     
@@ -334,7 +332,7 @@ sync_youtube_likes() {
             log_debug "Processing: $title (ID: $video_id)"
             
             # Traiter la vidéo
-            if process_liked_video "$video_id" "$title" "$duration" "$uploader" "$url" "$player" "$udrive_path"; then
+            if process_liked_video "$video_id" "$title" "$duration" "$uploader" "$url" "$player"; then
                 success_count=$((success_count + 1))
             fi
             
@@ -368,6 +366,7 @@ send_sync_notification() {
     
     # Créer le contenu HTML de la notification
     local email_content="<html><head><meta charset='UTF-8'>
+    <title>🎵 YouTube Synchronisation Complétée<title>
 <style>
     body { font-family: 'Courier New', monospace; background: #f5f5f5; }
     .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
@@ -392,7 +391,7 @@ send_sync_notification() {
         <ul>
             <li>🎬 <strong>Vidéos :</strong> uDRIVE/Videos/ (format MP4)</li>
         </ul>
-        <p><strong>🔗 Accéder à votre uDRIVE :</strong> <a href="$myIPFS$(cat ~/.zen/game/nostr/${player}/NOSTRNS 2>/dev/null || echo 'NOSTRNS_NOT_FOUND')/APP/uDRIVE" target="_blank">Ouvrir uDRIVE</a></p>
+        <p><strong>🔗 Accéder à votre uDRIVE :</strong> <a href="$myIPFS$(cat ~/.zen/game/nostr/${player}/NOSTRNS 2>/dev/null || echo 'NOSTRNS_NOT_FOUND')/${player}/APP/uDRIVE/" target="_blank">Ouvrir uDRIVE</a></p>
         <p>Les vidéos sont également accessibles via IPFS pour un partage décentralisé.</p>
     </div>
     <div class='footer'>
@@ -477,7 +476,7 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Disk space check passed" >&2
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting YouTube likes synchronization..." >&2
 # Lancer la synchronisation
-if sync_youtube_likes "$PLAYER" "$COOKIE_FILE" "$UDRIVE_PATH"; then
+if sync_youtube_likes "$PLAYER" "$COOKIE_FILE"; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] SUCCESS: YouTube likes sync completed successfully for $PLAYER" >&2
     log_debug "YouTube likes sync completed successfully for $PLAYER"
     exit 0

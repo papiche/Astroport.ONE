@@ -663,77 +663,28 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 if [ -z "$video_url" ]; then
                     KeyANSWER="Désolé, Aucune URL vidéo valide trouvée dans votre message."
                 else
-                    # Get user uDRIVE path for video downloads
-                    USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
-                    if [ $? -eq 0 ]; then
-                        echo "Using uDRIVE path for video download: $USER_UDRIVE_PATH" >&2
-                        # Pass uDRIVE path to process_youtube.sh (supports all yt-dlp platforms)
+                    echo "Processing YouTube video: $video_url" >&2
+                    
+                    # Get user email for video downloads
+                    if [[ "$KNAME" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+                        echo "Using player email for video download: $KNAME" >&2
+                        # Pass player email to process_youtube.sh (supports all yt-dlp platforms)
                         if [[ "$message_text" =~ \#mp3 ]]; then
-                            json=$($MY_PATH/process_youtube.sh --debug "$video_url" "mp3" "$USER_UDRIVE_PATH")
+                            $MY_PATH/process_youtube.sh --debug "$video_url" "mp3" "$KNAME" >/dev/null 2>&1
                         else
-                            json=$($MY_PATH/process_youtube.sh --debug "$video_url" "mp4" "$USER_UDRIVE_PATH")
+                            $MY_PATH/process_youtube.sh --debug "$video_url" "mp4" "$KNAME" >/dev/null 2>&1
                         fi
                     else
                         echo "Warning: Using default location for video download" >&2
                         # Enable debug mode for video processing (supports all yt-dlp platforms)
                         if [[ "$message_text" =~ \#mp3 ]]; then
-                            json=$($MY_PATH/process_youtube.sh --debug "$video_url" "mp3")
+                            $MY_PATH/process_youtube.sh --debug "$video_url" "mp3" >/dev/null 2>&1
                         else
-                            json=$($MY_PATH/process_youtube.sh --debug "$video_url" "mp4")
+                            $MY_PATH/process_youtube.sh --debug "$video_url" "mp4" >/dev/null 2>&1
                         fi
                     fi
-                    # Extract JSON from mixed output (yt-dlp output + JSON)
-                    # Simple approach: get the last few lines and look for JSON
-                    json_only=$(echo "$json" | tail -n 20 | awk '
-                    BEGIN { json = ""; in_json = 0 }
-                    /^\{/ { json = $0; in_json = 1; next }
-                    in_json == 1 { json = json "\n" $0 }
-                    /^}/ { if (in_json == 1) { print json; exit } }
-                    ')
                     
-                    # Debug: Log the extracted JSON
-                    echo "Extracted JSON: $json_only" >&2
-                    
-                    error=$(echo "$json_only" | jq -r .error 2>/dev/null)
-                    if [[ -n "$error" && "$error" != "null" ]]; then
-                        # Format error message with proper newlines
-                        error_formatted=$(echo -e "$error")
-                        KeyANSWER="$error_formatted"
-                    else
-                        # Debug: Log the JSON response
-                        echo "Video JSON response: $json_only" >&2
-                        
-                        # Extract values safely with fallbacks
-                        ipfs_url=$(echo "$json_only" | jq -r '.ipfs_url // empty' 2>/dev/null)
-                        title=$(echo "$json_only" | jq -r '.title // empty' 2>/dev/null)
-                        duration=$(echo "$json_only" | jq -r '.duration // empty' 2>/dev/null)
-                        uploader=$(echo "$json_only" | jq -r '.uploader // empty' 2>/dev/null)
-                        original_url=$(echo "$json_only" | jq -r '.original_url // empty' 2>/dev/null)
-                        
-                        # Debug: Log extracted values
-                        echo "Extracted values:" >&2
-                        echo "  ipfs_url: '$ipfs_url'" >&2
-                        echo "  title: '$title'" >&2
-                        echo "  duration: '$duration'" >&2
-                        echo "  uploader: '$uploader'" >&2
-                        echo "  original_url: '$original_url'" >&2
-                        
-                        # Format duration in H:MM:SS if possible
-                        duration_fmt="$duration"
-                        if [[ "$duration" =~ ^[0-9]+$ ]]; then
-                            hours=$((duration/3600))
-                            mins=$(( (duration%3600)/60 ))
-                            secs=$((duration%60))
-                            if (( hours > 0 )); then
-                                duration_fmt=$(printf "%d:%02d:%02d" $hours $mins $secs)
-                            else
-                                duration_fmt=$(printf "%02d:%02d" $mins $secs)
-                            fi
-                        fi
-                        
-                        # Build response with proper escaping
-                        KeyANSWER=$(echo -e "🎬 Title: ${title:-'Unknown'}\n⏱️ Duration: ${duration_fmt:-'Unknown'}\n👤 Uploader: ${uploader:-'Unknown'}\n🔗 Original: ${original_url:-'Unknown'}\n📦 IPFS: ${ipfs_url:-'Not available'}")
-                    fi
+                    echo "Video processing completed. NOSTR notification sent by process_youtube.sh" >&2
                 fi
             elif [[ "${TAGS[plantnet]}" == true ]]; then
                 # PlantNet recognition processing

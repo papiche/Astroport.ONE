@@ -3,7 +3,7 @@
 # process_youtube.sh
 # Script de téléchargement et traitement des vidéos YouTube
 #
-# Usage: $0 [--debug] <url> <format>
+# Usage: $0 [--debug] <url> <format> [player_email]
 #
 # --debug : active le mode verbeux, log dans ~/.zen/tmp/IA.log
 #
@@ -47,14 +47,14 @@ MY_PATH="$( cd "$MY_PATH" && pwd )"
 
 # Vérifie si les arguments sont fournis
 if [ $# -lt 2 ]; then
-    log_debug "Usage: $0 <url> <format> [udrive_path]"
-    echo "Usage: $0 <url> <format> [udrive_path]" >&2
+    log_debug "Usage: $0 <url> <format> [player_email]"
+    echo "Usage: $0 <url> <format> [player_email]" >&2
     exit 1
 fi
 
 URL="$1"
 FORMAT="$2"
-UDRIVE_PATH="$3"
+PLAYER_EMAIL="$3"
 
 . "$MY_PATH/../tools/my.sh"
 
@@ -67,12 +67,18 @@ OUTPUT_DIR="$TMP_DIR"
 echo "Using temporary directory for download: $OUTPUT_DIR" >&2
 log_debug "Using temporary directory for download: $OUTPUT_DIR"
 
-# Check if uDRIVE path is provided for final copy
+# Check if player email is provided and construct uDRIVE path
 UDRIVE_COPY_PATH=""
-if [ -n "$UDRIVE_PATH" ] && [ -d "$UDRIVE_PATH" ]; then
-    UDRIVE_COPY_PATH="$UDRIVE_PATH"
-    echo "Will copy final file to uDRIVE: $UDRIVE_COPY_PATH" >&2
-    log_debug "Will copy final file to uDRIVE: $UDRIVE_COPY_PATH"
+if [ -n "$PLAYER_EMAIL" ]; then
+    UDRIVE_COPY_PATH="$HOME/.zen/game/nostr/$PLAYER_EMAIL/APP/uDRIVE"
+    if [ -d "$UDRIVE_COPY_PATH" ]; then
+        echo "Will copy final file to uDRIVE: $UDRIVE_COPY_PATH" >&2
+        log_debug "Will copy final file to uDRIVE: $UDRIVE_COPY_PATH"
+    else
+        echo "uDRIVE directory not found for player: $PLAYER_EMAIL" >&2
+        log_debug "uDRIVE directory not found for player: $PLAYER_EMAIL"
+        UDRIVE_COPY_PATH=""
+    fi
 fi
 
 # Cleanup function
@@ -81,6 +87,61 @@ cleanup() {
     [[ -f "$HOME/.zen/tmp/youtube_cookies.txt" ]] && rm -f "$HOME/.zen/tmp/youtube_cookies.txt"
 }
 trap cleanup EXIT
+
+# Function to send NOSTR notification
+send_nostr_notification() {
+    local player_email="$1"
+    local title="$2"
+    local uploader="$3"
+    local ipfs_url="$4"
+    local youtube_url="$5"
+    
+    log_debug "Sending NOSTR notification for video: $title"
+    
+    # Check if NOSTR script exists
+    local nostr_script="$MY_PATH/../tools/nostr_send_note.py"
+    if [[ ! -f "$nostr_script" ]]; then
+        log_debug "NOSTR script not found: $nostr_script"
+        return 1
+    fi
+    
+    # Check if player has NSEC key
+    local nsec_file="$HOME/.zen/game/nostr/$player_email/.nsec"
+    if [[ ! -f "$nsec_file" ]]; then
+        log_debug "NSEC file not found for $player_email: $nsec_file"
+        return 1
+    fi
+    
+    # Read NSEC key
+    local nsec_key=$(cat "$nsec_file" 2>/dev/null)
+    if [[ -z "$nsec_key" ]]; then
+        log_debug "Failed to read NSEC key for $player_email"
+        return 1
+    fi
+    
+    # Build NOSTR message
+    local message="🎬 Nouvelle vidéo téléchargée: $title par $uploader
+
+🔗 IPFS: $ipfs_url
+📺 YouTube: $youtube_url
+
+#YouTubeDownload #uDRIVE #IPFS"
+    
+    # Send NOSTR note
+    echo "📡 Sending NOSTR notification for: $title" >&2
+    local nostr_result=$(python3 "$nostr_script" "$nsec_key" "$message" "ws://127.0.0.1:7777" 2>&1)
+    local nostr_exit_code=$?
+    
+    if [[ $nostr_exit_code -eq 0 ]]; then
+        log_debug "NOSTR notification sent successfully for: $title"
+        echo "✅ NOSTR notification published for: $title"
+        return 0
+    else
+        log_debug "Failed to send NOSTR notification for: $title (exit code: $nostr_exit_code)"
+        echo "⚠️ NOSTR notification failed for: $title"
+        return 1
+    fi
+}
 
 find_user_cookie_file() {
     # Search for .cookie.txt in user NOSTR directories
@@ -383,6 +444,11 @@ EOF
                     echo "Warning: Failed to copy file to uDRIVE: $udrive_file" >&2
                     log_debug "Warning: Failed to copy file to uDRIVE: $udrive_file"
                 fi
+            fi
+            
+            # Send NOSTR notification if player email is provided
+            if [[ -n "$PLAYER_EMAIL" ]]; then
+                send_nostr_notification "$PLAYER_EMAIL" "$media_title" "$uploader" "$ipfs_url" "$url"
             fi
             
             cat << EOF
