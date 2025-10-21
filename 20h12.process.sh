@@ -59,6 +59,9 @@ while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
         && exit 1
 done
 
+#### COPY MULTIPASS DAILY LOG - before erase
+cat $HOME/.zen/tmp/MULTIPASS.refresh.log >> /tmp/20h12.log
+
 ########################################################################
 # show ZONE.sh cache of the day
 echo "TODAY UPlanet landings"

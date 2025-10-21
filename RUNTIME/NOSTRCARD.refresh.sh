@@ -21,7 +21,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 [[ -z ${IPFSNODEID} ]] && echo "ERROR ASTROPORT BROKEN" && exit 1
 
 # =================== LOGGING SYSTEM ===================
-LOGFILE="$HOME/.zen/tmp/nostr_MULTIPASS.refresh.log"
+LOGFILE="$HOME/.zen/tmp/MULTIPASS.refresh.log"
 mkdir -p "$(dirname "$LOGFILE")"
 
 # Logging function with timestamp and PID
@@ -292,7 +292,7 @@ for PLAYER in "${NOSTR[@]}"; do
         ZEN=-10
     fi
 
-    log "INFO" "${G1PUBNOSTR} AMOUNT = ${COINS} G1 -> ${ZEN} ZEN"
+    log "INFO" "${G1PUBNOSTR} AMOUNT (${COINS} G1) = ${ZEN} ZEN"
     log_metric "WALLET_BALANCE" "${COINS}" "${PLAYER}"
 
     # Check for balance threshold notifications
@@ -1381,7 +1381,7 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     ########################################################################################
-    ########################################################################################
+    ########################################################################
     ## UPDATE IPNS NOSTRVAULT KEY - Only when refresh is needed
     if [[ $refresh_needed -eq 0 ]]; then
         echo "IPNS update triggered for ${PLAYER} - Reason: $REFRESH_REASON"
@@ -1420,6 +1420,36 @@ for PLAYER in "${NOSTR[@]}"; do
             echo "IPNS updated for ${PLAYER} (unknown reason: $REFRESH_REASON)"
             FILE_UPDATES=$((FILE_UPDATES + 1))
         fi
+
+        ########################################################################
+        ## YOUTUBE LIKES SYNC - Once per day PER USER at uDRIVE sync time
+        ########################################################################
+        # Check if YouTube sync should run for this user today (only once per day per user)
+        YOUTUBE_SYNC_TODAY_FILE="$HOME/.zen/tmp/youtube_sync_${PLAYER}_${TODATE}.done"
+        if [[ ! -f "$YOUTUBE_SYNC_TODAY_FILE" ]]; then
+            # Check if user has YouTube cookie file
+            if [[ -s ~/.zen/game/nostr/${PLAYER}/.cookie.txt ]]; then
+                log "INFO" "🎵 Starting YouTube likes sync for user: ${PLAYER}"
+                log_metric "YOUTUBE_SYNC_START" "1" "${PLAYER}"
+                
+                # Launch YouTube likes synchronization in background
+                ${MY_PATH}/../IA/sync_youtube_likes.sh "${PLAYER}" --debug &
+                YOUTUBE_SYNC_PID=$!
+                
+                log "INFO" "YouTube sync started for ${PLAYER} (PID: $YOUTUBE_SYNC_PID)"
+                log_metric "YOUTUBE_SYNC_PID" "$YOUTUBE_SYNC_PID" "${PLAYER}"
+                
+                # Mark YouTube sync as done for this user today
+                touch "$YOUTUBE_SYNC_TODAY_FILE"
+                YOUTUBE_SYNC_USERS=$((YOUTUBE_SYNC_USERS + 1))
+                log "INFO" "✅ YouTube sync scheduled for ${PLAYER}"
+                log_metric "YOUTUBE_SYNC_SCHEDULED" "1" "${PLAYER}"
+            else
+                log "DEBUG" "No YouTube cookie file found for user: ${PLAYER} - Visit $uSPOT/cookie to upload your YouTube cookies"
+            fi
+        else
+            log "DEBUG" "YouTube sync already completed today for ${PLAYER} - skipping"
+        fi
     else
         echo "IPNS update skipped for ${PLAYER} (no refresh needed)"
     fi
@@ -1431,49 +1461,10 @@ for PLAYER in "${NOSTR[@]}"; do
 done
 
 ########################################################################
-## GLOBAL YOUTUBE LIKES SYNC - Once per day at uDRIVE sync time
+## YOUTUBE LIKES SYNC - Once per day PER USER at uDRIVE sync time
 ########################################################################
-# Check if YouTube sync should run today (only once per day)
-YOUTUBE_SYNC_TODAY_FILE="$HOME/.zen/tmp/youtube_sync_${TODATE}.done"
-if [[ ! -f "$YOUTUBE_SYNC_TODAY_FILE" ]]; then
-    log "INFO" "🎵 Starting global YouTube likes sync for all users with cookies"
-    
-    # Get all users with YouTube cookies
-    YOUTUBE_USERS=()
-    for PLAYER in "${NOSTR[@]}"; do
-        if [[ -s ~/.zen/game/nostr/${PLAYER}/.cookie.txt ]]; then
-            YOUTUBE_USERS+=("${PLAYER}")
-        fi
-    done
-    
-    if [[ ${#YOUTUBE_USERS[@]} -gt 0 ]]; then
-        log "INFO" "Found ${#YOUTUBE_USERS[@]} users with YouTube cookies - starting sync"
-        log_metric "YOUTUBE_GLOBAL_SYNC_START" "${#YOUTUBE_USERS[@]}"
-        
-        # Launch YouTube sync for all users with cookies
-        for PLAYER in "${YOUTUBE_USERS[@]}"; do
-            log "INFO" "🎵 Starting YouTube likes sync for user: ${PLAYER}"
-            log_metric "YOUTUBE_SYNC_START" "1" "${PLAYER}"
-            
-            # Launch YouTube likes synchronization in background
-            ${MY_PATH}/../IA/sync_youtube_likes.sh "${PLAYER}" --debug &
-            YOUTUBE_SYNC_PID=$!
-            
-            log "INFO" "YouTube sync started for ${PLAYER} (PID: $YOUTUBE_SYNC_PID)"
-            log_metric "YOUTUBE_SYNC_PID" "$YOUTUBE_SYNC_PID" "${PLAYER}"
-        done
-        
-        # Mark YouTube sync as done for today
-        touch "$YOUTUBE_SYNC_TODAY_FILE"
-        YOUTUBE_SYNC_USERS=${#YOUTUBE_USERS[@]}
-        log "INFO" "✅ Global YouTube sync completed for ${#YOUTUBE_USERS[@]} users"
-        log_metric "YOUTUBE_GLOBAL_SYNC_COMPLETED" "${#YOUTUBE_USERS[@]}"
-    else
-        log "DEBUG" "No users with YouTube cookies found - skipping global sync"
-    fi
-else
-    log "DEBUG" "YouTube sync already completed today - skipping"
-fi
+# YouTube sync handled for each user during their refresh cycle
+# when uDRIVE sync occurs (daily_update or udrive_update refresh reasons)
 
 end=`date +%s`
 dur=`expr $end - $gstart`
@@ -1484,7 +1475,7 @@ log "INFO" "============================================ NOSTR REFRESH SUMMARY"
 log "INFO" "📊 Players: ${#NOSTR[@]} total | $DAILY_UPDATES daily | $FILE_UPDATES files | $SKIPPED_PLAYERS skipped"
 log "INFO" "💰 Payments: $PAYMENTS_PROCESSED processed | $PAYMENTS_FAILED failed | $PAYMENTS_ALREADY_DONE already done"
 log "INFO" "👥 Friends Summaries: $FRIENDS_SUMMARIES_PUBLISHED total ($DAILY_SUMMARIES daily | $WEEKLY_SUMMARIES weekly | $MONTHLY_SUMMARIES monthly | $YEARLY_SUMMARIES yearly)"
-log "INFO" "🏛️  U.SOCIETY N² Expansions: $USOCIETY_N2_EXPANSIONS"
+log "INFO" "🏛️ U.SOCIETY N² Expansions: $USOCIETY_N2_EXPANSIONS"
 log "INFO" "🎵 YouTube Sync: $YOUTUBE_SYNC_USERS users"
 log "INFO" "⏱️  Duration: ${hours}h ${minutes}m ${seconds}s"
 log "INFO" "============================================ NOSTR.refresh DONE."
