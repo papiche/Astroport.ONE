@@ -94,6 +94,7 @@ mkdir -p ~/.zen/tmp/${MOATS}
     MONTHLY_SUMMARIES=0
     YEARLY_SUMMARIES=0
     USOCIETY_N2_EXPANSIONS=0
+    YOUTUBE_SYNC_USERS=0
 
 # Fonction pour générer une heure aléatoire de rafraîchissement
 get_random_refresh_time() {
@@ -883,30 +884,6 @@ for PLAYER in "${NOSTR[@]}"; do
                 DIFF_SECONDS=$((TODATE_SECONDS - UDATE_SECONDS))
                 DIFF_DAYS=$((DIFF_SECONDS / 86400))
                 
-                if [ $DIFF_DAYS -lt 365 ]; then
-                    echo "OK VALID $((365 - DIFF_DAYS)) days left..."
-                    
-                    ########################################################################
-                    ## YOUTUBE LIKES SYNC FOR SOCIETY MEMBERS
-                    ########################################################################
-                    # Vérifier si le sociétaire a un fichier cookie YouTube
-                    if [[ -s ~/.zen/game/nostr/${PLAYER}/.cookie.txt ]]; then
-                        log "INFO" "🎵 Starting YouTube likes sync for society member: ${PLAYER}"
-                        log_metric "YOUTUBE_SYNC_START" "1" "${PLAYER}"
-                        
-                        # Lancer la synchronisation des vidéos likées en arrière-plan
-                        ${MY_PATH}/../IA/sync_youtube_likes.sh "${PLAYER}" --debug &
-                        YOUTUBE_SYNC_PID=$!
-                        
-                        log "INFO" "YouTube sync started for ${PLAYER} (PID: $YOUTUBE_SYNC_PID)"
-                        log_metric "YOUTUBE_SYNC_PID" "$YOUTUBE_SYNC_PID" "${PLAYER}"
-                    else
-                        log "DEBUG" "No YouTube cookie file found for society member: ${PLAYER}"
-                    fi
-                else
-                    echo "GAME OVER since $((DIFF_DAYS - 365))"
-                fi
-                
                 if [[ $DIFF_DAYS == 365 ]]; then
                     echo "### ENDING U SOCIETY FREE MODE (FALLBACK)"
                     rm ~/.zen/game/players/${PLAYER}/U.SOCIETY
@@ -917,23 +894,7 @@ for PLAYER in "${NOSTR[@]}"; do
         fi
     fi
 
-    ########################################################################
-    ## YOUTUBE LIKES SYNC FOR ALL USERS (WITH COOKIE)
-    ########################################################################
-    # Vérifier si l'utilisateur a un fichier cookie YouTube (pour tous les utilisateurs)
-    if [[ -s ~/.zen/game/nostr/${PLAYER}/.cookie.txt ]]; then
-        log "INFO" "🎵 Starting YouTube likes sync for user: ${PLAYER}"
-        log_metric "YOUTUBE_SYNC_START" "1" "${PLAYER}"
-        
-        # Lancer la synchronisation des vidéos likées en arrière-plan
-        ${MY_PATH}/../IA/sync_youtube_likes.sh "${PLAYER}" --debug &
-        YOUTUBE_SYNC_PID=$!
-        
-        log "INFO" "YouTube sync started for ${PLAYER} (PID: $YOUTUBE_SYNC_PID)"
-        log_metric "YOUTUBE_SYNC_PID" "$YOUTUBE_SYNC_PID" "${PLAYER}"
-    else
-        log "DEBUG" "No YouTube cookie file found for user: ${PLAYER} - Visit $uSPOT/cookie to upload your YouTube cookies"
-    fi
+  ########################################################################
 
     ########################################################################
     echo ">>> CHECKING MULTIPASS ($pcoins G1)"
@@ -1469,6 +1430,51 @@ for PLAYER in "${NOSTR[@]}"; do
 
 done
 
+########################################################################
+## GLOBAL YOUTUBE LIKES SYNC - Once per day at uDRIVE sync time
+########################################################################
+# Check if YouTube sync should run today (only once per day)
+YOUTUBE_SYNC_TODAY_FILE="$HOME/.zen/tmp/youtube_sync_${TODATE}.done"
+if [[ ! -f "$YOUTUBE_SYNC_TODAY_FILE" ]]; then
+    log "INFO" "🎵 Starting global YouTube likes sync for all users with cookies"
+    
+    # Get all users with YouTube cookies
+    YOUTUBE_USERS=()
+    for PLAYER in "${NOSTR[@]}"; do
+        if [[ -s ~/.zen/game/nostr/${PLAYER}/.cookie.txt ]]; then
+            YOUTUBE_USERS+=("${PLAYER}")
+        fi
+    done
+    
+    if [[ ${#YOUTUBE_USERS[@]} -gt 0 ]]; then
+        log "INFO" "Found ${#YOUTUBE_USERS[@]} users with YouTube cookies - starting sync"
+        log_metric "YOUTUBE_GLOBAL_SYNC_START" "${#YOUTUBE_USERS[@]}"
+        
+        # Launch YouTube sync for all users with cookies
+        for PLAYER in "${YOUTUBE_USERS[@]}"; do
+            log "INFO" "🎵 Starting YouTube likes sync for user: ${PLAYER}"
+            log_metric "YOUTUBE_SYNC_START" "1" "${PLAYER}"
+            
+            # Launch YouTube likes synchronization in background
+            ${MY_PATH}/../IA/sync_youtube_likes.sh "${PLAYER}" --debug &
+            YOUTUBE_SYNC_PID=$!
+            
+            log "INFO" "YouTube sync started for ${PLAYER} (PID: $YOUTUBE_SYNC_PID)"
+            log_metric "YOUTUBE_SYNC_PID" "$YOUTUBE_SYNC_PID" "${PLAYER}"
+        done
+        
+        # Mark YouTube sync as done for today
+        touch "$YOUTUBE_SYNC_TODAY_FILE"
+        YOUTUBE_SYNC_USERS=${#YOUTUBE_USERS[@]}
+        log "INFO" "✅ Global YouTube sync completed for ${#YOUTUBE_USERS[@]} users"
+        log_metric "YOUTUBE_GLOBAL_SYNC_COMPLETED" "${#YOUTUBE_USERS[@]}"
+    else
+        log "DEBUG" "No users with YouTube cookies found - skipping global sync"
+    fi
+else
+    log "DEBUG" "YouTube sync already completed today - skipping"
+fi
+
 end=`date +%s`
 dur=`expr $end - $gstart`
 hours=$((dur / 3600)); minutes=$(( (dur % 3600) / 60 )); seconds=$((dur % 60))
@@ -1477,8 +1483,9 @@ hours=$((dur / 3600)); minutes=$(( (dur % 3600) / 60 )); seconds=$((dur % 60))
 log "INFO" "============================================ NOSTR REFRESH SUMMARY"
 log "INFO" "📊 Players: ${#NOSTR[@]} total | $DAILY_UPDATES daily | $FILE_UPDATES files | $SKIPPED_PLAYERS skipped"
 log "INFO" "💰 Payments: $PAYMENTS_PROCESSED processed | $PAYMENTS_FAILED failed | $PAYMENTS_ALREADY_DONE already done"
-    log "INFO" "👥 Friends Summaries: $FRIENDS_SUMMARIES_PUBLISHED total ($DAILY_SUMMARIES daily | $WEEKLY_SUMMARIES weekly | $MONTHLY_SUMMARIES monthly | $YEARLY_SUMMARIES yearly)"
+log "INFO" "👥 Friends Summaries: $FRIENDS_SUMMARIES_PUBLISHED total ($DAILY_SUMMARIES daily | $WEEKLY_SUMMARIES weekly | $MONTHLY_SUMMARIES monthly | $YEARLY_SUMMARIES yearly)"
 log "INFO" "🏛️  U.SOCIETY N² Expansions: $USOCIETY_N2_EXPANSIONS"
+log "INFO" "🎵 YouTube Sync: $YOUTUBE_SYNC_USERS users"
 log "INFO" "⏱️  Duration: ${hours}h ${minutes}m ${seconds}s"
 log "INFO" "============================================ NOSTR.refresh DONE."
 
@@ -1495,6 +1502,7 @@ log_metric "WEEKLY_SUMMARIES" "$WEEKLY_SUMMARIES"
 log_metric "MONTHLY_SUMMARIES" "$MONTHLY_SUMMARIES"
 log_metric "YEARLY_SUMMARIES" "$YEARLY_SUMMARIES"
 log_metric "USOCIETY_N2_EXPANSIONS" "$USOCIETY_N2_EXPANSIONS"
+log_metric "YOUTUBE_SYNC_USERS" "$YOUTUBE_SYNC_USERS"
 log_metric "EXECUTION_TIME_SECONDS" "$dur"
 rm -Rf ~/.zen/tmp/${MOATS}
 rm -f "$LOCKFILE"
