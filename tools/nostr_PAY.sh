@@ -63,10 +63,23 @@ print_error() {
     echo -e "${RED}❌ $1${NC}"
 }
 
+# Function to calculate ZEN balance from G1 balance
+calculate_zen_balance() {
+    local g1_balance="$1"
+    # ZEN = (G1 - 1) * 10, with minimum of 0
+    local zen_balance=$(echo "scale=0; ($g1_balance - 1) * 10" | bc -l)
+    if (( $(echo "$zen_balance < 0" | bc -l) )); then
+        zen_balance="0"
+    fi
+    echo "$zen_balance"
+}
+
 print_balance() {
     local balance="$1"
     local pubkey="$2"
-    echo -e "  ${WHITE}💰 Balance: ${GREEN}$balance Ğ1${NC}"
+    local zen_balance=$(calculate_zen_balance "$balance")
+    echo -e "  ${WHITE}💰 G1 Balance: ${GREEN}$balance Ğ1${NC}"
+    echo -e "  ${WHITE}🌿 ZEN Balance: ${BLUE}$zen_balance ZEN${NC}"
     echo -e "  ${WHITE}🔑 Public Key: ${CYAN}${pubkey:0:20}...${NC}"
 }
 
@@ -170,13 +183,14 @@ select_nostr_account() {
         echo ""
         
         # Affichage en tableau compact
-        printf "%-4s %-25s %-12s %-20s\n" "N°" "Email" "Balance" "Public Key"
-        echo "──────────────────────────────────────────────────────────────────────────────"
+        printf "%-4s %-25s %-12s %-12s %-20s\n" "N°" "Email" "G1 Balance" "ZEN Balance" "Public Key"
+        echo "──────────────────────────────────────────────────────────────────────────────────────────────"
         
         for ((i=start_index; i<=end_index && i<display_count; i++)); do
             local account_name="${filtered_accounts[$i]}"
             local balance="${filtered_balances[$i]}"
             local g1pub="${filtered_pubkeys[$i]}"
+            local zen_balance=$(calculate_zen_balance "$balance")
             
             local display_index=$((i + 1))
             local short_pubkey="${g1pub:0:20}..."
@@ -185,8 +199,8 @@ select_nostr_account() {
                 short_email="${account_name:0:21}..."
             fi
             
-            printf "${BLUE}%-4s${NC} ${WHITE}%-25s${NC} ${GREEN}%-12s${NC} ${CYAN}%-20s${NC}\n" \
-                   "$display_index" "$short_email" "$balance Ğ1" "$short_pubkey"
+            printf "${BLUE}%-4s${NC} ${WHITE}%-25s${NC} ${GREEN}%-12s${NC} ${BLUE}%-12s${NC} ${CYAN}%-20s${NC}\n" \
+                   "$display_index" "$short_email" "$balance Ğ1" "$zen_balance ZEN" "$short_pubkey"
         done
         echo ""
     }
@@ -378,7 +392,9 @@ select_nostr_account() {
                         echo ""
                         print_success "Compte sélectionné: $selected_account"
                         echo -e "${WHITE}Fichier de clé: ${CYAN}$selected_keyfile${NC}"
-                        echo -e "${WHITE}Balance: ${GREEN}$selected_balance Ğ1${NC}"
+                        local selected_zen_balance=$(calculate_zen_balance "$selected_balance")
+                        echo -e "${WHITE}G1 Balance: ${GREEN}$selected_balance Ğ1${NC}"
+                        echo -e "${WHITE}ZEN Balance: ${BLUE}$selected_zen_balance ZEN${NC}"
                         echo -e "${WHITE}Clé publique: ${CYAN}${selected_pubkey:0:20}...${NC}"
                         return
                     else
@@ -530,10 +546,12 @@ confirm_payment() {
     # Calculate new balances
     new_source_balance=$(echo "$source_balance - $amount" | bc -l)
     new_dest_balance=$(echo "$dest_balance + $amount" | bc -l)
+    new_source_zen=$(calculate_zen_balance "$new_source_balance")
+    new_dest_zen=$(calculate_zen_balance "$new_dest_balance")
     
     echo -e "${WHITE}Nouveaux soldes après transaction:${NC}"
-    echo -e "  ${WHITE}Votre compte: ${GREEN}$new_source_balance Ğ1${NC}"
-    echo -e "  ${WHITE}Compte destinataire: ${GREEN}$new_dest_balance Ğ1${NC}"
+    echo -e "  ${WHITE}Votre compte: ${GREEN}$new_source_balance Ğ1${NC} / ${BLUE}$new_source_zen ZEN${NC}"
+    echo -e "  ${WHITE}Compte destinataire: ${GREEN}$new_dest_balance Ğ1${NC} / ${BLUE}$new_dest_zen ZEN${NC}"
     echo ""
     
     while true; do
@@ -616,6 +634,10 @@ main() {
         if [[ -n "$comment" ]]; then
             echo -e "  ${WHITE}Commentaire: ${CYAN}$comment${NC}"
         fi
+        echo ""
+        echo -e "${CYAN}Nouveaux soldes:${NC}"
+        echo -e "  ${WHITE}Votre compte: ${GREEN}$new_source_balance Ğ1${NC} / ${BLUE}$new_source_zen ZEN${NC}"
+        echo -e "  ${WHITE}Destinataire: ${GREEN}$new_dest_balance Ğ1${NC} / ${BLUE}$new_dest_zen ZEN${NC}"
         echo ""
         echo -e "${GREEN}✅ Votre paiement a été traité avec succès !${NC}"
     else
