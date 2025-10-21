@@ -150,8 +150,8 @@ fetch_nostr_society_data() {
     # Si aucun email trouvé dans les transferts, utiliser le script séparé
     if [[ -z "$emails" ]]; then
         echo -e "${YELLOW}⚠️  Aucun email trouvé dans les transferts, utilisation du script DID séparé...${NC}"
-        # Utiliser le script séparé pour récupérer les données DID
-        local did_result=$(${MY_PATH}/fetch_did_data.sh 2>/dev/null)
+        # Utiliser le script nostr_did_client.py pour récupérer les données DID
+        local did_result=$(fetch_did_data_only)
         echo "$did_result"
         return 0
     fi
@@ -499,8 +499,8 @@ if [[ "$DID_ONLY" == "true" ]]; then
         "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S)"'"
     }'
     
-    # Récupérer les données Nostr (script séparé pour le mode --did)
-    NOSTR_DATA=$(${MY_PATH}/fetch_did_data.sh 2>/dev/null)
+    # Récupérer les données Nostr (utiliser la fonction intégrée)
+    NOSTR_DATA=$(fetch_did_data_only)
     
     # Intégrer les données Nostr dans le résultat
     RESULT=$(echo "$base_json" | jq --argjson nostr_data "$NOSTR_DATA" '. + {nostr_did_data: $nostr_data}')
@@ -637,8 +637,8 @@ end
 # Récupérer les données Nostr si demandé
 if [[ "$INCLUDE_NOSTR" == "true" ]]; then
     echo ""
-    # Utiliser le script séparé pour récupérer les données DID
-    NOSTR_DATA=$(${MY_PATH}/fetch_did_data.sh 2>/dev/null)
+    # Utiliser la fonction intégrée pour récupérer les données DID
+    NOSTR_DATA=$(fetch_did_data_only)
     
     # Intégrer les données Nostr dans le résultat
     RESULT=$(echo "$RESULT" | jq --argjson nostr_data "$NOSTR_DATA" '. + {nostr_did_data: $nostr_data}')
