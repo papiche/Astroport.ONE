@@ -97,6 +97,23 @@ EOF"
     echo ""
     echo "📋 Vous pouvez vérifier la connexion avec : sudo wg show"
     echo "🌐 Test de connectivité : ping 10.99.99.1"
+    
+    # Proposer de générer un QR code
+    echo ""
+    read -p "Générer un QR code pour cette configuration ? (y/N) : " generate_qr
+    if [[ "$generate_qr" =~ ^[Yy]$ ]]; then
+        if command -v qrencode &> /dev/null; then
+            echo -e "\n${CYAN}QR Code de votre configuration:${NC}"
+            sudo cat "$WG_CONFIG" | qrencode -t ansiutf8
+            echo ""
+            echo -e "${YELLOW}📱 Instructions:${NC}"
+            echo "1. Installez l'application WireGuard sur votre appareil"
+            echo "2. Ouvrez l'application et sélectionnez 'Scanner un QR code'"
+            echo "3. Scannez le QR code affiché ci-dessus"
+        else
+            echo -e "${YELLOW}⚠️ qrencode non installé. Installez-le avec: sudo apt install qrencode${NC}"
+        fi
+    fi
 }
 
 # Version automatique (pour déploiement scripté)
@@ -149,8 +166,67 @@ EOF"
     echo "🌐 Test de connectivité : ping 10.99.99.1"
 }
 
+# Génération de QR code pour configuration existante
+generate_qr() {
+    local CONFIG_FILE="/etc/wireguard/wg0.conf"
+    
+    # Vérifier si qrencode est installé
+    if ! command -v qrencode &> /dev/null; then
+        echo "❌ qrencode n'est pas installé"
+        echo "   Installez-le avec: sudo apt install qrencode"
+        exit 1
+    fi
+    
+    # Chercher une configuration client
+    if [[ ! -f "$CONFIG_FILE" ]]; then
+        echo "❌ Aucune configuration WireGuard trouvée dans $CONFIG_FILE"
+        echo ""
+        echo "🔍 Recherche de configurations client..."
+        
+        # Chercher des fichiers de configuration client
+        local client_configs=($(sudo find /etc/wireguard -name "*_lan.conf" 2>/dev/null))
+        
+        if [[ ${#client_configs[@]} -eq 0 ]]; then
+            echo "❌ Aucune configuration client trouvée"
+            echo "   Exécutez d'abord la configuration avec: $0"
+            exit 1
+        fi
+        
+        echo "📋 Configurations client trouvées:"
+        for i in "${!client_configs[@]}"; do
+            echo "  $((i+1)). ${client_configs[$i]}"
+        done
+        echo ""
+        
+        read -p "Sélectionnez une configuration (numéro) : " choice
+        if [[ "$choice" =~ ^[0-9]+$ ]] && [[ $choice -ge 1 ]] && [[ $choice -le ${#client_configs[@]} ]]; then
+            CONFIG_FILE="${client_configs[$((choice-1))]}"
+        else
+            echo "❌ Sélection invalide"
+            exit 1
+        fi
+    fi
+    
+    echo "📱 Génération du QR code pour: $CONFIG_FILE"
+    echo ""
+    echo "Configuration WireGuard:"
+    sudo cat "$CONFIG_FILE"
+    echo ""
+    echo "QR Code (scannez avec votre application WireGuard):"
+    sudo cat "$CONFIG_FILE" | qrencode -t ansiutf8
+    echo ""
+    echo "📱 Instructions:"
+    echo "1. Installez l'application WireGuard sur votre appareil"
+    echo "2. Ouvrez l'application et sélectionnez 'Scanner un QR code'"
+    echo "3. Scannez le QR code affiché ci-dessus"
+}
+
 # Mode d'utilisation
-if [[ $# -ge 5 ]] && [[ "$1" == "auto" ]]; then
+if [[ $# -ge 1 ]] && [[ "$1" == "qr" ]]; then
+    check_deps
+    check_wireguard
+    generate_qr
+elif [[ $# -ge 5 ]] && [[ "$1" == "auto" ]]; then
     check_deps
     check_wireguard
     auto_setup "$2" "$3" "$4" "$5"

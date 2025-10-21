@@ -168,6 +168,20 @@ EOF"
     echo -e "${WHITE}🔑 Clé serveur:${NC} $(sudo cat "$KEYS_DIR/server.pub" 2>/dev/null || echo "ERREUR: Clé serveur non trouvée")"
     echo -e "${WHITE}🌐 Endpoint:${NC} $SERVER_ENDPOINT:$SERVER_PORT"
     echo -e "${WHITE}📱 IP attribuée:${NC} $CLIENT_IP"
+    
+    # Proposer de générer un QR code
+    echo ""
+    read -p "Générer un QR code pour ce client ? (y/N) : " generate_qr
+    if [[ "$generate_qr" =~ ^[Yy]$ ]]; then
+        if command -v qrencode &> /dev/null; then
+            echo -e "\n${CYAN}QR Code pour $CLIENT_NAME:${NC}"
+            sudo cat "$CLIENT_CONF" | qrencode -t ansiutf8
+            echo ""
+        else
+            echo -e "${YELLOW}⚠️ qrencode non installé. Installez-le avec: sudo apt install qrencode${NC}"
+        fi
+    fi
+    
     echo -e "\n${YELLOW}📤 Instructions pour le client:${NC}"
     echo "1. Copier le fichier de configuration: scp $CLIENT_CONF ${CLIENT_NAME}:~/lan_client.conf"
     echo "2. Sur le client, exécuter: ./wg-client-setup.sh auto $SERVER_ENDPOINT $SERVER_PORT $(sudo cat "$KEYS_DIR/server.pub" 2>/dev/null || echo "ERREUR") $CLIENT_IP"
@@ -374,8 +388,9 @@ show_menu() {
         echo "3. 🗑️  Supprimer un client"
         echo "4. 📋 Liste des clients"
         echo "5. 📖 Expliquer configuration client"
-        echo "6. 🔄 Redémarrer service"
-        echo "7. ❌ Quitter"
+        echo "6. 📱 Générer QR code client"
+        echo "7. 🔄 Redémarrer service"
+        echo "8. ❌ Quitter"
         echo ""
         read -p "Choix : " choice
 
@@ -400,17 +415,101 @@ show_menu() {
             5)
                 explain_client_config
                 ;;
-            6) 
+            6)
+                generate_qr_code
+                ;;
+            7) 
                 echo "🔄 Redémarrage du service..."
                 sudo systemctl restart wg-quick@wg0
                 echo -e "${GREEN}✅ Service redémarré${NC}"
                 ;;
-            7) exit 0 ;;
+            8) exit 0 ;;
             *) echo -e "${RED}❌ Option invalide${NC}" ;;
         esac
         
-        [[ $choice != "7" ]] && { echo ""; read -p "Appuyez sur ENTRÉE pour continuer..."; }
+        [[ $choice != "8" ]] && { echo ""; read -p "Appuyez sur ENTRÉE pour continuer..."; }
     done
+}
+
+# Génération de QR code pour configuration client
+generate_qr_code() {
+    local SERVER_CONF="/etc/wireguard/wg0.conf"
+    
+    print_section "GÉNÉRATION QR CODE"
+    
+    # Lister les clients disponibles
+    local clients=()
+    while IFS= read -r line; do
+        if [[ $line =~ ^#\ (.+)\ \( ]]; then
+            local client_name="${BASH_REMATCH[1]}"
+            clients+=("$client_name")
+        fi
+    done < <(sudo cat "$SERVER_CONF" 2>/dev/null || echo "")
+    
+    if [[ ${#clients[@]} -eq 0 ]]; then
+        echo -e "${YELLOW}⚠️ Aucun client configuré${NC}"
+        return 0
+    fi
+    
+    echo -e "${WHITE}Clients disponibles:${NC}"
+    for i in "${!clients[@]}"; do
+        echo "  $((i+1)). ${clients[$i]}"
+    done
+    echo ""
+    
+    read -p "Numéro du client (ou nom) : " choice
+    
+    local CLIENT_NAME=""
+    if [[ "$choice" =~ ^[0-9]+$ ]] && [[ $choice -ge 1 ]] && [[ $choice -le ${#clients[@]} ]]; then
+        CLIENT_NAME="${clients[$((choice-1))]}"
+    else
+        CLIENT_NAME="$choice"
+    fi
+    
+    # Vérifier si qrencode est installé
+    if ! command -v qrencode &> /dev/null; then
+        echo -e "${RED}❌ qrencode n'est pas installé${NC}"
+        echo "   Installez-le avec: sudo apt install qrencode"
+        echo "   ou: sudo yum install qrencode"
+        return 1
+    fi
+    
+    # Trouver le fichier de configuration du client
+    local CLIENT_CONF="$CONFIG_DIR/${CLIENT_NAME}_lan.conf"
+    
+    if [[ ! -f "$CLIENT_CONF" ]]; then
+        echo -e "${RED}❌ Fichier de configuration $CLIENT_CONF non trouvé${NC}"
+        return 1
+    fi
+    
+    echo -e "${GREEN}📱 Génération du QR code pour $CLIENT_NAME...${NC}"
+    echo ""
+    
+    # Afficher le contenu de la configuration
+    echo -e "${WHITE}Configuration WireGuard:${NC}"
+    sudo cat "$CLIENT_CONF"
+    echo ""
+    
+    # Générer le QR code
+    echo -e "${CYAN}QR Code (scannez avec votre application WireGuard):${NC}"
+    sudo cat "$CLIENT_CONF" | qrencode -t ansiutf8
+    echo ""
+    
+    # Option pour sauvegarder le QR code en image
+    read -p "Sauvegarder le QR code en image PNG ? (y/N) : " save_png
+    if [[ "$save_png" =~ ^[Yy]$ ]]; then
+        local QR_IMAGE="$CONFIG_DIR/${CLIENT_NAME}_qr.png"
+        sudo cat "$CLIENT_CONF" | qrencode -o "$QR_IMAGE"
+        echo -e "${GREEN}✅ QR code sauvegardé: $QR_IMAGE${NC}"
+    fi
+    
+    echo -e "\n${YELLOW}📱 Instructions pour le client:${NC}"
+    echo "1. Installez l'application WireGuard sur votre appareil"
+    echo "2. Ouvrez l'application et sélectionnez 'Scanner un QR code'"
+    echo "3. Scannez le QR code affiché ci-dessus"
+    echo "4. La configuration sera automatiquement importée"
+    echo ""
+    echo -e "${WHITE}Alternative:${NC} Copiez le fichier $CLIENT_CONF sur l'appareil client"
 }
 
 # Vérification des dépendances
