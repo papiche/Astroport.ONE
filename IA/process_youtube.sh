@@ -627,11 +627,12 @@ EOF
             
             # Generate channel-friendly JSON with enhanced metadata
             local channel_name=$(echo "$uploader" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 50)
+            # Example: For a video titled "How to Build a Blockchain in Python Tutorial"
+            # topic_keywords would be: "build,blockchain,python,tutorial"
             local topic_keywords=$(echo "$raw_title" | tr '[:upper:]' '[:lower:]' | \
                 sed 's/[^a-zA-Z0-9 ]//g' | \
                 awk '{for(i=1;i<=NF;i++) if(length($i)>3) print $i}' | \
-                head -5 | tr '\n' ',' | sed 's/,$//')
-            
+                head -5 | paste -sd,)
             # Subtitle handling removed for simplicity
             local subtitles_json="[]"
             
