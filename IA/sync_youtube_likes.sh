@@ -32,6 +32,13 @@ if [[ "$1" == "--debug" ]]; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] DEBUG mode enabled" >&2
 fi
 
+# Force debug mode for uDRIVE checking
+if [[ "$1" == "--debug-udrive" ]]; then
+    DEBUG=1
+    shift
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] DEBUG mode enabled for uDRIVE checking" >&2
+fi
+
 PLAYER="$1"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Player email: $PLAYER" >&2
 
@@ -41,7 +48,7 @@ if [[ -z "$PLAYER" ]]; then
     exit 1
 fi
 
-LOGFILE="$HOME/.zen/tmp/youtube_sync.log"
+LOGFILE="$HOME/.zen/tmp/IA.log"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Log file: $LOGFILE" >&2
 mkdir -p "$(dirname "$LOGFILE")"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Created log directory: $(dirname "$LOGFILE")" >&2
@@ -161,25 +168,48 @@ check_video_exists_in_udrive() {
     # Encoder le titre pour correspondre au nom de fichier
     local url_safe_title=$(url_encode_title "$title")
     
+    log_debug "Checking if video exists in uDRIVE: ID=$video_id, title=$url_safe_title"
+    
     # Vérifier dans le répertoire Videos
     local udrive_videos="$HOME/.zen/game/nostr/${player}/APP/uDRIVE/Videos"
     if [[ -d "$udrive_videos" ]]; then
+        log_debug "Searching in Videos directory: $udrive_videos"
         # Chercher des fichiers qui contiennent l'ID de la vidéo ou le titre
-        if find "$udrive_videos" -name "*${video_id}*" -o -name "*${url_safe_title}*" 2>/dev/null | grep -q .; then
-            log_debug "Video $video_id already exists in uDRIVE/Videos"
+        local found_files=$(find "$udrive_videos" -name "*${video_id}*" -o -name "*${url_safe_title}*" 2>/dev/null)
+        if [[ -n "$found_files" ]]; then
+            log_debug "Video $video_id already exists in uDRIVE/Videos: $found_files"
             return 0
         fi
+        
+        # Recherche plus large avec des parties du titre
+        local title_parts=$(echo "$url_safe_title" | tr '_' ' ' | awk '{for(i=1;i<=NF;i++) if(length($i)>3) print $i}' | head -3)
+        for part in $title_parts; do
+            if [[ -n "$part" ]]; then
+                local found_files=$(find "$udrive_videos" -name "*${part}*" 2>/dev/null)
+                if [[ -n "$found_files" ]]; then
+                    log_debug "Video found by title part '$part' in uDRIVE/Videos: $found_files"
+                    return 0
+                fi
+            fi
+        done
+    else
+        log_debug "Videos directory does not exist: $udrive_videos"
     fi
     
     # Vérifier dans le répertoire Music (pour les vidéos musicales)
     local udrive_music="$HOME/.zen/game/nostr/${player}/APP/uDRIVE/Music"
     if [[ -d "$udrive_music" ]]; then
-        if find "$udrive_music" -name "*${video_id}*" -o -name "*${url_safe_title}*" 2>/dev/null | grep -q .; then
-            log_debug "Video $video_id already exists in uDRIVE/Music"
+        log_debug "Searching in Music directory: $udrive_music"
+        local found_files=$(find "$udrive_music" -name "*${video_id}*" -o -name "*${url_safe_title}*" 2>/dev/null)
+        if [[ -n "$found_files" ]]; then
+            log_debug "Video $video_id already exists in uDRIVE/Music: $found_files"
             return 0
         fi
+    else
+        log_debug "Music directory does not exist: $udrive_music"
     fi
     
+    log_debug "Video $video_id not found in uDRIVE"
     return 1
 }
 
@@ -352,7 +382,7 @@ process_liked_video() {
         log_debug "Video $video_id already exists in uDRIVE, marking as processed"
         echo "📁 Video already exists in uDRIVE: $title"
         mark_video_processed "$video_id" "$processed_file"
-        return 0
+        return 2  # Code spécial pour vidéo existante (ne compte pas comme succès)
     fi
     
     # Encoder le titre pour compatibilité URL maximale
@@ -372,6 +402,8 @@ process_liked_video() {
     if [[ $process_exit_code -eq 0 ]]; then
         # Extraire l'URL IPFS du résultat JSON
         local ipfs_url=$(echo "$result" | jq -r '.ipfs_url // empty' 2>/dev/null)
+        log_debug "Extracted IPFS URL: '$ipfs_url'"
+        log_debug "Raw result: $result"
         if [[ -n "$ipfs_url" ]]; then
             log_debug "Successfully processed: $url_safe_title -> $ipfs_url"
             echo "✅ $url_safe_title by $uploader -> $ipfs_url"
@@ -394,7 +426,7 @@ process_liked_video() {
             log_debug "Video $video_id exists in uDRIVE despite download failure, marking as processed"
             echo "📁 Video found in uDRIVE despite download failure: $title"
             mark_video_processed "$video_id" "$processed_file"
-            return 0
+            return 2  # Code spécial pour vidéo existante
         fi
         
         return 1
@@ -437,6 +469,7 @@ sync_youtube_likes() {
         if [[ -n "$line" ]]; then
             # Arrêter si on a déjà 3 succès
             if [[ $success_count -ge 3 ]]; then
+                echo "🎯 Reached target of 3 successful downloads, stopping"
                 log_debug "Reached target of 3 successful downloads, stopping"
                 break
             fi
@@ -464,12 +497,26 @@ sync_youtube_likes() {
                 echo "⏭️ Skipping already processed: $title"
             else
                 # Traiter la vidéo
-                if process_liked_video "$video_id" "$title" "$duration" "$uploader" "$url" "$player" "$processed_file"; then
+                echo "🔄 Processing video: $title (ID: $video_id)"
+                process_liked_video "$video_id" "$title" "$duration" "$uploader" "$url" "$player" "$processed_file"
+                local process_exit_code=$?
+                echo "🔍 Process exit code: $process_exit_code"
+                
+                if [[ $process_exit_code -eq 0 ]]; then
+                    # Nouvelle vidéo téléchargée avec succès
                     success_count=$((success_count + 1))
                     processed_count=$((processed_count + 1))
+                    echo "✅ Success count: $success_count/3"
                     log_debug "Success count: $success_count/3"
+                elif [[ $process_exit_code -eq 2 ]]; then
+                    # Vidéo existante trouvée (ne compte pas comme succès)
+                    skipped_count=$((skipped_count + 1))
+                    echo "📁 Video already exists, continuing search... (skipped: $skipped_count)"
+                    log_debug "Video already exists, continuing search..."
                 else
+                    # Échec du téléchargement
                     failed_count=$((failed_count + 1))
+                    echo "❌ Failed count: $failed_count"
                 fi
             fi
             

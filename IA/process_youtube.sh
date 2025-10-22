@@ -554,24 +554,23 @@ EOF
         mp3)
             yt-dlp $browser_cookies -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
                 --write-info-json --write-thumbnail \
-                --write-subs --write-auto-subs --sub-langs "fr,en,es,de,it" \
                 --embed-metadata --embed-thumbnail \
-                --metadata-from-title "%(title)s" \
-                --metadata-from-description "%(description)s" \
                 -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
             ;;
         mp4)
             yt-dlp $browser_cookies -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best" \
                 --no-mtime --embed-thumbnail --add-metadata \
                 --write-info-json --write-thumbnail \
-                --write-subs --write-auto-subs --sub-langs "fr,en,es,de,it" \
                 --embed-metadata --embed-thumbnail \
-                --metadata-from-title "%(title)s" \
-                --metadata-from-description "%(description)s" \
                 -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
             ;;
     esac
-    media_file=$(ls "$OUTPUT_DIR"/${media_title}.* 2>/dev/null | head -n 1)
+    # Find the actual media file (video/audio, not metadata files)
+    media_file=$(ls "$OUTPUT_DIR"/${media_title}.{mp4,mp3,m4a,webm,mkv} 2>/dev/null | head -n 1)
+    if [[ -z "$media_file" ]]; then
+        # Fallback: look for any file that's not metadata
+        media_file=$(ls "$OUTPUT_DIR"/${media_title}.* 2>/dev/null | grep -v -E '\.(info\.json|vtt|srt|jpg|jpeg|png|webp)$' | head -n 1)
+    fi
     filename=$(basename "$media_file")
     log_debug "Downloaded file: $media_file"
     
@@ -584,7 +583,15 @@ EOF
     subtitle_files="$subtitle_files $(ls "$OUTPUT_DIR"/${media_title}.*.srt 2>/dev/null)"
     subtitle_files=$(echo "$subtitle_files" | tr -s ' ' | sed 's/^ *//;s/ *$//')
     
-    if [[ -n "$media_file" ]]; then
+    if [[ -n "$media_file" && -f "$media_file" ]]; then
+        # Verify it's actually a media file (not just metadata)
+        local file_size=$(stat -c%s "$media_file" 2>/dev/null || echo "0")
+        if [[ $file_size -lt 100000 ]]; then  # Less than 100KB is likely not a real video
+            log_debug "File too small ($file_size bytes), likely not a real video: $media_file"
+            echo '{"error":"❌ Downloaded file is too small, likely not a real video.\n\n💡 This might be due to:\n• YouTube blocking video downloads\n• Expired cookies\n• Network issues\n\n📖 Cookie Guide: https://ipfs.copylaradio.com/ipns/copylaradio.com/cookie.html\n💾 Upload cookies: https://u.copylaradio.com/astro"}'
+            return 1
+        fi
+        
         # Add main media file to IPFS
         media_ipfs=$(ipfs add -wq "$media_file" 2>> "$LOGFILE" | tail -n 1)
         log_debug "IPFS add result: $media_ipfs"
