@@ -299,7 +299,7 @@ ${TEXTPART}
 ---
 ${HEX:+📱 NOSTR: ${NPUB}}
 ${RELAY:+🌐 Relay: ${myRELAY}}
-${ephemeral_duration:+⏰ Éphémère: ${ephemeral_duration}s}
+${ephemeral_duration:+⏰ ${ephemeral_duration}s}
 "
 
     # Discover preferred relays for recipient
