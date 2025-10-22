@@ -2,11 +2,14 @@
 
 ## 🎯 Overview
 
-The YouTube download system (`#youtube` tag) allows users to download YouTube videos via UPlanet and ASTROBOT using `yt-dlp`.
+The YouTube download system provides **two modes** for downloading YouTube videos via UPlanet:
+
+1. **Manual Download** (`#youtube` tag) - On-demand video downloads
+2. **Automatic Sync** - Daily synchronization of liked videos via NOSTR refresh cycle
 
 ## 🔧 How It Works
 
-### Process Flow
+### Manual Download Process Flow
 
 1. **User sends message** with `#youtube` tag + YouTube URL
 2. **UPlanet_IA_Responder.sh** detects the tag and calls `process_youtube.sh`
@@ -16,7 +19,19 @@ The YouTube download system (`#youtube` tag) allows users to download YouTube vi
    - **Generated cookies** (basic fallback)
 4. **yt-dlp** downloads the video/audio
 5. **IPFS** uploads the media
-6. **Response** sent back to user with IPFS link
+6. **NOSTR Events** published (kind: 1 + NIP-71 kind: 21/22)
+7. **Response** sent back to user with IPFS link
+
+### Automatic Sync Process Flow
+
+1. **NOSTRCARD.refresh.sh** runs daily for each MULTIPASS user
+2. **Cookie Detection** - Checks for `.cookie.txt` in user's NOSTR directory
+3. **YouTube Sync Trigger** - If cookies exist, launches `sync_youtube_likes.sh`
+4. **Liked Videos Fetch** - Retrieves up to 3 new liked videos from YouTube
+5. **Video Processing** - Calls `process_youtube.sh` for each video
+6. **NOSTR Publication** - Publishes NIP-71 events for each downloaded video
+7. **uDRIVE Organization** - Videos stored in `uDRIVE/Videos/` and `uDRIVE/Music/`
+8. **Email Notification** - User receives sync summary via email
 
 ### Cookie Strategies (Priority Order)
 
@@ -48,6 +63,17 @@ YouTube blocks bot requests. Fresh browser cookies allow ASTROBOT to download vi
    ```
    ~/.zen/game/nostr/<your-email>/.cookie.txt
    ```
+
+### Automatic Sync Activation
+
+Once you upload cookies, the system automatically:
+
+- **Detects your cookies** during daily NOSTR refresh cycle
+- **Launches YouTube sync** for your liked videos
+- **Downloads up to 3 new videos** per day
+- **Organizes videos** in your uDRIVE
+- **Publishes NOSTR events** for each video
+- **Sends email notifications** with sync results
 
 ### Cookie File Format
 
@@ -134,26 +160,81 @@ To manually enable debug mode:
 ./process_youtube.sh "https://youtube.com/watch?v=ABC123" mp4
 ```
 
+## 🎬 NIP-71 Video Events
+
+### Event Types Published
+
+The system publishes **two types** of NOSTR events for each video:
+
+1. **Kind 1** - Text message (compatibility with older clients)
+2. **Kind 21/22** - NIP-71 video events (modern standard)
+
+### NIP-71 Classification
+
+- **Kind 21** - Normal videos (duration > 30s, horizontal format)
+- **Kind 22** - Short videos (duration ≤ 30s OR vertical/square format)
+
+### NIP-71 Tags Structure
+
+```json
+{
+  "url": "/ipfs/QmHash...",
+  "m": "video/mp4",
+  "x": "sha256_hash",
+  "size": "12345678",
+  "duration": "120",
+  "dim": "1920x1080"
+}
+```
+
+## 📺 YouTube Channel Interface
+
+### Access Your Videos
+
+Once videos are downloaded and published as NOSTR events, you can access them via:
+
+```
+https://u.copylaradio.com/youtube
+```
+
+### Features
+
+- **Video Gallery** - Browse all your downloaded videos
+- **NOSTR Integration** - Like videos, view author profiles
+- **Responsive Design** - Works on PC and mobile
+- **IPFS Streaming** - Direct video playback from IPFS
+- **Metadata Display** - Duration, file size, dimensions, keywords
+
 ## 🔗 Related Files
 
 ```
 Astroport.ONE/IA/
 ├── process_youtube.sh           # Main YouTube download script
-├── UPlanet_IA_Responder.sh      # Calls process_youtube.sh when #youtube tag detected
-└── README_YOUTUBE.md            # This file
+├── sync_youtube_likes.sh       # Automatic sync of liked videos
+├── create_video_channel.py     # NIP-71 channel creation
+├── UPlanet_IA_Responder.sh     # Calls process_youtube.sh when #youtube tag detected
+└── README_YOUTUBE.md           # This file
+
+Astroport.ONE/RUNTIME/
+└── NOSTRCARD.refresh.sh        # Daily refresh cycle (triggers YouTube sync)
 
 UPlanet/earth/
-└── cookie.html                  # User guide for cookie export
+└── cookie.html                 # User guide for cookie export
 
 UPassport/
-└── templates/astro_base.html    # File upload interface (detects Netscape cookies)
+├── templates/
+│   ├── astro_base.html         # File upload interface (detects Netscape cookies)
+│   └── youtube.html            # YouTube channel interface
+└── 54321.py                    # API endpoint for /youtube route
 
 ~/.zen/
 ├── tmp/
-│   ├── IA.log                   # Main log file
-│   └── youtube_*/               # Temporary download directories
+│   ├── IA.log                  # Main log file
+│   └── youtube_*/              # Temporary download directories
 └── game/nostr/<email>/
-    └── .cookie.txt              # User-uploaded cookies (Netscape format)
+    ├── .cookie.txt             # User-uploaded cookies (Netscape format)
+    ├── .last_youtube_sync      # Last sync date tracking
+    └── .processed_youtube_videos # Processed videos database
 ```
 
 ## 💡 Tips
@@ -168,6 +249,44 @@ UPassport/
 
 5. **Duration limit**: Videos longer than 3 hours are rejected to prevent resource exhaustion.
 
+6. **Automatic sync**: Upload cookies once and your liked videos will sync automatically every day.
+
+7. **NIP-71 compatibility**: All videos are published as NIP-71 events for maximum client compatibility.
+
+8. **uDRIVE organization**: Videos are automatically organized in your personal uDRIVE storage.
+
+9. **Email notifications**: You'll receive daily summaries of your YouTube sync results.
+
+10. **Channel interface**: Access all your videos via the `/youtube` route with full NOSTR integration.
+
+## 🔄 System Architecture
+
+### Complete YouTube Integration Flow
+
+```
+User Uploads Cookies
+        ↓
+NOSTRCARD.refresh.sh (Daily)
+        ↓
+sync_youtube_likes.sh (Auto-triggered)
+        ↓
+process_youtube.sh (Video download)
+        ↓
+NOSTR Events (kind: 1 + NIP-71)
+        ↓
+create_video_channel.py (Channel creation)
+        ↓
+/youtube Interface (User access)
+```
+
+### Key Components
+
+- **Cookie Upload**: `cookie.html` → `astro_base.html` → `.cookie.txt`
+- **Daily Sync**: `NOSTRCARD.refresh.sh` → `sync_youtube_likes.sh`
+- **Video Processing**: `process_youtube.sh` → IPFS → NOSTR
+- **Channel Creation**: `create_video_channel.py` → NIP-71 events
+- **User Interface**: `/youtube` route → `youtube.html`
+
 ## 🆘 Support
 
 If you encounter issues:
@@ -177,6 +296,8 @@ If you encounter issues:
 3. Test with a different YouTube URL
 4. Update yt-dlp: `pip install --upgrade yt-dlp`
 5. Check IPFS: `ipfs id`
+6. Check NOSTR relay: `ws://127.0.0.1:7777`
+7. Verify uDRIVE directory exists: `~/.zen/game/nostr/<email>/APP/uDRIVE/`
 
 For more help, contact: support@qo-op.com
 
