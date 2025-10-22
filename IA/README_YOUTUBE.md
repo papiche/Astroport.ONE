@@ -176,14 +176,91 @@ The system publishes **two types** of NOSTR events for each video:
 
 ### NIP-71 Tags Structure
 
+The system uses proper NIP-71 compliant tags:
+
 ```json
 {
-  "url": "/ipfs/QmHash...",
-  "m": "video/mp4",
-  "x": "sha256_hash",
-  "size": "12345678",
+  "title": "Video Title",
+  "imeta": [
+    "dim 1920x1080",
+    "url /ipfs/QmHash...",
+    "x sha256_hash",
+    "m video/mp4",
+    "image /ipfs/thumbnail_hash",
+    "fallback /ipfs/QmHash...",
+    "service nip96"
+  ],
   "duration": "120",
-  "dim": "1920x1080"
+  "published_at": "1640995200",
+  "alt": "Video Title by Author",
+  "content-warning": "Adult content", // if applicable
+  "t": ["YouTubeDownload", "VideoChannel", "Channel-AuthorName"],
+  "r": [
+    ["https://youtube.com/watch?v=...", "YouTube"],
+    ["/ipfs/metadata_hash", "Metadata"],
+    ["/ipfs/thumbnail_hash", "Thumbnail"]
+  ]
+}
+```
+
+#### NIP-71 Compliance Features
+
+- **✅ Proper `imeta` tags** with space-separated properties
+- **✅ Required `title` tag** for video identification
+- **✅ `published_at` timestamp** for publication date
+- **✅ `alt` tag** for accessibility
+- **✅ `content-warning`** for NSFW content
+- **✅ `fallback` URLs** for redundancy
+- **✅ `service` tag** for NIP-96 compatibility
+- **✅ Smart video classification** (kind 21/22 based on format and duration)
+
+## 🔧 NIP-71 Compliance
+
+### Full NIP-71 Implementation
+
+Our YouTube download system is now **fully compliant** with NIP-71 Video Events specification:
+
+#### ✅ **Required Elements**
+- **Event Kinds**: Correctly uses `kind: 21` (normal) and `kind: 22` (short) videos
+- **`title` tag**: Required video title for identification
+- **`imeta` tags**: Primary source of video information with proper format
+- **`published_at`**: Unix timestamp of video publication
+- **`alt` tag**: Accessibility description for screen readers
+
+#### ✅ **Enhanced Features**
+- **Smart Classification**: Automatically determines video kind based on:
+  - Vertical aspect ratio → kind 22 (short)
+  - Square aspect ratio → kind 22 (short)  
+  - Small dimensions (≤720p) → kind 22 (short)
+  - Duration ≤30s for horizontal videos → kind 22 (short)
+- **Redundancy**: Multiple `fallback` URLs for reliable video delivery
+- **NIP-96 Compatibility**: `service` tag for decentralized storage
+- **Content Warnings**: Automatic detection of NSFW content
+- **Rich Metadata**: File size, dimensions, duration, and technical info
+
+#### ✅ **Client Compatibility**
+- **Video-focused clients**: Netflix, YouTube, TikTok-like NOSTR clients
+- **Search functionality**: Proper tagging for video discovery
+- **Accessibility**: Screen reader support with `alt` tags
+- **Mobile optimization**: Responsive design for all devices
+
+### Example NIP-71 Event
+
+```json
+{
+  "kind": 21,
+  "content": "🎬 How to Build a Blockchain\n\n📺 YouTube: https://youtube.com/watch?v=...\n🔗 IPFS: $myLIBRA/ipfs/QmHash...",
+  "tags": [
+    ["title", "How to Build a Blockchain"],
+    ["imeta", "dim 1920x1080", "url /ipfs/QmHash...", "x sha256_hash", "m video/mp4", "image /ipfs/thumb_hash", "fallback /ipfs/QmHash...", "service nip96"],
+    ["duration", "1200"],
+    ["published_at", "1640995200"],
+    ["alt", "How to Build a Blockchain by TechChannel"],
+    ["t", "YouTubeDownload"],
+    ["t", "VideoChannel"],
+    ["t", "Channel-TechChannel"],
+    ["r", "https://youtube.com/watch?v=...", "YouTube"]
+  ]
 }
 ```
 
@@ -251,7 +328,7 @@ UPassport/
 
 6. **Automatic sync**: Upload cookies once and your liked videos will sync automatically every day.
 
-7. **NIP-71 compatibility**: All videos are published as NIP-71 events for maximum client compatibility.
+7. **NIP-71 compatibility**: All videos are published as fully compliant NIP-71 events with proper `imeta` tags, `title`, `published_at`, `alt`, and accessibility features.
 
 8. **uDRIVE organization**: Videos are automatically organized in your personal uDRIVE storage.
 

@@ -400,19 +400,6 @@ send_nip71_video_event() {
 🖼️ Miniature: $myLIBRA/ipfs/$thumbnail_ipfs"
     fi
     
-    # Build NIP-71 specific tags
-    local nip71_tags="[[\"url\",\"$ipfs_url\"],[\"m\",\"video/mp4\"],[\"x\",\"$(echo -n "$ipfs_url" | sha256sum | cut -d' ' -f1)\"]]"
-    
-    # Add file size if available
-    if [[ -n "$file_size" && "$file_size" -gt 0 ]]; then
-        nip71_tags="$nip71_tags,[\"size\",\"$file_size\"]"
-    fi
-    
-    # Add duration if available
-    if [[ -n "$duration" && "$duration" -gt 0 ]]; then
-        nip71_tags="$nip71_tags,[\"duration\",\"$duration\"]"
-    fi
-    
     # Extract real video dimensions using ffprobe
     local video_dimensions="1920x1080"  # Default fallback
     if [[ -n "$media_file" && -f "$media_file" ]]; then
@@ -425,9 +412,44 @@ send_nip71_video_event() {
             log_debug "Could not extract dimensions, using default: $video_dimensions"
         fi
     fi
-    nip71_tags="$nip71_tags,[\"dim\",\"$video_dimensions\"]"
     
-    # Add channel and topic tags
+    # Build NIP-71 compliant tags
+    local nip71_tags="[[\"title\",\"$title\"]"
+    
+    # Add imeta tag with proper NIP-71 format
+    nip71_tags="$nip71_tags,[\"imeta\",\"dim $video_dimensions\",\"url $ipfs_url\",\"x $(echo -n "$ipfs_url" | sha256sum | cut -d' ' -f1)\",\"m video/mp4\""
+    
+    # Add thumbnail if available
+    if [[ -n "$thumbnail_ipfs" ]]; then
+        nip71_tags="$nip71_tags,\"image $thumbnail_ipfs\""
+    fi
+    
+    # Add fallback URLs for redundancy
+    nip71_tags="$nip71_tags,\"fallback $ipfs_url\""
+    
+    # Add service tag for NIP-96 compatibility
+    nip71_tags="$nip71_tags,\"service nip96\""
+    
+    # Close imeta tag
+    nip71_tags="$nip71_tags]"
+    
+    # Add other required tags
+    if [[ -n "$duration" && "$duration" -gt 0 ]]; then
+        nip71_tags="$nip71_tags,[\"duration\",\"$duration\"]"
+    fi
+    
+    # Add published_at timestamp
+    nip71_tags="$nip71_tags,[\"published_at\",\"$(date +%s)\"]"
+    
+    # Add content warning if needed
+    if [[ "$title" =~ (NSFW|adult|18\+) ]]; then
+        nip71_tags="$nip71_tags,[\"content-warning\",\"Adult content\"]"
+    fi
+    
+    # Add alt text for accessibility
+    nip71_tags="$nip71_tags,[\"alt\",\"$title by $uploader\"]"
+    
+    # Add topic tags
     nip71_tags="$nip71_tags,[\"t\",\"YouTubeDownload\"],[\"t\",\"VideoChannel\"]"
     
     # Add channel-specific tag
@@ -448,6 +470,24 @@ send_nip71_video_event() {
         nip71_tags="$nip71_tags,$topic_tags"
     fi
     
+    # Add reference to original YouTube URL
+    nip71_tags="$nip71_tags,[\"r\",\"$youtube_url\",\"YouTube\"]"
+    
+    # Add metadata tags if available
+    if [[ -n "$metadata_ipfs" ]]; then
+        nip71_tags="$nip71_tags,[\"r\",\"/ipfs/$metadata_ipfs\",\"Metadata\"]"
+    fi
+    
+    if [[ -n "$thumbnail_ipfs" ]]; then
+        nip71_tags="$nip71_tags,[\"r\",\"/ipfs/$thumbnail_ipfs\",\"Thumbnail\"]"
+    fi
+    
+    # Add file size tag
+    if [[ -n "$file_size" && "$file_size" -gt 0 ]]; then
+        nip71_tags="$nip71_tags,[\"t\",\"FileSize-$file_size\"]"
+    fi
+    
+    # Close tags array
     nip71_tags="$nip71_tags]"
     
     # Send NIP-71 video event (kind: 21 or 22)

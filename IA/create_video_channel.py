@@ -89,13 +89,30 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
     metadata_ipfs = ""
     thumbnail_ipfs = ""
     
-    # Parser les tags NIP-71 uniquement
+    # Parse imeta tags (NIP-71 format)
     for tag in tags:
         if len(tag) >= 2:
             tag_type = tag[0]
             tag_value = tag[1]
             
-            if tag_type == 'url':
+            if tag_type == 'imeta':
+                # Parse imeta properties
+                for prop in tag[1:]:
+                    if prop.startswith('dim '):
+                        dimensions = prop[4:]
+                    elif prop.startswith('url '):
+                        ipfs_url = prop[4:]
+                    elif prop.startswith('x '):
+                        file_hash = prop[2:]
+                    elif prop.startswith('m '):
+                        media_type = prop[2:]
+                    elif prop.startswith('image '):
+                        thumbnail_ipfs = prop[6:]
+                    elif prop.startswith('fallback '):
+                        fallback_url = prop[9:]
+                    elif prop.startswith('service '):
+                        service_type = prop[8:]
+            elif tag_type == 'url':
                 if 'youtube.com' in tag_value or 'youtu.be' in tag_value:
                     youtube_url = tag_value
                 elif '/ipfs/' in tag_value or 'ipfs://' in tag_value:
