@@ -1100,9 +1100,15 @@ for PLAYER in "${NOSTR[@]}"; do
             
             # Generate personal N² journal for this specific MULTIPASS
             local summary_file="${summary_dir}/personal_n2_journal_${PLAYER}.md"
+            
+            # Get nprofile for the MULTIPASS owner
+            local player_nprofile=$(${MY_PATH}/../tools/nostr_hex2nprofile.sh "$HEX" 2>/dev/null)
+            [[ -z "$player_nprofile" ]] && player_nprofile="$HEX"
+            
             echo "# $summary_title" > "$summary_file"
             echo "**Date**: $TODATE" >> "$summary_file"
             echo "**MULTIPASS**: $PLAYER" >> "$summary_file"
+            echo "**NProfile**: nostr:$player_nprofile" >> "$summary_file"
             echo "**Period**: $summary_period" >> "$summary_file"
             echo "**Type**: Personal N² Journal ($summary_type)" >> "$summary_file"
             echo "**Network**: ${#friends_list[@]} friends (N1 + N²)" >> "$summary_file"
@@ -1198,6 +1204,8 @@ for PLAYER in "${NOSTR[@]}"; do
                         # For daily summaries, process raw friend messages
                         local author_hex=$(echo "$message" | jq -r .author)
                         local author_nprofile=$(${MY_PATH}/../tools/nostr_hex2nprofile.sh "$author_hex" 2>/dev/null)
+                        # Fallback to hex if nprofile generation fails
+                        [[ -z "$author_nprofile" ]] && author_nprofile="$author_hex"
                         
                         # Extract metadata
                         local message_application=$(echo "$message" | jq -r '.tags[] | select(.[0] == "application") | .[1]' | head -n 1)
@@ -1282,15 +1290,15 @@ for PLAYER in "${NOSTR[@]}"; do
                     local ai_prompt=""
                     if [[ "$summary_type" == "Daily" ]]; then
                         ai_prompt="[TEXT] $(cat "$summary_file") [/TEXT] --- \
-# Create a PERSONAL N² journal for ${PLAYER} based on their friends' activity over the $summary_period. \
-# 1. This is a PERSONAL journal for ${PLAYER} - make it feel intimate and tailored to them. \
+# 1. Create a PERSONAL journal for ${PLAYER} (nostr:$player_nprofile) based on their friends' activity over the $summary_period. \
 # 2. Group messages by author and highlight key topics and trends that would interest ${PLAYER}. \
 # 3. Add hashtags and emojis for readability and personality. \
 # 4. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
 # 5. IMPORTANT: Never omit an author, even if you summarize - each friend matters to ${PLAYER}. \
 # 6. Use the same language as mostly used in the messages. \
 # 7. Make it feel like a personal diary entry about ${PLAYER}'s social network. \
-# 8. Include insights about what's happening in ${PLAYER}'s extended network (N²)."
+# 8. Include insights about what's happening in ${PLAYER}'s extended network (N²). \
+# 9. Reference the MULTIPASS owner as ${PLAYER} (nostr:$player_nprofile) throughout the journal."
                     elif [[ "$summary_type" == "Weekly" ]]; then
                         ai_prompt="[TEXT] $(cat "$summary_file") [/TEXT] --- \
 # 1. Create a comprehensive $summary_type summary by analyzing the daily summaries from the $summary_period. \
