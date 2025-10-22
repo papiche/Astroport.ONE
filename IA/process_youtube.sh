@@ -181,12 +181,12 @@ send_nostr_notification() {
     # Add metadata links if available
     if [[ -n "$metadata_ipfs" ]]; then
         message="$message
-📋 Métadonnées: $myIPFS/ipfs/$metadata_ipfs"
+📋 Métadonnées: $myLIBRA/ipfs/$metadata_ipfs"
     fi
     
     if [[ -n "$thumbnail_ipfs" ]]; then
         message="$message
-🖼️ Miniature: $myIPFS/ipfs/$thumbnail_ipfs"
+🖼️ Miniature: $myLIBRA/ipfs/$thumbnail_ipfs"
     fi
     
     # Subtitle handling removed for simplicity
@@ -392,12 +392,12 @@ send_nip71_video_event() {
     # Add metadata if available
     if [[ -n "$metadata_ipfs" ]]; then
         video_content="$video_content
-📋 Métadonnées: $myIPFS/ipfs/$metadata_ipfs"
+📋 Métadonnées: $myLIBRA/ipfs/$metadata_ipfs"
     fi
     
     if [[ -n "$thumbnail_ipfs" ]]; then
         video_content="$video_content
-🖼️ Miniature: $myIPFS/ipfs/$thumbnail_ipfs"
+🖼️ Miniature: $myLIBRA/ipfs/$thumbnail_ipfs"
     fi
     
     # Build NIP-71 specific tags
