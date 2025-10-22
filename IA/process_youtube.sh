@@ -243,6 +243,11 @@ send_nostr_notification() {
     
     # Subtitle handling removed for simplicity
     
+    # Add main video IPFS URL as primary 'r' tag
+    if [[ -n "$ipfs_url" ]]; then
+        tags_json="$tags_json,[\"r\",\"$ipfs_url\",\"Video\"]"
+    fi
+    
     # Add metadata tags if available
     if [[ -n "$metadata_ipfs" ]]; then
         tags_json="$tags_json,[\"r\",\"/ipfs/$metadata_ipfs\",\"Metadata\"]"

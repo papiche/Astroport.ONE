@@ -13,6 +13,8 @@ import websockets
 import base64
 import hashlib
 import hmac
+import subprocess
+import os
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 import re
@@ -91,16 +93,19 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
             
             if 'youtube.com' in url or 'youtu.be' in url:
                 youtube_url = url
-            elif '/ipfs/' in url:
-                if 'Metadata' in tag_type:
+            elif '/ipfs/' in url or 'ipfs://' in url:
+                if 'Video' in tag_type:
+                    # Main video IPFS URL (priority)
+                    ipfs_url = url
+                elif 'Metadata' in tag_type:
                     metadata_ipfs = url
                 elif 'Thumbnail' in tag_type:
                     thumbnail_ipfs = url
                 elif 'Subtitle' in tag_type:
                     # Skip subtitles as they're no longer handled
                     continue
-                else:
-                    # Main video IPFS URL
+                elif not ipfs_url:
+                    # Fallback: if no Video tag found, use any IPFS URL as main
                     ipfs_url = url
     
     # Fallback: Parser le contenu si les tags ne contiennent pas les infos
@@ -141,7 +146,13 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
     
     # Extraire les tags de chaîne
     channel_tags = [t[1] for t in tags if len(t) > 1 and t[1].startswith('Channel-')]
-    channel_name = channel_tags[0].replace('Channel-', '') if channel_tags else uploader
+    if channel_tags:
+        channel_name = channel_tags[0].replace('Channel-', '')
+    elif uploader and uploader != "null":
+        # Use uploader as channel name if no Channel tag found
+        channel_name = uploader.replace(' ', '_').replace('-', '_')
+    else:
+        channel_name = "unknown"
     
     # Extraire les tags de sujet
     topic_tags = [t[1] for t in tags if len(t) > 1 and t[1].startswith('Topic-')]
@@ -160,6 +171,8 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
         'topic_keywords': ','.join(topic_keywords),
         'nostr_event_id': event.get('id', ''),
         'nostr_pubkey': event.get('pubkey', ''),
+        'message_id': event.get('id', ''),  # Alias pour compatibilité avec youtube.html
+        'author_id': event.get('pubkey', ''),  # Alias pour compatibilité avec youtube.html
         'created_at': datetime.fromtimestamp(event.get('created_at', 0)).isoformat(),
         'download_date': datetime.fromtimestamp(event.get('created_at', 0)).isoformat(),  # Alias pour compatibilité
         'duration': 0,  # Pas disponible dans les événements NOSTR
@@ -185,13 +198,21 @@ def parse_nostr_message(message_data: Dict[str, Any]) -> Dict[str, Any]:
         'metadata_ipfs': message_data.get('metadata_ipfs', ''),
         'download_date': message_data.get('technical_info', {}).get('download_date', ''),
         'file_size': message_data.get('technical_info', {}).get('file_size', 0),
-        'subtitles': message_data.get('subtitles', [])  # Ajout des sous-titres
+        'subtitles': message_data.get('subtitles', []),  # Ajout des sous-titres
+        'message_id': message_data.get('message_id', ''),
+        'author_id': message_data.get('author_id', ''),
+        'nostr_event_id': message_data.get('nostr_event_id', ''),
+        'nostr_pubkey': message_data.get('nostr_pubkey', '')
     }
     
     # Extraire les informations de chaîne
     channel_info = message_data.get('channel_info', {})
     video_info['channel_name'] = channel_info.get('name', '')
     video_info['channel_display_name'] = channel_info.get('display_name', '')
+    
+    # Fallback: if no channel_info, use uploader as channel name
+    if not video_info['channel_name'] and video_info.get('uploader'):
+        video_info['channel_name'] = video_info['uploader'].replace(' ', '_').replace('-', '_')
     
     # Extraire les informations de contenu
     content_info = message_data.get('content_info', {})
@@ -201,6 +222,44 @@ def parse_nostr_message(message_data: Dict[str, Any]) -> Dict[str, Any]:
     video_info['duration_category'] = content_info.get('duration_category', '')
     
     return video_info
+
+def is_incompatible_youtube_message(event: Dict[str, Any]) -> bool:
+    """
+    Détermine si un message YouTube est incompatible avec l'affichage youtube.html
+    Un message est incompatible s'il manque des tags essentiels
+    """
+    tags = event.get('tags', [])
+    
+    # Vérifier si c'est un message YouTube
+    youtube_tags = ['YouTubeDownload', 'VideoChannel', 'uDRIVE', 'IPFS']
+    has_youtube_tags = any(tag in [t[1] for t in tags if len(t) > 1] for tag in youtube_tags)
+    
+    if not has_youtube_tags:
+        return True  # Pas un message YouTube, incompatible
+    
+    # Vérifier la présence des tags essentiels
+    has_video_url = False
+    has_youtube_url = False
+    has_channel_tag = False
+    
+    for tag in tags:
+        if len(tag) >= 3 and tag[0] == 'r':
+            url = tag[1]
+            tag_type = tag[2] if len(tag) > 2 else ''
+            
+            if 'youtube.com' in url or 'youtu.be' in url:
+                has_youtube_url = True
+            elif '/ipfs/' in url or 'ipfs://' in url:
+                # Accepter tout lien IPFS (Video, Metadata, Thumbnail)
+                has_video_url = True
+        elif len(tag) >= 2 and tag[0] == 't':
+            tag_value = tag[1]
+            if tag_value.startswith('Channel-'):
+                has_channel_tag = True
+    
+    # Un message est incompatible s'il manque des tags essentiels
+    return not (has_video_url and has_youtube_url and has_channel_tag)
+
 
 def create_channel_playlist(videos: List[Dict[str, Any]], channel_name: str) -> Dict[str, Any]:
     """
@@ -260,13 +319,26 @@ def create_channel_playlist(videos: List[Dict[str, Any]], channel_name: str) -> 
 async def fetch_and_process_nostr_events(relay_url: str = "ws://127.0.0.1:7777", limit: int = 100) -> List[Dict[str, Any]]:
     """
     Récupère et traite les événements NOSTR pour créer des chaînes vidéo
+    Filtre automatiquement les messages incompatibles et affiche les statistiques
     """
     events = await fetch_nostr_events(relay_url, limit)
     video_messages = []
+    filtered_count = 0
+    
+    print(f"📊 Processing {len(events)} YouTube events...")
     
     for event in events:
+        # Filtrer les messages incompatibles
+        if is_incompatible_youtube_message(event):
+            filtered_count += 1
+            continue
+            
         video_info = extract_video_info_from_nostr_event(event)
         video_messages.append(video_info)
+    
+    print(f"✅ {len(video_messages)} compatible messages")
+    if filtered_count > 0:
+        print(f"🔍 {filtered_count} incompatible messages filtered out")
     
     return video_messages
 
