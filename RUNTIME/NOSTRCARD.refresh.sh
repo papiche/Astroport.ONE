@@ -1290,48 +1290,61 @@ for PLAYER in "${NOSTR[@]}"; do
                     local ai_prompt=""
                     if [[ "$summary_type" == "Daily" ]]; then
                         ai_prompt="[TEXT] $(cat "$summary_file") [/TEXT] --- \
-# 1. Create a PERSONAL journal for ${PLAYER} (nostr:$player_nprofile) based on their friends' activity over the $summary_period. \
-# 2. Group messages by author and highlight key topics and trends that would interest ${PLAYER}. \
-# 3. Add hashtags and emojis for readability and personality. \
-# 4. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
-# 5. IMPORTANT: Never omit an author, even if you summarize - each friend matters to ${PLAYER}. \
-# 6. Use the same language as mostly used in the messages. \
-# 7. Make it feel like a personal diary entry about ${PLAYER}'s social network. \
-# 8. Include insights about what's happening in ${PLAYER}'s extended network (N²). \
-# 9. Reference the MULTIPASS owner as ${PLAYER} (nostr:$player_nprofile) throughout the journal."
+# Create a RECONNECTION SUMMARY for ${PLAYER} (nostr:$player_nprofile) - what happened while they were away. \
+# 1. Start with a brief executive summary: 'Welcome back! Here's what happened in your network over the last $summary_period.' \
+# 2. Create a 'What You Missed' section highlighting the most important events, announcements, or discussions. \
+# 3. Group messages by author and highlight key topics and trends that would interest ${PLAYER}. \
+# 4. Add a 'Key Highlights' section with the most significant activities (new connections, important discussions, etc.). \
+# 5. Include a 'Network Activity' section showing who was most active and what they shared. \
+# 6. Add hashtags and emojis for readability and personality. \
+# 7. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
+# 8. IMPORTANT: Never omit an author, even if you summarize - each friend matters to ${PLAYER}. \
+# 9. Use the same language as mostly used in the messages. \
+# 10. Make it feel like a personal briefing about what happened in ${PLAYER}'s social network while they were away. \
+# 11. Include insights about what's happening in ${PLAYER}'s extended network (N²). \
+# 12. End with a 'Next Steps' or 'Follow-up' section suggesting what ${PLAYER} might want to check out."
                     elif [[ "$summary_type" == "Weekly" ]]; then
                         ai_prompt="[TEXT] $(cat "$summary_file") [/TEXT] --- \
-# 1. Create a comprehensive $summary_type summary by analyzing the daily summaries from the $summary_period. \
-# 2. Identify key trends, patterns, and highlights across all daily summaries. \
-# 3. Group information by themes and time periods. \
-# 4. Add hashtags and emojis for readability. \
-# 5. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
-# 6. Focus on evolution and changes over time. \
-# 7. Create a narrative that shows the progression of activity. \
-# 8. Use the same language as mostly used in the daily summaries."
+# Create a WEEKLY RECONNECTION SUMMARY for ${PLAYER} - what happened in their network over the past week. \
+# 1. Start with 'Weekly Overview: Here's what happened in your network this week.' \
+# 2. Analyze daily summaries to identify key trends, patterns, and highlights. \
+# 3. Create a 'Week in Review' section with major events and discussions. \
+# 4. Group information by themes and time periods. \
+# 5. Add hashtags and emojis for readability. \
+# 6. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
+# 7. Focus on evolution and changes over time. \
+# 8. Create a narrative that shows the progression of activity. \
+# 9. Include a 'Weekly Highlights' section with the most important developments. \
+# 10. Use the same language as mostly used in the daily summaries."
                     elif [[ "$summary_type" == "Monthly" ]]; then
                         ai_prompt="[TEXT] $(cat "$summary_file") [/TEXT] --- \
-        # 1. Create a comprehensive $summary_type summary by analyzing the weekly summaries from the $summary_period. \
-        # 2. Identify major trends, patterns, and highlights across all weekly summaries. \
-        # 3. Group information by themes and time periods. \
-        # 4. Add hashtags and emojis for readability. \
-        # 5. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
-        # 6. Focus on long-term evolution and major changes over time. \
-        # 7. Create a narrative that shows the monthly progression of activity. \
-        # 8. Highlight key milestones and significant events. \
-        # 9. Use the same language as mostly used in the weekly summaries."
+# Create a MONTHLY RECONNECTION SUMMARY for ${PLAYER} - what happened in their network over the past month. \
+# 1. Start with 'Monthly Overview: Here's what happened in your network this month.' \
+# 2. Analyze weekly summaries to identify major trends, patterns, and highlights. \
+# 3. Create a 'Month in Review' section with major events and discussions. \
+# 4. Group information by themes and time periods. \
+# 5. Add hashtags and emojis for readability. \
+# 6. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
+# 7. Focus on long-term evolution and major changes over time. \
+# 8. Create a narrative that shows the monthly progression of activity. \
+# 9. Highlight key milestones and significant events. \
+# 10. Include a 'Monthly Highlights' section with the most important developments. \
+# 11. Use the same language as mostly used in the weekly summaries."
                     else
                         ai_prompt="[TEXT] $(cat "$summary_file") [/TEXT] --- \
-        # 1. Create a comprehensive $summary_type summary by analyzing the monthly summaries from the $summary_period. \
-        # 2. Identify major trends, patterns, and highlights across all monthly summaries. \
-        # 3. Group information by themes and time periods. \
-        # 4. Add hashtags and emojis for readability. \
-        # 5. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
-        # 6. Focus on long-term evolution and major changes over time. \
-        # 7. Create a narrative that shows the yearly progression of activity. \
-        # 8. Highlight key milestones and significant events. \
-        # 9. Identify seasonal patterns and annual trends. \
-        # 10. Use the same language as mostly used in the monthly summaries."
+# Create a YEARLY RECONNECTION SUMMARY for ${PLAYER} - what happened in their network over the past year. \
+# 1. Start with 'Yearly Overview: Here's what happened in your network this year.' \
+# 2. Analyze monthly summaries to identify major trends, patterns, and highlights. \
+# 3. Create a 'Year in Review' section with major events and discussions. \
+# 4. Group information by themes and time periods. \
+# 5. Add hashtags and emojis for readability. \
+# 6. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
+# 7. Focus on long-term evolution and major changes over time. \
+# 8. Create a narrative that shows the yearly progression of activity. \
+# 9. Highlight key milestones and significant events. \
+# 10. Identify seasonal patterns and annual trends. \
+# 11. Include a 'Yearly Highlights' section with the most important developments. \
+# 12. Use the same language as mostly used in the monthly summaries."
                     fi
                     
                     local ai_summary=$(${MY_PATH}/../IA/question.py "$ai_prompt")
