@@ -252,7 +252,7 @@ AMOUNT=$(${MY_PATH}/../tools/G1check.sh ${g1pubnostr} | tail -n 1)
 echo "______ AMOUNT = ${AMOUNT} G1"
 ## EMPTY AMOUNT G1 to PRIMAL
 prime=$(cat ~/.zen/tmp/coucou/${g1pubnostr}.primal 2>/dev/null)
-[[ -z $prime ]] && prime=${UPLANETG1PUB}
+[[ -z $prime ]] && prime=${UPLANETNAME_G1}
 if [[ -n ${AMOUNT} && ${AMOUNT} != "null" ]]; then
     ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/tmp/nostr.dunikey" "$AMOUNT" "$prime" "MULTIPASS:$youser:PRIMAL:CASH-BACK" 2>/dev/null
 fi
