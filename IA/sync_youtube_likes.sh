@@ -379,9 +379,6 @@ process_liked_video() {
             # Marquer la vidéo comme traitée
             mark_video_processed "$video_id" "$processed_file"
             
-            # Envoyer une note NOSTR pour cette vidéo
-            send_nostr_note "$player" "$url_safe_title" "$uploader" "$ipfs_url" "$url"
-            
             return 0
         else
             log_debug "Failed to extract IPFS URL for: $url_safe_title"
@@ -426,6 +423,7 @@ sync_youtube_likes() {
     local processed_count=0
     local success_count=0
     local skipped_count=0
+    local failed_count=0
     
     # Compter le nombre total de vidéos déjà traitées
     local total_processed=0
@@ -462,25 +460,26 @@ sync_youtube_likes() {
                 # Traiter la vidéo
                 if process_liked_video "$video_id" "$title" "$duration" "$uploader" "$url" "$player" "$processed_file"; then
                     success_count=$((success_count + 1))
+                    processed_count=$((processed_count + 1))
+                else
+                    failed_count=$((failed_count + 1))
                 fi
             fi
-            
-            processed_count=$((processed_count + 1))
             
             # Pause entre les téléchargements pour éviter la surcharge
             sleep 2
         fi
     done <<< "$liked_videos"
     
-    log_debug "YouTube sync completed for $player: $success_count/$processed_count videos processed, $skipped_count skipped"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Sync stats: $success_count new, $skipped_count skipped, $processed_count total" >&2
+    log_debug "YouTube sync completed for $player: $success_count successful, $failed_count failed, $skipped_count skipped"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Sync stats: $success_count successful, $failed_count failed, $skipped_count skipped" >&2
     
     # Mettre à jour le fichier de dernière synchronisation
     echo "$TODAY" > "$LAST_SYNC_FILE"
     
     # Envoyer une notification par email si des vidéos ont été traitées
     if [[ $success_count -gt 0 ]]; then
-        send_sync_notification "$player" "$success_count" "$processed_count" "$skipped_count"
+        send_sync_notification "$player" "$success_count" "$failed_count" "$skipped_count"
     fi
     
     return 0
@@ -490,10 +489,10 @@ sync_youtube_likes() {
 send_sync_notification() {
     local player="$1"
     local success_count="$2"
-    local processed_count="$3"
+    local failed_count="$3"
     local skipped_count="$4"
     
-    log_debug "Sending sync notification to $player: $success_count/$processed_count videos ($skipped_count skipped)"
+    log_debug "Sending sync notification to $player: $success_count successful, $failed_count failed, $skipped_count skipped"
     
     # Créer le contenu HTML de la notification
     local email_content="<html><head><meta charset='UTF-8'>
@@ -514,8 +513,8 @@ send_sync_notification() {
     <div class='content'>
         <div class='stats'>
             <h3>📊 Statistiques de synchronisation</h3>
-            <p><strong>Vidéos analysées :</strong> $processed_count</p>
             <p><strong>Nouvelles vidéos téléchargées :</strong> $success_count</p>
+            <p><strong>Vidéos en échec :</strong> $failed_count</p>
             <p><strong>Vidéos déjà synchronisées :</strong> $skipped_count</p>
             <p><strong>Date :</strong> $(date '+%d/%m/%Y à %H:%M')</p>
         </div>
