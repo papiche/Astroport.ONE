@@ -96,9 +96,12 @@ fi
 
 # Fichier de suivi de la dernière synchronisation
 LAST_SYNC_FILE="$HOME/.zen/game/nostr/${PLAYER}/.last_youtube_sync"
+# Fichier de suivi des vidéos déjà traitées
+PROCESSED_VIDEOS_FILE="$HOME/.zen/game/nostr/${PLAYER}/.processed_youtube_videos"
 TODAY=$(date '+%Y-%m-%d')
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Today's date: $TODAY" >&2
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Last sync file: $LAST_SYNC_FILE" >&2
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Processed videos file: $PROCESSED_VIDEOS_FILE" >&2
 
 # Vérifier si une synchronisation a déjà eu lieu aujourd'hui
 if [[ -f "$LAST_SYNC_FILE" ]]; then
@@ -115,6 +118,50 @@ fi
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting YouTube likes sync for $PLAYER" >&2
 log_debug "Starting YouTube likes sync for $PLAYER"
+
+# Fonction pour vérifier si une vidéo a déjà été traitée
+is_video_processed() {
+    local video_id="$1"
+    local processed_file="$2"
+    
+    if [[ ! -f "$processed_file" ]]; then
+        return 1  # Fichier n'existe pas, vidéo pas traitée
+    fi
+    
+    # Vérifier si l'ID de la vidéo est dans le fichier
+    if grep -q "^$video_id$" "$processed_file" 2>/dev/null; then
+        return 0  # Vidéo déjà traitée
+    else
+        return 1  # Vidéo pas encore traitée
+    fi
+}
+
+# Fonction pour marquer une vidéo comme traitée
+mark_video_processed() {
+    local video_id="$1"
+    local processed_file="$2"
+    
+    # Créer le fichier s'il n'existe pas
+    if [[ ! -f "$processed_file" ]]; then
+        touch "$processed_file"
+        chmod 600 "$processed_file"
+    fi
+    
+    # Ajouter l'ID de la vidéo au fichier
+    echo "$video_id" >> "$processed_file"
+    log_debug "Marked video $video_id as processed"
+}
+
+# Fonction pour nettoyer les anciennes entrées (garder seulement les 100 dernières)
+cleanup_processed_videos() {
+    local processed_file="$1"
+    
+    if [[ -f "$processed_file" ]]; then
+        # Garder seulement les 100 dernières entrées
+        tail -n 100 "$processed_file" > "${processed_file}.tmp" && mv "${processed_file}.tmp" "$processed_file"
+        log_debug "Cleaned up processed videos database (kept last 100 entries)"
+    fi
+}
 
 # Fonction pour récupérer les vidéos likées via l'API YouTube
 get_liked_videos() {
@@ -258,8 +305,16 @@ process_liked_video() {
     local uploader="$4"
     local url="$5"
     local player="$6"
+    local processed_file="$7"
     
-    log_debug "Processing liked video: $title by $uploader"
+    log_debug "Processing liked video: $title by $uploader (ID: $video_id)"
+    
+    # Vérifier si la vidéo a déjà été traitée
+    if is_video_processed "$video_id" "$processed_file"; then
+        log_debug "Video $video_id already processed, skipping"
+        echo "⏭️ Skipping already processed video: $title"
+        return 0
+    fi
     
     # Encoder le titre pour compatibilité URL maximale
     local url_safe_title=$(url_encode_title "$title")
@@ -277,6 +332,9 @@ process_liked_video() {
         if [[ -n "$ipfs_url" ]]; then
             log_debug "Successfully processed: $url_safe_title -> $ipfs_url"
             echo "✅ $url_safe_title by $uploader -> $ipfs_url"
+            
+            # Marquer la vidéo comme traitée
+            mark_video_processed "$video_id" "$processed_file"
             
             # Envoyer une note NOSTR pour cette vidéo
             send_nostr_note "$player" "$url_safe_title" "$uploader" "$ipfs_url" "$url"
@@ -298,8 +356,12 @@ process_liked_video() {
 sync_youtube_likes() {
     local player="$1"
     local cookie_file="$2"
+    local processed_file="$3"
     
     log_debug "Starting YouTube likes synchronization for $player"
+    
+    # Nettoyer les anciennes entrées de la base de données
+    cleanup_processed_videos "$processed_file"
     
     # Récupérer les vidéos likées (maximum 3 par run)
     local liked_videos=$(get_liked_videos "$player" "$cookie_file" 3)
@@ -311,6 +373,11 @@ sync_youtube_likes() {
     
     local processed_count=0
     local success_count=0
+    local skipped_count=0
+    
+    # Compter le nombre total de vidéos déjà traitées
+    local total_processed=$(wc -l < "$processed_file" 2>/dev/null || echo "0")
+    log_debug "Total videos already processed: $total_processed"
     
     # Traiter chaque vidéo likée
     while IFS= read -r line; do
@@ -331,9 +398,16 @@ sync_youtube_likes() {
             
             log_debug "Processing: $title (ID: $video_id)"
             
-            # Traiter la vidéo
-            if process_liked_video "$video_id" "$title" "$duration" "$uploader" "$url" "$player"; then
-                success_count=$((success_count + 1))
+            # Vérifier si la vidéo a déjà été traitée avant de lancer le traitement
+            if is_video_processed "$video_id" "$processed_file"; then
+                skipped_count=$((skipped_count + 1))
+                log_debug "Skipping already processed video: $title (ID: $video_id)"
+                echo "⏭️ Skipping already processed: $title"
+            else
+                # Traiter la vidéo
+                if process_liked_video "$video_id" "$title" "$duration" "$uploader" "$url" "$player" "$processed_file"; then
+                    success_count=$((success_count + 1))
+                fi
             fi
             
             processed_count=$((processed_count + 1))
@@ -343,14 +417,15 @@ sync_youtube_likes() {
         fi
     done <<< "$liked_videos"
     
-    log_debug "YouTube sync completed for $player: $success_count/$processed_count videos processed"
+    log_debug "YouTube sync completed for $player: $success_count/$processed_count videos processed, $skipped_count skipped"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Sync stats: $success_count new, $skipped_count skipped, $processed_count total" >&2
     
     # Mettre à jour le fichier de dernière synchronisation
     echo "$TODAY" > "$LAST_SYNC_FILE"
     
     # Envoyer une notification par email si des vidéos ont été traitées
     if [[ $success_count -gt 0 ]]; then
-        send_sync_notification "$player" "$success_count" "$processed_count"
+        send_sync_notification "$player" "$success_count" "$processed_count" "$skipped_count"
     fi
     
     return 0
@@ -361,8 +436,9 @@ send_sync_notification() {
     local player="$1"
     local success_count="$2"
     local processed_count="$3"
+    local skipped_count="$4"
     
-    log_debug "Sending sync notification to $player: $success_count/$processed_count videos"
+    log_debug "Sending sync notification to $player: $success_count/$processed_count videos ($skipped_count skipped)"
     
     # Créer le contenu HTML de la notification
     local email_content="<html><head><meta charset='UTF-8'>
@@ -383,8 +459,9 @@ send_sync_notification() {
     <div class='content'>
         <div class='stats'>
             <h3>📊 Statistiques de synchronisation</h3>
-            <p><strong>Vidéos traitées :</strong> $processed_count</p>
-            <p><strong>Vidéos téléchargées :</strong> $success_count</p>
+            <p><strong>Vidéos analysées :</strong> $processed_count</p>
+            <p><strong>Nouvelles vidéos téléchargées :</strong> $success_count</p>
+            <p><strong>Vidéos déjà synchronisées :</strong> $skipped_count</p>
             <p><strong>Date :</strong> $(date '+%d/%m/%Y à %H:%M')</p>
         </div>
         <p>Vos nouvelles vidéos sont maintenant disponibles dans votre uDRIVE :</p>
@@ -476,7 +553,7 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Disk space check passed" >&2
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting YouTube likes synchronization..." >&2
 # Lancer la synchronisation
-if sync_youtube_likes "$PLAYER" "$COOKIE_FILE"; then
+if sync_youtube_likes "$PLAYER" "$COOKIE_FILE" "$PROCESSED_VIDEOS_FILE"; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] SUCCESS: YouTube likes sync completed successfully for $PLAYER" >&2
     log_debug "YouTube likes sync completed successfully for $PLAYER"
     exit 0

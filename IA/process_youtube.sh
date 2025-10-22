@@ -95,6 +95,9 @@ send_nostr_notification() {
     local uploader="$3"
     local ipfs_url="$4"
     local youtube_url="$5"
+    local metadata_ipfs="$6"
+    local thumbnail_ipfs="$7"
+    local subtitles_info="$8"
     
     log_debug "Sending NOSTR notification for video: $title"
     
@@ -123,17 +126,168 @@ send_nostr_notification() {
     
     local nsec_key="$NSEC"
     
-    # Build NOSTR message
-    local message="🎬 Nouvelle vidéo téléchargée: $title par $uploader
+    # Extract video description from metadata if available
+    local video_description=""
+    if [[ -n "$metadata_ipfs" ]]; then
+        # Try to extract description from the metadata JSON file
+        local metadata_file=$(find "$OUTPUT_DIR" -name "*.info.json" 2>/dev/null | head -n 1)
+        if [[ -n "$metadata_file" && -f "$metadata_file" ]]; then
+            video_description=$(jq -r '.description // empty' "$metadata_file" 2>/dev/null | head -c 500)
+            if [[ -n "$video_description" && "$video_description" != "null" ]]; then
+                # Clean description (remove HTML tags, limit length)
+                video_description=$(echo "$video_description" | sed 's/<[^>]*>//g' | sed 's/&nbsp;/ /g' | head -c 300)
+            else
+                video_description=""
+            fi
+        fi
+    fi
+    
+    # Generate AI analysis if description is available
+    local ai_analysis=""
+    if [[ -n "$video_description" && -n "$MY_PATH/../question.py" ]]; then
+        log_debug "Generating AI analysis for video: $title"
+        local ai_prompt="Analyse cette vidéo YouTube et donne un résumé en 2-3 phrases: Titre: $title, Auteur: $uploader, Description: $video_description"
+        ai_analysis=$(python3 "$MY_PATH/../question.py" "$ai_prompt" 2>/dev/null | head -c 200)
+        if [[ -n "$ai_analysis" && "$ai_analysis" != "Failed to get answer from Ollama." ]]; then
+            log_debug "AI analysis generated: $ai_analysis"
+        else
+            ai_analysis=""
+        fi
+    fi
+    
+    # Build NOSTR message with enhanced metadata
+    local message="🎬 Nouvelle vidéo téléchargée: $title par $uploader"
+
+    # Add AI analysis if available
+    if [[ -n "$ai_analysis" ]]; then
+        message="$message
+
+🤖 Analyse IA: $ai_analysis"
+    fi
+    
+    # Add description if available
+    if [[ -n "$video_description" ]]; then
+        message="$message
+
+📝 Description: $video_description"
+    fi
+    
+    message="$message
 
 🔗 IPFS: $ipfs_url
-📺 YouTube: $youtube_url
+
+--- debug ---"
+
+    # Add metadata links if available
+    if [[ -n "$metadata_ipfs" ]]; then
+        message="$message
+📋 Métadonnées: $myIPFS/ipfs/$metadata_ipfs"
+    fi
+    
+    if [[ -n "$thumbnail_ipfs" ]]; then
+        message="$message
+🖼️ Miniature: $myIPFS/ipfs/$thumbnail_ipfs"
+    fi
+    
+    # Add subtitles if available
+    if [[ -n "$subtitles_info" ]]; then
+        message="$message
+📝 Sous-titres:"
+        # Parse subtitles info (format: lang:format:ipfs_hash,lang:format:ipfs_hash)
+        IFS=',' read -ra SUBTITLE_ENTRIES <<< "$subtitles_info"
+        for subtitle_entry in "${SUBTITLE_ENTRIES[@]}"; do
+            if [[ -n "$subtitle_entry" ]]; then
+                IFS=':' read -ra SUBTITLE_PARTS <<< "$subtitle_entry"
+                local subtitle_lang="${SUBTITLE_PARTS[0]}"
+                local subtitle_format="${SUBTITLE_PARTS[1]}"
+                local subtitle_ipfs="${SUBTITLE_PARTS[2]}"
+                message="$message
+  • $subtitle_lang ($subtitle_format): $myIPFS/ipfs/$subtitle_ipfs"
+            fi
+        done
+    fi
+    
+    message="$message
 
 #YouTubeDownload #uDRIVE #IPFS"
     
-    # Send NOSTR note
+    # Build NOSTR tags optimized for video channels
+    local tags_json="[[\"r\",\"$youtube_url\",\"YouTube\"],[\"t\",\"YouTubeDownload\"],[\"t\",\"uDRIVE\"],[\"t\",\"IPFS\"]"
+    
+    # Add channel-specific tags
+    tags_json="$tags_json,[\"t\",\"VideoChannel\"]"
+    
+    # Add uploader as channel tag for grouping
+    if [[ -n "$uploader" && "$uploader" != "null" ]]; then
+        local channel_name=$(echo "$uploader" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 50)
+        tags_json="$tags_json,[\"t\",\"Channel-$channel_name\"]"
+    fi
+    
+    # Add video category/topic tags (extracted from title)
+    local topic_tags=$(echo "$title" | tr '[:upper:]' '[:lower:]' | \
+        sed 's/[^a-zA-Z0-9 ]//g' | \
+        awk '{for(i=1;i<=NF;i++) if(length($i)>3) print $i}' | \
+        head -3 | \
+        sed 's/^/["t","Topic-/' | sed 's/$/"]/' | \
+        tr '\n' ',' | sed 's/,$//')
+    
+    if [[ -n "$topic_tags" ]]; then
+        tags_json="$tags_json,$topic_tags"
+    fi
+    
+    # Add duration tag for filtering
+    if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ ]]; then
+        local duration_min=$((duration / 60))
+        if [[ $duration_min -lt 5 ]]; then
+            tags_json="$tags_json,[\"t\",\"Duration-Short\"]"
+        elif [[ $duration_min -lt 30 ]]; then
+            tags_json="$tags_json,[\"t\",\"Duration-Medium\"]"
+        else
+            tags_json="$tags_json,[\"t\",\"Duration-Long\"]"
+        fi
+    fi
+    
+    # Add AI analysis tag if available
+    if [[ -n "$ai_analysis" ]]; then
+        tags_json="$tags_json,[\"t\",\"AI-Analysis\"]"
+    fi
+    
+    # Add description tag if available
+    if [[ -n "$video_description" ]]; then
+        tags_json="$tags_json,[\"t\",\"Description\"]"
+    fi
+    
+    # Add subtitles tag if available
+    if [[ -n "$subtitles_info" ]]; then
+        tags_json="$tags_json,[\"t\",\"Subtitles\"]"
+        # Add language-specific tags
+        IFS=',' read -ra SUBTITLE_ENTRIES <<< "$subtitles_info"
+        for subtitle_entry in "${SUBTITLE_ENTRIES[@]}"; do
+            if [[ -n "$subtitle_entry" ]]; then
+                IFS=':' read -ra SUBTITLE_PARTS <<< "$subtitle_entry"
+                local subtitle_lang="${SUBTITLE_PARTS[0]}"
+                local subtitle_format="${SUBTITLE_PARTS[1]}"
+                local subtitle_ipfs="${SUBTITLE_PARTS[2]}"
+                tags_json="$tags_json,[\"t\",\"Subtitle-$subtitle_lang\"]"
+                tags_json="$tags_json,[\"r\",\"$myIPFS/ipfs/$subtitle_ipfs\",\"Subtitle-$subtitle_lang\"]"
+            fi
+        done
+    fi
+    
+    # Add metadata tags if available
+    if [[ -n "$metadata_ipfs" ]]; then
+        tags_json="$tags_json,[\"r\",\"$myIPFS/ipfs/$metadata_ipfs\",\"Metadata\"]"
+    fi
+    
+    if [[ -n "$thumbnail_ipfs" ]]; then
+        tags_json="$tags_json,[\"r\",\"$myIPFS/ipfs/$thumbnail_ipfs\",\"Thumbnail\"]"
+    fi
+    
+    tags_json="$tags_json]"
+    
+    # Send NOSTR note with tags
     echo "📡 Sending NOSTR notification for: $title" >&2
-    local nostr_result=$(python3 "$nostr_script" "$nsec_key" "$message" "ws://127.0.0.1:7777" 2>&1)
+    local nostr_result=$(python3 "$nostr_script" "$nsec_key" "$message" "ws://127.0.0.1:7777" "$tags_json" 2>&1)
     local nostr_exit_code=$?
     
     if [[ $nostr_exit_code -eq 0 ]]; then
@@ -305,9 +459,12 @@ process_youtube() {
     duration=$(echo "$line" | cut -d '&' -f 3)
     uploader=$(echo "$line" | cut -d '&' -f 4)
     
-    # Clean title safely
+    # Clean title safely and make it URL-compatible
     if [[ -n "$raw_title" ]]; then
-        media_title=$(echo "$raw_title" | detox --inline)
+        # First detox to remove special characters, then make URL-compatible
+        media_title=$(echo "$raw_title" | detox --inline | sed 's/[^a-zA-Z0-9._-]/_/g' | sed 's/__*/_/g' | sed 's/^_\|_$//g')
+        # Limit length to avoid filesystem issues
+        media_title=$(echo "$media_title" | head -c 100)
     else
         media_title="media-$(date +%s)"
     fi
@@ -332,7 +489,8 @@ process_youtube() {
             uploader="${BASH_REMATCH[4]}"
             log_debug "Re-extracted with regex: yid='$yid', title='$raw_title', duration='$duration', uploader='$uploader'"
             if [[ -n "$raw_title" ]]; then
-                media_title=$(echo "$raw_title" | detox --inline)
+                # Make URL-compatible
+                media_title=$(echo "$raw_title" | detox --inline | sed 's/[^a-zA-Z0-9._-]/_/g' | sed 's/__*/_/g' | sed 's/^_\|_$//g' | head -c 100)
             else
                 media_title="media-$(date +%s)"
             fi
@@ -395,20 +553,79 @@ EOF
     case "$media_type" in
         mp3)
             yt-dlp $browser_cookies -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+                --write-info-json --write-thumbnail \
+                --write-subs --write-auto-subs --sub-langs "fr,en,es,de,it" \
+                --embed-metadata --embed-thumbnail \
+                --metadata-from-title "%(title)s" \
+                --metadata-from-description "%(description)s" \
                 -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
             ;;
         mp4)
             yt-dlp $browser_cookies -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best" \
                 --no-mtime --embed-thumbnail --add-metadata \
+                --write-info-json --write-thumbnail \
+                --write-subs --write-auto-subs --sub-langs "fr,en,es,de,it" \
+                --embed-metadata --embed-thumbnail \
+                --metadata-from-title "%(title)s" \
+                --metadata-from-description "%(description)s" \
                 -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
             ;;
     esac
     media_file=$(ls "$OUTPUT_DIR"/${media_title}.* 2>/dev/null | head -n 1)
     filename=$(basename "$media_file")
     log_debug "Downloaded file: $media_file"
+    
+    # Find metadata files
+    info_json_file=$(ls "$OUTPUT_DIR"/${media_title}.info.json 2>/dev/null | head -n 1)
+    thumbnail_file=$(ls "$OUTPUT_DIR"/${media_title}.* 2>/dev/null | grep -E '\.(jpg|jpeg|png|webp)$' | head -n 1)
+    
+    # Find subtitle files
+    subtitle_files=$(ls "$OUTPUT_DIR"/${media_title}.*.vtt 2>/dev/null)
+    subtitle_files="$subtitle_files $(ls "$OUTPUT_DIR"/${media_title}.*.srt 2>/dev/null)"
+    subtitle_files=$(echo "$subtitle_files" | tr -s ' ' | sed 's/^ *//;s/ *$//')
+    
     if [[ -n "$media_file" ]]; then
+        # Add main media file to IPFS
         media_ipfs=$(ipfs add -wq "$media_file" 2>> "$LOGFILE" | tail -n 1)
         log_debug "IPFS add result: $media_ipfs"
+        
+        # Add metadata files to IPFS if they exist
+        local metadata_ipfs=""
+        if [[ -n "$info_json_file" ]]; then
+            metadata_ipfs=$(ipfs add -wq "$info_json_file" 2>> "$LOGFILE" | tail -n 1)
+            log_debug "Metadata IPFS: $metadata_ipfs"
+        fi
+        
+        # Add thumbnail to IPFS if it exists
+        local thumbnail_ipfs=""
+        if [[ -n "$thumbnail_file" ]]; then
+            thumbnail_ipfs=$(ipfs add -wq "$thumbnail_file" 2>> "$LOGFILE" | tail -n 1)
+            log_debug "Thumbnail IPFS: $thumbnail_ipfs"
+        fi
+        
+        # Add subtitles to IPFS if they exist
+        local subtitles_info=""
+        if [[ -n "$subtitle_files" ]]; then
+            log_debug "Found subtitle files: $subtitle_files"
+            local subtitle_ipfs_list=""
+            for subtitle_file in $subtitle_files; do
+                if [[ -f "$subtitle_file" ]]; then
+                    local subtitle_ipfs=$(ipfs add -wq "$subtitle_file" 2>> "$LOGFILE" | tail -n 1)
+                    local subtitle_lang=$(basename "$subtitle_file" | sed 's/.*\.\([a-z][a-z]\)\..*/\1/')
+                    local subtitle_format=$(basename "$subtitle_file" | sed 's/.*\.\([a-z][a-z][a-z]\)$/\1/')
+                    log_debug "Subtitle IPFS: $subtitle_ipfs (lang: $subtitle_lang, format: $subtitle_format)"
+                    
+                    if [[ -n "$subtitle_ipfs_list" ]]; then
+                        subtitle_ipfs_list="$subtitle_ipfs_list,$subtitle_lang:$subtitle_format:$subtitle_ipfs"
+                    else
+                        subtitle_ipfs_list="$subtitle_lang:$subtitle_format:$subtitle_ipfs"
+                    fi
+                fi
+            done
+            subtitles_info="$subtitle_ipfs_list"
+            log_debug "Subtitles info: $subtitles_info"
+        fi
+        
         if [[ -n "$media_ipfs" ]]; then
             ipfs_url="$myIPFS/ipfs/$media_ipfs/$filename"
             echo "Media saved to: $media_file" >&2
@@ -452,7 +669,39 @@ EOF
             
             # Send NOSTR notification if player email is provided
             if [[ -n "$PLAYER_EMAIL" ]]; then
-                send_nostr_notification "$PLAYER_EMAIL" "$media_title" "$uploader" "$ipfs_url" "$url"
+                send_nostr_notification "$PLAYER_EMAIL" "$media_title" "$uploader" "$ipfs_url" "$url" "$metadata_ipfs" "$thumbnail_ipfs" "$subtitles_info"
+            fi
+            
+            # Generate channel-friendly JSON with enhanced metadata
+            local channel_name=$(echo "$uploader" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 50)
+            local topic_keywords=$(echo "$raw_title" | tr '[:upper:]' '[:lower:]' | \
+                sed 's/[^a-zA-Z0-9 ]//g' | \
+                awk '{for(i=1;i<=NF;i++) if(length($i)>3) print $i}' | \
+                head -5 | tr '\n' ',' | sed 's/,$//')
+            
+            # Parse subtitles for JSON output
+            local subtitles_json="[]"
+            if [[ -n "$subtitles_info" ]]; then
+                subtitles_json="["
+                IFS=',' read -ra SUBTITLE_ENTRIES <<< "$subtitles_info"
+                local first=true
+                for subtitle_entry in "${SUBTITLE_ENTRIES[@]}"; do
+                    if [[ -n "$subtitle_entry" ]]; then
+                        IFS=':' read -ra SUBTITLE_PARTS <<< "$subtitle_entry"
+                        local subtitle_lang="${SUBTITLE_PARTS[0]}"
+                        local subtitle_format="${SUBTITLE_PARTS[1]}"
+                        local subtitle_ipfs="${SUBTITLE_PARTS[2]}"
+                        
+                        if [[ "$first" == "true" ]]; then
+                            first=false
+                        else
+                            subtitles_json="$subtitles_json,"
+                        fi
+                        
+                        subtitles_json="$subtitles_json{\"language\":\"$subtitle_lang\",\"format\":\"$subtitle_format\",\"ipfs_hash\":\"$subtitle_ipfs\",\"url\":\"$myIPFS/ipfs/$subtitle_ipfs\"}"
+                    fi
+                done
+                subtitles_json="$subtitles_json]"
             fi
             
             cat << EOF
@@ -462,7 +711,26 @@ EOF
   "duration": "$duration",
   "uploader": "$uploader",
   "original_url": "$url",
-  "filename": "$filename"
+  "filename": "$filename",
+  "metadata_ipfs": "$metadata_ipfs",
+  "thumbnail_ipfs": "$thumbnail_ipfs",
+  "subtitles": $subtitles_json,
+  "channel_info": {
+    "name": "$channel_name",
+    "display_name": "$uploader",
+    "type": "youtube"
+  },
+  "content_info": {
+    "description": "$video_description",
+    "ai_analysis": "$ai_analysis",
+    "topic_keywords": "$topic_keywords",
+    "duration_category": "$(if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ ]]; then duration_min=$((duration / 60)); if [[ $duration_min -lt 5 ]]; then echo "short"; elif [[ $duration_min -lt 30 ]]; then echo "medium"; else echo "long"; fi; fi)"
+  },
+  "technical_info": {
+    "format": "$media_type",
+    "file_size": "$(stat -c%s "$media_file" 2>/dev/null || echo "unknown")",
+    "download_date": "$(date -Iseconds)"
+  }
 }
 EOF
             log_debug "Success JSON outputted."
