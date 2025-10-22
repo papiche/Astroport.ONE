@@ -366,7 +366,7 @@ send_sync_notification() {
     
     # Créer le contenu HTML de la notification
     local email_content="<html><head><meta charset='UTF-8'>
-    <title>🎵 YouTube Synchronisation Complétée<title>
+    <title>🎵 YouTube Synchronisation Complétée</title>
 <style>
     body { font-family: 'Courier New', monospace; background: #f5f5f5; }
     .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }

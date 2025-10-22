@@ -105,19 +105,23 @@ send_nostr_notification() {
         return 1
     fi
     
-    # Check if player has NSEC key
-    local nsec_file="$HOME/.zen/game/nostr/$player_email/.nsec"
-    if [[ ! -f "$nsec_file" ]]; then
-        log_debug "NSEC file not found for $player_email: $nsec_file"
+    # Check if player has NOSTR keys in .secret.nostr format
+    local secret_file="$HOME/.zen/game/nostr/$player_email/.secret.nostr"
+    if [[ ! -f "$secret_file" ]]; then
+        log_debug "NOSTR keys file not found for $player_email: $secret_file"
         return 1
     fi
     
-    # Read NSEC key
-    local nsec_key=$(cat "$nsec_file" 2>/dev/null)
-    if [[ -z "$nsec_key" ]]; then
-        log_debug "Failed to read NSEC key for $player_email"
+    # Source the .secret.nostr file to get NSEC, NPUB, HEX
+    source "$secret_file" 2>/dev/null
+    
+    if [[ -z "$NSEC" ]] || [[ -z "$NPUB" ]]; then
+        log_debug "Invalid .secret.nostr file format for $player_email"
+        log_debug "Expected format: NSEC=nsec1...; NPUB=npub1...; HEX=..."
         return 1
     fi
+    
+    local nsec_key="$NSEC"
     
     # Build NOSTR message
     local message="🎬 Nouvelle vidéo téléchargée: $title par $uploader
