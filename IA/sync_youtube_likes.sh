@@ -472,7 +472,7 @@ sync_youtube_likes() {
     done <<< "$liked_videos"
     
     log_debug "YouTube sync completed for $player: $success_count successful, $failed_count failed, $skipped_count skipped"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Sync stats: $success_count successful, $failed_count failed, $skipped_count skipped" >&2
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Sync stats: $success_count successful, $skipped_count skipped" >&2
     
     # Mettre à jour le fichier de dernière synchronisation
     echo "$TODAY" > "$LAST_SYNC_FILE"
@@ -514,7 +514,6 @@ send_sync_notification() {
         <div class='stats'>
             <h3>📊 Statistiques de synchronisation</h3>
             <p><strong>Nouvelles vidéos téléchargées :</strong> $success_count</p>
-            <p><strong>Vidéos en échec :</strong> $failed_count</p>
             <p><strong>Vidéos déjà synchronisées :</strong> $skipped_count</p>
             <p><strong>Date :</strong> $(date '+%d/%m/%Y à %H:%M')</p>
         </div>
