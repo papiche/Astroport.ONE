@@ -1073,32 +1073,23 @@ for PLAYER in "${NOSTR[@]}"; do
         # Get friends list for this MULTIPASS
         local friends_list=($(${MY_PATH}/../tools/nostr_get_N1.sh "$HEX" 2>/dev/null))
         
-        # Check if this is a U.SOCIETY account (has purchased shares via UPLANET.official.sh)
-        local is_usociety=false
-        if [[ -f "$HOME/.zen/game/nostr/${PLAYER}/U.SOCIETY" ]]; then
-            is_usociety=true
-            log "INFO" "U.SOCIETY account detected - activating N² (friends of friends) for ${PLAYER}"
-        fi
+        # Personal N² journal for ALL MULTIPASS accounts (individual and personalized)
+        log "INFO" "Creating personal N² journal for ${PLAYER} - individual and tailored to their network"
         
-        # For U.SOCIETY accounts, expand to N² (friends of friends) for daily summaries only
-        if [[ "$is_usociety" == true && "$summary_type" == "Daily" ]]; then
-            log "INFO" "N² expansion activated for U.SOCIETY account ${PLAYER} (daily summary)"
-            
-            # Get friends of friends (N²)
-            local n2_friends=()
-            for friend_hex in "${friends_list[@]}"; do
-                local friend_friends=($(${MY_PATH}/../tools/nostr_get_N1.sh "$friend_hex" 2>/dev/null))
-                n2_friends+=("${friend_friends[@]}")
-            done
-            
-            # Remove duplicates and add to friends list
-            local all_friends=("${friends_list[@]}" "${n2_friends[@]}")
-            local unique_friends=($(printf '%s\n' "${all_friends[@]}" | sort -u))
-            friends_list=("${unique_friends[@]}")
-            
-            log "INFO" "N² expansion: ${#friends_list[@]} total friends (N1 + N²) for ${PLAYER}"
-            USOCIETY_N2_EXPANSIONS=$((USOCIETY_N2_EXPANSIONS + 1))
-        fi
+        # Get friends of friends (N²) for personalized journal
+        local n2_friends=()
+        for friend_hex in "${friends_list[@]}"; do
+            local friend_friends=($(${MY_PATH}/../tools/nostr_get_N1.sh "$friend_hex" 2>/dev/null))
+            n2_friends+=("${friend_friends[@]}")
+        done
+        
+        # Remove duplicates and add to friends list
+        local all_friends=("${friends_list[@]}" "${n2_friends[@]}")
+        local unique_friends=($(printf '%s\n' "${all_friends[@]}" | sort -u))
+        friends_list=("${unique_friends[@]}")
+        
+        log "INFO" "Personal N² journal: ${#friends_list[@]} total friends (N1 + N²) for ${PLAYER}'s individual network"
+        USOCIETY_N2_EXPANSIONS=$((USOCIETY_N2_EXPANSIONS + 1))
         
         if [[ ${#friends_list[@]} -gt 0 ]]; then
             log "INFO" "Found ${#friends_list[@]} friends for ${PLAYER} - generating summary"
@@ -1107,13 +1098,14 @@ for PLAYER in "${NOSTR[@]}"; do
             local summary_dir="${HOME}/.zen/tmp/${MOATS}/friends_summary_${PLAYER}"
             mkdir -p "$summary_dir"
             
-            # Generate friends activity summary
-            local summary_file="${summary_dir}/friends_summary.md"
+            # Generate personal N² journal for this specific MULTIPASS
+            local summary_file="${summary_dir}/personal_n2_journal_${PLAYER}.md"
             echo "# $summary_title" > "$summary_file"
             echo "**Date**: $TODATE" >> "$summary_file"
             echo "**MULTIPASS**: $PLAYER" >> "$summary_file"
             echo "**Period**: $summary_period" >> "$summary_file"
-            echo "**Type**: $summary_type" >> "$summary_file"
+            echo "**Type**: Personal N² Journal ($summary_type)" >> "$summary_file"
+            echo "**Network**: ${#friends_list[@]} friends (N1 + N²)" >> "$summary_file"
             
             # Add GPS coordinates if available
             local player_gps_file="${HOME}/.zen/game/nostr/${PLAYER}/GPS"
@@ -1259,20 +1251,20 @@ for PLAYER in "${NOSTR[@]}"; do
                     ((message_count++))
                 done
                 
-            # Add AI summary if too many messages (threshold depends on summary type and account type)
-            local ai_threshold=10
+            # Add AI summary if too many messages (threshold depends on summary type)
+            local ai_threshold=5  # Reduced threshold for more personalized summaries
             if [[ "$summary_type" == "Weekly" ]]; then
-                ai_threshold=7  # 7 daily summaries = 1 week
+                ai_threshold=5  # 5 daily summaries = 1 week
             elif [[ "$summary_type" == "Monthly" ]]; then
-                ai_threshold=4  # 4 weekly summaries = 1 month
+                ai_threshold=3   # 3 weekly summaries = 1 month
             elif [[ "$summary_type" == "Yearly" ]]; then
-                ai_threshold=13  # 13 monthly summaries = 1 year
+                ai_threshold=8   # 8 monthly summaries = 1 year
             fi
                 
-                # Adjust threshold for U.SOCIETY accounts with N² expansion
-                if [[ "$is_usociety" == true && "$summary_type" == "Daily" ]]; then
-                    ai_threshold=25  # Higher threshold for N² expanded networks
-                    log "INFO" "U.SOCIETY N² expansion: adjusted AI threshold to $ai_threshold for ${PLAYER}"
+                # Personal N² journal for each MULTIPASS with lower threshold
+                if [[ "$summary_type" == "Daily" ]]; then
+                    ai_threshold=5  # Lower threshold for personalized N² journal
+                    log "INFO" "Personal N² journal: AI threshold set to $ai_threshold for ${PLAYER}"
                 fi
                 
             if [[ $message_count -gt $ai_threshold ]]; then
@@ -1290,12 +1282,15 @@ for PLAYER in "${NOSTR[@]}"; do
                     local ai_prompt=""
                     if [[ "$summary_type" == "Daily" ]]; then
                         ai_prompt="[TEXT] $(cat "$summary_file") [/TEXT] --- \
-# 1. Summarize the friends' activity over the $summary_period in Markdown format. \
-# 2. Group messages by author and highlight key topics and trends. \
-# 3. Add hashtags and emojis for readability. \
+# Create a PERSONAL N² journal for ${PLAYER} based on their friends' activity over the $summary_period. \
+# 1. This is a PERSONAL journal for ${PLAYER} - make it feel intimate and tailored to them. \
+# 2. Group messages by author and highlight key topics and trends that would interest ${PLAYER}. \
+# 3. Add hashtags and emojis for readability and personality. \
 # 4. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
-# 5. IMPORTANT: Never omit an author, even if you summarize. \
-# 6. Use the same language as mostly used in the messages."
+# 5. IMPORTANT: Never omit an author, even if you summarize - each friend matters to ${PLAYER}. \
+# 6. Use the same language as mostly used in the messages. \
+# 7. Make it feel like a personal diary entry about ${PLAYER}'s social network. \
+# 8. Include insights about what's happening in ${PLAYER}'s extended network (N²)."
                     elif [[ "$summary_type" == "Weekly" ]]; then
                         ai_prompt="[TEXT] $(cat "$summary_file") [/TEXT] --- \
 # 1. Create a comprehensive $summary_type summary by analyzing the daily summaries from the $summary_period. \
@@ -1335,16 +1330,16 @@ for PLAYER in "${NOSTR[@]}"; do
                     echo "$ai_summary" > "$summary_file"
                 fi
                 
-                # Publish summary to MULTIPASS wall
+                # Publish personal N² journal to MULTIPASS wall
                 local summary_content=$(cat "$summary_file")
-                local d_tag="friends-${summary_type,,}-summary-${TODATE}"
+                local d_tag="personal-n2-journal-${PLAYER}-${summary_type,,}-${TODATE}"
                 local published_at=$(date +%s)
                 
                 # Convert NSEC to HEX for nostpy-cli
                 local NPRIV_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NSEC")
                 
-                # Build tags based on summary type
-                local summary_tags="[['d', '$d_tag'], ['title', '$summary_title'], ['published_at', '$published_at'], ['t', 'FriendsSummary'], ['t', '$summary_type'], ['t', 'UPlanet'], ['t', 'SummaryType:$summary_type']]"
+                # Build tags for personal N² journal
+                local summary_tags="[['d', '$d_tag'], ['title', '$summary_title'], ['published_at', '$published_at'], ['t', 'PersonalN2Journal'], ['t', 'N2Network'], ['t', '$summary_type'], ['t', 'UPlanet'], ['t', 'SummaryType:$summary_type'], ['p', '$PLAYER']]"
                 
                 # Send as kind 30023 (article) to MULTIPASS wall
                 nostpy-cli send_event \
@@ -1355,8 +1350,8 @@ for PLAYER in "${NOSTR[@]}"; do
                     --relay "$myRELAY" \
                     >/dev/null 2>&1
                 
-                log "INFO" "✅ $summary_type friends summary published to ${PLAYER} wall ($message_count messages)"
-                log_metric "FRIENDS_SUMMARY_PUBLISHED" "$message_count" "${PLAYER}"
+                log "INFO" "✅ Personal N² journal published to ${PLAYER} wall ($message_count messages)"
+                log_metric "PERSONAL_N2_JOURNAL_PUBLISHED" "$message_count" "${PLAYER}"
                 FRIENDS_SUMMARIES_PUBLISHED=$((FRIENDS_SUMMARIES_PUBLISHED + 1))
                 
                 # Increment specific counter based on summary type
@@ -1370,13 +1365,13 @@ for PLAYER in "${NOSTR[@]}"; do
                     YEARLY_SUMMARIES=$((YEARLY_SUMMARIES + 1))
                 fi
             else
-                log "DEBUG" "No friends messages found for ${PLAYER} in the last 24h"
+                log "DEBUG" "No friends messages found for ${PLAYER} in the last 24h - personal N² journal empty"
             fi
             
             # Cleanup temporary directory
             rm -rf "$summary_dir"
         else
-            log "DEBUG" "No friends found for ${PLAYER} - skipping summary"
+            log "DEBUG" "No friends found for ${PLAYER} - skipping personal N² journal"
         fi
     fi
 
@@ -1474,8 +1469,8 @@ hours=$((dur / 3600)); minutes=$(( (dur % 3600) / 60 )); seconds=$((dur % 60))
 log "INFO" "============================================ NOSTR REFRESH SUMMARY"
 log "INFO" "📊 Players: ${#NOSTR[@]} total | $DAILY_UPDATES daily | $FILE_UPDATES files | $SKIPPED_PLAYERS skipped"
 log "INFO" "💰 Payments: $PAYMENTS_PROCESSED processed | $PAYMENTS_FAILED failed | $PAYMENTS_ALREADY_DONE already done"
-log "INFO" "👥 Friends Summaries: $FRIENDS_SUMMARIES_PUBLISHED total ($DAILY_SUMMARIES daily | $WEEKLY_SUMMARIES weekly | $MONTHLY_SUMMARIES monthly | $YEARLY_SUMMARIES yearly)"
-log "INFO" "🏛️ U.SOCIETY N² Expansions: $USOCIETY_N2_EXPANSIONS"
+log "INFO" "👥 Personal N² Journals: $FRIENDS_SUMMARIES_PUBLISHED total ($DAILY_SUMMARIES daily | $WEEKLY_SUMMARIES weekly | $MONTHLY_SUMMARIES monthly | $YEARLY_SUMMARIES yearly)"
+log "INFO" "🔗 N² Network Expansions: $USOCIETY_N2_EXPANSIONS"
 log "INFO" "🎵 YouTube Sync: $YOUTUBE_SYNC_USERS users"
 log "INFO" "⏱️  Duration: ${hours}h ${minutes}m ${seconds}s"
 log "INFO" "============================================ NOSTR.refresh DONE."
@@ -1487,12 +1482,12 @@ log_metric "FILE_UPDATES" "$FILE_UPDATES"
 log_metric "SKIPPED_PLAYERS" "$SKIPPED_PLAYERS"
 log_metric "PAYMENTS_PROCESSED" "$PAYMENTS_PROCESSED"
 log_metric "PAYMENTS_FAILED" "$PAYMENTS_FAILED"
-log_metric "FRIENDS_SUMMARIES_PUBLISHED" "$FRIENDS_SUMMARIES_PUBLISHED"
-log_metric "DAILY_SUMMARIES" "$DAILY_SUMMARIES"
-log_metric "WEEKLY_SUMMARIES" "$WEEKLY_SUMMARIES"
-log_metric "MONTHLY_SUMMARIES" "$MONTHLY_SUMMARIES"
-log_metric "YEARLY_SUMMARIES" "$YEARLY_SUMMARIES"
-log_metric "USOCIETY_N2_EXPANSIONS" "$USOCIETY_N2_EXPANSIONS"
+log_metric "PERSONAL_N2_JOURNALS_PUBLISHED" "$FRIENDS_SUMMARIES_PUBLISHED"
+log_metric "DAILY_N2_JOURNALS" "$DAILY_SUMMARIES"
+log_metric "WEEKLY_N2_JOURNALS" "$WEEKLY_SUMMARIES"
+log_metric "MONTHLY_N2_JOURNALS" "$MONTHLY_SUMMARIES"
+log_metric "YEARLY_N2_JOURNALS" "$YEARLY_SUMMARIES"
+log_metric "N2_NETWORK_EXPANSIONS" "$USOCIETY_N2_EXPANSIONS"
 log_metric "YOUTUBE_SYNC_USERS" "$YOUTUBE_SYNC_USERS"
 log_metric "EXECUTION_TIME_SECONDS" "$dur"
 rm -Rf ~/.zen/tmp/${MOATS}
