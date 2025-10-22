@@ -152,6 +152,37 @@ mark_video_processed() {
     log_debug "Marked video $video_id as processed"
 }
 
+# Fonction pour vérifier si une vidéo existe déjà dans uDRIVE
+check_video_exists_in_udrive() {
+    local video_id="$1"
+    local title="$2"
+    local player="$3"
+    
+    # Encoder le titre pour correspondre au nom de fichier
+    local url_safe_title=$(url_encode_title "$title")
+    
+    # Vérifier dans le répertoire Videos
+    local udrive_videos="$HOME/.zen/game/nostr/${player}/APP/uDRIVE/Videos"
+    if [[ -d "$udrive_videos" ]]; then
+        # Chercher des fichiers qui contiennent l'ID de la vidéo ou le titre
+        if find "$udrive_videos" -name "*${video_id}*" -o -name "*${url_safe_title}*" 2>/dev/null | grep -q .; then
+            log_debug "Video $video_id already exists in uDRIVE/Videos"
+            return 0
+        fi
+    fi
+    
+    # Vérifier dans le répertoire Music (pour les vidéos musicales)
+    local udrive_music="$HOME/.zen/game/nostr/${player}/APP/uDRIVE/Music"
+    if [[ -d "$udrive_music" ]]; then
+        if find "$udrive_music" -name "*${video_id}*" -o -name "*${url_safe_title}*" 2>/dev/null | grep -q .; then
+            log_debug "Video $video_id already exists in uDRIVE/Music"
+            return 0
+        fi
+    fi
+    
+    return 1
+}
+
 # Fonction pour nettoyer les anciennes entrées (garder seulement les 100 dernières)
 cleanup_processed_videos() {
     local processed_file="$1"
@@ -316,6 +347,14 @@ process_liked_video() {
         return 0
     fi
     
+    # Vérifier si la vidéo existe déjà dans uDRIVE
+    if check_video_exists_in_udrive "$video_id" "$title" "$player"; then
+        log_debug "Video $video_id already exists in uDRIVE, marking as processed"
+        echo "📁 Video already exists in uDRIVE: $title"
+        mark_video_processed "$video_id" "$processed_file"
+        return 0
+    fi
+    
     # Encoder le titre pour compatibilité URL maximale
     local url_safe_title=$(url_encode_title "$title")
     log_debug "URL-safe title: $url_safe_title"
@@ -352,6 +391,15 @@ process_liked_video() {
     else
         log_debug "process_youtube.sh failed for: $url_safe_title"
         echo "❌ Download failed: $url_safe_title"
+        
+        # Vérifier si la vidéo existe quand même dans uDRIVE (peut-être téléchargée précédemment)
+        if check_video_exists_in_udrive "$video_id" "$title" "$player"; then
+            log_debug "Video $video_id exists in uDRIVE despite download failure, marking as processed"
+            echo "📁 Video found in uDRIVE despite download failure: $title"
+            mark_video_processed "$video_id" "$processed_file"
+            return 0
+        fi
+        
         return 1
     fi
 }
