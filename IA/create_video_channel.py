@@ -77,26 +77,50 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
     content = event.get('content', '')
     tags = event.get('tags', [])
     
-    # Extraire les liens IPFS et YouTube
+    # Extraire les liens IPFS et YouTube depuis les tags NOSTR
     ipfs_url = ""
     youtube_url = ""
     metadata_ipfs = ""
     thumbnail_ipfs = ""
     
-    # Parser le contenu pour extraire les liens
-    ipfs_match = re.search(r'🔗 IPFS: (https?://[^\s]+)', content)
-    if ipfs_match:
-        ipfs_url = ipfs_match.group(1)
+    # Parser les tags NOSTR pour extraire les liens
+    for tag in tags:
+        if len(tag) >= 3 and tag[0] == 'r':
+            url = tag[1]
+            tag_type = tag[2] if len(tag) > 2 else ''
+            
+            if 'youtube.com' in url or 'youtu.be' in url:
+                youtube_url = url
+            elif '/ipfs/' in url:
+                if 'Metadata' in tag_type:
+                    metadata_ipfs = url
+                elif 'Thumbnail' in tag_type:
+                    thumbnail_ipfs = url
+                elif 'Subtitle' in tag_type:
+                    # Skip subtitles as they're no longer handled
+                    continue
+                else:
+                    # Main video IPFS URL
+                    ipfs_url = url
     
-    youtube_match = re.search(r'📺 YouTube: (https?://[^\s]+)', content)
-    if youtube_match:
-        youtube_url = youtube_match.group(1)
+    # Fallback: Parser le contenu si les tags ne contiennent pas les infos
+    if not ipfs_url:
+        ipfs_match = re.search(r'🔗 IPFS: (https?://[^\s]+)', content)
+        if ipfs_match:
+            ipfs_url = ipfs_match.group(1)
     
-    metadata_match = re.search(r'📋 Métadonnées: (https?://[^\s]+)', content)
-    if metadata_match:
-        metadata_ipfs = metadata_match.group(1)
+    if not youtube_url:
+        youtube_match = re.search(r'📺 YouTube: (https?://[^\s]+)', content)
+        if youtube_match:
+            youtube_url = youtube_match.group(1)
     
-    thumbnail_match = re.search(r'🖼️ Miniature: (https?://[^\s]+)', content)
+    if not metadata_ipfs:
+        metadata_match = re.search(r'📋 Métadonnées: (https?://[^\s]+)', content)
+        if metadata_match:
+            metadata_ipfs = metadata_match.group(1)
+    
+    if not thumbnail_ipfs:
+        thumbnail_match = re.search(r'🖼️ Miniature: (https?://[^\s]+)', content)
     if thumbnail_match:
         thumbnail_ipfs = thumbnail_match.group(1)
     

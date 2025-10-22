@@ -189,23 +189,7 @@ send_nostr_notification() {
 🖼️ Miniature: $myIPFS/ipfs/$thumbnail_ipfs"
     fi
     
-    # Add subtitles if available
-    if [[ -n "$subtitles_info" ]]; then
-        message="$message
-📝 Sous-titres:"
-        # Parse subtitles info (format: lang:format:ipfs_hash,lang:format:ipfs_hash)
-        IFS=',' read -ra SUBTITLE_ENTRIES <<< "$subtitles_info"
-        for subtitle_entry in "${SUBTITLE_ENTRIES[@]}"; do
-            if [[ -n "$subtitle_entry" ]]; then
-                IFS=':' read -ra SUBTITLE_PARTS <<< "$subtitle_entry"
-                local subtitle_lang="${SUBTITLE_PARTS[0]}"
-                local subtitle_format="${SUBTITLE_PARTS[1]}"
-                local subtitle_ipfs="${SUBTITLE_PARTS[2]}"
-                message="$message
-  • $subtitle_lang ($subtitle_format): $myIPFS/ipfs/$subtitle_ipfs"
-            fi
-        done
-    fi
+    # Subtitle handling removed for simplicity
     
     message="$message
 
@@ -257,30 +241,15 @@ send_nostr_notification() {
         tags_json="$tags_json,[\"t\",\"Description\"]"
     fi
     
-    # Add subtitles tag if available
-    if [[ -n "$subtitles_info" ]]; then
-        tags_json="$tags_json,[\"t\",\"Subtitles\"]"
-        # Add language-specific tags
-        IFS=',' read -ra SUBTITLE_ENTRIES <<< "$subtitles_info"
-        for subtitle_entry in "${SUBTITLE_ENTRIES[@]}"; do
-            if [[ -n "$subtitle_entry" ]]; then
-                IFS=':' read -ra SUBTITLE_PARTS <<< "$subtitle_entry"
-                local subtitle_lang="${SUBTITLE_PARTS[0]}"
-                local subtitle_format="${SUBTITLE_PARTS[1]}"
-                local subtitle_ipfs="${SUBTITLE_PARTS[2]}"
-                tags_json="$tags_json,[\"t\",\"Subtitle-$subtitle_lang\"]"
-                tags_json="$tags_json,[\"r\",\"$myIPFS/ipfs/$subtitle_ipfs\",\"Subtitle-$subtitle_lang\"]"
-            fi
-        done
-    fi
+    # Subtitle handling removed for simplicity
     
     # Add metadata tags if available
     if [[ -n "$metadata_ipfs" ]]; then
-        tags_json="$tags_json,[\"r\",\"$myIPFS/ipfs/$metadata_ipfs\",\"Metadata\"]"
+        tags_json="$tags_json,[\"r\",\"/ipfs/$metadata_ipfs\",\"Metadata\"]"
     fi
     
     if [[ -n "$thumbnail_ipfs" ]]; then
-        tags_json="$tags_json,[\"r\",\"$myIPFS/ipfs/$thumbnail_ipfs\",\"Thumbnail\"]"
+        tags_json="$tags_json,[\"r\",\"/ipfs/$thumbnail_ipfs\",\"Thumbnail\"]"
     fi
     
     tags_json="$tags_json]"
@@ -578,10 +547,7 @@ EOF
     info_json_file=$(ls "$OUTPUT_DIR"/${media_title}.info.json 2>/dev/null | head -n 1)
     thumbnail_file=$(ls "$OUTPUT_DIR"/${media_title}.* 2>/dev/null | grep -E '\.(jpg|jpeg|png|webp)$' | head -n 1)
     
-    # Find subtitle files
-    subtitle_files=$(ls "$OUTPUT_DIR"/${media_title}.*.vtt 2>/dev/null)
-    subtitle_files="$subtitle_files $(ls "$OUTPUT_DIR"/${media_title}.*.srt 2>/dev/null)"
-    subtitle_files=$(echo "$subtitle_files" | tr -s ' ' | sed 's/^ *//;s/ *$//')
+    # Subtitle handling removed for simplicity
     
     if [[ -n "$media_file" && -f "$media_file" ]]; then
         # Verify it's actually a media file (not just metadata)
@@ -610,31 +576,11 @@ EOF
             log_debug "Thumbnail IPFS: $thumbnail_ipfs"
         fi
         
-        # Add subtitles to IPFS if they exist
-        local subtitles_info=""
-        if [[ -n "$subtitle_files" ]]; then
-            log_debug "Found subtitle files: $subtitle_files"
-            local subtitle_ipfs_list=""
-            for subtitle_file in $subtitle_files; do
-                if [[ -f "$subtitle_file" ]]; then
-                    local subtitle_ipfs=$(ipfs add -wq "$subtitle_file" 2>> "$LOGFILE" | tail -n 1)
-                    local subtitle_lang=$(basename "$subtitle_file" | sed 's/.*\.\([a-z][a-z]\)\..*/\1/')
-                    local subtitle_format=$(basename "$subtitle_file" | sed 's/.*\.\([a-z][a-z][a-z]\)$/\1/')
-                    log_debug "Subtitle IPFS: $subtitle_ipfs (lang: $subtitle_lang, format: $subtitle_format)"
-                    
-                    if [[ -n "$subtitle_ipfs_list" ]]; then
-                        subtitle_ipfs_list="$subtitle_ipfs_list,$subtitle_lang:$subtitle_format:$subtitle_ipfs"
-                    else
-                        subtitle_ipfs_list="$subtitle_lang:$subtitle_format:$subtitle_ipfs"
-                    fi
-                fi
-            done
-            subtitles_info="$subtitle_ipfs_list"
-            log_debug "Subtitles info: $subtitles_info"
-        fi
+        # Subtitle handling removed for simplicity
         
         if [[ -n "$media_ipfs" ]]; then
-            ipfs_url="$myIPFS/ipfs/$media_ipfs/$filename"
+            # Utiliser seulement le CID IPFS pur pour plus de flexibilité
+            ipfs_url="/ipfs/$media_ipfs/$filename"
             echo "Media saved to: $media_file" >&2
             log_debug "Media saved to: $media_file"
             
@@ -676,7 +622,7 @@ EOF
             
             # Send NOSTR notification if player email is provided
             if [[ -n "$PLAYER_EMAIL" ]]; then
-                send_nostr_notification "$PLAYER_EMAIL" "$media_title" "$uploader" "$ipfs_url" "$url" "$metadata_ipfs" "$thumbnail_ipfs" "$subtitles_info"
+                send_nostr_notification "$PLAYER_EMAIL" "$media_title" "$uploader" "$ipfs_url" "$url" "$metadata_ipfs" "$thumbnail_ipfs" ""
             fi
             
             # Generate channel-friendly JSON with enhanced metadata
@@ -686,30 +632,8 @@ EOF
                 awk '{for(i=1;i<=NF;i++) if(length($i)>3) print $i}' | \
                 head -5 | tr '\n' ',' | sed 's/,$//')
             
-            # Parse subtitles for JSON output
+            # Subtitle handling removed for simplicity
             local subtitles_json="[]"
-            if [[ -n "$subtitles_info" ]]; then
-                subtitles_json="["
-                IFS=',' read -ra SUBTITLE_ENTRIES <<< "$subtitles_info"
-                local first=true
-                for subtitle_entry in "${SUBTITLE_ENTRIES[@]}"; do
-                    if [[ -n "$subtitle_entry" ]]; then
-                        IFS=':' read -ra SUBTITLE_PARTS <<< "$subtitle_entry"
-                        local subtitle_lang="${SUBTITLE_PARTS[0]}"
-                        local subtitle_format="${SUBTITLE_PARTS[1]}"
-                        local subtitle_ipfs="${SUBTITLE_PARTS[2]}"
-                        
-                        if [[ "$first" == "true" ]]; then
-                            first=false
-                        else
-                            subtitles_json="$subtitles_json,"
-                        fi
-                        
-                        subtitles_json="$subtitles_json{\"language\":\"$subtitle_lang\",\"format\":\"$subtitle_format\",\"ipfs_hash\":\"$subtitle_ipfs\",\"url\":\"$myIPFS/ipfs/$subtitle_ipfs\"}"
-                    fi
-                done
-                subtitles_json="$subtitles_json]"
-            fi
             
             cat << EOF
 {
