@@ -1035,15 +1035,15 @@ for PLAYER in "${NOSTR[@]}"; do
     ########################################################################################
     if [[ "$REFRESH_REASON" == "daily_update" ]]; then
         # Determine summary type based on days since birthdate
-        local summary_type=""
-        local summary_period=""
-        local summary_title=""
-        local summary_days=0
+        summary_type=""
+        summary_period=""
+        summary_title=""
+        summary_days=0
         
         # Calculate days since birthdate
-        local birthdate_seconds=$(date -d "$BIRTHDATE" +%s)
-        local today_seconds=$(date -d "$TODATE" +%s)
-        local days_since_birth=$(( (today_seconds - birthdate_seconds) / 86400 ))
+        birthdate_seconds=$(date -d "$BIRTHDATE" +%s)
+        today_seconds=$(date -d "$TODATE" +%s)
+        days_since_birth=$(( (today_seconds - birthdate_seconds) / 86400 ))
         
         # Determine summary type
         if [[ $((days_since_birth % 365)) -eq 0 && $days_since_birth -ge 365 ]]; then
@@ -1071,21 +1071,21 @@ for PLAYER in "${NOSTR[@]}"; do
         log "INFO" "📝 Generating $summary_type friends summary for ${PLAYER} (${summary_period})"
         
         # Get friends list for this MULTIPASS
-        local friends_list=($(${MY_PATH}/../tools/nostr_get_N1.sh "$HEX" 2>/dev/null))
+        friends_list=($(${MY_PATH}/../tools/nostr_get_N1.sh "$HEX" 2>/dev/null))
         
         # Personal N² journal for ALL MULTIPASS accounts (individual and personalized)
         log "INFO" "Creating personal N² journal for ${PLAYER} - individual and tailored to their network"
         
         # Get friends of friends (N²) for personalized journal
-        local n2_friends=()
+        n2_friends=()
         for friend_hex in "${friends_list[@]}"; do
-            local friend_friends=($(${MY_PATH}/../tools/nostr_get_N1.sh "$friend_hex" 2>/dev/null))
+            friend_friends=($(${MY_PATH}/../tools/nostr_get_N1.sh "$friend_hex" 2>/dev/null))
             n2_friends+=("${friend_friends[@]}")
         done
         
         # Remove duplicates and add to friends list
-        local all_friends=("${friends_list[@]}" "${n2_friends[@]}")
-        local unique_friends=($(printf '%s\n' "${all_friends[@]}" | sort -u))
+        all_friends=("${friends_list[@]}" "${n2_friends[@]}")
+        unique_friends=($(printf '%s\n' "${all_friends[@]}" | sort -u))
         friends_list=("${unique_friends[@]}")
         
         log "INFO" "Personal N² journal: ${#friends_list[@]} total friends (N1 + N²) for ${PLAYER}'s individual network"
@@ -1095,14 +1095,14 @@ for PLAYER in "${NOSTR[@]}"; do
             log "INFO" "Found ${#friends_list[@]} friends for ${PLAYER} - generating summary"
             
             # Create temporary directory for summary processing
-            local summary_dir="${HOME}/.zen/tmp/${MOATS}/friends_summary_${PLAYER}"
+            summary_dir="${HOME}/.zen/tmp/${MOATS}/friends_summary_${PLAYER}"
             mkdir -p "$summary_dir"
             
             # Generate personal N² journal for this specific MULTIPASS
-            local summary_file="${summary_dir}/personal_n2_journal_${PLAYER}.md"
+            summary_file="${summary_dir}/personal_n2_journal_${PLAYER}.md"
             
             # Get nprofile for the MULTIPASS owner
-            local player_nprofile=$(${MY_PATH}/../tools/nostr_hex2nprofile.sh "$HEX" 2>/dev/null)
+            player_nprofile=$(${MY_PATH}/../tools/nostr_hex2nprofile.sh "$HEX" 2>/dev/null)
             [[ -z "$player_nprofile" ]] && player_nprofile="$HEX"
             
             echo "# $summary_title" > "$summary_file"
@@ -1114,10 +1114,10 @@ for PLAYER in "${NOSTR[@]}"; do
             echo "**Network**: ${#friends_list[@]} friends (N1 + N²)" >> "$summary_file"
             
             # Add GPS coordinates if available
-            local player_gps_file="${HOME}/.zen/game/nostr/${PLAYER}/GPS"
+            player_gps_file="${HOME}/.zen/game/nostr/${PLAYER}/GPS"
             if [[ -f "$player_gps_file" ]]; then
-                local player_lat=$(grep "^LAT=" "$player_gps_file" | tail -1 | cut -d'=' -f2 | tr -d ';' | xargs)
-                local player_lon=$(grep "^LON=" "$player_gps_file" | tail -1 | cut -d'=' -f2 | tr -d ';' | xargs)
+                player_lat=$(grep "^LAT=" "$player_gps_file" | tail -1 | cut -d'=' -f2 | tr -d ';' | xargs)
+                player_lon=$(grep "^LON=" "$player_gps_file" | tail -1 | cut -d'=' -f2 | tr -d ';' | xargs)
                 if [[ -n "$player_lat" && -n "$player_lon" && "$player_lat" != "" && "$player_lon" != "" ]]; then
                     echo "**Location**: $player_lat, $player_lon" >> "$summary_file"
                     echo "**UMAP Zone**: ${player_lat}_${player_lon}" >> "$summary_file"
@@ -1131,10 +1131,10 @@ for PLAYER in "${NOSTR[@]}"; do
                 log "INFO" "Using published daily summaries for $summary_type summary (more efficient)"
 
                 # Get published daily summaries from this MULTIPASS wall
-                local since_timestamp=$(date -d "${summary_days} days ago" +%s)
+                since_timestamp=$(date -d "${summary_days} days ago" +%s)
 
                 cd ~/.zen/strfry
-                local daily_summaries=$(./strfry scan "{
+                daily_summaries=$(./strfry scan "{
                     \"kinds\": [30023],
                     \"authors\": [\"$HEX\"],
                     \"since\": ${since_timestamp},
@@ -1143,15 +1143,15 @@ for PLAYER in "${NOSTR[@]}"; do
                 cd - >/dev/null
 
                 # Process daily summaries instead of raw messages
-                local friends_messages="$daily_summaries"
+                friends_messages="$daily_summaries"
             elif [[ "$summary_type" == "Monthly" ]]; then
                 log "INFO" "Using published weekly summaries for $summary_type summary (most efficient)"
 
                 # Get published weekly summaries from this MULTIPASS wall
-                local since_timestamp=$(date -d "${summary_days} days ago" +%s)
+                since_timestamp=$(date -d "${summary_days} days ago" +%s)
 
                 cd ~/.zen/strfry
-                local weekly_summaries=$(./strfry scan "{
+                weekly_summaries=$(./strfry scan "{
                     \"kinds\": [30023],
                     \"authors\": [\"$HEX\"],
                     \"since\": ${since_timestamp},
@@ -1160,15 +1160,15 @@ for PLAYER in "${NOSTR[@]}"; do
                 cd - >/dev/null
 
                 # Process weekly summaries instead of raw messages
-                local friends_messages="$weekly_summaries"
+                friends_messages="$weekly_summaries"
             elif [[ "$summary_type" == "Yearly" ]]; then
                 log "INFO" "Using published monthly summaries for $summary_type summary (most efficient)"
 
                 # Get published monthly summaries from this MULTIPASS wall
-                local since_timestamp=$(date -d "${summary_days} days ago" +%s)
+                since_timestamp=$(date -d "${summary_days} days ago" +%s)
 
                 cd ~/.zen/strfry
-                local monthly_summaries=$(./strfry scan "{
+                monthly_summaries=$(./strfry scan "{
                     \"kinds\": [30023],
                     \"authors\": [\"$HEX\"],
                     \"since\": ${since_timestamp},
@@ -1177,14 +1177,14 @@ for PLAYER in "${NOSTR[@]}"; do
                 cd - >/dev/null
 
                 # Process monthly summaries instead of raw messages
-                local friends_messages="$monthly_summaries"
+                friends_messages="$monthly_summaries"
             else
                 # For Daily summaries, get raw messages from friends
-                local since_timestamp=$(date -d "${summary_days} days ago" +%s)
-                local friends_json=$(printf '"%s",' "${friends_list[@]}"); friends_json="[${friends_json%,}]"
+                since_timestamp=$(date -d "${summary_days} days ago" +%s)
+                friends_json=$(printf '"%s",' "${friends_list[@]}"); friends_json="[${friends_json%,}]"
                 
                 cd ~/.zen/strfry
-                local friends_messages=$(./strfry scan "{
+                friends_messages=$(./strfry scan "{
                     \"kinds\": [1],
                     \"authors\": ${friends_json},
                     \"since\": ${since_timestamp},
@@ -1194,23 +1194,23 @@ for PLAYER in "${NOSTR[@]}"; do
             fi
             
             if [[ -n "$friends_messages" ]]; then
-                local message_count=0
+                message_count=0
                 echo "$friends_messages" | while read -r message; do
-                    local content=$(echo "$message" | jq -r .content)
-                    local created_at=$(echo "$message" | jq -r .created_at)
-                    local date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
+                    content=$(echo "$message" | jq -r .content)
+                    created_at=$(echo "$message" | jq -r .created_at)
+                    date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
                     
                     if [[ "$summary_type" == "Daily" ]]; then
                         # For daily summaries, process raw friend messages
-                        local author_hex=$(echo "$message" | jq -r .author)
-                        local author_nprofile=$(${MY_PATH}/../tools/nostr_hex2nprofile.sh "$author_hex" 2>/dev/null)
+                        author_hex=$(echo "$message" | jq -r .author)
+                        author_nprofile=$(${MY_PATH}/../tools/nostr_hex2nprofile.sh "$author_hex" 2>/dev/null)
                         # Fallback to hex if nprofile generation fails
                         [[ -z "$author_nprofile" ]] && author_nprofile="$author_hex"
                         
                         # Extract metadata
-                        local message_application=$(echo "$message" | jq -r '.tags[] | select(.[0] == "application") | .[1]' | head -n 1)
-                        local message_latitude=$(echo "$message" | jq -r '.tags[] | select(.[0] == "latitude") | .[1]' | head -n 1)
-                        local message_longitude=$(echo "$message" | jq -r '.tags[] | select(.[0] == "longitude") | .[1]' | head -n 1)
+                        message_application=$(echo "$message" | jq -r '.tags[] | select(.[0] == "application") | .[1]' | head -n 1)
+                        message_latitude=$(echo "$message" | jq -r '.tags[] | select(.[0] == "latitude") | .[1]' | head -n 1)
+                        message_longitude=$(echo "$message" | jq -r '.tags[] | select(.[0] == "longitude") | .[1]' | head -n 1)
                         
                         echo "### 📝 $date_str" >> "$summary_file"
                         echo "**Author**: nostr:$author_nprofile" >> "$summary_file"
@@ -1260,7 +1260,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 done
                 
             # Add AI summary if too many messages (threshold depends on summary type)
-            local ai_threshold=5  # Reduced threshold for more personalized summaries
+            ai_threshold=5  # Reduced threshold for more personalized summaries
             if [[ "$summary_type" == "Weekly" ]]; then
                 ai_threshold=5  # 5 daily summaries = 1 week
             elif [[ "$summary_type" == "Monthly" ]]; then
@@ -1276,7 +1276,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 fi
                 
             if [[ $message_count -gt $ai_threshold ]]; then
-                local source_type="messages"
+                source_type="messages"
                 if [[ "$summary_type" == "Weekly" ]]; then
                     source_type="daily summaries"
                 elif [[ "$summary_type" == "Monthly" ]]; then
@@ -1287,7 +1287,7 @@ for PLAYER in "${NOSTR[@]}"; do
                     
                     log "INFO" "Too many $source_type ($message_count), generating AI summary for ${PLAYER} ($summary_type)"
                     
-                    local ai_prompt=""
+                    ai_prompt=""
                     if [[ "$summary_type" == "Daily" ]]; then
                         ai_prompt="[TEXT] $(cat "$summary_file") [/TEXT] --- \
 # Create a RECONNECTION SUMMARY for ${PLAYER} (nostr:$player_nprofile) - what happened while they were away. \
@@ -1347,20 +1347,20 @@ for PLAYER in "${NOSTR[@]}"; do
 # 12. Use the same language as mostly used in the monthly summaries."
                     fi
                     
-                    local ai_summary=$(${MY_PATH}/../IA/question.py "$ai_prompt")
+                    ai_summary=$(${MY_PATH}/../IA/question.py "$ai_prompt")
                     echo "$ai_summary" > "$summary_file"
                 fi
                 
                 # Publish personal N² journal to MULTIPASS wall
-                local summary_content=$(cat "$summary_file")
-                local d_tag="personal-n2-journal-${PLAYER}-${summary_type,,}-${TODATE}"
-                local published_at=$(date +%s)
+                summary_content=$(cat "$summary_file")
+                d_tag="personal-n2-journal-${PLAYER}-${summary_type,,}-${TODATE}"
+                published_at=$(date +%s)
                 
                 # Convert NSEC to HEX for nostpy-cli
-                local NPRIV_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NSEC")
+                NPRIV_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NSEC")
                 
                 # Build tags for personal N² journal
-                local summary_tags="[['d', '$d_tag'], ['title', '$summary_title'], ['published_at', '$published_at'], ['t', 'PersonalN2Journal'], ['t', 'N2Network'], ['t', '$summary_type'], ['t', 'UPlanet'], ['t', 'SummaryType:$summary_type'], ['p', '$PLAYER']]"
+                summary_tags="[['d', '$d_tag'], ['title', '$summary_title'], ['published_at', '$published_at'], ['t', 'PersonalN2Journal'], ['t', 'N2Network'], ['t', '$summary_type'], ['t', 'UPlanet'], ['t', 'SummaryType:$summary_type'], ['p', '$PLAYER']]"
                 
                 # Send as kind 30023 (article) to MULTIPASS wall
                 nostpy-cli send_event \

@@ -604,19 +604,23 @@ process_youtube() {
     local yid media_title duration uploader
     local filename ipfs_url
     local user_cookie=""
-    log_debug "=========================================="
-    log_debug "START YouTube Processing"
-    log_debug "URL: $url"
-    log_debug "Format: $media_type"
-    log_debug "Temp dir: $temp_dir"
-    log_debug "Pre-extracted metadata: $PRE_EXTRACTED_METADATA"
-    log_debug "=========================================="
+log_debug "=========================================="
+log_debug "START YouTube Processing"
+log_debug "URL: $url"
+log_debug "Format: $media_type"
+log_debug "Temp dir: $temp_dir"
+log_debug "Pre-extracted metadata: $PRE_EXTRACTED_METADATA"
+log_debug "All arguments received: $*"
+log_debug "Argument count: $#"
+log_debug "=========================================="
     
     # Check if we have pre-extracted metadata to avoid additional requests
     if [[ -n "$PRE_EXTRACTED_METADATA" ]]; then
         log_debug "Using pre-extracted metadata to avoid additional requests"
+        log_debug "PRE_EXTRACTED_METADATA length: ${#PRE_EXTRACTED_METADATA}"
+        log_debug "PRE_EXTRACTED_METADATA content: '$PRE_EXTRACTED_METADATA'"
         line="$PRE_EXTRACTED_METADATA"
-        log_debug "Pre-extracted metadata: $line"
+        log_debug "Pre-extracted metadata assigned to line: '$line'"
     else
         # 0. First, try to use user's uploaded cookie file if available
         log_debug "STEP 1: Checking for user-uploaded cookie file..."
@@ -806,13 +810,25 @@ EOF
         
         case "$media_type" in
             mp3)
-                yt-dlp $browser_cookies --user-agent "$selected_ua" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+                yt-dlp $browser_cookies --user-agent "$selected_ua" \
+                    --extractor-args "youtube:player_client=android,web" \
+                    --throttled-rate 1M \
+                    --sleep-requests 1 \
+                    --sleep-interval 1 \
+                    --max-sleep-interval 5 \
+                    -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
                     --write-info-json --write-thumbnail \
                     --embed-metadata --embed-thumbnail \
                     -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
                 ;;
             mp4)
-                yt-dlp $browser_cookies --user-agent "$selected_ua" -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best" \
+                yt-dlp $browser_cookies --user-agent "$selected_ua" \
+                    --extractor-args "youtube:player_client=android,web" \
+                    --throttled-rate 1M \
+                    --sleep-requests 1 \
+                    --sleep-interval 1 \
+                    --max-sleep-interval 5 \
+                    -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best" \
                     --no-mtime --embed-thumbnail --add-metadata \
                     --write-info-json --write-thumbnail \
                     --embed-metadata --embed-thumbnail \

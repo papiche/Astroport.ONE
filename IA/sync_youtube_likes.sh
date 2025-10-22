@@ -442,6 +442,13 @@ process_liked_video() {
     local metadata_string="${video_id}&${title}&${duration}&${uploader}"
     log_debug "Calling process_youtube.sh with pre-extracted metadata: $url $format $player"
     log_debug "Metadata string: $metadata_string"
+    log_debug "Metadata string length: ${#metadata_string}"
+    log_debug "Metadata string bytes: $(echo -n "$metadata_string" | wc -c)"
+    
+    # Échapper les caractères spéciaux pour éviter les problèmes de parsing
+    local escaped_metadata_string=$(printf '%q' "$metadata_string")
+    log_debug "Escaped metadata string: $escaped_metadata_string"
+    
     local result=$($MY_PATH/process_youtube.sh --debug "$url" "$format" "$player" --metadata "$metadata_string" 2>&1)
     local process_exit_code=$?
     log_debug "process_youtube.sh exit code: $process_exit_code"
