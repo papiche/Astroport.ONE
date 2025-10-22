@@ -324,9 +324,13 @@ process_liked_video() {
     local format="mp4"
     
     # Appeler process_youtube.sh pour télécharger la vidéo
-    local result=$($MY_PATH/process_youtube.sh --debug "$url" "$format" "$player" 2>/dev/null)
+    log_debug "Calling process_youtube.sh with: $url $format $player"
+    local result=$($MY_PATH/process_youtube.sh --debug "$url" "$format" "$player" 2>&1)
+    local process_exit_code=$?
+    log_debug "process_youtube.sh exit code: $process_exit_code"
+    log_debug "process_youtube.sh output: $result"
     
-    if [[ $? -eq 0 ]]; then
+    if [[ $process_exit_code -eq 0 ]]; then
         # Extraire l'URL IPFS du résultat JSON
         local ipfs_url=$(echo "$result" | jq -r '.ipfs_url // empty' 2>/dev/null)
         if [[ -n "$ipfs_url" ]]; then
@@ -376,7 +380,10 @@ sync_youtube_likes() {
     local skipped_count=0
     
     # Compter le nombre total de vidéos déjà traitées
-    local total_processed=$(wc -l < "$processed_file" 2>/dev/null || echo "0")
+    local total_processed=0
+    if [[ -f "$processed_file" ]]; then
+        total_processed=$(wc -l < "$processed_file" 2>/dev/null || echo "0")
+    fi
     log_debug "Total videos already processed: $total_processed"
     
     # Traiter chaque vidéo likée
