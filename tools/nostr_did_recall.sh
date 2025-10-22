@@ -420,8 +420,8 @@ migrate_did() {
         cp "$did_file" "$backup_file"
         echo -e "${GREEN}✅ Backup created: $(basename "$backup_file")${NC}"
         
-        # Rename original to .cache
-        local cache_file="${did_file}.cache"
+        # Rename original to .cache (avoid double .cache extension)
+        local cache_file="${did_file%.cache}.cache"
         mv "$did_file" "$cache_file"
         echo -e "${GREEN}✅ Original renamed to cache: $(basename "$cache_file")${NC}"
         
