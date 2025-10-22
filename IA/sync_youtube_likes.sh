@@ -392,9 +392,11 @@ process_liked_video() {
     # Utiliser uniquement le format MP4 pour toutes les vidéos
     local format="mp4"
     
-    # Appeler process_youtube.sh pour télécharger la vidéo
-    log_debug "Calling process_youtube.sh with: $url $format $player"
-    local result=$($MY_PATH/process_youtube.sh --debug "$url" "$format" "$player" 2>&1)
+    # Appeler process_youtube.sh pour télécharger la vidéo avec métadonnées pré-extraites
+    local metadata_string="${video_id}&${title}&${duration}&${uploader}"
+    log_debug "Calling process_youtube.sh with pre-extracted metadata: $url $format $player"
+    log_debug "Metadata string: $metadata_string"
+    local result=$($MY_PATH/process_youtube.sh --debug "$url" "$format" "$player" --metadata "$metadata_string" 2>&1)
     local process_exit_code=$?
     log_debug "process_youtube.sh exit code: $process_exit_code"
     log_debug "process_youtube.sh output: $result"
@@ -520,8 +522,10 @@ sync_youtube_likes() {
                 fi
             fi
             
-            # Pause entre les téléchargements pour éviter la surcharge
-            sleep 2
+            # Pause entre les téléchargements pour éviter la surcharge et la détection
+            local delay_time=$((5 + RANDOM % 10))  # Random delay between 5-15 seconds
+            log_debug "Waiting ${delay_time}s before next video to avoid detection"
+            sleep $delay_time
         fi
     done <<< "$liked_videos"
     
