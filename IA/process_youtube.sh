@@ -783,6 +783,31 @@ EOF
     # Download according to type, using the last successful browser_cookies (may be empty)
     log_debug "Starting download: $media_type, browser_cookies='$browser_cookies'"
     
+    # Check yt-dlp version and suggest update if needed
+    local ytdlp_version=$(yt-dlp --version 2>/dev/null || echo "unknown")
+    log_debug "yt-dlp version: $ytdlp_version"
+    
+    # Check if yt-dlp is recent enough (basic check)
+    if [[ "$ytdlp_version" == "unknown" ]]; then
+        log_debug "Warning: yt-dlp version could not be determined"
+    else
+        # Extract version date for comparison (format: YYYY.MM.DD)
+        local version_date=$(echo "$ytdlp_version" | grep -oE '[0-9]{4}\.[0-9]{2}\.[0-9]{2}' | head -1)
+        if [[ -n "$version_date" ]]; then
+            local current_date=$(date +%Y.%m.%d)
+            log_debug "yt-dlp version date: $version_date, current date: $current_date"
+            # If version is more than 30 days old, suggest update
+            if [[ "$version_date" < "$(date -d '30 days ago' +%Y.%m.%d)" ]]; then
+                log_debug "Warning: yt-dlp version appears to be outdated. Consider updating with: pip install --upgrade yt-dlp"
+            fi
+        fi
+    fi
+    
+    # Pre-check available formats to understand what's available
+    log_debug "Checking available formats for URL: $url"
+    local format_check=$(yt-dlp $browser_cookies --list-formats "$url" 2>> "$LOGFILE" | head -20)
+    log_debug "Available formats preview: $format_check"
+    
     # User agent rotation to avoid detection
     local user_agents=(
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -793,7 +818,7 @@ EOF
     )
     
     # Retry logic with exponential backoff for 403 errors
-    local max_retries=3
+    local max_retries=5
     local retry_count=0
     local download_success=false
     
@@ -808,61 +833,296 @@ EOF
         local selected_ua="${user_agents[$((RANDOM % ${#user_agents[@]}))]}"
         log_debug "Using user agent: $selected_ua"
         
-        case "$media_type" in
-            mp3)
-                yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                    --extractor-args "youtube:player_client=android,web" \
-                    --throttled-rate 1M \
-                    --sleep-requests 1 \
-                    --sleep-interval 1 \
-                    --max-sleep-interval 5 \
-                    -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
-                    --write-info-json --write-thumbnail \
-                    --embed-metadata --embed-thumbnail \
-                    -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+        # Try different strategies based on retry count
+        local strategy=""
+        case $retry_count in
+            0)
+                # Strategy 1: Modern approach with multiple clients
+                strategy="modern"
+                case "$media_type" in
+                    mp3)
+                        yt-dlp $browser_cookies --user-agent "$selected_ua" \
+                            --extractor-args "youtube:player_client=web,android_music,android_creator" \
+                            --throttled-rate 1M \
+                            --sleep-requests 1 \
+                            --sleep-interval 1 \
+                            --max-sleep-interval 5 \
+                            --ignore-errors \
+                            --no-check-certificate \
+                            --prefer-insecure \
+                            --hls-prefer-native \
+                            --hls-use-mpegts \
+                            --downloader "m3u8:native" \
+                            --compat-options 2024 \
+                            -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+                            --write-info-json --write-thumbnail \
+                            --embed-metadata --embed-thumbnail \
+                            --verbose \
+                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                        ;;
+                    mp4)
+                        yt-dlp $browser_cookies --user-agent "$selected_ua" \
+                            --extractor-args "youtube:player_client=web,android,android_creator" \
+                            --throttled-rate 1M \
+                            --sleep-requests 1 \
+                            --sleep-interval 1 \
+                            --max-sleep-interval 5 \
+                            --ignore-errors \
+                            --no-check-certificate \
+                            --prefer-insecure \
+                            -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best[ext=mp4]/best" \
+                            --no-mtime --embed-thumbnail --add-metadata \
+                            --write-info-json --write-thumbnail \
+                            --embed-metadata --embed-thumbnail \
+                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                        ;;
+                esac
                 ;;
-            mp4)
-                yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                    --extractor-args "youtube:player_client=android,web" \
-                    --throttled-rate 1M \
-                    --sleep-requests 1 \
-                    --sleep-interval 1 \
-                    --max-sleep-interval 5 \
-                    -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best" \
-                    --no-mtime --embed-thumbnail --add-metadata \
-                    --write-info-json --write-thumbnail \
-                    --embed-metadata --embed-thumbnail \
-                    -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+            1)
+                # Strategy 2: Legacy approach with different clients
+                strategy="legacy"
+                case "$media_type" in
+                    mp3)
+                        yt-dlp $browser_cookies --user-agent "$selected_ua" \
+                            --extractor-args "youtube:player_client=android,web" \
+                            --throttled-rate 500K \
+                            --sleep-requests 2 \
+                            --sleep-interval 2 \
+                            --max-sleep-interval 8 \
+                            --ignore-errors \
+                            --no-check-certificate \
+                            -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+                            --write-info-json --write-thumbnail \
+                            --embed-metadata --embed-thumbnail \
+                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                        ;;
+                    mp4)
+                        yt-dlp $browser_cookies --user-agent "$selected_ua" \
+                            --extractor-args "youtube:player_client=android,web" \
+                            --throttled-rate 500K \
+                            --sleep-requests 2 \
+                            --sleep-interval 2 \
+                            --max-sleep-interval 8 \
+                            --ignore-errors \
+                            --no-check-certificate \
+                            -f "best[height<=720]/best" \
+                            --no-mtime --embed-thumbnail --add-metadata \
+                            --write-info-json --write-thumbnail \
+                            --embed-metadata --embed-thumbnail \
+                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                        ;;
+                esac
+                ;;
+            2)
+                # Strategy 3: Minimal approach without cookies
+                strategy="minimal"
+                case "$media_type" in
+                    mp3)
+                        yt-dlp --user-agent "$selected_ua" \
+                            --extractor-args "youtube:player_client=web" \
+                            --throttled-rate 1M \
+                            --sleep-requests 1 \
+                            --sleep-interval 1 \
+                            --max-sleep-interval 5 \
+                            --ignore-errors \
+                            --no-check-certificate \
+                            -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+                            --write-info-json --write-thumbnail \
+                            --embed-metadata --embed-thumbnail \
+                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                        ;;
+                    mp4)
+                        yt-dlp --user-agent "$selected_ua" \
+                            --extractor-args "youtube:player_client=web" \
+                            --throttled-rate 1M \
+                            --sleep-requests 1 \
+                            --sleep-interval 1 \
+                            --max-sleep-interval 5 \
+                            --ignore-errors \
+                            --no-check-certificate \
+                            -f "best[height<=720]/best" \
+                            --no-mtime --embed-thumbnail --add-metadata \
+                            --write-info-json --write-thumbnail \
+                            --embed-metadata --embed-thumbnail \
+                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                        ;;
+                esac
+                ;;
+            3)
+                # Strategy 4: SABR streaming workaround - try to download m3u8 directly
+                strategy="sabr"
+                case "$media_type" in
+                    mp3)
+                        yt-dlp $browser_cookies --user-agent "$selected_ua" \
+                            --extractor-args "youtube:player_client=web" \
+                            --throttled-rate 1M \
+                            --sleep-requests 1 \
+                            --sleep-interval 1 \
+                            --max-sleep-interval 5 \
+                            --ignore-errors \
+                            --no-check-certificate \
+                            --prefer-insecure \
+                            --hls-prefer-native \
+                            --hls-use-mpegts \
+                            --format "best[ext=m4a]/best[ext=mp4]/best" \
+                            -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+                            --write-info-json --write-thumbnail \
+                            --embed-metadata --embed-thumbnail \
+                            --verbose \
+                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                        ;;
+                    mp4)
+                        yt-dlp $browser_cookies --user-agent "$selected_ua" \
+                            --extractor-args "youtube:player_client=web" \
+                            --throttled-rate 1M \
+                            --sleep-requests 1 \
+                            --sleep-interval 1 \
+                            --max-sleep-interval 5 \
+                            --ignore-errors \
+                            --no-check-certificate \
+                            --prefer-insecure \
+                            --hls-prefer-native \
+                            --hls-use-mpegts \
+                            --format "best[ext=mp4]/best" \
+                            --no-mtime --embed-thumbnail --add-metadata \
+                            --write-info-json --write-thumbnail \
+                            --embed-metadata --embed-thumbnail \
+                            --verbose \
+                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                        ;;
+                esac
+                ;;
+            4)
+                # Strategy 5: Latest yt-dlp features with advanced options
+                strategy="latest"
+                case "$media_type" in
+                    mp3)
+                        yt-dlp $browser_cookies --user-agent "$selected_ua" \
+                            --extractor-args "youtube:player_client=web,android_music,android_creator" \
+                            --throttled-rate 1M \
+                            --sleep-requests 1 \
+                            --sleep-interval 1 \
+                            --max-sleep-interval 5 \
+                            --ignore-errors \
+                            --no-check-certificate \
+                            --prefer-insecure \
+                            --downloader "m3u8:native" \
+                            --compat-options 2024 \
+                            --format "bestaudio[ext=m4a]/bestaudio/best" \
+                            -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+                            --write-info-json --write-thumbnail \
+                            --embed-metadata --embed-thumbnail \
+                            --verbose \
+                            --no-playlist \
+                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                        ;;
+                    mp4)
+                        yt-dlp $browser_cookies --user-agent "$selected_ua" \
+                            --extractor-args "youtube:player_client=web,android,android_creator" \
+                            --throttled-rate 1M \
+                            --sleep-requests 1 \
+                            --sleep-interval 1 \
+                            --max-sleep-interval 5 \
+                            --ignore-errors \
+                            --no-check-certificate \
+                            --prefer-insecure \
+                            --downloader "m3u8:native" \
+                            --compat-options 2024 \
+                            --format "best[height<=720][ext=mp4]/best[height<=720]/best" \
+                            --no-mtime --embed-thumbnail --add-metadata \
+                            --write-info-json --write-thumbnail \
+                            --embed-metadata --embed-thumbnail \
+                            --verbose \
+                            --no-playlist \
+                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                        ;;
+                esac
                 ;;
         esac
+        
+        log_debug "Download strategy $((retry_count + 1)): $strategy"
         
         local download_exit_code=$?
         log_debug "Download attempt $((retry_count + 1)) exit code: $download_exit_code"
         
-        if [[ $download_exit_code -eq 0 ]]; then
+        # Check if any files were actually downloaded
+        local files_created=$(ls "$OUTPUT_DIR"/* 2>/dev/null | wc -l)
+        log_debug "Files created in output directory: $files_created"
+        
+        if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
             download_success=true
-            log_debug "Download successful on attempt $((retry_count + 1))"
+            log_debug "Download successful on attempt $((retry_count + 1)) - $files_created files created"
         else
             retry_count=$((retry_count + 1))
-            log_debug "Download failed on attempt $retry_count, will retry if attempts remaining"
+            if [[ $download_exit_code -eq 0 && $files_created -eq 0 ]]; then
+                log_debug "Download reported success but no files created - likely SABR streaming issue"
+            else
+                log_debug "Download failed on attempt $retry_count, will retry if attempts remaining"
+            fi
         fi
     done
     
     if [[ $download_success == false ]]; then
         log_debug "All download attempts failed after $max_retries retries"
+        echo '{"error":"❌ YouTube download failed after multiple attempts.\n\n💡 This might be due to:\n• YouTube SABR streaming protection (HLS/m3u8 only)\n• Expired or invalid cookies\n• YouTube blocking automated downloads\n• Network connectivity issues\n• Outdated yt-dlp version\n\n🔧 Solutions:\n• Update yt-dlp: pip install --upgrade yt-dlp\n• Upload fresh cookies: https://u.copylaradio.com/astro\n• Try again later (YouTube may be rate limiting)\n• Use a different video (some videos have stronger protection)\n\n📖 Cookie Guide: https://ipfs.copylaradio.com/ipns/copylaradio.com/cookie.html\n🔗 yt-dlp GitHub: https://github.com/yt-dlp/yt-dlp"}'
+        return 1
     fi
     # Find the actual media file (video/audio, not metadata files)
-    media_file=$(ls "$OUTPUT_DIR"/${media_title}.{mp4,mp3,m4a,webm,mkv} 2>/dev/null | head -n 1)
-    if [[ -z "$media_file" ]]; then
-        # Fallback: look for any file that's not metadata
-        media_file=$(ls "$OUTPUT_DIR"/${media_title}.* 2>/dev/null | grep -v -E '\.(info\.json|vtt|srt|jpg|jpeg|png|webp)$' | head -n 1)
-    fi
-    filename=$(basename "$media_file")
-    log_debug "Downloaded file: $media_file"
+    log_debug "Looking for media files in: $OUTPUT_DIR"
+    log_debug "Files in output directory:"
+    ls -la "$OUTPUT_DIR" 2>/dev/null | while read line; do
+        log_debug "  $line"
+    done
     
-    # Find metadata files
-    info_json_file=$(ls "$OUTPUT_DIR"/${media_title}.info.json 2>/dev/null | head -n 1)
-    thumbnail_file=$(ls "$OUTPUT_DIR"/${media_title}.* 2>/dev/null | grep -E '\.(jpg|jpeg|png|webp)$' | head -n 1)
+    # Try multiple patterns to find the downloaded file
+    media_file=""
+    
+    # Pattern 1: Exact title match
+    media_file=$(ls "$OUTPUT_DIR"/${media_title}.{mp4,mp3,m4a,webm,mkv} 2>/dev/null | head -n 1)
+    log_debug "Pattern 1 (exact title): $media_file"
+    
+    # Pattern 2: Any file with media extensions
+    if [[ -z "$media_file" ]]; then
+        media_file=$(ls "$OUTPUT_DIR"/*.{mp4,mp3,m4a,webm,mkv} 2>/dev/null | head -n 1)
+        log_debug "Pattern 2 (any media file): $media_file"
+    fi
+    
+    # Pattern 3: Files containing the video ID
+    if [[ -z "$media_file" ]]; then
+        media_file=$(ls "$OUTPUT_DIR"/*${yid}* 2>/dev/null | grep -E '\.(mp4|mp3|m4a|webm|mkv)$' | head -n 1)
+        log_debug "Pattern 3 (video ID): $media_file"
+    fi
+    
+    # Pattern 4: Any file that's not metadata (last resort)
+    if [[ -z "$media_file" ]]; then
+        media_file=$(ls "$OUTPUT_DIR"/* 2>/dev/null | grep -v -E '\.(info\.json|vtt|srt|jpg|jpeg|png|webp|mhtml)$' | head -n 1)
+        log_debug "Pattern 4 (any non-metadata): $media_file"
+    fi
+    
+    if [[ -n "$media_file" ]]; then
+        filename=$(basename "$media_file")
+        log_debug "Found downloaded file: $media_file"
+        log_debug "Filename: $filename"
+    else
+        log_debug "No media file found in: $OUTPUT_DIR"
+        log_debug "Available files:"
+        ls -la "$OUTPUT_DIR" 2>/dev/null || log_debug "Directory does not exist or is empty"
+    fi
+    
+    # Find metadata files with flexible patterns
+    info_json_file=$(ls "$OUTPUT_DIR"/*.info.json 2>/dev/null | head -n 1)
+    if [[ -z "$info_json_file" ]]; then
+        info_json_file=$(ls "$OUTPUT_DIR"/*${yid}*.json 2>/dev/null | head -n 1)
+    fi
+    
+    thumbnail_file=$(ls "$OUTPUT_DIR"/*.{jpg,jpeg,png,webp} 2>/dev/null | head -n 1)
+    if [[ -z "$thumbnail_file" ]]; then
+        thumbnail_file=$(ls "$OUTPUT_DIR"/*${yid}*.{jpg,jpeg,png,webp} 2>/dev/null | head -n 1)
+    fi
+    
+    log_debug "Metadata files found:"
+    log_debug "  info_json_file: $info_json_file"
+    log_debug "  thumbnail_file: $thumbnail_file"
     
     # Subtitle handling removed for simplicity
     
