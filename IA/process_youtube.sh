@@ -565,14 +565,14 @@ EOF
         # Add metadata files to IPFS if they exist
         local metadata_ipfs=""
         if [[ -n "$info_json_file" ]]; then
-            metadata_ipfs=$(ipfs add -wq "$info_json_file" 2>> "$LOGFILE" | tail -n 1)
+            metadata_ipfs=$(ipfs add -q "$info_json_file" 2>> "$LOGFILE" | tail -n 1)
             log_debug "Metadata IPFS: $metadata_ipfs"
         fi
         
         # Add thumbnail to IPFS if it exists
         local thumbnail_ipfs=""
         if [[ -n "$thumbnail_file" ]]; then
-            thumbnail_ipfs=$(ipfs add -wq "$thumbnail_file" 2>> "$LOGFILE" | tail -n 1)
+            thumbnail_ipfs=$(ipfs add -q "$thumbnail_file" 2>> "$LOGFILE" | tail -n 1)
             log_debug "Thumbnail IPFS: $thumbnail_ipfs"
         fi
         
