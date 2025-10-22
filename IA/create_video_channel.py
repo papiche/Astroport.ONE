@@ -121,8 +121,8 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
     
     if not thumbnail_ipfs:
         thumbnail_match = re.search(r'🖼️ Miniature: (https?://[^\s]+)', content)
-    if thumbnail_match:
-        thumbnail_ipfs = thumbnail_match.group(1)
+        if thumbnail_match:
+            thumbnail_ipfs = thumbnail_match.group(1)
     
     # Extraire le titre et l'uploader
     title_match = re.search(r'🎬 Nouvelle vidéo téléchargée: ([^par]+) par ([^\n]+)', content)
