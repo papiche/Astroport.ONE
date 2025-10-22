@@ -506,6 +506,57 @@ send_nip71_video_event() {
     fi
 }
 
+validate_cookie_file() {
+    local cookie_file="$1"
+    log_debug "Validating cookie file: $cookie_file"
+    
+    if [[ ! -f "$cookie_file" ]]; then
+        log_debug "Cookie file does not exist: $cookie_file"
+        return 1
+    fi
+    
+    # Check if file is not empty
+    if [[ ! -s "$cookie_file" ]]; then
+        log_debug "Cookie file is empty: $cookie_file"
+        return 1
+    fi
+    
+    # Check if it's a valid Netscape cookie format
+    if ! head -n 1 "$cookie_file" | grep -q "^# Netscape HTTP Cookie File"; then
+        log_debug "Cookie file is not in Netscape format: $cookie_file"
+        return 1
+    fi
+    
+    # Check for essential YouTube cookies
+    local essential_cookies=("CONSENT" "VISITOR_INFO1_LIVE" "YSC")
+    local has_essential=false
+    
+    for cookie in "${essential_cookies[@]}"; do
+        if grep -q "$cookie" "$cookie_file"; then
+            has_essential=true
+            log_debug "Found essential cookie: $cookie"
+        fi
+    done
+    
+    if [[ "$has_essential" == false ]]; then
+        log_debug "Cookie file missing essential YouTube cookies: $cookie_file"
+        return 1
+    fi
+    
+    # Check cookie age (warn if older than 7 days)
+    local cookie_age=$(($(date +%s) - $(stat -c %Y "$cookie_file" 2>/dev/null || echo 0)))
+    local cookie_age_days=$((cookie_age / 86400))
+    
+    if [[ $cookie_age_days -gt 7 ]]; then
+        log_debug "Warning: Cookie file is $cookie_age_days days old (may be expired): $cookie_file"
+    else
+        log_debug "Cookie file is fresh ($cookie_age_days days old): $cookie_file"
+    fi
+    
+    log_debug "Cookie file validation passed: $cookie_file"
+    return 0
+}
+
 find_user_cookie_file() {
     # Search for .cookie.txt in user NOSTR directories
     local nostr_dir="$HOME/.zen/game/nostr"
@@ -514,20 +565,26 @@ find_user_cookie_file() {
         for user_dir in "$nostr_dir"/*@*; do
             if [[ -f "$user_dir/.cookie.txt" ]]; then
                 log_debug "✓ Found user cookie file: $user_dir/.cookie.txt"
-                local cookie_age=$(($(date +%s) - $(stat -c %Y "$user_dir/.cookie.txt" 2>/dev/null || echo 0)))
-                log_debug "  Cookie file age: $((cookie_age / 86400)) days old"
-                echo "--cookies $user_dir/.cookie.txt"
-                return 0
+                
+                # Validate the cookie file
+                if validate_cookie_file "$user_dir/.cookie.txt"; then
+                    local cookie_age=$(($(date +%s) - $(stat -c %Y "$user_dir/.cookie.txt" 2>/dev/null || echo 0)))
+                    log_debug "  Cookie file age: $((cookie_age / 86400)) days old"
+                    echo "--cookies $user_dir/.cookie.txt"
+                    return 0
+                else
+                    log_debug "  Cookie file validation failed: $user_dir/.cookie.txt"
+                fi
             fi
         done
     fi
-    log_debug "✗ No user cookie file found"
+    log_debug "✗ No valid user cookie file found"
     return 1
 }
 
 get_youtube_cookies() {
     local cookie_file="$HOME/.zen/tmp/youtube_cookies.txt"
-    local user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+    local user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
     log_debug "Attempting to generate YouTube cookies..."
     mkdir -p "$(dirname "$cookie_file")"
     cat > "$cookie_file" << EOF
@@ -538,6 +595,8 @@ get_youtube_cookies() {
 .youtube.com	TRUE	/	TRUE	2147483647	YSC	$(openssl rand -hex 16)
 .youtube.com	TRUE	/	FALSE	2147483647	PREF	f4=4000000&tz=Europe.Paris&f5=30000&f6=8
 .youtube.com	TRUE	/	TRUE	2147483647	GPS	1
+.youtube.com	TRUE	/	TRUE	2147483647	__Secure-1PSID	$(openssl rand -hex 32)
+.youtube.com	TRUE	/	TRUE	2147483647	__Secure-3PSID	$(openssl rand -hex 32)
 EOF
     local strategies=(
         "https://www.youtube.com/"
@@ -602,11 +661,28 @@ process_youtube() {
     if [[ -n "$user_cookie" ]]; then
         log_debug "✓ Using user's uploaded cookie file"
         browser_cookies="$user_cookie"
-        log_debug "Attempting metadata extraction with user cookies..."
+        
+        # Test cookie validity with a simple metadata request first
+        log_debug "Testing cookie validity with metadata extraction..."
         line="$(yt-dlp $browser_cookies --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$url" 2>> "$LOGFILE")"
         local exit_code=$?
         log_debug "yt-dlp exit code: $exit_code"
         log_debug "yt-dlp output (user cookies): $line"
+        
+        # If metadata extraction fails, try without cookies as fallback
+        if [[ $exit_code -ne 0 || -z "$line" ]]; then
+            log_debug "User cookies failed metadata extraction, trying without cookies..."
+            line="$(yt-dlp --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$url" 2>> "$LOGFILE")"
+            local fallback_exit_code=$?
+            log_debug "yt-dlp fallback exit code: $fallback_exit_code"
+            log_debug "yt-dlp fallback output: $line"
+            
+            # If fallback works, clear browser_cookies to use no-cookie approach
+            if [[ $fallback_exit_code -eq 0 && -n "$line" ]]; then
+                log_debug "Fallback without cookies succeeded, will use no-cookie approach"
+                browser_cookies=""
+            fi
+        fi
     else
         log_debug "✗ No user cookie file available"
     fi
@@ -755,21 +831,211 @@ EOF
     fi
     # Download according to type, using the last successful browser_cookies (may be empty)
     log_debug "Starting download: $media_type, browser_cookies='$browser_cookies'"
-    case "$media_type" in
-        mp3)
-            yt-dlp $browser_cookies -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
-                --write-info-json --write-thumbnail \
-                --embed-metadata --embed-thumbnail \
-                -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
-            ;;
-        mp4)
-            yt-dlp $browser_cookies -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best" \
-                --no-mtime --embed-thumbnail --add-metadata \
-                --write-info-json --write-thumbnail \
-                --embed-metadata --embed-thumbnail \
-                -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
-            ;;
-    esac
+    
+    # Enhanced download with retry mechanism and better headers
+    local download_success=false
+    local retry_count=0
+    local max_retries=3
+    
+    # Check for rate limiting by looking at recent download attempts
+    local rate_limit_file="$HOME/.zen/tmp/youtube_rate_limit"
+    local current_time=$(date +%s)
+    local last_attempt=0
+    
+    if [[ -f "$rate_limit_file" ]]; then
+        last_attempt=$(cat "$rate_limit_file" 2>/dev/null || echo "0")
+    fi
+    
+    local time_since_last=$((current_time - last_attempt))
+    local min_interval=30  # Minimum 30 seconds between downloads
+    
+    if [[ $time_since_last -lt $min_interval ]]; then
+        local wait_time=$((min_interval - time_since_last))
+        log_debug "Rate limiting: waiting ${wait_time}s before download..."
+        sleep $wait_time
+    fi
+    
+    # Record this attempt
+    echo "$current_time" > "$rate_limit_file"
+    
+    # Define user agents to rotate through
+    local user_agents=(
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0"
+    )
+    
+    while [[ $retry_count -lt $max_retries && "$download_success" == false ]]; do
+        local current_ua="${user_agents[$((retry_count % ${#user_agents[@]}))]}"
+        log_debug "Attempt $((retry_count + 1))/$max_retries with UA: $current_ua"
+        
+        # Add delay between retries with exponential backoff
+        if [[ $retry_count -gt 0 ]]; then
+            local delay=$((retry_count * 10 + 15))
+            log_debug "Waiting ${delay}s before retry (exponential backoff)..."
+            sleep $delay
+        fi
+        
+        # Add random jitter to avoid synchronized requests
+        local jitter=$((RANDOM % 5 + 1))
+        log_debug "Adding ${jitter}s random jitter..."
+        sleep $jitter
+        
+        # Try different strategies based on retry count
+        local strategy=""
+        case $retry_count in
+            0) strategy="full_headers" ;;
+            1) strategy="minimal_headers" ;;
+            2) strategy="no_cookies" ;;
+        esac
+        
+        log_debug "Using strategy: $strategy"
+        
+        case "$media_type" in
+            mp3)
+                case "$strategy" in
+                    "full_headers")
+                        yt-dlp $browser_cookies \
+                            --user-agent "$current_ua" \
+                            --add-header "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8" \
+                            --add-header "Accept-Language: en-US,en;q=0.5" \
+                            --add-header "Accept-Encoding: gzip, deflate, br" \
+                            --add-header "DNT: 1" \
+                            --add-header "Connection: keep-alive" \
+                            --add-header "Upgrade-Insecure-Requests: 1" \
+                            --add-header "Sec-Fetch-Dest: document" \
+                            --add-header "Sec-Fetch-Mode: navigate" \
+                            --add-header "Sec-Fetch-Site: none" \
+                            --add-header "Sec-Fetch-User: ?1" \
+                            --sleep-interval 1 \
+                            --max-sleep-interval 3 \
+                            --sleep-requests 1 \
+                            --sleep-subtitles 1 \
+                            --retries 3 \
+                            --fragment-retries 3 \
+                            --retry-sleep 1 \
+                            -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+                            --write-info-json --write-thumbnail \
+                            --embed-metadata --embed-thumbnail \
+                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                        ;;
+                    "minimal_headers")
+                        yt-dlp $browser_cookies \
+                            --user-agent "$current_ua" \
+                            --sleep-interval 2 \
+                            --max-sleep-interval 5 \
+                            --sleep-requests 2 \
+                            --retries 2 \
+                            --fragment-retries 2 \
+                            --retry-sleep 2 \
+                            -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+                            --write-info-json --write-thumbnail \
+                            --embed-metadata --embed-thumbnail \
+                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                        ;;
+                    "no_cookies")
+                        yt-dlp \
+                            --user-agent "$current_ua" \
+                            --sleep-interval 3 \
+                            --max-sleep-interval 8 \
+                            --sleep-requests 3 \
+                            --retries 1 \
+                            --fragment-retries 1 \
+                            --retry-sleep 3 \
+                            -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+                            --write-info-json --write-thumbnail \
+                            --embed-metadata --embed-thumbnail \
+                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                        ;;
+                esac
+                ;;
+            mp4)
+                case "$strategy" in
+                    "full_headers")
+                        yt-dlp $browser_cookies \
+                            --user-agent "$current_ua" \
+                            --add-header "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8" \
+                            --add-header "Accept-Language: en-US,en;q=0.5" \
+                            --add-header "Accept-Encoding: gzip, deflate, br" \
+                            --add-header "DNT: 1" \
+                            --add-header "Connection: keep-alive" \
+                            --add-header "Upgrade-Insecure-Requests: 1" \
+                            --add-header "Sec-Fetch-Dest: document" \
+                            --add-header "Sec-Fetch-Mode: navigate" \
+                            --add-header "Sec-Fetch-Site: none" \
+                            --add-header "Sec-Fetch-User: ?1" \
+                            --sleep-interval 1 \
+                            --max-sleep-interval 3 \
+                            --sleep-requests 1 \
+                            --sleep-subtitles 1 \
+                            --retries 3 \
+                            --fragment-retries 3 \
+                            --retry-sleep 1 \
+                            -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best" \
+                            --no-mtime --embed-thumbnail --add-metadata \
+                            --write-info-json --write-thumbnail \
+                            --embed-metadata --embed-thumbnail \
+                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                        ;;
+                    "minimal_headers")
+                        yt-dlp $browser_cookies \
+                            --user-agent "$current_ua" \
+                            --sleep-interval 2 \
+                            --max-sleep-interval 5 \
+                            --sleep-requests 2 \
+                            --retries 2 \
+                            --fragment-retries 2 \
+                            --retry-sleep 2 \
+                            -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best" \
+                            --no-mtime --embed-thumbnail --add-metadata \
+                            --write-info-json --write-thumbnail \
+                            --embed-metadata --embed-thumbnail \
+                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                        ;;
+                    "no_cookies")
+                        yt-dlp \
+                            --user-agent "$current_ua" \
+                            --sleep-interval 3 \
+                            --max-sleep-interval 8 \
+                            --sleep-requests 3 \
+                            --retries 1 \
+                            --fragment-retries 1 \
+                            --retry-sleep 3 \
+                            -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best" \
+                            --no-mtime --embed-thumbnail --add-metadata \
+                            --write-info-json --write-thumbnail \
+                            --embed-metadata --embed-thumbnail \
+                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                        ;;
+                esac
+                ;;
+        esac
+        
+        local download_exit_code=$?
+        log_debug "Download attempt $((retry_count + 1)) exit code: $download_exit_code"
+        
+        # Check if download was successful by looking for the file
+        local downloaded_file=$(ls "$OUTPUT_DIR"/${media_title}.{mp4,mp3,m4a,webm,mkv} 2>/dev/null | head -n 1)
+        if [[ -n "$downloaded_file" && -f "$downloaded_file" ]]; then
+            local file_size=$(stat -c%s "$downloaded_file" 2>/dev/null || echo "0")
+            if [[ $file_size -gt 100000 ]]; then  # More than 100KB
+                log_debug "Download successful: $downloaded_file (${file_size} bytes)"
+                download_success=true
+                break
+            else
+                log_debug "Downloaded file too small: ${file_size} bytes, retrying..."
+                rm -f "$downloaded_file"
+            fi
+        fi
+        
+        retry_count=$((retry_count + 1))
+        log_debug "Download attempt $retry_count failed, will retry..."
+    done
+    
+    if [[ "$download_success" == false ]]; then
+        log_debug "All download attempts failed after $max_retries retries"
+    fi
     # Find the actual media file (video/audio, not metadata files)
     media_file=$(ls "$OUTPUT_DIR"/${media_title}.{mp4,mp3,m4a,webm,mkv} 2>/dev/null | head -n 1)
     if [[ -z "$media_file" ]]; then
@@ -778,6 +1044,13 @@ EOF
     fi
     filename=$(basename "$media_file")
     log_debug "Downloaded file: $media_file"
+    
+    # If download failed after all retries, provide better error message
+    if [[ "$download_success" == false ]]; then
+        log_debug "Download failed after $max_retries attempts with different strategies"
+        echo '{"error":"❌ YouTube download failed after multiple attempts.\n\n💡 This might be due to:\n• YouTube anti-bot protection (403 Forbidden)\n• Expired or invalid cookies\n• Rate limiting\n• Network connectivity issues\n\n🔧 Solutions:\n• Update your cookies via https://u.copylaradio.com/astro\n• Try again later (rate limiting)\n• Check your internet connection\n\n📖 Cookie Guide: https://ipfs.copylaradio.com/ipns/copylaradio.com/cookie.html"}'
+        return 1
+    fi
     
     # Find metadata files
     info_json_file=$(ls "$OUTPUT_DIR"/${media_title}.info.json 2>/dev/null | head -n 1)
