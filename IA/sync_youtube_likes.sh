@@ -412,8 +412,8 @@ sync_youtube_likes() {
     # Nettoyer les anciennes entrées de la base de données
     cleanup_processed_videos "$processed_file"
     
-    # Récupérer les vidéos likées (maximum 3 par run)
-    local liked_videos=$(get_liked_videos "$player" "$cookie_file" 3)
+    # Récupérer les vidéos likées (récupérer plus pour avoir 3 nouvelles)
+    local liked_videos=$(get_liked_videos "$player" "$cookie_file" 15)
     
     if [[ $? -ne 0 || -z "$liked_videos" ]]; then
         log_debug "No liked videos found or failed to fetch for $player"
@@ -432,9 +432,15 @@ sync_youtube_likes() {
     fi
     log_debug "Total videos already processed: $total_processed"
     
-    # Traiter chaque vidéo likée
+    # Traiter chaque vidéo likée jusqu'à avoir 3 succès
     while IFS= read -r line; do
         if [[ -n "$line" ]]; then
+            # Arrêter si on a déjà 3 succès
+            if [[ $success_count -ge 3 ]]; then
+                log_debug "Reached target of 3 successful downloads, stopping"
+                break
+            fi
+            
             # Parser les données de la vidéo
             local video_id=$(echo "$line" | cut -d '&' -f 1)
             local title=$(echo "$line" | cut -d '&' -f 2)
@@ -461,6 +467,7 @@ sync_youtube_likes() {
                 if process_liked_video "$video_id" "$title" "$duration" "$uploader" "$url" "$player" "$processed_file"; then
                     success_count=$((success_count + 1))
                     processed_count=$((processed_count + 1))
+                    log_debug "Success count: $success_count/3"
                 else
                     failed_count=$((failed_count + 1))
                 fi
