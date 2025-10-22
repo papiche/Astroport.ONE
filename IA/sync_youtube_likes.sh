@@ -240,55 +240,101 @@ get_liked_videos() {
     fi
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] yt-dlp command found" >&2
     
+    # Vérifier l'état du fichier cookie
+    if [[ -f "$cookie_file" ]]; then
+        local cookie_size=$(wc -c < "$cookie_file" 2>/dev/null || echo "0")
+        local cookie_lines=$(wc -l < "$cookie_file" 2>/dev/null || echo "0")
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cookie file info: size=${cookie_size} bytes, lines=${cookie_lines}" >&2
+        log_debug "Cookie file details: size=${cookie_size} bytes, lines=${cookie_lines}"
+        
+        # Vérifier si le fichier cookie contient des cookies valides
+        if [[ $cookie_size -lt 100 ]]; then
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: Cookie file seems too small (${cookie_size} bytes)" >&2
+            log_debug "Cookie file may be invalid or empty"
+        fi
+        
+        # Vérifier la présence de cookies YouTube spécifiques
+        if grep -q "youtube.com" "$cookie_file" 2>/dev/null; then
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cookie file contains YouTube cookies" >&2
+        else
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: Cookie file may not contain YouTube cookies" >&2
+            log_debug "Cookie file content preview: $(head -c 200 "$cookie_file")"
+        fi
+    else
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: Cookie file not found: $cookie_file" >&2
+        return 1
+    fi
+    
     # Utiliser yt-dlp pour récupérer la playlist "Liked videos"
     # La playlist "LL" correspond aux vidéos likées
     local liked_playlist_url="https://www.youtube.com/playlist?list=LL"
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Trying liked videos playlist: $liked_playlist_url" >&2
     
-    # Récupérer les métadonnées des vidéos likées avec gestion d'erreur améliorée
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Running yt-dlp command..." >&2
-    local videos_json=$(yt-dlp \
-        --cookies "$cookie_file" \
-        --print '%(id)s&%(title)s&%(duration)s&%(uploader)s&%(webpage_url)s' \
-        --playlist-end "$max_results" \
-        --no-warnings \
-        --quiet \
-        "$liked_playlist_url" 2>/dev/null)
+    # Skip connectivity tests to minimize requests - go directly to main request
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Skipping connectivity tests to minimize YouTube requests" >&2
+    log_debug "Minimizing requests by skipping connectivity tests"
     
-    local exit_code=$?
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] yt-dlp exit code: $exit_code" >&2
+    # Single optimized request with multiple fallback strategies
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Running optimized single yt-dlp request..." >&2
     
-    if [[ $exit_code -eq 0 && -n "$videos_json" ]]; then
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Successfully fetched liked videos" >&2
-        echo "$videos_json"
-        return 0
-    else
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Failed to fetch liked videos (exit code: $exit_code)" >&2
-        log_debug "Failed to fetch liked videos for $player (exit code: $exit_code)"
-        # Essayer une approche alternative avec l'historique
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Trying alternative approach with watch history" >&2
-        log_debug "Trying alternative approach with watch history"
-        local history_url="https://www.youtube.com/feed/history"
+    # Try multiple URLs in order of preference (single request each)
+    local urls_to_try=(
+        "https://www.youtube.com/playlist?list=LL"
+        "https://www.youtube.com/feed/history"
+        "https://www.youtube.com/playlist?list=WL"
+    )
+    
+    local videos_json=""
+    local exit_code=1
+    
+    for url in "${urls_to_try[@]}"; do
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Trying URL: $url" >&2
+        log_debug "Attempting yt-dlp with URL: $url"
+        
+        # Single request with minimal options
         videos_json=$(yt-dlp \
             --cookies "$cookie_file" \
             --print '%(id)s&%(title)s&%(duration)s&%(uploader)s&%(webpage_url)s' \
             --playlist-end "$max_results" \
             --no-warnings \
             --quiet \
-            "$history_url" 2>/dev/null)
+            "$url" 2>/dev/null)
         
-        local alt_exit_code=$?
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Alternative yt-dlp exit code: $alt_exit_code" >&2
+        exit_code=$?
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] yt-dlp exit code for $url: $exit_code" >&2
         
-        if [[ $alt_exit_code -eq 0 && -n "$videos_json" ]]; then
-            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Successfully fetched from watch history" >&2
-            echo "$videos_json"
-            return 0
+        # If we got results, break
+        if [[ $exit_code -eq 0 && -n "$videos_json" ]]; then
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Success with URL: $url" >&2
+            log_debug "Successfully fetched videos from: $url"
+            break
         else
-            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Alternative approach also failed" >&2
-            log_debug "Alternative approach also failed for $player"
-            return 1
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Failed with URL: $url (exit_code: $exit_code, content_length: ${#videos_json})" >&2
+            log_debug "Failed to get videos from: $url"
+            videos_json=""
         fi
+        
+        # Small delay between attempts to avoid rate limiting
+        sleep 2
+    done
+    
+    # Log final result
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Final videos_json length: ${#videos_json}" >&2
+    if [[ -n "$videos_json" ]]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] videos_json preview: $(echo "$videos_json" | head -c 200)..." >&2
+        log_debug "Final videos_json content: $videos_json"
+    else
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] All URL attempts failed - videos_json is empty" >&2
+    fi
+    
+    if [[ $exit_code -eq 0 && -n "$videos_json" ]]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Successfully fetched liked videos" >&2
+        echo "$videos_json"
+        return 0
+    else
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] All URL attempts failed - no videos found" >&2
+        log_debug "All URL attempts failed for $player"
+        return 1
     fi
 }
 
@@ -446,8 +492,8 @@ sync_youtube_likes() {
     # Nettoyer les anciennes entrées de la base de données
     cleanup_processed_videos "$processed_file"
     
-    # Récupérer les vidéos likées (récupérer plus pour avoir 3 nouvelles)
-    local liked_videos=$(get_liked_videos "$player" "$cookie_file" 15)
+    # Récupérer les vidéos likées (limiter à 5 pour minimiser les requêtes)
+    local liked_videos=$(get_liked_videos "$player" "$cookie_file" 5)
     
     if [[ $? -ne 0 || -z "$liked_videos" ]]; then
         log_debug "No liked videos found or failed to fetch for $player"
@@ -466,13 +512,13 @@ sync_youtube_likes() {
     fi
     log_debug "Total videos already processed: $total_processed"
     
-    # Traiter chaque vidéo likée jusqu'à avoir 3 succès
+    # Traiter chaque vidéo likée jusqu'à avoir 2 succès (réduit pour minimiser les requêtes)
     while IFS= read -r line; do
         if [[ -n "$line" ]]; then
-            # Arrêter si on a déjà 3 succès
-            if [[ $success_count -ge 3 ]]; then
-                echo "🎯 Reached target of 3 successful downloads, stopping"
-                log_debug "Reached target of 3 successful downloads, stopping"
+            # Arrêter si on a déjà 2 succès (réduit de 3 à 2)
+            if [[ $success_count -ge 2 ]]; then
+                echo "🎯 Reached target of 2 successful downloads, stopping"
+                log_debug "Reached target of 2 successful downloads, stopping"
                 break
             fi
             
@@ -508,8 +554,8 @@ sync_youtube_likes() {
                     # Nouvelle vidéo téléchargée avec succès
                     success_count=$((success_count + 1))
                     processed_count=$((processed_count + 1))
-                    echo "✅ Success count: $success_count/3"
-                    log_debug "Success count: $success_count/3"
+                    echo "✅ Success count: $success_count/2"
+                    log_debug "Success count: $success_count/2"
                 elif [[ $process_exit_code -eq 2 ]]; then
                     # Vidéo existante trouvée (ne compte pas comme succès)
                     skipped_count=$((skipped_count + 1))
