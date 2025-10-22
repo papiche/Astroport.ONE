@@ -27,9 +27,9 @@ async def fetch_nostr_events(relay_url: str = "ws://127.0.0.1:7777", limit: int 
     
     try:
         async with websockets.connect(relay_url) as websocket:
-            # Requête pour récupérer les événements avec tags YouTube
+            # Requête pour récupérer les événements avec tags YouTube (kind: 1, 21, 22 NIP-71)
             filter_data = {
-                "kinds": [1],  # Text notes
+                "kinds": [1, 21, 22],  # Text notes + NIP-71 Video Events (normal + shorts)
                 "limit": limit,
                 "#t": ["YouTubeDownload", "VideoChannel"]
             }
@@ -59,10 +59,19 @@ async def fetch_nostr_events(relay_url: str = "ws://127.0.0.1:7777", limit: int 
 def is_youtube_video_event(event: Dict[str, Any]) -> bool:
     """
     Vérifie si un événement NOSTR est une vidéo YouTube
+    Supporte les événements kind: 1 (compatibilité) et kind: 21 (NIP-71)
     """
     tags = event.get('tags', [])
+    kind = event.get('kind', 1)
     
-    # Vérifier les tags YouTube
+    # Pour les événements NIP-71 (kind: 21 ou 22), vérifier les tags spécifiques
+    if kind in [21, 22]:
+        # Vérifier les tags NIP-71 pour les vidéos
+        has_video_tags = any(tag[0] == 'url' and ('ipfs' in tag[1] or 'youtube' in tag[1]) for tag in tags if len(tag) > 1)
+        has_media_type = any(tag[0] == 'm' and 'video' in tag[1] for tag in tags if len(tag) > 1)
+        return has_video_tags and has_media_type
+    
+    # Pour les événements kind: 1 (compatibilité)
     youtube_tags = ['YouTubeDownload', 'VideoChannel', 'uDRIVE', 'IPFS']
     has_youtube_tags = any(tag in [t[1] for t in tags if len(t) > 1] for tag in youtube_tags)
     
@@ -75,9 +84,11 @@ def is_youtube_video_event(event: Dict[str, Any]) -> bool:
 def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]:
     """
     Extrait les informations vidéo d'un événement NOSTR
+    Supporte les événements kind: 1 (compatibilité) et kind: 21 (NIP-71)
     """
     content = event.get('content', '')
     tags = event.get('tags', [])
+    kind = event.get('kind', 1)
     
     # Extraire les liens IPFS et YouTube depuis les tags NOSTR
     ipfs_url = ""
@@ -85,28 +96,54 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
     metadata_ipfs = ""
     thumbnail_ipfs = ""
     
-    # Parser les tags NOSTR pour extraire les liens
-    for tag in tags:
-        if len(tag) >= 3 and tag[0] == 'r':
-            url = tag[1]
-            tag_type = tag[2] if len(tag) > 2 else ''
-            
-            if 'youtube.com' in url or 'youtu.be' in url:
-                youtube_url = url
-            elif '/ipfs/' in url or 'ipfs://' in url:
-                if 'Video' in tag_type:
-                    # Main video IPFS URL (priority)
-                    ipfs_url = url
-                elif 'Metadata' in tag_type:
-                    metadata_ipfs = url
-                elif 'Thumbnail' in tag_type:
-                    thumbnail_ipfs = url
-                elif 'Subtitle' in tag_type:
-                    # Skip subtitles as they're no longer handled
-                    continue
-                elif not ipfs_url:
-                    # Fallback: if no Video tag found, use any IPFS URL as main
-                    ipfs_url = url
+    # Traitement différent selon le type d'événement
+    if kind in [21, 22]:  # NIP-71 Video Event (normal ou short)
+        # Parser les tags NIP-71
+        for tag in tags:
+            if len(tag) >= 2:
+                tag_type = tag[0]
+                tag_value = tag[1]
+                
+                if tag_type == 'url':
+                    if 'youtube.com' in tag_value or 'youtu.be' in tag_value:
+                        youtube_url = tag_value
+                    elif '/ipfs/' in tag_value or 'ipfs://' in tag_value:
+                        ipfs_url = tag_value
+                elif tag_type == 'm' and 'video' in tag_value:
+                    # Media type confirmed as video
+                    pass
+                elif tag_type == 'size' and tag_value.isdigit():
+                    # File size from NIP-71
+                    pass
+                elif tag_type == 'duration' and tag_value.isdigit():
+                    # Duration from NIP-71
+                    pass
+                elif tag_type == 'dim':
+                    # Dimensions from NIP-71
+                    pass
+    else:  # kind: 1 (compatibilité)
+        # Parser les tags NOSTR traditionnels
+        for tag in tags:
+            if len(tag) >= 3 and tag[0] == 'r':
+                url = tag[1]
+                tag_type = tag[2] if len(tag) > 2 else ''
+                
+                if 'youtube.com' in url or 'youtu.be' in url:
+                    youtube_url = url
+                elif '/ipfs/' in url or 'ipfs://' in url:
+                    if 'Video' in tag_type:
+                        # Main video IPFS URL (priority)
+                        ipfs_url = url
+                    elif 'Metadata' in tag_type:
+                        metadata_ipfs = url
+                    elif 'Thumbnail' in tag_type:
+                        thumbnail_ipfs = url
+                    elif 'Subtitle' in tag_type:
+                        # Skip subtitles as they're no longer handled
+                        continue
+                    elif not ipfs_url:
+                        # Fallback: if no Video tag found, use any IPFS URL as main
+                        ipfs_url = url
     
     # Fallback: Parser le contenu si les tags ne contiennent pas les infos
     if not ipfs_url:
@@ -158,6 +195,47 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
     topic_tags = [t[1] for t in tags if len(t) > 1 and t[1].startswith('Topic-')]
     topic_keywords = [tag.replace('Topic-', '') for tag in topic_tags]
     
+    # Extraire la durée et la taille de fichier depuis les tags NOSTR
+    duration = 0
+    file_size = 0
+    dimensions = ""
+    
+    # Traitement différent selon le type d'événement
+    if kind in [21, 22]:  # NIP-71 Video Event (normal ou short)
+        # Extraire les métadonnées NIP-71
+        for tag in tags:
+            if len(tag) >= 2:
+                tag_type = tag[0]
+                tag_value = tag[1]
+                
+                if tag_type == 'duration':
+                    try:
+                        duration = int(tag_value)
+                    except ValueError:
+                        duration = 0
+                elif tag_type == 'size':
+                    try:
+                        file_size = int(tag_value)
+                    except ValueError:
+                        file_size = 0
+                elif tag_type == 'dim':
+                    dimensions = tag_value
+    else:  # kind: 1 (compatibilité)
+        # Extraire depuis les tags traditionnels
+        for tag in tags:
+            if len(tag) >= 2 and tag[0] == 't':
+                tag_value = tag[1]
+                if tag_value.startswith('Duration-'):
+                    try:
+                        duration = int(tag_value.replace('Duration-', ''))
+                    except ValueError:
+                        duration = 0
+                elif tag_value.startswith('FileSize-'):
+                    try:
+                        file_size = int(tag_value.replace('FileSize-', ''))
+                    except ValueError:
+                        file_size = 0
+    
     return {
         'title': title,
         'uploader': uploader,
@@ -175,11 +253,14 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
         'author_id': event.get('pubkey', ''),  # Alias pour compatibilité avec youtube.html
         'created_at': datetime.fromtimestamp(event.get('created_at', 0)).isoformat(),
         'download_date': datetime.fromtimestamp(event.get('created_at', 0)).isoformat(),  # Alias pour compatibilité
-        'duration': 0,  # Pas disponible dans les événements NOSTR
-        'file_size': 0,  # Pas disponible dans les événements NOSTR
+        'duration': duration,  # Extrait depuis les tags NOSTR
+        'file_size': file_size,  # Extrait depuis les tags NOSTR
+        'dimensions': dimensions,  # Nouvelles dimensions NIP-71
+        'event_kind': kind,  # Type d'événement (1 ou 21)
         'technical_info': {
             'download_date': datetime.fromtimestamp(event.get('created_at', 0)).isoformat(),
-            'file_size': 0
+            'file_size': file_size,
+            'dimensions': dimensions
         }
     }
 
@@ -221,44 +302,69 @@ def parse_nostr_message(message_data: Dict[str, Any]) -> Dict[str, Any]:
     video_info['topic_keywords'] = content_info.get('topic_keywords', '')
     video_info['duration_category'] = content_info.get('duration_category', '')
     
+    # Ajouter les nouvelles métadonnées NIP-71
+    video_info['dimensions'] = message_data.get('dimensions', '')
+    video_info['event_kind'] = message_data.get('event_kind', 1)
+    
     return video_info
 
 def is_incompatible_youtube_message(event: Dict[str, Any]) -> bool:
     """
     Détermine si un message YouTube est incompatible avec l'affichage youtube.html
     Un message est incompatible s'il manque des tags essentiels
+    Supporte les événements kind: 1 (compatibilité) et kind: 21 (NIP-71)
     """
     tags = event.get('tags', [])
+    kind = event.get('kind', 1)
     
-    # Vérifier si c'est un message YouTube
-    youtube_tags = ['YouTubeDownload', 'VideoChannel', 'uDRIVE', 'IPFS']
-    has_youtube_tags = any(tag in [t[1] for t in tags if len(t) > 1] for tag in youtube_tags)
+    # Traitement différent selon le type d'événement
+    if kind in [21, 22]:  # NIP-71 Video Event (normal ou short)
+        # Vérifier les tags NIP-71 essentiels
+        has_video_url = False
+        has_media_type = False
+        
+        for tag in tags:
+            if len(tag) >= 2:
+                tag_type = tag[0]
+                tag_value = tag[1]
+                
+                if tag_type == 'url' and ('ipfs' in tag_value or 'youtube' in tag_value):
+                    has_video_url = True
+                elif tag_type == 'm' and 'video' in tag_value:
+                    has_media_type = True
+        
+        return not (has_video_url and has_media_type)
     
-    if not has_youtube_tags:
-        return True  # Pas un message YouTube, incompatible
-    
-    # Vérifier la présence des tags essentiels
-    has_video_url = False
-    has_youtube_url = False
-    has_channel_tag = False
-    
-    for tag in tags:
-        if len(tag) >= 3 and tag[0] == 'r':
-            url = tag[1]
-            tag_type = tag[2] if len(tag) > 2 else ''
-            
-            if 'youtube.com' in url or 'youtu.be' in url:
-                has_youtube_url = True
-            elif '/ipfs/' in url or 'ipfs://' in url:
-                # Accepter tout lien IPFS (Video, Metadata, Thumbnail)
-                has_video_url = True
-        elif len(tag) >= 2 and tag[0] == 't':
-            tag_value = tag[1]
-            if tag_value.startswith('Channel-'):
-                has_channel_tag = True
-    
-    # Un message est incompatible s'il manque des tags essentiels
-    return not (has_video_url and has_youtube_url and has_channel_tag)
+    else:  # kind: 1 (compatibilité)
+        # Vérifier si c'est un message YouTube
+        youtube_tags = ['YouTubeDownload', 'VideoChannel', 'uDRIVE', 'IPFS']
+        has_youtube_tags = any(tag in [t[1] for t in tags if len(t) > 1] for tag in youtube_tags)
+        
+        if not has_youtube_tags:
+            return True  # Pas un message YouTube, incompatible
+        
+        # Vérifier la présence des tags essentiels
+        has_video_url = False
+        has_youtube_url = False
+        has_channel_tag = False
+        
+        for tag in tags:
+            if len(tag) >= 3 and tag[0] == 'r':
+                url = tag[1]
+                tag_type = tag[2] if len(tag) > 2 else ''
+                
+                if 'youtube.com' in url or 'youtu.be' in url:
+                    has_youtube_url = True
+                elif '/ipfs/' in url or 'ipfs://' in url:
+                    # Accepter tout lien IPFS (Video, Metadata, Thumbnail)
+                    has_video_url = True
+            elif len(tag) >= 2 and tag[0] == 't':
+                tag_value = tag[1]
+                if tag_value.startswith('Channel-'):
+                    has_channel_tag = True
+        
+        # Un message est incompatible s'il manque des tags essentiels
+        return not (has_video_url and has_youtube_url and has_channel_tag)
 
 
 def create_channel_playlist(videos: List[Dict[str, Any]], channel_name: str) -> Dict[str, Any]:

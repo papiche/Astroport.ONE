@@ -257,20 +257,211 @@ send_nostr_notification() {
         tags_json="$tags_json,[\"r\",\"/ipfs/$thumbnail_ipfs\",\"Thumbnail\"]"
     fi
     
+    # Add duration and file size as custom tags
+    if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ ]]; then
+        tags_json="$tags_json,[\"t\",\"Duration-$duration\"]"
+    fi
+    
+    # Add file size tag (get from the actual downloaded file)
+    if [[ -n "$media_file" && -f "$media_file" ]]; then
+        local file_size=$(stat -c%s "$media_file" 2>/dev/null || echo "0")
+        if [[ "$file_size" =~ ^[0-9]+$ && "$file_size" -gt 0 ]]; then
+            tags_json="$tags_json,[\"t\",\"FileSize-$file_size\"]"
+        fi
+    fi
+    
     tags_json="$tags_json]"
     
-    # Send NOSTR note with tags
-    echo "📡 Sending NOSTR notification for: $title" >&2
+    # Send NOSTR note with tags (kind: 1 for compatibility)
+    echo "📡 Sending NOSTR notification (kind: 1) for: $title" >&2
     local nostr_result=$(python3 "$nostr_script" "$nsec_key" "$message" "ws://127.0.0.1:7777" "$tags_json" 2>&1)
     local nostr_exit_code=$?
     
     if [[ $nostr_exit_code -eq 0 ]]; then
-        log_debug "NOSTR notification sent successfully for: $title"
-        echo "✅ NOSTR notification published for: $title"
+        log_debug "NOSTR notification (kind: 1) sent successfully for: $title"
+        echo "✅ NOSTR notification (kind: 1) published for: $title"
+        
+    # Determine video kind based on dimensions and duration
+    local video_kind=$(determine_video_kind "$duration" "$video_dimensions")
+    echo "📡 Sending NIP-71 video event (kind: $video_kind) for: $title" >&2
+    send_nip71_video_event "$nsec_key" "$title" "$uploader" "$ipfs_url" "$youtube_url" "$metadata_ipfs" "$thumbnail_ipfs" "$duration" "$file_size" "$media_file" "$video_kind"
+        
         return 0
     else
         log_debug "Failed to send NOSTR notification for: $title (exit code: $nostr_exit_code)"
         echo "⚠️ NOSTR notification failed for: $title"
+        return 1
+    fi
+}
+
+# Function to determine video kind based on duration and dimensions
+determine_video_kind() {
+    local duration="$1"
+    local dimensions="$2"
+    
+    log_debug "Determining video kind for duration: ${duration}s, dimensions: ${dimensions}"
+    
+    # Extract width and height from dimensions (format: WIDTHxHEIGHT)
+    local width=$(echo "$dimensions" | cut -d'x' -f1)
+    local height=$(echo "$dimensions" | cut -d'x' -f2)
+    
+    # Default to kind 21 if we can't parse dimensions
+    if [[ ! "$width" =~ ^[0-9]+$ ]] || [[ ! "$height" =~ ^[0-9]+$ ]]; then
+        log_debug "Invalid dimensions format, defaulting to kind 21"
+        echo "21"
+        return
+    fi
+    
+    # Calculate aspect ratio
+    local aspect_ratio=$(echo "scale=2; $width / $height" | bc -l 2>/dev/null || echo "1.78")
+    
+    # Determine if it's a short video based on:
+    # 1. Vertical aspect ratio (height > width) regardless of duration
+    # 2. Square aspect ratio regardless of duration  
+    # 3. Small dimensions (<= 720p) regardless of duration
+    # 4. Duration <= 30 seconds for horizontal videos (more strict)
+    
+    local is_short_duration=false
+    local is_short_format=false
+    
+    # Check duration (30 seconds or less for horizontal videos)
+    if [[ "$duration" -le 30 ]]; then
+        is_short_duration=true
+        log_debug "Short duration detected: ${duration}s <= 30s"
+    fi
+    
+    # Check aspect ratio and dimensions
+    if (( height > width )); then
+        # Vertical video (portrait) - always short format
+        is_short_format=true
+        log_debug "Vertical video detected: ${width}x${height}"
+    elif (( width == height )); then
+        # Square video - always short format
+        is_short_format=true
+        log_debug "Square video detected: ${width}x${height}"
+    elif (( width <= 720 && height <= 720 )); then
+        # Small dimensions (likely short)
+        is_short_format=true
+        log_debug "Small dimensions detected: ${width}x${height}"
+    fi
+    
+    # Determine kind with improved logic
+    if [[ "$is_short_format" == true ]]; then
+        # Format-based classification (vertical, square, small) - always short
+        log_debug "Classified as short video (kind 22) - format-based"
+        echo "22"
+    elif [[ "$is_short_duration" == true ]]; then
+        # Duration-based classification (<= 60s) but only for horizontal videos
+        log_debug "Classified as short video (kind 22) - duration-based"
+        echo "22"
+    else
+        log_debug "Classified as regular video (kind 21)"
+        echo "21"
+    fi
+}
+
+# Function to send NIP-71 video event
+send_nip71_video_event() {
+    local nsec_key="$1"
+    local title="$2"
+    local uploader="$3"
+    local ipfs_url="$4"
+    local youtube_url="$5"
+    local metadata_ipfs="$6"
+    local thumbnail_ipfs="$7"
+    local duration="$8"
+    local file_size="$9"
+    local media_file="${10}"
+    local video_kind="${11}"
+    
+    log_debug "Sending NIP-71 video event for: $title"
+    
+    # Check if NOSTR script exists
+    local nostr_script="$MY_PATH/../tools/nostr_send_note.py"
+    if [[ ! -f "$nostr_script" ]]; then
+        log_debug "NOSTR script not found: $nostr_script"
+        return 1
+    fi
+    
+    # Create NIP-71 video event content
+    local video_content="🎬 $title
+    
+📺 YouTube: $youtube_url
+🔗 IPFS: $ipfs_url"
+
+    # Add metadata if available
+    if [[ -n "$metadata_ipfs" ]]; then
+        video_content="$video_content
+📋 Métadonnées: $myIPFS/ipfs/$metadata_ipfs"
+    fi
+    
+    if [[ -n "$thumbnail_ipfs" ]]; then
+        video_content="$video_content
+🖼️ Miniature: $myIPFS/ipfs/$thumbnail_ipfs"
+    fi
+    
+    # Build NIP-71 specific tags
+    local nip71_tags="[[\"url\",\"$ipfs_url\"],[\"m\",\"video/mp4\"],[\"x\",\"$(echo -n "$ipfs_url" | sha256sum | cut -d' ' -f1)\"]]"
+    
+    # Add file size if available
+    if [[ -n "$file_size" && "$file_size" -gt 0 ]]; then
+        nip71_tags="$nip71_tags,[\"size\",\"$file_size\"]"
+    fi
+    
+    # Add duration if available
+    if [[ -n "$duration" && "$duration" -gt 0 ]]; then
+        nip71_tags="$nip71_tags,[\"duration\",\"$duration\"]"
+    fi
+    
+    # Extract real video dimensions using ffprobe
+    local video_dimensions="1920x1080"  # Default fallback
+    if [[ -n "$media_file" && -f "$media_file" ]]; then
+        log_debug "Extracting video dimensions from: $media_file"
+        local dimensions_output=$(ffprobe -v quiet -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$media_file" 2>/dev/null)
+        if [[ -n "$dimensions_output" && "$dimensions_output" =~ ^[0-9]+x[0-9]+$ ]]; then
+            video_dimensions="$dimensions_output"
+            log_debug "Extracted video dimensions: $video_dimensions"
+        else
+            log_debug "Could not extract dimensions, using default: $video_dimensions"
+        fi
+    fi
+    nip71_tags="$nip71_tags,[\"dim\",\"$video_dimensions\"]"
+    
+    # Add channel and topic tags
+    nip71_tags="$nip71_tags,[\"t\",\"YouTubeDownload\"],[\"t\",\"VideoChannel\"]"
+    
+    # Add channel-specific tag
+    if [[ -n "$uploader" && "$uploader" != "null" ]]; then
+        local channel_name=$(echo "$uploader" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 50)
+        nip71_tags="$nip71_tags,[\"t\",\"Channel-$channel_name\"]"
+    fi
+    
+    # Add topic tags from title
+    local topic_tags=$(echo "$title" | tr '[:upper:]' '[:lower:]' | \
+        sed 's/[^a-zA-Z0-9 ]//g' | \
+        awk '{for(i=1;i<=NF;i++) if(length($i)>3) print $i}' | \
+        head -3 | \
+        sed 's/^/["t","Topic-/' | sed 's/$/"]/' | \
+        tr '\n' ',' | sed 's/,$//')
+    
+    if [[ -n "$topic_tags" ]]; then
+        nip71_tags="$nip71_tags,$topic_tags"
+    fi
+    
+    nip71_tags="$nip71_tags]"
+    
+    # Send NIP-71 video event (kind: 21 or 22)
+    echo "📡 Sending NIP-71 video event (kind: $video_kind) for: $title" >&2
+    local nip71_result=$(python3 "$nostr_script" "$nsec_key" "$video_content" "ws://127.0.0.1:7777" "$nip71_tags" "$video_kind" 2>&1)
+    local nip71_exit_code=$?
+    
+    if [[ $nip71_exit_code -eq 0 ]]; then
+        log_debug "NIP-71 video event sent successfully for: $title"
+        echo "✅ NIP-71 video event published for: $title"
+        return 0
+    else
+        log_debug "Failed to send NIP-71 video event for: $title (exit code: $nip71_exit_code)"
+        echo "⚠️ NIP-71 video event failed for: $title"
         return 1
     fi
 }
