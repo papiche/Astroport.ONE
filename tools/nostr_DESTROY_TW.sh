@@ -197,19 +197,50 @@ EOF
 ZIP_FILE="$HOME/.zen/tmp/${email}_nostr_backup_$(date +%Y%m%d_%H%M%S).zip"
 echo "Creating ZIP archive: ${ZIP_FILE}"
 echo "Excluding hidden files (.*) for security..."
+
+# Check if OUTPUT_DIR exists
+if [[ ! -d "${OUTPUT_DIR}" ]]; then
+    echo "ERROR: Output directory ${OUTPUT_DIR} does not exist!"
+    exit 1
+fi
+
+# Debug: Show directory contents
+echo "DEBUG: Contents of ${OUTPUT_DIR}:"
+ls -la "${OUTPUT_DIR}" || echo "Failed to list directory contents"
+
+# Create the ZIP file with proper error handling
+echo "DEBUG: Changing to directory: $(dirname "${OUTPUT_DIR}")"
 cd "$(dirname "${OUTPUT_DIR}")"
-# Exclude all hidden files and directories (starting with .)
-zip -r "${ZIP_FILE}" "$(basename "${OUTPUT_DIR}")" -x "*/.*" -x ".*" > /dev/null 2>&1
-cd - > /dev/null 2>&1
-
-# Add ZIP to IPFS
-echo "Adding ZIP to IPFS..."
-NOSTRIFS=$(ipfs add -q "${ZIP_FILE}" | tail -n 1)
-ipfs pin rm ${NOSTRIFS} 2>/dev/null
-echo "Backup ZIP added to IPFS: ${NOSTRIFS}"
-
-# Clean up temporary ZIP file
-rm -f "${ZIP_FILE}"
+echo "DEBUG: Current directory: $(pwd)"
+echo "DEBUG: Zipping directory: $(basename "${OUTPUT_DIR}")"
+if zip -r "${ZIP_FILE}" "$(basename "${OUTPUT_DIR}")" -x "*/.*" -x ".*"; then
+    echo "ZIP archive created successfully: ${ZIP_FILE}"
+    cd - > /dev/null 2>&1
+    
+    # Check if ZIP file was created and has content
+    if [[ -f "${ZIP_FILE}" && -s "${ZIP_FILE}" ]]; then
+        # Add ZIP to IPFS
+        echo "Adding ZIP to IPFS..."
+        NOSTRIFS=$(ipfs add -q "${ZIP_FILE}" | tail -n 1)
+        if [[ -n "${NOSTRIFS}" ]]; then
+            ipfs pin rm ${NOSTRIFS} 2>/dev/null
+            echo "Backup ZIP added to IPFS: ${NOSTRIFS}"
+        else
+            echo "ERROR: Failed to add ZIP to IPFS"
+        fi
+        
+        # Clean up temporary ZIP file
+        rm -f "${ZIP_FILE}"
+    else
+        echo "ERROR: ZIP file was not created or is empty"
+        cd - > /dev/null 2>&1
+        exit 1
+    fi
+else
+    echo "ERROR: Failed to create ZIP archive"
+    cd - > /dev/null 2>&1
+    exit 1
+fi
 
 echo "DELETING ${player} NOSTRCARD : $pubnostr"
 ## 1. REMOVE NOSTR PROFILE
