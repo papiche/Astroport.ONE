@@ -258,15 +258,18 @@ EOFNOSTR
     # DID follows W3C DID 1.0 specification: https://www.w3.org/TR/did-1.0/
     echo "📝 Creating initial DID document..."
     
-    # Create comprehensive DID with all blockchain identities
+    
+    # Create Multikey verification method (DID Nostr spec)
+    multikey_pubkey="fe70102${HEX}"
+    
     cat > ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache <<EOF
 {
   "@context": [
-    "https://www.w3.org/ns/did/v1",
-    "https://w3id.org/security/suites/ed25519-2020/v1",
-    "https://w3id.org/security/suites/x25519-2020/v1"
+    "https://w3id.org/did/v1",
+    "https://w3id.org/nostr/context"
   ],
   "id": "did:nostr:${HEX}",
+  "type": "DIDNostr",
   "alsoKnownAs": [
     "mailto:${EMAIL}",
     "did:g1:${G1PUBNOSTR}",
@@ -274,11 +277,10 @@ EOFNOSTR
   ],
   "verificationMethod": [
     {
-      "id": "did:nostr:${HEX}#nostr-key",
-      "type": "Ed25519VerificationKey2020",
+      "id": "did:nostr:${HEX}#key1",
+      "type": "Multikey",
       "controller": "did:nostr:${HEX}",
-      "publicKeyMultibase": "${NPUBLIC}",
-      "publicKeyHex": "${HEX}"
+      "publicKeyMultibase": "${multikey_pubkey}"
     },
     {
       "id": "did:nostr:${HEX}#g1-key",
@@ -301,15 +303,15 @@ EOFNOSTR
     }
   ],
   "authentication": [
-    "did:nostr:${HEX}#nostr-key",
+    "did:nostr:${HEX}#key1",
     "did:nostr:${HEX}#g1-key"
   ],
   "assertionMethod": [
-    "did:nostr:${HEX}#nostr-key",
+    "did:nostr:${HEX}#key1",
     "did:nostr:${HEX}#g1-key"
   ],
   "keyAgreement": [
-    "did:nostr:${HEX}#nostr-key"
+    "did:nostr:${HEX}#key1"
   ],
   "service": [
     {
@@ -354,7 +356,9 @@ EOFNOSTR
     },
     "language": "${LANG}",
     "youser": "${YOUSER}",
-    "contractStatus": "new_multipass"
+    "contractStatus": "new_multipass",
+    "storageQuota": "10GB",
+    "services": "uDRIVE IPFS storage"
   }
 }
 EOF
@@ -487,7 +491,7 @@ EOF
         cp "${HOME}/.zen/Astroport.ONE/templates/NOSTR/did_viewer.html" ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html
         
         # Inject DID JSON data into the HTML file
-        local did_json_content=$(cat ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache)
+        did_json_content=$(cat ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache)
         sed -i "s|const _DID_JSON_ = null;|const _DID_JSON_ = $did_json_content;|g" ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html
         
         echo "✅ DID viewer created with embedded JSON: ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html"
@@ -527,7 +531,7 @@ EOF
     ${MY_PATH}/../tools/nostr_setup_profile.py \
         "$NPRIV" \
         "[•͡˘㇁•͡˘] $YOUSER" "${G1PUBNOSTR}" \
-        "⏰ UPlanet Ẑen ${ORIGIN} // Waiting for Primo Ğ1 RX // ${myIPFS}/ipns/copylaradio.com // DID: did:nostr:${HEX}" \
+        "⏰ UPlanet Ẑen ${ORIGIN} // Welcome // ${myIPFS}/ipns/copylaradio.com // DID: did:nostr:${HEX}" \
         "$myIPFS/ipfs/${G1PUBNOSTRQR}" \
         "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg" \
         "" "$myIPFS/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" "" "" "" "" \

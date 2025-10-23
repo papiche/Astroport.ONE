@@ -1,0 +1,8 @@
+# LIST OF NOSTR PUBLIC RELAYS
+wss://relay.copylaradio.com
+wss://relay.primal.net
+wss://relay.damus.io
+wss://relay.snort.social
+wss://relay.nostr.band
+wss://nostr.wine
+

@@ -28,6 +28,7 @@ L'écosystème UPlanet repose sur une architecture de scripts spécialisés qui 
 ### Script de Gestion Centralisée des DID (Nostr-Native)
 - **`did_manager_nostr.sh`** : Gestionnaire centralisé des documents DID avec Nostr comme source de vérité
 - **`nostr_publish_did.py`** : Publie les DIDs sur les relais Nostr (kind 30311)
+- **`nostr_did_client.py`** : Client unifié pour lecture/fetch des DIDs depuis Nostr
 - **`nostr_did_recall.sh`** : Script de migration des DIDs existants vers Nostr
 
 ## 2. Les deux piliers de notre architecture
@@ -263,7 +264,11 @@ Lorsqu'un utilisateur crée son MULTIPASS, le script génère l'ensemble de l'é
    - Marque l'identité comme appartenant à l'écosystème UPlanet
    - Crée la preuve de propriété on-chain
 
-6. **Publication IPNS**
+6. **Publication Nostr**
+   - Le document DID est publié immédiatement sur les relais Nostr (kind 30311)
+   - Accessible via la source de vérité distribuée
+
+7. **Publication IPNS**
    - Le document DID et tout l'espace uDRIVE sont publiés sur IPNS
    - Accessibles via le nom IPNS persistant
 
@@ -462,6 +467,8 @@ Le document DID est **automatiquement mis à jour** lors des transactions UPlane
 5. **Mise à jour cache** : Copie dans `did.json.cache`
 6. **Synchronisation IPFS** : Copie vers `.well-known/did.json` et republication IPNS (arrière-plan)
 
+**Note** : La publication initiale du DID se fait immédiatement lors de la création du MULTIPASS via `make_NOSTRCARD.sh`. Les mises à jour ultérieures sont gérées par `did_manager_nostr.sh` lors des transactions UPlanet.
+
 **Commandes `did_manager_nostr.sh`** :
 ```bash
 # Mise à jour complète (publie automatiquement sur Nostr)
@@ -483,7 +490,7 @@ Le document DID est **automatiquement mis à jour** lors des transactions UPlane
    → Clés: ~/.zen/game/nostr/${EMAIL}/.secret.nostr (NSEC/NPUB/HEX)
    → Quota: "10GB" (MULTIPASS gratuit 7 jours)
    → Primo-transaction: 1Ğ1 UPLANETNAME.G1 → G1PUBNOSTR
-   → Note: Publication Nostr différée au premier update
+   → Publication Nostr: DID publié immédiatement (kind 30311)
 
 2. WoT IDENTIFICATION (primal_wallet_control.sh)
    → Transaction 0.01Ğ1 depuis membre forgeron Duniter (2ème TX)
@@ -830,6 +837,7 @@ This implementation follows:
 - `VISA.new.sh` - Script de génération de ZEN Card
 - `did_manager_nostr.sh` - Gestionnaire centralisé avec Nostr comme source de vérité
 - `nostr_publish_did.py` - Publication des DIDs sur relais Nostr (kind 30311)
+- `nostr_did_client.py` - Client unifié pour lecture/fetch des DIDs depuis Nostr
 - `nostr_did_recall.sh` - Migration des DIDs existants vers Nostr
 
 #### Scripts de Gestion Opérationnelle
