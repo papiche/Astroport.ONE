@@ -602,9 +602,44 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 $MY_PATH/perplexica.me.sh
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g; s/"//g' <<< "$message_text")
                 KeyANSWER="$($MY_PATH/perplexica_search.sh "${cleaned_text}")"
+                
+                # Generate illustration image for the article
+                echo "Generating illustration image for search result..." >&2
+                $MY_PATH/comfyui.me.sh
+                
+                # Use AI to create an optimized Stable Diffusion prompt
+                echo "Creating AI-generated prompt for illustration..." >&2
+                SD_PROMPT="$($MY_PATH/question.py "Create a detailed Stable Diffusion prompt for generating a professional blog article header image about: ${cleaned_text}. The prompt should be optimized for high-quality, modern, and visually appealing results suitable for a blog header." --pubkey ${PUBKEY})"
+                
+                # Get user uDRIVE path for image storage
+                USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
+                if [ $? -eq 0 ]; then
+                    echo "Using user uDRIVE/Images for illustration output: $USER_UDRIVE_PATH/Images" >&2
+                    ILLUSTRATION_URL="$($MY_PATH/generate_image.sh "${SD_PROMPT}" "$USER_UDRIVE_PATH/Images")"
+                else
+                    echo "Using default location for search illustration" >&2
+                    ILLUSTRATION_URL="$($MY_PATH/generate_image.sh "${SD_PROMPT}")"
+                fi
+                
+                # Generate intelligent summary using question.py
+                echo "Generating intelligent summary for article..." >&2
+                ARTICLE_SUMMARY="$($MY_PATH/question.py "Create a concise, engaging summary (2-3 sentences) for this blog article about: ${cleaned_text}. The summary should capture the main points and be suitable for a blog article header." --pubkey ${PUBKEY})"
+                
+                # Add illustration to the article if generated successfully
+                if [[ -n "$ILLUSTRATION_URL" ]]; then
+                    echo "Adding illustration to article: $ILLUSTRATION_URL" >&2
+                    # Don't add image URL to content, it will be added as a tag
+                else
+                    echo "Warning: Could not generate illustration for search result" >&2
+                fi
+                
                 AnswerKind="30023"
-                # Add specific tags for kind 30023 (blog articles)
-                ExtraTags="[['title', 'Search Result: ${cleaned_text}'], ['summary', 'Perplexica search results'], ['published_at', '$(date -u +%s)'], ['t', 'search'], ['t', 'perplexica']]"
+                # Add specific tags for kind 30023 (blog articles) with image tag if available
+                if [[ -n "$ILLUSTRATION_URL" ]]; then
+                    ExtraTags="[['title', '${cleaned_text}'], ['summary', '${ARTICLE_SUMMARY}'], ['published_at', '$(date -u +%s)'], ['image', '${ILLUSTRATION_URL}'], ['t', 'search'], ['t', 'perplexica']]"
+                else
+                    ExtraTags="[['title', '${cleaned_text}'], ['summary', '${ARTICLE_SUMMARY}'], ['published_at', '$(date -u +%s)'], ['t', 'search'], ['t', 'perplexica']]"
+                fi
             elif [[ "${TAGS[image]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#image//g; s/"//g' <<< "$message_text")
                 $MY_PATH/comfyui.me.sh

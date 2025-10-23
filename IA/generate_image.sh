@@ -1,18 +1,52 @@
 #!/bin/bash
 # Dependencies : jq curl
-#### generate_image.sh : transform a prompt into an image using comfyui
+###################################################################
+# generate_image.sh
+# Transform a text prompt into a high-quality image using ComfyUI
+#
+# Usage: $0 <prompt> [udrive_path]
+#
+# Input:
+#   - prompt: Text description for image generation (e.g., "a cat sitting on a chair")
+#   - udrive_path: Optional user directory for image storage (default: temp directory)
+#
+# Output:
+#   - Returns IPFS URL of generated image (e.g., "https://ipfs.copylaradio.com/ipfs/QmHash/image_123456.png")
+#   - Saves image file to specified directory or temp folder
+#   - Adds image to IPFS network for permanent storage and sharing
+#
+# Process:
+#   1. Validates ComfyUI API connection (port 8188)
+#   2. Creates optimized workflow JSON with user prompt
+#   3. Sends workflow to ComfyUI for image generation
+#   4. Monitors generation progress (max 2 minutes timeout)
+#   5. Downloads generated image from ComfyUI
+#   6. Uploads image to IPFS network
+#   7. Returns public IPFS URL for immediate use
+#
+# Features:
+#   - Random seed generation for unique results
+#   - User-specific storage in uDRIVE directories
+#   - Automatic IPFS integration for decentralized storage
+#   - Error handling and timeout protection
+#   - Cleanup of temporary files
+###################################################################
 
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 
-# Vérifie si le prompt est fourni en argument
+# Validate input parameters
+# The script requires at least a text prompt for image generation
 if [ -z "$1" ]; then
   echo "Usage: $0 <prompt> [udrive_path]" >&2
+  echo "Example: $0 'a beautiful sunset over mountains' /home/user/uDRIVE/Images" >&2
   exit 1
 fi
 
-# Optional uDRIVE path parameter
+# Optional uDRIVE path parameter for user-specific storage
+# If provided, images will be saved to user's personal directory
+# If not provided, images will be saved to temporary directory
 UDRIVE_PATH="$2"
 
 . "${MY_PATH}/../tools/my.sh"
@@ -39,13 +73,17 @@ generate_random_seed() {
 TMP_DIR="$HOME/.zen/tmp"
 mkdir -p "$TMP_DIR"
 
-# Déterminer le répertoire de destination
+# Determine output directory for generated images
+# Priority: User's uDRIVE directory > Temporary directory
+# This ensures images are properly organized and accessible
 if [ -n "$UDRIVE_PATH" ] && [ -d "$UDRIVE_PATH" ]; then
     OUTPUT_DIR="$UDRIVE_PATH"
     echo "Using uDRIVE directory: $OUTPUT_DIR" >&2
+    echo "Images will be permanently stored in user's personal space" >&2
 else
     OUTPUT_DIR="$TMP_DIR"
     echo "Using temporary directory: $OUTPUT_DIR" >&2
+    echo "Images will be stored temporarily and may be cleaned up" >&2
 fi
 
 # Générer un identifiant unique pour cette exécution
@@ -85,23 +123,27 @@ check_comfyui_port() {
   fi
 }
 
-# Fonction pour mettre à jour le prompt et le seed dans le workflow JSON
+# Function to update the ComfyUI workflow with user prompt and random seed
+# This creates a customized workflow JSON for Stable Diffusion generation
 update_prompt() {
-  echo "Chargement du workflow JSON : ${WORKFLOW_FILE}" >&2
+  echo "Loading ComfyUI workflow template: ${WORKFLOW_FILE}" >&2
 
-  # Generate a new random seed
+  # Generate a new random seed for unique image generation
+  # Each run produces different results even with the same prompt
   local new_seed=$(generate_random_seed)
   echo "Using random seed: $new_seed" >&2
 
-  # Create a modified JSON with the prompt and seed replaced
+  # Create a modified JSON workflow with user's prompt and seed
+  # Node 4: Text input for the prompt
+  # Node 1: Seed input for randomization
   jq --arg prompt "$PROMPT" --argjson seed "$new_seed" \
      '(.["4"].inputs.text) = $prompt | (.["1"].inputs.seed) = $seed' \
      "$WORKFLOW_FILE" > "$TMP_WORKFLOW"
 
-  echo "Prompt and seed updated in temporary JSON file $TMP_WORKFLOW" >&2
+  echo "Workflow customized with prompt and seed in: $TMP_WORKFLOW" >&2
   
-  # Debug - show content of modified nodes
-  echo "Modified nodes content:" >&2
+  # Debug information: show the modified nodes for verification
+  echo "Modified workflow nodes:" >&2
   jq '.["4"].inputs, .["1"].inputs' "$TMP_WORKFLOW" >&2
 }
 
@@ -198,49 +240,50 @@ monitor_progress() {
   return 1
 }
 
-# Fonction pour récupérer et traiter l'image générée
+# Function to retrieve and process the generated image from ComfyUI
+# This function downloads the image and uploads it to IPFS for permanent storage
 get_image_result() {
   local prompt_id="$1"
   local history_url="$COMFYUI_URL/history"
 
-  echo "Récupération de l'historique..." >&2
+  echo "Retrieving generation history from ComfyUI..." >&2
   local history_response
   history_response=$(curl -s "$history_url")
   
-  # Get output data for this specific prompt
+  # Extract output data for this specific generation request
   local prompt_data
   prompt_data=$(echo "$history_response" | jq --arg id "$prompt_id" '.[$id]')
   
   if [ -z "$prompt_data" ] || [ "$prompt_data" = "null" ]; then
-    echo "Erreur: Données de prompt non trouvées dans l'historique" >&2
+    echo "Error: Generation data not found in ComfyUI history" >&2
     return 1
   fi
   
-  # Find the SaveImage node (should be node 7)
+  # Locate the SaveImage node output (typically node 7 in the workflow)
   local save_node_outputs
   save_node_outputs=$(echo "$prompt_data" | jq '.outputs."7".images')
   
   if [ -z "$save_node_outputs" ] || [ "$save_node_outputs" = "null" ]; then
-    echo "Erreur: Sorties du nœud SaveImage introuvables" >&2
+    echo "Error: SaveImage node output not found in generation results" >&2
     return 1
   fi
   
-  # Get the image filename
+  # Extract the generated image filename
   local image_filename
   image_filename=$(echo "$save_node_outputs" | jq -r '.[0].filename')
   
   if [ -z "$image_filename" ] || [ "$image_filename" = "null" ]; then
-    echo "Erreur: Nom de fichier non trouvé dans la sortie du nœud SaveImage" >&2
+    echo "Error: Image filename not found in SaveImage node output" >&2
     return 1
   fi
 
-  echo "Nom du fichier image : $image_filename" >&2
+  echo "Generated image filename: $image_filename" >&2
 
-  # Get subfolder if present
+  # Check for subfolder organization (ComfyUI may organize images in folders)
   local image_subfolder
   image_subfolder=$(echo "$save_node_outputs" | jq -r '.[0].subfolder')
   
-  # Build proper URL
+  # Build the complete ComfyUI image URL for download
   local image_url
   if [ -z "$image_subfolder" ] || [ "$image_subfolder" = "null" ] || [ "$image_subfolder" = "" ]; then
     image_url="$COMFYUI_URL/view?filename=$image_filename"
@@ -248,48 +291,58 @@ get_image_result() {
     image_url="$COMFYUI_URL/view?filename=$image_subfolder/$image_filename"
   fi
   
-  echo "URL de l'image : $image_url" >&2
+  echo "ComfyUI image URL: $image_url" >&2
 
-  echo "Téléchargement de l'image..." >&2
+  # Download the generated image from ComfyUI
+  echo "Downloading generated image..." >&2
   curl -s -o "$TMP_IMAGE" "$image_url"
   if [ $? -ne 0 ]; then
-    echo "Erreur lors du téléchargement de l'image" >&2
+    echo "Error: Failed to download image from ComfyUI" >&2
     return 1
   fi
-  echo "Image sauvegardée dans $TMP_IMAGE" >&2
+  echo "Image saved locally to: $TMP_IMAGE" >&2
 
-  # Vérifier que l'image a été correctement téléchargée
+  # Verify the downloaded image is not empty
   if [ ! -s "$TMP_IMAGE" ]; then
-    echo "Erreur : l'image téléchargée est vide" >&2
+    echo "Error: Downloaded image file is empty" >&2
     return 1
   fi
 
-  # Ajouter à IPFS
-  echo "Ajout de l'image à IPFS..." >&2
+  # Upload image to IPFS for permanent, decentralized storage
+  echo "Uploading image to IPFS network..." >&2
   local ipfs_hash
   ipfs_hash=$(ipfs add -wq "$TMP_IMAGE" 2>/dev/null | tail -n 1)
   if [ -n "$ipfs_hash" ]; then
-    echo "Image ajoutée à IPFS avec le hash : $ipfs_hash" >&2
-    echo "Image saved to: $TMP_IMAGE" >&2
-    # Seule l'URL IPFS est envoyée à stdout
+    echo "Image successfully uploaded to IPFS with hash: $ipfs_hash" >&2
+    echo "Local file saved to: $TMP_IMAGE" >&2
+    # Return the public IPFS URL for immediate use
+    # This URL can be used directly in web browsers and applications
     echo "$myIPFS/ipfs/$ipfs_hash/$(basename "$TMP_IMAGE")"
     return 0
   else
-    echo "Erreur lors de l'ajout à IPFS" >&2
+    echo "Error: Failed to upload image to IPFS network" >&2
     return 1
   fi
 }
 
 # Main script execution
+# This script generates a high-quality image from a text prompt and returns an IPFS URL
 
-# Check if ComfyUI is accessible
+# Step 1: Validate ComfyUI API is running and accessible
 check_comfyui_port
 if [ $? -ne 0 ]; then
+    echo "Error: ComfyUI API is not accessible. Please start ComfyUI server." >&2
     exit 1
 fi
 
-# Update the workflow with the user's prompt
+# Step 2: Prepare the generation workflow with user's prompt
 update_prompt
 
-# Send the workflow to ComfyUI for processing
+# Step 3: Submit workflow to ComfyUI and monitor generation
+# This will generate the image and return the IPFS URL
 send_workflow
+
+# Final Output:
+# - Success: Returns IPFS URL (e.g., "https://ipfs.copylaradio.com/ipfs/QmHash/image_123456.png")
+# - Failure: Returns error code and message to stderr
+# - Image file is saved locally and uploaded to IPFS for permanent access
