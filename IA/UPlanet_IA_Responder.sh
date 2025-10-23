@@ -609,7 +609,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 
                 # Use AI to create an optimized Stable Diffusion prompt
                 echo "Creating AI-generated prompt for illustration..." >&2
-                SD_PROMPT="$($MY_PATH/question.py "Create a detailed Stable Diffusion prompt for generating a professional blog article header image about: ${cleaned_text}. The prompt should be optimized for high-quality, modern, and visually appealing results suitable for a blog header." --pubkey ${PUBKEY})"
+                SD_PROMPT="$($MY_PATH/question.py "Create a concise, direct Stable Diffusion prompt (no explanations, just the prompt text) for a professional blog header image about: ${cleaned_text}. Format: direct prompt text only, no markdown, no explanations." --pubkey ${PUBKEY})"
                 
                 # Get user uDRIVE path for image storage
                 USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
@@ -623,7 +623,10 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 
                 # Generate intelligent summary using question.py
                 echo "Generating intelligent summary for article..." >&2
-                ARTICLE_SUMMARY="$($MY_PATH/question.py "Create a concise, engaging summary (2-3 sentences) for this blog article about: ${cleaned_text}. The summary should capture the main points and be suitable for a blog article header." --pubkey ${PUBKEY})"
+                ARTICLE_SUMMARY="$($MY_PATH/question.py "Create a concise, engaging summary (2-3 sentences) for this blog article about: ${cleaned_text}. The summary should capture the main points and be suitable for a blog article header. Format: plain text only, no quotes, no special characters, no emojis." --pubkey ${PUBKEY})"
+                
+                # Clean the summary to avoid parsing issues
+                ARTICLE_SUMMARY=$(echo "$ARTICLE_SUMMARY" | sed 's/["'"'"']//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '\n' | head -c 200)
                 
                 # Add illustration to the article if generated successfully
                 if [[ -n "$ILLUSTRATION_URL" ]]; then
