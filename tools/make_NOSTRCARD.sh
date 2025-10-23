@@ -431,6 +431,22 @@ EOF
         echo "⚠️  CAPTAIN HEX not found at ~/.zen/game/nostr/${CAPTAINEMAIL}/HEX"
     fi
 
+    ### CAPTAIN FOLLOWS NEW MULTIPASS AUTOMATICALLY
+    # CAPTAIN should follow the new MULTIPASS to monitor and provide support
+    if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
+        CAPTAINNSEC=$(grep "NSEC=" ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr | cut -d '=' -f 2)
+        if [[ -n "$CAPTAINNSEC" ]]; then
+            echo "👥 CAPTAIN ${CAPTAINEMAIL} following new MULTIPASS ${EMAIL} (${HEX})"
+            ${MY_PATH}/../tools/nostr_follow.sh "$CAPTAINNSEC" "$HEX" "$myRELAY" 2>/dev/null \
+                && echo "✅ CAPTAIN now follows new MULTIPASS" \
+                || echo "⚠️  Failed to follow new MULTIPASS (will retry later)"
+        else
+            echo "⚠️  CAPTAIN NSEC not found in ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr"
+        fi
+    else
+        echo "⚠️  CAPTAIN secret file not found at ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr"
+    fi
+
     ### SEND NOSTR MESSAGE WITH QR CODE LINK
     # DID is accessible via Nostr (source of truth) and IPFS/.well-known (cache)
     Mymessage="🎉 ẐEN wallet : ${G1PUBNOSTR}${Z} \n 🎫 ${uSPOT}/check_balance?g1pub=${EMAIL} \n  𝄃𝄃𝄂𝄂𝄀𝄁𝄃𝄂𝄂𝄃 ${myIPFS}/ipfs/${G1PUBNOSTRQR} \n 🆔 DID: did:nostr:${HEX} \n 📄 ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/"
