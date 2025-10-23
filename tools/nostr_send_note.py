@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 """
-Nostr Public Note Sender (Kind 1)
+Nostr Event Sender
 
-This script sends public notes (kind 1) to NOSTR relays.
+This script sends various types of events to NOSTR relays.
 Uses synchronous WebSocket connections.
 
 Usage:
-    python nostr_send_note.py <sender_nsec> <message> <relay_url> [tags_json] [--ephemeral SECONDS]
+    python nostr_send_note.py <sender_nsec> <message> <relay_url> [tags_json] [--ephemeral SECONDS] [--kind KIND]
     python nostr_send_note.py --help
 
 Example:
     python nostr_send_note.py nsec1xyz... "Hello world!" wss://relay.copylaradio.com
     python nostr_send_note.py nsec1xyz... "Reply to event" wss://relay.copylaradio.com '[["e","event_id"],["p","pubkey"]]'
     python nostr_send_note.py nsec1xyz... "Ephemeral message" wss://relay.copylaradio.com '[]' --ephemeral 3600
+    python nostr_send_note.py nsec1xyz... "Search result" wss://relay.copylaradio.com '[]' --kind 30023
 """
 
 import sys
@@ -115,9 +116,10 @@ class NostrWebSocketClient:
 def send_public_note_sync(sender_nsec: str, message: str, 
                          relay_url: str = DEFAULT_RELAY,
                          tags: list = None,
-                         ephemeral_duration: int = None) -> bool:
+                         ephemeral_duration: int = None,
+                         kind: int = EventKind.TEXT_NOTE) -> bool:
     """
-    Send a public note (kind 1) to a NOSTR relay (synchronous version).
+    Send a public note to a NOSTR relay (synchronous version).
     
     Args:
         sender_nsec: NSEC private key of the sender
@@ -125,6 +127,7 @@ def send_public_note_sync(sender_nsec: str, message: str,
         relay_url: NOSTR relay URL
         tags: Optional list of tags (e.g., [["e", "event_id"], ["p", "pubkey"]])
         ephemeral_duration: Optional duration in seconds for ephemeral messages
+        kind: Event kind (default: 1 for text notes, 30023 for blog results)
         
     Returns:
         bool: True if note was sent successfully, False otherwise
@@ -144,7 +147,7 @@ def send_public_note_sync(sender_nsec: str, message: str,
             print(f"⏰ Message will expire in {ephemeral_duration} seconds")
         
         event = Event(
-            kind=EventKind.TEXT_NOTE,
+            kind=kind,
             content=message,
             tags=tags,
             pubkey=priv_key_obj.public_key.hex()
@@ -155,7 +158,7 @@ def send_public_note_sync(sender_nsec: str, message: str,
 
         print(f"\n📝 Event details:")
         print(f"   - ID: {event.id}")
-        print(f"   - Kind: {event.kind} (Public Note)")
+        print(f"   - Kind: {event.kind} ({'Public Note' if kind == 1 else 'Blog Page' if kind == 30023 else 'Custom Event'})")
         print(f"   - Content length: {len(message)} chars")
         print(f"   - Tags: {tags}")
         print(f"   - Sender: {event.pubkey}")
@@ -195,7 +198,7 @@ def send_public_note_sync(sender_nsec: str, message: str,
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Send public notes (kind 1) via NOSTR (synchronous)",
+        description="Send various types of events via NOSTR (synchronous)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__
     )
@@ -208,6 +211,8 @@ def main():
                        help='Tags as JSON array (e.g., [["e","id"],["p","pubkey"]])')
     parser.add_argument("--ephemeral", type=int, metavar="SECONDS",
                        help="Make message ephemeral with specified duration in seconds")
+    parser.add_argument("--kind", type=int, default=1, metavar="KIND",
+                       help="Event kind (default: 1 for text notes, 30023 for blog publication)")
     
     args = parser.parse_args()
 
@@ -235,7 +240,8 @@ def main():
         args.message,
         args.relay_url,
         tags,
-        args.ephemeral
+        args.ephemeral,
+        args.kind
     )
     
     sys.exit(0 if success else 1)

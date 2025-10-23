@@ -29,7 +29,7 @@ JSON_PAYLOAD=$(cat <<EOF
   "optimizationMode": "balanced",
   "focusMode": "webSearch",
   "query": "$QUESTION",
-  "systemInstructions": "# INSTRUCTIONS: ## 1. Reply in the same language as the message. ## 2. Do NOT use any markdown : i.e. NO **bold** format ! ## 3. Use emojis to make your message more readable.",
+  "systemInstructions": "# INSTRUCTIONS FOR BLOG ARTICLE : ## 1. Reply in the same language as the message. ## 2. Format as a structured blog article with: - Clear introduction paragraph - Main content organized in logical sections - Conclusion with key takeaways ## 3. Use emojis strategically to enhance readability ## 4. Include relevant facts, statistics, or examples ## 5. Write in an engaging, informative tone",
   "stream": false
 }
 EOF
@@ -58,10 +58,12 @@ fi
 MESSAGE=$(echo "$RESPONSE" | jq -r '.message')
 echo -e "$MESSAGE"
 
-# Extract and display sources
+# Extract and display sources in markdown link format
 SOURCES=$(echo "$RESPONSE" | jq -r '.sources')
 if [ "$SOURCES" != "null" ] && [ "$SOURCES" != "[]" ]; then
-    echo "$SOURCES" | jq -r '.[] | "\(.metadata.title)\n\(.metadata.url)\n"'
+    echo ""
+    echo "📚 Sources et références :"
+    echo "$SOURCES" | jq -r '.[] | "[\(.metadata.title)](\(.metadata.url))"'
 fi
 
 exit 0

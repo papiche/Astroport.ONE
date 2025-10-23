@@ -590,6 +590,8 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
     fi
     fi
 
+    AnswerKind="1"
+    ExtraTags=""
     ##################################################### ASK IA
     ## KNOWN KNAME & CAPTAIN REPLY
     if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ || $KNAME == "CAPTAIN" ]]; then
@@ -600,6 +602,9 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 $MY_PATH/perplexica.me.sh
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g; s/"//g' <<< "$message_text")
                 KeyANSWER="$($MY_PATH/perplexica_search.sh "${cleaned_text}")"
+                AnswerKind="30023"
+                # Add specific tags for kind 30023 (blog articles)
+                ExtraTags="[['title', 'Search Result: ${cleaned_text}'], ['summary', 'Perplexica search results'], ['published_at', '$(date -u +%s)'], ['t', 'search'], ['t', 'perplexica']]"
             elif [[ "${TAGS[image]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#image//g; s/"//g' <<< "$message_text")
                 $MY_PATH/comfyui.me.sh
@@ -618,6 +623,8 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 execution_time=$(echo "$end_time - $start_time" | bc)
                 if [ -n "$IMAGE_URL" ]; then
                     KeyANSWER=$(echo -e "🖼️ $CURRENT_TIME_STR (⏱️ ${execution_time%.*} s)\n📝 Description: $cleaned_text\n🔗 $IMAGE_URL")
+                    # Add tags for image generation
+                    ExtraTags="[['t', 'image'], ['t', 'comfyui'], ['t', 'ai-generated']]"
                 else
                     KeyANSWER="Désolé, je n'ai pas pu générer l'image demandée."
                 fi
@@ -636,6 +643,8 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 
                 if [ -n "$VIDEO_AI_RETURN" ]; then
                     KeyANSWER="$VIDEO_AI_RETURN"
+                    # Add tags for video generation
+                    ExtraTags="[['t', 'video'], ['t', 'comfyui'], ['t', 'ai-generated']]"
                 else
                     KeyANSWER="Désolé, je n'ai pas pu générer la vidéo demandée."
                 fi
@@ -654,6 +663,8 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 
                 if [ -n "$MUSIC_URL" ]; then
                     KeyANSWER="$MUSIC_URL"
+                    # Add tags for music generation
+                    ExtraTags="[['t', 'music'], ['t', 'comfyui'], ['t', 'ai-generated']]"
                 else
                     KeyANSWER="Désolé, je n'ai pas pu générer la musique demandée."
                 fi
@@ -816,13 +827,25 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
                 echo "[SECRET] KNAME not set, cannot send DM."
             fi
         else
-            # Send public message
-        nostpy-cli send_event \
-          -privkey "$NPRIV_HEX" \
-          -kind 1 \
-          -content "$KeyANSWER" \
-          -tags "[['e', '$EVENT'], ['p', '$PUBKEY']]" \
-          --relay "$myRELAY"
+            # Send public message with appropriate tags
+            if [[ -n "$ExtraTags" ]]; then
+                # Combine standard tags with extra tags
+                CombinedTags="[['e', '$EVENT'], ['p', '$PUBKEY']], $ExtraTags"
+                nostpy-cli send_event \
+                  -privkey "$NPRIV_HEX" \
+                  -kind $AnswerKind \
+                  -content "$KeyANSWER" \
+                  -tags "$CombinedTags" \
+                  --relay "$myRELAY"
+            else
+                # Use standard tags only
+                nostpy-cli send_event \
+                  -privkey "$NPRIV_HEX" \
+                  -kind $AnswerKind \
+                  -content "$KeyANSWER" \
+                  -tags "[['e', '$EVENT'], ['p', '$PUBKEY']]" \
+                  --relay "$myRELAY"
+            fi
         fi
         
         ## AUTO-RECORD BOT RESPONSE if #rec2 is present
