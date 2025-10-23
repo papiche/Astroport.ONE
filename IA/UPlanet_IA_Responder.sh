@@ -603,13 +603,20 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g; s/"//g' <<< "$message_text")
                 KeyANSWER="$($MY_PATH/perplexica_search.sh "${cleaned_text}")"
                 
+                # Generate intelligent summary using the actual article content
+                echo "Generating intelligent summary for article..." >&2
+                ARTICLE_SUMMARY="$($MY_PATH/question.py "Create a concise, engaging summary (2-3 sentences) for this blog article. The summary should capture the main points and be suitable for a blog article header. Format: plain text only, no quotes, no special characters, no emojis. Article content: ${KeyANSWER}" --pubkey ${PUBKEY})"
+                
+                # Clean the summary to avoid parsing issues
+                ARTICLE_SUMMARY=$(echo "$ARTICLE_SUMMARY" | sed 's/["'"'"']//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '\n' | head -c 200)
+                
                 # Generate illustration image for the article
                 echo "Generating illustration image for search result..." >&2
                 $MY_PATH/comfyui.me.sh
                 
-                # Use AI to create an optimized Stable Diffusion prompt
-                echo "Creating AI-generated prompt for illustration..." >&2
-                SD_PROMPT="$($MY_PATH/question.py "Create a Stable Diffusion prompt (no explanations, just the prompt text) that describe an illustration image for this text : ${cleaned_text} --- IMPORTANT: direct prompt text only, no markdown, no explanations, no emojis, no special characters." --pubkey ${PUBKEY})"
+                # Use AI to create an optimized Stable Diffusion prompt based on the summary
+                echo "Creating AI-generated prompt for illustration based on article summary..." >&2
+                SD_PROMPT="$($MY_PATH/question.py "Create a Stable Diffusion prompt (no explanations, just the prompt text) for a professional blog header image based on this article summary: ${ARTICLE_SUMMARY} --- IMPORTANT: direct prompt text only, no markdown, no explanations, no emojis, no special characters." --pubkey ${PUBKEY})"
                 
                 # Get user uDRIVE path for image storage
                 USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
@@ -620,13 +627,6 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                     echo "Using default location for search illustration" >&2
                     ILLUSTRATION_URL="$($MY_PATH/generate_image.sh "${SD_PROMPT}")"
                 fi
-                
-                # Generate intelligent summary using question.py
-                echo "Generating intelligent summary for article..." >&2
-                ARTICLE_SUMMARY="$($MY_PATH/question.py "Create a concise, engaging summary (2-3 sentences) for this blog article about: ${cleaned_text}. The summary should capture the main points and be suitable for a blog article header. Format: plain text only, no quotes, no special characters, no emojis." --pubkey ${PUBKEY})"
-                
-                # Clean the summary to avoid parsing issues
-                ARTICLE_SUMMARY=$(echo "$ARTICLE_SUMMARY" | sed 's/["'"'"']//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '\n' | head -c 200)
                 
                 # Add illustration to the article if generated successfully
                 if [[ -n "$ILLUSTRATION_URL" ]]; then
