@@ -322,7 +322,7 @@ for PLAYER in "${NOSTR[@]}"; do
 </body></html>"
 
             # Create temporary file for email content
-            local temp_email_file=$(mktemp)
+            temp_email_file=$(mktemp)
             echo "$balance_celebration" > "$temp_email_file"
             ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "Seuil de 100 Ẑen Atteint - $TODATE"
             rm -f "$temp_email_file"
@@ -368,7 +368,7 @@ for PLAYER in "${NOSTR[@]}"; do
 </body></html>"
 
             # Create temporary file for email content
-            local temp_email_file=$(mktemp)
+            temp_email_file=$(mktemp)
             echo "$low_balance_warning" > "$temp_email_file"
             ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "Solde Faible - $TODATE"
             rm -f "$temp_email_file"
@@ -424,7 +424,7 @@ for PLAYER in "${NOSTR[@]}"; do
 </body></html>"
 
             # Create temporary file for email content
-            local temp_email_file=$(mktemp)
+            temp_email_file=$(mktemp)
             echo "$anniversary_1year" > "$temp_email_file"
             ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "🎉 1 An avec UPlanet - $TODATE"
             rm -f "$temp_email_file"
@@ -453,7 +453,7 @@ for PLAYER in "${NOSTR[@]}"; do
 </body></html>"
 
             # Create temporary file for email content
-            local temp_email_file=$(mktemp)
+            temp_email_file=$(mktemp)
             echo "$milestone_6months" > "$temp_email_file"
             ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "🎯 6 Mois avec UPlanet - $TODATE"
             rm -f "$temp_email_file"
@@ -644,7 +644,7 @@ for PLAYER in "${NOSTR[@]}"; do
 </body></html>"
 
                                 # Create temporary file for email content
-                                local temp_email_file=$(mktemp)
+                                temp_email_file=$(mktemp)
                                 echo "$success_message" > "$temp_email_file"
                                 ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "Paiement Réussi - $TODATE"
                                 rm -f "$temp_email_file"
@@ -680,7 +680,7 @@ for PLAYER in "${NOSTR[@]}"; do
 </body></html>"
 
                                 # Create temporary file for email content
-                                local temp_email_file=$(mktemp)
+                                temp_email_file=$(mktemp)
                                 echo "$error_message" > "$temp_email_file"
                                 ${MY_PATH}/../tools/mailjet.sh --expire 72h "${CAPTAINEMAIL}" "$temp_email_file" "MULTIPASS Payment Error - $TODATE"
                                 rm -f "$temp_email_file"
@@ -777,7 +777,7 @@ for PLAYER in "${NOSTR[@]}"; do
 </body></html>"
 
                     # Create temporary file for email content
-                    local temp_email_file=$(mktemp)
+                    temp_email_file=$(mktemp)
                     echo "$usociety_expired" > "$temp_email_file"
                     ${MY_PATH}/../tools/mailjet.sh --expire 72h "${CAPTAINEMAIL}" "$temp_email_file" "U.SOCIETY Expiré - Renouvellement Requis"
                     rm -f "$temp_email_file"
@@ -826,7 +826,7 @@ for PLAYER in "${NOSTR[@]}"; do
 </body></html>"
 
                             # Create temporary file for email content
-                            local temp_email_file=$(mktemp)
+                            temp_email_file=$(mktemp)
                             echo "$usociety_warning_30" > "$temp_email_file"
                             ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "U.SOCIETY Expire dans $DIFF_DAYS jours"
                             rm -f "$temp_email_file"
@@ -866,7 +866,7 @@ for PLAYER in "${NOSTR[@]}"; do
 </body></html>"
 
                             # Create temporary file for email content
-                            local temp_email_file=$(mktemp)
+                            temp_email_file=$(mktemp)
                             echo "$usociety_warning_7" > "$temp_email_file"
                             ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "URGENT: U.SOCIETY Expire dans $DIFF_DAYS jours"
                             rm -f "$temp_email_file"
