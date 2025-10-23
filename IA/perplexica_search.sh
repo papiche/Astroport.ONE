@@ -58,12 +58,13 @@ fi
 MESSAGE=$(echo "$RESPONSE" | jq -r '.message')
 echo -e "$MESSAGE"
 
-# Extract and display sources in markdown link format
+# Extract and display sources in numbered markdown link format
 SOURCES=$(echo "$RESPONSE" | jq -r '.sources')
 if [ "$SOURCES" != "null" ] && [ "$SOURCES" != "[]" ]; then
     echo ""
     echo "📚 Sources et références :"
-    echo "$SOURCES" | jq -r '.[] | "# \(. + 1). [\(.metadata.title)](\(.metadata.url))\n"'
+    # Add sources with numbering, one per line
+    echo "$SOURCES" | jq -r 'to_entries | .[] | "\(.key + 1). [\(.value.metadata.title)](\(.value.metadata.url))"'
 fi
 
 exit 0
