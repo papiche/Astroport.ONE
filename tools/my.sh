@@ -623,8 +623,13 @@ CAPTAING1PUB=$(cat $HOME/.zen/game/nostr/${CAPTAINEMAIL}/G1PUBNOSTR 2>/dev/null)
     && UPLANETNAME_G1=$(cat $HOME/.zen/game/uplanet.G1.dunikey | grep "pub" | cut -d " " -f 2) \
     && echo $UPLANETNAME_G1 > $HOME/.zen/tmp/UPLANETNAME_G1
 
-UPLANETNAME_G1=$(cat $HOME/.zen/game/uplanet.G1.dunikey | grep "pub" | cut -d " " -f 2)
-echo $UPLANETNAME_G1 > $HOME/.zen/tmp/UPLANETNAME_G1
+# Cache optimization: read from cache first
+if [[ -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
+    UPLANETNAME_G1=$(cat $HOME/.zen/tmp/UPLANETNAME_G1)
+else
+    UPLANETNAME_G1=$(cat $HOME/.zen/game/uplanet.G1.dunikey | grep "pub" | cut -d " " -f 2)
+    echo $UPLANETNAME_G1 > $HOME/.zen/tmp/UPLANETNAME_G1
+fi
 
 ## UPLANETNAME Ẑen wallet for Locative Service Layer
 [[ ! -s $HOME/.zen/game/uplanet.dunikey ]] \
@@ -641,8 +646,13 @@ echo ${UPLANETG1PUB} > $HOME/.zen/tmp/UPLANETG1PUB
     && UPLANETNAME_SOCIETY=$(cat $HOME/.zen/game/uplanet.SOCIETY.dunikey | grep "pub" | cut -d " " -f 2) \
     && echo ${UPLANETNAME_SOCIETY} > $HOME/.zen/tmp/UPLANETNAME_SOCIETY
 
-UPLANETNAME_SOCIETY=$(cat $HOME/.zen/game/uplanet.SOCIETY.dunikey | grep "pub" | cut -d " " -f 2)
-echo ${UPLANETNAME_SOCIETY} > $HOME/.zen/tmp/UPLANETNAME_SOCIETY
+# Cache optimization: read from cache first
+if [[ -f "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" ]]; then
+    UPLANETNAME_SOCIETY=$(cat $HOME/.zen/tmp/UPLANETNAME_SOCIETY)
+else
+    UPLANETNAME_SOCIETY=$(cat $HOME/.zen/game/uplanet.SOCIETY.dunikey | grep "pub" | cut -d " " -f 2)
+    echo ${UPLANETNAME_SOCIETY} > $HOME/.zen/tmp/UPLANETNAME_SOCIETY
+fi
 
 # UPLANETNAME_INTRUSION -- receives non authorized Ğ1 @primal_wallet_control.sh  
 [[ ! -s $HOME/.zen/game/uplanet.INTRUSION.dunikey ]] \
@@ -650,8 +660,13 @@ echo ${UPLANETNAME_SOCIETY} > $HOME/.zen/tmp/UPLANETNAME_SOCIETY
     && UPLANETNAME_INTRUSION=$(cat $HOME/.zen/game/uplanet.INTRUSION.dunikey | grep "pub" | cut -d " " -f 2) \
     && echo ${UPLANETNAME_INTRUSION} > $HOME/.zen/tmp/UPLANETNAME_INTRUSION
 
-UPLANETNAME_INTRUSION=$(cat $HOME/.zen/game/uplanet.INTRUSION.dunikey | grep "pub" | cut -d " " -f 2)
-echo ${UPLANETNAME_INTRUSION} > $HOME/.zen/tmp/UPLANETNAME_INTRUSION
+# Cache optimization: read from cache first
+if [[ -f "$HOME/.zen/tmp/UPLANETNAME_INTRUSION" ]]; then
+    UPLANETNAME_INTRUSION=$(cat $HOME/.zen/tmp/UPLANETNAME_INTRUSION)
+else
+    UPLANETNAME_INTRUSION=$(cat $HOME/.zen/game/uplanet.INTRUSION.dunikey | grep "pub" | cut -d " " -f 2)
+    echo ${UPLANETNAME_INTRUSION} > $HOME/.zen/tmp/UPLANETNAME_INTRUSION
+fi
 
 # UPLANETNAME_IMPOT
 [[ ! -s $HOME/.zen/game/uplanet.IMPOT.dunikey ]] \
@@ -659,8 +674,13 @@ echo ${UPLANETNAME_INTRUSION} > $HOME/.zen/tmp/UPLANETNAME_INTRUSION
     && UPLANETNAME_IMPOT=$(cat $HOME/.zen/game/uplanet.IMPOT.dunikey | grep "pub" | cut -d " " -f 2) \
     && echo ${UPLANETNAME_IMPOT} > $HOME/.zen/tmp/UPLANETNAME_IMPOT
 
-UPLANETNAME_IMPOT=$(cat $HOME/.zen/game/uplanet.IMPOT.dunikey | grep "pub" | cut -d " " -f 2)
-echo ${UPLANETNAME_IMPOT} > $HOME/.zen/tmp/UPLANETNAME_IMPOT
+# Cache optimization: read from cache first
+if [[ -f "$HOME/.zen/tmp/UPLANETNAME_IMPOT" ]]; then
+    UPLANETNAME_IMPOT=$(cat $HOME/.zen/tmp/UPLANETNAME_IMPOT)
+else
+    UPLANETNAME_IMPOT=$(cat $HOME/.zen/game/uplanet.IMPOT.dunikey | grep "pub" | cut -d " " -f 2)
+    echo ${UPLANETNAME_IMPOT} > $HOME/.zen/tmp/UPLANETNAME_IMPOT
+fi
 
 # UPLANETNAME_TREASURY -- Treasury wallet (1/3 allocation)
 [[ ! -s $HOME/.zen/game/uplanet.CASH.dunikey ]] \
@@ -668,8 +688,13 @@ echo ${UPLANETNAME_IMPOT} > $HOME/.zen/tmp/UPLANETNAME_IMPOT
     && UPLANETNAME_TREASURY=$(cat $HOME/.zen/game/uplanet.CASH.dunikey | grep "pub" | cut -d " " -f 2) \
     && echo ${UPLANETNAME_TREASURY} > $HOME/.zen/tmp/UPLANETNAME_TREASURY
 
-UPLANETNAME_TREASURY=$(cat $HOME/.zen/game/uplanet.CASH.dunikey | grep "pub" | cut -d " " -f 2)
-echo ${UPLANETNAME_TREASURY} > $HOME/.zen/tmp/UPLANETNAME_TREASURY
+# Cache optimization: read from cache first
+if [[ -f "$HOME/.zen/tmp/UPLANETNAME_TREASURY" ]]; then
+    UPLANETNAME_TREASURY=$(cat $HOME/.zen/tmp/UPLANETNAME_TREASURY)
+else
+    UPLANETNAME_TREASURY=$(cat $HOME/.zen/game/uplanet.CASH.dunikey | grep "pub" | cut -d " " -f 2)
+    echo ${UPLANETNAME_TREASURY} > $HOME/.zen/tmp/UPLANETNAME_TREASURY
+fi
 
 # UPLANETNAME_ASSETS -- Assets wallet (1/3 allocation)
 [[ ! -s $HOME/.zen/game/uplanet.ASSETS.dunikey ]] \
@@ -677,8 +702,13 @@ echo ${UPLANETNAME_TREASURY} > $HOME/.zen/tmp/UPLANETNAME_TREASURY
     && UPLANETNAME_ASSETS=$(cat $HOME/.zen/game/uplanet.ASSETS.dunikey | grep "pub" | cut -d " " -f 2) \
     && echo ${UPLANETNAME_ASSETS} > $HOME/.zen/tmp/UPLANETNAME_ASSETS
 
-UPLANETNAME_ASSETS=$(cat $HOME/.zen/game/uplanet.ASSETS.dunikey | grep "pub" | cut -d " " -f 2)
-echo ${UPLANETNAME_ASSETS} > $HOME/.zen/tmp/UPLANETNAME_ASSETS
+# Cache optimization: read from cache first
+if [[ -f "$HOME/.zen/tmp/UPLANETNAME_ASSETS" ]]; then
+    UPLANETNAME_ASSETS=$(cat $HOME/.zen/tmp/UPLANETNAME_ASSETS)
+else
+    UPLANETNAME_ASSETS=$(cat $HOME/.zen/game/uplanet.ASSETS.dunikey | grep "pub" | cut -d " " -f 2)
+    echo ${UPLANETNAME_ASSETS} > $HOME/.zen/tmp/UPLANETNAME_ASSETS
+fi
 
 # UPLANETNAME_RND -- R&D wallet (1/3 allocation)
 [[ ! -s $HOME/.zen/game/uplanet.RnD.dunikey ]] \
@@ -686,32 +716,47 @@ echo ${UPLANETNAME_ASSETS} > $HOME/.zen/tmp/UPLANETNAME_ASSETS
     && UPLANETNAME_RND=$(cat $HOME/.zen/game/uplanet.RnD.dunikey | grep "pub" | cut -d " " -f 2) \
     && echo ${UPLANETNAME_RND} > $HOME/.zen/tmp/UPLANETNAME_RND
 
-UPLANETNAME_RND=$(cat $HOME/.zen/game/uplanet.RnD.dunikey | grep "pub" | cut -d " " -f 2)
-echo ${UPLANETNAME_RND} > $HOME/.zen/tmp/UPLANETNAME_RND
+# Cache optimization: read from cache first
+if [[ -f "$HOME/.zen/tmp/UPLANETNAME_RND" ]]; then
+    UPLANETNAME_RND=$(cat $HOME/.zen/tmp/UPLANETNAME_RND)
+else
+    UPLANETNAME_RND=$(cat $HOME/.zen/game/uplanet.RnD.dunikey | grep "pub" | cut -d " " -f 2)
+    echo ${UPLANETNAME_RND} > $HOME/.zen/tmp/UPLANETNAME_RND
+fi
 
 # UPLANETNAME_NODE -- NODE wallet (Armateur) for infrastructure capital
 # Created by Ylevel.sh, or obtained by ipfs_to_g1.py conversion
-if [[ -f "$HOME/.zen/game/secret.NODE.dunikey" ]]; then
-UPLANETNAME_NODE=$(cat $HOME/.zen/game/secret.NODE.dunikey | grep "pub" | cut -d " " -f 2)
-echo ${UPLANETNAME_NODE} > $HOME/.zen/tmp/UPLANETNAME_NODE
+# Cache optimization: read from cache first
+if [[ -f "$HOME/.zen/tmp/UPLANETNAME_NODE" ]]; then
+    UPLANETNAME_NODE=$(cat $HOME/.zen/tmp/UPLANETNAME_NODE)
 else
-    # Fallback: generate from IPFSNODEID using ipfs_to_g1.py conversion
-    if [[ -n "$IPFSNODEID" ]]; then
-        UPLANETNAME_NODE=$(${MY_PATH}/ipfs_to_g1.py "$IPFSNODEID")
+    if [[ -f "$HOME/.zen/game/secret.NODE.dunikey" ]]; then
+        UPLANETNAME_NODE=$(cat $HOME/.zen/game/secret.NODE.dunikey | grep "pub" | cut -d " " -f 2)
         echo ${UPLANETNAME_NODE} > $HOME/.zen/tmp/UPLANETNAME_NODE
     else
-        echo "⚠️  NODE wallet not found and IPFSNODEID not available"
+        # Fallback: generate from IPFSNODEID using ipfs_to_g1.py conversion
+        if [[ -n "$IPFSNODEID" ]]; then
+            UPLANETNAME_NODE=$(${MY_PATH}/ipfs_to_g1.py "$IPFSNODEID")
+            echo ${UPLANETNAME_NODE} > $HOME/.zen/tmp/UPLANETNAME_NODE
+        else
+            echo "⚠️  NODE wallet not found and IPFSNODEID not available"
+        fi
     fi
 fi
 
 # UPLANETNAME_CAPTAIN -- Captain dedicated wallet for remuneration (2x PAF)
 # Created by ZEN.ECONOMY.sh for captain's personal earnings
-if [[ -f "$HOME/.zen/game/uplanet.captain.dunikey" ]]; then
-    UPLANETNAME_CAPTAIN=$(cat $HOME/.zen/game/uplanet.captain.dunikey | grep "pub" | cut -d " " -f 2)
-    echo ${UPLANETNAME_CAPTAIN} > $HOME/.zen/tmp/UPLANETNAME_CAPTAIN
+# Cache optimization: read from cache first
+if [[ -f "$HOME/.zen/tmp/UPLANETNAME_CAPTAIN" ]]; then
+    UPLANETNAME_CAPTAIN=$(cat $HOME/.zen/tmp/UPLANETNAME_CAPTAIN)
 else
-    # Will be created by ZEN.ECONOMY.sh when needed
-    echo "⚠️  Captain dedicated wallet not found (will be created by ZEN.ECONOMY.sh)"
+    if [[ -f "$HOME/.zen/game/uplanet.captain.dunikey" ]]; then
+        UPLANETNAME_CAPTAIN=$(cat $HOME/.zen/game/uplanet.captain.dunikey | grep "pub" | cut -d " " -f 2)
+        echo ${UPLANETNAME_CAPTAIN} > $HOME/.zen/tmp/UPLANETNAME_CAPTAIN
+    else
+        # Will be created by ZEN.ECONOMY.sh when needed
+        echo "⚠️  Captain dedicated wallet not found (will be created by ZEN.ECONOMY.sh)"
+    fi
 fi
 
 [[ -s ${HOME}/.zen/game/MY_boostrap_nodes.txt ]] \
