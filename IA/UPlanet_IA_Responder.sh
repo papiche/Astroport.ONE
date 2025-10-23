@@ -616,7 +616,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 
                 # Use AI to create an optimized Stable Diffusion prompt based on the summary
                 echo "Creating AI-generated prompt for illustration based on article summary..." >&2
-                SD_PROMPT="$($MY_PATH/question.py "Create a Stable Diffusion prompt (no explanations, just the prompt text) for a professional blog header image based on this article summary: ${ARTICLE_SUMMARY} --- IMPORTANT: direct prompt text only, no markdown, no explanations, no emojis, no special characters." --pubkey ${PUBKEY})"
+                SD_PROMPT="$($MY_PATH/question.py "Create a Stable Diffusion prompt (no explanations, just the prompt text) for a professional blog header image based on this article summary: ${ARTICLE_SUMMARY} --- IMPORTANT: direct prompt text only, no markdown, no explanations, no emojis, no special characters, no text, no words, no letters, no writing, visual elements only." --pubkey ${PUBKEY})"
                 
                 # Get user uDRIVE path for image storage
                 USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
