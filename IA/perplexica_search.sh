@@ -63,7 +63,7 @@ SOURCES=$(echo "$RESPONSE" | jq -r '.sources')
 if [ "$SOURCES" != "null" ] && [ "$SOURCES" != "[]" ]; then
     echo ""
     echo "📚 Sources et références :"
-    echo "$SOURCES" | jq -r '.[] | "[\(.metadata.title)](\(.metadata.url))"'
+    echo "$SOURCES" | jq -r '.[] | "# \(. + 1). [\(.metadata.title)](\(.metadata.url))\n"'
 fi
 
 exit 0
