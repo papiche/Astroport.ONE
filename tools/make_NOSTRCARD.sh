@@ -120,7 +120,7 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     # 1. Generate a DISCO Nostr key pair
     NPRIV=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}" -s)
     NPUBLIC=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}")
-    HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPUBLIC)
+    HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NPUBLIC")
 
     #~ echo "Nostr Private Key: $NPRIV"
     echo "Nostr Public Key: $NPUBLIC = $HEX"
@@ -154,30 +154,30 @@ EOFNOSTR
     ##########################################################################
     ## Create Bitcoin Twin Address
     BITCOIN=$(${MY_PATH}/../tools/keygen -t bitcoin "${SALT}" "${PEPPER}" | tail -n 1 | rev | cut -f 1 -d ' '  | rev)
-    echo $BITCOIN > ${HOME}/.zen/game/nostr/${EMAIL}/BITCOIN
+    echo "$BITCOIN" > ${HOME}/.zen/game/nostr/${EMAIL}/BITCOIN
     ## Create Monero Twin Address
     MONERO=$(${MY_PATH}/../tools/keygen -t monero "${SALT}" "${PEPPER}" | tail -n 1 | rev | cut -f 1 -d ' '  | rev)
-    echo $MONERO > ${HOME}/.zen/game/nostr/${EMAIL}/MONERO
+    echo "$MONERO" > ${HOME}/.zen/game/nostr/${EMAIL}/MONERO
 
     ### CRYPTO ZONE
     ## ENCODE HEAD SSSS SECRET WITH G1PUBNOSTR PUBKEY
     # echo "${MY_PATH}/../tools/natools.py encrypt -p $G1PUBNOSTR -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head -o ${HOME}/.zen/game/nostr/${EMAIL}/.ssss.head.player.enc"
-    ${MY_PATH}/../tools/natools.py encrypt -p $G1PUBNOSTR -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head -o ${HOME}/.zen/game/nostr/${EMAIL}/.ssss.head.player.enc >/dev/null
+    ${MY_PATH}/../tools/natools.py encrypt -p "$G1PUBNOSTR" -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head -o ${HOME}/.zen/game/nostr/${EMAIL}/.ssss.head.player.enc >/dev/null
 
     ## DISCO MIDDLE ENCRYPT WITH CAPTAING1PUB
     # echo "${MY_PATH}/../tools/natools.py encrypt -p $CAPTAING1PUB -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.mid -o ${HOME}/.zen/game/nostr/${EMAIL}/.ssss.mid.captain.enc"
-    ${MY_PATH}/../tools/natools.py encrypt -p $CAPTAING1PUB -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.mid -o ${HOME}/.zen/game/nostr/${EMAIL}/.ssss.mid.captain.enc >/dev/null
+    ${MY_PATH}/../tools/natools.py encrypt -p "$CAPTAING1PUB" -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.mid -o ${HOME}/.zen/game/nostr/${EMAIL}/.ssss.mid.captain.enc >/dev/null
 
     ## DISCO TAIL ENCRYPT WITH UPLANETG1PUB
     # echo "${MY_PATH}/../tools/natools.py encrypt -p $UPLANETG1PUB -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.tail -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.tail.uplanet.enc"
-    ${MY_PATH}/../tools/natools.py encrypt -p $UPLANETG1PUB -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.tail -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.tail.uplanet.enc >/dev/null
+    ${MY_PATH}/../tools/natools.py encrypt -p "$UPLANETG1PUB" -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.tail -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.tail.uplanet.enc >/dev/null
 
     ## CREATE IPNS KEY (SIDE STORAGE)
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${MOATS}.nostr.ipns "${SALT}" "${PEPPER}"
     ipfs key rm "${G1PUBNOSTR}:NOSTR" > /dev/null 2>&1
     NOSTRNS=$(ipfs key import "${G1PUBNOSTR}:NOSTR" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/${MOATS}.nostr.ipns)
     echo "${G1PUBNOSTR}:NOSTR ${EMAIL} STORAGE: /ipns/$NOSTRNS"
-    echo "/ipns/$NOSTRNS" > ${HOME}/.zen/game/nostr/${EMAIL}/NOSTRNS
+    echo "/ipns/$NOSTRNS" > "${HOME}/.zen/game/nostr/${EMAIL}/NOSTRNS"
 
 
     ## Create uSPOT/scan QR Code
@@ -206,7 +206,7 @@ EOFNOSTR
 
     ## Make PLAYER "SSSS.head:NOSTRNS" QR CODE (Terminal Compatible) - "M-$SSSS_HEAD_B58"
     SSSS_HEAD=$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head)
-    SSSS_HEAD_B58=$(${MY_PATH}/Mbase58.py encode "${SSSS_HEAD}:$NOSTRNS")
+    SSSS_HEAD_B58=$(${MY_PATH}/Mbase58.py encode "${SSSS_HEAD}:${NOSTRNS}")
     amzqr "M-$SSSS_HEAD_B58" -l H -p ${MY_PATH}/../templates/img/key.png \
         -c -n ._SSSSQR.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
 
@@ -220,7 +220,7 @@ EOFNOSTR
         || FDQR=${MY_PATH}/../templates/img/nature_cloud_face.png
 
     [[ $UPLANETNAME != "EnfinLibre" ]] && Z=":ZEN" || Z="" ## Add :ZEN only for UPlanet ẐEN
-    amzqr "${G1PUBNOSTR}${Z}" -l H -p $FDQR -c -n MULTIPASS.QR.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
+    amzqr "${G1PUBNOSTR}${Z}" -l H -p "$FDQR" -c -n MULTIPASS.QR.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
 
     ## Add white margins around the QR code image (for a flashable coracle profile picture)
     convert ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png -bordercolor white -border 90x90 ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png
@@ -244,21 +244,20 @@ EOFNOSTR
     ${MY_PATH}/MULTIPASS.print.sh "${EMAIL}" &
 
     ## TODATE TIME STAMP
-    echo ${TODATE} > ${HOME}/.zen/game/nostr/${EMAIL}/TODATE
+    echo "${TODATE}" > ${HOME}/.zen/game/nostr/${EMAIL}/TODATE
     ## ZLAT ZLON
     echo "_${ZLAT}_${ZLON}" > ${HOME}/.zen/game/nostr/${EMAIL}/ZUMAP # RUNTIME/NOSTR.UMAP.refresh.sh
     echo "LAT=${ZLAT}; LON=${ZLON};" > ${HOME}/.zen/game/nostr/${EMAIL}/GPS # IA/UPlanet_IA_Responder.sh
 
     ## Create a .secret.disco file with the DISCO seed (needed for UPlanet Captain) -
     # for Captain use # HARDER SECURITY # use encrypted RAM fs cycled every 20h12
-    echo "$DISCO" > ${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco
+    echo "$DISCO" > "${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco"
     chmod 600 ${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco
 
     ## Create initial DID document (will be managed by did_manager_nostr.sh)
     # DID follows W3C DID 1.0 specification: https://www.w3.org/TR/did-1.0/
     echo "📝 Creating initial DID document..."
-    
-    
+
     # Create Multikey verification method (DID Nostr spec)
     multikey_pubkey="fe70102${HEX}"
     
@@ -411,8 +410,12 @@ EOF
 
     if [[ "$Z" == ":ZEN" ]]; then
         ## Replace Cesium Access with uSPOT/check_balance?g1pub=email (html output)
-        sed -i "s~${myIPFS}/ipfs/QmYZWzSfPgb1y83fWTmKBEHdA9QoxsYBmqLkEJU2KQ1DYW/#/app/wot/${G1PUBNOSTR}/~${uSPOT}/check_balance?g1pub=${EMAIL}~g" \
-            ${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html
+        # Escape special characters in URLs for sed
+        escaped_myIPFS=$(echo "${myIPFS}" | sed 's/[[\.*^$()+?{|]/\\&/g')
+        escaped_uSPOT=$(echo "${uSPOT}" | sed 's/[[\.*^$()+?{|]/\\&/g')
+        escaped_EMAIL=$(echo "${EMAIL}" | sed 's/[[\.*^$()+?{|]/\\&/g')
+        sed -i "s~${escaped_myIPFS}/ipfs/QmYZWzSfPgb1y83fWTmKBEHdA9QoxsYBmqLkEJU2KQ1DYW/#/app/wot/${G1PUBNOSTR}/~${escaped_uSPOT}/check_balance?g1pub=${escaped_EMAIL}~g" \
+            "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html"
 
     fi
 
@@ -431,8 +434,8 @@ EOF
     ### SEND NOSTR MESSAGE WITH QR CODE LINK
     # DID is accessible via Nostr (source of truth) and IPFS/.well-known (cache)
     Mymessage="🎉 ẐEN wallet : ${G1PUBNOSTR}${Z} \n 🎫 ${uSPOT}/check_balance?g1pub=${EMAIL} \n  𝄃𝄃𝄂𝄂𝄀𝄁𝄃𝄂𝄂𝄃 ${myIPFS}/ipfs/${G1PUBNOSTRQR} \n 🆔 DID: did:nostr:${HEX} \n 📄 ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/"
-    NPRIV_HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPRIV)
-    HEX_HEX=$(${MY_PATH}/../tools/nostr2hex.py $NPUBLIC)
+    NPRIV_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NPRIV")
+    HEX_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NPUBLIC")
     
     # Send to relay(s) - avoid duplicates
 
@@ -490,9 +493,9 @@ EOF
         # Copy DID viewer template
         cp "${HOME}/.zen/Astroport.ONE/templates/NOSTR/did_viewer.html" ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html
         
-        # Inject DID JSON data into the HTML file
-        did_json_content=$(cat ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache)
-        sed -i "s|const _DID_JSON_ = null;|const _DID_JSON_ = $did_json_content;|g" ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html
+        # Inject DID JSON data into the HTML file using jq for proper JSON minification
+        did_json_content=$(jq -c . ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache | sed 's/"/\\"/g')
+        sed -i "s|const _DID_JSON_ = null;|const _DID_JSON_ = \"$did_json_content\";|g" ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html
         
         echo "✅ DID viewer created with embedded JSON: ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html"
     else
