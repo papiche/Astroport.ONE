@@ -662,6 +662,33 @@ echo ${UPLANETNAME_INTRUSION} > $HOME/.zen/tmp/UPLANETNAME_INTRUSION
 UPLANETNAME_IMPOT=$(cat $HOME/.zen/game/uplanet.IMPOT.dunikey | grep "pub" | cut -d " " -f 2)
 echo ${UPLANETNAME_IMPOT} > $HOME/.zen/tmp/UPLANETNAME_IMPOT
 
+# UPLANETNAME_TREASURY -- Treasury wallet (1/3 allocation)
+[[ ! -s $HOME/.zen/game/uplanet.CASH.dunikey ]] \
+    && $HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.CASH.dunikey "${UPLANETNAME}.TREASURY" "${UPLANETNAME}.TREASURY" \
+    && UPLANETNAME_TREASURY=$(cat $HOME/.zen/game/uplanet.CASH.dunikey | grep "pub" | cut -d " " -f 2) \
+    && echo ${UPLANETNAME_TREASURY} > $HOME/.zen/tmp/UPLANETNAME_TREASURY
+
+UPLANETNAME_TREASURY=$(cat $HOME/.zen/game/uplanet.CASH.dunikey | grep "pub" | cut -d " " -f 2)
+echo ${UPLANETNAME_TREASURY} > $HOME/.zen/tmp/UPLANETNAME_TREASURY
+
+# UPLANETNAME_ASSETS -- Assets wallet (1/3 allocation)
+[[ ! -s $HOME/.zen/game/uplanet.ASSETS.dunikey ]] \
+    && $HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.ASSETS.dunikey "${UPLANETNAME}.ASSETS" "${UPLANETNAME}.ASSETS" \
+    && UPLANETNAME_ASSETS=$(cat $HOME/.zen/game/uplanet.ASSETS.dunikey | grep "pub" | cut -d " " -f 2) \
+    && echo ${UPLANETNAME_ASSETS} > $HOME/.zen/tmp/UPLANETNAME_ASSETS
+
+UPLANETNAME_ASSETS=$(cat $HOME/.zen/game/uplanet.ASSETS.dunikey | grep "pub" | cut -d " " -f 2)
+echo ${UPLANETNAME_ASSETS} > $HOME/.zen/tmp/UPLANETNAME_ASSETS
+
+# UPLANETNAME_RND -- R&D wallet (1/3 allocation)
+[[ ! -s $HOME/.zen/game/uplanet.RnD.dunikey ]] \
+    && $HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.RnD.dunikey "${UPLANETNAME}.RND" "${UPLANETNAME}.RND" \
+    && UPLANETNAME_RND=$(cat $HOME/.zen/game/uplanet.RnD.dunikey | grep "pub" | cut -d " " -f 2) \
+    && echo ${UPLANETNAME_RND} > $HOME/.zen/tmp/UPLANETNAME_RND
+
+UPLANETNAME_RND=$(cat $HOME/.zen/game/uplanet.RnD.dunikey | grep "pub" | cut -d " " -f 2)
+echo ${UPLANETNAME_RND} > $HOME/.zen/tmp/UPLANETNAME_RND
+
 [[ -s ${HOME}/.zen/game/MY_boostrap_nodes.txt ]] \
     && STRAPFILE="${HOME}/.zen/game/MY_boostrap_nodes.txt" \
     || STRAPFILE="${HOME}/.zen/Astroport.ONE/A_boostrap_nodes.txt"

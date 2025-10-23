@@ -76,6 +76,53 @@ show_help() {
     echo "  infrastructure: 500€ (apport capital machine, direct vers NODE)"
 }
 
+# Fonction pour vérifier qu'il n'y a pas de transactions en cours avant de commencer
+check_no_pending_transactions() {
+    local wallet_pubkey="$1"
+    local max_wait="${PENDING_WAIT_TIMEOUT:-1800}"  # 30 minutes max pour attendre les pending
+    local wait_time=0
+    local interval="${VERIFICATION_INTERVAL:-60}"  # 60 secondes par défaut
+    
+    echo -e "${YELLOW}🔍 Vérification qu'il n'y a pas de transactions en cours: ${wallet_pubkey:0:8}...${NC}"
+    
+    while [[ $wait_time -lt $max_wait ]]; do
+        local balance_json=$(silkaj --json money balance "$wallet_pubkey" 2>/dev/null)
+        
+        if [[ $? -eq 0 ]]; then
+            # silkaj retourne les montants en centimes, il faut diviser par 100
+            local pending_centimes=$(echo "$balance_json" | jq -r '.balances.pending // 0' 2>/dev/null)
+            local total_centimes=$(echo "$balance_json" | jq -r '.balances.total // 0' 2>/dev/null)
+            local blockchain_centimes=$(echo "$balance_json" | jq -r '.balances.blockchain // 0' 2>/dev/null)
+            
+            # Valider les valeurs avant de les passer à bc
+            [[ -z "$pending_centimes" || "$pending_centimes" == "null" ]] && pending_centimes="0"
+            [[ -z "$total_centimes" || "$total_centimes" == "null" ]] && total_centimes="0"
+            [[ -z "$blockchain_centimes" || "$blockchain_centimes" == "null" ]] && blockchain_centimes="0"
+            
+            local pending=$(echo "scale=2; $pending_centimes / 100" | bc -l)
+            local total=$(echo "scale=2; $total_centimes / 100" | bc -l)
+            local blockchain=$(echo "scale=2; $blockchain_centimes / 100" | bc -l)
+            
+            if [[ "$pending" == "0" || "$pending" == "null" || "$pending" == "0.00" ]]; then
+                # Aucune transaction en cours
+                echo -e "${GREEN}✅ Aucune transaction en cours - Solde stable: ${total} Ğ1${NC}"
+                return 0
+            else
+                echo -e "${YELLOW}⏳ Transactions en cours... Pending: ${pending} Ğ1, Total: ${total} Ğ1 (attente: ${wait_time}s)${NC}"
+            fi
+        else
+            echo -e "${YELLOW}⏳ Vérification en cours... Impossible de récupérer le solde (attente: ${wait_time}s)${NC}"
+        fi
+        
+        sleep $interval
+        wait_time=$((wait_time + interval))
+    done
+    
+    echo -e "${RED}❌ Timeout: Des transactions sont encore en cours après ${max_wait} secondes${NC}"
+    echo -e "${YELLOW}💡 Attendez que les transactions en cours se terminent avant de relancer${NC}"
+    return 1
+}
+
 # Fonction pour vérifier le solde d'un portefeuille avec gestion du pending
 check_balance() {
     local wallet_pubkey="$1"
@@ -372,6 +419,14 @@ process_locataire() {
     echo -e "  UPLANETNAME: ${uplanet_pubkey:0:8}..."
     echo -e "  MULTIPASS ${email}: ${multipass_pubkey:0:8}..."
     
+    # Vérifier qu'il n'y a pas de transactions en cours avant de commencer
+    echo -e "${BLUE}🔍 Vérification préalable des transactions en cours...${NC}"
+    if ! check_no_pending_transactions "$g1_pubkey"; then
+        echo -e "${RED}❌ Impossible de commencer le virement: des transactions sont en cours${NC}"
+        echo -e "${YELLOW}💡 Attendez que les transactions en cours se terminent avant de relancer${NC}"
+        return 1
+    fi
+    
     # Étape 1: UPLANETNAME.G1 -> UPLANETNAME
     echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME.G1 → UPLANETNAME${NC}"
     if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$uplanet_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:RENTAL:${email}" "$email" "LOCATAIRE" "Étape 1: G1→UPLANET"; then
@@ -459,6 +514,14 @@ process_infrastructure() {
     echo -e "  UPLANETNAME.G1: ${g1_pubkey:0:8}..."
     echo -e "  ZEN Card ${email}: ${zencard_pubkey:0:8}..."
     echo -e "  NODE (Armateur): ${node_pubkey:0:8}..."
+    
+    # Vérifier qu'il n'y a pas de transactions en cours avant de commencer
+    echo -e "${BLUE}🔍 Vérification préalable des transactions en cours...${NC}"
+    if ! check_no_pending_transactions "$g1_pubkey"; then
+        echo -e "${RED}❌ Impossible de commencer le virement: des transactions sont en cours${NC}"
+        echo -e "${YELLOW}💡 Attendez que les transactions en cours se terminent avant de relancer${NC}"
+        return 1
+    fi
     
     # Étape 1: UPLANETNAME.G1 -> ZEN Card
     echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME.G1 → ZEN Card ${email}${NC}"
@@ -552,6 +615,14 @@ process_societaire() {
     echo -e "  UPLANETNAME.G1: ${g1_pubkey:0:8}..."
     echo -e "  UPLANETNAME.SOCIETY: ${society_pubkey:0:8}..."
     echo -e "  ZEN Card ${email}: ${zencard_pubkey:0:8}..."
+    
+    # Vérifier qu'il n'y a pas de transactions en cours avant de commencer
+    echo -e "${BLUE}🔍 Vérification préalable des transactions en cours...${NC}"
+    if ! check_no_pending_transactions "$g1_pubkey"; then
+        echo -e "${RED}❌ Impossible de commencer le virement: des transactions sont en cours${NC}"
+        echo -e "${YELLOW}💡 Attendez que les transactions en cours se terminent avant de relancer${NC}"
+        return 1
+    fi
     
     # Étape 1: UPLANETNAME.G1 -> UPLANETNAME.SOCIETY
     echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME.G1 → UPLANETNAME.SOCIETY${NC}"
