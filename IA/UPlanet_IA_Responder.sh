@@ -829,14 +829,24 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
         else
             # Send public message with appropriate tags
             if [[ -n "$ExtraTags" ]]; then
-                # Combine standard tags with extra tags
-                CombinedTags="[['e', '$EVENT'], ['p', '$PUBKEY']], $ExtraTags"
-                nostpy-cli send_event \
-                  -privkey "$NPRIV_HEX" \
-                  -kind $AnswerKind \
-                  -content "$KeyANSWER" \
-                  -tags "$CombinedTags" \
-                  --relay "$myRELAY"
+                # For kind 30023, use only the specific blog tags
+                if [[ "$AnswerKind" == "30023" ]]; then
+                    nostpy-cli send_event \
+                      -privkey "$NPRIV_HEX" \
+                      -kind $AnswerKind \
+                      -content "$KeyANSWER" \
+                      -tags "$ExtraTags" \
+                      --relay "$myRELAY"
+                else
+                    # For other kinds, combine standard tags with extra tags
+                    CombinedTags="[['e', '$EVENT'], ['p', '$PUBKEY']], $ExtraTags"
+                    nostpy-cli send_event \
+                      -privkey "$NPRIV_HEX" \
+                      -kind $AnswerKind \
+                      -content "$KeyANSWER" \
+                      -tags "$CombinedTags" \
+                      --relay "$myRELAY"
+                fi
             else
                 # Use standard tags only
                 nostpy-cli send_event \
