@@ -516,17 +516,14 @@ for PLAYER in "${NOSTR[@]}"; do
     ########################################################################
     YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
     ########################################################################
-    # Send welcome message on 1st day (regardless of COINS amount)
-    if [[ ${TODATE} == ${BIRTHDATE} ]]; then
-        ## 1st Day send welcome EMAIL...
-        if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.welcome.html ]]; then
-            cp ${MY_PATH}/../templates/NOSTR/welcome.html ~/.zen/game/nostr/${PLAYER}/.welcome.html \
-            && sed -i "s/http:\/\/127.0.0.1:8080/${myIPFS}/g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
-            && sed -i "s/_USPOT_/${uSPOT}/g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
-            && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${HOME}/.zen/game/nostr/${PLAYER}/.welcome.html" "WELCOME $YOUSER"
-            log "INFO" "Welcome email sent to new MULTIPASS: ${PLAYER}"
-            log_metric "WELCOME_EMAIL_SENT" "1" "${PLAYER}"
-         fi
+    ## 1st Day send welcome message...
+    if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.welcome.html ]]; then
+        cp ${MY_PATH}/../templates/NOSTR/welcome.html ~/.zen/game/nostr/${PLAYER}/.welcome.html \
+        && sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
+        && sed -i "s~_USPOT_~${uSPOT}~g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
+        && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${HOME}/.zen/game/nostr/${PLAYER}/.welcome.html" "WELCOME $YOUSER"
+        log "INFO" "Welcome email sent to new MULTIPASS: ${PLAYER}"
+        log_metric "WELCOME_EMAIL_SENT" "1" "${PLAYER}"
     fi
 
     ####################################################################
