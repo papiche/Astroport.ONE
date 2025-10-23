@@ -726,6 +726,25 @@ process_societaire() {
     local contract_type="SOCIETAIRE_${type^^}"
     "${MY_PATH}/tools/did_manager_nostr.sh" update "$email" "$contract_type" "$montant_euros" "$montant_g1"
     
+    # Validate France Connect compliance for ZEN Card holders (KYC verified)
+    # Check if user has WoT verification (0.01Ğ1 transaction from Duniter forgeron)
+    local wot_verified=false
+    if [[ -f "$HOME/.zen/tmp/coucou/${zencard_pubkey}.2nd" ]]; then
+        wot_verified=true
+        echo -e "${GREEN}✅ WoT verification detected (KYC completed)${NC}"
+    fi
+    
+    # Only validate France Connect for French users with KYC verification
+    if [[ "$wot_verified" == "true" ]]; then
+        local user_lang=$(cat "$HOME/.zen/game/nostr/${email}/LANG" 2>/dev/null || echo "fr")
+        if [[ "$user_lang" == "fr" ]]; then
+            echo -e "${CYAN}🇫🇷 Validating France Connect compliance for KYC-verified French user...${NC}"
+            "${MY_PATH}/tools/did_manager_nostr.sh" validate-france-connect "$email"
+        fi
+    else
+        echo -e "${YELLOW}⚠️  France Connect validation skipped - KYC verification required (WoT transaction)${NC}"
+    fi
+    
     return 0
 }
 

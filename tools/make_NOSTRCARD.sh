@@ -357,7 +357,20 @@ EOFNOSTR
     "youser": "${YOUSER}",
     "contractStatus": "new_multipass",
     "storageQuota": "10GB",
-    "services": "uDRIVE IPFS storage"
+    "services": "uDRIVE IPFS storage",
+    "franceConnect": {
+      "compliance": "disabled",
+      "identityProvider": "UPlanet",
+      "verificationLevel": "basic",
+      "kycStatus": "pending",
+      "wotVerification": "required",
+      "supportedServices": [],
+      "dataSharing": {
+        "consentRequired": true,
+        "scope": "none",
+        "retentionPeriod": "none"
+      }
+    }
   }
 }
 EOF

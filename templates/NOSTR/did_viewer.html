@@ -236,7 +236,13 @@
             🔐 UPlanet DID Document Viewer 🔐
         </div>
         
-        <h1>DID Document Viewer</h1>
+        <h1 id="page-title">DID Document Viewer</h1>
+        
+        <div id="language-toggle" style="text-align: center; margin: 10px 0; display: none;">
+            <button id="toggle-language-btn" style="background: #2196F3; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                🌍 International
+            </button>
+        </div>
         
         <div id="status">Loading DID document...</div>
         <div class="spinner" id="loadingSpinner"></div>
@@ -246,7 +252,7 @@
         </div>
         
         <details>
-            <summary>Show Raw JSON</summary>
+            <summary id="raw-json-summary">Show Raw JSON</summary>
             <div id="raw-json" class="json-display">
                 <pre>Loading...</pre>
             </div>
@@ -256,9 +262,90 @@
     <script>
         // Global variables
         let didData = null;
+        let userLanguage = 'fr'; // Default to French
         
         // Embedded DID JSON data (will be replaced by sed)
         const _DID_JSON_ = null;
+        
+        // Language detection and content
+        function detectLanguage() {
+            const browserLang = navigator.language || navigator.userLanguage;
+            const langCode = browserLang.split('-')[0].toLowerCase();
+            
+            // Check if it's French
+            if (langCode === 'fr') {
+                userLanguage = 'fr';
+            } else {
+                userLanguage = 'en';
+            }
+            
+            console.log('Detected language:', userLanguage, 'from browser:', browserLang);
+            
+            // Update page elements
+            updatePageElements();
+            
+            // Show language toggle for all users
+            document.getElementById('language-toggle').style.display = 'block';
+            
+            // Set initial button text
+            if (userLanguage === 'fr') {
+                document.getElementById('toggle-language-btn').textContent = '🌍 International';
+            } else {
+                document.getElementById('toggle-language-btn').textContent = '🇫🇷 Français';
+            }
+        }
+        
+        function updatePageElements() {
+            document.getElementById('page-title').textContent = getText('title');
+            document.getElementById('raw-json-summary').textContent = getText('rawJson');
+        }
+        
+        function toggleLanguage() {
+            if (userLanguage === 'fr') {
+                userLanguage = 'en';
+                document.getElementById('toggle-language-btn').textContent = '🇫🇷 Français';
+            } else {
+                userLanguage = 'fr';
+                document.getElementById('toggle-language-btn').textContent = '🌍 International';
+            }
+            
+            updatePageElements();
+            
+            // Reload the DID content with new language
+            if (didData) {
+                displayDID(didData);
+            }
+        }
+        
+        // International content
+        const content = {
+            fr: {
+                title: "DID Document Viewer",
+                warning: "🔐 UPlanet DID Document Viewer 🔐",
+                loading: "Chargement du document DID...",
+                basicInfo: "📋 Informations de Base",
+                verificationMethods: "🔑 Méthodes de Vérification",
+                services: "🌐 Services",
+                authentication: "🔐 Authentification",
+                metadata: "📊 Métadonnées UPlanet",
+                franceConnect: "🇫🇷 Statut France Connect",
+                franceIdentite: "🆔 France Identité - Justificatif d'Identité",
+                rawJson: "Afficher le JSON brut"
+            },
+            en: {
+                title: "DID Document Viewer",
+                warning: "🔐 UPlanet DID Document Viewer 🔐",
+                loading: "Loading DID document...",
+                basicInfo: "📋 Basic Information",
+                verificationMethods: "🔑 Verification Methods",
+                services: "🌐 Services",
+                authentication: "🔐 Authentication",
+                metadata: "📊 UPlanet Metadata",
+                franceConnect: "🇫🇷 France Connect Status",
+                franceIdentite: "🆔 France Identité - Identity Proof",
+                rawJson: "Show Raw JSON"
+            }
+        };
         
         // Helper functions
         function log(message) {
@@ -276,6 +363,10 @@
             el.css({ 'background-color': bg, 'color': fg });
         }
         
+        function getText(key) {
+            return content[userLanguage][key] || content['en'][key];
+        }
+        
         function showLoading(show) {
             $('#loadingSpinner').toggle(show);
         }
@@ -284,7 +375,7 @@
         function loadDID() {
             try {
                 showLoading(true);
-                updateStatus('Loading DID document...');
+                updateStatus(getText('loading'));
                 
                 // Get embedded JSON from the page
                 const embeddedJson = _DID_JSON_;
@@ -294,7 +385,7 @@
                 
                 didData = embeddedJson;
                 displayDID(didData);
-                updateStatus('DID document loaded successfully');
+                updateStatus(userLanguage === 'fr' ? 'Document DID chargé avec succès' : 'DID document loaded successfully');
                 
             } catch (error) {
                 console.error('Error loading DID:', error);
@@ -315,7 +406,7 @@
             const content = document.getElementById('content');
             
             let html = '<div class="did-info">';
-            html += '<h3>📋 Basic Information</h3>';
+            html += `<h3>${getText('basicInfo')}</h3>`;
             
             // DID ID
             if (data.id) {
@@ -343,7 +434,7 @@
             // Verification Methods
             if (data.verificationMethod && data.verificationMethod.length > 0) {
                 html += '<div class="verification-card">';
-                html += '<h4>🔑 Verification Methods</h4>';
+                html += `<h4>${getText('verificationMethods')}</h4>`;
                 data.verificationMethod.forEach((method, index) => {
                     html += `
                         <div class="verification-field">
@@ -377,7 +468,7 @@
             // Services
             if (data.service && data.service.length > 0) {
                 html += '<div class="service-card">';
-                html += '<h4>🌐 Services</h4>';
+                html += `<h4>${getText('services')}</h4>`;
                 data.service.forEach((service, index) => {
                     html += `
                         <div class="service-field">
@@ -403,7 +494,7 @@
             // Authentication
             if (data.authentication && data.authentication.length > 0) {
                 html += '<div class="did-info">';
-                html += '<h3>🔐 Authentication</h3>';
+                html += `<h3>${getText('authentication')}</h3>`;
                 data.authentication.forEach(auth => {
                     html += `
                         <div class="did-field">
@@ -418,7 +509,7 @@
             // Metadata - Enhanced display for UPlanet-specific fields
             if (data.metadata) {
                 html += '<div class="metadata-section">';
-                html += '<h4>📊 UPlanet Metadata</h4>';
+                html += `<h4>${getText('metadata')}</h4>`;
                 
                 // Contract Status (with color coding)
                 if (data.metadata.contractStatus) {
@@ -549,12 +640,371 @@
                     `;
                 }
                 
+                // France Connect Status - Enhanced display
+                if (data.metadata.franceConnect) {
+                    const fc = data.metadata.franceConnect;
+                    html += '<div class="metadata-section">';
+                    html += `<h4>${getText('franceConnect')}</h4>`;
+                    
+                    // Compliance Status with visual indicators
+                    const complianceStatus = fc.compliance;
+                    let complianceColor = '#dc3545'; // Red for disabled
+                    let complianceIcon = '❌';
+                    let complianceText = 'Disabled';
+                    
+                    if (complianceStatus === 'enabled') {
+                        complianceColor = '#28a745'; // Green for enabled
+                        complianceIcon = '✅';
+                        complianceText = 'Enabled';
+                    }
+                    
+                    html += `
+                        <div class="did-field">
+                            <span class="did-label">Compliance:</span>
+                            <span class="did-value" style="color: ${complianceColor}; font-weight: bold; font-size: 1.1em;">
+                                ${complianceIcon} ${complianceText}
+                            </span>
+                        </div>
+                    `;
+                    
+                    // KYC Status
+                    if (fc.kycStatus) {
+                        const kycStatus = fc.kycStatus;
+                        let kycColor = '#ffc107'; // Yellow for pending
+                        let kycIcon = '⏳';
+                        let kycText = 'Pending';
+                        
+                        if (kycStatus === 'verified') {
+                            kycColor = '#28a745'; // Green for verified
+                            kycIcon = '✅';
+                            kycText = 'Verified';
+                        }
+                        
+                        html += `
+                            <div class="did-field">
+                                <span class="did-label">KYC Status:</span>
+                                <span class="did-value" style="color: ${kycColor}; font-weight: bold;">
+                                    ${kycIcon} ${kycText}
+                                </span>
+                            </div>
+                        `;
+                    }
+                    
+                    // WoT Verification
+                    if (fc.wotVerification) {
+                        const wotStatus = fc.wotVerification;
+                        let wotColor = '#dc3545'; // Red for required
+                        let wotIcon = '❌';
+                        let wotText = 'Required';
+                        
+                        if (wotStatus === 'completed') {
+                            wotColor = '#28a745'; // Green for completed
+                            wotIcon = '✅';
+                            wotText = 'Completed';
+                        }
+                        
+                        html += `
+                            <div class="did-field">
+                                <span class="did-label">WoT Verification:</span>
+                                <span class="did-value" style="color: ${wotColor}; font-weight: bold;">
+                                    ${wotIcon} ${wotText}
+                                </span>
+                            </div>
+                        `;
+                    }
+                    
+                    // Verification Level
+                    if (fc.verificationLevel) {
+                        const level = fc.verificationLevel;
+                        let levelColor = '#6c757d'; // Gray for basic
+                        let levelIcon = '🔒';
+                        
+                        if (level === 'enhanced') {
+                            levelColor = '#007bff'; // Blue for enhanced
+                            levelIcon = '🔓';
+                        }
+                        
+                        html += `
+                            <div class="did-field">
+                                <span class="did-label">Verification Level:</span>
+                                <span class="did-value" style="color: ${levelColor}; font-weight: bold;">
+                                    ${levelIcon} ${level}
+                                </span>
+                            </div>
+                        `;
+                    }
+                    
+                    // Supported Services (only if enabled)
+                    if (fc.compliance === 'enabled' && fc.supportedServices && fc.supportedServices.length > 0) {
+                        html += `
+                            <div class="did-field">
+                                <span class="did-label">Supported Services:</span>
+                                <span class="did-value">
+                                    ${fc.supportedServices.map(service => {
+                                        const serviceIcons = {
+                                            'france-identite': '🆔',
+                                            'ameli': '🏥',
+                                            'impots': '💰',
+                                            'caf': '👨‍👩‍👧‍👦',
+                                            'pole-emploi': '💼'
+                                        };
+                                        const icon = serviceIcons[service] || '🔗';
+                                        return `${icon} ${service}`;
+                                    }).join(', ')}
+                                </span>
+                            </div>
+                        `;
+                    } else if (fc.compliance === 'disabled') {
+                        html += `
+                            <div class="did-field">
+                                <span class="did-label">Supported Services:</span>
+                                <span class="did-value" style="color: #6c757d; font-style: italic;">
+                                    None (KYC verification required)
+                                </span>
+                            </div>
+                        `;
+                    }
+                    
+                    // Data Sharing Policy
+                    if (fc.dataSharing) {
+                        const ds = fc.dataSharing;
+                        html += `
+                            <div class="did-field">
+                                <span class="did-label">Data Sharing:</span>
+                                <span class="did-value">
+                                    Scope: ${ds.scope} | Retention: ${ds.retentionPeriod} | Consent: ${ds.consentRequired ? 'Required' : 'Not Required'}
+                                </span>
+                            </div>
+                        `;
+                    }
+                    
+                    // Certification Level
+                    if (fc.certificationLevel) {
+                        const certLevel = fc.certificationLevel;
+                        let certColor = '#dc3545'; // Red for level 0
+                        let certIcon = '🔒';
+                        
+                        if (certLevel === 'level_2') {
+                            certColor = '#28a745'; // Green for level 2
+                            certIcon = '🔓';
+                        } else if (certLevel === 'level_1') {
+                            certColor = '#ffc107'; // Yellow for level 1
+                            certIcon = '🔐';
+                        }
+                        
+                        html += `
+                            <div class="did-field">
+                                <span class="did-label">Certification Level:</span>
+                                <span class="did-value" style="color: ${certColor}; font-weight: bold;">
+                                    ${certIcon} ${certLevel}
+                                </span>
+                            </div>
+                        `;
+                    }
+                    
+                    // Last Verification
+                    if (fc.lastVerification) {
+                        html += `
+                            <div class="did-field">
+                                <span class="did-label">Last Verification:</span>
+                                <span class="did-value">${new Date(fc.lastVerification).toLocaleString()}</span>
+                            </div>
+                        `;
+                    }
+                    
+                    // Process explanation based on status
+                    if (fc.compliance === 'disabled') {
+                        html += `
+                            <div class="did-field" style="background-color: #2a2a2a; padding: 15px; border-radius: 5px; margin-top: 10px;">
+                                <span class="did-label" style="color: #ffc107; font-weight: bold; font-size: 1.1em;">📋 Processus d'Activation France Connect:</span>
+                                <div class="did-value" style="color: #e0e0e0; font-size: 0.9em; line-height: 1.6; margin-top: 10px;">
+                                    <div style="display: flex; align-items: center; margin: 8px 0;">
+                                        <span style="background: #007bff; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 0.8em;">1</span>
+                                        <span><strong>Création MULTIPASS</strong> (sans KYC) - Identité de base UPlanet</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; margin: 8px 0;">
+                                        <span style="background: #6c757d; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 0.8em;">2</span>
+                                        <span><strong>Création ZEN Card</strong> (sociétaire) - Initialisée à 1Ğ1</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; margin: 8px 0;">
+                                        <span style="background: #6c757d; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 0.8em;">3</span>
+                                        <span><strong>Envoi justificatif France Identité</strong> au capitaine via <a href="https://france-identite.gouv.fr/justificatif/" target="_blank" style="color: #2196F3;">france-identite.gouv.fr</a></span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; margin: 8px 0;">
+                                        <span style="background: #6c757d; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 0.8em;">4</span>
+                                        <span><strong>Transaction WoT 0.01Ğ1</strong> depuis compte forgeron Duniter (2ème transaction)</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; margin: 8px 0;">
+                                        <span style="background: #6c757d; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 0.8em;">5</span>
+                                        <span><strong>UPLANET.official</strong> reproduit le dépôt <a href="https://opencollective.com/upanet-zero" target="_blank" style="color: #2196F3;">opencollective.com/upanet-zero</a> en ẐEN</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; margin: 8px 0; padding: 10px; background: #1a3a1a; border-radius: 5px; border-left: 4px solid #28a745;">
+                                        <span style="color: #28a745; font-size: 1.2em; margin-right: 10px;">🎉</span>
+                                        <span style="color: #28a745; font-weight: bold;">Bienvenue dans la coopérative !</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else if (fc.compliance === 'enabled') {
+                        html += `
+                            <div class="did-field" style="background-color: #1a3a1a; padding: 15px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #28a745;">
+                                <span class="did-label" style="color: #28a745; font-weight: bold; font-size: 1.1em;">✅ France Connect Active:</span>
+                                <div class="did-value" style="color: #e0e0e0; font-size: 0.9em; line-height: 1.6; margin-top: 10px;">
+                                    <div style="display: flex; align-items: center; margin: 8px 0;">
+                                        <span style="color: #28a745; font-size: 1.2em; margin-right: 10px;">🎉</span>
+                                        <span><strong>Bienvenue dans la coopérative !</strong></span>
+                                    </div>
+                                    <div style="margin-top: 10px; padding: 10px; background: #0d3a0d; border-radius: 5px;">
+                                        Vous pouvez maintenant accéder aux services publics français via France Connect en utilisant votre identité UPlanet. Votre statut de sociétaire coopératif est validé et votre contribution à l'écosystème UPlanet est enregistrée.
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    html += '</div>';
+                }
+                
+                // France Identité Section - Process explanation
+                if (data.metadata.franceConnect && data.metadata.franceConnect.compliance === 'disabled') {
+                    html += '<div class="metadata-section">';
+                    html += `<h4>${getText('franceIdentite')}</h4>`;
+                    html += `
+                        <div class="did-field" style="background-color: #1a1a2e; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                            <div style="color: #e0e0e0; font-size: 0.9em; line-height: 1.6;">
+                                <div style="margin-bottom: 15px;">
+                                    <strong style="color: #2196F3;">Le justificatif d'identité à usage unique</strong> remplace les photocopies de titre d'identité par un document sécurisé pour éviter les fraudes.
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 15px 0;">
+                                    <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; text-align: center;">
+                                        <div style="color: #4CAF50; font-size: 1.5em; margin-bottom: 5px;">🔒</div>
+                                        <div style="font-size: 0.8em;">Minimise les données transmises</div>
+                                    </div>
+                                    <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; text-align: center;">
+                                        <div style="color: #4CAF50; font-size: 1.5em; margin-bottom: 5px;">🛡️</div>
+                                        <div style="font-size: 0.8em;">Infalsifiable et ultra sécurisé</div>
+                                    </div>
+                                    <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; text-align: center;">
+                                        <div style="color: #4CAF50; font-size: 1.5em; margin-bottom: 5px;">✅</div>
+                                        <div style="font-size: 0.8em;">Signé par le ministère de l'Intérieur</div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 15px; padding: 10px; background: #0d1a2e; border-radius: 5px; border-left: 4px solid #2196F3;">
+                                    <div style="color: #2196F3; font-weight: bold; margin-bottom: 8px;">📋 Comment générer un justificatif :</div>
+                                    <div style="font-size: 0.85em;">
+                                        1. Téléchargez l'application <strong>France Identité</strong><br>
+                                        2. Cliquez sur "Créer un justificatif d'identité"<br>
+                                        3. Saisissez le nom du destinataire (Capitaine UPlanet)<br>
+                                        4. Sélectionnez une durée de validité<br>
+                                        5. Indiquez le motif (Adhésion coopérative UPlanet)<br>
+                                        6. Saisissez votre code personnel<br>
+                                        7. Effectuez la lecture de votre carte d'identité<br>
+                                        8. Partagez le justificatif avec le capitaine
+                                    </div>
+                                </div>
+                                <div style="margin-top: 10px; text-align: center;">
+                                    <a href="https://france-identite.gouv.fr/justificatif/" target="_blank" style="background: #2196F3; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none; font-weight: bold;">
+                                        🔗 Accéder à France Identité
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    html += '</div>';
+                }
+                
+                // International section for non-French users
+                if (userLanguage === 'en') {
+                    html += '<div class="metadata-section">';
+                    html += '<h4>🌍 UPlanet International - Digital Sovereignty</h4>';
+                    html += `
+                        <div class="did-field" style="background-color: #1a1a2e; padding: 20px; border-radius: 5px; margin: 10px 0;">
+                            <div style="color: #e0e0e0; font-size: 0.9em; line-height: 1.6;">
+                                <div style="margin-bottom: 20px; text-align: center;">
+                                    <h3 style="color: #2196F3; margin: 0 0 10px 0;">🌍 Welcome to UPlanet Digital Sovereignty</h3>
+                                    <p style="margin: 0; font-size: 1.1em; color: #4CAF50;">A decentralized identity and cooperative economy system</p>
+                                </div>
+                                
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0;">
+                                    <div style="background: #2a2a2a; padding: 15px; border-radius: 5px; text-align: center; border-left: 4px solid #4CAF50;">
+                                        <div style="color: #4CAF50; font-size: 2em; margin-bottom: 10px;">🔐</div>
+                                        <div style="font-weight: bold; margin-bottom: 8px;">Decentralized Identity</div>
+                                        <div style="font-size: 0.85em; color: #ccc;">Self-sovereign digital identity using W3C DID standards</div>
+                                    </div>
+                                    <div style="background: #2a2a2a; padding: 15px; border-radius: 5px; text-align: center; border-left: 4px solid #FF9800;">
+                                        <div style="color: #FF9800; font-size: 2em; margin-bottom: 10px;">💰</div>
+                                        <div style="font-weight: bold; margin-bottom: 8px;">Cooperative Economy</div>
+                                        <div style="font-size: 0.85em; color: #ccc;">Democratic money and cooperative resource sharing</div>
+                                    </div>
+                                    <div style="background: #2a2a2a; padding: 15px; border-radius: 5px; text-align: center; border-left: 4px solid #9C27B0;">
+                                        <div style="color: #9C27B0; font-size: 2em; margin-bottom: 10px;">🌐</div>
+                                        <div style="font-weight: bold; margin-bottom: 8px;">Distributed Network</div>
+                                        <div style="font-size: 0.85em; color: #ccc;">IPFS, Nostr, and blockchain integration</div>
+                                    </div>
+                                </div>
+                                
+                                <div style="margin: 20px 0; padding: 15px; background: #0d1a2e; border-radius: 5px; border-left: 4px solid #2196F3;">
+                                    <div style="color: #2196F3; font-weight: bold; margin-bottom: 15px; font-size: 1.1em;">🚀 Adapt UPlanet for Your Country</div>
+                                    <div style="font-size: 0.9em; line-height: 1.6;">
+                                        <p><strong>UPlanet is designed to be adapted to any country's legal and economic framework.</strong></p>
+                                        <p>This French implementation includes France Connect integration, but the core system can be modified for:</p>
+                                        <ul style="margin: 10px 0; padding-left: 20px;">
+                                            <li><strong>Digital Identity:</strong> Integration with your country's digital identity system</li>
+                                            <li><strong>Legal Compliance:</strong> Adaptation to local regulations and requirements</li>
+                                            <li><strong>Economic Integration:</strong> Connection to national banking and payment systems</li>
+                                            <li><strong>Language & Culture:</strong> Localization of interfaces and documentation</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div style="margin: 20px 0; padding: 15px; background: #1a3a1a; border-radius: 5px; border-left: 4px solid #28a745;">
+                                    <div style="color: #28a745; font-weight: bold; margin-bottom: 10px;">🛠️ Technical Implementation</div>
+                                    <div style="font-size: 0.85em;">
+                                        <p><strong>Core Technologies:</strong></p>
+                                        <ul style="margin: 8px 0; padding-left: 20px;">
+                                            <li><strong>DID:</strong> W3C Decentralized Identifiers (did:nostr:)</li>
+                                            <li><strong>UCAN:</strong> User-Controlled Authorization Networks</li>
+                                            <li><strong>SSSS:</strong> Shamir Secret Sharing (3/2 scheme)</li>
+                                            <li><strong>Blockchain:</strong> Duniter/G1, Bitcoin, Monero integration</li>
+                                            <li><strong>Storage:</strong> IPFS/IPNS decentralized storage</li>
+                                            <li><strong>Social:</strong> Nostr protocol for decentralized communication</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div style="margin: 20px 0; padding: 15px; background: #2a1a1a; border-radius: 5px; border-left: 4px solid #E91E63;">
+                                    <div style="color: #E91E63; font-weight: bold; margin-bottom: 10px;">🤝 Join the UPlanet Community</div>
+                                    <div style="font-size: 0.85em;">
+                                        <p>UPlanet is an open-source project that welcomes contributions from developers worldwide.</p>
+                                        <div style="margin-top: 10px;">
+                                            <a href="https://github.com/UPlanet" target="_blank" style="background: #2196F3; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none; font-weight: bold; margin-right: 10px;">
+                                                🔗 GitHub Repository
+                                            </a>
+                                            <a href="https://uplanet.org" target="_blank" style="background: #4CAF50; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none; font-weight: bold;">
+                                                🌐 UPlanet Website
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div style="text-align: center; margin-top: 20px; padding: 15px; background: #1a1a1a; border-radius: 5px;">
+                                    <div style="color: #4CAF50; font-weight: bold; font-size: 1.1em; margin-bottom: 10px;">🌍 Build Your Country's Digital Sovereignty</div>
+                                    <div style="font-size: 0.9em; color: #ccc;">
+                                        Adapt the Astroport.ONE codebase to create your own sovereign digital identity and cooperative economy system.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    html += '</div>';
+                }
+                
                 // Other metadata fields
                 const standardFields = ['updated', 'created', 'version', 'email'];
                 Object.entries(data.metadata).forEach(([key, value]) => {
                     if (!standardFields.includes(key) && 
                         !['contractStatus', 'storageQuota', 'services', 'lastPayment', 
-                          'wotDuniterMember', 'astroportStation', 'multipassWallet', 'zencardWallet'].includes(key)) {
+                          'wotDuniterMember', 'astroportStation', 'multipassWallet', 'zencardWallet', 'franceConnect'].includes(key)) {
                         if (typeof value === 'object' && value !== null) {
                             html += `
                                 <div class="did-field">
@@ -585,7 +1035,11 @@
         // Initialize when page loads
         $(document).ready(function() {
             log('DID Viewer initialized');
+            detectLanguage();
             loadDID();
+            
+            // Add event listener for language toggle button
+            document.getElementById('toggle-language-btn').addEventListener('click', toggleLanguage);
         });
     </script>
 </body>

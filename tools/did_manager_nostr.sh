@@ -378,6 +378,54 @@ update_did_document() {
         }"
     fi
     
+    # Add France Connect compliance metadata (only for KYC-verified users)
+    # Check if user has WoT verification (0.01Ğ1 transaction from Duniter forgeron)
+    local wot_verified=false
+    local zencard_g1pub=$(cat "$HOME/.zen/game/players/${email}/.g1pub" 2>/dev/null)
+    if [[ -n "$zencard_g1pub" ]] && [[ -f "$HOME/.zen/tmp/coucou/${zencard_g1pub}.2nd" ]]; then
+        wot_verified=true
+    fi
+    
+    if [[ "$wot_verified" == "true" ]]; then
+        jq_cmd="$jq_cmd | .metadata.franceConnect = {
+            \"compliance\": \"enabled\",
+            \"identityProvider\": \"UPlanet\",
+            \"verificationLevel\": \"enhanced\",
+            \"kycStatus\": \"verified\",
+            \"wotVerification\": \"completed\",
+            \"supportedServices\": [
+                \"france-identite\",
+                \"ameli\",
+                \"impots\",
+                \"caf\",
+                \"pole-emploi\"
+            ],
+            \"dataSharing\": {
+                \"consentRequired\": true,
+                \"scope\": \"minimal\",
+                \"retentionPeriod\": \"1_year\"
+            },
+            \"lastVerification\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+            \"certificationLevel\": \"level_2\"
+        }"
+    else
+        jq_cmd="$jq_cmd | .metadata.franceConnect = {
+            \"compliance\": \"disabled\",
+            \"identityProvider\": \"UPlanet\",
+            \"verificationLevel\": \"basic\",
+            \"kycStatus\": \"pending\",
+            \"wotVerification\": \"required\",
+            \"supportedServices\": [],
+            \"dataSharing\": {
+                \"consentRequired\": true,
+                \"scope\": \"none\",
+                \"retentionPeriod\": \"none\"
+            },
+            \"lastVerification\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+            \"certificationLevel\": \"level_0\"
+        }"
+    fi
+    
     local zencard_g1pub=$(cat "$HOME/.zen/game/players/${email}/.g1pub" 2>/dev/null)
     if [[ -n "$zencard_g1pub" ]]; then
         jq_cmd="$jq_cmd | .metadata.zencardWallet = {
@@ -668,6 +716,54 @@ show_wallet_addresses() {
 }
 
 ################################################################################
+# Validate France Connect compliance
+################################################################################
+validate_france_connect() {
+    local email="$1"
+    local did_file="$2"
+    
+    if [[ ! -f "$did_file" ]]; then
+        echo -e "${RED}❌ DID file not found: $did_file${NC}"
+        return 1
+    fi
+    
+    echo -e "${CYAN}🇫🇷 Validating France Connect compliance...${NC}"
+    
+    # Check if France Connect metadata exists
+    if ! jq -e '.metadata.franceConnect' "$did_file" >/dev/null 2>&1; then
+        echo -e "${YELLOW}⚠️  France Connect metadata not found${NC}"
+        return 1
+    fi
+    
+    # Validate required fields
+    local required_fields=("compliance" "identityProvider" "verificationLevel" "supportedServices")
+    for field in "${required_fields[@]}"; do
+        if ! jq -e ".metadata.franceConnect.$field" "$did_file" >/dev/null 2>&1; then
+            echo -e "${RED}❌ Missing France Connect field: $field${NC}"
+            return 1
+        fi
+    done
+    
+    # Check compliance status
+    local compliance=$(jq -r '.metadata.franceConnect.compliance' "$did_file")
+    if [[ "$compliance" != "enabled" ]]; then
+        echo -e "${YELLOW}⚠️  France Connect compliance not enabled${NC}"
+        return 1
+    fi
+    
+    # Check verification level
+    local verification_level=$(jq -r '.metadata.franceConnect.verificationLevel' "$did_file")
+    if [[ "$verification_level" == "basic" ]]; then
+        echo -e "${YELLOW}⚠️  Basic verification level - limited service access${NC}"
+    elif [[ "$verification_level" == "enhanced" ]]; then
+        echo -e "${GREEN}✅ Enhanced verification level - full service access${NC}"
+    fi
+    
+    echo -e "${GREEN}✅ France Connect compliance validated${NC}"
+    return 0
+}
+
+################################################################################
 # Show help
 ################################################################################
 show_help() {
@@ -683,6 +779,7 @@ Usage:
   $0 sync EMAIL
   $0 update-udrive EMAIL
   $0 validate FILE
+  $0 validate-france-connect EMAIL
   $0 show-wallets EMAIL
   $0 usociety EMAIL TYPE [MONTANT_ZEN]
   $0 help
@@ -762,6 +859,20 @@ main() {
                 exit 1
             fi
             validate_did_document "$2"
+            ;;
+        "validate-france-connect")
+            if [[ $# -lt 2 ]]; then
+                echo -e "${RED}❌ Usage: $0 validate-france-connect EMAIL${NC}"
+                exit 1
+            fi
+            local did_cache="$HOME/.zen/game/nostr/$2/did.json.cache"
+            if [[ -f "$did_cache" ]]; then
+                validate_france_connect "$2" "$did_cache"
+            else
+                echo -e "${RED}❌ No DID cache found for $2${NC}"
+                echo -e "${CYAN}💡 Run 'sync $2' first to fetch from Nostr${NC}"
+                exit 1
+            fi
             ;;
         "show-wallets")
             if [[ $# -lt 2 ]]; then

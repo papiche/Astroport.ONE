@@ -808,7 +808,231 @@ This implementation follows:
 - [Ed25519 Signature 2020](https://w3c-ccg.github.io/lds-ed25519-2020/)
 - [NOSTR Protocol (NIP-01)](https://github.com/nostr-protocol/nips/blob/master/01.md)
 
-## 10. Références
+## 10. Conformité France Connect : Pont entre Souveraineté et Légalité
+
+### 10.1. Positionnement Stratégique
+
+L'intégration de la conformité France Connect dans l'écosystème UPlanet représente un **pont stratégique** entre la souveraineté numérique décentralisée et la reconnaissance légale française. Cette approche permet aux utilisateurs français de bénéficier des deux mondes :
+
+- **Souveraineté UPlanet** : Contrôle total de l'identité, propriété numérique, économie coopérative
+- **Légalité Française** : Reconnaissance officielle, accès aux services publics, conformité RGPD
+
+### 10.2. Architecture France Connect Intégrée
+
+#### Métadonnées France Connect dans le DID
+
+Le document DID UPlanet inclut une section `franceConnect` qui s'active **uniquement pour les ZEN Card avec KYC vérifié** :
+
+**Pour les utilisateurs NON vérifiés (MULTIPASS uniquement) :**
+```json
+{
+  "metadata": {
+    "franceConnect": {
+      "compliance": "disabled",
+      "identityProvider": "UPlanet",
+      "verificationLevel": "basic",
+      "kycStatus": "pending",
+      "wotVerification": "required",
+      "supportedServices": [],
+      "dataSharing": {
+        "consentRequired": true,
+        "scope": "none",
+        "retentionPeriod": "none"
+      }
+    }
+  }
+}
+```
+
+**Pour les utilisateurs KYC vérifiés (ZEN Card + transaction WoT 0.01Ğ1) :**
+```json
+{
+  "metadata": {
+    "franceConnect": {
+      "compliance": "enabled",
+      "identityProvider": "UPlanet",
+      "verificationLevel": "enhanced",
+      "kycStatus": "verified",
+      "wotVerification": "completed",
+      "supportedServices": [
+        "france-identite",
+        "ameli",
+        "impots", 
+        "caf",
+        "pole-emploi"
+      ],
+      "dataSharing": {
+        "consentRequired": true,
+        "scope": "minimal",
+        "retentionPeriod": "1_year"
+      },
+      "lastVerification": "2025-10-11T14:30:00Z",
+      "certificationLevel": "level_2"
+    }
+  }
+}
+```
+
+#### Niveaux de Vérification
+
+1. **Level 0** : MULTIPASS sans KYC - Aucun accès France Connect
+2. **Level 1** : ZEN Card sans KYC - Accès limité aux services France Connect
+3. **Level 2** : ZEN Card + KYC WoT - Accès complet avec validation cryptographique UPlanet
+
+#### Processus de KYC WoT
+
+La conformité France Connect est activée uniquement après :
+
+1. **Création ZEN Card** : L'utilisateur devient sociétaire
+2. **Transaction WoT** : Un membre forgeron Duniter externe envoie 0.01Ğ1
+3. **Vérification** : Le fichier `~/.zen/tmp/coucou/${zencard_g1pub}.2nd` est créé
+4. **Activation** : France Connect passe de `disabled` à `enabled`
+
+### 10.3. Intégration Technique
+
+#### Scripts Modifiés
+
+**`make_NOSTRCARD.sh`** :
+- Génération des métadonnées France Connect en mode `disabled` par défaut
+- Statut initial : `kycStatus: "pending"`, `wotVerification: "required"`
+- Aucun service France Connect accessible sans KYC WoT
+
+**`did_manager_nostr.sh`** :
+- Nouvelle fonction `validate_france_connect()`
+- Vérification automatique du KYC WoT via fichier `.2nd`
+- Activation conditionnelle : `enabled` si KYC vérifié, `disabled` sinon
+- Métadonnées dynamiques selon le statut de vérification
+
+**`UPLANET.official.sh`** :
+- Validation France Connect **uniquement pour les SOCIÉTAIRES avec KYC WoT**
+- Pas de validation pour LOCATAIRE (MULTIPASS uniquement)
+- Pas de validation pour INFRASTRUCTURE (apport capital)
+- Vérification du fichier `~/.zen/tmp/coucou/${zencard_g1pub}.2nd`
+
+#### Commandes France Connect
+
+```bash
+# Validation de la conformité France Connect (KYC requis)
+./did_manager_nostr.sh validate-france-connect user@example.com
+
+# Mise à jour avec validation automatique (SOCIÉTAIRE uniquement)
+./did_manager_nostr.sh update user@example.com SOCIETAIRE_SATELLITE 50 5.0
+
+# Vérification du statut KYC
+ls ~/.zen/tmp/coucou/${zencard_g1pub}.2nd
+```
+
+### 10.4. Services France Connect Supportés
+
+#### Services Administratifs
+- **France Identité** : Justificatifs d'identité sécurisés
+- **Ameli** : Assurance maladie et remboursements
+- **Impots.gouv.fr** : Déclarations fiscales
+- **CAF** : Allocations familiales et sociales
+- **Pôle Emploi** : Services d'emploi et formation
+
+#### Flux d'Authentification
+
+**Pour les utilisateurs KYC vérifiés (ZEN Card + WoT) :**
+```
+Utilisateur UPlanet → France Connect → Service Public
+     ↓                    ↓              ↓
+  DID UPlanet      Validation FC    Service Administratif
+     ↓                    ↓              ↓
+  Blockchain Ğ1    Signature État    Accès Sécurisé
+```
+
+**Pour les utilisateurs sans KYC (MULTIPASS uniquement) :**
+```
+Utilisateur UPlanet → Accès Refusé
+     ↓                    ↓
+  DID UPlanet      France Connect
+     ↓                    ↓
+  Blockchain Ğ1    KYC Required
+```
+
+### 10.5. Avantages de l'Intégration
+
+#### Pour les Utilisateurs Français avec KYC
+- ✅ **Double Souveraineté** : UPlanet + France Connect
+- ✅ **Accès Simplifié** : Un seul identifiant pour tout
+- ✅ **Conformité Légale** : Respect du cadre français
+- ✅ **Économie Intégrée** : Monnaie libre + services publics
+
+#### Pour les Utilisateurs sans KYC
+- ✅ **Souveraineté UPlanet** : Contrôle total de l'identité
+- ✅ **Économie Coopérative** : Services UPlanet complets
+- ❌ **Services Publics** : Accès limité (KYC requis)
+
+#### Pour l'Écosystème UPlanet
+- ✅ **Légitimité Française** : Reconnaissance officielle
+- ✅ **Adoption Facilitée** : Pont avec l'existant
+- ✅ **Différenciation** : Unique en son genre
+- ✅ **Évolutivité** : Modèle réplicable
+
+### 10.6. Sécurité et Conformité
+
+#### Protection des Données
+- **Consentement Explicite** : `consentRequired: true`
+- **Minimisation** : `scope: "minimal"`
+- **Rétention Limitée** : `retentionPeriod: "1_year"`
+- **Chiffrement End-to-End** : Cryptographie Ed25519
+
+#### Conformité RGPD
+- **Droit à l'Oubli** : Suppression automatique après 1 an
+- **Portabilité** : Export des données via DID
+- **Transparence** : Métadonnées complètes dans le DID
+- **Contrôle Utilisateur** : Gestion via MULTIPASS
+
+### 10.7. Cas d'Usage Concrets
+
+#### Scénario 1 : Déclaration d'Impôts (KYC requis)
+```
+1. Utilisateur ZEN Card avec KYC WoT se connecte via UPlanet DID
+2. France Connect valide l'identité (KYC vérifié)
+3. Service Impots.gouv.fr accède aux données
+4. Déclaration pré-remplie automatiquement
+5. Signature électronique via clé UPlanet
+```
+
+#### Scénario 2 : Demande CAF (KYC requis)
+```
+1. Authentification UPlanet + France Connect (KYC vérifié)
+2. Vérification automatique des revenus Ğ1
+3. Calcul des droits via blockchain
+4. Demande automatique des allocations
+5. Paiement en Ğ1 ou euros
+```
+
+#### Scénario 3 : Utilisateur MULTIPASS sans KYC
+```
+1. Utilisateur MULTIPASS tente d'accéder à France Connect
+2. Accès refusé - KYC requis
+3. Redirection vers processus de création ZEN Card
+4. Information sur la nécessité du KYC WoT
+```
+
+### 10.8. Évolution Future
+
+#### Phase 1 : Conformité de Base (Actuelle)
+- Métadonnées France Connect conditionnelles dans le DID
+- Validation automatique basée sur le KYC WoT
+- Activation uniquement pour ZEN Card avec KYC vérifié
+- Intégration avec services existants
+
+#### Phase 2 : Certification Complète
+- Certification officielle France Connect pour utilisateurs KYC
+- Intégration directe avec l'API France Connect
+- Services publics natifs UPlanet pour sociétaires vérifiés
+- Processus de KYC automatisé via WoT
+
+#### Phase 3 : Écosystème Hybride
+- Services publics décentralisés pour utilisateurs KYC
+- Monnaie libre intégrée aux administrations
+- Gouvernance numérique participative
+- Écosystème multi-niveaux (MULTIPASS/ZEN Card/France Connect)
+
+## 11. Références
 
 ### Standards et Spécifications
 
@@ -816,6 +1040,8 @@ This implementation follows:
 - [W3C DID Specification Registries](https://www.w3.org/TR/did-spec-registries/) - Registre des méthodes DID
 - [Ed25519 Signature 2020](https://w3c-ccg.github.io/lds-ed25519-2020/) - Signatures cryptographiques Ed25519
 - [UCAN Specification](https://ucan.xyz/) - User-Controlled Authorization Networks
+- [France Connect Documentation](https://franceconnect.gouv.fr/) - Plateforme d'authentification française
+- [France Identité](https://france-identite.gouv.fr/) - Justificatifs d'identité sécurisés
 
 ### Protocoles et Technologies
 
