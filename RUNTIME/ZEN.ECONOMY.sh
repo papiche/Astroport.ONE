@@ -172,63 +172,6 @@ fi
 #######################################################################
 
 #######################################################################
-# APPORT AU CAPITAL - Machine contribution (one-time setup)
-# Check if NODE needs capital contribution from CAPTAIN ZEN Card
-# This should only happen once when the node is first set up
-#######################################################################
-check_machine_capital_contribution() {
-    local contribution_marker="$HOME/.zen/game/.machine_capital_contributed"
-    
-    # Check if capital contribution was already made
-    if [[ -f "$contribution_marker" ]]; then
-        log_output "ZEN ECONOMY: Machine capital contribution already recorded"
-        return 0
-    fi
-    
-    # Check if we have a captain with ZEN Card and sufficient balance
-    if [[ -n "$CAPTAINEMAIL" && "$CAPTAIN_ZENCARD_ZEN" -gt 0 ]]; then
-        log_output "ZEN ECONOMY: Checking machine capital contribution..."
-        
-        # Get machine value from environment or default (example: 500€ = 500 Ẑen)
-        MACHINE_VALUE_ZEN="${MACHINE_VALUE_ZEN:-500}"  # Default 500 Ẑen for a basic setup
-        MACHINE_VALUE_G1=$(makecoord $(echo "$MACHINE_VALUE_ZEN / 10" | bc -l))
-        
-        if [[ $(echo "$CAPTAIN_ZENCARD_ZEN >= $MACHINE_VALUE_ZEN" | bc -l) -eq 1 ]]; then
-            log_output "ZEN ECONOMY: Processing machine capital contribution..."
-            log_output "  Machine value: $MACHINE_VALUE_ZEN Ẑen ($MACHINE_VALUE_G1 G1)"
-            log_output "  From: CAPTAIN ZEN Card (parts sociales)"
-            log_output "  To: NODE (apport au capital)"
-            
-            # Transfer from CAPTAIN ZEN Card to NODE as capital contribution
-            CAPTYOUSER=$($MY_PATH/../tools/clyuseryomail.sh ${CAPTAINEMAIL})
-            ${MY_PATH}/../tools/PAYforSURE.sh \
-                "$HOME/.zen/game/players/$CAPTAINEMAIL/secret.dunikey" \
-                "$MACHINE_VALUE_G1" \
-                "${NODEG1PUB}" \
-                "UPLANET:${UPLANETG1PUB:0:8}:$CAPTYOUSER:APPORT_CAPITAL_MACHINE:${MACHINE_VALUE_ZEN}ZEN" \
-                2>/dev/null
-            
-            if [[ $? -eq 0 ]]; then
-                log_output "✅ Machine capital contribution completed: $MACHINE_VALUE_ZEN Ẑen"
-                echo "$(date -u +%Y%m%d%H%M%S) MACHINE_CAPITAL_CONTRIBUTION $MACHINE_VALUE_ZEN ZEN $CAPTYOUSER" > "$contribution_marker"
-                chmod 600 "$contribution_marker"
-            else
-                log_output "❌ Machine capital contribution failed"
-            fi
-        else
-            log_output "ZEN ECONOMY: Insufficient ZEN Card balance for machine capital contribution."
-            log_output "  Required: $MACHINE_VALUE_ZEN Ẑen"
-            log_output "  Available: $CAPTAIN_ZENCARD_ZEN Ẑen"
-        fi
-    else
-        log_output "ZEN ECONOMY: No captain ZEN Card available for machine capital contribution"
-    fi
-}
-
-# Execute capital contribution check (only runs once)
-check_machine_capital_contribution
-
-#######################################################################
 # CAPTAIN REMUNERATION - 2x PAF weekly payment
 # Transfer captain's remuneration (2x PAF) to dedicated captain wallet
 # This is the captain's earning for managing the node
@@ -297,6 +240,21 @@ fourweeks_paf_burn_and_convert() {
     local period_key="${current_year}-P${period_number}"
     local burn_marker="$HOME/.zen/game/.fourweeks_paf_burn.$period_key"
     
+    # Detect station level (X or Y) like DRAGON_p2p_ssh.sh
+    local station_level="X"
+    if [[ -s ~/.ssh/id_ed25519.pub ]]; then
+        local YIPNS=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py "$(cat ~/.ssh/id_ed25519.pub)")
+        if [[ ${IPFSNODEID} == ${YIPNS} ]]; then
+            station_level="Y"
+            log_output "ZEN ECONOMY: Station Level Y detected (SSH/IPFS transmuted)"
+        else
+            log_output "ZEN ECONOMY: Station Level X detected (SSH/IPFS not linked)"
+            log_output "ZEN ECONOMY: ${YIPNS} != ${IPFSNODEID}"
+        fi
+    else
+        log_output "ZEN ECONOMY: Station Level X detected (no SSH key found)"
+    fi
+    
     # Check if burn was already done for this 4-week period
     if [[ -f "$burn_marker" ]]; then
         log_output "ZEN ECONOMY: 4-week PAF burn already completed for period $period_key"
@@ -318,28 +276,47 @@ fourweeks_paf_burn_and_convert() {
             log_output "  To: UPLANETNAME.G1 (burn & convert)"
             
             # Burn: NODE → UPLANETNAME.G1
-            if [[ -f "$HOME/.zen/game/secret.NODE.dunikey" ]]; then
+            # Check station level and use appropriate method
+            if [[ "$station_level" == "Y" && -f "$HOME/.zen/game/secret.NODE.dunikey" ]]; then
+                # Level Y: Use existing NODE wallet
+                log_output "ZEN ECONOMY: Using NODE wallet (Level Y): $HOME/.zen/game/secret.NODE.dunikey"
                 ${MY_PATH}/../tools/PAYforSURE.sh \
                     "$HOME/.zen/game/secret.NODE.dunikey" \
                     "$FOURWEEKS_PAF_G1" \
                     "${UPLANETG1PUB}" \
                     "UPLANET:${UPLANETG1PUB:0:8}:NODE:BURN_PAF_4WEEKS:$period_key:${FOURWEEKS_PAF}ZEN" \
                     2>/dev/null
-                
-                if [[ $? -eq 0 ]]; then
-                    log_output "✅ 4-week PAF burn completed: $FOURWEEKS_PAF Ẑen"
-                    
-                    # Request OpenCollective conversion (1Ẑ = 1€)
-                    request_opencollective_conversion "$FOURWEEKS_PAF" "$period_key"
-                    
-                    # Mark burn as completed
-                    echo "$(date -u +%Y%m%d%H%M%S) FOURWEEKS_PAF_BURN $FOURWEEKS_PAF ZEN NODE $period_key" > "$burn_marker"
-                    chmod 600 "$burn_marker"
+            elif [[ "$station_level" == "X" ]]; then
+                # Level X: Use CAPTAIN MULTIPASS as burn source (no NODE wallet available)
+                log_output "ZEN ECONOMY: Level X - Using CAPTAIN MULTIPASS for PAF burn (no NODE wallet available)"
+                # For Level X stations, use CAPTAIN MULTIPASS as burn source
+                if [[ -n "$CAPTAINEMAIL" && -f "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" ]]; then
+                    ${MY_PATH}/../tools/PAYforSURE.sh \
+                        "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" \
+                        "$FOURWEEKS_PAF_G1" \
+                        "${UPLANETG1PUB}" \
+                        "UPLANET:${UPLANETG1PUB:0:8}:CAPTAIN:BURN_PAF_4WEEKS_LEVELX:$period_key:${FOURWEEKS_PAF}ZEN" \
+                        2>/dev/null
                 else
-                    log_output "❌ 4-week PAF burn failed"
+                    log_output "ZEN ECONOMY: Level X - No CAPTAIN MULTIPASS available for PAF burn"
+                    return 1
                 fi
             else
-                log_output "ZEN ECONOMY: NODE dunikey not found for burn operation"
+                log_output "ZEN ECONOMY: Unknown station level or missing NODE wallet"
+                return 1
+            fi
+            
+            if [[ $? -eq 0 ]]; then
+                log_output "✅ 4-week PAF burn completed: $FOURWEEKS_PAF Ẑen"
+                
+                # Request OpenCollective conversion (1Ẑ = 1€)
+                request_opencollective_conversion "$FOURWEEKS_PAF" "$period_key"
+                
+                # Mark burn as completed
+                echo "$(date -u +%Y%m%d%H%M%S) FOURWEEKS_PAF_BURN $FOURWEEKS_PAF ZEN NODE $period_key" > "$burn_marker"
+                chmod 600 "$burn_marker"
+            else
+                log_output "❌ 4-week PAF burn failed"
             fi
         else
             log_output "ZEN ECONOMY: Insufficient NODE balance for 4-week PAF burn"
