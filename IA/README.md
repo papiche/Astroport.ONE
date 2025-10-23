@@ -94,6 +94,68 @@ Welcome to the UPlanet IA Bot System! This is a powerful, multi-functional AI as
 | `#secret` | Send private DM instead of public reply | `#BRO #secret Tell me something private` | All users |
 | `#secret #N` | Private DM with slot context | `#BRO #secret #3 Private meeting notes` | Sociétaires only |
 
+## 🏗️ **Technical Architecture**
+
+### **Service Connection Management**
+
+The UPlanet IA system uses a sophisticated connection management architecture that ensures all AI services are available before processing requests. This system is crucial for the bot's functionality and will evolve significantly in production.
+
+#### **Current Architecture (Development)**
+- **Ollama** (Port 11434) - Core AI conversations
+- **ComfyUI** (Port 8188) - Image/video/music generation  
+- **Perplexica** (Port 3001) - Web search
+- **Orpheus TTS** (Port 5005) - Text-to-speech
+
+#### **Connection Verification Process**
+1. **Ollama verification** (mandatory) - Bot stops if unavailable
+2. **Specialized service verification** (on-demand based on tags)
+3. **SSH tunnel fallback** to `scorpio.copylaradio.com` if local services unavailable
+4. **Error handling** with specific messages per service
+
+#### **Future Architecture (Production UPlanet ẐEN[0])**
+All services will migrate to **IPFS P2P connections** via the `DRAGON_p2p_ssh.sh` system:
+
+- **Decentralized discovery** - Each node publishes available services
+- **Load balancing** - Automatic selection of best available node
+- **Resilience** - No single point of failure
+- **Security** - End-to-end encrypted P2P connections
+
+### **File Structure**
+```
+~/.zen/tmp/flashmem/
+├── {user_email}/
+│   ├── slot0.json      # General conversations
+│   ├── slot1.json      # Work discussions
+│   ├── slot2.json      # Personal projects
+│   └── ...
+└── uplanet_memory/     # Legacy coordinate-based memory
+    ├── {coord_key}.json
+    └── pubkey/
+        └── {pubkey}.json
+```
+
+### **Memory File Format**
+```json
+{
+  "user_id": "user@example.com",
+  "slot": 3,
+  "messages": [
+    {
+      "timestamp": "2024-01-01T12:00:00Z",
+      "event_id": "event123",
+      "latitude": "48.86",
+      "longitude": "2.22",
+      "content": "Meeting notes: Discussed Q4 goals"
+    }
+  ]
+}
+```
+
+### **AI Context Loading**
+- **Slot-based context**: Last 20 messages from specified slot
+- **Fallback**: Legacy pubkey or coordinate-based memory
+- **Token optimization**: Limits context to prevent AI token overflow
+
 ## 🧠 **Memory System Deep Dive**
 
 ### Why 12 Slots?
@@ -138,78 +200,6 @@ The 12-slot system allows you to organize conversations by context:
 #BRO #rec2 #3 What were our action items?
 #mem #3 Show me both the notes and the bot's response
 ```
-
-### Real-World Usage Examples
-
-#### 📊 **Work Scenario**
-```
-#rec #1 Meeting with client about Q4 project
-#rec #1 Client wants AI-powered dashboard
-#rec #1 Deadline: December 15th
-#BRO #1 What are the key requirements from our meeting?
-```
-
-#### 🎨 **Creative Project**
-```
-#rec #4 Idea: Mobile app for local farmers
-#rec #4 Features: GPS tracking, weather alerts
-#rec #4 Target users: Small-scale farmers
-#BRO #4 #image A modern farming app interface
-```
-
-#### 🏥 **Health Tracking**
-```
-#rec #9 Doctor appointment tomorrow at 2 PM
-#rec #9 Need to bring blood test results
-#rec #9 Questions about new medication
-#mem #9 Show me my health reminders
-```
-
-#### 🎵 **Music Creation**
-```
-#rec #12 Working on ambient album
-#rec #12 Theme: Ocean waves and meditation
-#rec #12 Need 5 more tracks
-#BRO #12 #music A peaceful ocean ambient track
-```
-
-## 🔧 **Technical Architecture**
-
-### File Structure
-```
-~/.zen/tmp/flashmem/
-├── {user_email}/
-│   ├── slot0.json      # General conversations
-│   ├── slot1.json      # Work discussions
-│   ├── slot2.json      # Personal projects
-│   └── ...
-└── uplanet_memory/     # Legacy coordinate-based memory
-    ├── {coord_key}.json
-    └── pubkey/
-        └── {pubkey}.json
-```
-
-### Memory File Format
-```json
-{
-  "user_id": "user@example.com",
-  "slot": 3,
-  "messages": [
-    {
-      "timestamp": "2024-01-01T12:00:00Z",
-      "event_id": "event123",
-      "latitude": "48.86",
-      "longitude": "2.22",
-      "content": "Meeting notes: Discussed Q4 goals"
-    }
-  ]
-}
-```
-
-### AI Context Loading
-- **Slot-based context**: Last 20 messages from specified slot
-- **Fallback**: Legacy pubkey or coordinate-based memory
-- **Token optimization**: Limits context to prevent AI token overflow
 
 ## 🎯 **Best Practices**
 
@@ -439,8 +429,19 @@ The `#secret` tag enables completely private communication between you and the U
 - [ ] Private AI generation: `#BRO #secret #image Private design`
 - [ ] Verify NOSTR client receives direct messages
 
+## 📚 **Technical Documentation**
+
+### **Connection Management Architecture**
+For detailed information about how the IA system manages service connections, see:
+- **[Connection Management Diagram](connection_management_diagram.md)** - Complete technical overview of service connection management, verification processes, and the migration to IPFS P2P architecture
+
+### **Related Documentation**
+- **[Astroport.ONE Main README](../README.md)** - Overview of the entire UPlanet ecosystem
+- **[Architecture Documentation](../ARCHITECTURE.md)** - Technical system architecture
+- **[Legal Framework](../LEGAL.md)** - Cooperative legal structure
+
 ---
 
 **Welcome to the future of contextual AI conversations!** 🚀
 
-The UPlanet IA Bot System combines the power of multiple AI models with intelligent memory management to create a truly personalized and contextually aware assistant. Whether you're managing work projects, pursuing creative endeavors, or just having a conversation, the 12-slot memory system ensures that your AI assistant always remembers what matters to you. 
+The UPlanet IA Bot System combines the power of multiple AI models with intelligent memory management to create a truly personalized and contextually aware assistant. Whether you're managing work projects, pursuing creative endeavors, or just having a conversation, the 12-slot memory system ensures that your AI assistant always remembers what matters to you.
