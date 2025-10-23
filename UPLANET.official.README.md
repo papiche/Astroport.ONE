@@ -4,6 +4,64 @@
 
 Ce script gère les virements officiels de l'écosystème UPlanet ẐEN selon la [Constitution de l'Écosystème](./LEGAL.md) et implémente techniquement le [Code de la Route](./RUNTIME/ZEN.ECONOMY.readme.md).
 
+## 🏗️ **Niveaux de Station UPlanet**
+
+### **🔴 Niveau X (Station Standard)**
+- **SSH** : Clé SSH standard (non jumelée)
+- **IPFS** : Identité IPFS indépendante
+- **NODE** : Conversion `IPFSNODEID → G1PUB` via `ipfs_to_g1.py`
+- **Fichier** : ❌ Pas de `secret.NODE.dunikey`
+- **Usage** : Stations de base, développement, tests
+
+### **🟡 Niveau Y (Station Transmutée)**
+- **SSH** : Clé SSH jumelée avec IPFS (via `Ylevel.sh`)
+- **IPFS** : Identité IPFS liée à la clé SSH
+- **NODE** : Fichier `secret.NODE.dunikey` créé par transmutation
+- **Fichier** : ✅ `secret.NODE.dunikey` existe
+- **Usage** : Stations de production, sécurité renforcée
+
+### **🔄 Processus de Transmutation (Ylevel.sh)**
+```bash
+# Avant transmutation (Niveau X)
+~/.ssh/id_ed25519          # Clé SSH standard
+~/.ipfs/config             # Identité IPFS indépendante
+# Pas de secret.NODE.dunikey
+
+# Après transmutation (Niveau Y)
+~/.ssh/id_ed25519          # Clé SSH jumelée avec IPFS
+~/.ipfs/config             # Identité IPFS liée à SSH
+~/.zen/game/secret.NODE.dunikey  # Fichier NODE créé
+```
+
+### **🎯 Détection Automatique du Niveau**
+Le script détecte automatiquement le niveau de la station :
+
+```bash
+# Logique de détection (my.sh + UPLANET.official.sh)
+if [[ -f "$HOME/.zen/game/secret.NODE.dunikey" ]]; then
+    # Niveau Y : Utilise le fichier transmuté
+    node_pubkey=$(cat "$HOME/.zen/game/secret.NODE.dunikey" | grep "pub:" | cut -d ' ' -f 2)
+    echo "✅ NODE trouvé (niveau Y): ${node_pubkey:0:8}..."
+else
+    # Niveau X : Conversion IPFSNODEID → G1PUB
+    if [[ -n "$IPFSNODEID" ]]; then
+        node_pubkey=$(${MY_PATH}/ipfs_to_g1.py "$IPFSNODEID")
+        echo "✅ NODE généré (conversion IPFS): ${node_pubkey:0:8}..."
+    fi
+fi
+```
+
+### **📊 Comparaison des Niveaux**
+
+| **Aspect** | **Niveau X** | **Niveau Y** |
+|------------|--------------|--------------|
+| **SSH/IPFS** | Indépendants | Jumelés |
+| **Fichier NODE** | ❌ Absent | ✅ `secret.NODE.dunikey` |
+| **Méthode NODE** | Conversion IPFS | Lecture fichier |
+| **Sécurité** | Standard | Renforcée |
+| **Performance** | Conversion à chaque fois | Cache optimisé |
+| **Transmutation** | Non effectuée | Via `Ylevel.sh` |
+
 ## 🏗️ **Architecture des Virements**
 
 ### **1. Virement LOCATAIRE (Recharge MULTIPASS)**
@@ -134,6 +192,20 @@ silkaj      # Interface blockchain Ğ1
 jq          # Traitement JSON
 bc          # Calculs mathématiques
 ```
+
+### **Niveau de Station Requis**
+
+Le script fonctionne avec **tous les niveaux de station** :
+
+#### **🔴 Niveau X (Standard)**
+- ✅ **Fonctionne** : Utilise la conversion `IPFSNODEID → G1PUB`
+- ✅ **Recommandé pour** : Développement, tests, stations temporaires
+- ✅ **Prérequis** : `IPFSNODEID` disponible dans l'environnement
+
+#### **🟡 Niveau Y (Transmutée)**
+- ✅ **Fonctionne** : Utilise le fichier `secret.NODE.dunikey`
+- ✅ **Recommandé pour** : Production, stations permanentes
+- ✅ **Prérequis** : Exécution de `Ylevel.sh` pour la transmutation SSH/IPFS
 
 ### **Configuration UPlanet**
 Le script nécessite que les portefeuilles suivants soient configurés :

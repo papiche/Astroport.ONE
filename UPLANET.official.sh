@@ -502,12 +502,19 @@ process_infrastructure() {
     # Récupérer la clé NODE
     local node_pubkey=""
     if [[ -f "$HOME/.zen/game/secret.NODE.dunikey" ]]; then
+        # Station avec niveau Y (Ylevel.sh) - utilise le fichier secret.NODE.dunikey
         node_pubkey=$(cat "$HOME/.zen/game/secret.NODE.dunikey" | grep "pub:" | cut -d ' ' -f 2)
-        echo -e "${GREEN}✅ NODE trouvé: ${node_pubkey:0:8}...${NC}"
+        echo -e "${GREEN}✅ NODE trouvé (niveau Y): ${node_pubkey:0:8}...${NC}"
     else
-        echo -e "${RED}❌ Portefeuille NODE non trouvé: ~/.zen/game/secret.NODE.dunikey${NC}"
-        echo -e "${CYAN}💡 Exécutez UPLANET.init.sh pour créer le portefeuille NODE${NC}"
-        return 1
+        # Station sans niveau Y - utilise la conversion G1 de IPFSNODEID
+        if [[ -n "$IPFSNODEID" ]]; then
+            node_pubkey=$(${MY_PATH}/../tools/ipfs_to_g1.py "$IPFSNODEID")
+            echo -e "${GREEN}✅ NODE généré (conversion IPFS): ${node_pubkey:0:8}...${NC}"
+        else
+            echo -e "${RED}❌ Impossible de déterminer la clé NODE${NC}"
+            echo -e "${CYAN}💡 IPFSNODEID non disponible pour la conversion G1${NC}"
+            return 1
+        fi
     fi
     
     echo -e "${YELLOW}🔑 Portefeuilles identifiés:${NC}"
