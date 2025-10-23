@@ -53,14 +53,57 @@ fi
 
 ### **📊 Comparaison des Niveaux**
 
-| **Aspect** | **Niveau X** | **Niveau Y** |
-|------------|--------------|--------------|
-| **SSH/IPFS** | Indépendants | Jumelés |
-| **Fichier NODE** | ❌ Absent | ✅ `secret.NODE.dunikey` |
-| **Méthode NODE** | Conversion IPFS | Lecture fichier |
-| **Sécurité** | Standard | Renforcée |
-| **Performance** | Conversion à chaque fois | Cache optimisé |
-| **Transmutation** | Non effectuée | Via `Ylevel.sh` |
+| **Aspect** | **Niveau X** | **Niveau Y** | **Niveau Z** |
+|------------|--------------|--------------|--------------|
+| **SSH/IPFS** | Indépendants | Jumelés | Jumelés + PGP |
+| **Fichier NODE** | ❌ Absent | ✅ `secret.NODE.dunikey` | ✅ `secret.NODE.dunikey` |
+| **Méthode NODE** | Conversion IPFS | Lecture fichier | Lecture fichier |
+| **Sécurité** | Standard | Renforcée | Maximale |
+| **Performance** | Conversion à chaque fois | Cache optimisé | Cache optimisé |
+| **Transmutation** | Non effectuée | Via `Ylevel.sh` | Via `Ylevel.sh` + PGP |
+| **Vérification Humaine** | ⚠️ Limitée | ✅ Confirmée | ✅ Maximale |
+
+### **🔒 Sécurité et Vérification Humaine**
+
+Le système de niveaux X/Y/Z garantit qu'**un Humain est aux commandes** de la machine :
+
+#### **🔴 Niveau X - Vérification Basique**
+- **Statut** : Station standard, développement
+- **Sécurité** : SSH/IPFS indépendants
+- **Vérification Humaine** : Limitée (pas de jumelage cryptographique)
+- **Usage** : Tests, développement, stations temporaires
+
+#### **🟡 Niveau Y - Vérification Renforcée**
+- **Statut** : Station transmutée, production
+- **Sécurité** : SSH/IPFS jumelés via `Ylevel.sh`
+- **Vérification Humaine** : ✅ **Confirmée** (transmutation cryptographique)
+- **Usage** : Production, stations permanentes
+- **Garantie** : L'identité SSH est liée à l'identité IPFS
+
+#### **🟢 Niveau Z - Vérification Maximale**
+- **Statut** : Station transmutée + PGP
+- **Sécurité** : SSH/IPFS jumelés + PGP intégré
+- **Vérification Humaine** : ✅ **Maximale** (triple vérification)
+- **Usage** : Stations critiques, haute sécurité
+- **Garantie** : Triple vérification SSH/IPFS/PGP
+
+### **🎯 Pourquoi cette Vérification est Cruciale ?**
+
+1. **Prévention des Bots** : Seuls les humains peuvent effectuer la transmutation
+2. **Sécurité Économique** : Les virements importants nécessitent une identité vérifiée
+3. **Traçabilité** : Chaque transaction est liée à une identité humaine confirmée
+4. **Gouvernance** : Les décisions économiques sont prises par des humains identifiés
+5. **Conformité Légale** : Respect des réglementations sur l'identité numérique
+
+### **🔄 Processus de Vérification**
+
+```bash
+# Niveau X → Y : Transmutation SSH/IPFS
+Ylevel.sh  # Jumelage cryptographique SSH ↔ IPFS
+
+# Niveau Y → Z : Intégration PGP
+# Vérification PGP supplémentaire pour sécurité maximale
+```
 
 ## 🏗️ **Architecture des Virements**
 
@@ -183,6 +226,37 @@ ZEN Card[email] → 3x1/3 (au choix : TREASURY, RnD, ou ASSETS)
 - ✅ Traçabilité complète des flux économiques
 - ✅ Mise à jour automatique des DID via `did_manager_nostr.sh`
 
+### **Vérification Humaine des Virements**
+- ✅ **Niveau Y/Z requis** : Les virements importants nécessitent une station transmutée
+- ✅ **Identité vérifiée** : Chaque transaction est liée à une identité humaine confirmée
+- ✅ **Prévention des bots** : Seuls les humains peuvent effectuer des virements économiques
+- ✅ **Traçabilité** : Références blockchain incluent l'identité du nœud humain
+- ✅ **Sécurité économique** : Protection contre les transactions automatisées non autorisées
+
+### **WoT DRAGON - Web of Trust**
+Le système respecte les usages de la **Web of Trust DRAGON** :
+
+#### **🔑 Primo-Transaction NODE**
+- **Source** : UPLANETNAME.G1 (compte principal)
+- **Destination** : Wallet NODE (niveau Y/Z)
+- **Montant** : 1Ğ1 (primo-transaction)
+- **Référence** : `UPLANET:${UPLANETG1PUB:0:8}:NODEINIT:${IPFSNODEID}`
+- **Justification** : Initialisation du nœud par l'écosystème UPlanet
+
+#### **🔄 Validation WoT DRAGON (.2nd)**
+- **Source** : Compte forgeron du Capitaine (`CAPTAINEMAIL`)
+- **Destination** : Wallet NODE (même adresse)
+- **Montant** : 0.01Ğ1 (transaction de validation)
+- **Référence** : `$CAPTAINEMAIL`
+- **Justification** : Validation WoT par le Capitaine forgeron
+
+#### **📊 Avantages WoT DRAGON**
+1. **Traçabilité** : Chaque NODE est initialisé par UPlanet puis validé par son Capitaine
+2. **Sécurité** : Double vérification (UPlanet + Capitaine forgeron)
+3. **Gouvernance** : Responsabilité claire du Capitaine sur son nœud
+4. **Conformité** : Respect des standards de la Web of Trust
+5. **Validation Humaine** : Le Capitaine confirme son contrôle via sa transaction forgeron
+
 ## 📋 **Prérequis**
 
 ### **Dépendances Système**
@@ -206,6 +280,23 @@ Le script fonctionne avec **tous les niveaux de station** :
 - ✅ **Fonctionne** : Utilise le fichier `secret.NODE.dunikey`
 - ✅ **Recommandé pour** : Production, stations permanentes
 - ✅ **Prérequis** : Exécution de `Ylevel.sh` pour la transmutation SSH/IPFS
+- ✅ **Sécurité** : Vérification humaine confirmée
+
+#### **🟢 Niveau Z (Transmutée + PGP)**
+- ✅ **Fonctionne** : Utilise le fichier `secret.NODE.dunikey` + PGP
+- ✅ **Recommandé pour** : Stations critiques, haute sécurité
+- ✅ **Prérequis** : Transmutation SSH/IPFS + intégration PGP
+- ✅ **Sécurité** : Vérification par Dongle USB (YubiKey)
+
+### **Niveau de Station par Type de Virement**
+
+| **Type de Virement** | **Niveau Minimum** | **Justification** |
+|----------------------|-------------------|-------------------|
+| **LOCATAIRE** | X | Recharge simple, pas de risque économique majeur |
+| **SOCIÉTAIRE** | Y | Parts sociales, nécessite identité vérifiée |
+| **INFRASTRUCTURE** | Y | Apport capital, sécurité économique requise |
+| **PAF Burn** | Y | Gestion économique critique, vérification humaine |
+| **Dépannage** | Y | Opérations de récupération, sécurité requise |
 
 ### **Configuration UPlanet**
 Le script nécessite que les portefeuilles suivants soient configurés :
