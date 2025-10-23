@@ -689,6 +689,31 @@ echo ${UPLANETNAME_ASSETS} > $HOME/.zen/tmp/UPLANETNAME_ASSETS
 UPLANETNAME_RND=$(cat $HOME/.zen/game/uplanet.RnD.dunikey | grep "pub" | cut -d " " -f 2)
 echo ${UPLANETNAME_RND} > $HOME/.zen/tmp/UPLANETNAME_RND
 
+# UPLANETNAME_NODE -- NODE wallet (Armateur) for infrastructure capital
+# Created by Ylevel.sh, or obtained by ipfs_to_g1.py conversion
+if [[ -f "$HOME/.zen/game/secret.NODE.dunikey" ]]; then
+UPLANETNAME_NODE=$(cat $HOME/.zen/game/secret.NODE.dunikey | grep "pub" | cut -d " " -f 2)
+echo ${UPLANETNAME_NODE} > $HOME/.zen/tmp/UPLANETNAME_NODE
+else
+    # Fallback: generate from IPFSNODEID using ipfs_to_g1.py conversion
+    if [[ -n "$IPFSNODEID" ]]; then
+        UPLANETNAME_NODE=$(${MY_PATH}/ipfs_to_g1.py "$IPFSNODEID")
+        echo ${UPLANETNAME_NODE} > $HOME/.zen/tmp/UPLANETNAME_NODE
+    else
+        echo "⚠️  NODE wallet not found and IPFSNODEID not available"
+    fi
+fi
+
+# UPLANETNAME_CAPTAIN -- Captain dedicated wallet for remuneration (2x PAF)
+# Created by ZEN.ECONOMY.sh for captain's personal earnings
+if [[ -f "$HOME/.zen/game/uplanet.captain.dunikey" ]]; then
+    UPLANETNAME_CAPTAIN=$(cat $HOME/.zen/game/uplanet.captain.dunikey | grep "pub" | cut -d " " -f 2)
+    echo ${UPLANETNAME_CAPTAIN} > $HOME/.zen/tmp/UPLANETNAME_CAPTAIN
+else
+    # Will be created by ZEN.ECONOMY.sh when needed
+    echo "⚠️  Captain dedicated wallet not found (will be created by ZEN.ECONOMY.sh)"
+fi
+
 [[ -s ${HOME}/.zen/game/MY_boostrap_nodes.txt ]] \
     && STRAPFILE="${HOME}/.zen/game/MY_boostrap_nodes.txt" \
     || STRAPFILE="${HOME}/.zen/Astroport.ONE/A_boostrap_nodes.txt"
