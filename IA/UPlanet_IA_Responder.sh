@@ -702,6 +702,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
         # Only generate an answer if KeyANSWER is not already set
         if [[ -z "$KeyANSWER" ]]; then
             # Optimisation: Process specialized commands
+            ######################################################### #search
             if [[ "${TAGS[search]}" == true ]]; then
                 $MY_PATH/perplexica.me.sh
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g; s/"//g' <<< "$message_text")
@@ -711,7 +712,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 
                 # Generate intelligent summary using the detected language
                 echo "Generating intelligent summary for article..." >&2
-                ARTICLE_SUMMARY="$($MY_PATH/question.py --json "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. The summary should capture the main points and be suitable for a blog article header. IMPORTANT: Respond ONLY in ${USER_LANG} language. Article content: ${KeyANSWER}" --pubkey ${PUBKEY})"
+                ARTICLE_SUMMARY="$($MY_PATH/question.py --json "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. The summary should capture the main points and be suitable for a blog article header. IMPORTANT: Respond directly and clearly ONLY in the language ${USER_LANG}. Article content: ${KeyANSWER}" --pubkey ${PUBKEY})"
                 
                 # Extract content from JSON response and clean it (less aggressive with JSON)
                 ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | jq -r '.answer // .' 2>/dev/null || echo "$ARTICLE_SUMMARY")"
@@ -723,9 +724,9 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 
                 # Use AI to create an optimized Stable Diffusion prompt based on the summary
                 echo "Creating AI-generated prompt for illustration based on article summary..." >&2
-                SD_PROMPT="$($MY_PATH/question.py --json "Create a Stable Diffusion prompt for an illustrative image based on this article summary: ${ARTICLE_SUMMARY} --- CRITICAL RULES: 1) Output ONLY the prompt text, no explanations 2) NO emojis, NO special characters, NO text, NO words, NO letters, NO writing 3) ONLY visual elements and descriptive words 4) Use simple English words only 5) Focus on visual composition, colors, style, objects, scenes 6) IMPORTANT: Respond ONLY in English for the prompt" --pubkey ${PUBKEY})"
+                SD_PROMPT="$($MY_PATH/question.py --json "Create a Stable Diffusion prompt for an illustrative image based on this article summary: ${ARTICLE_SUMMARY} --- CRITICAL RULES: 1) Output ONLY the prompt text, no explanations 2) NO emojis, NO special characters, NO text, NO words, NO brands, NO writing 3) ONLY visual elements and descriptive words 4) Use simple English words only 5) Focus on visual composition, colors, style, objects, scenes" --pubkey ${PUBKEY})"
                 
-                # Extract content from JSON response and clean the prompt (less aggressive with JSON)
+                # Extract content from JSON response and clean the prompt
                 SD_PROMPT="$(echo "$SD_PROMPT" | jq -r '.answer // .' 2>/dev/null || echo "$SD_PROMPT")"
                 SD_PROMPT=$(echo "$SD_PROMPT" | \
                     sed 's/^[[:space:]]*//' | \
@@ -759,7 +760,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 echo "Creating JSON tags for kind 30023..." >&2
                 
                 # Create a temporary JSON file for jq processing
-                temp_json="/tmp/tags_${RANDOM}.json"
+                temp_json="$HOME/.zen/tmp/tags_${RANDOM}.json"
                 if [[ -n "$ILLUSTRATION_URL" ]]; then
                     jq -n --arg title "$cleaned_text" --arg summary "$ARTICLE_SUMMARY" --arg image "$ILLUSTRATION_URL" --arg published_at "$(date -u +%s)" \
                         '[["title", $title], ["summary", $summary], ["published_at", $published_at], ["image", $image], ["t", "search"], ["t", "perplexica"]]' > "$temp_json"
@@ -772,6 +773,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 ExtraTags=$(cat "$temp_json")
                 echo "Generated ExtraTags: $ExtraTags" >&2
                 rm -f "$temp_json"
+            ######################################################### #image
             elif [[ "${TAGS[image]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#image//g; s/"//g' <<< "$message_text")
                 $MY_PATH/comfyui.me.sh
@@ -815,6 +817,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 else
                     KeyANSWER="Désolé, je n'ai pas pu générer la vidéo demandée."
                 fi
+            ######################################################### #music
             elif [[ "${TAGS[music]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#music//g; s/"//g' <<< "$message_text")
                 $MY_PATH/comfyui.me.sh
@@ -835,6 +838,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 else
                     KeyANSWER="Désolé, je n'ai pas pu générer la musique demandée."
                 fi
+            ######################################################### #youtube
             elif [[ "${TAGS[youtube]}" == true ]]; then
                 # Extract any video URL that yt-dlp can handle (YouTube, Rumble, Vimeo, etc.)
                 video_url=$(echo "$message_text" | awk 'match($0, /https?:\/\/[^ ]+/) { print substr($0, RSTART, RLENGTH) }' | head -n1)
@@ -864,6 +868,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                     
                     echo "Video processing completed. NOSTR notification sent by process_youtube.sh" >&2
                 fi
+            ######################################################### #plantnet
             elif [[ "${TAGS[plantnet]}" == true ]]; then
                 # PlantNet recognition processing
                 echo "Processing PlantNet recognition request..." >&2
@@ -893,6 +898,7 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
 
 #PlantNet #BRO #jardinage"
                 fi
+            ######################################################### #pierre / #amelie
             elif [[ "${TAGS[pierre]}" == true || "${TAGS[amelie]}" == true ]]; then
                 # Determine voice
                 if [[ "${TAGS[pierre]}" == true ]]; then
@@ -946,7 +952,7 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
             echo "Using USER key for response: ${KNAME}"
             source ~/.zen/game/nostr/${KNAME}/.secret.nostr
         else
-            # CAPTAIN is responding as fallback
+            # CAPTAIN is following as fallback
             echo "No valid user key, using CAPTAIN key"
             source ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
             ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$PUBKEY" 2>/dev/null
