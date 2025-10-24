@@ -457,7 +457,14 @@ EOFNOSTR
 
     ### SEND NOSTR MESSAGE WITH QR CODE LINK
     # DID is accessible via Nostr (source of truth) and IPFS/.well-known (cache)
-    Mymessage="🎉 ẐEN wallet : ${G1PUBNOSTR}${Z} \n 🎫 ${uSPOT}/check_balance?g1pub=${EMAIL} \n  𝄃𝄃𝄂𝄂𝄀𝄁𝄃𝄂𝄂𝄃 ${myIPFS}/ipfs/${G1PUBNOSTRQR} \n 🆔 DID: did:nostr:${HEX} \n 📄 ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/"
+    Mymessage="🎉 ẐEN wallet : ${G1PUBNOSTR}${Z}
+🎫 ${uSPOT}/check_balance?g1pub=${EMAIL}
+
+𝄃𝄃𝄂𝄂𝄀𝄁𝄃𝄂𝄂𝄃 ${myIPFS}/ipfs/${G1PUBNOSTRQR}
+
+🆔 DID: did:nostr:${HEX} 
+📄 ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/"
+
     NPRIV_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NPRIV")
     HEX_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NPUBLIC")
     
