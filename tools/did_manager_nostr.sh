@@ -26,7 +26,7 @@ NC='\033[0m' # No Color
 # Nostr configuration
 NOSTR_RELAYS="${NOSTR_RELAYS:-ws://127.0.0.1:7777 wss://relay.copylaradio.com}"
 NOSTR_PUBLISH_DID_SCRIPT="${MY_PATH}/nostr_publish_did.py"
-NOSTR_FETCH_DID_SCRIPT="${MY_PATH}/nostr_fetch_did.py"
+NOSTR_FETCH_DID_SCRIPT="${MY_PATH}/nostr_did_client.py"
 
 # DID Event configuration
 DID_EVENT_KIND=30311
@@ -154,16 +154,16 @@ fetch_did_from_nostr() {
         return 1
     fi
     
-    # Fetch DID using nostr_fetch_did.py script
+    # Fetch DID using nostr_did_client.py script
     if [[ -f "$NOSTR_FETCH_DID_SCRIPT" ]]; then
-        echo -e "${CYAN}🔍 Using nostr_fetch_did.py to query relays...${NC}"
+        echo -e "${CYAN}🔍 Using nostr_did_client.py to query relays...${NC}"
         
         local did_content=""
         for relay in $NOSTR_RELAYS; do
             echo -e "${BLUE}   Querying: ${relay}${NC}"
             
-            # Use the fetch script with hex pubkey
-            did_content=$(python3 "$NOSTR_FETCH_DID_SCRIPT" --author "$npub" --relay "$relay" --kind "$DID_EVENT_KIND" 2>/dev/null)
+            # Use the fetch command with proper syntax for nostr_did_client.py
+            did_content=$(python3 "$NOSTR_FETCH_DID_SCRIPT" fetch --author "$npub" --relay "$relay" --kind "$DID_EVENT_KIND" 2>/dev/null)
             
             if [[ -n "$did_content" ]] && [[ "$did_content" != "null" ]] && echo "$did_content" | jq empty 2>/dev/null; then
                 echo -e "${GREEN}✅ DID found on ${relay}${NC}"
@@ -186,7 +186,7 @@ fetch_did_from_nostr() {
         
         return 0
     else
-        echo -e "${YELLOW}⚠️  nostr_fetch_did.py script not found${NC}"
+        echo -e "${YELLOW}⚠️  nostr_did_client.py script not found${NC}"
         echo -e "${CYAN}💡 Falling back to cache...${NC}"
         return 1
     fi

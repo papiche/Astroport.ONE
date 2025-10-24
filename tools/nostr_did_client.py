@@ -6,15 +6,15 @@ This script provides a unified interface for reading, fetching, and managing
 DID documents from NOSTR relays (kind 30311 events).
 
 It combines the functionality of:
-- nostr_read_did.py (used by nostr_did_recall.sh)
-- nostr_fetch_did.py (used by G1society.sh)
+- DID document reading and fetching
+- Unified interface for all DID operations
 
 Usage:
-    # Read mode (like nostr_read_did.py)
+    # Read mode
     python nostr_did_client.py read <npub> [relay_urls...]
     python nostr_did_client.py read npub1xyz... ws://127.0.0.1:7777
     
-    # Fetch mode (like nostr_fetch_did.py)
+    # Fetch mode
     python nostr_did_client.py fetch --author <npub> --relay <relay_url>
     python nostr_did_client.py fetch --author npub1xyz... --relay ws://127.0.0.1:7777
     
@@ -500,8 +500,8 @@ def main():
     
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
     
-    # Read command (like nostr_read_did.py)
-    read_parser = subparsers.add_parser('read', help='Read DID document (like nostr_read_did.py)')
+    # Read command
+    read_parser = subparsers.add_parser('read', help='Read DID document')
     read_parser.add_argument("npub", help="NPUB public key of the DID owner")
     read_parser.add_argument("relay_urls", nargs="*", default=DEFAULT_RELAYS,
                            help=f"Relay URLs (default: {', '.join(DEFAULT_RELAYS)})")
@@ -511,8 +511,8 @@ def main():
     read_parser.add_argument("--check-only", action="store_true", 
                            help="Only check if DID exists (exit code 0 if found, 1 if not)")
     
-    # Fetch command (like nostr_fetch_did.py)
-    fetch_parser = subparsers.add_parser('fetch', help='Fetch DID document (like nostr_fetch_did.py)')
+    # Fetch command
+    fetch_parser = subparsers.add_parser('fetch', help='Fetch DID document')
     fetch_parser.add_argument("--author", required=True, help="NPUB of the DID owner")
     fetch_parser.add_argument("--relay", required=True, help="Relay URL to query")
     fetch_parser.add_argument("--kind", type=int, default=DID_EVENT_KIND, help=f"Event kind (default: {DID_EVENT_KIND})")

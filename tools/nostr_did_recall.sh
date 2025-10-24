@@ -591,7 +591,7 @@ print_summary() {
     if [[ $TOTAL_MIGRATED -gt 0 ]]; then
         echo -e "\n${GREEN}✅ Migration completed successfully!${NC}"
         echo -e "${CYAN}📝 Next steps:${NC}"
-        echo -e "   1. Verify DIDs on Nostr: python3 nostr_read_did.py <npub> [relay...]"
+        echo -e "   1. Verify DIDs on Nostr: python3 nostr_did_client.py read <npub> [relay...]"
         echo -e "   2. DIDs are now synchronized across constellation relays"
         echo -e "   3. Backups are kept with .pre-nostr-backup suffix"
         echo -e "   4. Original files renamed to .cache for fallback"

@@ -262,7 +262,7 @@ EOFNOSTR
         export IPFSNODEID="${IPFSNODEID:-}"
         
         # Check if DID already exists
-        local did_exists=false
+        did_exists=false
         if [[ -f "${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache" ]]; then
             echo "⚠️  DID already exists for ${EMAIL}, will update instead of creating new"
             did_exists=true
@@ -275,8 +275,8 @@ EOFNOSTR
             echo "✅ Initial DID document created by did_manager_nostr.sh"
             
             # Enrich the DID with additional UPlanet-specific information using jq
-            local did_temp=$(mktemp)
-            local jq_cmd="
+            did_temp=$(mktemp)
+            jq_cmd="
                 .alsoKnownAs = [\"mailto:${EMAIL}\", \"did:g1:${G1PUBNOSTR}\", \"ipns://${NOSTRNS}\"] |
                 .verificationMethod += [
                     {

@@ -159,7 +159,7 @@ fetch_nostr_society_data() {
     local nostr_data="[]"
     local nostr_count=0
     
-    # Vérifier si le script nostr_fetch_did.py existe
+    # Vérifier si le script nostr_did_client.py existe
     if [[ ! -f "$NOSTR_DID_CLIENT_SCRIPT" ]]; then
         echo -e "${YELLOW}⚠️  Script nostr_did_client.py non trouvé, impossible de récupérer les données Nostr${NC}"
         return 0
