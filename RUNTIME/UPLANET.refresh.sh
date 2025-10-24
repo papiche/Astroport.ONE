@@ -51,7 +51,8 @@ echo "############################################"
 #################################################################
 MEMAPS=($(ls -td ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*.?_*.?/* 2>/dev/null | rev | cut -d '/' -f 1 | rev | sort | uniq))
 SWARMMAPS=($(ls -Gd ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/* 2>/dev/null | rev | cut -d '/' -f 1 | rev | sort | uniq))
-combined=("${MEMAPS[@]}" "${SWARMMAPS[@]}")
+# combined=("${MEMAPS[@]}" "${SWARMMAPS[@]}") ## TODO CONFIRM IT WORKS BETTER
+combined=("${MEMAPS[@]}") ### REDUCE UMAP REFRESH TO LOCAL ONLY
 unique_combined=($(echo "${combined[@]}" | tr ' ' '\n' | sort -u))
 echo "ACTIVATED ${#unique_combined[@]} UMAPS : ${unique_combined[@]}" # "_LAT_LON" directories
 
