@@ -227,7 +227,12 @@ should_refresh() {
 
     ## update uDRIVE APP
     cd ${player_dir}/APP/uDRIVE/
+    log "DEBUG" "Starting uDRIVE generation for ${PLAYER}"
+    udrive_start=$(date +%s)
     UDRIVE=$(./generate_ipfs_structure.sh .)
+    udrive_end=$(date +%s)
+    udrive_duration=$((udrive_end - udrive_start))
+    log "DEBUG" "uDRIVE generation completed in ${udrive_duration}s for ${PLAYER}"
     cd - 2>&1 >/dev/null
 
     if [[ -n "$UDRIVE" ]]; then
@@ -1113,20 +1118,29 @@ for PLAYER in "${NOSTR[@]}"; do
         # Debug: Check if friends have any messages in the relay
         if [[ ${#friends_list[@]} -gt 0 ]]; then
             log "DEBUG" "Checking if friends have messages in relay..."
+            friends_check_start=$(date +%s)
             cd ~/.zen/strfry
             for friend_hex in "${friends_list[@]:0:3}"; do  # Check first 3 friends only for debug
                 friend_messages=$(./strfry scan "{\"kinds\": [1], \"authors\": [\"$friend_hex\"], \"limit\": 1}" 2>/dev/null | wc -l)
                 log "DEBUG" "Friend $friend_hex has $friend_messages messages in relay"
             done
             cd - >/dev/null
+            friends_check_end=$(date +%s)
+            friends_check_duration=$((friends_check_end - friends_check_start))
+            log "DEBUG" "Friends check completed in ${friends_check_duration}s for ${PLAYER}"
         fi
         
         # Get friends of friends (N²) for personalized journal
+        log "DEBUG" "Starting N² friends generation for ${PLAYER}"
+        n2_start=$(date +%s)
         n2_friends=()
         for friend_hex in "${friends_list[@]}"; do
             friend_friends=($(${MY_PATH}/../tools/nostr_get_N1.sh "$friend_hex" 2>/dev/null))
             n2_friends+=("${friend_friends[@]}")
         done
+        n2_end=$(date +%s)
+        n2_duration=$((n2_end - n2_start))
+        log "DEBUG" "N² friends generation completed in ${n2_duration}s for ${PLAYER}"
         
         # Remove duplicates and add to friends list
         all_friends=("${friends_list[@]}" "${n2_friends[@]}")
@@ -1231,6 +1245,8 @@ for PLAYER in "${NOSTR[@]}"; do
                 log "DEBUG" "Querying strfry for ${#friends_list[@]} friends since $(date -d "@$since_timestamp" '+%Y-%m-%d %H:%M')"
                 log "DEBUG" "Friends JSON: $friends_json"
                 
+                log "DEBUG" "Starting strfry scan for ${PLAYER}"
+                strfry_start=$(date +%s)
                 cd ~/.zen/strfry
                 friends_messages=$(./strfry scan "{
                     \"kinds\": [1],
@@ -1239,6 +1255,9 @@ for PLAYER in "${NOSTR[@]}"; do
                     \"limit\": 500
                 }" 2>/dev/null | jq -c 'select(.kind == 1) | {id: .id, content: .content, created_at: .created_at, author: .pubkey, tags: .tags}')
                 cd - >/dev/null
+                strfry_end=$(date +%s)
+                strfry_duration=$((strfry_end - strfry_start))
+                log "DEBUG" "strfry scan completed in ${strfry_duration}s for ${PLAYER}"
                 
                 # Debug: Check what we got from strfry
                 if [[ -n "$friends_messages" ]]; then
@@ -1415,7 +1434,12 @@ for PLAYER in "${NOSTR[@]}"; do
 # 12. Use the same language as mostly used in the monthly summaries."
                     fi
                     
+                    log "DEBUG" "Starting AI summary generation for ${PLAYER}"
+                    ai_start=$(date +%s)
                     ai_summary=$(${MY_PATH}/../IA/question.py "$ai_prompt" --model "gemma3:12b")
+                    ai_end=$(date +%s)
+                    ai_duration=$((ai_end - ai_start))
+                    log "DEBUG" "AI summary generation completed in ${ai_duration}s for ${PLAYER}"
                     echo "$ai_summary" > "$summary_file"
                 fi
                 
@@ -1506,8 +1530,19 @@ for PLAYER in "${NOSTR[@]}"; do
         fi
 
         ## UPDATE IPNS RESOLVE
+        log "DEBUG" "Starting IPFS add for ${PLAYER}"
+        ipfs_start=$(date +%s)
         NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${PLAYER}/ | tail -n 1)
+        ipfs_end=$(date +%s)
+        ipfs_duration=$((ipfs_end - ipfs_start))
+        log "DEBUG" "IPFS add completed in ${ipfs_duration}s for ${PLAYER}"
+        
+        log "DEBUG" "Starting IPNS publish for ${PLAYER}"
+        ipns_start=$(date +%s)
         ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS}
+        ipns_end=$(date +%s)
+        ipns_duration=$((ipns_end - ipns_start))
+        log "DEBUG" "IPNS publish completed in ${ipns_duration}s for ${PLAYER}"
 
         # Record the last IPNS update time
         date +%s > ${HOME}/.zen/game/nostr/${PLAYER}/.last_ipns_update
