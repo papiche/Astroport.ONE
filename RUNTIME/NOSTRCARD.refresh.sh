@@ -1110,6 +1110,17 @@ for PLAYER in "${NOSTR[@]}"; do
         # Personal N² journal for ALL MULTIPASS accounts (individual and personalized)
         log "INFO" "Creating personal N² journal for ${PLAYER} - individual and tailored to their network"
         
+        # Debug: Check if friends have any messages in the relay
+        if [[ ${#friends_list[@]} -gt 0 ]]; then
+            log "DEBUG" "Checking if friends have messages in relay..."
+            cd ~/.zen/strfry
+            for friend_hex in "${friends_list[@]:0:3}"; do  # Check first 3 friends only for debug
+                friend_messages=$(./strfry scan "{\"kinds\": [1], \"authors\": [\"$friend_hex\"], \"limit\": 1}" 2>/dev/null | wc -l)
+                log "DEBUG" "Friend $friend_hex has $friend_messages messages in relay"
+            done
+            cd - >/dev/null
+        fi
+        
         # Get friends of friends (N²) for personalized journal
         n2_friends=()
         for friend_hex in "${friends_list[@]}"; do
@@ -1217,6 +1228,9 @@ for PLAYER in "${NOSTR[@]}"; do
                 since_timestamp=$(date -d "${summary_days} days ago" +%s)
                 friends_json=$(printf '"%s",' "${friends_list[@]}"); friends_json="[${friends_json%,}]"
                 
+                log "DEBUG" "Querying strfry for ${#friends_list[@]} friends since $(date -d "@$since_timestamp" '+%Y-%m-%d %H:%M')"
+                log "DEBUG" "Friends JSON: $friends_json"
+                
                 cd ~/.zen/strfry
                 friends_messages=$(./strfry scan "{
                     \"kinds\": [1],
@@ -1225,26 +1239,46 @@ for PLAYER in "${NOSTR[@]}"; do
                     \"limit\": 500
                 }" 2>/dev/null | jq -c 'select(.kind == 1) | {id: .id, content: .content, created_at: .created_at, author: .pubkey, tags: .tags}')
                 cd - >/dev/null
+                
+                # Debug: Check what we got from strfry
+                if [[ -n "$friends_messages" ]]; then
+                    message_count_debug=$(echo "$friends_messages" | wc -l)
+                    log "DEBUG" "Retrieved $message_count_debug messages from strfry for ${PLAYER}"
+                else
+                    log "DEBUG" "No messages retrieved from strfry for ${PLAYER} (friends: ${#friends_list[@]})"
+                fi
             fi
             
-            if [[ -n "$friends_messages" ]]; then
+            # Check if we have actual messages (not just empty string)
+            if [[ -n "$friends_messages" && "$friends_messages" != "" ]]; then
                 message_count=0
-                echo "$friends_messages" | while read -r message; do
-                    content=$(echo "$message" | jq -r .content)
-                    created_at=$(echo "$message" | jq -r .created_at)
-                    date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M')
+                # Use process substitution to avoid subshell issues
+                while read -r message; do
+                    # Skip empty lines
+                    [[ -z "$message" || "$message" == "" ]] && continue
+                    
+                    content=$(echo "$message" | jq -r .content 2>/dev/null)
+                    created_at=$(echo "$message" | jq -r .created_at 2>/dev/null)
+                    
+                    # Skip if jq failed to parse
+                    [[ "$content" == "null" || "$created_at" == "null" ]] && continue
+                    
+                    date_str=$(date -d "@$created_at" '+%Y-%m-%d %H:%M' 2>/dev/null)
+                    [[ -z "$date_str" ]] && date_str="Unknown date"
                     
                     if [[ "$summary_type" == "Daily" ]]; then
                         # For daily summaries, process raw friend messages
-                        author_hex=$(echo "$message" | jq -r .author)
+                        author_hex=$(echo "$message" | jq -r .author 2>/dev/null)
+                        [[ "$author_hex" == "null" || -z "$author_hex" ]] && continue
+                        
                         author_nprofile=$(${MY_PATH}/../tools/nostr_hex2nprofile.sh "$author_hex" 2>/dev/null)
                         # Fallback to hex if nprofile generation fails
                         [[ -z "$author_nprofile" ]] && author_nprofile="$author_hex"
                         
                         # Extract metadata
-                        message_application=$(echo "$message" | jq -r '.tags[] | select(.[0] == "application") | .[1]' | head -n 1)
-                        message_latitude=$(echo "$message" | jq -r '.tags[] | select(.[0] == "latitude") | .[1]' | head -n 1)
-                        message_longitude=$(echo "$message" | jq -r '.tags[] | select(.[0] == "longitude") | .[1]' | head -n 1)
+                        message_application=$(echo "$message" | jq -r '.tags[] | select(.[0] == "application") | .[1]' 2>/dev/null | head -n 1)
+                        message_latitude=$(echo "$message" | jq -r '.tags[] | select(.[0] == "latitude") | .[1]' 2>/dev/null | head -n 1)
+                        message_longitude=$(echo "$message" | jq -r '.tags[] | select(.[0] == "longitude") | .[1]' 2>/dev/null | head -n 1)
                         
                         echo "### 📝 $date_str" >> "$summary_file"
                         echo "**Author**: nostr:$author_nprofile" >> "$summary_file"
@@ -1261,37 +1295,37 @@ for PLAYER in "${NOSTR[@]}"; do
                         echo "" >> "$summary_file"
                         echo "$content" >> "$summary_file"
                         echo "" >> "$summary_file"
-                elif [[ "$summary_type" == "Weekly" ]]; then
-                    # For weekly summaries, process daily summaries
-                    echo "### 📅 $date_str" >> "$summary_file"
-                    echo "**Daily Summary**" >> "$summary_file"
-                    echo "" >> "$summary_file"
-                    echo "$content" >> "$summary_file"
-                    echo "" >> "$summary_file"
-                    echo "---" >> "$summary_file"
-                    echo "" >> "$summary_file"
-                elif [[ "$summary_type" == "Monthly" ]]; then
-                    # For monthly summaries, process weekly summaries
-                    echo "### 📊 $date_str" >> "$summary_file"
-                    echo "**Weekly Summary**" >> "$summary_file"
-                    echo "" >> "$summary_file"
-                    echo "$content" >> "$summary_file"
-                    echo "" >> "$summary_file"
-                    echo "---" >> "$summary_file"
-                    echo "" >> "$summary_file"
-                else
-                    # For yearly summaries, process monthly summaries
-                    echo "### 🗓️ $date_str" >> "$summary_file"
-                    echo "**Monthly Summary**" >> "$summary_file"
-                    echo "" >> "$summary_file"
-                    echo "$content" >> "$summary_file"
-                    echo "" >> "$summary_file"
-                    echo "---" >> "$summary_file"
-                    echo "" >> "$summary_file"
-                fi
+                    elif [[ "$summary_type" == "Weekly" ]]; then
+                        # For weekly summaries, process daily summaries
+                        echo "### 📅 $date_str" >> "$summary_file"
+                        echo "**Daily Summary**" >> "$summary_file"
+                        echo "" >> "$summary_file"
+                        echo "$content" >> "$summary_file"
+                        echo "" >> "$summary_file"
+                        echo "---" >> "$summary_file"
+                        echo "" >> "$summary_file"
+                    elif [[ "$summary_type" == "Monthly" ]]; then
+                        # For monthly summaries, process weekly summaries
+                        echo "### 📊 $date_str" >> "$summary_file"
+                        echo "**Weekly Summary**" >> "$summary_file"
+                        echo "" >> "$summary_file"
+                        echo "$content" >> "$summary_file"
+                        echo "" >> "$summary_file"
+                        echo "---" >> "$summary_file"
+                        echo "" >> "$summary_file"
+                    else
+                        # For yearly summaries, process monthly summaries
+                        echo "### 🗓️ $date_str" >> "$summary_file"
+                        echo "**Monthly Summary**" >> "$summary_file"
+                        echo "" >> "$summary_file"
+                        echo "$content" >> "$summary_file"
+                        echo "" >> "$summary_file"
+                        echo "---" >> "$summary_file"
+                        echo "" >> "$summary_file"
+                    fi
                     
                     ((message_count++))
-                done
+                done < <(echo "$friends_messages")
                 
             # Add AI summary if too many messages (threshold depends on summary type)
             ai_threshold=5  # Reduced threshold for more personalized summaries
