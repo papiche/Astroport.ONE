@@ -79,11 +79,7 @@ trap cleanup EXIT
 # Extract metadata first
 log_debug "Extracting metadata for: $URL"
 cookie_file="$HOME/.zen/game/nostr/$PLAYER_EMAIL/.cookie.txt"
-if [[ -f "$cookie_file" ]]; then
-    metadata_line=$(yt-dlp --cookies "$cookie_file" --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
-else
-    metadata_line=$(yt-dlp --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
-fi
+metadata_line=$(yt-dlp --cookies "$cookie_file" --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
 log_debug "Metadata line: $metadata_line"
 
 if [[ -z "$metadata_line" ]]; then
@@ -109,100 +105,27 @@ if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ && "$duration" -gt 10800 ]]; the
     exit 1
 fi
 
-# Try simple download strategies
-log_debug "Starting download with simplified approach"
-
-# Strategy 1: Default yt-dlp with cookies
-log_debug "Strategy 1: Default yt-dlp with cookies"
-cookie_file="$HOME/.zen/game/nostr/$PLAYER_EMAIL/.cookie.txt"
-if [[ -f "$cookie_file" ]]; then
-    case "$FORMAT" in
-        mp3)
-            yt-dlp --cookies "$cookie_file" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
-                --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
-                -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" >&2 2>> "$LOGFILE"
-            ;;
-        mp4)
-            yt-dlp --cookies "$cookie_file" --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
-                --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
-                -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" >&2 2>> "$LOGFILE"
-            ;;
-    esac
-else
-    # Fallback without cookies
-    case "$FORMAT" in
-        mp3)
-            yt-dlp -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
-                --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
-                -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" >&2 2>> "$LOGFILE"
-            ;;
-        mp4)
-            yt-dlp --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
-                --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
-                -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" >&2 2>> "$LOGFILE"
-            ;;
-    esac
-fi
+# Simple download with cookies (guaranteed to exist by sync_youtube_likes.sh)
+log_debug "Starting download with cookies"
+case "$FORMAT" in
+    mp3)
+        yt-dlp --cookies "$cookie_file" -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+            --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
+            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" >&2 2>> "$LOGFILE"
+        ;;
+    mp4)
+        yt-dlp --cookies "$cookie_file" -f "best[height<=720]/best" --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
+            --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
+            -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" >&2 2>> "$LOGFILE"
+        ;;
+esac
 
 download_exit_code=$?
-log_debug "Strategy 1 exit code: $download_exit_code"
+log_debug "Download exit code: $download_exit_code"
 
 # Check if files were created
 files_created=$(ls "$OUTPUT_DIR"/* 2>/dev/null | wc -l)
 log_debug "Files created: $files_created"
-
-if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
-    log_debug "Strategy 1 successful"
-else
-    # Strategy 2: With format specification
-    log_debug "Strategy 2: With format specification"
-    case "$FORMAT" in
-        mp3)
-            yt-dlp -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
-                --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
-                -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" >&2 2>> "$LOGFILE"
-            ;;
-        mp4)
-            yt-dlp -f "best[height<=720]/best" --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
-                --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
-                -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" >&2 2>> "$LOGFILE"
-            ;;
-    esac
-    
-    download_exit_code=$?
-    log_debug "Strategy 2 exit code: $download_exit_code"
-    
-    # Check if files were created
-    files_created=$(ls "$OUTPUT_DIR"/* 2>/dev/null | wc -l)
-    log_debug "Files created after strategy 2: $files_created"
-    
-    if [[ $download_exit_code -ne 0 || $files_created -eq 0 ]]; then
-        # Strategy 3: With cookies if available
-        log_debug "Strategy 3: With cookies"
-        cookie_file="$HOME/.zen/game/nostr/$PLAYER_EMAIL/.cookie.txt"
-        if [[ -f "$cookie_file" ]]; then
-            case "$FORMAT" in
-                mp3)
-                    yt-dlp --cookies "$cookie_file" -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
-                        --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
-                        -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" >&2 2>> "$LOGFILE"
-                    ;;
-                mp4)
-                    yt-dlp --cookies "$cookie_file" -f "best[height<=720]/best" --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
-                        --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
-                        -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" >&2 2>> "$LOGFILE"
-                    ;;
-            esac
-            
-            download_exit_code=$?
-            log_debug "Strategy 3 exit code: $download_exit_code"
-            
-            # Check if files were created
-            files_created=$(ls "$OUTPUT_DIR"/* 2>/dev/null | wc -l)
-            log_debug "Files created after strategy 3: $files_created"
-        fi
-    fi
-fi
 
 # Check final result
 if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
