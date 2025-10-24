@@ -810,9 +810,14 @@ EOF
     
     # Check if only HLS/m3u8 formats are available (SABR streaming)
     local hls_only=false
+    local available_formats=""
     if echo "$format_check" | grep -q "m3u8" && ! echo "$format_check" | grep -q "mp4.*http"; then
         hls_only=true
         log_debug "SABR streaming detected - only HLS/m3u8 formats available"
+        
+        # Extract available format IDs for SABR streaming
+        available_formats=$(echo "$format_check" | grep -E "^\s*[0-9]+\s+mp4" | awk '{print $1}' | head -3 | tr '\n' ',' | sed 's/,$//')
+        log_debug "Available SABR format IDs: $available_formats"
     fi
     
     # User agent rotation to avoid detection
@@ -851,6 +856,17 @@ EOF
                 3) retry_count=4 ;;  # Skip to SABR optimized
                 4) retry_count=5 ;;  # Skip to HLS only
             esac
+        fi
+        
+        # Set format selection based on SABR detection
+        local format_selection=""
+        if [[ "$hls_only" == true && -n "$available_formats" ]]; then
+            # Use specific format IDs for SABR streaming
+            format_selection="$available_formats"
+            log_debug "Using SABR-specific format IDs: $format_selection"
+        else
+            # Use generic format selection
+            format_selection="best[height<=720]/best"
         fi
         
         case $retry_count in
@@ -892,7 +908,7 @@ EOF
                             --hls-use-mpegts \
                             --downloader "m3u8:native" \
                             --recode-video mp4 \
-                            -f "best[height<=720]/best" \
+                            -f "$format_selection" \
                             --no-mtime --embed-thumbnail --add-metadata \
                             --write-info-json --write-thumbnail \
                             --embed-metadata --embed-thumbnail \
@@ -931,7 +947,7 @@ EOF
                             --hls-use-mpegts \
                             --downloader "m3u8:native" \
                             --recode-video mp4 \
-                            -f "best[height<=720]/best" \
+                            -f "$format_selection" \
                             --no-mtime --embed-thumbnail --add-metadata \
                             --write-info-json --write-thumbnail \
                             --embed-metadata --embed-thumbnail \
@@ -970,7 +986,7 @@ EOF
                             --hls-use-mpegts \
                             --downloader "m3u8:native" \
                             --recode-video mp4 \
-                            -f "best[height<=720]/best" \
+                            -f "$format_selection" \
                             --no-mtime --embed-thumbnail --add-metadata \
                             --write-info-json --write-thumbnail \
                             --embed-metadata --embed-thumbnail \
@@ -1015,7 +1031,7 @@ EOF
                             --hls-use-mpegts \
                             --downloader "m3u8:native" \
                             --recode-video mp4 \
-                            --format "best[height<=720]/best" \
+                            --format "$format_selection" \
                             --no-mtime --embed-thumbnail --add-metadata \
                             --write-info-json --write-thumbnail \
                             --embed-metadata --embed-thumbnail \
@@ -1062,7 +1078,7 @@ EOF
                             --hls-use-mpegts \
                             --downloader "m3u8:native" \
                             --recode-video mp4 \
-                            --format "[height<=480]/best" \
+                            --format "$format_selection" \
                             --no-mtime --embed-thumbnail --add-metadata \
                             --write-info-json --write-thumbnail \
                             --embed-metadata --embed-thumbnail \
@@ -1110,7 +1126,7 @@ EOF
                             --hls-use-mpegts \
                             --downloader "m3u8:native" \
                             --recode-video mp4 \
-                            --format "best" \
+                            --format "$format_selection" \
                             --no-mtime --embed-thumbnail --add-metadata \
                             --write-info-json --write-thumbnail \
                             --embed-metadata --embed-thumbnail \
