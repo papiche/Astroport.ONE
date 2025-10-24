@@ -281,7 +281,7 @@ process_umap_messages() {
 # 4. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
 # 5. IMPORTANT: Never omit an author, even if you summarize. \
 # 6. Use the same language as the messages."
-            ANSWER=$($MY_PATH/../IA/question.py "$IA_PROMPT")
+            ANSWER=$($MY_PATH/../IA/question.py "$IA_PROMPT" --model "gemma3:12b")
             echo "$ANSWER" > "${UMAPPATH}/NOSTR_messages"
         fi
     fi
@@ -1064,7 +1064,7 @@ send_nostr_events() {
                 log "🎨 Generating image for UMAP journal ${LAT},${LON}..."
                 
                 # Generate descriptive prompt from journal content using question.py
-                local image_prompt=$($MY_PATH/../IA/question.py "[TEXT] $journal_content [/TEXT] --- Create a descriptive prompt for Stable Diffusion image generation based on this UMAP journal content. The image should represent the activities, mood, and atmosphere of this geographic location. Focus on visual elements that capture the essence of the messages. Keep the prompt concise but descriptive, suitable for AI image generation. Use English for the prompt." --lat "$LAT" --lon "$LON" 2>/dev/null)
+                local image_prompt=$($MY_PATH/../IA/question.py "[TEXT] $journal_content [/TEXT] --- Create a descriptive prompt for Stable Diffusion image generation based on this UMAP journal content. The image should represent the activities, mood, and atmosphere of this geographic location. Focus on visual elements that capture the essence of the messages. Keep the prompt concise but descriptive, suitable for AI image generation. Use English for the prompt." --lat "$LAT" --lon "$LON" --model "gemma3:12b" 2>/dev/null)
                 
                 if [[ -n "$image_prompt" && "$image_prompt" != "Failed to get answer from Ollama." ]]; then
                     log "📝 Generated image prompt: $image_prompt"
@@ -1926,7 +1926,7 @@ update_friends_list() {
 generate_ai_summary() {
     local text=$1
     local QUESTION="[TEXT] $text [/TEXT] --- # 1. Write a summary of [TEXT] in Markdown format # 2. Highlight key points with their authors # 3. Add hastags and emoticons # 4. Structure with Markdown headers, lists, and emphasis # IMPORTANT : Use the same language as mostly used in [TEXT]."
-    $MY_PATH/../IA/question.py "${QUESTION}"
+    $MY_PATH/../IA/question.py "${QUESTION}" --model "gemma3:12b"
 }
 
 format_content_as_markdown() {

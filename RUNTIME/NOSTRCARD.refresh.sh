@@ -1381,7 +1381,7 @@ for PLAYER in "${NOSTR[@]}"; do
 # 12. Use the same language as mostly used in the monthly summaries."
                     fi
                     
-                    ai_summary=$(${MY_PATH}/../IA/question.py "$ai_prompt")
+                    ai_summary=$(${MY_PATH}/../IA/question.py "$ai_prompt" --model "gemma3:12b")
                     echo "$ai_summary" > "$summary_file"
                 fi
                 
