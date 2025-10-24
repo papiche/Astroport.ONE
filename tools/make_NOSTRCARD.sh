@@ -462,8 +462,8 @@ EOFNOSTR
 
 𝄃𝄃𝄂𝄂𝄀𝄁𝄃𝄂𝄂𝄃 ${myIPFS}/ipfs/${G1PUBNOSTRQR}
 
-🆔 DID: did:nostr:${HEX} 
-📄 ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/"
+🆔 DID: did:nostr:${HEX}
+"
 
     NPRIV_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NPRIV")
     HEX_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NPUBLIC")
