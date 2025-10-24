@@ -718,6 +718,16 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | jq -r '.answer // .' 2>/dev/null || echo "$ARTICLE_SUMMARY")"
                 ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '\n' | sed 's/\s\+/ /g' | sed 's/"/\\"/g' | sed "s/'/\\'/g" | head -c 500)"
                 
+                # Generate intelligent tags based on article content
+                echo "Generating intelligent tags for article..." >&2
+                INTELLIGENT_TAGS="$($MY_PATH/question.py --json "Analyze this blog article and generate 5-8 relevant hashtags in ${USER_LANG} language. Focus on: 1) Main topics/subjects, 2) Key concepts, 3) Industry/domain tags, 4) Content type tags. IMPORTANT: Return ONLY the hashtags separated by spaces, no explanations. Article content: ${KeyANSWER}" --pubkey ${PUBKEY})"
+                
+                # Extract and clean the tags
+                INTELLIGENT_TAGS="$(echo "$INTELLIGENT_TAGS" | jq -r '.answer // .' 2>/dev/null || echo "$INTELLIGENT_TAGS")"
+                INTELLIGENT_TAGS="$(echo "$INTELLIGENT_TAGS" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sed 's/#//g' | sed 's/\s\+/ /g' | head -c 200)"
+                
+                echo "Generated intelligent tags: $INTELLIGENT_TAGS" >&2
+                
                 # Generate illustration image for the article
                 echo "Generating illustration image for search result..." >&2
                 $MY_PATH/comfyui.me.sh
@@ -761,12 +771,39 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 
                 # Create a temporary JSON file for jq processing
                 temp_json="$HOME/.zen/tmp/tags_${RANDOM}.json"
+                
+                # Convert intelligent tags to JSON array format
+                if [[ -n "$INTELLIGENT_TAGS" ]]; then
+                    # Split tags by space and create JSON array
+                    TAG_ARRAY=""
+                    IFS=' ' read -ra TAG_LIST <<< "$INTELLIGENT_TAGS"
+                    for tag in "${TAG_LIST[@]}"; do
+                        if [[ -n "$tag" ]]; then
+                            TAG_ARRAY="${TAG_ARRAY}[\"t\", \"$tag\"],"
+                        fi
+                    done
+                    # Remove trailing comma
+                    TAG_ARRAY="${TAG_ARRAY%,}"
+                else
+                    TAG_ARRAY=""
+                fi
+                
+                # Add standard tags
+                STANDARD_TAGS='["t", "search"], ["t", "perplexica"]'
+                if [[ -n "$TAG_ARRAY" ]]; then
+                    ALL_TAGS="${STANDARD_TAGS}, ${TAG_ARRAY}"
+                else
+                    ALL_TAGS="${STANDARD_TAGS}"
+                fi
+                
                 if [[ -n "$ILLUSTRATION_URL" ]]; then
                     jq -n --arg title "$cleaned_text" --arg summary "$ARTICLE_SUMMARY" --arg image "$ILLUSTRATION_URL" --arg published_at "$(date -u +%s)" \
-                        '[["title", $title], ["summary", $summary], ["published_at", $published_at], ["image", $image], ["t", "search"], ["t", "perplexica"]]' > "$temp_json"
+                        --argjson tags "[${ALL_TAGS}]" \
+                        '[["title", $title], ["summary", $summary], ["published_at", $published_at], ["image", $image]] + $tags' > "$temp_json"
                 else
                     jq -n --arg title "$cleaned_text" --arg summary "$ARTICLE_SUMMARY" --arg published_at "$(date -u +%s)" \
-                        '[["title", $title], ["summary", $summary], ["published_at", $published_at], ["t", "search"], ["t", "perplexica"]]' > "$temp_json"
+                        --argjson tags "[${ALL_TAGS}]" \
+                        '[["title", $title], ["summary", $summary], ["published_at", $published_at]] + $tags' > "$temp_json"
                 fi
                 
                 # Read the properly formatted JSON tags
