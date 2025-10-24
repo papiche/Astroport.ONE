@@ -704,8 +704,16 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 echo "Creating AI-generated prompt for illustration based on article summary..." >&2
                 SD_PROMPT="$($MY_PATH/question.py "Create a Stable Diffusion prompt (no explanations, just the prompt text) for a professional blog header image based on this article summary: ${ARTICLE_SUMMARY} --- IMPORTANT: direct prompt text only, no markdown, no explanations, no emojis, no special characters, no text, no words, no letters, no writing, visual elements only." --pubkey ${PUBKEY})"
                 
-                # Clean the prompt to remove any remaining emojis or special characters
-                SD_PROMPT=$(echo "$SD_PROMPT" | sed 's/[^a-zA-Z0-9\s.,!?-]//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+                # Clean the prompt aggressively to remove emojis, special characters, and ensure it's a direct prompt
+                SD_PROMPT=$(echo "$SD_PROMPT" | \
+                    sed 's/[^a-zA-Z0-9\s.,!?-]//g' | \
+                    sed 's/^[[:space:]]*//' | \
+                    sed 's/[[:space:]]*$//' | \
+                    sed 's/\s\+/ /g' | \
+                    sed 's/[🏞️♨️⛰️🚀💡🎉🌡️🌋🗺️⚠️]//g' | \
+                    sed 's/\.\.\././g' | \
+                    sed 's/,,/,/g' | \
+                    head -c 200)
                 
                 # Get user uDRIVE path for image storage
                 USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
