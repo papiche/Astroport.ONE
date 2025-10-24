@@ -1098,11 +1098,35 @@ handle_zen_card_management() {
             EMAIL="${mps[$((mp_choice-1))]}"
             # Récupérer les infos associées
             mp_dir="$HOME/.zen/game/nostr/$EMAIL"
-            LAT=""; LON=""; [[ -f "$mp_dir/LAT" ]] && LAT=$(cat "$mp_dir/LAT")
-            [[ -f "$mp_dir/LON" ]] && LON=$(cat "$mp_dir/LON")
+            LAT=""; LON=""
+            
+            # Lire les coordonnées depuis le fichier GPS (format: LAT=43.63; LON=1.36;)
+            if [[ -f "$mp_dir/GPS" ]]; then
+                source "$mp_dir/GPS"
+            fi
+            
+            # Fallback vers les fichiers LAT/LON séparés si GPS n'existe pas
+            [[ -z "$LAT" ]] && [[ -f "$mp_dir/LAT" ]] && LAT=$(cat "$mp_dir/LAT")
+            [[ -z "$LON" ]] && [[ -f "$mp_dir/LON" ]] && LON=$(cat "$mp_dir/LON")
+            
+            # Valeurs par défaut si aucune coordonnée trouvée
             [[ -z "$LAT" ]] && LAT="0.00"
             [[ -z "$LON" ]] && LON="0.00"
+            
+            # Récupérer NPUB et HEX depuis le MULTIPASS
+            NPUB=""
+            HEX=""
+            if [[ -f "$mp_dir/NPUB" ]]; then
+                NPUB=$(cat "$mp_dir/NPUB")
+            fi
+            if [[ -f "$mp_dir/HEX" ]]; then
+                HEX=$(cat "$mp_dir/HEX")
+            fi
+            
             print_info "Création de la ZEN Card pour $EMAIL ($LAT, $LON)"
+            print_info "NPUB: ${NPUB:0:20}..."
+            print_info "HEX: ${HEX:0:20}..."
+            
             # Génération automatique des secrets
             PPASS=$(${MY_PATH}/tools/diceware.sh $(( $(${MY_PATH}/tools/getcoins_from_gratitude_box.sh) + 1 )) | xargs)
             NPASS=$(${MY_PATH}/tools/diceware.sh $(( $(${MY_PATH}/tools/getcoins_from_gratitude_box.sh) + 1 )) | xargs)
@@ -1113,7 +1137,7 @@ handle_zen_card_management() {
             [[ -n "$CUSTOM_PPASS" ]] && PPASS="$CUSTOM_PPASS"
             [[ -n "$CUSTOM_NPASS" ]] && NPASS="$CUSTOM_NPASS"
             print_info "Création de la ZEN Card..."
-            if "${MY_PATH}/RUNTIME/VISA.new.sh" "$PPASS" "$NPASS" "$EMAIL" "UPlanet" "$SYSLANG" "$LAT" "$LON"; then
+            if "${MY_PATH}/RUNTIME/VISA.new.sh" "$PPASS" "$NPASS" "$EMAIL" "UPlanet" "$SYSLANG" "$LAT" "$LON" "$NPUB" "$HEX"; then
                 PSEUDO=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null)
                 rm -f ~/.zen/tmp/PSEUDO
                 print_success "ZEN Card créée avec succès pour $PSEUDO"
