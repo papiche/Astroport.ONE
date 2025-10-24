@@ -354,7 +354,7 @@ if [[ -x "$HOME/.zen/strfry/strfry" ]]; then
     
     # Delete old messages using strfry
     cd ~/.zen/strfry
-    if ./strfry delete --author "${hex}" --before "${TIMESTAMP_24H_AGO}" 2>/dev/null; then
+    if ./strfry delete --age="24h" --filter="authors:${hex}" 2>/dev/null; then
         echo "✅ Old messages deleted successfully"
     else
         echo "⚠️  Failed to delete old messages (may not be supported by this strfry version)"
