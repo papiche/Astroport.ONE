@@ -105,18 +105,21 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     "$myRELAY" \
     --zencard "$(cat ~/.zen/game/players/${CAPTAINEMAIL}/.g1pub 2>/dev/null)" \
     --ipns_vault "$(cat ~/.zen/game/nostr/${CAPTAINEMAIL}/NOSTRNS 2>/dev/null)" \
-    --ipfs_gw "$myIPFS"
+    --ipfs_gw "$myIPFS" >/dev/null 2>&1
 
     ## FOLLOW EVERY NOSTR CARD
     nostrhex=($(cat ~/.zen/game/nostr/*@*.*/HEX))
-    ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "${nostrhex[@]}" 2>/dev/null
+    if [[ ${#nostrhex[@]} -gt 0 ]]; then
+        echo "Following ${#nostrhex[@]} NOSTR cards"
+        ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "${nostrhex[@]}" >/dev/null 2>&1
+    fi
 
     ## FOLLOW EVERY ACTIVE UMAP NODE
     if [[ -d ~/.zen/tmp/${IPFSNODEID}/UPLANET ]]; then
         umaphex=($(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*/*/*/HEX 2>/dev/null))
         if [[ ${#umaphex[@]} -gt 0 ]]; then
             echo "Following ${#umaphex[@]} active UMAP nodes"
-            ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "${umaphex[@]}" 2>/dev/null
+            ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "${umaphex[@]}" >/dev/null 2>&1
         fi
     fi
 fi
@@ -139,10 +142,10 @@ do
     [[ ! ${LINE} ]] && continue
     if [[ ! $(cat ~/.zen/tmp/${MOATS}/authorized_keys | grep "${LINE}") ]]
     then
-        echo "# ADDING ${LINE} to ~/.zen/tmp/${MOATS}/authorized_keys"
+        echo "Adding SSH key to authorized_keys"
         mkdir -p ~/.ssh && echo "${LINE}" >> ~/.zen/tmp/${MOATS}/authorized_keys
     else
-        echo "ALREADY TRUSTING ${LINE}"
+        echo "SSH key already trusted"
     fi
 done < ${SSHAUTHFILE} ## INITIALIZED DURING BLOOM.Me PRIVATE SWARM ACTIVATION
 ## ADDING ${HOME}/.zen/game/players/${PLAYER}/ssh.pub (made during PLAYER.refresh)
@@ -150,10 +153,7 @@ cat ${HOME}/.zen/game/players/*/ssh.pub >> ~/.zen/tmp/${MOATS}/authorized_keys 2
 ### REMOVING DUPLICATION (NO ORDER CHANGING)
 awk '!seen[$0]++' ~/.zen/tmp/${MOATS}/authorized_keys > ~/.zen/tmp/${MOATS}/authorized_keys.clean
 cat ~/.zen/tmp/${MOATS}/authorized_keys.clean > ~/.ssh/authorized_keys
-echo "-----------------------------------------------------"
-echo "~/.ssh/authorized_keys"
-cat ~/.ssh/authorized_keys
-echo "-----------------------------------------------------"
+echo "SSH authorized_keys updated"
 ##################################################################################
 ##################################################################################
 cp ~/.zen/install.errors.log ~/.zen/tmp/${IPFSNODEID}/ 2>/dev/null
@@ -162,7 +162,7 @@ cp ~/.zen/install.errors.log ~/.zen/tmp/${IPFSNODEID}/ 2>/dev/null
 ############################################
 ### FORWARD SSH PORT over /x/ssh-${IPFSNODEID}
 ############################################
-echo "Launching SSH SHARE ACCESS /x/ssh-${IPFSNODEID}"
+echo "SSH tunnel: /x/ssh-${IPFSNODEID}"
 [[ ! $(ipfs p2p ls | grep "/x/ssh-${IPFSNODEID}") ]] \
     && ipfs p2p listen /x/ssh-${IPFSNODEID} /ip4/127.0.0.1/tcp/22
 ############################################
@@ -195,7 +195,7 @@ echo "ipfs cat /ipns/${IPFSNODEID}/x_ssh.sh | bash"
 rm -f ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh 2>/dev/null
 if [[ ! -z $(pgrep ollama) ]]; then
     PORT=11434
-    echo "Launching OLLAMA SHARE ACCESS /x/ollama-${IPFSNODEID}"
+    echo "Ollama tunnel: /x/ollama-${IPFSNODEID}"
     [[ ! $(ipfs p2p ls | grep "/x/ollama-${IPFSNODEID}") ]] \
         && ipfs p2p listen /x/ollama-${IPFSNODEID} /ip4/127.0.0.1/tcp/${PORT}
 
@@ -226,7 +226,7 @@ fi
 rm -f ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh 2>/dev/null
 if [[ ! -z $(systemctl status comfyui.service 2>/dev/null | grep "active (running)") ]]; then
     PORT=8188
-    echo "Launching comfyui SHARE ACCESS /x/comfyui-${IPFSNODEID}"
+    echo "ComfyUI tunnel: /x/comfyui-${IPFSNODEID}"
     [[ ! $(ipfs p2p ls | grep "/x/comfyui-${IPFSNODEID}") ]] \
         && ipfs p2p listen /x/comfyui-${IPFSNODEID} /ip4/127.0.0.1/tcp/${PORT}
 
@@ -256,7 +256,7 @@ rm -f ~/.zen/tmp/${IPFSNODEID}/x_orpheus.sh 2>/dev/null
 if [[ ! -z $(docker ps | grep orpheus) ]]; then
     PORT=5005
 
-    echo "Launching Orpheus SHARE ACCESS /x/orpheus-${IPFSNODEID}"
+    echo "Orpheus tunnel: /x/orpheus-${IPFSNODEID}"
     [[ ! $(ipfs p2p ls | grep "/x/orpheus-${IPFSNODEID}") ]] \
         && ipfs p2p listen /x/orpheus-${IPFSNODEID} /ip4/127.0.0.1/tcp/${PORT}
 
@@ -286,7 +286,7 @@ rm -f ~/.zen/tmp/${IPFSNODEID}/x_perplexica.sh 2>/dev/null
 if [[ ! -z $(docker ps | grep perplexica) ]]; then
     PORT=3001
 
-    echo "Launching Perplexica SHARE ACCESS /x/perplexica-${IPFSNODEID}"
+    echo "Perplexica tunnel: /x/perplexica-${IPFSNODEID}"
     [[ ! $(ipfs p2p ls | grep "/x/perplexica-${IPFSNODEID}") ]] \
         && ipfs p2p listen /x/perplexica-${IPFSNODEID} /ip4/127.0.0.1/tcp/${PORT}
 
@@ -315,7 +315,7 @@ rm -f ~/.zen/tmp/${IPFSNODEID}/x_strfry.sh 2>/dev/null
 if [[ ! -z $(ps auxf | grep "strfry relay" | grep -v grep) ]]; then
     PORT=7777
 
-    echo "Launching STRFRY RELAY SHARE ACCESS /x/strfry-${IPFSNODEID}"
+    echo "STRFRY relay tunnel: /x/strfry-${IPFSNODEID}"
     [[ ! $(ipfs p2p ls | grep "/x/strfry-${IPFSNODEID}") ]] \
         && ipfs p2p listen /x/strfry-${IPFSNODEID} /ip4/127.0.0.1/tcp/${PORT}
 
@@ -339,10 +339,8 @@ if [[ ! -z $(ps auxf | grep "strfry relay" | grep -v grep) ]]; then
 
 fi
 
-echo "-----------------------------------------------------"
-echo "ipfs p2p ls"
+echo "Active P2P tunnels:"
 ipfs p2p ls
-echo "-----------------------------------------------------"
 
 ############################################
 echo "DRAGON WOKE UP"
