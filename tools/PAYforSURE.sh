@@ -278,33 +278,293 @@ if [[ ${ISOK} == 0 ]]; then
     ZENCUR=$(echo "$COINS * 10" | bc | cut -d '.' -f 1)
     ZENDES=$(echo "$DES * 10" | bc | cut -d '.' -f 1)
     
-    # Generate HTML report
+    # Generate beautiful HTML report
     cat << EOF > ${PENDINGDIR}/${MOATS}.result.html
-<html>
+<!DOCTYPE html>
+<html lang="fr">
 <head>
-    <meta charset='UTF-8'>
-    <title>${COMMENT}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction ZEN - ${COMMENT}</title>
     <style>
-        body { font-family: 'Courier New', monospace; }
-        pre { white-space: pre-wrap; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .transaction-info {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-left: 5px solid #4facfe;
+        }
+        
+        .amount-display {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .amount {
+            font-size: 3em;
+            font-weight: bold;
+            color: #4facfe;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .currency {
+            font-size: 1.2em;
+            color: #666;
+            margin-top: 10px;
+        }
+        
+        .transaction-flow {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 30px 0;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .wallet-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            flex: 1;
+            min-width: 250px;
+            border: 2px solid #e9ecef;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .wallet-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        
+        .wallet-card.source {
+            border-color: #ff6b6b;
+        }
+        
+        .wallet-card.destination {
+            border-color: #51cf66;
+        }
+        
+        .wallet-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .wallet-address {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #333;
+            word-break: break-all;
+            margin-bottom: 15px;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .wallet-balance {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #4facfe;
+        }
+        
+        .arrow {
+            font-size: 2em;
+            color: #4facfe;
+            margin: 0 20px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .links {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #4facfe;
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(79, 172, 254, 0.3);
+        }
+        
+        .btn:hover {
+            background: #3d8bfe;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+        
+        .btn.secondary {
+            background: #6c757d;
+        }
+        
+        .btn.secondary:hover {
+            background: #5a6268;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #51cf66;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .comment {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #4facfe;
+            font-style: italic;
+            color: #1976d2;
+        }
+        
+        @media (max-width: 768px) {
+            .transaction-flow {
+                flex-direction: column;
+            }
+            
+            .arrow {
+                transform: rotate(90deg);
+                margin: 20px 0;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .amount {
+                font-size: 2.5em;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>${ZENAMOUNT} ZEN OPERATION</h1>
-    ${COMMENT}
-    <h3>
-        <a title='CESIUM' href='${CESIUMIPFS}/#/app/wot/tx/${ISSUERPUB}/'>${ISSUERPUB}</a>
-        (<a href='$myUPLANET/g1gate/?pubkey=${ISSUERPUB}'>SCAN</a>) : ${ZENCUR} ZEN
-        <br> //--->> 
-        <a title='CESIUM' href='${CESIUMIPFS}/#/app/wot/tx/${G1PUB}/'>${G1PUB}</a>
-        (<a href='$myUPLANET/g1gate/?pubkey=${G1PUB}'>SCAN</a>) : ${ZENDES} ZEN
-    </h3>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Transaction ZEN</h1>
+            <div class="subtitle">Opération blockchain réussie</div>
+        </div>
+        
+        <div class="content">
+            <div class="status-badge">✅ Transaction confirmée</div>
+            
+            <div class="amount-display">
+                <div class="amount">${ZENAMOUNT}</div>
+                <div class="currency">ZEN</div>
+            </div>
+            
+            <div class="comment">
+                <strong>Référence :</strong> ${COMMENT}
+            </div>
+            
+            <div class="transaction-flow">
+                <div class="wallet-card source">
+                    <div class="wallet-label">💰 Portefeuille source</div>
+                    <div class="wallet-address">${ISSUERPUB}</div>
+                    <div class="wallet-balance">${ZENCUR} ZEN</div>
+                    <div class="links">
+                        <a href="${CESIUMIPFS}/#/app/wot/tx/${ISSUERPUB}/" class="btn" target="_blank">📊 Cesium</a>
+                        <a href="$myUPLANET/g1gate/?pubkey=${ISSUERPUB}" class="btn secondary" target="_blank">🔍 Scanner</a>
+                    </div>
+                </div>
+                
+                <div class="arrow">➡️</div>
+                
+                <div class="wallet-card destination">
+                    <div class="wallet-label">🎯 Portefeuille destination</div>
+                    <div class="wallet-address">${G1PUB}</div>
+                    <div class="wallet-balance">${ZENDES} ZEN</div>
+                    <div class="links">
+                        <a href="${CESIUMIPFS}/#/app/wot/tx/${G1PUB}/" class="btn" target="_blank">📊 Cesium</a>
+                        <a href="$myUPLANET/g1gate/?pubkey=${G1PUB}" class="btn secondary" target="_blank">🔍 Scanner</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Transaction traitée le $(date '+%d/%m/%Y à %H:%M:%S')</p>
+            <p>ID de transaction : ${MOATS}</p>
+        </div>
+    </div>
 </body>
 </html>
 EOF
 
     ## TODO REMOVE : monitor 
-    $MY_PATH/mailjet.sh "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "${ZENAMOUNT} ZEN : ${COMMENT}"
+    $MY_PATH/mailjet.sh --expire 48h "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "${ZENAMOUNT} ZEN : ${COMMENT}"
 
 
 
