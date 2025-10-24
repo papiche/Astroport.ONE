@@ -124,6 +124,24 @@ EOF
     (sleep 3600 && rm -f "$error_report") &
 }
 
+# Function to get user language from LANG file
+get_user_language() {
+    local email="$1"
+    local lang_file="$HOME/.zen/game/nostr/${email}/LANG"
+    
+    if [[ -f "$lang_file" ]]; then
+        local user_lang=$(cat "$lang_file" 2>/dev/null | tr -d '\n' | head -c 10)
+        if [[ -n "$user_lang" ]]; then
+            echo "$user_lang"
+            return 0
+        fi
+    fi
+    
+    # Default to French if no language file found
+    echo "fr"
+    return 1
+}
+
 # Function to get user uDRIVE directory based on email
 get_user_udrive_path() {
     local email="$1"
@@ -689,9 +707,13 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g; s/"//g' <<< "$message_text")
                 KeyANSWER="$($MY_PATH/perplexica_search.sh "${cleaned_text}")"
                 
-                # Generate intelligent summary using the actual article content
+                # Get user language and generate intelligent summary
+                echo "Detecting user language..." >&2
+                USER_LANG=$(get_user_language "$KNAME")
+                echo "User language detected: $USER_LANG" >&2
+                
                 echo "Generating intelligent summary for article..." >&2
-                ARTICLE_SUMMARY="$($MY_PATH/question.py "Create a concise, engaging summary (2-3 sentences) for this blog article. The summary should capture the main points and be suitable for a blog article header. Format: plain text only, no quotes, no special characters, no emojis. Article content: ${KeyANSWER}" --pubkey ${PUBKEY})"
+                ARTICLE_SUMMARY="$($MY_PATH/question.py "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. The summary should capture the main points and be suitable for a blog article header. Format: plain text only, no quotes, no special characters, no emojis. Article content: ${KeyANSWER}" --pubkey ${PUBKEY})"
                 
                 # Clean the summary to avoid parsing issues while preserving spaces and meaningful content
                 ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | sed 's/["'"'"']//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '\n' | sed 's/[^a-zA-Z0-9 .,!?-]//g' | sed 's/\s\+/ /g' | sed 's/"/\\"/g' | sed "s/'/\\'/g" | head -c 500)"
@@ -702,7 +724,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 
                 # Use AI to create an optimized Stable Diffusion prompt based on the summary
                 echo "Creating AI-generated prompt for illustration based on article summary..." >&2
-                SD_PROMPT="$($MY_PATH/question.py "Create a Stable Diffusion prompt (no explanations, just the prompt text) for a professional blog header image based on this article summary: ${ARTICLE_SUMMARY} --- IMPORTANT: direct prompt text only, no markdown, no explanations, no emojis, no special characters, no text, no words, no letters, no writing, visual elements only." --pubkey ${PUBKEY})"
+                SD_PROMPT="$($MY_PATH/question.py "Create a Stable Diffusion prompt (no explanations, just the prompt text) for an illustrative image based on this article summary: ${ARTICLE_SUMMARY} --- IMPORTANT: direct prompt text only, no markdown, no explanations, no emojis, no special characters, no text, no words, no letters, no writing, visual elements only." --pubkey ${PUBKEY})"
                 
                 # Clean the prompt to remove emojis and special characters while preserving spaces and content
                 SD_PROMPT=$(echo "$SD_PROMPT" | \
@@ -734,11 +756,15 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 fi
                 
                 AnswerKind="30023"
+                # Clean and escape title and summary for JSON tags
+                CLEANED_TITLE=$(echo "$cleaned_text" | sed 's/"/\\"/g' | sed "s/'/\\'/g")
+                CLEANED_SUMMARY=$(echo "$ARTICLE_SUMMARY" | sed 's/"/\\"/g' | sed "s/'/\\'/g")
+                
                 # Add specific tags for kind 30023 (blog articles) with image tag if available
                 if [[ -n "$ILLUSTRATION_URL" ]]; then
-                    ExtraTags="[['title', '${cleaned_text}'], ['summary', '${ARTICLE_SUMMARY}'], ['published_at', '$(date -u +%s)'], ['image', '${ILLUSTRATION_URL}'], ['t', 'search'], ['t', 'perplexica']]"
+                    ExtraTags="[['title', '${CLEANED_TITLE}'], ['summary', '${CLEANED_SUMMARY}'], ['published_at', '$(date -u +%s)'], ['image', '${ILLUSTRATION_URL}'], ['t', 'search'], ['t', 'perplexica']]"
                 else
-                    ExtraTags="[['title', '${cleaned_text}'], ['summary', '${ARTICLE_SUMMARY}'], ['published_at', '$(date -u +%s)'], ['t', 'search'], ['t', 'perplexica']]"
+                    ExtraTags="[['title', '${CLEANED_TITLE}'], ['summary', '${CLEANED_SUMMARY}'], ['published_at', '$(date -u +%s)'], ['t', 'search'], ['t', 'perplexica']]"
                 fi
             elif [[ "${TAGS[image]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#image//g; s/"//g' <<< "$message_text")
