@@ -1,35 +1,15 @@
 #!/bin/bash
 ########################################################################
-# process_youtube.sh
-# Script de téléchargement et traitement des vidéos YouTube
+# process_youtube_simple.sh
+# Version simplifiée pour éviter les protections YouTube
 #
-# Usage: $0 [--debug] <url> <format> [player_email] [--metadata "id&title&duration&uploader"]
-#
-# --debug : active le mode verbeux, log dans ~/.zen/tmp/IA.log
-# --metadata : utilise les métadonnées pré-extraites pour éviter les requêtes supplémentaires
-#
-# Fonctionnalités:
-# - Téléchargement de vidéos YouTube avec yt-dlp
-# - Support des formats MP3 et MP4
-# - Gestion automatique des cookies :
-#   1. Priorité aux cookies uploadés par l'utilisateur (.cookie.txt)
-#      via l'interface astro_base.html (/api/fileupload)
-#   2. Cookies du navigateur par défaut (chrome, firefox, brave, edge)
-#   3. Fallback sur génération de cookies basiques avec curl
-# - Upload automatique vers IPFS
-# - Limitations de durée (3h max)
-#
-# Cookie Upload:
-# Les utilisateurs peuvent uploader n'importe quel fichier .txt
-# Le système détecte automatiquement le format Netscape (cookies)
-# et le sauvegarde dans ~/.zen/game/nostr/<email>/.cookie.txt
-# Les cookies sont utilisés en priorité pour tous les téléchargements YouTube.
+# Usage: $0 [--debug] <url> <format> [player_email]
 ########################################################################
+
 # Source my.sh to get all necessary constants and functions
 source "$HOME/.zen/Astroport.ONE/tools/my.sh"
 
 DEBUG=0
-PRE_EXTRACTED_METADATA=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -37,10 +17,6 @@ while [[ $# -gt 0 ]]; do
         --debug)
             DEBUG=1
             shift
-            ;;
-        --metadata)
-            PRE_EXTRACTED_METADATA="$2"
-            shift 2
             ;;
         *)
             break
@@ -53,7 +29,7 @@ mkdir -p "$(dirname "$LOGFILE")"
 
 log_debug() {
     if [[ $DEBUG -eq 1 ]]; then
-        echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOGFILE" >&2
+        echo "[process_youtube_simple.sh][$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOGFILE" >&2
     fi
 }
 
@@ -62,16 +38,14 @@ MY_PATH="$( cd "$MY_PATH" && pwd )"
 
 # Vérifie si les arguments sont fournis
 if [ $# -lt 2 ]; then
-    log_debug "Usage: $0 [--debug] <url> <format> [player_email] [--metadata \"id&title&duration&uploader\"]"
-    echo "Usage: $0 [--debug] <url> <format> [player_email] [--metadata \"id&title&duration&uploader\"]" >&2
+    log_debug "Usage: $0 [--debug] <url> <format> [player_email]"
+    echo "Usage: $0 [--debug] <url> <format> [player_email]" >&2
     exit 1
 fi
 
 URL="$1"
 FORMAT="$2"
 PLAYER_EMAIL="$3"
-
-. "$MY_PATH/../tools/my.sh"
 
 # Create temporary directory
 TMP_DIR="$HOME/.zen/tmp/youtube_$(date +%s)"
@@ -85,7 +59,7 @@ log_debug "Using temporary directory for download: $OUTPUT_DIR"
 # Check if player email is provided and construct uDRIVE path
 UDRIVE_COPY_PATH=""
 if [ -n "$PLAYER_EMAIL" ]; then
-    UDRIVE_COPY_PATH="$HOME/.zen/game/nostr/$PLAYER_EMAIL/APP/uDRIVE"
+    UDRIVE_COPY_PATH="$HOME/.zen/game/nostr/$PLAYER_EMAIL/APP/uDRIVE/Videos"
     if [ -d "$UDRIVE_COPY_PATH" ]; then
         echo "Will copy final file to uDRIVE: $UDRIVE_COPY_PATH" >&2
         log_debug "Will copy final file to uDRIVE: $UDRIVE_COPY_PATH"
@@ -99,1225 +73,149 @@ fi
 # Cleanup function
 cleanup() {
     rm -rf "$TMP_DIR"
-    [[ -f "$HOME/.zen/tmp/youtube_cookies.txt" ]] && rm -f "$HOME/.zen/tmp/youtube_cookies.txt"
 }
 trap cleanup EXIT
 
-# Function to send NOSTR notification
-send_nostr_notification() {
-    local player_email="$1"
-    local title="$2"
-    local uploader="$3"
-    local ipfs_url="$4"
-    local youtube_url="$5"
-    local metadata_ipfs="$6"
-    local thumbnail_ipfs="$7"
-    local subtitles_info="$8"
-    
-    log_debug "Sending NOSTR notification for video: $title"
-    
-    # Check if NOSTR script exists
-    local nostr_script="$MY_PATH/../tools/nostr_send_note.py"
-    if [[ ! -f "$nostr_script" ]]; then
-        log_debug "NOSTR script not found: $nostr_script"
-        return 1
-    fi
-    
-    # Check if player has NOSTR keys in .secret.nostr format
-    local secret_file="$HOME/.zen/game/nostr/$player_email/.secret.nostr"
-    if [[ ! -f "$secret_file" ]]; then
-        log_debug "NOSTR keys file not found for $player_email: $secret_file"
-        return 1
-    fi
-    
-    # Source the .secret.nostr file to get NSEC, NPUB, HEX
-    source "$secret_file" 2>/dev/null
-    
-    if [[ -z "$NSEC" ]] || [[ -z "$NPUB" ]]; then
-        log_debug "Invalid .secret.nostr file format for $player_email"
-        log_debug "Expected format: NSEC=nsec1...; NPUB=npub1...; HEX=..."
-        return 1
-    fi
-    
-    local nsec_key="$NSEC"
-    
-    # Extract video description from metadata if available
-    local video_description=""
-    if [[ -n "$metadata_ipfs" ]]; then
-        # Try to extract description from the metadata JSON file
-        local metadata_file=$(find "$OUTPUT_DIR" -name "*.info.json" 2>/dev/null | head -n 1)
-        if [[ -n "$metadata_file" && -f "$metadata_file" ]]; then
-            video_description=$(jq -r '.description // empty' "$metadata_file" 2>/dev/null | head -c 500)
-            if [[ -n "$video_description" && "$video_description" != "null" ]]; then
-                # Clean description (remove HTML tags, limit length)
-                video_description=$(echo "$video_description" | sed 's/<[^>]*>//g' | sed 's/&nbsp;/ /g' | head -c 300)
-            else
-                video_description=""
-            fi
-        fi
-    fi
-    
-    # Generate AI analysis if description is available
-    local ai_analysis=""
-    if [[ -n "$video_description" && -n "$MY_PATH/../question.py" ]]; then
-        log_debug "Generating AI analysis for video: $title"
-        local ai_prompt="Analyse cette vidéo YouTube et donne un résumé en 2-3 phrases: Titre: $title, Auteur: $uploader, Description: $video_description"
-        ai_analysis=$(python3 "$MY_PATH/../question.py" "$ai_prompt" 2>/dev/null | head -c 200)
-        if [[ -n "$ai_analysis" && "$ai_analysis" != "Failed to get answer from Ollama." ]]; then
-            log_debug "AI analysis generated: $ai_analysis"
-        else
-            ai_analysis=""
-        fi
-    fi
-    
-    # Build NOSTR message with enhanced metadata
-    local message="🎬 Nouvelle vidéo téléchargée: $title par $uploader"
+# Extract metadata first
+log_debug "Extracting metadata for: $URL"
+metadata_line=$(yt-dlp --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
+log_debug "Metadata line: $metadata_line"
 
-    # Add AI analysis if available
-    if [[ -n "$ai_analysis" ]]; then
-        message="$message
+if [[ -z "$metadata_line" ]]; then
+    echo '{"error":"❌ Failed to extract metadata from YouTube URL"}'
+    exit 1
+fi
 
-🤖 Analyse IA: $ai_analysis"
-    fi
-    
-    # Add description if available
-    if [[ -n "$video_description" ]]; then
-        message="$message
+# Parse metadata
+yid=$(echo "$metadata_line" | cut -d '&' -f 1)
+raw_title=$(echo "$metadata_line" | cut -d '&' -f 2)
+duration=$(echo "$metadata_line" | cut -d '&' -f 3)
+uploader=$(echo "$metadata_line" | cut -d '&' -f 4)
 
-📝 Description: $video_description"
-    fi
-    
-    message="$message
+# Clean title
+media_title=$(echo "$raw_title" | detox --inline | sed 's/[^a-zA-Z0-9._-]/_/g' | sed 's/__*/_/g' | sed 's/^_\|_$//g' | head -c 100)
 
-🔗 IPFS: $ipfs_url
+log_debug "Extracted: yid=$yid, title=$media_title, duration=$duration, uploader=$uploader"
 
---- debug ---"
+# Check duration limit (3 hours)
+if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ && "$duration" -gt 10800 ]]; then
+    log_debug "Media duration exceeds 3 hour limit: ${duration}s"
+    echo '{"error":"Media duration exceeds 3 hour limit"}'
+    exit 1
+fi
 
-    # Add metadata links if available
-    if [[ -n "$metadata_ipfs" ]]; then
-        message="$message
-📋 Métadonnées: $myLIBRA/ipfs/$metadata_ipfs"
-    fi
-    
-    if [[ -n "$thumbnail_ipfs" ]]; then
-        message="$message
-🖼️ Miniature: $myLIBRA/ipfs/$thumbnail_ipfs"
-    fi
-    
-    # Subtitle handling removed for simplicity
-    
-    message="$message
+# Try simple download strategies
+log_debug "Starting download with simplified approach"
 
-#YouTubeDownload #uDRIVE #IPFS"
-    
-    # Build NOSTR tags optimized for video channels
-    local tags_json="[[\"r\",\"$youtube_url\",\"YouTube\"],[\"t\",\"YouTubeDownload\"],[\"t\",\"uDRIVE\"],[\"t\",\"IPFS\"]"
-    
-    # Add channel-specific tags
-    tags_json="$tags_json,[\"t\",\"VideoChannel\"]"
-    
-    # Add uploader as channel tag for grouping
-    if [[ -n "$uploader" && "$uploader" != "null" ]]; then
-        local channel_name=$(echo "$uploader" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 50)
-        tags_json="$tags_json,[\"t\",\"Channel-$channel_name\"]"
-    fi
-    
-    # Add video category/topic tags (extracted from title)
-    local topic_tags=$(echo "$title" | tr '[:upper:]' '[:lower:]' | \
-        sed 's/[^a-zA-Z0-9 ]//g' | \
-        awk '{for(i=1;i<=NF;i++) if(length($i)>3) print $i}' | \
-        head -3 | \
-        sed 's/^/["t","Topic-/' | sed 's/$/"]/' | \
-        tr '\n' ',' | sed 's/,$//')
-    
-    if [[ -n "$topic_tags" ]]; then
-        tags_json="$tags_json,$topic_tags"
-    fi
-    
-    # Add duration tag for filtering
-    if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ ]]; then
-        local duration_min=$((duration / 60))
-        if [[ $duration_min -lt 5 ]]; then
-            tags_json="$tags_json,[\"t\",\"Duration-Short\"]"
-        elif [[ $duration_min -lt 30 ]]; then
-            tags_json="$tags_json,[\"t\",\"Duration-Medium\"]"
-        else
-            tags_json="$tags_json,[\"t\",\"Duration-Long\"]"
-        fi
-    fi
-    
-    # Add AI analysis tag if available
-    if [[ -n "$ai_analysis" ]]; then
-        tags_json="$tags_json,[\"t\",\"AI-Analysis\"]"
-    fi
-    
-    # Add description tag if available
-    if [[ -n "$video_description" ]]; then
-        tags_json="$tags_json,[\"t\",\"Description\"]"
-    fi
-    
-    # Subtitle handling removed for simplicity
-    
-    # Add main video IPFS URL as primary 'r' tag
-    if [[ -n "$ipfs_url" ]]; then
-        tags_json="$tags_json,[\"r\",\"$ipfs_url\",\"Video\"]"
-    fi
-    
-    # Add metadata tags if available
-    if [[ -n "$metadata_ipfs" ]]; then
-        tags_json="$tags_json,[\"r\",\"/ipfs/$metadata_ipfs\",\"Metadata\"]"
-    fi
-    
-    if [[ -n "$thumbnail_ipfs" ]]; then
-        tags_json="$tags_json,[\"r\",\"/ipfs/$thumbnail_ipfs\",\"Thumbnail\"]"
-    fi
-    
-    # Add duration and file size as custom tags
-    if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ ]]; then
-        tags_json="$tags_json,[\"t\",\"Duration-$duration\"]"
-    fi
-    
-    # Add file size tag (get from the actual downloaded file)
-    if [[ -n "$media_file" && -f "$media_file" ]]; then
-        local file_size=$(stat -c%s "$media_file" 2>/dev/null || echo "0")
-        if [[ "$file_size" =~ ^[0-9]+$ && "$file_size" -gt 0 ]]; then
-            tags_json="$tags_json,[\"t\",\"FileSize-$file_size\"]"
-        fi
-    fi
-    
-    tags_json="$tags_json]"
-    
-    # Send NOSTR note with tags (kind: 1 for compatibility)
-    echo "📡 Sending NOSTR notification (kind: 1) for: $title" >&2
-    local nostr_result=$(python3 "$nostr_script" "$nsec_key" "$message" "ws://127.0.0.1:7777" "$tags_json" 2>&1)
-    local nostr_exit_code=$?
-    
-    if [[ $nostr_exit_code -eq 0 ]]; then
-        log_debug "NOSTR notification (kind: 1) sent successfully for: $title"
-        echo "✅ NOSTR notification (kind: 1) published for: $title"
-        
-    # Determine video kind based on dimensions and duration
-    local video_kind=$(determine_video_kind "$duration" "$video_dimensions")
-    echo "📡 Sending NIP-71 video event (kind: $video_kind) for: $title" >&2
-    send_nip71_video_event "$nsec_key" "$title" "$uploader" "$ipfs_url" "$youtube_url" "$metadata_ipfs" "$thumbnail_ipfs" "$duration" "$file_size" "$media_file" "$video_kind"
-        
-        return 0
-    else
-        log_debug "Failed to send NOSTR notification for: $title (exit code: $nostr_exit_code)"
-        echo "⚠️ NOSTR notification failed for: $title"
-        return 1
-    fi
-}
+# Strategy 1: Default yt-dlp (no special options)
+log_debug "Strategy 1: Default yt-dlp"
+case "$FORMAT" in
+    mp3)
+        yt-dlp -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+            --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
+            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" >&2 2>> "$LOGFILE"
+        ;;
+    mp4)
+        yt-dlp --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
+            --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
+            -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" >&2 2>> "$LOGFILE"
+        ;;
+esac
 
-# Function to determine video kind based on duration and dimensions
-determine_video_kind() {
-    local duration="$1"
-    local dimensions="$2"
-    
-    log_debug "Determining video kind for duration: ${duration}s, dimensions: ${dimensions}"
-    
-    # Extract width and height from dimensions (format: WIDTHxHEIGHT)
-    local width=$(echo "$dimensions" | cut -d'x' -f1)
-    local height=$(echo "$dimensions" | cut -d'x' -f2)
-    
-    # Default to kind 21 if we can't parse dimensions
-    if [[ ! "$width" =~ ^[0-9]+$ ]] || [[ ! "$height" =~ ^[0-9]+$ ]]; then
-        log_debug "Invalid dimensions format, defaulting to kind 21"
-        echo "21"
-        return
-    fi
-    
-    # Calculate aspect ratio
-    local aspect_ratio=$(echo "scale=2; $width / $height" | bc -l 2>/dev/null || echo "1.78")
-    
-    # Determine if it's a short video based on:
-    # 1. Vertical aspect ratio (height > width) regardless of duration
-    # 2. Square aspect ratio regardless of duration  
-    # 3. Small dimensions (<= 720p) regardless of duration
-    # 4. Duration <= 30 seconds for horizontal videos (more strict)
-    
-    local is_short_duration=false
-    local is_short_format=false
-    
-    # Check duration (30 seconds or less for horizontal videos)
-    if [[ "$duration" -le 30 ]]; then
-        is_short_duration=true
-        log_debug "Short duration detected: ${duration}s <= 30s"
-    fi
-    
-    # Check aspect ratio and dimensions
-    if (( height > width )); then
-        # Vertical video (portrait) - always short format
-        is_short_format=true
-        log_debug "Vertical video detected: ${width}x${height}"
-    elif (( width == height )); then
-        # Square video - always short format
-        is_short_format=true
-        log_debug "Square video detected: ${width}x${height}"
-    elif (( width <= 720 && height <= 720 )); then
-        # Small dimensions (likely short)
-        is_short_format=true
-        log_debug "Small dimensions detected: ${width}x${height}"
-    fi
-    
-    # Determine kind with improved logic
-    if [[ "$is_short_format" == true ]]; then
-        # Format-based classification (vertical, square, small) - always short
-        log_debug "Classified as short video (kind 22) - format-based"
-        echo "22"
-    elif [[ "$is_short_duration" == true ]]; then
-        # Duration-based classification (<= 60s) but only for horizontal videos
-        log_debug "Classified as short video (kind 22) - duration-based"
-        echo "22"
-    else
-        log_debug "Classified as regular video (kind 21)"
-        echo "21"
-    fi
-}
+download_exit_code=$?
+log_debug "Strategy 1 exit code: $download_exit_code"
 
-# Function to send NIP-71 video event
-send_nip71_video_event() {
-    local nsec_key="$1"
-    local title="$2"
-    local uploader="$3"
-    local ipfs_url="$4"
-    local youtube_url="$5"
-    local metadata_ipfs="$6"
-    local thumbnail_ipfs="$7"
-    local duration="$8"
-    local file_size="$9"
-    local media_file="${10}"
-    local video_kind="${11}"
-    
-    log_debug "Sending NIP-71 video event for: $title"
-    
-    # Check if NOSTR script exists
-    local nostr_script="$MY_PATH/../tools/nostr_send_note.py"
-    if [[ ! -f "$nostr_script" ]]; then
-        log_debug "NOSTR script not found: $nostr_script"
-        return 1
-    fi
-    
-    # Create NIP-71 video event content
-    local video_content="🎬 $title
-    
-📺 YouTube: $youtube_url
-🔗 IPFS: $ipfs_url"
+# Check if files were created
+files_created=$(ls "$OUTPUT_DIR"/* 2>/dev/null | wc -l)
+log_debug "Files created: $files_created"
 
-    # Add metadata if available
-    if [[ -n "$metadata_ipfs" ]]; then
-        video_content="$video_content
-📋 Métadonnées: $myLIBRA/ipfs/$metadata_ipfs"
-    fi
+if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
+    log_debug "Strategy 1 successful"
+else
+    # Strategy 2: With format specification
+    log_debug "Strategy 2: With format specification"
+    case "$FORMAT" in
+        mp3)
+            yt-dlp -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+                --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
+                -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" >&2 2>> "$LOGFILE"
+            ;;
+        mp4)
+            yt-dlp -f "best[height<=720]/best" --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
+                --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
+                -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" >&2 2>> "$LOGFILE"
+            ;;
+    esac
     
-    if [[ -n "$thumbnail_ipfs" ]]; then
-        video_content="$video_content
-🖼️ Miniature: $myLIBRA/ipfs/$thumbnail_ipfs"
-    fi
+    download_exit_code=$?
+    log_debug "Strategy 2 exit code: $download_exit_code"
     
-    # Extract real video dimensions using ffprobe
-    local video_dimensions="1920x1080"  # Default fallback
-    if [[ -n "$media_file" && -f "$media_file" ]]; then
-        log_debug "Extracting video dimensions from: $media_file"
-        local dimensions_output=$(ffprobe -v quiet -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$media_file" 2>/dev/null)
-        if [[ -n "$dimensions_output" && "$dimensions_output" =~ ^[0-9]+x[0-9]+$ ]]; then
-            video_dimensions="$dimensions_output"
-            log_debug "Extracted video dimensions: $video_dimensions"
-        else
-            log_debug "Could not extract dimensions, using default: $video_dimensions"
-        fi
-    fi
+    # Check if files were created
+    files_created=$(ls "$OUTPUT_DIR"/* 2>/dev/null | wc -l)
+    log_debug "Files created after strategy 2: $files_created"
     
-    # Build NIP-71 compliant tags
-    local nip71_tags="[[\"title\",\"$title\"]"
-    
-    # Add imeta tag with proper NIP-71 format
-    nip71_tags="$nip71_tags,[\"imeta\",\"dim $video_dimensions\",\"url $ipfs_url\",\"x $(echo -n "$ipfs_url" | sha256sum | cut -d' ' -f1)\",\"m video/mp4\""
-    
-    # Add thumbnail if available
-    if [[ -n "$thumbnail_ipfs" ]]; then
-        nip71_tags="$nip71_tags,\"image $thumbnail_ipfs\""
-    fi
-    
-    # Add fallback URLs for redundancy
-    nip71_tags="$nip71_tags,\"fallback $ipfs_url\""
-    
-    # Add service tag for NIP-96 compatibility
-    nip71_tags="$nip71_tags,\"service nip96\""
-    
-    # Close imeta tag
-    nip71_tags="$nip71_tags]"
-    
-    # Add other required tags
-    if [[ -n "$duration" && "$duration" -gt 0 ]]; then
-        nip71_tags="$nip71_tags,[\"duration\",\"$duration\"]"
-    fi
-    
-    # Add published_at timestamp
-    nip71_tags="$nip71_tags,[\"published_at\",\"$(date +%s)\"]"
-    
-    # Add content warning if needed
-    if [[ "$title" =~ (NSFW|adult|18\+) ]]; then
-        nip71_tags="$nip71_tags,[\"content-warning\",\"Adult content\"]"
-    fi
-    
-    # Add alt text for accessibility
-    nip71_tags="$nip71_tags,[\"alt\",\"$title by $uploader\"]"
-    
-    # Add topic tags
-    nip71_tags="$nip71_tags,[\"t\",\"YouTubeDownload\"],[\"t\",\"VideoChannel\"]"
-    
-    # Add channel-specific tag
-    if [[ -n "$uploader" && "$uploader" != "null" ]]; then
-        local channel_name=$(echo "$uploader" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 50)
-        nip71_tags="$nip71_tags,[\"t\",\"Channel-$channel_name\"]"
-    fi
-    
-    # Add topic tags from title
-    local topic_tags=$(echo "$title" | tr '[:upper:]' '[:lower:]' | \
-        sed 's/[^a-zA-Z0-9 ]//g' | \
-        awk '{for(i=1;i<=NF;i++) if(length($i)>3) print $i}' | \
-        head -3 | \
-        sed 's/^/["t","Topic-/' | sed 's/$/"]/' | \
-        tr '\n' ',' | sed 's/,$//')
-    
-    if [[ -n "$topic_tags" ]]; then
-        nip71_tags="$nip71_tags,$topic_tags"
-    fi
-    
-    # Add reference to original YouTube URL
-    nip71_tags="$nip71_tags,[\"r\",\"$youtube_url\",\"YouTube\"]"
-    
-    # Add metadata tags if available
-    if [[ -n "$metadata_ipfs" ]]; then
-        nip71_tags="$nip71_tags,[\"r\",\"/ipfs/$metadata_ipfs\",\"Metadata\"]"
-    fi
-    
-    if [[ -n "$thumbnail_ipfs" ]]; then
-        nip71_tags="$nip71_tags,[\"r\",\"/ipfs/$thumbnail_ipfs\",\"Thumbnail\"]"
-    fi
-    
-    # Add file size tag
-    if [[ -n "$file_size" && "$file_size" -gt 0 ]]; then
-        nip71_tags="$nip71_tags,[\"t\",\"FileSize-$file_size\"]"
-    fi
-    
-    # Close tags array
-    nip71_tags="$nip71_tags]"
-    
-    # Send NIP-71 video event (kind: 21 or 22)
-    echo "📡 Sending NIP-71 video event (kind: $video_kind) for: $title" >&2
-    local nip71_result=$(python3 "$nostr_script" "$nsec_key" "$video_content" "ws://127.0.0.1:7777" "$nip71_tags" "$video_kind" 2>&1)
-    local nip71_exit_code=$?
-    
-    if [[ $nip71_exit_code -eq 0 ]]; then
-        log_debug "NIP-71 video event sent successfully for: $title"
-        echo "✅ NIP-71 video event published for: $title"
-        return 0
-    else
-        log_debug "Failed to send NIP-71 video event for: $title (exit code: $nip71_exit_code)"
-        echo "⚠️ NIP-71 video event failed for: $title"
-        return 1
-    fi
-}
-
-find_user_cookie_file() {
-    # Search for .cookie.txt in user NOSTR directories
-    local nostr_dir="$HOME/.zen/game/nostr"
-    log_debug "Searching for user cookie files in: $nostr_dir"
-    if [[ -d "$nostr_dir" ]]; then
-        for user_dir in "$nostr_dir"/*@*; do
-            if [[ -f "$user_dir/.cookie.txt" ]]; then
-                log_debug "✓ Found user cookie file: $user_dir/.cookie.txt"
-                local cookie_age=$(($(date +%s) - $(stat -c %Y "$user_dir/.cookie.txt" 2>/dev/null || echo 0)))
-                log_debug "  Cookie file age: $((cookie_age / 86400)) days old"
-                echo "--cookies $user_dir/.cookie.txt"
-                return 0
-            fi
-        done
-    fi
-    log_debug "✗ No user cookie file found"
-    return 1
-}
-
-get_youtube_cookies() {
-    local cookie_file="$HOME/.zen/tmp/youtube_cookies.txt"
-    local user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
-    log_debug "Attempting to generate YouTube cookies..."
-    mkdir -p "$(dirname "$cookie_file")"
-    cat > "$cookie_file" << EOF
-# Netscape HTTP Cookie File
-# https://www.youtube.com
-.youtube.com	TRUE	/	TRUE	2147483647	CONSENT	YES+cb.$(date +%Y%m%d)-14-p0.en+FX+$(openssl rand -hex 8)
-.youtube.com	TRUE	/	TRUE	2147483647	VISITOR_INFO1_LIVE	$(openssl rand -hex 16)
-.youtube.com	TRUE	/	TRUE	2147483647	YSC	$(openssl rand -hex 16)
-.youtube.com	TRUE	/	FALSE	2147483647	PREF	f4=4000000&tz=Europe.Paris&f5=30000&f6=8
-.youtube.com	TRUE	/	TRUE	2147483647	GPS	1
-EOF
-    local strategies=(
-        "https://www.youtube.com/"
-        "https://consent.youtube.com/"
-        "https://www.youtube.com/robots.txt"
-    )
-    for strategy_url in "${strategies[@]}"; do
-        log_debug "Trying cookie strategy: $strategy_url"
-        curl -s -L --max-time 10 \
-            -A "$user_agent" \
-            -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8" \
-            -H "Accept-Language: en-US,en;q=0.5" \
-            -H "Accept-Encoding: gzip, deflate, br" \
-            -H "DNT: 1" \
-            -H "Connection: keep-alive" \
-            -H "Upgrade-Insecure-Requests: 1" \
-            -H "Sec-Fetch-Dest: document" \
-            -H "Sec-Fetch-Mode: navigate" \
-            -H "Sec-Fetch-Site: none" \
-            -H "Sec-Fetch-User: ?1" \
-            -H "Pragma: no-cache" \
-            -H "Cache-Control: no-cache" \
-            -b "$cookie_file" \
-            -c "$cookie_file" \
-            "$strategy_url" > /dev/null 2>&1
-        if grep -q "CONSENT" "$cookie_file" && [[ $(wc -l < "$cookie_file") -gt 5 ]]; then
-            log_debug "Successfully obtained cookies from: $strategy_url"
-            break
-        fi
-    done
-    if [[ -f "$cookie_file" ]] && grep -q "CONSENT" "$cookie_file"; then
-        log_debug "Cookie file created successfully: $cookie_file"
-        echo "--cookies $cookie_file"
-    else
-        log_debug "Failed to create valid cookie file"
-        rm -f "$cookie_file"
-        echo ""
-    fi
-}
-
-process_youtube() {
-    local url="$1"
-    local media_type="$2"
-    local temp_dir="$3"
-    local browser_cookies=""
-    local media_file=""
-    local media_ipfs=""
-    local line=""
-    local yid media_title duration uploader
-    local filename ipfs_url
-    local user_cookie=""
-log_debug "=========================================="
-log_debug "START YouTube Processing"
-log_debug "URL: $url"
-log_debug "Format: $media_type"
-log_debug "Temp dir: $temp_dir"
-log_debug "Pre-extracted metadata: $PRE_EXTRACTED_METADATA"
-log_debug "All arguments received: $*"
-log_debug "Argument count: $#"
-log_debug "=========================================="
-    
-    # Check if we have pre-extracted metadata to avoid additional requests
-    if [[ -n "$PRE_EXTRACTED_METADATA" ]]; then
-        log_debug "Using pre-extracted metadata to avoid additional requests"
-        log_debug "PRE_EXTRACTED_METADATA length: ${#PRE_EXTRACTED_METADATA}"
-        log_debug "PRE_EXTRACTED_METADATA content: '$PRE_EXTRACTED_METADATA'"
-        line="$PRE_EXTRACTED_METADATA"
-        log_debug "Pre-extracted metadata assigned to line: '$line'"
-    else
-        # 0. First, try to use user's uploaded cookie file if available
-        log_debug "STEP 1: Checking for user-uploaded cookie file..."
-        user_cookie=$(find_user_cookie_file)
-        if [[ -n "$user_cookie" ]]; then
-            log_debug "✓ Using user's uploaded cookie file"
-            browser_cookies="$user_cookie"
-            log_debug "Attempting metadata extraction with user cookies..."
-            line="$(yt-dlp $browser_cookies --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$url" 2>> "$LOGFILE")"
-            local exit_code=$?
-            log_debug "yt-dlp exit code: $exit_code"
-            log_debug "yt-dlp output (user cookies): $line"
-        else
-            log_debug "✗ No user cookie file available"
-        fi
-        
-        # 1. Try to extract metadata without cookies (if not already done with user cookies)
-        if [[ -z "$line" ]]; then
-            log_debug "STEP 2: Trying yt-dlp metadata extraction without cookies..."
-            line="$(yt-dlp --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$url" 2>> "$LOGFILE")"
-            local exit_code=$?
-            log_debug "yt-dlp exit code: $exit_code"
-            log_debug "yt-dlp output (no cookies): $line"
-        fi
-    fi
-    
-    if [[ $? -ne 0 || -z "$line" ]]; then
-        # Try browser cookies if user cookies didn't work
-        if [[ -z "$user_cookie" ]]; then
-            log_debug "STEP 3: Trying browser cookies..."
-            browser_pref=$(xdg-settings get default-web-browser 2>/dev/null | cut -d'.' -f1 | tr 'A-Z' 'a-z')
-            log_debug "Default browser detected: $browser_pref"
-            case "$browser_pref" in
-                chromium|chrome) browser_cookies="--cookies-from-browser chrome" ;;
-                firefox) browser_cookies="--cookies-from-browser firefox" ;;
-                brave) browser_cookies="--cookies-from-browser brave" ;;
-                edge) browser_cookies="--cookies-from-browser edge" ;;
-                *) browser_cookies="" ;;
+    if [[ $download_exit_code -ne 0 || $files_created -eq 0 ]]; then
+        # Strategy 3: With cookies if available
+        log_debug "Strategy 3: With cookies"
+        cookie_file="$HOME/.zen/game/nostr/$PLAYER_EMAIL/.cookie.txt"
+        if [[ -f "$cookie_file" ]]; then
+            case "$FORMAT" in
+                mp3)
+                    yt-dlp --cookies "$cookie_file" -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+                        --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
+                        -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" >&2 2>> "$LOGFILE"
+                    ;;
+                mp4)
+                    yt-dlp --cookies "$cookie_file" -f "best[height<=720]/best" --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
+                        --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
+                        -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" >&2 2>> "$LOGFILE"
+                    ;;
             esac
-            if [[ -n "$browser_cookies" ]]; then
-                log_debug "Attempting metadata extraction with: $browser_cookies"
-                line="$(yt-dlp $browser_cookies --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$url" 2>> "$LOGFILE")"
-                local exit_code=$?
-                log_debug "yt-dlp exit code: $exit_code"
-                log_debug "yt-dlp output (browser cookies): $line"
-            else
-                log_debug "No browser cookies strategy available"
-            fi
-        fi
-        if [[ $? -ne 0 || -z "$line" ]]; then
-            # Generate temporary cookies as last resort
-            log_debug "STEP 4: Generating temporary cookies as last resort..."
-            browser_cookies=$(get_youtube_cookies)
-            if [[ -n "$browser_cookies" ]]; then
-                log_debug "Attempting metadata extraction with generated cookies"
-                line="$(yt-dlp $browser_cookies --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$url" 2>> "$LOGFILE")"
-                local exit_code=$?
-                log_debug "yt-dlp exit code: $exit_code"
-                log_debug "yt-dlp output (generated cookies): $line"
-            else
-                log_debug "Failed to generate cookies"
-            fi
+            
+            download_exit_code=$?
+            log_debug "Strategy 3 exit code: $download_exit_code"
+            
+            # Check if files were created
+            files_created=$(ls "$OUTPUT_DIR"/* 2>/dev/null | wc -l)
+            log_debug "Files created after strategy 3: $files_created"
         fi
     fi
-    # Extract fields more safely
-    yid=$(echo "$line" | cut -d '&' -f 1)
-    raw_title=$(echo "$line" | cut -d '&' -f 2)
-    duration=$(echo "$line" | cut -d '&' -f 3)
-    uploader=$(echo "$line" | cut -d '&' -f 4)
-    
-    # Clean title safely and make it URL-compatible
-    if [[ -n "$raw_title" ]]; then
-        # First detox to remove special characters, then make URL-compatible
-        media_title=$(echo "$raw_title" | detox --inline | sed 's/[^a-zA-Z0-9._-]/_/g' | sed 's/__*/_/g' | sed 's/^_\|_$//g')
-        # Limit length to avoid filesystem issues
-        media_title=$(echo "$media_title" | head -c 100)
-    else
-        media_title="media-$(date +%s)"
-    fi
-    
-    # Debug the extracted values
-    log_debug "Extracted fields:"
-    log_debug "  yid: '$yid'"
-    log_debug "  raw_title: '$raw_title'"
-    log_debug "  media_title: '$media_title'"
-    log_debug "  duration: '$duration'"
-    log_debug "  uploader: '$uploader'"
-    
-    # Validate field separation - check if duration contains non-numeric characters
-    if [[ -n "$duration" && ! "$duration" =~ ^[0-9]+$ ]]; then
-        log_debug "Warning: Duration field may be corrupted: '$duration'"
-        log_debug "Raw line was: '$line'"
-        # Try to re-extract with different approach
-        if [[ "$line" =~ ^([^&]+)\&(.+)\&([0-9]+)\&(.+)$ ]]; then
-            yid="${BASH_REMATCH[1]}"
-            raw_title="${BASH_REMATCH[2]}"
-            duration="${BASH_REMATCH[3]}"
-            uploader="${BASH_REMATCH[4]}"
-            log_debug "Re-extracted with regex: yid='$yid', title='$raw_title', duration='$duration', uploader='$uploader'"
-            if [[ -n "$raw_title" ]]; then
-                # Make URL-compatible
-                media_title=$(echo "$raw_title" | detox --inline | sed 's/[^a-zA-Z0-9._-]/_/g' | sed 's/__*/_/g' | sed 's/^_\|_$//g' | head -c 100)
-            else
-                media_title="media-$(date +%s)"
-            fi
-        fi
-    fi
-    # If we still don't have a valid title or id, try to extract from YouTube page JSON
-    if [[ -z "$yid" || -z "$media_title" || "$media_title" == "media-$(date +%s)" ]]; then
-        log_debug "yt-dlp metadata extraction failed, trying to extract from YouTube page JSON..."
-        page_html=$(curl -sL "$url")
-        player_json=$(echo "$page_html" | grep -oP 'var ytInitialPlayerResponse = \\K\\{.*?\\}(?=;)' | head -n1)
-        if [[ -n "$player_json" ]]; then
-            title=$(echo "$player_json" | jq -r '.videoDetails.title // empty' 2>/dev/null)
-            uploader=$(echo "$player_json" | jq -r '.videoDetails.author // empty' 2>/dev/null)
-            yid=$(echo "$player_json" | jq -r '.videoDetails.videoId // empty' 2>/dev/null)
-            duration=$(echo "$player_json" | jq -r '.videoDetails.lengthSeconds // empty' 2>/dev/null)
-            log_debug "Extracted from page: title=$title, uploader=$uploader, yid=$yid, duration=$duration"
-            if [[ -n "$title" && -n "$yid" ]]; then
-                [[ -z "$title" ]] && title=null || title="\"$title\""
-                [[ -z "$uploader" ]] && uploader=null || uploader="\"$uploader\""
-                [[ -z "$duration" ]] && duration=null || duration="\"$duration\""
-                [[ -z "$url" ]] && original_url=null || original_url="\"$url\""
-                cat << EOF
-{
-  "ipfs_url": null,
-  "title": $title,
-  "duration": $duration,
-  "uploader": $uploader,
-  "original_url": $original_url,
-  "filename": null,
-  "error": "Download not possible, but metadata extracted from YouTube page."
-}
-EOF
-                log_debug "Fallback JSON outputted."
-                exit 0
-            fi
-        fi
-        log_debug "Failed to extract video metadata from YouTube page."
-        echo '{"error":"❌ YouTube authentication failed. Please export fresh cookies from your browser.\n\n📖 Guide: https://ipfs.copylaradio.com/ipns/copylaradio.com/cookie.html\n\n💡 Upload your cookies.txt file via https://u.copylaradio.com/astro"}'
-        exit 1
-    fi
-    # Set max duration to 3h (10800s) for both mp3 and mp4
-    if [[ -n "$duration" ]]; then
-        # Validate that duration is a number
-        if [[ "$duration" =~ ^[0-9]+$ ]]; then
-            if [ "$duration" -gt 10800 ]; then
-                log_debug "Media duration exceeds 3 hour limit: ${duration}s"
-                echo '{"error":"Media duration exceeds 3 hour limit"}'
-                return 1
-            fi
-            log_debug "Duration validation passed: ${duration}s"
-        else
-            log_debug "Warning: Invalid duration format: '$duration' (not a number)"
-            # Don't fail, just log the warning and continue
-        fi
-    else
-        log_debug "No duration information available"
-    fi
-    # Download according to type, using the last successful browser_cookies (may be empty)
-    log_debug "Starting download: $media_type, browser_cookies='$browser_cookies'"
-    
-    # Check yt-dlp version and suggest update if needed
-    local ytdlp_version=$(yt-dlp --version 2>/dev/null || echo "unknown")
-    log_debug "yt-dlp version: $ytdlp_version"
-    
-    # Check if yt-dlp is recent enough (basic check)
-    if [[ "$ytdlp_version" == "unknown" ]]; then
-        log_debug "Warning: yt-dlp version could not be determined"
-    else
-        # Extract version date for comparison (format: YYYY.MM.DD)
-        local version_date=$(echo "$ytdlp_version" | grep -oE '[0-9]{4}\.[0-9]{2}\.[0-9]{2}' | head -1)
-        if [[ -n "$version_date" ]]; then
-            local current_date=$(date +%Y.%m.%d)
-            log_debug "yt-dlp version date: $version_date, current date: $current_date"
-            # If version is more than 30 days old, suggest update
-            if [[ "$version_date" < "$(date -d '30 days ago' +%Y.%m.%d)" ]]; then
-                log_debug "Warning: yt-dlp version appears to be outdated. Consider updating with: pip install --upgrade yt-dlp"
-            fi
-        fi
-    fi
-    
-    # Pre-check available formats to understand what's available
-    log_debug "Checking available formats for URL: $url"
-    local format_check=$(yt-dlp $browser_cookies --list-formats "$url" 2>> "$LOGFILE" | head -20)
-    log_debug "Available formats preview: $format_check"
-    
-    # Check if only HLS/m3u8 formats are available (SABR streaming)
-    local hls_only=false
-    local available_formats=""
-    if echo "$format_check" | grep -q "m3u8" && ! echo "$format_check" | grep -q "mp4.*http"; then
-        hls_only=true
-        log_debug "SABR streaming detected - only HLS/m3u8 formats available"
-        
-        # Extract available format IDs for SABR streaming
-        available_formats=$(echo "$format_check" | grep -E "^\s*[0-9]+\s+mp4" | awk '{print $1}' | head -3 | tr '\n' ',' | sed 's/,$//')
-        log_debug "Available SABR format IDs: $available_formats"
-    fi
-    
-    # User agent rotation to avoid detection
-    local user_agents=(
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0"
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:121.0) Gecko/20100101 Firefox/121.0"
-    )
-    
-    # Retry logic with exponential backoff for 403 errors
-    local max_retries=6
-    local retry_count=0
-    local download_success=false
-    
-    while [[ $retry_count -lt $max_retries && $download_success == false ]]; do
-        if [[ $retry_count -gt 0 ]]; then
-            local backoff_time=$((2 ** retry_count))
-            log_debug "Retry $retry_count/$max_retries - waiting ${backoff_time}s before retry"
-            sleep $backoff_time
-        fi
-        
-        # Select a random user agent for this attempt
-        local selected_ua="${user_agents[$((RANDOM % ${#user_agents[@]}))]}"
-        log_debug "Using user agent: $selected_ua"
-        
-        # Try different strategies based on retry count
-        local strategy=""
-        
-        # If SABR streaming is detected, try different client strategies
-        if [[ "$hls_only" == true && $retry_count -ge 2 ]]; then
-            log_debug "SABR streaming detected, trying different client strategies"
-            # Don't skip strategies, just use different clients
-        fi
-        
-        # Set format selection based on SABR detection
-        local format_selection=""
-        if [[ "$hls_only" == true && -n "$available_formats" ]]; then
-            # Use specific format IDs for SABR streaming
-            format_selection="$available_formats"
-            log_debug "Using SABR-specific format IDs: $format_selection"
-        else
-            # Use generic format selection
-            format_selection="best[height<=720]/best"
-        fi
-        
-        # Set client selection to avoid SABR streaming
-        local client_selection=""
-        if [[ "$hls_only" == true ]]; then
-            # For SABR streaming, try different clients that don't trigger SABR
-            case $retry_count in
-                0|1) client_selection="youtube:player_client=android,web" ;;
-                2|3) client_selection="youtube:player_client=android" ;;
-                4|5) client_selection="youtube:player_client=tv_embedded" ;;
-            esac
-        else
-            # Normal client selection
-            case $retry_count in
-                0) client_selection="youtube:player_client=web,android,android_creator" ;;
-                1) client_selection="youtube:player_client=android,web" ;;
-                2) client_selection="youtube:player_client=web" ;;
-                3) client_selection="youtube:player_client=web" ;;
-                4) client_selection="youtube:player_client=web" ;;
-                5) client_selection="youtube:player_client=web" ;;
-            esac
-        fi
-        log_debug "Using client selection: $client_selection"
-        
-        case $retry_count in
-            0)
-                # Strategy 1: Modern approach with multiple clients
-                strategy="modern"
-                case "$media_type" in
-                    mp3)
-                        yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                            --extractor-args "youtube:player_client=web,android_music,android_creator" \
-                            --throttled-rate 1M \
-                            --sleep-requests 1 \
-                            --sleep-interval 1 \
-                            --max-sleep-interval 5 \
-                            --ignore-errors \
-                            --no-check-certificate \
-                            --prefer-insecure \
-                            --hls-prefer-native \
-                            --hls-use-mpegts \
-                            --downloader "m3u8:native" \
-                            --compat-options 2024 \
-                            -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
-                            --write-info-json --write-thumbnail \
-                            --embed-metadata --embed-thumbnail \
-                            --verbose \
-                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
-                        ;;
-                    mp4)
-                        yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                            --extractor-args "$client_selection" \
-                            --throttled-rate 1M \
-                            --sleep-requests 1 \
-                            --sleep-interval 1 \
-                            --max-sleep-interval 5 \
-                            --ignore-errors \
-                            --no-check-certificate \
-                            --prefer-insecure \
-                            --hls-prefer-native \
-                            --hls-use-mpegts \
-                            --downloader "m3u8:native" \
-                            --recode-video mp4 \
-                            -f "$format_selection" \
-                            --no-mtime --embed-thumbnail --add-metadata \
-                            --write-info-json --write-thumbnail \
-                            --embed-metadata --embed-thumbnail \
-                            -o "${OUTPUT_DIR}/${media_title}.mp4" "$url" >&2 2>> "$LOGFILE"
-                        ;;
-                esac
-                ;;
-            1)
-                # Strategy 2: Legacy approach with different clients
-                strategy="legacy"
-                case "$media_type" in
-                    mp3)
-                        yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                            --extractor-args "$client_selection" \
-                            --throttled-rate 500K \
-                            --sleep-requests 2 \
-                            --sleep-interval 2 \
-                            --max-sleep-interval 8 \
-                            --ignore-errors \
-                            --no-check-certificate \
-                            -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
-                            --write-info-json --write-thumbnail \
-                            --embed-metadata --embed-thumbnail \
-                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
-                        ;;
-                    mp4)
-                        yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                            --extractor-args "$client_selection" \
-                            --throttled-rate 500K \
-                            --sleep-requests 2 \
-                            --sleep-interval 2 \
-                            --max-sleep-interval 8 \
-                            --ignore-errors \
-                            --no-check-certificate \
-                            --hls-prefer-native \
-                            --hls-use-mpegts \
-                            --downloader "m3u8:native" \
-                            --recode-video mp4 \
-                            -f "$format_selection" \
-                            --no-mtime --embed-thumbnail --add-metadata \
-                            --write-info-json --write-thumbnail \
-                            --embed-metadata --embed-thumbnail \
-                            -o "${OUTPUT_DIR}/${media_title}.mp4" "$url" >&2 2>> "$LOGFILE"
-                        ;;
-                esac
-                ;;
-            2)
-                # Strategy 3: Minimal approach without cookies
-                strategy="minimal"
-                case "$media_type" in
-                    mp3)
-                        yt-dlp --user-agent "$selected_ua" \
-                            --extractor-args "$client_selection" \
-                            --throttled-rate 1M \
-                            --sleep-requests 1 \
-                            --sleep-interval 1 \
-                            --max-sleep-interval 5 \
-                            --ignore-errors \
-                            --no-check-certificate \
-                            -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
-                            --write-info-json --write-thumbnail \
-                            --embed-metadata --embed-thumbnail \
-                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
-                        ;;
-                    mp4)
-                        yt-dlp --user-agent "$selected_ua" \
-                            --extractor-args "$client_selection" \
-                            --throttled-rate 1M \
-                            --sleep-requests 1 \
-                            --sleep-interval 1 \
-                            --max-sleep-interval 5 \
-                            --ignore-errors \
-                            --no-check-certificate \
-                            --hls-prefer-native \
-                            --hls-use-mpegts \
-                            --downloader "m3u8:native" \
-                            --recode-video mp4 \
-                            -f "$format_selection" \
-                            --no-mtime --embed-thumbnail --add-metadata \
-                            --write-info-json --write-thumbnail \
-                            --embed-metadata --embed-thumbnail \
-                            -o "${OUTPUT_DIR}/${media_title}.mp4" "$url" >&2 2>> "$LOGFILE"
-                        ;;
-                esac
-                ;;
-            3)
-                # Strategy 4: SABR streaming workaround - try to download m3u8 directly
-                strategy="sabr"
-                case "$media_type" in
-                    mp3)
-                        yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                            --extractor-args "$client_selection" \
-                            --throttled-rate 1M \
-                            --sleep-requests 1 \
-                            --sleep-interval 1 \
-                            --max-sleep-interval 5 \
-                            --ignore-errors \
-                            --no-check-certificate \
-                            --prefer-insecure \
-                            --hls-prefer-native \
-                            --hls-use-mpegts \
-                            --format "best[ext=m4a]/best[ext=mp4]/best" \
-                            -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
-                            --write-info-json --write-thumbnail \
-                            --embed-metadata --embed-thumbnail \
-                            --verbose \
-                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
-                        ;;
-                    mp4)
-                        yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                            --extractor-args "$client_selection" \
-                            --throttled-rate 1M \
-                            --sleep-requests 1 \
-                            --sleep-interval 1 \
-                            --max-sleep-interval 5 \
-                            --ignore-errors \
-                            --no-check-certificate \
-                            --prefer-insecure \
-                            --hls-prefer-native \
-                            --hls-use-mpegts \
-                            --downloader "m3u8:native" \
-                            --recode-video mp4 \
-                            --format "$format_selection" \
-                            --no-mtime --embed-thumbnail --add-metadata \
-                            --write-info-json --write-thumbnail \
-                            --embed-metadata --embed-thumbnail \
-                            --verbose \
-                            -o "${OUTPUT_DIR}/${media_title}.mp4" "$url" >&2 2>> "$LOGFILE"
-                        ;;
-                esac
-                ;;
-            4)
-                # Strategy 5: SABR streaming optimized - use format selection like working command
-                strategy="sabr_optimized"
-                case "$media_type" in
-                    mp3)
-                        yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                            --extractor-args "youtube:player_client=web,android_music,android_creator" \
-                            --throttled-rate 1M \
-                            --sleep-requests 1 \
-                            --sleep-interval 1 \
-                            --max-sleep-interval 5 \
-                            --ignore-errors \
-                            --no-check-certificate \
-                            --prefer-insecure \
-                            --downloader "m3u8:native" \
-                            --compat-options 2024 \
-                            --format "bestaudio[ext=m4a]/bestaudio/best" \
-                            -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
-                            --write-info-json --write-thumbnail \
-                            --embed-metadata --embed-thumbnail \
-                            --verbose \
-                            --no-playlist \
-                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
-                        ;;
-                    mp4)
-                        yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                            --extractor-args "$client_selection" \
-                            --throttled-rate 1M \
-                            --sleep-requests 1 \
-                            --sleep-interval 1 \
-                            --max-sleep-interval 5 \
-                            --ignore-errors \
-                            --no-check-certificate \
-                            --prefer-insecure \
-                            --hls-prefer-native \
-                            --hls-use-mpegts \
-                            --downloader "m3u8:native" \
-                            --recode-video mp4 \
-                            --format "$format_selection" \
-                            --no-mtime --embed-thumbnail --add-metadata \
-                            --write-info-json --write-thumbnail \
-                            --embed-metadata --embed-thumbnail \
-                            --verbose \
-                            --no-playlist \
-                            -o "${OUTPUT_DIR}/${media_title}.mp4" "$url" >&2 2>> "$LOGFILE"
-                        ;;
-                esac
-                ;;
-            5)
-                # Strategy 6: HLS-only fallback for SABR streaming
-                strategy="hls_only"
-                case "$media_type" in
-                    mp3)
-                        yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                            --extractor-args "$client_selection" \
-                            --throttled-rate 1M \
-                            --sleep-requests 1 \
-                            --sleep-interval 1 \
-                            --max-sleep-interval 5 \
-                            --ignore-errors \
-                            --no-check-certificate \
-                            --prefer-insecure \
-                            --hls-prefer-native \
-                            --hls-use-mpegts \
-                            --downloader "m3u8:native" \
-                            --format "bestaudio/best" \
-                            -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
-                            --write-info-json --write-thumbnail \
-                            --embed-metadata --embed-thumbnail \
-                            --verbose \
-                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
-                        ;;
-                    mp4)
-                        yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                            --extractor-args "$client_selection" \
-                            --throttled-rate 1M \
-                            --sleep-requests 1 \
-                            --sleep-interval 1 \
-                            --max-sleep-interval 5 \
-                            --ignore-errors \
-                            --no-check-certificate \
-                            --prefer-insecure \
-                            --hls-prefer-native \
-                            --hls-use-mpegts \
-                            --downloader "m3u8:native" \
-                            --recode-video mp4 \
-                            --format "$format_selection" \
-                            --no-mtime --embed-thumbnail --add-metadata \
-                            --write-info-json --write-thumbnail \
-                            --embed-metadata --embed-thumbnail \
-                            --verbose \
-                            -o "${OUTPUT_DIR}/${media_title}.mp4" "$url" >&2 2>> "$LOGFILE"
-                        ;;
-                esac
-                ;;
-        esac
-        
-        log_debug "Download strategy $((retry_count + 1)): $strategy"
-        
-        local download_exit_code=$?
-        log_debug "Download attempt $((retry_count + 1)) exit code: $download_exit_code"
-        
-        # Check if any files were actually downloaded
-        local files_created=$(ls "$OUTPUT_DIR"/* 2>/dev/null | wc -l)
-        log_debug "Files created in output directory: $files_created"
-        
-        # Check for SABR streaming specific errors in the log
-        local sabr_detected=false
-        if grep -q "SABR streaming" "$LOGFILE" 2>/dev/null || grep -q "Only images are available" "$LOGFILE" 2>/dev/null; then
-            sabr_detected=true
-            log_debug "SABR streaming detected in logs"
-        fi
-        
-        if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
-            download_success=true
-            log_debug "Download successful on attempt $((retry_count + 1)) - $files_created files created"
-        else
-            retry_count=$((retry_count + 1))
-            if [[ $download_exit_code -eq 0 && $files_created -eq 0 ]]; then
-                if [[ "$sabr_detected" == true ]]; then
-                    log_debug "SABR streaming issue detected - will try HLS-specific strategies"
-                else
-                    log_debug "Download reported success but no files created - likely SABR streaming issue"
-                fi
-            else
-                log_debug "Download failed on attempt $retry_count, will retry if attempts remaining"
-            fi
-        fi
-    done
-    
-    if [[ $download_success == false ]]; then
-        log_debug "All download attempts failed after $max_retries retries"
-        echo '{"error":"❌ YouTube download failed after multiple attempts.\n\n💡 This might be due to:\n• YouTube SABR streaming protection (HLS/m3u8 only)\n• Expired or invalid cookies\n• YouTube blocking automated downloads\n• Network connectivity issues\n• Outdated yt-dlp version\n\n🔧 Solutions:\n• Update yt-dlp: pip install --upgrade yt-dlp\n• Upload fresh cookies: https://u.copylaradio.com/astro\n• Try again later (YouTube may be rate limiting)\n• Use a different video (some videos have stronger protection)\n\n📖 Cookie Guide: https://ipfs.copylaradio.com/ipns/copylaradio.com/cookie.html\n🔗 yt-dlp GitHub: https://github.com/yt-dlp/yt-dlp"}'
-        return 1
-    fi
-    # Find the actual media file (video/audio, not metadata files)
-    log_debug "Looking for media files in: $OUTPUT_DIR"
-    log_debug "Files in output directory:"
-    ls -la "$OUTPUT_DIR" 2>/dev/null | while read line; do
-        log_debug "  $line"
-    done
-    
-    # Try multiple patterns to find the downloaded file
-    media_file=""
-    
-    # Pattern 1: Exact title match (prioritize MP4)
-    media_file=$(ls "$OUTPUT_DIR"/${media_title}.mp4 2>/dev/null | head -n 1)
-    log_debug "Pattern 1 (exact title MP4): $media_file"
-    
-    # Pattern 2: Any MP4 file
-    if [[ -z "$media_file" ]]; then
-        media_file=$(ls "$OUTPUT_DIR"/*.mp4 2>/dev/null | head -n 1)
-        log_debug "Pattern 2 (any MP4 file): $media_file"
-    fi
-    
-    # Pattern 3: Other media formats as fallback
-    if [[ -z "$media_file" ]]; then
-        media_file=$(ls "$OUTPUT_DIR"/*.{mp3,m4a,webm,mkv} 2>/dev/null | head -n 1)
-        log_debug "Pattern 3 (other media formats): $media_file"
-    fi
-    
-    # Pattern 4: Files containing the video ID
-    if [[ -z "$media_file" ]]; then
-        media_file=$(ls "$OUTPUT_DIR"/*${yid}* 2>/dev/null | grep -E '\.(mp4|mp3|m4a|webm|mkv)$' | head -n 1)
-        log_debug "Pattern 4 (video ID): $media_file"
-    fi
-    
-    # Pattern 5: Any file that's not metadata (last resort)
-    if [[ -z "$media_file" ]]; then
-        media_file=$(ls "$OUTPUT_DIR"/* 2>/dev/null | grep -v -E '\.(info\.json|vtt|srt|jpg|jpeg|png|webp|mhtml)$' | head -n 1)
-        log_debug "Pattern 5 (any non-metadata): $media_file"
-    fi
+fi
+
+# Check final result
+if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
+    # Find the downloaded file
+    media_file=$(ls "$OUTPUT_DIR"/*.{mp4,mp3,m4a,webm,mkv} 2>/dev/null | head -n 1)
     
     if [[ -n "$media_file" ]]; then
         filename=$(basename "$media_file")
         log_debug "Found downloaded file: $media_file"
-        log_debug "Filename: $filename"
-    else
-        log_debug "No media file found in: $OUTPUT_DIR"
-        log_debug "Available files:"
-        ls -la "$OUTPUT_DIR" 2>/dev/null || log_debug "Directory does not exist or is empty"
-    fi
-    
-    # Find metadata files with flexible patterns
-    info_json_file=$(ls "$OUTPUT_DIR"/*.info.json 2>/dev/null | head -n 1)
-    if [[ -z "$info_json_file" ]]; then
-        info_json_file=$(ls "$OUTPUT_DIR"/*${yid}*.json 2>/dev/null | head -n 1)
-    fi
-    
-    thumbnail_file=$(ls "$OUTPUT_DIR"/*.{jpg,jpeg,png,webp} 2>/dev/null | head -n 1)
-    if [[ -z "$thumbnail_file" ]]; then
-        thumbnail_file=$(ls "$OUTPUT_DIR"/*${yid}*.{jpg,jpeg,png,webp} 2>/dev/null | head -n 1)
-    fi
-    
-    log_debug "Metadata files found:"
-    log_debug "  info_json_file: $info_json_file"
-    log_debug "  thumbnail_file: $thumbnail_file"
-    
-    # Subtitle handling removed for simplicity
-    
-    if [[ -n "$media_file" && -f "$media_file" ]]; then
-        # Verify it's actually a media file (not just metadata)
-        local file_size=$(stat -c%s "$media_file" 2>/dev/null || echo "0")
-        if [[ $file_size -lt 100000 ]]; then  # Less than 100KB is likely not a real video
-            log_debug "File too small ($file_size bytes), likely not a real video: $media_file"
-            echo '{"error":"❌ Downloaded file is too small, likely not a real video.\n\n💡 This might be due to:\n• YouTube blocking video downloads\n• Expired cookies\n• Network issues\n\n📖 Cookie Guide: https://ipfs.copylaradio.com/ipns/copylaradio.com/cookie.html\n💾 Upload cookies: https://u.copylaradio.com/astro"}'
-            return 1
-        fi
         
-        # Add main media file to IPFS
+        # Add to IPFS
         media_ipfs=$(ipfs add -wq "$media_file" 2>> "$LOGFILE" | tail -n 1)
         log_debug "IPFS add result: $media_ipfs"
         
-        # Add metadata files to IPFS if they exist
-        local metadata_ipfs=""
-        if [[ -n "$info_json_file" ]]; then
-            metadata_ipfs=$(ipfs add -q "$info_json_file" 2>> "$LOGFILE" | tail -n 1)
-            log_debug "Metadata IPFS: $metadata_ipfs"
-        fi
-        
-        # Add thumbnail to IPFS if it exists
-        local thumbnail_ipfs=""
-        if [[ -n "$thumbnail_file" ]]; then
-            thumbnail_ipfs=$(ipfs add -q "$thumbnail_file" 2>> "$LOGFILE" | tail -n 1)
-            log_debug "Thumbnail IPFS: $thumbnail_ipfs"
-        fi
-        
-        # Subtitle handling removed for simplicity
-        
         if [[ -n "$media_ipfs" ]]; then
-            # Utiliser seulement le CID IPFS pur pour plus de flexibilité
             ipfs_url="/ipfs/$media_ipfs/$filename"
             echo "Media saved to: $media_file" >&2
             log_debug "Media saved to: $media_file"
             
             # Copy to uDRIVE if path provided
             if [[ -n "$UDRIVE_COPY_PATH" ]]; then
-                # Determine target directory based on format
-                if [[ "$media_type" == "mp3" ]]; then
-                    # Extract artist from uploader or title
+                if [[ "$FORMAT" == "mp3" ]]; then
                     artist=$(echo "$uploader" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 50)
                     if [[ -z "$artist" || "$artist" == "null" ]]; then
                         artist="Unknown_Artist"
                     fi
-                    
-                    # Create Music/Artist directory
                     music_dir="$UDRIVE_COPY_PATH/Music/$artist"
                     mkdir -p "$music_dir"
                     udrive_file="$music_dir/$filename"
-                    
                     echo "Organizing MP3 in Music/$artist/" >&2
-                    log_debug "Organizing MP3 in Music/$artist/"
                 else
-                    # For MP4 videos, use Videos directory
                     videos_dir="$UDRIVE_COPY_PATH/Videos"
                     mkdir -p "$videos_dir"
                     udrive_file="$videos_dir/$filename"
-                    
                     echo "Organizing MP4 in Videos/" >&2
-                    log_debug "Organizing MP4 in Videos/"
                 fi
                 
                 if cp "$media_file" "$udrive_file"; then
@@ -1329,59 +227,42 @@ EOF
                 fi
             fi
             
-            # Send NOSTR notification if player email is provided
-            if [[ -n "$PLAYER_EMAIL" ]]; then
-                send_nostr_notification "$PLAYER_EMAIL" "$media_title" "$uploader" "$ipfs_url" "$url" "$metadata_ipfs" "$thumbnail_ipfs" ""
-            fi
-            
-            # Generate channel-friendly JSON with enhanced metadata
-            local channel_name=$(echo "$uploader" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 50)
-            # Example: For a video titled "How to Build a Blockchain in Python Tutorial"
-            # topic_keywords would be: "build,blockchain,python,tutorial"
-            local topic_keywords=$(echo "$raw_title" | tr '[:upper:]' '[:lower:]' | \
-                sed 's/[^a-zA-Z0-9 ]//g' | \
-                awk '{for(i=1;i<=NF;i++) if(length($i)>3) print $i}' | \
-                head -5 | paste -sd,)
-            # Subtitle handling removed for simplicity
-            local subtitles_json="[]"
-            
+            # Generate JSON response
             cat << EOF
 {
   "ipfs_url": "$ipfs_url",
   "title": "$media_title",
   "duration": "$duration",
   "uploader": "$uploader",
-  "original_url": "$url",
+  "original_url": "$URL",
   "filename": "$filename",
-  "metadata_ipfs": "$metadata_ipfs",
-  "thumbnail_ipfs": "$thumbnail_ipfs",
-  "subtitles": $subtitles_json,
+  "metadata_ipfs": "",
+  "thumbnail_ipfs": "",
+  "subtitles": [],
   "channel_info": {
-    "name": "$channel_name",
+    "name": "$(echo "$uploader" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 50)",
     "display_name": "$uploader",
     "type": "youtube"
   },
   "content_info": {
-    "description": "$video_description",
-    "ai_analysis": "$ai_analysis",
-    "topic_keywords": "$topic_keywords",
+    "description": "",
+    "ai_analysis": "",
+    "topic_keywords": "",
     "duration_category": "$(if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ ]]; then duration_min=$((duration / 60)); if [[ $duration_min -lt 5 ]]; then echo "short"; elif [[ $duration_min -lt 30 ]]; then echo "medium"; else echo "long"; fi; fi)"
   },
   "technical_info": {
-    "format": "$media_type",
+    "format": "$FORMAT",
     "file_size": "$(stat -c%s "$media_file" 2>/dev/null || echo "unknown")",
     "download_date": "$(date -Iseconds)"
   }
 }
 EOF
             log_debug "Success JSON outputted."
-            return 0
+            exit 0
         fi
     fi
-    log_debug "Download or IPFS add failed."
-    echo '{"error":"❌ Download or IPFS upload failed.\n\n💡 This might be due to:\n• Expired YouTube cookies\n• Bot detection by YouTube\n• Network issues\n\n📖 Cookie Guide: https://ipfs.copylaradio.com/ipns/copylaradio.com/cookie.html\n💾 Upload cookies: https://u.copylaradio.com/astro"}'
-    return 1
-}
+fi
 
-# Main execution
-process_youtube "$URL" "$FORMAT" "$TMP_DIR" 
+log_debug "Download failed."
+echo '{"error":"❌ Download failed with all strategies"}'
+exit 1
