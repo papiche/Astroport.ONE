@@ -29,7 +29,7 @@ mkdir -p "$(dirname "$LOGFILE")"
 
 log_debug() {
     if [[ $DEBUG -eq 1 ]]; then
-        echo "[process_youtube_simple.sh][$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOGFILE" >&2
+        echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOGFILE" >&2
     fi
 }
 
@@ -78,7 +78,12 @@ trap cleanup EXIT
 
 # Extract metadata first
 log_debug "Extracting metadata for: $URL"
-metadata_line=$(yt-dlp --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
+cookie_file="$HOME/.zen/game/nostr/$PLAYER_EMAIL/.cookie.txt"
+if [[ -f "$cookie_file" ]]; then
+    metadata_line=$(yt-dlp --cookies "$cookie_file" --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
+else
+    metadata_line=$(yt-dlp --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
+fi
 log_debug "Metadata line: $metadata_line"
 
 if [[ -z "$metadata_line" ]]; then
