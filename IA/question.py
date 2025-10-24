@@ -125,14 +125,17 @@ if __name__ == "__main__":
     final_prompt += f"Question: {args.question}"
     
     # Log the final prompt to IA.log
-    with open(os.path.expanduser("~/.zen/tmp/IA.log"), "a") as log_file:
+    log_file_path = os.path.expanduser("~/.zen/tmp/IA.log")
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+    with open(log_file_path, "a") as log_file:
         log_file.write(f"{final_prompt}\n")
 
     # Get the answer from Ollama
     answer_output = get_ollama_answer(final_prompt, args.ollama_model_name)
     
     #Log the answer
-    with open(os.path.expanduser("~/.zen/tmp/IA.log"), "a") as log_file:
+    with open(log_file_path, "a") as log_file:
         log_file.write(f"{answer_output}\n")
 
     if answer_output:
