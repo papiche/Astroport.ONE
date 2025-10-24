@@ -42,10 +42,10 @@ exec 2>&1 >> ~/.zen/tmp/IA.log
 send_error_email() {
     local error_message="$1"
     local log_file="$2"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    local timestamp=$(date '+%Y-%m-%d_%H-%M-%S')
     
     # Create error report
-    local error_report="/tmp/IA_error_${timestamp}.html"
+    local error_report="$HOME/.zen/tmp/IA_error_${timestamp}.html"
     cat > "$error_report" << EOF
 <!DOCTYPE html>
 <html>
