@@ -748,7 +748,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 # Get user uDRIVE path and generate image
                 USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
                 if [ $? -eq 0 ]; then
-                    IMAGE_URL="$($MY_PATH/generate_image.sh "${cleaned_text}" "$USER_UDRIVE_PATH")"
+                    IMAGE_URL="$($MY_PATH/generate_image.sh "${cleaned_text}" "$USER_UDRIVE_PATH/Images")"
                 else
                     echo "Warning: Using default location for image generation" >&2
                     IMAGE_URL="$($MY_PATH/generate_image.sh "${cleaned_text}")"
