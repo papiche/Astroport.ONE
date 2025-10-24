@@ -848,14 +848,10 @@ EOF
         # Try different strategies based on retry count
         local strategy=""
         
-        # If SABR streaming is detected, prioritize HLS strategies
+        # If SABR streaming is detected, try different client strategies
         if [[ "$hls_only" == true && $retry_count -ge 2 ]]; then
-            log_debug "SABR streaming detected, using HLS-optimized strategies"
-            case $retry_count in
-                2) retry_count=3 ;;  # Skip to SABR strategy
-                3) retry_count=4 ;;  # Skip to SABR optimized
-                4) retry_count=5 ;;  # Skip to HLS only
-            esac
+            log_debug "SABR streaming detected, trying different client strategies"
+            # Don't skip strategies, just use different clients
         fi
         
         # Set format selection based on SABR detection
@@ -868,6 +864,28 @@ EOF
             # Use generic format selection
             format_selection="best[height<=720]/best"
         fi
+        
+        # Set client selection to avoid SABR streaming
+        local client_selection=""
+        if [[ "$hls_only" == true ]]; then
+            # For SABR streaming, try different clients that don't trigger SABR
+            case $retry_count in
+                0|1) client_selection="youtube:player_client=android,web" ;;
+                2|3) client_selection="youtube:player_client=android" ;;
+                4|5) client_selection="youtube:player_client=tv_embedded" ;;
+            esac
+        else
+            # Normal client selection
+            case $retry_count in
+                0) client_selection="youtube:player_client=web,android,android_creator" ;;
+                1) client_selection="youtube:player_client=android,web" ;;
+                2) client_selection="youtube:player_client=web" ;;
+                3) client_selection="youtube:player_client=web" ;;
+                4) client_selection="youtube:player_client=web" ;;
+                5) client_selection="youtube:player_client=web" ;;
+            esac
+        fi
+        log_debug "Using client selection: $client_selection"
         
         case $retry_count in
             0)
@@ -896,7 +914,7 @@ EOF
                         ;;
                     mp4)
                         yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                            --extractor-args "youtube:player_client=web,android,android_creator" \
+                            --extractor-args "$client_selection" \
                             --throttled-rate 1M \
                             --sleep-requests 1 \
                             --sleep-interval 1 \
@@ -922,7 +940,7 @@ EOF
                 case "$media_type" in
                     mp3)
                         yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                            --extractor-args "youtube:player_client=android,web" \
+                            --extractor-args "$client_selection" \
                             --throttled-rate 500K \
                             --sleep-requests 2 \
                             --sleep-interval 2 \
@@ -936,7 +954,7 @@ EOF
                         ;;
                     mp4)
                         yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                            --extractor-args "youtube:player_client=android,web" \
+                            --extractor-args "$client_selection" \
                             --throttled-rate 500K \
                             --sleep-requests 2 \
                             --sleep-interval 2 \
@@ -961,7 +979,7 @@ EOF
                 case "$media_type" in
                     mp3)
                         yt-dlp --user-agent "$selected_ua" \
-                            --extractor-args "youtube:player_client=web" \
+                            --extractor-args "$client_selection" \
                             --throttled-rate 1M \
                             --sleep-requests 1 \
                             --sleep-interval 1 \
@@ -975,7 +993,7 @@ EOF
                         ;;
                     mp4)
                         yt-dlp --user-agent "$selected_ua" \
-                            --extractor-args "youtube:player_client=web" \
+                            --extractor-args "$client_selection" \
                             --throttled-rate 1M \
                             --sleep-requests 1 \
                             --sleep-interval 1 \
@@ -1000,7 +1018,7 @@ EOF
                 case "$media_type" in
                     mp3)
                         yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                            --extractor-args "youtube:player_client=web" \
+                            --extractor-args "$client_selection" \
                             --throttled-rate 1M \
                             --sleep-requests 1 \
                             --sleep-interval 1 \
@@ -1019,7 +1037,7 @@ EOF
                         ;;
                     mp4)
                         yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                            --extractor-args "youtube:player_client=web" \
+                            --extractor-args "$client_selection" \
                             --throttled-rate 1M \
                             --sleep-requests 1 \
                             --sleep-interval 1 \
@@ -1066,7 +1084,7 @@ EOF
                         ;;
                     mp4)
                         yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                            --extractor-args "youtube:player_client=web" \
+                            --extractor-args "$client_selection" \
                             --throttled-rate 1M \
                             --sleep-requests 1 \
                             --sleep-interval 1 \
@@ -1094,7 +1112,7 @@ EOF
                 case "$media_type" in
                     mp3)
                         yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                            --extractor-args "youtube:player_client=web" \
+                            --extractor-args "$client_selection" \
                             --throttled-rate 1M \
                             --sleep-requests 1 \
                             --sleep-interval 1 \
@@ -1114,7 +1132,7 @@ EOF
                         ;;
                     mp4)
                         yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                            --extractor-args "youtube:player_client=web" \
+                            --extractor-args "$client_selection" \
                             --throttled-rate 1M \
                             --sleep-requests 1 \
                             --sleep-interval 1 \
