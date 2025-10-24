@@ -16,6 +16,13 @@
 # Enhanced logging setup
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting sync_youtube_likes.sh script" >&2
 
+# Trap pour nettoyer les fichiers temporaires en cas d'interruption
+cleanup_on_exit() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cleaning up temporary files on exit" >&2
+    rm -f "$HOME/.zen/tmp/process_youtube_output_*" 2>/dev/null || true
+}
+trap cleanup_on_exit EXIT INT TERM
+
 MY_PATH="$(dirname "$0")"
 MY_PATH="$( cd "$MY_PATH" && pwd )"
 
@@ -449,17 +456,54 @@ process_liked_video() {
     local escaped_metadata_string=$(printf '%q' "$metadata_string")
     log_debug "Escaped metadata string: $escaped_metadata_string"
     
-    local result=$($MY_PATH/process_youtube.sh --debug "$url" "$format" "$player" --metadata "$metadata_string" 2>&1)
+    # Créer un fichier temporaire pour capturer la sortie et éviter les problèmes de pipe
+    local temp_output_file="$HOME/.zen/tmp/process_youtube_output_$(date +%s)_$$.txt"
+    
+    # Exécuter process_youtube.sh et capturer la sortie dans un fichier
+    $MY_PATH/process_youtube.sh --debug "$url" "$format" "$player" --metadata "$metadata_string" > "$temp_output_file" 2>&1
     local process_exit_code=$?
+    
+    # Lire le résultat du fichier
+    local result=""
+    if [[ -f "$temp_output_file" ]]; then
+        result=$(cat "$temp_output_file")
+        rm -f "$temp_output_file"
+    fi
+    
     log_debug "process_youtube.sh exit code: $process_exit_code"
     log_debug "process_youtube.sh output: $result"
     
     if [[ $process_exit_code -eq 0 ]]; then
-        # Extraire l'URL IPFS du résultat JSON
-        local ipfs_url=$(echo "$result" | jq -r '.ipfs_url // empty' 2>/dev/null)
+        # Extraire l'URL IPFS du résultat JSON avec gestion d'erreur améliorée
+        log_debug "Raw result from process_youtube.sh: $result"
+        
+        # Vérifier que le résultat n'est pas vide
+        if [[ -z "$result" ]]; then
+            log_debug "Empty result from process_youtube.sh for: $url_safe_title"
+            echo "❌ Empty result from process_youtube.sh: $url_safe_title"
+            return 1
+        fi
+        
+        # Vérifier que jq est disponible
+        if ! command -v jq &> /dev/null; then
+            log_debug "jq command not found, trying alternative JSON parsing"
+            # Fallback: extraction simple avec grep/sed
+            local ipfs_url=$(echo "$result" | grep -o '"ipfs_url":"[^"]*"' | sed 's/"ipfs_url":"\([^"]*\)"/\1/' | head -1)
+        else
+            # Utiliser jq avec gestion d'erreur
+            local ipfs_url=""
+            if echo "$result" | jq -e '.ipfs_url' >/dev/null 2>&1; then
+                ipfs_url=$(echo "$result" | jq -r '.ipfs_url // empty' 2>/dev/null)
+            else
+                log_debug "Invalid JSON from process_youtube.sh, trying alternative parsing"
+                # Fallback: extraction simple avec grep/sed
+                ipfs_url=$(echo "$result" | grep -o '"ipfs_url":"[^"]*"' | sed 's/"ipfs_url":"\([^"]*\)"/\1/' | head -1)
+            fi
+        fi
+        
         log_debug "Extracted IPFS URL: '$ipfs_url'"
-        log_debug "Raw result: $result"
-        if [[ -n "$ipfs_url" ]]; then
+        
+        if [[ -n "$ipfs_url" && "$ipfs_url" != "null" && "$ipfs_url" != "empty" ]]; then
             log_debug "Successfully processed: $url_safe_title -> $ipfs_url"
             echo "✅ $url_safe_title by $uploader -> $ipfs_url"
             
@@ -468,8 +512,8 @@ process_liked_video() {
             
             return 0
         else
-            log_debug "Failed to extract IPFS URL for: $url_safe_title"
-            echo "❌ Failed to process: $url_safe_title"
+            log_debug "Failed to extract valid IPFS URL for: $url_safe_title"
+            echo "❌ Failed to extract IPFS URL: $url_safe_title"
             return 1
         fi
     else
@@ -667,6 +711,7 @@ cleanup_old_sync_processes() {
     # Nettoyer les fichiers temporaires
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cleaning temporary files..." >&2
     rm -f "$HOME/.zen/tmp/youtube_sync_${player}_*" 2>/dev/null || true
+    rm -f "$HOME/.zen/tmp/process_youtube_output_*" 2>/dev/null || true
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] cleanup_old_sync_processes: Completed" >&2
 }
 
