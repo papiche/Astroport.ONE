@@ -693,8 +693,8 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 echo "Generating intelligent summary for article..." >&2
                 ARTICLE_SUMMARY="$($MY_PATH/question.py "Create a concise, engaging summary (2-3 sentences) for this blog article. The summary should capture the main points and be suitable for a blog article header. Format: plain text only, no quotes, no special characters, no emojis. Article content: ${KeyANSWER}" --pubkey ${PUBKEY})"
                 
-                # Clean the summary to avoid parsing issues - escape all special characters
-                ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | sed 's/["'"'"']//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '\n' | sed 's/[^a-zA-Z0-9\s.,!?-]//g' | sed 's/\s\+/ /g' | sed 's/"/\\"/g' | sed "s/'/\\'/g" | head -c 200)"
+                # Clean the summary to avoid parsing issues while preserving spaces and meaningful content
+                ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | sed 's/["'"'"']//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '\n' | sed 's/[^a-zA-Z0-9 .,!?-]//g' | sed 's/\s\+/ /g' | sed 's/"/\\"/g' | sed "s/'/\\'/g" | head -c 500)"
                 
                 # Generate illustration image for the article
                 echo "Generating illustration image for search result..." >&2
@@ -704,16 +704,16 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 echo "Creating AI-generated prompt for illustration based on article summary..." >&2
                 SD_PROMPT="$($MY_PATH/question.py "Create a Stable Diffusion prompt (no explanations, just the prompt text) for a professional blog header image based on this article summary: ${ARTICLE_SUMMARY} --- IMPORTANT: direct prompt text only, no markdown, no explanations, no emojis, no special characters, no text, no words, no letters, no writing, visual elements only." --pubkey ${PUBKEY})"
                 
-                # Clean the prompt aggressively to remove emojis, special characters, and ensure it's a direct prompt
+                # Clean the prompt to remove emojis and special characters while preserving spaces and content
                 SD_PROMPT=$(echo "$SD_PROMPT" | \
-                    sed 's/[^a-zA-Z0-9\s.,!?-]//g' | \
+                    sed 's/[^a-zA-Z0-9 .,!?-]//g' | \
                     sed 's/^[[:space:]]*//' | \
                     sed 's/[[:space:]]*$//' | \
                     sed 's/\s\+/ /g' | \
                     sed 's/[🏞️♨️⛰️🚀💡🎉🌡️🌋🗺️⚠️]//g' | \
                     sed 's/\.\.\././g' | \
                     sed 's/,,/,/g' | \
-                    head -c 200)
+                    head -c 400)
                 
                 # Get user uDRIVE path for image storage
                 USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
