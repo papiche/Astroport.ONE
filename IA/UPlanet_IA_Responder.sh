@@ -38,6 +38,92 @@ MY_PATH="$(dirname "$0")"
 MY_PATH="$( cd "$MY_PATH" && pwd )"
 exec 2>&1 >> ~/.zen/tmp/IA.log
 
+# Function to send error email to CAPTAINEMAIL using mailjet.sh
+send_error_email() {
+    local error_message="$1"
+    local log_file="$2"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    
+    # Create error report
+    local error_report="/tmp/IA_error_${timestamp}.html"
+    cat > "$error_report" << EOF
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>UPlanet IA Responder Error Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { background-color: #f44336; color: white; padding: 10px; border-radius: 5px; }
+        .section { margin: 15px 0; padding: 10px; border-left: 3px solid #2196F3; }
+        .code { background-color: #f5f5f5; padding: 10px; border-radius: 3px; font-family: monospace; white-space: pre-wrap; }
+        .error { color: #d32f2f; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚨 UPlanet IA Responder Error Report</h1>
+        <p>Timestamp: $timestamp</p>
+    </div>
+    
+    <div class="section">
+        <h2>❌ Error Details</h2>
+        <p class="error">$error_message</p>
+    </div>
+    
+    <div class="section">
+        <h2>📋 Parameters</h2>
+        <ul>
+            <li><strong>PUBKEY:</strong> $PUBKEY</li>
+            <li><strong>EVENT:</strong> $EVENT</li>
+            <li><strong>LAT:</strong> $LAT</li>
+            <li><strong>LON:</strong> $LON</li>
+            <li><strong>MESSAGE:</strong> $MESSAGE</li>
+            <li><strong>KNAME:</strong> $KNAME</li>
+        </ul>
+    </div>
+    
+    <div class="section">
+        <h2>📝 Recent Logs</h2>
+        <div class="code">$(tail -50 "$log_file" 2>/dev/null || echo "No log file found")</div>
+    </div>
+    
+    <div class="section">
+        <h2>🖥️ System Information</h2>
+        <div class="code">$(uname -a)
+$(date)</div>
+    </div>
+    
+    <div class="section">
+        <h2>🔧 Troubleshooting</h2>
+        <ul>
+            <li>Check if all required services are running (Ollama, ComfyUI, Perplexica)</li>
+            <li>Verify NOSTR keys and relay connectivity</li>
+            <li>Check disk space and permissions</li>
+            <li>Review recent changes to the system</li>
+        </ul>
+    </div>
+</body>
+</html>
+EOF
+    
+    # Send email using mailjet.sh
+    if [[ -n "$CAPTAINEMAIL" ]]; then
+        echo "📧 Sending error email to $CAPTAINEMAIL..." >&2
+        $MY_PATH/../tools/mailjet.sh --expire 24h  "$CAPTAINEMAIL" "$error_report" "UPlanet IA Error - $timestamp" 2>/dev/null
+        if [[ $? -eq 0 ]]; then
+            echo "✅ Error email sent successfully to $CAPTAINEMAIL" >&2
+        else
+            echo "❌ Failed to send error email to $CAPTAINEMAIL" >&2
+        fi
+    else
+        echo "⚠️ CAPTAINEMAIL not set, cannot send error email" >&2
+    fi
+    
+    # Clean up after 1 hour
+    (sleep 3600 && rm -f "$error_report") &
+}
+
 # Function to get user uDRIVE directory based on email
 get_user_udrive_path() {
     local email="$1"
@@ -607,8 +693,8 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 echo "Generating intelligent summary for article..." >&2
                 ARTICLE_SUMMARY="$($MY_PATH/question.py "Create a concise, engaging summary (2-3 sentences) for this blog article. The summary should capture the main points and be suitable for a blog article header. Format: plain text only, no quotes, no special characters, no emojis. Article content: ${KeyANSWER}" --pubkey ${PUBKEY})"
                 
-                # Clean the summary to avoid parsing issues
-                ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | sed 's/["'"'"']//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '\n' | sed 's/[^a-zA-Z0-9\s.,!?-]//g' | head -c 200)..."
+                # Clean the summary to avoid parsing issues - escape all special characters
+                ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | sed 's/["'"'"']//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '\n' | sed 's/[^a-zA-Z0-9\s.,!?-]//g' | sed 's/\s\+/ /g' | sed 's/"/\\"/g' | sed "s/'/\\'/g" | head -c 200)"
                 
                 # Generate illustration image for the article
                 echo "Generating illustration image for search result..." >&2
@@ -858,6 +944,7 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
                     else
                         echo "[SECRET] Failed to send DM. Exit code: $DM_EXIT_CODE" >&2
                         echo "[SECRET] DM error output: $DM_RESULT" >&2
+                        send_error_email "Failed to send private DM to $KNAME. Exit code: $DM_EXIT_CODE. Error: $DM_RESULT" "~/.zen/tmp/IA.log"
                         FALLBACK_MSG="Message privé non envoyé. Erreur technique. $CURRENT_TIME_STR"
                         $HOME/.zen/Astroport.ONE/tools/nostr_send_dm.py "$NSEC" "$KNAME_HEX" "$FALLBACK_MSG" "$myRELAY" >/dev/null 2>&1
                     fi
@@ -872,30 +959,39 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
             if [[ -n "$ExtraTags" ]]; then
                 # For kind 30023, use only the specific blog tags
                 if [[ "$AnswerKind" == "30023" ]]; then
-                    nostpy-cli send_event \
+                    if ! nostpy-cli send_event \
                       -privkey "$NPRIV_HEX" \
                       -kind $AnswerKind \
                       -content "$KeyANSWER" \
                       -tags "$ExtraTags" \
-                      --relay "$myRELAY"
+                      --relay "$myRELAY" 2>/dev/null; then
+                        echo "Error: Failed to send kind 30023 event" >&2
+                        send_error_email "Failed to send kind 30023 event with tags: $ExtraTags" "~/.zen/tmp/IA.log"
+                    fi
                 else
                     # For other kinds, combine standard tags with extra tags
                     CombinedTags="[['e', '$EVENT'], ['p', '$PUBKEY']], $ExtraTags"
-                    nostpy-cli send_event \
+                    if ! nostpy-cli send_event \
                       -privkey "$NPRIV_HEX" \
                       -kind $AnswerKind \
                       -content "$KeyANSWER" \
                       -tags "$CombinedTags" \
-                      --relay "$myRELAY"
+                      --relay "$myRELAY" 2>/dev/null; then
+                        echo "Error: Failed to send event with combined tags" >&2
+                        send_error_email "Failed to send event with combined tags: $CombinedTags" "~/.zen/tmp/IA.log"
+                    fi
                 fi
             else
                 # Use standard tags only
-                nostpy-cli send_event \
+                if ! nostpy-cli send_event \
                   -privkey "$NPRIV_HEX" \
                   -kind $AnswerKind \
                   -content "$KeyANSWER" \
                   -tags "[['e', '$EVENT'], ['p', '$PUBKEY']]" \
-                  --relay "$myRELAY"
+                  --relay "$myRELAY" 2>/dev/null; then
+                    echo "Error: Failed to send standard event" >&2
+                    send_error_email "Failed to send standard event" "~/.zen/tmp/IA.log"
+                fi
             fi
         fi
         
@@ -930,5 +1026,39 @@ echo "Image: $DESC"
 echo "Question: $QUESTION"
 echo "Answer: $KeyANSWER"
 echo "---------------"
+
+# Error handling: Send email to CAPTAINEMAIL if there was an error
+if [[ $? -ne 0 || -z "$KeyANSWER" ]]; then
+    echo "❌ Error detected in UPlanet_IA_Responder.sh" >&2
+    
+    # Create error log file
+    ERROR_LOG_FILE="/tmp/uplanet_error_$(date +%Y%m%d_%H%M%S).log"
+    {
+        echo "=== UPlanet IA Responder Error Report ==="
+        echo "Timestamp: $(date)"
+        echo "PUBKEY: $PUBKEY"
+        echo "EVENT: $EVENT"
+        echo "LAT: $LAT"
+        echo "LON: $LON"
+        echo "MESSAGE: $MESSAGE"
+        echo "KNAME: $KNAME"
+        echo "KeyANSWER: $KeyANSWER"
+        echo ""
+        echo "=== Recent Log Entries ==="
+        tail -50 ~/.zen/tmp/IA.log 2>/dev/null || echo "No IA.log found"
+    } > "$ERROR_LOG_FILE"
+    
+    # Send error report via mailjet if CAPTAINEMAIL is available
+    if [[ -n "$CAPTAINEMAIL" && -s "$MY_PATH/../tools/mailjet.sh" ]]; then
+        echo "📧 Sending error report to CAPTAIN: $CAPTAINEMAIL" >&2
+        $MY_PATH/../tools/mailjet.sh "$CAPTAINEMAIL" "$ERROR_LOG_FILE" "UPlanet IA Error Report" 2>/dev/null
+        echo "✅ Error report sent to $CAPTAINEMAIL" >&2
+    else
+        echo "⚠️ Cannot send error report - CAPTAINEMAIL or mailjet.sh not available" >&2
+    fi
+    
+    # Clean up error log file
+    rm -f "$ERROR_LOG_FILE"
+fi
 
 exit 0
