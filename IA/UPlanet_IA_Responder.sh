@@ -308,8 +308,8 @@ TAGS[all]=false
 TAGS[plantnet]=false
 
 # Single pass tag detection
-if [[ "$message_text" =~ \#BRO\  ]]; then TAGS[BRO]=true; fi
-if [[ "$message_text" =~ \#BOT\  ]]; then TAGS[BOT]=true; fi
+if [[ "$message_text" =~ \#BRO\ + ]]; then TAGS[BRO]=true; fi
+if [[ "$message_text" =~ \#BOT\ + ]]; then TAGS[BOT]=true; fi
 if [[ "$message_text" =~ \#reset ]]; then TAGS[reset]=true; fi
 if [[ "$message_text" =~ \#mem ]]; then TAGS[mem]=true; fi
 if [[ "$message_text" =~ \#search ]]; then TAGS[search]=true; fi
@@ -1059,7 +1059,7 @@ if [[ $? -ne 0 || -z "$KeyANSWER" ]]; then
     # Send error report via mailjet if CAPTAINEMAIL is available
     if [[ -n "$CAPTAINEMAIL" && -s "$MY_PATH/../tools/mailjet.sh" ]]; then
         echo "📧 Sending error report to CAPTAIN: $CAPTAINEMAIL" >&2
-        $MY_PATH/../tools/mailjet.sh "$CAPTAINEMAIL" "$ERROR_LOG_FILE" "UPlanet IA Error Report" 2>/dev/null
+        $MY_PATH/../tools/mailjet.sh --expire 24h "$CAPTAINEMAIL" "$ERROR_LOG_FILE" "UPlanet IA Error Report" 2>/dev/null
         echo "✅ Error report sent to $CAPTAINEMAIL" >&2
     else
         echo "⚠️ Cannot send error report - CAPTAINEMAIL or mailjet.sh not available" >&2
