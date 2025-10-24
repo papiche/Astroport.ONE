@@ -207,12 +207,12 @@ for PLAYER in ${PLAYERONE[@]}; do
 <p>Both payments must succeed for fiscal compliance.</p>
 </body></html>"
 
-                    ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" <(echo "$error_message") "ZENCard Payment Error - $TODATE"
+                    ${MY_PATH}/../tools/mailjet.sh --expire 48h "${PLAYER}" <(echo "$error_message") "ZENCard Payment Error - $TODATE"
                     echo "Error email sent to ${PLAYER} for payment failure"
                 fi
             else
                 echo "[7 DAYS CYCLE] ZENCARD ($COINS G1) UNPLUG !!"
-                $MY_PATH/../tools/mailjet.sh "${PLAYER}" "$COINS Ğ1" "MULTIPASS is missing Ẑen for paying ZEN Card..."
+                $MY_PATH/../tools/mailjet.sh --expire 7d "${PLAYER}" "$COINS Ğ1" "MULTIPASS is missing Ẑen for paying ZEN Card..."
                 if [[ ${PLAYER} != ${CAPTAINEMAIL} ]]; then
                     ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL"
                 fi

@@ -564,7 +564,7 @@ if [[ ${ISOK} == 0 ]]; then
 EOF
 
     ## TODO REMOVE : monitor 
-    $MY_PATH/mailjet.sh --expire 48h "support@qo-op.com" ${PENDINGDIR}/${MOATS}.result.html "${ZENAMOUNT} ZEN : ${COMMENT}"
+    $MY_PATH/mailjet.sh --expire 48h "$CAPTAINEMAIL" ${PENDINGDIR}/${MOATS}.result.html "${ZENAMOUNT} ZEN : ${COMMENT}"
 
 
 

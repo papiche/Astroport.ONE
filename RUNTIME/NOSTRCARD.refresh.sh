@@ -39,6 +39,43 @@ log_metric() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$$] [METRIC] [$player] $metric=$value" >> "$LOGFILE"
 }
 
+# Validate NIP-23 compliance for kind 30023 events
+validate_nip23_event() {
+    local content="$1"
+    local title="$2"
+    local d_tag="$3"
+    local tags="$4"
+    
+    # Check required elements
+    if [[ -z "$content" ]]; then
+        log "ERROR" "NIP-23 validation failed: content is empty"
+        return 1
+    fi
+    
+    if [[ -z "$title" ]]; then
+        log "ERROR" "NIP-23 validation failed: title is empty"
+        return 1
+    fi
+    
+    if [[ -z "$d_tag" ]]; then
+        log "ERROR" "NIP-23 validation failed: d tag is empty"
+        return 1
+    fi
+    
+    # Check content length (reasonable limit)
+    if [[ ${#content} -gt 200000 ]]; then
+        log "WARN" "NIP-23 validation: content very long (${#content} chars), may be rejected by some relays"
+    fi
+    
+    # Check title length
+    if [[ ${#title} -gt 200 ]]; then
+        log "WARN" "NIP-23 validation: title very long (${#title} chars), may be truncated by clients"
+    fi
+    
+    log "DEBUG" "NIP-23 validation passed: content=${#content} chars, title='$title', d='$d_tag'"
+    return 0
+}
+
 # Redirect stderr to log file for debugging
 exec 2> >(while read line; do log "ERROR" "$line"; done)
 
@@ -324,7 +361,7 @@ for PLAYER in "${NOSTR[@]}"; do
             # Create temporary file for email content
             temp_email_file=$(mktemp)
             echo "$balance_celebration" > "$temp_email_file"
-            ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "Seuil de 100 Ẑen Atteint - $TODATE"
+            ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$temp_email_file" "Seuil de 100 Ẑen Atteint - $TODATE"
             rm -f "$temp_email_file"
             echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.balance_10_notified
             log "INFO" "Balance celebration email sent to ${PLAYER} for reaching 10 G1"
@@ -370,7 +407,7 @@ for PLAYER in "${NOSTR[@]}"; do
             # Create temporary file for email content
             temp_email_file=$(mktemp)
             echo "$low_balance_warning" > "$temp_email_file"
-            ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "Solde Faible - $TODATE"
+            ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$temp_email_file" "Solde Faible - $TODATE"
             rm -f "$temp_email_file"
             echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.balance_low_warned
             log "INFO" "Low balance warning email sent to ${PLAYER}"
@@ -426,7 +463,7 @@ for PLAYER in "${NOSTR[@]}"; do
             # Create temporary file for email content
             temp_email_file=$(mktemp)
             echo "$anniversary_1year" > "$temp_email_file"
-            ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "🎉 1 An avec UPlanet - $TODATE"
+            ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$temp_email_file" "🎉 1 An avec UPlanet - $TODATE"
             rm -f "$temp_email_file"
             echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.anniversary_1year_notified
             log "INFO" "1-year anniversary email sent to ${PLAYER}"
@@ -455,7 +492,7 @@ for PLAYER in "${NOSTR[@]}"; do
             # Create temporary file for email content
             temp_email_file=$(mktemp)
             echo "$milestone_6months" > "$temp_email_file"
-            ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "🎯 6 Mois avec UPlanet - $TODATE"
+            ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$temp_email_file" "🎯 6 Mois avec UPlanet - $TODATE"
             rm -f "$temp_email_file"
             echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.milestone_6months_notified
             log "INFO" "6-month milestone email sent to ${PLAYER}"
@@ -643,7 +680,7 @@ for PLAYER in "${NOSTR[@]}"; do
                                 # Create temporary file for email content
                                 temp_email_file=$(mktemp)
                                 echo "$success_message" > "$temp_email_file"
-                                ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "Paiement Réussi - $TODATE"
+                                ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$temp_email_file" "Paiement Réussi - $TODATE"
                                 rm -f "$temp_email_file"
                                 log "INFO" "Success email sent to ${PLAYER} for payment success"
                             else
@@ -679,7 +716,7 @@ for PLAYER in "${NOSTR[@]}"; do
                                 # Create temporary file for email content
                                 temp_email_file=$(mktemp)
                                 echo "$error_message" > "$temp_email_file"
-                                ${MY_PATH}/../tools/mailjet.sh --expire 72h "${CAPTAINEMAIL}" "$temp_email_file" "MULTIPASS Payment Error - $TODATE"
+                                ${MY_PATH}/../tools/mailjet.sh --expire 7d "${CAPTAINEMAIL}" "$temp_email_file" "MULTIPASS Payment Error - $TODATE"
                                 rm -f "$temp_email_file"
                                 log "INFO" "Error email sent to ${CAPTAINEMAIL} for payment failure of ${PLAYER}"
                             fi
@@ -776,7 +813,7 @@ for PLAYER in "${NOSTR[@]}"; do
                     # Create temporary file for email content
                     temp_email_file=$(mktemp)
                     echo "$usociety_expired" > "$temp_email_file"
-                    ${MY_PATH}/../tools/mailjet.sh --expire 72h "${CAPTAINEMAIL}" "$temp_email_file" "U.SOCIETY Expiré - Renouvellement Requis"
+                    ${MY_PATH}/../tools/mailjet.sh --expire 7d "${CAPTAINEMAIL}" "$temp_email_file" "U.SOCIETY Expiré - Renouvellement Requis"
                     rm -f "$temp_email_file"
                     log "INFO" "U.SOCIETY expiration email sent to ${CAPTAINEMAIL} for ${PLAYER}"
                 else
@@ -825,7 +862,7 @@ for PLAYER in "${NOSTR[@]}"; do
                             # Create temporary file for email content
                             temp_email_file=$(mktemp)
                             echo "$usociety_warning_30" > "$temp_email_file"
-                            ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "U.SOCIETY Expire dans $DIFF_DAYS jours"
+                            ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$temp_email_file" "U.SOCIETY Expire dans $DIFF_DAYS jours"
                             rm -f "$temp_email_file"
                             echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.usociety_30day_warned
                             log "INFO" "U.SOCIETY 30-day warning email sent to ${PLAYER}"
@@ -865,7 +902,7 @@ for PLAYER in "${NOSTR[@]}"; do
                             # Create temporary file for email content
                             temp_email_file=$(mktemp)
                             echo "$usociety_warning_7" > "$temp_email_file"
-                            ${MY_PATH}/../tools/mailjet.sh --expire 72h "${PLAYER}" "$temp_email_file" "URGENT: U.SOCIETY Expire dans $DIFF_DAYS jours"
+                            ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$temp_email_file" "URGENT: U.SOCIETY Expire dans $DIFF_DAYS jours"
                             rm -f "$temp_email_file"
                             echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.usociety_7day_warned
                             log "INFO" "U.SOCIETY 7-day urgent warning email sent to ${PLAYER}"
@@ -885,7 +922,7 @@ for PLAYER in "${NOSTR[@]}"; do
                     echo "### ENDING U SOCIETY FREE MODE (FALLBACK)"
                     rm ~/.zen/game/players/${PLAYER}/U.SOCIETY
                     rm ~/.zen/game/nostr/${PLAYER}/U.SOCIETY
-                    ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh --expire 72h "${CAPTAINEMAIL}" "$HOME/.zen/game/passport/${PUBKEY}/.passport.html" "U.SOCIETY Fallback Expiration - ${PLAYER}"
+                    ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh --expire 7d "${CAPTAINEMAIL}" "$HOME/.zen/game/passport/${PUBKEY}/.passport.html" "U.SOCIETY Fallback Expiration - ${PLAYER}"
                 fi
             fi
         fi
@@ -1356,21 +1393,47 @@ for PLAYER in "${NOSTR[@]}"; do
                 # Convert NSEC to HEX for nostpy-cli
                 NPRIV_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NSEC")
                 
-                # Build tags for personal N² journal
-                summary_tags="[['d', '$d_tag'], ['title', '$summary_title'], ['published_at', '$published_at'], ['t', 'PersonalN2Journal'], ['t', 'N2Network'], ['t', '$summary_type'], ['t', 'UPlanet'], ['t', 'SummaryType:$summary_type'], ['p', '$PLAYER']]"
+                # Create summary for the article (first 200 characters)
+                summary_text=$(echo "$summary_content" | head -c 200 | sed 's/"/\\"/g')
+                if [[ ${#summary_content} -gt 200 ]]; then
+                    summary_text="${summary_text}..."
+                fi
+                
+                # Build NIP-23 compliant tags for personal N² journal
+                # Required: d (unique identifier), title (article title)
+                # Recommended: summary (article summary), t (hashtags)
+                summary_tags="[['d', '$d_tag'], ['title', '$summary_title'], ['summary', '$summary_text'], ['t', 'PersonalN2Journal'], ['t', 'N2Network'], ['t', '$summary_type'], ['t', 'UPlanet'], ['t', 'SummaryType:$summary_type'], ['p', '$PLAYER']]"
                 
                 # Send as kind 30023 (article) to MULTIPASS wall
-                nostpy-cli send_event \
+                # Validate NIP-23 compliance before publication
+                if ! validate_nip23_event "$summary_content" "$summary_title" "$d_tag" "$summary_tags"; then
+                    log "ERROR" "NIP-23 validation failed for ${PLAYER}, skipping publication"
+                    continue
+                fi
+                
+                # Validate content length (NIP-23 recommends reasonable length)
+                if [[ ${#summary_content} -gt 100000 ]]; then
+                    log "WARN" "Content too long for kind 30023 (${#summary_content} chars), truncating to 100k"
+                    summary_content=$(echo "$summary_content" | head -c 100000)
+                fi
+                
+                # Send NIP-23 compliant event
+                nostpy_result=$(nostpy-cli send_event \
                     -privkey "$NPRIV_HEX" \
                     -kind 30023 \
                     -content "$summary_content" \
                     -tags "$summary_tags" \
-                    --relay "$myRELAY" \
-                    >/dev/null 2>&1
+                    --relay "$myRELAY" 2>&1)
                 
-                log "INFO" "✅ Personal N² journal published to ${PLAYER} wall ($message_count messages)"
-                log_metric "PERSONAL_N2_JOURNAL_PUBLISHED" "$message_count" "${PLAYER}"
-                FRIENDS_SUMMARIES_PUBLISHED=$((FRIENDS_SUMMARIES_PUBLISHED + 1))
+                # Check if publication was successful
+                if [[ $? -eq 0 ]]; then
+                    log "INFO" "✅ Personal N² journal published to ${PLAYER} wall ($message_count messages)"
+                    log_metric "PERSONAL_N2_JOURNAL_PUBLISHED" "$message_count" "${PLAYER}"
+                    FRIENDS_SUMMARIES_PUBLISHED=$((FRIENDS_SUMMARIES_PUBLISHED + 1))
+                else
+                    log "ERROR" "❌ Failed to publish N² journal for ${PLAYER}: $nostpy_result"
+                    log_metric "PERSONAL_N2_JOURNAL_FAILED" "1" "${PLAYER}"
+                fi
                 
                 # Increment specific counter based on summary type
                 if [[ "$summary_type" == "Daily" ]]; then
