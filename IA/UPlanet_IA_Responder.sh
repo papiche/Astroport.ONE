@@ -710,7 +710,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 # Get user language and generate intelligent summary
                 echo "Detecting user language..." >&2
                 USER_LANG=$(get_user_language "$KNAME")
-                echo "User language detected: $USER_LANG" >&2
+                echo "User language : $USER_LANG" >&2
                 
                 echo "Generating intelligent summary for article..." >&2
                 ARTICLE_SUMMARY="$($MY_PATH/question.py "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. The summary should capture the main points and be suitable for a blog article header. Format: plain text only, no quotes, no special characters, no emojis. Article content: ${KeyANSWER}" --pubkey ${PUBKEY})"
@@ -756,16 +756,22 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 fi
                 
                 AnswerKind="30023"
-                # Clean and escape title and summary for JSON tags
-                CLEANED_TITLE=$(echo "$cleaned_text" | sed 's/"/\\"/g' | sed "s/'/\\'/g")
-                CLEANED_SUMMARY=$(echo "$ARTICLE_SUMMARY" | sed 's/"/\\"/g' | sed "s/'/\\'/g")
+                # Create JSON tags using jq for proper escaping
+                echo "Creating JSON tags for kind 30023..." >&2
                 
-                # Add specific tags for kind 30023 (blog articles) with image tag if available
+                # Create a temporary JSON file for jq processing
+                local temp_json="/tmp/tags_${RANDOM}.json"
                 if [[ -n "$ILLUSTRATION_URL" ]]; then
-                    ExtraTags="[['title', '${CLEANED_TITLE}'], ['summary', '${CLEANED_SUMMARY}'], ['published_at', '$(date -u +%s)'], ['image', '${ILLUSTRATION_URL}'], ['t', 'search'], ['t', 'perplexica']]"
+                    jq -n --arg title "$cleaned_text" --arg summary "$ARTICLE_SUMMARY" --arg image "$ILLUSTRATION_URL" --arg published_at "$(date -u +%s)" \
+                        '[["title", $title], ["summary", $summary], ["published_at", $published_at], ["image", $image], ["t", "search"], ["t", "perplexica"]]' > "$temp_json"
                 else
-                    ExtraTags="[['title', '${CLEANED_TITLE}'], ['summary', '${CLEANED_SUMMARY}'], ['published_at', '$(date -u +%s)'], ['t', 'search'], ['t', 'perplexica']]"
+                    jq -n --arg title "$cleaned_text" --arg summary "$ARTICLE_SUMMARY" --arg published_at "$(date -u +%s)" \
+                        '[["title", $title], ["summary", $summary], ["published_at", $published_at], ["t", "search"], ["t", "perplexica"]]' > "$temp_json"
                 fi
+                
+                # Read the properly formatted JSON tags
+                ExtraTags=$(cat "$temp_json")
+                rm -f "$temp_json"
             elif [[ "${TAGS[image]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#image//g; s/"//g' <<< "$message_text")
                 $MY_PATH/comfyui.me.sh
