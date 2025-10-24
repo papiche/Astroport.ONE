@@ -573,6 +573,7 @@ EOFNOSTR
     # Send primo transaction from UPLANETNAME.G1 to establish primal chain for MULTIPASS
     ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.G1.dunikey" "1" "${G1PUBNOSTR}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:MULTIPASS:PRIMO" 2>/dev/null \
     && echo "${UPLANETNAME_G1}" > ~/.zen/game/nostr/${EMAIL}/G1PRIME \
+    && echo "${UPLANETNAME_G1}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal \
     && echo "✅ PRIMO TX sent successfully - PRIMAL marked from ${UPLANETNAME_G1} wallet" \
     || echo "⚠️ PRIMO TX failed for MULTIPASS ${EMAIL}"
 

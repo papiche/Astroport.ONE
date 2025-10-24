@@ -39,7 +39,7 @@ select_player_email() {
     for i in "${!player_emails[@]}"; do
         g1pub=$(cat ~/.zen/game/nostr/${player_emails[$i]}/G1PUBNOSTR)
         pcoins=$(cat ~/.zen/tmp/coucou/${g1pub}.COINS)
-        pprime=$(cat ~/.zen/tmp/coucou/${g1pub}.primal)
+        pprime=$(cat ~/.zen/tmp/coucou/${g1pub}.primal 2>/dev/null)
         echo "$i) ${player_emails[$i]} (${pcoins} Ğ1) ${g1pub} -> ${pprime}" 
     done
 
