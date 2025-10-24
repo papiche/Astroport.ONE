@@ -107,20 +107,37 @@ fi
 # Try simple download strategies
 log_debug "Starting download with simplified approach"
 
-# Strategy 1: Default yt-dlp (no special options)
-log_debug "Strategy 1: Default yt-dlp"
-case "$FORMAT" in
-    mp3)
-        yt-dlp -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
-            --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
-            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" >&2 2>> "$LOGFILE"
-        ;;
-    mp4)
-        yt-dlp --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
-            --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
-            -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" >&2 2>> "$LOGFILE"
-        ;;
-esac
+# Strategy 1: Default yt-dlp with cookies
+log_debug "Strategy 1: Default yt-dlp with cookies"
+cookie_file="$HOME/.zen/game/nostr/$PLAYER_EMAIL/.cookie.txt"
+if [[ -f "$cookie_file" ]]; then
+    case "$FORMAT" in
+        mp3)
+            yt-dlp --cookies "$cookie_file" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+                --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
+                -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" >&2 2>> "$LOGFILE"
+            ;;
+        mp4)
+            yt-dlp --cookies "$cookie_file" --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
+                --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
+                -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" >&2 2>> "$LOGFILE"
+            ;;
+    esac
+else
+    # Fallback without cookies
+    case "$FORMAT" in
+        mp3)
+            yt-dlp -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+                --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
+                -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" >&2 2>> "$LOGFILE"
+            ;;
+        mp4)
+            yt-dlp --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
+                --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
+                -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" >&2 2>> "$LOGFILE"
+            ;;
+    esac
+fi
 
 download_exit_code=$?
 log_debug "Strategy 1 exit code: $download_exit_code"
