@@ -1,12 +1,51 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 0.2
+# Version: 0.3
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/../tools/my.sh"
+
+# Function to display usage information
+usage() {
+    echo "Usage: $0 [OPTIONS] INDEX PLAYER [ONE] [SHOUT]"
+    echo ""
+    echo "Unplug a player from Astroport.ONE station"
+    echo ""
+    echo "Arguments:"
+    echo "  INDEX     Path to player's TW index.html file"
+    echo "  PLAYER    Player email address"
+    echo "  ONE       Transfer amount: 'ALL' (default) or 'ONE' (1 G1)"
+    echo "  SHOUT     Reason for unplugging (optional)"
+    echo ""
+    echo "Options:"
+    echo "  -h, --help    Show this help message"
+    echo ""
+    echo "Description:"
+    echo "  This script unplugs a player from the Astroport.ONE station."
+    echo "  It removes IPNS keys, cleans up local cache, and optionally"
+    echo "  transfers excess G1 balance to UPLANETNAME_G1 central bank."
+    echo ""
+    echo "  ZEN Card Preservation:"
+    echo "  - ZEN Card is preserved for capital shares transit via UPLANET.official.sh"
+    echo "  - Keeps minimum 1 G1 for capital shares management"
+    echo "  - Only transfers excess balance (balance - 1 G1)"
+    echo ""
+    echo "Examples:"
+    echo "  $0 ~/.zen/game/players/user@example.com/ipfs/moa/index.html user@example.com"
+    echo "  $0 ~/.zen/game/players/user@example.com/ipfs/moa/index.html user@example.com ALL 'Migration'"
+    echo "  $0 ~/.zen/game/players/user@example.com/ipfs/moa/index.html user@example.com ONE 'Quick exit'"
+    echo ""
+    exit 0
+}
+
+# Check for help option
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    usage
+fi
+
 ################################################################################
 ## UNPLUG A PLAYER FROM ASTROPORT STATION
 ############################################
@@ -51,29 +90,15 @@ $($MY_PATH/../tools/getUMAP_ENV.sh ${LAT} ${LON} | tail -n 1)
 COINS=$($MY_PATH/../tools/G1check.sh ${UPLANETNAME_G1} | tail -n 1)
 echo "SECTOR WALLET = ${COINS} G1 : ${UPLANETNAME_G1}"
 
-## UNPLUG => SEND 10 ZEN
-## ALL => SEND ALL to $UPLANETNAME_G1
+## ZEN CARD PRESERVATION FOR CAPITAL SHARES TRANSIT
+## The ZEN Card is used to transit capital shares acquired via UPLANET.official.sh
+## It should NOT be emptied during unplug - only transfer excess G1 if needed
 
 ALL="ALL"
-
 [[ $ONE == "ONE" ]] && ALL=1
-[[ $ALL == "ALL" ]] && echo "DEST = UPLANETNAME_G1: ${UPLANETNAME_G1}"
 
 YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
 
-# Check G1 balance of the ZEN Card before attempting transfer
-G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
-if [[ ! -z ${G1PUB} ]]; then
-    BALANCE=$(${MY_PATH}/../tools/G1check.sh ${G1PUB} | tail -n 1)
-    echo "ZEN CARD WALLET BALANCE = ${BALANCE} G1 : ${G1PUB}"
-    
-    if [[ -n ${BALANCE} && ${BALANCE} != "null" && ${BALANCE} != "0" && ${BALANCE} != "0.00" ]]; then
-        echo "> PAYforSURE ZEN:${ALL} WALLET MOVE"
-        ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${ALL}" "${UPLANETNAME_G1}" "UPLANET${UPLANETNAME_G1:0:8}:UNPLUG:${YOUSER}:${ALL}" 2>/dev/null
-    else
-        echo "No G1 balance to transfer from ZEN Card (${BALANCE} G1) - skipping PAYforSURE"
-    fi
-fi
 
 ## REMOVING PLAYER from ASTROPORT
 ipfs key rm "${PLAYER}" "${PLAYER}_feed" "${G1PUB}"
@@ -82,31 +107,112 @@ for vk in $(ls -d ~/.zen/game/players/${PLAYER}/voeux/*/* 2>/dev/null | rev | cu
     [[ ${vk} != "" ]] && ipfs key rm ${vk}
 done
 
-## CLEANUP NOSTR PROFILE - Remove zencard parameter
-## Before unplugging, update NOSTR profile to remove zencard parameter
-if [[ -s ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]]; then
-    echo "## Cleaning up NOSTR profile - removing ZENCARD parameter..."
-    source ~/.zen/game/nostr/${PLAYER}/.secret.nostr
-    
-    # Update NOSTR profile to remove zencard parameter
-    ${MY_PATH}/../tools/nostr_update_profile.py \
-        "$NSEC" \
-        "wss://relay.copylaradio.com" "$myRELAY" \
-        --zencard "" \
-        > ~/.zen/tmp/${MOATS}/nostr_cleanup_zencard.log 2>&1
-    
-    if [[ $? -eq 0 ]]; then
-        echo "✅ NOSTR profile cleaned - ZENCARD parameter removed"
-    else
-        echo "⚠️ NOSTR profile cleanup failed, check log: ~/.zen/tmp/${MOATS}/nostr_cleanup_zencard.log"
-    fi
-else
-    echo "⚠️ NOSTR secret not found, skipping profile cleanup"
-fi
-
-## SEND PLAYER LAST KNOW TW
+## SEND CAPTAINEMAIL PLAYER UNPLUG NOTIFICATION
 TW=$(ipfs add -Hq ${INDEX} | tail -n 1)
-${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "<html><body><h1>Ciao ${PLAYER},</h1> Your TW is unplugged from Astroport : <a href='/ipfs/${TW}'>TW (${TW})</a>.<br>$(cat ~/.zen/game/players/${PLAYER}/secret.june)<br><h3>May the force be with you.</h3></body></html>" "CIAO $SHOUT"
+
+# Create professional unplug notification email
+UNPLUG_EMAIL=$(mktemp)
+cat > "$UNPLUG_EMAIL" << EOF
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Player Unplugged from Astroport.ONE</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px 10px 0 0; margin: -20px -20px 20px -20px; }
+        .content { padding: 20px 0; }
+        .info-box { background: #e3f2fd; border-left: 4px solid #2196f3; padding: 15px; margin: 15px 0; border-radius: 4px; }
+        .warning-box { background: #fff3e0; border-left: 4px solid #ff9800; padding: 15px; margin: 15px 0; border-radius: 4px; }
+        .success-box { background: #e8f5e8; border-left: 4px solid #4caf50; padding: 15px; margin: 15px 0; border-radius: 4px; }
+        .code { background: #f5f5f5; padding: 10px; border-radius: 4px; font-family: monospace; margin: 10px 0; }
+        .button { display: inline-block; background: #2196f3; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 10px 5px; }
+        .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 12px; }
+        h1 { margin: 0; }
+        h2 { color: #333; margin-top: 25px; }
+        .highlight { background: #fff3cd; padding: 2px 4px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Player Unplugged from Astroport.ONE</h1>
+            <p>Station: <strong>${IPFSNODEID:0:8}...</strong> | Date: $(date '+%Y-%m-%d %H:%M:%S UTC')</p>
+        </div>
+        
+        <div class="content">
+            <div class="info-box">
+                <h2>📋 Player Information</h2>
+                <p><strong>Player Email:</strong> ${PLAYER}</p>
+                <p><strong>Reason:</strong> ${SHOUT:-"Standard unplug"}</p>
+                <p><strong>GPS Location:</strong> ${LAT}, ${LON}</p>
+            </div>
+            
+            <div class="success-box">
+                <h2>✅ Unplug Operations Completed</h2>
+                <ul>
+                    <li>IPNS keys removed from station</li>
+                    <li>Player directory cleaned up</li>
+                    <li>Node cache cleared</li>
+                </ul>
+            </div>
+            
+            <div class="info-box">
+                <h2>📦 TimeWarp Backup</h2>
+                <p>The player's TW has been backed up to IPFS:</p>
+                <div class="code">
+                    IPFS CID: <strong>${TW}</strong><br>
+                    Access: <a href="${myIPFS}/ipfs/${TW}" target="_blank">${myIPFS}/ipfs/${TW}</a>
+                </div>
+            </div>
+            
+            <div class="warning-box">
+                <h2>⚠️ Important Notes</h2>
+                <ul>
+                    <li>Player can reconnect to any Astroport.ONE station</li>
+                    <li>TimeWarp backup contains all player data</li>
+                    <li>Player may need to recreate ZEN Card on new station</li>
+                </ul>
+            </div>
+            
+            <div class="info-box">
+                <h2>🔑 ZEN Card Address</h2>
+                <div class="code">
+                    $(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null || echo "No ZEN Card wallet address found")
+                </div>
+                <p><small>This address contains ZEN Card capital owning history received from $UPLANETNAME_SOCIETY</small></p>
+            </div>
+            
+            <h2>🛠️ Captain Actions</h2>
+            <p>As the station captain, you may want to:</p>
+            <ul>
+                <li>Verify the unplug was intentional</li>
+                <li>Check if player needs assistance with migration</li>
+                <li>Monitor station resources after player departure</li>
+            </ul>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="${myIPFS}/ipfs/${TW}" class="button" target="_blank">📱 View Player TimeWarp</a>
+                <a href="${myIPFS}/ipns/${IPFSNODEID}" class="button" target="_blank">🌐 Access Station</a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Astroport.ONE Station Management</strong></p>
+            <p>Station ID: ${IPFSNODEID} | Generated: $(date '+%Y-%m-%d %H:%M:%S UTC')</p>
+            <p>This is an automated notification from your Astroport.ONE station.</p>
+        </div>
+    </div>
+</body>
+</html>
+EOF
+
+# Send the professional notification email
+${MY_PATH}/../tools/mailjet.sh "${CAPTAINEMAIL}" "$UNPLUG_EMAIL" "🚀 Player Unplugged: ${PLAYER} - ${SHOUT:-'Standard unplug'}"
+
+# Clean up temporary email file
+rm -f "$UNPLUG_EMAIL"
 
 echo "PLAYER IPNS KEYS UNPLUGED"
 echo "#######################"

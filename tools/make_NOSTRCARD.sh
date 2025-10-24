@@ -254,139 +254,137 @@ EOFNOSTR
     echo "$DISCO" > "${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco"
     chmod 600 ${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco
 
-    ## Create initial DID document (will be managed by did_manager_nostr.sh)
-    # DID follows W3C DID 1.0 specification: https://www.w3.org/TR/did-1.0/
-    echo "📝 Creating initial DID document..."
-
-    # Create Multikey verification method (DID Nostr spec)
-    multikey_pubkey="fe70102${HEX}"
+    ## Create initial DID document using did_manager_nostr.sh
+    echo "📝 Creating initial DID document using did_manager_nostr.sh..."
     
-    cat > ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache <<EOF
-{
-  "@context": [
-    "https://w3id.org/did/v1",
-    "https://w3id.org/nostr/context"
-  ],
-  "id": "did:nostr:${HEX}",
-  "type": "DIDNostr",
-  "alsoKnownAs": [
-    "mailto:${EMAIL}",
-    "did:g1:${G1PUBNOSTR}",
-    "ipns://${NOSTRNS}"
-  ],
-  "verificationMethod": [
-    {
-      "id": "did:nostr:${HEX}#key1",
-      "type": "Multikey",
-      "controller": "did:nostr:${HEX}",
-      "publicKeyMultibase": "${multikey_pubkey}"
-    },
-    {
-      "id": "did:nostr:${HEX}#g1-key",
-      "type": "Ed25519VerificationKey2020",
-      "controller": "did:nostr:${HEX}",
-      "publicKeyBase58": "${G1PUBNOSTR}",
-      "blockchainAccountId": "duniter:g1:${G1PUBNOSTR}"
-    },
-    {
-      "id": "did:nostr:${HEX}#bitcoin-key",
-      "type": "EcdsaSecp256k1VerificationKey2019",
-      "controller": "did:nostr:${HEX}",
-      "blockchainAccountId": "bitcoin:mainnet:${BITCOIN}"
-    },
-    {
-      "id": "did:nostr:${HEX}#monero-key",
-      "type": "MoneroVerificationKey",
-      "controller": "did:nostr:${HEX}",
-      "blockchainAccountId": "monero:mainnet:${MONERO}"
-    }
-  ],
-  "authentication": [
-    "did:nostr:${HEX}#key1",
-    "did:nostr:${HEX}#g1-key"
-  ],
-  "assertionMethod": [
-    "did:nostr:${HEX}#key1",
-    "did:nostr:${HEX}#g1-key"
-  ],
-  "keyAgreement": [
-    "did:nostr:${HEX}#key1"
-  ],
-  "service": [
-    {
-      "id": "did:nostr:${HEX}#nostr-relay",
-      "type": "NostrRelay",
-      "serviceEndpoint": "${myRELAY}",
-      "description": "Primary NOSTR relay endpoint"
-    },
-    {
-      "id": "did:nostr:${HEX}#ipns-storage",
-      "type": "DecentralizedWebNode",
-      "serviceEndpoint": "${myIPFS}/ipns/${NOSTRNS}",
-      "description": "IPNS personal storage vault"
-    },
-    {
-      "id": "did:nostr:${HEX}#udrive",
-      "type": "DecentralizedWebNode",
-      "serviceEndpoint": "${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE",
-      "description": "Personal cloud storage and application platform"
-    },
-    {
-      "id": "did:nostr:${HEX}#uspot",
-      "type": "CredentialRegistry",
-      "serviceEndpoint": "${uSPOT}",
-      "description": "UPlanet wallet and credential service"
-    },
-    {
-      "id": "did:nostr:${HEX}#cesium",
-      "type": "CredentialRegistry",
-      "serviceEndpoint": "${myIPFS}/ipfs/QmYZWzSfPgb1y83fWTmKBEHdA9QoxsYBmqLkEJU2KQ1DYW/#/app/wot/${G1PUBNOSTR}/",
-      "description": "G1 Cesium+ wallet interface"
-    }
-  ],
-  "metadata": {
-    "created": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-    "updated": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-    "email": "${EMAIL}",
-    "uplanet": "${UPLANETG1PUB:0:8}",
-    "coordinates": {
-      "latitude": "${ZLAT}",
-      "longitude": "${ZLON}"
-    },
-    "language": "${LANG}",
-    "youser": "${YOUSER}",
-    "contractStatus": "new_multipass",
-    "storageQuota": "10GB",
-    "services": "uDRIVE IPFS storage",
-    "franceConnect": {
-      "compliance": "disabled",
-      "identityProvider": "UPlanet",
-      "verificationLevel": "basic",
-      "kycStatus": "pending",
-      "wotVerification": "required",
-      "supportedServices": [],
-      "dataSharing": {
-        "consentRequired": true,
-        "scope": "none",
-        "retentionPeriod": "none"
-      }
-    }
-  }
-}
-EOF
-    echo "✅ DID document cache created: ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache"
-    
-    # Publish initial DID to Nostr immediately
-    echo "📡 Publishing initial DID to Nostr relays..."
-    if [[ -f "${MY_PATH}/nostr_publish_did.py" ]]; then
-        python3 "${MY_PATH}/nostr_publish_did.py" \
-            "$NPRIV" \
-            "${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache" \
-            ws://127.0.0.1:7777 wss://relay.copylaradio.com 2>/dev/null \
-            && echo "✅ Initial DID published to Nostr successfully" \
-            || echo "⚠️  DID publication to Nostr will retry on first update"
+    if [[ -f "${MY_PATH}/did_manager_nostr.sh" ]]; then
+        # Set environment variables that did_manager_nostr.sh needs
+        export IPFSNODEID="${IPFSNODEID:-}"
+        
+        # Check if DID already exists
+        local did_exists=false
+        if [[ -f "${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache" ]]; then
+            echo "⚠️  DID already exists for ${EMAIL}, will update instead of creating new"
+            did_exists=true
+        fi
+        
+        # Create or update DID using did_manager_nostr.sh with LOCATAIRE type (0 amount)
+        echo "🔧 ${did_exists:+Updating existing}${did_exists:-Creating new} DID with did_manager_nostr.sh..."
+        
+        if ${MY_PATH}/did_manager_nostr.sh update "${EMAIL}" "LOCATAIRE" "0" "0"; then
+            echo "✅ Initial DID document created by did_manager_nostr.sh"
+            
+            # Enrich the DID with additional UPlanet-specific information using jq
+            local did_temp=$(mktemp)
+            local jq_cmd="
+                .alsoKnownAs = [\"mailto:${EMAIL}\", \"did:g1:${G1PUBNOSTR}\", \"ipns://${NOSTRNS}\"] |
+                .verificationMethod += [
+                    {
+                        \"id\": \"did:nostr:${HEX}#g1-key\",
+                        \"type\": \"Ed25519VerificationKey2020\",
+                        \"controller\": \"did:nostr:${HEX}\",
+                        \"publicKeyBase58\": \"${G1PUBNOSTR}\",
+                        \"blockchainAccountId\": \"duniter:g1:${G1PUBNOSTR}\"
+                    },
+                    {
+                        \"id\": \"did:nostr:${HEX}#bitcoin-key\",
+                        \"type\": \"EcdsaSecp256k1VerificationKey2019\",
+                        \"controller\": \"did:nostr:${HEX}\",
+                        \"blockchainAccountId\": \"bitcoin:mainnet:${BITCOIN}\"
+                    }
+                ] |
+                .authentication += [\"did:nostr:${HEX}#g1-key\"] |
+                .assertionMethod += [\"did:nostr:${HEX}#g1-key\"] |
+                .keyAgreement = [\"did:nostr:${HEX}#key1\"] |
+                .service += [
+                    {
+                        \"id\": \"did:nostr:${HEX}#nostr-relay\",
+                        \"type\": \"NostrRelay\",
+                        \"serviceEndpoint\": \"${myRELAY}\",
+                        \"description\": \"Primary NOSTR relay endpoint\"
+                    },
+                    {
+                        \"id\": \"did:nostr:${HEX}#ipns-storage\",
+                        \"type\": \"DecentralizedWebNode\",
+                        \"serviceEndpoint\": \"${myIPFS}/ipns/${NOSTRNS}\",
+                        \"description\": \"IPNS personal storage vault\"
+                    },
+                    {
+                        \"id\": \"did:nostr:${HEX}#udrive\",
+                        \"type\": \"DecentralizedWebNode\",
+                        \"serviceEndpoint\": \"${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE\",
+                        \"description\": \"Personal cloud storage and application platform\"
+                    },
+                    {
+                        \"id\": \"did:nostr:${HEX}#uspot\",
+                        \"type\": \"CredentialRegistry\",
+                        \"serviceEndpoint\": \"${uSPOT}\",
+                        \"description\": \"UPlanet wallet and credential service\"
+                    },
+                    {
+                        \"id\": \"did:nostr:${HEX}#cesium\",
+                        \"type\": \"CredentialRegistry\",
+                        \"serviceEndpoint\": \"${myIPFS}/ipfs/QmYZWzSfPgb1y83fWTmKBEHdA9QoxsYBmqLkEJU2KQ1DYW/#/app/wot/${G1PUBNOSTR}/\",
+                        \"description\": \"G1 Cesium+ wallet interface\"
+                    }
+                ] |
+                .metadata += {
+                    \"uplanet\": \"${UPLANETG1PUB:0:8}\",
+                    \"coordinates\": {
+                        \"latitude\": \"${ZLAT}\",
+                        \"longitude\": \"${ZLON}\"
+                    },
+                    \"language\": \"${LANG}\",
+                    \"youser\": \"${YOUSER}\"
+                }
+            "
+            
+            if jq "$jq_cmd" ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache > "$did_temp" && [[ -s "$did_temp" ]]; then
+                mv "$did_temp" ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache
+                echo "✅ DID document enriched with UPlanet-specific information"
+                
+                # Update the enriched DID using did_manager_nostr.sh (single call)
+                echo "📡 Publishing enriched DID to Nostr relays..."
+                if ${MY_PATH}/did_manager_nostr.sh update "${EMAIL}" "LOCATAIRE" "0" "0"; then
+                    echo "✅ Enriched DID published to Nostr successfully"
+                else
+                    echo "⚠️  Failed to publish enriched DID, will retry on next update"
+                fi
+            else
+                echo "⚠️  Failed to enrich DID document, using basic version from did_manager_nostr.sh"
+                rm -f "$did_temp"
+            fi
+        else
+            echo "❌ Failed to create DID document using did_manager_nostr.sh"
+            echo "💡 Check that did_manager_nostr.sh is working correctly"
+            exit 1
+        fi
     else
-        echo "⚠️  nostr_publish_did.py not found, DID publication deferred"
+        echo "❌ did_manager_nostr.sh not found at ${MY_PATH}/did_manager_nostr.sh"
+        echo "💡 Ensure did_manager_nostr.sh is in the same directory as make_NOSTRCARD.sh"
+        exit 1
+    fi
+
+    ## Create .well-known/did.json for standard DID resolution (W3C compliant)
+    ## This is the public endpoint for DID resolution via IPFS/IPNS
+    echo "📁 Creating .well-known endpoint for DID resolution..."
+    mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known
+    
+    # Create .well-known directory and inject DID JSON into HTML viewer
+    if [[ -f ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache ]]; then
+        # Copy DID viewer template
+        cp "${HOME}/.zen/Astroport.ONE/templates/NOSTR/did_viewer.html" ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html
+        
+        # Inject DID JSON data into the HTML file using proper JSON escaping
+        did_json_content=$(jq -c . ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache)
+        # Escape quotes and newlines for JavaScript string
+        did_json_escaped=$(echo "$did_json_content" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+        sed -i "s|const _DID_JSON_ = null;|const _DID_JSON_ = \"$did_json_escaped\";|g" ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html
+        
+        echo "✅ DID viewer created with embedded JSON: ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html"
+    else
+        echo "❌ DID cache not found after creation, cannot create .well-known endpoint"
+        exit 1
     fi
 
     ##############################################################
@@ -424,10 +422,7 @@ EOF
     if [[ "$Z" == ":ZEN" ]]; then
         ## Replace Cesium Access with uSPOT/check_balance?g1pub=email (html output)
         # Escape special characters in URLs for sed
-        escaped_myIPFS=$(echo "${myIPFS}" | sed 's/[[\.*^$()+?{|]/\\&/g')
-        escaped_uSPOT=$(echo "${uSPOT}" | sed 's/[[\.*^$()+?{|]/\\&/g')
-        escaped_EMAIL=$(echo "${EMAIL}" | sed 's/[[\.*^$()+?{|]/\\&/g')
-        sed -i "s~${escaped_myIPFS}/ipfs/QmYZWzSfPgb1y83fWTmKBEHdA9QoxsYBmqLkEJU2KQ1DYW/#/app/wot/${G1PUBNOSTR}/~${escaped_uSPOT}/check_balance?g1pub=${escaped_EMAIL}~g" \
+        sed -i "s~${myIPFS}/ipfs/QmYZWzSfPgb1y83fWTmKBEHdA9QoxsYBmqLkEJU2KQ1DYW/#/app/wot/${G1PUBNOSTR}/~${uSPOT}/check_balance?g1pub=${EMAIL}~g" \
             "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html"
 
     fi
@@ -513,23 +508,6 @@ EOF
     cat "${HOME}/.zen/workspace/UPlanet/UPlanet_Enter_Help.md" \
         > "${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Documents/README.${YOUSER}.md"
 
-    ## Create .well-known/did.json for standard DID resolution (W3C compliant)
-    ## This is the public endpoint for DID resolution via IPFS/IPNS
-    mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known
-    
-    # Create .well-known directory and inject DID JSON into HTML viewer
-    if [[ -f ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache ]]; then
-        # Copy DID viewer template
-        cp "${HOME}/.zen/Astroport.ONE/templates/NOSTR/did_viewer.html" ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html
-        
-        # Inject DID JSON data into the HTML file using jq for proper JSON minification
-        did_json_content=$(jq -c . ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache | sed 's/"/\\"/g')
-        sed -i "s|const _DID_JSON_ = null;|const _DID_JSON_ = \"$did_json_content\";|g" ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html
-        
-        echo "✅ DID viewer created with embedded JSON: ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html"
-    else
-        echo "⚠️  Warning: DID cache not found, .well-known endpoint will be updated later"
-    fi
 
     ## Link generate_ipfs_structure.sh to uDRIVE
     cd ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/
