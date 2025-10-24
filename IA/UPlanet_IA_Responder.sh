@@ -713,9 +713,10 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 echo "User language : $USER_LANG" >&2
                 
                 echo "Generating intelligent summary for article..." >&2
-                ARTICLE_SUMMARY="$($MY_PATH/question.py "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. The summary should capture the main points and be suitable for a blog article header. Format: plain text only, no quotes, no special characters, no emojis. Article content: ${KeyANSWER}" --pubkey ${PUBKEY})"
+                ARTICLE_SUMMARY="$($MY_PATH/question.py --json "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. The summary should capture the main points and be suitable for a blog article header. Format: plain text only, no quotes, no special characters, no emojis. Article content: ${KeyANSWER}" --pubkey ${PUBKEY})"
                 
-                # Clean the summary to avoid parsing issues while preserving spaces and meaningful content
+                # Extract content from JSON response and clean it
+                ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | jq -r '.answer // .' 2>/dev/null || echo "$ARTICLE_SUMMARY")"
                 ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | sed 's/["'"'"']//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '\n' | sed 's/[^a-zA-Z0-9 .,!?-]//g' | sed 's/\s\+/ /g' | sed 's/"/\\"/g' | sed "s/'/\\'/g" | head -c 500)"
                 
                 # Generate illustration image for the article
@@ -724,17 +725,20 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 
                 # Use AI to create an optimized Stable Diffusion prompt based on the summary
                 echo "Creating AI-generated prompt for illustration based on article summary..." >&2
-                SD_PROMPT="$($MY_PATH/question.py "Create a Stable Diffusion prompt (no explanations, just the prompt text) for an illustrative image based on this article summary: ${ARTICLE_SUMMARY} --- IMPORTANT: direct prompt text only, no markdown, no explanations, no emojis, no special characters, no text, no words, no letters, no writing, visual elements only." --pubkey ${PUBKEY})"
+                SD_PROMPT="$($MY_PATH/question.py --json "Create a Stable Diffusion prompt for an illustrative image based on this article summary: ${ARTICLE_SUMMARY} --- CRITICAL RULES: 1) Output ONLY the prompt text, no explanations 2) NO emojis, NO special characters, NO text, NO words, NO letters, NO writing 3) ONLY visual elements and descriptive words 4) Use simple English words only 5) Focus on visual composition, colors, style, objects, scenes" --pubkey ${PUBKEY})"
                 
-                # Clean the prompt to remove emojis and special characters while preserving spaces and content
+                # Extract content from JSON response and clean the prompt
+                SD_PROMPT="$(echo "$SD_PROMPT" | jq -r '.answer // .' 2>/dev/null || echo "$SD_PROMPT")"
                 SD_PROMPT=$(echo "$SD_PROMPT" | \
                     sed 's/[^a-zA-Z0-9 .,!?-]//g' | \
                     sed 's/^[[:space:]]*//' | \
                     sed 's/[[:space:]]*$//' | \
                     sed 's/\s\+/ /g' | \
-                    sed 's/[🏞️♨️⛰️🚀💡🎉🌡️🌋🗺️⚠️]//g' | \
+                    sed 's/🥺🎨✨//g' | \
                     sed 's/\.\.\././g' | \
                     sed 's/,,/,/g' | \
+                    sed 's/emoji//g' | \
+                    sed 's/emojis//g' | \
                     head -c 400)
                 
                 # Get user uDRIVE path for image storage
@@ -760,7 +764,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 echo "Creating JSON tags for kind 30023..." >&2
                 
                 # Create a temporary JSON file for jq processing
-                local temp_json="/tmp/tags_${RANDOM}.json"
+                temp_json="/tmp/tags_${RANDOM}.json"
                 if [[ -n "$ILLUSTRATION_URL" ]]; then
                     jq -n --arg title "$cleaned_text" --arg summary "$ARTICLE_SUMMARY" --arg image "$ILLUSTRATION_URL" --arg published_at "$(date -u +%s)" \
                         '[["title", $title], ["summary", $summary], ["published_at", $published_at], ["image", $image], ["t", "search"], ["t", "perplexica"]]' > "$temp_json"
@@ -771,6 +775,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 
                 # Read the properly formatted JSON tags
                 ExtraTags=$(cat "$temp_json")
+                echo "Generated ExtraTags: $ExtraTags" >&2
                 rm -f "$temp_json"
             elif [[ "${TAGS[image]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#image//g; s/"//g' <<< "$message_text")
@@ -996,6 +1001,7 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
             fi
         else
             # Send public message with appropriate tags
+            echo "DEBUG: AnswerKind=$AnswerKind, ExtraTags=$ExtraTags" >&2
             if [[ -n "$ExtraTags" ]]; then
                 # For kind 30023, use only the specific blog tags
                 if [[ "$AnswerKind" == "30023" ]]; then
