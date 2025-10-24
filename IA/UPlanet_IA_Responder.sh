@@ -705,19 +705,17 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
             if [[ "${TAGS[search]}" == true ]]; then
                 $MY_PATH/perplexica.me.sh
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g; s/"//g' <<< "$message_text")
-                KeyANSWER="$($MY_PATH/perplexica_search.sh "${cleaned_text}")"
-                
-                # Get user language and generate intelligent summary
-                echo "Detecting user language..." >&2
                 USER_LANG=$(get_user_language "$KNAME")
-                echo "User language : $USER_LANG" >&2
+                echo "User language for search: $USER_LANG" >&2
+                KeyANSWER="$($MY_PATH/perplexica_search.sh "${cleaned_text}" "${USER_LANG}")"
                 
+                # Generate intelligent summary using the detected language
                 echo "Generating intelligent summary for article..." >&2
-                ARTICLE_SUMMARY="$($MY_PATH/question.py --json "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. The summary should capture the main points and be suitable for a blog article header. Format: plain text only, no quotes, no special characters, no emojis. Article content: ${KeyANSWER}" --pubkey ${PUBKEY})"
+                ARTICLE_SUMMARY="$($MY_PATH/question.py --json "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. The summary should capture the main points and be suitable for a blog article header. IMPORTANT: Respond ONLY in ${USER_LANG} language. Article content: ${KeyANSWER}" --pubkey ${PUBKEY})"
                 
-                # Extract content from JSON response and clean it
+                # Extract content from JSON response and clean it (less aggressive with JSON)
                 ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | jq -r '.answer // .' 2>/dev/null || echo "$ARTICLE_SUMMARY")"
-                ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | sed 's/["'"'"']//g' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '\n' | sed 's/[^a-zA-Z0-9 .,!?-]//g' | sed 's/\s\+/ /g' | sed 's/"/\\"/g' | sed "s/'/\\'/g" | head -c 500)"
+                ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '\n' | sed 's/\s\+/ /g' | sed 's/"/\\"/g' | sed "s/'/\\'/g" | head -c 500)"
                 
                 # Generate illustration image for the article
                 echo "Generating illustration image for search result..." >&2
@@ -725,18 +723,15 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 
                 # Use AI to create an optimized Stable Diffusion prompt based on the summary
                 echo "Creating AI-generated prompt for illustration based on article summary..." >&2
-                SD_PROMPT="$($MY_PATH/question.py --json "Create a Stable Diffusion prompt for an illustrative image based on this article summary: ${ARTICLE_SUMMARY} --- CRITICAL RULES: 1) Output ONLY the prompt text, no explanations 2) NO emojis, NO special characters, NO text, NO words, NO letters, NO writing 3) ONLY visual elements and descriptive words 4) Use simple English words only 5) Focus on visual composition, colors, style, objects, scenes" --pubkey ${PUBKEY})"
+                SD_PROMPT="$($MY_PATH/question.py --json "Create a Stable Diffusion prompt for an illustrative image based on this article summary: ${ARTICLE_SUMMARY} --- CRITICAL RULES: 1) Output ONLY the prompt text, no explanations 2) NO emojis, NO special characters, NO text, NO words, NO letters, NO writing 3) ONLY visual elements and descriptive words 4) Use simple English words only 5) Focus on visual composition, colors, style, objects, scenes 6) IMPORTANT: Respond ONLY in English for the prompt" --pubkey ${PUBKEY})"
                 
-                # Extract content from JSON response and clean the prompt
+                # Extract content from JSON response and clean the prompt (less aggressive with JSON)
                 SD_PROMPT="$(echo "$SD_PROMPT" | jq -r '.answer // .' 2>/dev/null || echo "$SD_PROMPT")"
                 SD_PROMPT=$(echo "$SD_PROMPT" | \
-                    sed 's/[^a-zA-Z0-9 .,!?-]//g' | \
                     sed 's/^[[:space:]]*//' | \
                     sed 's/[[:space:]]*$//' | \
                     sed 's/\s\+/ /g' | \
                     sed 's/🥺🎨✨//g' | \
-                    sed 's/\.\.\././g' | \
-                    sed 's/,,/,/g' | \
                     sed 's/emoji//g' | \
                     sed 's/emojis//g' | \
                     head -c 400)
