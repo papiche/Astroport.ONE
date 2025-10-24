@@ -99,18 +99,36 @@ if [[ -d ~/.zen/workspace/UPlanet ]]; then
     cd ~/.zen/workspace/UPlanet
     # Store current commit hash before pull
     BEFORE_HASH=$(git rev-parse HEAD)
-    git pull
-    # Store new commit hash after pull
-    AFTER_HASH=$(git rev-parse HEAD)
-    # Compare hashes to detect changes
-    if [[ "$BEFORE_HASH" != "$AFTER_HASH" ]]; then
-        echo "UPlanet updated from $BEFORE_HASH to $AFTER_HASH (ipfs add)"
-        ipfs add -rwq ~/.zen/workspace/UPlanet/* > /dev/null
+    if git pull; then
+        # Store new commit hash after pull
+        AFTER_HASH=$(git rev-parse HEAD)
+        # Compare hashes to detect changes
+        if [[ "$BEFORE_HASH" != "$AFTER_HASH" ]]; then
+            echo "UPlanet updated from $BEFORE_HASH to $AFTER_HASH (ipfs add)"
+            if ipfs add -rwq ~/.zen/workspace/UPlanet/*; then
+                echo "✅ UPlanet successfully added to IPFS"
+            else
+                echo "❌ Error adding UPlanet to IPFS"
+            fi
+        else
+            echo "UPlanet already up to date"
+        fi
+    else
+        echo "❌ Error pulling UPlanet updates"
     fi
 else
     mkdir -p ~/.zen/workspace
     cd ~/.zen/workspace
-    git clone --depth 1 https://github.com/papiche/UPlanet
+    if git clone --depth 1 https://github.com/papiche/UPlanet; then
+        echo "UPlanet cloned, adding to IPFS..."
+        if ipfs add -rwq ~/.zen/workspace/UPlanet/*; then
+            echo "✅ UPlanet successfully added to IPFS"
+        else
+            echo "❌ Error adding UPlanet to IPFS"
+        fi
+    else
+        echo "❌ Error cloning UPlanet"
+    fi
 fi
 
 ## UPDATE OC2UPlanet (Open Collective ZEN Economy bridge + AstroBot Triple Agents)
