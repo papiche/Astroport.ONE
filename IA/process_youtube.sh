@@ -808,6 +808,13 @@ EOF
     local format_check=$(yt-dlp $browser_cookies --list-formats "$url" 2>> "$LOGFILE" | head -20)
     log_debug "Available formats preview: $format_check"
     
+    # Check if only HLS/m3u8 formats are available (SABR streaming)
+    local hls_only=false
+    if echo "$format_check" | grep -q "m3u8" && ! echo "$format_check" | grep -q "mp4.*http"; then
+        hls_only=true
+        log_debug "SABR streaming detected - only HLS/m3u8 formats available"
+    fi
+    
     # User agent rotation to avoid detection
     local user_agents=(
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -818,7 +825,7 @@ EOF
     )
     
     # Retry logic with exponential backoff for 403 errors
-    local max_retries=5
+    local max_retries=6
     local retry_count=0
     local download_success=false
     
@@ -835,6 +842,17 @@ EOF
         
         # Try different strategies based on retry count
         local strategy=""
+        
+        # If SABR streaming is detected, prioritize HLS strategies
+        if [[ "$hls_only" == true && $retry_count -ge 2 ]]; then
+            log_debug "SABR streaming detected, using HLS-optimized strategies"
+            case $retry_count in
+                2) retry_count=3 ;;  # Skip to SABR strategy
+                3) retry_count=4 ;;  # Skip to SABR optimized
+                4) retry_count=5 ;;  # Skip to HLS only
+            esac
+        fi
+        
         case $retry_count in
             0)
                 # Strategy 1: Modern approach with multiple clients
@@ -870,11 +888,15 @@ EOF
                             --ignore-errors \
                             --no-check-certificate \
                             --prefer-insecure \
-                            -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best[ext=mp4]/best" \
+                            --hls-prefer-native \
+                            --hls-use-mpegts \
+                            --downloader "m3u8:native" \
+                            --recode-video mp4 \
+                            -f "best[height<=720]/best" \
                             --no-mtime --embed-thumbnail --add-metadata \
                             --write-info-json --write-thumbnail \
                             --embed-metadata --embed-thumbnail \
-                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                            -o "${OUTPUT_DIR}/${media_title}.mp4" "$url" >&2 2>> "$LOGFILE"
                         ;;
                 esac
                 ;;
@@ -905,11 +927,15 @@ EOF
                             --max-sleep-interval 8 \
                             --ignore-errors \
                             --no-check-certificate \
+                            --hls-prefer-native \
+                            --hls-use-mpegts \
+                            --downloader "m3u8:native" \
+                            --recode-video mp4 \
                             -f "best[height<=720]/best" \
                             --no-mtime --embed-thumbnail --add-metadata \
                             --write-info-json --write-thumbnail \
                             --embed-metadata --embed-thumbnail \
-                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                            -o "${OUTPUT_DIR}/${media_title}.mp4" "$url" >&2 2>> "$LOGFILE"
                         ;;
                 esac
                 ;;
@@ -940,11 +966,15 @@ EOF
                             --max-sleep-interval 5 \
                             --ignore-errors \
                             --no-check-certificate \
+                            --hls-prefer-native \
+                            --hls-use-mpegts \
+                            --downloader "m3u8:native" \
+                            --recode-video mp4 \
                             -f "best[height<=720]/best" \
                             --no-mtime --embed-thumbnail --add-metadata \
                             --write-info-json --write-thumbnail \
                             --embed-metadata --embed-thumbnail \
-                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                            -o "${OUTPUT_DIR}/${media_title}.mp4" "$url" >&2 2>> "$LOGFILE"
                         ;;
                 esac
                 ;;
@@ -983,18 +1013,20 @@ EOF
                             --prefer-insecure \
                             --hls-prefer-native \
                             --hls-use-mpegts \
-                            --format "best[ext=mp4]/best" \
+                            --downloader "m3u8:native" \
+                            --recode-video mp4 \
+                            --format "best[height<=720]/best" \
                             --no-mtime --embed-thumbnail --add-metadata \
                             --write-info-json --write-thumbnail \
                             --embed-metadata --embed-thumbnail \
                             --verbose \
-                            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                            -o "${OUTPUT_DIR}/${media_title}.mp4" "$url" >&2 2>> "$LOGFILE"
                         ;;
                 esac
                 ;;
             4)
-                # Strategy 5: Latest yt-dlp features with advanced options
-                strategy="latest"
+                # Strategy 5: SABR streaming optimized - use format selection like working command
+                strategy="sabr_optimized"
                 case "$media_type" in
                     mp3)
                         yt-dlp $browser_cookies --user-agent "$selected_ua" \
@@ -1018,7 +1050,7 @@ EOF
                         ;;
                     mp4)
                         yt-dlp $browser_cookies --user-agent "$selected_ua" \
-                            --extractor-args "youtube:player_client=web,android,android_creator" \
+                            --extractor-args "youtube:player_client=web" \
                             --throttled-rate 1M \
                             --sleep-requests 1 \
                             --sleep-interval 1 \
@@ -1026,15 +1058,64 @@ EOF
                             --ignore-errors \
                             --no-check-certificate \
                             --prefer-insecure \
+                            --hls-prefer-native \
+                            --hls-use-mpegts \
                             --downloader "m3u8:native" \
-                            --compat-options 2024 \
-                            --format "best[height<=720][ext=mp4]/best[height<=720]/best" \
+                            --recode-video mp4 \
+                            --format "[height<=480]/best" \
                             --no-mtime --embed-thumbnail --add-metadata \
                             --write-info-json --write-thumbnail \
                             --embed-metadata --embed-thumbnail \
                             --verbose \
                             --no-playlist \
+                            -o "${OUTPUT_DIR}/${media_title}.mp4" "$url" >&2 2>> "$LOGFILE"
+                        ;;
+                esac
+                ;;
+            5)
+                # Strategy 6: HLS-only fallback for SABR streaming
+                strategy="hls_only"
+                case "$media_type" in
+                    mp3)
+                        yt-dlp $browser_cookies --user-agent "$selected_ua" \
+                            --extractor-args "youtube:player_client=web" \
+                            --throttled-rate 1M \
+                            --sleep-requests 1 \
+                            --sleep-interval 1 \
+                            --max-sleep-interval 5 \
+                            --ignore-errors \
+                            --no-check-certificate \
+                            --prefer-insecure \
+                            --hls-prefer-native \
+                            --hls-use-mpegts \
+                            --downloader "m3u8:native" \
+                            --format "bestaudio/best" \
+                            -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+                            --write-info-json --write-thumbnail \
+                            --embed-metadata --embed-thumbnail \
+                            --verbose \
                             -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$url" >&2 2>> "$LOGFILE"
+                        ;;
+                    mp4)
+                        yt-dlp $browser_cookies --user-agent "$selected_ua" \
+                            --extractor-args "youtube:player_client=web" \
+                            --throttled-rate 1M \
+                            --sleep-requests 1 \
+                            --sleep-interval 1 \
+                            --max-sleep-interval 5 \
+                            --ignore-errors \
+                            --no-check-certificate \
+                            --prefer-insecure \
+                            --hls-prefer-native \
+                            --hls-use-mpegts \
+                            --downloader "m3u8:native" \
+                            --recode-video mp4 \
+                            --format "best" \
+                            --no-mtime --embed-thumbnail --add-metadata \
+                            --write-info-json --write-thumbnail \
+                            --embed-metadata --embed-thumbnail \
+                            --verbose \
+                            -o "${OUTPUT_DIR}/${media_title}.mp4" "$url" >&2 2>> "$LOGFILE"
                         ;;
                 esac
                 ;;
@@ -1049,13 +1130,24 @@ EOF
         local files_created=$(ls "$OUTPUT_DIR"/* 2>/dev/null | wc -l)
         log_debug "Files created in output directory: $files_created"
         
+        # Check for SABR streaming specific errors in the log
+        local sabr_detected=false
+        if grep -q "SABR streaming" "$LOGFILE" 2>/dev/null || grep -q "Only images are available" "$LOGFILE" 2>/dev/null; then
+            sabr_detected=true
+            log_debug "SABR streaming detected in logs"
+        fi
+        
         if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
             download_success=true
             log_debug "Download successful on attempt $((retry_count + 1)) - $files_created files created"
         else
             retry_count=$((retry_count + 1))
             if [[ $download_exit_code -eq 0 && $files_created -eq 0 ]]; then
-                log_debug "Download reported success but no files created - likely SABR streaming issue"
+                if [[ "$sabr_detected" == true ]]; then
+                    log_debug "SABR streaming issue detected - will try HLS-specific strategies"
+                else
+                    log_debug "Download reported success but no files created - likely SABR streaming issue"
+                fi
             else
                 log_debug "Download failed on attempt $retry_count, will retry if attempts remaining"
             fi
@@ -1077,26 +1169,32 @@ EOF
     # Try multiple patterns to find the downloaded file
     media_file=""
     
-    # Pattern 1: Exact title match
-    media_file=$(ls "$OUTPUT_DIR"/${media_title}.{mp4,mp3,m4a,webm,mkv} 2>/dev/null | head -n 1)
-    log_debug "Pattern 1 (exact title): $media_file"
+    # Pattern 1: Exact title match (prioritize MP4)
+    media_file=$(ls "$OUTPUT_DIR"/${media_title}.mp4 2>/dev/null | head -n 1)
+    log_debug "Pattern 1 (exact title MP4): $media_file"
     
-    # Pattern 2: Any file with media extensions
+    # Pattern 2: Any MP4 file
     if [[ -z "$media_file" ]]; then
-        media_file=$(ls "$OUTPUT_DIR"/*.{mp4,mp3,m4a,webm,mkv} 2>/dev/null | head -n 1)
-        log_debug "Pattern 2 (any media file): $media_file"
+        media_file=$(ls "$OUTPUT_DIR"/*.mp4 2>/dev/null | head -n 1)
+        log_debug "Pattern 2 (any MP4 file): $media_file"
     fi
     
-    # Pattern 3: Files containing the video ID
+    # Pattern 3: Other media formats as fallback
+    if [[ -z "$media_file" ]]; then
+        media_file=$(ls "$OUTPUT_DIR"/*.{mp3,m4a,webm,mkv} 2>/dev/null | head -n 1)
+        log_debug "Pattern 3 (other media formats): $media_file"
+    fi
+    
+    # Pattern 4: Files containing the video ID
     if [[ -z "$media_file" ]]; then
         media_file=$(ls "$OUTPUT_DIR"/*${yid}* 2>/dev/null | grep -E '\.(mp4|mp3|m4a|webm|mkv)$' | head -n 1)
-        log_debug "Pattern 3 (video ID): $media_file"
+        log_debug "Pattern 4 (video ID): $media_file"
     fi
     
-    # Pattern 4: Any file that's not metadata (last resort)
+    # Pattern 5: Any file that's not metadata (last resort)
     if [[ -z "$media_file" ]]; then
         media_file=$(ls "$OUTPUT_DIR"/* 2>/dev/null | grep -v -E '\.(info\.json|vtt|srt|jpg|jpeg|png|webp|mhtml)$' | head -n 1)
-        log_debug "Pattern 4 (any non-metadata): $media_file"
+        log_debug "Pattern 5 (any non-metadata): $media_file"
     fi
     
     if [[ -n "$media_file" ]]; then
