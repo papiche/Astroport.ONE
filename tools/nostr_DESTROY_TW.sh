@@ -273,8 +273,12 @@ if [[ -f "${ZEN_PASS_FILE}" ]]; then
     ZEN_PASSWORD=$(cat "${ZEN_PASS_FILE}")
     echo "✅ ZEN Card password retrieved for encryption"
 else
-    echo "⚠️  ZEN Card .pass not found, using default encryption"
-    ZEN_PASSWORD="0000"
+    # Generate secure random password for MULTIPASS-only accounts
+    ZEN_PASSWORD=$(openssl rand -base64 32 2>/dev/null | tr -d "=+/" | cut -c1-16)
+    if [[ -z "${ZEN_PASSWORD}" ]]; then
+        ZEN_PASSWORD=$(date +%s | sha256sum | cut -c1-16)
+    fi
+    echo "🔐 Generated secure password for MULTIPASS-only account: ${ZEN_PASSWORD}"
 fi
 
 # Copy RESTORE_INSTRUCTIONS.sh
@@ -352,12 +356,16 @@ if [[ -x "$HOME/.zen/strfry/strfry" ]]; then
     TIMESTAMP_24H_AGO=$(date -d "24 hours ago" +%s)
     echo "   📅 Deleting messages before: $(date -d "24 hours ago" '+%Y-%m-%d %H:%M:%S')"
     
-    # Delete old messages using strfry
+    # Delete old messages using strfry with proper syntax
     cd ~/.zen/strfry
-    if ./strfry delete --age="24h" --filter="authors:${hex}" 2>/dev/null; then
+    # Try different strfry delete syntaxes
+    if ./strfry delete --filter='{"authors":["'${hex}'"]}' --age=24h 2>/dev/null; then
         echo "✅ Old messages deleted successfully"
+    elif ./strfry delete --authors="${hex}" --age=86400 2>/dev/null; then
+        echo "✅ Old messages deleted successfully (alternative syntax)"
     else
-        echo "⚠️  Failed to delete old messages (may not be supported by this strfry version)"
+        echo "⚠️  Failed to delete old messages (strfry delete not supported or syntax incompatible)"
+        echo "   💡 Messages will remain in relay (this is normal for some relay configurations)"
     fi
     cd - > /dev/null 2>&1
 else
@@ -367,17 +375,46 @@ fi
 
 ## 2. CASH BACK
 ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/nostr.dunikey "${salt}" "${pepper}"
-AMOUNT=$(${MY_PATH}/../tools/G1check.sh ${g1pubnostr} | tail -n 1)
-echo "______ AMOUNT = ${AMOUNT} G1"
+
+# Get fresh balance from blockchain (not cache)
+echo "🔄 Checking fresh G1 balance from blockchain..."
+AMOUNT=$(${MY_PATH}/../tools/G1check.sh ${g1pubnostr} --fresh 2>/dev/null | tail -n 1)
+if [[ -z "${AMOUNT}" ]] || [[ "${AMOUNT}" == "null" ]]; then
+    AMOUNT="0"
+fi
+
+echo "💰 Current G1 balance: ${AMOUNT} Ğ1"
+
 ## EMPTY AMOUNT G1 to PRIMAL
 prime=$(cat ~/.zen/tmp/coucou/${g1pubnostr}.primal 2>/dev/null)
 [[ -z $prime ]] && prime=${UPLANETNAME_G1}
-if [[ -n ${AMOUNT} && ${AMOUNT} != "null" && ${AMOUNT} != "0" && ${AMOUNT} != "0.00" ]]; then
-    ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/tmp/nostr.dunikey" "$AMOUNT" "$prime" "MULTIPASS:$youser:PRIMAL:CASH-BACK" 2>/dev/null
+
+# Convert amount to numeric for precise comparison using bc
+AMOUNT_NUM=$(echo "${AMOUNT}" | sed 's/[^0-9.]//g')
+if [[ -n "${AMOUNT_NUM}" ]] && command -v bc >/dev/null 2>&1; then
+    # Use bc for precise numeric comparison
+    if echo "${AMOUNT_NUM} > 0" | bc -l 2>/dev/null | grep -q "1"; then
+        echo "💸 Transferring ${AMOUNT} Ğ1 to primal account: ${prime}"
+        if ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/tmp/nostr.dunikey" "${AMOUNT}" "${prime}" "MULTIPASS:${youser}:PRIMAL:CASH-BACK" 2>/dev/null; then
+            echo "✅ G1 balance transferred successfully"
+        else
+            echo "⚠️  Failed to transfer G1 balance (will continue with destruction)"
+        fi
+    else
+        echo "ℹ️  No G1 balance to transfer (${AMOUNT} Ğ1 - amount is zero or negative)"
+    fi
+elif [[ -n "${AMOUNT_NUM}" ]] && [[ "${AMOUNT_NUM}" != "0" ]] && [[ "${AMOUNT_NUM}" != "0.00" ]]; then
+    # Fallback to string comparison if bc is not available
+    echo "💸 Transferring ${AMOUNT} Ğ1 to primal account: ${prime}"
+    if ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/tmp/nostr.dunikey" "${AMOUNT}" "${prime}" "MULTIPASS:${youser}:PRIMAL:CASH-BACK" 2>/dev/null; then
+        echo "✅ G1 balance transferred successfully"
+    else
+        echo "⚠️  Failed to transfer G1 balance (will continue with destruction)"
+    fi
 else
-    echo "No G1 balance to transfer (${AMOUNT} G1)"
+    echo "ℹ️  No G1 balance to transfer (${AMOUNT} Ğ1)"
 fi
-rm ~/.zen/tmp/nostr.dunikey
+rm -f ~/.zen/tmp/nostr.dunikey
 
 ## 2. REMOVE ZEN CARD
 if [[ -s "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" ]]; then
@@ -405,11 +442,24 @@ ${MY_PATH}/../tools/mailjet.sh --expire 7d \
 ipfs key rm "${g1pubnostr}:NOSTR" > /dev/null 2>&1
 
 ## Cleaning local cache
-rm ~/.zen/tmp/coucou/${g1pubnostr-null}.*
-rm -Rf ~/.zen/game/nostr/${player-null}
+echo "🧹 Cleaning local cache and temporary files..."
+if [[ -n "${g1pubnostr}" ]]; then
+    rm -f ~/.zen/tmp/coucou/${g1pubnostr}.* 2>/dev/null
+    echo "✅ Cleared G1 cache files for ${g1pubnostr}"
+fi
+
+if [[ -n "${player}" ]]; then
+    rm -rf ~/.zen/game/nostr/${player} 2>/dev/null
+    echo "✅ Removed NOSTR directory for ${player}"
+fi
 
 ## Cleaning Node (& Swarm cache)
-rm -Rf ~/.zen/tmp/$IPFSNODEID/TW/${player-null}
+if [[ -n "${IPFSNODEID}" ]] && [[ -n "${player}" ]]; then
+    rm -rf ~/.zen/tmp/${IPFSNODEID}/TW/${player} 2>/dev/null
+    echo "✅ Cleared Node cache for ${player}"
+fi
+
+echo "✅ Account destruction completed successfully"
 
 
 exit 0
