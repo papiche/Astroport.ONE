@@ -978,7 +978,9 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
                     fi
                 else
                     # For other kinds, combine standard tags with extra tags
-                    CombinedTags="[['e', '$EVENT'], ['p', '$PUBKEY']], $ExtraTags"
+                    # Extract content from ExtraTags without the outer brackets
+                    ExtraTagsContent=$(echo "$ExtraTags" | sed 's/^\[//' | sed 's/\]$//')
+                    CombinedTags="[['e', '$EVENT'], ['p', '$PUBKEY'], $ExtraTagsContent]"
                     if ! nostpy-cli send_event \
                       -privkey "$NPRIV_HEX" \
                       -kind $AnswerKind \
