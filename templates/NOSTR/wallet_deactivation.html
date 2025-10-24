@@ -340,31 +340,75 @@
 
             <div class='section keys'>
                 <div class='lang-content' data-lang='en'>
-                    <h4>🔑 Your Recovery Keys (Keep Safe!)</h4>
-                    <p><strong>Salt:</strong> <code>_SALT_</code></p>
-                    <p><strong>Pepper:</strong> <code>_PEPPER_</code></p>
-                    <small>Store these securely - you'll need them to reactivate your account!</small>
+                    <h4>🔑 For Captains: Account Restoration Process</h4>
+                    <p><strong>To restore this account on your Astroport.ONE station:</strong></p>
+                    <ol>
+                        <li>Download the backup ZIP: <code>ipfs get _NOSTRIFS_ -o backup.zip</code></li>
+                        <li>Extract with user's ZEN Card password: <code>unzip backup.zip</code></li>
+                        <li>Run complete restoration: <code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></li>
+                        <li>User provides their ZEN Card password when prompted</li>
+                    </ol>
+                    <p><strong>Complete restoration process:</strong></p>
+                    <ul>
+                        <li>✅ <strong>MULTIPASS recreation</strong>: Uses .secret.disco to recreate with original salt/pepper</li>
+                        <li>✅ <strong>NOSTR events import</strong>: All messages and profile data restored</li>
+                        <li>✅ <strong>uDRIVE structure download</strong>: Complete directory structure restored from final_cid</li>
+                        <li>✅ <strong>Link verification</strong>: generate_ipfs_structure.sh link validated</li>
+                        <li>✅ <strong>Complete account</strong>: Fully functional MULTIPASS with all data</li>
+                    </ul>
+                    <small>Deactivated: _DEACTIVATION_DATE_ | Backup CID: _NOSTRIFS_</small>
                 </div>
                 <div class='lang-content' data-lang='fr'>
-                    <h4>🔑 Vos Clés de Récupération (Gardez-les en Sécurité !)</h4>
-                    <p><strong>Sel :</strong> <code>_SALT_</code></p>
-                    <p><strong>Poivre :</strong> <code>_PEPPER_</code></p>
-                    <small>Conservez-les en sécurité - vous en aurez besoin pour réactiver votre compte !</small>
+                    <h4>🔑 Pour les Capitaines : Processus de Restauration du Compte</h4>
+                    <p><strong>Pour restaurer ce compte sur votre station Astroport.ONE :</strong></p>
+                    <ol>
+                        <li>Téléchargez le ZIP de sauvegarde : <code>ipfs get _NOSTRIFS_ -o backup.zip</code></li>
+                        <li>Extrayez avec le mot de passe ZEN Card de l'utilisateur : <code>unzip backup.zip</code></li>
+                        <li>Lancez la restauration complète : <code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></li>
+                        <li>L'utilisateur fournit son mot de passe ZEN Card quand demandé</li>
+                    </ol>
+                    <p><strong>Processus de restauration complète :</strong></p>
+                    <ul>
+                        <li>✅ <strong>Recréation MULTIPASS</strong> : Utilise .secret.disco pour recréer avec salt/pepper originaux</li>
+                        <li>✅ <strong>Import événements NOSTR</strong> : Tous les messages et données de profil restaurés</li>
+                        <li>✅ <strong>Téléchargement structure uDRIVE</strong> : Structure complète restaurée depuis final_cid</li>
+                        <li>✅ <strong>Vérification des liens</strong> : Lien generate_ipfs_structure.sh validé</li>
+                        <li>✅ <strong>Compte complet</strong> : MULTIPASS entièrement fonctionnel avec toutes les données</li>
+                    </ul>
+                    <small>Désactivé : _DEACTIVATION_DATE_ | CID de Sauvegarde : _NOSTRIFS_</small>
                 </div>
             </div>
 
             <div class='section rejoin'>
                 <div class='lang-content' data-lang='en'>
-                    <h3>🚀 Ready to Reactivate?</h3>
-                    <p>Get your Ẑen and come back stronger! Your community is waiting for you.</p>
+                    <h3>🚀 Account Recovery Options</h3>
+                    <p><strong>Option 1: Restore with Another Captain</strong></p>
+                    <p>Contact any Astroport.ONE captain and provide them with:</p>
+                    <ul>
+                        <li>📦 Your backup ZIP file (CID: <code>_NOSTRIFS_</code>)</li>
+                        <li>🔑 Your ZEN Card password (from your .pass file)</li>
+                    </ul>
+                    <p>The captain can restore your account using: <code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></p>
+                    
+                    <p><strong>Option 2: Get Ẑen and Reactivate</strong></p>
+                    <p>Earn Ẑen and reactivate your account on this station.</p>
                     <div class='button-group'>
                         <a target='_blank' href='_uSPOT_/g1' class='cta-button'>🌟 Reactivate My MULTIPASS</a>
                         <a target='_blank' href='https://opencollective.com/uplanet-zero#category-CONTRIBUTE' class='cta-button'>💎 Get Ẑen on OpenCollective</a>
                     </div>
                 </div>
                 <div class='lang-content' data-lang='fr'>
-                    <h3>🚀 Prêt à Réactiver ?</h3>
-                    <p>Obtenez vos Ẑen et revenez plus fort ! Votre communauté vous attend.</p>
+                    <h3>🚀 Options de Récupération du Compte</h3>
+                    <p><strong>Option 1 : Restaurer avec un Autre Capitaine</strong></p>
+                    <p>Contactez n'importe quel capitaine Astroport.ONE et fournissez-lui :</p>
+                    <ul>
+                        <li>📦 Votre fichier ZIP de sauvegarde (CID : <code>_NOSTRIFS_</code>)</li>
+                        <li>🔑 Votre mot de passe ZEN Card (depuis votre fichier .pass)</li>
+                    </ul>
+                    <p>Le capitaine peut restaurer votre compte avec : <code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></p>
+                    
+                    <p><strong>Option 2 : Obtenir des Ẑen et Réactiver</strong></p>
+                    <p>Gagnez des Ẑen et réactivez votre compte sur cette station.</p>
                     <div class='button-group'>
                         <a target='_blank' href='_uSPOT_/g1' class='cta-button'>🌟 Réactiver Mon MULTIPASS</a>
                         <a target='_blank' href='https://opencollective.com/uplanet-zero#category-CONTRIBUTE' class='cta-button'>💎 Obtenir des Ẑen sur OpenCollective</a>

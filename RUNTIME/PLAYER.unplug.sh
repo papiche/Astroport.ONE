@@ -40,7 +40,7 @@ LON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
 echo "LAT=${LAT}; LON=${LON}; UMAPNS=${TWMAPNS}"
 rm ~/.zen/tmp/${MOATS}/GPS.json
 
-########## SEND COINS TO SECTORG1PUB - ẐEN VIRTUAL BANK - EVERY 800 METERS - ;)
+########## SEND COINS TO UPLANETNAME_G1 - ẐEN CENTRAL BANK ;)
 LAT=$(makecoord $LAT)
 LON=$(makecoord $LON)
 ##############################################################
@@ -48,25 +48,34 @@ LON=$(makecoord $LON)
 $($MY_PATH/../tools/getUMAP_ENV.sh ${LAT} ${LON} | tail -n 1)
 
 ## GET COINS
-COINS=$($MY_PATH/../tools/G1check.sh ${SECTORG1PUB} | tail -n 1)
-echo "SECTOR WALLET = ${COINS} G1 : ${SECTORG1PUB}"
+COINS=$($MY_PATH/../tools/G1check.sh ${UPLANETNAME_G1} | tail -n 1)
+echo "SECTOR WALLET = ${COINS} G1 : ${UPLANETNAME_G1}"
 
 ## UNPLUG => SEND 10 ZEN
-## ALL => SEND ALL to $UPLANETG1PUB
+## ALL => SEND ALL to $UPLANETNAME_G1
 
 ALL="ALL"
-UPLANETG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}")
 
 [[ $ONE == "ONE" ]] && ALL=1
-[[ $ALL == "ALL" ]] && echo "DEST = UPLANETG1PUB: ${UPLANETG1PUB}"
+[[ $ALL == "ALL" ]] && echo "DEST = UPLANETNAME_G1: ${UPLANETNAME_G1}"
 
 YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
-[[ ! -z ${SECTORG1PUB} ]] \
-    && echo "> PAYforSURE ZEN:${ALL} WALLET MOVE" \
-    && ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${ALL}" "${UPLANETG1PUB}" "UPLANET${UPLANETG1PUB:0:8}:UNPLUG:${YOUSER}:${ALL}" 2>/dev/null
+
+# Check G1 balance of the ZEN Card before attempting transfer
+G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
+if [[ ! -z ${G1PUB} ]]; then
+    BALANCE=$(${MY_PATH}/../tools/G1check.sh ${G1PUB} | tail -n 1)
+    echo "ZEN CARD WALLET BALANCE = ${BALANCE} G1 : ${G1PUB}"
+    
+    if [[ -n ${BALANCE} && ${BALANCE} != "null" && ${BALANCE} != "0" && ${BALANCE} != "0.00" ]]; then
+        echo "> PAYforSURE ZEN:${ALL} WALLET MOVE"
+        ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "${ALL}" "${UPLANETNAME_G1}" "UPLANET${UPLANETNAME_G1:0:8}:UNPLUG:${YOUSER}:${ALL}" 2>/dev/null
+    else
+        echo "No G1 balance to transfer from ZEN Card (${BALANCE} G1) - skipping PAYforSURE"
+    fi
+fi
 
 ## REMOVING PLAYER from ASTROPORT
-G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
 ipfs key rm "${PLAYER}" "${PLAYER}_feed" "${G1PUB}"
 for vk in $(ls -d ~/.zen/game/players/${PLAYER}/voeux/*/* 2>/dev/null | rev | cut -d / -f 1 | rev); do
     echo "removing wish ${vk}"

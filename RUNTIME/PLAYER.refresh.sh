@@ -214,7 +214,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 echo "[7 DAYS CYCLE] ZENCARD ($COINS G1) UNPLUG !!"
                 $MY_PATH/../tools/mailjet.sh "${PLAYER}" "$COINS Ğ1" "MULTIPASS is missing Ẑen for paying ZEN Card..."
                 if [[ ${PLAYER} != ${CAPTAINEMAIL} ]]; then
-                    ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.hEtml ${PLAYER} "ALL"
+                    ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL"
                 fi
             fi
         fi

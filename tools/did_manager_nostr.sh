@@ -333,6 +333,11 @@ update_did_document() {
                 }"
             fi
             ;;
+        "ACCOUNT_DEACTIVATED")
+            quota="N/A"
+            services="Account deactivated - no services available"
+            contract_status="account_deactivated"
+            ;;
         *)
             echo -e "${RED}❌ Unknown update type: ${update_type}${NC}"
             rm -f "$did_temp" "$did_updated"
@@ -364,6 +369,18 @@ update_did_document() {
             \"ipns\": \"$IPFSNODEID\",
             \"description\": \"Astroport station IPNS address\",
             \"updatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+        }"
+    fi
+    
+    # Add deactivation metadata for ACCOUNT_DEACTIVATED
+    if [[ "$update_type" == "ACCOUNT_DEACTIVATED" ]]; then
+        jq_cmd="$jq_cmd | .metadata.deactivation = {
+            \"status\": \"deactivated\",
+            \"reason\": \"Account destroyed by user request\",
+            \"deactivatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+            \"dataRetention\": \"backup_available\",
+            \"recoveryPossible\": false,
+            \"description\": \"This account has been permanently deactivated\"
         }"
     fi
     
@@ -793,6 +810,7 @@ Update Types:
   RND_CONTRIBUTION            - R&D fund contribution
   ASSETS_CONTRIBUTION         - Assets fund contribution
   WOT_MEMBER                  - Duniter WoT member identification
+  ACCOUNT_DEACTIVATED         - Account deactivated/destroyed
 
 Examples:
   $0 update user@example.com LOCATAIRE 50 5.0

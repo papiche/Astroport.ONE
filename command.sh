@@ -1219,7 +1219,7 @@ handle_zen_card_management() {
                     read -p "Êtes-vous sûr de vouloir supprimer la ZEN Card $PSEUDO ? (oui/non): " confirm
                     if [[ "$confirm" =~ ^(oui|o|y|yes)$ ]]; then
                         print_info "Suppression de $PSEUDO..."
-                        if "${MY_PATH}/RUNTIME/PLAYER.unplug.sh" "$HOME/.zen/game/players/$PSEUDO/ipfs/moa/index.html" "$PSEUDO"; then
+                        if "${MY_PATH}/RUNTIME/PLAYER.unplug.sh" "$HOME/.zen/game/players/$PSEUDO/ipfs/moa/index.html" "$PSEUDO" "ALL"; then
                             print_success "ZEN Card $PSEUDO supprimée."
                         else
                             print_error "Erreur lors de la suppression de la ZEN Card."
@@ -1336,7 +1336,7 @@ handle_disconnect() {
     
     if [[ "$confirm" == "oui" || "$confirm" == "o" || "$confirm" == "y" || "$confirm" == "yes" ]]; then
         print_info "Déconnexion en cours..."
-        if "${MY_PATH}/RUNTIME/PLAYER.unplug.sh" "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}"; then
+        if "${MY_PATH}/RUNTIME/PLAYER.unplug.sh" "${HOME}/.zen/game/players/${PLAYER}/ipfs/moa/index.html" "${PLAYER}" "ALL"; then
             print_success "Déconnexion réussie"
             PLAYER=""
             G1PUB=""
