@@ -472,12 +472,6 @@ EOFNOSTR
     #~ echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$UWORLD\"></head></html>" > index.html
     #~ cd -
     ###############################################################################################
-
-    ### PUBLISH MULTIPASS IPFS ####################################################################
-    NOSTRIPFS=$(ipfs --timeout 30s add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
-    ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
-    IPFS_PUBLISH_PID=$!
-    ###############################################################################################
     ## ORIGIN or ẐEN's
     [[ ${UPLANETG1PUB:0:8} == "AwdjhpJN" ]] && ORIGIN="ORIGIN" || ORIGIN="${UPLANETG1PUB:0:8}"
     ZENCARDG1=$(cat ~/.zen/game/players/${EMAIL}/.g1pub 2>/dev/null) ## Does ZenCard already existing
@@ -516,11 +510,20 @@ EOFNOSTR
     && echo "✅ PRIMO TX sent successfully - PRIMAL marked from ${UPLANETNAME_G1} wallet" \
     || echo "⚠️ PRIMO TX failed for MULTIPASS ${EMAIL}"
 
+
+    ### PUBLISH MULTIPASS IPFS ####################################################################
+    NOSTRIPFS=$(ipfs --timeout 30s add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
+    ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
+    IPFS_PUBLISH_PID=$!
+    ###############################################################################################
+
+
     ## SEND ZINE TO EMAIL USING MAILJET
     echo "Sending NOSTR zine to ${EMAIL} via mailjet..."
     ${MY_PATH}/mailjet.sh --expire 96h "${EMAIL}" "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html" "MULTIPASS" 2>/dev/null \
         && echo "✅ NOSTR zine sent successfully to ${EMAIL}" \
         || echo "⚠️ Failed to send NOSTR zine to ${EMAIL}"
+
 
     ## CLEAN CACHE
     rm -Rf ~/.zen/tmp/${MOATS-null}
