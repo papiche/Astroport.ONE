@@ -242,6 +242,7 @@ EOFNOSTR
 
     ### PREPARE MULTIPASS PRINT CARD (uSPOT + SSSS QR codes)
     ${MY_PATH}/MULTIPASS.print.sh "${EMAIL}" &
+    MULTIPASS_PRINT_PID=$!
 
     ## TODATE TIME STAMP
     echo "${TODATE}" > ${HOME}/.zen/game/nostr/${EMAIL}/TODATE
@@ -465,6 +466,7 @@ EOFNOSTR
     ### PUBLISH MULTIPASS IPFS ####################################################################
     NOSTRIPFS=$(ipfs --timeout 30s add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
     ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
+    IPFS_PUBLISH_PID=$!
     ###############################################################################################
     ## ORIGIN or ẐEN's
     [[ ${UPLANETG1PUB:0:8} == "AwdjhpJN" ]] && ORIGIN="ORIGIN" || ORIGIN="${UPLANETG1PUB:0:8}"
@@ -512,6 +514,19 @@ EOFNOSTR
 
     ## CLEAN CACHE
     rm -Rf ~/.zen/tmp/${MOATS-null}
+    
+    ## Wait for background processes to complete
+    echo "⏳ Waiting for background processes to complete..."
+    if [[ -n "$MULTIPASS_PRINT_PID" ]]; then
+        wait $MULTIPASS_PRINT_PID 2>/dev/null || true
+        echo "✅ MULTIPASS print process completed"
+    fi
+    
+    if [[ -n "$IPFS_PUBLISH_PID" ]]; then
+        wait $IPFS_PUBLISH_PID 2>/dev/null || true
+        echo "✅ IPFS publish process completed"
+    fi
+    
     ### UNCOMMENT for DEBUG
     #~ echo "SALT=$SALT PEPPER=$PEPPER \
     #~ NPUBLIC=${NPUBLIC} NPRIV=${NPRIV} EMAIL=${EMAIL} SSSSQR=${SSSSQR} \
