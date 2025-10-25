@@ -58,13 +58,13 @@
     {
       "id": "did:nostr:_HEX_PUBKEY_#ipns-storage",
       "type": "DecentralizedWebNode",
-      "serviceEndpoint": "_MY_IPFS_/ipns/_NOSTRNS_",
+      "serviceEndpoint": "_MY_IPFS__NOSTRNS_",
       "description": "IPNS personal storage vault"
     },
     {
       "id": "did:nostr:_HEX_PUBKEY_#udrive",
       "type": "DecentralizedWebNode",
-      "serviceEndpoint": "_MY_IPFS_/ipns/_NOSTRNS_/_EMAIL_/APP/uDRIVE",
+      "serviceEndpoint": "_MY_IPFS__NOSTRNS_/_EMAIL_/APP/uDRIVE",
       "description": "Personal cloud storage and application platform"
     },
     {

@@ -342,7 +342,6 @@
                 authentication: "🔐 Authentication",
                 metadata: "📊 UPlanet Metadata",
                 franceConnect: "🇫🇷 France Connect Status",
-                franceIdentite: "🆔 France Identité - Identity Proof",
                 rawJson: "Show Raw JSON"
             }
         };
@@ -827,27 +826,27 @@
                     if (fc.compliance === 'disabled') {
                         html += `
                             <div class="did-field" style="background-color: #2a2a2a; padding: 15px; border-radius: 5px; margin-top: 10px;">
-                                <span class="did-label" style="color: #ffc107; font-weight: bold; font-size: 1.1em;">📋 Processus d'Activation France Connect:</span>
+                                <span class="did-label" style="color: #ffc107; font-weight: bold; font-size: 1.1em;">📋 Processus d'Activation:</span>
                                 <div class="did-value" style="color: #e0e0e0; font-size: 0.9em; line-height: 1.6; margin-top: 10px;">
                                     <div style="display: flex; align-items: center; margin: 8px 0;">
                                         <span style="background: #007bff; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 0.8em;">1</span>
-                                        <span><strong>Création MULTIPASS</strong> (sans KYC) - Identité de base UPlanet</span>
+                                        <span><strong>Création MULTIPASS</strong> (ẐEN) - Identité de base UPlanet</span>
                                     </div>
                                     <div style="display: flex; align-items: center; margin: 8px 0;">
                                         <span style="background: #6c757d; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 0.8em;">2</span>
-                                        <span><strong>Création ZEN Card</strong> (sociétaire) - Initialisée à 1Ğ1</span>
+                                        <span><strong>Création ZEN Card</strong> (sociétaire) - parts du capital</span>
                                     </div>
                                     <div style="display: flex; align-items: center; margin: 8px 0;">
                                         <span style="background: #6c757d; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 0.8em;">3</span>
-                                        <span><strong>Envoi justificatif France Identité</strong> au capitaine via <a href="https://france-identite.gouv.fr/justificatif/" target="_blank" style="color: #2196F3;">france-identite.gouv.fr</a></span>
+                                        <span><strong>Envoi justificatif Identité</strong> (KYC) au capitaine via <a href="https://france-identite.gouv.fr/justificatif/" target="_blank" style="color: #2196F3;">france-identite.gouv.fr</a></span>
                                     </div>
                                     <div style="display: flex; align-items: center; margin: 8px 0;">
                                         <span style="background: #6c757d; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 0.8em;">4</span>
-                                        <span><strong>Transaction WoT 0.01Ğ1</strong> depuis compte forgeron Duniter (2ème transaction)</span>
+                                        <span><strong>Certification WoT 0.01Ğ1</strong> depuis compte forgeron Duniter (2nd transaction)</span>
                                     </div>
                                     <div style="display: flex; align-items: center; margin: 8px 0;">
                                         <span style="background: #6c757d; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 0.8em;">5</span>
-                                        <span><strong>UPLANET.official</strong> reproduit le dépôt <a href="https://opencollective.com/upanet-zero" target="_blank" style="color: #2196F3;">opencollective.com/upanet-zero</a> en ẐEN</span>
+                                        <span><strong>UPLANET.official</strong> conversion <a href="https://opencollective.com/upanet-zero" target="_blank" style="color: #2196F3;">€ <-> ẐEN</a></span>
                                     </div>
                                     <div style="display: flex; align-items: center; margin: 8px 0; padding: 10px; background: #1a3a1a; border-radius: 5px; border-left: 4px solid #28a745;">
                                         <span style="color: #28a745; font-size: 1.2em; margin-right: 10px;">🎉</span>
@@ -876,53 +875,7 @@
                     html += '</div>';
                 }
                 
-                // France Identité Section - Process explanation
-                if (data.metadata.franceConnect && data.metadata.franceConnect.compliance === 'disabled') {
-                    html += '<div class="metadata-section">';
-                    html += `<h4>${getText('franceIdentite')}</h4>`;
-                    html += `
-                        <div class="did-field" style="background-color: #1a1a2e; padding: 15px; border-radius: 5px; margin: 10px 0;">
-                            <div style="color: #e0e0e0; font-size: 0.9em; line-height: 1.6;">
-                                <div style="margin-bottom: 15px;">
-                                    <strong style="color: #2196F3;">Le justificatif d'identité à usage unique</strong> remplace les photocopies de titre d'identité par un document sécurisé pour éviter les fraudes.
-                                </div>
-                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 15px 0;">
-                                    <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; text-align: center;">
-                                        <div style="color: #4CAF50; font-size: 1.5em; margin-bottom: 5px;">🔒</div>
-                                        <div style="font-size: 0.8em;">Minimise les données transmises</div>
-                                    </div>
-                                    <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; text-align: center;">
-                                        <div style="color: #4CAF50; font-size: 1.5em; margin-bottom: 5px;">🛡️</div>
-                                        <div style="font-size: 0.8em;">Infalsifiable et ultra sécurisé</div>
-                                    </div>
-                                    <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; text-align: center;">
-                                        <div style="color: #4CAF50; font-size: 1.5em; margin-bottom: 5px;">✅</div>
-                                        <div style="font-size: 0.8em;">Signé par le ministère de l'Intérieur</div>
-                                    </div>
-                                </div>
-                                <div style="margin-top: 15px; padding: 10px; background: #0d1a2e; border-radius: 5px; border-left: 4px solid #2196F3;">
-                                    <div style="color: #2196F3; font-weight: bold; margin-bottom: 8px;">📋 Comment générer un justificatif :</div>
-                                    <div style="font-size: 0.85em;">
-                                        1. Téléchargez l'application <strong>France Identité</strong><br>
-                                        2. Cliquez sur "Créer un justificatif d'identité"<br>
-                                        3. Saisissez le nom du destinataire (Capitaine UPlanet)<br>
-                                        4. Sélectionnez une durée de validité<br>
-                                        5. Indiquez le motif (Adhésion coopérative UPlanet)<br>
-                                        6. Saisissez votre code personnel<br>
-                                        7. Effectuez la lecture de votre carte d'identité<br>
-                                        8. Partagez le justificatif avec le capitaine
-                                    </div>
-                                </div>
-                                <div style="margin-top: 10px; text-align: center;">
-                                    <a href="https://france-identite.gouv.fr/justificatif/" target="_blank" style="background: #2196F3; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none; font-weight: bold;">
-                                        🔗 Accéder à France Identité
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    html += '</div>';
-                }
+                
                 
                 // International section for non-French users
                 if (userLanguage === 'en') {

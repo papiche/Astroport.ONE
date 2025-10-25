@@ -104,7 +104,7 @@ create_initial_did() {
     local latitude=$(cat "${user_dir}/GPS" 2>/dev/null | grep "LAT=" | cut -d'=' -f2 | cut -d';' -f1 || echo "")
     local longitude=$(cat "${user_dir}/GPS" 2>/dev/null | grep "LON=" | cut -d'=' -f2 | cut -d';' -f1 || echo "")
     local language=$(cat "${user_dir}/LANG" 2>/dev/null || echo "fr")
-    local youser=$(cat "${user_dir}/HEX" 2>/dev/null | cut -c1-8 || echo "")
+    local youser=${email}
     
     # If no user directory exists, try to get G1PUB from the email parameter or environment
     if [[ -z "$g1_pubkey" ]]; then
