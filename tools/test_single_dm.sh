@@ -1,5 +1,5 @@
 #!/bin/bash
-# Simple test script for nostr_send_dm.py - tests one message at a time
+# Simple test script for nostr_send_secure_dm.py - tests one message at a time
 
 echo "🧪 Simple NOSTR Direct Message Test"
 echo "=================================="
@@ -48,7 +48,7 @@ echo "Message: $test_message"
 echo ""
 
 echo "Sending message..."
-result=$($HOME/.zen/Astroport.ONE/tools/nostr_send_dm.py "$NSEC" "$HEX_KEY" "$test_message" 2>&1)
+result=$($HOME/.zen/Astroport.ONE/tools/nostr_send_secure_dm.py "$NSEC" "$HEX_KEY" "$test_message" 2>&1)
 exit_code=$?
 
 if [[ $exit_code -eq 0 ]]; then

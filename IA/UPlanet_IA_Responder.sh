@@ -1019,7 +1019,7 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
                     fi
                     
                     echo "[SECRET] Sending DM with content: $KeyANSWER" >&2
-                    DM_RESULT=$($HOME/.zen/Astroport.ONE/tools/nostr_send_dm.py "$NSEC" "$KNAME_HEX" "$KeyANSWER" "$myRELAY" 2>&1)
+                    DM_RESULT=$($HOME/.zen/Astroport.ONE/tools/nostr_send_secure_dm.py "$NSEC" "$KNAME_HEX" "$KeyANSWER" "$myRELAY" 2>&1)
                     DM_EXIT_CODE=$?
                     
                     if [[ $DM_EXIT_CODE -eq 0 ]]; then
@@ -1029,7 +1029,7 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
                         echo "[SECRET] DM error output: $DM_RESULT" >&2
                         send_error_email "Failed to send private DM to $KNAME. Exit code: $DM_EXIT_CODE. Error: $DM_RESULT" "~/.zen/tmp/IA.log"
                         FALLBACK_MSG="Message privé non envoyé. Erreur technique. $CURRENT_TIME_STR"
-                        $HOME/.zen/Astroport.ONE/tools/nostr_send_dm.py "$NSEC" "$KNAME_HEX" "$FALLBACK_MSG" "$myRELAY" >/dev/null 2>&1
+                        $HOME/.zen/Astroport.ONE/tools/nostr_send_secure_dm.py "$NSEC" "$KNAME_HEX" "$FALLBACK_MSG" "$myRELAY" >/dev/null 2>&1
                     fi
                 else
                     echo "[SECRET] KNAME hex key not found at $KNAME_HEX_FILE, cannot send DM."

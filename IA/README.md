@@ -339,7 +339,7 @@ The `#secret` tag enables completely private communication between you and the U
 ### Technical Details
 
 #### **NOSTR Integration**
-- **Encryption**: Uses NIP-04 encryption for message privacy
+- **Encryption**: Uses NIP-44 encryption for enhanced message privacy
 - **Key management**: Automatically retrieves user's hex key from `~/.zen/game/nostr/{KNAME}/HEX`
 - **Relay handling**: Sends via configured NOSTR relay with proper error handling
 - **Event filtering**: Secret messages return exit code 1 to prevent relay storage

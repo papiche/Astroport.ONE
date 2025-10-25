@@ -1,5 +1,5 @@
 #!/bin/bash
-# Test script for nostr_send_dm.py (interactive, send as CAPTAIN)
+# Test script for nostr_send_secure_dm.py (interactive, send as CAPTAIN)
 
 CAPTAIN_SECRET="$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
 if [[ ! -f "$CAPTAIN_SECRET" ]]; then
@@ -49,6 +49,6 @@ if [[ -z "$msg" ]]; then
 fi
 
 echo "\nSending secret message..."
-$HOME/.zen/Astroport.ONE/tools/nostr_send_dm.py "$NSEC" "$recipient_hex" "$msg"
+$HOME/.zen/Astroport.ONE/tools/nostr_send_secure_dm.py "$NSEC" "$recipient_hex" "$msg"
 
 exit $? 

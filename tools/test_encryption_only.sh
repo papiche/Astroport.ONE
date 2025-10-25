@@ -1,7 +1,7 @@
 #!/bin/bash
-# Test script for NIP-04 encryption functionality only (no relay sending)
+# Test script for NIP-44 encryption functionality only (no relay sending)
 
-echo "🔐 Testing NIP-04 Encryption Functionality"
+echo "🔐 Testing NIP-44 Encryption Functionality"
 echo "=========================================="
 echo ""
 
@@ -54,7 +54,7 @@ done
 echo ""
 
 # Test encryption functionality
-echo "🔐 Testing NIP-04 encryption:"
+echo "🔐 Testing NIP-44 encryption:"
 echo "----------------------------"
 
 # Get list of valid keys
@@ -99,8 +99,8 @@ for i in "${!VALID_KEYS[@]}"; do
             # Get sender's hex key
             sender_hex=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "${NSEC_KEYS[$sender]}" 2>/dev/null)
             
-            # Test encryption using nostr_send_dm.py with a dummy relay
-            result=$(timeout 5 $HOME/.zen/Astroport.ONE/tools/nostr_send_dm.py "${NSEC_KEYS[$sender]}" "${HEX_KEYS[$recipient]}" "$test_message" "wss://invalid.relay" 2>&1 | grep -E "(✅|❌|Error|SUCCESS)" | head -1)
+            # Test encryption using nostr_send_secure_dm.py with a dummy relay
+            result=$(timeout 5 $HOME/.zen/Astroport.ONE/tools/nostr_send_secure_dm.py "${NSEC_KEYS[$sender]}" "${HEX_KEYS[$recipient]}" "$test_message" "wss://invalid.relay" 2>&1 | grep -E "(✅|❌|Error|SUCCESS)" | head -1)
             
             if [[ $? -eq 0 && -n "$result" ]]; then
                 echo "✅ Encryption test completed"
@@ -117,6 +117,6 @@ echo "========================="
 echo "✅ Valid .secret.nostr files found: ${#SECRET_FILES[@]}"
 echo "✅ Valid NSEC keys extracted: ${#NSEC_KEYS[@]}"
 echo "✅ Valid hex keys generated: ${#HEX_KEYS[@]}"
-echo "✅ NIP-04 encryption tested successfully"
+echo "✅ NIP-44 encryption tested successfully"
 echo ""
 echo "🔧 Encryption ready for use in UPlanet IA system!"

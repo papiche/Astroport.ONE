@@ -233,20 +233,20 @@ async def handle_kind_4(private_key_nsec, current_relays):
     recipient_pubkey = await get_input("Clé publique (hex) du destinataire")
     message_content = await get_input("Contenu du message (sera chiffré)")
 
-    # Le chiffrement NIP-04 est géré par pynostr lors de la signature si la clé publique du destinataire est dans les tags 'p'
+    # Le chiffrement NIP-44 est géré par pynostr lors de la signature si la clé publique du destinataire est dans les tags 'p'
     # Cependant, pynostr.event.Event ne chiffre pas automatiquement.
     # Nous allons créer l'événement avec le contenu en clair, et la méthode sign_event de PrivateKey
-    # (si elle est bien celle de NIP-04) devrait le chiffrer.
-    # pynostr.util.nip04_encrypt / decrypt est disponible.
+    # (si elle est bien celle de NIP-44) devrait le chiffrer.
+    # pynostr.util.nip44_encrypt / decrypt est disponible.
     # Pour l'instant, on va supposer que l'utilisateur chiffre manuellement ou que
     # le client destinataire s'attend à déchiffrer.
-    # Pour une implémentation correcte, il faudrait utiliser pynostr.util.nip04_encrypt ici.
+    # Pour une implémentation correcte, il faudrait utiliser pynostr.util.nip44_encrypt ici.
 
-    # Note: pynostr Event ne fait PAS le chiffrement NIP-04 automatiquement.
+    # Note: pynostr Event ne fait PAS le chiffrement NIP-44 automatiquement.
     # Il faut le faire explicitement en utilisant les fonctions de pynostr.util
     # Pour simplifier cet exemple, nous envoyons le message "comme si" il était chiffré
     # et notons qu'une étape de chiffrement est nécessaire.
-    print("AVERTISSEMENT: Ce script n'implémente PAS le chiffrement NIP-04.")
+    print("AVERTISSEMENT: Ce script n'implémente PAS le chiffrement NIP-44.")
     print("Le message sera envoyé en clair avec un kind 4.")
     print("Pour un vrai DM chiffré, le contenu doit être chiffré avec la clé publique du destinataire.")
 

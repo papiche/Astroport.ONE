@@ -1,5 +1,5 @@
 #!/bin/bash
-# Test script for nostr_send_dm.py using .secret.nostr files
+# Test script for nostr_send_secure_dm.py using .secret.nostr files
 
 echo "🔍 Testing NOSTR Direct Message functionality with .secret.nostr files"
 echo "=================================================================="
@@ -122,7 +122,7 @@ for i in "${!VALID_KEYS[@]}"; do
             
             # Send the message
             echo -n "   Sending... "
-            result=$(python3 nostr_send_dm.py "${NSEC_KEYS[$sender]}" "${HEX_KEYS[$recipient]}" "$test_message" 2>&1)
+            result=$(python3 nostr_send_secure_dm.py "${NSEC_KEYS[$sender]}" "${HEX_KEYS[$recipient]}" "$test_message" 2>&1)
             
             if [[ $? -eq 0 ]]; then
                 echo "✅ Success"
@@ -160,7 +160,7 @@ if [[ -f "$CAPTAIN_SECRET" ]]; then
                 test_message="Test message from Captain to $test_recipient at $timestamp"
                 
                 echo -n "   Sending... "
-                result=$(python3 nostr_send_dm.py "$NSEC" "${HEX_KEYS[$test_recipient]}" "$test_message" 2>&1)
+                result=$(python3 nostr_send_secure_dm.py "$NSEC" "${HEX_KEYS[$test_recipient]}" "$test_message" 2>&1)
                 
                 if [[ $? -eq 0 ]]; then
                     echo "✅ Success"
