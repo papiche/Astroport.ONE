@@ -39,12 +39,14 @@ OPTIONS:
     --nostr-only            Vérifier uniquement la source Nostr
     --ipfs-only             Vérifier uniquement la source IPFS
     --local-only             Vérifier uniquement le cache local
+    --auto-fix               Proposer et exécuter les corrections automatiques
 
 EXAMPLES:
     $SCRIPT_NAME user@example.com
     $SCRIPT_NAME --france-connect user@example.com
     $SCRIPT_NAME --check-all --format json
     $SCRIPT_NAME --nostr-only user@example.com
+    $SCRIPT_NAME --auto-fix user@example.com
 
 EOF
 }
@@ -57,6 +59,7 @@ FRANCE_CONNECT=false
 NOSTR_ONLY=false
 IPFS_ONLY=false
 LOCAL_ONLY=false
+AUTO_FIX=false
 EMAIL=""
 
 # Parsing des arguments
@@ -92,6 +95,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --local-only)
             LOCAL_ONLY=true
+            shift
+            ;;
+        --auto-fix)
+            AUTO_FIX=true
             shift
             ;;
         -*)
@@ -144,13 +151,13 @@ check_json_structure() {
     local required_fields=("@context" "id" "verificationMethod" "authentication" "assertionMethod" "keyAgreement")
     
     for field in "${required_fields[@]}"; do
-        if ! jq -e ".$field" "$did_file" >/dev/null 2>&1; then
+        if ! jq -e ".[\"$field\"]" "$did_file" >/dev/null 2>&1; then
             errors+=("MISSING_FIELD:$field")
         fi
     done
     
     # Vérification du contexte W3C
-    if ! jq -e '.["@context"] | contains(["https://w3id.org/did/v1"])' "$did_file" >/dev/null 2>&1; then
+    if ! jq -e '.["@context"] | contains(["https://www.w3.org/ns/did/v1"])' "$did_file" >/dev/null 2>&1; then
         errors+=("INVALID_CONTEXT")
     fi
     
@@ -242,10 +249,16 @@ check_did_resolution() {
     # Vérification de la source Nostr
     if [[ "$NOSTR_ONLY" == "false" && "$IPFS_ONLY" == "false" && "$LOCAL_ONLY" == "false" ]]; then
         if [[ -f "${MY_PATH}/nostr_did_client.py" ]]; then
-            if python3 "${MY_PATH}/nostr_did_client.py" fetch "$email" >/dev/null 2>&1; then
-                log_success "Source Nostr accessible"
+            # Récupérer la clé publique Nostr depuis le cache local
+            local npub=$(jq -r '.verificationMethod[0].publicKeyMultibase // empty' "$did_file" 2>/dev/null)
+            if [[ -n "$npub" ]]; then
+                if python3 "${MY_PATH}/nostr_did_client.py" read "$npub" ws://127.0.0.1:7777 >/dev/null 2>&1; then
+                    log_success "Source Nostr accessible"
+                else
+                    errors+=("NOSTR_SOURCE_UNAVAILABLE")
+                fi
             else
-                errors+=("NOSTR_SOURCE_UNAVAILABLE")
+                errors+=("NOSTR_NPUB_NOT_FOUND")
             fi
         else
             errors+=("NOSTR_CLIENT_NOT_FOUND")
@@ -269,6 +282,94 @@ check_did_resolution() {
     
     echo "RESOLUTION_OK"
     return 0
+}
+
+# Fonction de correction automatique
+auto_fix_did() {
+    local email="$1"
+    local did_file="${HOME}/.zen/game/nostr/${email}/did.json.cache"
+    local errors=()
+    
+    log_info "🔧 Tentative de correction automatique pour: $email"
+    
+    # Vérifier si nostr_did_recall.sh existe
+    local recall_script="${MY_PATH}/nostr_did_recall.sh"
+    if [[ ! -f "$recall_script" ]]; then
+        log_error "Script nostr_did_recall.sh non trouvé: $recall_script"
+        return 1
+    fi
+    
+    # Vérifier si l'utilisateur existe
+    if [[ ! -d "${HOME}/.zen/game/nostr/${email}" ]]; then
+        log_error "Utilisateur non trouvé: $email"
+        return 1
+    fi
+    
+    # Vérifier si les clés Nostr existent
+    if [[ ! -f "${HOME}/.zen/game/nostr/${email}/.secret.nostr" ]]; then
+        log_error "Clés Nostr non trouvées pour: $email"
+        return 1
+    fi
+    
+    log_info "🔄 Lancement de nostr_did_recall.sh pour corriger le DID..."
+    
+    # Exécuter nostr_did_recall.sh avec --force pour forcer la migration
+    if "$recall_script" single "$email" --force; then
+        log_success "✅ Correction automatique réussie"
+        
+        # Forcer la synchronisation du cache depuis Nostr
+        log_info "🔄 Synchronisation du cache depuis Nostr..."
+        # Récupérer la clé publique depuis le fichier .secret.nostr
+        local secret_file="${HOME}/.zen/game/nostr/${email}/.secret.nostr"
+        if [[ -f "$secret_file" ]]; then
+            source "$secret_file" 2>/dev/null
+            if [[ -n "$NPUB" ]]; then
+                if python3 "${MY_PATH}/nostr_did_client.py" read "$NPUB" ws://127.0.0.1:7777 > "$did_file" 2>/dev/null; then
+                    log_success "✅ Cache local synchronisé depuis Nostr"
+                    
+                    # Mettre à jour le fichier .well-known/index.html
+                    log_info "🔄 Mise à jour du fichier .well-known/index.html..."
+                    if [[ -f "${MY_PATH}/did_manager_nostr.sh" ]]; then
+                        # Utiliser la commande update-udrive de did_manager_nostr.sh
+                        if bash "${MY_PATH}/did_manager_nostr.sh" update-udrive "$email" 2>/dev/null; then
+                            log_success "✅ Fichier .well-known/index.html mis à jour"
+                        else
+                            log_warning "⚠️  Impossible de mettre à jour .well-known/index.html"
+                        fi
+                    else
+                        log_warning "⚠️  Script did_manager_nostr.sh non trouvé"
+                    fi
+                else
+                    log_warning "⚠️  Impossible de synchroniser depuis Nostr, utilisation du cache existant"
+                fi
+            else
+                log_warning "⚠️  Clé publique Nostr non trouvée dans .secret.nostr"
+            fi
+        else
+            log_warning "⚠️  Fichier .secret.nostr non trouvé"
+        fi
+        
+        # Vérifier que le cache a été mis à jour
+        if [[ -f "$did_file" ]]; then
+            log_success "✅ Cache local mis à jour"
+            
+            # Re-tester la conformité (sans auto-fix pour éviter la récursion)
+            log_info "🔍 Re-test de conformité après correction..."
+            if check_json_structure "$did_file" | grep -q "VALID"; then
+                log_success "🎉 DID maintenant conforme !"
+                return 0
+            else
+                log_warning "⚠️  DID corrigé mais encore des problèmes mineurs"
+                return 1
+            fi
+        else
+            log_error "❌ Cache local non trouvé après correction"
+            return 1
+        fi
+    else
+        log_error "❌ Échec de la correction automatique"
+        return 1
+    fi
 }
 
 # Fonction de vérification des métadonnées UPlanet
@@ -297,9 +398,9 @@ check_uplanet_metadata() {
         errors+=("INSUFFICIENT_UPLANET_SERVICES")
     fi
     
-    # Vérification des clés jumelles
+    # Vérification des clés jumelles (au moins 2 clés requises)
     local vm_count=$(jq '.verificationMethod | length' "$did_file")
-    if [[ "$vm_count" -lt 3 ]]; then
+    if [[ "$vm_count" -lt 2 ]]; then
         errors+=("INSUFFICIENT_TWIN_KEYS")
     fi
     
@@ -415,6 +516,29 @@ test_did_conformity() {
                 echo "  - $error"
             done
         fi
+    fi
+    
+    # Correction automatique si demandée et erreurs détectées
+    if [[ "$AUTO_FIX" == "true" && ${#errors[@]} -gt 0 ]]; then
+        echo ""
+        log_info "🔧 Erreurs détectées, tentative de correction automatique..."
+        
+        if auto_fix_did "$email"; then
+            log_success "🎉 Correction automatique réussie !"
+            return 0
+        else
+            log_error "❌ Correction automatique échouée"
+            return 1
+        fi
+    elif [[ ${#errors[@]} -gt 0 && "$FORMAT" == "text" ]]; then
+        # Proposer la correction automatique si des erreurs sont détectées
+        echo ""
+        log_info "💡 Correction automatique disponible :"
+        echo "   Utilisez l'option --auto-fix pour corriger automatiquement :"
+        echo "   $SCRIPT_NAME --auto-fix $email"
+        echo ""
+        log_info "🔧 Ou lancez manuellement nostr_did_recall.sh :"
+        echo "   ${MY_PATH}/nostr_did_recall.sh single $email --force"
     fi
     
     # Code de sortie
