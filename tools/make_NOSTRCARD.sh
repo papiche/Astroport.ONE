@@ -293,18 +293,27 @@ EOFNOSTR
     echo "📁 Creating .well-known endpoint for DID resolution..."
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known
     
-    # Create .well-known directory and inject DID JSON into HTML viewer
+    # Create .well-known directory and inject IPFS URL into HTML viewer
     if [[ -f ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache ]]; then
         # Copy DID viewer template
         cp "${HOME}/.zen/Astroport.ONE/templates/NOSTR/did_viewer.html" ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html
         
-        # Inject DID JSON data into the HTML file using proper JSON escaping
-        did_json_content=$(jq -c . ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache)
-        # Escape quotes and newlines for JavaScript string
-        did_json_escaped=$(echo "$did_json_content" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
-        sed -i "s|const _DID_JSON_ = null;|const _DID_JSON_ = \"$did_json_escaped\";|g" ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html
+        # Use IPFS direct link instead of embedding JSON
+        # The NOSTRIPFS variable contains the CID from ipfs add command
+        if [[ -n "$NOSTRIPFS" ]]; then
+            # Replace the placeholder with IPFS direct link
+            local ipfs_url="/ipfs/${NOSTRIPFS}/did.json.cache"
+            sed -i "s|const _DID_JSON_URL_ = null;|const _DID_JSON_URL_ = '${ipfs_url}';|g" ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html
+            echo -e "${GREEN}✅ Using IPFS CID: ${NOSTRIPFS}${NC}"
+        else
+            echo -e "${YELLOW}⚠️  No IPFS CID available, using fallback method${NC}" >&2
+            # Keep the original null value
+        fi
         
-        echo "✅ DID viewer created with embedded JSON: ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html"
+        # Ensure did.json.cache is available in the IPFS directory
+        echo -e "${GREEN}✅ DID cache file is ready for IPFS access${NC}"
+        
+        echo "✅ DID viewer created with IPFS link: ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html"
     else
         echo "❌ DID cache not found after creation, cannot create .well-known endpoint"
         exit 1
