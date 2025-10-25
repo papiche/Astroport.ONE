@@ -1,0 +1,102 @@
+{
+  "@context": [
+    "https://w3id.org/did/v1",
+    "https://w3id.org/nostr/context"
+  ],
+  "id": "did:nostr:_HEX_PUBKEY_",
+  "type": "DIDNostr",
+  "alsoKnownAs": [
+    "mailto:_EMAIL_",
+    "did:g1:_G1_PUBKEY_",
+    "ipns://_NOSTRNS_"
+  ],
+  "verificationMethod": [
+    {
+      "id": "did:nostr:_HEX_PUBKEY_#key1",
+      "type": "Multikey",
+      "controller": "did:nostr:_HEX_PUBKEY_",
+      "publicKeyMultibase": "fe70102_HEX_PUBKEY_"
+    },
+    {
+      "id": "did:nostr:_HEX_PUBKEY_#g1-key",
+      "type": "Ed25519VerificationKey2020",
+      "controller": "did:nostr:_HEX_PUBKEY_",
+      "publicKeyBase58": "_G1_PUBKEY_",
+      "blockchainAccountId": "duniter:g1:_G1_PUBKEY_"
+    },
+    {
+      "id": "did:nostr:_HEX_PUBKEY_#bitcoin-key",
+      "type": "EcdsaSecp256k1VerificationKey2019",
+      "controller": "did:nostr:_HEX_PUBKEY_",
+      "blockchainAccountId": "bitcoin:mainnet:_BITCOIN_ADDRESS_"
+    },
+    {
+      "id": "did:nostr:_HEX_PUBKEY_#monero-key",
+      "type": "Ed25519VerificationKey2020",
+      "controller": "did:nostr:_HEX_PUBKEY_",
+      "blockchainAccountId": "monero:mainnet:_MONERO_ADDRESS_"
+    }
+  ],
+  "authentication": [
+    "did:nostr:_HEX_PUBKEY_#key1",
+    "did:nostr:_HEX_PUBKEY_#g1-key"
+  ],
+  "assertionMethod": [
+    "did:nostr:_HEX_PUBKEY_#key1",
+    "did:nostr:_HEX_PUBKEY_#g1-key"
+  ],
+  "keyAgreement": [
+    "did:nostr:_HEX_PUBKEY_#key1"
+  ],
+  "service": [
+    {
+      "id": "did:nostr:_HEX_PUBKEY_#nostr-relay",
+      "type": "NostrRelay",
+      "serviceEndpoint": "_MY_RELAY_",
+      "description": "Primary NOSTR relay endpoint"
+    },
+    {
+      "id": "did:nostr:_HEX_PUBKEY_#ipns-storage",
+      "type": "DecentralizedWebNode",
+      "serviceEndpoint": "_MY_IPFS_/ipns/_NOSTRNS_",
+      "description": "IPNS personal storage vault"
+    },
+    {
+      "id": "did:nostr:_HEX_PUBKEY_#udrive",
+      "type": "DecentralizedWebNode",
+      "serviceEndpoint": "_MY_IPFS_/ipns/_NOSTRNS_/_EMAIL_/APP/uDRIVE",
+      "description": "Personal cloud storage and application platform"
+    },
+    {
+      "id": "did:nostr:_HEX_PUBKEY_#uspot",
+      "type": "CredentialRegistry",
+      "serviceEndpoint": "_USPOT_",
+      "description": "UPlanet wallet and credential service"
+    },
+    {
+      "id": "did:nostr:_HEX_PUBKEY_#cesium",
+      "type": "CredentialRegistry",
+      "serviceEndpoint": "_MY_IPFS_/ipfs/QmYZWzSfPgb1y83fWTmKBEHdA9QoxsYBmqLkEJU2KQ1DYW/#/app/wot/_G1_PUBKEY_/",
+      "description": "G1 Cesium+ wallet interface"
+    }
+  ],
+  "metadata": {
+    "email": "_EMAIL_",
+    "created": "_CREATED_DATE_",
+    "updated": "_UPDATED_DATE_",
+    "version": "1.0",
+    "contractStatus": "new_user",
+    "uplanet": "_UPLANET_G1PUB_8_",
+    "coordinates": {
+      "latitude": "_LATITUDE_",
+      "longitude": "_LONGITUDE_"
+    },
+    "language": "_LANGUAGE_",
+    "youser": "_YOUSER_",
+    "astroportStation": {
+      "ipns": "_IPFS_NODE_ID_",
+      "description": "Astroport station IPNS address",
+      "updatedAt": "_UPDATED_DATE_"
+    }
+  }
+}

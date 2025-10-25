@@ -269,91 +269,14 @@ EOFNOSTR
         fi
         
         # Create or update DID using did_manager_nostr.sh with LOCATAIRE type (0 amount)
-        echo "🔧 ${did_exists:+Updating existing}${did_exists:-Creating new} DID with did_manager_nostr.sh..."
+        if [[ "$did_exists" == "true" ]]; then
+            echo "🔧 Updating existing DID with did_manager_nostr.sh..."
+        else
+            echo "🔧 Creating new DID with did_manager_nostr.sh..."
+        fi
         
         if ${MY_PATH}/did_manager_nostr.sh update "${EMAIL}" "LOCATAIRE" "0" "0"; then
-            echo "✅ Initial DID document created by did_manager_nostr.sh"
-            
-            # Enrich the DID with additional UPlanet-specific information using jq
-            did_temp=$(mktemp)
-            jq_cmd="
-                .alsoKnownAs = [\"mailto:${EMAIL}\", \"did:g1:${G1PUBNOSTR}\", \"ipns://${NOSTRNS}\"] |
-                .verificationMethod += [
-                    {
-                        \"id\": \"did:nostr:${HEX}#g1-key\",
-                        \"type\": \"Ed25519VerificationKey2020\",
-                        \"controller\": \"did:nostr:${HEX}\",
-                        \"publicKeyBase58\": \"${G1PUBNOSTR}\",
-                        \"blockchainAccountId\": \"duniter:g1:${G1PUBNOSTR}\"
-                    },
-                    {
-                        \"id\": \"did:nostr:${HEX}#bitcoin-key\",
-                        \"type\": \"EcdsaSecp256k1VerificationKey2019\",
-                        \"controller\": \"did:nostr:${HEX}\",
-                        \"blockchainAccountId\": \"bitcoin:mainnet:${BITCOIN}\"
-                    }
-                ] |
-                .authentication += [\"did:nostr:${HEX}#g1-key\"] |
-                .assertionMethod += [\"did:nostr:${HEX}#g1-key\"] |
-                .keyAgreement = [\"did:nostr:${HEX}#key1\"] |
-                .service += [
-                    {
-                        \"id\": \"did:nostr:${HEX}#nostr-relay\",
-                        \"type\": \"NostrRelay\",
-                        \"serviceEndpoint\": \"${myRELAY}\",
-                        \"description\": \"Primary NOSTR relay endpoint\"
-                    },
-                    {
-                        \"id\": \"did:nostr:${HEX}#ipns-storage\",
-                        \"type\": \"DecentralizedWebNode\",
-                        \"serviceEndpoint\": \"${myIPFS}/ipns/${NOSTRNS}\",
-                        \"description\": \"IPNS personal storage vault\"
-                    },
-                    {
-                        \"id\": \"did:nostr:${HEX}#udrive\",
-                        \"type\": \"DecentralizedWebNode\",
-                        \"serviceEndpoint\": \"${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE\",
-                        \"description\": \"Personal cloud storage and application platform\"
-                    },
-                    {
-                        \"id\": \"did:nostr:${HEX}#uspot\",
-                        \"type\": \"CredentialRegistry\",
-                        \"serviceEndpoint\": \"${uSPOT}\",
-                        \"description\": \"UPlanet wallet and credential service\"
-                    },
-                    {
-                        \"id\": \"did:nostr:${HEX}#cesium\",
-                        \"type\": \"CredentialRegistry\",
-                        \"serviceEndpoint\": \"${myIPFS}/ipfs/QmYZWzSfPgb1y83fWTmKBEHdA9QoxsYBmqLkEJU2KQ1DYW/#/app/wot/${G1PUBNOSTR}/\",
-                        \"description\": \"G1 Cesium+ wallet interface\"
-                    }
-                ] |
-                .metadata += {
-                    \"uplanet\": \"${UPLANETG1PUB:0:8}\",
-                    \"coordinates\": {
-                        \"latitude\": \"${ZLAT}\",
-                        \"longitude\": \"${ZLON}\"
-                    },
-                    \"language\": \"${LANG}\",
-                    \"youser\": \"${YOUSER}\"
-                }
-            "
-            
-            if jq "$jq_cmd" ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache > "$did_temp" && [[ -s "$did_temp" ]]; then
-                mv "$did_temp" ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache
-                echo "✅ DID document enriched with UPlanet-specific information"
-                
-                # Update the enriched DID using did_manager_nostr.sh (single call)
-                echo "📡 Publishing enriched DID to Nostr relays..."
-                if ${MY_PATH}/did_manager_nostr.sh update "${EMAIL}" "LOCATAIRE" "0" "0"; then
-                    echo "✅ Enriched DID published to Nostr successfully"
-                else
-                    echo "⚠️  Failed to publish enriched DID, will retry on next update"
-                fi
-            else
-                echo "⚠️  Failed to enrich DID document, using basic version from did_manager_nostr.sh"
-                rm -f "$did_temp"
-            fi
+            echo "✅ Initial DID document created by did_manager_nostr.sh with full UPlanet template"
         else
             echo "❌ Failed to create DID document using did_manager_nostr.sh"
             echo "💡 Check that did_manager_nostr.sh is working correctly"
@@ -365,8 +288,7 @@ EOFNOSTR
         exit 1
     fi
 
-    ## Create .well-known/did.json for standard DID resolution (W3C compliant)
-    ## This is the public endpoint for DID resolution via IPFS/IPNS
+    ## Create .well-known/index.hmlt filled with did.json for standard DID resolution (W3C compliant)
     echo "📁 Creating .well-known endpoint for DID resolution..."
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known
     
@@ -390,6 +312,11 @@ EOFNOSTR
     ##############################################################
     [[ "$Z" == ":ZEN" ]] && ZenECO="(1Ẑ = 1€)" || ZenECO="(1Ẑ = 0.1Ğ1)"
     ### PREPARE NOSTR ZINE
+    if [[ ! -f "${MY_PATH}/../templates/NOSTR/zine/nostr.html" ]]; then
+        echo "❌ Error: NOSTR zine template not found at ${MY_PATH}/../templates/NOSTR/zine/nostr.html"
+        exit 1
+    fi
+    
     cat ${MY_PATH}/../templates/NOSTR/zine/nostr.html \
     | sed -e "s~npub1w25fyk90kknw499ku6q9j77sfx3888eyfr20kq2rj7f5gnm8qrfqd6uqu8~${NPUBLIC}~g" \
             -e "s~nsec13x0643lc3al5fk92auurh7ww0993syj566eh7ta8r2jpkprs44rs33cute~${NPRIV}~g" \

@@ -79,51 +79,44 @@ create_initial_did() {
         return 1
     fi
     
-    # Generate DID ID based on hex pubkey (DID Nostr spec)
-    local did_id="did:nostr:${hex_pubkey}"
+    # Use external template (required)
+    local template_file="${MY_PATH}/../templates/NOSTR/did_template.json"
+    if [[ ! -f "$template_file" ]]; then
+        echo -e "${RED}❌ DID template not found: ${template_file}${NC}" >&2
+        echo -e "${YELLOW}💡 Template is required for DID creation${NC}" >&2
+        return 1
+    fi
     
-    # Create Multikey verification method (DID Nostr spec)
-    local multikey_pubkey="fe70102${hex_pubkey}"
+    # Use external template with variable substitution
+    local current_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     
-    # Create minimal DID structure compliant with DID Nostr spec
-    cat <<EOF
-{
-  "@context": [
-    "https://w3id.org/did/v1",
-    "https://w3id.org/nostr/context"
-  ],
-  "id": "${did_id}",
-  "type": "DIDNostr",
-  "verificationMethod": [
-    {
-      "id": "${did_id}#key1",
-      "type": "Multikey",
-      "controller": "${did_id}",
-      "publicKeyMultibase": "${multikey_pubkey}"
-    }
-  ],
-  "authentication": [
-    "${did_id}#key1"
-  ],
-  "assertionMethod": [
-    "${did_id}#key1"
-  ],
-  "service": [
-    {
-      "id": "${did_id}#uplanet",
-      "type": "UPlanetService",
-      "serviceEndpoint": "https://copylaradio.com"
-    }
-  ],
-  "metadata": {
-    "email": "${email}",
-    "created": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-    "updated": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-    "version": "1.0",
-    "contractStatus": "new_user"
-  }
-}
-EOF
+    # Create a temporary file for the template processing
+    local temp_template=$(mktemp)
+    
+    # Copy template and substitute variables
+    sed -e "s/_HEX_PUBKEY_/${hex_pubkey}/g" \
+        -e "s/_EMAIL_/${email}/g" \
+        -e "s/_CREATED_DATE_/${current_date}/g" \
+        -e "s/_UPDATED_DATE_/${current_date}/g" \
+        -e "s/_G1_PUBKEY_/${G1PUBNOSTR:-}/g" \
+        -e "s/_BITCOIN_ADDRESS_/${BITCOIN:-}/g" \
+        -e "s/_NOSTRNS_/${NOSTRNS:-}/g" \
+        -e "s|_MY_RELAY_|${myRELAY:-wss://relay.copylaradio.com}|g" \
+        -e "s|_MY_IPFS_|${myIPFS:-http://127.0.0.1:8080}|g" \
+        -e "s|_USPOT_|${uSPOT:-https://u.copylaradio.com}|g" \
+        -e "s/_UPLANET_G1PUB_8_/${UPLANETG1PUB:0:8}/g" \
+        -e "s/_LATITUDE_/${ZLAT:-}/g" \
+        -e "s/_LONGITUDE_/${ZLON:-}/g" \
+        -e "s/_LANGUAGE_/${LANG:-fr}/g" \
+        -e "s/_YOUSER_/${YOUSER:-}/g" \
+        -e "s/_IPFS_NODE_ID_/${IPFSNODEID:-}/g" \
+        "$template_file" > "$temp_template"
+    
+    # Output the processed template
+    cat "$temp_template"
+    
+    # Cleanup
+    rm -f "$temp_template"
 }
 
 ################################################################################
@@ -453,11 +446,24 @@ update_did_document() {
         }"
     fi
     
-    # Execute update
-    if jq "$jq_cmd" "$did_temp" > "$did_updated" && [[ -s "$did_updated" ]]; then
+    # Execute update with better error handling
+    echo -e "${BLUE}🔧 Executing jq command...${NC}"
+    if jq "$jq_cmd" "$did_temp" > "$did_updated" 2>/dev/null && [[ -s "$did_updated" ]]; then
         echo -e "${GREEN}✅ DID fields updated${NC}"
     else
         echo -e "${RED}❌ Failed to update DID fields${NC}"
+        echo -e "${YELLOW}💡 Debug info:${NC}"
+        echo -e "${YELLOW}   Input file: $did_temp${NC}"
+        echo -e "${YELLOW}   Output file: $did_updated${NC}"
+        echo -e "${YELLOW}   jq command: $jq_cmd${NC}"
+        
+        # Try to show the input file content for debugging
+        if [[ -f "$did_temp" ]]; then
+            echo -e "${YELLOW}   Input file content (first 200 chars):${NC}"
+            head -c 200 "$did_temp" | cat
+            echo ""
+        fi
+        
         rm -f "$did_temp" "$did_updated"
         return 1
     fi

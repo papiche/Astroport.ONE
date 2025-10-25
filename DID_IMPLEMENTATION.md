@@ -6,7 +6,7 @@ Ce document détaille notre approche de l'identité numérique décentralisée (
 
 Nous ne nous contentons pas de suivre les spécifications W3C ; nous les utilisons comme un tremplin pour construire un système de **souveraineté numérique** complet. Notre objectif est de transformer le concept d'identité numérique en une véritable **propriété numérique**, où chaque individu contrôle non seulement qui il est, mais aussi ce qu'il possède et les droits qu'il délègue.
 
-Le script `make_NOSTRCARD.sh` génère des documents DID conformes aux standards [W3C DID 1.0](https://www.w3.org/TR/did-1.0/), mais va bien au-delà en créant un écosystème complet de **ZEN Cards** (identité) et de **MULTIPASS** (autorisations).
+Le script `make_NOSTRCARD.sh` génère des documents DID conformes aux standards [W3C DID Core v1.1](https://www.w3.org/TR/did-core-1.1/) et [W3C DID Resolution v1.0](https://www.w3.org/TR/did-resolution/), mais va bien au-delà en créant un écosystème complet de **ZEN Cards** (identité) et de **MULTIPASS** (autorisations).
 
 ## Architecture des Scripts de Gestion
 
@@ -327,7 +327,7 @@ Le document DID est accessible via **trois canaux** pour une résilience maximal
 - ✅ **Source de vérité** : Version la plus à jour
 - ✅ **Distribué** : Répliqué sur tous les relais
 - ✅ **Automatique** : Les mises à jour remplacent l'ancienne version
-- ✅ **Vérifiabl e** : Signature cryptographique du propriétaire
+- ✅ **Vérifiable** : Signature cryptographique du propriétaire
 
 #### 2. Chemin Standard W3C .well-known (Cache Public via IPFS)
 ```
@@ -371,6 +371,66 @@ https://ipfs.copylaradio.com/ipns/k51qzi5uqu5dgy..../user@example.com/APP/uDRIVE
 - ✅ **Cohérence** : Source de vérité unique (Nostr)
 - ✅ **Censorship-resistant** : Distribution sur relais décentralisés
 - ✅ **Standards W3C** : Compatible via `.well-known`
+
+#### 5. Exemples de Résolution DID Conformes W3C v1.1
+
+**Résolution via HTTP (Standard W3C)** :
+```bash
+# Résolution directe via HTTP
+curl -H "Accept: application/did+ld+json" \
+     "https://ipfs.copylaradio.com/ipns/k51qzi5uqu5dgy..../user@example.com/did.json.cache"
+
+# Résolution avec métadonnées de résolution
+curl -H "Accept: application/did+ld+json" \
+     "https://ipfs.copylaradio.com/ipns/k51qzi5uqu5dgy..../user@example.com/did.json.cache" \
+     | jq '.didResolutionMetadata'
+```
+
+**Résolution via Nostr (Source de Vérité)** :
+```bash
+# Résolution depuis les relais Nostr
+python3 nostr_did_client.py fetch did:nostr:a1b2c3d4e5f6...
+
+# Résolution avec validation cryptographique
+python3 nostr_did_client.py validate did:nostr:a1b2c3d4e5f6...
+```
+
+**Résolution Programmatique** :
+```javascript
+// Résolution DID conforme W3C v1.1
+const resolver = new DIDResolver({
+  methods: ['nostr'],
+  nostr: {
+    relays: ['wss://relay.copylaradio.com', 'ws://127.0.0.1:7777']
+  }
+});
+
+const didDocument = await resolver.resolve('did:nostr:a1b2c3d4e5f6...');
+console.log(didDocument.didDocument);
+console.log(didDocument.didResolutionMetadata);
+```
+
+**Métadonnées de Résolution W3C v1.1** :
+```json
+{
+  "didResolutionMetadata": {
+    "contentType": "application/did+ld+json",
+    "retrieved": "2025-10-11T14:30:00Z",
+    "nextUpdate": "2025-10-11T15:30:00Z",
+    "source": "nostr_relay",
+    "relay": "wss://relay.copylaradio.com",
+    "eventId": "abc123...",
+    "verificationStatus": "verified"
+  },
+  "didDocumentMetadata": {
+    "created": "2025-10-11T14:30:00Z",
+    "updated": "2025-10-11T14:30:00Z",
+    "deactivated": false,
+    "versionId": "1",
+    "nextVersionId": "2"
+  }
+}
+```
 
 ### 5.4. Mise à Jour Dynamique du DID
 
@@ -658,6 +718,98 @@ No additional parameters are needed. The script will:
 3. Publish it to IPNS
 4. Include it in the NOSTR profile
 5. Send it in the welcome message
+
+## Test de Conformité DID
+
+### Script de Test de Conformité
+
+Le script `test_did_conformity.sh` permet de vérifier la conformité des documents DID avec les standards W3C v1.1 et la compatibilité France Connect.
+
+#### Utilisation de Base
+
+```bash
+# Test de conformité pour un utilisateur
+./test_did_conformity.sh user@example.com
+
+# Test avec vérification France Connect
+./test_did_conformity.sh --france-connect user@example.com
+
+# Test de tous les utilisateurs
+./test_did_conformity.sh --check-all
+
+# Test avec sortie JSON
+./test_did_conformity.sh --format json user@example.com
+```
+
+#### Options Avancées
+
+```bash
+# Test uniquement la source Nostr
+./test_did_conformity.sh --nostr-only user@example.com
+
+# Test uniquement la source IPFS
+./test_did_conformity.sh --ipfs-only user@example.com
+
+# Test uniquement le cache local
+./test_did_conformity.sh --local-only user@example.com
+
+# Mode verbeux
+./test_did_conformity.sh --verbose user@example.com
+```
+
+#### Vérifications Effectuées
+
+1. **Structure JSON** : Validité du JSON et conformité W3C DID Core v1.1
+2. **Résolution DID** : Vérification des sources Nostr, IPFS et cache local
+3. **Métadonnées UPlanet** : Complétude des métadonnées spécifiques UPlanet
+4. **France Connect** : Conformité aux exigences France Connect (optionnel)
+5. **Clés Jumelles** : Vérification des clés cryptographiques multiples
+6. **Services** : Validation des endpoints de service
+
+#### Exemple de Sortie
+
+```bash
+$ ./test_did_conformity.sh user@example.com
+
+ℹ️  Test de conformité DID pour: user@example.com
+ℹ️  Vérification de la structure JSON et conformité W3C v1.1...
+✅ Structure JSON valide et conforme W3C v1.1
+ℹ️  Vérification de la résolution DID...
+✅ Source Nostr accessible
+✅ Cache local trouvé: /home/user/.zen/game/nostr/user@example.com/did.json.cache
+✅ Résolution DID fonctionnelle
+ℹ️  Vérification des métadonnées UPlanet...
+✅ Métadonnées UPlanet complètes
+
+ℹ️  Résumé des tests:
+  - json_structure:VALID
+  - did_resolution:OK
+  - uplanet_metadata:OK
+```
+
+#### Intégration dans les Tests Automatisés
+
+```bash
+#!/bin/bash
+# Script de test automatisé pour l'écosystème UPlanet
+
+# Test de conformité DID
+if ./test_did_conformity.sh --check-all --format json > did_test_results.json; then
+    echo "✅ Tous les DIDs sont conformes"
+else
+    echo "❌ Certains DIDs ne sont pas conformes"
+    cat did_test_results.json | jq '.errors'
+    exit 1
+fi
+
+# Test spécifique France Connect
+if ./test_did_conformity.sh --france-connect --check-all; then
+    echo "✅ Conformité France Connect validée"
+else
+    echo "❌ Problèmes de conformité France Connect"
+    exit 1
+fi
+```
 
 ## Benefits
 
@@ -1012,6 +1164,33 @@ Utilisateur UPlanet → Accès Refusé
 4. Information sur la nécessité du KYC WoT
 ```
 
+#### Scénario 4 : Authentification Multi-Niveaux
+```
+1. Utilisateur UPlanet avec KYC WoT
+2. Authentification via DID UPlanet (niveau 1)
+3. Validation France Connect (niveau 2)
+4. Accès aux services publics avec double vérification
+5. Traçabilité complète des accès
+```
+
+#### Scénario 5 : Portabilité des Données
+```
+1. Utilisateur change d'Astroport
+2. DID reste valide (identité persistante)
+3. Métadonnées mises à jour automatiquement
+4. Services France Connect continuent de fonctionner
+5. Aucune perte de données ou de droits
+```
+
+#### Scénario 6 : Récupération d'Urgence
+```
+1. Utilisateur perd accès à son compte
+2. Récupération via SSSS 3/2 (2 parts sur 3)
+3. Validation de l'identité via WoT
+4. Restauration des droits France Connect
+5. Continuité des services publics
+```
+
 ### 10.8. Évolution Future
 
 #### Phase 1 : Conformité de Base (Actuelle)
@@ -1036,7 +1215,8 @@ Utilisateur UPlanet → Accès Refusé
 
 ### Standards et Spécifications
 
-- [W3C DID Core v1.0](https://www.w3.org/TR/did-core/) - Spécification des identifiants décentralisés
+- [W3C DID Core v1.1](https://www.w3.org/TR/did-core-1.1/) - Spécification des identifiants décentralisés (version 1.1)
+- [W3C DID Resolution v1.0](https://www.w3.org/TR/did-resolution/) - Spécification de résolution des identifiants décentralisés
 - [W3C DID Specification Registries](https://www.w3.org/TR/did-spec-registries/) - Registre des méthodes DID
 - [Ed25519 Signature 2020](https://w3c-ccg.github.io/lds-ed25519-2020/) - Signatures cryptographiques Ed25519
 - [UCAN Specification](https://ucan.xyz/) - User-Controlled Authorization Networks
@@ -1079,6 +1259,10 @@ Utilisateur UPlanet → Accès Refusé
 - `upassport.sh` - Script d'authentification et de résolution SSSS
 - `54321.py` - API backend UPassport
 - `scan_new.html` - Terminal de scan MULTIPASS
+
+#### Outils de Test et Validation
+- `test_did_conformity.sh` - Script de test de conformité DID W3C v1.1
+- `nostr_did_client.py` - Client de test et validation Nostr
 
 ---
 

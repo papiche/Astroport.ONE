@@ -52,8 +52,8 @@ DEFAULT_RELAYS = [
     "wss://relay.copylaradio.com"    # UPlanet ORIGIN relay
 ]
 
-CONNECT_TIMEOUT = 10
-READ_TIMEOUT = 30
+CONNECT_TIMEOUT = 5
+READ_TIMEOUT = 10
 
 # Kind 30311: Parameterized Replaceable Event for general-purpose JSON
 # Using tag ["d", "did"] to identify DID documents
