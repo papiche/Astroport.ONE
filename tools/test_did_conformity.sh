@@ -158,7 +158,12 @@ check_json_structure() {
     
     # Vérification du contexte W3C
     if ! jq -e '.["@context"] | contains(["https://www.w3.org/ns/did/v1"])' "$did_file" >/dev/null 2>&1; then
-        errors+=("INVALID_CONTEXT")
+        # Vérifier si c'est l'ancien contexte w3id.org
+        if jq -e '.["@context"] | contains(["https://w3id.org/did/v1"])' "$did_file" >/dev/null 2>&1; then
+            errors+=("INVALID_CONTEXT_LEGACY")
+        else
+            errors+=("INVALID_CONTEXT")
+        fi
     fi
     
     # Vérification de l'ID DID
@@ -326,6 +331,15 @@ auto_fix_did() {
             if [[ -n "$NPUB" ]]; then
                 if python3 "${MY_PATH}/nostr_did_client.py" read "$NPUB" ws://127.0.0.1:7777 > "$did_file" 2>/dev/null; then
                     log_success "✅ Cache local synchronisé depuis Nostr"
+                    
+                    # Corriger le contexte W3C si nécessaire
+                    log_info "🔧 Vérification et correction du contexte W3C..."
+                    if jq -e '.["@context"] | contains(["https://w3id.org/did/v1"])' "$did_file" >/dev/null 2>&1; then
+                        log_info "🔄 Correction du contexte W3C (w3id.org → w3.org)..."
+                        # Remplacer l'ancien contexte par le nouveau
+                        jq '.["@context"] = ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/suites/ed25519-2020/v1", "https://w3id.org/security/suites/x25519-2020/v1"]' "$did_file" > /tmp/did_fixed.json && mv /tmp/did_fixed.json "$did_file"
+                        log_success "✅ Contexte W3C corrigé vers v1.1"
+                    fi
                     
                     # Mettre à jour le fichier .well-known/index.html
                     log_info "🔄 Mise à jour du fichier .well-known/index.html..."
