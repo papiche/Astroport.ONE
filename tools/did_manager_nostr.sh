@@ -129,24 +129,30 @@ create_initial_did() {
     # Create a temporary file for the template processing
     local temp_template=$(mktemp)
     
+    # Escape special characters for sed
+    escape_sed() {
+        echo "$1" | sed 's/[[\.*^$()+?{|]/\\&/g'
+    }
+    
     # Copy template and substitute variables
-    if ! sed -e "s/_HEX_PUBKEY_/${hex_pubkey}/g" \
-        -e "s/_EMAIL_/${email}/g" \
-        -e "s/_CREATED_DATE_/${current_date}/g" \
-        -e "s/_UPDATED_DATE_/${current_date}/g" \
-        -e "s/_G1_PUBKEY_/${g1_pubkey}/g" \
-        -e "s/_BITCOIN_ADDRESS_/${bitcoin_address}/g" \
-        -e "s/_MONERO_ADDRESS_/${monero_address}/g" \
-        -e "s/_NOSTRNS_/${nostrns}/g" \
-        -e "s|_MY_RELAY_|${my_relay}|g" \
-        -e "s|_MY_IPFS_|${my_ipfs}|g" \
-        -e "s|_USPOT_|${uspot}|g" \
-        -e "s/_UPLANET_G1PUB_8_/${uplanet_g1pub_8}/g" \
-        -e "s/_LATITUDE_/${latitude}/g" \
-        -e "s/_LONGITUDE_/${longitude}/g" \
-        -e "s/_LANGUAGE_/${language}/g" \
-        -e "s/_YOUSER_/${youser}/g" \
-        -e "s/_IPFS_NODE_ID_/${ipfs_node_id}/g" \
+    # Use pipe delimiter to avoid conflicts with forward slashes in URLs
+    if ! sed -e "s|_HEX_PUBKEY_|$(escape_sed "${hex_pubkey}")|g" \
+        -e "s|_EMAIL_|$(escape_sed "${email}")|g" \
+        -e "s|_CREATED_DATE_|$(escape_sed "${current_date}")|g" \
+        -e "s|_UPDATED_DATE_|$(escape_sed "${current_date}")|g" \
+        -e "s|_G1_PUBKEY_|$(escape_sed "${g1_pubkey}")|g" \
+        -e "s|_BITCOIN_ADDRESS_|$(escape_sed "${bitcoin_address}")|g" \
+        -e "s|_MONERO_ADDRESS_|$(escape_sed "${monero_address}")|g" \
+        -e "s|_NOSTRNS_|$(escape_sed "${nostrns}")|g" \
+        -e "s|_MY_RELAY_|$(escape_sed "${my_relay}")|g" \
+        -e "s|_MY_IPFS_|$(escape_sed "${my_ipfs}")|g" \
+        -e "s|_USPOT_|$(escape_sed "${uspot}")|g" \
+        -e "s|_UPLANET_G1PUB_8_|$(escape_sed "${uplanet_g1pub_8}")|g" \
+        -e "s|_LATITUDE_|$(escape_sed "${latitude}")|g" \
+        -e "s|_LONGITUDE_|$(escape_sed "${longitude}")|g" \
+        -e "s|_LANGUAGE_|$(escape_sed "${language}")|g" \
+        -e "s|_YOUSER_|$(escape_sed "${youser}")|g" \
+        -e "s|_IPFS_NODE_ID_|$(escape_sed "${ipfs_node_id}")|g" \
         "$template_file" > "$temp_template"; then
         echo -e "${RED}❌ Template processing failed${NC}" >&2
         rm -f "$temp_template"
