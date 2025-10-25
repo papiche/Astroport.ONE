@@ -299,14 +299,17 @@ EOFNOSTR
         cp "${HOME}/.zen/Astroport.ONE/templates/NOSTR/did_viewer.html" ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html
         
         # Use IPFS direct link instead of embedding JSON
-        # The NOSTRIPFS variable contains the CID from ipfs add command
-        if [[ -n "$NOSTRIPFS" ]]; then
+        # Add did.json.cache to IPFS to get its specific CID
+        echo "📡 Adding did.json.cache to IPFS..."
+        did_ipfs_cid=$(ipfs --timeout 30s add -q ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache)
+        
+        if [[ -n "$did_ipfs_cid" ]]; then
             # Replace the placeholder with IPFS direct link
-            local ipfs_url="/ipfs/${NOSTRIPFS}/did.json.cache"
+            ipfs_url="/ipfs/${did_ipfs_cid}"
             sed -i "s|const _DID_JSON_URL_ = null;|const _DID_JSON_URL_ = '${ipfs_url}';|g" ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html
-            echo -e "${GREEN}✅ Using IPFS CID: ${NOSTRIPFS}${NC}"
+            echo -e "${GREEN}✅ Using IPFS CID for did.json.cache: ${did_ipfs_cid}${NC}"
         else
-            echo -e "${YELLOW}⚠️  No IPFS CID available, using fallback method${NC}" >&2
+            echo -e "${YELLOW}⚠️  Failed to add did.json.cache to IPFS, using fallback method${NC}" >&2
             # Keep the original null value
         fi
         
