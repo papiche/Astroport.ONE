@@ -552,15 +552,15 @@ update_udrive_did() {
         cp "$template_file" "$index_file"
         
         # Inject DID JSON data into the HTML file (properly escaped for JavaScript)
-        local did_json_content=$(jq -c . "$did_file" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
-        sed -i "s|const _DID_JSON_ = null;|const _DID_JSON_ = JSON.parse(\"$did_json_content\");|g" "$index_file"
+        local did_json_content=$(jq -c . "$did_file" | jq -R -s . | sed 's/^"//' | sed 's/"$//')
+        sed -i "s|const _DID_JSON_ = null;|const _DID_JSON_ = JSON.parse($did_json_content);|g" "$index_file"
         
         echo -e "${GREEN}✅ uDRIVE DID viewer updated with embedded JSON: ${index_file}${NC}"
         return 0
     elif [[ -f "$index_file" ]]; then
         # Update existing file with new JSON data (properly escaped for JavaScript)
-        local did_json_content=$(jq -c . "$did_file" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
-        sed -i "s|const _DID_JSON_ = .*;|const _DID_JSON_ = JSON.parse(\"$did_json_content\");|g" "$index_file"
+        local did_json_content=$(jq -c . "$did_file" | jq -R -s . | sed 's/^"//' | sed 's/"$//')
+        sed -i "s|const _DID_JSON_ = .*;|const _DID_JSON_ = JSON.parse($did_json_content);|g" "$index_file"
         
         echo -e "${GREEN}✅ uDRIVE DID viewer updated with new JSON data${NC}"
         return 0
