@@ -395,33 +395,31 @@ EOFNOSTR
     NPRIV_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NPRIV")
     HEX_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NPUBLIC")
     
+    # Calculate expiration timestamp (48 hours from now)
+    EXPIRATION=$(date -d "+48 hours" +%s)
+    
     # Send to relay(s) - avoid duplicates
-
-    if [[ $myRELAY != "wss://relay.copylaradio.com" ]]; then
-        echo "📡 Publishing to both local and public relays"
-        # Send to local relay
+    echo "📡 Publishing NOSTR message to relay: $myRELAY (expires in 48h)"
+    
+    # Send message to the configured relay
+    nostpy-cli send_event \
+        -privkey "$NPRIV_HEX" \
+        -kind 1 \
+        -content "$Mymessage" \
+        -tags "[['p', '$HEX_HEX'], ['i', 'did:nostr:${HEX}'], ['expiration', '$EXPIRATION']]" \
+        --relay "$myRELAY" &>/dev/null
+    
+    # Only send to public relay if it's different from the configured relay
+    if [[ "$myRELAY" != "wss://relay.copylaradio.com" ]]; then
+        echo "📡 Also publishing to public relay for redundancy"
         nostpy-cli send_event \
             -privkey "$NPRIV_HEX" \
             -kind 1 \
             -content "$Mymessage" \
-            -tags "[['p', '$HEX_HEX'], ['i', 'did:nostr:${HEX}']]" \
-            --relay "$myRELAY" &>/dev/null
-        # Send to public relay
-        nostpy-cli send_event \
-            -privkey "$NPRIV_HEX" \
-            -kind 1 \
-            -content "$Mymessage" \
-            -tags "[['p', '$HEX_HEX'], ['i', 'did:nostr:${HEX}']]" \
+            -tags "[['p', '$HEX_HEX'], ['i', 'did:nostr:${HEX}'], ['expiration', '$EXPIRATION']]" \
             --relay "wss://relay.copylaradio.com" &>/dev/null
     else
-        echo "📡 Publishing to public relay only (local relay is already public)"
-        # Send only to public relay (local is the same)
-        nostpy-cli send_event \
-            -privkey "$NPRIV_HEX" \
-            -kind 1 \
-            -content "$Mymessage" \
-            -tags "[['p', '$HEX_HEX'], ['i', 'did:nostr:${HEX}']]" \
-            --relay "wss://relay.copylaradio.com" &>/dev/null
+        echo "📡 Message sent to public relay (no duplication)"
     fi
 
 
