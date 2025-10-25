@@ -228,7 +228,7 @@ show_system_wallets_summary() {
         fi
     fi
     
-    # UPLANETNAME.SOCIETY (Capital Social) - Utilise G1society.sh pour l'historique
+    # UPLANETNAME_SOCIETY (Capital Social) - Utilise G1society.sh pour l'historique
     if [[ -f "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" ]]; then
         local society_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" 2>/dev/null)
         if [[ -n "$society_pubkey" ]]; then
@@ -241,16 +241,16 @@ show_system_wallets_summary() {
                 local society_zen=$(echo "$society_data" | jq -r '.total_outgoing_zen // 0' 2>/dev/null)
                 local society_txcount=$(echo "$society_data" | jq -r '.total_transfers // 0' 2>/dev/null)
                 local zen_str=$(safe_printf "%.0f" "$society_zen")
-                echo -e "  ⭐ UPLANETNAME.SOCIETY: ${YELLOW}$society_str Ğ1${NC} (Parts: ${CYAN}$zen_str Ẑen${NC}, ${WHITE}$society_txcount${NC} sociétaires)"
+                echo -e "  ⭐ UPLANETNAME_SOCIETY: ${YELLOW}$society_str Ğ1${NC} (Parts: ${CYAN}$zen_str Ẑen${NC}, ${WHITE}$society_txcount${NC} sociétaires)"
             else
                 local society_zen=$(calculate_zen_balance "$society_balance")
                 local zen_str=$(safe_printf "%.0f" "$society_zen")
-                echo -e "  ⭐ UPLANETNAME.SOCIETY: ${YELLOW}$society_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC})"
+                echo -e "  ⭐ UPLANETNAME_SOCIETY: ${YELLOW}$society_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC})"
             fi
         fi
     fi
     
-    # UPLANETNAME.INTRUSION (Fonds d'intrusions détectées)
+    # UPLANETNAME_INTRUSION (Fonds d'intrusions détectées)
     if [[ -f "$HOME/.zen/game/uplanet.INTRUSION.dunikey" ]]; then
         local intrusion_pubkey=$(cat "$HOME/.zen/game/uplanet.INTRUSION.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
         if [[ -n "$intrusion_pubkey" ]]; then
@@ -261,13 +261,13 @@ show_system_wallets_summary() {
             
             # Highlight if there are intrusion funds
             if (( $(echo "$intrusion_balance > 1" | bc -l 2>/dev/null || echo 0) )); then
-                echo -e "  🚨 UPLANETNAME.INTRUSION: ${RED}$intrusion_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC}) ${YELLOW}⚠️${NC}"
+                echo -e "  🚨 UPLANETNAME_INTRUSION: ${RED}$intrusion_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC}) ${YELLOW}⚠️${NC}"
             else
-                echo -e "  🛡️  UPLANETNAME.INTRUSION: ${GREEN}$intrusion_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC})"
+                echo -e "  🛡️  UPLANETNAME_INTRUSION: ${GREEN}$intrusion_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC})"
             fi
         fi
     else
-        echo -e "  🚨 UPLANETNAME.INTRUSION: ${RED}Non initialisé${NC} ${YELLOW}⚠️${NC}"
+        echo -e "  🚨 UPLANETNAME_INTRUSION: ${RED}Non initialisé${NC} ${YELLOW}⚠️${NC}"
     fi
 }
 

@@ -9,7 +9,7 @@
 # 
 # Gère trois types de virements :
 # 1. LOCATAIRE : UPLANETNAME_G1 -> UPLANETNAME -> MULTIPASS (recharge de service)
-# 2. SOCIÉTAIRE : UPLANETNAME_G1 -> UPLANETNAME.SOCIETY -> ZEN Card -> 3x1/3
+# 2. SOCIÉTAIRE : UPLANETNAME_G1 -> UPLANETNAME_SOCIETY -> ZEN Card -> 3x1/3
 # 3. ORE : UPLANETNAME_ASSETS -> UMAP DID (récompenses environnementales depuis réserves coopératives)
 #
 # Format des références blockchain :
@@ -688,8 +688,8 @@ process_societaire() {
     fi
     
     if [[ ! -f "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" ]]; then
-        echo -e "${RED}❌ Portefeuille UPLANETNAME.SOCIETY non configuré${NC}"
-        echo "💡 Utilisez zen.sh → UPLANETNAME.SOCIETY pour configurer"
+        echo -e "${RED}❌ Portefeuille UPLANETNAME_SOCIETY non configuré${NC}"
+        echo "💡 Utilisez zen.sh → UPLANETNAME_SOCIETY pour configurer"
         return 1
     fi
     
@@ -716,7 +716,7 @@ process_societaire() {
     
     echo -e "${YELLOW}🔑 Portefeuilles identifiés:${NC}"
     echo -e "  UPLANETNAME_G1: ${g1_pubkey:0:8}..."
-    echo -e "  UPLANETNAME.SOCIETY: ${society_pubkey:0:8}..."
+    echo -e "  UPLANETNAME_SOCIETY: ${society_pubkey:0:8}..."
     echo -e "  ZEN Card ${email}: ${zencard_pubkey:0:8}..."
     
     # Vérifier qu'il n'y a pas de transactions en cours avant de commencer
@@ -727,15 +727,15 @@ process_societaire() {
         return 1
     fi
     
-    # Étape 1: UPLANETNAME_G1 -> UPLANETNAME.SOCIETY
-    echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME_G1 → UPLANETNAME.SOCIETY${NC}"
+    # Étape 1: UPLANETNAME_G1 -> UPLANETNAME_SOCIETY
+    echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME_G1 → UPLANETNAME_SOCIETY${NC}"
     if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$society_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:SOCIETY:${email}:${type}:${IPFSNODEID}" "$email" "SOCIETAIRE_${type^^}" "Étape 1: G1→SOCIETY"; then
         echo -e "${RED}❌ Échec de l'étape 1${NC}"
         return 1
     fi
     
-    # Étape 2: UPLANETNAME.SOCIETY -> ZEN Card
-    echo -e "${BLUE}📤 Étape 2: Transfert UPLANETNAME.SOCIETY → ZEN Card ${email}${NC}"
+    # Étape 2: UPLANETNAME_SOCIETY -> ZEN Card
+    echo -e "${BLUE}📤 Étape 2: Transfert UPLANETNAME_SOCIETY → ZEN Card ${email}${NC}"
     if ! transfer_and_verify "$HOME/.zen/game/uplanet.SOCIETY.dunikey" "$zencard_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:SOCIETY:${email}:${type}:${IPFSNODEID}" "$email" "SOCIETAIRE_${type^^}" "Étape 2: SOCIETY→ZENCARD"; then
         echo -e "${RED}❌ Échec de l'étape 2${NC}"
         return 1
@@ -862,7 +862,7 @@ process_recovery() {
     
     # Vérifier que le portefeuille SOCIETY existe
     if [[ ! -f "$HOME/.zen/game/uplanet.SOCIETY.dunikey" ]]; then
-        echo -e "${RED}❌ Portefeuille UPLANETNAME.SOCIETY non trouvé${NC}"
+        echo -e "${RED}❌ Portefeuille UPLANETNAME_SOCIETY non trouvé${NC}"
         echo -e "${CYAN}💡 Fichier attendu: ~/.zen/game/uplanet.SOCIETY.dunikey${NC}"
         return 1
     fi

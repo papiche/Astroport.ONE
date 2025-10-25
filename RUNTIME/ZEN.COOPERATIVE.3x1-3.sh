@@ -16,7 +16,7 @@
 # Le capitaine reçoit sa part chaque semaine (même si faible)
 #
 # Conformité fiscale : Provision automatique TVA (20%) et IS (25%)
-# via le portefeuille UPLANETNAME.IMPOT
+# via le portefeuille UPLANETNAME_IMPOT
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -136,12 +136,12 @@ echo "Cooperative balance: $UPLANETZEN Ẑen"
 # TVA (20%) : Collectée sur le CHIFFRE D'AFFAIRES BRUT
 #             Provisionnée ailleurs (non gérée par ce script)
 #             Fait générateur : Encaissement des locations RENTAL
-#             Portefeuille : UPLANETNAME.IMPOT
+#             Portefeuille : UPLANETNAME_IMPOT
 #
 # IS (15%/25%) : Calculé sur le BÉNÉFICE NET (après charges)
 #                Provisionné ICI sur le surplus après Node + Capitaine
 #                Base taxable : Surplus coopératif (revenus - PAF - rémunérations)
-#                Portefeuille : UPLANETNAME.IMPOT
+#                Portefeuille : UPLANETNAME_IMPOT
 #######################################################################
 [[ -z $TVA_RATE ]] && TVA_RATE=20  # Taux de TVA (20%) - RÉFÉRENCE UNIQUEMENT (provisionnée ailleurs)
 

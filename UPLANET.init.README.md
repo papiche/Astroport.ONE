@@ -22,16 +22,16 @@ Le script crée et initialise l'infrastructure complète UPlanet ẐEN :
 |---------------|------------------|------------------------|
 | **`UPLANETNAME_G1`** | `uplanet.G1.dunikey` | **Source primale principale** - Réserve Ğ1 de l'écosystème |
 | **`UPLANETNAME`** | `uplanet.dunikey` | **Services locaux** - Gestion revenus MULTIPASS |
-| **`UPLANETNAME.SOCIETY`** | `uplanet.SOCIETY.dunikey` | **Capital social** - Émission parts sociales ZEN Cards |
+| **`UPLANETNAME_SOCIETY`** | `uplanet.SOCIETY.dunikey` | **Capital social** - Émission parts sociales ZEN Cards |
 
 ### **🏛️ Portefeuilles de Gouvernance Coopérative (3x1/3)**
 
 | Portefeuille | Fichier Dunikey | Allocation Coopérative |
 |---------------|------------------|------------------------|
-| **`UPLANETNAME.CASH`** | `uplanet.CASH.dunikey` | **Trésorerie** (33.33% du surplus) |
+| **`UPLANETNAME_CASH`** | `uplanet.CASH.dunikey` | **Trésorerie** (33.33% du surplus) |
 | **`UPLANETNAME_RND`** | `uplanet.RnD.dunikey` | **R&D** (33.33% du surplus) |
 | **`UPLANETNAME_ASSETS`** | `uplanet.ASSETS.dunikey` | **Actifs** (33.34% du surplus) |
-| **`UPLANETNAME.IMPOT`** | `uplanet.IMPOT.dunikey` | **Fiscalité** (TVA + IS) |
+| **`UPLANETNAME_IMPOT`** | `uplanet.IMPOT.dunikey` | **Fiscalité** (TVA + IS) |
 
 ### **⚙️ Infrastructure Opérationnelle**
 
@@ -214,7 +214,7 @@ Installation → Configuration → Initialisation → Identité Capitaine
 | **`ZEN.ECONOMY.sh`** | Paiement PAF + Burn | Utilise NODE et portefeuilles coopératifs |
 | **`ZEN.COOPERATIVE.3x1-3.sh`** | Allocation 3x1/3 | Utilise CASH, RND, ASSETS |
 | **`NOSTRCARD.refresh.sh`** | Collecte MULTIPASS | Utilise UPLANETNAME et IMPOT |
-| **`PLAYER.refresh.sh`** | Collecte ZEN Cards | Utilise UPLANETNAME.SOCIETY et IMPOT |
+| **`PLAYER.refresh.sh`** | Collecte ZEN Cards | Utilise UPLANETNAME_SOCIETY et IMPOT |
 
 ### **🔧 Scripts de Configuration**
 

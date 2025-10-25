@@ -56,13 +56,13 @@ MIGRATION_NOTIFICATIONS_FAILED=0
 declare -A COOPERATIVE_WALLETS=(
     ["UPLANETNAME"]="$HOME/.zen/game/uplanet.dunikey"
     ["UPLANETNAME_G1"]="$HOME/.zen/game/uplanet.G1.dunikey"
-    ["UPLANETNAME.SOCIETY"]="$HOME/.zen/game/uplanet.SOCIETY.dunikey"
-    ["UPLANETNAME.CASH"]="$HOME/.zen/game/uplanet.CASH.dunikey"
+    ["UPLANETNAME_SOCIETY"]="$HOME/.zen/game/uplanet.SOCIETY.dunikey"
+    ["UPLANETNAME_CASH"]="$HOME/.zen/game/uplanet.CASH.dunikey"
     ["UPLANETNAME_RND"]="$HOME/.zen/game/uplanet.RnD.dunikey"
     ["UPLANETNAME_ASSETS"]="$HOME/.zen/game/uplanet.ASSETS.dunikey"
-    ["UPLANETNAME.IMPOT"]="$HOME/.zen/game/uplanet.IMPOT.dunikey"
+    ["UPLANETNAME_IMPOT"]="$HOME/.zen/game/uplanet.IMPOT.dunikey"
     ["UPLANETNAME.CAPTAIN"]="$HOME/.zen/game/uplanet.captain.dunikey"
-    ["UPLANETNAME.INTRUSION"]="$HOME/.zen/game/uplanet.INTRUSION.dunikey"
+    ["UPLANETNAME_INTRUSION"]="$HOME/.zen/game/uplanet.INTRUSION.dunikey"
 )
 
 # Portefeuilles NODE et CAPTAIN

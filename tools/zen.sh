@@ -6,7 +6,7 @@
 # according to the UPlanet economic model flowchart:
 # - UPLANETNAME_G1: Reserve wallet for Ğ1 donations
 # - UPLANETNAME: Services wallet for MULTIPASS operations
-# - UPLANETNAME.SOCIETY: Social capital wallet for ZenCard operations
+# - UPLANETNAME_SOCIETY: Social capital wallet for ZenCard operations
 #
 # Usage: ./zen.sh
 # -----------------------------------------------------------------------------
@@ -228,8 +228,8 @@ show_flowchart_position() {
             echo -e "${GREEN}   → User Wallets${NC}"
             echo -e "${PURPLE}   → Flow: Service Operations → MULTIPASS${NC}"
             ;;
-        "UPLANETNAME.SOCIETY")
-            echo -e "${BLUE}⭐ WALLET TYPE: UPLANETNAME.SOCIETY (Social Capital)${NC}"
+        "UPLANETNAME_SOCIETY")
+            echo -e "${BLUE}⭐ WALLET TYPE: UPLANETNAME_SOCIETY (Social Capital)${NC}"
             echo -e "${GREEN}   → Operational Cooperative: CopyLaRadio${NC}"
             echo -e "${GREEN}   → User Wallets${NC}"
             echo -e "${PURPLE}   → Flow: Investment Operations → ZenCard${NC}"
@@ -297,7 +297,7 @@ show_captain_tips() {
     echo ""
     echo -e "${BLUE}3. GESTION DES SOCIÉTAIRES:${NC}"
     echo -e "   • Surveiller les dates d'expiration (alertes automatiques)"
-    echo -e "   • Traiter les renouvellements via UPLANETNAME.SOCIETY"
+    echo -e "   • Traiter les renouvellements via UPLANETNAME_SOCIETY"
     echo -e "   • Confirmer la création des fichiers U.SOCIETY"
     echo ""
     echo -e "${BLUE}4. SÉCURITÉ:${NC}"
@@ -517,7 +517,7 @@ get_system_wallet_public_key() {
         "UPLANETNAME")
             keyfile="$HOME/.zen/tmp/UPLANETG1PUB"
             ;;
-        "UPLANETNAME.SOCIETY")
+        "UPLANETNAME_SOCIETY")
             keyfile="$HOME/.zen/tmp/UPLANETNAME_SOCIETY"
             ;;
     esac
@@ -557,7 +557,7 @@ get_system_wallet_private_key() {
         "UPLANETNAME")
             dunikey_file="$HOME/.zen/tmp/UPLANETNAME.dunikey"
             ;;
-        "UPLANETNAME.SOCIETY")
+        "UPLANETNAME_SOCIETY")
             dunikey_file="$HOME/.zen/tmp/UPLANETNAME_SOCIETY.dunikey"
             ;;
     esac
@@ -607,7 +607,7 @@ display_system_wallet_info() {
                 "UPLANETNAME_G1")
                 echo -e "${BLUE}Balance:${NC} ${YELLOW}$balance Ğ1${NC}"
                     ;;
-                "UPLANETNAME"|"UPLANETNAME.SOCIETY")
+                "UPLANETNAME"|"UPLANETNAME_SOCIETY")
                 echo -e "${BLUE}Balance:${NC} ${YELLOW}$balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
                     ;;
             esac
@@ -715,7 +715,7 @@ execute_system_transaction() {
         "UPLANETNAME")
             source_wallet_name="${UPLANETNAME}"
             ;;
-        "UPLANETNAME.SOCIETY")
+        "UPLANETNAME_SOCIETY")
             source_wallet_name="${UPLANETNAME}.SOCIETY"
             ;;
     esac
@@ -740,8 +740,8 @@ execute_system_transaction() {
     if ${MY_PATH}/PAYforSURE.sh "$dunikey_file" "$amount" "$dest_pubkey" "$comment"; then
         echo -e "\n${GREEN}✅ Transaction successful!${NC}"
         
-        # Special handling for UPLANETNAME.SOCIETY transactions (sociétaire creation)
-        if [[ "$source_wallet_type" == "UPLANETNAME.SOCIETY" ]]; then
+        # Special handling for UPLANETNAME_SOCIETY transactions (sociétaire creation)
+        if [[ "$source_wallet_type" == "UPLANETNAME_SOCIETY" ]]; then
             # Find the player email from the destination pubkey
             local player_email=""
             if [[ -d ~/.zen/game/players ]]; then
@@ -806,7 +806,7 @@ validate_economic_flow() {
                 echo -e "${YELLOW}⚠ Destination is not a registered MULTIPASS wallet${NC}"
             fi
             ;;
-        "UPLANETNAME.SOCIETY")
+        "UPLANETNAME_SOCIETY")
             echo -e "${BLUE}Flow:${NC} Investment operations → ZenCard wallet management"
                             # Check if destination is a ZenCard wallet
                 if ls ~/.zen/game/players/*@*.*/.g1pub 2>/dev/null | xargs grep -l "$dest_pubkey" >/dev/null; then
@@ -852,7 +852,7 @@ get_transaction_details() {
         "UPLANETNAME_G1")
             unit="Ğ1"
             ;;
-        "UPLANETNAME"|"UPLANETNAME.SOCIETY")
+        "UPLANETNAME"|"UPLANETNAME_SOCIETY")
             unit="Ẑen"
             ;;
     esac
@@ -860,7 +860,7 @@ get_transaction_details() {
     while true; do
         read -p "Enter amount to transfer (in $unit): " amount
         if [[ -n "$amount" ]] && [[ $amount =~ ^[0-9]+([.][0-9]+)?$ ]]; then
-            # Convert Ẑen to Ğ1 for UPLANETNAME and UPLANETNAME.SOCIETY
+            # Convert Ẑen to Ğ1 for UPLANETNAME and UPLANETNAME_SOCIETY
             # Note: Ẑen / 10 = Ğ1 (excluding primal transaction)
             if [[ "$wallet_type" != "UPLANETNAME_G1" ]]; then
                 g1_amount=$(echo "scale=2; ($amount / 10)" | bc -l)
@@ -883,14 +883,14 @@ get_transaction_details() {
             exit 1
         fi
         echo -e "${GREEN}Destination: UPLANETNAME (Services & Cash-Flow)${NC}"
-    elif [[ "$target_wallet" == "UPLANETNAME.SOCIETY" ]]; then
-        # Send to UPLANETNAME.SOCIETY wallet
-        dest_pubkey=$(get_system_wallet_public_key "UPLANETNAME.SOCIETY")
+    elif [[ "$target_wallet" == "UPLANETNAME_SOCIETY" ]]; then
+        # Send to UPLANETNAME_SOCIETY wallet
+        dest_pubkey=$(get_system_wallet_public_key "UPLANETNAME_SOCIETY")
         if [[ -z "$dest_pubkey" ]]; then
-            echo -e "${RED}UPLANETNAME.SOCIETY wallet not configured${NC}"
+            echo -e "${RED}UPLANETNAME_SOCIETY wallet not configured${NC}"
             exit 1
         fi
-        echo -e "${GREEN}Destination: UPLANETNAME.SOCIETY (Social Capital)${NC}"
+        echo -e "${GREEN}Destination: UPLANETNAME_SOCIETY (Social Capital)${NC}"
     else
         # External wallet - prompt for public key
     while true; do
@@ -933,7 +933,7 @@ get_transaction_details() {
         "UPLANETNAME")
             transaction_type="Service Operation → MULTIPASS"
             ;;
-        "UPLANETNAME.SOCIETY")
+        "UPLANETNAME_SOCIETY")
             transaction_type="Investment Operation → ZenCard"
             ;;
     esac
@@ -961,7 +961,7 @@ get_transaction_details() {
         "UPLANETNAME_G1")
             echo -e "${BLUE}Amount:${NC} $amount Ğ1"
             ;;
-        "UPLANETNAME"|"UPLANETNAME.SOCIETY")
+        "UPLANETNAME"|"UPLANETNAME_SOCIETY")
             zen_amount=$(echo "$amount * 10" | bc | cut -d '.' -f 1)
             echo -e "${BLUE}Amount:${NC} $amount Ğ1 (${CYAN}$zen_amount Ẑen${NC})"
             ;;
@@ -1019,7 +1019,7 @@ handle_g1_reserve() {
     
     echo -e "\n${BLUE}OPTIONS DE TRANSACTION:${NC}"
     echo -e "  1. 💼 Alimenter UPLANETNAME (Services & Cash-Flow)"
-    echo -e "  2. ⭐ Valoriser Capital Machine → UPLANETNAME.SOCIETY"
+    echo -e "  2. ⭐ Valoriser Capital Machine → UPLANETNAME_SOCIETY"
     echo -e "  3. 💰 Envoyer Ğ1 vers portefeuille externe"
     echo -e "  4. 📊 Voir le statut du portefeuille uniquement"
     echo -e "  5. 🚀 Assistant d'initialisation Astroport"
@@ -1127,7 +1127,7 @@ handle_capital_valuation() {
     echo -e "${BLUE}Type de machine:${NC} $machine_type"
     echo -e "${BLUE}Valeur:${NC} ${YELLOW}$machine_value €${NC} = ${CYAN}$zen_amount Ẑen${NC} = ${YELLOW}$g1_amount Ğ1${NC}"
     echo -e "\n${GREEN}Cette valorisation sera inscrite au capital social de la coopérative.${NC}"
-    echo -e "${GREEN}Flux: UPLANETNAME_G1 → UPLANETNAME.SOCIETY → ZenCard Capitaine${NC}"
+    echo -e "${GREEN}Flux: UPLANETNAME_G1 → UPLANETNAME_SOCIETY → ZenCard Capitaine${NC}"
     
     read -p "Confirmer la valorisation? (y/N): " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
@@ -1135,10 +1135,10 @@ handle_capital_valuation() {
         return 0
     fi
     
-    # Get UPLANETNAME.SOCIETY public key
-    local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME.SOCIETY")
+    # Get UPLANETNAME_SOCIETY public key
+    local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME_SOCIETY")
     if [[ -z "$society_pubkey" ]]; then
-        echo -e "${RED}UPLANETNAME.SOCIETY wallet not configured${NC}"
+        echo -e "${RED}UPLANETNAME_SOCIETY wallet not configured${NC}"
         return 1
     fi
     
@@ -1287,7 +1287,7 @@ initialize_system_wallets_complete() {
     echo -e "\n${BLUE}État des portefeuilles système:${NC}"
     
     # Check each wallet
-    local wallets=("UPLANETNAME_G1" "UPLANETNAME" "UPLANETNAME.SOCIETY")
+    local wallets=("UPLANETNAME_G1" "UPLANETNAME" "UPLANETNAME_SOCIETY")
     for wallet in "${wallets[@]}"; do
         local pubkey=$(get_system_wallet_public_key "$wallet")
         if [[ -n "$pubkey" ]]; then
@@ -1314,7 +1314,7 @@ verify_astroport_configuration() {
     fi
     
     # Check system wallets
-    local wallets=("UPLANETNAME_G1" "UPLANETNAME" "UPLANETNAME.SOCIETY")
+    local wallets=("UPLANETNAME_G1" "UPLANETNAME" "UPLANETNAME_SOCIETY")
     for wallet in "${wallets[@]}"; do
         local pubkey=$(get_system_wallet_public_key "$wallet")
         if [[ -n "$pubkey" ]]; then
@@ -1393,7 +1393,7 @@ handle_wallet_analysis() {
     echo -e "\n${CYAN}SYSTEM WALLETS:${NC}"
     echo -e "  ${GREEN}$((1+${#account_names[@]}+${#player_dirs[@]}))${NC} UPLANETNAME_G1 (Ğ1 Reserve)"
     echo -e "  ${GREEN}$((2+${#account_names[@]}+${#player_dirs[@]}))${NC} UPLANETNAME (Services & Cash-Flow)"
-    echo -e "  ${GREEN}$((3+${#account_names[@]}+${#player_dirs[@]}))${NC} UPLANETNAME.SOCIETY (Social Capital)"
+    echo -e "  ${GREEN}$((3+${#account_names[@]}+${#player_dirs[@]}))${NC} UPLANETNAME_SOCIETY (Social Capital)"
     
     # Get wallet selection
     echo -e "\n${YELLOW}Select wallet to analyze (1-$((3+${#account_names[@]}+${#player_dirs[@]}))):${NC}"
@@ -1425,8 +1425,8 @@ handle_wallet_analysis() {
         wallet_type="SYSTEM"
         pubkey=$(cat "$HOME/.zen/tmp/UPLANETG1PUB" 2>/dev/null)
     elif [[ "$wallet_choice" -eq $((3+${#account_names[@]}+${#player_dirs[@]})) ]]; then
-        # UPLANETNAME.SOCIETY
-        selected_wallet="UPLANETNAME.SOCIETY"
+        # UPLANETNAME_SOCIETY
+        selected_wallet="UPLANETNAME_SOCIETY"
         wallet_type="SYSTEM"
         pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" 2>/dev/null)
     else
@@ -1692,14 +1692,14 @@ export_history_csv() {
     fi
 }
 
-# Function to handle UPLANETNAME.SOCIETY operations
+# Function to handle UPLANETNAME_SOCIETY operations
 handle_social_capital() {
-    echo -e "\n${CYAN}⭐ UPLANETNAME.SOCIETY - SOCIAL CAPITAL WALLET${NC}"
+    echo -e "\n${CYAN}⭐ UPLANETNAME_SOCIETY - SOCIAL CAPITAL WALLET${NC}"
     echo -e "${YELLOW}=============================================${NC}"
     echo -e "${GREEN}This wallet manages cooperative shares and ZenCard operations.${NC}"
     echo -e "${GREEN}Flow: Investment operations → ZenCard wallet management${NC}"
     
-    show_flowchart_position "UPLANETNAME.SOCIETY" "Investment Operation → ZenCard"
+    show_flowchart_position "UPLANETNAME_SOCIETY" "Investment Operation → ZenCard"
     
     # List available ZenCard wallets
     if list_zencard_wallets; then
@@ -1707,7 +1707,7 @@ handle_social_capital() {
         selected_zencard=$(select_wallet "ZenCard" "${zencard_wallets[@]}")
         
         if [[ -n "$selected_zencard" ]]; then
-            get_transaction_details "UPLANETNAME.SOCIETY" "$selected_zencard"
+            get_transaction_details "UPLANETNAME_SOCIETY" "$selected_zencard"
         fi
     else
         echo -e "${RED}No ZenCard wallets available for transaction.${NC}"
@@ -1729,7 +1729,7 @@ get_system_wallet_key() {
         "UPLANETNAME")
             pubkey_file="$HOME/.zen/tmp/UPLANETG1PUB"
             ;;
-        "UPLANETNAME.SOCIETY")
+        "UPLANETNAME_SOCIETY")
             pubkey_file="$HOME/.zen/tmp/UPLANETNAME_SOCIETY"
             ;;
     esac
@@ -1767,8 +1767,8 @@ initialize_system_wallets() {
     # Initialize UPLANETNAME
     get_system_wallet_key "UPLANETNAME" "${UPLANETNAME}" >/dev/null 2>&1
     
-    # Initialize UPLANETNAME.SOCIETY
-    get_system_wallet_key "UPLANETNAME.SOCIETY" "${UPLANETNAME}.SOCIETY" >/dev/null 2>&1
+    # Initialize UPLANETNAME_SOCIETY
+    get_system_wallet_key "UPLANETNAME_SOCIETY" "${UPLANETNAME}.SOCIETY" >/dev/null 2>&1
     
     echo -e "${GREEN}System wallets initialized.${NC}"
 }
@@ -2061,8 +2061,8 @@ display_users_summary() {
                         local zencard_primal=$(get_primal_info "$zencard_pubkey")
                         local primal_indicator=""
                         if [[ -n "$zencard_primal" ]]; then
-                            # Get UPLANETNAME.SOCIETY pubkey for comparison
-                            local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME.SOCIETY" 2>/dev/null)
+                            # Get UPLANETNAME_SOCIETY pubkey for comparison
+                            local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME_SOCIETY" 2>/dev/null)
                             if [[ "$zencard_primal" == "$society_pubkey" ]]; then
                                 primal_indicator="S"  # Sociétaire (from SOCIETY)
                                 zencard_balance="${PURPLE}Z:${zencard_zen}Ẑ(S)${NC}"
@@ -2119,7 +2119,7 @@ display_users_summary() {
     echo -e "\n${BLUE}LÉGENDE DES SOLDES:${NC}"
     echo -e "  • ${CYAN}M:XXẐ${NC} = Solde MULTIPASS (G1PUBNOSTR)"
     echo -e "  • ${PURPLE}Z:XXẐ(L)${NC} = Solde ZenCard Locataire (source: UPLANETNAME)"
-    echo -e "  • ${PURPLE}Z:XXẐ(S)${NC} = Solde ZenCard Sociétaire (source: UPLANETNAME.SOCIETY)"
+    echo -e "  • ${PURPLE}Z:XXẐ(S)${NC} = Solde ZenCard Sociétaire (source: UPLANETNAME_SOCIETY)"
     echo -e "  • ${ORANGE}XX?${NC} = Portefeuille sans transaction primale"
     
     return $payments_due
@@ -2138,10 +2138,10 @@ handle_opencollective_reporting() {
     local total_to_report=0
     local payments_list=()
     
-    # Check for recent transactions in UPLANETNAME.SOCIETY wallet
-    local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME.SOCIETY")
+    # Check for recent transactions in UPLANETNAME_SOCIETY wallet
+    local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME_SOCIETY")
     if [[ -n "$society_pubkey" ]]; then
-        echo -e "${GREEN}Portefeuille UPLANETNAME.SOCIETY: ${CYAN}$society_pubkey${NC}"
+        echo -e "${GREEN}Portefeuille UPLANETNAME_SOCIETY: ${CYAN}$society_pubkey${NC}"
         
         # Get recent transactions (last 30 days)
         echo -e "\n${YELLOW}Transactions récentes (30 derniers jours):${NC}"
@@ -2231,7 +2231,7 @@ handle_payment_transcription() {
     echo -e "\n${BLUE}OPTIONS DE RETRANSCRIPTION:${NC}"
     echo -e "  1. 📊 Rapport complet de tous les versements"
     echo -e "  2. 👤 Versements d'un utilisateur spécifique"
-    echo -e "  3. 🏛️  Versements par source (UPLANETNAME vs UPLANETNAME.SOCIETY)"
+    echo -e "  3. 🏛️  Versements par source (UPLANETNAME vs UPLANETNAME_SOCIETY)"
     echo -e "  4. 📈 Générer rapport CSV des versements"
     echo -e "  5. 🔙 Retour au menu principal"
     
@@ -2348,9 +2348,9 @@ generate_complete_payment_report() {
                     # Determine primal source
                     local zencard_primal=$(get_primal_info "$zencard_pubkey")
                     if [[ -n "$zencard_primal" ]]; then
-                        local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME.SOCIETY" 2>/dev/null)
+                        local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME_SOCIETY" 2>/dev/null)
                         if [[ "$zencard_primal" == "$society_pubkey" ]]; then
-                            primal_source="UPLANETNAME.SOCIETY (Sociétaire)"
+                            primal_source="UPLANETNAME_SOCIETY (Sociétaire)"
                             total_societaire_zen=$((total_societaire_zen + zencard_zen))
                         else
                             primal_source="UPLANETNAME (Locataire)"
@@ -2525,9 +2525,9 @@ transcribe_user_payments() {
                 # Determine primal source
                 local zencard_primal=$(get_primal_info "$zencard_pubkey")
                 if [[ -n "$zencard_primal" ]]; then
-                    local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME.SOCIETY" 2>/dev/null)
+                    local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME_SOCIETY" 2>/dev/null)
                     if [[ "$zencard_primal" == "$society_pubkey" ]]; then
-                        echo -e "  • Source primale: ${GREEN}UPLANETNAME.SOCIETY${NC}"
+                        echo -e "  • Source primale: ${GREEN}UPLANETNAME_SOCIETY${NC}"
                         echo -e "  • Type: ${GREEN}Sociétaire${NC}"
                     else
                         echo -e "  • Source primale: ${YELLOW}UPLANETNAME${NC}"
@@ -2636,7 +2636,7 @@ transcribe_payments_by_source() {
                     local zencard_zen=$(echo "($zencard_coins - 1) * 10" | bc | cut -d '.' -f 1)
                     local zencard_primal=$(get_primal_info "$zencard_pubkey")
                     if [[ -n "$zencard_primal" ]]; then
-                        local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME.SOCIETY" 2>/dev/null)
+                        local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME_SOCIETY" 2>/dev/null)
                         if [[ "$zencard_primal" != "$society_pubkey" ]]; then
                             user_zen=$((user_zen + zencard_zen))
                             uplanetname_total=$((uplanetname_total + zencard_zen))
@@ -2656,13 +2656,13 @@ transcribe_payments_by_source() {
     echo -e "${YELLOW}Sous-total UPLANETNAME: ${CYAN}$((uplanetname_total + multipass_total)) Ẑen${NC}"
     echo ""
     
-    echo -e "${GREEN}⭐ SOURCE: UPLANETNAME.SOCIETY (Sociétaires)${NC}"
+    echo -e "${GREEN}⭐ SOURCE: UPLANETNAME_SOCIETY (Sociétaires)${NC}"
     echo -e "${YELLOW}$(printf '%.0s-' {1..50})${NC}"
     
     for user_email in "${all_users[@]}"; do
         local user_zen=0
         
-        # Check ZenCard from UPLANETNAME.SOCIETY
+        # Check ZenCard from UPLANETNAME_SOCIETY
         if [[ -s ~/.zen/game/players/${user_email}/.g1pub ]]; then
             local zencard_pubkey=$(cat ~/.zen/game/players/${user_email}/.g1pub 2>/dev/null)
             if [[ -n "$zencard_pubkey" ]]; then
@@ -2671,7 +2671,7 @@ transcribe_payments_by_source() {
                     local zencard_zen=$(echo "($zencard_coins - 1) * 10" | bc | cut -d '.' -f 1)
                     local zencard_primal=$(get_primal_info "$zencard_pubkey")
                     if [[ -n "$zencard_primal" ]]; then
-                        local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME.SOCIETY" 2>/dev/null)
+                        local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME_SOCIETY" 2>/dev/null)
                         if [[ "$zencard_primal" == "$society_pubkey" ]]; then
                             user_zen=$((user_zen + zencard_zen))
                             society_total=$((society_total + zencard_zen))
@@ -2686,7 +2686,7 @@ transcribe_payments_by_source() {
         fi
     done
     
-    echo -e "${YELLOW}Sous-total UPLANETNAME.SOCIETY: ${PURPLE}${society_total} Ẑen${NC}"
+    echo -e "${YELLOW}Sous-total UPLANETNAME_SOCIETY: ${PURPLE}${society_total} Ẑen${NC}"
     echo ""
     
     if [[ $no_primal_total -gt 0 ]]; then
@@ -2785,9 +2785,9 @@ generate_payment_csv_report() {
                     # Determine primal source
                     local zencard_primal=$(get_primal_info "$zencard_pubkey")
                     if [[ -n "$zencard_primal" ]]; then
-                        local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME.SOCIETY" 2>/dev/null)
+                        local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME_SOCIETY" 2>/dev/null)
                         if [[ "$zencard_primal" == "$society_pubkey" ]]; then
-                            primal_source="UPLANETNAME.SOCIETY"
+                            primal_source="UPLANETNAME_SOCIETY"
                             status="Sociétaire"
                         else
                             primal_source="UPLANETNAME"
@@ -2831,7 +2831,7 @@ generate_payment_csv_report() {
     echo -e "  • Type_Portefeuille: MULTIPASS, ZenCard, ou MULTIPASS+ZenCard"
     echo -e "  • Solde_MULTIPASS_Zen: Solde en Ẑen du portefeuille MULTIPASS"
     echo -e "  • Solde_ZenCard_Zen: Solde en Ẑen du portefeuille ZenCard"
-    echo -e "  • Source_Primale: UPLANETNAME ou UPLANETNAME.SOCIETY"
+    echo -e "  • Source_Primale: UPLANETNAME ou UPLANETNAME_SOCIETY"
     echo -e "  • Statut: Locataire ou Sociétaire"
     echo -e "  • Total_Zen: Somme des soldes en Ẑen"
     
@@ -2890,7 +2890,7 @@ display_station_overview() {
         echo -e "  • ${RED}UPLANETNAME: Non configuré${NC}"
     fi
     
-    # UPLANETNAME.SOCIETY - Utilise G1society.sh pour afficher les parts sociales depuis l'historique
+    # UPLANETNAME_SOCIETY - Utilise G1society.sh pour afficher les parts sociales depuis l'historique
     if [[ -f "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" ]]; then
         society_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" 2>/dev/null)
         if [[ -n "$society_pubkey" ]]; then
@@ -2900,16 +2900,16 @@ display_station_overview() {
             local society_json=$(${MY_PATH}/G1society.sh 2>/dev/null)
             if [[ -n "$society_json" ]] && echo "$society_json" | jq empty 2>/dev/null; then
                 local society_zen=$(echo "$society_json" | jq -r '.total_outgoing_zen // 0' 2>/dev/null)
-                echo -e "  • ${GREEN}UPLANETNAME.SOCIETY:${NC} ${YELLOW}$society_balance Ğ1${NC} (Parts: ${CYAN}$society_zen Ẑen${NC})"
+                echo -e "  • ${GREEN}UPLANETNAME_SOCIETY:${NC} ${YELLOW}$society_balance Ğ1${NC} (Parts: ${CYAN}$society_zen Ẑen${NC})"
             else
                 local zen_balance=$(echo "($society_balance - 1) * 10" | bc | cut -d '.' -f 1)
-                echo -e "  • ${GREEN}UPLANETNAME.SOCIETY:${NC} ${YELLOW}$society_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
+                echo -e "  • ${GREEN}UPLANETNAME_SOCIETY:${NC} ${YELLOW}$society_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
             fi
         else
-            echo -e "  • ${RED}UPLANETNAME.SOCIETY: Non configuré${NC}"
+            echo -e "  • ${RED}UPLANETNAME_SOCIETY: Non configuré${NC}"
         fi
     else
-        echo -e "  • ${RED}UPLANETNAME.SOCIETY: Non configuré${NC}"
+        echo -e "  • ${RED}UPLANETNAME_SOCIETY: Non configuré${NC}"
     fi
     
     # Quick user stats
@@ -2966,7 +2966,7 @@ display_economic_dashboard() {
         echo -e "   • UPLANETNAME: ${RED}Not configured${NC}"
     fi
     
-    # UPLANETNAME.SOCIETY - Utilise G1society.sh pour afficher les parts sociales depuis l'historique
+    # UPLANETNAME_SOCIETY - Utilise G1society.sh pour afficher les parts sociales depuis l'historique
     if [[ -f "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" ]]; then
         society_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" 2>/dev/null)
         if [[ -n "$society_pubkey" ]]; then
@@ -2977,16 +2977,16 @@ display_economic_dashboard() {
             if [[ -n "$society_json" ]] && echo "$society_json" | jq empty 2>/dev/null; then
                 local society_zen=$(echo "$society_json" | jq -r '.total_outgoing_zen // 0' 2>/dev/null)
                 local society_txcount=$(echo "$society_json" | jq -r '.total_transfers // 0' 2>/dev/null)
-                echo -e "   • UPLANETNAME.SOCIETY: ${YELLOW}$society_balance Ğ1${NC} (Parts: ${CYAN}$society_zen Ẑen${NC}, ${WHITE}$society_txcount${NC} sociétaires)"
+                echo -e "   • UPLANETNAME_SOCIETY: ${YELLOW}$society_balance Ğ1${NC} (Parts: ${CYAN}$society_zen Ẑen${NC}, ${WHITE}$society_txcount${NC} sociétaires)"
             else
                 local zen_balance=$(echo "($society_balance - 1) * 10" | bc | cut -d '.' -f 1)
-                echo -e "   • UPLANETNAME.SOCIETY: ${YELLOW}$society_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
+                echo -e "   • UPLANETNAME_SOCIETY: ${YELLOW}$society_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
             fi
         else
-            echo -e "   • UPLANETNAME.SOCIETY: ${RED}Invalid keyfile${NC}"
+            echo -e "   • UPLANETNAME_SOCIETY: ${RED}Invalid keyfile${NC}"
         fi
     else
-        echo -e "   • UPLANETNAME.SOCIETY: ${RED}Not configured${NC}"
+        echo -e "   • UPLANETNAME_SOCIETY: ${RED}Not configured${NC}"
     fi
     
     # User wallets summary
@@ -3403,7 +3403,7 @@ handle_system_wallets() {
         echo -e "\n${BLUE}PORTEFEUILLES DISPONIBLES:${NC}"
         echo -e "  1. 🏛️  UPLANETNAME_G1 - Réserves Ğ1 et donations"
         echo -e "  2. 💼 UPLANETNAME - Services et MULTIPASS"
-        echo -e "  3. ⭐ UPLANETNAME.SOCIETY - Capital social et ZenCard"
+        echo -e "  3. ⭐ UPLANETNAME_SOCIETY - Capital social et ZenCard"
         echo -e "  4. 📊 Vue d'ensemble de tous les portefeuilles"
         echo -e "  5. 🔧 Initialisation des portefeuilles manquants"
         echo -e "  0. 🔙 Retour au menu principal"
@@ -3638,7 +3638,7 @@ display_all_system_wallets() {
     echo -e "\n${CYAN}📊 VUE D'ENSEMBLE DES PORTEFEUILLES SYSTÈME${NC}"
     echo -e "${YELLOW}===========================================${NC}"
     
-    local wallets=("UPLANETNAME_G1" "UPLANETNAME" "UPLANETNAME.SOCIETY")
+    local wallets=("UPLANETNAME_G1" "UPLANETNAME" "UPLANETNAME_SOCIETY")
     for wallet in "${wallets[@]}"; do
         local pubkey=$(get_system_wallet_public_key "$wallet")
         if [[ -n "$pubkey" ]]; then
@@ -3662,7 +3662,7 @@ initialize_missing_wallets() {
     initialize_system_wallets
     
     echo -e "\n${BLUE}État des portefeuilles:${NC}"
-    local wallets=("UPLANETNAME_G1" "UPLANETNAME" "UPLANETNAME.SOCIETY")
+    local wallets=("UPLANETNAME_G1" "UPLANETNAME" "UPLANETNAME_SOCIETY")
     for wallet in "${wallets[@]}"; do
         local pubkey=$(get_system_wallet_public_key "$wallet")
         if [[ -n "$pubkey" ]]; then

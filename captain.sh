@@ -456,7 +456,7 @@ show_captain_dashboard() {
         echo ""
     fi
     
-    # UPLANETNAME.SOCIETY (Capital Social) - Utilise G1society.sh pour l'historique
+    # UPLANETNAME_SOCIETY (Capital Social) - Utilise G1society.sh pour l'historique
     local uplanet_society_pubkey=""
     if [[ -f "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" ]]; then
         uplanet_society_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" 2>/dev/null)
@@ -471,14 +471,14 @@ show_captain_dashboard() {
         local society_g1=$(echo "$society_data" | jq -r '.total_outgoing_g1 // 0' 2>/dev/null)
         local society_txcount=$(echo "$society_data" | jq -r '.total_transfers // 0' 2>/dev/null)
         
-        echo -e "${BLUE}⭐ UPLANETNAME.SOCIETY (Capital Social):${NC}"
+        echo -e "${BLUE}⭐ UPLANETNAME_SOCIETY (Capital Social):${NC}"
         echo -e "  💰 Solde brut: ${YELLOW}$society_balance Ğ1${NC}"
         echo -e "  📊 Parts sociales distribuées (historique): ${CYAN}$society_zen Ẑen${NC} (${YELLOW}$society_g1 Ğ1${NC})"
         echo -e "  👥 Sociétaires enregistrés: ${WHITE}$society_txcount${NC} membres"
         echo -e "  📝 Usage: Émission parts sociales ZEN Cards"
         echo ""
     else
-        echo -e "${RED}⭐ UPLANETNAME.SOCIETY: ${YELLOW}Non configuré${NC}"
+        echo -e "${RED}⭐ UPLANETNAME_SOCIETY: ${YELLOW}Non configuré${NC}"
         echo -e "  💡 Pour configurer: Lancez UPLANET.init.sh"
         echo ""
     fi
@@ -514,11 +514,11 @@ show_captain_dashboard() {
     if [[ -n "$cash_pubkey" ]]; then
         local cash_balance=$(get_wallet_balance "$cash_pubkey")
         local cash_zen=$(calculate_zen "$cash_balance")
-        echo -e "${GREEN}💰 UPLANETNAME.CASH (Trésorerie 1/3):${NC}"
+        echo -e "${GREEN}💰 UPLANETNAME_CASH (Trésorerie 1/3):${NC}"
         echo -e "  💰 Solde: ${YELLOW}$cash_balance Ğ1${NC} (${CYAN}$cash_zen Ẑen${NC})"
         echo -e "  📝 Usage: Solidarité PAF + réserve opérationnelle"
     else
-        echo -e "${RED}💰 UPLANETNAME.CASH: ${YELLOW}Non configuré${NC}"
+        echo -e "${RED}💰 UPLANETNAME_CASH: ${YELLOW}Non configuré${NC}"
     fi
     
     # RND (R&D)
@@ -562,11 +562,11 @@ show_captain_dashboard() {
     if [[ -n "$impot_pubkey" ]]; then
         local impot_balance=$(get_wallet_balance "$impot_pubkey")
         local impot_zen=$(calculate_zen "$impot_balance")
-        echo -e "${PURPLE}🏛️  UPLANETNAME.IMPOT (Fiscalité):${NC}"
+        echo -e "${PURPLE}🏛️  UPLANETNAME_IMPOT (Fiscalité):${NC}"
         echo -e "  💰 Solde: ${YELLOW}$impot_balance Ğ1${NC} (${CYAN}$impot_zen Ẑen${NC})"
         echo -e "  📝 Usage: TVA collectée + provision IS"
     else
-        echo -e "${RED}🏛️  UPLANETNAME.IMPOT: ${YELLOW}Non configuré${NC}"
+        echo -e "${RED}🏛️  UPLANETNAME_IMPOT: ${YELLOW}Non configuré${NC}"
     fi
     echo ""
     
@@ -752,7 +752,7 @@ show_economic_flow_diagram() {
     
     # Flux 2: Sociétaire (Vert)
     echo -e "${GREEN}2️⃣  FLUX SOCIÉTAIRE:${NC}"
-    echo -e "   OpenCollective → UPLANETNAME.SOCIETY → ZenCard"
+    echo -e "   OpenCollective → UPLANETNAME_SOCIETY → ZenCard"
     echo -e "   💰 Achat parts sociales → Investissement → Primo TX"
     echo ""
     
@@ -786,7 +786,7 @@ show_captain_navigation_menu() {
     echo ""
     
     echo -e "${GREEN}1. 💰 Gestion Économique (zen.sh)${NC}"
-    echo -e "   • Transactions UPLANETNAME_G1, UPLANETG1PUB, UPLANETNAME.SOCIETY"
+    echo -e "   • Transactions UPLANETNAME_G1, UPLANETG1PUB, UPLANETNAME_SOCIETY"
     echo -e "   • Analyse des portefeuilles et flux économiques"
     echo -e "   • Gestion des investissements et répartitions"
     echo ""

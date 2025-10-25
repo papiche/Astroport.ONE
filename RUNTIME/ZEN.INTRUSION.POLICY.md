@@ -5,12 +5,12 @@
 ```mermaid
 graph TD
     G1[UPLANETNAME_G1<br/>Réserve Principale] --> UP[UPLANETNAME<br/>🔑 UPLANETG1PUB]
-    G1 --> SOC[UPLANETNAME.SOCIETY]
-    G1 --> CASH[UPLANETNAME.CASH]
+    G1 --> SOC[UPLANETNAME_SOCIETY]
+    G1 --> CASH[UPLANETNAME_CASH]
     G1 --> RND[UPLANETNAME_RND]
     G1 --> ASSETS[UPLANETNAME_ASSETS]
-    G1 --> IMPOT[UPLANETNAME.IMPOT]
-    G1 --> INTRUSION[UPLANETNAME.INTRUSION<br/>🚨 Fonds Intrusifs]
+    G1 --> IMPOT[UPLANETNAME_IMPOT]
+    G1 --> INTRUSION[UPLANETNAME_INTRUSION<br/>🚨 Fonds Intrusifs]
     
     UP --> MP[MULTIPASS<br/>1Ẑ/sem]
     SOC --> ZC[ZEN Cards<br/>50Ẑ parts]
@@ -33,24 +33,24 @@ graph TD
 | Portefeuille | Source Autorisée | Script de Contrôle |
 |--------------|------------------|---------------------|
 | **UPLANETNAME** | `UPLANETNAME_G1` | `ZEN.ECONOMY.sh` |
-| **UPLANETNAME.SOCIETY** | `UPLANETNAME_G1` | `ZEN.ECONOMY.sh` |
-| **UPLANETNAME.CASH** | `UPLANETNAME_G1` | `ZEN.ECONOMY.sh` |
+| **UPLANETNAME_SOCIETY** | `UPLANETNAME_G1` | `ZEN.ECONOMY.sh` |
+| **UPLANETNAME_CASH** | `UPLANETNAME_G1` | `ZEN.ECONOMY.sh` |
 | **UPLANETNAME_RND** | `UPLANETNAME_G1` | `ZEN.ECONOMY.sh` |
 | **UPLANETNAME_ASSETS** | `UPLANETNAME_G1` | `ZEN.ECONOMY.sh` |
-| **UPLANETNAME.IMPOT** | `UPLANETNAME_G1` | `ZEN.ECONOMY.sh` |
-| **UPLANETNAME.INTRUSION** | `UPLANETNAME_G1` | `UPLANET.init.sh` |
+| **UPLANETNAME_IMPOT** | `UPLANETNAME_G1` | `ZEN.ECONOMY.sh` |
+| **UPLANETNAME_INTRUSION** | `UPLANETNAME_G1` | `UPLANET.init.sh` |
 | **MULTIPASS Users** | `UPLANETNAME` | `NOSTRCARD.refresh.sh` |
-| **ZEN Cards** | `UPLANETNAME.SOCIETY` | `G1PalPay.sh` |
+| **ZEN Cards** | `UPLANETNAME_SOCIETY` | `G1PalPay.sh` |
 
 ## **🛡️ Politique Anti-Intrusion**
 
 ### **Principe**
-**TOUTES les intrusions** sont automatiquement redirigées vers `UPLANETNAME.INTRUSION` pour centraliser la gestion des fonds intrusifs. Le portefeuille INTRUSION est créé automatiquement s'il n'existe pas.
+**TOUTES les intrusions** sont automatiquement redirigées vers `UPLANETNAME_INTRUSION` pour centraliser la gestion des fonds intrusifs. Le portefeuille INTRUSION est créé automatiquement s'il n'existe pas.
 
 ### **Logique d'Application**
 
 #### **Toutes les Intrusions**
-- **Action** : REDIRECTION vers `UPLANETNAME.INTRUSION`
+- **Action** : REDIRECTION vers `UPLANETNAME_INTRUSION`
 - **Message** : "Versements Ğ1 doivent être faits vers UPLANETNAME_G1 uniquement"
 - **Email** : `wallet_redirection.html`
 - **Objectif** : Centralisation et analyse des fonds intrusifs
@@ -58,7 +58,7 @@ graph TD
 
 ### **Code d'Implémentation**
 ```bash
-# Toutes les intrusions : REDIRECTION vers UPLANETNAME.INTRUSION
+# Toutes les intrusions : REDIRECTION vers UPLANETNAME_INTRUSION
 # Création automatique du portefeuille si nécessaire
 if ! create_intrusion_wallet; then
     echo "ERROR: Cannot create INTRUSION wallet, aborting intrusion handling"
@@ -68,7 +68,7 @@ fi
 # Récupération de la clé publique INTRUSION
 intrusion_pubkey=$(cat "$HOME/.zen/game/uplanet.INTRUSION.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
 
-# Redirection vers UPLANETNAME.INTRUSION
+# Redirection vers UPLANETNAME_INTRUSION
 PAYforSURE.sh "${wallet}" "${amount}" "${intrusion_pubkey}" "UPLANET:${UPLANETG1PUB:0:8}:INTRUSION:${sender:0:8}"
 send_alert_email "${email}" "${wallet}" "${sender}" "${amount}" "${primal}" "$total" "redirection"
 ```
@@ -79,12 +79,12 @@ send_alert_email "${email}" "${wallet}" "${sender}" "${amount}" "${primal}" "$to
 ```bash
 declare -A COOPERATIVE_WALLETS=(
     ["UPLANETNAME"]="$HOME/.zen/game/uplanet.dunikey"
-    ["UPLANETNAME.SOCIETY"]="$HOME/.zen/game/uplanet.SOCIETY.dunikey"
-    ["UPLANETNAME.CASH"]="$HOME/.zen/game/uplanet.CASH.dunikey"
+    ["UPLANETNAME_SOCIETY"]="$HOME/.zen/game/uplanet.SOCIETY.dunikey"
+    ["UPLANETNAME_CASH"]="$HOME/.zen/game/uplanet.CASH.dunikey"
     ["UPLANETNAME_RND"]="$HOME/.zen/game/uplanet.RnD.dunikey"
     ["UPLANETNAME_ASSETS"]="$HOME/.zen/game/uplanet.ASSETS.dunikey"
-    ["UPLANETNAME.IMPOT"]="$HOME/.zen/game/uplanet.IMPOT.dunikey"
-    ["UPLANETNAME.INTRUSION"]="$HOME/.zen/game/uplanet.INTRUSION.dunikey"
+    ["UPLANETNAME_IMPOT"]="$HOME/.zen/game/uplanet.IMPOT.dunikey"
+    ["UPLANETNAME_INTRUSION"]="$HOME/.zen/game/uplanet.INTRUSION.dunikey"
 )
 
 for wallet_name in "${!COOPERATIVE_WALLETS[@]}"; do
@@ -109,14 +109,14 @@ primal_wallet_control.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "$
 ## **💰 Impact Économique**
 
 ### **Centralisation des Fonds**
-- **Toutes les intrusions** : 100% → `UPLANETNAME.INTRUSION`
+- **Toutes les intrusions** : 100% → `UPLANETNAME_INTRUSION`
 - **Gestion centralisée** : Analyse et traitement des fonds intrusifs
 - **Traçabilité complète** : Tous les fonds intrusifs dans un seul portefeuille
 
 ### **Exemple**
 ```
 5 intrusions × 10 Ğ1 :
-- Toutes les intrusions : 50 Ğ1 → UPLANETNAME.INTRUSION
+- Toutes les intrusions : 50 Ğ1 → UPLANETNAME_INTRUSION
 - Centralisation : 50 Ğ1 disponibles pour analyse
 - Gestion : Décision coopérative sur l'utilisation des fonds
 ```
@@ -138,7 +138,7 @@ primal_wallet_control.sh "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" "$
 - Messages éducatifs clairs
 
 ### **Coopérative**
-- Fonds intrusifs centralisés dans UPLANETNAME.INTRUSION
+- Fonds intrusifs centralisés dans UPLANETNAME_INTRUSION
 - Gestion et analyse facilitées des intrusions
 - Conformité réglementaire renforcée
 - Traçabilité complète des flux

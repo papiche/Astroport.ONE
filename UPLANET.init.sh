@@ -4,8 +4,8 @@
 #
 # Ce script vérifie et initialise les portefeuilles de la coopérative UPlanet :
 # - UPLANETNAME (Services & MULTIPASS)
-# - UPLANETNAME.SOCIETY (Capital social)
-# - UPLANETNAME.CASH (Trésorerie - uplanet.CASH.dunikey)
+# - UPLANETNAME_SOCIETY (Capital social)
+# - UPLANETNAME_CASH (Trésorerie - uplanet.CASH.dunikey)
 # - UPLANETNAME_RND (R&D - uplanet.RnD.dunikey)
 # - UPLANETNAME_ASSETS (Actifs - uplanet.ASSETS.dunikey)
 #
@@ -41,13 +41,13 @@ FORCE=false
 # Cooperative wallets to check and initialize
 declare -A COOPERATIVE_WALLETS=(
     ["UPLANETNAME"]="$HOME/.zen/game/uplanet.dunikey"
-    ["UPLANETNAME.SOCIETY"]="$HOME/.zen/game/uplanet.SOCIETY.dunikey"
-    ["UPLANETNAME.CASH"]="$HOME/.zen/game/uplanet.CASH.dunikey"
+    ["UPLANETNAME_SOCIETY"]="$HOME/.zen/game/uplanet.SOCIETY.dunikey"
+    ["UPLANETNAME_CASH"]="$HOME/.zen/game/uplanet.CASH.dunikey"
     ["UPLANETNAME_RND"]="$HOME/.zen/game/uplanet.RnD.dunikey"
     ["UPLANETNAME_ASSETS"]="$HOME/.zen/game/uplanet.ASSETS.dunikey"
-    ["UPLANETNAME.IMPOT"]="$HOME/.zen/game/uplanet.IMPOT.dunikey"
+    ["UPLANETNAME_IMPOT"]="$HOME/.zen/game/uplanet.IMPOT.dunikey"
     ["UPLANETNAME.CAPTAIN"]="$HOME/.zen/game/uplanet.captain.dunikey"
-    ["UPLANETNAME.INTRUSION"]="$HOME/.zen/game/uplanet.INTRUSION.dunikey"
+    ["UPLANETNAME_INTRUSION"]="$HOME/.zen/game/uplanet.INTRUSION.dunikey"
 )
 
 # Node and Captain wallets to check and initialize (if they exist)
@@ -66,13 +66,13 @@ usage() {
     echo ""
     echo -e "${GREEN}Ce script vérifie et initialise les portefeuilles de la coopérative:${NC}"
     echo -e "  • UPLANETNAME (Services & MULTIPASS)"
-    echo -e "  • UPLANETNAME.SOCIETY (Capital social)"
-    echo -e "  • UPLANETNAME.CASH (Trésorerie)"
+    echo -e "  • UPLANETNAME_SOCIETY (Capital social)"
+    echo -e "  • UPLANETNAME_CASH (Trésorerie)"
     echo -e "  • UPLANETNAME_RND (R&D)"
     echo -e "  • UPLANETNAME_ASSETS (Actifs)"
-    echo -e "  • UPLANETNAME.IMPOT (Fiscalité)"
+    echo -e "  • UPLANETNAME_IMPOT (Fiscalité)"
     echo -e "  • UPLANETNAME.CAPTAIN (Rémunération capitaine)"
-    echo -e "  • UPLANETNAME.INTRUSION (Fonds d'intrusions détectées)"
+    echo -e "  • UPLANETNAME_INTRUSION (Fonds d'intrusions détectées)"
     echo -e "  • NODE (Armateur - si existant)"
     echo -e "  • CAPTAIN (si configuré)"
     echo ""
@@ -223,7 +223,7 @@ create_missing_wallet() {
     
     # Create wallet using keygen like in ZEN.COOPERATIVE.3x1-3.sh and my.sh
     case "$wallet_name" in
-        "UPLANETNAME.CASH")
+        "UPLANETNAME_CASH")
             "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.TREASURY" "${UPLANETNAME}.TREASURY"
             ;;
         "UPLANETNAME_RND")
@@ -232,10 +232,10 @@ create_missing_wallet() {
         "UPLANETNAME_ASSETS")
             "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.ASSETS" "${UPLANETNAME}.ASSETS"
             ;;
-        "UPLANETNAME.IMPOT")
+        "UPLANETNAME_IMPOT")
             "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT"
             ;;
-        "UPLANETNAME.SOCIETY")
+        "UPLANETNAME_SOCIETY")
             "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.SOCIETY" "${UPLANETNAME}.SOCIETY"
             ;;
         "UPLANETNAME")
@@ -244,7 +244,7 @@ create_missing_wallet() {
         "UPLANETNAME.CAPTAIN")
             "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.${CAPTAINEMAIL}" "${UPLANETNAME}.${CAPTAINEMAIL}"
             ;;
-        "UPLANETNAME.INTRUSION")
+        "UPLANETNAME_INTRUSION")
             "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.INTRUSION" "${UPLANETNAME}.INTRUSION"
             ;;
         *)

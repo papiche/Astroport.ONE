@@ -56,7 +56,7 @@ La coopérative peut mandater des **hôtes fiscaux** (tels que OpenCollective) p
 ### **Article 7 : La Participation Aux Frais (PAF) et la Rémunération du Capitaine**
 1.  **PAF de l'Armateur :** Le Capitaine paie une PAF hebdomadaire de **14 Ẑen** au NODE (Armateur) pour couvrir les coûts d'infrastructure.
 2.  **Rémunération du Capitaine :** Le Capitaine est rémunéré pour son travail de maintenance à hauteur de **2x la PAF (28 Ẑen)** par semaine, versée sur son **portefeuille CAPTAIN dédié**.
-3.  **Hiérarchie de Paiement :** La PAF est prélevée en priorité sur le **MULTIPASS** (revenus) du Capitaine. Si insuffisant, le solde est prélevé sur la **trésorerie coopérative** (`UPLANETNAME.TREASURY`). La **ZenCard** (capital social) ne sert plus aux charges opérationnelles.
+3.  **Hiérarchie de Paiement :** La PAF est prélevée en priorité sur le **MULTIPASS** (revenus) du Capitaine. Si insuffisant, le solde est prélevé sur la **trésorerie coopérative** (`UPLANETNAME_TREASURY`). La **ZenCard** (capital social) ne sert plus aux charges opérationnelles.
 
 ### **Article 8 : Gestion du Surplus**
 Si les revenus locatifs collectés par un Capitaine excèdent ses charges (TVA + PAF), après versement de sa rémunération (2x PAF) sur son **portefeuille CAPTAIN dédié**, le **surplus est automatiquement transféré** au portefeuille d'exploitation de la coopérative (`UPLANETNAME`).
@@ -65,10 +65,10 @@ Si les revenus locatifs collectés par un Capitaine excèdent ses charges (TVA +
 La conversion des Ẑen en Euros est un service offert par la coopérative. Pour protéger la trésorerie commune, la conversion des **revenus d'activité** (Ẑen acquis sur le MULTIPASS) est limitée à **1/3 du total acquis par année civile**. La conversion du capital social (contenu sur la ZenCard) est une opération exceptionnelle soumise au droit des sociétés et à la validation de l'Assemblée Générale.
 
 ### **Article 10 : Provision Fiscale Automatique**
-La coopérative provisionne automatiquement la **TVA (20%)** sur les services et l'**Impôt sur les Sociétés (15%/25%)** sur les bénéfices dans le portefeuille `UPLANETNAME.IMPOT`.
+La coopérative provisionne automatiquement la **TVA (20%)** sur les services et l'**Impôt sur les Sociétés (15%/25%)** sur les bénéfices dans le portefeuille `UPLANETNAME_IMPOT`.
 
 ### **Article 11 : Sécurité Anti-Intrusion**
-Toutes les transactions vers les portefeuilles coopératifs doivent provenir de **sources primales autorisées**. Les fonds provenant de sources non autorisées sont automatiquement redirigés vers `UPLANETNAME.INTRUSION` pour centraliser leur gestion et garantir la pureté comptable de l'écosystème.
+Toutes les transactions vers les portefeuilles coopératifs doivent provenir de **sources primales autorisées**. Les fonds provenant de sources non autorisées sont automatiquement redirigés vers `UPLANETNAME_INTRUSION` pour centraliser leur gestion et garantir la pureté comptable de l'écosystème.
 
 ---
 
@@ -78,14 +78,14 @@ Toutes les transactions vers les portefeuilles coopératifs doivent provenir de 
 | Portefeuille | Rôle | Fonction |
 | :--- | :--- | :--- |
 | **`UPLANETNAME_G1`** | **Réserve & Stabilité** | Émet et "brûle" les Ẑen lors des conversions avec l'Euro. |
-| **`UPLANETNAME.SOCIETY`** | **Capital Social** | Gère les apports des sociétaires et l'émission des parts. |
+| **`UPLANETNAME_SOCIETY`** | **Capital Social** | Gère les apports des sociétaires et l'émission des parts. |
 | **`UPLANETNAME`** | **Exploitation** | Collecte les surplus et gère l'allocation 3x1/3. |
-| **`UPLANETNAME.IMPOT`** | **Provision Fiscale** | Isole la TVA et l'IS pour garantir la conformité. |
-| **`UPLANETNAME.TREASURY`** | **Trésorerie (1/3)** | Réserves impartageables pour la liquidité. |
+| **`UPLANETNAME_IMPOT`** | **Provision Fiscale** | Isole la TVA et l'IS pour garantir la conformité. |
+| **`UPLANETNAME_TREASURY`** | **Trésorerie (1/3)** | Réserves impartageables pour la liquidité. |
 | **`UPLANETNAME_RND`** | **R&D (1/3)** | Financement du G1FabLab. |
 | **`UPLANETNAME_ASSETS`** | **Actifs Réels (1/3)** | Acquisition des forêts-jardins. |
 | **`UPLANETNAME.CAPTAIN`** | **Rémunération Capitaine** | Stocke la rémunération hebdomadaire du capitaine. |
-| **`UPLANETNAME.INTRUSION`** | **Sécurité Anti-Intrusion** | Centralise les fonds provenant de transactions non autorisées. |
+| **`UPLANETNAME_INTRUSION`** | **Sécurité Anti-Intrusion** | Centralise les fonds provenant de transactions non autorisées. |
 
 ### **Article 13 : Portefeuilles Membres**
 | Portefeuille | Rôle | Fonction |
@@ -148,13 +148,13 @@ graph TD
 
     subgraph "Portefeuilles Coopérative UPLANET"
         UPLANETNAME_G1["UPLANETNAME_G1<br><b>Réserve & Stabilité</b>"]:::cooperativeCentral
-        UPLANETNAME_SOCIETY["UPLANETNAME.SOCIETY<br><b>Capital Social</b>"]:::cooperativeCentral
+        UPLANETNAME_SOCIETY["UPLANETNAME_SOCIETY<br><b>Capital Social</b>"]:::cooperativeCentral
         UPLANETNAME["UPLANETNAME<br><b>Compte d'Exploitation</b>"]:::cooperativeCentral
-        UPLANETNAME_IMPOT["UPLANETNAME.IMPOT<br><b>Provision Fiscale</b>"]:::cooperativeCentral
-        UPLANETNAME_TREASURY["UPLANETNAME.TREASURY<br><b>Trésorerie (1/3)</b>"]:::allocationType
+        UPLANETNAME_IMPOT["UPLANETNAME_IMPOT<br><b>Provision Fiscale</b>"]:::cooperativeCentral
+        UPLANETNAME_TREASURY["UPLANETNAME_TREASURY<br><b>Trésorerie (1/3)</b>"]:::allocationType
         UPLANETNAME_ASSETS["UPLANETNAME_ASSETS<br><b>Projets (1/3)</b>"]:::allocationType
         UPLANETNAME_RND["UPLANETNAME_RND<br><b>R&D (1/3)</b>"]:::allocationType
-        UPLANETNAME_INTRUSION["UPLANETNAME.INTRUSION<br><b>Sécurité Anti-Intrusion</b>"]:::cooperativeCentral
+        UPLANETNAME_INTRUSION["UPLANETNAME_INTRUSION<br><b>Sécurité Anti-Intrusion</b>"]:::cooperativeCentral
         
         MB_SCIC -- "2. Échange € → Ẑen" --> UPLANETNAME_G1
         UPLANETNAME_G1 -- "3. Émission Ẑen" --> UPLANETNAME_SOCIETY

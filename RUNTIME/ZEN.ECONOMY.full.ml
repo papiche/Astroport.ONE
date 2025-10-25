@@ -32,7 +32,7 @@ graph TD;
       
       subgraph "Organe n°3 : Le Capital Social Local";
           style SW fill:#fdebd0,stroke:#333,stroke-width:2px
-          SW["⭐ Wallet Capital<br/><b>UPLANETNAME.SOCIETY</b><br/>(Gère les parts sociales locales)"];
+          SW["⭐ Wallet Capital<br/><b>UPLANETNAME_SOCIETY</b><br/>(Gère les parts sociales locales)"];
           G1W -- "Collatéralise & Initialise" --> SW;
           OC -- "Flux 'Sociétaire Local'" --> SW;
           SW -- "Émet les parts Ẑen" --> ZenCard["Wallet Sociétaire<br/><b>CAPTAIN.ZENCARD</b><br/>(50Ẑ parts sociales)"];
@@ -51,10 +51,10 @@ graph TD;
           style ASSETS fill:#fff3e0,stroke:#f57c00,stroke-width:2px
           style IMPOT fill:#fce4ec,stroke:#c2185b,stroke-width:2px
           
-          CASH["💰 UPLANETNAME.CASH<br/>(Trésorerie 1/3)"];
+          CASH["💰 UPLANETNAME_CASH<br/>(Trésorerie 1/3)"];
           RND["🔬 UPLANETNAME_RND<br/>(R&D 1/3)"];
           ASSETS["🌳 UPLANETNAME_ASSETS<br/>(Actifs 1/3)"];
-          IMPOT["🏛️ UPLANETNAME.IMPOT<br/>(Fiscalité TVA+IS)"];
+          IMPOT["🏛️ UPLANETNAME_IMPOT<br/>(Fiscalité TVA+IS)"];
           
           G1W -- "Initialise" --> CASH;
           G1W -- "Initialise" --> RND;

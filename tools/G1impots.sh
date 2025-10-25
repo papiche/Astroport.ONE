@@ -6,7 +6,7 @@
 ################################################################################
 # G1impots.sh
 # Calcule les provisions fiscales (TVA + IS) depuis l'historique des transactions
-# Filtre : Transactions INCOMING vers UPLANETNAME.IMPOT
+# Filtre : Transactions INCOMING vers UPLANETNAME_IMPOT
 #          avec référence contenant "TAX_PROVISION" (provisions fiscales)
 ################################################################################
 

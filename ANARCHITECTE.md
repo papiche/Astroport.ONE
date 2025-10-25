@@ -54,7 +54,7 @@ Le Ẑen est un outil de comptabilité conçu pour permettre à l'écosystème d
     4.  **Transparence et Gouvernance :** Les apports sont publics et validés par la communauté des sociétaires.
 *   **Séparation des Flux (Locataires vs. Sociétaires) :** Pour une conformité légale et une clarté comptable, les flux sont séparés via des wallets distincts :
     *   **`UPLANETNAME` :** Gère les revenus locatifs (chiffre d'affaires).
-    *   **`UPLANETNAME.SOCIETY` :** Gère les apports au capital social.
+    *   **`UPLANETNAME_SOCIETY` :** Gère les apports au capital social.
     Le script [`ZEN.ECONOMY.sh`](https://github.com/papiche/Astroport.ONE/blob/master/RUNTIME/ZEN.ECONOMY.sh) automatise la collecte des "loyers" et la distribution des PAFs.
 
 ---

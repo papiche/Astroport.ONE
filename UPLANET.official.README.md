@@ -117,7 +117,7 @@ UPLANETNAME_G1 → UPLANETNAME → MULTIPASS[email]
 
 ### **2. Virement SOCIÉTAIRE (Parts Sociales)**
 ```
-UPLANETNAME_G1 → UPLANETNAME.SOCIETY → ZEN Card[email] → 3x1/3
+UPLANETNAME_G1 → UPLANETNAME_SOCIETY → ZEN Card[email] → 3x1/3
 ```
 - **Types** :
   - **Satellite** : 50€/an (sans IA)
@@ -304,10 +304,10 @@ Le script nécessite que les portefeuilles suivants soient configurés :
 #### **Portefeuilles Principaux**
 - `UPLANETNAME_G1` → `~/.zen/game/uplanet.G1.dunikey` (Réserve Ğ1)
 - `UPLANETNAME` → `~/.zen/game/uplanet.dunikey` (Compte d'exploitation)
-- `UPLANETNAME.SOCIETY` → `~/.zen/game/uplanet.SOCIETY.dunikey` (Capital social)
+- `UPLANETNAME_SOCIETY` → `~/.zen/game/uplanet.SOCIETY.dunikey` (Capital social)
 
 #### **Portefeuilles Coopératifs** (créés par `ZEN.COOPERATIVE.3x1-3.sh`)
-- `UPLANETNAME.TREASURY` → `~/.zen/game/uplanet.CASH.dunikey`
+- `UPLANETNAME_TREASURY` → `~/.zen/game/uplanet.CASH.dunikey`
 - `UPLANETNAME_RND` → `~/.zen/game/uplanet.RnD.dunikey`
 - `UPLANETNAME_ASSETS` → `~/.zen/game/uplanet.ASSETS.dunikey`
 
@@ -329,9 +329,9 @@ Le script nécessite que les portefeuilles suivants soient configurés :
 
 ### **Virement Sociétaire**
 1. **Vérification** : Contrôle de l'existence des portefeuilles
-2. **Étape 1** : Transfert `UPLANETNAME_G1` → `UPLANETNAME.SOCIETY` (via `uplanet.G1.dunikey`)
+2. **Étape 1** : Transfert `UPLANETNAME_G1` → `UPLANETNAME_SOCIETY` (via `uplanet.G1.dunikey`)
 3. **Vérification** : Attente confirmation blockchain (max 40 minutes)
-4. **Étape 2** : Transfert `UPLANETNAME.SOCIETY` → `ZEN Card[email]` (via `uplanet.SOCIETY.dunikey`)
+4. **Étape 2** : Transfert `UPLANETNAME_SOCIETY` → `ZEN Card[email]` (via `uplanet.SOCIETY.dunikey`)
 5. **Vérification** : Attente confirmation blockchain (max 40 minutes)
 6. **Étape 3** : Répartition 3x1/3 depuis ZEN Card (via `secret.dunikey` de l'utilisateur)
    - Treasury (1/3) → `uplanet.CASH.dunikey` + attente confirmation
@@ -404,8 +404,8 @@ MACHINE_VALUE_ZEN=500        # Valeur machine par défaut
 # Résultat attendu
 👑 Traitement virement SOCIÉTAIRE pour: jane.smith@example.com
 💰 Type: satellite - Montant: 50€ (50 Ẑen)
-📤 Étape 1: Transfert UPLANETNAME_G1 → UPLANETNAME.SOCIETY
-📤 Étape 2: Transfert UPLANETNAME.SOCIETY → ZEN Card jane.smith@example.com
+📤 Étape 1: Transfert UPLANETNAME_G1 → UPLANETNAME_SOCIETY
+📤 Étape 2: Transfert UPLANETNAME_SOCIETY → ZEN Card jane.smith@example.com
 📤 Étape 3: Répartition 3x1/3 depuis ZEN Card
   📤 Treasury (1/3): 16.66 Ẑen
   📤 R&D (1/3): 16.66 Ẑen
@@ -544,7 +544,7 @@ UPLANET:AwdjhpJN:SOCIETY:support@qo-op.com:constellation:12D3KooWL2FcDJ41U9SyLuv
 # Chaque transfert utilise le fichier dunikey approprié :
 - UPLANETNAME_G1 → uplanet.G1.dunikey
 - UPLANETNAME → uplanet.dunikey  
-- UPLANETNAME.SOCIETY → uplanet.SOCIETY.dunikey
+- UPLANETNAME_SOCIETY → uplanet.SOCIETY.dunikey
 - ZEN Card → secret.dunikey de l'utilisateur
 ```
 

@@ -32,7 +32,7 @@ graph TD;
       
       subgraph "Organe n°3 : Le Capital Social Local";
           style SW fill:#fdebd0,stroke:#333,stroke-width:2px
-          SW["⭐ Wallet Capital<br/><b>UPLANETNAME.SOCIETY</b><br/>(Gère les parts sociales locales)"];
+          SW["⭐ Wallet Capital<br/><b>UPLANETNAME_SOCIETY</b><br/>(Gère les parts sociales locales)"];
           G1W -- "Collatéralise" --> SW;
           OC -- "Flux 'Sociétaire Local'" --> SW;
           SW -- "Émet les parts Ẑen" --> ZeroCard["Wallet Sociétaire<br/><b>ZEROCARD</b><br/>(du UPassport)"];

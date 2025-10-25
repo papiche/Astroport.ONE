@@ -332,11 +332,11 @@ L'initialisation UPLANET crée automatiquement :
 |-------------|------|----------------|
 | **UPLANETNAME_G1** | Réserve Ğ1 | Source principale |
 | **UPLANETNAME** | Services & MULTIPASS | UPLANETNAME_G1 |
-| **UPLANETNAME.SOCIETY** | Capital social | UPLANETNAME_G1 |
-| **UPLANETNAME.CASH** | Trésorerie (1/3) | UPLANETNAME_G1 |
+| **UPLANETNAME_SOCIETY** | Capital social | UPLANETNAME_G1 |
+| **UPLANETNAME_CASH** | Trésorerie (1/3) | UPLANETNAME_G1 |
 | **UPLANETNAME_RND** | R&D (1/3) | UPLANETNAME_G1 |
 | **UPLANETNAME_ASSETS** | Actifs (1/3) | UPLANETNAME_G1 |
-| **UPLANETNAME.IMPOT** | Fiscalité | UPLANETNAME_G1 |
+| **UPLANETNAME_IMPOT** | Fiscalité | UPLANETNAME_G1 |
 | **NODE** | Armateur | UPLANETNAME_G1 |
 
 ### **🔐 Sécurité Primale**

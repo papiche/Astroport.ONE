@@ -73,7 +73,7 @@ Ce surplus est le **bénéfice net de l'essaim**. Il est intégralement reversé
 
 #### **3. Allocation Coopérative 3x1/3**
 Le surplus net de la coopérative (après provision de l'Impôt sur les Sociétés) est alloué selon la règle des **3x1/3** :
-*   **1/3 Trésorerie** (`UPLANETNAME.TREASURY`)
+*   **1/3 Trésorerie** (`UPLANETNAME_TREASURY`)
 *   **1/3 R&D** (`UPLANETNAME_RND`)
 *   **1/3 Forêts Jardins** (`UPLANETNAME_ASSETS`)
 
@@ -98,7 +98,7 @@ Le surplus net de la coopérative (après provision de l'Impôt sur les Sociét�
 ```
 Loyer MULTIPASS : 1 Ẑ HT/semaine + 0.2 Ẑ TVA (20%)
 ├── 1.0 Ẑ → CAPTAIN (service hosting)
-└── 0.2 Ẑ → UPLANETNAME.IMPOT (provision TVA)
+└── 0.2 Ẑ → UPLANETNAME_IMPOT (provision TVA)
 ```
 - **Gestion** : Paiement automatique tous les 7 jours depuis la date de naissance
 - **Heure** : Aléatoire par utilisateur (éviter simultanéité)
@@ -108,7 +108,7 @@ Loyer MULTIPASS : 1 Ẑ HT/semaine + 0.2 Ẑ TVA (20%)
 ```
 Loyer ZEN Card : 4 Ẑ HT/semaine + 0.8 Ẑ TVA (20%)
 ├── 4.0 Ẑ → CAPTAIN (service premium)
-└── 0.8 Ẑ → UPLANETNAME.IMPOT (provision TVA)
+└── 0.8 Ẑ → UPLANETNAME_IMPOT (provision TVA)
 ```
 - **Services** : Accès TiddlyWiki + 128Go stockage
 - **Gestion** : Cycle 7 jours depuis BIRTHDATE
@@ -131,7 +131,7 @@ Parts Sociales : 50 Ẑ (paiement unique)
 ```
 PAF Hebdomadaire : 14 Ẑ/semaine (1.4 Ğ1)
 ├── Priorité 1 : CAPTAIN MULTIPASS → NODE
-├── Priorité 2 : UPLANETNAME.TREASURY → NODE (si CAPTAIN insuffisant)
+├── Priorité 2 : UPLANETNAME_TREASURY → NODE (si CAPTAIN insuffisant)
 └── Objectif : Électricité + Internet + Maintenance
 ```
 
@@ -155,7 +155,7 @@ Burn Mensuel : 56 Ẑ (4 semaines × 14 Ẑ)
 
 ##### **TVA Collectée**
 ```
-UPLANETNAME.IMPOT : 20% × (MULTIPASS + ZEN Cards)
+UPLANETNAME_IMPOT : 20% × (MULTIPASS + ZEN Cards)
 ├── MULTIPASS : 0.2 Ẑ × N utilisateurs/semaine
 ├── ZEN Cards : 0.8 Ẑ × N cartes/semaine
 └── Déclaration : Mensuelle (CA3)
@@ -164,7 +164,7 @@ UPLANETNAME.IMPOT : 20% × (MULTIPASS + ZEN Cards)
 ##### **Répartition Coopérative 3x1/3 - `ZEN.COOPERATIVE.3x1-3.sh`**
 ```
 Surplus Hebdomadaire → Allocation Automatique :
-├── UPLANETNAME.TREASURY (33.33%) : Trésorerie opérationnelle
+├── UPLANETNAME_TREASURY (33.33%) : Trésorerie opérationnelle
 ├── UPLANETNAME_RND (33.33%) : Recherche & Développement
 └── UPLANETNAME_ASSETS (33.34%) : Investissements durables
 ```
@@ -496,7 +496,7 @@ graph TD;
       
       subgraph "Organe n°3 : Le Capital Social Local";
           style SW fill:#fdebd0,stroke:#333,stroke-width:2px
-          SW["⭐ Wallet Capital<br/><b>UPLANETNAME.SOCIETY</b><br/>(Gère les parts sociales locales)"];
+          SW["⭐ Wallet Capital<br/><b>UPLANETNAME_SOCIETY</b><br/>(Gère les parts sociales locales)"];
           G1W -- "Collatéralise & Initialise" --> SW;
           OC -- "Flux 'Sociétaire Local'" --> SW;
           SW -- "Émet les parts Ẑen" --> ZenCard["Wallet Sociétaire<br/><b>CAPTAIN.ZENCARD</b><br/>(50Ẑ parts sociales)"];
@@ -515,10 +515,10 @@ graph TD;
           style ASSETS fill:#fff3e0,stroke:#f57c00,stroke-width:2px
           style IMPOT fill:#fce4ec,stroke:#c2185b,stroke-width:2px
           
-          CASH["💰 UPLANETNAME.CASH<br/>(Trésorerie 1/3)"];
+          CASH["💰 UPLANETNAME_CASH<br/>(Trésorerie 1/3)"];
           RND["🔬 UPLANETNAME_RND<br/>(R&D 1/3)"];
           ASSETS["🌳 UPLANETNAME_ASSETS<br/>(Actifs 1/3)"];
-          IMPOT["🏛️ UPLANETNAME.IMPOT<br/>(Fiscalité TVA+IS)"];
+          IMPOT["🏛️ UPLANETNAME_IMPOT<br/>(Fiscalité TVA+IS)"];
           
           G1W -- "Initialise" --> CASH;
           G1W -- "Initialise" --> RND;
@@ -605,7 +605,7 @@ Chaque constellation locale dispose de 5 organes essentiels :
 
 1. **La Réserve Locale (UPLANETNAME_G1)** : Collatéral Ğ1 qui sécurise l'ensemble
 2. **Les Services Locaux (UPLANETNAME)** : Gère les revenus locatifs des MULTIPASS
-3. **Le Capital Social (UPLANETNAME.SOCIETY)** : Émet les parts sociales ZEN Cards
+3. **Le Capital Social (UPLANETNAME_SOCIETY)** : Émet les parts sociales ZEN Cards
 4. **L'Infrastructure (NODE)** : Portefeuille de l'armateur qui reçoit l'apport capital machine
 5. **Les Portefeuilles Coopératifs** : CASH, RND, ASSETS, IMPOT pour la gestion collective
 
