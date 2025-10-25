@@ -65,8 +65,6 @@ create_initial_did() {
     local email="$1"
     local npub="$2"
     
-    echo -e "${CYAN}📝 Creating initial DID document for ${email}${NC}"
-    
     # Convert npub to hex for DID Nostr spec compliance
     local hex_pubkey=""
     if command -v python3 &> /dev/null; then
@@ -90,6 +88,24 @@ create_initial_did() {
     # Use external template with variable substitution
     local current_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     
+    # Read values from files created by make_NOSTRCARD.sh
+    local user_dir="$HOME/.zen/game/nostr/${email}"
+    local g1_pubkey=$(cat "${user_dir}/G1PUBNOSTR" 2>/dev/null || echo "")
+    local bitcoin_address=$(cat "${user_dir}/BITCOIN" 2>/dev/null || echo "")
+    local monero_address=$(cat "${user_dir}/MONERO" 2>/dev/null || echo "")
+    local nostrns=$(cat "${user_dir}/NOSTRNS" 2>/dev/null || echo "")
+    local latitude=$(cat "${user_dir}/GPS" 2>/dev/null | grep "LAT=" | cut -d'=' -f2 | cut -d';' -f1 || echo "")
+    local longitude=$(cat "${user_dir}/GPS" 2>/dev/null | grep "LON=" | cut -d'=' -f2 | cut -d';' -f1 || echo "")
+    local language=$(cat "${user_dir}/LANG" 2>/dev/null || echo "fr")
+    local youser=$(cat "${user_dir}/HEX" 2>/dev/null | cut -c1-8 || echo "")
+    
+    # Get UPlanet info from environment or defaults
+    local uplanet_g1pub_8="${UPLANETG1PUB:0:8:-AwdjhpJN}"
+    local my_relay="${myRELAY:-wss://relay.copylaradio.com}"
+    local my_ipfs="${myIPFS:-http://127.0.0.1:8080}"
+    local uspot="${uSPOT:-https://u.copylaradio.com}"
+    local ipfs_node_id="${IPFSNODEID:-}"
+    
     # Create a temporary file for the template processing
     local temp_template=$(mktemp)
     
@@ -98,21 +114,22 @@ create_initial_did() {
         -e "s/_EMAIL_/${email}/g" \
         -e "s/_CREATED_DATE_/${current_date}/g" \
         -e "s/_UPDATED_DATE_/${current_date}/g" \
-        -e "s/_G1_PUBKEY_/${G1PUBNOSTR:-}/g" \
-        -e "s/_BITCOIN_ADDRESS_/${BITCOIN:-}/g" \
-        -e "s/_NOSTRNS_/${NOSTRNS:-}/g" \
-        -e "s|_MY_RELAY_|${myRELAY:-wss://relay.copylaradio.com}|g" \
-        -e "s|_MY_IPFS_|${myIPFS:-http://127.0.0.1:8080}|g" \
-        -e "s|_USPOT_|${uSPOT:-https://u.copylaradio.com}|g" \
-        -e "s/_UPLANET_G1PUB_8_/${UPLANETG1PUB:0:8}/g" \
-        -e "s/_LATITUDE_/${ZLAT:-}/g" \
-        -e "s/_LONGITUDE_/${ZLON:-}/g" \
-        -e "s/_LANGUAGE_/${LANG:-fr}/g" \
-        -e "s/_YOUSER_/${YOUSER:-}/g" \
-        -e "s/_IPFS_NODE_ID_/${IPFSNODEID:-}/g" \
+        -e "s/_G1_PUBKEY_/${g1_pubkey}/g" \
+        -e "s/_BITCOIN_ADDRESS_/${bitcoin_address}/g" \
+        -e "s/_MONERO_ADDRESS_/${monero_address}/g" \
+        -e "s/_NOSTRNS_/${nostrns}/g" \
+        -e "s|_MY_RELAY_|${my_relay}|g" \
+        -e "s|_MY_IPFS_|${my_ipfs}|g" \
+        -e "s|_USPOT_|${uspot}|g" \
+        -e "s/_UPLANET_G1PUB_8_/${uplanet_g1pub_8}/g" \
+        -e "s/_LATITUDE_/${latitude}/g" \
+        -e "s/_LONGITUDE_/${longitude}/g" \
+        -e "s/_LANGUAGE_/${language}/g" \
+        -e "s/_YOUSER_/${youser}/g" \
+        -e "s/_IPFS_NODE_ID_/${ipfs_node_id}/g" \
         "$template_file" > "$temp_template"
     
-    # Output the processed template
+    # Output the processed template (JSON only, no debug messages)
     cat "$temp_template"
     
     # Cleanup
@@ -448,7 +465,19 @@ update_did_document() {
     
     # Execute update with better error handling
     echo -e "${BLUE}🔧 Executing jq command...${NC}"
-    if jq "$jq_cmd" "$did_temp" > "$did_updated" 2>/dev/null && [[ -s "$did_updated" ]]; then
+    
+    # First, validate that the input file is valid JSON
+    if ! jq empty "$did_temp" 2>/dev/null; then
+        echo -e "${RED}❌ Input file is not valid JSON${NC}"
+        echo -e "${YELLOW}💡 Input file content (first 200 chars):${NC}"
+        head -c 200 "$did_temp" | cat
+        echo ""
+        rm -f "$did_temp" "$did_updated"
+        return 1
+    fi
+    
+    # Execute the jq command with error output
+    if jq "$jq_cmd" "$did_temp" > "$did_updated" 2>/tmp/jq_error.log && [[ -s "$did_updated" ]]; then
         echo -e "${GREEN}✅ DID fields updated${NC}"
     else
         echo -e "${RED}❌ Failed to update DID fields${NC}"
@@ -457,6 +486,12 @@ update_did_document() {
         echo -e "${YELLOW}   Output file: $did_updated${NC}"
         echo -e "${YELLOW}   jq command: $jq_cmd${NC}"
         
+        # Show jq error if available
+        if [[ -f "/tmp/jq_error.log" ]] && [[ -s "/tmp/jq_error.log" ]]; then
+            echo -e "${YELLOW}   jq error:${NC}"
+            cat "/tmp/jq_error.log"
+        fi
+        
         # Try to show the input file content for debugging
         if [[ -f "$did_temp" ]]; then
             echo -e "${YELLOW}   Input file content (first 200 chars):${NC}"
@@ -464,7 +499,7 @@ update_did_document() {
             echo ""
         fi
         
-        rm -f "$did_temp" "$did_updated"
+        rm -f "$did_temp" "$did_updated" "/tmp/jq_error.log"
         return 1
     fi
     
@@ -552,14 +587,14 @@ update_udrive_did() {
         cp "$template_file" "$index_file"
         
         # Inject DID JSON data into the HTML file (properly escaped for JavaScript)
-        local did_json_content=$(jq -c . "$did_file" | jq -R -s . | sed 's/^"//' | sed 's/"$//')
+        local did_json_content=$(jq -c . "$did_file" | jq -R -s .)
         sed -i "s|const _DID_JSON_ = null;|const _DID_JSON_ = JSON.parse($did_json_content);|g" "$index_file"
         
         echo -e "${GREEN}✅ uDRIVE DID viewer updated with embedded JSON: ${index_file}${NC}"
         return 0
     elif [[ -f "$index_file" ]]; then
         # Update existing file with new JSON data (properly escaped for JavaScript)
-        local did_json_content=$(jq -c . "$did_file" | jq -R -s . | sed 's/^"//' | sed 's/"$//')
+        local did_json_content=$(jq -c . "$did_file" | jq -R -s .)
         sed -i "s|const _DID_JSON_ = .*;|const _DID_JSON_ = JSON.parse($did_json_content);|g" "$index_file"
         
         echo -e "${GREEN}✅ uDRIVE DID viewer updated with new JSON data${NC}"
