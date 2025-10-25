@@ -341,6 +341,30 @@ auto_fix_did() {
                         log_success "✅ Contexte W3C corrigé vers v1.1"
                     fi
                     
+                    # Corriger les métadonnées UPlanet manquantes
+                    log_info "🔧 Vérification et correction des métadonnées UPlanet..."
+                    local needs_update=false
+                    
+                    # Ajouter version si manquant
+                    if ! jq -e '.metadata.version' "$did_file" >/dev/null 2>&1; then
+                        log_info "🔄 Ajout du champ version manquant..."
+                        jq '.metadata.version = "1.0"' "$did_file" > /tmp/did_fixed.json && mv /tmp/did_fixed.json "$did_file"
+                        log_success "✅ Champ version ajouté"
+                        needs_update=true
+                    fi
+                    
+                    # Ajouter email si manquant
+                    if ! jq -e '.metadata.email' "$did_file" >/dev/null 2>&1; then
+                        log_info "🔄 Ajout du champ email manquant..."
+                        jq ".metadata.email = \"$email\"" "$did_file" > /tmp/did_fixed.json && mv /tmp/did_fixed.json "$did_file"
+                        log_success "✅ Champ email ajouté"
+                        needs_update=true
+                    fi
+                    
+                    if [[ "$needs_update" == "true" ]]; then
+                        log_success "✅ Métadonnées UPlanet corrigées"
+                    fi
+                    
                     # Mettre à jour le fichier .well-known/index.html
                     log_info "🔄 Mise à jour du fichier .well-known/index.html..."
                     if [[ -f "${MY_PATH}/did_manager_nostr.sh" ]]; then
