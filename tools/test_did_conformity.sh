@@ -568,6 +568,17 @@ test_did_conformity() {
             log_error "❌ Correction automatique échouée"
             return 1
         fi
+    elif [[ "$AUTO_FIX" == "true" ]] && ! jq -e '.metadata.version' "$did_file" >/dev/null 2>&1; then
+        echo ""
+        log_info "🔧 Métadonnées UPlanet incomplètes (version manquante), tentative de correction automatique..."
+        
+        if auto_fix_did "$email"; then
+            log_success "🎉 Correction automatique réussie !"
+            return 0
+        else
+            log_error "❌ Correction automatique échouée"
+            return 1
+        fi
     elif [[ ${#errors[@]} -gt 0 && "$FORMAT" == "text" ]]; then
         # Proposer la correction automatique si des erreurs sont détectées
         echo ""
