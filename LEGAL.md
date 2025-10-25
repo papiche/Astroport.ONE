@@ -77,13 +77,13 @@ Toutes les transactions vers les portefeuilles coopératifs doivent provenir de 
 ### **Article 12 : Portefeuilles Centraux**
 | Portefeuille | Rôle | Fonction |
 | :--- | :--- | :--- |
-| **`UPLANETNAME.G1`** | **Réserve & Stabilité** | Émet et "brûle" les Ẑen lors des conversions avec l'Euro. |
+| **`UPLANETNAME_G1`** | **Réserve & Stabilité** | Émet et "brûle" les Ẑen lors des conversions avec l'Euro. |
 | **`UPLANETNAME.SOCIETY`** | **Capital Social** | Gère les apports des sociétaires et l'émission des parts. |
 | **`UPLANETNAME`** | **Exploitation** | Collecte les surplus et gère l'allocation 3x1/3. |
 | **`UPLANETNAME.IMPOT`** | **Provision Fiscale** | Isole la TVA et l'IS pour garantir la conformité. |
 | **`UPLANETNAME.TREASURY`** | **Trésorerie (1/3)** | Réserves impartageables pour la liquidité. |
-| **`UPLANETNAME.RND`** | **R&D (1/3)** | Financement du G1FabLab. |
-| **`UPLANETNAME.ASSETS`** | **Actifs Réels (1/3)** | Acquisition des forêts-jardins. |
+| **`UPLANETNAME_RND`** | **R&D (1/3)** | Financement du G1FabLab. |
+| **`UPLANETNAME_ASSETS`** | **Actifs Réels (1/3)** | Acquisition des forêts-jardins. |
 | **`UPLANETNAME.CAPTAIN`** | **Rémunération Capitaine** | Stocke la rémunération hebdomadaire du capitaine. |
 | **`UPLANETNAME.INTRUSION`** | **Sécurité Anti-Intrusion** | Centralise les fonds provenant de transactions non autorisées. |
 
@@ -102,7 +102,7 @@ Toutes les transactions vers les portefeuilles coopératifs doivent provenir de 
 La coopérative propose un service de **rachat de Ẑen en Euros**, conditionné par la trésorerie disponible et les règles statutaires. Le processus est le suivant :
 1.  **Demande & Justification** (via Terminal Astroport)
 2.  **Validation Automatisée** (conformité, fonds, règle du 1/3)
-3.  **Burn** : Le membre transfère ses Ẑen vers `UPLANETNAME.G1` (destruction).
+3.  **Burn** : Le membre transfère ses Ẑen vers `UPLANETNAME_G1` (destruction).
 4.  **Paiement** : L'hôte fiscal exécute le virement SEPA en Euros.
 
 ---
@@ -147,13 +147,13 @@ graph TD
     end
 
     subgraph "Portefeuilles Coopérative UPLANET"
-        UPLANETNAME_G1["UPLANETNAME.G1<br><b>Réserve & Stabilité</b>"]:::cooperativeCentral
+        UPLANETNAME_G1["UPLANETNAME_G1<br><b>Réserve & Stabilité</b>"]:::cooperativeCentral
         UPLANETNAME_SOCIETY["UPLANETNAME.SOCIETY<br><b>Capital Social</b>"]:::cooperativeCentral
         UPLANETNAME["UPLANETNAME<br><b>Compte d'Exploitation</b>"]:::cooperativeCentral
         UPLANETNAME_IMPOT["UPLANETNAME.IMPOT<br><b>Provision Fiscale</b>"]:::cooperativeCentral
         UPLANETNAME_TREASURY["UPLANETNAME.TREASURY<br><b>Trésorerie (1/3)</b>"]:::allocationType
-        UPLANETNAME_ASSETS["UPLANETNAME.ASSETS<br><b>Projets (1/3)</b>"]:::allocationType
-        UPLANETNAME_RND["UPLANETNAME.RND<br><b>R&D (1/3)</b>"]:::allocationType
+        UPLANETNAME_ASSETS["UPLANETNAME_ASSETS<br><b>Projets (1/3)</b>"]:::allocationType
+        UPLANETNAME_RND["UPLANETNAME_RND<br><b>R&D (1/3)</b>"]:::allocationType
         UPLANETNAME_INTRUSION["UPLANETNAME.INTRUSION<br><b>Sécurité Anti-Intrusion</b>"]:::cooperativeCentral
         
         MB_SCIC -- "2. Échange € → Ẑen" --> UPLANETNAME_G1

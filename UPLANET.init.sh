@@ -6,8 +6,8 @@
 # - UPLANETNAME (Services & MULTIPASS)
 # - UPLANETNAME.SOCIETY (Capital social)
 # - UPLANETNAME.CASH (Trésorerie - uplanet.CASH.dunikey)
-# - UPLANETNAME.RND (R&D - uplanet.RnD.dunikey)
-# - UPLANETNAME.ASSETS (Actifs - uplanet.ASSETS.dunikey)
+# - UPLANETNAME_RND (R&D - uplanet.RnD.dunikey)
+# - UPLANETNAME_ASSETS (Actifs - uplanet.ASSETS.dunikey)
 #
 # Si un portefeuille est vide (< 1 Ğ1), il reçoit 1 Ğ1 depuis secret.G1.dunikey
 # pour l'initialiser à 0 Ẑen (1 Ğ1 = 0 Ẑen après transaction primale)
@@ -43,8 +43,8 @@ declare -A COOPERATIVE_WALLETS=(
     ["UPLANETNAME"]="$HOME/.zen/game/uplanet.dunikey"
     ["UPLANETNAME.SOCIETY"]="$HOME/.zen/game/uplanet.SOCIETY.dunikey"
     ["UPLANETNAME.CASH"]="$HOME/.zen/game/uplanet.CASH.dunikey"
-    ["UPLANETNAME.RND"]="$HOME/.zen/game/uplanet.RnD.dunikey"
-    ["UPLANETNAME.ASSETS"]="$HOME/.zen/game/uplanet.ASSETS.dunikey"
+    ["UPLANETNAME_RND"]="$HOME/.zen/game/uplanet.RnD.dunikey"
+    ["UPLANETNAME_ASSETS"]="$HOME/.zen/game/uplanet.ASSETS.dunikey"
     ["UPLANETNAME.IMPOT"]="$HOME/.zen/game/uplanet.IMPOT.dunikey"
     ["UPLANETNAME.CAPTAIN"]="$HOME/.zen/game/uplanet.captain.dunikey"
     ["UPLANETNAME.INTRUSION"]="$HOME/.zen/game/uplanet.INTRUSION.dunikey"
@@ -68,8 +68,8 @@ usage() {
     echo -e "  • UPLANETNAME (Services & MULTIPASS)"
     echo -e "  • UPLANETNAME.SOCIETY (Capital social)"
     echo -e "  • UPLANETNAME.CASH (Trésorerie)"
-    echo -e "  • UPLANETNAME.RND (R&D)"
-    echo -e "  • UPLANETNAME.ASSETS (Actifs)"
+    echo -e "  • UPLANETNAME_RND (R&D)"
+    echo -e "  • UPLANETNAME_ASSETS (Actifs)"
     echo -e "  • UPLANETNAME.IMPOT (Fiscalité)"
     echo -e "  • UPLANETNAME.CAPTAIN (Rémunération capitaine)"
     echo -e "  • UPLANETNAME.INTRUSION (Fonds d'intrusions détectées)"
@@ -226,10 +226,10 @@ create_missing_wallet() {
         "UPLANETNAME.CASH")
             "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.TREASURY" "${UPLANETNAME}.TREASURY"
             ;;
-        "UPLANETNAME.RND")
+        "UPLANETNAME_RND")
             "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.RND" "${UPLANETNAME}.RND"
             ;;
-        "UPLANETNAME.ASSETS")
+        "UPLANETNAME_ASSETS")
             "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.ASSETS" "${UPLANETNAME}.ASSETS"
             ;;
         "UPLANETNAME.IMPOT")

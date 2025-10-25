@@ -320,6 +320,22 @@ process_umap_friends() {
     # Process MULTIPASS summaries from this UMAP zone
     process_multipass_summaries "$UMAPPATH" "$SINCE" "$NPRIV_HEX"
 
+    ################################################################################
+    # ORE SYSTEM INTEGRATION
+    ################################################################################
+    # ORE SYSTEM INTEGRATION - Check if this UMAP should activate ORE mode
+    if [[ -x "${MY_PATH}/../tools/ore_system.py" ]]; then
+        # Use Python ORE system for activation check
+        local ore_check_result=$(python3 "${MY_PATH}/../tools/ore_system.py" "check_ore" "$LAT" "$LON" 2>/dev/null)
+        if echo "$ore_check_result" | grep -q "Should activate ORE mode: ✅ Yes"; then
+            log "🌱 Activating ORE mode for UMAP (${LAT}, ${LON})"
+            python3 "${MY_PATH}/../tools/ore_system.py" "activate_ore" "$LAT" "$LON" 2>/dev/null
+            
+            # Publish ORE Meeting Space (kind 30312) for persistent environmental space
+            publish_ore_meeting_space "$LAT" "$LON" "$NPRIV_HEX"
+        fi
+    fi
+
     for ami in ${friends[@]}; do
         process_friend_messages "$ami" "$UMAPPATH" "$SINCE" "$WEEK_AGO" "$MONTH_AGO" "$NPRIV_HEX"
     done
@@ -2016,6 +2032,106 @@ main() {
     fi
 
     exit 0
+}
+
+################################################################################
+# ORE SYSTEM FUNCTIONS - Nostr Event Publishing
+################################################################################
+
+# Function to publish ORE Meeting Space (kind 30312) for persistent environmental space
+publish_ore_meeting_space() {
+    local lat="$1"
+    local lon="$2"
+    local npriv_hex="$3"
+    
+    log "🌱 Publishing ORE Meeting Space (kind 30312) for UMAP (${lat}, ${lon})"
+    
+    # Generate UMAP DID for the meeting space
+    local umap_did_result=$(python3 "${MY_PATH}/../tools/ore_system.py" "generate_did" "$lat" "$lon" 2>/dev/null)
+    if [[ $? -ne 0 ]]; then
+        log "❌ Failed to generate UMAP DID for ORE Meeting Space"
+        return 1
+    fi
+    
+    # Extract UMAP hex key for the meeting space
+    local umap_hex=$(echo "$umap_did_result" | grep "HEX:" | cut -d ' ' -f 2)
+    if [[ -z "$umap_hex" ]]; then
+        log "❌ Failed to extract UMAP hex key"
+        return 1
+    fi
+    
+    # Create ORE Meeting Space event (kind 30312)
+    local event_content="{
+        \"kind\": 30312,
+        \"content\": \"UPlanet ORE Environmental Space - Persistent geographic area for environmental obligations tracking\",
+        \"tags\": [
+            [\"d\", \"ore-space-${lat}-${lon}\"],
+            [\"room\", \"UMAP_ORE_${lat}_${lon}\"],
+            [\"summary\", \"UPlanet ORE Environmental Space\"],
+            [\"status\", \"open\"],
+            [\"service\", \"${VDONINJA}/?room=${UPLANETNAME_G1:0:8}&effects&record\"],
+            [\"t\", \"ORE\"],
+            [\"t\", \"UPlanet\"],
+            [\"t\", \"Environment\"],
+            [\"t\", \"UMAP\"],
+            [\"g\", \"${lat},${lon}\"],
+            [\"p\", \"${UPLANETNAME_G1:0:8}\"]
+        ]
+    }"
+    
+    # Publish the event using nostr_publish_did.py
+    if [[ -x "${MY_PATH}/../tools/nostr_publish_did.py" ]]; then
+        echo "$event_content" | python3 "${MY_PATH}/../tools/nostr_publish_did.py" "$npriv_hex" 2>/dev/null
+        if [[ $? -eq 0 ]]; then
+            log "✅ ORE Meeting Space (kind 30312) published successfully"
+        else
+            log "❌ Failed to publish ORE Meeting Space"
+        fi
+    else
+        log "⚠️  nostr_publish_did.py not found, skipping ORE Meeting Space publication"
+    fi
+}
+
+# Function to publish ORE Verification Meeting (kind 30313) for scheduled verification
+publish_ore_verification_meeting() {
+    local lat="$1"
+    local lon="$2"
+    local npriv_hex="$3"
+    local meeting_title="$4"
+    local meeting_status="$5"
+    local start_time="$6"
+    
+    log "🌱 Publishing ORE Verification Meeting (kind 30313) for UMAP (${lat}, ${lon})"
+    
+    # Create ORE Verification Meeting event (kind 30313)
+    local event_content="{
+        \"kind\": 30313,
+        \"content\": \"${meeting_title}\",
+        \"tags\": [
+            [\"d\", \"ore-verification-${lat}-${lon}-$(date +%s)\"],
+            [\"a\", \"30312:${UPLANETNAME_G1:0:8}:ore-space-${lat}-${lon}\"],
+            [\"title\", \"${meeting_title}\"],
+            [\"status\", \"${meeting_status}\"],
+            [\"starts\", \"${start_time}\"],
+            [\"t\", \"ORE\"],
+            [\"t\", \"Verification\"],
+            [\"t\", \"UPlanet\"],
+            [\"t\", \"Environment\"],
+            [\"g\", \"${lat},${lon}\"]
+        ]
+    }"
+    
+    # Publish the event using nostr_publish_did.py
+    if [[ -x "${MY_PATH}/../tools/nostr_publish_did.py" ]]; then
+        echo "$event_content" | python3 "${MY_PATH}/../tools/nostr_publish_did.py" "$npriv_hex" 2>/dev/null
+        if [[ $? -eq 0 ]]; then
+            log "✅ ORE Verification Meeting (kind 30313) published successfully"
+        else
+            log "❌ Failed to publish ORE Verification Meeting"
+        fi
+    else
+        log "⚠️  nostr_publish_did.py not found, skipping ORE Verification Meeting publication"
+    fi
 }
 
 main

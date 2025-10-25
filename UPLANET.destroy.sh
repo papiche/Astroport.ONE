@@ -55,11 +55,11 @@ MIGRATION_NOTIFICATIONS_FAILED=0
 # Portefeuilles coopératifs (basés sur UPLANET.init.sh)
 declare -A COOPERATIVE_WALLETS=(
     ["UPLANETNAME"]="$HOME/.zen/game/uplanet.dunikey"
-    ["UPLANETNAME.G1"]="$HOME/.zen/game/uplanet.G1.dunikey"
+    ["UPLANETNAME_G1"]="$HOME/.zen/game/uplanet.G1.dunikey"
     ["UPLANETNAME.SOCIETY"]="$HOME/.zen/game/uplanet.SOCIETY.dunikey"
     ["UPLANETNAME.CASH"]="$HOME/.zen/game/uplanet.CASH.dunikey"
-    ["UPLANETNAME.RND"]="$HOME/.zen/game/uplanet.RnD.dunikey"
-    ["UPLANETNAME.ASSETS"]="$HOME/.zen/game/uplanet.ASSETS.dunikey"
+    ["UPLANETNAME_RND"]="$HOME/.zen/game/uplanet.RnD.dunikey"
+    ["UPLANETNAME_ASSETS"]="$HOME/.zen/game/uplanet.ASSETS.dunikey"
     ["UPLANETNAME.IMPOT"]="$HOME/.zen/game/uplanet.IMPOT.dunikey"
     ["UPLANETNAME.CAPTAIN"]="$HOME/.zen/game/uplanet.captain.dunikey"
     ["UPLANETNAME.INTRUSION"]="$HOME/.zen/game/uplanet.INTRUSION.dunikey"

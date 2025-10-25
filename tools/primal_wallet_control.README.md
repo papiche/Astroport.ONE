@@ -231,7 +231,7 @@ This implementation extracts and generalizes the primal transaction control func
 The system supports a **two-step identification protocol** for linking UPlanet stations to the WoT Dragon network:
 
 #### **Step 1: Primal Transaction (Initialization)**
-- **Source**: UPLANETNAME.G1 (unified primal source)
+- **Source**: UPLANETNAME_G1 (unified primal source)
 - **Destination**: NODE wallet
 - **Amount**: **Exactly 1 Ğ1** (initialization transaction)
 - **Purpose**: Initializes NODE wallet (1 Ğ1 = 0 ẐEN) and establishes primal source

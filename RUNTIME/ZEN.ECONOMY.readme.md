@@ -74,8 +74,8 @@ Ce surplus est le **bénéfice net de l'essaim**. Il est intégralement reversé
 #### **3. Allocation Coopérative 3x1/3**
 Le surplus net de la coopérative (après provision de l'Impôt sur les Sociétés) est alloué selon la règle des **3x1/3** :
 *   **1/3 Trésorerie** (`UPLANETNAME.TREASURY`)
-*   **1/3 R&D** (`UPLANETNAME.RND`)
-*   **1/3 Forêts Jardins** (`UPLANETNAME.ASSETS`)
+*   **1/3 R&D** (`UPLANETNAME_RND`)
+*   **1/3 Forêts Jardins** (`UPLANETNAME_ASSETS`)
 
 ---
 
@@ -165,8 +165,8 @@ UPLANETNAME.IMPOT : 20% × (MULTIPASS + ZEN Cards)
 ```
 Surplus Hebdomadaire → Allocation Automatique :
 ├── UPLANETNAME.TREASURY (33.33%) : Trésorerie opérationnelle
-├── UPLANETNAME.RND (33.33%) : Recherche & Développement
-└── UPLANETNAME.ASSETS (33.34%) : Investissements durables
+├── UPLANETNAME_RND (33.33%) : Recherche & Développement
+└── UPLANETNAME_ASSETS (33.34%) : Investissements durables
 ```
 
 #### **📈 Modèle Économique par Utilisateur (Immobilier Numérique)**
@@ -201,18 +201,18 @@ Raspberry Pi 5 + NVMe 4To (Recommandé)
 **Référence Technique :** [Guide complet Raspberry Pi 5 + NVMe 4To](https://pad.p2p.legal/s/RaspberryPi#)
 
 ### **CONFIGURATION**
-Les variables (`PAF`, `TVA_RATE`, `MACHINE_VALUE_ZEN`, etc.) sont définies dans un fichier `.env`. Les portefeuilles sont initialisés automatiquement par `UPLANET.init.sh` avec source primale unique `UPLANETNAME.G1`.
+Les variables (`PAF`, `TVA_RATE`, `MACHINE_VALUE_ZEN`, etc.) sont définies dans un fichier `.env`. Les portefeuilles sont initialisés automatiquement par `UPLANET.init.sh` avec source primale unique `UPLANETNAME_G1`.
 
 ### **NOUVEAUTÉS SYSTÈME**
-- **Burn 4-semaines** : NODE → UPLANETNAME.G1 → OpenCollective (56Ẑ toutes les 4 semaines)
+- **Burn 4-semaines** : NODE → UPLANETNAME_G1 → OpenCollective (56Ẑ toutes les 4 semaines)
 - **Apport capital machine** : ZEN Card → NODE (une seule fois, valeur machine en Ẑen)
 - **TVA fiscalement correcte** : Répartition directe MULTIPASS → CAPTAIN HT + IMPOTS TVA
-- **Initialisation cohérente** : Tous les portefeuilles initialisés depuis `UPLANETNAME.G1`
+- **Initialisation cohérente** : Tous les portefeuilles initialisés depuis `UPLANETNAME_G1`
 
 ### **RÈGLE DE CONVERSION ẐEN**
 **Parité Fixe :** `0.1Ğ1 = 1Ẑ` est toujours vraie
 **Formule :** `#ZEN = (#G1 - 1) × 10` pour tous les portefeuilles UPlanet
-**Source :** Tous les portefeuilles reçoivent 1Ğ1 depuis `UPLANETNAME.G1` (banque centrale)
+**Source :** Tous les portefeuilles reçoivent 1Ğ1 depuis `UPLANETNAME_G1` (banque centrale)
 
 ### **SIMULATEUR ÉCONOMIQUE**
 Testez le système : https://ipfs.copylaradio.com/ipns/copylaradio.com/economy.html
@@ -338,6 +338,15 @@ UPLANET:${UPLANETG1PUB:0:8}:COOPERATIVE:ASSETS
 - **Comptabilité** : Compte 50 - Valeurs mobilières de placement
 - **Fiscal** : Plus-values soumises à IS
 
+##### **Récompenses ORE (Obligations Réelles Environnementales)**
+```
+UPLANET:${UPLANETG1PUB:0:8}:ORE:${umap_hex:0:8}:${lat}:${lon}:${IPFSNODEID}
+```
+- **Nature juridique** : Récompenses pour services écosystémiques
+- **Comptabilité** : Compte 706 - Prestations de services environnementaux
+- **Fiscal** : Services environnementaux (potentiellement exonérés)
+- **UMAP** : Cellule géographique 0.01°x0.01° avec DID Nostr
+
 #### **🎮 Transactions Ludiques - Économie Circulaire**
 
 ##### **PalPay - Redistribution de Jeu**
@@ -390,7 +399,7 @@ C'est un service de rachat offert par la coopérative.
 1.  **Demande** via le Terminal.
 2.  **Justification** sur IPFS.
 3.  **Validation** par le protocole (conformité, trésorerie, règle du 1/3).
-4.  **Burn** : Le membre transfère ses Ẑen vers `UPLANETNAME.G1` (destruction).
+4.  **Burn** : Le membre transfère ses Ẑen vers `UPLANETNAME_G1` (destruction).
 5.  **Paiement** : Virement SEPA en Euros via l'hôte fiscal.
 
 ### **DÉPLOIEMENT SYSTÈME : HUB + 24 SATELLITES**
@@ -474,7 +483,7 @@ graph TD;
       
       subgraph "Organe n°1 : La Réserve Locale";
           style G1W fill:#cde4ff,stroke:#333,stroke-width:4px
-          G1W["🏛️ Wallet Réserve<br/><b>UPLANETNAME.G1</b><br/>(Collatéral Ğ1 de l'essaim)"];
+          G1W["🏛️ Wallet Réserve<br/><b>UPLANETNAME_G1</b><br/>(Collatéral Ğ1 de l'essaim)"];
       end
 
       subgraph "Organe n°2 : Les Services Locaux";
@@ -507,8 +516,8 @@ graph TD;
           style IMPOT fill:#fce4ec,stroke:#c2185b,stroke-width:2px
           
           CASH["💰 UPLANETNAME.CASH<br/>(Trésorerie 1/3)"];
-          RND["🔬 UPLANETNAME.RND<br/>(R&D 1/3)"];
-          ASSETS["🌳 UPLANETNAME.ASSETS<br/>(Actifs 1/3)"];
+          RND["🔬 UPLANETNAME_RND<br/>(R&D 1/3)"];
+          ASSETS["🌳 UPLANETNAME_ASSETS<br/>(Actifs 1/3)"];
           IMPOT["🏛️ UPLANETNAME.IMPOT<br/>(Fiscalité TVA+IS)"];
           
           G1W -- "Initialise" --> CASH;
@@ -594,7 +603,7 @@ Ce diagramme illustre l'écosystème ẐEN dans sa totalité, de l'académie des
 #### **🌟 Niveau 2 : UPlanet ZEN 'NAME' (Constellation Locale)**
 Chaque constellation locale dispose de 5 organes essentiels :
 
-1. **La Réserve Locale (UPLANETNAME.G1)** : Collatéral Ğ1 qui sécurise l'ensemble
+1. **La Réserve Locale (UPLANETNAME_G1)** : Collatéral Ğ1 qui sécurise l'ensemble
 2. **Les Services Locaux (UPLANETNAME)** : Gère les revenus locatifs des MULTIPASS
 3. **Le Capital Social (UPLANETNAME.SOCIETY)** : Émet les parts sociales ZEN Cards
 4. **L'Infrastructure (NODE)** : Portefeuille de l'armateur qui reçoit l'apport capital machine

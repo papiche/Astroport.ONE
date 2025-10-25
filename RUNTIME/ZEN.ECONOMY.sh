@@ -229,7 +229,7 @@ process_captain_remuneration
 
 #######################################################################
 # PAF BURN & CONVERSION - 4-week operational cost management
-# Burn 4-week accumulated PAF from NODE back to UPLANETNAME.G1 and request € conversion
+# Burn 4-week accumulated PAF from NODE back to UPLANETNAME_G1 and request € conversion
 # This creates a deflationary mechanism and enables real € payment for costs
 #######################################################################
 fourweeks_paf_burn_and_convert() {
@@ -273,9 +273,9 @@ fourweeks_paf_burn_and_convert() {
             log_output "  Period: $period_key (4-week cycle)"
             log_output "  4-week PAF: $FOURWEEKS_PAF Ẑen ($FOURWEEKS_PAF_G1 G1)"
             log_output "  From: NODE (operational costs)"
-            log_output "  To: UPLANETNAME.G1 (burn & convert)"
+            log_output "  To: UPLANETNAME_G1 (burn & convert)"
             
-            # Burn: NODE → UPLANETNAME.G1
+            # Burn: NODE → UPLANETNAME_G1
             # Check station level and use appropriate method
             if [[ "$station_level" == "Y" && -f "$HOME/.zen/game/secret.NODE.dunikey" ]]; then
                 # Level Y: Use existing NODE wallet
@@ -438,8 +438,8 @@ declare -A COOPERATIVE_WALLETS=(
     ["UPLANETNAME"]="$HOME/.zen/game/uplanet.dunikey"
     ["UPLANETNAME.SOCIETY"]="$HOME/.zen/game/uplanet.SOCIETY.dunikey"
     ["UPLANETNAME.CASH"]="$HOME/.zen/game/uplanet.CASH.dunikey"
-    ["UPLANETNAME.RND"]="$HOME/.zen/game/uplanet.RnD.dunikey"
-    ["UPLANETNAME.ASSETS"]="$HOME/.zen/game/uplanet.ASSETS.dunikey"
+    ["UPLANETNAME_RND"]="$HOME/.zen/game/uplanet.RnD.dunikey"
+    ["UPLANETNAME_ASSETS"]="$HOME/.zen/game/uplanet.ASSETS.dunikey"
     ["UPLANETNAME.IMPOT"]="$HOME/.zen/game/uplanet.IMPOT.dunikey"
     ["UPLANETNAME.CAPTAIN"]="$HOME/.zen/game/uplanet.captain.dunikey"
     ["UPLANETNAME.INTRUSION"]="$HOME/.zen/game/uplanet.INTRUSION.dunikey"

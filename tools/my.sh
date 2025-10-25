@@ -617,7 +617,7 @@ CAPTAINEMAIL=$(cat $HOME/.zen/game/players/.current/.player 2>/dev/null) ## PLAY
 CAPTAINHEX=$(cat $HOME/.zen/game/nostr/${CAPTAINEMAIL}/HEX 2>/dev/null) ## PLAYER ONE HEX
 CAPTAING1PUB=$(cat $HOME/.zen/game/nostr/${CAPTAINEMAIL}/G1PUBNOSTR 2>/dev/null) ## PLAYER ONE MULTIPASS G1PUBNOSTR
 
-## ADD "UPLANETNAME.G1" WALLET LINK FOR Ğ1 DONATION 
+## ADD "UPLANETNAME_G1" WALLET LINK FOR Ğ1 DONATION 
 [[ ! -s $HOME/.zen/game/uplanet.G1.dunikey ]] \
     && $HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.G1.dunikey "${UPLANETNAME}.G1" "${UPLANETNAME}.G1" \
     && UPLANETNAME_G1=$(cat $HOME/.zen/game/uplanet.G1.dunikey | grep "pub" | cut -d " " -f 2) \

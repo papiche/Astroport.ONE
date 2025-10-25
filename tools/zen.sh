@@ -4,7 +4,7 @@
 #
 # This script allows captains to perform transactions using different wallet types
 # according to the UPlanet economic model flowchart:
-# - UPLANETNAME.G1: Reserve wallet for Ğ1 donations
+# - UPLANETNAME_G1: Reserve wallet for Ğ1 donations
 # - UPLANETNAME: Services wallet for MULTIPASS operations
 # - UPLANETNAME.SOCIETY: Social capital wallet for ZenCard operations
 #
@@ -105,7 +105,7 @@ get_wallet_status() {
     
     # Calculate Ẑen for non-G1 wallets
     local zen_balance=""
-    if [[ "$wallet_type" != "UPLANETNAME.G1" ]]; then
+    if [[ "$wallet_type" != "UPLANETNAME_G1" ]]; then
         zen_balance=$(calculate_zen_balance "$balance")
     fi
     
@@ -215,8 +215,8 @@ show_flowchart_position() {
     echo -e "${YELLOW}================================${NC}"
     
     case "$wallet_type" in
-        "UPLANETNAME.G1")
-            echo -e "${BLUE}🏛️  WALLET TYPE: UPLANETNAME.G1 (Ğ1 Reserve)${NC}"
+        "UPLANETNAME_G1")
+            echo -e "${BLUE}🏛️  WALLET TYPE: UPLANETNAME_G1 (Ğ1 Reserve)${NC}"
             echo -e "${GREEN}   → External World & Inputs${NC}"
             echo -e "${GREEN}   → Parent Cooperative${NC}"
             echo -e "${GREEN}   → Operational Cooperative: CopyLaRadio${NC}"
@@ -511,7 +511,7 @@ get_system_wallet_public_key() {
     
     local keyfile=""
     case "$wallet_type" in
-        "UPLANETNAME.G1")
+        "UPLANETNAME_G1")
             keyfile="$HOME/.zen/tmp/UPLANETNAME_G1"
             ;;
         "UPLANETNAME")
@@ -551,7 +551,7 @@ get_system_wallet_private_key() {
     
     local dunikey_file=""
     case "$wallet_type" in
-        "UPLANETNAME.G1")
+        "UPLANETNAME_G1")
             dunikey_file="$HOME/.zen/tmp/UPLANETNAME_G1.dunikey"
             ;;
         "UPLANETNAME")
@@ -604,7 +604,7 @@ display_system_wallet_info() {
             
             # Display balance in correct unit
             case "$wallet_type" in
-                "UPLANETNAME.G1")
+                "UPLANETNAME_G1")
                 echo -e "${BLUE}Balance:${NC} ${YELLOW}$balance Ğ1${NC}"
                     ;;
                 "UPLANETNAME"|"UPLANETNAME.SOCIETY")
@@ -709,7 +709,7 @@ execute_system_transaction() {
     # Get source wallet private key
     local source_wallet_name=""
     case "$source_wallet_type" in
-        "UPLANETNAME.G1")
+        "UPLANETNAME_G1")
             source_wallet_name="${UPLANETNAME}.G1"
             ;;
         "UPLANETNAME")
@@ -789,7 +789,7 @@ validate_economic_flow() {
     dest_primal=$(get_primal_info "$dest_pubkey")
     
     case "$wallet_type" in
-        "UPLANETNAME.G1")
+        "UPLANETNAME_G1")
             echo -e "${BLUE}Flow:${NC} External donations → Reserve management"
             if [[ -n "$dest_primal" ]]; then
                 echo -e "${GREEN}✓ Destination has primal transaction${NC}"
@@ -849,7 +849,7 @@ get_transaction_details() {
     # Get amount with correct unit
     local unit=""
     case "$wallet_type" in
-        "UPLANETNAME.G1")
+        "UPLANETNAME_G1")
             unit="Ğ1"
             ;;
         "UPLANETNAME"|"UPLANETNAME.SOCIETY")
@@ -862,7 +862,7 @@ get_transaction_details() {
         if [[ -n "$amount" ]] && [[ $amount =~ ^[0-9]+([.][0-9]+)?$ ]]; then
             # Convert Ẑen to Ğ1 for UPLANETNAME and UPLANETNAME.SOCIETY
             # Note: Ẑen / 10 = Ğ1 (excluding primal transaction)
-            if [[ "$wallet_type" != "UPLANETNAME.G1" ]]; then
+            if [[ "$wallet_type" != "UPLANETNAME_G1" ]]; then
                 g1_amount=$(echo "scale=2; ($amount / 10)" | bc -l)
                 echo -e "${CYAN}Converting $amount $unit to $g1_amount Ğ1 for transaction${NC}"
                 amount="$g1_amount"
@@ -927,7 +927,7 @@ get_transaction_details() {
     
     # Determine transaction type based on wallet type
     case "$wallet_type" in
-        "UPLANETNAME.G1")
+        "UPLANETNAME_G1")
             transaction_type="Ğ1 Reserve Management"
             ;;
         "UPLANETNAME")
@@ -958,7 +958,7 @@ get_transaction_details() {
     echo -e "${BLUE}Destination Balance:${NC} ${YELLOW}$dest_balance Ğ1${NC}"
     # Display amount in correct unit
     case "$wallet_type" in
-        "UPLANETNAME.G1")
+        "UPLANETNAME_G1")
             echo -e "${BLUE}Amount:${NC} $amount Ğ1"
             ;;
         "UPLANETNAME"|"UPLANETNAME.SOCIETY")
@@ -1008,14 +1008,14 @@ get_transaction_details() {
     fi
 }
 
-# Function to handle UPLANETNAME.G1 operations
+# Function to handle UPLANETNAME_G1 operations
 handle_g1_reserve() {
-    echo -e "\n${CYAN}🏛️  UPLANETNAME.G1 - Ğ1 RESERVE WALLET${NC}"
+    echo -e "\n${CYAN}🏛️  UPLANETNAME_G1 - Ğ1 RESERVE WALLET${NC}"
     echo -e "${YELLOW}=====================================${NC}"
     echo -e "${GREEN}Ce portefeuille gère les réserves Ğ1 et les donations externes.${NC}"
     echo -e "${GREEN}Flux: Donations externes → Gestion des réserves${NC}"
     
-    show_flowchart_position "UPLANETNAME.G1" "Ğ1 Reserve Management"
+    show_flowchart_position "UPLANETNAME_G1" "Ğ1 Reserve Management"
     
     echo -e "\n${BLUE}OPTIONS DE TRANSACTION:${NC}"
     echo -e "  1. 💼 Alimenter UPLANETNAME (Services & Cash-Flow)"
@@ -1032,7 +1032,7 @@ handle_g1_reserve() {
             # Send to UPLANETNAME
             local dest_pubkey=$(get_system_wallet_public_key "UPLANETNAME")
             if [[ -n "$dest_pubkey" ]]; then
-                get_transaction_details "UPLANETNAME.G1" "UPLANETNAME"
+                get_transaction_details "UPLANETNAME_G1" "UPLANETNAME"
             else
                 echo -e "${RED}UPLANETNAME wallet not configured${NC}"
                 exit 1
@@ -1044,15 +1044,15 @@ handle_g1_reserve() {
             ;;
         3)
             # Send to external wallet
-    get_transaction_details "UPLANETNAME.G1" ""
+    get_transaction_details "UPLANETNAME_G1" ""
             ;;
         4)
             # View status only
-            local source_pubkey=$(get_system_wallet_public_key "UPLANETNAME.G1")
+            local source_pubkey=$(get_system_wallet_public_key "UPLANETNAME_G1")
             if [[ -n "$source_pubkey" ]]; then
-                display_system_wallet_info "UPLANETNAME.G1" "$source_pubkey"
+                display_system_wallet_info "UPLANETNAME_G1" "$source_pubkey"
             else
-                echo -e "${RED}UPLANETNAME.G1 wallet not configured${NC}"
+                echo -e "${RED}UPLANETNAME_G1 wallet not configured${NC}"
                 exit 1
             fi
             ;;
@@ -1127,7 +1127,7 @@ handle_capital_valuation() {
     echo -e "${BLUE}Type de machine:${NC} $machine_type"
     echo -e "${BLUE}Valeur:${NC} ${YELLOW}$machine_value €${NC} = ${CYAN}$zen_amount Ẑen${NC} = ${YELLOW}$g1_amount Ğ1${NC}"
     echo -e "\n${GREEN}Cette valorisation sera inscrite au capital social de la coopérative.${NC}"
-    echo -e "${GREEN}Flux: UPLANETNAME.G1 → UPLANETNAME.SOCIETY → ZenCard Capitaine${NC}"
+    echo -e "${GREEN}Flux: UPLANETNAME_G1 → UPLANETNAME.SOCIETY → ZenCard Capitaine${NC}"
     
     read -p "Confirmer la valorisation? (y/N): " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
@@ -1144,7 +1144,7 @@ handle_capital_valuation() {
     
     # Execute capital valuation transaction
     local comment="CAPITAL:MACHINE:$machine_type:$machine_value€"
-    if execute_system_transaction "UPLANETNAME.G1" "$society_pubkey" "$g1_amount" "$comment"; then
+    if execute_system_transaction "UPLANETNAME_G1" "$society_pubkey" "$g1_amount" "$comment"; then
         echo -e "\n${GREEN}✅ Valorisation du capital réussie!${NC}"
         echo -e "${GREEN}Votre machine ($machine_type) est maintenant inscrite au capital social.${NC}"
         
@@ -1287,7 +1287,7 @@ initialize_system_wallets_complete() {
     echo -e "\n${BLUE}État des portefeuilles système:${NC}"
     
     # Check each wallet
-    local wallets=("UPLANETNAME.G1" "UPLANETNAME" "UPLANETNAME.SOCIETY")
+    local wallets=("UPLANETNAME_G1" "UPLANETNAME" "UPLANETNAME.SOCIETY")
     for wallet in "${wallets[@]}"; do
         local pubkey=$(get_system_wallet_public_key "$wallet")
         if [[ -n "$pubkey" ]]; then
@@ -1314,7 +1314,7 @@ verify_astroport_configuration() {
     fi
     
     # Check system wallets
-    local wallets=("UPLANETNAME.G1" "UPLANETNAME" "UPLANETNAME.SOCIETY")
+    local wallets=("UPLANETNAME_G1" "UPLANETNAME" "UPLANETNAME.SOCIETY")
     for wallet in "${wallets[@]}"; do
         local pubkey=$(get_system_wallet_public_key "$wallet")
         if [[ -n "$pubkey" ]]; then
@@ -1391,7 +1391,7 @@ handle_wallet_analysis() {
     
     # System wallets
     echo -e "\n${CYAN}SYSTEM WALLETS:${NC}"
-    echo -e "  ${GREEN}$((1+${#account_names[@]}+${#player_dirs[@]}))${NC} UPLANETNAME.G1 (Ğ1 Reserve)"
+    echo -e "  ${GREEN}$((1+${#account_names[@]}+${#player_dirs[@]}))${NC} UPLANETNAME_G1 (Ğ1 Reserve)"
     echo -e "  ${GREEN}$((2+${#account_names[@]}+${#player_dirs[@]}))${NC} UPLANETNAME (Services & Cash-Flow)"
     echo -e "  ${GREEN}$((3+${#account_names[@]}+${#player_dirs[@]}))${NC} UPLANETNAME.SOCIETY (Social Capital)"
     
@@ -1415,8 +1415,8 @@ handle_wallet_analysis() {
         wallet_type="ZenCard"
         pubkey=$(cat ~/.zen/game/players/${selected_wallet}/.g1pub 2>/dev/null)
     elif [[ "$wallet_choice" -eq $((1+${#account_names[@]}+${#player_dirs[@]})) ]]; then
-        # UPLANETNAME.G1
-        selected_wallet="UPLANETNAME.G1"
+        # UPLANETNAME_G1
+        selected_wallet="UPLANETNAME_G1"
         wallet_type="SYSTEM"
         pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_G1" 2>/dev/null)
     elif [[ "$wallet_choice" -eq $((2+${#account_names[@]}+${#player_dirs[@]})) ]]; then
@@ -1459,7 +1459,7 @@ show_analysis_menu() {
     ZEN=$(echo "$status" | cut -d '|' -f 3)
     
     # Display balance
-    if [[ "$wallet_type" != "UPLANETNAME.G1" ]] && [[ -n "$ZEN" ]] && [[ "$ZEN" != "0" ]]; then
+    if [[ "$wallet_type" != "UPLANETNAME_G1" ]] && [[ -n "$ZEN" ]] && [[ "$ZEN" != "0" ]]; then
         echo -e "${GREEN}Balance: ${YELLOW}$balance Ğ1${NC} (${CYAN}$ZEN Ẑen${NC})"
     else
         echo -e "${GREEN}Balance: ${YELLOW}$balance Ğ1${NC}"
@@ -1723,7 +1723,7 @@ get_system_wallet_key() {
     # Create the public key cache file path based on wallet type
     local pubkey_file=""
     case "$wallet_type" in
-        "UPLANETNAME.G1")
+        "UPLANETNAME_G1")
             pubkey_file="$HOME/.zen/tmp/UPLANETNAME_G1"
             ;;
         "UPLANETNAME")
@@ -1761,8 +1761,8 @@ get_system_wallet_key() {
 initialize_system_wallets() {
     echo -e "${YELLOW}Initializing system wallets...${NC}"
     
-    # Initialize UPLANETNAME.G1
-    get_system_wallet_key "UPLANETNAME.G1" "${UPLANETNAME}.G1" >/dev/null 2>&1
+    # Initialize UPLANETNAME_G1
+    get_system_wallet_key "UPLANETNAME_G1" "${UPLANETNAME}.G1" >/dev/null 2>&1
     
     # Initialize UPLANETNAME
     get_system_wallet_key "UPLANETNAME" "${UPLANETNAME}" >/dev/null 2>&1
@@ -2855,17 +2855,17 @@ display_station_overview() {
     # System wallets status
     echo -e "\n${BLUE}💰 PORTEFEUILLES SYSTÈME:${NC}"
     
-    # UPLANETNAME.G1
+    # UPLANETNAME_G1
     if [[ -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
         g1_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_G1" 2>/dev/null)
         if [[ -n "$g1_pubkey" ]]; then
             g1_balance=$(get_wallet_balance "$g1_pubkey")
-            echo -e "  • ${GREEN}UPLANETNAME.G1:${NC} ${YELLOW}$g1_balance Ğ1${NC} (Réserves)"
+            echo -e "  • ${GREEN}UPLANETNAME_G1:${NC} ${YELLOW}$g1_balance Ğ1${NC} (Réserves)"
         else
-            echo -e "  • ${RED}UPLANETNAME.G1: Erreur de configuration${NC}"
+            echo -e "  • ${RED}UPLANETNAME_G1: Erreur de configuration${NC}"
         fi
     else
-        echo -e "  • ${RED}UPLANETNAME.G1: Non configuré${NC}"
+        echo -e "  • ${RED}UPLANETNAME_G1: Non configuré${NC}"
     fi
     
     # UPLANETNAME - Utilise G1revenue.sh pour afficher le CA depuis l'historique
@@ -2930,17 +2930,17 @@ display_economic_dashboard() {
     # System wallets info
     echo -e "${BLUE}🏛️  SYSTEM WALLETS:${NC}"
     
-    # UPLANETNAME.G1
+    # UPLANETNAME_G1
     if [[ -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
         g1_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_G1" 2>/dev/null)
         if [[ -n "$g1_pubkey" ]]; then
             g1_balance=$(get_wallet_balance "$g1_pubkey")
-            echo -e "   • UPLANETNAME.G1: ${YELLOW}$g1_balance Ğ1${NC}"
+            echo -e "   • UPLANETNAME_G1: ${YELLOW}$g1_balance Ğ1${NC}"
         else
-            echo -e "   • UPLANETNAME.G1: ${RED}Invalid keyfile${NC}"
+            echo -e "   • UPLANETNAME_G1: ${RED}Invalid keyfile${NC}"
         fi
     else
-        echo -e "   • UPLANETNAME.G1: ${RED}Not configured${NC}"
+        echo -e "   • UPLANETNAME_G1: ${RED}Not configured${NC}"
     fi
     
     # UPLANETNAME - Utilise G1revenue.sh pour afficher le CA depuis l'historique
@@ -3401,7 +3401,7 @@ handle_system_wallets() {
         echo -e "${GREEN}Gérez les comptes centraux de votre station UPlanet${NC}"
         
         echo -e "\n${BLUE}PORTEFEUILLES DISPONIBLES:${NC}"
-        echo -e "  1. 🏛️  UPLANETNAME.G1 - Réserves Ğ1 et donations"
+        echo -e "  1. 🏛️  UPLANETNAME_G1 - Réserves Ğ1 et donations"
         echo -e "  2. 💼 UPLANETNAME - Services et MULTIPASS"
         echo -e "  3. ⭐ UPLANETNAME.SOCIETY - Capital social et ZenCard"
         echo -e "  4. 📊 Vue d'ensemble de tous les portefeuilles"
@@ -3638,7 +3638,7 @@ display_all_system_wallets() {
     echo -e "\n${CYAN}📊 VUE D'ENSEMBLE DES PORTEFEUILLES SYSTÈME${NC}"
     echo -e "${YELLOW}===========================================${NC}"
     
-    local wallets=("UPLANETNAME.G1" "UPLANETNAME" "UPLANETNAME.SOCIETY")
+    local wallets=("UPLANETNAME_G1" "UPLANETNAME" "UPLANETNAME.SOCIETY")
     for wallet in "${wallets[@]}"; do
         local pubkey=$(get_system_wallet_public_key "$wallet")
         if [[ -n "$pubkey" ]]; then
@@ -3662,7 +3662,7 @@ initialize_missing_wallets() {
     initialize_system_wallets
     
     echo -e "\n${BLUE}État des portefeuilles:${NC}"
-    local wallets=("UPLANETNAME.G1" "UPLANETNAME" "UPLANETNAME.SOCIETY")
+    local wallets=("UPLANETNAME_G1" "UPLANETNAME" "UPLANETNAME.SOCIETY")
     for wallet in "${wallets[@]}"; do
         local pubkey=$(get_system_wallet_public_key "$wallet")
         if [[ -n "$pubkey" ]]; then

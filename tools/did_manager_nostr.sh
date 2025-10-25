@@ -390,6 +390,26 @@ update_did_document() {
                 }"
             fi
             ;;
+        "ORE_GUARDIAN")
+            quota="N/A"
+            services="ORE Guardian - Environmental contract verification authority"
+            contract_status="ore_guardian_authority"
+            ;;
+        "ORE_CONTRACT_ATTACHED")
+            quota="N/A"
+            services="ORE Contract - Environmental obligations attached"
+            contract_status="ore_contract_active"
+            ;;
+        "ORE_COMPLIANCE_VERIFIED")
+            quota="N/A"
+            services="ORE Compliance - Environmental obligations verified"
+            contract_status="ore_compliance_verified"
+            ;;
+        "ORE_REWARD_DISTRIBUTED")
+            quota="N/A"
+            services="ORE Reward - Environmental compliance rewarded"
+            contract_status="ore_reward_distributed"
+            ;;
         "ACCOUNT_DEACTIVATED")
             quota="N/A"
             services="Account deactivated - no services available"
@@ -426,6 +446,35 @@ update_did_document() {
             \"ipns\": \"$IPFSNODEID\",
             \"description\": \"Astroport station IPNS address\",
             \"updatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+        }"
+    fi
+    
+    # Add ORE (Obligations Réelles Environnementales) metadata for UMAP cells
+    # This integrates with the ORE system for environmental obligations
+    if [[ -n "$LATITUDE" ]] && [[ -n "$LONGITUDE" ]]; then
+        jq_cmd="$jq_cmd | .metadata.oreSystem = {
+            \"geographicCell\": {
+                \"latitude\": \"$LATITUDE\",
+                \"longitude\": \"$LONGITUDE\",
+                \"precision\": \"0.01\",
+                \"area_km2\": 1.21
+            },
+            \"environmentalObligations\": {
+                \"ore_contracts\": [],
+                \"verification_status\": \"pending\",
+                \"compliance_score\": 0,
+                \"last_verification\": null
+            },
+            \"economic_incentives\": {
+                \"zen_rewards\": 0,
+                \"carbon_credits\": 0,
+                \"biodiversity_premiums\": 0
+            },
+            \"guardian_authority\": {
+                \"uplanet_scic_did\": \"did:nostr:${UPLANETNAME_G1:0:8}\",
+                \"verification_methods\": [\"satellite_imagery\", \"iot_sensors\", \"drone_surveys\"],
+                \"compliance_threshold\": 0.8
+            }
         }"
     fi
     
@@ -940,6 +989,10 @@ Update Types:
   RND_CONTRIBUTION            - R&D fund contribution
   ASSETS_CONTRIBUTION         - Assets fund contribution
   WOT_MEMBER                  - Duniter WoT member identification
+  ORE_GUARDIAN                - ORE Guardian authority (UPlanet SCIC)
+  ORE_CONTRACT_ATTACHED       - ORE contract attached to UMAP
+  ORE_COMPLIANCE_VERIFIED     - ORE compliance verified
+  ORE_REWARD_DISTRIBUTED      - ORE compliance reward distributed
   ACCOUNT_DEACTIVATED         - Account deactivated/destroyed
 
 Examples:

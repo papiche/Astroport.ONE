@@ -196,13 +196,13 @@ show_system_wallets_summary() {
     echo ""
     echo -e "${CYAN}🏛️  PORTEFEUILLES SYSTÈME UPLANET:${NC}"
     
-    # UPLANETNAME.G1 (Réserve Ğ1)
+    # UPLANETNAME_G1 (Réserve Ğ1)
     if [[ -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
         local g1_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_G1" 2>/dev/null)
         if [[ -n "$g1_pubkey" ]]; then
             local g1_balance=$(get_wallet_balance "$g1_pubkey")
             local g1_str=$(safe_printf "%.2f" "$g1_balance")
-            echo -e "  🏛️  UPLANETNAME.G1: ${YELLOW}$g1_str Ğ1${NC} (Réserve)"
+            echo -e "  🏛️  UPLANETNAME_G1: ${YELLOW}$g1_str Ğ1${NC} (Réserve)"
         fi
     fi
     

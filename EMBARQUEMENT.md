@@ -330,19 +330,19 @@ L'initialisation UPLANET crée automatiquement :
 
 | Portefeuille | Rôle | Source primale |
 |-------------|------|----------------|
-| **UPLANETNAME.G1** | Réserve Ğ1 | Source principale |
-| **UPLANETNAME** | Services & MULTIPASS | UPLANETNAME.G1 |
-| **UPLANETNAME.SOCIETY** | Capital social | UPLANETNAME.G1 |
-| **UPLANETNAME.CASH** | Trésorerie (1/3) | UPLANETNAME.G1 |
-| **UPLANETNAME.RND** | R&D (1/3) | UPLANETNAME.G1 |
-| **UPLANETNAME.ASSETS** | Actifs (1/3) | UPLANETNAME.G1 |
-| **UPLANETNAME.IMPOT** | Fiscalité | UPLANETNAME.G1 |
-| **NODE** | Armateur | UPLANETNAME.G1 |
+| **UPLANETNAME_G1** | Réserve Ğ1 | Source principale |
+| **UPLANETNAME** | Services & MULTIPASS | UPLANETNAME_G1 |
+| **UPLANETNAME.SOCIETY** | Capital social | UPLANETNAME_G1 |
+| **UPLANETNAME.CASH** | Trésorerie (1/3) | UPLANETNAME_G1 |
+| **UPLANETNAME_RND** | R&D (1/3) | UPLANETNAME_G1 |
+| **UPLANETNAME_ASSETS** | Actifs (1/3) | UPLANETNAME_G1 |
+| **UPLANETNAME.IMPOT** | Fiscalité | UPLANETNAME_G1 |
+| **NODE** | Armateur | UPLANETNAME_G1 |
 
 ### **🔐 Sécurité Primale**
 
 Tous les portefeuilles sont protégés par le système de contrôle primal :
-- **Source unique** : `UPLANETNAME.G1`
+- **Source unique** : `UPLANETNAME_G1`
 - **Anti-intrusion** : Redirection automatique des fonds non autorisés
 - **Traçabilité** : Chaîne primale vérifiable
 

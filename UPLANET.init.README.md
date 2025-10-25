@@ -2,7 +2,7 @@
 
 ## 📋 Description
 
-`UPLANET.init.sh` est le script **FONDAMENTAL** d'initialisation de l'infrastructure complète UPlanet ẐEN. Il crée et initialise tous les portefeuilles coopératifs, opérationnels et de gouvernance nécessaires au fonctionnement de l'écosystème, en respectant la source primale unique `UPLANETNAME.G1`.
+`UPLANET.init.sh` est le script **FONDAMENTAL** d'initialisation de l'infrastructure complète UPlanet ẐEN. Il crée et initialise tous les portefeuilles coopératifs, opérationnels et de gouvernance nécessaires au fonctionnement de l'écosystème, en respectant la source primale unique `UPLANETNAME_G1`.
 
 ## 🎯 Objectifs
 
@@ -20,7 +20,7 @@ Le script crée et initialise l'infrastructure complète UPlanet ẐEN :
 
 | Portefeuille | Fichier Dunikey | Rôle dans l'Écosystème |
 |---------------|------------------|------------------------|
-| **`UPLANETNAME.G1`** | `uplanet.G1.dunikey` | **Source primale principale** - Réserve Ğ1 de l'écosystème |
+| **`UPLANETNAME_G1`** | `uplanet.G1.dunikey` | **Source primale principale** - Réserve Ğ1 de l'écosystème |
 | **`UPLANETNAME`** | `uplanet.dunikey` | **Services locaux** - Gestion revenus MULTIPASS |
 | **`UPLANETNAME.SOCIETY`** | `uplanet.SOCIETY.dunikey` | **Capital social** - Émission parts sociales ZEN Cards |
 
@@ -29,8 +29,8 @@ Le script crée et initialise l'infrastructure complète UPlanet ẐEN :
 | Portefeuille | Fichier Dunikey | Allocation Coopérative |
 |---------------|------------------|------------------------|
 | **`UPLANETNAME.CASH`** | `uplanet.CASH.dunikey` | **Trésorerie** (33.33% du surplus) |
-| **`UPLANETNAME.RND`** | `uplanet.RnD.dunikey` | **R&D** (33.33% du surplus) |
-| **`UPLANETNAME.ASSETS`** | `uplanet.ASSETS.dunikey` | **Actifs** (33.34% du surplus) |
+| **`UPLANETNAME_RND`** | `uplanet.RnD.dunikey` | **R&D** (33.33% du surplus) |
+| **`UPLANETNAME_ASSETS`** | `uplanet.ASSETS.dunikey` | **Actifs** (33.34% du surplus) |
 | **`UPLANETNAME.IMPOT`** | `uplanet.IMPOT.dunikey` | **Fiscalité** (TVA + IS) |
 
 ### **⚙️ Infrastructure Opérationnelle**
@@ -47,12 +47,12 @@ Le script crée et initialise l'infrastructure complète UPlanet ẐEN :
 - Outils requis : `silkaj`, `jq`, `bc`, `G1check.sh`
 - Portefeuille source disponible avec solde suffisant
 
-### 2. Source Primale Unique : UPLANETNAME.G1
+### 2. Source Primale Unique : UPLANETNAME_G1
 
-Le script utilise **exclusivement** `UPLANETNAME.G1` comme source primale pour garantir :
+Le script utilise **exclusivement** `UPLANETNAME_G1` comme source primale pour garantir :
 
 #### **🔐 Sécurité et Traçabilité**
-- **Source unique** : Tous les portefeuilles proviennent de `UPLANETNAME.G1`
+- **Source unique** : Tous les portefeuilles proviennent de `UPLANETNAME_G1`
 - **Chaîne primale** : Traçabilité complète des fonds
 - **Anti-intrusion** : Protection contre les fonds non autorisés
 - **Cohérence économique** : Respect de la Constitution ẐEN
@@ -342,7 +342,7 @@ ls -la ~/.zen/game/*.dunikey
 
 `UPLANET.init.sh` est le **script fondamental** qui transforme une installation Astroport.ONE en infrastructure UPlanet ẐEN complète. Il :
 
-1. **🔐 Garantit la sécurité** via la source primale unique `UPLANETNAME.G1`
+1. **🔐 Garantit la sécurité** via la source primale unique `UPLANETNAME_G1`
 2. **🏛️ Crée l'infrastructure** complète (8 portefeuilles + NODE + CAPTAIN)
 3. **🎯 S'adapte automatiquement** au mode choisi (ORIGIN ou ẐEN)
 4. **🔄 Intègre parfaitement** avec tous les scripts économiques

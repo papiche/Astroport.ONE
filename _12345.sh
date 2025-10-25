@@ -152,13 +152,13 @@ UPLANETZEN=$(echo "($UPLANETCOINS - 1) * 10" | bc | cut -d '.' -f 1)
     && chmod 600 ~/.zen/game/uplanet.CASH.dunikey
 UPLANETNAME_TREASURY=$(cat ~/.zen/game/uplanet.CASH.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
 
-# UPLANETNAME.RND wallet
+# UPLANETNAME_RND wallet
 [[ ! -s ~/.zen/game/uplanet.RnD.dunikey ]] \
     && ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/uplanet.RnD.dunikey "${UPLANETNAME}.RND" "${UPLANETNAME}.RND" \
     && chmod 600 ~/.zen/game/uplanet.RnD.dunikey
 UPLANETNAME_RND=$(cat ~/.zen/game/uplanet.RnD.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
 
-# UPLANETNAME.ASSETS wallet
+# UPLANETNAME_ASSETS wallet
 [[ ! -s ~/.zen/game/uplanet.ASSETS.dunikey ]] \
     && ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/uplanet.ASSETS.dunikey "${UPLANETNAME}.ASSETS" "${UPLANETNAME}.ASSETS" \
     && chmod 600 ~/.zen/game/uplanet.ASSETS.dunikey

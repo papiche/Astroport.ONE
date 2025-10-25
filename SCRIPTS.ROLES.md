@@ -62,9 +62,9 @@ Script **INTELLIGENT** pour la gestion des configurations existantes et les migr
 Script **PRINCIPAL** pour tous les virements officiels conformes à la Constitution ẐEN.
 
 #### **✅ Fonctionnalités**
-- **Virement LOCATAIRE** : `UPLANETNAME.G1 → UPLANETNAME → MULTIPASS`
-- **Virement SOCIÉTAIRE** : `UPLANETNAME.G1 → UPLANETNAME.SOCIETY → ZEN Card → 3x1/3`
-- **Apport CAPITAL INFRASTRUCTURE** : `UPLANETNAME.G1 → ZEN Card CAPTAIN → NODE` (direct, pas de 3x1/3)
+- **Virement LOCATAIRE** : `UPLANETNAME_G1 → UPLANETNAME → MULTIPASS`
+- **Virement SOCIÉTAIRE** : `UPLANETNAME_G1 → UPLANETNAME.SOCIETY → ZEN Card → 3x1/3`
+- **Apport CAPITAL INFRASTRUCTURE** : `UPLANETNAME_G1 → ZEN Card CAPTAIN → NODE` (direct, pas de 3x1/3)
 - **Vérification automatique** des transactions blockchain
 - **Gestion des timeouts** et confirmations
 - **Menu interactif** et ligne de commande
@@ -87,7 +87,7 @@ Script **PRINCIPAL** pour tous les virements officiels conformes à la Constitut
 Script **FONDAMENTAL** pour l'initialisation de tous les portefeuilles coopératifs.
 
 #### **✅ Fonctionnalités**
-- **Initialisation complète** : Tous les portefeuilles depuis `UPLANETNAME.G1`
+- **Initialisation complète** : Tous les portefeuilles depuis `UPLANETNAME_G1`
 - **Portefeuilles NODE et CAPTAIN** : Infrastructure opérationnelle
 - **Portefeuilles coopératifs** : CASH, RND, ASSETS, IMPOT, SOCIETY
 - **Vérification automatique** des soldes et prérequis

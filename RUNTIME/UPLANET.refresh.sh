@@ -278,10 +278,17 @@ for UMAP in ${unique_combined[@]}; do
     echo "###################### PUBLISH UMAP PROFILE ##########################"
     ##########################################################
     UMAPNSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
+    
+    # Check if ORE mode is activated for this UMAP
+    local ore_status=""
+    if [[ -f "${UMAPPATH}/ore_mode.activated" ]]; then
+        ore_status=" | 🌱 ORE MODE ACTIVE - Environmental obligations tracked"
+    fi
+    
     ${MY_PATH}/../tools/nostr_setup_profile.py \
     "$UMAPNSEC" \
-    "UMAP_${UPLANETG1PUB:0:8}${UMAP}" "${UMAPG1PUB}" \
-    "${TODATE} JOURNAL : VISIO : ${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record" \
+    "UMAP_${UPLANETG1PUB:0:8}${UMAP}${ore_status}" "${UMAPG1PUB}" \
+    "${TODATE} JOURNAL : VISIO : ${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record${ore_status}" \
     "${PIC_PROFILE}" \
     "${PIC_BANNER}" \
     "" "${myLIBRA}/ipfs/${UMAPROOT}" "" "${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record" "" "" \

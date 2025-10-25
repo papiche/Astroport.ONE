@@ -17,7 +17,7 @@ graph TD;
       UPlanet_Essaim
       subgraph "Organe n°1 : La Réserve Locale";
           style G1W fill:#cde4ff,stroke:#333,stroke-width:2px
-          G1W["🏛️ Wallet Réserve<br/><b>UPLANETNAME.G1</b><br/>(Collatéral Ğ1 de l'essaim)"];
+          G1W["🏛️ Wallet Réserve<br/><b>UPLANETNAME_G1</b><br/>(Collatéral Ğ1 de l'essaim)"];
       end
 
       subgraph "Organe n°2 : Les Services Locaux";

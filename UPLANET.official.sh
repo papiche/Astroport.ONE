@@ -7,9 +7,10 @@
 # UPLANET.official.sh
 # Script de gestion des virements officiels UPlanet
 # 
-# Gère deux types de virements :
-# 1. LOCATAIRE : UPLANETNAME.G1 -> UPLANETNAME -> MULTIPASS (recharge de service)
-# 2. SOCIÉTAIRE : UPLANETNAME.G1 -> UPLANETNAME.SOCIETY -> ZEN Card -> 3x1/3
+# Gère trois types de virements :
+# 1. LOCATAIRE : UPLANETNAME_G1 -> UPLANETNAME -> MULTIPASS (recharge de service)
+# 2. SOCIÉTAIRE : UPLANETNAME_G1 -> UPLANETNAME.SOCIETY -> ZEN Card -> 3x1/3
+# 3. ORE : UPLANETNAME_ASSETS -> UMAP DID (récompenses environnementales depuis réserves coopératives)
 #
 # Format des références blockchain :
 # - RENTAL : "UPLANET:${UPLANETG1PUB:0:8}:RENTAL:${email}"
@@ -18,6 +19,7 @@
 # - TREASURY: "UPLANET:${UPLANETG1PUB:0:8}:TREASURY:${email}:${type}:${IPFSNODEID}"
 # - RnD     : "UPLANET:${UPLANETG1PUB:0:8}:RnD:${email}:${type}:${IPFSNODEID}"
 # - ASSETS  : "UPLANET:${UPLANETG1PUB:0:8}:ASSETS:${email}:${type}:${IPFSNODEID}"
+# - ORE     : "UPLANET:${UPLANETG1PUB:0:8}:ORE:${umap_did}:${lat}:${lon}:${IPFSNODEID}" (depuis ASSETS)
 #
 # L'IPFSNODEID identifie le nœud/machine à l'origine de la transaction
 #
@@ -57,6 +59,7 @@ show_help() {
     echo "  -s, --societaire EMAIL    Virement pour sociétaire (parts sociales)"
     echo "  -t, --type TYPE           Type de sociétaire: satellite|constellation|infrastructure"
     echo "  -i, --infrastructure      Apport capital infrastructure (CAPTAIN → NODE)"
+    echo "  -o, --ore LAT LON         Virement ORE (récompenses environnementales UMAP depuis ASSETS)"
     echo "  -m, --montant MONTANT     Montant en euros (optionnel, auto-calculé par défaut)"
     echo "  -r, --recovery            Mode dépannage: récupération complète SOCIETY → 3x1/3"
     echo "  --recovery-3x13           Mode dépannage: récupération partielle ZEN Card → 3x1/3"
@@ -67,6 +70,7 @@ show_help() {
     echo "  $0 -s user@example.com -t satellite           # Parts sociales satellite"
     echo "  $0 -s user@example.com -t constellation       # Parts sociales constellation"
     echo "  $0 -i -m 500                                  # Apport capital infrastructure (500€)"
+    echo "  $0 -o 43.60 1.44 -m 10                       # Récompense ORE UMAP depuis ASSETS (10Ẑen)"
     echo "  $0 -r                                         # Mode dépannage SOCIETY → 3x1/3"
     echo "  $0 --recovery-3x13                            # Mode dépannage ZEN Card → 3x1/3"
     echo ""
@@ -378,6 +382,98 @@ calculate_societaire_amount() {
 }
 
 ################################################################################
+# Fonction principale pour virement ORE (récompenses environnementales)
+################################################################################
+process_ore() {
+    local lat="$1"
+    local lon="$2"
+    local montant_euros="${3:-10}"  # 10 Ẑen par défaut pour récompense ORE
+    
+    # Valider que le montant est un nombre valide
+    if [[ -z "$montant_euros" ]] || ! [[ "$montant_euros" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+        echo -e "${RED}❌ Montant invalide: '$montant_euros'${NC}"
+        echo -e "${YELLOW}💡 Utilisez un nombre positif (ex: 10)${NC}"
+        return 1
+    fi
+    
+    local montant_g1=$(zen_to_g1 "$montant_euros")
+    
+    echo -e "${BLUE}🌱 Traitement virement ORE pour UMAP: (${lat}, ${lon})${NC}"
+    echo -e "${CYAN}💰 Montant: ${montant_euros} Ẑen = ${montant_g1} Ğ1${NC}"
+    echo -e "${YELLOW}🏛️ Source: Portefeuille ASSETS (réserves coopératives)${NC}"
+    
+    # Vérifier que le portefeuille ASSETS existe (créé par ZEN.COOPERATIVE.3x1-3.sh)
+    if [[ ! -f "$HOME/.zen/game/uplanet.ASSETS.dunikey" ]]; then
+        echo -e "${RED}❌ Portefeuille UPLANETNAME_ASSETS non configuré${NC}"
+        echo "💡 Exécutez ZEN.COOPERATIVE.3x1-3.sh pour créer les portefeuilles coopératifs"
+        return 1
+    fi
+    
+    # Récupérer la clé publique ASSETS
+    local assets_pubkey=$(cat "$HOME/.zen/game/uplanet.ASSETS.dunikey" | grep "pub:" | cut -d ' ' -f 2)
+    if [[ -z "$assets_pubkey" ]]; then
+        echo -e "${RED}❌ Impossible de lire la clé publique ASSETS${NC}"
+        return 1
+    fi
+    
+    echo -e "${GREEN}✅ Portefeuille ASSETS trouvé: ${assets_pubkey:0:8}...${NC}"
+    
+    # Générer le DID UMAP
+    echo -e "${YELLOW}🔑 Génération du DID UMAP...${NC}"
+    local umap_did_result=$(python3 "${MY_PATH}/tools/ore_system.py" "generate_did" "$lat" "$lon" 2>/dev/null)
+    if [[ $? -ne 0 ]]; then
+        echo -e "${RED}❌ Échec de génération du DID UMAP${NC}"
+        return 1
+    fi
+    
+    # Extraire le DID et la clé publique UMAP
+    local umap_did=$(echo "$umap_did_result" | grep "DID:" | cut -d ' ' -f 2)
+    local umap_npub=$(echo "$umap_did_result" | grep "NPUB:" | cut -d ' ' -f 2)
+    local umap_hex=$(echo "$umap_did_result" | grep "HEX:" | cut -d ' ' -f 2)
+    
+    if [[ -z "$umap_did" || -z "$umap_hex" ]]; then
+        echo -e "${RED}❌ Impossible d'extraire le DID UMAP${NC}"
+        return 1
+    fi
+    
+    echo -e "${GREEN}✅ DID UMAP généré: ${umap_did:0:20}...${NC}"
+    echo -e "${GREEN}✅ Clé publique UMAP: ${umap_hex:0:16}...${NC}"
+    
+    # Vérifier qu'il n'y a pas de transactions en cours avant de commencer
+    echo -e "${BLUE}🔍 Vérification préalable des transactions en cours...${NC}"
+    if ! check_no_pending_transactions "$assets_pubkey"; then
+        echo -e "${RED}❌ Impossible de commencer le virement: des transactions sont en cours${NC}"
+        echo -e "${YELLOW}💡 Attendez que les transactions en cours se terminent avant de relancer${NC}"
+        return 1
+    fi
+    
+    # Étape 1: UPLANETNAME_ASSETS -> UMAP DID
+    echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME_ASSETS → UMAP DID${NC}"
+    local ore_reference="UPLANET:${UPLANETG1PUB:0:8}:ORE:${umap_hex:0:8}:${lat}:${lon}:${IPFSNODEID}"
+    
+    if ! transfer_and_verify "$HOME/.zen/game/uplanet.ASSETS.dunikey" "$umap_hex" "$montant_euros" "$ore_reference" "ORE_UMAP_${lat}_${lon}" "ORE" "Étape 1: ASSETS→UMAP_DID"; then
+        echo -e "${RED}❌ Échec de l'étape 1${NC}"
+        return 1
+    fi
+    
+    echo -e "${GREEN}🎉 Virement ORE terminé avec succès!${NC}"
+    echo -e "${CYAN}📊 Résumé:${NC}"
+    echo -e "  • ${montant_euros} Ẑen (${montant_g1} Ğ1) transférés depuis ASSETS vers UMAP DID"
+    echo -e "  • UMAP: (${lat}, ${lon})"
+    echo -e "  • DID: ${umap_did}"
+    echo -e "  • Source: Portefeuille ASSETS (réserves coopératives)"
+    echo -e "  • Récompense environnementale distribuée"
+    echo -e "  • Toutes les transactions confirmées sur la blockchain"
+    
+    # Mettre à jour le document DID avec les récompenses ORE
+    echo -e "${YELLOW}📝 Mise à jour du DID UMAP...${NC}"
+    # Note: Le DID UMAP est géré par le système ORE, pas par did_manager_nostr.sh
+    # qui gère les DIDs utilisateurs (MULTIPASS/ZenCard)
+    
+    return 0
+}
+
+################################################################################
 # Fonction principale pour virement locataire
 ################################################################################
 process_locataire() {
@@ -398,8 +494,8 @@ process_locataire() {
     
     # Vérifier que les portefeuilles existent
     if [[ ! -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
-        echo -e "${RED}❌ Portefeuille UPLANETNAME.G1 non configuré${NC}"
-        echo "💡 Utilisez zen.sh → UPLANETNAME.G1 pour configurer"
+        echo -e "${RED}❌ Portefeuille UPLANETNAME_G1 non configuré${NC}"
+        echo "💡 Utilisez zen.sh → UPLANETNAME_G1 pour configurer"
         return 1
     fi
     
@@ -415,7 +511,7 @@ process_locataire() {
     local multipass_pubkey=$(cat ~/.zen/game/nostr/${email}/G1PUBNOSTR)
     
     echo -e "${YELLOW}🔑 Portefeuilles identifiés:${NC}"
-    echo -e "  UPLANETNAME.G1: ${g1_pubkey:0:8}..."
+    echo -e "  UPLANETNAME_G1: ${g1_pubkey:0:8}..."
     echo -e "  UPLANETNAME: ${uplanet_pubkey:0:8}..."
     echo -e "  MULTIPASS ${email}: ${multipass_pubkey:0:8}..."
     
@@ -427,8 +523,8 @@ process_locataire() {
         return 1
     fi
     
-    # Étape 1: UPLANETNAME.G1 -> UPLANETNAME
-    echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME.G1 → UPLANETNAME${NC}"
+    # Étape 1: UPLANETNAME_G1 -> UPLANETNAME
+    echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME_G1 → UPLANETNAME${NC}"
     if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$uplanet_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:RENTAL:${email}" "$email" "LOCATAIRE" "Étape 1: G1→UPLANET"; then
         echo -e "${RED}❌ Échec de l'étape 1${NC}"
         return 1
@@ -474,8 +570,8 @@ process_infrastructure() {
     
     # Vérifier que les portefeuilles existent
     if [[ ! -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
-        echo -e "${RED}❌ Portefeuille UPLANETNAME.G1 non configuré${NC}"
-        echo "💡 Utilisez zen.sh → UPLANETNAME.G1 pour configurer"
+        echo -e "${RED}❌ Portefeuille UPLANETNAME_G1 non configuré${NC}"
+        echo "💡 Utilisez zen.sh → UPLANETNAME_G1 pour configurer"
         return 1
     fi
     
@@ -518,7 +614,7 @@ process_infrastructure() {
     fi
     
     echo -e "${YELLOW}🔑 Portefeuilles identifiés:${NC}"
-    echo -e "  UPLANETNAME.G1: ${g1_pubkey:0:8}..."
+    echo -e "  UPLANETNAME_G1: ${g1_pubkey:0:8}..."
     echo -e "  ZEN Card ${email}: ${zencard_pubkey:0:8}..."
     echo -e "  NODE (Armateur): ${node_pubkey:0:8}..."
     
@@ -530,8 +626,8 @@ process_infrastructure() {
         return 1
     fi
     
-    # Étape 1: UPLANETNAME.G1 -> ZEN Card
-    echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME.G1 → ZEN Card ${email}${NC}"
+    # Étape 1: UPLANETNAME_G1 -> ZEN Card
+    echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME_G1 → ZEN Card ${email}${NC}"
     if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$zencard_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:CAPITAL:${email}:${IPFSNODEID}" "$email" "INFRASTRUCTURE" "Étape 1: G1→ZENCARD"; then
         echo -e "${RED}❌ Échec de l'étape 1${NC}"
         return 1
@@ -586,8 +682,8 @@ process_societaire() {
     
     # Vérifier que les portefeuilles existent
     if [[ ! -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
-        echo -e "${RED}❌ Portefeuille UPLANETNAME.G1 non configuré${NC}"
-        echo "💡 Utilisez zen.sh → UPLANETNAME.G1 pour configurer"
+        echo -e "${RED}❌ Portefeuille UPLANETNAME_G1 non configuré${NC}"
+        echo "💡 Utilisez zen.sh → UPLANETNAME_G1 pour configurer"
         return 1
     fi
     
@@ -619,7 +715,7 @@ process_societaire() {
     fi
     
     echo -e "${YELLOW}🔑 Portefeuilles identifiés:${NC}"
-    echo -e "  UPLANETNAME.G1: ${g1_pubkey:0:8}..."
+    echo -e "  UPLANETNAME_G1: ${g1_pubkey:0:8}..."
     echo -e "  UPLANETNAME.SOCIETY: ${society_pubkey:0:8}..."
     echo -e "  ZEN Card ${email}: ${zencard_pubkey:0:8}..."
     
@@ -631,8 +727,8 @@ process_societaire() {
         return 1
     fi
     
-    # Étape 1: UPLANETNAME.G1 -> UPLANETNAME.SOCIETY
-    echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME.G1 → UPLANETNAME.SOCIETY${NC}"
+    # Étape 1: UPLANETNAME_G1 -> UPLANETNAME.SOCIETY
+    echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME_G1 → UPLANETNAME.SOCIETY${NC}"
     if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$society_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:SOCIETY:${email}:${type}:${IPFSNODEID}" "$email" "SOCIETAIRE_${type^^}" "Étape 1: G1→SOCIETY"; then
         echo -e "${RED}❌ Échec de l'étape 1${NC}"
         return 1
@@ -1221,11 +1317,12 @@ show_menu() {
     echo "2. Virement SOCIÉTAIRE Satellite (50€/an)"
     echo "3. Virement SOCIÉTAIRE Constellation (540€/3ans)"
     echo "4. Apport CAPITAL INFRASTRUCTURE (CAPTAIN → NODE)"
-    echo "5. 🔧 MODE DÉPANNAGE (récupération complète SOCIETY → 3x1/3)"
-    echo "6. 🔧 MODE DÉPANNAGE (récupération partielle ZEN Card → 3x1/3)"
-    echo "7. Quitter"
+    echo "5. 🌱 Virement ORE (récompenses environnementales UMAP depuis ASSETS)"
+    echo "6. 🔧 MODE DÉPANNAGE (récupération complète SOCIETY → 3x1/3)"
+    echo "7. 🔧 MODE DÉPANNAGE (récupération partielle ZEN Card → 3x1/3)"
+    echo "8. Quitter"
     echo ""
-    read -p "Choisissez une option (1-7): " choice
+    read -p "Choisissez une option (1-8): " choice
     
     case $choice in
         1)
@@ -1292,12 +1389,29 @@ show_menu() {
             fi
             ;;
         5)
-            process_recovery
+            read -p "Latitude UMAP: " lat
+            read -p "Longitude UMAP: " lon
+            if [[ -n "$lat" && -n "$lon" ]]; then
+                read -p "Montant en Ẑen (défaut: 10): " montant
+                montant="${montant:-10}"
+                
+                # Valider que le montant est un nombre
+                if [[ "$montant" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+                    process_ore "$lat" "$lon" "$montant"
+                else
+                    echo -e "${RED}❌ Montant invalide (nombre requis)${NC}"
+                fi
+            else
+                echo -e "${RED}❌ Latitude et longitude requises${NC}"
+            fi
             ;;
         6)
-            process_recovery_3x13
+            process_recovery
             ;;
         7)
+            process_recovery_3x13
+            ;;
+        8)
             echo -e "${GREEN}👋 Au revoir!${NC}"
             exit 0
             ;;
@@ -1336,6 +1450,8 @@ main() {
         local type="satellite"
         local montant=""
         local mode=""
+        local lat=""
+        local lon=""
         
         while [[ $# -gt 0 ]]; do
             case "$1" in
@@ -1358,6 +1474,18 @@ main() {
                 -i|--infrastructure)
                     mode="infrastructure"
                     shift
+                    ;;
+                -o|--ore)
+                    mode="ore"
+                    shift
+                    if [[ -n "$1" && ! "$1" =~ ^- ]]; then
+                        lat="$1"
+                        shift
+                    fi
+                    if [[ -n "$1" && ! "$1" =~ ^- ]]; then
+                        lon="$1"
+                        shift
+                    fi
                     ;;
                 -r|--recovery)
                     mode="recovery"
@@ -1427,6 +1555,17 @@ main() {
                 ;;
             "recovery_3x13")
                 process_recovery_3x13
+                ;;
+            "ore")
+                if [[ -n "$lat" && -n "$lon" ]]; then
+                    local ore_montant="${montant:-10}"
+                    echo -e "${CYAN}🌱 Virement ORE pour UMAP depuis ASSETS: (${lat}, ${lon}) - ${ore_montant} Ẑen${NC}"
+                    process_ore "$lat" "$lon" "$ore_montant"
+                else
+                    echo -e "${RED}❌ Latitude et longitude requises pour l'option --ore${NC}"
+                    echo -e "${CYAN}💡 Usage: $0 -o 43.60 1.44 -m 10${NC}"
+                    exit 1
+                fi
                 ;;
             *)
                 echo -e "${RED}❌ Mode non spécifié${NC}"

@@ -19,7 +19,7 @@ graph TD;
       
       subgraph "Organe n°1 : La Réserve Locale";
           style G1W fill:#cde4ff,stroke:#333,stroke-width:4px
-          G1W["🏛️ Wallet Réserve<br/><b>UPLANETNAME.G1</b><br/>(Collatéral Ğ1 de l'essaim)"];
+          G1W["🏛️ Wallet Réserve<br/><b>UPLANETNAME_G1</b><br/>(Collatéral Ğ1 de l'essaim)"];
       end
 
       subgraph "Organe n°2 : Les Services Locaux";
@@ -52,8 +52,8 @@ graph TD;
           style IMPOT fill:#fce4ec,stroke:#c2185b,stroke-width:2px
           
           CASH["💰 UPLANETNAME.CASH<br/>(Trésorerie 1/3)"];
-          RND["🔬 UPLANETNAME.RND<br/>(R&D 1/3)"];
-          ASSETS["🌳 UPLANETNAME.ASSETS<br/>(Actifs 1/3)"];
+          RND["🔬 UPLANETNAME_RND<br/>(R&D 1/3)"];
+          ASSETS["🌳 UPLANETNAME_ASSETS<br/>(Actifs 1/3)"];
           IMPOT["🏛️ UPLANETNAME.IMPOT<br/>(Fiscalité TVA+IS)"];
           
           G1W -- "Initialise" --> CASH;

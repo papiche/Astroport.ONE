@@ -109,7 +109,7 @@ Ylevel.sh  # Jumelage cryptographique SSH ↔ IPFS
 
 ### **1. Virement LOCATAIRE (Recharge MULTIPASS)**
 ```
-UPLANETNAME.G1 → UPLANETNAME → MULTIPASS[email]
+UPLANETNAME_G1 → UPLANETNAME → MULTIPASS[email]
 ```
 - **Montant** : Variable selon `$NCARD` (défini dans `my.sh`)
 - **Objectif** : Recharger le compte MULTIPASS d'un locataire
@@ -117,7 +117,7 @@ UPLANETNAME.G1 → UPLANETNAME → MULTIPASS[email]
 
 ### **2. Virement SOCIÉTAIRE (Parts Sociales)**
 ```
-UPLANETNAME.G1 → UPLANETNAME.SOCIETY → ZEN Card[email] → 3x1/3
+UPLANETNAME_G1 → UPLANETNAME.SOCIETY → ZEN Card[email] → 3x1/3
 ```
 - **Types** :
   - **Satellite** : 50€/an (sans IA)
@@ -130,7 +130,7 @@ UPLANETNAME.G1 → UPLANETNAME.SOCIETY → ZEN Card[email] → 3x1/3
 
 ### **3. Apport CAPITAL INFRASTRUCTURE (Valorisation Machine)**
 ```
-UPLANETNAME.G1 → ZEN Card[CAPTAIN] → NODE
+UPLANETNAME_G1 → ZEN Card[CAPTAIN] → NODE
 ```
 - **Type** : Infrastructure (500€ par défaut)
 - **Objectif** : Apport au capital fixe (valorisation machine du capitaine)
@@ -237,7 +237,7 @@ ZEN Card[email] → 3x1/3 (au choix : TREASURY, RnD, ou ASSETS)
 Le système respecte les usages de la **Web of Trust DRAGON** :
 
 #### **🔑 Primo-Transaction NODE**
-- **Source** : UPLANETNAME.G1 (compte principal)
+- **Source** : UPLANETNAME_G1 (compte principal)
 - **Destination** : Wallet NODE (niveau Y/Z)
 - **Montant** : 1Ğ1 (primo-transaction)
 - **Référence** : `UPLANET:${UPLANETG1PUB:0:8}:NODEINIT:${IPFSNODEID}`
@@ -302,14 +302,14 @@ Le script fonctionne avec **tous les niveaux de station** :
 Le script nécessite que les portefeuilles suivants soient configurés :
 
 #### **Portefeuilles Principaux**
-- `UPLANETNAME.G1` → `~/.zen/game/uplanet.G1.dunikey` (Réserve Ğ1)
+- `UPLANETNAME_G1` → `~/.zen/game/uplanet.G1.dunikey` (Réserve Ğ1)
 - `UPLANETNAME` → `~/.zen/game/uplanet.dunikey` (Compte d'exploitation)
 - `UPLANETNAME.SOCIETY` → `~/.zen/game/uplanet.SOCIETY.dunikey` (Capital social)
 
 #### **Portefeuilles Coopératifs** (créés par `ZEN.COOPERATIVE.3x1-3.sh`)
 - `UPLANETNAME.TREASURY` → `~/.zen/game/uplanet.CASH.dunikey`
-- `UPLANETNAME.RND` → `~/.zen/game/uplanet.RnD.dunikey`
-- `UPLANETNAME.ASSETS` → `~/.zen/game/uplanet.ASSETS.dunikey`
+- `UPLANETNAME_RND` → `~/.zen/game/uplanet.RnD.dunikey`
+- `UPLANETNAME_ASSETS` → `~/.zen/game/uplanet.ASSETS.dunikey`
 
 #### **Portefeuilles Utilisateurs**
 - **MULTIPASS** : `~/.zen/game/nostr/${email}/G1PUBNOSTR` & `~/.zen/game/nostr/${email}/.secret.dunikey`
@@ -321,7 +321,7 @@ Le script nécessite que les portefeuilles suivants soient configurés :
 
 ### **Virement Locataire**
 1. **Vérification** : Contrôle de l'existence des portefeuilles
-2. **Étape 1** : Transfert `UPLANETNAME.G1` → `UPLANETNAME` (via `uplanet.G1.dunikey`)
+2. **Étape 1** : Transfert `UPLANETNAME_G1` → `UPLANETNAME` (via `uplanet.G1.dunikey`)
 3. **Vérification** : Attente confirmation blockchain sur le wallet source
 4. **Étape 2** : Transfert `UPLANETNAME` → `MULTIPASS[email]` (via `uplanet.dunikey`)
 5. **Vérification** : Attente confirmation blockchain sur le wallet source
@@ -329,7 +329,7 @@ Le script nécessite que les portefeuilles suivants soient configurés :
 
 ### **Virement Sociétaire**
 1. **Vérification** : Contrôle de l'existence des portefeuilles
-2. **Étape 1** : Transfert `UPLANETNAME.G1` → `UPLANETNAME.SOCIETY` (via `uplanet.G1.dunikey`)
+2. **Étape 1** : Transfert `UPLANETNAME_G1` → `UPLANETNAME.SOCIETY` (via `uplanet.G1.dunikey`)
 3. **Vérification** : Attente confirmation blockchain (max 40 minutes)
 4. **Étape 2** : Transfert `UPLANETNAME.SOCIETY` → `ZEN Card[email]` (via `uplanet.SOCIETY.dunikey`)
 5. **Vérification** : Attente confirmation blockchain (max 40 minutes)
@@ -391,7 +391,7 @@ MACHINE_VALUE_ZEN=500        # Valeur machine par défaut
 # Résultat attendu
 🏠 Traitement virement LOCATAIRE pour: john.doe@example.com
 💰 Montant: 1€ (1 Ẑen)
-📤 Étape 1: Transfert UPLANETNAME.G1 → UPLANETNAME
+📤 Étape 1: Transfert UPLANETNAME_G1 → UPLANETNAME
 📤 Étape 2: Transfert UPLANETNAME → MULTIPASS john.doe@example.com
 🎉 Virement locataire terminé avec succès!
 ```
@@ -404,7 +404,7 @@ MACHINE_VALUE_ZEN=500        # Valeur machine par défaut
 # Résultat attendu
 👑 Traitement virement SOCIÉTAIRE pour: jane.smith@example.com
 💰 Type: satellite - Montant: 50€ (50 Ẑen)
-📤 Étape 1: Transfert UPLANETNAME.G1 → UPLANETNAME.SOCIETY
+📤 Étape 1: Transfert UPLANETNAME_G1 → UPLANETNAME.SOCIETY
 📤 Étape 2: Transfert UPLANETNAME.SOCIETY → ZEN Card jane.smith@example.com
 📤 Étape 3: Répartition 3x1/3 depuis ZEN Card
   📤 Treasury (1/3): 16.66 Ẑen
@@ -542,7 +542,7 @@ UPLANET:AwdjhpJN:SOCIETY:support@qo-op.com:constellation:12D3KooWL2FcDJ41U9SyLuv
 ### **Gestion des Clés Privées**
 ```bash
 # Chaque transfert utilise le fichier dunikey approprié :
-- UPLANETNAME.G1 → uplanet.G1.dunikey
+- UPLANETNAME_G1 → uplanet.G1.dunikey
 - UPLANETNAME → uplanet.dunikey  
 - UPLANETNAME.SOCIETY → uplanet.SOCIETY.dunikey
 - ZEN Card → secret.dunikey de l'utilisateur

@@ -664,20 +664,20 @@ cat ${ZINE} \
 
 $MY_PATH/../tools/mailjet.sh --expire 7d "${PLAYER}" ~/.zen/game/players/${PLAYER}/.ZENCard.html "✅ ẐEN Card activated"
 
-### SEND INITIAL G1 - PRIMO TRANSACTION FROM UPLANETNAME.G1 FOR ZENCARD
+### SEND INITIAL G1 - PRIMO TRANSACTION FROM UPLANETNAME_G1 FOR ZENCARD
 
 YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
 
-# For any UPlanet ORIGIN/Ẑen, send primo transaction from UPLANETNAME.G1 wallet (source primale unique)
-echo "UPlanet ẐEN : Sending PRIMO TX from UPLANETNAME.G1 to ZenCard"
+# For any UPlanet ORIGIN/Ẑen, send primo transaction from UPLANETNAME_G1 wallet (source primale unique)
+echo "UPlanet ẐEN : Sending PRIMO TX from UPLANETNAME_G1 to ZenCard"
 
-# Ensure UPLANETNAME.G1 dunikey exists (source primale unique)
+# Ensure UPLANETNAME_G1 dunikey exists (source primale unique)
 if [[ ! -f ~/.zen/game/uplanet.G1.dunikey ]]; then
     ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.G1.dunikey "${UPLANETNAME}.G1" "${UPLANETNAME}.G1"
     chmod 600 ~/.zen/game/uplanet.G1.dunikey
 fi
 
-# Send primo transaction from UPLANETNAME.G1 to establish primal chain (consistent with MULTIPASS)
+# Send primo transaction from UPLANETNAME_G1 to establish primal chain (consistent with MULTIPASS)
 ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.G1.dunikey" "1" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:PRIMO" 2>/dev/null \
 && echo "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:PRIMO" && echo "(⌐■_■) ~~~ G1 PRIMO TX ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS"
 

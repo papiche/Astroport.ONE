@@ -500,16 +500,16 @@ EOFNOSTR
         set --name "${YOUSER} MULTIPASS" --avatar "$HOME/.zen/game/nostr/${EMAIL}/IPNS.QR.png" \
         --site "$myIPFS/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" -d "UPlanet ${UPLANETG1PUB:0:8} MULTIPASS ($HEX)" &>/dev/null
 
-    ## SEND PRIMO TRANSACTION FROM UPLANETNAME.G1 (source primale unique)
-    echo "UPlanet ẐEN : Sending PRIMO TX from UPLANETNAME.G1 to MULTIPASS"
+    ## SEND PRIMO TRANSACTION FROM UPLANETNAME_G1 (source primale unique)
+    echo "UPlanet ẐEN : Sending PRIMO TX from UPLANETNAME_G1 to MULTIPASS"
     
-    # Ensure UPLANETNAME.G1 dunikey exists (source primale unique)
+    # Ensure UPLANETNAME_G1 dunikey exists (source primale unique)
     if [[ ! -f ~/.zen/game/uplanet.G1.dunikey ]]; then
         ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.G1.dunikey "${UPLANETNAME}.G1" "${UPLANETNAME}.G1"
         chmod 600 ~/.zen/game/uplanet.G1.dunikey
     fi
     
-    # Send primo transaction from UPLANETNAME.G1 to establish primal chain for MULTIPASS
+    # Send primo transaction from UPLANETNAME_G1 to establish primal chain for MULTIPASS
     ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.G1.dunikey" "1" "${G1PUBNOSTR}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:MULTIPASS:PRIMO" 2>/dev/null \
     && echo "${UPLANETNAME_G1}" > ~/.zen/game/nostr/${EMAIL}/G1PRIME \
     && echo "${UPLANETNAME_G1}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal \

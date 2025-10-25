@@ -410,7 +410,7 @@ show_captain_dashboard() {
     # Portefeuilles système UPlanet
     print_section "PORTEFEUILLES SYSTÈME UPLANET"
     
-    # UPLANETNAME.G1 (Réserve Ğ1) - Source primale, pas de conversion ẐEN
+    # UPLANETNAME_G1 (Réserve Ğ1) - Source primale, pas de conversion ẐEN
     local uplanet_g1_pubkey=""
     if [[ -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
         uplanet_g1_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_G1" 2>/dev/null)
@@ -418,13 +418,13 @@ show_captain_dashboard() {
     
     if [[ -n "$uplanet_g1_pubkey" ]]; then
         local g1_balance=$(get_wallet_balance "$uplanet_g1_pubkey")
-        echo -e "${BLUE}🏛️  UPLANETNAME.G1 (Réserve Ğ1):${NC}"
+        echo -e "${BLUE}🏛️  UPLANETNAME_G1 (Réserve Ğ1):${NC}"
         echo -e "  💰 Solde: ${YELLOW}$g1_balance Ğ1${NC}"
         echo -e "  📝 Usage: Source primale - Alimentation de tous les portefeuilles"
         echo -e "  ℹ️  Note: Réserve en Ğ1 pure (non convertie en ẐEN)"
         echo ""
     else
-        echo -e "${RED}🏛️  UPLANETNAME.G1: ${YELLOW}Non configuré${NC}"
+        echo -e "${RED}🏛️  UPLANETNAME_G1: ${YELLOW}Non configuré${NC}"
         echo -e "  💡 Pour configurer: Lancez UPLANET.init.sh"
         echo ""
     fi
@@ -530,11 +530,11 @@ show_captain_dashboard() {
     if [[ -n "$rnd_pubkey" ]]; then
         local rnd_balance=$(get_wallet_balance "$rnd_pubkey")
         local rnd_zen=$(calculate_zen "$rnd_balance")
-        echo -e "${CYAN}🔬 UPLANETNAME.RND (R&D 1/3):${NC}"
+        echo -e "${CYAN}🔬 UPLANETNAME_RND (R&D 1/3):${NC}"
         echo -e "  💰 Solde: ${YELLOW}$rnd_balance Ğ1${NC} (${CYAN}$rnd_zen Ẑen${NC})"
         echo -e "  📝 Usage: Développement + innovation"
     else
-        echo -e "${RED}🔬 UPLANETNAME.RND: ${YELLOW}Non configuré${NC}"
+        echo -e "${RED}🔬 UPLANETNAME_RND: ${YELLOW}Non configuré${NC}"
     fi
     
     # ASSETS (Actifs)
@@ -546,11 +546,11 @@ show_captain_dashboard() {
     if [[ -n "$assets_pubkey" ]]; then
         local assets_balance=$(get_wallet_balance "$assets_pubkey")
         local assets_zen=$(calculate_zen "$assets_balance")
-        echo -e "${YELLOW}🌳 UPLANETNAME.ASSETS (Actifs 1/3):${NC}"
+        echo -e "${YELLOW}🌳 UPLANETNAME_ASSETS (Actifs 1/3):${NC}"
         echo -e "  💰 Solde: ${YELLOW}$assets_balance Ğ1${NC} (${CYAN}$assets_zen Ẑen${NC})"
         echo -e "  📝 Usage: Forêts jardins + impact écologique"
     else
-        echo -e "${RED}🌳 UPLANETNAME.ASSETS: ${YELLOW}Non configuré${NC}"
+        echo -e "${RED}🌳 UPLANETNAME_ASSETS: ${YELLOW}Non configuré${NC}"
     fi
     
     # IMPOT (Fiscalité)
@@ -786,7 +786,7 @@ show_captain_navigation_menu() {
     echo ""
     
     echo -e "${GREEN}1. 💰 Gestion Économique (zen.sh)${NC}"
-    echo -e "   • Transactions UPLANETNAME.G1, UPLANETG1PUB, UPLANETNAME.SOCIETY"
+    echo -e "   • Transactions UPLANETNAME_G1, UPLANETG1PUB, UPLANETNAME.SOCIETY"
     echo -e "   • Analyse des portefeuilles et flux économiques"
     echo -e "   • Gestion des investissements et répartitions"
     echo ""
@@ -890,7 +890,7 @@ show_economic_scripts_menu() {
     
     echo -e "${GREEN}1. 💰 ZEN.ECONOMY.sh${NC}"
     echo -e "   • Paiement PAF hebdomadaire (Captain → NODE)"
-    echo -e "   • Burn 4-semaines (NODE → UPLANETNAME.G1 → OpenCollective)"
+    echo -e "   • Burn 4-semaines (NODE → UPLANETNAME_G1 → OpenCollective)"
     echo -e "   • Apport capital machine (ZEN Card → NODE, une fois)"
     echo -e "   • Contrôle primal des portefeuilles coopératifs"
     echo ""
@@ -1113,10 +1113,10 @@ check_and_init_uplanet_infrastructure() {
     # Vérifier si les portefeuilles UPLANET sont initialisés
     local uplanet_initialized=true
     
-    # Vérifier UPLANETNAME.G1 (réserve principale)
+    # Vérifier UPLANETNAME_G1 (réserve principale)
     if [[ ! -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
         uplanet_initialized=false
-        print_warning "UPLANETNAME.G1 (Réserve Ğ1) non initialisé"
+        print_warning "UPLANETNAME_G1 (Réserve Ğ1) non initialisé"
     fi
     
     # Vérifier les portefeuilles coopératifs

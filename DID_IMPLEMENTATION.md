@@ -6,6 +6,18 @@ Ce document détaille notre approche de l'identité numérique décentralisée (
 
 Nous ne nous contentons pas de suivre les spécifications W3C ; nous les utilisons comme un tremplin pour construire un système de **souveraineté numérique** complet. Notre objectif est de transformer le concept d'identité numérique en une véritable **propriété numérique**, où chaque individu contrôle non seulement qui il est, mais aussi ce qu'il possède et les droits qu'il délègue.
 
+### 🌱 Extension Environnementale : DIDs pour la Protection de la Terre
+
+L'écosystème DID UPlanet s'étend au-delà de l'identité humaine pour inclure l'**identité environnementale** via le système ORE (Obligations Réelles Environnementales). Chaque cellule géographique UMAP (0.01° x 0.01°) peut obtenir son propre DID, créant un **cadastre écologique vivant et programmable**.
+
+**Intégration ORE-DID :**
+- **UMAP DIDs** : `did:nostr:{umap_hex}` pour chaque cellule géographique
+- **Contrats Environnementaux** : Obligations ORE attachées aux DIDs UMAP
+- **Vérification en Temps Réel** : Salles VDO.ninja liées aux DIDs pour la vérification
+- **Récompenses Économiques** : Ẑen distribués depuis le portefeuille ASSETS coopératif
+
+Pour plus de détails, voir [`ORE_SYSTEM.md`](./docs/ORE_SYSTEM.md).
+
 Le script `make_NOSTRCARD.sh` génère des documents DID conformes aux standards [W3C DID Core v1.1](https://www.w3.org/TR/did-core-1.1/) et [W3C DID Resolution v1.0](https://www.w3.org/TR/did-resolution/), mais va bien au-delà en créant un écosystème complet de **ZEN Cards** (identité) et de **MULTIPASS** (autorisations).
 
 ## Architecture des Scripts de Gestion
@@ -30,6 +42,12 @@ L'écosystème UPlanet repose sur une architecture de scripts spécialisés qui 
 - **`nostr_publish_did.py`** : Publie les DIDs sur les relais Nostr (kind 30311)
 - **`nostr_did_client.py`** : Client unifié pour lecture/fetch des DIDs depuis Nostr
 - **`nostr_did_recall.sh`** : Script de migration des DIDs existants vers Nostr
+
+### Scripts d'Extension Environnementale (ORE)
+- **`ore_system.py`** : Système complet de gestion des Obligations Réelles Environnementales
+- **`ore_complete_test.sh`** : Tests et démonstrations du système ORE intégré
+- **`NOSTR.UMAP.refresh.sh`** : Intégration ORE dans le traitement des cellules UMAP
+- **`UPLANET.official.sh`** : Virements ORE depuis le portefeuille ASSETS coopératif
 
 ## 2. Les deux piliers de notre architecture
 
@@ -131,7 +149,7 @@ Une **primo-transaction** est effectuée pour activer le compte ẐEN à 0 avec 
 
 **Caractéristiques** :
 - **Montant** : 1 Ğ1 (activation initiale)
-- **Source** : UPLANETNAME.G1 (réserve centrale UPlanet)
+- **Source** : UPLANETNAME_G1 (réserve centrale UPlanet)
 - **Destination** : G1PUBNOSTR (portefeuille MULTIPASS)
 - **Commentaire** : `UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:MULTIPASS:PRIMO`
 - **Cache** : `~/.zen/tmp/coucou/${G1PUBNOSTR}.primal` (permanent)
@@ -229,6 +247,15 @@ Informations contextuelles sur l'identité et les capacités :
 - **Portefeuilles associés** : MULTIPASS (Ẑ revenue) et ZEN Card (Ẑ society)
 - **Statut contractuel** : Niveau de service et contributions coopératives
 - **Identification WoT** : Validation par membre forgeron Duniter externe
+
+#### 6. **Extension Environnementale (ORE)**
+Pour les DIDs UMAP avec obligations environnementales :
+- **Coordonnées géographiques** : Latitude/longitude précises (0.01° x 0.01°)
+- **Obligations environnementales** : Contrats ORE attachés au DID
+- **Statut de conformité** : Vérification automatique via satellite/IoT
+- **Salle de vérification** : Endpoint VDO.ninja pour vérification en temps réel
+- **Récompenses économiques** : Historique des Ẑen distribués depuis ASSETS
+- **Métadonnées ORE** : Détails des contrats et obligations environnementales
 
 ## 5. Flux Opérationnel : De la Création à l'Utilisation
 
@@ -549,7 +576,7 @@ Le document DID est **automatiquement mis à jour** lors des transactions UPlane
    → Cache: ~/.zen/game/nostr/${EMAIL}/did.json.cache
    → Clés: ~/.zen/game/nostr/${EMAIL}/.secret.nostr (NSEC/NPUB/HEX)
    → Quota: "10GB" (MULTIPASS gratuit 7 jours)
-   → Primo-transaction: 1Ğ1 UPLANETNAME.G1 → G1PUBNOSTR
+   → Primo-transaction: 1Ğ1 UPLANETNAME_G1 → G1PUBNOSTR
    → Publication Nostr: DID publié immédiatement (kind 30311)
 
 2. WoT IDENTIFICATION (primal_wallet_control.sh)
@@ -684,6 +711,56 @@ Le message NOSTR initial inclut :
 - Lien direct vers le document DID (`{myIPFS}/ipns/{NOSTRNS}/{EMAIL}/did.json`)
 - QR codes pour le portefeuille et l'accès à l'identité
 - Primo-transaction sur la blockchain Ğ1
+
+### 7.4. Événements NOSTR pour ORE (Extension Environnementale)
+Les DIDs UMAP avec obligations environnementales publient des événements NOSTR spécialisés :
+
+#### Kind 30312 : ORE Meeting Space
+```json
+{
+  "kind": 30312,
+  "content": "UPlanet ORE Environmental Space - Persistent geographic area for environmental obligations tracking",
+  "tags": [
+    ["d", "ore-space-{lat}-{lon}"],
+    ["room", "UMAP_ORE_{lat}_{lon}"],
+    ["summary", "UPlanet ORE Environmental Space"],
+    ["status", "open"],
+    ["service", "{VDONINJA}/?room={UPLANETNAME_G1:0:8}&effects&record"],
+    ["t", "ORE"],
+    ["t", "UPlanet"],
+    ["t", "Environment"],
+    ["t", "UMAP"],
+    ["g", "{lat},{lon}"],
+    ["p", "{UPLANETNAME_G1:0:8}"]
+  ]
+}
+```
+
+#### Kind 30313 : ORE Verification Meeting
+```json
+{
+  "kind": 30313,
+  "content": "ORE Environmental Verification Meeting",
+  "tags": [
+    ["d", "ore-verification-{lat}-{lon}-{timestamp}"],
+    ["a", "30312:{UPLANETNAME_G1:0:8}:ore-space-{lat}-{lon}"],
+    ["title", "ORE Environmental Verification"],
+    ["status", "planned/live/ended"],
+    ["starts", "{unix_timestamp}"],
+    ["t", "ORE"],
+    ["t", "Verification"],
+    ["t", "UPlanet"],
+    ["t", "Environment"],
+    ["g", "{lat},{lon}"]
+  ]
+}
+```
+
+Ces événements permettent :
+- **Découverte automatique** des espaces environnementaux ORE
+- **Vérification en temps réel** via VDO.ninja
+- **Traçabilité complète** des obligations environnementales
+- **Intégration économique** avec le système Ẑen
 
 ## Exemple de Document DID
 
@@ -920,6 +997,24 @@ Le standard **DID** fournit une grammaire et une syntaxe communes pour l'identit
 - La **ZEN Card** n'est pas qu'un identifiant, c'est un **titre de propriété**
 - Le **MULTIPASS** n'est pas qu'une autorisation, c'est un **contrat de location dynamique**
 - Le flux de **ẐEN** n'est pas qu'une monnaie, c'est **l'énergie économique** qui anime ces relations de propriété
+
+### 9.7. Extension Environnementale : DIDs pour la Terre
+
+L'innovation la plus révolutionnaire de l'écosystème UPlanet est l'extension des DIDs au-delà de l'identité humaine vers l'**identité environnementale**. Chaque cellule géographique UMAP (0.01° x 0.01°) peut obtenir son propre DID, créant un **cadastre écologique vivant et programmable**.
+
+#### DIDs UMAP : L'Identité de la Terre
+- **Chaque parcelle** de terre obtient une identité numérique unique
+- **Obligations environnementales** attachées aux DIDs UMAP
+- **Vérification en temps réel** via VDO.ninja et satellites
+- **Récompenses économiques** automatiques pour la conformité
+
+#### Économie de la Protection Environnementale
+- **La terre devient un actif numérique** avec son propre DID
+- **Protection environnementale** transformée en source de revenus
+- **Ẑen distribués** depuis les réserves coopératives ASSETS
+- **Économie circulaire** : Les Ẑen ORE sont fongibles avec tous les autres Ẑen
+
+Cette extension représente une **révolution conceptuelle** : la terre n'est plus juste un bien, elle devient un **acteur économique** avec sa propre identité numérique et ses propres droits économiques.
 
 En intégrant ces concepts, UPlanet démontre comment les standards techniques peuvent être le fondement d'une véritable organisation sociale et économique décentralisée, une **"nation d'esprit"** où :
 - Le code est la loi
@@ -1235,6 +1330,7 @@ Utilisateur UPlanet → Accès Refusé
 - [Relation de Confiance Décentralisée à 3 Tiers avec la Ğ1](https://www.copylaradio.com/blog/blog-1/post/relation-de-confiance-decentralisee-a-3-tiers-avec-la-g1-149) - Article fondateur sur CopyLaRadio
 - [MULTIPASS System Documentation](./MULTIPASS_SYSTEM.md) - Documentation complète du système MULTIPASS
 - [MULTIPASS Quick Reference](../templates/MULTIPASS_QUICK_REFERENCE.md) - Guide rapide utilisateur
+- [ORE System Documentation](./docs/ORE_SYSTEM.md) - Système d'Obligations Réelles Environnementales avec DIDs UMAP
 
 ### Outils et Implémentations
 

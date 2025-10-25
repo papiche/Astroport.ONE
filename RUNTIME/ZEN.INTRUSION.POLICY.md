@@ -4,11 +4,11 @@
 
 ```mermaid
 graph TD
-    G1[UPLANETNAME.G1<br/>Réserve Principale] --> UP[UPLANETNAME<br/>🔑 UPLANETG1PUB]
+    G1[UPLANETNAME_G1<br/>Réserve Principale] --> UP[UPLANETNAME<br/>🔑 UPLANETG1PUB]
     G1 --> SOC[UPLANETNAME.SOCIETY]
     G1 --> CASH[UPLANETNAME.CASH]
-    G1 --> RND[UPLANETNAME.RND]
-    G1 --> ASSETS[UPLANETNAME.ASSETS]
+    G1 --> RND[UPLANETNAME_RND]
+    G1 --> ASSETS[UPLANETNAME_ASSETS]
     G1 --> IMPOT[UPLANETNAME.IMPOT]
     G1 --> INTRUSION[UPLANETNAME.INTRUSION<br/>🚨 Fonds Intrusifs]
     
@@ -32,13 +32,13 @@ graph TD
 
 | Portefeuille | Source Autorisée | Script de Contrôle |
 |--------------|------------------|---------------------|
-| **UPLANETNAME** | `UPLANETNAME.G1` | `ZEN.ECONOMY.sh` |
-| **UPLANETNAME.SOCIETY** | `UPLANETNAME.G1` | `ZEN.ECONOMY.sh` |
-| **UPLANETNAME.CASH** | `UPLANETNAME.G1` | `ZEN.ECONOMY.sh` |
-| **UPLANETNAME.RND** | `UPLANETNAME.G1` | `ZEN.ECONOMY.sh` |
-| **UPLANETNAME.ASSETS** | `UPLANETNAME.G1` | `ZEN.ECONOMY.sh` |
-| **UPLANETNAME.IMPOT** | `UPLANETNAME.G1` | `ZEN.ECONOMY.sh` |
-| **UPLANETNAME.INTRUSION** | `UPLANETNAME.G1` | `UPLANET.init.sh` |
+| **UPLANETNAME** | `UPLANETNAME_G1` | `ZEN.ECONOMY.sh` |
+| **UPLANETNAME.SOCIETY** | `UPLANETNAME_G1` | `ZEN.ECONOMY.sh` |
+| **UPLANETNAME.CASH** | `UPLANETNAME_G1` | `ZEN.ECONOMY.sh` |
+| **UPLANETNAME_RND** | `UPLANETNAME_G1` | `ZEN.ECONOMY.sh` |
+| **UPLANETNAME_ASSETS** | `UPLANETNAME_G1` | `ZEN.ECONOMY.sh` |
+| **UPLANETNAME.IMPOT** | `UPLANETNAME_G1` | `ZEN.ECONOMY.sh` |
+| **UPLANETNAME.INTRUSION** | `UPLANETNAME_G1` | `UPLANET.init.sh` |
 | **MULTIPASS Users** | `UPLANETNAME` | `NOSTRCARD.refresh.sh` |
 | **ZEN Cards** | `UPLANETNAME.SOCIETY` | `G1PalPay.sh` |
 
@@ -81,8 +81,8 @@ declare -A COOPERATIVE_WALLETS=(
     ["UPLANETNAME"]="$HOME/.zen/game/uplanet.dunikey"
     ["UPLANETNAME.SOCIETY"]="$HOME/.zen/game/uplanet.SOCIETY.dunikey"
     ["UPLANETNAME.CASH"]="$HOME/.zen/game/uplanet.CASH.dunikey"
-    ["UPLANETNAME.RND"]="$HOME/.zen/game/uplanet.RnD.dunikey"
-    ["UPLANETNAME.ASSETS"]="$HOME/.zen/game/uplanet.ASSETS.dunikey"
+    ["UPLANETNAME_RND"]="$HOME/.zen/game/uplanet.RnD.dunikey"
+    ["UPLANETNAME_ASSETS"]="$HOME/.zen/game/uplanet.ASSETS.dunikey"
     ["UPLANETNAME.IMPOT"]="$HOME/.zen/game/uplanet.IMPOT.dunikey"
     ["UPLANETNAME.INTRUSION"]="$HOME/.zen/game/uplanet.INTRUSION.dunikey"
 )
