@@ -264,8 +264,8 @@
         let didData = null;
         let userLanguage = 'fr'; // Default to French
         
-        // Embedded DID JSON data (will be replaced by sed)
-        const _DID_JSON_ = null;
+        // IPFS URL for DID JSON data (will be replaced by sed)
+        const _DID_JSON_URL_ = null;
         
         // Language detection and content
         function detectLanguage() {
@@ -371,21 +371,31 @@
             $('#loadingSpinner').toggle(show);
         }
         
-        // Load DID document from embedded JSON
-        function loadDID() {
+        // Load DID document from IPFS URL
+        async function loadDID() {
             try {
                 showLoading(true);
                 updateStatus(getText('loading'));
                 
-                // Get embedded JSON from the page
-                const embeddedJson = _DID_JSON_;
-                if (!embeddedJson) {
-                    throw new Error('No DID JSON data embedded in page');
+                // Get IPFS URL from the page
+                const ipfsUrl = _DID_JSON_URL_;
+                if (!ipfsUrl || ipfsUrl === 'null') {
+                    throw new Error('No IPFS URL provided for DID document');
                 }
                 
-                didData = embeddedJson;
+                console.log('Loading DID from IPFS URL:', ipfsUrl);
+                
+                // Fetch DID document from IPFS
+                const response = await fetch(ipfsUrl);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const jsonText = await response.text();
+                didData = JSON.parse(jsonText);
+                
                 displayDID(didData);
-                updateStatus(userLanguage === 'fr' ? 'Document DID chargé avec succès' : 'DID document loaded successfully');
+                updateStatus(userLanguage === 'fr' ? 'Document DID chargé avec succès depuis IPFS' : 'DID document loaded successfully from IPFS');
                 
             } catch (error) {
                 console.error('Error loading DID:', error);
@@ -393,7 +403,8 @@
                 document.getElementById('content').innerHTML = `
                     <div class="error">
                         <strong>Error loading DID document:</strong><br>
-                        ${error.message}
+                        ${error.message}<br><br>
+                        <strong>IPFS URL:</strong> ${_DID_JSON_URL_ || 'Not provided'}
                     </div>
                 `;
             } finally {

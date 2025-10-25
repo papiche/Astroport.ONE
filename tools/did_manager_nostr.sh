@@ -633,18 +633,60 @@ update_udrive_did() {
         # Copy template and inject JSON data
         cp "$template_file" "$index_file"
         
-        # Inject DID JSON data into the HTML file (properly escaped for JavaScript)
-        local did_json_content=$(jq -c . "$did_file" | jq -R -s .)
-        sed -i "s|const _DID_JSON_ = null;|const _DID_JSON_ = JSON.parse($did_json_content);|g" "$index_file"
+        # Use IPFS direct link instead of embedding JSON
+        local ipfs_cid=$(cat "$did_file" | jq -r '.metadata.astroportStation.ipns // empty' 2>/dev/null)
+        if [[ -n "$ipfs_cid" ]]; then
+            # Replace the placeholder with IPFS direct link
+            local ipfs_url="/ipfs/${ipfs_cid}/did.json.cache"
+            sed -i "s|const _DID_JSON_ = null;|const _DID_JSON_URL_ = '${ipfs_url}';|g" "$index_file"
+        else
+            # Fallback: try to get IPFS CID from the user directory
+            local user_dir="$HOME/.zen/game/nostr/${email}"
+            local nostr_ipfs_file="${user_dir}/NOSTRIPFS"
+            if [[ -f "$nostr_ipfs_file" ]]; then
+                local nostr_ipfs=$(cat "$nostr_ipfs_file")
+                local ipfs_url="/ipfs/${nostr_ipfs}/did.json.cache"
+                sed -i "s|const _DID_JSON_ = null;|const _DID_JSON_URL_ = '${ipfs_url}';|g" "$index_file"
+            else
+                echo -e "${YELLOW}⚠️  No IPFS CID found, using fallback method${NC}" >&2
+                # Keep the original null value
+            fi
+        fi
         
-        echo -e "${GREEN}✅ uDRIVE DID viewer updated with embedded JSON: ${index_file}${NC}"
+        # Ensure did.json.cache is available in the IPFS directory
+        if [[ -f "$did_cache_file" ]]; then
+            cp "$did_cache_file" "${user_dir}/did.json.cache"
+            echo -e "${GREEN}✅ DID cache file copied to user directory${NC}"
+        fi
+        
+        echo -e "${GREEN}✅ uDRIVE DID viewer updated with IPFS link: ${index_file}${NC}"
         return 0
     elif [[ -f "$index_file" ]]; then
-        # Update existing file with new JSON data (properly escaped for JavaScript)
-        local did_json_content=$(jq -c . "$did_file" | jq -R -s .)
-        sed -i "s|const _DID_JSON_ = .*;|const _DID_JSON_ = JSON.parse($did_json_content);|g" "$index_file"
+        # Update existing file with IPFS direct link
+        local ipfs_cid=$(cat "$did_file" | jq -r '.metadata.astroportStation.ipns // empty' 2>/dev/null)
+        if [[ -n "$ipfs_cid" ]]; then
+            local ipfs_url="/ipfs/${ipfs_cid}/did.json.cache"
+            sed -i "s|const _DID_JSON_.*;|const _DID_JSON_URL_ = '${ipfs_url}';|g" "$index_file"
+        else
+            # Fallback: try to get IPFS CID from the user directory
+            local user_dir="$HOME/.zen/game/nostr/${email}"
+            local nostr_ipfs_file="${user_dir}/NOSTRIPFS"
+            if [[ -f "$nostr_ipfs_file" ]]; then
+                local nostr_ipfs=$(cat "$nostr_ipfs_file")
+                local ipfs_url="/ipfs/${nostr_ipfs}/did.json.cache"
+                sed -i "s|const _DID_JSON_.*;|const _DID_JSON_URL_ = '${ipfs_url}';|g" "$index_file"
+            else
+                echo -e "${YELLOW}⚠️  No IPFS CID found for existing file${NC}" >&2
+            fi
+        fi
         
-        echo -e "${GREEN}✅ uDRIVE DID viewer updated with new JSON data${NC}"
+        # Ensure did.json.cache is available in the IPFS directory
+        if [[ -f "$did_cache_file" ]]; then
+            cp "$did_cache_file" "${user_dir}/did.json.cache"
+            echo -e "${GREEN}✅ DID cache file copied to user directory${NC}"
+        fi
+        
+        echo -e "${GREEN}✅ uDRIVE DID viewer updated with IPFS link${NC}"
         return 0
     else
         echo -e "${YELLOW}⚠️  DID viewer (index.html) not found${NC}"
