@@ -90,6 +90,13 @@ create_initial_did() {
     
     # Read values from files created by make_NOSTRCARD.sh
     local user_dir="$HOME/.zen/game/nostr/${email}"
+    
+    # Check if user directory exists
+    if [[ ! -d "$user_dir" ]]; then
+        echo -e "${YELLOW}⚠️  User directory not found: ${user_dir}${NC}" >&2
+        echo -e "${YELLOW}💡 Creating minimal DID document with available information${NC}" >&2
+    fi
+    
     local g1_pubkey=$(cat "${user_dir}/G1PUBNOSTR" 2>/dev/null || echo "")
     local bitcoin_address=$(cat "${user_dir}/BITCOIN" 2>/dev/null || echo "")
     local monero_address=$(cat "${user_dir}/MONERO" 2>/dev/null || echo "")
@@ -99,8 +106,21 @@ create_initial_did() {
     local language=$(cat "${user_dir}/LANG" 2>/dev/null || echo "fr")
     local youser=$(cat "${user_dir}/HEX" 2>/dev/null | cut -c1-8 || echo "")
     
+    # If no user directory exists, try to get G1PUB from the email parameter or environment
+    if [[ -z "$g1_pubkey" ]]; then
+        # Try to get from environment or use a placeholder
+        g1_pubkey="${G1PUBNOSTR:-}"
+        if [[ -z "$g1_pubkey" ]]; then
+            # Generate a placeholder G1PUB for deactivated accounts
+            g1_pubkey="DEACTIVATED_${hex_pubkey:0:8}"
+        fi
+    fi
+    
     # Get UPlanet info from environment or defaults
-    local uplanet_g1pub_8="${UPLANETG1PUB:0:8:-AwdjhpJN}"
+    local uplanet_g1pub_8="${UPLANETG1PUB:0:8}"
+    if [[ -z "$uplanet_g1pub_8" ]]; then
+        uplanet_g1pub_8="AwdjhpJN"
+    fi
     local my_relay="${myRELAY:-wss://relay.copylaradio.com}"
     local my_ipfs="${myIPFS:-http://127.0.0.1:8080}"
     local uspot="${uSPOT:-https://u.copylaradio.com}"
@@ -110,7 +130,7 @@ create_initial_did() {
     local temp_template=$(mktemp)
     
     # Copy template and substitute variables
-    sed -e "s/_HEX_PUBKEY_/${hex_pubkey}/g" \
+    if ! sed -e "s/_HEX_PUBKEY_/${hex_pubkey}/g" \
         -e "s/_EMAIL_/${email}/g" \
         -e "s/_CREATED_DATE_/${current_date}/g" \
         -e "s/_UPDATED_DATE_/${current_date}/g" \
@@ -127,7 +147,28 @@ create_initial_did() {
         -e "s/_LANGUAGE_/${language}/g" \
         -e "s/_YOUSER_/${youser}/g" \
         -e "s/_IPFS_NODE_ID_/${ipfs_node_id}/g" \
-        "$template_file" > "$temp_template"
+        "$template_file" > "$temp_template"; then
+        echo -e "${RED}❌ Template processing failed${NC}" >&2
+        rm -f "$temp_template"
+        return 1
+    fi
+    
+    # Validate the processed template
+    if [[ ! -s "$temp_template" ]]; then
+        echo -e "${RED}❌ Template processing produced empty output${NC}" >&2
+        rm -f "$temp_template"
+        return 1
+    fi
+    
+    # Validate JSON
+    if ! jq empty "$temp_template" 2>/dev/null; then
+        echo -e "${RED}❌ Template processing produced invalid JSON${NC}" >&2
+        echo -e "${YELLOW}💡 Template content (first 200 chars):${NC}" >&2
+        head -c 200 "$temp_template" >&2
+        echo "" >&2
+        rm -f "$temp_template"
+        return 1
+    fi
     
     # Output the processed template (JSON only, no debug messages)
     cat "$temp_template"
