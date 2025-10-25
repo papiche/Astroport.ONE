@@ -146,6 +146,47 @@ convert_duration_to_seconds() {
     fi
 }
 
+# Function to convert seconds back to human-readable format
+convert_seconds_to_human() {
+    local seconds="$1"
+    local result=""
+    
+    # Weeks
+    if [[ $seconds -ge 604800 ]]; then
+        local weeks=$((seconds / 604800))
+        result="${weeks}w"
+        seconds=$((seconds % 604800))
+    fi
+    
+    # Days
+    if [[ $seconds -ge 86400 ]]; then
+        local days=$((seconds / 86400))
+        result="${result}${days}d"
+        seconds=$((seconds % 86400))
+    fi
+    
+    # Hours
+    if [[ $seconds -ge 3600 ]]; then
+        local hours=$((seconds / 3600))
+        result="${result}${hours}h"
+        seconds=$((seconds % 3600))
+    fi
+    
+    # Minutes
+    if [[ $seconds -ge 60 ]]; then
+        local minutes=$((seconds / 60))
+        result="${result}${minutes}m"
+        seconds=$((seconds % 60))
+    fi
+    
+    # Seconds
+    if [[ $seconds -gt 0 ]]; then
+        result="${result}${seconds}s"
+    fi
+    
+    echo "$result"
+}
+
 # Convert ephemeral duration to seconds if provided
 if [[ -n "$EPHEMERAL_DURATION" ]]; then
     ephemeral_duration=$(convert_duration_to_seconds "$EPHEMERAL_DURATION")
@@ -299,7 +340,7 @@ ${TEXTPART}
 ---
 ${HEX:+📱 NOSTR: ${NPUB}}
 ${RELAY:+🌐 Relay: ${myRELAY}}
-${ephemeral_duration:+⏰ ${ephemeral_duration}s}
+${ephemeral_duration:+⏰ $(convert_seconds_to_human ${ephemeral_duration})}
 "
 
     # Discover preferred relays for recipient
