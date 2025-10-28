@@ -273,10 +273,10 @@ if [[ -f "${ZEN_PASS_FILE}" ]]; then
     ZEN_PASSWORD=$(cat "${ZEN_PASS_FILE}")
     echo "✅ ZEN Card password retrieved for encryption"
 else
-    # Generate secure random password for MULTIPASS-only accounts
-    ZEN_PASSWORD=$(openssl rand -base64 32 2>/dev/null | tr -d "=+/" | cut -c1-16)
+    # Use 0000 password for MULTIPASS-only accounts
+    ZEN_PASSWORD="0000"
     if [[ -z "${ZEN_PASSWORD}" ]]; then
-        ZEN_PASSWORD=$(date +%s | sha256sum | cut -c1-16)
+        ZEN_PASSWORD=$(date +%s | sha256sum | cut -c1-8)
     fi
     echo "🔐 Generated secure password for MULTIPASS-only account: ${ZEN_PASSWORD}"
 fi
@@ -359,9 +359,9 @@ if [[ -x "$HOME/.zen/strfry/strfry" ]]; then
     # Delete old messages using strfry with proper syntax
     cd ~/.zen/strfry
     # Try different strfry delete syntaxes
-    if ./strfry delete --filter='{"authors":["'${hex}'"]}' --age=24h 2>/dev/null; then
+    if ./strfry delete --age=24h --filter='{"authors":["'${hex}'"]}' 2>/dev/null; then
         echo "✅ Old messages deleted successfully"
-    elif ./strfry delete --authors="${hex}" --age=86400 2>/dev/null; then
+    elif ./strfry delete --age=86400 --authors="${hex}" 2>/dev/null; then
         echo "✅ Old messages deleted successfully (alternative syntax)"
     else
         echo "⚠️  Failed to delete old messages (strfry delete not supported or syntax incompatible)"
