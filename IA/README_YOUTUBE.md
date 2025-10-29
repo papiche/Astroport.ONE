@@ -1,13 +1,27 @@
-# YouTube Download System - Documentation
+# YouTube & Video Management System - Documentation
 
 ## 🎯 Overview
 
-The YouTube download system provides **two modes** for downloading YouTube videos via UPlanet:
+The UPlanet video management system provides **three modes** for creating and managing videos:
 
-1. **Manual Download** (`#youtube` tag) - On-demand video downloads
+1. **Manual Download** (`#youtube` tag) - On-demand YouTube video downloads
 2. **Automatic Sync** - Daily synchronization of liked videos via NOSTR refresh cycle
+3. **Webcam Recording** (`/webcam` route) - Direct video recording and upload with geolocation
 
 ## 🔧 How It Works
+
+### Webcam Recording Process Flow (NEW)
+
+1. **User accesses** `/webcam` route with NOSTR authentication
+2. **Records video** via browser webcam or uploads local video file (.mp4, .webm, .mov)
+3. **Geolocation capture** - User can specify coordinates or use current location (defaults to 0.00, 0.00)
+4. **IPFS Upload** - Video uploaded via `/api/fileupload` endpoint
+5. **NOSTR Publication** - NIP-71 event (kind 21/22) with geographic tags:
+   - `g` tag: Geohash format (lat,lon) for UMAP anchoring
+   - `location` tag: Human-readable coordinates
+   - `latitude` and `longitude` tags: Individual coordinate tags
+6. **uDRIVE Storage** - Video saved to `uDRIVE/Videos/` directory
+7. **Geographic Discovery** - Videos searchable by location via `/youtube` route
 
 ### Manual Download Process Flow
 
@@ -27,7 +41,7 @@ The YouTube download system provides **two modes** for downloading YouTube video
 1. **NOSTRCARD.refresh.sh** runs daily for each MULTIPASS user
 2. **Cookie Detection** - Checks for `.cookie.txt` in user's NOSTR directory
 3. **YouTube Sync Trigger** - If cookies exist, launches `sync_youtube_likes.sh`
-4. **Liked Videos Fetch** - Retrieves up to 3 new liked videos from YouTube
+4. **Liked Videos Fetch** - Retrieves up to 2 new liked videos from YouTube
 5. **Video Processing** - Calls `process_youtube.sh` for each video
 6. **NOSTR Publication** - Publishes NIP-71 events for each downloaded video
 7. **uDRIVE Organization** - Videos stored in `uDRIVE/Videos/` and `uDRIVE/Music/`
@@ -176,7 +190,7 @@ The system publishes **two types** of NOSTR events for each video:
 
 ### NIP-71 Tags Structure
 
-The system uses proper NIP-71 compliant tags:
+The system uses proper NIP-71 compliant tags with **geographic anchoring**:
 
 ```json
 {
@@ -194,7 +208,11 @@ The system uses proper NIP-71 compliant tags:
   "published_at": "1640995200",
   "alt": "Video Title by Author",
   "content-warning": "Adult content", // if applicable
-  "t": ["YouTubeDownload", "VideoChannel", "Channel-AuthorName"],
+  "t": ["YouTubeDownload", "VideoChannel", "Channel-AuthorName", "WebcamRecording"],
+  "g": "48.86,2.35",           // NEW: Geohash for UMAP anchoring
+  "location": "48.86,2.35",     // NEW: Human-readable location
+  "latitude": "48.86",          // NEW: Separate latitude tag
+  "longitude": "2.35",          // NEW: Separate longitude tag
   "r": [
     ["https://youtube.com/watch?v=...", "YouTube"],
     ["/ipfs/metadata_hash", "Metadata"],
@@ -213,6 +231,8 @@ The system uses proper NIP-71 compliant tags:
 - **✅ `fallback` URLs** for redundancy
 - **✅ `service` tag** for NIP-96 compatibility
 - **✅ Smart video classification** (kind 21/22 based on format and duration)
+- **✅ Geographic tags** (`g`, `location`, `latitude`, `longitude`) for UMAP anchoring
+- **✅ uDRIVE integration** for personal video storage
 
 ## 🔧 NIP-71 Compliance
 
@@ -264,23 +284,74 @@ Our YouTube download system is now **fully compliant** with NIP-71 Video Events 
 }
 ```
 
-## 📺 YouTube Channel Interface
+## 📺 Video Interfaces
 
-### Access Your Videos
+### YouTube Channel Interface (`/youtube`)
 
-Once videos are downloaded and published as NOSTR events, you can access them via:
+Access your videos and browse community content:
 
 ```
 https://u.copylaradio.com/youtube
 ```
 
-### Features
+#### Features
 
-- **Video Gallery** - Browse all your downloaded videos
+- **Video Gallery** - Browse all downloaded and recorded videos
 - **NOSTR Integration** - Like videos, view author profiles
+- **Geographic Filtering** - Search videos by location (lat, lon, radius)
 - **Responsive Design** - Works on PC and mobile
 - **IPFS Streaming** - Direct video playback from IPFS
-- **Metadata Display** - Duration, file size, dimensions, keywords
+- **Metadata Display** - Duration, file size, dimensions, keywords, location
+- **Channel Organization** - Videos grouped by uploader/creator
+
+#### Geographic Search
+
+Filter videos by location using URL parameters:
+
+```
+https://u.copylaradio.com/youtube?lat=48.86&lon=2.35&radius=10&html=1
+```
+
+Parameters:
+- `lat`: Latitude (decimal degrees)
+- `lon`: Longitude (decimal degrees)
+- `radius`: Search radius in kilometers
+- `html=1`: Return HTML view (required for web browser)
+
+The system uses the Haversine formula to calculate geographic distances and filter videos within the specified radius.
+
+### Webcam Recording Interface (`/webcam`)
+
+Record or upload videos with geolocation:
+
+```
+https://u.copylaradio.com/webcam
+```
+
+#### Features
+
+- **NOSTR Authentication** - Connect via browser extension or nsec key
+- **Webcam Recording** - Direct browser recording (3-60 seconds)
+- **File Upload** - Upload local video files (.mp4, .webm, .mov, max 500MB)
+- **Geolocation** - Interactive map for location selection
+- **Preview & Edit** - Review video before publishing
+- **IPFS Upload** - Automatic upload via `/api/fileupload`
+- **NIP-71 Publishing** - Creates proper video events with geographic tags
+- **uDRIVE Storage** - Saves to personal `uDRIVE/Videos/` directory
+
+#### Recording Workflow
+
+1. **Connect NOSTR** - Authenticate with your NOSTR identity
+2. **Choose Source**:
+   - Record via webcam (adjustable duration)
+   - Upload video file from device
+3. **Preview** - Review video in modal
+4. **Edit Metadata**:
+   - Title (required)
+   - Description (optional)
+   - Geographic location (interactive map or manual input)
+5. **Publish** - Video uploaded to IPFS and published to NOSTR
+6. **View** - Access via `/youtube` interface with geographic filtering
 
 ## 🔗 Related Files
 
@@ -288,7 +359,7 @@ https://u.copylaradio.com/youtube
 Astroport.ONE/IA/
 ├── process_youtube.sh           # Main YouTube download script
 ├── sync_youtube_likes.sh       # Automatic sync of liked videos
-├── create_video_channel.py     # NIP-71 channel creation
+├── create_video_channel.py     # NIP-71 channel creation with geolocation support
 ├── UPlanet_IA_Responder.sh     # Calls process_youtube.sh when #youtube tag detected
 └── README_YOUTUBE.md           # This file
 
@@ -296,13 +367,18 @@ Astroport.ONE/RUNTIME/
 └── NOSTRCARD.refresh.sh        # Daily refresh cycle (triggers YouTube sync)
 
 UPlanet/earth/
-└── cookie.html                 # User guide for cookie export
+├── cookie.html                 # User guide for cookie export
+└── common.js                   # Shared NOSTR/IPFS functions for webcam integration
 
 UPassport/
 ├── templates/
 │   ├── astro_base.html         # File upload interface (detects Netscape cookies)
-│   └── youtube.html            # YouTube channel interface
-└── 54321.py                    # API endpoint for /youtube route
+│   ├── webcam.html             # Webcam recording interface with geolocation
+│   └── youtube.html            # YouTube channel interface with geographic filtering
+└── 54321.py                    # API endpoints:
+                                #   - /youtube (with lat/lon/radius filtering)
+                                #   - /webcam (video publishing with geolocation)
+                                #   - /api/fileupload (IPFS upload for webcam videos)
 
 ~/.zen/
 ├── tmp/
@@ -311,7 +387,10 @@ UPassport/
 └── game/nostr/<email>/
     ├── .cookie.txt             # User-uploaded cookies (Netscape format)
     ├── .last_youtube_sync      # Last sync date tracking
-    └── .processed_youtube_videos # Processed videos database
+    ├── .processed_youtube_videos # Processed videos database
+    └── APP/uDRIVE/
+        ├── Videos/             # User's video storage (webcam + YouTube)
+        └── Music/              # User's audio storage (YouTube MP3)
 ```
 
 ## 💡 Tips
@@ -326,20 +405,31 @@ UPassport/
 
 5. **Duration limit**: Videos longer than 3 hours are rejected to prevent resource exhaustion.
 
-6. **Automatic sync**: Upload cookies once and your liked videos will sync automatically every day.
+6. **Automatic sync**: Upload cookies once and your liked videos will sync automatically every day (up to 2 new videos per day).
 
 7. **NIP-71 compatibility**: All videos are published as fully compliant NIP-71 events with proper `imeta` tags, `title`, `published_at`, `alt`, and accessibility features.
 
-8. **uDRIVE organization**: Videos are automatically organized in your personal uDRIVE storage.
+8. **uDRIVE organization**: Videos are automatically organized in your personal uDRIVE storage (`uDRIVE/Videos/` and `uDRIVE/Music/`).
 
 9. **Email notifications**: You'll receive daily summaries of your YouTube sync results.
 
-10. **Channel interface**: Access all your videos via the `/youtube` route with full NOSTR integration.
+10. **Channel interface**: Access all your videos via the `/youtube` route with full NOSTR integration and geographic filtering.
+
+11. **Webcam recording**: Record videos directly in browser with adjustable duration (3-60 seconds, optimized for mobile).
+
+12. **Video upload**: Upload local video files (.mp4, .webm, .mov) up to 500MB via `/webcam` interface.
+
+13. **Geolocation**: Add location data to videos for geographic discovery and UMAP anchoring (defaults to 0.00, 0.00 if not specified).
+
+14. **Geographic search**: Filter videos by location using `lat`, `lon`, and `radius` URL parameters on `/youtube` route.
+
+15. **IPFS streaming**: All videos accessible via IPFS gateway for decentralized, censorship-resistant playback.
 
 ## 🔄 System Architecture
 
-### Complete YouTube Integration Flow
+### Complete Video Management Flow
 
+#### YouTube Download Flow
 ```
 User Uploads Cookies
         ↓
@@ -349,32 +439,72 @@ sync_youtube_likes.sh (Auto-triggered)
         ↓
 process_youtube.sh (Video download)
         ↓
+IPFS Upload + uDRIVE Storage
+        ↓
 NOSTR Events (kind: 1 + NIP-71)
         ↓
-create_video_channel.py (Channel creation)
+create_video_channel.py (Channel parsing)
         ↓
-/youtube Interface (User access)
+/youtube Interface (User access + geographic filtering)
+```
+
+#### Webcam Recording Flow
+```
+User Accesses /webcam
+        ↓
+NOSTR Authentication (extension or nsec)
+        ↓
+Video Recording/Upload + Geolocation
+        ↓
+/api/fileupload (IPFS upload to uDRIVE)
+        ↓
+/webcam (NIP-71 event creation with geographic tags)
+        ↓
+NOSTR Publication (kind: 21/22 with g, location, lat, lon tags)
+        ↓
+/youtube Interface (Access with geographic filtering)
 ```
 
 ### Key Components
 
 - **Cookie Upload**: `cookie.html` → `astro_base.html` → `.cookie.txt`
-- **Daily Sync**: `NOSTRCARD.refresh.sh` → `sync_youtube_likes.sh`
-- **Video Processing**: `process_youtube.sh` → IPFS → NOSTR
-- **Channel Creation**: `create_video_channel.py` → NIP-71 events
-- **User Interface**: `/youtube` route → `youtube.html`
+- **Daily Sync**: `NOSTRCARD.refresh.sh` → `sync_youtube_likes.sh` → `process_youtube.sh`
+- **Webcam Recording**: `/webcam` → NOSTR auth → video capture → `/api/fileupload`
+- **IPFS Upload**: `/api/fileupload` → `uDRIVE/Videos/` → IPFS CID
+- **NOSTR Publishing**: `/webcam` route → NIP-71 event with geographic tags
+- **Video Processing**: `process_youtube.sh` → IPFS → NOSTR → uDRIVE
+- **Channel Parsing**: `create_video_channel.py` → Extract NIP-71 events with geolocation
+- **User Interface**: `/youtube` route → `youtube.html` with geographic filtering
+- **Geographic Discovery**: Haversine formula → filter videos by lat/lon/radius
 
 ## 🆘 Support
 
 If you encounter issues:
 
-1. Check logs: `./youtube_logs.sh -e`
-2. Verify cookie file exists and is recent
+### YouTube Download Issues
+1. Check logs: `tail -f ~/.zen/tmp/IA.log | grep "process_youtube"`
+2. Verify cookie file exists and is recent: `ls -la ~/.zen/game/nostr/*/. cookie.txt`
 3. Test with a different YouTube URL
 4. Update yt-dlp: `pip install --upgrade yt-dlp`
-5. Check IPFS: `ipfs id`
-6. Check NOSTR relay: `ws://127.0.0.1:7777`
-7. Verify uDRIVE directory exists: `~/.zen/game/nostr/<email>/APP/uDRIVE/`
+
+### Webcam Recording Issues
+1. Verify NOSTR connection: Check browser console for connection errors
+2. Check IPFS upload: Verify `/api/fileupload` endpoint is accessible
+3. Browser permissions: Ensure webcam/microphone access is granted
+4. File size: Maximum 500MB for uploaded videos
+5. Supported formats: .mp4, .webm, .mov
+
+### General System Checks
+1. Check IPFS daemon: `ipfs id`
+2. Check NOSTR relay: `ws://127.0.0.1:7777` or `wss://relay.copylaradio.com`
+3. Verify uDRIVE directory: `~/.zen/game/nostr/<email>/APP/uDRIVE/Videos/`
+4. Check video storage: `ls -lh ~/.zen/game/nostr/<email>/APP/uDRIVE/Videos/`
+
+### Geographic Filtering Issues
+1. Verify coordinates format: Use decimal degrees (e.g., 48.86, not 48°51'N)
+2. Check radius parameter: Value in kilometers (default: 10.0)
+3. Test without filters: Access `/youtube?html=1` first
+4. Browser console: Check for JavaScript errors in geographic calculations
 
 For more help, contact: support@qo-op.com
 
