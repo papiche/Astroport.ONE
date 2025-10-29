@@ -797,13 +797,13 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 fi
                 
                 if [[ -n "$ILLUSTRATION_URL" ]]; then
-                    jq -n --arg title "$cleaned_text" --arg summary "$ARTICLE_SUMMARY" --arg image "$ILLUSTRATION_URL" --arg published_at "$(date -u +%s)" \
+                    jq -n --arg title "$cleaned_text" --arg summary "$ARTICLE_SUMMARY" --arg image "$ILLUSTRATION_URL" --arg published_at "$(date -u +%s)" --arg d_tag "search_$(date -u +%s)_$(echo -n "$cleaned_text" | md5sum | cut -d' ' -f1 | head -c 8)" \
                         --argjson tags "[${ALL_TAGS}]" \
-                        '[["title", $title], ["summary", $summary], ["published_at", $published_at], ["image", $image]] + $tags' > "$temp_json"
+                        '[["d", $d_tag], ["title", $title], ["summary", $summary], ["published_at", $published_at], ["image", $image]] + $tags' > "$temp_json"
                 else
-                    jq -n --arg title "$cleaned_text" --arg summary "$ARTICLE_SUMMARY" --arg published_at "$(date -u +%s)" \
+                    jq -n --arg title "$cleaned_text" --arg summary "$ARTICLE_SUMMARY" --arg published_at "$(date -u +%s)" --arg d_tag "search_$(date -u +%s)_$(echo -n "$cleaned_text" | md5sum | cut -d' ' -f1 | head -c 8)" \
                         --argjson tags "[${ALL_TAGS}]" \
-                        '[["title", $title], ["summary", $summary], ["published_at", $published_at]] + $tags' > "$temp_json"
+                        '[["d", $d_tag], ["title", $title], ["summary", $summary], ["published_at", $published_at]] + $tags' > "$temp_json"
                 fi
                 
                 # Read the properly formatted JSON tags
