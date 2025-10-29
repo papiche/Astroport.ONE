@@ -8,7 +8,7 @@
   "alsoKnownAs": [
     "mailto:_EMAIL_",
     "did:g1:_G1_PUBKEY_",
-    "ipns://_NOSTRNS_"
+    "_NOSTRNS_"
   ],
   "verificationMethod": [
     {

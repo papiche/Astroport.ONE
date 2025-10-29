@@ -194,7 +194,7 @@ create_did_from_filesystem() {
   "alsoKnownAs": [
     "mailto:${email}",
     "did:g1:${G1PUBNOSTR}",
-    "ipns://${NOSTRNS}"
+    "${NOSTRNS}"
   ],
   "verificationMethod": [
     {
