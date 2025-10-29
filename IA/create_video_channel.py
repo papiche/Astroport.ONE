@@ -184,6 +184,10 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
     file_size = 0
     dimensions = ""
     
+    # Extraire les coordonnées géographiques depuis les tags NOSTR
+    latitude = None
+    longitude = None
+    
     # Extraire les métadonnées NIP-71 uniquement
     for tag in tags:
         if len(tag) >= 2:
@@ -202,6 +206,37 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
                     file_size = 0
             elif tag_type == 'dim':
                 dimensions = tag_value
+            elif tag_type == 'g':
+                # Geohash tag format: "lat,lon"
+                try:
+                    coords = tag_value.split(',')
+                    if len(coords) == 2:
+                        latitude = float(coords[0].strip())
+                        longitude = float(coords[1].strip())
+                except (ValueError, IndexError):
+                    pass
+            elif tag_type == 'latitude':
+                # Separate latitude tag
+                try:
+                    latitude = float(tag_value)
+                except ValueError:
+                    pass
+            elif tag_type == 'longitude':
+                # Separate longitude tag
+                try:
+                    longitude = float(tag_value)
+                except ValueError:
+                    pass
+            elif tag_type == 'location':
+                # Human-readable location tag format: "lat,lon"
+                if latitude is None or longitude is None:  # Only use if not already set
+                    try:
+                        coords = tag_value.split(',')
+                        if len(coords) == 2:
+                            latitude = float(coords[0].strip())
+                            longitude = float(coords[1].strip())
+                    except (ValueError, IndexError):
+                        pass
     
     return {
         'title': title,
@@ -221,6 +256,8 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
         'duration': duration,  # Extrait depuis les tags NOSTR
         'file_size': file_size,  # Extrait depuis les tags NOSTR
         'dimensions': dimensions,  # Nouvelles dimensions NIP-71
+        'latitude': latitude,  # Latitude extraite depuis les tags NOSTR
+        'longitude': longitude,  # Longitude extraite depuis les tags NOSTR
         'event_kind': kind,  # Type d'événement (1 ou 21)
         'technical_info': {
             'download_date': datetime.fromtimestamp(event.get('created_at', 0)).isoformat(),

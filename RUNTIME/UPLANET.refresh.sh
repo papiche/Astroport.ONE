@@ -280,7 +280,7 @@ for UMAP in ${unique_combined[@]}; do
     UMAPNSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
     
     # Check if ORE mode is activated for this UMAP
-    local ore_status=""
+    ore_status=""
     if [[ -f "${UMAPPATH}/ore_mode.activated" ]]; then
         ore_status=" | 🌱 ORE MODE ACTIVE - Environmental obligations tracked"
     fi
