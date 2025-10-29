@@ -1402,7 +1402,7 @@ for PLAYER in "${NOSTR[@]}"; do
 # 7. Focus on evolution and changes over time. \
 # 8. Create a narrative that shows the progression of activity. \
 # 9. Include a 'Weekly Highlights' section with the most important developments. \
-# 10. Use the same language as mostly used in the daily summaries."
+# IMPORTANT! Use the same language as mostly used in the daily summaries."
                     elif [[ "$summary_type" == "Monthly" ]]; then
                         ai_prompt="[TEXT] $(cat "$summary_file") [/TEXT] --- \
 # Create a MONTHLY RECONNECTION SUMMARY for ${PLAYER} - what happened in their network over the past month. \
@@ -1416,7 +1416,7 @@ for PLAYER in "${NOSTR[@]}"; do
 # 8. Create a narrative that shows the monthly progression of activity. \
 # 9. Highlight key milestones and significant events. \
 # 10. Include a 'Monthly Highlights' section with the most important developments. \
-# 11. Use the same language as mostly used in the weekly summaries."
+# IMPORTANT! Use the same language as mostly used in the weekly summaries."
                     else
                         ai_prompt="[TEXT] $(cat "$summary_file") [/TEXT] --- \
 # Create a YEARLY RECONNECTION SUMMARY for ${PLAYER} - what happened in their network over the past year. \
@@ -1431,7 +1431,7 @@ for PLAYER in "${NOSTR[@]}"; do
 # 9. Highlight key milestones and significant events. \
 # 10. Identify seasonal patterns and annual trends. \
 # 11. Include a 'Yearly Highlights' section with the most important developments. \
-# 12. Use the same language as mostly used in the monthly summaries."
+# IMPORTANT! Use the same language as mostly used in the monthly summaries."
                     fi
                     
                     log "DEBUG" "Starting AI summary generation for ${PLAYER}"
@@ -1457,10 +1457,16 @@ for PLAYER in "${NOSTR[@]}"; do
                     summary_text="${summary_text}..."
                 fi
                 
-                # Build NIP-23 compliant tags for personal N² journal
+                # Build NIP-23 compliant tags for personal N² journal using jq for proper JSON escaping
                 # Required: d (unique identifier), title (article title)
                 # Recommended: summary (article summary), t (hashtags)
-                summary_tags="[['d', '$d_tag'], ['title', '$summary_title'], ['summary', '$summary_text'], ['t', 'PersonalN2Journal'], ['t', 'N2Network'], ['t', '$summary_type'], ['t', 'UPlanet'], ['t', 'SummaryType:$summary_type'], ['p', '$PLAYER']]"
+                summary_tags=$(jq -c -n \
+                    --arg d "$d_tag" \
+                    --arg title "$summary_title" \
+                    --arg summary "$summary_text" \
+                    --arg type "$summary_type" \
+                    --arg player "$PLAYER" \
+                    '[["d", $d], ["title", $title], ["summary", $summary], ["t", "PersonalN2Journal"], ["t", "N2Network"], ["t", $type], ["t", "UPlanet"], ["t", "SummaryType:" + $type], ["p", $player]]')
                 
                 # Send as kind 30023 (article) to MULTIPASS wall
                 # Validate NIP-23 compliance before publication
