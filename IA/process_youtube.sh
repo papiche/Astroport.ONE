@@ -157,7 +157,7 @@ if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
                     udrive_file="$music_dir/$filename"
                     echo "Organizing MP3 in Music/$artist/" >&2
                 else
-                    videos_dir="$UDRIVE_COPY_PATH/Videos"
+                    videos_dir="$UDRIVE_COPY_PATH"
                     mkdir -p "$videos_dir"
                     udrive_file="$videos_dir/$filename"
                     echo "Organizing MP4 in Videos/" >&2
