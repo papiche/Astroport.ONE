@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💰 Cooperative Allocation Report</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4caf50, #45a049);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header .subtitle {
+            font-size: 1.2em;
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .summary-box {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border-left: 5px solid #2196f3;
+            padding: 25px;
+            margin: 25px;
+            border-radius: 8px;
+        }
+        
+        .summary-box h2 {
+            color: #1565c0;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .summary-box h2::before {
+            content: "📊";
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .info-item strong {
+            color: #1565c0;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .tax-section {
+            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+            border-left: 5px solid #ff9800;
+            padding: 25px;
+            margin: 25px;
+            border-radius: 8px;
+        }
+        
+        .tax-section h2 {
+            color: #e65100;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .tax-section h2::before {
+            content: "💰";
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+        
+        .allocation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .allocation-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-top: 4px solid;
+            transition: transform 0.2s;
+        }
+        
+        .allocation-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .allocation-card.treasury {
+            border-top-color: #4caf50;
+        }
+        
+        .allocation-card.rnd {
+            border-top-color: #2196f3;
+        }
+        
+        .allocation-card.assets {
+            border-top-color: #ff9800;
+        }
+        
+        .allocation-card h3 {
+            margin-top: 0;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+        }
+        
+        .allocation-card.treasury h3::before {
+            content: "🏦";
+            margin-right: 10px;
+        }
+        
+        .allocation-card.rnd h3::before {
+            content: "🔬";
+            margin-right: 10px;
+        }
+        
+        .allocation-card.assets h3::before {
+            content: "🌱";
+            margin-right: 10px;
+        }
+        
+        .amount {
+            font-size: 2em;
+            font-weight: bold;
+            color: #e65100;
+            margin: 15px 0;
+        }
+        
+        .amount-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .wallet-section {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 25px;
+        }
+        
+        .wallet-section h2 {
+            color: #495057;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .wallet-section h2::before {
+            content: "🔑";
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+        
+        .wallet-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .wallet-list li {
+            background: white;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border-left: 3px solid #4caf50;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        .wallet-list li strong {
+            color: #495057;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .status-badge {
+            background: linear-gradient(135deg, #4caf50, #45a049);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin: 30px auto;
+            max-width: 400px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .footer {
+            background: #263238;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .footer a {
+            color: #81c784;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .note-box {
+            background: #f1f8e9;
+            border-left: 5px solid #4caf50;
+            padding: 20px;
+            margin: 20px 25px;
+            border-radius: 8px;
+        }
+        
+        .note-box p {
+            margin: 0;
+            color: #2e7d32;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+                
+            .content {
+                padding: 20px;
+            }
+            
+            .allocation-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 Cooperative Allocation Report</h1>
+            <div class="subtitle">3x1/3 Rule - Weekly Distribution</div>
+        </div>
+        
+        <div class="content">
+            <div class="summary-box">
+                <h2>📊 Economic Summary</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <strong>Report Date</strong>
+                        <span>_DATE_</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Period</strong>
+                        <span>_TODATE_</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Captain Birthday</strong>
+                        <span>_CAPTAIN_BIRTHDAY_</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>UPlanet ID</strong>
+                        <span>_UPLANET_ID_</span>
+                    </div>
+                </div>
+                
+                <div class="info-grid" style="margin-top: 20px;">
+                    <div class="info-item">
+                        <strong>Initial Captain Balance</strong>
+                        <span style="font-size: 1.2em; font-weight: bold; color: #1565c0;">_INITIAL_BALANCE_ Ẑen</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Allocation Base</strong>
+                        <span style="font-size: 1.2em; font-weight: bold; color: #1565c0;">_REMAINING_BALANCE_ Ẑen</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="note-box">
+                <p>💡 <strong>Note:</strong> Captain remuneration (2x PAF) is handled by ZEN.ECONOMY.sh</p>
+            </div>
+            
+            <div class="tax-section">
+                <h2>💰 Tax Provision</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <strong>Tax Rate Applied</strong>
+                        <span style="font-size: 1.3em; font-weight: bold; color: #e65100;">_TAX_RATE_USED_%</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Tax Provision</strong>
+                        <span style="font-size: 1.3em; font-weight: bold; color: #e65100;">_TAX_PROVISION_ Ẑen</span>
+                        <div class="amount-label">(_TAX_PROVISION_G1_ G1)</div>
+                    </div>
+                    <div class="info-item">
+                        <strong>Net Surplus After Tax</strong>
+                        <span style="font-size: 1.3em; font-weight: bold; color: #2e7d32;">_NET_SURPLUS_ Ẑen</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="summary-box">
+                <h2>📈 Cooperative Allocation (3x1/3)</h2>
+                <p style="margin-top: 0;">Net surplus allocated equally across three pillars:</p>
+                
+                <div class="allocation-grid">
+                    <div class="allocation-card treasury">
+                        <h3>Treasury</h3>
+                        <p class="amount-label">Reserves & Liquidity</p>
+                        <div class="amount">_TREASURY_AMOUNT_ Ẑen</div>
+                        <div class="amount-label">(_TREASURY_G1_ G1)</div>
+                        <p style="margin-top: 15px; color: #666; font-size: 0.9em;">Ensures financial stability and liquidity of the cooperative</p>
+                    </div>
+                    
+                    <div class="allocation-card rnd">
+                        <h3>🔬 R&D</h3>
+                        <p class="amount-label">Research & Development</p>
+                        <div class="amount">_RND_AMOUNT_ Ẑen</div>
+                        <div class="amount-label">(_RND_G1_ G1)</div>
+                        <p style="margin-top: 15px; color: #666; font-size: 0.9em;">Open source software development and innovation</p>
+                    </div>
+                    
+                    <div class="allocation-card assets">
+                        <h3>Assets</h3>
+                        <p class="amount-label">Forests & Gardens</p>
+                        <div class="amount">_ASSETS_AMOUNT_ Ẑen</div>
+                        <div class="amount-label">(_ASSETS_G1_ G1)</div>
+                        <p style="margin-top: 15px; color: #666; font-size: 0.9em;">Regenerative investment in real assets</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="wallet-section">
+                <h2>🔑 Wallet Addresses</h2>
+                <ul class="wallet-list">
+                    <li>
+                        <strong>Captain Dedicated:</strong>
+                        _CAPTAIN_DEDICATED_PUB_
+                    </li>
+                    <li>
+                        <strong>Treasury:</strong>
+                        _TREASURY_PUB_
+                    </li>
+                    <li>
+                        <strong>R&D:</strong>
+                        _RND_PUB_
+                    </li>
+                    <li>
+                        <strong>Assets:</strong>
+                        _ASSETS_PUB_
+                    </li>
+                    <li>
+                        <strong>Tax Provision:</strong>
+                        _IMPOTS_PUB_
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="status-badge">
+                ✅ Allocation completed successfully
+            </div>
+        </div>
+        
+        <div class="footer">
+            <h3>🌍 UPlanet Cooperative System</h3>
+            <p>This report is automatically generated by the ZEN.COOPERATIVE allocation system.</p>
+            <p><strong>Report ID:</strong> COOP-ALLOCATION-_TODATE_</p>
+            <p><strong>Generated:</strong> _DATE_</p>
+            <hr style="border: none; border-top: 1px solid #455a64; margin: 20px 0;">
+            <p><small>
+                This is an automated report from the UPlanet Cooperative Allocation System.<br>
+                The 3x1/3 rule ensures transparent distribution of cooperative surplus.
+            </small></p>
+        </div>
+    </div>
+</body>
+</html>
+

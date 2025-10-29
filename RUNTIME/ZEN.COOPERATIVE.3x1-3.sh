@@ -313,59 +313,71 @@ echo "🌱 Assets (1/3): $ASSETS_AMOUNT Ẑen"
 echo "============================================ COOPERATIVE ALLOCATION DONE."
 
 #######################################################################
-# Envoi du rapport par email via mailjet.sh
+# Envoi du rapport par email via mailjet.sh (HTML format)
 #######################################################################
 echo "🔄 Sending allocation report via email..."
 
-# Créer le fichier de rapport
-REPORT_FILE="$HOME/.zen/tmp/cooperative_allocation_report_${TODATE}.txt"
+# Template path
+TEMPLATE_FILE="${MY_PATH}/../templates/NOSTR/cooperative_allocation_report.html"
+REPORT_FILE="$HOME/.zen/tmp/cooperative_allocation_report_${TODATE}.html"
 
-cat > "$REPORT_FILE" << EOF
-============================================
-COOPERATIVE ALLOCATION REPORT
-============================================
-Date: $(date '+%Y-%m-%d %H:%M:%S')
-Period: $TODATE (Captain's birthday: $CAPTAIN_BIRTHDAY)
-UPlanet: ${UPLANETG1PUB:0:8}
-
-ECONOMIC DATA:
-- Initial Captain MULTIPASS balance: $(echo "scale=2; $CAPTAINZEN + $TAX_PROVISION" | bc -l) Ẑen
-- Note: Captain remuneration (2x PAF) handled by ZEN.ECONOMY.sh
-- Balance for cooperative allocation: $REMAINING_BALANCE Ẑen
-
-TAX PROVISION:
-- Tax rate applied: ${TAX_RATE_USED}%
-- Tax provision: $TAX_PROVISION Ẑen ($TAX_PROVISION_G1 G1)
-- Net surplus after tax: $NET_SURPLUS Ẑen
-
-ALLOCATION 3x1/3 (on net surplus):
-- Treasury (1/3): $TREASURY_AMOUNT Ẑen
-- R&D (1/3): $RND_AMOUNT Ẑen
-- Assets (1/3): $ASSETS_AMOUNT Ẑen
-
-WALLET ADDRESSES:
-- Captain dedicated: ${CAPTAING1PUB_DEDICATED:0:8}...
-- Treasury: ${TREASURYG1PUB:0:8}...
-- R&D: ${RNDG1PUB:0:8}...
-- Assets: ${ASSETSG1PUB:0:8}...
-- Tax provision: ${IMPOTSG1PUB:0:8}...
-
-STATUS: ✅ Allocation completed successfully
-============================================
-EOF
-
-# Envoyer le rapport par email au Capitaine
-if [[ -n "$CAPTAINEMAIL" && -s "$REPORT_FILE" ]]; then
-    echo "📧 Sending report to Captain: $CAPTAINEMAIL"
-    ${MY_PATH}/../tools/mailjet.sh "$CAPTAINEMAIL" "$REPORT_FILE" "Cooperative Allocation Report - $TODATE"
-
-    if [[ $? -eq 0 ]]; then
-        echo "✅ Report sent successfully to Captain"
-    else
-        echo "❌ Failed to send report to Captain"
-    fi
+# Check if template exists
+if [[ ! -s "$TEMPLATE_FILE" ]]; then
+    echo "⚠️  Template file not found: $TEMPLATE_FILE"
+    echo "Skipping HTML report generation..."
 else
-    echo "⚠️  Captain email not configured or report file empty"
+    # Calculate values for template substitution
+    INITIAL_BALANCE=$(echo "scale=2; $CAPTAINZEN + $TAX_PROVISION" | bc -l)
+    REPORT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+    if [[ -z "$CAPTAING1PUB_DEDICATED" ]]; then
+        CAPTAIN_DEDICATED_DISPLAY="Not created yet"
+    else
+        CAPTAIN_DEDICATED_DISPLAY="${CAPTAING1PUB_DEDICATED:0:16}..."
+    fi
+    TREASURY_DISPLAY="${TREASURYG1PUB:0:16}..."
+    RND_DISPLAY="${RNDG1PUB:0:16}..."
+    ASSETS_DISPLAY="${ASSETSG1PUB:0:16}..."
+    IMPOTS_DISPLAY="${IMPOTSG1PUB:0:16}..."
+    UPLANET_ID="${UPLANETG1PUB:0:8}"
+
+    # Generate HTML report from template using sed substitutions
+    cat "$TEMPLATE_FILE" | sed \
+        -e "s~_DATE_~${REPORT_DATE}~g" \
+        -e "s~_TODATE_~${TODATE}~g" \
+        -e "s~_CAPTAIN_BIRTHDAY_~${CAPTAIN_BIRTHDAY}~g" \
+        -e "s~_UPLANET_ID_~${UPLANET_ID}~g" \
+        -e "s~_INITIAL_BALANCE_~${INITIAL_BALANCE}~g" \
+        -e "s~_REMAINING_BALANCE_~${REMAINING_BALANCE}~g" \
+        -e "s~_TAX_RATE_USED_~${TAX_RATE_USED}~g" \
+        -e "s~_TAX_PROVISION_~${TAX_PROVISION}~g" \
+        -e "s~_TAX_PROVISION_G1_~${TAX_PROVISION_G1}~g" \
+        -e "s~_NET_SURPLUS_~${NET_SURPLUS}~g" \
+        -e "s~_TREASURY_AMOUNT_~${TREASURY_AMOUNT}~g" \
+        -e "s~_TREASURY_G1_~${TREASURY_G1}~g" \
+        -e "s~_RND_AMOUNT_~${RND_AMOUNT}~g" \
+        -e "s~_RND_G1_~${RND_G1}~g" \
+        -e "s~_ASSETS_AMOUNT_~${ASSETS_AMOUNT}~g" \
+        -e "s~_ASSETS_G1_~${ASSETS_G1}~g" \
+        -e "s~_CAPTAIN_DEDICATED_PUB_~${CAPTAIN_DEDICATED_DISPLAY}~g" \
+        -e "s~_TREASURY_PUB_~${TREASURY_DISPLAY}~g" \
+        -e "s~_RND_PUB_~${RND_DISPLAY}~g" \
+        -e "s~_ASSETS_PUB_~${ASSETS_DISPLAY}~g" \
+        -e "s~_IMPOTS_PUB_~${IMPOTS_DISPLAY}~g" \
+        > "$REPORT_FILE"
+
+    # Envoyer le rapport par email au Capitaine
+    if [[ -n "$CAPTAINEMAIL" && -s "$REPORT_FILE" ]]; then
+        echo "📧 Sending HTML report to Captain: $CAPTAINEMAIL"
+        ${MY_PATH}/../tools/mailjet.sh "$CAPTAINEMAIL" "$REPORT_FILE" "Cooperative Allocation Report - $TODATE"
+
+        if [[ $? -eq 0 ]]; then
+            echo "✅ HTML report sent successfully to Captain"
+        else
+            echo "❌ Failed to send HTML report to Captain"
+        fi
+    else
+        echo "⚠️  Captain email not configured or report file empty"
+    fi
 fi
 
 #######################################################################
