@@ -19,6 +19,7 @@
 
 MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
+. "${MY_PATH}/my.sh"
 
 # Configuration
 API_URL="${uSPOT:-http://localhost:54321}"
@@ -121,13 +122,81 @@ check_nostr_tools() {
 }
 
 # Fonction pour générer des données de test
+get_captain_npub() {
+    # Get CAPTAIN's npub from .secret.nostr file
+    local captain_keyfile="${HOME}/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr"
+    
+    if [[ ! -f "$captain_keyfile" ]]; then
+        echo -e "${RED}❌ Captain keyfile not found: ${captain_keyfile}${NC}" >&2
+        echo -e "${YELLOW}💡 Make sure CAPTAINEMAIL is set and the MULTIPASS exists${NC}" >&2
+        return 1
+    fi
+    
+    # Extract HEX from .secret.nostr file (format: NSEC=...; NPUB=...; HEX=...;)
+    local hex=$(grep -o 'HEX=[^;]*' "$captain_keyfile" | cut -d'=' -f2 | tr -d ' ')
+    
+    if [[ -z "$hex" ]]; then
+        echo -e "${RED}❌ Could not extract HEX from captain keyfile${NC}" >&2
+        return 1
+    fi
+    
+    echo "$hex"
+}
+
+get_captain_email() {
+    # Return CAPTAIN's email
+    if [[ -z "$CAPTAINEMAIL" ]]; then
+        echo -e "${RED}❌ CAPTAINEMAIL is not set${NC}" >&2
+        return 1
+    fi
+    echo "$CAPTAINEMAIL"
+}
+
+# Legacy functions for backward compatibility
 generate_test_email() {
-    echo "test_$(date +%s)_${RANDOM}@copylaradio.com"
+    get_captain_email || echo "test_$(date +%s)_${RANDOM}@copylaradio.com"
 }
 
 generate_test_npub() {
-    # Générer une clé publique hex de test (64 caractères)
-    echo "$(openssl rand -hex 32)"
+    get_captain_npub || echo "$(openssl rand -hex 32)"
+}
+
+authenticate_captain_nip42() {
+    # Authenticate CAPTAIN via NIP-42 before running tests
+    local captain_keyfile="${HOME}/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr"
+    
+    if [[ ! -f "$captain_keyfile" ]]; then
+        echo -e "${YELLOW}⚠️  Cannot authenticate: captain keyfile not found${NC}"
+        return 1
+    fi
+    
+    local relay_url="${NOSTR_RELAY}"
+    
+    # Build relay tag as required by NIP-42
+    local relay_tag_json="[[\"relay\",\"${relay_url}\"]]"
+    
+    echo -e "${CYAN}🔐 Authenticating CAPTAIN via NIP-42...${NC}"
+    echo -e "${BLUE}   Relay: ${relay_url}${NC}"
+    echo -e "${BLUE}   Keyfile: ${captain_keyfile}${NC}"
+    
+    # Send NIP-42 authentication event (kind 22242)
+    # Content is the relay URL, tag 'relay' is required
+    python3 "${MY_PATH}/nostr_send_note.py" \
+        --keyfile "$captain_keyfile" \
+        --kind 22242 \
+        --content "${relay_url}" \
+        --relays "$relay_url" \
+        --tags "$relay_tag_json" 2>&1 | head -20
+    
+    if [[ $? -eq 0 ]]; then
+        echo -e "${GREEN}✅ NIP-42 authentication event sent${NC}"
+        echo -e "${YELLOW}💡 Waiting 3 seconds for relay to process...${NC}"
+        sleep 3
+        return 0
+    else
+        echo -e "${YELLOW}⚠️  Failed to send NIP-42 authentication event${NC}"
+        return 1
+    fi
 }
 
 ################################################################################
@@ -162,14 +231,15 @@ test_permit_definitions() {
 test_permit_request() {
     section "TEST 2: Demande de permis"
     
+    # Authenticate CAPTAIN first
+    authenticate_captain_nip42
+    
     local test_email=$(generate_test_email)
     local test_npub=$(generate_test_npub)
     local permit_id="PERMIT_ORE_V1"
     
-    echo -e "${CYAN}📧 Email de test: ${test_email}${NC}"
-    echo -e "${CYAN}🔑 NPub de test: ${test_npub:0:16}...${NC}"
-    
-    # Note: En mode test, on skip l'authentification NOSTR
+    echo -e "${CYAN}📧 Using CAPTAIN email: ${test_email}${NC}"
+    echo -e "${CYAN}🔑 Using CAPTAIN npub: ${test_npub:0:16}...${NC}"
     local request_data=$(cat <<EOF
 {
     "permit_definition_id": "${permit_id}",
