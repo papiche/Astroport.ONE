@@ -1481,13 +1481,22 @@ for PLAYER in "${NOSTR[@]}"; do
                     summary_content=$(echo "$summary_content" | head -c 100000)
                 fi
                 
-                # Send NIP-23 compliant event
+                # Write content and tags to temporary files to avoid shell escaping issues
+                temp_content_file=$(mktemp)
+                temp_tags_file=$(mktemp)
+                echo "$summary_content" > "$temp_content_file"
+                echo "$summary_tags" > "$temp_tags_file"
+                
+                # Send NIP-23 compliant event using file inputs to avoid shell expansion issues
                 nostpy_result=$(nostpy-cli send_event \
                     -privkey "$NPRIV_HEX" \
                     -kind 30023 \
-                    -content "$summary_content" \
-                    -tags "$summary_tags" \
+                    -content "$(cat "$temp_content_file")" \
+                    -tags "$(cat "$temp_tags_file")" \
                     --relay "$myRELAY" 2>&1)
+                
+                # Cleanup temporary files
+                rm -f "$temp_content_file" "$temp_tags_file"
                 
                 # Check if publication was successful
                 if [[ $? -eq 0 ]]; then
