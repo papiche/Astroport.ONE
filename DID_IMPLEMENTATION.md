@@ -18,6 +18,19 @@ L'écosystème DID UPlanet s'étend au-delà de l'identité humaine pour inclure
 
 Pour plus de détails, voir [`ORE_SYSTEM.md`](./docs/ORE_SYSTEM.md).
 
+### 🔐 Extension Oracle : Permis de Compétence WoT
+
+Le système Oracle étend le Web of Trust (WoT) de l'**identité** vers la **compétence**. Basé sur le modèle du "permis de conduire" décrit dans l'[article CopyLaRadio](https://www.copylaradio.com/blog/blog-1/post/reinventer-la-societe-avec-la-monnaie-libre-et-la-web-of-trust-148#), il permet la certification décentralisée de compétences via des attestations multi-signatures.
+
+**Intégration Oracle-DID :**
+- **Permit Credentials** : Verifiable Credentials (VCs) émis après validation par pairs
+- **Multi-Signature** : Validation par N experts certifiés (3-24 attestations selon le permit)
+- **NOSTR Events** : Publication des demandes, attestations et credentials (kinds 30500-30503)
+- **Récompenses Économiques** : Ẑen distribués depuis le portefeuille RnD coopératif
+- **Types de Permis** : ORE Verifier, Driver's License, WoT Dragon, Medical, Artisan, etc.
+
+Pour plus de détails, voir [`ORACLE_SYSTEM.md`](./docs/ORACLE_SYSTEM.md).
+
 Le script `make_NOSTRCARD.sh` génère des documents DID conformes aux standards [W3C DID Core v1.1](https://www.w3.org/TR/did-core-1.1/) et [W3C DID Resolution v1.0](https://www.w3.org/TR/did-resolution/), mais va bien au-delà en créant un écosystème complet de **ZEN Cards** (identité) et de **MULTIPASS** (autorisations).
 
 ## Architecture des Scripts de Gestion
@@ -48,6 +61,14 @@ L'écosystème UPlanet repose sur une architecture de scripts spécialisés qui 
 - **`ore_complete_test.sh`** : Tests et démonstrations du système ORE intégré
 - **`NOSTR.UMAP.refresh.sh`** : Intégration ORE dans le traitement des cellules UMAP
 - **`UPLANET.official.sh`** : Virements ORE depuis le portefeuille ASSETS coopératif
+
+### Scripts du Système Oracle (Permits & Licenses)
+- **`oracle_system.py`** : Système de gestion des permis multi-signatures basé sur le WoT
+- **`request_license.sh`** : Script pour demander un permis/license
+- **`attest_license.sh`** : Script pour attester un permis (expert)
+- **`init_permit_definitions.sh`** : Initialisation des définitions de permis
+- **`test_permit_system.sh`** : Suite de tests complète du système Oracle
+- **`UPLANET.official.sh`** : Virements PERMIT depuis le portefeuille RnD coopératif
 
 ## 2. Les deux piliers de notre architecture
 
