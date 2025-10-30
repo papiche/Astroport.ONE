@@ -430,14 +430,16 @@ process_ore() {
     local umap_did=$(echo "$umap_did_result" | grep "DID:" | cut -d ' ' -f 2)
     local umap_npub=$(echo "$umap_did_result" | grep "NPUB:" | cut -d ' ' -f 2)
     local umap_hex=$(echo "$umap_did_result" | grep "HEX:" | cut -d ' ' -f 2)
+    local umap_g1pub=$(echo "$umap_did_result" | grep "G1PUB:" | cut -d ' ' -f 2)
     
-    if [[ -z "$umap_did" || -z "$umap_hex" ]]; then
-        echo -e "${RED}❌ Impossible d'extraire le DID UMAP${NC}"
+    if [[ -z "$umap_did" || -z "$umap_g1pub" ]]; then
+        echo -e "${RED}❌ Impossible d'extraire le DID UMAP ou la clé G1${NC}"
         return 1
     fi
     
     echo -e "${GREEN}✅ DID UMAP généré: ${umap_did:0:20}...${NC}"
-    echo -e "${GREEN}✅ Clé publique UMAP: ${umap_hex:0:16}...${NC}"
+    echo -e "${GREEN}✅ Clé publique Duniter/Ğ1: ${umap_g1pub:0:8}...${NC}"
+    echo -e "${CYAN}   Clé Nostr (hex): ${umap_hex:0:16}...${NC}"
     
     # Vérifier qu'il n'y a pas de transactions en cours avant de commencer
     echo -e "${BLUE}🔍 Vérification préalable des transactions en cours...${NC}"
@@ -451,7 +453,8 @@ process_ore() {
     echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME_ASSETS → UMAP DID${NC}"
     local ore_reference="UPLANET:${UPLANETG1PUB:0:8}:ORE:${umap_hex:0:8}:${lat}:${lon}:${IPFSNODEID}"
     
-    if ! transfer_and_verify "$HOME/.zen/game/uplanet.ASSETS.dunikey" "$umap_hex" "$montant_euros" "$ore_reference" "ORE_UMAP_${lat}_${lon}" "ORE" "Étape 1: ASSETS→UMAP_DID"; then
+    # Use G1 base58 public key for blockchain transaction (not hex key)
+    if ! transfer_and_verify "$HOME/.zen/game/uplanet.ASSETS.dunikey" "$umap_g1pub" "$montant_euros" "$ore_reference" "ORE_UMAP_${lat}_${lon}" "ORE" "Étape 1: ASSETS→UMAP_DID"; then
         echo -e "${RED}❌ Échec de l'étape 1${NC}"
         return 1
     fi

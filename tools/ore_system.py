@@ -285,8 +285,17 @@ class OREUMAPDIDGenerator:
     def __init__(self, uplanet_name: str):
         self.uplanet_name = uplanet_name
 
-    def generate_umap_did(self, lat: str, lon: str) -> Tuple[str, Dict[str, Any], str, str, str]:
-        """Generates a DID for a UMAP geographic cell and its DID Document."""
+    def generate_umap_did(self, lat: str, lon: str) -> Tuple[str, Dict[str, Any], str, str, str, str]:
+        """Generates a DID for a UMAP geographic cell and its DID Document.
+        
+        Returns:
+            did: The DID identifier (did:nostr:hex)
+            did_document: The DID Document
+            umap_nsec: Nostr secret key (nsec format)
+            umap_npub: Nostr public key (npub format)
+            umap_hex: Nostr public key (hex format)
+            umap_g1pub: Duniter/Ğ1 public key (base58 format)
+        """
         
         # Generate Nostr keys using existing UPlanet keygen
         umap_nsec_cmd = f'{os.path.expanduser("~")}/.zen/Astroport.ONE/tools/keygen -t nostr "{self.uplanet_name}{lat}" "{self.uplanet_name}{lon}" -s'
@@ -297,6 +306,12 @@ class OREUMAPDIDGenerator:
 
         umap_hex_cmd = f'{os.path.expanduser("~")}/.zen/Astroport.ONE/tools/nostr2hex.py "{umap_npub}"'
         umap_hex = subprocess.check_output(umap_hex_cmd, shell=True, text=True).strip()
+
+        # Generate Duniter/Ğ1 public key (base58 format) for blockchain transactions
+        umap_g1pub_cmd = f'{os.path.expanduser("~")}/.zen/Astroport.ONE/tools/keygen -t duniter "{self.uplanet_name}{lat}" "{self.uplanet_name}{lon}"'
+        umap_g1pub_output = subprocess.check_output(umap_g1pub_cmd, shell=True, text=True).strip()
+        # Extract the pub key from "pub: <key>" format
+        umap_g1pub = umap_g1pub_output.split("pub: ")[-1].split("\n")[0] if "pub: " in umap_g1pub_output else umap_g1pub_output.split("\n")[0]
 
         # Create the DID (did:nostr method with HEX format)
         did = f"did:nostr:{umap_hex}"
@@ -310,7 +325,8 @@ class OREUMAPDIDGenerator:
                     "id": f"{did}#key-1",
                     "type": "Ed25519VerificationKey2020",
                     "controller": did,
-                    "publicKeyHex": umap_hex
+                    "publicKeyHex": umap_hex,
+                    "publicKeyBase58": umap_g1pub
                 }
             ],
             "authentication": [f"{did}#key-1"],
@@ -319,6 +335,11 @@ class OREUMAPDIDGenerator:
                     "id": f"{did}#nostr-relay",
                     "type": "NostrRelay",
                     "serviceEndpoint": "wss://relay.copylaradio.com"
+                },
+                {
+                    "id": f"{did}#duniter-blockchain",
+                    "type": "DuniterBlockchain",
+                    "serviceEndpoint": "https://g1.copylaradio.com"
                 }
             ],
             "geographicContext": {
@@ -327,7 +348,7 @@ class OREUMAPDIDGenerator:
                 "geohash": hashlib.sha256(f"{lat},{lon}".encode()).hexdigest()[:12]
             }
         }
-        return did, did_document, umap_nsec, umap_npub, umap_hex
+        return did, did_document, umap_nsec, umap_npub, umap_hex, umap_g1pub
 
 class OREUMAPManager:
     """Manages ORE system integration for UMAP geographic cells."""
@@ -492,11 +513,17 @@ class OREUMAPManager:
             
             # Generate UMAP DID using existing infrastructure
             generator = OREUMAPDIDGenerator(self.uplanet_g1_pub)
-            did, did_doc, nsec, npub, hex_key = generator.generate_umap_did(lat, lon)
+            did, did_doc, nsec, npub, hex_key, g1pub = generator.generate_umap_did(lat, lon)
             
             if not did:
                 print("❌ Failed to generate UMAP DID for ORE mode")
                 return False
+            
+            # Store the G1 public key for blockchain transactions
+            g1pub_file = os.path.join(umappath, "g1pub.key")
+            with open(g1pub_file, 'w') as f:
+                f.write(g1pub)
+            print(f"✅ Duniter/Ğ1 public key saved: {g1pub}")
             
             # Create ORE contract if conditions are met
             if self._should_create_ore_contract(lat, lon, umappath):
@@ -711,11 +738,12 @@ def main():
         # Use UPLANETNAME_G1 for Zen usage (Banque centrale G1/Ẑ)
         uplanet_name_g1 = os.environ.get("UPLANETNAME_G1", "UPlanetZen")
         generator = OREUMAPDIDGenerator(uplanet_name_g1)
-        did, did_doc, nsec, npub, hex_key = generator.generate_umap_did(lat, lon)
+        did, did_doc, nsec, npub, hex_key, g1pub = generator.generate_umap_did(lat, lon)
         print(f"DID: {did}")
         print(f"NSEC: {nsec}")
         print(f"NPUB: {npub}")
         print(f"HEX: {hex_key}")
+        print(f"G1PUB: {g1pub}")
         print("DID Document:")
         print(json.dumps(did_doc, indent=2))
     
@@ -723,7 +751,7 @@ def main():
         # Example verification
         uplanet_name_g1 = os.environ.get("UPLANETNAME_G1", "UPlanetZen")
         generator = OREUMAPDIDGenerator(uplanet_name_g1)
-        did, did_doc, _, _, _ = generator.generate_umap_did(lat, lon)
+        did, did_doc, _, _, _, _ = generator.generate_umap_did(lat, lon)
         
         # Mock ORE credential
         ore_credential = {
@@ -745,7 +773,7 @@ def main():
         # Example reward calculation
         uplanet_name_g1 = os.environ.get("UPLANETNAME_G1", "UPlanetZen")
         generator = OREUMAPDIDGenerator(uplanet_name_g1)
-        did, did_doc, _, _, _ = generator.generate_umap_did(lat, lon)
+        did, did_doc, _, _, _, _ = generator.generate_umap_did(lat, lon)
         
         compliance_report = {
             "compliance_status": "compliant",
