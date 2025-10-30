@@ -362,30 +362,33 @@ test_credential_retrieval() {
 }
 
 ################################################################################
-# Tests des scripts helper
+# Tests Web Interface and WoT Bootstrap
 ################################################################################
 
 test_helper_scripts() {
-    section "TEST 7: Scripts helper (oracle_request_license.sh & oracle_attest_license.sh)"
+    section "TEST 7: Oracle Web Interface & Bootstrap Scripts"
     
-    # Test 7.1: Vérifier l'existence des scripts
-    if [ -f "${MY_PATH}/oracle_request_license.sh" ]; then
-        echo -e "${GREEN}✅ oracle_request_license.sh existe${NC}"
-        run_test "oracle_request_license.sh est exécutable" \
-            "[ -x '${MY_PATH}/oracle_request_license.sh' ]"
+    # Test 7.1: Vérifier l'interface web oracle.html
+    if [ -f "${MY_PATH}/../../UPassport/templates/oracle.html" ]; then
+        echo -e "${GREEN}✅ oracle.html web interface exists${NC}"
+        run_test "oracle.html is readable" \
+            "[ -r '${MY_PATH}/../../UPassport/templates/oracle.html' ]"
     else
-        echo -e "${RED}❌ oracle_request_license.sh introuvable${NC}"
+        echo -e "${RED}❌ oracle.html not found${NC}"
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
     
-    if [ -f "${MY_PATH}/oracle_attest_license.sh" ]; then
-        echo -e "${GREEN}✅ oracle_attest_license.sh existe${NC}"
-        run_test "oracle_attest_license.sh est exécutable" \
-            "[ -x '${MY_PATH}/oracle_attest_license.sh' ]"
+    # Test 7.2: Vérifier le script de bootstrap WoT
+    if [ -f "${MY_PATH}/oracle.WoT_PERMIT.init.sh" ]; then
+        echo -e "${GREEN}✅ oracle.WoT_PERMIT.init.sh exists${NC}"
+        run_test "oracle.WoT_PERMIT.init.sh is executable" \
+            "[ -x '${MY_PATH}/oracle.WoT_PERMIT.init.sh' ]"
     else
-        echo -e "${RED}❌ oracle_attest_license.sh introuvable${NC}"
+        echo -e "${RED}❌ oracle.WoT_PERMIT.init.sh not found${NC}"
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
+    
+    echo -e "${CYAN}💡 Note: CLI scripts have been replaced by web interface /oracle${NC}"
     
     TESTS_TOTAL=$((TESTS_TOTAL + 2))
 }

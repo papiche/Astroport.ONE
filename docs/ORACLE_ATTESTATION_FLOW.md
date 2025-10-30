@@ -1,5 +1,11 @@
 # 🔐 Oracle System - Attestation Flow & NOSTR Events
 
+> **⚠️ NOTE**: This document provides technical implementation details of the attestation process.
+> While it references CLI scripts for illustration, the **current workflow uses the `/oracle` web interface**
+> with NIP-42 authentication. The underlying cryptographic process remains identical.
+>
+> **For usage instructions**: See [ORACLE_SYSTEM.md](ORACLE_SYSTEM.md)
+
 ## Vue d'ensemble
 
 Le processus d'attestation dans le système Oracle est un mécanisme de **validation multi-signature décentralisé** basé sur NOSTR. Ce document détaille le flux cryptographique complet, de la soumission d'une attestation à sa publication sur les relais NOSTR.
@@ -643,22 +649,22 @@ Alice veut devenir vérificatrice ORE environnementale:
            └─> Publié sur NOSTR (kind 30311)
 
 3. Permit Request ✅
-   └─> ./request_license.sh alice@example.com PERMIT_ORE_V1 "5 ans d'expérience..."
-       └─> Événement NOSTR kind 30501
+   └─> Via /oracle interface or API POST /api/permit/request
+       └─> NOSTR event kind 30501
            └─> Request ID: xyz123
 
 4. Attestations (5 experts) ✅
-   Expert 1: ./attest_license.sh expert1@example.com xyz123 "Compétence vérifiée"
-   └─> NOSTR kind 30502 (Signature Schnorr expert1)
+   Expert 1: Via /oracle "Attest This Request" or API
+   └─> NOSTR kind 30502 (Schnorr signature expert1)
    
-   Expert 2: ./attest_license.sh expert2@example.com xyz123 "Confirmé"
-   └─> NOSTR kind 30502 (Signature Schnorr expert2)
+   Expert 2: Via /oracle "Attest This Request" or API
+   └─> NOSTR kind 30502 (Schnorr signature expert2)
    
-   ... (3 autres experts)
+   ... (3 other experts)
    
-   Expert 5: ./attest_license.sh expert5@example.com xyz123 "Validé"
-   └─> NOSTR kind 30502 (Signature Schnorr expert5)
-   └─> [SEUIL ATTEINT 5/5] → Émission automatique VC
+   Expert 5: Via /oracle "Attest This Request" or API
+   └─> NOSTR kind 30502 (Schnorr signature expert5)
+   └─> [THRESHOLD REACHED 5/5] → Automatic VC issuance
 
 5. Credential Issuance ✅
    └─> oracle_system.issue_credential()
@@ -792,9 +798,9 @@ def revoke_credential(
 ### Vue Synthétique
 
 ```
-1. EXPERT lance: ./attest_license.sh email request_id "statement"
+1. EXPERT uses /oracle web interface (or API)
    ↓
-2. Script récupère NPUB depuis ~/.zen/game/nostr/{email}/NPUB
+2. Authenticates via NIP-42 (NOSTR extension)
    ↓
 3. Construction JSON attestation + POST /api/permit/attest
    ↓

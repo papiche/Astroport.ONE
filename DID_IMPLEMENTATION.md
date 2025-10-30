@@ -64,11 +64,10 @@ L'écosystème UPlanet repose sur une architecture de scripts spécialisés qui 
 
 ### Scripts du Système Oracle (Permits & Licenses)
 - **`oracle_system.py`** (UPassport API) : Système de gestion des permis multi-signatures basé sur le WoT 
-- **`oracle_request_license.sh`** : Script pour demander un permis/license
-- **`oracle_attest_license.sh`** : Script pour attester un permis (expert)
-- **`oracle_init_permit_definitions.sh`** : Initialisation des définitions de permis
+- **`oracle.WoT_PERMIT.init.sh`** : Initialisation de la Web of Trust pour nouveaux permis (Bootstrap "Block 0")
 - **`oracle_test_permit_system.sh`** : Suite de tests complète du système Oracle
 - **`UPLANET.official.sh`** : Virements PERMIT depuis le portefeuille RnD coopératif
+- **Interface Web `/oracle`** : Interface moderne pour demander et attester des permis (NIP-42)
 
 ## 2. Les deux piliers de notre architecture
 
