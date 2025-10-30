@@ -1,12 +1,12 @@
 #!/bin/bash
 ################################################################################
-# Script: attest_license.sh
+# Script: oracle_attest_license.sh
 # Description: Attest a permit/license request as an expert
 #
 # This script allows certified experts to attest permit requests,
 # contributing their signature to the multi-signature validation process.
 #
-# Usage: ./attest_license.sh EMAIL REQUEST_ID STATEMENT [LICENSE_ID]
+# Usage: ./oracle_attest_license.sh EMAIL REQUEST_ID STATEMENT [LICENSE_ID]
 #
 # License: AGPL-3.0
 # Author: UPlanet/Astroport.ONE Team (support@qo-op.com)
@@ -29,7 +29,7 @@ NC='\033[0m' # No Color
 # Display help
 ################################################################################
 show_help() {
-    echo -e "${BLUE}attest_license.sh - Attest a Permit/License Request${NC}"
+    echo -e "${BLUE}oracle_attest_license.sh - Attest a Permit/License Request${NC}"
     echo ""
     echo "Usage:"
     echo "  $0 EMAIL REQUEST_ID STATEMENT [LICENSE_ID]"

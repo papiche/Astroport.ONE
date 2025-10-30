@@ -366,45 +366,56 @@ send_nostr_note() {
     
     log_debug "Sending NOSTR note for video: $title"
     
-    # Vérifier que le script nostr_send_note.py existe
+    # Check if the script nostr_send_note.py exists
     local nostr_script="$MY_PATH/../tools/nostr_send_note.py"
     if [[ ! -f "$nostr_script" ]]; then
         log_debug "NOSTR script not found: $nostr_script"
         return 1
     fi
     
-    # Vérifier que le fichier NSEC existe pour ce joueur
-    local nsec_file="$HOME/.zen/game/nostr/${player}/.nsec"
-    if [[ ! -f "$nsec_file" ]]; then
-        log_debug "NSEC file not found for $player: $nsec_file"
+    # Check if keyfile exists for this player
+    local keyfile="$HOME/.zen/game/nostr/${player}/.secret.nostr"
+    
+    if [[ ! -f "$keyfile" ]]; then
+        log_debug "NOSTR keyfile not found for $player: $keyfile"
         return 1
     fi
     
-    # Lire la clé NSEC
-    local nsec_key=$(cat "$nsec_file" 2>/dev/null)
-    if [[ -z "$nsec_key" ]]; then
-        log_debug "Failed to read NSEC key for $player"
-        return 1
-    fi
+    log_debug "Using .secret.nostr keyfile: $keyfile"
     
-    # Construire le message NOSTR
-    local message="🎬 Nouvelle vidéo synchronisée: $title par $uploader
+    # Build NOSTR message
+    local message="🎬 New video synced: $title by $uploader
 
 🔗 IPFS: $ipfs_url
 📺 YouTube: $youtube_url
 
 #YouTubeSync #uDRIVE #IPFS"
     
-    # Envoyer la note NOSTR
+    # Prepare tags for better categorization
+    local tags='[["t","YouTubeSync"],["t","uDRIVE"],["t","IPFS"],["r","'$youtube_url'","YouTube"]]'
+    
+    # Send NOSTR note with new unified API
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Sending NOSTR note for: $title" >&2
-    local nostr_result=$(python3 "$nostr_script" "$nsec_key" "$message" "ws://127.0.0.1:7777" 2>&1)
+    
+    local nostr_result=$(python3 "$nostr_script" \
+        --keyfile "$keyfile" \
+        --content "$message" \
+        --tags "$tags" \
+        --relays "ws://127.0.0.1:7777" \
+        --json 2>&1)
+    
     local nostr_exit_code=$?
     
     if [[ $nostr_exit_code -eq 0 ]]; then
-        log_debug "NOSTR note sent successfully for: $title"
+        # Parse JSON result
+        local event_id=$(echo "$nostr_result" | grep -o '"event_id":[[:space:]]*"[^"]*"' | sed 's/"event_id":[[:space:]]*"\([^"]*\)"/\1/')
+        local relays_success=$(echo "$nostr_result" | grep -o '"relays_success":[[:space:]]*[0-9]*' | grep -o '[0-9]*')
+        
+        log_debug "NOSTR note sent successfully for: $title (event_id: $event_id, relays: $relays_success)"
         echo "📡 NOSTR note published for: $title"
     else
         log_debug "Failed to send NOSTR note for: $title (exit code: $nostr_exit_code)"
+        log_debug "NOSTR output: $nostr_result"
         echo "⚠️ NOSTR note failed for: $title"
     fi
     

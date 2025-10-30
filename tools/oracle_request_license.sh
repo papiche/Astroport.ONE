@@ -1,12 +1,12 @@
 #!/bin/bash
 ################################################################################
-# Script: request_license.sh
+# Script: oracle_request_license.sh
 # Description: Request a permit/license from the Oracle System
 #
 # This script allows users to request a permit (license) that requires
 # multiple attestations from experts to be validated.
 #
-# Usage: ./request_license.sh EMAIL PERMIT_ID STATEMENT [EVIDENCE...]
+# Usage: ./oracle_request_license.sh EMAIL PERMIT_ID STATEMENT [EVIDENCE...]
 #
 # License: AGPL-3.0
 # Author: UPlanet/Astroport.ONE Team (support@qo-op.com)
@@ -28,7 +28,7 @@ NC='\033[0m' # No Color
 # Display help
 ################################################################################
 show_help() {
-    echo -e "${BLUE}request_license.sh - Request a Permit/License${NC}"
+    echo -e "${BLUE}oracle_request_license.sh - Request a Permit/License${NC}"
     echo ""
     echo "Usage:"
     echo "  $0 EMAIL PERMIT_ID STATEMENT [EVIDENCE...]"

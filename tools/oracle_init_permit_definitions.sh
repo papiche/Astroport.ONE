@@ -1,12 +1,12 @@
 #!/bin/bash
 ################################################################################
-# Script: init_permit_definitions.sh
+# Script: oracle_init_permit_definitions.sh
 # Description: Initialize permit definitions from JSON template
 #
 # This script loads permit definitions from the JSON template and creates
 # them in the oracle system.
 #
-# Usage: ./init_permit_definitions.sh
+# Usage: ./oracle_init_permit_definitions.sh
 #
 # License: AGPL-3.0
 # Author: UPlanet/Astroport.ONE Team (support@qo-op.com)

@@ -379,24 +379,43 @@ ${ephemeral_duration:+⏰ $(convert_seconds_to_human ${ephemeral_duration})}
         echo "🏷️ Adding tag for recipient: ${HEX}"
     fi
     
-    # Send NOSTR public note to each relay
+    # Send NOSTR public note to all relays at once (new unified API)
     SUCCESS_COUNT=0
-    for NOSTR_RELAY in "${TARGET_RELAYS[@]}"; do
-        echo "🚀 Sending public note via NOSTR to ${NOSTR_RELAY}..."
-        if [[ -n "$ephemeral_duration" ]]; then
-            echo "⏰ Sending ephemeral message (duration: ${ephemeral_duration}s)"
-            python3 $MY_PATH/nostr_send_note.py "${SENDER_NSEC}" "${NOSTR_MESSAGE}" "${NOSTR_RELAY}" "${TAGS_JSON}" --ephemeral "${ephemeral_duration}" 2>/dev/null
-        else
-            python3 $MY_PATH/nostr_send_note.py "${SENDER_NSEC}" "${NOSTR_MESSAGE}" "${NOSTR_RELAY}" "${TAGS_JSON}" 2>/dev/null
-        fi
+    
+    # Convert array to comma-separated string for multi-relay support
+    RELAY_LIST=$(IFS=,; echo "${TARGET_RELAYS[*]}")
+    
+    echo "🚀 Sending public note via NOSTR to ${#TARGET_RELAYS[@]} relay(s)..."
+    
+    # Build command with new API
+    NOSTR_CMD="python3 $MY_PATH/nostr_send_note.py --keyfile \"${NOSTR_KEYFILE}\" --content \"${NOSTR_MESSAGE}\" --tags '${TAGS_JSON}' --relays \"${RELAY_LIST}\""
+    
+    # Add ephemeral flag if set
+    if [[ -n "$ephemeral_duration" ]]; then
+        echo "⏰ Sending ephemeral message (duration: ${ephemeral_duration}s)"
+        NOSTR_CMD="${NOSTR_CMD} --ephemeral ${ephemeral_duration}"
+    fi
+    
+    # Add JSON output for parsing
+    NOSTR_CMD="${NOSTR_CMD} --json"
+    
+    # Execute and parse JSON result
+    RESULT=$(eval $NOSTR_CMD 2>/dev/null)
+    
+    if [[ $? -eq 0 ]]; then
+        # Parse JSON result
+        SUCCESS_COUNT=$(echo "$RESULT" | grep -o '"relays_success":[[:space:]]*[0-9]*' | grep -o '[0-9]*' || echo "0")
+        TOTAL_COUNT=$(echo "$RESULT" | grep -o '"relays_total":[[:space:]]*[0-9]*' | grep -o '[0-9]*' || echo "${#TARGET_RELAYS[@]}")
         
-        if [[ $? -eq 0 ]]; then
-            echo "   ✅ Published successfully to ${NOSTR_RELAY}"
-            ((SUCCESS_COUNT++))
+        if [[ $SUCCESS_COUNT -gt 0 ]]; then
+            echo "   ✅ Published successfully to ${SUCCESS_COUNT}/${TOTAL_COUNT} relay(s)"
         else
-            echo "   ❌ Failed to publish to ${NOSTR_RELAY}"
+            echo "   ❌ Failed to publish to any relay"
         fi
-    done
+    else
+        echo "   ❌ NOSTR command failed"
+        SUCCESS_COUNT=0
+    fi
     
     if [[ $SUCCESS_COUNT -gt 0 ]]; then
         echo "✅ NOSTR note published successfully to ${SUCCESS_COUNT}/${#TARGET_RELAYS[@]} relay(s)"

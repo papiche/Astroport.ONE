@@ -13,6 +13,31 @@ The Oracle System transforms traditional licensing from centralized authorities 
 - **Credential Issuance**: Once enough attestations are collected, a Verifiable Credential (VC) is issued
 - **Authority Signature**: The final VC is signed by the UPlanet authority (UPLANETNAME.G1 key)
 
+### 📝 MULTIPASS Creation
+
+**Every participant must have a MULTIPASS created via `make_NOSTRCARD.sh`** before interacting with the Oracle System.
+
+The `make_NOSTRCARD.sh` script:
+- Generates NOSTR keypair (nsec/npub)
+- Creates and publishes the DID on NOSTR (kind 30311)
+- Stores credentials in `~/.zen/game/nostr/EMAIL/.secret.nostr`
+- Publishes NOSTR profile with DID reference
+
+### 🌱 "Block 0" - WoT Initialization
+
+For a new permit type without existing holders, the system uses a **"Block 0" initialization process**:
+
+**Principle:** For a permit requiring **N signatures**, you need **minimum N+1 MULTIPASS registered** on the station to initialize the certification group.
+
+Each member attests all other members (except themselves), giving exactly **N attestations** per member.
+
+**Examples:**
+- **PERMIT_ORE_V1** (5 signatures) → minimum **6 registered MULTIPASS** (each receives 5 attestations)
+- **PERMIT_DRIVER** (12 signatures) → minimum **13 registered MULTIPASS** (each receives 12 attestations)
+- **PERMIT_WOT_DRAGON** (3 signatures) → minimum **4 registered MULTIPASS** (each receives 3 attestations)
+
+This ensures each initial member can be attested by enough peers from the start. The "Block 0" creates a cross-attestation network where all initial members attest each other, establishing the foundation for the Web of Trust.
+
 ## 🏗️ Architecture
 
 ### Components
@@ -25,12 +50,14 @@ The Oracle System transforms traditional licensing from centralized authorities 
 
 ### NOSTR Event Kinds
 
-| Kind  | Name | Description |
-|-------|------|-------------|
-| 30500 | Permit Definition | License type definition (e.g., "Driver's License") |
-| 30501 | Permit Request | Application from a user |
-| 30502 | Permit Attestation | Expert signature/attestation |
-| 30503 | Permit Credential | Final Verifiable Credential (VC) |
+| Kind  | Name | Description | Signed by |
+|-------|------|-------------|-----------|
+| 30500 | Permit Definition | License type definition (e.g., "Driver's License") | `UPLANETNAME.G1` |
+| 30501 | Permit Request | Application from a user | Applicant |
+| 30502 | Permit Attestation | Expert signature/attestation | Attester |
+| 30503 | Permit Credential | Final Verifiable Credential (VC) | `UPLANETNAME.G1` |
+
+**📖 For detailed NOSTR event flow, see [ORACLE_NOSTR_FLOW.md](ORACLE_NOSTR_FLOW.md)**
 
 ### Data Flow
 
@@ -66,54 +93,149 @@ See `templates/NOSTR/permit_definitions.json` for full definitions:
 
 ## 🚀 Usage
 
-### 1. Initialize Permit Definitions
+### Web Interface: `/oracle`
+
+The Oracle System provides a modern web interface for managing permits:
+
+**Access:** `https://u.copylaradio.com/oracle` (or `http://127.0.0.1:54321/oracle` for local)
+
+**Features:**
+1. **View Available Permits (30500)**
+   - Browse all permit types with their requirements
+   - See holders of each permit type (30503 credentials)
+
+2. **Connect with NOSTR (NIP-42)**
+   - Authenticate using NOSTR extension (nos2x, Alby, etc.)
+   - Seamless integration with your MULTIPASS
+
+3. **Request/Renew Permits**
+   - Submit permit requests (30501 events)
+   - Track your application status
+   - View attestation progress
+
+4. **Attest Requests**
+   - View pending requests that match your credentials
+   - Submit attestations (30502 events) for requests you can validate
+   - Track your attestation history
+
+**Interface Tabs:**
+- 📜 **Available Permits**: Browse and request permits
+- 🎯 **My Permits**: View your issued credentials
+- ⏳ **Pending Requests**: Validate requests from others (if you have required permits)
+- ✍️ **My Attestations**: Track attestations you've provided
+
+### Command-Line Interface
+
+**Note**: The Oracle system is primarily accessed through the `/oracle` web interface. Legacy CLI scripts have been integrated into the web UI for better user experience.
+
+### 0. Initialize Web of Trust (Bootstrap)
+
+**For NEW permits that have no holders yet:**
 
 ```bash
 cd Astroport.ONE/tools
-./init_permit_definitions.sh
+./oracle.WoT_PERMIT.init.sh
 ```
 
-This loads all permit types from the JSON template into the system.
+This script creates the **"Block 0"** of a new permit's Web of Trust by establishing the initial certification group.
 
-### 2. Request a Permit (as Applicant)
+**Prerequisites:**
+- All initial members must have a **MULTIPASS created via `make_NOSTRCARD.sh`**
+- For N required signatures → minimum **N+1 MULTIPASS registered** on the station
+- The CAPTAIN of the station launches the script
 
-```bash
-./request_license.sh EMAIL PERMIT_ID STATEMENT [EVIDENCE...]
-```
+**📖 See [ORACLE_WOT_BOOTSTRAP.md](ORACLE_WOT_BOOTSTRAP.md) for detailed bootstrap process**
+
+The script will:
+1. List permits (30500) with no holders (no 30503 events)
+2. Let you select a permit to initialize
+3. Let you select MULTIPASS members to become initial holders
+4. Create permit requests (30501) for each member
+5. Create cross-attestations (30502) between all members
+6. Wait for credentials (30503) to be issued by the Oracle
 
 **Example:**
 ```bash
-./request_license.sh user@example.com PERMIT_ORE_V1 \
-    "I have 5 years experience in environmental assessment and forest management"
+# Interactive mode (recommended)
+./oracle.WoT_PERMIT.init.sh
+
+# Direct mode
+./oracle.WoT_PERMIT.init.sh PERMIT_ORE_V1 \
+    alice@example.com \
+    bob@example.com \
+    carol@example.com \
+    dave@example.com \
+    eve@example.com \
+    frank@example.com
 ```
 
-This will:
-- Submit a permit request to the API
-- Publish a NOSTR event (kind 30501)
-- Return a `REQUEST_ID` for tracking
+**What happens during "Block 0" initialization:**
+1. **Cross-attestation network**: Each of the 6 members attests the other 5
+2. **Threshold reached**: All members receive exactly 5 attestations (the required number)
+3. **Credentials issued**: UPLANETNAME.G1 signs the 30503 for each member
+4. **WoT established**: The initial group can now attest new applicants
 
-### 3. Attest a Permit (as Expert)
+### 1. Initialize Permit Definitions
 
+Permit definitions are loaded automatically when the system starts. They are defined in `templates/NOSTR/permit_definitions.json`.
+
+To add a new permit type:
+1. Edit `templates/NOSTR/permit_definitions.json`
+2. Add your permit definition
+3. Restart the API (54321.py) to load the new definition
+4. Initialize the WoT for the new permit (see "0. Initialize Web of Trust")
+
+### 2. Request a Permit
+
+**Via Web Interface** (Recommended):
+- Go to `https://u.copylaradio.com/oracle`
+- Connect with NOSTR (NIP-42)
+- Navigate to "Available Permits" tab
+- Click "Request This Permit" on the desired permit
+- Fill out the form and submit
+
+**Via API**:
 ```bash
-./attest_license.sh EMAIL REQUEST_ID STATEMENT [LICENSE_ID]
+curl -X POST "${uSPOT}/api/permit/request" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "permit_definition_id": "PERMIT_ORE_V1",
+    "applicant_email": "user@example.com",
+    "statement": "I have 5 years experience in environmental assessment",
+    "evidence": []
+  }'
 ```
 
-**Example:**
+### 3. Attest a Permit
+
+**Via Web Interface** (Recommended):
+- Go to `/oracle`
+- Connect with NOSTR
+- Navigate to "Pending Requests" tab
+- View requests that need your attestation
+- Click "Attest This Request" and submit your attestation
+
+**Via API**:
 ```bash
-./attest_license.sh expert@example.com a1b2c3d4 \
-    "I have personally verified their competence in ORE verification"
+curl -X POST "${uSPOT}/api/permit/attest" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "request_id": "a1b2c3d4",
+    "attester_email": "expert@example.com",
+    "statement": "I have personally verified their competence",
+    "attester_license_id": null
+  }'
 ```
-
-This will:
-- Verify you have the required license (if needed)
-- Submit an attestation with your signature
-- Publish a NOSTR event (kind 30502)
-- Auto-issue the credential if enough attestations are collected
 
 ### 4. Check Permit Status
 
+**Via Web Interface**:
+- Go to `/oracle` → "My Permits" tab to see your own permits
+- Or check "Pending Requests" to see attestation progress
+
+**Via API**:
 ```bash
-curl https://u.copylaradio.com/api/permit/status/REQUEST_ID | jq
+curl "${uSPOT}/api/permit/status/REQUEST_ID" | jq
 ```
 
 **Example response:**
@@ -137,24 +259,35 @@ curl https://u.copylaradio.com/api/permit/status/REQUEST_ID | jq
 
 ### 5. List Permits
 
+**Via Web Interface**:
+- Browse all permits in "Available Permits" tab
+- View your own permits in "My Permits" tab
+- See pending attestations in "Pending Requests" tab
+
+**Via API**:
 ```bash
 # List all requests
-curl "https://u.copylaradio.com/api/permit/list?type=requests" | jq
+curl "${uSPOT}/api/permit/list?type=requests" | jq
 
 # List my requests
-curl "https://u.copylaradio.com/api/permit/list?type=requests&npub=NPUB" | jq
+curl "${uSPOT}/api/permit/list?type=requests&npub=NPUB" | jq
 
 # List all credentials
-curl "https://u.copylaradio.com/api/permit/list?type=credentials" | jq
+curl "${uSPOT}/api/permit/list?type=credentials" | jq
 
 # List my credentials
-curl "https://u.copylaradio.com/api/permit/list?type=credentials&npub=NPUB" | jq
+curl "${uSPOT}/api/permit/list?type=credentials&npub=NPUB" | jq
 ```
 
 ### 6. Get Verifiable Credential
 
+**Via Web Interface**:
+- Go to "My Permits" tab
+- Click "View Credential" on any issued permit
+
+**Via API**:
 ```bash
-curl https://u.copylaradio.com/api/permit/credential/CREDENTIAL_ID | jq
+curl "${uSPOT}/api/permit/credential/CREDENTIAL_ID" | jq
 ```
 
 **Example W3C Verifiable Credential:**
@@ -272,6 +405,40 @@ curl "https://u.copylaradio.com/api/permit/list?type=requests" | jq '.count'
 # Count issued credentials
 curl "https://u.copylaradio.com/api/permit/list?type=credentials" | jq '.count'
 ```
+
+## 🛠️ API Reference
+
+The Oracle System exposes REST API endpoints for permit management.
+
+**📖 See [ORACLE_API_ROUTES.md](ORACLE_API_ROUTES.md) for complete API reference**
+
+### Core Routes
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/permit/define` | POST | Create permit definition (admin) |
+| `/api/permit/request` | POST | Submit permit request (NIP-42) |
+| `/api/permit/attest` | POST | Add attestation (NIP-42) |
+| `/api/permit/status/{id}` | GET | Get request status |
+| `/api/permit/list` | GET | List requests/credentials |
+| `/api/permit/credential/{id}` | GET | Get W3C credential |
+| `/api/permit/definitions` | GET | List all permit types |
+
+### NOSTR Integration Routes ⭐ NEW
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/permit/nostr/fetch` | GET | Fetch events from NOSTR relays (kind 30500-30503) |
+| `/api/permit/issue/{id}` | POST | Trigger credential issuance (maintenance) |
+| `/api/permit/expire/{id}` | POST | Mark request as expired (maintenance) |
+| `/api/permit/revoke/{id}` | POST | Revoke credential (admin) |
+
+**Tools used:**
+- **`nostr_send_note.py`** - Publish events to NOSTR relays
+- **NIP-42 authentication** - Secure API access
+- **Local storage + NOSTR sync** - Hybrid data model
+
+---
 
 ## 🛠️ API Reference
 
@@ -771,7 +938,7 @@ pip install fastapi uvicorn pydantic nostr
 3. **Permit definitions loaded:**
 ```bash
 cd Astroport.ONE/tools
-./init_permit_definitions.sh
+./oracle_init_permit_definitions.sh
 ```
 
 4. **For blockchain tests (optional):**
@@ -855,9 +1022,63 @@ jobs:
 ```
 → Set `TEST_MODE=1` to skip auth in testing
 
+## 🔄 Automated Maintenance
+
+The Oracle System includes daily automated maintenance via `ORACLE.refresh.sh`:
+
+**📖 See [ORACLE_MAINTENANCE.md](ORACLE_MAINTENANCE.md) for detailed documentation**
+
+### Daily Tasks
+
+1. **Process Pending Requests**
+   - Check all requests with status `pending` or `attesting`
+   - Verify attestation thresholds
+   - Auto-issue credentials (30503) when threshold reached
+
+2. **Expire Old Requests**
+   - Mark requests older than 90 days as expired
+   - Clean up abandoned applications
+
+3. **Revoke Expired Credentials**
+   - Check credential expiration dates
+   - Mark expired credentials as inactive
+
+4. **Generate Statistics**
+   - Per-permit request and credential counts
+   - Global statistics
+   - JSON files in `~/.zen/tmp/${IPFSNODEID}/ORACLE/`
+
+5. **Publish to NOSTR**
+   - Daily report signed by `UPLANETNAME.G1`
+   - Kind 1 event with global statistics
+
+### Execution Schedule
+
+The maintenance script runs daily as part of `UPLANET.refresh.sh`:
+
+```bash
+# UPLANET.refresh.sh
+${MY_PATH}/ZEN.ECONOMY.sh
+${MY_PATH}/ORACLE.refresh.sh    # ← Daily Oracle maintenance
+${MY_PATH}/NOSTR.UMAP.refresh.sh
+```
+
+### Manual Execution
+
+```bash
+cd Astroport.ONE/RUNTIME
+./ORACLE.refresh.sh
+```
+
+---
+
 ## 📚 Further Reading
 
 - [CopyLaRadio Article](https://www.copylaradio.com/blog/blog-1/post/reinventer-la-societe-avec-la-monnaie-libre-et-la-web-of-trust-148#) - Philosophical foundation
+- [ORACLE_WOT_BOOTSTRAP.md](ORACLE_WOT_BOOTSTRAP.md) - Web of Trust initialization process
+- [ORACLE_NOSTR_FLOW.md](ORACLE_NOSTR_FLOW.md) - Detailed NOSTR event flow
+- [ORACLE_NIP42_AUTH.md](ORACLE_NIP42_AUTH.md) - NOSTR authentication (NIP-42)
+- [ORACLE_MAINTENANCE.md](ORACLE_MAINTENANCE.md) - Daily maintenance and automation
 - [DID_IMPLEMENTATION.md](../DID_IMPLEMENTATION.md) - DID system overview
 - [ORE_SYSTEM.md](./ORE_SYSTEM.md) - Environmental obligations system
 - [W3C DID Core](https://www.w3.org/TR/did-core/) - DID standard

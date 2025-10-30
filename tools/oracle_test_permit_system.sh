@@ -1,27 +1,31 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 1.0
+# Version: 2.0
 # License: AGPL-3.0
 ################################################################################
-# test_permit_system.sh
+# oracle_test_permit_system.sh
 # Script de test complet pour le système de gestion des permis Oracle
 #
 # Ce script teste l'ensemble du workflow:
-# 1. Initialisation des définitions de permis
-# 2. Demande de permis
-# 3. Attestations par des pairs
-# 4. Vérification automatique et émission de credential
-# 5. Récupération des credentials
-# 6. Virement blockchain PERMIT
+# 1. Initialisation des définitions de permis (NOSTR kind 30500)
+# 2. Demande de permis (NOSTR kind 30501)
+# 3. Attestations par des pairs (NOSTR kind 30502)
+# 4. Vérification automatique et émission de credential (NOSTR kind 30503)
+# 5. Récupération des credentials (W3C Verifiable Credentials)
+# 6. Virement blockchain PERMIT (depuis UPLANETNAME.RnD)
+# 7. Tests NOSTR (strfry query via nostr_get_events.sh)
 ################################################################################
 
 MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 
 # Configuration
-API_URL="${API_URL:-http://localhost:1234}"
+API_URL="${uSPOT:-http://localhost:54321}"
 TEST_MODE="${TEST_MODE:-1}"
+NOSTR_RELAY="${myRELAY:-ws://localhost:7777}"
+STRFRY_DB="${STRFRY_DB:-/home/zen/.zen/strfry/strfry-db}"
+TIMEOUT="${TIMEOUT:-30}"
 
 # Couleurs
 RED='\033[0;31m'
@@ -72,27 +76,53 @@ run_test() {
 # Fonction pour vérifier qu'une commande existe
 check_command() {
     if ! command -v "$1" &> /dev/null; then
-        echo -e "${RED}❌ Erreur: $1 n'est pas installé${NC}"
+        echo -e "${RED}❌ Error: $1 is not installed${NC}"
         exit 1
     fi
 }
 
 # Fonction pour vérifier la disponibilité de l'API
 check_api() {
-    echo -e "${YELLOW}🔍 Vérification de la disponibilité de l'API...${NC}"
-    if curl -s -f "${API_URL}/health" > /dev/null 2>&1; then
-        echo -e "${GREEN}✅ API disponible à ${API_URL}${NC}"
+    echo -e "${YELLOW}🔍 Checking API availability...${NC}"
+    local response=$(curl -s -w "\n%{http_code}" --max-time 5 "${API_URL}/health" 2>/dev/null)
+    local http_code=$(echo "$response" | tail -n1)
+    
+    if [ "$http_code" = "200" ]; then
+        echo -e "${GREEN}✅ API available at ${API_URL}${NC}"
         return 0
     else
-        echo -e "${RED}❌ API non disponible à ${API_URL}${NC}"
-        echo -e "${YELLOW}💡 Lancez d'abord: cd UPassport && python 54321.py${NC}"
+        echo -e "${RED}❌ API not available at ${API_URL} (HTTP ${http_code})${NC}"
+        echo -e "${YELLOW}💡 Start the API first: cd UPassport && python3 54321.py${NC}"
         exit 1
     fi
 }
 
+# Fonction pour vérifier strfry et nostr_get_events.sh
+check_nostr_tools() {
+    echo -e "${YELLOW}🔍 Checking NOSTR tools...${NC}"
+    
+    # Check strfry
+    if ! command -v strfry &> /dev/null; then
+        echo -e "${YELLOW}⚠️  strfry not found (NOSTR tests will be skipped)${NC}"
+        NOSTR_AVAILABLE=0
+        return 1
+    fi
+    
+    # Check nostr_get_events.sh
+    if [ ! -f "${MY_PATH}/nostr_get_events.sh" ]; then
+        echo -e "${YELLOW}⚠️  nostr_get_events.sh not found (NOSTR tests will be skipped)${NC}"
+        NOSTR_AVAILABLE=0
+        return 1
+    fi
+    
+    echo -e "${GREEN}✅ NOSTR tools available${NC}"
+    NOSTR_AVAILABLE=1
+    return 0
+}
+
 # Fonction pour générer des données de test
 generate_test_email() {
-    echo "test_$(date +%s)_${RANDOM}@example.com"
+    echo "test_$(date +%s)_${RANDOM}@copylaradio.com"
 }
 
 generate_test_npub() {
@@ -336,24 +366,24 @@ test_credential_retrieval() {
 ################################################################################
 
 test_helper_scripts() {
-    section "TEST 7: Scripts helper (request_license.sh & attest_license.sh)"
+    section "TEST 7: Scripts helper (oracle_request_license.sh & oracle_attest_license.sh)"
     
     # Test 7.1: Vérifier l'existence des scripts
-    if [ -f "${MY_PATH}/request_license.sh" ]; then
-        echo -e "${GREEN}✅ request_license.sh existe${NC}"
-        run_test "request_license.sh est exécutable" \
-            "[ -x '${MY_PATH}/request_license.sh' ]"
+    if [ -f "${MY_PATH}/oracle_request_license.sh" ]; then
+        echo -e "${GREEN}✅ oracle_request_license.sh existe${NC}"
+        run_test "oracle_request_license.sh est exécutable" \
+            "[ -x '${MY_PATH}/oracle_request_license.sh' ]"
     else
-        echo -e "${RED}❌ request_license.sh introuvable${NC}"
+        echo -e "${RED}❌ oracle_request_license.sh introuvable${NC}"
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
     
-    if [ -f "${MY_PATH}/attest_license.sh" ]; then
-        echo -e "${GREEN}✅ attest_license.sh existe${NC}"
-        run_test "attest_license.sh est exécutable" \
-            "[ -x '${MY_PATH}/attest_license.sh' ]"
+    if [ -f "${MY_PATH}/oracle_attest_license.sh" ]; then
+        echo -e "${GREEN}✅ oracle_attest_license.sh existe${NC}"
+        run_test "oracle_attest_license.sh est exécutable" \
+            "[ -x '${MY_PATH}/oracle_attest_license.sh' ]"
     else
-        echo -e "${RED}❌ attest_license.sh introuvable${NC}"
+        echo -e "${RED}❌ oracle_attest_license.sh introuvable${NC}"
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
     
@@ -365,41 +395,41 @@ test_helper_scripts() {
 ################################################################################
 
 test_permit_virement() {
-    section "TEST 8: Virement PERMIT (blockchain)"
+    section "TEST 8: PERMIT Payment (blockchain)"
     
-    echo -e "${YELLOW}⚠️  Ce test nécessite:${NC}"
-    echo -e "  1. Un portefeuille UPLANETNAME_RnD configuré"
-    echo -e "  2. Des fonds disponibles dans RnD"
-    echo -e "  3. Un MULTIPASS créé pour le bénéficiaire"
+    echo -e "${YELLOW}⚠️  This test requires:${NC}"
+    echo -e "  1. A configured UPLANETNAME_RnD wallet"
+    echo -e "  2. Available funds in RnD wallet"
+    echo -e "  3. A created MULTIPASS for the recipient"
     echo ""
     
-    read -p "Voulez-vous tester le virement PERMIT? (o/N): " confirm
+    read -p "Do you want to test PERMIT payment? (y/N): " confirm
     
-    if [[ "$confirm" != "o" && "$confirm" != "O" ]]; then
-        echo -e "${YELLOW}⏭️  Test du virement PERMIT ignoré${NC}"
+    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+        echo -e "${YELLOW}⏭️  PERMIT payment test skipped${NC}"
         return 0
     fi
     
-    read -p "Email du bénéficiaire: " email
+    read -p "Recipient email: " email
     if [ -z "$email" ]; then
-        echo -e "${RED}❌ Email requis${NC}"
+        echo -e "${RED}❌ Email required${NC}"
         return 1
     fi
     
-    read -p "Permit ID (ex: PERMIT_WOT_DRAGON): " permit_id
+    read -p "Permit ID (e.g., PERMIT_WOT_DRAGON): " permit_id
     permit_id="${permit_id:-PERMIT_WOT_DRAGON}"
     
-    read -p "Montant en Ẑen (défaut: 100): " montant
+    read -p "Amount in Ẑen (default: 100): " montant
     montant="${montant:-100}"
     
     echo ""
-    echo -e "${CYAN}🚀 Lancement du virement PERMIT...${NC}"
+    echo -e "${CYAN}🚀 Launching PERMIT payment...${NC}"
     
     if bash "${MY_PATH}/../UPLANET.official.sh" -p "$email" "$permit_id" -m "$montant"; then
-        echo -e "${GREEN}✅ Virement PERMIT réussi${NC}"
+        echo -e "${GREEN}✅ PERMIT payment successful${NC}"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
-        echo -e "${RED}❌ Échec du virement PERMIT${NC}"
+        echo -e "${RED}❌ PERMIT payment failed${NC}"
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
     
@@ -407,35 +437,156 @@ test_permit_virement() {
 }
 
 ################################################################################
-# Test du système Oracle complet
+# Tests NOSTR - Vérification des événements publiés
 ################################################################################
 
-test_oracle_system() {
-    section "TEST 9: Système Oracle (oracle_system.py)"
+test_nostr_events() {
+    section "TEST 10: Événements NOSTR (strfry + nostr_get_events.sh)"
     
-    # Vérifier que oracle_system.py existe
-    if [ -f "${MY_PATH}/../../UPassport/oracle_system.py" ]; then
-        echo -e "${GREEN}✅ oracle_system.py existe${NC}"
-        
-        run_test "oracle_system.py est syntaxiquement correct" \
-            "python3 -m py_compile '${MY_PATH}/../../UPassport/oracle_system.py'"
+    if [ "$NOSTR_AVAILABLE" -eq 0 ]; then
+        echo -e "${YELLOW}⚠️  NOSTR tools not available, skipping NOSTR tests${NC}"
+        return 0
+    fi
+    
+    # Test 10.1: Vérifier les événements kind 30500 (Permit Definitions)
+    echo -e "${CYAN}📡 Querying kind 30500 (Permit Definitions)...${NC}"
+    local definitions=$(bash "${MY_PATH}/nostr_get_events.sh" --kind 30500 --limit 10)
+    local def_count=$(echo "$definitions" | grep -c '"kind":30500' || echo "0")
+    
+    if [ "$def_count" -gt 0 ]; then
+        echo -e "${GREEN}✅ Found ${def_count} permit definitions in strfry${NC}"
+        echo "$definitions" | jq -r '.content' | head -5
+        TESTS_PASSED=$((TESTS_PASSED + 1))
     else
-        echo -e "${RED}❌ oracle_system.py introuvable${NC}"
-        TESTS_FAILED=$((TESTS_FAILED + 1))
+        echo -e "${YELLOW}⚠️  No permit definitions found in strfry${NC}"
+        echo -e "${CYAN}💡 Run oracle.WoT_PERMIT.init.sh to initialize permits${NC}"
+    fi
+    TESTS_TOTAL=$((TESTS_TOTAL + 1))
+    
+    # Test 10.2: Vérifier les événements kind 30501 (Permit Requests)
+    echo -e "${CYAN}📡 Querying kind 30501 (Permit Requests)...${NC}"
+    local requests=$(bash "${MY_PATH}/nostr_get_events.sh" --kind 30501 --limit 10)
+    local req_count=$(echo "$requests" | grep -c '"kind":30501' || echo "0")
+    
+    if [ "$req_count" -gt 0 ]; then
+        echo -e "${GREEN}✅ Found ${req_count} permit requests in strfry${NC}"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        echo -e "${YELLOW}⚠️  No permit requests found in strfry${NC}"
+    fi
+    TESTS_TOTAL=$((TESTS_TOTAL + 1))
+    
+    # Test 10.3: Vérifier les événements kind 30502 (Attestations)
+    echo -e "${CYAN}📡 Querying kind 30502 (Attestations)...${NC}"
+    local attestations=$(bash "${MY_PATH}/nostr_get_events.sh" --kind 30502 --limit 10)
+    local att_count=$(echo "$attestations" | grep -c '"kind":30502' || echo "0")
+    
+    if [ "$att_count" -gt 0 ]; then
+        echo -e "${GREEN}✅ Found ${att_count} attestations in strfry${NC}"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        echo -e "${YELLOW}⚠️  No attestations found in strfry${NC}"
+    fi
+    TESTS_TOTAL=$((TESTS_TOTAL + 1))
+    
+    # Test 10.4: Vérifier les événements kind 30503 (Credentials)
+    echo -e "${CYAN}📡 Querying kind 30503 (Credentials)...${NC}"
+    local credentials=$(bash "${MY_PATH}/nostr_get_events.sh" --kind 30503 --limit 10)
+    local cred_count=$(echo "$credentials" | grep -c '"kind":30503' || echo "0")
+    
+    if [ "$cred_count" -gt 0 ]; then
+        echo -e "${GREEN}✅ Found ${cred_count} credentials in strfry${NC}"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        echo -e "${YELLOW}⚠️  No credentials found in strfry${NC}"
+    fi
+    TESTS_TOTAL=$((TESTS_TOTAL + 1))
+    
+    # Test 10.5: Tester la recherche par auteur
+    if [ -f /tmp/test_permit_npub ]; then
+        local test_npub=$(cat /tmp/test_permit_npub)
+        echo -e "${CYAN}📡 Querying events by author ${test_npub:0:16}...${NC}"
+        local author_events=$(bash "${MY_PATH}/nostr_get_events.sh" --kind 30501 --author "$test_npub" --limit 5)
+        local author_count=$(echo "$author_events" | grep -c '"kind":' || echo "0")
+        
+        if [ "$author_count" -gt 0 ]; then
+            echo -e "${GREEN}✅ Found ${author_count} events from test author${NC}"
+            TESTS_PASSED=$((TESTS_PASSED + 1))
+        else
+            echo -e "${YELLOW}⚠️  No events found from test author${NC}"
+        fi
         TESTS_TOTAL=$((TESTS_TOTAL + 1))
     fi
 }
 
 ################################################################################
-# Résumé des tests
+# Tests API NOSTR Fetch
 ################################################################################
 
-show_summary() {
-    section "RÉSUMÉ DES TESTS"
+test_api_nostr_fetch() {
+    section "TEST 11: API NOSTR Fetch Routes"
     
-    echo -e "${CYAN}Tests exécutés: ${TESTS_TOTAL}${NC}"
-    echo -e "${GREEN}Tests réussis: ${TESTS_PASSED}${NC}"
-    echo -e "${RED}Tests échoués: ${TESTS_FAILED}${NC}"
+    # Test 11.1: Fetch permit definitions from NOSTR
+    run_test "GET /api/permit/nostr/fetch?type=definitions" \
+        "curl -s -f '${API_URL}/api/permit/nostr/fetch?type=definitions' | jq -e '.success == true'"
+    
+    if [ $? -eq 0 ]; then
+        local defs=$(curl -s "${API_URL}/api/permit/nostr/fetch?type=definitions")
+        local count=$(echo "$defs" | jq '.count // 0')
+        echo -e "${CYAN}📊 Found ${count} definitions via API${NC}"
+    fi
+    
+    # Test 11.2: Fetch permit requests from NOSTR
+    run_test "GET /api/permit/nostr/fetch?type=requests" \
+        "curl -s -f '${API_URL}/api/permit/nostr/fetch?type=requests' | jq -e '.success == true'"
+    
+    if [ $? -eq 0 ]; then
+        local reqs=$(curl -s "${API_URL}/api/permit/nostr/fetch?type=requests")
+        local count=$(echo "$reqs" | jq '.count // 0')
+        echo -e "${CYAN}📊 Found ${count} requests via API${NC}"
+    fi
+    
+    # Test 11.3: Fetch credentials from NOSTR
+    run_test "GET /api/permit/nostr/fetch?type=credentials" \
+        "curl -s -f '${API_URL}/api/permit/nostr/fetch?type=credentials' | jq -e '.success == true'"
+    
+    if [ $? -eq 0 ]; then
+        local creds=$(curl -s "${API_URL}/api/permit/nostr/fetch?type=credentials")
+        local count=$(echo "$creds" | jq '.count // 0')
+        echo -e "${CYAN}📊 Found ${count} credentials via API${NC}"
+    fi
+}
+
+################################################################################
+# Test du système Oracle complet
+################################################################################
+
+test_oracle_system() {
+    section "TEST 9: Oracle System (oracle_system.py)"
+    
+    # Vérifier que oracle_system.py existe
+    if [ -f "${MY_PATH}/../../UPassport/oracle_system.py" ]; then
+        echo -e "${GREEN}✅ oracle_system.py found${NC}"
+        
+        run_test "oracle_system.py syntax is correct" \
+            "python3 -m py_compile '${MY_PATH}/../../UPassport/oracle_system.py'"
+        
+        # Test import
+        run_test "oracle_system.py can be imported" \
+            "python3 -c 'import sys; sys.path.insert(0, \"${MY_PATH}/../../UPassport\"); import oracle_system'"
+    else
+        echo -e "${RED}❌ oracle_system.py not found${NC}"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+        TESTS_TOTAL=$((TESTS_TOTAL + 1))
+    fi
+}
+
+show_summary() {
+    section "TEST SUMMARY"
+    
+    echo -e "${CYAN}Tests executed: ${TESTS_TOTAL}${NC}"
+    echo -e "${GREEN}Tests passed: ${TESTS_PASSED}${NC}"
+    echo -e "${RED}Tests failed: ${TESTS_FAILED}${NC}"
     echo ""
     
     local success_rate=0
@@ -443,14 +594,14 @@ show_summary() {
         success_rate=$((TESTS_PASSED * 100 / TESTS_TOTAL))
     fi
     
-    echo -e "${CYAN}Taux de réussite: ${success_rate}%${NC}"
+    echo -e "${CYAN}Success rate: ${success_rate}%${NC}"
     echo ""
     
     if [ $TESTS_FAILED -eq 0 ]; then
-        echo -e "${GREEN}🎉 TOUS LES TESTS SONT PASSÉS!${NC}"
+        echo -e "${GREEN}🎉 ALL TESTS PASSED!${NC}"
         return 0
     else
-        echo -e "${RED}⚠️  CERTAINS TESTS ONT ÉCHOUÉ${NC}"
+        echo -e "${RED}⚠️  SOME TESTS FAILED${NC}"
         return 1
     fi
 }
@@ -464,19 +615,21 @@ show_menu() {
     echo -e "${BLUE}║         TEST DU SYSTÈME DE GESTION DES PERMIS ORACLE          ║${NC}"
     echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo "1. 🧪 Exécuter TOUS les tests (automatique)"
-    echo "2. 📋 Test: Définitions de permis"
-    echo "3. 📝 Test: Demande de permis"
+    echo "1. 🧪 Run ALL tests (automated)"
+    echo "2. 📋 Test: Permit definitions"
+    echo "3. 📝 Test: Permit request"
     echo "4. ✍️  Test: Attestations"
-    echo "5. 📊 Test: Vérification du statut"
-    echo "6. 📑 Test: Listing des permis"
-    echo "7. 🎫 Test: Récupération de credential"
-    echo "8. 🛠️  Test: Scripts helper"
-    echo "9. 💰 Test: Virement PERMIT"
-    echo "10. 🔧 Test: Système Oracle"
-    echo "11. 🚪 Quitter"
+    echo "5. 📊 Test: Status verification"
+    echo "6. 📑 Test: Permit listing"
+    echo "7. 🎫 Test: Credential retrieval"
+    echo "8. 🛠️  Test: Helper scripts"
+    echo "9. 🔧 Test: Oracle system"
+    echo "10. 📡 Test: NOSTR events (strfry)"
+    echo "11. 🌐 Test: API NOSTR fetch"
+    echo "12. 💰 Test: PERMIT payment"
+    echo "13. 🚪 Exit"
     echo ""
-    read -p "Choisissez une option (1-11): " choice
+    read -p "Choose an option (1-13): " choice
     
     case $choice in
         1)
@@ -504,24 +657,30 @@ show_menu() {
             test_helper_scripts
             ;;
         9)
-            test_permit_virement
-            ;;
-        10)
             test_oracle_system
             ;;
+        10)
+            test_nostr_events
+            ;;
         11)
-            echo -e "${GREEN}👋 Au revoir!${NC}"
+            test_api_nostr_fetch
+            ;;
+        12)
+            test_permit_virement
+            ;;
+        13)
+            echo -e "${GREEN}👋 Goodbye!${NC}"
             exit 0
             ;;
         *)
-            echo -e "${RED}❌ Option invalide${NC}"
+            echo -e "${RED}❌ Invalid option${NC}"
             ;;
     esac
 }
 
 run_all_tests() {
     echo -e "${MAGENTA}╔════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${MAGENTA}║               EXÉCUTION DE TOUS LES TESTS                      ║${NC}"
+    echo -e "${MAGENTA}║               RUNNING ALL TESTS                                ║${NC}"
     echo -e "${MAGENTA}╚════════════════════════════════════════════════════════════════╝${NC}"
     
     test_permit_definitions
@@ -532,10 +691,12 @@ run_all_tests() {
     test_credential_retrieval
     test_helper_scripts
     test_oracle_system
+    test_nostr_events
+    test_api_nostr_fetch
     
     # Test du virement PERMIT (optionnel)
     echo ""
-    echo -e "${YELLOW}⚠️  Le test du virement PERMIT nécessite une configuration blockchain${NC}"
+    echo -e "${YELLOW}⚠️  PERMIT payment test requires blockchain configuration${NC}"
     test_permit_virement
     
     show_summary
@@ -547,20 +708,25 @@ run_all_tests() {
 
 main() {
     echo -e "${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║    🧪 SUITE DE TESTS - SYSTÈME DE GESTION DES PERMIS ORACLE   ║${NC}"
+    echo -e "${BLUE}║    🧪 TEST SUITE - ORACLE PERMIT MANAGEMENT SYSTEM            ║${NC}"
     echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     
     # Vérifier les dépendances
-    echo -e "${YELLOW}🔍 Vérification des dépendances...${NC}"
+    echo -e "${YELLOW}🔍 Checking dependencies...${NC}"
     check_command "curl"
     check_command "jq"
     check_command "openssl"
-    echo -e "${GREEN}✅ Toutes les dépendances sont installées${NC}"
+    check_command "python3"
+    echo -e "${GREEN}✅ All required dependencies are installed${NC}"
     echo ""
     
     # Vérifier l'API
     check_api
+    echo ""
+    
+    # Vérifier les outils NOSTR
+    check_nostr_tools
     echo ""
     
     # Si des arguments sont fournis, exécuter tous les tests
@@ -573,7 +739,7 @@ main() {
     while true; do
         show_menu
         echo ""
-        read -p "Appuyez sur Entrée pour continuer..."
+        read -p "Press Enter to continue..."
         clear
     done
 }
