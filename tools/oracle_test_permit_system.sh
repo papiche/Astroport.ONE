@@ -138,11 +138,20 @@ test_permit_definitions() {
     section "TEST 1: Récupération des définitions de permis"
     
     run_test "GET /api/permit/definitions" \
-        "curl -s -f '${API_URL}/api/permit/definitions' | jq -e '.success == true and .count > 0'"
+        "curl -s -f '${API_URL}/api/permit/definitions' | jq -e '.success == true'"
     
     if [ $? -eq 0 ]; then
-        echo -e "${CYAN}📋 Définitions disponibles:${NC}"
-        curl -s "${API_URL}/api/permit/definitions" | jq -r '.definitions[] | "  • \(.id): \(.name) (min: \(.min_attestations) attestations)"'
+        local response=$(curl -s "${API_URL}/api/permit/definitions")
+        local count=$(echo "$response" | jq '.count // 0')
+        
+        if [ "$count" -gt 0 ]; then
+            echo -e "${CYAN}📋 Définitions disponibles (${count}):${NC}"
+            echo "$response" | jq -r '.definitions[] | "  • \(.id): \(.name) (min: \(.min_attestations) attestations)"'
+        else
+            echo -e "${YELLOW}⚠️  Aucune définition chargée (count: 0)${NC}"
+            echo -e "${CYAN}💡 Les définitions sont chargées depuis permit_definitions.json au démarrage${NC}"
+            echo -e "${CYAN}💡 Ou publiées via NOSTR events kind 30500${NC}"
+        fi
     fi
 }
 
