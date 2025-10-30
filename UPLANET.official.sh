@@ -7,10 +7,11 @@
 # UPLANET.official.sh
 # Script de gestion des virements officiels UPlanet
 # 
-# Gère trois types de virements :
+# Gère quatre types de virements :
 # 1. LOCATAIRE : UPLANETNAME_G1 -> UPLANETNAME -> MULTIPASS (recharge de service)
 # 2. SOCIÉTAIRE : UPLANETNAME_G1 -> UPLANETNAME_SOCIETY -> ZEN Card -> 3x1/3
 # 3. ORE : UPLANETNAME_ASSETS -> UMAP DID (récompenses environnementales depuis réserves coopératives)
+# 4. PERMIT : UPLANETNAME_RnD -> PERMIT HOLDER (récompenses pour WoT Dragon et autres permis spéciaux)
 #
 # Format des références blockchain :
 # - RENTAL : "UPLANET:${UPLANETG1PUB:0:8}:RENTAL:${email}"
@@ -20,6 +21,7 @@
 # - RnD     : "UPLANET:${UPLANETG1PUB:0:8}:RnD:${email}:${type}:${IPFSNODEID}"
 # - ASSETS  : "UPLANET:${UPLANETG1PUB:0:8}:ASSETS:${email}:${type}:${IPFSNODEID}"
 # - ORE     : "UPLANET:${UPLANETG1PUB:0:8}:ORE:${umap_did}:${lat}:${lon}:${IPFSNODEID}" (depuis ASSETS)
+# - PERMIT  : "UPLANET:${UPLANETG1PUB:0:8}:PERMIT:${permit_id}:${email}:${credential_id}:${IPFSNODEID}" (depuis G1)
 #
 # L'IPFSNODEID identifie le nœud/machine à l'origine de la transaction
 #
@@ -60,6 +62,7 @@ show_help() {
     echo "  -t, --type TYPE           Type de sociétaire: satellite|constellation|infrastructure"
     echo "  -i, --infrastructure      Apport capital infrastructure (CAPTAIN → NODE)"
     echo "  -o, --ore LAT LON         Virement ORE (récompenses environnementales UMAP depuis ASSETS)"
+    echo "  -p, --permit EMAIL ID     Virement PERMIT (récompense WoT Dragon/permit holder)"
     echo "  -m, --montant MONTANT     Montant en euros (optionnel, auto-calculé par défaut)"
     echo "  -r, --recovery            Mode dépannage: récupération complète SOCIETY → 3x1/3"
     echo "  --recovery-3x13           Mode dépannage: récupération partielle ZEN Card → 3x1/3"
@@ -71,6 +74,7 @@ show_help() {
     echo "  $0 -s user@example.com -t constellation       # Parts sociales constellation"
     echo "  $0 -i -m 500                                  # Apport capital infrastructure (500€)"
     echo "  $0 -o 43.60 1.44 -m 10                       # Récompense ORE UMAP depuis ASSETS (10Ẑen)"
+    echo "  $0 -p dragon@example.com PERMIT_WOT_DRAGON  # Récompense WoT Dragon"
     echo "  $0 -r                                         # Mode dépannage SOCIETY → 3x1/3"
     echo "  $0 --recovery-3x13                            # Mode dépannage ZEN Card → 3x1/3"
     echo ""
@@ -379,6 +383,89 @@ calculate_societaire_amount() {
             echo "0"
             ;;
     esac
+}
+
+################################################################################
+# Fonction principale pour virement PERMIT (récompenses pour permits WoT Dragon)
+################################################################################
+virement_permit() {
+    local email="$1"
+    local permit_id="$2"
+    local credential_id="${3:-}"
+    local montant_euros="${4:-100}"  # 100 Ẑen par défaut pour WoT Dragon
+    
+    # Valider que le montant est un nombre valide
+    if [[ -z "$montant_euros" ]] || ! [[ "$montant_euros" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+        echo -e "${RED}❌ Montant invalide: '$montant_euros'${NC}"
+        echo -e "${YELLOW}💡 Utilisez un nombre positif (ex: 100)${NC}"
+        return 1
+    fi
+    
+    local montant_g1=$(zen_to_g1 "$montant_euros")
+    
+    echo -e "${BLUE}🎫 Traitement virement PERMIT pour: ${email}${NC}"
+    echo -e "${CYAN}💰 Montant: ${montant_euros} Ẑen = ${montant_g1} Ğ1${NC}"
+    echo -e "${YELLOW}🏛️ Type: ${permit_id}${NC}"
+    
+    # Vérifier que le portefeuille RnD existe
+    if [[ ! -f "$HOME/.zen/game/uplanet.RnD.dunikey" ]]; then
+        echo -e "${RED}❌ Portefeuille UPLANETNAME_RnD non configuré${NC}"
+        echo "💡 Exécutez ZEN.COOPERATIVE.3x1-3.sh pour créer les portefeuilles coopératifs"
+        return 1
+    fi
+    
+    # Récupérer la clé publique RnD de UPlanet
+    local rnd_pubkey=$(cat "$HOME/.zen/game/uplanet.RnD.dunikey" | grep "pub:" | cut -d ' ' -f 2)
+    if [[ -z "$rnd_pubkey" ]]; then
+        echo -e "${RED}❌ Impossible de récupérer la clé publique RnD${NC}"
+        return 1
+    fi
+    
+    echo -e "${GREEN}✅ Portefeuille RnD trouvé: ${rnd_pubkey:0:8}...${NC}"
+    
+    # Récupérer la clé publique du MULTIPASS du bénéficiaire
+    local multipass_pubkey=$(cat "$HOME/.zen/game/nostr/${email}/G1PUBNOSTR" 2>/dev/null)
+    if [[ -z "$multipass_pubkey" ]]; then
+        echo -e "${RED}❌ MULTIPASS non trouvé pour ${email}${NC}"
+        echo "💡 Créez un MULTIPASS avec make_NOSTRCARD.sh"
+        return 1
+    fi
+    
+    # Vérifier qu'il n'y a pas de transactions en cours avant de commencer
+    echo -e "${BLUE}🔍 Vérification préalable des transactions en cours...${NC}"
+    if ! check_no_pending_transactions "$rnd_pubkey"; then
+        echo -e "${RED}❌ Impossible de commencer le virement: des transactions sont en cours${NC}"
+        echo -e "${YELLOW}💡 Attendez que les transactions en cours se terminent avant de relancer${NC}"
+        return 1
+    fi
+    
+    # Générer le credential_id si non fourni
+    if [[ -z "$credential_id" ]]; then
+        credential_id=$(date +%s | sha256sum | cut -c1-16)
+    fi
+    
+    # Transfert direct: UPLANETNAME_RnD -> MULTIPASS (permit holder)
+    echo -e "${BLUE}📤 Transfert UPLANETNAME_RnD → MULTIPASS (permit holder)${NC}"
+    local permit_reference="UPLANET:${UPLANETG1PUB:0:8}:PERMIT:${permit_id}:${email}:${credential_id}:${IPFSNODEID}"
+    
+    if ! transfer_and_verify "$HOME/.zen/game/uplanet.RnD.dunikey" "$multipass_pubkey" "$montant_euros" "$permit_reference" "$email" "PERMIT" "RnD→MULTIPASS(PERMIT)"; then
+        echo -e "${RED}❌ Échec du virement PERMIT${NC}"
+        return 1
+    fi
+    
+    echo -e "${GREEN}🎉 Virement PERMIT terminé avec succès!${NC}"
+    echo -e "${CYAN}📊 Résumé:${NC}"
+    echo -e "  • ${montant_euros} Ẑen (${montant_g1} Ğ1) transférés vers ${email}"
+    echo -e "  • Permit: ${permit_id}"
+    echo -e "  • Credential: ${credential_id}"
+    echo -e "  • Récompense pour WoT permit holder"
+    echo -e "  • Transaction confirmée sur la blockchain"
+    
+    # Mettre à jour le document DID avec le permit
+    echo -e "${YELLOW}📝 Mise à jour du DID...${NC}"
+    "${MY_PATH}/tools/did_manager_nostr.sh" update "$email" "PERMIT_ISSUED" "$montant_euros" "$montant_g1"
+    
+    return 0
 }
 
 ################################################################################
@@ -1455,6 +1542,7 @@ main() {
         local mode=""
         local lat=""
         local lon=""
+        local permit_id=""
         
         while [[ $# -gt 0 ]]; do
             case "$1" in
@@ -1487,6 +1575,18 @@ main() {
                     fi
                     if [[ -n "$1" && ! "$1" =~ ^- ]]; then
                         lon="$1"
+                        shift
+                    fi
+                    ;;
+                -p|--permit)
+                    mode="permit"
+                    shift
+                    if [[ -n "$1" && ! "$1" =~ ^- ]]; then
+                        email="$1"
+                        shift
+                    fi
+                    if [[ -n "$1" && ! "$1" =~ ^- ]]; then
+                        permit_id="$1"
                         shift
                     fi
                     ;;
@@ -1567,6 +1667,17 @@ main() {
                 else
                     echo -e "${RED}❌ Latitude et longitude requises pour l'option --ore${NC}"
                     echo -e "${CYAN}💡 Usage: $0 -o 43.60 1.44 -m 10${NC}"
+                    exit 1
+                fi
+                ;;
+            "permit")
+                if [[ -n "$email" && -n "$permit_id" ]]; then
+                    local permit_montant="${montant:-100}"
+                    echo -e "${CYAN}🎫 Virement PERMIT pour: ${email} (${permit_id}) - ${permit_montant} Ẑen${NC}"
+                    virement_permit "$email" "$permit_id" "" "$permit_montant"
+                else
+                    echo -e "${RED}❌ Email et Permit ID requis pour l'option --permit${NC}"
+                    echo -e "${CYAN}💡 Usage: $0 -p dragon@example.com PERMIT_WOT_DRAGON -m 100${NC}"
                     exit 1
                 fi
                 ;;

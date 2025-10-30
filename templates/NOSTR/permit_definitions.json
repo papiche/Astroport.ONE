@@ -1,0 +1,249 @@
+{
+  "definitions": [
+    {
+      "id": "PERMIT_ORE_V1",
+      "name": "ORE Environmental Verifier",
+      "description": "Certifies the ability to verify Environmental Real Obligations (ORE) compliance for UMAP cells. This permit authorizes the holder to inspect environmental commitments and issue compliance reports.",
+      "issuer_did": "did:nostr:UPLANETNAME",
+      "min_attestations": 5,
+      "required_license": null,
+      "valid_duration_days": 1095,
+      "revocable": true,
+      "verification_method": "peer_attestation",
+      "metadata": {
+        "category": "environmental",
+        "competencies": [
+          "Forest management",
+          "Biodiversity assessment",
+          "Satellite imagery interpretation",
+          "Field verification",
+          "Report writing"
+        ],
+        "responsible_for": [
+          "ORE contract verification",
+          "Environmental compliance audits",
+          "Biodiversity assessments",
+          "Carbon credit validation"
+        ]
+      }
+    },
+    {
+      "id": "PERMIT_DRIVER",
+      "name": "Driver's License (WoT Model)",
+      "description": "Certifies the ability to safely operate a motor vehicle on public roads. Based on the Web of Trust model as described in the CopyLaRadio article.",
+      "issuer_did": "did:nostr:UPLANETNAME",
+      "min_attestations": 12,
+      "required_license": "PERMIT_DRIVER",
+      "valid_duration_days": 5475,
+      "revocable": true,
+      "verification_method": "peer_attestation",
+      "metadata": {
+        "category": "transportation",
+        "competencies": [
+          "Vehicle operation",
+          "Traffic rules knowledge",
+          "Defensive driving",
+          "Emergency procedures",
+          "Road safety awareness"
+        ],
+        "responsible_for": [
+          "Safe vehicle operation",
+          "Respect of traffic laws",
+          "Accident prevention",
+          "Insurance mutual participation"
+        ],
+        "assurance_model": {
+          "type": "mutual",
+          "coverage": "N1/N2 circles",
+          "liability": "collective_repair"
+        }
+      }
+    },
+    {
+      "id": "PERMIT_WOT_DRAGON",
+      "name": "WoT Dragon (UPlanet Authority)",
+      "description": "A permit that grants Captain's authority to manage UPlanet infrastructure, issue Verifiable Credentials, and act as a trusted authority in the WoT network.",
+      "issuer_did": "did:nostr:UPLANETNAME",
+      "min_attestations": 3,
+      "required_license": null,
+      "valid_duration_days": 0,
+      "revocable": true,
+      "verification_method": "peer_attestation",
+      "metadata": {
+        "category": "governance",
+        "competencies": [
+          "System administration",
+          "Cryptography knowledge",
+          "Community trust",
+          "Technical expertise",
+          "Ethical judgment"
+        ],
+        "responsible_for": [
+          "Infrastructure management",
+          "Credential issuance",
+          "System security",
+          "Community governance"
+        ],
+        "special_powers": [
+          "Issue permits on behalf of UPlanet",
+          "Manage UPLANETNAME.G1 key",
+          "Revoke credentials in emergency",
+          "Approve infrastructure nodes"
+        ]
+      }
+    },
+    {
+      "id": "PERMIT_MEDICAL_FIRST_AID",
+      "name": "First Aid Provider",
+      "description": "Certifies competence in providing emergency first aid and basic medical assistance. Allows holder to respond to medical emergencies within their community.",
+      "issuer_did": "did:nostr:UPLANETNAME",
+      "min_attestations": 8,
+      "required_license": "PERMIT_MEDICAL_FIRST_AID",
+      "valid_duration_days": 730,
+      "revocable": true,
+      "verification_method": "peer_attestation",
+      "metadata": {
+        "category": "health",
+        "competencies": [
+          "CPR",
+          "Wound care",
+          "Fracture management",
+          "Emergency assessment",
+          "Patient communication"
+        ],
+        "responsible_for": [
+          "Emergency response",
+          "Basic life support",
+          "Injury assessment",
+          "Patient stabilization"
+        ]
+      }
+    },
+    {
+      "id": "PERMIT_BUILDING_ARTISAN",
+      "name": "Building Artisan Certification",
+      "description": "Certifies competence in construction and building trades. Enables community-based validation of construction work with collective insurance.",
+      "issuer_did": "did:nostr:UPLANETNAME",
+      "min_attestations": 10,
+      "required_license": "PERMIT_BUILDING_ARTISAN",
+      "valid_duration_days": 1825,
+      "revocable": true,
+      "verification_method": "peer_attestation",
+      "metadata": {
+        "category": "construction",
+        "competencies": [
+          "Structural knowledge",
+          "Material expertise",
+          "Safety procedures",
+          "Building codes",
+          "Quality assurance"
+        ],
+        "responsible_for": [
+          "Construction quality",
+          "Structural safety",
+          "Material selection",
+          "Workmanship guarantee"
+        ],
+        "assurance_model": {
+          "type": "mutual",
+          "coverage": "construction_defects",
+          "liability": "collective_repair"
+        }
+      }
+    },
+    {
+      "id": "PERMIT_EDUCATOR_COMPAGNON",
+      "name": "Compagnon Educator",
+      "description": "Certifies the ability to teach and mentor in the compagnon tradition. Enables community-based education and skill transmission.",
+      "issuer_did": "did:nostr:UPLANETNAME",
+      "min_attestations": 12,
+      "required_license": null,
+      "valid_duration_days": 0,
+      "revocable": true,
+      "verification_method": "peer_attestation",
+      "metadata": {
+        "category": "education",
+        "competencies": [
+          "Pedagogical skills",
+          "Subject matter expertise",
+          "Mentorship",
+          "Evaluation methods",
+          "Curriculum design"
+        ],
+        "responsible_for": [
+          "Student assessment",
+          "Knowledge transmission",
+          "Skill validation",
+          "Educational quality"
+        ],
+        "teaching_domains": [
+          "Trades and crafts",
+          "Technical skills",
+          "Soft skills",
+          "Community practices"
+        ]
+      }
+    },
+    {
+      "id": "PERMIT_FOOD_PRODUCER",
+      "name": "Local Food Producer Certification",
+      "description": "Certifies competence in sustainable food production and food safety. Enables direct sales and community food distribution.",
+      "issuer_did": "did:nostr:UPLANETNAME",
+      "min_attestations": 6,
+      "required_license": null,
+      "valid_duration_days": 1095,
+      "revocable": true,
+      "verification_method": "peer_attestation",
+      "metadata": {
+        "category": "agriculture",
+        "competencies": [
+          "Food safety",
+          "Sustainable farming",
+          "Quality control",
+          "Storage management",
+          "Distribution logistics"
+        ],
+        "responsible_for": [
+          "Food quality",
+          "Safety compliance",
+          "Sustainable practices",
+          "Product traceability"
+        ]
+      }
+    },
+    {
+      "id": "PERMIT_MEDIATOR",
+      "name": "Community Mediator",
+      "description": "Certifies the ability to mediate conflicts within N1/N2 circles. Essential for the decentralized justice system described in the article.",
+      "issuer_did": "did:nostr:UPLANETNAME",
+      "min_attestations": 15,
+      "required_license": null,
+      "valid_duration_days": 1825,
+      "revocable": true,
+      "verification_method": "peer_attestation",
+      "metadata": {
+        "category": "governance",
+        "competencies": [
+          "Conflict resolution",
+          "Active listening",
+          "Neutrality",
+          "Legal knowledge",
+          "Communication skills"
+        ],
+        "responsible_for": [
+          "Dispute mediation",
+          "Community harmony",
+          "Fair resolution",
+          "Process facilitation"
+        ],
+        "jurisdiction": [
+          "N1 circle conflicts",
+          "N2 circle disputes",
+          "Community agreements",
+          "Mutual aid disputes"
+        ]
+      }
+    }
+  ]
+}
+
