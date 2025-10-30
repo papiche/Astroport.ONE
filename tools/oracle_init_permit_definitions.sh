@@ -1,10 +1,12 @@
 #!/bin/bash
 ################################################################################
 # Script: oracle_init_permit_definitions.sh
-# Description: Initialize permit definitions from JSON template
+# Description: Interactive permit definitions management via NOSTR
 #
-# This script loads permit definitions from the JSON template and creates
-# them in the oracle system.
+# This script allows to:
+# - Add permit definitions from JSON template to NOSTR
+# - Edit existing permit definitions on NOSTR
+# - Delete permit definitions (with safety checks)
 #
 # Usage: ./oracle_init_permit_definitions.sh
 #
@@ -22,50 +24,457 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
 NC='\033[0m' # No Color
 
+# Paths
 DEFINITIONS_FILE="${MY_PATH}/../templates/NOSTR/permit_definitions.json"
+NOSTR_GET_EVENTS="${MY_PATH}/nostr_get_events.sh"
+NOSTR_SEND_NOTE="${MY_PATH}/nostr_send_note.py"
+UPLANET_G1_KEYFILE="${HOME}/.zen/game/nostr/${UPLANETNAME_G1}/.secret.nostr"
 
-echo -e "${CYAN}🎫 Initializing Permit Definitions${NC}"
-echo -e "${BLUE}   Loading from: ${DEFINITIONS_FILE}${NC}"
+################################################################################
+# Helper functions
+################################################################################
 
-if [[ ! -f "$DEFINITIONS_FILE" ]]; then
-    echo -e "${RED}❌ Definitions file not found: ${DEFINITIONS_FILE}${NC}"
-    exit 1
-fi
-
-# Read definitions and create them one by one
-DEFINITIONS=$(jq -c '.definitions[]' "$DEFINITIONS_FILE")
-
-COUNT=0
-TOTAL=$(echo "$DEFINITIONS" | wc -l)
-
-while IFS= read -r definition; do
-    PERMIT_ID=$(echo "$definition" | jq -r '.id')
-    PERMIT_NAME=$(echo "$definition" | jq -r '.name')
-    MIN_ATTESTATIONS=$(echo "$definition" | jq -r '.min_attestations')
-    REQUIRED_LICENSE=$(echo "$definition" | jq -r '.required_license')
-    VALID_DAYS=$(echo "$definition" | jq -r '.valid_duration_days')
+check_tools() {
+    local missing=0
     
-    echo -e "${CYAN}📋 Creating permit: ${PERMIT_ID} (${PERMIT_NAME})${NC}"
+    if [[ ! -f "$NOSTR_GET_EVENTS" ]]; then
+        echo -e "${RED}❌ nostr_get_events.sh not found at ${NOSTR_GET_EVENTS}${NC}"
+        missing=$((missing + 1))
+    fi
     
-    # Create permit definition via API
-    RESPONSE=$(curl -s -X POST "${uSPOT}/api/permit/define" \
-        -H "Content-Type: application/json" \
-        -d "$definition")
+    if [[ ! -f "$NOSTR_SEND_NOTE" ]]; then
+        echo -e "${RED}❌ nostr_send_note.py not found at ${NOSTR_SEND_NOTE}${NC}"
+        missing=$((missing + 1))
+    fi
     
-    if echo "$RESPONSE" | jq -e '.success' > /dev/null 2>&1; then
-        COUNT=$((COUNT + 1))
-        echo -e "${GREEN}✅ Created: ${PERMIT_ID}${NC}"
+    if [[ ! -f "$DEFINITIONS_FILE" ]]; then
+        echo -e "${RED}❌ Template file not found: ${DEFINITIONS_FILE} Attempting to create it"
+        missing=$((missing + 1))
+    fi
+    
+    if [[ ! -f "$UPLANET_G1_KEYFILE" ]]; then
+        echo -e "${RED}❌ UPLANETNAME.G1 keyfile not found: ${UPLANET_G1_KEYFILE}${NC}"
+        echo -e "${YELLOW}   This script requires UPLANETNAME.G1 to publish permit definitions${NC}"
+        missing=$((missing + 1))
+    fi
+    
+    if [[ $missing -gt 0 ]]; then
+        exit 1
+    fi
+}
+
+get_nostr_definitions() {
+    # Fetch permit definitions from NOSTR (kind 30500)
+    "$NOSTR_GET_EVENTS" --kind 30500 --limit 100 2>/dev/null | \
+        jq -c 'select(.kind == 30500)' 2>/dev/null || echo ""
+}
+
+get_template_definitions() {
+    # Get definitions from JSON template
+    if [[ -f "$DEFINITIONS_FILE" ]]; then
+        jq -c '.definitions[]' "$DEFINITIONS_FILE" 2>/dev/null || echo ""
     else
-        ERROR=$(echo "$RESPONSE" | jq -r '.detail // .message // "Unknown error"')
-        if echo "$ERROR" | grep -q "already exists"; then
-            echo -e "${YELLOW}⚠️  Already exists: ${PERMIT_ID}${NC}"
-        else
-            echo -e "${RED}❌ Failed: ${PERMIT_ID} - ${ERROR}${NC}"
+        echo ""
+    fi
+}
+
+parse_permit_from_nostr_event() {
+    local event_json="$1"
+    local permit_id=$(echo "$event_json" | jq -r '.tags[] | select(.[0] == "d") | .[1]' 2>/dev/null)
+    local content=$(echo "$event_json" | jq -r '.content' 2>/dev/null)
+    
+    if [[ -n "$permit_id" && -n "$content" ]]; then
+        echo "$content" | jq -c ". + {id: \"$permit_id\"}" 2>/dev/null
+    fi
+}
+
+check_permit_in_use() {
+    local permit_id="$1"
+    
+    # Check if there are active credentials for this permit (kind 30503)
+    local credentials=$("$NOSTR_GET_EVENTS" --kind 30503 --limit 1000 2>/dev/null | \
+        jq -c "select(.kind == 30503 and (.content | fromjson | .permit_definition_id) == \"$permit_id\")" 2>/dev/null)
+    
+    local count=$(echo "$credentials" | grep -c '"kind":30503' 2>/dev/null || echo "0")
+    
+    if [[ "$count" -gt 0 ]]; then
+        echo "$credentials"
+        return 1  # In use
+    fi
+    
+    return 0  # Not in use
+}
+
+display_permit() {
+    local permit_json="$1"
+    local permit_id=$(echo "$permit_json" | jq -r '.id // "N/A"')
+    local name=$(echo "$permit_json" | jq -r '.name // "N/A"')
+    local min_attestations=$(echo "$permit_json" | jq -r '.min_attestations // "N/A"')
+    local valid_days=$(echo "$permit_json" | jq -r '.valid_duration_days // "N/A"')
+    
+    echo -e "  ${CYAN}ID:${NC} $permit_id"
+    echo -e "  ${CYAN}Name:${NC} $name"
+    echo -e "  ${CYAN}Min Attestations:${NC} $min_attestations"
+    echo -e "  ${CYAN}Valid Duration:${NC} $valid_days days"
+}
+
+publish_permit_to_nostr() {
+    local permit_json="$1"
+    local permit_id=$(echo "$permit_json" | jq -r '.id')
+    
+    if [[ -z "$permit_id" ]]; then
+        echo -e "${RED}❌ Invalid permit: missing ID${NC}"
+        return 1
+    fi
+    
+    # Build tags for parameterized replaceable event (NIP-33)
+    # Tag 'd' is required for parameterized replaceable events
+    local tags_json="[[\"d\",\"$permit_id\"]]"
+    
+    # Build content (permit definition as JSON)
+    local content_json=$(echo "$permit_json" | jq -c '.')
+    
+    # Publish to NOSTR (kind 30500)
+    echo -e "${CYAN}📤 Publishing permit definition to NOSTR...${NC}"
+    
+    python3 "$NOSTR_SEND_NOTE" \
+        --keyfile "$UPLANET_G1_KEYFILE" \
+        --kind 30500 \
+        --content "$content_json" \
+        --tags "$tags_json" \
+        --relays "${myRELAY}" > /dev/null 2>&1
+    
+    if [[ $? -eq 0 ]]; then
+        echo -e "${GREEN}✅ Published permit definition: $permit_id${NC}"
+        return 0
+    else
+        echo -e "${RED}❌ Failed to publish permit definition: $permit_id${NC}"
+        return 1
+    fi
+}
+
+################################################################################
+# Menu functions
+################################################################################
+
+show_main_menu() {
+    clear
+    echo -e "${MAGENTA}╔════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${MAGENTA}║     🎫 ORACLE PERMIT DEFINITIONS MANAGEMENT                   ║${NC}"
+    echo -e "${MAGENTA}╚════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${CYAN}1.${NC} Add permit definition (from template)"
+    echo -e "${CYAN}2.${NC} Edit permit definition (from NOSTR)"
+    echo -e "${CYAN}3.${NC} Delete permit definition (from NOSTR)"
+    echo -e "${CYAN}4.${NC} List all permit definitions (NOSTR)"
+    echo -e "${CYAN}5.${NC} List template definitions (JSON)"
+    echo -e "${CYAN}6.${NC} Exit"
+    echo ""
+}
+
+show_template_list() {
+    local definitions=$(get_template_definitions)
+    
+    if [[ -z "$definitions" ]]; then
+        echo -e "${YELLOW}⚠️  No definitions found in template${NC}"
+        return 1
+    fi
+    
+    echo -e "${CYAN}📋 Template Permit Definitions:${NC}"
+    echo ""
+    
+    local index=1
+    while IFS= read -r def; do
+        local permit_id=$(echo "$def" | jq -r '.id')
+        local name=$(echo "$def" | jq -r '.name')
+        echo -e "  ${GREEN}$index.${NC} ${CYAN}$permit_id${NC} - $name"
+        index=$((index + 1))
+    done <<< "$definitions"
+    
+    echo ""
+    return 0
+}
+
+show_nostr_list() {
+    local events=$(get_nostr_definitions)
+    
+    if [[ -z "$events" ]]; then
+        echo -e "${YELLOW}⚠️  No permit definitions found on NOSTR${NC}"
+        return 1
+    fi
+    
+    echoிப -e "${CYAN}📋 NOSTR Permit Definitions:${NC}"
+    echo ""
+    
+    local index=1
+    while IFS= read -r event; do
+        local permit_json=$(parse_permit_from_nostr_event "$event")
+        if [[ -n "$permit_json" ]]; then
+            local permit_id=$(echo "$permit_json" | jq -r '.id')
+            local name=$(echo "$permit_json" | jq -r '.name')
+            echo -e "  ${GREEN}$index.${NC} ${CYAN}$permit_id${NC} - $name"
+            index=$((index + 1))
+        fi
+    done <<< "$events"
+    
+    echo ""
+    return 0
+}
+
+add_permit() {
+    local definitions=$(get_template_definitions)
+    
+    if [[ -z "$definitions" ]]; then
+        echo -e "${RED}❌ No definitions available in template${NC}"
+        read -p "Press Enter to continue..."
+        return
+    fi
+    
+    show_template_list
+    echo -e "${CYAN}Select permit definition to add (number):${NC} "
+    read -r selection
+    
+    local permit_json=$(echo "$definitions" | sed -n "${selection}p")
+    
+    if [[ -z "$permit_json" ]]; then
+        echo -e "${RED}❌ Invalid selection${NC}"
+        read -p "Press Enter to continue..."
+        return
+    fi
+    
+    local permit_id=$(echo "$permit_json" | jq -r '.id')
+    
+    # Check if already exists on NOSTR
+    local existing=$(get_nostr_definitions | \
+        jq -c "select(.tags[]? | .[0] == \"d\" and .[1] == \"$permit_id\")" 2>/dev/null)
+    
+    if [[ -n "$existing" ]]; then
+        echo -e "${YELLOW}⚠️  Permit definition already exists on NOSTR: $permit_id${NC}"
+        echo -e "${CYAN}Would you like to edit it instead? (y/N):${NC} "
+        read -r confirm
+        if [[ "$confirm" =~ ^[Yy]$ ]]; then
+            edit_permit_interactive "$permit_id"
+        fi
+        return
+    fi
+    
+    echo -e "${CYAN}Permit Definition Preview:${NC}"
+    display_permit "$permit_json"
+    echo ""
+    echo -e "${CYAN}Confirm publication to NOSTR? (y/N):${NC} "
+    read -r confirm
+    
+    if [[ "$confirm" =~ ^[Yy]$ ]]; then
+        publish_permit_to_nostr "$permit_json"
+    else
+        echo -e "${YELLOW}Operation cancelled${NC}"
+    fi
+    
+    read -p "Press Enter to continue..."
+}
+
+edit_permit_interactive() {
+    local target_permit_id="$1"
+    local events=$(get_nostr_definitions)
+    
+    if [[ -z "$events" ]]; then
+        echo -e "${RED}❌ No permit definitions found on NOSTR${NC}"
+        read -p "Press Enter to continue..."
+        return
+    fi
+    
+    if [[ -z "$target_permit_id" ]]; then
+        show_nostr_list
+        echo -e "${CYAN}Select permit definition to edit (number):${NC} "
+        read -r selection
+        
+        local permit_json=$(echo "$events" | sed -n "${selection}p" | \
+            jq -c 'select(.kind == 30500)' 2>/dev/null)
+        
+        if [[ -z "$permit_json" ]]; then
+            echo -e "${RED}❌ Invalid selection${NC}"
+            read -p "Press Enter to continue..."
+            return
+        fi
+        
+        target_permit_id=$(parse_permit_from_nostr_event "$permit_json" | jq -r '.id')
+    fi
+    
+    # Find the permit
+    local permit_event=$(echo "$events" | \
+        jq -c "select(.tags[]? | .[0] == \"d\" and .[1] == \"$target_permit_id\")" 2>/dev/null | head -1)
+    
+    if [[ -z "$permit_event" ]]; then
+        echo -e "${RED}❌ Permit definition not found: $target_permit_id${NC}"
+        read -p "Press Enter to continue..."
+        return
+    fi
+    
+    local permit_json=$(parse_permit_from_nostr_event "$permit_event")
+    
+    echo -e "${CYAN}Current Permit Definition:${NC}"
+    display_permit "$permit_json"
+    echo ""
+    
+    # Load from template if available (for editing)
+    local template_def=$(get_template_definitions | \
+        jq -c "select(.id == \"$target_permit_id\")" 2>/dev/null)
+    
+    if [[ -n "$template_def" ]]; then
+        echo -e "${YELLOW}📋 Template version found. Use template as base? (y/N):${NC} "
+        read -r use_template
+        
+        if [[ "$use_template" =~ ^[Yy]$ ]]; then
+            permit_json="$template_def"
+            echo -e "${GREEN}✅ Using template version${NC}"
         fi
     fi
-done <<< "$DEFINITIONS"
+    
+    echo ""
+    echo -e "${CYAN}Permit will be republished to NOSTR (parameterized replaceable event)${NC}"
+    echo -e "${CYAN}Confirm edit? (y/N):${NC} "
+    read -r confirm
+    
+    if [[ "$confirm" =~ ^[Yy]$ ]]; then
+        publish_permit_to_nostr "$permit_json"
+    else
+        echo -e "${YELLOW}Operation cancelled${NC}"
+    fi
+    
+    read -p "Press Enter to continue..."
+}
 
-echo -e "${GREEN}✅ Initialization complete: ${COUNT}/${TOTAL} permit definitions created${NC}"
+delete_permit() {
+    local events=$(get_nostr_definitions)
+    
+    if [[ -z "$events" ]]; then
+        echo -e "${RED}❌ No permit definitions found on NOSTR${NC}"
+        read -p "Press Enter to continue..."
+        return
+    fi
+    
+    show_nostr_list
+    echo -e "${CYAN}Select permit definition to delete (number):${NC} "
+    read -r selection
+    
+    local permit_event=$(echo "$events" | sed -n "${selection}p" | \
+        jq -c 'select(.kind == 30500)' 2>/dev/null)
+    
+    if [[ -z "$permit_event" ]]; then
+        echo -e "${RED}❌ Invalid selection${NC}"
+        read -p "Press Enter to continue..."
+        return
+    fi
+    
+    local permit_json=$(parse_permit_from_nostr_event "$permit_event")
+    local permit_id=$(echo "$permit_json" | jq -r '.id')
+    
+    echo -e "${CYAN}Permit to delete:${NC}"
+    display_permit "$permit_json"
+    echo ""
+    
+    # Check if permit is in use
+    echo -e "${CYAN}Checking if permit is in use...${NC}"
+    local credentials=$(check_permit_in_use "$permit_id")
+    local in_use=$?
+    
+    if [[ $in_use -eq 1 ]]; then
+        local count=$(echo "$credentials" | grep -c '"kind":30503' 2>/dev/null || echo "0")
+        echo -e "${RED}❌ Cannot delete permit definition: $permit_id${NC}"
+        echo -e "${RED}   Active credentials found: $count${NC}"
+        echo -e "${YELLOW}   This permit is currently in use and cannot be deleted${NC}"
+        echo ""
+        echo -e "${CYAN}Active credentials holders:${NC}"
+        echo "$credentials" | jq -r '.content | fromjson | "  - \(.holder_npub)"' 2>/dev/null | head -5
+        echo ""
+        read -p "Press Enter to continue..."
+        return
+    fi
+    
+    echo -e "${GREEN}✅ No active credentials found${NC}"
+    echo ""
+    echo -e "${RED}⚠️  WARNING: This will remove the permit definition from NOSTR${NC}"
+    echo -e "${CYAN}Confirm deletion? (type DELETE to confirm):${NC} "
+    read -r confirm
+    
+    if [[ "$confirm" == "DELETE" ]]; then
+        # Publish deletion event (kind 5 - event deletion)
+        # Note: Parameterized replaceable events can be "deleted" by publishing empty content
+        # But we'll publish a deletion marker
+        local deletion_content=$(echo '{"deleted": true, "reason": "Admin deletion", "deleted_at": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"}' | jq -c '.')
+        local tags_json="[[\"d\",\"$permit_id\"]]"
+        
+        echo -e "${CYAN}📤 Publishing deletion marker...${NC}"
+        python3 "$NOSTR_SEND_NOTE" \
+            --keyfile "$UPLANET_G1_KEYFILE" \
+            --kind 30500 \
+            --content "$deletion_content" \
+            --tags "$tags_json" \
+            --relays "${myRELAY}" > /dev/null 2>&1
+        
+        if [[ $? -eq 0 ]]; then
+            echo -e "${GREEN}✅ Permit definition marked as deleted: $permit_id${NC}"
+        else
+            echo -e "${RED}❌ Failed to delete permit definition${NC}"
+        fi
+    else
+        echo -e "${YELLOW}Operation cancelled${NC}"
+    fi
+    
+    read -p "Press Enter to continue..."
+}
 
+list_nostr_definitions() {
+    show_nostr_list
+    read -p "Press Enter to continue..."
+}
+
+list_template_definitions() {
+    show_template_list
+    read -p "Press Enter to continue..."
+}
+
+################################################################################
+# Main script
+################################################################################
+
+main() {
+    check_tools
+    
+    while true; do
+        show_main_menu
+        echo -e "${CYAN}Select an option:${NC} "
+        read -r choice
+        
+        case "$choice" in
+            1)
+                add_permit
+                ;;
+            2)
+                edit_permit_interactive
+                ;;
+            3)
+                delete_permit
+                ;;
+            4)
+                list_nostr_definitions
+                ;;
+            5)
+                list_template_definitions
+                ;;
+            6)
+                echo -e "${GREEN}Goodbye!${NC}"
+                exit 0
+                ;;
+            *)
+                echo -e "${RED}Invalid option${NC}"
+                sleep 1
+                ;;
+        esac
+    done
+}
+
+main
