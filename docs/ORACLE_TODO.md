@@ -268,9 +268,6 @@ async def get_global_stats():
 ## 📞 CONTACTS
 
 **For task assignment**:
-- Documentation: technical@qo-op.com
-- Code: dev@qo-op.com
-- Testing: qa@qo-op.com
 - General: support@qo-op.com
 
 **Project tracking**: Use this file + Git issues
