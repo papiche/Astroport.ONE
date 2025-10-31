@@ -256,18 +256,8 @@ export TEXTPART="$(myIpfsGw)/ipfs/${EMAILZ}"
 [[ $title == "" ]] && title="MESSAGE"
 
 ############# GETTING MAILJET API ############### from ~/.zen/MJ_APIKEY
-[[ ! -s ~/.zen/MJ_APIKEY ]] \
-    && echo "MISSING ~/.zen/MJ_APIKEY
-    PLEASE PROVIDE MAILJET KEY : MJ_APIKEY_PUBLIC= & MJ_APIKEY_PRIVATE" \
-    && exit 1
-
+if [[ -s ~/.zen/MJ_APIKEY ]]; then
 ## LOAD SENDER API KEYS
-###################################
-######### ~/.zen/MJ_APIKEY contains
-# export MJ_APIKEY_PUBLIC='publickey'
-# export MJ_APIKEY_PRIVATE='privatekey'
-# export SENDER_EMAIL='me@source.tld'
-###################################
 source ~/.zen/MJ_APIKEY
 export RECIPIENT_EMAIL=${mail}
 
@@ -307,6 +297,9 @@ curl -s \
     https://api.mailjet.com/v3.1/send \
     -H 'Content-Type: application/json' \
     -d "$json_payload"
+
+fi
+
 
 ############################################## SEND NOSTR PUBLIC NOTE (Kind 1)
 # Try to use destination's NSEC if available, otherwise use captain's NSEC
@@ -404,47 +397,86 @@ ${ephemeral_duration:+⏰ $(convert_seconds_to_human ${ephemeral_duration})}
             "--tags" "$TAGS_JSON"
             "--relays" "$RELAY_LIST"
         )
-        
-        # Add ephemeral flag if set
-        if [[ -n "$ephemeral_duration" ]]; then
-            echo "⏰ Sending ephemeral message (duration: ${ephemeral_duration}s)"
+    
+    # Add ephemeral flag if set
+    if [[ -n "$ephemeral_duration" ]]; then
+        echo "⏰ Sending ephemeral message (duration: ${ephemeral_duration}s)"
             NOSTR_ARGS+=("--ephemeral" "$ephemeral_duration")
-        fi
-        
-        # Add JSON output for parsing
+    fi
+    
+    # Add JSON output for parsing
         NOSTR_ARGS+=("--json")
-        
+    
         # Execute command and capture both stdout and stderr
         RESULT=$("${NOSTR_ARGS[@]}" 2>&1)
         NOSTR_EXIT_CODE=$?
-        
+    
         if [[ $NOSTR_EXIT_CODE -eq 0 && -n "$RESULT" ]]; then
-            # Try to parse JSON result using jq if available, otherwise use grep
-            if command -v jq >/dev/null 2>&1; then
-                SUCCESS_COUNT=$(echo "$RESULT" | jq -r '.relays_success // 0' 2>/dev/null || echo "0")
-                TOTAL_COUNT=$(echo "$RESULT" | jq -r '.relays_total // 0' 2>/dev/null || echo "${#TARGET_RELAYS[@]}")
-                EVENT_ID=$(echo "$RESULT" | jq -r '.event_id // ""' 2>/dev/null || echo "")
+            # Extract JSON from output (may contain debug messages before JSON)
+            # Find the line number where JSON starts (first line with {)
+            JSON_START=$(echo "$RESULT" | grep -n '^{' | head -n 1 | cut -d: -f1)
+            
+            if [[ -n "$JSON_START" ]]; then
+                # Extract from JSON start line to end of output
+                JSON_OUTPUT=$(echo "$RESULT" | tail -n +${JSON_START})
             else
-                # Fallback to grep parsing
-                SUCCESS_COUNT=$(echo "$RESULT" | grep -o '"relays_success":[[:space:]]*[0-9]*' | grep -o '[0-9]*' || echo "0")
-                TOTAL_COUNT=$(echo "$RESULT" | grep -o '"relays_total":[[:space:]]*[0-9]*' | grep -o '[0-9]*' || echo "${#TARGET_RELAYS[@]}")
-                EVENT_ID=""
+                # Fallback: try to extract JSON object on single line
+                JSON_OUTPUT=$(echo "$RESULT" | grep -o '{.*}' | tail -n 1)
+                
+                # If still no JSON found, try last line
+                if [[ -z "$JSON_OUTPUT" ]]; then
+                    JSON_OUTPUT=$(echo "$RESULT" | tail -n 1 | grep -E '^\{.*\}$')
+                fi
+            fi
+            
+            # Try to parse JSON result using jq if available, otherwise use grep
+            if command -v jq >/dev/null 2>&1 && [[ -n "$JSON_OUTPUT" ]]; then
+                SUCCESS_COUNT=$(echo "$JSON_OUTPUT" | jq -r '.relays_success // 0' 2>/dev/null || echo "0")
+                TOTAL_COUNT=$(echo "$JSON_OUTPUT" | jq -r '.relays_total // 0' 2>/dev/null || echo "${#TARGET_RELAYS[@]}")
+                EVENT_ID=$(echo "$JSON_OUTPUT" | jq -r '.event_id // ""' 2>/dev/null || echo "")
+                SUCCESS=$(echo "$JSON_OUTPUT" | jq -r '.success // false' 2>/dev/null || echo "false")
+            else
+                # Fallback to grep parsing from RESULT (if JSON_OUTPUT extraction failed)
+                # Try to find JSON in RESULT
+                if [[ -z "$JSON_OUTPUT" ]]; then
+                    JSON_OUTPUT=$(echo "$RESULT" | grep -o '{.*}' | tail -n 1)
+                fi
+                
+                if [[ -n "$JSON_OUTPUT" ]] && command -v jq >/dev/null 2>&1; then
+                    # Try jq on extracted JSON
+                    SUCCESS_COUNT=$(echo "$JSON_OUTPUT" | jq -r '.relays_success // 0' 2>/dev/null || echo "0")
+                    TOTAL_COUNT=$(echo "$JSON_OUTPUT" | jq -r '.relays_total // 0' 2>/dev/null || echo "${#TARGET_RELAYS[@]}")
+                    EVENT_ID=$(echo "$JSON_OUTPUT" | jq -r '.event_id // ""' 2>/dev/null || echo "")
+                    SUCCESS=$(echo "$JSON_OUTPUT" | jq -r '.success // false' 2>/dev/null || echo "false")
+                else
+                    # Final fallback: grep parsing
+                    SUCCESS_COUNT=$(echo "$RESULT" | grep -o '"relays_success":[[:space:]]*[0-9]*' | grep -o '[0-9]*' || echo "0")
+                    TOTAL_COUNT=$(echo "$RESULT" | grep -o '"relays_total":[[:space:]]*[0-9]*' | grep -o '[0-9]*' || echo "${#TARGET_RELAYS[@]}")
+                    EVENT_ID=$(echo "$RESULT" | grep -o '"event_id":[[:space:]]*"[^"]*"' | grep -o '[a-f0-9]\{64\}' | head -n 1 || echo "")
+                    SUCCESS=$(echo "$RESULT" | grep -o '"success":[[:space:]]*true' >/dev/null && echo "true" || echo "false")
+                fi
             fi
             
             if [[ -n "$EVENT_ID" && "$EVENT_ID" != "null" ]]; then
                 echo "   📝 Event ID: ${EVENT_ID:0:16}..."
             fi
             
-            if [[ $SUCCESS_COUNT -gt 0 ]]; then
+            # Check success based on JSON values
+            # SUCCESS_COUNT should be > 0, or SUCCESS should be true
+            if [[ "$SUCCESS_COUNT" =~ ^[0-9]+$ ]] && [[ $SUCCESS_COUNT -gt 0 ]]; then
                 echo "   ✅ Published successfully to ${SUCCESS_COUNT}/${TOTAL_COUNT} relay(s)"
+            elif [[ "$SUCCESS" == "true" ]]; then
+                echo "   ✅ Published successfully (confirmed by success flag)"
+                SUCCESS_COUNT=1
             else
                 echo "   ❌ Failed to publish to any relay"
                 echo "   📋 Response: $RESULT"
+                SUCCESS_COUNT=0
             fi
-        else
+    else
             echo "   ❌ NOSTR command failed (exit code: ${NOSTR_EXIT_CODE})"
             echo "   📋 Error output: $RESULT"
-            SUCCESS_COUNT=0
+        SUCCESS_COUNT=0
         fi
     fi
     
