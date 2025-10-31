@@ -721,7 +721,7 @@ for PLAYER in "${NOSTR[@]}"; do
                                 # Create temporary file for email content
                                 temp_email_file=$(mktemp)
                                 echo "$error_message" > "$temp_email_file"
-                                ${MY_PATH}/../tools/mailjet.sh --expire 7d "${CAPTAINEMAIL}" "$temp_email_file" "MULTIPASS Payment Error - $TODATE"
+                                ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$temp_email_file" "MULTIPASS Payment Error - $TODATE"
                                 rm -f "$temp_email_file"
                                 log "INFO" "Error email sent to ${CAPTAINEMAIL} for payment failure of ${PLAYER}"
                             fi
@@ -818,7 +818,7 @@ for PLAYER in "${NOSTR[@]}"; do
                     # Create temporary file for email content
                     temp_email_file=$(mktemp)
                     echo "$usociety_expired" > "$temp_email_file"
-                    ${MY_PATH}/../tools/mailjet.sh --expire 7d "${CAPTAINEMAIL}" "$temp_email_file" "U.SOCIETY Expiré - Renouvellement Requis"
+                    ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$temp_email_file" "U.SOCIETY Expiré - Renouvellement Requis"
                     rm -f "$temp_email_file"
                     log "INFO" "U.SOCIETY expiration email sent to ${CAPTAINEMAIL} for ${PLAYER}"
                 else
@@ -1458,9 +1458,10 @@ for PLAYER in "${NOSTR[@]}"; do
                 fi
                 
                 # Build NIP-23 compliant tags for personal N² journal using jq for proper JSON escaping
+                # Same format as UPlanet_IA_Responder.sh for kind 30023
                 # Required: d (unique identifier), title (article title)
                 # Recommended: summary (article summary), t (hashtags)
-                summary_tags=$(jq -c -n \
+                ExtraTags=$(jq -c -n \
                     --arg d "$d_tag" \
                     --arg title "$summary_title" \
                     --arg summary "$summary_text" \
@@ -1470,7 +1471,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 
                 # Send as kind 30023 (article) to MULTIPASS wall
                 # Validate NIP-23 compliance before publication
-                if ! validate_nip23_event "$summary_content" "$summary_title" "$d_tag" "$summary_tags"; then
+                if ! validate_nip23_event "$summary_content" "$summary_title" "$d_tag" "$ExtraTags"; then
                     log "ERROR" "NIP-23 validation failed for ${PLAYER}, skipping publication"
                     continue
                 fi
@@ -1481,31 +1482,32 @@ for PLAYER in "${NOSTR[@]}"; do
                     summary_content=$(echo "$summary_content" | head -c 100000)
                 fi
                 
-                # Write content and tags to temporary files to avoid shell escaping issues
-                temp_content_file=$(mktemp)
-                temp_tags_file=$(mktemp)
-                echo "$summary_content" > "$temp_content_file"
-                echo "$summary_tags" > "$temp_tags_file"
+                # Log debug info before sending (same style as UPlanet_IA_Responder.sh)
+                log "DEBUG" "Publishing N² journal to relay: $myRELAY"
+                log "DEBUG" "Event tags (first 300 chars): $(echo "$ExtraTags" | head -c 300)..."
+                log "DEBUG" "Content length: ${#summary_content} chars"
                 
-                # Send NIP-23 compliant event using file inputs to avoid shell expansion issues
-                nostpy_result=$(nostpy-cli send_event \
+                # Send event via nostpy-cli - same method as UPlanet_IA_Responder.sh (line 1046-1054)
+                if ! nostpy-cli send_event \
                     -privkey "$NPRIV_HEX" \
                     -kind 30023 \
-                    -content "$(cat "$temp_content_file")" \
-                    -tags "$(cat "$temp_tags_file")" \
-                    --relay "$myRELAY" 2>&1)
-                
-                # Cleanup temporary files
-                rm -f "$temp_content_file" "$temp_tags_file"
-                
-                # Check if publication was successful
-                if [[ $? -eq 0 ]]; then
+                    -content "$summary_content" \
+                    -tags "$ExtraTags" \
+                    --relay "$myRELAY" 2>/dev/null; then
+                    log "ERROR" "❌ Failed to publish N² journal for ${PLAYER}"
+                    log_metric "PERSONAL_N2_JOURNAL_FAILED" "1" "${PLAYER}"
+                    
+                    # Log additional debug info
+                    log "DEBUG" "Publication failed details:"
+                    log "DEBUG" "  d_tag: $d_tag"
+                    log "DEBUG" "  summary_type: $summary_type"
+                    log "DEBUG" "  HEX: $HEX"
+                    log "DEBUG" "  relay: $myRELAY"
+                    log "DEBUG" "  tags: $ExtraTags"
+                else
                     log "INFO" "✅ Personal N² journal published to ${PLAYER} wall ($message_count messages)"
                     log_metric "PERSONAL_N2_JOURNAL_PUBLISHED" "$message_count" "${PLAYER}"
                     FRIENDS_SUMMARIES_PUBLISHED=$((FRIENDS_SUMMARIES_PUBLISHED + 1))
-                else
-                    log "ERROR" "❌ Failed to publish N² journal for ${PLAYER}: $nostpy_result"
-                    log_metric "PERSONAL_N2_JOURNAL_FAILED" "1" "${PLAYER}"
                 fi
                 
                 # Increment specific counter based on summary type
@@ -1592,11 +1594,24 @@ for PLAYER in "${NOSTR[@]}"; do
                 log "INFO" "🎵 Starting YouTube likes sync for user: ${PLAYER}"
                 log_metric "YOUTUBE_SYNC_START" "1" "${PLAYER}"
                 
-                # Launch YouTube likes synchronization in background
-                ${MY_PATH}/../IA/sync_youtube_likes.sh "${PLAYER}" --debug &
+                # Create dedicated log file for YouTube sync to avoid broken pipe errors
+                YOUTUBE_SYNC_LOG="$HOME/.zen/tmp/youtube_sync_${PLAYER}.log"
+                mkdir -p "$(dirname "$YOUTUBE_SYNC_LOG")"
+                
+                # Launch YouTube likes synchronization in background with output redirected to log file
+                # This prevents broken pipe errors when parent process continues
+                (
+                    ${MY_PATH}/../IA/sync_youtube_likes.sh "${PLAYER}" --debug > "$YOUTUBE_SYNC_LOG" 2>&1
+                    sync_exit_code=$?
+                    if [[ $sync_exit_code -eq 0 ]]; then
+                        log "INFO" "✅ YouTube sync completed successfully for ${PLAYER}"
+                    else
+                        log "WARN" "⚠️ YouTube sync completed with exit code $sync_exit_code for ${PLAYER}"
+                    fi
+                ) &
                 YOUTUBE_SYNC_PID=$!
                 
-                log "INFO" "YouTube sync started for ${PLAYER} (PID: $YOUTUBE_SYNC_PID)"
+                log "INFO" "YouTube sync started for ${PLAYER} (PID: $YOUTUBE_SYNC_PID, log: $YOUTUBE_SYNC_LOG)"
                 log_metric "YOUTUBE_SYNC_PID" "$YOUTUBE_SYNC_PID" "${PLAYER}"
                 
                 # Mark YouTube sync as done for this user today

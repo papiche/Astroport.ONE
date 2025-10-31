@@ -29,7 +29,10 @@ mkdir -p "$(dirname "$LOGFILE")"
 
 log_debug() {
     if [[ $DEBUG -eq 1 ]]; then
-        echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOGFILE" >&2
+        # Use subshell with error handling to prevent broken pipe errors
+        (
+            echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOGFILE" >&2
+        ) 2>/dev/null || true
     fi
 }
 
@@ -39,7 +42,8 @@ MY_PATH="$( cd "$MY_PATH" && pwd )"
 # Vérifie si les arguments sont fournis
 if [ $# -lt 2 ]; then
     log_debug "Usage: $0 [--debug] <url> <format> [player_email]"
-    echo "Usage: $0 [--debug] <url> <format> [player_email]" >&2
+    # Use subshell to prevent broken pipe errors
+    (echo "Usage: $0 [--debug] <url> <format> [player_email]" >&2) 2>/dev/null || echo "Usage: $0 [--debug] <url> <format> [player_email]"
     exit 1
 fi
 
@@ -53,7 +57,8 @@ mkdir -p "$TMP_DIR"
 
 # Always use temporary directory for download
 OUTPUT_DIR="$TMP_DIR"
-echo "Using temporary directory for download: $OUTPUT_DIR" >&2
+# Use subshell to prevent broken pipe errors when writing to stderr
+(echo "Using temporary directory for download: $OUTPUT_DIR" >&2) 2>/dev/null || true
 log_debug "Using temporary directory for download: $OUTPUT_DIR"
 
 # Check if player email is provided and construct uDRIVE path
@@ -61,10 +66,10 @@ UDRIVE_COPY_PATH=""
 if [ -n "$PLAYER_EMAIL" ]; then
     UDRIVE_COPY_PATH="$HOME/.zen/game/nostr/$PLAYER_EMAIL/APP/uDRIVE/Videos"
     if [ -d "$UDRIVE_COPY_PATH" ]; then
-        echo "Will copy final file to uDRIVE: $UDRIVE_COPY_PATH" >&2
+        (echo "Will copy final file to uDRIVE: $UDRIVE_COPY_PATH" >&2) 2>/dev/null || true
         log_debug "Will copy final file to uDRIVE: $UDRIVE_COPY_PATH"
     else
-        echo "uDRIVE directory not found for player: $PLAYER_EMAIL" >&2
+        (echo "uDRIVE directory not found for player: $PLAYER_EMAIL" >&2) 2>/dev/null || true
         log_debug "uDRIVE directory not found for player: $PLAYER_EMAIL"
         UDRIVE_COPY_PATH=""
     fi
@@ -83,7 +88,8 @@ metadata_line=$(yt-dlp --cookies "$cookie_file" --print '%(id)s&%(title)s&%(dura
 log_debug "Metadata line: $metadata_line"
 
 if [[ -z "$metadata_line" ]]; then
-    echo '{"error":"❌ Failed to extract metadata from YouTube URL"}'
+    # Output JSON to stdout (not stderr) to avoid broken pipe issues
+    echo '{"error":"❌ Failed to extract metadata from YouTube URL"}' 2>/dev/null || echo '{"error":"Failed to extract metadata from YouTube URL"}'
     exit 1
 fi
 
@@ -101,7 +107,8 @@ log_debug "Extracted: yid=$yid, title=$media_title, duration=$duration, uploader
 # Check duration limit (3 hours)
 if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ && "$duration" -gt 10800 ]]; then
     log_debug "Media duration exceeds 3 hour limit: ${duration}s"
-    echo '{"error":"Media duration exceeds 3 hour limit"}'
+    # Output JSON to stdout (not stderr) to avoid broken pipe issues
+    echo '{"error":"Media duration exceeds 3 hour limit"}' 2>/dev/null || echo '{"error":"Media duration exceeds 3 hour limit"}'
     exit 1
 fi
 
@@ -142,7 +149,7 @@ if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
         
         if [[ -n "$media_ipfs" ]]; then
             ipfs_url="/ipfs/$media_ipfs/$filename"
-            echo "Media saved to: $media_file" >&2
+            (echo "Media saved to: $media_file" >&2) 2>/dev/null || true
             log_debug "Media saved to: $media_file"
             
             # Copy to uDRIVE if path provided
@@ -155,19 +162,19 @@ if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
                     music_dir="$UDRIVE_COPY_PATH/Music/$artist"
                     mkdir -p "$music_dir"
                     udrive_file="$music_dir/$filename"
-                    echo "Organizing MP3 in Music/$artist/" >&2
+                    (echo "Organizing MP3 in Music/$artist/" >&2) 2>/dev/null || true
                 else
                     videos_dir="$UDRIVE_COPY_PATH"
                     mkdir -p "$videos_dir"
                     udrive_file="$videos_dir/$filename"
-                    echo "Organizing MP4 in Videos/" >&2
+                    (echo "Organizing MP4 in Videos/" >&2) 2>/dev/null || true
                 fi
                 
                 if cp "$media_file" "$udrive_file"; then
-                    echo "File copied to uDRIVE: $udrive_file" >&2
+                    (echo "File copied to uDRIVE: $udrive_file" >&2) 2>/dev/null || true
                     log_debug "File copied to uDRIVE: $udrive_file"
                 else
-                    echo "Warning: Failed to copy file to uDRIVE: $udrive_file" >&2
+                    (echo "Warning: Failed to copy file to uDRIVE: $udrive_file" >&2) 2>/dev/null || true
                     log_debug "Warning: Failed to copy file to uDRIVE: $udrive_file"
                 fi
             fi
@@ -209,5 +216,6 @@ EOF
 fi
 
 log_debug "Download failed."
-echo '{"error":"❌ Download failed with all strategies"}'
+# Output JSON to stdout (not stderr) to avoid broken pipe issues
+echo '{"error":"❌ Download failed with all strategies"}' 2>/dev/null || echo '{"error":"Download failed with all strategies"}'
 exit 1
