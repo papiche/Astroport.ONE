@@ -64,15 +64,30 @@ def is_youtube_video_event(event: Dict[str, Any]) -> bool:
     tags = event.get('tags', [])
     kind = event.get('kind', 1)
     
+    print(f"🔍 [is_youtube_video_event] Checking event: kind={kind}, id={event.get('id', '')[:16]}...")
+    
     # Accepter uniquement les événements NIP-71 (kind: 21 ou 22)
     if kind not in [21, 22]:
+        print(f"   ❌ Invalid kind: {kind} (expected 21 or 22)")
         return False
+    
+    print(f"   ✅ Valid kind: {kind}")
     
     # Vérifier les tags NIP-71 pour les vidéos
     has_video_tags = any(tag[0] == 'url' and ('ipfs' in tag[1] or 'youtube' in tag[1]) for tag in tags if len(tag) > 1)
     has_media_type = any(tag[0] == 'm' and 'video' in tag[1] for tag in tags if len(tag) > 1)
     
-    return has_video_tags and has_media_type
+    print(f"   - has_video_tags (url with ipfs/youtube): {has_video_tags}")
+    print(f"   - has_media_type (m with video): {has_media_type}")
+    print(f"   - All tags: {[tag[0] for tag in tags if len(tag) > 0]}")
+    
+    result = has_video_tags and has_media_type
+    if result:
+        print(f"   ✅ Valid NIP-71 video event!")
+    else:
+        print(f"   ❌ Not a valid NIP-71 video event")
+    
+    return result
 
 def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]:
     """
