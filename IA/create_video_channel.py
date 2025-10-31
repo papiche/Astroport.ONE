@@ -348,7 +348,9 @@ def parse_nostr_message(message_data: Dict[str, Any]) -> Dict[str, Any]:
         'file_size': message_data.get('technical_info', {}).get('file_size', 0),
         'subtitles': message_data.get('subtitles', []),  # Ajout des sous-titres
         'message_id': message_data.get('message_id', ''),
-        'author_id': message_data.get('author_id', '')
+        'author_id': message_data.get('author_id', ''),
+        'latitude': message_data.get('latitude'),  # Coordonnées GPS
+        'longitude': message_data.get('longitude')  # Coordonnées GPS
     }
     
     # Extraire les informations de chaîne
@@ -447,7 +449,7 @@ def create_channel_playlist(videos: List[Dict[str, Any]], channel_name: str) -> 
             'common_keywords': common_keywords
         },
         'videos': videos,
-        'playlist_url': f"ipfs://channel/{channel_name}",
+        'playlist_url': f"/youtube?html=1&channel={channel_name}",  # URL to view this channel
         'export_formats': {
             'm3u': f"#EXTM3U\n#EXTINF:-1,{channel_name}\n" + "\n".join([v['ipfs_url'] for v in videos]),
             'json': json.dumps(videos, indent=2),
