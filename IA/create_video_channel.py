@@ -104,34 +104,20 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
     metadata_ipfs = ""
     thumbnail_ipfs = ""
     
-    # Parse imeta tags (NIP-71 format)
+    # Parse tags for standard NIP-71 fields first
     for tag in tags:
         if len(tag) >= 2:
             tag_type = tag[0]
             tag_value = tag[1]
             
-            if tag_type == 'imeta':
-                # Parse imeta properties
-                for prop in tag[1:]:
-                    if prop.startswith('dim '):
-                        dimensions = prop[4:]
-                    elif prop.startswith('url '):
-                        ipfs_url = prop[4:]
-                    elif prop.startswith('x '):
-                        file_hash = prop[2:]
-                    elif prop.startswith('m '):
-                        media_type = prop[2:]
-                    elif prop.startswith('image '):
-                        thumbnail_ipfs = prop[6:]
-                    elif prop.startswith('fallback '):
-                        fallback_url = prop[9:]
-                    elif prop.startswith('service '):
-                        service_type = prop[8:]
-            elif tag_type == 'url':
+            if tag_type == 'url':
                 if 'youtube.com' in tag_value or 'youtu.be' in tag_value:
                     youtube_url = tag_value
                 elif '/ipfs/' in tag_value or 'ipfs://' in tag_value:
                     ipfs_url = tag_value
+            elif tag_type == 'image' and not thumbnail_ipfs:
+                # Standard NIP-71 image tag for thumbnails
+                thumbnail_ipfs = tag_value
             elif tag_type == 'm' and 'video' in tag_value:
                 # Media type confirmed as video
                 pass
@@ -143,6 +129,34 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
                 pass
             elif tag_type == 'dim':
                 dimensions = tag_value
+    
+    # Parse imeta tags (NIP-71 format) as fallback
+    for tag in tags:
+        if len(tag) >= 2:
+            tag_type = tag[0]
+            tag_value = tag[1]
+            
+            if tag_type == 'imeta':
+                # Parse imeta properties
+                for prop in tag[1:]:
+                    if prop.startswith('dim '):
+                        dimensions = prop[4:]
+                    elif prop.startswith('url ') and not ipfs_url:
+                        ipfs_url = prop[4:]
+                    elif prop.startswith('x '):
+                        file_hash = prop[2:]
+                    elif prop.startswith('m '):
+                        media_type = prop[2:]
+                    elif prop.startswith('image ') and not thumbnail_ipfs:
+                        thumbnail_ipfs = prop[6:]
+                    elif prop.startswith('fallback '):
+                        fallback_url = prop[9:]
+                    elif prop.startswith('service '):
+                        service_type = prop[8:]
+            elif tag_type == 'r' and not thumbnail_ipfs:
+                # Reference tag - check if it's a thumbnail
+                if len(tag) >= 3 and tag[2] == 'Thumbnail':
+                    thumbnail_ipfs = tag_value
     
     # Fallback: Parser le contenu si les tags ne contiennent pas les infos
     if not ipfs_url:
@@ -165,10 +179,46 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
         if thumbnail_match:
             thumbnail_ipfs = thumbnail_match.group(1)
     
-    # Extraire le titre et l'uploader
-    title_match = re.search(r'🎬 Nouvelle vidéo téléchargée: ([^par]+) par ([^\n]+)', content)
-    title = title_match.group(1).strip() if title_match else "Titre inconnu"
-    uploader = title_match.group(2).strip() if title_match else "Auteur inconnu"
+    # Extraire le titre et l'uploader depuis les tags NIP-71 d'abord
+    title = ""
+    uploader = ""
+    
+    # Priorité 1: Extraire depuis les tags NIP-71 (plus fiable)
+    for tag in tags:
+        if len(tag) >= 2:
+            tag_type = tag[0]
+            tag_value = tag[1]
+            
+            if tag_type == 'title' and not title:
+                title = tag_value
+            elif tag_type == 'uploader' and not uploader:
+                uploader = tag_value
+    
+    # Priorité 2: Fallback - Parser le contenu si les tags sont vides
+    if not title or not uploader:
+        title_match = re.search(r'🎬 Nouvelle vidéo téléchargée: ([^par]+) par ([^\n]+)', content)
+        if title_match:
+            if not title:
+                title = title_match.group(1).strip()
+            if not uploader:
+                uploader = title_match.group(2).strip()
+    
+    # Priorité 3: Extraire depuis le format webcam si toujours vide
+    if not title:
+        webcam_title_match = re.search(r'🎬 ([^\n]+)', content)
+        if webcam_title_match:
+            title = webcam_title_match.group(1).strip()
+    
+    # Valeurs par défaut si toujours vides
+    if not title:
+        title = "Titre inconnu"
+    if not uploader:
+        # Try to extract from channel name
+        channel_tags = [t[1] for t in tags if len(t) > 1 and t[1].startswith('Channel-')]
+        if channel_tags:
+            uploader = channel_tags[0].replace('Channel-', '').replace('_', '@', 1).replace('_', '.')
+        else:
+            uploader = "Auteur inconnu"
     
     # Extraire les sous-titres
     subtitles = []
