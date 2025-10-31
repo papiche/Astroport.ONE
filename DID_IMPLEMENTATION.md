@@ -495,7 +495,7 @@ Le document DID est **automatiquement mis à jour** lors des transactions UPlane
 - **`nostr_publish_did.py`** : Publication directe sur relais Nostr (kind 30311)
 
 **Déclencheurs de mise à jour** :
-- ✅ Transaction **LOCATAIRE** : Recharge MULTIPASS (10GB uDRIVE)
+- ✅ Transaction **MULTIPASS** : Recharge MULTIPASS (10GB uDRIVE)
 - ✅ Transaction **SOCIÉTAIRE Satellite** : Parts sociales (128GB + NextCloud)
 - ✅ Transaction **SOCIÉTAIRE Constellation** : Parts sociales (128GB + NextCloud + IA)
 - ✅ Transaction **INFRASTRUCTURE** : Apport capital machine
@@ -579,7 +579,7 @@ Le document DID est **automatiquement mis à jour** lors des transactions UPlane
 **Commandes `did_manager_nostr.sh`** :
 ```bash
 # Mise à jour complète (publie automatiquement sur Nostr)
-./did_manager_nostr.sh update user@example.com LOCATAIRE 50 5.0
+./did_manager_nostr.sh update user@example.com MULTIPASS 50 5.0
 
 # Récupération depuis Nostr
 ./did_manager_nostr.sh fetch user@example.com
@@ -1172,7 +1172,7 @@ La conformité France Connect est activée uniquement après :
 
 **`UPLANET.official.sh`** :
 - Validation France Connect **uniquement pour les SOCIÉTAIRES avec KYC WoT**
-- Pas de validation pour LOCATAIRE (MULTIPASS uniquement)
+- Pas de validation pour MULTIPASS (MULTIPASS uniquement)
 - Pas de validation pour INFRASTRUCTURE (apport capital)
 - Vérification du fichier `~/.zen/tmp/coucou/${zencard_g1pub}.2nd`
 

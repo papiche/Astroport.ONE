@@ -107,7 +107,7 @@ Ylevel.sh  # Jumelage cryptographique SSH ↔ IPFS
 
 ## 🏗️ **Architecture des Virements**
 
-### **1. Virement LOCATAIRE (Recharge MULTIPASS)**
+### **1. Virement MULTIPASS (Recharge MULTIPASS)**
 ```
 UPLANETNAME_G1 → UPLANETNAME → MULTIPASS[email]
 ```
@@ -203,7 +203,7 @@ ZEN Card[email] → 3x1/3 (au choix : TREASURY, RnD, ou ASSETS)
 ```
 
 **Menu disponible :**
-1. Virement LOCATAIRE (recharge MULTIPASS)
+1. Virement MULTIPASS (recharge MULTIPASS)
 2. Virement SOCIÉTAIRE Satellite (50€/an)
 3. Virement SOCIÉTAIRE Constellation (540€/3ans)
 4. Apport CAPITAL INFRASTRUCTURE (CAPTAIN → NODE)
@@ -292,7 +292,7 @@ Le script fonctionne avec **tous les niveaux de station** :
 
 | **Type de Virement** | **Niveau Minimum** | **Justification** |
 |----------------------|-------------------|-------------------|
-| **LOCATAIRE** | X | Recharge simple, pas de risque économique majeur |
+| **MULTIPASS** | X | Recharge simple, pas de risque économique majeur |
 | **SOCIÉTAIRE** | Y | Parts sociales, nécessite identité vérifiée |
 | **INFRASTRUCTURE** | Y | Apport capital, sécurité économique requise |
 | **PAF Burn** | Y | Gestion économique critique, vérification humaine |
@@ -389,7 +389,7 @@ MACHINE_VALUE_ZEN=500        # Valeur machine par défaut
 ./UPLANET.official.sh -l john.doe@example.com
 
 # Résultat attendu
-🏠 Traitement virement LOCATAIRE pour: john.doe@example.com
+🏠 Traitement virement MULTIPASS pour: john.doe@example.com
 💰 Montant: 1€ (1 Ẑen)
 📤 Étape 1: Transfert UPLANETNAME_G1 → UPLANETNAME
 📤 Étape 2: Transfert UPLANETNAME → MULTIPASS john.doe@example.com

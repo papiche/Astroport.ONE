@@ -269,14 +269,14 @@ EOFNOSTR
             did_exists=true
         fi
         
-        # Create or update DID using did_manager_nostr.sh with LOCATAIRE type (0 amount)
+        # Create or update DID using did_manager_nostr.sh with MULTIPASS type (0 amount)
         if [[ "$did_exists" == "true" ]]; then
             echo "🔧 Updating existing DID with did_manager_nostr.sh..."
         else
             echo "🔧 Creating new DID with did_manager_nostr.sh..."
         fi
         
-        if ${MY_PATH}/did_manager_nostr.sh update "${EMAIL}" "LOCATAIRE" "0" "0"; then
+        if ${MY_PATH}/did_manager_nostr.sh update "${EMAIL}" "MULTIPASS" "0" "0"; then
             echo "✅ Initial DID document created by did_manager_nostr.sh with full UPlanet template"
         else
             echo "❌ Failed to create DID document using did_manager_nostr.sh"

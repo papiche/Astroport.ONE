@@ -11,7 +11,7 @@
 # Vérification différée : un script en arrière-plan vérifie les transactions après 1 heure
 #
 # Gère quatre types de virements :
-# 1. LOCATAIRE : UPLANETNAME_G1 -> UPLANETNAME -> MULTIPASS (recharge de service)
+# 1. MULTIPASS : UPLANETNAME_G1 -> UPLANETNAME -> MULTIPASS (recharge de service)
 # 2. SOCIÉTAIRE : UPLANETNAME_G1 -> UPLANETNAME_SOCIETY -> ZEN Card -> 3x1/3
 # 3. ORE : UPLANETNAME_ASSETS -> UMAP DID (récompenses environnementales depuis réserves coopératives)
 # 4. PERMIT : UPLANETNAME_RnD -> PERMIT HOLDER (récompenses pour WoT Dragon et autres permis spéciaux)
@@ -580,7 +580,7 @@ process_locataire() {
     
     local montant_g1=$(zen_to_g1 "$montant_euros")
     
-    echo -e "${BLUE}🏠 Traitement virement LOCATAIRE pour: ${email}${NC}"
+    echo -e "${BLUE}🏠 Traitement virement MULTIPASS pour: ${email}${NC}"
     echo -e "${CYAN}💰 Montant: ${montant_euros} Ẑen = ${montant_g1} Ğ1${NC}"
     
     # Vérifier que les portefeuilles existent
@@ -616,14 +616,14 @@ process_locataire() {
     
     # Étape 1: UPLANETNAME_G1 -> UPLANETNAME
     echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME_G1 → UPLANETNAME${NC}"
-    if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$uplanet_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:RENTAL:${email}" "$email" "LOCATAIRE" "Étape 1: G1→UPLANET"; then
+    if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$uplanet_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:RENTAL:${email}" "$email" "MULTIPASS" "Étape 1: G1→UPLANET"; then
         echo -e "${RED}❌ Échec de l'étape 1${NC}"
         return 1
     fi
     
     # Étape 2: UPLANETNAME -> MULTIPASS
     echo -e "${BLUE}📤 Étape 2: Transfert UPLANETNAME → MULTIPASS ${email}${NC}"
-    if ! transfer_and_verify "$HOME/.zen/game/uplanet.dunikey" "$multipass_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:RENTAL:${email}" "$email" "LOCATAIRE" "Étape 2: UPLANET→MULTIPASS"; then
+    if ! transfer_and_verify "$HOME/.zen/game/uplanet.dunikey" "$multipass_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:RENTAL:${email}" "$email" "MULTIPASS" "Étape 2: UPLANET→MULTIPASS"; then
         echo -e "${RED}❌ Échec de l'étape 2${NC}"
         return 1
     fi
@@ -635,7 +635,7 @@ process_locataire() {
     echo -e "  • Toutes les transactions confirmées sur la blockchain"
     
     # Mettre à jour le document DID avec les nouvelles capacités
-    "${MY_PATH}/tools/did_manager_nostr.sh" update "$email" "LOCATAIRE" "$montant_euros" "$montant_g1"
+    "${MY_PATH}/tools/did_manager_nostr.sh" update "$email" "MULTIPASS" "$montant_euros" "$montant_g1"
     
     return 0
 }
@@ -1404,7 +1404,7 @@ process_recovery_3x13() {
 show_menu() {
     echo -e "${BLUE}🏛️  UPLANET.central.sh - Menu de gestion des virements (version centralisée)${NC}"
     echo ""
-    echo "1. Virement LOCATAIRE (recharge MULTIPASS)"
+    echo "1. Virement MULTIPASS (recharge MULTIPASS)"
     echo "2. Virement SOCIÉTAIRE Satellite (50€/an)"
     echo "3. Virement SOCIÉTAIRE Constellation (540€/3ans)"
     echo "4. Apport CAPITAL INFRASTRUCTURE (CAPTAIN → NODE)"

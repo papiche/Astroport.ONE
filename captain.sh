@@ -745,7 +745,7 @@ show_economic_flow_diagram() {
     echo ""
     
     # Flux 1: Locataire (Bleu)
-    echo -e "${BLUE}1️⃣  FLUX LOCATAIRE:${NC}"
+    echo -e "${BLUE}1️⃣  FLUX MULTIPASS:${NC}"
     echo -e "   OpenCollective → UPLANETNAME → MULTIPASS"
     echo -e "   💰 Paiement loyer → Services → Primo TX"
     echo ""

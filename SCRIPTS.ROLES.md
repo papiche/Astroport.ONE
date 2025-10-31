@@ -62,7 +62,7 @@ Script **INTELLIGENT** pour la gestion des configurations existantes et les migr
 Script **PRINCIPAL** pour tous les virements officiels conformes à la Constitution ẐEN.
 
 #### **✅ Fonctionnalités**
-- **Virement LOCATAIRE** : `UPLANETNAME_G1 → UPLANETNAME → MULTIPASS`
+- **Virement MULTIPASS** : `UPLANETNAME_G1 → UPLANETNAME → MULTIPASS`
 - **Virement SOCIÉTAIRE** : `UPLANETNAME_G1 → UPLANETNAME_SOCIETY → ZEN Card → 3x1/3`
 - **Apport CAPITAL INFRASTRUCTURE** : `UPLANETNAME_G1 → ZEN Card CAPTAIN → NODE` (direct, pas de 3x1/3)
 - **Vérification automatique** des transactions blockchain

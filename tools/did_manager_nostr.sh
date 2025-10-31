@@ -293,7 +293,7 @@ publish_did_to_nostr() {
 ################################################################################
 update_did_document() {
     local email="$1"
-    local update_type="$2"  # LOCATAIRE, SOCIETAIRE_SATELLITE, SOCIETAIRE_CONSTELLATION, INFRASTRUCTURE, WOT_MEMBER, etc.
+    local update_type="$2"  # MULTIPASS, SOCIETAIRE_SATELLITE, SOCIETAIRE_CONSTELLATION, INFRASTRUCTURE, WOT_MEMBER, etc.
     local montant_zen="${3:-0}"
     local montant_g1="${4:-0}"
     local wot_g1pub="${5:-}"
@@ -351,7 +351,7 @@ update_did_document() {
     local wot_metadata=""
     
     case "$update_type" in
-        "LOCATAIRE")
+        "MULTIPASS")
             quota="10GB"
             services="uDRIVE IPFS storage"
             contract_status="active_rental"
@@ -981,7 +981,7 @@ Usage:
   $0 help
 
 Update Types:
-  LOCATAIRE                    - MULTIPASS recharge (rental)
+  MULTIPASS                    - MULTIPASS recharge (rental)
   SOCIETAIRE_SATELLITE        - Satellite cooperative shares
   SOCIETAIRE_CONSTELLATION    - Constellation cooperative shares
   INFRASTRUCTURE              - Infrastructure capital contribution
@@ -996,7 +996,7 @@ Update Types:
   ACCOUNT_DEACTIVATED         - Account deactivated/destroyed
 
 Examples:
-  $0 update user@example.com LOCATAIRE 50 5.0
+  $0 update user@example.com MULTIPASS 50 5.0
   $0 update user@example.com SOCIETAIRE_SATELLITE 512 51.2
   $0 fetch user@example.com
   $0 sync user@example.com

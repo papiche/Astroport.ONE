@@ -370,7 +370,7 @@ Tous les portefeuilles sont protégés par le système de contrôle primal :
 ```
 
 **Fonctionnalités :**
-- Virement LOCATAIRE : Recharge MULTIPASS
+- Virement MULTIPASS : Recharge MULTIPASS
 - Virement SOCIÉTAIRE : Parts sociales + répartition 3x1/3
 - Apport CAPITAL INFRASTRUCTURE : Valorisation machine → NODE (direct)
 - Vérification automatique blockchain

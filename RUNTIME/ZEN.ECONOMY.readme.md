@@ -663,7 +663,7 @@ Six scripts orchestrent l'ensemble :
 
 ### **USER STORIES : LES BÉNÉFICES POUR CHAQUE MEMBRE**
 
-#### **🏠 LE LOCATAIRE : Votre Passeport vers la Souveraineté**
+#### **🏠 LE MULTIPASS : Votre Passeport vers la Souveraineté**
 > **"Je paie 1 Ẑen/semaine (≈ 4€/mois) et je gagne ma liberté numérique."**
 *   **Ce que vous obtenez :** Une identité souveraine, un stockage décentralisé, et la possibilité de gagner des Ẑen en créant du contenu de qualité.
 *   **Pourquoi ?** C'est moins cher qu'un abonnement standard, mais vous n'êtes plus le produit. Vous êtes un citoyen du réseau.
