@@ -315,21 +315,24 @@ SENDER_IDENTITY=""
 DEST_EMAIL="${mail}"
 
 # First, try to load destination's NOSTR keys
+NOSTR_KEYFILE=""
 if [[ -s "$HOME/.zen/game/nostr/${DEST_EMAIL}/.secret.nostr" ]]; then
     echo "🔑 Found destination's NOSTR key for ${DEST_EMAIL}"
-    source "$HOME/.zen/game/nostr/${DEST_EMAIL}/.secret.nostr"
+    NOSTR_KEYFILE="$HOME/.zen/game/nostr/${DEST_EMAIL}/.secret.nostr"
+    source "$NOSTR_KEYFILE"
     SENDER_NSEC="$NSEC"
     SENDER_IDENTITY="${DEST_EMAIL}"
     echo "👤 Using destination's NOSTR key: ${NSEC:0:20}..."
 elif [[ -n "$CAPTAINEMAIL" && -s "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr" ]]; then
     echo "🔑 Destination's key not found, using captain's key"
-    source "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
+    NOSTR_KEYFILE="$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
+    source "$NOSTR_KEYFILE"
     SENDER_NSEC="$NSEC"
     SENDER_IDENTITY="${CAPTAINEMAIL} (Captain)"
     echo "👨‍✈️ Using captain's NOSTR key: ${NSEC:0:20}..."
 fi
 
-if [[ -n "$SENDER_NSEC" ]]; then
+if [[ -n "$SENDER_NSEC" && -n "$NOSTR_KEYFILE" ]]; then
     echo "📝 Preparing NOSTR public note (kind 1)..."
     
     # Prepare NOSTR message content
@@ -387,34 +390,62 @@ ${ephemeral_duration:+⏰ $(convert_seconds_to_human ${ephemeral_duration})}
     
     echo "🚀 Sending public note via NOSTR to ${#TARGET_RELAYS[@]} relay(s)..."
     
-    # Build command with new API
-    NOSTR_CMD="python3 $MY_PATH/nostr_send_note.py --keyfile \"${NOSTR_KEYFILE}\" --content \"${NOSTR_MESSAGE}\" --tags '${TAGS_JSON}' --relays \"${RELAY_LIST}\""
-    
-    # Add ephemeral flag if set
-    if [[ -n "$ephemeral_duration" ]]; then
-        echo "⏰ Sending ephemeral message (duration: ${ephemeral_duration}s)"
-        NOSTR_CMD="${NOSTR_CMD} --ephemeral ${ephemeral_duration}"
-    fi
-    
-    # Add JSON output for parsing
-    NOSTR_CMD="${NOSTR_CMD} --json"
-    
-    # Execute and parse JSON result
-    RESULT=$(eval $NOSTR_CMD 2>/dev/null)
-    
-    if [[ $? -eq 0 ]]; then
-        # Parse JSON result
-        SUCCESS_COUNT=$(echo "$RESULT" | grep -o '"relays_success":[[:space:]]*[0-9]*' | grep -o '[0-9]*' || echo "0")
-        TOTAL_COUNT=$(echo "$RESULT" | grep -o '"relays_total":[[:space:]]*[0-9]*' | grep -o '[0-9]*' || echo "${#TARGET_RELAYS[@]}")
-        
-        if [[ $SUCCESS_COUNT -gt 0 ]]; then
-            echo "   ✅ Published successfully to ${SUCCESS_COUNT}/${TOTAL_COUNT} relay(s)"
-        else
-            echo "   ❌ Failed to publish to any relay"
-        fi
-    else
-        echo "   ❌ NOSTR command failed"
+    # Check if keyfile exists
+    if [[ ! -s "$NOSTR_KEYFILE" ]]; then
+        echo "❌ NOSTR keyfile not found: $NOSTR_KEYFILE"
         SUCCESS_COUNT=0
+    else
+        # Build command arguments array to avoid quoting issues
+        NOSTR_ARGS=(
+            "python3"
+            "$MY_PATH/nostr_send_note.py"
+            "--keyfile" "$NOSTR_KEYFILE"
+            "--content" "$NOSTR_MESSAGE"
+            "--tags" "$TAGS_JSON"
+            "--relays" "$RELAY_LIST"
+        )
+        
+        # Add ephemeral flag if set
+        if [[ -n "$ephemeral_duration" ]]; then
+            echo "⏰ Sending ephemeral message (duration: ${ephemeral_duration}s)"
+            NOSTR_ARGS+=("--ephemeral" "$ephemeral_duration")
+        fi
+        
+        # Add JSON output for parsing
+        NOSTR_ARGS+=("--json")
+        
+        # Execute command and capture both stdout and stderr
+        RESULT=$("${NOSTR_ARGS[@]}" 2>&1)
+        NOSTR_EXIT_CODE=$?
+        
+        if [[ $NOSTR_EXIT_CODE -eq 0 && -n "$RESULT" ]]; then
+            # Try to parse JSON result using jq if available, otherwise use grep
+            if command -v jq >/dev/null 2>&1; then
+                SUCCESS_COUNT=$(echo "$RESULT" | jq -r '.relays_success // 0' 2>/dev/null || echo "0")
+                TOTAL_COUNT=$(echo "$RESULT" | jq -r '.relays_total // 0' 2>/dev/null || echo "${#TARGET_RELAYS[@]}")
+                EVENT_ID=$(echo "$RESULT" | jq -r '.event_id // ""' 2>/dev/null || echo "")
+            else
+                # Fallback to grep parsing
+                SUCCESS_COUNT=$(echo "$RESULT" | grep -o '"relays_success":[[:space:]]*[0-9]*' | grep -o '[0-9]*' || echo "0")
+                TOTAL_COUNT=$(echo "$RESULT" | grep -o '"relays_total":[[:space:]]*[0-9]*' | grep -o '[0-9]*' || echo "${#TARGET_RELAYS[@]}")
+                EVENT_ID=""
+            fi
+            
+            if [[ -n "$EVENT_ID" && "$EVENT_ID" != "null" ]]; then
+                echo "   📝 Event ID: ${EVENT_ID:0:16}..."
+            fi
+            
+            if [[ $SUCCESS_COUNT -gt 0 ]]; then
+                echo "   ✅ Published successfully to ${SUCCESS_COUNT}/${TOTAL_COUNT} relay(s)"
+            else
+                echo "   ❌ Failed to publish to any relay"
+                echo "   📋 Response: $RESULT"
+            fi
+        else
+            echo "   ❌ NOSTR command failed (exit code: ${NOSTR_EXIT_CODE})"
+            echo "   📋 Error output: $RESULT"
+            SUCCESS_COUNT=0
+        fi
     fi
     
     if [[ $SUCCESS_COUNT -gt 0 ]]; then
