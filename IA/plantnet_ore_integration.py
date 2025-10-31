@@ -85,6 +85,114 @@ def extract_plantnet_info(plantnet_result: str) -> Optional[Dict[str, Any]]:
         print(f"Error parsing PlantNet result: {e}", file=sys.stderr)
         return None
 
+def publish_plant_observation_to_nostr(observation_info: Dict[str, Any], lat: str, lon: str, 
+                                       observer_pubkey: str, keyfile_path: str, 
+                                       relay_url: str = "wss://relay.copylaradio.com") -> Optional[str]:
+    """Publish plant observation to Nostr as a kind 1 event.
+    
+    Args:
+        observation_info: Plant observation data from ORE system
+        lat: Latitude
+        lon: Longitude
+        observer_pubkey: Observer's public key
+        keyfile_path: Path to .secret.nostr file
+        relay_url: Nostr relay URL
+        
+    Returns:
+        Event ID if successful, None otherwise
+    """
+    try:
+        if not observation_info.get("success"):
+            return None
+        
+        is_new = observation_info.get("is_new_species", False)
+        species_name = observation_info.get("common_name", "")
+        scientific_name = observation_info.get("scientific_name", "")
+        total_species = observation_info.get("total_species", 0)
+        total_obs = observation_info.get("total_observations", 0)
+        biodiversity_score = observation_info.get("biodiversity_score", 0.0)
+        
+        # Build the message
+        if is_new:
+            message = f"""🌱 NEW SPECIES DISCOVERY! 🎉
+
+📸 Plant Observation: **{species_name}** (_${scientific_name}_)
+📍 Location: UMAP ({lat}, {lon})
+
+🎊 First observation of this species in this UMAP!
+
+📊 UMAP Biodiversity Stats:
+- 🌿 Unique Species: {total_species}
+- 📸 Total Observations: {total_obs}
+- 🏆 Biodiversity Score: {biodiversity_score:.2%}
+
+💰 This observation contributes to ORE ecological obligations and ecosystem protection!
+
+#PlantNet #ORE #UPlanet #Biodiversity #FloraQuest #NewSpecies"""
+        else:
+            message = f"""🌱 Plant Observation Recorded
+
+📸 Plant: **{species_name}** (_${scientific_name}_)
+📍 Location: UMAP ({lat}, {lon})
+
+📊 UMAP Biodiversity Stats:
+- 🌿 Unique Species: {total_species}
+- 📸 Total Observations: {total_obs}
+- 🏆 Biodiversity Score: {biodiversity_score:.2%}
+
+💰 This observation contributes to ORE ecological obligations!
+
+#PlantNet #ORE #UPlanet #Biodiversity #FloraQuest"""
+        
+        # Prepare tags
+        tags_json = json.dumps([
+            ["g", f"{lat},{lon}"],  # Geolocation tag
+            ["t", "PlantNet"],
+            ["t", "ORE"],
+            ["t", "UPlanet"],
+            ["t", "Biodiversity"],
+            ["species", species_name],
+            ["scientific_name", scientific_name],
+            ["new_species", "true" if is_new else "false"],
+            ["umap", f"{lat}_{lon}"]
+        ])
+        
+        # Path to nostr_send_note.py
+        nostr_send_script = os.path.join(os.path.dirname(__file__), "../tools/nostr_send_note.py")
+        
+        # Publish using nostr_send_note.py
+        print(f"📡 Publishing plant observation to Nostr...", file=sys.stderr)
+        
+        result = subprocess.run([
+            "python3", nostr_send_script,
+            "--keyfile", keyfile_path,
+            "--content", message,
+            "--kind", "1",
+            "--tags", tags_json,
+            "--relays", relay_url,
+            "--json"
+        ], capture_output=True, text=True, timeout=60)
+        
+        if result.returncode == 0:
+            result_data = json.loads(result.stdout)
+            if result_data.get("success"):
+                event_id = result_data.get("event_id")
+                print(f"✅ Plant observation published to Nostr (Event ID: {event_id})", file=sys.stderr)
+                return event_id
+            else:
+                print(f"⚠️  Plant observation publication had issues: {result_data.get('errors', [])}", file=sys.stderr)
+                return None
+        else:
+            print(f"❌ Failed to publish plant observation", file=sys.stderr)
+            return None
+        
+    except subprocess.TimeoutExpired:
+        print(f"❌ Timeout publishing plant observation to Nostr", file=sys.stderr)
+        return None
+    except Exception as e:
+        print(f"❌ Error publishing plant observation to Nostr: {e}", file=sys.stderr)
+        return None
+
 def record_plant_observation(lat: str, lon: str, species_name: str, 
                             scientific_name: str, observer_pubkey: str,
                             confidence: float, image_url: str = "", 
@@ -176,12 +284,13 @@ def format_ore_response(observation_info: Dict[str, Any]) -> str:
 def main():
     """Main function for PlantNet ORE integration.
     
-    Usage: python3 plantnet_ore_integration.py <lat> <lon> <observer_pubkey> <event_id> <image_url>
+    Usage: python3 plantnet_ore_integration.py <lat> <lon> <observer_pubkey> <event_id> <image_url> [keyfile_path]
     
     This version calls plantnet_recognition.py --json internally for structured data.
+    If keyfile_path is provided, it will also publish the observation to Nostr.
     """
     if len(sys.argv) < 6:
-        print("Usage: python3 plantnet_ore_integration.py <lat> <lon> <observer_pubkey> <event_id> <image_url>", file=sys.stderr)
+        print("Usage: python3 plantnet_ore_integration.py <lat> <lon> <observer_pubkey> <event_id> <image_url> [keyfile_path]", file=sys.stderr)
         sys.exit(1)
     
     lat = sys.argv[1]
@@ -189,6 +298,7 @@ def main():
     observer_pubkey = sys.argv[3]
     event_id = sys.argv[4]
     image_url = sys.argv[5]
+    keyfile_path = sys.argv[6] if len(sys.argv) > 6 else None
     
     # Call plantnet_recognition.py with --json flag for structured output
     plantnet_script = os.path.join(os.path.dirname(__file__), "plantnet_recognition.py")
@@ -248,6 +358,17 @@ def main():
         print(f"Error recording observation: {observation_info.get('error', 'Unknown error')}", file=sys.stderr)
         sys.exit(1)
     
+    # Publish to Nostr if keyfile provided
+    nostr_event_id = None
+    if keyfile_path and os.path.exists(keyfile_path):
+        print(f"Publishing plant observation to Nostr with keyfile: {keyfile_path}", file=sys.stderr)
+        relay_url = os.environ.get("myRELAY", "wss://relay.copylaradio.com")
+        nostr_event_id = publish_plant_observation_to_nostr(
+            observation_info, lat, lon, observer_pubkey, keyfile_path, relay_url
+        )
+    elif keyfile_path:
+        print(f"⚠️  Keyfile not found: {keyfile_path}. Skipping Nostr publication.", file=sys.stderr)
+    
     # Format and print the ORE response
     ore_message = format_ore_response(observation_info)
     print(ore_message)
@@ -255,7 +376,8 @@ def main():
     # Also output JSON for programmatic use (to stderr to not pollute main output)
     enhanced_info = {
         **observation_info,
-        "plantnet_data": plant_info
+        "plantnet_data": plant_info,
+        "nostr_event_id": nostr_event_id
     }
     print(f"\n<!-- ORE_DATA: {json.dumps(enhanced_info)} -->", file=sys.stderr)
 

@@ -711,8 +711,15 @@ class OREUMAPManager:
         except ValueError:
             return 0.0
 
-    def activate_ore_mode(self, lat: str, lon: str, umappath: str, npriv_hex: str) -> bool:
-        """Activate ORE mode for a UMAP."""
+    def activate_ore_mode(self, lat: str, lon: str, umappath: str, keyfile_path: str = None) -> bool:
+        """Activate ORE mode for a UMAP.
+        
+        Args:
+            lat: Latitude
+            lon: Longitude
+            umappath: Path to UMAP directory
+            keyfile_path: Optional path to .secret.nostr file (not used, UMAP keys are generated)
+        """
         print(f"🌱 Activating ORE mode for UMAP ({lat}, {lon})")
         
         try:
@@ -721,13 +728,26 @@ class OREUMAPManager:
             with open(ore_activated_file, 'w') as f:
                 f.write(datetime.utcnow().isoformat())
             
-            # Generate UMAP DID using existing infrastructure
+            # Generate UMAP DID and keys using existing infrastructure
             generator = OREUMAPDIDGenerator(self.uplanet_g1_pub)
             did, did_doc, nsec, npub, hex_key, g1pub = generator.generate_umap_did(lat, lon)
             
             if not did:
                 print("❌ Failed to generate UMAP DID for ORE mode")
                 return False
+            
+            print(f"🔑 UMAP Keys generated:")
+            print(f"   NSEC: {nsec[:20]}...")
+            print(f"   NPUB: {npub[:20]}...")
+            print(f"   HEX: {hex_key[:20]}...")
+            print(f"   G1PUB: {g1pub[:20]}...")
+            
+            # Create UMAP keyfile for Nostr publishing
+            umap_keyfile = os.path.join(umappath, ".secret.nostr")
+            with open(umap_keyfile, 'w') as f:
+                f.write(f"NSEC={nsec}; NPUB={npub}; HEX={hex_key};")
+            os.chmod(umap_keyfile, 0o600)  # Secure permissions
+            print(f"✅ UMAP keyfile saved: {umap_keyfile}")
             
             # Store the G1 public key for blockchain transactions
             g1pub_file = os.path.join(umappath, "g1pub.key")
@@ -750,21 +770,23 @@ class OREUMAPManager:
                         # Update UMAP DID with ORE information
                         self._update_umap_did_with_ore(umappath, did, compliance_score, total_reward)
             
-            # Publish ORE status to Nostr
-            self._publish_ore_status_to_nostr(lat, lon, npriv_hex, did)
+            # Publish ORE status to Nostr using UMAP's own keyfile
+            self._publish_ore_status_to_nostr(lat, lon, umap_keyfile, did)
             
             # Create initial ORE verification meeting
             verification_title = f"ORE Environmental Verification - UMAP ({lat}, {lon})"
             verification_description = f"Initial environmental assessment and ORE contract verification for geographic cell ({lat}, {lon})"
             starts_timestamp = int(time.time())
             
-            self._create_ore_verification_meeting(lat, lon, npriv_hex, verification_title, verification_description, starts_timestamp)
+            self._create_ore_verification_meeting(lat, lon, umap_keyfile, verification_title, verification_description, starts_timestamp)
             
             print(f"✅ ORE mode activated for UMAP ({lat}, {lon})")
             return True
             
         except Exception as e:
             print(f"❌ Error activating ORE mode: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
     def _should_create_ore_contract(self, lat: str, lon: str, umappath: str) -> bool:
@@ -890,45 +912,163 @@ class OREUMAPManager:
         except Exception as e:
             print(f"❌ Error updating UMAP DID with ORE: {e}")
 
-    def _publish_ore_status_to_nostr(self, lat: str, lon: str, npriv_hex: str, umap_did: str) -> None:
-        """Publish ORE status to Nostr with ORE DID event."""
+    def _publish_ore_status_to_nostr(self, lat: str, lon: str, keyfile_path: str, umap_did: str) -> None:
+        """Publish ORE status to Nostr with ORE Meeting Space event (kind 30312).
+        
+        Args:
+            lat: Latitude
+            lon: Longitude
+            keyfile_path: Path to .secret.nostr file for signing
+            umap_did: DID of the UMAP
+        """
         try:
             # Create ORE Meeting Space event (kind 30312 - Persistent Geographic Space)
             room_name = f"UMAP_ORE_{lat}_{lon}"
             room_description = "UPlanet ORE Environmental Space - Geographic cell with environmental obligations"
             vdo_room_url = f"{self.vdo_ninja}/?room={self.uplanet_g1_pub[:8]}&effects&record"
             
-            # This would require nostpy-cli integration
+            # Prepare event content
+            ore_status_msg = f"""🌱 ORE Mode Activated - UMAP ({lat}, {lon})
+
+📍 Geographic Cell: {lat}, {lon}
+🆔 DID: {umap_did}
+🎥 Meeting Room: {room_name}
+🔗 VDO.ninja: {vdo_room_url}
+
+Environmental obligations are now tracked via UPlanet ORE system.
+Join the meeting space to collaborate on ecological verification.
+
+#UPlanet #ORE #Environment #Biodiversity"""
+            
+            # Prepare tags for kind 30312 (replaceable event with 'd' tag)
+            tags_json = json.dumps([
+                ["d", f"ore-space-{lat}-{lon}"],  # Unique identifier for replaceable event
+                ["g", f"{lat},{lon}"],  # Geolocation tag
+                ["t", "ORE"],
+                ["t", "UPlanet"],
+                ["t", "Environment"],
+                ["room", room_name],
+                ["vdo_url", vdo_room_url],
+                ["did", umap_did],
+                ["uplanet_authority", self.uplanet_g1_pub[:16]]
+            ])
+            
+            # Path to nostr_send_note.py
+            nostr_send_script = os.path.join(os.path.dirname(__file__), "nostr_send_note.py")
+            
+            # Publish using nostr_send_note.py
             print(f"📡 Publishing ORE Meeting Space event (kind 30312) for UMAP ({lat}, {lon})")
-            print(f"   Room: {room_name}")
-            print(f"   VDO.ninja: {vdo_room_url}")
-            print(f"   DID: {umap_did}")
             
-            # Also publish a regular status message
-            ore_status_msg = f"🌱 ORE mode activated for UMAP ({lat}, {lon}) - DID: {umap_did} - Environmental obligations now tracked via UPlanet ORE system #UPlanet #ORE #Environment"
-            print(f"📝 Status message: {ore_status_msg}")
+            result = subprocess.run([
+                "python3", nostr_send_script,
+                "--keyfile", keyfile_path,
+                "--content", ore_status_msg,
+                "--kind", "30312",
+                "--tags", tags_json,
+                "--relays", self.my_relay,
+                "--json"
+            ], capture_output=True, text=True, timeout=60)
             
-            print("✅ ORE Meeting Space event (kind 30312) and status published to Nostr")
+            if result.returncode == 0:
+                result_data = json.loads(result.stdout)
+                if result_data.get("success"):
+                    print(f"✅ ORE Meeting Space event (kind 30312) published successfully")
+                    print(f"   Event ID: {result_data.get('event_id')}")
+                    print(f"   Published to: {result_data.get('relays_success')}/{result_data.get('relays_total')} relay(s)")
+                else:
+                    print(f"⚠️  ORE Meeting Space event publication had issues")
+                    print(f"   Errors: {result_data.get('errors', [])}")
+            else:
+                print(f"❌ Failed to publish ORE Meeting Space event")
+                print(f"   stderr: {result.stderr}")
             
+        except subprocess.TimeoutExpired:
+            print(f"❌ Timeout publishing ORE status to Nostr")
         except Exception as e:
             print(f"❌ Error publishing ORE status to Nostr: {e}")
 
-    def _create_ore_verification_meeting(self, lat: str, lon: str, npriv_hex: str, meeting_title: str, meeting_description: str, starts_timestamp: int) -> Optional[str]:
-        """Create ORE verification meeting event (kind 30313)."""
+    def _create_ore_verification_meeting(self, lat: str, lon: str, keyfile_path: str, meeting_title: str, meeting_description: str, starts_timestamp: int) -> Optional[str]:
+        """Create ORE verification meeting event (kind 30313).
+        
+        Args:
+            lat: Latitude
+            lon: Longitude
+            keyfile_path: Path to .secret.nostr file for signing
+            meeting_title: Title of the meeting
+            meeting_description: Description of the meeting
+            starts_timestamp: Start time (Unix timestamp)
+            
+        Returns:
+            Meeting event ID if successful, None otherwise
+        """
         try:
             # Create meeting event (kind 30313)
             meeting_id = f"ore-verification-{lat}-{lon}-{int(time.time())}"
             room_a_tag = f"30312:{self.uplanet_g1_pub[:8]}:ore-space-{lat}-{lon}"
             
-            # This would require nostpy-cli integration
+            # Format meeting content
+            meeting_content = f"""{meeting_title}
+
+{meeting_description}
+
+📅 Scheduled: {datetime.fromtimestamp(starts_timestamp).strftime('%Y-%m-%d %H:%M:%S')} UTC
+📍 Location: UMAP ({lat}, {lon})
+🎥 Join via ORE Meeting Space (kind 30312)
+
+This verification meeting is part of the UPlanet ORE system for ecological real obligations tracking.
+
+#ORE #UPlanet #EnvironmentalVerification"""
+            
+            # Prepare tags for kind 30313
+            tags_json = json.dumps([
+                ["d", meeting_id],  # Unique identifier
+                ["a", room_a_tag],  # Reference to meeting space (kind 30312)
+                ["g", f"{lat},{lon}"],  # Geolocation
+                ["t", "ORE"],
+                ["t", "UPlanet"],
+                ["t", "Verification"],
+                ["title", meeting_title],
+                ["start", str(starts_timestamp)],
+                ["meeting_type", "environmental_verification"]
+            ])
+            
+            # Path to nostr_send_note.py
+            nostr_send_script = os.path.join(os.path.dirname(__file__), "nostr_send_note.py")
+            
+            # Publish using nostr_send_note.py
             print(f"📅 Creating ORE verification meeting event (kind 30313): {meeting_id}")
-            print(f"   Title: {meeting_title}")
-            print(f"   Description: {meeting_description}")
-            print(f"   Starts: {starts_timestamp}")
             
-            print(f"✅ ORE verification meeting event (kind 30313) created: {meeting_id}")
-            return meeting_id
+            result = subprocess.run([
+                "python3", nostr_send_script,
+                "--keyfile", keyfile_path,
+                "--content", meeting_content,
+                "--kind", "30313",
+                "--tags", tags_json,
+                "--relays", self.my_relay,
+                "--json"
+            ], capture_output=True, text=True, timeout=60)
             
+            if result.returncode == 0:
+                result_data = json.loads(result.stdout)
+                if result_data.get("success"):
+                    event_id = result_data.get("event_id")
+                    print(f"✅ ORE verification meeting event (kind 30313) created successfully")
+                    print(f"   Event ID: {event_id}")
+                    print(f"   Meeting ID: {meeting_id}")
+                    print(f"   Published to: {result_data.get('relays_success')}/{result_data.get('relays_total')} relay(s)")
+                    return event_id
+                else:
+                    print(f"⚠️  ORE verification meeting publication had issues")
+                    print(f"   Errors: {result_data.get('errors', [])}")
+                    return None
+            else:
+                print(f"❌ Failed to create ORE verification meeting")
+                print(f"   stderr: {result.stderr}")
+                return None
+            
+        except subprocess.TimeoutExpired:
+            print(f"❌ Timeout creating ORE verification meeting")
+            return None
         except Exception as e:
             print(f"❌ Error creating ORE verification meeting: {e}")
             return None
@@ -941,7 +1081,7 @@ def main():
         print("  verify <lat> <lon>")
         print("  reward <lat> <lon>")
         print("  generate_did <lat> <lon>")
-        print("  activate_ore <lat> <lon>")
+        print("  activate_ore <lat> <lon>  # UMAP keys generated dynamically")
         print("  check_ore <lat> <lon>")
         print("  add_plant <lat> <lon> <species_name> <scientific_name> <observer_pubkey> <confidence> [image_url] [event_id]")
         print("  check_plant <lat> <lon> <scientific_name>")
@@ -1105,7 +1245,7 @@ def main():
         economic_system.distribute_rewards(did_doc, rewards)
     
     elif action == "activate_ore":
-        # Activate ORE mode for UMAP
+        # Activate ORE mode for UMAP (UMAP keys are generated dynamically)
         config = {
             "ipfs_node_id": os.environ.get("IPFSNODEID", "default_node"),  # Astroport.ONE local relay address
             "uplanet_g1_pub": os.environ.get("UPLANETNAME_G1", "default_pub"),  # Use UPLANETNAME_G1 for Zen usage (Banque centrale G1/Ẑ)
@@ -1117,10 +1257,10 @@ def main():
         
         manager = OREUMAPManager(config)
         umappath = f"/tmp/umap_{lat}_{lon}"  # Mock path
-        npriv_hex = "mock_private_key"
+        os.makedirs(umappath, exist_ok=True)
         
         if manager.should_activate_ore_mode(lat, lon, umappath):
-            success = manager.activate_ore_mode(lat, lon, umappath, npriv_hex)
+            success = manager.activate_ore_mode(lat, lon, umappath)
             print(f"ORE activation: {'✅ Success' if success else '❌ Failed'}")
         else:
             print("ℹ️  UMAP does not qualify for ORE mode")

@@ -23,7 +23,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ################################################################################
 
 generate_uplanet_g1_nostr_key() {
-    # Generate NOSTR key for UPLANETNAME.G1 if it doesn't exist
+    # Generate NOSTR key for UPLANETNAME_G1 if it doesn't exist
     # Similar to oracle_init_permit_definitions.sh
     
     local keyfile="${HOME}/.zen/game/uplanet.G1.nostr"
@@ -37,9 +37,9 @@ generate_uplanet_g1_nostr_key() {
         return 1
     fi
     
-    echo "[INFO] Generating NOSTR key for UPLANETNAME.G1..."
+    echo "[INFO] Generating NOSTR key for UPLANETNAME_G1..."
     
-    # Generate NOSTR keys using UPLANETNAME.G1 as SALT and PEPPER (like dunikey generation)
+    # Generate NOSTR keys using UPLANETNAME_G1 as SALT and PEPPER (like dunikey generation)
     local salt="${UPLANETNAME}.G1"
     local pepper="${UPLANETNAME}.G1"
     local keygen="${HOME}/.zen/Astroport.ONE/tools/keygen"
@@ -289,7 +289,7 @@ cat > "${ORACLE_STATS_DIR}/global_stats.json" <<EOF
     "total_requests": ${total_requests},
     "total_credentials": ${total_credentials},
     "last_updated": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-    "uplanet": "${UPLANETNAME}",
+    "uplanet": "${UPLANETNAME_G1}",
     "ipfs_node": "${IPFSNODEID}"
 }
 EOF
@@ -304,13 +304,13 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "[STEP 4] Publishing Oracle status to NOSTR..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Use UPLANETNAME.G1 keyfile for signing (standardized location)
+# Use UPLANETNAME_G1 keyfile for signing (standardized location)
 UPLANET_G1_KEYFILE="${HOME}/.zen/game/uplanet.G1.nostr"
 
 # Generate keyfile if it doesn't exist
 if [[ ! -f "$UPLANET_G1_KEYFILE" ]]; then
     if ! generate_uplanet_g1_nostr_key; then
-        echo "[ERROR] Failed to generate UPLANETNAME.G1 keyfile"
+        echo "[ERROR] Failed to generate UPLANETNAME_G1 keyfile"
         echo "[INFO] Oracle status will not be published to NOSTR"
     fi
 fi
@@ -339,7 +339,7 @@ if [[ -f "$UPLANET_G1_KEYFILE" ]]; then
         --relays "$myRELAY" \
         2>/dev/null && echo "[SUCCESS] Oracle status published to NOSTR" || echo "[WARNING] Failed to publish to NOSTR"
 else
-    echo "[WARNING] UPLANETNAME.G1 keyfile not found: $UPLANET_G1_KEYFILE"
+    echo "[WARNING] UPLANETNAME_G1 keyfile not found: $UPLANET_G1_KEYFILE"
     echo "[INFO] Run oracle_init_permit_definitions.sh to generate the keyfile"
 fi
 
