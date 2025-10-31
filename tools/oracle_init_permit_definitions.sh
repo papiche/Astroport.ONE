@@ -198,6 +198,7 @@ publish_permit_to_nostr() {
     local content_json=$(echo "$permit_json" | jq -c '.')
     
     # Publish to NOSTR (kind 30500)
+    # Publish to local strfry relay only - backfill_constellation.sh will sync to other nodes
     echo -e "${CYAN}📤 Publishing permit definition to NOSTR...${NC}"
     
     python3 "$NOSTR_SEND_NOTE" \
@@ -205,7 +206,7 @@ publish_permit_to_nostr() {
         --kind 30500 \
         --content "$content_json" \
         --tags "$tags_json" \
-        --relays "${myRELAY}" > /dev/null 2>&1
+        --relays "ws://127.0.0.1:7777" > /dev/null 2>&1
     
     if [[ $? -eq 0 ]]; then
         echo -e "${GREEN}✅ Published permit definition: $permit_id${NC}"
@@ -468,12 +469,13 @@ delete_permit() {
         local tags_json="[[\"d\",\"$permit_id\"]]"
         
         echo -e "${CYAN}📤 Publishing deletion marker...${NC}"
+        # Publish to local strfry relay only - backfill_constellation.sh will sync to other nodes
         python3 "$NOSTR_SEND_NOTE" \
             --keyfile "$UPLANET_G1_KEYFILE" \
             --kind 30500 \
             --content "$deletion_content" \
             --tags "$tags_json" \
-            --relays "${myRELAY}" > /dev/null 2>&1
+            --relays "ws://127.0.0.1:7777" > /dev/null 2>&1
         
         if [[ $? -eq 0 ]]; then
             echo -e "${GREEN}✅ Permit definition marked as deleted: $permit_id${NC}"
