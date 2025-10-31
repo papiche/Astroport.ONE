@@ -132,6 +132,17 @@ get_nostr_definitions() {
         jq -c 'select(.kind == 30500)' 2>/dev/null || echo ""
 }
 
+get_nostr_definition_by_id() {
+    # Fetch a specific permit definition by ID (using tag-d filter)
+    local permit_id="$1"
+    if [[ -z "$permit_id" ]]; then
+        echo ""
+        return
+    fi
+    "$NOSTR_GET_EVENTS" --kind 30500 --tag-d "$permit_id" --limit 1 2>/dev/null | \
+        jq -c 'select(.kind == 30500)' 2>/dev/null | head -1 || echo ""
+}
+
 get_template_definitions() {
     # Get definitions from JSON template
     if [[ -f "$DEFINITIONS_FILE" ]]; then
@@ -201,18 +212,41 @@ publish_permit_to_nostr() {
     # Publish to local strfry relay only - backfill_constellation.sh will sync to other nodes
     echo -e "${CYAN}📤 Publishing permit definition to NOSTR...${NC}"
     
-    python3 "$NOSTR_SEND_NOTE" \
+    # Capture output to check for success
+    local publish_output=$(python3 "$NOSTR_SEND_NOTE" \
         --keyfile "$UPLANET_G1_KEYFILE" \
         --kind 30500 \
         --content "$content_json" \
         --tags "$tags_json" \
-        --relays "ws://127.0.0.1:7777" > /dev/null 2>&1
+        --relays "ws://127.0.0.1:7777" 2>&1)
     
-    if [[ $? -eq 0 ]]; then
+    local publish_exit_code=$?
+    
+    # Check if publication was successful (exit code 0 means success)
+    if [[ $publish_exit_code -eq 0 ]] && echo "$publish_output" | grep -q "successfully"; then
         echo -e "${GREEN}✅ Published permit definition: $permit_id${NC}"
-        return 0
+        echo -e "${CYAN}⏳ Waiting for strfry database to sync (3 seconds)...${NC}"
+        sleep 3
+        
+        # Verify the event was actually stored by querying for it using tag-d filter
+        echo -e "${CYAN}🔍 Verifying event was stored...${NC}"
+        local verification=$(get_nostr_definition_by_id "$permit_id")
+        
+        if [[ -n "$verification" ]]; then
+            echo -e "${GREEN}✅ Verified: permit definition found in strfry database${NC}"
+            return 0
+        else
+            echo -e "${YELLOW}⚠️  Warning: permit definition published but not yet visible in database${NC}"
+            echo -e "${CYAN}💡 This may be normal - strfry may need a few more seconds to index the event${NC}"
+            echo -e "${CYAN}💡 Try listing definitions again in a few seconds${NC}"
+            return 0  # Still return success since publication succeeded
+        fi
     else
         echo -e "${RED}❌ Failed to publish permit definition: $permit_id${NC}"
+        if [[ -n "$publish_output" ]]; then
+            echo -e "${YELLOW}Error details:${NC}"
+            echo "$publish_output" | head -5
+        fi
         return 1
     fi
 }
@@ -309,8 +343,7 @@ add_permit() {
     local permit_id=$(echo "$permit_json" | jq -r '.id')
     
     # Check if already exists on NOSTR
-    local existing=$(get_nostr_definitions | \
-        jq -c "select(.tags[]? | .[0] == \"d\" and .[1] == \"$permit_id\")" 2>/dev/null)
+    local existing=$(get_nostr_definition_by_id "$permit_id")
     
     if [[ -n "$existing" ]]; then
         echo -e "${YELLOW}⚠️  Permit definition already exists on NOSTR: $permit_id${NC}"
@@ -364,9 +397,17 @@ edit_permit_interactive() {
         target_permit_id=$(parse_permit_from_nostr_event "$permit_json" | jq -r '.id')
     fi
     
-    # Find the permit
-    local permit_event=$(echo "$events" | \
-        jq -c "select(.tags[]? | .[0] == \"d\" and .[1] == \"$target_permit_id\")" 2>/dev/null | head -1)
+    # Find the permit - use direct query by ID if available for better performance
+    local permit_event=""
+    if [[ -n "$target_permit_id" ]]; then
+        permit_event=$(get_nostr_definition_by_id "$target_permit_id")
+    fi
+    
+    # Fallback to searching in events list if direct query didn't find it
+    if [[ -z "$permit_event" ]]; then
+        permit_event=$(echo "$events" | \
+            jq -c "select(.tags[]? | .[0] == \"d\" and .[1] == \"$target_permit_id\")" 2>/dev/null | head -1)
+    fi
     
     if [[ -z "$permit_event" ]]; then
         echo -e "${RED}❌ Permit definition not found: $target_permit_id${NC}"
