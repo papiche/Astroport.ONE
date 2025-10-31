@@ -19,6 +19,8 @@ TAG_D=""
 TAG_P=""
 TAG_E=""
 OUTPUT_FORMAT="json"  # json or count
+DELETE_MODE=false      # Delete found events
+FORCE_MODE=false       # Skip confirmation prompt
 
 ################################################################################
 # Usage
@@ -39,6 +41,8 @@ OPTIONS:
     -u, --until TIMESTAMP     Filter events before this timestamp (unix timestamp)
     -l, --limit NUMBER        Limit number of results (default: 100)
     -o, --output FORMAT       Output format: 'json' or 'count' (default: json)
+        --del                 Delete found events (⚠️  DESTRUCTIVE - use with caution!)
+        --force               Skip confirmation prompt when using --del (⚠️  VERY DANGEROUS!)
     -h, --help                Show this help message
 
 EXAMPLES:
@@ -60,10 +64,21 @@ EXAMPLES:
     # Get events with limit
     nostr_get_events.sh --kind 1 --limit 10
 
+    # Delete all events of a specific kind (⚠️  DANGEROUS!)
+    nostr_get_events.sh --kind 30500 --del
+
+    # Delete events by specific author
+    nostr_get_events.sh --kind 1 --author a1b2c3d4e5f6... --del
+
+    # Delete events without confirmation (use with extreme caution!)
+    nostr_get_events.sh --kind 30500 --del --force
+
 NOTES:
     - Requires strfry relay to be running at ~/.zen/strfry/
     - Returns events in JSON format (one per line)
     - Use jq for further JSON processing: nostr_get_events.sh --kind 1 | jq '.'
+    - ⚠️  --del is DESTRUCTIVE and cannot be undone! Always test your filter first without --del
+    - ⚠️  --force with --del is VERY DANGEROUS! Use only in scripts or when you're absolutely sure
 
 EOF
     exit 0
@@ -109,6 +124,14 @@ while [[ $# -gt 0 ]]; do
         -o|--output)
             OUTPUT_FORMAT="$2"
             shift 2
+            ;;
+        --del)
+            DELETE_MODE=true
+            shift
+            ;;
+        --force)
+            FORCE_MODE=true
+            shift
             ;;
         -h|--help)
             usage
@@ -190,7 +213,96 @@ FILTER+="}"
 cd "$STRFRY_DIR" || exit 1
 
 # Execute query
-if [[ "$OUTPUT_FORMAT" == "count" ]]; then
+if [[ "$DELETE_MODE" == "true" ]]; then
+    # Delete mode: extract event IDs and delete them
+    echo "[INFO] 🔍 Searching for events to delete..." >&2
+    
+    # Get events
+    EVENTS=$(./strfry scan "$FILTER" 2>/dev/null)
+    
+    if [[ -z "$EVENTS" ]]; then
+        echo "[INFO] No events found matching the filter" >&2
+        exit 0
+    fi
+    
+    # Extract all event IDs first (optimized - single pass)
+    echo "[INFO] 📋 Extracting event IDs..." >&2
+    EVENT_IDS=()
+    
+    if command -v jq &> /dev/null; then
+        # Use jq for efficient batch processing
+        while IFS= read -r event_id; do
+            if [[ -n "$event_id" && "$event_id" != "null" ]]; then
+                EVENT_IDS+=("$event_id")
+            fi
+        done < <(echo "$EVENTS" | jq -r '.id' 2>/dev/null)
+    else
+        # Fallback: extract IDs with grep/sed
+        while IFS= read -r event; do
+            EVENT_ID=$(echo "$event" | grep -o '"id":"[^"]*"' | sed 's/"id":"\([^"]*\)"/\1/')
+            if [[ -n "$EVENT_ID" ]]; then
+                EVENT_IDS+=("$EVENT_ID")
+            fi
+        done <<< "$EVENTS"
+    fi
+    
+    EVENT_COUNT=${#EVENT_IDS[@]}
+    
+    if [[ "$EVENT_COUNT" -eq 0 ]]; then
+        echo "[INFO] No valid event IDs found" >&2
+        exit 0
+    fi
+    
+    echo "[INFO] Found $EVENT_COUNT event(s) to delete" >&2
+    
+    # Show confirmation unless --force is used
+    if [[ "$FORCE_MODE" != "true" ]]; then
+        echo "[WARNING] ⚠️  This operation is DESTRUCTIVE and cannot be undone!" >&2
+        echo "[WARNING] Event IDs to delete:" >&2
+        for id in "${EVENT_IDS[@]:0:5}"; do
+            echo "  - $id" >&2
+        done
+        if [[ "$EVENT_COUNT" -gt 5 ]]; then
+            echo "  ... and $((EVENT_COUNT - 5)) more" >&2
+        fi
+        echo "" >&2
+        echo -n "[PROMPT] Continue with deletion? (yes/NO): " >&2
+        read -r CONFIRM
+        
+        if [[ "$CONFIRM" != "yes" ]]; then
+            echo "[INFO] Deletion cancelled by user" >&2
+            exit 0
+        fi
+    else
+        echo "[WARNING] ⚠️  --force mode: skipping confirmation" >&2
+    fi
+    
+    echo "[INFO] 🗑️  Deleting $EVENT_COUNT event(s)..." >&2
+    
+    DELETED=0
+    FAILED=0
+    
+    # Delete events (batch processing for better performance)
+    for event_id in "${EVENT_IDS[@]}"; do
+        if ./strfry delete "$event_id" 2>/dev/null; then
+            ((DELETED++))
+            # Show progress every 10 deletions or for small batches
+            if [[ $((DELETED % 10)) -eq 0 ]] || [[ "$EVENT_COUNT" -lt 20 ]]; then
+                echo "[OK] ✅ Deleted $DELETED/$EVENT_COUNT events..." >&2
+            fi
+        else
+            ((FAILED++))
+            echo "[ERROR] ❌ Failed to delete: $event_id" >&2
+        fi
+    done
+    
+    echo "" >&2
+    echo "[SUMMARY] Deletion complete:" >&2
+    echo "  - Total found: $EVENT_COUNT" >&2
+    echo "  - Successfully deleted: $DELETED" >&2
+    echo "  - Failed: $FAILED" >&2
+    
+elif [[ "$OUTPUT_FORMAT" == "count" ]]; then
     # Count mode: just count lines
     COUNT=$(./strfry scan "$FILTER" 2>/dev/null | wc -l)
     echo "$COUNT"
