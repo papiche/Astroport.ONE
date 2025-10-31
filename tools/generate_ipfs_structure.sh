@@ -3828,16 +3828,16 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             const hostname = currentURL.hostname;
             const protocol = currentURL.protocol;
 
-            // Second bloc (uPlanetAPI_URL)
+            // Second bloc (UPlanetAPI_URL)
             let uPort = currentURL.port;  // Nouvelle variable pour ce bloc
             if (uPort === "8080") {
                 uPort = "54321";
             }
             let uHost = hostname.replace("ipfs", "u");
-            let uPlanetStation = protocol + "//" + uHost + (uPort ? ":" + uPort : "");
+            let UPlanetStation = protocol + "//" + uHost + (uPort ? ":" + uPort : "");
 
-            console.log('API Base URL detected:', uPlanetStation);
-            return uPlanetStation;
+            console.log('API Base URL detected:', UPlanetStation);
+            return UPlanetStation;
         }
 
         function navigateFile(direction) {

@@ -122,7 +122,7 @@ The PASS code system allows users to control what happens when they authenticate
 |-----------|---------|--------|
 | *(empty)* | **Quick Message** | Opens the simple NOSTR message interface (default, most secure for public terminals) |
 | `0000` | **Resiliation** | Cancels/regenerates the MULTIPASS - allows the owner to claim a new identity if lost, stolen, or forgotten |
-| `1111` | **Full Access** | Opens the complete Astro Base interface (uPlanet Messenger) with the nsec pre-filled and authenticated |
+| `1111` | **Full Access** | Opens the complete Astro Base interface (UPlanet Messenger) with the nsec pre-filled and authenticated |
 | `xxxx` | **Future** | More PASS codes coming for delegated tasks and advanced features |
 
 ### How to Use PASS Codes
