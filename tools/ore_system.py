@@ -723,6 +723,9 @@ class OREUMAPManager:
         print(f"🌱 Activating ORE mode for UMAP ({lat}, {lon})")
         
         try:
+            # Ensure UMAP directory exists
+            os.makedirs(umappath, exist_ok=True)
+            
             # Create ORE mode marker
             ore_activated_file = os.path.join(umappath, "ore_mode.activated")
             with open(ore_activated_file, 'w') as f:
@@ -912,6 +915,151 @@ class OREUMAPManager:
         except Exception as e:
             print(f"❌ Error updating UMAP DID with ORE: {e}")
 
+    def _get_biodiversity_stats(self, lat: str, lon: str) -> Dict[str, Any]:
+        """Get biodiversity statistics for a UMAP from NOSTR events.
+        
+        Queries NOSTR for plant observations (kind 1 with #plantnet and #UPlanet tags)
+        to calculate real-time biodiversity statistics.
+        
+        Args:
+            lat: Latitude
+            lon: Longitude
+            
+        Returns:
+            Dictionary with biodiversity statistics
+        """
+        try:
+            umapKey = f"{lat},{lon}"
+            print(f"🔍 Fetching biodiversity stats from NOSTR for UMAP {umapKey}")
+            
+            # Path to nostr_get_events.sh
+            nostr_get_events_script = os.path.join(os.path.dirname(__file__), "nostr_get_events.sh")
+            
+            if not os.path.exists(nostr_get_events_script):
+                print(f"⚠️  nostr_get_events.sh not found at {nostr_get_events_script}")
+                return self._get_fallback_stats()
+            
+            # Query NOSTR for plant observations in this UMAP
+            # Get PlantNet bot responses (confirmed identifications)
+            result = subprocess.run([
+                nostr_get_events_script,
+                "--kind", "1",
+                "--limit", "500"
+            ], capture_output=True, text=True, timeout=30)
+            
+            if result.returncode != 0:
+                print(f"⚠️  Error querying NOSTR: {result.stderr}")
+                return self._get_fallback_stats()
+            
+            # Parse NOSTR events (one JSON per line)
+            events = []
+            for line in result.stdout.strip().split('\n'):
+                if line.strip():
+                    try:
+                        event = json.loads(line)
+                        events.append(event)
+                    except json.JSONDecodeError:
+                        continue
+            
+            # Filter events for this UMAP and with PlantNet tags
+            umap_observations = []
+            for event in events:
+                # Check if event has both #plantnet and #UPlanet tags
+                tags = [tag[1] for tag in event.get('tags', []) if len(tag) > 1]
+                if 'plantnet' not in tags or 'UPlanet' not in tags:
+                    continue
+                
+                # Check geolocation tag
+                geo_tag = next((tag for tag in event.get('tags', []) if tag[0] == 'g'), None)
+                if geo_tag and len(geo_tag) > 1:
+                    coords = geo_tag[1].split(',')
+                    if len(coords) == 2:
+                        event_lat = float(coords[0])
+                        event_lon = float(coords[1])
+                        # Check if in same UMAP (0.01° precision)
+                        event_umap = f"{event_lat:.2f},{event_lon:.2f}"
+                        if event_umap == umapKey:
+                            umap_observations.append(event)
+            
+            print(f"📊 Found {len(umap_observations)} plant observations in UMAP {umapKey}")
+            
+            # Calculate statistics from NOSTR events
+            unique_species = set()
+            unique_observers = set()
+            
+            for event in umap_observations:
+                # Extract observer pubkey
+                unique_observers.add(event.get('pubkey'))
+                
+                # Try to extract species from content
+                content = event.get('content', '')
+                # Look for species in content (format: "Species: Scientific Name")
+                species_match = re.search(r'(?:Species|Espèce)[:\s]+([^\n]+)', content, re.IGNORECASE)
+                if species_match:
+                    species_name = species_match.group(1).strip()
+                    if species_name:
+                        unique_species.add(species_name)
+            
+            plants_count = len(umap_observations)
+            species_count = len(unique_species)
+            observer_count = len(unique_observers)
+            
+            # Calculate compliance score based on biodiversity
+            # Score = (unique_species * 0.02) + (total_observations * 0.01)
+            # Capped at 1.0
+            compliance_score = min(
+                (species_count * 0.02) + (plants_count * 0.01),
+                1.0
+            )
+            
+            # Calculate reward potential
+            # Base: 0.5 Ẑen per observation
+            # Species bonus: 1.5 Ẑen per species
+            # Observer bonus: 2.0 Ẑen per observer
+            reward_potential = (
+                (plants_count * 0.5) +
+                (species_count * 1.5) +
+                (observer_count * 2.0)
+            )
+            
+            # Active contract multiplier (if exists)
+            if compliance_score > 0.7:
+                reward_potential *= 1.5
+            
+            stats = {
+                "plants_count": plants_count,
+                "species_count": species_count,
+                "observer_count": observer_count,
+                "compliance_score": round(compliance_score, 2),
+                "reward_potential": round(reward_potential, 2)
+            }
+            
+            print(f"✅ Biodiversity stats for UMAP {umapKey}: {stats}")
+            return stats
+            
+        except subprocess.TimeoutExpired:
+            print(f"⚠️  Timeout querying NOSTR for biodiversity stats")
+            return self._get_fallback_stats()
+        except Exception as e:
+            print(f"⚠️  Error getting biodiversity stats from NOSTR: {e}")
+            import traceback
+            traceback.print_exc()
+            return self._get_fallback_stats()
+    
+    def _get_fallback_stats(self) -> Dict[str, Any]:
+        """Return fallback statistics when NOSTR query fails.
+        
+        Returns:
+            Dictionary with zero statistics
+        """
+        return {
+            "plants_count": 0,
+            "species_count": 0,
+            "observer_count": 0,
+            "compliance_score": 0.0,
+            "reward_potential": 0.0
+        }
+    
     def _publish_ore_status_to_nostr(self, lat: str, lon: str, keyfile_path: str, umap_did: str) -> None:
         """Publish ORE status to Nostr with ORE Meeting Space event (kind 30312).
         
@@ -940,6 +1088,9 @@ Join the meeting space to collaborate on ecological verification.
 
 #UPlanet #ORE #Environment #Biodiversity"""
             
+            # Get biodiversity statistics for this UMAP
+            biodiversity_stats = self._get_biodiversity_stats(lat, lon)
+            
             # Prepare tags for kind 30312 (replaceable event with 'd' tag)
             tags_json = json.dumps([
                 ["d", f"ore-space-{lat}-{lon}"],  # Unique identifier for replaceable event
@@ -950,7 +1101,12 @@ Join the meeting space to collaborate on ecological verification.
                 ["room", room_name],
                 ["vdo_url", vdo_room_url],
                 ["did", umap_did],
-                ["uplanet_authority", self.uplanet_g1_pub[:16]]
+                ["uplanet_authority", self.uplanet_g1_pub[:16]],
+                ["plants", str(biodiversity_stats.get("plants_count", 0))],
+                ["species", str(biodiversity_stats.get("species_count", 0))],
+                ["observers", str(biodiversity_stats.get("observer_count", 0))],
+                ["compliance_score", str(biodiversity_stats.get("compliance_score", 0.0))],
+                ["ore_reward", str(biodiversity_stats.get("reward_potential", 0.0))]
             ])
             
             # Path to nostr_send_note.py
@@ -1246,6 +1402,14 @@ def main():
     
     elif action == "activate_ore":
         # Activate ORE mode for UMAP (UMAP keys are generated dynamically)
+        if len(sys.argv) < 4:
+            print("Usage: python3 ore_system.py activate_ore <lat> <lon> <umappath>")
+            sys.exit(1)
+        
+        lat = sys.argv[2]
+        lon = sys.argv[3]
+        umappath = sys.argv[4] if len(sys.argv) > 4 else f"/tmp/umap_{lat}_{lon}"
+        
         config = {
             "ipfs_node_id": os.environ.get("IPFSNODEID", "default_node"),  # Astroport.ONE local relay address
             "uplanet_g1_pub": os.environ.get("UPLANETNAME_G1", "default_pub"),  # Use UPLANETNAME_G1 for Zen usage (Banque centrale G1/Ẑ)
@@ -1256,8 +1420,6 @@ def main():
         }
         
         manager = OREUMAPManager(config)
-        umappath = f"/tmp/umap_{lat}_{lon}"  # Mock path
-        os.makedirs(umappath, exist_ok=True)
         
         if manager.should_activate_ore_mode(lat, lon, umappath):
             success = manager.activate_ore_mode(lat, lon, umappath)

@@ -329,7 +329,7 @@ process_umap_friends() {
         local ore_check_result=$(python3 "${MY_PATH}/../tools/ore_system.py" "check_ore" "$LAT" "$LON" 2>/dev/null)
         if echo "$ore_check_result" | grep -q "Should activate ORE mode: ✅ Yes"; then
             log "🌱 Activating ORE mode for UMAP (${LAT}, ${LON})"
-            python3 "${MY_PATH}/../tools/ore_system.py" "activate_ore" "$LAT" "$LON" 2>/dev/null
+            python3 "${MY_PATH}/../tools/ore_system.py" "activate_ore" "$LAT" "$LON" "$UMAPPATH" 2>&1 | grep -v "^$"
             
             # Publish ORE Meeting Space (kind 30312) for persistent environmental space
             publish_ore_meeting_space "$LAT" "$LON" "$NPRIV_HEX"
