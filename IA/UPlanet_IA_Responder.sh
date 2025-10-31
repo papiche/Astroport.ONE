@@ -388,6 +388,7 @@ send_memory_access_denied() {
     source ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr ## CAPTAIN SPEAKING
     if [[ "$pubkey" != "$HEX" && "$NSEC" != "" ]]; then
         NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
+        KEYFILE_PATH="$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
         
         DENIED_MSG="⚠️ Accès refusé aux slots de mémoire 1-12.
 
@@ -400,17 +401,20 @@ Pour devenir sociétaire : $myIPFS/ipns/copylaradio.com
 Votre Capitaine.
 #CopyLaRadio #mem"
 
-        nostpy-cli send_event \
-          -privkey "$NPRIV_HEX" \
-          -kind 1 \
-          -content "$DENIED_MSG" \
-          -tags "[['e', '$event_id'], ['p', '$pubkey'], ['t', 'MemoryAccessDenied']]" \
-          --relay "$myRELAY" 2>/dev/null
+        TAGS_JSON='[["e","'$event_id'"],["p","'$pubkey'"],["t","MemoryAccessDenied"]]'
+        
+        python3 "$HOME/.zen/Astroport.ONE/tools/nostr_send_note.py" \
+          --keyfile "$KEYFILE_PATH" \
+          --content "$DENIED_MSG" \
+          --relays "$myRELAY" \
+          --tags "$TAGS_JSON" \
+          --kind 1 \
+          --json >/dev/null 2>&1
     fi
     ) &
 }
 
-# Function to handle PlantNet recognition with image description
+# Function to handle PlantNet recognition with image description and ORE integration
 handle_plantnet_recognition() {
     local image_url="$1"
     local latitude="$2"
@@ -419,21 +423,9 @@ handle_plantnet_recognition() {
     local event_id="$5"
     local pubkey="$6"
     
-    echo "PlantNet: Starting recognition process with image description..." >&2
+    echo "PlantNet: Starting recognition process with ORE integration..." >&2
     
-    # First, get image description using describe_image.py
-    echo "PlantNet: Getting image description..." >&2
-    local image_desc=""
-    if [[ -n "$image_url" ]]; then
-        # Properly quote the URL to handle spaces and special characters
-        image_desc=$("$MY_PATH/describe_image.py" "$image_url" --json | jq -r '.description' 2>/dev/null)
-        if [[ -z "$image_desc" || "$image_desc" == "null" ]]; then
-            image_desc="Image analysis failed"
-        fi
-        echo "PlantNet: Image description: $image_desc" >&2
-    fi
-    
-    # Call PlantNet recognition script with image description
+    # Call PlantNet recognition script (text output for user)
     echo "PlantNet: Calling PlantNet API..." >&2
     local plantnet_result=""
     plantnet_result=$($MY_PATH/plantnet_recognition.py "$image_url" "$latitude" "$longitude" "$user_id" "$event_id" "$pubkey" 2>/dev/null)
@@ -441,7 +433,27 @@ handle_plantnet_recognition() {
     local exit_code=$?
     if [[ $exit_code -eq 0 && -n "$plantnet_result" ]]; then
         echo "PlantNet: Recognition completed successfully" >&2
-        # Return the actual PlantNet result instead of generic message
+        
+        # Integrate with ORE system for biodiversity tracking
+        # plantnet_ore_integration.py now calls plantnet_recognition.py --json internally
+        echo "PlantNet: Recording observation in ORE biodiversity system..." >&2
+        local ore_response=""
+        if [[ -x "$MY_PATH/plantnet_ore_integration.py" ]]; then
+            # New signature: only needs lat, lon, pubkey, event_id, image_url
+            ore_response=$("$MY_PATH/plantnet_ore_integration.py" "$latitude" "$longitude" "$pubkey" "$event_id" "$image_url" 2>/dev/null)
+            if [[ $? -eq 0 && -n "$ore_response" ]]; then
+                echo "PlantNet: ORE observation recorded successfully" >&2
+                # Append ORE information to PlantNet result
+                plantnet_result="${plantnet_result}${ore_response}"
+            else
+                echo "PlantNet: Failed to record ORE observation (non-critical)" >&2
+                # Don't fail if ORE integration fails - still return PlantNet result
+            fi
+        else
+            echo "PlantNet: ORE integration not available (plantnet_ore_integration.py not found)" >&2
+        fi
+        
+        # Return the actual PlantNet result with ORE data
         echo "$plantnet_result"
     else
         echo "PlantNet: Recognition failed with exit code $exit_code" >&2
@@ -454,38 +466,25 @@ handle_plantnet_recognition() {
             echo "PlantNet: Last error from log: $error_details" >&2
         fi
         
-        # Fallback to image description if PlantNet fails
-        if [[ -n "$image_desc" ]]; then
-            echo "🌿 Analyse d'image (PlantNet indisponible)
+        # Fallback to error message if PlantNet fails
+        echo "🌿 Reconnaissance de plante
 
-📸 **Description de l'image :** $image_desc
+❌ Erreur de reconnaissance
 
-❌ **PlantNet API indisponible** (code d'erreur: $exit_code)
-$error_details
+La reconnaissance de la plante a échoué. 
 
-📍 **Localisation :** $latitude, $longitude
+💡 Causes possibles :
+• Image de mauvaise qualité ou corrompue
+• Problème de connexion à l'API PlantNet
+• Clé API PlantNet invalide ou expirée
+• Image trop grande ou dans un format non supporté
 
-💡 **Conseils :**
-• Vérifiez que la clé API PlantNet est configurée
-• L'image doit être claire et montrer des parties de plante
-• Formats supportés : JPG, JPEG, PNG, GIF, WEBP
+📍 Localisation : $latitude, $longitude
 
-#PlantNet #BRO #jardinage"
-        else
-            echo "❌ Erreur lors de l'analyse de l'image
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔬 Source : https://plantnet.org
 
-❌ **PlantNet API indisponible** (code d'erreur: $exit_code)
-$error_details
-
-📍 **Localisation :** $latitude, $longitude
-
-💡 **Vérifiez :**
-• Que la clé API PlantNet est configurée
-• Que l'image est accessible et valide
-• Les logs pour plus de détails
-
-#PlantNet #BRO #jardinage"
-        fi
+#plantnet #UPlanet"
     fi
 }
 
@@ -924,6 +923,11 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                     
                     # Call PlantNet recognition with image description
                     KeyANSWER=$(handle_plantnet_recognition "$image_url" "$LAT" "$LON" "$user_id" "$EVENT" "$PUBKEY")
+                    
+                    # Add tags for image URL and geolocation (NIP-94 image tag + NIP-52 geolocation)
+                    # This allows plantnet.html to retrieve and display the photo gallery
+                    echo "PlantNet: Adding image and geolocation tags for gallery display" >&2
+                    ExtraTags="[['imeta', 'url $image_url'], ['g', '${LAT},${LON}']]"
                 else
                     echo "PlantNet: No valid image URL found in message" >&2
                     KeyANSWER="❌ Aucune image valide trouvée pour la reconnaissance PlantNet.
@@ -933,7 +937,7 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
 **Formats supportés :** JPG, JPEG, PNG, GIF, WEBP
 **Note :** Seuls les fichiers image sont analysés. Les autres types de fichiers sont ignorés.
 
-#PlantNet #BRO #jardinage"
+#plantnet #UPlanet"
                 fi
             ######################################################### #pierre / #amelie
             elif [[ "${TAGS[pierre]}" == true || "${TAGS[amelie]}" == true ]]; then
@@ -995,19 +999,17 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
             ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$PUBKEY" 2>/dev/null
         fi
 
-        NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
-
         # Clean KeyANSWER of BOT and BRO tags
         KeyANSWER=$(echo "$KeyANSWER" | sed 's/#BOT//g; s/#BRO//g; s/#bot//g; s/#bro//g')
 
+        # Prepare keyfile for nostr_send_note.py
+        KEYFILE_PATH="$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
+        
         ## SEND REPLY MESSAGE
         if [[ "$SECRET_MODE" == true ]]; then
             # Send encrypted DM
             if [[ -n "$KNAME" ]]; then
                 # Capitaine speaking
-                source ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
-                NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$NSEC")
-                
                 KNAME_HEX_FILE="$HOME/.zen/game/nostr/$KNAME/HEX"
                 if [[ -f "$KNAME_HEX_FILE" ]]; then
                     KNAME_HEX=$(cat "$KNAME_HEX_FILE")
@@ -1019,6 +1021,8 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
                     fi
                     
                     echo "[SECRET] Sending DM with content: $KeyANSWER" >&2
+                    # Note: DM functionality still uses nostr_send_secure_dm.py
+                    source ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
                     DM_RESULT=$($HOME/.zen/Astroport.ONE/tools/nostr_send_secure_dm.py "$NSEC" "$KNAME_HEX" "$KeyANSWER" "$myRELAY" 2>&1)
                     DM_EXIT_CODE=$?
                     
@@ -1038,46 +1042,55 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
                 echo "[SECRET] KNAME not set, cannot send DM."
             fi
         else
-            # Send public message with appropriate tags
+            # Send public message with appropriate tags using nostr_send_note.py
             echo "DEBUG: AnswerKind=$AnswerKind, ExtraTags=$ExtraTags" >&2
+            
+            # Prepare tags in JSON format
             if [[ -n "$ExtraTags" ]]; then
                 # For kind 30023, use only the specific blog tags
                 if [[ "$AnswerKind" == "30023" ]]; then
-                    if ! nostpy-cli send_event \
-                      -privkey "$NPRIV_HEX" \
-                      -kind $AnswerKind \
-                      -content "$KeyANSWER" \
-                      -tags "$ExtraTags" \
-                      --relay "$myRELAY" 2>/dev/null; then
-                        echo "Error: Failed to send kind 30023 event" >&2
-                        send_error_email "Failed to send kind 30023 event with tags: $ExtraTags" "~/.zen/tmp/IA.log"
-                    fi
+                    TAGS_JSON="$ExtraTags"
                 else
                     # For other kinds, combine standard tags with extra tags
-                    # Extract content from ExtraTags without the outer brackets
-                    ExtraTagsContent=$(echo "$ExtraTags" | sed 's/^\[//' | sed 's/\]$//')
-                    CombinedTags="[['e', '$EVENT'], ['p', '$PUBKEY'], $ExtraTagsContent]"
-                    if ! nostpy-cli send_event \
-                      -privkey "$NPRIV_HEX" \
-                      -kind $AnswerKind \
-                      -content "$KeyANSWER" \
-                      -tags "$CombinedTags" \
-                      --relay "$myRELAY" 2>/dev/null; then
-                        echo "Error: Failed to send event with combined tags" >&2
-                        send_error_email "Failed to send event with combined tags: $CombinedTags" "~/.zen/tmp/IA.log"
-                    fi
+                    # Convert Python list format to proper JSON
+                    ExtraTagsJSON=$(echo "$ExtraTags" | sed "s/'/\"/g")
+                    # Remove outer brackets and add standard tags
+                    ExtraTagsContent=$(echo "$ExtraTagsJSON" | sed 's/^\[//' | sed 's/\]$//')
+                    TAGS_JSON='[["e","'$EVENT'"],["p","'$PUBKEY'"],'$ExtraTagsContent']'
                 fi
             else
                 # Use standard tags only
-                if ! nostpy-cli send_event \
-                  -privkey "$NPRIV_HEX" \
-                  -kind $AnswerKind \
-                  -content "$KeyANSWER" \
-                  -tags "[['e', '$EVENT'], ['p', '$PUBKEY']]" \
-                  --relay "$myRELAY" 2>/dev/null; then
-                    echo "Error: Failed to send standard event" >&2
-                    send_error_email "Failed to send standard event" "~/.zen/tmp/IA.log"
+                TAGS_JSON='[["e","'$EVENT'"],["p","'$PUBKEY'"]]'
+            fi
+            
+            echo "DEBUG: Sending to relay $myRELAY with tags: $TAGS_JSON" >&2
+            
+            # Send event using nostr_send_note.py
+            SEND_RESULT=$(python3 "$HOME/.zen/Astroport.ONE/tools/nostr_send_note.py" \
+                --keyfile "$KEYFILE_PATH" \
+                --content "$KeyANSWER" \
+                --relays "$myRELAY" \
+                --tags "$TAGS_JSON" \
+                --kind "$AnswerKind" \
+                --json 2>&1)
+            SEND_EXIT_CODE=$?
+            
+            if [[ $SEND_EXIT_CODE -eq 0 ]]; then
+                # Parse JSON response
+                EVENT_ID=$(echo "$SEND_RESULT" | jq -r '.event_id // empty' 2>/dev/null)
+                RELAYS_SUCCESS=$(echo "$SEND_RESULT" | jq -r '.relays_success // 0' 2>/dev/null)
+                
+                if [[ -n "$EVENT_ID" && "$RELAYS_SUCCESS" -gt 0 ]]; then
+                    echo "✅ Event published successfully - ID: $EVENT_ID (Kind: $AnswerKind)" >&2
+                else
+                    echo "⚠️ Event may not have been published correctly" >&2
+                    echo "Response: $SEND_RESULT" >&2
+                    send_error_email "Event published with warnings. Response: $SEND_RESULT" "~/.zen/tmp/IA.log"
                 fi
+            else
+                echo "❌ Failed to send event. Exit code: $SEND_EXIT_CODE" >&2
+                echo "Error output: $SEND_RESULT" >&2
+                send_error_email "Failed to send Nostr event (kind: $AnswerKind). Exit code: $SEND_EXIT_CODE. Error: $SEND_RESULT" "~/.zen/tmp/IA.log"
             fi
         fi
         

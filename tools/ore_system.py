@@ -350,6 +350,216 @@ class OREUMAPDIDGenerator:
         }
         return did, did_document, umap_nsec, umap_npub, umap_hex, umap_g1pub
 
+class OREBiodiversityTracker:
+    """Tracks plant observations for UMAP biodiversity scoring."""
+    
+    def __init__(self, umap_path: str):
+        self.umap_path = umap_path
+        self.biodiversity_file = os.path.join(umap_path, "ore_biodiversity.json")
+        self._ensure_biodiversity_file()
+    
+    def _ensure_biodiversity_file(self):
+        """Create biodiversity tracking file if it doesn't exist."""
+        if not os.path.exists(self.biodiversity_file):
+            os.makedirs(self.umap_path, exist_ok=True)
+            initial_data = {
+                "species": {},
+                "total_observations": 0,
+                "unique_species": 0,
+                "last_updated": datetime.utcnow().isoformat(),
+                "observers": {}
+            }
+            with open(self.biodiversity_file, 'w') as f:
+                json.dump(initial_data, f, indent=2)
+    
+    def add_plant_observation(self, species_name: str, scientific_name: str, 
+                             observer_pubkey: str, confidence: float,
+                             image_url: str = "", nostr_event_id: str = "") -> Dict[str, Any]:
+        """Add a plant observation to the UMAP biodiversity record.
+        
+        Returns:
+            dict with 'is_new_species', 'observation_count', 'biodiversity_score'
+        """
+        with open(self.biodiversity_file, 'r') as f:
+            data = json.load(f)
+        
+        is_new_species = scientific_name not in data["species"]
+        
+        # Initialize species record if new
+        if is_new_species:
+            data["species"][scientific_name] = {
+                "common_name": species_name,
+                "first_observed": datetime.utcnow().isoformat(),
+                "observations": [],
+                "observers": []
+            }
+            data["unique_species"] += 1
+        
+        # Add observation
+        observation = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "observer": observer_pubkey,
+            "confidence": confidence,
+            "image_url": image_url,
+            "nostr_event_id": nostr_event_id
+        }
+        data["species"][scientific_name]["observations"].append(observation)
+        
+        # Track observer
+        if observer_pubkey not in data["species"][scientific_name]["observers"]:
+            data["species"][scientific_name]["observers"].append(observer_pubkey)
+        
+        if observer_pubkey not in data["observers"]:
+            data["observers"][observer_pubkey] = {
+                "first_observation": datetime.utcnow().isoformat(),
+                "observation_count": 0
+            }
+        data["observers"][observer_pubkey]["observation_count"] += 1
+        data["observers"][observer_pubkey]["last_observation"] = datetime.utcnow().isoformat()
+        
+        data["total_observations"] += 1
+        data["last_updated"] = datetime.utcnow().isoformat()
+        
+        # Save updated data
+        with open(self.biodiversity_file, 'w') as f:
+            json.dump(data, f, indent=2)
+        
+        # Calculate biodiversity score
+        biodiversity_score = self._calculate_biodiversity_score(data)
+        
+        return {
+            "is_new_species": is_new_species,
+            "observation_count": len(data["species"][scientific_name]["observations"]),
+            "total_species": data["unique_species"],
+            "total_observations": data["total_observations"],
+            "biodiversity_score": biodiversity_score,
+            "scientific_name": scientific_name,
+            "common_name": species_name
+        }
+    
+    def _calculate_biodiversity_score(self, data: Dict[str, Any]) -> float:
+        """Calculate biodiversity score based on species diversity and observations.
+        
+        Score factors:
+        - Unique species count (weighted heavily)
+        - Total observations (shows activity)
+        - Observer diversity (multiple people observing)
+        """
+        unique_species = data["unique_species"]
+        total_observations = data["total_observations"]
+        observer_count = len(data["observers"])
+        
+        # Base score from species diversity (0-70 points)
+        species_score = min(unique_species * 2, 70)
+        
+        # Observation activity score (0-20 points)
+        observation_score = min(total_observations * 0.5, 20)
+        
+        # Observer diversity score (0-10 points)
+        observer_score = min(observer_count * 2, 10)
+        
+        total_score = species_score + observation_score + observer_score
+        
+        # Normalize to 0-1 scale
+        return min(total_score / 100.0, 1.0)
+    
+    def get_biodiversity_summary(self) -> Dict[str, Any]:
+        """Get current biodiversity summary for this UMAP."""
+        if not os.path.exists(self.biodiversity_file):
+            return {
+                "unique_species": 0,
+                "total_observations": 0,
+                "biodiversity_score": 0.0
+            }
+        
+        with open(self.biodiversity_file, 'r') as f:
+            data = json.load(f)
+        
+        return {
+            "unique_species": data["unique_species"],
+            "total_observations": data["total_observations"],
+            "biodiversity_score": self._calculate_biodiversity_score(data),
+            "top_species": self._get_top_species(data, limit=5),
+            "recent_observations": self._get_recent_observations(data, limit=10)
+        }
+    
+    def _get_top_species(self, data: Dict[str, Any], limit: int = 5) -> List[Dict[str, Any]]:
+        """Get most frequently observed species."""
+        species_list = []
+        for scientific_name, species_data in data["species"].items():
+            species_list.append({
+                "scientific_name": scientific_name,
+                "common_name": species_data["common_name"],
+                "observation_count": len(species_data["observations"])
+            })
+        
+        species_list.sort(key=lambda x: x["observation_count"], reverse=True)
+        return species_list[:limit]
+    
+    def _get_recent_observations(self, data: Dict[str, Any], limit: int = 10) -> List[Dict[str, Any]]:
+        """Get most recent observations across all species."""
+        all_observations = []
+        for scientific_name, species_data in data["species"].items():
+            for obs in species_data["observations"]:
+                all_observations.append({
+                    "scientific_name": scientific_name,
+                    "common_name": species_data["common_name"],
+                    **obs
+                })
+        
+        all_observations.sort(key=lambda x: x["timestamp"], reverse=True)
+        return all_observations[:limit]
+    
+    def check_if_species_exists(self, scientific_name: str) -> Dict[str, Any]:
+        """Check if a species has already been observed in this UMAP."""
+        if not os.path.exists(self.biodiversity_file):
+            return {"exists": False}
+        
+        with open(self.biodiversity_file, 'r') as f:
+            data = json.load(f)
+        
+        if scientific_name in data["species"]:
+            species_data = data["species"][scientific_name]
+            return {
+                "exists": True,
+                "common_name": species_data["common_name"],
+                "first_observed": species_data["first_observed"],
+                "observation_count": len(species_data["observations"]),
+                "observers": len(species_data["observers"])
+            }
+        
+        return {"exists": False}
+    
+    def get_all_images(self) -> List[Dict[str, Any]]:
+        """Get all plant observation images for this UMAP.
+        
+        Returns:
+            List of image records with metadata (URL, timestamp, species, observer)
+        """
+        if not os.path.exists(self.biodiversity_file):
+            return []
+        
+        with open(self.biodiversity_file, 'r') as f:
+            data = json.load(f)
+        
+        images = []
+        for scientific_name, species_data in data["species"].items():
+            for obs in species_data["observations"]:
+                if obs.get("image_url"):
+                    images.append({
+                        "image_url": obs["image_url"],
+                        "timestamp": obs["timestamp"],
+                        "scientific_name": scientific_name,
+                        "common_name": species_data["common_name"],
+                        "observer": obs["observer"],
+                        "confidence": obs.get("confidence", 0.0),
+                        "nostr_event_id": obs.get("nostr_event_id", "")
+                    })
+        
+        # Sort by timestamp (most recent first)
+        images.sort(key=lambda x: x["timestamp"], reverse=True)
+        return images
+
 class OREUMAPManager:
     """Manages ORE system integration for UMAP geographic cells."""
     
@@ -725,12 +935,117 @@ class OREUMAPManager:
 
 def main():
     """Main function for ORE system operations."""
+    if len(sys.argv) < 2:
+        print("Usage: python3 ore_system.py <action> [options]")
+        print("Actions:")
+        print("  verify <lat> <lon>")
+        print("  reward <lat> <lon>")
+        print("  generate_did <lat> <lon>")
+        print("  activate_ore <lat> <lon>")
+        print("  check_ore <lat> <lon>")
+        print("  add_plant <lat> <lon> <species_name> <scientific_name> <observer_pubkey> <confidence> [image_url] [event_id]")
+        print("  check_plant <lat> <lon> <scientific_name>")
+        print("  biodiversity_summary <lat> <lon>")
+        sys.exit(1)
+    
+    action = sys.argv[1]
+    
+    # Handle plant observation actions (different parameter structure)
+    if action == "add_plant":
+        if len(sys.argv) < 7:
+            print("Usage: python3 ore_system.py add_plant <lat> <lon> <species_name> <scientific_name> <observer_pubkey> <confidence> [image_url] [event_id]")
+            sys.exit(1)
+        
+        lat = sys.argv[2]
+        lon = sys.argv[3]
+        species_name = sys.argv[4]
+        scientific_name = sys.argv[5]
+        observer_pubkey = sys.argv[6]
+        confidence = float(sys.argv[7])
+        image_url = sys.argv[8] if len(sys.argv) > 8 else ""
+        event_id = sys.argv[9] if len(sys.argv) > 9 else ""
+        
+        # Calculate UMAP path
+        ipfs_node_id = os.environ.get("IPFSNODEID", "default_node")
+        rlat = lat.split('.')[0]
+        rlon = lon.split('.')[0]
+        slat = lat[:len(lat)-1]
+        slon = lon[:len(lon)-1]
+        umap_path = f"{os.path.expanduser('~')}/.zen/tmp/{ipfs_node_id}/UPLANET/__/_{rlat}_{rlon}/_{slat}_{slon}/_{lat}_{lon}"
+        
+        tracker = OREBiodiversityTracker(umap_path)
+        result = tracker.add_plant_observation(species_name, scientific_name, observer_pubkey, confidence, image_url, event_id)
+        print(json.dumps(result, indent=2))
+        return
+    
+    elif action == "check_plant":
+        if len(sys.argv) < 5:
+            print("Usage: python3 ore_system.py check_plant <lat> <lon> <scientific_name>")
+            sys.exit(1)
+        
+        lat = sys.argv[2]
+        lon = sys.argv[3]
+        scientific_name = sys.argv[4]
+        
+        # Calculate UMAP path
+        ipfs_node_id = os.environ.get("IPFSNODEID", "default_node")
+        rlat = lat.split('.')[0]
+        rlon = lon.split('.')[0]
+        slat = lat[:len(lat)-1]
+        slon = lon[:len(lon)-1]
+        umap_path = f"{os.path.expanduser('~')}/.zen/tmp/{ipfs_node_id}/UPLANET/__/_{rlat}_{rlon}/_{slat}_{slon}/_{lat}_{lon}"
+        
+        tracker = OREBiodiversityTracker(umap_path)
+        result = tracker.check_if_species_exists(scientific_name)
+        print(json.dumps(result, indent=2))
+        return
+    
+    elif action == "biodiversity_summary":
+        if len(sys.argv) < 4:
+            print("Usage: python3 ore_system.py biodiversity_summary <lat> <lon>")
+            sys.exit(1)
+        
+        lat = sys.argv[2]
+        lon = sys.argv[3]
+        
+        # Calculate UMAP path
+        ipfs_node_id = os.environ.get("IPFSNODEID", "default_node")
+        rlat = lat.split('.')[0]
+        rlon = lon.split('.')[0]
+        slat = lat[:len(lat)-1]
+        slon = lon[:len(lon)-1]
+        umap_path = f"{os.path.expanduser('~')}/.zen/tmp/{ipfs_node_id}/UPLANET/__/_{rlat}_{rlon}/_{slat}_{slon}/_{lat}_{lon}"
+        
+        tracker = OREBiodiversityTracker(umap_path)
+        result = tracker.get_biodiversity_summary()
+        print(json.dumps(result, indent=2))
+        return
+    
+    # Get all images for a UMAP
+    if action == "get_images":
+        if len(sys.argv) < 4:
+            print("Usage: python3 ore_system.py get_images <lat> <lon>")
+            sys.exit(1)
+        
+        lat = sys.argv[2]
+        lon = sys.argv[3]
+        umap_path = os.path.expanduser(f"~/.zen/game/nostr/UMAP_{lat}_{lon}")
+        
+        if not os.path.exists(umap_path):
+            print(json.dumps({"error": "UMAP not found", "images": []}, indent=2))
+            return
+        
+        tracker = OREBiodiversityTracker(umap_path)
+        images = tracker.get_all_images()
+        print(json.dumps({"images": images, "count": len(images)}, indent=2))
+        return
+    
+    # Standard actions requiring lat/lon as 2nd and 3rd parameters
     if len(sys.argv) < 4:
         print("Usage: python3 ore_system.py <action> <lat> <lon> [options]")
         print("Actions: verify, reward, generate_did, activate_ore, check_ore")
         sys.exit(1)
     
-    action = sys.argv[1]
     lat = sys.argv[2]
     lon = sys.argv[3]
     

@@ -193,15 +193,58 @@ def call_plantnet_api(image_data):
         log_message(f"Error calling PlantNet API: {e}")
         return None
 
-def format_plantnet_result(plant_info, latitude, longitude, image_url=None):
-    """Format PlantNet result for display"""
+def format_plantnet_result(plant_info, latitude, longitude, image_url=None, output_format='text'):
+    """Format PlantNet result for display or as JSON
+    
+    Args:
+        plant_info: PlantNet API response
+        latitude: GPS latitude
+        longitude: GPS longitude
+        image_url: Optional image URL
+        output_format: 'text' (default) or 'json'
+    
+    Returns:
+        Formatted text string or dict (for JSON output)
+    """
     try:
         if plant_info and plant_info.get('results'):
             best_match = plant_info['results'][0]
-            confidence = int(best_match['score'] * 100)
+            confidence = best_match['score']  # Keep as float for JSON
+            confidence_pct = int(confidence * 100)
             scientific_name = best_match['species']['scientificNameWithoutAuthor']
             common_names = best_match['species'].get('commonNames', [])
             
+            # If JSON output is requested, return structured data
+            if output_format == 'json':
+                # Build alternative matches list
+                alternatives = []
+                for result in plant_info['results'][1:5]:  # Top 5 alternatives
+                    alternatives.append({
+                        'scientific_name': result['species']['scientificNameWithoutAuthor'],
+                        'common_names': result['species'].get('commonNames', []),
+                        'confidence': result['score']
+                    })
+                
+                return {
+                    'success': True,
+                    'best_match': {
+                        'scientific_name': scientific_name,
+                        'common_names': common_names,
+                        'confidence': confidence,
+                        'confidence_pct': confidence_pct,
+                        'wikipedia_url': f"https://fr.wikipedia.org/wiki/{scientific_name.replace(' ', '_')}"
+                    },
+                    'alternatives': alternatives,
+                    'location': {
+                        'latitude': latitude,
+                        'longitude': longitude
+                    },
+                    'image_url': image_url,
+                    'timestamp': time.time(),
+                    'source': 'PlantNet API v2'
+                }
+            
+            # TEXT OUTPUT (existing format)
             # Format common names
             common_name_str = ""
             if common_names:
@@ -210,13 +253,13 @@ def format_plantnet_result(plant_info, latitude, longitude, image_url=None):
                 common_name_str = f"\n🏷️  Noms communs : {', '.join(names_to_show)}"
             
             # Determine confidence level with more precise categories
-            if confidence >= 70:
+            if confidence_pct >= 70:
                 confidence_emoji = "🟢"
                 confidence_text = "Très probable"
-            elif confidence >= 50:
+            elif confidence_pct >= 50:
                 confidence_emoji = "🟡"
                 confidence_text = "Probable"
-            elif confidence >= 30:
+            elif confidence_pct >= 30:
                 confidence_emoji = "🟠"
                 confidence_text = "Possible"
             else:
@@ -233,7 +276,7 @@ def format_plantnet_result(plant_info, latitude, longitude, image_url=None):
 
 🔬 Nom scientifique : {scientific_name}{common_name_str}
 
-{confidence_emoji} Confiance : {confidence}% ({confidence_text})
+{confidence_emoji} Confiance : {confidence_pct}% ({confidence_text})
 📍 Localisation : {latitude:.4f}, {longitude:.4f}
 
 📖 En savoir plus : {wikipedia_url}
@@ -273,6 +316,22 @@ def format_plantnet_result(plant_info, latitude, longitude, image_url=None):
             
             return result_content
         else:
+            # No results found
+            if output_format == 'json':
+                return {
+                    'success': False,
+                    'error': 'no_match',
+                    'message': 'No match found in PlantNet database',
+                    'location': {
+                        'latitude': latitude,
+                        'longitude': longitude
+                    },
+                    'image_url': image_url,
+                    'timestamp': time.time(),
+                    'source': 'PlantNet API v2'
+                }
+            
+            # TEXT OUTPUT for no results
             result_content = f"""🌿 Reconnaissance de plante
 
 ❌ Aucune correspondance trouvée
@@ -306,37 +365,62 @@ La plante n'a pas pu être identifiée avec certitude dans la base de données P
 
 def main():
     """Main function"""
-    if len(sys.argv) < 7:
-        log_message("Usage: plantnet_recognition.py <image_url> <latitude> <longitude> <user_id> <event_id> <pubkey>")
-        print("❌ Erreur: paramètres manquants pour la reconnaissance PlantNet")
+    # Check for --json flag
+    output_format = 'text'
+    args = sys.argv[1:]
+    
+    if '--json' in args:
+        output_format = 'json'
+        args.remove('--json')
+    
+    if len(args) < 6:
+        log_message("Usage: plantnet_recognition.py <image_url> <latitude> <longitude> <user_id> <event_id> <pubkey> [--json]")
+        error_msg = "❌ Erreur: paramètres manquants pour la reconnaissance PlantNet"
+        if output_format == 'json':
+            print(json.dumps({'success': False, 'error': 'missing_parameters', 'message': error_msg}))
+        else:
+            print(error_msg)
         sys.exit(0)
     
-    image_url = sys.argv[1]
+    image_url = args[0]
     
     # Safe float conversion with error handling
     try:
-        latitude = float(sys.argv[2])
-        longitude = float(sys.argv[3])
+        latitude = float(args[1])
+        longitude = float(args[2])
     except (ValueError, IndexError) as e:
         log_message(f"Error parsing coordinates: {e}")
         latitude = 0.0
         longitude = 0.0
     
-    user_id = sys.argv[4]
-    # event_id and pubkey are not used in current implementation
-    # (UPlanet_IA_Responder.sh handles Nostr response sending)
+    user_id = args[3]
+    event_id = args[4]
+    pubkey = args[5]
     
     log_message(f"Starting PlantNet recognition for {user_id}")
     log_message(f"Image URL: {image_url}")
     log_message(f"Location: {latitude}, {longitude}")
+    log_message(f"Output format: {output_format}")
     
     # Download image
     log_message("Downloading image...")
     image_data = download_image(image_url)
     if not image_data:
         log_message("Failed to download image")
-        # Return formatted error message instead of exiting with error
-        error_result = f"""🌿 Reconnaissance de plante
+        
+        if output_format == 'json':
+            error_result = {
+                'success': False,
+                'error': 'image_download_failed',
+                'message': 'Failed to download image from URL',
+                'location': {'latitude': latitude, 'longitude': longitude},
+                'image_url': image_url,
+                'timestamp': time.time()
+            }
+            print(json.dumps(error_result, ensure_ascii=False, indent=2))
+        else:
+            # Return formatted error message instead of exiting with error
+            error_result = f"""🌿 Reconnaissance de plante
 
 ❌ Erreur de téléchargement d'image
 
@@ -354,7 +438,7 @@ Impossible de télécharger l'image depuis l'URL fournie.
 🔬 Source : https://plantnet.org
 
 #PlantNet"""
-        print(error_result)
+            print(error_result)
         sys.exit(0)
     
     log_message(f"Image downloaded successfully ({len(image_data)} bytes)")
@@ -364,8 +448,20 @@ Impossible de télécharger l'image depuis l'URL fournie.
     plant_info = call_plantnet_api(image_data)
     if not plant_info:
         log_message("PlantNet API call failed")
-        # Instead of exiting, return a formatted error message
-        error_result = f"""🌿 Reconnaissance de plante
+        
+        if output_format == 'json':
+            error_result = {
+                'success': False,
+                'error': 'api_call_failed',
+                'message': 'PlantNet API call failed',
+                'location': {'latitude': latitude, 'longitude': longitude},
+                'image_url': image_url,
+                'timestamp': time.time()
+            }
+            print(json.dumps(error_result, ensure_ascii=False, indent=2))
+        else:
+            # Instead of exiting, return a formatted error message
+            error_result = f"""🌿 Reconnaissance de plante
 
 ❌ Erreur de reconnaissance
 
@@ -383,23 +479,44 @@ La reconnaissance de la plante a échoué.
 🔬 Source : https://plantnet.org
 
 #PlantNet"""
-        print(error_result)
+            print(error_result)
         # Exit with code 0 to avoid triggering error handling in UPlanet_IA_Responder.sh
         sys.exit(0)
     
     log_message(f"PlantNet API response: {json.dumps(plant_info, indent=2)}")
     
-    # Format and return the result instead of sending via Nostr
-    log_message("Formatting PlantNet result...")
-    result = format_plantnet_result(plant_info, latitude, longitude, image_url)
+    # Format and return the result
+    log_message(f"Formatting PlantNet result (format: {output_format})...")
+    result = format_plantnet_result(plant_info, latitude, longitude, image_url, output_format)
     
     if result:
         log_message("PlantNet recognition completed successfully")
-        print(result)  # Output the result to stdout
+        
+        if output_format == 'json':
+            # Add additional metadata for ORE integration
+            if isinstance(result, dict) and result.get('success'):
+                result['event_id'] = event_id
+                result['observer_pubkey'] = pubkey
+                result['user_id'] = user_id
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+        else:
+            print(result)  # Output the text result to stdout
+        
         sys.exit(0)  # Explicit success exit
     else:
         log_message("Failed to format PlantNet result")
-        error_result = f"""🌿 Reconnaissance de plante
+        
+        if output_format == 'json':
+            error_result = {
+                'success': False,
+                'error': 'formatting_failed',
+                'message': 'Failed to format PlantNet result',
+                'location': {'latitude': latitude, 'longitude': longitude},
+                'timestamp': time.time()
+            }
+            print(json.dumps(error_result, ensure_ascii=False, indent=2))
+        else:
+            error_result = f"""🌿 Reconnaissance de plante
 
 ❌ Erreur de formatage
 
@@ -411,7 +528,7 @@ Une erreur s'est produite lors du formatage du résultat.
 🔬 Source : https://plantnet.org
 
 #PlantNet"""
-        print(error_result)
+            print(error_result)
         sys.exit(0)
 
 if __name__ == "__main__":
