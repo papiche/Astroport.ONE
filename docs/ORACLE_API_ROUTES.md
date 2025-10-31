@@ -427,7 +427,7 @@ ${RUNTIME}/ORACLE.refresh.sh
 ### Par `oracle_system.py`
 - **`nostr_send_note.py`** - Publication d'événements NOSTR
 - **`~/.zen/game/nostr/EMAIL/.secret.nostr`** - Keyfiles pour signature
-- **`~/.zen/game/nostr/UPLANETNAME.G1/.secret.nostr`** - Clé autorité
+- **`~/.zen/game/uplanet.G1.nostr`** - Clé autorité UPLANETNAME.G1
 
 ### Par l'interface `/oracle`
 - **`common.js`** - Connexion NIP-42 (comme `astro_base.html`)

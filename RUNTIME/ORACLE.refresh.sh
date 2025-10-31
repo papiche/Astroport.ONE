@@ -17,6 +17,70 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/../tools/my.sh"
+
+################################################################################
+# Helper functions
+################################################################################
+
+generate_uplanet_g1_nostr_key() {
+    # Generate NOSTR key for UPLANETNAME.G1 if it doesn't exist
+    # Similar to oracle_init_permit_definitions.sh
+    
+    local keyfile="${HOME}/.zen/game/uplanet.G1.nostr"
+    
+    if [[ -f "$keyfile" ]]; then
+        return 0  # Keyfile already exists
+    fi
+    
+    if [[ -z "$UPLANETNAME" ]]; then
+        echo "[ERROR] UPLANETNAME not set in environment"
+        return 1
+    fi
+    
+    echo "[INFO] Generating NOSTR key for UPLANETNAME.G1..."
+    
+    # Generate NOSTR keys using UPLANETNAME.G1 as SALT and PEPPER (like dunikey generation)
+    local salt="${UPLANETNAME}.G1"
+    local pepper="${UPLANETNAME}.G1"
+    local keygen="${HOME}/.zen/Astroport.ONE/tools/keygen"
+    local nostr2hex="${HOME}/.zen/Astroport.ONE/tools/nostr2hex.py"
+    
+    if [[ ! -f "$keygen" ]]; then
+        echo "[ERROR] keygen tool not found at ${keygen}"
+        return 1
+    fi
+    
+    # Generate private key
+    local npriv=$("$keygen" -t nostr "$salt" "$pepper" -s 2>/dev/null)
+    if [[ -z "$npriv" ]]; then
+        echo "[ERROR] Failed to generate NOSTR private key"
+        return 1
+    fi
+    
+    # Generate public key
+    local npub=$("$keygen" -t nostr "$salt" "$pepper" 2>/dev/null)
+    if [[ -z "$npub" ]]; then
+        echo "[ERROR] Failed to generate NOSTR public key"
+        return 1
+    fi
+    
+    # Generate HEX from public key
+    local hex=""
+    if [[ -f "$nostr2hex" ]]; then
+        hex=$("$nostr2hex" "$npub" 2>/dev/null)
+    fi
+    
+    # Create keyfile in the same format as make_NOSTRCARD.sh
+    mkdir -p "$(dirname "$keyfile")"
+    cat > "$keyfile" <<EOF
+NSEC=$npriv; NPUB=$npub; HEX=$hex;
+EOF
+    chmod 600 "$keyfile"
+    
+    echo "[SUCCESS] Generated NOSTR keyfile: $keyfile"
+    return 0
+}
+
 ################################################################################
 
 echo "############################################"
@@ -240,11 +304,21 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "[STEP 4] Publishing Oracle status to NOSTR..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Get UPLANETNAME.G1 NSEC for signing
-UPLANETG1NSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}.G1" "${UPLANETNAME}.G1" -s)
+# Use UPLANETNAME.G1 keyfile for signing (standardized location)
+UPLANET_G1_KEYFILE="${HOME}/.zen/game/uplanet.G1.nostr"
 
-if [[ -n "$UPLANETG1NSEC" ]]; then
-    # Create a kind 1 note with daily Oracle statistics
+# Generate keyfile if it doesn't exist
+if [[ ! -f "$UPLANET_G1_KEYFILE" ]]; then
+    if ! generate_uplanet_g1_nostr_key; then
+        echo "[ERROR] Failed to generate UPLANETNAME.G1 keyfile"
+        echo "[INFO] Oracle status will not be published to NOSTR"
+    fi
+fi
+
+if [[ -f "$UPLANET_G1_KEYFILE" ]]; then
+    
+    source "$UPLANET_G1_KEYFILE" && echo $HEX >> $HOME/.zen/game/nostr/ZSWARM/HEX
+    # Create a kind 1 note with daily Oracle statistics    
     oracle_message="🔐 Oracle System Daily Report (${TODATE})
 
 📊 Global Statistics:
@@ -257,17 +331,16 @@ if [[ -n "$UPLANETG1NSEC" ]]; then
 
 #UPlanet #Oracle #WoT #Permits"
 
-    # Send to NOSTR relay
-    UPLANETG1HEX=$(${MY_PATH}/../tools/nostr2hex.py "${UPLANETG1NSEC}" 2>/dev/null || echo "")
-    
-    if [[ -n "$UPLANETG1HEX" ]]; then
-        ${MY_PATH}/../tools/nostr_send_note.py \
-            --keyfile <(echo "NSEC=${UPLANETG1NSEC}") \
-            --content "$oracle_message" \
-            --kind 1 \
-            --relays "$myRELAY" \
-            2>/dev/null && echo "[SUCCESS] Oracle status published to NOSTR" || echo "[WARNING] Failed to publish to NOSTR"
-    fi
+    # Send to NOSTR relay using keyfile
+    ${MY_PATH}/../tools/nostr_send_note.py \
+        --keyfile "$UPLANET_G1_KEYFILE" \
+        --content "$oracle_message" \
+        --kind 1 \
+        --relays "$myRELAY" \
+        2>/dev/null && echo "[SUCCESS] Oracle status published to NOSTR" || echo "[WARNING] Failed to publish to NOSTR"
+else
+    echo "[WARNING] UPLANETNAME.G1 keyfile not found: $UPLANET_G1_KEYFILE"
+    echo "[INFO] Run oracle_init_permit_definitions.sh to generate the keyfile"
 fi
 
 ################################################################################

@@ -31,11 +31,68 @@ NC='\033[0m' # No Color
 DEFINITIONS_FILE="${MY_PATH}/../templates/NOSTR/permit_definitions.json"
 NOSTR_GET_EVENTS="${MY_PATH}/nostr_get_events.sh"
 NOSTR_SEND_NOTE="${MY_PATH}/nostr_send_note.py"
-UPLANET_G1_KEYFILE="${HOME}/.zen/game/nostr/${UPLANETNAME_G1}/.secret.nostr"
+UPLANET_G1_KEYFILE="${HOME}/.zen/game/uplanet.G1.nostr"
+KEYGEN="${MY_PATH}/keygen"
+NOSTR2HEX="${MY_PATH}/nostr2hex.py"
 
 ################################################################################
 # Helper functions
 ################################################################################
+
+generate_uplanet_g1_nostr_key() {
+    # Generate NOSTR key for UPLANETNAME.G1 if it doesn't exist
+    # Similar to make_NOSTRCARD.sh but for UPLANETNAME.G1 wallet
+    
+    if [[ -f "$UPLANET_G1_KEYFILE" ]]; then
+        return 0  # Keyfile already exists
+    fi
+    
+    if [[ -z "$UPLANETNAME" ]]; then
+        echo -e "${RED}❌ UPLANETNAME not set in environment${NC}"
+        return 1
+    fi
+    
+    echo -e "${CYAN}🔑 Generating NOSTR key for UPLANETNAME.G1...${NC}"
+    
+    # Generate NOSTR keys using UPLANETNAME.G1 as SALT and PEPPER (like dunikey generation)
+    local salt="${UPLANETNAME}.G1"
+    local pepper="${UPLANETNAME}.G1"
+    
+    if [[ ! -f "$KEYGEN" ]]; then
+        echo -e "${RED}❌ keygen tool not found at ${KEYGEN}${NC}"
+        return 1
+    fi
+    
+    # Generate private key
+    local npriv=$("$KEYGEN" -t nostr "$salt" "$pepper" -s 2>/dev/null)
+    if [[ -z "$npriv" ]]; then
+        echo -e "${RED}❌ Failed to generate NOSTR private key${NC}"
+        return 1
+    fi
+    
+    # Generate public key
+    local npub=$("$KEYGEN" -t nostr "$salt" "$pepper" 2>/dev/null)
+    if [[ -z "$npub" ]]; then
+        echo -e "${RED}❌ Failed to generate NOSTR public key${NC}"
+        return 1
+    fi
+    
+    # Generate HEX from public key
+    local hex=""
+    if [[ -f "$NOSTR2HEX" ]]; then
+        hex=$("$NOSTR2HEX" "$npub" 2>/dev/null)
+    fi
+    
+    # Create keyfile in the same format as make_NOSTRCARD.sh
+    mkdir -p "$(dirname "$UPLANET_G1_KEYFILE")"
+    cat > "$UPLANET_G1_KEYFILE" <<EOF
+NSEC=$npriv; NPUB=$npub; HEX=$hex;
+EOF
+    chmod 600 "$UPLANET_G1_KEYFILE"
+    
+    echo -e "${GREEN}✅ Generated NOSTR keyfile: $UPLANET_G1_KEYFILE${NC}"
+    return 0
+}
 
 check_tools() {
     local missing=0
@@ -55,10 +112,13 @@ check_tools() {
         missing=$((missing + 1))
     fi
     
+    # Generate UPLANETNAME.G1 NOSTR keyfile if it doesn't exist
     if [[ ! -f "$UPLANET_G1_KEYFILE" ]]; then
-        echo -e "${RED}❌ UPLANETNAME.G1 keyfile not found: ${UPLANET_G1_KEYFILE}${NC}"
-        echo -e "${YELLOW}   This script requires UPLANETNAME.G1 to publish permit definitions${NC}"
-        missing=$((missing + 1))
+        if ! generate_uplanet_g1_nostr_key; then
+            echo -e "${RED}❌ Failed to generate UPLANETNAME.G1 keyfile${NC}"
+            echo -e "${YELLOW}   This script requires UPLANETNAME.G1 to publish permit definitions${NC}"
+            missing=$((missing + 1))
+        fi
     fi
     
     if [[ $missing -gt 0 ]]; then
@@ -206,7 +266,7 @@ show_nostr_list() {
         return 1
     fi
     
-    echoிப -e "${CYAN}📋 NOSTR Permit Definitions:${NC}"
+    echo -e "${CYAN}📋 NOSTR Permit Definitions:${NC}"
     echo ""
     
     local index=1
