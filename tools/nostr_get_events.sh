@@ -279,28 +279,33 @@ if [[ "$DELETE_MODE" == "true" ]]; then
     
     echo "[INFO] 🗑️  Deleting $EVENT_COUNT event(s)..." >&2
     
-    DELETED=0
-    FAILED=0
+    # Build filter with IDs for batch deletion
+    # strfry delete uses --filter with JSON containing ids array
+    IDS_JSON=$(printf '%s\n' "${EVENT_IDS[@]}" | jq -R . | jq -s -c '{ids: .}')
     
-    # Delete events (batch processing for better performance)
-    for event_id in "${EVENT_IDS[@]}"; do
-        if ./strfry delete "$event_id" 2>/dev/null; then
-            ((DELETED++))
-            # Show progress every 10 deletions or for small batches
-            if [[ $((DELETED % 10)) -eq 0 ]] || [[ "$EVENT_COUNT" -lt 20 ]]; then
-                echo "[OK] ✅ Deleted $DELETED/$EVENT_COUNT events..." >&2
-            fi
-        else
-            ((FAILED++))
-            echo "[ERROR] ❌ Failed to delete: $event_id" >&2
-        fi
-    done
+    echo "[INFO] 🔄 Executing batch deletion with filter..." >&2
     
-    echo "" >&2
-    echo "[SUMMARY] Deletion complete:" >&2
-    echo "  - Total found: $EVENT_COUNT" >&2
-    echo "  - Successfully deleted: $DELETED" >&2
-    echo "  - Failed: $FAILED" >&2
+    # Execute deletion with filter
+    DELETE_OUTPUT=$(./strfry delete --filter="$IDS_JSON" 2>&1)
+    DELETE_EXIT_CODE=$?
+    
+    if [[ $DELETE_EXIT_CODE -eq 0 ]]; then
+        echo "[OK] ✅ Successfully deleted $EVENT_COUNT event(s)" >&2
+        echo "" >&2
+        echo "[SUMMARY] Deletion complete:" >&2
+        echo "  - Total found: $EVENT_COUNT" >&2
+        echo "  - Successfully deleted: $EVENT_COUNT" >&2
+        echo "  - Failed: 0" >&2
+    else
+        echo "[ERROR] ❌ Batch deletion failed" >&2
+        echo "[ERROR] Exit code: $DELETE_EXIT_CODE" >&2
+        echo "[ERROR] Output: $DELETE_OUTPUT" >&2
+        echo "" >&2
+        echo "[SUMMARY] Deletion failed:" >&2
+        echo "  - Total found: $EVENT_COUNT" >&2
+        echo "  - Successfully deleted: 0" >&2
+        echo "  - Failed: $EVENT_COUNT" >&2
+    fi
     
 elif [[ "$OUTPUT_FORMAT" == "count" ]]; then
     # Count mode: just count lines
