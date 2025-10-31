@@ -187,7 +187,7 @@ La **transaction .2nd** (0.01 Ğ1) permet à un **membre forgeron Duniter** (ext
 - **Effet** : Mise à jour automatique du DID avec `metadata.wotDuniterMember`
 
 **Processus d'identification WoT** :
-1. **Détection** : [`primal_wallet_control.sh`](../tools/primal_wallet_control.sh) surveille les transactions entrantes
+1. **Détection** : [`primal_wallet_control.sh`](tools/primal_wallet_control.sh) surveille les transactions entrantes
 2. **Validation** : Vérifie que c'est exactement la 2ème transaction reçue ET que le montant est 0.01 Ğ1
 3. **Mise à jour DID** : Ajoute la G1PUB du membre forgeron dans le document DID
 4. **Cache permanent** : Enregistre la G1PUB dans `~/.zen/tmp/coucou/${wallet}.2nd`
