@@ -173,7 +173,7 @@ Une **primo-transaction** est effectuée pour activer le compte ẐEN à 0 avec 
 - **Montant** : 1 Ğ1 (activation initiale)
 - **Source** : UPLANETNAME_G1 (réserve centrale UPlanet)
 - **Destination** : G1PUBNOSTR (portefeuille MULTIPASS)
-- **Commentaire** : `UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:MULTIPASS:PRIMO`
+- **Commentaire** : `UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:MULTIPASS:PRIMAL`
 - **Cache** : `~/.zen/tmp/coucou/${G1PUBNOSTR}.primal` (permanent)
 
 #### Transaction WoT (.2nd) : Identification par Membre Forgeron

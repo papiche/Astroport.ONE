@@ -6,10 +6,14 @@ This script sends encrypted direct messages (kind 4) to NOSTR users using
 enhanced security features including NIP-44 encryption and metadata protection.
 
 Features:
-- NIP-44 ChaCha20-Poly1305 encryption (enhanced security)
+- NIP-44 v2 ChaCha20-Poly1305 encryption (recommended - replaces deprecated NIP-04)
 - Metadata protection and obfuscation
 - Gift wrapping support (NIP-17) for additional privacy
 - Rate limiting and anti-surveillance measures
+- Compatible with strfry and other modern NOSTR relays
+
+Note: NIP-04 is deprecated. This script uses NIP-44 v2 which is the modern standard
+for encrypted direct messages. NIP-44 provides better security than NIP-04's AES-256-CBC.
 
 Usage:
     python nostr_send_secure_dm.py <sender_nsec> <recipient_hex> <message> [relay_url] [options]
@@ -341,9 +345,10 @@ def send_secure_direct_message(sender_nsec: str, recipient_hex: str, message: st
             protected_message = add_metadata_protection(message, priv_key_obj.public_key.hex(), recipient_hex)
             print("🔒 Metadata protection enabled")
         
-        # Encrypt the message using NIP-44 (enhanced security)
+        # Encrypt the message using NIP-44 v2 (enhanced security - replaces deprecated NIP-04)
+        # NIP-44 uses ChaCha20-Poly1305 with HKDF, providing better security than NIP-04's AES-256-CBC
         encrypted_content = nip44_encrypt(protected_message, priv_key_obj.hex(), recipient_hex)
-        print("🔐 Message encrypted with NIP-44 (ChaCha20-Poly1305)")
+        print("🔐 Message encrypted with NIP-44 v2 (ChaCha20-Poly1305) - Compatible with strfry")
         
         # Create the base event
         tags = [["p", recipient_hex]]
