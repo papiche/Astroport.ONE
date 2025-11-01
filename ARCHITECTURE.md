@@ -433,8 +433,27 @@ Astroport.ONE utilise un relay NOSTR dédié avec des filtres personnalisés pou
 - **IA Contextuelle** : Réponses automatiques avec #BRO
 - **Géolocalisation** : Messages liés aux coordonnées GPS
 - **Mémoire Privée** : Stockage contrôlé avec #rec
+- **Événements Vidéo (NIP-71)** : Support pour kind 21/22 (vidéos normales/courtes)
 
-### 2. Filtres Personnalisés
+### 2. Nostr Tube - Plateforme Vidéo Décentralisée
+
+Astroport.ONE intègre **Nostr Tube**, une alternative décentralisée à YouTube utilisant :
+
+- **NIP-71** : Événements vidéo (kind 21/22) avec métadonnées complètes
+- **IPFS** : Stockage décentralisé des vidéos et miniatures
+- **NIP-51** : Playlists (kind 10001) pour les collections vidéo
+- **NIP-25** : Réactions (kind 7) pour les likes et commentaires
+- **UMAP** : Ancrage géographique des vidéos (tags `g`, `latitude`, `longitude`)
+
+**Composants** :
+- Route `/youtube` : Interface de découverte et lecture
+- Route `/theater` : Mode théâtre immersif avec commentaires en direct
+- Route `/playlist` : Gestionnaire de playlists
+- Scripts IA : Synchronisation YouTube (`sync_youtube_likes.sh`), traitement vidéo (`process_youtube.sh`)
+
+Voir **[docs/README.NostrTube.md](docs/README.NostrTube.md)** pour la documentation complète.
+
+### 3. Filtres Personnalisés
 
 ```bash
 # Filtre principal (all_but_blacklist.sh)
@@ -442,9 +461,12 @@ Astroport.ONE utilise un relay NOSTR dédié avec des filtres personnalisés pou
 
 # Filtre kind 1 (filter/1.sh)
 # Gestion des messages texte avec IA et mémoire
+
+# Filtre kind 21/22 (vidéos)
+# Support pour les événements vidéo NIP-71
 ```
 
-### 3. Système de Mémoire
+### 4. Système de Mémoire
 
 - **Mémoire Utilisateur** : `~/.zen/tmp/flashmem/uplanet_memory/pubkey/{pubkey}.json`
 - **Mémoire UMAP** : `~/.zen/tmp/flashmem/uplanet_memory/{latitude}_{longitude}.json`
@@ -485,6 +507,7 @@ curl -F "file=@photo.jpg" \
 - **[WELCOME.md](WELCOME.md)** - Guide écosystème UPlanet
 - **[UPASSPORT_API.md](UPASSPORT_API.md)** - Documentation API UPassport
 - **[API.NOSTRAuth.readme.md](API.NOSTRAuth.readme.md)** - Documentation NOSTR
+- **[docs/README.NostrTube.md](docs/README.NostrTube.md)** - Documentation Nostr Tube (plateforme vidéo décentralisée)
 
 ### Ressources Externes
 - **[GitHub Repository](https://github.com/papiche/Astroport.ONE)** - Code source

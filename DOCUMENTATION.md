@@ -38,6 +38,15 @@
 * **[UPassport API](api-upassport.md)** - UPassport API documentation
 * **[NOSTR Auth API](API.NOSTRAuth.readme.md)** - NOSTR authentication system
 
+### Media & Content Platforms
+* **[🎬 Nostr Tube](docs/README.NostrTube.md)** - **Decentralized Video Platform** - Complete guide to the Web3 YouTube alternative. Features include:
+  * Theater mode with integrated comments and live chat
+  * Playlists and video collections (NIP-51)
+  * Real-time engagement statistics
+  * N² network-based recommendations
+  * YouTube synchronization and IPFS storage
+  * Geographic anchoring (UMAP) for videos
+
 ### Tools & Utilities
 * **[Keygen Documentation](tools/keygen.readme.md)** - Key generation utilities
 * **[Jaklis Tools](tools/jaklis/README.md)** - Jaklis integration tools
@@ -59,6 +68,9 @@
 
 ### Gaming & Social
 * **[321 DU Game](321_DU.md)** - The DU Game documentation
+
+### Media & Content
+* **[🎬 Nostr Tube](docs/README.NostrTube.md)** - Decentralized video platform with theater mode, playlists, and N² recommendations
 
 ### Identity & Authentication
 * **[UPassport API](UPASSPORT_API.md)** - UPassport API reference
