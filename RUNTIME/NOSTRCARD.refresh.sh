@@ -1457,14 +1457,14 @@ for PLAYER in "${NOSTR[@]}"; do
                 # Build NIP-23 compliant tags for personal N² journal using jq for proper JSON escaping
                 # Same format as UPlanet_IA_Responder.sh for kind 30023
                 # Required: d (unique identifier), title (article title)
-                # Recommended: summary (article summary), t (hashtags)
+                # Recommended: summary (article summary), published_at (publication timestamp), t (hashtags)
                 ExtraTags=$(jq -c -n \
                     --arg d "$d_tag" \
                     --arg title "$summary_title" \
                     --arg summary "$summary_text" \
+                    --arg published_at "$published_at" \
                     --arg type "$summary_type" \
-                    --arg player "$PLAYER" \
-                    '[["d", $d], ["title", $title], ["summary", $summary], ["t", "PersonalN2Journal"], ["t", "N2Network"], ["t", $type], ["t", "UPlanet"], ["t", "SummaryType:" + $type], ["p", $player]]')
+                    '[["d", $d], ["title", $title], ["summary", $summary], ["published_at", $published_at], ["t", "PersonalN2Journal"], ["t", "N2Network"], ["t", $type], ["t", "UPlanet"], ["t", "SummaryType:" + $type]]')
                 
                 # Send as kind 30023 (article) to MULTIPASS wall
                 # Validate NIP-23 compliance before publication
