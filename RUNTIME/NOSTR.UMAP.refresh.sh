@@ -58,7 +58,8 @@
 #   Format: LAT=43.60; LON=1.44;
 #
 # === DEPENDENCIES ===
-# - jq, nostpy-cli, ipfs, strfry, bc (for GPS calculations)
+# - jq, ipfs, strfry, bc (for GPS calculations)
+# - nostr_send_note.py (for NOSTR event publishing)
 # - question.py (AI summarization)
 # - page_screenshot.py (map image generation)
 ################################################################################
@@ -178,22 +179,42 @@ log_always() {
     echo "$1"
 }
 
-# Wrapper function for nostpy-cli to reduce verbosity
-send_nostr_event() {
-    local output
-    if [[ "$VERBOSE" == "true" ]]; then
-        nostpy-cli "$@"
-    else
-        # Suppress all output except errors
-        output=$(nostpy-cli "$@" 2>&1)
-        local exit_code=$?
-        # Only show actual errors (not success messages or "Already following")
-        if [[ $exit_code -ne 0 ]] && [[ ! "$output" =~ "Already following" ]]; then
-            # Filter out success messages and color codes
-            echo "$output" | grep -i "error\|failed\|warning" | sed 's/\x1b\[[0-9;]*m//g' >&2
-        fi
-        return $exit_code
+# Helper function to send Nostr events using nostr_send_note.py
+send_nostr_event_py() {
+    local nsec_key="$1"
+    local content="$2"
+    local kind="$3"
+    local tags_json="$4"
+    local relay_url="$5"
+    
+    # Create temporary keyfile
+    local temp_keyfile=$(mktemp)
+    echo "NSEC=$nsec_key;" > "$temp_keyfile"
+    
+    # Convert Python-style tags to JSON if needed (handle [['p', '...']] format)
+    local tags_json_fixed="$tags_json"
+    if [[ "$tags_json" =~ \' ]]; then
+        tags_json_fixed=$(echo "$tags_json" | sed "s/'/\"/g")
     fi
+    
+    # For kind 3 (contacts), content can be empty per NIP-02
+    # nostr_send_note.py now allows empty content for kind 3
+    
+    # Send event using nostr_send_note.py
+    local send_result=$(python3 "${MY_PATH}/../tools/nostr_send_note.py" \
+        --keyfile "$temp_keyfile" \
+        --content "$content" \
+        --relays "$relay_url" \
+        --tags "$tags_json_fixed" \
+        --kind "$kind" \
+        --json 2>&1)
+    local exit_code=$?
+    
+    # Clean up temporary keyfile
+    rm -f "$temp_keyfile"
+    
+    # Return exit code
+    return $exit_code
 }
 
 check_dependencies() {
@@ -204,7 +225,6 @@ check_dependencies() {
     local missing_tools=()
     
     [[ ! -x $(command -v jq) ]] && missing_tools+=("jq")
-    [[ ! -x $(command -v nostpy-cli) ]] && missing_tools+=("nostpy-cli")
     [[ ! -x $(command -v ipfs) ]] && missing_tools+=("ipfs")
     [[ ! -d ~/.zen/strfry ]] && missing_tools+=("strfry directory")
     [[ ! -s $MY_PATH/../IA/question.py ]] && missing_tools+=("question.py")
@@ -418,12 +438,12 @@ handle_inactive_friend() {
 
     # echo "🚫 Removing inactive friend: nostr:$profile (no activity in 4 weeks)" >> ${UMAPPATH}/NOSTR_messages
     local GOODBYE_MSG="👋 nostr:$profile ! It seems you've been inactive for a while. I remove you from my GeoKey list, but you're welcome to reconnect anytime! #UPlanet #Community"
-    send_nostr_event send_event \
-        -privkey "$NPRIV_HEX" \
-        -kind 1 \
-        -content "$GOODBYE_MSG" \
-        -tags "[['p', '$ami']]" \
-        --relay "$myRELAY"
+    
+    # Regenerate UMAPNSEC for keyfile
+    local UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
+    
+    # Send using nostr_send_note.py
+    send_nostr_event_py "$UMAPNSEC" "$GOODBYE_MSG" "1" "[[\"p\", \"$ami\"]]" "$myRELAY"
 }
 
 handle_active_friend_activity() {
@@ -454,12 +474,12 @@ send_reminder_message() {
     local NPRIV_HEX=$3
 
     local REMINDER_MSG="👋 nostr:$profile ! Haven't seen you around lately. How are you doing? Feel free to share your thoughts or updates! #UPlanet #Community"
-    send_nostr_event send_event \
-        -privkey "$NPRIV_HEX" \
-        -kind 1 \
-        -content "$REMINDER_MSG" \
-        -tags "[['p', '$ami']]" \
-        --relay "$myRELAY"
+    
+    # Regenerate UMAPNSEC for keyfile
+    local UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
+    
+    # Send using nostr_send_note.py
+    send_nostr_event_py "$UMAPNSEC" "$REMINDER_MSG" "1" "[[\"p\", \"$ami\"]]" "$myRELAY"
     echo "📬 Sent reminder to $profile" 2>/dev/null >> ${UMAPPATH}/NOSTR_messages
 }
 
@@ -927,12 +947,12 @@ cleanup_old_documents() {
             if [[ -n "$author" && "$author" != "null" ]]; then
                 local notification="🛒 nostr:$author_profile your ad was removed after 6 months. You can republish if still relevant. #UPlanet #uMARKET #Community"
 
-                send_nostr_event send_event \
-                    -privkey "$NPRIV_HEX" \
-                    -kind 1 \
-                    -content "$notification" \
-                    -tags "[['p', '$author']]" \
-                    --relay "$myRELAY"
+                # Send using nostr_send_note.py
+                send_nostr_event_py "$NPRIV_HEX" "$notification" "1" "[[\"p\", \"$author\"]]" "$myRELAY" 2>/dev/null || {
+                    # If NPRIV_HEX is actually HEX instead of NSEC, regenerate NSEC from UMAP coordinates
+                    local UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
+                    send_nostr_event_py "$UMAPNSEC" "$notification" "1" "[[\"p\", \"$author\"]]" "$myRELAY" 2>/dev/null
+                }
             fi
 
             rm "$file"
@@ -1041,12 +1061,11 @@ send_nostr_events() {
     local TAGS_JSON=$2
     local UMAPPATH=$3
 
-    send_nostr_event send_event \
-        -privkey "$NPRIV_HEX" \
-        -kind 3 \
-        -content "" \
-        -tags "$TAGS_JSON" \
-        --relay "$myRELAY"
+    # Regenerate UMAPNSEC for keyfile (since NPRIV_HEX might be HEX, not NSEC)
+    local UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
+    
+    # Send kind 3 (contacts) using nostr_send_note.py
+    send_nostr_event_py "$UMAPNSEC" "" "3" "$TAGS_JSON" "$myRELAY"
 
     # Only publish UMAP journal if NOSTR_messages file exists and has content
     if [[ ! -f "${UMAPPATH}/NOSTR_messages" || ! -s "${UMAPPATH}/NOSTR_messages" ]]; then
@@ -1108,14 +1127,41 @@ send_nostr_events() {
             # Add kind 30023 specific tags to TAGS_JSON
             local article_tags=$(echo "$TAGS_JSON" | jq '. + [["d", "'"$d_tag"'"], ["title", "'"$umap_title"'"], ["published_at", "'"$published_at"'"], ["t", "UPlanet"], ["t", "'"${LAT}_${LON}"'"], ["t", "UMAP"]]')
             
-            send_nostr_event send_event \
-                -privkey "$NPRIV_HEX" \
-                -kind 30023 \
-                -content "$umap_content" \
-                -tags "$article_tags" \
-                --relay "$myRELAY"
+            # Regenerate UMAPNSEC for keyfile (same method as setup_umap_identity)
+            local UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
             
-            log "✅ Published UMAP journal for ${LAT},${LON} with content"
+            # Create temporary keyfile for nostr_send_note.py (same method as NOSTRCARD.refresh.sh)
+            local temp_keyfile=$(mktemp)
+            echo "NSEC=$UMAPNSEC;" > "$temp_keyfile"
+            
+            # Send event using nostr_send_note.py (same method as NOSTRCARD.refresh.sh)
+            SEND_RESULT=$(python3 "${MY_PATH}/../tools/nostr_send_note.py" \
+                --keyfile "$temp_keyfile" \
+                --content "$umap_content" \
+                --relays "$myRELAY" \
+                --tags "$article_tags" \
+                --kind 30023 \
+                --json 2>&1)
+            SEND_EXIT_CODE=$?
+            
+            # Clean up temporary keyfile
+            rm -f "$temp_keyfile"
+            
+            if [[ $SEND_EXIT_CODE -eq 0 ]]; then
+                # Parse JSON response
+                EVENT_ID=$(echo "$SEND_RESULT" | jq -r '.event_id // empty' 2>/dev/null)
+                RELAYS_SUCCESS=$(echo "$SEND_RESULT" | jq -r '.relays_success // 0' 2>/dev/null)
+                
+                if [[ -n "$EVENT_ID" && "$RELAYS_SUCCESS" -gt 0 ]]; then
+                    log "✅ Published UMAP journal for ${LAT},${LON} with content (ID: $EVENT_ID)"
+                else
+                    log "⚠️ UMAP journal may not have been published correctly for ${LAT},${LON}"
+                    log "Response: $SEND_RESULT"
+                fi
+            else
+                log "❌ Failed to publish UMAP journal for ${LAT},${LON}. Exit code: $SEND_EXIT_CODE"
+                log "Error output: $SEND_RESULT"
+            fi
         else
             log "⏭️  Skipping empty UMAP journal for ${LAT},${LON} (no real content)"
         fi
@@ -1655,12 +1701,8 @@ update_sector_nostr_profile() {
     local TAGS_JSON=$(printf '%s\n' "${STAGS[@]}" | jq -c . | tr '\n' ',' | sed 's/,$//')
     TAGS_JSON="[$TAGS_JSON]"
 
-    send_nostr_event send_event \
-        -privkey "$NPRIV_HEX" \
-        -kind 3 \
-        -content "" \
-        -tags "$TAGS_JSON" \
-        --relay "$myRELAY"
+    # Send kind 3 (contacts) using nostr_send_note.py
+    send_nostr_event_py "$SECTORNSEC" "" "3" "$TAGS_JSON" "$myRELAY"
 
     if [[ -s $sectorpath/${IPFSNODEID: -12}.NOSTR_journal ]]; then
         local sector_title="SECTOR Report - ${sector}"
@@ -1671,12 +1713,38 @@ update_sector_nostr_profile() {
         # Build article tags with sector-specific tags
         local article_tags=$(echo "$TAGS_JSON" | jq '. + [["d", "'"$d_tag"'"], ["title", "'"$sector_title"'"], ["published_at", "'"$published_at"'"], ["t", "UPlanet"], ["t", "SECTOR"], ["g", "'"${slat},${slon}"'"]]')
         
-        send_nostr_event send_event \
-            -privkey "$NPRIV_HEX" \
-            -kind 30023 \
-            -content "$sector_content" \
-            -tags "$article_tags" \
-            --relay "$myRELAY"
+        # Create temporary keyfile for nostr_send_note.py (same method as NOSTRCARD.refresh.sh)
+        local temp_keyfile=$(mktemp)
+        echo "NSEC=$SECTORNSEC;" > "$temp_keyfile"
+        
+        # Send event using nostr_send_note.py (same method as NOSTRCARD.refresh.sh)
+        SEND_RESULT=$(python3 "${MY_PATH}/../tools/nostr_send_note.py" \
+            --keyfile "$temp_keyfile" \
+            --content "$sector_content" \
+            --relays "$myRELAY" \
+            --tags "$article_tags" \
+            --kind 30023 \
+            --json 2>&1)
+        SEND_EXIT_CODE=$?
+        
+        # Clean up temporary keyfile
+        rm -f "$temp_keyfile"
+        
+        if [[ $SEND_EXIT_CODE -eq 0 ]]; then
+            # Parse JSON response
+            EVENT_ID=$(echo "$SEND_RESULT" | jq -r '.event_id // empty' 2>/dev/null)
+            RELAYS_SUCCESS=$(echo "$SEND_RESULT" | jq -r '.relays_success // 0' 2>/dev/null)
+            
+            if [[ -n "$EVENT_ID" && "$RELAYS_SUCCESS" -gt 0 ]]; then
+                log "✅ Published SECTOR journal for ${sector} (ID: $EVENT_ID)"
+            else
+                log "⚠️ SECTOR journal may not have been published correctly for ${sector}"
+                log "Response: $SEND_RESULT"
+            fi
+        else
+            log "❌ Failed to publish SECTOR journal for ${sector}. Exit code: $SEND_EXIT_CODE"
+            log "Error output: $SEND_RESULT"
+        fi
     fi
 }
 
@@ -1892,12 +1960,8 @@ update_region_nostr_profile() {
     TAGS_JSON="[$TAGS_JSON]"
 
     ## Confirm UMAP friendship
-    send_nostr_event send_event \
-        -privkey "$NPRIV_HEX" \
-        -kind 3 \
-        -content "" \
-        -tags "$TAGS_JSON" \
-        --relay "$myRELAY"
+    # Send kind 3 (contacts) using nostr_send_note.py
+    send_nostr_event_py "$REGSEC" "" "3" "$TAGS_JSON" "$myRELAY"
     
     ## Publish Report to NOSTR with kind 30023
     local region_title="REGION Report - ${region}"
@@ -1908,12 +1972,38 @@ update_region_nostr_profile() {
     # Build article tags with region-specific tags
     local article_tags=$(echo "$TAGS_JSON" | jq '. + [["d", "'"$d_tag"'"], ["title", "'"$region_title"'"], ["published_at", "'"$published_at"'"], ["t", "UPlanet"], ["t", "REGION"], ["g", "'"${rlat},${rlon}"'"]]')
     
-    send_nostr_event send_event \
-        -privkey "$NPRIV_HEX" \
-        -kind 30023 \
-        -content "$region_content" \
-        -tags "$article_tags" \
-        --relay "$myRELAY"
+    # Create temporary keyfile for nostr_send_note.py (same method as NOSTRCARD.refresh.sh)
+    local temp_keyfile=$(mktemp)
+    echo "NSEC=$REGSEC;" > "$temp_keyfile"
+    
+    # Send event using nostr_send_note.py (same method as NOSTRCARD.refresh.sh)
+    SEND_RESULT=$(python3 "${MY_PATH}/../tools/nostr_send_note.py" \
+        --keyfile "$temp_keyfile" \
+        --content "$region_content" \
+        --relays "$myRELAY" \
+        --tags "$article_tags" \
+        --kind 30023 \
+        --json 2>&1)
+    SEND_EXIT_CODE=$?
+    
+    # Clean up temporary keyfile
+    rm -f "$temp_keyfile"
+    
+    if [[ $SEND_EXIT_CODE -eq 0 ]]; then
+        # Parse JSON response
+        EVENT_ID=$(echo "$SEND_RESULT" | jq -r '.event_id // empty' 2>/dev/null)
+        RELAYS_SUCCESS=$(echo "$SEND_RESULT" | jq -r '.relays_success // 0' 2>/dev/null)
+        
+        if [[ -n "$EVENT_ID" && "$RELAYS_SUCCESS" -gt 0 ]]; then
+            log "✅ Published REGION journal for ${region} (ID: $EVENT_ID)"
+        else
+            log "⚠️ REGION journal may not have been published correctly for ${region}"
+            log "Response: $SEND_RESULT"
+        fi
+    else
+        log "❌ Failed to publish REGION journal for ${region}. Exit code: $SEND_EXIT_CODE"
+        log "Error output: $SEND_RESULT"
+    fi
 }
 
 ################################################################################
@@ -2069,7 +2159,7 @@ publish_ore_meeting_space() {
             [\"room\", \"UMAP_ORE_${lat}_${lon}\"],
             [\"summary\", \"UPlanet ORE Environmental Space\"],
             [\"status\", \"open\"],
-            [\"service\", \"${VDONINJA}/?room=${UPLANETNAME_G1:0:8}&effects&record\"],
+            [\"service\", \"${VDONINJA}/?room=${umap_hex:0:8}&effects&record\"],
             [\"t\", \"ORE\"],
             [\"t\", \"UPlanet\"],
             [\"t\", \"Environment\"],
@@ -2103,13 +2193,17 @@ publish_ore_verification_meeting() {
     
     log "🌱 Publishing ORE Verification Meeting (kind 30313) for UMAP (${lat}, ${lon})"
     
+    # Generate UMAP hex key for room reference
+    local umap_npub=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${lat}" "${UPLANETNAME}${lon}")
+    local umap_hex=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$umap_npub")
+    
     # Create ORE Verification Meeting event (kind 30313)
     local event_content="{
         \"kind\": 30313,
         \"content\": \"${meeting_title}\",
         \"tags\": [
             [\"d\", \"ore-verification-${lat}-${lon}-$(date +%s)\"],
-            [\"a\", \"30312:${UPLANETNAME_G1:0:8}:ore-space-${lat}-${lon}\"],
+            [\"a\", \"30312:${umap_hex:0:8}:ore-space-${lat}-${lon}\"],
             [\"title\", \"${meeting_title}\"],
             [\"status\", \"${meeting_status}\"],
             [\"starts\", \"${start_time}\"],

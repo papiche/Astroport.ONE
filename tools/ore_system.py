@@ -1070,10 +1070,16 @@ class OREUMAPManager:
             umap_did: DID of the UMAP
         """
         try:
+            # Generate UMAP hex key for room name
+            umap_npub_cmd = f'{os.path.expanduser("~")}/.zen/Astroport.ONE/tools/keygen -t nostr "{self.uplanet_name}{lat}" "{self.uplanet_name}{lon}"'
+            umap_npub = subprocess.check_output(umap_npub_cmd, shell=True, text=True).strip()
+            umap_hex_cmd = f'{os.path.expanduser("~")}/.zen/Astroport.ONE/tools/nostr2hex.py "{umap_npub}"'
+            umap_hex = subprocess.check_output(umap_hex_cmd, shell=True, text=True).strip()
+            
             # Create ORE Meeting Space event (kind 30312 - Persistent Geographic Space)
             room_name = f"UMAP_ORE_{lat}_{lon}"
             room_description = "UPlanet ORE Environmental Space - Geographic cell with environmental obligations"
-            vdo_room_url = f"{self.vdo_ninja}/?room={self.uplanet_g1_pub[:8]}&effects&record"
+            vdo_room_url = f"{self.vdo_ninja}/?room={umap_hex[:8]}&effects&record"
             
             # Prepare event content
             ore_status_msg = f"""🌱 ORE Mode Activated - UMAP ({lat}, {lon})
@@ -1158,9 +1164,15 @@ Join the meeting space to collaborate on ecological verification.
             Meeting event ID if successful, None otherwise
         """
         try:
+            # Generate UMAP hex key for room reference
+            umap_npub_cmd = f'{os.path.expanduser("~")}/.zen/Astroport.ONE/tools/keygen -t nostr "{self.uplanet_name}{lat}" "{self.uplanet_name}{lon}"'
+            umap_npub = subprocess.check_output(umap_npub_cmd, shell=True, text=True).strip()
+            umap_hex_cmd = f'{os.path.expanduser("~")}/.zen/Astroport.ONE/tools/nostr2hex.py "{umap_npub}"'
+            umap_hex = subprocess.check_output(umap_hex_cmd, shell=True, text=True).strip()
+            
             # Create meeting event (kind 30313)
             meeting_id = f"ore-verification-{lat}-{lon}-{int(time.time())}"
-            room_a_tag = f"30312:{self.uplanet_g1_pub[:8]}:ore-space-{lat}-{lon}"
+            room_a_tag = f"30312:{umap_hex[:8]}:ore-space-{lat}-{lon}"
             
             # Format meeting content
             meeting_content = f"""{meeting_title}

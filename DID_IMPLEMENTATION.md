@@ -747,7 +747,7 @@ Les DIDs UMAP avec obligations environnementales publient des événements NOSTR
     ["room", "UMAP_ORE_{lat}_{lon}"],
     ["summary", "UPlanet ORE Environmental Space"],
     ["status", "open"],
-    ["service", "{VDONINJA}/?room={UPLANETNAME_G1:0:8}&effects&record"],
+    ["service", "{VDONINJA}/?room={umap_hex:0:8}&effects&record"],
     ["t", "ORE"],
     ["t", "UPlanet"],
     ["t", "Environment"],
@@ -765,7 +765,7 @@ Les DIDs UMAP avec obligations environnementales publient des événements NOSTR
   "content": "ORE Environmental Verification Meeting",
   "tags": [
     ["d", "ore-verification-{lat}-{lon}-{timestamp}"],
-    ["a", "30312:{UPLANETNAME_G1:0:8}:ore-space-{lat}-{lon}"],
+    ["a", "30312:{umap_hex:0:8}:ore-space-{lat}-{lon}"],
     ["title", "ORE Environmental Verification"],
     ["status", "planned/live/ended"],
     ["starts", "{unix_timestamp}"],

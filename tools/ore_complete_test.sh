@@ -29,6 +29,10 @@ display_nostr_event_structure() {
     local lat="$2"
     local lon="$3"
     
+    # Generate UMAP hex key for unique room name
+    local umap_npub=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${lat}" "${UPLANETNAME}${lon}" 2>/dev/null)
+    local umap_hex=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$umap_npub" 2>/dev/null)
+    
     echo "📋 Nostr Event Structure for $event_type:"
     echo "=========================================="
     
@@ -42,7 +46,7 @@ display_nostr_event_structure() {
             echo "  room: UMAP_ORE_${lat}_${lon}"
             echo "  summary: UPlanet ORE Environmental Space"
             echo "  status: open"
-            echo "  service: ${VDONINJA}/?room=${UPLANETNAME_G1:0:8}&effects&record"
+            echo "  service: ${VDONINJA}/?room=${umap_hex:0:8}&effects&record"
             echo "  t: ORE, UPlanet, Environment, UMAP"
             echo "  g: ${lat},${lon}"
             echo "  p: ${UPLANETNAME_G1:0:8} (Host)"
@@ -53,7 +57,7 @@ display_nostr_event_structure() {
             echo ""
             echo "Tags:"
             echo "  d: ore-verification-${lat}-${lon}-<timestamp>"
-            echo "  a: 30312:${UPLANETNAME_G1:0:8}:ore-space-${lat}-${lon}"
+            echo "  a: 30312:${umap_hex:0:8}:ore-space-${lat}-${lon}"
             echo "  title: ORE Environmental Verification"
             echo "  status: planned/live/ended"
             echo "  starts: <unix_timestamp>"
@@ -371,9 +375,11 @@ demo_ore_activation() {
     echo "   ✅ Found MULTIPASS users in zone"
     echo ""
     
-    # Step 2: Generate UMAP DID
+    # Step 2: Generate UMAP DID and hex key
     echo "2️⃣ Generating UMAP DID..."
-    local umap_did="did:nostr:${UPLANETNAME_G1:0:8}${TEST_LAT}${TEST_LON}"
+    local umap_npub=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${TEST_LAT}" "${UPLANETNAME}${TEST_LON}" 2>/dev/null)
+    local umap_hex=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$umap_npub" 2>/dev/null)
+    local umap_did="did:nostr:${umap_hex}"
     echo "   ✅ DID: $umap_did"
     echo ""
     
@@ -381,7 +387,7 @@ demo_ore_activation() {
     echo "3️⃣ Creating ORE Meeting Space (kind 30312)..."
     display_nostr_event_structure "30312" "$TEST_LAT" "$TEST_LON"
     echo "   ✅ ORE Meeting Space created"
-    echo "   🎥 VDO.ninja Room: ${VDONINJA}/?room=${UPLANETNAME_G1:0:8}&effects&record"
+    echo "   🎥 VDO.ninja Room: ${VDONINJA}/?room=${umap_hex:0:8}&effects&record"
     echo ""
     
     # Step 4: Create verification meeting (kind 30313)
@@ -394,7 +400,7 @@ demo_ore_activation() {
     echo "5️⃣ Updating UMAP Nostr profile..."
     echo "   📝 Name: UMAP_${UPLANETNAME_G1:0:8}_${TEST_LAT}_${TEST_LON} | 🌱 ORE MODE ACTIVE"
     echo "   📝 About: Environmental obligations tracked via UPlanet ORE system"
-    echo "   🎥 VDO Room: ${VDONINJA}/?room=${UPLANETNAME_G1:0:8}&effects&record"
+    echo "   🎥 VDO Room: ${VDONINJA}/?room=${umap_hex:0:8}&effects&record"
     echo "   ✅ Profile updated"
     echo ""
 }
@@ -406,9 +412,13 @@ demo_vdo_integration() {
     echo "==================================="
     echo ""
     
+    # Generate UMAP hex for unique room name
+    local umap_npub=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${TEST_LAT}" "${UPLANETNAME}${TEST_LON}" 2>/dev/null)
+    local umap_hex=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$umap_npub" 2>/dev/null)
+    
     echo "🌐 Room Configuration:"
     echo "  - Room Name: UMAP_ORE_${TEST_LAT}_${TEST_LON}"
-    echo "  - URL: ${VDONINJA}/?room=${UPLANETNAME_G1:0:8}&effects&record"
+    echo "  - URL: ${VDONINJA}/?room=${umap_hex:0:8}&effects&record"
     echo "  - Status: Open (persistent)"
     echo "  - Access: Public with ORE verification"
     echo "  - Funding: UPLANETNAME_ASSETS (cooperative reserves)"
