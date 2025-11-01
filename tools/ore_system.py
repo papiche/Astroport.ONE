@@ -688,27 +688,52 @@ class OREUMAPManager:
         return False
 
     def _calculate_environmental_score(self, lat: str, lon: str) -> float:
-        """Calculate environmental score for a UMAP (placeholder for real environmental data)."""
+        """Calculate environmental score for a UMAP based on PlantNet observations.
+        
+        Uses real PlantNet biodiversity data from NOSTR to calculate an environmental
+        score that reflects the actual biodiversity value of the UMAP.
+        
+        Args:
+            lat: Latitude of the UMAP
+            lon: Longitude of the UMAP
+            
+        Returns:
+            Environmental score between 0.0 and 1.0, based on:
+            - Species diversity (unique species count)
+            - Observation activity (total plant observations)
+            - Observer participation (number of unique observers)
+        """
         try:
-            lat_f = float(lat)
-            lon_f = float(lon)
-            score = 0.0
+            # Get biodiversity statistics from PlantNet observations on NOSTR
+            biodiversity_stats = self._get_biodiversity_stats(lat, lon)
             
-            # Example: higher score for certain latitude ranges (temperate zones)
-            if 40 <= lat_f <= 60:
-                score += 0.3
+            # Base score: use compliance_score which is calculated from species and observations
+            # compliance_score = min((species_count * 0.02) + (plants_count * 0.01), 1.0)
+            base_score = biodiversity_stats.get("compliance_score", 0.0)
             
-            # Example: higher score for areas with specific longitude patterns
-            if -10 <= lon_f <= 20:
-                score += 0.2
+            # Additional bonus for observer diversity (encourages community participation)
+            # Bonus: 0.05 points per observer (capped at 0.2 for 4+ observers)
+            observer_count = biodiversity_stats.get("observer_count", 0)
+            observer_bonus = min(observer_count * 0.05, 0.2)
             
-            # Add some randomness for demonstration (in real system, use actual data)
-            random_factor = random.random()
-            score += random_factor * 0.5
+            # Calculate final environmental score
+            env_score = min(base_score + observer_bonus, 1.0)
             
-            # Cap at 1.0
-            return min(score, 1.0)
-        except ValueError:
+            # Log score details for debugging
+            species_count = biodiversity_stats.get("species_count", 0)
+            plants_count = biodiversity_stats.get("plants_count", 0)
+            
+            if env_score > 0:
+                print(f"📊 Environmental score for UMAP ({lat}, {lon}): {env_score:.2f}")
+                print(f"   - Species: {species_count} (score: {species_count * 0.02:.2f})")
+                print(f"   - Observations: {plants_count} (score: {plants_count * 0.01:.2f})")
+                print(f"   - Observers: {observer_count} (bonus: +{observer_bonus:.2f})")
+            
+            return round(env_score, 2)
+            
+        except Exception as e:
+            # If we can't get biodiversity stats, return 0.0 (no activation)
+            print(f"⚠️  Error calculating environmental score for UMAP ({lat}, {lon}): {e}")
             return 0.0
 
     def activate_ore_mode(self, lat: str, lon: str, umappath: str, keyfile_path: str = None) -> bool:
@@ -940,10 +965,16 @@ class OREUMAPManager:
                 return self._get_fallback_stats()
             
             # Query NOSTR for plant observations in this UMAP
-            # Get PlantNet bot responses (confirmed identifications)
+            # Use nostr_get_events.sh with filters for PlantNet tags and geolocation
+            # Filter by tags: plantnet AND UPlanet (comma-separated for OR logic in NOSTR)
+            # Note: NOSTR #t filter with multiple values returns events with ANY of the tags
+            # We still need to verify both tags are present in the result
+            umapKey = f"{lat},{lon}"
             result = subprocess.run([
                 nostr_get_events_script,
                 "--kind", "1",
+                "--tag-t", "plantnet,UPlanet",  # Filter by hashtags (OR logic in NOSTR)
+                "--tag-g", umapKey,              # Filter by geolocation (UMAP coordinates)
                 "--limit", "500"
             ], capture_output=True, text=True, timeout=30)
             
@@ -961,25 +992,32 @@ class OREUMAPManager:
                     except json.JSONDecodeError:
                         continue
             
-            # Filter events for this UMAP and with PlantNet tags
+            # Filter events: must have BOTH #plantnet and #UPlanet tags
+            # (NOSTR #t filter with multiple values returns events with ANY tag, so we verify both)
             umap_observations = []
             for event in events:
-                # Check if event has both #plantnet and #UPlanet tags
-                tags = [tag[1] for tag in event.get('tags', []) if len(tag) > 1]
-                if 'plantnet' not in tags or 'UPlanet' not in tags:
+                # Extract all tag values
+                tag_values = [tag[1] for tag in event.get('tags', []) if len(tag) > 1]
+                
+                # Verify event has BOTH plantnet and UPlanet tags
+                if 'plantnet' not in tag_values or 'UPlanet' not in tag_values:
                     continue
                 
-                # Check geolocation tag
+                # Geolocation already filtered by nostr_get_events.sh --tag-g
+                # But verify it matches the UMAP (0.01° precision)
                 geo_tag = next((tag for tag in event.get('tags', []) if tag[0] == 'g'), None)
                 if geo_tag and len(geo_tag) > 1:
                     coords = geo_tag[1].split(',')
                     if len(coords) == 2:
-                        event_lat = float(coords[0])
-                        event_lon = float(coords[1])
-                        # Check if in same UMAP (0.01° precision)
-                        event_umap = f"{event_lat:.2f},{event_lon:.2f}"
-                        if event_umap == umapKey:
-                            umap_observations.append(event)
+                        try:
+                            event_lat = float(coords[0])
+                            event_lon = float(coords[1])
+                            # Check if in same UMAP (0.01° precision)
+                            event_umap = f"{event_lat:.2f},{event_lon:.2f}"
+                            if event_umap == umapKey:
+                                umap_observations.append(event)
+                        except ValueError:
+                            continue
             
             print(f"📊 Found {len(umap_observations)} plant observations in UMAP {umapKey}")
             

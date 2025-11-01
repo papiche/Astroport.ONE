@@ -18,6 +18,8 @@ UNTIL=""
 TAG_D=""
 TAG_P=""
 TAG_E=""
+TAG_T=""
+TAG_G=""
 OUTPUT_FORMAT="json"  # json or count
 DELETE_MODE=false      # Delete found events
 FORCE_MODE=false       # Skip confirmation prompt
@@ -37,6 +39,8 @@ OPTIONS:
     -d, --tag-d VALUE         Filter by 'd' tag (identifier for parameterized replaceable events)
     -p, --tag-p HEX           Filter by 'p' tag (mentioned pubkey)
     -e, --tag-e ID            Filter by 'e' tag (referenced event)
+    -t, --tag-t VALUE         Filter by 't' tag (hashtag, e.g., "plantnet", "UPlanet")
+    -g, --tag-g COORDS        Filter by 'g' tag (geolocation, format: "lat,lon")
     -s, --since TIMESTAMP     Filter events after this timestamp (unix timestamp)
     -u, --until TIMESTAMP     Filter events before this timestamp (unix timestamp)
     -l, --limit NUMBER        Limit number of results (default: 100)
@@ -57,6 +61,12 @@ EXAMPLES:
 
     # Get credentials for a specific holder
     nostr_get_events.sh --kind 30503 --tag-p "holder_pubkey_hex"
+
+    # Get PlantNet observations (with hashtags - multiple tags separated by comma)
+    nostr_get_events.sh --kind 1 --tag-t "plantnet,UPlanet"
+
+    # Get events in specific UMAP (geolocation)
+    nostr_get_events.sh --kind 1 --tag-g "43.60,1.44"
 
     # Count recent events (last 24 hours)
     nostr_get_events.sh --kind 1 --since \$(date -d '24 hours ago' +%s) --output count
@@ -107,6 +117,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         -e|--tag-e)
             TAG_E="$2"
+            shift 2
+            ;;
+        -t|--tag-t)
+            TAG_T="$2"
+            shift 2
+            ;;
+        -g|--tag-g)
+            TAG_G="$2"
             shift 2
             ;;
         -s|--since)
@@ -203,6 +221,19 @@ fi
 if [[ -n "$TAG_E" ]]; then
     [[ "$FILTER" != "{" ]] && FILTER+=","
     FILTER+="\"#e\":[\"$TAG_E\"]"
+fi
+
+if [[ -n "$TAG_T" ]]; then
+    [[ "$FILTER" != "{" ]] && FILTER+=","
+    # Support multiple values separated by commas (e.g., "plantnet,UPlanet")
+    IFS=',' read -ra TAG_T_VALUES <<< "$TAG_T"
+    TAG_T_JSON=$(printf '"%s",' "${TAG_T_VALUES[@]}" | sed 's/,$//')
+    FILTER+="\"#t\":[$TAG_T_JSON]"
+fi
+
+if [[ -n "$TAG_G" ]]; then
+    [[ "$FILTER" != "{" ]] && FILTER+=","
+    FILTER+="\"#g\":[\"$TAG_G\"]"
 fi
 
 FILTER+="}"
