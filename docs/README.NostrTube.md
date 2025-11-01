@@ -259,7 +259,10 @@ Publishes videos as NOSTR events (NIP-71).
 
 **Publishing Script**:
 - Uses `~/.zen/Astroport.ONE/tools/nostr_send_note.py`
-- Supports multiple relays: `ws://127.0.0.1:7777,wss://relay.copylaradio.com`
+- Relay discovery via Astroport swarm: each node exposes `myRELAY` in `12345.json`
+- Local relay: `ws://127.0.0.1:7777` (strfry local)
+- Swarm relays: discovered via `_12345.sh` from compatible Astroport nodes
+- Constellation sync: `backfill_constellation.sh` synchronizes video events (kind 21/22) across swarm
 - Returns event ID on success
 
 ---
@@ -379,9 +382,13 @@ Web interface for browsing and watching videos.
 - **Responsive**: Mobile-optimized layout
 
 **IPFS Gateway Detection**:
-- Auto-detects best IPFS gateway for video playback
-- Supports multiple gateways: `ipfs.io`, `gateway.pinata.cloud`, `dweb.link`
-- Falls back to local gateway if available
+- Auto-detects IPFS gateway based on current Astroport station domain
+- Uses gateway from same Astroport swarm (ORIGIN public or ẐEN private)
+- Discovery via `_12345.sh`: each node exposes its `myIPFS` gateway in `12345.json`
+- Local gateway: `http://127.0.0.1:8080` for localhost access
+- Domain-based: `https://ipfs.{domain}` derived from station hostname
+- Default: `https://ipfs.copylaradio.com` for UPlanet ORIGIN
+- Swarm synchronization: compatible gateways discovered via IPNS swarm map (`~/.zen/tmp/swarm/`)
 
 **Video Card Structure**:
 ```html
@@ -526,6 +533,31 @@ User Request
 ```
 
 ---
+
+## Astroport Swarm Integration
+
+Nostr Tube leverages the **Astroport swarm network** for decentralized video distribution:
+
+### Swarm Discovery (`_12345.sh`)
+- Each Astroport node publishes its services via IPNS in `12345.json`
+- Contains: `myIPFS` (gateway), `myRELAY` (NOSTR), `myAPI` (UPassport), `ipfsnodeid`
+- Swarm map stored in: `~/.zen/tmp/swarm/{ipfsnodeid}/`
+- Two swarm levels:
+  - **UPlanet ORIGIN**: Public swarm (all Astroport nodes)
+  - **UPlanet ẐEN**: Private swarm (cooperative members only)
+
+### Constellation Synchronization (`backfill_constellation.sh`)
+- Synchronizes NOSTR events (including video events kind 21/22) across swarm
+- Discovers peers via IPNS swarm map
+- Uses IPFS P2P tunnels for localhost relays (via `DRAGON_p2p_ssh.sh`)
+- Targets constellation members (friends N1 and friends of friends N2)
+- Video events are automatically synchronized from swarm peers
+
+### Video Gateway Selection
+- Videos are served from Astroport IPFS gateways in the same swarm
+- Gateway URLs discovered from `12345.json` files in swarm directory
+- Local gateway preferred: `http://127.0.0.1:8080`
+- Fallback to swarm peers: `https://ipfs.{domain}` from discovered nodes
 
 ## NOSTR Event Standards
 
@@ -681,7 +713,9 @@ Videos can be anchored to geographic locations:
    - Ensure `m` tag indicates video type
 
 2. **Check Relay Connection**:
-   - Relay must be accessible: `ws://127.0.0.1:7777`
+   - Local relay: `ws://127.0.0.1:7777` (strfry on local node)
+   - Swarm relays: Check `~/.zen/tmp/swarm/*/12345.json` for `myRELAY` entries
+   - Constellation sync: Verify `backfill_constellation.sh` is running to sync from swarm peers
    - Events must be published successfully
 
 3. **Check Tags**:
