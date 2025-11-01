@@ -468,20 +468,29 @@ control_primal_transactions() {
         # Check primal transaction for incoming transaction
         echo "# RX from ${TXIPUBKEY:0:8}.... checking primal transaction..."
         echo "🔗 Sender Cesium: $(generate_cesium_link "$TXIPUBKEY")"
-        local tx_primal=$(get_primal_source "${TXIPUBKEY}")
+        local tx_primal=$(get_primal_source "${TXIPUBKEY}" "true")
 
         if [[ -n "$tx_primal" && "$tx_primal" != "null" ]]; then
             # For CAPTAIN: also authorize UPLANET sources as valid primal (unified architecture)
             local is_valid_primal=false
             if [[ "$is_captain" == true ]]; then
-                # CAPTAIN can receive from master_primal (UPLANETNAME_G1) and other UPLANET wallets with same primal
-                # Since all wallets are now initialized from UPLANETNAME_G1, check if tx_primal matches the unified source
-                if [[ "$master_primal" == "$tx_primal" || "$tx_primal" == "$UPLANETG1PUB" || "$tx_primal" == "$UPLANETNAME_SOCIETY" ]]; then
+                # CAPTAIN can receive from:
+                # 1. master_primal wallet itself (direct from UPLANETNAME_G1)
+                # 2. Other UPLANET wallets directly (UPLANETG1PUB, UPLANETNAME_SOCIETY, UPLANETNAME_G1)
+                # 3. Any wallet with primal source matching master_primal or UPLANET wallets
+                if [[ "$master_primal" == "$TXIPUBKEY" || \
+                      "$TXIPUBKEY" == "$UPLANETG1PUB" || \
+                      "$TXIPUBKEY" == "$UPLANETNAME_SOCIETY" || \
+                      "$TXIPUBKEY" == "$UPLANETNAME_G1" || \
+                      "$master_primal" == "$tx_primal" || \
+                      "$tx_primal" == "$UPLANETG1PUB" || \
+                      "$tx_primal" == "$UPLANETNAME_SOCIETY" ]]; then
                     is_valid_primal=true
                 fi
             else
                 # Regular players: only master_primal (UPLANETNAME_G1) is valid
-                if [[ "$master_primal" == "$tx_primal" ]]; then
+                # Allow direct transactions from master_primal wallet itself or wallets with matching primal source
+                if [[ "$master_primal" == "$TXIPUBKEY" || "$master_primal" == "$tx_primal" ]]; then
                     is_valid_primal=true
                 fi
             fi
