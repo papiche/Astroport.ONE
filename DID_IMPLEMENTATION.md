@@ -52,7 +52,7 @@ L'écosystème UPlanet repose sur une architecture de scripts spécialisés qui 
 
 ### Script de Gestion Centralisée des DID (Nostr-Native)
 - **`did_manager_nostr.sh`** : Gestionnaire centralisé des documents DID avec Nostr comme source de vérité
-- **`nostr_publish_did.py`** : Publie les DIDs sur les relais Nostr (kind 30311)
+- **`nostr_publish_did.py`** : Publie les DIDs sur les relais Nostr (kind 30800 - NIP-101)
 - **`nostr_did_client.py`** : Client unifié pour lecture/fetch des DIDs depuis Nostr
 - **`nostr_did_recall.sh`** : Script de migration des DIDs existants vers Nostr
 
@@ -87,7 +87,9 @@ Nous lions l'identité décentralisée à la clé publique NOSTR, elle-même dé
 
 **Architecture Nostr-Native (Source de Vérité)**
 
-Les documents DID sont publiés comme **événements Nostr kind 30311** (Parameterized Replaceable Events), garantissant:
+Les documents DID sont publiés comme **événements Nostr kind 30800** (Parameterized Replaceable Events - DID Documents - NIP-101), garantissant:
+
+> **Note:** Nous utilisons le kind 30800 au lieu du 30311 pour éviter les conflits avec NIP-53 (Live Event) qui utilise officiellement le kind 30311.
 - **Distribution automatique** sur tous les relais Nostr
 - **Mise à jour atomique** (chaque nouvelle version remplace l'ancienne)
 - **Résilience** : réplication sur multiples relais
@@ -312,7 +314,7 @@ Lorsqu'un utilisateur crée son MULTIPASS, le script génère l'ensemble de l'é
    - Crée la preuve de propriété on-chain
 
 6. **Publication Nostr**
-   - Le document DID est publié immédiatement sur les relais Nostr (kind 30311)
+   - Le document DID est publié immédiatement sur les relais Nostr (kind 30800 - NIP-101)
    - Accessible via la source de vérité distribuée
 
 7. **Publication IPNS**
@@ -352,7 +354,7 @@ Lors de l'exécution de `make_NOSTRCARD.sh` pour une adresse email, les fichiers
 ```
 
 **Architecture Nostr-Native:**
-- **Source de vérité:** Relais Nostr (événements kind 30311 avec tag `["d", "did"]`)
+- **Source de vérité:** Relais Nostr (événements kind 30800 avec tag `["d", "did"]` - NIP-101)
 - **Cache local:** `did.json.cache` (synchronisé depuis Nostr)
 - **Endpoint public:** `.well-known/did.json` (copie du cache, accessible via IPFS/IPNS)
 - **Clés privées:** `.secret.nostr` (format: `NSEC=...; NPUB=...; HEX=...`)
@@ -362,7 +364,7 @@ Lors de l'exécution de `make_NOSTRCARD.sh` pour une adresse email, les fichiers
 
 Le document DID est accessible via **trois canaux** pour une résilience maximale :
 
-#### 1. Source de Vérité : Relais Nostr (kind 30311)
+#### 1. Source de Vérité : Relais Nostr (kind 30800 - NIP-101)
 ```bash
 # Requête avec did_manager_nostr.sh
 ./did_manager_nostr.sh fetch user@example.com
@@ -492,7 +494,7 @@ Le document DID est **automatiquement mis à jour** lors des transactions UPlane
   - `validate` : Validation de la structure DID
   - `show-wallets` : Affichage des portefeuilles MULTIPASS et ZEN Card
   - `usociety` : Gestion des fichiers U.SOCIETY pour sociétaires
-- **`nostr_publish_did.py`** : Publication directe sur relais Nostr (kind 30311)
+- **`nostr_publish_did.py`** : Publication directe sur relais Nostr (kind 30800 - NIP-101)
 
 **Déclencheurs de mise à jour** :
 - ✅ Transaction **MULTIPASS** : Recharge MULTIPASS (10GB uDRIVE)
@@ -570,7 +572,7 @@ Le document DID est **automatiquement mis à jour** lors des transactions UPlane
 1. **Récupération** : Fetch du DID actuel depuis Nostr (ou cache)
 2. **Modification** : Mise à jour des métadonnées via `jq` (sans casser la structure JSON)
 3. **Validation** : Vérification de la structure W3C DID
-4. **Publication Nostr** : Publication kind 30311 (remplace automatiquement l'ancienne version)
+4. **Publication Nostr** : Publication kind 30800 (remplace automatiquement l'ancienne version - NIP-101)
 5. **Mise à jour cache** : Copie dans `did.json.cache`
 6. **Synchronisation IPFS** : Copie vers `.well-known/did.json` et republication IPNS (arrière-plan)
 
@@ -597,12 +599,12 @@ Le document DID est **automatiquement mis à jour** lors des transactions UPlane
    → Clés: ~/.zen/game/nostr/${EMAIL}/.secret.nostr (NSEC/NPUB/HEX)
    → Quota: "10GB" (MULTIPASS gratuit 7 jours)
    → Primo-transaction: 1Ğ1 UPLANETNAME_G1 → G1PUBNOSTR
-   → Publication Nostr: DID publié immédiatement (kind 30311)
+   → Publication Nostr: DID publié immédiatement (kind 30800 - NIP-101)
 
 2. WoT IDENTIFICATION (primal_wallet_control.sh)
    → Transaction 0.01Ğ1 depuis membre forgeron Duniter (2ème TX)
    → DID mis à jour via did_manager_nostr.sh
-   → Publication automatique sur Nostr (kind 30311, d=did)
+   → Publication automatique sur Nostr (kind 30800, d=did - NIP-101)
    → Ajout metadata.wotDuniterMember avec G1PUB du forgeron
    → Lien vers profil Cesium+ du membre WoT
    → Cache permanent: ~/.zen/tmp/coucou/${wallet}.2nd
@@ -616,7 +618,7 @@ Le document DID est **automatiquement mis à jour** lors des transactions UPlane
    → Services: "uDRIVE + NextCloud"
 
 4. CONSULTATION
-   → SOURCE: Relais Nostr (kind 30311) - Source de vérité
+   → SOURCE: Relais Nostr (kind 30800 - NIP-101) - Source de vérité
    → CACHE: ~/.zen/game/nostr/${EMAIL}/did.json.cache - Performance
    → PUBLIC: {myIPFS}/ipns/{NOSTRNS}/{EMAIL}/.well-known/did.json - Compatibilité W3C
    → Métadonnées reflètent les capacités actuelles
@@ -952,7 +954,7 @@ Le système `did_manager_nostr.sh` enrichit automatiquement les documents DID et
 - **Portefeuilles ZEN Card** : Clés G1 pour les parts coopératives
 - **Identification WoT** : Validation par membres forgerons externes
 - **Contributions coopératives** : Traçabilité complète des fonds
-- **Publication Nostr** : Événement kind 30311 (Parameterized Replaceable Event)
+- **Publication Nostr** : Événement kind 30800 (Parameterized Replaceable Event - NIP-101)
 - **Signature cryptographique** : Vérifiable par la clé NSEC du propriétaire
 
 ## 9. Réflexions Philosophiques : UPlanet, une Nation d'Esprit
@@ -1358,7 +1360,7 @@ Utilisateur UPlanet → Accès Refusé
 - `make_NOSTRCARD.sh` - Script de génération de MULTIPASS et DID
 - `VISA.new.sh` - Script de génération de ZEN Card
 - `did_manager_nostr.sh` - Gestionnaire centralisé avec Nostr comme source de vérité
-- `nostr_publish_did.py` - Publication des DIDs sur relais Nostr (kind 30311)
+- `nostr_publish_did.py` - Publication des DIDs sur relais Nostr (kind 30800 - NIP-101)
 - `nostr_did_client.py` - Client unifié pour lecture/fetch des DIDs depuis Nostr
 - `nostr_did_recall.sh` - Migration des DIDs existants vers Nostr
 

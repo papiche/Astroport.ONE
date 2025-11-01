@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Nostr DID Document Publisher (Kind 30311)
+Nostr DID Document Publisher (Kind 30800 - NIP-101)
 
-This script publishes DID documents as parameterized replaceable events (kind 30311)
+This script publishes DID documents as parameterized replaceable events (kind 30800)
 to NOSTR relays. Each new version automatically replaces the previous one.
 
 Usage:
@@ -32,9 +32,10 @@ DEFAULT_RELAYS = [
 CONNECT_TIMEOUT = 10
 PUBLISH_TIMEOUT = 30
 
-# Kind 30311: Parameterized Replaceable Event for general-purpose JSON
-# Using tag ["d", "did"] to identify DID documents
-DID_EVENT_KIND = 30311
+# Kind 30800: Parameterized Replaceable Event for DID Documents (NIP-101)
+# Note: Kind 30311 is reserved for "Live Event" (NIP-53)
+# We use 30800 to avoid conflict with official Nostr NIPs
+DID_EVENT_KIND = 30800
 DID_TAG_IDENTIFIER = "did"
 
 class NostrWebSocketClient:
@@ -153,7 +154,7 @@ def validate_did_json(did_content: str) -> bool:
 def publish_did_to_nostr(sender_nsec: str, did_json_path: str, 
                           relay_urls: list = None) -> tuple[bool, str]:
     """
-    Publish a DID document (kind 30311) to NOSTR relays.
+    Publish a DID document (kind 30800 - NIP-101) to NOSTR relays.
     
     Args:
         sender_nsec: NSEC private key of the DID owner
@@ -207,7 +208,7 @@ def publish_did_to_nostr(sender_nsec: str, did_json_path: str,
         if email:
             tags.append(["email", email])
         
-        # Create the event (kind 30311 = Parameterized Replaceable Event)
+        # Create the event (kind 30800 = Parameterized Replaceable Event for DID - NIP-101)
         event = Event(
             kind=DID_EVENT_KIND,
             content=did_content,
@@ -292,7 +293,7 @@ def publish_did_to_nostr(sender_nsec: str, did_json_path: str,
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Publish DID documents via NOSTR as kind 30311 events",
+        description="Publish DID documents via NOSTR as kind 30800 events (NIP-101)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__
     )

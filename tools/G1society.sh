@@ -23,7 +23,7 @@ log() {
 # Nostr configuration
 NOSTR_RELAYS="${NOSTR_RELAYS:-ws://127.0.0.1:7777 wss://relay.copylaradio.com}"
 NOSTR_DID_CLIENT_SCRIPT="${MY_PATH}/nostr_did_client.py"
-DID_EVENT_KIND=30311
+DID_EVENT_KIND=30800  # NIP-101 DID Documents (changed from 30311 to avoid NIP-53 conflict)
 DID_TAG_IDENTIFIER="did"
 
 # Couleurs pour l'affichage

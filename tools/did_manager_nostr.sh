@@ -3,7 +3,7 @@
 # Script: did_manager_nostr.sh
 # Description: Nostr-native DID Document Manager
 # 
-# Manages DID documents using Nostr as the source of truth (kind 30311 events)
+# Manages DID documents using Nostr as the source of truth (kind 30800 events - NIP-101)
 # Local files are only used as cache for performance
 #
 # Source of Truth: Nostr relays (Parameterized Replaceable Events)
@@ -28,8 +28,8 @@ NOSTR_RELAYS="${NOSTR_RELAYS:-ws://127.0.0.1:7777 wss://relay.copylaradio.com}"
 NOSTR_PUBLISH_DID_SCRIPT="${MY_PATH}/nostr_publish_did.py"
 NOSTR_FETCH_DID_SCRIPT="${MY_PATH}/nostr_did_client.py"
 
-# DID Event configuration
-DID_EVENT_KIND=30311
+# DID Event configuration (NIP-101)
+DID_EVENT_KIND=30800  # Changed from 30311 to avoid conflict with NIP-53 (Live Event)
 DID_TAG_IDENTIFIER="did"
 
 ################################################################################
@@ -966,7 +966,7 @@ show_help() {
     cat <<EOF
 ${BLUE}did_manager_nostr.sh - Nostr-native DID Document Manager${NC}
 
-${CYAN}Source of Truth: Nostr relays (kind 30311 events)${NC}
+${CYAN}Source of Truth: Nostr relays (kind 30800 events - NIP-101)${NC}
 ${CYAN}Local Storage: Cache only (for performance)${NC}
 
 Usage:

@@ -49,7 +49,7 @@ print_banner() {
     echo "║                     DID RECALL - Migration to Nostr                    ║"
     echo "║                                                                        ║"
     echo "║  This script migrates existing DID documents from local filesystem    ║"
-    echo "║  to Nostr relays (kind 30311 events).                                 ║"
+    echo "║  to Nostr relays (kind 30800 events - NIP-101).                       ║"
     echo "║                                                                        ║"
     echo "║  After migration, Nostr becomes the SOURCE OF TRUTH for DIDs.         ║"
     echo "╚════════════════════════════════════════════════════════════════════════╝"

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Nostr DID Client - Unified DID Document Manager
+Nostr DID Client - Unified DID Document Manager (NIP-101)
 
 This script provides a unified interface for reading, fetching, and managing
-DID documents from NOSTR relays (kind 30311 events).
+DID documents from NOSTR relays (kind 30800 events - NIP-101).
 
 It combines the functionality of:
 - DID document reading and fetching
@@ -55,9 +55,10 @@ DEFAULT_RELAYS = [
 CONNECT_TIMEOUT = 5
 READ_TIMEOUT = 10
 
-# Kind 30311: Parameterized Replaceable Event for general-purpose JSON
+# Kind 30800: Parameterized Replaceable Event for DID Documents (NIP-101)
+# Note: Kind 30311 is reserved for "Live Event" (NIP-53)
 # Using tag ["d", "did"] to identify DID documents
-DID_EVENT_KIND = 30311
+DID_EVENT_KIND = 30800
 DID_TAG_IDENTIFIER = "did"
 
 class NostrWebSocketClient:
@@ -83,7 +84,7 @@ class NostrWebSocketClient:
     
     def query_did(self, pubkey_hex: str, timeout: int = READ_TIMEOUT) -> Optional[Dict[str, Any]]:
         """
-        Query for a DID document (kind 30311 with d=did tag)
+        Query for a DID document (kind 30800 with d=did tag - NIP-101)
         
         Args:
             pubkey_hex: Hex-encoded public key of the DID owner
@@ -400,7 +401,7 @@ def fetch_did_from_nostr(author_pubkey: str, relay_url: str, kind: int = DID_EVE
     Args:
         author_pubkey: NPUB of the DID owner
         relay_url: Relay URL to query
-        kind: Event kind (default: 30311 for DID documents)
+        kind: Event kind (default: 30800 for DID documents - NIP-101)
         
     Returns:
         str: JSON string of the DID document, or empty string if not found
@@ -450,7 +451,7 @@ def list_dids_from_nostr(author_pubkey: str, relay_url: str, kind: int = DID_EVE
     Args:
         author_pubkey: NPUB of the DID owner
         relay_url: Relay URL to query
-        kind: Event kind (default: 30311 for DID documents)
+        kind: Event kind (default: 30800 for DID documents - NIP-101)
         
     Returns:
         list: List of DID documents

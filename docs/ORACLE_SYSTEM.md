@@ -19,7 +19,7 @@ The Oracle System transforms traditional licensing from centralized authorities 
 
 The `make_NOSTRCARD.sh` script:
 - Generates NOSTR keypair (nsec/npub)
-- Creates and publishes the DID on NOSTR (kind 30311)
+- Creates and publishes the DID on NOSTR (kind 30800 - NIP-101)
 - Stores credentials in `~/.zen/game/nostr/EMAIL/.secret.nostr`
 - Publishes NOSTR profile with DID reference
 

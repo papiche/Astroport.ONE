@@ -73,7 +73,7 @@ L'analyse des fichiers modifiés et non suivis révèle une **intégration cohé
 - **DIDs UMAP** : Format `did:nostr:{umap_hex}` cohérent
 - **Métadonnées** : Coordonnées géographiques et obligations environnementales
 - **Service Endpoints** : VDO.ninja rooms liées aux DIDs
-- **Publication Nostr** : Kind 30311 pour les DIDs, 30312/30313 pour ORE
+- **Publication Nostr** : Kind 30800 pour les DIDs (NIP-101), 30312/30313 pour ORE
 
 ### 2. **Flux Économique** ✅
 - **Source** : `UPLANETNAME_ASSETS` (portefeuille coopératif)
@@ -82,7 +82,7 @@ L'analyse des fichiers modifiés et non suivis révèle une **intégration cohé
 - **Fongibilité** : Ẑen ORE identiques aux autres Ẑen
 
 ### 3. **Intégration Nostr** ✅
-- **Kind 30311** : Mises à jour DID (système existant)
+- **Kind 30800** : Mises à jour DID (système existant - NIP-101)
 - **Kind 30312** : ORE Meeting Space (espaces environnementaux persistants)
 - **Kind 30313** : ORE Verification Meeting (sessions de vérification)
 - **VDO.ninja** : Salles de vérification temps réel

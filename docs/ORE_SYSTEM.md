@@ -53,12 +53,33 @@ Les informations du contrat ORE sont intégrées directement dans le document DI
 }
 ```
 
+**NOSTR Event Kinds utilisés par le système ORE :**
+- **30800** : DID Documents (UMAP identities - NIP-101)
+  > Note: Changé de 30311 à 30800 pour éviter conflit avec NIP-53 (Live Event)
+- **30312** : ORE Meeting Space (Persistent Geographic Space)
+- **30313** : ORE Verification Meeting (scheduled meetings for compliance verification)
+
 ### 3. Publication et Découverte sur Nostr
 
-Le document DID est publié sur les relais Nostr en tant qu'événement de **`kind: 30311`** (Événement Remplaçable Paramétré).
+Les documents et événements ORE sont publiés sur les relais Nostr avec plusieurs event kinds :
 
-*   **Publication** : Le script `did_manager_nostr.sh` est utilisé pour mettre à jour et publier le document DID de l'UMAP.
-*   **Découverte** : N'importe quel client Nostr peut s'abonner aux événements de `kind: 30311` pour découvrir les DIDs des UMAP et lire leurs contrats ORE.
+*   **Kind 30800** (DID Document) : Document DID de l'UMAP avec contrat ORE (NIP-101)
+    - Tag `["d", "did"]` pour identification
+    - Publication via `did_manager_nostr.sh`
+    - Découverte : clients s'abonnent aux événements kind 30800
+    - **Note:** Changé de 30311 à 30800 pour éviter conflit avec NIP-53 (Live Event)
+    
+*   **Kind 30312** (ORE Meeting Space) : Espace géographique persistant pour vérifications
+    - Tag `["d", "ore-space-{lat}-{lon}"]` pour identification unique
+    - Tag `["g", "{lat},{lon}"]` pour géolocalisation
+    - Tag `["room", "UMAP_ORE_{lat}_{lon}"]` pour salle VDO.ninja
+    - Publication lors de l'activation du mode ORE
+    
+*   **Kind 30313** (ORE Verification Meeting) : Réunions de vérification planifiées
+    - Tag `["d", "ore-verification-{lat}-{lon}-{timestamp}"]`
+    - Tag `["a", "30312:{authority}:ore-space-{lat}-{lon}"]` pour référencer la salle
+    - Tag `["start", "{unix_timestamp}"]` pour la date de vérification
+    - Publication automatique lors de création de réunions de vérification
 
 ### 4. Vérification et Récompense Économique
 
@@ -78,7 +99,7 @@ Un client Nostr (comme Damus, Amethyst, ou une application web dédiée) peut in
 
 Pour trouver les parcelles engagées :
 
-1.  **S'abonner aux DIDs** : Le client s'abonne aux événements de `kind: 30311` sur les relais Nostr.
+1.  **S'abonner aux DIDs** : Le client s'abonne aux événements de `kind: 30800` sur les relais Nostr (NIP-101).
 2.  **Filtrer les UMAP** : Il suffit de parcourir les événements reçus et de filtrer ceux dont le champ `"type"` est `"UMAPGeographicCell"`.
 3.  **Identifier les contrats actifs** : Le client analyse le champ `"environmentalObligations"` pour trouver les UMAP avec un contrat ORE actif.
 

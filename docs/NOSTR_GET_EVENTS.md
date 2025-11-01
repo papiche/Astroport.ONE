@@ -87,7 +87,7 @@ SINCE=$(date -d '7 days ago' +%s)
 ### Example 5: Get DID Documents with 'd' Tag
 
 ```bash
-./nostr_get_events.sh --kind 30311 --tag-d did --limit 20
+./nostr_get_events.sh --kind 30800 --tag-d did --limit 20
 ```
 
 ### Example 6: Get Events Referencing a Specific Event (tag 'e')

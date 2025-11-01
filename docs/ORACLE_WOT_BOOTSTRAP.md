@@ -14,7 +14,7 @@ Le script `oracle.WoT_PERMIT.init.sh` résout ce problème en créant le **"Bloc
 
 Le script `make_NOSTRCARD.sh`:
 - Génère la paire de clés NOSTR (nsec/npub)
-- Crée le DID et le publie sur NOSTR (kind 30311)
+- Crée le DID et le publie sur NOSTR (kind 30800 - NIP-101)
 - Stocke les credentials dans `~/.zen/game/nostr/EMAIL/.secret.nostr`
 - Publie le profil NOSTR avec le DID
 
@@ -421,7 +421,7 @@ Si un permis a été initialisé avec trop peu de membres et qu'il faut l'élarg
 1. **MULTIPASS créés pour tous les membres**
    - Chaque membre doit avoir un MULTIPASS via `make_NOSTRCARD.sh`
    - Les credentials NOSTR doivent être dans `~/.zen/game/nostr/EMAIL/.secret.nostr`
-   - Les DIDs doivent être publiés sur NOSTR (kind 30311)
+   - Les DIDs doivent être publiés sur NOSTR (kind 30800 - NIP-101)
 
 2. **Bootstrap manuel requis**
    - Chaque nouveau permis doit être bootstrappé manuellement

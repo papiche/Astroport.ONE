@@ -593,7 +593,7 @@ def verify_credential(credential: PermitCredential) -> bool:
 │                                                                   │
 │  NIVEAU 1: MULTIPASS (Identité Décentralisée)                   │
 │     └─> DID: did:nostr:{hex_pubkey}                             │
-│         └─> Publié sur NOSTR (kind 30311)                       │
+│         └─> Publié sur NOSTR (kind 30800 - NIP-101)                 │
 │             └─> Clés jumelles (G1, NOSTR, BTC, XMR)            │
 │                                                                   │
 │  NIVEAU 2: Attestation d'Expert                                  │
@@ -616,7 +616,7 @@ def verify_credential(credential: PermitCredential) -> bool:
 │                                                                   │
 │  NIVEAU 5: Intégration DID                                       │
 │     └─> VC ajouté au document DID du holder                      │
-│         └─> Publié sur NOSTR (kind 30311 update)                │
+│         └─> Publié sur NOSTR (kind 30800 update - NIP-101)         │
 │             └─> Vérifiable cryptographiquement                   │
 │                                                                   │
 └──────────────────────────────────────────────────────────────────┘
@@ -675,7 +675,7 @@ Alice veut devenir vérificatrice ORE environnementale:
 6. DID Update ✅
    └─> did_manager_nostr.sh update alice@example.com
        └─> VC ajouté à verifiableCredential[]
-           └─> DID republié sur NOSTR (kind 30311)
+           └─> DID republié sur NOSTR (kind 30800 - NIP-101)
 
 Alice a maintenant:
 - ✅ Identité WoT validée (Ğ1)
@@ -828,7 +828,7 @@ def revoke_credential(
     ↓
 15. Publication sur relais NOSTR
     ↓
-16. Mise à jour DID holder (kind 30311 update)
+16. Mise à jour DID holder (kind 30800 update - NIP-101)
     ↓
 17. Notification holder + attesteurs
     ↓
