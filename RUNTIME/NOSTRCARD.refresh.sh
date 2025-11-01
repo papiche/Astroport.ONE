@@ -1448,9 +1448,6 @@ for PLAYER in "${NOSTR[@]}"; do
                 d_tag="personal-n2-journal-${PLAYER}-${summary_type,,}-${TODATE}"
                 published_at=$(date +%s)
                 
-                # Convert NSEC to HEX for nostpy-cli
-                NPRIV_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NSEC")
-                
                 # Create summary for the article (first 200 characters)
                 summary_text=$(echo "$summary_content" | head -c 200 | sed 's/"/\\"/g')
                 if [[ ${#summary_content} -gt 200 ]]; then
@@ -1487,27 +1484,47 @@ for PLAYER in "${NOSTR[@]}"; do
                 log "DEBUG" "Event tags (first 300 chars): $(echo "$ExtraTags" | head -c 300)..."
                 log "DEBUG" "Content length: ${#summary_content} chars"
                 
-                # Send event via nostpy-cli - same method as UPlanet_IA_Responder.sh (line 1046-1054)
-                if ! nostpy-cli send_event \
-                    -privkey "$NPRIV_HEX" \
-                    -kind 30023 \
-                    -content "$summary_content" \
-                    -tags "$ExtraTags" \
-                    --relay "$myRELAY" 2>/dev/null; then
-                    log "ERROR" "❌ Failed to publish N² journal for ${PLAYER}"
-                    log_metric "PERSONAL_N2_JOURNAL_FAILED" "1" "${PLAYER}"
+                # Prepare keyfile path for nostr_send_note.py (same method as UPlanet_IA_Responder.sh)
+                KEYFILE_PATH="${HOME}/.zen/game/nostr/${PLAYER}/.secret.nostr"
+                
+                # For kind 30023, use only the specific blog tags (same as UPlanet_IA_Responder.sh line 1051)
+                TAGS_JSON="$ExtraTags"
+                
+                # Send event using nostr_send_note.py (same method as UPlanet_IA_Responder.sh line 1068-1075)
+                SEND_RESULT=$(python3 "${MY_PATH}/../tools/nostr_send_note.py" \
+                    --keyfile "$KEYFILE_PATH" \
+                    --content "$summary_content" \
+                    --relays "$myRELAY" \
+                    --tags "$TAGS_JSON" \
+                    --kind 30023 \
+                    --json 2>&1)
+                SEND_EXIT_CODE=$?
+                
+                if [[ $SEND_EXIT_CODE -eq 0 ]]; then
+                    # Parse JSON response
+                    EVENT_ID=$(echo "$SEND_RESULT" | jq -r '.event_id // empty' 2>/dev/null)
+                    RELAYS_SUCCESS=$(echo "$SEND_RESULT" | jq -r '.relays_success // 0' 2>/dev/null)
                     
-                    # Log additional debug info
+                    if [[ -n "$EVENT_ID" && "$RELAYS_SUCCESS" -gt 0 ]]; then
+                        log "INFO" "✅ Personal N² journal published to ${PLAYER} wall (ID: $EVENT_ID, $message_count messages)"
+                        log_metric "PERSONAL_N2_JOURNAL_PUBLISHED" "$message_count" "${PLAYER}"
+                        FRIENDS_SUMMARIES_PUBLISHED=$((FRIENDS_SUMMARIES_PUBLISHED + 1))
+                    else
+                        log "WARN" "⚠️ Personal N² journal may not have been published correctly for ${PLAYER}"
+                        log "DEBUG" "Response: $SEND_RESULT"
+                        log_metric "PERSONAL_N2_JOURNAL_FAILED" "1" "${PLAYER}"
+                    fi
+                else
+                    log "ERROR" "❌ Failed to publish N² journal for ${PLAYER}. Exit code: $SEND_EXIT_CODE"
+                    log "DEBUG" "Error output: $SEND_RESULT"
                     log "DEBUG" "Publication failed details:"
                     log "DEBUG" "  d_tag: $d_tag"
                     log "DEBUG" "  summary_type: $summary_type"
                     log "DEBUG" "  HEX: $HEX"
                     log "DEBUG" "  relay: $myRELAY"
-                    log "DEBUG" "  tags: $ExtraTags"
-                else
-                    log "INFO" "✅ Personal N² journal published to ${PLAYER} wall ($message_count messages)"
-                    log_metric "PERSONAL_N2_JOURNAL_PUBLISHED" "$message_count" "${PLAYER}"
-                    FRIENDS_SUMMARIES_PUBLISHED=$((FRIENDS_SUMMARIES_PUBLISHED + 1))
+                    log "DEBUG" "  tags: $TAGS_JSON"
+                    log "DEBUG" "  keyfile: $KEYFILE_PATH"
+                    log_metric "PERSONAL_N2_JOURNAL_FAILED" "1" "${PLAYER}"
                 fi
                 
                 # Increment specific counter based on summary type
