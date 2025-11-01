@@ -163,7 +163,7 @@ fi
 log "Payment processor ID: ${MOATS}"
 log "${ISSUERPUB} : (${AMOUNT}) -> ${G1PUB}"
 
-[[ -z $COMMENT ]] && COMMENT="UPLANET${UPLANETG1PUB:0:8}:ZEN:${MOATS}"
+[[ -z $COMMENT ]] && COMMENT="UPLANET${UPLANETG1PUB:0:8}:ZEN:${ISSUERPUB:0:8}->${G1PUB:0:8}"
 
 PENDINGDIR=$HOME/.zen/tmp/${ISSUERPUB}
 mkdir -p $PENDINGDIR
