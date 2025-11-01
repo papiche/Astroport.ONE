@@ -58,7 +58,7 @@ Astroport.ONE utilise et recommande la librairie JavaScript NOSTR hébergée sur
 
 ```html
 <!-- Inclusion de la librairie NOSTR depuis IPFS -->
-<script src="https://ipfs.copylaradio.com/ipfs/QmXEmaPRUaGcvhuyeG99mHHNyP43nn8GtNeuDok8jdpG4a/nostr.bundle.js"></script>
+<script src="https://ipfs.copylaradio.com/ipns/copylaradio.com/nostr.bundle.js"></script>
 ```
 
 ---

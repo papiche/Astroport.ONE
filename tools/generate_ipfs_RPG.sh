@@ -807,18 +807,14 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <link rel="icon" type="image/x-icon" href="/ipfs/QmPPELF7HhM9BXtAUMnNUSNsrRJgsFzLNCQ5pFhWKr9ogk/favicon.galaxy.ico">
     <title>🌐 UPlanet Geo-RPG / World-Builder</title>
-    <script src="/ipfs/QmQLQ5WdCEc7mpKw5rhUujUU1URKweei4Bb4esyVNd9Atx/G1PalPay_fichiers/jquery-3.6.3.min.js"></script>
-    <script src="/ipfs/Qmab3sg8QLrKYw7wQGmBujEdxG3zTNsMQcsG9zoBdToAhQ/marked.min.js.js"></script>
-    <script src="/ipfs/QmXEmaPRUaGcvhuyeG99mHHNyP43nn8GtNeuDok8jdpG4a/nostr.bundle.js"></script>
+    <script src="/ipns/copylaradio.com/jquery-3.6.3.min.js"></script>
+    <script src="/ipns/copylaradio.com/marked.min.js"></script>
+    <script src="/ipns/copylaradio.com/nostr.bundle.js"></script>
     <link rel="stylesheet" href="/ipfs/QmVAXbUyzyaZP4yVzN6WnkEhw7LFw3TY1bmMCTSKbHgYpR/css/all.min.css">
     <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossorigin=""/>
+    <link rel="stylesheet" href="/ipns/copylaradio.com/leaflet.css"/>
     <!-- Leaflet JavaScript -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-            crossorigin=""></script>
+    <script src="/ipns/copylaradio.com/leaflet.js"></script>
     <style>
         /* General Styles */
         body {

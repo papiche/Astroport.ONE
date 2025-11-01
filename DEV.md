@@ -221,7 +221,7 @@ Retourne les 4 UMAPs les plus proches, les joueurs et comptes NOSTR à proximit�
 - Utiliser la librairie NostrTools (hébergée sur IPFS) :
 
 ```html
-<script src="https://ipfs.copylaradio.com/ipfs/QmXEmaPRUaGcvhuyeG99mHHNyP43nn8GtNeuDok8jdpG4a/nostr.bundle.js"></script>
+<script src="https://ipfs.copylaradio.com/ipns/copylaradio.com/nostr.bundle.js"></script>
 ```
 
 - Générer et utiliser les clés (pour test/démo ; en production, utiliser les clés émises par le relai) :
