@@ -288,9 +288,14 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
                     except (ValueError, IndexError):
                         pass
     
+    # Extract content (comment/description from event)
+    # According to NIP-71, the content field contains a summary or description of the video
+    content = event.get('content', '').strip()
+    
     return {
         'title': title,
         'uploader': uploader,
+        'content': content,  # Comment/description from the event (NIP-71)
         'ipfs_url': ipfs_url,
         'youtube_url': youtube_url,  # Utilise youtube_url pour la cohérence
         'original_url': youtube_url,  # Alias pour compatibilité avec process_youtube.sh
@@ -324,6 +329,7 @@ def parse_nostr_message(message_data: Dict[str, Any]) -> Dict[str, Any]:
     video_info = {
         'title': message_data.get('title', ''),
         'uploader': message_data.get('uploader', ''),
+        'content': message_data.get('content', ''),  # Comment/description from event (NIP-71)
         'duration': message_data.get('duration', 0),
         'ipfs_url': message_data.get('ipfs_url', ''),
         'youtube_url': message_data.get('original_url', ''),  # Compatible avec process_youtube.sh
