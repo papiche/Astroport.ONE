@@ -50,6 +50,11 @@ if [[ -f "$HOME/.zen/game/players/${ZENCARD_EMAIL}/secret.dunikey" ]]; then
 elif [[ -f "$HOME/.zen/game/players/${ZENCARD_EMAIL}/.g1pub" ]]; then
     ZENCARD_G1PUB=$(cat "$HOME/.zen/game/players/${ZENCARD_EMAIL}/.g1pub")
 else
+    # Search in swarm memory
+    ZENCARD_G1PUB=$(cat "$HOME/.zen/tmp/swarm/*/TW/${ZENCARD_EMAIL}/_g1pub" 2>/dev/null | head -n 1)
+fi
+
+if [[ -z "$ZENCARD_G1PUB" ]]; then
     log_error "ERROR: ZEN Card not found for email: $ZENCARD_EMAIL"
     echo "{\"error\": \"ZEN Card not found\", \"email\": \"$ZENCARD_EMAIL\", \"total_received_g1\": 0, \"total_received_zen\": 0, \"total_transfers\": 0, \"transfers\": []}"
     exit 1

@@ -88,6 +88,10 @@ for PLAYER in ${PLAYERONE[@]}; do
     # Check ZEN Card balance (should be 1Ğ1 = 0 ẐEN for cooperative members)
     ZENCARD_G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
     if [[ -n "$ZENCARD_G1PUB" ]]; then
+        # Publish ZENCard _g1pub (used by tools/G1zencard_history.sh)
+        [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/_g1pub ]] \
+            && echo "$ZENCARD_G1PUB" > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/_g1pub
+
         echo "🔍 Checking ZEN Card balance for cooperative member..."
         $MY_PATH/../tools/G1check.sh ${ZENCARD_G1PUB} > ~/.zen/tmp/${MOATS}/${PLAYER}.ZENCARD.G1check
         ZENCARD_COINS=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.ZENCARD.G1check | tail -n 1)
