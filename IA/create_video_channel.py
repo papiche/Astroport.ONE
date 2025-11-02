@@ -215,33 +215,6 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
             "format": "vtt" if "vtt" in url else "srt"
         })
     
-    # Extraire la description depuis le contenu
-    description = ""
-    # Priorité 1: Parser le format webcam avec emoji 📝
-    description_match = re.search(r'📝 Description:\s*(.+?)(?:\n\n|\n📹|\n🔗|$)', content, re.DOTALL)
-    if description_match:
-        description = description_match.group(1).strip()
-    else:
-        # Priorité 2: Parser le format standard (sans emoji)
-        description_match = re.search(r'Description:\s*(.+?)(?:\n\n|\n📹|\n🔗|$)', content, re.DOTALL)
-        if description_match:
-            description = description_match.group(1).strip()
-        else:
-            # Priorité 3: Si le contenu ne commence pas par 🎬, considérer tout le contenu comme description
-            # (pour les formats de contenu simples)
-            if not content.startswith('🎬') and content.strip():
-                # Exclure les patterns connus de métadonnées
-                cleaned_content = content
-                # Supprimer les lignes contenant des emojis de métadonnées connus
-                lines = cleaned_content.split('\n')
-                filtered_lines = []
-                for line in lines:
-                    # Garder seulement les lignes qui ne sont pas des métadonnées techniques
-                    if not re.match(r'^(📹|🔗|📺|📋|🖼️|📝|🎬|•)', line.strip()):
-                        filtered_lines.append(line)
-                if filtered_lines:
-                    description = '\n'.join(filtered_lines).strip()
-    
     # Extraire les tags de chaîne
     channel_tags = [t[1] for t in tags if len(t) > 1 and t[1].startswith('Channel-')]
     if channel_tags:
@@ -324,7 +297,6 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
         'metadata_ipfs': metadata_ipfs,
         'thumbnail_ipfs': thumbnail_ipfs,
         'subtitles': subtitles,
-        'description': description,  # Description extraite depuis le contenu
         'channel_name': channel_name,
         'topic_keywords': ','.join(topic_keywords),
         'message_id': event.get('id', ''),
@@ -360,7 +332,6 @@ def parse_nostr_message(message_data: Dict[str, Any]) -> Dict[str, Any]:
         'download_date': message_data.get('technical_info', {}).get('download_date', ''),
         'file_size': message_data.get('technical_info', {}).get('file_size', 0),
         'subtitles': message_data.get('subtitles', []),  # Ajout des sous-titres
-        'description': message_data.get('description', ''),  # Description extraite depuis le contenu
         'message_id': message_data.get('message_id', ''),
         'author_id': message_data.get('author_id', ''),
         'latitude': message_data.get('latitude'),  # Coordonnées GPS
