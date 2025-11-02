@@ -89,38 +89,123 @@ echo "${YIPNS}
 mkdir -p ~/.zen/tmp/${MOATS}
 
 ##################################################################################
-############################################ SETUP CAPTAIN NOSTR PROFILE
+############################################ UPDATE CAPTAIN NOSTR PROFILE (preserves existing data)
 if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${CAPTAINEMAIL}")
 
-    echo "Setup Captain NOSTR profile"
+    echo "Update Captain NOSTR profile (preserves existing data)"
     source ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr
-    ${MY_PATH}/../tools/nostr_setup_profile.py \
+    
+    # Use nostr_update_profile.py instead of nostr_setup_profile.py to preserve existing profile data
+    # Note: We don't update all to let the captain modify them manually
+    ${MY_PATH}/../tools/nostr_update_profile.py \
     "$NSEC" \
-    "$YOUSER [♥️BOX Captain]" "$CAPTAING1PUB" \
-    "UPlanet ${UPLANETG1PUB:0:8} : $myIPFS/ipns/copylaradio.com ($TODATE)" \
-    "${myIPFS}/ipfs/QmfBK5h8R4LjS2qMtHKze3nnFrtdm85pCbUw3oPSirik5M/logo.uplanet.png" \
-    "${myIPFS}/ipfs/QmVwnUSH9ZAUfHxh9FU19szax2F8ukcfJMeDfH8UQHXkrY/FutureFork.png" \
-    "$CAPTAINEMAIL" "$myIPFS$(cat ~/.zen/game/nostr/${CAPTAINEMAIL}/NOSTRNS)" "" "" "" "" \
-    "$myRELAY" \
+    "wss://relay.copylaradio.com" "$myRELAY" \
+    --g1pub "$CAPTAING1PUB" \
+    --picture "${myIPFS}/ipfs/QmfBK5h8R4LjS2qMtHKze3nnFrtdm85pCbUw3oPSirik5M/logo.uplanet.png" \
+    --banner "${myIPFS}/ipfs/QmVwnUSH9ZAUfHxh9FU19szax2F8ukcfJMeDfH8UQHXkrY/FutureFork.png" \
     --zencard "$(cat ~/.zen/game/players/${CAPTAINEMAIL}/.g1pub 2>/dev/null)" \
     --ipns_vault "$(cat ~/.zen/game/nostr/${CAPTAINEMAIL}/NOSTRNS 2>/dev/null)" \
-    --ipfs_gw "$myIPFS" >/dev/null 2>&1
-
-    ## FOLLOW EVERY NOSTR CARD
-    nostrhex=($(cat ~/.zen/game/nostr/*@*.*/HEX))
-    if [[ ${#nostrhex[@]} -gt 0 ]]; then
-        echo "Following ${#nostrhex[@]} NOSTR cards"
-        ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "${nostrhex[@]}" >/dev/null 2>&1
+    --ipfs_gw "$myIPFS" \
+    --email "$CAPTAINEMAIL" >/dev/null 2>&1
+    
+    # Update DID document - Read from NOSTR relay (source of truth) instead of local cache
+    # IMPORTANT: Preserve existing contract status (sociétaire, infrastructure, etc.)
+    if [[ -f "${MY_PATH}/../tools/did_manager_nostr.sh" ]] && [[ -f "${MY_PATH}/../tools/nostr_get_events.sh" ]]; then
+        echo "Reading DID document from NOSTR relay (source of truth)"
+        
+        # Get Captain's HEX pubkey
+        CAPTAIN_HEX=$(cat ~/.zen/game/nostr/${CAPTAINEMAIL}/HEX 2>/dev/null)
+        
+        if [[ -n "$CAPTAIN_HEX" ]]; then
+            # Query NOSTR relay for DID document (kind 30800 with d=did tag)
+            did_event=$(${MY_PATH}/../tools/nostr_get_events.sh \
+                --kind 30800 \
+                --author "$CAPTAIN_HEX" \
+                --tag-d "did" \
+                --limit 1 2>/dev/null | jq -c 'select(.kind == 30800)' 2>/dev/null | head -n 1)
+            
+            update_type="MULTIPASS"
+            current_status=""
+            
+            if [[ -n "$did_event" ]] && command -v jq &>/dev/null; then
+                # Extract contract status from DID content (NOSTR source of truth)
+                did_content=$(echo "$did_event" | jq -r '.content' 2>/dev/null)
+                
+                if [[ -n "$did_content" && "$did_content" != "null" ]]; then
+                    # Parse DID JSON content to extract contractStatus
+                    current_status=$(echo "$did_content" | jq -r '.metadata.contractStatus // "active_rental"' 2>/dev/null)
+                    
+                    # Map contract status to update type to preserve it
+                    case "$current_status" in
+                        "cooperative_member_satellite")
+                            update_type="SOCIETAIRE_SATELLITE"
+                            echo "Preserving sociétaire satellite status from NOSTR DID"
+                            ;;
+                        "cooperative_member_constellation")
+                            update_type="SOCIETAIRE_CONSTELLATION"
+                            echo "Preserving sociétaire constellation status from NOSTR DID"
+                            ;;
+                        "infrastructure_contributor")
+                            update_type="INFRASTRUCTURE"
+                            echo "Preserving infrastructure contributor status from NOSTR DID"
+                            ;;
+                        "cooperative_treasury_contributor"|"cooperative_rnd_contributor"|"cooperative_assets_contributor")
+                            echo "Preserving contribution status from NOSTR DID: ${current_status}"
+                            # Check services to determine if also sociétaire
+                            has_satellite=$(echo "$did_content" | jq -r '.metadata.services // ""' 2>/dev/null | grep -q "satellite" && echo "yes" || echo "no")
+                            has_constellation=$(echo "$did_content" | jq -r '.metadata.services // ""' 2>/dev/null | grep -q "constellation" && echo "yes" || echo "no")
+                            if [[ "$has_constellation" == "yes" ]]; then
+                                update_type="SOCIETAIRE_CONSTELLATION"
+                            elif [[ "$has_satellite" == "yes" ]]; then
+                                update_type="SOCIETAIRE_SATELLITE"
+                            fi
+                            ;;
+                        "active_rental"|""|"null")
+                            update_type="MULTIPASS"
+                            ;;
+                        *)
+                            echo "Unknown contract status from NOSTR DID: ${current_status}, using MULTIPASS"
+                            update_type="MULTIPASS"
+                            ;;
+                    esac
+                    
+                    echo "DID found in NOSTR relay, updating with preserved status"
+                else
+                    echo "DID event found but content is empty, creating new DID"
+                fi
+            else
+                echo "No DID document found in NOSTR relay, creating new DID with default type"
+            fi
+            
+            # Update or create DID document
+            ${MY_PATH}/../tools/did_manager_nostr.sh update "${CAPTAINEMAIL}" "$update_type" "0" "0" >/dev/null 2>&1
+            
+            if [[ $? -eq 0 ]]; then
+                echo "✅ DID document updated for Captain (type: ${update_type})"
+            else
+                echo "⚠️ Failed to update DID document for Captain"
+            fi
+        else
+            echo "⚠️ Captain HEX not found, skipping DID update"
+        fi
+    else
+        echo "⚠️ did_manager_nostr.sh or nostr_get_events.sh not found, skipping DID update"
     fi
 
-    ## FOLLOW EVERY ACTIVE UMAP NODE
+    ## FOLLOW EVERY NOSTR CARD AND ACTIVE UMAP NODE (single kind3 event)
+    nostrhex=($(cat ~/.zen/game/nostr/*@*.*/HEX 2>/dev/null))
+    umaphex=()
     if [[ -d ~/.zen/tmp/${IPFSNODEID}/UPLANET ]]; then
         umaphex=($(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*/*/*/HEX 2>/dev/null))
-        if [[ ${#umaphex[@]} -gt 0 ]]; then
-            echo "Following ${#umaphex[@]} active UMAP nodes"
-            ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "${umaphex[@]}" >/dev/null 2>&1
-        fi
+    fi
+    
+    # Combine both lists
+    allhex=("${nostrhex[@]}" "${umaphex[@]}")
+    
+    if [[ ${#allhex[@]} -gt 0 ]]; then
+        echo "Following ${#nostrhex[@]} NOSTR cards and ${#umaphex[@]} active UMAP nodes (single kind3)"
+        ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "${allhex[@]}" >/dev/null 2>&1
     fi
 fi
 ##################################################################################

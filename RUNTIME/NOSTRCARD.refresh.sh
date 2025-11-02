@@ -1003,106 +1003,122 @@ for PLAYER in "${NOSTR[@]}"; do
                         log "WARN" "⚠️ Failed to update email in NOSTR profile for ${PLAYER}"
                     fi
                     
-                    # Update DID document to ensure it's synchronized with current user data
+                    # Update DID document - Read from NOSTR relay (source of truth) instead of local cache
                     # This updates IPNS addresses, wallet info, and other metadata
                     # IMPORTANT: Preserve existing contract status (sociétaire, infrastructure, etc.)
-                    if [[ -f "${MY_PATH}/../tools/did_manager_nostr.sh" ]]; then
-                        log "INFO" "Updating DID document for ${PLAYER} during daily refresh"
+                    if [[ -f "${MY_PATH}/../tools/did_manager_nostr.sh" ]] && [[ -f "${MY_PATH}/../tools/nostr_get_events.sh" ]]; then
+                        log "INFO" "Reading DID document from NOSTR relay (source of truth) for ${PLAYER}"
                         
-                        # Determine the appropriate update type based on current contract status
-                        # This prevents overwriting special statuses set by UPLANET.official.sh
-                        local did_cache="${HOME}/.zen/game/nostr/${PLAYER}/did.json.cache"
-                        local update_type="MULTIPASS"
-                        local current_status=""
-                        
-                        if [[ -f "$did_cache" ]] && command -v jq &>/dev/null; then
-                            # Extract current contract status from DID cache
-                            current_status=$(jq -r '.metadata.contractStatus // "active_rental"' "$did_cache" 2>/dev/null)
+                        # Get player's HEX pubkey (already defined earlier in the loop)
+                        if [[ -n "$HEX" ]]; then
+                            # Query NOSTR relay for DID document (kind 30800 with d=did tag)
+                            did_event=$(${MY_PATH}/../tools/nostr_get_events.sh \
+                                --kind 30800 \
+                                --author "$HEX" \
+                                --tag-d "did" \
+                                --limit 1 2>/dev/null | jq -c 'select(.kind == 30800)' 2>/dev/null | head -n 1)
                             
-                            # Map contract status to update type to preserve it
-                            case "$current_status" in
-                                "cooperative_member_satellite")
-                                    update_type="SOCIETAIRE_SATELLITE"
-                                    log "INFO" "Preserving sociétaire satellite status in DID update"
-                                    ;;
-                                "cooperative_member_constellation")
-                                    update_type="SOCIETAIRE_CONSTELLATION"
-                                    log "INFO" "Preserving sociétaire constellation status in DID update"
-                                    ;;
-                                "infrastructure_contributor")
-                                    update_type="INFRASTRUCTURE"
-                                    log "INFO" "Preserving infrastructure contributor status in DID update"
-                                    ;;
-                                "cooperative_treasury_contributor"|"cooperative_rnd_contributor"|"cooperative_assets_contributor")
-                                    # For contribution-only statuses, keep as MULTIPASS but log the preservation
-                                    log "INFO" "Preserving contribution status: ${current_status}"
-                                    # Note: These statuses are usually combined with sociétaire status
-                                    # Try to detect if there's also a sociétaire status by checking other fields
-                                    local has_satellite=$(jq -r '.metadata.services // ""' "$did_cache" 2>/dev/null | grep -q "satellite" && echo "yes" || echo "no")
-                                    local has_constellation=$(jq -r '.metadata.services // ""' "$did_cache" 2>/dev/null | grep -q "constellation" && echo "yes" || echo "no")
-                                    if [[ "$has_constellation" == "yes" ]]; then
-                                        update_type="SOCIETAIRE_CONSTELLATION"
-                                    elif [[ "$has_satellite" == "yes" ]]; then
-                                        update_type="SOCIETAIRE_SATELLITE"
-                                    fi
-                                    ;;
-                                "active_rental"|"")
-                                    # Default MULTIPASS status, no change needed
-                                    update_type="MULTIPASS"
-                                    ;;
-                                *)
-                                    log "INFO" "Unknown contract status: ${current_status}, using MULTIPASS"
-                                    update_type="MULTIPASS"
-                                    ;;
-                            esac
-                        else
-                            log "DEBUG" "DID cache not found, using default MULTIPASS type"
-                        fi
-                        
-                        ${MY_PATH}/../tools/did_manager_nostr.sh update "${PLAYER}" "$update_type" "0" "0" \
-                            2>&1 | while read line; do log "DEBUG" "$line"; done
-                        
-                        if [[ $? -eq 0 ]]; then
-                            # Log the end date from U.SOCIETY.end file if it exists
-                            local end_date=""
-                            local did_end_date=""
-                            local usociety_end_file="${HOME}/.zen/game/nostr/${PLAYER}/U.SOCIETY.end"
+                            update_type="MULTIPASS"
+                            current_status=""
+                            did_end_date=""
                             
-                            if [[ -f "$usociety_end_file" ]]; then
-                                end_date=$(cat "$usociety_end_file" 2>/dev/null)
-                                if [[ -n "$end_date" ]]; then
-                                    log "INFO" "📅 Contract end date: ${end_date}"
-                                fi
-                            fi
-                            
-                            # Also try to get end date from DID metadata if available
-                            if [[ -f "$did_cache" ]] && command -v jq &>/dev/null; then
-                                did_end_date=$(jq -r '.metadata.contractEndDate // .metadata.expirationDate // .metadata.societyEndDate // empty' "$did_cache" 2>/dev/null)
-                                if [[ -n "$did_end_date" ]] && [[ "$did_end_date" != "null" ]]; then
-                                    if [[ -z "$end_date" ]] || [[ "$end_date" != "$did_end_date" ]]; then
-                                        log "INFO" "📅 Contract end date (from DID): ${did_end_date}"
-                                    fi
-                                fi
-                            fi
-                            
-                            if [[ -n "$current_status" ]]; then
-                                if [[ -n "$end_date" ]] || [[ -n "$did_end_date" ]]; then
-                                    log "INFO" "✅ DID document updated for ${PLAYER} (status: ${current_status}, end date: ${end_date:-${did_end_date:-N/A}})"
+                            if [[ -n "$did_event" ]] && command -v jq &>/dev/null; then
+                                # Extract contract status from DID content (NOSTR source of truth)
+                                did_content=$(echo "$did_event" | jq -r '.content' 2>/dev/null)
+                                
+                                if [[ -n "$did_content" && "$did_content" != "null" ]]; then
+                                    # Parse DID JSON content to extract contractStatus
+                                    current_status=$(echo "$did_content" | jq -r '.metadata.contractStatus // "active_rental"' 2>/dev/null)
+                                    
+                                    # Also extract end date from DID
+                                    did_end_date=$(echo "$did_content" | jq -r '.metadata.contractEndDate // .metadata.expirationDate // .metadata.societyEndDate // empty' 2>/dev/null)
+                                    
+                                    # Map contract status to update type to preserve it
+                                    case "$current_status" in
+                                        "cooperative_member_satellite")
+                                            update_type="SOCIETAIRE_SATELLITE"
+                                            log "INFO" "Preserving sociétaire satellite status from NOSTR DID"
+                                            ;;
+                                        "cooperative_member_constellation")
+                                            update_type="SOCIETAIRE_CONSTELLATION"
+                                            log "INFO" "Preserving sociétaire constellation status from NOSTR DID"
+                                            ;;
+                                        "infrastructure_contributor")
+                                            update_type="INFRASTRUCTURE"
+                                            log "INFO" "Preserving infrastructure contributor status from NOSTR DID"
+                                            ;;
+                                        "cooperative_treasury_contributor"|"cooperative_rnd_contributor"|"cooperative_assets_contributor")
+                                            log "INFO" "Preserving contribution status from NOSTR DID: ${current_status}"
+                                            # Check services to determine if also sociétaire
+                                            has_satellite=$(echo "$did_content" | jq -r '.metadata.services // ""' 2>/dev/null | grep -q "satellite" && echo "yes" || echo "no")
+                                            has_constellation=$(echo "$did_content" | jq -r '.metadata.services // ""' 2>/dev/null | grep -q "constellation" && echo "yes" || echo "no")
+                                            if [[ "$has_constellation" == "yes" ]]; then
+                                                update_type="SOCIETAIRE_CONSTELLATION"
+                                            elif [[ "$has_satellite" == "yes" ]]; then
+                                                update_type="SOCIETAIRE_SATELLITE"
+                                            fi
+                                            ;;
+                                        "active_rental"|""|"null")
+                                            update_type="MULTIPASS"
+                                            ;;
+                                        *)
+                                            log "INFO" "Unknown contract status from NOSTR DID: ${current_status}, using MULTIPASS"
+                                            update_type="MULTIPASS"
+                                            ;;
+                                    esac
+                                    
+                                    log "INFO" "DID found in NOSTR relay, updating with preserved status"
                                 else
-                                    log "INFO" "✅ DID document updated for ${PLAYER} (preserved status: ${current_status})"
+                                    log "INFO" "DID event found but content is empty, creating new DID"
                                 fi
                             else
-                                if [[ -n "$end_date" ]] || [[ -n "$did_end_date" ]]; then
-                                    log "INFO" "✅ DID document updated for ${PLAYER} (type: ${update_type}, end date: ${end_date:-${did_end_date:-N/A}})"
-                                else
-                                    log "INFO" "✅ DID document updated for ${PLAYER} (update type: ${update_type})"
+                                log "INFO" "No DID document found in NOSTR relay, creating new DID with default type"
+                            fi
+                            
+                            # Update or create DID document
+                            ${MY_PATH}/../tools/did_manager_nostr.sh update "${PLAYER}" "$update_type" "0" "0" \
+                                2>&1 | while read line; do log "DEBUG" "$line"; done
+                            
+                            if [[ $? -eq 0 ]]; then
+                                # Log the end date from U.SOCIETY.end file if it exists
+                                end_date=""
+                                usociety_end_file="${HOME}/.zen/game/nostr/${PLAYER}/U.SOCIETY.end"
+                                
+                                if [[ -f "$usociety_end_file" ]]; then
+                                    end_date=$(cat "$usociety_end_file" 2>/dev/null)
+                                    if [[ -n "$end_date" ]]; then
+                                        log "INFO" "📅 Contract end date: ${end_date}"
+                                    fi
                                 fi
+                                
+                                # Use end date from NOSTR DID if available
+                                if [[ -n "$did_end_date" ]] && [[ "$did_end_date" != "null" ]] && [[ "$did_end_date" != "" ]]; then
+                                    if [[ -z "$end_date" ]] || [[ "$end_date" != "$did_end_date" ]]; then
+                                        log "INFO" "📅 Contract end date (from NOSTR DID): ${did_end_date}"
+                                    fi
+                                fi
+                                
+                                if [[ -n "$current_status" ]]; then
+                                    if [[ -n "$end_date" ]] || [[ -n "$did_end_date" ]]; then
+                                        log "INFO" "✅ DID document updated for ${PLAYER} (status: ${current_status}, end date: ${end_date:-${did_end_date:-N/A}})"
+                                    else
+                                        log "INFO" "✅ DID document updated for ${PLAYER} (preserved status: ${current_status})"
+                                    fi
+                                else
+                                    if [[ -n "$end_date" ]] || [[ -n "$did_end_date" ]]; then
+                                        log "INFO" "✅ DID document updated for ${PLAYER} (type: ${update_type}, end date: ${end_date:-${did_end_date:-N/A}})"
+                                    else
+                                        log "INFO" "✅ DID document updated for ${PLAYER} (update type: ${update_type})"
+                                    fi
+                                fi
+                            else
+                                log "WARN" "⚠️ Failed to update DID document for ${PLAYER}"
                             fi
                         else
-                            log "WARN" "⚠️ Failed to update DID document for ${PLAYER}"
+                            log "WARN" "⚠️ Player HEX not found for ${PLAYER}, skipping DID update"
                         fi
                     else
-                        log "WARN" "⚠️ did_manager_nostr.sh not found, skipping DID update"
+                        log "WARN" "⚠️ did_manager_nostr.sh or nostr_get_events.sh not found, skipping DID update"
                     fi
                 fi
             fi
