@@ -64,30 +64,15 @@ def is_youtube_video_event(event: Dict[str, Any]) -> bool:
     tags = event.get('tags', [])
     kind = event.get('kind', 1)
     
-    print(f"🔍 [is_youtube_video_event] Checking event: kind={kind}, id={event.get('id', '')[:16]}...")
-    
     # Accepter uniquement les événements NIP-71 (kind: 21 ou 22)
     if kind not in [21, 22]:
-        print(f"   ❌ Invalid kind: {kind} (expected 21 or 22)")
         return False
-    
-    print(f"   ✅ Valid kind: {kind}")
     
     # Vérifier les tags NIP-71 pour les vidéos
     has_video_tags = any(tag[0] == 'url' and ('ipfs' in tag[1] or 'youtube' in tag[1]) for tag in tags if len(tag) > 1)
     has_media_type = any(tag[0] == 'm' and 'video' in tag[1] for tag in tags if len(tag) > 1)
     
-    print(f"   - has_video_tags (url with ipfs/youtube): {has_video_tags}")
-    print(f"   - has_media_type (m with video): {has_media_type}")
-    print(f"   - All tags: {[tag[0] for tag in tags if len(tag) > 0]}")
-    
-    result = has_video_tags and has_media_type
-    if result:
-        print(f"   ✅ Valid NIP-71 video event!")
-    else:
-        print(f"   ❌ Not a valid NIP-71 video event")
-    
-    return result
+    return has_video_tags and has_media_type
 
 def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -468,22 +453,14 @@ async def fetch_and_process_nostr_events(relay_url: str = "ws://127.0.0.1:7777",
     """
     events = await fetch_nostr_events(relay_url, limit)
     video_messages = []
-    filtered_count = 0
-    
-    print(f"📊 Processing {len(events)} NIP-71 video events...")
     
     for event in events:
         # Filtrer les messages incompatibles
         if is_incompatible_youtube_message(event):
-            filtered_count += 1
             continue
             
         video_info = extract_video_info_from_nostr_event(event)
         video_messages.append(video_info)
-    
-    print(f"✅ {len(video_messages)} compatible NIP-71 messages")
-    if filtered_count > 0:
-        print(f"🔍 {filtered_count} incompatible messages filtered out")
     
     return video_messages
 
