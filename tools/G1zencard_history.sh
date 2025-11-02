@@ -91,10 +91,11 @@ CUTOFF_YEAR=$((CURRENT_YEAR - FILTER_YEARS + 1))
 # Process history JSON with jq to filter and calculate
 # Always analyze 3 years of history
 # Satellite transfers older than 1 year are invalidated from valid balance
+JQ_STDERR=$(mktemp)
 RESULT=$(echo "$HISTORY_JSON" | jq --arg society_g1 "$SOCIETY_G1PUB" --arg cutoff_year "$CUTOFF_YEAR" --arg zencard_email "$ZENCARD_EMAIL" --arg current_year "$CURRENT_YEAR" '
 {
     zencard_email: $zencard_email,
-    zencard_g1pub: .pubkey,
+    zencard_g1pub: (.pubkey // ""),
     filter_years: 3,
     cutoff_year: ($cutoff_year | tonumber),
     current_year: ($current_year | tonumber),
@@ -107,17 +108,21 @@ RESULT=$(echo "$HISTORY_JSON" | jq --arg society_g1 "$SOCIETY_G1PUB" --arg cutof
     timestamp: (now | strftime("%Y-%m-%dT%H:%M:%S"))
 } as $init |
 
-if .history then
+if (.history and (.history | type == "array")) then
     .history | map(
-        # Parse amount
-        (."Amounts Ğ1" | tonumber) as $amount_g1 |
+        # Parse amount (handle null/empty/invalid, string or number)
+        ((."Amounts Ğ1" // 0 | if type == "number" then . else (tonumber // 0) end)) as $amount_g1 |
         # Extract issuer pubkey (before ":")
-        (."Issuers/Recipients" | split(":")[0]) as $issuer |
+        ((."Issuers/Recipients" // "") | if type == "string" and length > 0 then (split(":")[0] // "") else "" end) as $issuer |
         # Get reference
         (."Reference" // "") as $reference |
-        # Parse date and year
+        # Parse date and year (handle null/empty)
         (."Date" // "") as $date |
-        ($date | split("-")[0] | tonumber) as $year |
+        (if ($date | type == "string" and length > 0) then 
+            (($date | split("-")[0] // "0") | if type == "number" then . else (tonumber // 0) end)
+        else 
+            0 
+        end) as $year |
         
         # Check if this is an incoming transfer from SOCIETY with SOCIETY reference
         # and within the 3 year period
@@ -125,8 +130,8 @@ if .history then
             {
                 is_society_transfer: true,
                 amount_g1: $amount_g1,
-                # Standard rate: 1Ẑ = 0.1Ğ1 (or 10Ẑ = 1Ğ1)
-                amount_zen: (if $amount_g1 > 1 then (($amount_g1) * 10) else 0 end),
+                # Formula: Z = (G1 - 1) * 10, minimum 0
+                amount_zen: (((($amount_g1 - 1) * 10) | if . < 0 then 0 else . end)),
                 date: $date,
                 year: $year,
                 part_type: (
@@ -214,7 +219,25 @@ if .history then
 else
     $init
 end
-')
+' 2>"$JQ_STDERR")
+JQ_EXIT_CODE=$?
+JQ_ERROR=$(cat "$JQ_STDERR" 2>/dev/null)
+rm -f "$JQ_STDERR"
+
+# Check if jq failed or output is empty/invalid
+if [[ $JQ_EXIT_CODE -ne 0 ]] || [[ -z "$RESULT" ]] || ! echo "$RESULT" | jq empty 2>/dev/null; then
+    log_error "ERROR: jq processing failed (exit code: $JQ_EXIT_CODE)"
+    if [[ -n "$JQ_ERROR" ]]; then
+        log_error "jq error: $JQ_ERROR"
+    fi
+    # Output valid error JSON (escape JQ_ERROR safely)
+    JQ_ERROR_JSON="null"
+    if [[ -n "$JQ_ERROR" ]]; then
+        JQ_ERROR_JSON=$(echo -n "$JQ_ERROR" | jq -Rs . 2>/dev/null || echo "null")
+    fi
+    echo "{\"error\": \"Failed to process history JSON\", \"jq_exit_code\": $JQ_EXIT_CODE, \"jq_error\": $JQ_ERROR_JSON, \"zencard_email\": \"$ZENCARD_EMAIL\", \"total_received_g1\": 0, \"total_received_zen\": 0, \"valid_balance_g1\": 0, \"valid_balance_zen\": 0, \"total_transfers\": 0, \"transfers\": []}"
+    exit 1
+fi
 
 # Output the result
 echo "$RESULT"
