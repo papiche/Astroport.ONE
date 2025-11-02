@@ -150,7 +150,7 @@ if (.history and (.history | type == "array")) then
                 is_society_transfer: true,
                 amount_g1: $amount_g1,
                 # Formula: Z = (G1 - 1) * 10, minimum 0
-                amount_zen: (((($amount_g1 - 1) * 10) | if . < 0 then 0 else . end)),
+                amount_zen: ((($amount_g1 * 10) | if . < 0 then 0 else . end)),
                 date: $date,
                 year: $year,
                 part_type: (
