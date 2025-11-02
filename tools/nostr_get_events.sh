@@ -11,7 +11,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 # Default values
 ################################################################################
 KIND=""
-AUTHOR=""
+declare -a AUTHORS=()  # Array to support multiple authors
 LIMIT=100
 SINCE=""
 UNTIL=""
@@ -36,6 +36,7 @@ Query NOSTR events from local strfry relay with flexible filters.
 OPTIONS:
     -k, --kind KIND           Filter by event kind (e.g., 30500, 30501, 1)
     -a, --author HEX          Filter by author pubkey (hex format)
+                              Can be specified multiple times or as comma-separated list
     -d, --tag-d VALUE         Filter by 'd' tag (identifier for parameterized replaceable events)
     -p, --tag-p HEX           Filter by 'p' tag (mentioned pubkey)
     -e, --tag-e ID            Filter by 'e' tag (referenced event)
@@ -55,6 +56,12 @@ EXAMPLES:
 
     # Get permit requests by specific author
     nostr_get_events.sh --kind 30501 --author a1b2c3d4e5f6...
+    
+    # Get messages from multiple authors (multiple --author)
+    nostr_get_events.sh --kind 1 --author hex1 --author hex2 --author hex3
+    
+    # Get messages from multiple authors (comma-separated)
+    nostr_get_events.sh --kind 1 --author "hex1,hex2,hex3"
 
     # Get specific permit request by identifier
     nostr_get_events.sh --kind 30501 --tag-d "req_abc123"
@@ -104,7 +111,18 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         -a|--author)
-            AUTHOR="$2"
+            # Support multiple authors: accumulate in array
+            # Also support comma-separated list for backward compatibility
+            if [[ "$2" == *","* ]]; then
+                # Comma-separated list: split and add each
+                IFS=',' read -ra AUTHOR_LIST <<< "$2"
+                for author in "${AUTHOR_LIST[@]}"; do
+                    [[ -n "$author" ]] && AUTHORS+=("$author")
+                done
+            else
+                # Single author: add to array
+                [[ -n "$2" ]] && AUTHORS+=("$2")
+            fi
             shift 2
             ;;
         -d|--tag-d)
@@ -183,10 +201,12 @@ if [[ -n "$KIND" ]]; then
     FILTER+="\"kinds\":[$KIND]"
 fi
 
-# Add authors filter
-if [[ -n "$AUTHOR" ]]; then
+# Add authors filter (support multiple authors)
+if [[ ${#AUTHORS[@]} -gt 0 ]]; then
     [[ "$FILTER" != "{" ]] && FILTER+=","
-    FILTER+="\"authors\":[\"$AUTHOR\"]"
+    # Build JSON array of authors
+    AUTHORS_JSON=$(printf '"%s",' "${AUTHORS[@]}" | sed 's/,$//')
+    FILTER+="\"authors\":[$AUTHORS_JSON]"
 fi
 
 # Add since filter

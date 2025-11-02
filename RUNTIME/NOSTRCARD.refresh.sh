@@ -981,6 +981,132 @@ for PLAYER in "${NOSTR[@]}"; do
         # echo "## MULTIPASS nostr PROFILE EXISTING"
         #~ cat ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
         HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX)
+        
+        # Update email in NOSTR profile during refresh (ensure email is always present)
+        # This ensures the email is always available in the profile for frontend retrieval
+        if [[ -s ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]]; then
+            source ~/.zen/game/nostr/${PLAYER}/.secret.nostr 2>/dev/null
+            if [[ -n "$NSEC" ]]; then
+                # Update email only during daily refresh to avoid excessive updates
+                # But ensure it's done at least once per day
+                if [[ "$REFRESH_REASON" == "daily_update" ]]; then
+                    log "INFO" "Updating email in NOSTR profile for ${PLAYER} during daily refresh"
+                    ${MY_PATH}/../tools/nostr_update_profile.py \
+                        "$NSEC" \
+                        "wss://relay.copylaradio.com" "$myRELAY" \
+                        --email "$PLAYER" \
+                        2>&1 | while read line; do log "DEBUG" "$line"; done
+                    
+                    if [[ $? -eq 0 ]]; then
+                        log "INFO" "✅ Email updated in NOSTR profile for ${PLAYER}"
+                    else
+                        log "WARN" "⚠️ Failed to update email in NOSTR profile for ${PLAYER}"
+                    fi
+                    
+                    # Update DID document to ensure it's synchronized with current user data
+                    # This updates IPNS addresses, wallet info, and other metadata
+                    # IMPORTANT: Preserve existing contract status (sociétaire, infrastructure, etc.)
+                    if [[ -f "${MY_PATH}/../tools/did_manager_nostr.sh" ]]; then
+                        log "INFO" "Updating DID document for ${PLAYER} during daily refresh"
+                        
+                        # Determine the appropriate update type based on current contract status
+                        # This prevents overwriting special statuses set by UPLANET.official.sh
+                        local did_cache="${HOME}/.zen/game/nostr/${PLAYER}/did.json.cache"
+                        local update_type="MULTIPASS"
+                        local current_status=""
+                        
+                        if [[ -f "$did_cache" ]] && command -v jq &>/dev/null; then
+                            # Extract current contract status from DID cache
+                            current_status=$(jq -r '.metadata.contractStatus // "active_rental"' "$did_cache" 2>/dev/null)
+                            
+                            # Map contract status to update type to preserve it
+                            case "$current_status" in
+                                "cooperative_member_satellite")
+                                    update_type="SOCIETAIRE_SATELLITE"
+                                    log "INFO" "Preserving sociétaire satellite status in DID update"
+                                    ;;
+                                "cooperative_member_constellation")
+                                    update_type="SOCIETAIRE_CONSTELLATION"
+                                    log "INFO" "Preserving sociétaire constellation status in DID update"
+                                    ;;
+                                "infrastructure_contributor")
+                                    update_type="INFRASTRUCTURE"
+                                    log "INFO" "Preserving infrastructure contributor status in DID update"
+                                    ;;
+                                "cooperative_treasury_contributor"|"cooperative_rnd_contributor"|"cooperative_assets_contributor")
+                                    # For contribution-only statuses, keep as MULTIPASS but log the preservation
+                                    log "INFO" "Preserving contribution status: ${current_status}"
+                                    # Note: These statuses are usually combined with sociétaire status
+                                    # Try to detect if there's also a sociétaire status by checking other fields
+                                    local has_satellite=$(jq -r '.metadata.services // ""' "$did_cache" 2>/dev/null | grep -q "satellite" && echo "yes" || echo "no")
+                                    local has_constellation=$(jq -r '.metadata.services // ""' "$did_cache" 2>/dev/null | grep -q "constellation" && echo "yes" || echo "no")
+                                    if [[ "$has_constellation" == "yes" ]]; then
+                                        update_type="SOCIETAIRE_CONSTELLATION"
+                                    elif [[ "$has_satellite" == "yes" ]]; then
+                                        update_type="SOCIETAIRE_SATELLITE"
+                                    fi
+                                    ;;
+                                "active_rental"|"")
+                                    # Default MULTIPASS status, no change needed
+                                    update_type="MULTIPASS"
+                                    ;;
+                                *)
+                                    log "INFO" "Unknown contract status: ${current_status}, using MULTIPASS"
+                                    update_type="MULTIPASS"
+                                    ;;
+                            esac
+                        else
+                            log "DEBUG" "DID cache not found, using default MULTIPASS type"
+                        fi
+                        
+                        ${MY_PATH}/../tools/did_manager_nostr.sh update "${PLAYER}" "$update_type" "0" "0" \
+                            2>&1 | while read line; do log "DEBUG" "$line"; done
+                        
+                        if [[ $? -eq 0 ]]; then
+                            # Log the end date from U.SOCIETY.end file if it exists
+                            local end_date=""
+                            local did_end_date=""
+                            local usociety_end_file="${HOME}/.zen/game/nostr/${PLAYER}/U.SOCIETY.end"
+                            
+                            if [[ -f "$usociety_end_file" ]]; then
+                                end_date=$(cat "$usociety_end_file" 2>/dev/null)
+                                if [[ -n "$end_date" ]]; then
+                                    log "INFO" "📅 Contract end date: ${end_date}"
+                                fi
+                            fi
+                            
+                            # Also try to get end date from DID metadata if available
+                            if [[ -f "$did_cache" ]] && command -v jq &>/dev/null; then
+                                did_end_date=$(jq -r '.metadata.contractEndDate // .metadata.expirationDate // .metadata.societyEndDate // empty' "$did_cache" 2>/dev/null)
+                                if [[ -n "$did_end_date" ]] && [[ "$did_end_date" != "null" ]]; then
+                                    if [[ -z "$end_date" ]] || [[ "$end_date" != "$did_end_date" ]]; then
+                                        log "INFO" "📅 Contract end date (from DID): ${did_end_date}"
+                                    fi
+                                fi
+                            fi
+                            
+                            if [[ -n "$current_status" ]]; then
+                                if [[ -n "$end_date" ]] || [[ -n "$did_end_date" ]]; then
+                                    log "INFO" "✅ DID document updated for ${PLAYER} (status: ${current_status}, end date: ${end_date:-${did_end_date:-N/A}})"
+                                else
+                                    log "INFO" "✅ DID document updated for ${PLAYER} (preserved status: ${current_status})"
+                                fi
+                            else
+                                if [[ -n "$end_date" ]] || [[ -n "$did_end_date" ]]; then
+                                    log "INFO" "✅ DID document updated for ${PLAYER} (type: ${update_type}, end date: ${end_date:-${did_end_date:-N/A}})"
+                                else
+                                    log "INFO" "✅ DID document updated for ${PLAYER} (update type: ${update_type})"
+                                fi
+                            fi
+                        else
+                            log "WARN" "⚠️ Failed to update DID document for ${PLAYER}"
+                        fi
+                    else
+                        log "WARN" "⚠️ did_manager_nostr.sh not found, skipping DID update"
+                    fi
+                fi
+            fi
+        fi
         ########################################################################
         ## Create ZENCARD ONLY FOR UPlanet Zen #################################################
         if [[ "$UPLANETG1PUB" != "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" ]]; then
@@ -1119,12 +1245,14 @@ for PLAYER in "${NOSTR[@]}"; do
         if [[ ${#friends_list[@]} -gt 0 ]]; then
             log "DEBUG" "Checking if friends have messages in relay..."
             friends_check_start=$(date +%s)
-            cd ~/.zen/strfry
             for friend_hex in "${friends_list[@]:0:3}"; do  # Check first 3 friends only for debug
-                friend_messages=$(./strfry scan "{\"kinds\": [1], \"authors\": [\"$friend_hex\"], \"limit\": 1}" 2>/dev/null | wc -l)
+                friend_messages=$(${MY_PATH}/../tools/nostr_get_events.sh \
+                    --kind 1 \
+                    --author "$friend_hex" \
+                    --limit 1 \
+                    --output count 2>/dev/null)
                 log "DEBUG" "Friend $friend_hex has $friend_messages messages in relay"
             done
-            cd - >/dev/null
             friends_check_end=$(date +%s)
             friends_check_duration=$((friends_check_end - friends_check_start))
             log "DEBUG" "Friends check completed in ${friends_check_duration}s for ${PLAYER}"
@@ -1189,82 +1317,109 @@ for PLAYER in "${NOSTR[@]}"; do
             if [[ "$summary_type" == "Weekly" ]]; then
                 log "INFO" "Using published daily summaries for $summary_type summary (more efficient)"
 
-                # Get published daily summaries from this MULTIPASS wall
+                # Get published daily summaries from this MULTIPASS wall using nostr_get_events.sh
                 since_timestamp=$(date -d "${summary_days} days ago" +%s)
 
-                cd ~/.zen/strfry
-                daily_summaries=$(./strfry scan "{
-                    \"kinds\": [30023],
-                    \"authors\": [\"$HEX\"],
-                    \"since\": ${since_timestamp},
-                    \"limit\": 100
-                }" 2>/dev/null | jq -c 'select(.kind == 30023 and (.tags[] | select(.[0] == "t" and .[1] == "SummaryType:Daily"))) | {id: .id, content: .content, created_at: .created_at, tags: .tags}')
-                cd - >/dev/null
+                log "DEBUG" "Querying daily summaries using nostr_get_events.sh for ${PLAYER}"
+                daily_summaries=$(${MY_PATH}/../tools/nostr_get_events.sh \
+                    --kind 30023 \
+                    --author "$HEX" \
+                    --tag-t "SummaryType:Daily" \
+                    --since "$since_timestamp" \
+                    --limit 100 2>/dev/null | \
+                    jq -c 'select(.kind == 30023) | {id: .id, content: .content, created_at: .created_at, tags: .tags}')
 
                 # Process daily summaries instead of raw messages
                 friends_messages="$daily_summaries"
+                
+                if [[ -n "$daily_summaries" ]]; then
+                    summary_count=$(echo "$daily_summaries" | wc -l)
+                    log "DEBUG" "Retrieved $summary_count daily summaries for ${PLAYER}"
+                else
+                    log "DEBUG" "No daily summaries found for ${PLAYER}"
+                fi
             elif [[ "$summary_type" == "Monthly" ]]; then
                 log "INFO" "Using published weekly summaries for $summary_type summary (most efficient)"
 
-                # Get published weekly summaries from this MULTIPASS wall
+                # Get published weekly summaries from this MULTIPASS wall using nostr_get_events.sh
                 since_timestamp=$(date -d "${summary_days} days ago" +%s)
 
-                cd ~/.zen/strfry
-                weekly_summaries=$(./strfry scan "{
-                    \"kinds\": [30023],
-                    \"authors\": [\"$HEX\"],
-                    \"since\": ${since_timestamp},
-                    \"limit\": 100
-                }" 2>/dev/null | jq -c 'select(.kind == 30023 and (.tags[] | select(.[0] == "t" and .[1] == "SummaryType:Weekly"))) | {id: .id, content: .content, created_at: .created_at, tags: .tags}')
-                cd - >/dev/null
+                log "DEBUG" "Querying weekly summaries using nostr_get_events.sh for ${PLAYER}"
+                weekly_summaries=$(${MY_PATH}/../tools/nostr_get_events.sh \
+                    --kind 30023 \
+                    --author "$HEX" \
+                    --tag-t "SummaryType:Weekly" \
+                    --since "$since_timestamp" \
+                    --limit 100 2>/dev/null | \
+                    jq -c 'select(.kind == 30023) | {id: .id, content: .content, created_at: .created_at, tags: .tags}')
 
                 # Process weekly summaries instead of raw messages
                 friends_messages="$weekly_summaries"
+                
+                if [[ -n "$weekly_summaries" ]]; then
+                    summary_count=$(echo "$weekly_summaries" | wc -l)
+                    log "DEBUG" "Retrieved $summary_count weekly summaries for ${PLAYER}"
+                else
+                    log "DEBUG" "No weekly summaries found for ${PLAYER}"
+                fi
             elif [[ "$summary_type" == "Yearly" ]]; then
                 log "INFO" "Using published monthly summaries for $summary_type summary (most efficient)"
 
-                # Get published monthly summaries from this MULTIPASS wall
+                # Get published monthly summaries from this MULTIPASS wall using nostr_get_events.sh
                 since_timestamp=$(date -d "${summary_days} days ago" +%s)
 
-                cd ~/.zen/strfry
-                monthly_summaries=$(./strfry scan "{
-                    \"kinds\": [30023],
-                    \"authors\": [\"$HEX\"],
-                    \"since\": ${since_timestamp},
-                    \"limit\": 100
-                }" 2>/dev/null | jq -c 'select(.kind == 30023 and (.tags[] | select(.[0] == "t" and .[1] == "SummaryType:Monthly"))) | {id: .id, content: .content, created_at: .created_at, tags: .tags}')
-                cd - >/dev/null
+                log "DEBUG" "Querying monthly summaries using nostr_get_events.sh for ${PLAYER}"
+                monthly_summaries=$(${MY_PATH}/../tools/nostr_get_events.sh \
+                    --kind 30023 \
+                    --author "$HEX" \
+                    --tag-t "SummaryType:Monthly" \
+                    --since "$since_timestamp" \
+                    --limit 100 2>/dev/null | \
+                    jq -c 'select(.kind == 30023) | {id: .id, content: .content, created_at: .created_at, tags: .tags}')
 
                 # Process monthly summaries instead of raw messages
                 friends_messages="$monthly_summaries"
-            else
-                # For Daily summaries, get raw messages from friends
-                since_timestamp=$(date -d "${summary_days} days ago" +%s)
-                friends_json=$(printf '"%s",' "${friends_list[@]}"); friends_json="[${friends_json%,}]"
                 
-                log "DEBUG" "Querying strfry for ${#friends_list[@]} friends since $(date -d "@$since_timestamp" '+%Y-%m-%d %H:%M')"
-                log "DEBUG" "Friends JSON: $friends_json"
-                
-                log "DEBUG" "Starting strfry scan for ${PLAYER}"
-                strfry_start=$(date +%s)
-                cd ~/.zen/strfry
-                friends_messages=$(./strfry scan "{
-                    \"kinds\": [1],
-                    \"authors\": ${friends_json},
-                    \"since\": ${since_timestamp},
-                    \"limit\": 500
-                }" 2>/dev/null | jq -c 'select(.kind == 1) | {id: .id, content: .content, created_at: .created_at, author: .pubkey, tags: .tags}')
-                cd - >/dev/null
-                strfry_end=$(date +%s)
-                strfry_duration=$((strfry_end - strfry_start))
-                log "DEBUG" "strfry scan completed in ${strfry_duration}s for ${PLAYER}"
-                
-                # Debug: Check what we got from strfry
-                if [[ -n "$friends_messages" ]]; then
-                    message_count_debug=$(echo "$friends_messages" | wc -l)
-                    log "DEBUG" "Retrieved $message_count_debug messages from strfry for ${PLAYER}"
+                if [[ -n "$monthly_summaries" ]]; then
+                    summary_count=$(echo "$monthly_summaries" | wc -l)
+                    log "DEBUG" "Retrieved $summary_count monthly summaries for ${PLAYER}"
                 else
-                    log "DEBUG" "No messages retrieved from strfry for ${PLAYER} (friends: ${#friends_list[@]})"
+                    log "DEBUG" "No monthly summaries found for ${PLAYER}"
+                fi
+            else
+                # For Daily summaries, get raw messages from friends using nostr_get_events.sh
+                since_timestamp=$(date -d "${summary_days} days ago" +%s)
+                
+                log "DEBUG" "Querying messages using nostr_get_events.sh for ${#friends_list[@]} friends since $(date -d "@$since_timestamp" '+%Y-%m-%d %H:%M')"
+                
+                log "DEBUG" "Starting nostr_get_events.sh queries for ${PLAYER}"
+                query_start=$(date +%s)
+                
+                # Use nostr_get_events.sh with multiple authors (comma-separated or multiple --author)
+                # Build comma-separated authors list for efficient query
+                if [[ ${#friends_list[@]} -gt 0 ]]; then
+                    friends_comma=$(IFS=','; echo "${friends_list[*]}")
+                    
+                    friends_messages=$(${MY_PATH}/../tools/nostr_get_events.sh \
+                        --kind 1 \
+                        --author "$friends_comma" \
+                        --since "$since_timestamp" \
+                        --limit 500 2>/dev/null | \
+                        jq -c 'select(.kind == 1) | {id: .id, content: .content, created_at: .created_at, author: .pubkey, tags: .tags}')
+                else
+                    friends_messages=""
+                fi
+                
+                query_end=$(date +%s)
+                query_duration=$((query_end - query_start))
+                log "DEBUG" "nostr_get_events.sh queries completed in ${query_duration}s for ${PLAYER}"
+                
+                # Debug: Check what we got
+                if [[ -n "$friends_messages" ]]; then
+                    message_count_debug=$(echo "$friends_messages" | grep -c '^{' || echo "0")
+                    log "DEBUG" "Retrieved $message_count_debug messages from friends for ${PLAYER}"
+                else
+                    log "DEBUG" "No messages retrieved from friends for ${PLAYER} (friends: ${#friends_list[@]})"
                 fi
             fi
             
