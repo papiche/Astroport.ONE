@@ -111,9 +111,28 @@ RESULT=$(echo "$HISTORY_JSON" | jq --arg society_g1 "$SOCIETY_G1PUB" --arg cutof
 if (.history and (.history | type == "array")) then
     .history | map(
         # Parse amount (handle null/empty/invalid, string or number)
-        ((."Amounts Ğ1" // 0 | if type == "number" then . else (tonumber // 0) end)) as $amount_g1 |
+        # Handle empty strings, null, and invalid values
+        (if (."Amounts Ğ1" == null or ."Amounts Ğ1" == "") then
+            0
+        elif (."Amounts Ğ1" | type == "number") then
+            ."Amounts Ğ1"
+        elif (."Amounts Ğ1" | type == "string") then
+            (if (."Amounts Ğ1" | length == 0) then
+                0
+            else
+                ((."Amounts Ğ1" | tonumber) // 0)
+            end)
+        else
+            0
+        end) as $amount_g1 |
         # Extract issuer pubkey (before ":")
-        ((."Issuers/Recipients" // "") | if type == "string" and length > 0 then (split(":")[0] // "") else "" end) as $issuer |
+        (if (."Issuers/Recipients" == null or ."Issuers/Recipients" == "") then
+            ""
+        elif (."Issuers/Recipients" | type == "string" and length > 0) then
+            ((."Issuers/Recipients" | split(":")[0]) // "")
+        else
+            ""
+        end) as $issuer |
         # Get reference
         (."Reference" // "") as $reference |
         # Parse date and year (handle null/empty)
