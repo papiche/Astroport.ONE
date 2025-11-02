@@ -26,7 +26,8 @@
 - **IPFS**: Content-addressed storage for video files
 - **MULTIPASS**: Unified identity system with NOSTR keys and uDRIVE storage
 - **NIP-42**: Authentication mechanism for secure uploads
-- **UMAP**: Geographic anchoring of videos (latitude/longitude)
+- **NIP-101**: UPlanet protocol for decentralized identity, geographic coordination, and constellation synchronization
+- **UMAP**: Geographic anchoring of videos (latitude/longitude) - defined in NIP-101
 
 ---
 
@@ -534,9 +535,34 @@ User Request
 
 ---
 
-## Astroport Swarm Integration
+## Astroport Swarm Integration & NIP-101 Protocol
 
-Nostr Tube leverages the **Astroport swarm network** for decentralized video distribution:
+Nostr Tube leverages the **Astroport swarm network** and **NIP-101 protocol** for decentralized video distribution, identity management, and geographic coordination.
+
+### NIP-101 Integration
+
+**NIP-101** (UPlanet: Decentralized Identity & Geographic Coordination) is applied to Nostr Tube through:
+
+1. **Hierarchical GeoKeys**: Geographic coordinate-based Nostr keypairs (UMAP, SECTOR, REGION) for location-based video discovery
+2. **DID Documents** (kind 30800): W3C-compliant decentralized identities linked to video creators
+3. **Constellation Synchronization**: Automatic event sync across Astroport relay network using NIP-101's synchronization protocol
+
+### Protocol N² (Network of Networks)
+
+Nostr Tube implements the **N² protocol** for social graph-based video discovery:
+
+- **N1 (Friends)**: Videos from direct connections (kind 3 contact lists) are prioritized in recommendations
+- **N2 (Friends of Friends)**: Videos from extended network (2nd degree) appear in discovery feed
+- **Constellation Sync**: `backfill_constellation.sh` synchronizes events across N² network using NIP-101's event kind list
+
+**Event Kinds Synchronized** (per NIP-101):
+- Core: 0, 1, 3, 5, 6, 7
+- Media: 21, 22 (videos)
+- Content: 30023, 30024
+- Identity: 30800 (DID Documents)
+- Oracle: 30500-30503 (Permit system)
+- ORE: 30312-30313 (Environmental verification)
+- **Total: 18 event types** automatically synchronized across constellation
 
 ### Swarm Discovery (`_12345.sh`)
 - Each Astroport node publishes its services via IPNS in `12345.json`
@@ -547,11 +573,13 @@ Nostr Tube leverages the **Astroport swarm network** for decentralized video dis
   - **UPlanet ẐEN**: Private swarm (cooperative members only)
 
 ### Constellation Synchronization (`backfill_constellation.sh`)
+- **Implements NIP-101 synchronization protocol** across Astroport relays
 - Synchronizes NOSTR events (including video events kind 21/22) across swarm
 - Discovers peers via IPNS swarm map
 - Uses IPFS P2P tunnels for localhost relays (via `DRAGON_p2p_ssh.sh`)
-- Targets constellation members (friends N1 and friends of friends N2)
+- Targets constellation members (friends N1 and friends of friends N2) per N² protocol
 - Video events are automatically synchronized from swarm peers
+- Also synchronizes NIP-101 events (kind 30800, 30500-30503, 30312-30313) for identity and geographic coordination
 
 ### Video Gateway Selection
 - Videos are served from Astroport IPFS gateways in the same swarm
@@ -560,6 +588,20 @@ Nostr Tube leverages the **Astroport swarm network** for decentralized video dis
 - Fallback to swarm peers: `https://ipfs.{domain}` from discovered nodes
 
 ## NOSTR Event Standards
+
+### NIP-101 Integration
+
+Nostr Tube events are synchronized across Astroport relays according to **NIP-101's Constellation Synchronization** protocol:
+
+**Synchronized Event Kinds**:
+- **Core Events**: 0 (Metadata), 1 (Text Notes), 3 (Contact Lists), 5 (Events), 6 (Reposts), 7 (Reactions)
+- **Video Events**: 21 (Normal Videos), 22 (Short Videos) - NIP-71
+- **Content**: 30023 (Long-form), 30024 (Article)
+- **Identity**: 30800 (DID Documents) - NIP-101
+- **Oracle**: 30500-30503 (Permit System) - NIP-101
+- **ORE**: 30312-30313 (Environmental Verification) - NIP-101
+
+All events are authenticated via **NIP-42** and synchronized through the N² network (friends N1, friends of friends N2).
 
 ### NIP-71 Video Events
 
@@ -663,28 +705,47 @@ async def verify_nostr_auth(npub: Optional[str]) -> bool:
 
 ---
 
-## Geographic Anchoring (UMAP)
+## Geographic Anchoring (UMAP) - NIP-101
 
-Videos can be anchored to geographic locations:
+Videos can be anchored to geographic locations using **NIP-101's UMAP system**:
 
-**Tag Format**:
-- `g`: `"lat,lon"` (e.g., `["g", "48.8566,2.3522"]`)
-- `latitude`: Separate latitude tag
-- `longitude`: Separate longitude tag
-- `location`: Human-readable location
+### UMAP Grid Levels (NIP-101)
+
+| Level | Precision | Area Size | Use Case |
+|-------|-----------|-----------|----------|
+| **UMAP** | 0.01° | ~1.2 km² | Neighborhood-level video discovery |
+| **SECTOR** | 0.1° | ~100 km² | City-level video grouping |
+| **REGION** | 1.0° | ~10,000 km² | Regional video collections |
+
+### Tag Format (NIP-101 Compatible)
+- `g`: `"lat,lon"` (e.g., `["g", "48.8566,2.3522"]`) - Primary geographic tag
+- `latitude`: Separate latitude tag (FLOAT_STRING)
+- `longitude`: Separate longitude tag (FLOAT_STRING)
+- `application`: `"UPlanet"` (identifies UPlanet/NIP-101 events)
 
 **Use Cases**:
 - Location-based video discovery
 - UMAP visualization
 - Geographic filtering in `/youtube` API
+- Integration with NIP-101 ORE system (environmental verification at location)
+- Local community video feeds (N² network filtered by UMAP)
 
 **Example**:
 ```json
 ["g", "48.8566,2.3522"],
 ["latitude", "48.8566"],
 ["longitude", "2.3522"],
+["application", "UPlanet"],
 ["location", "48.86,2.35"]
 ```
+
+### Geographic Video Discovery
+
+Videos tagged with UMAP coordinates can be discovered by:
+1. **UMAP-level feeds**: Subscribe to videos from specific neighborhood (0.01° precision)
+2. **SECTOR-level feeds**: Browse videos from entire city area (0.1° precision)
+3. **REGION-level feeds**: Explore videos from regional collection (1.0° precision)
+4. **N² Network filtering**: Combine geographic tags with social graph (friends N1/N2 in same UMAP)
 
 ---
 
@@ -780,10 +841,12 @@ Nostr Tube includes advanced UX features to provide a unique and engaging video 
 - **Template**: `playlist-manager.html` (route: `/playlist`)
 
 ### N² Network Recommendations 🔗
-- **Personalized feed** based on social graph
-- **Videos from friends** (N1) prioritized
+- **Personalized feed** based on social graph (Protocol N²)
+- **Videos from friends** (N1) prioritized - uses NOSTR contact lists (kind 3)
 - **Videos from friends of friends** (N2) in discovery section
-- Uses NOSTR contact lists (kind 3) to build network graph
+- **Geographic filtering**: Combines N² network with UMAP tags (NIP-101) for local video discovery
+- **Constellation sync**: Events automatically synchronized across N² network via NIP-101 protocol
+- **Relay synchronization**: Uses `backfill_constellation.sh` to sync events across Astroport relays
 
 ### Enhanced Video Actions 🎯
 - **Share with preview** modal showing video card
@@ -845,23 +908,61 @@ All enhancements are loaded via:
 
 ## NOSTR Event Kinds Used
 
-| Kind | Purpose | Description |
-|------|---------|-------------|
-| **Kind 1** | Text Notes | Video posts, comments, shares |
-| **Kind 7** | Reactions | Likes and reactions on videos |
-| **Kind 21/22** | Video Events | Video content (NIP-71) - 21 for regular, 22 for short videos |
-| **Kind 10001** | Playlists | Video playlists (NIP-51 Lists) |
-| **Kind 30001** | Bookmarks | Video bookmarks |
-| **Kind 3** | Contact Lists | Used for N² network recommendations |
+### Video & Content Events
+
+| Kind | Purpose | Description | NIP Standard |
+|------|---------|-------------|--------------|
+| **Kind 1** | Text Notes | Video posts, comments, shares | NIP-01 |
+| **Kind 7** | Reactions | Likes and reactions on videos | NIP-25 |
+| **Kind 21/22** | Video Events | Video content (NIP-71) - 21 for regular, 22 for short videos | NIP-71 |
+| **Kind 10001** | Playlists | Video playlists (NIP-51 Lists) | NIP-51 |
+| **Kind 30001** | Bookmarks | Video bookmarks | NIP-51 |
+| **Kind 3** | Contact Lists | Used for N² network recommendations | NIP-02 |
+
+### NIP-101 Events (Identity & Geographic Coordination)
+
+| Kind | Purpose | Description | Sync |
+|------|---------|-------------|------|
+| **Kind 30800** | DID Documents | W3C-compliant decentralized identities for video creators | ✅ Constellation |
+| **Kind 30500** | Permit Definitions | License/permit type definitions for ORE verifiers | ✅ Constellation |
+| **Kind 30501** | Permit Requests | User applications for permits/credentials | ✅ Constellation |
+| **Kind 30502** | Permit Attestations | Peer attestations for permit applicants | ✅ Constellation |
+| **Kind 30503** | Permit Credentials | W3C Verifiable Credentials issued by Oracle | ✅ Constellation |
+| **Kind 30312** | ORE Meeting Spaces | Geographic spaces for environmental verification | ✅ Constellation |
+| **Kind 30313** | ORE Verification Meetings | Completed environmental compliance verifications | ✅ Constellation |
+
+**Constellation Synchronization**: All NIP-101 events (kinds 30800, 30500-30503, 30312-30313) are automatically synchronized across Astroport relays via `backfill_constellation.sh` as part of the N² protocol.
 
 ## References
 
-- **NIP-71**: Video Events specification
-- **NIP-42**: Relay Authentication
-- **NIP-51**: Lists (playlists)
+### NOSTR Improvement Proposals (NIPs)
+
+- **NIP-01**: Basic protocol flow
+- **NIP-02**: Contact Lists
+- **NIP-25**: Reactions (likes)
+- **NIP-42**: Relay Authentication (required for all uploads)
+- **NIP-51**: Lists (playlists - kind 10001, bookmarks - kind 30001)
+- **NIP-71**: Video Events specification (kinds 21/22)
 - **NIP-92**: Media Metadata (imeta tags)
+- **NIP-101**: UPlanet protocol - Decentralized Identity & Geographic Coordination
+  - DID Documents (kind 30800)
+  - Oracle System (kinds 30500-30503)
+  - ORE System (kinds 30312-30313)
+  - Constellation Synchronization
+  - Hierarchical GeoKeys (UMAP, SECTOR, REGION)
+
+### Additional Resources
+
 - **MULTIPASS**: `make_NOSTRCARD.sh` documentation
-- **UMAP**: Geographic anchoring system
+- **UMAP**: Geographic anchoring system (defined in NIP-101)
+- **Protocol N²**: Network of Networks for social graph-based discovery
+- **Astroport Swarm**: Decentralized network of Astroport nodes
+
+### NIP-101 Implementation
+
+- **Main Repository**: [github.com/papiche/Astroport.ONE](https://github.com/papiche/Astroport.ONE)
+- **NIP-101 Repository**: [github.com/papiche/NIP-101](https://github.com/papiche/NIP-101)
+- **Documentation**: See `nostr-nips/101.md` in Astroport.ONE repository
 
 ---
 

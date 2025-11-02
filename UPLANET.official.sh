@@ -4,9 +4,12 @@
 # Version: 1.1
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
-# UPLANET.official.sh
-# Script de gestion des virements officiels UPlanet
+# UPLANET.central.sh
+# Script de gestion des virements officiels UPlanet (version centralisée)
 # 
+# Utilise PAYforSURE.sh pour effectuer les transactions sans attendre les pending
+# Vérification différée : un script en arrière-plan vérifie les transactions après 1 heure
+#
 # Gère quatre types de virements :
 # 1. MULTIPASS : UPLANETNAME_G1 -> UPLANETNAME -> MULTIPASS (recharge de service)
 # 2. SOCIÉTAIRE : UPLANETNAME_G1 -> UPLANETNAME_SOCIETY -> ZEN Card -> 3x1/3
@@ -26,7 +29,7 @@
 # L'IPFSNODEID identifie le nœud/machine à l'origine de la transaction
 #
 # Conformité : Respecte la Constitution de l'Écosystème UPlanet ẐEN
-# Sécurité : Vérification des transactions pending entre chaque transfert
+# Sécurité : Utilise PAYforSURE.sh avec vérification différée (1 heure)
 ################################################################################
 
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -51,7 +54,7 @@ NC='\033[0m' # No Color
 
 # Fonction pour afficher l'aide
 show_help() {
-    echo -e "${BLUE}UPLANET.official.sh - Gestion des virements officiels UPlanet${NC}"
+    echo -e "${BLUE}UPLANET.central.sh - Gestion des virements officiels UPlanet (version centralisée)${NC}"
     echo ""
     echo "Usage:"
     echo "  $0 [OPTIONS]"
@@ -85,50 +88,36 @@ show_help() {
 }
 
 # Fonction pour vérifier qu'il n'y a pas de transactions en cours avant de commencer
+# NOTE: Dans UPLANET.central.sh, cette fonction n'attend pas et affiche juste un avertissement
 check_no_pending_transactions() {
     local wallet_pubkey="$1"
-    local max_wait="${PENDING_WAIT_TIMEOUT:-1800}"  # 30 minutes max pour attendre les pending
-    local wait_time=0
-    local interval="${VERIFICATION_INTERVAL:-60}"  # 60 secondes par défaut
     
-    echo -e "${YELLOW}🔍 Vérification qu'il n'y a pas de transactions en cours: ${wallet_pubkey:0:8}...${NC}"
+    echo -e "${YELLOW}🔍 Vérification rapide des transactions en cours: ${wallet_pubkey:0:8}...${NC}"
     
-    while [[ $wait_time -lt $max_wait ]]; do
-        local balance_json=$(silkaj --json money balance "$wallet_pubkey" 2>/dev/null)
+    local balance_json=$(silkaj --json money balance "$wallet_pubkey" 2>/dev/null)
+    
+    if [[ $? -eq 0 ]]; then
+        # silkaj retourne les montants en centimes, il faut diviser par 100
+        local pending_centimes=$(echo "$balance_json" | jq -r '.balances.pending // 0' 2>/dev/null)
+        local total_centimes=$(echo "$balance_json" | jq -r '.balances.total // 0' 2>/dev/null)
         
-        if [[ $? -eq 0 ]]; then
-            # silkaj retourne les montants en centimes, il faut diviser par 100
-            local pending_centimes=$(echo "$balance_json" | jq -r '.balances.pending // 0' 2>/dev/null)
-            local total_centimes=$(echo "$balance_json" | jq -r '.balances.total // 0' 2>/dev/null)
-            local blockchain_centimes=$(echo "$balance_json" | jq -r '.balances.blockchain // 0' 2>/dev/null)
-            
-            # Valider les valeurs avant de les passer à bc
-            [[ -z "$pending_centimes" || "$pending_centimes" == "null" ]] && pending_centimes="0"
-            [[ -z "$total_centimes" || "$total_centimes" == "null" ]] && total_centimes="0"
-            [[ -z "$blockchain_centimes" || "$blockchain_centimes" == "null" ]] && blockchain_centimes="0"
-            
-            local pending=$(echo "scale=2; $pending_centimes / 100" | bc -l)
-            local total=$(echo "scale=2; $total_centimes / 100" | bc -l)
-            local blockchain=$(echo "scale=2; $blockchain_centimes / 100" | bc -l)
-            
-            if [[ "$pending" == "0" || "$pending" == "null" || "$pending" == "0.00" ]]; then
-                # Aucune transaction en cours
-                echo -e "${GREEN}✅ Aucune transaction en cours - Solde stable: ${total} Ğ1${NC}"
-                return 0
-            else
-                echo -e "${YELLOW}⏳ Transactions en cours... Pending: ${pending} Ğ1, Total: ${total} Ğ1 (attente: ${wait_time}s)${NC}"
-            fi
+        # Valider les valeurs avant de les passer à bc
+        [[ -z "$pending_centimes" || "$pending_centimes" == "null" ]] && pending_centimes="0"
+        [[ -z "$total_centimes" || "$total_centimes" == "null" ]] && total_centimes="0"
+        
+        local pending=$(echo "scale=2; $pending_centimes / 100" | bc -l)
+        local total=$(echo "scale=2; $total_centimes / 100" | bc -l)
+        
+        if [[ "$pending" == "0" || "$pending" == "null" || "$pending" == "0.00" ]]; then
+            echo -e "${GREEN}✅ Aucune transaction en cours - Solde: ${total} Ğ1${NC}"
         else
-            echo -e "${YELLOW}⏳ Vérification en cours... Impossible de récupérer le solde (attente: ${wait_time}s)${NC}"
+            echo -e "${YELLOW}⚠️  Transactions en cours (Pending: ${pending} Ğ1) - Continuons quand même (vérification différée)${NC}"
         fi
-        
-        sleep $interval
-        wait_time=$((wait_time + interval))
-    done
+    else
+        echo -e "${YELLOW}⚠️  Impossible de récupérer le solde - Continuons quand même${NC}"
+    fi
     
-    echo -e "${RED}❌ Timeout: Des transactions sont encore en cours après ${max_wait} secondes${NC}"
-    echo -e "${YELLOW}💡 Attendez que les transactions en cours se terminent avant de relancer${NC}"
-    return 1
+    return 0
 }
 
 # Fonction pour vérifier le solde d'un portefeuille avec gestion du pending
@@ -290,7 +279,7 @@ send_alert() {
     </div>
     
     <hr>
-    <p><small>Alerte générée automatiquement par UPLANET.official.sh</small></p>
+    <p><small>Alerte générée automatiquement par UPLANET.central.sh</small></p>
 </body>
 </html>
 EOF
@@ -309,7 +298,7 @@ EOF
     fi
 }
 
-# Fonction pour effectuer un transfert et vérifier sa confirmation
+# Fonction pour effectuer un transfert avec PAYforSURE.sh (sans attendre les pending)
 transfer_and_verify() {
     local dunikey_file="$1"
     local to_wallet="$2"
@@ -325,42 +314,54 @@ transfer_and_verify() {
     echo -e "${BLUE}💰 Transfert: ${zen_amount} Ẑen (${g1_amount} Ğ1) vers ${to_wallet:0:8}${NC}"
     echo -e "${CYAN}📝 Description: ${description}${NC}"
     
-    # Effectuer le transfert avec silkaj en utilisant le fichier dunikey
-    local transfer_result
-    if [[ -n "$dunikey_file" && -f "$dunikey_file" ]]; then
-        transfer_result=$(silkaj --json --dunikey-file "$dunikey_file" money transfer -r "$to_wallet" -a "$g1_amount" --reference "$description" --yes 2>/dev/null)
-    else
+    # Vérifier que PAYforSURE.sh existe
+    if [[ ! -f "${MY_PATH}/tools/PAYforSURE.sh" ]]; then
+        echo -e "${RED}❌ PAYforSURE.sh non trouvé dans ${MY_PATH}/tools/${NC}"
+        send_alert "PAYFORSURE_ERROR" "$user_email" "$transaction_type" "$zen_amount" "$step_name" "PAYforSURE.sh non trouvé"
+        return 1
+    fi
+    
+    # Vérifier que le fichier dunikey existe
+    if [[ -z "$dunikey_file" || ! -f "$dunikey_file" ]]; then
         echo -e "${RED}❌ Fichier dunikey manquant ou invalide: $dunikey_file${NC}"
         send_alert "DUNIKEY_ERROR" "$user_email" "$transaction_type" "$zen_amount" "$step_name" "Fichier dunikey manquant ou invalide: $dunikey_file"
         return 1
     fi
     
-    if [[ $? -eq 0 ]]; then
-        echo -e "${GREEN}✅ Transfert initié avec succès${NC}"
+    # Récupérer la clé publique source pour la vérification différée
+    local source_pubkey=$(cat "$dunikey_file" | grep 'pub:' | cut -d ' ' -f 2)
+    if [[ -z "$source_pubkey" ]]; then
+        echo -e "${RED}❌ Impossible de récupérer la clé publique depuis le fichier dunikey${NC}"
+        send_alert "PUBKEY_ERROR" "$user_email" "$transaction_type" "$zen_amount" "$step_name" "Impossible de récupérer la clé publique depuis: $dunikey_file"
+        return 1
+    fi
+    
+    # Effectuer le transfert avec PAYforSURE.sh
+    echo -e "${YELLOW}📤 Utilisation de PAYforSURE.sh pour le transfert...${NC}"
+    "${MY_PATH}/tools/PAYforSURE.sh" "$dunikey_file" "$g1_amount" "$to_wallet" "$description"
+    local transfer_exit_code=$?
+    
+    if [[ $transfer_exit_code -eq 0 ]]; then
+        echo -e "${GREEN}✅ Transfert envoyé avec succès (vérification différée dans 1 heure)${NC}"
         
-        # Attendre la confirmation sur le wallet source
-        local source_pubkey=$(cat "$dunikey_file" | grep 'pub:' | cut -d ' ' -f 2)
-        if [[ -n "$source_pubkey" ]]; then
-            # Définir les variables globales pour check_balance
-            export USER_EMAIL="$user_email"
-            export TRANSACTION_TYPE="$transaction_type"
-            export TRANSACTION_AMOUNT="$zen_amount"
-            export CURRENT_STEP="$step_name"
-            
-            if check_balance "$source_pubkey"; then
-                return 0
-            else
-                return 1
-            fi
-        else
-            echo -e "${RED}❌ Impossible de récupérer la clé publique depuis le fichier dunikey${NC}"
-            send_alert "PUBKEY_ERROR" "$user_email" "$transaction_type" "$zen_amount" "$step_name" "Impossible de récupérer la clé publique depuis: $dunikey_file"
-            return 1
-        fi
+        # Lancer la vérification en arrière-plan après 1 heure
+        echo -e "${CYAN}⏰ Vérification programmée dans 1 heure...${NC}"
+        nohup "${MY_PATH}/tools/verify_transaction.sh" \
+            "$source_pubkey" \
+            "$g1_amount" \
+            "$description" \
+            "$transaction_type" \
+            "$user_email" \
+            "$zen_amount" \
+            3600 >/dev/null 2>&1 &
+        
+        local verify_pid=$!
+        echo -e "${GREEN}✅ Vérification en arrière-plan lancée (PID: $verify_pid)${NC}"
+        
+        return 0
     else
-        echo -e "${RED}❌ Erreur lors du transfert${NC}"
-        echo "$transfer_result"
-        send_alert "TRANSFER_ERROR" "$user_email" "$transaction_type" "$zen_amount" "$step_name" "Erreur silkaj: $transfer_result"
+        echo -e "${RED}❌ Erreur lors du transfert (code: $transfer_exit_code)${NC}"
+        send_alert "TRANSFER_ERROR" "$user_email" "$transaction_type" "$zen_amount" "$step_name" "Erreur PAYforSURE.sh: exit code $transfer_exit_code"
         return 1
     fi
 }
@@ -1401,7 +1402,7 @@ process_recovery_3x13() {
 # Menu interactif
 ################################################################################
 show_menu() {
-    echo -e "${BLUE}🏛️  UPLANET.official.sh - Menu de gestion des virements${NC}"
+    echo -e "${BLUE}🏛️  UPLANET.central.sh - Menu de gestion des virements (version centralisée)${NC}"
     echo ""
     echo "1. Virement MULTIPASS (recharge MULTIPASS)"
     echo "2. Virement SOCIÉTAIRE Satellite (50€/an)"
