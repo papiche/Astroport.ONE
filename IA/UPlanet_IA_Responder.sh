@@ -307,6 +307,12 @@ log() {
 SECRET_MODE=false
 [[ "$8" == "--secret" ]] && SECRET_MODE=true
 
+# Initialize PlantNet UMAP mode flag
+USE_UMAP_FOR_PLANTNET=false
+
+# Initialize PlantNet JSON variable (will be set by handle_plantnet_recognition)
+PLANTNET_JSON=""
+
 # Optimisation: Parse tags once at the beginning
 message_text=$(echo "$MESSAGE" | tr '\n' ' ')
 declare -A TAGS
@@ -414,7 +420,138 @@ Votre Capitaine.
     ) &
 }
 
+# Function to format PlantNet JSON result as text
+format_plantnet_json_to_text() {
+    local plantnet_json="$1"
+    local latitude="$2"
+    local longitude="$3"
+    local image_url="$4"
+    
+    if [[ -z "$plantnet_json" ]] || ! echo "$plantnet_json" | jq empty 2>/dev/null; then
+        return 1
+    fi
+    
+    local success=$(echo "$plantnet_json" | jq -r '.success // false' 2>/dev/null)
+    
+    if [[ "$success" == "true" ]]; then
+        local scientific_name=$(echo "$plantnet_json" | jq -r '.best_match.scientific_name // ""' 2>/dev/null)
+        local common_names=$(echo "$plantnet_json" | jq -r '.best_match.common_names // []' 2>/dev/null)
+        local confidence=$(echo "$plantnet_json" | jq -r '.best_match.confidence // 0' 2>/dev/null)
+        local confidence_pct=$(echo "$plantnet_json" | jq -r '.best_match.confidence_pct // 0' 2>/dev/null)
+        local wikipedia_url=$(echo "$plantnet_json" | jq -r '.best_match.wikipedia_url // ""' 2>/dev/null)
+        local alternatives=$(echo "$plantnet_json" | jq -r '.alternatives // []' 2>/dev/null)
+        
+        # Format common names
+        local common_name_str=""
+        if [[ "$common_names" != "[]" ]] && [[ -n "$common_names" ]]; then
+            local names_array=$(echo "$common_names" | jq -r '.[:3] | join(", ")' 2>/dev/null)
+            if [[ -n "$names_array" ]]; then
+                common_name_str="\n🏷️  Noms communs : ${names_array}"
+            fi
+        fi
+        
+        # Determine confidence level
+        local confidence_emoji="🔴"
+        local confidence_text="Incertain"
+        if [[ $confidence_pct -ge 70 ]]; then
+            confidence_emoji="🟢"
+            confidence_text="Très probable"
+        elif [[ $confidence_pct -ge 50 ]]; then
+            confidence_emoji="🟡"
+            confidence_text="Probable"
+        elif [[ $confidence_pct -ge 30 ]]; then
+            confidence_emoji="🟠"
+            confidence_text="Possible"
+        fi
+        
+        local result_content="🌿 Reconnaissance de plante
+
+✅ Identification réussie !
+
+🔬 Nom scientifique : ${scientific_name}${common_name_str}
+
+${confidence_emoji} Confiance : ${confidence_pct}% (${confidence_text})
+📍 Localisation : ${latitude}, ${longitude}
+
+📖 En savoir plus : ${wikipedia_url}
+"
+        
+        # Add alternatives if available
+        local alt_count=$(echo "$alternatives" | jq 'length' 2>/dev/null)
+        if [[ $alt_count -gt 0 ]]; then
+            result_content="${result_content}
+🔎 Autres possibilités :
+"
+            local i=2
+            while IFS= read -r alt; do
+                local alt_name=$(echo "$alt" | jq -r '.scientific_name // ""' 2>/dev/null)
+                local alt_common=$(echo "$alt" | jq -r '.common_names[0] // ""' 2>/dev/null)
+                local alt_conf=$(echo "$alt" | jq -r '.confidence // 0' 2>/dev/null)
+                local alt_conf_pct=$(awk "BEGIN {printf \"%.0f\", ${alt_conf} * 100}")
+                
+                local common_str=""
+                [[ -n "$alt_common" ]] && common_str=" (${alt_common})"
+                
+                local bar_length=$(awk "BEGIN {printf \"%.0f\", ${alt_conf_pct} / 10}")
+                [[ $bar_length -lt 1 ]] && bar_length=1
+                [[ $bar_length -gt 10 ]] && bar_length=10
+                
+                local bar=""
+                for ((j=1; j<=bar_length; j++)); do bar="${bar}▓"; done
+                for ((j=$((bar_length+1)); j<=10; j++)); do bar="${bar}░"; done
+                
+                result_content="${result_content}
+${i}. ${alt_name}${common_str}
+   ${bar} ${alt_conf_pct}%"
+                i=$((i+1))
+            done < <(echo "$alternatives" | jq -c '.[:4]' 2>/dev/null | jq -c '.[]' 2>/dev/null)
+        fi
+        
+        result_content="${result_content}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔬 Source : https://plantnet.org
+💡 Astuce : Plus la confiance est élevée, plus l'identification est fiable
+
+#PlantNet #botanique #nature"
+        
+        if [[ -n "$image_url" ]]; then
+            result_content="${result_content}
+
+📸 Image : ${image_url}"
+        fi
+        
+        echo "$result_content"
+    else
+        # No results or error
+        local error_msg=$(echo "$plantnet_json" | jq -r '.error // "no_match"' 2>/dev/null)
+        
+        echo "🌿 Reconnaissance de plante
+
+❌ Aucune correspondance trouvée
+
+La plante n'a pas pu être identifiée avec certitude dans la base de données PlantNet.
+
+💡 Conseils pour améliorer la reconnaissance :
+• 📸 Prenez une photo plus claire et nette
+• 🌱 Assurez-vous que la plante occupe la majeure partie de l'image
+• ☀️ Évitez les ombres portées et les reflets
+• 🍃 Photographiez les détails : feuilles, fleurs, fruits ou écorce
+• 🔍 Prenez plusieurs angles si possible
+
+📍 Localisation : ${latitude}, ${longitude}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔬 Source : https://plantnet.org
+💾 Base de données : Plus de 40 000 espèces référencées
+
+#PlantNet #botanique #nature"
+    fi
+}
+
 # Function to handle PlantNet recognition with image description and ORE integration
+# Returns: plantnet_result (formatted text) on stdout, sets PLANTNET_SUCCESS=true/false globally
+# Stores JSON in PLANTNET_JSON global variable
 handle_plantnet_recognition() {
     local image_url="$1"
     local latitude="$2"
@@ -424,37 +561,51 @@ handle_plantnet_recognition() {
     local pubkey="$6"
     
     echo "PlantNet: Starting recognition process with ORE integration..." >&2
+    PLANTNET_SUCCESS=false
+    PLANTNET_JSON=""  # Initialize global JSON variable
     
-    # Call PlantNet recognition script (text output for user)
-    echo "PlantNet: Calling PlantNet API..." >&2
-    local plantnet_result=""
-    plantnet_result=$($MY_PATH/plantnet_recognition.py "$image_url" "$latitude" "$longitude" "$user_id" "$event_id" "$pubkey" 2>/dev/null)
+    # Call PlantNet recognition script ONCE with --json flag
+    echo "PlantNet: Calling PlantNet API (JSON mode)..." >&2
+    PLANTNET_JSON=$($MY_PATH/plantnet_recognition.py "$image_url" "$latitude" "$longitude" "$user_id" "$event_id" "$pubkey" --json 2>/dev/null)
     
     local exit_code=$?
-    if [[ $exit_code -eq 0 && -n "$plantnet_result" ]]; then
+    if [[ $exit_code -eq 0 && -n "$PLANTNET_JSON" ]] && echo "$PLANTNET_JSON" | jq empty 2>/dev/null; then
         echo "PlantNet: Recognition completed successfully" >&2
         
-        # Integrate with ORE system for biodiversity tracking
-        # plantnet_ore_integration.py now calls plantnet_recognition.py --json internally
-        echo "PlantNet: Recording observation in ORE biodiversity system..." >&2
-        local ore_response=""
-        if [[ -x "$MY_PATH/plantnet_ore_integration.py" ]]; then
-            # New signature: only needs lat, lon, pubkey, event_id, image_url
-            ore_response=$("$MY_PATH/plantnet_ore_integration.py" "$latitude" "$longitude" "$pubkey" "$event_id" "$image_url" 2>/dev/null)
-            if [[ $? -eq 0 && -n "$ore_response" ]]; then
-                echo "PlantNet: ORE observation recorded successfully" >&2
-                # Append ORE information to PlantNet result
-                plantnet_result="${plantnet_result}${ore_response}"
+        local success=$(echo "$PLANTNET_JSON" | jq -r '.success // false' 2>/dev/null)
+        if [[ "$success" == "true" ]]; then
+            PLANTNET_SUCCESS=true
+            
+            # Format JSON to text for user display
+            local plantnet_result=$(format_plantnet_json_to_text "$PLANTNET_JSON" "$latitude" "$longitude" "$image_url")
+            
+            # Integrate with ORE system for biodiversity tracking
+            # plantnet_ore_integration.py now calls plantnet_recognition.py --json internally
+            echo "PlantNet: Recording observation in ORE biodiversity system..." >&2
+            local ore_response=""
+            if [[ -x "$MY_PATH/plantnet_ore_integration.py" ]]; then
+                # New signature: only needs lat, lon, pubkey, event_id, image_url
+                ore_response=$("$MY_PATH/plantnet_ore_integration.py" "$latitude" "$longitude" "$pubkey" "$event_id" "$image_url" 2>/dev/null)
+                if [[ $? -eq 0 && -n "$ore_response" ]]; then
+                    echo "PlantNet: ORE observation recorded successfully" >&2
+                    # Append ORE information to PlantNet result
+                    plantnet_result="${plantnet_result}${ore_response}"
+                else
+                    echo "PlantNet: Failed to record ORE observation (non-critical)" >&2
+                    # Don't fail if ORE integration fails - still return PlantNet result
+                fi
             else
-                echo "PlantNet: Failed to record ORE observation (non-critical)" >&2
-                # Don't fail if ORE integration fails - still return PlantNet result
+                echo "PlantNet: ORE integration not available (plantnet_ore_integration.py not found)" >&2
             fi
+            
+            # Return the formatted PlantNet result with ORE data
+            echo "$plantnet_result"
         else
-            echo "PlantNet: ORE integration not available (plantnet_ore_integration.py not found)" >&2
+            # Recognition failed (no match found)
+            echo "PlantNet: No match found" >&2
+            local plantnet_result=$(format_plantnet_json_to_text "$PLANTNET_JSON" "$latitude" "$longitude" "$image_url")
+            echo "$plantnet_result"
         fi
-        
-        # Return the actual PlantNet result with ORE data
-        echo "$plantnet_result"
     else
         echo "PlantNet: Recognition failed with exit code $exit_code" >&2
         echo "PlantNet: Checking for error details in plantnet.log..." >&2
@@ -483,8 +634,130 @@ La reconnaissance de la plante a échoué.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 🔬 Source : https://plantnet.org
+"
+    fi
+}
 
-#plantnet #UPlanet"
+# Function to update UMAP DID with PlantNet detection
+# Uses PLANTNET_JSON global variable (set by handle_plantnet_recognition)
+update_umap_did_with_plantnet() {
+    local latitude="$1"
+    local longitude="$2"
+    local event_id="$3"
+    local image_url="$4"
+    local pubkey="$5"
+    
+    echo "PlantNet: Updating UMAP DID with detection data..." >&2
+    
+    # UMAP identifier based on coordinates (format used by UPlanet system)
+    local umap_id="UMAP_${latitude}_${longitude}"
+    local umap_dir="$HOME/.zen/game/nostr/${umap_id}"
+    
+    # Create UMAP directory if it doesn't exist
+    if [[ ! -d "$umap_dir" ]]; then
+        mkdir -p "$umap_dir"
+        if [[ -n "$UMAPHEX" ]]; then
+            echo "$UMAPHEX" > "${umap_dir}/HEX"
+        fi
+    fi
+    
+    # Check if we have UMAP keys
+    if [[ -z "$UMAPNSEC" ]] || [[ -z "$UMAPNPUB" ]] || [[ -z "$UMAPHEX" ]]; then
+        echo "PlantNet: Warning - UMAP keys not available for DID update" >&2
+        return 1
+    fi
+    
+    # Create .secret.nostr for UMAP if it doesn't exist
+    local umap_secret_file="${umap_dir}/.secret.nostr"
+    if [[ ! -f "$umap_secret_file" ]]; then
+        echo "NSEC=${UMAPNSEC}; NPUB=${UMAPNPUB}; HEX=${UMAPHEX};" > "$umap_secret_file"
+    fi
+    
+    # Use PLANTNET_JSON global variable (set by handle_plantnet_recognition)
+    # No need to call plantnet_recognition.py again!
+    local plantnet_json="$PLANTNET_JSON"
+    
+    # Update UMAP DID with plant detection using did_manager_nostr.sh
+    if [[ -x "$MY_PATH/../tools/did_manager_nostr.sh" ]]; then
+        # Store detection in a JSON file that will be referenced in DID metadata
+        local detections_file="${umap_dir}/plantnet_detections.json"
+        local detection_json=$(mktemp)
+        
+        if [[ -n "$plantnet_json" ]] && echo "$plantnet_json" | jq empty 2>/dev/null; then
+            # Extract key information from PlantNet JSON (corrected paths)
+            local scientific_name=$(echo "$plantnet_json" | jq -r '.best_match.scientific_name // ""' 2>/dev/null)
+            local common_name=$(echo "$plantnet_json" | jq -r '.best_match.common_names[0] // ""' 2>/dev/null)
+            local confidence=$(echo "$plantnet_json" | jq -r '.best_match.confidence // 0' 2>/dev/null)
+            local confidence_pct=$(echo "$plantnet_json" | jq -r '.best_match.confidence_pct // 0' 2>/dev/null)
+            local wikipedia_url=$(echo "$plantnet_json" | jq -r '.best_match.wikipedia_url // ""' 2>/dev/null)
+            
+            # Create detection metadata with all useful data for plantnet.html display and ORE contracts
+            cat > "$detection_json" <<EOF
+{
+    "event_id": "${event_id}",
+    "observer_pubkey": "${pubkey}",
+    "image_url": "${image_url}",
+    "scientific_name": "${scientific_name}",
+    "common_name": "${common_name}",
+    "confidence": ${confidence},
+    "confidence_pct": ${confidence_pct},
+    "wikipedia_url": "${wikipedia_url}",
+    "detected_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+    "latitude": ${latitude},
+    "longitude": ${longitude}
+}
+EOF
+        else
+            # Minimal detection data if JSON parsing fails
+            cat > "$detection_json" <<EOF
+{
+    "event_id": "${event_id}",
+    "observer_pubkey": "${pubkey}",
+    "image_url": "${image_url}",
+    "detected_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+    "latitude": ${latitude},
+    "longitude": ${longitude}
+}
+EOF
+        fi
+        
+        # Read existing detections or create new array
+        if [[ -f "$detections_file" ]] && jq empty "$detections_file" 2>/dev/null; then
+            # Append new detection to existing array
+            jq --argjson new "$(cat "$detection_json")" '.detections += [$new]' "$detections_file" > "${detections_file}.tmp" && mv "${detections_file}.tmp" "$detections_file"
+        else
+            # Create new detections file
+            cat > "$detections_file" <<EOF
+{
+    "umap_id": "${umap_id}",
+    "latitude": ${latitude},
+    "longitude": ${longitude},
+    "detections": [$(cat "$detection_json")]
+}
+EOF
+        fi
+        
+        echo "PlantNet: Detection stored in ${detections_file}" >&2
+        
+        # Update UMAP DID document (kind 30800) with plant detection reference
+        # Use did_manager_nostr.sh with PLANTNET_DETECTION type
+        # The email parameter is actually the UMAP identifier
+        echo "PlantNet: Updating UMAP DID document..." >&2
+        $MY_PATH/../tools/did_manager_nostr.sh update "${umap_id}" "PLANTNET_DETECTION" 0 0 "" >/dev/null 2>&1
+        
+        if [[ $? -eq 0 ]]; then
+            echo "PlantNet: UMAP DID updated successfully with plant detection" >&2
+        else
+            echo "PlantNet: Warning - Failed to update UMAP DID, but detection stored locally" >&2
+        fi
+        
+        # Cleanup
+        rm -f "$detection_json"
+        
+        return 0
+    else
+        echo "PlantNet: Warning - did_manager_nostr.sh not available" >&2
+        return 1
     fi
 }
 
@@ -909,6 +1182,9 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 # PlantNet recognition processing
                 echo "Processing PlantNet recognition request..." >&2
                 
+                # Initialize success flag
+                PLANTNET_SUCCESS=false
+                
                 # Extract image URL from message or use provided URL
                 image_url=""
                 if [[ -n "$URL" ]]; then
@@ -924,10 +1200,49 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                     # Call PlantNet recognition with image description
                     KeyANSWER=$(handle_plantnet_recognition "$image_url" "$LAT" "$LON" "$user_id" "$EVENT" "$PUBKEY")
                     
-                    # Add tags for image URL and geolocation (NIP-94 image tag + NIP-52 geolocation)
-                    # This allows plantnet.html to retrieve and display the photo gallery
-                    echo "PlantNet: Adding image and geolocation tags for gallery display" >&2
-                    ExtraTags="[['imeta', 'url $image_url'], ['g', '${LAT},${LON}']]"
+                    # Check if recognition was successful
+                    if [[ "${PLANTNET_SUCCESS:-false}" == true ]]; then
+                        echo "PlantNet: Recognition successful - adding tags and updating UMAP DID" >&2
+                        
+                        # Generate nprofile of the message sender (PUBKEY) to mention them in the response
+                        echo "PlantNet: Generating sender nprofile for mention..." >&2
+                        SENDER_NPROFILE=""
+                        if [[ -n "$PUBKEY" ]]; then
+                            # Generate nprofile using nostr_hex2nprofile.sh with relay hints
+                            SENDER_NPROFILE=$($MY_PATH/../tools/nostr_hex2nprofile.sh "$PUBKEY" "$myRELAY" 2>/dev/null)
+                            if [[ -n "$SENDER_NPROFILE" ]]; then
+                                echo "PlantNet: Sender nprofile generated: ${SENDER_NPROFILE:0:30}..." >&2
+                                # Add nostr:profil reference to mention the sender in the response content
+                                KeyANSWER="${KeyANSWER}
+
+📍 Observer: nostr:${SENDER_NPROFILE}"
+                            else
+                                echo "PlantNet: Warning - Failed to generate sender nprofile" >&2
+                            fi
+                        else
+                            echo "PlantNet: Warning - PUBKEY not available for nprofile generation" >&2
+                        fi
+                        
+                        # Add tags #plantnet #UPlanet only if recognition succeeded
+                        KeyANSWER="${KeyANSWER}
+#plantnet #UPlanet"
+                        
+                        # Add tags for image URL and geolocation (NIP-94 image tag + NIP-52 geolocation)
+                        # This allows plantnet.html to retrieve and display the photo gallery
+                        echo "PlantNet: Adding image and geolocation tags for gallery display" >&2
+                        ExtraTags="[['imeta', 'url $image_url'], ['g', '${LAT},${LON}'], ['t', 'plantnet'], ['t', 'UPlanet']]"
+                        
+                        # Update UMAP DID with plant detection
+                        update_umap_did_with_plantnet "$LAT" "$LON" "$EVENT" "$image_url" "$PUBKEY"
+                        
+                        # Set flag to use UMAP key for PlantNet responses
+                        USE_UMAP_FOR_PLANTNET=true
+                    else
+                        echo "PlantNet: Recognition failed - not adding tags" >&2
+                        # Don't add #plantnet #UPlanet tags if recognition failed
+                        # Only add basic tags for image display
+                        ExtraTags="[['imeta', 'url $image_url'], ['g', '${LAT},${LON}']]"
+                    fi
                 else
                     echo "PlantNet: No valid image URL found in message" >&2
                     KeyANSWER="❌ Aucune image valide trouvée pour la reconnaissance PlantNet.
@@ -936,8 +1251,7 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
 
 **Formats supportés :** JPG, JPEG, PNG, GIF, WEBP
 **Note :** Seuls les fichiers image sont analysés. Les autres types de fichiers sont ignorés.
-
-#plantnet #UPlanet"
+"
                 fi
             ######################################################### #pierre / #amelie
             elif [[ "${TAGS[pierre]}" == true || "${TAGS[amelie]}" == true ]]; then
@@ -979,11 +1293,43 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
         fi
 
         # Priority order for response key:
-        # 1. User key (KNAME) if available
+        # 1. UMAP key for PlantNet responses (geographical location-based responses)
+        # 2. User key (KNAME) if available
         # + UMAP key follows
-        # 2. CAPTAIN key as fallback
+        # 3. CAPTAIN key as fallback
         
-        if [[ -s ~/.zen/game/nostr/${KNAME}/.secret.nostr ]]; then
+        # Check if PlantNet mode requires UMAP key
+        if [[ "${USE_UMAP_FOR_PLANTNET:-false}" == true ]]; then
+            # Use UMAP key for PlantNet responses
+            echo "PlantNet: Using UMAP key for response at location ${LAT}, ${LON}" >&2
+            
+            # Generate UMAP keys if not already generated
+            if [[ -z "$UMAPNSEC" ]]; then
+                UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
+            fi
+            
+            # Ensure UMAPNPUB is available
+            if [[ -z "$UMAPNPUB" ]]; then
+                UMAPNPUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
+            fi
+            
+            # Ensure UMAPHEX is available
+            if [[ -z "$UMAPHEX" ]]; then
+                UMAPHEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNPUB")
+            fi
+            
+            # Create temporary .secret.nostr file for UMAP key
+            UMAP_KEYFILE="$HOME/.zen/tmp/umap_${LAT}_${LON}_${CURRENT_TIMESTAMP}.secret.nostr"
+            echo "NSEC=${UMAPNSEC}; NPUB=${UMAPNPUB}; HEX=${UMAPHEX};" > "$UMAP_KEYFILE"
+            
+            # Set KEYFILE_PATH for sending
+            KEYFILE_PATH="$UMAP_KEYFILE"
+            
+            # UMAP follows the original pubkey
+            ${MY_PATH}/../tools/nostr_follow.sh "$UMAPNSEC" "$PUBKEY" 2>/dev/null
+            
+            echo "PlantNet: Using UMAP keyfile: $KEYFILE_PATH" >&2
+        elif [[ -s ~/.zen/game/nostr/${KNAME}/.secret.nostr ]]; then
             # UMAP is following if coordinates are provided
             if [[ "$LAT" != "0.00" && "$LON" != "0.00" && -n "$LAT" && -n "$LON" ]]; then
                 echo "Using UMAP key for geographical location : ${LAT}, ${LON}"
@@ -992,19 +1338,18 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
             fi
             echo "Using USER key for response: ${KNAME}"
             source ~/.zen/game/nostr/${KNAME}/.secret.nostr
+            KEYFILE_PATH="$HOME/.zen/game/nostr/${KNAME}/.secret.nostr"
         else
             # CAPTAIN is following as fallback
             echo "No valid user key, using CAPTAIN key"
             source ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
             ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "$PUBKEY" 2>/dev/null
+            KEYFILE_PATH="$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
         fi
 
         # Clean KeyANSWER of BOT and BRO tags
         KeyANSWER=$(echo "$KeyANSWER" | sed 's/#BOT//g; s/#BRO//g; s/#bot//g; s/#bro//g')
 
-        # Prepare keyfile for nostr_send_note.py
-        KEYFILE_PATH="$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
-        
         ## SEND REPLY MESSAGE
         if [[ "$SECRET_MODE" == true ]]; then
             # Send encrypted DM
@@ -1040,6 +1385,12 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
                 fi
             else
                 echo "[SECRET] KNAME not set, cannot send DM."
+            fi
+            
+            # Clean up temporary UMAP keyfile if it was created (even in SECRET mode)
+            if [[ "${USE_UMAP_FOR_PLANTNET:-false}" == true && -n "${UMAP_KEYFILE:-}" && -f "$UMAP_KEYFILE" ]]; then
+                echo "PlantNet: Cleaning up temporary UMAP keyfile: $UMAP_KEYFILE" >&2
+                rm -f "$UMAP_KEYFILE"
             fi
         else
             # Send public message with appropriate tags using nostr_send_note.py
@@ -1091,6 +1442,12 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
                 echo "❌ Failed to send event. Exit code: $SEND_EXIT_CODE" >&2
                 echo "Error output: $SEND_RESULT" >&2
                 send_error_email "Failed to send Nostr event (kind: $AnswerKind). Exit code: $SEND_EXIT_CODE. Error: $SEND_RESULT" "~/.zen/tmp/IA.log"
+            fi
+            
+            # Clean up temporary UMAP keyfile if it was created
+            if [[ "${USE_UMAP_FOR_PLANTNET:-false}" == true && -n "${UMAP_KEYFILE:-}" && -f "$UMAP_KEYFILE" ]]; then
+                echo "PlantNet: Cleaning up temporary UMAP keyfile: $UMAP_KEYFILE" >&2
+                rm -f "$UMAP_KEYFILE"
             fi
         fi
         

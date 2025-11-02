@@ -415,6 +415,11 @@ update_did_document() {
             services="Account deactivated - no services available"
             contract_status="account_deactivated"
             ;;
+        "PLANTNET_DETECTION")
+            quota="N/A"
+            services="PlantNet detection - Biodiversity observation recorded"
+            contract_status="plantnet_detection_recorded"
+            ;;
         *)
             echo -e "${RED}❌ Unknown update type: ${update_type}${NC}"
             rm -f "$did_temp" "$did_updated"
@@ -559,6 +564,80 @@ update_did_document() {
         }"
     fi
     
+    # Initialize PlantNet metadata file variables (for cleanup)
+    local PLANTNET_METADATA_FILE=""
+    local latest_detection_file=""
+    local detections_history_file=""
+    
+    # Add PlantNet detection metadata for PLANTNET_DETECTION updates
+    if [[ "$update_type" == "PLANTNET_DETECTION" ]]; then
+        local plantnet_detections_file="$HOME/.zen/game/nostr/${email}/plantnet_detections.json"
+        if [[ -f "$plantnet_detections_file" ]] && jq empty "$plantnet_detections_file" 2>/dev/null; then
+            # Read detection statistics from the file
+            local total_detections=$(jq '.detections | length' "$plantnet_detections_file" 2>/dev/null || echo "0")
+            local unique_species=$(jq '[.detections[] | select(.scientific_name != null and .scientific_name != "")] | [.[] | .scientific_name] | unique | length' "$plantnet_detections_file" 2>/dev/null || echo "0")
+            
+            # Calculate average confidence score from all detections
+            local average_confidence=$(jq '[.detections[] | select(.confidence != null)] | if length > 0 then ([.[] | .confidence] | add / length) else 0 end' "$plantnet_detections_file" 2>/dev/null || echo "0")
+            # Round to 2 decimal places for readability
+            average_confidence=$(echo "$average_confidence" | awk '{printf "%.2f", $1}')
+            
+            # Extract latest detection confidence
+            local latest_confidence=$(jq -r '.detections[-1].confidence // 0' "$plantnet_detections_file" 2>/dev/null || echo "0")
+            
+            # Extract latitude/longitude from UMAP identifier or detection file
+            local umap_lat=$(jq -r '.latitude // empty' "$plantnet_detections_file" 2>/dev/null || echo "")
+            local umap_lon=$(jq -r '.longitude // empty' "$plantnet_detections_file" 2>/dev/null || echo "")
+            
+            # Add PlantNet metadata to DID
+            # Build the plantnetBiodiversity object using jq with proper JSON injection
+            # Include full detection history for display on plantnet.html map
+            PLANTNET_METADATA_FILE=$(mktemp)
+            detections_history_file=$(mktemp)
+            latest_detection_file=$(mktemp)
+            
+            # Extract all successful detections (with confidence > 0 and scientific_name)
+            # This includes all data needed for plantnet.html display: image_url, scientific_name, common_name, confidence, detected_at, observer_pubkey, event_id
+            jq '[.detections[] | select(.confidence != null and .confidence > 0 and (.scientific_name != null and .scientific_name != ""))] | sort_by(.detected_at) | reverse' "$plantnet_detections_file" > "$detections_history_file" 2>/dev/null
+            
+            # Extract latest detection separately for quick access
+            jq '.detections[-1] // null' "$plantnet_detections_file" > "$latest_detection_file" 2>/dev/null
+            
+            # Build base metadata object with confidence scores and full detection history
+            # Use jq to properly merge the detections history array
+            jq -n \
+                --arg detections_count "$total_detections" \
+                --arg unique_species "$unique_species" \
+                --arg average_confidence "$average_confidence" \
+                --arg latest_confidence "$latest_confidence" \
+                --arg umap_lat "$umap_lat" \
+                --arg umap_lon "$umap_lon" \
+                --arg updated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+                --slurpfile detections_history "$detections_history_file" \
+                --slurpfile latest_detection "$latest_detection_file" \
+                '{
+                    "detections_count": ($detections_count | tonumber),
+                    "unique_species": ($unique_species | tonumber),
+                    "average_confidence": ($average_confidence | tonumber),
+                    "latest_confidence": ($latest_confidence | tonumber),
+                    "umap_coordinates": {
+                        "latitude": $umap_lat,
+                        "longitude": $umap_lon
+                    },
+                    "detections_history": $detections_history[0],
+                    "last_detection": (if ($latest_detection[0] != null) then $latest_detection[0] else null end),
+                    "detections_file": "plantnet_detections.json",
+                    "updatedAt": $updated_at,
+                    "description": "PlantNet biodiversity observations for this UMAP - Complete detection history for ORE contracts and map display"
+                }' > "$PLANTNET_METADATA_FILE"
+            
+            # Add to jq command using --argjson to inject the JSON object
+            jq_cmd="$jq_cmd | .metadata.plantnetBiodiversity = (\$plantnet_meta)"
+        else
+            echo -e "${YELLOW}⚠️  PlantNet detections file not found: ${plantnet_detections_file}${NC}" >&2
+        fi
+    fi
+    
     # Execute update with better error handling
     echo -e "${BLUE}🔧 Executing jq command...${NC}"
     
@@ -569,35 +648,64 @@ update_did_document() {
         head -c 200 "$did_temp" | cat
         echo ""
         rm -f "$did_temp" "$did_updated"
+        [[ -n "$PLANTNET_METADATA_FILE" ]] && rm -f "$PLANTNET_METADATA_FILE" "$latest_detection_file" "$detections_history_file"
         return 1
     fi
     
     # Execute the jq command with error output
-    if jq "$jq_cmd" "$did_temp" > "$did_updated" 2>/tmp/jq_error.log && [[ -s "$did_updated" ]]; then
-        echo -e "${GREEN}✅ DID fields updated${NC}"
+    # Use --argjson for PlantNet metadata if available
+    local jq_success=false
+    if [[ -n "$PLANTNET_METADATA_FILE" ]] && [[ -f "$PLANTNET_METADATA_FILE" ]]; then
+        # Execute with --argjson to inject PlantNet metadata
+        if jq --argjson plantnet_meta "$(cat "$PLANTNET_METADATA_FILE")" "$jq_cmd" "$did_temp" > "$did_updated" 2>/tmp/jq_error.log && [[ -s "$did_updated" ]]; then
+            echo -e "${GREEN}✅ DID fields updated${NC}"
+            jq_success=true
+            rm -f "$PLANTNET_METADATA_FILE" "$latest_detection_file" "$detections_history_file"
+        else
+            echo -e "${RED}❌ Failed to update DID fields${NC}"
+            rm -f "$PLANTNET_METADATA_FILE" "$latest_detection_file" "$detections_history_file"
+        fi
     else
+        # Normal execution without PlantNet metadata
+        if jq "$jq_cmd" "$did_temp" > "$did_updated" 2>/tmp/jq_error.log && [[ -s "$did_updated" ]]; then
+            echo -e "${GREEN}✅ DID fields updated${NC}"
+            jq_success=true
+        else
+            echo -e "${RED}❌ Failed to update DID fields${NC}"
+            echo -e "${YELLOW}💡 Debug info:${NC}"
+            echo -e "${YELLOW}   Input file: $did_temp${NC}"
+            echo -e "${YELLOW}   Output file: $did_updated${NC}"
+            echo -e "${YELLOW}   jq command: $jq_cmd${NC}"
+        
+            # Show jq error if available
+            if [[ -f "/tmp/jq_error.log" ]] && [[ -s "/tmp/jq_error.log" ]]; then
+                echo -e "${YELLOW}   jq error:${NC}"
+                cat "/tmp/jq_error.log"
+            fi
+            
+            # Try to show the input file content for debugging
+            if [[ -f "$did_temp" ]]; then
+                echo -e "${YELLOW}   Input file content (first 200 chars):${NC}"
+                head -c 200 "$did_temp" | cat
+                echo ""
+            fi
+            
+            rm -f "$did_temp" "$did_updated" "/tmp/jq_error.log"
+            [[ -n "$PLANTNET_METADATA_FILE" ]] && rm -f "$PLANTNET_METADATA_FILE" "$latest_detection_file"
+            return 1
+        fi
+    fi
+    
+    # Check if jq execution was successful
+    if [[ "$jq_success" != "true" ]]; then
         echo -e "${RED}❌ Failed to update DID fields${NC}"
-        echo -e "${YELLOW}💡 Debug info:${NC}"
-        echo -e "${YELLOW}   Input file: $did_temp${NC}"
-        echo -e "${YELLOW}   Output file: $did_updated${NC}"
-        echo -e "${YELLOW}   jq command: $jq_cmd${NC}"
-        
-        # Show jq error if available
-        if [[ -f "/tmp/jq_error.log" ]] && [[ -s "/tmp/jq_error.log" ]]; then
-            echo -e "${YELLOW}   jq error:${NC}"
-            cat "/tmp/jq_error.log"
-        fi
-        
-        # Try to show the input file content for debugging
-        if [[ -f "$did_temp" ]]; then
-            echo -e "${YELLOW}   Input file content (first 200 chars):${NC}"
-            head -c 200 "$did_temp" | cat
-            echo ""
-        fi
-        
         rm -f "$did_temp" "$did_updated" "/tmp/jq_error.log"
+        [[ -n "$PLANTNET_METADATA_FILE" ]] && rm -f "$PLANTNET_METADATA_FILE" "$latest_detection_file"
         return 1
     fi
+    
+    # Cleanup PlantNet metadata files if they exist
+    [[ -n "$PLANTNET_METADATA_FILE" ]] && rm -f "$PLANTNET_METADATA_FILE" "$latest_detection_file"
     
     # Step 3: Validate updated DID
     echo -e "\n${CYAN}Step 3/6: Validating DID document...${NC}"
@@ -993,6 +1101,7 @@ Update Types:
   ORE_CONTRACT_ATTACHED       - ORE contract attached to UMAP
   ORE_COMPLIANCE_VERIFIED     - ORE compliance verified
   ORE_REWARD_DISTRIBUTED      - ORE compliance reward distributed
+  PLANTNET_DETECTION          - PlantNet biodiversity detection recorded
   ACCOUNT_DEACTIVATED         - Account deactivated/destroyed
 
 Examples:
