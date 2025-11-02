@@ -274,9 +274,10 @@ if [[ ${ISOK} == 0 ]]; then
     fi
     
     ## ZEN CONVERSION
+    ## Formula: Z = (G1 - 1) * 10 (removes PRIMAL transaction)
     ZENAMOUNT=$(echo "$AMOUNT * 10" | bc | cut -d '.' -f 1)
-    ZENCUR=$(echo "$COINS * 10" | bc | cut -d '.' -f 1)
-    ZENDES=$(echo "$DES * 10" | bc | cut -d '.' -f 1)
+    ZENCUR=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
+    ZENDES=$(echo "($DES - 1) * 10" | bc | cut -d '.' -f 1)
     
     # Generate beautiful HTML report
     cat << EOF > ${PENDINGDIR}/${MOATS}.result.html
