@@ -216,7 +216,7 @@ Publishes videos as NOSTR events (NIP-71).
 5. Creates NOSTR event with NIP-71 tags
 6. Publishes to relay(s)
 
-**NOSTR Event Structure** (NIP-71):
+**NOSTR Event Structure** (NIP-71 + Provenance Extension):
 
 ```json
 {
@@ -238,7 +238,13 @@ Publishes videos as NOSTR events (NIP-71).
     ["latitude", "48.8566"],
     ["longitude", "2.3522"],
     ["image", "/ipfs/QmTHUMBNAIL/thumb.jpg"],
-    ["r", "/ipfs/QmTHUMBNAIL/thumb.jpg", "Thumbnail"]
+    ["r", "/ipfs/QmTHUMBNAIL/thumb.jpg", "Thumbnail"],
+    // Provenance & Deduplication Tags (NIP-71 Extension)
+    ["x", "abc123..."],  // SHA-256 hash of file (for deduplication)
+    ["info", "QmInfoCID..."],  // CID of info.json (metadata reuse)
+    ["upload_chain", "pubkey1,pubkey2,..."],  // Distribution chain
+    ["e", "original_event_id"],  // Original event (if re-upload)
+    ["p", "original_author_pubkey"]  // Original author (if re-upload)
   ]
 }
 ```
@@ -257,6 +263,11 @@ Publishes videos as NOSTR events (NIP-71).
 - `Channel-*`: Channel grouping tag
 - `Topic-*`: Topic/keyword tags for categorization
 - `image`: Thumbnail IPFS URL
+- **`x`**: SHA-256 file hash (for deduplication and provenance)
+- **`info`**: CID of info.json (metadata reuse, avoids redundant IPFS operations)
+- **`upload_chain`**: Distribution chain (comma-separated pubkeys showing file propagation)
+- **`e`**: Reference to original event ID (if video is a re-upload)
+- **`p`**: Reference to original author pubkey (if video is a re-upload)
 
 **Publishing Script**:
 - Uses `~/.zen/Astroport.ONE/tools/nostr_send_note.py`
@@ -621,6 +632,8 @@ All events are authenticated via **NIP-42** and synchronized through the N² net
 - `url`: Primary video URL (IPFS or HTTP) (required)
 - `m`: Media type, e.g., `video/webm` (required)
 - `published_at`: Unix timestamp (required)
+- **`x`**: SHA-256 file hash (required for provenance & deduplication)
+- **`info`**: CID of info.json (required for metadata reuse)
 
 ### Recommended Tags
 
@@ -631,6 +644,9 @@ All events are authenticated via **NIP-42** and synchronized through the N² net
 - `g`: Geographic coordinates (UMAP)
 - `Channel-*`: Channel grouping
 - `Topic-*`: Topic/keyword tags
+- **`upload_chain`**: Distribution chain (pubkeys of uploaders)
+- **`e`**: Original event ID (for re-uploads, provenance tracking)
+- **`p`**: Original author pubkey (for re-uploads, copyright respect)
 
 ### Optional Tags
 
@@ -640,6 +656,124 @@ All events are authenticated via **NIP-42** and synchronized through the N² net
 - `p`: Participant pubkeys
 - `r`: Reference links
 - `t`: Hashtags
+
+---
+
+## Provenance & Deduplication System 🔐
+
+Nostr Tube implements a comprehensive **provenance tracking and deduplication system** to ensure content integrity, avoid redundant uploads, and respect copyright.
+
+### Key Features
+
+#### 1. File Hash (SHA-256)
+- Every file uploaded gets a **SHA-256 hash** calculated by `upload2ipfs.sh`
+- Hash is stored in NOSTR event tag: `["x", "sha256_hash"]`
+- Enables **client-side deduplication**: identical files are detected before upload
+- Published in both:
+  - Direct tag: `["x", "hash"]` for quick lookup
+  - `imeta` tag: For NIP-71 compatibility
+
+#### 2. Info.json CID
+- Complete metadata stored in IPFS as `info.json`
+- Includes: duration, dimensions, codecs, thumbnails, animated GIF CIDs
+- Tag: `["info", "QmInfoCID"]`
+- **Benefits**:
+  - Avoids redundant metadata extraction (expensive ffprobe operations)
+  - Enables instant metadata reuse on re-uploads
+  - Centralized source of truth for file metadata
+
+#### 3. Upload Chain
+- **Distribution tracking**: Records all users who have uploaded this file
+- Format: `["upload_chain", "pubkey1,pubkey2,pubkey3"]`
+- Shows propagation path through the network
+- First pubkey = original uploader
+- Subsequent pubkeys = redistributors (sharing via their nodes)
+
+#### 4. Provenance References
+- `["e", "original_event_id"]`: Links to the first NOSTR event for this file
+- `["p", "original_author_pubkey"]`: Credits the original uploader
+- Enables:
+  - **Copyright respect**: Original creator is always visible
+  - **Content verification**: Users can verify file authenticity
+  - **Social graph tracking**: See who in your network shared this content
+
+### Workflow Example
+
+**Alice uploads a video:**
+```json
+{
+  "kind": 21,
+  "pubkey": "alice_pubkey",
+  "tags": [
+    ["x", "abc123hash..."],
+    ["info", "QmAliceInfo..."],
+    ["upload_chain", "alice_pubkey"]
+  ]
+}
+```
+
+**Bob uploads the SAME video (detected by hash):**
+```bash
+# upload2ipfs.sh detects existing hash in relay
+# Reuses Alice's IPFS CID and info.json
+# No redundant upload to IPFS!
+```
+
+```json
+{
+  "kind": 21,
+  "pubkey": "bob_pubkey",
+  "tags": [
+    ["x", "abc123hash..."],  // Same hash
+    ["info", "QmAliceInfo..."],  // Reused info.json
+    ["upload_chain", "alice_pubkey,bob_pubkey"],  // Bob added to chain
+    ["e", "alice_event_id"],  // Reference to Alice's event
+    ["p", "alice_pubkey"]  // Credit to Alice
+  ]
+}
+```
+
+### Implementation
+
+**Backend** (`upload2ipfs.sh`):
+1. Calculate SHA-256 hash **before** IPFS operations
+2. Search relay for existing events with same hash:
+   - Videos: Search in `kind 21` and `kind 22`
+   - Documents: Search in `kind 1063`
+3. If found:
+   - **Skip `ipfs add`** (file already exists)
+   - Use `ipfs get` to fetch existing CID locally (pins automatically)
+   - Reuse `info.json` CID for metadata
+   - Append current user to `upload_chain`
+4. If not found:
+   - Upload to IPFS normally
+   - Create new `info.json`
+   - Initialize `upload_chain` with current user
+
+**Frontend** (`youtube.enhancements.js`):
+- `extractVideoMetadata()`: Extracts provenance tags from events
+- `loadTheaterProvenance()`: Displays provenance in theater mode
+- Shows:
+  - File hash (for verification)
+  - Link to info.json (view full metadata)
+  - Distribution chain (visual badges)
+  - Original uploader (if re-upload)
+
+### Benefits
+
+✅ **Bandwidth Savings**: Identical files uploaded only once to IPFS  
+✅ **Storage Efficiency**: Metadata reused, no duplicate info.json  
+✅ **Copyright Respect**: Original creator always credited  
+✅ **Content Verification**: Users can verify file authenticity via hash  
+✅ **Network Transparency**: See distribution path through network  
+✅ **Faster Uploads**: Re-uploads are near-instant (no IPFS operations)  
+
+### Security Considerations
+
+- **Hash Collision**: SHA-256 provides 256-bit security (practically impossible to forge)
+- **Metadata Integrity**: Info.json is content-addressed (CID = hash of content)
+- **Event Authenticity**: All NOSTR events signed by uploader's private key
+- **Trust Model**: Users trust their N² network (friends & friends of friends)
 
 ---
 
@@ -826,6 +960,7 @@ Nostr Tube includes advanced UX features to provide a unique and engaging video 
 - **Live chat** during playback via NOSTR relay WebSocket
 - **Related videos** automatically displayed
 - **Picture-in-Picture** mode support
+- **Provenance Display**: Shows file hash, info.json link, distribution chain, and original uploader
 - **Template**: `theater-modal.html` (route: `/theater`)
 
 ### Engagement Statistics 📊
