@@ -33,6 +33,8 @@ LON="$4"
 MESSAGE="$5"
 URL="$6"
 KNAME="$7"
+ORIGINAL_GEO_LAT="$8"  # Precise latitude from original message's 'g' tag (optional)
+ORIGINAL_GEO_LON="$9"  # Precise longitude from original message's 'g' tag (optional)
 
 MY_PATH="$(dirname "$0")"
 MY_PATH="$( cd "$MY_PATH" && pwd )"
@@ -242,49 +244,50 @@ if [[ $# -lt 5 ]]; then
   exit 1
 fi
 
-## Optimisation: Extract URLs once
+## Optimisation: Extract URLs once - improved extraction
 if [ -z "$URL" ]; then
-    # Extract image URLs - handle filenames with spaces by collecting tokens until we hit a hashtag
-    URL=$(echo "$MESSAGE" | awk '{
-        for(i=1; i<=NF; i++) {
-            if ($i ~ /^https?:\/\/.*\.(png|gif|jpg|jpeg|webp|PNG|GIF|JPG|JPEG|WEBP)/) {
-                url = $i
-                # Continue collecting until we hit a # or end
-                for(j=i+1; j<=NF; j++) {
-                    if ($j ~ /^#/) break
-                    url = url " " $j
-                }
-                # Remove any trailing # tags
-                sub(/ *#.*$/, "", url)
-                print url
-                exit
-            }
-        }
-    }' | head -n 1)
-    
-    # If no URL found with extension in first token, try matching across multiple tokens
-    if [[ -z "$URL" ]]; then
-        URL=$(echo "$MESSAGE" | awk '{
-            for(i=1; i<=NF; i++) {
-                if ($i ~ /^https?:\/\//) {
-                    url = $i
-                    # Continue collecting until we hit a # or end or find image extension
-                    for(j=i+1; j<=NF; j++) {
-                        if ($j ~ /^#/) break
-                        url = url " " $j
-                        if (url ~ /\.(png|gif|jpg|jpeg|webp|PNG|GIF|JPG|JPEG|WEBP)/) {
-                            sub(/ *#.*$/, "", url)
-                            print url
-                            exit
-                        }
-                    }
-                }
-            }
-        }' | head -n 1)
+    # First, try to get URL from original event's imeta tags (most reliable)
+    if [[ -n "$EVENT" ]]; then
+        local original_event=$(get_event_by_id "$EVENT" 2>/dev/null)
+        if [[ -n "$original_event" ]]; then
+            # Extract imeta tag with url
+            URL=$(echo "$original_event" | jq -r '.tags[] | select(.[0] == "imeta") | .[1] // empty' 2>/dev/null | grep -oP 'url\s+\K[^\s]+' | head -n1)
+            if [[ -z "$URL" ]]; then
+                # Try alternative imeta format: ["imeta", "url", "https://..."]
+                URL=$(echo "$original_event" | jq -r '.tags[] | select(.[0] == "imeta" and .[1] == "url") | .[2] // empty' 2>/dev/null | head -n1)
+            fi
+        fi
     fi
     
-    # Extract any URL for general use (first http/https URL found)
-    ANYURL=$(echo "$MESSAGE" | awk 'match($0, /https?:\/\/[^ ]+/) { print substr($0, RSTART, RLENGTH) }' | head -n 1)
+    # If no URL from tags, extract from message text (improved pattern)
+    if [[ -z "$URL" ]]; then
+        # Extract IPFS URLs more precisely - stop at end of filename
+        URL=$(echo "$MESSAGE" | grep -oE 'https?://[^[:space:]#]+/ipfs/[A-Za-z0-9]+/[^[:space:]#]+\.(jpg|jpeg|png|gif|webp|JPG|JPEG|PNG|GIF|WEBP)' | head -n1)
+        
+        if [[ -z "$URL" ]]; then
+            # Fallback: extract any URL ending with image extension, stop at whitespace or #
+            URL=$(echo "$MESSAGE" | awk 'match($0, /https?:\/\/[^[:space:]#]+\.(png|gif|jpg|jpeg|webp|PNG|GIF|JPG|JPEG|WEBP)/) { 
+                url = substr($0, RSTART, RLENGTH)
+                # Remove any trailing characters after extension
+                sub(/[^a-zA-Z0-9_.-]+.*$/, "", url)
+                print url
+            }' | head -n 1)
+        fi
+    fi
+    
+    # Extract any URL for general use (first http/https URL found, stop at whitespace)
+    ANYURL=$(echo "$MESSAGE" | awk 'match($0, /https?:\/\/[^[:space:]#]+/) { 
+        url = substr($0, RSTART, RLENGTH)
+        # Stop at whitespace or # character
+        sub(/[[:space:]#].*$/, "", url)
+        print url
+    }' | head -n 1)
+fi
+
+# Clean URL if it contains description text after the filename
+if [[ -n "$URL" ]]; then
+    # Remove everything after the image file extension
+    URL=$(echo "$URL" | sed -E 's/(https?:\/\/[^[:space:]#]+\.(jpg|jpeg|png|gif|webp|JPG|JPEG|PNG|GIF|WEBP))[^[:space:]#]*.*/\1/')
 fi
 
 echo "Received parameters:" >&2
@@ -466,11 +469,12 @@ format_plantnet_json_to_text() {
         
         local result_content="🌿 Reconnaissance de plante
 
-✅ Identification réussie !
+✅ Identification réussie
 
 🔬 Nom scientifique : ${scientific_name}${common_name_str}
 
 ${confidence_emoji} Confiance : ${confidence_pct}% (${confidence_text})
+
 📍 Localisation : ${latitude}, ${longitude}
 
 📖 En savoir plus : ${wikipedia_url}
@@ -510,16 +514,11 @@ ${i}. ${alt_name}${common_str}
         result_content="${result_content}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 🔬 Source : https://plantnet.org
-💡 Astuce : Plus la confiance est élevée, plus l'identification est fiable
-
-#PlantNet #botanique #nature"
+💡 Astuce : Plus la confiance est élevée, plus l'identification est fiable"
         
-        if [[ -n "$image_url" ]]; then
-            result_content="${result_content}
-
-📸 Image : ${image_url}"
-        fi
+        # Note: image_url is already in imeta tags, don't add to content to avoid duplication
         
         echo "$result_content"
     else
@@ -533,19 +532,19 @@ ${i}. ${alt_name}${common_str}
 La plante n'a pas pu être identifiée avec certitude dans la base de données PlantNet.
 
 💡 Conseils pour améliorer la reconnaissance :
-• 📸 Prenez une photo plus claire et nette
-• 🌱 Assurez-vous que la plante occupe la majeure partie de l'image
-• ☀️ Évitez les ombres portées et les reflets
-• 🍃 Photographiez les détails : feuilles, fleurs, fruits ou écorce
-• 🔍 Prenez plusieurs angles si possible
+
+📸 Prenez une photo plus claire et nette
+🌱 Assurez-vous que la plante occupe la majeure partie de l'image
+☀️ Évitez les ombres portées et les reflets
+🍃 Photographiez les détails : feuilles, fleurs, fruits ou écorce
+🔍 Prenez plusieurs angles si possible
 
 📍 Localisation : ${latitude}, ${longitude}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
-🔬 Source : https://plantnet.org
-💾 Base de données : Plus de 40 000 espèces référencées
 
-#PlantNet #botanique #nature"
+🔬 Source : https://plantnet.org
+💾 Base de données : Plus de 40 000 espèces référencées"
     fi
 }
 
@@ -1180,25 +1179,88 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
             ######################################################### #plantnet
             elif [[ "${TAGS[plantnet]}" == true ]]; then
                 # PlantNet recognition processing
-                echo "Processing PlantNet recognition request..." >&2
+                echo "Processing PlantNet recognition request (tags: #BRO #plantnet)..." >&2
                 
                 # Initialize success flag
                 PLANTNET_SUCCESS=false
                 
-                # Extract image URL from message or use provided URL
+                # Extract image URL - use cleaned URL from earlier extraction
                 image_url=""
+                
+                # Method 1: Use cleaned URL variable (already extracted and cleaned earlier)
                 if [[ -n "$URL" ]]; then
                     image_url="$URL"
+                    echo "PlantNet: Using cleaned URL from parameter: $image_url" >&2
                 else
-                    # Try to extract image URL from message content
-                    image_url=$(echo "$message_text" | awk 'match($0, /https?:\/\/[^ ]+\.(jpg|jpeg|png|gif|webp)/) { print substr($0, RSTART, RLENGTH) }' | head -n1)
+                    # Method 2: Try to get URL from original event's imeta tags (most reliable)
+                    if [[ -n "$EVENT" ]]; then
+                        original_event=$(cd $HOME/.zen/strfry && ./strfry scan '{"ids":["'"$EVENT"'"]}' 2>/dev/null && cd - >/dev/null)
+                        if [[ -n "$original_event" ]]; then
+                            # Extract imeta tag with url - format: ["imeta", "url https://..."]
+                            local imeta_url=$(echo "$original_event" | jq -r '.tags[] | select(.[0] == "imeta") | .[1] // empty' 2>/dev/null | grep -oP 'url\s+\K[^\s]+' | head -n1)
+                            if [[ -n "$imeta_url" ]]; then
+                                image_url="$imeta_url"
+                                echo "PlantNet: Found image URL from event imeta tag: $image_url" >&2
+                            else
+                                # Try alternative imeta format: ["imeta", "url", "https://..."]
+                                local imeta_url=$(echo "$original_event" | jq -r '.tags[] | select(.[0] == "imeta" and .[1] == "url") | .[2] // empty' 2>/dev/null | head -n1)
+                                if [[ -n "$imeta_url" ]]; then
+                                    image_url="$imeta_url"
+                                    echo "PlantNet: Found image URL from event imeta tag (alt format): $image_url" >&2
+                                fi
+                            fi
+                        fi
+                    fi
+                    
+                    # Method 3: Extract from message text as last resort (with better pattern)
+                    if [[ -z "$image_url" ]]; then
+                        # Extract IPFS URLs more precisely - stop at end of filename
+                        image_url=$(echo "$message_text" | grep -oE 'https?://[^[:space:]#]+/ipfs/[A-Za-z0-9]+/[^[:space:]#]+\.(jpg|jpeg|png|gif|webp|JPG|JPEG|PNG|GIF|WEBP)' | head -n1)
+                        
+                        if [[ -z "$image_url" ]]; then
+                            # Fallback: extract any URL ending with image extension
+                            image_url=$(echo "$message_text" | awk 'match($0, /https?:\/\/[^[:space:]#]+\.(jpg|jpeg|png|gif|webp|JPG|JPEG|PNG|GIF|WEBP)/) { 
+                                url = substr($0, RSTART, RLENGTH)
+                                # Remove any trailing characters after extension
+                                sub(/[^a-zA-Z0-9_.-]+.*$/, "", url)
+                                print url
+                            }' | head -n1)
+                        fi
+                        
+                        if [[ -n "$image_url" ]]; then
+                            echo "PlantNet: Found image URL from message text: $image_url" >&2
+                        fi
+                    fi
+                fi
+                
+                # Final cleanup: ensure URL doesn't have description text appended
+                if [[ -n "$image_url" ]]; then
+                    # Remove everything after the image file extension
+                    image_url=$(echo "$image_url" | sed -E 's/(https?:\/\/[^[:space:]#]+\.(jpg|jpeg|png|gif|webp|JPG|JPEG|PNG|GIF|WEBP))[^[:space:]#]*.*/\1/')
+                    echo "PlantNet: Final cleaned image URL: $image_url" >&2
                 fi
                 
                 if [[ -n "$image_url" ]]; then
-                    echo "PlantNet: Found image URL: $image_url" >&2
+                    # Use precise coordinates from original message (passed by 1.sh)
+                    # Fallback to LAT/LON if ORIGINAL_GEO_* not provided (backward compatibility)
+                    ORIGINAL_LAT="$ORIGINAL_GEO_LAT"
+                    ORIGINAL_LON="$ORIGINAL_GEO_LON"
+                    if [[ -z "$ORIGINAL_LAT" || -z "$ORIGINAL_LON" ]]; then
+                        # Fallback: use provided LAT/LON (may already be processed/rounded by 1.sh)
+                        ORIGINAL_LAT="$LAT"
+                        ORIGINAL_LON="$LON"
+                        echo "PlantNet: Using provided coordinates as precise coordinates: ${ORIGINAL_LAT}, ${ORIGINAL_LON}" >&2
+                    else
+                        echo "PlantNet: Using precise coordinates from original message: ${ORIGINAL_LAT}, ${ORIGINAL_LON}" >&2
+                    fi
+                    
+                    # Calculate UMAP coordinates (rounded to 0.01 precision)
+                    UMAP_LAT=$(echo "$ORIGINAL_LAT" | awk '{printf "%.2f", $1}')
+                    UMAP_LON=$(echo "$ORIGINAL_LON" | awk '{printf "%.2f", $1}')
+                    echo "PlantNet: UMAP coordinates (0.01 precision): ${UMAP_LAT}, ${UMAP_LON}" >&2
                     
                     # Call PlantNet recognition with image description
-                    KeyANSWER=$(handle_plantnet_recognition "$image_url" "$LAT" "$LON" "$user_id" "$EVENT" "$PUBKEY")
+                    KeyANSWER=$(handle_plantnet_recognition "$image_url" "$ORIGINAL_LAT" "$ORIGINAL_LON" "$user_id" "$EVENT" "$PUBKEY")
                     
                     # Check if recognition was successful
                     if [[ "${PLANTNET_SUCCESS:-false}" == true ]]; then
@@ -1223,25 +1285,32 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                             echo "PlantNet: Warning - PUBKEY not available for nprofile generation" >&2
                         fi
                         
-                        # Add tags #plantnet #UPlanet only if recognition succeeded
-                        KeyANSWER="${KeyANSWER}
-#plantnet #UPlanet"
-                        
                         # Add tags for image URL and geolocation (NIP-94 image tag + NIP-52 geolocation)
-                        # This allows plantnet.html to retrieve and display the photo gallery
-                        echo "PlantNet: Adding image and geolocation tags for gallery display" >&2
-                        ExtraTags="[['imeta', 'url $image_url'], ['g', '${LAT},${LON}'], ['t', 'plantnet'], ['t', 'UPlanet']]"
+                        # Preserve precise coordinates from original message in 'g' tag
+                        # Add UMAP coordinates (rounded to 0.01) in 'umap' tag for UMAP identification
+                        # Add tags #plantnet #UPlanet as Nostr tags ONLY (not in content text)
+                        # These tags identify responses with recognized plants (different from requests which have #BRO #plantnet)
+                        # This allows plantnet.html to retrieve and display recognized plants on the map
+                        echo "PlantNet: Adding Nostr tags: #plantnet #UPlanet (for recognized plants)" >&2
+                        echo "PlantNet: Adding precise coordinates (g tag): ${ORIGINAL_LAT}, ${ORIGINAL_LON}" >&2
+                        echo "PlantNet: Adding UMAP coordinates (umap tag): ${UMAP_LAT}, ${UMAP_LON}" >&2
+                        ExtraTags="[['imeta', 'url $image_url'], ['g', '${ORIGINAL_LAT},${ORIGINAL_LON}'], ['umap', '${UMAP_LAT},${UMAP_LON}'], ['t', 'plantnet'], ['t', 'UPlanet']]"
                         
-                        # Update UMAP DID with plant detection
-                        update_umap_did_with_plantnet "$LAT" "$LON" "$EVENT" "$image_url" "$PUBKEY"
+                        # Note: Tags #plantnet and #UPlanet are in ExtraTags (Nostr tags), NOT in KeyANSWER content
+                        # User requests use #BRO #plantnet tags, bot responses use #plantnet #UPlanet tags
+                        # Tag 'g' contains precise coordinates from original message
+                        # Tag 'umap' contains UMAP coordinates rounded to 0.01 precision for UMAP identification
+                        
+                        # Update UMAP DID with plant detection (use UMAP coordinates for DID)
+                        update_umap_did_with_plantnet "$UMAP_LAT" "$UMAP_LON" "$EVENT" "$image_url" "$PUBKEY"
                         
                         # Set flag to use UMAP key for PlantNet responses
                         USE_UMAP_FOR_PLANTNET=true
                     else
                         echo "PlantNet: Recognition failed - not adding tags" >&2
                         # Don't add #plantnet #UPlanet tags if recognition failed
-                        # Only add basic tags for image display
-                        ExtraTags="[['imeta', 'url $image_url'], ['g', '${LAT},${LON}']]"
+                        # Still preserve precise coordinates and add UMAP coordinates
+                        ExtraTags="[['imeta', 'url $image_url'], ['g', '${ORIGINAL_LAT},${ORIGINAL_LON}'], ['umap', '${UMAP_LAT},${UMAP_LON}']]"
                     fi
                 else
                     echo "PlantNet: No valid image URL found in message" >&2
