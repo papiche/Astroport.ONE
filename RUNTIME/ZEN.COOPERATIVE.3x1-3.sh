@@ -191,8 +191,9 @@ echo "Tax provision (${TAX_RATE_USED}% of surplus): $TAX_PROVISION Ẑen ($TAX_P
 
 # Transfert de la provision fiscale
 tax_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$TAX_PROVISION_G1" "${IMPOTSG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:COOPERATIVE:TAX_PROVISION" 2>/dev/null)
+TAX_SUCCESS=$?
 
-if [[ $? -eq 0 ]]; then
+if [[ $TAX_SUCCESS -eq 0 ]]; then
     echo "✅ Tax provision completed: $TAX_PROVISION Ẑen ($TAX_PROVISION_G1 G1)"
 else
     echo "❌ Tax provision failed: $TAX_PROVISION Ẑen"
@@ -243,8 +244,9 @@ TREASURY_G1=$(echo "scale=2; $TREASURY_AMOUNT / 10" | bc -l)
 
 # Transfert vers le portefeuille trésorerie
 treasury_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$TREASURY_G1" "${TREASURYG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:COOPERATIVE:TREASURY" 2>/dev/null)
+TREASURY_SUCCESS=$?
 
-if [[ $? -eq 0 ]]; then
+if [[ $TREASURY_SUCCESS -eq 0 ]]; then
     echo "✅ Treasury allocation completed: $TREASURY_AMOUNT Ẑen ($TREASURY_G1 G1)"
 else
     echo "❌ Treasury allocation failed: $TREASURY_AMOUNT Ẑen"
@@ -267,8 +269,9 @@ RND_G1=$(echo "scale=2; $RND_AMOUNT / 10" | bc -l)
 
 # Transfert vers le portefeuille R&D
 rnd_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$RND_G1" "${RNDG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:COOPERATIVE:RND" 2>/dev/null)
+RND_SUCCESS=$?
 
-if [[ $? -eq 0 ]]; then
+if [[ $RND_SUCCESS -eq 0 ]]; then
     echo "✅ R&D allocation completed: $RND_AMOUNT Ẑen ($RND_G1 G1)"
 else
     echo "❌ R&D allocation failed: $RND_AMOUNT Ẑen"
@@ -291,8 +294,9 @@ ASSETS_G1=$(echo "scale=2; $ASSETS_AMOUNT / 10" | bc -l)
 
 # Transfert vers le portefeuille actifs
 assets_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$ASSETS_G1" "${ASSETSG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:COOPERATIVE:ASSETS" 2>/dev/null)
+ASSETS_SUCCESS=$?
 
-if [[ $? -eq 0 ]]; then
+if [[ $ASSETS_SUCCESS -eq 0 ]]; then
     echo "✅ Assets allocation completed: $ASSETS_AMOUNT Ẑen ($ASSETS_G1 G1)"
 else
     echo "❌ Assets allocation failed: $ASSETS_AMOUNT Ẑen"
@@ -378,6 +382,173 @@ else
     else
         echo "⚠️  Captain email not configured or report file empty"
     fi
+fi
+
+#######################################################################
+# Bankruptcy Detection and Alert System
+# Check if any allocations failed and send alerts to all users
+#######################################################################
+BANKRUPTCY_DETECTED=0
+FAILED_ALLOCATIONS=""
+
+# Check for failed allocations
+if [[ $TAX_SUCCESS -ne 0 ]]; then
+    BANKRUPTCY_DETECTED=1
+    FAILED_ALLOCATIONS="${FAILED_ALLOCATIONS}<li>Tax Provision: ${TAX_PROVISION} Ẑen (${TAX_PROVISION_G1} G1)</li>"
+fi
+
+if [[ $TREASURY_SUCCESS -ne 0 ]]; then
+    BANKRUPTCY_DETECTED=1
+    FAILED_ALLOCATIONS="${FAILED_ALLOCATIONS}<li>Treasury: ${TREASURY_AMOUNT} Ẑen (${TREASURY_G1} G1)</li>"
+fi
+
+if [[ $RND_SUCCESS -ne 0 ]]; then
+    BANKRUPTCY_DETECTED=1
+    FAILED_ALLOCATIONS="${FAILED_ALLOCATIONS}<li>R&D: ${RND_AMOUNT} Ẑen (${RND_G1} G1)</li>"
+fi
+
+if [[ $ASSETS_SUCCESS -ne 0 ]]; then
+    BANKRUPTCY_DETECTED=1
+    FAILED_ALLOCATIONS="${FAILED_ALLOCATIONS}<li>Assets: ${ASSETS_AMOUNT} Ẑen (${ASSETS_G1} G1)</li>"
+fi
+
+if [[ $BANKRUPTCY_DETECTED -eq 1 ]]; then
+    echo "🚨 BANKRUPTCY ALERT: One or more allocations failed!"
+    echo "🔄 Sending bankruptcy alerts to all users..."
+    
+    # Template path
+    BANKRUPTCY_TEMPLATE="${MY_PATH}/../templates/NOSTR/bankrupt.html"
+    BANKRUPTCY_REPORT="$HOME/.zen/tmp/bankruptcy_alert_${TODATE}.html"
+    
+    # Check if template exists
+    if [[ -s "$BANKRUPTCY_TEMPLATE" ]]; then
+        # Calculate values for template substitution
+        REPORT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+        UPLANET_ID="${UPLANETG1PUB:0:8}"
+        
+        # Calculate dynamic values for template
+        # Load economic variables from .env or use defaults
+        # PAF is already defined (default 14 if not set)
+        [[ -z $PAF ]] && PAF=14
+        [[ -z $NCARD ]] && NCARD=1
+        [[ -z $ZCARD ]] && ZCARD=4
+        [[ -z $TVA_RATE ]] && TVA_RATE=20
+        [[ -z $IS_THRESHOLD ]] && IS_THRESHOLD=42500
+        [[ -z $IS_RATE_REDUCED ]] && IS_RATE_REDUCED=15
+        [[ -z $IS_RATE_NORMAL ]] && IS_RATE_NORMAL=25
+        [[ -z $TREASURY_RATIO ]] && TREASURY_RATIO=33.33
+        [[ -z $RND_RATIO ]] && RND_RATIO=33.33
+        [[ -z $ASSETS_RATIO ]] && ASSETS_RATIO=33.34
+        
+        # Sociétaire share price (default 50 Ẑ/year = 50€)
+        [[ -z $SOCIETAIRE_SHARE_PRICE ]] && SOCIETAIRE_SHARE_PRICE=50
+        SOCIETAIRE_SHARE_PRICE_EUR=$SOCIETAIRE_SHARE_PRICE  # 1 Ẑ = 1€
+        
+        # Captain remuneration (2x PAF)
+        CAPTAIN_REMUNERATION=$(echo "scale=2; $PAF * 2" | bc -l)
+        
+        # Minimum required for operational costs (PAF + Captain remuneration)
+        MIN_REQUIRED=$(echo "scale=2; $PAF + $CAPTAIN_REMUNERATION" | bc -l)
+        
+        # Total allocations (Treasury + R&D + Assets)
+        TOTAL_ALLOCATIONS=$(echo "scale=2; $TREASURY_AMOUNT + $RND_AMOUNT + $ASSETS_AMOUNT" | bc -l)
+        
+        # Total required for all allocations (operational + tax + cooperative)
+        TOTAL_REQUIRED=$(echo "scale=2; $TAX_PROVISION + $TREASURY_AMOUNT + $RND_AMOUNT + $ASSETS_AMOUNT" | bc -l)
+        TOTAL_NEEDED=$(echo "scale=2; $MIN_REQUIRED + $TAX_PROVISION + $TOTAL_ALLOCATIONS" | bc -l)
+        
+        # Calculate deficit
+        DEFICIT=$(echo "scale=2; $TOTAL_REQUIRED - $REMAINING_BALANCE" | bc -l)
+        
+        # If deficit is negative, set to 0 (we have excess)
+        if [[ $(echo "$DEFICIT < 0" | bc -l) -eq 1 ]]; then
+            DEFICIT="0.00"
+        else
+            # Format deficit to 2 decimal places (remove trailing zeros if needed)
+            DEFICIT=$(echo "scale=2; $DEFICIT" | bc -l)
+        fi
+        
+        # Calculate impact examples for recovery plan
+        IMPACT_10_MULTIPASS=$(echo "scale=2; 10 * $NCARD" | bc -l)
+        IMPACT_5_ZENCARDS=$(echo "scale=2; 5 * $ZCARD" | bc -l)
+        IMPACT_TOTAL_REVENUE=$(echo "scale=2; $IMPACT_10_MULTIPASS + $IMPACT_5_ZENCARDS" | bc -l)
+        
+        # Calculate sociétaire capital (10 sociétaires)
+        SOCIETAIRE_CAPITAL=$(echo "scale=2; 10 * $SOCIETAIRE_SHARE_PRICE" | bc -l)
+        
+        # Generate HTML report from template using sed substitutions
+        cat "$BANKRUPTCY_TEMPLATE" | sed \
+            -e "s~_DATE_~${REPORT_DATE}~g" \
+            -e "s~_TODATE_~${TODATE}~g" \
+            -e "s~_UPLANET_ID_~${UPLANET_ID}~g" \
+            -e "s~_CAPTAIN_BALANCE_~${CAPTAINZEN}~g" \
+            -e "s~_PAF_~${PAF}~g" \
+            -e "s~_CAPTAIN_REMUNERATION_~${CAPTAIN_REMUNERATION}~g" \
+            -e "s~_MIN_REQUIRED_~${MIN_REQUIRED}~g" \
+            -e "s~_NCARD_~${NCARD}~g" \
+            -e "s~_ZCARD_~${ZCARD}~g" \
+            -e "s~_TVA_RATE_~${TVA_RATE}~g" \
+            -e "s~_IS_THRESHOLD_~${IS_THRESHOLD}~g" \
+            -e "s~_IS_RATE_REDUCED_~${IS_RATE_REDUCED}~g" \
+            -e "s~_IS_RATE_NORMAL_~${IS_RATE_NORMAL}~g" \
+            -e "s~_TAX_RATE_USED_~${TAX_RATE_USED}~g" \
+            -e "s~_TOTAL_ALLOCATIONS_~${TOTAL_ALLOCATIONS}~g" \
+            -e "s~_TOTAL_NEEDED_~${TOTAL_NEEDED}~g" \
+            -e "s~_DEFICIT_~${DEFICIT}~g" \
+            -e "s~_IMPACT_10_MULTIPASS_~${IMPACT_10_MULTIPASS}~g" \
+            -e "s~_IMPACT_5_ZENCARDS_~${IMPACT_5_ZENCARDS}~g" \
+            -e "s~_IMPACT_TOTAL_REVENUE_~${IMPACT_TOTAL_REVENUE}~g" \
+            -e "s~_SOCIETAIRE_SHARE_PRICE_~${SOCIETAIRE_SHARE_PRICE}~g" \
+            -e "s~_SOCIETAIRE_SHARE_PRICE_EUR_~${SOCIETAIRE_SHARE_PRICE_EUR}~g" \
+            -e "s~_SOCIETAIRE_CAPITAL_~${SOCIETAIRE_CAPITAL}~g" \
+            -e "s~_FAILED_ALLOCATIONS_~${FAILED_ALLOCATIONS}~g" \
+            > "$BANKRUPTCY_REPORT"
+        
+        # Collect all user emails from ~/.zen/game/nostr/*/
+        USER_EMAILS=()
+        NOSTR_DIR="$HOME/.zen/game/nostr"
+        
+        if [[ -d "$NOSTR_DIR" ]]; then
+            # Find all directories that contain email addresses (contain @)
+            while IFS= read -r -d '' user_dir; do
+                user_email=$(basename "$user_dir")
+                # Check if it's a valid email format (contains @)
+                if [[ "$user_email" =~ @ ]]; then
+                    USER_EMAILS+=("$user_email")
+                fi
+            done < <(find "$NOSTR_DIR" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
+        fi
+        
+        echo "📧 Found ${#USER_EMAILS[@]} user(s) to notify"
+        
+        # Send bankruptcy alert to all users
+        ALERT_SENT_COUNT=0
+        ALERT_FAILED_COUNT=0
+        
+        for user_email in "${USER_EMAILS[@]}"; do
+            echo "📧 Sending bankruptcy alert to: $user_email"
+            ${MY_PATH}/../tools/mailjet.sh "$user_email" "$BANKRUPTCY_REPORT" "⚠️ UPlanet Bankruptcy Alert - $TODATE"
+            
+            if [[ $? -eq 0 ]]; then
+                echo "✅ Bankruptcy alert sent successfully to $user_email"
+                ALERT_SENT_COUNT=$((ALERT_SENT_COUNT + 1))
+            else
+                echo "❌ Failed to send bankruptcy alert to $user_email"
+                ALERT_FAILED_COUNT=$((ALERT_FAILED_COUNT + 1))
+            fi
+        done
+        
+        echo "============================================ BANKRUPTCY ALERT SUMMARY"
+        echo "📊 Total users notified: ${#USER_EMAILS[@]}"
+        echo "✅ Successfully sent: $ALERT_SENT_COUNT"
+        echo "❌ Failed: $ALERT_FAILED_COUNT"
+        echo "============================================ BANKRUPTCY ALERT DONE."
+    else
+        echo "⚠️  Bankruptcy template file not found: $BANKRUPTCY_TEMPLATE"
+        echo "Skipping bankruptcy alert generation..."
+    fi
+else
+    echo "✅ All allocations completed successfully - no bankruptcy detected"
 fi
 
 #######################################################################

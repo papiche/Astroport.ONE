@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚠️ UPlanet Bankruptcy Alert</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: #333;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header .subtitle {
+            font-size: 1.2em;
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+        
+        .language-tabs {
+            display: flex;
+            justify-content: center;
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            gap: 5px;
+        }
+        
+        .language-tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            background-color: rgba(255,255,255,0.2);
+            color: white;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+        }
+        
+        .language-tab.active {
+            background-color: rgba(255,255,255,0.9);
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .language-tab:hover {
+            background-color: rgba(255,255,255,0.3);
+        }
+        
+        .language-section {
+            display: none;
+        }
+        
+        .language-section.active {
+            display: block;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .alert-box {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border-left: 5px solid #dc3545;
+            padding: 25px;
+            margin: 25px;
+            border-radius: 8px;
+        }
+        
+        .alert-box h2 {
+            color: #c82333;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .alert-box h2::before {
+            content: "⚠️";
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .info-item strong {
+            color: #c82333;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .failure-section {
+            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+            border-left: 5px solid #dc3545;
+            padding: 25px;
+            margin: 25px;
+            border-radius: 8px;
+        }
+        
+        .failure-section h2 {
+            color: #c82333;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .failure-section h2::before {
+            content: "❌";
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+        
+        .failure-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .failure-list li {
+            background: white;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border-left: 3px solid #dc3545;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        .failure-list li::before {
+            content: "❌ ";
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .balance-section {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border-left: 5px solid #2196f3;
+            padding: 25px;
+            margin: 25px;
+            border-radius: 8px;
+        }
+        
+        .balance-section h2 {
+            color: #1565c0;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .balance-section h2::before {
+            content: "💰";
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+        
+        .amount {
+            font-size: 2em;
+            font-weight: bold;
+            color: #c82333;
+            margin: 15px 0;
+        }
+        
+        .amount-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .status-badge {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin: 30px auto;
+            max-width: 400px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .footer {
+            background: #263238;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .footer a {
+            color: #81c784;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .note-box {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 20px;
+            margin: 20px 25px;
+            border-radius: 8px;
+        }
+        
+        .note-box p {
+            margin: 0;
+            color: #856404;
+        }
+        
+        .reasons-section {
+            background: linear-gradient(135deg, #ffe0b2, #ffcc80);
+            border-left: 5px solid #ff9800;
+            padding: 25px;
+            margin: 25px;
+            border-radius: 8px;
+        }
+        
+        .reasons-section h2 {
+            color: #e65100;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .reasons-section h2::before {
+            content: "🔍";
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+        
+        .reasons-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .reasons-list li {
+            background: white;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border-left: 3px solid #ff9800;
+        }
+        
+        .reasons-list li::before {
+            content: "📊 ";
+            color: #ff9800;
+            font-weight: bold;
+        }
+        
+        .recovery-section {
+            background: linear-gradient(135deg, #c8e6c9, #a5d6a7);
+            border-left: 5px solid #4caf50;
+            padding: 25px;
+            margin: 25px;
+            border-radius: 8px;
+        }
+        
+        .recovery-section h2 {
+            color: #2e7d32;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .recovery-section h2::before {
+            content: "🌱";
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+        
+        .recovery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .recovery-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-top: 4px solid #4caf50;
+            transition: transform 0.2s;
+        }
+        
+        .recovery-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .recovery-card h3 {
+            margin-top: 0;
+            color: #2e7d32;
+            display: flex;
+            align-items: center;
+        }
+        
+        .recovery-card h3::before {
+            content: "💡";
+            margin-right: 10px;
+        }
+        
+        .action-list {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0 0 0;
+        }
+        
+        .action-list li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        
+        .action-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #4caf50;
+            font-weight: bold;
+        }
+        
+        .calculation-box {
+            background: #f1f8e9;
+            border: 2px solid #8bc34a;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        .calculation-box strong {
+            color: #2e7d32;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+                
+            .content {
+                padding: 20px;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .language-tabs {
+                flex-wrap: wrap;
+            }
+            
+            .language-tab {
+                font-size: 0.85em;
+                padding: 6px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚠️ ALERTE DE FAILLITE</h1>
+            <div class="subtitle">Crise Financière Coopérative UPlanet</div>
+            
+            <div class="language-tabs">
+                <div class="language-tab active" data-lang="fr">Français</div>
+                <div class="language-tab" data-lang="en">English</div>
+                <div class="language-tab" data-lang="es">Español</div>
+            </div>
+        </div>
+        
+        <!-- FRANÇAIS -->
+        <div class="language-section active" id="fr">
+            <div class="content">
+                <div class="alert-box">
+                    <h2>Situation Financière Critique</h2>
+                    <p style="font-size: 1.1em; margin: 15px 0;">
+                        <strong>Le système d'allocation coopérative UPlanet a échoué en raison de fonds insuffisants.</strong>
+                    </p>
+                    <p>
+                        Le processus d'allocation coopérative hebdomadaire n'a pas pu se terminer car le portefeuille MULTIPASS du Capitaine 
+                        n'a pas assez de solde pour couvrir les allocations requises.
+                    </p>
+                </div>
+                
+                <div class="balance-section">
+                    <h2>💰 État Financier Actuel</h2>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <strong>Date du Rapport</strong>
+                            <span>_DATE_</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>Période</strong>
+                            <span>_TODATE_</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>ID UPlanet</strong>
+                            <span>_UPLANET_ID_</span>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <div class="info-item" style="background: #fff3cd; border: 2px solid #ffc107;">
+                            <strong>Solde MULTIPASS Capitaine</strong>
+                            <span class="amount">_CAPTAIN_BALANCE_ Ẑen</span>
+                            <div class="amount-label">Insuffisant pour les allocations requises</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="failure-section">
+                    <h2>Allocations Échouées</h2>
+                    <p>Les allocations suivantes n'ont pas pu être effectuées :</p>
+                    <ul class="failure-list">
+                        _FAILED_ALLOCATIONS_
+                    </ul>
+                </div>
+                
+                <div class="note-box">
+                    <p><strong>💡 Ce que cela signifie :</strong></p>
+                    <ul style="margin: 10px 0 0 20px; padding-left: 0;">
+                        <li>Le système d'allocation du surplus coopératif s'est arrêté</li>
+                        <li>Aucun fonds n'a été alloué à la Trésorerie, la R&D ou les Actifs</li>
+                        <li>Les provisions fiscales n'ont pas pu être effectuées</li>
+                        <li>Le système nécessite une action immédiate pour restaurer la santé financière</li>
+                    </ul>
+                </div>
+                
+                <div class="status-badge">
+                    ⚠️ STATUT DE FAILLITE : ACTIF
+                </div>
+                
+                <div class="reasons-section">
+                    <h2>Analyse des Causes Racines</h2>
+                    <p style="margin-bottom: 15px;">La faillite a été déclenchée par un ou plusieurs des déséquilibres économiques suivants :</p>
+                    <ul class="reasons-list">
+                        <li><strong>Revenus Locatifs Insuffisants :</strong> Pas assez de locataires MULTIPASS (_NCARD_ Ẑ/semaine) ou ZEN Cards (_ZCARD_ Ẑ/semaine) pour couvrir les coûts opérationnels</li>
+                        <li><strong>Coûts Opérationnels Supérieurs aux Revenus :</strong> PAF hebdomadaire (_PAF_ Ẑ) + rémunération Capitaine (_CAPTAIN_REMUNERATION_ Ẑ) = _MIN_REQUIRED_ Ẑ/semaine minimum requis</li>
+                        <li><strong>Déséquilibre Économique :</strong> Revenus < (PAF + Rémunération + Provisions fiscales + Allocations coopératives)</li>
+                        <li><strong>Infrastructure Sous-Utilisée :</strong> Capacité de la station non pleinement exploitée (Raspberry Pi : ~400 MULTIPASS, ~30 ZEN Cards possibles)</li>
+                        <li><strong>Surplus Coopératif Insuffisant :</strong> Après paiement de tous les coûts opérationnels, aucun surplus ne reste pour l'allocation 3x1/3</li>
+                    </ul>
+                    
+                    <div class="calculation-box" style="margin-top: 20px;">
+                        <strong>Calcul du Seuil de Rentabilité :</strong><br>
+                        Minimum requis : _MIN_REQUIRED_ Ẑ/semaine (PAF + Capitaine)<br>
+                        + Provisions fiscales : _TAX_RATE_USED_% du surplus (seuil : _IS_THRESHOLD_ €)<br>
+                        + Allocations coopératives : _TOTAL_ALLOCATIONS_ Ẑ/semaine<br>
+                        <strong>Total nécessaire : _TOTAL_NEEDED_ Ẑ/semaine minimum</strong><br><br>
+                        Solde actuel : _CAPTAIN_BALANCE_ Ẑen<br>
+                        <strong>Déficit : _DEFICIT_ Ẑen</strong><br><br>
+                        <strong>Configuration Fiscale :</strong><br>
+                        Taux TVA : _TVA_RATE_% (référence uniquement, provisionné ailleurs)<br>
+                        Taux IS Réduit : _IS_RATE_REDUCED_% (jusqu'à _IS_THRESHOLD_ €)<br>
+                        Taux IS Normal : _IS_RATE_NORMAL_% (au-delà de _IS_THRESHOLD_ €)
+                    </div>
+                </div>
+                
+                <div class="recovery-section">
+                    <h2>Plan d'Action de Redressement</h2>
+                    <p style="margin-bottom: 20px;">Voici des mesures concrètes pour restaurer la santé financière et redémarrer le système d'allocation coopérative :</p>
+                    
+                    <div class="recovery-grid">
+                        <div class="recovery-card">
+                            <h3>1. Augmenter les Revenus Locatifs</h3>
+                            <p><strong>Objectif :</strong> Attirer plus de locataires pour générer des revenus hebdomadaires</p>
+                            <ul class="action-list">
+                                <li>Inviter des amis à créer des MULTIPASS (_NCARD_ Ẑ/semaine de revenus chacun)</li>
+                                <li>Promouvoir les ZEN Cards (_ZCARD_ Ẑ/semaine de revenus chacun)</li>
+                                <li>Partager sur les réseaux sociaux : "Rejoignez UPlanet - Possédez votre espace numérique"</li>
+                                <li>Utiliser le système de parrainage : Chaque nouveau locataire renforce le réseau</li>
+                            </ul>
+                            <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
+                                <strong>Impact :</strong> 10 nouveaux MULTIPASS = +_IMPACT_10_MULTIPASS_ Ẑ/semaine<br>
+                                5 nouvelles ZEN Cards = +_IMPACT_5_ZENCARDS_ Ẑ/semaine<br>
+                                <strong>Total : +_IMPACT_TOTAL_REVENUE_ Ẑ/semaine de revenus supplémentaires</strong>
+                            </div>
+                        </div>
+                        
+                        <div class="recovery-card">
+                            <h3>2. Utiliser la Trésorerie Coopérative</h3>
+                            <p><strong>Objectif :</strong> Tirer parti des réserves de trésorerie accumulées</p>
+                            <ul class="action-list">
+                                <li>Vérifier le solde du portefeuille UPLANETNAME_CASH</li>
+                                <li>La trésorerie peut couvrir le PAF si le MULTIPASS du Capitaine est insuffisant</li>
+                                <li>Mécanisme de solidarité automatique dans ZEN.ECONOMY.sh</li>
+                                <li>C'est temporaire - il faut restaurer les flux de revenus</li>
+                            </ul>
+                            <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
+                                <strong>Note :</strong> Les réserves de trésorerie sont pour les urgences.<br>
+                                La solution à long terme nécessite une croissance des revenus.
+                            </div>
+                        </div>
+                        
+                        <div class="recovery-card">
+                            <h3>3. Investissement en Capital (Sociétaires)</h3>
+                            <p><strong>Objectif :</strong> Attirer de nouveaux membres coopératifs</p>
+                            <ul class="action-list">
+                                <li>Promouvoir les parts coopératives (_SOCIETAIRE_SHARE_PRICE_ Ẑ/an = _SOCIETAIRE_SHARE_PRICE_EUR_ €)</li>
+                                <li>Les sociétaires obtiennent : 128Go NextCloud + droit de vote</li>
+                                <li>Pas de loyer hebdomadaire pendant 1 an</li>
+                                <li>Injection de capital directe dans UPLANETNAME_SOCIETY</li>
+                            </ul>
+                            <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
+                                <strong>Impact :</strong> 10 nouveaux sociétaires = _SOCIETAIRE_CAPITAL_ Ẑ de capital<br>
+                                <strong>Prix de la Part :</strong> _SOCIETAIRE_SHARE_PRICE_ Ẑ/an (_SOCIETAIRE_SHARE_PRICE_EUR_ €)<br>
+                                <strong>Utiliser OpenCollective :</strong> opencollective.com/uplanet-zero
+                            </div>
+                        </div>
+                        
+                        <div class="recovery-card">
+                            <h3>4. Conversion Fiat vers Ẑen</h3>
+                            <p><strong>Objectif :</strong> Recharger via OpenCollective</p>
+                            <ul class="action-list">
+                                <li>Contribuer via OpenCollective (uplanet-zero)</li>
+                                <li>Taux de conversion : 1€ = 1 Ẑen</li>
+                                <li>Les fonds vont à UPLANETNAME_G1 (réserve)</li>
+                                <li>Peut être alloué au MULTIPASS du Capitaine si nécessaire</li>
+                            </ul>
+                            <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
+                                <strong>Lien :</strong> opencollective.com/uplanet-zero<br>
+                                <strong>Objectif :</strong> "Fonds d'urgence - UPlanet _UPLANET_ID_"
+                            </div>
+                        </div>
+                        
+                        <div class="recovery-card">
+                            <h3>5. Optimiser les Coûts d'Infrastructure</h3>
+                            <p><strong>Objectif :</strong> Réduire les dépenses opérationnelles</p>
+                            <ul class="action-list">
+                                <li>Examiner la consommation d'électricité (Raspberry Pi 5 est efficace)</li>
+                                <li>Optimiser la connexion Internet (connexion partagée possible)</li>
+                                <li>Vérifier si le PAF peut être réduit (nécessite un consensus)</li>
+                                <li>Surveiller les coûts opérationnels du NODE</li>
+                            </ul>
+                            <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
+                                <strong>Note :</strong> PAF = _PAF_ Ẑ/semaine couvre :<br>
+                                Électricité + Internet + Maintenance
+                            </div>
+                        </div>
+                        
+                        <div class="recovery-card">
+                            <h3>6. Revenus de Création de Contenu</h3>
+                            <p><strong>Objectif :</strong> Générer des Ẑen grâce à la participation à l'écosystème</p>
+                            <ul class="action-list">
+                                <li>Créer du contenu de qualité sur Coracle (coracle.copylaradio.com)</li>
+                                <li>Chaque like = 1 Ẑen automatiquement</li>
+                                <li>Construire votre réseau N² (amis d'amis)</li>
+                                <li>Plus de réseau = plus de likes = plus de Ẑen</li>
+                            </ul>
+                            <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
+                                <strong>Formule :</strong> 1 like = 1 Ẑen automatiquement<br>
+                                <strong>Exemple :</strong> 100 likes/semaine = 100 Ẑ/semaine<br>
+                                <strong>Potentiel :</strong> Source de revenus importante
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="note-box" style="background: #e8f5e9; border-left-color: #4caf50; margin-top: 25px;">
+                        <p style="color: #2e7d32;"><strong>📈 Priorité de Redressement :</strong></p>
+                        <ol style="margin: 10px 0 0 20px; color: #2e7d32;">
+                            <li><strong>Immédiat :</strong> Utiliser les réserves de trésorerie (automatique) + Conversion fiat</li>
+                            <li><strong>Court terme (1-2 semaines) :</strong> Inviter de nouveaux locataires (MULTIPASS/ZEN Cards)</li>
+                            <li><strong>Moyen terme (1 mois) :</strong> Attirer des sociétaires (injection de capital)</li>
+                            <li><strong>Long terme :</strong> Construire les revenus de création de contenu + optimiser les coûts</li>
+                        </ol>
+                    </div>
+                </div>
+                
+                <div class="note-box" style="background: #f8d7da; border-left-color: #dc3545;">
+                    <p style="color: #721c24;"><strong>🚨 Action Requise :</strong></p>
+                    <p style="color: #721c24; margin-top: 10px;">
+                        Une intervention financière immédiate est requise. Le système d'allocation coopérative restera suspendu 
+                        jusqu'à ce que des fonds suffisants soient disponibles dans le portefeuille MULTIPASS du Capitaine.
+                    </p>
+                    <p style="color: #721c24; margin-top: 10px;">
+                        <strong>Prochaines Étapes :</strong> Examinez le plan de redressement ci-dessus et choisissez les actions les plus appropriées à votre situation. 
+                        Le système réessaiera automatiquement les allocations une fois que des fonds suffisants seront disponibles.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ENGLISH -->
+        <div class="language-section" id="en">
+            <div class="content">
+                <div class="alert-box">
+                    <h2>Critical Financial Situation</h2>
+                    <p style="font-size: 1.1em; margin: 15px 0;">
+                        <strong>The UPlanet cooperative allocation system has failed due to insufficient funds.</strong>
+                    </p>
+                    <p>
+                        The weekly cooperative allocation process could not complete because the Captain MULTIPASS wallet 
+                        does not have enough balance to cover the required allocations.
+                    </p>
+                </div>
+                
+                <div class="balance-section">
+                    <h2>💰 Current Financial Status</h2>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <strong>Report Date</strong>
+                            <span>_DATE_</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>Period</strong>
+                            <span>_TODATE_</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>UPlanet ID</strong>
+                            <span>_UPLANET_ID_</span>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <div class="info-item" style="background: #fff3cd; border: 2px solid #ffc107;">
+                            <strong>Captain MULTIPASS Balance</strong>
+                            <span class="amount">_CAPTAIN_BALANCE_ Ẑen</span>
+                            <div class="amount-label">Insufficient for required allocations</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="failure-section">
+                    <h2>Failed Allocations</h2>
+                    <p>The following allocations could not be completed:</p>
+                    <ul class="failure-list">
+                        _FAILED_ALLOCATIONS_
+                    </ul>
+                </div>
+                
+                <div class="note-box">
+                    <p><strong>💡 What This Means:</strong></p>
+                    <ul style="margin: 10px 0 0 20px; padding-left: 0;">
+                        <li>The cooperative surplus allocation system has stopped</li>
+                        <li>No funds were allocated to Treasury, R&D, or Assets</li>
+                        <li>Tax provisions could not be made</li>
+                        <li>The system requires immediate action to restore financial health</li>
+                    </ul>
+                </div>
+                
+                <div class="status-badge">
+                    ⚠️ BANKRUPTCY STATUS: ACTIVE
+                </div>
+                
+                <div class="reasons-section">
+                    <h2>Root Causes Analysis</h2>
+                    <p style="margin-bottom: 15px;">The bankruptcy was triggered by one or more of the following economic imbalances:</p>
+                    <ul class="reasons-list">
+                        <li><strong>Insufficient Rental Revenue:</strong> Not enough MULTIPASS (_NCARD_ Ẑ/week) or ZEN Cards (_ZCARD_ Ẑ/week) tenants to cover operational costs</li>
+                        <li><strong>Operational Costs Exceed Income:</strong> Weekly PAF (_PAF_ Ẑ) + Captain remuneration (_CAPTAIN_REMUNERATION_ Ẑ) = _MIN_REQUIRED_ Ẑ/week minimum required</li>
+                        <li><strong>Economic Imbalance:</strong> Revenues < (PAF + Remuneration + Tax provisions + Cooperative allocations)</li>
+                        <li><strong>Underutilized Infrastructure:</strong> Station capacity not fully exploited (Raspberry Pi: ~400 MULTIPASS, ~30 ZEN Cards possible)</li>
+                        <li><strong>Insufficient Cooperative Surplus:</strong> After paying all operational costs, no surplus remains for 3x1/3 allocation</li>
+                    </ul>
+                    
+                    <div class="calculation-box" style="margin-top: 20px;">
+                        <strong>Break-even Calculation:</strong><br>
+                        Minimum required: _MIN_REQUIRED_ Ẑ/week (PAF + Captain)<br>
+                        + Tax provisions: _TAX_RATE_USED_% of surplus (threshold: _IS_THRESHOLD_ €)<br>
+                        + Cooperative allocations: _TOTAL_ALLOCATIONS_ Ẑ/week<br>
+                        <strong>Total needed: _TOTAL_NEEDED_ Ẑ/week minimum</strong><br><br>
+                        Current balance: _CAPTAIN_BALANCE_ Ẑen<br>
+                        <strong>Deficit: _DEFICIT_ Ẑen</strong><br><br>
+                        <strong>Tax Configuration:</strong><br>
+                        VAT Rate: _TVA_RATE_% (reference only, provisioned elsewhere)<br>
+                        IS Reduced Rate: _IS_RATE_REDUCED_% (up to _IS_THRESHOLD_ €)<br>
+                        IS Normal Rate: _IS_RATE_NORMAL_% (above _IS_THRESHOLD_ €)
+                    </div>
+                </div>
+                
+                <div class="recovery-section">
+                    <h2>Recovery Action Plan</h2>
+                    <p style="margin-bottom: 20px;">Here are concrete steps to restore financial health and restart the cooperative allocation system:</p>
+                    
+                    <div class="recovery-grid">
+                        <div class="recovery-card">
+                            <h3>1. Increase Rental Revenue</h3>
+                            <p><strong>Goal:</strong> Attract more tenants to generate weekly income</p>
+                            <ul class="action-list">
+                                <li>Invite friends to create MULTIPASS (_NCARD_ Ẑ/week revenue each)</li>
+                                <li>Promote ZEN Cards (_ZCARD_ Ẑ/week revenue each)</li>
+                                <li>Share on social networks: "Join UPlanet - Own your digital space"</li>
+                                <li>Use referral system: Each new tenant strengthens the network</li>
+                            </ul>
+                            <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
+                                <strong>Impact:</strong> 10 new MULTIPASS = +_IMPACT_10_MULTIPASS_ Ẑ/week<br>
+                                5 new ZEN Cards = +_IMPACT_5_ZENCARDS_ Ẑ/week<br>
+                                <strong>Total: +_IMPACT_TOTAL_REVENUE_ Ẑ/week additional revenue</strong>
+                            </div>
+                        </div>
+                        
+                        <div class="recovery-card">
+                            <h3>2. Use Cooperative Treasury</h3>
+                            <p><strong>Goal:</strong> Leverage accumulated treasury reserves</p>
+                            <ul class="action-list">
+                                <li>Check UPLANETNAME_CASH wallet balance</li>
+                                <li>Treasury can cover PAF if Captain MULTIPASS insufficient</li>
+                                <li>Automatic solidarity mechanism in ZEN.ECONOMY.sh</li>
+                                <li>This is temporary - must restore revenue streams</li>
+                            </ul>
+                            <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
+                                <strong>Note:</strong> Treasury reserves are for emergencies.<br>
+                                Long-term solution requires revenue growth.
+                            </div>
+                        </div>
+                        
+                        <div class="recovery-card">
+                            <h3>3. Capital Investment (Sociétaires)</h3>
+                            <p><strong>Goal:</strong> Attract new cooperative members</p>
+                            <ul class="action-list">
+                                <li>Promote cooperative shares (_SOCIETAIRE_SHARE_PRICE_ Ẑ/year = _SOCIETAIRE_SHARE_PRICE_EUR_ €)</li>
+                                <li>Sociétaires get: 128Go NextCloud + voting rights</li>
+                                <li>No weekly rent for 1 year</li>
+                                <li>Direct capital injection into UPLANETNAME_SOCIETY</li>
+                            </ul>
+                            <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
+                                <strong>Impact:</strong> 10 new sociétaires = _SOCIETAIRE_CAPITAL_ Ẑ capital<br>
+                                <strong>Share Price:</strong> _SOCIETAIRE_SHARE_PRICE_ Ẑ/year (_SOCIETAIRE_SHARE_PRICE_EUR_ €)<br>
+                                <strong>Use OpenCollective:</strong> opencollective.com/uplanet-zero
+                            </div>
+                        </div>
+                        
+                        <div class="recovery-card">
+                            <h3>4. Fiat to Ẑen Conversion</h3>
+                            <p><strong>Goal:</strong> Recharge via OpenCollective</p>
+                            <ul class="action-list">
+                                <li>Contribute via OpenCollective (uplanet-zero)</li>
+                                <li>Conversion rate: 1€ = 1 Ẑen</li>
+                                <li>Funds go to UPLANETNAME_G1 (reserve)</li>
+                                <li>Can be allocated to Captain MULTIPASS if needed</li>
+                            </ul>
+                            <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
+                                <strong>Link:</strong> opencollective.com/uplanet-zero<br>
+                                <strong>Purpose:</strong> "Emergency fund - UPlanet _UPLANET_ID_"
+                            </div>
+                        </div>
+                        
+                        <div class="recovery-card">
+                            <h3>5. Optimize Infrastructure Costs</h3>
+                            <p><strong>Goal:</strong> Reduce operational expenses</p>
+                            <ul class="action-list">
+                                <li>Review electricity consumption (Raspberry Pi 5 is efficient)</li>
+                                <li>Optimize internet connection (shared connection possible)</li>
+                                <li>Check if PAF can be reduced (requires consensus)</li>
+                                <li>Monitor NODE operational costs</li>
+                            </ul>
+                            <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
+                                <strong>Note:</strong> PAF = _PAF_ Ẑ/week covers:<br>
+                                Electricity + Internet + Maintenance
+                            </div>
+                        </div>
+                        
+                        <div class="recovery-card">
+                            <h3>6. Content Creation Revenue</h3>
+                            <p><strong>Goal:</strong> Generate Ẑen through ecosystem participation</p>
+                            <ul class="action-list">
+                                <li>Create quality content on Coracle (coracle.copylaradio.com)</li>
+                                <li>Each like = 1 Ẑen automatically</li>
+                                <li>Build your N² network (friends of friends)</li>
+                                <li>More network = more likes = more Ẑen</li>
+                            </ul>
+                            <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
+                                <strong>Formula:</strong> 1 like = 1 Ẑen automatically<br>
+                                <strong>Example:</strong> 100 likes/week = 100 Ẑ/week<br>
+                                <strong>Potential:</strong> Significant revenue stream
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="note-box" style="background: #e8f5e9; border-left-color: #4caf50; margin-top: 25px;">
+                        <p style="color: #2e7d32;"><strong>📈 Recovery Priority:</strong></p>
+                        <ol style="margin: 10px 0 0 20px; color: #2e7d32;">
+                            <li><strong>Immediate:</strong> Use Treasury reserves (automatic) + Fiat conversion</li>
+                            <li><strong>Short-term (1-2 weeks):</strong> Invite new tenants (MULTIPASS/ZEN Cards)</li>
+                            <li><strong>Medium-term (1 month):</strong> Attract sociétaires (capital injection)</li>
+                            <li><strong>Long-term:</strong> Build content creation revenue + optimize costs</li>
+                        </ol>
+                    </div>
+                </div>
+                
+                <div class="note-box" style="background: #f8d7da; border-left-color: #dc3545;">
+                    <p style="color: #721c24;"><strong>🚨 Action Required:</strong></p>
+                    <p style="color: #721c24; margin-top: 10px;">
+                        Immediate financial intervention is required. The cooperative allocation system will remain suspended 
+                        until sufficient funds are available in the Captain MULTIPASS wallet.
+                    </p>
+                    <p style="color: #721c24; margin-top: 10px;">
+                        <strong>Next Steps:</strong> Review the recovery plan above and choose the most appropriate actions for your situation. 
+                        The system will automatically retry allocations once sufficient funds are available.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ESPAÑOL -->
+        <div class="language-section" id="es">
+            <div class="content">
+                <div class="alert-box">
+                    <h2>Situación Financiera Crítica</h2>
+                    <p style="font-size: 1.1em; margin: 15px 0;">
+                        <strong>El sistema de asignación cooperativa UPlanet ha fallado debido a fondos insuficientes.</strong>
+                    </p>
+                    <p>
+                        El proceso de asignación cooperativa semanal no pudo completarse porque la cartera MULTIPASS del Capitán 
+                        no tiene suficiente saldo para cubrir las asignaciones requeridas.
+                    </p>
+                </div>
+                
+                <div class="balance-section">
+                    <h2>💰 Estado Financiero Actual</h2>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <strong>Fecha del Informe</strong>
+                            <span>_DATE_</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>Período</strong>
+                            <span>_TODATE_</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>ID UPlanet</strong>
+                            <span>_UPLANET_ID_</span>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <div class="info-item" style="background: #fff3cd; border: 2px solid #ffc107;">
+                            <strong>Saldo MULTIPASS Capitán</strong>
+                            <span class="amount">_CAPTAIN_BALANCE_ Ẑen</span>
+                            <div class="amount-label">Insuficiente para las asignaciones requeridas</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="failure-section">
+                    <h2>Asignaciones Fallidas</h2>
+                    <p>Las siguientes asignaciones no pudieron completarse:</p>
+                    <ul class="failure-list">
+                        _FAILED_ALLOCATIONS_
+                    </ul>
+                </div>
+                
+                <div class="note-box">
+                    <p><strong>💡 Qué Significa Esto:</strong></p>
+                    <ul style="margin: 10px 0 0 20px; padding-left: 0;">
+                        <li>El sistema de asignación de excedente cooperativo se ha detenido</li>
+                        <li>No se asignaron fondos a Tesorería, I+D o Activos</li>
+                        <li>No se pudieron hacer provisiones fiscales</li>
+                        <li>El sistema requiere acción inmediata para restaurar la salud financiera</li>
+                    </ul>
+                </div>
+                
+                <div class="status-badge">
+                    ⚠️ ESTADO DE QUIEBRA: ACTIVO
+                </div>
+                
+                <div class="reasons-section">
+                    <h2>Análisis de Causas Raíz</h2>
+                    <p style="margin-bottom: 15px;">La quiebra fue desencadenada por uno o más de los siguientes desequilibrios económicos:</p>
+                    <ul class="reasons-list">
+                        <li><strong>Ingresos por Alquiler Insuficientes :</strong> No hay suficientes inquilinos MULTIPASS (_NCARD_ Ẑ/semana) o ZEN Cards (_ZCARD_ Ẑ/semana) para cubrir los costos operativos</li>
+                        <li><strong>Costos Operativos Superan los Ingresos :</strong> PAF semanal (_PAF_ Ẑ) + remuneración Capitán (_CAPTAIN_REMUNERATION_ Ẑ) = _MIN_REQUIRED_ Ẑ/semana mínimo requerido</li>
+                        <li><strong>Desequilibrio Económico :</strong> Ingresos < (PAF + Remuneración + Provisiones fiscales + Asignaciones cooperativas)</li>
+                        <li><strong>Infraestructura Subutilizada :</strong> Capacidad de la estación no completamente explotada (Raspberry Pi: ~400 MULTIPASS, ~30 ZEN Cards posibles)</li>
+                        <li><strong>Excedente Cooperativo Insuficiente :</strong> Después de pagar todos los costos operativos, no queda excedente para la asignación 3x1/3</li>
+                    </ul>
+                    
+                    <div class="calculation-box" style="margin-top: 20px;">
+                        <strong>Cálculo del Punto de Equilibrio :</strong><br>
+                        Mínimo requerido: _MIN_REQUIRED_ Ẑ/semana (PAF + Capitán)<br>
+                        + Provisiones fiscales: _TAX_RATE_USED_% del excedente (umbral: _IS_THRESHOLD_ €)<br>
+                        + Asignaciones cooperativas: _TOTAL_ALLOCATIONS_ Ẑ/semana<br>
+                        <strong>Total necesario: _TOTAL_NEEDED_ Ẑ/semana mínimo</strong><br><br>
+                        Saldo actual: _CAPTAIN_BALANCE_ Ẑen<br>
+                        <strong>Déficit: _DEFICIT_ Ẑen</strong><br><br>
+                        <strong>Configuración Fiscal :</strong><br>
+                        Tasa IVA: _TVA_RATE_% (solo referencia, provisionado en otro lugar)<br>
+                        Tasa IS Reducida: _IS_RATE_REDUCED_% (hasta _IS_THRESHOLD_ €)<br>
+                        Tasa IS Normal: _IS_RATE_NORMAL_% (por encima de _IS_THRESHOLD_ €)
+                    </div>
+                </div>
+                
+                <div class="recovery-section">
+                    <h2>Plan de Acción de Recuperación</h2>
+                    <p style="margin-bottom: 20px;">Aquí hay pasos concretos para restaurar la salud financiera y reiniciar el sistema de asignación cooperativa:</p>
+                    
+                    <div class="recovery-grid">
+                        <div class="recovery-card">
+                            <h3>1. Aumentar los Ingresos por Alquiler</h3>
+                            <p><strong>Objetivo :</strong> Atraer más inquilinos para generar ingresos semanales</p>
+                            <ul class="action-list">
+                                <li>Invitar amigos a crear MULTIPASS (_NCARD_ Ẑ/semana de ingresos cada uno)</li>
+                                <li>Promover ZEN Cards (_ZCARD_ Ẑ/semana de ingresos cada uno)</li>
+                                <li>Compartir en redes sociales: "Únete a UPlanet - Posee tu espacio digital"</li>
+                                <li>Usar sistema de referidos: Cada nuevo inquilino fortalece la red</li>
+                            </ul>
+                            <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
+                                <strong>Impacto :</strong> 10 nuevos MULTIPASS = +_IMPACT_10_MULTIPASS_ Ẑ/semana<br>
+                                5 nuevas ZEN Cards = +_IMPACT_5_ZENCARDS_ Ẑ/semana<br>
+                                <strong>Total: +_IMPACT_TOTAL_REVENUE_ Ẑ/semana de ingresos adicionales</strong>
+                            </div>
+                        </div>
+                        
+                        <div class="recovery-card">
+                            <h3>2. Usar la Tesorería Cooperativa</h3>
+                            <p><strong>Objetivo :</strong> Aprovechar las reservas de tesorería acumuladas</p>
+                            <ul class="action-list">
+                                <li>Verificar el saldo de la cartera UPLANETNAME_CASH</li>
+                                <li>La tesorería puede cubrir el PAF si el MULTIPASS del Capitán es insuficiente</li>
+                                <li>Mecanismo de solidaridad automático en ZEN.ECONOMY.sh</li>
+                                <li>Esto es temporal - debe restaurarse los flujos de ingresos</li>
+                            </ul>
+                            <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
+                                <strong>Nota :</strong> Las reservas de tesorería son para emergencias.<br>
+                                La solución a largo plazo requiere crecimiento de ingresos.
+                            </div>
+                        </div>
+                        
+                        <div class="recovery-card">
+                            <h3>3. Inversión de Capital (Sociétaires)</h3>
+                            <p><strong>Objetivo :</strong> Atraer nuevos miembros cooperativos</p>
+                            <ul class="action-list">
+                                <li>Promover participaciones cooperativas (_SOCIETAIRE_SHARE_PRICE_ Ẑ/año = _SOCIETAIRE_SHARE_PRICE_EUR_ €)</li>
+                                <li>Los sociétaires obtienen: 128Go NextCloud + derecho a voto</li>
+                                <li>Sin alquiler semanal por 1 año</li>
+                                <li>Inyección de capital directa en UPLANETNAME_SOCIETY</li>
+                            </ul>
+                            <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
+                                <strong>Impacto :</strong> 10 nuevos sociétaires = _SOCIETAIRE_CAPITAL_ Ẑ de capital<br>
+                                <strong>Precio de la Participación :</strong> _SOCIETAIRE_SHARE_PRICE_ Ẑ/año (_SOCIETAIRE_SHARE_PRICE_EUR_ €)<br>
+                                <strong>Usar OpenCollective :</strong> opencollective.com/uplanet-zero
+                            </div>
+                        </div>
+                        
+                        <div class="recovery-card">
+                            <h3>4. Conversión Fiat a Ẑen</h3>
+                            <p><strong>Objetivo :</strong> Recargar vía OpenCollective</p>
+                            <ul class="action-list">
+                                <li>Contribuir vía OpenCollective (uplanet-zero)</li>
+                                <li>Tasa de conversión: 1€ = 1 Ẑen</li>
+                                <li>Los fondos van a UPLANETNAME_G1 (reserva)</li>
+                                <li>Puede ser asignado al MULTIPASS del Capitán si es necesario</li>
+                            </ul>
+                            <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
+                                <strong>Enlace :</strong> opencollective.com/uplanet-zero<br>
+                                <strong>Propósito :</strong> "Fondo de emergencia - UPlanet _UPLANET_ID_"
+                            </div>
+                        </div>
+                        
+                        <div class="recovery-card">
+                            <h3>5. Optimizar los Costos de Infraestructura</h3>
+                            <p><strong>Objetivo :</strong> Reducir gastos operativos</p>
+                            <ul class="action-list">
+                                <li>Revisar consumo de electricidad (Raspberry Pi 5 es eficiente)</li>
+                                <li>Optimizar conexión a Internet (conexión compartida posible)</li>
+                                <li>Verificar si el PAF puede reducirse (requiere consenso)</li>
+                                <li>Monitorear costos operativos del NODE</li>
+                            </ul>
+                            <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
+                                <strong>Nota :</strong> PAF = _PAF_ Ẑ/semana cubre:<br>
+                                Electricidad + Internet + Mantenimiento
+                            </div>
+                        </div>
+                        
+                        <div class="recovery-card">
+                            <h3>6. Ingresos por Creación de Contenido</h3>
+                            <p><strong>Objetivo :</strong> Generar Ẑen mediante participación en el ecosistema</p>
+                            <ul class="action-list">
+                                <li>Crear contenido de calidad en Coracle (coracle.copylaradio.com)</li>
+                                <li>Cada like = 1 Ẑen automáticamente</li>
+                                <li>Construir tu red N² (amigos de amigos)</li>
+                                <li>Más red = más likes = más Ẑen</li>
+                            </ul>
+                            <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
+                                <strong>Fórmula :</strong> 1 like = 1 Ẑen automáticamente<br>
+                                <strong>Ejemplo :</strong> 100 likes/semana = 100 Ẑ/semana<br>
+                                <strong>Potencial :</strong> Fuente de ingresos significativa
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="note-box" style="background: #e8f5e9; border-left-color: #4caf50; margin-top: 25px;">
+                        <p style="color: #2e7d32;"><strong>📈 Prioridad de Recuperación :</strong></p>
+                        <ol style="margin: 10px 0 0 20px; color: #2e7d32;">
+                            <li><strong>Inmediato :</strong> Usar reservas de tesorería (automático) + Conversión fiat</li>
+                            <li><strong>Corto plazo (1-2 semanas) :</strong> Invitar nuevos inquilinos (MULTIPASS/ZEN Cards)</li>
+                            <li><strong>Medio plazo (1 mes) :</strong> Atraer sociétaires (inyección de capital)</li>
+                            <li><strong>Largo plazo :</strong> Construir ingresos por creación de contenido + optimizar costos</li>
+                        </ol>
+                    </div>
+                </div>
+                
+                <div class="note-box" style="background: #f8d7da; border-left-color: #dc3545;">
+                    <p style="color: #721c24;"><strong>🚨 Acción Requerida :</strong></p>
+                    <p style="color: #721c24; margin-top: 10px;">
+                        Se requiere intervención financiera inmediata. El sistema de asignación cooperativa permanecerá suspendido 
+                        hasta que haya fondos suficientes disponibles en la cartera MULTIPASS del Capitán.
+                    </p>
+                    <p style="color: #721c24; margin-top: 10px;">
+                        <strong>Próximos Pasos :</strong> Revise el plan de recuperación anterior y elija las acciones más apropiadas para su situación. 
+                        El sistema reintentará automáticamente las asignaciones una vez que haya fondos suficientes disponibles.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <h3>🌍 Système Coopératif UPlanet</h3>
+            <p>Ceci est une alerte automatisée de faillite du système d'allocation ZEN.COOPERATIVE.</p>
+            <p><strong>ID Alerte :</strong> BANKRUPTCY-_TODATE_</p>
+            <p><strong>Généré :</strong> _DATE_</p>
+            <hr style="border: none; border-top: 1px solid #455a64; margin: 20px 0;">
+            <p><small>
+                Cette alerte est générée automatiquement lorsque le système d'allocation coopérative échoue en raison de fonds insuffisants.<br>
+                Tous les utilisateurs sont notifiés pour assurer la transparence de la situation financière.
+            </small></p>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Language tabs functionality
+            const tabs = document.querySelectorAll('.language-tab');
+            const sections = document.querySelectorAll('.language-section');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    sections.forEach(s => s.classList.remove('active'));
+
+                    tab.classList.add('active');
+                    const lang = tab.getAttribute('data-lang');
+                    document.getElementById(lang).classList.add('active');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
