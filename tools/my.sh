@@ -482,20 +482,7 @@ my_IPCity() {
     echo "$ville,$pays"
 }
 
-# Optimisation: utiliser un cache pour éviter les appels IPFS répétés
-if [[ -z "$IPFSNODEID" ]]; then
-    # Fallback: essayer de lire depuis un cache
-    if [[ -f ~/.zen/tmp/ipfsnodeid.cache ]]; then
-        IPFSNODEID=$(cat ~/.zen/tmp/ipfsnodeid.cache 2>/dev/null)
-    fi
-    # Si toujours vide, forcer la récupération
-    if [[ -z "$IPFSNODEID" ]]; then
-        IPFSNODEID="$(myIpfsPeerId)"
-        # Sauvegarder en cache
-        mkdir -p ~/.zen/tmp
-        echo "$IPFSNODEID" > ~/.zen/tmp/ipfsnodeid.cache 2>/dev/null
-    fi
-fi
+IPFSNODEID="$(myIpfsPeerId)"
 
 isLAN="$(isLan)"
 myIP="$(myIp)" # "127.0.0.1"
@@ -510,10 +497,10 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 myDOMAIN="$(myDomainName)"
 
 myASTROPORT="http://127.0.0.1:1234" # BE ACCESSIBLE THROUGH LAN
-myAPI="http://127.0.0.1:5001"
-myDATA="https://data.gchange.fr"
+myAPI="http://127.0.0.1:5001" ## IPFS API
+myDATA="https://data.gchange.fr" ## GCHANGE +
 myGCHANGE="https://www.gchange.fr"
-myCESIUM="https://g1.data.e-is.pro"
+myCESIUM="https://g1.data.e-is.pro" ## CESIUM +
 myG1BILLET="http://127.0.0.1:33101"
 myHOST="$(myHostName)"
 
