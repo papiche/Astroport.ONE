@@ -614,22 +614,31 @@ cmd_upgrade() {
         return 1
     fi
     
-    # Extract metadata from original event
+    # Extract metadata from original event using jq
     local title=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "title") | .[1] // "Untitled"' 2>/dev/null | head -n1)
     local description=$(echo "$event" | jq -r '.content // ""' 2>/dev/null)
     local url=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "url") | .[1] // empty' 2>/dev/null | head -n1)
     local old_duration=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "duration") | .[1] // "0"' 2>/dev/null | head -n1)
     local latitude=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "latitude") | .[1] // "0.00"' 2>/dev/null | head -n1)
     local longitude=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "longitude") | .[1] // "0.00"' 2>/dev/null | head -n1)
-    local cid=$(echo "$url" | grep -oP '(?<=ipfs/)[^/]+' | head -n1)
-    local filename=$(echo "$url" | grep -oP '(?<=ipfs/[^/]+/).*' | head -n1)
+    
+    # Extract CID and filename from URL using sed (no lookbehind issues)
+    # URL format: /ipfs/CID/filename or http://domain/ipfs/CID/filename
+    local cid=$(echo "$url" | sed -n 's|.*/ipfs/\([^/]*\).*|\1|p')
+    local filename=$(echo "$url" | sed -n 's|.*/ipfs/[^/]*/\(.*\)|\1|p' | sed 's/%20/ /g; s/%28/(/g; s/%29/)/g; s/%2C/,/g')
     
     if [[ -z "$cid" ]]; then
-        log_error "Could not extract CID from event"
+        log_error "Could not extract CID from URL: $url"
         return 1
     fi
     
-    [[ -z "$filename" ]] && filename="video_${event_id:0:8}.webm"
+    # If filename extraction failed, try to get it from the last part of URL
+    if [[ -z "$filename" ]]; then
+        filename=$(basename "$url" | sed 's/%20/ /g; s/%28/(/g; s/%29/)/g; s/%2C/,/g')
+    fi
+    
+    # Final fallback
+    [[ -z "$filename" ]] && filename="video_${event_id:0:8}.mp4"
     
     log_info "Title: $title"
     log_info "CID: $cid"
@@ -1049,9 +1058,18 @@ show_video_details() {
         local file_hash=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "x") | .[1] // empty' 2>/dev/null | head -n1)
         local upload_chain=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "upload_chain") | .[1] // empty' 2>/dev/null | head -n1)
         
-        # Extract CID from URL
-        local cid=$(echo "$url" | grep -oP '(?<=ipfs/)[^/]+' | head -n1)
-        local filename=$(echo "$url" | grep -oP '(?<=ipfs/[^/]+/).*' | head -n1)
+        # Extract CID and filename from URL using sed (no lookbehind issues)
+        # URL format: /ipfs/CID/filename or http://domain/ipfs/CID/filename
+        local cid=$(echo "$url" | sed -n 's|.*/ipfs/\([^/]*\).*|\1|p')
+        local filename=$(echo "$url" | sed -n 's|.*/ipfs/[^/]*/\(.*\)|\1|p' | sed 's/%20/ /g; s/%28/(/g; s/%29/)/g; s/%2C/,/g')
+        
+        # If filename extraction failed, try to get it from the last part of URL
+        if [[ -z "$filename" ]]; then
+            filename=$(basename "$url" | sed 's/%20/ /g; s/%28/(/g; s/%29/)/g; s/%2C/,/g')
+        fi
+        
+        # Final fallback
+        [[ -z "$filename" ]] && filename="video.mp4"
         
         # Extract content/description
         local content=$(echo "$event" | jq -r '.content // ""')
