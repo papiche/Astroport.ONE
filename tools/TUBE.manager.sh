@@ -718,15 +718,20 @@ cmd_upgrade() {
     
     # Query DID document for this pubkey (kind 30800)
     log_info "Querying DID document for pubkey: ${user_hex:0:16}..."
-    local did_json=$(bash "$NOSTR_GET_EVENTS" --kind 30800 --author "$user_hex" --limit 1 2>/dev/null)
+    local did_event=$(bash "$NOSTR_GET_EVENTS" --kind 30800 --author "$user_hex" --limit 1 2>/dev/null)
     
-    if [[ -n "$did_json" ]] && [[ "$did_json" != "[]" ]]; then
-        # Extract email from DID document
-        local email=$(echo "$did_json" | jq -r '.[0].content | fromjson | .alsoKnownAs[]? | select(startswith("mailto:")) | sub("^mailto:"; "")' 2>/dev/null)
+    if [[ -n "$did_event" ]] && [[ "$did_event" != "[]" ]]; then
+        # Try to extract email from event tags first (simpler and more reliable)
+        local email=$(echo "$did_event" | jq -r 'if type == "array" then .[0].tags[]? else .tags[]? end | select(.[0] == "email") | .[1]' 2>/dev/null | head -n1)
         
+        # If not found in tags, try from content.metadata.email
         if [[ -z "$email" ]]; then
-            # Try alternative field in DID document (email tag)
-            email=$(echo "$did_json" | jq -r '.[0].tags[]? | select(.[0] == "email") | .[1]' 2>/dev/null)
+            email=$(echo "$did_event" | jq -r 'if type == "array" then .[0].content else .content end | fromjson | .metadata.email // empty' 2>/dev/null)
+        fi
+        
+        # If still not found, try from content.alsoKnownAs
+        if [[ -z "$email" ]]; then
+            email=$(echo "$did_event" | jq -r 'if type == "array" then .[0].content else .content end | fromjson | .alsoKnownAs[]? | select(startswith("mailto:")) | sub("^mailto:"; "")' 2>/dev/null | head -n1)
         fi
         
         if [[ -n "$email" ]]; then
