@@ -737,7 +737,7 @@ cmd_upgrade() {
         if [[ -n "$email" ]]; then
             log_info "Found email from DID: $email"
             # Construct path to .secret.nostr file
-            secret_file="${HOME}/.zen/game/nostr/${email}_DID/.secret.nostr"
+            secret_file="${HOME}/.zen/game/nostr/${email}/.secret.nostr"
             
             if [[ ! -f "$secret_file" ]]; then
                 log_error "Secret file not found at expected path: $secret_file"
