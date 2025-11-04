@@ -105,11 +105,15 @@ EVENT_KINDS = {
     34550: "Community Definition"
 }
 
-def load_keyfile(keyfile_path: str) -> str:
+def load_keyfile(keyfile_path: str, silent: bool = False) -> str:
     """
     Load NSEC key from .secret.nostr file
     
     Expected format: NSEC=nsec1...; NPUB=npub1...; HEX=...;
+    
+    Args:
+        keyfile_path: Path to keyfile
+        silent: If True, suppress error output
     
     Returns:
         str: NSEC key
@@ -133,7 +137,8 @@ def load_keyfile(keyfile_path: str) -> str:
         raise ValueError("No NSEC key found in keyfile")
         
     except Exception as e:
-        print(f"❌ Error loading keyfile: {e}")
+        if not silent:
+            print(f"❌ Error loading keyfile: {e}")
         raise
 
 class NostrWebSocketClient:
@@ -215,7 +220,8 @@ def send_nostr_event(keyfile_path: str, message: str,
                      relay_urls: list = None,
                      tags: list = None,
                      ephemeral_duration: int = None,
-                     kind: int = EventKind.TEXT_NOTE) -> dict:
+                     kind: int = EventKind.TEXT_NOTE,
+                     json_output: bool = False) -> dict:
     """
     Send a Nostr event to multiple relays (synchronous version).
     
@@ -226,6 +232,7 @@ def send_nostr_event(keyfile_path: str, message: str,
         tags: Optional list of tags (e.g., [["e", "event_id"], ["p", "pubkey"]])
         ephemeral_duration: Optional duration in seconds for ephemeral messages
         kind: Event kind (default: 1 for text notes)
+        json_output: If True, suppress all output (for JSON mode)
         
     Returns:
         dict: {"success": bool, "event_id": str, "relays_success": int, "relays_total": int}
@@ -241,7 +248,7 @@ def send_nostr_event(keyfile_path: str, message: str,
     
     try:
         # Load key from keyfile
-        sender_nsec = load_keyfile(keyfile_path)
+        sender_nsec = load_keyfile(keyfile_path, silent=json_output)
         
         # Create private key object
         priv_key_obj = PrivateKey.from_nsec(sender_nsec)
@@ -278,60 +285,71 @@ def send_nostr_event(keyfile_path: str, message: str,
         # Get kind name
         kind_name = EVENT_KINDS.get(kind, f"Custom Kind {kind}")
         
-        print(f"\n📝 Event details:")
-        print(f"   - ID: {event.id}")
-        print(f"   - Kind: {kind} ({kind_name})")
-        print(f"   - Content length: {len(message)} chars")
-        if len(tags) > 0:
-            print(f"   - Tags: {len(tags)} tag(s)")
-        print(f"   - Sender pubkey: {event.pubkey[:16]}...")
-        print(f"   - Target relays: {len(relay_urls)}")
+        if not json_output:
+            print(f"\n📝 Event details:")
+            print(f"   - ID: {event.id}")
+            print(f"   - Kind: {kind} ({kind_name})")
+            print(f"   - Content length: {len(message)} chars")
+            if len(tags) > 0:
+                print(f"   - Tags: {len(tags)} tag(s)")
+            print(f"   - Sender pubkey: {event.pubkey[:16]}...")
+            print(f"   - Target relays: {len(relay_urls)}")
         
         # Connect to all relays
-        print(f"\n🔌 Connecting to {len(relay_urls)} relay(s)...")
+        if not json_output:
+            print(f"\n🔌 Connecting to {len(relay_urls)} relay(s)...")
         for relay_url in relay_urls:
             client = NostrWebSocketClient(relay_url)
             if client.connect():
                 clients.append(client)
-                print(f"   ✅ {client.relay_name}")
+                if not json_output:
+                    print(f"   ✅ {client.relay_name}")
             else:
                 result["errors"].append(f"Failed to connect to {relay_url}")
         
         if len(clients) == 0:
-            print("\n❌ Failed to connect to any relay")
+            if not json_output:
+                print("\n❌ Failed to connect to any relay")
             return result
         
-        print(f"\n✅ Connected to {len(clients)}/{len(relay_urls)} relay(s)")
+        if not json_output:
+            print(f"\n✅ Connected to {len(clients)}/{len(relay_urls)} relay(s)")
         
         # Send to all connected relays
-        print(f"\n📤 Publishing event...")
+        if not json_output:
+            print(f"\n📤 Publishing event...")
         for client in clients:
             if client.send_event(event_json):
                 if client.wait_for_response():
                     result["relays_success"] += 1
-                    print(f"   ✅ {client.relay_name}")
+                    if not json_output:
+                        print(f"   ✅ {client.relay_name}")
                 else:
-                    print(f"   ⚠️  {client.relay_name} (no confirmation)")
+                    if not json_output:
+                        print(f"   ⚠️  {client.relay_name} (no confirmation)")
         
         result["success"] = result["relays_success"] > 0
         
-        if result["success"]:
-            print(f"\n✅ Event published successfully to {result['relays_success']}/{result['relays_total']} relay(s)!")
-            print(f"   - Event ID: {event.id}")
-        else:
-            print(f"\n❌ Failed to publish event to any relay")
+        if not json_output:
+            if result["success"]:
+                print(f"\n✅ Event published successfully to {result['relays_success']}/{result['relays_total']} relay(s)!")
+                print(f"   - Event ID: {event.id}")
+            else:
+                print(f"\n❌ Failed to publish event to any relay")
         
         return result
 
     except KeyboardInterrupt:
-        print("\n🛑 Operation cancelled by user.")
+        if not json_output:
+            print("\n🛑 Operation cancelled by user.")
         result["errors"].append("Cancelled by user")
         return result
     except Exception as e:
-        print(f"\n⚠️ Error: {type(e).__name__}: {str(e)}")
+        if not json_output:
+            print(f"\n⚠️ Error: {type(e).__name__}: {str(e)}")
+            import traceback
+            traceback.print_exc()
         result["errors"].append(str(e))
-        import traceback
-        traceback.print_exc()
         return result
     finally:
         for client in clients:
@@ -415,11 +433,13 @@ def main():
         relay_urls,
         tags,
         args.ephemeral,
-        args.kind
+        args.kind,
+        json_output=args.json
     )
     
     # Output result
     if args.json:
+        # Only output JSON, nothing else
         print(json.dumps(result, indent=2))
     
     sys.exit(0 if result["success"] else 1)
