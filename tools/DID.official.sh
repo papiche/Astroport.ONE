@@ -651,10 +651,10 @@ cmd_browse() {
         
         echo -e "${CYAN}─────────────────────────────────────────────────────────────────────────────${NC}"
         echo ""
-        echo "  ${YELLOW}1-$dids_per_page.${NC} 🔍 View DID details"
-        [[ $current_page -gt 0 ]] && echo "  ${YELLOW}p.${NC} ⬅️  Previous page"
-        [[ $current_page -lt $((total_pages - 1)) ]] && echo "  ${YELLOW}n.${NC} ➡️  Next page"
-        echo "  ${YELLOW}0.${NC} 🚪 Exit"
+        echo -e "  ${YELLOW}1-$dids_per_page.${NC} 🔍 View DID details"
+        [[ $current_page -gt 0 ]] && echo -e "  ${YELLOW}p.${NC} ⬅️  Previous page"
+        [[ $current_page -lt $((total_pages - 1)) ]] && echo -e "  ${YELLOW}n.${NC} ➡️  Next page"
+        echo -e "  ${YELLOW}0.${NC} 🚪 Exit"
         echo ""
         
         read -p "$(echo -e ${CYAN}Choose action:${NC} )" action
