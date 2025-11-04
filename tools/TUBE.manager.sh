@@ -27,7 +27,7 @@ NC='\033[0m' # No Color
 IPFS_GATEWAY="${myIPFS:-http://127.0.0.1:8080}"
 UPASSPORT_API="${myHOST:-http://127.0.0.1:54321}"
 NOSTR_GET_EVENTS="${MY_PATH}/nostr_get_events.sh"
-UPLOAD2IPFS="${HOME}/.zen/Astroport.ONE/UPassport/upload2ipfs.sh"
+UPLOAD2IPFS="${HOME}/.zen/UPassport/upload2ipfs.sh"
 PUBLISH_NOSTR_VIDEO="${MY_PATH}/publish_nostr_video.sh"
 TEMP_DIR="${HOME}/.zen/tmp/nostr_tube_$$"
 
