@@ -736,7 +736,7 @@ else
     else
         # Fallback: generate from IPFSNODEID using ipfs_to_g1.py conversion
         if [[ -n "$IPFSNODEID" ]]; then
-            UPLANETNAME_NODE=$(${MY_PATH}/ipfs_to_g1.py "$IPFSNODEID")
+            UPLANETNAME_NODE=$($HOME/.zen/Astroport.ONE/tools/ipfs_to_g1.py "$IPFSNODEID")
             echo ${UPLANETNAME_NODE} > $HOME/.zen/tmp/UPLANETNAME_NODE
         else
             echo "⚠️  NODE wallet not found and IPFSNODEID not available"
