@@ -88,6 +88,10 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
     youtube_url = ""
     metadata_ipfs = ""
     thumbnail_ipfs = ""
+    gifanim_ipfs = ""  # NEW: Animated GIF for video preview on hover
+    info_cid = ""      # NEW: info.json CID for metadata reuse
+    file_hash = ""     # NEW: File hash for provenance tracking
+    upload_chain = ""  # NEW: Upload chain for provenance tracking (comma-separated pubkeys)
     
     # Parse tags for standard NIP-71 fields first
     for tag in tags:
@@ -103,6 +107,21 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
             elif tag_type == 'image' and not thumbnail_ipfs:
                 # Standard NIP-71 image tag for thumbnails
                 thumbnail_ipfs = tag_value
+            elif tag_type == 'thumbnail_ipfs' and not thumbnail_ipfs:
+                # Direct CID for thumbnail (NEW: from webcam endpoint)
+                thumbnail_ipfs = tag_value if not tag_value.startswith('/ipfs/') else tag_value.split('/ipfs/')[-1]
+            elif tag_type == 'gifanim_ipfs':
+                # NEW: Animated GIF CID for video preview
+                gifanim_ipfs = tag_value if not tag_value.startswith('/ipfs/') else tag_value.split('/ipfs/')[-1]
+            elif tag_type == 'info':
+                # NEW: info.json CID for complete metadata
+                info_cid = tag_value
+            elif tag_type == 'x':
+                # NEW: File hash for provenance/deduplication
+                file_hash = tag_value
+            elif tag_type == 'upload_chain':
+                # NEW: Upload chain for provenance tracking
+                upload_chain = tag_value
             elif tag_type == 'm' and 'video' in tag_value:
                 # Media type confirmed as video
                 pass
@@ -134,13 +153,16 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
                         media_type = prop[2:]
                     elif prop.startswith('image ') and not thumbnail_ipfs:
                         thumbnail_ipfs = prop[6:]
+                    elif prop.startswith('gifanim ') and not gifanim_ipfs:
+                        # NEW: Extract gifanim from imeta tag
+                        gifanim_ipfs = prop[8:]
                     elif prop.startswith('fallback '):
                         fallback_url = prop[9:]
                     elif prop.startswith('service '):
                         service_type = prop[8:]
-            elif tag_type == 'r' and not thumbnail_ipfs:
+            elif tag_type == 'r':
                 # Reference tag - check if it's a thumbnail
-                if len(tag) >= 3 and tag[2] == 'Thumbnail':
+                if len(tag) >= 3 and tag[2] == 'Thumbnail' and not thumbnail_ipfs:
                     thumbnail_ipfs = tag_value
     
     # Fallback: Parser le contenu si les tags ne contiennent pas les infos
@@ -301,6 +323,10 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
         'original_url': youtube_url,  # Alias pour compatibilité avec process_youtube.sh
         'metadata_ipfs': metadata_ipfs,
         'thumbnail_ipfs': thumbnail_ipfs,
+        'gifanim_ipfs': gifanim_ipfs,  # NEW: Animated GIF CID for hover preview
+        'info_cid': info_cid,  # NEW: info.json CID for metadata reuse
+        'file_hash': file_hash,  # NEW: File hash for provenance tracking
+        'upload_chain': upload_chain,  # NEW: Upload chain for provenance (comma-separated pubkeys)
         'subtitles': subtitles,
         'channel_name': channel_name,
         'topic_keywords': ','.join(topic_keywords),
@@ -313,11 +339,14 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
         'dimensions': dimensions,  # Nouvelles dimensions NIP-71
         'latitude': latitude,  # Latitude extraite depuis les tags NOSTR
         'longitude': longitude,  # Longitude extraite depuis les tags NOSTR
-        'event_kind': kind,  # Type d'événement (1 ou 21)
+        'event_kind': kind,  # Type d'événement (21 ou 22)
         'technical_info': {
             'download_date': datetime.fromtimestamp(event.get('created_at', 0)).isoformat(),
             'file_size': file_size,
-            'dimensions': dimensions
+            'dimensions': dimensions,
+            'info_cid': info_cid,  # NEW: info.json CID
+            'file_hash': file_hash,  # NEW: File hash
+            'upload_chain': upload_chain  # NEW: Upload chain for provenance
         }
     }
 
@@ -334,6 +363,10 @@ def parse_nostr_message(message_data: Dict[str, Any]) -> Dict[str, Any]:
         'ipfs_url': message_data.get('ipfs_url', ''),
         'youtube_url': message_data.get('original_url', ''),  # Compatible avec process_youtube.sh
         'thumbnail_ipfs': message_data.get('thumbnail_ipfs', ''),
+        'gifanim_ipfs': message_data.get('gifanim_ipfs', ''),  # NEW: Animated GIF CID
+        'info_cid': message_data.get('info_cid', ''),  # NEW: info.json CID
+        'file_hash': message_data.get('file_hash', ''),  # NEW: File hash
+        'upload_chain': message_data.get('upload_chain', ''),  # NEW: Upload chain
         'metadata_ipfs': message_data.get('metadata_ipfs', ''),
         'download_date': message_data.get('technical_info', {}).get('download_date', ''),
         'file_size': message_data.get('technical_info', {}).get('file_size', 0),
