@@ -712,29 +712,58 @@ cmd_upgrade() {
         return 1
     fi
     
-    # Find user's .secret.nostr file
+    # Find user's .secret.nostr file by querying DID document
     log_info "Looking for user's NOSTR keys..."
-    local player_dir="${HOME}/.zen/game/players"
     local secret_file=""
     
-    # Search for user directory by hex
-    for dir in "$player_dir"/*; do
-        [[ ! -d "$dir" ]] && continue
-        # Look for .secret.nostr containing this hex
-        for subdir in "$dir"/*; do
-            [[ ! -d "$subdir" ]] && continue
-            if [[ -f "$subdir/.secret.nostr" ]]; then
-                # Check if this secret file contains our user's hex (as NPUB field)
-                if grep -q "$user_hex" "$subdir/.secret.nostr" 2>/dev/null; then
-                    secret_file="$subdir/.secret.nostr"
-                    break 2
-                fi
-            fi
-        done
-    done
+    # Query DID document for this pubkey (kind 30800)
+    log_info "Querying DID document for pubkey: ${user_hex:0:16}..."
+    local did_json=$(bash "$NOSTR_GET_EVENTS" --kind 30800 --author "$user_hex" --limit 1 2>/dev/null)
     
-    if [[ -z "$secret_file" ]]; then
-        log_error "Could not find .secret.nostr file for user: ${user_hex:0:16}..."
+    if [[ -n "$did_json" ]] && [[ "$did_json" != "[]" ]]; then
+        # Extract email from DID document
+        local email=$(echo "$did_json" | jq -r '.[0].content | fromjson | .alsoKnownAs[]? | select(startswith("mailto:")) | sub("^mailto:"; "")' 2>/dev/null)
+        
+        if [[ -z "$email" ]]; then
+            # Try alternative field in DID document (email tag)
+            email=$(echo "$did_json" | jq -r '.[0].tags[]? | select(.[0] == "email") | .[1]' 2>/dev/null)
+        fi
+        
+        if [[ -n "$email" ]]; then
+            log_info "Found email from DID: $email"
+            # Construct path to .secret.nostr file
+            secret_file="${HOME}/.zen/game/nostr/${email}_DID/.secret.nostr"
+            
+            if [[ ! -f "$secret_file" ]]; then
+                log_error "Secret file not found at expected path: $secret_file"
+                log_warning "⚠️  New event NOT published - manual intervention required"
+                log_info "To complete the upgrade, please re-publish this video via /webcam"
+                log_info "Use the following metadata:"
+                echo "  - CID: $new_cid"
+                echo "  - Filename: $filename"
+                echo "  - Title: $title"
+                [[ -n "$gifanim_cid" ]] && echo "  - Animated GIF: $gifanim_cid"
+                [[ -n "$thumbnail_cid" ]] && echo "  - Thumbnail: $thumbnail_cid"
+                [[ -n "$info_cid" ]] && echo "  - Info: $info_cid"
+                rm -rf "$TEMP_DIR"
+                return 1
+            fi
+        else
+            log_error "Could not extract email from DID document"
+            log_warning "⚠️  New event NOT published - manual intervention required"
+            log_info "To complete the upgrade, please re-publish this video via /webcam"
+            log_info "Use the following metadata:"
+            echo "  - CID: $new_cid"
+            echo "  - Filename: $filename"
+            echo "  - Title: $title"
+            [[ -n "$gifanim_cid" ]] && echo "  - Animated GIF: $gifanim_cid"
+            [[ -n "$thumbnail_cid" ]] && echo "  - Thumbnail: $thumbnail_cid"
+            [[ -n "$info_cid" ]] && echo "  - Info: $info_cid"
+            rm -rf "$TEMP_DIR"
+            return 1
+        fi
+    else
+        log_error "No DID document found for user: ${user_hex:0:16}..."
         log_warning "⚠️  New event NOT published - manual intervention required"
         log_info "To complete the upgrade, please re-publish this video via /webcam"
         log_info "Use the following metadata:"
