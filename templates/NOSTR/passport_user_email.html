@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎫 Your UPlanet Passport is Ready!</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+        .email-header {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: #ffffff;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .email-header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .email-body {
+            padding: 30px 20px;
+            color: #333333;
+        }
+        .welcome-box {
+            background: linear-gradient(135deg, rgba(39, 174, 96, 0.1), rgba(39, 174, 96, 0.05));
+            border-left: 4px solid #27ae60;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .welcome-box h2 {
+            margin: 0 0 10px 0;
+            color: #27ae60;
+            font-size: 20px;
+        }
+        .info-section {
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .info-section h2 {
+            margin: 0 0 10px 0;
+            color: #3498db;
+            font-size: 18px;
+        }
+        .info-item {
+            margin: 8px 0;
+            display: flex;
+            align-items: flex-start;
+        }
+        .info-label {
+            font-weight: bold;
+            min-width: 140px;
+            color: #555;
+        }
+        .info-value {
+            color: #333;
+            word-break: break-all;
+        }
+        .passport-link {
+            display: inline-block;
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: bold;
+            text-align: center;
+            font-size: 16px;
+        }
+        .passport-link:hover {
+            background: linear-gradient(135deg, #229954, #1e8449);
+        }
+        .next-steps {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .next-steps h2 {
+            margin: 0 0 15px 0;
+            color: #856404;
+            font-size: 18px;
+        }
+        .next-steps ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .next-steps li {
+            margin: 10px 0;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .feature-item {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .feature-item strong {
+            color: #3498db;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            color: #666;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            border-top: 1px solid #e9ecef;
+        }
+        .emoji {
+            font-size: 28px;
+        }
+        @media (max-width: 600px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="email-header">
+            <div class="emoji">🎉</div>
+            <h1>Your UPlanet Passport is Ready!</h1>
+        </div>
+        
+        <div class="email-body">
+            <div class="welcome-box">
+                <h2>Welcome to UPlanet!</h2>
+                <p style="font-size: 18px; margin: 10px 0 0 0;">Your journey into the decentralized Internet begins here.</p>
+            </div>
+            
+            <p>Hello,</p>
+            
+            <p>Your UPlanet Passport has been successfully created for member <strong>_MEMBERUID_</strong>. You are now part of the Internet of Trust!</p>
+            
+            <div class="info-section">
+                <h2>📋 Your Passport Details</h2>
+                <div class="info-item">
+                    <span class="info-label">Member:</span>
+                    <span class="info-value">_MEMBERUID_</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Public Key:</span>
+                    <span class="info-value">_PUBKEY_</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Creation Date:</span>
+                    <span class="info-value">_DATE_</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">UPlanet:</span>
+                    <span class="info-value">_UPLANET8_</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Balance:</span>
+                    <span class="info-value">_AMOUNT_</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Location:</span>
+                    <span class="info-value">_LAT_, _LON_</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">TOTAL:</span>
+                    <span class="info-value">_TOTAL_ ẐEN</span>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="_IPFS_URL_" class="passport-link">
+                    🌐 Access My Passport
+                </a>
+            </div>
+            
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <strong>🔐 Maximum Security</strong>
+                    <p style="margin: 0; font-size: 14px;">Your identity is protected by SSSS (Shamir Secret Sharing)</p>
+                </div>
+                <div class="feature-item">
+                    <strong>💰 Transparent Economy</strong>
+                    <p style="margin: 0; font-size: 14px;">Every like = 1 ẐEN automatically in your wallet</p>
+                </div>
+                <div class="feature-item">
+                    <strong>🌐 Universal Access</strong>
+                    <p style="margin: 0; font-size: 14px;">Use your MULTIPASS on any UPlanet terminal worldwide</p>
+                </div>
+                <div class="feature-item">
+                    <strong>🤖 Personal AI</strong>
+                    <p style="margin: 0; font-size: 14px;">Astro Bot creates your daily journals 24/7</p>
+                </div>
+            </div>
+            
+            <div class="next-steps">
+                <h2>🗺️ Next Steps</h2>
+                <ol>
+                    <li><strong>📚 Understand:</strong> Read the UPlanet documentation and print your MULTIPASS Zine</li>
+                    <li><strong>🔌 Connect:</strong> Scan your SSSS QR code on any UPlanet terminal</li>
+                    <li><strong>💬 Participate:</strong> Join the N² social network and start earning ẐEN</li>
+                    <li><strong>🏛️ Become Co-Owner:</strong> Join ẐEN[0] cooperative (50€/year)</li>
+                </ol>
+            </div>
+            
+            <p style="text-align: center; font-size: 14px; color: #666; margin: 20px 0;">
+                Your email <strong>_EMAIL_</strong> has been authenticated via Web of Trust (WoT).
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Welcome to the Internet of Trust!</strong></p>
+            <p>Astroport.ONE - UPlanet Network</p>
+            <p><a href="https://copylaradio.com" style="color: #3498db; text-decoration: none;">copylaradio.com</a></p>
+        </div>
+    </div>
+</body>
+</html>
+
