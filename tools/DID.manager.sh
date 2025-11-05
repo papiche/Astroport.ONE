@@ -1,6 +1,6 @@
 #!/bin/bash
 ################################################################################
-# Script: DID.official.sh
+# Script: DID.manager.sh
 # Description: Interactive DID Document Manager for UPlanet MULTIPASS & UMAP
 # 
 # Manages DID documents (kind 30800 events) created by:
@@ -41,14 +41,14 @@ TEMP_DIR="${HOME}/.zen/tmp/did_official_$$"
 ################################################################################
 usage() {
     cat << EOF
-${CYAN}DID.official.sh - Interactive DID Document Manager${NC}
+${CYAN}DID.manager.sh - Interactive DID Document Manager${NC}
 
 ${YELLOW}DESCRIPTION:${NC}
     Manage DID documents (kind 30800 events) for MULTIPASS identities and UMAP cells.
     Uses Nostr relays as source of truth, local files as performance cache.
 
 ${YELLOW}USAGE:${NC}
-    DID.official.sh COMMAND [OPTIONS]
+    DID.manager.sh COMMAND [OPTIONS]
 
 ${YELLOW}COMMANDS:${NC}
     list              List all DID documents for a user
@@ -75,28 +75,28 @@ ${YELLOW}OPTIONS:${NC}
 
 ${YELLOW}EXAMPLES:${NC}
     # List ALL DIDs from relay
-    DID.official.sh list-all
+    DID.manager.sh list-all
 
     # Browse DIDs interactively
-    DID.official.sh browse
+    DID.manager.sh browse
 
     # List DIDs for specific user
-    DID.official.sh list --email user@example.com
+    DID.manager.sh list --email user@example.com
 
     # Sync DID from Nostr to cache
-    DID.official.sh sync --email user@example.com
+    DID.manager.sh sync --email user@example.com
 
     # Check metadata completeness
-    DID.official.sh check --npub npub1abc...
+    DID.manager.sh check --npub npub1abc...
 
     # Show wallet addresses
-    DID.official.sh show-wallets --hex abc123...
+    DID.manager.sh show-wallets --hex abc123...
 
     # Show follows (N1 network)
-    DID.official.sh show-follows --email user@example.com
+    DID.manager.sh show-follows --email user@example.com
 
     # Export all DIDs
-    DID.official.sh export --email user@example.com
+    DID.manager.sh export --email user@example.com
 
 ${YELLOW}DID DOCUMENT METADATA:${NC}
     - Contract Status (MULTIPASS, SOCIETAIRE, INFRASTRUCTURE, etc.)
