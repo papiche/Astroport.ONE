@@ -1,7 +1,8 @@
 #!/bin/bash
 ########################################################################
-# sync_youtube_likes.sh
-# Script de synchronisation des vidéos YouTube likées pour les sociétaires
+# youtube.com.sh
+# YouTube likes synchronization for MULTIPASS holders
+# Called by NOSTRCARD.refresh.sh when .youtube.com.cookie is detected
 #
 # Usage: $0 <player_email> [--debug]
 #
@@ -14,7 +15,7 @@
 ########################################################################
 
 # Enhanced logging setup
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting sync_youtube_likes.sh script" >&2
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting youtube.com.sh script (YouTube sync)" >&2
 
 # Trap pour nettoyer les fichiers temporaires en cas d'interruption
 cleanup_on_exit() {
@@ -62,7 +63,7 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Created log directory: $(dirname "$LOGFILE"
 
 log_debug() {
     if [[ $DEBUG -eq 1 ]]; then
-        echo "[sync_youtube_likes.sh][$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOGFILE" >&2
+        echo "[youtube.com.sh][$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOGFILE" >&2
     fi
 }
 

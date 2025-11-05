@@ -1545,64 +1545,171 @@ for PLAYER in "${NOSTR[@]}"; do
                     
                     log "INFO" "Too many $source_type ($message_count), generating AI summary for ${PLAYER} ($summary_type)"
                     
+                    # Get user's preferred language from LANG file
+                    USER_LANG=$(cat ${HOME}/.zen/game/nostr/${PLAYER}/LANG 2>/dev/null)
+                    [[ -z "$USER_LANG" ]] && USER_LANG="en"
+                    log "DEBUG" "User language preference: ${USER_LANG}"
+                    
+                    # Set language instruction based on user preference
+                    case "$USER_LANG" in
+                        "fr")
+                            LANG_INSTRUCTION="Rédige EXCLUSIVEMENT en FRANÇAIS. Ne traduis pas, écris directement en français."
+                            ;;
+                        "es")
+                            LANG_INSTRUCTION="Escribe EXCLUSIVAMENTE en ESPAÑOL. No traduzcas, escribe directamente en español."
+                            ;;
+                        "de")
+                            LANG_INSTRUCTION="Schreibe AUSSCHLIESSLICH auf DEUTSCH. Übersetze nicht, schreibe direkt auf Deutsch."
+                            ;;
+                        "it")
+                            LANG_INSTRUCTION="Scrivi ESCLUSIVAMENTE in ITALIANO. Non tradurre, scrivi direttamente in italiano."
+                            ;;
+                        "pt")
+                            LANG_INSTRUCTION="Escreva EXCLUSIVAMENTE em PORTUGUÊS. Não traduza, escreva diretamente em português."
+                            ;;
+                        *)
+                            LANG_INSTRUCTION="Write EXCLUSIVELY in ENGLISH. Do not translate, write directly in English."
+                            ;;
+                    esac
+                    
                     ai_prompt=""
                     if [[ "$summary_type" == "Daily" ]]; then
-                        ai_prompt="[TEXT] $(cat "$summary_file") [/TEXT] --- \
-# Create a RECONNECTION SUMMARY for ${PLAYER} (nostr:$player_nprofile) - what happened while they were away. \
-# 1. Start with a brief executive summary: 'Welcome back! Here's what happened in your network over the last $summary_period.' \
-# 2. Create a 'What You Missed' section highlighting the most important events, announcements, or discussions. \
-# 3. Group messages by author and highlight key topics and trends that would interest ${PLAYER}. \
-# 4. Add a 'Key Highlights' section with the most significant activities (new connections, important discussions, etc.). \
-# 5. Include a 'Network Activity' section showing who was most active and what they shared. \
-# 6. Add hashtags and emojis for readability and personality. \
-# 7. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
-# 8. IMPORTANT: Never omit an author, even if you summarize - each friend matters to ${PLAYER}. \
-# 9. Use the same language as mostly used in the messages. \
-# 10. Make it feel like a personal briefing about what happened in ${PLAYER}'s social network while they were away. \
-# 11. Include insights about what's happening in ${PLAYER}'s extended network (N²). \
-# 12. End with a 'Next Steps' or 'Follow-up' section suggesting what ${PLAYER} might want to check out."
+                        ai_prompt="You are a personal AI assistant creating a reconnection summary for ${PLAYER}.
+
+LANGUAGE REQUIREMENT: ${LANG_INSTRUCTION}
+
+SOURCE CONTENT:
+[TEXT]
+$(cat "$summary_file")
+[/TEXT]
+
+TASK: Create a personalized daily N² network journal for ${PLAYER} (nostr:$player_nprofile)
+
+STRUCTURE:
+1. **Executive Summary** (2-3 lines): Brief overview of network activity in the last ${summary_period}
+2. **What You Missed**: Most important events, announcements, discussions (grouped by theme)
+3. **Active Contributors**: Who posted what, with key insights per author
+4. **Key Highlights**: New connections, important discussions, trending topics
+5. **Network Insights**: Patterns in your N² network (extended circle)
+6. **Follow-up Suggestions**: What to check out next
+
+STYLE GUIDELINES:
+- Use emojis for visual appeal (but don't overdo it)
+- Write in Markdown (headers, bold, lists, quotes)
+- Be conversational and personal (write TO ${PLAYER}, not about them)
+- Keep it concise but informative
+- Never omit an author - each friend matters
+- Focus on value: what would ${PLAYER} want to know?
+- Add relevant hashtags for key topics
+
+CRITICAL: ${LANG_INSTRUCTION}"
                     elif [[ "$summary_type" == "Weekly" ]]; then
-                        ai_prompt="[TEXT] $(cat "$summary_file") [/TEXT] --- \
-# Create a WEEKLY RECONNECTION SUMMARY for ${PLAYER} - what happened in their network over the past week. \
-# 1. Start with 'Weekly Overview: Here's what happened in your network this week.' \
-# 2. Analyze daily summaries to identify key trends, patterns, and highlights. \
-# 3. Create a 'Week in Review' section with major events and discussions. \
-# 4. Group information by themes and time periods. \
-# 5. Add hashtags and emojis for readability. \
-# 6. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
-# 7. Focus on evolution and changes over time. \
-# 8. Create a narrative that shows the progression of activity. \
-# 9. Include a 'Weekly Highlights' section with the most important developments. \
-# IMPORTANT! Use the same language as mostly used in the daily summaries."
+                        ai_prompt="You are a personal AI assistant creating a weekly reconnection summary for ${PLAYER}.
+
+LANGUAGE REQUIREMENT: ${LANG_INSTRUCTION}
+
+SOURCE CONTENT:
+[TEXT]
+$(cat "$summary_file")
+[/TEXT]
+
+TASK: Synthesize the week's daily summaries into a weekly overview for ${PLAYER}
+
+STRUCTURE:
+1. **Weekly Overview** (3-4 lines): What defined this week in your network
+2. **Week in Review**: Major events and discussions (grouped by theme/time)
+3. **Trending Topics**: What themes emerged over the week
+4. **Active Period Analysis**: When was your network most active
+5. **Evolution & Changes**: How conversations evolved day-to-day
+6. **Weekly Highlights**: Top 5 moments of the week
+
+ANALYSIS FOCUS:
+- Identify patterns and trends across daily summaries
+- Show progression: how topics evolved over the week
+- Highlight connections between different days
+- Extract meta-insights about network behavior
+
+STYLE GUIDELINES:
+- Use emojis sparingly for section markers
+- Create a narrative arc for the week
+- Use Markdown for structure
+- Be analytical yet accessible
+- Focus on big picture, not individual messages
+
+CRITICAL: ${LANG_INSTRUCTION}"
                     elif [[ "$summary_type" == "Monthly" ]]; then
-                        ai_prompt="[TEXT] $(cat "$summary_file") [/TEXT] --- \
-# Create a MONTHLY RECONNECTION SUMMARY for ${PLAYER} - what happened in their network over the past month. \
-# 1. Start with 'Monthly Overview: Here's what happened in your network this month.' \
-# 2. Analyze weekly summaries to identify major trends, patterns, and highlights. \
-# 3. Create a 'Month in Review' section with major events and discussions. \
-# 4. Group information by themes and time periods. \
-# 5. Add hashtags and emojis for readability. \
-# 6. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
-# 7. Focus on long-term evolution and major changes over time. \
-# 8. Create a narrative that shows the monthly progression of activity. \
-# 9. Highlight key milestones and significant events. \
-# 10. Include a 'Monthly Highlights' section with the most important developments. \
-# IMPORTANT! Use the same language as mostly used in the weekly summaries."
+                        ai_prompt="You are a personal AI assistant creating a monthly reconnection summary for ${PLAYER}.
+
+LANGUAGE REQUIREMENT: ${LANG_INSTRUCTION}
+
+SOURCE CONTENT:
+[TEXT]
+$(cat "$summary_file")
+[/TEXT]
+
+TASK: Synthesize the month's weekly summaries into a monthly overview for ${PLAYER}
+
+STRUCTURE:
+1. **Monthly Overview** (4-5 lines): The month at a glance in your network
+2. **Month in Review**: Major developments week by week
+3. **Trending Themes**: What dominated conversations this month
+4. **Network Evolution**: How your community changed/grew
+5. **Key Milestones**: Significant events that shaped the month
+6. **Monthly Highlights**: Top moments and achievements
+
+ANALYSIS FOCUS:
+- Synthesize weekly patterns into monthly trends
+- Identify long-term developments
+- Show community evolution
+- Extract strategic insights
+- Connect disparate events into coherent narrative
+
+STYLE GUIDELINES:
+- Use emojis for major section markers
+- Create a coherent month-long narrative
+- Use Markdown for clear structure
+- Be strategic and forward-looking
+- Focus on impact and significance
+
+CRITICAL: ${LANG_INSTRUCTION}"
                     else
-                        ai_prompt="[TEXT] $(cat "$summary_file") [/TEXT] --- \
-# Create a YEARLY RECONNECTION SUMMARY for ${PLAYER} - what happened in their network over the past year. \
-# 1. Start with 'Yearly Overview: Here's what happened in your network this year.' \
-# 2. Analyze monthly summaries to identify major trends, patterns, and highlights. \
-# 3. Create a 'Year in Review' section with major events and discussions. \
-# 4. Group information by themes and time periods. \
-# 5. Add hashtags and emojis for readability. \
-# 6. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
-# 7. Focus on long-term evolution and major changes over time. \
-# 8. Create a narrative that shows the yearly progression of activity. \
-# 9. Highlight key milestones and significant events. \
-# 10. Identify seasonal patterns and annual trends. \
-# 11. Include a 'Yearly Highlights' section with the most important developments. \
-# IMPORTANT! Use the same language as mostly used in the monthly summaries."
+                        ai_prompt="You are a personal AI assistant creating a yearly reconnection summary for ${PLAYER}.
+
+LANGUAGE REQUIREMENT: ${LANG_INSTRUCTION}
+
+SOURCE CONTENT:
+[TEXT]
+$(cat "$summary_file")
+[/TEXT]
+
+TASK: Synthesize the year's monthly summaries into a yearly overview for ${PLAYER}
+
+STRUCTURE:
+1. **Yearly Overview** (5-6 lines): The year that was in your network
+2. **Year in Review**: Quarter-by-quarter analysis of major developments
+3. **Annual Themes**: What defined your network this year
+4. **Community Growth**: How your N² network evolved over 12 months
+5. **Seasonal Patterns**: Identify recurring themes by season
+6. **Key Achievements**: Major milestones and breakthroughs
+7. **Looking Forward**: Emerging trends for next year
+
+ANALYSIS FOCUS:
+- Identify long-term trends and cycles
+- Show annual evolution and growth
+- Extract strategic insights from monthly data
+- Recognize seasonal patterns
+- Celebrate achievements and growth
+- Provide forward-looking perspective
+
+STYLE GUIDELINES:
+- Use emojis for major section markers
+- Create an epic year-long narrative
+- Use Markdown with rich formatting
+- Be reflective and visionary
+- Focus on transformation and impact
+- Make it memorable and inspiring
+
+CRITICAL: ${LANG_INSTRUCTION}"
                     fi
                     
                     log "DEBUG" "Starting AI summary generation for ${PLAYER}"
@@ -1772,46 +1879,132 @@ for PLAYER in "${NOSTR[@]}"; do
         fi
 
         ########################################################################
-        ## YOUTUBE LIKES SYNC - Once per day PER USER at uDRIVE sync time
+        ## AUTOMATED DOMAIN SCRAPERS - Once per day PER USER at uDRIVE sync time
+        ## Detects all *.cookie files and runs corresponding domain.sh scripts
         ########################################################################
-        # Check if YouTube sync should run for this user today (only once per day per user)
-        YOUTUBE_SYNC_TODAY_FILE="$HOME/.zen/tmp/youtube_sync_${PLAYER}_${TODATE}.done"
-        if [[ ! -f "$YOUTUBE_SYNC_TODAY_FILE" ]]; then
-            # Check if user has YouTube cookie file
-            if [[ -s ~/.zen/game/nostr/${PLAYER}/.cookie.txt ]]; then
-                log "INFO" "🎵 Starting YouTube likes sync for user: ${PLAYER}"
-                log_metric "YOUTUBE_SYNC_START" "1" "${PLAYER}"
+        PLAYER_DIR="$HOME/.zen/game/nostr/${PLAYER}"
+        
+        # Find all cookie files (hidden files starting with . and ending with .cookie)
+        COOKIE_FILES=($(find "$PLAYER_DIR" -maxdepth 1 -type f -name ".*.cookie" 2>/dev/null))
+        
+        if [[ ${#COOKIE_FILES[@]} -gt 0 ]]; then
+            log "INFO" "🍪 Found ${#COOKIE_FILES[@]} cookie file(s) for ${PLAYER}"
+            
+            for COOKIE_FILE in "${COOKIE_FILES[@]}"; do
+                # Extract domain from cookie filename
+                # Example: .youtube.com.cookie -> youtube.com
+                COOKIE_BASENAME=$(basename "$COOKIE_FILE")
+                DOMAIN="${COOKIE_BASENAME#.}"  # Remove leading dot
+                DOMAIN="${DOMAIN%.cookie}"     # Remove .cookie extension
                 
-                # Create dedicated log file for YouTube sync to avoid broken pipe errors
-                YOUTUBE_SYNC_LOG="$HOME/.zen/tmp/youtube_sync_${PLAYER}.log"
-                mkdir -p "$(dirname "$YOUTUBE_SYNC_LOG")"
+                log "INFO" "🔍 Processing cookie for domain: ${DOMAIN}"
                 
-                # Launch YouTube likes synchronization in background with output redirected to log file
-                # This prevents broken pipe errors when parent process continues
-                (
-                    ${MY_PATH}/../IA/sync_youtube_likes.sh "${PLAYER}" --debug > "$YOUTUBE_SYNC_LOG" 2>&1
-                    sync_exit_code=$?
-                    if [[ $sync_exit_code -eq 0 ]]; then
-                        log "INFO" "✅ YouTube sync completed successfully for ${PLAYER}"
-                    else
-                        log "WARN" "⚠️ YouTube sync completed with exit code $sync_exit_code for ${PLAYER}"
+                # Check if script was already run today for this domain
+                DOMAIN_SYNC_TODAY_FILE="$HOME/.zen/tmp/${DOMAIN}_sync_${PLAYER}_${TODATE}.done"
+                
+                if [[ -f "$DOMAIN_SYNC_TODAY_FILE" ]]; then
+                    log "DEBUG" "${DOMAIN} scraper already completed today for ${PLAYER} - skipping"
+                    continue
+                fi
+                
+                # Look for domain-specific script (e.g., youtube.com.sh, leboncoin.fr.sh)
+                DOMAIN_SCRIPT="${MY_PATH}/../IA/${DOMAIN}.sh"
+                
+                if [[ -f "$DOMAIN_SCRIPT" && -x "$DOMAIN_SCRIPT" ]]; then
+                    log "INFO" "🚀 Running scraper for ${DOMAIN}: ${DOMAIN_SCRIPT}"
+                    
+                    # Create dedicated log file to avoid broken pipe errors
+                    DOMAIN_SYNC_LOG="$HOME/.zen/tmp/${DOMAIN}_sync_${PLAYER}.log"
+                    mkdir -p "$(dirname "$DOMAIN_SYNC_LOG")"
+                    
+                    # Launch domain-specific script in background
+                    (
+                        "${DOMAIN_SCRIPT}" "${PLAYER}" "$COOKIE_FILE" > "$DOMAIN_SYNC_LOG" 2>&1
+                        sync_exit_code=$?
+                        if [[ $sync_exit_code -eq 0 ]]; then
+                            log "INFO" "✅ ${DOMAIN} scraper completed successfully for ${PLAYER}"
+                        else
+                            log "WARN" "⚠️ ${DOMAIN} scraper completed with exit code $sync_exit_code for ${PLAYER}"
+                        fi
+                    ) &
+                    DOMAIN_SYNC_PID=$!
+                    
+                    log "INFO" "${DOMAIN} scraper started for ${PLAYER} (PID: $DOMAIN_SYNC_PID, log: $DOMAIN_SYNC_LOG)"
+                    log_metric "${DOMAIN}_SYNC_PID" "$DOMAIN_SYNC_PID" "${PLAYER}"
+                    
+                    # Mark as done for today
+                    touch "$DOMAIN_SYNC_TODAY_FILE"
+                    
+                    # Increment counter for specific domains
+                    if [[ "$DOMAIN" == "youtube.com" ]]; then
+                        YOUTUBE_SYNC_USERS=$((YOUTUBE_SYNC_USERS + 1))
                     fi
-                ) &
-                YOUTUBE_SYNC_PID=$!
-                
-                log "INFO" "YouTube sync started for ${PLAYER} (PID: $YOUTUBE_SYNC_PID, log: $YOUTUBE_SYNC_LOG)"
-                log_metric "YOUTUBE_SYNC_PID" "$YOUTUBE_SYNC_PID" "${PLAYER}"
-                
-                # Mark YouTube sync as done for this user today
-                touch "$YOUTUBE_SYNC_TODAY_FILE"
-                YOUTUBE_SYNC_USERS=$((YOUTUBE_SYNC_USERS + 1))
-                log "INFO" "✅ YouTube sync scheduled for ${PLAYER}"
-                log_metric "YOUTUBE_SYNC_SCHEDULED" "1" "${PLAYER}"
-            else
-                log "DEBUG" "No YouTube cookie file found for user: ${PLAYER} - Visit $uSPOT/cookie to upload your YouTube cookies"
-            fi
+                    
+                    log_metric "${DOMAIN}_SYNC_SCHEDULED" "1" "${PLAYER}"
+                    
+                elif [[ -f "$DOMAIN_SCRIPT" && ! -x "$DOMAIN_SCRIPT" ]]; then
+                    log "ERROR" "❌ Script found but not executable: ${DOMAIN_SCRIPT}"
+                    log "ERROR" "   Run: chmod +x ${DOMAIN_SCRIPT}"
+                else
+                    # Script not found - notify user via email
+                    log "INFO" "📧 No scraper found for ${DOMAIN}, notifying ${PLAYER}"
+                    
+                    # Check if notification already sent for this domain
+                    DOMAIN_NOTIF_FILE="$PLAYER_DIR/.${DOMAIN}_notified"
+                    
+                    if [[ ! -f "$DOMAIN_NOTIF_FILE" ]]; then
+                        # Create notification email
+                        notification_email="<html><head><meta charset='UTF-8'>
+<style>
+    body { font-family: 'Courier New', monospace; }
+    .info { color: #2196F3; font-weight: bold; }
+    .details { background-color: #E3F2FD; padding: 15px; margin: 10px 0; border-left: 4px solid #2196F3; }
+    .next-steps { background-color: #FFF3E0; padding: 15px; margin: 10px 0; border-left: 4px solid #FF9800; }
+</style></head><body>
+<h2 class='info'>🍪 Nouveau Cookie Détecté - Service Non Disponible</h2>
+<div class='details'>
+<p><strong>MULTIPASS:</strong> ${PLAYER}</p>
+<p><strong>Domaine:</strong> ${DOMAIN}</p>
+<p><strong>Fichier cookie:</strong> ${COOKIE_BASENAME}</p>
+<p><strong>Date:</strong> $TODATE</p>
+</div>
+<p>Votre cookie pour <strong>${DOMAIN}</strong> a été détecté, mais aucun service automatisé n'est disponible pour ce domaine.</p>
+<div class='next-steps'>
+<h3>🚀 Créer un Service Personnalisé</h3>
+<p>Vous pouvez demander la création d'un service automatisé pour ce domaine :</p>
+<ul>
+<li>📧 <strong>Contactez le Capitaine :</strong> ${CAPTAINEMAIL}</li>
+<li>💬 <strong>Décrivez votre besoin :</strong> Quel type de données souhaitez-vous extraire de ${DOMAIN} ?</li>
+<li>📝 <strong>Smart Contract :</strong> Un script personnalisé sera créé et ajouté au code officiel</li>
+<li>🔄 <strong>Automatisation :</strong> Une fois validé, le service s'exécutera automatiquement chaque jour</li>
+</ul>
+</div>
+<p><strong>💡 Services déjà disponibles :</strong></p>
+<ul>
+<li>✅ <strong>YouTube</strong> - Synchronisation automatique des likes</li>
+<li>✅ <strong>Leboncoin</strong> - Recherche d'annonces géolocalisées</li>
+</ul>
+<p><strong>🔧 Extensibilité :</strong> Le système est conçu pour supporter facilement de nouveaux domaines !</p>
+</body></html>"
+                        
+                        # Create temporary file for email content
+                        temp_email_file=$(mktemp)
+                        echo "$notification_email" > "$temp_email_file"
+                        ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$temp_email_file" "🍪 Cookie: ${DOMAIN} - MISSING ASTROBOT PROGRAM"
+                        rm -f "$temp_email_file"
+                        
+                        # Mark notification as sent
+                        echo "$TODATE" > "$DOMAIN_NOTIF_FILE"
+                        
+                        log "INFO" "✅ Notification email sent to ${PLAYER} for domain ${DOMAIN}"
+                        log_metric "DOMAIN_NOTIFICATION_SENT" "1" "${PLAYER}"
+                    else
+                        log "DEBUG" "Notification already sent for domain ${DOMAIN} to ${PLAYER}"
+                    fi
+                fi
+            done
         else
-            log "DEBUG" "YouTube sync already completed today for ${PLAYER} - skipping"
+            log "DEBUG" "No cookie files found for ${PLAYER} - Visit $uSPOT/cookie to upload cookies"
         fi
     else
         echo "IPNS update skipped for ${PLAYER} (no refresh needed)"
@@ -1824,10 +2017,12 @@ for PLAYER in "${NOSTR[@]}"; do
 done
 
 ########################################################################
-## YOUTUBE LIKES SYNC - Once per day PER USER at uDRIVE sync time
+## AUTOMATED DOMAIN SCRAPERS - Once per day PER USER at uDRIVE sync time
 ########################################################################
-# YouTube sync handled for each user during their refresh cycle
-# when uDRIVE sync occurs (daily_update or udrive_update refresh reasons)
+# Domain-specific scrapers (youtube.com.sh, leboncoin.fr.sh, etc.)
+# are handled for each user during their refresh cycle when uDRIVE sync occurs.
+# Cookie files are automatically detected as .DOMAIN.cookie files.
+# If a scraper doesn't exist for a domain, the user is notified by email.
 
 end=`date +%s`
 dur=`expr $end - $gstart`

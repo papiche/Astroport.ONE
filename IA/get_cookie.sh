@@ -40,9 +40,8 @@ fi
 
 # Priority paths to check (in order) - all hidden files at root of NOSTR directory
 COOKIE_PATHS=(
-    "${PLAYER_DIR}/.${NORMALIZED_DOMAIN}.cookie"       # Single-domain specific
-    "${PLAYER_DIR}/.${DOMAIN}.cookie"                  # Single-domain specific (alternative)
-    "${PLAYER_DIR}/.cookie.txt"                        # Multi-domain or legacy
+    "${PLAYER_DIR}/.${NORMALIZED_DOMAIN}.cookie"       # Domain-specific cookie
+    "${PLAYER_DIR}/.${DOMAIN}.cookie"                  # Domain-specific cookie (alternative)
 )
 
 # Try to find cookie file
@@ -58,7 +57,7 @@ done
 
 # If no specific cookie found, try to find any cookie file in player directory
 # List all .cookie files that match the domain
-for COOKIE_FILE in "$PLAYER_DIR"/.*.cookie "$PLAYER_DIR"/.cookie.txt; do
+for COOKIE_FILE in "$PLAYER_DIR"/.*.cookie; do
     if [[ -f "$COOKIE_FILE" ]]; then
         if grep -q "${NORMALIZED_DOMAIN}" "$COOKIE_FILE" 2>/dev/null || grep -q "${DOMAIN}" "$COOKIE_FILE" 2>/dev/null; then
             echo "$COOKIE_FILE"
@@ -73,8 +72,7 @@ echo "" >&2
 echo "Paths checked:" >&2
 echo "  - ${PLAYER_DIR}/.${NORMALIZED_DOMAIN}.cookie" >&2
 echo "  - ${PLAYER_DIR}/.${DOMAIN}.cookie" >&2
-echo "  - ${PLAYER_DIR}/.cookie.txt" >&2
 echo "" >&2
-echo "To upload a cookie file, use the /api/fileupload endpoint with a .txt cookie file." >&2
+echo "To upload a cookie file, visit: https://u.copylaradio.com/cookie" >&2
 exit 1
 

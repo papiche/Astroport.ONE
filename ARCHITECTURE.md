@@ -449,7 +449,7 @@ Astroport.ONE intègre **Nostr Tube**, une alternative décentralisée à YouTub
 - Route `/youtube` : Interface de découverte et lecture
 - Route `/theater` : Mode théâtre immersif avec commentaires en direct
 - Route `/playlist` : Gestionnaire de playlists
-- Scripts IA : Synchronisation YouTube (`sync_youtube_likes.sh`), traitement vidéo (`process_youtube.sh`)
+- Scripts IA : Synchronisation YouTube (`youtube.com.sh`), traitement vidéo (`process_youtube.sh`)
 
 Voir **[docs/README.NostrTube.md](docs/README.NostrTube.md)** pour la documentation complète.
 

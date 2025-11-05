@@ -2,15 +2,16 @@
 
 ## Overview
 
-The `/api/fileupload` endpoint supports automatic detection and organization of cookie files for any website domain. Cookies are stored as **hidden files** (with leading dot) for better security and privacy.
+The `/api/fileupload` endpoint supports automatic detection and organization of **single-domain** cookie files. Cookies are stored as **hidden files** (with leading dot) for better security and privacy.
 
 ## Features
 
-✅ **Multi-Domain Support**: Automatically detects and organizes cookies by domain  
+✅ **Single-Domain Only**: Each cookie file must contain cookies for one domain only  
 ✅ **Hidden Files**: All cookies saved with leading dot (`.youtube.com.cookie`, `.leboncoin.fr.cookie`)  
 ✅ **Auto-Detection**: Recognizes Netscape HTTP Cookie File format  
 ✅ **Domain Extraction**: Parses cookie content to identify the source domain  
 ✅ **MULTIPASS Compatible**: Cookies stored in EMAIL-based MULTIPASS directories  
+❌ **No Multi-Domain**: Multi-domain cookie files are rejected (export per-domain cookies)  
 
 ## Directory Structure
 
@@ -20,7 +21,6 @@ The `/api/fileupload` endpoint supports automatic detection and organization of 
 ├── .leboncoin.fr.cookie                 # Leboncoin cookies only (single-domain, hidden file)
 ├── .amazon.fr.cookie                    # Amazon cookies only (single-domain, hidden file)
 ├── .[domain].cookie                     # Any single domain cookie (hidden file)
-├── .cookie.txt                          # Multi-domain cookies OR legacy format (hidden file)
 ├── NPUB                                 # NOSTR public key (npub1..., stored as file)
 ├── HEX                                  # NOSTR public key (hex format, stored as file)
 ├── .secret.nostr                        # NOSTR private key (nsec, npub, hex - hidden)
@@ -31,29 +31,28 @@ The `/api/fileupload` endpoint supports automatic detection and organization of 
 ```
 
 **Notes:**
-- `.{domain}.cookie` → Single-domain cookies (e.g., only youtube.com + subdomains)
-- `.cookie.txt` → Multi-domain cookies (e.g., youtube.com + leboncoin.fr + amazon.fr) OR legacy format
+- `.{domain}.cookie` → Single-domain cookies ONLY (e.g., youtube.com + subdomains)
 - All cookie files are **hidden files** (starting with dot) at the root of user's EMAIL directory
 - **Directory is always EMAIL-based**, NPUB/HEX are stored as files inside
+- **Multi-domain cookies are NOT supported** - export cookies separately for each domain
 
 ## Cookie File Format
 
-### Supported formats:
-- **Netscape HTTP Cookie File** (recommended)
-- Raw cookie string
+### Supported format:
+- **Netscape HTTP Cookie File** (ONLY format accepted)
+- **Single-domain only** - cookies must be for one domain and its subdomains
 
 ### Cookie File Types:
 
-#### 1. Single-Domain Cookies
-If the uploaded file contains cookies for **one domain only** (or subdomains of the same domain), it's saved as:
-- `.youtube.com.cookie` → All cookies are for youtube.com and subdomains
-- `.leboncoin.fr.cookie` → All cookies are for leboncoin.fr and subdomains
+#### Single-Domain Cookies (ONLY accepted type)
+Each uploaded file must contain cookies for **one domain only** (and its subdomains):
+- `.youtube.com.cookie` → All cookies for youtube.com and subdomains
+- `.leboncoin.fr.cookie` → All cookies for leboncoin.fr and subdomains
 
-#### 2. Multi-Domain Cookies
-If the uploaded file contains cookies for **multiple different domains**, it's saved as:
-- `.cookie.txt` → Full browser cookie export (e.g., youtube.com + leboncoin.fr + amazon.fr)
+#### ❌ Multi-Domain Cookies (REJECTED)
+Files containing cookies for **multiple different domains** are **rejected** with an error message.
 
-This is useful when exporting ALL your browser cookies at once.
+**Solution:** Export cookies separately for each domain using your browser extension's filter options.
 
 ### Example Netscape format:
 ```
@@ -93,35 +92,79 @@ curl -X POST 'http://localhost:54321/api/fileupload' \
 }
 ```
 
-#### Multi-Domain Cookie:
+#### ❌ Multi-Domain Cookie (Error):f
 ```json
 {
-  "success": true,
-  "message": "Cookie file uploaded successfully for Multiple domains (full browser cookies) - All services will use your authentication",
-  "file_path": "USER/.cookie.txt",
-  "file_type": "netscape_cookies",
-  "target_directory": "/home/user/.zen/game/nostr/USER",
-  "new_cid": null,
-  "timestamp": "2025-11-05T12:34:56",
-  "auth_verified": true,
-  "description": "Domain: multi-domain"
+  "detail": "Multi-domain cookie files are not supported. Please export cookies for a single domain only. Detected domains: amazon.fr, leboncoin.fr, youtube.com"
 }
 ```
+**Status Code:** 400 Bad Request
+
+## Automated Scraper Execution
+
+### System Architecture
+
+The UPlanet system includes an **extensible domain-based scraper framework** that automatically executes scrapers when cookies are detected.
+
+#### How It Works
+
+1. **Cookie Upload**: User uploads cookie via `/api/fileupload` or UPlanet interface
+2. **Domain Detection**: System extracts primary domain (e.g., `youtube.com`, `leboncoin.fr`)
+3. **File Storage**: Cookie saved as `.DOMAIN.cookie` in user's MULTIPASS directory
+4. **Daily Scan**: During MULTIPASS refresh (`NOSTRCARD.refresh.sh`), system scans for all `.*.cookie` files
+5. **Scraper Lookup**: For each cookie, system looks for `DOMAIN.sh` script in `Astroport.ONE/IA/`
+6. **Execution**: If found, script runs with user's email and cookie file path as arguments
+7. **Notification**: If not found, user receives email explaining how to request a custom scraper
+
+#### Naming Convention for Scrapers
+
+**Scraper Scripts:**
+- Format: `DOMAIN.sh` (bash script run by AstrBot)
+- Location: `Astroport.ONE/IA/`
+- Examples:
+  - `youtube.com.sh` → YouTube scraper
+  - `leboncoin.fr.sh` → Leboncoin scraper
+  - `twitter.com.sh` → Twitter scraper (etc...)
+
+**Python Backend (optional):**
+- Format: `scraper_DOMAIN.py`
+- Location: `Astroport.ONE/IA/`
+- Called by bash script if complex logic required
+
+#### User Notifications
+
+When a cookie is uploaded for a domain without a scraper:
+- User receives email: "Cookie détecté: DOMAIN - Service à créer"
+- Email explains how to request a custom scraper via Captain
+- Notification sent only once per domain (tracked in `.DOMAIN_notified`)
+- Smart contract workflow: User describes needs → Captain validates → Script added to codebase
+
+See `DOMAIN_SCRAPERS.md` for detailed instructions on creating custom scrapers.
 
 ## Using Cookies
 
 ### 1. YouTube Sync (automatic)
 
+**Note:** Now handled automatically by `NOSTRCARD.refresh.sh` when `.youtube.com.cookie` is detected.
+
+Manual execution:
 ```bash
-bash sync_youtube_likes.sh user@email.com
+bash youtube.com.sh user@email.com
 ```
 
-Searches for (in order):
-1. `~/.zen/game/nostr/user@email.com/.youtube.com.cookie` (single-domain YouTube)
-2. `~/.zen/game/nostr/user@email.com/.cookie.txt` (multi-domain file or legacy)
+Searches for:
+- `~/.zen/game/nostr/user@email.com/.youtube.com.cookie` (domain-specific cookie)
 
-### 2. Leboncoin Scraper
+### 2. Leboncoin Scraper (automatic)
 
+**Note:** Now handled automatically by `NOSTRCARD.refresh.sh` when `.leboncoin.fr.cookie` is detected.
+
+Manual execution:
+```bash
+bash leboncoin.fr.sh user@email.com ~/.zen/game/nostr/user@email.com/.leboncoin.fr.cookie
+```
+
+Or call Python scraper directly:
 ```bash
 python3 scraper_leboncoin.py \
   ~/.zen/game/nostr/user@email.com/.leboncoin.fr.cookie \
@@ -132,11 +175,9 @@ python3 scraper_leboncoin.py \
 ### 3. Generic Cookie Helper
 
 ```bash
-# Find cookie for any domain (searches in order)
+# Find cookie for any domain
 COOKIE_PATH=$(bash get_cookie.sh user@email.com youtube.com)
-# Returns:
-#   1. ~/.zen/game/nostr/user@email.com/.youtube.com.cookie  (if exists, single-domain)
-#   2. ~/.zen/game/nostr/user@email.com/.cookie.txt          (if exists, multi-domain or legacy)
+# Returns: ~/.zen/game/nostr/user@email.com/.youtube.com.cookie
 
 # Use in your scripts
 COOKIE=$(bash get_cookie.sh $PLAYER_EMAIL leboncoin.fr)
@@ -145,13 +186,19 @@ python3 my_scraper.py --cookie "$COOKIE" [...]
 
 ## Supported Services
 
-| Service | Cookie File | Script |
-|---------|-------------|--------|
-| **YouTube** | `.youtube.com.cookie` | `sync_youtube_likes.sh`, `process_youtube.sh` |
-| **Leboncoin** | `.leboncoin.fr.cookie` | `scraper_leboncoin.py` |
-| **Any Domain** | `.{domain}.cookie` | Use `get_cookie.sh` helper |
+| Service | Cookie File | Bash Script | Python Backend |
+|---------|-------------|-------------|----------------|
+| **YouTube** | `.youtube.com.cookie` | `youtube.com.sh` | (uses yt-dlp + process_youtube.sh) |
+| **Leboncoin** | `.leboncoin.fr.cookie` | `leboncoin.fr.sh` | `scraper_leboncoin.py` |
+| **Any Domain** | `.{domain}.cookie` | Create `{domain}.sh` | Optional `scraper_{domain}.py` |
 
 All files are stored in `~/.zen/game/nostr/EMAIL/` directory
+
+**Extensible System:**
+- Add `DOMAIN.sh` script to `Astroport.ONE/IA/` directory
+- System automatically detects and executes it
+- No code changes required in main system
+- See `DOMAIN_SCRAPERS.md` for instructions
 
 ## Security
 
@@ -175,9 +222,8 @@ All MULTIPASS identities are created by `make_NOSTRCARD.sh` and stored in EMAIL-
 
 ```
 ~/.zen/game/nostr/user@email.com/
-├── .youtube.com.cookie         # Cookie files
+├── .youtube.com.cookie         # Domain-specific cookie files
 ├── .leboncoin.fr.cookie
-├── .cookie.txt
 ├── NPUB                        # NOSTR public key (npub1...)
 ├── HEX                         # NOSTR public key (hex format)
 ├── .secret.nostr               # NOSTR private key (nsec, npub, hex)
@@ -190,18 +236,19 @@ All MULTIPASS identities are created by `make_NOSTRCARD.sh` and stored in EMAIL-
 - NPUB/HEX are stored as **files** inside the EMAIL directory
 - There is **NO** separate directory for NPUB
 - All services access cookies via the EMAIL path
+- **Only single-domain cookie files** (`.DOMAIN.cookie`) are supported
 
 ## Extending to New Services
 
 To add support for a new website:
 
-1. **Upload the cookie file** (via `/api/fileupload`)
+1. **Upload the cookie file** for ONE domain only (via `/api/fileupload`)
 2. **System auto-detects the domain** (e.g., `amazon.fr` → `.amazon.fr.cookie`)
 3. **Use in your scripts:**
 
 ```bash
 # Method 1: Direct path
-COOKIE_FILE=~/.zen/game/nostr/$PLAYER/.cookies/.amazon.fr.cookie
+COOKIE_FILE=~/.zen/game/nostr/$PLAYER/.amazon.fr.cookie
 python3 amazon_scraper.py --cookie "$COOKIE_FILE" [...]
 
 # Method 2: Helper script
@@ -209,28 +256,20 @@ COOKIE_FILE=$(bash get_cookie.sh $PLAYER amazon.fr)
 python3 amazon_scraper.py --cookie "$COOKIE_FILE" [...]
 ```
 
-## Migration from Legacy Format
+## Best Practices
 
-### YouTube Legacy Support
+### How to Export Single-Domain Cookies
 
-The system maintains backward compatibility:
-- **New uploads** create both `.youtube.com.cookie` AND `.cookie.txt`
-- **Old scripts** continue working with `.cookie.txt`
-- **New scripts** prefer `.youtube.com.cookie`
+When using "Get cookies.txt LOCALLY" extension:
 
-### Migrating Existing Cookies
+1. **Open the website** you want to export cookies for
+2. **Click the extension** icon
+3. **Filter by current site** (usually done automatically)
+4. **Select Netscape format**
+5. **Export** - this creates a single-domain cookie file
+6. **Upload to UPlanet**
 
-```bash
-# If you have an old .cookie.txt, simply re-upload it:
-curl -X POST 'http://localhost:54321/api/fileupload' \
-  -F 'file=@~/.zen/game/nostr/USER/.cookie.txt' \
-  -F 'npub=npub1...'
-
-# System will:
-# 1. Detect the domain (youtube.com)
-# 2. Save as .cookies/.youtube.com.cookie
-# 3. Keep .cookie.txt for backward compat
-```
+**Important:** Export cookies separately for each domain you want to use. Don't export all browser cookies at once.
 
 ## API Endpoints
 
@@ -247,9 +286,9 @@ curl -X POST 'http://localhost:54321/api/fileupload' \
 | Script | Purpose |
 |--------|---------|
 | `get_cookie.sh` | Find cookie file for a domain |
-| `sync_youtube_likes.sh` | Auto-sync YouTube liked videos |
-| `process_youtube.sh` | Download YouTube videos/music |
-| `scraper_leboncoin.py` | Scrape Leboncoin ads |
+| `youtube.com.sh` | Auto-sync YouTube liked videos |
+| `leboncoin.fr.sh` | Scrape Leboncoin ads |
+| `scraper_leboncoin.py` | Python backend for Leboncoin |
 
 ## Troubleshooting
 
@@ -257,7 +296,7 @@ curl -X POST 'http://localhost:54321/api/fileupload' \
 
 ```bash
 # Check cookie files in user directory (EMAIL-based)
-ls -la ~/.zen/game/nostr/user@email.com/.*.cookie ~/.zen/game/nostr/user@email.com/.cookie.txt
+ls -la ~/.zen/game/nostr/user@email.com/.*.cookie
 
 # Verify cookie file exists
 bash get_cookie.sh user@email.com youtube.com

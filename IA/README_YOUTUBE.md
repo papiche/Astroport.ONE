@@ -40,7 +40,7 @@ The UPlanet video management system provides **three modes** for creating and ma
 
 1. **NOSTRCARD.refresh.sh** runs daily for each MULTIPASS user
 2. **Cookie Detection** - Checks for `.cookie.txt` in user's NOSTR directory
-3. **YouTube Sync Trigger** - If cookies exist, launches `sync_youtube_likes.sh`
+3. **YouTube Sync Trigger** - If cookies exist, launches `youtube.com.sh`
 4. **Liked Videos Fetch** - Retrieves up to 2 new liked videos from YouTube
 5. **Video Processing** - Calls `process_youtube.sh` for each video
 6. **NOSTR Publication** - Publishes NIP-71 events for each downloaded video
@@ -358,7 +358,7 @@ https://u.copylaradio.com/webcam
 ```
 Astroport.ONE/IA/
 ├── process_youtube.sh           # Main YouTube download script
-├── sync_youtube_likes.sh       # Automatic sync of liked videos
+├── youtube.com.sh       # Automatic sync of liked videos
 ├── create_video_channel.py     # NIP-71 channel creation with geolocation support
 ├── UPlanet_IA_Responder.sh     # Calls process_youtube.sh when #youtube tag detected
 └── README_YOUTUBE.md           # This file
@@ -435,7 +435,7 @@ User Uploads Cookies
         ↓
 NOSTRCARD.refresh.sh (Daily)
         ↓
-sync_youtube_likes.sh (Auto-triggered)
+youtube.com.sh (Auto-triggered)
         ↓
 process_youtube.sh (Video download)
         ↓
@@ -468,7 +468,7 @@ NOSTR Publication (kind: 21/22 with g, location, lat, lon tags)
 ### Key Components
 
 - **Cookie Upload**: `cookie.html` → `astro_base.html` → `.cookie.txt`
-- **Daily Sync**: `NOSTRCARD.refresh.sh` → `sync_youtube_likes.sh` → `process_youtube.sh`
+- **Daily Sync**: `NOSTRCARD.refresh.sh` → `youtube.com.sh` → `process_youtube.sh`
 - **Webcam Recording**: `/webcam` → NOSTR auth → video capture → `/api/fileupload`
 - **IPFS Upload**: `/api/fileupload` → `uDRIVE/Videos/` → IPFS CID
 - **NOSTR Publishing**: `/webcam` route → NIP-71 event with geographic tags

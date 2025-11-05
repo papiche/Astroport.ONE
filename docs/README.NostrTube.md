@@ -33,11 +33,11 @@
 
 ## Components
 
-### 1. YouTube Synchronization (`sync_youtube_likes.sh`)
+### 1. YouTube Synchronization (`youtube.com.sh`)
 
 Synchronizes liked videos from YouTube to Nostr Tube.
 
-**Location**: `Astroport.ONE/IA/sync_youtube_likes.sh`
+**Location**: `Astroport.ONE/IA/youtube.com.sh`
 
 **Features**:
 - Fetches up to 5 liked videos per sync (configurable)
@@ -50,10 +50,10 @@ Synchronizes liked videos from YouTube to Nostr Tube.
 **Workflow**:
 ```bash
 # Manual sync for a player
-./sync_youtube_likes.sh player@example.com
+./youtube.com.sh player@example.com
 
 # Debug mode
-./sync_youtube_likes.sh player@example.com --debug
+./youtube.com.sh player@example.com --debug
 ```
 
 **Cookie Setup**:
@@ -443,7 +443,7 @@ curl -X POST https://uplanet.com/api/fileupload \
   -F "npub={npub}"
 
 # 2. Automatic sync runs (via cron)
-./sync_youtube_likes.sh player@example.com
+./youtube.com.sh player@example.com
 
 # 3. Script downloads video and uploads to IPFS
 # 4. Video is published as NOSTR event (kind 21)

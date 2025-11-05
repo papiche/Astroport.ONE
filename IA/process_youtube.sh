@@ -131,7 +131,7 @@ if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ && "$duration" -gt 10800 ]]; the
     exit 1
 fi
 
-# Simple download with cookies (guaranteed to exist by sync_youtube_likes.sh)
+# Simple download with cookies (guaranteed to exist by youtube.com.sh)
 log_debug "Starting download with cookies"
 case "$FORMAT" in
     mp3)
