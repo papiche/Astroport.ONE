@@ -404,35 +404,30 @@ EOFNOSTR
 🆔 DID: did:nostr:${HEX}
 "
 
-    NPRIV_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NPRIV")
-    HEX_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NPUBLIC")
+    # Prepare tags for the NOSTR message
+    NOSTR_TAGS="[[\"p\",\"${HEX}\"],[\"i\",\"did:nostr:${HEX}\"]]"
     
-    # Calculate expiration timestamp (48 hours from now)
-    EXPIRATION=$(date -d "+48 hours" +%s)
-    
-    # Send to relay(s) - avoid duplicates
-    echo "📡 Publishing NOSTR message to relay: $myRELAY (expires in 48h)"
-    
-    # Send message to the configured relay
-    nostpy-cli send_event \
-        -privkey "$NPRIV_HEX" \
-        -kind 1 \
-        -content "$Mymessage" \
-        -tags "[['p', '$HEX_HEX'], ['i', 'did:nostr:${HEX}'], ['expiration', '$EXPIRATION']]" \
-        --relay "$myRELAY" &>/dev/null
-    
-    # Only send to public relay if it's different from the configured relay
+    # Determine which relays to use
     if [[ "$myRELAY" != "wss://relay.copylaradio.com" ]]; then
-        echo "📡 Also publishing to public relay for redundancy"
-        nostpy-cli send_event \
-            -privkey "$NPRIV_HEX" \
-            -kind 1 \
-            -content "$Mymessage" \
-            -tags "[['p', '$HEX_HEX'], ['i', 'did:nostr:${HEX}'], ['expiration', '$EXPIRATION']]" \
-            --relay "wss://relay.copylaradio.com" &>/dev/null
+        # Send to both relays for redundancy
+        RELAY_LIST="${myRELAY},wss://relay.copylaradio.com"
+        echo "📡 Publishing NOSTR message to ${myRELAY} and public relay (expires in 48h)"
     else
-        echo "📡 Message sent to public relay (no duplication)"
+        # Send only to the configured relay (already the public one)
+        RELAY_LIST="$myRELAY"
+        echo "📡 Publishing NOSTR message to public relay (expires in 48h)"
     fi
+    
+    # Send message using nostr_send_note.py with keyfile
+    ${MY_PATH}/../tools/nostr_send_note.py \
+        --keyfile "${HOME}/.zen/game/nostr/${EMAIL}/.secret.nostr" \
+        --content "$Mymessage" \
+        --kind 1 \
+        --tags "$NOSTR_TAGS" \
+        --ephemeral 172800 \
+        --relays "$RELAY_LIST" &>/dev/null \
+        && echo "✅ NOSTR message published successfully" \
+        || echo "⚠️  Failed to publish NOSTR message"
 
 
     ###############################################################################################
