@@ -9,7 +9,7 @@
 - ✅ **Calcul du CA total** en ẐEN et Ğ1
 - ✅ **Filtrage par année** (2024, 2025, etc.)
 - ✅ **Résumé annuel automatique** (CA par année)
-- ✅ **Historique détaillé** des ventes RENTAL
+- ✅ **Historique détaillé** des ventes ZENCOIN
 - ✅ **Identification des clients** (email)
 - ✅ **Sortie JSON structurée**
 
@@ -88,8 +88,8 @@
       "customer_email": "frenault@linkeo.com",
       "amount_g1": 2.0,
       "amount_zen": 20.0,
-      "transaction_type": "RENTAL",
-      "comment": "Service RENTAL - UPLANET:AwdjhpJN:RENTAL:frenault@linkeo.com"
+      "transaction_type": "ZENCOIN",
+      "comment": "Service ZENCOIN - UPLANET:AwdjhpJN:ZENCOIN:frenault@linkeo.com"
     }
   ],
   "timestamp": "2025-10-09T16:30:42"
@@ -104,7 +104,7 @@
 | `filter_year` | string | Année filtrée ("all" ou "YYYY") |
 | `total_revenue_g1` | number | CA total en Ğ1 |
 | `total_revenue_zen` | number | CA total en ẐEN |
-| `total_transactions` | number | Nombre de ventes RENTAL |
+| `total_transactions` | number | Nombre de ventes ZENCOIN |
 | `yearly_summary` | array | Résumé CA par année (mode "all" uniquement) |
 | `transactions` | array | Liste des transactions (max 100) |
 | `timestamp` | string | Date/heure de génération |
@@ -117,17 +117,17 @@ Le script filtre les transactions selon ces critères :
 
 1. **Direction** : INCOMING (entrantes) vers `UPLANETG1PUB`
 2. **Émetteur** : Provient de `UPLANETNAME_G1` (réserve)
-3. **Référence** : Contient "RENTAL" (ventes de services)
+3. **Référence** : Contient "ZENCOIN" (ventes de services)
 
-### Format de Référence RENTAL
+### Format de Référence ZENCOIN
 
 ```
-UPLANET:${UPLANETG1PUB:0:8}:RENTAL:${email}
+UPLANET:${UPLANETG1PUB:0:8}:ZENCOIN:${email}
 ```
 
 **Exemple** :
 ```
-UPLANET:AwdjhpJN:RENTAL:bidule@machintruc.com
+UPLANET:AwdjhpJN:ZENCOIN:bidule@machintruc.com
 ```
 
 ### Formule de Conversion
@@ -151,7 +151,7 @@ UPLANET:AwdjhpJN:RENTAL:bidule@machintruc.com
 ┌─────────────────────────────────────────────┐
 │ UPLANETNAME (UPLANETG1PUB)                 │
 │ Hub de distribution des services            │
-│ Historique RENTAL = Chiffre d'Affaires     │
+│ Historique ZENCOIN = Chiffre d'Affaires     │
 └─────────────────────────────────────────────┘
                ↓ DISTRIBUTION
 ┌─────────────────────────────────────────────┐
@@ -188,7 +188,7 @@ Le CA est affiché dans le dashboard économique UPlanet :
 ```html
 📡 Chiffre d'Affaires (UPLANETG1PUB)
 ├─ CA total : 1195 Ẑ
-├─ 24 ventes RENTAL
+├─ 24 ventes ZENCOIN
 └─ [💼 Historique CA] → Lien vers /check_revenue?html=1
 ```
 
@@ -211,7 +211,7 @@ echo "UPLANETG1PUB=$UPLANETG1PUB"
 
 ### CA vide (0 transaction)
 
-C'est normal si aucune vente RENTAL n'a encore été effectuée. Testez avec :
+C'est normal si aucune vente ZENCOIN n'a encore été effectuée. Testez avec :
 
 ```bash
 cd /home/fred/workspace/AAA/Astroport.ONE
@@ -224,7 +224,7 @@ cd /home/fred/workspace/AAA/Astroport.ONE
 |---------|-------------|
 | `G1revenue.sh` | Script principal de calcul CA |
 | `G1history.sh` | Récupère l'historique blockchain |
-| `UPLANET.official.sh` | Gère les transactions RENTAL |
+| `UPLANET.official.sh` | Gère les transactions ZENCOIN |
 | `54321.py` | API FastAPI avec endpoint `/check_revenue` |
 | `templates/revenue.html` | Template HTML pour affichage CA |
 | `economy.html` | Dashboard économique UPlanet |
@@ -234,9 +234,9 @@ cd /home/fred/workspace/AAA/Astroport.ONE
 
 ```
 1. Client → UPLANET.official.sh (recharge MULTIPASS)
-2. Transaction RENTAL → Blockchain Ğ1
+2. Transaction ZENCOIN → Blockchain Ğ1
 3. G1history.sh → Récupère historique
-4. G1revenue.sh → Calcule CA + filtre RENTAL
+4. G1revenue.sh → Calcule CA + filtre ZENCOIN
 5. 54321.py → API JSON/HTML
 6. economy.html → Affichage dashboard
 ```
@@ -253,7 +253,7 @@ cd /home/fred/workspace/AAA/Astroport.ONE
 ## 📝 Changelog
 
 ### Version 1.0 (2025-10-09)
-- ✅ Calcul CA total depuis transactions RENTAL
+- ✅ Calcul CA total depuis transactions ZENCOIN
 - ✅ Filtrage par année
 - ✅ Résumé annuel automatique
 - ✅ Sortie JSON structurée

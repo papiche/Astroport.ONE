@@ -135,7 +135,7 @@ echo "Cooperative balance: $UPLANETZEN Ẑen"
 # =========================
 # TVA (20%) : Collectée sur le CHIFFRE D'AFFAIRES BRUT
 #             Provisionnée ailleurs (non gérée par ce script)
-#             Fait générateur : Encaissement des locations RENTAL
+#             Fait générateur : Encaissement des locations ZENCOIN
 #             Portefeuille : UPLANETNAME_IMPOT
 #
 # IS (15%/25%) : Calculé sur le BÉNÉFICE NET (après charges)

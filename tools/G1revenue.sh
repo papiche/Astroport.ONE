@@ -7,7 +7,7 @@
 # G1revenue.sh
 # Calcule le Chiffre d'Affaires (CA) total depuis l'historique des transactions
 # Filtre : Transactions INCOMING depuis UPLANETNAME_G1 vers UPLANETG1PUB
-#          avec référence contenant "RENTAL" (ventes de services)
+#          avec référence contenant "ZENCOIN" (ventes de services)
 ################################################################################
 
 MY_PATH="`dirname \"$0\"`"
@@ -54,7 +54,7 @@ if ! echo "$HISTORY_JSON" | jq empty 2>/dev/null; then
 fi
 
 ################################################################################
-# Filter and calculate revenue (RENTAL transactions from UPLANETNAME_G1)
+# Filter and calculate revenue (ZENCOIN transactions from UPLANETNAME_G1)
 # These are incoming transactions representing service sales
 ################################################################################
 
@@ -68,8 +68,8 @@ RESULT=$(echo "$HISTORY_JSON" | jq -r --arg source_g1 "$UPLANET_G1_SOURCE" --arg
     ."Date" as $date |
     ($date | split("-")[0]) as $year |
     
-    # Check if this is an incoming RENTAL transaction from UPLANETNAME_G1
-    if ($amount_g1 > 0 and $issuer == $source_g1 and ($reference | contains("RENTAL"))) then
+    # Check if this is an incoming ZENCOIN transaction from UPLANETNAME_G1
+    if ($amount_g1 > 0 and $issuer == $source_g1 and ($reference | contains("ZENCOIN"))) then
         {
             is_revenue_transaction: true,
             amount_g1: $amount_g1,
@@ -79,15 +79,15 @@ RESULT=$(echo "$HISTORY_JSON" | jq -r --arg source_g1 "$UPLANET_G1_SOURCE" --arg
             date: $date,
             year: $year,
             customer_email: (
-                if ($reference | contains("RENTAL:")) then
-                    ($reference | split("RENTAL:")[1] | split(":")[0])
+                if ($reference | contains("ZENCOIN:")) then
+                    ($reference | split("ZENCOIN:")[1] | split(":")[0])
                 else
                     "N/A"
                 end
             ),
             transaction_type: (
-                if ($reference | contains("RENTAL")) then
-                    "RENTAL"
+                if ($reference | contains("ZENCOIN")) then
+                    "ZENCOIN"
                 else
                     "OTHER"
                 end
@@ -132,8 +132,8 @@ RESULT=$(echo "$HISTORY_JSON" | jq -r --arg source_g1 "$UPLANET_G1_SOURCE" --arg
             amount_zen: (.amount_zen | . * 100 | round / 100),
             transaction_type: .transaction_type,
             comment: (
-                if .transaction_type == "RENTAL" then
-                    "Service RENTAL - \(.comment)"
+                if .transaction_type == "ZENCOIN" then
+                    "Service ZENCOIN - \(.comment)"
                 else
                     .comment
                 end

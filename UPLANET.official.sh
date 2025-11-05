@@ -17,7 +17,7 @@
 # 4. PERMIT : UPLANETNAME_RnD -> PERMIT HOLDER (récompenses pour WoT Dragon et autres permis spéciaux)
 #
 # Format des références blockchain :
-# - RENTAL : "UPLANET:${UPLANETG1PUB:0:8}:RENTAL:${email}"
+# - ZENCOIN : "UPLANET:${UPLANETG1PUB:0:8}:ZENCOIN:${email}"
 # - CAPITAL : "UPLANET:${UPLANETG1PUB:0:8}:CAPITAL:${email}:${IPFSNODEID}"
 # - SOCIETY : "UPLANET:${UPLANETG1PUB:0:8}:SOCIETY:${email}:${type}:${IPFSNODEID}"
 # - TREASURY: "UPLANET:${UPLANETG1PUB:0:8}:TREASURY:${email}:${type}:${IPFSNODEID}"
@@ -616,14 +616,14 @@ process_locataire() {
     
     # Étape 1: UPLANETNAME_G1 -> UPLANETNAME
     echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME_G1 → UPLANETNAME${NC}"
-    if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$uplanet_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:RENTAL:${email}" "$email" "MULTIPASS" "Étape 1: G1→UPLANET"; then
+    if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$uplanet_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:ZENCOIN:${email}" "$email" "MULTIPASS" "Étape 1: G1→UPLANET"; then
         echo -e "${RED}❌ Échec de l'étape 1${NC}"
         return 1
     fi
     
     # Étape 2: UPLANETNAME -> MULTIPASS
     echo -e "${BLUE}📤 Étape 2: Transfert UPLANETNAME → MULTIPASS ${email}${NC}"
-    if ! transfer_and_verify "$HOME/.zen/game/uplanet.dunikey" "$multipass_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:RENTAL:${email}" "$email" "MULTIPASS" "Étape 2: UPLANET→MULTIPASS"; then
+    if ! transfer_and_verify "$HOME/.zen/game/uplanet.dunikey" "$multipass_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:ZENCOIN:${email}" "$email" "MULTIPASS" "Étape 2: UPLANET→MULTIPASS"; then
         echo -e "${RED}❌ Échec de l'étape 2${NC}"
         return 1
     fi

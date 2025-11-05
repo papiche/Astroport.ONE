@@ -304,7 +304,7 @@ UPLANET:${UPLANETG1PUB:0:8}:SOCIETY:${email}:${type}:${IPFSNODEID}
 GET /check_revenue?html={0|1}&year={YYYY}
 ```
 
-**Description** : Récupère l'historique du Chiffre d'Affaires depuis les transactions RENTAL. Calcule les revenus totaux depuis le portefeuille `UPLANETNAME` (hub de distribution des services).
+**Description** : Récupère l'historique du Chiffre d'Affaires depuis les transactions ZENCOIN. Calcule les revenus totaux depuis le portefeuille `UPLANETNAME` (hub de distribution des services).
 
 **Paramètres** :
 - `html` : Si présent, retourne une page HTML stylisée (optionnel)
@@ -339,8 +339,8 @@ GET /check_revenue?html={0|1}&year={YYYY}
       "customer_email": "frenault@linkeo.com",
       "amount_g1": 2.0,
       "amount_zen": 20.0,
-      "transaction_type": "RENTAL",
-      "comment": "Service RENTAL - UPLANET:AwdjhpJN:RENTAL:frenault@linkeo.com"
+      "transaction_type": "ZENCOIN",
+      "comment": "Service ZENCOIN - UPLANET:AwdjhpJN:ZENCOIN:frenault@linkeo.com"
     }
   ],
   "timestamp": "2025-10-09T16:30:42"
@@ -354,18 +354,18 @@ GET /check_revenue?html={0|1}&year={YYYY}
 
 **Format des références blockchain** :
 ```
-UPLANET:${UPLANETG1PUB:0:8}:RENTAL:${email}
+UPLANET:${UPLANETG1PUB:0:8}:ZENCOIN:${email}
 ```
 
 **Calcul du CA** : Le Chiffre d'Affaires est calculé depuis les transactions **INCOMING** (entrantes) vers `UPLANETG1PUB` qui :
 1. Proviennent de `UPLANETNAME_G1` (réserve)
-2. Contiennent "RENTAL" dans la référence (ventes de services)
+2. Contiennent "ZENCOIN" dans la référence (ventes de services)
 
 **Page HTML** : Accessible via `?html=1`, fournit une interface web stylisée avec :
 - Résumé du CA total (ẐEN, Ğ1, nombre de transactions)
 - **Tableau récapitulatif annuel** (mode "all")
 - Boutons pour filtrer par année
-- Historique détaillé des ventes RENTAL avec identification client
+- Historique détaillé des ventes ZENCOIN avec identification client
 
 **Architecture économique** :
 ```

@@ -33,7 +33,7 @@ if [[ -z "$IMPOT_G1PUB" ]]; then
                 "total_g1": 0,
                 "total_zen": 0,
                 "transactions": 0,
-                "description": "TVA collectée sur locations RENTAL (20%)"
+                "description": "TVA collectée sur locations ZENCOIN (20%)"
             },
             "is": {
                 "total_g1": 0,
@@ -66,7 +66,7 @@ if [[ $? -ne 0 ]] || [[ -z "$HISTORY_JSON" ]]; then
                 "total_g1": 0,
                 "total_zen": 0,
                 "transactions": 0,
-                "description": "TVA collectée sur locations RENTAL (20%)"
+                "description": "TVA collectée sur locations ZENCOIN (20%)"
             },
             "is": {
                 "total_g1": 0,
@@ -93,7 +93,7 @@ if ! echo "$HISTORY_JSON" | jq empty 2>/dev/null; then
                 "total_g1": 0,
                 "total_zen": 0,
                 "transactions": 0,
-                "description": "TVA collectée sur locations RENTAL (20%)"
+                "description": "TVA collectée sur locations ZENCOIN (20%)"
             },
             "is": {
                 "total_g1": 0,
@@ -145,7 +145,7 @@ FILTERED_JSON=$(echo "$HISTORY_JSON" | jq '[
 # Calculate totals and categorize by tax type
 ################################################################################
 
-# TVA provisions (from RENTAL transactions or explicit TVA comment)
+# TVA provisions (from ZENCOIN transactions or explicit TVA comment)
 TVA_TOTAL_G1=$(echo "$FILTERED_JSON" | jq '[.[] | select(.is_tva == true) | .amount_g1] | add // 0 | . * 100 | round | . / 100')
 
 # IS provisions (from COOPERATIVE allocations)
@@ -208,7 +208,7 @@ jq -n \
                 total_g1: $tva_g1,
                 total_zen: $tva_zen,
                 transactions: $tva_transactions,
-                description: "TVA collectée sur locations RENTAL (20%)"
+                description: "TVA collectée sur locations ZENCOIN (20%)"
             },
             is: {
                 total_g1: $is_g1,

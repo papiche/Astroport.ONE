@@ -446,7 +446,7 @@ show_captain_dashboard() {
         
         echo -e "${BLUE}💼 UPLANETNAME (Services & MULTIPASS):${NC}"
         echo -e "  💰 Solde brut: ${YELLOW}$services_balance Ğ1${NC}"
-        echo -e "  📊 Chiffre d'Affaires (historique RENTAL): ${CYAN}$revenue_zen Ẑen${NC} (${YELLOW}$revenue_g1 Ğ1${NC})"
+        echo -e "  📊 Chiffre d'Affaires (historique ZENCOIN): ${CYAN}$revenue_zen Ẑen${NC} (${YELLOW}$revenue_g1 Ğ1${NC})"
         echo -e "  📈 Ventes de services: ${WHITE}$revenue_txcount${NC} transactions"
         echo -e "  📝 Usage: Revenus locatifs MULTIPASS + services"
         echo ""

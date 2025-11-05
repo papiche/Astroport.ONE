@@ -513,7 +513,7 @@ Toutes les transactions de parts de capital incluent l'identifiant IPFS du nœud
 
 | Type de Transaction | Format de Référence |
 |---------------------|---------------------|
-| **RENTAL** (Location) | `UPLANET:${UPLANETG1PUB:0:8}:RENTAL:${email}` |
+| **ZENCOIN** (Location) | `UPLANET:${UPLANETG1PUB:0:8}:ZENCOIN:${email}` |
 | **CAPITAL** (Infrastructure) | `UPLANET:${UPLANETG1PUB:0:8}:CAPITAL:${email}:${IPFSNODEID}` |
 | **SOCIETY** (Parts Sociales) | `UPLANET:${UPLANETG1PUB:0:8}:SOCIETY:${email}:${type}:${IPFSNODEID}` |
 | **TREASURY** (1/3 Trésorerie) | `UPLANET:${UPLANETG1PUB:0:8}:TREASURY:${email}:${type}:${IPFSNODEID}` |
