@@ -83,7 +83,26 @@ trap cleanup EXIT
 
 # Extract metadata first
 log_debug "Extracting metadata for: $URL"
-cookie_file="$HOME/.zen/game/nostr/$PLAYER_EMAIL/.cookie.txt"
+
+# Find cookie file - cookies are stored at user's NOSTR root directory
+cookie_file=""
+if [[ -n "$PLAYER_EMAIL" ]]; then
+    user_dir="$HOME/.zen/game/nostr/$PLAYER_EMAIL"
+    if [[ -f "$user_dir/.youtube.com.cookie" ]]; then
+        cookie_file="$user_dir/.youtube.com.cookie"
+        log_debug "Using single-domain YouTube cookie: $cookie_file"
+    elif [[ -f "$user_dir/.cookie.txt" ]]; then
+        cookie_file="$user_dir/.cookie.txt"
+        log_debug "Using cookie file: $cookie_file"
+    fi
+fi
+
+if [[ -z "$cookie_file" || ! -f "$cookie_file" ]]; then
+    # Output JSON to stdout (not stderr) to avoid broken pipe issues
+    echo '{"error":"❌ No cookie file found. Please upload a YouTube cookie file via /api/fileupload"}' 2>/dev/null || echo '{"error":"No cookie file found"}'
+    exit 1
+fi
+
 metadata_line=$(yt-dlp --cookies "$cookie_file" --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
 log_debug "Metadata line: $metadata_line"
 

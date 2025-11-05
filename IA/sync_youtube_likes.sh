@@ -76,16 +76,28 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting validation checks for player: $PLA
 # fi
 
 # Vérifier l'existence du fichier cookie
-COOKIE_FILE="$HOME/.zen/game/nostr/${PLAYER}/.cookie.txt"
+# Cookies are stored at the root of user's NOSTR directory (hidden files)
+COOKIE_FILE=""
+USER_DIR="$HOME/.zen/game/nostr/${PLAYER}"
+if [[ -f "$USER_DIR/.youtube.com.cookie" ]]; then
+    COOKIE_FILE="$USER_DIR/.youtube.com.cookie"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Using single-domain YouTube cookie: $COOKIE_FILE" >&2
+elif [[ -f "$USER_DIR/.cookie.txt" ]]; then
+    COOKIE_FILE="$USER_DIR/.cookie.txt"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Using cookie file: $COOKIE_FILE" >&2
+fi
+
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Checking cookie file: $COOKIE_FILE" >&2
-if [[ ! -f "$COOKIE_FILE" ]]; then
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: No cookie file found for $PLAYER at $COOKIE_FILE" >&2
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Checking if directory exists: $(dirname "$COOKIE_FILE")" >&2
-    if [[ -d "$(dirname "$COOKIE_FILE")" ]]; then
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Directory exists, listing contents:" >&2
-        ls -la "$(dirname "$COOKIE_FILE")" >&2
+if [[ ! -f "$COOKIE_FILE" || -z "$COOKIE_FILE" ]]; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: No cookie file found for $PLAYER" >&2
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Checked paths:" >&2
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')]   - $USER_DIR/.youtube.com.cookie (single-domain)" >&2
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')]   - $USER_DIR/.cookie.txt (multi-domain or legacy)" >&2
+    if [[ -d "$USER_DIR" ]]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] User directory exists, listing cookie files:" >&2
+        ls -la "$USER_DIR"/.*.cookie "$USER_DIR"/.cookie.txt 2>&1 | grep -v "cannot access" >&2 || echo "  No cookie files found" >&2
     else
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Directory does not exist: $(dirname "$COOKIE_FILE")" >&2
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] User directory does not exist: $USER_DIR" >&2
     fi
     log_debug "No cookie file found for $PLAYER, skipping YouTube sync"
     exit 0
