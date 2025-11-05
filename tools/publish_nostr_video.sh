@@ -367,7 +367,9 @@ else
 fi
 
 # Build IPFS URL
-IPFS_URL="/ipfs/${IPFS_CID}/${FILENAME}"
+# Encode the filename for URL safety
+ENCODED_FILENAME=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$FILENAME")
+IPFS_URL="/ipfs/${IPFS_CID}/${ENCODED_FILENAME}"
 log_info "IPFS URL: $IPFS_URL"
 
 # Build video content (compatible with /webcam)
