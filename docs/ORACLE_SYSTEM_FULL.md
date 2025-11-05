@@ -138,6 +138,13 @@ The `make_NOSTRCARD.sh` script:
 
 **Note on NOSTR DID Storage**: The project uses NOSTR profile events (kind 0) with a custom DID field in the content JSON to store Decentralized Identifiers. This follows the NOSTR convention for extensible profile data.
 
+> **🔗 For complete details on DID implementation**, see [`DID_IMPLEMENTATION.md`](../../DID_IMPLEMENTATION.md) which covers:
+> - Full DID architecture and W3C compliance
+> - MULTIPASS and ZEN Card creation
+> - SSSS 3/2 secret sharing
+> - Twin keys (G1, NOSTR, BTC, XMR)
+> - Integration with France Connect
+
 ---
 
 ## 3. Architecture
@@ -1370,6 +1377,15 @@ When a permit is issued, it's automatically added to the holder's DID document:
 }
 ```
 
+**DID Document Updates**: The Oracle System automatically updates the holder's DID document when credentials are issued. This integration ensures that permits are permanently linked to the user's decentralized identity.
+
+> **🔗 For complete DID architecture**, see [`DID_IMPLEMENTATION.md`](../../DID_IMPLEMENTATION.md) which explains:
+> - How DID documents are structured and published
+> - NOSTR-native DID resolution (kind 30800)
+> - Integration with Ğ1 blockchain and Web of Trust
+> - SSSS 3/2 secret sharing for security
+> - France Connect compliance for verified users
+
 ### 13.2. Blockchain Rewards
 
 Permit holders can receive economic incentives via `UPLANET.official.sh`:
@@ -1506,8 +1522,8 @@ cd Astroport.ONE/RUNTIME
 
 ### 15.3. UPlanet Documentation
 
+- **DID_IMPLEMENTATION.md**: Complete DID system architecture and implementation
 - **ORACLE_TODO.md**: Task tracking and improvements
-- **DID_IMPLEMENTATION.md**: DID system overview
 - **ORE_SYSTEM.md**: Environmental obligations system
 
 ### 15.4. Philosophy
