@@ -329,16 +329,16 @@ Both can publish to either API endpoint
 
 ### Loading Libraries
 
-Include these libraries in your HTML templates:
+Include these libraries in your HTML templates **in this exact order**:
 
 ```html
-<!-- NOSTR protocol library (cryptography, event signing, relay communication) -->
+<!-- 1. NOSTR protocol library (cryptography, event signing, relay communication) -->
 <script src="{{ myIPFS }}/ipns/copylaradio.com/nostr.bundle.js"></script>
 
-<!-- Common utilities (authentication, comments, payments, UI helpers) -->
+<!-- 2. Common utilities (authentication, comments, payments, UI helpers) -->
 <script src="{{ myIPFS }}/ipns/copylaradio.com/common.js"></script>
 
-<!-- YouTube enhancements (video player, theater mode, engagement stats) -->
+<!-- 3. Optional: YouTube enhancements (video player, theater mode, engagement stats) -->
 <script src="{{ myIPFS }}/ipns/copylaradio.com/youtube.enhancements.js"></script>
 
 <!-- Optional: CSS for enhancements -->
@@ -346,6 +346,102 @@ Include these libraries in your HTML templates:
 ```
 
 **Note**: `{{ myIPFS }}` is automatically set by FastAPI based on your Astroport gateway.
+
+### Avoiding Variable Conflicts
+
+⚠️ **Important**: `common.js` declares global variables like `userPubkey`, `userNpub`, `nostrRelay`, etc. To avoid conflicts in your application code, use a **namespace pattern**.
+
+#### ❌ Wrong - Direct Variable Declaration (causes conflicts)
+
+```javascript
+<script>
+    // ❌ This will conflict with common.js
+    let userPubkey = null;
+    let userNpub = null;
+    
+    async function login() {
+        userPubkey = await connectNostr();  // Error: already declared
+    }
+</script>
+```
+
+#### ✅ Correct - Use Application Namespace
+
+```javascript
+<script>
+    // ✅ Create your own namespace to avoid conflicts
+    window.MyApp = {
+        userPubkey: null,
+        userNpub: null,
+        userData: {},
+        isConnected: false
+    };
+    
+    async function login() {
+        // Use common.js function
+        const pubkey = await connectNostr();
+        
+        // Store in your namespace
+        MyApp.userPubkey = pubkey;
+        MyApp.isConnected = true;
+        
+        // Access common.js globals when needed
+        console.log('Global relay:', window.nostrRelay);
+    }
+    
+    async function uploadFile(file) {
+        if (!MyApp.userPubkey) {
+            alert('Please login first');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('npub', MyApp.userPubkey);
+        
+        const response = await fetch('/api/fileupload', {
+            method: 'POST',
+            body: formData
+        });
+    }
+</script>
+```
+
+### Common.js Global Variables
+
+After loading `common.js`, these **global variables** are available:
+
+```javascript
+// User authentication
+window.userPubkey          // User's hex public key (set after connectNostr())
+window.userNpub            // User's npub (set after connectNostr())
+
+// Relay connection
+window.nostrRelay          // Relay connection object
+window.isNostrConnected    // Connection status (boolean)
+window.relayUrl            // Current relay URL
+
+// Infrastructure
+window.myIPFS              // IPFS gateway URL (auto-detected)
+window.uSPOT               // UPassport API URL (auto-detected)
+
+// NOSTR Tools
+window.NostrTools          // nostr-tools library object
+```
+
+**Best Practice**: Read from these globals but store your app state in your own namespace:
+
+```javascript
+window.MyApp = {
+    // Copy from globals when needed
+    init: async function() {
+        await connectNostr();  // Sets window.userPubkey
+        this.userPubkey = window.userPubkey;  // Copy to app state
+        this.userNpub = window.userNpub;
+        this.relayConnected = window.isNostrConnected;
+    }
+};
+```
 
 ### Library Structure
 
@@ -1741,123 +1837,144 @@ Response JSON:
 <body>
     <h1>Upload Video to NostrTube</h1>
     
-    <button onclick="connect()">Connect NOSTR</button>
+    <button onclick="MyApp.connect()">Connect NOSTR</button>
     <div id="user-info"></div>
     
     <input type="file" id="video-file" accept="video/*">
     <input type="text" id="video-title" placeholder="Title">
-    <button onclick="uploadVideo()">Upload</button>
+    <button onclick="MyApp.uploadVideo()">Upload</button>
     
     <div id="status"></div>
     
-    <script src="/ipns/copylaradio.com/nostr.bundle.js"></script>
-    <script src="/ipns/copylaradio.com/common.js"></script>
+    <!-- Load libraries in correct order -->
+    <script src="{{ myIPFS }}/ipns/copylaradio.com/nostr.bundle.js"></script>
+    <script src="{{ myIPFS }}/ipns/copylaradio.com/common.js"></script>
     
     <script>
-        let userPubkey = null;
-        let userEmail = null;
+        // ✅ Use namespace pattern to avoid conflicts
+        window.MyApp = {
+            userPubkey: null,
+            userNpub: null,
+            userEmail: null,
+            
+            async connect() {
+                // Use common.js function
+                const pubkey = await connectNostr();
+                
+                if (pubkey) {
+                    // Store in namespace
+                    this.userPubkey = pubkey;
+                    this.userNpub = window.userNpub;  // Copy from global
+                    
+                    const name = await getUserDisplayName(pubkey);
+                    const email = await fetchUserEmailWithFallback(pubkey);
+                    this.userEmail = email || 'unknown@example.com';
+                    
+                    document.getElementById('user-info').innerHTML = 
+                        `Connected: ${name} (${this.userEmail})`;
+                    
+                    showNotification({ 
+                        message: 'Connected successfully!', 
+                        type: 'success' 
+                    });
+                }
+            },
+            
+            async uploadVideo() {
+                if (!this.userPubkey) {
+                    showNotification({ 
+                        message: 'Please connect first', 
+                        type: 'error' 
+                    });
+                    return;
+                }
+                
+                const fileInput = document.getElementById('video-file');
+                const file = fileInput.files[0];
+                if (!file) {
+                    showNotification({ 
+                        message: 'Please select a video', 
+                        type: 'warning' 
+                    });
+                    return;
+                }
+                
+                const title = document.getElementById('video-title').value || 'Untitled';
+                
+                // Step 1: Upload to IPFS
+                showNotification({ 
+                    message: 'Uploading to IPFS...', 
+                    type: 'info',
+                    duration: 0
+                });
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('npub', this.userNpub || this.userPubkey);
+                
+                const uploadResponse = await fetch(`${window.uSPOT}/api/fileupload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const uploadResult = await uploadResponse.json();
+                
+                if (!uploadResult.success) {
+                    showNotification({ 
+                        message: 'Upload failed: ' + uploadResult.message, 
+                        type: 'error' 
+                    });
+                    return;
+                }
+                
+                // Step 2: Publish to NOSTR
+                showNotification({ 
+                    message: 'Publishing to NOSTR...', 
+                    type: 'info',
+                    duration: 0
+                });
+                
+                const publishFormData = new FormData();
+                publishFormData.append('player', this.userEmail);
+                publishFormData.append('ipfs_cid', uploadResult.new_cid);
+                publishFormData.append('thumbnail_ipfs', uploadResult.thumbnail_ipfs || '');
+                publishFormData.append('info_cid', uploadResult.info || '');
+                publishFormData.append('title', title);
+                publishFormData.append('description', '');
+                publishFormData.append('npub', this.userNpub || this.userPubkey);
+                publishFormData.append('publish_nostr', 'true');
+                
+                const publishResponse = await fetch(`${window.uSPOT}/webcam`, {
+                    method: 'POST',
+                    body: publishFormData
+                });
+                
+                if (publishResponse.ok) {
+                    showNotification({ 
+                        message: 'Video published successfully!', 
+                        type: 'success' 
+                    });
+                    
+                    // Open in theater mode
+                    window.open(`${window.uSPOT}/theater?video=${uploadResult.new_cid}`, '_blank');
+                } else {
+                    showNotification({ 
+                        message: 'Publishing failed', 
+                        type: 'error' 
+                    });
+                }
+            }
+        };
         
-        async function connect() {
-            userPubkey = await connectNostr();
-            if (userPubkey) {
-                const name = await getUserDisplayName(userPubkey);
-                const email = await fetchUserEmailWithFallback(userPubkey);
-                userEmail = email || 'unknown@example.com';
-                
-                document.getElementById('user-info').innerHTML = 
-                    `Connected: ${name} (${userEmail})`;
-                
-                showNotification({ 
-                    message: 'Connected successfully!', 
-                    type: 'success' 
-                });
-            }
-        }
-        
-        async function uploadVideo() {
-            if (!userPubkey) {
-                showNotification({ 
-                    message: 'Please connect first', 
-                    type: 'error' 
-                });
-                return;
-            }
-            
-            const fileInput = document.getElementById('video-file');
-            const file = fileInput.files[0];
-            if (!file) {
-                showNotification({ 
-                    message: 'Please select a video', 
-                    type: 'warning' 
-                });
-                return;
-            }
-            
-            const title = document.getElementById('video-title').value || 'Untitled';
-            
-            // Step 1: Upload to IPFS
-            showNotification({ 
-                message: 'Uploading to IPFS...', 
-                type: 'info',
-                duration: 0
+        // Auto-initialize on load
+        window.addEventListener('load', () => {
+            console.log('App initialized');
+            console.log('Infrastructure:', {
+                api: window.uSPOT,
+                ipfs: window.myIPFS,
+                relay: window.relayUrl
             });
-            
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('npub', userPubkey);
-            
-            const uploadResponse = await fetch('/api/fileupload', {
-                method: 'POST',
-                body: formData
-            });
-            
-            const uploadResult = await uploadResponse.json();
-            
-            if (!uploadResult.success) {
-                showNotification({ 
-                    message: 'Upload failed: ' + uploadResult.message, 
-                    type: 'error' 
-                });
-                return;
-            }
-            
-            // Step 2: Publish to NOSTR
-            showNotification({ 
-                message: 'Publishing to NOSTR...', 
-                type: 'info',
-                duration: 0
-            });
-            
-            const publishFormData = new FormData();
-            publishFormData.append('player', userEmail);
-            publishFormData.append('ipfs_cid', uploadResult.new_cid);
-            publishFormData.append('thumbnail_ipfs', uploadResult.thumbnail_ipfs || '');
-            publishFormData.append('info_cid', uploadResult.info || '');
-            publishFormData.append('title', title);
-            publishFormData.append('description', '');
-            publishFormData.append('npub', userPubkey);
-            publishFormData.append('publish_nostr', 'true');
-            
-            const publishResponse = await fetch('/webcam', {
-                method: 'POST',
-                body: publishFormData
-            });
-            
-            if (publishResponse.ok) {
-                showNotification({ 
-                    message: 'Video published successfully!', 
-                    type: 'success' 
-                });
-                
-                // Open in theater mode
-                window.open(`/theater?video=${uploadResult.new_cid}`, '_blank');
-            } else {
-                showNotification({ 
-                    message: 'Publishing failed', 
-                    type: 'error' 
-                });
-            }
-        }
+        });
     </script>
 </body>
 </html>
