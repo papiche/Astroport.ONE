@@ -380,7 +380,7 @@ else
     # Add dimensions for images (from upload2ipfs.sh)
     if [[ "$MIME_TYPE" == "image/"* ]]; then
         # Extract dimensions from auto mode or use provided value
-        local DIMENSIONS=""
+        DIMENSIONS=""
         if [ "$AUTO_MODE" = "true" ] && [ -n "$UPLOAD_DATA" ]; then
             DIMENSIONS=$(echo "$UPLOAD_DATA" | jq -r '.dimensions // empty')
         fi
@@ -392,13 +392,13 @@ else
         fi
         
         # Add thumbnail CID if available (for non-JPG images converted to JPG)
-        local THUMBNAIL_CID=""
+        THUMBNAIL_CID=""
         if [ "$AUTO_MODE" = "true" ] && [ -n "$UPLOAD_DATA" ]; then
             THUMBNAIL_CID=$(echo "$UPLOAD_DATA" | jq -r '.thumbnail_ipfs // empty')
         fi
         
         if [ -n "$THUMBNAIL_CID" ]; then
-            local THUMBNAIL_URL="/ipfs/${THUMBNAIL_CID}"
+            THUMBNAIL_URL="/ipfs/${THUMBNAIL_CID}"
             TAGS="${TAGS},
     [\"r\", \"${THUMBNAIL_URL}\", \"Thumbnail\"],
     [\"image\", \"${THUMBNAIL_URL}\"],
@@ -409,7 +409,7 @@ else
     
     # Add duration for audio files (from upload2ipfs.sh)
     if [[ "$MIME_TYPE" == "audio/"* ]]; then
-        local DURATION=""
+        DURATION=""
         if [ "$AUTO_MODE" = "true" ] && [ -n "$UPLOAD_DATA" ]; then
             DURATION=$(echo "$UPLOAD_DATA" | jq -r '.duration // empty')
         fi
