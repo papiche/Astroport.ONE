@@ -20,6 +20,7 @@ TAG_P=""
 TAG_E=""
 TAG_T=""
 TAG_G=""
+TAG_X=""
 OUTPUT_FORMAT="json"  # json or count
 DELETE_MODE=false      # Delete found events
 FORCE_MODE=false       # Skip confirmation prompt
@@ -42,6 +43,7 @@ OPTIONS:
     -e, --tag-e ID            Filter by 'e' tag (referenced event)
     -t, --tag-t VALUE         Filter by 't' tag (hashtag, e.g., "plantnet", "UPlanet")
     -g, --tag-g COORDS        Filter by 'g' tag (geolocation, format: "lat,lon")
+    -x, --tag-x HASH          Filter by 'x' tag (file hash for NIP-94/NIP-71 provenance)
     -s, --since TIMESTAMP     Filter events after this timestamp (unix timestamp)
     -u, --until TIMESTAMP     Filter events before this timestamp (unix timestamp)
     -l, --limit NUMBER        Limit number of results (default: 100)
@@ -143,6 +145,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -g|--tag-g)
             TAG_G="$2"
+            shift 2
+            ;;
+        -x|--tag-x)
+            TAG_X="$2"
             shift 2
             ;;
         -s|--since)
@@ -254,6 +260,11 @@ fi
 if [[ -n "$TAG_G" ]]; then
     [[ "$FILTER" != "{" ]] && FILTER+=","
     FILTER+="\"#g\":[\"$TAG_G\"]"
+fi
+
+if [[ -n "$TAG_X" ]]; then
+    [[ "$FILTER" != "{" ]] && FILTER+=","
+    FILTER+="\"#x\":[\"$TAG_X\"]"
 fi
 
 FILTER+="}"

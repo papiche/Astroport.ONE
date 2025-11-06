@@ -90,7 +90,8 @@
 #
 ################################################################################
 
-set -e
+# Note: set -e removed to allow proper error handling with exit codes
+# set -e
 
 # Get script directory for relative imports
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -459,7 +460,17 @@ else
     # Publish to NOSTR (kind 1063 for NIP-94)
     log_info "Publishing to NOSTR relays (kind 1063)..."
     
-    NOSTR_OUTPUT=$(python3 "$NOSTR_SCRIPT" \
+    # Determine which Python3 to use (prefer ~/.astro/bin/python3 if available)
+    PYTHON_CMD="python3"
+    if [ -x "$HOME/.astro/bin/python3" ]; then
+        PYTHON_CMD="$HOME/.astro/bin/python3"
+    elif [ -x "/usr/bin/python3" ]; then
+        PYTHON_CMD="/usr/bin/python3"
+    fi
+    
+    log_info "Using Python: $PYTHON_CMD"
+    
+    NOSTR_OUTPUT=$($PYTHON_CMD "$NOSTR_SCRIPT" \
         --keyfile "$KEYFILE" \
         --content "$FILE_CONTENT" \
         --relays "$RELAYS" \

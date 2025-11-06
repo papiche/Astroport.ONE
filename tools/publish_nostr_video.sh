@@ -90,7 +90,8 @@
 #
 ################################################################################
 
-set -e
+# Note: set -e removed to allow proper error handling with exit codes
+# set -e
 
 # Default values
 RELAYS="ws://127.0.0.1:7777,wss://relay.copylaradio.com"
@@ -481,8 +482,18 @@ fi
 log_info "Publishing to NOSTR relays..."
 log_info "Command: python3 $NOSTR_SCRIPT --keyfile <keyfile> --content <content> --relays $RELAYS --tags <tags> --kind $VIDEO_KIND --json"
 
+# Determine which Python3 to use (prefer ~/.astro/bin/python3 if available)
+PYTHON_CMD="python3"
+if [ -x "$HOME/.astro/bin/python3" ]; then
+    PYTHON_CMD="$HOME/.astro/bin/python3"
+elif [ -x "/usr/bin/python3" ]; then
+    PYTHON_CMD="/usr/bin/python3"
+fi
+
+log_info "Using Python: $PYTHON_CMD"
+
 # Execute nostr_send_note.py
-NOSTR_OUTPUT=$(python3 "$NOSTR_SCRIPT" \
+NOSTR_OUTPUT=$($PYTHON_CMD "$NOSTR_SCRIPT" \
     --keyfile "$KEYFILE" \
     --content "$VIDEO_CONTENT" \
     --relays "$RELAYS" \
@@ -514,6 +525,72 @@ if [ $NOSTR_EXIT_CODE -eq 0 ]; then
         log_success "Event ID: $EVENT_ID"
         log_success "Published to $RELAYS_SUCCESS/$RELAYS_TOTAL relay(s)"
         
+        # Publish a kind 1 note on user's wall with theater link
+        log_info "Publishing kind 1 note with theater link..."
+        
+        # Build theater URL
+        THEATER_URL="${uSPOT}/theater?video=${IPFS_CID}"
+        
+        # Build kind 1 content with emojis and theater link
+        KIND1_CONTENT="🎬 ${TITLE}
+
+📹 New video published!
+🎥 Watch here: ${THEATER_URL}
+
+Duration: ${DURATION}s
+IPFS: /ipfs/${IPFS_CID}
+
+#video #UPlanet"
+        
+        # Build kind 1 tags with video reference
+        KIND1_TAGS="[
+    [\"e\", \"${EVENT_ID}\", \"\", \"mention\"],
+    [\"t\", \"video\"],
+    [\"t\", \"UPlanet\"]"
+        
+        # Add location tags if provided
+        if [ "$LATITUDE" != "0.00" ] || [ "$LONGITUDE" != "0.00" ]; then
+            KIND1_TAGS="${KIND1_TAGS},
+    [\"g\", \"${LATITUDE},${LONGITUDE}\"]"
+        fi
+        
+        KIND1_TAGS="${KIND1_TAGS}
+]"
+        
+        # Re-create keyfile for kind 1 publication
+        if [ -f "$NSEC_INPUT" ]; then
+            KIND1_KEYFILE="$NSEC_INPUT"
+        else
+            KIND1_TEMP_KEYFILE=$(mktemp)
+            echo "NSEC=$NSEC_KEY" > "$KIND1_TEMP_KEYFILE"
+            KIND1_KEYFILE="$KIND1_TEMP_KEYFILE"
+        fi
+        
+        # Publish kind 1 note
+        KIND1_OUTPUT=$($PYTHON_CMD "$NOSTR_SCRIPT" \
+            --keyfile "$KIND1_KEYFILE" \
+            --content "$KIND1_CONTENT" \
+            --relays "$RELAYS" \
+            --tags "$KIND1_TAGS" \
+            --kind "1" \
+            --json 2>&1)
+        
+        KIND1_EXIT_CODE=$?
+        
+        # Clean up temporary keyfile if created
+        [ -n "$KIND1_TEMP_KEYFILE" ] && rm -f "$KIND1_TEMP_KEYFILE"
+        
+        if [ $KIND1_EXIT_CODE -eq 0 ]; then
+            KIND1_EVENT_ID=$(echo "$KIND1_OUTPUT" | jq -r '.event_id // empty' 2>/dev/null || echo "")
+            if [ -n "$KIND1_EVENT_ID" ]; then
+                log_success "Kind 1 note published: ${KIND1_EVENT_ID:0:16}..."
+            else
+                log_warning "Kind 1 note might have been published but ID not extracted"
+            fi
+        else
+            log_warning "Failed to publish kind 1 note (non-critical): $KIND1_OUTPUT"
+        fi
+        
         if [ "$JSON_OUTPUT" = "true" ]; then
             # Output JSON format
             cat << EOF
@@ -526,7 +603,8 @@ if [ $NOSTR_EXIT_CODE -eq 0 ]; then
   "ipfs_url": "$IPFS_URL",
   "title": "$TITLE",
   "duration": $DURATION,
-  "upload_chain": "${UPLOAD_CHAIN:-}"
+  "upload_chain": "${UPLOAD_CHAIN:-}",
+  "kind1_note_id": "${KIND1_EVENT_ID:-}"
 }
 EOF
         else
