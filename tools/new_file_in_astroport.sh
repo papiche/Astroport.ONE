@@ -324,7 +324,30 @@ echo ">>>>>>>>>> $MEDIAKEY ($MIME) <<<<<<<<<<<<<<<"
 ########################################################################
 # Check if file exists and is not empty
 [[ -z "$file" ]] && echo "ERROR: No file specified" && exit 1
-[[ ! -f "${path}${file}" ]] && echo "ERROR: File ${path}${file} not found" && exit 1
+[[ ! -f "${path}${file}" ]] && [[ ! -L "${path}${file}" ]] && echo "ERROR: File ${path}${file} not found" && exit 1
+
+# Try to load MIME from upload_info.json if it exists (for YouTube videos)
+REAL_MIME=""
+if [[ -f "${path}upload_info.json" ]]; then
+    REAL_MIME=$(jq -r '.mime_type // empty' "${path}upload_info.json" 2>/dev/null)
+    if [[ -z "$REAL_MIME" ]]; then
+        # Fallback: detect from actual file type
+        if [[ -L "${path}${file}" ]]; then
+            # Follow symlink to get real file MIME
+            REAL_FILE=$(readlink -f "${path}${file}")
+            REAL_MIME=$(file --mime-type -b "$REAL_FILE" 2>/dev/null || echo "")
+        fi
+    fi
+fi
+
+# Get MIME from file (may be symlink)
+MIME=$(file --mime-type -b "${path}${file}")
+
+# Use real MIME if available, otherwise use detected MIME
+if [[ -n "$REAL_MIME" && "$MIME" == "inode/symlink" ]]; then
+    echo "Detected symlink, using real MIME type: $REAL_MIME"
+    MIME="$REAL_MIME"
+fi
 
     echo "ADDING ${path}${file} to IPFS "
 echo "-----------------------------------------------------------------"
@@ -341,15 +364,44 @@ FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; 
 startipfs=`date +%s`
 
 echo "ADDING FILE SIZE = $FILE_SIZE ($FILE_BSIZE octets)"
-espeak "Adding $FILE_SIZE file" 2>&1 > /dev/null
-IPFS=$(ipfs add -wq "${path}${file}")
-IPFSREPFILEID=$(echo $IPFS | cut -d ' ' -f 2)
-IPFSID=$(echo $IPFS | cut -d ' ' -f 1)
+
+# Check if this is a symlink with upload_info.json (YouTube video already uploaded via upload2ipfs.sh)
+if [[ -L "${path}${file}" ]] && [[ -f "${path}upload_info.json" ]]; then
+    echo "📹 Using existing IPFS CID from upload_info.json (symlink detected)"
+    EXISTING_CID=$(jq -r '.ipfs_cid // empty' "${path}upload_info.json" 2>/dev/null)
+    
+    if [[ -n "$EXISTING_CID" ]]; then
+        # Use existing CID instead of re-adding symlink
+        IPFSID="$EXISTING_CID"
+        # For IPFSREPFILEID, we need to wrap it (simulate ipfs add -w behavior)
+        # Create a temporary directory structure and add it
+        TEMP_WRAP_DIR=$(mktemp -d)
+        ln -s "$(readlink -f ${path}${file})" "$TEMP_WRAP_DIR/${file}"
+        IPFS=$(ipfs add -wq "$TEMP_WRAP_DIR/${file}" 2>/dev/null)
+        IPFSREPFILEID=$(echo $IPFS | cut -d ' ' -f 2)
+        rm -rf "$TEMP_WRAP_DIR"
+        
+        echo "✅ Using existing CID: $IPFSID (wrapped: $IPFSREPFILEID)"
+    else
+        echo "⚠️  upload_info.json exists but no CID found, adding file normally"
+        espeak "Adding $FILE_SIZE file" 2>&1 > /dev/null
+        IPFS=$(ipfs add -wq "${path}${file}")
+        IPFSREPFILEID=$(echo $IPFS | cut -d ' ' -f 2)
+        IPFSID=$(echo $IPFS | cut -d ' ' -f 1)
+    fi
+else
+    # Normal file or no upload_info.json: add to IPFS
+    espeak "Adding $FILE_SIZE file" 2>&1 > /dev/null
+    IPFS=$(ipfs add -wq "${path}${file}")
+    IPFSREPFILEID=$(echo $IPFS | cut -d ' ' -f 2)
+    IPFSID=$(echo $IPFS | cut -d ' ' -f 1)
+fi
+
 [[ $IPFSREPFILEID == "" ]] && echo "ipfs add ERROR" && exit 1
 
 end=`date +%s`
 ipfsdur=`expr $end - $startipfs`
-echo "IPFS ADD time was $ipfsdur seconds. $URLENCODE_FILE_NAME"
+echo "IPFS ADD time was $ipfsdur seconds."
 
 URLENCODE_FILE_NAME=$(echo ${file} | jq -Rr @uri)
 
@@ -553,29 +605,88 @@ then
         -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "$myDATA" send -d "$3" \
         -t "${TITLE} ${MEDIAKEY}" -m "MEDIA : $myIPFSGW/ipfs/${IPFSREPFILEID}"
 
-        ## SEND MEDIA AS PUBLIC NOSTR MESSAGE
-        echo "Sending media as public NOSTR message..."
-        # Build optional extras for NOSTR
-        SUBS_DESC_NOSTR="$SUBTITLES_DESC"
-        COMMENTS_LINK_NOSTR=""
-        if [[ -n "$COMMENTS_IPFS" ]]; then
-            COMMENTS_LINK_NOSTR="${myLIBRA}/ipfs/${COMMENTS_IPFS}"
-        fi
+        ## SEND VIDEO AS NIP-71 NOSTR EVENT (if video and upload_info.json exists)
+        if [[ $(echo "$MIME" | grep 'video') ]] && [[ -f ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/upload_info.json ]]; then
+            echo "📹 Publishing video as NIP-71 NOSTR event..."
+            
+            # Load metadata from upload_info.json
+            UPLOAD_INFO=$(cat ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/upload_info.json)
+            VIDEO_INFO_CID=$(echo "$UPLOAD_INFO" | jq -r '.info_cid // empty')
+            VIDEO_THUMBNAIL_CID=$(echo "$UPLOAD_INFO" | jq -r '.thumbnail_cid // empty')
+            VIDEO_GIFANIM_CID=$(echo "$UPLOAD_INFO" | jq -r '.gifanim_cid // empty')
+            VIDEO_FILE_HASH=$(echo "$UPLOAD_INFO" | jq -r '.file_hash // empty')
+            VIDEO_UPLOAD_CHAIN=$(echo "$UPLOAD_INFO" | jq -r '.upload_chain // empty')
+            VIDEO_DIMENSIONS=$(echo "$UPLOAD_INFO" | jq -r '.dimensions // empty')
+            VIDEO_DURATION=$(echo "$UPLOAD_INFO" | jq -r '.duration // 0')
+            
+            # Check if NOSTR keys exist
+            if [[ -f ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]]; then
+                # Call publish_nostr_video.sh
+                NOSTR_RESULT=$(bash $MY_PATH/publish_nostr_video.sh \
+                    --nsec ~/.zen/game/nostr/${PLAYER}/.secret.nostr \
+                    --ipfs-cid "${IPFSID}" \
+                    --filename "${file}" \
+                    --title "${TITLE}" \
+                    --description "${DESCRIPTION}" \
+                    --thumbnail-cid "${VIDEO_THUMBNAIL_CID}" \
+                    --gifanim-cid "${VIDEO_GIFANIM_CID}" \
+                    --info-cid "${VIDEO_INFO_CID}" \
+                    --file-hash "${VIDEO_FILE_HASH}" \
+                    --mime-type "${MIME}" \
+                    --upload-chain "${VIDEO_UPLOAD_CHAIN}" \
+                    --duration "${VIDEO_DURATION}" \
+                    --dimensions "${VIDEO_DIMENSIONS}" \
+                    --channel "${PLAYER}" \
+                    --json 2>&1)
+                
+                NOSTR_EXIT=$?
+                
+                if [[ $NOSTR_EXIT -eq 0 ]]; then
+                    NOSTR_EVENT_ID=$(echo "$NOSTR_RESULT" | jq -r '.event_id // empty' 2>/dev/null)
+                    if [[ -n "$NOSTR_EVENT_ID" ]]; then
+                        echo "✅ NIP-71 video event published: ${NOSTR_EVENT_ID:0:16}..."
+                    else
+                        echo "⚠️  Video event published but ID not extracted"
+                    fi
+                else
+                    echo "❌ Failed to publish NIP-71 video event (exit code: $NOSTR_EXIT)"
+                    echo "Output: $NOSTR_RESULT"
+                    
+                    # Send failure email notification
+                    send_nostr_failure_email \
+                        "$PLAYER" \
+                        "$MEDIAKEY" \
+                        "$TITLE" \
+                        "/ipfs/${IPFSREPFILEID}/${URLENCODE_FILE_NAME}"
+                fi
+            else
+                echo "⚠️  No NOSTR keys found for ${PLAYER}, skipping NOSTR video publication"
+            fi
+        elif [[ -n $3 ]]; then
+            ## FALLBACK: SEND MEDIA AS PUBLIC NOSTR MESSAGE (Kind 1) for non-videos
+            echo "Sending media as public NOSTR message..."
+            # Build optional extras for NOSTR
+            SUBS_DESC_NOSTR="$SUBTITLES_DESC"
+            COMMENTS_LINK_NOSTR=""
+            if [[ -n "$COMMENTS_IPFS" ]]; then
+                COMMENTS_LINK_NOSTR="${myLIBRA}/ipfs/${COMMENTS_IPFS}"
+            fi
 
-        send_media_nostr_message \
-            "$PLAYER" \
-            "$MEDIAKEY" \
-            "$TITLE" \
-            "$DESCRIPTION" \
-            "$myLIBRA/ipfs/${IPFSREPFILEID}/${URLENCODE_FILE_NAME}" \
-            "$MIME" \
-            "$FILE_SIZE" \
-            "$DUREE" \
-            "$RES" \
-            "$HASHTAG" \
-            "$G1PUB" \
-            "$SUBS_DESC_NOSTR" \
-            "$COMMENTS_LINK_NOSTR"
+            send_media_nostr_message \
+                "$PLAYER" \
+                "$MEDIAKEY" \
+                "$TITLE" \
+                "$DESCRIPTION" \
+                "$myLIBRA/ipfs/${IPFSREPFILEID}/${URLENCODE_FILE_NAME}" \
+                "$MIME" \
+                "$FILE_SIZE" \
+                "$DUREE" \
+                "$RES" \
+                "$HASHTAG" \
+                "$G1PUB" \
+                "$SUBS_DESC_NOSTR" \
+                "$COMMENTS_LINK_NOSTR"
+        fi
 
     fi
 

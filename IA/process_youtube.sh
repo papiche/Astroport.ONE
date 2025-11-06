@@ -10,6 +10,8 @@
 source "$HOME/.zen/Astroport.ONE/tools/my.sh"
 
 DEBUG=0
+NO_IPFS=0
+CUSTOM_OUTPUT_DIR=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -17,6 +19,14 @@ while [[ $# -gt 0 ]]; do
         --debug)
             DEBUG=1
             shift
+            ;;
+        --no-ipfs)
+            NO_IPFS=1
+            shift
+            ;;
+        --output-dir)
+            CUSTOM_OUTPUT_DIR="$2"
+            shift 2
             ;;
         *)
             break
@@ -41,9 +51,9 @@ MY_PATH="$( cd "$MY_PATH" && pwd )"
 
 # Vérifie si les arguments sont fournis
 if [ $# -lt 2 ]; then
-    log_debug "Usage: $0 [--debug] <url> <format> [player_email]"
+    log_debug "Usage: $0 [--debug] [--no-ipfs] [--output-dir DIR] <url> <format> [player_email]"
     # Use subshell to prevent broken pipe errors
-    (echo "Usage: $0 [--debug] <url> <format> [player_email]" >&2) 2>/dev/null || echo "Usage: $0 [--debug] <url> <format> [player_email]"
+    (echo "Usage: $0 [--debug] [--no-ipfs] [--output-dir DIR] <url> <format> [player_email]" >&2) 2>/dev/null || echo "Usage: $0 [--debug] [--no-ipfs] [--output-dir DIR] <url> <format> [player_email]"
     exit 1
 fi
 
@@ -51,15 +61,20 @@ URL="$1"
 FORMAT="$2"
 PLAYER_EMAIL="$3"
 
-# Create temporary directory
-TMP_DIR="$HOME/.zen/tmp/youtube_$(date +%s)"
-mkdir -p "$TMP_DIR"
+# Create temporary directory or use custom output dir
+if [[ -n "$CUSTOM_OUTPUT_DIR" ]]; then
+    OUTPUT_DIR="$CUSTOM_OUTPUT_DIR"
+    mkdir -p "$OUTPUT_DIR"
+    log_debug "Using custom output directory: $OUTPUT_DIR"
+else
+    TMP_DIR="$HOME/.zen/tmp/youtube_$(date +%s)"
+    mkdir -p "$TMP_DIR"
+    OUTPUT_DIR="$TMP_DIR"
+fi
 
-# Always use temporary directory for download
-OUTPUT_DIR="$TMP_DIR"
 # Use subshell to prevent broken pipe errors when writing to stderr
-(echo "Using temporary directory for download: $OUTPUT_DIR" >&2) 2>/dev/null || true
-log_debug "Using temporary directory for download: $OUTPUT_DIR"
+(echo "Using directory for download: $OUTPUT_DIR" >&2) 2>/dev/null || true
+log_debug "Using directory for download: $OUTPUT_DIR"
 
 # Check if player email is provided and construct uDRIVE path
 UDRIVE_COPY_PATH=""
@@ -75,9 +90,11 @@ if [ -n "$PLAYER_EMAIL" ]; then
     fi
 fi
 
-# Cleanup function
+# Cleanup function (only cleanup if using temp dir)
 cleanup() {
-    rm -rf "$TMP_DIR"
+    if [[ -z "$CUSTOM_OUTPUT_DIR" && -n "$TMP_DIR" ]]; then
+        rm -rf "$TMP_DIR"
+    fi
 }
 trap cleanup EXIT
 
@@ -162,7 +179,54 @@ if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
         filename=$(basename "$media_file")
         log_debug "Found downloaded file: $media_file"
         
-        # Add to IPFS
+        # If --no-ipfs flag is set, just return the file info without adding to IPFS
+        if [[ $NO_IPFS -eq 1 ]]; then
+            (echo "Media downloaded to: $media_file (skipping IPFS)" >&2) 2>/dev/null || true
+            log_debug "Media downloaded to: $media_file (skipping IPFS)"
+            
+            # Generate JSON response without IPFS - write to stdout ONLY
+            # Use echo to ensure clean output
+            json_output=$(cat << EOF
+{
+  "ipfs_url": "",
+  "title": "$media_title",
+  "duration": "$duration",
+  "uploader": "$uploader",
+  "original_url": "$URL",
+  "filename": "$filename",
+  "file_path": "$media_file",
+  "output_dir": "$OUTPUT_DIR",
+  "metadata_ipfs": "",
+  "thumbnail_ipfs": "",
+  "subtitles": [],
+  "channel_info": {
+    "name": "$(echo "$uploader" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 50)",
+    "display_name": "$uploader",
+    "type": "youtube"
+  },
+  "content_info": {
+    "description": "",
+    "ai_analysis": "",
+    "topic_keywords": "",
+    "duration_category": "$(if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ ]]; then duration_min=$((duration / 60)); if [[ $duration_min -lt 5 ]]; then echo "short"; elif [[ $duration_min -lt 30 ]]; then echo "medium"; else echo "long"; fi; fi)"
+  },
+  "technical_info": {
+    "format": "$FORMAT",
+    "file_size": "$(stat -c%s "$media_file" 2>/dev/null || echo "unknown")",
+    "download_date": "$(date -Iseconds)"
+  }
+}
+EOF
+)
+            # Write a clear separator to stderr, then JSON to stdout
+            (echo "=== JSON OUTPUT START ===" >&2) 2>/dev/null || true
+            echo "$json_output"
+            (echo "=== JSON OUTPUT END ===" >&2) 2>/dev/null || true
+            log_debug "Success JSON outputted (no IPFS)."
+            exit 0
+        fi
+        
+        # Add to IPFS (original behavior)
         media_ipfs=$(ipfs add -wq "$media_file" 2>> "$LOGFILE" | tail -n 1)
         log_debug "IPFS add result: $media_ipfs"
         

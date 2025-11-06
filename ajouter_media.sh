@@ -167,6 +167,18 @@ else
     [[ ! $isLAN ]] && BROWSER=""
 fi
 
+# Get user uDRIVE path for file storage
+USER_UDRIVE_PATH=$(get_user_udrive_path "$PLAYER")
+if [[ -n "$USER_UDRIVE_PATH" ]]; then
+    # Check both uDRIVE root and Videos subdirectory
+    if [[ -d "$USER_UDRIVE_PATH/Videos" ]]; then
+        USER_UDRIVE_PATH="$USER_UDRIVE_PATH/Videos"
+    fi
+    echo "✅ Using uDRIVE path: $USER_UDRIVE_PATH"
+else
+    echo "⚠️  Could not determine uDRIVE path for player: $PLAYER"
+fi
+
 ###
 if [ $URL ]; then
 
@@ -225,9 +237,10 @@ fi
 
 ###
 # IS THERE ANY RUNNING IPFS ADD OR PUBLISH IN PROGRESS ?
-ISADDING=$(pgrep -au $USER -f 'ipfs add' | tail -n 1 | xargs | cut -d " " -f 1)
-ISPUBLISHING=$(pgrep -au $USER -f 'ipfs name publish' | tail -n 1 | xargs | cut -d " " -f 1)
+ISADDING=$(pgrep -au $USER -f 'ipfs add' | grep -v 'pgrep' | tail -n 1 | xargs | cut -d " " -f 1)
+ISPUBLISHING=$(pgrep -au $USER -f 'ipfs name publish' | grep -v 'pgrep' | tail -n 1 | xargs | cut -d " " -f 1)
 [[ $ISADDING || $ISPUBLISHING ]] \
+&& echo "⚠️  IPFS task in progress (PID: ${ISADDING}${ISPUBLISHING}). Wait finish & try later" \
 && espeak "I P F S task in progress. Wait finish & try later" && exit 1
 
 ## CHECK IF ASTROPORT/CRON/IPFS IS RUNNING
@@ -305,61 +318,74 @@ YTURL="$URL"
 echo "VIDEO $YTURL"
 echo "Processing URL: $YTURL"
 
-# Use process_youtube.sh for YouTube processing with player email
-echo "Using process_youtube.sh for YouTube download..."
-echo "Command: ${MY_PATH}/IA/process_youtube.sh --debug \"$YTURL\" \"mp4\" \"$PLAYER\""
-YOUTUBE_RESULT=$(${MY_PATH}/IA/process_youtube.sh --debug "$YTURL" "mp4" "$PLAYER")
-YOUTUBE_EXIT_CODE=$?
-echo "process_youtube.sh exit code: $YOUTUBE_EXIT_CODE"
+# Download YouTube video using process_youtube.sh with --no-ipfs option
+echo "📥 Downloading YouTube video using process_youtube.sh..."
 
-# Debug: Show the raw result
-echo "Raw YOUTUBE_RESULT: $YOUTUBE_RESULT"
+# Create temporary download directory
+TEMP_YOUTUBE_DIR="$HOME/.zen/tmp/youtube_$(date -u +%s%N | cut -b1-13)"
+mkdir -p "$TEMP_YOUTUBE_DIR"
 
-# Check if the result is valid JSON
-if ! echo "$YOUTUBE_RESULT" | jq . >/dev/null 2>&1; then
-    echo "Invalid JSON returned from process_youtube.sh"
-    echo "Raw output: $YOUTUBE_RESULT"
+# Call process_youtube.sh with --no-ipfs and --output-dir options
+YOUTUBE_RESULT=$(${MY_PATH}/IA/process_youtube.sh --no-ipfs --output-dir "$TEMP_YOUTUBE_DIR" "$YTURL" "mp4" "$PLAYER" 2>&1)
+YTDLP_EXIT=$?
+
+# Extract only the JSON part between markers
+# Look for JSON between "=== JSON OUTPUT START ===" and "=== JSON OUTPUT END ==="
+if echo "$YOUTUBE_RESULT" | grep -q "=== JSON OUTPUT START ==="; then
+    YOUTUBE_JSON=$(echo "$YOUTUBE_RESULT" | sed -n '/=== JSON OUTPUT START ===/,/=== JSON OUTPUT END ===/p' | grep -v "=== JSON OUTPUT")
+else
+    # Fallback: extract the last valid JSON object
+    YOUTUBE_JSON=$(echo "$YOUTUBE_RESULT" | grep -A 1000 '^{$' | tail -n +1)
+fi
+
+# Validate JSON
+if ! echo "$YOUTUBE_JSON" | jq '.' >/dev/null 2>&1; then
+    echo "❌ ERROR: Invalid JSON from process_youtube.sh"
+    echo "Full output:"
+    echo "$YOUTUBE_RESULT"
     espeak "Invalid JSON from YouTube processing"
     exit 1
 fi
 
-# Check if process_youtube.sh succeeded
-if echo "$YOUTUBE_RESULT" | jq -e '.error' >/dev/null 2>&1; then
-    ERROR_MSG=$(echo "$YOUTUBE_RESULT" | jq -r '.error')
-    echo "YouTube processing failed: $ERROR_MSG"
-    espeak "YouTube processing failed"
+# Debug: Show result
+echo "✅ JSON Result:"
+echo "$YOUTUBE_JSON" | jq '.'
+
+# Check if download succeeded
+if [[ $YTDLP_EXIT -ne 0 ]]; then
+    echo "❌ ERROR: YouTube download failed (exit code: $YTDLP_EXIT)"
+    espeak "YouTube download failed"
     exit 1
 fi
 
-# Extract values from JSON result with better error handling
-IPFS_URL=$(echo "$YOUTUBE_RESULT" | jq -r '.ipfs_url // empty' 2>/dev/null)
-TITLE=$(echo "$YOUTUBE_RESULT" | jq -r '.title // empty' 2>/dev/null)
-DURATION=$(echo "$YOUTUBE_RESULT" | jq -r '.duration // empty' 2>/dev/null)
-UPLOADER=$(echo "$YOUTUBE_RESULT" | jq -r '.uploader // empty' 2>/dev/null)
-FILENAME=$(echo "$YOUTUBE_RESULT" | jq -r '.filename // empty' 2>/dev/null)
+# Extract metadata from JSON result
+TITLE=$(echo "$YOUTUBE_JSON" | jq -r '.title // empty')
+DURATION=$(echo "$YOUTUBE_JSON" | jq -r '.duration // "0"')
+UPLOADER=$(echo "$YOUTUBE_JSON" | jq -r '.uploader // "YouTube"')
+FILENAME=$(echo "$YOUTUBE_JSON" | jq -r '.filename // empty')
+FILE_PATH_DOWNLOADED=$(echo "$YOUTUBE_JSON" | jq -r '.file_path // empty')
 
-# Debug: Show extracted values
-echo "Extracted values:"
-echo "  IPFS_URL: '$IPFS_URL'"
-echo "  TITLE: '$TITLE'"
-echo "  DURATION: '$DURATION'"
-echo "  UPLOADER: '$UPLOADER'"
-echo "  FILENAME: '$FILENAME'"
-
-if [[ -z "$TITLE" || -z "$IPFS_URL" ]]; then
-    echo "Failed to extract required data from YouTube processing"
-    echo "TITLE: '$TITLE'"
-    echo "IPFS_URL: '$IPFS_URL'"
-    espeak "Failed to extract data"
+# Validate extracted values
+if [[ -z "$FILENAME" || -z "$FILE_PATH_DOWNLOADED" || ! -f "$FILE_PATH_DOWNLOADED" ]]; then
+    echo "❌ ERROR: Downloaded file not found or invalid metadata"
+    echo "FILENAME: '$FILENAME'"
+    echo "FILE_PATH: '$FILE_PATH_DOWNLOADED'"
+    ls -lah "$TEMP_YOUTUBE_DIR"
+    espeak "Download failed"
     exit 1
 fi
 
-echo "OK $TITLE processed"
-espeak "OK $TITLE processed"
+# Extract YouTube ID from URL
+YID=$(echo "$YTURL" | grep -oE '(?:v=|/)([a-zA-Z0-9_-]{11})' | cut -d'=' -f2 | cut -d'/' -f2)
+
+echo "✅ Downloaded: $FILENAME"
+echo "   Title: $TITLE"
+echo "   Duration: $DURATION seconds"
+echo "   YouTube ID: $YID"
+echo "   File: $FILE_PATH_DOWNLOADED"
 
 # Create MEDIAID and MEDIAKEY
 REVSOURCE="$(echo "$YTURL" | awk -F/ '{print $3}' | rev)_"
-YID=$(echo "$YTURL" | grep -oE '(?:v=|/)([a-zA-Z0-9_-]{11})' | cut -d'=' -f2 | cut -d'/' -f2)
 MEDIAID="$REVSOURCE${YID}"
 MEDIAKEY="YOUTUBE_${MEDIAID}"
 
@@ -367,24 +393,116 @@ MEDIAKEY="YOUTUBE_${MEDIAID}"
 FILE_PATH="$HOME/Astroport/${PLAYER}/youtube/$MEDIAID"
 mkdir -p ${FILE_PATH}
 
-# Create symbolic link to uDRIVE file if available
-if [[ -n "$USER_UDRIVE_PATH" && -f "$USER_UDRIVE_PATH/$FILENAME" ]]; then
-    ln -sf "$USER_UDRIVE_PATH/$FILENAME" "${FILE_PATH}/${FILENAME}"
-    echo "Created symbolic link to uDRIVE file: $USER_UDRIVE_PATH/$FILENAME"
+echo ""
+echo "📤 Uploading to IPFS using upload2ipfs.sh..."
+
+# Call upload2ipfs.sh with user's public key for provenance tracking
+NPUB_HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX 2>/dev/null || echo "")
+UPLOAD_OUTPUT_FILE="$TEMP_YOUTUBE_DIR/upload_result.json"
+
+# Call upload2ipfs.sh with the downloaded file
+bash "${HOME}/.zen/UPassport/upload2ipfs.sh" \
+    "$FILE_PATH_DOWNLOADED" \
+    "$UPLOAD_OUTPUT_FILE" \
+    "$NPUB_HEX"
+
+UPLOAD_EXIT_CODE=$?
+
+if [[ $UPLOAD_EXIT_CODE -ne 0 ]]; then
+    echo "❌ ERROR: upload2ipfs.sh failed with exit code $UPLOAD_EXIT_CODE"
+    espeak "Upload to IPFS failed"
+    exit 1
 fi
 
-# Get resolution from downloaded file
-FILE_RES="720"  # Default for YouTube downloads
-if [[ -f "${FILE_PATH}/${FILENAME}" ]]; then
+# Read upload result
+if [[ ! -f "$UPLOAD_OUTPUT_FILE" ]]; then
+    echo "❌ ERROR: Upload result file not found: $UPLOAD_OUTPUT_FILE"
+    espeak "Upload result not found"
+    exit 1
+fi
+
+UPLOAD_RESULT=$(cat "$UPLOAD_OUTPUT_FILE")
+echo "Upload result:"
+echo "$UPLOAD_RESULT" | jq '.'
+
+# Extract values from upload result
+IPFS_CID=$(echo "$UPLOAD_RESULT" | jq -r '.cid // empty')
+INFO_CID=$(echo "$UPLOAD_RESULT" | jq -r '.info // empty')
+THUMBNAIL_CID=$(echo "$UPLOAD_RESULT" | jq -r '.thumbnail_ipfs // empty')
+GIFANIM_CID=$(echo "$UPLOAD_RESULT" | jq -r '.gifanim_ipfs // empty')
+FILE_HASH=$(echo "$UPLOAD_RESULT" | jq -r '.fileHash // empty')
+FILE_SIZE=$(echo "$UPLOAD_RESULT" | jq -r '.fileSize // 0')
+MIME_TYPE=$(echo "$UPLOAD_RESULT" | jq -r '.mimeType // "video/mp4"')
+UPLOAD_CHAIN=$(echo "$UPLOAD_RESULT" | jq -r '.upload_chain // empty')
+DIMENSIONS=$(echo "$UPLOAD_RESULT" | jq -r '.dimensions // empty')
+
+if [[ -z "$IPFS_CID" ]]; then
+    echo "❌ ERROR: Failed to get IPFS CID from upload result"
+    espeak "IPFS upload failed"
+    exit 1
+fi
+
+echo ""
+echo "✅ IPFS Upload successful!"
+echo "   CID: $IPFS_CID"
+echo "   Info CID: $INFO_CID"
+echo "   Thumbnail CID: $THUMBNAIL_CID"
+echo "   GIF CID: $GIFANIM_CID"
+echo "   File Hash: ${FILE_HASH:0:16}..."
+echo "   Size: $FILE_SIZE bytes"
+
+# Create symbolic link or copy file to Astroport directory
+if [[ -n "$USER_UDRIVE_PATH" ]]; then
+    # Try to move file to uDRIVE
+    if mv "$TEMP_YOUTUBE_DIR/$FILENAME" "$USER_UDRIVE_PATH/$FILENAME" 2>/dev/null; then
+        ln -sf "$USER_UDRIVE_PATH/$FILENAME" "${FILE_PATH}/${FILENAME}"
+        echo "✅ Moved to uDRIVE and created symbolic link"
+    else
+        # Fallback: just create symlink to temp file
+        ln -sf "$TEMP_YOUTUBE_DIR/$FILENAME" "${FILE_PATH}/${FILENAME}"
+        echo "⚠️  Could not move to uDRIVE, using temp file"
+    fi
+else
+    # No uDRIVE, just symlink
+    ln -sf "$TEMP_YOUTUBE_DIR/$FILENAME" "${FILE_PATH}/${FILENAME}"
+    echo "⚠️  No uDRIVE path, using temp file"
+fi
+
+# Get resolution
+FILE_RES="720"  # Default
+if [[ -e "${FILE_PATH}/${FILENAME}" ]]; then
     FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${FILE_PATH}/${FILENAME}" 2>/dev/null | cut -d "x" -f 2 || echo "720")
 fi
 RES=${FILE_RES%?}0p
 
 ## CREATE "~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt"
 URLENCODE_FILE_NAME=$(echo ${FILENAME} | jq -Rr @uri)
-echo "youtube;${MEDIAID};$(date -u +%s%N | cut -b1-13);${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$URLENCODE_FILE_NAME" > ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt
+echo "youtube;${MEDIAID};$(date -u +%s%N | cut -b1-13);${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/${IPFS_CID}/$URLENCODE_FILE_NAME" > ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt
 
-# _IPFSREPFILEID_ is replaced later
+# Store additional metadata for later use
+cat > ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/upload_info.json <<EOF
+{
+  "ipfs_cid": "$IPFS_CID",
+  "info_cid": "$INFO_CID",
+  "thumbnail_cid": "$THUMBNAIL_CID",
+  "gifanim_cid": "$GIFANIM_CID",
+  "file_hash": "$FILE_HASH",
+  "file_size": $FILE_SIZE,
+  "mime_type": "$MIME_TYPE",
+  "upload_chain": "$UPLOAD_CHAIN",
+  "dimensions": "$DIMENSIONS",
+  "duration": "$DURATION",
+  "uploader": "$UPLOADER",
+  "youtube_url": "$YTURL",
+  "youtube_id": "$YID"
+}
+EOF
+
+# Set FILE_NAME for new_file_in_astroport.sh
+FILE_NAME="$FILENAME"
+
+echo "✅ YouTube video processed successfully!"
+espeak "YouTube video ready"
 
     ;;
 
@@ -682,9 +800,21 @@ echo '[
         mkdir -p ${FILE_PATH}
         
         # Create symbolic link to uDRIVE file if available
+        FILE_NAME="$FILE_NAME"
         if [[ -n "$USER_UDRIVE_PATH" && -f "$USER_UDRIVE_PATH/$FILE_NAME" ]]; then
             ln -sf "$USER_UDRIVE_PATH/$FILE_NAME" "${FILE_PATH}/${FILE_NAME}"
             echo "Created symbolic link to uDRIVE file: $USER_UDRIVE_PATH/$FILE_NAME"
+        else
+            echo "⚠️  uDRIVE file not found: $USER_UDRIVE_PATH/$FILE_NAME"
+            espeak "Error: MP3 file not found in uDRIVE"
+            exit 1
+        fi
+        
+        # Verify the file exists (either direct file or symlink)
+        if [[ ! -e "${FILE_PATH}/${FILE_NAME}" ]]; then
+            echo "❌ ERROR: MP3 file not accessible at ${FILE_PATH}/${FILE_NAME}"
+            espeak "Error: MP3 file not accessible"
+            exit 1
         fi
         
         # Create ajouter_video.txt
