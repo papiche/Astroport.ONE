@@ -378,7 +378,6 @@ VIDEO_CONTENT="🎬 ${TITLE}"
 if [ -n "$DESCRIPTION" ]; then
     VIDEO_CONTENT="${VIDEO_CONTENT}\n\n📝 Description: ${DESCRIPTION}"
 fi
-VIDEO_CONTENT="${VIDEO_CONTENT}\n\n📹 Video: ${IPFS_URL}"
 
 log_info "Building NOSTR tags..."
 
@@ -529,12 +528,12 @@ if [ $NOSTR_EXIT_CODE -eq 0 ]; then
         log_info "Publishing kind 1 note with theater link..."
         
         # Build theater URL
-        THEATER_URL="${uSPOT}/theater?video=${IPFS_CID}"
+        THEATER_URL="${uSPOT}/theater?video=${EVENT_ID}"
         
         # Build kind 1 content with emojis and theater link
         KIND1_CONTENT="🎬 ${TITLE}
 
-📹 New video published!
+📹 New video !
 🎥 Watch here: ${THEATER_URL}
 
 Duration: ${DURATION}s
