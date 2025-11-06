@@ -92,6 +92,8 @@
 
 # Note: set -e removed to allow proper error handling with exit codes
 # set -e
+# Find uSPOT ENV
+source $HOME/.zen/Astroport.ONE/tools/my.sh
 
 # Default values
 RELAYS="ws://127.0.0.1:7777,wss://relay.copylaradio.com"

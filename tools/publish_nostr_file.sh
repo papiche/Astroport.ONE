@@ -92,7 +92,8 @@
 
 # Note: set -e removed to allow proper error handling with exit codes
 # set -e
-
+# Find uSPOT ENV
+source $HOME/.zen/Astroport.ONE/tools/my.sh
 # Get script directory for relative imports
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
