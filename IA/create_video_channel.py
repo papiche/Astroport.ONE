@@ -28,10 +28,12 @@ async def fetch_nostr_events(relay_url: str = "ws://127.0.0.1:7777", limit: int 
     try:
         async with websockets.connect(relay_url) as websocket:
             # Requête pour récupérer uniquement les événements NIP-71 (kind: 21, 22)
+            # According to UPlanet_FILE_CONTRACT.md, videos use tag "t" with prefix "Channel-"
+            # We don't filter by #t to avoid excluding valid videos published via /webcam
             filter_data = {
                 "kinds": [21, 22],  # NIP-71 Video Events uniquement (normal + shorts)
-                "limit": limit,
-                "#t": ["YouTubeDownload", "VideoChannel"]
+                "limit": limit
+                # No #t filter - fetch ALL kind 21/22 events (filtering happens in is_youtube_video_event)
             }
             
             request = ["REQ", "youtube_videos", filter_data]
@@ -103,6 +105,9 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
                 if 'youtube.com' in tag_value or 'youtu.be' in tag_value:
                     youtube_url = tag_value
                 elif '/ipfs/' in tag_value or 'ipfs://' in tag_value:
+                    # Normalize IPFS URL format to /ipfs/{CID}/{filename} (UPlanet_FILE_CONTRACT.md)
+                    if tag_value.startswith('ipfs://'):
+                        tag_value = tag_value.replace('ipfs://', '/ipfs/')
                     ipfs_url = tag_value
             elif tag_type == 'image' and not thumbnail_ipfs:
                 # Standard NIP-71 image tag for thumbnails
