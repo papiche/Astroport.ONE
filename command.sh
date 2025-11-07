@@ -928,7 +928,7 @@ list_existing_cards() {
     echo -e "${CYAN}MULTIPASS:${NC}"
     NOSTR_CARDS=$(ls ~/.zen/game/nostr 2>/dev/null | grep "@" || echo "Aucune")
     if [[ "$NOSTR_CARDS" != "Aucune" ]]; then
-        echo "$NOSTR_CARDS" | nl
+        echo "$NOSTR_CARDS" | nl                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
     else
         echo "  Aucune carte MULTIPASS trouvée"
     fi
@@ -1081,7 +1081,12 @@ handle_zen_card_management() {
             fi
             echo "MULTIPASS disponibles (sans ZEN Card) :"
             for i in "${!mps[@]}"; do
-                echo "$((i+1)). ${mps[$i]}"
+                local email="${mps[$i]}"
+                if [[ -f "${HOME}/.zen/game/nostr/${email}/.secret.nostr" ]]; then
+                    echo -e "$((i+1)). ${GREEN}${email}${NC} ${CYAN}[LOCAL]${NC}"
+                else
+                    echo -e "$((i+1)). ${YELLOW}${email}${NC} ${RED}[REMOTE]${NC}"
+                fi
             done
             echo "0. ⬅️  Annuler"
             echo ""

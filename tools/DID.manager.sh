@@ -198,18 +198,14 @@ find_hex_from_email() {
 find_email_from_hex() {
     local hex="$1"
     
-    # Search in game/nostr directories
-    for dir in "${HOME}/.zen/game/nostr"/*; do
-        [[ ! -d "$dir" ]] && continue
-        
-        if [[ -f "$dir/HEX" ]]; then
-            local stored_hex=$(cat "$dir/HEX")
-            if [[ "$stored_hex" == "$hex" ]]; then
-                basename "$dir"
-                return 0
-            fi
-        fi
-    done
+    # Search in game/nostr directories using grep (much faster)
+    local found_file=$(grep -lr "^${hex}$" "${HOME}/.zen/game/nostr"/*@*/HEX 2>/dev/null | head -n1)
+    
+    if [[ -n "$found_file" ]]; then
+        # Extract email from path: /home/user/.zen/game/nostr/email@domain.com/HEX -> email@domain.com
+        basename "$(dirname "$found_file")"
+        return 0
+    fi
     
     return 1
 }

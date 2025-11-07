@@ -13,10 +13,11 @@ This guide explains how to build applications on top of **NostrTube** using the 
 3. [Core NOSTR Functions](#core-nostr-functions)
 4. [Video & Media Functions](#video--media-functions)
 5. [Social Graph & N² Network](#social-graph--n²-network)
-6. [UPlanet ORE & Flora](#uplanet-ore--flora)
-7. [FastAPI Backend](#fastapi-backend)
-8. [Complete Examples](#complete-examples)
-9. [Best Practices](#best-practices)
+6. [UMAP Geographic Chat](#umap-geographic-chat-nip-28-extension)
+7. [UPlanet ORE & Flora](#uplanet-ore--flora)
+8. [FastAPI Backend](#fastapi-backend)
+9. [Complete Examples](#complete-examples)
+10. [Best Practices](#best-practices)
 
 ---
 
@@ -1355,6 +1356,378 @@ console.log(`${videos.total_videos} videos within ${radius}km`);
 
 ---
 
+## UMAP Geographic Chat (NIP-28 Extension)
+
+### 1. Overview
+
+The UMAP chat system provides **location-based discussion rooms** using NIP-28 (Public Chat) combined with UMAP DIDs (NIP-101). Each geographic cell (0.01° × 0.01°) can have its own decentralized chat channel.
+
+**Key Features:**
+- Geographic chat rooms tied to real-world locations
+- Based on UMAP DID identities (kind 30800)
+- Uses NIP-28 channel messages (kind 42)
+- Automatic UMAP discovery by coordinates
+- Fallback to generic IDs if no DID exists
+
+### 2. Initialize UMAP Chat
+
+```javascript
+/**
+ * Initialize UMAP chat system
+ * Searches for UMAP DID and sets up channel
+ * Automatically fetches user's GPS coordinates if authenticated
+ * @returns {Promise<void>}
+ */
+async function initUMAPChat()
+
+// Usage
+await initUMAPChat();
+// Sets global UMAPChat object:
+// - UMAPChat.currentUMAP { lat, lon } (from /api/myGPS or default 0.00, 0.00)
+// - UMAPChat.channelId (UMAP DID npub or fallback)
+// - UMAPChat.umapDID (full DID document if found)
+
+// Behavior:
+// 1. If user is authenticated (NIP-42), fetches GPS from /api/myGPS
+// 2. Uses retrieved coordinates to find local UMAP DID
+// 3. Falls back to default (0.00, 0.00) if GPS not available
+```
+
+### 2b. Get User GPS Coordinates (API)
+
+```javascript
+/**
+ * Fetch authenticated user's GPS coordinates
+ * Backend endpoint: GET /api/myGPS
+ * Requires: Valid NIP-42 authentication
+ * @param {string} npub - User's NOSTR public key
+ * @returns {Promise<object>} GPS data
+ */
+
+// Usage
+const response = await fetch(`/api/myGPS?npub=${userPubkey}`);
+const gpsData = await response.json();
+
+if (gpsData.success) {
+    console.log('Coordinates:', gpsData.coordinates);
+    // { lat: 48.20, lon: -2.48 }
+    
+    console.log('UMAP key:', gpsData.umap_key);
+    // "48.20,-2.48"
+    
+    console.log('Email:', gpsData.email);
+    // "user@example.com"
+}
+
+// Security:
+// - Requires valid NIP-42 authentication (kind 22242 event on relay)
+// - Only returns coordinates for the authenticated user
+// - GPS file location: ~/.zen/game/nostr/{email}/GPS
+// - Format: LAT=48.20; LON=-2.48;
+
+// Response (success):
+{
+    "success": true,
+    "coordinates": { "lat": 48.20, "lon": -2.48 },
+    "umap_key": "48.20,-2.48",
+    "email": "user@example.com",
+    "message": "GPS coordinates retrieved successfully",
+    "timestamp": "2025-11-06T23:00:00Z"
+}
+
+// Response (error 403 - not authenticated):
+{
+    "error": "authentication_required",
+    "message": "NIP-42 authentication required to access GPS coordinates",
+    "hint": "Please connect your NOSTR wallet and send an authentication event (kind 22242)"
+}
+
+// Response (error 404 - GPS not found):
+{
+    "error": "gps_not_found",
+    "message": "GPS coordinates not found for this user",
+    "hint": "GPS coordinates are set during MULTIPASS registration"
+}
+```
+
+### 3. Discover UMAP DID
+
+```javascript
+/**
+ * Fetch UMAP DID (kind 30800) for geographic coordinates
+ * @param {number} lat - Latitude (rounded to 0.01°)
+ * @param {number} lon - Longitude (rounded to 0.01°)
+ * @returns {Promise<void>}
+ */
+async function fetchUMAPDIDForChat(lat, lon)
+
+// Usage
+await fetchUMAPDIDForChat(48.86, 2.35);
+
+// Result stored in UMAPChat:
+if (UMAPChat.umapDID) {
+    console.log('Found DID:', UMAPChat.channelId); // npub1abc...
+} else {
+    console.log('No DID, using fallback:', UMAPChat.channelId); // UMAP_48.86_2.35
+}
+```
+
+### 4. Subscribe to Messages
+
+```javascript
+/**
+ * Load chat messages for current UMAP
+ * @returns {Promise<void>}
+ */
+async function loadChatMessages()
+
+// Usage
+await loadChatMessages();
+
+// Subscribes to NIP-28 messages (kind 42) filtered by channel ID
+// Filter: { kinds: [42], "#e": [UMAPChat.channelId] }
+```
+
+### 5. Send Message
+
+```javascript
+/**
+ * Send message to UMAP chat channel
+ * @returns {Promise<void>}
+ */
+async function sendChatMessage()
+
+// Usage
+const input = document.getElementById('chatInput');
+input.value = 'Hello UMAP!';
+await sendChatMessage();
+
+// Creates kind 42 event:
+{
+  kind: 42,
+  tags: [
+    ["e", UMAPChat.channelId, "", "root"],  // Channel reference
+    ["g", "48.86,2.35"]                      // Geographic tag
+  ],
+  content: "Hello UMAP!"
+}
+```
+
+### 6. Change UMAP (Switch Room)
+
+```javascript
+/**
+ * Switch to a different UMAP chat room
+ * @returns {Promise<void>}
+ */
+async function showUMAPSelector()
+
+// Usage
+await showUMAPSelector();
+// Prompts user for new coordinates
+// Re-fetches UMAP DID
+// Reloads messages for new channel
+```
+
+### 7. Display Chat Message
+
+```javascript
+/**
+ * Display a chat message in the UI
+ * @param {object} event - NOSTR event (kind 42)
+ */
+function displayChatMessage(event)
+
+// Usage - Automatic
+// Called by subscription when new messages arrive
+```
+
+### 8. UMAP Chat Object Structure
+
+```javascript
+// Global state object
+window.UMAPChat = {
+    currentUMAP: { lat: 0.00, lon: 0.00 },
+    channelId: '',        // UMAP DID npub or fallback ID
+    umapDID: null,        // Full DID document (kind 30800)
+    subscription: null,   // Relay subscription object
+    activeUsers: new Set() // Track unique pubkeys in channel
+};
+
+// Example - After initialization and message loading
+{
+    currentUMAP: { lat: 48.86, lon: 2.35 },
+    channelId: "npub1abc123...xyz",
+    umapDID: {
+        id: "event_id",
+        pubkey: "abc123...",
+        kind: 30800,
+        content: "{...DID document...}"
+    },
+    subscription: { unsub: function() {...} },
+    activeUsers: Set(3) { "abc123...", "def456...", "ghi789..." }
+}
+
+// Access user count
+console.log(`Active users: ${UMAPChat.activeUsers.size}`);
+```
+
+### 8b. Track Active Users
+
+```javascript
+/**
+ * Active users are automatically tracked when messages are received
+ * The count is displayed in real-time in the UI badge
+ */
+
+// Users are added when:
+// 1. Messages (kind 42) are received - event.pubkey is added to Set
+// 2. User sends a message - their pubkey is added
+
+// UI updates automatically via updateUMAPChatUI()
+// Badge: <i class="bi bi-people-fill"></i> 3
+
+// Reset on channel change:
+UMAPChat.activeUsers.clear();  // Called in loadChatMessages()
+```
+
+### 9. Complete Example - UMAP Chat Integration
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>UMAP Chat Demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>Geographic Chat Room</h1>
+        
+        <div class="mb-3">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-secondary">
+                    <i class="bi bi-geo-alt"></i> UMAP: <strong id="currentUMAP">0.00, 0.00</strong>
+                </span>
+                <button class="btn btn-sm btn-outline-secondary" onclick="showUMAPSelector()">
+                    <i class="bi bi-pencil"></i> Change
+                </button>
+                <span class="badge bg-info ms-auto" title="Active users in this UMAP channel">
+                    <i class="bi bi-people-fill"></i> <span id="channelUsersCount">0</span>
+                </span>
+            </div>
+        </div>
+        
+        <div class="mb-2">
+            <small class="text-muted">Channel: <code id="channelId">...</code></small>
+        </div>
+        
+        <div id="chatMessages" style="height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;"></div>
+        
+        <div class="input-group mt-2">
+            <input type="text" id="chatInput" class="form-control" placeholder="Type a message...">
+            <button class="btn btn-primary" onclick="sendChatMessage()">
+                <i class="bi bi-send"></i> Send
+            </button>
+        </div>
+    </div>
+    
+    <script src="{{ myIPFS }}/ipns/copylaradio.com/nostr.bundle.js"></script>
+    <script src="{{ myIPFS }}/ipns/copylaradio.com/common.js"></script>
+    
+    <script>
+        // Initialize on page load
+        window.addEventListener('load', async () => {
+            // Connect to relay
+            await connectToRelay();
+            
+            // Connect user (for authentication)
+            const pubkey = await connectNostr();
+            
+            if (pubkey) {
+                // Initialize UMAP chat (will fetch GPS if authenticated)
+                await initUMAPChat();
+                
+                // Load messages (will populate activeUsers count)
+                await loadChatMessages();
+                
+                console.log('Chat initialized with', UMAPChat.activeUsers.size, 'active users');
+            }
+        });
+    </script>
+</body>
+</html>
+```
+
+### 10. Best Practices
+
+✅ **Use UMAP DID as Channel ID when available:**
+```javascript
+// Good - Uses DID-based channel
+if (UMAPChat.umapDID) {
+    channelId = NostrTools.nip19.npubEncode(UMAPChat.umapDID.pubkey);
+}
+```
+
+✅ **Always include geographic tag:**
+```javascript
+tags.push(["g", `${lat.toFixed(2)},${lon.toFixed(2)}`]);
+```
+
+✅ **Round coordinates to 0.01° precision:**
+```javascript
+lat = Math.round(lat * 100) / 100;  // 48.8566 -> 48.86
+lon = Math.round(lon * 100) / 100;  // 2.3522 -> 2.35
+```
+
+✅ **Unsubscribe when changing UMAP:**
+```javascript
+if (UMAPChat.subscription) {
+    UMAPChat.subscription.unsub();
+}
+```
+
+✅ **Handle missing DIDs gracefully:**
+```javascript
+if (!UMAPChat.umapDID) {
+    console.log('No DID found, using fallback channel ID');
+    channelEl.title = 'No UMAP DID registered for this location';
+}
+```
+
+### 11. Integration with ORE System
+
+UMAP chats are part of the larger ORE ecosystem:
+
+**Environmental Compliance Discussions:**
+```javascript
+// Fetch ORE contracts for current UMAP
+const contracts = await fetchOREContractsForUMAP(
+    UMAPChat.currentUMAP.lat,
+    UMAPChat.currentUMAP.lon
+);
+
+// Discuss in UMAP chat
+await sendChatMessage(`Found ${contracts.length} ORE contracts here!`);
+```
+
+**Flora Observations:**
+```javascript
+// Share plant identification in local UMAP
+await sendChatMessage('🌱 Just identified a Quercus robur (Oak tree) here!');
+```
+
+**Verification Meetings:**
+```javascript
+// Announce ORE verification session
+await sendChatMessage('📅 ORE verification meeting tomorrow at 10am in this UMAP');
+```
+
+See **NIP-28 UMAP Extension** (`28-umap-extension.md`) for full protocol specification.
+
+---
+
 ## UPlanet ORE & Flora
 
 ### 1. Flora Statistics (Plant Observations)
@@ -1671,6 +2044,63 @@ Query Parameters:
     video: str (video event ID or IPFS CID)
 
 Response: HTML template (theater-modal.html)
+```
+
+---
+
+### User & Location Endpoints
+
+#### GET /api/myGPS - Get User GPS Coordinates
+
+```python
+# Get authenticated user's GPS coordinates (requires NIP-42)
+GET /api/myGPS?npub={npub_or_hex}
+
+Query Parameters:
+    npub: str (user's NOSTR public key - hex or npub format)
+
+Response JSON (success):
+{
+    "success": true,
+    "coordinates": {
+        "lat": 48.20,
+        "lon": -2.48
+    },
+    "umap_key": "48.20,-2.48",
+    "email": "user@example.com",
+    "message": "GPS coordinates retrieved successfully",
+    "timestamp": "2025-11-06T23:00:00Z"
+}
+
+Response JSON (error 403 - not authenticated):
+{
+    "error": "authentication_required",
+    "message": "NIP-42 authentication required to access GPS coordinates",
+    "hint": "Please connect your NOSTR wallet and send an authentication event (kind 22242)"
+}
+
+Response JSON (error 404 - GPS not found):
+{
+    "error": "gps_not_found",
+    "message": "GPS coordinates not found for this user",
+    "hint": "GPS coordinates are set during MULTIPASS registration"
+}
+
+Security:
+    - Requires valid NIP-42 authentication (kind 22242)
+    - Verifies authentication by calling verify_nostr_auth(npub, force_check=True)
+    - Only returns coordinates for the authenticated user
+    - Does not expose coordinates of other users
+    
+Storage:
+    - GPS file location: ~/.zen/game/nostr/{email}/GPS
+    - Format: LAT=48.20; LON=-2.48;
+    - Set during MULTIPASS registration (/g1nostr endpoint)
+    
+Use Case:
+    - Automatic UMAP chat room initialization
+    - Location-based features (ORE verification, flora observations)
+    - Geographic content filtering
 ```
 
 ---
@@ -2323,14 +2753,18 @@ const isValid = await verifySignature(event);
 ## Resources
 
 ### Documentation
+- **NIP-28**: Public Chat - https://github.com/nostr-protocol/nips/blob/master/28.md
+- **NIP-28 UMAP Extension**: Geographic Chat Rooms - `nostr-nips/28-umap-extension.md`
 - **NIP-71**: Video Events - https://github.com/nostr-protocol/nips/blob/master/71.md
 - **NIP-101**: UPlanet Protocol - https://github.com/papiche/NIP-101
 - **NIP-42**: Authentication - https://github.com/nostr-protocol/nips/blob/master/42.md
 - **NIP-22**: Comments - https://github.com/nostr-protocol/nips/blob/master/22.md
+- **ORE System**: `ORE_SYSTEM.md` - Environmental compliance system
 
 ### Repositories
 - **Astroport.ONE**: https://github.com/papiche/Astroport.ONE
 - **NIP-101**: https://github.com/papiche/NIP-101
+- **NOSTR NIPs**: https://github.com/nostr-protocol/nips
 
 ### Support
 - Open issues on GitHub

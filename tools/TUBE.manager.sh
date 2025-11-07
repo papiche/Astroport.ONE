@@ -195,59 +195,185 @@ find_hex_from_email() {
     return 1
 }
 
-# Delete specific NOSTR event by ID using strfry
+# Check if a pubkey (hex) exists locally in ~/.zen/game/nostr/*/HEX
+check_local_pubkey() {
+    local pubkey_hex="$1"
+    
+    # Search for this pubkey in all HEX files
+    grep -qr "^${pubkey_hex}$" "${HOME}/.zen/game/nostr"/*@*/HEX 2>/dev/null
+}
+
+# Delete specific NOSTR event by ID using kind 5 (NIP-09) or physical deletion
 delete_event_by_id() {
     local event_id="$1"
-    local force="${2:-false}"
+    local user_hex="$2"
+    local force="${3:-false}"
+    local deletion_mode="${4:-kind5}"  # "kind5", "physical", or "both"
     
-    log_debug "Deleting event: $event_id"
+    log_debug "Deleting event: $event_id (mode: $deletion_mode)"
     
-    # Check strfry exists
-    local STRFRY_DIR="$HOME/.zen/strfry"
-    local STRFRY_BIN="${STRFRY_DIR}/strfry"
-    
-    if [[ ! -f "${STRFRY_BIN}" ]]; then
-        log_error "strfry not found at ${STRFRY_BIN}"
-        return 1
-    fi
-    
-    # Change to strfry directory
-    cd "$STRFRY_DIR" || return 1
-    
-    # Build filter JSON with specific event ID
-    # Format: {"ids": ["event_id"]}
-    local IDS_JSON=$(echo "$event_id" | jq -R . | jq -s -c '{ids: .}')
-    
-    log_debug "Delete filter: $IDS_JSON"
-    
-    # Execute deletion with filter (no confirmation if force=true)
-    if [[ "$force" == "true" ]]; then
-        log_debug "Executing deletion with --force..."
+    if [[ "$deletion_mode" == "both" ]]; then
+        # Do both: kind 5 first, then physical deletion
+        log_info "Combined deletion mode: kind 5 + physical"
+        
+        # Step 1: Publish kind 5 deletion event
+        log_info "Step 1/2: Publishing kind 5 deletion event..."
+        if delete_event_by_id "$event_id" "$user_hex" "$force" "kind5"; then
+            log_success "✅ Kind 5 deletion event published"
+        else
+            log_error "❌ Failed to publish kind 5 event"
+            return 1
+        fi
+        
+        # Step 2: Physical deletion
+        log_info "Step 2/2: Physical deletion from database..."
+        if delete_event_by_id "$event_id" "$user_hex" "$force" "physical"; then
+            log_success "✅ Event physically deleted from database"
+        else
+            log_error "❌ Failed to physically delete event"
+            return 1
+        fi
+        
+        log_success "🎉 Complete deletion finished (kind 5 + physical)"
+        return 0
+        
+    elif [[ "$deletion_mode" == "physical" ]]; then
+        # Physical deletion using nostr_get_events.sh --del
+        log_info "Physical deletion mode (using --del)"
+        
+        if [[ "$force" != "true" ]]; then
+            log_warning "Confirmation required for physical deletion"
+            echo "Event ID to delete: $event_id"
+            read -p "Continue with physical deletion? (yes/NO): " confirm
+            
+            if [[ "$confirm" != "yes" ]]; then
+                log_warning "Deletion cancelled"
+                return 1
+            fi
+        fi
+        
+        # Use nostr_get_events.sh with --del option
+        local force_flag=""
+        [[ "$force" == "true" ]] && force_flag="--force"
+        
+        # Delete by filtering on this specific event ID
+        # We need to query first, then delete based on author + created_at or use strfry delete directly
+        log_info "Executing physical deletion..."
+        
+        # Using strfry delete directly with filter
+        local STRFRY_DIR="$HOME/.zen/strfry"
+        local STRFRY_BIN="${STRFRY_DIR}/strfry"
+        
+        if [[ ! -f "${STRFRY_BIN}" ]]; then
+            log_error "strfry not found at ${STRFRY_BIN}"
+            return 1
+        fi
+        
+        cd "$STRFRY_DIR" || return 1
+        
+        # Build filter JSON with specific event ID
+        local IDS_JSON=$(echo "$event_id" | jq -R . | jq -s -c '{ids: .}')
+        
+        log_debug "Delete filter: $IDS_JSON"
+        
         if ./strfry delete --filter="$IDS_JSON" 2>&1 >/dev/null; then
+            log_success "Event physically deleted from database"
             cd - > /dev/null 2>&1
             return 0
         else
-            log_error "Failed to delete event: $event_id"
+            log_error "Failed to physically delete event: $event_id"
             cd - > /dev/null 2>&1
             return 1
         fi
-    else
-        log_warning "Confirmation required for deletion"
-        echo "Event ID to delete: $event_id"
-        read -p "Continue? (yes/NO): " confirm
         
-        if [[ "$confirm" == "yes" ]]; then
-            if ./strfry delete --filter="$IDS_JSON" 2>&1 >/dev/null; then
-                cd - > /dev/null 2>&1
-                return 0
+    else
+        # Kind 5 deletion (NIP-09) - publish deletion event
+        log_info "Publishing kind 5 deletion event (NIP-09)..."
+        
+        # Find user's .secret.nostr file
+        local secret_file=""
+        
+        # Query DID document for this pubkey (kind 30800)
+        log_debug "Querying DID document for pubkey: ${user_hex:0:16}..."
+        local did_event=$(bash "$NOSTR_GET_EVENTS" --kind 30800 --author "$user_hex" --limit 1 2>/dev/null)
+        
+        if [[ -n "$did_event" ]] && [[ "$did_event" != "[]" ]]; then
+            # Try to extract email from event tags first
+            local email=$(echo "$did_event" | jq -r 'if type == "array" then .[0].tags[]? else .tags[]? end | select(.[0] == "email") | .[1]' 2>/dev/null | head -n1)
+            
+            # If not found in tags, try from content.metadata.email
+            if [[ -z "$email" ]]; then
+                email=$(echo "$did_event" | jq -r 'if type == "array" then .[0].content else .content end | fromjson | .metadata.email // empty' 2>/dev/null)
+            fi
+            
+            # If still not found, try from content.alsoKnownAs
+            if [[ -z "$email" ]]; then
+                email=$(echo "$did_event" | jq -r 'if type == "array" then .[0].content else .content end | fromjson | .alsoKnownAs[]? | select(startswith("mailto:")) | sub("^mailto:"; "")' 2>/dev/null | head -n1)
+            fi
+            
+            if [[ -n "$email" ]]; then
+                log_debug "Found email from DID: $email"
+                secret_file="${HOME}/.zen/game/nostr/${email}/.secret.nostr"
+                
+                if [[ ! -f "$secret_file" ]]; then
+                    log_error "Secret file not found at: $secret_file"
+                    return 1
+                fi
             else
-                log_error "Failed to delete event: $event_id"
-                cd - > /dev/null 2>&1
+                log_error "Could not extract email from DID document"
                 return 1
             fi
         else
-            log_warning "Deletion cancelled"
-            cd - > /dev/null 2>&1
+            log_error "No DID document found for user: ${user_hex:0:16}..."
+            return 1
+        fi
+        
+        # Confirmation prompt if not forced
+        if [[ "$force" != "true" ]]; then
+            log_warning "Confirmation required for deletion"
+            echo "Event ID to delete: $event_id"
+            read -p "Continue with kind 5 deletion? (yes/NO): " confirm
+            
+            if [[ "$confirm" != "yes" ]]; then
+                log_warning "Deletion cancelled"
+                return 1
+            fi
+        fi
+        
+        local NOSTR_SEND_NOTE="${MY_PATH}/nostr_send_note.py"
+        
+        if [[ ! -f "$NOSTR_SEND_NOTE" ]]; then
+            log_error "nostr_send_note.py not found at: $NOSTR_SEND_NOTE"
+            return 1
+        fi
+        
+        # Build tags JSON: [["e", "event_id"]]
+        local tags_json="[[\"e\",\"$event_id\"]]"
+        
+        # Send deletion event
+        local result=$(python3 "$NOSTR_SEND_NOTE" \
+            --keyfile "$secret_file" \
+            --content "Video deleted by owner" \
+            --kind 5 \
+            --tags "$tags_json" \
+            --json 2>&1)
+        
+        local exit_code=$?
+        
+        if [[ $exit_code -eq 0 ]]; then
+            local success=$(echo "$result" | jq -r '.success // false' 2>/dev/null)
+            
+            if [[ "$success" == "true" ]]; then
+                log_success "Deletion event published successfully (kind 5)"
+                return 0
+            else
+                log_error "Failed to publish deletion event"
+                log_debug "Result: $result"
+                return 1
+            fi
+        else
+            log_error "Failed to execute nostr_send_note.py"
+            log_debug "Output: $result"
             return 1
         fi
     fi
@@ -702,10 +828,10 @@ cmd_upgrade() {
         fi
     fi
     
-    # Delete old event using strfry directly
+    # Delete old event by publishing kind 5 deletion event
     log_info "Deleting old NOSTR event: ${event_id:0:16}..."
-    if delete_event_by_id "$event_id" "true"; then
-        log_success "Old event deleted successfully"
+    if delete_event_by_id "$event_id" "$user_hex" "true"; then
+        log_success "Old event deleted successfully (kind 5 published)"
     else
         log_error "Failed to delete old event, aborting upgrade"
         rm -rf "$TEMP_DIR"
@@ -912,7 +1038,17 @@ cmd_browse() {
         local idx=1
         for channel in "${channels[@]}"; do
             local video_count=$(echo "${channel_videos[$channel]}" | wc -w)
-            echo -e "  ${YELLOW}$idx.${NC} 📺 $channel (${GREEN}$video_count${NC} videos)"
+            local author_hex="${channel_authors[$channel]}"
+            
+            # Check if this channel's pubkey exists locally (has HEX file with matching pubkey)
+            local status_indicator=""
+            if check_local_pubkey "$author_hex"; then
+                status_indicator="${GREEN}[LOCAL]${NC}"
+            else
+                status_indicator="${YELLOW}[REMOTE]${NC}"
+            fi
+            
+            echo -e "  ${YELLOW}$idx.${NC} 📺 $channel (${GREEN}$video_count${NC} videos) $status_indicator"
             idx=$((idx + 1))
         done
         
@@ -1188,7 +1324,9 @@ show_video_details() {
         echo -e "  ${YELLOW}3.${NC} 🖼️  Open thumbnail in browser"
         echo -e "  ${YELLOW}4.${NC} 🎬 Open animated GIF in browser"
         echo -e "  ${YELLOW}5.${NC} 📊 View info.json"
-        echo -e "  ${YELLOW}6.${NC} 🗑️  Delete this video"
+        echo -e "  ${YELLOW}6.${NC} 🗑️  Delete this video (kind 5 - NIP-09)"
+        echo -e "  ${YELLOW}7.${NC} ⚠️  Delete physically from database"
+        echo -e "  ${YELLOW}8.${NC} 💥 Delete both (kind 5 + physical)"
         echo -e "  ${YELLOW}b.${NC} 🔙 Back to video list"
         echo -e "  ${YELLOW}0.${NC} 🚪 Exit"
         echo ""
@@ -1253,16 +1391,70 @@ show_video_details() {
                 fi
                 ;;
             6)
-                # Delete video
+                # Delete video with kind 5 (NIP-09)
                 echo ""
-                read -p "Delete this video permanently? (yes/NO): " confirm
+                echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+                echo -e "${YELLOW}Delete with kind 5 (NIP-09)${NC}"
+                echo ""
+                echo -e "This will publish a deletion event (kind 5) according to NIP-09."
+                echo -e "Compliant clients will hide this video from their interface."
+                echo -e "The original video event remains in the database."
+                echo ""
+                read -p "Delete this video with kind 5? (yes/NO): " confirm
                 if [[ "$confirm" == "yes" ]]; then
-                    if delete_event_by_id "$event_id" "true"; then
-                        log_success "Video deleted!"
+                    if delete_event_by_id "$event_id" "$author_hex" "true" "kind5"; then
+                        log_success "Video deleted (kind 5 published)!"
                         sleep 2
                         return 0
                     else
                         log_error "Failed to delete video"
+                        sleep 2
+                    fi
+                fi
+                ;;
+            7)
+                # Physical deletion from database
+                echo ""
+                echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+                echo -e "${RED}⚠️  Physical Deletion from Database${NC}"
+                echo ""
+                echo -e "${YELLOW}WARNING:${NC} This will permanently remove the event from the relay database."
+                echo -e "This operation cannot be undone!"
+                echo -e "Use this only if you are the relay operator."
+                echo ""
+                read -p "Physically delete this video from database? (yes/NO): " confirm
+                if [[ "$confirm" == "yes" ]]; then
+                    if delete_event_by_id "$event_id" "$author_hex" "true" "physical"; then
+                        log_success "Video physically deleted from database!"
+                        sleep 2
+                        return 0
+                    else
+                        log_error "Failed to delete video"
+                        sleep 2
+                    fi
+                fi
+                ;;
+            8)
+                # Combined deletion: kind 5 + physical
+                echo ""
+                echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+                echo -e "${MAGENTA}💥 Complete Deletion (kind 5 + physical)${NC}"
+                echo ""
+                echo -e "This will:"
+                echo -e "  ${YELLOW}1.${NC} Publish a kind 5 deletion event (NIP-09)"
+                echo -e "  ${YELLOW}2.${NC} Physically remove the event from the local database"
+                echo ""
+                echo -e "${RED}⚠️  WARNING:${NC} This combines both deletion methods!"
+                echo -e "Use this when you want to delete from your relay AND notify other relays."
+                echo ""
+                read -p "Perform complete deletion (kind 5 + physical)? (yes/NO): " confirm
+                if [[ "$confirm" == "yes" ]]; then
+                    if delete_event_by_id "$event_id" "$author_hex" "true" "both"; then
+                        log_success "Complete deletion finished!"
+                        sleep 2
+                        return 0
+                    else
+                        log_error "Failed to complete deletion"
                         sleep 2
                     fi
                 fi
@@ -1367,22 +1559,72 @@ cmd_channel() {
             5)
                 echo "🗑️  Delete specific video"
                 echo ""
-                read -p "Enter event ID: " event_id
-                if [[ -n "$event_id" ]]; then
-                    echo ""
-                    read -p "Are you sure you want to delete $event_id? (yes/NO): " confirm
-                    if [[ "$confirm" == "yes" ]]; then
-                        log_info "Deleting event: ${event_id:0:16}..."
-                        # Delete using our helper function
-                        if delete_event_by_id "$event_id" "true"; then
-                            log_success "Event deleted successfully!"
-                        else
-                            log_error "Failed to delete event"
+                echo -e "${CYAN}Choose deletion method:${NC}"
+                echo -e "  1. Kind 5 deletion (NIP-09) - Publish deletion event"
+                echo -e "  2. Physical deletion from database"
+                echo -e "  3. Both (kind 5 + physical)"
+                echo -e "  0. Cancel"
+                echo ""
+                read -p "Method: " del_method
+                
+                case "$del_method" in
+                    1|2|3)
+                        echo ""
+                        read -p "Enter event ID: " event_id
+                        if [[ -n "$event_id" ]]; then
+                            echo ""
+                            
+                            if [[ "$del_method" == "1" ]]; then
+                                log_info "Kind 5 deletion method selected"
+                                read -p "Publish kind 5 deletion event for $event_id? (yes/NO): " confirm
+                                if [[ "$confirm" == "yes" ]]; then
+                                    log_info "Deleting event: ${event_id:0:16}..."
+                                    if delete_event_by_id "$event_id" "$user_hex" "true" "kind5"; then
+                                        log_success "Event deleted successfully (kind 5 published)!"
+                                    else
+                                        log_error "Failed to delete event"
+                                    fi
+                                else
+                                    log_warning "Deletion cancelled"
+                                fi
+                            elif [[ "$del_method" == "2" ]]; then
+                                log_warning "Physical deletion method selected"
+                                echo -e "${RED}⚠️  WARNING: This will permanently remove the event from the database!${NC}"
+                                read -p "Physically delete $event_id from database? (yes/NO): " confirm
+                                if [[ "$confirm" == "yes" ]]; then
+                                    log_info "Deleting event: ${event_id:0:16}..."
+                                    if delete_event_by_id "$event_id" "$user_hex" "true" "physical"; then
+                                        log_success "Event physically deleted from database!"
+                                    else
+                                        log_error "Failed to delete event"
+                                    fi
+                                else
+                                    log_warning "Deletion cancelled"
+                                fi
+                            else
+                                log_warning "Combined deletion method selected (kind 5 + physical)"
+                                echo -e "${RED}⚠️  WARNING: This will publish kind 5 AND physically delete from database!${NC}"
+                                read -p "Perform complete deletion for $event_id? (yes/NO): " confirm
+                                if [[ "$confirm" == "yes" ]]; then
+                                    log_info "Deleting event: ${event_id:0:16}..."
+                                    if delete_event_by_id "$event_id" "$user_hex" "true" "both"; then
+                                        log_success "Complete deletion finished (kind 5 + physical)!"
+                                    else
+                                        log_error "Failed to complete deletion"
+                                    fi
+                                else
+                                    log_warning "Deletion cancelled"
+                                fi
+                            fi
                         fi
-                    else
-                        log_warning "Deletion cancelled"
-                    fi
-                fi
+                        ;;
+                    0)
+                        log_info "Deletion cancelled"
+                        ;;
+                    *)
+                        log_error "Invalid method"
+                        ;;
+                esac
                 echo ""
                 read -p "Press ENTER to continue..."
                 clear
