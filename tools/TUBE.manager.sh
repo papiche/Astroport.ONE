@@ -50,6 +50,7 @@ ${YELLOW}COMMANDS:${NC}
     upgrade-all       Upgrade all videos for a user
     check             Check video metadata completeness
     stats             Show statistics for user's video chain
+    cleanup           Clean up non-compliant events (no metadata or no channel)
 
 ${YELLOW}OPTIONS:${NC}
     -u, --npub NPUB           User's npub key
@@ -86,6 +87,9 @@ ${YELLOW}EXAMPLES:${NC}
 
     # Show statistics
     nostr_tube_manager.sh stats --npub npub1abc...
+
+    # Clean up non-compliant events (no metadata or no channel tag)
+    nostr_tube_manager.sh cleanup --force
 
 ${YELLOW}UPGRADE PROCESS:${NC}
     1. Download original video from IPFS
@@ -1803,6 +1807,391 @@ cmd_upgrade_all() {
 }
 
 ################################################################################
+# Command: cleanup (clean non-compliant events)
+################################################################################
+cmd_cleanup() {
+    log_info "Scanning for non-compliant events..."
+    echo ""
+    
+    # Get all video events
+    local events=$(bash "$NOSTR_GET_EVENTS" --kind 21 --limit 10000 2>/dev/null)
+    events+=$'\n'
+    events+=$(bash "$NOSTR_GET_EVENTS" --kind 22 --limit 10000 2>/dev/null)
+    
+    if [[ -z "$events" ]]; then
+        log_warning "No video events found"
+        return 0
+    fi
+    
+    # Collect non-compliant events categorized by author type
+    local -a invalid_author_ids=()
+    local -a invalid_author_events=()
+    local -a invalid_author_reasons=()
+    
+    local -a local_author_ids=()
+    local -a local_author_events=()
+    local -a local_author_reasons=()
+    
+    local -a remote_author_ids=()
+    local -a remote_author_events=()
+    local -a remote_author_reasons=()
+    
+    while IFS= read -r event; do
+        [[ -z "$event" ]] && continue
+        
+        local event_id=$(echo "$event" | jq -r '.id // empty' 2>/dev/null)
+        [[ -z "$event_id" ]] && continue
+        
+        local author=$(echo "$event" | jq -r '.pubkey // empty' 2>/dev/null)
+        
+        # Check if author is valid (64 hex characters)
+        local is_valid_author=false
+        if [[ -n "$author" ]] && [[ ${#author} -eq 64 ]] && [[ "$author" =~ ^[0-9a-f]{64}$ ]]; then
+            is_valid_author=true
+        fi
+        
+        local is_non_compliant=false
+        local reason=""
+        
+        # Check 1: Channel tag (must have Channel-*)
+        local channel=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "t" and (.[1] | startswith("Channel-"))) | .[1]' 2>/dev/null | head -n1)
+        if [[ -z "$channel" ]]; then
+            is_non_compliant=true
+            reason="❌ No channel tag"
+        fi
+        
+        # Check 2: Complete metadata (gifanim_ipfs, thumbnail_ipfs, info)
+        local gifanim=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "gifanim_ipfs") | .[1] // empty' 2>/dev/null | head -n1)
+        local thumbnail=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "thumbnail_ipfs") | .[1] // empty' 2>/dev/null | head -n1)
+        local info=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "info") | .[1] // empty' 2>/dev/null | head -n1)
+        
+        local metadata_status=""
+        [[ -z "$gifanim" ]] && metadata_status+="❌ No GIF "
+        [[ -z "$thumbnail" ]] && metadata_status+="❌ No thumbnail "
+        [[ -z "$info" ]] && metadata_status+="❌ No info"
+        
+        if [[ -n "$metadata_status" ]]; then
+            is_non_compliant=true
+            [[ -n "$reason" ]] && reason="$reason | "
+            reason="${reason}${metadata_status}"
+        fi
+        
+        # Categorize non-compliant events
+        if [[ "$is_non_compliant" == "true" ]]; then
+            if [[ "$is_valid_author" != "true" ]]; then
+                # Invalid or missing author -> DELETE
+                invalid_author_ids+=("$event_id")
+                invalid_author_events+=("$event")
+                invalid_author_reasons+=("${reason} | 🚫 Invalid/missing author")
+            elif check_local_pubkey "$author"; then
+                # Local account -> UPGRADE
+                local_author_ids+=("$event_id")
+                local_author_events+=("$event")
+                local_author_reasons+=("$reason")
+            else
+                # Remote account -> IGNORE (can't upgrade)
+                remote_author_ids+=("$event_id")
+                remote_author_events+=("$event")
+                remote_author_reasons+=("$reason")
+            fi
+        fi
+        
+    done <<< "$events"
+    
+    local total_invalid=${#invalid_author_ids[@]}
+    local total_local=${#local_author_ids[@]}
+    local total_remote=${#remote_author_ids[@]}
+    local total_non_compliant=$((total_invalid + total_local + total_remote))
+    
+    if [[ $total_non_compliant -eq 0 ]]; then
+        log_success "✅ All events are compliant with UPlanet File Contract!"
+        return 0
+    fi
+    
+    # Display summary
+    echo -e "${CYAN}╔════════════════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${NC}                ${YELLOW}Non-Compliant Events - Actionable Items${NC}                  ${CYAN}║${NC}"
+    echo -e "${CYAN}╚════════════════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    
+    # Show only actionable items
+    local has_actionable=false
+    if [[ $total_invalid -gt 0 ]]; then
+        echo -e "  ${RED}Invalid/Missing Author:${NC} $total_invalid event(s) → ${RED}WILL BE DELETED${NC}"
+        has_actionable=true
+    fi
+    if [[ $total_local -gt 0 ]]; then
+        echo -e "  ${GREEN}Local Account:${NC} $total_local event(s) → ${GREEN}CAN BE UPGRADED${NC}"
+        has_actionable=true
+    fi
+    
+    if [[ "$has_actionable" != "true" ]]; then
+        log_warning "No actionable events found (all are from remote accounts)"
+        [[ $total_remote -gt 0 ]] && echo -e "  ${YELLOW}Note:${NC} $total_remote remote account events cannot be fixed (missing keys)"
+        return 0
+    fi
+    
+    [[ $total_remote -gt 0 ]] && echo -e "  ${YELLOW}Note:${NC} $total_remote remote account events ignored (cannot be fixed)"
+    echo ""
+    
+    # Display events by category
+    
+    # Category 1: Invalid Author (TO DELETE)
+    if [[ $total_invalid -gt 0 ]]; then
+        echo -e "${CYAN}╔════════════════════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${CYAN}║${NC}         ${RED}🚫 Events with Invalid/Missing Author (TO DELETE)${NC}             ${CYAN}║${NC}"
+        echo -e "${CYAN}╚════════════════════════════════════════════════════════════════════════════╝${NC}"
+        echo ""
+        
+        for i in "${!invalid_author_ids[@]}"; do
+            local idx=$((i + 1))
+            local event_id="${invalid_author_ids[$i]}"
+            local event="${invalid_author_events[$i]}"
+            
+            local title=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "title") | .[1] // "Untitled"' 2>/dev/null | head -n1)
+            local author=$(echo "$event" | jq -r '.pubkey // "N/A"' 2>/dev/null)
+            local kind=$(echo "$event" | jq -r '.kind // 0' 2>/dev/null)
+            local created_at=$(echo "$event" | jq -r '.created_at // 0' 2>/dev/null)
+            local date=$(date -d "@$created_at" "+%Y-%m-%d %H:%M" 2>/dev/null || echo "N/A")
+            
+            echo -e "${RED}[DELETE-$idx]${NC}"
+            echo -e "    ${CYAN}Event ID:${NC} ${event_id:0:32}..."
+            echo -e "    ${CYAN}Title:${NC} $title"
+            echo -e "    ${CYAN}Author:${NC} $author"
+            echo -e "    ${CYAN}Kind:${NC} $kind | ${CYAN}Date:${NC} $date"
+            echo -e "    ${RED}Issue:${NC} ${invalid_author_reasons[$i]}"
+            echo ""
+        done
+    fi
+    
+    # Category 2: Local Account (CAN UPGRADE)
+    if [[ $total_local -gt 0 ]]; then
+        echo -e "${CYAN}╔════════════════════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${CYAN}║${NC}            ${GREEN}🔧 Local Account Events (CAN BE UPGRADED)${NC}                  ${CYAN}║${NC}"
+        echo -e "${CYAN}╚════════════════════════════════════════════════════════════════════════════╝${NC}"
+        echo ""
+        
+        for i in "${!local_author_ids[@]}"; do
+            local idx=$((i + 1))
+            local event_id="${local_author_ids[$i]}"
+            local event="${local_author_events[$i]}"
+            
+            local title=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "title") | .[1] // "Untitled"' 2>/dev/null | head -n1)
+            local author=$(echo "$event" | jq -r '.pubkey // "unknown"' 2>/dev/null)
+            local kind=$(echo "$event" | jq -r '.kind // 0' 2>/dev/null)
+            local created_at=$(echo "$event" | jq -r '.created_at // 0' 2>/dev/null)
+            local date=$(date -d "@$created_at" "+%Y-%m-%d %H:%M" 2>/dev/null || echo "N/A")
+            
+            echo -e "${GREEN}[UPGRADE-$idx]${NC}"
+            echo -e "    ${CYAN}Event ID:${NC} ${event_id:0:32}..."
+            echo -e "    ${CYAN}Title:${NC} $title"
+            echo -e "    ${CYAN}Author:${NC} ${author:0:16}... ${GREEN}[LOCAL]${NC}"
+            echo -e "    ${CYAN}Kind:${NC} $kind | ${CYAN}Date:${NC} $date"
+            echo -e "    ${YELLOW}Issue:${NC} ${local_author_reasons[$i]}"
+            echo ""
+        done
+    fi
+    
+    echo -e "${CYAN}─────────────────────────────────────────────────────────────────────────────${NC}"
+    echo ""
+    
+    # Action menu
+    if [[ "$FORCE" != "true" ]]; then
+        echo -e "${YELLOW}⚠️  Actions:${NC}"
+        echo ""
+        
+        local menu_idx=1
+        local delete_option=""
+        local upgrade_option=""
+        
+        # Build menu dynamically
+        if [[ $total_invalid -gt 0 ]]; then
+            delete_option="$menu_idx"
+            echo -e "  ${RED}$menu_idx. Delete invalid author events${NC} ($total_invalid events)"
+            menu_idx=$((menu_idx + 1))
+        fi
+        
+        if [[ $total_local -gt 0 ]]; then
+            upgrade_option="$menu_idx"
+            echo -e "  ${GREEN}$menu_idx. Upgrade local account events${NC} ($total_local events)"
+            menu_idx=$((menu_idx + 1))
+        fi
+        
+        echo -e "  ${YELLOW}0. Cancel${NC}"
+        echo ""
+        read -p "$(echo -e ${CYAN}Enter your choice:${NC} )" choice
+        
+        if [[ "$choice" == "0" ]] || [[ -z "$choice" ]]; then
+            log_warning "Cleanup cancelled by user"
+            return 0
+        elif [[ -n "$delete_option" ]] && [[ "$choice" == "$delete_option" ]]; then
+            # Delete invalid author events
+            if [[ $total_invalid -eq 0 ]]; then
+                log_warning "No invalid author events to delete"
+                return 0
+            fi
+            
+            echo ""
+            echo -e "${RED}⚠️  You are about to DELETE $total_invalid event(s) with invalid/missing authors!${NC}"
+            echo -e "${RED}This operation CANNOT be undone!${NC}"
+            echo ""
+            read -p "Confirm deletion? (type 'DELETE' to confirm): " confirm
+            
+            if [[ "$confirm" != "DELETE" ]]; then
+                log_warning "Deletion cancelled by user"
+                return 0
+            fi
+            
+            # Delete events
+            log_info "Deleting events with invalid authors..."
+            echo ""
+            
+            local STRFRY_DIR="$HOME/.zen/strfry"
+            local STRFRY_BIN="${STRFRY_DIR}/strfry"
+            
+            if [[ ! -f "${STRFRY_BIN}" ]]; then
+                log_error "strfry not found at ${STRFRY_BIN}"
+                return 1
+            fi
+            
+            cd "$STRFRY_DIR" || return 1
+            
+            local success_count=0
+            local failed_count=0
+            
+            for event_id in "${invalid_author_ids[@]}"; do
+                local IDS_JSON=$(echo "$event_id" | jq -R . | jq -s -c '{ids: .}')
+                
+                if ./strfry delete --filter="$IDS_JSON" 2>&1 >/dev/null; then
+                    success_count=$((success_count + 1))
+                    log_success "  ✅ Deleted: ${event_id:0:16}..."
+                else
+                    failed_count=$((failed_count + 1))
+                    log_error "  ❌ Failed: ${event_id:0:16}..."
+                fi
+            done
+            
+            cd - > /dev/null 2>&1
+            
+            echo ""
+            echo -e "${CYAN}╔════════════════════════════════════════════════════════════════════════════╗${NC}"
+            echo -e "${CYAN}║${NC}                        ${YELLOW}Deletion Summary${NC}                                   ${CYAN}║${NC}"
+            echo -e "${CYAN}╚════════════════════════════════════════════════════════════════════════════╝${NC}"
+            echo ""
+            echo -e "${GREEN}✅ Successfully deleted: $success_count${NC}"
+            [[ $failed_count -gt 0 ]] && echo -e "${RED}❌ Failed: $failed_count${NC}"
+            echo ""
+            log_success "🎉 Invalid author events deleted!"
+            echo -e "${CYAN}─────────────────────────────────────────────────────────────────────────────${NC}"
+            
+        elif [[ -n "$upgrade_option" ]] && [[ "$choice" == "$upgrade_option" ]]; then
+            # Upgrade local account events
+            if [[ $total_local -eq 0 ]]; then
+                log_warning "No local account events to upgrade"
+                return 0
+            fi
+            
+            echo ""
+            echo -e "${GREEN}🔧 Upgrading local account events...${NC}"
+            echo ""
+            echo -e "${YELLOW}This will:${NC}"
+            echo -e "  1. Download each video from IPFS"
+            echo -e "  2. Regenerate metadata (GIF, thumbnail, info.json)"
+            echo -e "  3. Delete old event"
+            echo -e "  4. Publish new event with complete metadata"
+            echo ""
+            echo -e "${YELLOW}⚠️  This may take a while ($total_local videos to upgrade)${NC}"
+            echo ""
+            read -p "Continue with upgrade? (yes/NO): " confirm
+            
+            if [[ "$confirm" != "yes" ]]; then
+                log_warning "Upgrade cancelled by user"
+                return 0
+            fi
+            
+            local success_count=0
+            local failed_count=0
+            
+            for i in "${!local_author_ids[@]}"; do
+                local event_id="${local_author_ids[$i]}"
+                local event="${local_author_events[$i]}"
+                local author=$(echo "$event" | jq -r '.pubkey')
+                
+                log_info "Upgrading video $((i + 1))/$total_local: ${event_id:0:16}..."
+                echo ""
+                
+                # Call upgrade directly without capturing output
+                if cmd_upgrade "$event_id" "$author"; then
+                    success_count=$((success_count + 1))
+                    log_success "✅ Video upgraded successfully"
+                else
+                    failed_count=$((failed_count + 1))
+                    log_error "❌ Failed to upgrade video"
+                fi
+                
+                echo ""
+                # Pause between upgrades
+                sleep 2
+            done
+            
+            echo ""
+            echo -e "${CYAN}╔════════════════════════════════════════════════════════════════════════════╗${NC}"
+            echo -e "${CYAN}║${NC}                        ${YELLOW}Upgrade Summary${NC}                                    ${CYAN}║${NC}"
+            echo -e "${CYAN}╚════════════════════════════════════════════════════════════════════════════╝${NC}"
+            echo ""
+            echo -e "${GREEN}✅ Successfully upgraded: $success_count${NC}"
+            [[ $failed_count -gt 0 ]] && echo -e "${RED}❌ Failed: $failed_count${NC}"
+            echo ""
+            log_success "🎉 Local account events upgraded!"
+            echo -e "${CYAN}─────────────────────────────────────────────────────────────────────────────${NC}"
+        else
+            log_error "Invalid choice: $choice"
+            return 1
+        fi
+    else
+        # Force mode: delete invalid authors only
+        if [[ $total_invalid -eq 0 ]]; then
+            log_success "No invalid author events to delete"
+            return 0
+        fi
+        
+        log_info "Force mode: Deleting $total_invalid invalid author events..."
+        echo ""
+        
+        local STRFRY_DIR="$HOME/.zen/strfry"
+        local STRFRY_BIN="${STRFRY_DIR}/strfry"
+        
+        if [[ ! -f "${STRFRY_BIN}" ]]; then
+            log_error "strfry not found at ${STRFRY_BIN}"
+            return 1
+        fi
+        
+        cd "$STRFRY_DIR" || return 1
+        
+        local success_count=0
+        local failed_count=0
+        
+        for event_id in "${invalid_author_ids[@]}"; do
+            local IDS_JSON=$(echo "$event_id" | jq -R . | jq -s -c '{ids: .}')
+            
+            if ./strfry delete --filter="$IDS_JSON" 2>&1 >/dev/null; then
+                success_count=$((success_count + 1))
+                log_success "  ✅ Deleted: ${event_id:0:16}..."
+            else
+                failed_count=$((failed_count + 1))
+                log_error "  ❌ Failed: ${event_id:0:16}..."
+            fi
+        done
+        
+        cd - > /dev/null 2>&1
+        
+        echo ""
+        log_success "✅ Deleted: $success_count events"
+        [[ $failed_count -gt 0 ]] && log_error "❌ Failed: $failed_count events"
+    fi
+}
+
+################################################################################
 # Main
 ################################################################################
 main() {
@@ -1871,9 +2260,9 @@ main() {
     # Check dependencies
     check_dependencies || exit 1
     
-    # Determine user hex (not required for list-all and browse)
+    # Determine user hex (not required for list-all, browse, and cleanup)
     USER_HEX=""
-    if [[ "$COMMAND" != "list-all" ]] && [[ "$COMMAND" != "browse" ]]; then
+    if [[ "$COMMAND" != "list-all" ]] && [[ "$COMMAND" != "browse" ]] && [[ "$COMMAND" != "cleanup" ]]; then
         if [[ -n "$HEX" ]]; then
             USER_HEX="$HEX"
         elif [[ -n "$NPUB" ]]; then
@@ -1920,6 +2309,10 @@ main() {
             ;;
         upgrade-all)
             cmd_upgrade_all "$USER_HEX"
+            ;;
+        cleanup)
+            # cleanup doesn't require user identification
+            cmd_cleanup
             ;;
         *)
             log_error "Unknown command: $COMMAND"
