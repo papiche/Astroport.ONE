@@ -262,34 +262,96 @@ IMPORTANT: Write in French language."
                             FIX_SUGGESTIONS="$(echo "$FIX_SUGGESTIONS" | jq -r '.answer // .' 2>/dev/null || echo "$FIX_SUGGESTIONS")"
                             
                             if [[ -n "$FIX_SUGGESTIONS" && "$FIX_SUGGESTIONS" != "null" ]]; then
-                                # Publish fix suggestions as a new error report
-                                FIX_EXPIRATION=$(date -d '+25 hours' +%s)
-                                FIX_MSG="🔧 Suggestions de correctifs - Forum ${FORUM_NAME}
-
-${FIX_SUGGESTIONS}
-
-#forum #erreur #correctif #monnaie-libre"
+                                echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📝 Creating blog article with fix suggestions..."
                                 
-                                FIX_TAGS="["
-                                FIX_TAGS="${FIX_TAGS}[\"t\", \"forum\"], "
-                                FIX_TAGS="${FIX_TAGS}[\"t\", \"erreur\"], "
-                                FIX_TAGS="${FIX_TAGS}[\"t\", \"correctif\"], "
-                                FIX_TAGS="${FIX_TAGS}[\"t\", \"monnaie-libre\"], "
-                                FIX_TAGS="${FIX_TAGS}[\"t\", \"forum_error_report\"], "
-                                FIX_TAGS="${FIX_TAGS}[\"expiration\", \"${FIX_EXPIRATION}\"]"
-                                FIX_TAGS="${FIX_TAGS}]"
+                                # Generate introduction for the blog article
+                                echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📄 Generating introduction..."
+                                FIX_INTRO="$($MY_PATH/question.py --json "Create an engaging introduction (2-3 paragraphs) in ${USER_LANG} language for a blog article about fixing a forum scraper error. The introduction should explain the context, the problem encountered, and introduce the solutions that will be presented. IMPORTANT: Write in ${USER_LANG} language. Context: Forum ${FORUM_NAME} scraper failed to retrieve posts. Error: ${ERROR_LOGS}" --pubkey "${PUBKEY_HEX}")"
+                                FIX_INTRO="$(echo "$FIX_INTRO" | jq -r '.answer // .' 2>/dev/null || echo "$FIX_INTRO")"
+                                
+                                # Combine intro and suggestions
+                                FIX_CONTENT="${FIX_INTRO}
+
+${FIX_SUGGESTIONS}"
+                                
+                                # Generate summary for the blog article
+                                echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📄 Generating summary..."
+                                FIX_SUMMARY="$($MY_PATH/question.py --json "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. The summary should capture the main points about the error analysis and fix suggestions. IMPORTANT: Respond directly and clearly ONLY in the language ${USER_LANG}. Article content: ${FIX_CONTENT}" --pubkey "${PUBKEY_HEX}")"
+                                FIX_SUMMARY="$(echo "$FIX_SUMMARY" | jq -r '.answer // .' 2>/dev/null || echo "$FIX_SUMMARY")"
+                                FIX_SUMMARY="$(echo "$FIX_SUMMARY" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '\n' | sed 's/\s\+/ /g' | sed 's/"/\\"/g' | sed "s/'/\\'/g" | head -c 500)"
+                                
+                                # Generate tags (in user's language)
+                                echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🏷️ Generating tags..."
+                                FIX_TAGS_AI="$($MY_PATH/question.py --json "Analyze this blog article about fixing a forum scraper error and generate 5-8 relevant hashtags in ${USER_LANG} language. Focus on: 1) Technical tags (scraper, API, debugging), 2) Forum-related tags, 3) Error fixing tags. IMPORTANT: Return ONLY the hashtags separated by spaces, no explanations. Article content: ${FIX_CONTENT}" --pubkey "${PUBKEY_HEX}")"
+                                FIX_TAGS_AI="$(echo "$FIX_TAGS_AI" | jq -r '.answer // .' 2>/dev/null || echo "$FIX_TAGS_AI")"
+                                FIX_TAGS_AI="$(echo "$FIX_TAGS_AI" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sed 's/#//g' | sed 's/\s\+/ /g' | head -c 200)"
+                                
+                                # Generate illustration
+                                echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🎨 Generating illustration..."
+                                $MY_PATH/comfyui.me.sh
+                                FIX_SD_PROMPT="$($MY_PATH/question.py --json "Create a Stable Diffusion prompt for an illustrative image based on this article summary: ${FIX_SUMMARY} --- CRITICAL RULES: 1) Output ONLY the prompt text, no explanations 2) NO emojis, NO special characters, NO text, NO words, NO brands, NO writing 3) ONLY visual elements and descriptive words 4) Use simple English words only 5) Focus on visual composition, colors, style, objects, scenes related to debugging, code fixing, technical solutions" --pubkey "${PUBKEY_HEX}")"
+                                FIX_SD_PROMPT="$(echo "$FIX_SD_PROMPT" | jq -r '.answer // .' 2>/dev/null || echo "$FIX_SD_PROMPT")"
+                                FIX_SD_PROMPT=$(echo "$FIX_SD_PROMPT" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sed 's/\s\+/ /g' | sed 's/🥺🎨✨//g' | sed 's/emoji//g' | sed 's/emojis//g' | head -c 400)
+                                
+                                # Get user uDRIVE path for image storage
+                                USER_UDRIVE_PATH="${PLAYER_DIR}/APP/uDRIVE"
+                                mkdir -p "${USER_UDRIVE_PATH}/Images"
+                                FIX_ILLUSTRATION_URL="$($MY_PATH/generate_image.sh "${FIX_SD_PROMPT}" "${USER_UDRIVE_PATH}/Images" 2>/dev/null || echo "")"
+                                
+                                # Create blog post (kind 30023) with expiration
+                                echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📰 Publishing fix suggestions as blog article..."
+                                
+                                # Calculate expiration timestamp (22 hours from now)
+                                FIX_EXPIRATION=$(date -d '+22 hours' +%s)
+                                
+                                # Prepare tags
+                                FIX_TEMP_JSON="$HOME/.zen/tmp/tags_fix_${RANDOM}.json"
+                                FIX_TAG_ARRAY=""
+                                if [[ -n "$FIX_TAGS_AI" ]]; then
+                                    IFS=' ' read -ra FIX_TAG_LIST <<< "$FIX_TAGS_AI"
+                                    for tag in "${FIX_TAG_LIST[@]}"; do
+                                        if [[ -n "$tag" ]]; then
+                                            FIX_TAG_ARRAY="${FIX_TAG_ARRAY}[\"t\", \"$tag\"],"
+                                        fi
+                                    done
+                                    FIX_TAG_ARRAY="${FIX_TAG_ARRAY%,}"
+                                fi
+                                
+                                FIX_STANDARD_TAGS='["t", "forum"], ["t", "erreur"], ["t", "correctif"], ["t", "monnaie-libre"], ["t", "forum_error_report"]'
+                                if [[ -n "$FIX_TAG_ARRAY" ]]; then
+                                    FIX_ALL_TAGS="${FIX_STANDARD_TAGS}, ${FIX_TAG_ARRAY}"
+                                else
+                                    FIX_ALL_TAGS="${FIX_STANDARD_TAGS}"
+                                fi
+                                
+                                # Create d-tag for kind 30023
+                                FIX_D_TAG="forum_fix_$(date -u +%s)_$(echo -n "${FORUM_NAME}" | md5sum | cut -d' ' -f1 | head -c 8)"
+                                FIX_BLOG_TITLE="🔧 Correctifs suggérés - Scraper Forum ${FORUM_NAME}"
+                                
+                                if [[ -n "$FIX_ILLUSTRATION_URL" ]]; then
+                                    jq -n --arg title "$FIX_BLOG_TITLE" --arg summary "$FIX_SUMMARY" --arg image "$FIX_ILLUSTRATION_URL" --arg published_at "$(date -u +%s)" --arg d_tag "$FIX_D_TAG" --arg expiration "$FIX_EXPIRATION" \
+                                        --argjson tags "[${FIX_ALL_TAGS}]" \
+                                        '[["d", $d_tag], ["title", $title], ["summary", $summary], ["published_at", $published_at], ["image", $image], ["expiration", $expiration]] + $tags' > "$FIX_TEMP_JSON"
+                                else
+                                    jq -n --arg title "$FIX_BLOG_TITLE" --arg summary "$FIX_SUMMARY" --arg published_at "$(date -u +%s)" --arg d_tag "$FIX_D_TAG" --arg expiration "$FIX_EXPIRATION" \
+                                        --argjson tags "[${FIX_ALL_TAGS}]" \
+                                        '[["d", $d_tag], ["title", $title], ["summary", $summary], ["published_at", $published_at], ["expiration", $expiration]] + $tags' > "$FIX_TEMP_JSON"
+                                fi
+                                
+                                FIX_EXTRA_TAGS=$(cat "$FIX_TEMP_JSON")
+                                rm -f "$FIX_TEMP_JSON"
                                 
                                 FIX_RESULT=$(python3 "$HOME/.zen/Astroport.ONE/tools/nostr_send_note.py" \
                                     --keyfile "$KEYFILE_PATH" \
-                                    --content "$FIX_MSG" \
+                                    --content "$FIX_CONTENT" \
                                     --relays "$myRELAY" \
-                                    --tags "$FIX_TAGS" \
-                                    --kind "1" \
+                                    --tags "$FIX_EXTRA_TAGS" \
+                                    --kind "30023" \
                                     --json 2>&1)
                                 
                                 if [[ $? -eq 0 ]]; then
                                     FIX_EVENT_ID=$(echo "$FIX_RESULT" | jq -r '.event_id // empty' 2>/dev/null)
-                                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Fix suggestions published (kind 1, expires in 25h). Event ID: ${FIX_EVENT_ID}"
+                                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Fix suggestions published as blog article (kind 30023, expires in 22h). Event ID: ${FIX_EVENT_ID}"
                                 else
                                     echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️ Failed to publish fix suggestions: $FIX_RESULT"
                                 fi
