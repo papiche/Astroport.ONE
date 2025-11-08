@@ -104,6 +104,92 @@ if [[ -f "${MY_PATH}/scraper_forum_discourse.py" ]]; then
                 posts_count=$(jq -r '.total_posts // (.posts | length)' "$JSON_OUTPUT_FILE" 2>/dev/null || echo "0")
                 echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Forum scraper completed successfully for ${PLAYER} (${posts_count} posts found)"
                 
+                # If no posts found, try with larger time windows
+                if [[ "$posts_count" -eq 0 ]]; then
+                    RETRY_DAYS=(3 7 30)
+                    FOUND_POSTS=false
+                    
+                    for RETRY_DAY in "${RETRY_DAYS[@]}"; do
+                        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️ No posts found at ${DAYS_BACK} day(s), trying ${RETRY_DAY} days..."
+                        
+                        RETRY_TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
+                        RETRY_JSON_OUTPUT_FILE="${OUTPUT_DIR}/forum_${PLAYER}_retry_${RETRY_DAY}d_${RETRY_TIMESTAMP}.json"
+                        RETRY_STDERR_FILE="${OUTPUT_DIR}/forum_${PLAYER}_retry_${RETRY_DAY}d_${RETRY_TIMESTAMP}.stderr"
+                        
+                        python3 "${MY_PATH}/scraper_forum_discourse.py" \
+                            "$COOKIE_FILE" \
+                            "$FORUM_URL" \
+                            --days "$RETRY_DAY" \
+                            --json > "$RETRY_JSON_OUTPUT_FILE" 2> "$RETRY_STDERR_FILE"
+                        
+                        if [[ $? -eq 0 ]]; then
+                            RETRY_VALID_JSON=$(jq -c '.' "$RETRY_JSON_OUTPUT_FILE" 2>/dev/null || echo "")
+                            if [[ -z "$RETRY_VALID_JSON" ]]; then
+                                RETRY_VALID_JSON=$(tail -100 "$RETRY_JSON_OUTPUT_FILE" | jq -c '.' 2>/dev/null || echo "")
+                            fi
+                            
+                            if [[ -n "$RETRY_VALID_JSON" ]]; then
+                                echo "$RETRY_VALID_JSON" > "$RETRY_JSON_OUTPUT_FILE"
+                                retry_posts_count=$(jq -r '.total_posts // (.posts | length)' "$RETRY_JSON_OUTPUT_FILE" 2>/dev/null || echo "0")
+                                
+                                if [[ "$retry_posts_count" -gt 0 ]]; then
+                                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Found ${retry_posts_count} posts at ${RETRY_DAY} days, using these results..."
+                                    # Use retry results
+                                    JSON_OUTPUT_FILE="$RETRY_JSON_OUTPUT_FILE"
+                                    posts_count="$retry_posts_count"
+                                    DAYS_BACK="$RETRY_DAY"
+                                    FOUND_POSTS=true
+                                    break
+                                fi
+                            fi
+                        fi
+                    done
+                    
+                    # If still no posts found after all retries, send error message
+                    if [[ "$FOUND_POSTS" != true ]]; then
+                        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ❌ No posts found even after trying up to 30 days, sending error message"
+                        
+                        # Get user language
+                        USER_LANG=$(get_user_language "$PLAYER")
+                        
+                        # Get player's NOSTR key if available
+                        PLAYER_KEYFILE="${PLAYER_DIR}/.secret.nostr"
+                        if [[ -f "$PLAYER_KEYFILE" ]]; then
+                            KEYFILE_PATH="$PLAYER_KEYFILE"
+                        else
+                            KEYFILE_PATH="$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
+                        fi
+                        
+                        FORUM_NAME=$(echo "$FORUM_URL" | sed 's|https\?://||' | sed 's|/.*||')
+                        ERROR_MSG="❌ Journal du forum ${FORUM_NAME} - Aucun message trouvé
+
+Recherche effectuée sur ${FORUM_NAME}
+Fenêtres temporelles testées : 1, 3, 7 et 30 jours
+Aucun message trouvé dans ces périodes.
+
+Le forum peut être inactif ou le cookie peut être invalide.
+
+#forum #erreur #monnaie-libre"
+                        
+                        SEND_RESULT=$(python3 "$HOME/.zen/Astroport.ONE/tools/nostr_send_note.py" \
+                            --keyfile "$KEYFILE_PATH" \
+                            --content "$ERROR_MSG" \
+                            --relays "$myRELAY" \
+                            --tags '[["t", "forum"], ["t", "erreur"], ["t", "monnaie-libre"]]' \
+                            --kind "1" \
+                            --json 2>&1)
+                        
+                        if [[ $? -eq 0 ]]; then
+                            EVENT_ID=$(echo "$SEND_RESULT" | jq -r '.event_id // empty' 2>/dev/null)
+                            echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Error message published (kind 1). Event ID: ${EVENT_ID}"
+                        fi
+                        
+                        # Cleanup retry files
+                        rm -f "$RETRY_JSON_OUTPUT_FILE" "$RETRY_STDERR_FILE" 2>/dev/null
+                        exit 0
+                    fi
+                fi
+                
                 # Process results and create blog post
                 if [[ "$posts_count" -gt 0 ]]; then
                     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📝 Processing results to create journal blog post..."
@@ -286,8 +372,6 @@ IMPORTANT:
                     else
                         echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️ Failed to publish blog post: $SEND_RESULT"
                     fi
-                else
-                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ℹ️ No posts found, skipping journal creation"
                 fi
                 
                 # Cleanup old files (keep last 5)
