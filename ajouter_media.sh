@@ -1,61 +1,42 @@
 #!/bin/bash
 ########################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 1.0
+# Version: 2.0
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
-# SCRIPT INTERACTIF POUR AJOUTER UN FICHIER à ASTROPORT/TW
-#
-# 1. CAT: film, serie
-# 2. TMDB: ID de la fiche sur https://www.themoviedb.org/
-# 3. TITLE:  Titre de la vidéo
-# 4. YEAR: Année de la vidéo
-# 5. RES: Résolution 1080p, 4K, SD, 720, HD
-# 6. SAISON: Pour les séries, c'est le numéro de saison.
-# Pour un film, le champ SAISON est utilisé pour renseigner la Saga
-# 7. GENRES: Action, Aventure, Fantastique, Animation, etc (choix multiple).
-# 8. GROUPES: Stocker la clef IPNS du MEDIAKEY.
-#
-# https://github.com/Kodi-vStream/venom-xbmc-addons/wiki/Voir-et-partager-sa-biblioth%C3%A8que-priv%C3%A9e#d%C3%A9clarer-des-films
+# SCRIPT INTERACTIF POUR AJOUTER UN FICHIER à UPLANET
+# Compatible avec UPlanet_FILE_CONTRACT.md
+# Utilise upload2ipfs.sh et l'API FastAPI (/api/fileupload, /webcam)
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
-#~ LOWMODE=$(sudo systemctl status ipfs | grep disabled) ## IPFS DISABLED - START ONLY FOR SYNC -
-#~ # echo "$USER ALL=(ALL) NOPASSWD:/bin/systemctl" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/systemctl')
-#~ if [[ $LOWMODE != "" ]]; then
-    #~ espeak "Low Mode"
-    #~ sudo systemctl start ipfs
-#~ fi
-
-#~ ########################################################################
 # REMOVE GtkDialog errors for zenity
 shopt -s expand_aliases
 alias zenity='zenity 2> >(grep -v GtkDialog >&2)'
 alias espeak='espeak >/dev/null 2>&1'
 
-## CHECK IF IPFS DAEMON IS STARTS WELL
+## CHECK IF IPFS DAEMON IS RUNNING
 floop=0
 while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
     sleep 1
     ((floop++)) && [ $floop -gt 5 ] \
         && echo "ERROR. IPFS daemon not running on port 5001" \
         && espeak 'ERROR. I P F S daemon not running' \
-        &&  exit 1
+        && exit 1
 done
 
 . "${MY_PATH}/tools/my.sh"
 [[ $IPFSNODEID == "" ]] && echo "IPFSNODEID manquant" && espeak "IPFS NODE ID Missing" && exit 1
 
-
 start=`date +%s`
 
 ########################################################################
+# Check dependencies
 [[ $(which ipfs) == "" ]] && echo "ERREUR! Installez ipfs" && exit 1
 [[ $(which zenity) == "" ]] && echo "ERREUR! Installez zenity" && echo "sudo apt install zenity" && exit 1
-[[ $(which ffmpeg) == "" ]] && echo "ERREUR! Installez ffmpeg" && echo "sudo apt install ffmpeg" && exit 1
-[[ $(which xdpyinfo) == "" ]] && echo "ERREUR! Installez x11-utils" && echo "sudo apt install x11-utils" && exit 1
-[[ $(which tiddlywiki) == "" ]] && echo "ERREUR! Installez tiddlywiki" && echo "sudo npm install -g tiddlywiki" && exit 1
+[[ $(which curl) == "" ]] && echo "ERREUR! Installez curl" && exit 1
+[[ $(which jq) == "" ]] && echo "ERREUR! Installez jq" && exit 1
 
 mkdir -p ~/.zen/tmp/
 exec 2>&1 >> ~/.zen/tmp/ajouter_media.log
@@ -65,11 +46,12 @@ PLAYER="$2"
 CHOICE="$3"
 echo ">>> RUNNING 'ajouter_media.sh' URL=$URL PLAYER=$PLAYER CHOICE=$CHOICE"
 
-# Check who is PLAYER  ?
+# API endpoint
+API_URL="http://127.0.0.1:54321"
+
+# Check who is PLAYER ?
 if [[ ${PLAYER} == "" ]]; then
-
     players=($(ls ~/.zen/game/players 2>/dev/null | grep "@"))
-
     if [[ ${#players[@]} -ge 1 ]]; then
         espeak "SELECT YOUR PLAYER"
         OUTPUT=$(zenity --list --width 480 --height 200 --title="Choix du PLAYER" --column="Astronaute" "${players[@]}")
@@ -77,21 +59,17 @@ if [[ ${PLAYER} == "" ]]; then
     else
         OUTPUT="${players}"
     fi
-
     PLAYER=${OUTPUT}
-
 else
-
     OUTPUT=${PLAYER}
-
 fi
 
 ####### NO CURRENT ? PLAYER = .current
-[[ ! -d $(readlink ~/.zen/game/players/.current) ]] \
+[[ ! -d $(readlink ~/.zen/game/players/.current 2>/dev/null) ]] \
     && rm -f ~/.zen/game/players/.current \
     && ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
 
-echo "ADMIN : "$(cat ~/.zen/game/players/.current/.player)
+echo "ADMIN : "$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
 
 [[ ${OUTPUT} != ""  ]] \
 && espeak "${OUTPUT} CONNECTED" \
@@ -100,46 +78,56 @@ echo "ADMIN : "$(cat ~/.zen/game/players/.current/.player)
 ## NO PLAYER AT ALL
 [[ ${OUTPUT} == "" ]] \
 && espeak "Astronaut. Please register." \
-&& xdg-open "http://astroport.localhost:1234" \
+&& xdg-open "$API_URL/g1" \
 && exit 1 \
-|| PSEUDO=$(myPlayerUser)
+PSEUDO=$(myPlayerUser)
 
 $($MY_PATH/tools/search_for_this_email_in_players.sh ${PLAYER} | tail -n 1)
 
 espeak "Hello $PSEUDO"
 
+## ZEN CARD (contains shares)
 G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
 [[ $G1PUB == "" ]] && espeak "ERROR NO G 1 PUBLIC KEY FOUND - EXIT" && exit 1
 
-ASTRONAUTENS=$(basename $ASTROTW)
-[[ $ASTRONAUTENS == "" ]] && echo "ASTRONAUTE manquant" && espeak "Astronaut Key Missing" && exit 1
+# Get NOSTR npub and hex from player
+NPUB=$(cat ~/.zen/game/nostr/${PLAYER}/NPUB 2>/dev/null || echo "")
+    NPUB_HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX 2>/dev/null || echo "")
 
-# Function to find user uploaded cookie file
-find_user_cookie_file() {
-    # Search for .cookie.txt in user NOSTR directories
-    local nostr_dir="$HOME/.zen/game/nostr"
-    if [[ -d "$nostr_dir" ]]; then
-        # First, try to find cookie for current PLAYER
-        if [[ -n "$PLAYER" && -f "$nostr_dir/$PLAYER/.cookie.txt" ]]; then
-            echo "--cookies $nostr_dir/$PLAYER/.cookie.txt"
-            return 0
-        fi
-        # Otherwise, find any recent cookie file
-        for user_dir in "$nostr_dir"/*@*; do
-            if [[ -f "$user_dir/.cookie.txt" ]]; then
-                echo "--cookies $user_dir/.cookie.txt"
-                return 0
+# If we have NPUB but not HEX, try to convert (or use search_for_this_email_in_players.sh)
+if [[ -z "$NPUB_HEX" ]] && [[ -n "$NPUB" ]]; then
+    # Try to get HEX from user directory lookup
+    USER_NOSTR_DIR="$HOME/.zen/game/nostr/${PLAYER}"
+    if [[ -d "$USER_NOSTR_DIR" ]]; then
+        # Check if there's a .secret.nostr file we can extract pubkey from
+        if [[ -f "$USER_NOSTR_DIR/.secret.nostr" ]]; then
+            # Try to extract pubkey from secret file (if it contains pubkey info)
+            # For now, we'll use a helper script if available
+            if [[ -f "${MY_PATH}/tools/nostr2hex.py" ]]; then
+                NPUB_HEX=$(python3 "${MY_PATH}/tools/nostr2hex.py" "$NPUB" 2>/dev/null || echo "")
             fi
-        done
+        fi
     fi
-    return 1
-}
+fi
+
+# If still no HEX, try to get from search_for_this_email_in_players.sh output
+if [[ -z "$NPUB_HEX" ]]; then
+    SEARCH_OUTPUT=$($MY_PATH/tools/search_for_this_email_in_players.sh ${PLAYER} 2>/dev/null | tail -n 1)
+    # Extract hex from output if available
+    if echo "$SEARCH_OUTPUT" | grep -qE '^[a-f0-9]{64}$'; then
+        NPUB_HEX="$SEARCH_OUTPUT"
+    fi
+fi
+
+if [[ -z "$NPUB_HEX" ]] && [[ -z "$NPUB" ]]; then
+        echo "⚠️  No NOSTR keys found for player ${PLAYER}"
+    echo "⚠️  Upload will work but provenance tracking will be disabled"
+fi
 
 # Function to get user uDRIVE path
 get_user_udrive_path() {
     local player="$1"
     if [[ -n "$player" && "$player" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
-        # Find user directory by email
         local nostr_base_path="$HOME/.zen/game/nostr"
         if [ -d "$nostr_base_path" ]; then
             for email_dir in "$nostr_base_path"/*; do
@@ -155,53 +143,19 @@ get_user_udrive_path() {
     return 1
 }
 
-# Try user uploaded cookies first (priority)
-USER_COOKIE=$(find_user_cookie_file)
-if [[ -n "$USER_COOKIE" ]]; then
-    BROWSER="$USER_COOKIE"
-    echo "✅ Using user uploaded cookie file"
-else
-    # Fallback to browser cookies
-    BZER=$(xdg-settings get default-web-browser | cut -d '.' -f 1 | cut -d '-' -f 1)
-    [[ $BZER ]] && BROWSER="--cookies-from-browser $BZER " || BROWSER=""
-    [[ ! $isLAN ]] && BROWSER=""
-fi
-
 # Get user uDRIVE path for file storage
 USER_UDRIVE_PATH=$(get_user_udrive_path "$PLAYER")
 if [[ -n "$USER_UDRIVE_PATH" ]]; then
-    # Check both uDRIVE root and Videos subdirectory
-    if [[ -d "$USER_UDRIVE_PATH/Videos" ]]; then
-        USER_UDRIVE_PATH="$USER_UDRIVE_PATH/Videos"
-    fi
     echo "✅ Using uDRIVE path: $USER_UDRIVE_PATH"
 else
     echo "⚠️  Could not determine uDRIVE path for player: $PLAYER"
+    USER_UDRIVE_PATH="$HOME/.zen/tmp"
 fi
-
-###
-if [ $URL ]; then
-
-    echo "URL: $URL"
-    REVSOURCE="$(echo "$URL" | awk -F/ '{print $3}' | rev)_"
-    [[ ${CHOICE} == "" ]] && IMPORT=$(zenity --entry --width 640 --title="$URL => Astroport" --text="${PLAYER} Type de media à importer ?" --entry-text="Video" PDF MP3) || IMPORT="$CHOICE"
-    [[ $IMPORT == "" ]] && espeak "No choice made. Exit" && exit 1
-    [[ $IMPORT == "Video" ]] && IMPORT="Youtube"
-    CHOICE="$IMPORT"
-
-fi
-###
-
-COINS=$($MY_PATH/tools/G1check.sh $G1PUB | tail -n 1)
-echo "$PLAYER wallet = $COINS G1"
-
-
 
 ########################################################################
 ## EXCEPTION COPIE PRIVE
-# https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006278917/2008-12-11/
 if [[ ! -f ~/.zen/game/players/${PLAYER}/legal ]]; then
-zenity --width ${large} --height=${haut} --text-info \
+    zenity --width 600 --height 400 --text-info \
        --title="Action conforme avec le Code de la propriété intellectuelle" \
        --html \
        --url="https://fr.wikipedia.org/wiki/Droit_d%27auteur_en_France#Les_exceptions_au_droit_d%E2%80%99auteur" \
@@ -209,9 +163,8 @@ zenity --width ${large} --height=${haut} --text-info \
 
 case $? in
     0)
-        echo "AUTORISATION COPIE PRIVE ASTROPORT OK !"
+            echo "AUTORISATION COPIE PRIVE UPLANET OK !"
         echo "$G1PUB" > ~/.zen/game/players/${PLAYER}/legal
-    # next step
     ;;
     1)
         echo "Refus conditions"
@@ -225,36 +178,17 @@ case $? in
 esac
 fi
 
-## CHANGE ASTROPORT BOOSTRAP
-if [[ $1 == "on" ]]; then
-    STRAP=$(ipfs bootstrap)
-    BOOT=$(zenity --entry --width 300 --title="Catégorie" --text="$STRAP Changez de Bootstrap" --entry-text="Aucun" Astroport Public)
-    [[ $BOOT == "Aucun" ]] && ipfs bootstrap rm --all
-    [[ $BOOT == "Astroport" ]] && for bootnode in $(cat ${MY_PATH}/A_boostrap_nodes.txt | grep -Ev "#"); do ipfs bootstrap add $bootnode; done
-    [[ $BOOT == "Public" ]] && for bootnode in $(cat ${MY_PATH}/A_boostrap_public.txt | grep -Ev "#"); do ipfs bootstrap add $bootnode; done
-    REP=$(${MY_PATH}/tools/cron_VRFY.sh ON) && zenity --warning --width 600 --text "$REP"
+########################################################################
+# CHOOSE CATEGORY
+if [ $URL ]; then
+    echo "URL: $URL"
+    REVSOURCE="$(echo "$URL" | awk -F/ '{print $3}' | rev)_"
+    [[ ${CHOICE} == "" ]] && IMPORT=$(zenity --entry --width 640 --title="$URL => UPlanet" --text="${PLAYER} Type de media à importer ?" --entry-text="Video" PDF MP3) || IMPORT="$CHOICE"
+    [[ $IMPORT == "" ]] && espeak "No choice made. Exit" && exit 1
+    [[ $IMPORT == "Video" ]] && IMPORT="Youtube"
+    CHOICE="$IMPORT"
 fi
 
-###
-# IS THERE ANY RUNNING IPFS ADD OR PUBLISH IN PROGRESS ?
-ISADDING=$(pgrep -au $USER -f 'ipfs add' | grep -v 'pgrep' | tail -n 1 | xargs | cut -d " " -f 1)
-ISPUBLISHING=$(pgrep -au $USER -f 'ipfs name publish' | grep -v 'pgrep' | tail -n 1 | xargs | cut -d " " -f 1)
-[[ $ISADDING || $ISPUBLISHING ]] \
-&& echo "⚠️  IPFS task in progress (PID: ${ISADDING}${ISPUBLISHING}). Wait finish & try later" \
-&& espeak "I P F S task in progress. Wait finish & try later" && exit 1
-
-## CHECK IF ASTROPORT/CRON/IPFS IS RUNNING
-YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
-[[ ! $YOU ]] &&  espeak "I P F S not running - EXIT" && exit 1
-
-[[ ! $URL ]] && xdg-open "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS"
-
-########################################################################
-espeak "$COINS JUNE Ready !"
-########################################################################
-
-########################################################################
-# CHOOSE CATEGORY (remove anime, not working!)
 [ ! $2 ] && [[ $CHOICE == "" ]] && CHOICE=$(zenity --entry --width 300 --title="Catégorie" --text="Quelle catégorie pour ce media ?" --entry-text="Vlog" Video Film Serie PDF Youtube MP3)
 [[ $CHOICE == "" ]] && echo "NO CHOICE MADE" && exit 1
 
@@ -270,45 +204,18 @@ PREFIX=$(echo "${CAT}" | head -c 1 | awk '{ print toupper($0) }' ) # ex: F, S, A
 ########################################################################
 case ${CAT} in
 ########################################################################
-########################################################################
-########################################################################
-# CASE ## VLOG
-#~ __     ___
-#~ \ \   / / | ___   __ _
- #~ \ \ / /| |/ _ \ / _` |
-  #~ \ V / | | (_) | (_| |
-   #~ \_/  |_|\___/ \__, |
-                        #~ |___/
-#
+# CASE ## VLOG - Redirect to webcam endpoint
 ########################################################################
     vlog)
-
-    mkdir -p ~/Astroport/${PLAYER}/vlog
-
-    espeak "Ready to record your webcam"
-
-    [ ! $2 ] && zenity --warning --width 300 --text "${PLAYER}. Prêt à enregistrer votre video ?"
-
-    ## RECORD WEBCAM VIDEO
-    ${MY_PATH}/tools/vlc_webcam.sh
-
-
+        espeak "Opening webcam interface"
+        xdg-open "${API_URL}/webcam" 2>/dev/null || echo "Open ${API_URL}/webcam in your browser"
     exit 0
     ;;
 
 ########################################################################
 # CASE ## YOUTUBE
-#                   _         _
-# _   _  ___  _   _| |_ _   _| |__   ___
-#| | | |/ _ \| | | | __| | | | '_ \ / _ \
-#| |_| | (_) | |_| | |_| |_| | |_) |  __/
-# \__, |\___/ \__,_|\__|\__,_|_.__/ \___|
-# |___/
 ########################################################################
     youtube)
-
-    mkdir -p ~/Astroport/${PLAYER}/youtube
-
     espeak "youtube : video copying"
 
 YTURL="$URL"
@@ -318,7 +225,7 @@ YTURL="$URL"
 echo "VIDEO $YTURL"
 echo "Processing URL: $YTURL"
 
-# Download YouTube video using process_youtube.sh with --no-ipfs option
+        # Download YouTube video using process_youtube.sh
 echo "📥 Downloading YouTube video using process_youtube.sh..."
 
 # Create temporary download directory
@@ -329,12 +236,10 @@ mkdir -p "$TEMP_YOUTUBE_DIR"
 YOUTUBE_RESULT=$(${MY_PATH}/IA/process_youtube.sh --no-ipfs --output-dir "$TEMP_YOUTUBE_DIR" "$YTURL" "mp4" "$PLAYER" 2>&1)
 YTDLP_EXIT=$?
 
-# Extract only the JSON part between markers
-# Look for JSON between "=== JSON OUTPUT START ===" and "=== JSON OUTPUT END ==="
+        # Extract JSON from result
 if echo "$YOUTUBE_RESULT" | grep -q "=== JSON OUTPUT START ==="; then
     YOUTUBE_JSON=$(echo "$YOUTUBE_RESULT" | sed -n '/=== JSON OUTPUT START ===/,/=== JSON OUTPUT END ===/p' | grep -v "=== JSON OUTPUT")
 else
-    # Fallback: extract the last valid JSON object
     YOUTUBE_JSON=$(echo "$YOUTUBE_RESULT" | grep -A 1000 '^{$' | tail -n +1)
 fi
 
@@ -347,10 +252,6 @@ if ! echo "$YOUTUBE_JSON" | jq '.' >/dev/null 2>&1; then
     exit 1
 fi
 
-# Debug: Show result
-echo "✅ JSON Result:"
-echo "$YOUTUBE_JSON" | jq '.'
-
 # Check if download succeeded
 if [[ $YTDLP_EXIT -ne 0 ]]; then
     echo "❌ ERROR: YouTube download failed (exit code: $YTDLP_EXIT)"
@@ -361,394 +262,217 @@ fi
 # Extract metadata from JSON result
 TITLE=$(echo "$YOUTUBE_JSON" | jq -r '.title // empty')
 DURATION=$(echo "$YOUTUBE_JSON" | jq -r '.duration // "0"')
-UPLOADER=$(echo "$YOUTUBE_JSON" | jq -r '.uploader // "YouTube"')
 FILENAME=$(echo "$YOUTUBE_JSON" | jq -r '.filename // empty')
 FILE_PATH_DOWNLOADED=$(echo "$YOUTUBE_JSON" | jq -r '.file_path // empty')
+        METADATA_FILE_FROM_JSON=$(echo "$YOUTUBE_JSON" | jq -r '.metadata_file // empty')
 
 # Validate extracted values
 if [[ -z "$FILENAME" || -z "$FILE_PATH_DOWNLOADED" || ! -f "$FILE_PATH_DOWNLOADED" ]]; then
     echo "❌ ERROR: Downloaded file not found or invalid metadata"
-    echo "FILENAME: '$FILENAME'"
-    echo "FILE_PATH: '$FILE_PATH_DOWNLOADED'"
-    ls -lah "$TEMP_YOUTUBE_DIR"
     espeak "Download failed"
     exit 1
 fi
 
-# Extract YouTube ID from URL
-YID=$(echo "$YTURL" | grep -oE '(?:v=|/)([a-zA-Z0-9_-]{11})' | cut -d'=' -f2 | cut -d'/' -f2)
-
 echo "✅ Downloaded: $FILENAME"
 echo "   Title: $TITLE"
 echo "   Duration: $DURATION seconds"
-echo "   YouTube ID: $YID"
-echo "   File: $FILE_PATH_DOWNLOADED"
-
-# Create MEDIAID and MEDIAKEY
-REVSOURCE="$(echo "$YTURL" | awk -F/ '{print $3}' | rev)_"
-MEDIAID="$REVSOURCE${YID}"
-MEDIAKEY="YOUTUBE_${MEDIAID}"
-
-# Create directory structure
-FILE_PATH="$HOME/Astroport/${PLAYER}/youtube/$MEDIAID"
-mkdir -p ${FILE_PATH}
-
-echo ""
-echo "📤 Uploading to IPFS using upload2ipfs.sh..."
-
-# Call upload2ipfs.sh with user's public key for provenance tracking
-NPUB_HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX 2>/dev/null || echo "")
-UPLOAD_OUTPUT_FILE="$TEMP_YOUTUBE_DIR/upload_result.json"
-
-# Call upload2ipfs.sh with the downloaded file
-bash "${HOME}/.zen/UPassport/upload2ipfs.sh" \
-    "$FILE_PATH_DOWNLOADED" \
-    "$UPLOAD_OUTPUT_FILE" \
-    "$NPUB_HEX"
-
-UPLOAD_EXIT_CODE=$?
-
-if [[ $UPLOAD_EXIT_CODE -ne 0 ]]; then
-    echo "❌ ERROR: upload2ipfs.sh failed with exit code $UPLOAD_EXIT_CODE"
-    espeak "Upload to IPFS failed"
+       
+        # Upload via /api/fileupload (copies to uDRIVE automatically)
+        echo "📤 Uploading video via /api/fileupload..."
+        
+        if [[ -z "$NPUB" ]]; then
+            echo "❌ ERROR: No NOSTR npub found, upload will fail"
+            espeak "No NOSTR key found"
     exit 1
 fi
 
-# Read upload result
-if [[ ! -f "$UPLOAD_OUTPUT_FILE" ]]; then
-    echo "❌ ERROR: Upload result file not found: $UPLOAD_OUTPUT_FILE"
-    espeak "Upload result not found"
+        UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
+            -F "file=@${FILE_PATH_DOWNLOADED}" \
+            -F "npub=${NPUB}")
+        
+        if ! echo "$UPLOAD_RESPONSE" | jq -e '.success' >/dev/null 2>&1; then
+            echo "❌ ERROR: /api/fileupload failed"
+            echo "Response: $UPLOAD_RESPONSE"
+            espeak "Upload failed"
     exit 1
 fi
 
-UPLOAD_RESULT=$(cat "$UPLOAD_OUTPUT_FILE")
-echo "Upload result:"
-echo "$UPLOAD_RESULT" | jq '.'
-
-# Extract values from upload result
-IPFS_CID=$(echo "$UPLOAD_RESULT" | jq -r '.cid // empty')
-INFO_CID=$(echo "$UPLOAD_RESULT" | jq -r '.info // empty')
-THUMBNAIL_CID=$(echo "$UPLOAD_RESULT" | jq -r '.thumbnail_ipfs // empty')
-GIFANIM_CID=$(echo "$UPLOAD_RESULT" | jq -r '.gifanim_ipfs // empty')
-FILE_HASH=$(echo "$UPLOAD_RESULT" | jq -r '.fileHash // empty')
-FILE_SIZE=$(echo "$UPLOAD_RESULT" | jq -r '.fileSize // 0')
-MIME_TYPE=$(echo "$UPLOAD_RESULT" | jq -r '.mimeType // "video/mp4"')
-UPLOAD_CHAIN=$(echo "$UPLOAD_RESULT" | jq -r '.upload_chain // empty')
-DIMENSIONS=$(echo "$UPLOAD_RESULT" | jq -r '.dimensions // empty')
+        # Extract values from upload response
+        IPFS_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.new_cid // empty')
+        INFO_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.info // empty')
+        THUMBNAIL_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.thumbnail_ipfs // empty')
+        GIFANIM_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.gifanim_ipfs // empty')
+        FILE_HASH=$(echo "$UPLOAD_RESPONSE" | jq -r '.fileHash // empty')
+        DIMENSIONS=$(echo "$UPLOAD_RESPONSE" | jq -r '.dimensions // empty')
+        UPLOAD_CHAIN=$(echo "$UPLOAD_RESPONSE" | jq -r '.upload_chain // empty')
 
 if [[ -z "$IPFS_CID" ]]; then
-    echo "❌ ERROR: Failed to get IPFS CID from upload result"
+            echo "❌ ERROR: Failed to get IPFS CID from upload response"
     espeak "IPFS upload failed"
     exit 1
 fi
 
-echo ""
-echo "✅ IPFS Upload successful!"
+        echo "✅ Video uploaded to IPFS and copied to uDRIVE!"
 echo "   CID: $IPFS_CID"
-echo "   Info CID: $INFO_CID"
-echo "   Thumbnail CID: $THUMBNAIL_CID"
-echo "   GIF CID: $GIFANIM_CID"
-echo "   File Hash: ${FILE_HASH:0:16}..."
-echo "   Size: $FILE_SIZE bytes"
-
-# Create symbolic link or copy file to Astroport directory
-if [[ -n "$USER_UDRIVE_PATH" ]]; then
-    # Try to move file to uDRIVE
-    if mv "$TEMP_YOUTUBE_DIR/$FILENAME" "$USER_UDRIVE_PATH/$FILENAME" 2>/dev/null; then
-        ln -sf "$USER_UDRIVE_PATH/$FILENAME" "${FILE_PATH}/${FILENAME}"
-        echo "✅ Moved to uDRIVE and created symbolic link"
-    else
-        # Fallback: just create symlink to temp file
-        ln -sf "$TEMP_YOUTUBE_DIR/$FILENAME" "${FILE_PATH}/${FILENAME}"
-        echo "⚠️  Could not move to uDRIVE, using temp file"
-    fi
-else
-    # No uDRIVE, just symlink
-    ln -sf "$TEMP_YOUTUBE_DIR/$FILENAME" "${FILE_PATH}/${FILENAME}"
-    echo "⚠️  No uDRIVE path, using temp file"
-fi
-
-# Get resolution
-FILE_RES="720"  # Default
-if [[ -e "${FILE_PATH}/${FILENAME}" ]]; then
-    FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${FILE_PATH}/${FILENAME}" 2>/dev/null | cut -d "x" -f 2 || echo "720")
-fi
-RES=${FILE_RES%?}0p
-
-## CREATE "~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt"
-URLENCODE_FILE_NAME=$(echo ${FILENAME} | jq -Rr @uri)
-echo "youtube;${MEDIAID};$(date -u +%s%N | cut -b1-13);${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/${IPFS_CID}/$URLENCODE_FILE_NAME" > ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt
-
-# Store additional metadata for later use
-cat > ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/upload_info.json <<EOF
-{
-  "ipfs_cid": "$IPFS_CID",
-  "info_cid": "$INFO_CID",
-  "thumbnail_cid": "$THUMBNAIL_CID",
-  "gifanim_cid": "$GIFANIM_CID",
-  "file_hash": "$FILE_HASH",
-  "file_size": $FILE_SIZE,
-  "mime_type": "$MIME_TYPE",
-  "upload_chain": "$UPLOAD_CHAIN",
-  "dimensions": "$DIMENSIONS",
-  "duration": "$DURATION",
-  "uploader": "$UPLOADER",
-  "youtube_url": "$YTURL",
-  "youtube_id": "$YID"
-}
-EOF
-
-# Set FILE_NAME for new_file_in_astroport.sh
-FILE_NAME="$FILENAME"
-
-echo "✅ YouTube video processed successfully!"
-espeak "YouTube video ready"
-
-    ;;
-
-########################################################################
-# CASE ## WEB
-#~ __        __     _
-#~ \ \       / /__ | |__
-#~  \ \ /\ / / _ \ '_ \
-#~   \ V  V /__/ |_) |
-#~    \_/\_/ \_|_.__/
-#~
-
-    web)
-
-    mkdir -p ~/Astroport/${PLAYER}/web
-
-# URL="https://discuss.ipfs.io/t/limit-ipfs-get-command/3573/6"
-        espeak "Mirror web site"
-        cd ~/.zen/tmp/
-
-        [ ! $2 ] && [[ $URL == "" ]] && URL=$(zenity --entry --width 300 --title "Lien du site Web à copier" --text "Indiquez le lien (URL)" --entry-text="")
-
-        ## Extract http(s)://domain.tld
-        URLSOURCE=$(echo $URL | grep -Eo '^http[s]?://[^/]+')     # URL="https://discuss.ipfs.io"
-        DOMAIN=$(echo $URLSOURCE | rev | cut -d '/' -f1 | rev)    # DOMAIN=discuss.ipfs.io
-        ARR=($(echo $DOMAIN | sed "s~\.~ ~g")) # ARR=discuss ipfs io
-        NIAMOD=$(printf '%s\n' "${ARR[@]}" | tac | tr '\n' '.' ) # NIAMOD=io.ipfs.discuss.
-        NIAPATH=$(echo $NIAMOD | sed "s~\.~\/~g") # NIAPATH=io/ipfs/discuss/
-
-        TITLE=$DOMAIN
-        GENRES="Web"
-
-        espeak "${ARR[@]}"
-
-        ## CREATE IPNS KEY HOOK JUST FOR FUN
-        REVSOURCE="$(echo "$NIAMOD" | rev | sha256sum | cut -d ' ' -f 1)"; echo $REVSOURCE
-        MEDIAKEY="$REVSOURCE" # MEDIAKEY=435582881619ee4df9e2723fb9e20bb173b32818094a3e40c9536068ae3730ac
-
-        IPNSKEY=$(ipfs key list -l | grep -w $MEDIAKEY | cut -d ' ' -f 1 )
-        if [[ ! $IPNSKEY ]]; then
-        # Funny Crypto Level # TODO MAKE IT MORE SECURE # THIS KEY OWNS THE DOMAIN NOW
-            ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/tmp/$MEDIAKEY.ipns "$DOMAIN" "$NIAMOD"
-            IPNSKEY=$(ipfs key import $MEDIAKEY -f pem-pkcs8-cleartext ~/.zen/tmp/$MEDIAKEY.ipns)
+        
+        # Find YouTube metadata.json file for info.json update (optional enhancement)
+        YOUTUBE_METADATA_FILE=""
+        if [[ -n "$METADATA_FILE_FROM_JSON" ]] && [[ -f "$METADATA_FILE_FROM_JSON" ]]; then
+            YOUTUBE_METADATA_FILE="$METADATA_FILE_FROM_JSON"
+        else
+            METADATA_BASENAME=$(basename "$FILE_PATH_DOWNLOADED" | sed 's/\.[^.]*$//')
+            for possible_metadata in "${TEMP_YOUTUBE_DIR}/${METADATA_BASENAME}.info.json" "${TEMP_YOUTUBE_DIR}/${METADATA_BASENAME}.metadata.json" "$(dirname "$FILE_PATH_DOWNLOADED")/${METADATA_BASENAME}.info.json"; do
+                if [[ -f "$possible_metadata" ]]; then
+                    YOUTUBE_METADATA_FILE="$possible_metadata"
+                    break
+                fi
+            done
         fi
-
-        MEDIAID="WEB_${NIAMOD}" # MEDIAID=WEB_io.ipfs.discuss.
-
-        FILE_PATH="$HOME/Astroport/${PLAYER}/web/$MEDIAID";  # FILE_PATH=/home/fred/Astroport/${PLAYER}/web/WEB_io.ipfs.discuss.
-
-            start=`date +%s`
-
-            mkdir -p $FILE_PATH
-            cd $FILE_PATH
-
-            espeak "Let's go. " ###################### HTTRACK COPYING
-
-            httrack -wxY --sockets=99 −−max−rate=0 --disable-security-limits −−keep−alive --ext-depth=0 --stay-on-same-domain --robots=0 --keep-links=0 -V "echo \$0 >> $FILE_PATH/files" "$URL" -* +*/$DOMAIN/* -*wget* # -%l "fr"
-
-            cd $FILE_PATH/$DOMAIN/
-            grep -rl '../external.html' ./  | xargs sed -i 's~../external.html~external.html~g'
-
-            cp $MY_PATH/templates/external.html $FILE_PATH/$DOMAIN/
-
-            ## G1PUB ENCODE.16 MEDIAKEY
-            ${MY_PATH}/tools/natools.py encrypt -p $G1PUB -i $HOME/.zen/tmp/$MEDIAKEY.ipns -o $HOME/.zen/tmp/$MEDIAKEY.ipns.enc
-            cat $HOME/.zen/tmp/$MEDIAKEY.ipns.enc | base16 > $FILE_PATH/$DOMAIN/.ipnskey.$G1PUB.enc.16
-
-            ## BLOCKCHAIN IT
-            echo "$MOATS" > $FILE_PATH/$DOMAIN/.moats        # TIMESTMAPING
-            echo "$IPNSKEY" > $FILE_PATH/$DOMAIN/.ipnshook       # SELF REFERING
-
-            espeak "OK Web is copied. Adding to I P F S now..."
-
-            ### ADD TO IPFS
-            IPFSREPFILEID=$(ipfs add -qHwr $FILE_PATH/$DOMAIN/* | tail -n 1)  # ADDING $DOMAIN TO IPFS
-            ipfs name publish -k $MEDIAKEY /ipfs/$IPFSREPFILEID   # PUBLISH $MEDIAKEY
-
-            ## CREATE ajouter_video.txt
-            echo "web;${MEDIAID};${MOATS};${TITLE};${SAISON};${GENRES};$IPNSKEY;${RES};/ipfs/$IPFSREPFILEID" > ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt
-
-            ## DURATION LOG
-            end=`date +%s`
-            dur=`expr $end - $start`
-            echo ${MOATS}:${G1PUB}:${PLAYER}:${MEDIAID}:$dur >> ~/.zen/tmp/${IPFSNODEID}/_timings
-            cat ~/.zen/tmp/${IPFSNODEID}/_timings | tail -n 1
-
-            ## TIDDLER CREATION
-            FILE_BSIZE=$(du -b "$FILE_PATH/$DOMAIN/" | awk '{print $1}' | tail -n 1)
-            FILE_SIZE=$(echo "${FILE_BSIZE}" | awk '{ split( "B KB MB GB TB PB" , v ); s=1; while( $1>1024 ){ $1/=1024; s++ } printf "%.2f %s", $1, v[s] }')
-
-            ## NB TEXT IS MADE WITH TIDDLERS FIELDS VALUES (LEARN TODO)
-            TEXT="<iframe src={{{ [{$:/ipfs/saver/gateway/http/localhost!!text}] [{!!ipfs}] +[join[]] }}} height='360' width='100%'></iframe>
-             Web : $URL ----> <a href={{{ [{$:/ipfs/saver/gateway/http/localhost!!text}] [{!!ipfs}] +[join[]] }}}}><<currentTiddler>></a>
-            <br>$FILE_SIZE - $dur sec"
-
-echo '[
-  {
-    "created": "'${MOATS}'",
-    "modified": "'${MOATS}'",
-    "dur": "'$dur'",
-    "title": "'${NIAMOD}'",
-    "type": "'text/vnd.tiddlywiki'",
-    "text": "'$TEXT'",
-    "size": "'${FILE_BSIZE}'",
-    "filesize": "'${FILE_SIZE}'",
-    "g1pub": "'${G1PUB}'",
-    "ipfs": "'/ipfs/${IPFSREPFILEID}'",
-    "mediakey": "'${MEDIAKEY}'",
-    "ipnskey16": "'$(cat $HOME/.zen/tmp/$MEDIAKEY.ipns.enc | base16)'",
-    "ipns": "'/ipns/${IPNSKEY}'",
-    "tags": "'ipfs G1Web $PLAYER webmaster@$DOMAIN'"
-  }
-]
-' > ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json
-
-#        zenity --warning --width ${large} --text "Copie $URL dans ${FILE_PATH}/ et /ipns/$IPNSKEY"
-
-        espeak "Done. Tiddler is ready"
-
+        
+        # Note: YouTube metadata will be added to info.json if we update it later
+        # For now, we'll include it in the description passed to /webcam
+        
+        # Ask for title and description for video publication
+        [ ! $2 ] && VIDEO_TITLE=$(zenity --entry --width 600 --title "Titre de la vidéo" --text "Titre de la vidéo YouTube" --entry-text="$TITLE")
+        [[ -z "$VIDEO_TITLE" ]] && VIDEO_TITLE="$TITLE"
+        
+        [ ! $2 ] && VIDEO_DESC=$(zenity --entry --width 600 --title "Description" --text "Description de la vidéo (optionnel)" --entry-text="")
+        
+        # Build description with YouTube metadata if available
+        if [[ -n "$YOUTUBE_METADATA_FILE" ]] && command -v jq &> /dev/null; then
+            YT_UPLOADER=$(jq -r '.uploader // .channel // empty' "$YOUTUBE_METADATA_FILE" 2>/dev/null)
+            YT_WEBPAGE_URL=$(jq -r '.webpage_url // .url // empty' "$YOUTUBE_METADATA_FILE" 2>/dev/null)
+            if [[ -n "$YT_UPLOADER" ]] || [[ -n "$YT_WEBPAGE_URL" ]]; then
+                if [[ -n "$VIDEO_DESC" ]]; then
+                    VIDEO_DESC="${VIDEO_DESC}\n\nSource YouTube: ${YT_UPLOADER}"
+                    [[ -n "$YT_WEBPAGE_URL" ]] && VIDEO_DESC="${VIDEO_DESC}\n${YT_WEBPAGE_URL}"
+                else
+                    VIDEO_DESC="Source YouTube: ${YT_UPLOADER}"
+                    [[ -n "$YT_WEBPAGE_URL" ]] && VIDEO_DESC="${VIDEO_DESC}\n${YT_WEBPAGE_URL}"
+                fi
+            fi
+        fi
+        
+        # Publish video via /webcam endpoint (NIP-71)
+        echo "📹 Publishing video via /webcam endpoint..."
+        
+        PUBLISH_DATA="player=${PLAYER}"
+        PUBLISH_DATA="${PUBLISH_DATA}&ipfs_cid=${IPFS_CID}"
+        PUBLISH_DATA="${PUBLISH_DATA}&thumbnail_ipfs=${THUMBNAIL_CID}"
+        PUBLISH_DATA="${PUBLISH_DATA}&gifanim_ipfs=${GIFANIM_CID}"
+        PUBLISH_DATA="${PUBLISH_DATA}&info_cid=${INFO_CID}"
+        PUBLISH_DATA="${PUBLISH_DATA}&file_hash=${FILE_HASH}"
+        PUBLISH_DATA="${PUBLISH_DATA}&mime_type=video/mp4"
+        PUBLISH_DATA="${PUBLISH_DATA}&upload_chain=${UPLOAD_CHAIN}"
+        PUBLISH_DATA="${PUBLISH_DATA}&duration=${DURATION}"
+        PUBLISH_DATA="${PUBLISH_DATA}&video_dimensions=${DIMENSIONS}"
+        PUBLISH_DATA="${PUBLISH_DATA}&title=${VIDEO_TITLE}"
+        PUBLISH_DATA="${PUBLISH_DATA}&description=${VIDEO_DESC}"
+        PUBLISH_DATA="${PUBLISH_DATA}&publish_nostr=true"
+        PUBLISH_DATA="${PUBLISH_DATA}&npub=${NPUB}"
+        
+        PUBLISH_RESPONSE=$(curl -s -X POST "${API_URL}/webcam" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "$PUBLISH_DATA")
+        
+        if echo "$PUBLISH_RESPONSE" | grep -q "success\|✅"; then
+            echo "✅ Video published successfully!"
+            espeak "YouTube video published"
+        else
+            echo "⚠️  Video upload succeeded but publication may have failed"
+            echo "Response: $PUBLISH_RESPONSE"
+        fi
+        
+        # Cleanup temp directory
+        rm -rf "$TEMP_YOUTUBE_DIR"
+        
+        espeak "YouTube video ready"
     ;;
-
 
 ########################################################################
 # CASE ## PDF
- #~ ____
-#~ |  _ \ __ _  __ _  ___
-#~ | |_) / _` |/ _` |/ _ \
-#~ |  __/ (_| | (_| |  __/
-#~ |_|   \__,_|\__, |\___|
-                #~ |___/
-
+########################################################################
     pdf)
-
-        mkdir -p ~/Astroport/${PLAYER}/pdf
-
         espeak "Importing file or web page to P D F"
-        ## EVOLVE TO ARTICLE
-        # httrack --mirror --ext-depth=0 --depth=1 --near --stay-on-same-address --keep-links=0 --path article-x --quiet https://example.com/article-x/
 
         [ ! $2 ] && [[ $URL == "" ]] && URL=$(zenity --entry --width 500 --title "Convertir lien PDF (ANNULER ET CHOISIR UN FICHIER LOCAL)" --text "Indiquez le lien (URL)" --entry-text="")
 
         if [[ $URL != "" ]]; then
     ## record one page to PDF
-            [ ! $2 ] && [[ ! $(which chromium) ]] &&  zenity --warning --width ${large} --text "Utilitaire de copie de page web absent.. Lancez la commande 'sudo apt install chromium'" && exit 1
+            [ ! $2 ] && [[ ! $(which chromium) ]] && zenity --warning --width 600 --text "Utilitaire de copie de page web absent.. Lancez la commande 'sudo apt install chromium'" && exit 1
 
             cd ~/.zen/tmp/ && rm -f output.pdf
 
-            # https://peter.sh/experiments/chromium-command-line-switches
             ${MY_PATH}/tools/timeout.sh -t 30 \
             chromium --headless --use-mobile-user-agent --no-sandbox --print-to-pdf "$URL"
         fi
 
         if [[ $URL == "" ]]; then
-
-            # SELECT FILE TO ADD TO ASTROPORT/KODI
+            # SELECT FILE TO ADD
             [ ! $2 ] && FILE=$(zenity --file-selection --title="Sélectionner le fichier à ajouter")
             echo "${FILE}"
             [[ ! -s "${FILE}" ]] && echo "NO FILE" && exit 1
 
-            # Remove file extension to get file name => STITLE
-            FILE_PATH="$(dirname "${FILE}")"
             FILE_NAME="$(basename "${FILE}")"
-            FILE_EXT="${FILE_NAME##*.}"
-            FILE_TITLE="${FILE_NAME%.*}"
             cp "${FILE}" ~/.zen/tmp/output.pdf
-            URL="/ipfs.localhost/$FILE_TITLE"
         fi
-
 
         [[ ! -s ~/.zen/tmp/output.pdf ]] && espeak "No file Sorry. Exit" && exit 1
 
         espeak "OK P D F received"
 
-        #~ ## TODO
-        #~ ## CONVERT TO DOCX
-        #~ pdf2docx convert ~/.zen/tmp/output.pdf
-        #~ # THEN TO MD
-        #~ pandoc -f docx -t markdown -o ~/.zen/tmp/output.md ~/.zen/tmp/output.docx
-
-        CTITLE=$(echo $URL | rev | cut -d '/' -f 1 | rev)
-
+        CTITLE=$(echo $URL | rev | cut -d '/' -f 1 | rev 2>/dev/null || echo "document")
         [ ! $2 ] && TITLE=$(zenity --entry --width 480 --title "Titre" --text "Quel nom donner à ce fichier ? " --entry-text="${CTITLE}") || TITLE="$CTITLE"
         [[ "$TITLE" == "" ]] && echo "NO TITLE" && exit 1
 
-        FILE_NAME="$(echo "${TITLE}" | detox --inline).pdf" ## TODO make it better
-        REVSOURCE="$(echo "$URL" | awk -F/ '{print $3}' | rev | detox --inline)_"
-
-        MEDIAID="$REVSOURCE$(echo "${TITLE}" | detox --inline)"
-        MEDIAKEY="PDF_${MEDIAID}"
-        FILE_PATH="$HOME/Astroport/${PLAYER}/pdf/$MEDIAID"
-        mkdir -p ${FILE_PATH} && mv ~/.zen/tmp/output.pdf ${FILE_PATH}/${FILE_NAME}
-
-        echo "pdf;${MEDIAID};$(date -u +%s%N | cut -b1-13);${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$FILE_NAME" > ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt
-
-        espeak 'Document ready'
-
+        FILE_NAME="$(echo "${TITLE}" | detox --inline).pdf"
+        
+        # Rename temp file (upload2ipfs.sh will handle uDRIVE storage)
+        FILE_TO_UPLOAD="$HOME/.zen/tmp/$FILE_NAME"
+        mv ~/.zen/tmp/output.pdf "$FILE_TO_UPLOAD"
+        
+        # Upload via API (upload2ipfs.sh will copy to uDRIVE)
+        echo "📤 Uploading PDF via /api/fileupload..."
+        
+        if [[ -n "$NPUB" ]]; then
+            UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
+                -F "file=@${FILE_TO_UPLOAD}" \
+                -F "npub=${NPUB}")
+        else
+            echo "⚠️  No NOSTR npub found, upload may fail"
+            UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
+                -F "file=@${FILE_TO_UPLOAD}" \
+                -F "npub=")
+        fi
+        
+        if echo "$UPLOAD_RESPONSE" | jq -e '.success' >/dev/null 2>&1; then
+            echo "✅ PDF uploaded and published successfully!"
+            espeak "Document ready"
+        else
+            echo "❌ Upload failed"
+            echo "Response: $UPLOAD_RESPONSE"
+            espeak "Upload failed"
+            exit 1
+        fi
     ;;
 
 ########################################################################
 # CASE ## MP3
-#                _____
-# _ __ ___  _ __|___ /
-#| '_ ` _ \| '_ \ |_ \
-#| | | | | | |_) |__) |
-#|_| |_| |_| .__/____/
-#          |_|
 ########################################################################
     mp3)
-
-        mkdir -p ~/Astroport/${PLAYER}/mp3
-
         [[ $URL == "" ]] && URL=$(zenity --entry --width 500 --title "Lien Youtube à convertir en MP3" --text "Indiquez le lien (URL)" --entry-text="")
         [[ $URL == "" ]] && echo "URL EMPTY" && exit 1
         
         echo "Processing URL: $URL"
-        
         espeak "OK."
         
-        # Use process_youtube.sh for MP3 processing with player email
-        echo "Using process_youtube.sh for MP3 download..."
-        echo "Command: ${MY_PATH}/IA/process_youtube.sh --debug \"$URL\" \"mp3\" \"$PLAYER\""
-        
-        # Check if process_youtube.sh exists and is executable
-        if [[ ! -f "${MY_PATH}/IA/process_youtube.sh" ]]; then
-            echo "ERROR: process_youtube.sh not found at ${MY_PATH}/IA/process_youtube.sh"
-            espeak "process_youtube.sh not found"
-            exit 1
-        fi
-        
-        if [[ ! -x "${MY_PATH}/IA/process_youtube.sh" ]]; then
-            echo "ERROR: process_youtube.sh is not executable"
-            espeak "process_youtube.sh not executable"
-            exit 1
-        fi
-        
+        # Use process_youtube.sh for MP3 processing
         MP3_RESULT=$(${MY_PATH}/IA/process_youtube.sh --debug "$URL" "mp3" "$PLAYER")
         MP3_EXIT_CODE=$?
-        echo "process_youtube.sh exit code: $MP3_EXIT_CODE"
-        
-        # Debug: Show the raw result
-        echo "Raw MP3_RESULT: $MP3_RESULT"
         
         # Check if the result is valid JSON
         if ! echo "$MP3_RESULT" | jq . >/dev/null 2>&1; then
             echo "Invalid JSON returned from process_youtube.sh"
-            echo "Raw output: $MP3_RESULT"
             espeak "Invalid JSON from YouTube processing"
             exit 1
         fi
@@ -761,88 +485,63 @@ echo '[
             exit 1
         fi
         
-        # Extract values from JSON result with better error handling
-        IPFS_URL=$(echo "$MP3_RESULT" | jq -r '.ipfs_url // empty' 2>/dev/null)
+        # Extract values from JSON result
         FILE_TITLE=$(echo "$MP3_RESULT" | jq -r '.title // empty' 2>/dev/null)
-        DURATION=$(echo "$MP3_RESULT" | jq -r '.duration // empty' 2>/dev/null)
-        UPLOADER=$(echo "$MP3_RESULT" | jq -r '.uploader // empty' 2>/dev/null)
         FILE_NAME=$(echo "$MP3_RESULT" | jq -r '.filename // empty' 2>/dev/null)
+        IPFS_URL=$(echo "$MP3_RESULT" | jq -r '.ipfs_url // empty' 2>/dev/null)
         
-        # Debug: Show extracted values
-        echo "Extracted values:"
-        echo "  IPFS_URL: '$IPFS_URL'"
-        echo "  FILE_TITLE: '$FILE_TITLE'"
-        echo "  DURATION: '$DURATION'"
-        echo "  UPLOADER: '$UPLOADER'"
-        echo "  FILE_NAME: '$FILE_NAME'"
-        
-        if [[ -z "$FILE_TITLE" || -z "$IPFS_URL" ]]; then
+        if [[ -z "$FILE_TITLE" || -z "$FILE_NAME" ]]; then
             echo "Failed to extract required data from MP3 processing"
-            echo "FILE_TITLE: '$FILE_TITLE'"
-            echo "IPFS_URL: '$IPFS_URL'"
             espeak "Failed to extract data"
             exit 1
         fi
         
-        # Create MEDIAID and MEDIAKEY using YouTube ID
-        REVSOURCE="$(echo "$URL" | awk -F/ '{print $3}' | rev)_"
-        YOUTUBE_ID=$(echo "$URL" | grep -oE '(?:v=|/)([a-zA-Z0-9_-]{11})' | cut -d'=' -f2 | cut -d'/' -f2)
-        MEDIAID="${REVSOURCE}${YOUTUBE_ID}"
-        MEDIAKEY="MP3_${MEDIAID}"
-        
-        # Initialize missing variables for MP3
-        SAISON=""
-        GENRES="[\"Musique\", \"${PLAYER// /-}\"]"
-        RES="Audio"
-        
-        # Create proper directory structure
-        FILE_PATH="$HOME/Astroport/${PLAYER}/mp3/$MEDIAID"
-        mkdir -p ${FILE_PATH}
-        
-        # Create symbolic link to uDRIVE file if available
-        FILE_NAME="$FILE_NAME"
-        if [[ -n "$USER_UDRIVE_PATH" && -f "$USER_UDRIVE_PATH/$FILE_NAME" ]]; then
-            ln -sf "$USER_UDRIVE_PATH/$FILE_NAME" "${FILE_PATH}/${FILE_NAME}"
-            echo "Created symbolic link to uDRIVE file: $USER_UDRIVE_PATH/$FILE_NAME"
+        # Find file path from process_youtube.sh result (it should already be in uDRIVE or temp)
+        FILE_PATH_FROM_RESULT=$(echo "$MP3_RESULT" | jq -r '.file_path // empty' 2>/dev/null)
+        if [[ -n "$FILE_PATH_FROM_RESULT" && -f "$FILE_PATH_FROM_RESULT" ]]; then
+            FILE_TO_UPLOAD="$FILE_PATH_FROM_RESULT"
         else
-            echo "⚠️  uDRIVE file not found: $USER_UDRIVE_PATH/$FILE_NAME"
-            espeak "Error: MP3 file not found in uDRIVE"
+            # Fallback: try to find in uDRIVE
+            if [[ -n "$USER_UDRIVE_PATH" && -f "$USER_UDRIVE_PATH/Music/$FILE_NAME" ]]; then
+                FILE_TO_UPLOAD="$USER_UDRIVE_PATH/Music/$FILE_NAME"
+            else
+                echo "⚠️  MP3 file not found: $FILE_PATH_FROM_RESULT or $USER_UDRIVE_PATH/Music/$FILE_NAME"
+                espeak "Error: MP3 file not found"
             exit 1
         fi
-        
-        # Verify the file exists (either direct file or symlink)
-        if [[ ! -e "${FILE_PATH}/${FILE_NAME}" ]]; then
-            echo "❌ ERROR: MP3 file not accessible at ${FILE_PATH}/${FILE_NAME}"
-            espeak "Error: MP3 file not accessible"
-            exit 1
         fi
         
-        # Create ajouter_video.txt
-        URLENCODE_FILE_NAME=$(echo ${FILE_NAME} | jq -Rr @uri)
-        echo "mp3;${MEDIAID};$(date -u +%s%N | cut -b1-13);${FILE_TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$URLENCODE_FILE_NAME" > ~/Astroport/${PLAYER}/mp3/${MEDIAID}/ajouter_video.txt
+        # Upload via API (upload2ipfs.sh will handle uDRIVE storage, will auto-publish as NIP-94 kind 1063)
+        echo "📤 Uploading MP3 via /api/fileupload..."
         
-        espeak "Ready. MP3 file processed"
-
-        break
+        if [[ -n "$NPUB" ]]; then
+            UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
+                -F "file=@${FILE_TO_UPLOAD}" \
+                -F "npub=${NPUB}")
+        else
+            UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
+                -F "file=@${FILE_TO_UPLOAD}" \
+                -F "npub=")
+        fi
+        
+        if echo "$UPLOAD_RESPONSE" | jq -e '.success' >/dev/null 2>&1; then
+            echo "✅ MP3 uploaded and published successfully!"
+            espeak "Ready. MP3 file processed"
+        else
+            echo "❌ Upload failed"
+            echo "Response: $UPLOAD_RESPONSE"
+            espeak "Upload failed"
+            exit 1
+        fi
     ;;
 
 ########################################################################
-#   Film                 __ _ _ Serie
-#~ _____ _ _              ___     ____            _
-#~ |  ___(_) |_ __ ___    ( _ )   / ___|  ___ _ __(_) ___
-#~ | |_  | | | '_ ` _ \   / _ \/\ \___ \ / _ \ '__| |/ _ \
-#~ |  _| | | | | | | | | | (_>  <  ___) |  __/ |  | |  __/
-#~ |_|   |_|_|_| |_| |_|  \___/\/ |____/ \___|_|  |_|\___|
-#
+# CASE ## FILM / SERIE
 ########################################################################
     film | serie)
-
-    mkdir -p ~/Astroport/${PLAYER}/film
-    mkdir -p ~/Astroport/${PLAYER}/serie
-
     espeak "please select your file"
 
-# SELECT FILE TO ADD TO ASTROPORT/KODI
+        # SELECT FILE TO ADD
 FILE=$(zenity --file-selection --title="Sélectionner le fichier à ajouter")
 echo "${FILE}"
 [[ $FILE == "" ]] && exit 1
@@ -854,145 +553,354 @@ FILE_EXT="${FILE_NAME##*.}"
 FILE_TITLE="${FILE_NAME%.*}"
 
 # OPEN default browser and search TMDB
-zenity --question --width 300 --text "Ouvrir https://www.themoviedb.org pou récupérer le numéro d'identification de $(echo ${FILE_TITLE} | sed 's/_/%20/g') ?"
+        zenity --question --width 300 --text "Ouvrir https://www.themoviedb.org pour récupérer le numéro d'identification de $(echo ${FILE_TITLE} | sed 's/_/%20/g') ?"
 [ $? == 0 ] && xdg-open "https://www.themoviedb.org/search?query=$(echo ${FILE_TITLE} | sed 's/_/%20/g')"
 
-MEDIAID=$(zenity --entry --title="Identification TMDB" --text="Copiez le nom de la page du film. Ex: 301528-toy-story-4 pour une adresse https://www.themoviedb.org/movie/301528-toy-story-4)" --entry-text="")
-[[ $MEDIAID == "" ]] && exit 1
-MEDIAID=$(echo $MEDIAID | rev | cut -d '/' -f 1 | rev) ## REmoving/That/Part/keeping/MEDIAID
-CMED=$(echo $MEDIAID | cut -d '-' -f 1)
-TMTL=$(echo $MEDIAID | cut -d '-' -f 2-) # contient la fin du nom de fichier tmdb (peut servir?)
+# Get TMDB URL or ID from user
+TMDB_URL_INPUT=$(zenity --entry --title="Identification TMDB" --text="Copiez l'URL complète ou le nom de la page du film.\nEx: https://www.themoviedb.org/movie/301528-toy-story-4\nou: 301528-toy-story-4" --entry-text="")
+[[ $TMDB_URL_INPUT == "" ]] && exit 1
 
-if ! [[ "$CMED" =~ ^[0-9]+$ ]]
-then
-        zenity --warning --width ${large} --text "Vous devez renseigner un numéro! Merci de recommencer... Seules les vidéos référencées sur The Movie Database sont acceptées. Sinon importez en mode 'Video'" && exit 1
+# Extract MEDIAID and build full URL
+if [[ "$TMDB_URL_INPUT" =~ ^https?:// ]]; then
+    # Full URL provided
+    TMDB_URL="$TMDB_URL_INPUT"
+    MEDIAID=$(echo "$TMDB_URL_INPUT" | rev | cut -d '/' -f 1 | rev)
+else
+    # Just ID or slug provided
+    MEDIAID="$TMDB_URL_INPUT"
+    # Determine media type and build URL
+    if [[ "$CAT" == "serie" ]]; then
+        MEDIA_TYPE="tv"
+        TMDB_URL="https://www.themoviedb.org/tv/$MEDIAID"
+    else
+        MEDIA_TYPE="movie"
+        TMDB_URL="https://www.themoviedb.org/movie/$MEDIAID"
+    fi
+fi
+
+# Extract numeric ID from slug (e.g., "301528-toy-story-4" -> "301528")
+        MEDIAID=$(echo $MEDIAID | rev | cut -d '/' -f 1 | rev)
+CMED=$(echo $MEDIAID | cut -d '-' -f 1)
+
+        if ! [[ "$CMED" =~ ^[0-9]+$ ]]; then
+            zenity --warning --width 600 --text "Vous devez renseigner un numéro! Merci de recommencer... Seules les vidéos référencées sur The Movie Database sont acceptées. Sinon importez en mode 'Video'" && exit 1
 fi
 MEDIAID=$CMED
-MEDIAKEY="TMDB_$MEDIAID"
 
-# VIDEO TITLE
-### CHECK IF PREVIOUS ajouter_video (usefull for Serie)
-[[ -f  ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt ]] \
-&& PRE=$(cat ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt | cut -d ';' -f 4) \
-|| PRE=${FILE_TITLE}
-###
-TITLE=$(zenity --entry --width 300 --title "Titre" --text "Indiquez le titre de la vidéo" --entry-text="${PRE}")
+# Determine media type (film or serie)
+if [[ "$CAT" == "serie" ]]; then
+    MEDIA_TYPE="tv"
+    [[ ! "$TMDB_URL" =~ ^https?:// ]] && TMDB_URL="https://www.themoviedb.org/tv/$MEDIAID"
+else
+    MEDIA_TYPE="movie"
+    [[ ! "$TMDB_URL" =~ ^https?:// ]] && TMDB_URL="https://www.themoviedb.org/movie/$MEDIAID"
+fi
+
+# Ask if user wants to scrape TMDB page for metadata
+SCRAPE_TMDB="no"
+SCRAPED_METADATA=""
+if zenity --question --width 400 --title="Scraper TMDB ?" --text="Voulez-vous scraper la page TMDB pour enrichir automatiquement les métadonnées ?\n\nURL: $TMDB_URL"; then
+    SCRAPE_TMDB="yes"
+    echo "🔍 Scraping TMDB page: $TMDB_URL"
+    
+    # Get scraper script path
+    SCRAPER_SCRIPT="${MY_PATH}/IA/scraper.TMDB.py"
+    if [[ ! -f "$SCRAPER_SCRIPT" ]]; then
+        SCRAPER_SCRIPT="${HOME}/.zen/Astroport.ONE/IA/scraper.TMDB.py"
+    fi
+    if [[ ! -f "$SCRAPER_SCRIPT" ]]; then
+        SCRAPER_SCRIPT="${HOME}/workspace/AAA/Astroport.ONE/IA/scraper.TMDB.py"
+    fi
+    
+    if [[ -f "$SCRAPER_SCRIPT" ]]; then
+        SCRAPED_METADATA=$(python3 "$SCRAPER_SCRIPT" "$TMDB_URL" 2>/dev/null)
+        if [[ -n "$SCRAPED_METADATA" ]] && echo "$SCRAPED_METADATA" | jq -e '.' >/dev/null 2>&1; then
+            echo "✅ TMDB metadata scraped successfully"
+        else
+            echo "⚠️  Failed to scrape TMDB metadata, using manual input"
+            SCRAPED_METADATA=""
+        fi
+    else
+        echo "⚠️  Scraper script not found, using manual input"
+        SCRAPE_TMDB="no"
+    fi
+fi
+
+# Extract or ask for title
+if [[ "$SCRAPE_TMDB" == "yes" ]] && [[ -n "$SCRAPED_METADATA" ]]; then
+    TITLE=$(echo "$SCRAPED_METADATA" | jq -r '.title // empty' 2>/dev/null)
+    if [[ -z "$TITLE" ]]; then
+        TITLE="$FILE_TITLE"
+    fi
+else
+    TITLE="$FILE_TITLE"
+fi
+
+# VIDEO TITLE (ask user to confirm/edit)
+TITLE=$(zenity --entry --width 300 --title "Titre" --text "Indiquez le titre de la vidéo" --entry-text="$TITLE")
 [[ $TITLE == "" ]] && exit 1
-TITLE=$(echo "${TITLE}" | detox --inline ) # Clean TITLE (NO ;)
+        TITLE=$(echo "${TITLE}" | detox --inline)
 
-# VIDEO YEAR
-### CHECK IF PREVIOUS ajouter_video (Serie case)
-[[ -f  ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt ]] \
-&& PRE=$(cat ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt | cut -d ';' -f 3) \
-|| PRE=""
-YEAR=$(zenity --entry --width 300 --title "Année" --text "Indiquez année de la vidéo. Exemple: 1985" --entry-text="${PRE}")
+# Extract or ask for year
+if [[ "$SCRAPE_TMDB" == "yes" ]] && [[ -n "$SCRAPED_METADATA" ]]; then
+    YEAR=$(echo "$SCRAPED_METADATA" | jq -r '.year // empty' 2>/dev/null)
+fi
+YEAR=$(zenity --entry --width 300 --title "Année" --text "Indiquez année de la vidéo. Exemple: 1985" --entry-text="$YEAR")
+        
+# Extract genres from scraped data or ask user
+GENRES=""
+if [[ "$SCRAPE_TMDB" == "yes" ]] && [[ -n "$SCRAPED_METADATA" ]]; then
+    GENRES=$(echo "$SCRAPED_METADATA" | jq -r '.genres // [] | join(", ")' 2>/dev/null)
+fi
+if [[ -z "$GENRES" ]]; then
+    GENRES=$(zenity --entry --width 400 --title "Genres" --text "Indiquez les genres (séparés par des virgules). Ex: Action, Science Fiction, Thriller" --entry-text="")
+fi
 
-# VIDEO RESOLUTION
-FILE_RES=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${FILE}" | cut -d "x" -f 2)
-RES=${FILE_RES%?}0p # Rounding. Replace last digit with 0
+# Extract or ask for description
+if [[ "$SCRAPE_TMDB" == "yes" ]] && [[ -n "$SCRAPED_METADATA" ]]; then
+    SCRAPED_OVERVIEW=$(echo "$SCRAPED_METADATA" | jq -r '.overview // empty' 2>/dev/null)
+    SCRAPED_TAGLINE=$(echo "$SCRAPED_METADATA" | jq -r '.tagline // empty' 2>/dev/null)
+    if [[ -n "$SCRAPED_TAGLINE" ]]; then
+        VIDEO_DESC="$SCRAPED_TAGLINE"
+    fi
+    if [[ -n "$SCRAPED_OVERVIEW" ]]; then
+        if [[ -n "$VIDEO_DESC" ]]; then
+            VIDEO_DESC="${VIDEO_DESC}\n\n${SCRAPED_OVERVIEW}"
+        else
+            VIDEO_DESC="$SCRAPED_OVERVIEW"
+        fi
+    fi
+        fi
+        
+# Ask for description (user can edit scraped content)
+[ ! $2 ] && VIDEO_DESC=$(zenity --entry --width 600 --title "Description" --text "Description de la vidéo (optionnel)" --entry-text="$VIDEO_DESC")
 
-# VIDEO SEASON or SAGA
-### CHECK IF PREVIOUS ajouter_video (Serie case)
-[[ -f  ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt ]] \
-&& PRE=$(cat ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt | cut -d ';' -f 5 | cut -d '_' -f 2)
-[[ "${CAT}" == "serie" ]] && SAISON=$(zenity --entry --width 300 --title "${CHOICE} Saison" --text "Indiquez SAISON et EPISODE. Exemple: S02E05" --entry-text="${PRE}")
-[[ "${CAT}" == "film" ]] && SAISON=$(zenity --entry --width 300 --title "${CHOICE} Saga" --text "Indiquez une SAGA (optionnel). Exemple: James Bond" --entry-text="")
-[[ $SAISON ]] && SAISON="_$SAISON"
+# Create TMDB metadata JSON file (merge scraped data with manual input)
+        TMDB_METADATA_FILE="$HOME/.zen/tmp/tmdb_${MEDIAID}_$(date +%s).json"
 
-# VIDEO GENRES
-FILM_GENRES=$(zenity --list --checklist --title="GENRE" --height=${haut}\
-    --text="Choisissez le(s) genre(s) de \"${TITLE}\""\
-    --column="Use"\
-    --column="Feature"\
-    FALSE '+18'\
-    FALSE Action\
-    FALSE Animation\
-    FALSE 'Arts Martiaux'\
-    FALSE Aventure\
-    FALSE Autre\
-    FALSE Biographie\
-    FALSE Biopic\
-    FALSE Comedie\
-    FALSE 'Comedie Dramatique'\
-    FALSE 'Comedie Musicale'\
-    FALSE Crime\
-    FALSE Documentaire\
-    FALSE Drame\
-    FALSE Divers\
-    FALSE Educatif\
-    FALSE Enfant\
-    FALSE Horreur\
-    FALSE Espionnage\
-    FALSE Famille\
-    FALSE Fantastique\
-    FALSE Guerre\
-    FALSE Histoire\
-    FALSE Historique\
-    FALSE Judiciaire\
-    FALSE Opera\
-    FALSE Medical\
-    FALSE Musique\
-    FALSE Mystere\
-    FALSE Peplum\
-    FALSE Policier\
-    FALSE Romance\
-    FALSE 'Science Fiction'\
-    FALSE Soap\
-    FALSE Spectacle\
-    FALSE Sport\
-    FALSE Telefilm\
-    FALSE Thriller\
-    FALSE Western\
-    TRUE ${PLAYER// /-})
+if [[ "$SCRAPE_TMDB" == "yes" ]] && [[ -n "$SCRAPED_METADATA" ]]; then
+    # Merge scraped metadata with manual inputs
+    TMDB_METADATA_JSON=$(echo "$SCRAPED_METADATA" | jq --arg title "$TITLE" --arg year "$YEAR" --arg genres "$GENRES" --arg tmdb_url "$TMDB_URL" --arg tmdb_id "$MEDIAID" --arg media_type "$MEDIA_TYPE" '
+        .title = $title |
+        .year = $year |
+        .tmdb_id = ($tmdb_id | tonumber) |
+        .media_type = $media_type |
+        .tmdb_url = $tmdb_url |
+        (if $genres != "" then .genres = ($genres | split(", ") | map(select(. != ""))) else . end)
+    ' 2>/dev/null)
+    
+    if [[ -z "$TMDB_METADATA_JSON" ]] || ! echo "$TMDB_METADATA_JSON" | jq -e '.' >/dev/null 2>&1; then
+        # Fallback to basic structure
+        TMDB_METADATA_JSON=$(cat << EOF
+{
+  "tmdb_id": $MEDIAID,
+  "media_type": "$MEDIA_TYPE",
+  "title": "$TITLE",
+  "year": "$YEAR",
+  "tmdb_url": "$TMDB_URL",
+  "genres": $(if [[ -n "$GENRES" ]]; then echo "$GENRES" | jq -R 'split(", ") | map(select(. != ""))'; else echo "[]"; fi)
+}
+EOF
+        )
+    fi
+else
+    # Basic structure without scraping
+    TMDB_METADATA_JSON=$(cat << EOF
+{
+  "tmdb_id": $MEDIAID,
+  "media_type": "$MEDIA_TYPE",
+  "title": "$TITLE",
+  "year": "$YEAR",
+  "tmdb_url": "$TMDB_URL",
+  "genres": $(if [[ -n "$GENRES" ]]; then echo "$GENRES" | jq -R 'split(", ") | map(select(. != ""))'; else echo "[]"; fi)
+}
+EOF
+    )
+fi
 
-# FORMAT GENRES ["genre1","genre2"] # USE  IF YOU ACTIVATE KODI COMPATIBILITY
-GENRES="[\"$(echo ${FILM_GENRES} | sed s/\|/\",\"/g)\"]"
-
-    # CONVERT INPUT TO MP4 #######################
-    [[ $FILE_EXT != "mp4"  ]] \
-    && espeak "Converting to M P 4. Please wait" \
-    && echo "CONVERT TO MP4 : ffmpeg -loglevel quiet -i ${FILE_PATH}/${FILE_NAME} -c:v libx264 -c:a aac ${FILE_PATH}/$FILE_TITLE.mp4" \
-    && ffmpeg -loglevel quiet -i "${FILE_PATH}/${FILE_NAME}" -c:v libx264 -c:a aac "${FILE_PATH}/$FILE_TITLE.mp4" \
-    && FILE_EXT="mp4" && FILE_NAME="$FILE_TITLE.mp4" \
-    && espeak "M P 4 ready"
-
-mkdir -p ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/
-
-[[ ! -s "$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" ]] \
-&& cp "${FILE_PATH}/${FILE_NAME}" "$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" \
-&& [ $? != 0 ] \
-        && zenity --warning --width ${large} --text "(☓‿‿☓) ${FILE_PATH}/${FILE_NAME} vers ~/Astroport - EXIT -" && exit 1
-
-FILE_NAME="${TITLE}${SAISON}.${FILE_EXT}"
-
-## CREATE "~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt"
-URLENCODE_FILE_NAME=$(echo ${FILE_NAME} | jq -Rr @uri)
-echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/ipfs/_IPFSREPFILEID_/$URLENCODE_FILE_NAME" > ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt
-# _IPFSREPFILEID_ is replaced later
-#######################################################
-######## NOT CREATING TIDDLER JSON... SWALLOW IS POST-PROCESSED
-## new_file_in_astroport.sh ACTIVATES CONTRACT MODE !!
-#######################################################
-#######################################################
-
+        echo "$TMDB_METADATA_JSON" > "$TMDB_METADATA_FILE"
+        echo "✅ Created TMDB metadata file: $TMDB_METADATA_FILE"
+        
+        # CONVERT INPUT TO MP4 if needed
+        if [[ $FILE_EXT != "mp4" ]]; then
+            espeak "Converting to M P 4. Please wait"
+            FINAL_FILE="$HOME/.zen/tmp/${TITLE}.mp4"
+            ffmpeg -loglevel quiet -i "${FILE}" -c:v libx264 -c:a aac "$FINAL_FILE"
+            FILE_EXT="mp4"
+            FILE_NAME="${TITLE}.mp4"
+            espeak "M P 4 ready"
+        else
+            FINAL_FILE="$HOME/.zen/tmp/${TITLE}.${FILE_EXT}"
+            cp "${FILE}" "$FINAL_FILE"
+        fi
+        
+        # Upload via upload2ipfs.sh directly (no API, no NIP-42 required)
+        echo "📤 Uploading video via upload2ipfs.sh..."
+        
+        # Create temp output file for upload2ipfs.sh JSON response
+        UPLOAD_OUTPUT_FILE="$HOME/.zen/tmp/upload_$(date +%s).json"
+        
+        # Get upload2ipfs.sh path
+        UPLOAD_SCRIPT="${MY_PATH}/../UPassport/upload2ipfs.sh"
+        if [[ ! -f "$UPLOAD_SCRIPT" ]]; then
+            UPLOAD_SCRIPT="${HOME}/.zen/Astroport.ONE/UPassport/upload2ipfs.sh"
+        fi
+        if [[ ! -f "$UPLOAD_SCRIPT" ]]; then
+            UPLOAD_SCRIPT="${HOME}/workspace/AAA/UPassport/upload2ipfs.sh"
+        fi
+        
+        if [[ ! -f "$UPLOAD_SCRIPT" ]]; then
+            echo "❌ ERROR: upload2ipfs.sh not found"
+            espeak "Upload script not found"
+            rm -f "$TMDB_METADATA_FILE"
+            exit 1
+        fi
+        
+        # Call upload2ipfs.sh with metadata file
+        if [[ -n "$NPUB_HEX" ]]; then
+            echo "📤 Using upload2ipfs.sh with provenance tracking (hex: ${NPUB_HEX:0:16}...)"
+            bash "$UPLOAD_SCRIPT" --metadata "$TMDB_METADATA_FILE" "$FINAL_FILE" "$UPLOAD_OUTPUT_FILE" "$NPUB_HEX" > "$HOME/.zen/tmp/upload2ipfs.log" 2>&1
+        else
+            echo "📤 Using upload2ipfs.sh without provenance tracking"
+            bash "$UPLOAD_SCRIPT" --metadata "$TMDB_METADATA_FILE" "$FINAL_FILE" "$UPLOAD_OUTPUT_FILE" > "$HOME/.zen/tmp/upload2ipfs.log" 2>&1
+        fi
+        
+        UPLOAD_EXIT_CODE=$?
+        
+        if [[ $UPLOAD_EXIT_CODE -ne 0 ]] || [[ ! -f "$UPLOAD_OUTPUT_FILE" ]]; then
+            echo "❌ ERROR: upload2ipfs.sh failed (exit code: $UPLOAD_EXIT_CODE)"
+            echo "Log output:"
+            cat "$HOME/.zen/tmp/upload2ipfs.log" 2>/dev/null || echo "(no log)"
+            espeak "Upload failed"
+            rm -f "$TMDB_METADATA_FILE" "$UPLOAD_OUTPUT_FILE"
+            exit 1
+        fi
+        
+        # Read upload result JSON
+        if ! command -v jq &> /dev/null; then
+            echo "❌ ERROR: jq is required but not found"
+            espeak "jq required"
+            rm -f "$TMDB_METADATA_FILE" "$UPLOAD_OUTPUT_FILE"
+            exit 1
+        fi
+        
+        # Validate JSON
+        if ! jq -e '.' "$UPLOAD_OUTPUT_FILE" >/dev/null 2>&1; then
+            echo "❌ ERROR: Invalid JSON from upload2ipfs.sh"
+            echo "Output:"
+            cat "$UPLOAD_OUTPUT_FILE"
+            espeak "Invalid JSON"
+            rm -f "$TMDB_METADATA_FILE" "$UPLOAD_OUTPUT_FILE"
+            exit 1
+        fi
+        
+        # Extract values from upload result
+        IPFS_CID=$(jq -r '.cid // empty' "$UPLOAD_OUTPUT_FILE")
+        INFO_CID=$(jq -r '.info // empty' "$UPLOAD_OUTPUT_FILE")
+        THUMBNAIL_CID=$(jq -r '.thumbnail_ipfs // empty' "$UPLOAD_OUTPUT_FILE")
+        GIFANIM_CID=$(jq -r '.gifanim_ipfs // empty' "$UPLOAD_OUTPUT_FILE")
+        FILE_HASH=$(jq -r '.fileHash // empty' "$UPLOAD_OUTPUT_FILE")
+        DIMENSIONS=$(jq -r '.dimensions // empty' "$UPLOAD_OUTPUT_FILE")
+        UPLOAD_CHAIN=$(jq -r '.upload_chain // empty' "$UPLOAD_OUTPUT_FILE")
+        DURATION=$(jq -r '.duration // 0' "$UPLOAD_OUTPUT_FILE")
+        MIME_TYPE=$(jq -r '.mimeType // "video/mp4"' "$UPLOAD_OUTPUT_FILE")
+        FILENAME_FROM_UPLOAD=$(jq -r '.fileName // empty' "$UPLOAD_OUTPUT_FILE")
+        
+        if [[ -z "$IPFS_CID" ]]; then
+            echo "❌ ERROR: Failed to get IPFS CID from upload result"
+            espeak "IPFS upload failed"
+            rm -f "$TMDB_METADATA_FILE" "$UPLOAD_OUTPUT_FILE"
+            exit 1
+        fi
+        
+        echo "✅ Video uploaded to IPFS and copied to uDRIVE!"
+        echo "   CID: $IPFS_CID"
+        
+        # Build description with TMDB metadata
+        if [[ -n "$TMDB_METADATA_FILE" ]] && command -v jq &> /dev/null; then
+            TMDB_URL=$(jq -r '.tmdb_url // empty' "$TMDB_METADATA_FILE" 2>/dev/null)
+            if [[ -n "$TMDB_URL" ]]; then
+                if [[ -n "$VIDEO_DESC" ]]; then
+                    VIDEO_DESC="${VIDEO_DESC}\n\nTMDB: ${TMDB_URL}"
+                else
+                    VIDEO_DESC="TMDB: ${TMDB_URL}"
+                fi
+            fi
+        fi
+        
+        # Publish via publish_nostr_video.sh directly (no API, no NIP-42 required)
+        echo "📹 Publishing video via publish_nostr_video.sh..."
+        
+        # Get publish script path
+        PUBLISH_SCRIPT="${MY_PATH}/tools/publish_nostr_video.sh"
+        if [[ ! -f "$PUBLISH_SCRIPT" ]]; then
+            PUBLISH_SCRIPT="${HOME}/.zen/Astroport.ONE/tools/publish_nostr_video.sh"
+        fi
+        
+        if [[ ! -f "$PUBLISH_SCRIPT" ]]; then
+            echo "❌ ERROR: publish_nostr_video.sh not found"
+            espeak "Publish script not found"
+            rm -f "$TMDB_METADATA_FILE" "$UPLOAD_OUTPUT_FILE"
+            exit 1
+        fi
+        
+        # Get secret file path
+        SECRET_FILE="$HOME/.zen/game/nostr/${PLAYER}/.secret.nostr"
+        if [[ ! -f "$SECRET_FILE" ]]; then
+            echo "❌ ERROR: Secret file not found: $SECRET_FILE"
+            espeak "Secret file not found"
+            rm -f "$TMDB_METADATA_FILE" "$UPLOAD_OUTPUT_FILE"
+            exit 1
+        fi
+        
+        # Build publish command using --auto mode (reads from upload2ipfs.sh output)
+        PUBLISH_CMD=("$PUBLISH_SCRIPT" "--auto" "$UPLOAD_OUTPUT_FILE" "--nsec" "$SECRET_FILE" "--title" "$TITLE")
+        
+        if [[ -n "$VIDEO_DESC" ]]; then
+            PUBLISH_CMD+=("--description" "$VIDEO_DESC")
+        fi
+        
+        PUBLISH_CMD+=("--channel" "$PLAYER" "--json")
+        
+        # Execute publish script
+        PUBLISH_OUTPUT=$(bash "${PUBLISH_CMD[@]}" 2>&1)
+        PUBLISH_EXIT_CODE=$?
+        
+        if [[ $PUBLISH_EXIT_CODE -eq 0 ]]; then
+            # Try to extract event ID from output
+            EVENT_ID=$(echo "$PUBLISH_OUTPUT" | jq -r '.event_id // empty' 2>/dev/null || echo "")
+            if [[ -n "$EVENT_ID" ]]; then
+                echo "✅ Video published successfully to NOSTR!"
+                echo "   Event ID: ${EVENT_ID:0:16}..."
+            espeak "Video published"
+        else
+                # Try regex extraction
+                EVENT_ID=$(echo "$PUBLISH_OUTPUT" | grep -oE '"event_id"\s*:\s*"[a-f0-9]{64}"' | grep -oE '[a-f0-9]{64}' | head -1)
+                if [[ -n "$EVENT_ID" ]]; then
+                    echo "✅ Video published successfully to NOSTR!"
+                    echo "   Event ID: ${EVENT_ID:0:16}..."
+                    espeak "Video published"
+                else
+                    echo "⚠️  Video uploaded but event ID not found in output"
+                    echo "Publish output: $PUBLISH_OUTPUT"
+                fi
+            fi
+        else
+            echo "⚠️  Video uploaded but publication may have failed (exit code: $PUBLISH_EXIT_CODE)"
+            echo "Publish output: $PUBLISH_OUTPUT"
+        fi
+        
+        # Cleanup metadata and temp files
+        rm -f "$TMDB_METADATA_FILE" "$UPLOAD_OUTPUT_FILE"
     ;;
-# video       _     _
-#__   _(_) __| | ___  ___
-#\ \ / / |/ _` |/ _ \/ _ \
-# \ V /| | (_| |  __/ (_) |
-#  \_/ |_|\__,_|\___|\___/
-#                           TIMESTAMP INDEX
 
+########################################################################
+# CASE ## VIDEO (personal video)
+########################################################################
     video)
-
-    mkdir -p ~/Astroport/${PLAYER}/video
-
-    espeak "Add your personnal video in TW"
-
-    #~ zenity --warning --width 600 --text 'DEV-DEBUG : REGISTER https://git.p2p.legal'
-
-    ## GENERAL MEDIAKEY for uploaded video. Title + Decription + hashtag + hashipfs
-    # SELECT FILE TO ADD TO ASTROPORT/KODI
+        espeak "Add your personal video"
+        
+        # SELECT FILE TO ADD
     FILE=$(zenity --file-selection --title="Sélectionner votre vidéo")
     echo "${FILE}"
     [[ $FILE == "" ]] && exit 1
@@ -1003,216 +911,168 @@ echo "${CAT};${MEDIAID};${YEAR};${TITLE};${SAISON};${GENRES};_IPNSKEY_;${RES};/i
     FILE_EXT="${FILE_NAME##*.}"
     FILE_TITLE="${FILE_NAME%.*}"
 
-    #~ # MUST CONVERT MKV TO MP4
-    #~ [[ $FILE_EXT != "mp4"  ]] \
-    #~ && ffmpeg -loglevel quiet -i "${FILE_PATH}/${FILE_NAME}" -c:v libx264 -c:a aac "${FILE_PATH}/$FILE_TITLE.mp4" \
-    #~ && FILE_EXT="mp4" && FILE_NAME="$FILE_TITLE.mp4"
-
     # VIDEO TITLE
     TITLE=$(zenity --entry --width 600 --title "Titre" --text "Indiquez le titre de cette vidéo" --entry-text="${FILE_TITLE}")
     [[ $TITLE == "" ]] && exit 1
-    TITLE=$(echo "${TITLE}" | detox --inline ) # Clean TITLE (NO ;)
-
-    ## video_timestamp INDEX
-    MEDIAID="$(date -u +%s%N | cut -b1-13)"
-    mkdir -p ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/
-    MEDIAKEY="VIDEO_${MEDIAID}"
-
-    ## CREATE SIMPLE JSON (EXPERIENCE WITH it)
-    jq -n --arg ts "$MEDIAID" --arg title "$TITLE" --arg desc "$DESCRIPTION" --arg htag "$HASHTAG" '{"timestamp":$ts,"ipfs":"_IPFSREPFILEID_","ipns":"_IPNSKEY_","title":$title,"desc":$desc,"tag":$htag}' > ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/video.json
-
-    ## MOVE FILE FOR new_file_in_astroport POST TREATMENT
-    [[ ! -s "$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}" ]] \
-    && cp "${FILE_PATH}/${FILE_NAME}" "$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${TITLE}${SAISON}.${FILE_EXT}"
-
-    FILE_NAME="${TITLE}.${FILE_EXT}"
-
-#######################################################
-######## NOT CREATING TIDDLER JSON... SWALLOW IS POST-PROCESSED
-## new_file_in_astroport.sh FOR OWN CREATION CONTRACTING MODE !!
-#######################################################
-#######################################################
-
-
+        TITLE=$(echo "${TITLE}" | detox --inline)
+        
+        # Copy to temp
+        FINAL_FILE="$HOME/.zen/tmp/${TITLE}.${FILE_EXT}"
+        cp "${FILE}" "$FINAL_FILE"
+        
+        # Ask for description
+        [ ! $2 ] && VIDEO_DESC=$(zenity --entry --width 600 --title "Description" --text "Description de la vidéo (optionnel)" --entry-text="")
+        
+        # Upload via upload2ipfs.sh directly (no API, no NIP-42 required)
+        echo "📤 Uploading video via upload2ipfs.sh..."
+        
+        # Create temp output file for upload2ipfs.sh JSON response
+        UPLOAD_OUTPUT_FILE="$HOME/.zen/tmp/upload_$(date +%s).json"
+        
+        # Get upload2ipfs.sh path
+        UPLOAD_SCRIPT="${MY_PATH}/../UPassport/upload2ipfs.sh"
+        if [[ ! -f "$UPLOAD_SCRIPT" ]]; then
+            UPLOAD_SCRIPT="${HOME}/.zen/Astroport.ONE/UPassport/upload2ipfs.sh"
+        fi
+        if [[ ! -f "$UPLOAD_SCRIPT" ]]; then
+            UPLOAD_SCRIPT="${HOME}/workspace/AAA/UPassport/upload2ipfs.sh"
+        fi
+        
+        if [[ ! -f "$UPLOAD_SCRIPT" ]]; then
+            echo "❌ ERROR: upload2ipfs.sh not found"
+            espeak "Upload script not found"
+            exit 1
+        fi
+        
+        # Call upload2ipfs.sh
+        if [[ -n "$NPUB_HEX" ]]; then
+            echo "📤 Using upload2ipfs.sh with provenance tracking (hex: ${NPUB_HEX:0:16}...)"
+            bash "$UPLOAD_SCRIPT" "$FINAL_FILE" "$UPLOAD_OUTPUT_FILE" "$NPUB_HEX" > "$HOME/.zen/tmp/upload2ipfs.log" 2>&1
+        else
+            echo "📤 Using upload2ipfs.sh without provenance tracking"
+            bash "$UPLOAD_SCRIPT" "$FINAL_FILE" "$UPLOAD_OUTPUT_FILE" > "$HOME/.zen/tmp/upload2ipfs.log" 2>&1
+        fi
+        
+        UPLOAD_EXIT_CODE=$?
+        
+        if [[ $UPLOAD_EXIT_CODE -ne 0 ]] || [[ ! -f "$UPLOAD_OUTPUT_FILE" ]]; then
+            echo "❌ ERROR: upload2ipfs.sh failed (exit code: $UPLOAD_EXIT_CODE)"
+            echo "Log output:"
+            cat "$HOME/.zen/tmp/upload2ipfs.log" 2>/dev/null || echo "(no log)"
+            espeak "Upload failed"
+            rm -f "$UPLOAD_OUTPUT_FILE"
+    exit 1
+        fi
+        
+        # Read upload result JSON
+        if ! command -v jq &> /dev/null; then
+            echo "❌ ERROR: jq is required but not found"
+            espeak "jq required"
+            rm -f "$UPLOAD_OUTPUT_FILE"
+            exit 1
+        fi
+        
+        # Validate JSON
+        if ! jq -e '.' "$UPLOAD_OUTPUT_FILE" >/dev/null 2>&1; then
+            echo "❌ ERROR: Invalid JSON from upload2ipfs.sh"
+            echo "Output:"
+            cat "$UPLOAD_OUTPUT_FILE"
+            espeak "Invalid JSON"
+            rm -f "$UPLOAD_OUTPUT_FILE"
+            exit 1
+        fi
+        
+        # Extract values from upload result
+        IPFS_CID=$(jq -r '.cid // empty' "$UPLOAD_OUTPUT_FILE")
+        
+        if [[ -z "$IPFS_CID" ]]; then
+            echo "❌ ERROR: Failed to get IPFS CID from upload result"
+            espeak "IPFS upload failed"
+            rm -f "$UPLOAD_OUTPUT_FILE"
+            exit 1
+        fi
+        
+        echo "✅ Video uploaded to IPFS and copied to uDRIVE!"
+        echo "   CID: $IPFS_CID"
+        
+        # Publish via publish_nostr_video.sh directly (no API, no NIP-42 required)
+        echo "📹 Publishing video via publish_nostr_video.sh..."
+        
+        # Get publish script path
+        PUBLISH_SCRIPT="${MY_PATH}/tools/publish_nostr_video.sh"
+        if [[ ! -f "$PUBLISH_SCRIPT" ]]; then
+            PUBLISH_SCRIPT="${HOME}/.zen/Astroport.ONE/tools/publish_nostr_video.sh"
+        fi
+        
+        if [[ ! -f "$PUBLISH_SCRIPT" ]]; then
+            echo "❌ ERROR: publish_nostr_video.sh not found"
+            espeak "Publish script not found"
+            rm -f "$UPLOAD_OUTPUT_FILE"
+            exit 1
+        fi
+        
+        # Get secret file path
+        SECRET_FILE="$HOME/.zen/game/nostr/${PLAYER}/.secret.nostr"
+        if [[ ! -f "$SECRET_FILE" ]]; then
+            echo "❌ ERROR: Secret file not found: $SECRET_FILE"
+            espeak "Secret file not found"
+            rm -f "$UPLOAD_OUTPUT_FILE"
+            exit 1
+        fi
+        
+        # Build publish command using --auto mode (reads from upload2ipfs.sh output)
+        PUBLISH_CMD=("$PUBLISH_SCRIPT" "--auto" "$UPLOAD_OUTPUT_FILE" "--nsec" "$SECRET_FILE" "--title" "$TITLE")
+        
+        if [[ -n "$VIDEO_DESC" ]]; then
+            PUBLISH_CMD+=("--description" "$VIDEO_DESC")
+        fi
+        
+        PUBLISH_CMD+=("--channel" "$PLAYER" "--json")
+        
+        # Execute publish script
+        PUBLISH_OUTPUT=$(bash "${PUBLISH_CMD[@]}" 2>&1)
+        PUBLISH_EXIT_CODE=$?
+        
+        if [[ $PUBLISH_EXIT_CODE -eq 0 ]]; then
+            # Try to extract event ID from output
+            EVENT_ID=$(echo "$PUBLISH_OUTPUT" | jq -r '.event_id // empty' 2>/dev/null || echo "")
+            if [[ -n "$EVENT_ID" ]]; then
+                echo "✅ Video published successfully to NOSTR!"
+                echo "   Event ID: ${EVENT_ID:0:16}..."
+            espeak "Video published"
+        else
+                # Try regex extraction
+                EVENT_ID=$(echo "$PUBLISH_OUTPUT" | grep -oE '"event_id"\s*:\s*"[a-f0-9]{64}"' | grep -oE '[a-f0-9]{64}' | head -1)
+                if [[ -n "$EVENT_ID" ]]; then
+                    echo "✅ Video published successfully to NOSTR!"
+                    echo "   Event ID: ${EVENT_ID:0:16}..."
+                    espeak "Video published"
+                else
+                    echo "⚠️  Video uploaded but event ID not found in output"
+                    echo "Publish output: $PUBLISH_OUTPUT"
+                fi
+            fi
+        else
+            echo "⚠️  Video uploaded but publication may have failed (exit code: $PUBLISH_EXIT_CODE)"
+            echo "Publish output: $PUBLISH_OUTPUT"
+        fi
+        
+        # Cleanup temp files
+        rm -f "$UPLOAD_OUTPUT_FILE"
     ;;
 
-########################################################################
+    ########################################################################
 # CASE ## DEFAULT
-########################################################################
+    ########################################################################
     *)
-
-    [ ! $2 ] && zenity --warning --width ${large} --text "Impossible d'interpréter votre commande $CAT"
+        [ ! $2 ] && zenity --warning --width 600 --text "Impossible d'interpréter votre commande $CAT"
     exit 1
-
     ;;
 
 esac
 
-########################################################################
-
-########################################################################
-########################################################################
-
-########################################################################
-########################################################################
-# Screen capture
-########################################################################
-if [[ $(echo $DISPLAY | cut -d ':' -f 1) == "" ]]; then
-    sleep 1
-    import -window root ~/.zen/tmp/screen.png
-fi
-
-###################################
-### MOVING FILE TO ~/astroport ####
-###################################
-mkdir -p ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/
-mv ~/.zen/tmp/screen.png ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/screen.png
-
-########################################################################
-# ADD $FILE to IPFS / ASTROPORT / KODI
-echo "(♥‿‿♥) new_file_in_astroport.sh \"$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/\" \"${FILE_NAME}\"" "$3" "$PLAYER"
-[[ -f ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt ]] && cat ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/ajouter_video.txt
-# LOG NOISE # [[ -f ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/video.json ]] && cat ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/video.json
-########################################################################
-## CREATION DU FICHIER ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
-########################################################################
-### AJOUT DANS IPFS  #######################################################
-########################################################################
-####################################new_file_in_astroport.sh##################
-########################################################################
-if [[ ! -s ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
-    [[ "$CAT" == "film" || "$CAT" == "serie" ]] && CHOICE="TMDB"
-
-    timestamp=$(date -u +%s%N | cut -b1-13)
-
-    ## CREATE BASH SCRIPT
-
-    echo "MEDIAKEY=${MEDIAKEY}" > ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
-    echo 'exec 2>&1 >> ~/.zen/tmp/ajouter_media.log' >> ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
-
-    ## ACTIVATE h265 conversion .?
-    #[[ $CHOICE == "TMDB" ]] && echo "echo \"Encoder ${FILE_NAME} en h265 avant import ? Tapez sur ENTER.. Sinon saisissez qqch avant...\"
-    #reponse=\$1
-    #[[ ! \$reponse ]] && read reponse
-    #if [[ ! \$reponse ]]; then
-    #    ffmpeg -i \"$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${FILE_NAME}\" -vcodec libx265 -crf 28 $HOME/Astroport/${PLAYER}/${MEDIAID}.mp4
-    #    mv \"$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${FILE_NAME}\" \"$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${FILE_NAME}.old\"
-    #    mv $HOME/Astroport/${PLAYER}/${MEDIAID}.mp4 \"$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${FILE_NAME}.mp4\"
-    #    ${MY_PATH}/tools/new_file_in_astroport.sh \"$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/\" \"${FILE_NAME}.mp4\"
-    #else" >> ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
-
-    # $3 is the G1PUB of the PLAYER
-    echo "${MY_PATH}/tools/new_file_in_astroport.sh \"$HOME/Astroport/${PLAYER}/${CAT}/${MEDIAID}/\" \"${FILE_NAME}\" \"$G1PUB\" \"$PLAYER\"" >> ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
-
-    #[[ $CHOICE == "TMDB" ]] && echo "fi" >> ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
-
-    echo "mv ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh \"$HOME/Astroport/${PLAYER}/${FILE_NAME}_DONE.sh\"
-    " >> ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
-
-    chmod +x ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh
-
-    ########################################################################
-    echo "(♥‿‿♥) $MEDIAKEY IPFS MIAM (ᵔ◡◡ᵔ)"
-#    zenity --warning --width 360 --text "(♥‿‿♥) $MEDIAKEY IPFS MIAM (ᵔ◡◡ᵔ)"
-
-    espeak "Adding $CAT to I P F S. Please Wait"
-
-    ## RUN BASH SCRIPT
-    bash ~/Astroport/${PLAYER}/Add_${MEDIAKEY}_script.sh "noh265"
-
-    ## OR PUT IN YOUR QUEUE
-    ## CREATING TIMELINE FOR BATCH TREATMENT
-    #~ mkdir -p ~/.zen/tmp/${IPFSNODEID}/ajouter_media.sh/
-    #~ echo "${MEDIAKEY}" > ~/.zen/tmp/${IPFSNODEID}/ajouter_media.sh/${MOATS}
-
-    ##
-
-
-fi
-
-#######################################
-########################## TIDDLER JSON READY
-#######################################
-if [[ -s ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json ]]; then
-    espeak "Updating T W"
-
-    ########################################################################
-    ## ADD TIDDLER TO TW
-    ########################################################################
-    echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-    ## GETTING LAST TW via IPFS or HTTP GW
-    LIBRA=$(head -n 2 ${MY_PATH}/A_boostrap_nodes.txt | tail -n 1 | xargs | cut -d ' ' -f 2)
-    rm -f ~/.zen/tmp/astronaut_TW.html > /dev/null 2>&1
-    [[ $YOU ]] \
-        && echo " ipfs --timeout 120s cat --progress=false /ipns/${ASTRONAUTENS} ($YOU)" \
-        && ipfs --timeout 120s cat --progress=false /ipns/${ASTRONAUTENS} > ~/.zen/tmp/astronaut_TW.html
-    #~ [[ ! -s ~/.zen/tmp/astronaut_TW.html ]] && echo "curl -m 12 $LIBRA/ipns/${ASTRONAUTENS}" && curl -m 12 -so ~/.zen/tmp/astronaut_TW.html "$LIBRA/ipns/${ASTRONAUTENS}"
-    [[ ! -s ~/.zen/tmp/astronaut_TW.html ]] && espeak "WARNING. WARNING. impossible to find your TW online"
-    [[ ! -s ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ]] && espeak "FATAL ERROR. No player TW copy found ! EXIT" && exit 1
-    ## TODO : CHECK CACHE LAST MODIFIED
-    echo "%%%%%%%%%%%%%% I GOT YOUR TW %%%%%%%%%%%%%%%%%%%%%%%%%%"
-
-    [[ -s ~/.zen/tmp/astronaut_TW.html ]] \
-    && cp -f ~/.zen/tmp/astronaut_TW.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
-    && espeak "TW Found" \
-    || espeak "USING LOCAL COPY"
-    ###############################
-
-    echo "Adding ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json
-    To TW $PSEUDO / ${PLAYER} : $myIPFS/ipns/$ASTRONAUTENS"
-    tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
-                --import ~/Astroport/${PLAYER}/${CAT}/${MEDIAID}/${MEDIAKEY}.dragdrop.json "application/json" \
-                --output ~/.zen/tmp --render "$:/core/save/all" "newindex.html" "text/plain"
-
-    if [[ -s ~/.zen/tmp/newindex.html ]]; then
-
-        NEWTW=$(ipfs add -Hq ~/.zen/tmp/newindex.html | tail -n 1)
-        ################################################
-        ## UPDATE TW CHAIN WITH PREVIOUSLY RECORDED CHAIN
-        tiddlywiki --load ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html \
-            --output ~/.zen/tmp/${MOATS} \
-            --render '.' 'Astroport.json' 'text/plain' '$:/core/templates/exporters/JsonFile' 'exportFilter' 'Astroport'
-        ASTROPORT=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].astroport)
-        CURCHAIN=$(cat ~/.zen/tmp/${MOATS}/Astroport.json | jq -r .[].chain | rev | cut -f 1 -d '/' | rev) # Remove "/ipfs/" part
-        [[ $CURCHAIN == "" ||  $CURCHAIN == "null" ]] &&  CURCHAIN="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" # AVOID EMPTY
-        echo "CURCHAIN=$CURCHAIN"
-
-        echo "$MOATS" > ~/.zen/game/players/$PLAYER/ipfs/moa/.moats
-        cp ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain \
-            ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain.$(cat ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats)
-        echo "$NEWTW" > ~/.zen/game/players/$PLAYER/ipfs/moa/.chain
-
-        echo "# CHAIN : $CURCHAIN -> $NEWTW"
-        sed -i "s~$CURCHAIN~$NEWTW~g" ~/.zen/tmp/newindex.html
-        ################################################
-        cp -f ~/.zen/tmp/newindex.html ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
-
-        espeak "I P N S Publishing. Please wait..."
-        ipfs name publish --key=${PLAYER} /ipfs/$NEWTW
-
-        echo "================================================"
-        echo "${PLAYER} : $myIPFS/ipns/$ASTRONAUTENS"
-        echo "================================================"
-        echo
-
-        [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open "http://ipfs.localhost:8080/ipfs/$NEWTW"
-
-    else
-
-        espeak "Warning. Could not import Tiddler. You must add it by hand."
-
-    fi
-
-    espeak "OK We did it"
-
-else
-
-    espeak "Sorry. No Tiddler found"
-
-fi
-
 end=`date +%s`
 dur=`expr $end - $start`
-espeak "It tooks $dur seconds to acomplish"
+espeak "It tooks $dur seconds to accomplish"
 
 exit 0

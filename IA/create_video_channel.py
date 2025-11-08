@@ -19,13 +19,131 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 import re
 
-async def fetch_nostr_events(relay_url: str = "ws://127.0.0.1:7777", limit: int = 100) -> List[Dict[str, Any]]:
+# Cache for author_id -> email lookups to avoid repeated NOSTR queries
+_EMAIL_CACHE = {}
+
+async def fetch_author_email_from_nostr(author_id: str, relay_url: str = "ws://127.0.0.1:7777", timeout: int = 5) -> Optional[str]:
     """
-    Récupère les événements NOSTR depuis un relay
+    Récupère l'email de l'auteur depuis son profil NOSTR (kind 0) ou DID (kind 30800)
+    Cherche dans:
+    1. Tags 'i' avec préfixe 'email:' dans le profil (kind 0)
+    2. Champ 'nip05' du profil (kind 0) si format email
+    3. DID document (kind 30800) si disponible
+    """
+    if not author_id or len(author_id) != 64:
+        return None
+    
+    # Check cache first
+    if author_id in _EMAIL_CACHE:
+        return _EMAIL_CACHE[author_id]
+    
+    try:
+        async with websockets.connect(relay_url, timeout=timeout) as websocket:
+            # First, try to fetch profile (kind 0)
+            profile_filter = {
+                "kinds": [0],
+                "authors": [author_id],
+                "limit": 1
+            }
+            
+            request = ["REQ", f"profile_{author_id[:8]}", profile_filter]
+            await websocket.send(json.dumps(request))
+            
+            # Wait for profile event
+            profile_event = None
+            async for message in websocket:
+                try:
+                    data = json.loads(message)
+                    if data[0] == "EVENT":
+                        profile_event = data[2]
+                        break
+                    elif data[0] == "EOSE":
+                        break
+                except (json.JSONDecodeError, IndexError, KeyError):
+                    continue
+            
+            # Extract email from profile (kind 0)
+            if profile_event:
+                # Parse profile content
+                try:
+                    profile_content = json.loads(profile_event.get('content', '{}'))
+                    # Check nip05 field (may contain email format)
+                    nip05 = profile_content.get('nip05', '')
+                    if '@' in nip05 and '.' in nip05:
+                        # nip05 format: name@domain.com
+                        email = nip05
+                        _EMAIL_CACHE[author_id] = email
+                        return email
+                except (json.JSONDecodeError, KeyError):
+                    pass
+                
+                # Check tags for 'i' tag with 'email:' prefix
+                tags = profile_event.get('tags', [])
+                for tag in tags:
+                    if len(tag) >= 2 and tag[0] == 'i':
+                        tag_value = tag[1]
+                        if tag_value.startswith('email:'):
+                            email = tag_value[6:]  # Remove 'email:' prefix
+                            if '@' in email:
+                                _EMAIL_CACHE[author_id] = email
+                                return email
+            
+            # If profile didn't have email, try DID (kind 30800)
+            did_filter = {
+                "kinds": [30800],  # NIP-101 DID events
+                "authors": [author_id],
+                "limit": 1
+            }
+            
+            request = ["REQ", f"did_{author_id[:8]}", did_filter]
+            await websocket.send(json.dumps(request))
+            
+            # Wait for DID event
+            async for message in websocket:
+                try:
+                    data = json.loads(message)
+                    if data[0] == "EVENT":
+                        did_event = data[2]
+                        # Parse DID content
+                        try:
+                            did_content = json.loads(did_event.get('content', '{}'))
+                            # Extract email from DID metadata or id
+                            did_id = did_content.get('id', '')
+                            if did_id.startswith('did:nostr:'):
+                                # DID format: did:nostr:{hex_pubkey}
+                                # Try to extract from metadata or other fields
+                                metadata = did_content.get('metadata', {})
+                                # Check various possible email fields in DID
+                                email = metadata.get('email') or metadata.get('contactEmail') or metadata.get('youser')
+                                if email and '@' in email:
+                                    _EMAIL_CACHE[author_id] = email
+                                    return email
+                        except (json.JSONDecodeError, KeyError):
+                            pass
+                        break
+                    elif data[0] == "EOSE":
+                        break
+                except (json.JSONDecodeError, IndexError, KeyError):
+                    continue
+                    
+    except (websockets.exceptions.WebSocketException, asyncio.TimeoutError, OSError) as e:
+        # Silently fail - will fallback to directory lookup
+        pass
+    except Exception as e:
+        # Log unexpected errors but don't fail
+        print(f"Warning: Error fetching email from NOSTR for {author_id[:8]}...: {e}", file=sys.stderr)
+    
+    # Cache None result to avoid repeated queries
+    _EMAIL_CACHE[author_id] = None
+    return None
+
+async def fetch_nostr_events(relay_url: str = "ws://127.0.0.1:7777", limit: int = 100, timeout: int = 10) -> List[Dict[str, Any]]:
+    """
+    Récupère les événements NOSTR depuis un relay avec timeout
     """
     events = []
     
-    try:
+    async def _fetch_events():
         async with websockets.connect(relay_url) as websocket:
             # Requête pour récupérer uniquement les événements NIP-71 (kind: 21, 22)
             # According to UPlanet_FILE_CONTRACT.md, videos use tag "t" with prefix "Channel-"
@@ -52,7 +170,12 @@ async def fetch_nostr_events(relay_url: str = "ws://127.0.0.1:7777", limit: int 
                         break
                 except (json.JSONDecodeError, IndexError, KeyError):
                     continue
-                    
+    
+    try:
+        # Add timeout to prevent hanging (compatible with Python < 3.11)
+        await asyncio.wait_for(_fetch_events(), timeout=timeout)
+    except asyncio.TimeoutError:
+        print(f"Timeout lors de la récupération des événements NOSTR depuis {relay_url}")
     except Exception as e:
         print(f"Erreur lors de la récupération des événements NOSTR: {e}")
     
@@ -76,7 +199,7 @@ def is_youtube_video_event(event: Dict[str, Any]) -> bool:
     
     return has_video_tags and has_media_type
 
-def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]:
+def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = "ws://127.0.0.1:7777") -> Dict[str, Any]:
     """
     Extrait les informations vidéo d'un événement NOSTR NIP-71
     Supporte uniquement les événements kind: 21 et 22 (NIP-71)
@@ -94,6 +217,7 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
     info_cid = ""      # NEW: info.json CID for metadata reuse
     file_hash = ""     # NEW: File hash for provenance tracking
     upload_chain = ""  # NEW: Upload chain for provenance tracking (comma-separated pubkeys)
+    source_type = ""   # NEW: Source type (film, serie, youtube, webcam)
     
     # Parse tags for standard NIP-71 fields first
     for tag in tags:
@@ -127,6 +251,9 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
             elif tag_type == 'upload_chain':
                 # NEW: Upload chain for provenance tracking
                 upload_chain = tag_value
+            elif tag_type == 'i' and tag_value.startswith('source:'):
+                # Source type tag (source:film, source:serie, source:youtube, source:webcam)
+                source_type = tag_value.replace('source:', '')
             elif tag_type == 'm' and 'video' in tag_value:
                 # Media type confirmed as video
                 pass
@@ -225,12 +352,58 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
     if not title:
         title = "Titre inconnu"
     if not uploader:
-        # Try to extract from channel name
-        channel_tags = [t[1] for t in tags if len(t) > 1 and t[1].startswith('Channel-')]
+        # Try to extract from channel name (tag "t" with "Channel-" prefix)
+        # Look for tags of type "t" (topic tags) that start with "Channel-"
+        channel_tags = [t[1] for t in tags if len(t) > 1 and t[0] == 't' and t[1].startswith('Channel-')]
+        if not channel_tags:
+            # Fallback: look for any tag with "Channel-" prefix (for backward compatibility)
+            channel_tags = [t[1] for t in tags if len(t) > 1 and t[1].startswith('Channel-')]
         if channel_tags:
-            uploader = channel_tags[0].replace('Channel-', '').replace('_', '@', 1).replace('_', '.')
+            # Convert Channel-email_com to email@com format
+            channel_name = channel_tags[0].replace('Channel-', '')
+            # Replace first _ with @, then remaining _ with .
+            parts = channel_name.split('_', 1)
+            if len(parts) == 2:
+                uploader = f"{parts[0]}@{parts[1].replace('_', '.')}"
+            else:
+                uploader = channel_name.replace('_', '@', 1).replace('_', '.')
         else:
-            uploader = "Auteur inconnu"
+            # Try to get uploader from author_id (pubkey) via NOSTR profile/DID
+            # Email should already be in cache from batch pre-fetch in fetch_and_process_nostr_events
+            author_id = event.get('pubkey', '')
+            if author_id:
+                # Check cache first (populated by batch pre-fetch)
+                if author_id in _EMAIL_CACHE:
+                    email_from_nostr = _EMAIL_CACHE[author_id]
+                    if email_from_nostr:
+                        uploader = email_from_nostr
+                
+                # Fallback: Try to find user email from pubkey in local directories
+                if not uploader:
+                    import os
+                    nostr_base = os.path.expanduser('~/.zen/game/nostr')
+                    if os.path.isdir(nostr_base):
+                        for email_dir in os.listdir(nostr_base):
+                            email_path = os.path.join(nostr_base, email_dir)
+                            if os.path.isdir(email_path):
+                                # Check if this directory has the matching pubkey
+                                hex_file = os.path.join(email_path, 'HEX')
+                                npub_file = os.path.join(email_path, 'NPUB')
+                                if os.path.isfile(hex_file):
+                                    try:
+                                        with open(hex_file, 'r') as f:
+                                            hex_key = f.read().strip()
+                                            if hex_key == author_id:
+                                                uploader = email_dir
+                                                break
+                                    except (IOError, OSError):
+                                        continue
+                                elif os.path.isfile(npub_file):
+                                    # Would need to convert npub to hex, skip for now
+                                    pass
+            # Final fallback if uploader still not found
+            if not uploader:
+                uploader = "Auteur inconnu"
     
     # Extraire les sous-titres
     subtitles = []
@@ -242,13 +415,16 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
             "format": "vtt" if "vtt" in url else "srt"
         })
     
-    # Extraire les tags de chaîne
-    channel_tags = [t[1] for t in tags if len(t) > 1 and t[1].startswith('Channel-')]
+    # Extraire les tags de chaîne (tag "t" with "Channel-" prefix)
+    channel_tags = [t[1] for t in tags if len(t) > 1 and t[0] == 't' and t[1].startswith('Channel-')]
+    if not channel_tags:
+        # Fallback: look for any tag with "Channel-" prefix
+        channel_tags = [t[1] for t in tags if len(t) > 1 and t[1].startswith('Channel-')]
     if channel_tags:
         channel_name = channel_tags[0].replace('Channel-', '')
-    elif uploader and uploader != "null":
+    elif uploader and uploader != "null" and uploader != "Auteur inconnu":
         # Use uploader as channel name if no Channel tag found
-        channel_name = uploader.replace(' ', '_').replace('-', '_')
+        channel_name = uploader.replace(' ', '_').replace('-', '_').replace('@', '_').replace('.', '_')
     else:
         channel_name = "unknown"
     
@@ -319,6 +495,92 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
     # According to NIP-71, the content field contains a summary or description of the video
     content = event.get('content', '').strip()
     
+    # Determine source type from tags (source:film, source:serie, source:youtube, source:webcam)
+    # Default to 'webcam' if not found in tags
+    if not source_type:
+        source_type = 'webcam'  # Default: personal video/webcam
+        if youtube_url:
+            source_type = 'youtube'
+    
+    # Parse upload_chain to extract list of uploaders (copieurs)
+    upload_chain_list = []
+    if upload_chain:
+        try:
+            import json
+            # Try to parse as JSON array first (new format)
+            if upload_chain.strip().startswith('['):
+                chain_array = json.loads(upload_chain)
+                for entry in chain_array:
+                    if isinstance(entry, dict):
+                        pubkey = entry.get('pubkey', '')
+                        timestamp = entry.get('timestamp')
+                    else:
+                        pubkey = str(entry)
+                        timestamp = None
+                    if pubkey and len(pubkey) == 64:
+                        # Try to get email from cache or directory lookup
+                        email = None
+                        if pubkey in _EMAIL_CACHE:
+                            email = _EMAIL_CACHE[pubkey]
+                        else:
+                            # Try directory lookup
+                            import os
+                            nostr_base = os.path.expanduser('~/.zen/game/nostr')
+                            if os.path.isdir(nostr_base):
+                                for email_dir in os.listdir(nostr_base):
+                                    email_path = os.path.join(nostr_base, email_dir)
+                                    if os.path.isdir(email_path):
+                                        hex_file = os.path.join(email_path, 'HEX')
+                                        if os.path.isfile(hex_file):
+                                            try:
+                                                with open(hex_file, 'r') as f:
+                                                    hex_key = f.read().strip()
+                                                    if hex_key == pubkey:
+                                                        email = email_dir
+                                                        _EMAIL_CACHE[pubkey] = email
+                                                        break
+                                            except (IOError, OSError):
+                                                continue
+                        upload_chain_list.append({
+                            'pubkey': pubkey,
+                            'email': email or f"{pubkey[:8]}...",
+                            'timestamp': timestamp
+                        })
+            else:
+                # Parse as comma-separated string (old format)
+                pubkeys = [p.strip() for p in upload_chain.split(',') if p.strip() and len(p.strip()) == 64]
+                for pubkey in pubkeys:
+                    email = None
+                    if pubkey in _EMAIL_CACHE:
+                        email = _EMAIL_CACHE[pubkey]
+                    else:
+                        # Try directory lookup
+                        import os
+                        nostr_base = os.path.expanduser('~/.zen/game/nostr')
+                        if os.path.isdir(nostr_base):
+                            for email_dir in os.listdir(nostr_base):
+                                email_path = os.path.join(nostr_base, email_dir)
+                                if os.path.isdir(email_path):
+                                    hex_file = os.path.join(email_path, 'HEX')
+                                    if os.path.isfile(hex_file):
+                                        try:
+                                            with open(hex_file, 'r') as f:
+                                                hex_key = f.read().strip()
+                                                if hex_key == pubkey:
+                                                    email = email_dir
+                                                    _EMAIL_CACHE[pubkey] = email
+                                                    break
+                                        except (IOError, OSError):
+                                            continue
+                    upload_chain_list.append({
+                        'pubkey': pubkey,
+                        'email': email or f"{pubkey[:8]}...",
+                        'timestamp': None
+                    })
+        except (json.JSONDecodeError, ValueError, AttributeError):
+            # If parsing fails, keep upload_chain as string
+            pass
+    
     return {
         'title': title,
         'uploader': uploader,
@@ -332,6 +594,8 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any]) -> Dict[str, Any]
         'info_cid': info_cid,  # NEW: info.json CID for metadata reuse
         'file_hash': file_hash,  # NEW: File hash for provenance tracking
         'upload_chain': upload_chain,  # NEW: Upload chain for provenance (comma-separated pubkeys)
+        'upload_chain_list': upload_chain_list,  # NEW: Parsed upload chain list (copieurs)
+        'source_type': source_type,  # NEW: Source type (film, serie, youtube, webcam)
         'subtitles': subtitles,
         'channel_name': channel_name,
         'topic_keywords': ','.join(topic_keywords),
@@ -498,12 +762,25 @@ async def fetch_and_process_nostr_events(relay_url: str = "ws://127.0.0.1:7777",
     events = await fetch_nostr_events(relay_url, limit)
     video_messages = []
     
+    # Pre-fetch emails for all unique authors in batch (more efficient)
+    unique_authors = set()
+    for event in events:
+        if not is_incompatible_youtube_message(event):
+            author_id = event.get('pubkey', '')
+            if author_id and author_id not in _EMAIL_CACHE:
+                unique_authors.add(author_id)
+    
+    # Fetch emails in parallel for better performance
+    if unique_authors:
+        tasks = [fetch_author_email_from_nostr(author_id, relay_url, timeout=3) for author_id in unique_authors]
+        await asyncio.gather(*tasks, return_exceptions=True)
+    
     for event in events:
         # Filtrer les messages incompatibles
         if is_incompatible_youtube_message(event):
             continue
             
-        video_info = extract_video_info_from_nostr_event(event)
+        video_info = extract_video_info_from_nostr_event(event, relay_url)
         video_messages.append(video_info)
     
     return video_messages

@@ -99,9 +99,11 @@ source $HOME/.zen/Astroport.ONE/tools/my.sh
 RELAYS="ws://127.0.0.1:7777,wss://relay.copylaradio.com"
 MIME_TYPE="video/webm"
 DURATION=0
+FILE_SIZE=0
 DIMENSIONS="640x480"
 LATITUDE="0.00"
 LONGITUDE="0.00"
+SOURCE_TYPE=""
 JSON_OUTPUT=false
 AUTO_MODE=false
 AUTO_FILE=""
@@ -161,6 +163,7 @@ Optional arguments:
   --latitude <lat>          Geographic latitude (default: 0.00)
   --longitude <lon>         Geographic longitude (default: 0.00)
   --channel <name>          Channel name/email
+  --source-type <type>      Source type: film, serie, youtube, webcam (auto-detected in --auto mode)
   --relays <urls>           Comma-separated relay URLs (default: local+copylaradio)
   --json                    Output JSON format
   --help                    Show this help message
@@ -248,6 +251,10 @@ while [[ $# -gt 0 ]]; do
             CHANNEL="$2"
             shift 2
             ;;
+        --source-type)
+            SOURCE_TYPE="$2"
+            shift 2
+            ;;
         --relays)
             RELAYS="$2"
             shift 2
@@ -294,11 +301,41 @@ if [ "$AUTO_MODE" = "true" ]; then
     [ -z "$INFO_CID" ] && INFO_CID=$(echo "$UPLOAD_DATA" | jq -r '.info // empty')
     [ -z "$UPLOAD_CHAIN" ] && UPLOAD_CHAIN=$(echo "$UPLOAD_DATA" | jq -r '.upload_chain // empty')
     [ -z "$DIMENSIONS" ] && DIMENSIONS=$(echo "$UPLOAD_DATA" | jq -r '.dimensions // "640x480"')
+    # Extract file size (for NIP-71 size tag)
+    FILE_SIZE=$(echo "$UPLOAD_DATA" | jq -r '.fileSize // 0')
+    
+    # Auto-detect source type from upload2ipfs.sh metadata (only if not provided via command line)
+    if [ -z "$SOURCE_TYPE" ]; then
+        SOURCE_TYPE="webcam"  # Default: personal video/webcam
+        if command -v jq &> /dev/null; then
+            # Check for TMDB metadata (film/serie)
+            TMDB_MEDIA_TYPE=$(echo "$UPLOAD_DATA" | jq -r '.tmdb.media_type // empty' 2>/dev/null)
+            if [[ -n "$TMDB_MEDIA_TYPE" ]]; then
+                if [[ "$TMDB_MEDIA_TYPE" == "movie" ]]; then
+                    SOURCE_TYPE="film"
+                elif [[ "$TMDB_MEDIA_TYPE" == "tv" ]]; then
+                    SOURCE_TYPE="serie"
+                fi
+            else
+                # Check for YouTube metadata
+                YOUTUBE_VIDEO_ID=$(echo "$UPLOAD_DATA" | jq -r '.youtube.video_id // empty' 2>/dev/null)
+                if [[ -n "$YOUTUBE_VIDEO_ID" ]]; then
+                    SOURCE_TYPE="youtube"
+                fi
+            fi
+        fi
+    fi
+    # Default to webcam if still empty
+    SOURCE_TYPE=${SOURCE_TYPE:-webcam}
+    log_info "Source type: $SOURCE_TYPE"
     
     # Extract duration (convert to integer)
     if [ -z "$DURATION" ] || [ "$DURATION" = "0" ]; then
         DURATION_RAW=$(echo "$UPLOAD_DATA" | jq -r '.duration // 0')
         DURATION=$(echo "$DURATION_RAW" | awk '{print int($1)}')
+    else
+        # Convert duration to integer if it's a decimal (always convert for comparison)
+        DURATION=$(echo "$DURATION" | awk '{print int($1)}')
     fi
     
     # Auto-generate title if not provided
@@ -360,6 +397,13 @@ if [ -z "$TITLE" ]; then
     log_info "Using default title: $TITLE"
 fi
 
+# Ensure DURATION is an integer (convert if decimal) - required for comparison
+if [ -n "$DURATION" ] && [ "$DURATION" != "0" ]; then
+    DURATION=$(echo "$DURATION" | awk '{print int($1)}')
+fi
+# Default to 0 if not set
+DURATION=${DURATION:-0}
+
 # Determine video kind based on duration (22 for ≤60s, 21 for >60s)
 if [ "$DURATION" -le 60 ]; then
     VIDEO_KIND="22"
@@ -378,7 +422,8 @@ log_info "IPFS URL: $IPFS_URL"
 # Build video content (compatible with /webcam)
 VIDEO_CONTENT="🎬 ${TITLE}"
 if [ -n "$DESCRIPTION" ]; then
-    VIDEO_CONTENT="${VIDEO_CONTENT}\n\n📝 Description: ${DESCRIPTION}"
+    VIDEO_CONTENT="${VIDEO_CONTENT}
+📝 Description: ${DESCRIPTION}"
 fi
 
 log_info "Building NOSTR tags..."
@@ -397,7 +442,16 @@ if [ -n "$FILE_HASH" ]; then
 fi
 
 TAGS="${TAGS}],
-    [\"duration\", \"$DURATION\"],
+    [\"duration\", \"$DURATION\"]"
+    
+# Add file size tag (NIP-71 standard) - always add even if 0 for consistency
+if [ -n "$FILE_SIZE" ]; then
+    TAGS="${TAGS},
+    [\"size\", \"$FILE_SIZE\"]"
+    log_info "Added file size: ${FILE_SIZE} bytes"
+fi
+
+TAGS="${TAGS},
     [\"published_at\", \"$(date +%s)\"],
     [\"t\", \"YouTubeDownload\"],
     [\"t\", \"VideoChannel\"]"
@@ -459,10 +513,30 @@ if [ -n "$FILE_HASH" ]; then
     log_info "Added provenance 'x' tag: ${FILE_HASH:0:16}..."
 fi
 
+# Add source type tag (film, serie, youtube, webcam)
+if [ -n "$SOURCE_TYPE" ]; then
+    TAGS="${TAGS},
+    [\"i\", \"source:${SOURCE_TYPE}\"]"
+    log_info "Added source type tag: source:${SOURCE_TYPE}"
+fi
+
 # Add upload_chain if this is a re-upload
 if [ -n "$UPLOAD_CHAIN" ]; then
+    # Use jq to properly escape the JSON string for insertion into tags array
+    # The upload_chain is a JSON string that needs to be escaped as a tag value
+    if command -v jq &> /dev/null; then
+        # Escape the JSON string properly using jq -Rs (raw string, escape special chars)
+        # This will properly escape quotes, newlines, etc. for JSON
+        ESCAPED_CHAIN=$(echo "$UPLOAD_CHAIN" | jq -Rs '.' | head -c -1)
+        # jq -Rs outputs a JSON string (with quotes), use it directly in the tag
+        TAGS="${TAGS},
+    [\"upload_chain\", ${ESCAPED_CHAIN}]"
+    else
+        # Fallback: basic escaping (replace quotes and newlines)
+        ESCAPED_CHAIN=$(echo "$UPLOAD_CHAIN" | sed 's/"/\\"/g' | tr '\n' ' ' | sed 's/  */ /g')
     TAGS="${TAGS},
-    [\"upload_chain\", \"${UPLOAD_CHAIN}\"]"
+    [\"upload_chain\", \"${ESCAPED_CHAIN}\"]"
+    fi
     log_info "Added upload chain: ${UPLOAD_CHAIN:0:50}..."
 fi
 
@@ -593,6 +667,21 @@ IPFS: /ipfs/${IPFS_CID}
         fi
         
         if [ "$JSON_OUTPUT" = "true" ]; then
+            # Escape upload_chain for JSON output using jq
+            UPLOAD_CHAIN_JSON=""
+            if [ -n "$UPLOAD_CHAIN" ]; then
+                if command -v jq &> /dev/null; then
+                    # Escape the string properly for JSON
+                    UPLOAD_CHAIN_JSON=$(echo "$UPLOAD_CHAIN" | jq -Rs '.' | head -c -1)
+                else
+                    # Fallback: basic escaping
+                    UPLOAD_CHAIN_JSON=$(echo "$UPLOAD_CHAIN" | sed 's/"/\\"/g' | sed 's/\\/\\\\/g')
+                    UPLOAD_CHAIN_JSON="\"$UPLOAD_CHAIN_JSON\""
+                fi
+            else
+                UPLOAD_CHAIN_JSON='""'
+            fi
+            
             # Output JSON format
             cat << EOF
 {
@@ -604,7 +693,7 @@ IPFS: /ipfs/${IPFS_CID}
   "ipfs_url": "$IPFS_URL",
   "title": "$TITLE",
   "duration": $DURATION,
-  "upload_chain": "${UPLOAD_CHAIN:-}",
+  "upload_chain": ${UPLOAD_CHAIN_JSON},
   "kind1_note_id": "${KIND1_EVENT_ID:-}"
 }
 EOF

@@ -9,8 +9,10 @@
 # Fonctionnalités:
 # - Récupère les vidéos likées depuis la dernière synchronisation (max 3 par run)
 # - Utilise les cookies du sociétaire pour l'authentification YouTube
-# - Télécharge les nouvelles vidéos via process_youtube.sh
-# - Organise les vidéos dans uDRIVE/Music/ et uDRIVE/Videos/
+# - Télécharge les nouvelles vidéos via process_youtube.sh (download-only)
+# - Upload via /api/fileupload (UPlanet_FILE_CONTRACT.md compliant)
+# - Publie via /webcam (NIP-71 kind 21/22)
+# - Organise automatiquement dans uDRIVE/Videos/ via /api/fileupload
 # - Met à jour le fichier de dernière synchronisation
 ########################################################################
 
@@ -370,6 +372,8 @@ url_encode_title() {
 }
 
 # Fonction pour envoyer une note NOSTR pour une vidéo synchronisée
+# DEPRECATED: Videos are now published via /webcam endpoint (NIP-71 kind 21/22)
+# This function is kept for backward compatibility but is no longer used
 send_nostr_note() {
     local player="$1"
     local title="$2"
@@ -377,62 +381,9 @@ send_nostr_note() {
     local ipfs_url="$4"
     local youtube_url="$5"
     
-    log_debug "Sending NOSTR note for video: $title"
-    
-    # Check if the script nostr_send_note.py exists
-    local nostr_script="$MY_PATH/../tools/nostr_send_note.py"
-    if [[ ! -f "$nostr_script" ]]; then
-        log_debug "NOSTR script not found: $nostr_script"
-        return 1
-    fi
-    
-    # Check if keyfile exists for this player
-    local keyfile="$HOME/.zen/game/nostr/${player}/.secret.nostr"
-    
-    if [[ ! -f "$keyfile" ]]; then
-        log_debug "NOSTR keyfile not found for $player: $keyfile"
-        return 1
-    fi
-    
-    log_debug "Using .secret.nostr keyfile: $keyfile"
-    
-    # Build NOSTR message
-    local message="🎬 New video synced: $title by $uploader
-
-🔗 IPFS: $ipfs_url
-📺 YouTube: $youtube_url
-
-#YouTubeSync #uDRIVE #IPFS"
-    
-    # Prepare tags for better categorization
-    local tags='[["t","YouTubeSync"],["t","uDRIVE"],["t","IPFS"],["r","'$youtube_url'","YouTube"]]'
-    
-    # Send NOSTR note with new unified API
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Sending NOSTR note for: $title" >&2
-    
-    local nostr_result=$(python3 "$nostr_script" \
-        --keyfile "$keyfile" \
-        --content "$message" \
-        --tags "$tags" \
-        --relays "ws://127.0.0.1:7777" \
-        --json 2>&1)
-    
-    local nostr_exit_code=$?
-    
-    if [[ $nostr_exit_code -eq 0 ]]; then
-        # Parse JSON result
-        local event_id=$(echo "$nostr_result" | grep -o '"event_id":[[:space:]]*"[^"]*"' | sed 's/"event_id":[[:space:]]*"\([^"]*\)"/\1/')
-        local relays_success=$(echo "$nostr_result" | grep -o '"relays_success":[[:space:]]*[0-9]*' | grep -o '[0-9]*')
-        
-        log_debug "NOSTR note sent successfully for: $title (event_id: $event_id, relays: $relays_success)"
-        echo "📡 NOSTR note published for: $title"
-    else
-        log_debug "Failed to send NOSTR note for: $title (exit code: $nostr_exit_code)"
-        log_debug "NOSTR output: $nostr_result"
-        echo "⚠️ NOSTR note failed for: $title"
-    fi
-    
-    return $nostr_exit_code
+    log_debug "Note: send_nostr_note() is deprecated. Videos are published via /webcam (NIP-71 kind 21/22)"
+    # Videos are now published via /webcam endpoint in process_liked_video()
+    return 0
 }
 
 # Fonction pour traiter une vidéo likée
@@ -469,28 +420,54 @@ process_liked_video() {
     # Utiliser uniquement le format MP4 pour toutes les vidéos
     local format="mp4"
     
-    # Appeler process_youtube.sh pour télécharger la vidéo avec métadonnées pré-extraites
-    local metadata_string="${video_id}&${title}&${duration}&${uploader}"
-    log_debug "Calling process_youtube.sh with pre-extracted metadata: $url $format $player"
-    log_debug "Metadata string: $metadata_string"
-    log_debug "Metadata string length: ${#metadata_string}"
-    log_debug "Metadata string bytes: $(echo -n "$metadata_string" | wc -c)"
+    # UPlanet_FILE_CONTRACT.md Compliance:
+    # 1. Download video via process_youtube.sh (download-only, no IPFS upload)
+    # 2. Upload via /api/fileupload (standardized workflow)
+    # 3. Publish via /webcam (NIP-71 kind 21/22)
     
-    # Échapper les caractères spéciaux pour éviter les problèmes de parsing
-    local escaped_metadata_string=$(printf '%q' "$metadata_string")
-    log_debug "Escaped metadata string: $escaped_metadata_string"
+    log_debug "Calling process_youtube.sh: $url $format $player"
     
     # Créer un fichier temporaire pour capturer la sortie et éviter les problèmes de pipe
     local temp_output_file="$HOME/.zen/tmp/process_youtube_output_$(date +%s)_$$.txt"
+    local temp_output_dir="$HOME/.zen/tmp/youtube_sync_${player}_$$"
+    mkdir -p "$temp_output_dir"
     
     # Exécuter process_youtube.sh et capturer la sortie dans un fichier
-    $MY_PATH/process_youtube.sh --debug "$url" "$format" "$player" --metadata "$metadata_string" > "$temp_output_file" 2>&1
+    $MY_PATH/process_youtube.sh --debug --output-dir "$temp_output_dir" "$url" "$format" "$player" > "$temp_output_file" 2>&1
     local process_exit_code=$?
     
-    # Lire le résultat du fichier
+    # Lire le résultat du fichier et extraire JSON avec jq uniquement
     local result=""
     if [[ -f "$temp_output_file" ]]; then
-        result=$(cat "$temp_output_file")
+        # Vérifier que jq est disponible
+        if ! command -v jq &> /dev/null; then
+            log_debug "ERROR: jq is required but not found"
+            echo "❌ jq is required for JSON parsing but not installed" >&2
+            rm -f "$temp_output_file"
+            return 1
+        fi
+        
+        # Extract JSON from output using jq only
+        # Try to extract JSON directly with jq (handles both marked and raw JSON)
+        # First, try to parse the entire file as JSON
+        result=$(jq -c '.' "$temp_output_file" 2>/dev/null)
+        
+        # If that fails, try to extract JSON between markers using jq
+        if [[ -z "$result" ]] && grep -q "=== JSON OUTPUT START ===" "$temp_output_file"; then
+            # Extract lines between markers, then parse with jq
+            local json_lines=$(awk '/=== JSON OUTPUT START ===/{flag=1;next}/=== JSON OUTPUT END ===/{flag=0}flag' "$temp_output_file")
+            if [[ -n "$json_lines" ]]; then
+                result=$(echo "$json_lines" | jq -c '.' 2>/dev/null)
+            fi
+        fi
+        
+        # If still no result, try to find and parse first JSON object/array in file
+        if [[ -z "$result" ]]; then
+            local first_json=$(grep -m 1 -E '^\{|^\[' "$temp_output_file" 2>/dev/null)
+            if [[ -n "$first_json" ]]; then
+                result=$(echo "$first_json" | jq -c '.' 2>/dev/null)
+            fi
+        fi
         rm -f "$temp_output_file"
     fi
     
@@ -498,51 +475,164 @@ process_liked_video() {
     log_debug "process_youtube.sh output: $result"
     
     if [[ $process_exit_code -eq 0 ]]; then
-        # Extraire l'URL IPFS du résultat JSON avec gestion d'erreur améliorée
+        # Extract file_path and metadata_file from JSON using jq only (UPlanet_FILE_CONTRACT.md compliant)
         log_debug "Raw result from process_youtube.sh: $result"
         
-        # Vérifier que le résultat n'est pas vide
+        # Vérifier que le résultat n'est pas vide et est un JSON valide
         if [[ -z "$result" ]]; then
             log_debug "Empty result from process_youtube.sh for: $url_safe_title"
             echo "❌ Empty result from process_youtube.sh: $url_safe_title"
             return 1
         fi
         
-        # Vérifier que jq est disponible
-        if ! command -v jq &> /dev/null; then
-            log_debug "jq command not found, trying alternative JSON parsing"
-            # Fallback: extraction simple avec grep/sed
-            local ipfs_url=$(echo "$result" | grep -o '"ipfs_url":"[^"]*"' | sed 's/"ipfs_url":"\([^"]*\)"/\1/' | head -1)
+        # Validate JSON with jq
+        if ! echo "$result" | jq -e '.' >/dev/null 2>&1; then
+            log_debug "Invalid JSON from process_youtube.sh: $result"
+            echo "❌ Invalid JSON from process_youtube.sh: $url_safe_title"
+            return 1
+        fi
+        
+        # Extract file_path and metadata_file using jq only
+        local file_path=""
+        local metadata_file=""
+        local duration_from_json=""
+        
+            file_path=$(echo "$result" | jq -r '.file_path // empty' 2>/dev/null)
+            metadata_file=$(echo "$result" | jq -r '.metadata_file // empty' 2>/dev/null)
+            duration_from_json=$(echo "$result" | jq -r '.duration // empty' 2>/dev/null)
+        
+        log_debug "Extracted file_path: '$file_path'"
+        log_debug "Extracted metadata_file: '$metadata_file'"
+        
+        if [[ -z "$file_path" || ! -f "$file_path" ]]; then
+            log_debug "Invalid or missing file_path from process_youtube.sh: $file_path"
+            echo "❌ Downloaded file not found: $url_safe_title"
+            return 1
+        fi
+        
+        # Get player's npub for authentication
+        local npub=""
+        local npub_file="$HOME/.zen/game/nostr/${player}/NPUB"
+        if [[ -f "$npub_file" ]]; then
+            npub=$(cat "$npub_file" 2>/dev/null)
         else
-            # Utiliser jq avec gestion d'erreur
-            local ipfs_url=""
-            if echo "$result" | jq -e '.ipfs_url' >/dev/null 2>&1; then
-                ipfs_url=$(echo "$result" | jq -r '.ipfs_url // empty' 2>/dev/null)
-            else
-                log_debug "Invalid JSON from process_youtube.sh, trying alternative parsing"
-                # Fallback: extraction simple avec grep/sed
-                ipfs_url=$(echo "$result" | grep -o '"ipfs_url":"[^"]*"' | sed 's/"ipfs_url":"\([^"]*\)"/\1/' | head -1)
+            log_debug "NPUB file not found for $player, trying HEX conversion"
+            local hex_file="$HOME/.zen/game/nostr/${player}/HEX"
+            if [[ -f "$hex_file" ]]; then
+                # Try to convert hex to npub (would need proper conversion script)
+                log_debug "HEX found but npub conversion needed"
             fi
         fi
         
-        log_debug "Extracted IPFS URL: '$ipfs_url'"
+        if [[ -z "$npub" ]]; then
+            log_debug "No NOSTR npub found for $player, upload will fail"
+            echo "❌ No NOSTR key found for $player"
+            return 1
+        fi
         
-        if [[ -n "$ipfs_url" && "$ipfs_url" != "null" && "$ipfs_url" != "empty" ]]; then
-            log_debug "Successfully processed: $url_safe_title -> $ipfs_url"
-            echo "✅ $url_safe_title by $uploader -> $ipfs_url"
+        # Upload via /api/fileupload (UPlanet_FILE_CONTRACT.md compliant)
+        log_debug "Uploading video via /api/fileupload..."
+        local api_url="http://127.0.0.1:54321"
+        
+        local upload_response=$(curl -s -X POST "${api_url}/api/fileupload" \
+            -F "file=@${file_path}" \
+            -F "npub=${npub}" 2>&1)
+        
+        local upload_success=0
+        local ipfs_cid=""
+        local info_cid=""
+        local thumbnail_cid=""
+        local gifanim_cid=""
+        local file_hash=""
+        local dimensions=""
+        local upload_chain=""
+        local mime_type="video/mp4"
+        
+        if echo "$upload_response" | jq -e '.success' >/dev/null 2>&1; then
+            upload_success=1
+            ipfs_cid=$(echo "$upload_response" | jq -r '.new_cid // empty' 2>/dev/null)
+            info_cid=$(echo "$upload_response" | jq -r '.info // empty' 2>/dev/null)
+            thumbnail_cid=$(echo "$upload_response" | jq -r '.thumbnail_ipfs // empty' 2>/dev/null)
+            gifanim_cid=$(echo "$upload_response" | jq -r '.gifanim_ipfs // empty' 2>/dev/null)
+            file_hash=$(echo "$upload_response" | jq -r '.fileHash // empty' 2>/dev/null)
+            dimensions=$(echo "$upload_response" | jq -r '.dimensions // empty' 2>/dev/null)
+            upload_chain=$(echo "$upload_response" | jq -r '.upload_chain // empty' 2>/dev/null)
+            mime_type=$(echo "$upload_response" | jq -r '.mimeType // "video/mp4"' 2>/dev/null)
+            
+            log_debug "Upload successful: CID=$ipfs_cid"
+        else
+            log_debug "Upload failed: $upload_response"
+            echo "❌ Upload to IPFS failed: $url_safe_title"
+            return 1
+        fi
+        
+        if [[ -z "$ipfs_cid" ]]; then
+            log_debug "Failed to get IPFS CID from upload response"
+            echo "❌ Failed to get IPFS CID: $url_safe_title"
+            return 1
+        fi
+        
+        # Use duration from JSON or upload response
+        local final_duration="$duration"
+        if [[ -n "$duration_from_json" && "$duration_from_json" != "null" ]]; then
+            final_duration="$duration_from_json"
+        fi
+        
+        # Publish via /webcam endpoint (NIP-71 kind 21/22)
+        log_debug "Publishing video via /webcam endpoint..."
+        
+        local description="YouTube sync: $title by $uploader"
+        if [[ -n "$url" ]]; then
+            description="${description}\n\nSource: ${url}"
+        fi
+        
+        local publish_data="player=${player}"
+        publish_data="${publish_data}&ipfs_cid=${ipfs_cid}"
+        publish_data="${publish_data}&thumbnail_ipfs=${thumbnail_cid}"
+        publish_data="${publish_data}&gifanim_ipfs=${gifanim_cid}"
+        publish_data="${publish_data}&info_cid=${info_cid}"
+        publish_data="${publish_data}&file_hash=${file_hash}"
+        publish_data="${publish_data}&mime_type=${mime_type}"
+        publish_data="${publish_data}&upload_chain=${upload_chain}"
+        publish_data="${publish_data}&duration=${final_duration}"
+        publish_data="${publish_data}&video_dimensions=${dimensions}"
+        publish_data="${publish_data}&title=${title}"
+        publish_data="${publish_data}&description=${description}"
+        publish_data="${publish_data}&publish_nostr=true"
+        publish_data="${publish_data}&npub=${npub}"
+        
+        local publish_response=$(curl -s -X POST "${api_url}/webcam" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "$publish_data" 2>&1)
+        
+        if echo "$publish_response" | grep -q "success\|✅"; then
+            log_debug "Video published successfully via /webcam (NIP-71 kind 21/22)"
+            echo "✅ $url_safe_title by $uploader -> Published (CID: ${ipfs_cid:0:16}...)"
             
             # Marquer la vidéo comme traitée
             mark_video_processed "$video_id" "$processed_file"
             
+            # Cleanup temp directory
+            rm -rf "$temp_output_dir" 2>/dev/null || true
+            
             return 0
         else
-            log_debug "Failed to extract valid IPFS URL for: $url_safe_title"
-            echo "❌ Failed to extract IPFS URL: $url_safe_title"
-            return 1
+            log_debug "Video upload succeeded but publication may have failed: $publish_response"
+            echo "⚠️ Video uploaded but publication may have failed: $url_safe_title"
+            # Still mark as processed since file is in uDRIVE
+            mark_video_processed "$video_id" "$processed_file"
+            
+            # Cleanup temp directory
+            rm -rf "$temp_output_dir" 2>/dev/null || true
+            
+            return 0  # Consider it success since file is uploaded
         fi
     else
         log_debug "process_youtube.sh failed for: $url_safe_title"
         echo "❌ Download failed: $url_safe_title"
+        
+        # Cleanup temp directory
+        rm -rf "$temp_output_dir" 2>/dev/null || true
         
         # Vérifier si la vidéo existe quand même dans uDRIVE (peut-être téléchargée précédemment)
         if check_video_exists_in_udrive "$video_id" "$title" "$player"; then

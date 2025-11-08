@@ -99,6 +99,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Default values
 RELAYS="ws://127.0.0.1:7777,wss://relay.copylaradio.com"
+FILE_SIZE=0
 JSON_OUTPUT=false
 AUTO_MODE=false
 AUTO_FILE=""
@@ -262,7 +263,21 @@ if [ "$AUTO_MODE" = "true" ]; then
     [ -z "$FILE_HASH" ] && FILE_HASH=$(echo "$UPLOAD_DATA" | jq -r '.fileHash // empty')
     [ -z "$MIME_TYPE" ] && MIME_TYPE=$(echo "$UPLOAD_DATA" | jq -r '.mimeType // empty')
     [ -z "$INFO_CID" ] && INFO_CID=$(echo "$UPLOAD_DATA" | jq -r '.info // empty')
-    [ -z "$UPLOAD_CHAIN" ] && UPLOAD_CHAIN=$(echo "$UPLOAD_DATA" | jq -r '.upload_chain // empty')
+    # Extract file size (for NIP-94 size tag)
+    FILE_SIZE=$(echo "$UPLOAD_DATA" | jq -r '.fileSize // 0')
+    # Extract upload_chain - can be string (old format) or JSON array (new format)
+    # Use -c to get compact JSON if it's an array, or -r for string
+    if [ -z "$UPLOAD_CHAIN" ]; then
+        UPLOAD_CHAIN_RAW=$(echo "$UPLOAD_DATA" | jq -c '.upload_chain // empty' 2>/dev/null || echo "")
+        # Check if it's a JSON array or string
+        if echo "$UPLOAD_CHAIN_RAW" | jq -e '. | type == "array"' >/dev/null 2>&1; then
+            # It's an array, keep as compact JSON
+            UPLOAD_CHAIN="$UPLOAD_CHAIN_RAW"
+        else
+            # It's a string or empty, extract as string
+            UPLOAD_CHAIN=$(echo "$UPLOAD_DATA" | jq -r '.upload_chain // empty' 2>/dev/null || echo "")
+        fi
+    fi
     
     # Auto-generate title if not provided
     if [ -z "$TITLE" ]; then
@@ -370,6 +385,13 @@ else
     ["url", "'"$IPFS_URL"'"],
     ["m", "'"$MIME_TYPE"'"]'
     
+    # Add file size if available (NIP-94 standard)
+    if [ -n "$FILE_SIZE" ] && [ "$FILE_SIZE" != "0" ]; then
+        TAGS="${TAGS},
+    [\"size\", \"${FILE_SIZE}\"]"
+        log_info "Added file size: ${FILE_SIZE} bytes"
+    fi
+    
     # Add file hash if available (critical for provenance)
     if [ -n "$FILE_HASH" ]; then
         TAGS="${TAGS},
@@ -430,8 +452,29 @@ else
     
     # Add upload_chain if available (provenance tracking)
     if [ -n "$UPLOAD_CHAIN" ]; then
+        # Use jq to properly escape the JSON string for insertion into tags array
+        # The upload_chain can be a string (old format) or JSON array (new format)
+        # Convert to string format for Nostr tag if it's a JSON array
+        if command -v jq &> /dev/null; then
+            # Check if UPLOAD_CHAIN is a JSON array (new format)
+            if echo "$UPLOAD_CHAIN" | jq -e '. | type == "array"' >/dev/null 2>&1; then
+                # Convert array to comma-separated string for Nostr tag (backward compatibility)
+                UPLOAD_CHAIN_STR=$(echo "$UPLOAD_CHAIN" | jq -r '[.[].pubkey] | join(",")' 2>/dev/null || echo "$UPLOAD_CHAIN")
+            else
+                # Already a string, use as-is
+                UPLOAD_CHAIN_STR="$UPLOAD_CHAIN"
+            fi
+            # Escape the string properly using jq -Rs (raw string, escape special chars)
+            ESCAPED_CHAIN=$(echo "$UPLOAD_CHAIN_STR" | jq -Rs '.' | head -c -1)
+            # jq -Rs outputs a JSON string (with quotes), use it directly in the tag
+            TAGS="${TAGS},
+    [\"upload_chain\", ${ESCAPED_CHAIN}]"
+        else
+            # Fallback: basic escaping (replace quotes and newlines)
+            ESCAPED_CHAIN=$(echo "$UPLOAD_CHAIN" | sed 's/"/\\"/g' | tr '\n' ' ' | sed 's/  */ /g')
         TAGS="${TAGS},
-    [\"upload_chain\", \"${UPLOAD_CHAIN}\"]"
+    [\"upload_chain\", \"${ESCAPED_CHAIN}\"]"
+        fi
         log_info "Added upload chain: ${UPLOAD_CHAIN:0:50}..."
     fi
     

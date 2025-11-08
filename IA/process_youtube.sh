@@ -10,10 +10,10 @@
 source "$HOME/.zen/Astroport.ONE/tools/my.sh"
 
 DEBUG=0
-NO_IPFS=0
 CUSTOM_OUTPUT_DIR=""
 
 # Parse arguments
+# Note: --no-ipfs flag is deprecated (now default behavior for UPlanet_FILE_CONTRACT.md compliance)
 while [[ $# -gt 0 ]]; do
     case $1 in
         --debug)
@@ -21,7 +21,8 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --no-ipfs)
-            NO_IPFS=1
+            # Deprecated: IPFS upload removed. This flag is kept for backward compatibility but does nothing.
+            log_debug "Note: --no-ipfs flag is deprecated (IPFS upload removed for UPlanet_FILE_CONTRACT.md compliance)"
             shift
             ;;
         --output-dir)
@@ -51,9 +52,10 @@ MY_PATH="$( cd "$MY_PATH" && pwd )"
 
 # Vérifie si les arguments sont fournis
 if [ $# -lt 2 ]; then
-    log_debug "Usage: $0 [--debug] [--no-ipfs] [--output-dir DIR] <url> <format> [player_email]"
+    log_debug "Usage: $0 [--debug] [--output-dir DIR] <url> <format> [player_email]"
     # Use subshell to prevent broken pipe errors
-    (echo "Usage: $0 [--debug] [--no-ipfs] [--output-dir DIR] <url> <format> [player_email]" >&2) 2>/dev/null || echo "Usage: $0 [--debug] [--no-ipfs] [--output-dir DIR] <url> <format> [player_email]"
+    (echo "Usage: $0 [--debug] [--output-dir DIR] <url> <format> [player_email]" >&2) 2>/dev/null || echo "Usage: $0 [--debug] [--output-dir DIR] <url> <format> [player_email]"
+    (echo "Note: This script downloads only. Uploads must go through /api/fileupload (UPlanet_FILE_CONTRACT.md)" >&2) 2>/dev/null || true
     exit 1
 fi
 
@@ -76,19 +78,8 @@ fi
 (echo "Using directory for download: $OUTPUT_DIR" >&2) 2>/dev/null || true
 log_debug "Using directory for download: $OUTPUT_DIR"
 
-# Check if player email is provided and construct uDRIVE path
-UDRIVE_COPY_PATH=""
-if [ -n "$PLAYER_EMAIL" ]; then
-    UDRIVE_COPY_PATH="$HOME/.zen/game/nostr/$PLAYER_EMAIL/APP/uDRIVE/Videos"
-    if [ -d "$UDRIVE_COPY_PATH" ]; then
-        (echo "Will copy final file to uDRIVE: $UDRIVE_COPY_PATH" >&2) 2>/dev/null || true
-        log_debug "Will copy final file to uDRIVE: $UDRIVE_COPY_PATH"
-    else
-        (echo "uDRIVE directory not found for player: $PLAYER_EMAIL" >&2) 2>/dev/null || true
-        log_debug "uDRIVE directory not found for player: $PLAYER_EMAIL"
-        UDRIVE_COPY_PATH=""
-    fi
-fi
+# Note: uDRIVE copy is now handled by /api/fileupload endpoint
+# (UPlanet_FILE_CONTRACT.md compliance - standardized workflow)
 
 # Cleanup function (only cleanup if using temp dir)
 cleanup() {
@@ -179,12 +170,32 @@ if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
         filename=$(basename "$media_file")
         log_debug "Found downloaded file: $media_file"
         
-        # If --no-ipfs flag is set, just return the file info without adding to IPFS
-        if [[ $NO_IPFS -eq 1 ]]; then
-            (echo "Media downloaded to: $media_file (skipping IPFS)" >&2) 2>/dev/null || true
-            log_debug "Media downloaded to: $media_file (skipping IPFS)"
+        # Find metadata.json file created by yt-dlp (--write-info-json)
+        metadata_file=""
+        metadata_basename=$(basename "$media_file" | sed 's/\.[^.]*$//')
+        # yt-dlp creates .info.json files
+        for possible_metadata in "${OUTPUT_DIR}/${metadata_basename}.info.json" "$(dirname "$media_file")/${metadata_basename}.info.json"; do
+            if [[ -f "$possible_metadata" ]]; then
+                metadata_file="$possible_metadata"
+                log_debug "Found metadata file: $metadata_file"
+                break
+            fi
+        done
+        
+        # UPlanet_FILE_CONTRACT.md Compliance:
+        # This script is a download-only tool. All uploads must go through /api/fileupload
+        # which uses upload2ipfs.sh for standardized metadata extraction, info.json generation,
+        # provenance tracking, and uDRIVE organization.
+        # 
+        # The --no-ipfs flag is now the default behavior (legacy IPFS upload removed).
+        # Files are downloaded and returned to the caller (ajouter_media.sh) which handles
+        # the complete workflow via /api/fileupload and /webcam endpoints.
+        
+        (echo "Media downloaded to: $media_file" >&2) 2>/dev/null || true
+        log_debug "Media downloaded to: $media_file"
+        log_debug "File will be uploaded via /api/fileupload (UPlanet_FILE_CONTRACT.md compliant)"
             
-            # Generate JSON response without IPFS - write to stdout ONLY
+        # Generate JSON response - write to stdout ONLY
             # Use echo to ensure clean output
             json_output=$(cat << EOF
 {
@@ -196,6 +207,7 @@ if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
   "filename": "$filename",
   "file_path": "$media_file",
   "output_dir": "$OUTPUT_DIR",
+  "metadata_file": "${metadata_file:-}",
   "metadata_ipfs": "",
   "thumbnail_ipfs": "",
   "subtitles": [],
@@ -222,79 +234,8 @@ EOF
             (echo "=== JSON OUTPUT START ===" >&2) 2>/dev/null || true
             echo "$json_output"
             (echo "=== JSON OUTPUT END ===" >&2) 2>/dev/null || true
-            log_debug "Success JSON outputted (no IPFS)."
+        log_debug "Success JSON outputted. File ready for /api/fileupload workflow."
             exit 0
-        fi
-        
-        # Add to IPFS (original behavior)
-        media_ipfs=$(ipfs add -wq "$media_file" 2>> "$LOGFILE" | tail -n 1)
-        log_debug "IPFS add result: $media_ipfs"
-        
-        if [[ -n "$media_ipfs" ]]; then
-            ipfs_url="/ipfs/$media_ipfs/$filename"
-            (echo "Media saved to: $media_file" >&2) 2>/dev/null || true
-            log_debug "Media saved to: $media_file"
-            
-            # Copy to uDRIVE if path provided
-            if [[ -n "$UDRIVE_COPY_PATH" ]]; then
-                if [[ "$FORMAT" == "mp3" ]]; then
-                    artist=$(echo "$uploader" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 50)
-                    if [[ -z "$artist" || "$artist" == "null" ]]; then
-                        artist="Unknown_Artist"
-                    fi
-                    music_dir="$UDRIVE_COPY_PATH/Music/$artist"
-                    mkdir -p "$music_dir"
-                    udrive_file="$music_dir/$filename"
-                    (echo "Organizing MP3 in Music/$artist/" >&2) 2>/dev/null || true
-                else
-                    videos_dir="$UDRIVE_COPY_PATH"
-                    mkdir -p "$videos_dir"
-                    udrive_file="$videos_dir/$filename"
-                    (echo "Organizing MP4 in Videos/" >&2) 2>/dev/null || true
-                fi
-                
-                if cp "$media_file" "$udrive_file"; then
-                    (echo "File copied to uDRIVE: $udrive_file" >&2) 2>/dev/null || true
-                    log_debug "File copied to uDRIVE: $udrive_file"
-                else
-                    (echo "Warning: Failed to copy file to uDRIVE: $udrive_file" >&2) 2>/dev/null || true
-                    log_debug "Warning: Failed to copy file to uDRIVE: $udrive_file"
-                fi
-            fi
-            
-            # Generate JSON response
-            cat << EOF
-{
-  "ipfs_url": "$ipfs_url",
-  "title": "$media_title",
-  "duration": "$duration",
-  "uploader": "$uploader",
-  "original_url": "$URL",
-  "filename": "$filename",
-  "metadata_ipfs": "",
-  "thumbnail_ipfs": "",
-  "subtitles": [],
-  "channel_info": {
-    "name": "$(echo "$uploader" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 50)",
-    "display_name": "$uploader",
-    "type": "youtube"
-  },
-  "content_info": {
-    "description": "",
-    "ai_analysis": "",
-    "topic_keywords": "",
-    "duration_category": "$(if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ ]]; then duration_min=$((duration / 60)); if [[ $duration_min -lt 5 ]]; then echo "short"; elif [[ $duration_min -lt 30 ]]; then echo "medium"; else echo "long"; fi; fi)"
-  },
-  "technical_info": {
-    "format": "$FORMAT",
-    "file_size": "$(stat -c%s "$media_file" 2>/dev/null || echo "unknown")",
-    "download_date": "$(date -Iseconds)"
-  }
-}
-EOF
-            log_debug "Success JSON outputted."
-            exit 0
-        fi
     fi
 fi
 
