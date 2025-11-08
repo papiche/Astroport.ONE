@@ -61,7 +61,7 @@ The protocol adheres to the following design principles:
 - **NIP (NOSTR Improvement Proposal)**: Protocol specification for NOSTR events
 - **Kind**: NOSTR event type identifier (1063 for files, 21/22 for videos)
 - **Provenance**: Chain-of-custody tracking for file uploads
-- **Upload Chain**: Comma-separated list of public keys representing upload history
+- **Upload Chain**: Array of objects with `pubkey` and `timestamp` representing upload history (in info.json), or comma-separated string in Nostr tags (backward compatibility)
 
 ---
 
@@ -365,9 +365,9 @@ Video files follow a **two-phase workflow**:
 
 1. **Hash-Based Lookup**: SHA256 hash used to search NOSTR for existing events
 2. **CID Reuse**: Identical files share the same IPFS CID (content-addressing property)
-3. **Chain Extension**: `upload_chain` tag appends new uploader's public key
+3. **Chain Extension**: `upload_chain` array appends new uploader's public key with timestamp
 4. **No Duplicate Events**: Prevents redundant NOSTR events for identical content
-5. **Audit Trail**: Complete history of file custody preserved in `upload_chain`
+5. **Audit Trail**: Complete history of file custody preserved in `upload_chain` with timestamps for each upload
 
 ---
 
@@ -535,7 +535,8 @@ All files generate a comprehensive `info.json` file stored on IPFS. **The JSON i
   "ipfs": {
     "cid": "QmXXX...",
     "url": "/ipfs/QmXXX.../filename.ext",
-    "date": "YYYY-MM-DD HH:MM ±ZZZZ"
+    "date": "YYYY-MM-DD HH:MM ±ZZZZ",
+    "node_id": "IPNS_address_or_node_identifier"
   },
   "image": {
     "dimensions": "1920x1080"
@@ -551,7 +552,11 @@ All files generate a comprehensive `info.json` file stored on IPFS. **The JSON i
   "provenance": {
     "original_event_id": "evt_abc123...",
     "original_author": "npub1...",
-    "upload_chain": "hex1,hex2,hex3",
+    "upload_chain": [
+      {"pubkey": "hex1", "timestamp": "2025-01-01T12:00:00Z"},
+      {"pubkey": "hex2", "timestamp": "2025-01-02T14:30:00Z"},
+      {"pubkey": "hex3", "timestamp": "2025-01-03T10:15:00Z"}
+    ],
     "is_reupload": true
   },
   "metadata": {
@@ -582,11 +587,18 @@ All files generate a comprehensive `info.json` file stored on IPFS. **The JSON i
 - Critical for signature verification and provenance tracking
 - Implementation: `canonicalize_json.py` script (RFC 8785 JCS compliant)
 
+**IPFS Section Fields**:
+- **`cid`**: IPFS Content Identifier (hash of file content)
+- **`url`**: IPFS path to access the file (`/ipfs/{CID}/{filename}`)
+- **`date`**: Upload timestamp in local timezone format
+- **`node_id`**: (Optional) IPNS address or node identifier of the IPFS node where the file was uploaded. This identifies the specific Astroport station or IPFS node that handled the upload, useful for tracking file distribution across the network.
+
 **Purpose of info.json**:
 1. **Complete Metadata Archive**: Single source of truth for all file metadata
 2. **Provenance Documentation**: Preserves upload history
 3. **Interoperability**: JSON format enables cross-platform parsing
 4. **Redundancy**: Metadata survives even if NOSTR events are lost
+5. **Node Tracking**: Records which IPFS node handled the upload for network analysis
 
 ---
 
@@ -604,9 +616,11 @@ Provenance tracking in UPlanet is based on:
    - Each upload associated with unique public key
    - Non-repudiation: Cannot deny authorship
 
-3. **Append-Only Chain**: Upload chain structure
-   - New uploads append to existing chain
-   - Maintains complete custody history
+3. **Append-Only Chain**: Upload chain structure with timestamps
+   - New uploads append to existing chain with current timestamp
+   - Maintains complete custody history with temporal information
+   - Format: Array of objects `[{"pubkey": "hex", "timestamp": "ISO8601"}]` in info.json
+   - Backward compatibility: Comma-separated string in Nostr tags for older clients
 
 ### 5.2 Hash-Based Lookup Algorithm
 
@@ -637,28 +651,62 @@ def find_existing_event(file_path: str, user_hex: str) -> Optional[Event]:
 
 ### 5.3 Chain Extension Algorithm
 
+The upload chain is stored as an array of objects in `info.json` with timestamps for each upload:
+
 ```python
-def extend_upload_chain(existing_event: Event, new_uploader: str) -> str:
-    # Extract existing chain
-    existing_chain = existing_event.get_tag('upload_chain')
+from datetime import datetime
+from typing import List, Dict, Optional
+
+def extend_upload_chain(
+    existing_chain: Optional[List[Dict[str, str]]], 
+    new_uploader: str,
+    current_timestamp: str = None
+) -> List[Dict[str, str]]:
+    """
+    Extend upload chain with new uploader and timestamp.
     
-    if existing_chain:
-        # Parse chain
-        uploaders = existing_chain.split(',')
-        
-        # Avoid duplicates
-        if new_uploader not in uploaders:
-            uploaders.append(new_uploader)
-        
-        return ','.join(uploaders)
-    else:
-        # Create new chain
-        original_author = existing_event.pubkey
-        if original_author != new_uploader:
-            return f"{original_author},{new_uploader}"
-        else:
-            return original_author
+    Args:
+        existing_chain: Existing chain array or None
+        new_uploader: Hex public key of new uploader
+        current_timestamp: ISO 8601 timestamp (defaults to current time)
+    
+    Returns:
+        Updated chain array with new entry
+    """
+    if current_timestamp is None:
+        current_timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    
+    # Initialize chain if empty
+    if existing_chain is None:
+        existing_chain = []
+    
+    # Check if uploader already in chain
+    existing_pubkeys = [entry["pubkey"] for entry in existing_chain]
+    
+    if new_uploader not in existing_pubkeys:
+        # Append new entry with timestamp
+        existing_chain.append({
+            "pubkey": new_uploader,
+            "timestamp": current_timestamp
+        })
+    
+    return existing_chain
+
+# Example usage:
+chain = [
+    {"pubkey": "hex_A", "timestamp": "2025-01-01T10:00:00Z"}
+]
+chain = extend_upload_chain(chain, "hex_B", "2025-01-02T14:30:00Z")
+# Result: [
+#   {"pubkey": "hex_A", "timestamp": "2025-01-01T10:00:00Z"},
+#   {"pubkey": "hex_B", "timestamp": "2025-01-02T14:30:00Z"}
+# ]
 ```
+
+**Backward Compatibility**:
+- Nostr tags still use comma-separated string format: `["upload_chain", "hex1,hex2,hex3"]`
+- `info.json` uses array format with timestamps for richer metadata
+- Old string chains are automatically converted to array format when processing
 
 ### 5.4 Provenance Visualization
 
@@ -707,7 +755,11 @@ def extend_upload_chain(existing_event: Event, new_uploader: str) -> str:
   "provenance": {
     "original_event_id": "evt_001",
     "original_author": "hex_A",
-    "upload_chain": "hex_A,hex_B,hex_C",
+    "upload_chain": [
+      {"pubkey": "hex_A", "timestamp": "2025-01-01T10:00:00Z"},
+      {"pubkey": "hex_B", "timestamp": "2025-01-02T14:30:00Z"},
+      {"pubkey": "hex_C", "timestamp": "2025-01-03T09:15:00Z"}
+    ],
     "is_reupload": true
   }
 }
