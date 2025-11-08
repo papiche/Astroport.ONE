@@ -155,26 +155,33 @@ if [[ -f "${MY_PATH}/scraper_forum_discourse.py" ]]; then
                         # Get player's NOSTR key if available
                         PLAYER_KEYFILE="${PLAYER_DIR}/.secret.nostr"
                         if [[ -f "$PLAYER_KEYFILE" ]]; then
+                            source "$PLAYER_KEYFILE"
+                            PUBKEY_HEX="$HEX"
                             KEYFILE_PATH="$PLAYER_KEYFILE"
                         else
+                            source ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
+                            PUBKEY_HEX="$HEX"
                             KEYFILE_PATH="$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
                         fi
                         
                         FORUM_NAME=$(echo "$FORUM_URL" | sed 's|https\?://||' | sed 's|/.*||')
                         
-                        # Read stderr logs for error details
+                        # Read stderr logs for error details (remove null bytes and control characters)
                         ERROR_LOGS=""
                         if [[ -f "$STDERR_FILE" ]]; then
-                            ERROR_LOGS=$(cat "$STDERR_FILE" 2>/dev/null | tail -50)
+                            ERROR_LOGS=$(cat "$STDERR_FILE" 2>/dev/null | tr -d '\0' | strings | tail -50)
                         fi
                         
                         # Also check retry stderr files
                         for retry_file in "${OUTPUT_DIR}"/forum_${PLAYER}_retry_*d_*.stderr; do
                             if [[ -f "$retry_file" ]]; then
-                                ERROR_LOGS="${ERROR_LOGS}
+                                RETRY_LOG=$(cat "$retry_file" 2>/dev/null | tr -d '\0' | strings | tail -30)
+                                if [[ -n "$RETRY_LOG" ]]; then
+                                    ERROR_LOGS="${ERROR_LOGS}
 
 --- Retry logs from $(basename "$retry_file") ---
-$(cat "$retry_file" 2>/dev/null | tail -30)"
+${RETRY_LOG}"
+                                fi
                             fi
                         done
                         
@@ -220,43 +227,43 @@ ${ERROR_LOGS}
                             # Try to analyze error and suggest fixes
                             echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🔍 Analyzing error for fix suggestions..."
                             
-                            # Read the scraper code
+                            # Read the scraper code (full file for better context)
                             SCRAPER_CODE=""
                             if [[ -f "${MY_PATH}/scraper_forum_discourse.py" ]]; then
-                                SCRAPER_CODE=$(cat "${MY_PATH}/scraper_forum_discourse.py" 2>/dev/null | head -2000)  # Limit to avoid token limits
-                            fi
-                            
-                            # Also read the bash script code
-                            BASH_CODE=""
-                            if [[ -f "${MY_PATH}/forum.monnaie-libre.fr.sh" ]]; then
-                                BASH_CODE=$(cat "${MY_PATH}/forum.monnaie-libre.fr.sh" 2>/dev/null | head -500)
+                                SCRAPER_CODE=$(cat "${MY_PATH}/scraper_forum_discourse.py" 2>/dev/null)
                             fi
                             
                             # Generate fix suggestions using AI
-                            FIX_PROMPT="Analyze this forum scraper error and suggest fixes. 
+                            FIX_PROMPT="Tu es un expert en développement Python et APIs web. Analyse cette erreur de scraper Discourse et propose des correctifs.
 
-Error logs:
+CONTEXTE: Le script Python scraper_forum_discourse.py essaie de récupérer des posts depuis l'API Discourse (https://forum.monnaie-libre.fr/latest.json) mais reçoit une réponse vide ou invalide.
+
+Logs d'erreur du scraper:
 ${ERROR_LOGS}
 
-Scraper Python code:
+Code Python du scraper à corriger (scraper_forum_discourse.py):
 \`\`\`python
 ${SCRAPER_CODE}
 \`\`\`
 
-Bash script code (relevant parts):
-\`\`\`bash
-${BASH_CODE}
-\`\`\`
+ERREUR CRITIQUE: L'erreur 'Expecting value: line 1 column 1 (char 0)' se produit dans scraper_forum_discourse.py à la ligne ~159 lors de l'appel à response.json(). L'API Discourse retourne une réponse vide ou des données non-JSON.
 
-Provide:
-1. Root cause analysis of the error
-2. Specific code fixes needed
-3. Alternative approaches if the current method doesn't work
-4. Testing recommendations
+PROBLÈME À RÉSOUDRE:
+- L'API Discourse ne retourne pas de JSON valide
+- La réponse est vide ou dans un format inattendu
+- Le scraper ne peut pas parser la réponse
 
-Be concise, actionable, and focus on fixing the 'Expecting value: line 1 column 1 (char 0)' JSON parsing error.
+Fournis:
+1. Analyse de la cause racine: Pourquoi l'API Discourse retourne-t-elle une réponse vide/invalide?
+2. Corrections de code spécifiques pour scraper_forum_discourse.py pour gérer ce cas
+3. Endpoints API alternatifs ou méthodes alternatives pour récupérer les posts Discourse
+4. Recommandations de test
 
-IMPORTANT: Write in French language."
+IMPORTANT: 
+- Focus UNIQUEMENT sur scraper_forum_discourse.py
+- Ne mentionne PAS question.py (ce n'est pas le problème)
+- Ne mentionne PAS le script bash (ce n'est pas le problème)
+- Écris en français"
                             
                             FIX_SUGGESTIONS="$($MY_PATH/question.py --json "${FIX_PROMPT}" --pubkey "${PUBKEY_HEX}")"
                             FIX_SUGGESTIONS="$(echo "$FIX_SUGGESTIONS" | jq -r '.answer // .' 2>/dev/null || echo "$FIX_SUGGESTIONS")"
