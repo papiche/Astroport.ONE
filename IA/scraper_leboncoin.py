@@ -4,24 +4,35 @@ import json
 import argparse
 import sys
 from datetime import datetime
+from http.cookiejar import MozillaCookieJar
 
 # URL de l'API de recherche de Leboncoin
 API_URL = "https://api.leboncoin.fr/finder/search"
 
-# Headers de base pour simuler un navigateur
-# Le cookie sera ajouté dynamiquement
+# Headers de base pour simuler un navigateur réel
 BASE_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Accept-Encoding": "gzip, deflate, br",
     "Content-Type": "application/json",
+    "Origin": "https://www.leboncoin.fr",
+    "Referer": "https://www.leboncoin.fr/",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-site",
+    "Sec-Ch-Ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"Windows"',
 }
 
 def read_cookie_from_file(file_path):
     """
     Reads cookie from file - supports both Netscape cookie format and raw cookie string.
-    
-    If file_path is a Netscape format cookie file (with tabs), extracts cookies for leboncoin.fr.
-    Otherwise, reads the raw cookie string.
+    Returns a requests.Session with cookies loaded, or a cookie dict for manual handling.
     """
+    session = requests.Session()
+    
     try:
         with open(file_path, 'r') as f:
             content = f.read().strip()
@@ -30,8 +41,26 @@ def read_cookie_from_file(file_path):
         if '\t' in content and ('# Netscape HTTP Cookie File' in content or '# HTTP Cookie File' in content or content.count('\t') > 5):
             print(f"Detected Netscape cookie format, extracting leboncoin.fr cookies...", file=sys.stderr)
             
-            # Extract cookies for leboncoin.fr domain
-            cookies = []
+            # Try to use MozillaCookieJar for proper cookie handling
+            try:
+                cookie_jar = MozillaCookieJar(file_path)
+                cookie_jar.load(ignore_discard=True, ignore_expires=True)
+                
+                # Filter cookies for leboncoin.fr domains
+                leboncoin_cookies = {}
+                for cookie in cookie_jar:
+                    if 'leboncoin.fr' in cookie.domain:
+                        leboncoin_cookies[cookie.name] = cookie.value
+                
+                if leboncoin_cookies:
+                    session.cookies.update(leboncoin_cookies)
+                    print(f"Extracted {len(leboncoin_cookies)} cookies for leboncoin.fr using cookie jar", file=sys.stderr)
+                    return session
+            except Exception as e:
+                print(f"Warning: Could not use MozillaCookieJar, falling back to manual parsing: {e}", file=sys.stderr)
+            
+            # Fallback: manual parsing
+            cookies = {}
             lines = content.split('\n')
             for line in lines:
                 line = line.strip()
@@ -47,16 +76,16 @@ def read_cookie_from_file(file_path):
                     
                     # Only include leboncoin.fr cookies
                     if 'leboncoin.fr' in domain:
-                        cookies.append(f"{cookie_name}={cookie_value}")
+                        cookies[cookie_name] = cookie_value
             
             if cookies:
-                cookie_string = '; '.join(cookies)
+                session.cookies.update(cookies)
                 print(f"Extracted {len(cookies)} cookies for leboncoin.fr", file=sys.stderr)
-                return cookie_string
+                return session
             else:
                 print(f"Warning: No leboncoin.fr cookies found in file", file=sys.stderr)
                 # Fallback: try to use all cookies
-                cookies = []
+                cookies = {}
                 for line in content.split('\n'):
                     line = line.strip()
                     if not line or line.startswith('#'):
@@ -65,12 +94,28 @@ def read_cookie_from_file(file_path):
                     if len(parts) >= 7:
                         cookie_name = parts[5].strip()
                         cookie_value = parts[6].strip()
-                        cookies.append(f"{cookie_name}={cookie_value}")
+                        cookies[cookie_name] = cookie_value
                 if cookies:
-                    return '; '.join(cookies)
+                    session.cookies.update(cookies)
+                    return session
         
-        # Raw cookie string format
-        return content
+        # Raw cookie string format - parse it
+        # Format: "name1=value1; name2=value2" or just "name1=value1"
+        if '=' in content and (';' in content or content.count('=') == 1):
+            cookies = {}
+            for cookie_pair in content.split(';'):
+                cookie_pair = cookie_pair.strip()
+                if '=' in cookie_pair:
+                    name, value = cookie_pair.split('=', 1)
+                    cookies[name.strip()] = value.strip()
+            if cookies:
+                session.cookies.update(cookies)
+                return session
+        
+        # If we get here, treat as raw cookie string and add to session
+        # This is a fallback for edge cases
+        print(f"Warning: Treating cookie file as raw string", file=sys.stderr)
+        return session
         
     except FileNotFoundError:
         print(f"Error: Cookie file '{file_path}' not found.", file=sys.stderr)
@@ -79,7 +124,7 @@ def read_cookie_from_file(file_path):
         print(f"Error reading cookie file: {e}", file=sys.stderr)
         sys.exit(1)
 
-def search_leboncoin(cookie, query, lat, lon, radius):
+def search_leboncoin(session, query, lat, lon, radius):
     """Interroge l'API de Leboncoin et retourne les annonces."""
     
     # Construction du payload pour la requête POST
@@ -105,13 +150,21 @@ def search_leboncoin(cookie, query, lat, lon, radius):
         "sort_order": "desc" # Trier par date, du plus récent au plus ancien
     }
     
-    # Ajout du cookie aux headers
-    headers = BASE_HEADERS.copy()
-    headers["Cookie"] = cookie
+    # Use session with proper headers
+    session.headers.update(BASE_HEADERS)
 
     try:
         print("Envoi de la requête de recherche à Leboncoin...", file=sys.stderr)
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=10)
+        
+        # First, make a GET request to the main page to establish session
+        # This helps avoid captcha by showing we're browsing normally
+        try:
+            session.get("https://www.leboncoin.fr/", timeout=10)
+        except:
+            pass  # Ignore errors on this pre-request
+        
+        # Now make the actual API request
+        response = session.post(API_URL, json=payload, timeout=15, allow_redirects=True)
         
         # Lève une exception si la requête a échoué (ex: 401, 403, 500)
         response.raise_for_status() 
@@ -124,9 +177,18 @@ def search_leboncoin(cookie, query, lat, lon, radius):
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 401:
             print("Erreur HTTP 401 : Non autorisé. Votre cookie est probablement invalide ou expiré.", file=sys.stderr)
+        elif e.response.status_code == 403:
+            print("Erreur HTTP 403 : Accès interdit. Leboncoin a détecté un bot ou demande un captcha.", file=sys.stderr)
+            print("Solutions possibles :", file=sys.stderr)
+            print("  1. Vérifiez que vos cookies sont à jour et valides", file=sys.stderr)
+            print("  2. Essayez de vous connecter manuellement sur leboncoin.fr avec votre navigateur", file=sys.stderr)
+            print("  3. Exportez à nouveau vos cookies après connexion", file=sys.stderr)
+            if hasattr(e.response, 'text') and e.response.text:
+                print(f"Détails de la réponse : {e.response.text[:500]}", file=sys.stderr)
         else:
             print(f"Erreur HTTP : {e}", file=sys.stderr)
-            print(f"Détails de la réponse : {e.response.text}", file=sys.stderr)
+            if hasattr(e.response, 'text') and e.response.text:
+                print(f"Détails de la réponse : {e.response.text[:500]}", file=sys.stderr)
         return None
     except requests.exceptions.RequestException as e:
         print(f"Une erreur réseau est survenue : {e}", file=sys.stderr)
@@ -190,10 +252,11 @@ def main():
     args = parser.parse_args()
     
     # 1. Read cookie from file (supports both Netscape and raw format)
-    cookie_string = read_cookie_from_file(args.cookie_file)
+    # Returns a requests.Session with cookies loaded
+    session = read_cookie_from_file(args.cookie_file)
     
     # 2. Launch search
-    ads = search_leboncoin(cookie_string, args.search_query, args.latitude, args.longitude, args.radius)
+    ads = search_leboncoin(session, args.search_query, args.latitude, args.longitude, args.radius)
     
     # 3. Display results
     if ads is not None:
