@@ -124,28 +124,42 @@ def read_cookie_from_file(file_path):
         print(f"Error reading cookie file: {e}", file=sys.stderr)
         sys.exit(1)
 
-def search_leboncoin(session, query, lat, lon, radius):
+def search_leboncoin(session, query, lat, lon, radius, donation_only=False, owner_type_private=True, limit=100):
     """Interroge l'API de Leboncoin et retourne les annonces."""
     
     # Construction du payload pour la requête POST
-    # C'est ici que l'on définit les critères de recherche
+    filters = {
+        "location": {
+            "locations": [
+                {
+                    "locationType": "area",
+                    "lat": lat,
+                    "lon": lon,
+                    "radius": radius # Le rayon est en mètres
+                }
+            ]
+        }
+    }
+    
+    # Add keywords filter if query is provided
+    if query:
+        filters["keywords"] = {
+            "text": query
+        }
+    
+    # Add donation filter if requested
+    if donation_only:
+        filters["donation"] = 1
+        print("Filtre donation activé pour rechercher uniquement les annonces de dons", file=sys.stderr)
+    
+    # Add owner type filter if requested
+    if owner_type_private:
+        filters["owner_type"] = "private"
+        print("Filtre owner_type=private activé", file=sys.stderr)
+    
     payload = {
-        "filters": {
-            "keywords": {
-                "text": query
-            },
-            "location": {
-                "locations": [
-                    {
-                        "locationType": "area",
-                        "lat": lat,
-                        "lon": lon,
-                        "radius": radius # Le rayon est en mètres
-                    }
-                ]
-            }
-        },
-        "limit": 35,  # Nombre d'annonces par page (maximum habituel)
+        "filters": filters,
+        "limit": limit,  # Nombre d'annonces par page
         "sort_by": "date",
         "sort_order": "desc" # Trier par date, du plus récent au plus ancien
     }
@@ -170,9 +184,16 @@ def search_leboncoin(session, query, lat, lon, radius):
         response.raise_for_status() 
         
         data = response.json()
-        print(f"Succès ! {data.get('total', 0)} annonces trouvées au total.", file=sys.stderr)
+        total = data.get('total', 0)
+        ads = data.get('ads', [])
+        print(f"Succès ! {total} annonces trouvées au total, {len(ads)} annonces retournées.", file=sys.stderr)
         
-        return data.get('ads', [])
+        # Return full response data for JSON output
+        return {
+            'total': total,
+            'ads': ads,
+            'full_response': data  # Include all data from API response
+        }
 
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 401:
@@ -193,9 +214,52 @@ def search_leboncoin(session, query, lat, lon, radius):
     except requests.exceptions.RequestException as e:
         print(f"Une erreur réseau est survenue : {e}", file=sys.stderr)
         return None
-    except json.JSONDecodeError:
-        print("Erreur : Impossible de décoder la réponse JSON. Le site a peut-être changé sa structure.", file=sys.stderr)
+    except json.JSONDecodeError as e:
+        print(f"Erreur : Impossible de décoder la réponse JSON. Le site a peut-être changé sa structure. {e}", file=sys.stderr)
         return None
+
+def filter_relevant_ads(ads, search_query, lat, lon, radius):
+    """
+    Filter ads to keep only those relevant to the search query.
+    Since the API already filters donations when donation=1 is set,
+    this is mainly a safety check to ensure relevance.
+    """
+    if not ads:
+        return []
+    
+    # Normalize search query to lowercase for matching
+    query_lower = search_query.lower() if search_query else ""
+    
+    # Keywords that indicate free items
+    free_keywords = ['donne', 'donner', 'donné', 'donnée', 'gratuit', 'gratuite', 'gratuits', 'gratuites', 'offert', 'offerte']
+    
+    # Check if search is for free items
+    is_free_search = any(keyword in query_lower for keyword in free_keywords)
+    
+    filtered_ads = []
+    for ad in ads:
+        titre = ad.get('subject', '').lower()
+        
+        # If searching for free items, verify the ad is actually a donation
+        # (API should already filter, but this is a safety check)
+        if is_free_search:
+            # Double-check that the title contains donation keywords
+            if not any(keyword in titre for keyword in free_keywords):
+                # Skip if title doesn't contain donation keywords
+                # (API might return some false positives)
+                continue
+        
+        # For non-donation searches, verify query relevance
+        if query_lower and not is_free_search:
+            # Check if at least one significant word from query appears in title
+            query_words = query_lower.split()
+            if query_words and not any(word in titre for word in query_words if len(word) > 3):
+                # Skip if no relevant words found
+                continue
+        
+        filtered_ads.append(ad)
+    
+    return filtered_ads
 
 def display_results(ads):
     """Affiche les résultats de manière lisible."""
@@ -236,7 +300,7 @@ def main():
     Example usage:
     - With raw cookie file: python scraper_leboncoin.py ./mon_cookie.txt "table a donner" 48.8566 2.3522 10000
     - With Netscape format: python scraper_leboncoin.py ~/.zen/game/nostr/user@email.com/.leboncoin.fr.cookie "table a donner" 48.8566 2.3522 10000
-    - With MULTIPASS EMAIL: python scraper_leboncoin.py ~/.zen/game/nostr/user@email.com/.leboncoin.fr.cookie "table a donner" 48.8566 2.3522 10000
+    - JSON output with donations only: python scraper_leboncoin.py cookie.txt "" 48.8566 2.3522 100000 --donation-only --json
     """
     parser = argparse.ArgumentParser(
         description="Scraper for Leboncoin ads within a geographic area. Supports Netscape cookie format and raw cookie strings.",
@@ -244,10 +308,14 @@ def main():
     )
     
     parser.add_argument("cookie_file", help="Path to cookie file (Netscape format or raw cookie string). Can be domain-specific like .leboncoin.fr.cookie")
-    parser.add_argument("search_query", help="Search term (e.g., 'donne', 'gratuit', 'canapé').")
+    parser.add_argument("search_query", nargs='?', default="", help="Search term (e.g., 'donne', 'gratuit', 'canapé'). Optional if --donation-only is used.")
     parser.add_argument("latitude", type=float, help="Latitude of search center.")
     parser.add_argument("longitude", type=float, help="Longitude of search center.")
-    parser.add_argument("radius", type=int, help="Search radius in meters (e.g., 5000 for 5km).")
+    parser.add_argument("radius", type=int, help="Search radius in meters (e.g., 100000 for 100km).")
+    parser.add_argument("--donation-only", action="store_true", help="Only search for donation ads (donation=1).")
+    parser.add_argument("--owner-type", default="private", choices=["private", "pro", "all"], help="Filter by owner type (default: private).")
+    parser.add_argument("--json", action="store_true", help="Output results as JSON instead of formatted text.")
+    parser.add_argument("--limit", type=int, default=100, help="Maximum number of results to return (default: 100).")
     
     args = parser.parse_args()
     
@@ -255,12 +323,43 @@ def main():
     # Returns a requests.Session with cookies loaded
     session = read_cookie_from_file(args.cookie_file)
     
-    # 2. Launch search
-    ads = search_leboncoin(session, args.search_query, args.latitude, args.longitude, args.radius)
+    # Determine if we should filter by donation
+    donation_only = args.donation_only
+    owner_type_private = (args.owner_type == "private")
     
-    # 3. Display results
-    if ads is not None:
-        display_results(ads)
+    # 2. Launch search
+    result = search_leboncoin(session, args.search_query or None, args.latitude, args.longitude, args.radius, 
+                             donation_only=donation_only, owner_type_private=owner_type_private, limit=args.limit)
+    
+    # 3. Output results
+    if result is not None:
+        if args.json:
+            # Output full JSON response
+            output = {
+                'total': result.get('total', 0),
+                'ads': result.get('ads', []),
+                'search_params': {
+                    'query': args.search_query,
+                    'latitude': args.latitude,
+                    'longitude': args.longitude,
+                    'radius_meters': args.radius,
+                    'donation_only': donation_only,
+                    'owner_type': args.owner_type
+                }
+            }
+            # Include full API response if available
+            if 'full_response' in result:
+                output['api_response'] = result['full_response']
+            
+            print(json.dumps(output, indent=2, ensure_ascii=False))
+        else:
+            # Filter and display formatted results
+            ads = result.get('ads', [])
+            filtered_ads = filter_relevant_ads(ads, args.search_query, args.latitude, args.longitude, args.radius)
+            if len(filtered_ads) < len(ads):
+                print(f"Filtrage : {len(ads)} annonces trouvées, {len(filtered_ads)} annonces pertinentes conservées.", file=sys.stderr)
+            
+            display_results(filtered_ads)
 
 if __name__ == "__main__":
     main()

@@ -46,8 +46,9 @@ fi
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📍 Search location: ${LAT}, ${LON}"
 
 # Default search parameters
-SEARCH_QUERY="${LEBONCOIN_SEARCH_QUERY:-donne}"  # Default: "donne" (free items)
-SEARCH_RADIUS="${LEBONCOIN_SEARCH_RADIUS:-10000}"  # Default: 10km
+SEARCH_QUERY="${LEBONCOIN_SEARCH_QUERY:-}"  # Default: empty (all donations)
+SEARCH_RADIUS="${LEBONCOIN_SEARCH_RADIUS:-20000}"  # Default: 20km
+SEARCH_LIMIT="${LEBONCOIN_SEARCH_LIMIT:-100}"  # Default: 100 results
 
 # Check for custom search parameters in player config
 PLAYER_CONFIG="${PLAYER_DIR}/.leboncoin_config"
@@ -56,7 +57,8 @@ if [[ -f "$PLAYER_CONFIG" ]]; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] ℹ️ Using custom search parameters from ${PLAYER_CONFIG}"
 fi
 
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🔍 Search query: '${SEARCH_QUERY}', radius: ${SEARCH_RADIUS}m"
+RADIUS_KM=$((SEARCH_RADIUS / 1000))
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🔍 Search query: '${SEARCH_QUERY:-all donations}', radius: ${SEARCH_RADIUS}m (${RADIUS_KM}km)"
 
 # Output directory for results
 OUTPUT_DIR="${PLAYER_DIR}/leboncoin_results"
@@ -72,18 +74,31 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📝 Results will be saved to: ${OUTPUT_FIL
 if [[ -f "${MY_PATH}/scraper_leboncoin.py" ]]; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🚀 Running Leboncoin scraper..."
     
-    python3 "${MY_PATH}/scraper_leboncoin.py" \
-        "$COOKIE_FILE" \
-        "$SEARCH_QUERY" \
-        "$LAT" \
-        "$LON" \
-        "$SEARCH_RADIUS" > "$OUTPUT_FILE" 2>&1
+    # Build command with donation-only and JSON output
+    CMD_ARGS=(
+        "$COOKIE_FILE"
+        "${SEARCH_QUERY:-}"
+        "$LAT"
+        "$LON"
+        "$SEARCH_RADIUS"
+        "--donation-only"
+        "--owner-type" "private"
+        "--json"
+        "--limit" "$SEARCH_LIMIT"
+    )
+    
+    python3 "${MY_PATH}/scraper_leboncoin.py" "${CMD_ARGS[@]}" > "$OUTPUT_FILE" 2>&1
     
     exit_code=$?
     
     if [[ $exit_code -eq 0 ]]; then
-        # Count results
-        result_count=$(grep -c "^Titre:" "$OUTPUT_FILE" 2>/dev/null || echo "0")
+        # Count results from JSON output
+        if command -v jq >/dev/null 2>&1; then
+            result_count=$(jq -r '.total // .ads | length' "$OUTPUT_FILE" 2>/dev/null || echo "0")
+        else
+            # Fallback: count "subject" fields in JSON
+            result_count=$(grep -o '"subject"' "$OUTPUT_FILE" 2>/dev/null | wc -l || echo "0")
+        fi
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Leboncoin scraper completed successfully for ${PLAYER} (${result_count} results)"
         
         # Keep only last 10 result files to save space
