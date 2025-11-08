@@ -137,29 +137,67 @@ def get_today_posts(session, base_url, days_back=1):
             }
             
             try:
+                print(f"DEBUG: Fetching page {page} with params: {params}", file=sys.stderr)
                 response = session.get(latest_url, params=params, timeout=15)
                 response.raise_for_status()
                 
-                data = response.json()
+                # Debug: check content type and first bytes
+                content_type = response.headers.get('Content-Type', '')
+                print(f"DEBUG: Response Content-Type: {content_type}", file=sys.stderr)
+                print(f"DEBUG: Response status code: {response.status_code}", file=sys.stderr)
+                print(f"DEBUG: Response length: {len(response.text)} chars", file=sys.stderr)
+                print(f"DEBUG: Response first 500 chars: {response.text[:500]}", file=sys.stderr)
+                
+                # Check if response is empty
+                if not response.text or len(response.text.strip()) == 0:
+                    print(f"ERROR: Empty response from API", file=sys.stderr)
+                    print(f"ERROR: Response headers: {dict(response.headers)}", file=sys.stderr)
+                    raise ValueError("Empty response from Discourse API")
+                
+                # Try to parse JSON
+                try:
+                    data = response.json()
+                except json.JSONDecodeError as e:
+                    print(f"ERROR: Failed to parse JSON response: {e}", file=sys.stderr)
+                    print(f"ERROR: Response is not valid JSON", file=sys.stderr)
+                    print(f"ERROR: Full response text (first 2000 chars): {response.text[:2000]}", file=sys.stderr)
+                    print(f"ERROR: Response headers: {dict(response.headers)}", file=sys.stderr)
+                    raise
+                
+                # Debug: show structure of response
+                if page == 0:
+                    print(f"DEBUG: Response keys: {list(data.keys())}", file=sys.stderr)
+                    if 'topic_list' in data:
+                        print(f"DEBUG: topic_list keys: {list(data['topic_list'].keys())}", file=sys.stderr)
                 
                 # Extract topic list
                 topic_list = data.get('topic_list', {})
                 topics = topic_list.get('topics', [])
                 
                 if not topics:
+                    print(f"DEBUG: No topics found on page {page}, stopping", file=sys.stderr)
                     break  # No more topics
                 
                 all_topics.extend(topics)
                 print(f"Retrieved {len(topics)} topics from page {page} (total: {len(all_topics)})", file=sys.stderr)
                 
+                # Debug: show first topic structure
+                if page == 0 and len(topics) > 0:
+                    first_topic = topics[0]
+                    print(f"DEBUG: First topic keys: {list(first_topic.keys())}", file=sys.stderr)
+                    print(f"DEBUG: First topic sample: id={first_topic.get('id')}, title={first_topic.get('title', '')[:50]}, created_at={first_topic.get('created_at')}, bumped_at={first_topic.get('bumped_at')}, last_posted_at={first_topic.get('last_posted_at')}", file=sys.stderr)
+                
                 # Check if there are more pages
                 more_topics = topic_list.get('more_topics_url', None)
                 if not more_topics or len(topics) == 0:
+                    print(f"DEBUG: No more topics URL found, stopping at page {page}", file=sys.stderr)
                     break
                 
                 page += 1
             except Exception as e:
                 print(f"Warning: Error fetching page {page}: {e}", file=sys.stderr)
+                import traceback
+                print(f"DEBUG: Traceback: {traceback.format_exc()}", file=sys.stderr)
                 break
         
         topics = all_topics
@@ -168,6 +206,7 @@ def get_today_posts(session, base_url, days_back=1):
         # Filter topics from the specified time window
         today_posts = []
         print(f"Filtering topics from the last {days_back} day(s) (threshold: {threshold_date})", file=sys.stderr)
+        print(f"DEBUG: Current time: {datetime.now()}, Threshold: {threshold_date}", file=sys.stderr)
         
         for topic in topics:
             # Parse created_at timestamp
@@ -221,12 +260,21 @@ def get_today_posts(session, base_url, days_back=1):
                 date_to_use = None
             
             # Debug: print first few topics to see what we're getting
-            if len(today_posts) < 3:
-                print(f"Debug: Topic '{topic.get('title', 'N/A')[:50]}' - created: {created_at_str}, bumped: {bumped_at_str}, last_posted: {last_posted_at_str}, using: {date_to_use}", file=sys.stderr)
+            if len(topics) <= 5 or len(today_posts) < 3:
+                print(f"DEBUG: Topic '{topic.get('title', 'N/A')[:50]}'", file=sys.stderr)
+                print(f"  created_at: {created_at_str} -> {created_at}", file=sys.stderr)
+                print(f"  bumped_at: {bumped_at_str} -> {bumped_at}", file=sys.stderr)
+                print(f"  last_posted_at: {last_posted_at_str} -> {last_posted_at}", file=sys.stderr)
+                print(f"  date_to_use: {date_to_use}", file=sys.stderr)
+                if date_to_use:
+                    print(f"  date_to_use >= threshold_date: {date_to_use >= threshold_date} ({date_to_use} >= {threshold_date})", file=sys.stderr)
+                else:
+                    print(f"  date_to_use is None, skipping", file=sys.stderr)
             
             # Check if post is within the time window
             # Use the most recent date we found
             if date_to_use and date_to_use >= threshold_date:
+                print(f"DEBUG: Topic '{topic.get('title', 'N/A')[:50]}' matches time window, adding to results", file=sys.stderr)
                 # Get full post details
                 post_id = topic.get('id')
                 if post_id:
@@ -292,13 +340,29 @@ def get_today_posts(session, base_url, days_back=1):
         print(f"Found {len(today_posts)} posts from the last {days_back} day(s)", file=sys.stderr)
         
         # Debug: if no posts found, show some info about what we got
-        if len(today_posts) == 0 and len(topics) > 0:
-            print(f"Debug: No posts matched the time window. Showing first 3 topics for debugging:", file=sys.stderr)
-            for i, topic in enumerate(topics[:3]):
-                print(f"  Topic {i+1}: '{topic.get('title', 'N/A')[:60]}'", file=sys.stderr)
-                print(f"    created_at: {topic.get('created_at', 'N/A')}", file=sys.stderr)
-                print(f"    bumped_at: {topic.get('bumped_at', 'N/A')}", file=sys.stderr)
-                print(f"    last_posted_at: {topic.get('last_posted_at', 'N/A')}", file=sys.stderr)
+        if len(today_posts) == 0:
+            if len(topics) > 0:
+                print(f"DEBUG: No posts matched the time window. Showing first 5 topics for debugging:", file=sys.stderr)
+                for i, topic in enumerate(topics[:5]):
+                    print(f"  Topic {i+1}: '{topic.get('title', 'N/A')[:60]}'", file=sys.stderr)
+                    print(f"    created_at: {topic.get('created_at', 'N/A')}", file=sys.stderr)
+                    print(f"    bumped_at: {topic.get('bumped_at', 'N/A')}", file=sys.stderr)
+                    print(f"    last_posted_at: {topic.get('last_posted_at', 'N/A')}", file=sys.stderr)
+                    # Try to parse and show dates
+                    created_at_str = topic.get('created_at', '')
+                    if created_at_str:
+                        try:
+                            if isinstance(created_at_str, (int, float)):
+                                parsed = datetime.fromtimestamp(created_at_str)
+                            elif 'T' in created_at_str:
+                                parsed = datetime.fromisoformat(created_at_str.replace('Z', '+00:00'))
+                            else:
+                                parsed = datetime.strptime(created_at_str, "%Y-%m-%d %H:%M:%S")
+                            print(f"    parsed created_at: {parsed} (>= threshold: {parsed >= threshold_date})", file=sys.stderr)
+                        except Exception as e:
+                            print(f"    Could not parse created_at: {e}", file=sys.stderr)
+            else:
+                print(f"DEBUG: No topics retrieved at all from API", file=sys.stderr)
         
         return today_posts
         

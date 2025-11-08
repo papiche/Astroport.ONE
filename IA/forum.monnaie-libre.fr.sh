@@ -161,6 +161,26 @@ if [[ -f "${MY_PATH}/scraper_forum_discourse.py" ]]; then
                         fi
                         
                         FORUM_NAME=$(echo "$FORUM_URL" | sed 's|https\?://||' | sed 's|/.*||')
+                        
+                        # Read stderr logs for error details
+                        ERROR_LOGS=""
+                        if [[ -f "$STDERR_FILE" ]]; then
+                            ERROR_LOGS=$(cat "$STDERR_FILE" 2>/dev/null | tail -50)
+                        fi
+                        
+                        # Also check retry stderr files
+                        for retry_file in "${OUTPUT_DIR}"/forum_${PLAYER}_retry_*d_*.stderr; do
+                            if [[ -f "$retry_file" ]]; then
+                                ERROR_LOGS="${ERROR_LOGS}
+
+--- Retry logs from $(basename "$retry_file") ---
+$(cat "$retry_file" 2>/dev/null | tail -30)"
+                            fi
+                        done
+                        
+                        # Calculate expiration timestamp (25 hours from now)
+                        EXPIRATION_TIMESTAMP=$(date -d '+25 hours' +%s)
+                        
                         ERROR_MSG="❌ Journal du forum ${FORUM_NAME} - Aucun message trouvé
 
 Recherche effectuée sur ${FORUM_NAME}
@@ -169,19 +189,113 @@ Aucun message trouvé dans ces périodes.
 
 Le forum peut être inactif ou le cookie peut être invalide.
 
+📋 Logs d'erreur :
+\`\`\`
+${ERROR_LOGS}
+\`\`\`
+
 #forum #erreur #monnaie-libre"
+                        
+                        # Prepare tags with expiration and error report tag
+                        ERROR_TAGS="["
+                        ERROR_TAGS="${ERROR_TAGS}[\"t\", \"forum\"], "
+                        ERROR_TAGS="${ERROR_TAGS}[\"t\", \"erreur\"], "
+                        ERROR_TAGS="${ERROR_TAGS}[\"t\", \"monnaie-libre\"], "
+                        ERROR_TAGS="${ERROR_TAGS}[\"t\", \"forum_error_report\"], "
+                        ERROR_TAGS="${ERROR_TAGS}[\"expiration\", \"${EXPIRATION_TIMESTAMP}\"]"
+                        ERROR_TAGS="${ERROR_TAGS}]"
                         
                         SEND_RESULT=$(python3 "$HOME/.zen/Astroport.ONE/tools/nostr_send_note.py" \
                             --keyfile "$KEYFILE_PATH" \
                             --content "$ERROR_MSG" \
                             --relays "$myRELAY" \
-                            --tags '[["t", "forum"], ["t", "erreur"], ["t", "monnaie-libre"]]' \
+                            --tags "$ERROR_TAGS" \
                             --kind "1" \
                             --json 2>&1)
                         
                         if [[ $? -eq 0 ]]; then
                             EVENT_ID=$(echo "$SEND_RESULT" | jq -r '.event_id // empty' 2>/dev/null)
-                            echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Error message published (kind 1). Event ID: ${EVENT_ID}"
+                            echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Error message published (kind 1, expires in 25h). Event ID: ${EVENT_ID}"
+                            
+                            # Try to analyze error and suggest fixes
+                            echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🔍 Analyzing error for fix suggestions..."
+                            
+                            # Read the scraper code
+                            SCRAPER_CODE=""
+                            if [[ -f "${MY_PATH}/scraper_forum_discourse.py" ]]; then
+                                SCRAPER_CODE=$(cat "${MY_PATH}/scraper_forum_discourse.py" 2>/dev/null | head -2000)  # Limit to avoid token limits
+                            fi
+                            
+                            # Also read the bash script code
+                            BASH_CODE=""
+                            if [[ -f "${MY_PATH}/forum.monnaie-libre.fr.sh" ]]; then
+                                BASH_CODE=$(cat "${MY_PATH}/forum.monnaie-libre.fr.sh" 2>/dev/null | head -500)
+                            fi
+                            
+                            # Generate fix suggestions using AI
+                            FIX_PROMPT="Analyze this forum scraper error and suggest fixes. 
+
+Error logs:
+${ERROR_LOGS}
+
+Scraper Python code:
+\`\`\`python
+${SCRAPER_CODE}
+\`\`\`
+
+Bash script code (relevant parts):
+\`\`\`bash
+${BASH_CODE}
+\`\`\`
+
+Provide:
+1. Root cause analysis of the error
+2. Specific code fixes needed
+3. Alternative approaches if the current method doesn't work
+4. Testing recommendations
+
+Be concise, actionable, and focus on fixing the 'Expecting value: line 1 column 1 (char 0)' JSON parsing error.
+
+IMPORTANT: Write in French language."
+                            
+                            FIX_SUGGESTIONS="$($MY_PATH/question.py --json "${FIX_PROMPT}" --pubkey "${PUBKEY_HEX}")"
+                            FIX_SUGGESTIONS="$(echo "$FIX_SUGGESTIONS" | jq -r '.answer // .' 2>/dev/null || echo "$FIX_SUGGESTIONS")"
+                            
+                            if [[ -n "$FIX_SUGGESTIONS" && "$FIX_SUGGESTIONS" != "null" ]]; then
+                                # Publish fix suggestions as a new error report
+                                FIX_EXPIRATION=$(date -d '+25 hours' +%s)
+                                FIX_MSG="🔧 Suggestions de correctifs - Forum ${FORUM_NAME}
+
+${FIX_SUGGESTIONS}
+
+#forum #erreur #correctif #monnaie-libre"
+                                
+                                FIX_TAGS="["
+                                FIX_TAGS="${FIX_TAGS}[\"t\", \"forum\"], "
+                                FIX_TAGS="${FIX_TAGS}[\"t\", \"erreur\"], "
+                                FIX_TAGS="${FIX_TAGS}[\"t\", \"correctif\"], "
+                                FIX_TAGS="${FIX_TAGS}[\"t\", \"monnaie-libre\"], "
+                                FIX_TAGS="${FIX_TAGS}[\"t\", \"forum_error_report\"], "
+                                FIX_TAGS="${FIX_TAGS}[\"expiration\", \"${FIX_EXPIRATION}\"]"
+                                FIX_TAGS="${FIX_TAGS}]"
+                                
+                                FIX_RESULT=$(python3 "$HOME/.zen/Astroport.ONE/tools/nostr_send_note.py" \
+                                    --keyfile "$KEYFILE_PATH" \
+                                    --content "$FIX_MSG" \
+                                    --relays "$myRELAY" \
+                                    --tags "$FIX_TAGS" \
+                                    --kind "1" \
+                                    --json 2>&1)
+                                
+                                if [[ $? -eq 0 ]]; then
+                                    FIX_EVENT_ID=$(echo "$FIX_RESULT" | jq -r '.event_id // empty' 2>/dev/null)
+                                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Fix suggestions published (kind 1, expires in 25h). Event ID: ${FIX_EVENT_ID}"
+                                else
+                                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️ Failed to publish fix suggestions: $FIX_RESULT"
+                                fi
+                            else
+                                echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️ No fix suggestions generated"
+                            fi
                         fi
                         
                         # Cleanup retry files
