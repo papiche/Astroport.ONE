@@ -158,47 +158,23 @@ def get_today_posts(session, base_url, days_back=1):
             
             # Check if post is from today or within days_back
             if created_at and created_at >= threshold_date:
-                        # Get full post details
-                        post_id = topic.get('id')
-                        if post_id:
-                            # Fetch post content
-                            post_url = f"{base_url}/t/{topic.get('slug', '')}/{post_id}.json"
-                            try:
-                                post_response = session.get(post_url, timeout=10)
-                                if post_response.status_code == 200:
-                                    post_data = post_response.json()
-                                    post_content = post_data.get('post_stream', {}).get('posts', [])
-                                    if post_content:
-                                        first_post = post_content[0]
-                                        # Extract category information
-                                        category = topic.get('category_id', None)
-                                        category_name = None
-                                        if category:
-                                            # Try to get category name from topic list metadata
-                                            categories = data.get('topic_list', {}).get('categories', [])
-                                            for cat in categories:
-                                                if cat.get('id') == category:
-                                                    category_name = cat.get('name', '')
-                                                    break
-                                        
-                                        today_posts.append({
-                                            'id': post_id,
-                                            'title': topic.get('title', ''),
-                                            'author': topic.get('last_poster_username', ''),
-                                            'created_at': created_at_str,
-                                            'url': f"{base_url}/t/{topic.get('slug', '')}/{post_id}",
-                                            'content': first_post.get('cooked', '')[:800],  # First 800 chars for better analysis
-                                            'reply_count': topic.get('reply_count', 0),
-                                            'like_count': topic.get('like_count', 0),
-                                            'views': topic.get('views', 0),
-                                            'category_id': category,
-                                            'category_name': category_name or 'Non classé',
-                                        })
-                            except:
-                                # If we can't get full post, use topic info
+                # Get full post details
+                post_id = topic.get('id')
+                if post_id:
+                    # Fetch post content
+                    post_url = f"{base_url}/t/{topic.get('slug', '')}/{post_id}.json"
+                    try:
+                        post_response = session.get(post_url, timeout=10)
+                        if post_response.status_code == 200:
+                            post_data = post_response.json()
+                            post_content = post_data.get('post_stream', {}).get('posts', [])
+                            if post_content:
+                                first_post = post_content[0]
+                                # Extract category information
                                 category = topic.get('category_id', None)
                                 category_name = None
                                 if category:
+                                    # Try to get category name from topic list metadata
                                     categories = data.get('topic_list', {}).get('categories', [])
                                     for cat in categories:
                                         if cat.get('id') == category:
@@ -211,16 +187,38 @@ def get_today_posts(session, base_url, days_back=1):
                                     'author': topic.get('last_poster_username', ''),
                                     'created_at': created_at_str,
                                     'url': f"{base_url}/t/{topic.get('slug', '')}/{post_id}",
-                                    'content': '',
+                                    'content': first_post.get('cooked', '')[:800],  # First 800 chars for better analysis
                                     'reply_count': topic.get('reply_count', 0),
                                     'like_count': topic.get('like_count', 0),
                                     'views': topic.get('views', 0),
                                     'category_id': category,
                                     'category_name': category_name or 'Non classé',
                                 })
-                except (ValueError, TypeError) as e:
-                    print(f"Warning: Could not parse date {created_at_str}: {e}", file=sys.stderr)
-                    continue
+                    except Exception as e:
+                        # If we can't get full post, use topic info
+                        print(f"Warning: Could not fetch full post for topic {post_id}: {e}", file=sys.stderr)
+                        category = topic.get('category_id', None)
+                        category_name = None
+                        if category:
+                            categories = data.get('topic_list', {}).get('categories', [])
+                            for cat in categories:
+                                if cat.get('id') == category:
+                                    category_name = cat.get('name', '')
+                                    break
+                        
+                        today_posts.append({
+                            'id': post_id,
+                            'title': topic.get('title', ''),
+                            'author': topic.get('last_poster_username', ''),
+                            'created_at': created_at_str,
+                            'url': f"{base_url}/t/{topic.get('slug', '')}/{post_id}",
+                            'content': '',
+                            'reply_count': topic.get('reply_count', 0),
+                            'like_count': topic.get('like_count', 0),
+                            'views': topic.get('views', 0),
+                            'category_id': category,
+                            'category_name': category_name or 'Non classé',
+                        })
         
         print(f"Found {len(today_posts)} posts from the last {days_back} day(s)", file=sys.stderr)
         return today_posts
