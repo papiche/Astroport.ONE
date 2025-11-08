@@ -9,9 +9,8 @@
 ################################################################################
 
 PLAYER="$1"
-COOKIE_FILE="$2"
 
-[[ -z "$PLAYER" || -z "$COOKIE_FILE" ]] && echo "Usage: $0 <player_email> <cookie_file_path>" && exit 1
+[[ -z "$PLAYER" ]] && echo "Usage: $0 <player_email>" && exit 1
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🛒 Starting Leboncoin scraper for ${PLAYER}"
 
@@ -19,8 +18,16 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🛒 Starting Leboncoin scraper for ${PLAYE
 MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 
-# Get player GPS coordinates for search
+# Get player directory and cookie file
 PLAYER_DIR="$HOME/.zen/game/nostr/${PLAYER}"
+COOKIE_FILE="${PLAYER_DIR}/.leboncoin.fr.cookie"
+
+if [[ ! -f "$COOKIE_FILE" ]]; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️ Cookie file not found at ${COOKIE_FILE}, skipping Leboncoin scraper"
+    exit 0
+fi
+
+# Get player GPS coordinates for search
 GPS_FILE="${PLAYER_DIR}/GPS"
 
 if [[ ! -f "$GPS_FILE" ]]; then
