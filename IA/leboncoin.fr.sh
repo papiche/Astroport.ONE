@@ -133,7 +133,12 @@ if [[ -f "${MY_PATH}/scraper_leboncoin.py" ]]; then
                 echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Leboncoin scraper completed successfully for ${PLAYER} (${result_count} total, ${ads_count} returned)"
                 
                 # Process results and create blog post
+                CREATE_BLOG_POST=false
                 if [[ "$ads_count" -gt 0 ]]; then
+                    CREATE_BLOG_POST=true
+                fi
+                
+                if [[ "$CREATE_BLOG_POST" == true ]]; then
                     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📝 Processing results to create blog post..."
                     
                     # Get user language
@@ -155,6 +160,9 @@ if [[ -f "${MY_PATH}/scraper_leboncoin.py" ]]; then
                     ADS_SUMMARY=$(jq -r '.ads[0:20] | map("• \(.subject) - \(.location.city_label // "N/A") (\(.location.zipcode // "")) - \(.url)") | join("\n")' "$JSON_OUTPUT_FILE" 2>/dev/null)
                     TOTAL_ADS=$(jq -r '.total' "$JSON_OUTPUT_FILE" 2>/dev/null || echo "$ads_count")
                     
+                    # Extract all ad URLs for inclusion in final content
+                    ADS_URLS=$(jq -r '.ads[] | "\(.subject) - \(.url)"' "$JSON_OUTPUT_FILE" 2>/dev/null | head -50)
+                    
                     # Generate blog content using AI (in user's language)
                     BLOG_TITLE="Annonces de dons autour de ${LAT}, ${LON} (rayon ${RADIUS_KM}km)"
                     BLOG_PROMPT="Create an engaging blog article in ${USER_LANG} language about free items (donations) available on Leboncoin in the area around coordinates ${LAT}, ${LON} within a ${RADIUS_KM}km radius. 
@@ -175,6 +183,22 @@ IMPORTANT: Write in ${USER_LANG} language, be concise but informative, and make 
                     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🤖 Generating blog content with AI (language: ${USER_LANG})..."
                     BLOG_CONTENT="$($MY_PATH/question.py --json "${BLOG_PROMPT}" --pubkey "${PUBKEY_HEX}")"
                     BLOG_CONTENT="$(echo "$BLOG_CONTENT" | jq -r '.answer // .' 2>/dev/null || echo "$BLOG_CONTENT")"
+                    
+                    # Append links section to blog content
+                    if [[ -n "$ADS_URLS" ]]; then
+                        LINKS_SECTION="
+
+## 🔗 Liens vers les annonces
+
+"
+                        while IFS= read -r line; do
+                            if [[ -n "$line" ]]; then
+                                LINKS_SECTION="${LINKS_SECTION}${line}
+"
+                            fi
+                        done <<< "$ADS_URLS"
+                        BLOG_CONTENT="${BLOG_CONTENT}${LINKS_SECTION}"
+                    fi
                     
                     # Generate summary (in user's language)
                     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📄 Generating summary..."
@@ -260,8 +284,273 @@ IMPORTANT: Write in ${USER_LANG} language, be concise but informative, and make 
                     else
                         echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️ Failed to publish blog post: $SEND_RESULT"
                     fi
-                else
-                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ℹ️ No ads found, skipping blog post creation"
+                fi
+                
+                # Handle retry at 100km if no results at 20km
+                if [[ "$CREATE_BLOG_POST" != true && "$SEARCH_RADIUS" -eq 20000 ]]; then
+                        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️ No ads found at 20km, trying 100km..."
+                        
+                        # Retry with 100km radius
+                        RETRY_RADIUS=100000
+                        RETRY_RADIUS_KM=$((RETRY_RADIUS / 1000))
+                        RETRY_TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
+                        RETRY_JSON_OUTPUT_FILE="${OUTPUT_DIR}/leboncoin_${PLAYER}_retry_${RETRY_TIMESTAMP}.json"
+                        RETRY_STDERR_FILE="${OUTPUT_DIR}/leboncoin_${PLAYER}_retry_${RETRY_TIMESTAMP}.stderr"
+                        
+                        CMD_ARGS=(
+                            "$COOKIE_FILE"
+                            "${SEARCH_QUERY:-}"
+                            "$LAT"
+                            "$LON"
+                            "$RETRY_RADIUS"
+                            "--donation-only"
+                            "--owner-type" "private"
+                            "--json"
+                            "--limit" "$SEARCH_LIMIT"
+                        )
+                        
+                        python3 "${MY_PATH}/scraper_leboncoin.py" "${CMD_ARGS[@]}" > "$RETRY_JSON_OUTPUT_FILE" 2> "$RETRY_STDERR_FILE"
+                        
+                        if [[ $? -eq 0 ]]; then
+                            # Extract JSON
+                            RETRY_VALID_JSON=$(jq -c '.' "$RETRY_JSON_OUTPUT_FILE" 2>/dev/null || echo "")
+                            if [[ -z "$RETRY_VALID_JSON" ]]; then
+                                RETRY_VALID_JSON=$(tail -100 "$RETRY_JSON_OUTPUT_FILE" | jq -c '.' 2>/dev/null || echo "")
+                            fi
+                            
+                            if [[ -n "$RETRY_VALID_JSON" ]]; then
+                                echo "$RETRY_VALID_JSON" > "$RETRY_JSON_OUTPUT_FILE"
+                                retry_ads_count=$(jq -r '.ads | length' "$RETRY_JSON_OUTPUT_FILE" 2>/dev/null || echo "0")
+                                
+                                if [[ "$retry_ads_count" -gt 0 ]]; then
+                                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Found ${retry_ads_count} ads at 100km, processing..."
+                                    # Use retry results and continue to blog post creation
+                                    JSON_OUTPUT_FILE="$RETRY_JSON_OUTPUT_FILE"
+                                    ads_count="$retry_ads_count"
+                                    SEARCH_RADIUS="$RETRY_RADIUS"
+                                    RADIUS_KM="$RETRY_RADIUS_KM"
+                                    
+                                    # Get user language
+                                    USER_LANG=$(get_user_language "$PLAYER")
+                                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🌍 Using language: ${USER_LANG}"
+                                    
+                                    # Get player's NOSTR key if available
+                                    PLAYER_KEYFILE="${PLAYER_DIR}/.secret.nostr"
+                                    if [[ -f "$PLAYER_KEYFILE" ]]; then
+                                        source "$PLAYER_KEYFILE"
+                                        PUBKEY_HEX="$HEX"
+                                    else
+                                        # Use CAPTAIN key as fallback
+                                        source ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
+                                        PUBKEY_HEX="$HEX"
+                                    fi
+                                    
+                                    # Format ads for AI processing (limit to first 20 for content generation)
+                                    ADS_SUMMARY=$(jq -r '.ads[0:20] | map("• \(.subject) - \(.location.city_label // "N/A") (\(.location.zipcode // "")) - \(.url)") | join("\n")' "$JSON_OUTPUT_FILE" 2>/dev/null)
+                                    TOTAL_ADS=$(jq -r '.total' "$JSON_OUTPUT_FILE" 2>/dev/null || echo "$ads_count")
+                                    
+                                    # Extract all ad URLs for inclusion in final content
+                                    ADS_URLS=$(jq -r '.ads[] | "\(.subject) - \(.url)"' "$JSON_OUTPUT_FILE" 2>/dev/null | head -50)
+                                    
+                                    # Generate blog content using AI (in user's language)
+                                    BLOG_TITLE="Annonces de dons autour de ${LAT}, ${LON} (rayon ${RADIUS_KM}km)"
+                                    BLOG_PROMPT="Create an engaging blog article in ${USER_LANG} language about free items (donations) available on Leboncoin in the area around coordinates ${LAT}, ${LON} within a ${RADIUS_KM}km radius. 
+
+Total ads found: ${TOTAL_ADS}
+Sample ads:
+${ADS_SUMMARY}
+
+Create a blog post that:
+1. Introduces the topic of finding free items locally
+2. Highlights interesting items from the list
+3. Provides tips for finding and claiming free items
+4. Mentions the location and radius
+5. Is engaging and useful for readers
+
+IMPORTANT: Write in ${USER_LANG} language, be concise but informative, and make it suitable for a blog post (kind 30023)."
+                                    
+                                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🤖 Generating blog content with AI (language: ${USER_LANG})..."
+                                    BLOG_CONTENT="$($MY_PATH/question.py --json "${BLOG_PROMPT}" --pubkey "${PUBKEY_HEX}")"
+                                    BLOG_CONTENT="$(echo "$BLOG_CONTENT" | jq -r '.answer // .' 2>/dev/null || echo "$BLOG_CONTENT")"
+                                    
+                                    # Append links section to blog content
+                                    if [[ -n "$ADS_URLS" ]]; then
+                                        LINKS_SECTION="
+
+## 🔗 Liens vers les annonces
+
+"
+                                        while IFS= read -r line; do
+                                            if [[ -n "$line" ]]; then
+                                                LINKS_SECTION="${LINKS_SECTION}${line}
+"
+                                            fi
+                                        done <<< "$ADS_URLS"
+                                        BLOG_CONTENT="${BLOG_CONTENT}${LINKS_SECTION}"
+                                    fi
+                                    
+                                    # Set flag and continue to summary generation below
+                                    CREATE_BLOG_POST=true
+                                else
+                                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ℹ️ No ads found even at 100km, sending simple message"
+                                    # Send simple kind 1 message
+                                    USER_LANG=$(get_user_language "$PLAYER")
+                                    PLAYER_KEYFILE="${PLAYER_DIR}/.secret.nostr"
+                                    if [[ -f "$PLAYER_KEYFILE" ]]; then
+                                        KEYFILE_PATH="$PLAYER_KEYFILE"
+                                    else
+                                        KEYFILE_PATH="$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
+                                    fi
+                                    
+                                    NO_RESULTS_MSG="🔍 Recherche Leboncoin - Aucune annonce de don trouvée
+
+Recherche effectuée autour de ${LAT}, ${LON}
+Rayon testé : 20km puis 100km
+Filtres : donations uniquement, particuliers
+
+Aucune annonce gratuite disponible dans cette zone pour le moment.
+
+#leboncoin #donations #gratuit"
+                                    
+                                    SEND_RESULT=$(python3 "$HOME/.zen/Astroport.ONE/tools/nostr_send_note.py" \
+                                        --keyfile "$KEYFILE_PATH" \
+                                        --content "$NO_RESULTS_MSG" \
+                                        --relays "$myRELAY" \
+                                        --tags '[["t", "leboncoin"], ["t", "donations"], ["t", "gratuit"]]' \
+                                        --kind "1" \
+                                        --json 2>&1)
+                                    
+                                    if [[ $? -eq 0 ]]; then
+                                        EVENT_ID=$(echo "$SEND_RESULT" | jq -r '.event_id // empty' 2>/dev/null)
+                                        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Simple message published (kind 1). Event ID: ${EVENT_ID}"
+                                    fi
+                                    
+                                    # Cleanup retry files
+                                    rm -f "$RETRY_JSON_OUTPUT_FILE" "$RETRY_STDERR_FILE"
+                                fi
+                            fi
+                        fi
+                    else
+                        # Already tried 100km, send simple message
+                        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ℹ️ No ads found, sending simple message"
+                        USER_LANG=$(get_user_language "$PLAYER")
+                        PLAYER_KEYFILE="${PLAYER_DIR}/.secret.nostr"
+                        if [[ -f "$PLAYER_KEYFILE" ]]; then
+                            KEYFILE_PATH="$PLAYER_KEYFILE"
+                        else
+                            KEYFILE_PATH="$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
+                        fi
+                        
+                        NO_RESULTS_MSG="🔍 Recherche Leboncoin - Aucune annonce de don trouvée
+
+Recherche effectuée autour de ${LAT}, ${LON}
+Rayon testé : ${RADIUS_KM}km
+Filtres : donations uniquement, particuliers
+
+Aucune annonce gratuite disponible dans cette zone pour le moment.
+
+#leboncoin #donations #gratuit"
+                        
+                        SEND_RESULT=$(python3 "$HOME/.zen/Astroport.ONE/tools/nostr_send_note.py" \
+                            --keyfile "$KEYFILE_PATH" \
+                            --content "$NO_RESULTS_MSG" \
+                            --relays "$myRELAY" \
+                            --tags '[["t", "leboncoin"], ["t", "donations"], ["t", "gratuit"]]' \
+                            --kind "1" \
+                            --json 2>&1)
+                        
+                        if [[ $? -eq 0 ]]; then
+                            EVENT_ID=$(echo "$SEND_RESULT" | jq -r '.event_id // empty' 2>/dev/null)
+                            echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Simple message published (kind 1). Event ID: ${EVENT_ID}"
+                        fi
+                    fi
+                fi
+                
+                # If blog content was generated (from retry), complete blog post creation
+                if [[ "$CREATE_BLOG_POST" == true && -n "$BLOG_CONTENT" && -z "$ARTICLE_SUMMARY" ]]; then
+                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📄 Generating summary for retry results..."
+                    ARTICLE_SUMMARY="$($MY_PATH/question.py --json "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. The summary should capture the main points and be suitable for a blog article header. IMPORTANT: Respond directly and clearly ONLY in the language ${USER_LANG}. Article content: ${BLOG_CONTENT}" --pubkey "${PUBKEY_HEX}")"
+                    ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | jq -r '.answer // .' 2>/dev/null || echo "$ARTICLE_SUMMARY")"
+                    ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '\n' | sed 's/\s\+/ /g' | sed 's/"/\\"/g' | sed "s/'/\\'/g" | head -c 500)"
+                    
+                    # Generate tags (in user's language)
+                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🏷️ Generating tags..."
+                    INTELLIGENT_TAGS="$($MY_PATH/question.py --json "Analyze this blog article and generate 5-8 relevant hashtags in ${USER_LANG} language. Focus on: 1) Main topics (free items, donations, local), 2) Location-related tags, 3) Content type tags. IMPORTANT: Return ONLY the hashtags separated by spaces, no explanations. Article content: ${BLOG_CONTENT}" --pubkey "${PUBKEY_HEX}")"
+                    INTELLIGENT_TAGS="$(echo "$INTELLIGENT_TAGS" | jq -r '.answer // .' 2>/dev/null || echo "$INTELLIGENT_TAGS")"
+                    INTELLIGENT_TAGS="$(echo "$INTELLIGENT_TAGS" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sed 's/#//g' | sed 's/\s\+/ /g' | head -c 200)"
+                    
+                    # Generate illustration
+                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🎨 Generating illustration..."
+                    $MY_PATH/comfyui.me.sh
+                    SD_PROMPT="$($MY_PATH/question.py --json "Create a Stable Diffusion prompt for an illustrative image based on this article summary: ${ARTICLE_SUMMARY} --- CRITICAL RULES: 1) Output ONLY the prompt text, no explanations 2) NO emojis, NO special characters, NO text, NO words, NO brands, NO writing 3) ONLY visual elements and descriptive words 4) Use simple English words only 5) Focus on visual composition, colors, style, objects, scenes" --pubkey "${PUBKEY_HEX}")"
+                    SD_PROMPT="$(echo "$SD_PROMPT" | jq -r '.answer // .' 2>/dev/null || echo "$SD_PROMPT")"
+                    SD_PROMPT=$(echo "$SD_PROMPT" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sed 's/\s\+/ /g' | sed 's/🥺🎨✨//g' | sed 's/emoji//g' | sed 's/emojis//g' | head -c 400)
+                    
+                    # Get user uDRIVE path for image storage
+                    USER_UDRIVE_PATH="${PLAYER_DIR}/APP/uDRIVE"
+                    mkdir -p "${USER_UDRIVE_PATH}/Images"
+                    ILLUSTRATION_URL="$($MY_PATH/generate_image.sh "${SD_PROMPT}" "${USER_UDRIVE_PATH}/Images" 2>/dev/null || echo "")"
+                    
+                    # Create blog post (kind 30023)
+                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📰 Publishing blog post..."
+                    
+                    # Prepare tags
+                    temp_json="$HOME/.zen/tmp/tags_leboncoin_${RANDOM}.json"
+                    TAG_ARRAY=""
+                    if [[ -n "$INTELLIGENT_TAGS" ]]; then
+                        IFS=' ' read -ra TAG_LIST <<< "$INTELLIGENT_TAGS"
+                        for tag in "${TAG_LIST[@]}"; do
+                            if [[ -n "$tag" ]]; then
+                                TAG_ARRAY="${TAG_ARRAY}[\"t\", \"$tag\"],"
+                            fi
+                        done
+                        TAG_ARRAY="${TAG_ARRAY%,}"
+                    fi
+                    
+                    STANDARD_TAGS='["t", "leboncoin"], ["t", "donations"], ["t", "gratuit"]'
+                    if [[ -n "$TAG_ARRAY" ]]; then
+                        ALL_TAGS="${STANDARD_TAGS}, ${TAG_ARRAY}"
+                    else
+                        ALL_TAGS="${STANDARD_TAGS}"
+                    fi
+                    
+                    # Create d-tag for kind 30023
+                    D_TAG="leboncoin_$(date -u +%s)_$(echo -n "${BLOG_TITLE}" | md5sum | cut -d' ' -f1 | head -c 8)"
+                    
+                    if [[ -n "$ILLUSTRATION_URL" ]]; then
+                        jq -n --arg title "$BLOG_TITLE" --arg summary "$ARTICLE_SUMMARY" --arg image "$ILLUSTRATION_URL" --arg published_at "$(date -u +%s)" --arg d_tag "$D_TAG" \
+                            --argjson tags "[${ALL_TAGS}]" \
+                            '[["d", $d_tag], ["title", $title], ["summary", $summary], ["published_at", $published_at], ["image", $image]] + $tags' > "$temp_json"
+                    else
+                        jq -n --arg title "$BLOG_TITLE" --arg summary "$ARTICLE_SUMMARY" --arg published_at "$(date -u +%s)" --arg d_tag "$D_TAG" \
+                            --argjson tags "[${ALL_TAGS}]" \
+                            '[["d", $d_tag], ["title", $title], ["summary", $summary], ["published_at", $published_at]] + $tags' > "$temp_json"
+                    fi
+                    
+                    ExtraTags=$(cat "$temp_json")
+                    rm -f "$temp_json"
+                    
+                    # Publish blog post
+                    if [[ -f "$PLAYER_KEYFILE" ]]; then
+                        KEYFILE_PATH="$PLAYER_KEYFILE"
+                    else
+                        KEYFILE_PATH="$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
+                    fi
+                    
+                    SEND_RESULT=$(python3 "$HOME/.zen/Astroport.ONE/tools/nostr_send_note.py" \
+                        --keyfile "$KEYFILE_PATH" \
+                        --content "$BLOG_CONTENT" \
+                        --relays "$myRELAY" \
+                        --tags "$ExtraTags" \
+                        --kind "30023" \
+                        --json 2>&1)
+                    
+                    if [[ $? -eq 0 ]]; then
+                        EVENT_ID=$(echo "$SEND_RESULT" | jq -r '.event_id // empty' 2>/dev/null)
+                        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Blog post published successfully! Event ID: ${EVENT_ID}"
+                    else
+                        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️ Failed to publish blog post: $SEND_RESULT"
+                    fi
                 fi
                 
                 # Cleanup old files (keep last 5)
