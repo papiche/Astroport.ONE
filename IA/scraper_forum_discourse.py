@@ -116,48 +116,117 @@ def get_today_posts(session, base_url, days_back=1):
         except:
             pass
         
-        # Get latest topics/posts
+        # Get latest topics/posts - try multiple endpoints and parameters
+        # Discourse API: /latest.json returns recent topics, but may be limited
+        # We'll request more topics and filter by date
+        
         latest_url = f"{base_url}{LATEST_POSTS_URL}"
         print(f"Requesting: {latest_url}", file=sys.stderr)
         
-        response = session.get(latest_url, params={"order": "created"}, timeout=15)
-        response.raise_for_status()
+        # Request with parameters to get more results
+        # Discourse may limit results, so we request multiple pages if needed
+        all_topics = []
+        page = 0
+        max_pages = 5  # Limit to avoid infinite loops
         
-        data = response.json()
+        while page < max_pages:
+            params = {
+                "order": "created",
+                "page": page,
+                "ascending": "false"  # Most recent first
+            }
+            
+            try:
+                response = session.get(latest_url, params=params, timeout=15)
+                response.raise_for_status()
+                
+                data = response.json()
+                
+                # Extract topic list
+                topic_list = data.get('topic_list', {})
+                topics = topic_list.get('topics', [])
+                
+                if not topics:
+                    break  # No more topics
+                
+                all_topics.extend(topics)
+                print(f"Retrieved {len(topics)} topics from page {page} (total: {len(all_topics)})", file=sys.stderr)
+                
+                # Check if there are more pages
+                more_topics = topic_list.get('more_topics_url', None)
+                if not more_topics or len(topics) == 0:
+                    break
+                
+                page += 1
+            except Exception as e:
+                print(f"Warning: Error fetching page {page}: {e}", file=sys.stderr)
+                break
         
-        # Extract topic list
-        topics = data.get('topic_list', {}).get('topics', [])
+        topics = all_topics
+        print(f"Total topics retrieved: {len(topics)}", file=sys.stderr)
         
-        # Filter topics from today
+        # Filter topics from the specified time window
         today_posts = []
+        print(f"Filtering topics from the last {days_back} day(s) (threshold: {threshold_date})", file=sys.stderr)
+        
         for topic in topics:
             # Parse created_at timestamp
+            # Discourse uses 'created_at' for topic creation date
             created_at_str = topic.get('created_at', '')
             created_at = None
             
-            if created_at_str:
-                try:
-                    # Discourse can use ISO format, Unix timestamp, or other formats
-                    if isinstance(created_at_str, (int, float)):
-                        # Unix timestamp
-                        created_at = datetime.fromtimestamp(created_at_str)
-                    elif 'T' in created_at_str:
-                        # ISO format with T separator
-                        created_at_str_clean = created_at_str.replace('Z', '+00:00')
-                        if '+' in created_at_str_clean or created_at_str_clean.count('-') >= 3:
-                            created_at = datetime.fromisoformat(created_at_str_clean)
-                        else:
-                            created_at = datetime.strptime(created_at_str, "%Y-%m-%dT%H:%M:%S")
-                    else:
-                        # Try standard format
-                        created_at = datetime.strptime(created_at_str, "%Y-%m-%d %H:%M:%S")
-                except (ValueError, TypeError, OSError) as e:
-                    print(f"Warning: Could not parse date '{created_at_str}': {e}", file=sys.stderr)
-                    # Try to continue with other topics
-                    continue
+            # Also check 'bumped_at' and 'last_posted_at' which might be more recent
+            bumped_at_str = topic.get('bumped_at', '')
+            last_posted_at_str = topic.get('last_posted_at', '')
             
-            # Check if post is from today or within days_back
-            if created_at and created_at >= threshold_date:
+            # Use the most recent date among created_at, bumped_at, and last_posted_at
+            # This ensures we catch topics that were created earlier but had recent activity
+            
+            # Helper function to parse a date string
+            def parse_date(date_str):
+                if not date_str:
+                    return None
+                try:
+                    if isinstance(date_str, (int, float)):
+                        return datetime.fromtimestamp(date_str)
+                    elif 'T' in date_str:
+                        date_str_clean = date_str.replace('Z', '+00:00')
+                        if '+' in date_str_clean or date_str_clean.count('-') >= 3:
+                            return datetime.fromisoformat(date_str_clean)
+                        else:
+                            return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S")
+                    else:
+                        return datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+                except (ValueError, TypeError, OSError):
+                    return None
+            
+            # Parse all dates
+            created_at = parse_date(created_at_str)
+            bumped_at = parse_date(bumped_at_str)
+            last_posted_at = parse_date(last_posted_at_str)
+            
+            # Use the most recent date (most likely to be within our time window)
+            dates_to_check = []
+            if created_at:
+                dates_to_check.append(created_at)
+            if bumped_at:
+                dates_to_check.append(bumped_at)
+            if last_posted_at:
+                dates_to_check.append(last_posted_at)
+            
+            # Use the most recent date
+            if dates_to_check:
+                date_to_use = max(dates_to_check)
+            else:
+                date_to_use = None
+            
+            # Debug: print first few topics to see what we're getting
+            if len(today_posts) < 3:
+                print(f"Debug: Topic '{topic.get('title', 'N/A')[:50]}' - created: {created_at_str}, bumped: {bumped_at_str}, last_posted: {last_posted_at_str}, using: {date_to_use}", file=sys.stderr)
+            
+            # Check if post is within the time window
+            # Use the most recent date we found
+            if date_to_use and date_to_use >= threshold_date:
                 # Get full post details
                 post_id = topic.get('id')
                 if post_id:
@@ -221,6 +290,16 @@ def get_today_posts(session, base_url, days_back=1):
                         })
         
         print(f"Found {len(today_posts)} posts from the last {days_back} day(s)", file=sys.stderr)
+        
+        # Debug: if no posts found, show some info about what we got
+        if len(today_posts) == 0 and len(topics) > 0:
+            print(f"Debug: No posts matched the time window. Showing first 3 topics for debugging:", file=sys.stderr)
+            for i, topic in enumerate(topics[:3]):
+                print(f"  Topic {i+1}: '{topic.get('title', 'N/A')[:60]}'", file=sys.stderr)
+                print(f"    created_at: {topic.get('created_at', 'N/A')}", file=sys.stderr)
+                print(f"    bumped_at: {topic.get('bumped_at', 'N/A')}", file=sys.stderr)
+                print(f"    last_posted_at: {topic.get('last_posted_at', 'N/A')}", file=sys.stderr)
+        
         return today_posts
         
     except requests.exceptions.HTTPError as e:
