@@ -1,11 +1,12 @@
 # 🔐 UPlanet Oracle System - Complete Documentation
 
-**Version**: 2.0  
-**Date**: November 5, 2025  
-**Status**: Consolidated Documentation  
+**Version**: 2.1  
+**Date**: December 2025  
+**Status**: Updated with WoTx2 System  
 **License**: AGPL-3.0
 
-> **Note**: This document consolidates 7 previous Oracle documentation files into a single, comprehensive reference.
+> **Note**: This document consolidates 7 previous Oracle documentation files into a single, comprehensive reference.  
+> **Update v2.1**: Added WoTx2 evolving permits system and decentralized architecture.
 
 ---
 
@@ -64,6 +65,19 @@ The Web of Trust (WoT) is a decentralized trust model where:
 - Trust starts with the Ğ1 blockchain WoT (Duniter certification)
 - Extends to NOSTR-based DIDs (MULTIPASS)
 - Further extends to specific competencies (Oracle permits)
+
+### 2.1.1. WoTx2: Evolving Web of Trust
+
+**WoTx2** is an advanced permit system where competencies can be **discovered and expanded** through attestations:
+
+- **Traditional WoT**: Fixed competencies defined at permit creation
+- **WoTx2**: Competencies can be revealed during attestations, expanding the permit's scope
+- **Virtuous Circle**: Students become instructors, discovering new talents through the attestation process
+
+**Example**: PERMIT_DE_NAGER (Swimming Instructor)
+- Base competencies: Swimming instruction, Water safety, Rescue techniques
+- Revealed competencies: Synchronized swimming, Open water rescue, Aqua-fitness (discovered during attestations)
+- The more competencies, the more attestations required (2 + number of competencies)
 
 ### 2.2. Multi-Signature Validation
 
@@ -156,35 +170,37 @@ The `make_NOSTRCARD.sh` script:
 │                      ORACLE SYSTEM ARCHITECTURE                  │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  1. WEB INTERFACE (/oracle)                                     │
-│     └─> oracle.html (frontend)                                  │
+│  1. WEB INTERFACES                                              │
+│     ├─> /oracle (oracle.html) - General permit management      │
+│     └─> /wotx2 (wotx2.html) - WoTx2 evolving permits            │
 │         ├─> Bootstrap 5 UI                                      │
-│         ├─> Chart.js visualizations                             │
-│         └─> NOSTR.bundle.js (NIP-42 auth)                      │
+│         ├─> Direct NOSTR event creation (30501/30502)           │
+│         └─> NOSTR.bundle.js (client-side signing)               │
 │                                                                  │
 │  2. API BACKEND (54321.py)                                      │
 │     └─> FastAPI application                                     │
-│         ├─> 11 Oracle endpoints                                 │
-│         ├─> NIP-42 authentication                               │
-│         └─> NOSTR event publishing                              │
+│         ├─> Permit definitions (30500) - UPLANETNAME.G1 only    │
+│         ├─> Credential issuance (30503) - UPLANETNAME.G1 only  │
+│         └─> Data initialization for frontend                    │
+│         ⚠️  Requests (30501) & Attestations (30502) are        │
+│            created directly by MULTIPASS via Nostr (not API)     │
 │                                                                  │
 │  3. CORE SYSTEM (oracle_system.py)                              │
-│     └─> Python module                                           │
+│     └─> Python module                                               │
 │         ├─> PermitDefinition                                    │
-│         ├─> PermitRequest                                       │
-│         ├─> PermitAttestation                                   │
 │         ├─> PermitCredential                                    │
 │         └─> Credential issuance logic                           │
 │                                                                  │
 │  4. NOSTR RELAYS                                                 │
 │     └─> Decentralized storage                                    │
-│         ├─> Events: kinds 30500-30503                           │
-│         ├─> Persistence layer                                    │
+│         ├─> Events: kinds 30500-30503                          │
+│         ├─> 30500/30503: Published by UPLANETNAME.G1           │
+│         ├─> 30501/30502: Published by MULTIPASS users           │
 │         └─> Public verifiability                                │
 │                                                                  │
 │  5. MAINTENANCE (ORACLE.refresh.sh)                             │
 │     └─> Daily automated tasks                                    │
-│         ├─> Process pending requests                             │
+│         ├─> Process pending requests (from Nostr)               │
 │         ├─> Expire old requests                                  │
 │         ├─> Revoke expired credentials                           │
 │         └─> Generate statistics                                  │
@@ -200,22 +216,31 @@ The `make_NOSTRCARD.sh` script:
 
 ### 3.2. Data Flow
 
+**Decentralized Architecture** (v2.1):
+
 ```
-1. REQUEST
-   User → 54321.py → oracle_system.py → NOSTR (kind 30501)
+1. PERMIT DEFINITION (30500)
+   UPLANETNAME.G1 → API (/api/permit/define) → oracle_system.py → NOSTR (kind 30500)
    
-2. ATTESTATION (multiple)
-   Expert → 54321.py → oracle_system.py → NOSTR (kind 30502)
+2. REQUEST (30501) - DECENTRALIZED
+   User → wotx2.html → window.nostr.signEvent() → NOSTR (kind 30501)
+   ⚠️  No API call - direct Nostr event creation
    
-3. VALIDATION
-   oracle_system.py → Check attestations → Auto-issue if threshold reached
+3. ATTESTATION (30502) - DECENTRALIZED
+   Expert → wotx2.html → window.nostr.signEvent() → NOSTR (kind 30502)
+   ⚠️  No API call - direct Nostr event creation
    
-4. CREDENTIAL
-   oracle_system.py → Sign with UPLANETNAME.G1 → NOSTR (kind 30503) → DID update
+4. VALIDATION
+   ORACLE.refresh.sh → Fetch from Nostr → Check attestations → Auto-issue if threshold
    
-5. REWARD (optional)
+5. CREDENTIAL (30503)
+   ORACLE.refresh.sh → API (/api/permit/issue) → Sign with UPLANETNAME.G1 → NOSTR (kind 30503) → DID update
+   
+6. REWARD (optional)
    UPLANET.official.sh -p email PERMIT_ID → Blockchain payment
 ```
+
+**Key Change**: Events 30501 and 30502 are now created **directly by MULTIPASS users** via Nostr, not through the API. This makes the system fully decentralized.
 
 ### 3.3. Technology Stack
 
@@ -364,8 +389,8 @@ The Oracle System uses four parameterized replaceable event kinds:
 | Kind  | Name | Signed by | Description |
 |-------|------|-----------|-------------|
 | **30500** | Permit Definition | `UPLANETNAME.G1` | Definition of a permit type (rules, validity, etc.) |
-| **30501** | Permit Request | Applicant | Application from a user |
-| **30502** | Permit Attestation | Attester | Expert signature/attestation |
+| **30501** | Permit Request | Applicant (MULTIPASS) | Application from a user - **Created directly via Nostr** |
+| **30502** | Permit Attestation | Attester (MULTIPASS) | Expert signature/attestation - **Created directly via Nostr** |
 | **30503** | Permit Credential | `UPLANETNAME.G1` | Final Verifiable Credential (VC) |
 
 ### 5.2. Event Structure Details
@@ -405,7 +430,9 @@ The Oracle System uses four parameterized replaceable event kinds:
 
 **Purpose**: User requests a permit
 
-**Published by**: Applicant (MULTIPASS holder)
+**Published by**: Applicant (MULTIPASS holder) - **Directly via Nostr, not through API**
+
+**Note**: Since v2.1, requests are created directly by users in `wotx2.html` using `window.nostr.signEvent()`. The API no longer handles 30501 events.
 
 **Structure**:
 ```json
@@ -432,7 +459,9 @@ The Oracle System uses four parameterized replaceable event kinds:
 
 **Purpose**: Expert attests an applicant's competence
 
-**Published by**: Attester (expert with valid credential)
+**Published by**: Attester (expert with valid credential) - **Directly via Nostr, not through API**
+
+**Note**: Since v2.1, attestations are created directly by users in `wotx2.html` using `window.nostr.signEvent()`. The API no longer handles 30502 events.
 
 **Structure**:
 ```json
@@ -864,16 +893,28 @@ The script `oracle.WoT_PERMIT.init.sh` resolves this by creating the **"Block 0"
 
 **Key principle**: All initial members attest each other (except themselves), creating a mutual certification network.
 
-### 7.3. Why N+1 Members for N Signatures?
+### 7.3. Bootstrap Requirements
+
+#### Standard Permits: N+1 Members for N Attestations
 
 For a permit requiring **N attestations**, you need **minimum N+1 members**.
 
-#### Mathematical Explanation
-
-Each member attests **all others** (except themselves):
+**Mathematical Explanation**:
 - Total members: N+1
 - Each member attests: (N+1) - 1 = **N others** ✅
 - Each member receives: N attestations ✅
+
+#### WoTx2 Permits: Special Bootstrap (2 Attestations)
+
+**WoTx2 permits** (like PERMIT_DE_NAGER) use a simplified bootstrap:
+- **Bootstrap phase**: Only **2 attestations** required for the first cycle
+- **Normal phase**: After first holders exist, reverts to standard requirement (e.g., 6+ attestations)
+- **Rationale**: Allows easier initial setup while maintaining security after bootstrap
+
+**Example**: PERMIT_DE_NAGER
+- Normal requirement: 6 attestations
+- Bootstrap requirement: 2 attestations (for first kind 30501/30502 cycle)
+- After bootstrap: Returns to 6 attestations for new applicants
 
 #### Concrete Example: PERMIT_ORE_V1 (5 attestations required)
 
@@ -996,6 +1037,8 @@ cd Astroport.ONE/tools
 
 See `templates/NOSTR/permit_definitions.json` for full definitions:
 
+### 8.1. Standard Permits
+
 1. **PERMIT_ORE_V1** - ORE Environmental Verifier
    - Required attestations: 5
    - Validity: 3 years
@@ -1036,28 +1079,29 @@ See `templates/NOSTR/permit_definitions.json` for full definitions:
    - Validity: 5 years
    - Purpose: Conflict resolution
 
+### 8.2. WoTx2 Evolving Permits
+
+9. **PERMIT_DE_NAGER** - Swimming Instructor (WoTx2)
+   - Required attestations: 6 (normal), 2 (bootstrap)
+   - Validity: 3 years
+   - Purpose: Swimming instruction and water safety
+   - **Special**: Competencies can be discovered during attestations
+   - **Bootstrap**: Only 2 attestations needed for initial "Block 0"
+   - **Interface**: `/wotx2` - Create and manage WoTx2 permits
+
+**Creating New WoTx2 Permits**: Users can create new professional permits via the `/wotx2` interface. The system automatically calculates `min_attestations` based on the number of competencies (2 + number of competencies).
+
 ---
 
 ## 9. Usage
 
-### 9.1. Web Interface (/oracle)
+### 9.1. Web Interfaces
+
+#### /oracle - General Permit Management
 
 **Access**: `https://u.copylaradio.com/oracle` (or `http://127.0.0.1:54321/oracle` for local)
 
 ⚠️ **Current Status**: The web interface is under active development. The HTML template (oracle.html) provides the UI structure, but full integration with the backend API is in progress.
-
-**Implemented**:
-- ✅ UI layout and styling
-- ✅ NOSTR connection flow
-- ✅ Chart.js visualizations
-
-**In Development**:
-- 🚧 Real-time data fetching from API
-- 🚧 Permit request submission
-- 🚧 Attestation submission
-- 🚧 Credential verification
-
-**For production use, interact directly with the API endpoints (see Section 10).**
 
 **Interface Tabs**:
 - 📜 **Available Permits**: Browse and request permits
@@ -1066,38 +1110,105 @@ See `templates/NOSTR/permit_definitions.json` for full definitions:
 - ✍️ **My Attestations**: Track attestations you've provided
 - 🌱 **ORE Contracts**: View environmental obligations with map
 
-### 9.2. API Usage Examples
+#### /wotx2 - WoTx2 Evolving Permits Interface
 
-#### Request a Permit
+**Access**: `https://u.copylaradio.com/wotx2` (or `http://127.0.0.1:54321/wotx2` for local)
+
+**Features**:
+- ✅ **Create New Permits**: Form to create new WoTx2 professional permits (kind 30500)
+- ✅ **Direct Nostr Integration**: Create requests (30501) and attestations (30502) directly via Nostr
+- ✅ **Permit Selector**: Choose from all available permits
+- ✅ **Bootstrap Support**: Initialize new permits with 2+ emails
+- ✅ **Real-time Data**: Loads requests and credentials directly from Nostr relays
+- ✅ **Competency Discovery**: Reveal new competencies during attestations
+
+**Workflow**:
+1. Select or create a permit
+2. Create request (30501) - signed directly by your MULTIPASS
+3. Others attest (30502) - signed directly by their MULTIPASS
+4. ORACLE.refresh.sh issues credential (30503) when threshold reached
+
+**Note**: This interface is **fully decentralized** - no API calls for 30501/30502 events.
+
+### 9.2. Creating Permits and Events
+
+#### Create a Permit Definition (30500) - API
 
 ```bash
-curl -X POST "${uSPOT}/api/permit/request" \
+curl -X POST "${uSPOT}/api/permit/define" \
   -H "Content-Type: application/json" \
   -d '{
-    "permit_definition_id": "PERMIT_ORE_V1",
-    "applicant_npub": "npub1...",
-    "statement": "I have 5 years experience in environmental assessment",
-    "evidence": []
+    "permit": {
+      "id": "PERMIT_EXAMPLE",
+      "name": "Example Permit",
+      "description": "Description here",
+      "min_attestations": 5,
+      "valid_duration_days": 1095,
+      "metadata": {"category": "general"}
+    },
+    "npub": "npub1...",
+    "bootstrap_emails": ["email1@example.com", "email2@example.com"]
   }'
 ```
 
-#### Attest a Request
+**Note**: Requires NIP-42 authentication. Creates kind 30500 event signed by UPLANETNAME.G1.
 
-```bash
-curl -X POST "${uSPOT}/api/permit/attest" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "request_id": "a1b2c3d4",
-    "attester_npub": "npub1...",
-    "statement": "I have personally verified their competence",
-    "attester_license_id": null
-  }'
+#### Create a Permit Request (30501) - Direct Nostr
+
+**Via wotx2.html interface** (recommended):
+1. Connect MULTIPASS
+2. Select permit
+3. Click "Create Request"
+4. Fill form and submit
+5. Event 30501 is created and published directly to your Nostr relays
+
+**Manual (JavaScript)**:
+```javascript
+const event = {
+  kind: 30501,
+  content: JSON.stringify({
+    request_id: "...",
+    permit_definition_id: "PERMIT_ORE_V1",
+    statement: "My competence statement",
+    evidence: []
+  }),
+  tags: [["d", "request_id"], ["l", "PERMIT_ORE_V1", "permit_type"]],
+  created_at: Math.floor(Date.now() / 1000)
+};
+const signedEvent = await window.nostr.signEvent(event);
+// Publish to relays
 ```
 
-#### Check Status
+#### Create an Attestation (30502) - Direct Nostr
+
+**Via wotx2.html interface** (recommended):
+1. View pending requests
+2. Click "Attest this request"
+3. Fill attestation form
+4. Event 30502 is created and published directly to your Nostr relays
+
+**Manual (JavaScript)**:
+```javascript
+const event = {
+  kind: 30502,
+  content: JSON.stringify({
+    attestation_id: "...",
+    request_id: "request_id",
+    statement: "I certify this person",
+    signature: "..."
+  }),
+  tags: [["d", "attestation_id"], ["e", "request_id"]],
+  created_at: Math.floor(Date.now() / 1000)
+};
+const signedEvent = await window.nostr.signEvent(event);
+// Publish to relays
+```
+
+#### Check Status (from Nostr)
 
 ```bash
-curl "${uSPOT}/api/permit/status/a1b2c3d4" | jq
+# Fetch request from Nostr
+curl "${uSPOT}/api/permit/nostr/fetch?kind=30501&npub=<applicant_npub>" | jq
 ```
 
 #### Get Credential
@@ -1128,18 +1239,24 @@ curl "${uSPOT}/api/permit/credential/cred_xyz123" | jq
 
 ## 10. API Reference
 
-### 10.1. Core Routes (CRUD)
+### 10.1. Core Routes
 
-#### POST /api/permit/request
-Submit a new permit request (requires NIP-42)
+#### POST /api/permit/define
+Create a new permit definition (requires NIP-42, creates kind 30500)
 
 **Body**:
 ```json
 {
-  "permit_definition_id": "PERMIT_ORE_V1",
-  "applicant_npub": "npub1...",
-  "statement": "My competence statement",
-  "evidence": []
+  "permit": {
+    "id": "PERMIT_EXAMPLE",
+    "name": "Example Permit",
+    "description": "Description",
+    "min_attestations": 5,
+    "valid_duration_days": 1095,
+    "metadata": {"category": "general", "competencies": [...]}
+  },
+  "npub": "npub1...",
+  "bootstrap_emails": ["email1@example.com", "email2@example.com"]
 }
 ```
 
@@ -1147,58 +1264,25 @@ Submit a new permit request (requires NIP-42)
 ```json
 {
   "success": true,
-  "request_id": "a1b2c3d4",
-  "status": "pending"
+  "definition_id": "PERMIT_EXAMPLE",
+  "min_attestations": 5,
+  "bootstrap_initiated": true
 }
 ```
 
-#### POST /api/permit/attest
-Add attestation to a request (requires NIP-42)
+**Note**: Creates kind 30500 event signed by UPLANETNAME.G1. Optionally triggers bootstrap initialization.
 
-**Body**:
-```json
-{
-  "request_id": "a1b2c3d4",
-  "attester_npub": "npub1...",
-  "statement": "I certify this person",
-  "attester_license_id": null
-}
-```
+#### ⚠️ POST /api/permit/request - REMOVED (v2.1)
+**This route is no longer available**. Permit requests (30501) must be created directly by MULTIPASS users via Nostr in `wotx2.html` or using `window.nostr.signEvent()`.
 
-**Response**:
-```json
-{
-  "success": true,
-  "attestation_id": "b2c3d4e5",
-  "status": "attesting",
-  "attestations_count": 3
-}
-```
+#### ⚠️ POST /api/permit/attest - REMOVED (v2.1)
+**This route is no longer available**. Permit attestations (30502) must be created directly by MULTIPASS users via Nostr in `wotx2.html` or using `window.nostr.signEvent()`.
 
-#### GET /api/permit/status/{request_id}
-Get request status
+#### ⚠️ GET /api/permit/status/{request_id} - REMOVED (v2.1)
+**This route is no longer available**. Permit requests (30501) are now stored in Nostr. Use `/api/permit/nostr/fetch?kind=30501` to fetch requests from Nostr.
 
-**Response**:
-```json
-{
-  "request_id": "a1b2c3d4",
-  "permit_type": "ORE Environmental Verifier",
-  "status": "attesting",
-  "attestations_count": 3,
-  "required_attestations": 5
-}
-```
-
-#### GET /api/permit/list
-List requests or credentials
-
-**Query params**:
-- `type`: "requests" or "credentials"
-- `npub`: (optional) filter by user
-
-**Examples**:
-- `/api/permit/list?type=requests`
-- `/api/permit/list?type=credentials&npub=npub1...`
+#### ⚠️ GET /api/permit/list - REMOVED (v2.1)
+**This route is no longer available**. Permit requests (30501) are now stored in Nostr. Use `/api/permit/nostr/fetch?kind=30501` or `/api/permit/nostr/fetch?kind=30503` to fetch from Nostr.
 
 #### GET /api/permit/credential/{credential_id}
 Get W3C Verifiable Credential
@@ -1229,8 +1313,10 @@ Manually trigger credential issuance (idempotent)
 
 Used by `ORACLE.refresh.sh` for automatic issuance.
 
-#### POST /api/permit/expire/{request_id}
-Mark request as expired (> 90 days)
+**Note**: Since v2.1, this endpoint reads the request from Nostr (kind 30501) before issuing the credential. The request must be validated (have enough attestations from kind 30502 events).
+
+#### ⚠️ POST /api/permit/expire/{request_id} - REMOVED (v2.1)
+**This route is no longer available**. Permit requests (30501) are now stored in Nostr. Expiration is handled by ORACLE.refresh.sh which reads from Nostr.
 
 #### POST /api/permit/revoke/{credential_id}
 Revoke a credential
@@ -1241,32 +1327,38 @@ Revoke a credential
 ### 10.4. Authentication
 
 **Routes requiring NIP-42**:
-- `POST /api/permit/request`
-- `POST /api/permit/attest`
+- `POST /api/permit/define` (any authenticated user can create permits)
 
 **Admin routes** (UPLANETNAME.G1 only):
-- `POST /api/permit/define`
-- `POST /api/permit/issue/{id}`
-- `POST /api/permit/revoke/{id}`
+- `POST /api/permit/issue/{id}` (credential issuance)
+- `POST /api/permit/revoke/{id}` (credential revocation)
 
 **Public routes**:
 - All GET endpoints
 
+**Decentralized (no API)**:
+- `30501` (Permit Request) - Created directly by MULTIPASS via Nostr
+- `30502` (Permit Attestation) - Created directly by MULTIPASS via Nostr
+
 ### 10.5. Route Summary Table
 
-| Endpoint | Method | Auth | Purpose |
-|----------|--------|------|---------|
-| `/api/permit/define` | POST | Admin | Create permit definition |
-| `/api/permit/request` | POST | NIP-42 | Submit request |
-| `/api/permit/attest` | POST | NIP-42 | Add attestation |
-| `/api/permit/status/{id}` | GET | - | Get status |
-| `/api/permit/list` | GET | - | List permits |
-| `/api/permit/credential/{id}` | GET | - | Get VC |
-| `/api/permit/definitions` | GET | - | List definitions |
-| `/api/permit/nostr/fetch` | GET | - | Fetch NOSTR events |
-| `/api/permit/issue/{id}` | POST | Admin | Issue credential |
-| `/api/permit/expire/{id}` | POST | Admin | Expire request |
-| `/api/permit/revoke/{id}` | POST | Admin | Revoke credential |
+| Endpoint | Method | Auth | Purpose | Notes |
+|----------|--------|------|---------|-------|
+| `/api/permit/define` | POST | NIP-42 | Create permit definition | Creates 30500 |
+| `/api/permit/request` | ~~POST~~ | ~~NIP-42~~ | ~~Submit request~~ | **REMOVED v2.1** - Use Nostr directly |
+| `/api/permit/attest` | ~~POST~~ | ~~NIP-42~~ | ~~Add attestation~~ | **REMOVED v2.1** - Use Nostr directly |
+| `/api/permit/status/{id}` | ~~GET~~ | ~~-~~ | ~~Get status~~ | **REMOVED v2.1** - Use `/api/permit/nostr/fetch` |
+| `/api/permit/list` | ~~GET~~ | ~~-~~ | ~~List permits~~ | **REMOVED v2.1** - Use `/api/permit/nostr/fetch` |
+| `/api/permit/credential/{id}` | GET | - | Get VC | Reads from Nostr |
+| `/api/permit/definitions` | GET | - | List definitions | Reads from Nostr |
+| `/api/permit/nostr/fetch` | GET | - | Fetch NOSTR events | Direct Nostr query |
+| `/api/permit/issue/{id}` | POST | Admin | Issue credential | Creates 30503 |
+| `/api/permit/expire/{id}` | ~~POST~~ | ~~Admin~~ | ~~Expire request~~ | **REMOVED v2.1** - Handled by ORACLE.refresh.sh |
+| `/api/permit/revoke/{id}` | POST | Admin | Revoke credential | Maintenance |
+
+**Web Interfaces**:
+- `/oracle` - General permit management (development)
+- `/wotx2` - WoTx2 evolving permits (production-ready)
 
 
 ---
@@ -1669,6 +1761,14 @@ A: It depends on how quickly you receive attestations. Once you have enough atte
 
 A: No. You must have a MULTIPASS created via `make_NOSTRCARD.sh` before requesting any permit.
 
+**Q: How do I create a permit request?**
+
+A: Use the `/wotx2` interface. Connect your MULTIPASS, select a permit, and click "Create Request". The request (30501) is created directly via Nostr - no API call needed.
+
+**Q: How do I attest someone's request?**
+
+A: Use the `/wotx2` interface. View pending requests and click "Attest this request". The attestation (30502) is created directly via Nostr - no API call needed.
+
 **Q: What if nobody attests my request?**
 
 A: After 90 days with insufficient attestations, the request expires. You can submit a new request.
@@ -1691,26 +1791,38 @@ A: Yes. New members can request the permit and be attested by existing holders t
 
 A: Run the bootstrap script again with additional members, or let them join via normal attestation.
 
+**Q: What's the difference between standard permits and WoTx2 permits?**
+
+A: 
+- **Standard permits**: Fixed competencies defined at creation
+- **WoTx2 permits**: Competencies can be discovered and expanded during attestations. Bootstrap requires only 2 attestations (vs N+1 for standard permits).
+
+**Q: Can I create my own professional permit?**
+
+A: Yes! Use the `/wotx2` interface, click "NEW - Créer une Profession", fill the form with competencies and responsibilities. The system automatically calculates `min_attestations` based on the number of competencies.
+
 ---
 
 ## 📊 Statistics
 
 **System Capabilities**:
-- 8 default permit types
-- Unlimited permit types (extensible)
-- Multi-signature validation (3-15 attestations)
+- 8+ default permit types (standard + WoTx2)
+- Unlimited permit types (extensible via `/wotx2`)
+- Multi-signature validation (2-15 attestations)
 - W3C VC standard compliance
+- Fully decentralized (30501/30502 via Nostr)
 - NOSTR decentralized storage
 - Daily automated maintenance
 - Blockchain economic integration
 
 **Components**:
 - 1 core Python module (oracle_system.py)
-- 1 API server (54321.py, 11 routes)
-- 1 web interface (oracle.html)
+- 1 API server (54321.py, simplified routes)
+- 2 web interfaces (oracle.html, wotx2.html)
 - 1 maintenance script (ORACLE.refresh.sh)
 - 1 bootstrap script (oracle.WoT_PERMIT.init.sh)
 - 4 NOSTR event kinds (30500-30503)
+- Client-side Nostr integration (wotx2.html)
 
 ---
 
@@ -1752,6 +1864,13 @@ The Oracle System is free and open-source software. You are free to use, modify,
   - Eliminated documentation redundancies
   - Improved "N+1 members" explanation
   - Clarified web interface development status
+- **v2.1** (December 2025): Added WoTx2 system and decentralized architecture
+  - Documented WoTx2 evolving permits system
+  - Updated architecture to reflect decentralized 30501/30502 creation
+  - Added `/wotx2` interface documentation
+  - Documented special bootstrap for WoTx2 permits (2 attestations)
+  - Removed deprecated API routes (/api/permit/request, /api/permit/attest)
+  - Clarified that API only handles 30500 and 30503
 
 ---
 
@@ -1769,8 +1888,8 @@ The Oracle System is free and open-source software. You are free to use, modify,
 
 **End of Oracle System Documentation**
 
-**Last Updated**: November 5, 2025  
-**Version**: 2.0  
+**Last Updated**: December 2025  
+**Version**: 2.1  
 **Maintained by**: UPlanet Development Team  
-**Status**: Complete & Consolidated
+**Status**: Complete & Updated with WoTx2
 

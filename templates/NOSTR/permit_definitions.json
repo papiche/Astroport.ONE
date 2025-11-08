@@ -4,7 +4,7 @@
       "id": "PERMIT_ORE_V1",
       "name": "ORE Environmental Verifier",
       "description": "Certifies the ability to verify Environmental Real Obligations (ORE) compliance for UMAP cells. This permit authorizes the holder to inspect environmental commitments and issue compliance reports.",
-      "issuer_did": "did:nostr:UPLANETNAME",
+      "issuer_did": "did:nostr:UPLANETNAME_G1",
       "min_attestations": 5,
       "required_license": null,
       "valid_duration_days": 1095,
@@ -31,7 +31,7 @@
       "id": "PERMIT_DRIVER",
       "name": "Driver's License (WoT Model)",
       "description": "Certifies the ability to safely operate a motor vehicle on public roads. Based on the Web of Trust model as described in the CopyLaRadio article.",
-      "issuer_did": "did:nostr:UPLANETNAME",
+      "issuer_did": "did:nostr:UPLANETNAME_G1",
       "min_attestations": 12,
       "required_license": "PERMIT_DRIVER",
       "valid_duration_days": 5475,
@@ -63,7 +63,7 @@
       "id": "PERMIT_WOT_DRAGON",
       "name": "WoT Dragon (UPlanet Authority)",
       "description": "A permit that grants Captain's authority to manage UPlanet infrastructure, issue Verifiable Credentials, and act as a trusted authority in the WoT network.",
-      "issuer_did": "did:nostr:UPLANETNAME",
+      "issuer_did": "did:nostr:UPLANETNAME_G1",
       "min_attestations": 3,
       "required_license": null,
       "valid_duration_days": 0,
@@ -96,7 +96,7 @@
       "id": "PERMIT_MEDICAL_FIRST_AID",
       "name": "First Aid Provider",
       "description": "Certifies competence in providing emergency first aid and basic medical assistance. Allows holder to respond to medical emergencies within their community.",
-      "issuer_did": "did:nostr:UPLANETNAME",
+      "issuer_did": "did:nostr:UPLANETNAME_G1",
       "min_attestations": 8,
       "required_license": "PERMIT_MEDICAL_FIRST_AID",
       "valid_duration_days": 730,
@@ -123,7 +123,7 @@
       "id": "PERMIT_BUILDING_ARTISAN",
       "name": "Building Artisan Certification",
       "description": "Certifies competence in construction and building trades. Enables community-based validation of construction work with collective insurance.",
-      "issuer_did": "did:nostr:UPLANETNAME",
+      "issuer_did": "did:nostr:UPLANETNAME_G1",
       "min_attestations": 10,
       "required_license": "PERMIT_BUILDING_ARTISAN",
       "valid_duration_days": 1825,
@@ -155,7 +155,7 @@
       "id": "PERMIT_EDUCATOR_COMPAGNON",
       "name": "Compagnon Educator",
       "description": "Certifies the ability to teach and mentor in the compagnon tradition. Enables community-based education and skill transmission.",
-      "issuer_did": "did:nostr:UPLANETNAME",
+      "issuer_did": "did:nostr:UPLANETNAME_G1",
       "min_attestations": 12,
       "required_license": null,
       "valid_duration_days": 0,
@@ -188,7 +188,7 @@
       "id": "PERMIT_FOOD_PRODUCER",
       "name": "Local Food Producer Certification",
       "description": "Certifies competence in sustainable food production and food safety. Enables direct sales and community food distribution.",
-      "issuer_did": "did:nostr:UPLANETNAME",
+      "issuer_did": "did:nostr:UPLANETNAME_G1",
       "min_attestations": 6,
       "required_license": null,
       "valid_duration_days": 1095,
@@ -215,7 +215,7 @@
       "id": "PERMIT_MEDIATOR",
       "name": "Community Mediator",
       "description": "Certifies the ability to mediate conflicts within N1/N2 circles. Essential for the decentralized justice system described in the article.",
-      "issuer_did": "did:nostr:UPLANETNAME",
+      "issuer_did": "did:nostr:UPLANETNAME_G1",
       "min_attestations": 15,
       "required_license": null,
       "valid_duration_days": 1825,
@@ -242,6 +242,55 @@
           "Community agreements",
           "Mutual aid disputes"
         ]
+      }
+    },
+    {
+      "id": "PERMIT_DE_NAGER",
+      "name": "Permit De Nager (Swimming Instructor)",
+      "description": "Certifies competence in swimming instruction and water safety. This evolving Web of Trust (WoTx2) permit allows discovering new competencies through attestations, creating a virtuous circle between students, instructors, and revealed talents.",
+      "issuer_did": "did:nostr:UPLANETNAME_G1",
+      "min_attestations": 6,
+      "required_license": null,
+      "valid_duration_days": 1095,
+      "revocable": true,
+      "verification_method": "peer_attestation",
+      "metadata": {
+        "category": "sports_education",
+        "competencies": [
+          "Swimming instruction",
+          "Water safety",
+          "Rescue techniques",
+          "Pedagogical skills",
+          "Physical fitness"
+        ],
+        "responsible_for": [
+          "Swimming lessons",
+          "Water safety education",
+          "Student assessment",
+          "Emergency response"
+        ],
+        "evolving_system": {
+          "type": "WoTx2",
+          "description": "New competencies can be revealed during attestations, expanding the permit's scope",
+          "discovery_mechanism": "attestation_revealed_competencies",
+          "virtuous_circle": {
+            "student": "Receives instruction and can become instructor",
+            "instructor": "Teaches and discovers new talents",
+            "revealed_talents": "New competencies discovered through attestations expand the permit"
+          },
+          "bootstrap": {
+            "min_attestations": 2,
+            "description": "For initial bootstrap (Block 0), only 2 attestations required for first kind 30501/30502 cycle"
+          }
+        },
+        "teaching_levels": [
+          "Beginner",
+          "Intermediate",
+          "Advanced",
+          "Competitive",
+          "Rescue"
+        ],
+        "specializations": []
       }
     }
   ]

@@ -583,8 +583,17 @@ main() {
         local permit_info=$(echo "${permits_array[@]}" | tr ' ' '\n' | grep "^${permit_id}|")
         local min_attestations=$(echo "$permit_info" | cut -d'|' -f3)
         
+        # Check if this permit has bootstrap configuration (e.g., PERMIT_DE_NAGER)
+        local bootstrap_attestations="$min_attestations"
+        if [[ "$permit_id" == "PERMIT_DE_NAGER" ]]; then
+            # For PERMIT_DE_NAGER, bootstrap requires only 2 attestations (2 more than minimum for first cycle)
+            bootstrap_attestations=2
+            log_info "Using bootstrap mode: ${YELLOW}${bootstrap_attestations}${NC} attestations required for initial Block 0"
+            log_info "After bootstrap, normal requirement is ${YELLOW}${min_attestations}${NC} attestations"
+        fi
+        
         # Get MULTIPASS members
-        local members_list=$(get_multipass_list "$permit_id" "$min_attestations")
+        local members_list=$(get_multipass_list "$permit_id" "$bootstrap_attestations")
         members=($members_list)
     fi
     
@@ -660,6 +669,15 @@ main() {
     wait_for_credentials "$permit_id" "${members[@]}"
     
     # Display summary
+    display_summary "$permit_id" "${members[@]}"
+    
+    log_info "View the initialized WoT at: ${uSPOT}/oracle"
+}
+
+# Run main function
+main "$@"
+
+
     display_summary "$permit_id" "${members[@]}"
     
     log_info "View the initialized WoT at: ${uSPOT}/oracle"
