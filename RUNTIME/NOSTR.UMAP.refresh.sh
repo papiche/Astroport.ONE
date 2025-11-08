@@ -1124,8 +1124,11 @@ send_nostr_events() {
             local d_tag="umap-${LAT}-${LON}-${TODATE}"
             local published_at=$(date +%s)
             
-            # Add kind 30023 specific tags to TAGS_JSON
-            local article_tags=$(echo "$TAGS_JSON" | jq '. + [["d", "'"$d_tag"'"], ["title", "'"$umap_title"'"], ["published_at", "'"$published_at"'"], ["t", "UPlanet"], ["t", "'"${LAT}_${LON}"'"], ["t", "UMAP"]]')
+            # Add kind 30023 specific tags according to NIP-23 and NIP-101 (latitide et longitude sont à précision limité pour garantir une localisation floue)
+            # NIP-23: ["d", "identifier"], ["title", "..."], ["published_at", "timestamp"]
+            # NIP-101: ["latitude", "FLOAT"], ["longitude", "FLOAT"], ["g", "lat,lon"], ["application", "UPlanet"], ["t", "uplanet"]
+            # UMAP journals use coordinate tag format: ["t", "LAT_LON"] for backward compatibility
+            local article_tags=$(echo "$TAGS_JSON" | jq '. + [["d", "'"$d_tag"'"], ["title", "'"$umap_title"'"], ["published_at", "'"$published_at"'"], ["latitude", "'"${LAT}"'"], ["longitude", "'"${LON}"'"], ["g", "'"${LAT},${LON}"'"], ["application", "UPlanet"], ["t", "UPlanet"], ["t", "'"${LAT}_${LON}"'"], ["t", "UMAP"]]')
             
             # Regenerate UMAPNSEC for keyfile (same method as setup_umap_identity)
             local UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
@@ -1710,8 +1713,13 @@ update_sector_nostr_profile() {
         local d_tag="sector-${sector}-${TODATE}"
         local published_at=$(date +%s)
         
-        # Build article tags with sector-specific tags
-        local article_tags=$(echo "$TAGS_JSON" | jq '. + [["d", "'"$d_tag"'"], ["title", "'"$sector_title"'"], ["published_at", "'"$published_at"'"], ["t", "UPlanet"], ["t", "SECTOR"], ["g", "'"${slat},${slon}"'"]]')
+        # Build article tags according to NIP-23 and NIP-101
+        # NIP-23: ["d", "identifier"], ["title", "..."], ["published_at", "timestamp"]
+        # NIP-101: ["latitude", "FLOAT"], ["longitude", "FLOAT"], ["g", "lat,lon"], ["application", "UPlanet"]
+        # Calculate sector center coordinates for latitude/longitude tags (center of 0.1° sector)
+        local sector_lat=$(echo "scale=1; $slat + 0.05" | bc -l)
+        local sector_lon=$(echo "scale=1; $slon + 0.05" | bc -l)
+        local article_tags=$(echo "$TAGS_JSON" | jq '. + [["d", "'"$d_tag"'"], ["title", "'"$sector_title"'"], ["published_at", "'"$published_at"'"], ["latitude", "'"${sector_lat}"'"], ["longitude", "'"${sector_lon}"'"], ["g", "'"${slat},${slon}"'"], ["application", "UPlanet"], ["t", "UPlanet"], ["t", "SECTOR"]]')
         
         # Create temporary keyfile for nostr_send_note.py (same method as NOSTRCARD.refresh.sh)
         local temp_keyfile=$(mktemp)
@@ -1969,8 +1977,13 @@ update_region_nostr_profile() {
     local d_tag="region-${region}-${TODATE}"
     local published_at=$(date +%s)
     
-    # Build article tags with region-specific tags
-    local article_tags=$(echo "$TAGS_JSON" | jq '. + [["d", "'"$d_tag"'"], ["title", "'"$region_title"'"], ["published_at", "'"$published_at"'"], ["t", "UPlanet"], ["t", "REGION"], ["g", "'"${rlat},${rlon}"'"]]')
+    # Build article tags according to NIP-23 and NIP-101
+    # NIP-23: ["d", "identifier"], ["title", "..."], ["published_at", "timestamp"]
+    # NIP-101: ["latitude", "FLOAT"], ["longitude", "FLOAT"], ["g", "lat,lon"], ["application", "UPlanet"]
+    # Calculate region center coordinates for latitude/longitude tags (center of 1° region)
+    local region_lat=$(echo "scale=1; $rlat + 0.5" | bc -l)
+    local region_lon=$(echo "scale=1; $rlon + 0.5" | bc -l)
+    local article_tags=$(echo "$TAGS_JSON" | jq '. + [["d", "'"$d_tag"'"], ["title", "'"$region_title"'"], ["published_at", "'"$published_at"'"], ["latitude", "'"${region_lat}"'"], ["longitude", "'"${region_lon}"'"], ["g", "'"${rlat},${rlon}"'"], ["application", "UPlanet"], ["t", "UPlanet"], ["t", "REGION"]]')
     
     # Create temporary keyfile for nostr_send_note.py (same method as NOSTRCARD.refresh.sh)
     local temp_keyfile=$(mktemp)
