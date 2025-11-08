@@ -981,7 +981,8 @@ for PLAYER in "${NOSTR[@]}"; do
         # echo "## MULTIPASS nostr PROFILE EXISTING"
         #~ cat ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
         HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX)
-        
+        NPUB=$(cat ~/.zen/game/nostr/${PLAYER}/NPUB)
+
         # Update email in NOSTR profile during refresh (ensure email is always present)
         # This ensures the email is always available in the profile for frontend retrieval
         if [[ -s ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]]; then
@@ -1006,71 +1007,70 @@ for PLAYER in "${NOSTR[@]}"; do
                     # Update DID document - Read from NOSTR relay (source of truth) instead of local cache
                     # This updates IPNS addresses, wallet info, and other metadata
                     # IMPORTANT: Preserve existing contract status (sociétaire, infrastructure, etc.)
-                    if [[ -f "${MY_PATH}/../tools/did_manager_nostr.sh" ]] && [[ -f "${MY_PATH}/../tools/nostr_get_events.sh" ]]; then
+                    if [[ -f "${MY_PATH}/../tools/did_manager_nostr.sh" ]] && [[ -f "${MY_PATH}/../tools/nostr_did_client.py" ]]; then
                         log "INFO" "Reading DID document from NOSTR relay (source of truth) for ${PLAYER}"
                         
-                        # Get player's HEX pubkey (already defined earlier in the loop)
-                        if [[ -n "$HEX" ]]; then
-                            # Query NOSTR relay for DID document (kind 30800 with d=did tag)
-                            did_event=$(${MY_PATH}/../tools/nostr_get_events.sh \
-                                --kind 30800 \
-                                --author "$HEX" \
-                                --tag-d "did" \
-                                --limit 1 2>/dev/null | jq -c 'select(.kind == 30800)' 2>/dev/null | head -n 1)
+                        # Get player's NPUB (already defined earlier in the loop)
+                        if [[ -n "$NPUB" ]]; then
+                            # Query NOSTR relay for DID document using nostr_did_client.py (specialized tool)
+                            # This is more reliable than nostr_get_events.sh for DID documents
+                            did_content=""
+                            for relay in "ws://127.0.0.1:7777" "wss://relay.copylaradio.com"; do
+                                log "DEBUG" "Querying DID from ${relay} for ${PLAYER}"
+                                did_content=$(python3 "${MY_PATH}/../tools/nostr_did_client.py" fetch --author "$NPUB" --relay "$relay" --kind 30800 -q 2>/dev/null)
+                                
+                                if [[ -n "$did_content" ]] && [[ "$did_content" != "null" ]] && echo "$did_content" | jq empty 2>/dev/null; then
+                                    log "INFO" "✅ DID found on ${relay} for ${PLAYER}"
+                                    break
+                                fi
+                            done
                             
                             update_type="MULTIPASS"
                             current_status=""
                             did_end_date=""
                             
-                            if [[ -n "$did_event" ]] && command -v jq &>/dev/null; then
-                                # Extract contract status from DID content (NOSTR source of truth)
-                                did_content=$(echo "$did_event" | jq -r '.content' 2>/dev/null)
+                            if [[ -n "$did_content" ]] && [[ "$did_content" != "null" ]] && command -v jq &>/dev/null; then
+                                # Parse DID JSON content to extract contractStatus
+                                current_status=$(echo "$did_content" | jq -r '.metadata.contractStatus // "active_rental"' 2>/dev/null)
                                 
-                                if [[ -n "$did_content" && "$did_content" != "null" ]]; then
-                                    # Parse DID JSON content to extract contractStatus
-                                    current_status=$(echo "$did_content" | jq -r '.metadata.contractStatus // "active_rental"' 2>/dev/null)
-                                    
-                                    # Also extract end date from DID
-                                    did_end_date=$(echo "$did_content" | jq -r '.metadata.contractEndDate // .metadata.expirationDate // .metadata.societyEndDate // empty' 2>/dev/null)
-                                    
-                                    # Map contract status to update type to preserve it
-                                    case "$current_status" in
-                                        "cooperative_member_satellite")
-                                            update_type="SOCIETAIRE_SATELLITE"
-                                            log "INFO" "Preserving sociétaire satellite status from NOSTR DID"
-                                            ;;
-                                        "cooperative_member_constellation")
+                                # Also extract end date from DID
+                                did_end_date=$(echo "$did_content" | jq -r '.metadata.contractEndDate // .metadata.expirationDate // .metadata.societyEndDate // empty' 2>/dev/null)
+                                
+                                # Map contract status to update type to preserve it
+                                case "$current_status" in
+                                    "cooperative_member_satellite")
+                                        update_type="SOCIETAIRE_SATELLITE"
+                                        log "INFO" "Preserving sociétaire satellite status from NOSTR DID"
+                                        ;;
+                                    "cooperative_member_constellation")
+                                        update_type="SOCIETAIRE_CONSTELLATION"
+                                        log "INFO" "Preserving sociétaire constellation status from NOSTR DID"
+                                        ;;
+                                    "infrastructure_contributor")
+                                        update_type="INFRASTRUCTURE"
+                                        log "INFO" "Preserving infrastructure contributor status from NOSTR DID"
+                                        ;;
+                                    "cooperative_treasury_contributor"|"cooperative_rnd_contributor"|"cooperative_assets_contributor")
+                                        log "INFO" "Preserving contribution status from NOSTR DID: ${current_status}"
+                                        # Check services to determine if also sociétaire
+                                        has_satellite=$(echo "$did_content" | jq -r '.metadata.services // ""' 2>/dev/null | grep -q "satellite" && echo "yes" || echo "no")
+                                        has_constellation=$(echo "$did_content" | jq -r '.metadata.services // ""' 2>/dev/null | grep -q "constellation" && echo "yes" || echo "no")
+                                        if [[ "$has_constellation" == "yes" ]]; then
                                             update_type="SOCIETAIRE_CONSTELLATION"
-                                            log "INFO" "Preserving sociétaire constellation status from NOSTR DID"
-                                            ;;
-                                        "infrastructure_contributor")
-                                            update_type="INFRASTRUCTURE"
-                                            log "INFO" "Preserving infrastructure contributor status from NOSTR DID"
-                                            ;;
-                                        "cooperative_treasury_contributor"|"cooperative_rnd_contributor"|"cooperative_assets_contributor")
-                                            log "INFO" "Preserving contribution status from NOSTR DID: ${current_status}"
-                                            # Check services to determine if also sociétaire
-                                            has_satellite=$(echo "$did_content" | jq -r '.metadata.services // ""' 2>/dev/null | grep -q "satellite" && echo "yes" || echo "no")
-                                            has_constellation=$(echo "$did_content" | jq -r '.metadata.services // ""' 2>/dev/null | grep -q "constellation" && echo "yes" || echo "no")
-                                            if [[ "$has_constellation" == "yes" ]]; then
-                                                update_type="SOCIETAIRE_CONSTELLATION"
-                                            elif [[ "$has_satellite" == "yes" ]]; then
-                                                update_type="SOCIETAIRE_SATELLITE"
-                                            fi
-                                            ;;
-                                        "active_rental"|""|"null")
-                                            update_type="MULTIPASS"
-                                            ;;
-                                        *)
-                                            log "INFO" "Unknown contract status from NOSTR DID: ${current_status}, using MULTIPASS"
-                                            update_type="MULTIPASS"
-                                            ;;
-                                    esac
-                                    
-                                    log "INFO" "DID found in NOSTR relay, updating with preserved status"
-                                else
-                                    log "INFO" "DID event found but content is empty, creating new DID"
-                                fi
+                                        elif [[ "$has_satellite" == "yes" ]]; then
+                                            update_type="SOCIETAIRE_SATELLITE"
+                                        fi
+                                        ;;
+                                    "active_rental"|""|"null")
+                                        update_type="MULTIPASS"
+                                        ;;
+                                    *)
+                                        log "INFO" "Unknown contract status from NOSTR DID: ${current_status}, using MULTIPASS"
+                                        update_type="MULTIPASS"
+                                        ;;
+                                esac
+                                
+                                log "INFO" "DID found in NOSTR relay, updating with preserved status"
                             else
                                 log "INFO" "No DID document found in NOSTR relay, creating new DID with default type"
                             fi
@@ -1115,10 +1115,10 @@ for PLAYER in "${NOSTR[@]}"; do
                                 log "WARN" "⚠️ Failed to update DID document for ${PLAYER}"
                             fi
                         else
-                            log "WARN" "⚠️ Player HEX not found for ${PLAYER}, skipping DID update"
+                            log "WARN" "⚠️ Player NPUB not found for ${PLAYER}, skipping DID update"
                         fi
                     else
-                        log "WARN" "⚠️ did_manager_nostr.sh or nostr_get_events.sh not found, skipping DID update"
+                        log "WARN" "⚠️ did_manager_nostr.sh or nostr_did_client.py not found, skipping DID update"
                     fi
                 fi
             fi

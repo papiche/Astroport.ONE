@@ -399,7 +399,7 @@ def fetch_did_from_nostr(author_pubkey: str, relay_url: str, kind: int = DID_EVE
     Fetch DID document from NOSTR relay (fetch mode for G1society.sh).
     
     Args:
-        author_pubkey: NPUB of the DID owner
+        author_pubkey: NPUB or HEX public key of the DID owner
         relay_url: Relay URL to query
         kind: Event kind (default: 30800 for DID documents - NIP-101)
         
@@ -408,11 +408,20 @@ def fetch_did_from_nostr(author_pubkey: str, relay_url: str, kind: int = DID_EVE
     """
     client = None
     try:
+        # Convert NPUB to HEX if needed (NOSTR queries use HEX format)
+        if author_pubkey.startswith("npub1"):
+            pubkey_hex = npub_to_hex(author_pubkey)
+            if not pubkey_hex:
+                return ""
+        else:
+            # Assume it's already HEX format
+            pubkey_hex = author_pubkey
+        
         client = NostrWebSocketClient(relay_url)
         if not client.connect():
             return ""
         
-        events = client.fetch_events(author_pubkey, kind)
+        events = client.fetch_events(pubkey_hex, kind)
         
         if not events:
             return ""
@@ -449,7 +458,7 @@ def list_dids_from_nostr(author_pubkey: str, relay_url: str, kind: int = DID_EVE
     List all DID documents for an author from a relay.
     
     Args:
-        author_pubkey: NPUB of the DID owner
+        author_pubkey: NPUB or HEX public key of the DID owner
         relay_url: Relay URL to query
         kind: Event kind (default: 30800 for DID documents - NIP-101)
         
@@ -458,11 +467,20 @@ def list_dids_from_nostr(author_pubkey: str, relay_url: str, kind: int = DID_EVE
     """
     client = None
     try:
+        # Convert NPUB to HEX if needed (NOSTR queries use HEX format)
+        if author_pubkey.startswith("npub1"):
+            pubkey_hex = npub_to_hex(author_pubkey)
+            if not pubkey_hex:
+                return []
+        else:
+            # Assume it's already HEX format
+            pubkey_hex = author_pubkey
+        
         client = NostrWebSocketClient(relay_url)
         if not client.connect():
             return []
         
-        events = client.fetch_events(author_pubkey, kind)
+        events = client.fetch_events(pubkey_hex, kind)
         
         dids = []
         for event in events:
