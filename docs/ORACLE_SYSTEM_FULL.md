@@ -658,7 +658,8 @@ def _sign_credential(self, permit_request: PermitRequest) -> str:
         "attestations": [a.attestation_id for a in permit_request.attestations]
     }
     
-    message = json.dumps(credential_data, sort_keys=True).encode()
+    # CRITICAL: Canonicalize JSON before signing (RFC 8785)
+    message = canonicalize_json(credential_data).encode()
     message_hash = hashlib.sha256(message).digest()
     
     # Ed25519 signature
@@ -675,6 +676,88 @@ def _sign_credential(self, permit_request: PermitRequest) -> str:
 
 **Algorithm**: Ed25519 signatures (more secure than ECDSA)
 
+### 6.2.1. JSON Canonicalization (RFC 8785)
+
+**CRITICAL**: All JSON content in NOSTR events must be canonicalized before signing to ensure signature consistency.
+
+#### Why Canonicalization is Required
+
+When signing NOSTR events whose `content` field contains JSON, the same logical data must always produce the same string representation. Without canonicalization:
+
+- Different key ordering produces different hashes
+- Whitespace variations break signature verification
+- Floating-point formatting differences cause mismatches
+- **Result**: Signatures fail verification even with valid data
+
+#### Implementation (RFC 8785 - JCS)
+
+The Oracle System implements **JSON Canonicalization Scheme (JCS)** as specified in [RFC 8785](https://datatracker.ietf.org/doc/html/rfc8785):
+
+```python
+def canonicalize_json(data: Any) -> str:
+    """
+    Canonicalize JSON according to RFC 8785 (JCS - JSON Canonicalization Scheme).
+    
+    This ensures that the same JSON data always produces the same string representation,
+    which is critical for cryptographic signatures.
+    """
+    return json.dumps(
+        data,
+        sort_keys=True,           # Lexicographic key ordering
+        separators=(',', ':'),   # No whitespace (compact)
+        ensure_ascii=False,      # Preserve Unicode
+        allow_nan=False          # Reject NaN/Infinity (not in JSON spec)
+    )
+```
+
+#### Canonicalization Rules
+
+1. **Key Ordering**: All object keys sorted lexicographically (UTF-8 byte order)
+2. **Whitespace**: No spaces between tokens (`separators=(',', ':')`)
+3. **Numbers**: Standard JSON number format (no leading zeros, no trailing zeros)
+4. **Unicode**: Preserved as-is (no ASCII escaping)
+5. **Special Values**: `NaN`, `Infinity` rejected (not valid JSON)
+
+#### Usage in Oracle System
+
+All NOSTR event content is canonicalized:
+
+- **Kind 30500** (Permit Definition): `canonicalize_json(asdict(definition))`
+- **Kind 30501** (Permit Request): `canonicalize_json({...})`
+- **Kind 30502** (Permit Attestation): `canonicalize_json({...})`
+- **Kind 30503** (Permit Credential): `canonicalize_json({...})` (especially critical for W3C VCs)
+- **Credential Signing**: `canonicalize_json(credential_data)` before hashing
+
+#### Example: Before vs After Canonicalization
+
+**Before** (non-canonical):
+```json
+{
+  "request_id": "abc123",
+  "status": "pending",
+  "applicant_did": "did:nostr:xyz"
+}
+```
+
+**After** (canonical):
+```json
+{"applicant_did":"did:nostr:xyz","request_id":"abc123","status":"pending"}
+```
+
+**Note**: The canonical form has:
+- Keys sorted: `applicant_did` < `request_id` < `status`
+- No whitespace
+- Consistent formatting
+
+#### NIP-101 Recommendation
+
+For NOSTR events containing Verifiable Credentials (kinds 30503), the NIP-101 specification should mandate RFC 8785 canonicalization to ensure:
+
+- Cross-platform signature compatibility
+- Verifiable Credential standard compliance (W3C VC)
+- Deterministic event IDs
+- Reliable signature verification
+
 ### 6.3. Verification
 
 ```python
@@ -690,7 +773,8 @@ def verify_credential(credential: PermitCredential) -> bool:
         "attestations": [a.attestation_id for a in credential.attestations]
     }
     
-    message = json.dumps(credential_data, sort_keys=True).encode()
+    # CRITICAL: Canonicalize JSON before verification (RFC 8785)
+    message = canonicalize_json(credential_data).encode()
     message_hash = hashlib.sha256(message).digest()
     
     # Get UPlanet public key

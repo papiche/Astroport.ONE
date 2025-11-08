@@ -59,6 +59,9 @@ Les informations du contrat ORE sont intégrées directement dans le document DI
 - **30312** : ORE Meeting Space (Persistent Geographic Space)
 - **30313** : ORE Verification Meeting (scheduled meetings for compliance verification)
 
+**⚠️ Important - Canonisation JSON (RFC 8785) :**
+Tous les événements NOSTR contenant du JSON (tags, contenu) sont canonisés selon RFC 8785 (JCS) avant signature pour garantir la cohérence des signatures cryptographiques. Cette canonisation est appliquée automatiquement dans `ore_system.py` via la fonction `canonicalize_json()`.
+
 ### 3. Publication et Découverte sur Nostr
 
 Les documents et événements ORE sont publiés sur les relais Nostr avec plusieurs event kinds :

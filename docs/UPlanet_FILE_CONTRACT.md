@@ -8,7 +8,9 @@
 
 This document specifies the UPlanet File Management Contract, a protocol for decentralized file storage using IPFS (InterPlanetary File System) and metadata publication via the NOSTR (Notes and Other Stuff Transmitted by Relays) protocol. The system implements a separation-of-concerns architecture distinguishing between video content (NIP-71, kinds 21/22) and general file metadata (NIP-94, kind 1063), while ensuring provenance tracking through cryptographic hashing and chain-of-custody mechanisms.
 
-**Keywords**: IPFS, NOSTR, NIP-94, NIP-71, Decentralized Storage, Provenance Tracking, Metadata Publishing
+**Protocol Version**: 1.0.0  
+**JSON Canonicalization**: RFC 8785 (JCS) compliant  
+**Keywords**: IPFS, NOSTR, NIP-94, NIP-71, Decentralized Storage, Provenance Tracking, Metadata Publishing, RFC 8785, JSON Canonicalization
 
 ---
 
@@ -515,10 +517,15 @@ ffmpeg -ss "$PROBETIME" -t 1.6 -i "$FILE_PATH" "$GIFANIM_PATH"
 
 ### 4.2 info.json Structure
 
-All files generate a comprehensive `info.json` file stored on IPFS:
+All files generate a comprehensive `info.json` file stored on IPFS. **The JSON is canonicalized according to RFC 8785 (JCS) before IPFS upload** to ensure deterministic CID generation and signature consistency.
 
 ```json
 {
+  "protocol": {
+    "name": "UPlanet File Management Contract",
+    "version": "1.0.0",
+    "specification": "https://github.com/papiche/Astroport.ONE/blob/main/Astroport.ONE/docs/UPlanet_FILE_CONTRACT.md"
+  },
   "file": {
     "name": "filename.ext",
     "size": 1234567,
@@ -561,6 +568,19 @@ All files generate a comprehensive `info.json` file stored on IPFS:
   }
 }
 ```
+
+**Protocol Versioning**:
+- **Version Format**: Semantic versioning (MAJOR.MINOR.PATCH)
+- **MAJOR**: Breaking changes to structure (incompatible)
+- **MINOR**: New fields added (backward compatible)
+- **PATCH**: Bug fixes and corrections
+- **Current Version**: 1.0.0
+
+**JSON Canonicalization (RFC 8785)**:
+- All `info.json` files are canonicalized before IPFS upload
+- Ensures deterministic CID generation (same content → same CID)
+- Critical for signature verification and provenance tracking
+- Implementation: `canonicalize_json.py` script (RFC 8785 JCS compliant)
 
 **Purpose of info.json**:
 1. **Complete Metadata Archive**: Single source of truth for all file metadata
@@ -808,6 +828,22 @@ FILE_HASH=$(sha256sum "$FILE_PATH" | awk '{print $1}')
 - Tampering → Different CID
 - Self-verifying content
 
+**JSON Canonicalization (RFC 8785)**: Deterministic serialization
+- All JSON metadata (info.json, NOSTR event content) is canonicalized before signing
+- Ensures same logical data always produces same string representation
+- Critical for signature consistency and CID determinism
+- Implementation: `canonicalize_json.py` (RFC 8785 JCS compliant)
+```python
+def canonicalize_json(data: Any) -> str:
+    return json.dumps(
+        data,
+        sort_keys=True,           # Lexicographic key ordering
+        separators=(',', ':'),   # No whitespace (compact)
+        ensure_ascii=False,      # Preserve Unicode
+        allow_nan=False          # Reject NaN/Infinity
+    )
+```
+
 **NOSTR Event Signatures**: Non-repudiation
 ```json
 {
@@ -816,6 +852,11 @@ FILE_HASH=$(sha256sum "$FILE_PATH" | awk '{print $1}')
   "sig": "schnorr_signature"
 }
 ```
+
+**Protocol Versioning**: Compatibility tracking
+- All `info.json` files include protocol version (currently 1.0.0)
+- Enables version-aware parsing and migration
+- Specification URL included for reference
 
 ---
 
@@ -842,8 +883,14 @@ FILE_HASH=$(sha256sum "$FILE_PATH" | awk '{print $1}')
 2. Extract type-specific metadata
 3. Generate thumbnails/GIFs (if applicable)
 4. Check provenance (existing uploads)
-5. Generate info.json
-6. Return JSON output
+5. Generate info.json with protocol version (1.0.0)
+6. **Canonicalize info.json** according to RFC 8785 (JCS) before IPFS upload
+7. Return JSON output
+
+**JSON Canonicalization**:
+- Uses `canonicalize_json.py` script to ensure RFC 8785 compliance
+- Ensures deterministic CID generation (same content → same CID)
+- Critical for signature verification and provenance tracking
 
 **Interface**:
 ```bash
@@ -871,6 +918,11 @@ Output: JSON file with structure:
   }
 }
 ```
+
+**Note**: The `info.json` file (referenced by `info` CID) is:
+- Canonicalized according to RFC 8785 (JCS) before IPFS upload
+- Includes protocol version (1.0.0) for compatibility tracking
+- Ensures deterministic CID generation for signature verification
 
 #### 7.2.2 publish_nostr_file.sh
 
@@ -1624,6 +1676,11 @@ curl -X POST http://localhost:54321/api/fileupload \
 5. **NIP-42 (Authentication)**
    - Specification: https://github.com/nostr-protocol/nips/blob/master/42.md
 
+6. **RFC 8785 (JSON Canonicalization Scheme - JCS)**
+   - Specification: https://datatracker.ietf.org/doc/html/rfc8785
+   - Purpose: Deterministic JSON serialization for cryptographic signatures
+   - Implementation: `canonicalize_json.py` in Astroport.ONE/tools/
+
 ### 10.2 Dependencies
 
 - **Python 3.x**: Backend language
@@ -1731,11 +1788,18 @@ This protocol was developed as part of the UPlanet decentralized ecosystem. Spec
 
 ## Document Metadata
 
-- **Version**: 1.0
+- **Protocol Version**: 1.0.0
+- **Document Version**: 1.1
 - **Date**: 2025-01-04
+- **Last Updated**: 2025-11-05 (Added RFC 8785 JSON canonicalization and protocol versioning)
 - **Authors**: UPlanet Development Team
 - **License**: CC BY-SA 4.0
 - **Repository**: https://github.com/papiche/Astroport.ONE
+
+**Changes in v1.1**:
+- Added RFC 8785 (JCS) JSON canonicalization requirement
+- Added protocol versioning to info.json structure
+- Updated security considerations with canonicalization details
 
 ---
 

@@ -32,6 +32,62 @@ NOSTR_FETCH_DID_SCRIPT="${MY_PATH}/nostr_did_client.py"
 DID_EVENT_KIND=30800  # Changed from 30311 to avoid conflict with NIP-53 (Live Event)
 DID_TAG_IDENTIFIER="did"
 
+# JSON Canonicalization script (RFC 8785 - JCS)
+CANONICALIZE_JSON_SCRIPT="${MY_PATH}/canonicalize_json.py"
+
+################################################################################
+# Helper: Canonicalize JSON file according to RFC 8785 (JCS)
+################################################################################
+canonicalize_json_file() {
+    local input_file="$1"
+    local output_file="${2:-$input_file}"
+    
+    if [[ ! -f "$input_file" ]]; then
+        echo -e "${RED}❌ Input file not found: ${input_file}${NC}" >&2
+        return 1
+    fi
+    
+    # Check if canonicalization script exists
+    if [[ ! -f "$CANONICALIZE_JSON_SCRIPT" ]]; then
+        echo -e "${YELLOW}⚠️  canonicalize_json.py not found at ${CANONICALIZE_JSON_SCRIPT}${NC}" >&2
+        echo -e "${YELLOW}⚠️  JSON will not be canonicalized (RFC 8785 compliance not guaranteed)${NC}" >&2
+        return 0  # Non-fatal, continue without canonicalization
+    fi
+    
+    # Validate input JSON first
+    if ! jq empty "$input_file" 2>/dev/null; then
+        echo -e "${RED}❌ Invalid JSON in input file: ${input_file}${NC}" >&2
+        return 1
+    fi
+    
+    # Create temporary file for canonicalized output
+    local temp_canonical=$(mktemp)
+    
+    # Canonicalize JSON
+    if python3 "$CANONICALIZE_JSON_SCRIPT" "$input_file" "$temp_canonical" 2>/dev/null; then
+        if [[ -f "$temp_canonical" ]] && [[ -s "$temp_canonical" ]]; then
+            # Validate canonicalized output
+            if jq empty "$temp_canonical" 2>/dev/null; then
+                mv "$temp_canonical" "$output_file"
+                echo -e "${GREEN}✅ JSON canonicalized (RFC 8785)${NC}" >&2
+                return 0
+            else
+                echo -e "${RED}❌ Canonicalization produced invalid JSON${NC}" >&2
+                rm -f "$temp_canonical"
+                return 1
+            fi
+        else
+            echo -e "${RED}❌ Canonicalization produced empty output${NC}" >&2
+            rm -f "$temp_canonical"
+            return 1
+        fi
+    else
+        echo -e "${YELLOW}⚠️  Failed to canonicalize JSON, using original${NC}" >&2
+        rm -f "$temp_canonical"
+        return 0  # Non-fatal, continue with original
+    fi
+}
+
 ################################################################################
 # Helper: Get user's Nostr keys from .secret.nostr
 ################################################################################
@@ -174,6 +230,12 @@ create_initial_did() {
         echo "" >&2
         rm -f "$temp_template"
         return 1
+    fi
+    
+    # Canonicalize JSON according to RFC 8785 (JCS) before returning
+    # This ensures consistent signatures when the DID is published to Nostr
+    if ! canonicalize_json_file "$temp_template" "$temp_template" 2>/dev/null; then
+        echo -e "${YELLOW}⚠️  Failed to canonicalize initial DID, continuing with original${NC}" >&2
     fi
     
     # Output the processed template (JSON only, no debug messages)
@@ -706,6 +768,13 @@ update_did_document() {
     
     # Cleanup PlantNet metadata files if they exist
     [[ -n "$PLANTNET_METADATA_FILE" ]] && rm -f "$PLANTNET_METADATA_FILE" "$latest_detection_file"
+    
+    # Canonicalize JSON according to RFC 8785 (JCS) before validation and publication
+    # This ensures consistent signatures when the DID is published to Nostr
+    echo -e "${BLUE}🔧 Canonicalizing DID JSON (RFC 8785)...${NC}"
+    if ! canonicalize_json_file "$did_updated" "$did_updated" 2>/dev/null; then
+        echo -e "${YELLOW}⚠️  Failed to canonicalize DID, continuing with original${NC}" >&2
+    fi
     
     # Step 3: Validate updated DID
     echo -e "\n${CYAN}Step 3/6: Validating DID document...${NC}"

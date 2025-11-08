@@ -21,6 +21,33 @@ from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass
 from enum import Enum
 
+def canonicalize_json(data: Any) -> str:
+    """
+    Canonicalize JSON according to RFC 8785 (JCS - JSON Canonicalization Scheme).
+    
+    This ensures that the same JSON data always produces the same string representation,
+    which is critical for cryptographic signatures. The output is:
+    - Keys sorted lexicographically
+    - No whitespace between tokens
+    - No trailing commas
+    - Consistent number formatting
+    
+    Args:
+        data: Python object to serialize (dict, list, etc.)
+    
+    Returns:
+        Canonical JSON string ready for signing
+    
+    Reference: https://datatracker.ietf.org/doc/html/rfc8785
+    """
+    return json.dumps(
+        data,
+        sort_keys=True,           # Lexicographic key ordering
+        separators=(',', ':'),   # No whitespace (compact)
+        ensure_ascii=False,      # Preserve Unicode
+        allow_nan=False          # Reject NaN/Infinity (not in JSON spec)
+    )
+
 class ComplianceStatus(Enum):
     """Environmental compliance status."""
     COMPLIANT = "compliant"
@@ -1136,7 +1163,8 @@ Join the meeting space to collaborate on ecological verification.
             biodiversity_stats = self._get_biodiversity_stats(lat, lon)
             
             # Prepare tags for kind 30312 (replaceable event with 'd' tag)
-            tags_json = json.dumps([
+            # CRITICAL: Use canonical JSON (RFC 8785) for signature consistency
+            tags_json = canonicalize_json([
                 ["d", f"ore-space-{lat}-{lon}"],  # Unique identifier for replaceable event
                 ["g", f"{lat},{lon}"],  # Geolocation tag
                 ["t", "ORE"],
@@ -1226,7 +1254,8 @@ This verification meeting is part of the UPlanet ORE system for ecological real 
 #ORE #UPlanet #EnvironmentalVerification"""
             
             # Prepare tags for kind 30313
-            tags_json = json.dumps([
+            # CRITICAL: Use canonical JSON (RFC 8785) for signature consistency
+            tags_json = canonicalize_json([
                 ["d", meeting_id],  # Unique identifier
                 ["a", room_a_tag],  # Reference to meeting space (kind 30312)
                 ["g", f"{lat},{lon}"],  # Geolocation
