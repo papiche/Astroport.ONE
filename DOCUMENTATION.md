@@ -50,7 +50,7 @@
 ### Tools & Utilities
 * **[Keygen Documentation](tools/keygen.readme.md)** - Key generation utilities
 * **[Jaklis Tools](tools/jaklis/README.md)** - Jaklis integration tools
-* **[uMARKET](tools/README_uMARKET.md)** - Market utilities
+* **[🛒 uMARKET](docs/uMARKET.md)** - **Decentralized Marketplace System** - Système de marketplace décentralisé avec tag `#market`. ⚠️ **À refondre** : Intégration ORE UMAP requise. [TODO](docs/uMARKET.todo.md)
 
 ## 🔧 Advanced Topics
 
@@ -66,10 +66,20 @@
 * **[WWW Interface](WWW/Readme.md)** - Web interface documentation
 * **[Runtime TW](RUNTIME/TW/readme.md)** - Runtime TiddlyWiki system
 
+### Project Management & Tracking
+* **[📋 TODO System](docs/TODO_SYSTEM.md)** - **Daily Progress Tracking** - Système automatisé de suivi quotidien des avancées sur tous les systèmes UPlanet (ECONOMY, DID, ORE, ORACLE, Nostr Tube, Cookie & N8N, PlantNet, CoinFlip, uMARKET). Utilise l'analyse Git et la synthèse IA via `todo.sh` pour générer des rapports quotidiens et publier automatiquement sur le mur du CAPTAIN.
+* **[📋 TODO.md](TODO.md)** - Fichier principal de suivi des avancées quotidiennes (mis à jour manuellement)
+
 ## 🎮 Specialized Systems
 
 ### Gaming & Social
 * **[321 DU Game](321_DU.md)** - The DU Game documentation
+* **[🎲 CoinFlip](docs/COINFLIP.md)** - **St. Petersburg Paradox Game** - Jeu de pile ou face décentralisé avec paiements ZEN automatiques. Features include:
+  * Paradoxe de Saint-Pétersbourg (gains progressifs)
+  * Authentification MULTIPASS via NOSTR
+  * Paiements automatiques (gains et pertes)
+  * Mode Entraînement et Mode Réel
+  * Intégration API uSPOT
 
 ### Media & Content
 * **[🎬 Nostr Tube](docs/README.NostrTube.md)** - Decentralized video platform with theater mode, playlists, and N² recommendations

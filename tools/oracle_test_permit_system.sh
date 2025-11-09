@@ -1019,3 +1019,367 @@ trap cleanup EXIT
 # Exécuter le script principal
 main "$@"
 
+
+
+show_summary() {
+    section "TEST SUMMARY"
+    
+    echo -e "${CYAN}Tests executed: ${TESTS_TOTAL}${NC}"
+    echo -e "${GREEN}Tests passed: ${TESTS_PASSED}${NC}"
+    echo -e "${RED}Tests failed: ${TESTS_FAILED}${NC}"
+    echo ""
+    
+    local success_rate=0
+    if [ $TESTS_TOTAL -gt 0 ]; then
+        success_rate=$((TESTS_PASSED * 100 / TESTS_TOTAL))
+    fi
+    
+    echo -e "${CYAN}Success rate: ${success_rate}%${NC}"
+    echo ""
+    
+    if [ $TESTS_FAILED -eq 0 ]; then
+        echo -e "${GREEN}🎉 ALL TESTS PASSED!${NC}"
+        return 0
+    else
+        echo -e "${RED}⚠️  SOME TESTS FAILED${NC}"
+        return 1
+    fi
+}
+
+################################################################################
+# Menu principal
+################################################################################
+
+show_menu() {
+    echo -e "${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║         TEST DU SYSTÈME DE GESTION DES PERMIS ORACLE          ║${NC}"
+    echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo "1. 🧪 Run ALL tests (automated)"
+    echo "2. 📋 Test: Permit definitions"
+    echo "3. 📝 Test: Permit request"
+    echo "4. ✍️  Test: Attestations"
+    echo "5. 📊 Test: Status verification"
+    echo "6. 📑 Test: Permit listing"
+    echo "7. 🎫 Test: Credential retrieval"
+    echo "8. 🛠️  Test: Helper scripts"
+    echo "9. 🔧 Test: Oracle system"
+    echo "10. 📡 Test: NOSTR events (strfry)"
+    echo "11. 🌐 Test: API NOSTR fetch"
+    echo "12. 💰 Test: PERMIT payment"
+    echo "13. 🚀 Test: WoTx2 (auto-proclaimed professions)"
+    echo "14. 🚪 Exit"
+    echo ""
+    read -p "Choose an option (1-14): " choice
+    
+    case $choice in
+        1)
+            run_all_tests
+            ;;
+        2)
+            test_permit_definitions
+            ;;
+        3)
+            test_permit_request
+            ;;
+        4)
+            test_permit_attestations
+            ;;
+        5)
+            test_permit_status
+            ;;
+        6)
+            test_permit_list
+            ;;
+        7)
+            test_credential_retrieval
+            ;;
+        8)
+            test_helper_scripts
+            ;;
+        9)
+            test_oracle_system
+            ;;
+        10)
+            test_nostr_events
+            ;;
+        11)
+            test_api_nostr_fetch
+            ;;
+        12)
+            test_permit_virement
+            ;;
+        13)
+            test_wotx2_system
+            ;;
+        14)
+            echo -e "${GREEN}👋 Goodbye!${NC}"
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}❌ Invalid option${NC}"
+            ;;
+    esac
+}
+
+run_all_tests() {
+    echo -e "${MAGENTA}╔════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${MAGENTA}║               RUNNING ALL TESTS                                ║${NC}"
+    echo -e "${MAGENTA}║         (Official Permits + WoTx2 Auto-Proclaimed)            ║${NC}"
+    echo -e "${MAGENTA}╚════════════════════════════════════════════════════════════════╝${NC}"
+    
+    test_permit_definitions
+    test_permit_request
+    test_permit_attestations
+    test_permit_status
+    test_permit_list
+    test_credential_retrieval
+    test_helper_scripts
+    test_oracle_system
+    test_nostr_events
+    test_api_nostr_fetch
+    test_wotx2_system
+    
+    # Test du virement PERMIT (optionnel)
+    echo ""
+    echo -e "${YELLOW}⚠️  PERMIT payment test requires blockchain configuration${NC}"
+    test_permit_virement
+    
+    show_summary
+}
+
+################################################################################
+# Point d'entrée principal
+################################################################################
+
+main() {
+    echo -e "${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║    🧪 TEST SUITE - ORACLE PERMIT MANAGEMENT SYSTEM            ║${NC}"
+    echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    
+    # Vérifier les dépendances
+    echo -e "${YELLOW}🔍 Checking dependencies...${NC}"
+    check_command "curl"
+    check_command "jq"
+    check_command "openssl"
+    check_command "python3"
+    echo -e "${GREEN}✅ All required dependencies are installed${NC}"
+    echo ""
+    
+    # Vérifier l'API
+    check_api
+    echo ""
+    
+    # Vérifier les outils NOSTR
+    check_nostr_tools
+    echo ""
+    
+    # Si des arguments sont fournis, exécuter tous les tests
+    if [ "$1" = "--all" ] || [ "$1" = "-a" ]; then
+        run_all_tests
+        exit $?
+    fi
+    
+    # Sinon, afficher le menu
+    while true; do
+        show_menu
+        echo ""
+        read -p "Press Enter to continue..."
+        clear
+    done
+}
+
+# Nettoyer les fichiers temporaires à la sortie
+cleanup() {
+    rm -f /tmp/test_permit_request_id
+    rm -f /tmp/test_permit_npub
+}
+
+trap cleanup EXIT
+
+# Exécuter le script principal
+main "$@"
+
+
+
+show_summary() {
+    section "TEST SUMMARY"
+    
+    echo -e "${CYAN}Tests executed: ${TESTS_TOTAL}${NC}"
+    echo -e "${GREEN}Tests passed: ${TESTS_PASSED}${NC}"
+    echo -e "${RED}Tests failed: ${TESTS_FAILED}${NC}"
+    echo ""
+    
+    local success_rate=0
+    if [ $TESTS_TOTAL -gt 0 ]; then
+        success_rate=$((TESTS_PASSED * 100 / TESTS_TOTAL))
+    fi
+    
+    echo -e "${CYAN}Success rate: ${success_rate}%${NC}"
+    echo ""
+    
+    if [ $TESTS_FAILED -eq 0 ]; then
+        echo -e "${GREEN}🎉 ALL TESTS PASSED!${NC}"
+        return 0
+    else
+        echo -e "${RED}⚠️  SOME TESTS FAILED${NC}"
+        return 1
+    fi
+}
+
+################################################################################
+# Menu principal
+################################################################################
+
+show_menu() {
+    echo -e "${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║         TEST DU SYSTÈME DE GESTION DES PERMIS ORACLE          ║${NC}"
+    echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo "1. 🧪 Run ALL tests (automated)"
+    echo "2. 📋 Test: Permit definitions"
+    echo "3. 📝 Test: Permit request"
+    echo "4. ✍️  Test: Attestations"
+    echo "5. 📊 Test: Status verification"
+    echo "6. 📑 Test: Permit listing"
+    echo "7. 🎫 Test: Credential retrieval"
+    echo "8. 🛠️  Test: Helper scripts"
+    echo "9. 🔧 Test: Oracle system"
+    echo "10. 📡 Test: NOSTR events (strfry)"
+    echo "11. 🌐 Test: API NOSTR fetch"
+    echo "12. 💰 Test: PERMIT payment"
+    echo "13. 🚀 Test: WoTx2 (auto-proclaimed professions)"
+    echo "14. 🚪 Exit"
+    echo ""
+    read -p "Choose an option (1-14): " choice
+    
+    case $choice in
+        1)
+            run_all_tests
+            ;;
+        2)
+            test_permit_definitions
+            ;;
+        3)
+            test_permit_request
+            ;;
+        4)
+            test_permit_attestations
+            ;;
+        5)
+            test_permit_status
+            ;;
+        6)
+            test_permit_list
+            ;;
+        7)
+            test_credential_retrieval
+            ;;
+        8)
+            test_helper_scripts
+            ;;
+        9)
+            test_oracle_system
+            ;;
+        10)
+            test_nostr_events
+            ;;
+        11)
+            test_api_nostr_fetch
+            ;;
+        12)
+            test_permit_virement
+            ;;
+        13)
+            test_wotx2_system
+            ;;
+        14)
+            echo -e "${GREEN}👋 Goodbye!${NC}"
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}❌ Invalid option${NC}"
+            ;;
+    esac
+}
+
+run_all_tests() {
+    echo -e "${MAGENTA}╔════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${MAGENTA}║               RUNNING ALL TESTS                                ║${NC}"
+    echo -e "${MAGENTA}║         (Official Permits + WoTx2 Auto-Proclaimed)            ║${NC}"
+    echo -e "${MAGENTA}╚════════════════════════════════════════════════════════════════╝${NC}"
+    
+    test_permit_definitions
+    test_permit_request
+    test_permit_attestations
+    test_permit_status
+    test_permit_list
+    test_credential_retrieval
+    test_helper_scripts
+    test_oracle_system
+    test_nostr_events
+    test_api_nostr_fetch
+    test_wotx2_system
+    
+    # Test du virement PERMIT (optionnel)
+    echo ""
+    echo -e "${YELLOW}⚠️  PERMIT payment test requires blockchain configuration${NC}"
+    test_permit_virement
+    
+    show_summary
+}
+
+################################################################################
+# Point d'entrée principal
+################################################################################
+
+main() {
+    echo -e "${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║    🧪 TEST SUITE - ORACLE PERMIT MANAGEMENT SYSTEM            ║${NC}"
+    echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    
+    # Vérifier les dépendances
+    echo -e "${YELLOW}🔍 Checking dependencies...${NC}"
+    check_command "curl"
+    check_command "jq"
+    check_command "openssl"
+    check_command "python3"
+    echo -e "${GREEN}✅ All required dependencies are installed${NC}"
+    echo ""
+    
+    # Vérifier l'API
+    check_api
+    echo ""
+    
+    # Vérifier les outils NOSTR
+    check_nostr_tools
+    echo ""
+    
+    # Si des arguments sont fournis, exécuter tous les tests
+    if [ "$1" = "--all" ] || [ "$1" = "-a" ]; then
+        run_all_tests
+        exit $?
+    fi
+    
+    # Sinon, afficher le menu
+    while true; do
+        show_menu
+        echo ""
+        read -p "Press Enter to continue..."
+        clear
+    done
+}
+
+# Nettoyer les fichiers temporaires à la sortie
+cleanup() {
+    rm -f /tmp/test_permit_request_id
+    rm -f /tmp/test_permit_npub
+}
+
+trap cleanup EXIT
+
+# Exécuter le script principal
+main "$@"
+

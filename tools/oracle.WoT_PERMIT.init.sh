@@ -721,3 +721,109 @@ main() {
 # Run main function
 main "$@"
 
+
+    echo ""
+    
+    # Step 1: Create permit requests (30501) for all members
+    log_info "Step 1: Creating permit requests (30501)"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    
+    local request_ids=()
+    
+    for email in "${members[@]}"; do
+        local request_id=$(create_permit_request "$permit_id" "$email" "")
+        
+        if [[ $? -eq 0 ]] && [[ -n "$request_id" ]]; then
+            request_ids+=("$request_id")
+        else
+            log_error "Failed to create request for: $email"
+            exit 1
+        fi
+        
+        sleep 1
+    done
+    
+    echo ""
+    log_success "All permit requests created: ${#request_ids[@]}"
+    sleep 2
+    
+    # Step 2: Create cross-attestations (30502)
+    echo ""
+    log_info "Step 2: Creating cross-attestations (30502)"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    
+    create_cross_attestations "$permit_id" "${members[@]}"
+    
+    echo ""
+    log_success "Cross-attestations completed"
+    sleep 2
+    
+    # Step 3: Wait for credentials to be issued (30503)
+    echo ""
+    log_info "Step 3: Waiting for credentials to be issued (30503)"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    
+    wait_for_credentials "$permit_id" "${members[@]}"
+    
+    # Display summary
+    display_summary "$permit_id" "${members[@]}"
+    
+    log_info "View the initialized WoT at: ${uSPOT}/oracle"
+}
+
+# Run main function
+main "$@"
+
+
+    echo ""
+    
+    # Step 1: Create permit requests (30501) for all members
+    log_info "Step 1: Creating permit requests (30501)"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    
+    local request_ids=()
+    
+    for email in "${members[@]}"; do
+        local request_id=$(create_permit_request "$permit_id" "$email" "")
+        
+        if [[ $? -eq 0 ]] && [[ -n "$request_id" ]]; then
+            request_ids+=("$request_id")
+        else
+            log_error "Failed to create request for: $email"
+            exit 1
+        fi
+        
+        sleep 1
+    done
+    
+    echo ""
+    log_success "All permit requests created: ${#request_ids[@]}"
+    sleep 2
+    
+    # Step 2: Create cross-attestations (30502)
+    echo ""
+    log_info "Step 2: Creating cross-attestations (30502)"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    
+    create_cross_attestations "$permit_id" "${members[@]}"
+    
+    echo ""
+    log_success "Cross-attestations completed"
+    sleep 2
+    
+    # Step 3: Wait for credentials to be issued (30503)
+    echo ""
+    log_info "Step 3: Waiting for credentials to be issued (30503)"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    
+    wait_for_credentials "$permit_id" "${members[@]}"
+    
+    # Display summary
+    display_summary "$permit_id" "${members[@]}"
+    
+    log_info "View the initialized WoT at: ${uSPOT}/oracle"
+}
+
+# Run main function
+main "$@"
+

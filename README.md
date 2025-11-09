@@ -118,6 +118,7 @@ For those who want to dive deeper into the nuts and bolts of our system.
 *   **[🤖 IA Bot System](IA/README.md)**: **UPlanet AI Assistant** - Complete guide to the 12-slot memory system, AI generation capabilities, and connection management architecture for the decentralized AI ecosystem.
 *   **[🔗 IA Connection Management](IA/connection_management_diagram.md)**: **Technical deep-dive** into service connection management, IPFS P2P migration, and the DRAGON_p2p_ssh.sh discovery system.
 *   **[🍪 Cookie Management System](IA/COOKIE_SYSTEM.md)**: **Universal Cookie Management** - Secure cookie upload and storage system for authenticated web scraping. Supports single-domain cookies, automatic scraper execution, and extensible domain-based framework.
+*   **[📋 TODO System](docs/TODO_SYSTEM.md)**: **Daily Progress Tracking** - Automated system for tracking daily progress across all UPlanet systems (ECONOMY, DID, ORE, ORACLE, Nostr Tube, Cookie & N8N, PlantNet, CoinFlip, uMARKET). Uses Git analysis and AI summarization to generate daily reports.
 *   **[GitBook Guide](https://astroport-1.gitbook.io/astroport.one/)**: User-friendly documentation and tutorials.
 *   **[📋 Le Livre Blanc Astroport.ONE](BOOKS/Le%20Livre%20Blanc%20Astroport.ONE%20_%20De%20la%20Souveraineté%20Numérique%20à%20la%20Régénération%20Écologique.md)**: The comprehensive white paper detailing our vision from digital sovereignty to ecological regeneration (French).
 *   **[🌍 UPlanet: Votre Guide pour Entrer dans le Nouveau Monde](BOOKS/UPlanet%20_%20Votre%20Guide%20pour%20Entrer%20dans%20le%20Nouveau%20Monde.md)**: Your complete guide to entering the UPlanet ecosystem (French).
@@ -159,4 +160,6 @@ UPlanet operates as a **distributed swarm intelligence** where each Station cont
 
 **Ready to monetize your GPU?** [Install Astroport.ONE](https://install.astroport.com) and join the swarm that's redefining AI ownership.
 
+---
+---
 ---

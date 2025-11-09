@@ -14,10 +14,14 @@ NC='\033[0m' # No Color
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$SCRIPT_DIR"
+source $SCRIPT_DIR/tools/my.sh
+
+
 TODO_TODAY="$REPO_ROOT/TODO.today.md"
 TODO_MAIN="$REPO_ROOT/TODO.md"
 QUESTION_PY="$REPO_ROOT/IA/question.py"
 GIT_LOG_FILE="$REPO_ROOT/.git_changes_24h.txt"
+
 
 # Vérifier que nous sommes dans un dépôt Git
 if ! git rev-parse --git-dir > /dev/null 2>&1; then
@@ -63,6 +67,7 @@ analyze_changes_by_system() {
         ["Cookie"]="IA/COOKIE_SYSTEM.md|IA/cookie_workflow_engine.sh|UPassport/templates/cookie.html"
         ["N8N"]="docs/N8N.md|docs/N8N.todo.md|UPassport/templates/n8n.html|nostr-nips/101-cookie-workflow-extension.md"
         ["PlantNet"]="docs/PLANTNET_ORE.md|IA/plantnet_recognition.py|IA/plantnet_ore_integration.py|UPlanet/earth/plantnet.html"
+        ["CoinFlip"]="docs/COINFLIP.md|UPlanet/earth/coinflip/index.html|UPlanet/earth/coinflip/README.md|UPassport/zen_send.sh"
     )
     
     echo -e "${BLUE}🔍 Analyse des modifications par système...${NC}"
@@ -122,17 +127,40 @@ main() {
         exit 1
     fi
     
+    # Vérifier et démarrer Ollama si nécessaire
+    local OLLAMA_SCRIPT="$HOME/.zen/Astroport.ONE/IA/ollama.me.sh"
+    if [ -f "$OLLAMA_SCRIPT" ]; then
+        echo -e "${BLUE}🔧 Vérification/démarrage d'Ollama...${NC}"
+        bash "$OLLAMA_SCRIPT" >/dev/null 2>&1 || {
+            echo -e "${YELLOW}⚠️  Ollama non disponible, génération d'un résumé basique${NC}"
+            generate_basic_summary
+            return
+        }
+        # Attendre un peu que Ollama soit prêt
+        sleep 2
+    else
+        echo -e "${YELLOW}⚠️  Script ollama.me.sh introuvable, tentative d'appel direct à question.py${NC}"
+    fi
+    
     # Générer le prompt
     local prompt=$(generate_ai_prompt)
+    local prompt_file="$REPO_ROOT/.todo_prompt_$$.txt"
+    
+    # Écrire le prompt dans un fichier temporaire pour éviter les problèmes avec les sauts de ligne
+    echo "$prompt" > "$prompt_file"
     
     echo -e "${BLUE}🤖 Analyse des modifications avec question.py...${NC}"
     
-    # Appeler question.py avec le prompt
-    local ai_summary=$(echo "$prompt" | python3 "$QUESTION_PY" --model "gemma3:latest" 2>/dev/null || {
+    # Appeler question.py avec le prompt depuis le fichier
+    local ai_summary=$(python3 "$QUESTION_PY" --model "gemma3:latest" "$(cat "$prompt_file")" 2>/dev/null || {
         echo -e "${YELLOW}⚠️  Erreur lors de l'appel à question.py, génération d'un résumé basique${NC}"
+        rm -f "$prompt_file"
         generate_basic_summary
         return
     })
+    
+    # Nettoyer le fichier temporaire
+    rm -f "$prompt_file"
     
     # Générer TODO.today.md
     cat > "$TODO_TODAY" <<EOF
@@ -173,8 +201,176 @@ EOF
     head -30 "$TODO_TODAY"
     echo -e "\n${GREEN}💡 Utilisez votre éditeur pour ouvrir $TODO_TODAY et intégrer les informations dans TODO.md${NC}"
     
+    # Publier le rapport sur le mur du CAPTAIN
+    publish_todo_report
+    
     # Nettoyer le fichier temporaire
     rm -f "$GIT_LOG_FILE"
+}
+
+# Fonction pour publier le rapport quotidien sur le mur du CAPTAIN
+publish_todo_report() {
+    # Vérifier que CAPTAINEMAIL est défini
+    if [[ -z "$CAPTAINEMAIL" ]]; then
+        echo -e "${YELLOW}⚠️  CAPTAINEMAIL non défini, publication du rapport annulée${NC}"
+        return 1
+    fi
+    
+    # Vérifier que le fichier TODO existe
+    if [[ ! -f "$TODO_TODAY" ]]; then
+        echo -e "${YELLOW}⚠️  Fichier TODO.today.md introuvable, publication annulée${NC}"
+        return 1
+    fi
+    
+    # Vérifier que la clé du CAPTAIN existe
+    local CAPTAIN_KEYFILE="$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
+    if [[ ! -f "$CAPTAIN_KEYFILE" ]]; then
+        echo -e "${YELLOW}⚠️  Clé du CAPTAIN introuvable à $CAPTAIN_KEYFILE, publication annulée${NC}"
+        return 1
+    fi
+    
+    echo -e "${BLUE}📤 Publication du rapport quotidien sur le mur du CAPTAIN...${NC}"
+    
+    # Lire le contenu du rapport
+    local report_content=$(cat "$TODO_TODAY")
+    
+    # Extraire le titre (première ligne après le #)
+    local title=$(echo "$report_content" | head -1 | sed 's/^# //' | sed 's/^## //')
+    [[ -z "$title" ]] && title="TODO Quotidien - $(date +"%Y-%m-%d")"
+    
+    # Générer un résumé concis en comparant TODO.md avec le rapport
+    echo -e "${BLUE}🤖 Génération d'un résumé concis via IA...${NC}"
+    
+    # Vérifier que TODO.md existe
+    local todo_main_content=""
+    if [[ -f "$TODO_MAIN" ]]; then
+        todo_main_content=$(cat "$TODO_MAIN")
+    else
+        todo_main_content="TODO.md n'existe pas encore."
+    fi
+    
+    # Créer un prompt pour question.py
+    local prompt_file="$REPO_ROOT/.todo_prompt_concise_$$.txt"
+    cat > "$prompt_file" <<EOF
+Compare le fichier TODO.md principal avec le rapport quotidien généré et génère un résumé concis en français qui :
+
+1. Identifie ce qui a été fait (tâches complétées, systèmes modifiés)
+2. Identifie ce qu'il reste à faire (tâches en cours, prochaines étapes)
+3. Met en évidence les avancées importantes
+4. Suggère les priorités pour la suite
+
+Format de réponse : Markdown structuré, concis (maximum 500 mots), avec des sections claires.
+
+TODO.md principal :
+$todo_main_content
+
+---
+
+Rapport quotidien (modifications des dernières 24h) :
+$report_content
+EOF
+    
+    # Appeler question.py pour générer le résumé concis
+    local concise_summary=$(python3 "$QUESTION_PY" --model "gemma3:latest" "$(cat "$prompt_file")" 2>/dev/null || {
+        echo -e "${YELLOW}⚠️  Erreur lors de la génération du résumé concis, utilisation du rapport complet${NC}"
+        echo "$report_content"
+    })
+    
+    # Nettoyer le fichier temporaire
+    rm -f "$prompt_file"
+    
+    # Si le résumé concis est vide ou contient une erreur, utiliser le rapport complet
+    if [[ -z "$concise_summary" ]] || echo "$concise_summary" | grep -qi "error\|failed\|erreur"; then
+        echo -e "${YELLOW}⚠️  Résumé concis non généré, utilisation du rapport complet${NC}"
+        concise_summary="$report_content"
+    fi
+    
+    # Extraire un résumé court pour les métadonnées (première section après "Résumé")
+    local summary=$(echo "$concise_summary" | sed -n '/## 📊 Résumé/,/^---/p' | head -20 | tail -n +2 | sed '/^---/d' | head -10)
+    [[ -z "$summary" ]] && summary=$(echo "$concise_summary" | head -5 | tail -1)
+    [[ -z "$summary" ]] && summary="Rapport quotidien des modifications Git des dernières 24h"
+    
+    # Nettoyer le résumé (limiter à 200 caractères)
+    summary=$(echo "$summary" | tr '\n' ' ' | sed 's/  */ /g' | head -c 200)
+    
+    # Préparer le contenu de l'article (markdown) avec le résumé concis
+    local article_content="$concise_summary"
+    
+    # Calculer la date d'expiration (5 jours = 432000 secondes)
+    local expiration_seconds=432000
+    local expiration_timestamp=$(date -d "+5 days" +%s 2>/dev/null || date -v+5d +%s 2>/dev/null || echo $(($(date +%s) + expiration_seconds)))
+    
+    # Créer les tags pour l'article de blog (kind 30023)
+    # Format: [["d", "unique-id"], ["title", "..."], ["summary", "..."], ["published_at", "timestamp"], ["expiration", "timestamp"], ["t", "todo"], ...]
+    local d_tag="todo_$(date +%Y%m%d)_$(echo -n "$title" | md5sum | cut -d' ' -f1 | head -c 8)"
+    local published_at=$(date +%s)
+    
+    # Créer un fichier JSON temporaire pour les tags
+    local temp_tags_file="$REPO_ROOT/.todo_tags_$$.json"
+    cat > "$temp_tags_file" <<EOF
+[
+  ["d", "$d_tag"],
+  ["title", "$title"],
+  ["summary", "$summary"],
+  ["published_at", "$published_at"],
+  ["expiration", "$expiration_timestamp"],
+  ["t", "todo"],
+  ["t", "rapport"],
+  ["t", "quotidien"],
+  ["t", "git"],
+  ["t", "UPlanet"]
+]
+EOF
+    
+    # Lire les tags depuis le fichier JSON
+    local tags_json=$(cat "$temp_tags_file")
+    
+    # Vérifier que nostr_send_note.py existe
+    local NOSTR_SEND_SCRIPT="$REPO_ROOT/tools/nostr_send_note.py"
+    if [[ ! -f "$NOSTR_SEND_SCRIPT" ]]; then
+        echo -e "${YELLOW}⚠️  nostr_send_note.py introuvable, publication annulée${NC}"
+        rm -f "$temp_tags_file"
+        return 1
+    fi
+    
+    # Publier l'article avec kind 30023 (Long-form Content)
+    echo -e "${BLUE}📝 Titre: $title${NC}"
+    echo -e "${BLUE}📄 Résumé: $summary${NC}"
+    echo -e "${BLUE}⏰ Expiration: $(date -d "@$expiration_timestamp" +"%Y-%m-%d %H:%M:%S" 2>/dev/null || date -r "$expiration_timestamp" +"%Y-%m-%d %H:%M:%S" 2>/dev/null)${NC}"
+    
+    local publish_result=$(python3 "$NOSTR_SEND_SCRIPT" \
+        --keyfile "$CAPTAIN_KEYFILE" \
+        --content "$article_content" \
+        --tags "$tags_json" \
+        --kind 30023 \
+        --ephemeral "$expiration_seconds" \
+        --relays "$myRELAY" \
+        --json 2>&1)
+    
+    local publish_exit_code=$?
+    
+    if [[ $publish_exit_code -eq 0 ]]; then
+        # Parser la réponse JSON
+        local event_id=$(echo "$publish_result" | jq -r '.event_id // empty' 2>/dev/null)
+        local relays_success=$(echo "$publish_result" | jq -r '.relays_success // 0' 2>/dev/null)
+        
+        if [[ -n "$event_id" && "$relays_success" -gt 0 ]]; then
+            echo -e "${GREEN}✅ Rapport publié avec succès sur le mur du CAPTAIN${NC}"
+            echo -e "${GREEN}   Event ID: ${event_id:0:16}...${NC}"
+            echo -e "${GREEN}   Relays: $relays_success${NC}"
+            echo -e "${GREEN}   Expiration: 5 jours${NC}"
+        else
+            echo -e "${YELLOW}⚠️  Publication avec avertissements${NC}"
+            echo -e "${YELLOW}   Réponse: $publish_result${NC}"
+        fi
+    else
+        echo -e "${RED}❌ Échec de la publication${NC}"
+        echo -e "${RED}   Code de sortie: $publish_exit_code${NC}"
+        echo -e "${RED}   Erreur: $publish_result${NC}"
+    fi
+    
+    # Nettoyer le fichier temporaire
+    rm -f "$temp_tags_file"
 }
 
 # Fonction de fallback si question.py échoue
@@ -214,6 +410,9 @@ $(git log --since="24 hours ago" --pretty=format:"- **%ad** : %s (%an)" --date=s
 
 **Note** : Ce fichier est généré automatiquement par \`todo.sh\`. Analysez les modifications et intégrez les informations pertinentes dans TODO.md manuellement.
 EOF
+    
+    # Publier le rapport sur le mur du CAPTAIN même en mode fallback
+    publish_todo_report
 }
 
 # Exécuter le script

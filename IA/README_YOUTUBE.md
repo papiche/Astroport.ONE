@@ -513,3 +513,13 @@ If you encounter issues:
 
 For more help, contact: support@qo-op.com
 
+
+4. Browser console: Check for JavaScript errors in geographic calculations
+
+For more help, contact: support@qo-op.com
+
+
+4. Browser console: Check for JavaScript errors in geographic calculations
+
+For more help, contact: support@qo-op.com
+
