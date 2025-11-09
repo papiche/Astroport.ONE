@@ -164,6 +164,7 @@ Optional arguments:
   --longitude <lon>         Geographic longitude (default: 0.00)
   --channel <name>          Channel name/email
   --source-type <type>      Source type: film, serie, youtube, webcam (auto-detected in --auto mode)
+  --youtube-url <url>       YouTube URL (optional, auto-sets --source-type youtube if not set)
   --relays <urls>           Comma-separated relay URLs (default: local+copylaradio)
   --json                    Output JSON format
   --help                    Show this help message
@@ -253,6 +254,12 @@ while [[ $# -gt 0 ]]; do
             ;;
         --source-type)
             SOURCE_TYPE="$2"
+            shift 2
+            ;;
+        --youtube-url)
+            YOUTUBE_URL="$2"
+            # Auto-set source type to youtube if not already set
+            [[ -z "$SOURCE_TYPE" ]] && SOURCE_TYPE="youtube"
             shift 2
             ;;
         --relays)

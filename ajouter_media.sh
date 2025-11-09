@@ -992,6 +992,15 @@ fi
             PUBLISH_CMD+=("--description" "$VIDEO_DESC")
         fi
         
+        # Add source type based on category (film or serie)
+        if [[ "$CAT" == "film" ]]; then
+            PUBLISH_CMD+=("--source-type" "film")
+            echo "📽️ Source type: film"
+        elif [[ "$CAT" == "serie" ]]; then
+            PUBLISH_CMD+=("--source-type" "serie")
+            echo "📺 Source type: serie"
+        fi
+        
         PUBLISH_CMD+=("--channel" "$PLAYER" "--json")
         
         # Execute publish script
@@ -1158,6 +1167,10 @@ fi
         if [[ -n "$VIDEO_DESC" ]]; then
             PUBLISH_CMD+=("--description" "$VIDEO_DESC")
         fi
+        
+        # Add source type: webcam for personal videos
+        PUBLISH_CMD+=("--source-type" "webcam")
+        echo "📹 Source type: webcam (personal video)"
         
         PUBLISH_CMD+=("--channel" "$PLAYER" "--json")
         

@@ -213,6 +213,7 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
     file_hash = ""     # NEW: File hash for provenance tracking
     upload_chain = ""  # NEW: Upload chain for provenance tracking (comma-separated pubkeys)
     source_type = "webcam"   # NEW: Source type (film, serie, youtube, webcam) - default: webcam
+    source_type_explicit = False  # Track if source_type was explicitly set from ["i", "source:*"] tag
     
     # Parse tags for standard NIP-71 fields first
     for tag in tags:
@@ -248,7 +249,9 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
                 upload_chain = tag_value
             elif tag_type == 'i' and tag_value.startswith('source:'):
                 # Source type tag (source:film, source:serie, source:youtube, source:webcam)
+                # This has PRIORITY - don't override with topic tags
                 source_type = tag_value.replace('source:', '')
+                source_type_explicit = True  # Mark as explicitly set
             elif tag_type == 'm' and 'video' in tag_value:
                 # Media type confirmed as video
                 pass
@@ -497,10 +500,10 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
     content = event.get('content', '').strip()
     
     # Determine source type from tags (source:film, source:serie, source:youtube, source:webcam)
-    # Also check topic tags (t) for provenance indicators
-    # Default is already set to 'webcam' - only override if explicitly specified
-    if source_type == "webcam":  # Only check if still at default value
-        # Check topic tags for provenance
+    # The tag ["i", "source:*"] has PRIORITY - if present, use it and don't override
+    # Only use topic tags as fallback if source_type was NOT explicitly set
+    if not source_type_explicit and source_type == "webcam":  # Only check if still at default value (no explicit source: tag found)
+        # Check topic tags for provenance (fallback only)
         topic_tags = [t[1] for t in tags if len(t) > 1 and t[0] == 't']
         if 'YouTubeDownload' in topic_tags:
             source_type = 'youtube'
@@ -518,13 +521,16 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
     elif source_type == 'webcam':
         provenance = 'webcam'
     
-    # Check compliance with UPlanet_FILE_CONTRACT.md
-    # Required tags: x (file hash), info (info.json CID), thumbnail_ipfs, gifanim_ipfs
+    # Check compliance with UPlanet_FILE_CONTRACT.md (as per TUBE.manager.sh)
+    # Required: Channel tag (t with "Channel-" prefix), gifanim_ipfs, thumbnail_ipfs, info
+    # Also check: x (file hash), upload_chain, dimensions, duration
+    has_channel_tag = bool(channel_tags and len(channel_tags) > 0)
     compliance = {
+        'has_channel_tag': has_channel_tag,  # Required by TUBE.manager.sh
         'has_file_hash': bool(file_hash),
-        'has_info_cid': bool(info_cid),
-        'has_thumbnail': bool(thumbnail_ipfs),
-        'has_gifanim': bool(gifanim_ipfs),
+        'has_info_cid': bool(info_cid),  # Required by TUBE.manager.sh
+        'has_thumbnail': bool(thumbnail_ipfs),  # Required by TUBE.manager.sh
+        'has_gifanim': bool(gifanim_ipfs),  # Required by TUBE.manager.sh
         'has_upload_chain': bool(upload_chain),
         'has_dimensions': bool(dimensions),
         'has_duration': bool(duration and duration > 0)
@@ -532,7 +538,20 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
     compliance_score = sum(compliance.values())
     compliance_total = len(compliance)
     compliance_percent = int((compliance_score / compliance_total) * 100) if compliance_total > 0 else 0
-    is_compliant = compliance_percent >= 80  # At least 80% of required fields
+    
+    # Determine compliance level (as per TUBE.manager.sh logic)
+    # Compliant: has channel tag + all required metadata (gifanim, thumbnail, info)
+    required_fields = ['has_channel_tag', 'has_gifanim', 'has_thumbnail', 'has_info_cid']
+    has_all_required = all(compliance.get(field, False) for field in required_fields)
+    
+    if has_all_required and compliance_percent >= 80:
+        compliance_level = 'compliant'
+    elif compliance_percent >= 50:
+        compliance_level = 'partial'
+    else:
+        compliance_level = 'non-compliant'
+    
+    is_compliant = compliance_level == 'compliant'
     
     # Parse upload_chain to extract list of uploaders (copieurs)
     upload_chain_list = []
@@ -632,6 +651,7 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
         'compliance': compliance,  # NEW: Compliance check with UPlanet_FILE_CONTRACT.md
         'compliance_score': compliance_score,  # NEW: Number of compliant fields
         'compliance_percent': compliance_percent,  # NEW: Percentage of compliance
+        'compliance_level': compliance_level,  # NEW: Compliance level (compliant, partial, non-compliant)
         'is_compliant': is_compliant,  # NEW: Boolean indicating if video is compliant (>=80%)
         'subtitles': subtitles,
         'channel_name': channel_name,

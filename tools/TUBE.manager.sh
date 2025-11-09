@@ -460,6 +460,22 @@ cmd_list_all() {
         local thumbnail=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "thumbnail_ipfs") | .[1] // empty' 2>/dev/null | head -n1)
         local info=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "info") | .[1] // empty' 2>/dev/null | head -n1)
         
+        # Extract source type from tag "i" with prefix "source:"
+        local source_tag=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "i" and (.[1] | startswith("source:"))) | .[1]' 2>/dev/null | head -n1)
+        local source_type=""
+        local source_icon=""
+        if [[ -n "$source_tag" ]]; then
+            source_type=${source_tag#source:}
+            case "$source_type" in
+                webcam) source_icon="🎥" ;;
+                film) source_icon="🎬" ;;
+                serie) source_icon="📺" ;;
+                video) source_icon="📹" ;;
+                youtube) source_icon="▶️" ;;
+                *) source_icon="📄" ;;
+            esac
+        fi
+        
         # Extract CID from URL
         local cid=$(echo "$url" | grep -oP '(?<=ipfs/)[^/]+' | head -n1)
         
@@ -477,6 +493,7 @@ cmd_list_all() {
         echo -e "  📅 Date: $date"
         echo -e "  🆔 Event: ${event_id:0:16}..."
         echo -e "  📹 Title: $title"
+        [[ -n "$source_type" ]] && echo -e "  ${source_icon} Source: ${source_type}"
         echo -e "  💿 CID: ${cid:0:16}..."
         echo -e "  ⏱️  Duration: ${duration}s"
         echo -e "  📊 Status: $status_icons"
@@ -571,6 +588,22 @@ cmd_list() {
         local thumbnail=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "thumbnail_ipfs") | .[1] // empty' 2>/dev/null | head -n1)
         local info=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "info") | .[1] // empty' 2>/dev/null | head -n1)
         
+        # Extract source type from tag "i" with prefix "source:"
+        local source_tag=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "i" and (.[1] | startswith("source:"))) | .[1]' 2>/dev/null | head -n1)
+        local source_type=""
+        local source_icon=""
+        if [[ -n "$source_tag" ]]; then
+            source_type=${source_tag#source:}
+            case "$source_type" in
+                webcam) source_icon="🎥" ;;
+                film) source_icon="🎬" ;;
+                serie) source_icon="📺" ;;
+                video) source_icon="📹" ;;
+                youtube) source_icon="▶️" ;;
+                *) source_icon="📄" ;;
+            esac
+        fi
+        
         # Extract CID from URL
         local cid=$(echo "$url" | grep -oP '(?<=ipfs/)[^/]+' | head -n1)
         
@@ -587,6 +620,7 @@ cmd_list() {
         echo -e "  📅 Date: $date"
         echo -e "  🆔 Event: ${event_id:0:16}..."
         echo -e "  📹 Title: $title"
+        [[ -n "$source_type" ]] && echo -e "  ${source_icon} Source: ${source_type}"
         echo -e "  💿 CID: ${cid:0:16}..."
         echo -e "  ⏱️  Duration: ${duration}s"
         echo -e "  📊 Status: $status_icons"
@@ -1139,6 +1173,22 @@ browse_channel_videos() {
             local created_at=$(echo "$event" | jq -r '.created_at // 0')
             local date=$(date -d "@$created_at" "+%Y-%m-%d %H:%M" 2>/dev/null || echo "N/A")
             
+            # Extract source type from tag "i" with prefix "source:"
+            local source_tag=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "i" and (.[1] | startswith("source:"))) | .[1]' 2>/dev/null | head -n1)
+            local source_type=""
+            local source_icon=""
+            if [[ -n "$source_tag" ]]; then
+                source_type=${source_tag#source:}
+                case "$source_type" in
+                    webcam) source_icon="🎥" ;;
+                    film) source_icon="🎬" ;;
+                    serie) source_icon="📺" ;;
+                    video) source_icon="📹" ;;
+                    youtube) source_icon="▶️" ;;
+                    *) source_icon="📄" ;;
+                esac
+            fi
+            
             # Check metadata completeness
             local gifanim=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "gifanim_ipfs") | .[1] // empty' 2>/dev/null | head -n1)
             local thumbnail=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "thumbnail_ipfs") | .[1] // empty' 2>/dev/null | head -n1)
@@ -1150,7 +1200,9 @@ browse_channel_videos() {
             [[ -n "$info" ]] && status+="✅" || status+="❌"
             
             echo -e "  ${YELLOW}$display_idx.${NC} 📹 $title"
-            echo -e "      ⏱️  ${duration}s | 📅 $date | Kind $kind | Status: $status"
+            local source_display=""
+            [[ -n "$source_type" ]] && source_display=" | ${source_icon} $source_type"
+            echo -e "      ⏱️  ${duration}s | 📅 $date | Kind $kind$source_display | Status: $status"
             echo ""
             
             display_idx=$((display_idx + 1))
@@ -1226,6 +1278,22 @@ show_video_details() {
         local created_at=$(echo "$event" | jq -r '.created_at // 0')
         local date=$(date -d "@$created_at" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "N/A")
         
+        # Extract source type from tag "i" with prefix "source:"
+        local source_tag=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "i" and (.[1] | startswith("source:"))) | .[1]' 2>/dev/null | head -n1)
+        local source_type=""
+        local source_icon=""
+        if [[ -n "$source_tag" ]]; then
+            source_type=${source_tag#source:}
+            case "$source_type" in
+                webcam) source_icon="🎥" ;;
+                film) source_icon="🎬" ;;
+                serie) source_icon="📺" ;;
+                video) source_icon="📹" ;;
+                youtube) source_icon="▶️" ;;
+                *) source_icon="📄" ;;
+            esac
+        fi
+        
         local gifanim=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "gifanim_ipfs") | .[1] // empty' 2>/dev/null | head -n1)
         local thumbnail=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "thumbnail_ipfs") | .[1] // empty' 2>/dev/null | head -n1)
         local info=$(echo "$event" | jq -r '.tags[]? | select(.[0] == "info") | .[1] // empty' 2>/dev/null | head -n1)
@@ -1256,6 +1324,7 @@ show_video_details() {
         echo -e "${YELLOW}⏱️  Duration:${NC} ${duration}s"
         [[ -n "$dimensions" ]] && echo -e "${YELLOW}📐 Dimensions:${NC} $dimensions"
         echo -e "${YELLOW}🎬 Kind:${NC} $kind"
+        [[ -n "$source_type" ]] && echo -e "${YELLOW}${source_icon} Source:${NC} $source_type"
         echo ""
         
         if [[ -n "$content" ]]; then
