@@ -4,6 +4,8 @@
 
 The UPlanet MULTIPASS system includes an extensible framework for automatically executing domain-specific scrapers based on uploaded cookies. This allows users to share their authenticated sessions with their AI assistant, enabling personalized data extraction from various websites.
 
+> **📖 For complete cookie management documentation, see [COOKIE_SYSTEM.md](./COOKIE_SYSTEM.md)**
+
 ## Architecture
 
 ### Cookie Detection

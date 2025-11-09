@@ -108,13 +108,13 @@ The UPlanet system includes an **extensible domain-based scraper framework** tha
 
 #### How It Works
 
-1. **Cookie Upload**: User uploads cookie via `/api/fileupload` or UPlanet interface
+1. **Cookie Upload**: User uploads cookie via `/api/fileupload` or `/cookie` interface
 2. **Domain Detection**: System extracts primary domain (e.g., `youtube.com`, `leboncoin.fr`)
-3. **File Storage**: Cookie saved as `.DOMAIN.cookie` in user's MULTIPASS directory
+3. **File Storage**: Cookie saved as `.DOMAIN.cookie` in user's MULTIPASS directory with permissions 600
 4. **Daily Scan**: During MULTIPASS refresh (`NOSTRCARD.refresh.sh`), system scans for all `.*.cookie` files
 5. **Scraper Lookup**: For each cookie, system looks for `DOMAIN.sh` script in `Astroport.ONE/IA/`
-6. **Execution**: If found, script runs with user's email and cookie file path as arguments
-7. **Notification**: If not found, user receives email explaining how to request a custom scraper
+6. **Execution**: If found, script runs with user's email and cookie file path as arguments (once per day)
+7. **Notification**: If not found, user receives email explaining how to request a custom scraper (once per domain)
 
 #### Naming Convention for Scrapers
 
@@ -134,10 +134,17 @@ The UPlanet system includes an **extensible domain-based scraper framework** tha
 #### User Notifications
 
 When a cookie is uploaded for a domain without a scraper:
-- User receives email: "Cookie détecté: DOMAIN - Service à créer"
+- User receives email: "🍪 Cookie: DOMAIN - MISSING ASTROBOT PROGRAM"
 - Email explains how to request a custom scraper via Captain
-- Notification sent only once per domain (tracked in `.DOMAIN_notified`)
+- Notification sent only once per domain (tracked in `.DOMAIN_notified` file)
 - Smart contract workflow: User describes needs → Captain validates → Script added to codebase
+
+#### Execution Tracking
+
+To prevent multiple executions per day:
+- Each scraper execution creates a `.done` file: `~/.zen/tmp/${DOMAIN}_sync_${PLAYER}_${TODATE}.done`
+- If `.done` file exists for today, scraper is skipped
+- Logs are stored in: `~/.zen/tmp/${DOMAIN}_sync_${PLAYER}.log`
 
 See `DOMAIN_SCRAPERS.md` for detailed instructions on creating custom scrapers.
 
@@ -207,7 +214,7 @@ All files are stored in `~/.zen/game/nostr/EMAIL/` directory
 - Stored in user's **private directory** (not in uDRIVE)
 - **NIP-42 authentication** required for upload
 - **Hidden files** (leading dot) for extra privacy
-- File permissions: **600** (read/write for owner only)
+- File permissions: **600** (read/write for owner only) - Set automatically on save
 
 ⚠️ **Best Practices:**
 - Never share cookie files publicly
@@ -371,6 +378,14 @@ Planned features:
 ---
 
 **Documentation**: UPassport Cookie System v1.0  
-**Last Updated**: 2025-11-05  
+**Last Updated**: Décembre 2025  
 **Maintainer**: Astroport.ONE Team
+
+---
+
+## Related Documentation
+
+- **[COOKIE_SYSTEM_COMPLIANCE.md](./COOKIE_SYSTEM_COMPLIANCE.md)**: Detailed conformity analysis between documentation and implementation
+- **[NOSTRCARD.refresh.sh](../RUNTIME/NOSTRCARD.refresh.sh)**: Automated scraper execution script
+- **[cookie.html](../../UPassport/templates/cookie.html)**: User interface for cookie upload
 

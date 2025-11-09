@@ -1,16 +1,22 @@
 #!/bin/bash
 ################################################################################
 # Script: oracle.WoT_PERMIT.init.sh
-# Description: Initialize Web of Trust (WoT) for a new permit type
+# Description: Initialize Web of Trust (WoT) for a new OFFICIAL permit type
 #
-# This script bootstraps a new permit by:
+# ⚠️  IMPORTANT: This script is for OFFICIAL PERMITS only (PERMIT_ORE_V1, etc.)
+#    For AUTO-PROCLAIMED PROFESSIONS (WoTx2), NO BOOTSTRAP IS REQUIRED:
+#    → WoTx2 starts with 1 signature (no chicken-and-egg problem)
+#    → Use /wotx2 interface to create auto-proclaimed professions
+#    → Progression is automatic: X1 → X2 → ... → X144 → ...
+#
+# This script bootstraps a new OFFICIAL permit by:
 # 1. Finding permits (30500) with no holders (30503)
 # 2. Selecting MULTIPASS members to become initial holders
 # 3. Creating automatic cross-signature attestations (30501 + 30502)
 # 4. Issuing initial credentials (30503) signed by UPLANETNAME.G1
 #
-# This solves the "chicken and egg" problem: how to get the first permit holders
-# when attestations require existing permit holders?
+# This solves the "chicken and egg" problem for OFFICIAL PERMITS:
+# How to get the first permit holders when attestations require existing permit holders?
 #
 # Usage:
 #   ./oracle.WoT_PERMIT.init.sh [PERMIT_ID] [MULTIPASS_EMAILS...]
@@ -24,6 +30,7 @@
 #
 # License: AGPL-3.0
 # Author: UPlanet/Astroport.ONE Team
+# Version: 3.0 - Updated for 100% Dynamic System
 ################################################################################
 
 MY_PATH=$(dirname "$0")
@@ -203,13 +210,21 @@ list_uninitiated_permits() {
     echo ""
     echo "╔════════════════════════════════════════════════════════════════╗"
     echo "║      Permits without Web of Trust (No holders yet)            ║"
+    echo "║      (Official Permits Only - WoTx2 excluded)                  ║"
     echo "╚════════════════════════════════════════════════════════════════╝"
     echo ""
     
     local uninitiated_permits=()
     local index=1
+    local wotx2_skipped=0
     
     while IFS='|' read -r permit_id permit_name min_attestations; do
+        # Skip WoTx2 auto-proclaimed professions (they don't need bootstrap)
+        if [[ "$permit_id" =~ ^PERMIT_PROFESSION_.*_X[0-9]+$ ]]; then
+            ((wotx2_skipped++))
+            continue
+        fi
+        
         local holder_status=$(check_permit_holders "$permit_id")
         
         if [[ "$holder_status" == "NO_HOLDERS" ]]; then
@@ -220,8 +235,14 @@ list_uninitiated_permits() {
         fi
     done <<< "$permits"
     
+    if [[ $wotx2_skipped -gt 0 ]]; then
+        echo ""
+        log_info "Skipped ${wotx2_skipped} WoTx2 auto-proclaimed profession(s) (no bootstrap required)"
+        log_info "💡 Use /wotx2 to create requests for WoTx2 professions"
+    fi
+    
     if [[ ${#uninitiated_permits[@]} -eq 0 ]]; then
-        log_info "All permits have been initialized with holders"
+        log_info "All official permits have been initialized with holders"
         return 1
     fi
     
@@ -525,7 +546,14 @@ display_summary() {
 main() {
     echo "╔════════════════════════════════════════════════════════════════╗"
     echo "║     UPlanet Oracle - WoT Permit Initialization (Bootstrap)     ║"
+    echo "║     (Official Permits Only - WoTx2 via /wotx2)                   ║"
     echo "╚════════════════════════════════════════════════════════════════╝"
+    echo ""
+    echo -e "${YELLOW}⚠️  NOTE: This script is for OFFICIAL PERMITS only${NC}"
+    echo -e "${YELLOW}   For AUTO-PROCLAIMED PROFESSIONS (WoTx2), use:${NC}"
+    echo -e "${GREEN}   → Web Interface: /wotx2${NC}"
+    echo -e "${GREEN}   → No bootstrap required (starts with 1 signature)${NC}"
+    echo -e "${GREEN}   → Auto-progression: X1 → X2 → ... → X144 → ...${NC}"
     echo ""
     
     # Check if UPLANETNAME is set
@@ -577,6 +605,22 @@ main() {
         if [[ $? -ne 0 ]] || [[ -z "$permit_id" ]]; then
             log_error "No permit selected"
             exit 1
+        fi
+        
+        # Warn if trying to bootstrap a WoTx2 auto-proclaimed profession
+        if [[ "$permit_id" =~ ^PERMIT_PROFESSION_.*_X[0-9]+$ ]]; then
+            log_warning "⚠️  WARNING: This is an auto-proclaimed profession (WoTx2)"
+            log_warning "   WoTx2 professions do NOT require bootstrap"
+            log_warning "   They start with 1 signature (no chicken-and-egg problem)"
+            echo ""
+            log_info "💡 To create a request for this profession, use:"
+            log_info "   → Web Interface: ${uSPOT}/wotx2?permit_id=${permit_id}"
+            echo ""
+            read -p "Continue anyway? (yes/no): " confirm
+            if [[ "$confirm" != "yes" ]]; then
+                log_info "Bootstrap cancelled"
+                exit 0
+            fi
         fi
         
         # Get permit details
@@ -669,15 +713,6 @@ main() {
     wait_for_credentials "$permit_id" "${members[@]}"
     
     # Display summary
-    display_summary "$permit_id" "${members[@]}"
-    
-    log_info "View the initialized WoT at: ${uSPOT}/oracle"
-}
-
-# Run main function
-main "$@"
-
-
     display_summary "$permit_id" "${members[@]}"
     
     log_info "View the initialized WoT at: ${uSPOT}/oracle"

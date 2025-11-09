@@ -435,6 +435,194 @@ Si un permis a été initialisé avec trop peu de membres et qu'il faut l'élarg
 
 ---
 
+---
+
+## 🔄 Système WoT Dynamique Xn (WoTx2)
+
+### Principe des Professions Auto-Proclamées
+
+Le système **WoTx2** permet la création de **professions auto-proclamées** qui évoluent automatiquement de niveau en niveau (X1 → X2 → X3 → X4) selon les validations.
+
+### Workflow de Progression Automatique
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  PROFESSION AUTO-PROCLAMÉE - PROGRESSION AUTOMATIQUE           │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────┐
+│  Niveau X1  │  Création initiale par l'utilisateur
+│             │  • ID: PERMIT_PROFESSION_[NOM]_X1
+│ 1 signature │  • 1 attestation requise
+│             │  • Compétence réclamée dans la demande 30501
+└──────┬──────┘
+       │
+       │ ✅ 1 attestation (30502) reçue
+       │ ✅ ORACLE.refresh.sh émet 30503
+       ▼
+┌─────────────┐
+│  Niveau X2  │  Créé automatiquement par ORACLE.refresh.sh
+│             │  • ID: PERMIT_PROFESSION_[NOM]_X2
+│ 2 signatures│  • 2 compétences + 2 attestations requises
+│ 2 compétences│  • Enrichi des compétences révélées en X1
+└──────┬──────┘
+       │
+       │ ✅ 2 attestations (30502) reçues
+       │ ✅ ORACLE.refresh.sh émet 30503
+       ▼
+┌─────────────┐
+│  Niveau X3  │  Créé automatiquement par ORACLE.refresh.sh
+│             │  • ID: PERMIT_PROFESSION_[NOM]_X3
+│ 3 signatures│  • 3 compétences + 3 attestations requises
+│ 3 compétences│  • Enrichi des compétences révélées en X2
+└──────┬──────┘
+       │
+       │ ✅ 3 attestations (30502) reçues
+       │ ✅ ORACLE.refresh.sh émet 30503
+       ▼
+┌─────────────┐
+│  Niveau X4  │  Créé automatiquement par ORACLE.refresh.sh
+│   (Maître)  │  • ID: PERMIT_PROFESSION_[NOM]_X4
+│             │  • 4 compétences + 4 attestations requises
+│ 4 signatures│  • Progression continue vers X5, X6...
+│ 4 compétences│
+└──────┬──────┘
+       │
+       │ ✅ Progression illimitée
+       │ ✅ X5, X6, X10, X50, X100, X144...
+       ▼
+┌─────────────┐
+│  Niveau Xn  │  Progression automatique infinie
+│             │  • Chaque niveau nécessite N compétences et N signatures
+│ N signatures│  • Labels: Expert (X5-X10), Maître (X11-X50), 
+│ N compétences│    Grand Maître (X51-X100), Maître Absolu (X101+)
+└─────────────┘
+```
+
+### Schéma Détaillé du Cycle de Vie
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    CYCLE DE VIE D'UNE PROFESSION Xn                  │
+└─────────────────────────────────────────────────────────────────────┘
+
+1. CRÉATION (Utilisateur via /wotx2)
+   ┌─────────────────────────────────────┐
+   │ Utilisateur crée profession X1       │
+   │ • Nom: "Maître Nageur"               │
+   │ • ID auto: PERMIT_PROFESSION_MAITRE_NAGEUR_X1 │
+   │ • Événement 30500 signé par UPLANETNAME_G1 │
+   └──────────────┬──────────────────────┘
+                  │
+                  ▼
+2. DEMANDE D'APPRENTISSAGE (30501)
+   ┌─────────────────────────────────────┐
+   │ Apprenti crée demande 30501          │
+   │ • Compétence réclamée: "Natation"   │
+   │ • Apparaît dans "Apprentis Cherchant un Maître" │
+   └──────────────┬──────────────────────┘
+                  │
+                  ▼
+3. ATTESTATION (30502)
+   ┌─────────────────────────────────────┐
+   │ Maître certifié atteste (30502)     │
+   │ • Transfère compétences             │
+   │ • Révèle nouvelles compétences      │
+   └──────────────┬──────────────────────┘
+                  │
+                  ▼
+4. VALIDATION (ORACLE.refresh.sh)
+   ┌─────────────────────────────────────┐
+   │ Seuil atteint → Émission 30503      │
+   │ • Credential signé par UPLANETNAME_G1 │
+   │ • 30501 supprimé (plus apprenti)    │
+   │ • Apparaît dans "Maîtres Certifiés" │
+   └──────────────┬──────────────────────┘
+                  │
+                  ▼
+5. PROGRESSION AUTOMATIQUE (ORACLE.refresh.sh)
+   ┌─────────────────────────────────────┐
+   │ Si Xn validé → Création X(n+1)        │
+   │ • Progression illimitée (X1→X2→...→X144→...) │
+   │ • Authentification NIP-42 (kind 22242) avant API │
+   │ • Nouveau permit 30500 créé          │
+   │ • Visible dans /oracle et /wotx2     │
+   │ • Labels: Expert, Maître, Grand Maître, Maître Absolu │
+   └─────────────────────────────────────┘
+```
+
+### Exemple Concret: "Maître Nageur"
+
+```
+Jour 1: Alice crée "Maître Nageur" (X1)
+  └─> PERMIT_PROFESSION_MAITRE_NAGEUR_X1 créé
+      └─> 1 signature requise
+
+Jour 2: Bob crée demande 30501 pour X1
+  └─> Compétence réclamée: "Natation"
+      └─> Apparaît dans "Apprentis Cherchant un Maître"
+
+Jour 3: Alice (maître) atteste Bob (30502)
+  └─> Bob reçoit 1 attestation
+      └─> Seuil atteint (1/1)
+
+Jour 4: ORACLE.refresh.sh s'exécute
+  └─> Émet 30503 pour Bob
+      └─> Bob devient "Maître Certifié" (X1)
+      └─> Crée automatiquement PERMIT_PROFESSION_MAITRE_NAGEUR_X2
+          └─> 2 compétences + 2 signatures requises
+
+Jour 5: Carol crée demande 30501 pour X2
+  └─> Compétence réclamée: "Sauvetage"
+      └─> Apparaît dans "Apprentis Cherchant un Maître"
+
+Jour 6-7: Bob et Alice attestent Carol (2×30502)
+  └─> Carol reçoit 2 attestations
+      └─> Seuil atteint (2/2)
+
+Jour 8: ORACLE.refresh.sh s'exécute
+  └─> Émet 30503 pour Carol
+      └─> Carol devient "Maître Certifié" (X2)
+      └─> Authentifie avec NIP-42 (kind 22242)
+      └─> Crée automatiquement PERMIT_PROFESSION_MAITRE_NAGEUR_X3
+          └─> 3 compétences + 3 signatures requises
+
+Jour 9+: Progression continue
+  └─> X3 → X4 → X5 → ... → X10 (Expert)
+      └─> X11 → X50 (Maître)
+          └─> X51 → X100 (Grand Maître)
+              └─> X101+ (Maître Absolu)
+                  └─> Progression illimitée jusqu'à X144 et au-delà
+```
+
+### Interface Utilisateur
+
+**Création de profession auto-proclamée:**
+- Interface: `/wotx2` → "Créer une Nouvelle Profession WoTx2"
+- Formulaire avec checkbox "Profession Auto-Proclamée"
+- ID généré automatiquement: `PERMIT_PROFESSION_[NOM]_X1`
+
+**Visualisation:**
+- `/oracle` → Liste tous les permits (X1, X2, X3, X4)
+- `/wotx2?permit_id=PERMIT_PROFESSION_XXX_X1` → Détails du permit
+- Badges de niveau affichés dans l'UI
+
+**Workflow complet:**
+- Voir: `/wotx2` → Section "Workflow de Progression Automatique"
+
+### Différences avec Bootstrap Traditionnel
+
+| Aspect | Bootstrap Traditionnel | WoTx2 Auto-Proclamé |
+|--------|----------------------|---------------------|
+| **Création** | Par UPLANETNAME_G1 (admin) | Par utilisateur (auto-proclamé) |
+| **ID** | Fixe (ex: PERMIT_ORE_V1) | Dynamique (PERMIT_PROFESSION_*_X1) |
+| **Progression** | Statique | Automatique illimitée X1→X2→...→X144→... |
+| **Compétences** | Définies à la création | Révélées progressivement |
+| **Bootstrap** | Requis (N+1 membres) | Non requis (démarre avec 1) |
+| **Utilisation** | Permis officiels | Professions libres |
+
+---
+
 ## 🌟 Évolution future
 
 ### Amélioration 1: Bootstrap semi-automatique
@@ -466,4 +654,12 @@ Exiger plusieurs signatures d'autorité pour le bootstrap:
     --multisig-authority \
     --required-sigs 3/5
 ```
+
+---
+
+## 🔗 Liens Utiles
+
+- **Interface Oracle**: `/oracle` - Vue d'ensemble de tous les permits
+- **Interface WoTx2**: `/wotx2` - Création et gestion des professions auto-proclamées
+- **Documentation API**: `/dev` - Documentation complète de l'API
 

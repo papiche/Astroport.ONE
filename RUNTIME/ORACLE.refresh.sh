@@ -85,7 +85,7 @@ EOF
 
 echo "############################################"
 echo "
- _____  ____      _    ____ _     _____   
+ _____ ____      _    ____ _     _____   
 |  _ \|  _ \    / \  / ___| |   | ____|  
 | | | | |_) |  / _ \| |   | |   |  _|    
 | |_| |  _ <  / ___ \ |___| |___| |___   
@@ -116,84 +116,268 @@ fi
 echo "[SUCCESS] Oracle API is available"
 
 ################################################################################
-## RETRIEVE PENDING REQUESTS
+## RETRIEVE PENDING REQUESTS FROM NOSTR (30501) AND CHECK ATTESTATIONS (30502)
 ################################################################################
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "[STEP 1] Checking pending permit requests..."
+echo "[STEP 1] Checking permit requests from Nostr (WoTx2 system)..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Get all pending and attesting requests
-pending_requests=$(curl -s "${ORACLE_API}/list?type=requests&status=pending,attesting" | jq -r '.requests[]?.request_id // empty' 2>/dev/null)
+# Find nostr_get_events.sh script
+NOSTR_SCRIPT="${HOME}/.zen/Astroport.ONE/tools/nostr_get_events.sh"
 
-if [[ -z "$pending_requests" ]]; then
-    echo "[INFO] No pending requests to process"
+if [[ ! -f "$NOSTR_SCRIPT" ]]; then
+    echo "[WARNING] nostr_get_events.sh not found at ${NOSTR_SCRIPT}"
+    echo "[INFO] Cannot fetch events from Nostr relay"
+    echo "[INFO] Skipping WoTx2 permit processing"
 else
-    request_count=$(echo "$pending_requests" | wc -l)
-    echo "[INFO] Found ${request_count} pending request(s)"
+    # Fetch all permit requests (kind 30501) from Nostr
+    echo "[INFO] Fetching permit requests (kind 30501) from Nostr relay..."
+    requests_json=$("$NOSTR_SCRIPT" --kind 30501 2>/dev/null)
     
-    # Process each pending request
-    for request_id in $pending_requests; do
-        echo ""
-        echo "  [→] Processing request: ${request_id}"
+    if [[ -z "$requests_json" ]]; then
+        echo "[INFO] No permit requests found in Nostr"
+    else
+        # Parse requests and check attestations
+        request_count=$(echo "$requests_json" | jq -s 'length' 2>/dev/null || echo "0")
+        echo "[INFO] Found ${request_count} permit request(s) in Nostr"
         
-        # Get request details
-        request_data=$(curl -s "${ORACLE_API}/status/${request_id}")
-        
-        if [[ $? -ne 0 ]] || [[ -z "$request_data" ]]; then
-            echo "  [ERROR] Failed to retrieve request ${request_id}"
-            continue
-        fi
-        
-        status=$(echo "$request_data" | jq -r '.status // empty')
-        attestations_count=$(echo "$request_data" | jq -r '.attestations_count // 0')
-        required_attestations=$(echo "$request_data" | jq -r '.required_attestations // 0')
-        permit_id=$(echo "$request_data" | jq -r '.permit_definition_id // empty')
-        applicant_npub=$(echo "$request_data" | jq -r '.applicant_npub // empty')
-        created_at=$(echo "$request_data" | jq -r '.created_at // empty')
-        
-        echo "  [INFO] Status: ${status}"
-        echo "  [INFO] Attestations: ${attestations_count}/${required_attestations}"
-        echo "  [INFO] Permit: ${permit_id}"
-        
-        # Check if threshold is reached
-        if [[ $attestations_count -ge $required_attestations ]]; then
-            echo "  [SUCCESS] Threshold reached! Triggering credential issuance..."
+        # Process each request
+        echo "$requests_json" | jq -c '.[]' 2>/dev/null | while read -r request_event; do
+            request_id=$(echo "$request_event" | jq -r '.tags[]? | select(.[0]=="d") | .[1]' 2>/dev/null | head -1)
+            permit_id=$(echo "$request_event" | jq -r '.tags[]? | select(.[0]=="l") | .[1]' 2>/dev/null | head -1)
+            applicant_hex=$(echo "$request_event" | jq -r '.pubkey // empty' 2>/dev/null)
+            created_at=$(echo "$request_event" | jq -r '.created_at // 0' 2>/dev/null)
             
-            # The API should auto-issue, but we can verify or trigger manually
-            # Call the issue endpoint (this should be idempotent)
-            issue_result=$(curl -s -X POST "${ORACLE_API}/issue/${request_id}" 2>/dev/null)
+            if [[ -z "$request_id" ]] || [[ -z "$permit_id" ]]; then
+                continue
+            fi
             
-            if [[ $? -eq 0 ]]; then
-                credential_id=$(echo "$issue_result" | jq -r '.credential_id // empty')
-                if [[ -n "$credential_id" ]]; then
-                    echo "  [SUCCESS] Credential issued: ${credential_id}"
-                    
-                    # Optional: Send notification to applicant
-                    # ${MY_PATH}/../tools/notify_permit_issued.sh "${applicant_npub}" "${permit_id}" "${credential_id}"
+            echo ""
+            echo "  [→] Processing request: ${request_id}"
+            echo "  [INFO] Permit: ${permit_id}"
+            echo "  [INFO] Applicant: ${applicant_hex:0:16}..."
+            
+            # Get permit definition to know required attestations
+            definition_data=$(curl -s "${ORACLE_API}/definitions" | jq -r ".permits[]? | select(.id==\"${permit_id}\")" 2>/dev/null)
+            
+            if [[ -z "$definition_data" ]]; then
+                echo "  [WARNING] Permit definition ${permit_id} not found"
+                continue
+            fi
+            
+            required_attestations=$(echo "$definition_data" | jq -r '.min_attestations // 1' 2>/dev/null)
+            
+            # Count attestations (kind 30502) for this request
+            echo "  [INFO] Counting attestations (kind 30502) for request ${request_id}..."
+            attestations_json=$("$NOSTR_SCRIPT" --kind 30502 2>/dev/null)
+            
+            attestations_count=0
+            if [[ -n "$attestations_json" ]]; then
+                # Count attestations that reference this request_id
+                attestations_count=$(echo "$attestations_json" | jq -r --arg req_id "$request_id" '[.[] | select(.tags[]?[0]=="e" and .tags[]?[1]==$req_id)] | length' 2>/dev/null || echo "0")
+            fi
+            
+            echo "  [INFO] Attestations: ${attestations_count}/${required_attestations}"
+            
+            # Check if credential already exists (kind 30503)
+            existing_credential=$(echo "$("$NOSTR_SCRIPT" --kind 30503 2>/dev/null)" | jq -r --arg req_id "$request_id" '[.[] | select(.tags[]?[0]=="d" and .tags[]?[1]==$req_id)] | length' 2>/dev/null || echo "0")
+            
+            if [[ "$existing_credential" -gt 0 ]]; then
+                echo "  [INFO] Credential already issued for this request"
+                continue
+            fi
+            
+            # Check if threshold is reached (WoTx2: 1, 2, 3, 4... signatures)
+            if [[ $attestations_count -ge $required_attestations ]]; then
+                echo "  [SUCCESS] Threshold reached (${attestations_count} >= ${required_attestations})! Issuing credential..."
+                
+                # Call API to issue credential (using request_id from Nostr event)
+                # The API will read the request from Nostr and issue 30503
+                issue_result=$(curl -s -X POST "${ORACLE_API}/issue/${request_id}" 2>/dev/null)
+                
+                if [[ $? -eq 0 ]]; then
+                    credential_id=$(echo "$issue_result" | jq -r '.credential_id // empty' 2>/dev/null)
+                    if [[ -n "$credential_id" ]]; then
+                        echo "  [SUCCESS] Credential issued: ${credential_id}"
+                        echo "  [INFO] WoTx2 system progressing: ${attestations_count} attestations collected"
+                        
+                        # Check if this is an auto-proclaimed profession (PERMIT_PROFESSION_*_X1, X2, X3...)
+                        if [[ "$permit_id" =~ ^PERMIT_PROFESSION_.*_X([0-9]+)$ ]]; then
+                            current_level="${BASH_REMATCH[1]}"
+                            echo "  [INFO] Auto-proclaimed profession detected: Level X${current_level}"
+                            
+                            # Calculate next level (unlimited progression: X1→X2→X3→...→X144→...)
+                            next_level=$((current_level + 1))
+                            next_permit_id=$(echo "$permit_id" | sed "s/_X${current_level}$/_X${next_level}/")
+                            echo "  [INFO] X${current_level} validated! Creating next level: ${next_permit_id}"
+                            
+                            # Get permit definition to extract name and description
+                            # Remove level suffix from name and description
+                            permit_name=$(echo "$definition_data" | jq -r '.name // empty' 2>/dev/null | sed 's/ (Niveau X[0-9]\+.*)$//')
+                            permit_desc=$(echo "$definition_data" | jq -r '.description // empty' 2>/dev/null | sed 's/ - Niveau X[0-9]\+.*$//')
+                            
+                            # Determine level label
+                            if [[ $next_level -le 4 ]]; then
+                                level_label="Niveau X${next_level}"
+                            elif [[ $next_level -le 10 ]]; then
+                                level_label="Niveau X${next_level} (Expert)"
+                            elif [[ $next_level -le 50 ]]; then
+                                level_label="Niveau X${next_level} (Maître)"
+                            elif [[ $next_level -le 100 ]]; then
+                                level_label="Niveau X${next_level} (Grand Maître)"
+                            else
+                                level_label="Niveau X${next_level} (Maître Absolu)"
+                            fi
+                            
+                            # Calculate requirements: next level needs (next_level) competencies and signatures
+                            min_attestations=$next_level
+                            
+                            # Authenticate with NIP-42 before calling API
+                            echo "  [INFO] Authenticating with NIP-42 (kind 22242)..."
+                            UPLANET_G1_KEYFILE="${HOME}/.zen/game/uplanet.G1.nostr"
+                            
+                            if [[ ! -f "$UPLANET_G1_KEYFILE" ]]; then
+                                if ! generate_uplanet_g1_nostr_key; then
+                                    echo "  [ERROR] Failed to generate UPLANETNAME_G1 keyfile"
+                                    continue
+                                fi
+                            fi
+                            
+                            # Load NPUB from keyfile
+                            if [[ -f "$UPLANET_G1_KEYFILE" ]]; then
+                                source "$UPLANET_G1_KEYFILE" 2>/dev/null
+                                UPLANETNAME_G1_NPUB="$NPUB"
+                            fi
+                            
+                            # Send NIP-42 authentication event
+                            NOSTR_SEND_NOTE="${MY_PATH}/../tools/nostr_send_note.py"
+                            if [[ -f "$NOSTR_SEND_NOTE" ]]; then
+                                # Generate auth challenge
+                                auth_challenge="oracle_refresh_$(date +%s)_${next_permit_id}"
+                                
+                                # Send NIP-42 auth event (kind 22242)
+                                auth_result=$("$NOSTR_SEND_NOTE" \
+                                    --keyfile "$UPLANET_G1_KEYFILE" \
+                                    --content "$auth_challenge" \
+                                    --kind 22242 \
+                                    --relays "${myRELAY:-ws://127.0.0.1:7777}" \
+                                    2>/dev/null)
+                                
+                                if echo "$auth_result" | grep -q "success"; then
+                                    echo "  [SUCCESS] NIP-42 authentication sent"
+                                    # Wait a moment for relay to process
+                                    sleep 1
+                                else
+                                    echo "  [WARNING] NIP-42 authentication may have failed, continuing anyway"
+                                fi
+                            else
+                                echo "  [WARNING] nostr_send_note.py not found, skipping NIP-42 auth"
+                            fi
+                            
+                            # Create next level permit definition via API
+                            # ORACLE_API = ${uSPOT}/api/permit, so we need base URL + /api/permit/define
+                            ORACLE_BASE="${ORACLE_API%/api/permit}"
+                            
+                            # Build progression rules (always continue to next level)
+                            next_next_level=$((next_level + 1))
+                            
+                            create_next_result=$(curl -s -X POST "${ORACLE_BASE}/api/permit/define" \
+                                -H "Content-Type: application/json" \
+                                -H "X-Nostr-Auth: ${UPLANETNAME_G1_NPUB:-}" \
+                                -d "{
+                                    \"permit\": {
+                                        \"id\": \"${next_permit_id}\",
+                                        \"name\": \"${permit_name} (${level_label})\",
+                                        \"description\": \"${permit_desc} - ${level_label} nécessite ${min_attestations} compétences et ${min_attestations} signatures\",
+                                        \"min_attestations\": ${min_attestations},
+                                        \"required_license\": null,
+                                        \"valid_duration_days\": 0,
+                                        \"revocable\": true,
+                                        \"verification_method\": \"peer_attestation\",
+                                        \"metadata\": {
+                                            \"category\": \"auto_proclaimed\",
+                                            \"level\": \"X${next_level}\",
+                                            \"auto_proclaimed\": true,
+                                            \"evolving_system\": {
+                                                \"type\": \"WoTx2_AutoProclaimed\",
+                                                \"auto_progression\": true,
+                                                \"progression_rules\": {
+                                                    \"x${next_level}\": {
+                                                        \"signatures\": ${min_attestations},
+                                                        \"competencies\": ${min_attestations},
+                                                        \"next_level\": \"X${next_next_level}\"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    \"npub\": \"${UPLANETNAME_G1_NPUB:-}\"
+                                }" 2>/dev/null)
+                            
+                            if echo "$create_next_result" | jq -e '.success' >/dev/null 2>&1; then
+                                echo "  [SUCCESS] Created next level permit: ${next_permit_id} (${level_label})"
+                            else
+                                error_msg=$(echo "$create_next_result" | jq -r '.detail // .message // "Unknown error"' 2>/dev/null)
+                                echo "  [WARNING] Failed to create X${next_level} permit: ${error_msg}"
+                                echo "  [INFO] Permit may already exist or API authentication failed"
+                            fi
+                        fi
+                        
+                        # Delete the 30501 request from MULTIPASS directory after credential issuance
+                        # Find applicant email from hex
+                        applicant_email=""
+                        if [[ -n "$applicant_hex" ]]; then
+                            # Convert hex to npub if needed, or search for email
+                            nostr_dir="${HOME}/.zen/game/nostr"
+                            if [[ -d "$nostr_dir" ]]; then
+                                for email_dir in "$nostr_dir"/*; do
+                                    if [[ -d "$email_dir" ]]; then
+                                        npub_file="${email_dir}/NPUB"
+                                        if [[ -f "$npub_file" ]]; then
+                                            stored_npub=$(cat "$npub_file" 2>/dev/null)
+                                            # Check if hex matches (simplified - would need hex2npub conversion)
+                                            # For now, search for 30501 events in MULTIPASS directories
+                                            for event_file in "${email_dir}"/30501_*.json; do
+                                                if [[ -f "$event_file" ]]; then
+                                                    event_req_id=$(jq -r '.tags[]? | select(.[0]=="d") | .[1]' "$event_file" 2>/dev/null | head -1)
+                                                    if [[ "$event_req_id" == "$request_id" ]]; then
+                                                        applicant_email=$(basename "$email_dir")
+                                                        echo "  [INFO] Found request in MULTIPASS directory: ${applicant_email}"
+                                                        # Delete the 30501 request file
+                                                        rm -f "$event_file"
+                                                        echo "  [SUCCESS] Deleted 30501 request from ${applicant_email} directory"
+                                                        break 2
+                                                    fi
+                                                fi
+                                            done
+                                        fi
+                                    fi
+                                done
+                            fi
+                        fi
+                    else
+                        echo "  [INFO] Credential issuance may be pending or already exists"
+                    fi
                 else
-                    echo "  [INFO] Credential may already exist or issuance pending"
+                    echo "  [WARNING] Failed to issue credential for ${request_id}"
                 fi
             else
-                echo "  [WARNING] Failed to issue credential for ${request_id}"
-            fi
-        else
-            # Check if request is too old (> 90 days)
-            if [[ -n "$created_at" ]]; then
-                created_timestamp=$(date -d "$created_at" +%s 2>/dev/null || echo 0)
-                now_timestamp=$(date +%s)
-                age_days=$(( (now_timestamp - created_timestamp) / 86400 ))
+                echo "  [INFO] WoTx2 progressing: ${attestations_count}/${required_attestations} attestations (need $((required_attestations - attestations_count)) more)"
                 
-                if [[ $age_days -gt 90 ]]; then
-                    echo "  [WARNING] Request is ${age_days} days old (> 90 days)"
-                    echo "  [ACTION] Marking request as expired"
+                # Check if request is too old (> 90 days)
+                if [[ -n "$created_at" ]] && [[ "$created_at" != "0" ]]; then
+                    created_timestamp=$created_at
+                    now_timestamp=$(date +%s)
+                    age_days=$(( (now_timestamp - created_timestamp) / 86400 ))
                     
-                    # Optional: Call API to expire the request
-                    # curl -s -X POST "${ORACLE_API}/expire/${request_id}"
+                    if [[ $age_days -gt 90 ]]; then
+                        echo "  [WARNING] Request is ${age_days} days old (> 90 days)"
+                    fi
                 fi
             fi
-        fi
-    done
+        done
+    fi
 fi
 
 ################################################################################
@@ -347,6 +531,35 @@ fi
 ## CLEANUP
 ################################################################################
 echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "[STEP 5] Cleanup..."
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# Remove old temporary files (> 7 days)
+find ~/.zen/tmp -name "ORACLE_*" -type d -mtime +7 -exec rm -rf {} \; 2>/dev/null
+echo "[SUCCESS] Cleanup completed"
+
+################################################################################
+## SUMMARY
+################################################################################
+end=`date +%s`
+duration=$((end-start))
+
+echo ""
+echo "╔════════════════════════════════════════════════════════════════╗"
+echo "║            Oracle System Maintenance Complete                  ║"
+echo "╚════════════════════════════════════════════════════════════════╝"
+echo ""
+echo "  Duration: ${duration}s"
+echo "  Total Requests: ${total_requests}"
+echo "  Total Credentials: ${total_credentials}"
+echo "  Statistics: ${ORACLE_STATS_DIR}"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+exit 0
+
+
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "[STEP 5] Cleanup..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

@@ -58,6 +58,8 @@
 * **[IA Documentation](IA/README.md)** - AI system overview (English)
 * **[IA Documentation (French)](IA/README.fr.md)** - AI system overview (French)
 * **[Slot Memory System](IA/SLOT_MEMORY_README.md)** - Memory management
+* **[🍪 Cookie Management System](IA/COOKIE_SYSTEM.md)** - Universal cookie upload and storage system for authenticated web scraping
+* **[🔧 Domain Scrapers](IA/DOMAIN_SCRAPERS.md)** - Guide to creating custom domain-specific scrapers
 
 ### Deployment & Infrastructure
 * **[Docker Setup](_DOCKER/Readme.md)** - Docker configuration

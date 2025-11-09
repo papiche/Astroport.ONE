@@ -91,13 +91,18 @@ Once you upload cookies, the system automatically:
 
 ### Cookie File Format
 
-The system expects **Netscape cookie format**:
+The system expects **Netscape cookie format**. Cookies are automatically detected and stored as `.youtube.com.cookie` in your MULTIPASS directory.
 
+> **📖 For complete cookie management documentation, see [COOKIE_SYSTEM.md](./COOKIE_SYSTEM.md)**
+
+Example format:
 ```
 # Netscape HTTP Cookie File
 .youtube.com	TRUE	/	TRUE	2147483647	CONSENT	YES+cb...
 .youtube.com	TRUE	/	TRUE	2147483647	VISITOR_INFO1_LIVE	abc123...
 ```
+
+**Note**: The system now uses domain-specific cookie files (`.youtube.com.cookie`) instead of the generic `.cookie.txt` format. Upload your cookies via the `/cookie` interface for automatic detection and storage.
 
 ## 📋 Logs and Debugging
 

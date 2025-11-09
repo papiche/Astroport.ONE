@@ -4,14 +4,25 @@
 # Description: Interactive permit definitions management via NOSTR
 #
 # This script allows to:
-# - Add permit definitions from JSON template to NOSTR
+# - Add permit definitions from JSON template to NOSTR (OFFICIAL PERMITS ONLY)
 # - Edit existing permit definitions on NOSTR
 # - Delete permit definitions (with safety checks)
+#
+# ⚠️  IMPORTANT: This script is for OFFICIAL PERMITS only (PERMIT_ORE_V1, etc.)
+#    For AUTO-PROCLAIMED PROFESSIONS (WoTx2), use the web interface:
+#    → /wotx2 → "Créer une Nouvelle Profession WoTx2"
+#
+#    Auto-proclaimed professions:
+#    - Created via /wotx2 interface (100% dynamic)
+#    - ID format: PERMIT_PROFESSION_[NOM]_X1
+#    - Automatic progression: X1 → X2 → ... → X144 → ... (unlimited)
+#    - No bootstrap required (starts with 1 signature)
 #
 # Usage: ./oracle_init_permit_definitions.sh
 #
 # License: AGPL-3.0
 # Author: UPlanet/Astroport.ONE Team (support@qo-op.com)
+# Version: 3.0 - Updated for 100% Dynamic System
 ################################################################################
 
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -259,9 +270,16 @@ show_main_menu() {
     clear
     echo -e "${MAGENTA}╔════════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${MAGENTA}║     🎫 ORACLE PERMIT DEFINITIONS MANAGEMENT                   ║${NC}"
+    echo -e "${MAGENTA}║     (Official Permits Only - WoTx2 via /wotx2)               ║${NC}"
     echo -e "${MAGENTA}╚════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo -e "${CYAN}1.${NC} Add permit definition (from template)"
+    echo -e "${YELLOW}⚠️  NOTE: This script manages OFFICIAL PERMITS only${NC}"
+    echo -e "${YELLOW}   For AUTO-PROCLAIMED PROFESSIONS (WoTx2), use:${NC}"
+    echo -e "${GREEN}   → Web Interface: /wotx2${NC}"
+    echo -e "${GREEN}   → Creates: PERMIT_PROFESSION_[NOM]_X1${NC}"
+    echo -e "${GREEN}   → Auto-progression: X1 → X2 → ... → X144 → ...${NC}"
+    echo ""
+    echo -e "${CYAN}1.${NC} Add permit definition (from template) - OFFICIAL ONLY"
     echo -e "${CYAN}2.${NC} Edit permit definition (from NOSTR)"
     echo -e "${CYAN}3.${NC} Delete permit definition (from NOSTR)"
     echo -e "${CYAN}4.${NC} List all permit definitions (NOSTR)"
@@ -305,16 +323,30 @@ show_nostr_list() {
     echo ""
     
     local index=1
+    local official_count=0
+    local wotx2_count=0
+    
     while IFS= read -r event; do
         local permit_json=$(parse_permit_from_nostr_event "$event")
         if [[ -n "$permit_json" ]]; then
             local permit_id=$(echo "$permit_json" | jq -r '.id')
             local name=$(echo "$permit_json" | jq -r '.name')
-            echo -e "  ${GREEN}$index.${NC} ${CYAN}$permit_id${NC} - $name"
+            
+            # Check if it's a WoTx2 auto-proclaimed profession
+            if [[ "$permit_id" =~ ^PERMIT_PROFESSION_.*_X[0-9]+$ ]]; then
+                local level=$(echo "$permit_id" | grep -oE '_X[0-9]+$' | sed 's/_X//')
+                echo -e "  ${GREEN}$index.${NC} ${CYAN}$permit_id${NC} - $name ${MAGENTA}[WoTx2 - Niveau X${level}]${NC}"
+                wotx2_count=$((wotx2_count + 1))
+            else
+                echo -e "  ${GREEN}$index.${NC} ${CYAN}$permit_id${NC} - $name ${YELLOW}[Officiel]${NC}"
+                official_count=$((official_count + 1))
+            fi
             index=$((index + 1))
         fi
     done <<< "$events"
     
+    echo ""
+    echo -e "${CYAN}Summary:${NC} ${YELLOW}$official_count${NC} Official | ${MAGENTA}$wotx2_count${NC} WoTx2 Auto-Proclaimed"
     echo ""
     return 0
 }
@@ -341,6 +373,22 @@ add_permit() {
     fi
     
     local permit_id=$(echo "$permit_json" | jq -r '.id')
+    
+    # Warn if trying to create auto-proclaimed profession via this script
+    if [[ "$permit_id" =~ ^PERMIT_PROFESSION_.*_X[0-9]+$ ]]; then
+        echo -e "${YELLOW}⚠️  WARNING: This is an auto-proclaimed profession (WoTx2)${NC}"
+        echo -e "${YELLOW}   Auto-proclaimed professions should be created via /wotx2 interface${NC}"
+        echo -e "${CYAN}   This script is for OFFICIAL PERMITS only (PERMIT_ORE_V1, etc.)${NC}"
+        echo ""
+        echo -e "${CYAN}Continue anyway? (y/N):${NC} "
+        read -r confirm
+        if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+            echo -e "${YELLOW}Operation cancelled${NC}"
+            echo -e "${GREEN}💡 Use /wotx2 to create auto-proclaimed professions${NC}"
+            read -p "Press Enter to continue..."
+            return
+        fi
+    fi
     
     # Check if already exists on NOSTR
     local existing=$(get_nostr_definition_by_id "$permit_id")

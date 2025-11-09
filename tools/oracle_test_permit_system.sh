@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 2.0
+# Version: 3.0 - Updated for 100% Dynamic System
 # License: AGPL-3.0
 ################################################################################
 # oracle_test_permit_system.sh
@@ -15,6 +15,10 @@
 # 5. Récupération des credentials (W3C Verifiable Credentials)
 # 6. Virement blockchain PERMIT (depuis UPLANETNAME.RnD)
 # 7. Tests NOSTR (strfry query via nostr_get_events.sh)
+# 8. Tests WoTx2 (professions auto-proclamées, progression automatique)
+# 9. Tests authentification NIP-42
+#
+# ⚠️  NOTE: Tests couvrent à la fois les permits officiels et WoTx2
 ################################################################################
 
 MY_PATH="`dirname \"$0\"`"
@@ -457,19 +461,41 @@ test_helper_scripts() {
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
     
-    # Test 7.2: Vérifier le script de bootstrap WoT
+    # Test 7.2: Vérifier l'interface web wotx2.html (WoTx2)
+    if [ -f "${MY_PATH}/../../UPassport/templates/wotx2.html" ]; then
+        echo -e "${GREEN}✅ wotx2.html web interface exists${NC}"
+        run_test "wotx2.html is readable" \
+            "[ -r '${MY_PATH}/../../UPassport/templates/wotx2.html' ]"
+    else
+        echo -e "${RED}❌ wotx2.html not found${NC}"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    
+    # Test 7.3: Vérifier le script de bootstrap WoT (officiels uniquement)
     if [ -f "${MY_PATH}/oracle.WoT_PERMIT.init.sh" ]; then
         echo -e "${GREEN}✅ oracle.WoT_PERMIT.init.sh exists${NC}"
         run_test "oracle.WoT_PERMIT.init.sh is executable" \
             "[ -x '${MY_PATH}/oracle.WoT_PERMIT.init.sh' ]"
+        echo -e "${CYAN}💡 Note: This script is for OFFICIAL PERMITS only${NC}"
+        echo -e "${CYAN}   WoTx2 professions do NOT require bootstrap${NC}"
     else
         echo -e "${RED}❌ oracle.WoT_PERMIT.init.sh not found${NC}"
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
     
-    echo -e "${CYAN}💡 Note: CLI scripts have been replaced by web interface /oracle${NC}"
+    # Test 7.4: Vérifier le script de gestion des permits
+    if [ -f "${MY_PATH}/oracle_init_permit_definitions.sh" ]; then
+        echo -e "${GREEN}✅ oracle_init_permit_definitions.sh exists${NC}"
+        run_test "oracle_init_permit_definitions.sh is executable" \
+            "[ -x '${MY_PATH}/oracle_init_permit_definitions.sh' ]"
+    else
+        echo -e "${RED}❌ oracle_init_permit_definitions.sh not found${NC}"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
     
-    TESTS_TOTAL=$((TESTS_TOTAL + 2))
+    echo -e "${CYAN}💡 Web interfaces: /oracle (officiels) and /wotx2 (auto-proclamés)${NC}"
+    
+    TESTS_TOTAL=$((TESTS_TOTAL + 4))
 }
 
 ################################################################################
@@ -599,6 +625,38 @@ test_nostr_events() {
         fi
         TESTS_TOTAL=$((TESTS_TOTAL + 1))
     fi
+    
+    # Test 10.6: Vérifier les professions auto-proclamées (WoTx2)
+    echo -e "${CYAN}📡 Querying WoTx2 auto-proclaimed professions (PERMIT_PROFESSION_*_X*)...${NC}"
+    local wotx2_defs=$(echo "$definitions" | jq -r 'select(.id | startswith("PERMIT_PROFESSION_")) | .id' 2>/dev/null || echo "")
+    local wotx2_count=$(echo "$wotx2_defs" | grep -c "PERMIT_PROFESSION_" || echo "0")
+    
+    if [ "$wotx2_count" -gt 0 ]; then
+        echo -e "${GREEN}✅ Found ${wotx2_count} WoTx2 auto-proclaimed profession(s)${NC}"
+        echo "$wotx2_defs" | head -5 | while read -r permit_id; do
+            local level=$(echo "$permit_id" | grep -oE '_X[0-9]+$' | sed 's/_X//')
+            echo -e "${CYAN}   • ${permit_id} (Niveau X${level})${NC}"
+        done
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        echo -e "${YELLOW}⚠️  No WoTx2 auto-proclaimed professions found${NC}"
+        echo -e "${CYAN}💡 Create one via /wotx2 interface${NC}"
+    fi
+    TESTS_TOTAL=$((TESTS_TOTAL + 1))
+    
+    # Test 10.7: Vérifier les événements NIP-42 (authentification)
+    echo -e "${CYAN}📡 Querying kind 22242 (NIP-42 authentication events)...${NC}"
+    local nip42_events=$(bash "${MY_PATH}/nostr_get_events.sh" --kind 22242 --limit 10 2>/dev/null)
+    local nip42_count=$(echo "$nip42_events" | grep -c '"kind":22242' || echo "0")
+    
+    if [ "$nip42_count" -gt 0 ]; then
+        echo -e "${GREEN}✅ Found ${nip42_count} NIP-42 authentication event(s)${NC}"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        echo -e "${YELLOW}⚠️  No NIP-42 authentication events found${NC}"
+        echo -e "${CYAN}💡 NIP-42 events are sent before API calls for permit creation${NC}"
+    fi
+    TESTS_TOTAL=$((TESTS_TOTAL + 1))
 }
 
 ################################################################################
@@ -637,6 +695,124 @@ test_api_nostr_fetch() {
         local count=$(echo "$creds" | jq '.count // 0')
         echo -e "${CYAN}📊 Found ${count} credentials via API${NC}"
     fi
+}
+
+################################################################################
+# Tests WoTx2 - Professions Auto-Proclamées
+################################################################################
+
+test_wotx2_system() {
+    section "TEST 13: WoTx2 - Auto-Proclaimed Professions"
+    
+    echo -e "${CYAN}🧪 Testing WoTx2 system (100% dynamic)${NC}"
+    echo ""
+    
+    # Test 13.1: Vérifier que les professions auto-proclamées existent
+    echo -e "${YELLOW}Test 13.1: Check for WoTx2 auto-proclaimed professions${NC}"
+    local definitions=$(curl -s "${API_URL}/api/permit/definitions")
+    local wotx2_permits=$(echo "$definitions" | jq -r '.definitions[]? | select(.id | startswith("PERMIT_PROFESSION_")) | .id' 2>/dev/null)
+    local wotx2_count=$(echo "$wotx2_permits" | grep -c "PERMIT_PROFESSION_" || echo "0")
+    
+    if [ "$wotx2_count" -gt 0 ]; then
+        echo -e "${GREEN}✅ Found ${wotx2_count} WoTx2 profession(s)${NC}"
+        echo "$wotx2_permits" | head -5 | while read -r permit_id; do
+            local level=$(echo "$permit_id" | grep -oE '_X[0-9]+$' | sed 's/_X//')
+            local name=$(echo "$definitions" | jq -r ".definitions[]? | select(.id == \"$permit_id\") | .name" 2>/dev/null)
+            echo -e "${CYAN}   • ${permit_id} - ${name} (Niveau X${level})${NC}"
+        done
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        echo -e "${YELLOW}⚠️  No WoTx2 professions found${NC}"
+        echo -e "${CYAN}💡 Create one via /wotx2 interface${NC}"
+    fi
+    TESTS_TOTAL=$((TESTS_TOTAL + 1))
+    
+    # Test 13.2: Vérifier la progression automatique (X1 → X2 → ...)
+    echo ""
+    echo -e "${YELLOW}Test 13.2: Check automatic progression (X1 → X2 → ...)${NC}"
+    local progression_found=0
+    
+    for base_permit in $(echo "$wotx2_permits" | sed 's/_X[0-9]\+$//' | sort -u); do
+        local levels=$(echo "$wotx2_permits" | grep "^${base_permit}_X" | sed 's/.*_X\([0-9]\+\)$/\1/' | sort -n)
+        local level_count=$(echo "$levels" | wc -l)
+        
+        if [ "$level_count" -gt 1 ]; then
+            echo -e "${GREEN}✅ Progression found for ${base_permit}:${NC}"
+            echo "$levels" | while read -r level; do
+                echo -e "${CYAN}   • Niveau X${level}${NC}"
+            done
+            progression_found=1
+            break
+        fi
+    done
+    
+    if [ "$progression_found" -eq 1 ]; then
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        echo -e "${YELLOW}⚠️  No progression found (need at least X1 and X2)${NC}"
+        echo -e "${CYAN}💡 Progression is automatic when X1 is validated${NC}"
+    fi
+    TESTS_TOTAL=$((TESTS_TOTAL + 1))
+    
+    # Test 13.3: Vérifier les labels dynamiques
+    echo ""
+    echo -e "${YELLOW}Test 13.3: Check dynamic labels (Expert, Maître, etc.)${NC}"
+    local labels_ok=0
+    
+    for permit_id in $(echo "$wotx2_permits" | head -10); do
+        local level=$(echo "$permit_id" | grep -oE '_X[0-9]+$' | sed 's/_X//')
+        local name=$(echo "$definitions" | jq -r ".definitions[]? | select(.id == \"$permit_id\") | .name" 2>/dev/null)
+        
+        if [[ $level -le 4 ]]; then
+            if echo "$name" | grep -q "Niveau X${level}"; then
+                labels_ok=1
+            fi
+        elif [[ $level -le 10 ]]; then
+            if echo "$name" | grep -q "Expert"; then
+                labels_ok=1
+            fi
+        elif [[ $level -le 50 ]]; then
+            if echo "$name" | grep -q "Maître"; then
+                labels_ok=1
+            fi
+        elif [[ $level -le 100 ]]; then
+            if echo "$name" | grep -q "Grand Maître"; then
+                labels_ok=1
+            fi
+        else
+            if echo "$name" | grep -q "Maître Absolu"; then
+                labels_ok=1
+            fi
+        fi
+    done
+    
+    if [ "$labels_ok" -eq 1 ]; then
+        echo -e "${GREEN}✅ Dynamic labels are correctly applied${NC}"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        echo -e "${YELLOW}⚠️  Could not verify dynamic labels${NC}"
+        echo -e "${CYAN}💡 Labels: X1-X4 (basic), X5-X10 (Expert), X11-X50 (Maître), etc.${NC}"
+    fi
+    TESTS_TOTAL=$((TESTS_TOTAL + 1))
+    
+    # Test 13.4: Vérifier l'interface /wotx2
+    echo ""
+    echo -e "${YELLOW}Test 13.4: Check /wotx2 web interface${NC}"
+    if curl -s -f "${API_URL}/wotx2" > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ /wotx2 interface is accessible${NC}"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        echo -e "${RED}❌ /wotx2 interface not accessible${NC}"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    TESTS_TOTAL=$((TESTS_TOTAL + 1))
+    
+    echo ""
+    echo -e "${CYAN}💡 WoTx2 Summary:${NC}"
+    echo -e "${CYAN}   • Auto-proclaimed professions: ${wotx2_count}${NC}"
+    echo -e "${CYAN}   • Progression: Automatic (X1 → X2 → ... → X144 → ...)${NC}"
+    echo -e "${CYAN}   • Bootstrap: NOT required (starts with 1 signature)${NC}"
+    echo -e "${CYAN}   • Interface: ${API_URL}/wotx2${NC}"
 }
 
 ################################################################################
@@ -709,9 +885,10 @@ show_menu() {
     echo "10. 📡 Test: NOSTR events (strfry)"
     echo "11. 🌐 Test: API NOSTR fetch"
     echo "12. 💰 Test: PERMIT payment"
-    echo "13. 🚪 Exit"
+    echo "13. 🚀 Test: WoTx2 (auto-proclaimed professions)"
+    echo "14. 🚪 Exit"
     echo ""
-    read -p "Choose an option (1-13): " choice
+    read -p "Choose an option (1-14): " choice
     
     case $choice in
         1)
@@ -751,6 +928,9 @@ show_menu() {
             test_permit_virement
             ;;
         13)
+            test_wotx2_system
+            ;;
+        14)
             echo -e "${GREEN}👋 Goodbye!${NC}"
             exit 0
             ;;
@@ -763,6 +943,7 @@ show_menu() {
 run_all_tests() {
     echo -e "${MAGENTA}╔════════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${MAGENTA}║               RUNNING ALL TESTS                                ║${NC}"
+    echo -e "${MAGENTA}║         (Official Permits + WoTx2 Auto-Proclaimed)            ║${NC}"
     echo -e "${MAGENTA}╚════════════════════════════════════════════════════════════════╝${NC}"
     
     test_permit_definitions
@@ -775,6 +956,7 @@ run_all_tests() {
     test_oracle_system
     test_nostr_events
     test_api_nostr_fetch
+    test_wotx2_system
     
     # Test du virement PERMIT (optionnel)
     echo ""
