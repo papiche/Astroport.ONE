@@ -333,6 +333,7 @@ TAGS[amelie]=false
 TAGS[rec2]=false
 TAGS[all]=false
 TAGS[plantnet]=false
+TAGS[cookie]=false
 
 # Single pass tag detection
 if [[ "$message_text" =~ \#BRO\ + ]]; then TAGS[BRO]=true; fi
@@ -349,6 +350,7 @@ if [[ "$message_text" =~ \#amelie ]]; then TAGS[amelie]=true; fi
 if [[ "$message_text" =~ \#rec2 ]]; then TAGS[rec2]=true; fi
 if [[ "$message_text" =~ \#all ]]; then TAGS[all]=true; fi
 if [[ "$message_text" =~ \#plantnet ]]; then TAGS[plantnet]=true; fi
+if [[ "$message_text" =~ \#cookie ]]; then TAGS[cookie]=true; fi
 
 # Detect memory slot once
 memory_slot=0
@@ -1321,6 +1323,36 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
 **Formats supportés :** JPG, JPEG, PNG, GIF, WEBP
 **Note :** Seuls les fichiers image sont analysés. Les autres types de fichiers sont ignorés.
 "
+                fi
+            ######################################################### #cookie
+            elif [[ "${TAGS[cookie]}" == true ]]; then
+                # Cookie workflow execution
+                echo "Processing cookie workflow execution request..." >&2
+                
+                # Extract workflow name/ID from message
+                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#cookie//g; s/"//g' <<< "$message_text")
+                workflow_identifier=$(echo "$cleaned_text" | awk '{print $1}' | tr -d '[:space:]')
+                
+                if [[ -z "$workflow_identifier" ]]; then
+                    KeyANSWER="❌ No workflow specified. Usage: #BRO #cookie <workflow_name_or_id>"
+                else
+                    echo "Executing cookie workflow: $workflow_identifier" >&2
+                    
+                    # Call workflow engine script
+                    if [[ -x "$MY_PATH/cookie_workflow_engine.sh" ]]; then
+                        WORKFLOW_RESULT=$("$MY_PATH/cookie_workflow_engine.sh" "$workflow_identifier" "$KNAME" "$PUBKEY" "$EVENT" 2>&1)
+                        if [[ $? -eq 0 ]]; then
+                            KeyANSWER="✅ Cookie workflow executed successfully: $workflow_identifier
+
+$WORKFLOW_RESULT"
+                        else
+                            KeyANSWER="❌ Cookie workflow execution failed: $workflow_identifier
+
+Error: $WORKFLOW_RESULT"
+                        fi
+                    else
+                        KeyANSWER="⚠️ Cookie workflow engine not available. Please ensure cookie_workflow_engine.sh is installed and executable."
+                    fi
                 fi
             ######################################################### #pierre / #amelie
             elif [[ "${TAGS[pierre]}" == true || "${TAGS[amelie]}" == true ]]; then

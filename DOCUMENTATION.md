@@ -74,9 +74,19 @@
 ### Media & Content
 * **[🎬 Nostr Tube](docs/README.NostrTube.md)** - Decentralized video platform with theater mode, playlists, and N² recommendations
 
+### Environmental & Biodiversity
+* **[🌿 PlantNet & ORE](docs/PLANTNET_ORE.md)** - **Biodiversity Tracking System** - Recensement de la biodiversité végétale avec activation automatique de contrats ORE. Features include:
+  * Reconnaissance automatique de plantes via PlantNet API
+  * Intégration ORE biodiversité par UMAP
+  * Interface Flora Quest avec gamification
+  * Système de badges et récompenses Ẑen
+  * Activation contrats ORE après 8 plantes observées
+* **[🌍 ORE System](docs/ORE_SYSTEM.md)** - Obligations Réelles Environnementales décentralisées
+
 ### Identity & Authentication
 * **[UPassport API](UPASSPORT_API.md)** - UPassport API reference
 * **[NOSTR Integration](NIP-101/)** - NOSTR protocol integration
+* **[DID Implementation](DID_IMPLEMENTATION.md)** - Decentralized Identity system
 
 ## 🌍 Language Versions
 
