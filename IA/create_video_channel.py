@@ -183,21 +183,16 @@ async def fetch_nostr_events(relay_url: str = "ws://127.0.0.1:7777", limit: int 
 
 def is_youtube_video_event(event: Dict[str, Any]) -> bool:
     """
-    Vérifie si un événement NOSTR est une vidéo YouTube NIP-71
-    Supporte uniquement les événements kind: 21 et 22 (NIP-71)
+    Vérifie si un événement NOSTR est une vidéo NIP-71 (kind 21 ou 22)
+    Accepte TOUTES les vidéos kind 21/22, indépendamment de leur conformité au contrat
+    Permet à youtube.html d'afficher toutes les vidéos avec indication de provenance et conformité
     """
-    tags = event.get('tags', [])
     kind = event.get('kind', 1)
     
     # Accepter uniquement les événements NIP-71 (kind: 21 ou 22)
-    if kind not in [21, 22]:
-        return False
-    
-    # Vérifier les tags NIP-71 pour les vidéos
-    has_video_tags = any(tag[0] == 'url' and ('ipfs' in tag[1] or 'youtube' in tag[1]) for tag in tags if len(tag) > 1)
-    has_media_type = any(tag[0] == 'm' and 'video' in tag[1] for tag in tags if len(tag) > 1)
-    
-    return has_video_tags and has_media_type
+    # On accepte toutes les vidéos, même si elles ne respectent pas strictement UPlanet_FILE_CONTRACT.md
+    # La conformité sera vérifiée et affichée par youtube.html
+    return kind in [21, 22]
 
 def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = "ws://127.0.0.1:7777") -> Dict[str, Any]:
     """
@@ -217,7 +212,7 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
     info_cid = ""      # NEW: info.json CID for metadata reuse
     file_hash = ""     # NEW: File hash for provenance tracking
     upload_chain = ""  # NEW: Upload chain for provenance tracking (comma-separated pubkeys)
-    source_type = ""   # NEW: Source type (film, serie, youtube, webcam)
+    source_type = "webcam"   # NEW: Source type (film, serie, youtube, webcam) - default: webcam
     
     # Parse tags for standard NIP-71 fields first
     for tag in tags:
@@ -304,9 +299,15 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
             ipfs_url = ipfs_match.group(1)
     
     if not youtube_url:
+        # Try to extract from content with emoji prefix
         youtube_match = re.search(r'📺 YouTube: (https?://[^\s]+)', content)
         if youtube_match:
             youtube_url = youtube_match.group(1)
+        else:
+            # Try to extract any YouTube URL from content
+            youtube_match = re.search(r'(https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)[\w-]+)', content)
+            if youtube_match:
+                youtube_url = youtube_match.group(1)
     
     if not metadata_ipfs:
         metadata_match = re.search(r'📋 Métadonnées: (https?://[^\s]+)', content)
@@ -496,11 +497,42 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
     content = event.get('content', '').strip()
     
     # Determine source type from tags (source:film, source:serie, source:youtube, source:webcam)
-    # Default to 'webcam' if not found in tags
-    if not source_type:
-        source_type = 'webcam'  # Default: personal video/webcam
-        if youtube_url:
+    # Also check topic tags (t) for provenance indicators
+    # Default is already set to 'webcam' - only override if explicitly specified
+    if source_type == "webcam":  # Only check if still at default value
+        # Check topic tags for provenance
+        topic_tags = [t[1] for t in tags if len(t) > 1 and t[0] == 't']
+        if 'YouTubeDownload' in topic_tags:
             source_type = 'youtube'
+        # Keep 'webcam' as default - don't override based on youtube_url presence
+    
+    # Detect provenance from topic tags
+    provenance_tags = [t[1] for t in tags if len(t) > 1 and t[0] == 't']
+    provenance = 'unknown'
+    if 'YouTubeDownload' in provenance_tags:
+        provenance = 'youtube_download'
+    elif 'VideoChannel' in provenance_tags:
+        provenance = 'video_channel'
+    elif source_type == 'youtube':
+        provenance = 'youtube'
+    elif source_type == 'webcam':
+        provenance = 'webcam'
+    
+    # Check compliance with UPlanet_FILE_CONTRACT.md
+    # Required tags: x (file hash), info (info.json CID), thumbnail_ipfs, gifanim_ipfs
+    compliance = {
+        'has_file_hash': bool(file_hash),
+        'has_info_cid': bool(info_cid),
+        'has_thumbnail': bool(thumbnail_ipfs),
+        'has_gifanim': bool(gifanim_ipfs),
+        'has_upload_chain': bool(upload_chain),
+        'has_dimensions': bool(dimensions),
+        'has_duration': bool(duration and duration > 0)
+    }
+    compliance_score = sum(compliance.values())
+    compliance_total = len(compliance)
+    compliance_percent = int((compliance_score / compliance_total) * 100) if compliance_total > 0 else 0
+    is_compliant = compliance_percent >= 80  # At least 80% of required fields
     
     # Parse upload_chain to extract list of uploaders (copieurs)
     upload_chain_list = []
@@ -596,6 +628,11 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
         'upload_chain': upload_chain,  # NEW: Upload chain for provenance (comma-separated pubkeys)
         'upload_chain_list': upload_chain_list,  # NEW: Parsed upload chain list (copieurs)
         'source_type': source_type,  # NEW: Source type (film, serie, youtube, webcam)
+        'provenance': provenance,  # NEW: Provenance detected from tags (youtube_download, video_channel, webcam, etc.)
+        'compliance': compliance,  # NEW: Compliance check with UPlanet_FILE_CONTRACT.md
+        'compliance_score': compliance_score,  # NEW: Number of compliant fields
+        'compliance_percent': compliance_percent,  # NEW: Percentage of compliance
+        'is_compliant': is_compliant,  # NEW: Boolean indicating if video is compliant (>=80%)
         'subtitles': subtitles,
         'channel_name': channel_name,
         'topic_keywords': ','.join(topic_keywords),

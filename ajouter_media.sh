@@ -39,21 +39,25 @@ start=`date +%s`
 [[ $(which jq) == "" ]] && echo "ERREUR! Installez jq" && exit 1
 
 mkdir -p ~/.zen/tmp/
-exec 2>&1 >> ~/.zen/tmp/ajouter_media.log
+LOG_FILE="$HOME/.zen/tmp/ajouter_media.log"
+# Properly redirect both stdout and stderr to log file while also showing on terminal
+exec > >(tee -a "$LOG_FILE")
+exec 2>&1
 
 URL="$1"
 PLAYER="$2"
 CHOICE="$3"
 echo ">>> RUNNING 'ajouter_media.sh' URL=$URL PLAYER=$PLAYER CHOICE=$CHOICE"
+echo ">>> Log file: $LOG_FILE"
 
 # API endpoint
 API_URL="http://127.0.0.1:54321"
 
 # Check who is PLAYER ?
 if [[ ${PLAYER} == "" ]]; then
-    players=($(ls ~/.zen/game/players 2>/dev/null | grep "@"))
+    players=($(ls ~/.zen/game/nostr 2>/dev/null | grep "@"))
     if [[ ${#players[@]} -ge 1 ]]; then
-        espeak "SELECT YOUR PLAYER"
+        espeak "SELECT YOUR MULTIPASS"
         OUTPUT=$(zenity --list --width 480 --height 200 --title="Choix du PLAYER" --column="Astronaute" "${players[@]}")
         [[ ${OUTPUT} == "" ]] && espeak "No player selected. EXIT" && exit 1
     else
@@ -86,8 +90,8 @@ $($MY_PATH/tools/search_for_this_email_in_players.sh ${PLAYER} | tail -n 1)
 
 espeak "Hello $PSEUDO"
 
-## ZEN CARD (contains shares)
-G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub)
+## MULTIPASS (Zen)
+G1PUB=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
 [[ $G1PUB == "" ]] && espeak "ERROR NO G 1 PUBLIC KEY FOUND - EXIT" && exit 1
 
 # Get NOSTR npub and hex from player
@@ -189,7 +193,7 @@ if [ $URL ]; then
     CHOICE="$IMPORT"
 fi
 
-[ ! $2 ] && [[ $CHOICE == "" ]] && CHOICE=$(zenity --entry --width 300 --title="Catégorie" --text="Quelle catégorie pour ce media ?" --entry-text="Vlog" Video Film Serie PDF Youtube MP3)
+[ ! $2 ] && [[ $CHOICE == "" ]] && CHOICE=$(zenity --list --width 300 --height 250 --title="Catégorie" --text="Quelle catégorie pour ce media ?" --column="Catégorie" "Vlog" "Video" "Film" "Serie" "PDF" "Youtube" "MP3" 2>/dev/null)
 [[ $CHOICE == "" ]] && echo "NO CHOICE MADE" && exit 1
 
 # LOWER CARACTERS
@@ -232,15 +236,83 @@ echo "📥 Downloading YouTube video using process_youtube.sh..."
 TEMP_YOUTUBE_DIR="$HOME/.zen/tmp/youtube_$(date -u +%s%N | cut -b1-13)"
 mkdir -p "$TEMP_YOUTUBE_DIR"
 
-# Call process_youtube.sh with --no-ipfs and --output-dir options
-YOUTUBE_RESULT=$(${MY_PATH}/IA/process_youtube.sh --no-ipfs --output-dir "$TEMP_YOUTUBE_DIR" "$YTURL" "mp4" "$PLAYER" 2>&1)
+# Call process_youtube.sh with --json, --no-ipfs and --output-dir options
+echo "📥 Calling process_youtube.sh with: --json --no-ipfs --output-dir \"$TEMP_YOUTUBE_DIR\" \"$YTURL\" \"mp4\" \"$PLAYER\""
+YOUTUBE_RESULT=$(${MY_PATH}/IA/process_youtube.sh --json --debug --no-ipfs --output-dir "$TEMP_YOUTUBE_DIR" "$YTURL" "mp4" "$PLAYER" 2>&1)
 YTDLP_EXIT=$?
 
-        # Extract JSON from result
-if echo "$YOUTUBE_RESULT" | grep -q "=== JSON OUTPUT START ==="; then
-    YOUTUBE_JSON=$(echo "$YOUTUBE_RESULT" | sed -n '/=== JSON OUTPUT START ===/,/=== JSON OUTPUT END ===/p' | grep -v "=== JSON OUTPUT")
-else
-    YOUTUBE_JSON=$(echo "$YOUTUBE_RESULT" | grep -A 1000 '^{$' | tail -n +1)
+echo "📋 process_youtube.sh exit code: $YTDLP_EXIT"
+
+# Extract JSON from result (with --json flag, output is pure JSON)
+YOUTUBE_JSON=$(echo "$YOUTUBE_RESULT" | grep -E '^\{|^\[' | head -n 1)
+
+# If no JSON found, try to extract from stderr messages
+if [[ -z "$YOUTUBE_JSON" ]] || ! echo "$YOUTUBE_JSON" | jq '.' >/dev/null 2>&1; then
+    # Try to find JSON in the output
+    YOUTUBE_JSON=$(echo "$YOUTUBE_RESULT" | jq -c '.' 2>/dev/null | head -n 1)
+    
+    # If still no valid JSON, try to extract error JSON
+    if [[ -z "$YOUTUBE_JSON" ]] || ! echo "$YOUTUBE_JSON" | jq '.' >/dev/null 2>&1; then
+        YOUTUBE_JSON=$(echo "$YOUTUBE_RESULT" | grep -oE '\{[^}]*"error"[^}]*\}' | head -n 1)
+    fi
+fi
+
+# Check if JSON contains an error field
+if [[ -n "$YOUTUBE_JSON" ]] && echo "$YOUTUBE_JSON" | jq -e '.error' >/dev/null 2>&1; then
+    ERROR_MSG=$(echo "$YOUTUBE_JSON" | jq -r '.error')
+    
+    # Build user-friendly error message for zenity
+    ERROR_DISPLAY="❌ ERROR: $ERROR_MSG"
+    
+    # Check if error is about missing cookie
+    if echo "$ERROR_MSG" | grep -qi "cookie"; then
+        ERROR_DISPLAY="${ERROR_DISPLAY}\n\n💡 Solution:\n"
+        ERROR_DISPLAY="${ERROR_DISPLAY}   1. Export your YouTube cookies from your browser\n"
+        ERROR_DISPLAY="${ERROR_DISPLAY}   2. Upload the cookie file via: http://127.0.0.1:54321/api/fileupload\n"
+        ERROR_DISPLAY="${ERROR_DISPLAY}   3. The cookie file should be saved as:\n"
+        ERROR_DISPLAY="${ERROR_DISPLAY}      ~/.zen/game/nostr/${PLAYER}/.youtube.com.cookie\n\n"
+        ERROR_DISPLAY="${ERROR_DISPLAY}   Or use the cookie upload interface at:\n"
+        ERROR_DISPLAY="${ERROR_DISPLAY}   http://127.0.0.1:54321/cookie"
+    fi
+    
+    # Display error to user via zenity (if available and not in non-interactive mode)
+    if [[ -z "$2" ]] && command -v zenity &> /dev/null; then
+        zenity --error \
+            --width 600 \
+            --title="YouTube Download Error" \
+            --text="$ERROR_DISPLAY" 2>/dev/null || true
+    fi
+    
+    # Also display in console
+    echo "$ERROR_DISPLAY" | sed 's/\\n/\n/g'
+    echo ""
+    echo "Full output from process_youtube.sh:"
+    echo "$YOUTUBE_RESULT"
+    echo ""
+    echo "📋 Check also: ~/.zen/tmp/IA.log for detailed process_youtube.sh logs"
+    espeak "YouTube processing error"
+    exit 1
+fi
+
+# If exit code is non-zero but no JSON error was found, show generic error
+if [[ $YTDLP_EXIT -ne 0 ]]; then
+    ERROR_DISPLAY="❌ ERROR: YouTube download failed (exit code: $YTDLP_EXIT)"
+    
+    # Display error to user via zenity (if available and not in non-interactive mode)
+    if [[ -z "$2" ]] && command -v zenity &> /dev/null; then
+        zenity --error \
+            --width 500 \
+            --title="YouTube Download Error" \
+            --text="${ERROR_DISPLAY}\n\nCheck ~/.zen/tmp/IA.log for details." 2>/dev/null || true
+    fi
+    
+    echo "$ERROR_DISPLAY"
+    echo "Full output from process_youtube.sh:"
+    echo "$YOUTUBE_RESULT"
+    echo ""
+    echo "📋 Check also: ~/.zen/tmp/IA.log for detailed process_youtube.sh logs"
+    espeak "YouTube download failed"
+    exit 1
 fi
 
 # Validate JSON
@@ -248,14 +320,9 @@ if ! echo "$YOUTUBE_JSON" | jq '.' >/dev/null 2>&1; then
     echo "❌ ERROR: Invalid JSON from process_youtube.sh"
     echo "Full output:"
     echo "$YOUTUBE_RESULT"
+    echo ""
+    echo "📋 Check also: ~/.zen/tmp/IA.log for detailed process_youtube.sh logs"
     espeak "Invalid JSON from YouTube processing"
-    exit 1
-fi
-
-# Check if download succeeded
-if [[ $YTDLP_EXIT -ne 0 ]]; then
-    echo "❌ ERROR: YouTube download failed (exit code: $YTDLP_EXIT)"
-    espeak "YouTube download failed"
     exit 1
 fi
 
@@ -264,11 +331,38 @@ TITLE=$(echo "$YOUTUBE_JSON" | jq -r '.title // empty')
 DURATION=$(echo "$YOUTUBE_JSON" | jq -r '.duration // "0"')
 FILENAME=$(echo "$YOUTUBE_JSON" | jq -r '.filename // empty')
 FILE_PATH_DOWNLOADED=$(echo "$YOUTUBE_JSON" | jq -r '.file_path // empty')
-        METADATA_FILE_FROM_JSON=$(echo "$YOUTUBE_JSON" | jq -r '.metadata_file // empty')
+METADATA_FILE_FROM_JSON=$(echo "$YOUTUBE_JSON" | jq -r '.metadata_file // empty')
+OUTPUT_DIR_FROM_JSON=$(echo "$YOUTUBE_JSON" | jq -r '.output_dir // empty')
 
-# Validate extracted values
+# Validate extracted values - if file_path doesn't exist, try to find it in output_dir
+if [[ -z "$FILE_PATH_DOWNLOADED" ]] || [[ ! -f "$FILE_PATH_DOWNLOADED" ]]; then
+    # Try to find the file in output_dir
+    if [[ -n "$OUTPUT_DIR_FROM_JSON" ]] && [[ -d "$OUTPUT_DIR_FROM_JSON" ]]; then
+        echo "🔍 File path from JSON not found, searching in output_dir: $OUTPUT_DIR_FROM_JSON"
+        # Find any media file in the output directory
+        FILE_PATH_DOWNLOADED=$(find "$OUTPUT_DIR_FROM_JSON" -maxdepth 1 -type f \( -name "*.mp4" -o -name "*.mp3" -o -name "*.m4a" -o -name "*.webm" -o -name "*.mkv" \) ! -name "*.info.json" ! -name "*.webp" ! -name "*.png" ! -name "*.jpg" 2>/dev/null | head -n 1)
+        
+        # If still not found, try to find the largest file
+        if [[ -z "$FILE_PATH_DOWNLOADED" ]] || [[ ! -f "$FILE_PATH_DOWNLOADED" ]]; then
+            FILE_PATH_DOWNLOADED=$(find "$OUTPUT_DIR_FROM_JSON" -maxdepth 1 -type f ! -name "*.info.json" ! -name "*.webp" ! -name "*.png" ! -name "*.jpg" -exec ls -S {} + 2>/dev/null | head -n 1)
+        fi
+        
+        if [[ -n "$FILE_PATH_DOWNLOADED" ]] && [[ -f "$FILE_PATH_DOWNLOADED" ]]; then
+            FILENAME=$(basename "$FILE_PATH_DOWNLOADED")
+            echo "✅ Found downloaded file: $FILE_PATH_DOWNLOADED"
+        fi
+    fi
+fi
+
+# Final validation
 if [[ -z "$FILENAME" || -z "$FILE_PATH_DOWNLOADED" || ! -f "$FILE_PATH_DOWNLOADED" ]]; then
     echo "❌ ERROR: Downloaded file not found or invalid metadata"
+    echo "   Searched for: $FILE_PATH_DOWNLOADED"
+    if [[ -n "$OUTPUT_DIR_FROM_JSON" ]]; then
+        echo "   In directory: $OUTPUT_DIR_FROM_JSON"
+        echo "   Files in directory:"
+        ls -lh "$OUTPUT_DIR_FROM_JSON" 2>/dev/null || echo "   (directory not accessible)"
+    fi
     espeak "Download failed"
     exit 1
 fi
@@ -285,6 +379,40 @@ echo "   Duration: $DURATION seconds"
             espeak "No NOSTR key found"
     exit 1
 fi
+
+        # Send NIP-42 authentication event before upload
+        echo "🔐 Sending NIP-42 authentication event..."
+        SECRET_NOSTR_FILE="$HOME/.zen/game/nostr/${PLAYER}/.secret.nostr"
+        NOSTR_SEND_SCRIPT="${MY_PATH}/tools/nostr_send_note.py"
+        NOSTR_RELAY="ws://127.0.0.1:7777"
+        
+        if [[ -f "$SECRET_NOSTR_FILE" ]] && [[ -f "$NOSTR_SEND_SCRIPT" ]]; then
+            # Send NIP-42 event (kind 22242) to authenticate with relay
+            # Content includes IPFSNODEID and UPLANETNAME_G1 for identification
+            NIP42_CONTENT="${IPFSNODEID} ${UPLANETNAME_G1}"
+            NIP42_TAGS='[["relay","'${NOSTR_RELAY}'"],["challenge",""]]'
+            if python3 "$NOSTR_SEND_SCRIPT" \
+                --keyfile "$SECRET_NOSTR_FILE" \
+                --content "$NIP42_CONTENT" \
+                --kind 22242 \
+                --tags "$NIP42_TAGS" \
+                --relays "$NOSTR_RELAY" \
+                >/dev/null 2>&1; then
+                echo "✅ NIP-42 authentication event sent"
+                # Wait a bit for the event to be processed by the relay
+                sleep 2
+            else
+                echo "⚠️  Warning: Failed to send NIP-42 authentication event (upload may still work if already authenticated)"
+            fi
+        else
+            if [[ ! -f "$SECRET_NOSTR_FILE" ]]; then
+                echo "⚠️  Warning: Secret key file not found: $SECRET_NOSTR_FILE"
+            fi
+            if [[ ! -f "$NOSTR_SEND_SCRIPT" ]]; then
+                echo "⚠️  Warning: nostr_send_note.py not found: $NOSTR_SEND_SCRIPT"
+            fi
+            echo "⚠️  Warning: Cannot send NIP-42 authentication event (upload may still work if already authenticated)"
+        fi
 
         UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
             -F "file=@${FILE_PATH_DOWNLOADED}" \
@@ -370,6 +498,10 @@ echo "   CID: $IPFS_CID"
         PUBLISH_DATA="${PUBLISH_DATA}&description=${VIDEO_DESC}"
         PUBLISH_DATA="${PUBLISH_DATA}&publish_nostr=true"
         PUBLISH_DATA="${PUBLISH_DATA}&npub=${NPUB}"
+        # Add YouTube URL if available (for source:youtube tag)
+        if [[ -n "$YTURL" ]]; then
+            PUBLISH_DATA="${PUBLISH_DATA}&youtube_url=${YTURL}"
+        fi
         
         PUBLISH_RESPONSE=$(curl -s -X POST "${API_URL}/webcam" \
             -H "Content-Type: application/x-www-form-urlencoded" \

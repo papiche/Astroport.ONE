@@ -11,6 +11,19 @@ source "$HOME/.zen/Astroport.ONE/tools/my.sh"
 
 DEBUG=0
 CUSTOM_OUTPUT_DIR=""
+JSON_OUTPUT=0
+LOGFILE="$HOME/.zen/tmp/IA.log"
+mkdir -p "$(dirname "$LOGFILE")"
+
+# Define log_debug function early (before argument parsing)
+log_debug() {
+    if [[ $DEBUG -eq 1 ]]; then
+        # Use subshell with error handling to prevent broken pipe errors
+        (
+            echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOGFILE" >&2
+        ) 2>/dev/null || true
+    fi
+}
 
 # Parse arguments
 # Note: --no-ipfs flag is deprecated (now default behavior for UPlanet_FILE_CONTRACT.md compliance)
@@ -18,6 +31,10 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         --debug)
             DEBUG=1
+            shift
+            ;;
+        --json)
+            JSON_OUTPUT=1
             shift
             ;;
         --no-ipfs)
@@ -34,18 +51,6 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
-
-LOGFILE="$HOME/.zen/tmp/IA.log"
-mkdir -p "$(dirname "$LOGFILE")"
-
-log_debug() {
-    if [[ $DEBUG -eq 1 ]]; then
-        # Use subshell with error handling to prevent broken pipe errors
-        (
-            echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOGFILE" >&2
-        ) 2>/dev/null || true
-    fi
-}
 
 MY_PATH="$(dirname "$0")"
 MY_PATH="$( cd "$MY_PATH" && pwd )"
@@ -86,11 +91,96 @@ cleanup() {
     if [[ -z "$CUSTOM_OUTPUT_DIR" && -n "$TMP_DIR" ]]; then
         rm -rf "$TMP_DIR"
     fi
+    # Also cleanup browser cookie file if it was created
+    if [[ -n "$BROWSER_COOKIE_FILE" ]] && [[ -f "$BROWSER_COOKIE_FILE" ]]; then
+        rm -f "$BROWSER_COOKIE_FILE" 2>/dev/null
+    fi
 }
 trap cleanup EXIT
 
 # Extract metadata first
 log_debug "Extracting metadata for: $URL"
+
+# Function to extract YouTube cookies from browser's cookie database
+extract_browser_cookies() {
+    local temp_cookie_file="$HOME/.zen/tmp/youtube_browser_cookies_$$.txt"
+    mkdir -p "$(dirname "$temp_cookie_file")"
+    
+    # Try Chrome/Chromium/Brave
+    for chrome_dir in "$HOME/.config/google-chrome" "$HOME/.config/chromium" "$HOME/.config/BraveSoftware/Brave-Browser"; do
+        if [[ -d "$chrome_dir" ]]; then
+            for profile in "$chrome_dir"/*/Cookies; do
+                if [[ -f "$profile" ]]; then
+                    log_debug "Trying Chrome cookie database: $profile"
+                    # Extract YouTube cookies using sqlite3
+                    if command -v sqlite3 &> /dev/null; then
+                        # Use process substitution to avoid subshell issues
+                        while IFS='|' read -r name value host path expires_utc is_secure is_httponly; do
+                            if [[ -n "$name" && -n "$value" ]]; then
+                                # Convert Chrome timestamp to Unix timestamp (Chrome uses microseconds since 1601-01-01)
+                                # expires_utc is in microseconds, convert to seconds
+                                expires=$((expires_utc / 1000000 - 11644473600))
+                                # Format as Netscape cookie format: domain flag path secure expiration name value
+                                # flag: TRUE if cookie applies to subdomains, FALSE otherwise
+                                domain_flag="FALSE"
+                                [[ "$host" =~ ^\. ]] && domain_flag="TRUE"
+                                secure_flag="FALSE"
+                                [[ "$is_secure" == "1" ]] && secure_flag="TRUE"
+                                httponly_flag=""
+                                [[ "$is_httponly" == "1" ]] && httponly_flag="#HttpOnly_"
+                                echo -e "${httponly_flag}${host}\t${domain_flag}\t${path}\t${secure_flag}\t${expires}\t${name}\t${value}" >> "$temp_cookie_file"
+                            fi
+                        done < <(sqlite3 "$profile" "SELECT name, value, host_key, path, expires_utc, is_secure, is_httponly FROM cookies WHERE host_key LIKE '%youtube.com%' OR host_key LIKE '%.youtube.com%'" 2>/dev/null)
+                        
+                        if [[ -f "$temp_cookie_file" ]] && [[ -s "$temp_cookie_file" ]]; then
+                            break 2
+                        fi
+                    fi
+                fi
+            done
+        fi
+    done
+    
+    # Try Firefox if Chrome didn't work
+    if [[ ! -f "$temp_cookie_file" ]] || [[ ! -s "$temp_cookie_file" ]]; then
+        if command -v sqlite3 &> /dev/null; then
+            for firefox_profile in "$HOME/.mozilla/firefox"/*/cookies.sqlite*; do
+                if [[ -f "$firefox_profile" ]]; then
+                    log_debug "Trying Firefox cookie database: $firefox_profile"
+                    while IFS='|' read -r name value host path expiry is_secure is_httponly; do
+                        if [[ -n "$name" && -n "$value" ]]; then
+                            # Format as Netscape cookie format: domain flag path secure expiration name value
+                            # flag: TRUE if cookie applies to subdomains, FALSE otherwise
+                            domain_flag="FALSE"
+                            [[ "$host" =~ ^\. ]] && domain_flag="TRUE"
+                            secure_flag="FALSE"
+                            [[ "$is_secure" == "1" ]] && secure_flag="TRUE"
+                            httponly_flag=""
+                            [[ "$is_httponly" == "1" ]] && httponly_flag="#HttpOnly_"
+                            echo -e "${httponly_flag}${host}\t${domain_flag}\t${path}\t${secure_flag}\t${expiry}\t${name}\t${value}" >> "$temp_cookie_file"
+                        fi
+                    done < <(sqlite3 "$firefox_profile" "SELECT name, value, host, path, expiry, isSecure, isHttpOnly FROM moz_cookies WHERE host LIKE '%youtube.com%' OR host LIKE '%.youtube.com%'" 2>/dev/null)
+                    
+                    if [[ -f "$temp_cookie_file" ]] && [[ -s "$temp_cookie_file" ]]; then
+                        break
+                    fi
+                fi
+            done
+        fi
+    fi
+    
+    if [[ -f "$temp_cookie_file" ]] && [[ -s "$temp_cookie_file" ]]; then
+        # Add Netscape cookie file header
+        echo -e "# Netscape HTTP Cookie File\n# This file was generated by process_youtube.sh from browser cookies\n" > "${temp_cookie_file}.netscape"
+        cat "$temp_cookie_file" >> "${temp_cookie_file}.netscape"
+        rm -f "$temp_cookie_file"
+        echo "${temp_cookie_file}.netscape"
+        return 0
+    else
+        rm -f "$temp_cookie_file" "${temp_cookie_file}.netscape" 2>/dev/null
+        return 1
+    fi
+}
 
 # Find cookie file - cookies are stored at user's NOSTR root directory
 cookie_file=""
@@ -105,26 +195,121 @@ if [[ -n "$PLAYER_EMAIL" ]]; then
     fi
 fi
 
+# If no MULTIPASS cookie found, try to extract from browser
+BROWSER_COOKIE_FILE=""
 if [[ -z "$cookie_file" || ! -f "$cookie_file" ]]; then
+    log_debug "No MULTIPASS cookie found, trying to extract from browser..."
+    BROWSER_COOKIE_FILE=$(extract_browser_cookies)
+    if [[ -n "$BROWSER_COOKIE_FILE" ]] && [[ -f "$BROWSER_COOKIE_FILE" ]]; then
+        cookie_file="$BROWSER_COOKIE_FILE"
+        log_debug "Using browser cookie file: $cookie_file"
+    fi
+fi
+
+if [[ -z "$cookie_file" || ! -f "$cookie_file" ]]; then
+    # Build detailed error message
+    error_msg="❌ No YouTube cookie file found"
+    if [[ -n "$PLAYER_EMAIL" ]]; then
+        error_msg="${error_msg} for MULTIPASS: ${PLAYER_EMAIL}"
+    fi
+    error_msg="${error_msg}. Please upload a YouTube cookie file via /api/fileupload"
+    
+    if [[ -n "$PLAYER_EMAIL" ]]; then
+        error_msg="${error_msg}. Expected location: ~/.zen/game/nostr/${PLAYER_EMAIL}/.youtube.com.cookie or ~/.zen/game/nostr/${PLAYER_EMAIL}/.cookie.txt"
+    fi
+    error_msg="${error_msg}. Also tried to extract cookies from browser but failed."
+    
+    # Log detailed error to file
+    echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $error_msg" >> "$LOGFILE"
+    if [[ -n "$PLAYER_EMAIL" ]]; then
+        echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] Checked paths:" >> "$LOGFILE"
+        echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')]   - $HOME/.zen/game/nostr/${PLAYER_EMAIL}/.youtube.com.cookie" >> "$LOGFILE"
+        echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')]   - $HOME/.zen/game/nostr/${PLAYER_EMAIL}/.cookie.txt" >> "$LOGFILE"
+    fi
+    echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] Also tried browser cookie extraction (Chrome/Firefox)" >> "$LOGFILE"
+    
     # Output JSON to stdout (not stderr) to avoid broken pipe issues
-    echo '{"error":"❌ No cookie file found. Please upload a YouTube cookie file via /api/fileupload"}' 2>/dev/null || echo '{"error":"No cookie file found"}'
+    # Escape quotes for JSON
+    error_msg_json=$(echo "$error_msg" | sed 's/"/\\"/g')
+    if [[ $JSON_OUTPUT -eq 1 ]]; then
+        # JSON-only output mode
+        echo "{\"error\":\"${error_msg_json}\",\"success\":false}" 2>/dev/null || echo "{\"error\":\"No cookie file found\",\"success\":false}"
+    else
+        # Legacy mode with markers
+        (echo "=== JSON OUTPUT START ===" >&2) 2>/dev/null || true
+        echo "{\"error\":\"${error_msg_json}\"}" 2>/dev/null || echo "{\"error\":\"No cookie file found\"}"
+        (echo "=== JSON OUTPUT END ===" >&2) 2>/dev/null || true
+    fi
     exit 1
 fi
 
-metadata_line=$(yt-dlp --cookies "$cookie_file" --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
-log_debug "Metadata line: $metadata_line"
+log_debug "Extracting metadata with yt-dlp..."
+# Run yt-dlp with --quiet to suppress warnings, but keep errors
+# Use --no-warnings to suppress warnings, but keep errors in stderr
+metadata_output=$(yt-dlp --cookies "$cookie_file" --no-warnings --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
+metadata_exit_code=$?
+log_debug "yt-dlp metadata extraction exit code: $metadata_exit_code"
+
+# Log errors to file
+if [[ $metadata_exit_code -ne 0 ]]; then
+    echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] ERROR: yt-dlp metadata extraction failed (exit code: $metadata_exit_code)" >> "$LOGFILE"
+    echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] yt-dlp output: $metadata_output" >> "$LOGFILE"
+    log_debug "yt-dlp error output: $metadata_output"
+    # Output JSON to stdout (not stderr) to avoid broken pipe issues
+    error_msg=$(echo "$metadata_output" | head -n 1 | sed 's/"/\\"/g')
+    echo "{\"error\":\"❌ Failed to extract metadata from YouTube URL: $error_msg\"}" 2>/dev/null || echo "{\"error\":\"Failed to extract metadata from YouTube URL\"}"
+    exit 1
+fi
+
+# Filter out warnings and extract only the line matching the expected format (id&title&duration&uploader)
+# YouTube video IDs are 11 characters (alphanumeric, hyphens, underscores)
+# The format should be: video_id&title&duration&uploader
+# Filter lines that match the pattern: 11-char ID followed by & followed by title&duration&uploader
+metadata_line=$(echo "$metadata_output" | grep -v "^WARNING" | grep -v "^ERROR" | grep -v "Please report" | grep -v "Falling back" | grep -E "^[a-zA-Z0-9_-]{11}&" | head -n 1)
+
+# If still no valid line, try to extract any line with exactly 4 fields separated by &
+if [[ -z "$metadata_line" ]]; then
+    # Count fields separated by & - should be exactly 4 (id, title, duration, uploader)
+    metadata_line=$(echo "$metadata_output" | grep -v "WARNING" | grep -v "ERROR" | while IFS= read -r line; do
+        field_count=$(echo "$line" | tr '&' '\n' | wc -l)
+        # Check if line starts with 11-char ID followed by & (escape & in regex)
+        if [[ $field_count -eq 4 ]] && echo "$line" | grep -qE '^[a-zA-Z0-9_-]{11}&'; then
+            echo "$line"
+            break
+        fi
+    done | head -n 1)
+fi
+
+# Last resort: extract the last line that contains & and has 4 fields
+if [[ -z "$metadata_line" ]]; then
+    metadata_line=$(echo "$metadata_output" | grep -E "&" | grep -v "WARNING" | grep -v "ERROR" | while IFS= read -r line; do
+        field_count=$(echo "$line" | tr '&' '\n' | wc -l)
+        if [[ $field_count -eq 4 ]]; then
+            echo "$line"
+        fi
+    done | tail -n 1)
+fi
+
+log_debug "Metadata line (filtered): $metadata_line"
 
 if [[ -z "$metadata_line" ]]; then
     # Output JSON to stdout (not stderr) to avoid broken pipe issues
-    echo '{"error":"❌ Failed to extract metadata from YouTube URL"}' 2>/dev/null || echo '{"error":"Failed to extract metadata from YouTube URL"}'
+    echo '{"error":"❌ Failed to extract metadata from YouTube URL (empty result)"}' 2>/dev/null || echo '{"error":"Failed to extract metadata from YouTube URL"}'
     exit 1
 fi
 
-# Parse metadata
-yid=$(echo "$metadata_line" | cut -d '&' -f 1)
-raw_title=$(echo "$metadata_line" | cut -d '&' -f 2)
-duration=$(echo "$metadata_line" | cut -d '&' -f 3)
-uploader=$(echo "$metadata_line" | cut -d '&' -f 4)
+# Parse metadata - extract fields separated by &
+yid=$(echo "$metadata_line" | cut -d '&' -f 1 | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+raw_title=$(echo "$metadata_line" | cut -d '&' -f 2 | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+duration=$(echo "$metadata_line" | cut -d '&' -f 3 | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+uploader=$(echo "$metadata_line" | cut -d '&' -f 4 | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+# Validate extracted fields
+if [[ -z "$yid" ]] || [[ "$yid" =~ ^WARNING|^ERROR ]]; then
+    log_debug "Invalid video ID extracted: $yid"
+    echo '{"error":"❌ Failed to extract valid metadata from YouTube URL (invalid video ID)"}' 2>/dev/null || echo '{"error":"Failed to extract metadata from YouTube URL"}'
+    exit 1
+fi
 
 # Clean title
 media_title=$(echo "$raw_title" | detox --inline | sed 's/[^a-zA-Z0-9._-]/_/g' | sed 's/__*/_/g' | sed 's/^_\|_$//g' | head -c 100)
@@ -143,19 +328,32 @@ fi
 log_debug "Starting download with cookies"
 case "$FORMAT" in
     mp3)
-        yt-dlp --cookies "$cookie_file" -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+        log_debug "Running yt-dlp for MP3 download..."
+        download_output=$(yt-dlp --cookies "$cookie_file" -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
             --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
-            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" >&2 2>> "$LOGFILE"
+            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" 2>&1)
+        download_exit_code=$?
+        echo "$download_output" >> "$LOGFILE"
+        # Show output on stderr for debugging
+        (echo "$download_output" >&2) 2>/dev/null || true
         ;;
     mp4)
-        yt-dlp --cookies "$cookie_file" -f "best[height<=720]/best" --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
+        log_debug "Running yt-dlp for MP4 download..."
+        download_output=$(yt-dlp --cookies "$cookie_file" -f "best[height<=720]/best" --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
             --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
-            -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" >&2 2>> "$LOGFILE"
+            -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)
+        download_exit_code=$?
+        echo "$download_output" >> "$LOGFILE"
+        # Show output on stderr for debugging
+        (echo "$download_output" >&2) 2>/dev/null || true
         ;;
 esac
 
-download_exit_code=$?
 log_debug "Download exit code: $download_exit_code"
+if [[ $download_exit_code -ne 0 ]]; then
+    echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] ERROR: yt-dlp download failed (exit code: $download_exit_code)" >> "$LOGFILE"
+    log_debug "yt-dlp download error output: $download_output"
+fi
 
 # Check if files were created
 files_created=$(ls "$OUTPUT_DIR"/* 2>/dev/null | wc -l)
@@ -163,10 +361,31 @@ log_debug "Files created: $files_created"
 
 # Check final result
 if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
-    # Find the downloaded file
-    media_file=$(ls "$OUTPUT_DIR"/*.{mp4,mp3,m4a,webm,mkv} 2>/dev/null | head -n 1)
+    # Find the downloaded file - try multiple methods
+    media_file=""
     
-    if [[ -n "$media_file" ]]; then
+    # Method 1: Look for files with expected extension
+    media_file=$(find "$OUTPUT_DIR" -maxdepth 1 -type f \( -name "*.mp4" -o -name "*.mp3" -o -name "*.m4a" -o -name "*.webm" -o -name "*.mkv" \) ! -name "*.info.json" ! -name "*.webp" ! -name "*.png" ! -name "*.jpg" 2>/dev/null | head -n 1)
+    
+    # Method 2: If not found, try to find the largest file (likely the video)
+    if [[ -z "$media_file" ]] || [[ ! -f "$media_file" ]]; then
+        media_file=$(find "$OUTPUT_DIR" -maxdepth 1 -type f ! -name "*.info.json" ! -name "*.webp" ! -name "*.png" ! -name "*.jpg" -exec ls -S {} + 2>/dev/null | head -n 1)
+    fi
+    
+    # Method 3: List all files and find media file
+    if [[ -z "$media_file" ]] || [[ ! -f "$media_file" ]]; then
+        for file in "$OUTPUT_DIR"/*; do
+            if [[ -f "$file" ]] && [[ ! "$file" =~ \.(info\.json|webp|png|jpg)$ ]]; then
+                # Check if it's a media file by extension or size (media files are usually > 1MB)
+                if [[ "$file" =~ \.(mp4|mp3|m4a|webm|mkv)$ ]] || [[ $(stat -c%s "$file" 2>/dev/null || echo 0) -gt 1048576 ]]; then
+                    media_file="$file"
+                    break
+                fi
+            fi
+        done
+    fi
+    
+    if [[ -n "$media_file" ]] && [[ -f "$media_file" ]]; then
         filename=$(basename "$media_file")
         log_debug "Found downloaded file: $media_file"
         
@@ -196,8 +415,7 @@ if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
         log_debug "File will be uploaded via /api/fileupload (UPlanet_FILE_CONTRACT.md compliant)"
             
         # Generate JSON response - write to stdout ONLY
-            # Use echo to ensure clean output
-            json_output=$(cat << EOF
+        json_output=$(cat << EOF
 {
   "ipfs_url": "",
   "title": "$media_title",
@@ -230,12 +448,20 @@ if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
 }
 EOF
 )
-            # Write a clear separator to stderr, then JSON to stdout
+        
+        # Output JSON based on --json flag
+        if [[ $JSON_OUTPUT -eq 1 ]]; then
+            # Pure JSON output (no separators)
+            echo "$json_output"
+        else
+            # Write separators to stderr, then JSON to stdout (backward compatibility)
             (echo "=== JSON OUTPUT START ===" >&2) 2>/dev/null || true
             echo "$json_output"
             (echo "=== JSON OUTPUT END ===" >&2) 2>/dev/null || true
+        fi
+        
         log_debug "Success JSON outputted. File ready for /api/fileupload workflow."
-            exit 0
+        exit 0
     fi
 fi
 

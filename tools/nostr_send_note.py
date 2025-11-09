@@ -405,8 +405,8 @@ def main():
         print(f"Error: Keyfile not found: {args.keyfile}", file=sys.stderr)
         sys.exit(1)
     
-    # Allow empty content for kind 3 (contacts) per NIP-02
-    if not args.content.strip() and args.kind != 3:
+    # Allow empty content for kind 3 (contacts) per NIP-02 and kind 22242 (NIP-42 auth)
+    if not args.content.strip() and args.kind != 3 and args.kind != 22242:
         print("Error: Content cannot be empty", file=sys.stderr)
         sys.exit(1)
     
