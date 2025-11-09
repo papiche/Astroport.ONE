@@ -1382,4 +1382,3 @@ trap cleanup EXIT
 
 # Exécuter le script principal
 main "$@"
-

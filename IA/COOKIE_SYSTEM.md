@@ -410,12 +410,3 @@ Planned features:
 **Documentation**: UPassport Cookie System v1.0  
 **Last Updated**: Décembre 2025  
 **Maintainer**: Astroport.ONE Team
-
----
-
-## Related Documentation
-
-- **[COOKIE_SYSTEM_COMPLIANCE.md](./COOKIE_SYSTEM_COMPLIANCE.md)**: Detailed conformity analysis between documentation and implementation
-- **[NOSTRCARD.refresh.sh](../RUNTIME/NOSTRCARD.refresh.sh)**: Automated scraper execution script
-- **[cookie.html](../../UPassport/templates/cookie.html)**: User interface for cookie upload
-

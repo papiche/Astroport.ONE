@@ -534,7 +534,10 @@ myASTROTUBE="https://$(myAstroTube)"
 ###
 if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]]; then
 # GET SCREEN DIMENSIONS
-    if [[ -z $large && -z $haut ]]; then
+    # Initialize variables to avoid "unbound variable" error with set -u
+    large="${large:-}"
+    haut="${haut:-}"
+    if [[ -z "$large" && -z "$haut" ]]; then
         # Check cache first
         cache_file="$HOME/.zen/tmp/screen_dimensions"
         if [[ -f "$cache_file" ]]; then

@@ -1,69 +1,50 @@
 # TODO Quotidien - 2025-11-09
 
-**Généré automatiquement** : 2025-11-09 14:28:08  
+**Généré automatiquement** : 2025-11-09 15:31:35  
 **Période analysée** : Dernières 24h
 
 ---
 
 ## 📊 Résumé Généré par IA
 
-## Analyse des Modifications Git - 9 Novembre 2025 ⏰
+## Résumé des Modifications Git des Dernières 24h (Projet TODO)
 
-Voici un résumé structuré des modifications Git détectées, destiné à TODO.today.md.
+Ce résumé analyse les modifications Git des dernières 24h, axées sur l'amélioration et la consolidation de la documentation et des scripts associés au système TODO.  L'activité est principalement concentrée sur l'amélioration du système Oracle et l'optimisation du traitement des médias pour UPlanet.
 
-**Date :** 9 Novembre 2025 🗓️
+**1. Activités Principales :**
 
-**Systèmes Modifiés & Détails :**
+*   **Oracle System (5 modifications):** Les modifications les plus importantes concernent l'Oracle System, avec des mises à jour régulières des scripts et de la documentation.  Il y a eu une transition vers un système dynamique 100% (WoTx2) avec des permis auto-déclarés, une refonte de la documentation et des définitions de permis. L'activité comprend des améliorations de la documentation, des refontes des scripts et l'ajustement de la structure des DIDs.
+*   **UPlanet Media Processing (2 modifications):** L'activité se concentre sur une migration vers un modèle de téléchargement uniquement pour le traitement des médias, supprimant ainsi l'intégration IPFS. Cela inclut des mises à jour des scripts et de la documentation pour gérer les nouvelles API endpoints et la détection des types de fichiers.
+*   **N8N (2 fichiers):** Mises à jour de la documentation pour le framework N8N, probablement pour améliorer sa documentation.
+*   **CoinFlip (1 fichier):** Modifications de la documentation pour CoinFlip.
 
-*   **Oracle 🛡️:** Des mises à jour significatives ont été apportées à la documentation et aux scripts concernant le système Oracle.  Ces changements incluent la transition vers un système dynamique 100% avec WoTx2, la mise à jour des définitions de permis, et l'amélioration de la clarté de la documentation.  Plusieurs scripts ont été modifiés pour aligner avec ces changements, notamment `oracle_init_permit_definitions.sh` et `runtime/oracle.refresh.sh`. Un script a été supprimé:  `tools/oracle_test_permit_system.sh`.
-*   **N8N 📊:** Quelques mises à jour ont été faites aux fichiers de documentation pour ce système.
-*   **UPlanet 🚀:**  Des changements importants ont été apportés aux scripts et à la documentation liés à UPlanet, notamment le passage à un modèle de téléchargement uniquement pour le traitement des médias, la suppression de l'upload via IPFS et l'implémentation de nouveaux endpoints API pour le téléchargement et la publication de vidéos.
-*   **Cookie 🍪:** Des modifications dans la documentation et les scripts concernant le workflow des cookies ont été apportées.
-*   **DID 🔑:**  Des modifications à la documentation concernant la mise en œuvre des DID ont été faites.
-*   **NostrTube 🎬:** Des mises à jour ont été apportées aux scripts pour la création de canaux vidéo et la publication de vidéos sur YouTube.
+**2. Tâches Complétées :**
 
-**Fichiers Concernés :**
+*   Intégration du système WoTx2 dans l'Oracle System.
+*   Migration vers un modèle de téléchargement des médias pour UPlanet.
+*   Mises à jour de la documentation du framework N8N.
+*   Mises à jour de la documentation de CoinFlip.
+*   Implémentation de nouvelles API endpoints pour le traitement des médias.
 
-*   **Créés :**
-    *   `IA/cookie_workflow_engine.sh`
-    *   `IA/scraper.TMDB.py`
-    *   `docs/PLANTNET_ORE.md`
-    *   `docs/N8N.todo.md`
-*   **Modifiés :**
-    *   `DOCUMENTATION.md` (Plusieurs instances)
-    *   `IA/UPlanet_IA_Responder.sh`
-    *   `IA/create_video_channel.py`
-    *   `IA/process_youtube.sh`
-    *   `IA/youtube.com.sh`
-    *   `ajouter_media.sh`
-    *   `runtime/oracle.refresh.sh`
-    *   `docs/N8N.md`
-    *   `docs/N8N.todo.md`
-    *   `tools/publish_nostr_file.sh`
-    *   `tools/publish_nostr_video.sh`
-    *   `docs/ORACLE.doc.md`
-    *   `tools/oracle.WoT_PERMIT.init.sh`
-    *   `templates/NOSTR/permit_definitions.json`
-*   **Supprimés :**
-    *   `tools/oracle_test_permit_system.sh`
+**3. Tâches en Cours / Prochaines Étapes :**
 
-**Résumé des Changements par Système :**
+*   La transition vers le système dynamique Oracle est en cours, nécessitant une surveillance continue.
+*   Mise à jour des workflows pour le traitement des médias et l'intégration des nouvelles API.
+*   Amélioration de la documentation en fonction des nouvelles fonctionnalités.
+*   Résolution des problèmes d'erreur identifiés dans les scripts.
 
-*   **Oracle:** Amélioration de la documentation, transition vers un système dynamique, mise à jour des définitions de permis. C’est une mise à jour majeure qui nécessite une revue attentive des scripts pour assurer la cohérence.
-*   **UPlanet:** Migration vers un workflow de médias basé sur le téléchargement, amélioration des fonctionnalités de publication vidéo.  Cela pourrait affecter le flux de travail actuel, il est important de tester les nouveaux scripts et endpoints.
-*   **Cookie:**  Prise en compte du nouveau workflow, il est important de s'assurer que le nouveau script est intégré correctement.
-*   **N8N:**  Ce système a subi des mises à jour mineures de la documentation.
-*   **NostrTube:**  Modifications des scripts de gestion des canaux vidéo et de la publication de vidéos.
+**4. Avancées Importantes :**
 
-**Prochaines Étapes Suggérées :**
+*   L'adoption du système WoTx2 représente une avancée majeure dans la conception du système Oracle.
+*   La migration vers un modèle de téléchargement est une étape cruciale pour optimiser le flux de travail des médias.
+*   La mise à jour de la documentation est une amélioration continue qui facilite l'utilisation et la compréhension du système.
 
-1.  **Revue des modifications Oracle 🔎:**  Examinez attentivement tous les scripts modifiés dans le système Oracle pour vous assurer de leur cohérence et de leur intégration avec les nouvelles définitions de permis.
-2.  **Tests UPlanet 🧪:**  Testez rigoureusement les nouveaux endpoints API et le workflow de publication vidéo pour UPlanet.
-3.  **Intégration Cookie 🔄:** Assurez-vous que le nouveau script fonctionne correctement et s'intègre au reste de votre système.
-4.  **Documentation 📝:**  Mettez à jour la documentation de TODO.today.md en fonction des modifications apportées.
-5. **Vérification des dépendances:** Assurez-vous que toutes les bibliothèques et dépendances sont à jour.
+**5. Priorités pour la Suite :**
 
-J'espère que ce résumé vous sera utile ! 👍
+*   **Terminer la transition complète vers le système Oracle dynamique.**  Cela comprend une surveillance et des tests approfondis.
+*   **Optimiser les nouveaux workflows de traitement des médias.**  Assurer une intégration transparente et efficace.
+*   **Continuer à améliorer la documentation**, en particulier pour les nouvelles fonctionnalités et les corrections de bugs.
+*   **Évaluer l’impact des changements sur les performances du système.**
 
 ---
 
@@ -71,13 +52,14 @@ J'espère que ce résumé vous sera utile ! 👍
 
 [0;34m🔍 Analyse des modifications par système...[0m
 \n### N8N (2 fichier(s))\n  - docs/N8N.md
-  - docs/N8N.todo.md\n\n### ORACLE (5 fichier(s))\n  - RUNTIME/ORACLE.refresh.sh
+  - docs/N8N.todo.md\n\n### CoinFlip (1 fichier(s))\n  - docs/COINFLIP.md\n\n### ORACLE (5 fichier(s))\n  - RUNTIME/ORACLE.refresh.sh
   - docs/ORACLE.doc.md
   - tools/oracle.WoT_PERMIT.init.sh
   - tools/oracle_init_permit_definitions.sh
   - tools/oracle_test_permit_system.sh\n\n### Cookie (2 fichier(s))\n  - IA/COOKIE_SYSTEM.md
   - IA/cookie_workflow_engine.sh\n\n### DID (1 fichier(s))\n  - DID_IMPLEMENTATION.md\n\n### NostrTube (2 fichier(s))\n  - IA/create_video_channel.py
-  - IA/youtube.com.sh\n\n### PlantNet (1 fichier(s))\n  - docs/PLANTNET_ORE.md\n
+  - IA/youtube.com.sh\n\n### uMARKET (2 fichier(s))\n  - docs/uMARKET.md
+  - docs/uMARKET.todo.md\n\n### PlantNet (1 fichier(s))\n  - docs/PLANTNET_ORE.md\n
 
 ---
 
@@ -85,7 +67,8 @@ J'espère que ce résumé vous sera utile ! 👍
 
 - [TODO Principal](TODO.md)
 - [Documentation](DOCUMENTATION.md)
+- [TODO System](docs/TODO_SYSTEM.md)
 
 ---
 
-**Note** : Ce fichier est généré automatiquement par `todo.sh`. Vérifiez et intégrez les informations pertinentes dans TODO.md manuellement.
+**Note** : Ce fichier est généré automatiquement par `todo.sh`. Le résumé IA compare déjà TODO.md avec les modifications Git pour assurer la continuité. Vérifiez et intégrez les informations pertinentes dans TODO.md manuellement.

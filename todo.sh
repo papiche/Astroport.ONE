@@ -68,6 +68,7 @@ analyze_changes_by_system() {
         ["N8N"]="docs/N8N.md|docs/N8N.todo.md|UPassport/templates/n8n.html|nostr-nips/101-cookie-workflow-extension.md"
         ["PlantNet"]="docs/PLANTNET_ORE.md|IA/plantnet_recognition.py|IA/plantnet_ore_integration.py|UPlanet/earth/plantnet.html"
         ["CoinFlip"]="docs/COINFLIP.md|UPlanet/earth/coinflip/index.html|UPlanet/earth/coinflip/README.md|UPassport/zen_send.sh"
+        ["uMARKET"]="docs/uMARKET.md|docs/uMARKET.todo.md|tools/_uMARKET.*.sh|RUNTIME/NOSTR.UMAP.refresh.sh"
     )
     
     echo -e "${BLUE}🔍 Analyse des modifications par système...${NC}"
@@ -86,28 +87,39 @@ analyze_changes_by_system() {
     echo "$changes_summary"
 }
 
-# Fonction pour générer le prompt pour question.py
+# Fonction pour générer le prompt pour question.py (une seule question pour continuité)
 generate_ai_prompt() {
     local git_summary=$(cat "$GIT_LOG_FILE" 2>/dev/null | head -100)
     local changes_by_system=$(analyze_changes_by_system)
     
+    # Lire TODO.md principal pour assurer la continuité
+    local todo_main_content=""
+    if [[ -f "$TODO_MAIN" ]]; then
+        todo_main_content=$(cat "$TODO_MAIN")
+    else
+        todo_main_content="TODO.md n'existe pas encore."
+    fi
+    
     cat <<EOF
-Analyse les modifications Git suivantes des dernières 24h et génère un résumé structuré pour TODO.today.md.
+Compare le fichier TODO.md principal avec les modifications Git des dernières 24h et génère un résumé concis en français qui :
 
-Modifications Git :
+1. Identifie ce qui a été fait (tâches complétées, systèmes modifiés)
+2. Identifie ce qu'il reste à faire (tâches en cours, prochaines étapes)
+3. Met en évidence les avancées importantes
+4. Suggère les priorités pour la suite
+
+Format de réponse : Markdown structuré, concis (maximum 500 mots), avec des sections claires.
+
+TODO.md principal :
+$todo_main_content
+
+---
+
+Modifications Git des dernières 24h :
 $git_summary
 
 Modifications par système :
 $changes_by_system
-
-Génère un résumé en format Markdown avec :
-1. Date du jour
-2. Systèmes modifiés avec détails
-3. Fichiers créés/modifiés/supprimés
-4. Résumé des changements par système
-5. Prochaines étapes suggérées
-
-Format de sortie : Markdown structuré, en français, avec emojis pour la lisibilité.
 EOF
 }
 
@@ -162,7 +174,7 @@ main() {
     # Nettoyer le fichier temporaire
     rm -f "$prompt_file"
     
-    # Générer TODO.today.md
+    # Générer TODO.today.md avec le résumé concis (une seule question)
     cat > "$TODO_TODAY" <<EOF
 # TODO Quotidien - $(date +"%Y-%m-%d")
 
@@ -187,10 +199,11 @@ $(analyze_changes_by_system)
 
 - [TODO Principal](TODO.md)
 - [Documentation](DOCUMENTATION.md)
+- [TODO System](docs/TODO_SYSTEM.md)
 
 ---
 
-**Note** : Ce fichier est généré automatiquement par \`todo.sh\`. Vérifiez et intégrez les informations pertinentes dans TODO.md manuellement.
+**Note** : Ce fichier est généré automatiquement par \`todo.sh\`. Le résumé IA compare déjà TODO.md avec les modifications Git pour assurer la continuité. Vérifiez et intégrez les informations pertinentes dans TODO.md manuellement.
 EOF
     
     echo -e "${GREEN}✅ TODO.today.md généré avec succès${NC}"
@@ -231,70 +244,23 @@ publish_todo_report() {
     
     echo -e "${BLUE}📤 Publication du rapport quotidien sur le mur du CAPTAIN...${NC}"
     
-    # Lire le contenu du rapport
+    # Lire le contenu du rapport (déjà généré avec résumé concis)
     local report_content=$(cat "$TODO_TODAY")
     
     # Extraire le titre (première ligne après le #)
     local title=$(echo "$report_content" | head -1 | sed 's/^# //' | sed 's/^## //')
     [[ -z "$title" ]] && title="TODO Quotidien - $(date +"%Y-%m-%d")"
     
-    # Générer un résumé concis en comparant TODO.md avec le rapport
-    echo -e "${BLUE}🤖 Génération d'un résumé concis via IA...${NC}"
-    
-    # Vérifier que TODO.md existe
-    local todo_main_content=""
-    if [[ -f "$TODO_MAIN" ]]; then
-        todo_main_content=$(cat "$TODO_MAIN")
-    else
-        todo_main_content="TODO.md n'existe pas encore."
-    fi
-    
-    # Créer un prompt pour question.py
-    local prompt_file="$REPO_ROOT/.todo_prompt_concise_$$.txt"
-    cat > "$prompt_file" <<EOF
-Compare le fichier TODO.md principal avec le rapport quotidien généré et génère un résumé concis en français qui :
-
-1. Identifie ce qui a été fait (tâches complétées, systèmes modifiés)
-2. Identifie ce qu'il reste à faire (tâches en cours, prochaines étapes)
-3. Met en évidence les avancées importantes
-4. Suggère les priorités pour la suite
-
-Format de réponse : Markdown structuré, concis (maximum 500 mots), avec des sections claires.
-
-TODO.md principal :
-$todo_main_content
-
----
-
-Rapport quotidien (modifications des dernières 24h) :
-$report_content
-EOF
-    
-    # Appeler question.py pour générer le résumé concis
-    local concise_summary=$(python3 "$QUESTION_PY" --model "gemma3:latest" "$(cat "$prompt_file")" 2>/dev/null || {
-        echo -e "${YELLOW}⚠️  Erreur lors de la génération du résumé concis, utilisation du rapport complet${NC}"
-        echo "$report_content"
-    })
-    
-    # Nettoyer le fichier temporaire
-    rm -f "$prompt_file"
-    
-    # Si le résumé concis est vide ou contient une erreur, utiliser le rapport complet
-    if [[ -z "$concise_summary" ]] || echo "$concise_summary" | grep -qi "error\|failed\|erreur"; then
-        echo -e "${YELLOW}⚠️  Résumé concis non généré, utilisation du rapport complet${NC}"
-        concise_summary="$report_content"
-    fi
-    
-    # Extraire un résumé court pour les métadonnées (première section après "Résumé")
-    local summary=$(echo "$concise_summary" | sed -n '/## 📊 Résumé/,/^---/p' | head -20 | tail -n +2 | sed '/^---/d' | head -10)
-    [[ -z "$summary" ]] && summary=$(echo "$concise_summary" | head -5 | tail -1)
+    # Extraire le résumé pour les métadonnées (première section après "Résumé Généré par IA")
+    local summary=$(echo "$report_content" | sed -n '/## 📊 Résumé Généré par IA/,/^---/p' | head -20 | tail -n +2 | sed '/^---/d' | head -10)
+    [[ -z "$summary" ]] && summary=$(echo "$report_content" | sed -n '/## 📊 Résumé/,/^---/p' | head -10 | tail -n +2 | sed '/^---/d')
     [[ -z "$summary" ]] && summary="Rapport quotidien des modifications Git des dernières 24h"
     
     # Nettoyer le résumé (limiter à 200 caractères)
     summary=$(echo "$summary" | tr '\n' ' ' | sed 's/  */ /g' | head -c 200)
     
-    # Préparer le contenu de l'article (markdown) avec le résumé concis
-    local article_content="$concise_summary"
+    # Utiliser le contenu complet du rapport (déjà concis grâce à la question unique)
+    local article_content="$report_content"
     
     # Calculer la date d'expiration (5 jours = 432000 secondes)
     local expiration_seconds=432000
@@ -359,6 +325,18 @@ EOF
             echo -e "${GREEN}   Event ID: ${event_id:0:16}...${NC}"
             echo -e "${GREEN}   Relays: $relays_success${NC}"
             echo -e "${GREEN}   Expiration: 5 jours${NC}"
+            
+            # Afficher l'événement créé avec nostr_get_events.sh
+            echo -e "\n${BLUE}📋 Affichage de l'événement créé...${NC}"
+            local NOSTR_GET_EVENTS="$REPO_ROOT/tools/nostr_get_events.sh"
+            if [[ -f "$NOSTR_GET_EVENTS" ]]; then
+                echo -e "${BLUE}   Récupération de l'événement kind 30023 avec tag d='$d_tag'...${NC}"
+                "$NOSTR_GET_EVENTS" --kind 30023 --tag-d "$d_tag" 2>/dev/null | jq '.' 2>/dev/null || {
+                    echo -e "${YELLOW}   ⚠️  Impossible d'afficher l'événement (jq peut-être manquant)${NC}"
+                }
+            else
+                echo -e "${YELLOW}   ⚠️  nostr_get_events.sh introuvable${NC}"
+            fi
         else
             echo -e "${YELLOW}⚠️  Publication avec avertissements${NC}"
             echo -e "${YELLOW}   Réponse: $publish_result${NC}"
@@ -417,4 +395,3 @@ EOF
 
 # Exécuter le script
 main "$@"
-

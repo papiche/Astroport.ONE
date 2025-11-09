@@ -160,6 +160,5 @@ UPlanet operates as a **distributed swarm intelligence** where each Station cont
 
 **Ready to monetize your GPU?** [Install Astroport.ONE](https://install.astroport.com) and join the swarm that's redefining AI ownership.
 
----
----
+------
 ---
