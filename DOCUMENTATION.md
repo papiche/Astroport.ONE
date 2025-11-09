@@ -144,6 +144,7 @@ Astroport.ONE/
 1. Review **[ARCHITECTURE.md](ARCHITECTURE.md)** for system design
 2. Explore **[BOOKS/astroport-20h12/](BOOKS/astroport-20h12/README.md)** for core systems
 3. Check **[tools/](tools/)** for utilities and scripts
+4. Track progress with **[TODO System](docs/TODO_SYSTEM.md)** and **[TODO.md](TODO.md)**
 
 ### For System Administrators
 1. Read **[ARCHITECTURE.md](ARCHITECTURE.md)** for deployment details
