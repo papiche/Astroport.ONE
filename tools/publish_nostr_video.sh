@@ -615,6 +615,7 @@ if [ $NOSTR_EXIT_CODE -eq 0 ]; then
         log_info "Publishing kind 1 note with theater link..."
         
         # Build theater URL
+        [[ "$uSPOT" == "http://127.0.0.1:54321" ]] && uSPOT="https://u.copylaradio.com"
         THEATER_URL="${uSPOT}/theater?video=${EVENT_ID}"
         
         # Build kind 1 content with emojis and theater link

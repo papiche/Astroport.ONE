@@ -1004,6 +1004,15 @@ Videos tagged with UMAP coordinates can be discovered by:
 
 Nostr Tube includes advanced UX features to provide a unique and engaging video experience:
 
+### User Tags & Tag Cloud 🏷️
+- **Community-driven tagging**: Users can add tags to any video (NIP-32 Labeling)
+- **Tag cloud visualization**: Display most popular tags with size-based weighting
+- **Tag-based search**: Find videos by user-contributed tags (single or multiple tags with AND/OR operators)
+- **Tag aggregation**: See which tags are most popular across all videos
+- **Tag management**: Users can add/remove their own tags
+- **Standards-compliant**: Uses NIP-32 (Labeling) for tag events (kind 1985)
+- **See**: `nostr-nips/71-video-user-tags-extension.md` for full specification
+
 ### Theater Mode 🎬
 - **Full-screen immersive viewing** with integrated comments panel
 - **Real-time comments** with timestamp support (jump to specific moments)
@@ -1104,6 +1113,7 @@ All enhancements are loaded via:
 | **Kind 10001** | Playlists | Video playlists (NIP-51 Lists) | NIP-51 |
 | **Kind 30001** | Bookmarks | Video bookmarks | NIP-51 |
 | **Kind 3** | Contact Lists | Used for N² network recommendations | NIP-02 |
+| **Kind 1985** | User Tags | User-generated tags for videos (NIP-32 Labeling) | NIP-32 |
 
 ### NIP-101 Events (Identity & Geographic Coordination)
 
@@ -1126,9 +1136,11 @@ All enhancements are loaded via:
 - **NIP-01**: Basic protocol flow
 - **NIP-02**: Contact Lists
 - **NIP-25**: Reactions (likes)
+- **NIP-32**: Labeling (user tags for videos - kind 1985)
 - **NIP-42**: Relay Authentication (required for all uploads)
 - **NIP-51**: Lists (playlists - kind 10001, bookmarks - kind 30001)
 - **NIP-71**: Video Events specification (kinds 21/22)
+- **NIP-71 Extension**: User Tags for Videos (`nostr-nips/71-video-user-tags-extension.md`)
 - **NIP-92**: Media Metadata (imeta tags)
 - **NIP-101**: UPlanet protocol - Decentralized Identity & Geographic Coordination
   - DID Documents (kind 30800)

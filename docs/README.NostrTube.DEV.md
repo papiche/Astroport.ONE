@@ -1229,6 +1229,198 @@ document.querySelectorAll('.video-card').forEach(async (card) => {
 
 ---
 
+### 5. User Tags & Tag Cloud
+
+#### Add Tag to Video
+
+```javascript
+/**
+ * Add a user tag to a video (NIP-32 Labeling)
+ * @param {string} videoEventId - Video event ID (kind 21 or 22)
+ * @param {string} tagValue - Tag value (lowercase, alphanumeric)
+ * @param {string} videoAuthorPubkey - Video author's pubkey (optional)
+ * @param {string} relayUrl - Relay URL where video is stored
+ * @returns {Promise<object>} Result object
+ */
+async function addVideoTag(videoEventId, tagValue, videoAuthorPubkey = null, relayUrl = null)
+
+// Usage
+const result = await addVideoTag(videoEventId, 'bitcoin');
+if (result.success) {
+    console.log('Tag added:', result.tagValue);
+}
+
+// Result object
+{
+    success: true,
+    tagEventId: "event_id",
+    tagValue: "bitcoin"
+}
+```
+
+#### Remove Tag from Video
+
+```javascript
+/**
+ * Remove a user tag from a video
+ * @param {string} tagEventId - The kind 1985 event ID to delete
+ * @returns {Promise<object>} Result object
+ */
+async function removeVideoTag(tagEventId)
+
+// Usage
+const result = await removeVideoTag(tagEventId);
+if (result.success) {
+    console.log('Tag removed');
+}
+```
+
+#### Fetch Tags for Video
+
+```javascript
+/**
+ * Fetch all tags for a video
+ * @param {string} videoEventId - Video event ID
+ * @param {number} timeout - Timeout in ms (default: 5000)
+ * @returns {Promise<object>} Tags object with counts and taggers
+ */
+async function fetchVideoTags(videoEventId, timeout = 5000)
+
+// Usage
+const tags = await fetchVideoTags(videoEventId);
+console.log('Tags:', tags);
+
+// Tags object structure
+{
+    "bitcoin": {
+        count: 5,
+        taggers: ["pubkey1", "pubkey2", ...],
+        events: ["event_id1", "event_id2", ...]
+    },
+    "tutorial": {
+        count: 3,
+        taggers: ["pubkey1", ...],
+        events: ["event_id3", ...]
+    }
+}
+```
+
+#### Fetch Tag Cloud
+
+```javascript
+/**
+ * Fetch tag cloud statistics
+ * @param {number} limit - Number of top tags to return (default: 50)
+ * @param {number} minCount - Minimum tag count (default: 1)
+ * @returns {Promise<object>} Tag cloud object
+ */
+async function fetchTagCloud(limit = 50, minCount = 1)
+
+// Usage
+const tagCloud = await fetchTagCloud(50, 2);
+console.log('Top tags:', tagCloud.tags);
+
+// Tag cloud object
+{
+    tags: {
+        "bitcoin": 42,
+        "tutorial": 38,
+        "music": 35,
+        "comedy": 28
+    },
+    totalTags: 150,
+    uniqueVideos: 75
+}
+```
+
+#### Search Videos by Tag
+
+```javascript
+/**
+ * Search videos by tag(s)
+ * @param {string|Array<string>} tags - Tag value(s) to search for
+ * @param {string} operator - 'AND' or 'OR' (default: 'OR')
+ * @returns {Promise<Array<string>>} Array of video event IDs
+ */
+async function searchVideosByTag(tags, operator = 'OR')
+
+// Usage - Single tag
+const videoIds = await searchVideosByTag('bitcoin');
+
+// Usage - Multiple tags (OR)
+const videoIds = await searchVideosByTag(['bitcoin', 'ethereum'], 'OR');
+
+// Usage - Multiple tags (AND)
+const videoIds = await searchVideosByTag(['bitcoin', 'tutorial'], 'AND');
+```
+
+#### Display Video Tags UI
+
+```javascript
+/**
+ * Display tag input and existing tags for a video
+ * @param {string} containerId - Container element ID
+ * @param {string} videoEventId - Video event ID
+ */
+async function displayVideoTags(containerId, videoEventId)
+
+// Usage in HTML
+<div id="tags-video123"></div>
+
+<script>
+await displayVideoTags('tags-video123', videoEventId);
+</script>
+```
+
+#### Display Tag Cloud UI
+
+```javascript
+/**
+ * Display tag cloud
+ * @param {string} containerId - Container element ID
+ * @param {number} limit - Number of tags to display (default: 50)
+ */
+async function displayTagCloud(containerId, limit = 50)
+
+// Usage in HTML
+<div id="tag-cloud"></div>
+
+<script>
+await displayTagCloud('tag-cloud', 50);
+</script>
+```
+
+#### Tag Naming Conventions
+
+**Recommended:**
+- Use lowercase: `bitcoin`, `tutorial`, `music`
+- Use hyphens for multi-word: `machine-learning`, `web-development`
+- Use underscores for compound: `video_game`, `how_to`
+- Keep tags concise (1-3 words max)
+- Avoid special characters except hyphens and underscores
+
+**Examples:**
+- ✅ `bitcoin`, `crypto`, `tutorial`, `music`, `comedy`
+- ✅ `machine-learning`, `web-development`, `cooking-tips`
+- ❌ `Bitcoin` (should be lowercase)
+- ❌ `bitcoin tutorial` (use hyphen: `bitcoin-tutorial`)
+- ❌ `bitcoin!` (no special chars)
+
+#### API Endpoints
+
+**GET /api/video/tags**
+- Get tag cloud statistics
+- Query params: `limit`, `min_count`
+
+**GET /api/video/tags/{video_id}**
+- Get all tags for a specific video
+
+**GET /youtube?tag={tag_value}**
+- Filter videos by tag
+- Query params: `tag`, `tags` (comma-separated OR), `tags_and` (comma-separated AND)
+
+---
+
 ## Social Graph & N² Network
 
 ### 1. N² Network Discovery
