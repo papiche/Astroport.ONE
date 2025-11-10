@@ -1582,6 +1582,12 @@ fi
         echo "$TMDB_METADATA_JSON" > "$TMDB_METADATA_FILE"
         echo "✅ Created TMDB metadata file: $TMDB_METADATA_FILE"
         
+        # Debug: verify genres are in the metadata file
+        if command -v jq &> /dev/null; then
+            GENRES_IN_FILE=$(echo "$TMDB_METADATA_JSON" | jq -c '.genres // []' 2>/dev/null)
+            echo "🔍 Debug: Genres in TMDB_METADATA_FILE: $GENRES_IN_FILE"
+        fi
+        
         # Extract additional metadata for display (if scraped)
         if [[ "$SCRAPE_TMDB" == "yes" ]] && [[ -n "$SCRAPED_METADATA" ]]; then
             SCRAPED_NETWORK=$(echo "$SCRAPED_METADATA" | jq -r '.network // empty' 2>/dev/null)
@@ -1829,16 +1835,21 @@ fi
         
         # Add genres for tag publication (kind 1985)
         if [[ -n "$GENRES_ARRAY" ]] && [[ "$GENRES_ARRAY" != "[]" ]] && [[ "$GENRES_ARRAY" != "null" ]]; then
-            # Validate JSON array format
-            if echo "$GENRES_ARRAY" | jq -e '.' >/dev/null 2>&1; then
-                PUBLISH_CMD+=("--genres" "$GENRES_ARRAY")
-                echo "🏷️  Genres for tagging (kind 1985): $GENRES_ARRAY"
+            # Validate JSON array format and clean it (remove newlines, extra spaces)
+            GENRES_ARRAY_CLEAN=$(echo "$GENRES_ARRAY" | jq -c '.' 2>/dev/null | tr -d '\n\r')
+            
+            if [[ -n "$GENRES_ARRAY_CLEAN" ]] && echo "$GENRES_ARRAY_CLEAN" | jq -e '.' >/dev/null 2>&1; then
+                PUBLISH_CMD+=("--genres" "$GENRES_ARRAY_CLEAN")
+                echo "🏷️  Genres for tagging (kind 1985): $GENRES_ARRAY_CLEAN"
+                echo "🔍 Debug: GENRES_ARRAY_CLEAN length: ${#GENRES_ARRAY_CLEAN}, format: $(echo "$GENRES_ARRAY_CLEAN" | jq -c '.' 2>/dev/null || echo "invalid")"
             else
                 echo "⚠️  WARNING: Invalid JSON format for genres, skipping genre tags"
-                echo "   GENRES_ARRAY: $GENRES_ARRAY"
+                echo "   GENRES_ARRAY (original): $GENRES_ARRAY"
+                echo "   GENRES_ARRAY_CLEAN: $GENRES_ARRAY_CLEAN"
             fi
         else
             echo "⚠️  No genres provided, skipping kind 1985 tag events"
+            echo "🔍 Debug: GENRES_ARRAY='$GENRES_ARRAY' (empty check: $([ -z "$GENRES_ARRAY" ] && echo "empty" || echo "not empty"))"
         fi
         
         PUBLISH_CMD+=("--channel" "$PLAYER" "--json")

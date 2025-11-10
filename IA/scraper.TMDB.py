@@ -46,12 +46,39 @@ def scrape_tmdb_page(url):
             else:
                 title_text = title_elem.get_text(strip=True)
             
-            # Extract year from span.release_date
-            release_date_span = title_elem.find('span', class_=re.compile('release_date|tag', re.I))
+            # Extract year from span.release_date - try multiple selectors
+            # BeautifulSoup handles multiple classes as a list, so we need to check for both classes
+            # First try: span with both "tag" and "release_date" classes (exact match)
+            release_date_span = None
+            for span in title_elem.find_all('span'):
+                span_classes = span.get('class', [])
+                # Check if span has both "tag" and "release_date" classes
+                if 'tag' in span_classes and 'release_date' in span_classes:
+                    release_date_span = span
+                    break
+            if not release_date_span:
+                # Second try: span with class containing "release_date"
+                release_date_span = title_elem.find('span', class_=re.compile('release_date', re.I))
+            if not release_date_span:
+                # Third try: span with class "tag" that might have release_date
+                for span in title_elem.find_all('span', class_=re.compile('tag', re.I)):
+                    span_classes = span.get('class', [])
+                    if 'release_date' in span_classes or any('release_date' in str(c).lower() for c in span_classes):
+                        release_date_span = span
+                        break
+            
             if release_date_span:
-                year_match = re.search(r'\((\d{4})\)', release_date_span.get_text())
+                release_date_text = release_date_span.get_text(strip=True)
+                year_match = re.search(r'\((\d{4})\)', release_date_text)
                 if year_match:
                     year_from_title = year_match.group(1)
+                    # Also check if the span itself has the year pattern
+                elif re.search(r'\d{4}', release_date_text):
+                    year_match = re.search(r'(\d{4})', release_date_text)
+                    if year_match:
+                        year_candidate = year_match.group(1)
+                        if 1900 <= int(year_candidate) <= 2100:
+                            year_from_title = year_candidate
         
         # Method 2: data-testid="title"
         if not title_text:
@@ -87,24 +114,69 @@ def scrape_tmdb_page(url):
         
         # Try to extract year from various sources
         if 'year' not in metadata or not metadata['year']:
-            # For TV shows: try "First Air Date" or "Premiere Date"
-            for label in ['First Air Date', 'Premiere Date']:
-                label_elem = soup.find(string=re.compile(label, re.I))
-                if label_elem:
-                    parent = label_elem.find_parent()
-                    if parent:
-                        date_elem = parent.find_next('span')
-                        if date_elem:
-                            date_str = date_elem.get_text(strip=True)
-                            if date_str:
-                                year_match = re.search(r'(\d{4})', date_str)
-                                if year_match:
-                                    year_candidate = year_match.group(1)
-                                    if 1900 <= int(year_candidate) <= 2100:
-                                        metadata['year'] = year_candidate
-                                        break
+            # Priority 1: Search for span with class "tag release_date" anywhere in the page
+            # BeautifulSoup handles multiple classes as a list
+            for span in soup.find_all('span'):
+                span_classes = span.get('class', [])
+                # Check if span has both "tag" and "release_date" classes
+                if 'tag' in span_classes and 'release_date' in span_classes:
+                    span_text = span.get_text(strip=True)
+                    # Look for pattern (YYYY) in the span text
+                    year_match = re.search(r'\((\d{4})\)', span_text)
+                    if year_match:
+                        year_candidate = year_match.group(1)
+                        if 1900 <= int(year_candidate) <= 2100:
+                            metadata['year'] = year_candidate
+                            break
+                    # Fallback: look for any 4-digit year in the span
+                    elif re.search(r'\d{4}', span_text):
+                        year_match = re.search(r'(\d{4})', span_text)
+                        if year_match:
+                            year_candidate = year_match.group(1)
+                            if 1900 <= int(year_candidate) <= 2100:
+                                metadata['year'] = year_candidate
+                                break
             
-            # For movies: try "Release Date"
+            # If still not found, try spans with class containing "release_date"
+            if 'year' not in metadata or not metadata['year']:
+                release_date_spans = soup.find_all('span', class_=re.compile('release_date', re.I))
+                for span in release_date_spans:
+                    span_text = span.get_text(strip=True)
+                    # Look for pattern (YYYY) in the span text
+                    year_match = re.search(r'\((\d{4})\)', span_text)
+                    if year_match:
+                        year_candidate = year_match.group(1)
+                        if 1900 <= int(year_candidate) <= 2100:
+                            metadata['year'] = year_candidate
+                            break
+                    # Fallback: look for any 4-digit year in the span
+                    elif re.search(r'\d{4}', span_text):
+                        year_match = re.search(r'(\d{4})', span_text)
+                        if year_match:
+                            year_candidate = year_match.group(1)
+                            if 1900 <= int(year_candidate) <= 2100:
+                                metadata['year'] = year_candidate
+                                break
+            
+            # Priority 2: For TV shows: try "First Air Date" or "Premiere Date"
+            if 'year' not in metadata or not metadata['year']:
+                for label in ['First Air Date', 'Premiere Date']:
+                    label_elem = soup.find(string=re.compile(label, re.I))
+                    if label_elem:
+                        parent = label_elem.find_parent()
+                        if parent:
+                            date_elem = parent.find_next('span')
+                            if date_elem:
+                                date_str = date_elem.get_text(strip=True)
+                                if date_str:
+                                    year_match = re.search(r'(\d{4})', date_str)
+                                    if year_match:
+                                        year_candidate = year_match.group(1)
+                                        if 1900 <= int(year_candidate) <= 2100:
+                                            metadata['year'] = year_candidate
+                                            break
+            
+            # Priority 3: For movies: try "Release Date"
             if 'year' not in metadata or not metadata['year']:
                 release_label = soup.find(string=re.compile('Release Date', re.I))
                 if release_label:
