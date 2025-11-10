@@ -1257,19 +1257,26 @@ if [[ "$CAT" == "serie" ]]; then
     SERIES_NAME=$(echo "${SERIES_NAME}" | detox --inline)
     
     # Episode title (default to file title, user can edit)
-    EPISODE_NAME="$FILE_TITLE"
+    EPISODE_NAME_DEFAULT="$FILE_TITLE"
     if [[ "$SCRAPE_TMDB" == "yes" ]] && [[ -n "$SCRAPED_METADATA" ]]; then
         # Try to get episode title from scraped metadata
         EPISODE_TITLE_FROM_META=$(echo "$SCRAPED_METADATA" | jq -r '.episode_title // .episode_name // empty' 2>/dev/null)
-        [[ -n "$EPISODE_TITLE_FROM_META" ]] && EPISODE_NAME="$EPISODE_TITLE_FROM_META"
+        [[ -n "$EPISODE_TITLE_FROM_META" ]] && EPISODE_NAME_DEFAULT="$EPISODE_TITLE_FROM_META"
     fi
+    # Clean episode title before showing to user (remove underscores that might come from scraper)
+    EPISODE_NAME_CLEAN=$(echo "$EPISODE_NAME_DEFAULT" | sed 's/_/ /g' | sed 's/  */ /g' | sed 's/^ *//;s/ *$//')
     # Ask user for episode title
-    [ ! $2 ] && EPISODE_NAME=$(zenity --entry --width 400 --title "Titre de l'épisode" --text "Indiquez le titre de l'épisode" --entry-text="$EPISODE_NAME")
-    [[ -z "$EPISODE_NAME" ]] && EPISODE_NAME="$FILE_TITLE"
-    EPISODE_NAME=$(echo "${EPISODE_NAME}" | detox --inline)
+    [ ! $2 ] && EPISODE_NAME=$(zenity --entry --width 400 --title "Titre de l'épisode" --text "Indiquez le titre de l'épisode" --entry-text="$EPISODE_NAME_CLEAN") || EPISODE_NAME="$EPISODE_NAME_CLEAN"
+    [[ -z "$EPISODE_NAME" ]] && EPISODE_NAME="$EPISODE_NAME_CLEAN"
+    # Clean episode name for filename only (detox replaces spaces with underscores)
+    EPISODE_NAME_FOR_FILENAME=$(echo "${EPISODE_NAME}" | detox --inline)
+    # Keep original episode name (with spaces) for NOSTR publication
+    EPISODE_NAME_FOR_PUBLICATION="$EPISODE_NAME"
     
     # Use episode name as TITLE for compatibility with existing code
-    TITLE="$EPISODE_NAME"
+    TITLE="$EPISODE_NAME_FOR_FILENAME"
+    # Keep original title (with spaces) for NOSTR publication
+    TITLE_FOR_PUBLICATION="$EPISODE_NAME_FOR_PUBLICATION"
 else
     # For films/videos, use regular title extraction
     if [[ "$SCRAPE_TMDB" == "yes" ]] && [[ -n "$SCRAPED_METADATA" ]]; then
@@ -1282,9 +1289,15 @@ else
     fi
     
     # VIDEO TITLE (ask user to confirm/edit)
-    TITLE=$(zenity --entry --width 300 --title "Titre" --text "Indiquez le titre de la vidéo" --entry-text="$TITLE")
+    # Clean title before showing to user (remove underscores that might come from scraper)
+    TITLE_CLEAN_FOR_DISPLAY=$(echo "$TITLE" | sed 's/_/ /g' | sed 's/  */ /g' | sed 's/^ *//;s/ *$//')
+    [ ! $2 ] && TITLE=$(zenity --entry --width 300 --title "Titre" --text "Indiquez le titre de la vidéo" --entry-text="$TITLE_CLEAN_FOR_DISPLAY") || TITLE="$TITLE_CLEAN_FOR_DISPLAY"
     [[ $TITLE == "" ]] && exit 1
-    TITLE=$(echo "${TITLE}" | detox --inline)
+    # Clean title for filename (detox replaces spaces with underscores, but we want to preserve user's input)
+    # Only sanitize special characters, keep spaces as spaces for the title tag
+    TITLE_FOR_FILENAME=$(echo "${TITLE}" | detox --inline)
+    # Keep original title (with spaces) for NOSTR publication, use sanitized version only for filename
+    TITLE_FOR_PUBLICATION="$TITLE"
 fi
 
 # Extract or ask for year
@@ -1296,24 +1309,38 @@ YEAR=$(zenity --entry --width 300 --title "Année" --text "Indiquez année de la
 # Extract genres from scraped data or ask user
 GENRES=""
 GENRES_ARRAY="[]"
+GENRES_DEFAULT=""
 if [[ "$SCRAPE_TMDB" == "yes" ]] && [[ -n "$SCRAPED_METADATA" ]]; then
     # Try to get genres as array first (preferred format)
     GENRES_ARRAY=$(echo "$SCRAPED_METADATA" | jq -c '.genres // []' 2>/dev/null)
     if [[ -z "$GENRES_ARRAY" ]] || [[ "$GENRES_ARRAY" == "[]" ]]; then
         # Fallback: try to get as comma-separated string
-        GENRES=$(echo "$SCRAPED_METADATA" | jq -r '.genres // [] | join(", ")' 2>/dev/null)
+        GENRES_DEFAULT=$(echo "$SCRAPED_METADATA" | jq -r '.genres // [] | join(", ")' 2>/dev/null)
     else
-        # Convert array to comma-separated string for display
-        GENRES=$(echo "$SCRAPED_METADATA" | jq -r '.genres // [] | join(", ")' 2>/dev/null)
+        # Convert array to comma-separated string for display/confirmation
+        GENRES_DEFAULT=$(echo "$SCRAPED_METADATA" | jq -r '.genres // [] | join(", ")' 2>/dev/null)
     fi
 fi
+
+# Always ask user to confirm/edit genres (even if scraped)
+[ ! $2 ] && GENRES=$(zenity --entry --width 400 --title "Genres" --text "Indiquez les genres (séparés par des virgules). Ex: Action, Science Fiction, Thriller" --entry-text="$GENRES_DEFAULT") || GENRES="$GENRES_DEFAULT"
+
+# If user cancelled or left empty, use default if available
 if [[ -z "$GENRES" ]] || [[ "$GENRES" == "" ]]; then
-    GENRES=$(zenity --entry --width 400 --title "Genres" --text "Indiquez les genres (séparés par des virgules). Ex: Action, Science Fiction, Thriller" --entry-text="")
+    if [[ -n "$GENRES_DEFAULT" ]] && [[ "$GENRES_DEFAULT" != "" ]]; then
+        GENRES="$GENRES_DEFAULT"
+        echo "📋 Using scraped genres: $GENRES"
+    else
+        echo "⚠️  No genres provided, skipping genre tags"
+        GENRES=""
+        GENRES_ARRAY="[]"
+    fi
 fi
+
 # Convert genres string to array format for JSON
-if [[ -n "$GENRES" ]]; then
+if [[ -n "$GENRES" ]] && [[ "$GENRES" != "" ]]; then
     GENRES_ARRAY=$(echo "$GENRES" | jq -R 'split(", ") | map(select(. != "")) | map(gsub("^\\s+|\\s+$"; ""))' 2>/dev/null || echo "[]")
-    echo "📋 Genres: $GENRES"
+    echo "📋 Genres confirmed: $GENRES"
 fi
 
 # For series: ask for season and episode numbers
@@ -1757,9 +1784,11 @@ fi
         
         # Build publish command using --auto mode (reads from upload2ipfs.sh output)
         # Use episode title for series if available, otherwise use regular title
-        PUBLISH_TITLE="$TITLE"
+        # Use TITLE_FOR_PUBLICATION (with spaces, no underscores) for NOSTR publication
+        PUBLISH_TITLE="${TITLE_FOR_PUBLICATION:-$TITLE}"
         if [[ "$CAT" == "serie" ]] && [[ -n "$TITLE_WITH_EPISODE" ]]; then
-            PUBLISH_TITLE="$TITLE_WITH_EPISODE"
+            # Clean episode title too
+            PUBLISH_TITLE=$(echo "$TITLE_WITH_EPISODE" | sed 's/_/ /g' | sed 's/  */ /g' | sed 's/^ *//;s/ *$//')
             echo "📺 Using episode title: $PUBLISH_TITLE"
         fi
         PUBLISH_CMD=("$PUBLISH_SCRIPT" "--auto" "$UPLOAD_OUTPUT_FILE" "--nsec" "$SECRET_FILE" "--title" "$PUBLISH_TITLE")
@@ -1781,7 +1810,10 @@ fi
                 PUBLISH_CMD+=("--series-name" "$SERIES_NAME")
                 echo "📺 Series name: $SERIES_NAME"
             fi
-            if [[ -n "$EPISODE_NAME" ]]; then
+            if [[ -n "$EPISODE_NAME_FOR_PUBLICATION" ]]; then
+                PUBLISH_CMD+=("--episode-name" "$EPISODE_NAME_FOR_PUBLICATION")
+                echo "📺 Episode name: $EPISODE_NAME_FOR_PUBLICATION"
+            elif [[ -n "$EPISODE_NAME" ]]; then
                 PUBLISH_CMD+=("--episode-name" "$EPISODE_NAME")
                 echo "📺 Episode name: $EPISODE_NAME"
             fi
@@ -1796,9 +1828,17 @@ fi
         fi
         
         # Add genres for tag publication (kind 1985)
-        if [[ -n "$GENRES_ARRAY" ]] && [[ "$GENRES_ARRAY" != "[]" ]]; then
-            PUBLISH_CMD+=("--genres" "$GENRES_ARRAY")
-            echo "🏷️  Genres for tagging: $GENRES_ARRAY"
+        if [[ -n "$GENRES_ARRAY" ]] && [[ "$GENRES_ARRAY" != "[]" ]] && [[ "$GENRES_ARRAY" != "null" ]]; then
+            # Validate JSON array format
+            if echo "$GENRES_ARRAY" | jq -e '.' >/dev/null 2>&1; then
+                PUBLISH_CMD+=("--genres" "$GENRES_ARRAY")
+                echo "🏷️  Genres for tagging (kind 1985): $GENRES_ARRAY"
+            else
+                echo "⚠️  WARNING: Invalid JSON format for genres, skipping genre tags"
+                echo "   GENRES_ARRAY: $GENRES_ARRAY"
+            fi
+        else
+            echo "⚠️  No genres provided, skipping kind 1985 tag events"
         fi
         
         PUBLISH_CMD+=("--channel" "$PLAYER" "--json")
