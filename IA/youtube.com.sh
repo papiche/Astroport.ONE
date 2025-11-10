@@ -4,7 +4,12 @@
 # YouTube likes synchronization for MULTIPASS holders
 # Called by NOSTRCARD.refresh.sh when .youtube.com.cookie is detected
 #
-# Usage: $0 <player_email> [--debug]
+# Usage: $0 <player_email> [cookie_file] [--debug]
+#
+# Parameters:
+#   player_email: Email of the MULTIPASS holder
+#   cookie_file:  (Optional) Path to cookie file. If not provided, will search in user directory
+#   --debug:     (Optional) Enable debug logging
 #
 # Fonctionnalités:
 # - Récupère les vidéos likées depuis la dernière synchronisation (max 3 par run)
@@ -54,8 +59,16 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Player email: $PLAYER" >&2
 
 if [[ -z "$PLAYER" ]]; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: No player email provided" >&2
-    echo "Usage: $0 <player_email> [--debug]"
+    echo "Usage: $0 <player_email> [cookie_file] [--debug]"
     exit 1
+fi
+
+# Check if second parameter is a cookie file (not --debug)
+COOKIE_PARAM=""
+if [[ -n "$2" && "$2" != "--debug" && "$2" != "--debug-udrive" ]]; then
+    COOKIE_PARAM="$2"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cookie file provided as parameter: $COOKIE_PARAM" >&2
+    shift  # Remove cookie param so --debug can still be processed
 fi
 
 LOGFILE="$HOME/.zen/tmp/IA.log"
@@ -79,15 +92,28 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting validation checks for player: $PLA
 # fi
 
 # Vérifier l'existence du fichier cookie
-# Cookies are stored at the root of user's NOSTR directory (hidden files)
+# Priority: 1) Parameter provided, 2) .youtube.com.cookie, 3) .cookie.txt
 COOKIE_FILE=""
 USER_DIR="$HOME/.zen/game/nostr/${PLAYER}"
-if [[ -f "$USER_DIR/.youtube.com.cookie" ]]; then
-    COOKIE_FILE="$USER_DIR/.youtube.com.cookie"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Using single-domain YouTube cookie: $COOKIE_FILE" >&2
-elif [[ -f "$USER_DIR/.cookie.txt" ]]; then
-    COOKIE_FILE="$USER_DIR/.cookie.txt"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Using cookie file: $COOKIE_FILE" >&2
+
+# If cookie was provided as parameter, use it
+if [[ -n "$COOKIE_PARAM" && -f "$COOKIE_PARAM" ]]; then
+    COOKIE_FILE="$COOKIE_PARAM"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Using cookie file from parameter: $COOKIE_FILE" >&2
+elif [[ -n "$COOKIE_PARAM" && ! -f "$COOKIE_PARAM" ]]; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: Cookie file provided as parameter but not found: $COOKIE_PARAM" >&2
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Falling back to searching in user directory..." >&2
+fi
+
+# If no cookie from parameter, search in user directory
+if [[ -z "$COOKIE_FILE" ]]; then
+    if [[ -f "$USER_DIR/.youtube.com.cookie" ]]; then
+        COOKIE_FILE="$USER_DIR/.youtube.com.cookie"
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Using single-domain YouTube cookie: $COOKIE_FILE" >&2
+    elif [[ -f "$USER_DIR/.cookie.txt" ]]; then
+        COOKIE_FILE="$USER_DIR/.cookie.txt"
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Using cookie file: $COOKIE_FILE" >&2
+    fi
 fi
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Checking cookie file: $COOKIE_FILE" >&2
