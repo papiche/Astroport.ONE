@@ -266,11 +266,11 @@ if [[ -n "$YOUTUBE_JSON" ]] && echo "$YOUTUBE_JSON" | jq -e '.error' >/dev/null 
     
     # Check if error is about missing cookie
     if echo "$ERROR_MSG" | grep -qi "cookie"; then
-        ERROR_DISPLAY="${ERROR_DISPLAY}\n\n💡 Solution:\n"
+        ERROR_DISPLAY="${ERROR_DISPLAY}  💡 Solution:\n"
         ERROR_DISPLAY="${ERROR_DISPLAY}   1. Export your YouTube cookies from your browser\n"
         ERROR_DISPLAY="${ERROR_DISPLAY}   2. Upload the cookie file via: http://127.0.0.1:54321/api/fileupload\n"
         ERROR_DISPLAY="${ERROR_DISPLAY}   3. The cookie file should be saved as:\n"
-        ERROR_DISPLAY="${ERROR_DISPLAY}      ~/.zen/game/nostr/${PLAYER}/.youtube.com.cookie\n\n"
+        ERROR_DISPLAY="${ERROR_DISPLAY}      ~/.zen/game/nostr/${PLAYER}/.youtube.com.cookie  "
         ERROR_DISPLAY="${ERROR_DISPLAY}   Or use the cookie upload interface at:\n"
         ERROR_DISPLAY="${ERROR_DISPLAY}   http://127.0.0.1:54321/cookie"
     fi
@@ -303,7 +303,7 @@ if [[ $YTDLP_EXIT -ne 0 ]]; then
         zenity --error \
             --width 500 \
             --title="YouTube Download Error" \
-            --text="${ERROR_DISPLAY}\n\nCheck ~/.zen/tmp/IA.log for details." 2>/dev/null || true
+            --text="${ERROR_DISPLAY}  Check ~/.zen/tmp/IA.log for details." 2>/dev/null || true
     fi
     
     echo "$ERROR_DISPLAY"
@@ -414,9 +414,18 @@ fi
             echo "⚠️  Warning: Cannot send NIP-42 authentication event (upload may still work if already authenticated)"
         fi
 
-        UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
-            -F "file=@${FILE_PATH_DOWNLOADED}" \
-            -F "npub=${NPUB}")
+        # Upload with YouTube metadata if available
+        if [[ -n "$YOUTUBE_METADATA_JSON_FILE" ]] && [[ -f "$YOUTUBE_METADATA_JSON_FILE" ]]; then
+            echo "📤 Uploading video with YouTube metadata..."
+            UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
+                -F "file=@${FILE_PATH_DOWNLOADED}" \
+                -F "npub=${NPUB}" \
+                -F "youtube_metadata=@${YOUTUBE_METADATA_JSON_FILE}")
+        else
+            UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
+                -F "file=@${FILE_PATH_DOWNLOADED}" \
+                -F "npub=${NPUB}")
+        fi
         
         if ! echo "$UPLOAD_RESPONSE" | jq -e '.success' >/dev/null 2>&1; then
             echo "❌ ERROR: /api/fileupload failed"
@@ -443,13 +452,13 @@ fi
         echo "✅ Video uploaded to IPFS and copied to uDRIVE!"
 echo "   CID: $IPFS_CID"
         
-        # Find YouTube metadata.json file for info.json update (optional enhancement)
+        # Find YouTube metadata.json file (yt-dlp .info.json contains all YouTube metadata)
         YOUTUBE_METADATA_FILE=""
         if [[ -n "$METADATA_FILE_FROM_JSON" ]] && [[ -f "$METADATA_FILE_FROM_JSON" ]]; then
             YOUTUBE_METADATA_FILE="$METADATA_FILE_FROM_JSON"
         else
             METADATA_BASENAME=$(basename "$FILE_PATH_DOWNLOADED" | sed 's/\.[^.]*$//')
-            for possible_metadata in "${TEMP_YOUTUBE_DIR}/${METADATA_BASENAME}.info.json" "${TEMP_YOUTUBE_DIR}/${METADATA_BASENAME}.metadata.json" "$(dirname "$FILE_PATH_DOWNLOADED")/${METADATA_BASENAME}.info.json"; do
+            for possible_metadata in "${TEMP_YOUTUBE_DIR}/${METADATA_BASENAME}.info.json" "$(dirname "$FILE_PATH_DOWNLOADED")/${METADATA_BASENAME}.info.json"; do
                 if [[ -f "$possible_metadata" ]]; then
                     YOUTUBE_METADATA_FILE="$possible_metadata"
                     break
@@ -457,8 +466,117 @@ echo "   CID: $IPFS_CID"
             done
         fi
         
-        # Note: YouTube metadata will be added to info.json if we update it later
-        # For now, we'll include it in the description passed to /webcam
+        # Extract and structure all YouTube metadata for info.json
+        YOUTUBE_METADATA_JSON_FILE="$HOME/.zen/tmp/youtube_metadata_$(date +%s).json"
+        if [[ -n "$YOUTUBE_METADATA_FILE" ]] && [[ -f "$YOUTUBE_METADATA_FILE" ]] && command -v jq &> /dev/null; then
+            echo "📋 Extracting comprehensive YouTube metadata..."
+            
+            # Extract all relevant YouTube metadata from yt-dlp .info.json
+            YOUTUBE_METADATA_JSON=$(jq '{
+                youtube_id: .id,
+                youtube_url: .webpage_url,
+                youtube_short_url: .short_url,
+                title: .title,
+                description: .description,
+                uploader: .uploader,
+                uploader_id: .uploader_id,
+                uploader_url: .uploader_url,
+                channel: .channel,
+                channel_id: .channel_id,
+                channel_url: .channel_url,
+                channel_follower_count: .channel_follower_count,
+                duration: .duration,
+                view_count: .view_count,
+                like_count: .like_count,
+                comment_count: .comment_count,
+                average_rating: .average_rating,
+                age_limit: .age_limit,
+                upload_date: .upload_date,
+                release_date: .release_date,
+                timestamp: .timestamp,
+                availability: .availability,
+                live_status: .live_status,
+                was_live: .was_live,
+                format: .format,
+                format_id: .format_id,
+                format_note: .format_note,
+                width: .width,
+                height: .height,
+                fps: .fps,
+                vcodec: .vcodec,
+                acodec: .acodec,
+                abr: .abr,
+                vbr: .vbr,
+                tbr: .tbr,
+                filesize: .filesize,
+                filesize_approx: .filesize_approx,
+                ext: .ext,
+                resolution: .resolution,
+                categories: .categories,
+                tags: .tags,
+                chapters: .chapters,
+                subtitles: .subtitles,
+                automatic_captions: .automatic_captions,
+                thumbnail: .thumbnail,
+                thumbnails: .thumbnails,
+                license: .license,
+                language: .language,
+                languages: .languages,
+                location: .location,
+                artist: .artist,
+                album: .album,
+                track: .track,
+                creator: .creator,
+                alt_title: .alt_title,
+                series: .series,
+                season: .season,
+                season_number: .season_number,
+                episode: .episode,
+                episode_number: .episode_number,
+                playlist: .playlist,
+                playlist_id: .playlist_id,
+                playlist_title: .playlist_title,
+                playlist_index: .playlist_index,
+                n_entries: .n_entries,
+                webpage_url_basename: .webpage_url_basename,
+                webpage_url_domain: .webpage_url_domain,
+                extractor: .extractor,
+                extractor_key: .extractor_key,
+                epoch: .epoch,
+                modified_timestamp: .modified_timestamp,
+                modified_date: .modified_date,
+                requested_subtitles: .requested_subtitles,
+                has_drm: .has_drm,
+                is_live: .is_live,
+                was_live: .was_live,
+                live_status: .live_status,
+                release_timestamp: .release_timestamp,
+                comment_count: .comment_count,
+                heatmap: .heatmap
+            }' "$YOUTUBE_METADATA_FILE" 2>/dev/null)
+            
+            if [[ -n "$YOUTUBE_METADATA_JSON" ]] && echo "$YOUTUBE_METADATA_JSON" | jq -e '.' >/dev/null 2>&1; then
+                echo "$YOUTUBE_METADATA_JSON" > "$YOUTUBE_METADATA_JSON_FILE"
+                echo "✅ YouTube metadata extracted and saved to: $YOUTUBE_METADATA_JSON_FILE"
+                
+                # Display key metadata
+                YT_UPLOADER=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.uploader // .channel // empty')
+                YT_CHANNEL=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.channel // empty')
+                YT_VIEWS=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.view_count // empty')
+                YT_LIKES=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.like_count // empty')
+                YT_WEBPAGE_URL=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.youtube_url // .webpage_url // empty')
+                
+                echo "   📺 Channel: ${YT_CHANNEL:-$YT_UPLOADER}"
+                [[ -n "$YT_VIEWS" ]] && echo "   👁️  Views: $YT_VIEWS"
+                [[ -n "$YT_LIKES" ]] && echo "   👍 Likes: $YT_LIKES"
+            else
+                echo "⚠️  Failed to extract YouTube metadata JSON"
+                YOUTUBE_METADATA_JSON_FILE=""
+            fi
+        else
+            echo "⚠️  YouTube metadata file not found, skipping metadata extraction"
+            YOUTUBE_METADATA_JSON_FILE=""
+        fi
         
         # Ask for title and description for video publication
         [ ! $2 ] && VIDEO_TITLE=$(zenity --entry --width 600 --title "Titre de la vidéo" --text "Titre de la vidéo YouTube" --entry-text="$TITLE")
@@ -472,7 +590,7 @@ echo "   CID: $IPFS_CID"
             YT_WEBPAGE_URL=$(jq -r '.webpage_url // .url // empty' "$YOUTUBE_METADATA_FILE" 2>/dev/null)
             if [[ -n "$YT_UPLOADER" ]] || [[ -n "$YT_WEBPAGE_URL" ]]; then
                 if [[ -n "$VIDEO_DESC" ]]; then
-                    VIDEO_DESC="${VIDEO_DESC}\n\nSource YouTube: ${YT_UPLOADER}"
+                    VIDEO_DESC="${VIDEO_DESC}  Source YouTube: ${YT_UPLOADER}"
                     [[ -n "$YT_WEBPAGE_URL" ]] && VIDEO_DESC="${VIDEO_DESC}\n${YT_WEBPAGE_URL}"
                 else
                     VIDEO_DESC="Source YouTube: ${YT_UPLOADER}"
@@ -515,8 +633,9 @@ echo "   CID: $IPFS_CID"
             echo "Response: $PUBLISH_RESPONSE"
         fi
         
-        # Cleanup temp directory
+        # Cleanup temp files
         rm -rf "$TEMP_YOUTUBE_DIR"
+        [[ -n "$YOUTUBE_METADATA_JSON_FILE" ]] && [[ -f "$YOUTUBE_METADATA_JSON_FILE" ]] && rm -f "$YOUTUBE_METADATA_JSON_FILE"
         
         espeak "YouTube video ready"
     ;;
@@ -731,7 +850,7 @@ fi
 # Ask if user wants to scrape TMDB page for metadata
 SCRAPE_TMDB="no"
 SCRAPED_METADATA=""
-if zenity --question --width 400 --title="Scraper TMDB ?" --text="Voulez-vous scraper la page TMDB pour enrichir automatiquement les métadonnées ?\n\nURL: $TMDB_URL"; then
+if zenity --question --width 400 --title="Scraper TMDB ?" --text="Voulez-vous scraper la page TMDB pour enrichir automatiquement les métadonnées ?  URL: $TMDB_URL"; then
     SCRAPE_TMDB="yes"
     echo "🔍 Scraping TMDB page: $TMDB_URL"
     
@@ -748,6 +867,11 @@ if zenity --question --width 400 --title="Scraper TMDB ?" --text="Voulez-vous sc
         SCRAPED_METADATA=$(python3 "$SCRAPER_SCRIPT" "$TMDB_URL" 2>/dev/null)
         if [[ -n "$SCRAPED_METADATA" ]] && echo "$SCRAPED_METADATA" | jq -e '.' >/dev/null 2>&1; then
             echo "✅ TMDB metadata scraped successfully"
+            # Display extracted genres if available
+            SCRAPED_GENRES=$(echo "$SCRAPED_METADATA" | jq -r '.genres // [] | join(", ")' 2>/dev/null)
+            if [[ -n "$SCRAPED_GENRES" ]] && [[ "$SCRAPED_GENRES" != "" ]]; then
+                echo "   📋 Genres found: $SCRAPED_GENRES"
+            fi
         else
             echo "⚠️  Failed to scrape TMDB metadata, using manual input"
             SCRAPED_METADATA=""
@@ -781,11 +905,63 @@ YEAR=$(zenity --entry --width 300 --title "Année" --text "Indiquez année de la
         
 # Extract genres from scraped data or ask user
 GENRES=""
+GENRES_ARRAY="[]"
 if [[ "$SCRAPE_TMDB" == "yes" ]] && [[ -n "$SCRAPED_METADATA" ]]; then
-    GENRES=$(echo "$SCRAPED_METADATA" | jq -r '.genres // [] | join(", ")' 2>/dev/null)
+    # Try to get genres as array first (preferred format)
+    GENRES_ARRAY=$(echo "$SCRAPED_METADATA" | jq -c '.genres // []' 2>/dev/null)
+    if [[ -z "$GENRES_ARRAY" ]] || [[ "$GENRES_ARRAY" == "[]" ]]; then
+        # Fallback: try to get as comma-separated string
+        GENRES=$(echo "$SCRAPED_METADATA" | jq -r '.genres // [] | join(", ")' 2>/dev/null)
+    else
+        # Convert array to comma-separated string for display
+        GENRES=$(echo "$SCRAPED_METADATA" | jq -r '.genres // [] | join(", ")' 2>/dev/null)
+    fi
 fi
-if [[ -z "$GENRES" ]]; then
+if [[ -z "$GENRES" ]] || [[ "$GENRES" == "" ]]; then
     GENRES=$(zenity --entry --width 400 --title "Genres" --text "Indiquez les genres (séparés par des virgules). Ex: Action, Science Fiction, Thriller" --entry-text="")
+fi
+# Convert genres string to array format for JSON
+if [[ -n "$GENRES" ]]; then
+    GENRES_ARRAY=$(echo "$GENRES" | jq -R 'split(", ") | map(select(. != "")) | map(gsub("^\\s+|\\s+$"; ""))' 2>/dev/null || echo "[]")
+    echo "📋 Genres: $GENRES"
+fi
+
+# For series: ask for season and episode numbers
+SEASON_NUMBER=""
+EPISODE_NUMBER=""
+if [[ "$CAT" == "serie" ]]; then
+    # Try to extract season/episode from filename if available (e.g., "S01E05" or "s1e5")
+    if echo "$FILE_NAME" | grep -qiE 's[0-9]+e[0-9]+'; then
+        SEASON_NUMBER=$(echo "$FILE_NAME" | grep -oiE 's([0-9]+)' | grep -oiE '[0-9]+' | head -1)
+        EPISODE_NUMBER=$(echo "$FILE_NAME" | grep -oiE 'e([0-9]+)' | grep -oiE '[0-9]+' | head -1)
+    fi
+    
+    # Ask user for season number
+    [ ! $2 ] && SEASON_NUMBER=$(zenity --entry --width 300 --title "Numéro de saison" --text "Indiquez le numéro de saison (ex: 1, 2, 3...)" --entry-text="$SEASON_NUMBER")
+    
+    # Ask user for episode number
+    [ ! $2 ] && EPISODE_NUMBER=$(zenity --entry --width 300 --title "Numéro d'épisode" --text "Indiquez le numéro d'épisode (ex: 1, 2, 3...)" --entry-text="$EPISODE_NUMBER")
+    
+    # Validate season and episode numbers
+    if [[ -n "$SEASON_NUMBER" ]] && ! [[ "$SEASON_NUMBER" =~ ^[0-9]+$ ]]; then
+        echo "⚠️  Invalid season number, ignoring: $SEASON_NUMBER"
+        SEASON_NUMBER=""
+    fi
+    if [[ -n "$EPISODE_NUMBER" ]] && ! [[ "$EPISODE_NUMBER" =~ ^[0-9]+$ ]]; then
+        echo "⚠️  Invalid episode number, ignoring: $EPISODE_NUMBER"
+        EPISODE_NUMBER=""
+    fi
+    
+    # Update title to include season/episode if available
+    if [[ -n "$SEASON_NUMBER" ]] && [[ -n "$EPISODE_NUMBER" ]]; then
+        TITLE_WITH_EPISODE="${TITLE} - S${SEASON_NUMBER}E${EPISODE_NUMBER}"
+        echo "📺 Episode: Season $SEASON_NUMBER, Episode $EPISODE_NUMBER"
+        echo "📺 Episode title: $TITLE_WITH_EPISODE"
+    elif [[ -n "$SEASON_NUMBER" ]]; then
+        echo "📺 Season: $SEASON_NUMBER (episode number missing)"
+    elif [[ -n "$EPISODE_NUMBER" ]]; then
+        echo "📺 Episode: $EPISODE_NUMBER (season number missing)"
+    fi
 fi
 
 # Extract or ask for description
@@ -797,12 +973,20 @@ if [[ "$SCRAPE_TMDB" == "yes" ]] && [[ -n "$SCRAPED_METADATA" ]]; then
     fi
     if [[ -n "$SCRAPED_OVERVIEW" ]]; then
         if [[ -n "$VIDEO_DESC" ]]; then
-            VIDEO_DESC="${VIDEO_DESC}\n\n${SCRAPED_OVERVIEW}"
+            VIDEO_DESC="${VIDEO_DESC}  ${SCRAPED_OVERVIEW}"
         else
             VIDEO_DESC="$SCRAPED_OVERVIEW"
         fi
     fi
-        fi
+    
+    # Extract additional metadata from scraped data for JSON and display
+    SCRAPED_DIRECTOR=$(echo "$SCRAPED_METADATA" | jq -r '.director // empty' 2>/dev/null)
+    SCRAPED_CREATOR=$(echo "$SCRAPED_METADATA" | jq -r '.creator // empty' 2>/dev/null)
+    SCRAPED_RUNTIME=$(echo "$SCRAPED_METADATA" | jq -r '.runtime // empty' 2>/dev/null)
+    SCRAPED_VOTE_AVG=$(echo "$SCRAPED_METADATA" | jq -r '.vote_average // empty' 2>/dev/null)
+    SCRAPED_VOTE_COUNT=$(echo "$SCRAPED_METADATA" | jq -r '.vote_count // empty' 2>/dev/null)
+    # Note: SCRAPED_TAGLINE already extracted above
+fi
         
 # Ask for description (user can edit scraped content)
 [ ! $2 ] && VIDEO_DESC=$(zenity --entry --width 600 --title "Description" --text "Description de la vidéo (optionnel)" --entry-text="$VIDEO_DESC")
@@ -810,30 +994,117 @@ if [[ "$SCRAPE_TMDB" == "yes" ]] && [[ -n "$SCRAPED_METADATA" ]]; then
 # Create TMDB metadata JSON file (merge scraped data with manual input)
         TMDB_METADATA_FILE="$HOME/.zen/tmp/tmdb_${MEDIAID}_$(date +%s).json"
 
+# Build base JSON structure with genres array
 if [[ "$SCRAPE_TMDB" == "yes" ]] && [[ -n "$SCRAPED_METADATA" ]]; then
     # Merge scraped metadata with manual inputs
-    TMDB_METADATA_JSON=$(echo "$SCRAPED_METADATA" | jq --arg title "$TITLE" --arg year "$YEAR" --arg genres "$GENRES" --arg tmdb_url "$TMDB_URL" --arg tmdb_id "$MEDIAID" --arg media_type "$MEDIA_TYPE" '
-        .title = $title |
-        .year = $year |
-        .tmdb_id = ($tmdb_id | tonumber) |
-        .media_type = $media_type |
-        .tmdb_url = $tmdb_url |
-        (if $genres != "" then .genres = ($genres | split(", ") | map(select(. != ""))) else . end)
-    ' 2>/dev/null)
+    # Preserve ALL scraped fields (director, creator, runtime, vote_average, vote_count, tagline,
+    # network, status, certification, production_companies, countries, languages, number_of_seasons,
+    # number_of_episodes, etc.) and override only with user inputs (title, year, genres, season/episode)
+    # Use GENRES_ARRAY if available, otherwise parse from GENRES string
+    if [[ "$GENRES_ARRAY" != "[]" ]] && [[ -n "$GENRES_ARRAY" ]]; then
+        # Use existing array format - preserve all scraped metadata
+        TMDB_METADATA_JSON=$(echo "$SCRAPED_METADATA" | jq --arg title "$TITLE" --arg year "$YEAR" --argjson genres_array "$GENRES_ARRAY" --arg tmdb_url "$TMDB_URL" --arg tmdb_id "$MEDIAID" --arg media_type "$MEDIA_TYPE" '
+            .title = $title |
+            .year = $year |
+            .tmdb_id = ($tmdb_id | tonumber) |
+            .media_type = $media_type |
+            .tmdb_url = $tmdb_url |
+            .genres = $genres_array
+        ' 2>/dev/null)
+    else
+        # Parse genres from string - preserve all scraped metadata
+        TMDB_METADATA_JSON=$(echo "$SCRAPED_METADATA" | jq --arg title "$TITLE" --arg year "$YEAR" --arg genres "$GENRES" --arg tmdb_url "$TMDB_URL" --arg tmdb_id "$MEDIAID" --arg media_type "$MEDIA_TYPE" '
+            .title = $title |
+            .year = $year |
+            .tmdb_id = ($tmdb_id | tonumber) |
+            .media_type = $media_type |
+            .tmdb_url = $tmdb_url |
+            (if $genres != "" then .genres = ($genres | split(", ") | map(select(. != "")) | map(gsub("^\\s+|\\s+$"; ""))) else . end)
+        ' 2>/dev/null)
+    fi
+    
+    # Add season and episode numbers for series
+    if [[ "$CAT" == "serie" ]]; then
+        if [[ -n "$SEASON_NUMBER" ]] && [[ "$SEASON_NUMBER" =~ ^[0-9]+$ ]]; then
+            TMDB_METADATA_JSON=$(echo "$TMDB_METADATA_JSON" | jq --argjson season "$SEASON_NUMBER" '.season_number = ($season | tonumber)' 2>/dev/null || echo "$TMDB_METADATA_JSON")
+        fi
+        if [[ -n "$EPISODE_NUMBER" ]] && [[ "$EPISODE_NUMBER" =~ ^[0-9]+$ ]]; then
+            TMDB_METADATA_JSON=$(echo "$TMDB_METADATA_JSON" | jq --argjson episode "$EPISODE_NUMBER" '.episode_number = ($episode | tonumber)' 2>/dev/null || echo "$TMDB_METADATA_JSON")
+        fi
+    fi
     
     if [[ -z "$TMDB_METADATA_JSON" ]] || ! echo "$TMDB_METADATA_JSON" | jq -e '.' >/dev/null 2>&1; then
-        # Fallback to basic structure
-        TMDB_METADATA_JSON=$(cat << EOF
+        # Fallback to basic structure - preserve all scraped metadata
+        TMDB_METADATA_JSON=$(echo "$SCRAPED_METADATA" | jq --arg title "$TITLE" --arg year "$YEAR" --argjson genres_array "$GENRES_ARRAY" --arg tmdb_url "$TMDB_URL" --arg tmdb_id "$MEDIAID" --arg media_type "$MEDIA_TYPE" '
+            .title = $title |
+            .year = $year |
+            .tmdb_id = ($tmdb_id | tonumber) |
+            .media_type = $media_type |
+            .tmdb_url = $tmdb_url |
+            .genres = $genres_array
+        ' 2>/dev/null)
+        
+        # If jq merge failed, use basic structure
+        if [[ -z "$TMDB_METADATA_JSON" ]] || ! echo "$TMDB_METADATA_JSON" | jq -e '.' >/dev/null 2>&1; then
+            TMDB_METADATA_JSON=$(cat << EOF
 {
   "tmdb_id": $MEDIAID,
   "media_type": "$MEDIA_TYPE",
   "title": "$TITLE",
   "year": "$YEAR",
   "tmdb_url": "$TMDB_URL",
-  "genres": $(if [[ -n "$GENRES" ]]; then echo "$GENRES" | jq -R 'split(", ") | map(select(. != ""))'; else echo "[]"; fi)
-}
+  "genres": $GENRES_ARRAY
 EOF
-        )
+            )
+            # Add additional fields from scraped data if available
+            if [[ -n "$SCRAPED_DIRECTOR" ]] && [[ "$SCRAPED_DIRECTOR" != "" ]]; then
+                TMDB_METADATA_JSON="${TMDB_METADATA_JSON},
+  \"director\": \"$SCRAPED_DIRECTOR\""
+            fi
+            if [[ -n "$SCRAPED_CREATOR" ]] && [[ "$SCRAPED_CREATOR" != "" ]]; then
+                TMDB_METADATA_JSON="${TMDB_METADATA_JSON},
+  \"creator\": \"$SCRAPED_CREATOR\""
+            fi
+            if [[ -n "$SCRAPED_RUNTIME" ]] && [[ "$SCRAPED_RUNTIME" != "" ]]; then
+                TMDB_METADATA_JSON="${TMDB_METADATA_JSON},
+  \"runtime\": \"$SCRAPED_RUNTIME\""
+            fi
+            if [[ -n "$SCRAPED_VOTE_AVG" ]] && [[ "$SCRAPED_VOTE_AVG" != "" ]]; then
+                TMDB_METADATA_JSON="${TMDB_METADATA_JSON},
+  \"vote_average\": \"$SCRAPED_VOTE_AVG\""
+            fi
+            if [[ -n "$SCRAPED_TAGLINE" ]] && [[ "$SCRAPED_TAGLINE" != "" ]]; then
+                TMDB_METADATA_JSON="${TMDB_METADATA_JSON},
+  \"tagline\": \"$SCRAPED_TAGLINE\""
+            fi
+            if [[ -n "$SCRAPED_VOTE_COUNT" ]] && [[ "$SCRAPED_VOTE_COUNT" != "" ]]; then
+                TMDB_METADATA_JSON="${TMDB_METADATA_JSON},
+  \"vote_count\": \"$SCRAPED_VOTE_COUNT\""
+            fi
+            # Add season/episode for series
+            if [[ "$CAT" == "serie" ]]; then
+                if [[ -n "$SEASON_NUMBER" ]] && [[ "$SEASON_NUMBER" =~ ^[0-9]+$ ]]; then
+                    TMDB_METADATA_JSON="${TMDB_METADATA_JSON},
+  \"season_number\": $SEASON_NUMBER"
+                fi
+                if [[ -n "$EPISODE_NUMBER" ]] && [[ "$EPISODE_NUMBER" =~ ^[0-9]+$ ]]; then
+                    TMDB_METADATA_JSON="${TMDB_METADATA_JSON},
+  \"episode_number\": $EPISODE_NUMBER"
+                fi
+            fi
+            TMDB_METADATA_JSON="${TMDB_METADATA_JSON}
+}"
+        else
+            # Add season/episode if not already in merged JSON
+            if [[ "$CAT" == "serie" ]]; then
+                if [[ -n "$SEASON_NUMBER" ]] && [[ "$SEASON_NUMBER" =~ ^[0-9]+$ ]]; then
+                    TMDB_METADATA_JSON=$(echo "$TMDB_METADATA_JSON" | jq --argjson season "$SEASON_NUMBER" '.season_number = ($season | tonumber)' 2>/dev/null || echo "$TMDB_METADATA_JSON")
+                fi
+                if [[ -n "$EPISODE_NUMBER" ]] && [[ "$EPISODE_NUMBER" =~ ^[0-9]+$ ]]; then
+                    TMDB_METADATA_JSON=$(echo "$TMDB_METADATA_JSON" | jq --argjson episode "$EPISODE_NUMBER" '.episode_number = ($episode | tonumber)' 2>/dev/null || echo "$TMDB_METADATA_JSON")
+                fi
+            fi
+        fi
     fi
 else
     # Basic structure without scraping
@@ -844,14 +1115,94 @@ else
   "title": "$TITLE",
   "year": "$YEAR",
   "tmdb_url": "$TMDB_URL",
-  "genres": $(if [[ -n "$GENRES" ]]; then echo "$GENRES" | jq -R 'split(", ") | map(select(. != ""))'; else echo "[]"; fi)
-}
+  "genres": $GENRES_ARRAY
 EOF
     )
+    # Add season/episode for series
+    if [[ "$CAT" == "serie" ]]; then
+        if [[ -n "$SEASON_NUMBER" ]] && [[ "$SEASON_NUMBER" =~ ^[0-9]+$ ]]; then
+            TMDB_METADATA_JSON="${TMDB_METADATA_JSON},
+  \"season_number\": $SEASON_NUMBER"
+        fi
+        if [[ -n "$EPISODE_NUMBER" ]] && [[ "$EPISODE_NUMBER" =~ ^[0-9]+$ ]]; then
+            TMDB_METADATA_JSON="${TMDB_METADATA_JSON},
+  \"episode_number\": $EPISODE_NUMBER"
+        fi
+    fi
+    TMDB_METADATA_JSON="${TMDB_METADATA_JSON}
+}"
 fi
 
         echo "$TMDB_METADATA_JSON" > "$TMDB_METADATA_FILE"
         echo "✅ Created TMDB metadata file: $TMDB_METADATA_FILE"
+        
+        # Extract additional metadata for display (if scraped)
+        if [[ "$SCRAPE_TMDB" == "yes" ]] && [[ -n "$SCRAPED_METADATA" ]]; then
+            SCRAPED_NETWORK=$(echo "$SCRAPED_METADATA" | jq -r '.network // empty' 2>/dev/null)
+            SCRAPED_STATUS=$(echo "$SCRAPED_METADATA" | jq -r '.status // empty' 2>/dev/null)
+            SCRAPED_CERTIFICATION=$(echo "$SCRAPED_METADATA" | jq -r '.certification // empty' 2>/dev/null)
+            SCRAPED_PRODUCTION=$(echo "$SCRAPED_METADATA" | jq -r '.production_companies // [] | join(", ")' 2>/dev/null)
+            SCRAPED_COUNTRIES=$(echo "$SCRAPED_METADATA" | jq -r '.countries // [] | join(", ")' 2>/dev/null)
+            SCRAPED_LANGUAGES=$(echo "$SCRAPED_METADATA" | jq -r '.languages // [] | join(", ")' 2>/dev/null)
+            SCRAPED_NUM_SEASONS=$(echo "$SCRAPED_METADATA" | jq -r '.number_of_seasons // empty' 2>/dev/null)
+            SCRAPED_NUM_EPISODES=$(echo "$SCRAPED_METADATA" | jq -r '.number_of_episodes // empty' 2>/dev/null)
+        fi
+        
+        # Display summary of metadata
+        echo ""
+        echo "📋 Metadata Summary:"
+        echo "   Title: $TITLE"
+        echo "   Year: $YEAR"
+        echo "   TMDB ID: $MEDIAID"
+        echo "   Media Type: $MEDIA_TYPE"
+        if [[ -n "$GENRES" ]] && [[ "$GENRES" != "" ]]; then
+            echo "   Genres: $GENRES"
+        fi
+        if [[ -n "$SCRAPED_DIRECTOR" ]] && [[ "$SCRAPED_DIRECTOR" != "" ]]; then
+            echo "   Director: $SCRAPED_DIRECTOR"
+        fi
+        if [[ -n "$SCRAPED_CREATOR" ]] && [[ "$SCRAPED_CREATOR" != "" ]]; then
+            echo "   Creator: $SCRAPED_CREATOR"
+        fi
+        if [[ -n "$SCRAPED_RUNTIME" ]] && [[ "$SCRAPED_RUNTIME" != "" ]]; then
+            echo "   Runtime: $SCRAPED_RUNTIME"
+        fi
+        if [[ -n "$SCRAPED_VOTE_AVG" ]] && [[ "$SCRAPED_VOTE_AVG" != "" ]]; then
+            echo "   Rating: $SCRAPED_VOTE_AVG"
+            if [[ -n "$SCRAPED_VOTE_COUNT" ]] && [[ "$SCRAPED_VOTE_COUNT" != "" ]]; then
+                echo "   Votes: $SCRAPED_VOTE_COUNT"
+            fi
+        fi
+        if [[ -n "$SCRAPED_CERTIFICATION" ]] && [[ "$SCRAPED_CERTIFICATION" != "" ]]; then
+            echo "   Certification: $SCRAPED_CERTIFICATION"
+        fi
+        if [[ "$CAT" == "serie" ]]; then
+            if [[ -n "$SEASON_NUMBER" ]] && [[ -n "$EPISODE_NUMBER" ]]; then
+                echo "   Season: $SEASON_NUMBER, Episode: $EPISODE_NUMBER"
+            fi
+            if [[ -n "$SCRAPED_NETWORK" ]] && [[ "$SCRAPED_NETWORK" != "" ]]; then
+                echo "   Network: $SCRAPED_NETWORK"
+            fi
+            if [[ -n "$SCRAPED_STATUS" ]] && [[ "$SCRAPED_STATUS" != "" ]]; then
+                echo "   Status: $SCRAPED_STATUS"
+            fi
+            if [[ -n "$SCRAPED_NUM_SEASONS" ]] && [[ "$SCRAPED_NUM_SEASONS" != "" ]]; then
+                echo "   Total Seasons: $SCRAPED_NUM_SEASONS"
+            fi
+            if [[ -n "$SCRAPED_NUM_EPISODES" ]] && [[ "$SCRAPED_NUM_EPISODES" != "" ]]; then
+                echo "   Total Episodes: $SCRAPED_NUM_EPISODES"
+            fi
+        fi
+        if [[ -n "$SCRAPED_PRODUCTION" ]] && [[ "$SCRAPED_PRODUCTION" != "" ]] && [[ "$SCRAPED_PRODUCTION" != "[]" ]]; then
+            echo "   Production: $SCRAPED_PRODUCTION"
+        fi
+        if [[ -n "$SCRAPED_COUNTRIES" ]] && [[ "$SCRAPED_COUNTRIES" != "" ]] && [[ "$SCRAPED_COUNTRIES" != "[]" ]]; then
+            echo "   Countries: $SCRAPED_COUNTRIES"
+        fi
+        if [[ -n "$SCRAPED_LANGUAGES" ]] && [[ "$SCRAPED_LANGUAGES" != "" ]] && [[ "$SCRAPED_LANGUAGES" != "[]" ]]; then
+            echo "   Languages: $SCRAPED_LANGUAGES"
+        fi
+        echo ""
         
         # CONVERT INPUT TO MP4 if needed
         if [[ $FILE_EXT != "mp4" ]]; then
@@ -953,7 +1304,7 @@ fi
             TMDB_URL=$(jq -r '.tmdb_url // empty' "$TMDB_METADATA_FILE" 2>/dev/null)
             if [[ -n "$TMDB_URL" ]]; then
                 if [[ -n "$VIDEO_DESC" ]]; then
-                    VIDEO_DESC="${VIDEO_DESC}\n\nTMDB: ${TMDB_URL}"
+                    VIDEO_DESC="${VIDEO_DESC}  TMDB: ${TMDB_URL}"
                 else
                     VIDEO_DESC="TMDB: ${TMDB_URL}"
                 fi
@@ -986,7 +1337,13 @@ fi
         fi
         
         # Build publish command using --auto mode (reads from upload2ipfs.sh output)
-        PUBLISH_CMD=("$PUBLISH_SCRIPT" "--auto" "$UPLOAD_OUTPUT_FILE" "--nsec" "$SECRET_FILE" "--title" "$TITLE")
+        # Use episode title for series if available, otherwise use regular title
+        PUBLISH_TITLE="$TITLE"
+        if [[ "$CAT" == "serie" ]] && [[ -n "$TITLE_WITH_EPISODE" ]]; then
+            PUBLISH_TITLE="$TITLE_WITH_EPISODE"
+            echo "📺 Using episode title: $PUBLISH_TITLE"
+        fi
+        PUBLISH_CMD=("$PUBLISH_SCRIPT" "--auto" "$UPLOAD_OUTPUT_FILE" "--nsec" "$SECRET_FILE" "--title" "$PUBLISH_TITLE")
         
         if [[ -n "$VIDEO_DESC" ]]; then
             PUBLISH_CMD+=("--description" "$VIDEO_DESC")
