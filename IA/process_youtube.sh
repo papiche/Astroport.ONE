@@ -12,6 +12,7 @@ source "$HOME/.zen/Astroport.ONE/tools/my.sh"
 DEBUG=0
 CUSTOM_OUTPUT_DIR=""
 JSON_OUTPUT=0
+JSON_FILE=""
 LOGFILE="$HOME/.zen/tmp/IA.log"
 mkdir -p "$(dirname "$LOGFILE")"
 
@@ -22,6 +23,36 @@ log_debug() {
         (
             echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOGFILE" >&2
         ) 2>/dev/null || true
+    fi
+}
+
+# Function to output JSON safely (to file if specified, and to stdout)
+output_json() {
+    local json_content="$1"
+    
+    # Write to file if JSON_FILE is specified
+    if [[ -n "$JSON_FILE" ]]; then
+        # Create directory if it doesn't exist
+        local json_dir=$(dirname "$JSON_FILE")
+        if [[ ! -d "$json_dir" ]]; then
+            mkdir -p "$json_dir" 2>/dev/null || true
+        fi
+        # Write JSON to file
+        echo "$json_content" > "$JSON_FILE" 2>/dev/null || {
+            log_debug "WARNING: Failed to write JSON to file: $JSON_FILE"
+        }
+        log_debug "JSON written to file: $JSON_FILE"
+    fi
+    
+    # Also output to stdout for backward compatibility
+    if [[ $JSON_OUTPUT -eq 1 ]]; then
+        # Pure JSON output (no separators)
+        echo "$json_content"
+    else
+        # Write separators to stderr, then JSON to stdout (backward compatibility)
+        (echo "=== JSON OUTPUT START ===" >&2) 2>/dev/null || true
+        echo "$json_content"
+        (echo "=== JSON OUTPUT END ===" >&2) 2>/dev/null || true
     fi
 }
 
@@ -36,6 +67,11 @@ while [[ $# -gt 0 ]]; do
         --json)
             JSON_OUTPUT=1
             shift
+            ;;
+        --json-file)
+            JSON_OUTPUT=1
+            JSON_FILE="$2"
+            shift 2
             ;;
         --no-ipfs)
             # Deprecated: IPFS upload removed. This flag is kept for backward compatibility but does nothing.
@@ -233,7 +269,8 @@ if [[ -z "$cookie_file" || ! -f "$cookie_file" ]]; then
     error_msg_json=$(echo "$error_msg" | sed 's/"/\\"/g')
     if [[ $JSON_OUTPUT -eq 1 ]]; then
         # JSON-only output mode
-        echo "{\"error\":\"${error_msg_json}\",\"success\":false}" 2>/dev/null || echo "{\"error\":\"No cookie file found\",\"success\":false}"
+        local error_json="{\"error\":\"${error_msg_json}\",\"success\":false}"
+        output_json "$error_json"
     else
         # Legacy mode with markers
         (echo "=== JSON OUTPUT START ===" >&2) 2>/dev/null || true
@@ -243,9 +280,290 @@ if [[ -z "$cookie_file" || ! -f "$cookie_file" ]]; then
     exit 1
 fi
 
+# Check if URL contains a playlist parameter (list=)
+IS_PLAYLIST=false
+PLAYLIST_ID=""
+if echo "$URL" | grep -qE '[?&]list='; then
+    IS_PLAYLIST=true
+    PLAYLIST_ID=$(echo "$URL" | grep -oE '[?&]list=([^&]+)' | cut -d'=' -f2)
+    log_debug "Playlist detected: $PLAYLIST_ID"
+    
+    # For playlists, force MP3 format
+    if [[ "$FORMAT" != "mp3" ]]; then
+        log_debug "Playlist detected, forcing MP3 format"
+        FORMAT="mp3"
+    fi
+fi
+
 log_debug "Extracting metadata with yt-dlp..."
 # Run yt-dlp with --quiet to suppress warnings, but keep errors
 # Use --no-warnings to suppress warnings, but keep errors in stderr
+# For playlists, use --flat-playlist to get all video URLs
+if [ "$IS_PLAYLIST" = "true" ]; then
+    log_debug "Extracting playlist video URLs..."
+    # Get list of video URLs from playlist
+    PLAYLIST_VIDEOS=$(yt-dlp --cookies "$cookie_file" --no-warnings --flat-playlist --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
+    PLAYLIST_EXIT_CODE=$?
+    
+    if [[ $PLAYLIST_EXIT_CODE -ne 0 ]]; then
+        log_debug "Failed to extract playlist videos (exit code: $PLAYLIST_EXIT_CODE)"
+        echo "{\"error\":\"❌ Failed to extract playlist videos\"}" 2>/dev/null || echo '{"error":"Failed to extract playlist videos"}'
+        exit 1
+    fi
+    
+    # Count videos in playlist
+    VIDEO_COUNT=$(echo "$PLAYLIST_VIDEOS" | grep -E '^[a-zA-Z0-9_-]{11}&' | wc -l)
+    log_debug "Found $VIDEO_COUNT videos in playlist"
+    
+    if [[ $VIDEO_COUNT -eq 0 ]]; then
+        echo '{"error":"❌ No videos found in playlist"}' 2>/dev/null || echo '{"error":"No videos found in playlist"}'
+        exit 1
+    fi
+    
+    # Download each video in the playlist as MP3
+    # Use temp files to store results (avoid subshell issues)
+    METADATA_TEMP="${OUTPUT_DIR}/.playlist_metadata.json"
+    PROCESSED_FILES="${OUTPUT_DIR}/.processed_files.txt"
+    rm -f "$METADATA_TEMP" "$PROCESSED_FILES"
+    touch "$METADATA_TEMP" "$PROCESSED_FILES"
+    
+    VIDEO_INDEX=0
+    DOWNLOADED_COUNT=0
+    
+    # Process each video in playlist
+    while IFS= read -r video_line; do
+        # Filter valid video lines
+        if ! echo "$video_line" | grep -qE '^[a-zA-Z0-9_-]{11}&'; then
+            continue
+        fi
+        
+        VIDEO_INDEX=$((VIDEO_INDEX + 1))
+        
+        # Parse video metadata
+        video_yid=$(echo "$video_line" | cut -d '&' -f 1 | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        video_raw_title=$(echo "$video_line" | cut -d '&' -f 2 | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        video_duration=$(echo "$video_line" | cut -d '&' -f 3 | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        video_uploader=$(echo "$video_line" | cut -d '&' -f 4 | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        
+        if [[ -z "$video_yid" ]]; then
+            continue
+        fi
+        
+        # Build video URL
+        video_url="https://www.youtube.com/watch?v=${video_yid}"
+        
+        # Clean title for filename
+        video_media_title=$(echo "$video_raw_title" | detox --inline | sed 's/[^a-zA-Z0-9._-]/_/g' | sed 's/__*/_/g' | sed 's/^_\|_$//g' | head -c 100)
+        
+        log_debug "Downloading playlist video $VIDEO_INDEX/$VIDEO_COUNT: $video_media_title"
+        espeak "Downloading track $VIDEO_INDEX of $VIDEO_COUNT" 2>/dev/null || true
+        
+        # Download as MP3
+        video_download_output=$(yt-dlp --cookies "$cookie_file" -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+            --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
+            -o "${OUTPUT_DIR}/${video_media_title}.%(ext)s" "$video_url" 2>&1)
+        video_download_exit_code=$?
+        
+        if [[ $video_download_exit_code -eq 0 ]]; then
+            # Wait a moment for file to be written
+            sleep 1
+            
+            # Find downloaded file (try multiple patterns)
+            # First try exact match with cleaned title
+            video_file=$(find "$OUTPUT_DIR" -maxdepth 1 -type f -name "${video_media_title}.mp3" 2>/dev/null | head -n 1)
+            
+            # If not found, try with video ID
+            if [[ -z "$video_file" ]] || [[ ! -f "$video_file" ]]; then
+                video_file=$(find "$OUTPUT_DIR" -maxdepth 1 -type f -name "*${video_yid}*.mp3" 2>/dev/null | head -n 1)
+            fi
+            
+            # If still not found, find newest MP3 file that wasn't there before
+            if [[ -z "$video_file" ]] || [[ ! -f "$video_file" ]]; then
+                # Get timestamp before download
+                TIMESTAMP_BEFORE=$(stat -c %Y "$METADATA_TEMP" 2>/dev/null || echo "0")
+                # Find MP3 files modified after timestamp
+                video_file=$(find "$OUTPUT_DIR" -maxdepth 1 -type f -name "*.mp3" -newermt "@$TIMESTAMP_BEFORE" 2>/dev/null | head -n 1)
+            fi
+            
+            # Last resort: find any MP3 file we haven't processed yet
+            if [[ -z "$video_file" ]] || [[ ! -f "$video_file" ]]; then
+                # List all MP3 files and find one not in our processed list
+                for mp3_file in "$OUTPUT_DIR"/*.mp3; do
+                    if [[ -f "$mp3_file" ]] && ! grep -q "^${mp3_file}$" "$PROCESSED_FILES" 2>/dev/null; then
+                        video_file="$mp3_file"
+                        break
+                    fi
+                done
+            fi
+            
+            if [[ -n "$video_file" ]] && [[ -f "$video_file" ]]; then
+                # Mark file as processed
+                echo "$video_file" >> "$PROCESSED_FILES"
+                
+                video_filename=$(basename "$video_file")
+                log_debug "✅ Downloaded: $video_filename"
+                DOWNLOADED_COUNT=$((DOWNLOADED_COUNT + 1))
+                
+                # Find metadata file
+                video_metadata_file=""
+                video_metadata_basename=$(basename "$video_file" | sed 's/\.[^.]*$//')
+                for possible_metadata in "${OUTPUT_DIR}/${video_metadata_basename}.info.json"; do
+                    if [[ -f "$possible_metadata" ]]; then
+                        video_metadata_file="$possible_metadata"
+                        break
+                    fi
+                done
+                
+                # Extract comprehensive metadata from .info.json if available
+                if [[ -n "$video_metadata_file" ]] && [[ -f "$video_metadata_file" ]] && command -v jq &> /dev/null; then
+                    # Use jq to create comprehensive JSON entry
+                    video_metadata_json=$(jq -n \
+                        --arg file_path "$video_file" \
+                        --arg filename "$video_filename" \
+                        --arg title "$video_raw_title" \
+                        --arg duration "$video_duration" \
+                        --arg uploader "$video_uploader" \
+                        --arg youtube_url "$video_url" \
+                        --arg metadata_file "${video_metadata_file}" \
+                        --argjson youtube_metadata "$(jq '.' "$video_metadata_file" 2>/dev/null || echo '{}')" \
+                        '{
+                            file_path: $file_path,
+                            filename: $filename,
+                            title: $title,
+                            raw_title: ($youtube_metadata.title // $title),
+                            duration: ($duration | tonumber? // 0),
+                            uploader: $uploader,
+                            youtube_url: $youtube_url,
+                            metadata_file: $metadata_file,
+                            channel_info: {
+                                name: ($uploader | gsub("[^a-zA-Z0-9._-]"; "_") | .[0:50]),
+                                display_name: $uploader,
+                                type: "youtube",
+                                channel_id: ($youtube_metadata.channel_id // ""),
+                                channel_url: ($youtube_metadata.channel_url // ""),
+                                uploader_id: ($youtube_metadata.uploader_id // ""),
+                                uploader_url: ($youtube_metadata.uploader_url // ""),
+                                channel_follower_count: ($youtube_metadata.channel_follower_count // 0)
+                            },
+                            content_info: {
+                                description: ($youtube_metadata.description // ""),
+                                topic_keywords: (($youtube_metadata.tags // []) | join(", ")),
+                                categories: ($youtube_metadata.categories // []),
+                                tags: ($youtube_metadata.tags // []),
+                                license: ($youtube_metadata.license // ""),
+                                language: ($youtube_metadata.language // "")
+                            },
+                            technical_info: {
+                                format: "mp3",
+                                file_size: ($youtube_metadata.filesize // 0),
+                                format_id: ($youtube_metadata.format_id // ""),
+                                acodec: ($youtube_metadata.acodec // ""),
+                                abr: ($youtube_metadata.abr // 0),
+                                ext: ($youtube_metadata.ext // "")
+                            },
+                            youtube_metadata: $youtube_metadata,
+                            statistics: {
+                                view_count: ($youtube_metadata.view_count // 0),
+                                like_count: ($youtube_metadata.like_count // 0),
+                                comment_count: ($youtube_metadata.comment_count // 0),
+                                average_rating: ($youtube_metadata.average_rating // 0)
+                            },
+                            dates: {
+                                upload_date: ($youtube_metadata.upload_date // ""),
+                                release_date: ($youtube_metadata.release_date // ""),
+                                timestamp: ($youtube_metadata.timestamp // 0)
+                            },
+                            media_info: {
+                                artist: ($youtube_metadata.artist // ""),
+                                album: ($youtube_metadata.album // ""),
+                                track: ($youtube_metadata.track // ""),
+                                creator: ($youtube_metadata.creator // "")
+                            },
+                            thumbnails: {
+                                thumbnail: ($youtube_metadata.thumbnail // ""),
+                                thumbnails: ($youtube_metadata.thumbnails // [])
+                            }
+                        }' 2>/dev/null || echo "{}")
+                    
+                    # Add to metadata JSON array
+                    if [[ $DOWNLOADED_COUNT -gt 1 ]]; then
+                        echo "," >> "$METADATA_TEMP"
+                    fi
+                    echo "$video_metadata_json" | jq -c '.' >> "$METADATA_TEMP" 2>/dev/null || echo "$video_metadata_json" >> "$METADATA_TEMP"
+                else
+                    # Fallback: basic metadata without jq
+                    video_raw_title_escaped=$(echo "$video_raw_title" | sed 's/"/\\"/g' | sed 's/\\/\\\\/g')
+                    video_uploader_escaped=$(echo "$video_uploader" | sed 's/"/\\"/g' | sed 's/\\/\\\\/g')
+                    
+                    # Add to metadata JSON array
+                    if [[ $DOWNLOADED_COUNT -gt 1 ]]; then
+                        echo "," >> "$METADATA_TEMP"
+                    fi
+                    cat >> "$METADATA_TEMP" << EOF
+    {
+      "file_path": "$video_file",
+      "filename": "$video_filename",
+      "title": "$video_raw_title_escaped",
+      "raw_title": "$video_raw_title_escaped",
+      "duration": "$video_duration",
+      "uploader": "$video_uploader_escaped",
+      "youtube_url": "$video_url",
+      "metadata_file": "${video_metadata_file}",
+      "channel_info": {
+        "name": "$(echo "$video_uploader" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 50)",
+        "display_name": "$video_uploader_escaped",
+        "type": "youtube"
+      },
+      "content_info": {},
+      "technical_info": {
+        "format": "mp3"
+      },
+      "youtube_metadata": {},
+      "statistics": {},
+      "dates": {},
+      "media_info": {},
+      "thumbnails": {}
+    }
+EOF
+                fi
+            fi
+        else
+            log_debug "⚠️  Failed to download video $VIDEO_INDEX: $video_media_title"
+        fi
+    done <<< "$(echo "$PLAYLIST_VIDEOS" | grep -E '^[a-zA-Z0-9_-]{11}&')"
+    
+    # Build JSON response with all downloaded files
+    if [[ $DOWNLOADED_COUNT -gt 0 ]]; then
+        json_output="{"
+        json_output="${json_output}\"playlist\":true,"
+        json_output="${json_output}\"playlist_id\":\"${PLAYLIST_ID}\","
+        json_output="${json_output}\"total_videos\":${VIDEO_COUNT},"
+        json_output="${json_output}\"downloaded_count\":${DOWNLOADED_COUNT},"
+        json_output="${json_output}\"files\":["
+        
+        # Read metadata from temp file
+        if [[ -f "$METADATA_TEMP" ]]; then
+            METADATA_CONTENT=$(cat "$METADATA_TEMP")
+            json_output="${json_output}${METADATA_CONTENT}"
+            rm -f "$METADATA_TEMP" "$PROCESSED_FILES"
+        fi
+        
+        json_output="${json_output}]"
+        json_output="${json_output}}"
+        
+        # Use output_json function to write to file and stdout
+        output_json "$json_output"
+        
+        log_debug "Playlist download completed: ${DOWNLOADED_COUNT}/${VIDEO_COUNT} files downloaded"
+        espeak "Playlist download completed. ${DOWNLOADED_COUNT} tracks downloaded" 2>/dev/null || true
+        exit 0
+    else
+        echo '{"error":"❌ Failed to download any videos from playlist"}' 2>/dev/null || echo '{"error":"Failed to download playlist videos"}'
+        exit 1
+    fi
+fi
+
+# Single video processing (existing code)
 metadata_output=$(yt-dlp --cookies "$cookie_file" --no-warnings --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
 metadata_exit_code=$?
 log_debug "yt-dlp metadata extraction exit code: $metadata_exit_code"
@@ -324,6 +642,59 @@ if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ && "$duration" -gt 10800 ]]; the
     exit 1
 fi
 
+# Calculate optimal video format to stay under 650MB limit
+# Formula: max_bitrate (kbps) = (650MB * 8 * 1024) / duration_seconds
+# We reserve ~50MB for audio and metadata, so target ~600MB for video
+MAX_FILE_SIZE_MB=650
+TARGET_VIDEO_SIZE_MB=600
+TARGET_VIDEO_SIZE_BYTES=$((TARGET_VIDEO_SIZE_MB * 1024 * 1024))
+
+# Determine optimal resolution based on duration
+VIDEO_HEIGHT_LIMIT=720
+VIDEO_FORMAT_FILTER="best[height<=720]/best"
+
+if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ && "$duration" -gt 0 ]]; then
+    # Calculate max bitrate in kbps (kilobits per second)
+    # Reserve ~128 kbps for audio, so video gets the rest
+    MAX_TOTAL_BITRATE_KBPS=$(echo "$TARGET_VIDEO_SIZE_BYTES $duration" | awk '{if ($2 > 0) printf "%.0f", ($1 * 8) / ($2 * 1000); else print "0"}' 2>/dev/null || echo "0")
+    
+    # Validate and calculate video bitrate
+    if [[ -n "$MAX_TOTAL_BITRATE_KBPS" ]] && [[ "$MAX_TOTAL_BITRATE_KBPS" =~ ^[0-9]+$ ]] && [[ $MAX_TOTAL_BITRATE_KBPS -gt 128 ]]; then
+        MAX_VIDEO_BITRATE_KBPS=$((MAX_TOTAL_BITRATE_KBPS - 128))
+    else
+        # Fallback: use conservative estimate for very long videos
+        MAX_VIDEO_BITRATE_KBPS=300
+        log_debug "Warning: Could not calculate bitrate, using conservative default: ${MAX_VIDEO_BITRATE_KBPS} kbps"
+    fi
+    
+    log_debug "Duration: ${duration}s, Max video bitrate: ${MAX_VIDEO_BITRATE_KBPS} kbps"
+    
+    # Choose resolution based on duration and bitrate constraints
+    # Approximate bitrates: 720p ~2-3 Mbps, 480p ~1-1.5 Mbps, 360p ~0.5-1 Mbps, 240p ~0.3-0.5 Mbps
+    # For a 2h video (7200s) with 600MB target: ~655 kbps total, ~527 kbps video -> need 360p or lower
+    if [[ -n "$MAX_VIDEO_BITRATE_KBPS" ]] && [[ "$MAX_VIDEO_BITRATE_KBPS" =~ ^[0-9]+$ ]] && [[ $MAX_VIDEO_BITRATE_KBPS -lt 400 ]]; then
+        # Very long video (>2h), use 240p or 360p
+        VIDEO_HEIGHT_LIMIT=240
+        VIDEO_FORMAT_FILTER="best[height<=240]/best[height<=360]/best[height<=480]/best"
+        log_debug "Very long video detected (${duration}s, ${MAX_VIDEO_BITRATE_KBPS} kbps), selecting 240p max to stay under size limit"
+    elif [[ -n "$MAX_VIDEO_BITRATE_KBPS" ]] && [[ "$MAX_VIDEO_BITRATE_KBPS" =~ ^[0-9]+$ ]] && [[ $MAX_VIDEO_BITRATE_KBPS -lt 700 ]]; then
+        # Long video (1.5-2h), use 360p
+        VIDEO_HEIGHT_LIMIT=360
+        VIDEO_FORMAT_FILTER="best[height<=360]/best[height<=480]/best[height<=720]/best"
+        log_debug "Long video detected (${duration}s, ${MAX_VIDEO_BITRATE_KBPS} kbps), selecting 360p max to stay under size limit"
+    elif [[ -n "$MAX_VIDEO_BITRATE_KBPS" ]] && [[ "$MAX_VIDEO_BITRATE_KBPS" =~ ^[0-9]+$ ]] && [[ $MAX_VIDEO_BITRATE_KBPS -lt 1200 ]]; then
+        # Medium video (45min-1.5h), use 480p
+        VIDEO_HEIGHT_LIMIT=480
+        VIDEO_FORMAT_FILTER="best[height<=480]/best[height<=720]/best"
+        log_debug "Medium video detected (${duration}s, ${MAX_VIDEO_BITRATE_KBPS} kbps), selecting 480p max to stay under size limit"
+    else
+        # Short video (<45min), can use 720p (or fallback if calculation failed)
+        VIDEO_HEIGHT_LIMIT=720
+        VIDEO_FORMAT_FILTER="best[height<=720]/best"
+        log_debug "Short video detected (${duration}s, ${MAX_VIDEO_BITRATE_KBPS} kbps), using 720p max"
+    fi
+fi
+
 # Simple download with cookies (guaranteed to exist by youtube.com.sh)
 log_debug "Starting download with cookies"
 case "$FORMAT" in
@@ -338,8 +709,12 @@ case "$FORMAT" in
         (echo "$download_output" >&2) 2>/dev/null || true
         ;;
     mp4)
-        log_debug "Running yt-dlp for MP4 download..."
-        download_output=$(yt-dlp --cookies "$cookie_file" -f "best[height<=720]/best" --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
+        log_debug "Running yt-dlp for MP4 download with format filter: $VIDEO_FORMAT_FILTER"
+        # Use format filter to select appropriate resolution based on duration
+        # The format filter ensures we download at the right resolution to stay under size limit
+        # If recoding is needed, yt-dlp will handle it with default settings
+        download_output=$(yt-dlp --cookies "$cookie_file" -f "$VIDEO_FORMAT_FILTER" \
+            --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
             --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
             -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)
         download_exit_code=$?
@@ -388,6 +763,7 @@ if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
     if [[ -n "$media_file" ]] && [[ -f "$media_file" ]]; then
         filename=$(basename "$media_file")
         log_debug "Found downloaded file: $media_file"
+        log_debug "File size: $(stat -c%s "$media_file" 2>/dev/null || echo "unknown") bytes"
         
         # Find metadata.json file created by yt-dlp (--write-info-json)
         metadata_file=""
@@ -414,14 +790,276 @@ if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
         log_debug "Media downloaded to: $media_file"
         log_debug "File will be uploaded via /api/fileupload (UPlanet_FILE_CONTRACT.md compliant)"
             
-        # Generate JSON response - write to stdout ONLY
+        # Extract comprehensive metadata from .info.json if available
+        YOUTUBE_METADATA_JSON="{}"
+        if [[ -n "$metadata_file" ]] && [[ -f "$metadata_file" ]] && command -v jq &> /dev/null; then
+            log_debug "Extracting comprehensive metadata from: $metadata_file"
+            YOUTUBE_METADATA_JSON=$(jq '{
+                youtube_id: .id,
+                youtube_url: .webpage_url,
+                youtube_short_url: .short_url,
+                title: .title,
+                description: .description,
+                uploader: .uploader,
+                uploader_id: .uploader_id,
+                uploader_url: .uploader_url,
+                channel: .channel,
+                channel_id: .channel_id,
+                channel_url: .channel_url,
+                channel_follower_count: .channel_follower_count,
+                duration: .duration,
+                view_count: .view_count,
+                like_count: .like_count,
+                comment_count: .comment_count,
+                average_rating: .average_rating,
+                age_limit: .age_limit,
+                upload_date: .upload_date,
+                release_date: .release_date,
+                timestamp: .timestamp,
+                availability: .availability,
+                live_status: .live_status,
+                was_live: .was_live,
+                format: .format,
+                format_id: .format_id,
+                format_note: .format_note,
+                width: .width,
+                height: .height,
+                fps: .fps,
+                vcodec: .vcodec,
+                acodec: .acodec,
+                abr: .abr,
+                vbr: .vbr,
+                tbr: .tbr,
+                filesize: .filesize,
+                filesize_approx: .filesize_approx,
+                ext: .ext,
+                resolution: .resolution,
+                categories: .categories,
+                tags: .tags,
+                chapters: .chapters,
+                subtitles: .subtitles,
+                automatic_captions: .automatic_captions,
+                thumbnail: .thumbnail,
+                thumbnails: .thumbnails,
+                license: .license,
+                language: .language,
+                languages: .languages,
+                location: .location,
+                artist: .artist,
+                album: .album,
+                track: .track,
+                creator: .creator,
+                alt_title: .alt_title,
+                series: .series,
+                season: .season,
+                season_number: .season_number,
+                episode: .episode,
+                episode_number: .episode_number,
+                playlist: .playlist,
+                playlist_id: .playlist_id,
+                playlist_title: .playlist_title,
+                playlist_index: .playlist_index,
+                n_entries: .n_entries,
+                webpage_url_basename: .webpage_url_basename,
+                webpage_url_domain: .webpage_url_domain,
+                extractor: .extractor,
+                extractor_key: .extractor_key,
+                epoch: .epoch,
+                modified_timestamp: .modified_timestamp,
+                modified_date: .modified_date,
+                requested_subtitles: .requested_subtitles,
+                has_drm: .has_drm,
+                is_live: .is_live,
+                was_live: .was_live,
+                live_status: .live_status,
+                release_timestamp: .release_timestamp,
+                comment_count: .comment_count,
+                heatmap: .heatmap
+            }' "$metadata_file" 2>/dev/null || echo "{}")
+        fi
+        
+        # Generate JSON response with comprehensive metadata - write to stdout ONLY
+        # Use jq to merge base JSON with extracted metadata
+        # Validate media_file before generating JSON
+        if [[ -z "$media_file" ]] || [[ ! -f "$media_file" ]]; then
+            log_debug "ERROR: media_file is empty or does not exist before JSON generation: '$media_file'"
+            log_debug "OUTPUT_DIR: $OUTPUT_DIR"
+            log_debug "OUTPUT_DIR contents:"
+            ls -la "$OUTPUT_DIR" 2>/dev/null | head -20 >&2 || true
+            error_msg="Downloaded file not found in output directory: $OUTPUT_DIR"
+            if [[ $JSON_OUTPUT -eq 1 ]]; then
+                local error_json="{\"error\":\"${error_msg}\",\"success\":false}"
+                output_json "$error_json"
+            else
+                echo "ERROR: $error_msg" >&2
+            fi
+            exit 1
+        fi
+        
+        log_debug "Generating JSON with file_path: $media_file"
+        
+        # Validate YOUTUBE_METADATA_JSON before using it
+        if command -v jq &> /dev/null; then
+            if ! echo "$YOUTUBE_METADATA_JSON" | jq '.' >/dev/null 2>&1; then
+                log_debug "WARNING: YOUTUBE_METADATA_JSON is invalid JSON, using empty object"
+                YOUTUBE_METADATA_JSON="{}"
+            fi
+        fi
+        
+        json_output=""
+        
+        if command -v jq &> /dev/null && [[ "$YOUTUBE_METADATA_JSON" != "{}" ]]; then
+            # Try to generate JSON with jq, capture errors
+            log_debug "Attempting to generate JSON with jq and comprehensive metadata"
+            jq_temp_output=$(jq -n \
+                --arg title "$media_title" \
+                --arg raw_title "$raw_title" \
+                --arg duration "$duration" \
+                --arg uploader "$uploader" \
+                --arg original_url "$URL" \
+                --arg youtube_url "$URL" \
+                --arg filename "$filename" \
+                --arg file_path "$media_file" \
+                --arg output_dir "$OUTPUT_DIR" \
+                --arg metadata_file "${metadata_file:-}" \
+                --arg format "$FORMAT" \
+                --arg file_size "$(stat -c%s "$media_file" 2>/dev/null || echo "0")" \
+                --arg download_date "$(date -Iseconds)" \
+                --argjson youtube_metadata "$YOUTUBE_METADATA_JSON" \
+                '{
+                    ipfs_url: "",
+                    title: $title,
+                    raw_title: $raw_title,
+                    duration: ($duration | tonumber? // 0),
+                    uploader: $uploader,
+                    original_url: $original_url,
+                    youtube_url: $youtube_url,
+                    filename: $filename,
+                    file_path: $file_path,
+                    output_dir: $output_dir,
+                    metadata_file: $metadata_file,
+                    metadata_ipfs: "",
+                    thumbnail_ipfs: "",
+                    subtitles: [],
+                    channel_info: {
+                        name: ($uploader | gsub("[^a-zA-Z0-9._-]"; "_") | .[0:50]),
+                        display_name: $uploader,
+                        type: "youtube",
+                        channel_id: $youtube_metadata.channel_id // "",
+                        channel_url: $youtube_metadata.channel_url // "",
+                        uploader_id: $youtube_metadata.uploader_id // "",
+                        uploader_url: $youtube_metadata.uploader_url // "",
+                        channel_follower_count: $youtube_metadata.channel_follower_count // 0
+                    },
+                    content_info: {
+                        description: ($youtube_metadata.description // ""),
+                        ai_analysis: "",
+                        topic_keywords: (($youtube_metadata.tags // []) | join(", ")),
+                        duration_category: (if ($duration | tonumber? // 0) > 0 then 
+                            (($duration | tonumber) / 60 | floor) as $mins |
+                            if $mins < 5 then "short" elif $mins < 30 then "medium" else "long" end
+                        else "" end),
+                        categories: ($youtube_metadata.categories // []),
+                        tags: ($youtube_metadata.tags // []),
+                        license: ($youtube_metadata.license // ""),
+                        language: ($youtube_metadata.language // ""),
+                        languages: ($youtube_metadata.languages // [])
+                    },
+                    technical_info: {
+                        format: $format,
+                        file_size: ($file_size | tonumber? // 0),
+                        download_date: $download_date,
+                        format_id: ($youtube_metadata.format_id // ""),
+                        format_note: ($youtube_metadata.format_note // ""),
+                        width: ($youtube_metadata.width // 0),
+                        height: ($youtube_metadata.height // 0),
+                        fps: ($youtube_metadata.fps // 0),
+                        vcodec: ($youtube_metadata.vcodec // ""),
+                        acodec: ($youtube_metadata.acodec // ""),
+                        abr: ($youtube_metadata.abr // 0),
+                        vbr: ($youtube_metadata.vbr // 0),
+                        tbr: ($youtube_metadata.tbr // 0),
+                        resolution: ($youtube_metadata.resolution // ""),
+                        ext: ($youtube_metadata.ext // "")
+                    },
+                    youtube_metadata: $youtube_metadata,
+                    statistics: {
+                        view_count: ($youtube_metadata.view_count // 0),
+                        like_count: ($youtube_metadata.like_count // 0),
+                        comment_count: ($youtube_metadata.comment_count // 0),
+                        average_rating: ($youtube_metadata.average_rating // 0)
+                    },
+                    dates: {
+                        upload_date: ($youtube_metadata.upload_date // ""),
+                        release_date: ($youtube_metadata.release_date // ""),
+                        timestamp: ($youtube_metadata.timestamp // 0),
+                        release_timestamp: ($youtube_metadata.release_timestamp // 0),
+                        modified_timestamp: ($youtube_metadata.modified_timestamp // 0),
+                        modified_date: ($youtube_metadata.modified_date // "")
+                    },
+                    media_info: {
+                        artist: ($youtube_metadata.artist // ""),
+                        album: ($youtube_metadata.album // ""),
+                        track: ($youtube_metadata.track // ""),
+                        creator: ($youtube_metadata.creator // ""),
+                        alt_title: ($youtube_metadata.alt_title // ""),
+                        series: ($youtube_metadata.series // ""),
+                        season: ($youtube_metadata.season // ""),
+                        season_number: ($youtube_metadata.season_number // 0),
+                        episode: ($youtube_metadata.episode // ""),
+                        episode_number: ($youtube_metadata.episode_number // 0)
+                    },
+                    playlist_info: {
+                        playlist: ($youtube_metadata.playlist // ""),
+                        playlist_id: ($youtube_metadata.playlist_id // ""),
+                        playlist_title: ($youtube_metadata.playlist_title // ""),
+                        playlist_index: ($youtube_metadata.playlist_index // 0),
+                        n_entries: ($youtube_metadata.n_entries // 0)
+                    },
+                    thumbnails: {
+                        thumbnail: ($youtube_metadata.thumbnail // ""),
+                        thumbnails: ($youtube_metadata.thumbnails // [])
+                    },
+                    subtitles_info: {
+                        subtitles: ($youtube_metadata.subtitles // {}),
+                        automatic_captions: ($youtube_metadata.automatic_captions // {}),
+                        requested_subtitles: ($youtube_metadata.requested_subtitles // {})
+                    },
+                    chapters: ($youtube_metadata.chapters // []),
+                    location: ($youtube_metadata.location // ""),
+                    age_limit: ($youtube_metadata.age_limit // 0),
+                    live_info: {
+                        live_status: ($youtube_metadata.live_status // ""),
+                        was_live: ($youtube_metadata.was_live // false),
+                        is_live: ($youtube_metadata.is_live // false)
+                    }
+                }' 2>>"$LOGFILE")
+            
+            jq_exit_code=$?
+            if [[ $jq_exit_code -eq 0 ]] && [[ -n "$jq_temp_output" ]] && [[ "$jq_temp_output" != "{}" ]]; then
+                json_output="$jq_temp_output"
+                log_debug "JSON generated successfully with jq (length: ${#json_output} chars)"
+            else
+                log_debug "jq command failed (exit code: $jq_exit_code) or returned empty/invalid JSON"
+                log_debug "jq output: ${jq_temp_output:0:200}..."
+                log_debug "jq error output saved to: $LOGFILE"
+                json_output=""
+            fi
+        fi
+        
+        # Use fallback if jq is not available or failed
+        if [[ -z "$json_output" ]] || [[ "$json_output" == "{}" ]]; then
+            log_debug "Using fallback JSON generation (no jq or jq failed)"
+            # Fallback: basic JSON without jq or metadata file
         json_output=$(cat << EOF
 {
   "ipfs_url": "",
   "title": "$media_title",
+  "raw_title": "$raw_title",
   "duration": "$duration",
   "uploader": "$uploader",
   "original_url": "$URL",
+  "youtube_url": "$URL",
   "filename": "$filename",
   "file_path": "$media_file",
   "output_dir": "$OUTPUT_DIR",
@@ -442,25 +1080,56 @@ if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
   },
   "technical_info": {
     "format": "$FORMAT",
-    "file_size": "$(stat -c%s "$media_file" 2>/dev/null || echo "unknown")",
+    "file_size": "$(stat -c%s "$media_file" 2>/dev/null || echo "0")",
     "download_date": "$(date -Iseconds)"
-  }
+  },
+  "youtube_metadata": {},
+  "statistics": {},
+  "dates": {},
+  "media_info": {},
+  "playlist_info": {},
+  "thumbnails": {},
+  "subtitles_info": {},
+  "chapters": [],
+  "location": "",
+  "age_limit": 0,
+  "live_info": {}
 }
 EOF
 )
-        
-        # Output JSON based on --json flag
-        if [[ $JSON_OUTPUT -eq 1 ]]; then
-            # Pure JSON output (no separators)
-            echo "$json_output"
-        else
-            # Write separators to stderr, then JSON to stdout (backward compatibility)
-            (echo "=== JSON OUTPUT START ===" >&2) 2>/dev/null || true
-            echo "$json_output"
-            (echo "=== JSON OUTPUT END ===" >&2) 2>/dev/null || true
         fi
         
+        # Validate that file_path is in JSON before outputting
+        if command -v jq &> /dev/null; then
+            if ! echo "$json_output" | jq -e '.file_path' >/dev/null 2>&1; then
+                log_debug "ERROR: file_path missing from JSON output"
+                log_debug "media_file value: '$media_file'"
+                log_debug "JSON preview: ${json_output:0:500}..."
+                error_json="{\"error\":\"Failed to include file_path in JSON output\",\"success\":false}"
+                output_json "$error_json"
+                exit 1
+            fi
+            log_debug "JSON file_path validated: $(echo "$json_output" | jq -r '.file_path // "MISSING"')"
+        else
+            # Without jq, check if file_path appears in JSON string
+            if ! echo "$json_output" | grep -q "\"file_path\""; then
+                log_debug "ERROR: file_path missing from JSON output (no jq available)"
+                log_debug "media_file value: '$media_file'"
+                log_debug "JSON preview: ${json_output:0:500}..."
+                error_json="{\"error\":\"Failed to include file_path in JSON output\",\"success\":false}"
+                output_json "$error_json"
+                exit 1
+            fi
+            log_debug "JSON file_path found in output (no jq validation)"
+        fi
+        
+        # Use output_json function to write to file and stdout
+        output_json "$json_output"
+        
         log_debug "Success JSON outputted. File ready for /api/fileupload workflow."
+        if command -v jq &> /dev/null; then
+            log_debug "JSON file_path: $(echo "$json_output" | jq -r '.file_path // "MISSING"')"
+        fi
         exit 0
     fi
 fi

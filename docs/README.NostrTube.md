@@ -76,18 +76,26 @@ Downloads and processes YouTube videos, then uploads to IPFS.
 
 **Usage**:
 ```bash
-./process_youtube.sh [--debug] <youtube_url> <format> [player_email]
+./process_youtube.sh [--debug] [--json] [--json-file <file>] [--output-dir <dir>] <youtube_url> <format> [player_email]
 ```
+
+**Options**:
+- `--debug`: Enable debug logging
+- `--json`: Output pure JSON (no separators) to stdout
+- `--json-file <file>`: Write JSON to a separate file (recommended for reliable parsing)
+- `--output-dir <dir>`: Specify custom output directory for downloaded files
+- `--no-ipfs`: Deprecated (IPFS upload removed for UPlanet_FILE_CONTRACT.md compliance)
 
 **Features**:
 - Downloads video in MP4 format (max 720p) or MP3
-- Extracts metadata (title, duration, uploader)
+- Extracts comprehensive metadata (title, duration, uploader, YouTube metadata, etc.)
 - Validates video duration (max 3 hours)
-- Uploads to IPFS via `ipfs add`
+- Automatically selects resolution based on video duration to stay under 650MB limit
 - Organizes files in uDRIVE structure:
   - Videos → `uDRIVE/Videos/`
   - Audio → `uDRIVE/Music/{artist}/`
-- Returns JSON with IPFS URL and metadata
+- Returns JSON with file path, metadata, and comprehensive YouTube information
+- Supports playlist downloads (MP3 format)
 
 **Output Format**:
 ```json

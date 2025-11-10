@@ -386,10 +386,17 @@ else
     ["m", "'"$MIME_TYPE"'"]'
     
     # Add file size if available (NIP-94 standard)
-    if [ -n "$FILE_SIZE" ] && [ "$FILE_SIZE" != "0" ]; then
+    # Validate and add file size tag (REQUIRED - must not be 0 or empty)
+    if [ -n "$FILE_SIZE" ] && [ "$FILE_SIZE" != "0" ] && [ "$FILE_SIZE" != "" ]; then
         TAGS="${TAGS},
     [\"size\", \"${FILE_SIZE}\"]"
         log_info "Added file size: ${FILE_SIZE} bytes"
+    else
+        log_error "fileSize is missing, empty, or 0. Cannot publish NOSTR event without valid file size."
+        if [ "$JSON_OUTPUT" = "true" ]; then
+            echo "{\"error\": \"fileSize is required and must not be 0\", \"fileSize\": \"$FILE_SIZE\"}"
+        fi
+        exit 1
     fi
     
     # Add file hash if available (critical for provenance)
@@ -429,17 +436,185 @@ else
         fi
     fi
     
-    # Add duration for audio files (from upload2ipfs.sh)
+    # Add comprehensive metadata for audio files (from upload2ipfs.sh and process_youtube.sh)
     if [[ "$MIME_TYPE" == "audio/"* ]]; then
-        DURATION=""
-        if [ "$AUTO_MODE" = "true" ] && [ -n "$UPLOAD_DATA" ]; then
+        if [ "$AUTO_MODE" = "true" ] && [ -n "$UPLOAD_DATA" ] && command -v jq &> /dev/null; then
+            # Extract all available metadata from UPLOAD_DATA
             DURATION=$(echo "$UPLOAD_DATA" | jq -r '.duration // empty')
-        fi
-        
-        if [ -n "$DURATION" ] && [ "$DURATION" != "0" ]; then
-            TAGS="${TAGS},
+            ARTIST=$(echo "$UPLOAD_DATA" | jq -r '.media_info.artist // .content_info.artist // .uploader // empty')
+            ALBUM=$(echo "$UPLOAD_DATA" | jq -r '.media_info.album // empty')
+            TRACK=$(echo "$UPLOAD_DATA" | jq -r '.media_info.track // empty')
+            CREATOR=$(echo "$UPLOAD_DATA" | jq -r '.media_info.creator // empty')
+            CHANNEL=$(echo "$UPLOAD_DATA" | jq -r '.channel_info.display_name // .channel_info.name // .uploader // empty')
+            CHANNEL_ID=$(echo "$UPLOAD_DATA" | jq -r '.channel_info.channel_id // empty')
+            CHANNEL_URL=$(echo "$UPLOAD_DATA" | jq -r '.channel_info.channel_url // empty')
+            YOUTUBE_URL=$(echo "$UPLOAD_DATA" | jq -r '.youtube_url // .original_url // empty')
+            VIEW_COUNT=$(echo "$UPLOAD_DATA" | jq -r '.statistics.view_count // 0')
+            LIKE_COUNT=$(echo "$UPLOAD_DATA" | jq -r '.statistics.like_count // 0')
+            COMMENT_COUNT=$(echo "$UPLOAD_DATA" | jq -r '.statistics.comment_count // 0')
+            UPLOAD_DATE=$(echo "$UPLOAD_DATA" | jq -r '.dates.upload_date // empty')
+            RELEASE_DATE=$(echo "$UPLOAD_DATA" | jq -r '.dates.release_date // empty')
+            LANGUAGE=$(echo "$UPLOAD_DATA" | jq -r '.content_info.language // empty')
+            LICENSE=$(echo "$UPLOAD_DATA" | jq -r '.content_info.license // empty')
+            TAGS_LIST=$(echo "$UPLOAD_DATA" | jq -r '.content_info.tags // [] | join(", ")' 2>/dev/null || echo "")
+            CATEGORIES=$(echo "$UPLOAD_DATA" | jq -r '.content_info.categories // [] | join(", ")' 2>/dev/null || echo "")
+            THUMBNAIL_URL=$(echo "$UPLOAD_DATA" | jq -r '.thumbnails.thumbnail // empty')
+            FORMAT_NOTE=$(echo "$UPLOAD_DATA" | jq -r '.technical_info.format_note // empty')
+            ABR=$(echo "$UPLOAD_DATA" | jq -r '.technical_info.abr // 0')
+            ACODEC=$(echo "$UPLOAD_DATA" | jq -r '.technical_info.acodec // empty')
+            
+            # Add duration
+            if [ -n "$DURATION" ] && [ "$DURATION" != "0" ]; then
+                TAGS="${TAGS},
     [\"duration\", \"${DURATION}\"]"
-            log_info "Added audio duration: ${DURATION}s"
+                log_info "Added audio duration: ${DURATION}s"
+            fi
+            
+            # Add artist (critical for music)
+            if [ -n "$ARTIST" ]; then
+                TAGS="${TAGS},
+    [\"artist\", \"${ARTIST}\"]"
+                log_info "Added artist: $ARTIST"
+            fi
+            
+            # Add album
+            if [ -n "$ALBUM" ]; then
+                TAGS="${TAGS},
+    [\"album\", \"${ALBUM}\"]"
+                log_info "Added album: $ALBUM"
+            fi
+            
+            # Add track number
+            if [ -n "$TRACK" ]; then
+                TAGS="${TAGS},
+    [\"track\", \"${TRACK}\"]"
+                log_info "Added track: $TRACK"
+            fi
+            
+            # Add creator
+            if [ -n "$CREATOR" ]; then
+                TAGS="${TAGS},
+    [\"creator\", \"${CREATOR}\"]"
+            fi
+            
+            # Add channel/uploader info
+            if [ -n "$CHANNEL" ]; then
+                TAGS="${TAGS},
+    [\"channel\", \"${CHANNEL}\"]"
+            fi
+            
+            if [ -n "$CHANNEL_ID" ]; then
+                TAGS="${TAGS},
+    [\"channel_id\", \"${CHANNEL_ID}\"]"
+            fi
+            
+            if [ -n "$CHANNEL_URL" ]; then
+                TAGS="${TAGS},
+    [\"channel_url\", \"${CHANNEL_URL}\"]"
+            fi
+            
+            # Add YouTube URL
+            if [ -n "$YOUTUBE_URL" ]; then
+                TAGS="${TAGS},
+    [\"youtube_url\", \"${YOUTUBE_URL}\"]"
+            fi
+            
+            # Add statistics
+            if [ -n "$VIEW_COUNT" ] && [ "$VIEW_COUNT" != "0" ]; then
+                TAGS="${TAGS},
+    [\"view_count\", \"${VIEW_COUNT}\"]"
+            fi
+            
+            if [ -n "$LIKE_COUNT" ] && [ "$LIKE_COUNT" != "0" ]; then
+                TAGS="${TAGS},
+    [\"like_count\", \"${LIKE_COUNT}\"]"
+            fi
+            
+            if [ -n "$COMMENT_COUNT" ] && [ "$COMMENT_COUNT" != "0" ]; then
+                TAGS="${TAGS},
+    [\"comment_count\", \"${COMMENT_COUNT}\"]"
+            fi
+            
+            # Add dates
+            if [ -n "$UPLOAD_DATE" ]; then
+                TAGS="${TAGS},
+    [\"upload_date\", \"${UPLOAD_DATE}\"]"
+            fi
+            
+            if [ -n "$RELEASE_DATE" ]; then
+                TAGS="${TAGS},
+    [\"release_date\", \"${RELEASE_DATE}\"]"
+            fi
+            
+            # Add language
+            if [ -n "$LANGUAGE" ]; then
+                TAGS="${TAGS},
+    [\"language\", \"${LANGUAGE}\"]"
+            fi
+            
+            # Add license
+            if [ -n "$LICENSE" ]; then
+                TAGS="${TAGS},
+    [\"license\", \"${LICENSE}\"]"
+            fi
+            
+            # Add tags/categories (comma-separated)
+            if [ -n "$TAGS_LIST" ] && [ "$TAGS_LIST" != "" ]; then
+                TAGS="${TAGS},
+    [\"tags\", \"${TAGS_LIST}\"]"
+            fi
+            
+            if [ -n "$CATEGORIES" ] && [ "$CATEGORIES" != "" ]; then
+                TAGS="${TAGS},
+    [\"categories\", \"${CATEGORIES}\"]"
+            fi
+            
+            # Add thumbnail
+            if [ -n "$THUMBNAIL_URL" ]; then
+                # Convert IPFS URL if needed
+                if [[ "$THUMBNAIL_URL" == "/ipfs/"* ]] || [[ "$THUMBNAIL_URL" == "ipfs://"* ]]; then
+                    THUMBNAIL_IPFS=$(echo "$THUMBNAIL_URL" | sed 's|^ipfs://|/ipfs/|' | sed 's|^/ipfs/||' | cut -d'/' -f1)
+                    if [ -n "$THUMBNAIL_IPFS" ]; then
+                        TAGS="${TAGS},
+    [\"r\", \"/ipfs/${THUMBNAIL_IPFS}\", \"Thumbnail\"],
+    [\"thumb\", \"/ipfs/${THUMBNAIL_IPFS}\"],
+    [\"image\", \"/ipfs/${THUMBNAIL_IPFS}\"]"
+                        log_info "Added thumbnail: ${THUMBNAIL_IPFS:0:16}..."
+                    fi
+                else
+                    TAGS="${TAGS},
+    [\"thumb\", \"${THUMBNAIL_URL}\"],
+    [\"image\", \"${THUMBNAIL_URL}\"]"
+                fi
+            fi
+            
+            # Add technical info
+            if [ -n "$FORMAT_NOTE" ]; then
+                TAGS="${TAGS},
+    [\"format_note\", \"${FORMAT_NOTE}\"]"
+            fi
+            
+            if [ -n "$ABR" ] && [ "$ABR" != "0" ]; then
+                TAGS="${TAGS},
+    [\"abr\", \"${ABR}\"]"
+            fi
+            
+            if [ -n "$ACODEC" ]; then
+                TAGS="${TAGS},
+    [\"acodec\", \"${ACODEC}\"]"
+            fi
+        else
+            # Fallback: basic duration extraction
+            DURATION=""
+            if [ "$AUTO_MODE" = "true" ] && [ -n "$UPLOAD_DATA" ]; then
+                DURATION=$(echo "$UPLOAD_DATA" | jq -r '.duration // empty' 2>/dev/null || echo "")
+            fi
+            
+            if [ -n "$DURATION" ] && [ "$DURATION" != "0" ]; then
+                TAGS="${TAGS},
+    [\"duration\", \"${DURATION}\"]"
+                log_info "Added audio duration: ${DURATION}s"
+            fi
         fi
     fi
     

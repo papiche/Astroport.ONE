@@ -179,6 +179,25 @@ To manually enable debug mode:
 ./process_youtube.sh "https://youtube.com/watch?v=ABC123" mp4
 ```
 
+**JSON Output Options**:
+
+For reliable JSON parsing (recommended), use `--json-file`:
+
+```bash
+# Write JSON to separate file (prevents mixing with logs)
+./process_youtube.sh --json-file /tmp/output.json --debug "https://youtube.com/watch?v=ABC123" mp4
+
+# Output pure JSON to stdout
+./process_youtube.sh --json --debug "https://youtube.com/watch?v=ABC123" mp4
+```
+
+**Custom Output Directory**:
+
+```bash
+# Download to specific directory
+./process_youtube.sh --output-dir /tmp/my_videos "https://youtube.com/watch?v=ABC123" mp4
+```
+
 ## 🎬 NIP-71 Video Events
 
 ### Event Types Published

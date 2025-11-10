@@ -432,44 +432,63 @@ process_liked_video() {
     local temp_output_dir="$HOME/.zen/tmp/youtube_sync_${player}_$$"
     mkdir -p "$temp_output_dir"
     
-    # Exécuter process_youtube.sh et capturer la sortie dans un fichier
-    $MY_PATH/process_youtube.sh --debug --output-dir "$temp_output_dir" "$url" "$format" "$player" > "$temp_output_file" 2>&1
+    # Create temporary JSON file for clean JSON output (separate from logs)
+    local json_output_file="$HOME/.zen/tmp/process_youtube_json_$(date +%s)_$$.json"
+    mkdir -p "$(dirname "$json_output_file")"
+    
+    # Exécuter process_youtube.sh avec --json-file pour isoler le JSON des logs
+    $MY_PATH/process_youtube.sh --json-file "$json_output_file" --debug --output-dir "$temp_output_dir" "$url" "$format" "$player" > "$temp_output_file" 2>&1
     local process_exit_code=$?
     
-    # Lire le résultat du fichier et extraire JSON avec jq uniquement
+    # Lire le JSON depuis le fichier séparé (méthode fiable)
     local result=""
-    if [[ -f "$temp_output_file" ]]; then
-        # Vérifier que jq est disponible
-        if ! command -v jq &> /dev/null; then
-            log_debug "ERROR: jq is required but not found"
-            echo "❌ jq is required for JSON parsing but not installed" >&2
-            rm -f "$temp_output_file"
-            return 1
+    if [[ -f "$json_output_file" ]] && [[ -s "$json_output_file" ]]; then
+        # Read JSON from separate file (clean, no mixing with logs)
+        if command -v jq &> /dev/null; then
+            result=$(jq -c '.' "$json_output_file" 2>/dev/null)
+        else
+            result=$(cat "$json_output_file" 2>/dev/null)
         fi
-        
-        # Extract JSON from output using jq only
-        # Try to extract JSON directly with jq (handles both marked and raw JSON)
-        # First, try to parse the entire file as JSON
-        result=$(jq -c '.' "$temp_output_file" 2>/dev/null)
-        
-        # If that fails, try to extract JSON between markers using jq
-        if [[ -z "$result" ]] && grep -q "=== JSON OUTPUT START ===" "$temp_output_file"; then
-            # Extract lines between markers, then parse with jq
-            local json_lines=$(awk '/=== JSON OUTPUT START ===/{flag=1;next}/=== JSON OUTPUT END ===/{flag=0}flag' "$temp_output_file")
-            if [[ -n "$json_lines" ]]; then
-                result=$(echo "$json_lines" | jq -c '.' 2>/dev/null)
+        rm -f "$json_output_file"
+        log_debug "JSON read from file: $json_output_file"
+    else
+        # Fallback: try to extract JSON from output file (backward compatibility)
+        log_debug "JSON file not found, attempting fallback extraction from output"
+        if [[ -f "$temp_output_file" ]]; then
+            # Vérifier que jq est disponible
+            if ! command -v jq &> /dev/null; then
+                log_debug "ERROR: jq is required but not found"
+                echo "❌ jq is required for JSON parsing but not installed" >&2
+                rm -f "$temp_output_file"
+                return 1
+            fi
+            
+            # Extract JSON from output using jq only
+            # Try to extract JSON directly with jq (handles both marked and raw JSON)
+            # First, try to parse the entire file as JSON
+            result=$(jq -c '.' "$temp_output_file" 2>/dev/null)
+            
+            # If that fails, try to extract JSON between markers using jq
+            if [[ -z "$result" ]] && grep -q "=== JSON OUTPUT START ===" "$temp_output_file"; then
+                # Extract lines between markers, then parse with jq
+                local json_lines=$(awk '/=== JSON OUTPUT START ===/{flag=1;next}/=== JSON OUTPUT END ===/{flag=0}flag' "$temp_output_file")
+                if [[ -n "$json_lines" ]]; then
+                    result=$(echo "$json_lines" | jq -c '.' 2>/dev/null)
+                fi
+            fi
+            
+            # If still no result, try to find and parse first JSON object/array in file
+            if [[ -z "$result" ]]; then
+                local first_json=$(grep -m 1 -E '^\{|^\[' "$temp_output_file" 2>/dev/null)
+                if [[ -n "$first_json" ]]; then
+                    result=$(echo "$first_json" | jq -c '.' 2>/dev/null)
+                fi
             fi
         fi
-        
-        # If still no result, try to find and parse first JSON object/array in file
-        if [[ -z "$result" ]]; then
-            local first_json=$(grep -m 1 -E '^\{|^\[' "$temp_output_file" 2>/dev/null)
-            if [[ -n "$first_json" ]]; then
-                result=$(echo "$first_json" | jq -c '.' 2>/dev/null)
-            fi
-        fi
-        rm -f "$temp_output_file"
     fi
+    
+    # Clean up temp output file
+    rm -f "$temp_output_file"
     
     log_debug "process_youtube.sh exit code: $process_exit_code"
     log_debug "process_youtube.sh output: $result"

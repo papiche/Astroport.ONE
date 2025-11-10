@@ -240,6 +240,10 @@ while [[ $# -gt 0 ]]; do
             DIMENSIONS="$2"
             shift 2
             ;;
+        --file-size)
+            FILE_SIZE="$2"
+            shift 2
+            ;;
         --latitude)
             LATITUDE="$2"
             shift 2
@@ -308,8 +312,8 @@ if [ "$AUTO_MODE" = "true" ]; then
     [ -z "$INFO_CID" ] && INFO_CID=$(echo "$UPLOAD_DATA" | jq -r '.info // empty')
     [ -z "$UPLOAD_CHAIN" ] && UPLOAD_CHAIN=$(echo "$UPLOAD_DATA" | jq -r '.upload_chain // empty')
     [ -z "$DIMENSIONS" ] && DIMENSIONS=$(echo "$UPLOAD_DATA" | jq -r '.dimensions // "640x480"')
-    # Extract file size (for NIP-71 size tag)
-    FILE_SIZE=$(echo "$UPLOAD_DATA" | jq -r '.fileSize // 0')
+    # Extract file size (for NIP-71 size tag) - only if not provided via command line
+    [ -z "$FILE_SIZE" ] || [ "$FILE_SIZE" = "0" ] && FILE_SIZE=$(echo "$UPLOAD_DATA" | jq -r '.fileSize // 0')
     
     # Auto-detect source type from upload2ipfs.sh metadata (only if not provided via command line)
     if [ -z "$SOURCE_TYPE" ]; then
