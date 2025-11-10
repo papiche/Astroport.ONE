@@ -165,6 +165,11 @@ Optional arguments:
   --channel <name>          Channel name/email
   --source-type <type>      Source type: film, serie, youtube, webcam (auto-detected in --auto mode)
   --youtube-url <url>       YouTube URL (optional, auto-sets --source-type youtube if not set)
+  --series-name <name>      Series name (for series/episodes)
+  --episode-name <name>     Episode name/title (for series/episodes)
+  --season-number <num>     Season number (for series/episodes)
+  --episode-number <num>    Episode number (for series/episodes)
+  --genres <json_array>     JSON array of genres (e.g., '["Action","Sci-Fi"]') - will publish kind 1985 tags
   --relays <urls>           Comma-separated relay URLs (default: local+copylaradio)
   --json                    Output JSON format
   --help                    Show this help message
@@ -266,6 +271,26 @@ while [[ $# -gt 0 ]]; do
             [[ -z "$SOURCE_TYPE" ]] && SOURCE_TYPE="youtube"
             shift 2
             ;;
+        --series-name)
+            SERIES_NAME="$2"
+            shift 2
+            ;;
+        --episode-name)
+            EPISODE_NAME="$2"
+            shift 2
+            ;;
+        --season-number)
+            SEASON_NUMBER="$2"
+            shift 2
+            ;;
+        --episode-number)
+            EPISODE_NUMBER="$2"
+            shift 2
+            ;;
+        --genres)
+            GENRES_JSON="$2"
+            shift 2
+            ;;
         --relays)
             RELAYS="$2"
             shift 2
@@ -339,6 +364,40 @@ if [ "$AUTO_MODE" = "true" ]; then
     # Default to webcam if still empty
     SOURCE_TYPE=${SOURCE_TYPE:-webcam}
     log_info "Source type: $SOURCE_TYPE"
+    
+    # Extract series metadata from upload2ipfs.sh output (only if not already provided via command line)
+    if [ -z "$SERIES_NAME" ] && command -v jq &> /dev/null; then
+        # Try to get from tmdb.series_name first (preferred)
+        SERIES_NAME=$(echo "$UPLOAD_DATA" | jq -r '.tmdb.series_name // empty' 2>/dev/null)
+        # If not found, try tmdb.title (for series, this is the series name)
+        if [[ -z "$SERIES_NAME" ]] && [[ "$SOURCE_TYPE" == "serie" ]]; then
+            SERIES_NAME=$(echo "$UPLOAD_DATA" | jq -r '.tmdb.title // .tmdb.name // empty' 2>/dev/null)
+        fi
+    fi
+    
+    if [ -z "$EPISODE_NAME" ] && command -v jq &> /dev/null; then
+        # Episode name in tmdb.episode_name (preferred) or tmdb.episode_title
+        EPISODE_NAME=$(echo "$UPLOAD_DATA" | jq -r '.tmdb.episode_name // .tmdb.episode_title // empty' 2>/dev/null)
+    fi
+    
+    if [ -z "$SEASON_NUMBER" ] && command -v jq &> /dev/null; then
+        SEASON_NUMBER=$(echo "$UPLOAD_DATA" | jq -r '.tmdb.season_number // empty' 2>/dev/null)
+        # Convert to string if it's a number
+        [[ -n "$SEASON_NUMBER" ]] && [[ "$SEASON_NUMBER" != "null" ]] && SEASON_NUMBER=$(echo "$SEASON_NUMBER" | awk '{print int($1)}')
+    fi
+    
+    if [ -z "$EPISODE_NUMBER" ] && command -v jq &> /dev/null; then
+        EPISODE_NUMBER=$(echo "$UPLOAD_DATA" | jq -r '.tmdb.episode_number // empty' 2>/dev/null)
+        # Convert to string if it's a number
+        [[ -n "$EPISODE_NUMBER" ]] && [[ "$EPISODE_NUMBER" != "null" ]] && EPISODE_NUMBER=$(echo "$EPISODE_NUMBER" | awk '{print int($1)}')
+    fi
+    
+    # Extract genres from upload2ipfs.sh output (only if not already provided via command line)
+    if [ -z "$GENRES_JSON" ] && command -v jq &> /dev/null; then
+        GENRES_JSON=$(echo "$UPLOAD_DATA" | jq -c '.tmdb.genres // []' 2>/dev/null)
+        # If empty or null, try empty array
+        [[ -z "$GENRES_JSON" ]] || [[ "$GENRES_JSON" == "null" ]] && GENRES_JSON="[]"
+    fi
     
     # Extract duration (convert to integer)
     if [ -z "$DURATION" ] || [ "$DURATION" = "0" ]; then
@@ -531,6 +590,31 @@ if [ -n "$SOURCE_TYPE" ]; then
     log_info "Added source type tag: source:${SOURCE_TYPE}"
 fi
 
+# Add series metadata tags (for series/episodes)
+if [ -n "$SERIES_NAME" ]; then
+    TAGS="${TAGS},
+    [\"series_name\", \"${SERIES_NAME}\"]"
+    log_info "Added series name: ${SERIES_NAME}"
+fi
+
+if [ -n "$EPISODE_NAME" ]; then
+    TAGS="${TAGS},
+    [\"episode_name\", \"${EPISODE_NAME}\"]"
+    log_info "Added episode name: ${EPISODE_NAME}"
+fi
+
+if [ -n "$SEASON_NUMBER" ]; then
+    TAGS="${TAGS},
+    [\"season_number\", \"${SEASON_NUMBER}\"]"
+    log_info "Added season number: ${SEASON_NUMBER}"
+fi
+
+if [ -n "$EPISODE_NUMBER" ]; then
+    TAGS="${TAGS},
+    [\"episode_number\", \"${EPISODE_NUMBER}\"]"
+    log_info "Added episode number: ${EPISODE_NUMBER}"
+fi
+
 # Add upload_chain if this is a re-upload
 if [ -n "$UPLOAD_CHAIN" ]; then
     # Use jq to properly escape the JSON string for insertion into tags array
@@ -676,6 +760,66 @@ IPFS: /ipfs/${IPFS_CID}
             fi
         else
             log_warning "Failed to publish kind 1 note (non-critical): $KIND1_OUTPUT"
+        fi
+        
+        # Publish kind 1985 tag events for each genre (NIP-32 Labeling)
+        if [ -n "$GENRES_JSON" ] && [ "$GENRES_JSON" != "[]" ] && [ "$GENRES_JSON" != "null" ]; then
+            log_info "Publishing kind 1985 tag events for genres..."
+            
+            # Parse genres array
+            if command -v jq &> /dev/null; then
+                # Get first relay URL for tag events
+                FIRST_RELAY=$(echo "$RELAYS" | cut -d',' -f1 | tr -d ' ')
+                
+                # Extract each genre and publish a kind 1985 event
+                # Use process substitution to avoid subshell issues
+                GENRE_COUNT=0
+                while IFS= read -r genre; do
+                    # Skip empty genres
+                    [[ -z "$genre" ]] && continue
+                    
+                    # Normalize genre: lowercase, replace spaces with hyphens, remove special chars
+                    NORMALIZED_GENRE=$(echo "$genre" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9_-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
+                    
+                    # Skip if normalization resulted in empty string
+                    [[ -z "$NORMALIZED_GENRE" ]] && continue
+                    
+                    log_info "Publishing tag event for genre: $NORMALIZED_GENRE (from: $genre)"
+                    
+                    # Build tags for kind 1985 (NIP-32 format)
+                    # Format: ["L", "ugc"], ["l", "<tag_value>", "ugc"], ["e", "<video_event_id>", "<relay_url>"], ["k", "<video_kind>"]
+                    TAG_EVENT_TAGS="[[\"L\",\"ugc\"],[\"l\",\"${NORMALIZED_GENRE}\",\"ugc\"],[\"e\",\"${EVENT_ID}\",\"${FIRST_RELAY}\"],[\"k\",\"${VIDEO_KIND}\"]]"
+                    
+                    # Publish kind 1985 event using nostr_send_note.py
+                    TAG_EVENT_OUTPUT=$($PYTHON_CMD "$NOSTR_SCRIPT" \
+                        --keyfile "$KEYFILE" \
+                        --content "" \
+                        --relays "$RELAYS" \
+                        --tags "$TAG_EVENT_TAGS" \
+                        --kind 1985 \
+                        --json 2>&1)
+                    
+                    TAG_EVENT_EXIT_CODE=$?
+                    
+                    if [ $TAG_EVENT_EXIT_CODE -eq 0 ]; then
+                        TAG_EVENT_ID=$(echo "$TAG_EVENT_OUTPUT" | jq -r '.event_id // empty' 2>/dev/null || echo "")
+                        if [ -n "$TAG_EVENT_ID" ]; then
+                            log_success "Tag event published for genre '$NORMALIZED_GENRE': ${TAG_EVENT_ID:0:16}..."
+                            GENRE_COUNT=$((GENRE_COUNT + 1))
+                        else
+                            log_warning "Tag event published for genre '$NORMALIZED_GENRE' but could not extract event ID"
+                        fi
+                    else
+                        log_warning "Failed to publish tag event for genre '$NORMALIZED_GENRE' (non-critical): $TAG_EVENT_OUTPUT"
+                    fi
+                done < <(echo "$GENRES_JSON" | jq -r '.[]' 2>/dev/null)
+                
+                if [ $GENRE_COUNT -gt 0 ]; then
+                    log_success "Published $GENRE_COUNT genre tag event(s)"
+                fi
+            else
+                log_warning "jq not available, skipping genre tag publication"
+            fi
         fi
         
         if [ "$JSON_OUTPUT" = "true" ]; then

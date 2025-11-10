@@ -1241,19 +1241,51 @@ if zenity --question --width 400 --title="Scraper TMDB ?" --text="Voulez-vous sc
 fi
 
 # Extract or ask for title
-if [[ "$SCRAPE_TMDB" == "yes" ]] && [[ -n "$SCRAPED_METADATA" ]]; then
-    TITLE=$(echo "$SCRAPED_METADATA" | jq -r '.title // empty' 2>/dev/null)
-    if [[ -z "$TITLE" ]]; then
+# For series, we need to distinguish between series name and episode title
+SERIES_NAME=""
+EPISODE_NAME=""
+if [[ "$CAT" == "serie" ]]; then
+    # For series, extract series name from scraped metadata
+    if [[ "$SCRAPE_TMDB" == "yes" ]] && [[ -n "$SCRAPED_METADATA" ]]; then
+        SERIES_NAME=$(echo "$SCRAPED_METADATA" | jq -r '.title // .name // empty' 2>/dev/null)
+    fi
+    # If series name not found, ask user or use base title
+    if [[ -z "$SERIES_NAME" ]]; then
+        [ ! $2 ] && SERIES_NAME=$(zenity --entry --width 400 --title "Nom de la série" --text "Indiquez le nom de la série" --entry-text="$FILE_TITLE")
+        [[ -z "$SERIES_NAME" ]] && SERIES_NAME="$FILE_TITLE"
+    fi
+    SERIES_NAME=$(echo "${SERIES_NAME}" | detox --inline)
+    
+    # Episode title (default to file title, user can edit)
+    EPISODE_NAME="$FILE_TITLE"
+    if [[ "$SCRAPE_TMDB" == "yes" ]] && [[ -n "$SCRAPED_METADATA" ]]; then
+        # Try to get episode title from scraped metadata
+        EPISODE_TITLE_FROM_META=$(echo "$SCRAPED_METADATA" | jq -r '.episode_title // .episode_name // empty' 2>/dev/null)
+        [[ -n "$EPISODE_TITLE_FROM_META" ]] && EPISODE_NAME="$EPISODE_TITLE_FROM_META"
+    fi
+    # Ask user for episode title
+    [ ! $2 ] && EPISODE_NAME=$(zenity --entry --width 400 --title "Titre de l'épisode" --text "Indiquez le titre de l'épisode" --entry-text="$EPISODE_NAME")
+    [[ -z "$EPISODE_NAME" ]] && EPISODE_NAME="$FILE_TITLE"
+    EPISODE_NAME=$(echo "${EPISODE_NAME}" | detox --inline)
+    
+    # Use episode name as TITLE for compatibility with existing code
+    TITLE="$EPISODE_NAME"
+else
+    # For films/videos, use regular title extraction
+    if [[ "$SCRAPE_TMDB" == "yes" ]] && [[ -n "$SCRAPED_METADATA" ]]; then
+        TITLE=$(echo "$SCRAPED_METADATA" | jq -r '.title // empty' 2>/dev/null)
+        if [[ -z "$TITLE" ]]; then
+            TITLE="$FILE_TITLE"
+        fi
+    else
         TITLE="$FILE_TITLE"
     fi
-else
-    TITLE="$FILE_TITLE"
+    
+    # VIDEO TITLE (ask user to confirm/edit)
+    TITLE=$(zenity --entry --width 300 --title "Titre" --text "Indiquez le titre de la vidéo" --entry-text="$TITLE")
+    [[ $TITLE == "" ]] && exit 1
+    TITLE=$(echo "${TITLE}" | detox --inline)
 fi
-
-# VIDEO TITLE (ask user to confirm/edit)
-TITLE=$(zenity --entry --width 300 --title "Titre" --text "Indiquez le titre de la vidéo" --entry-text="$TITLE")
-[[ $TITLE == "" ]] && exit 1
-        TITLE=$(echo "${TITLE}" | detox --inline)
 
 # Extract or ask for year
 if [[ "$SCRAPE_TMDB" == "yes" ]] && [[ -n "$SCRAPED_METADATA" ]]; then
@@ -1383,6 +1415,13 @@ if [[ "$SCRAPE_TMDB" == "yes" ]] && [[ -n "$SCRAPED_METADATA" ]]; then
     
     # Add season and episode numbers for series
     if [[ "$CAT" == "serie" ]]; then
+        # Add series name and episode name
+        if [[ -n "$SERIES_NAME" ]]; then
+            TMDB_METADATA_JSON=$(echo "$TMDB_METADATA_JSON" | jq --arg series_name "$SERIES_NAME" '.series_name = $series_name' 2>/dev/null || echo "$TMDB_METADATA_JSON")
+        fi
+        if [[ -n "$EPISODE_NAME" ]]; then
+            TMDB_METADATA_JSON=$(echo "$TMDB_METADATA_JSON" | jq --arg episode_name "$EPISODE_NAME" '.episode_name = $episode_name' 2>/dev/null || echo "$TMDB_METADATA_JSON")
+        fi
         if [[ -n "$SEASON_NUMBER" ]] && [[ "$SEASON_NUMBER" =~ ^[0-9]+$ ]]; then
             TMDB_METADATA_JSON=$(echo "$TMDB_METADATA_JSON" | jq --argjson season "$SEASON_NUMBER" '.season_number = ($season | tonumber)' 2>/dev/null || echo "$TMDB_METADATA_JSON")
         fi
@@ -1441,6 +1480,14 @@ EOF
             fi
             # Add season/episode for series
             if [[ "$CAT" == "serie" ]]; then
+                if [[ -n "$SERIES_NAME" ]]; then
+                    TMDB_METADATA_JSON="${TMDB_METADATA_JSON},
+  \"series_name\": \"$SERIES_NAME\""
+                fi
+                if [[ -n "$EPISODE_NAME" ]]; then
+                    TMDB_METADATA_JSON="${TMDB_METADATA_JSON},
+  \"episode_name\": \"$EPISODE_NAME\""
+                fi
                 if [[ -n "$SEASON_NUMBER" ]] && [[ "$SEASON_NUMBER" =~ ^[0-9]+$ ]]; then
                     TMDB_METADATA_JSON="${TMDB_METADATA_JSON},
   \"season_number\": $SEASON_NUMBER"
@@ -1455,6 +1502,12 @@ EOF
         else
             # Add season/episode if not already in merged JSON
             if [[ "$CAT" == "serie" ]]; then
+                if [[ -n "$SERIES_NAME" ]]; then
+                    TMDB_METADATA_JSON=$(echo "$TMDB_METADATA_JSON" | jq --arg series_name "$SERIES_NAME" '.series_name = $series_name' 2>/dev/null || echo "$TMDB_METADATA_JSON")
+                fi
+                if [[ -n "$EPISODE_NAME" ]]; then
+                    TMDB_METADATA_JSON=$(echo "$TMDB_METADATA_JSON" | jq --arg episode_name "$EPISODE_NAME" '.episode_name = $episode_name' 2>/dev/null || echo "$TMDB_METADATA_JSON")
+                fi
                 if [[ -n "$SEASON_NUMBER" ]] && [[ "$SEASON_NUMBER" =~ ^[0-9]+$ ]]; then
                     TMDB_METADATA_JSON=$(echo "$TMDB_METADATA_JSON" | jq --argjson season "$SEASON_NUMBER" '.season_number = ($season | tonumber)' 2>/dev/null || echo "$TMDB_METADATA_JSON")
                 fi
@@ -1478,6 +1531,14 @@ EOF
     )
     # Add season/episode for series
     if [[ "$CAT" == "serie" ]]; then
+        if [[ -n "$SERIES_NAME" ]]; then
+            TMDB_METADATA_JSON="${TMDB_METADATA_JSON},
+  \"series_name\": \"$SERIES_NAME\""
+        fi
+        if [[ -n "$EPISODE_NAME" ]]; then
+            TMDB_METADATA_JSON="${TMDB_METADATA_JSON},
+  \"episode_name\": \"$EPISODE_NAME\""
+        fi
         if [[ -n "$SEASON_NUMBER" ]] && [[ "$SEASON_NUMBER" =~ ^[0-9]+$ ]]; then
             TMDB_METADATA_JSON="${TMDB_METADATA_JSON},
   \"season_number\": $SEASON_NUMBER"
@@ -1714,6 +1775,30 @@ fi
         elif [[ "$CAT" == "serie" ]]; then
             PUBLISH_CMD+=("--source-type" "serie")
             echo "📺 Source type: serie"
+            
+            # Add series metadata tags
+            if [[ -n "$SERIES_NAME" ]]; then
+                PUBLISH_CMD+=("--series-name" "$SERIES_NAME")
+                echo "📺 Series name: $SERIES_NAME"
+            fi
+            if [[ -n "$EPISODE_NAME" ]]; then
+                PUBLISH_CMD+=("--episode-name" "$EPISODE_NAME")
+                echo "📺 Episode name: $EPISODE_NAME"
+            fi
+            if [[ -n "$SEASON_NUMBER" ]] && [[ "$SEASON_NUMBER" =~ ^[0-9]+$ ]]; then
+                PUBLISH_CMD+=("--season-number" "$SEASON_NUMBER")
+                echo "📺 Season number: $SEASON_NUMBER"
+            fi
+            if [[ -n "$EPISODE_NUMBER" ]] && [[ "$EPISODE_NUMBER" =~ ^[0-9]+$ ]]; then
+                PUBLISH_CMD+=("--episode-number" "$EPISODE_NUMBER")
+                echo "📺 Episode number: $EPISODE_NUMBER"
+            fi
+        fi
+        
+        # Add genres for tag publication (kind 1985)
+        if [[ -n "$GENRES_ARRAY" ]] && [[ "$GENRES_ARRAY" != "[]" ]]; then
+            PUBLISH_CMD+=("--genres" "$GENRES_ARRAY")
+            echo "🏷️  Genres for tagging: $GENRES_ARRAY"
         fi
         
         PUBLISH_CMD+=("--channel" "$PLAYER" "--json")
