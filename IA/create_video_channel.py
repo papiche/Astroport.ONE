@@ -317,6 +317,10 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
         if metadata_match:
             metadata_ipfs = metadata_match.group(1)
     
+    # Set metadata_ipfs from info_cid if available and metadata_ipfs is empty
+    if not metadata_ipfs and info_cid:
+        metadata_ipfs = info_cid
+    
     if not thumbnail_ipfs:
         thumbnail_match = re.search(r'🖼️ Miniature: (https?://[^\s]+)', content)
         if thumbnail_match:
@@ -632,6 +636,10 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
             # If parsing fails, keep upload_chain as string
             pass
     
+    # Ensure metadata_ipfs is set from info_cid if not already set
+    if not metadata_ipfs and info_cid:
+        metadata_ipfs = info_cid
+    
     return {
         'title': title,
         'uploader': uploader,
@@ -639,7 +647,7 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
         'ipfs_url': ipfs_url,
         'youtube_url': youtube_url,  # Utilise youtube_url pour la cohérence
         'original_url': youtube_url,  # Alias pour compatibilité avec process_youtube.sh
-        'metadata_ipfs': metadata_ipfs,
+        'metadata_ipfs': metadata_ipfs or info_cid,  # Use info_cid as fallback
         'thumbnail_ipfs': thumbnail_ipfs,
         'gifanim_ipfs': gifanim_ipfs,  # NEW: Animated GIF CID for hover preview
         'info_cid': info_cid,  # NEW: info.json CID for metadata reuse
@@ -832,6 +840,11 @@ async def fetch_and_process_nostr_events(relay_url: str = "ws://127.0.0.1:7777",
         tasks = [fetch_author_email_from_nostr(author_id, relay_url, timeout=3) for author_id in unique_authors]
         await asyncio.gather(*tasks, return_exceptions=True)
     
+    # Calculate total size and duration for all videos on relay
+    total_size_bytes = 0
+    total_duration_seconds = 0
+    total_videos_count = 0
+    
     for event in events:
         # Filtrer les messages incompatibles
         if is_incompatible_youtube_message(event):
@@ -839,6 +852,34 @@ async def fetch_and_process_nostr_events(relay_url: str = "ws://127.0.0.1:7777",
             
         video_info = extract_video_info_from_nostr_event(event, relay_url)
         video_messages.append(video_info)
+        
+        # Accumulate statistics
+        file_size = int(video_info.get('file_size', 0) or 0)
+        duration = int(video_info.get('duration', 0) or 0)
+        total_size_bytes += file_size
+        total_duration_seconds += duration
+        total_videos_count += 1
+    
+    # Add global statistics to each video message (for easy access in JSON)
+    # Format: human-readable sizes
+    total_size_gb = total_size_bytes / (1024 * 1024 * 1024)
+    total_size_mb = total_size_bytes / (1024 * 1024)
+    total_duration_hours = total_duration_seconds / 3600
+    
+    # Add statistics as metadata to the first video (or create a summary entry)
+    if video_messages:
+        # Add global statistics to all videos for easy access
+        for video in video_messages:
+            video['_relay_statistics'] = {
+                'total_videos_count': total_videos_count,
+                'total_size_bytes': total_size_bytes,
+                'total_size_gb': round(total_size_gb, 2),
+                'total_size_mb': round(total_size_mb, 2),
+                'total_size_formatted': f"{total_size_gb:.2f} GB" if total_size_gb >= 1 else f"{total_size_mb:.2f} MB",
+                'total_duration_seconds': total_duration_seconds,
+                'total_duration_hours': round(total_duration_hours, 2),
+                'total_duration_formatted': f"{int(total_duration_hours)}h {int((total_duration_seconds % 3600) / 60)}m"
+            }
     
     return video_messages
 

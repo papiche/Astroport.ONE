@@ -217,26 +217,116 @@ def scrape_tmdb_page(url):
                 metadata['tagline'] = tagline_elem.get_text(strip=True)
         
         # Extract genres - target actual TMDB structure
-        # <span class="genres"><a href="/genre/18-drame/tv">Drame</a>,&nbsp;<a href="/genre/80-crime/tv">Crime</a></span>
+        # Multiple methods to capture all genres
         genres = []
+        
+        # Method 1: <span class="genres"><a href="/genre/18-drame/tv">Drame</a>,&nbsp;<a href="/genre/80-crime/tv">Crime</a></span>
         genres_span = soup.find('span', class_='genres')
         if genres_span:
             genre_links = genres_span.find_all('a', href=re.compile(r'/genre/\d+-'))
             for link in genre_links:
                 genre_name = link.get_text(strip=True)
-                if genre_name:
+                if genre_name and genre_name not in genres:
                     genres.append(genre_name)
+            # Also try to extract from text content (comma-separated)
+            if not genres:
+                genres_text = genres_span.get_text(strip=True)
+                if genres_text:
+                    # Split by comma and clean up
+                    genre_list = [g.strip() for g in genres_text.split(',') if g.strip()]
+                    for genre in genre_list:
+                        if genre and genre not in genres:
+                            genres.append(genre)
         
-        # Fallback: find all genre links in the page
-        if not genres:
+        # Method 2: Look for genre links in various sections (facts, details, etc.)
+        if not genres or len(genres) < 2:
+            # Search in facts section
+            facts_section = soup.find('section', class_=re.compile('facts', re.I))
+            if facts_section:
+                genre_links = facts_section.find_all('a', href=re.compile(r'/genre/\d+-'))
+                for link in genre_links:
+                    genre_name = link.get_text(strip=True)
+                    if genre_name and genre_name not in genres:
+                        genres.append(genre_name)
+        
+        # Method 3: Find all genre links in the page (comprehensive search)
+        if not genres or len(genres) < 2:
             genre_links = soup.find_all('a', href=re.compile(r'/genre/\d+-'))
             for link in genre_links:
                 genre_name = link.get_text(strip=True)
-                if genre_name and genre_name not in genres:
+                # Filter out navigation/UI text
+                if genre_name and len(genre_name) > 1 and genre_name not in genres:
+                    # Skip if it looks like a navigation element
+                    parent = link.find_parent()
+                    if parent and parent.name in ['nav', 'header', 'footer']:
+                        continue
                     genres.append(genre_name)
         
+        # Method 4: Extract from JSON-LD structured data
+        if not genres or len(genres) < 2:
+            json_ld_scripts = soup.find_all('script', type='application/ld+json')
+            for script in json_ld_scripts:
+                try:
+                    json_ld = json.loads(script.string)
+                    if isinstance(json_ld, dict):
+                        # Check for genre field
+                        if 'genre' in json_ld:
+                            genre_value = json_ld['genre']
+                            if isinstance(genre_value, list):
+                                for g in genre_value:
+                                    if isinstance(g, str) and g not in genres:
+                                        genres.append(g)
+                                    elif isinstance(g, dict) and 'name' in g:
+                                        if g['name'] not in genres:
+                                            genres.append(g['name'])
+                            elif isinstance(genre_value, str) and genre_value not in genres:
+                                genres.append(genre_value)
+                    elif isinstance(json_ld, list) and len(json_ld) > 0:
+                        for item in json_ld:
+                            if isinstance(item, dict) and 'genre' in item:
+                                genre_value = item['genre']
+                                if isinstance(genre_value, list):
+                                    for g in genre_value:
+                                        if isinstance(g, str) and g not in genres:
+                                            genres.append(g)
+                                elif isinstance(genre_value, str) and genre_value not in genres:
+                                    genres.append(genre_value)
+                except (json.JSONDecodeError, KeyError, AttributeError):
+                    continue
+        
+        # Method 5: Look for genre labels in metadata sections
+        if not genres or len(genres) < 2:
+            # Look for "Genre" or "Genres" label
+            genre_labels = soup.find_all(string=re.compile(r'^Genres?$', re.I))
+            for label in genre_labels:
+                parent = label.find_parent()
+                if parent:
+                    # Look for links or text after the label
+                    next_sibling = parent.find_next_sibling()
+                    if next_sibling:
+                        genre_links = next_sibling.find_all('a', href=re.compile(r'/genre/\d+-'))
+                        for link in genre_links:
+                            genre_name = link.get_text(strip=True)
+                            if genre_name and genre_name not in genres:
+                                genres.append(genre_name)
+                    # Also check within the same element
+                    genre_links = parent.find_all('a', href=re.compile(r'/genre/\d+-'))
+                    for link in genre_links:
+                        genre_name = link.get_text(strip=True)
+                        if genre_name and genre_name not in genres:
+                            genres.append(genre_name)
+        
+        # Clean and deduplicate genres
         if genres:
-            metadata['genres'] = genres
+            # Remove duplicates while preserving order
+            seen = set()
+            unique_genres = []
+            for genre in genres:
+                genre_lower = genre.lower().strip()
+                if genre_lower and genre_lower not in seen:
+                    seen.add(genre_lower)
+                    unique_genres.append(genre.strip())
+            metadata['genres'] = unique_genres
         
         # Extract director (for movies)
         director_label = soup.find(string=re.compile('^Director$', re.I))
