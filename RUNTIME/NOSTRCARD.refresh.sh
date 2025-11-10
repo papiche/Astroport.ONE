@@ -672,9 +672,9 @@ for PLAYER in "${NOSTR[@]}"; do
 <div class='details'>
 <p><strong>Joueur:</strong> ${PLAYER}</p>
 <p><strong>Date:</strong> $TODATE</p>
-<p><strong>Montant HT:</strong> <span class='amount'>$Npaf ẐEN</span></p>
-<p><strong>Montant TVA:</strong> <span class='amount'>$TVA_AMOUNT ẐEN</span></p>
-<p><strong>Total payé:</strong> <span class='amount'>$TOTAL_PAYMENT ẐEN</span></p>
+<p><strong>Montant HT:</strong> <span class='amount'>$(echo "$Npaf * 10" | awk '{print $1 * $3}') ẐEN</span></p>
+<p><strong>Montant TVA:</strong> <span class='amount'>$(echo "$TVA_AMOUNT * 10" | awk '{print $1 * $3}') ẐEN</span></p>
+<p><strong>Total payé:</strong> <span class='amount'>$(echo "$TOTAL_PAYMENT * 10" | awk '{print $1 * $3}') ẐEN</span></p>
 <p><strong>Solde restant:</strong> $ZEN ẐEN</p>
 <p><strong>Prochain paiement:</strong> $NEXT_PAYMENT_DATE</p>
 </div>
