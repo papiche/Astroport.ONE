@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>MULTIPASS Card - Usage Guide</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        .content {
+            padding: 2rem;
+        }
+        .section {
+            margin: 1.5rem 0;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #667eea;
+            font-size: 1.2rem;
+        }
+        .qr-info {
+            display: flex;
+            align-items: center;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .qr-info .icon {
+            font-size: 2rem;
+            margin-right: 1rem;
+        }
+        .qr-info .details {
+            flex: 1;
+        }
+        .qr-info .details strong {
+            display: block;
+            color: #667eea;
+            margin-bottom: 0.25rem;
+        }
+        .pass-code {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: #667eea;
+            color: white;
+            border-radius: 4px;
+            font-weight: bold;
+            font-family: monospace;
+            margin: 0.25rem;
+        }
+        .pass-description {
+            margin: 0.5rem 0;
+            padding: 0.75rem;
+            background: #e9ecef;
+            border-radius: 4px;
+            border-left: 3px solid #667eea;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            margin: 0.5rem 0;
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+        }
+        .cta-button:hover {
+            text-decoration: none;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+        }
+        .warning {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+            color: #856404;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+        .info-box {
+            background: #d1ecf1;
+            border-left: 4px solid #0ea5e9;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+        .footer {
+            padding: 1rem 2rem;
+            background: #f7fafc;
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        ul {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+        li {
+            margin: 0.5rem 0;
+        }
+        code {
+            background: #e9ecef;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🎫 MULTIPASS Card - Guide d'Utilisation</h1>
+        </div>
+        <div class="content">
+            <p><strong>Date:</strong> _DATE_</p>
+            <p>Votre carte MULTIPASS a été créée et est prête à être utilisée ! Cette carte vous permet d'authentifier votre identité décentralisée sur n'importe quel terminal UPlanet.</p>
+            
+            <div class="section">
+                <h2>📱 QR Codes sur la Carte</h2>
+                
+                <div class="qr-info">
+                    <div class="icon">🔍</div>
+                    <div class="details">
+                        <strong>Petit QR Code (en haut à gauche) : uSPOT Scan</strong>
+                        <p>Scannez ce QR code avec votre téléphone pour accéder à <code>_uSPOT_/scan</code>. Utilisez-le pour authentifier votre MULTIPASS depuis votre mobile.</p>
+                    </div>
+                </div>
+                
+                <div class="qr-info">
+                    <div class="icon">🔐</div>
+                    <div class="details">
+                        <strong>Grand QR Code (en bas) : Clé SSSS</strong>
+                        <p>Scannez ce QR code sur n'importe quel terminal UPlanet pour vous authentifier. Cette clé SSSS (Shamir Secret Sharing Scheme) permet l'authentification sans stockage navigateur.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>⌨️ Codes PASS Spéciaux</h2>
+                <p>Après avoir scanné votre QR code SSSS, vous pouvez entrer un code PASS à 4 chiffres pour accéder à différentes fonctionnalités :</p>
+                
+                <div class="pass-description">
+                    <span class="pass-code">1111</span>
+                    <strong>Interface Astro Base Complète</strong>
+                    <p>Ouvre l'interface messenger NOSTR complète avec toutes les fonctionnalités de communication décentralisée.</p>
+                </div>
+                
+                <div class="pass-description">
+                    <span class="pass-code">9999</span>
+                    <strong>Terminal de Paiement MULTIPASS</strong>
+                    <p>Accède au terminal de paiement pour gérer vos ẐEN et effectuer des transactions.</p>
+                </div>
+                
+                <div class="pass-description">
+                    <span class="pass-code">7777</span>
+                    <strong>Enregistreur Webcam</strong>
+                    <p>Ouvre l'interface d'enregistrement vidéo avec authentification NOSTR automatique.</p>
+                </div>
+                
+                <div class="pass-description">
+                    <span class="pass-code">0000</span>
+                    <strong>Régénération MULTIPASS</strong>
+                    <p>⚠️ Utilisez uniquement en cas de perte ou vol de votre carte. Régénère votre MULTIPASS avec de nouvelles clés.</p>
+                </div>
+                
+                <div class="pass-description">
+                    <strong>Par défaut (sans code)</strong>
+                    <p>Ouvre l'interface simple de message NOSTR pour communiquer rapidement.</p>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>🚀 Comment Utiliser Votre Carte</h2>
+                <ol>
+                    <li><strong>Sur Mobile :</strong> Scannez le petit QR code (uSPOT) avec votre téléphone pour accéder à <code>_uSPOT_/scan</code></li>
+                    <li><strong>Sur Terminal UPlanet :</strong> Scannez le grand QR code (SSSS) sur l'écran du terminal</li>
+                    <li><strong>Authentification :</strong> Votre identité est automatiquement reconnue, pas besoin de mot de passe !</li>
+                    <li><strong>Codes PASS :</strong> Entrez un code PASS (1111, 9999, 7777) pour accéder à des fonctionnalités spécifiques</li>
+                </ol>
+            </div>
+            
+            <div class="info-box">
+                <strong>💡 Astuce :</strong> Votre carte MULTIPASS est votre identité décentralisée universelle. Elle fonctionne sur tous les terminaux UPlanet du réseau, pas seulement celui où vous l'avez créée.
+            </div>
+            
+            <div class="warning">
+                <strong>⚠️ Sécurité :</strong> Gardez cette carte en sécurité ! Elle contient vos clés d'authentification. En cas de perte ou vol, utilisez le code PASS <span class="pass-code">0000</span> pour régénérer votre MULTIPASS.
+            </div>
+            
+            <div class="section">
+                <h2>💳 QR Code de Paiement</h2>
+                <p>Après avoir scanné votre QR code SSSS sur <code>_uSPOT_/scan</code>, utilisez ce QR code pour recevoir des paiements en ẐEN sur votre portefeuille MULTIPASS :</p>
+                <div style="text-align: center; margin: 1.5rem 0;">
+                    <img src="_myIPFS_/ipfs/_G1PUBNOSTRQR_CID_/MULTIPASS.QR.png" alt="QR Code G1PUBNOSTR" style="max-width: 300px; border: 2px solid #667eea; border-radius: 8px; padding: 10px; background: white;" />
+                    <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
+                        <strong>Portefeuille :</strong> <code>_G1PUBNOSTR_</code>
+                    </p>
+                    <p style="margin-top: 0.5rem; font-size: 0.85rem; color: #888;">
+                        Scannez ce QR code pour recevoir des paiements en ẐEN
+                    </p>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>🎫 Votre Carte MULTIPASS</h2>
+                <p>Votre carte d'authentification complète est disponible ci-dessous. Imprimez-la et gardez-la en sécurité :</p>
+                <div style="text-align: center; margin: 1.5rem 0;">
+                    <img src="_myIPFS_/ipfs/_MULTIPASS_CARD_IPFS_" alt="MULTIPASS Card" style="max-width: 100%; border: 2px solid #667eea; border-radius: 8px; padding: 10px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+                    <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
+                        <a href="_myIPFS_/ipfs/_MULTIPASS_CARD_IPFS_" target="_blank" style="color: #667eea; text-decoration: none;">📥 Télécharger la carte</a>
+                    </p>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>📋 Informations de Votre MULTIPASS</h2>
+                <ul>
+                    <li><strong>Email :</strong> _EMAIL_</li>
+                    <li><strong>Utilisateur :</strong> _YOUSER_</li>
+                    <li><strong>Portefeuille G1 :</strong> <code>_G1PUBNOSTR_</code></li>
+                    <li><strong>Station UPlanet :</strong> _UPLANET8_</li>
+                    <li><strong>uSPOT :</strong> <a href="_uSPOT_/scan" target="_blank">_uSPOT_/scan</a></li>
+                </ul>
+            </div>
+            
+            <div style="text-align: center; margin: 2rem 0;">
+                <a href="_uSPOT_/scan" class="cta-button" target="_blank">🔍 Accéder à uSPOT/scan</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>#UPlanet #MULTIPASS #NOSTR #DID</p>
+            <p>Station: _UPLANET8_ | Date: _DATE_</p>
+        </div>
+    </div>
+</body>
+</html>
+

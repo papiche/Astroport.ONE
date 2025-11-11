@@ -172,13 +172,99 @@ else
             echo "  [INFO] Counting attestations (kind 30502) for request ${request_id}..."
             attestations_json=$("$NOSTR_SCRIPT" --kind 30502 2>/dev/null)
             
+            # Get all credentials (kind 30503) to verify attesters
+            all_credentials_json=$("$NOSTR_SCRIPT" --kind 30503 2>/dev/null)
+            
             attestations_count=0
+            valid_attestations_count=0
+            valid_attestations_file="${HOME}/.zen/tmp/${MOATS}/valid_attestations_${request_id}.txt"
+            echo "0" > "$valid_attestations_file"
+            
             if [[ -n "$attestations_json" ]]; then
-                # Count attestations that reference this request_id
-                attestations_count=$(echo "$attestations_json" | jq -r --arg req_id "$request_id" '[.[] | select(.tags[]?[0]=="e" and .tags[]?[1]==$req_id)] | length' 2>/dev/null || echo "0")
+                # Extract all attestations that reference this request_id
+                matching_attestations=$(echo "$attestations_json" | jq -r --arg req_id "$request_id" '[.[] | select(.tags[]?[0]=="e" and .tags[]?[1]==$req_id)]' 2>/dev/null)
+                
+                if [[ -n "$matching_attestations" ]] && [[ "$matching_attestations" != "[]" ]]; then
+                    # Get total count first
+                    attestations_count=$(echo "$matching_attestations" | jq 'length' 2>/dev/null || echo "0")
+                    
+                    # Process each attestation to verify attester has valid credential
+                    echo "$matching_attestations" | jq -c '.[]' 2>/dev/null | while read -r attestation_event; do
+                        attester_hex=$(echo "$attestation_event" | jq -r '.pubkey // empty' 2>/dev/null)
+                        
+                        if [[ -z "$attester_hex" ]]; then
+                            continue
+                        fi
+                        
+                        attester_has_valid_credential=false
+                        
+                        # Check if this is a WoTx2 auto-proclaimed profession (PERMIT_PROFESSION_*_XN)
+                        if [[ "$permit_id" =~ ^PERMIT_PROFESSION_.*_X([0-9]+)$ ]]; then
+                            # WoTx2: Attester must have credential for this permit OR a higher level
+                            current_level="${BASH_REMATCH[1]}"
+                            
+                            # Check if attester has a credential for this permit or higher level
+                            if [[ -n "$all_credentials_json" ]] && [[ "$all_credentials_json" != "[]" ]]; then
+                                # Check credentials for this permit (same or higher level)
+                                for level in $(seq "$current_level" 200); do
+                                    check_permit_id=$(echo "$permit_id" | sed "s/_X${current_level}$/_X${level}/")
+                                    
+                                    # Check if attester has credential for this permit_id
+                                    # Check tags (permit_id, l with permit_type) and content JSON (credentialSubject.license)
+                                    has_cred=$(echo "$all_credentials_json" | jq -r --arg permit "$check_permit_id" --arg attester "$attester_hex" '[.[] | select((.tags[]?[0]=="permit_id" and .tags[]?[1]==$permit) or (.tags[]?[0]=="l" and .tags[]?[1]==$permit and .tags[]?[2]=="permit_type") or (try (.content | fromjson | .credentialSubject.license) == $permit)) | select(.pubkey==$attester or (.tags[]?[0]=="p" and .tags[]?[1]==$attester))] | length' 2>/dev/null || echo "0")
+                                    
+                                    if [[ "$has_cred" -gt 0 ]]; then
+                                        attester_has_valid_credential=true
+                                        echo "  [VALID] Attester ${attester_hex:0:16}... has credential for ${check_permit_id} (level X${level})"
+                                        break
+                                    fi
+                                done
+                            fi
+                            
+                            # Special case for X1: If no credentials exist yet, allow the creator to attest (bootstrap)
+                            if [[ "$current_level" == "1" ]] && [[ "$attester_has_valid_credential" == "false" ]]; then
+                                # Check if attester is the creator of the permit (from 30500 event)
+                                permit_30500=$("$NOSTR_SCRIPT" --kind 30500 2>/dev/null | jq -r --arg permit "$permit_id" '[.[] | select(.tags[]?[0]=="d" and .tags[]?[1]==$permit)] | .[0]' 2>/dev/null)
+                                creator_hex=$(echo "$permit_30500" | jq -r '.pubkey // empty' 2>/dev/null)
+                                
+                                if [[ "$attester_hex" == "$creator_hex" ]]; then
+                                    attester_has_valid_credential=true
+                                    echo "  [VALID] Attester ${attester_hex:0:16}... is the creator of ${permit_id} (bootstrap X1)"
+                                fi
+                            fi
+                            
+                            if [[ "$attester_has_valid_credential" == "false" ]]; then
+                                echo "  [INVALID] Attester ${attester_hex:0:16}... does NOT have valid credential for ${permit_id} (needs X${current_level} or higher)"
+                            fi
+                        else
+                            # Standard permit (not WoTx2): Attester must have credential for this exact permit
+                            if [[ -n "$all_credentials_json" ]] && [[ "$all_credentials_json" != "[]" ]]; then
+                                # Check tags (permit_id, l with permit_type) and content JSON (credentialSubject.license)
+                                has_cred=$(echo "$all_credentials_json" | jq -r --arg permit "$permit_id" --arg attester "$attester_hex" '[.[] | select((.tags[]?[0]=="permit_id" and .tags[]?[1]==$permit) or (.tags[]?[0]=="l" and .tags[]?[1]==$permit and .tags[]?[2]=="permit_type") or (try (.content | fromjson | .credentialSubject.license) == $permit)) | select(.pubkey==$attester or (.tags[]?[0]=="p" and .tags[]?[1]==$attester))] | length' 2>/dev/null || echo "0")
+                                
+                                if [[ "$has_cred" -gt 0 ]]; then
+                                    attester_has_valid_credential=true
+                                    echo "  [VALID] Attester ${attester_hex:0:16}... has credential for ${permit_id}"
+                                else
+                                    echo "  [INVALID] Attester ${attester_hex:0:16}... does NOT have credential for ${permit_id}"
+                                fi
+                            fi
+                        fi
+                        
+                        # Increment counter in file if valid
+                        if [[ "$attester_has_valid_credential" == "true" ]]; then
+                            current_count=$(cat "$valid_attestations_file" 2>/dev/null || echo "0")
+                            echo $((current_count + 1)) > "$valid_attestations_file"
+                        fi
+                    done
+                    
+                    # Read valid count from file
+                    valid_attestations_count=$(cat "$valid_attestations_file" 2>/dev/null || echo "0")
+                    rm -f "$valid_attestations_file"
+                fi
             fi
             
-            echo "  [INFO] Attestations: ${attestations_count}/${required_attestations}"
+            echo "  [INFO] Attestations: ${valid_attestations_count}/${required_attestations} (valid) out of ${attestations_count} total"
             
             # Check if credential already exists (kind 30503)
             existing_credential=$(echo "$("$NOSTR_SCRIPT" --kind 30503 2>/dev/null)" | jq -r --arg req_id "$request_id" '[.[] | select(.tags[]?[0]=="d" and .tags[]?[1]==$req_id)] | length' 2>/dev/null || echo "0")
@@ -189,8 +275,9 @@ else
             fi
             
             # Check if threshold is reached (WoTx2: 1, 2, 3, 4... signatures)
-            if [[ $attestations_count -ge $required_attestations ]]; then
-                echo "  [SUCCESS] Threshold reached (${attestations_count} >= ${required_attestations})! Issuing credential..."
+            # Only count VALID attestations (attesters must have credential)
+            if [[ $valid_attestations_count -ge $required_attestations ]]; then
+                echo "  [SUCCESS] Threshold reached (${valid_attestations_count} valid >= ${required_attestations})! Issuing credential..."
                 
                 # Call API to issue credential (using request_id from Nostr event)
                 # The API will read the request from Nostr and issue 30503
@@ -200,7 +287,34 @@ else
                     credential_id=$(echo "$issue_result" | jq -r '.credential_id // empty' 2>/dev/null)
                     if [[ -n "$credential_id" ]]; then
                         echo "  [SUCCESS] Credential issued: ${credential_id}"
-                        echo "  [INFO] WoTx2 system progressing: ${attestations_count} attestations collected"
+                        echo "  [INFO] WoTx2 system progressing: ${valid_attestations_count} valid attestations collected"
+                        
+                        # Send email notification to captain about credential issuance
+                        if [[ -n "${CAPTAINEMAIL:-}" ]] && [[ -f "${MY_PATH}/../tools/mailjet.sh" ]]; then
+                            template_file="${MY_PATH}/../templates/NOSTR/oracle_credential_issued.html"
+                            if [[ -f "$template_file" ]]; then
+                                permit_name=$(echo "$definition_data" | jq -r '.name // "Unknown"' 2>/dev/null)
+                                oracle_url="${uSPOT:-http://127.0.0.1:54321}/oracle"
+                                
+                                temp_email_file=$(mktemp)
+                                cat "$template_file" | \
+                                    sed "s|_DATE_|$(date -u +"%Y-%m-%d %H:%M:%S UTC")|g" | \
+                                    sed "s|_CREDENTIAL_ID_|${credential_id}|g" | \
+                                    sed "s|_PERMIT_ID_|${permit_id}|g" | \
+                                    sed "s|_PERMIT_NAME_|${permit_name}|g" | \
+                                    sed "s|_APPLICANT_HEX_|${applicant_hex:0:16}...|g" | \
+                                    sed "s|_VALID_ATTESTATIONS_|${valid_attestations_count}|g" | \
+                                    sed "s|_REQUIRED_ATTESTATIONS_|${required_attestations}|g" | \
+                                    sed "s|_ORACLE_URL_|${oracle_url}|g" > "$temp_email_file"
+                                
+                                ${MY_PATH}/../tools/mailjet.sh --expire 7d "${CAPTAINEMAIL}" "$temp_email_file" "🔐 Oracle: Credential Issued - ${permit_id}" 2>/dev/null && \
+                                    echo "  [INFO] Email notification sent to captain" || \
+                                    echo "  [WARNING] Failed to send email notification"
+                                rm -f "$temp_email_file"
+                            else
+                                echo "  [WARNING] Template not found: $template_file"
+                            fi
+                        fi
                         
                         # Check if this is an auto-proclaimed profession (PERMIT_PROFESSION_*_X1, X2, X3...)
                         if [[ "$permit_id" =~ ^PERMIT_PROFESSION_.*_X([0-9]+)$ ]]; then
@@ -317,10 +431,57 @@ else
                             
                             if echo "$create_next_result" | jq -e '.success' >/dev/null 2>&1; then
                                 echo "  [SUCCESS] Created next level permit: ${next_permit_id} (${level_label})"
+                                
+                                # Send email notification to captain about WoTx2 progression
+                                if [[ -n "${CAPTAINEMAIL:-}" ]] && [[ -f "${MY_PATH}/../tools/mailjet.sh" ]]; then
+                                    template_file="${MY_PATH}/../templates/NOSTR/oracle_wotx2_progression.html"
+                                    if [[ -f "$template_file" ]]; then
+                                        wotx2_url="${uSPOT:-http://127.0.0.1:54321}/wotx2?permit_id=${next_permit_id}"
+                                        
+                                        temp_email_file=$(mktemp)
+                                        cat "$template_file" | \
+                                            sed "s|_DATE_|$(date -u +"%Y-%m-%d %H:%M:%S UTC")|g" | \
+                                            sed "s|_PROFESSION_NAME_|${permit_name}|g" | \
+                                            sed "s|_CURRENT_LEVEL_|${current_level}|g" | \
+                                            sed "s|_LEVEL_LABEL_|${level_label}|g" | \
+                                            sed "s|_NEXT_PERMIT_ID_|${next_permit_id}|g" | \
+                                            sed "s|_MIN_ATTESTATIONS_|${min_attestations}|g" | \
+                                            sed "s|_WOTX2_URL_|${wotx2_url}|g" > "$temp_email_file"
+                                        
+                                        ${MY_PATH}/../tools/mailjet.sh --expire 7d "${CAPTAINEMAIL}" "$temp_email_file" "🔄 WoTx2: Progression X${current_level} → X${next_level} - ${permit_name}" 2>/dev/null && \
+                                            echo "  [INFO] Email notification sent to captain about progression" || \
+                                            echo "  [WARNING] Failed to send email notification"
+                                        rm -f "$temp_email_file"
+                                    else
+                                        echo "  [WARNING] Template not found: $template_file"
+                                    fi
+                                fi
                             else
                                 error_msg=$(echo "$create_next_result" | jq -r '.detail // .message // "Unknown error"' 2>/dev/null)
                                 echo "  [WARNING] Failed to create X${next_level} permit: ${error_msg}"
                                 echo "  [INFO] Permit may already exist or API authentication failed"
+                                
+                                # Send email notification to captain about error
+                                if [[ -n "${CAPTAINEMAIL:-}" ]] && [[ -f "${MY_PATH}/../tools/mailjet.sh" ]]; then
+                                    template_file="${MY_PATH}/../templates/NOSTR/oracle_wotx2_error.html"
+                                    if [[ -f "$template_file" ]]; then
+                                        temp_email_file=$(mktemp)
+                                        cat "$template_file" | \
+                                            sed "s|_DATE_|$(date -u +"%Y-%m-%d %H:%M:%S UTC")|g" | \
+                                            sed "s|_PROFESSION_NAME_|${permit_name}|g" | \
+                                            sed "s|_CURRENT_LEVEL_|${current_level}|g" | \
+                                            sed "s|_NEXT_LEVEL_|${next_level}|g" | \
+                                            sed "s|_NEXT_PERMIT_ID_|${next_permit_id}|g" | \
+                                            sed "s|_ERROR_MESSAGE_|${error_msg}|g" > "$temp_email_file"
+                                        
+                                        ${MY_PATH}/../tools/mailjet.sh --expire 7d "${CAPTAINEMAIL}" "$temp_email_file" "⚠️ Oracle Error: Failed to Create WoTx2 X${next_level}" 2>/dev/null && \
+                                            echo "  [INFO] Error notification sent to captain" || \
+                                            echo "  [WARNING] Failed to send error notification"
+                                        rm -f "$temp_email_file"
+                                    else
+                                        echo "  [WARNING] Template not found: $template_file"
+                                    fi
+                                fi
                             fi
                         fi
                         
@@ -363,7 +524,7 @@ else
                     echo "  [WARNING] Failed to issue credential for ${request_id}"
                 fi
             else
-                echo "  [INFO] WoTx2 progressing: ${attestations_count}/${required_attestations} attestations (need $((required_attestations - attestations_count)) more)"
+                echo "  [INFO] WoTx2 progressing: ${valid_attestations_count}/${required_attestations} valid attestations (need $((required_attestations - valid_attestations_count)) more)"
                 
                 # Check if request is too old (> 90 days)
                 if [[ -n "$created_at" ]] && [[ "$created_at" != "0" ]]; then
