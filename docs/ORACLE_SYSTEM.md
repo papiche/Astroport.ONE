@@ -628,29 +628,38 @@ Liste les demandes, credentials, ou attestations
 
 **Fonctions** :
 
-1. **Vérification des demandes 30501** :
+1. **Détection de la Station Primaire (ORACLE des ORACLES)** :
+   - Vérifie si `IPFSNODEID` correspond au premier node dans `A_boostrap_nodes.txt`
+   - Si station primaire détectée → Mode "ORACLE des ORACLES" activé
+   - En mode primaire : Traite **tous les permits de toutes les stations** de la constellation
+   - En mode standard : Filtre uniquement les événements de cette station par `IPFSNODEID`
+
+2. **Vérification des demandes 30501** :
    - Récupère toutes les demandes depuis Nostr
+   - Filtre par `IPFSNODEID` (sauf si station primaire)
    - Compte les attestations 30502 pour chaque demande
    - Émet 30503 si seuil atteint
 
-2. **Progression automatique WoTx2** :
+3. **Progression automatique WoTx2** :
    - Détecte les professions auto-proclamées validées
    - Authentifie avec NIP-42
    - Crée automatiquement le niveau suivant (X(n+1))
 
-3. **Vérification des credentials expirés** :
+4. **Vérification des credentials expirés** :
    - Liste tous les credentials
    - Signale ceux qui ont expiré
 
-4. **Génération de statistiques** :
+5. **Génération de statistiques** :
    - Compte demandes et credentials par permit
    - Sauvegarde dans `~/.zen/tmp/${IPFSNODEID}/ORACLE/`
+   - En mode primaire : Statistiques globales de toutes les stations
 
-5. **Publication sur Nostr** :
+6. **Publication sur Nostr** :
    - Publie un rapport quotidien (kind 1)
    - Signé par UPLANETNAME_G1
+   - En mode primaire : Rapport global de toutes les stations
 
-6. **Nettoyage** :
+7. **Nettoyage** :
    - Supprime fichiers temporaires > 7 jours
 
 ### 8.2. Configuration Cron
@@ -897,6 +906,9 @@ curl -s http://127.0.0.1:54321/api/permit/stats | jq
 
 ### Q7 : L'authentification NIP-42 est-elle obligatoire ?
 **R** : Oui, pour créer des permits via l'API, l'authentification NIP-42 est requise. `ORACLE.refresh.sh` gère cela automatiquement.
+
+### Q8 : Qu'est-ce que le mode "ORACLE des ORACLES" ?
+**R** : Le mode "ORACLE des ORACLES" est activé automatiquement sur la station primaire (premier node dans `A_boostrap_nodes.txt`). Cette station traite tous les permits de toutes les stations de la constellation, offrant une vue globale et centralisée. Les autres stations filtrent uniquement leurs propres événements par `IPFSNODEID`.
 
 ---
 

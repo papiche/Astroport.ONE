@@ -743,6 +743,7 @@ else
     if [[ -f "$HOME/.zen/game/uplanet.captain.dunikey" ]]; then
         UPLANETNAME_CAPTAIN=$(cat $HOME/.zen/game/uplanet.captain.dunikey | grep "pub" | cut -d " " -f 2)
         echo ${UPLANETNAME_CAPTAIN} > $HOME/.zen/tmp/UPLANETNAME_CAPTAIN
+        
     else
         # Will be created by ZEN.ECONOMY.sh when needed
         echo "⚠️  Captain dedicated wallet not found (will be created by ZEN.ECONOMY.sh)"

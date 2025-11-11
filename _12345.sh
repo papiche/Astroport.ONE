@@ -88,6 +88,17 @@ if [[ ${CHAN} == "" || ${CHAN} == "null" || ! -s ~/.zen/game/myswarm_secret.june
     CHAN=$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1 )
 fi
 
+#### Clef NODE myswarm_secret.nostr (ORACLE_SYSTEM)
+if [[ ! -s ~/.zen/game/myswarm_secret.nostr ]]; then
+    SECRET1=$(cat /proc/cpuinfo | grep -Ev MHz | sha512sum | cut -d ' ' -f 1)
+    SECRET2=${IPFSNODEID}
+    npub=$(${MY_PATH}/tools/keygen -t nostr "$SECRET1${UPLANETNAME}" "$SECRET2${UPLANETNAME}")
+    hex=$(${MY_PATH}/tools/nostr2hex.py "$npub")
+    nsec=$(${MY_PATH}/tools/keygen -t nostr "$SECRET1${UPLANETNAME}" "$SECRET2${UPLANETNAME}" -s)
+    echo "NSEC=$nsec; NPUB=$npub; HEX=$hex" > ~/.zen/game/myswarm_secret.nostr
+    chmod 600 ~/.zen/game/myswarm_secret.nostr
+fi 
+
 ## NOSTR ##############################################
 ## CREATE ~/.zen/game/secret.nostr (for YLEVEL NODES only)
 if [[ -s ~/.zen/game/secret.june && ! -s ~/.zen/game/secret.nostr ]]; then

@@ -260,8 +260,8 @@ Les compétences ne sont **pas définies à la création** mais **révélées pr
 **Processus automatique** : `ORACLE.refresh.sh` (exécuté quotidiennement)
 
 1. **Vérification** :
-   - Récupère toutes les demandes 30501 depuis Nostr
-   - Compte les attestations 30502 pour chaque demande
+   - Récupère toutes les demandes 30501 depuis Nostr **filtrées par IPFSNODEID** (évite les conflits entre Astroports)
+   - Compte les attestations 30502 pour chaque demande **filtrées par IPFSNODEID**
    - Vérifie si le seuil est atteint (`attestations_count >= min_attestations`)
 
 2. **Émission** :
@@ -307,6 +307,36 @@ Les compétences ne sont **pas définies à la création** mais **révélées pr
 
 ## 5. Événements NOSTR
 
+### 5.0. Tag IPFSNODEID - Filtrage par Astroport
+
+**Important** : Tous les événements WoTx2 (30500, 30501, 30502, 30503) incluent un tag `ipfs_node` avec la valeur `IPFSNODEID` de l'Astroport qui les a créés.
+
+**Raison** : Dans une constellation UPlanet, plusieurs Astroports partagent le même relay Nostr. Le tag `ipfs_node` permet à chaque Astroport de filtrer et gérer uniquement ses propres événements, évitant les conflits entre stations.
+
+**Format du tag** :
+```json
+["ipfs_node", "<IPFSNODEID>"]
+```
+
+**Exemple** : Si `IPFSNODEID=QmAbc123...`, tous les événements créés par cet Astroport incluront :
+```json
+["ipfs_node", "QmAbc123..."]
+```
+
+**Filtrage** :
+- `ORACLE.refresh.sh` filtre automatiquement les événements par `IPFSNODEID` avant traitement
+- Le frontend `wotx2.html` filtre également les événements lors de la récupération depuis Nostr
+- Les requêtes utilisent le filtre `#ipfs_node: [IPFSNODEID]` pour ne récupérer que les événements de cet Astroport
+
+**Compatibilité** : Les événements sans tag `ipfs_node` sont ignorés par `ORACLE.refresh.sh` si `IPFSNODEID` est défini, assurant la compatibilité avec les anciens événements tout en isolant les nouveaux.
+
+**ORACLE des ORACLES - Station Primaire** :
+- La station primaire (premier node dans `A_boostrap_nodes.txt`) peut fonctionner en mode "ORACLE des ORACLES"
+- En mode primaire, `ORACLE.refresh.sh` traite **tous les permits de toutes les stations** de la constellation
+- Cette fonctionnalité permet une vue globale et centralisée de tous les permits dans une constellation UPlanet
+- La détection se fait automatiquement en comparant `IPFSNODEID` avec le premier STRAP dans `A_boostrap_nodes.txt` (même logique que `_UPLANET.refresh.sh`)
+- En mode primaire, aucun filtre par `IPFSNODEID` n'est appliqué, permettant de traiter tous les événements
+
 ### 5.1. Kind 30500 - Permit Definition
 
 **Publié par** : `UPLANETNAME_G1` (via API avec NIP-42)
@@ -319,7 +349,8 @@ Les compétences ne sont **pas définies à la création** mais **révélées pr
     ["d", "PERMIT_PROFESSION_MAITRE_NAGEUR_X1"],
     ["t", "permit"],
     ["t", "definition"],
-    ["t", "auto_proclaimed"]
+    ["t", "auto_proclaimed"],
+    ["ipfs_node", "<IPFSNODEID>"]
   ],
   "content": "{
     \"id\": \"PERMIT_PROFESSION_MAITRE_NAGEUR_X1\",
@@ -365,6 +396,7 @@ Les compétences ne sont **pas définies à la création** mais **révélées pr
     ["p", "<applicant_npub>"],
     ["t", "permit"],
     ["t", "request"],
+    ["ipfs_node", "<IPFSNODEID>"],
     ["g", "48.8566", "2.3522"]
   ],
   "content": "{
@@ -400,6 +432,7 @@ Les compétences ne sont **pas définies à la création** mais **révélées pr
     ["p", "<applicant_npub>"],
     ["t", "permit"],
     ["t", "attestation"],
+    ["ipfs_node", "<IPFSNODEID>"],
     ["competency", "Natation"],
     ["competency", "Sauvetage"],
     ["g", "48.8566", "2.3522"]
@@ -436,7 +469,8 @@ Les compétences ne sont **pas définies à la création** mais **révélées pr
     ["permit_id", "PERMIT_PROFESSION_MAITRE_NAGEUR_X1"],
     ["request_id", "req_abc123"],
     ["issued_at", "2025-12-01T12:00:00Z"],
-    ["attestation_count", "1"]
+    ["attestation_count", "1"],
+    ["ipfs_node", "<IPFSNODEID>"]
   ],
   "content": "{
     \"@context\": [

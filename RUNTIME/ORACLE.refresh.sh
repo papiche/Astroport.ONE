@@ -22,6 +22,36 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 # Helper functions
 ################################################################################
 
+# Detect if this is the primary station (first node in A_boostrap_nodes.txt)
+is_primary_station() {
+    # Get STRAPFILE path (same logic as _UPLANET.refresh.sh)
+    local strapfile=""
+    if [[ -f "${HOME}/.zen/game/MY_boostrap_nodes.txt" ]]; then
+        strapfile="${HOME}/.zen/game/MY_boostrap_nodes.txt"
+    elif [[ -f "${HOME}/.zen/Astroport.ONE/A_boostrap_nodes.txt" ]]; then
+        strapfile="${HOME}/.zen/Astroport.ONE/A_boostrap_nodes.txt"
+    fi
+    
+    if [[ -z "$strapfile" ]] || [[ ! -f "$strapfile" ]]; then
+        return 1  # Not primary if file doesn't exist
+    fi
+    
+    # Extract STRAPS (same logic as _UPLANET.refresh.sh line 139)
+    local straps=($(cat "$strapfile" | grep -Ev "#" | rev | cut -d '/' -f 1 | rev | grep -v '^[[:space:]]*$'))
+    
+    if [[ ${#straps[@]} -eq 0 ]]; then
+        return 1  # No straps found
+    fi
+    
+    # Check if IPFSNODEID matches the first STRAP (primary station)
+    local primary_strap="${straps[0]}"
+    if [[ "$IPFSNODEID" == "$primary_strap" ]]; then
+        return 0  # This is the primary station
+    fi
+    
+    return 1  # Not the primary station
+}
+
 generate_uplanet_g1_nostr_key() {
     # Generate NOSTR key for UPLANETNAME_G1 if it doesn't exist
     # Similar to oracle_init_permit_definitions.sh
@@ -131,6 +161,16 @@ if [[ ! -f "$NOSTR_SCRIPT" ]]; then
     echo "[INFO] Cannot fetch events from Nostr relay"
     echo "[INFO] Skipping WoTx2 permit processing"
 else
+    # Detect if this is the primary station (ORACLE des ORACLES)
+    IS_PRIMARY_STATION=false
+    if is_primary_station; then
+        IS_PRIMARY_STATION=true
+        echo "[INFO] ⭐ PRIMARY STATION DETECTED - Running ORACLE des ORACLES mode"
+        echo "[INFO] This station will process permits from ALL stations in the constellation"
+    else
+        echo "[INFO] Standard station mode - Processing only permits from this Astroport (IPFSNODEID: ${IPFSNODEID})"
+    fi
+    
     # Fetch all permit requests (kind 30501) from Nostr
     echo "[INFO] Fetching permit requests (kind 30501) from Nostr relay..."
     requests_json=$("$NOSTR_SCRIPT" --kind 30501 2>/dev/null)
@@ -138,9 +178,21 @@ else
     if [[ -z "$requests_json" ]]; then
         echo "[INFO] No permit requests found in Nostr"
     else
+        # Filter requests by IPFSNODEID only if NOT primary station
+        if [[ "$IS_PRIMARY_STATION" == "false" ]] && [[ -n "$IPFSNODEID" ]]; then
+            requests_json=$(echo "$requests_json" | jq -r --arg nodeid "$IPFSNODEID" '[.[] | select(.tags[]?[0]=="ipfs_node" and .tags[]?[1]==$nodeid)]' 2>/dev/null)
+            echo "[INFO] Filtered by IPFSNODEID: ${IPFSNODEID}"
+        elif [[ "$IS_PRIMARY_STATION" == "true" ]]; then
+            echo "[INFO] ORACLE des ORACLES: Processing ALL permit requests from ALL stations"
+        fi
+        
         # Parse requests and check attestations
         request_count=$(echo "$requests_json" | jq -s 'length' 2>/dev/null || echo "0")
-        echo "[INFO] Found ${request_count} permit request(s) in Nostr"
+        if [[ "$IS_PRIMARY_STATION" == "true" ]]; then
+            echo "[INFO] Found ${request_count} permit request(s) from ALL stations (ORACLE des ORACLES mode)"
+        else
+            echo "[INFO] Found ${request_count} permit request(s) for this Astroport (IPFSNODEID: ${IPFSNODEID})"
+        fi
         
         # Process each request
         echo "$requests_json" | jq -c '.[]' 2>/dev/null | while read -r request_event; do
@@ -158,6 +210,14 @@ else
             echo "  [INFO] Permit: ${permit_id}"
             echo "  [INFO] Applicant: ${applicant_hex:0:16}..."
             
+            # Show source station if primary station mode
+            if [[ "$IS_PRIMARY_STATION" == "true" ]]; then
+                request_ipfs_node=$(echo "$request_event" | jq -r '.tags[]? | select(.[0]=="ipfs_node") | .[1]' 2>/dev/null | head -1)
+                if [[ -n "$request_ipfs_node" ]]; then
+                    echo "  [INFO] Source Station: ${request_ipfs_node:0:16}..."
+                fi
+            fi
+            
             # Get permit definition to know required attestations
             definition_data=$(curl -s "${ORACLE_API}/definitions" | jq -r ".permits[]? | select(.id==\"${permit_id}\")" 2>/dev/null)
             
@@ -172,8 +232,18 @@ else
             echo "  [INFO] Counting attestations (kind 30502) for request ${request_id}..."
             attestations_json=$("$NOSTR_SCRIPT" --kind 30502 2>/dev/null)
             
+            # Filter attestations by IPFSNODEID only if NOT primary station
+            if [[ "$IS_PRIMARY_STATION" == "false" ]] && [[ -n "$IPFSNODEID" ]] && [[ -n "$attestations_json" ]]; then
+                attestations_json=$(echo "$attestations_json" | jq -r --arg nodeid "$IPFSNODEID" '[.[] | select(.tags[]?[0]=="ipfs_node" and .tags[]?[1]==$nodeid)]' 2>/dev/null)
+            fi
+            
             # Get all credentials (kind 30503) to verify attesters
             all_credentials_json=$("$NOSTR_SCRIPT" --kind 30503 2>/dev/null)
+            
+            # Filter credentials by IPFSNODEID only if NOT primary station
+            if [[ "$IS_PRIMARY_STATION" == "false" ]] && [[ -n "$IPFSNODEID" ]] && [[ -n "$all_credentials_json" ]]; then
+                all_credentials_json=$(echo "$all_credentials_json" | jq -r --arg nodeid "$IPFSNODEID" '[.[] | select(.tags[]?[0]=="ipfs_node" and .tags[]?[1]==$nodeid)]' 2>/dev/null)
+            fi
             
             attestations_count=0
             valid_attestations_count=0
@@ -224,7 +294,12 @@ else
                             # Special case for X1: If no credentials exist yet, allow the creator to attest (bootstrap)
                             if [[ "$current_level" == "1" ]] && [[ "$attester_has_valid_credential" == "false" ]]; then
                                 # Check if attester is the creator of the permit (from 30500 event)
-                                permit_30500=$("$NOSTR_SCRIPT" --kind 30500 2>/dev/null | jq -r --arg permit "$permit_id" '[.[] | select(.tags[]?[0]=="d" and .tags[]?[1]==$permit)] | .[0]' 2>/dev/null)
+                                permit_30500_json=$("$NOSTR_SCRIPT" --kind 30500 2>/dev/null)
+                                # Filter by IPFSNODEID only if NOT primary station
+                                if [[ "$IS_PRIMARY_STATION" == "false" ]] && [[ -n "$IPFSNODEID" ]] && [[ -n "$permit_30500_json" ]]; then
+                                    permit_30500_json=$(echo "$permit_30500_json" | jq -r --arg nodeid "$IPFSNODEID" '[.[] | select(.tags[]?[0]=="ipfs_node" and .tags[]?[1]==$nodeid)]' 2>/dev/null)
+                                fi
+                                permit_30500=$(echo "$permit_30500_json" | jq -r --arg permit "$permit_id" '[.[] | select(.tags[]?[0]=="d" and .tags[]?[1]==$permit)] | .[0]' 2>/dev/null)
                                 creator_hex=$(echo "$permit_30500" | jq -r '.pubkey // empty' 2>/dev/null)
                                 
                                 if [[ "$attester_hex" == "$creator_hex" ]]; then
