@@ -283,7 +283,7 @@ if [ "$AUTO_MODE" = "true" ]; then
     if [ -z "$TITLE" ]; then
         TITLE=$(echo "$UPLOAD_DATA" | jq -r '.title // empty')
         if [ -z "$TITLE" ]; then
-            TITLE="$FILENAME"
+            TITLE="${FILENAME%.*}"
         fi
     fi
     
@@ -404,13 +404,6 @@ else
         TAGS="${TAGS},
     [\"x\", \"${FILE_HASH}\"]"
         log_info "Added file hash for provenance: ${FILE_HASH:0:16}..."
-        
-        # Add original file hash (ox) - NIP-94 Provenance Extension
-        # If file is not transformed, ox = x (same hash)
-        # This allows tracking the original file even after transformations
-        TAGS="${TAGS},
-    [\"ox\", \"${FILE_HASH}\"]"
-        log_info "Added original file hash (ox): ${FILE_HASH:0:16}..."
     fi
     
     # Add dimensions for images (from upload2ipfs.sh)
