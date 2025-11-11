@@ -3,7 +3,17 @@
 # nostr_RESTORE_TW.sh
 #
 # This script restores a NOSTR account backup from IPFS.
-# It downloads the backup ZIP, extracts it, and imports all events into strfry.
+# It supports both NEW format (.next.disco for migration to new relay/captain)
+# and OLD format (.secret.disco for backward compatibility).
+#
+# For NEW relay/captain migration:
+#   - Uses .next.disco (pre-generated during account deactivation)
+#   - Creates MULTIPASS with new credentials on the new relay
+#   - Imports all NOSTR events and restores uDRIVE
+#
+# For OLD format (backward compatibility):
+#   - Uses .secret.disco (may not work on new relay)
+#   - Attempts restoration with original credentials
 #
 # Usage: ./nostr_RESTORE_TW.sh <IPFS_CID> [target_relay_url]
 # -----------------------------------------------------------------------------
@@ -119,24 +129,86 @@ else
     echo -e "${YELLOW}⚠️  No uDRIVE manifest found (no uDRIVE data to restore)${NC}"
 fi
 
-# Check for .secret.disco
-DISCO_FILE=$(find "${RESTORE_DIR}" -name ".secret.disco" | head -1)
-if [[ -f "${DISCO_FILE}" ]]; then
-    echo -e "${GREEN}✅ Secret .disco key found${NC}"
-    echo -e "${CYAN}   🔑 Full account restoration possible${NC}"
+# Check for .next.disco (NEW format for restoration on new relay/captain)
+NEXT_DISCO_FILE=$(find "${RESTORE_DIR}" -name ".next.disco" | head -1)
+NEXT_HEX_FILE=$(find "${RESTORE_DIR}" -name ".next.hex" | head -1)
+NEXT_SALT_FILE=$(find "${RESTORE_DIR}" -name ".next.salt" | head -1)
+NEXT_PEPPER_FILE=$(find "${RESTORE_DIR}" -name ".next.pepper" | head -1)
+
+# Check for .secret.disco (OLD format - for reference only)
+OLD_DISCO_FILE=$(find "${RESTORE_DIR}" -name ".secret.disco" | head -1)
+
+RESTORE_EMAIL=""
+RESTORE_SALT=""
+RESTORE_PEPPER=""
+IS_NEW_RELAY_RESTORE=false
+
+# Priority: Use .next.disco for new relay/captain restoration
+if [[ -f "${NEXT_DISCO_FILE}" ]]; then
+    echo -e "${GREEN}✅ Next .disco key found (for restoration on NEW relay/captain)${NC}"
+    echo -e "${CYAN}   🔮 This backup is ready for migration to a new relay/captain${NC}"
     
-    # Extract email, salt, and pepper from .disco file
-    DISCO_CONTENT=$(cat "${DISCO_FILE}")
-    echo -e "${CYAN}   📋 DISCO content: ${DISCO_CONTENT:0:50}...${NC}"
+    # Extract email, salt, and pepper from .next.disco file
+    DISCO_CONTENT=$(cat "${NEXT_DISCO_FILE}")
+    echo -e "${CYAN}   📋 Next DISCO content: ${DISCO_CONTENT:0:50}...${NC}"
     
     # Parse DISCO format: /?email=salt&nostr=pepper
     if [[ "$DISCO_CONTENT" =~ ^/\?([^=]+)=([^&]+)&nostr=(.+)$ ]]; then
         RESTORE_EMAIL="${BASH_REMATCH[1]}"
         RESTORE_SALT="${BASH_REMATCH[2]}"
         RESTORE_PEPPER="${BASH_REMATCH[3]}"
+        IS_NEW_RELAY_RESTORE=true
+        
         echo -e "${GREEN}   📧 Email: ${RESTORE_EMAIL}${NC}"
-        echo -e "${GREEN}   🔐 Salt: ${RESTORE_SALT:0:20}...${NC}"
-        echo -e "${GREEN}   🔐 Pepper: ${RESTORE_PEPPER:0:20}...${NC}"
+        echo -e "${GREEN}   🔐 New Salt: ${RESTORE_SALT:0:20}...${NC}"
+        echo -e "${GREEN}   🔐 New Pepper: ${RESTORE_PEPPER:0:20}...${NC}"
+        
+        # Verify with .next.salt and .next.pepper files if available
+        if [[ -f "${NEXT_SALT_FILE}" ]] && [[ -f "${NEXT_PEPPER_FILE}" ]]; then
+            VERIFY_SALT=$(cat "${NEXT_SALT_FILE}")
+            VERIFY_PEPPER=$(cat "${NEXT_PEPPER_FILE}")
+            if [[ "$RESTORE_SALT" == "$VERIFY_SALT" ]] && [[ "$RESTORE_PEPPER" == "$VERIFY_PEPPER" ]]; then
+                echo -e "${GREEN}   ✅ Salt/Pepper verified against backup files${NC}"
+            fi
+        fi
+        
+        # Show next HEX if available
+        if [[ -f "${NEXT_HEX_FILE}" ]]; then
+            NEXT_HEX=$(cat "${NEXT_HEX_FILE}")
+            echo -e "${CYAN}   🔮 Next HEX (pre-generated): ${NEXT_HEX:0:20}...${NC}"
+            echo -e "${CYAN}   💡 This HEX will be used for the new MULTIPASS on this relay${NC}"
+        fi
+        
+        echo -e "${YELLOW}   ⚠️  IMPORTANT: This is a NEW .disco for restoration on a NEW relay/captain${NC}"
+        echo -e "${YELLOW}   ⚠️  The old .secret.disco will NOT work on a new relay${NC}"
+    else
+        echo -e "${RED}❌ Invalid DISCO format in .next.disco${NC}"
+        RESTORE_EMAIL=""
+        RESTORE_SALT=""
+        RESTORE_PEPPER=""
+    fi
+elif [[ -f "${OLD_DISCO_FILE}" ]]; then
+    # Fallback to old .secret.disco (for backward compatibility)
+    echo -e "${YELLOW}⚠️  Old .secret.disco found (legacy format)${NC}"
+    echo -e "${YELLOW}   ⚠️  This is the OLD .disco - it may not work on a new relay${NC}"
+    echo -e "${CYAN}   🔑 Attempting restoration with old credentials...${NC}"
+    
+    # Extract email, salt, and pepper from old .disco file
+    DISCO_CONTENT=$(cat "${OLD_DISCO_FILE}")
+    echo -e "${CYAN}   📋 Old DISCO content: ${DISCO_CONTENT:0:50}...${NC}"
+    
+    # Parse DISCO format: /?email=salt&nostr=pepper
+    if [[ "$DISCO_CONTENT" =~ ^/\?([^=]+)=([^&]+)&nostr=(.+)$ ]]; then
+        RESTORE_EMAIL="${BASH_REMATCH[1]}"
+        RESTORE_SALT="${BASH_REMATCH[2]}"
+        RESTORE_PEPPER="${BASH_REMATCH[3]}"
+        IS_NEW_RELAY_RESTORE=false
+        
+        echo -e "${GREEN}   📧 Email: ${RESTORE_EMAIL}${NC}"
+        echo -e "${GREEN}   🔐 Old Salt: ${RESTORE_SALT:0:20}...${NC}"
+        echo -e "${GREEN}   🔐 Old Pepper: ${RESTORE_PEPPER:0:20}...${NC}"
+        echo -e "${YELLOW}   ⚠️  WARNING: Using old .disco - restoration may fail on new relay${NC}"
+        echo -e "${YELLOW}   💡 For new relay/captain, use .next.disco from a recent backup${NC}"
     else
         echo -e "${RED}❌ Invalid DISCO format in .secret.disco${NC}"
         RESTORE_EMAIL=""
@@ -144,7 +216,8 @@ if [[ -f "${DISCO_FILE}" ]]; then
         RESTORE_PEPPER=""
     fi
 else
-    echo -e "${YELLOW}⚠️  No .secret.disco found (limited restoration)${NC}"
+    echo -e "${YELLOW}⚠️  No .disco found (limited restoration)${NC}"
+    echo -e "${CYAN}   💡 Full account restoration requires .next.disco or .secret.disco${NC}"
     RESTORE_EMAIL=""
     RESTORE_SALT=""
     RESTORE_PEPPER=""
@@ -234,9 +307,15 @@ if [[ -n "$RESTORE_EMAIL" && -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
     
     # Check if make_NOSTRCARD.sh exists
     if [[ -f "${MY_PATH}/make_NOSTRCARD.sh" ]]; then
-        echo -e "${CYAN}   🔄 Recreating MULTIPASS with original credentials...${NC}"
+        if [[ "$IS_NEW_RELAY_RESTORE" == "true" ]]; then
+            echo -e "${CYAN}   🔄 Recreating MULTIPASS with NEW credentials (for new relay/captain)...${NC}"
+            echo -e "${GREEN}   ✅ Using pre-generated .next.disco for restoration on this new relay${NC}"
+        else
+            echo -e "${CYAN}   🔄 Recreating MULTIPASS with original credentials...${NC}"
+            echo -e "${YELLOW}   ⚠️  Using old .secret.disco (may not work on new relay)${NC}"
+        fi
         
-        # Recreate MULTIPASS with original salt/pepper
+        # Recreate MULTIPASS with salt/pepper (new or old depending on what was found)
         if "${MY_PATH}/make_NOSTRCARD.sh" "${RESTORE_EMAIL}" "fr" "0.00" "0.00" "${RESTORE_SALT}" "${RESTORE_PEPPER}" 2>/dev/null; then
             echo -e "${GREEN}✅ MULTIPASS recreated successfully${NC}"
             
@@ -412,15 +491,23 @@ if [[ -f "${MANIFEST_FILE}" ]]; then
 fi
 
 # Show secret key info if exists
-if [[ -f "${DISCO_FILE}" ]]; then
-    echo -e "${BLUE}║${NC}  ${CYAN}Secret key:${NC}               ${GREEN}Available for full restoration${NC}           ${BLUE}║${NC}"
+if [[ -f "${NEXT_DISCO_FILE}" ]]; then
+    echo -e "${BLUE}║${NC}  ${CYAN}Next .disco:${NC}             ${GREEN}Available (NEW relay/captain ready)${NC}      ${BLUE}║${NC}"
+elif [[ -f "${OLD_DISCO_FILE}" ]]; then
+    echo -e "${BLUE}║${NC}  ${CYAN}Old .disco:${NC}              ${YELLOW}Available (legacy format)${NC}              ${BLUE}║${NC}"
 fi
 
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
         if [[ -n "$RESTORE_EMAIL" && -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
             echo -e "${GREEN}💡 Complete Restoration Achieved:${NC}"
-            echo -e "   ${CYAN}✅ MULTIPASS recreated with original credentials${NC}"
+            if [[ "$IS_NEW_RELAY_RESTORE" == "true" ]]; then
+                echo -e "   ${GREEN}✅ MULTIPASS recreated with NEW credentials (migration to new relay/captain)${NC}"
+                echo -e "   ${CYAN}✅ Using pre-generated .next.disco for restoration on this new relay${NC}"
+            else
+                echo -e "   ${CYAN}✅ MULTIPASS recreated with original credentials${NC}"
+                echo -e "   ${YELLOW}⚠️  Using old .secret.disco (may not work on new relay)${NC}"
+            fi
             echo -e "   ${CYAN}✅ NOSTR events imported successfully${NC}"
             if [[ -f "${MANIFEST_FILE}" ]]; then
                 echo -e "   ${CYAN}✅ uDRIVE files restored from IPFS${NC}"
@@ -431,8 +518,13 @@ echo ""
             echo -e "   ${CYAN}✅ Account location:${NC} ~/.zen/game/nostr/${RESTORE_EMAIL}/"
             echo ""
             echo -e "${YELLOW}📋 For the User:${NC}"
-            echo -e "   ${CYAN}• Your complete MULTIPASS has been restored on this Astroport.ONE station${NC}"
-            echo -e "   ${CYAN}• All your NOSTR events, profile, and uDRIVE files are now available${NC}"
+            if [[ "$IS_NEW_RELAY_RESTORE" == "true" ]]; then
+                echo -e "   ${GREEN}• Your MULTIPASS has been successfully migrated to this NEW relay/captain${NC}"
+                echo -e "   ${CYAN}• All your NOSTR events, profile, and uDRIVE files are now available${NC}"
+            else
+                echo -e "   ${CYAN}• Your complete MULTIPASS has been restored on this Astroport.ONE station${NC}"
+                echo -e "   ${CYAN}• All your NOSTR events, profile, and uDRIVE files are now available${NC}"
+            fi
             if [[ -f "${ZEN_SECRET_JUNE}" || -f "${ZEN_G1PUB}" ]]; then
                 echo -e "   ${CYAN}• Your ZEN Card has been recreated with original credentials (capital owner history)${NC}"
             fi
@@ -444,9 +536,14 @@ else
         echo -e "   ${CYAN}2. Recreate uDRIVE:${NC} Use uDRIVE_manifest.json to restore user's files"
         echo -e "   ${CYAN}3. uDRIVE location:${NC} ~/.zen/game/nostr/<EMAIL>/APP/uDRIVE/"
     fi
-            if [[ -f "${DISCO_FILE}" ]]; then
+            if [[ -f "${NEXT_DISCO_FILE}" ]]; then
+                echo -e "   ${CYAN}4. Full restoration:${NC} Use .next.disco for complete account recreation on NEW relay"
+                echo -e "   ${CYAN}5. Next .disco location:${NC} ${NEXT_DISCO_FILE}"
+                echo -e "   ${GREEN}   ✅ This backup is ready for migration to a new relay/captain${NC}"
+            elif [[ -f "${OLD_DISCO_FILE}" ]]; then
                 echo -e "   ${CYAN}4. Full restoration:${NC} Use .secret.disco for complete account recreation"
-                echo -e "   ${CYAN}5. Secret key location:${NC} ${DISCO_FILE}"
+                echo -e "   ${CYAN}5. Old .disco location:${NC} ${OLD_DISCO_FILE}"
+                echo -e "   ${YELLOW}   ⚠️  This is the OLD .disco - may not work on a new relay${NC}"
             fi
             if [[ -f "${ZEN_SECRET_JUNE}" ]]; then
                 echo -e "   ${CYAN}6. ZEN Card recreation:${NC} Use secret.june with VISA.new.sh for ZEN Card restoration"

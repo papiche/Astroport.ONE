@@ -27,6 +27,7 @@ NC='\033[0m' # No Color
 IPFS_GATEWAY="${myIPFS:-http://127.0.0.1:8080}"
 UPASSPORT_API="${myHOST:-http://127.0.0.1:54321}"
 NOSTR_GET_EVENTS="${MY_PATH}/nostr_get_events.sh"
+NOSTR_GET_EVENT_BY_ID="${MY_PATH}/nostr_get_event_by_id.sh"
 UPLOAD2IPFS="${HOME}/.zen/UPassport/upload2ipfs.sh"
 PUBLISH_NOSTR_VIDEO="${MY_PATH}/publish_nostr_video.sh"
 TEMP_DIR="${HOME}/.zen/tmp/nostr_tube_$$"
@@ -51,6 +52,10 @@ ${YELLOW}COMMANDS:${NC}
     check             Check video metadata completeness
     stats             Show statistics for user's video chain
     cleanup           Clean up non-compliant events (no metadata or no channel)
+    
+${YELLOW}INTERACTIVE FEATURES (in browse/details menu):${NC}
+    Export tree       Export all events related to a video (kind 21/22, 1985, 1986, 30001, 1111, 5)
+    Delete tree       Delete complete video tree (LOCAL accounts only - MULTIPASS on this station)
 
 ${YELLOW}OPTIONS:${NC}
     -u, --npub NPUB           User's npub key
@@ -97,11 +102,29 @@ ${YELLOW}UPGRADE PROCESS:${NC}
     3. Delete old NOSTR event
     4. Publish new event with complete metadata (including gifanim_ipfs)
 
+${YELLOW}EXPORT TREE PROCESS:${NC}
+    Exports all events related to a video:
+    - Main video event (kind 21/22)
+    - User tags (kind 1985 - NIP-32)
+    - TMDB enrichments (kind 1986 - community contributions)
+    - Author updates (kind 30001 - replaceable enrichments)
+    - Comments (kind 1111 - NIP-22)
+    - Deletion events (kind 5 - if already deleted)
+    Export saved to: ~/.zen/tmp/video_export_*/video_tree_*.json
+
+${YELLOW}DELETE TREE PROCESS (LOCAL accounts only):${NC}
+    1. Create backup export (all related events)
+    2. Publish kind 5 deletion events for all related events
+    3. Physical deletion using nostr_get_events.sh --del --force
+    ⚠️  Only available for LOCAL accounts (MULTIPASS on this station)
+    ⚠️  This permanently removes ALL events from database
+
 ${YELLOW}NOTES:${NC}
     - Requires jq, ipfs, and curl
     - Videos are temporarily downloaded to ~/.zen/tmp/
     - Old events are permanently deleted (cannot be undone)
     - Use --force to skip confirmation prompts
+    - Export/Delete tree features require LOCAL account (MULTIPASS on station)
 
 EOF
     exit 0
@@ -1117,38 +1140,62 @@ browse_channel_videos() {
     local channel_name="$1"
     local author_hex="$2"
     
-    # Get all videos for this author
-    local events=$(bash "$NOSTR_GET_EVENTS" --kind 21 --author "$author_hex" --limit 1000 2>/dev/null)
-    events+=$'\n'
-    events+=$(bash "$NOSTR_GET_EVENTS" --kind 22 --author "$author_hex" --limit 1000 2>/dev/null)
-    
-    if [[ -z "$events" ]]; then
-        log_warning "No videos found for this channel"
-        read -p "Press ENTER to continue..."
-        return 0
-    fi
-    
-    # Parse videos into array
-    local video_ids=()
-    local -A video_data
-    
-    while IFS= read -r event; do
-        [[ -z "$event" ]] && continue
-        
-        local event_id=$(echo "$event" | jq -r '.id // empty' 2>/dev/null)
-        [[ -z "$event_id" ]] && continue
-        
-        video_ids+=("$event_id")
-        video_data["$event_id"]="$event"
-    done <<< "$events"
-    
     local current_page=0
     local videos_per_page=5
-    local total_videos=${#video_ids[@]}
-    local total_pages=$(( (total_videos + videos_per_page - 1) / videos_per_page ))
+    local needs_reload=true
+    
+    # Declare arrays at function scope
+    local -a video_ids=()
+    local -A video_data=()
+    
+    # Function to load/reload video list
+    load_video_list() {
+        # Get all videos for this author
+        local events=$(bash "$NOSTR_GET_EVENTS" --kind 21 --author "$author_hex" --limit 1000 2>/dev/null)
+        events+=$'\n'
+        events+=$(bash "$NOSTR_GET_EVENTS" --kind 22 --author "$author_hex" --limit 1000 2>/dev/null)
+        
+        if [[ -z "$events" ]]; then
+            return 1
+        fi
+        
+        # Clear and rebuild arrays
+        video_ids=()
+        video_data=()
+        
+        while IFS= read -r event; do
+            [[ -z "$event" ]] && continue
+            
+            local event_id=$(echo "$event" | jq -r '.id // empty' 2>/dev/null)
+            [[ -z "$event_id" ]] && continue
+            
+            video_ids+=("$event_id")
+            video_data["$event_id"]="$event"
+        done <<< "$events"
+        
+        return 0
+    }
     
     # Video navigation menu
     while true; do
+        # Reload video list if needed (first time or after deletion)
+        if [[ "$needs_reload" == "true" ]]; then
+            if ! load_video_list; then
+                log_warning "No videos found for this channel"
+                read -p "Press ENTER to continue..."
+                return 0
+            fi
+            needs_reload=false
+            # Reset to first page if we're beyond available pages
+            local total_videos=${#video_ids[@]}
+            local total_pages=$(( (total_videos + videos_per_page - 1) / videos_per_page ))
+            if [[ $current_page -ge $total_pages ]] && [[ $total_pages -gt 0 ]]; then
+                current_page=$((total_pages - 1))
+            fi
+        fi
+        
+        local total_videos=${#video_ids[@]}
+        local total_pages=$(( (total_videos + videos_per_page - 1) / videos_per_page ))
         clear
         echo -e "${CYAN}╔════════════════════════════════════════════════════════════════════════════╗${NC}"
         echo -e "${CYAN}║${NC}                 ${YELLOW}Channel: $channel_name${NC}                                      ${CYAN}║${NC}"
@@ -1242,7 +1289,12 @@ browse_channel_videos() {
                 if [[ $video_idx -ge $start_idx ]] && [[ $video_idx -lt $end_idx ]]; then
                     local selected_event_id="${video_ids[$video_idx]}"
                     local selected_event="${video_data[$selected_event_id]}"
-                    show_video_details "$selected_event_id" "$selected_event" "$author_hex"
+                    # Show video details - if it returns 0, video was deleted, reload list
+                    if show_video_details "$selected_event_id" "$selected_event" "$author_hex"; then
+                        # Video was deleted, reload the list
+                        needs_reload=true
+                        log_info "Reloading video list after deletion..."
+                    fi
                 else
                     log_error "Invalid video number"
                     sleep 1
@@ -1254,6 +1306,472 @@ browse_channel_videos() {
                 ;;
         esac
     done
+}
+
+################################################################################
+# Export all events related to a video (complete tree)
+################################################################################
+export_video_tree() {
+    local video_event_id="$1"
+    local author_hex="$2"
+    
+    log_info "Exporting all events related to video: ${video_event_id:0:16}..."
+    
+    # Create export directory
+    local export_dir="${HOME}/.zen/tmp/video_export_${video_event_id:0:8}_$(date +%Y%m%d_%H%M%S)"
+    mkdir -p "$export_dir"
+    
+    local export_file="${export_dir}/video_tree_${video_event_id:0:16}.json"
+    local export_summary="${export_dir}/summary.txt"
+    
+    # Initialize export JSON array
+    local all_events="[]"
+    
+    local total_events=0
+    local event_kinds=()
+    
+    # 1. Main video event (kind 21 or 22) - use nostr_get_event_by_id.sh
+    log_info "Fetching main video event (kind 21/22)..."
+    local video_event=""
+    if [[ -f "$NOSTR_GET_EVENT_BY_ID" ]]; then
+        video_event=$(bash "$NOSTR_GET_EVENT_BY_ID" "$video_event_id" 2>/dev/null)
+    else
+        # Fallback: try to get by author and filter
+        log_debug "nostr_get_event_by_id.sh not found, trying alternative method..."
+        local author_events=$(bash "$NOSTR_GET_EVENTS" --kind 21 --author "$author_hex" --limit 1000 2>/dev/null)
+        video_event=$(echo "$author_events" | jq -r "if type == \"array\" then .[] | select(.id == \"$video_event_id\") else if .id == \"$video_event_id\" then . else empty end end" 2>/dev/null)
+        if [[ -z "$video_event" ]] || [[ "$video_event" == "null" ]]; then
+            author_events=$(bash "$NOSTR_GET_EVENTS" --kind 22 --author "$author_hex" --limit 1000 2>/dev/null)
+            video_event=$(echo "$author_events" | jq -r "if type == \"array\" then .[] | select(.id == \"$video_event_id\") else if .id == \"$video_event_id\" then . else empty end end" 2>/dev/null)
+        fi
+    fi
+    
+    # Parse output from nostr_get_event_by_id.sh (strfry scan returns JSON on single line)
+    if [[ -n "$video_event" ]] && [[ "$video_event" != "" ]]; then
+        # strfry scan returns one JSON object per line, get first non-empty line
+        local event_line=$(echo "$video_event" | grep -v '^$' | head -1)
+        if [[ -n "$event_line" ]]; then
+            # Verify it's valid JSON and extract event
+            if echo "$event_line" | jq -e '.' >/dev/null 2>&1; then
+                local event_id_check=$(echo "$event_line" | jq -r '.id // empty' 2>/dev/null)
+                if [[ "$event_id_check" == "$video_event_id" ]]; then
+                    local video_kind=$(echo "$event_line" | jq -r '.kind // empty' 2>/dev/null)
+                    # Add to export using proper jq merge
+                    all_events=$(echo "$all_events" | jq --argjson evt "$event_line" '. + [$evt]' 2>/dev/null || echo "$all_events")
+                    total_events=$((total_events + 1))
+                    event_kinds+=("kind $video_kind (main video)")
+                    log_success "✅ Found main video event (kind $video_kind)"
+                else
+                    log_warning "⚠️  Event ID mismatch: expected $video_event_id, got ${event_id_check:0:16}..."
+                fi
+            else
+                log_warning "⚠️  Main video event not found (invalid JSON)"
+                log_debug "Raw output: ${video_event:0:200}..."
+            fi
+        else
+            log_warning "⚠️  Main video event not found (empty output)"
+        fi
+    else
+        log_warning "⚠️  Main video event not found (no output from query)"
+    fi
+    
+    # 2. User tags (kind 1985) - NIP-32
+    log_info "Fetching user tags (kind 1985)..."
+    local tag_events=$(bash "$NOSTR_GET_EVENTS" --kind 1985 --tag e "$video_event_id" --limit 1000 2>/dev/null)
+    local tag_count=0
+    if [[ -n "$tag_events" ]] && [[ "$tag_events" != "[]" ]]; then
+        tag_count=$(echo "$tag_events" | jq 'if type == "array" then length else 1 end' 2>/dev/null || echo "0")
+        all_events=$(echo "$all_events" | jq --argjson evts "$(echo "$tag_events" | jq 'if type == "array" then . else [.] end' 2>/dev/null)" '. + $evts' 2>/dev/null || echo "$all_events")
+        total_events=$((total_events + tag_count))
+    fi
+    event_kinds+=("kind 1985 (user tags): $tag_count event(s)")
+    if [[ $tag_count -gt 0 ]]; then
+        log_success "✅ Found $tag_count user tag event(s)"
+    else
+        log_info "ℹ️  No user tags found (0 events)"
+    fi
+    
+    # 3. TMDB enrichments (kind 1986) - Community enrichments
+    log_info "Fetching TMDB enrichments (kind 1986)..."
+    local enrichment_events=$(bash "$NOSTR_GET_EVENTS" --kind 1986 --tag e "$video_event_id" --tag L "tmdb.metadata" --limit 1000 2>/dev/null)
+    local enrichment_count=0
+    if [[ -n "$enrichment_events" ]] && [[ "$enrichment_events" != "[]" ]]; then
+        enrichment_count=$(echo "$enrichment_events" | jq 'if type == "array" then length else 1 end' 2>/dev/null || echo "0")
+        all_events=$(echo "$all_events" | jq --argjson evts "$(echo "$enrichment_events" | jq 'if type == "array" then . else [.] end' 2>/dev/null)" '. + $evts' 2>/dev/null || echo "$all_events")
+        total_events=$((total_events + enrichment_count))
+    fi
+    event_kinds+=("kind 1986 (TMDB enrichments): $enrichment_count event(s)")
+    if [[ $enrichment_count -gt 0 ]]; then
+        log_success "✅ Found $enrichment_count TMDB enrichment event(s)"
+    else
+        log_info "ℹ️  No TMDB enrichments found (0 events)"
+    fi
+    
+    # 4. Author updates (kind 30001) - Replaceable enrichments
+    log_info "Fetching author updates (kind 30001)..."
+    local author_update_events=$(bash "$NOSTR_GET_EVENTS" --kind 30001 --author "$author_hex" --tag e "$video_event_id" --tag d "tmdb-metadata" --limit 10 2>/dev/null)
+    local update_count=0
+    if [[ -n "$author_update_events" ]] && [[ "$author_update_events" != "[]" ]]; then
+        update_count=$(echo "$author_update_events" | jq 'if type == "array" then length else 1 end' 2>/dev/null || echo "0")
+        all_events=$(echo "$all_events" | jq --argjson evts "$(echo "$author_update_events" | jq 'if type == "array" then . else [.] end' 2>/dev/null)" '. + $evts' 2>/dev/null || echo "$all_events")
+        total_events=$((total_events + update_count))
+    fi
+    event_kinds+=("kind 30001 (author updates): $update_count event(s)")
+    if [[ $update_count -gt 0 ]]; then
+        log_success "✅ Found $update_count author update event(s)"
+    else
+        log_info "ℹ️  No author updates found (0 events)"
+    fi
+    
+    # 5. Comments (kind 1111) - NIP-22
+    log_info "Fetching comments (kind 1111)..."
+    local comment_events=$(bash "$NOSTR_GET_EVENTS" --kind 1111 --tag e "$video_event_id" --limit 1000 2>/dev/null)
+    local comment_count=0
+    if [[ -n "$comment_events" ]] && [[ "$comment_events" != "[]" ]]; then
+        comment_count=$(echo "$comment_events" | jq 'if type == "array" then length else 1 end' 2>/dev/null || echo "0")
+        all_events=$(echo "$all_events" | jq --argjson evts "$(echo "$comment_events" | jq 'if type == "array" then . else [.] end' 2>/dev/null)" '. + $evts' 2>/dev/null || echo "$all_events")
+        total_events=$((total_events + comment_count))
+    fi
+    event_kinds+=("kind 1111 (comments): $comment_count event(s)")
+    if [[ $comment_count -gt 0 ]]; then
+        log_success "✅ Found $comment_count comment event(s)"
+    else
+        log_info "ℹ️  No comments found (0 events)"
+    fi
+    
+    # 6. Deletion events (kind 5) - If video was already deleted
+    log_info "Fetching deletion events (kind 5)..."
+    local deletion_events=$(bash "$NOSTR_GET_EVENTS" --kind 5 --tag e "$video_event_id" --limit 100 2>/dev/null)
+    local deletion_count=0
+    if [[ -n "$deletion_events" ]] && [[ "$deletion_events" != "[]" ]]; then
+        deletion_count=$(echo "$deletion_events" | jq 'if type == "array" then length else 1 end' 2>/dev/null || echo "0")
+        all_events=$(echo "$all_events" | jq --argjson evts "$(echo "$deletion_events" | jq 'if type == "array" then . else [.] end' 2>/dev/null)" '. + $evts' 2>/dev/null || echo "$all_events")
+        total_events=$((total_events + deletion_count))
+    fi
+    event_kinds+=("kind 5 (deletions): $deletion_count event(s)")
+    if [[ $deletion_count -gt 0 ]]; then
+        log_success "✅ Found $deletion_count deletion event(s)"
+    else
+        log_info "ℹ️  No deletion events found (0 events)"
+    fi
+    
+    # Write all events to file
+    echo "$all_events" | jq '.' > "$export_file" 2>/dev/null || echo "[]" > "$export_file"
+    
+    # Create summary file
+    {
+        echo "Video Event Tree Export"
+        echo "========================"
+        echo ""
+        echo "Video Event ID: $video_event_id"
+        echo "Author: ${author_hex:0:16}..."
+        echo "Export Date: $(date '+%Y-%m-%d %H:%M:%S')"
+        echo ""
+        echo "Total Events: $total_events"
+        echo ""
+        echo "Event Types:"
+        for kind_info in "${event_kinds[@]}"; do
+            echo "  - $kind_info"
+        done
+        echo ""
+        echo "Export File: $export_file"
+        echo ""
+        echo "This export contains all NOSTR events related to this video:"
+        echo "  - Main video event (kind 21/22)"
+        echo "  - User tags (kind 1985)"
+        echo "  - TMDB enrichments (kind 1986)"
+        echo "  - Author updates (kind 30001)"
+        echo "  - Comments (kind 1111)"
+        echo "  - Deletion events (kind 5)"
+    } > "$export_summary"
+    
+    # Display summary
+    echo ""
+    echo -e "${CYAN}╔════════════════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${NC}                      ${YELLOW}Video Tree Export Complete${NC}                            ${CYAN}║${NC}"
+    echo -e "${CYAN}╚════════════════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${GREEN}✅ Export directory:${NC} $export_dir"
+    echo -e "${GREEN}✅ Total events exported:${NC} $total_events"
+    echo ""
+    echo -e "${YELLOW}Event breakdown:${NC}"
+    for kind_info in "${event_kinds[@]}"; do
+        echo -e "  • $kind_info"
+    done
+    echo ""
+    echo -e "${CYAN}Files created:${NC}"
+    echo -e "  📄 $export_file (JSON array of all events)"
+    echo -e "  📋 $export_summary (Summary text)"
+    echo ""
+    echo -e "${CYAN}─────────────────────────────────────────────────────────────────────────────${NC}"
+    
+    return 0
+}
+
+################################################################################
+# Delete complete video tree (all related events)
+################################################################################
+delete_video_tree() {
+    local video_event_id="$1"
+    local author_hex="$2"
+    local force="${3:-false}"
+    
+    log_warning "⚠️  COMPLETE VIDEO TREE DELETION"
+    echo ""
+    echo -e "${RED}This will permanently delete:${NC}"
+    echo "  • Main video event (kind 21/22)"
+    echo "  • All user tags (kind 1985)"
+    echo "  • All TMDB enrichments (kind 1986)"
+    echo "  • All author updates (kind 30001)"
+    echo "  • All comments (kind 1111)"
+    echo ""
+    echo -e "${RED}⚠️  This operation CANNOT be undone!${NC}"
+    echo ""
+    
+    if [[ "$force" != "true" ]]; then
+        read -p "$(echo -e ${RED}Type 'DELETE TREE' to confirm:${NC} )" confirm
+        if [[ "$confirm" != "DELETE TREE" ]]; then
+            log_warning "Deletion cancelled"
+            return 1
+        fi
+    fi
+    
+    # First, export the tree (backup before deletion)
+    log_info "Creating backup export before deletion..."
+    if ! export_video_tree "$video_event_id" "$author_hex"; then
+        log_warning "Export failed, but continuing with deletion..."
+    fi
+    
+    # Collect all event IDs to delete (use process substitution to avoid subshell issues)
+    local -a event_ids_to_delete=()
+    
+    # 1. Main video event - use nostr_get_event_by_id.sh
+    log_debug "Fetching main video event for deletion..."
+    local video_event=""
+    if [[ -f "$NOSTR_GET_EVENT_BY_ID" ]]; then
+        video_event=$(bash "$NOSTR_GET_EVENT_BY_ID" "$video_event_id" 2>/dev/null)
+    else
+        # Fallback: try to get by author and filter
+        log_debug "nostr_get_event_by_id.sh not found, trying alternative method..."
+        local author_events=$(bash "$NOSTR_GET_EVENTS" --kind 21 --author "$author_hex" --limit 1000 2>/dev/null)
+        video_event=$(echo "$author_events" | jq -r "if type == \"array\" then .[] | select(.id == \"$video_event_id\") else if .id == \"$video_event_id\" then . else empty end end" 2>/dev/null)
+        if [[ -z "$video_event" ]] || [[ "$video_event" == "null" ]]; then
+            author_events=$(bash "$NOSTR_GET_EVENTS" --kind 22 --author "$author_hex" --limit 1000 2>/dev/null)
+            video_event=$(echo "$author_events" | jq -r "if type == \"array\" then .[] | select(.id == \"$video_event_id\") else if .id == \"$video_event_id\" then . else empty end end" 2>/dev/null)
+        fi
+    fi
+    
+    # Parse output from nostr_get_event_by_id.sh (strfry scan returns JSON on single line)
+    if [[ -n "$video_event" ]] && [[ "$video_event" != "" ]]; then
+        # strfry scan returns one JSON object per line, get first non-empty line
+        local event_line=$(echo "$video_event" | grep -v '^$' | head -1)
+        if [[ -n "$event_line" ]]; then
+            # Verify it's valid JSON and extract event ID
+            if echo "$event_line" | jq -e '.' >/dev/null 2>&1; then
+                local main_id=$(echo "$event_line" | jq -r '.id // empty' 2>/dev/null)
+                if [[ -n "$main_id" ]] && [[ "$main_id" != "null" ]] && [[ "$main_id" == "$video_event_id" ]]; then
+                    event_ids_to_delete+=("$main_id")
+                    log_debug "Added main video event to deletion list: ${main_id:0:16}..."
+                else
+                    log_warning "⚠️  Event ID mismatch or invalid: expected $video_event_id, got ${main_id:0:16}..."
+                fi
+            else
+                log_warning "⚠️  Could not parse event JSON for deletion"
+                log_debug "Raw output: ${video_event:0:200}..."
+            fi
+        else
+            log_warning "⚠️  Main video event not found for deletion (empty output)"
+        fi
+    else
+        log_warning "⚠️  Main video event not found for deletion (may already be deleted)"
+    fi
+    
+    # 2. User tags (kind 1985)
+    local tag_events=$(bash "$NOSTR_GET_EVENTS" --kind 1985 --tag e "$video_event_id" --limit 1000 2>/dev/null)
+    if [[ -n "$tag_events" ]] && [[ "$tag_events" != "[]" ]]; then
+        while IFS= read -r id; do
+            [[ -n "$id" ]] && event_ids_to_delete+=("$id")
+        done < <(echo "$tag_events" | jq -r 'if type == "array" then .[].id else .id end' 2>/dev/null)
+    fi
+    
+    # 3. TMDB enrichments (kind 1986)
+    local enrichment_events=$(bash "$NOSTR_GET_EVENTS" --kind 1986 --tag e "$video_event_id" --tag L "tmdb.metadata" --limit 1000 2>/dev/null)
+    if [[ -n "$enrichment_events" ]] && [[ "$enrichment_events" != "[]" ]]; then
+        while IFS= read -r id; do
+            [[ -n "$id" ]] && event_ids_to_delete+=("$id")
+        done < <(echo "$enrichment_events" | jq -r 'if type == "array" then .[].id else .id end' 2>/dev/null)
+    fi
+    
+    # 4. Author updates (kind 30001)
+    local author_update_events=$(bash "$NOSTR_GET_EVENTS" --kind 30001 --author "$author_hex" --tag e "$video_event_id" --tag d "tmdb-metadata" --limit 10 2>/dev/null)
+    if [[ -n "$author_update_events" ]] && [[ "$author_update_events" != "[]" ]]; then
+        while IFS= read -r id; do
+            [[ -n "$id" ]] && event_ids_to_delete+=("$id")
+        done < <(echo "$author_update_events" | jq -r 'if type == "array" then .[].id else .id end' 2>/dev/null)
+    fi
+    
+    # 5. Comments (kind 1111)
+    local comment_events=$(bash "$NOSTR_GET_EVENTS" --kind 1111 --tag e "$video_event_id" --limit 1000 2>/dev/null)
+    if [[ -n "$comment_events" ]] && [[ "$comment_events" != "[]" ]]; then
+        while IFS= read -r id; do
+            [[ -n "$id" ]] && event_ids_to_delete+=("$id")
+        done < <(echo "$comment_events" | jq -r 'if type == "array" then .[].id else .id end' 2>/dev/null)
+    fi
+    
+    local total_to_delete=${#event_ids_to_delete[@]}
+    
+    if [[ $total_to_delete -eq 0 ]]; then
+        log_warning "No events found to delete"
+        log_info "Debug: Checking if event still exists using nostr_get_event_by_id.sh..."
+        if [[ -f "$NOSTR_GET_EVENT_BY_ID" ]]; then
+            local check_event=$(bash "$NOSTR_GET_EVENT_BY_ID" "$video_event_id" 2>/dev/null | grep -v '^$' | head -1)
+            if [[ -n "$check_event" ]]; then
+                local check_id=$(echo "$check_event" | jq -r '.id // empty' 2>/dev/null)
+                if [[ "$check_id" == "$video_event_id" ]]; then
+                    log_error "❌ Event still exists but was not added to deletion list!"
+                    log_info "Event found: ${check_id:0:16}..."
+                    log_info "This is a bug - the event should have been added to deletion list"
+                    # Force add it
+                    event_ids_to_delete+=("$video_event_id")
+                    total_to_delete=1
+                    log_warning "⚠️  Forcing deletion of event (workaround)"
+                else
+                    log_info "Event not found in database (may already be deleted)"
+                fi
+            else
+                log_info "Event not found in database (may already be deleted)"
+            fi
+        fi
+        
+        if [[ ${#event_ids_to_delete[@]} -eq 0 ]]; then
+            log_warning "No events found to delete - operation cancelled"
+            return 0
+        fi
+    fi
+    
+    total_to_delete=${#event_ids_to_delete[@]}
+    log_info "Found $total_to_delete event(s) to delete"
+    echo ""
+    
+    # Step 1: Publish kind 5 deletion events for all
+    log_info "Step 1/2: Publishing kind 5 deletion events..."
+    local kind5_success=0
+    local kind5_failed=0
+    
+    for event_id in "${event_ids_to_delete[@]}"; do
+        if delete_event_by_id "$event_id" "$author_hex" "true" "kind5"; then
+            kind5_success=$((kind5_success + 1))
+        else
+            kind5_failed=$((kind5_failed + 1))
+            log_warning "Failed to publish kind 5 for: ${event_id:0:16}..."
+        fi
+    done
+    
+    log_info "Kind 5 deletion: $kind5_success success, $kind5_failed failed"
+    
+    # Step 2: Physical deletion using nostr_get_events.sh --del --force
+    log_info "Step 2/2: Physical deletion from database (nostr_get_events.sh --del --force)..."
+    
+    local physical_success=0
+    local physical_failed=0
+    
+    # Delete each event using strfry delete directly (more reliable)
+    for event_id in "${event_ids_to_delete[@]}"; do
+        log_debug "Deleting event: ${event_id:0:16}..."
+        
+        # Use strfry delete directly with filter (more reliable than nostr_get_events.sh --del)
+        local STRFRY_DIR="$HOME/.zen/strfry"
+        local STRFRY_BIN="${STRFRY_DIR}/strfry"
+        
+        if [[ -f "${STRFRY_BIN}" ]]; then
+            cd "$STRFRY_DIR" || continue
+            # Create filter JSON with proper format for strfry delete
+            # strfry expects: {"ids":["event_id1","event_id2"]}
+            local IDS_JSON=$(echo "$event_id" | jq -R . | jq -s -c '{ids: .}')
+            
+            # Verify JSON is valid before passing to strfry
+            if echo "$IDS_JSON" | jq -e '.' >/dev/null 2>&1; then
+                log_debug "Deleting event ${event_id:0:16}... with filter: $IDS_JSON"
+                # Capture strfry output to check if deletion was successful
+                local strfry_output=$(./strfry delete --filter="$IDS_JSON" 2>&1)
+                local strfry_exit=$?
+                
+                # Check if strfry reported deleting events (look for "Deleting N events" where N > 0)
+                local deleted_count=$(echo "$strfry_output" | grep -oP 'Deleting \K\d+' || echo "0")
+                
+                if [[ $strfry_exit -eq 0 ]] && [[ "$deleted_count" -gt 0 ]]; then
+                    physical_success=$((physical_success + 1))
+                    log_debug "✅ Physically deleted: ${event_id:0:16}... (strfry reported: $deleted_count event(s))"
+                elif [[ $strfry_exit -eq 0 ]] && [[ "$deleted_count" == "0" ]]; then
+                    # Event may have already been deleted by kind 5, or doesn't exist
+                    log_debug "⚠️  strfry reported 0 events deleted for ${event_id:0:16}... (may already be deleted)"
+                    # Still count as success if exit code is 0 (event doesn't exist = success)
+                    physical_success=$((physical_success + 1))
+                else
+                    physical_failed=$((physical_failed + 1))
+                    log_warning "Failed to physically delete: ${event_id:0:16}... (exit code: $strfry_exit)"
+                    log_debug "strfry output: ${strfry_output:0:200}..."
+                fi
+            else
+                physical_failed=$((physical_failed + 1))
+                log_warning "Invalid JSON filter for deletion: $IDS_JSON"
+            fi
+            cd - > /dev/null 2>&1
+        else
+            # Fallback: use nostr_get_events.sh --del --force (requires filtering by kind + author)
+            log_warning "strfry not found, using fallback deletion method..."
+            physical_failed=$((physical_failed + 1))
+        fi
+    done
+    
+    # Summary
+    echo ""
+    echo -e "${CYAN}╔════════════════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${NC}                    ${YELLOW}Complete Video Tree Deletion Summary${NC}                    ${CYAN}║${NC}"
+    echo -e "${CYAN}╚════════════════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${YELLOW}Total events processed:${NC} $total_to_delete"
+    echo ""
+    echo -e "${YELLOW}Kind 5 deletion (NIP-09):${NC}"
+    echo -e "  ✅ Success: $kind5_success"
+    [[ $kind5_failed -gt 0 ]] && echo -e "  ❌ Failed: $kind5_failed"
+    echo ""
+    echo -e "${YELLOW}Physical deletion (database):${NC}"
+    echo -e "  ✅ Success: $physical_success"
+    [[ $physical_failed -gt 0 ]] && echo -e "  ❌ Failed: $physical_failed"
+    echo ""
+    
+    if [[ $physical_success -eq $total_to_delete ]]; then
+        log_success "🎉 Complete video tree deleted successfully!"
+        
+        # Verify deletion by checking if main event still exists
+        log_info "Verifying deletion..."
+        sleep 1  # Give strfry time to process deletion
+        if [[ -f "$NOSTR_GET_EVENT_BY_ID" ]]; then
+            local verify_event=$(bash "$NOSTR_GET_EVENT_BY_ID" "$video_event_id" 2>/dev/null | grep -v '^$' | head -1)
+            if [[ -n "$verify_event" ]]; then
+                local verify_id=$(echo "$verify_event" | jq -r '.id // empty' 2>/dev/null)
+                if [[ "$verify_id" == "$video_event_id" ]]; then
+                    log_error "❌ WARNING: Event still exists after deletion!"
+                    log_warning "The event may still be visible in create_video_channel.py"
+                    log_info "This could be due to:"
+                    log_info "  - Database replication delay"
+                    log_info "  - Cache in create_video_channel.py"
+                    log_info "  - Deletion not fully processed by strfry"
+                else
+                    log_success "✅ Deletion verified: event no longer exists in database"
+                fi
+            else
+                log_success "✅ Deletion verified: event no longer exists in database"
+            fi
+        fi
+    else
+        log_warning "⚠️  Some events may not have been deleted completely"
+    fi
+    
+    echo -e "${CYAN}─────────────────────────────────────────────────────────────────────────────${NC}"
+    
+    return 0
 }
 
 # Show detailed video information with metadata links
@@ -1397,9 +1915,11 @@ show_video_details() {
         echo -e "  ${YELLOW}3.${NC} 🖼️  Open thumbnail in browser"
         echo -e "  ${YELLOW}4.${NC} 🎬 Open animated GIF in browser"
         echo -e "  ${YELLOW}5.${NC} 📊 View info.json"
-        echo -e "  ${YELLOW}6.${NC} 🗑️  Delete this video (kind 5 - NIP-09)"
-        echo -e "  ${YELLOW}7.${NC} ⚠️  Delete physically from database"
-        echo -e "  ${YELLOW}8.${NC} 💥 Delete both (kind 5 + physical)"
+        echo -e "  ${YELLOW}6.${NC} 💾 Export complete video tree (all related events)"
+        echo -e "  ${YELLOW}7.${NC} 🗑️  Delete this video (kind 5 - NIP-09)"
+        echo -e "  ${YELLOW}8.${NC} ⚠️  Delete physically from database"
+        echo -e "  ${YELLOW}9.${NC} 💥 Delete both (kind 5 + physical)"
+        echo -e "  ${YELLOW}10.${NC} ${RED}🗑️💥 Delete COMPLETE TREE (all events + physical)${NC}"
         echo -e "  ${YELLOW}b.${NC} 🔙 Back to video list"
         echo -e "  ${YELLOW}0.${NC} 🚪 Exit"
         echo ""
@@ -1454,7 +1974,7 @@ show_video_details() {
                 if [[ -n "$info" ]]; then
                     echo ""
                     log_info "Fetching info.json..."
-                    local info_url="${IPFS_GATEWAY}/ipfs/$info"
+                    local info_url="${IPFS_GATEWAY}/ipfs/$info/info.json"
                     curl -s "$info_url" | jq '.' 2>/dev/null || echo "Failed to fetch info.json"
                     echo ""
                     read -p "Press ENTER to continue..."
@@ -1464,6 +1984,18 @@ show_video_details() {
                 fi
                 ;;
             6)
+                # Export complete video tree
+                echo ""
+                log_info "Exporting complete video tree..."
+                if export_video_tree "$event_id" "$author_hex"; then
+                    log_success "Export complete!"
+                else
+                    log_error "Export failed"
+                fi
+                echo ""
+                read -p "Press ENTER to continue..."
+                ;;
+            7)
                 # Delete video with kind 5 (NIP-09)
                 echo ""
                 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -1486,6 +2018,29 @@ show_video_details() {
                 fi
                 ;;
             7)
+                # Delete video with kind 5 (NIP-09)
+                echo ""
+                echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+                echo -e "${YELLOW}Delete with kind 5 (NIP-09)${NC}"
+                echo ""
+                echo -e "This will publish a deletion event (kind 5) according to NIP-09."
+                echo -e "Compliant clients will hide this video from their interface."
+                echo -e "The original video event remains in the database."
+                echo ""
+                read -p "Delete this video with kind 5? (yes/NO): " confirm
+                if [[ "$confirm" == "yes" ]]; then
+                    if delete_event_by_id "$event_id" "$author_hex" "true" "kind5"; then
+                        log_success "Video deleted (kind 5 published)!"
+                        echo ""
+                        read -p "$(echo -e ${CYAN}Press ENTER to return to video list...${NC} )"
+                        return 0
+                    else
+                        log_error "Failed to delete video"
+                        sleep 2
+                    fi
+                fi
+                ;;
+            8)
                 # Physical deletion from database
                 echo ""
                 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -1499,7 +2054,8 @@ show_video_details() {
                 if [[ "$confirm" == "yes" ]]; then
                     if delete_event_by_id "$event_id" "$author_hex" "true" "physical"; then
                         log_success "Video physically deleted from database!"
-                        sleep 2
+                        echo ""
+                        read -p "$(echo -e ${CYAN}Press ENTER to return to video list...${NC} )"
                         return 0
                     else
                         log_error "Failed to delete video"
@@ -1507,7 +2063,7 @@ show_video_details() {
                     fi
                 fi
                 ;;
-            8)
+            9)
                 # Combined deletion: kind 5 + physical
                 echo ""
                 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -1517,19 +2073,68 @@ show_video_details() {
                 echo -e "  ${YELLOW}1.${NC} Publish a kind 5 deletion event (NIP-09)"
                 echo -e "  ${YELLOW}2.${NC} Physically remove the event from the local database"
                 echo ""
-                echo -e "${RED}⚠️  WARNING:${NC} This combines both deletion methods!"
-                echo -e "Use this when you want to delete from your relay AND notify other relays."
+                echo -e "${YELLOW}Note:${NC} This deletes only the main video event."
+                echo -e "Use option 10 to delete the complete tree (all related events)."
                 echo ""
                 read -p "Perform complete deletion (kind 5 + physical)? (yes/NO): " confirm
                 if [[ "$confirm" == "yes" ]]; then
                     if delete_event_by_id "$event_id" "$author_hex" "true" "both"; then
                         log_success "Complete deletion finished!"
-                        sleep 2
+                        echo ""
+                        read -p "$(echo -e ${CYAN}Press ENTER to return to video list...${NC} )"
                         return 0
                     else
                         log_error "Failed to complete deletion"
                         sleep 2
                     fi
+                fi
+                ;;
+            10)
+                # Delete complete video tree (all related events)
+                echo ""
+                echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+                echo -e "${RED}🗑️💥 DELETE COMPLETE VIDEO TREE${NC}"
+                echo ""
+                echo -e "${RED}⚠️  WARNING: This will delete EVERYTHING related to this video!${NC}"
+                echo ""
+                echo -e "This will permanently delete:"
+                echo -e "  • Main video event (kind 21/22)"
+                echo -e "  • All user tags (kind 1985)"
+                echo -e "  • All TMDB enrichments (kind 1986)"
+                echo -e "  • All author updates (kind 30001)"
+                echo -e "  • All comments (kind 1111)"
+                echo ""
+                echo -e "Deletion method:"
+                echo -e "  ${YELLOW}1.${NC} Publish kind 5 deletion events for all"
+                echo -e "  ${YELLOW}2.${NC} Physical deletion using nostr_get_events.sh --del --force"
+                echo ""
+                echo -e "${RED}⚠️  This operation CANNOT be undone!${NC}"
+                echo -e "${YELLOW}Note:${NC} A backup export will be created before deletion."
+                echo ""
+                
+                # Check if user is LOCAL (has MULTIPASS on this station)
+                if ! check_local_pubkey "$author_hex"; then
+                    log_error "❌ This feature is only available for LOCAL accounts (MULTIPASS on this station)"
+                    log_warning "Author ${author_hex:0:16}... is not found locally"
+                    echo ""
+                    read -p "Press ENTER to continue..."
+                    continue
+                fi
+                
+                read -p "$(echo -e ${RED}Type 'DELETE TREE' to confirm:${NC} )" confirm
+                if [[ "$confirm" == "DELETE TREE" ]]; then
+                    if delete_video_tree "$event_id" "$author_hex" "false"; then
+                        log_success "Complete video tree deleted!"
+                        echo ""
+                        read -p "$(echo -e ${CYAN}Press ENTER to return to video list...${NC} )"
+                        return 0
+                    else
+                        log_error "Failed to delete video tree"
+                        sleep 2
+                    fi
+                else
+                    log_warning "Deletion cancelled"
+                    sleep 1
                 fi
                 ;;
             b)

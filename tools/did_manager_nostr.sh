@@ -963,9 +963,26 @@ republish_did_ipns() {
         
         if [[ -n "$g1pubnostr" ]]; then
             echo -e "${CYAN}📡 Republishing to IPNS for web access...${NC}"
+            # Ensure .well-known directory exists before publishing
+            local udrive_did_path="$HOME/.zen/game/nostr/${email}/APP/uDRIVE/Apps/.well-known"
+            mkdir -p "$udrive_did_path"
+            
+            # Add entire directory recursively to IPFS to ensure .well-known is included
             local nostripfs=$(ipfs add -rwq "$HOME/.zen/game/nostr/${email}/" | tail -n 1)
-            ipfs name publish --key "${g1pubnostr}:NOSTR" "/ipfs/${nostripfs}" 2>&1 >/dev/null &
-            echo -e "${GREEN}✅ IPNS publication launched in background${NC}"
+            
+            if [[ -n "$nostripfs" ]]; then
+                # Verify .well-known is accessible in the IPFS directory
+                if ipfs ls "/ipfs/${nostripfs}/APP/uDRIVE/Apps/.well-known" >/dev/null 2>&1; then
+                    ipfs name publish --key "${g1pubnostr}:NOSTR" "/ipfs/${nostripfs}" 2>&1 >/dev/null &
+                    echo -e "${GREEN}✅ IPNS publication launched in background (includes .well-known)${NC}"
+                else
+                    echo -e "${YELLOW}⚠️  .well-known directory not found in IPFS, republishing anyway...${NC}"
+                    ipfs name publish --key "${g1pubnostr}:NOSTR" "/ipfs/${nostripfs}" 2>&1 >/dev/null &
+                    echo -e "${GREEN}✅ IPNS publication launched in background${NC}"
+                fi
+            else
+                echo -e "${RED}❌ Failed to add directory to IPFS${NC}"
+            fi
         fi
     fi
 }

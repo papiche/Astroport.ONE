@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>MULTIPASS/uDRIVE Desactivated | MULTIPASS/uDRIVE Désactivé</title>
+    <title>MULTIPASS/uDRIVE Migration Ready | MULTIPASS/uDRIVE Prêt pour Migration</title>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <style>
@@ -267,10 +267,10 @@
     <div class='email-container'>
         <div class='header'>
             <div class='lang-content' data-lang='en'>
-                <h1>⏸️ MULTIPASS/uDRIVE Paused</h1>
+                <h1>🔄 MULTIPASS/uDRIVE Migration Ready</h1>
             </div>
             <div class='lang-content' data-lang='fr'>
-                <h1>⏸️ MULTIPASS/uDRIVE en Pause</h1>
+                <h1>🔄 MULTIPASS/uDRIVE Prêt pour Migration</h1>
             </div>
         </div>
         
@@ -282,35 +282,55 @@
 
             <div class='section status'>
                 <div class='lang-content' data-lang='en'>
-                    <h2>Account Status Update</h2>
-                    <p>Your MULTIPASS/uDRIVE has been <span class='highlight'>temporarily paused</span> due to insufficient Ẑen balance. <strong>Your account is NOT deleted</strong> - all your data, connections, and settings are perfectly safe!</p>
+                    <h2>Account Migration Status</h2>
+                    <p>Your MULTIPASS/uDRIVE has been <span class='highlight'>deactivated on this relay</span> to allow migration to a new relay/captain. <strong>Your account is NOT deleted</strong> - all your data, connections, and settings are perfectly safe and ready for restoration!</p>
+                    <p><strong>🔮 Next Restoration Ready:</strong> A new .disco has been pre-generated for restoration on a new relay. Your next HEX is stored in your DID document and NOSTR profile.</p>
                 </div>
                 <div class='lang-content' data-lang='fr'>
-                    <h2>Mise à Jour du Statut du Compte</h2>
-                    <p>Votre MULTIPASS/uDRIVE a été <span class='highlight'>temporairement en pause</span> en raison d'un solde Ẑen insuffisant. <strong>Votre compte N'EST PAS supprimé</strong> - toutes vos données, connexions et paramètres vous sont rendus !</p>
+                    <h2>Statut de Migration du Compte</h2>
+                    <p>Votre MULTIPASS/uDRIVE a été <span class='highlight'>désactivé sur ce relais</span> pour permettre la migration vers un nouveau relais/capitaine. <strong>Votre compte N'EST PAS supprimé</strong> - toutes vos données, connexions et paramètres sont parfaitement sûrs et prêts pour la restauration !</p>
+                    <p><strong>🔮 Restauration Prête :</strong> Un nouveau .disco a été pré-généré pour la restauration sur un nouveau relais. Votre prochain HEX est stocké dans votre document DID et votre profil NOSTR.</p>
                 </div>
             </div>
 
             <div class='section backup'>
                 <div class='lang-content' data-lang='en'>
-                    <h3>📦 Complete Data Backup</h3>
-                    <p>We've created a complete backup of all your MULTIPASS data on IPFS for your peace of mind:</p>
+                    <h3>📦 Complete Migration Backup</h3>
+                    <p>We've created a complete backup of all your MULTIPASS data on IPFS, including pre-generated credentials for restoration on a new relay:</p>
                     <p><strong>Backup CID:</strong> <code>_NOSTRIFS_</code></p>
                     <div class='button-group'>
                         <a target='_blank' href='_myIPFS_/ipfs/_NOSTRIFS_' class='cta-button'>📥 Download ZIP Backup</a>
                         <a target='_blank' href='https://ipfs.asycn.io/ipfs/_NOSTRIFS_' class='cta-button'>📥 Download via asycn.io</a>
                     </div>
-                    <small>Download the ZIP file and extract it to access your nostr_export.json and all account data</small>
+                    <p><strong>🔑 What's in the backup:</strong></p>
+                    <ul>
+                        <li>✅ <strong>.next.disco</strong> - Pre-generated new credentials for restoration on new relay</li>
+                        <li>✅ <strong>.next.hex</strong> - Next HEX address (also in your DID and NOSTR profile)</li>
+                        <li>✅ <strong>nostr_export.json</strong> - All your NOSTR events</li>
+                        <li>✅ <strong>uDRIVE_manifest.json</strong> - Complete file structure</li>
+                        <li>✅ <strong>secret.june</strong> - ZEN Card capital shares history (preserved)</li>
+                        <li>✅ <strong>.g1pub</strong> - ZEN Card G1 wallet access</li>
+                    </ul>
+                    <small>Download the ZIP file and extract it with your ZEN Card password to access all restoration data</small>
                 </div>
                 <div class='lang-content' data-lang='fr'>
-                    <h3>📦 Sauvegarde Complète des Données</h3>
-                    <p>Nous avons créé une sauvegarde complète de toutes vos données MULTIPASS sur IPFS pour votre tranquillité d'esprit :</p>
+                    <h3>📦 Sauvegarde Complète de Migration</h3>
+                    <p>Nous avons créé une sauvegarde complète de toutes vos données MULTIPASS sur IPFS, incluant les identifiants pré-générés pour la restauration sur un nouveau relais :</p>
                     <p><strong>CID de Sauvegarde :</strong> <code>_NOSTRIFS_</code></p>
                     <div class='button-group'>
                         <a target='_blank' href='_myIPFS_/ipfs/_NOSTRIFS_' class='cta-button'>📥 Télécharger ZIP Sauvegarde</a>
                         <a target='_blank' href='https://asycn.io/ipfs/_NOSTRIFS_' class='cta-button'>📥 Télécharger via asycn.io</a>
                     </div>
-                    <small>Téléchargez le fichier ZIP et extrayez-le pour accéder à votre nostr_export.json et toutes les données de compte</small>
+                    <p><strong>🔑 Contenu de la sauvegarde :</strong></p>
+                    <ul>
+                        <li>✅ <strong>.next.disco</strong> - Nouveaux identifiants pré-générés pour restauration sur nouveau relais</li>
+                        <li>✅ <strong>.next.hex</strong> - Prochaine adresse HEX (également dans votre DID et profil NOSTR)</li>
+                        <li>✅ <strong>nostr_export.json</strong> - Tous vos événements NOSTR</li>
+                        <li>✅ <strong>uDRIVE_manifest.json</strong> - Structure complète des fichiers</li>
+                        <li>✅ <strong>secret.june</strong> - Historique des parts sociales ZEN Card (préservé)</li>
+                        <li>✅ <strong>.g1pub</strong> - Accès au portefeuille G1 de la ZEN Card</li>
+                    </ul>
+                    <small>Téléchargez le fichier ZIP et extrayez-le avec votre mot de passe ZEN Card pour accéder à toutes les données de restauration</small>
                 </div>
             </div>
 
@@ -340,79 +360,89 @@
 
             <div class='section keys'>
                 <div class='lang-content' data-lang='en'>
-                    <h4>🔑 For Captains: Account Restoration Process</h4>
-                    <p><strong>To restore this account on your Astroport.ONE station:</strong></p>
+                    <h4>🔑 For New Captains: Account Migration & Restoration</h4>
+                    <p><strong>This account is ready for migration to your Astroport.ONE station:</strong></p>
                     <ol>
                         <li>Download the backup ZIP: <code>ipfs get _NOSTRIFS_ -o backup.zip</code></li>
                         <li>Extract with user's ZEN Card password: <code>unzip backup.zip</code></li>
-                        <li>Run complete restoration: <code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></li>
+                        <li>Run automated restoration: <code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></li>
                         <li>User provides their ZEN Card password when prompted</li>
                     </ol>
-                    <p><strong>Complete restoration process:</strong></p>
+                    <p><strong>✅ Automated restoration process (uses .next.disco):</strong></p>
                     <ul>
-                        <li>✅ <strong>MULTIPASS recreation</strong>: Uses .secret.disco to recreate with original salt/pepper</li>
+                        <li>✅ <strong>MULTIPASS recreation</strong>: Uses <code>.next.disco</code> to create MULTIPASS with NEW credentials on your relay</li>
+                        <li>✅ <strong>Next HEX</strong>: Pre-generated HEX stored in backup, DID document, and NOSTR profile</li>
                         <li>✅ <strong>NOSTR events import</strong>: All messages and profile data restored</li>
                         <li>✅ <strong>uDRIVE structure download</strong>: Complete directory structure restored from final_cid</li>
-                        <li>✅ <strong>Link verification</strong>: generate_ipfs_structure.sh link validated</li>
-                        <li>✅ <strong>Complete account</strong>: Fully functional MULTIPASS with all data</li>
+                        <li>✅ <strong>ZEN Card restoration</strong>: Capital shares history preserved in secret.june</li>
+                        <li>✅ <strong>Complete account</strong>: Fully functional MULTIPASS ready on your relay</li>
                     </ul>
-                    <small>Deactivated: _DEACTIVATION_DATE_ | Backup CID: _NOSTRIFS_</small>
+                    <p><strong>⚠️ Important:</strong> The script automatically detects and uses <code>.next.disco</code> for new relay migration. The old <code>.secret.disco</code> will NOT work on a new relay.</p>
+                    <small>Deactivated: _DEACTIVATION_DATE_ | Backup CID: _NOSTRIFS_ | Next HEX: Available in DID and NOSTR profile</small>
                 </div>
                 <div class='lang-content' data-lang='fr'>
-                    <h4>🔑 Pour les Capitaines : Processus de Restauration du Compte</h4>
-                    <p><strong>Pour restaurer ce compte sur votre station Astroport.ONE :</strong></p>
+                    <h4>🔑 Pour les Nouveaux Capitaines : Migration et Restauration du Compte</h4>
+                    <p><strong>Ce compte est prêt pour la migration vers votre station Astroport.ONE :</strong></p>
                     <ol>
                         <li>Téléchargez le ZIP de sauvegarde : <code>ipfs get _NOSTRIFS_ -o backup.zip</code></li>
                         <li>Extrayez avec le mot de passe ZEN Card de l'utilisateur : <code>unzip backup.zip</code></li>
-                        <li>Lancez la restauration complète : <code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></li>
+                        <li>Lancez la restauration automatisée : <code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></li>
                         <li>L'utilisateur fournit son mot de passe ZEN Card quand demandé</li>
                     </ol>
-                    <p><strong>Processus de restauration complète :</strong></p>
+                    <p><strong>✅ Processus de restauration automatisée (utilise .next.disco) :</strong></p>
                     <ul>
-                        <li>✅ <strong>Recréation MULTIPASS</strong> : Utilise .secret.disco pour recréer avec salt/pepper originaux</li>
+                        <li>✅ <strong>Recréation MULTIPASS</strong> : Utilise <code>.next.disco</code> pour créer MULTIPASS avec NOUVEAUX identifiants sur votre relais</li>
+                        <li>✅ <strong>Prochain HEX</strong> : HEX pré-généré stocké dans la sauvegarde, le document DID et le profil NOSTR</li>
                         <li>✅ <strong>Import événements NOSTR</strong> : Tous les messages et données de profil restaurés</li>
                         <li>✅ <strong>Téléchargement structure uDRIVE</strong> : Structure complète restaurée depuis final_cid</li>
-                        <li>✅ <strong>Vérification des liens</strong> : Lien generate_ipfs_structure.sh validé</li>
-                        <li>✅ <strong>Compte complet</strong> : MULTIPASS entièrement fonctionnel avec toutes les données</li>
+                        <li>✅ <strong>Restauration ZEN Card</strong> : Historique des parts sociales préservé dans secret.june</li>
+                        <li>✅ <strong>Compte complet</strong> : MULTIPASS entièrement fonctionnel prêt sur votre relais</li>
                     </ul>
-                    <small>Désactivé : _DEACTIVATION_DATE_ | CID de Sauvegarde : _NOSTRIFS_</small>
+                    <p><strong>⚠️ Important :</strong> Le script détecte automatiquement et utilise <code>.next.disco</code> pour la migration vers un nouveau relais. L'ancien <code>.secret.disco</code> ne fonctionnera PAS sur un nouveau relais.</p>
+                    <small>Désactivé : _DEACTIVATION_DATE_ | CID de Sauvegarde : _NOSTRIFS_ | Prochain HEX : Disponible dans DID et profil NOSTR</small>
                 </div>
             </div>
 
             <div class='section rejoin'>
                 <div class='lang-content' data-lang='en'>
-                    <h3>🚀 Account Recovery Options</h3>
-                    <p><strong>Option 1: Restore with Another Captain</strong></p>
-                    <p>Contact any Astroport.ONE captain and provide them with:</p>
+                    <h3>🚀 Account Migration Options</h3>
+                    <p><strong>Option 1: Migrate to a New Relay/Captain (Recommended)</strong></p>
+                    <p>Your account is ready for migration! Contact any Astroport.ONE captain and provide them with:</p>
                     <ul>
                         <li>📦 Your backup ZIP file (CID: <code>_NOSTRIFS_</code>)</li>
                         <li>🔑 Your ZEN Card password (from your .pass file)</li>
                     </ul>
-                    <p>The captain can restore your account using: <code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></p>
+                    <p>The new captain can restore your account using: <code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></p>
+                    <p><strong>✅ What happens:</strong> The script automatically uses <code>.next.disco</code> to create your MULTIPASS on the new relay with pre-generated credentials. Your ZEN Card capital shares (secret.june) are preserved.</p>
                     
-                    <p><strong>Option 2: Get Ẑen and Reactivate</strong></p>
+                    <p><strong>Option 2: Get Ẑen and Reactivate on This Station</strong></p>
                     <p>Earn Ẑen and reactivate your account on this station.</p>
                     <div class='button-group'>
                         <a target='_blank' href='_uSPOT_/g1' class='cta-button'>🌟 Reactivate My MULTIPASS</a>
                         <a target='_blank' href='https://opencollective.com/uplanet-zero#category-CONTRIBUTE' class='cta-button'>💎 Get Ẑen on OpenCollective</a>
                     </div>
+                    
+                    <p><strong>💡 Your Next HEX:</strong> Your pre-generated next HEX is stored in your DID document and NOSTR profile. Any captain can find it there for verification.</p>
                 </div>
                 <div class='lang-content' data-lang='fr'>
-                    <h3>🚀 Options de Récupération du Compte</h3>
-                    <p><strong>Option 1 : Restaurer avec un Autre Capitaine</strong></p>
-                    <p>Contactez n'importe quel capitaine Astroport.ONE et fournissez-lui :</p>
+                    <h3>🚀 Options de Migration du Compte</h3>
+                    <p><strong>Option 1 : Migrer vers un Nouveau Relais/Capitaine (Recommandé)</strong></p>
+                    <p>Votre compte est prêt pour la migration ! Contactez n'importe quel capitaine Astroport.ONE et fournissez-lui :</p>
                     <ul>
                         <li>📦 Votre fichier ZIP de sauvegarde (CID : <code>_NOSTRIFS_</code>)</li>
                         <li>🔑 Votre mot de passe ZEN Card (depuis votre fichier .pass)</li>
                     </ul>
-                    <p>Le capitaine peut restaurer votre compte avec : <code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></p>
+                    <p>Le nouveau capitaine peut restaurer votre compte avec : <code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></p>
+                    <p><strong>✅ Ce qui se passe :</strong> Le script utilise automatiquement <code>.next.disco</code> pour créer votre MULTIPASS sur le nouveau relais avec les identifiants pré-générés. Vos parts sociales ZEN Card (secret.june) sont préservées.</p>
                     
-                    <p><strong>Option 2 : Obtenir des Ẑen et Réactiver</strong></p>
+                    <p><strong>Option 2 : Obtenir des Ẑen et Réactiver sur Cette Station</strong></p>
                     <p>Gagnez des Ẑen et réactivez votre compte sur cette station.</p>
                     <div class='button-group'>
                         <a target='_blank' href='_uSPOT_/g1' class='cta-button'>🌟 Réactiver Mon MULTIPASS</a>
                         <a target='_blank' href='https://opencollective.com/uplanet-zero#category-CONTRIBUTE' class='cta-button'>💎 Obtenir des Ẑen sur OpenCollective</a>
                     </div>
+                    
+                    <p><strong>💡 Votre Prochain HEX :</strong> Votre prochain HEX pré-généré est stocké dans votre document DID et votre profil NOSTR. N'importe quel capitaine peut le trouver là pour vérification.</p>
                 </div>
             </div>
         </div>

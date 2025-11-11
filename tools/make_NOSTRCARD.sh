@@ -369,30 +369,36 @@ EOFNOSTR
 
     ### MULTIPASS FOLLOWS CAPTAIN AUTOMATICALLY
     # New MULTIPASS should follow the CAPTAIN to receive updates and guidance
-    if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/HEX ]]; then
-        CAPTAINHEX=$(cat ~/.zen/game/nostr/${CAPTAINEMAIL}/HEX)
-        echo "👥 MULTIPASS ${EMAIL} following CAPTAIN ${CAPTAINEMAIL} (${CAPTAINHEX})"
-        ${MY_PATH}/../tools/nostr_follow.sh "$NPRIV" "$CAPTAINHEX" "$myRELAY" 2>/dev/null \
-            && echo "✅ MULTIPASS now follows CAPTAIN" \
-            || echo "⚠️  Failed to follow CAPTAIN (will retry later)"
-    else
-        echo "⚠️  CAPTAIN HEX not found at ~/.zen/game/nostr/${CAPTAINEMAIL}/HEX"
-    fi
-
-    ### CAPTAIN FOLLOWS NEW MULTIPASS AUTOMATICALLY
-    # CAPTAIN should follow the new MULTIPASS to monitor and provide support
-    if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
-        CAPTAINNSEC=$(grep "NSEC=" ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr | cut -d '=' -f 2)
-        if [[ -n "$CAPTAINNSEC" ]]; then
-            echo "👥 CAPTAIN ${CAPTAINEMAIL} following new MULTIPASS ${EMAIL} (${HEX})"
-            ${MY_PATH}/../tools/nostr_follow.sh "$CAPTAINNSEC" "$HEX" "$myRELAY" 2>/dev/null \
-                && echo "✅ CAPTAIN now follows new MULTIPASS" \
-                || echo "⚠️  Failed to follow new MULTIPASS (will retry later)"
+    # Only if CAPTAIN exists (not first user)
+    if [[ -n "$CAPTAINEMAIL" ]] && [[ "$CAPTAINEMAIL" != "$EMAIL" ]]; then
+        if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/HEX ]]; then
+            CAPTAINHEX=$(cat ~/.zen/game/nostr/${CAPTAINEMAIL}/HEX)
+            echo "👥 MULTIPASS ${EMAIL} following CAPTAIN ${CAPTAINEMAIL} (${CAPTAINHEX})"
+            ${MY_PATH}/../tools/nostr_follow.sh "$NPRIV" "$CAPTAINHEX" "$myRELAY" 2>/dev/null \
+                && echo "✅ MULTIPASS now follows CAPTAIN" \
+                || echo "⚠️  Failed to follow CAPTAIN (will retry later)"
         else
-            echo "⚠️  CAPTAIN NSEC not found in ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr"
+            echo "⚠️  CAPTAIN HEX not found at ~/.zen/game/nostr/${CAPTAINEMAIL}/HEX"
+        fi
+
+        ### CAPTAIN FOLLOWS NEW MULTIPASS AUTOMATICALLY
+        # CAPTAIN should follow the new MULTIPASS to monitor and provide support
+        if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
+            CAPTAINNSEC=$(grep "NSEC=" ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr | cut -d '=' -f 2)
+            if [[ -n "$CAPTAINNSEC" ]]; then
+                echo "👥 CAPTAIN ${CAPTAINEMAIL} following new MULTIPASS ${EMAIL} (${HEX})"
+                ${MY_PATH}/../tools/nostr_follow.sh "$CAPTAINNSEC" "$HEX" "$myRELAY" 2>/dev/null \
+                    && echo "✅ CAPTAIN now follows new MULTIPASS" \
+                    || echo "⚠️  Failed to follow new MULTIPASS (will retry later)"
+            else
+                echo "⚠️  CAPTAIN NSEC not found in ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr"
+            fi
+        else
+            echo "⚠️  CAPTAIN secret file not found at ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr"
         fi
     else
-        echo "⚠️  CAPTAIN secret file not found at ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr"
+        # First user - no captain yet
+        echo "ℹ️  First MULTIPASS created - no CAPTAIN to follow yet"
     fi
 
     ### SEND NOSTR MESSAGE WITH QR CODE LINK
@@ -505,17 +511,15 @@ EOFNOSTR
     && echo "✅ PRIMO TX sent successfully - PRIMAL marked from ${UPLANETNAME_G1} wallet" \
     || echo "⚠️ PRIMO TX failed for MULTIPASS ${EMAIL}"
 
-
-    ### PUBLISH MULTIPASS IPFS ####################################################################
-    NOSTRIPFS=$(ipfs --timeout 30s add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
-    ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>&1 >/dev/null &
-    IPFS_PUBLISH_PID=$!
-    ###############################################################################################
+    ### IPNS PUBLICATION
+    # Note: IPNS publication is handled by generate_ipfs_structure.sh (line 462)
+    # The .well-known directory is created earlier (line 294) and will be included automatically
+    # No need to publish here - generate_ipfs_structure.sh will update the IPNS with the complete structure
 
 
     ## SEND ZINE TO EMAIL USING MAILJET
     echo "Sending NOSTR zine to ${EMAIL} via mailjet..."
-    ${MY_PATH}/mailjet.sh --expire 96h "${EMAIL}" "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html" "MULTIPASS" 2>/dev/null \
+    ${MY_PATH}/mailjet.sh --expire 96h "${EMAIL}" "${HOME}/.zen/game/nostr/${EMAIL}/.MULTIPASS.CARD.png" "MULTIPASS /Scan" 2>/dev/null \
         && echo "✅ NOSTR zine sent successfully to ${EMAIL}" \
         || echo "⚠️ Failed to send NOSTR zine to ${EMAIL}"
 
@@ -530,10 +534,8 @@ EOFNOSTR
         echo "✅ MULTIPASS print process completed"
     fi
     
-    if [[ -n "$IPFS_PUBLISH_PID" ]]; then
-        wait $IPFS_PUBLISH_PID 2>/dev/null || true
-        echo "✅ IPFS publish process completed"
-    fi
+    # IPNS publication is handled by generate_ipfs_structure.sh, no need to wait here
+    echo "✅ IPFS publish process completed"
     
     ### UNCOMMENT for DEBUG
     #~ echo "SALT=$SALT PEPPER=$PEPPER \

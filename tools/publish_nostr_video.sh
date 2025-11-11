@@ -170,6 +170,10 @@ Optional arguments:
   --season-number <num>     Season number (for series/episodes)
   --episode-number <num>    Episode number (for series/episodes)
   --genres <json_array>     JSON array of genres (e.g., '["Action","Sci-Fi"]') - will publish kind 1985 tags
+  --text-track <url>        WebVTT subtitles URL (IPFS CID or full URL) - NIP-71 text-track tag
+  --text-track-type <type>  Text track type: captions, subtitles, chapters, metadata (default: subtitles)
+  --text-track-lang <code>  Language code (e.g., en, fr) for text-track (default: empty)
+  --segments <json_array>   JSON array of segments/chapters: [{"start":"00:00:00.000","end":"00:05:00.000","title":"Chapter 1","thumbnail":"/ipfs/Qm..."}]
   --relays <urls>           Comma-separated relay URLs (default: local+copylaradio)
   --json                    Output JSON format
   --help                    Show this help message
@@ -293,6 +297,24 @@ while [[ $# -gt 0 ]]; do
             GENRES_JSON=$(echo "$GENRES_JSON" | tr -d '\n\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
             shift 2
             ;;
+        --text-track)
+            TEXT_TRACK_URL="$2"
+            shift 2
+            ;;
+        --text-track-type)
+            TEXT_TRACK_TYPE="$2"
+            shift 2
+            ;;
+        --text-track-lang)
+            TEXT_TRACK_LANG="$2"
+            shift 2
+            ;;
+        --segments)
+            SEGMENTS_JSON="$2"
+            # Remove any leading/trailing whitespace and newlines
+            SEGMENTS_JSON=$(echo "$SEGMENTS_JSON" | tr -d '\n\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            shift 2
+            ;;
         --relays)
             RELAYS="$2"
             shift 2
@@ -366,6 +388,12 @@ if [ "$AUTO_MODE" = "true" ]; then
     # Default to webcam if still empty
     SOURCE_TYPE=${SOURCE_TYPE:-webcam}
     log_info "Source type: $SOURCE_TYPE"
+    
+    # Extract text-track and segments from upload2ipfs.sh output (only if not already provided via command line)
+    [ -z "$TEXT_TRACK_URL" ] && TEXT_TRACK_URL=$(echo "$UPLOAD_DATA" | jq -r '.text_track_url // .text_track // empty' 2>/dev/null)
+    [ -z "$TEXT_TRACK_TYPE" ] && TEXT_TRACK_TYPE=$(echo "$UPLOAD_DATA" | jq -r '.text_track_type // empty' 2>/dev/null)
+    [ -z "$TEXT_TRACK_LANG" ] && TEXT_TRACK_LANG=$(echo "$UPLOAD_DATA" | jq -r '.text_track_lang // empty' 2>/dev/null)
+    [ -z "$SEGMENTS_JSON" ] && SEGMENTS_JSON=$(echo "$UPLOAD_DATA" | jq -c '.segments // empty' 2>/dev/null)
     
     # Extract series metadata from upload2ipfs.sh output (only if not already provided via command line)
     if [ -z "$SERIES_NAME" ] && command -v jq &> /dev/null; then
@@ -503,21 +531,95 @@ fi
 
 log_info "Building NOSTR tags..."
 
+# Extract published_at from original event if this is a re-upload
+PUBLISHED_AT=$(date +%s)
+ORIGINAL_EVENT_ID=""
+ORIGINAL_AUTHOR=""
+if [ -n "$UPLOAD_CHAIN" ]; then
+    # Try to extract original event ID and author from upload_chain (if it's a JSON array)
+    if command -v jq &> /dev/null; then
+        # Check if upload_chain is a JSON array (new format)
+        if echo "$UPLOAD_CHAIN" | jq -e '. | type == "array"' >/dev/null 2>&1; then
+            # Extract first entry's event_id and pubkey (original uploader)
+            ORIGINAL_EVENT_ID=$(echo "$UPLOAD_CHAIN" | jq -r '.[0].event_id // empty' 2>/dev/null || echo "")
+            ORIGINAL_AUTHOR=$(echo "$UPLOAD_CHAIN" | jq -r '.[0].pubkey // empty' 2>/dev/null || echo "")
+        else
+            # Old format: upload_chain is a comma-separated string of pubkeys
+            # Extract first pubkey as original author
+            ORIGINAL_AUTHOR=$(echo "$UPLOAD_CHAIN" | cut -d',' -f1 | head -c 64)
+        fi
+        
+        # If we have an original event ID, try to fetch its published_at
+        if [ -n "$ORIGINAL_EVENT_ID" ] && [ "$ORIGINAL_EVENT_ID" != "null" ] && [ "$ORIGINAL_EVENT_ID" != "" ]; then
+            log_info "Found original event ID in upload_chain: ${ORIGINAL_EVENT_ID:0:16}..."
+            # Try to query relay for original event
+            NOSTR_GET_SCRIPT="${MY_PATH}/tools/nostr_get_events.sh"
+            if [ -f "$NOSTR_GET_SCRIPT" ]; then
+                ORIGINAL_EVENT=$("$NOSTR_GET_SCRIPT" --event-id "$ORIGINAL_EVENT_ID" 2>/dev/null || echo "")
+                if [ -n "$ORIGINAL_EVENT" ]; then
+                    # Extract published_at from original event
+                    ORIGINAL_PUBLISHED_AT=$(echo "$ORIGINAL_EVENT" | jq -r '.tags[]? | select(.[0] == "published_at") | .[1]' 2>/dev/null || echo "")
+                    if [ -n "$ORIGINAL_PUBLISHED_AT" ] && [ "$ORIGINAL_PUBLISHED_AT" != "null" ]; then
+                        PUBLISHED_AT="$ORIGINAL_PUBLISHED_AT"
+                        log_info "Using original published_at: $PUBLISHED_AT"
+                    else
+                        # Fallback: use original event's created_at
+                        ORIGINAL_CREATED_AT=$(echo "$ORIGINAL_EVENT" | jq -r '.created_at // empty' 2>/dev/null || echo "")
+                        if [ -n "$ORIGINAL_CREATED_AT" ] && [ "$ORIGINAL_CREATED_AT" != "null" ]; then
+                            PUBLISHED_AT="$ORIGINAL_CREATED_AT"
+                            log_info "Using original created_at as published_at: $PUBLISHED_AT"
+                        fi
+                    fi
+                fi
+            fi
+        fi
+    fi
+fi
+
+# Build complete imeta tag according to NIP-71 specification
+# Format: ["imeta", "dim 1920x1080", "url /ipfs/QmCID", "x sha256", "m video/mp4", ...]
+# Each parameter is a complete string "param value" in the tag array
+IMETA_TAG_ARRAY="[\"imeta\""
+IMETA_TAG_ARRAY="${IMETA_TAG_ARRAY}, \"dim ${DIMENSIONS}\""
+IMETA_TAG_ARRAY="${IMETA_TAG_ARRAY}, \"url ${IPFS_URL}\""
+IMETA_TAG_ARRAY="${IMETA_TAG_ARRAY}, \"m ${MIME_TYPE}\""
+
+# Add file hash (x tag in imeta) - NIP-71 standard
+if [ -n "$FILE_HASH" ]; then
+    IMETA_TAG_ARRAY="${IMETA_TAG_ARRAY}, \"x ${FILE_HASH}\""
+    log_info "Added file hash to imeta: ${FILE_HASH:0:16}..."
+fi
+
+# Add thumbnail image in imeta
+if [ -n "$THUMBNAIL_CID" ]; then
+    IMETA_TAG_ARRAY="${IMETA_TAG_ARRAY}, \"image /ipfs/${THUMBNAIL_CID}\""
+fi
+
+# Calculate and add bitrate (NIP-71 recommended) - bits per second
+if [ -n "$FILE_SIZE" ] && [ -n "$DURATION" ] && [ "$DURATION" -gt 0 ]; then
+    BITRATE=$(echo "$FILE_SIZE $DURATION" | awk '{printf "%.0f", ($1 * 8) / $2}')
+    IMETA_TAG_ARRAY="${IMETA_TAG_ARRAY}, \"bitrate ${BITRATE}\""
+    log_info "Calculated bitrate: ${BITRATE} bps"
+fi
+
+# Add duration in imeta (NIP-71 recommended) - floating point seconds
+if [ -n "$DURATION" ] && [ "$DURATION" != "0" ]; then
+    # Convert to floating point if needed
+    DURATION_FLOAT=$(echo "$DURATION" | awk '{printf "%.3f", $1}')
+    IMETA_TAG_ARRAY="${IMETA_TAG_ARRAY}, \"duration ${DURATION_FLOAT}\""
+fi
+
+# Add service indicator (NIP-96 compatible)
+IMETA_TAG_ARRAY="${IMETA_TAG_ARRAY}, \"service nip96\""
+IMETA_TAG_ARRAY="${IMETA_TAG_ARRAY}]"
+
 # Build tags array (compatible with NIP-71 and create_video_channel.py)
 TAGS='[
     ["title", "'"$TITLE"'"],
     ["url", "'"$IPFS_URL"'"],
     ["m", "'"$MIME_TYPE"'"],
-    ["imeta", "dim '"$DIMENSIONS"'", "url '"$IPFS_URL"'"'
-
-# Add file hash to imeta if available
-if [ -n "$FILE_HASH" ]; then
-    TAGS="${TAGS}, \"x ${FILE_HASH}\", \"m ${MIME_TYPE}\""
-    log_info "Added file hash to imeta: ${FILE_HASH:0:16}..."
-fi
-
-TAGS="${TAGS}],
-    [\"duration\", \"$DURATION\"]"
+    '"$IMETA_TAG_ARRAY"'
+'
     
 # Add file size tag (NIP-71 standard) - always add even if 0 for consistency
 if [ -n "$FILE_SIZE" ]; then
@@ -526,18 +628,63 @@ if [ -n "$FILE_SIZE" ]; then
     log_info "Added file size: ${FILE_SIZE} bytes"
 fi
 
+# Add published_at tag (use original timestamp if re-upload)
 TAGS="${TAGS},
-    [\"published_at\", \"$(date +%s)\"],
-    [\"t\", \"YouTubeDownload\"],
-    [\"t\", \"VideoChannel\"]"
+    [\"published_at\", \"${PUBLISHED_AT}\"]"
+
+# Add source type tags (improved with descriptive tags)
+case "$SOURCE_TYPE" in
+    film)
+        TAGS="${TAGS},
+    [\"t\", \"film\"],
+    [\"t\", \"movie\"]"
+        ;;
+    serie)
+        TAGS="${TAGS},
+    [\"t\", \"series\"],
+    [\"t\", \"tv-show\"]"
+        ;;
+    youtube)
+        TAGS="${TAGS},
+    [\"t\", \"youtube\"],
+    [\"t\", \"video\"]"
+        ;;
+    webcam)
+        TAGS="${TAGS},
+    [\"t\", \"webcam\"],
+    [\"t\", \"live\"]"
+        ;;
+    *)
+        # Default: generic video tag
+        TAGS="${TAGS},
+    [\"t\", \"video\"]"
+        ;;
+esac
 
 # Add short/regular video tag
 if [ "$DURATION" -le 60 ]; then
     TAGS="${TAGS},
-    [\"t\", \"ShortVideo\"]"
+    [\"t\", \"short\"]"
 else
     TAGS="${TAGS},
-    [\"t\", \"RegularVideo\"]"
+    [\"t\", \"regular\"]"
+fi
+
+# Add genre tags from TMDB (if available)
+if [ -n "$GENRES_JSON" ] && [ "$GENRES_JSON" != "[]" ] && [ "$GENRES_JSON" != "null" ] && command -v jq &> /dev/null; then
+    # Parse genres JSON array and add as hashtags
+    # Use process substitution to avoid subshell issues
+    while IFS= read -r genre; do
+        if [ -n "$genre" ] && [ "$genre" != "null" ]; then
+            # Normalize genre: lowercase, replace spaces with hyphens, remove special chars
+            GENRE_TAG=$(echo "$genre" | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g' | sed 's/[^a-z0-9-]//g')
+            if [ -n "$GENRE_TAG" ]; then
+                TAGS="${TAGS},
+    [\"t\", \"${GENRE_TAG}\"]"
+                log_info "Added genre tag: ${GENRE_TAG}"
+            fi
+        fi
+    done < <(echo "$GENRES_JSON" | jq -r '.[]' 2>/dev/null)
 fi
 
 # Add channel tag if provided
@@ -549,12 +696,34 @@ if [ -n "$CHANNEL" ]; then
 fi
 
 # Add geographic coordinates (UMAP anchoring)
+# Try to convert to geohash if available (NIP-96 Extension recommends geohash)
+GEOHASH=""
+if command -v python3 &> /dev/null; then
+    # Try to use Python's geohash library if available
+    GEOHASH=$(python3 -c "
+try:
+    import geohash
+    print(geohash.encode($LATITUDE, $LONGITUDE))
+except ImportError:
+    pass
+except Exception:
+    pass
+" 2>/dev/null || echo "")
+fi
+
+# If geohash not available, use coordinates format
+if [ -z "$GEOHASH" ]; then
+    GEOHASH="${LATITUDE},${LONGITUDE}"
+    log_info "Using coordinate format for geohash (geohash library not available)"
+else
+    log_info "Converted coordinates to geohash: $GEOHASH"
+fi
+
 TAGS="${TAGS},
-    [\"g\", \"${LATITUDE},${LONGITUDE}\"],
-    [\"location\", \"${LATITUDE},${LONGITUDE}\"],
+    [\"g\", \"${GEOHASH}\"],
     [\"latitude\", \"${LATITUDE}\"],
     [\"longitude\", \"${LONGITUDE}\"]"
-log_info "Added location: ${LATITUDE}, ${LONGITUDE}"
+log_info "Added location: ${LATITUDE}, ${LONGITUDE} (geohash: ${GEOHASH})"
 
 # Add thumbnail if available
 if [ -n "$THUMBNAIL_CID" ]; then
@@ -574,11 +743,28 @@ if [ -n "$GIFANIM_CID" ]; then
     log_info "Added animated GIF: ${GIFANIM_CID}"
 fi
 
-# Add info.json CID if available
+# Add info.json CID if available (UPlanet extension: CID only, clients construct URL)
+# Note: NIP-94 doesn't define 'info' tag, this is a UPlanet extension
+# Clients expect just the CID and construct the URL themselves: /ipfs/${INFO_CID}/info.json
 if [ -n "$INFO_CID" ]; then
     TAGS="${TAGS},
     [\"info\", \"${INFO_CID}\"]"
-    log_info "Added info.json: ${INFO_CID}"
+    log_info "Added info.json CID: ${INFO_CID} (clients will construct /ipfs/${INFO_CID}/info.json)"
+fi
+
+# Add alt tag for accessibility (NIP-71 recommended)
+if [ -n "$DESCRIPTION" ]; then
+    # Limit alt text to 200 characters for accessibility
+    ALT_TEXT=$(echo "$DESCRIPTION" | head -c 200 | sed 's/"/\\"/g')
+    TAGS="${TAGS},
+    [\"alt\", \"${ALT_TEXT}\"]"
+    log_info "Added alt tag for accessibility"
+elif [ -n "$TITLE" ]; then
+    # Use title as fallback alt text
+    ALT_TEXT=$(echo "$TITLE" | head -c 200 | sed 's/"/\\"/g')
+    TAGS="${TAGS},
+    [\"alt\", \"${ALT_TEXT}\"]"
+    log_info "Added alt tag (using title)"
 fi
 
 # Add direct 'x' tag for file hash (provenance)
@@ -638,6 +824,82 @@ if [ -n "$UPLOAD_CHAIN" ]; then
     [\"upload_chain\", \"${ESCAPED_CHAIN}\"]"
     fi
     log_info "Added upload chain: ${UPLOAD_CHAIN:0:50}..."
+    
+    # Add provenance tags (e, p) for NIP-71 - reference to original event
+    # Extract current pubkey from NSEC for comparison
+    CURRENT_PUBKEY=""
+    if [ -n "$NSEC_INPUT" ]; then
+        # Try to extract pubkey from nsec (requires nostr-tools or similar)
+        # For now, we'll skip if we can't determine current pubkey
+        # The original author check will be done if ORIGINAL_AUTHOR is set
+    fi
+    
+    # Add tag 'e' (event reference) if we have original event ID
+    if [ -n "$ORIGINAL_EVENT_ID" ] && [ "$ORIGINAL_EVENT_ID" != "null" ] && [ "$ORIGINAL_EVENT_ID" != "" ]; then
+        TAGS="${TAGS},
+    [\"e\", \"${ORIGINAL_EVENT_ID}\", \"\", \"mention\"]"
+        log_info "Added provenance event reference (e): ${ORIGINAL_EVENT_ID:0:16}..."
+    fi
+    
+    # Add tag 'p' (pubkey reference) if we have original author and it's different from current
+    if [ -n "$ORIGINAL_AUTHOR" ] && [ "$ORIGINAL_AUTHOR" != "null" ] && [ "$ORIGINAL_AUTHOR" != "" ]; then
+        # Only add if we can verify it's different (or always add for provenance)
+        TAGS="${TAGS},
+    [\"p\", \"${ORIGINAL_AUTHOR}\"]"
+        log_info "Added provenance author reference (p): ${ORIGINAL_AUTHOR:0:16}..."
+    fi
+fi
+
+# Add text-track tag (NIP-71) for WebVTT subtitles/captions
+# Format: ["text-track", "<url>", "<type>", "<language>"]
+# Type: captions, subtitles, chapters, metadata (default: subtitles)
+# Language: ISO 639-1 code (e.g., en, fr) - optional
+if [ -n "$TEXT_TRACK_URL" ]; then
+    # Normalize URL: if it's just a CID, prepend /ipfs/
+    if [[ "$TEXT_TRACK_URL" =~ ^Qm[a-zA-Z0-9]{44}$ ]] || [[ "$TEXT_TRACK_URL" =~ ^[a-zA-Z0-9]{46}$ ]]; then
+        TEXT_TRACK_URL="/ipfs/${TEXT_TRACK_URL}"
+    fi
+    
+    # Default type is subtitles if not specified
+    TEXT_TRACK_TYPE="${TEXT_TRACK_TYPE:-subtitles}"
+    
+    # Build text-track tag
+    if [ -n "$TEXT_TRACK_LANG" ]; then
+        TAGS="${TAGS},
+    [\"text-track\", \"${TEXT_TRACK_URL}\", \"${TEXT_TRACK_TYPE}\", \"${TEXT_TRACK_LANG}\"]"
+        log_info "Added text-track: ${TEXT_TRACK_URL} (type: ${TEXT_TRACK_TYPE}, lang: ${TEXT_TRACK_LANG})"
+    else
+        TAGS="${TAGS},
+    [\"text-track\", \"${TEXT_TRACK_URL}\", \"${TEXT_TRACK_TYPE}\"]"
+        log_info "Added text-track: ${TEXT_TRACK_URL} (type: ${TEXT_TRACK_TYPE})"
+    fi
+fi
+
+# Add segment tags (NIP-71) for video chapters
+# Format: ["segment", "<start>", "<end>", "<title>", "<thumbnail_url>"]
+# Start/end format: HH:MM:SS.sss (e.g., "00:05:30.000")
+if [ -n "$SEGMENTS_JSON" ]; then
+    # Validate JSON format
+    if echo "$SEGMENTS_JSON" | jq -e '.' >/dev/null 2>&1; then
+        # Parse segments array and add each as a tag
+        SEGMENT_COUNT=$(echo "$SEGMENTS_JSON" | jq '. | length' 2>/dev/null || echo "0")
+        if [ "$SEGMENT_COUNT" -gt 0 ]; then
+            log_info "Adding ${SEGMENT_COUNT} segment(s) for video chapters"
+            # Use jq to iterate through segments and build tags
+            while IFS= read -r segment_line; do
+                if [ -n "$segment_line" ]; then
+                    TAGS="${TAGS},
+    ${segment_line}"
+                fi
+            done < <(echo "$SEGMENTS_JSON" | jq -r '.[] | 
+                "[\"segment\", \"\(.start // "00:00:00.000")\", \"\(.end // "00:00:00.000")\", \"\(.title // "Chapter")\", \"\(.thumbnail // "")\"]"' 2>/dev/null)
+            log_info "Added ${SEGMENT_COUNT} segment tag(s) for video chapters"
+        else
+            log_warning "Segments JSON is empty or invalid"
+        fi
+    else
+        log_warning "Invalid JSON format for segments: ${SEGMENTS_JSON:0:50}..."
+    fi
 fi
 
 # Close tags array

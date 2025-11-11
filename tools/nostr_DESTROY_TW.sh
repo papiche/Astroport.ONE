@@ -2,17 +2,22 @@
 # -----------------------------------------------------------------------------
 # nostr_DESTROY_TW.sh
 #
-# This script is used to deactivate ("unplug") a NOSTR + PLAYER UPlanet account.
-# It allows the user to select a player email, exports and backs up all NOSTR data
-# to IPFS, removes the NOSTR profile, transfers any remaining G1 balance to the
-# primal account, removes the ZEN card, and sends a notification email to the user
-# with recovery information and backup links. It also cleans up local cache and
-# removes the NOSTR IPNS vault key.
+# This script deactivates MULTIPASS management on the relay it occupies
+# and ensures NOSTR/IPFS data coherence for uDRIVE.
+#
+# This procedure allows the user to change RELAY and CAPTAIN.
+#
+# Key features:
+# - Pre-generates next .disco for restoration on new relay/captain
+# - Stores next HEX in DID document and NOSTR profile
+# - Preserves ZEN Card capital shares (secret.june) - NOT emptied
+# - Maintains minimum 1 G1 in ZEN Card for capital shares management
+# - Exports complete backup with restoration credentials
 #
 # Usage: ./nostr_DESTROY_TW.sh [email]
 # If no email is provided, the script will prompt the user to select one.
 # -----------------------------------------------------------------------------
-# Unplug NOSTR + PLAYER UPlanet Account
+# Deactivate MULTIPASS - Enable Relay/Captain Migration
 
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -112,10 +117,33 @@ cd - > /dev/null 2>&1
 COUNT=$(grep -c '^{' "${OUTPUT_DIR}/nostr_export.json" 2>/dev/null || echo "0")
 echo "Exported ${COUNT} events to ${OUTPUT_DIR}/nostr_export.json"
 
+## PREGENERATE NEXT .disco FOR RESTORATION (before creating instructions)
+echo "🔮 Pre-generating next .disco for restoration on new relay/captain..."
+# Generate new SALT and PEPPER for restoration
+NEW_SALT=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w42 | head -n1)
+NEW_PEPPER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w42 | head -n1)
+NEW_DISCO="/?${email}=${NEW_SALT}&nostr=${NEW_PEPPER}"
+
+# Generate next HEX from new SALT/PEPPER
+NEXT_NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${NEW_SALT}" "${NEW_PEPPER}" 2>/dev/null)
+NEXT_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NEXT_NPUB" 2>/dev/null)
+
+if [[ -n "$NEXT_HEX" ]]; then
+    echo "✅ Next restoration HEX pre-generated: ${NEXT_HEX:0:20}..."
+    echo "   📝 New .disco will be: ${NEW_DISCO:0:50}..."
+else
+    echo "⚠️  Failed to generate next HEX, restoration will require new .disco creation"
+    NEXT_HEX=""
+    NEW_SALT=""
+    NEW_PEPPER=""
+    NEW_DISCO=""
+fi
+
 # Create a simple restore script inside the backup
-cat > "${OUTPUT_DIR}/RESTORE_INSTRUCTIONS.sh" <<'RESTORE_SCRIPT'
+# Note: Variables NEXT_HEX, NEW_DISCO are now available
+cat > "${OUTPUT_DIR}/RESTORE_INSTRUCTIONS.sh" <<RESTORE_SCRIPT
 #!/bin/bash
-# Minimal NOSTR backup restore instructions
+# NOSTR Account Restore Instructions
 # Usage: ./RESTORE_INSTRUCTIONS.sh
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -125,29 +153,66 @@ echo ""
 echo "This encrypted backup contains:"
 echo "  • nostr_export.json - All your Nostr events"
 echo "  • uDRIVE_manifest.json - Your uDRIVE file manifest"
-echo "  • .secret.disco - Your secret key for full restoration"
-echo "  • secret.june - ZEN Card transaction history"
+echo "  • .secret.disco - Your OLD secret key (for reference)"
+echo "  • .next.disco - PRE-GENERATED new .disco for restoration"
+echo "  • .next.hex - Next HEX address for new relay/captain"
+echo "  • secret.june - ZEN Card transaction history (capital shares)"
 echo "  • .g1pub - ZEN Card G1 wallet access"
-echo "  • Instructions for recreation"
 echo ""
 echo "🔐 BACKUP PASSWORD: ${ZEN_PASSWORD}"
 echo ""
-echo "To restore your account:"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "IMPORTANT: Account Migration to New Relay/Captain"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "1. Use the automated restore script:"
-echo "   cd ~/.zen/Astroport.ONE"
-echo "   ./tools/nostr_RESTORE_TW.sh <IPFS_CID>"
-echo "   (Script will prompt for password: ${ZEN_PASSWORD})"
+echo "Your account has been deactivated on the previous relay."
+echo "To restore on a NEW relay/captain, you MUST use the NEW .disco:"
 echo ""
-echo "2. Or manually recreate your MULTIPASS:"
-echo "   - Extract backup with password: ${ZEN_PASSWORD}"
-echo "   - Create new MULTIPASS with same email"
-echo "   - Import events: jq -c '.[]' nostr_export.json | ./strfry import --no-verify"
-echo "   - Use .secret.disco for full account restoration"
+if [[ -n "$NEXT_HEX" ]]; then
+    echo "  🔮 Next HEX (pre-generated): ${NEXT_HEX:0:20}..."
+    echo "  📝 New .disco: .next.disco (in backup)"
+    echo ""
+    echo "The next HEX is also stored in:"
+    echo "  • Your DID document (did:nostr:${hex})"
+    echo "  • Your NOSTR profile (about field)"
+    echo ""
+else
+    echo "  ⚠️  Next HEX not pre-generated - you'll need to create new .disco"
+    echo ""
+fi
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "RESTORATION METHODS:"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "3. uDRIVE restoration:"
-echo "   - Use uDRIVE_manifest.json to recreate your file structure"
-echo "   - All files are still available via IPFS links in manifest"
+echo "Method 1: Automated restore (RECOMMENDED)"
+echo "  cd ~/.zen/Astroport.ONE"
+echo "  ./tools/nostr_RESTORE_TW.sh <IPFS_CID>"
+echo "  (Script will use .next.disco automatically)"
+echo ""
+echo "Method 2: Manual restoration with NEW .disco"
+echo "  1. Extract backup with password: ${ZEN_PASSWORD}"
+echo "  2. Use .next.disco to create MULTIPASS on new relay:"
+echo "     cat .next.disco"
+echo "     # Use this .disco when creating new MULTIPASS"
+echo "  3. Create MULTIPASS with same email + .next.disco:"
+echo "     ./tools/make_NOSTRCARD.sh <EMAIL> <LANG> <LAT> <LON> <NEW_SALT> <NEW_PEPPER>"
+echo "  4. Import events to new account:"
+echo "     jq -c '.[]' nostr_export.json | ./strfry import --no-verify"
+echo ""
+echo "Method 3: uDRIVE restoration"
+echo "  - Use uDRIVE_manifest.json to recreate your file structure"
+echo "  - All files are still available via IPFS links in manifest"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "ZEN Card Capital Shares:"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "Your ZEN Card capital shares are preserved in secret.june"
+echo "This file contains the transaction history of capital shares"
+echo "received from UPLANETNAME_SOCIETY."
+echo ""
+echo "The ZEN Card wallet (.g1pub) is NOT emptied - it maintains"
+echo "minimum 1 G1 for capital shares management."
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 RESTORE_SCRIPT
@@ -163,13 +228,17 @@ Backup Date: $(date '+%Y-%m-%d %H:%M:%S')
 Account: ${email}
 Public Key (HEX): ${hex}
 G1 Wallet: ${g1pubnostr}
+$(if [[ -n "$NEXT_HEX" ]]; then echo "Next HEX (for restoration): ${NEXT_HEX:0:20}..."; fi)
 
 This encrypted backup contains:
   • nostr_export.json - ${COUNT} Nostr events
   • uDRIVE_manifest.json - Your uDRIVE file manifest (if exists)
-  • .secret.disco - Your secret key for full restoration
-  • secret.june - ZEN Card secrets (if exists)
-  • .g1pub - ZEN Card G1 wallet access (if exists)
+  • .secret.disco - Your OLD secret key (for reference only)
+  • .next.disco - PRE-GENERATED new .disco for restoration on new relay
+  • .next.hex - Next HEX address (pre-calculated)
+  • .next.salt / .next.pepper - New credentials for restoration
+  • secret.june - ZEN Card transaction history (capital shares preserved)
+  • .g1pub - ZEN Card G1 wallet access
   • RESTORE_INSTRUCTIONS.sh - Quick restore guide
 
 🔐 BACKUP PASSWORD: ${ZEN_PASSWORD}
@@ -179,15 +248,34 @@ This encrypted backup contains:
 
 ═══════════════════════════════════════════════════════════════
 
+ACCOUNT MIGRATION TO NEW RELAY/CAPTAIN:
+
+Your account has been deactivated on the previous relay.
+This allows you to migrate to a NEW relay and NEW captain.
+
+IMPORTANT: You MUST use the NEW .disco (.next.disco) for restoration
+The old .disco will NOT work on a new relay.
+
+The next HEX is pre-calculated and stored in:
+  • This backup (.next.hex)
+  • Your DID document (did:nostr:${hex})
+  • Your NOSTR profile (about field)
+
+═══════════════════════════════════════════════════════════════
+
 RESTORE METHODS:
 
 Method 1: Using Astroport restore tool (RECOMMENDED)
   $ cd ~/.zen/Astroport.ONE
   $ ./tools/nostr_RESTORE_TW.sh <IPFS_CID>
+  (Script will automatically use .next.disco)
 
-Method 2: Manual recreation
+Method 2: Manual recreation with NEW .disco
   $ cd ~/.zen/Astroport.ONE
-  $ ./tools/make_NOSTRCARD.sh <EMAIL> <LANG> <LAT> <LON>
+  $ # Extract backup and read .next.disco
+  $ cat .next.disco
+  $ # Use the SALT and PEPPER from .next.salt and .next.pepper
+  $ ./tools/make_NOSTRCARD.sh <EMAIL> <LANG> <LAT> <LON> <NEW_SALT> <NEW_PEPPER>
   $ cd ~/.zen/strfry
   $ jq -c '.[]' nostr_export.json | ./strfry import --no-verify
 
@@ -197,17 +285,32 @@ Method 3: uDRIVE restoration
 
 ═══════════════════════════════════════════════════════════════
 
-SECURITY NOTICE:
-This backup contains ONLY public data and your Nostr events.
-Private keys (.secret.*) are EXCLUDED for security.
+ZEN CARD CAPITAL SHARES:
 
-To fully restore your account, you will need:
-  1. This backup (for events and uDRIVE manifest)
-  2. Create new MULTIPASS with same email
+Your ZEN Card capital shares are preserved in secret.june.
+This file contains the complete transaction history of capital shares
+received from UPLANETNAME_SOCIETY.
+
+The ZEN Card wallet (.g1pub) maintains minimum 1 G1 for capital
+shares management. It is NOT emptied during account deactivation.
+
+═══════════════════════════════════════════════════════════════
+
+SECURITY NOTICE:
+This backup contains:
+  • Public data (Nostr events, uDRIVE manifest)
+  • Old .secret.disco (for reference, won't work on new relay)
+  • New .next.disco (for restoration on new relay)
+  • ZEN Card history (secret.june, .g1pub)
+
+To fully restore your account on a NEW relay:
+  1. Extract this backup with password: ${ZEN_PASSWORD}
+  2. Use .next.disco to create new MULTIPASS on new relay
   3. Import events to new account
+  4. Restore uDRIVE from manifest
 
 For support: ${CAPTAINEMAIL}
-UPlanet Documentation: https://copylaradio.com
+UPlanet ORIGIN: https://qo-op.com
 
 ═══════════════════════════════════════════════════════════════
 EOF
@@ -267,6 +370,15 @@ else
     echo "⚠️  ZEN Card .g1pub not found (no G1 wallet to backup)"
 fi
 
+# Save next restoration info to backup directory (before ZIP creation)
+if [[ -n "$NEXT_HEX" ]] && [[ -d "${BACKUP_DIR}" ]]; then
+    echo "$NEW_DISCO" > "${BACKUP_DIR}/.next.disco"
+    echo "$NEXT_HEX" > "${BACKUP_DIR}/.next.hex"
+    echo "$NEW_SALT" > "${BACKUP_DIR}/.next.salt"
+    echo "$NEW_PEPPER" > "${BACKUP_DIR}/.next.pepper"
+    echo "✅ Next restoration credentials saved to backup"
+fi
+
 # Get ZEN Card password for encryption
 ZEN_PASS_FILE="${HOME}/.zen/game/players/${email}/.pass"
 if [[ -f "${ZEN_PASS_FILE}" ]]; then
@@ -324,26 +436,57 @@ fi
 
 echo "DELETING ${player} NOSTRCARD : $pubnostr"
 
-## 0. UPDATE DID DOCUMENT - Mark as deactivated
+## 0. UPDATE DID DOCUMENT - Mark as deactivated and include next HEX
 echo "📝 Updating DID document to mark account as deactivated..."
 if [[ -f "${MY_PATH}/did_manager_nostr.sh" ]]; then
     # Update DID to mark account as deactivated
     "${MY_PATH}/did_manager_nostr.sh" update "${player}" "ACCOUNT_DEACTIVATED" 0 0 2>/dev/null \
         && echo "✅ DID document updated - account marked as deactivated" \
         || echo "⚠️  Failed to update DID document (will continue with destruction)"
+    
+    # Add next HEX to DID metadata for restoration on new relay
+    if [[ -n "$NEXT_HEX" ]]; then
+        local did_cache_file="${HOME}/.zen/game/nostr/${player}/did.json.cache"
+        if [[ -f "$did_cache_file" ]] && command -v jq >/dev/null 2>&1; then
+            # Add next restoration HEX to deactivation metadata
+            jq ".metadata.deactivation.nextRestorationHex = \"${NEXT_HEX}\"" "$did_cache_file" > "${did_cache_file}.tmp" 2>/dev/null
+            if [[ -s "${did_cache_file}.tmp" ]]; then
+                mv "${did_cache_file}.tmp" "$did_cache_file"
+                echo "   🔮 Next restoration HEX added to DID metadata: ${NEXT_HEX:0:20}..."
+                
+                # Republish DID with next HEX in metadata
+                echo "   📡 Republishing DID with next HEX metadata..."
+                "${MY_PATH}/did_manager_nostr.sh" sync "${player}" 2>/dev/null \
+                    && echo "   ✅ DID republished with next HEX metadata" \
+                    || echo "   ⚠️  Failed to republish DID (next HEX stored locally)"
+            else
+                rm -f "${did_cache_file}.tmp"
+                echo "   ⚠️  Failed to add next HEX to DID metadata"
+            fi
+        else
+            echo "   ⚠️  Cannot add next HEX to DID (file or jq not available)"
+        fi
+    fi
 else
     echo "⚠️  did_manager_nostr.sh not found, skipping DID update"
 fi
 
-## 1. UPDATE NOSTR PROFILE (don't remove, just mark as deactivated)
+## 1. UPDATE NOSTR PROFILE - Mark as deactivated and include next HEX
 echo "📝 Updating NOSTR profile to mark as deactivated..."
 if [[ -f "${MY_PATH}/nostr_update_profile.py" ]]; then
-    # Update profile with deactivation message and backup link
+    # Build about message with backup link and next HEX
+    if [[ -n "$NEXT_HEX" ]]; then
+        ABOUT_MSG="Account deactivated - Backup: ${myIPFS}/ipfs/${NOSTRIFS} | Next HEX: ${NEXT_HEX:0:16}..."
+    else
+        ABOUT_MSG="Account deactivated - backup available at ${myIPFS}/ipfs/${NOSTRIFS}"
+    fi
+    
+    # Update profile with deactivation message, backup link, and next HEX
     "${MY_PATH}/nostr_update_profile.py" "${secnostr}" "$myRELAY" "wss://relay.copylaradio.com" \
-        --about "Account deactivated - backup available" \
+        --about "${ABOUT_MSG}" \
         --name "[DEACTIVATED] ${youser}" \
         --website "${myIPFS}/ipfs/${NOSTRIFS}" 2>/dev/null \
-        && echo "✅ NOSTR profile updated - marked as deactivated with backup link" \
+        && echo "✅ NOSTR profile updated - marked as deactivated with backup link and next HEX" \
         || echo "⚠️  Failed to update NOSTR profile (will continue with destruction)"
 else
     echo "⚠️  nostr_update_profile.py not found, skipping NOSTR profile update"
@@ -385,8 +528,14 @@ fi
 
 echo "💰 Current G1 balance: ${AMOUNT} Ğ1"
 
-## EMPTY AMOUNT G1 to PRIMAL
+## EMPTY AMOUNT G1 to UPLANETNAME_G1 (central bank) PRIMAL
 prime=$(cat ~/.zen/tmp/coucou/${g1pubnostr}.primal 2>/dev/null)
+
+## Real value when Humans understand that Commons needs aggradation instead of degradation. 
+[[ $UPLANETNAME == "Enfin Libre" ]] \
+    && [[ -f ~/.zen/tmp/coucou/${g1pubnostr}.2nd ]] \
+    && prime=$(cat ~/.zen/tmp/coucou/${g1pubnostr}.2nd) ## REFILL REAL OWNER
+
 [[ -z $prime ]] && prime=${UPLANETNAME_G1}
 
 # Convert amount to numeric for precise comparison using bc
@@ -416,9 +565,13 @@ else
 fi
 rm -f ~/.zen/tmp/nostr.dunikey
 
-## 2. REMOVE ZEN CARD
+## 2. REMOVE ZEN CARD (capital shares preserved in secret.june)
+# Note: ZEN Card capital shares are archived in transaction history (secret.june)
+# The ZEN Card wallet maintains minimum 1 G1 for capital shares management
+# secret.june is preserved in backup - no need to empty remaining june
+# The ZEN Card cannot be truly deleted as capital shares are in transaction history
 if [[ -s "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" ]]; then
-    echo "/PLAYER.unplug : TW + ZEN CARD"
+    echo "/PLAYER.unplug : TW + ZEN CARD (capital shares preserved in secret.june)"
     ${MY_PATH}/../RUNTIME/PLAYER.unplug.sh "${HOME}/.zen/game/players/${player}/ipfs/moa/index.html" "${player}" "ALL"
 fi
 
@@ -432,7 +585,7 @@ EMAIL_TEMPLATE=$(cat "${MY_PATH}/../templates/NOSTR/wallet_deactivation.html" \
           -e "s~_DEACTIVATION_DATE_~$(date '+%Y-%m-%d %H:%M:%S')~g")
 
 # Send email to CAPTAIN (not to the user)
-${MY_PATH}/../tools/mailjet.sh --expire 7d \
+${MY_PATH}/../tools/mailjet.sh --expire 3d \
     "${CAPTAINEMAIL}" \
     "${EMAIL_TEMPLATE}" \
     "CAPTAIN: ${youser} MULTIPASS Deactivated - Backup: ${NOSTRIFS}"

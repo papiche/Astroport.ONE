@@ -9,8 +9,9 @@
 This document specifies the UPlanet File Management Contract, a protocol for decentralized file storage using IPFS (InterPlanetary File System) and metadata publication via the NOSTR (Notes and Other Stuff Transmitted by Relays) protocol. The system implements a separation-of-concerns architecture distinguishing between video content (NIP-71, kinds 21/22) and general file metadata (NIP-94, kind 1063), while ensuring provenance tracking through cryptographic hashing and chain-of-custody mechanisms.
 
 **Protocol Version**: 1.0.0  
+**Document Version**: 1.2  
 **JSON Canonicalization**: RFC 8785 (JCS) compliant  
-**Keywords**: IPFS, NOSTR, NIP-94, NIP-71, Decentralized Storage, Provenance Tracking, Metadata Publishing, RFC 8785, JSON Canonicalization
+**Keywords**: IPFS, NOSTR, NIP-94, NIP-71, NIP-96, Decentralized Storage, Provenance Tracking, Metadata Publishing, RFC 8785, JSON Canonicalization, MULTIPASS, Tiered Quotas
 
 ---
 
@@ -802,12 +803,35 @@ async def verify_nostr_auth(npub: str) -> bool:
 
 ### 6.2 Input Validation
 
-**File Size Limit**: 100 MB per file
+**File Size Limits**: Dynamic limits based on user authentication status
+
+The system implements tiered file size limits aligned with NIP-96 Discovery:
+
+- **MULTIPASS users** (recognized by UPlanet): **650 MB** (681574400 bytes)
+- **Other NOSTR users**: **100 MB** (104857600 bytes)
+
+**Implementation**:
 ```python
-MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
-if file_size > MAX_FILE_SIZE:
-    raise HTTPException(413, "File too large")
+def get_max_file_size_for_user(npub: str) -> int:
+    """
+    Get the maximum file size limit for a user.
+    MULTIPASS users: 650MB, Other users: 100MB
+    """
+    hex_pubkey = npub_to_hex(npub) if npub else None
+    if hex_pubkey and is_multipass_user(hex_pubkey):
+        return 681574400  # 650MB (aligned with NIP-96 Discovery)
+    else:
+        return 104857600  # 100MB (default per UPlanet_FILE_CONTRACT.md)
+
+# Validation in /api/fileupload and /api/upload
+max_size_bytes = get_max_file_size_for_user(npub)
+if file.size and file.size > max_size_bytes:
+    raise HTTPException(413, f"File size exceeds maximum allowed size ({max_size_bytes // 1048576}MB)")
 ```
+
+**MULTIPASS Detection**: Uses `search_for_this_hex_in_uplanet.sh` to verify if a user's hex public key is registered in UPlanet's user database. This enables higher quotas for trusted users.
+
+**Note**: The 650MB limit for MULTIPASS users is aligned with the NIP-96 Discovery endpoint (`/.well-known/nostr/nip96.json`) which advertises the same limits to NOSTR clients.
 
 **MIME Type Validation**: Magic byte inspection
 ```python
@@ -1053,6 +1077,12 @@ Options:
 
 **Purpose**: Upload any file to IPFS and publish metadata to NOSTR
 
+**Authentication**: NIP-42 (required, `force_check=True`)
+
+**File Size Limits**:
+- MULTIPASS users: 650MB (681574400 bytes)
+- Other NOSTR users: 100MB (104857600 bytes)
+
 **Request**:
 ```http
 POST /api/fileupload HTTP/1.1
@@ -1060,7 +1090,14 @@ Content-Type: multipart/form-data
 
 file: <binary_data>
 npub: npub1abc123...
+youtube_metadata: <optional_json_file>
 ```
+
+**Validation**:
+1. **File Size**: Validated before file content is read (prevents DoS)
+2. **MIME Type**: Magic byte inspection for content safety
+3. **File Content**: Signature verification for critical file types
+4. **MULTIPASS Detection**: Automatic quota assignment based on user status
 
 **Response** (Success):
 ```json
@@ -1773,7 +1810,7 @@ curl -X POST http://localhost:54321/api/fileupload \
 
 | Threat | Mitigation | Residual Risk |
 |--------|-----------|---------------|
-| **File Size DoS** | 100 MB limit, rate limiting | Low (configurable limits) |
+| **File Size DoS** | Tiered quotas (100MB/650MB), validation before content read, rate limiting | Low (dynamic limits, early rejection) |
 | **MIME Type Spoofing** | Magic byte inspection | Low (robust detection) |
 | **Path Traversal** | Filename sanitization, user directory isolation | Very Low |
 | **Unauthorized Access** | NOSTR NIP-42 authentication | Low (key management responsibility) |
@@ -1816,7 +1853,9 @@ curl -X POST http://localhost:54321/api/fileupload \
 
 ---
 
-## Appendix D: API Rate Limits
+## Appendix D: API Rate Limits and File Size Quotas
+
+### D.1 Rate Limits
 
 **Default Configuration**:
 
@@ -1830,6 +1869,26 @@ curl -X POST http://localhost:54321/api/fileupload \
 - 127.0.0.0/8 (localhost)
 - 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 (private networks)
 
+### D.2 File Size Quotas
+
+**Tiered Quota System** (aligned with NIP-96 Discovery):
+
+| User Type | Max File Size | Detection Method |
+|-----------|---------------|------------------|
+| MULTIPASS (recognized by UPlanet) | 650 MB (681574400 bytes) | `search_for_this_hex_in_uplanet.sh` |
+| Other NOSTR users | 100 MB (104857600 bytes) | Default quota |
+
+**Implementation Details**:
+- Quota is determined **before** file content is read (prevents DoS attacks)
+- MULTIPASS detection uses UPlanet user database lookup
+- Limits are enforced in both `/api/fileupload` and `/api/upload` endpoints
+- HTTP 413 (Payload Too Large) is returned when limit is exceeded
+
+**Rationale**:
+- **100MB default**: Prevents abuse while allowing reasonable file uploads
+- **650MB MULTIPASS**: Enables trusted users (webcam.html, ajouter_media.sh) to upload larger media files
+- **Dynamic detection**: No manual configuration required, automatic quota assignment
+
 ---
 
 ## Acknowledgments
@@ -1841,12 +1900,19 @@ This protocol was developed as part of the UPlanet decentralized ecosystem. Spec
 ## Document Metadata
 
 - **Protocol Version**: 1.0.0
-- **Document Version**: 1.1
+- **Document Version**: 1.2
 - **Date**: 2025-01-04
-- **Last Updated**: 2025-11-05 (Added RFC 8785 JSON canonicalization and protocol versioning)
+- **Last Updated**: 2025-01-XX (Added tiered file size quotas and MULTIPASS detection)
 - **Authors**: UPlanet Development Team
 - **License**: CC BY-SA 4.0
 - **Repository**: https://github.com/papiche/Astroport.ONE
+
+**Changes in v1.2**:
+- Added tiered file size quota system (100MB default, 650MB for MULTIPASS users)
+- Documented MULTIPASS detection mechanism
+- Updated security section with file size validation details
+- Aligned quotas with NIP-96 Discovery endpoint
+- Added validation requirements for `/api/fileupload` endpoint
 
 **Changes in v1.1**:
 - Added RFC 8785 (JCS) JSON canonicalization requirement

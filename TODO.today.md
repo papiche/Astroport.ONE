@@ -1,60 +1,47 @@
-# TODO Quotidien - 2025-11-10
+# TODO Quotidien - 2025-11-11
 
-**Généré automatiquement** : 2025-11-10 06:48:07  
+**Généré automatiquement** : 2025-11-11 15:20:24  
 **Période analysée** : Dernières 24h
 
 ---
 
 ## 📊 Résumé Généré par IA
 
-**Résumé des Modifications Git (dernières 24h)**
+## Résumé des Modifications Git (dernières 24h) – Projet “qo-op”
 
-Ce rapport résume les modifications détectées dans le code et la documentation au cours des dernières 24 heures. Les changements se concentrent principalement sur l'amélioration du traitement des métadonnées des vidéos YouTube, la gestion des sources de médias, et l'enrichissement de la documentation.
+Ce résumé analyse les modifications Git des dernières 24 heures pour le projet “qo-op”, en s'appuyant sur le fichier `TODO.md` principal.
 
 **1. Ce qui a été fait :**
 
-*   **Amélioration du Traitement des Vidéos YouTube:** Plusieurs scripts ont été modifiés pour une meilleure gestion des métadonnées, notamment `create_video_channel.py`, `scraper.TMDB.py`, `ajouter_media.sh` et `process_youtube.sh`.  Il y a une focalisation sur l'extraction de données (genres, informations sur le réalisateur, etc.) à partir de sources variées (JSON-LD, BeautifulSoup).  La gestion des erreurs a été améliorée.
-*   **Gestion des Sources de Médias:** Une attention particulière a été portée au suivi du type source des médias (film, série, webcam) via `ajouter_media.sh` et `create_video_channel.py`.  La détection automatique des types de sources est désormais prise en charge.
-*   **Documentation:** La documentation a été substantiellement mise à jour, y compris des sections spécifiques pour N8N, CoinFlip, ORACLE, et PlantNet/ORE.  Des améliorations ont été apportées au `README_YOUTUBE.md`, `README.md`, et `UPlanet_IA_Responder.sh`.
-*   **Implémentation du système Cookie:** L'intégration du système Cookie a été étoffée, avec un nouveau workflow et des modifications dans `cookie_workflow_engine.sh`.
-*   **Gestion de l'Oracle:** L'Oracle a été migré vers un système entièrement dynamique, utilisant auto-déclarations professionnelles. La documentation et les scripts ont été mis à jour en conséquence.
+*   **Améliorations du script `ajouter_media.sh`:** Plusieurs modifications ont été apportées, notamment l'amélioration de la gestion des métadonnées pour les séries et les épisodes, l'ajout de valeurs par défaut pour les titres d'épisodes et de genres, ainsi que des améliorations dans le formatage JSON pour la publication.
+*   **Optimisations du script `publish_nostr_video.sh`:**  Ce script a été mis à jour pour supporter les métadonnées des séries et les genres extraits des données de téléversement.
+*   **Améliorations du script `youtube.com.sh`:** Les instructions d'utilisation ont été complétées, et la gestion des fichiers cookies a été améliorée, avec une option pour spécifier un fichier cookie.
+*   **Optimisation du script `NOSTRCARD.refresh.sh`:** La mise à jour du script permet le calcul dynamique des montants HT, TVA et le montant total du paiement.
 
-**2. Ce qui reste à faire :**
+**2. Ce qui reste à faire (tâches en cours, prochaines étapes):**
 
-*   **Complétion des métadonnées:** L'extraction complète des métadonnées des vidéos est toujours en cours de développement.
-*   **Suivi des sources de médias:** L'identification précise des types de sources reste une priorité.
-*   **Amélioration continue des workflows:** Des ajustements et des tests supplémentaires sont nécessaires pour optimiser les workflows existants.
+*   La maintenance et l'amélioration continue des scripts existants (`ajouter_media.sh`, `publish_nostr_video.sh`, `youtube.com.sh`, `NOSTRCARD.refresh.sh`) restent prioritaires.
+*   Des efforts sont nécessaires pour continuer d'optimiser la gestion des genres et des métadonnées, en particulier pour assurer la conformité avec les normes NIP-32.
+*   L'amélioration de l'intégration avec YouTube et la gestion des cookies représentent des axes d'amélioration importants.
 
 **3. Avancées Importantes :**
 
-*   L'implémentation de la gestion des erreurs a permis d'améliorer la robustesse du système.
-*   La création d'une base de données de genres plus complète et dédupliquée est une avancée majeure.
-*   L'amélioration des workflows de traitement des vidéos YouTube a considérablement augmenté l'efficacité.
-*   La mise à jour de la documentation a considérablement amélioré la compréhension et la maintenabilité du projet.
+*   L’amélioration de la gestion des séries et des épisodes, notamment l’ajout de valeurs par défaut, est une avancée significative pour améliorer l'expérience utilisateur et la cohérence des données.
+*   L'ajout de calculs dynamiques des montants (HT, TVA) dans `NOSTRCARD.refresh.sh` est un investissement important pour une meilleure précision des informations.
+*   L’amélioration du script `youtube.com.sh` est une étape importante pour faciliter l’utilisation de YouTube.
 
-**4. Priorités pour la Suite :**
+**4. Priorités pour la suite :**
 
-1.  **Finaliser la gestion des métadonnées** des vidéos YouTube.
-2.  **Tester et valider** les nouveaux workflows pour garantir leur efficacité.
-3.  **Documentation:**  Continuer à mettre à jour la documentation en fonction des nouvelles fonctionnalités et des modifications.
-4.  **Assurer la conformité UPlanet:** Vérifier que toutes les modifications respectent les normes UPlanet.
-5. **Optimisation des Scripts:**  Améliorer les performances des scripts, en particulier pour les tâches de traitement intensif.
+*   **Priorité Haute:** Stabilisation et optimisation des scripts existants, en particulier ceux liés à la publication de médias (ajouter_media.sh, publish_nostr_video.sh).
+*   **Priorité Moyenne:**  Amélioration continue de la gestion des données de genre et des métadonnées, afin de garantir la conformité NIP-32.
+*   **Priorité Faible:** Explorer des solutions pour une meilleure intégration avec YouTube et une gestion plus robuste des cookies.
 
 ---
 
 ## 📝 Modifications Détectées
 
 [0;34m🔍 Analyse des modifications par système...[0m
-\n### N8N (2 fichier(s))\n  - docs/N8N.md
-  - docs/N8N.todo.md\n\n### CoinFlip (1 fichier(s))\n  - docs/COINFLIP.md\n\n### ORACLE (5 fichier(s))\n  - RUNTIME/ORACLE.refresh.sh
-  - docs/ORACLE.doc.md
-  - tools/oracle.WoT_PERMIT.init.sh
-  - tools/oracle_init_permit_definitions.sh
-  - tools/oracle_test_permit_system.sh\n\n### Cookie (2 fichier(s))\n  - IA/COOKIE_SYSTEM.md
-  - IA/cookie_workflow_engine.sh\n\n### DID (1 fichier(s))\n  - DID_IMPLEMENTATION.md\n\n### NostrTube (3 fichier(s))\n  - IA/create_video_channel.py
-  - IA/youtube.com.sh
-  - docs/README.NostrTube.md\n\n### uMARKET (2 fichier(s))\n  - docs/uMARKET.md
-  - docs/uMARKET.todo.md\n\n### PlantNet (1 fichier(s))\n  - docs/PLANTNET_ORE.md\n
+\n### NostrTube (1 fichier(s))\n  - IA/youtube.com.sh\n\n### uMARKET (1 fichier(s))\n  - docs/uMARKET.md\n
 
 ---
 

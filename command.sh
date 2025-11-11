@@ -870,6 +870,102 @@ create_multipass() {
         YOUSER=$(${HOME}/.zen/Astroport.ONE/tools/clyuseryomail.sh ${EMAIL})
         ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh "${EMAIL}" "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html" "UPlanet MULTIPASS - $YOUSER"
         print_success "MULTIPASS créée avec succès pour $EMAIL"
+        
+        # Vérifier si c'est le premier utilisateur (pas de ZEN Card existante)
+        local zen_cards_count=$(ls ~/.zen/game/players 2>/dev/null | grep "@" | wc -l)
+        local multipass_dir="$HOME/.zen/game/nostr/$EMAIL"
+        
+        # Si c'est le premier utilisateur, proposer automatiquement de créer la ZEN Card
+        if [[ $zen_cards_count -eq 0 ]]; then
+            echo ""
+            print_info "C'est votre premier compte ! Pour devenir capitaine, vous devez créer une ZEN Card."
+            echo ""
+            read -p "Voulez-vous créer votre ZEN Card maintenant ? (oui/non): " create_zencard_choice
+            
+            if [[ "$create_zencard_choice" == "oui" || "$create_zencard_choice" == "o" || "$create_zencard_choice" == "y" || "$create_zencard_choice" == "yes" ]]; then
+                # Récupérer les informations du MULTIPASS
+                local npub=""
+                local hex=""
+                local multipass_lat="$LAT"
+                local multipass_lon="$LON"
+                
+                if [[ -d "$multipass_dir" ]]; then
+                    # Récupérer NPUB
+                    if [[ -f "$multipass_dir/NPUB" ]]; then
+                        npub=$(cat "$multipass_dir/NPUB")
+                    fi
+                    
+                    # Récupérer HEX
+                    if [[ -f "$multipass_dir/HEX" ]]; then
+                        hex=$(cat "$multipass_dir/HEX")
+                    fi
+                    
+                    # Récupérer GPS si disponible
+                    if [[ -f "$multipass_dir/GPS" ]]; then
+                        # Source GPS file in a subshell to avoid variable conflicts
+                        local gps_lat=$(grep "^LAT=" "$multipass_dir/GPS" | cut -d'=' -f2 | tr -d ';')
+                        local gps_lon=$(grep "^LON=" "$multipass_dir/GPS" | cut -d'=' -f2 | tr -d ';')
+                        if [[ -n "$gps_lat" ]]; then
+                            multipass_lat="$gps_lat"
+                        fi
+                        if [[ -n "$gps_lon" ]]; then
+                            multipass_lon="$gps_lon"
+                        fi
+                    fi
+                fi
+                
+                # Génération automatique des secrets
+                print_info "Génération automatique des secrets pour la ZEN Card..."
+                local ppass=$(${MY_PATH}/tools/diceware.sh $(( $(${MY_PATH}/tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
+                local npass=$(${MY_PATH}/tools/diceware.sh $(( $(${MY_PATH}/tools/getcoins_from_gratitude_box.sh) )) | xargs)
+                
+                print_info "Secret 1 généré: $ppass"
+                print_info "Secret 2 généré: $npass"
+                
+                # Créer la ZEN Card avec les informations du MULTIPASS
+                print_info "Création de la ZEN Card avec les informations du MULTIPASS..."
+                if "${MY_PATH}/RUNTIME/VISA.new.sh" "$ppass" "$npass" "$EMAIL" "UPlanet" "$SYSLANG" "$multipass_lat" "$multipass_lon" "$npub" "$hex"; then
+                    local pseudo=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null)
+                    rm -f ~/.zen/tmp/PSEUDO
+                    
+                    print_success "ZEN Card créée avec succès pour $pseudo !"
+                    
+                    # Définir comme carte courante (capitaine)
+                    local player="$EMAIL"
+                    if [[ -d ~/.zen/game/players/$player ]]; then
+                        rm -f ~/.zen/game/players/.current
+                        ln -s ~/.zen/game/players/${player} ~/.zen/game/players/.current
+                        
+                        # Mettre à jour les variables globales
+                        PLAYER="$player"
+                        G1PUB=$(cat ~/.zen/game/players/$PLAYER/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+                        ASTRONAUTENS=$(ipfs key list -l | grep -w "$PLAYER" | head -n1 | cut -d ' ' -f 1 2>/dev/null)
+                        
+                        print_success "Vous êtes maintenant le capitaine de cette station !"
+                        echo ""
+                        echo -e "${GREEN}🎉 Configuration terminée avec succès !${NC}"
+                        echo "  • Compte MULTIPASS: $EMAIL"
+                        echo "  • ZEN Card: $player"
+                        if [[ -n "$G1PUB" ]]; then
+                            echo "  • G1PUB: $G1PUB"
+                        fi
+                        if [[ -n "$ASTRONAUTENS" ]]; then
+                            echo "  • IPNS: $myIPFS/ipns/$ASTRONAUTENS"
+                        fi
+                        echo ""
+                    fi
+                else
+                    print_error "Erreur lors de la création de la ZEN Card"
+                    print_info "Vous pourrez créer votre ZEN Card plus tard depuis le menu principal"
+                fi
+            else
+                print_info "Création de la ZEN Card reportée. Vous pourrez la créer plus tard depuis le menu principal."
+            fi
+        else
+            echo ""
+            print_info "Vous pouvez créer une ZEN Card à partir de ce MULTIPASS depuis le menu principal."
+        fi
+        
         read -p "Appuyez sur ENTRÉE pour continuer..."
     else
         print_error "Erreur lors de la création de la MULTIPASS"

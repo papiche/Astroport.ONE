@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$SCRIPT_DIR"
-source $SCRIPT_DIR/tools/my.sh
+source $HOME/.zen/Astroport.ONE/tools/my.sh
 
 
 TODO_TODAY="$REPO_ROOT/TODO.today.md"
