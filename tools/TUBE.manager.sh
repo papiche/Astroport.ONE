@@ -24,7 +24,7 @@ NC='\033[0m' # No Color
 ################################################################################
 # Configuration
 ################################################################################
-IPFS_GATEWAY="${myIPFS:-http://127.0.0.1:8080}"
+IPFS_GATEWAY="${myLIBRA:-http://127.0.0.1:8080}"
 UPASSPORT_API="${myHOST:-http://127.0.0.1:54321}"
 NOSTR_GET_EVENTS="${MY_PATH}/nostr_get_events.sh"
 NOSTR_GET_EVENT_BY_ID="${MY_PATH}/nostr_get_event_by_id.sh"
@@ -1505,6 +1505,9 @@ export_video_tree() {
     echo ""
     echo -e "${CYAN}─────────────────────────────────────────────────────────────────────────────${NC}"
     
+    # Return export directory path (to stdout, not stderr)
+    echo "$export_dir" >&1
+    
     return 0
 }
 
@@ -1538,8 +1541,21 @@ delete_video_tree() {
     
     # First, export the tree (backup before deletion)
     log_info "Creating backup export before deletion..."
-    if ! export_video_tree "$video_event_id" "$author_hex"; then
-        log_warning "Export failed, but continuing with deletion..."
+    local export_dir=""
+    # Capture export_dir from stdout (last line), redirect all log messages to stderr
+    # export_video_tree outputs the export_dir path as the last line on stdout
+    export_dir=$(export_video_tree "$video_event_id" "$author_hex" 2>&1 | grep -E "^/.*video_export" | tail -1)
+    if [[ -z "$export_dir" ]] || [[ ! -d "$export_dir" ]]; then
+        # Try alternative: get from function output directly
+        export_dir=$(export_video_tree "$video_event_id" "$author_hex" 2>&1 | tail -1)
+        if [[ -z "$export_dir" ]] || [[ ! -d "$export_dir" ]]; then
+            log_warning "Export failed, but continuing with deletion..."
+            export_dir=""
+        else
+            log_info "Export directory: $export_dir"
+        fi
+    else
+        log_info "Export directory: $export_dir"
     fi
     
     # Collect all event IDs to delete (use process substitution to avoid subshell issues)
@@ -1763,6 +1779,78 @@ delete_video_tree() {
                 fi
             else
                 log_success "✅ Deletion verified: event no longer exists in database"
+            fi
+        fi
+        
+        # Send notification message (kind 1, ephemeral 28 days) with IPFS link to export
+        if [[ -n "$export_dir" ]] && [[ -d "$export_dir" ]]; then
+            local export_file="${export_dir}/video_tree_${video_event_id:0:16}.json"
+            if [[ -f "$export_file" ]]; then
+                log_info "Uploading export to IPFS and sending notification..."
+                
+                # Upload JSON file to IPFS
+                local ipfs_output=$(ipfs add -q "$export_file" 2>/dev/null)
+                if [[ -n "$ipfs_output" ]] && [[ $? -eq 0 ]]; then
+                    local ipfs_cid=$(echo "$ipfs_output" | tail -1)
+                    local ipfs_url="${IPFS_GATEWAY}/ipfs/${ipfs_cid}"
+                    
+                    log_info "✅ Export uploaded to IPFS: ${ipfs_cid}"
+                    
+                    # Find author's .secret.nostr file
+                    local author_secret_file=""
+                    local nostr_base="${HOME}/.zen/game/nostr"
+                    
+                    if [[ -d "$nostr_base" ]]; then
+                        for email_dir in "$nostr_base"/*; do
+                            if [[ -d "$email_dir" ]]; then
+                                local hex_file="${email_dir}/HEX"
+                                if [[ -f "$hex_file" ]]; then
+                                    local stored_hex=$(cat "$hex_file" 2>/dev/null | tr -d '\n\r ')
+                                    if [[ "$stored_hex" == "$author_hex" ]]; then
+                                        author_secret_file="${email_dir}/.secret.nostr"
+                                        break
+                                    fi
+                                fi
+                            fi
+                        done
+                    fi
+                    
+                    if [[ -n "$author_secret_file" ]] && [[ -f "$author_secret_file" ]]; then
+                        # Prepare notification message
+                        local notification_msg="🗑️ Video deletion completed
+
+Event ID: ${video_event_id:0:16}...
+Total events deleted: $total_to_delete
+
+📋 Export backup (all events before deletion):
+${ipfs_url}
+
+This message will expire in 28 days (ephemeral)."
+                        
+                        # Send kind 1 message with ephemeral duration (28 days = 2419200 seconds)
+                        local nostr_send_script="${MY_PATH}/nostr_send_note.py"
+                        if [[ -f "$nostr_send_script" ]]; then
+                            log_info "Sending notification message (kind 1, ephemeral 28d)..."
+                            if python3 "$nostr_send_script" \
+                                --keyfile "$author_secret_file" \
+                                --content "$notification_msg" \
+                                --kind 1 \
+                                --ephemeral 2419200 \
+                                --relays "ws://127.0.0.1:7777" \
+                                2>/dev/null; then
+                                log_success "✅ Notification message sent successfully!"
+                            else
+                                log_warning "⚠️  Failed to send notification message"
+                            fi
+                        else
+                            log_warning "⚠️  nostr_send_note.py not found, skipping notification"
+                        fi
+                    else
+                        log_warning "⚠️  Could not find .secret.nostr file for author ${author_hex:0:16}..., skipping notification"
+                    fi
+                else
+                    log_warning "⚠️  Failed to upload export to IPFS, skipping notification"
+                fi
             fi
         fi
     else

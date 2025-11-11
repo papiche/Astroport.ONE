@@ -62,7 +62,7 @@ analyze_changes_by_system() {
         ["ECONOMY"]="RUNTIME/ZEN.ECONOMY.readme.md|LEGAL.md|RUNTIME/ZEN.*.sh"
         ["DID"]="DID_IMPLEMENTATION.md|tools/make_NOSTRCARD.sh|tools/did_manager.*.sh"
         ["ORE"]="docs/ORE_SYSTEM.md|IA/ore_system.py|RUNTIME/NOSTR.UMAP.refresh.sh"
-        ["ORACLE"]="docs/ORACLE.doc.md|RUNTIME/ORACLE.refresh.sh|tools/oracle.*.sh|UPassport/templates/wotx2.html|UPassport/templates/oracle.html"
+        ["ORACLE"]="docs/ORACLE_SYSTEM.md|RUNTIME/ORACLE.refresh.sh|tools/oracle.*.sh|UPassport/templates/wotx2.html|UPassport/templates/oracle.html"
         ["NostrTube"]="docs/README.NostrTube.md|IA/youtube.com.sh|IA/create_video_channel.py|UPassport/templates/youtube.html"
         ["Cookie"]="IA/COOKIE_SYSTEM.md|IA/cookie_workflow_engine.sh|UPassport/templates/cookie.html"
         ["N8N"]="docs/N8N.md|docs/N8N.todo.md|UPassport/templates/n8n.html|nostr-nips/101-cookie-workflow-extension.md"

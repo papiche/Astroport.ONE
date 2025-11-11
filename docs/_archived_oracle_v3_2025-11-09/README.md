@@ -2,12 +2,12 @@
 
 **Date d'archivage** : 2025-11-09  
 **Raison** : Migration vers système Oracle v3.0 - 100% Dynamique  
-**Documentation actuelle** : `docs/ORACLE.doc.md`
+**Documentation actuelle** : `docs/ORACLE_SYSTEM.md`
 
 ## Contenu de cette archive
 
 ### Documents obsolètes
-- `ORACLE_SYSTEM_FULL.md` - Ancienne documentation complète (remplacée par `ORACLE.doc.md`)
+- `ORACLE_SYSTEM_FULL.md` - Ancienne documentation complète (remplacée par `ORACLE_SYSTEM.md`)
 - `ORACLE_TODO.md` - Liste de tâches obsolète
 - `_archived_oracle_docs_2025-11-05/` - Archive précédente des documents Oracle
 
@@ -22,7 +22,7 @@ Le nouveau système Oracle est **100% dynamique** :
 - ✅ Authentification NIP-42 requise pour les appels API
 - ✅ Compétences révélées progressivement
 
-**Documentation complète** : `docs/ORACLE.doc.md`
+**Documentation complète** : `docs/ORACLE_SYSTEM.md`
 
 ## Scripts actifs
 

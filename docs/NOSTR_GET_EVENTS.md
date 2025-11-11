@@ -298,7 +298,7 @@ find ~ -name "strfry-db" 2>/dev/null
 
 ## 🔗 Related Documentation
 
-- **[ORACLE.doc.md](./ORACLE.doc.md)**: Oracle permit management system - 100% Dynamic System with auto-proclaimed professions and unlimited progression
+- **[ORACLE_SYSTEM.md](./ORACLE_SYSTEM.md)**: Oracle permit management system - 100% Dynamic System with auto-proclaimed professions and unlimited progression
 - **[ORACLE_NOSTR_FLOW.md](./ORACLE_NOSTR_FLOW.md)**: NOSTR event flow details
 - **[DID_IMPLEMENTATION.md](../DID_IMPLEMENTATION.md)**: DID and NOSTR integration
 

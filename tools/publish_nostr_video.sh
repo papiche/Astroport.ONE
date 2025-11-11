@@ -170,10 +170,6 @@ Optional arguments:
   --season-number <num>     Season number (for series/episodes)
   --episode-number <num>    Episode number (for series/episodes)
   --genres <json_array>     JSON array of genres (e.g., '["Action","Sci-Fi"]') - will publish kind 1985 tags
-  --text-track <url>        WebVTT subtitles URL (IPFS CID or full URL) - NIP-71 text-track tag
-  --text-track-type <type>  Text track type: captions, subtitles, chapters, metadata (default: subtitles)
-  --text-track-lang <code>  Language code (e.g., en, fr) for text-track (default: empty)
-  --segments <json_array>   JSON array of segments/chapters: [{"start":"00:00:00.000","end":"00:05:00.000","title":"Chapter 1","thumbnail":"/ipfs/Qm..."}]
   --relays <urls>           Comma-separated relay URLs (default: local+copylaradio)
   --json                    Output JSON format
   --help                    Show this help message
@@ -297,24 +293,6 @@ while [[ $# -gt 0 ]]; do
             GENRES_JSON=$(echo "$GENRES_JSON" | tr -d '\n\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
             shift 2
             ;;
-        --text-track)
-            TEXT_TRACK_URL="$2"
-            shift 2
-            ;;
-        --text-track-type)
-            TEXT_TRACK_TYPE="$2"
-            shift 2
-            ;;
-        --text-track-lang)
-            TEXT_TRACK_LANG="$2"
-            shift 2
-            ;;
-        --segments)
-            SEGMENTS_JSON="$2"
-            # Remove any leading/trailing whitespace and newlines
-            SEGMENTS_JSON=$(echo "$SEGMENTS_JSON" | tr -d '\n\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-            shift 2
-            ;;
         --relays)
             RELAYS="$2"
             shift 2
@@ -388,12 +366,6 @@ if [ "$AUTO_MODE" = "true" ]; then
     # Default to webcam if still empty
     SOURCE_TYPE=${SOURCE_TYPE:-webcam}
     log_info "Source type: $SOURCE_TYPE"
-    
-    # Extract text-track and segments from upload2ipfs.sh output (only if not already provided via command line)
-    [ -z "$TEXT_TRACK_URL" ] && TEXT_TRACK_URL=$(echo "$UPLOAD_DATA" | jq -r '.text_track_url // .text_track // empty' 2>/dev/null)
-    [ -z "$TEXT_TRACK_TYPE" ] && TEXT_TRACK_TYPE=$(echo "$UPLOAD_DATA" | jq -r '.text_track_type // empty' 2>/dev/null)
-    [ -z "$TEXT_TRACK_LANG" ] && TEXT_TRACK_LANG=$(echo "$UPLOAD_DATA" | jq -r '.text_track_lang // empty' 2>/dev/null)
-    [ -z "$SEGMENTS_JSON" ] && SEGMENTS_JSON=$(echo "$UPLOAD_DATA" | jq -c '.segments // empty' 2>/dev/null)
     
     # Extract series metadata from upload2ipfs.sh output (only if not already provided via command line)
     if [ -z "$SERIES_NAME" ] && command -v jq &> /dev/null; then
@@ -847,58 +819,6 @@ if [ -n "$UPLOAD_CHAIN" ]; then
         TAGS="${TAGS},
     [\"p\", \"${ORIGINAL_AUTHOR}\"]"
         log_info "Added provenance author reference (p): ${ORIGINAL_AUTHOR:0:16}..."
-    fi
-fi
-
-# Add text-track tag (NIP-71) for WebVTT subtitles/captions
-# Format: ["text-track", "<url>", "<type>", "<language>"]
-# Type: captions, subtitles, chapters, metadata (default: subtitles)
-# Language: ISO 639-1 code (e.g., en, fr) - optional
-if [ -n "$TEXT_TRACK_URL" ]; then
-    # Normalize URL: if it's just a CID, prepend /ipfs/
-    if [[ "$TEXT_TRACK_URL" =~ ^Qm[a-zA-Z0-9]{44}$ ]] || [[ "$TEXT_TRACK_URL" =~ ^[a-zA-Z0-9]{46}$ ]]; then
-        TEXT_TRACK_URL="/ipfs/${TEXT_TRACK_URL}"
-    fi
-    
-    # Default type is subtitles if not specified
-    TEXT_TRACK_TYPE="${TEXT_TRACK_TYPE:-subtitles}"
-    
-    # Build text-track tag
-    if [ -n "$TEXT_TRACK_LANG" ]; then
-        TAGS="${TAGS},
-    [\"text-track\", \"${TEXT_TRACK_URL}\", \"${TEXT_TRACK_TYPE}\", \"${TEXT_TRACK_LANG}\"]"
-        log_info "Added text-track: ${TEXT_TRACK_URL} (type: ${TEXT_TRACK_TYPE}, lang: ${TEXT_TRACK_LANG})"
-    else
-        TAGS="${TAGS},
-    [\"text-track\", \"${TEXT_TRACK_URL}\", \"${TEXT_TRACK_TYPE}\"]"
-        log_info "Added text-track: ${TEXT_TRACK_URL} (type: ${TEXT_TRACK_TYPE})"
-    fi
-fi
-
-# Add segment tags (NIP-71) for video chapters
-# Format: ["segment", "<start>", "<end>", "<title>", "<thumbnail_url>"]
-# Start/end format: HH:MM:SS.sss (e.g., "00:05:30.000")
-if [ -n "$SEGMENTS_JSON" ]; then
-    # Validate JSON format
-    if echo "$SEGMENTS_JSON" | jq -e '.' >/dev/null 2>&1; then
-        # Parse segments array and add each as a tag
-        SEGMENT_COUNT=$(echo "$SEGMENTS_JSON" | jq '. | length' 2>/dev/null || echo "0")
-        if [ "$SEGMENT_COUNT" -gt 0 ]; then
-            log_info "Adding ${SEGMENT_COUNT} segment(s) for video chapters"
-            # Use jq to iterate through segments and build tags
-            while IFS= read -r segment_line; do
-                if [ -n "$segment_line" ]; then
-                    TAGS="${TAGS},
-    ${segment_line}"
-                fi
-            done < <(echo "$SEGMENTS_JSON" | jq -r '.[] | 
-                "[\"segment\", \"\(.start // "00:00:00.000")\", \"\(.end // "00:00:00.000")\", \"\(.title // "Chapter")\", \"\(.thumbnail // "")\"]"' 2>/dev/null)
-            log_info "Added ${SEGMENT_COUNT} segment tag(s) for video chapters"
-        else
-            log_warning "Segments JSON is empty or invalid"
-        fi
-    else
-        log_warning "Invalid JSON format for segments: ${SEGMENTS_JSON:0:50}..."
     fi
 fi
 

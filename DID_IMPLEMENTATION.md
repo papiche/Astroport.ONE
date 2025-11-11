@@ -29,7 +29,7 @@ Le système Oracle étend le Web of Trust (WoT) de l'**identité** vers la **com
 - **Récompenses Économiques** : Ẑen distribués depuis le portefeuille RnD coopératif
 - **Types de Permis** : ORE Verifier, Driver's License, WoT Dragon, Medical, Artisan, etc.
 
-Pour plus de détails, voir [`ORACLE.doc.md`](./docs/ORACLE.doc.md).
+Pour plus de détails, voir [`ORACLE_SYSTEM.md`](./docs/ORACLE_SYSTEM.md).
 
 Le script `make_NOSTRCARD.sh` génère des documents DID conformes aux standards [W3C DID Core v1.1](https://www.w3.org/TR/did-core-1.1/) et [W3C DID Resolution v1.0](https://www.w3.org/TR/did-resolution/), mais va bien au-delà en créant un écosystème complet de **ZEN Cards** (identité) et de **MULTIPASS** (autorisations).
 
