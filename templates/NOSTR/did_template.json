@@ -86,6 +86,7 @@
     "updated": "_UPDATED_DATE_",
     "version": "1.0",
     "contractStatus": "new_user",
+    "tokenTypes": [],
     "uplanet": "_UPLANET_G1PUB_8_",
     "coordinates": {
       "latitude": "_LATITUDE_",

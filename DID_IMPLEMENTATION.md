@@ -512,6 +512,7 @@ Le document DID est **automatiquement mis à jour** lors des transactions UPlane
 {
   "metadata": {
     "contractStatus": "cooperative_member_satellite",
+    "tokenTypes": ["ZENCARD", "ZENCOIN"],
     "storageQuota": "128GB",
     "services": "uDRIVE + NextCloud private storage",
     "lastPayment": {
@@ -568,13 +569,30 @@ Le document DID est **automatiquement mis à jour** lors des transactions UPlane
 }
 ```
 
+**Types de Jetons (`tokenTypes`)** :
+Le champ `tokenTypes` distingue les différents types de jetons possédés par l'utilisateur :
+- **`ZENCOIN`** : Jetons d'usage (MULTIPASS) - Recharges de services hebdomadaires
+- **`ZENCARD`** : Jetons de propriété (Parts de Capital) - Parts sociales coopératives
+
+Un utilisateur peut posséder les deux types simultanément. Par exemple, un sociétaire qui recharge son MULTIPASS aura `["ZENCARD", "ZENCOIN"]` dans `tokenTypes`.
+
+**Préservation du Statut de Sociétaire** :
+Lors d'une mise à jour MULTIPASS (recharge ZENCOIN), le système préserve automatiquement :
+- Le `contractStatus` de sociétaire (cooperative_member_satellite, cooperative_member_constellation, infrastructure_contributor)
+- Le quota supérieur des sociétaires (128GB au lieu de 10GB)
+- Les services étendus (NextCloud, AI services)
+
+Cela permet à un sociétaire de recharger son MULTIPASS sans perdre son statut de propriétaire coopératif.
+
 **Processus de mise à jour (Nostr-Native)** :
 1. **Récupération** : Fetch du DID actuel depuis Nostr (ou cache)
-2. **Modification** : Mise à jour des métadonnées via `jq` (sans casser la structure JSON)
-3. **Validation** : Vérification de la structure W3C DID
-4. **Publication Nostr** : Publication kind 30800 (remplace automatiquement l'ancienne version - NIP-101)
-5. **Mise à jour cache** : Copie dans `did.json.cache`
-6. **Synchronisation IPFS** : Copie vers `.well-known/did.json` et republication IPNS (arrière-plan)
+2. **Préservation** : Vérification et préservation du statut de sociétaire si présent
+3. **Modification** : Mise à jour des métadonnées via `jq` (sans casser la structure JSON)
+4. **Types de jetons** : Ajout du type de jeton approprié dans `tokenTypes` (ZENCOIN ou ZENCARD)
+5. **Validation** : Vérification de la structure W3C DID
+6. **Publication Nostr** : Publication kind 30800 (remplace automatiquement l'ancienne version - NIP-101)
+7. **Mise à jour cache** : Copie dans `did.json.cache`
+8. **Synchronisation IPFS** : Copie vers `.well-known/did.json` et republication IPNS (arrière-plan)
 
 **Note** : La publication initiale du DID se fait immédiatement lors de la création du MULTIPASS via `make_NOSTRCARD.sh`. Les mises à jour ultérieures sont gérées par `did_manager_nostr.sh` lors des transactions UPlanet.
 

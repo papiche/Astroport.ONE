@@ -100,6 +100,7 @@ ${YELLOW}EXAMPLES:${NC}
 
 ${YELLOW}DID DOCUMENT METADATA:${NC}
     - Contract Status (MULTIPASS, SOCIETAIRE, INFRASTRUCTURE, etc.)
+    - Token Types (ZENCOIN usage tokens, ZENCARD ownership tokens)
     - Storage Quotas
     - Wallet Addresses (MULTIPASS, ZenCard, G1, Bitcoin, Monero)
     - Services (uDRIVE, NextCloud, AI, etc.)
@@ -369,6 +370,9 @@ cmd_list() {
         echo -e "  📊 Status: ${CYAN}$contract_status${NC}"
         echo -e "  💾 Quota: $storage_quota"
         echo -e "  🛠️  Services: $services"
+        if [[ -n "$token_types" ]] && [[ "$token_types" != "null" ]] && [[ "$token_types" != "" ]]; then
+            echo -e "  🪙 Token Types: ${CYAN}$token_types${NC}"
+        fi
         
         if [[ "$VERBOSE" == "true" ]]; then
             [[ -n "$g1_multipass" ]] && echo -e "  💳 MULTIPASS: ${g1_multipass:0:8}..."
@@ -419,6 +423,7 @@ show_did_details() {
     local contract_status=$(echo "$content" | jq -r '.metadata.contractStatus // "unknown"')
     local storage_quota=$(echo "$content" | jq -r '.metadata.storageQuota // "N/A"')
     local services=$(echo "$content" | jq -r '.metadata.services // "N/A"')
+    local token_types=$(echo "$content" | jq -r '.metadata.tokenTypes // [] | join(", ")' 2>/dev/null)
     local created=$(echo "$content" | jq -r '.metadata.created // empty')
     local updated=$(echo "$content" | jq -r '.metadata.updated // empty')
     
@@ -436,6 +441,12 @@ show_did_details() {
     echo -e "  Status: ${CYAN}$contract_status${NC}"
     echo -e "  Quota: $storage_quota"
     echo -e "  Services: $services"
+    
+    # Token types
+    local token_types=$(echo "$content" | jq -r '.metadata.tokenTypes // [] | join(", ")' 2>/dev/null)
+    if [[ -n "$token_types" ]] && [[ "$token_types" != "null" ]] && [[ "$token_types" != "" ]]; then
+        echo -e "  Token Types: ${CYAN}$token_types${NC}"
+    fi
     echo ""
     
     # Wallets
@@ -635,11 +646,17 @@ cmd_browse() {
             local content=$(echo "$event" | jq -r '.content // "{}"' 2>/dev/null)
             local did_id=$(echo "$content" | jq -r '.id // empty' | sed 's/did:nostr://')
             local contract_status=$(echo "$content" | jq -r '.metadata.contractStatus // "unknown"')
+            local token_types=$(echo "$content" | jq -r '.metadata.tokenTypes // [] | join(",")' 2>/dev/null)
             local created_at=$(echo "$event" | jq -r '.created_at // 0')
             local date=$(date -d "@$created_at" "+%Y-%m-%d %H:%M" 2>/dev/null || echo "N/A")
             
+            local token_display=""
+            if [[ -n "$token_types" ]] && [[ "$token_types" != "null" ]] && [[ "$token_types" != "" ]]; then
+                token_display=" | 🪙 $token_types"
+            fi
+            
             echo -e "  ${YELLOW}$display_idx.${NC} 🆔 ${did_id:0:16}..."
-            echo -e "      👤 $email | 📊 $contract_status | 📅 $date"
+            echo -e "      👤 $email | 📊 $contract_status$token_display | 📅 $date"
             echo ""
             
             display_idx=$((display_idx + 1))
@@ -806,6 +823,9 @@ cmd_stats() {
     local with_astroport=0
     local fc_enabled=0
     local plantnet_users=0
+    local with_zencoin=0
+    local with_zencard_token=0
+    local with_both_tokens=0
     
     while IFS= read -r event; do
         [[ -z "$event" ]] && continue
@@ -835,6 +855,14 @@ cmd_stats() {
         local plantnet=$(echo "$content" | jq -r '.metadata.plantnetBiodiversity.detections_count // "0"')
         [[ "$plantnet" != "0" ]] && plantnet_users=$((plantnet_users + 1))
         
+        # Token types statistics
+        local token_types=$(echo "$content" | jq -r '.metadata.tokenTypes // []' 2>/dev/null)
+        local has_zencoin=$(echo "$token_types" | jq -r '.[] | select(. == "ZENCOIN") // empty' 2>/dev/null)
+        local has_zencard=$(echo "$token_types" | jq -r '.[] | select(. == "ZENCARD") // empty' 2>/dev/null)
+        [[ -n "$has_zencoin" ]] && with_zencoin=$((with_zencoin + 1))
+        [[ -n "$has_zencard" ]] && with_zencard_token=$((with_zencard_token + 1))
+        [[ -n "$has_zencoin" ]] && [[ -n "$has_zencard" ]] && with_both_tokens=$((with_both_tokens + 1))
+        
     done <<< "$events"
     
     # Display stats
@@ -856,6 +884,11 @@ cmd_stats() {
     echo -e "${YELLOW}💰 Wallet Distribution${NC}"
     echo -e "  MULTIPASS wallets: $with_multipass/$total ($(( (with_multipass * 100) / total ))%)"
     echo -e "  ZenCard wallets: $with_zencard/$total ($(( (with_zencard * 100) / total ))%)"
+    echo ""
+    echo -e "${YELLOW}🪙 Token Types Distribution${NC}"
+    echo -e "  ZENCOIN (usage tokens): $with_zencoin/$total ($(( (with_zencoin * 100) / total ))%)"
+    echo -e "  ZENCARD (ownership tokens): $with_zencard_token/$total ($(( (with_zencard_token * 100) / total ))%)"
+    echo -e "  Both types: $with_both_tokens/$total ($(( (with_both_tokens * 100) / total ))%)"
     echo ""
     echo -e "${YELLOW}🏭 Infrastructure${NC}"
     echo -e "  Astroport Stations: $with_astroport/$total ($(( (with_astroport * 100) / total ))%)"

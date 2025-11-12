@@ -800,11 +800,6 @@ if [ -n "$UPLOAD_CHAIN" ]; then
     # Add provenance tags (e, p) for NIP-71 - reference to original event
     # Extract current pubkey from NSEC for comparison
     CURRENT_PUBKEY=""
-    if [ -n "$NSEC_INPUT" ]; then
-        # Try to extract pubkey from nsec (requires nostr-tools or similar)
-        # For now, we'll skip if we can't determine current pubkey
-        # The original author check will be done if ORIGINAL_AUTHOR is set
-    fi
     
     # Add tag 'e' (event reference) if we have original event ID
     if [ -n "$ORIGINAL_EVENT_ID" ] && [ "$ORIGINAL_EVENT_ID" != "null" ] && [ "$ORIGINAL_EVENT_ID" != "" ]; then

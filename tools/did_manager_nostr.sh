@@ -489,10 +489,85 @@ update_did_document() {
             ;;
     esac
     
+    # Read existing contractStatus to preserve cooperative membership status
+    local existing_contract_status=$(jq -r '.metadata.contractStatus // "new_user"' "$did_temp" 2>/dev/null)
+    
+    # Check if existing status indicates cooperative membership (should not be overwritten by MULTIPASS updates)
+    local is_cooperative_member=false
+    if [[ "$existing_contract_status" == *"cooperative_member"* ]] || \
+       [[ "$existing_contract_status" == *"infrastructure_contributor"* ]] || \
+       [[ "$existing_contract_status" == *"cooperative_treasury_contributor"* ]] || \
+       [[ "$existing_contract_status" == *"cooperative_rnd_contributor"* ]] || \
+       [[ "$existing_contract_status" == *"cooperative_assets_contributor"* ]]; then
+        is_cooperative_member=true
+    fi
+    
+    # Preserve cooperative membership status when updating MULTIPASS (usage tokens)
+    # MULTIPASS updates should only add usage tokens, not overwrite ownership tokens (ZENCard)
+    local final_contract_status="$contract_status"
+    if [[ "$update_type" == "MULTIPASS" ]] && [[ "$is_cooperative_member" == "true" ]]; then
+        # Keep the cooperative membership status, don't overwrite with "active_rental"
+        final_contract_status="$existing_contract_status"
+        echo -e "${YELLOW}⚠️  Preserving cooperative membership status: ${existing_contract_status}${NC}"
+        echo -e "${CYAN}💡 MULTIPASS update adds usage tokens (ZENCOIN) without overwriting ownership tokens (ZENCard)${NC}"
+    fi
+    
     # Build jq command for updates
     local jq_cmd=".metadata.updated = \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\""
     
-    [[ -n "$contract_status" ]] && jq_cmd="$jq_cmd | .metadata.contractStatus = \"$contract_status\""
+    # Update contractStatus only if we have a new status and it's not a MULTIPASS update on a cooperative member
+    if [[ -n "$final_contract_status" ]] && [[ "$final_contract_status" != "$existing_contract_status" ]]; then
+        jq_cmd="$jq_cmd | .metadata.contractStatus = \"$final_contract_status\""
+    elif [[ -n "$final_contract_status" ]] && [[ "$update_type" != "MULTIPASS" ]]; then
+        # For non-MULTIPASS updates, always update the status
+        jq_cmd="$jq_cmd | .metadata.contractStatus = \"$final_contract_status\""
+    fi
+    
+    # Add token types to distinguish usage tokens (ZENCOIN) from ownership tokens (ZENCard)
+    # This allows users to have both usage tokens (MULTIPASS) and ownership tokens (cooperative shares)
+    # Determine token type based on update type
+    local new_token_type=""
+    case "$update_type" in
+        "MULTIPASS")
+            new_token_type="ZENCOIN"  # Usage tokens
+            ;;
+        "SOCIETAIRE_SATELLITE"|"SOCIETAIRE_CONSTELLATION"|"INFRASTRUCTURE")
+            new_token_type="ZENCARD"  # Ownership tokens (cooperative shares)
+            ;;
+    esac
+    
+    # Add token type if it's not already in the array
+    if [[ -n "$new_token_type" ]]; then
+        # Check if token type already exists in the array using jq
+        local token_exists=$(jq -r --arg type "$new_token_type" '.metadata.tokenTypes // [] | .[] | select(. == $type) // empty' "$did_temp" 2>/dev/null)
+        if [[ -z "$token_exists" ]]; then
+            # Add new token type to the array using jq
+            jq_cmd="$jq_cmd | .metadata.tokenTypes = ((.metadata.tokenTypes // []) + [\"$new_token_type\"])"
+            echo -e "${GREEN}✅ Added token type: ${new_token_type}${NC}"
+        else
+            echo -e "${CYAN}ℹ️  Token type ${new_token_type} already exists${NC}"
+        fi
+    fi
+    
+    # Preserve quota and services for cooperative members when updating MULTIPASS
+    # Cooperative members have higher quotas (128GB) than regular MULTIPASS users (10GB)
+    if [[ "$update_type" == "MULTIPASS" ]] && [[ "$is_cooperative_member" == "true" ]]; then
+        # Read existing quota and services to preserve them
+        local existing_quota=$(jq -r '.metadata.storageQuota // ""' "$did_temp" 2>/dev/null)
+        local existing_services=$(jq -r '.metadata.services // ""' "$did_temp" 2>/dev/null)
+        
+        # Only update if existing values are empty or lower
+        if [[ -n "$existing_quota" ]] && [[ "$existing_quota" != "10GB" ]]; then
+            echo -e "${CYAN}💡 Preserving cooperative member quota: ${existing_quota}${NC}"
+            quota="$existing_quota"
+        fi
+        
+        if [[ -n "$existing_services" ]] && ([[ "$existing_services" == *"NextCloud"* ]] || [[ "$existing_services" == *"AI services"* ]]); then
+            echo -e "${CYAN}💡 Preserving cooperative member services: ${existing_services}${NC}"
+            services="$existing_services"
+        fi
+    fi
+    
     [[ -n "$quota" ]] && jq_cmd="$jq_cmd | .metadata.storageQuota = \"$quota\""
     [[ -n "$services" ]] && jq_cmd="$jq_cmd | .metadata.services = \"$services\""
     
