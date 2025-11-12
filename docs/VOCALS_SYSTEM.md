@@ -5,7 +5,7 @@
 The VOCALS (Voice Over Communication And Localization System) is a comprehensive voice messaging system built on NOSTR that enables users to send public or end-to-end encrypted voice messages with optional geolocation. It implements NIP-A0 for voice messages and extends it with encryption capabilities.
 
 **Status:** Production  
-**NIPs Used:** [NIP-A0](nostr-nips/A0.md), [NIP-A0 Encryption Extension](nostr-nips/A0-encryption-extension.md), [NIP-44](nostr-nips/44.md), [NIP-04](nostr-nips/04.md), [NIP-42](nostr-nips/42.md), [NIP-92](nostr-nips/92.md), [NIP-22](nostr-nips/22.md), [NIP-101](nostr-nips/101.md)
+**NIPs Used:** [NIP-A0](nostr-nips/A0.md), [NIP-A0 Encryption Extension](nostr-nips/A0-encryption-extension.md), [NIP-44](nostr-nips/44.md), [NIP-04](nostr-nips/04.md), [NIP-42](nostr-nips/42.md), [NIP-92](nostr-nips/92.md), [NIP-22](nostr-nips/22.md), [NIP-101](nostr-nips/101.md), [NIP-40](nostr-nips/40.md)
 
 ## Features
 
@@ -13,6 +13,8 @@ The VOCALS (Voice Over Communication And Localization System) is a comprehensive
 - ✅ **End-to-End Encryption**: Optional E2EE using NIP-44 (recommended) or NIP-04 (legacy)
 - ✅ **Geolocation Support**: Optional UMAP anchoring (NIP-101)
 - ✅ **Multiple Recipients**: Support for encrypted messages to multiple recipients
+- ✅ **Self-Messaging**: Send encrypted voice messages to yourself (reminders, notes)
+- ✅ **Expiration Support**: Optional NIP-40 expiration timestamp (relay auto-deletion)
 - ✅ **IPFS Storage**: Decentralized storage via IPFS
 - ✅ **Metadata Rich**: Waveform, duration, title, description
 - ✅ **Reply Support**: Kind 1244 for threaded voice conversations
@@ -79,7 +81,11 @@ After recording/uploading:
   - **Encryption** (optional):
     - Enable/disable E2EE
     - Select encryption method (NIP-44 or NIP-04)
-    - Enter recipient pubkeys (one per line, npub format)
+    - Enter recipient pubkeys (one per line, npub format) OR
+    - Click "📝 Send to Myself" to add your own npub as recipient
+  - **Expiration** (optional):
+    - Set expiration date/time (NIP-40)
+    - Relay will automatically delete event after this timestamp
   - **Geolocation** (optional):
     - Manual coordinates entry
     - "My Location" button (uses `/api/myGPS` if NIP-42 authenticated)
@@ -138,6 +144,10 @@ Backend (`/vocals` POST endpoint):
    - `--file-hash`: SHA256 hash
    - `--mime-type`: Audio MIME type
    - `--channel`: User email/identifier
+   - `--expiration`: Optional NIP-40 expiration timestamp (Unix timestamp)
+   - `--encrypted`: Flag if message is encrypted
+   - `--encryption-method`: "nip44" or "nip04"
+   - `--recipients`: JSON array of recipient pubkeys (if encrypted)
 
 4. Script publishes NOSTR event to relay
 5. Returns event ID and publication status
@@ -212,6 +222,7 @@ Processes and publishes a voice message to NOSTR.
 - `mime_type`: Audio MIME type (default: `audio/mpeg`)
 - `waveform`: Waveform data for visual preview
 - `latitude`, `longitude`: Geographic coordinates
+- `expiration`: Unix timestamp (NIP-40) - relay will delete event after this time
 - `encrypted`: `"true"` to enable encryption (default: `"false"`)
 - `encryption_method`: `"nip44"` (recommended) or `"nip04"` (legacy)
 - `recipients`: JSON array of recipient pubkeys (required if `encrypted=true`)
@@ -231,7 +242,8 @@ curl -X POST http://localhost:54321/vocals \
   -F "encryption_method=nip44" \
   -F "recipients=[\"npub1recipient1...\",\"npub1recipient2...\"]" \
   -F "latitude=48.8566" \
-  -F "longitude=2.3522"
+  -F "longitude=2.3522" \
+  -F "expiration=1752600000"
 ```
 
 ### GET `/api/getN2`
@@ -309,7 +321,8 @@ const recipients = network.nodes
     ["p", "recipient2_pubkey_hex"],
     ["encrypted", "true"],
     ["encryption", "nip44"],
-    ["imeta", "duration 45"]  // Public metadata (optional)
+    ["imeta", "duration 45"],  // Public metadata (optional)
+    ["expiration", "1752600000"]  // NIP-40: Relay will delete after this timestamp (optional)
   ],
   "id": "...",
   "sig": "..."
@@ -365,6 +378,14 @@ Follows NIP-22 reply structure with `e` and `p` tags:
    - Client-side: `window.nostr.nip04.encrypt(recipientPubkey, plaintext)`
    - Client-side: `window.nostr.nip04.decrypt(senderPubkey, ciphertext)`
 
+### Self-Messaging
+
+Users can send encrypted voice messages to themselves:
+- Click "📝 Send to Myself" button in the encryption UI
+- Automatically adds your own npub as recipient
+- Useful for reminders, notes, or scheduled messages
+- Works with expiration dates (NIP-40) for time-limited reminders
+
 ### Multiple Recipients
 
 **Approach 1: Separate Events** (Recommended for small groups)
@@ -380,6 +401,23 @@ Follows NIP-22 reply structure with `e` and `p` tags:
 **Current Implementation:**
 - Uses Approach 1 (separate encryption per recipient)
 - TODO: Support Approach 2 for groups
+
+## Expiration (NIP-40)
+
+### Event Expiration
+
+Voice messages can include an expiration timestamp (NIP-40):
+
+- **Tag**: `["expiration", "<unix_timestamp>"]`
+- **Behavior**: Relays supporting NIP-40 will automatically delete the event after this timestamp
+- **Use Cases**:
+  - Temporary reminders
+  - Time-limited announcements
+  - Self-destructing messages
+- **Client Behavior**: Clients SHOULD ignore expired events
+- **Relay Behavior**: Relays SHOULD NOT send expired events to clients
+
+**Note**: Expiration is not a security feature - events may be cached or downloaded before expiration.
 
 ## Geolocation
 
@@ -638,13 +676,14 @@ const contacts = network.nodes
 
 ## Future Enhancements
 
-- [ ] Support for multiple recipients with shared secret approach
-- [ ] Audio file encryption before upload (full E2EE)
+- [ ] Support for multiple recipients with shared secret approach (currently uses separate events)
+- [ ] Audio file encryption before upload (full E2EE - currently only URL/metadata encrypted)
 - [ ] Voice message threading/replies UI
 - [ ] Waveform generation client-side
 - [ ] Voice message playback in feed
 - [ ] Integration with NostrTube for voice message discovery
 - [ ] Voice message transcription (NIP-90 integration)
+- [ ] Scheduled messages (currently only expiration supported via NIP-40)
 
 ## Related Documentation
 
