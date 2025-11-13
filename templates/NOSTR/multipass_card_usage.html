@@ -196,6 +196,33 @@
         .comparison-item.multipass strong {
             color: #0d7377;
         }
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 1.2rem;
+            }
+            .section h2 {
+                font-size: 1.1rem;
+            }
+            .qr-info {
+                flex-direction: column;
+                text-align: center;
+            }
+            .qr-info .icon {
+                margin-right: 0;
+                margin-bottom: 0.5rem;
+            }
+            .comparison-row {
+                flex-direction: column;
+            }
+            .pass-code {
+                font-size: 0.9rem;
+                padding: 0.4rem 0.8rem;
+            }
+            /* Rendre les grids verticaux sur mobile */
+            div[style*="grid-template-columns"] {
+                grid-template-columns: 1fr !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -203,61 +230,141 @@
         <div class="header">
             <h1>🎫 MULTIPASS Card - Guide d'Utilisation</h1>
         </div>
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; text-align: center;">
+            <h2 style="margin: 0 0 1rem 0; font-size: 1.3rem;">🚀 Démarrage en 30 Secondes</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; max-width: 600px; margin: 0 auto;">
+                <div style="background: rgba(255,255,255,0.2); padding: 1rem; border-radius: 8px; backdrop-filter: blur(10px);">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">1️⃣</div>
+                    <strong>Téléchargez</strong><br>
+                    <small>Votre carte ci-dessous</small>
+                </div>
+                <div style="background: rgba(255,255,255,0.2); padding: 1rem; border-radius: 8px; backdrop-filter: blur(10px);">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">2️⃣</div>
+                    <strong>Imprimez</strong><br>
+                    <small>Sur feuille A4</small>
+                </div>
+                <div style="background: rgba(255,255,255,0.2); padding: 1rem; border-radius: 8px; backdrop-filter: blur(10px);">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">3️⃣</div>
+                    <strong>Scannez</strong><br>
+                    <small>Sur terminal UPlanet</small>
+                </div>
+            </div>
+        </div>
         <div class="content">
             <p><strong>Date:</strong> _DATE_</p>
             <p>Votre carte MULTIPASS a été créée et est prête à être utilisée ! Cette carte vous permet d'authentifier votre identité décentralisée sur n'importe quel terminal UPlanet.</p>
             
             <div class="section">
-                <h2>📱 QR Codes sur la Carte</h2>
+                <h2>📱 Les 2 QR Codes de Votre Carte</h2>
                 
-                <div class="qr-info">
-                    <div class="icon">🔍</div>
-                    <div class="details">
-                        <strong>Petit QR Code (en haut à gauche) : uSPOT Scan</strong>
-                        <p>Scannez ce QR code avec votre téléphone pour accéder à <code>_uSPOT_/scan</code>. Utilisez-le pour authentifier votre MULTIPASS depuis votre mobile.</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0;">
+                    <!-- Petit QR -->
+                    <div style="text-align: center; padding: 1rem; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div style="font-size: 3rem; margin-bottom: 0.5rem;">📱</div>
+                        <strong style="color: #667eea; display: block; margin-bottom: 0.5rem;">Petit QR (Mobile)</strong>
+                        <p style="margin: 0; font-size: 0.9rem; color: #666;">
+                            Scannez avec votre téléphone pour accéder à <strong>uSPOT/scan</strong>
+                        </p>
+                    </div>
+                    
+                    <!-- Grand QR -->
+                    <div style="text-align: center; padding: 1rem; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div style="font-size: 3rem; margin-bottom: 0.5rem;">🖥️</div>
+                        <strong style="color: #667eea; display: block; margin-bottom: 0.5rem;">Grand QR (Terminal)</strong>
+                        <p style="margin: 0; font-size: 0.9rem; color: #666;">
+                            Scannez sur écran terminal pour vous authentifier (clé SSSS)
+                        </p>
                     </div>
                 </div>
                 
-                <div class="qr-info">
-                    <div class="icon">🔐</div>
-                    <div class="details">
-                        <strong>Grand QR Code (en bas) : Clé SSSS</strong>
-                        <p>Scannez ce QR code sur n'importe quel terminal UPlanet pour vous authentifier. Cette clé SSSS (Shamir Secret Sharing Scheme) permet l'authentification sans stockage navigateur.</p>
-                    </div>
+                <div style="background: #e7f5ff; padding: 1rem; border-radius: 6px; margin-top: 1rem;">
+                    <strong>💡 Astuce :</strong> Le grand QR code est votre <strong>authentification universelle</strong>. 
+                    Il fonctionne sur tous les terminaux UPlanet du réseau !
                 </div>
             </div>
             
             <div class="section">
-                <h2>⌨️ Codes PASS Spéciaux</h2>
-                <p>Après avoir scanné votre QR code SSSS, vous pouvez entrer un code PASS à 4 chiffres pour accéder à différentes fonctionnalités :</p>
+                <h2>⌨️ Codes PASS : Votre Télécommande UPlanet</h2>
+                <p>Après avoir scanné votre QR code SSSS, entrez un de ces codes à 4 chiffres :</p>
                 
-                <div class="pass-description">
-                    <span class="pass-code">1111</span>
-                    <strong>Interface Astro Base Complète</strong>
-                    <p>Ouvre l'interface messenger NOSTR complète avec toutes les fonctionnalités de communication décentralisée.</p>
-                </div>
+                <table style="width: 100%; border-collapse: collapse; margin: 1rem 0; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <thead>
+                        <tr style="background: #667eea; color: white;">
+                            <th style="padding: 0.75rem; text-align: left;">Code</th>
+                            <th style="padding: 0.75rem; text-align: left;">Fonction</th>
+                            <th style="padding: 0.75rem; text-align: left;">Usage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="background: #f8f9fa;">
+                            <td style="padding: 0.75rem;">
+                                <span style="display: inline-block; padding: 0.5rem 1rem; background: #667eea; color: white; border-radius: 6px; font-weight: bold; font-family: monospace;">1111</span>
+                            </td>
+                            <td style="padding: 0.75rem;">
+                                <strong>Astro Base</strong>
+                            </td>
+                            <td style="padding: 0.75rem; font-size: 0.9rem; color: #666;">
+                                Interface messenger NOSTR complète
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <td style="padding: 0.75rem;">
+                                <span style="display: inline-block; padding: 0.5rem 1rem; background: #10b981; color: white; border-radius: 6px; font-weight: bold; font-family: monospace;">9999</span>
+                            </td>
+                            <td style="padding: 0.75rem;">
+                                <strong>Terminal Paiement</strong>
+                            </td>
+                            <td style="padding: 0.75rem; font-size: 0.9rem; color: #666;">
+                                Gérez vos ẐEN et transactions
+                            </td>
+                        </tr>
+                        
+                        <tr style="background: #f8f9fa;">
+                            <td style="padding: 0.75rem;">
+                                <span style="display: inline-block; padding: 0.5rem 1rem; background: #f59e0b; color: white; border-radius: 6px; font-weight: bold; font-family: monospace;">7777</span>
+                            </td>
+                            <td style="padding: 0.75rem;">
+                                <strong>Enregistreur Webcam</strong>
+                            </td>
+                            <td style="padding: 0.75rem; font-size: 0.9rem; color: #666;">
+                                Enregistrez vidéo avec auth NOSTR
+                            </td>
+                        </tr>
+                        
+                        <tr style="background: #fff3cd;">
+                            <td style="padding: 0.75rem;">
+                                <span style="display: inline-block; padding: 0.5rem 1rem; background: #dc2626; color: white; border-radius: 6px; font-weight: bold; font-family: monospace;">0000</span>
+                            </td>
+                            <td style="padding: 0.75rem;">
+                                <strong>⚠️ Régénération</strong>
+                            </td>
+                            <td style="padding: 0.75rem; font-size: 0.9rem; color: #856404;">
+                                <strong>Urgence uniquement :</strong> perte/vol carte
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <td style="padding: 0.75rem;">
+                                <span style="display: inline-block; padding: 0.5rem 1rem; background: #6b7280; color: white; border-radius: 6px; font-weight: bold; font-family: monospace;">vide</span>
+                            </td>
+                            <td style="padding: 0.75rem;">
+                                <strong>Message Simple</strong>
+                            </td>
+                            <td style="padding: 0.75rem; font-size: 0.9rem; color: #666;">
+                                Interface messagerie rapide
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
                 
-                <div class="pass-description">
-                    <span class="pass-code">9999</span>
-                    <strong>Terminal de Paiement MULTIPASS</strong>
-                    <p>Accède au terminal de paiement pour gérer vos ẐEN et effectuer des transactions.</p>
-                </div>
-                
-                <div class="pass-description">
-                    <span class="pass-code">7777</span>
-                    <strong>Enregistreur Webcam</strong>
-                    <p>Ouvre l'interface d'enregistrement vidéo avec authentification NOSTR automatique.</p>
-                </div>
-                
-                <div class="pass-description">
-                    <span class="pass-code">0000</span>
-                    <strong>Régénération MULTIPASS</strong>
-                    <p>⚠️ Utilisez uniquement en cas de perte ou vol de votre carte. Régénère votre MULTIPASS avec de nouvelles clés.</p>
-                </div>
-                
-                <div class="pass-description">
-                    <strong>Par défaut (sans code)</strong>
-                    <p>Ouvre l'interface simple de message NOSTR pour communiquer rapidement.</p>
+                <div style="background: #d1f2eb; padding: 1rem; border-radius: 6px; margin-top: 1rem;">
+                    <strong>💡 À retenir :</strong>
+                    <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                        <li><strong>1111</strong> = Messagerie complète (usage quotidien)</li>
+                        <li><strong>9999</strong> = Portefeuille ẐEN (paiements)</li>
+                        <li><strong>0000</strong> = Urgence (perte carte)</li>
+                    </ul>
                 </div>
             </div>
             
@@ -280,7 +387,35 @@
             </div>
             
             <div class="section">
-                <h2>🛡️ MULTIPASS vs Banques : La Révolution de la Sécurité</h2>
+                <h2>🛡️ MULTIPASS vs Banques Traditionnelles</h2>
+                
+                <!-- TL;DR Visuel -->
+                <div style="background: linear-gradient(135deg, #fff3cd 0%, #d1f2eb 100%); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; text-align: center;">
+                    <h3 style="margin: 0 0 1rem 0; color: #333; font-size: 1.2rem;">⚡ En 10 Secondes</h3>
+                    <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: center; max-width: 500px; margin: 0 auto;">
+                        <div>
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🏦</div>
+                            <strong style="color: #856404;">Banque</strong><br>
+                            <span style="font-size: 1.5rem; font-weight: bold; color: #856404;">Milliards €</span><br>
+                            <small style="color: #856404;">Infrastructure centralisée</small>
+                        </div>
+                        
+                        <div style="font-size: 2rem; font-weight: bold; color: #667eea;">
+                            VS
+                        </div>
+                        
+                        <div>
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎫</div>
+                            <strong style="color: #0d7377;">MULTIPASS</strong><br>
+                            <span style="font-size: 1.5rem; font-weight: bold; color: #0d7377;">2.40€</span><br>
+                            <small style="color: #0d7377;">Par utilisateur</small>
+                        </div>
+                    </div>
+                    <p style="margin: 1rem 0 0 0; font-weight: 600; color: #333;">
+                        💡 Coût divisé par <strong style="color: #667eea;">1 million</strong> grâce à la décentralisation
+                    </p>
+                </div>
+                
                 <p>Alors que les banques dépensent des fortunes pour sécuriser leurs systèmes centralisés, le MULTIPASS repose sur une architecture décentralisée qui rend obsolète l'infrastructure coûteuse du système bancaire traditionnel.</p>
                 
                 <div class="comparison-row">
@@ -306,6 +441,85 @@
                     <p>Le MULTIPASS intègre la confiance et la sécurité <strong>au cœur du protocole</strong> (cryptographie, blockchain Ğ1), rendant obsolète la quasi-totalité de l'infrastructure coûteuse du vieux monde. La valeur est sur la blockchain, pas sur le papier. Les transactions sont instantanées, transparentes, de pair à pair, avec des frais quasi nuls.</p>
                 </div>
             </div>
+            
+            <details style="margin: 1.5rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; cursor: pointer;">
+                <summary style="font-size: 1.2rem; font-weight: 600; color: #667eea; padding: 0.5rem; cursor: pointer;">
+                    🔐 Pour les Curieux : Comment Fonctionne l'Authentification SSSS ?
+                </summary>
+                
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e9ecef;">
+                    <p style="background: #e7f5ff; padding: 0.75rem; border-radius: 6px; border-left: 4px solid #0ea5e9;">
+                        <strong>💡 En résumé :</strong> Votre carte contient <strong>1 fragment sur 3</strong> de votre clé privée. 
+                        Il faut <strong>2 fragments</strong> pour vous authentifier. Même si quelqu'un vole votre carte, 
+                        il ne peut rien faire sans le 2ème fragment stocké sur le réseau.
+                    </p>
+                    
+                    <p style="margin-top: 1rem;">Lorsque vous scannez votre QR code SSSS sur un terminal UPlanet, voici les opérations cryptographiques qui se déroulent en arrière-plan :</p>
+                
+                <div style="margin: 1.5rem 0; padding: 1rem; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #667eea;">
+                    <h3 style="margin-top: 0; color: #667eea; font-size: 1.1rem;">📱 Étape 1 : Détection et Transmission</h3>
+                    <p>Le terminal détecte que votre QR code commence par <code>M-</code> ou <code>1-</code> (format SSSS MULTIPASS) et extrait :</p>
+                    <ul>
+                        <li><strong>SSSS1</strong> : La première part du secret Shamir (dans le QR code)</li>
+                        <li><strong>IPNSVAULT</strong> : La clé IPNS (k51qzi5uqu5d...) qui identifie votre coffre-fort décentralisé</li>
+                        <li><strong>PASS</strong> : Le code à 4 chiffres que vous entrez (1111, 9999, 7777, 0000, ou vide)</li>
+                    </ul>
+                </div>
+                
+                <div style="margin: 1.5rem 0; padding: 1rem; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #667eea;">
+                    <h3 style="margin-top: 0; color: #667eea; font-size: 1.1rem;">🔍 Étape 2 : Recherche du MULTIPASS</h3>
+                    <p>Le système recherche votre MULTIPASS dans la base locale en utilisant l'IPNSVAULT. Si votre MULTIPASS n'est pas trouvé sur ce terminal, vous verrez le message "NOSTR CARD MISSING".</p>
+                </div>
+                
+                <div style="margin: 1.5rem 0; padding: 1rem; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #667eea;">
+                    <h3 style="margin-top: 0; color: #667eea; font-size: 1.1rem;">🔓 Étape 3 : Décryptage SSSS (Shamir Secret Sharing Scheme)</h3>
+                    <p>Le système combine deux parts du secret pour reconstruire votre clé :</p>
+                    <ol>
+                        <li><strong>Part 1 (SSSS1)</strong> : Extraite directement de votre QR code scanné</li>
+                        <li><strong>Part 2 (TAIL)</strong> : Décryptée depuis <code>ssss.tail.uplanet.enc</code> en utilisant la clé UPlanet</li>
+                    </ol>
+                    <p>Ces deux parts sont combinées via <code>ssss-combine</code> pour reconstruire le secret <strong>DISCO</strong> qui contient votre <code>salt</code> et <code>pepper</code>.</p>
+                    <p style="margin-top: 0.5rem; padding: 0.75rem; background: #fff3cd; border-radius: 4px; font-size: 0.9em;">
+                        <strong>🔐 Sécurité :</strong> Le système utilise un schéma "2 sur 3" : il faut au minimum 2 parts sur 3 possibles (HEAD=utilisateur, MIDDLE=UPlanet, TAIL=Capitaine) pour reconstruire le secret. Votre carte ne contient qu'une seule part, insuffisante seule pour compromettre votre identité.
+                    </p>
+                </div>
+                
+                <div style="margin: 1.5rem 0; padding: 1rem; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #667eea;">
+                    <h3 style="margin-top: 0; color: #667eea; font-size: 1.1rem;">🔑 Étape 4 : Génération des Clés</h3>
+                    <p>À partir du <code>salt</code> et <code>pepper</code> reconstruits, le système génère :</p>
+                    <ul>
+                        <li><strong>NSEC</strong> : Votre clé privée NOSTR (pour l'authentification réseau social décentralisé)</li>
+                        <li><strong>DUNIKEY</strong> : Votre clé privée Ğ1 (pour les transactions monétaires, si nécessaire)</li>
+                    </ul>
+                    <p style="margin-top: 0.5rem; padding: 0.75rem; background: #d1f2eb; border-radius: 4px; font-size: 0.9em;">
+                        <strong>💡 Important :</strong> Ces clés sont générées à la volée et ne sont jamais stockées dans le navigateur. Elles restent uniquement en mémoire pendant la session.
+                    </p>
+                </div>
+                
+                <div style="margin: 1.5rem 0; padding: 1rem; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #667eea;">
+                    <h3 style="margin-top: 0; color: #667eea; font-size: 1.1rem;">🎯 Étape 5 : Routage selon le Code PASS</h3>
+                    <p>Selon le code PASS que vous avez entré, le système ouvre différentes interfaces :</p>
+                    <ul>
+                        <li><strong>PASS vide</strong> → Interface simple de message NOSTR (<code>nostr.html</code>)</li>
+                        <li><strong>PASS 1111</strong> → Interface demo Astro Base avec messenger NOSTR (<code>astro_base.html</code>)</li>
+                        <li><strong>PASS 9999</strong> → Terminal de paiement MULTIPASS avec solde ẐEN (<code>scan_multipass_payment.html</code>)</li>
+                        <li><strong>PASS 7777</strong> → Enregistreur vidéo webcam avec authentification NOSTR (<code>webcam.html</code>)</li>
+                        <li><strong>PASS 0000</strong> → Résiliation : vide le portefeuille Ğ1 et régénère le MULTIPASS</li>
+                    </ul>
+                </div>
+                
+                <div style="margin: 1.5rem 0; padding: 1rem; background: #e7f5ff; border-left: 4px solid #0ea5e9; border-radius: 4px;">
+                    <strong>🛡️ Avantages de cette Architecture :</strong>
+                    <ul style="margin-top: 0.5rem;">
+                        <li><strong>Aucun stockage navigateur</strong> : Vos clés ne sont jamais sauvegardées dans le navigateur</li>
+                        <li><strong>Authentification sans mot de passe</strong> : La possession physique de votre carte suffit</li>
+                        <li><strong>Multi-terminal</strong> : Votre MULTIPASS fonctionne sur n'importe quel terminal UPlanet</li>
+                        <li><strong>Résilience</strong> : Même si une part est compromise, il faut encore une deuxième part pour reconstruire le secret</li>
+                        <li><strong>Régénération possible</strong> : En cas de perte, utilisez le code 0000 pour récupérer vos fonds et créer un nouveau MULTIPASS</li>
+                    </ul>
+                </div>
+                </div>
+            </details>
             
             <div class="section">
                 <h2>💳 QR Code de Paiement</h2>
@@ -343,8 +557,37 @@
                 </ul>
             </div>
             
-            <div style="text-align: center; margin: 2rem 0;">
-                <a href="_uSPOT_/scan" class="cta-button" target="_blank">🔍 Accéder à uSPOT/scan</a>
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; border-radius: 12px; margin: 2rem 0;">
+                <h2 style="margin: 0 0 1rem 0; text-align: center; font-size: 1.5rem;">🚀 Vos Prochaines Étapes</h2>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                    <div style="background: rgba(255,255,255,0.15); padding: 1rem; border-radius: 8px; backdrop-filter: blur(10px);">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">1️⃣</div>
+                        <strong>Maintenant</strong><br>
+                        <small>Téléchargez et imprimez votre carte ci-dessous</small>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.15); padding: 1rem; border-radius: 8px; backdrop-filter: blur(10px);">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">2️⃣</div>
+                        <strong>Aujourd'hui</strong><br>
+                        <small>Testez votre MULTIPASS sur uSPOT/scan</small>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.15); padding: 1rem; border-radius: 8px; backdrop-filter: blur(10px);">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">3️⃣</div>
+                        <strong>Cette Semaine</strong><br>
+                        <small>Rejoignez la communauté sur Coracle</small>
+                    </div>
+                </div>
+                
+                <div style="text-align: center;">
+                    <a href="_uSPOT_/scan" style="display: inline-block; background: white; color: #667eea; padding: 1rem 2rem; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                        🔍 Tester Mon MULTIPASS
+                    </a>
+                    <a href="https://coracle.copylaradio.com" target="_blank" style="display: inline-block; background: rgba(255,255,255,0.2); color: white; padding: 1rem 2rem; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 0.5rem; border: 2px solid white;">
+                        💬 Rejoindre la Communauté
+                    </a>
+                </div>
             </div>
         </div>
         <div class="footer">
@@ -352,6 +595,31 @@
             <p>Station: _UPLANET8_ | Date: _DATE_</p>
         </div>
     </div>
+    <!-- Tracking & Analytics using uPlanetAnalytics from astro.js -->
+    <!-- Load astro.js from IPNS (standard UPlanet library) -->
+    <!-- Note: If common.js is loaded and NOSTR is connected, analytics will be sent as NOSTR events (kind 10000) -->
+    <!-- Otherwise, falls back to HTTP POST to /ping endpoint -->
+    <script src="https://ipfs.copylaradio.com/ipns/copylaradio.com/astro.js"></script>
+    <script>
+        // Use uPlanetAnalytics system from astro.js
+        // Extract data from template variables (they will be replaced by sed)
+        const email = '_EMAIL_';
+        const captainEmail = '_CAPTAINEMAIL_';
+        const g1pubnostr = '_G1PUBNOSTR_';
+        const uplanet8 = '_UPLANET8_';
+        const date = '_DATE_';
+        
+        // Smart send: uses NOSTR if common.js is loaded and connected, otherwise HTTP /ping
+        uPlanetAnalytics.smartSend({
+            type: 'multipass_card_usage',
+            source: 'email',
+            email: email !== '_EMAIL_' ? email : null,
+            captain_email: captainEmail !== '_CAPTAINEMAIL_' ? captainEmail : null,
+            g1pubnostr: g1pubnostr !== '_G1PUBNOSTR_' ? g1pubnostr : null,
+            uplanet: uplanet8 !== '_UPLANET8_' ? uplanet8 : null,
+            date: date !== '_DATE_' ? date : new Date().toISOString()
+        });
+    </script>
 </body>
 </html>
 
