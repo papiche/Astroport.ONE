@@ -60,13 +60,20 @@ The VOCALS (Voice Over Communication And Localization System) is a comprehensive
 
 ### 1. Recording/Uploading Voice Message
 
-**Option A: Record like Webcam Interface**
+**Option A: Access via MULTIPASS (PASS 8888)**
+- User scans MULTIPASS SSSS QR code in `scan_new.html`
+- Enters PASS code **"8888"**
+- `vocals.html` opens with NOSTR private key (nsec) pre-injected
+- Encryption works automatically without manual key entry
+- User can record or upload voice messages immediately
+
+**Option B: Record like Webcam Interface**
 - User navigates to `/vocals`
 - Clicks "Start Recording" (if webcam available)
 - Records up to 30 seconds (configurable)
 - Stops recording
 
-**Option B: Upload Audio File**
+**Option C: Upload Audio File**
 - User navigates to `/vocals?type=mp3` or `/vocals?audio=1`
 - Selects audio file (MP3, WAV, OGG, FLAC, AAC, M4A)
 - File is validated (type, size max 500MB)
@@ -694,6 +701,31 @@ const contacts = network.nodes
 - [NIP-101: UPlanet - Decentralized Identity & Geographic Coordination](nostr-nips/101.md)
 - [UPlanet_FILE_CONTRACT.md](UPlanet_FILE_CONTRACT.md)
 
+## MULTIPASS Integration
+
+### PASS Code "8888"
+
+Users can access the Voice Messages Recorder directly via MULTIPASS authentication:
+
+1. **Scan MULTIPASS QR Code** in `scan_new.html`
+2. **Enter PASS code "8888"**
+3. **Automatic Authentication**: `upassport.sh` injects the NOSTR private key (nsec) into `vocals.html`
+4. **Ready to Use**: Encryption works automatically without manual key entry
+
+**PASS Codes Available:**
+- **1111** = Full Astro Base access
+- **9999** = MULTIPASS Payment Terminal
+- **7777** = Webcam Video Recorder (with NOSTR auth)
+- **8888** = Voice Messages Recorder (with NOSTR auth) ✨
+- **0000** = Resiliation / Regeneration
+- **(empty)** = Quick Message interface
+
+**Implementation:**
+- `upassport.sh` handles PASS code routing (lines 428-516)
+- Injects `AUTO_CONNECT_NSEC` variable into `vocals.html` template
+- Uses `sed` to replace `const AUTO_CONNECT_NSEC = null;` with actual nsec value
+- Frontend automatically uses injected key for encryption
+
 ## Code References
 
 - Frontend Recording: `UPassport/templates/vocals.html`
@@ -701,4 +733,5 @@ const contacts = network.nodes
 - Backend Routes: `UPassport/54321.py` (lines 3746-4410)
 - NOSTR Script: `~/.zen/Astroport.ONE/tools/publish_nostr_video.sh`
 - Upload Script: `~/.zen/Astroport.ONE/tools/upload2ipfs.sh`
+- MULTIPASS Handler: `UPassport/upassport.sh` (PASS code "8888" at lines 503-516)
 
