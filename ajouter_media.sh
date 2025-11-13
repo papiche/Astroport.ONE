@@ -1888,6 +1888,17 @@ fi
             echo "🔍 Debug: GENRES_ARRAY='$GENRES_ARRAY' (empty check: $([ -z "$GENRES_ARRAY" ] && echo "empty" || echo "not empty"))"
         fi
         
+        # Add dimensions and duration explicitly to ensure correct values (film/serie)
+        if [[ -n "$DIMENSIONS" ]] && [[ "$DIMENSIONS" != "empty" ]] && [[ "$DIMENSIONS" != "" ]] && [[ "$DIMENSIONS" != "640x480" ]]; then
+            PUBLISH_CMD+=("--dimensions" "$DIMENSIONS")
+            echo "📐 Dimensions: $DIMENSIONS"
+        fi
+        
+        if [[ -n "$DURATION" ]] && [[ "$DURATION" != "0" ]] && [[ "$DURATION" != "empty" ]] && [[ "$DURATION" != "" ]]; then
+            PUBLISH_CMD+=("--duration" "$DURATION")
+            echo "⏱️  Duration: ${DURATION}s"
+        fi
+        
         PUBLISH_CMD+=("--channel" "$PLAYER" "--json")
         
         # Execute publish script
@@ -2307,6 +2318,8 @@ EOF
         
         # Extract values from upload result
         IPFS_CID=$(jq -r '.cid // empty' "$UPLOAD_OUTPUT_FILE")
+        DIMENSIONS=$(jq -r '.dimensions // empty' "$UPLOAD_OUTPUT_FILE")
+        DURATION=$(jq -r '.duration // 0' "$UPLOAD_OUTPUT_FILE")
         
         if [[ -z "$IPFS_CID" ]]; then
             echo "❌ ERROR: Failed to get IPFS CID from upload result"
@@ -2317,6 +2330,8 @@ EOF
         
         echo "✅ Video uploaded to IPFS and copied to uDRIVE!"
         echo "   CID: $IPFS_CID"
+        [[ -n "$DIMENSIONS" ]] && echo "   Dimensions: $DIMENSIONS"
+        [[ -n "$DURATION" ]] && [[ "$DURATION" != "0" ]] && echo "   Duration: ${DURATION}s"
         
         # Publish via publish_nostr_video.sh directly (no API, no NIP-42 required)
         echo "📹 Publishing video via publish_nostr_video.sh..."
@@ -2392,6 +2407,17 @@ EOF
                 PUBLISH_CMD+=("--genres" "$GENRES_ARRAY_CLEAN")
                 echo "🏷️  Genres for tagging (kind 1985): $GENRES_ARRAY_CLEAN"
             fi
+        fi
+        
+        # Add dimensions and duration explicitly to ensure correct values (personal video)
+        if [[ -n "$DIMENSIONS" ]] && [[ "$DIMENSIONS" != "empty" ]] && [[ "$DIMENSIONS" != "" ]] && [[ "$DIMENSIONS" != "640x480" ]]; then
+            PUBLISH_CMD+=("--dimensions" "$DIMENSIONS")
+            echo "📐 Dimensions: $DIMENSIONS"
+        fi
+        
+        if [[ -n "$DURATION" ]] && [[ "$DURATION" != "0" ]] && [[ "$DURATION" != "empty" ]] && [[ "$DURATION" != "" ]]; then
+            PUBLISH_CMD+=("--duration" "$DURATION")
+            echo "⏱️  Duration: ${DURATION}s"
         fi
         
         PUBLISH_CMD+=("--channel" "$PLAYER" "--json")

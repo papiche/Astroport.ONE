@@ -338,7 +338,15 @@ if [ "$AUTO_MODE" = "true" ]; then
     [ -z "$GIFANIM_CID" ] && GIFANIM_CID=$(echo "$UPLOAD_DATA" | jq -r '.gifanim_ipfs // empty')
     [ -z "$INFO_CID" ] && INFO_CID=$(echo "$UPLOAD_DATA" | jq -r '.info // empty')
     [ -z "$UPLOAD_CHAIN" ] && UPLOAD_CHAIN=$(echo "$UPLOAD_DATA" | jq -r '.upload_chain // empty')
-    [ -z "$DIMENSIONS" ] && DIMENSIONS=$(echo "$UPLOAD_DATA" | jq -r '.dimensions // "640x480"')
+    # Extract dimensions (only if not already provided via command line)
+    if [ -z "$DIMENSIONS" ] || [ "$DIMENSIONS" = "640x480" ]; then
+        DIMENSIONS_FROM_JSON=$(echo "$UPLOAD_DATA" | jq -r '.dimensions // empty')
+        if [[ -n "$DIMENSIONS_FROM_JSON" ]] && [[ "$DIMENSIONS_FROM_JSON" != "null" ]] && [[ "$DIMENSIONS_FROM_JSON" != "640x480" ]] && [[ "$DIMENSIONS_FROM_JSON" != "" ]]; then
+            DIMENSIONS="$DIMENSIONS_FROM_JSON"
+        elif [ -z "$DIMENSIONS" ]; then
+            DIMENSIONS="640x480"  # Default fallback
+        fi
+    fi
     # Extract file size (for NIP-71 size tag) - only if not provided via command line
     [ -z "$FILE_SIZE" ] || [ "$FILE_SIZE" = "0" ] && FILE_SIZE=$(echo "$UPLOAD_DATA" | jq -r '.fileSize // 0')
     
@@ -405,9 +413,15 @@ if [ "$AUTO_MODE" = "true" ]; then
     fi
     
     # Extract duration (convert to integer)
+    # Only extract from JSON if not already provided via command line or if current value is 0
     if [ -z "$DURATION" ] || [ "$DURATION" = "0" ]; then
         DURATION_RAW=$(echo "$UPLOAD_DATA" | jq -r '.duration // 0')
-        DURATION=$(echo "$DURATION_RAW" | awk '{print int($1)}')
+        # Only use JSON value if it's valid and non-zero
+        if [[ -n "$DURATION_RAW" ]] && [[ "$DURATION_RAW" != "null" ]] && [[ "$DURATION_RAW" != "0" ]] && [[ "$DURATION_RAW" != "" ]]; then
+            DURATION=$(echo "$DURATION_RAW" | awk '{print int($1)}')
+        else
+            DURATION=0  # Default fallback
+        fi
     else
         # Convert duration to integer if it's a decimal (always convert for comparison)
         DURATION=$(echo "$DURATION" | awk '{print int($1)}')
