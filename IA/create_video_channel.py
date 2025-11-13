@@ -214,6 +214,8 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
     upload_chain = ""  # NEW: Upload chain for provenance tracking (comma-separated pubkeys)
     source_type = "webcam"   # NEW: Source type (film, serie, youtube, webcam) - default: webcam
     source_type_explicit = False  # Track if source_type was explicitly set from ["i", "source:*"] tag
+    dimensions = ""    # Initialize dimensions early to avoid NameError
+    duration = 0      # Initialize duration early to avoid NameError
     
     # Parse tags for standard NIP-71 fields first
     for tag in tags:
@@ -259,10 +261,11 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
                 # File size from NIP-71
                 pass
             elif tag_type == 'duration' and tag_value.isdigit():
-                # Duration from NIP-71
+                # Duration from NIP-71 (will be extracted later from imeta or separate tag)
                 pass
             elif tag_type == 'dim':
-                dimensions = tag_value
+                if not dimensions:  # Only set if not already set from imeta
+                    dimensions = tag_value
     
     # Parse imeta tags (NIP-71 format) as fallback
     for tag in tags:
@@ -275,6 +278,13 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
                 for prop in tag[1:]:
                     if prop.startswith('dim '):
                         dimensions = prop[4:]
+                    elif prop.startswith('duration '):
+                        # Extract duration from imeta tag (NIP-71 format: "duration 123.456")
+                        try:
+                            duration_str = prop[9:].strip()  # Remove "duration " prefix
+                            duration = int(float(duration_str))  # Convert float to int
+                        except (ValueError, IndexError):
+                            duration = 0
                     elif prop.startswith('url ') and not ipfs_url:
                         ipfs_url = prop[4:]
                     elif prop.startswith('x '):
@@ -456,17 +466,20 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
             tag_value = tag[1]
             
             if tag_type == 'duration':
-                try:
-                    duration = int(tag_value)
-                except ValueError:
-                    duration = 0
+                # Only set if not already set from imeta
+                if duration == 0:
+                    try:
+                        duration = int(float(tag_value))  # Handle both int and float strings
+                    except ValueError:
+                        duration = 0
             elif tag_type == 'size':
                 try:
                     file_size = int(tag_value)
                 except ValueError:
                     file_size = 0
             elif tag_type == 'dim':
-                dimensions = tag_value
+                if not dimensions:  # Only set if not already set from imeta
+                    dimensions = tag_value
             elif tag_type == 'g':
                 # Geohash tag format: "lat,lon"
                 try:
