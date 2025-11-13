@@ -6,9 +6,10 @@
 ################################################################################
 # MULTIPASS.print.sh - Print MULTIPASS Authentication Card
 #
-# Prints a MULTIPASS card with two essential QR codes:
+# Prints a MULTIPASS card with essential QR codes:
 # 1. uSPOT/scan QR - Small, top-left for quick mobile access
-# 2. SSSS QR - Large, full-width for terminal authentication
+# 2. G1/MULTIPASS QR - Small, top-right for wallet authentication
+# 3. SSSS QR - Large, full-width for terminal authentication
 #
 # This card allows the user to authenticate on any UPlanet terminal
 # without needing browser storage, using mobile phone scanning.
@@ -56,6 +57,7 @@ fi
 # Check if required QR codes exist
 USPOT_QR="${MULTIPASS_DIR}/uSPOT.QR.png"
 SSSS_QR="${MULTIPASS_DIR}/._SSSSQR.png"
+G1_QR="${MULTIPASS_DIR}/MULTIPASS.QR.o.png"
 
 if [[ ! -f "$USPOT_QR" ]]; then
     echo "❌ uSPOT QR code not found: $USPOT_QR"
@@ -111,18 +113,26 @@ if [[ -z "$LP" ]]; then
 fi
 
 ################################################################################
-# Create composite image with both QR codes
+# Create composite image with QR codes
 ################################################################################
 
 if [[ "$SKIP_GENERATION" == false ]]; then
     echo "🎨 Generating MULTIPASS card layout..."
     
-    # New layout: uSPOT small top-left, SSSS large bottom full-width
+    # New layout: uSPOT small top-left, G1_QR small top-right, SSSS large bottom full-width
     # Brother QL-700: 62mm label, optimal canvas 696x1000 pixels for vertical layout
     
     # Resize QR codes
     convert "$USPOT_QR" -resize 180x180 "$TMP_DIR/uspot_resized.png"
     convert "$SSSS_QR" -resize 650x650 "$TMP_DIR/ssss_resized.png"
+    
+    # Resize G1_QR if it exists
+    if [[ -f "$G1_QR" ]]; then
+        convert "$G1_QR" -resize 180x180 "$TMP_DIR/g1_resized.png"
+        HAS_G1_QR=true
+    else
+        HAS_G1_QR=false
+    fi
     
     # Create base canvas (696x1000 for Brother QL-700 continuous)
     convert -size 696x1000 xc:white "$TMP_DIR/base.png"
@@ -137,14 +147,22 @@ if [[ "$SKIP_GENERATION" == false ]]; then
     composite -compose Over -gravity NorthWest -geometry +10+10 \
         "$TMP_DIR/uspot_resized.png" "$TMP_DIR/with_header.png" "$TMP_DIR/with_uspot.png"
     
+    # Composite G1_QR top-right inside header if it exists
+    if [[ "$HAS_G1_QR" == true ]]; then
+        composite -compose Over -gravity NorthEast -geometry +10+10 \
+            "$TMP_DIR/g1_resized.png" "$TMP_DIR/with_uspot.png" "$TMP_DIR/with_g1.png"
+    else
+        cp "$TMP_DIR/with_uspot.png" "$TMP_DIR/with_g1.png"
+    fi
+    
     # Add text labels to the right of uSPOT QR
     G1SHORT="${G1PUBNOSTR:0:8}"
-    convert "$TMP_DIR/with_uspot.png" \
-        -gravity NorthWest -pointsize 28 -fill "#667eea" -font "DejaVu-Sans-Bold" -annotate +200+15 "MULTIPASS" \
+    convert "$TMP_DIR/with_g1.png" \
+        -gravity NorthWest -pointsize 28 -fill "#667eea" -font "DejaVu-Sans-Bold" -annotate +200+15 "MINIPASS" \
         -gravity NorthWest -pointsize 18 -fill black -annotate +200+55 "$EMAIL" \
         -gravity NorthWest -pointsize 16 -fill "#667eea" -annotate +200+85 "$YOUSER" \
-        -gravity NorthWest -pointsize 14 -fill "#888888" -annotate +200+110 "G1: $G1SHORT" \
-        -gravity NorthWest -pointsize 12 -fill "#666666" -annotate +200+135 "uSPOT Scan Authentication" \
+        -gravity NorthWest -pointsize 14 -fill "#888888" -annotate +200+110 "ẐEN: $G1SHORT" \
+        -gravity NorthWest -pointsize 12 -fill "#666666" -annotate +200+135 "uSPOT Scan Address" \
         "$TMP_DIR/with_text.png"
     
     # Add separator line
@@ -155,7 +173,7 @@ if [[ "$SKIP_GENERATION" == false ]]; then
     # Add SSSS label above QR
     convert "$TMP_DIR/with_separator.png" \
         -gravity North -pointsize 22 -fill black -font "DejaVu-Sans-Bold" -annotate +0+225 "SSSS Authentication Key" \
-        -gravity North -pointsize 14 -fill "#666666" -annotate +0+255 "Scan on any UPlanet terminal" \
+        -gravity North -pointsize 14 -fill "#666666" -annotate +0+255 "Scan on any UPlanet:${UPLANETG1PUB:0:8} terminal" \
         "$TMP_DIR/with_ssss_label.png"
     
     # Composite large SSSS QR at bottom center
@@ -237,6 +255,7 @@ echo "   Card: $FINAL_OUTPUT"
 echo ""
 echo "💡 Usage:"
 echo "   • Scan small uSPOT QR with phone to access ${uSPOT}/scan"
+echo "   • Scan G1 QR (top-right) for wallet authentication"
 echo "   • Scan large SSSS QR on any UPlanet terminal for authentication"
 echo "   • Keep this card secure - it's your identity key!"
 echo ""

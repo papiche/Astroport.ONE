@@ -220,10 +220,10 @@ EOFNOSTR
         || FDQR=${MY_PATH}/../templates/img/nature_cloud_face.png
 
     [[ $UPLANETNAME != "EnfinLibre" ]] && Z=":ZEN" || Z="" ## Add :ZEN only for UPlanet ẐEN
-    amzqr "${G1PUBNOSTR}${Z}" -l H -p "$FDQR" -c -n MULTIPASS.QR.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
+    amzqr "${G1PUBNOSTR}${Z}" -l H -p "$FDQR" -c -n MULTIPASS.QR.o.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
 
     ## Add white margins around the QR code image (for a flashable coracle profile picture)
-    convert ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png -bordercolor white -border 90x90 ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png
+    convert ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.o.png -bordercolor white -border 90x90 ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png
 
     echo "${G1PUBNOSTR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR
 
@@ -556,6 +556,7 @@ EOFNOSTR
             sed "s|_DATE_|$(date -u +"%Y-%m-%d %H:%M:%S UTC")|g" | \
             sed "s|_EMAIL_|${EMAIL}|g" | \
             sed "s|_YOUSER_|${YOUSER}|g" | \
+            sed "s|_CAPTAINEMAIL_|${CAPTAINEMAIL}|g" | \
             sed "s|_G1PUBNOSTR_|${G1PUBNOSTR}|g" | \
             sed "s|_G1PUBNOSTRQR_CID_|${G1PUBNOSTRQR_CID}|g" | \
             sed "s|_MULTIPASS_CARD_IPFS_|${MULTIPASS_CARD_IPFS}|g" | \

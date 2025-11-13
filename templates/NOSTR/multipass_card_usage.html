@@ -136,6 +136,66 @@
             font-family: monospace;
             font-size: 0.9rem;
         }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background: white;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .comparison-table th {
+            background: #667eea;
+            color: white;
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+        }
+        .comparison-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+        .comparison-table .bank-col {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .comparison-table .multipass-col {
+            background: #d1f2eb;
+            color: #0d7377;
+        }
+        .comparison-row {
+            display: flex;
+            margin: 0.75rem 0;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .comparison-item {
+            flex: 1;
+            padding: 1rem;
+        }
+        .comparison-item.bank {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+        }
+        .comparison-item.multipass {
+            background: #d1f2eb;
+            border-left: 4px solid #0ea5e9;
+        }
+        .comparison-item strong {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+        .comparison-item.bank strong {
+            color: #856404;
+        }
+        .comparison-item.multipass strong {
+            color: #0d7377;
+        }
     </style>
 </head>
 <body>
@@ -220,8 +280,36 @@
             </div>
             
             <div class="section">
+                <h2>🛡️ MULTIPASS vs Banques : La Révolution de la Sécurité</h2>
+                <p>Alors que les banques dépensent des fortunes pour sécuriser leurs systèmes centralisés, le MULTIPASS repose sur une architecture décentralisée qui rend obsolète l'infrastructure coûteuse du système bancaire traditionnel.</p>
+                
+                <div class="comparison-row">
+                    <div class="comparison-item bank">
+                        <strong>🏦 Banque Centralisée "Ancien Temps"</strong>
+                        <p><strong>Identité :</strong> Carte bancaire avec puce et RFID (vulnérable, copiable). Remplacée en cas de perte/vol. Coût : Production et logistique coûteuses.</p>
+                        <p><strong>Sécurité :</strong> Centralisée. Dépend de la sécurité physique (agences, convois blindés) et informatique (serveurs). <strong>Point de défaillance unique.</strong></p>
+                        <p><strong>Infrastructure :</strong> Réseau d'agences physiques, data centers centralisés, flottes de distributeurs. Coût : <strong>Milliards d'euros.</strong></p>
+                        <p><strong>Transparence :</strong> Opaque. Bilans complexes publiés annuellement. Coûts cachés.</p>
+                    </div>
+                    <div class="comparison-item multipass">
+                        <strong>✅ MULTIPASS - Écosystème UPlanet</strong>
+                        <p><strong>Identité :</strong> MULTIPASS personnel, imprimable sur une feuille A4, contrôlé par l'utilisateur. Sécurisé par cryptographie. <strong>Coût : Une feuille de papier.</strong></p>
+                        <p><strong>Sécurité :</strong> Décentralisée. Repose sur la cryptographie et la distribution du registre (blockchain Ğ1). <strong>Pas de point de défaillance unique.</strong></p>
+                        <p><strong>Infrastructure :</strong> 150 Hub et 3600 Satellites hébergés par les membres. Coût : <strong>2.40€ par utilisateur</strong> (pour 1 million d'utilisateurs).</p>
+                        <p><strong>Transparence :</strong> Radicale. Chaque flux visible en temps réel sur un tableau de bord économique.</p>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 1.5rem; padding: 1rem; background: #e7f5ff; border-left: 4px solid #0ea5e9; border-radius: 4px;">
+                    <strong>💡 Le Verdict :</strong>
+                    <p>Le coût écrasant du système bancaire traditionnel ne vient pas de la technologie, mais de sa <strong>structure de confiance centralisée</strong>. Il dépense des fortunes pour protéger des coffres-forts, sécuriser des convois et vérifier manuellement des identités, car son architecture est fondamentalement fragile.</p>
+                    <p>Le MULTIPASS intègre la confiance et la sécurité <strong>au cœur du protocole</strong> (cryptographie, blockchain Ğ1), rendant obsolète la quasi-totalité de l'infrastructure coûteuse du vieux monde. La valeur est sur la blockchain, pas sur le papier. Les transactions sont instantanées, transparentes, de pair à pair, avec des frais quasi nuls.</p>
+                </div>
+            </div>
+            
+            <div class="section">
                 <h2>💳 QR Code de Paiement</h2>
-                <p>Après avoir scanné votre QR code SSSS sur <code>_uSPOT_/scan</code>, utilisez ce QR code pour recevoir des paiements en ẐEN sur votre portefeuille MULTIPASS :</p>
+                <p>Après avoir scanné le QR code SSSS source de la tranaction sur <code>_uSPOT_/scan</code>, utilisez ce QR code pour recevoir des paiements en ẐEN sur votre portefeuille MULTIPASS :</p>
                 <div style="text-align: center; margin: 1.5rem 0;">
                     <img src="_myIPFS_/ipfs/_G1PUBNOSTRQR_CID_/MULTIPASS.QR.png" alt="QR Code G1PUBNOSTR" style="max-width: 300px; border: 2px solid #667eea; border-radius: 8px; padding: 10px; background: white;" />
                     <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
@@ -234,8 +322,8 @@
             </div>
             
             <div class="section">
-                <h2>🎫 Votre Carte MULTIPASS</h2>
-                <p>Votre carte d'authentification complète est disponible ci-dessous. Imprimez-la et gardez-la en sécurité :</p>
+                <h2>🎫 Votre MINIPASS</h2>
+                <p>Votre carte d'authentification est disponible ci-dessous. Imprimez-la c'est votre sésame multi-terminal :</p>
                 <div style="text-align: center; margin: 1.5rem 0;">
                     <img src="_myIPFS_/ipfs/_MULTIPASS_CARD_IPFS_" alt="MULTIPASS Card" style="max-width: 100%; border: 2px solid #667eea; border-radius: 8px; padding: 10px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
                     <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
@@ -248,9 +336,9 @@
                 <h2>📋 Informations de Votre MULTIPASS</h2>
                 <ul>
                     <li><strong>Email :</strong> _EMAIL_</li>
-                    <li><strong>Utilisateur :</strong> _YOUSER_</li>
-                    <li><strong>Portefeuille G1 :</strong> <code>_G1PUBNOSTR_</code></li>
-                    <li><strong>Station UPlanet :</strong> _UPLANET8_</li>
+                <li><strong>Capitaine :</strong> _CAPTAINEMAIL_</li>
+                    <li><strong>Portefeuille ẐEN :</strong> <code>_G1PUBNOSTR_</code></li>
+                    <li><strong>_UPLANET8_ </strong></li>
                     <li><strong>uSPOT :</strong> <a href="_uSPOT_/scan" target="_blank">_uSPOT_/scan</a></li>
                 </ul>
             </div>
