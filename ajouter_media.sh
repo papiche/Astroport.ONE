@@ -1134,6 +1134,9 @@ espeak "Video uploaded successfully to IPFS" 2>/dev/null || true
         FILE_TITLE=$(echo "$MP3_RESULT" | jq -r '.title // empty' 2>/dev/null)
         FILE_NAME=$(echo "$MP3_RESULT" | jq -r '.filename // empty' 2>/dev/null)
         IPFS_URL=$(echo "$MP3_RESULT" | jq -r '.ipfs_url // empty' 2>/dev/null)
+        OUTPUT_DIR_FROM_JSON=$(echo "$MP3_RESULT" | jq -r '.output_dir // empty' 2>/dev/null)
+        METADATA_FILE_FROM_JSON=$(echo "$MP3_RESULT" | jq -r '.metadata_file // empty' 2>/dev/null)
+        YOUTUBE_URL_FROM_JSON=$(echo "$MP3_RESULT" | jq -r '.youtube_url // .original_url // empty' 2>/dev/null)
         
         if [[ -z "$FILE_TITLE" || -z "$FILE_NAME" ]]; then
             echo "Failed to extract required data from MP3 processing"
@@ -1143,41 +1146,233 @@ espeak "Video uploaded successfully to IPFS" 2>/dev/null || true
         
         # Find file path from process_youtube.sh result (it should already be in uDRIVE or temp)
         FILE_PATH_FROM_RESULT=$(echo "$MP3_RESULT" | jq -r '.file_path // empty' 2>/dev/null)
-        if [[ -n "$FILE_PATH_FROM_RESULT" && -f "$FILE_PATH_FROM_RESULT" ]]; then
-            FILE_TO_UPLOAD="$FILE_PATH_FROM_RESULT"
-        else
+        if [[ -z "$FILE_PATH_FROM_RESULT" ]] || [[ ! -f "$FILE_PATH_FROM_RESULT" ]]; then
+            # Try to find the file in output_dir
+            if [[ -n "$OUTPUT_DIR_FROM_JSON" ]] && [[ -d "$OUTPUT_DIR_FROM_JSON" ]]; then
+                echo "🔍 File path from JSON not found, searching in output_dir: $OUTPUT_DIR_FROM_JSON"
+                # Find any MP3 file in the output directory
+                FILE_PATH_FROM_RESULT=$(find "$OUTPUT_DIR_FROM_JSON" -maxdepth 1 -type f \( -name "*.mp3" -o -name "*.m4a" -o -name "*.webm" \) ! -name "*.info.json" ! -name "*.webp" ! -name "*.png" ! -name "*.jpg" 2>/dev/null | head -n 1)
+                
+                # If still not found, try to find the largest file
+                if [[ -z "$FILE_PATH_FROM_RESULT" ]] || [[ ! -f "$FILE_PATH_FROM_RESULT" ]]; then
+                    FILE_PATH_FROM_RESULT=$(find "$OUTPUT_DIR_FROM_JSON" -maxdepth 1 -type f ! -name "*.info.json" ! -name "*.webp" ! -name "*.png" ! -name "*.jpg" -exec ls -S {} + 2>/dev/null | head -n 1)
+                fi
+                
+                if [[ -n "$FILE_PATH_FROM_RESULT" ]] && [[ -f "$FILE_PATH_FROM_RESULT" ]]; then
+                    FILE_NAME=$(basename "$FILE_PATH_FROM_RESULT")
+                    echo "✅ Found downloaded file: $FILE_PATH_FROM_RESULT"
+                fi
+            fi
+        fi
+        
+        if [[ -z "$FILE_PATH_FROM_RESULT" ]] || [[ ! -f "$FILE_PATH_FROM_RESULT" ]]; then
             # Fallback: try to find in uDRIVE
             if [[ -n "$USER_UDRIVE_PATH" && -f "$USER_UDRIVE_PATH/Music/$FILE_NAME" ]]; then
-                FILE_TO_UPLOAD="$USER_UDRIVE_PATH/Music/$FILE_NAME"
+                FILE_PATH_FROM_RESULT="$USER_UDRIVE_PATH/Music/$FILE_NAME"
             else
                 echo "⚠️  MP3 file not found: $FILE_PATH_FROM_RESULT or $USER_UDRIVE_PATH/Music/$FILE_NAME"
                 espeak "Error: MP3 file not found"
-            exit 1
+                exit 1
+            fi
         fi
+        
+        FILE_TO_UPLOAD="$FILE_PATH_FROM_RESULT"
+        
+        # Find YouTube metadata.json file (yt-dlp .info.json contains all YouTube metadata)
+        YOUTUBE_METADATA_FILE=""
+        if [[ -n "$METADATA_FILE_FROM_JSON" ]] && [[ -f "$METADATA_FILE_FROM_JSON" ]]; then
+            YOUTUBE_METADATA_FILE="$METADATA_FILE_FROM_JSON"
+        elif [[ -n "$OUTPUT_DIR_FROM_JSON" ]] && [[ -d "$OUTPUT_DIR_FROM_JSON" ]]; then
+            METADATA_BASENAME=$(basename "$FILE_TO_UPLOAD" | sed 's/\.[^.]*$//')
+            for possible_metadata in "${OUTPUT_DIR_FROM_JSON}/${METADATA_BASENAME}.info.json" "$(dirname "$FILE_TO_UPLOAD")/${METADATA_BASENAME}.info.json"; do
+                if [[ -f "$possible_metadata" ]]; then
+                    YOUTUBE_METADATA_FILE="$possible_metadata"
+                    break
+                fi
+            done
+        fi
+        
+        # Extract and structure all YouTube metadata for info.json
+        YOUTUBE_METADATA_JSON_FILE="$HOME/.zen/tmp/youtube_mp3_metadata_$(date +%s).json"
+        if [[ -n "$YOUTUBE_METADATA_FILE" ]] && [[ -f "$YOUTUBE_METADATA_FILE" ]] && command -v jq &> /dev/null; then
+            echo "📋 Extracting comprehensive YouTube metadata from .info.json..."
+            
+            # Extract all relevant YouTube metadata from yt-dlp .info.json
+            YOUTUBE_METADATA_JSON=$(jq '{
+                youtube_id: .id,
+                youtube_url: .webpage_url,
+                youtube_short_url: .short_url,
+                title: .title,
+                description: .description,
+                uploader: .uploader,
+                uploader_id: .uploader_id,
+                uploader_url: .uploader_url,
+                channel: .channel,
+                channel_id: .channel_id,
+                channel_url: .channel_url,
+                channel_follower_count: .channel_follower_count,
+                duration: .duration,
+                view_count: .view_count,
+                like_count: .like_count,
+                comment_count: .comment_count,
+                average_rating: .average_rating,
+                age_limit: .age_limit,
+                upload_date: .upload_date,
+                release_date: .release_date,
+                timestamp: .timestamp,
+                availability: .availability,
+                live_status: .live_status,
+                was_live: .was_live,
+                format: .format,
+                format_id: .format_id,
+                format_note: .format_note,
+                width: .width,
+                height: .height,
+                fps: .fps,
+                vcodec: .vcodec,
+                acodec: .acodec,
+                abr: .abr,
+                vbr: .vbr,
+                tbr: .tbr,
+                filesize: .filesize,
+                filesize_approx: .filesize_approx,
+                ext: .ext,
+                resolution: .resolution,
+                categories: .categories,
+                tags: .tags,
+                chapters: .chapters,
+                subtitles: .subtitles,
+                automatic_captions: .automatic_captions,
+                thumbnail: .thumbnail,
+                thumbnails: .thumbnails,
+                license: .license,
+                language: .language,
+                languages: .languages,
+                location: .location,
+                artist: .artist,
+                album: .album,
+                track: .track,
+                creator: .creator,
+                alt_title: .alt_title,
+                series: .series,
+                season: .season,
+                season_number: .season_number,
+                episode: .episode,
+                episode_number: .episode_number,
+                playlist: .playlist,
+                playlist_id: .playlist_id,
+                playlist_title: .playlist_title,
+                playlist_index: .playlist_index,
+                n_entries: .n_entries,
+                webpage_url_basename: .webpage_url_basename,
+                webpage_url_domain: .webpage_url_domain,
+                extractor: .extractor,
+                extractor_key: .extractor_key,
+                epoch: .epoch,
+                modified_timestamp: .modified_timestamp,
+                modified_date: .modified_date,
+                requested_subtitles: .requested_subtitles,
+                has_drm: .has_drm,
+                is_live: .is_live,
+                was_live: .was_live,
+                live_status: .live_status,
+                release_timestamp: .release_timestamp,
+                comment_count: .comment_count,
+                heatmap: .heatmap
+            }' "$YOUTUBE_METADATA_FILE" 2>/dev/null)
+            
+            if [[ -n "$YOUTUBE_METADATA_JSON" ]] && echo "$YOUTUBE_METADATA_JSON" | jq -e '.' >/dev/null 2>&1; then
+                echo "$YOUTUBE_METADATA_JSON" > "$YOUTUBE_METADATA_JSON_FILE"
+                echo "✅ YouTube metadata extracted and saved to: $YOUTUBE_METADATA_JSON_FILE"
+                
+                # Display key metadata
+                YT_UPLOADER=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.uploader // .channel // empty')
+                YT_CHANNEL=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.channel // empty')
+                YT_VIEWS=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.view_count // empty')
+                YT_LIKES=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.like_count // empty')
+                YT_THUMBNAIL=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.thumbnail // empty')
+                YT_ARTIST=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.artist // empty')
+                YT_ALBUM=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.album // empty')
+                
+                echo "   📺 Channel: ${YT_CHANNEL:-$YT_UPLOADER}"
+                [[ -n "$YT_VIEWS" ]] && echo "   👁️  Views: $YT_VIEWS"
+                [[ -n "$YT_LIKES" ]] && echo "   👍 Likes: $YT_LIKES"
+                [[ -n "$YT_THUMBNAIL" ]] && echo "   🖼️  Thumbnail: $YT_THUMBNAIL"
+                [[ -n "$YT_ARTIST" ]] && echo "   🎤 Artist: $YT_ARTIST"
+                [[ -n "$YT_ALBUM" ]] && echo "   💿 Album: $YT_ALBUM"
+            else
+                echo "⚠️  Failed to extract YouTube metadata JSON"
+                YOUTUBE_METADATA_JSON_FILE=""
+            fi
+        else
+            # Fallback: use metadata from process_youtube.sh JSON result if available
+            if echo "$MP3_RESULT" | jq -e '.youtube_metadata' >/dev/null 2>&1; then
+                echo "📋 Using YouTube metadata from process_youtube.sh JSON result..."
+                YOUTUBE_METADATA_JSON=$(echo "$MP3_RESULT" | jq '.youtube_metadata' 2>/dev/null)
+                if [[ -n "$YOUTUBE_METADATA_JSON" ]] && echo "$YOUTUBE_METADATA_JSON" | jq -e '.' >/dev/null 2>&1; then
+                    echo "$YOUTUBE_METADATA_JSON" > "$YOUTUBE_METADATA_JSON_FILE"
+                    echo "✅ YouTube metadata extracted from JSON result"
+                else
+                    echo "⚠️  YouTube metadata file not found and JSON result has no metadata, skipping metadata extraction"
+                    YOUTUBE_METADATA_JSON_FILE=""
+                fi
+            else
+                echo "⚠️  YouTube metadata file not found, skipping metadata extraction"
+                YOUTUBE_METADATA_JSON_FILE=""
+            fi
         fi
         
         # Upload via API (upload2ipfs.sh will handle uDRIVE storage, will auto-publish as NIP-94 kind 1063)
         echo "📤 Uploading MP3 via /api/fileupload..."
         
         if [[ -n "$NPUB" ]]; then
-            UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
-                -F "file=@${FILE_TO_UPLOAD}" \
-                -F "npub=${NPUB}")
+            if [[ -n "$YOUTUBE_METADATA_JSON_FILE" ]] && [[ -f "$YOUTUBE_METADATA_JSON_FILE" ]]; then
+                echo "📤 Uploading MP3 with YouTube metadata..."
+                UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
+                    -F "file=@${FILE_TO_UPLOAD}" \
+                    -F "npub=${NPUB}" \
+                    -F "youtube_metadata=@${YOUTUBE_METADATA_JSON_FILE}")
+            else
+                UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
+                    -F "file=@${FILE_TO_UPLOAD}" \
+                    -F "npub=${NPUB}")
+            fi
         else
-            UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
-                -F "file=@${FILE_TO_UPLOAD}" \
-                -F "npub=")
+            if [[ -n "$YOUTUBE_METADATA_JSON_FILE" ]] && [[ -f "$YOUTUBE_METADATA_JSON_FILE" ]]; then
+                echo "📤 Uploading MP3 with YouTube metadata (no NOSTR npub)..."
+                UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
+                    -F "file=@${FILE_TO_UPLOAD}" \
+                    -F "npub=" \
+                    -F "youtube_metadata=@${YOUTUBE_METADATA_JSON_FILE}")
+            else
+                UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
+                    -F "file=@${FILE_TO_UPLOAD}" \
+                    -F "npub=")
+            fi
         fi
         
         if echo "$UPLOAD_RESPONSE" | jq -e '.success' >/dev/null 2>&1; then
             echo "✅ MP3 uploaded and published successfully!"
             espeak "Ready. MP3 file processed"
+            
+            # Display upload result info
+            IPFS_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.new_cid // empty' 2>/dev/null)
+            INFO_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.info // empty' 2>/dev/null)
+            if [[ -n "$IPFS_CID" ]]; then
+                echo "   CID: $IPFS_CID"
+                [[ -n "$INFO_CID" ]] && echo "   Info CID: $INFO_CID"
+            fi
         else
             echo "❌ Upload failed"
             echo "Response: $UPLOAD_RESPONSE"
             espeak "Upload failed"
+            # Cleanup metadata file on error
+            [[ -n "$YOUTUBE_METADATA_JSON_FILE" ]] && [[ -f "$YOUTUBE_METADATA_JSON_FILE" ]] && rm -f "$YOUTUBE_METADATA_JSON_FILE"
             exit 1
         fi
+        
+        # Cleanup temp metadata file
+        [[ -n "$YOUTUBE_METADATA_JSON_FILE" ]] && [[ -f "$YOUTUBE_METADATA_JSON_FILE" ]] && rm -f "$YOUTUBE_METADATA_JSON_FILE"
     ;;
 
 ########################################################################
