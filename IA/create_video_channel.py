@@ -265,7 +265,7 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
                 pass
             elif tag_type == 'dim':
                 if not dimensions:  # Only set if not already set from imeta
-                dimensions = tag_value
+                    dimensions = tag_value
     
     # Parse imeta tags (NIP-71 format) as fallback
     for tag in tags:
