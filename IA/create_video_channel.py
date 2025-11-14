@@ -479,7 +479,7 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
                     file_size = 0
             elif tag_type == 'dim':
                 if not dimensions:  # Only set if not already set from imeta
-                dimensions = tag_value
+                    dimensions = tag_value
             elif tag_type == 'g':
                 # Geohash tag format: "lat,lon"
                 try:
