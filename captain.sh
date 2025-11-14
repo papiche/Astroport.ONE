@@ -132,6 +132,24 @@ parse_arguments() {
     done
 }
 
+# Fonction pour vérifier si le capitaine est configuré
+check_captain_configured() {
+    # Vérifier si le lien .current existe et pointe vers un dossier valide
+    if [[ -L ~/.zen/game/players/.current ]] && [[ -d ~/.zen/game/players/.current ]]; then
+        local player_file="$HOME/.zen/game/players/.current/.player"
+        if [[ -f "$player_file" ]]; then
+            local captain_email=$(cat "$player_file" 2>/dev/null | tr -d '\n')
+            if [[ -n "$captain_email" ]]; then
+                # Vérifier que le MULTIPASS et la ZEN Card existent
+                if [[ -d ~/.zen/game/nostr/$captain_email ]] && [[ -d ~/.zen/game/players/$captain_email ]]; then
+                    return 0  # Capitaine configuré
+                fi
+            fi
+        fi
+    fi
+    return 1  # Capitaine non configuré
+}
+
 # Fonction pour vérifier si c'est la première utilisation
 check_first_time_usage() {
     # Vérifier s'il y a des cartes existantes
@@ -407,9 +425,57 @@ show_captain_dashboard() {
     print_header "ASTROPORT.ONE - TABLEAU DE BORD DU CAPITAINE"
     
     # Récupérer le capitaine actuel
-    local current_captain=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
+    local current_captain=""
+    if [[ -L ~/.zen/game/players/.current ]] && [[ -f ~/.zen/game/players/.current/.player ]]; then
+        current_captain=$(cat ~/.zen/game/players/.current/.player 2>/dev/null | tr -d '\n')
+    fi
+    
     if [[ -z "$current_captain" ]]; then
         print_error "Aucun capitaine connecté"
+        echo ""
+        echo -e "${YELLOW}💡 Il semble que votre compte Capitaine ne soit pas configuré.${NC}"
+        echo ""
+        
+        # Vérifier s'il y a des cartes existantes
+        local nostr_cards=$(ls ~/.zen/game/nostr 2>/dev/null | grep "@" | wc -l)
+        local zen_cards=$(ls ~/.zen/game/players 2>/dev/null | grep "@" | wc -l)
+        
+        if [[ $nostr_cards -gt 0 || $zen_cards -gt 0 ]]; then
+            echo -e "${CYAN}📋 Des comptes existent mais aucun n'est configuré comme Capitaine.${NC}"
+            echo ""
+            
+            # Proposer de créer le compte Capitaine
+            if [[ "$AUTO_MODE" == "false" ]]; then
+                read -p "Voulez-vous configurer un compte Capitaine maintenant ? (oui/non): " setup_captain
+                if [[ "$setup_captain" == "oui" || "$setup_captain" == "o" || "$setup_captain" == "y" || "$setup_captain" == "yes" ]]; then
+                    embark_captain
+                    return $?
+                fi
+            else
+                # Mode automatique : proposer l'embarquement
+                print_info "Lancement de la configuration du Capitaine..."
+                embark_captain
+                return $?
+            fi
+        else
+            # Aucune carte existante : proposer l'embarquement complet
+            echo -e "${CYAN}📋 Aucun compte n'existe encore.${NC}"
+            echo ""
+            
+            if [[ "$AUTO_MODE" == "false" ]]; then
+                read -p "Voulez-vous créer votre compte Capitaine maintenant ? (oui/non): " create_captain
+                if [[ "$create_captain" == "oui" || "$create_captain" == "o" || "$create_captain" == "y" || "$create_captain" == "yes" ]]; then
+                    embark_captain
+                    return $?
+                fi
+            else
+                # Mode automatique : lancer l'embarquement
+                print_info "Lancement de la création du compte Capitaine..."
+                embark_captain
+                return $?
+            fi
+        fi
+        
         return 1
     fi
     
@@ -1659,13 +1725,32 @@ main() {
     # Parser les arguments
     parse_arguments "$@"
     
-    # Vérifier si c'est la première utilisation
-    if ! check_first_time_usage; then
-        # Il y a déjà des comptes - afficher le tableau de bord du capitaine
+    # Vérifier si le capitaine est configuré
+    if check_captain_configured; then
+        # Capitaine configuré - afficher le tableau de bord
         show_captain_dashboard
     else
-        # Première utilisation - procéder à l'embarquement
-        embark_captain
+        # Capitaine non configuré - proposer la création
+        if ! check_first_time_usage; then
+            # Il y a des cartes mais pas de capitaine configuré
+            print_warning "Des comptes existent mais aucun Capitaine n'est configuré"
+            echo ""
+            if [[ "$AUTO_MODE" == "false" ]]; then
+                read -p "Voulez-vous configurer un compte Capitaine maintenant ? (oui/non): " setup_captain
+                if [[ "$setup_captain" == "oui" || "$setup_captain" == "o" || "$setup_captain" == "y" || "$setup_captain" == "yes" ]]; then
+                    embark_captain
+                else
+                    print_info "Configuration reportée. Utilisez './captain.sh' pour configurer votre compte Capitaine."
+                fi
+            else
+                # Mode automatique : lancer l'embarquement
+                print_info "Configuration automatique du compte Capitaine..."
+                embark_captain
+            fi
+        else
+            # Première utilisation - procéder à l'embarquement
+            embark_captain
+        fi
     fi
 }
 
