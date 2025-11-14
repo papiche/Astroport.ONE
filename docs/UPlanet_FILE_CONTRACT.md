@@ -114,20 +114,23 @@ The system implements a three-layer architecture:
 - **NOSTR Relay (strfry)**: Local event storage and relay
 - **External Relays**: Federation for event propagation
 
-### 2.3 Separation of Concerns: Video vs. Non-Video
+### 2.3 Separation of Concerns: Video vs. Audio vs. Other Files
 
-The protocol distinguishes between video files and other file types due to:
+The protocol distinguishes between video files, audio files, and other file types due to:
 
 1. **Metadata Complexity**:
    - Videos require: duration, dimensions, thumbnail, animated GIF
+   - Audio requires: duration, codecs, waveform (optional)
    - Other files: basic metadata (size, type, hash)
 
 2. **User Experience**:
    - Videos: Two-step workflow (upload → preview → publish)
+   - Audio: Two-step workflow (upload → preview → publish via /vocals)
    - Other files: Single-step workflow (upload → immediate publish)
 
 3. **NOSTR Event Types**:
    - Videos: NIP-71 (kinds 21/22) with specialized tags
+   - Audio: NIP-A0 (kinds 1222/1244) for voice messages
    - Other files: NIP-94 (kind 1063) with generic file metadata
 
 **Decision Matrix**:
@@ -135,15 +138,17 @@ The protocol distinguishes between video files and other file types due to:
 | File Type | MIME Pattern | Endpoint | NOSTR Kind | Script |
 |-----------|--------------|----------|------------|---------|
 | Video | `video/*` | `/api/fileupload` → `/webcam` | 21 or 22 | `publish_nostr_video.sh` |
+| Audio | `audio/*` | `/api/fileupload` → `/vocals` | 1222 or 1244 | Backend (NIP-A0) |
 | Image | `image/*` | `/api/fileupload` | 1063 | `publish_nostr_file.sh` |
-| Audio | `audio/*` | `/api/fileupload` | 1063 | `publish_nostr_file.sh` |
 | Document | `application/*`, `text/*` | `/api/fileupload` | 1063 | `publish_nostr_file.sh` |
 
 ---
 
 ## 3. Protocol Specifications
 
-### 3.1 Workflow: Non-Video File Upload
+### 3.1 Workflow: Non-Video, Non-Audio File Upload
+
+**Note**: This workflow applies to images, documents, and other file types. Audio files follow a two-phase workflow similar to videos (see section 3.4), and video files have their own workflow (see section 3.2).
 
 ```
 ┌──────────┐      ┌──────────┐      ┌──────────────┐      ┌──────────┐
@@ -207,8 +212,9 @@ The protocol distinguishes between video files and other file types due to:
 
 6. **MIME Type Verification**:
    ```python
-   if not file_mime.startswith('video/') and not is_reupload:
-       # Publish to NOSTR
+   if not file_mime.startswith('video/') and not file_mime.startswith('audio/') and not is_reupload:
+       # Publish to NOSTR (kind 1063)
+       # Note: Audio files are published via /vocals endpoint (kind 1222/1244)
    ```
 
 7. **NOSTR Publication**: Execute `publish_nostr_file.sh`:
@@ -314,7 +320,85 @@ Video files follow a **two-phase workflow**:
 2. **Metadata Enrichment**: User provides title, description, geolocation after preview
 3. **Network Efficiency**: Avoids publishing incomplete metadata that would require event deletion
 
-### 3.3 Workflow: Re-Upload (Provenance Tracking)
+### 3.3 Workflow: Audio File Upload (Voice Messages)
+
+Audio files follow a **two-phase workflow** similar to videos, using NIP-A0 (kinds 1222/1244) instead of NIP-71:
+
+**Phase 1: IPFS Upload and Metadata Generation**
+
+```
+┌──────────┐      ┌──────────┐      ┌──────────────┐
+│  Client  │      │ 54321.py │      │upload2ipfs.sh│
+└────┬─────┘      └────┬─────┘      └──────┬───────┘
+     │                 │                    │
+     │ POST /api/      │                    │
+     │ fileupload      │                    │
+     ├────────────────>│                    │
+     │                 │                    │
+     │                 │ Execute script     │
+     │                 ├───────────────────>│
+     │                 │                    │
+     │                 │                    │ 1. Upload to IPFS
+     │                 │                    │ 2. Extract duration
+     │                 │                    │ 3. Extract codecs
+     │                 │                    │ 4. Calculate SHA256
+     │                 │                    │
+     │                 │ JSON output        │
+     │                 │<───────────────────┤
+     │                 │                    │
+     │                 │ Detect audio/*     │
+     │                 │ SKIP NOSTR         │
+     │                 │ (deferred to /vocals)
+     │                 │                    │
+     │ UploadResponse  │                    │
+     │ (cid, info)      │                    │
+     │<────────────────┤                    │
+```
+
+**Phase 2: NOSTR Publication with User Metadata**
+
+```
+┌──────────┐      ┌──────────┐      ┌──────────┐
+│  Client  │      │ 54321.py │      │  NOSTR   │
+└────┬─────┘      └────┬─────┘      └────┬─────┘
+     │                 │                  │
+     │ POST /vocals     │                  │
+     │ (cid, title,     │                  │
+     │  description,   │                  │
+     │  encrypted,      │                  │
+     │  recipients)     │                  │
+     ├────────────────>│                  │
+     │                 │                  │
+     │                 │ Verify NIP-42    │
+     │                 │                  │
+     │                 │ Build NIP-A0 tags:
+     │                 │ - url (IPFS CID) │
+     │                 │ - imeta (duration, waveform)
+     │                 │ - e (reply-to, if kind 1244)
+     │                 │ - p (reply-to author, if kind 1244)
+     │                 │                  │
+     │                 │ Determine kind:  │
+     │                 │ - 1222 if root   │
+     │                 │ - 1244 if reply  │
+     │                 │                  │
+     │                 │ Publish event    │
+     │                 ├─────────────────>│
+     │                 │                  │
+     │                 │ Event ID         │
+     │                 │<─────────────────┤
+     │                 │                  │
+     │ Success         │                  │
+     │<────────────────┤                  │
+```
+
+**Key Differences from Video Workflow**:
+- Uses NIP-A0 (kinds 1222/1244) instead of NIP-71 (kinds 21/22)
+- No thumbnail or animated GIF generation
+- Optional waveform generation for visual preview
+- Supports end-to-end encryption (NIP-44 or NIP-04)
+- Duration typically limited to 60 seconds (recommended)
+
+### 3.4 Workflow: Re-Upload (Provenance Tracking)
 
 ```
 ┌──────────┐      ┌──────────┐      ┌──────────────┐      ┌──────────┐
@@ -427,18 +511,35 @@ fi
 **Metadata Collected**:
 - **Duration**: Seconds (floating point)
 - **Codecs**: Audio codec names (in info.json)
+- **Waveform**: Optional amplitude values for visual preview (NIP-A0)
 
-**NIP-94 Tags**:
+**Note**: Audio files are **NOT** published with NIP-94 (kind 1063). They are published via `/vocals` endpoint using NIP-A0 (kinds 1222/1244) for voice messages.
+
+**NIP-A0 Tags** (kinds 1222/1244):
 ```json
 {
-  "kind": 1063,
+  "kind": 1222,
+  "content": "https://ipfs.copylaradio.com/ipfs/{CID}/{filename}",
   "tags": [
-    ["url", "/ipfs/{CID}/{filename}"],
-    ["m", "audio/mpeg"],
+    ["url", "https://ipfs.copylaradio.com/ipfs/{CID}/{filename}"],
+    ["imeta", "url https://ipfs.copylaradio.com/ipfs/{CID}/{filename}", "duration 45", "waveform ..."],
     ["x", "{SHA256_hash}"],
-    ["duration", "180"],
-    ["info", "{info_CID}"],
-    ["upload_chain", "{pubkey_list}"]
+    ["info", "{info_CID}"]
+  ]
+}
+```
+
+**For replies (kind 1244)**:
+```json
+{
+  "kind": 1244,
+  "content": "https://ipfs.copylaradio.com/ipfs/{CID}/{filename}",
+  "tags": [
+    ["e", "{root_event_id}"],
+    ["p", "{root_author_pubkey}"],
+    ["url", "https://ipfs.copylaradio.com/ipfs/{CID}/{filename}"],
+    ["imeta", "url https://ipfs.copylaradio.com/ipfs/{CID}/{filename}", "duration 30"],
+    ["x", "{SHA256_hash}"]
   ]
 }
 ```
@@ -891,8 +992,8 @@ def sanitize_filename(filename: str) -> str:
 
 **Layer 1**: Python backend (54321.py)
 ```python
-if not file_mime.startswith('video/') and not is_reupload:
-    # Publish non-video files
+if not file_mime.startswith('video/') and not file_mime.startswith('audio/') and not is_reupload:
+    # Publish non-video, non-audio files (kind 1063)
     publish_nostr_file.sh --auto ...
 ```
 
@@ -904,7 +1005,9 @@ if [[ "$MIME_TYPE" == "video/"* ]]; then
 fi
 ```
 
-**Result**: Videos can never be published as NIP-94 (kind 1063) by mistake
+**Result**: 
+- Videos can never be published as NIP-94 (kind 1063) by mistake
+- Audio files can never be published as NIP-94 (kind 1063) by mistake - they must use NIP-A0 (kinds 1222/1244) via `/vocals` endpoint
 
 ### 6.4 Rate Limiting
 
@@ -1110,7 +1213,12 @@ Options:
 
 #### 7.3.1 POST /api/fileupload
 
-**Purpose**: Upload any file to IPFS and publish metadata to NOSTR
+**Purpose**: Upload any file to IPFS and optionally publish metadata to NOSTR
+
+**Note**: 
+- **Video files** (`video/*`): Upload only, publication deferred to `/webcam` endpoint (kinds 21/22)
+- **Audio files** (`audio/*`): Upload only, publication deferred to `/vocals` endpoint (kinds 1222/1244)
+- **Other files** (`image/*`, `application/*`, `text/*`): Upload and immediate publication (kind 1063)
 
 **Authentication**: NIP-42 (required, `force_check=True`)
 
@@ -1166,6 +1274,18 @@ youtube_metadata: <optional_json_file>
 ```
 (Log: "📹 Video file - kind 21/22 will be published by /webcam endpoint")
 
+**Response** (Audio - Deferred NOSTR Publication):
+```json
+{
+  "success": true,
+  "message": "File uploaded successfully to IPFS",
+  "new_cid": "QmAUDIO...",
+  "info": "QmINFO...",
+  "duration": 45
+}
+```
+(Log: "🎤 Audio file - kind 1222/1244 will be published by /vocals endpoint")
+
 #### 7.3.2 POST /webcam
 
 **Purpose**: Publish video metadata to NOSTR with user-provided information
@@ -1205,6 +1325,52 @@ Content-Type: text/html
   </body>
 </html>
 ```
+
+#### 7.3.3 POST /vocals
+
+**Purpose**: Publish voice message metadata to NOSTR with user-provided information (NIP-A0)
+
+**Request**:
+```http
+POST /vocals HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+player=user@example.com
+ipfs_cid=QmAUDIO...
+info_cid=QmINFO...
+file_hash=sha256_hash
+mime_type=audio/webm
+file_name=voice_1234567890.mp3
+duration=45
+title=My Voice Message
+description=Voice message description
+npub=npub1abc123...
+publish_nostr=true
+encrypted=false
+encryption_method=nip44
+recipients=[]
+latitude=48.8566
+longitude=2.3522
+expiration=1735689600
+```
+
+**Response** (Success):
+```http
+HTTP/1.1 200 OK
+Content-Type: text/html
+
+<html>
+  <body>
+    ✅ NOSTR voice message (kind 1222) published: evt_abc123...
+    📡 Published to 2/2 relay(s)
+  </body>
+</html>
+```
+
+**Note**: 
+- Kind 1222 for root messages, kind 1244 for replies (when `e` and `p` tags are provided)
+- Supports end-to-end encryption via NIP-44 (recommended) or NIP-04 (legacy)
+- Optional expiration timestamp (NIP-40) for automatic relay deletion
 
 ### 7.4 Configuration
 
@@ -1831,9 +1997,9 @@ curl -X POST http://localhost:54321/api/fileupload \
 | File Type | MIME Type | Processing Endpoint | Metadata Extraction | NOSTR Kind | Publishing Script |
 |-----------|-----------|---------------------|---------------------|------------|-------------------|
 | Video | `video/*` | `/api/fileupload` → `/webcam` | Duration, dimensions, thumbnail (JPG), animated GIF, codecs | 21 or 22 | `publish_nostr_video.sh` |
+| Audio | `audio/*` | `/api/fileupload` → `/vocals` | Duration, codecs | 1222 or 1244 | Backend (NIP-A0) |
 | Image (JPG) | `image/jpeg` | `/api/fileupload` | Dimensions | 1063 | `publish_nostr_file.sh` |
 | Image (PNG/GIF/WEBP) | `image/{png,gif,webp}` | `/api/fileupload` | Dimensions, thumbnail (JPG conversion) | 1063 | `publish_nostr_file.sh` |
-| Audio | `audio/*` | `/api/fileupload` | Duration, codecs | 1063 | `publish_nostr_file.sh` |
 | PDF | `application/pdf` | `/api/fileupload` | None | 1063 | `publish_nostr_file.sh` |
 | Text | `text/*` | `/api/fileupload` | Content preview (optional) | 1063 | `publish_nostr_file.sh` |
 | Other | `*/*` | `/api/fileupload` | None | 1063 | `publish_nostr_file.sh` |

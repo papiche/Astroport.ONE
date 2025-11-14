@@ -92,6 +92,28 @@ Backend stores analytics
 - ✅ Simple and lightweight
 - ✅ Works everywhere (no dependencies)
 
+#### Web2 Compatibility Note
+
+**This HTTP-based mode (`/ping` endpoint) is designed for web2 sites** that are not yet compatible with:
+- MULTIPASS card scanning
+- NOSTR browser extensions (NOSTR Connect, Alby, nos2x)
+- Native NOSTR integration
+
+**Use case**: Legacy websites, traditional web applications, or sites that need analytics without requiring users to have NOSTR capabilities.
+
+**However**, a **pure NOSTR approach (kind 10000/10001 events)** is **more robust and flexible** because:
+- ✅ **Decentralized**: Data stored on user-controlled relays (not centralized server)
+- ✅ **Verifiable**: Cryptographically signed by user
+- ✅ **Queryable**: Can query analytics via standard NOSTR filters
+- ✅ **User ownership**: User controls which relays store their data
+- ✅ **No single point of failure**: No dependency on `/ping` endpoint availability
+- ✅ **Privacy**: Optional encryption (kind 10001) for sensitive analytics
+- ✅ **Interoperable**: Works with any NOSTR client or relay
+
+**Recommendation**: For new projects or sites that can require NOSTR, prefer **Mode 2** (NOSTR events) or **Mode 3** (Encrypted NOSTR events) over HTTP `/ping`. Use HTTP `/ping` only as a fallback or for web2 compatibility.
+
+**See**: `/ping` endpoint implementation in `UPassport/54321.py` for server-side processing details.
+
 ---
 
 ### Mode 2: With common.js (NOSTR Integration)
@@ -434,14 +456,48 @@ All analytics data follows this structure:
 
 ---
 
+## Architecture Decision: HTTP vs NOSTR
+
+### When to Use HTTP `/ping` (Mode 1)
+
+Use HTTP `/ping` endpoint when:
+- ✅ **Web2 compatibility required**: Site doesn't support NOSTR or MULTIPASS
+- ✅ **Legacy integration**: Existing web2 infrastructure that can't be modified
+- ✅ **Fallback mechanism**: Backup when NOSTR is unavailable
+- ✅ **Simple deployment**: No NOSTR dependencies needed
+
+**Trade-offs**:
+- ❌ Centralized storage (single point of failure)
+- ❌ No user control over data storage
+- ❌ Not queryable via NOSTR filters
+- ❌ Requires `/ping` endpoint to be available
+
+### When to Use Pure NOSTR (Mode 2/3)
+
+Use NOSTR events (kind 10000/10001) when:
+- ✅ **Decentralization priority**: Want user-controlled data storage
+- ✅ **Verifiability needed**: Cryptographically signed analytics
+- ✅ **Queryability required**: Need to query analytics via NOSTR filters
+- ✅ **User ownership**: Users should control their analytics data
+- ✅ **Privacy concerns**: Sensitive data requires encryption (kind 10001)
+- ✅ **Interoperability**: Want to work with any NOSTR client/relay
+
+**Trade-offs**:
+- ❌ Requires NOSTR connection (browser extension or native support)
+- ❌ Slightly more complex setup (needs `common.js` or `nostr.bundle.js`)
+- ✅ More robust and flexible long-term
+
+**Recommendation**: For new projects, prefer **pure NOSTR** (Mode 2/3). Use HTTP `/ping` only for web2 compatibility or as a fallback.
+
 ## Best Practices
 
-1. **Start simple**: Use standalone mode for basic analytics
-2. **Add NOSTR**: Load `common.js` for decentralized storage
+1. **Start simple**: Use standalone mode for basic analytics (web2 compatibility)
+2. **Add NOSTR**: Load `common.js` for decentralized storage (preferred for new projects)
 3. **Add encryption**: Load `nostr.bundle.js` for private analytics
 4. **Use smartSend**: Let the system choose the best method automatically
 5. **Include context**: Use `sendWithContext()` for automatic page data
 6. **Handle errors gracefully**: System already does this, but be aware of fallbacks
+7. **Prefer NOSTR**: For new projects, use pure NOSTR events (kind 10000/10001) over HTTP `/ping` when possible
 
 ---
 
