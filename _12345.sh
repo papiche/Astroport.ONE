@@ -254,7 +254,42 @@ while true; do
         ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh &
         ### NOSTR RELAY SYNCHRO for LAST 24 H (direct call with lock protection)
         if [[ -s ~/.zen/workspace/NIP-101/backfill_constellation.sh ]]; then
-            ~/.zen/workspace/NIP-101/backfill_constellation.sh --days 1 --verbose &
+            # Check if backfill is already running (prevent double execution)
+            BACKFILL_LOCK="$HOME/.zen/strfry/constellation-backfill.lock"
+            BACKFILL_RUNNING=false
+            
+            if [[ -f "$BACKFILL_LOCK" ]]; then
+                BACKFILL_PID=$(cat "$BACKFILL_LOCK" 2>/dev/null)
+                if [[ -n "$BACKFILL_PID" && -d "/proc/$BACKFILL_PID" ]]; then
+                    BACKFILL_RUNNING=true
+                    echo "⚠️  Backfill already running (PID: $BACKFILL_PID), skipping..."
+                else
+                    # Remove stale lock file
+                    rm -f "$BACKFILL_LOCK"
+                fi
+            fi
+            
+            # Check last execution time to prevent double execution in same hour
+            BACKFILL_LAST_RUN="$HOME/.zen/tmp/backfill_constellation.lastrun"
+            if [[ -f "$BACKFILL_LAST_RUN" ]]; then
+                LAST_RUN_TIME=$(cat "$BACKFILL_LAST_RUN" 2>/dev/null)
+                CURRENT_TIME=$(date +%s)
+                TIME_SINCE_LAST_RUN=$((CURRENT_TIME - LAST_RUN_TIME))
+                
+                # Prevent execution if last run was less than 50 minutes ago (avoid double execution in same hour)
+                if [[ $TIME_SINCE_LAST_RUN -lt 3000 ]]; then
+                    echo "⚠️  Backfill executed ${TIME_SINCE_LAST_RUN}s ago (< 50min), skipping to avoid double execution..."
+                    BACKFILL_RUNNING=true
+                fi
+            fi
+            
+            # Launch backfill only if not running and enough time has passed
+            if [[ "$BACKFILL_RUNNING" == "false" ]]; then
+                echo "🚀 Launching constellation backfill..."
+                ~/.zen/workspace/NIP-101/backfill_constellation.sh --days 1 --verbose &
+                # Record execution time
+                date +%s > "$BACKFILL_LAST_RUN"
+            fi
         fi
         ##################################################################################
         # Check for IPFS P2P tunnels
