@@ -468,10 +468,10 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
             if tag_type == 'duration':
                 # Only set if not already set from imeta
                 if duration == 0:
-                try:
+                    try:
                         duration = int(float(tag_value))  # Handle both int and float strings
-                except ValueError:
-                    duration = 0
+                    except ValueError:
+                        duration = 0
             elif tag_type == 'size':
                 try:
                     file_size = int(tag_value)
