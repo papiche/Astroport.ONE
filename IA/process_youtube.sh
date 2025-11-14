@@ -633,25 +633,42 @@ if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
         
         json_output=""
         
-        if command -v jq &> /dev/null && [[ "$YOUTUBE_METADATA_JSON" != "{}" ]]; then
+        if command -v jq &> /dev/null; then
             # Try to generate JSON with jq, capture errors
             log_debug "Attempting to generate JSON with jq and comprehensive metadata"
-            jq_temp_output=$(jq -n \
-                --arg title "$media_title" \
-                --arg raw_title "$raw_title" \
-                --arg duration "$duration" \
-                --arg uploader "$uploader" \
-                --arg original_url "$URL" \
-                --arg youtube_url "$URL" \
-                --arg filename "$filename" \
-                --arg file_path "$media_file" \
-                --arg output_dir "$OUTPUT_DIR" \
-                --arg metadata_file "${metadata_file:-}" \
-                --arg format "$FORMAT" \
-                --arg file_size "$(stat -c%s "$media_file" 2>/dev/null || echo "0")" \
-                --arg download_date "$(date -Iseconds)" \
-                --argjson youtube_metadata "$YOUTUBE_METADATA_JSON" \
-                '{
+            
+            # Use metadata file directly if available, or write YOUTUBE_METADATA_JSON to temp file
+            # to avoid "argument list too long" error
+            metadata_temp_file=""
+            if [[ -n "$metadata_file" ]] && [[ -f "$metadata_file" ]]; then
+                # Use metadata file directly
+                metadata_temp_file="$metadata_file"
+                log_debug "Using metadata file directly: $metadata_temp_file"
+            elif [[ "$YOUTUBE_METADATA_JSON" != "{}" ]] && [[ -n "$YOUTUBE_METADATA_JSON" ]]; then
+                # Write metadata JSON to temp file to avoid argument length limit
+                metadata_temp_file=$(mktemp "$HOME/.zen/tmp/youtube_metadata_$$.json" 2>/dev/null || echo "$HOME/.zen/tmp/youtube_metadata_$$.json")
+                echo "$YOUTUBE_METADATA_JSON" > "$metadata_temp_file" 2>/dev/null
+                log_debug "Wrote metadata JSON to temp file: $metadata_temp_file"
+            fi
+            
+            if [[ -n "$metadata_temp_file" ]] && [[ -f "$metadata_temp_file" ]]; then
+                # Use --slurpfile to read metadata from file (avoids argument length limit)
+                jq_temp_output=$(jq -n \
+                    --arg title "$media_title" \
+                    --arg raw_title "$raw_title" \
+                    --arg duration "$duration" \
+                    --arg uploader "$uploader" \
+                    --arg original_url "$URL" \
+                    --arg youtube_url "$URL" \
+                    --arg filename "$filename" \
+                    --arg file_path "$media_file" \
+                    --arg output_dir "$OUTPUT_DIR" \
+                    --arg metadata_file "${metadata_file:-}" \
+                    --arg format "$FORMAT" \
+                    --arg file_size "$(stat -c%s "$media_file" 2>/dev/null || echo "0")" \
+                    --arg download_date "$(date -Iseconds)" \
+                    --slurpfile youtube_metadata "$metadata_temp_file" \
+                    '($youtube_metadata[0] // {}) as $yt_meta | {
                     ipfs_url: "",
                     title: $title,
                     raw_title: $raw_title,
@@ -670,95 +687,164 @@ if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
                         name: ($uploader | gsub("[^a-zA-Z0-9._-]"; "_") | .[0:50]),
                         display_name: $uploader,
                         type: "youtube",
-                        channel_id: $youtube_metadata.channel_id // "",
-                        channel_url: $youtube_metadata.channel_url // "",
-                        uploader_id: $youtube_metadata.uploader_id // "",
-                        uploader_url: $youtube_metadata.uploader_url // "",
-                        channel_follower_count: $youtube_metadata.channel_follower_count // 0
+                        channel_id: ($yt_meta.channel_id // ""),
+                        channel_url: ($yt_meta.channel_url // ""),
+                        uploader_id: ($yt_meta.uploader_id // ""),
+                        uploader_url: ($yt_meta.uploader_url // ""),
+                        channel_follower_count: ($yt_meta.channel_follower_count // 0)
                     },
                     content_info: {
-                        description: ($youtube_metadata.description // ""),
+                        description: ($yt_meta.description // ""),
                         ai_analysis: "",
-                        topic_keywords: (($youtube_metadata.tags // []) | join(", ")),
+                        topic_keywords: (($yt_meta.tags // []) | join(", ")),
                         duration_category: (if ($duration | tonumber? // 0) > 0 then 
                             (($duration | tonumber) / 60 | floor) as $mins |
                             if $mins < 5 then "short" elif $mins < 30 then "medium" else "long" end
                         else "" end),
-                        categories: ($youtube_metadata.categories // []),
-                        tags: ($youtube_metadata.tags // []),
-                        license: ($youtube_metadata.license // ""),
-                        language: ($youtube_metadata.language // ""),
-                        languages: ($youtube_metadata.languages // [])
+                        categories: ($yt_meta.categories // []),
+                        tags: ($yt_meta.tags // []),
+                        license: ($yt_meta.license // ""),
+                        language: ($yt_meta.language // ""),
+                        languages: ($yt_meta.languages // [])
                     },
                     technical_info: {
                         format: $format,
                         file_size: ($file_size | tonumber? // 0),
                         download_date: $download_date,
-                        format_id: ($youtube_metadata.format_id // ""),
-                        format_note: ($youtube_metadata.format_note // ""),
-                        width: ($youtube_metadata.width // 0),
-                        height: ($youtube_metadata.height // 0),
-                        fps: ($youtube_metadata.fps // 0),
-                        vcodec: ($youtube_metadata.vcodec // ""),
-                        acodec: ($youtube_metadata.acodec // ""),
-                        abr: ($youtube_metadata.abr // 0),
-                        vbr: ($youtube_metadata.vbr // 0),
-                        tbr: ($youtube_metadata.tbr // 0),
-                        resolution: ($youtube_metadata.resolution // ""),
-                        ext: ($youtube_metadata.ext // "")
+                        format_id: ($yt_meta.format_id // ""),
+                        format_note: ($yt_meta.format_note // ""),
+                        width: ($yt_meta.width // 0),
+                        height: ($yt_meta.height // 0),
+                        fps: ($yt_meta.fps // 0),
+                        vcodec: ($yt_meta.vcodec // ""),
+                        acodec: ($yt_meta.acodec // ""),
+                        abr: ($yt_meta.abr // 0),
+                        vbr: ($yt_meta.vbr // 0),
+                        tbr: ($yt_meta.tbr // 0),
+                        resolution: ($yt_meta.resolution // ""),
+                        ext: ($yt_meta.ext // "")
                     },
-                    youtube_metadata: $youtube_metadata,
+                    youtube_metadata: $yt_meta,
                     statistics: {
-                        view_count: ($youtube_metadata.view_count // 0),
-                        like_count: ($youtube_metadata.like_count // 0),
-                        comment_count: ($youtube_metadata.comment_count // 0),
-                        average_rating: ($youtube_metadata.average_rating // 0)
+                        view_count: ($yt_meta.view_count // 0),
+                        like_count: ($yt_meta.like_count // 0),
+                        comment_count: ($yt_meta.comment_count // 0),
+                        average_rating: ($yt_meta.average_rating // 0)
                     },
                     dates: {
-                        upload_date: ($youtube_metadata.upload_date // ""),
-                        release_date: ($youtube_metadata.release_date // ""),
-                        timestamp: ($youtube_metadata.timestamp // 0),
-                        release_timestamp: ($youtube_metadata.release_timestamp // 0),
-                        modified_timestamp: ($youtube_metadata.modified_timestamp // 0),
-                        modified_date: ($youtube_metadata.modified_date // "")
+                        upload_date: ($yt_meta.upload_date // ""),
+                        release_date: ($yt_meta.release_date // ""),
+                        timestamp: ($yt_meta.timestamp // 0),
+                        release_timestamp: ($yt_meta.release_timestamp // 0),
+                        modified_timestamp: ($yt_meta.modified_timestamp // 0),
+                        modified_date: ($yt_meta.modified_date // "")
                     },
                     media_info: {
-                        artist: ($youtube_metadata.artist // ""),
-                        album: ($youtube_metadata.album // ""),
-                        track: ($youtube_metadata.track // ""),
-                        creator: ($youtube_metadata.creator // ""),
-                        alt_title: ($youtube_metadata.alt_title // ""),
-                        series: ($youtube_metadata.series // ""),
-                        season: ($youtube_metadata.season // ""),
-                        season_number: ($youtube_metadata.season_number // 0),
-                        episode: ($youtube_metadata.episode // ""),
-                        episode_number: ($youtube_metadata.episode_number // 0)
+                        artist: ($yt_meta.artist // ""),
+                        album: ($yt_meta.album // ""),
+                        track: ($yt_meta.track // ""),
+                        creator: ($yt_meta.creator // ""),
+                        alt_title: ($yt_meta.alt_title // ""),
+                        series: ($yt_meta.series // ""),
+                        season: ($yt_meta.season // ""),
+                        season_number: ($yt_meta.season_number // 0),
+                        episode: ($yt_meta.episode // ""),
+                        episode_number: ($yt_meta.episode_number // 0)
                     },
                     playlist_info: {
-                        playlist: ($youtube_metadata.playlist // ""),
-                        playlist_id: ($youtube_metadata.playlist_id // ""),
-                        playlist_title: ($youtube_metadata.playlist_title // ""),
-                        playlist_index: ($youtube_metadata.playlist_index // 0),
-                        n_entries: ($youtube_metadata.n_entries // 0)
+                        playlist: ($yt_meta.playlist // ""),
+                        playlist_id: ($yt_meta.playlist_id // ""),
+                        playlist_title: ($yt_meta.playlist_title // ""),
+                        playlist_index: ($yt_meta.playlist_index // 0),
+                        n_entries: ($yt_meta.n_entries // 0)
                     },
                     thumbnails: {
-                        thumbnail: ($youtube_metadata.thumbnail // ""),
-                        thumbnails: ($youtube_metadata.thumbnails // [])
+                        thumbnail: ($yt_meta.thumbnail // ""),
+                        thumbnails: ($yt_meta.thumbnails // [])
                     },
                     subtitles_info: {
-                        subtitles: ($youtube_metadata.subtitles // {}),
-                        automatic_captions: ($youtube_metadata.automatic_captions // {}),
-                        requested_subtitles: ($youtube_metadata.requested_subtitles // {})
+                        subtitles: ($yt_meta.subtitles // {}),
+                        automatic_captions: ($yt_meta.automatic_captions // {}),
+                        requested_subtitles: ($yt_meta.requested_subtitles // {})
                     },
-                    chapters: ($youtube_metadata.chapters // []),
-                    location: ($youtube_metadata.location // ""),
-                    age_limit: ($youtube_metadata.age_limit // 0),
+                    chapters: ($yt_meta.chapters // []),
+                    location: ($yt_meta.location // ""),
+                    age_limit: ($yt_meta.age_limit // 0),
                     live_info: {
-                        live_status: ($youtube_metadata.live_status // ""),
-                        was_live: ($youtube_metadata.was_live // false),
-                        is_live: ($youtube_metadata.is_live // false)
+                        live_status: ($yt_meta.live_status // ""),
+                        was_live: ($yt_meta.was_live // false),
+                        is_live: ($yt_meta.is_live // false)
                     }
                 }' 2>>"$LOGFILE")
+                
+                # Clean up temp file if we created it
+                if [[ "$metadata_temp_file" != "$metadata_file" ]] && [[ -f "$metadata_temp_file" ]]; then
+                    rm -f "$metadata_temp_file" 2>/dev/null
+                fi
+            else
+                # No metadata available, generate basic JSON without metadata
+                log_debug "No metadata file available, generating basic JSON"
+                jq_temp_output=$(jq -n \
+                    --arg title "$media_title" \
+                    --arg raw_title "$raw_title" \
+                    --arg duration "$duration" \
+                    --arg uploader "$uploader" \
+                    --arg original_url "$URL" \
+                    --arg youtube_url "$URL" \
+                    --arg filename "$filename" \
+                    --arg file_path "$media_file" \
+                    --arg output_dir "$OUTPUT_DIR" \
+                    --arg metadata_file "${metadata_file:-}" \
+                    --arg format "$FORMAT" \
+                    --arg file_size "$(stat -c%s "$media_file" 2>/dev/null || echo "0")" \
+                    --arg download_date "$(date -Iseconds)" \
+                    '{
+                    ipfs_url: "",
+                    title: $title,
+                    raw_title: $raw_title,
+                    duration: ($duration | tonumber? // 0),
+                    uploader: $uploader,
+                    original_url: $original_url,
+                    youtube_url: $youtube_url,
+                    filename: $filename,
+                    file_path: $file_path,
+                    output_dir: $output_dir,
+                    metadata_file: $metadata_file,
+                    metadata_ipfs: "",
+                    thumbnail_ipfs: "",
+                    subtitles: [],
+                    channel_info: {
+                        name: ($uploader | gsub("[^a-zA-Z0-9._-]"; "_") | .[0:50]),
+                        display_name: $uploader,
+                        type: "youtube"
+                    },
+                    content_info: {
+                        description: "",
+                        ai_analysis: "",
+                        topic_keywords: "",
+                        duration_category: (if ($duration | tonumber? // 0) > 0 then 
+                            (($duration | tonumber) / 60 | floor) as $mins |
+                            if $mins < 5 then "short" elif $mins < 30 then "medium" else "long" end
+                        else "" end)
+                    },
+                    technical_info: {
+                        format: $format,
+                        file_size: ($file_size | tonumber? // 0),
+                        download_date: $download_date
+                    },
+                    youtube_metadata: {},
+                    statistics: {},
+                    dates: {},
+                    media_info: {},
+                    playlist_info: {},
+                    thumbnails: {},
+                    subtitles_info: {},
+                    chapters: [],
+                    location: "",
+                    age_limit: 0,
+                    live_info: {}
+                }' 2>>"$LOGFILE")
+            fi
             
             jq_exit_code=$?
             if [[ $jq_exit_code -eq 0 ]] && [[ -n "$jq_temp_output" ]] && [[ "$jq_temp_output" != "{}" ]]; then
@@ -775,38 +861,129 @@ if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
         # Use fallback if jq is not available or failed
         if [[ -z "$json_output" ]] || [[ "$json_output" == "{}" ]]; then
             log_debug "Using fallback JSON generation (no jq or jq failed)"
-            # Fallback: basic JSON without jq or metadata file
-        json_output=$(cat << EOF
-{
+            # Fallback: use jq if available for proper escaping, otherwise use printf with escaped strings
+            if command -v jq &> /dev/null; then
+                # Use jq for fallback to ensure proper JSON escaping
+                json_output=$(jq -n \
+                    --arg title "$media_title" \
+                    --arg raw_title "$raw_title" \
+                    --arg duration "$duration" \
+                    --arg uploader "$uploader" \
+                    --arg original_url "$URL" \
+                    --arg youtube_url "$URL" \
+                    --arg filename "$filename" \
+                    --arg file_path "$media_file" \
+                    --arg output_dir "$OUTPUT_DIR" \
+                    --arg metadata_file "${metadata_file:-}" \
+                    --arg format "$FORMAT" \
+                    --arg file_size "$(stat -c%s "$media_file" 2>/dev/null || echo "0")" \
+                    --arg download_date "$(date -Iseconds)" \
+                    '{
+                    ipfs_url: "",
+                    title: $title,
+                    raw_title: $raw_title,
+                    duration: ($duration | tonumber? // 0),
+                    uploader: $uploader,
+                    original_url: $original_url,
+                    youtube_url: $youtube_url,
+                    filename: $filename,
+                    file_path: $file_path,
+                    output_dir: $output_dir,
+                    metadata_file: $metadata_file,
+                    metadata_ipfs: "",
+                    thumbnail_ipfs: "",
+                    subtitles: [],
+                    channel_info: {
+                        name: ($uploader | gsub("[^a-zA-Z0-9._-]"; "_") | .[0:50]),
+                        display_name: $uploader,
+                        type: "youtube"
+                    },
+                    content_info: {
+                        description: "",
+                        ai_analysis: "",
+                        topic_keywords: "",
+                        duration_category: (if ($duration | tonumber? // 0) > 0 then 
+                            (($duration | tonumber) / 60 | floor) as $mins |
+                            if $mins < 5 then "short" elif $mins < 30 then "medium" else "long" end
+                        else "" end)
+                    },
+                    technical_info: {
+                        format: $format,
+                        file_size: ($file_size | tonumber? // 0),
+                        download_date: $download_date
+                    },
+                    youtube_metadata: {},
+                    statistics: {},
+                    dates: {},
+                    media_info: {},
+                    playlist_info: {},
+                    thumbnails: {},
+                    subtitles_info: {},
+                    chapters: [],
+                    location: "",
+                    age_limit: 0,
+                    live_info: {}
+                }' 2>/dev/null || echo "")
+            fi
+            
+            # If jq fallback also failed or jq not available, use printf with manual escaping
+            if [[ -z "$json_output" ]] || [[ "$json_output" == "{}" ]]; then
+                # Escape JSON special characters manually
+                escape_json() {
+                    printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g; s/\r/\\r/g; s/\n/\\n/g'
+                }
+                escaped_title=$(escape_json "$media_title")
+                escaped_raw_title=$(escape_json "$raw_title")
+                escaped_uploader=$(escape_json "$uploader")
+                escaped_url=$(escape_json "$URL")
+                escaped_filename=$(escape_json "$filename")
+                escaped_file_path=$(escape_json "$media_file")
+                escaped_output_dir=$(escape_json "$OUTPUT_DIR")
+                escaped_metadata_file=$(escape_json "${metadata_file:-}")
+                duration_category=""
+                if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ ]]; then
+                    duration_min=$((duration / 60))
+                    if [[ $duration_min -lt 5 ]]; then
+                        duration_category="short"
+                    elif [[ $duration_min -lt 30 ]]; then
+                        duration_category="medium"
+                    else
+                        duration_category="long"
+                    fi
+                fi
+                file_size=$(stat -c%s "$media_file" 2>/dev/null || echo "0")
+                download_date=$(date -Iseconds)
+                
+                json_output=$(printf '{
   "ipfs_url": "",
-  "title": "$media_title",
-  "raw_title": "$raw_title",
-  "duration": "$duration",
-  "uploader": "$uploader",
-  "original_url": "$URL",
-  "youtube_url": "$URL",
-  "filename": "$filename",
-  "file_path": "$media_file",
-  "output_dir": "$OUTPUT_DIR",
-  "metadata_file": "${metadata_file:-}",
+  "title": "%s",
+  "raw_title": "%s",
+  "duration": "%s",
+  "uploader": "%s",
+  "original_url": "%s",
+  "youtube_url": "%s",
+  "filename": "%s",
+  "file_path": "%s",
+  "output_dir": "%s",
+  "metadata_file": "%s",
   "metadata_ipfs": "",
   "thumbnail_ipfs": "",
   "subtitles": [],
   "channel_info": {
-    "name": "$(echo "$uploader" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 50)",
-    "display_name": "$uploader",
+    "name": "%s",
+    "display_name": "%s",
     "type": "youtube"
   },
   "content_info": {
     "description": "",
     "ai_analysis": "",
     "topic_keywords": "",
-    "duration_category": "$(if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ ]]; then duration_min=$((duration / 60)); if [[ $duration_min -lt 5 ]]; then echo "short"; elif [[ $duration_min -lt 30 ]]; then echo "medium"; else echo "long"; fi; fi)"
+    "duration_category": "%s"
   },
   "technical_info": {
-    "format": "$FORMAT",
-    "file_size": "$(stat -c%s "$media_file" 2>/dev/null || echo "0")",
-    "download_date": "$(date -Iseconds)"
+    "format": "%s",
+    "file_size": "%s",
+    "download_date": "%s"
   },
   "youtube_metadata": {},
   "statistics": {},
@@ -819,9 +996,8 @@ if [[ $download_exit_code -eq 0 && $files_created -gt 0 ]]; then
   "location": "",
   "age_limit": 0,
   "live_info": {}
-}
-EOF
-)
+}' "$escaped_title" "$escaped_raw_title" "$duration" "$escaped_uploader" "$escaped_url" "$escaped_url" "$escaped_filename" "$escaped_file_path" "$escaped_output_dir" "$escaped_metadata_file" "$(echo "$uploader" | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 50)" "$escaped_uploader" "$duration_category" "$FORMAT" "$file_size" "$download_date")
+            fi
         fi
         
         # Validate that file_path is in JSON before outputting
