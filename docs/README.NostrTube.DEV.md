@@ -33,7 +33,7 @@ This guide explains how to build applications on top of **NostrTube** using the 
 UPlanet applications can be accessed in **two ways**:
 
 1. **Via API (uSPOT)**: `https://u.copylaradio.com/youtube`
-2. **Via IPFS Gateway**: `https://ipfs.copylaradio.com/ipns/copylaradio.com/plantnet.html`
+2. **Via IPFS Gateway**: `https://ipfs.copylaradio.com/ipns/copylaradio.com/youtube.html`
 
 Both access methods must automatically discover:
 - **API endpoint** (uSPOT) - for file uploads, video publishing, user management
