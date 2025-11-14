@@ -333,7 +333,67 @@ if [ "$AUTO_MODE" = "true" ]; then
     [ -z "$IPFS_CID" ] && IPFS_CID=$(echo "$UPLOAD_DATA" | jq -r '.cid // empty')
     [ -z "$FILENAME" ] && FILENAME=$(echo "$UPLOAD_DATA" | jq -r '.fileName // empty')
     [ -z "$FILE_HASH" ] && FILE_HASH=$(echo "$UPLOAD_DATA" | jq -r '.fileHash // empty')
-    [ -z "$MIME_TYPE" ] && MIME_TYPE=$(echo "$UPLOAD_DATA" | jq -r '.mimeType // "video/webm"')
+    # Extract MIME type: check if it's still the default value, then try multiple JSON paths
+    if [ "$MIME_TYPE" = "video/webm" ] || [ -z "$MIME_TYPE" ]; then
+        # Try multiple JSON paths in order of preference
+        # 1. .mimeType (from upload2ipfs.sh output)
+        MIME_TYPE_FROM_JSON=$(echo "$UPLOAD_DATA" | jq -r '.mimeType // empty')
+        # 2. .file_type (NIP-96 format)
+        if [[ -z "$MIME_TYPE_FROM_JSON" ]] || [[ "$MIME_TYPE_FROM_JSON" == "null" ]]; then
+            MIME_TYPE_FROM_JSON=$(echo "$UPLOAD_DATA" | jq -r '.file_type // empty')
+        fi
+        # 3. .file.type (from info.json structure)
+        if [[ -z "$MIME_TYPE_FROM_JSON" ]] || [[ "$MIME_TYPE_FROM_JSON" == "null" ]]; then
+            MIME_TYPE_FROM_JSON=$(echo "$UPLOAD_DATA" | jq -r '.file.type // empty')
+        fi
+        # 4. Try to read from info.json via INFO_CID if available
+        if [[ -z "$MIME_TYPE_FROM_JSON" ]] || [[ "$MIME_TYPE_FROM_JSON" == "null" ]]; then
+            INFO_CID_FOR_MIME=$(echo "$UPLOAD_DATA" | jq -r '.info // empty')
+            if [[ -n "$INFO_CID_FOR_MIME" ]] && [[ "$INFO_CID_FOR_MIME" != "null" ]] && command -v ipfs &> /dev/null; then
+                INFO_JSON_CONTENT=$(ipfs cat "$INFO_CID_FOR_MIME" 2>/dev/null || echo "")
+                if [[ -n "$INFO_JSON_CONTENT" ]]; then
+                    MIME_TYPE_FROM_JSON=$(echo "$INFO_JSON_CONTENT" | jq -r '.file.type // empty' 2>/dev/null || echo "")
+                fi
+            fi
+        fi
+        # Use the extracted value if valid
+        if [[ -n "$MIME_TYPE_FROM_JSON" ]] && [[ "$MIME_TYPE_FROM_JSON" != "null" ]] && [[ "$MIME_TYPE_FROM_JSON" != "" ]]; then
+            MIME_TYPE="$MIME_TYPE_FROM_JSON"
+            log_info "Extracted MIME type from upload data: $MIME_TYPE"
+        else
+            # Fallback: try to detect from file extension
+            if [[ -n "$FILENAME" ]]; then
+                FILE_EXT=$(echo "$FILENAME" | awk -F. '{print tolower($NF)}')
+                case "$FILE_EXT" in
+                    mp4)
+                        MIME_TYPE="video/mp4"
+                        log_info "Detected MIME type from file extension (.mp4): $MIME_TYPE"
+                        ;;
+                    webm)
+                        MIME_TYPE="video/webm"
+                        log_info "Detected MIME type from file extension (.webm): $MIME_TYPE"
+                        ;;
+                    mkv)
+                        MIME_TYPE="video/x-matroska"
+                        log_info "Detected MIME type from file extension (.mkv): $MIME_TYPE"
+                        ;;
+                    avi)
+                        MIME_TYPE="video/x-msvideo"
+                        log_info "Detected MIME type from file extension (.avi): $MIME_TYPE"
+                        ;;
+                    mov)
+                        MIME_TYPE="video/quicktime"
+                        log_info "Detected MIME type from file extension (.mov): $MIME_TYPE"
+                        ;;
+                    *)
+                        log_warning "Could not extract MIME type from upload data or file extension, using default: $MIME_TYPE"
+                        ;;
+                esac
+            else
+                log_warning "Could not extract MIME type from upload data, using default: $MIME_TYPE"
+            fi
+        fi
+    fi
     [ -z "$THUMBNAIL_CID" ] && THUMBNAIL_CID=$(echo "$UPLOAD_DATA" | jq -r '.thumbnail_ipfs // empty')
     [ -z "$GIFANIM_CID" ] && GIFANIM_CID=$(echo "$UPLOAD_DATA" | jq -r '.gifanim_ipfs // empty')
     [ -z "$INFO_CID" ] && INFO_CID=$(echo "$UPLOAD_DATA" | jq -r '.info // empty')

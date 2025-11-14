@@ -8,9 +8,10 @@
 
 This document specifies the UPlanet File Management Contract, a protocol for decentralized file storage using IPFS (InterPlanetary File System) and metadata publication via the NOSTR (Notes and Other Stuff Transmitted by Relays) protocol. The system implements a separation-of-concerns architecture distinguishing between video content (NIP-71, kinds 21/22) and general file metadata (NIP-94, kind 1063), while ensuring provenance tracking through cryptographic hashing and chain-of-custody mechanisms.
 
-**Protocol Version**: 1.0.0  
-**Document Version**: 1.2  
+**Protocol Version**: 2.0.0  
+**Document Version**: 1.3  
 **JSON Canonicalization**: RFC 8785 (JCS) compliant  
+**Metadata Format**: See [INFO_JSON_FORMATS.md](INFO_JSON_FORMATS.md) for v2.0 specification  
 **Keywords**: IPFS, NOSTR, NIP-94, NIP-71, NIP-96, Decentralized Storage, Provenance Tracking, Metadata Publishing, RFC 8785, JSON Canonicalization, MULTIPASS, Tiered Quotas
 
 ---
@@ -520,11 +521,17 @@ ffmpeg -ss "$PROBETIME" -t 1.6 -i "$FILE_PATH" "$GIFANIM_PATH"
 
 All files generate a comprehensive `info.json` file stored on IPFS. **The JSON is canonicalized according to RFC 8785 (JCS) before IPFS upload** to ensure deterministic CID generation and signature consistency.
 
+**Version History**:
+- **v1.0.0**: Initial format (snake_case, flat structure)
+- **v2.0.0**: Standardized format (camelCase, nested structure, `source` section) - See [INFO_JSON_FORMATS.md](INFO_JSON_FORMATS.md)
+
+**Example (v2.0 format)**:
+
 ```json
 {
   "protocol": {
     "name": "UPlanet File Management Contract",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "specification": "https://github.com/papiche/Astroport.ONE/blob/main/Astroport.ONE/docs/UPlanet_FILE_CONTRACT.md"
   },
   "file": {
@@ -536,29 +543,49 @@ All files generate a comprehensive `info.json` file stored on IPFS. **The JSON i
   "ipfs": {
     "cid": "QmXXX...",
     "url": "/ipfs/QmXXX.../filename.ext",
-    "date": "YYYY-MM-DD HH:MM ±ZZZZ",
+    "gateway": "https://ipfs.copylaradio.com",
+    "date": "2025-11-14T12:34:56Z",
     "node_id": "IPNS_address_or_node_identifier"
   },
   "image": {
     "dimensions": "1920x1080"
   },
   "media": {
+    "type": "video",
     "duration": 180,
-    "video_codecs": "h264, vp9",
-    "audio_codecs": "aac, opus",
-    "dimensions": "1920x1080",
-    "thumbnail_ipfs": "QmTHUMB...",
-    "gifanim_ipfs": "QmGIF..."
+    "dimensions": {
+      "width": 1920,
+      "height": 1080,
+      "aspectRatio": "16:9"
+    },
+    "codecs": {
+      "video": "h264",
+      "audio": "aac"
+    },
+    "thumbnails": {
+      "static": "QmTHUMB...",
+      "animated": "QmGIF..."
+    }
+  },
+  "source": {
+    "type": "youtube",
+    "youtube": {
+      "id": "video_id",
+      "title": "Video Title",
+      "channel": {
+        "name": "Channel Name",
+        "id": "channel_id"
+      }
+    }
   },
   "provenance": {
-    "original_event_id": "evt_abc123...",
-    "original_author": "npub1...",
-    "upload_chain": [
+    "originalEventId": "evt_abc123...",
+    "originalAuthor": "hex_pubkey",
+    "uploadChain": [
       {"pubkey": "hex1", "timestamp": "2025-01-01T12:00:00Z"},
-      {"pubkey": "hex2", "timestamp": "2025-01-02T14:30:00Z"},
-      {"pubkey": "hex3", "timestamp": "2025-01-03T10:15:00Z"}
+      {"pubkey": "hex2", "timestamp": "2025-01-02T14:30:00Z"}
     ],
-    "is_reupload": true
+    "isReupload": true
   },
   "metadata": {
     "description": "Auto-generated or user-provided description",
@@ -575,12 +602,20 @@ All files generate a comprehensive `info.json` file stored on IPFS. **The JSON i
 }
 ```
 
+**Key Improvements in v2.0**:
+- **camelCase naming**: Consistent with JavaScript conventions
+- **Nested structures**: `dimensions` as object, `codecs` object, `thumbnails` object
+- **Source section**: Separate `source.youtube` or `source.tmdb` for attribution
+- **ISO 8601 dates**: Standard timestamp format
+- **Backward compatibility**: Clients support both v1.0 and v2.0
+
 **Protocol Versioning**:
 - **Version Format**: Semantic versioning (MAJOR.MINOR.PATCH)
 - **MAJOR**: Breaking changes to structure (incompatible)
 - **MINOR**: New fields added (backward compatible)
 - **PATCH**: Bug fixes and corrections
-- **Current Version**: 1.0.0
+- **Current Version**: 2.0.0
+- **Previous Version**: 1.0.0 (still supported by clients)
 
 **JSON Canonicalization (RFC 8785)**:
 - All `info.json` files are canonicalized before IPFS upload
@@ -1899,13 +1934,22 @@ This protocol was developed as part of the UPlanet decentralized ecosystem. Spec
 
 ## Document Metadata
 
-- **Protocol Version**: 1.0.0
-- **Document Version**: 1.2
+- **Protocol Version**: 2.0.0
+- **Document Version**: 1.3
 - **Date**: 2025-01-04
-- **Last Updated**: 2025-01-XX (Added tiered file size quotas and MULTIPASS detection)
+- **Last Updated**: 2025-11-14 (Standardized info.json v2.0 format)
 - **Authors**: UPlanet Development Team
 - **License**: CC BY-SA 4.0
 - **Repository**: https://github.com/papiche/Astroport.ONE
+
+**Changes in v1.3**:
+- Upgraded protocol to v2.0.0 with standardized info.json format
+- Added camelCase field naming convention
+- Introduced nested structures (dimensions, codecs, thumbnails as objects)
+- Moved YouTube/TMDB metadata to `source` section
+- Added ISO 8601 timestamp format
+- Backward compatibility maintained for v1.0 clients
+- Reference to INFO_JSON_FORMATS.md for complete specification
 
 **Changes in v1.2**:
 - Added tiered file size quota system (100MB default, 650MB for MULTIPASS users)

@@ -1,5 +1,20 @@
 # Nostr Tube - Web3 Video Platform
 
+> **🚀 Built in 1 week**. Like CSS separated presentation from data, UPlanet separates events from processing chains.
+
+## 🎯 The Revolution
+
+- **No API to build**: NOSTR events handle distribution
+- **No auth to implement**: NIP-42 cryptographic authentication  
+- **No servers to manage**: IPFS + NOSTR network
+- **Interoperable by design**: Any NOSTR client can interact
+
+**Result**: Focus on your features, not infrastructure.
+
+**[▶️ See live demo](https://u.copylaradio.com/youtube?html=1)**
+
+---
+
 ## Overview
 
 **Nostr Tube** is a fully decentralized YouTube alternative built on **NOSTR**, **IPFS**, and **MULTIPASS**. It enables users to upload, share, like, and comment on videos without relying on centralized platforms.
@@ -233,8 +248,8 @@ Publishes videos as NOSTR events (NIP-71).
   "tags": [
     ["title", "Video Title"],
     ["url", "/ipfs/QmHASH/video.mp4"],
-    ["m", "video/webm"],
-    ["imeta", "dim 1280x720", "url /ipfs/QmHASH/video.mp4", "m video/webm"],
+    ["m", "video/mp4"],
+    ["imeta", "dim 1280x720", "url /ipfs/QmHASH/video.mp4", "m video/mp4"],
     ["duration", "30"],
     ["published_at", "1704067200"],
     ["t", "YouTubeDownload"],
@@ -264,7 +279,10 @@ Publishes videos as NOSTR events (NIP-71).
 **Tags Explained**:
 - `title`: Video title
 - `url`: IPFS URL (required for `create_video_channel.py`)
-- `m`: Media type (`video/webm`, `video/mp4`)
+- `m`: Media type (`video/mp4`, `video/webm`, etc.)
+  - **Automatic detection** by `upload2ipfs.sh` from file content
+  - **Priority**: file magic bytes → file extension → `video/mp4` (default)
+  - **For MP4 files**: Will be `video/mp4` (not `video/webm`)
 - `imeta`: NIP-71 metadata tag with dimensions and URL
 - `duration`: Video duration in seconds
 - `g`: Geohash tag (latitude,longitude) for UMAP anchoring
@@ -638,7 +656,10 @@ All events are authenticated via **NIP-42** and synchronized through the N² net
 
 - `title`: Video title (required)
 - `url`: Primary video URL (IPFS or HTTP) (required)
-- `m`: Media type, e.g., `video/webm` (required)
+- `m`: Media type, e.g., `video/mp4`, `video/webm` (required)
+  - **Automatic detection** by `upload2ipfs.sh` from file content
+  - **Priority**: file magic bytes → file extension → `video/mp4` (default)
+  - **For MP4 files**: Will be `video/mp4` (not `video/webm`)
 - `published_at`: Unix timestamp (required)
 - **`x`**: SHA-256 file hash (required for provenance & deduplication)
 - **`info`**: CID of info.json (required for metadata reuse)
@@ -685,6 +706,30 @@ Nostr Tube implements a comprehensive **provenance tracking and deduplication sy
 - Complete metadata stored in IPFS as `info.json`
 - Includes: duration, dimensions, codecs, thumbnails, animated GIF CIDs
 - Tag: `["info", "QmInfoCID"]`
+
+**Format Standardization (v2.0)**:
+
+NostrTube uses a **standardized `info.json` v2.0 format** for metadata:
+
+- **Base structure**: `protocol`, `file`, `ipfs`, `metadata`, `nostr`
+- **Media-specific**: `media` section with camelCase fields (v2.0)
+  - Object-based dimensions: `{width, height, aspectRatio}`
+  - Nested codecs: `{video, audio}`
+  - Thumbnails object: `{static, animated}`
+- **Source attribution**: `source.youtube` or `source.tmdb` for external content (v2.0)
+- **Provenance tracking**: `provenance.uploadChain` with timestamps (v2.0)
+- **Backward compatible**: Clients support both v1.0 (snake_case, flat) and v2.0 (camelCase, nested)
+
+📖 **See**: [INFO_JSON_FORMATS.md](INFO_JSON_FORMATS.md) for complete specification
+
+**Format varies by media type and source**:
+  - **Video (webcam/personal)**: Base + `media` section
+  - **Video (Film/Serie)**: Base + `media` + `source.tmdb`
+  - **Video (YouTube)**: Base + `media` + `source.youtube`
+  - **Audio (MP3)**: Base + `media` (audio-specific)
+  - **Image**: Base + `image` section
+  - **PDF/Document**: Base structure only
+  - **Re-uploads**: All above + `provenance` section
 - **Benefits**:
   - Avoids redundant metadata extraction (expensive ffprobe operations)
   - Enables instant metadata reuse on re-uploads
@@ -726,8 +771,9 @@ Nostr Tube implements a comprehensive **provenance tracking and deduplication sy
 # OPTIMIZATION: Uses direct tag filter (#x) instead of fetching all events
 # Query: kind=21&22, #x=abc123hash, limit=1
 # This is ~1000x faster than client-side filtering!
-# Reuses Alice's IPFS CID and info.json
-# No redundant upload to IPFS!
+# Reuses Alice's IPFS CID (main file)
+# Creates NEW info.json with updated provenance (new CID)
+# No redundant upload to IPFS for main file!
 ```
 
 ```json
@@ -736,13 +782,15 @@ Nostr Tube implements a comprehensive **provenance tracking and deduplication sy
   "pubkey": "bob_pubkey",
   "tags": [
     ["x", "abc123hash..."],  // Same hash
-    ["info", "QmAliceInfo..."],  // Reused info.json
+    ["info", "QmBobInfo..."],  // NEW info.json (with updated upload_chain)
     ["upload_chain", "alice_pubkey,bob_pubkey"],  // Bob added to chain
     ["e", "alice_event_id"],  // Reference to Alice's event
     ["p", "alice_pubkey"]  // Credit to Alice
   ]
 }
 ```
+
+**Note**: The main file CID is reused, but a **new info.json is created** with updated timestamp and upload_chain. This allows the upload history to evolve with each re-publication.
 
 ### Implementation
 
@@ -792,7 +840,7 @@ When a user re-uploads an **identical file** (same SHA-256 hash):
 - ✅ Main file CID (no redundant IPFS upload)
 - ✅ Thumbnail CID (if available from original)
 - ✅ Animated GIF CID (if available from original)
-- ✅ Video metadata (duration, dimensions, codecs)
+- ✅ Video metadata (duration, dimensions, codecs) - extracted from original info.json
 
 **What is created new:**
 - 🆕 **New NOSTR event** (kind 21/22) with new event ID

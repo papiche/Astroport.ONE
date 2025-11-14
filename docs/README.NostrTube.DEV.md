@@ -10,7 +10,8 @@ This guide explains how to build applications on top of **NostrTube** using the 
 
 1. [Infrastructure Discovery](#infrastructure-discovery)
 2. [JavaScript Libraries](#javascript-libraries)
-3. [Core NOSTR Functions](#core-nostr-functions)
+3. [Metadata Format (info.json v2.0)](#metadata-format-infojson-v20)
+4. [Core NOSTR Functions](#core-nostr-functions)
 4. [Video & Media Functions](#video--media-functions)
 5. [Social Graph & N² Network](#social-graph--n²-network)
 6. [UMAP Geographic Chat](#umap-geographic-chat-nip-28-extension)
@@ -469,6 +470,128 @@ youtube.enhancements.js (~3700 lines)
 ├── Related Videos & Recommendations
 ├── Profile Links & Social Features
 └── UI Components (Modals, cards, buttons)
+```
+
+---
+
+## Metadata Format (info.json v2.0)
+
+### Overview
+
+NostrTube uses a **standardized metadata format** for all uploaded files. This format is defined in `info.json` files stored on IPFS and referenced in NOSTR events via the `info` tag.
+
+**Version History**:
+- **v1.0.0**: Initial format (snake_case, flat structure, YouTube/TMDB at root)
+- **v2.0.0**: Standardized format (camelCase, nested structure, `source` section)
+
+### Key Changes in v2.0
+
+| Aspect | v1.0 | v2.0 |
+|--------|------|------|
+| **Field naming** | snake_case | camelCase |
+| **Dimensions** | String `"1920x1080"` | Object `{width, height, aspectRatio}` |
+| **Thumbnails** | `thumbnail_ipfs`, `gifanim_ipfs` | `thumbnails: {static, animated}` |
+| **Codecs** | `video_codecs`, `audio_codecs` | `codecs: {video, audio}` |
+| **YouTube metadata** | Root level | `source.youtube` |
+| **TMDB metadata** | `tmdb` at root | `source.tmdb` |
+| **Provenance** | `upload_chain` | `uploadChain` (array with timestamps) |
+
+### Client Compatibility
+
+All NostrTube JavaScript clients support **both v1.0 and v2.0**:
+
+- `youtube.enhancements.js`: Auto-detects version via `protocol.version`
+- `nostrify.enhancements.js`: Reads from both old and new paths
+- `extractStandardizedMetadata()`: Unified extraction function
+
+**Example detection**:
+```javascript
+const version = infoJson.protocol?.version || '1.0.0';
+const isV2 = version.startsWith('2.');
+
+if (isV2) {
+    // v2.0: Read from source.youtube
+    const youtubeData = infoJson.source?.youtube;
+} else {
+    // v1.0: Read from root level
+    const youtubeData = infoJson;
+}
+```
+
+### Format Reference
+
+📖 **Complete documentation**: [INFO_JSON_FORMATS.md](../INFO_JSON_FORMATS.md)
+
+**Quick example (v2.0)**:
+```json
+{
+  "protocol": {
+    "version": "2.0.0"
+  },
+  "file": {
+    "name": "video.mp4",
+    "type": "video/mp4",
+    "hash": "sha256_hash"
+  },
+  "media": {
+    "type": "video",
+    "duration": 180,
+    "dimensions": {
+      "width": 1920,
+      "height": 1080,
+      "aspectRatio": "16:9"
+    },
+    "codecs": {
+      "video": "h264",
+      "audio": "aac"
+    },
+    "thumbnails": {
+      "static": "QmThumb...",
+      "animated": "QmGif..."
+    }
+  },
+  "source": {
+    "type": "youtube",
+    "youtube": {
+      "id": "dQw4w9WgXcQ",
+      "title": "Video Title",
+      "channel": {
+        "name": "Channel Name",
+        "id": "UCxxxxxx"
+      }
+    }
+  }
+}
+```
+
+### Backend Generation
+
+The `upload2ipfs.sh` script generates v2.0 format by default:
+
+- Converts dimensions to object format
+- Nests codecs and thumbnails
+- Places YouTube/TMDB metadata in `source` section
+- Uses camelCase for all field names
+
+**Provenance tracking** (v2.0):
+```json
+{
+  "provenance": {
+    "uploadChain": [
+      {
+        "pubkey": "hex_pubkey_1",
+        "timestamp": "2025-11-14T10:00:00Z"
+      },
+      {
+        "pubkey": "hex_pubkey_2",
+        "timestamp": "2025-11-14T15:30:00Z"
+      }
+    ],
+    "originalEventId": "event_id",
+    "originalAuthor": "hex_pubkey_1",
+    "isReupload": true
+  }
+}
 ```
 
 ---
