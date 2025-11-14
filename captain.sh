@@ -266,19 +266,17 @@ create_zen_card() {
         local g1pub=$(cat ~/.zen/game/players/$player/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
         local astronautens=$(ipfs key list -l | grep -w "$player" | head -n1 | cut -d ' ' -f 1)
         
-        # Mettre à jour .current
+        # Mettre à jour .current (créer le lien symbolique)
         rm -f ~/.zen/game/players/.current
         ln -s ~/.zen/game/players/${player} ~/.zen/game/players/.current
         
-        print_success "Configuration terminée avec succès!"
+        print_success "Lien .current créé vers ${player}"
         echo ""
-        echo -e "${GREEN}🎉 Félicitations! Votre station est maintenant configurée:${NC}"
-        echo "  • Compte MULTIPASS: $email"
+        echo -e "${GREEN}✅ ZEN Card configurée:${NC}"
         echo "  • ZEN Card: $player"
         echo "  • G1PUB: $g1pub"
         echo "  • IPNS: $myIPFS/ipns/$astronautens"
-        echo ""
-        echo -e "${CYAN}Vous pouvez maintenant utiliser toutes les fonctionnalités d'Astroport.ONE!${NC}"
+        echo "  • Lien .current: ~/.zen/game/players/.current → $player"
         echo ""
         
         # Proposer d'imprimer la VISA en mode interactif
@@ -362,6 +360,20 @@ calculate_zen() {
     else
         echo "0"
     fi
+}
+
+# Fonction pour convertir Ẑen en Ğ1
+# Taux standard : 1Ẑ = 0.1Ğ1 (ou 10Ẑ = 1Ğ1)
+zen_to_g1() {
+    local zen_amount="$1"
+    
+    # Valider que l'entrée est un nombre
+    if [[ -z "$zen_amount" ]] || ! [[ "$zen_amount" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+        echo "0"
+        return 1
+    fi
+    
+    echo "scale=2; $zen_amount / 10" | bc -l
 }
 
 # Fonction pour récupérer les données de revenu depuis G1revenue.sh
@@ -1369,6 +1381,88 @@ show_network_statistics() {
     show_nostr_broadcast_menu
 }
 
+# Fonction pour vérifier que les comptes coopératifs peuvent couvrir 3xPAF/semaine
+check_cooperative_balance() {
+    local paf_weekly="${PAF:-14}"
+    local required_zen=$(echo "$paf_weekly * 3" | bc -l)
+    local required_g1=$(zen_to_g1 "$required_zen")
+    
+    print_section "VÉRIFICATION DES COMPTES COOPÉRATIFS"
+    
+    echo -e "${CYAN}💰 Vérification que les comptes coopératifs peuvent couvrir 3xPAF/semaine${NC}"
+    echo -e "${YELLOW}  Requis: ${required_zen} Ẑen (${required_g1} Ğ1) pour 3xPAF hebdomadaire${NC}"
+    echo ""
+    
+    # Vérifier UPLANETNAME_G1 (réserve principale)
+    local g1_pubkey=""
+    if [[ -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
+        g1_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_G1" 2>/dev/null)
+        if [[ -n "$g1_pubkey" ]]; then
+            local g1_balance=$(get_wallet_balance "$g1_pubkey")
+            local g1_zen=$(calculate_zen "$g1_balance")
+            echo -e "${BLUE}🏛️  UPLANETNAME_G1: ${g1_zen} Ẑen (${g1_balance} Ğ1)${NC}"
+            
+            if (( $(echo "$g1_zen >= $required_zen" | bc -l) )); then
+                print_success "✅ UPLANETNAME_G1 a suffisamment de fonds"
+            else
+                print_warning "⚠️  UPLANETNAME_G1 insuffisant (${g1_zen} Ẑen < ${required_zen} Ẑen requis)"
+                echo -e "${YELLOW}💡 Vous devrez alimenter UPLANETNAME_G1 depuis OpenCollective${NC}"
+            fi
+        fi
+    else
+        print_warning "⚠️  UPLANETNAME_G1 non configuré"
+    fi
+    
+    # Vérifier les portefeuilles coopératifs
+    local total_coop_zen=0
+    local coop_wallets=("CASH" "RnD" "ASSETS")
+    
+    for wallet_type in "${coop_wallets[@]}"; do
+        local wallet_file="$HOME/.zen/game/uplanet.${wallet_type}.dunikey"
+        if [[ -f "$wallet_file" ]]; then
+            local wallet_pubkey=$(cat "$wallet_file" | grep "pub:" | cut -d ' ' -f 2 2>/dev/null)
+            if [[ -n "$wallet_pubkey" ]]; then
+                local wallet_balance=$(get_wallet_balance "$wallet_pubkey")
+                local wallet_zen=$(calculate_zen "$wallet_balance")
+                total_coop_zen=$(echo "$total_coop_zen + $wallet_zen" | bc -l)
+                
+                case $wallet_type in
+                    "CASH")
+                        echo -e "${GREEN}💰 UPLANETNAME_CASH: ${wallet_zen} Ẑen${NC}"
+                        ;;
+                    "RnD")
+                        echo -e "${CYAN}🔬 UPLANETNAME_RND: ${wallet_zen} Ẑen${NC}"
+                        ;;
+                    "ASSETS")
+                        echo -e "${YELLOW}🌳 UPLANETNAME_ASSETS: ${wallet_zen} Ẑen${NC}"
+                        ;;
+                esac
+            fi
+        fi
+    done
+    
+    echo ""
+    echo -e "${BLUE}📊 Total coopératif: ${total_coop_zen} Ẑen${NC}"
+    
+    if (( $(echo "$total_coop_zen >= $required_zen" | bc -l) )); then
+        print_success "✅ Les comptes coopératifs peuvent couvrir 3xPAF/semaine"
+        return 0
+    else
+        print_warning "⚠️  Les comptes coopératifs sont insuffisants pour couvrir 3xPAF/semaine"
+        echo -e "${YELLOW}💡 Recommandation: Alimenter les comptes depuis OpenCollective avant de lancer ZEN.ECONOMY.sh${NC}"
+        echo ""
+        
+        if [[ "$AUTO_MODE" == "false" ]]; then
+            read -p "Voulez-vous continuer quand même ? (oui/non): " continue_anyway
+            if [[ "$continue_anyway" != "oui" && "$continue_anyway" != "o" && "$continue_anyway" != "y" && "$continue_anyway" != "yes" ]]; then
+                return 1
+            fi
+        fi
+    fi
+    
+    return 0
+}
+
 # Fonction principale d'embarquement
 embark_captain() {
     print_header "BIENVENUE SUR ASTROPORT.ONE - EMBARQUEMENT DU CAPITAINE"
@@ -1379,6 +1473,8 @@ embark_captain() {
     echo "  1. Initialiser l'infrastructure UPLANET (portefeuilles coopératifs)"
     echo "  2. Créer un compte MULTIPASS (interface CLI)"
     echo "  3. Créer une ZEN Card (interface CLI)"
+    echo "  4. Inscrire l'Armateur avec apport capital infrastructure"
+    echo "  5. Vérifier que les comptes coopératifs peuvent couvrir 3xPAF/semaine"
     echo ""
     echo -e "${YELLOW}Cette configuration vous permettra de:${NC}"
     echo "  • Gérer une constellation locale UPlanet"
@@ -1483,9 +1579,77 @@ embark_captain() {
         return 1
     fi
     
+    # Étape 3: Inscrire l'Armateur avec apport capital infrastructure
+    print_section "INSCRIPTION ARMATEUR - APPORT CAPITAL INFRASTRUCTURE"
+    
+    echo -e "${CYAN}Nous allons maintenant enregistrer votre apport capital infrastructure.${NC}"
+    echo -e "${YELLOW}Cet apport représente la valeur de votre machine (Raspberry Pi, PC, etc.)${NC}"
+    echo ""
+    
+    # Demander la valeur de la machine
+    local machine_value="${MACHINE_VALUE_ZEN:-500}"
+    if [[ "$AUTO_MODE" == "false" ]]; then
+        read -p "Valeur de votre machine en Ẑen (défaut: ${machine_value}): " input_machine_value
+        [[ -n "$input_machine_value" ]] && machine_value="$input_machine_value"
+    fi
+    
+    # Valider que c'est un nombre
+    if ! [[ "$machine_value" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+        print_error "Valeur invalide: '$machine_value'. Utilisez un nombre (ex: 500)"
+        machine_value="500"
+    fi
+    
+    echo -e "${CYAN}💰 Apport capital infrastructure: ${machine_value} Ẑen${NC}"
+    echo ""
+    
+    if [[ "$AUTO_MODE" == "false" ]]; then
+        read -p "Confirmer l'inscription de l'Armateur avec cet apport ? (oui/non): " confirm_armateur
+        if [[ "$confirm_armateur" != "oui" && "$confirm_armateur" != "o" && "$confirm_armateur" != "y" && "$confirm_armateur" != "yes" ]]; then
+            print_info "Inscription Armateur reportée"
+        else
+            print_info "Inscription de l'Armateur avec apport capital infrastructure..."
+            if "${MY_PATH}/UPLANET.official.sh" --infrastructure -m "$machine_value"; then
+                print_success "✅ Armateur inscrit avec succès !"
+            else
+                print_warning "⚠️  L'inscription de l'Armateur a peut-être échoué"
+                echo -e "${YELLOW}💡 Vous pourrez la refaire plus tard avec:${NC}"
+                echo -e "${CYAN}   ${MY_PATH}/UPLANET.official.sh --infrastructure -m ${machine_value}${NC}"
+            fi
+        fi
+    else
+        # Mode automatique
+        if "${MY_PATH}/UPLANET.official.sh" --infrastructure -m "$machine_value"; then
+            print_success "✅ Armateur inscrit avec succès !"
+        else
+            print_warning "⚠️  L'inscription de l'Armateur a peut-être échoué"
+        fi
+    fi
+    
+    echo ""
+    
+    # Étape 4: Vérifier que les comptes coopératifs peuvent couvrir 3xPAF/semaine
+    if ! check_cooperative_balance; then
+        print_warning "⚠️  Les comptes coopératifs sont insuffisants"
+        echo -e "${YELLOW}💡 Important: Assurez-vous d'alimenter les comptes depuis OpenCollective avant de lancer ZEN.ECONOMY.sh${NC}"
+        echo ""
+    fi
+    
     if [[ "$AUTO_MODE" == "false" ]]; then
         read -p "Appuyez sur ENTRÉE pour continuer..."
     fi
+    
+    print_success "🎉 Configuration du Capitaine terminée avec succès !"
+    echo ""
+    echo -e "${GREEN}✅ Votre station Astroport.ONE est maintenant configurée:${NC}"
+    echo -e "  • Compte MULTIPASS: $email"
+    echo -e "  • ZEN Card: $email"
+    echo -e "  • Armateur: Apport capital ${machine_value} Ẑen"
+    echo ""
+    echo -e "${CYAN}📋 Prochaines étapes:${NC}"
+    echo -e "  1. Alimenter UPLANETNAME_G1 depuis OpenCollective si nécessaire"
+    echo -e "  2. Lancer ZEN.ECONOMY.sh pour le paiement PAF hebdomadaire"
+    echo -e "  3. Utiliser le tableau de bord avec: ${MY_PATH}/captain.sh"
+    echo ""
     
     return 0
 }

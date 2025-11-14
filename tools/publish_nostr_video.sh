@@ -967,11 +967,12 @@ if [ $NOSTR_EXIT_CODE -eq 0 ]; then
 Duration: ${DURATION}s
 IPFS: /ipfs/${IPFS_CID}
 
-#video #UPlanet"
+#NostrTube #UPlanet #video"
         
         # Build kind 1 tags with video reference
         KIND1_TAGS="[
     [\"e\", \"${EVENT_ID}\", \"\", \"mention\"],
+    [\"t\", \"NostrTube\"],
     [\"t\", \"video\"],
     [\"t\", \"UPlanet\"]"
         
