@@ -579,10 +579,6 @@ EOFNOSTR
             || echo "⚠️ Failed to send MULTIPASS card image to ${EMAIL}"
     fi
 
-
-    ## CLEAN CACHE
-    rm -Rf ~/.zen/tmp/${MOATS-null}
-    
     ## Wait for background processes to complete
     echo "⏳ Waiting for background processes to complete..."
     if [[ -n "$MULTIPASS_PRINT_PID" ]]; then
@@ -590,8 +586,25 @@ EOFNOSTR
         echo "✅ MULTIPASS print process completed"
     fi
     
-    # IPNS publication is handled by generate_ipfs_structure.sh, no need to wait here
+    ## IPNS PUBLICATION - Publish entire ~/.zen/game/nostr/${EMAIL}/ directory to IPNS
+    if [[ -n "$G1PUBNOSTR" ]] && [[ -d "${HOME}/.zen/game/nostr/${EMAIL}" ]]; then
+        echo "📡 Publishing MULTIPASS directory to IPNS (${G1PUBNOSTR}:NOSTR)..."
+        NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
+        if [[ -n "$NOSTRIPFS" ]]; then
+            ipfs name publish --key "${G1PUBNOSTR}:NOSTR" "/ipfs/${NOSTRIPFS}" 2>&1 >/dev/null \
+                && echo "✅ IPNS publication successful: /ipns/${NOSTRNS} -> /ipfs/${NOSTRIPFS}" \
+                || echo "⚠️  IPNS publication failed (will retry later)"
+        else
+            echo "⚠️  Failed to add MULTIPASS directory to IPFS"
+        fi
+    else
+        echo "⚠️  Cannot publish to IPNS: G1PUBNOSTR not set or MULTIPASS directory missing"
+    fi
+    
     echo "✅ IPFS publish process completed"
+
+    ## CLEAN CACHE
+    rm -Rf ~/.zen/tmp/${MOATS-null}
     
     ### UNCOMMENT for DEBUG
     #~ echo "SALT=$SALT PEPPER=$PEPPER \
