@@ -8,8 +8,7 @@
 # 2. Pour chaque compte, extrait l'email depuis le nom du dossier
 # 3. Met à jour le profil NOSTR avec l'email via nostr_update_profile.py
 #
-# Usage: ./nostr_addemail2profil.sh [RELAY_URL]
-# Si RELAY_URL n'est pas fourni, utilise ws://127.0.0.1:7777
+# Usage: ./nostr_addemail2profil.sh (utilise ws://127.0.0.1:7777)
 ################################################################################
 
 MY_PATH="`dirname \"$0\"`"              # relative
