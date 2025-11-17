@@ -570,24 +570,29 @@ for PLAYER in "${NOSTR[@]}"; do
 
     ####################################################################
     ## EVERY 7 DAYS NOSTR CARD is PAYING CAPTAIN
-    TODATE_SECONDS=$(date -d "$TODATE" +%s)
-    BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s)
-    # Calculate the difference in days
-    DIFF_DAYS=$(( (TODATE_SECONDS - BIRTHDATE_SECONDS) / 86400 ))
+    # Skip payment logic for CAPTAIN (no rental payment needed)
+    if [[ "${PLAYER}" == "${CAPTAINEMAIL}" ]] || [[ "${CAPTAING1PUB}" == "${G1PUBNOSTR}" ]]; then
+        echo "___ CAPTAIN WALLET ACCOUNT : $COINS G1"
+        # Skip all payment logic for CAPTAIN
+    elif [[ ! -s ~/.zen/game/players/${PLAYER}/U.SOCIETY ]]; then
+        # Regular MULTIPASS payment logic (not CAPTAIN, not U.SOCIETY member)
+        TODATE_SECONDS=$(date -d "$TODATE" +%s)
+        BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s)
+        # Calculate the difference in days
+        DIFF_DAYS=$(( (TODATE_SECONDS - BIRTHDATE_SECONDS) / 86400 ))
 
-    # Calculate next payment date (next multiple of 7 days from birthdate)
-    NEXT_PAYMENT_DAYS=$(( ((DIFF_DAYS / 7) + 1) * 7 ))
-    NEXT_PAYMENT_SECONDS=$(( BIRTHDATE_SECONDS + (NEXT_PAYMENT_DAYS * 86400) ))
-    NEXT_PAYMENT_DATE=$(date -d "@$NEXT_PAYMENT_SECONDS" '+%Y-%m-%d')
+        # Calculate next payment date (next multiple of 7 days from birthdate)
+        NEXT_PAYMENT_DAYS=$(( ((DIFF_DAYS / 7) + 1) * 7 ))
+        NEXT_PAYMENT_SECONDS=$(( BIRTHDATE_SECONDS + (NEXT_PAYMENT_DAYS * 86400) ))
+        NEXT_PAYMENT_DATE=$(date -d "@$NEXT_PAYMENT_SECONDS" '+%Y-%m-%d')
 
-    # Get player's refresh time for payment hour
-    PLAYER_REFRESH_TIME=$(cat ~/.zen/game/nostr/${PLAYER}/.refresh_time 2>/dev/null)
-    [[ -z "$PLAYER_REFRESH_TIME" ]] && PLAYER_REFRESH_TIME="00:00"
+        # Get player's refresh time for payment hour
+        PLAYER_REFRESH_TIME=$(cat ~/.zen/game/nostr/${PLAYER}/.refresh_time 2>/dev/null)
+        [[ -z "$PLAYER_REFRESH_TIME" ]] && PLAYER_REFRESH_TIME="00:00"
 
-    log "INFO" "💰 Next weekly payment for ${PLAYER}: $NEXT_PAYMENT_DATE at $PLAYER_REFRESH_TIME (in $((NEXT_PAYMENT_DAYS - DIFF_DAYS)) days)"
+        log "INFO" "💰 Next weekly payment for ${PLAYER}: $NEXT_PAYMENT_DATE at $PLAYER_REFRESH_TIME (in $((NEXT_PAYMENT_DAYS - DIFF_DAYS)) days)"
 
-    # Check if the difference is a multiple of 7 // Weekly cycle
-    if [[ ! -s ~/.zen/game/players/${PLAYER}/U.SOCIETY ]]; then
+        # Check if the difference is a multiple of 7 // Weekly cycle
         if [[ ${CAPTAING1PUB} != ${G1PUBNOSTR} ]]; then
             # First payment only after 7 days minimum (exclude J0 where DIFF_DAYS=0)
             if [ $DIFF_DAYS -ge 7 ] && [ $((DIFF_DAYS % 7)) -eq 0 ]; then
@@ -747,8 +752,6 @@ for PLAYER in "${NOSTR[@]}"; do
                     PAYMENTS_ALREADY_DONE=$((PAYMENTS_ALREADY_DONE + 1))
                 fi
             fi
-        else
-            echo "___ CAPTAIN WALLET ACCOUNT : $COINS G1"
         fi
     else
         echo "U SOCIETY MEMBER "
