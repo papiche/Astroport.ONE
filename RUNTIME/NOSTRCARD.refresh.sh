@@ -1159,7 +1159,6 @@ for PLAYER in "${NOSTR[@]}"; do
             echo "$source ORIGIN ($LAT $LON) : $HEX = $EMAIL"
 
         fi
-    fi
 
     ########################################################################################
     # Use the generic primal wallet control function
