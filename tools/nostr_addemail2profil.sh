@@ -123,7 +123,7 @@ fi
 
 echo ""
 echo "🔍 You can verify the updates by checking the profiles in the NOSTR viewer:"
-echo "   ${myIPFS}/ipns/copylaradio.com/nostr_profile_viewer.html"
+echo "   ${myIPFS}/ipns/copylaradio.com/nostr_profile_viewer.html?hex=$(cat $hex_file)"
 echo ""
 
 exit 0
