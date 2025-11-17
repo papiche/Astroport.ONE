@@ -986,17 +986,15 @@ for PLAYER in "${NOSTR[@]}"; do
         # Update email in NOSTR profile during refresh (ensure email is always present)
         # This ensures the email is always available in the profile for frontend retrieval
         if [[ -s ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]]; then
-            source ~/.zen/game/nostr/${PLAYER}/.secret.nostr 2>/dev/null
-            if [[ -n "$NSEC" ]]; then
-                # Update email only during daily refresh to avoid excessive updates
-                # But ensure it's done at least once per day
-                if [[ "$REFRESH_REASON" == "daily_update" ]]; then
-                    log "INFO" "Updating email in NOSTR profile for ${PLAYER} during daily refresh"
-                    ${MY_PATH}/../tools/nostr_update_profile.py \
-                        "$NSEC" \
-                        "wss://relay.copylaradio.com" "$myRELAY" \
-                        --email "$PLAYER" \
-                        2>&1 | while read line; do log "DEBUG" "$line"; done
+            # Update email only during daily refresh to avoid excessive updates
+            # But ensure it's done at least once per day
+            if [[ "$REFRESH_REASON" == "daily_update" ]]; then
+                log "INFO" "Updating email in NOSTR profile for ${PLAYER} during daily refresh"
+                ${MY_PATH}/../tools/nostr_update_profile.py \
+                    "${PLAYER}" \
+                    "wss://relay.copylaradio.com" "$myRELAY" \
+                    --email "$PLAYER" \
+                    2>&1 | while read line; do log "DEBUG" "$line"; done
                     
                     if [[ $? -eq 0 ]]; then
                         log "INFO" "✅ Email updated in NOSTR profile for ${PLAYER}"

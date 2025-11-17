@@ -446,7 +446,7 @@ if [[ -f "${MY_PATH}/did_manager_nostr.sh" ]]; then
     
     # Add next HEX to DID metadata for restoration on new relay
     if [[ -n "$NEXT_HEX" ]]; then
-        local did_cache_file="${HOME}/.zen/game/nostr/${player}/did.json.cache"
+        did_cache_file="${HOME}/.zen/game/nostr/${player}/did.json.cache"
         if [[ -f "$did_cache_file" ]] && command -v jq >/dev/null 2>&1; then
             # Add next restoration HEX to deactivation metadata
             jq ".metadata.deactivation.nextRestorationHex = \"${NEXT_HEX}\"" "$did_cache_file" > "${did_cache_file}.tmp" 2>/dev/null
@@ -482,7 +482,7 @@ if [[ -f "${MY_PATH}/nostr_update_profile.py" ]]; then
     fi
     
     # Update profile with deactivation message, backup link, and next HEX
-    "${MY_PATH}/nostr_update_profile.py" "${secnostr}" "$myRELAY" "wss://relay.copylaradio.com" \
+    "${MY_PATH}/nostr_update_profile.py" "${email}" "$myRELAY" "wss://relay.copylaradio.com" \
         --about "${ABOUT_MSG}" \
         --name "[DEACTIVATED] ${youser}" \
         --website "${myIPFS}/ipfs/${NOSTRIFS}" 2>/dev/null \

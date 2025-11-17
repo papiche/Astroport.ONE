@@ -94,12 +94,11 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${CAPTAINEMAIL}")
 
     echo "Update Captain NOSTR profile (preserves existing data)"
-    source ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr
     
     # Use nostr_update_profile.py instead of nostr_setup_profile.py to preserve existing profile data
     # Note: We don't update all to let the captain modify them manually
     ${MY_PATH}/../tools/nostr_update_profile.py \
-    "$NSEC" \
+    "${CAPTAINEMAIL}" \
     "wss://relay.copylaradio.com" "$myRELAY" \
     --g1pub "$CAPTAING1PUB" \
     --picture "${myIPFS}/ipfs/QmfBK5h8R4LjS2qMtHKze3nnFrtdm85pCbUw3oPSirik5M/logo.uplanet.png" \

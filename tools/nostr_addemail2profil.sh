@@ -84,33 +84,12 @@ for account_dir in "$NOSTR_BASE"/*; do
         continue
     fi
     
-    # Utiliser source pour récupérer NSEC depuis .secret.nostr
-    echo "   🔐 Loading NSEC from .secret.nostr..."
-    
-    # Source le fichier .secret.nostr pour récupérer NSEC
-    if [[ -f "$secret_file" ]]; then
-        # Source le fichier pour récupérer les variables NSEC, NPUB, HEX
-        source "$secret_file" 2>/dev/null
-        
-        if [[ -n "$NSEC" ]]; then
-            echo "   ✅ NSEC loaded successfully"
-            echo "   📧 Adding email: $account_name"
-        else
-            echo "   ❌ Error: NSEC not found in $secret_file"
-            ((FAILED_ACCOUNTS++))
-            continue
-        fi
-    else
-        echo "   ❌ Error: .secret.nostr file not found: $secret_file"
-        ((FAILED_ACCOUNTS++))
-        continue
-    fi
-    
     # Mettre à jour le profil avec l'email
     echo "   📤 Updating NOSTR profile..."
+    echo "   📧 Adding email: $account_name"
     
     if python3 "${MY_PATH}/nostr_update_profile.py" \
-        "$NSEC" \
+        "$account_name" \
         "$RELAY_URL" \
         --email "$account_name" 2>/dev/null; then
         echo "   ✅ Profile updated successfully"

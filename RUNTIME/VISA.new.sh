@@ -689,7 +689,6 @@ rm -Rf ~/.zen/tmp/${MOATS}
 ## After ZEN Card creation, update the MULTIPASS NOSTR profile to include zencard
 if [[ -s ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]]; then
     echo "## Updating NOSTR profile with ZENCARD parameter..."
-    source ~/.zen/game/nostr/${PLAYER}/.secret.nostr
     
     # Get the ZEN Card G1PUB address
     ZENCARDG1=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
@@ -699,7 +698,7 @@ if [[ -s ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]]; then
         
         # Update NOSTR profile using nostr_update_profile.py
         ${MY_PATH}/../tools/nostr_update_profile.py \
-            "$NSEC" \
+            "${PLAYER}" \
             "wss://relay.copylaradio.com" "$myRELAY" \
             --zencard "$ZENCARDG1" \
             > ~/.zen/game/nostr/${PLAYER}/nostr_update_zencard.log 2>&1

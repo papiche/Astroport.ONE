@@ -60,58 +60,131 @@ def sign_event(event_dict: dict, private_key_hex: str) -> dict:
         return event_dict
 
 def convert_private_key(private_key_input: str) -> tuple[str, str]:
-    """Convertir une clé privée (nsec ou hex) et retourner (hex_privkey, hex_pubkey)"""
+    """Convert private key (nsec or hex) and return (hex_privkey, hex_pubkey)"""
     
     if private_key_input.startswith('nsec1'):
-        # C'est une nsec, la convertir
+        # It's a nsec, convert it
         if not HAS_CONVERSION_TOOLS:
-            raise ValueError("❌ Module de conversion bech32 non disponible. Impossible de traiter nsec.")
+            raise ValueError("❌ bech32 conversion module not available. Cannot process nsec.")
         
         hex_privkey = nsec_to_hex(private_key_input)
         if not hex_privkey:
-            raise ValueError("❌ Erreur lors de la conversion nsec vers hex")
+            raise ValueError("❌ Error converting nsec to hex")
         
-        print(f"✅ nsec convertie vers hex")
+        print(f"✅ nsec converted to hex")
         
-        # Obtenir la clé publique en utilisant les outils de conversion
-        npub = nsec_to_npub(private_key_input)
-        if not npub:
-            raise ValueError("❌ Erreur lors de la dérivation de la clé publique")
+        # Try to get public key using multiple methods
+        hex_pubkey = None
         
-        # Convertir npub vers hex
-        from bech32 import bech32_decode, convertbits
-        hrp, data = bech32_decode(npub)
-        if hrp != 'npub' or not data:
-            raise ValueError("❌ Erreur lors du décodage npub")
+        # Method 1: Try nsec_to_npub conversion
+        try:
+            npub = nsec_to_npub(private_key_input)
+            if npub:
+                # Convert npub to hex
+                from bech32 import bech32_decode, convertbits
+                hrp, data = bech32_decode(npub)
+                if hrp == 'npub' and data:
+                    hex_pubkey = bytes(convertbits(data, 5, 8, False)).hex()
+                    print(f"✅ Public key derived via nsec_to_npub: {hex_pubkey}")
+        except Exception as e:
+            print(f"⚠️ nsec_to_npub failed: {e}, trying other methods...")
         
-        hex_pubkey = bytes(convertbits(data, 5, 8, False)).hex()
-        print(f"✅ Clé publique dérivée: {hex_pubkey}")
+        # Method 2: Try to extract from user files
+        if not hex_pubkey:
+            hex_pubkey = extract_pubkey_from_nsec_file(hex_privkey)
+            if hex_pubkey:
+                print(f"🔑 Public key found in user files")
+        
+        # Method 3: Try secp256k1 derivation
+        if not hex_pubkey and HAS_SECP256K1:
+            try:
+                private_key = secp256k1.PrivateKey(bytes.fromhex(hex_privkey))
+                public_key = private_key.pubkey.serialize(compressed=False)[1:]  # Remove 0x04 prefix
+                hex_pubkey = public_key.hex()
+                print(f"✅ Public key derived with secp256k1")
+            except Exception as e:
+                print(f"⚠️ secp256k1 derivation failed: {e}")
+        
+        if not hex_pubkey:
+            raise ValueError("❌ Cannot derive public key (all methods failed)")
         
         return hex_privkey, hex_pubkey
         
     else:
-        # Supposer que c'est déjà en hex
+        # Assume it's already in hex
         hex_privkey = private_key_input
         
-        # D'abord essayer d'extraire depuis les fichiers utilisateur
+        # First try to extract from user files
         hex_pubkey = extract_pubkey_from_nsec_file(hex_privkey)
         if hex_pubkey:
-            print(f"🔑 Clé publique trouvée dans les fichiers utilisateur")
+            print(f"🔑 Public key found in user files")
             return hex_privkey, hex_pubkey
         
-        # Sinon utiliser secp256k1 pour dériver
+        # Otherwise use secp256k1 to derive
         if HAS_SECP256K1:
             private_key = secp256k1.PrivateKey(bytes.fromhex(hex_privkey))
-            public_key = private_key.pubkey.serialize(compressed=False)[1:]  # Enlever le préfixe 0x04
+            public_key = private_key.pubkey.serialize(compressed=False)[1:]  # Remove 0x04 prefix
             hex_pubkey = public_key.hex()
-            print(f"✅ Clé publique dérivée avec secp256k1")
+            print(f"✅ Public key derived with secp256k1")
             return hex_privkey, hex_pubkey
         else:
-            raise ValueError("❌ secp256k1 non disponible et clé publique non trouvée dans les fichiers")
+            raise ValueError("❌ secp256k1 not available and public key not found in files")
+
+def read_secret_nostr_file(secret_file_path: Path) -> Optional[Dict[str, str]]:
+    """Read .secret.nostr file and extract NSEC, NPUB, HEX"""
+    try:
+        if not secret_file_path.exists():
+            return None
+        
+        with open(secret_file_path, 'r') as f:
+            content = f.read().strip()
+        
+        # Parse format: NSEC=...; NPUB=...; HEX=...
+        result = {}
+        for line in content.split(';'):
+            line = line.strip()
+            if '=' in line:
+                key, value = line.split('=', 1)
+                key = key.strip()
+                value = value.strip()
+                result[key] = value
+        
+        if 'NSEC' in result:
+            return result
+        return None
+    except Exception as e:
+        print(f"⚠️ Error reading .secret.nostr: {e}")
+        return None
+
+def find_secret_nostr_file(email_or_path: str) -> Optional[Path]:
+    """Find .secret.nostr file from email or path"""
+    # If it's a path to .secret.nostr file
+    if email_or_path.endswith('.secret.nostr'):
+        path = Path(email_or_path)
+        if path.exists():
+            return path
+        # Try as relative path
+        path = Path(email_or_path).expanduser()
+        if path.exists():
+            return path
+    
+    # If it's a directory path, look for .secret.nostr inside
+    if '@' not in email_or_path and Path(email_or_path).is_dir():
+        secret_file = Path(email_or_path) / ".secret.nostr"
+        if secret_file.exists():
+            return secret_file
+    
+    # If it looks like an email, search in ~/.zen/game/nostr/
+    if '@' in email_or_path:
+        secret_file = Path.home() / ".zen" / "game" / "nostr" / email_or_path / ".secret.nostr"
+        if secret_file.exists():
+            return secret_file
+    
+    return None
 
 def extract_pubkey_from_nsec_file(private_key_hex: str) -> Optional[str]:
-    """Extraire la clé publique depuis les fichiers utilisateur"""
-    # Chercher dans tous les dossiers utilisateur
+    """Extract public key (HEX) from user files by matching private key HEX"""
+    # Search in all user directories
     nostr_base = Path.home() / ".zen" / "game" / "nostr"
     
     if not nostr_base.exists():
@@ -122,27 +195,28 @@ def extract_pubkey_from_nsec_file(private_key_hex: str) -> Optional[str]:
             secret_file = user_dir / ".secret.nostr"
             if secret_file.exists():
                 try:
-                    with open(secret_file, 'r') as f:
-                        content = f.read().strip()
-                    
-                    # Parser le contenu
-                    hex_val = None
-                    
-                    for line in content.split(';'):
-                        line = line.strip()
-                        if line.startswith('HEX='):
-                            hex_val = line.replace('HEX=', '').strip()
-                            break
-                    
-                    # Vérifier si la clé privée correspond
-                    if private_key_hex.lower() == hex_val.lower() if hex_val else False:
-                        # Récupérer la clé publique depuis le fichier HEX
-                        hex_file = user_dir / "HEX"
-                        if hex_file.exists():
-                            with open(hex_file, 'r') as f:
-                                pubkey = f.read().strip()
-                            return pubkey
-                except Exception as e:
+                    secret_data = read_secret_nostr_file(secret_file)
+                    if secret_data:
+                        # Get NSEC from file and convert to hex to match
+                        nsec_val = secret_data.get('NSEC', '')
+                        if nsec_val and nsec_val.startswith('nsec1'):
+                            # Convert NSEC to hex to compare with private_key_hex
+                            if HAS_CONVERSION_TOOLS:
+                                try:
+                                    nsec_hex = nsec_to_hex(nsec_val)
+                                    if nsec_hex and nsec_hex.lower() == private_key_hex.lower():
+                                        # Return HEX (public key) from .secret.nostr
+                                        hex_val = secret_data.get('HEX', '')
+                                        if hex_val:
+                                            return hex_val
+                                        # Or from separate HEX file
+                                        hex_file = user_dir / "HEX"
+                                        if hex_file.exists():
+                                            with open(hex_file, 'r') as f:
+                                                return f.read().strip()
+                                except Exception:
+                                    pass
+                except Exception:
                     continue
     
     return None
@@ -360,11 +434,29 @@ async def update_nostr_profile(private_key_input: str, relays: list, args: argpa
         return False
 
 async def main():
-    parser = argparse.ArgumentParser(description="Update Nostr profile metadata (préserve les données existantes)", allow_abbrev=False)
-    parser.add_argument("private_key", help="Private key (nsec1... or hex format)")
+    parser = argparse.ArgumentParser(
+        description="Update Nostr profile metadata (preserves existing data)",
+        allow_abbrev=False,
+        epilog="""
+Examples:
+  # Using email (searches ~/.zen/game/nostr/EMAIL/.secret.nostr)
+  %(prog)s user@example.com wss://relay.example.com --name "My Name"
+  
+  # Using path to .secret.nostr file
+  %(prog)s ~/.zen/game/nostr/user@example.com/.secret.nostr wss://relay.example.com --name "My Name"
+  
+  # Using NSEC directly (backward compatibility)
+  %(prog)s nsec1... wss://relay.example.com --name "My Name"
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "private_key_or_email",
+        help="Private key (nsec1... or hex), email address, or path to .secret.nostr file"
+    )
     parser.add_argument("relays", nargs="+", help="List of relays")
 
-    # Champs connus
+    # Known fields
     parser.add_argument("--name", help="Name")
     parser.add_argument("--about", help="About")
     parser.add_argument("--picture", help="Avatar URL")
@@ -384,7 +476,21 @@ async def main():
 
     args, unknown_args = parser.parse_known_args()
     
-    success = await update_nostr_profile(args.private_key, args.relays, args, unknown_args)
+    # Try to find .secret.nostr file if it looks like email or path
+    private_key = args.private_key_or_email
+    
+    # Check if it's an email or path to .secret.nostr
+    secret_file_path = find_secret_nostr_file(args.private_key_or_email)
+    if secret_file_path:
+        print(f"📁 Found .secret.nostr file: {secret_file_path}")
+        secret_data = read_secret_nostr_file(secret_file_path)
+        if secret_data and 'NSEC' in secret_data:
+            private_key = secret_data['NSEC']
+            print(f"✅ Using NSEC from .secret.nostr file")
+        else:
+            print(f"⚠️ No NSEC found in .secret.nostr, using provided value as-is")
+    
+    success = await update_nostr_profile(private_key, args.relays, args, unknown_args)
     if not success:
         sys.exit(1)
 
