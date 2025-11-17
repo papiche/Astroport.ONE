@@ -545,6 +545,7 @@ NODE12345="{
     \"SSHPUB\" : \"$(cat $HOME/.ssh/id_ed25519.pub)\",
     \"NODEZEN\" : \"${NODEZEN}\",
     \"NODEHEX\" : \"${hex}\",
+    \"NODEG1PUB\" : \"${NODEG1PUB}\",    
     \"UPLANETNAME_G1\" : \"${UPLANETNAME_G1}\",
     \"UPLANETNAME_SOCIETY\" : \"${UPLANETNAME_SOCIETY}\",
     \"UPLANETNAME_TREASURY\" : \"${UPLANETNAME_TREASURY}\",
