@@ -224,7 +224,7 @@ def extract_pubkey_from_nsec_file(private_key_hex: str) -> Optional[str]:
 async def fetch_current_profile(relay_url: str, pubkey: str) -> Optional[Dict[str, Any]]:
     """Récupérer le profil actuel depuis strfry via WebSocket"""
     try:
-        async with websockets.connect(relay_url, timeout=10) as websocket:
+        async with websockets.connect(relay_url) as websocket:
             # Créer une requête pour récupérer le profil (kind 0)
             subscription_id = f"profile_fetch_{int(time.time())}"
             request = [
@@ -273,7 +273,7 @@ async def fetch_current_profile(relay_url: str, pubkey: str) -> Optional[Dict[st
 async def publish_event(relay_url: str, event: dict) -> bool:
     """Publier un événement sur strfry via WebSocket"""
     try:
-        async with websockets.connect(relay_url, timeout=10) as websocket:
+        async with websockets.connect(relay_url) as websocket:
             # Publier l'événement
             publish_msg = ["EVENT", event]
             await websocket.send(json.dumps(publish_msg))
