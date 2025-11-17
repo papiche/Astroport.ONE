@@ -18,8 +18,7 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
 # Configuration
 NOSTR_BASE="${HOME}/.zen/game/nostr"
-DEFAULT_RELAY="ws://127.0.0.1:7777"
-RELAY_URL="${1:-$DEFAULT_RELAY}"
+RELAY_URL="ws://127.0.0.1:7777"
 
 echo "🔍 NOSTR Email Profile Updater"
 echo "================================"
