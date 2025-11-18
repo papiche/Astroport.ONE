@@ -111,6 +111,199 @@ EOF
     return 0
 }
 
+find_user_multipass_keyfile() {
+    # Find user's MULTIPASS keyfile by HEX in ~/.zen/game/nostr/EMAIL/.secret.nostr
+    # Args: holder_hex (hex pubkey)
+    # Returns: path to .secret.nostr file or empty string
+    
+    local holder_hex="$1"
+    
+    if [[ -z "$holder_hex" ]]; then
+        return 1
+    fi
+    
+    # Normalize hex (remove any prefix, convert to lowercase)
+    holder_hex=$(echo "$holder_hex" | tr '[:upper:]' '[:lower:]' | sed 's/^0x//')
+    
+    # Search in ~/.zen/game/nostr/EMAIL/.secret.nostr
+    local nostr_dir="${HOME}/.zen/game/nostr"
+    
+    if [[ ! -d "$nostr_dir" ]]; then
+        return 1
+    fi
+    
+    # Search through all email directories
+    for email_dir in "$nostr_dir"/*; do
+        if [[ ! -d "$email_dir" ]]; then
+            continue
+        fi
+        
+        local secret_file="${email_dir}/.secret.nostr"
+        if [[ ! -f "$secret_file" ]]; then
+            continue
+        fi
+        
+        # Check if HEX in keyfile matches holder_hex
+        local file_hex=$(grep -i "HEX=" "$secret_file" 2>/dev/null | cut -d'=' -f2 | cut -d';' -f1 | tr -d ' ' | tr '[:upper:]' '[:lower:]')
+        
+        if [[ -n "$file_hex" ]] && [[ "$file_hex" == "$holder_hex" ]]; then
+            echo "$secret_file"
+            return 0
+        fi
+    done
+    
+    return 1
+}
+
+send_renewal_notification() {
+    # Send kind 1 notification to user about credential expiration/renewal
+    # Args: holder_npub, permit_name, permit_id, credential_id, notification_level, days_until_expiry
+    
+    local holder_npub="$1"
+    local permit_name="$2"
+    local permit_id="$3"
+    local credential_id="$4"
+    local notification_level="$5"
+    local days_until_expiry="$6"
+    
+    if [[ -z "$holder_npub" ]] || [[ -z "$permit_name" ]]; then
+        return 1
+    fi
+    
+    # Convert npub to hex if needed (for searching keyfile)
+    local holder_hex="$holder_npub"
+    if [[ "$holder_npub" =~ ^npub ]]; then
+        # Try to convert npub to hex using nostr2hex.py if available
+        local nostr2hex="${HOME}/.zen/Astroport.ONE/tools/nostr2hex.py"
+        if [[ -f "$nostr2hex" ]]; then
+            holder_hex=$("$nostr2hex" "$holder_npub" 2>/dev/null || echo "$holder_npub")
+        fi
+    fi
+    
+    # Build notification message based on level
+    local message=""
+    local urgency_emoji=""
+    local urgency_text=""
+    
+    case "$notification_level" in
+        "EXPIRED")
+            urgency_emoji="🔴"
+            urgency_text="EXPIRÉ"
+            message="🔴 Votre certificat de maîtrise \"${permit_name}\" a EXPIRÉ !
+
+⚠️ ACTION REQUISE :
+Pour renouveler votre certificat, obtenez de nouvelles validations de maîtres certifiés.
+
+💡 Comment renouveler :
+1. Connectez-vous sur ${uSPOT:-http://127.0.0.1:54321}/wotx2?permit_id=${permit_id}
+2. Créez une nouvelle demande d'apprentissage
+3. Obtenez les validations requises de maîtres certifiés
+4. Votre certificat sera renouvelé automatiquement
+
+🔗 Accéder : ${uSPOT:-http://127.0.0.1:54321}/wotx2?permit_id=${permit_id}
+
+#UPlanet #Oracle #Renouvellement"
+            ;;
+        "URGENT_1_DAY")
+            urgency_emoji="🟠"
+            urgency_text="URGENT"
+            message="🟠 URGENT : Votre certificat de maîtrise \"${permit_name}\" expire dans ${days_until_expiry} jour(s) !
+
+⚠️ ACTION REQUISE :
+Pour renouveler votre certificat, obtenez de nouvelles validations de maîtres certifiés avant l'expiration.
+
+💡 Comment renouveler :
+1. Connectez-vous sur ${uSPOT:-http://127.0.0.1:54321}/wotx2?permit_id=${permit_id}
+2. Créez une nouvelle demande d'apprentissage si nécessaire
+3. Obtenez les validations requises de maîtres certifiés
+4. Votre certificat sera renouvelé automatiquement
+
+🔗 Accéder : ${uSPOT:-http://127.0.0.1:54321}/wotx2?permit_id=${permit_id}
+
+#UPlanet #Oracle #Renouvellement"
+            ;;
+        "WARNING_7_DAYS")
+            urgency_emoji="🟡"
+            urgency_text="ATTENTION"
+            message="🟡 ATTENTION : Votre certificat de maîtrise \"${permit_name}\" expire dans ${days_until_expiry} jours
+
+💡 Pour renouveler votre certificat :
+1. Obtenez de nouvelles validations de maîtres certifiés
+2. Créez une nouvelle demande si nécessaire
+3. Votre certificat sera renouvelé automatiquement
+
+🔗 Accéder : ${uSPOT:-http://127.0.0.1:54321}/wotx2?permit_id=${permit_id}
+
+#UPlanet #Oracle #Renouvellement"
+            ;;
+        "WARNING_30_DAYS")
+            urgency_emoji="ℹ️"
+            urgency_text="INFO"
+            message="ℹ️ Rappel : Votre certificat de maîtrise \"${permit_name}\" expire dans ${days_until_expiry} jours
+
+💡 Pour renouveler, obtenez de nouvelles validations de maîtres certifiés avant l'expiration.
+
+🔗 ${uSPOT:-http://127.0.0.1:54321}/wotx2?permit_id=${permit_id}
+
+#UPlanet #Oracle #Renouvellement"
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+    
+    # Try to find user's MULTIPASS keyfile first (preferred - sends from user's account)
+    local user_keyfile=""
+    user_keyfile=$(find_user_multipass_keyfile "$holder_hex")
+    
+    # Fallback to UPLANETNAME_G1 keyfile if user's MULTIPASS not found
+    local keyfile_to_use=""
+    if [[ -n "$user_keyfile" ]] && [[ -f "$user_keyfile" ]]; then
+        keyfile_to_use="$user_keyfile"
+        echo "    [INFO] Using user's MULTIPASS keyfile: $(basename $(dirname "$user_keyfile"))"
+    else
+        # Use UPLANETNAME_G1 keyfile for signing (fallback)
+        UPLANET_G1_KEYFILE="${HOME}/.zen/game/uplanet.G1.nostr"
+        
+        if [[ ! -f "$UPLANET_G1_KEYFILE" ]]; then
+            if ! generate_uplanet_g1_nostr_key; then
+                echo "    [ERROR] Failed to generate UPLANETNAME_G1 keyfile for notification"
+                return 1
+            fi
+        fi
+        keyfile_to_use="$UPLANET_G1_KEYFILE"
+        echo "    [INFO] Using UPLANETNAME_G1 keyfile (user's MULTIPASS not found)"
+    fi
+    
+    # Send kind 1 note with p tag to notify the user
+    NOSTR_SEND_NOTE="${MY_PATH}/../tools/nostr_send_note.py"
+    if [[ -f "$NOSTR_SEND_NOTE" ]]; then
+        # Build tags: p tag for user (mentions them), permit_id tag, renewal tag
+        # Format: JSON array of arrays
+        local tags_json="[[\"p\",\"${holder_hex}\"],[\"t\",\"oracle\"],[\"t\",\"renewal\"],[\"t\",\"${permit_id}\"],[\"t\",\"credential\"]]"
+        
+        # Send notification (kind 1 with p tag to mention user)
+        local send_result=$("$NOSTR_SEND_NOTE" \
+            --keyfile "$keyfile_to_use" \
+            --content "$message" \
+            --kind 1 \
+            --relays "${myRELAY:-ws://127.0.0.1:7777}" \
+            --tags "$tags_json" \
+            2>/dev/null)
+        
+        if echo "$send_result" | grep -q "success\|published"; then
+            echo "    [SUCCESS] ${urgency_text} notification sent to ${holder_npub:0:16}... (${days_until_expiry} days)"
+            return 0
+        else
+            echo "    [WARNING] Failed to send notification to ${holder_npub:0:16}..."
+            return 1
+        fi
+    else
+        echo "    [WARNING] nostr_send_note.py not found, cannot send notification"
+        return 1
+    fi
+}
+
 ################################################################################
 
 echo "############################################"
@@ -617,49 +810,182 @@ else
 fi
 
 ################################################################################
-## CHECK EXPIRED CREDENTIALS
+## CHECK EXPIRED CREDENTIALS AND SEND RENEWAL NOTIFICATIONS
 ################################################################################
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "[STEP 2] Checking expired credentials..."
+echo "[STEP 2] Checking expired credentials and sending renewal notifications..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Get all credentials
-all_credentials=$(curl -s "${ORACLE_API}/list?type=credentials" | jq -r '.credentials[]? // empty' 2>/dev/null)
+# Initialize IS_PRIMARY_STATION if not already set
+if [[ -z "${IS_PRIMARY_STATION:-}" ]]; then
+    IS_PRIMARY_STATION=false
+    if is_primary_station; then
+        IS_PRIMARY_STATION=true
+    fi
+fi
 
-if [[ -z "$all_credentials" ]]; then
+# Get all credentials from NOSTR (kind 30503) to have holder information
+echo "[INFO] Fetching credentials from NOSTR (kind 30503)..."
+all_credentials_nostr=""
+if [[ -f "$NOSTR_SCRIPT" ]]; then
+    all_credentials_nostr=$("$NOSTR_SCRIPT" --kind 30503 2>/dev/null)
+fi
+
+# Filter by IPFSNODEID only if NOT primary station
+if [[ "$IS_PRIMARY_STATION" == "false" ]] && [[ -n "$IPFSNODEID" ]] && [[ -n "$all_credentials_nostr" ]]; then
+    all_credentials_nostr=$(echo "$all_credentials_nostr" | jq -r --arg nodeid "$IPFSNODEID" '[.[] | select(.tags[]?[0]=="ipfs_node" and .tags[]?[1]==$nodeid)]' 2>/dev/null)
+fi
+
+# Also get credentials from API for expiration dates
+all_credentials_api=$(curl -s "${ORACLE_API}/list?type=credentials" | jq -r '.credentials[]? // empty' 2>/dev/null)
+
+if [[ -z "$all_credentials_api" ]] && [[ -z "$all_credentials_nostr" ]]; then
     echo "[INFO] No credentials to check"
 else
-    credential_count=$(echo "$all_credentials" | jq -s 'length')
-    echo "[INFO] Checking ${credential_count} credential(s)"
-    
-    expired_count=0
+    credential_count=0
     now_timestamp=$(date +%s)
     
-    # Process each credential
-    echo "$all_credentials" | jq -c '.' | while read -r credential; do
-        credential_id=$(echo "$credential" | jq -r '.credential_id // empty')
-        expires_at=$(echo "$credential" | jq -r '.expires_at // empty')
-        status=$(echo "$credential" | jq -r '.status // "active"')
+    # Notification thresholds (in seconds before expiration)
+    WARNING_30_DAYS=$((30 * 86400))  # 30 days in seconds
+    WARNING_7_DAYS=$((7 * 86400))    # 7 days in seconds
+    WARNING_1_DAY=$((1 * 86400))     # 1 day in seconds
+    
+    # Track notifications sent to avoid duplicates
+    notification_tracker_file="${HOME}/.zen/tmp/${MOATS}/renewal_notifications.txt"
+    touch "$notification_tracker_file"
+    
+    # Counters file (to avoid subshell issues)
+    expired_count_file="${HOME}/.zen/tmp/${MOATS}/expired_count.txt"
+    expiring_count_file="${HOME}/.zen/tmp/${MOATS}/expiring_count.txt"
+    echo "0" > "$expired_count_file"
+    echo "0" > "$expiring_count_file"
+    
+    # Process credentials from API (has expiration dates)
+    if [[ -n "$all_credentials_api" ]]; then
+        credential_count=$(echo "$all_credentials_api" | jq -s 'length')
+        echo "[INFO] Checking ${credential_count} credential(s) from API"
         
-        if [[ -n "$expires_at" && "$expires_at" != "null" ]]; then
-            expires_timestamp=$(date -d "$expires_at" +%s 2>/dev/null || echo 0)
+        echo "$all_credentials_api" | jq -c '.' | while read -r credential; do
+            credential_id=$(echo "$credential" | jq -r '.credential_id // empty')
+            permit_id=$(echo "$credential" | jq -r '.permit_definition_id // empty')
+            expires_at=$(echo "$credential" | jq -r '.expires_at // empty')
+            status=$(echo "$credential" | jq -r '.status // "active"')
             
-            if [[ $expires_timestamp -lt $now_timestamp ]] && [[ "$status" == "active" ]]; then
-                echo "  [WARNING] Credential ${credential_id} has expired"
-                expired_count=$((expired_count + 1))
-                
-                # Optional: Call API to revoke/expire the credential
-                # curl -s -X POST "${ORACLE_API}/revoke/${credential_id}" -d '{"reason":"expired"}'
+            if [[ -z "$credential_id" ]] || [[ "$status" != "active" ]]; then
+                continue
             fi
-        fi
-    done
+            
+            # Find corresponding NOSTR credential to get holder_npub
+            holder_npub=""
+            if [[ -n "$all_credentials_nostr" ]] && [[ "$all_credentials_nostr" != "[]" ]]; then
+                # Try to find credential by credential_id in tags or content
+                nostr_cred=$(echo "$all_credentials_nostr" | jq -r --arg cred_id "$credential_id" '[.[] | select((.tags[]?[0]=="d" and .tags[]?[1]==$cred_id) or (try (.content | fromjson | .credential_id) == $cred_id))] | .[0]' 2>/dev/null)
+                
+                if [[ -n "$nostr_cred" ]] && [[ "$nostr_cred" != "null" ]]; then
+                    # Extract holder_npub from content or tags
+                    holder_npub=$(echo "$nostr_cred" | jq -r 'try (.content | fromjson | .holder_npub) // .pubkey // empty' 2>/dev/null)
+                    if [[ -z "$holder_npub" ]]; then
+                        # Try p tag
+                        holder_npub=$(echo "$nostr_cred" | jq -r '.tags[]? | select(.[0]=="p") | .[1]' 2>/dev/null | head -1)
+                    fi
+                fi
+            fi
+            
+            # If no holder_npub found, try to get from API credential
+            if [[ -z "$holder_npub" ]]; then
+                holder_npub=$(echo "$credential" | jq -r '.holder_npub // empty' 2>/dev/null)
+            fi
+            
+            if [[ -z "$holder_npub" ]]; then
+                echo "  [WARNING] Cannot find holder_npub for credential ${credential_id}, skipping notification"
+                continue
+            fi
+            
+            # Get permit name
+            permit_name=$(echo "$credential" | jq -r '.permit_name // empty' 2>/dev/null)
+            if [[ -z "$permit_name" ]] && [[ -n "$permit_id" ]]; then
+                definition_data=$(curl -s "${ORACLE_API}/definitions" | jq -r ".permits[]? | select(.id==\"${permit_id}\")" 2>/dev/null)
+                permit_name=$(echo "$definition_data" | jq -r '.name // "Unknown Permit"' 2>/dev/null)
+            fi
+            
+            if [[ -n "$expires_at" && "$expires_at" != "null" ]]; then
+                expires_timestamp=$(date -d "$expires_at" +%s 2>/dev/null || echo 0)
+                
+                if [[ $expires_timestamp -eq 0 ]]; then
+                    continue  # Invalid date
+                fi
+                
+                days_until_expiry=$(( (expires_timestamp - now_timestamp) / 86400 ))
+                
+                # Check if expired
+                if [[ $expires_timestamp -lt $now_timestamp ]]; then
+                    echo "  [WARNING] Credential ${credential_id} (${permit_name}) has EXPIRED"
+                    # Increment counter in file
+                    current_count=$(cat "$expired_count_file" 2>/dev/null || echo "0")
+                    echo $((current_count + 1)) > "$expired_count_file"
+                    
+                    # Send urgent expiration notification
+                    notification_key="expired_${credential_id}"
+                    if ! grep -q "^${notification_key}$" "$notification_tracker_file" 2>/dev/null; then
+                        echo "  [NOTIFY] Sending EXPIRED notification to ${holder_npub:0:16}..."
+                        send_renewal_notification "$holder_npub" "$permit_name" "$permit_id" "$credential_id" "EXPIRED" "$days_until_expiry"
+                        echo "$notification_key" >> "$notification_tracker_file"
+                    fi
+                    
+                # Check if expiring soon (30 days, 7 days, 1 day)
+                elif [[ $expires_timestamp -gt $now_timestamp ]]; then
+                    time_until_expiry=$((expires_timestamp - now_timestamp))
+                    
+                    # Determine notification level
+                    notification_level=""
+                    if [[ $time_until_expiry -le $WARNING_1_DAY ]]; then
+                        notification_level="URGENT_1_DAY"
+                        current_count=$(cat "$expiring_count_file" 2>/dev/null || echo "0")
+                        echo $((current_count + 1)) > "$expiring_count_file"
+                    elif [[ $time_until_expiry -le $WARNING_7_DAYS ]]; then
+                        notification_level="WARNING_7_DAYS"
+                        current_count=$(cat "$expiring_count_file" 2>/dev/null || echo "0")
+                        echo $((current_count + 1)) > "$expiring_count_file"
+                    elif [[ $time_until_expiry -le $WARNING_30_DAYS ]]; then
+                        notification_level="WARNING_30_DAYS"
+                        current_count=$(cat "$expiring_count_file" 2>/dev/null || echo "0")
+                        echo $((current_count + 1)) > "$expiring_count_file"
+                    fi
+                    
+                    # Send notification if needed
+                    if [[ -n "$notification_level" ]]; then
+                        notification_key="${notification_level}_${credential_id}"
+                        # Check if we already sent this level of notification today
+                        if ! grep -q "^${notification_key}$" "$notification_tracker_file" 2>/dev/null; then
+                            echo "  [NOTIFY] Sending ${notification_level} notification to ${holder_npub:0:16}... (${days_until_expiry} days remaining)"
+                            send_renewal_notification "$holder_npub" "$permit_name" "$permit_id" "$credential_id" "$notification_level" "$days_until_expiry"
+                            echo "$notification_key" >> "$notification_tracker_file"
+                        fi
+                    fi
+                fi
+            fi
+        done
+    fi
+    
+    # Read counts from files
+    expired_count=$(cat "$expired_count_file" 2>/dev/null || echo "0")
+    expiring_soon_count=$(cat "$expiring_count_file" 2>/dev/null || echo "0")
     
     if [[ $expired_count -gt 0 ]]; then
-        echo "[INFO] Found ${expired_count} expired credential(s)"
-    else
-        echo "[SUCCESS] All credentials are valid"
+        echo "[WARNING] Found ${expired_count} expired credential(s) - notifications sent"
     fi
+    
+    if [[ $expiring_soon_count -gt 0 ]]; then
+        echo "[INFO] Found ${expiring_soon_count} credential(s) expiring soon - notifications sent"
+    fi
+    
+    if [[ $expired_count -eq 0 ]] && [[ $expiring_soon_count -eq 0 ]]; then
+        echo "[SUCCESS] All credentials are valid and not expiring soon"
+    fi
+    
+    # Cleanup
+    rm -f "$notification_tracker_file" "$expired_count_file" "$expiring_count_file"
 fi
 
 ################################################################################
@@ -767,35 +1093,6 @@ fi
 ## CLEANUP
 ################################################################################
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "[STEP 5] Cleanup..."
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-# Remove old temporary files (> 7 days)
-find ~/.zen/tmp -name "ORACLE_*" -type d -mtime +7 -exec rm -rf {} \; 2>/dev/null
-echo "[SUCCESS] Cleanup completed"
-
-################################################################################
-## SUMMARY
-################################################################################
-end=`date +%s`
-duration=$((end-start))
-
-echo ""
-echo "╔════════════════════════════════════════════════════════════════╗"
-echo "║            Oracle System Maintenance Complete                  ║"
-echo "╚════════════════════════════════════════════════════════════════╝"
-echo ""
-echo "  Duration: ${duration}s"
-echo "  Total Requests: ${total_requests}"
-echo "  Total Credentials: ${total_credentials}"
-echo "  Statistics: ${ORACLE_STATS_DIR}"
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-exit 0
-
-
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "[STEP 5] Cleanup..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
