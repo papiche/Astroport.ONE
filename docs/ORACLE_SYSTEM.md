@@ -5,7 +5,7 @@
 **Status**: Production - WoTx2 avec Progression Automatique Illimitée  
 **License**: AGPL-3.0
 
-> **Système Oracle 100% Dynamique** : Ce document décrit la dernière version du système Oracle qui permet la création et la progression automatique illimitée de professions auto-proclamées (WoTx2).
+> **Système Oracle 100% Dynamique** : Ce document décrit la dernière version du système Oracle qui permet la création et la progression automatique illimitée de maîtrises auto-proclamées (WoTx2).
 
 ---
 
@@ -13,7 +13,7 @@
 
 1. [Vue d'Ensemble](#1-vue-densemble)
 2. [Architecture Dynamique](#2-architecture-dynamique)
-3. [Système WoTx2 - Professions Auto-Proclamées](#3-système-wotx2---professions-auto-proclamées)
+3. [Système WoTx2 - Maîtrises Auto-Proclamées](#3-système-wotx2---maîtrises-auto-proclamées)
 4. [Workflow Complet](#4-workflow-complet)
 5. [Événements NOSTR](#5-événements-nostr)
 6. [Authentification NIP-42](#6-authentification-nip-42)
@@ -44,7 +44,7 @@ Le Système Oracle transforme la certification traditionnelle d'autorités centr
 
 Le système Oracle v3.0 est **100% dynamique** :
 
-- ✅ **Création libre** : N'importe qui peut créer une profession auto-proclamée
+- ✅ **Création libre** : N'importe qui peut créer une maîtrise auto-proclamée
 - ✅ **Progression automatique** : X1 → X2 → X3 → ... → X144 → ... (illimité)
 - ✅ **Compétences révélées** : Les compétences sont découvertes progressivement lors des attestations
 - ✅ **Aucun bootstrap requis** : Démarre avec 1 signature (vs N+1 pour les permits officiels)
@@ -63,7 +63,7 @@ Le système Oracle v3.0 est **100% dynamique** :
 - Compétences définies à la création
 - Exemples : Permis de conduire, Vérificateur ORE, etc.
 
-#### Professions Auto-Proclamées (Dynamiques - WoTx2)
+#### Maîtrises Auto-Proclamées (Dynamiques - WoTx2)
 - Créés par n'importe quel utilisateur
 - ID dynamique : `PERMIT_[NOM]_X1`
 - Aucun bootstrap requis (démarre avec 1 signature)
@@ -111,17 +111,17 @@ Le système Oracle v3.0 est **100% dynamique** :
 
 ---
 
-## 3. Système WoTx2 - Professions Auto-Proclamées
+## 3. Système WoTx2 - Maîtrises Auto-Proclamées
 
 ### 3.1. Principe de Progression Automatique
 
-Le système **WoTx2** permet la création de **professions auto-proclamées** qui évoluent automatiquement de niveau en niveau selon les validations.
+Le système **WoTx2** permet la création de **maîtrises auto-proclamées** qui évoluent automatiquement de niveau en niveau selon les validations.
 
 ### 3.2. Workflow de Progression Illimitée
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  PROFESSION AUTO-PROCLAMÉE - PROGRESSION AUTOMATIQUE           │
+│  MAÎTRISE AUTO-PROCLAMÉE - PROGRESSION AUTOMATIQUE           │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────┐
@@ -178,7 +178,7 @@ Le système **WoTx2** permet la création de **professions auto-proclamées** qu
 ```
 1. CRÉATION (Utilisateur via /wotx2)
    ┌─────────────────────────────────────┐
-   │ Utilisateur crée profession X1       │
+   │ Utilisateur crée maîtrise X1       │
    │ • Nom: "Maître Nageur"               │
    │ • ID auto: PERMIT_MAITRE_NAGEUR_X1 │
    │ • Événement 30500 signé par UPLANETNAME_G1 │
@@ -224,13 +224,13 @@ Le système **WoTx2** permet la création de **professions auto-proclamées** qu
 
 ## 4. Workflow Complet
 
-### 4.1. Création d'une Profession Auto-Proclamée
+### 4.1. Création d'une Maîtrise Auto-Proclamée
 
-**Interface**: `/wotx2` → "Créer une Nouvelle Profession WoTx2"
+**Interface**: `/wotx2` → "Créer une Nouvelle Maîtrise WoTx2"
 
 1. **Formulaire** :
-   - ✅ Cocher "Profession Auto-Proclamée"
-   - Saisir le nom de la profession (ex: "Maître Nageur")
+   - ✅ Cocher "Maîtrise Auto-Proclamée"
+   - Saisir le nom de la maîtrise (ex: "Maître Nageur")
    - L'ID est généré automatiquement : `PERMIT_MAITRE_NAGEUR_X1`
    - Ajouter une description
 
@@ -249,7 +249,7 @@ Le système **WoTx2** permet la création de **professions auto-proclamées** qu
 
 1. **Sélection du permit** :
    - Choisir parmi tous les permits disponibles (officiels ou auto-proclamés)
-   - Voir le niveau si c'est une profession Xn
+   - Voir le niveau si c'est une maîtrise Xn
 
 2. **Formulaire** :
    - Déclaration d'apprentissage (minimum 20 caractères)
@@ -641,7 +641,7 @@ Liste les demandes, credentials, ou attestations
    - Émet 30503 si seuil atteint
 
 3. **Progression automatique WoTx2** :
-   - Détecte les professions auto-proclamées validées
+   - Détecte les maîtrises auto-proclamées validées
    - Authentifie avec NIP-42
    - Crée automatiquement le niveau suivant (X(n+1))
 
@@ -683,14 +683,14 @@ Liste les demandes, credentials, ou attestations
 - ✅ Graphiques de répartition
 - ✅ Distinction visuelle entre permits officiels et WoTx2
 - ✅ Workflow de progression visible
-- ✅ Liens vers `/wotx2` pour créer des professions
+- ✅ Liens vers `/wotx2` pour créer des maîtrises
 
 ### 9.2. `/wotx2` - Interface WoTx2
 
 **URL** : `http://127.0.0.1:54321/wotx2` ou `https://u.copylaradio.com/wotx2`
 
 **Fonctionnalités** :
-- ✅ Création de professions auto-proclamées
+- ✅ Création de maîtrises auto-proclamées
 - ✅ Sélection de permit pour créer une demande
 - ✅ Formulaire de demande avec compétence réclamée
 - ✅ Liste "Maîtres Certifiés" (30503)
@@ -708,7 +708,7 @@ Liste les demandes, credentials, ou attestations
 
 ### 10.1. Exemple Complet : "Maître Nageur"
 
-#### Jour 1 : Création de la Profession
+#### Jour 1 : Création de la Maîtrise
 ```
 Alice crée "Maître Nageur" via /wotx2
   └─> PERMIT_MAITRE_NAGEUR_X1 créé
@@ -741,7 +741,7 @@ ORACLE.refresh.sh s'exécute
           └─> 30501 supprimé du MULTIPASS de Bob
           └─> Bob apparaît dans "Maîtres Certifiés"
           
-  └─> Détecte profession auto-proclamée X1 validée
+  └─> Détecte maîtrise auto-proclamée X1 validée
       └─> Authentifie avec NIP-42 (kind 22242)
       └─> Crée automatiquement PERMIT_MAITRE_NAGEUR_X2
           └─> 2 compétences + 2 signatures requises
@@ -790,7 +790,7 @@ X3 → X4 → X5 → ... → X10 (Expert)
 | **Progression** | Statique | Automatique illimitée X1→X2→...→X144→... |
 | **Compétences** | Définies à la création | Révélées progressivement |
 | **Bootstrap** | Requis (N+1 membres) | Non requis (démarre avec 1) |
-| **Utilisation** | Permis officiels | Professions libres |
+| **Utilisation** | Permis officiels | Maîtrises libres |
 | **Authentification API** | NIP-42 pour création | NIP-42 pour progression automatique |
 
 ---
@@ -863,7 +863,7 @@ curl -s http://127.0.0.1:54321/api/permit/stats | jq
 
 ### 12.1. Interfaces Web
 - **Oracle** : `/oracle` - Vue d'ensemble de tous les permits
-- **WoTx2** : `/wotx2` - Création et gestion des professions auto-proclamées
+- **WoTx2** : `/wotx2` - Création et gestion des maîtrises auto-proclamées
 - **API Dev** : `/dev` - Documentation interactive de l'API
 
 ### 12.2. Scripts
@@ -886,8 +886,8 @@ curl -s http://127.0.0.1:54321/api/permit/stats | jq
 
 ## 13. FAQ
 
-### Q1 : Puis-je créer plusieurs professions auto-proclamées ?
-**R** : Oui, il n'y a aucune limite. Chaque profession démarre à X1 et progresse indépendamment.
+### Q1 : Puis-je créer plusieurs maîtrises auto-proclamées ?
+**R** : Oui, il n'y a aucune limite. Chaque maîtrise démarre à X1 et progresse indépendamment.
 
 ### Q2 : Que se passe-t-il si personne n'atteste ma demande ?
 **R** : Votre demande reste dans "Apprentis Cherchant un Maître". Après 90 jours, un avertissement est affiché, mais la demande reste active.
@@ -901,7 +901,7 @@ curl -s http://127.0.0.1:54321/api/permit/stats | jq
 ### Q5 : Les compétences sont-elles obligatoires ?
 **R** : Oui, lors de la création d'une demande 30501, vous devez indiquer la compétence que vous souhaitez acquérir.
 
-### Q6 : Comment supprimer une profession auto-proclamée ?
+### Q6 : Comment supprimer une maîtrise auto-proclamée ?
 **R** : Seul le créateur peut supprimer un permit (kind 5) si aucun credential 30503 n'a été émis pour ce permit.
 
 ### Q7 : L'authentification NIP-42 est-elle obligatoire ?
@@ -916,7 +916,7 @@ curl -s http://127.0.0.1:54321/api/permit/stats | jq
 
 Le Système Oracle v3.0 est un système **100% dynamique** qui permet :
 
-- ✅ La création libre de professions auto-proclamées
+- ✅ La création libre de maîtrises auto-proclamées
 - ✅ La progression automatique illimitée (X1 → X2 → ... → X144 → ...)
 - ✅ La découverte progressive des compétences
 - ✅ L'authentification sécurisée via NIP-42
@@ -952,7 +952,7 @@ Le Système Oracle v3.0 est un système **100% dynamique** qui permet :
 **Description** : Script interactif pour gérer les **permits officiels uniquement**
 
 **⚠️ Important** : Ce script est pour les permits officiels (PERMIT_ORE_V1, PERMIT_DRIVER, etc.)
-- Pour les professions auto-proclamées (WoTx2), utilisez `/wotx2` via le navigateur
+- Pour les maîtrises auto-proclamées (WoTx2), utilisez `/wotx2` via le navigateur
 
 **Fonctionnalités** :
 - Ajouter des permits officiels depuis le template JSON

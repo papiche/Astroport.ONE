@@ -4,9 +4,9 @@
 # Description: Initialize Web of Trust (WoT) for a new OFFICIAL permit type
 #
 # ⚠️  IMPORTANT: This script is for OFFICIAL PERMITS only (PERMIT_ORE_V1, etc.)
-#    For AUTO-PROCLAIMED PROFESSIONS (WoTx2), NO BOOTSTRAP IS REQUIRED:
+#    For AUTO-PROCLAIMED MAÎTRISES (WoTx2), NO BOOTSTRAP IS REQUIRED:
 #    → WoTx2 starts with 1 signature (no chicken-and-egg problem)
-#    → Use /wotx2 interface to create auto-proclaimed professions
+#    → Use /wotx2 interface to create auto-proclaimed maîtrises
 #    → Progression is automatic: X1 → X2 → ... → X144 → ...
 #
 # This script bootstraps a new OFFICIAL permit by:
@@ -219,7 +219,7 @@ list_uninitiated_permits() {
     local wotx2_skipped=0
     
     while IFS='|' read -r permit_id permit_name min_attestations; do
-        # Skip WoTx2 auto-proclaimed professions (they don't need bootstrap)
+        # Skip WoTx2 auto-proclaimed maîtrises (they don't need bootstrap)
         if [[ "$permit_id" =~ ^PERMIT_.*_X[0-9]+$ ]]; then
             ((wotx2_skipped++))
             continue
@@ -237,8 +237,8 @@ list_uninitiated_permits() {
     
     if [[ $wotx2_skipped -gt 0 ]]; then
         echo ""
-        log_info "Skipped ${wotx2_skipped} WoTx2 auto-proclaimed profession(s) (no bootstrap required)"
-        log_info "💡 Use /wotx2 to create requests for WoTx2 professions"
+        log_info "Skipped ${wotx2_skipped} WoTx2 auto-proclaimed maîtrise(s) (no bootstrap required)"
+        log_info "💡 Use /wotx2 to create requests for WoTx2 maîtrises"
     fi
     
     if [[ ${#uninitiated_permits[@]} -eq 0 ]]; then
@@ -550,7 +550,7 @@ main() {
     echo "╚════════════════════════════════════════════════════════════════╝"
     echo ""
     echo -e "${YELLOW}⚠️  NOTE: This script is for OFFICIAL PERMITS only${NC}"
-    echo -e "${YELLOW}   For AUTO-PROCLAIMED PROFESSIONS (WoTx2), use:${NC}"
+    echo -e "${YELLOW}   For AUTO-PROCLAIMED MAÎTRISES (WoTx2), use:${NC}"
     echo -e "${GREEN}   → Web Interface: /wotx2${NC}"
     echo -e "${GREEN}   → No bootstrap required (starts with 1 signature)${NC}"
     echo -e "${GREEN}   → Auto-progression: X1 → X2 → ... → X144 → ...${NC}"
@@ -609,11 +609,11 @@ main() {
         
         # Warn if trying to bootstrap a WoTx2 auto-proclaimed profession
         if [[ "$permit_id" =~ ^PERMIT_.*_X[0-9]+$ ]]; then
-            log_warning "⚠️  WARNING: This is an auto-proclaimed profession (WoTx2)"
-            log_warning "   WoTx2 professions do NOT require bootstrap"
+            log_warning "⚠️  WARNING: This is an auto-proclaimed maîtrise (WoTx2)"
+            log_warning "   WoTx2 maîtrises do NOT require bootstrap"
             log_warning "   They start with 1 signature (no chicken-and-egg problem)"
             echo ""
-            log_info "💡 To create a request for this profession, use:"
+            log_info "💡 To create a request for this maîtrise, use:"
             log_info "   → Web Interface: ${uSPOT}/wotx2?permit_id=${permit_id}"
             echo ""
             read -p "Continue anyway? (yes/no): " confirm

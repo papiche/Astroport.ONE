@@ -2,10 +2,10 @@
 
 **Version**: 1.0 - Système de Toiles de Confiance Dynamiques  
 **Date**: Décembre 2025  
-**Status**: Production - Professions Auto-Proclamées avec Progression Automatique Illimitée  
+**Status**: Production - Maîtrises Auto-Proclamées avec Progression Automatique Illimitée  
 **License**: AGPL-3.0
 
-> **Système WoTx2 100% Dynamique** : Ce document décrit l'implémentation complète du système WoTx2 qui permet la création et la progression automatique illimitée de professions auto-proclamées via des toiles de confiance décentralisées.
+> **Système WoTx2 100% Dynamique** : Ce document décrit l'implémentation complète du système WoTx2 qui permet la création et la progression automatique illimitée de maîtrises auto-proclamées via des toiles de confiance décentralisées.
 
 ---
 
@@ -28,13 +28,13 @@
 
 ### 1.1. Qu'est-ce que WoTx2 ?
 
-**WoTx2** (Web of Trust eXtended 2) est un système décentralisé de **toiles de confiance dynamiques** pour la certification professionnelle. Il permet à n'importe quel utilisateur de créer une profession auto-proclamée qui évolue automatiquement de niveau en niveau selon les validations par les pairs.
+**WoTx2** (Web of Trust eXtended 2) est un système décentralisé de **toiles de confiance dynamiques** pour la certification de compétences. Il permet à n'importe quel utilisateur de créer une maîtrise auto-proclamée qui évolue automatiquement de niveau en niveau selon les validations par les pairs.
 
 ### 1.2. Philosophie
 
 Le système WoTx2 transforme la certification traditionnelle d'autorités centralisées vers une **certification validée par les pairs avec progression automatique** :
 
-- **Création libre** : N'importe qui peut créer une profession auto-proclamée
+- **Création libre** : N'importe qui peut créer une maîtrise auto-proclamée
 - **Progression automatique** : X1 → X2 → X3 → ... → X144 → ... (illimité)
 - **Compétences révélées** : Les compétences sont découvertes progressivement lors des attestations
 - **Aucun bootstrap requis** : Démarre avec 1 signature (vs N+1 pour les permits officiels)
@@ -49,7 +49,7 @@ Le système WoTx2 transforme la certification traditionnelle d'autorités centra
 | **Progression** | Statique | Automatique illimitée X1→X2→...→X144→... |
 | **Compétences** | Définies à la création | Révélées progressivement |
 | **Bootstrap** | Requis (N+1 membres) | Non requis (démarre avec 1) |
-| **Utilisation** | Permis officiels | Professions libres |
+| **Utilisation** | Permis officiels | Maîtrises libres |
 
 ---
 
@@ -95,7 +95,7 @@ Le système WoTx2 transforme la certification traditionnelle d'autorités centra
 ### 2.2. Composants Principaux
 
 #### Frontend (`wotx2.html`)
-- Interface web pour créer et gérer les professions auto-proclamées
+- Interface web pour créer et gérer les maîtrises auto-proclamées
 - Connexion MULTIPASS via NIP-42
 - Publication directe d'événements NOSTR (30501, 30502)
 - Affichage de la progression automatique
@@ -122,13 +122,13 @@ Le système WoTx2 transforme la certification traditionnelle d'autorités centra
 
 ### 3.1. Principe de Progression Illimitée
 
-Le système **WoTx2** permet la création de **professions auto-proclamées** qui évoluent automatiquement de niveau en niveau selon les validations.
+Le système **WoTx2** permet la création de **maîtrises auto-proclamées** qui évoluent automatiquement de niveau en niveau selon les validations.
 
 ### 3.2. Workflow de Progression
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  PROFESSION AUTO-PROCLAMÉE - PROGRESSION AUTOMATIQUE           │
+│  MAÎTRISE AUTO-PROCLAMÉE - PROGRESSION AUTOMATIQUE           │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────┐
@@ -197,13 +197,13 @@ Les compétences ne sont **pas définies à la création** mais **révélées pr
 
 ## 4. Workflow Complet
 
-### 4.1. Création d'une Profession Auto-Proclamée
+### 4.1. Création d'une Maîtrise Auto-Proclamée
 
-**Interface**: `/wotx2` → "Créer une Nouvelle Profession WoTx2"
+**Interface**: `/wotx2` → "Créer une Nouvelle Maîtrise WoTx2"
 
 1. **Formulaire** :
-   - ✅ Cocher "Profession Auto-Proclamée"
-   - Saisir le nom de la profession (ex: "Maître Nageur")
+   - ✅ Cocher "Maîtrise Auto-Proclamée"
+   - Saisir le nom de la maîtrise (ex: "Maître Nageur")
    - L'ID est généré automatiquement : `PERMIT_MAITRE_NAGEUR_X1`
    - Ajouter une description
 
@@ -223,7 +223,7 @@ Les compétences ne sont **pas définies à la création** mais **révélées pr
 
 1. **Sélection du permit** :
    - Choisir parmi tous les permits disponibles (officiels ou auto-proclamés)
-   - Voir le niveau si c'est une profession Xn
+   - Voir le niveau si c'est une maîtrise Xn
 
 2. **Formulaire** :
    - Déclaration d'apprentissage (minimum 20 caractères)
@@ -530,7 +530,7 @@ Les compétences ne sont **pas définies à la création** mais **révélées pr
 ```python
 @app.get("/wotx2", response_class=HTMLResponse)
 async def get_wotx2(request: Request, npub: Optional[str] = None, permit_id: Optional[str] = None):
-    """WoTx2 Permit Interface - Evolving Web of Trust for Professional Permits
+    """WoTx2 Permit Interface - Evolving Web of Trust for Competency Mastery
     
     This interface reads all data from Nostr relays. The API only serves to initialize the page.
     All permit requests (30501) and attestations (30502) are managed directly via Nostr by each MULTIPASS.
@@ -557,7 +557,7 @@ async def get_wotx2(request: Request, npub: Optional[str] = None, permit_id: Opt
 **Fonctionnalités** :
 - Crée une nouvelle définition de permit (kind 30500)
 - Vérifie l'authentification NIP-42
-- Génère automatiquement l'ID pour les professions auto-proclamées
+- Génère automatiquement l'ID pour les maîtrises auto-proclamées
 - Publie l'événement sur Nostr via `oracle_system.create_permit_definition()`
 - Sauvegarde l'événement dans le répertoire MULTIPASS du créateur
 
@@ -617,7 +617,7 @@ Le système WoTx2 s'intègre avec `oracle_system.py` pour :
 2. **Sélecteur de Permits** :
    - Liste déroulante de tous les permits disponibles
    - Affichage des niveaux (X1, X2, X3, ...)
-   - Bouton "Créer une Nouvelle Profession"
+   - Bouton "Créer une Nouvelle Maîtrise"
 
 3. **Liste de Tous les Permits** :
    - Affichage en grille (similaire à `/oracle`)
@@ -750,7 +750,7 @@ Récupère toutes les définitions de permits (30500)
 
 ### 9.1. Exemple Complet : "Maître Nageur"
 
-#### Jour 1 : Création de la Profession
+#### Jour 1 : Création de la Maîtrise
 ```
 Alice crée "Maître Nageur" via /wotx2
   └─> PERMIT_MAITRE_NAGEUR_X1 créé
@@ -784,7 +784,7 @@ ORACLE.refresh.sh s'exécute
           └─> 30501 supprimé du MULTIPASS de Bob
           └─> Bob apparaît dans "Maîtres Certifiés"
           
-  └─> Détecte profession auto-proclamée X1 validée
+  └─> Détecte maîtrise auto-proclamée X1 validée
       └─> Authentifie avec NIP-42 (kind 22242)
       └─> Crée automatiquement PERMIT_MAITRE_NAGEUR_X2
           └─> 2 compétences + 2 signatures requises
@@ -834,7 +834,7 @@ X3 → X4 → X5 → ... → X10 (Expert)
 | **Progression** | Statique | Automatique illimitée X1→X2→...→X144→... |
 | **Compétences** | Définies à la création | Révélées progressivement |
 | **Bootstrap** | Requis (N+1 membres) | Non requis (démarre avec 1) |
-| **Utilisation** | Permis officiels | Professions libres |
+| **Utilisation** | Permis officiels | Maîtrises libres |
 | **Authentification API** | NIP-42 pour création | NIP-42 pour progression automatique |
 
 ---
@@ -915,7 +915,7 @@ curl -s http://127.0.0.1:54321/api/permit/stats | jq
 ## 11. Références et Liens
 
 ### 11.1. Interfaces Web
-- **WoTx2** : `/wotx2` - Interface principale pour les professions auto-proclamées
+- **WoTx2** : `/wotx2` - Interface principale pour les maîtrises auto-proclamées
 - **Oracle** : `/oracle` - Vue d'ensemble de tous les permits
 - **API Dev** : `/dev` - Documentation interactive de l'API
 
@@ -941,8 +941,8 @@ curl -s http://127.0.0.1:54321/api/permit/stats | jq
 
 ## 12. FAQ
 
-### Q1 : Puis-je créer plusieurs professions auto-proclamées ?
-**R** : Oui, il n'y a aucune limite. Chaque profession démarre à X1 et progresse indépendamment.
+### Q1 : Puis-je créer plusieurs maîtrises auto-proclamées ?
+**R** : Oui, il n'y a aucune limite. Chaque maîtrise démarre à X1 et progresse indépendamment.
 
 ### Q2 : Que se passe-t-il si personne n'atteste ma demande ?
 **R** : Votre demande reste dans "Apprentis Cherchant un Maître". Après 90 jours, un avertissement est affiché, mais la demande reste active.
@@ -956,7 +956,7 @@ curl -s http://127.0.0.1:54321/api/permit/stats | jq
 ### Q5 : Les compétences sont-elles obligatoires ?
 **R** : Oui, lors de la création d'une demande 30501, vous devez indiquer la compétence que vous souhaitez acquérir.
 
-### Q6 : Comment supprimer une profession auto-proclamée ?
+### Q6 : Comment supprimer une maîtrise auto-proclamée ?
 **R** : Seul le créateur peut supprimer un permit (kind 5) si aucun credential 30503 n'a été émis pour ce permit.
 
 ### Q7 : L'authentification NIP-42 est-elle obligatoire ?
@@ -971,7 +971,7 @@ curl -s http://127.0.0.1:54321/api/permit/stats | jq
 
 Le Système WoTx2 est un système **100% dynamique** qui permet :
 
-- ✅ La création libre de professions auto-proclamées
+- ✅ La création libre de maîtrises auto-proclamées
 - ✅ La progression automatique illimitée (X1 → X2 → ... → X144 → ...)
 - ✅ La découverte progressive des compétences
 - ✅ L'authentification sécurisée via NIP-42

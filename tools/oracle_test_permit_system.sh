@@ -15,7 +15,7 @@
 # 5. Récupération des credentials (W3C Verifiable Credentials)
 # 6. Virement blockchain PERMIT (depuis UPLANETNAME.RnD)
 # 7. Tests NOSTR (strfry query via nostr_get_events.sh)
-# 8. Tests WoTx2 (professions auto-proclamées, progression automatique)
+# 8. Tests WoTx2 (maîtrises auto-proclamées, progression automatique)
 # 9. Tests authentification NIP-42
 #
 # ⚠️  NOTE: Tests couvrent à la fois les permits officiels et WoTx2
@@ -477,7 +477,7 @@ test_helper_scripts() {
         run_test "oracle.WoT_PERMIT.init.sh is executable" \
             "[ -x '${MY_PATH}/oracle.WoT_PERMIT.init.sh' ]"
         echo -e "${CYAN}💡 Note: This script is for OFFICIAL PERMITS only${NC}"
-        echo -e "${CYAN}   WoTx2 professions do NOT require bootstrap${NC}"
+        echo -e "${CYAN}   WoTx2 maîtrises do NOT require bootstrap${NC}"
     else
         echo -e "${RED}❌ oracle.WoT_PERMIT.init.sh not found${NC}"
         TESTS_FAILED=$((TESTS_FAILED + 1))
@@ -626,20 +626,20 @@ test_nostr_events() {
         TESTS_TOTAL=$((TESTS_TOTAL + 1))
     fi
     
-    # Test 10.6: Vérifier les professions auto-proclamées (WoTx2)
-    echo -e "${CYAN}📡 Querying WoTx2 auto-proclaimed professions (PERMIT_*_X*)...${NC}"
+    # Test 10.6: Vérifier les maîtrises auto-proclamées (WoTx2)
+    echo -e "${CYAN}📡 Querying WoTx2 auto-proclaimed maîtrises (PERMIT_*_X*)...${NC}"
     local wotx2_defs=$(echo "$definitions" | jq -r 'select(.id | startswith("PERMIT_")) | .id' 2>/dev/null || echo "")
     local wotx2_count=$(echo "$wotx2_defs" | grep -c "PERMIT_" || echo "0")
     
     if [ "$wotx2_count" -gt 0 ]; then
-        echo -e "${GREEN}✅ Found ${wotx2_count} WoTx2 auto-proclaimed profession(s)${NC}"
+        echo -e "${GREEN}✅ Found ${wotx2_count} WoTx2 auto-proclaimed maîtrise(s)${NC}"
         echo "$wotx2_defs" | head -5 | while read -r permit_id; do
             local level=$(echo "$permit_id" | grep -oE '_X[0-9]+$' | sed 's/_X//')
             echo -e "${CYAN}   • ${permit_id} (Niveau X${level})${NC}"
         done
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
-        echo -e "${YELLOW}⚠️  No WoTx2 auto-proclaimed professions found${NC}"
+        echo -e "${YELLOW}⚠️  No WoTx2 auto-proclaimed maîtrises found${NC}"
         echo -e "${CYAN}💡 Create one via /wotx2 interface${NC}"
     fi
     TESTS_TOTAL=$((TESTS_TOTAL + 1))
@@ -698,23 +698,23 @@ test_api_nostr_fetch() {
 }
 
 ################################################################################
-# Tests WoTx2 - Professions Auto-Proclamées
+# Tests WoTx2 - Maîtrises Auto-Proclamées
 ################################################################################
 
 test_wotx2_system() {
-    section "TEST 13: WoTx2 - Auto-Proclaimed Professions"
+    section "TEST 13: WoTx2 - Auto-Proclaimed Maîtrises"
     
     echo -e "${CYAN}🧪 Testing WoTx2 system (100% dynamic)${NC}"
     echo ""
     
-    # Test 13.1: Vérifier que les professions auto-proclamées existent
-    echo -e "${YELLOW}Test 13.1: Check for WoTx2 auto-proclaimed professions${NC}"
+    # Test 13.1: Vérifier que les maîtrises auto-proclamées existent
+    echo -e "${YELLOW}Test 13.1: Check for WoTx2 auto-proclaimed maîtrises${NC}"
     local definitions=$(curl -s "${API_URL}/api/permit/definitions")
     local wotx2_permits=$(echo "$definitions" | jq -r '.definitions[]? | select(.id | startswith("PERMIT_")) | .id' 2>/dev/null)
     local wotx2_count=$(echo "$wotx2_permits" | grep -c "PERMIT_" || echo "0")
     
     if [ "$wotx2_count" -gt 0 ]; then
-        echo -e "${GREEN}✅ Found ${wotx2_count} WoTx2 profession(s)${NC}"
+        echo -e "${GREEN}✅ Found ${wotx2_count} WoTx2 maîtrise(s)${NC}"
         echo "$wotx2_permits" | head -5 | while read -r permit_id; do
             local level=$(echo "$permit_id" | grep -oE '_X[0-9]+$' | sed 's/_X//')
             local name=$(echo "$definitions" | jq -r ".definitions[]? | select(.id == \"$permit_id\") | .name" 2>/dev/null)
@@ -722,7 +722,7 @@ test_wotx2_system() {
         done
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
-        echo -e "${YELLOW}⚠️  No WoTx2 professions found${NC}"
+        echo -e "${YELLOW}⚠️  No WoTx2 maîtrises found${NC}"
         echo -e "${CYAN}💡 Create one via /wotx2 interface${NC}"
     fi
     TESTS_TOTAL=$((TESTS_TOTAL + 1))
@@ -809,7 +809,7 @@ test_wotx2_system() {
     
     echo ""
     echo -e "${CYAN}💡 WoTx2 Summary:${NC}"
-    echo -e "${CYAN}   • Auto-proclaimed professions: ${wotx2_count}${NC}"
+    echo -e "${CYAN}   • Auto-proclaimed maîtrises: ${wotx2_count}${NC}"
     echo -e "${CYAN}   • Progression: Automatic (X1 → X2 → ... → X144 → ...)${NC}"
     echo -e "${CYAN}   • Bootstrap: NOT required (starts with 1 signature)${NC}"
     echo -e "${CYAN}   • Interface: ${API_URL}/wotx2${NC}"
@@ -885,7 +885,7 @@ show_menu() {
     echo "10. 📡 Test: NOSTR events (strfry)"
     echo "11. 🌐 Test: API NOSTR fetch"
     echo "12. 💰 Test: PERMIT payment"
-    echo "13. 🚀 Test: WoTx2 (auto-proclaimed professions)"
+    echo "13. 🚀 Test: WoTx2 (auto-proclaimed maîtrises)"
     echo "14. 🚪 Exit"
     echo ""
     read -p "Choose an option (1-14): " choice
@@ -1067,7 +1067,7 @@ show_menu() {
     echo "10. 📡 Test: NOSTR events (strfry)"
     echo "11. 🌐 Test: API NOSTR fetch"
     echo "12. 💰 Test: PERMIT payment"
-    echo "13. 🚀 Test: WoTx2 (auto-proclaimed professions)"
+    echo "13. 🚀 Test: WoTx2 (auto-proclaimed maîtrises)"
     echo "14. 🚪 Exit"
     echo ""
     read -p "Choose an option (1-14): " choice
@@ -1249,7 +1249,7 @@ show_menu() {
     echo "10. 📡 Test: NOSTR events (strfry)"
     echo "11. 🌐 Test: API NOSTR fetch"
     echo "12. 💰 Test: PERMIT payment"
-    echo "13. 🚀 Test: WoTx2 (auto-proclaimed professions)"
+    echo "13. 🚀 Test: WoTx2 (auto-proclaimed maîtrises)"
     echo "14. 🚪 Exit"
     echo ""
     read -p "Choose an option (1-14): " choice

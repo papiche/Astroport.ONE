@@ -268,7 +268,7 @@ else
                         
                         attester_has_valid_credential=false
                         
-                        # Check if this is a WoTx2 auto-proclaimed profession (PERMIT_*_XN)
+                        # Check if this is a WoTx2 auto-proclaimed maîtrise (PERMIT_*_XN)
                         if [[ "$permit_id" =~ ^PERMIT_.*_X([0-9]+)$ ]]; then
                             # WoTx2: Attester must have credential for this permit OR a higher level
                             current_level="${BASH_REMATCH[1]}"
@@ -391,10 +391,10 @@ else
                             fi
                         fi
                         
-                        # Check if this is an auto-proclaimed profession (PERMIT_*_X1, X2, X3...)
+                        # Check if this is an auto-proclaimed maîtrise (PERMIT_*_X1, X2, X3...)
                         if [[ "$permit_id" =~ ^PERMIT_.*_X([0-9]+)$ ]]; then
                             current_level="${BASH_REMATCH[1]}"
-                            echo "  [INFO] Auto-proclaimed profession detected: Level X${current_level}"
+                            echo "  [INFO] Auto-proclaimed maîtrise detected: Level X${current_level}"
                             
                             # Calculate next level (unlimited progression: X1→X2→X3→...→X144→...)
                             next_level=$((current_level + 1))

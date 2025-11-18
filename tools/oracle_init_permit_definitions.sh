@@ -9,10 +9,10 @@
 # - Delete permit definitions (with safety checks)
 #
 # ⚠️  IMPORTANT: This script is for OFFICIAL PERMITS only (PERMIT_ORE_V1, etc.)
-#    For AUTO-PROCLAIMED PROFESSIONS (WoTx2), use the web interface:
-#    → /wotx2 → "Créer une Nouvelle Profession WoTx2"
+#    For AUTO-PROCLAIMED MAÎTRISES (WoTx2), use the web interface:
+#    → /wotx2 → "Créer une Nouvelle Maîtrise WoTx2"
 #
-#    Auto-proclaimed professions:
+#    Auto-proclaimed maîtrises:
 #    - Created via /wotx2 interface (100% dynamic)
 #    - ID format: PERMIT_[NOM]_X1
 #    - Automatic progression: X1 → X2 → ... → X144 → ... (unlimited)
@@ -274,7 +274,7 @@ show_main_menu() {
     echo -e "${MAGENTA}╚════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     echo -e "${YELLOW}⚠️  NOTE: This script manages OFFICIAL PERMITS only${NC}"
-    echo -e "${YELLOW}   For AUTO-PROCLAIMED PROFESSIONS (WoTx2), use:${NC}"
+    echo -e "${YELLOW}   For AUTO-PROCLAIMED MAÎTRISES (WoTx2), use:${NC}"
     echo -e "${GREEN}   → Web Interface: /wotx2${NC}"
     echo -e "${GREEN}   → Creates: PERMIT_[NOM]_X1${NC}"
     echo -e "${GREEN}   → Auto-progression: X1 → X2 → ... → X144 → ...${NC}"
@@ -332,7 +332,7 @@ show_nostr_list() {
             local permit_id=$(echo "$permit_json" | jq -r '.id')
             local name=$(echo "$permit_json" | jq -r '.name')
             
-            # Check if it's a WoTx2 auto-proclaimed profession
+            # Check if it's a WoTx2 auto-proclaimed maîtrise
             if [[ "$permit_id" =~ ^PERMIT_.*_X[0-9]+$ ]]; then
                 local level=$(echo "$permit_id" | grep -oE '_X[0-9]+$' | sed 's/_X//')
                 echo -e "  ${GREEN}$index.${NC} ${CYAN}$permit_id${NC} - $name ${MAGENTA}[WoTx2 - Niveau X${level}]${NC}"
@@ -376,15 +376,15 @@ add_permit() {
     
     # Warn if trying to create auto-proclaimed profession via this script
     if [[ "$permit_id" =~ ^PERMIT_.*_X[0-9]+$ ]]; then
-        echo -e "${YELLOW}⚠️  WARNING: This is an auto-proclaimed profession (WoTx2)${NC}"
-        echo -e "${YELLOW}   Auto-proclaimed professions should be created via /wotx2 interface${NC}"
+        echo -e "${YELLOW}⚠️  WARNING: This is an auto-proclaimed maîtrise (WoTx2)${NC}"
+        echo -e "${YELLOW}   Auto-proclaimed maîtrises should be created via /wotx2 interface${NC}"
         echo -e "${CYAN}   This script is for OFFICIAL PERMITS only (PERMIT_ORE_V1, etc.)${NC}"
         echo ""
         echo -e "${CYAN}Continue anyway? (y/N):${NC} "
         read -r confirm
         if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
             echo -e "${YELLOW}Operation cancelled${NC}"
-            echo -e "${GREEN}💡 Use /wotx2 to create auto-proclaimed professions${NC}"
+            echo -e "${GREEN}💡 Use /wotx2 to create auto-proclaimed maîtrises${NC}"
             read -p "Press Enter to continue..."
             return
         fi
