@@ -369,6 +369,22 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
     # Valeurs par défaut si toujours vides
     if not title:
         title = "Titre inconnu"
+    
+    # Enrich title with source type for better theater display
+    # Format: "Title - Source" (year will be added later from TMDB metadata in theater-modal.html)
+    if title and title != "Titre inconnu":
+        source_labels = {
+            'film': 'Film',
+            'serie': 'Série',
+            'youtube': 'YouTube',
+            'webcam': 'Webcam'
+        }
+        # source_type is set earlier in the function
+        if source_type and source_type in source_labels:
+            # Only add source if not already in title
+            if f" - {source_labels[source_type]}" not in title:
+                title = f"{title} - {source_labels[source_type]}"
+    
     if not uploader:
         # Try to extract from channel name (tag "t" with "Channel-" prefix)
         # Look for tags of type "t" (topic tags) that start with "Channel-"
