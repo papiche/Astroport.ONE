@@ -627,9 +627,9 @@ test_nostr_events() {
     fi
     
     # Test 10.6: Vérifier les professions auto-proclamées (WoTx2)
-    echo -e "${CYAN}📡 Querying WoTx2 auto-proclaimed professions (PERMIT_PROFESSION_*_X*)...${NC}"
-    local wotx2_defs=$(echo "$definitions" | jq -r 'select(.id | startswith("PERMIT_PROFESSION_")) | .id' 2>/dev/null || echo "")
-    local wotx2_count=$(echo "$wotx2_defs" | grep -c "PERMIT_PROFESSION_" || echo "0")
+    echo -e "${CYAN}📡 Querying WoTx2 auto-proclaimed professions (PERMIT_*_X*)...${NC}"
+    local wotx2_defs=$(echo "$definitions" | jq -r 'select(.id | startswith("PERMIT_")) | .id' 2>/dev/null || echo "")
+    local wotx2_count=$(echo "$wotx2_defs" | grep -c "PERMIT_" || echo "0")
     
     if [ "$wotx2_count" -gt 0 ]; then
         echo -e "${GREEN}✅ Found ${wotx2_count} WoTx2 auto-proclaimed profession(s)${NC}"
@@ -710,8 +710,8 @@ test_wotx2_system() {
     # Test 13.1: Vérifier que les professions auto-proclamées existent
     echo -e "${YELLOW}Test 13.1: Check for WoTx2 auto-proclaimed professions${NC}"
     local definitions=$(curl -s "${API_URL}/api/permit/definitions")
-    local wotx2_permits=$(echo "$definitions" | jq -r '.definitions[]? | select(.id | startswith("PERMIT_PROFESSION_")) | .id' 2>/dev/null)
-    local wotx2_count=$(echo "$wotx2_permits" | grep -c "PERMIT_PROFESSION_" || echo "0")
+    local wotx2_permits=$(echo "$definitions" | jq -r '.definitions[]? | select(.id | startswith("PERMIT_")) | .id' 2>/dev/null)
+    local wotx2_count=$(echo "$wotx2_permits" | grep -c "PERMIT_" || echo "0")
     
     if [ "$wotx2_count" -gt 0 ]; then
         echo -e "${GREEN}✅ Found ${wotx2_count} WoTx2 profession(s)${NC}"

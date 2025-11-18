@@ -65,7 +65,7 @@ Le système Oracle v3.0 est **100% dynamique** :
 
 #### Professions Auto-Proclamées (Dynamiques - WoTx2)
 - Créés par n'importe quel utilisateur
-- ID dynamique : `PERMIT_PROFESSION_[NOM]_X1`
+- ID dynamique : `PERMIT_[NOM]_X1`
 - Aucun bootstrap requis (démarre avec 1 signature)
 - Compétences révélées progressivement
 - Progression automatique illimitée : X1 → X2 → ... → X144 → ...
@@ -81,9 +81,9 @@ Le système Oracle v3.0 est **100% dynamique** :
 │  Permits Officiels   │         │  WoTx2 Auto-Proclamés │
 │  (Statiques)         │         │  (Dynamiques)         │
 ├──────────────────────┤         ├──────────────────────┤
-│ • PERMIT_ORE_V1      │         │ • PERMIT_PROFESSION_ │
+│ • PERMIT_ORE_V1      │         │ • PERMIT_ │
 │ • PERMIT_DRIVER      │         │   MAITRE_NAGEUR_X1    │
-│ • PERMIT_MEDICAL...  │         │ • PERMIT_PROFESSION_  │
+│ • PERMIT_MEDICAL...  │         │ • PERMIT_  │
 │                      │         │   CUISINIER_X1        │
 │ Bootstrap: N+1       │         │                      │
 │ Compétences: Fixes   │         │ Bootstrap: 1          │
@@ -126,7 +126,7 @@ Le système **WoTx2** permet la création de **professions auto-proclamées** qu
 
 ┌─────────────┐
 │  Niveau X1  │  Création initiale par l'utilisateur
-│             │  • ID: PERMIT_PROFESSION_[NOM]_X1
+│             │  • ID: PERMIT_[NOM]_X1
 │ 1 signature │  • 1 attestation requise
 │             │  • Compétence réclamée dans la demande 30501
 └──────┬──────┘
@@ -138,7 +138,7 @@ Le système **WoTx2** permet la création de **professions auto-proclamées** qu
        ▼
 ┌─────────────┐
 │  Niveau X2 │  Créé automatiquement par ORACLE.refresh.sh
-│           │  • ID: PERMIT_PROFESSION_[NOM]_X2
+│           │  • ID: PERMIT_[NOM]_X2
 │ 2 signatures│  • 2 compétences + 2 attestations requises
 │ 2 compétences│  • Enrichi des compétences révélées en X1
 └──────┬──────┘
@@ -180,7 +180,7 @@ Le système **WoTx2** permet la création de **professions auto-proclamées** qu
    ┌─────────────────────────────────────┐
    │ Utilisateur crée profession X1       │
    │ • Nom: "Maître Nageur"               │
-   │ • ID auto: PERMIT_PROFESSION_MAITRE_NAGEUR_X1 │
+   │ • ID auto: PERMIT_MAITRE_NAGEUR_X1 │
    │ • Événement 30500 signé par UPLANETNAME_G1 │
    └──────────────┬──────────────────────┘
                   │
@@ -231,7 +231,7 @@ Le système **WoTx2** permet la création de **professions auto-proclamées** qu
 1. **Formulaire** :
    - ✅ Cocher "Profession Auto-Proclamée"
    - Saisir le nom de la profession (ex: "Maître Nageur")
-   - L'ID est généré automatiquement : `PERMIT_PROFESSION_MAITRE_NAGEUR_X1`
+   - L'ID est généré automatiquement : `PERMIT_MAITRE_NAGEUR_X1`
    - Ajouter une description
 
 2. **Publication** :
@@ -306,12 +306,12 @@ Le système **WoTx2** permet la création de **professions auto-proclamées** qu
 **Processus automatique** : `ORACLE.refresh.sh` (après émission 30503)
 
 1. **Détection** :
-   - Détecte si le permit est auto-proclamé : `PERMIT_PROFESSION_*_X{n}`
+   - Détecte si le permit est auto-proclamé : `PERMIT_*_X{n}`
    - Extrait le niveau actuel (X1, X2, X3, ...)
 
 2. **Calcul du niveau suivant** :
    - `next_level = current_level + 1`
-   - `next_permit_id = PERMIT_PROFESSION_[NOM]_X{next_level}`
+   - `next_permit_id = PERMIT_[NOM]_X{next_level}`
    - `min_attestations = next_level`
 
 3. **Authentification NIP-42** :
@@ -342,13 +342,13 @@ Le système **WoTx2** permet la création de **professions auto-proclamées** qu
   "kind": 30500,
   "pubkey": "<UPLANETNAME_G1_hex>",
   "tags": [
-    ["d", "PERMIT_PROFESSION_MAITRE_NAGEUR_X1"],
+    ["d", "PERMIT_MAITRE_NAGEUR_X1"],
     ["t", "permit"],
     ["t", "definition"],
     ["t", "auto_proclaimed"]
   ],
   "content": "{
-    \"id\": \"PERMIT_PROFESSION_MAITRE_NAGEUR_X1\",
+    \"id\": \"PERMIT_MAITRE_NAGEUR_X1\",
     \"name\": \"Maître Nageur\",
     \"description\": \"Enseignement de la natation et du sauvetage\",
     \"min_attestations\": 1,
@@ -387,14 +387,14 @@ Le système **WoTx2** permet la création de **professions auto-proclamées** qu
   "pubkey": "<applicant_hex>",
   "tags": [
     ["d", "req_abc123"],
-    ["l", "PERMIT_PROFESSION_MAITRE_NAGEUR_X1", "permit_type"],
+    ["l", "PERMIT_MAITRE_NAGEUR_X1", "permit_type"],
     ["p", "<applicant_npub>"],
     ["t", "permit"],
     ["t", "request"]
   ],
   "content": "{
     \"request_id\": \"req_abc123\",
-    \"permit_definition_id\": \"PERMIT_PROFESSION_MAITRE_NAGEUR_X1\",
+    \"permit_definition_id\": \"PERMIT_MAITRE_NAGEUR_X1\",
     \"applicant_did\": \"did:nostr:<applicant_npub>\",
     \"statement\": \"Je souhaite apprendre la natation...\",
     \"requested_competency\": \"Natation\",
@@ -455,7 +455,7 @@ Le système **WoTx2** permet la création de **professions auto-proclamées** qu
   "tags": [
     ["d", "cred_abc123"],
     ["p", "<holder_npub>"],
-    ["permit_id", "PERMIT_PROFESSION_MAITRE_NAGEUR_X1"],
+    ["permit_id", "PERMIT_MAITRE_NAGEUR_X1"],
     ["request_id", "req_abc123"],
     ["issued_at", "2025-12-01T12:00:00Z"],
     ["attestation_count", "1"]
@@ -471,7 +471,7 @@ Le système **WoTx2** permet la création de **professions auto-proclamées** qu
     \"issuanceDate\": \"2025-12-01T12:00:00Z\",
     \"credentialSubject\": {
       \"id\": \"did:nostr:<holder_npub>\",
-      \"license\": \"PERMIT_PROFESSION_MAITRE_NAGEUR_X1\",
+      \"license\": \"PERMIT_MAITRE_NAGEUR_X1\",
       \"attestations\": 1,
       \"level\": \"X1\"
     },
@@ -563,7 +563,7 @@ Récupère toutes les définitions de permits (30500)
   "success": true,
   "permits": [
     {
-      "id": "PERMIT_PROFESSION_MAITRE_NAGEUR_X1",
+      "id": "PERMIT_MAITRE_NAGEUR_X1",
       "name": "Maître Nageur",
       "description": "...",
       "min_attestations": 1,
@@ -583,7 +583,7 @@ Crée une nouvelle définition de permit (30500)
 ```json
 {
   "permit": {
-    "id": "PERMIT_PROFESSION_MAITRE_NAGEUR_X1",
+    "id": "PERMIT_MAITRE_NAGEUR_X1",
     "name": "Maître Nageur",
     "description": "...",
     "min_attestations": 1,
@@ -711,7 +711,7 @@ Liste les demandes, credentials, ou attestations
 #### Jour 1 : Création de la Profession
 ```
 Alice crée "Maître Nageur" via /wotx2
-  └─> PERMIT_PROFESSION_MAITRE_NAGEUR_X1 créé
+  └─> PERMIT_MAITRE_NAGEUR_X1 créé
       └─> 1 signature requise
       └─> Événement 30500 publié sur Nostr
 ```
@@ -743,7 +743,7 @@ ORACLE.refresh.sh s'exécute
           
   └─> Détecte profession auto-proclamée X1 validée
       └─> Authentifie avec NIP-42 (kind 22242)
-      └─> Crée automatiquement PERMIT_PROFESSION_MAITRE_NAGEUR_X2
+      └─> Crée automatiquement PERMIT_MAITRE_NAGEUR_X2
           └─> 2 compétences + 2 signatures requises
           └─> Visible dans /oracle et /wotx2
 ```
@@ -768,7 +768,7 @@ ORACLE.refresh.sh s'exécute
   └─> Émet 30503 pour Carol
       └─> Carol devient "Maître Certifié" (X2)
       └─> Authentifie avec NIP-42
-      └─> Crée automatiquement PERMIT_PROFESSION_MAITRE_NAGEUR_X3
+      └─> Crée automatiquement PERMIT_MAITRE_NAGEUR_X3
           └─> 3 compétences + 3 signatures requises
 ```
 
@@ -786,7 +786,7 @@ X3 → X4 → X5 → ... → X10 (Expert)
 | Aspect | Permits Officiels | WoTx2 Auto-Proclamés |
 |--------|----------------|---------------------|
 | **Création** | Par UPLANETNAME_G1 (admin) | Par utilisateur (auto-proclamé) |
-| **ID** | Fixe (ex: PERMIT_ORE_V1) | Dynamique (PERMIT_PROFESSION_*_X1) |
+| **ID** | Fixe (ex: PERMIT_ORE_V1) | Dynamique (PERMIT_*_X1) |
 | **Progression** | Statique | Automatique illimitée X1→X2→...→X144→... |
 | **Compétences** | Définies à la création | Révélées progressivement |
 | **Bootstrap** | Requis (N+1 membres) | Non requis (démarre avec 1) |
@@ -815,7 +815,7 @@ X3 → X4 → X5 → ... → X10 (Expert)
 1. Vérifier les logs de `ORACLE.refresh.sh` pour voir les erreurs
 2. Vérifier que l'API `/api/permit/define` est accessible
 3. Vérifier que l'authentification NIP-42 a réussi
-4. Vérifier que le permit ID correspond au pattern `PERMIT_PROFESSION_*_X{n}`
+4. Vérifier que le permit ID correspond au pattern `PERMIT_*_X{n}`
 
 #### Les demandes ne disparaissent pas après validation
 **Symptôme** : 30501 toujours visible dans "Apprentis Cherchant un Maître" après émission 30503

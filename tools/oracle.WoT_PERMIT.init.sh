@@ -220,7 +220,7 @@ list_uninitiated_permits() {
     
     while IFS='|' read -r permit_id permit_name min_attestations; do
         # Skip WoTx2 auto-proclaimed professions (they don't need bootstrap)
-        if [[ "$permit_id" =~ ^PERMIT_PROFESSION_.*_X[0-9]+$ ]]; then
+        if [[ "$permit_id" =~ ^PERMIT_.*_X[0-9]+$ ]]; then
             ((wotx2_skipped++))
             continue
         fi
@@ -608,7 +608,7 @@ main() {
         fi
         
         # Warn if trying to bootstrap a WoTx2 auto-proclaimed profession
-        if [[ "$permit_id" =~ ^PERMIT_PROFESSION_.*_X[0-9]+$ ]]; then
+        if [[ "$permit_id" =~ ^PERMIT_.*_X[0-9]+$ ]]; then
             log_warning "⚠️  WARNING: This is an auto-proclaimed profession (WoTx2)"
             log_warning "   WoTx2 professions do NOT require bootstrap"
             log_warning "   They start with 1 signature (no chicken-and-egg problem)"

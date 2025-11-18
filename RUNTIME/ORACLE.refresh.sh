@@ -268,8 +268,8 @@ else
                         
                         attester_has_valid_credential=false
                         
-                        # Check if this is a WoTx2 auto-proclaimed profession (PERMIT_PROFESSION_*_XN)
-                        if [[ "$permit_id" =~ ^PERMIT_PROFESSION_.*_X([0-9]+)$ ]]; then
+                        # Check if this is a WoTx2 auto-proclaimed profession (PERMIT_*_XN)
+                        if [[ "$permit_id" =~ ^PERMIT_.*_X([0-9]+)$ ]]; then
                             # WoTx2: Attester must have credential for this permit OR a higher level
                             current_level="${BASH_REMATCH[1]}"
                             
@@ -391,8 +391,8 @@ else
                             fi
                         fi
                         
-                        # Check if this is an auto-proclaimed profession (PERMIT_PROFESSION_*_X1, X2, X3...)
-                        if [[ "$permit_id" =~ ^PERMIT_PROFESSION_.*_X([0-9]+)$ ]]; then
+                        # Check if this is an auto-proclaimed profession (PERMIT_*_X1, X2, X3...)
+                        if [[ "$permit_id" =~ ^PERMIT_.*_X([0-9]+)$ ]]; then
                             current_level="${BASH_REMATCH[1]}"
                             echo "  [INFO] Auto-proclaimed profession detected: Level X${current_level}"
                             
@@ -516,7 +516,7 @@ else
                                         temp_email_file=$(mktemp)
                                         cat "$template_file" | \
                                             sed "s|_DATE_|$(date -u +"%Y-%m-%d %H:%M:%S UTC")|g" | \
-                                            sed "s|_PROFESSION_NAME_|${permit_name}|g" | \
+                                            sed "s|_NAME_|${permit_name}|g" | \
                                             sed "s|_CURRENT_LEVEL_|${current_level}|g" | \
                                             sed "s|_LEVEL_LABEL_|${level_label}|g" | \
                                             sed "s|_NEXT_PERMIT_ID_|${next_permit_id}|g" | \
@@ -543,7 +543,7 @@ else
                                         temp_email_file=$(mktemp)
                                         cat "$template_file" | \
                                             sed "s|_DATE_|$(date -u +"%Y-%m-%d %H:%M:%S UTC")|g" | \
-                                            sed "s|_PROFESSION_NAME_|${permit_name}|g" | \
+                                            sed "s|_NAME_|${permit_name}|g" | \
                                             sed "s|_CURRENT_LEVEL_|${current_level}|g" | \
                                             sed "s|_NEXT_LEVEL_|${next_level}|g" | \
                                             sed "s|_NEXT_PERMIT_ID_|${next_permit_id}|g" | \

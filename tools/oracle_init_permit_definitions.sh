@@ -14,7 +14,7 @@
 #
 #    Auto-proclaimed professions:
 #    - Created via /wotx2 interface (100% dynamic)
-#    - ID format: PERMIT_PROFESSION_[NOM]_X1
+#    - ID format: PERMIT_[NOM]_X1
 #    - Automatic progression: X1 → X2 → ... → X144 → ... (unlimited)
 #    - No bootstrap required (starts with 1 signature)
 #
@@ -276,7 +276,7 @@ show_main_menu() {
     echo -e "${YELLOW}⚠️  NOTE: This script manages OFFICIAL PERMITS only${NC}"
     echo -e "${YELLOW}   For AUTO-PROCLAIMED PROFESSIONS (WoTx2), use:${NC}"
     echo -e "${GREEN}   → Web Interface: /wotx2${NC}"
-    echo -e "${GREEN}   → Creates: PERMIT_PROFESSION_[NOM]_X1${NC}"
+    echo -e "${GREEN}   → Creates: PERMIT_[NOM]_X1${NC}"
     echo -e "${GREEN}   → Auto-progression: X1 → X2 → ... → X144 → ...${NC}"
     echo ""
     echo -e "${CYAN}1.${NC} Add permit definition (from template) - OFFICIAL ONLY"
@@ -333,7 +333,7 @@ show_nostr_list() {
             local name=$(echo "$permit_json" | jq -r '.name')
             
             # Check if it's a WoTx2 auto-proclaimed profession
-            if [[ "$permit_id" =~ ^PERMIT_PROFESSION_.*_X[0-9]+$ ]]; then
+            if [[ "$permit_id" =~ ^PERMIT_.*_X[0-9]+$ ]]; then
                 local level=$(echo "$permit_id" | grep -oE '_X[0-9]+$' | sed 's/_X//')
                 echo -e "  ${GREEN}$index.${NC} ${CYAN}$permit_id${NC} - $name ${MAGENTA}[WoTx2 - Niveau X${level}]${NC}"
                 wotx2_count=$((wotx2_count + 1))
@@ -375,7 +375,7 @@ add_permit() {
     local permit_id=$(echo "$permit_json" | jq -r '.id')
     
     # Warn if trying to create auto-proclaimed profession via this script
-    if [[ "$permit_id" =~ ^PERMIT_PROFESSION_.*_X[0-9]+$ ]]; then
+    if [[ "$permit_id" =~ ^PERMIT_.*_X[0-9]+$ ]]; then
         echo -e "${YELLOW}⚠️  WARNING: This is an auto-proclaimed profession (WoTx2)${NC}"
         echo -e "${YELLOW}   Auto-proclaimed professions should be created via /wotx2 interface${NC}"
         echo -e "${CYAN}   This script is for OFFICIAL PERMITS only (PERMIT_ORE_V1, etc.)${NC}"
