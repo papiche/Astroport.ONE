@@ -5,7 +5,7 @@
 The VOCALS (Voice Over Communication And Localization System) is a comprehensive voice messaging system built on NOSTR that enables users to send public or end-to-end encrypted voice messages with optional geolocation. It implements NIP-A0 for voice messages and extends it with encryption capabilities.
 
 **Status:** Production  
-**NIPs Used:** [NIP-A0](nostr-nips/A0.md), [NIP-A0 Encryption Extension](nostr-nips/A0-encryption-extension.md), [NIP-44](nostr-nips/44.md), [NIP-04](nostr-nips/04.md), [NIP-42](nostr-nips/42.md), [NIP-92](nostr-nips/92.md), [NIP-22](nostr-nips/22.md), [NIP-101](nostr-nips/101.md), [NIP-40](nostr-nips/40.md)
+**NIPs Used:** [NIP-A0](nostr-nips/A0.md), [NIP-A0 Encryption Extension](nostr-nips/A0-encryption-extension.md), [NIP-44](nostr-nips/44.md), [NIP-04](nostr-nips/04.md), [NIP-17](nostr-nips/17.md), [NIP-59](nostr-nips/59.md), [NIP-42](nostr-nips/42.md), [NIP-92](nostr-nips/92.md), [NIP-22](nostr-nips/22.md), [NIP-101](nostr-nips/101.md), [NIP-40](nostr-nips/40.md), [NIP-02](nostr-nips/02.md)
 
 ## Features
 
@@ -13,6 +13,8 @@ The VOCALS (Voice Over Communication And Localization System) is a comprehensive
 - ✅ **End-to-End Encryption**: Optional E2EE using NIP-44 (recommended) or NIP-04 (legacy)
 - ✅ **Geolocation Support**: Optional UMAP anchoring (NIP-101)
 - ✅ **Multiple Recipients**: Support for encrypted messages to multiple recipients
+- ✅ **Private Group/Room Messaging**: Create voice rooms and send encrypted messages to groups
+- ✅ **Follow List Integration**: Load and select recipients from NOSTR follow list (kind 3)
 - ✅ **Self-Messaging**: Send encrypted voice messages to yourself (reminders, notes)
 - ✅ **Expiration Support**: Optional NIP-40 expiration timestamp (relay auto-deletion)
 - ✅ **IPFS Storage**: Decentralized storage via IPFS
@@ -46,12 +48,20 @@ The VOCALS (Voice Over Communication And Localization System) is a comprehensive
    - `/api/getN2`: Provides contact list for recipient selection
 
 4. **NOSTR Integration**
-   - Event publishing (kinds 1222/1244)
+   - Event publishing (kinds 1222/1244, 30020/30021 for rooms)
    - NIP-42 authentication
    - Profile fetching for contacts
+   - Follow list fetching (kind 3) with enriched metadata
    - Relay communication
 
-4. **IPFS Storage**
+5. **Private Messaging Module** (`nostr.private.js`)
+   - NIP-17 encrypted direct messages (kind 14)
+   - NIP-44 encryption/decryption
+   - NIP-59 gift wrap support (optional)
+   - Voice room creation and management (kinds 30020/30021)
+   - Group messaging to room members
+
+6. **IPFS Storage**
    - Audio file storage
    - Metadata storage (info.json)
    - Decentralized content delivery
@@ -88,8 +98,17 @@ After recording/uploading:
   - **Encryption** (optional):
     - Enable/disable E2EE
     - Select encryption method (NIP-44 or NIP-04)
-    - Enter recipient pubkeys (one per line, npub format) OR
-    - Click "📝 Send to Myself" to add your own npub as recipient
+    - Recipient selection:
+      - Click "👥 Load Follows" to load your NOSTR follow list (kind 3) with enriched metadata
+      - Click "📋 Load Network" to load contacts from network (N2)
+      - Search and select from loaded contacts
+      - Enter recipient pubkeys manually (one per line, npub format)
+      - Click "📝 Send to Myself" to add your own npub as recipient
+  - **Voice Room** (optional):
+    - Enable "Send to Voice Room (Group Chat)" checkbox
+    - Select existing room or create new room
+    - Send encrypted message to all room members
+    - Manage rooms (create, invite members, view members)
   - **Expiration** (optional):
     - Set expiration date/time (NIP-40)
     - Relay will automatically delete event after this timestamp
@@ -295,6 +314,54 @@ const recipients = network.nodes
   .map(node => node.npub);
 ```
 
+### Follow List Integration
+
+The system integrates with NOSTR follow lists (kind 3) for recipient selection:
+
+**Function:** `fetchUserFollowsWithMetadata(pubkey, options)`
+
+**Parameters:**
+- `pubkey`: User's public key (hex or npub, optional - defaults to current user)
+- `options.timeout`: Timeout in ms (default: 5000)
+- `options.includeProfiles`: Fetch profile metadata for each follow (default: true)
+
+**Returns:** Array of enriched follow objects:
+```javascript
+[
+  {
+    pubkey: "hex_pubkey",
+    npub: "npub1...",
+    name: "Display Name",
+    display_name: "Display Name",
+    email: "user@example.com",
+    picture: "https://...",
+    about: "...",
+    website: "https://...",
+    nip05: "user@domain.com"
+  }
+]
+```
+
+**Usage in Frontend:**
+```javascript
+// Load follows with metadata
+const follows = await fetchUserFollowsWithMetadata(userPubkey, {
+  timeout: 5000,
+  includeProfiles: true
+});
+
+// Display in UI for selection
+follows.forEach(follow => {
+  // Add to recipient selection dropdown
+});
+```
+
+**UI Integration:**
+- "👥 Load Follows" button in `vocals.html` encryption UI
+- Automatically fetches kind 3 follow list
+- Enriches with profile metadata (kind 0)
+- Displays in searchable dropdown for easy selection
+
 ## NOSTR Event Structure
 
 ### Public Voice Message (Kind 1222)
@@ -369,6 +436,52 @@ Follows NIP-22 reply structure with `e` and `p` tags:
 }
 ```
 
+### Voice Room Creation (Kind 30020)
+
+Custom event kind for creating private voice rooms/groups:
+
+```json
+{
+  "kind": 30020,
+  "content": "{\"name\":\"My Room\",\"description\":\"...\",\"created_at\":1752501052,\"members\":[...],\"allow_member_invites\":true}",
+  "created_at": 1752501052,
+  "pubkey": "creator_pubkey_hex",
+  "tags": [
+    ["d", "room_id"],
+    ["name", "My Room"],
+    ["description", "Room description"],
+    ["created_by", "creator_pubkey_hex"],
+    ["allow_invites", "true"],
+    ["type", "voice-room"],
+    ["p", "member1_pubkey"],
+    ["p", "member2_pubkey"]
+  ],
+  "id": "...",
+  "sig": "..."
+}
+```
+
+### Voice Room Invitation (Kind 30021)
+
+Custom event kind for inviting users to existing rooms:
+
+```json
+{
+  "kind": 30021,
+  "content": "You have been invited to join voice room: room_id",
+  "created_at": 1752501053,
+  "pubkey": "inviter_pubkey_hex",
+  "tags": [
+    ["d", "room_id"],
+    ["p", "invitee_pubkey"],
+    ["p", "inviter_pubkey"],
+    ["type", "voice-room-invitation"]
+  ],
+  "id": "...",
+  "sig": "..."
+}
+```
+
 ## Encryption Details
 
 ### Supported Methods
@@ -407,7 +520,40 @@ Users can send encrypted voice messages to themselves:
 
 **Current Implementation:**
 - Uses Approach 1 (separate encryption per recipient)
-- TODO: Support Approach 2 for groups
+- For voice rooms: Encrypts message individually for each room member
+- TODO: Support Approach 2 for very large groups (>20 members)
+
+### Private Group/Room Messaging
+
+The system supports private voice rooms for group messaging:
+
+**Features:**
+- Create voice rooms with name and description
+- Invite users to rooms (invited users can invite others if `allow_member_invites` is true)
+- Send encrypted voice messages to all room members
+- List rooms you've created or joined
+- View room members and metadata
+
+**Implementation:**
+- Uses `nostr.private.js` module
+- Room creation: Kind 30020 event
+- Invitations: Kind 30021 event
+- Room messages: Kind 14 (NIP-17) encrypted messages sent to all members
+- Each member receives individually encrypted message
+
+**Functions:**
+- `createVoiceRoom(name, description, initialMembers, options)`: Create new room
+- `inviteToVoiceRoom(roomId, inviteePubkey, inviterPubkey, options)`: Invite user to room
+- `sendEncryptedRoomMessage(roomId, voiceMessageMetadata, options)`: Send message to room
+- `getRoomMembers(roomId)`: Get all members of a room
+- `getRoomInfo(roomId)`: Get room metadata
+- `listMyVoiceRooms(userPubkey)`: List rooms for a user
+
+**UI Integration:**
+- "🎤 Send to Voice Room (Group Chat)" checkbox in `vocals.html`
+- Room selection dropdown
+- "🎤 Voice Rooms" button in header for room management
+- Modal for creating rooms and inviting members
 
 ## Expiration (NIP-40)
 
@@ -502,6 +648,27 @@ The `/api/getN2` endpoint provides enriched contact information:
 
 **Use Case**: Recipient selection in encryption UI
 
+### NOSTR Follow List (Kind 3)
+
+The `fetchUserFollowsWithMetadata` function (in `common.js`) provides:
+- Follow list fetching (kind 3 events)
+- Profile metadata enrichment (kind 0 events)
+- npub conversion for all follows
+- Sorted and searchable contact list
+
+**Use Case**: Quick recipient selection from your NOSTR follows
+
+### Private Messaging Module (nostr.private.js)
+
+The `nostr.private.js` module provides:
+- NIP-17 encrypted direct messages (kind 14)
+- NIP-44 encryption/decryption
+- NIP-59 gift wrap support
+- Voice room creation and management (kinds 30020/30021)
+- Group messaging to room members
+
+**Use Case**: Private group voice messaging, room management
+
 ### IPFS Storage
 
 - Audio files stored on IPFS
@@ -524,11 +691,28 @@ The `/api/getN2` endpoint provides enriched contact information:
 - Uploads to IPFS
 - Encrypts if enabled
 - Publishes to NOSTR
+- Supports voice room messaging
 
 **`adaptUIForAudioMode()`**
 - Hides webcam controls
 - Shows audio upload section
 - Adapts UI for audio-only workflow
+
+**`loadNostrFollows()`**
+- Loads NOSTR follow list (kind 3) using `fetchUserFollowsWithMetadata`
+- Enriches with profile metadata
+- Displays in searchable dropdown for recipient selection
+
+**`loadContactsFromNetwork()`**
+- Loads contacts from network (N2) via `/api/getN2`
+- Filters mutual connections
+- Displays in searchable dropdown
+
+**Voice Room Functions:**
+- `loadVoiceRooms()`: Loads user's voice rooms
+- `handleCreateRoom()`: Creates new voice room
+- `handleInviteToRoom()`: Invites user to room
+- `updateRoomMembersDisplay()`: Shows room members
 
 **Encryption Flow:**
 ```javascript
@@ -627,6 +811,22 @@ const response = await fetch('/vocals', {
 
 ### Example 3: Fetching Contacts for Recipient Selection
 
+**Option A: Load NOSTR Follows (Kind 3)**
+```javascript
+// Load follows with enriched metadata
+const follows = await fetchUserFollowsWithMetadata(userPubkey, {
+  timeout: 5000,
+  includeProfiles: true
+});
+
+// Display in UI for selection
+follows.forEach(follow => {
+  // Add to dropdown with name, email, npub
+  console.log(`${follow.name || 'Unknown'} (${follow.npub})`);
+});
+```
+
+**Option B: Load Network Contacts (N2)**
 ```javascript
 // Get user's hex pubkey
 const userHex = npubToHex(userPubkey);
@@ -646,6 +846,46 @@ const contacts = network.nodes
   }));
 
 // Display in UI for selection
+```
+
+### Example 4: Creating and Using Voice Rooms
+
+```javascript
+// Create a new voice room
+const room = await window.NostrPrivate.createVoiceRoom(
+  'My Team Room',
+  'Voice messages for our team',
+  ['npub1member1...', 'npub1member2...'],
+  { allowMemberInvites: true }
+);
+
+console.log('Room created:', room.roomId);
+
+// Invite additional member
+await window.NostrPrivate.inviteToVoiceRoom(
+  room.roomId,
+  'npub1newmember...',
+  null,
+  { message: 'Welcome to our team room!' }
+);
+
+// Send encrypted voice message to room
+const voiceMetadata = JSON.stringify({
+  url: 'https://ipfs.io/ipfs/QmXXX.../voice.m4a',
+  duration: 45,
+  title: 'Team Update',
+  description: 'Weekly team update'
+});
+
+await window.NostrPrivate.sendEncryptedRoomMessage(
+  room.roomId,
+  voiceMetadata,
+  { useGiftWrap: false }
+);
+
+// List my rooms
+const myRooms = await window.NostrPrivate.listMyVoiceRooms();
+console.log('My rooms:', myRooms);
 ```
 
 ## Error Handling
@@ -683,7 +923,7 @@ const contacts = network.nodes
 
 ## Future Enhancements
 
-- [ ] Support for multiple recipients with shared secret approach (currently uses separate events)
+- [ ] Support for multiple recipients with shared secret approach for very large groups (>20 members)
 - [ ] Audio file encryption before upload (full E2EE - currently only URL/metadata encrypted)
 - [ ] Voice message threading/replies UI
 - [ ] Waveform generation client-side
@@ -691,6 +931,9 @@ const contacts = network.nodes
 - [ ] Integration with NostrTube for voice message discovery
 - [ ] Voice message transcription (NIP-90 integration)
 - [ ] Scheduled messages (currently only expiration supported via NIP-40)
+- [ ] Room message history and threading
+- [ ] Room member roles and permissions
+- [ ] Room discovery and public rooms
 
 ## Related Documentation
 
@@ -734,4 +977,6 @@ Users can access the Voice Messages Recorder directly via MULTIPASS authenticati
 - NOSTR Script: `~/.zen/Astroport.ONE/tools/publish_nostr_video.sh`
 - Upload Script: `~/.zen/Astroport.ONE/tools/upload2ipfs.sh`
 - MULTIPASS Handler: `UPassport/upassport.sh` (PASS code "8888" at lines 503-516)
+- Private Messaging Module: `UPlanet/earth/nostr.private.js`
+- Common NOSTR Functions: `UPlanet/earth/common.js` (includes `fetchUserFollowsWithMetadata`)
 
