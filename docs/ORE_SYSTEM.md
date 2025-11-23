@@ -58,6 +58,7 @@ Les informations du contrat ORE sont intégrées directement dans le document DI
   > Note: Changé de 30311 à 30800 pour éviter conflit avec NIP-53 (Live Event)
 - **30312** : ORE Meeting Space (Persistent Geographic Space)
 - **30313** : ORE Verification Meeting (scheduled meetings for compliance verification)
+- **30009, 8, 30008** : Badges NIP-58 (pour matérialiser les compétences ORE validées)
 
 **⚠️ Important - Canonisation JSON (RFC 8785) :**
 Tous les événements NOSTR contenant du JSON (tags, contenu) sont canonisés selon RFC 8785 (JCS) avant signature pour garantir la cohérence des signatures cryptographiques. Cette canonisation est appliquée automatiquement dans `ore_system.py` via la fonction `canonicalize_json()`.

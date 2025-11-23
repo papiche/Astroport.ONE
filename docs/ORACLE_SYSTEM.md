@@ -39,6 +39,7 @@ Le Système Oracle transforme la certification traditionnelle d'autorités centr
 - **Attestation par les Pairs** : Des experts certifiés attestent la compétence du candidat (validation multi-signature)
 - **Émission de Credential** : Une fois suffisamment d'attestations collectées, un Verifiable Credential (VC) est émis
 - **Signature d'Autorité** : Le VC final est signé par l'autorité UPlanet (clé UPLANETNAME.G1)
+- **Badge NIP-58** : Un badge visuel est automatiquement émis pour matérialiser la compétence validée (gamification)
 
 ### 1.3. Système 100% Dynamique
 
@@ -295,6 +296,7 @@ Le système **WoTx2** permet la création de **maîtrises auto-proclamées** qui
    - L'API émet un événement kind 30503 (Verifiable Credential)
    - Signé par `UPLANETNAME_G1`
    - Le credential est un W3C Verifiable Credential standard
+   - **Badge NIP-58** : Un badge (kind 30009 + kind 8) est automatiquement émis
 
 3. **Nettoyage** :
    - Supprime le fichier 30501 du répertoire MULTIPASS
@@ -328,6 +330,7 @@ Le système **WoTx2** permet la création de **maîtrises auto-proclamées** qui
    - Le nouveau niveau apparaît dans `/oracle` et `/wotx2`
    - Les utilisateurs peuvent créer des demandes pour ce niveau
    - Le cycle recommence
+   - **Badge automatique** : Un badge définition (kind 30009) est créé pour le nouveau niveau
 
 ---
 
@@ -684,6 +687,7 @@ Liste les demandes, credentials, ou attestations
 - ✅ Distinction visuelle entre permits officiels et WoTx2
 - ✅ Workflow de progression visible
 - ✅ Liens vers `/wotx2` pour créer des maîtrises
+- ✅ **Badges NIP-58** : Affichage des badges pour chaque permit et dans "Mes Permits"
 
 ### 9.2. `/wotx2` - Interface WoTx2
 
@@ -698,6 +702,7 @@ Liste les demandes, credentials, ou attestations
 - ✅ Modal d'attestation
 - ✅ Affichage des niveaux (X1, X2, X3, ...)
 - ✅ Workflow de progression visible
+- ✅ **Badges NIP-58** : Affichage des badges pour chaque maître certifié
 
 **Paramètres URL** :
 - `?permit_id=PERMIT_XXX` : Affiche les détails d'un permit spécifique
@@ -876,6 +881,10 @@ curl -s http://127.0.0.1:54321/api/permit/stats | jq
 - **Clés NOSTR** : `~/.zen/game/uplanet.G1.nostr` (UPLANETNAME_G1)
 - **Statistiques** : `~/.zen/tmp/${IPFSNODEID}/ORACLE/`
 - **Templates** : `Astroport.ONE/templates/NOSTR/permit_definitions.json`
+- **Badge Images** : Génération automatique via `Astroport.ONE/IA/generate_badge_image.sh`
+  - Images générées automatiquement lors de la création de badge definition
+  - Utilise AI (question.py) + ComfyUI + ImageMagick + IPFS
+  - Stockage permanent sur IPFS
 
 ### 12.4. Documentation Technique
 - **NIP-42** : Authentification Nostr
