@@ -463,7 +463,8 @@ process_liked_video() {
     mkdir -p "$(dirname "$json_output_file")"
     
     # Exécuter process_youtube.sh avec --json-file pour isoler le JSON des logs
-    $MY_PATH/process_youtube.sh --json-file "$json_output_file" --debug --output-dir "$temp_output_dir" "$url" "$format" "$player" > "$temp_output_file" 2>&1
+    # Use --no-ipfs flag for consistency with ajouter_media.sh (download-only, no IPFS upload)
+    $MY_PATH/process_youtube.sh --json-file "$json_output_file" --debug --no-ipfs --output-dir "$temp_output_dir" "$url" "$format" "$player" > "$temp_output_file" 2>&1
     local process_exit_code=$?
     
     # Lire le JSON depuis le fichier séparé (méthode fiable)
@@ -519,6 +520,14 @@ process_liked_video() {
     log_debug "process_youtube.sh exit code: $process_exit_code"
     log_debug "process_youtube.sh output: $result"
     
+    # Check if JSON contains an error field (like ajouter_media.sh does)
+    if [[ -n "$result" ]] && echo "$result" | jq -e '.error' >/dev/null 2>&1; then
+        local error_msg=$(echo "$result" | jq -r '.error' 2>/dev/null)
+        log_debug "process_youtube.sh returned error: $error_msg"
+        echo "❌ process_youtube.sh error: $error_msg"
+        return 1
+    fi
+    
     if [[ $process_exit_code -eq 0 ]]; then
         # Extract file_path and metadata_file from JSON using jq only (UPlanet_FILE_CONTRACT.md compliant)
         log_debug "Raw result from process_youtube.sh: $result"
@@ -541,16 +550,41 @@ process_liked_video() {
         local file_path=""
         local metadata_file=""
         local duration_from_json=""
+        local output_dir_from_json=""
         
-            file_path=$(echo "$result" | jq -r '.file_path // empty' 2>/dev/null)
-            metadata_file=$(echo "$result" | jq -r '.metadata_file // empty' 2>/dev/null)
-            duration_from_json=$(echo "$result" | jq -r '.duration // empty' 2>/dev/null)
+        file_path=$(echo "$result" | jq -r '.file_path // empty' 2>/dev/null)
+        metadata_file=$(echo "$result" | jq -r '.metadata_file // empty' 2>/dev/null)
+        duration_from_json=$(echo "$result" | jq -r '.duration // empty' 2>/dev/null)
+        output_dir_from_json=$(echo "$result" | jq -r '.output_dir // empty' 2>/dev/null)
         
         log_debug "Extracted file_path: '$file_path'"
         log_debug "Extracted metadata_file: '$metadata_file'"
+        log_debug "Extracted output_dir: '$output_dir_from_json'"
         
-        if [[ -z "$file_path" || ! -f "$file_path" ]]; then
+        # If file_path doesn't exist, try to find it in output_dir (like ajouter_media.sh does)
+        if [[ -z "$file_path" ]] || [[ ! -f "$file_path" ]]; then
+            if [[ -n "$output_dir_from_json" ]] && [[ -d "$output_dir_from_json" ]]; then
+                log_debug "File path from JSON not found, searching in output_dir: $output_dir_from_json"
+                # Find any media file in the output directory
+                file_path=$(find "$output_dir_from_json" -maxdepth 1 -type f \( -name "*.mp4" -o -name "*.mp3" -o -name "*.m4a" -o -name "*.webm" -o -name "*.mkv" \) ! -name "*.info.json" ! -name "*.webp" ! -name "*.png" ! -name "*.jpg" 2>/dev/null | head -n 1)
+                
+                # If still not found, try to find the largest file
+                if [[ -z "$file_path" ]] || [[ ! -f "$file_path" ]]; then
+                    file_path=$(find "$output_dir_from_json" -maxdepth 1 -type f ! -name "*.info.json" ! -name "*.webp" ! -name "*.png" ! -name "*.jpg" -exec ls -S {} + 2>/dev/null | head -n 1)
+                fi
+                
+                if [[ -n "$file_path" ]] && [[ -f "$file_path" ]]; then
+                    log_debug "Found downloaded file in output_dir: $file_path"
+                fi
+            fi
+        fi
+        
+        if [[ -z "$file_path" ]] || [[ ! -f "$file_path" ]]; then
             log_debug "Invalid or missing file_path from process_youtube.sh: $file_path"
+            log_debug "Output directory contents:"
+            if [[ -n "$output_dir_from_json" ]] && [[ -d "$output_dir_from_json" ]]; then
+                ls -lh "$output_dir_from_json" 2>/dev/null | head -20 >&2 || true
+            fi
             echo "❌ Downloaded file not found: $url_safe_title"
             return 1
         fi
@@ -575,13 +609,60 @@ process_liked_video() {
             return 1
         fi
         
+        # Send NIP-42 authentication event before upload (like ajouter_media.sh does)
+        log_debug "Sending NIP-42 authentication event..."
+        local secret_nostr_file="$HOME/.zen/game/nostr/${player}/.secret.nostr"
+        local nostr_send_script="${MY_PATH}/../tools/nostr_send_note.py"
+        local nostr_relay="ws://127.0.0.1:7777"
+        
+        if [[ -f "$secret_nostr_file" ]] && [[ -f "$nostr_send_script" ]]; then
+            # Send NIP-42 event (kind 22242) to authenticate with relay
+            # Content includes IPFSNODEID and UPLANETNAME_G1 for identification
+            . "${MY_PATH}/tools/my.sh" 2>/dev/null || true
+            local nip42_content="${IPFSNODEID} ${UPLANETNAME_G1}"
+            local nip42_tags='[["relay","'${nostr_relay}'"],["challenge",""]]'
+            if python3 "$nostr_send_script" \
+                --keyfile "$secret_nostr_file" \
+                --content "$nip42_content" \
+                --kind 22242 \
+                --tags "$nip42_tags" \
+                --relays "$nostr_relay" \
+                >/dev/null 2>&1; then
+                log_debug "NIP-42 authentication event sent"
+                # Wait a bit for the event to be processed by the relay
+                sleep 2
+            else
+                log_debug "Warning: Failed to send NIP-42 authentication event (upload may still work if already authenticated)"
+            fi
+        else
+            if [[ ! -f "$secret_nostr_file" ]]; then
+                log_debug "Warning: Secret key file not found: $secret_nostr_file"
+            fi
+            if [[ ! -f "$nostr_send_script" ]]; then
+                log_debug "Warning: nostr_send_note.py not found: $nostr_send_script"
+            fi
+            log_debug "Warning: Cannot send NIP-42 authentication event (upload may still work if already authenticated)"
+        fi
+        
         # Upload via /api/fileupload (UPlanet_FILE_CONTRACT.md compliant)
         log_debug "Uploading video via /api/fileupload..."
+        log_debug "File path: $file_path"
+        log_debug "File exists: $([ -f "$file_path" ] && echo "yes" || echo "no")"
+        if [[ -f "$file_path" ]]; then
+            log_debug "File size: $(stat -c%s "$file_path" 2>/dev/null || echo "unknown") bytes"
+        fi
         local api_url="http://127.0.0.1:54321"
         
+        # Don't redirect stderr to stdout to avoid mixing error messages with JSON response
         local upload_response=$(curl -s -X POST "${api_url}/api/fileupload" \
             -F "file=@${file_path}" \
-            -F "npub=${npub}" 2>&1)
+            -F "npub=${npub}")
+        local curl_exit_code=$?
+        
+        # Log curl exit code for debugging
+        log_debug "curl exit code: $curl_exit_code"
+        log_debug "Upload response length: ${#upload_response} characters"
+        log_debug "Upload response preview: ${upload_response:0:500}..."
         
         local upload_success=0
         local ipfs_cid=""
@@ -592,6 +673,20 @@ process_liked_video() {
         local dimensions=""
         local upload_chain=""
         local mime_type="video/mp4"
+        
+        # Check if curl succeeded
+        if [[ $curl_exit_code -ne 0 ]]; then
+            log_debug "curl command failed with exit code: $curl_exit_code"
+            echo "❌ Upload request failed (curl exit code: $curl_exit_code): $url_safe_title"
+            return 1
+        fi
+        
+        # Check if response is valid JSON
+        if ! echo "$upload_response" | jq -e '.' >/dev/null 2>&1; then
+            log_debug "Invalid JSON response from /api/fileupload: $upload_response"
+            echo "❌ Invalid JSON response from upload API: $url_safe_title"
+            return 1
+        fi
         
         if echo "$upload_response" | jq -e '.success' >/dev/null 2>&1; then
             upload_success=1
@@ -606,8 +701,11 @@ process_liked_video() {
             
             log_debug "Upload successful: CID=$ipfs_cid"
         else
-            log_debug "Upload failed: $upload_response"
-            echo "❌ Upload to IPFS failed: $url_safe_title"
+            # Extract error message from response if available
+            local error_msg=$(echo "$upload_response" | jq -r '.error // .message // "Unknown error"' 2>/dev/null || echo "Unknown error")
+            log_debug "Upload failed: $error_msg"
+            log_debug "Full upload response: $upload_response"
+            echo "❌ Upload to IPFS failed: $url_safe_title ($error_msg)"
             return 1
         fi
         
@@ -623,47 +721,147 @@ process_liked_video() {
             final_duration="$duration_from_json"
         fi
         
-        # Publish via /webcam endpoint (NIP-71 kind 21/22)
-        log_debug "Publishing video via /webcam endpoint..."
+        # Publish via publish_nostr_video.sh directly (like ajouter_media.sh does)
+        log_debug "Publishing video via publish_nostr_video.sh..."
         
+        # Get publish script path
+        local publish_script="${MY_PATH}/../tools/publish_nostr_video.sh"
+        if [[ ! -f "$publish_script" ]]; then
+            publish_script="${HOME}/.zen/Astroport.ONE/tools/publish_nostr_video.sh"
+        fi
+        
+        if [[ ! -f "$publish_script" ]]; then
+            log_debug "ERROR: publish_nostr_video.sh not found"
+            echo "❌ ERROR: publish_nostr_video.sh not found"
+            return 1
+        fi
+        
+        # Get secret file path
+        local secret_file="$HOME/.zen/game/nostr/${player}/.secret.nostr"
+        if [[ ! -f "$secret_file" ]]; then
+            log_debug "ERROR: Secret file not found: $secret_file"
+            echo "❌ ERROR: Secret file not found: $secret_file"
+            return 1
+        fi
+        
+        # Save upload response to temporary file for --auto mode
+        # Adapt JSON format to match what publish_nostr_video.sh expects (--auto mode)
+        # publish_nostr_video.sh expects: .cid (not .new_cid), .fileName (not .filename)
+        local upload_output_file="$HOME/.zen/tmp/youtube_upload_$(date +%s)_$$.json"
+        local adapted_json=$(echo "$upload_response" | jq --arg filename "$(basename "$file_path")" --arg duration "$final_duration" '
+            {
+                cid: (.new_cid // .cid // ""),
+                fileName: (.fileName // .filename // $filename),
+                fileHash: (.fileHash // ""),
+                mimeType: (.mimeType // "video/mp4"),
+                thumbnail_ipfs: (.thumbnail_ipfs // ""),
+                gifanim_ipfs: (.gifanim_ipfs // ""),
+                info: (.info // ""),
+                upload_chain: (.upload_chain // ""),
+                dimensions: (.dimensions // ""),
+                duration: (if .duration then .duration else ($duration | tonumber) end),
+                fileSize: (.fileSize // .file_size // 0)
+            }
+        ' 2>/dev/null)
+        
+        if [[ -n "$adapted_json" ]] && echo "$adapted_json" | jq -e '.' >/dev/null 2>&1; then
+            echo "$adapted_json" > "$upload_output_file"
+            log_debug "Saved adapted upload response to: $upload_output_file"
+        else
+            # Fallback: use original response (may not work with --auto mode)
+            echo "$upload_response" > "$upload_output_file"
+            log_debug "Saved upload response (original format) to: $upload_output_file"
+        fi
+        
+        # Build description
         local description="YouTube sync: $title by $uploader"
         if [[ -n "$url" ]]; then
             description="${description}\n\nSource: ${url}"
         fi
         
-        local publish_data="player=${player}"
-        publish_data="${publish_data}&ipfs_cid=${ipfs_cid}"
-        publish_data="${publish_data}&thumbnail_ipfs=${thumbnail_cid}"
-        publish_data="${publish_data}&gifanim_ipfs=${gifanim_cid}"
-        publish_data="${publish_data}&info_cid=${info_cid}"
-        publish_data="${publish_data}&file_hash=${file_hash}"
-        publish_data="${publish_data}&mime_type=${mime_type}"
-        publish_data="${publish_data}&upload_chain=${upload_chain}"
-        publish_data="${publish_data}&duration=${final_duration}"
-        publish_data="${publish_data}&video_dimensions=${dimensions}"
-        publish_data="${publish_data}&title=${title}"
-        publish_data="${publish_data}&description=${description}"
-        publish_data="${publish_data}&publish_nostr=true"
-        publish_data="${publish_data}&npub=${npub}"
+        # Build publish command using --auto mode (reads from upload response JSON)
+        local publish_cmd=("$publish_script" "--auto" "$upload_output_file" "--nsec" "$secret_file" "--title" "$title")
         
-        local publish_response=$(curl -s -X POST "${api_url}/webcam" \
-            -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "$publish_data" 2>&1)
+        if [[ -n "$description" ]]; then
+            publish_cmd+=("--description" "$description")
+        fi
         
-        if echo "$publish_response" | grep -q "success\|✅"; then
-            log_debug "Video published successfully via /webcam (NIP-71 kind 21/22)"
-            echo "✅ $url_safe_title by $uploader -> Published (CID: ${ipfs_cid:0:16}...)"
-            
-            # Marquer la vidéo comme traitée
-            mark_video_processed "$video_id" "$processed_file"
-            
-            # Cleanup temp directory
-            rm -rf "$temp_output_dir" 2>/dev/null || true
-            
-            return 0
+        # Add source type: youtube
+        publish_cmd+=("--source-type" "youtube")
+        log_debug "Source type: youtube"
+        
+        # Add YouTube URL if available
+        if [[ -n "$url" ]]; then
+            publish_cmd+=("--youtube-url" "$url")
+            log_debug "YouTube URL: $url"
+        fi
+        
+        # Add dimensions and duration explicitly
+        if [[ -n "$dimensions" ]] && [[ "$dimensions" != "empty" ]] && [[ "$dimensions" != "" ]] && [[ "$dimensions" != "640x480" ]]; then
+            publish_cmd+=("--dimensions" "$dimensions")
+            log_debug "Dimensions: $dimensions"
+        fi
+        
+        if [[ -n "$final_duration" ]] && [[ "$final_duration" != "0" ]] && [[ "$final_duration" != "empty" ]] && [[ "$final_duration" != "" ]]; then
+            publish_cmd+=("--duration" "$final_duration")
+            log_debug "Duration: ${final_duration}s"
+        fi
+        
+        publish_cmd+=("--channel" "$player" "--json")
+        
+        # Execute publish script
+        log_debug "Executing: ${publish_cmd[*]}"
+        local publish_output=$(bash "${publish_cmd[@]}" 2>&1)
+        local publish_exit_code=$?
+        
+        # Cleanup upload output file
+        rm -f "$upload_output_file"
+        
+        if [[ $publish_exit_code -eq 0 ]]; then
+            # Try to extract event ID from output
+            local event_id=$(echo "$publish_output" | jq -r '.event_id // empty' 2>/dev/null || echo "")
+            if [[ -n "$event_id" ]]; then
+                log_debug "Video published successfully to NOSTR! Event ID: ${event_id:0:16}..."
+                echo "✅ $url_safe_title by $uploader -> Published (CID: ${ipfs_cid:0:16}..., Event: ${event_id:0:16}...)"
+                
+                # Marquer la vidéo comme traitée
+                mark_video_processed "$video_id" "$processed_file"
+                
+                # Cleanup temp directory
+                rm -rf "$temp_output_dir" 2>/dev/null || true
+                
+                return 0
+            else
+                # Try regex extraction
+                event_id=$(echo "$publish_output" | grep -oE '"event_id"\s*:\s*"[a-f0-9]{64}"' | grep -oE '[a-f0-9]{64}' | head -1)
+                if [[ -n "$event_id" ]]; then
+                    log_debug "Video published successfully to NOSTR! Event ID: ${event_id:0:16}..."
+                    echo "✅ $url_safe_title by $uploader -> Published (CID: ${ipfs_cid:0:16}..., Event: ${event_id:0:16}...)"
+                    
+                    # Marquer la vidéo comme traitée
+                    mark_video_processed "$video_id" "$processed_file"
+                    
+                    # Cleanup temp directory
+                    rm -rf "$temp_output_dir" 2>/dev/null || true
+                    
+                    return 0
+                else
+                    log_debug "Video uploaded but event ID not found in output"
+                    echo "⚠️ Video uploaded but event ID not found: $url_safe_title"
+                    echo "Publish output: $publish_output"
+                    # Still mark as processed since file is in uDRIVE
+                    mark_video_processed "$video_id" "$processed_file"
+                    
+                    # Cleanup temp directory
+                    rm -rf "$temp_output_dir" 2>/dev/null || true
+                    
+                    return 0  # Consider it success since file is uploaded
+                fi
+            fi
         else
-            log_debug "Video upload succeeded but publication may have failed: $publish_response"
+            log_debug "Video uploaded but publication may have failed (exit code: $publish_exit_code)"
             echo "⚠️ Video uploaded but publication may have failed: $url_safe_title"
+            echo "Publish output: $publish_output"
             # Still mark as processed since file is in uDRIVE
             mark_video_processed "$video_id" "$processed_file"
             
