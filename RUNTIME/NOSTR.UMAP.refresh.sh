@@ -300,7 +300,8 @@ process_umap_messages() {
 # 3. Add hashtags and emojis for readability. \
 # 4. Use Markdown formatting (headers, bold, lists, etc.) for better structure. \
 # 5. IMPORTANT: Never omit an author, even if you summarize. \
-# 6. Use the same language as the messages."
+# 6. Use the same language as the messages. \
+# 7. NOSTR REFERENCES FORMAT (CRITICAL FOR CORACLE): ALWAYS preserve existing nostr: references exactly as provided (e.g., nostr:nprofile1..., nostr:npub1...). DO NOT modify, shorten, or reformat nostr: references. Coracle recognizes nostr:nprofile1... and nostr:npub1... formats for clickable profile links. When citing authors, use the EXACT format from source: nostr:nprofile1... or nostr:npub1..."
             ANSWER=$($MY_PATH/../IA/question.py "$IA_PROMPT" --model "gemma3:12b")
             echo "$ANSWER" > "${UMAPPATH}/NOSTR_messages"
         fi
@@ -1124,14 +1125,35 @@ send_nostr_events() {
             local d_tag="umap-${LAT}-${LON}-${TODATE}"
             local published_at=$(date +%s)
             
+            # Regenerate UMAPNSEC for keyfile (same method as setup_umap_identity)
+            local UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
+            local UMAP_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$UMAPNSEC")
+            
+            # Check if journal already exists (prevent duplicates in swarm)
+            # Multiple machines in the swarm can try to create the same UMAP journal
+            # We check if an event with the same d_tag and author already exists
+            log "🔍 Checking if UMAP journal already exists for ${LAT},${LON} (d_tag: $d_tag)"
+            cd ~/.zen/strfry
+            existing_journal=$(./strfry scan "{
+                \"kinds\": [30023],
+                \"authors\": [\"$UMAP_HEX\"],
+                \"#d\": [\"$d_tag\"],
+                \"limit\": 1
+            }" 2>/dev/null | jq -r 'select(.kind == 30023) | .id' | head -n 1)
+            cd - >/dev/null
+            
+            if [[ -n "$existing_journal" && "$existing_journal" != "null" && "$existing_journal" != "" ]]; then
+                log "⏭️  UMAP journal already exists for ${LAT},${LON} (ID: $existing_journal) - skipping creation to prevent duplicates"
+                return 0
+            fi
+            
+            log "✅ No existing journal found, proceeding with creation for ${LAT},${LON}"
+            
             # Add kind 30023 specific tags according to NIP-23 and NIP-101 (latitide et longitude sont à précision limité pour garantir une localisation floue)
             # NIP-23: ["d", "identifier"], ["title", "..."], ["published_at", "timestamp"]
             # NIP-101: ["latitude", "FLOAT"], ["longitude", "FLOAT"], ["g", "lat,lon"], ["application", "UPlanet"], ["t", "uplanet"]
             # UMAP journals use coordinate tag format: ["t", "LAT_LON"] for backward compatibility
             local article_tags=$(echo "$TAGS_JSON" | jq '. + [["d", "'"$d_tag"'"], ["title", "'"$umap_title"'"], ["published_at", "'"$published_at"'"], ["latitude", "'"${LAT}"'"], ["longitude", "'"${LON}"'"], ["g", "'"${LAT},${LON}"'"], ["application", "UPlanet"], ["t", "UPlanet"], ["t", "'"${LAT}_${LON}"'"], ["t", "UMAP"]]')
-            
-            # Regenerate UMAPNSEC for keyfile (same method as setup_umap_identity)
-            local UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
             
             # Create temporary keyfile for nostr_send_note.py (same method as NOSTRCARD.refresh.sh)
             local temp_keyfile=$(mktemp)
@@ -1201,6 +1223,9 @@ create_aggregate_journal() {
     local geo_id=$2 # sector or region id like _45.4_1.2 or _45_1
     local like_threshold=$3
 
+    # UMAP journals use like filtering: SECTOR (≥3 likes), REGION (≥12 likes)
+    # Unlike MULTIPASS journals, UMAP journals don't have daily/weekly/monthly hierarchy
+    # They aggregate messages from UMAP friends filtered by like count
     log "Creating ${type} ${geo_id} Journal from recently liked messages (threshold: ${like_threshold} likes)"
 
     local geo_path find_pattern
@@ -2044,7 +2069,7 @@ update_friends_list() {
 
 generate_ai_summary() {
     local text=$1
-    local QUESTION="[TEXT] $text [/TEXT] --- # 1. Write a summary of [TEXT] in Markdown format # 2. Highlight key points with their authors # 3. Add hastags and emoticons # 4. Structure with Markdown headers, lists, and emphasis # IMPORTANT : Use the same language as mostly used in [TEXT]."
+    local QUESTION="[TEXT] $text [/TEXT] --- # 1. Write a summary of [TEXT] in Markdown format # 2. Highlight key points with their authors # 3. Add hastags and emoticons # 4. Structure with Markdown headers, lists, and emphasis # IMPORTANT : Use the same language as mostly used in [TEXT]. # 5. NOSTR REFERENCES FORMAT (CRITICAL FOR CORACLE): ALWAYS preserve existing nostr: references exactly as provided (e.g., nostr:nprofile1..., nostr:npub1...). DO NOT modify, shorten, or reformat nostr: references. Coracle recognizes nostr:nprofile1... and nostr:npub1... formats for clickable profile links. When citing authors, use the EXACT format from source: nostr:nprofile1... or nostr:npub1..."
     $MY_PATH/../IA/question.py "${QUESTION}" --model "gemma3:12b"
 }
 

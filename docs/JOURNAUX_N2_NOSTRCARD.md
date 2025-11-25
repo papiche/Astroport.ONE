@@ -63,7 +63,7 @@ nostr_get_events.sh \
 
 ### 📊 Weekly (Hebdomadaire)
 
-**Source** : Résumés quotidiens publiés précédemment (kind 30023)
+**Source** : Résumés quotidiens publiés précédemment (kind 30023 - format blog)
 
 **Requête** :
 ```bash
@@ -76,16 +76,18 @@ nostr_get_events.sh \
 ```
 
 **Stratégie** : Plus efficace que de récupérer tous les messages bruts de 7 jours
-- Récupère les 7 résumés quotidiens déjà publiés
+- **Lit les journaux quotidiens (format blog)** publiés dans les 7 derniers jours
 - Les agrège dans le résumé hebdomadaire
+- Chaque daily journal est un article kind 30023 avec tag `SummaryType:Daily`
 
 **Traitement** :
-- Lecture des résumés quotidiens existants
+- Lecture des résumés quotidiens existants (format blog kind 30023)
 - Format : Un résumé quotidien par section avec date et contenu
+- Chaque daily journal est traité comme un article complet
 
 ### 📅 Monthly (Mensuel)
 
-**Source** : Résumés hebdomadaires publiés précédemment (kind 30023)
+**Source** : Résumés hebdomadaires publiés précédemment (kind 30023 - format blog)
 
 **Requête** :
 ```bash
@@ -93,17 +95,20 @@ nostr_get_events.sh \
     --kind 30023 \
     --author "${HEX}" \
     --tag-t "SummaryType:Weekly" \
-    --since "${since_timestamp}" \  # 28 jours avant
+    --since "${since_timestamp}" \  # 28 jours avant (4 semaines)
     --limit 100
 ```
 
 **Stratégie** : Encore plus efficace
+- **Lit les journaux hebdomadaires (format blog) des 4 dernières semaines** (28 jours)
 - Récupère les ~4 résumés hebdomadaires déjà publiés
 - Les agrège dans le résumé mensuel
+- Chaque weekly journal est un article kind 30023 avec tag `SummaryType:Weekly`
 
 **Traitement** :
-- Lecture des résumés hebdomadaires existants
+- Lecture des résumés hebdomadaires existants (format blog kind 30023)
 - Format : Un résumé hebdomadaire par section
+- Chaque weekly journal est traité comme un article complet
 
 ### 🗓️ Yearly (Annuel)
 
@@ -263,17 +268,23 @@ Contenu du message...
 ## 🔄 Hiérarchie et dépendances
 
 ```
-Daily (messages bruts)
-  ↓ publié comme kind 30023 avec tag SummaryType:Daily
-Weekly (récupère Daily résumés)
-  ↓ publié comme kind 30023 avec tag SummaryType:Weekly
-Monthly (récupère Weekly résumés)
-  ↓ publié comme kind 30023 avec tag SummaryType:Monthly
-Yearly (récupère Monthly résumés)
-  ↓ publié comme kind 30023 avec tag SummaryType:Yearly
+Daily (messages bruts kind 1 du réseau N²)
+  ↓ publié comme kind 30023 (format blog) avec tag SummaryType:Daily
+Weekly (lit les daily journals des 7 derniers jours)
+  ↓ publié comme kind 30023 (format blog) avec tag SummaryType:Weekly
+Monthly (lit les weekly journals des 4 dernières semaines - 28 jours)
+  ↓ publié comme kind 30023 (format blog) avec tag SummaryType:Monthly
+Yearly (lit les monthly journals des 12 derniers mois - 365 jours)
+  ↓ publié comme kind 30023 (format blog) avec tag SummaryType:Yearly
 ```
 
-**Avantage** : Chaque niveau réutilise les données déjà agrégées, évitant de retraiter des milliers de messages bruts.
+**Avantage** : Chaque niveau réutilise les données déjà agrégées (format blog kind 30023), évitant de retraiter des milliers de messages bruts.
+
+**Clarification** :
+- **Daily** : Collecte les messages kind 1 du réseau N² (N1 + N² friends)
+- **Weekly** : Lit les daily journals (format blog) publiés dans les 7 derniers jours
+- **Monthly** : Lit les weekly journals (format blog) publiés dans les 4 dernières semaines (28 jours)
+- **Yearly** : Lit les monthly journals (format blog) publiés dans les 12 derniers mois (365 jours)
 
 ## 🎯 Points clés
 
@@ -290,4 +301,19 @@ Yearly (récupère Monthly résumés)
 - Nettoyage automatique après publication
 - Les erreurs de publication sont loggées mais n'interrompent pas le processus
 - Les journaux vides (aucun ami ou aucun message) ne sont pas publiés
+- **Vérification de doublons** : Avant publication, vérifie si un journal avec le même `d_tag` existe déjà pour éviter les doublons
+
+## 🔄 Comparaison avec UMAP Journals
+
+**MULTIPASS Journals (NOSTRCARD)** :
+- Hiérarchie : Daily → Weekly → Monthly → Yearly
+- Source Daily : Messages kind 1 du réseau N²
+- Source Weekly+ : Lit les journaux précédents (format blog kind 30023)
+- Personnalisé : Basé sur le réseau N² unique de chaque MULTIPASS
+
+**UMAP Journals (NOSTR.UMAP)** :
+- Pas de hiérarchie daily/weekly/monthly
+- Source : Messages des amis de la zone géographique UMAP
+- Filtre par likes : SECTOR (≥3 likes), REGION (≥12 likes)
+- Géographique : Basé sur la localisation (0.01° pour UMAP)
 

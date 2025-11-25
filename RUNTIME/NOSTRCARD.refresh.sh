@@ -1330,10 +1330,14 @@ for PLAYER in "${NOSTR[@]}"; do
             echo "" >> "$summary_file"
             
             # For Weekly/Monthly/Yearly summaries, use published summaries instead of raw messages
+            # HIERARCHY: Daily → Weekly → Monthly → Yearly
+            # Each level reads the previous level's published journals (format blog kind 30023)
             if [[ "$summary_type" == "Weekly" ]]; then
                 log "INFO" "Using published daily summaries for $summary_type summary (more efficient)"
+                log "INFO" "Weekly journal reads daily journals (format blog) from the last 7 days"
 
                 # Get published daily summaries from this MULTIPASS wall using nostr_get_events.sh
+                # Reads all daily journals published in the last 7 days
                 since_timestamp=$(date -d "${summary_days} days ago" +%s)
 
                 log "DEBUG" "Querying daily summaries using nostr_get_events.sh for ${PLAYER}"
@@ -1356,8 +1360,10 @@ for PLAYER in "${NOSTR[@]}"; do
                 fi
             elif [[ "$summary_type" == "Monthly" ]]; then
                 log "INFO" "Using published weekly summaries for $summary_type summary (most efficient)"
+                log "INFO" "Monthly journal reads weekly journals (format blog) from the last 4 weeks (28 days)"
 
                 # Get published weekly summaries from this MULTIPASS wall using nostr_get_events.sh
+                # Reads all weekly journals published in the last 4 weeks (28 days = 4 weeks)
                 since_timestamp=$(date -d "${summary_days} days ago" +%s)
 
                 log "DEBUG" "Querying weekly summaries using nostr_get_events.sh for ${PLAYER}"
@@ -1380,8 +1386,10 @@ for PLAYER in "${NOSTR[@]}"; do
                 fi
             elif [[ "$summary_type" == "Yearly" ]]; then
                 log "INFO" "Using published monthly summaries for $summary_type summary (most efficient)"
+                log "INFO" "Yearly journal reads monthly journals (format blog) from the last 12 months (365 days)"
 
                 # Get published monthly summaries from this MULTIPASS wall using nostr_get_events.sh
+                # Reads all monthly journals published in the last 12 months (365 days)
                 since_timestamp=$(date -d "${summary_days} days ago" +%s)
 
                 log "DEBUG" "Querying monthly summaries using nostr_get_events.sh for ${PLAYER}"
@@ -1403,10 +1411,12 @@ for PLAYER in "${NOSTR[@]}"; do
                     log "DEBUG" "No monthly summaries found for ${PLAYER}"
                 fi
             else
-                # For Daily summaries, get raw messages from friends using nostr_get_events.sh
+                # For Daily summaries, get raw messages (kind 1) from N² network friends
+                # Daily journal collects kind 1 messages from the user's N² network (N1 + N² friends)
                 since_timestamp=$(date -d "${summary_days} days ago" +%s)
                 
                 log "DEBUG" "Querying messages using nostr_get_events.sh for ${#friends_list[@]} friends since $(date -d "@$since_timestamp" '+%Y-%m-%d %H:%M')"
+                log "INFO" "Daily journal collects kind 1 messages from N² network (${#friends_list[@]} friends)"
                 
                 log "DEBUG" "Starting nostr_get_events.sh queries for ${PLAYER}"
                 query_start=$(date +%s)
@@ -1602,6 +1612,14 @@ STYLE GUIDELINES:
 - Focus on value: what would ${PLAYER} want to know?
 - Add relevant hashtags for key topics
 
+NOSTR REFERENCES FORMAT (CRITICAL FOR CORACLE COMPATIBILITY):
+- ALWAYS preserve existing nostr: references from source content (e.g., nostr:nprofile1..., nostr:npub1...)
+- When mentioning authors, use the EXACT format from source: nostr:nprofile1... or nostr:npub1...
+- DO NOT modify, shorten, or reformat nostr: references - they must remain exactly as provided
+- Coracle recognizes nostr:nprofile1... and nostr:npub1... formats for clickable profile links
+- Example correct format: \"**Author**: nostr:nprofile1qqsrhuxx8l9ex335q7he0f09aej04zpazpl0ne2cgukyawd24mayt8gpp4mhxue69uhhytnc9e3k7mgpz4mhxue69uhkg6nzv9ejuumpv34kytnrdaksjlyr9p\"
+- If source has \"nostr:\" prefix, keep it - if it's just hex, convert to nostr:nprofile format
+
 CRITICAL: ${LANG_INSTRUCTION}"
                     elif [[ "$summary_type" == "Weekly" ]]; then
                         ai_prompt="You are a personal AI assistant creating a weekly reconnection summary for ${PLAYER}.
@@ -1635,6 +1653,13 @@ STYLE GUIDELINES:
 - Use Markdown for structure
 - Be analytical yet accessible
 - Focus on big picture, not individual messages
+
+NOSTR REFERENCES FORMAT (CRITICAL FOR CORACLE COMPATIBILITY):
+- ALWAYS preserve existing nostr: references from source content (e.g., nostr:nprofile1..., nostr:npub1...)
+- When referencing authors mentioned in daily summaries, use the EXACT format from source
+- DO NOT modify, shorten, or reformat nostr: references - they must remain exactly as provided
+- Coracle recognizes nostr:nprofile1... and nostr:npub1... formats for clickable profile links
+- Example: If source has \"nostr:nprofile1qqs...\", keep it exactly as is
 
 CRITICAL: ${LANG_INSTRUCTION}"
                     elif [[ "$summary_type" == "Monthly" ]]; then
@@ -1670,6 +1695,13 @@ STYLE GUIDELINES:
 - Use Markdown for clear structure
 - Be strategic and forward-looking
 - Focus on impact and significance
+
+NOSTR REFERENCES FORMAT (CRITICAL FOR CORACLE COMPATIBILITY):
+- ALWAYS preserve existing nostr: references from source content (e.g., nostr:nprofile1..., nostr:npub1...)
+- When referencing authors mentioned in weekly summaries, use the EXACT format from source
+- DO NOT modify, shorten, or reformat nostr: references - they must remain exactly as provided
+- Coracle recognizes nostr:nprofile1... and nostr:npub1... formats for clickable profile links
+- Example: If source has \"nostr:nprofile1qqs...\", keep it exactly as is
 
 CRITICAL: ${LANG_INSTRUCTION}"
                     else
@@ -1708,6 +1740,13 @@ STYLE GUIDELINES:
 - Be reflective and visionary
 - Focus on transformation and impact
 - Make it memorable and inspiring
+
+NOSTR REFERENCES FORMAT (CRITICAL FOR CORACLE COMPATIBILITY):
+- ALWAYS preserve existing nostr: references from source content (e.g., nostr:nprofile1..., nostr:npub1...)
+- When referencing authors mentioned in monthly summaries, use the EXACT format from source
+- DO NOT modify, shorten, or reformat nostr: references - they must remain exactly as provided
+- Coracle recognizes nostr:nprofile1... and nostr:npub1... formats for clickable profile links
+- Example: If source has \"nostr:nprofile1qqs...\", keep it exactly as is
 
 CRITICAL: ${LANG_INSTRUCTION}"
                     fi
