@@ -492,27 +492,22 @@ else
     echo "⚠️  nostr_update_profile.py not found, skipping NOSTR profile update"
 fi
 
-## 1.5. DELETE OLD MESSAGES (older than 24h)
-echo "🗑️ Deleting messages older than 24 hours..."
-if [[ -x "$HOME/.zen/strfry/strfry" ]]; then
-    # Calculate timestamp for 24 hours ago
-    TIMESTAMP_24H_AGO=$(date -d "24 hours ago" +%s)
-    echo "   📅 Deleting messages before: $(date -d "24 hours ago" '+%Y-%m-%d %H:%M:%S')"
-    
-    # Delete old messages using strfry with proper syntax
-    cd ~/.zen/strfry
-    # Try different strfry delete syntaxes
-    if ./strfry delete --age=24h --filter='{"authors":["'${hex}'"]}' 2>/dev/null; then
-        echo "✅ Old messages deleted successfully"
-    elif ./strfry delete --age=86400 --authors="${hex}" 2>/dev/null; then
-        echo "✅ Old messages deleted successfully (alternative syntax)"
-    else
-        echo "⚠️  Failed to delete old messages (strfry delete not supported or syntax incompatible)"
-        echo "   💡 Messages will remain in relay (this is normal for some relay configurations)"
-    fi
-    cd - > /dev/null 2>&1
+## 1.5. DELETE ALL FOLLOWS (clear contact list)
+echo "👥 Clearing follow list (kind 3)..."
+# Convert NSEC to HEX for nostpy-cli
+NPRIV_HEX=$(${MY_PATH}/nostr2hex.py "$secnostr" 2>/dev/null)
+if [[ -n "$NPRIV_HEX" ]]; then
+    # Publish empty kind 3 event to clear all follows
+    nostpy-cli send_event \
+        -privkey "$NPRIV_HEX" \
+        -kind 3 \
+        -content "" \
+        -tags "[]" \
+        --relay "$myRELAY" 2>/dev/null \
+        && echo "✅ Follow list cleared (empty kind 3 published)" \
+        || echo "⚠️  Failed to clear follow list (will continue with destruction)"
 else
-    echo "⚠️  strfry not found, skipping old message deletion"
+    echo "⚠️  Failed to convert NSEC to HEX, skipping follow list clear"
 fi
 
 
