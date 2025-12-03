@@ -144,7 +144,9 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
         if [[ $(echo "$CAPTAINZEN > $WEEKLYPAF" | bc -l) -eq 1 ]]; then
             ## CAPTAIN MULTIPASS CAN PAY NODE : ECONOMY + (Correct: frais de fonctionnement)
             CAPTYOUSER=$($MY_PATH/../tools/clyuseryomail.sh ${CAPTAINEMAIL})
-            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$WEEKLYG1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:$CAPTYOUSER:WEEKLYPAF" 2>/dev/null
+            # TX Comment: UP:NetworkID:PAF:Week:Amount:Source
+            # PAF = Participation Aux Frais (weekly operational costs: housing + electricity + IP)
+            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$WEEKLYG1" "${NODEG1PUB}" "UP:${UPLANETG1PUB:0:8}:PAF:W${CURRENT_WEEK}:${WEEKLYPAF}Z:CPT>NODE" 2>/dev/null
             log_output "✅ CAPTAIN MULTIPASS paid weekly PAF: $WEEKLYPAF ZEN ($WEEKLYG1 G1) to NODE"
         else
             ## UPLANET.CASH PAYS NODE: ECONOMY - (Correct: trésorerie coopérative)
@@ -155,7 +157,9 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                 CASH_ZEN=$(echo "($CASH_COIN - 1) * 10" | bc | cut -d '.' -f 1)
                 
                 if [[ $(echo "$CASH_ZEN > $WEEKLYPAF" | bc -l) -eq 1 ]]; then
-                    ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.CASH.dunikey" "$WEEKLYG1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:TREASURY:WEEKLYPAF" 2>/dev/null
+                    # TX Comment: UP:NetworkID:PAF:Week:Amount:Source (Treasury solidarity)
+                    # Fallback payment when Captain MULTIPASS has insufficient funds
+                    ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.CASH.dunikey" "$WEEKLYG1" "${NODEG1PUB}" "UP:${UPLANETG1PUB:0:8}:PAF:W${CURRENT_WEEK}:${WEEKLYPAF}Z:CASH>NODE" 2>/dev/null
                     log_output "✅ UPLANET.CASH (Treasury) paid weekly PAF: $WEEKLYPAF ZEN ($WEEKLYG1 G1) to NODE"
                 else
                     ## ECONOMIC FAILURE ?!
@@ -165,7 +169,9 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
         fi
     else
         log_output "NODE $NODECOIN G1 is NOT INITIALIZED !! UPlanet send 1 G1 to NODE"
-        ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.G1.dunikey" "1" "${NODEG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:$IPFSNODEID:NODEINIT" 2>/dev/null
+        # TX Comment: UP:NetworkID:INIT:IPFSNodeID:Amount (Node wallet activation)
+        # First-time activation of NODE wallet with 1 G1 to enable transactions
+        ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.G1.dunikey" "1" "${NODEG1PUB}" "UP:${UPLANETG1PUB:0:8}:INIT:${IPFSNODEID:0:8}:1G1:GENESIS" 2>/dev/null
     fi
 fi
 
@@ -203,11 +209,13 @@ process_captain_remuneration() {
         # Transfer from CAPTAIN MULTIPASS to dedicated captain wallet
         CAPTAIN_SHARE_G1=$(echo "scale=2; $CAPTAIN_SHARE_TARGET / 10" | bc -l)
         
+        # TX Comment: UP:NetworkID:SALARY:Week:Amount:Role
+        # Captain weekly remuneration = 2x PAF for node management work
         ${MY_PATH}/../tools/PAYforSURE.sh \
             "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" \
             "$CAPTAIN_SHARE_G1" \
             "${CAPTAIN_DEDICATED_PUB}" \
-            "UPLANET:${UPLANETG1PUB:0:8}:CAPTAIN:2xPAF" \
+            "UP:${UPLANETG1PUB:0:8}:SALARY:W${CURRENT_WEEK}:${CAPTAIN_SHARE_TARGET}Z:CPT_2xPAF" \
             2>/dev/null
         
         if [[ $? -eq 0 ]]; then
@@ -280,22 +288,26 @@ fourweeks_paf_burn_and_convert() {
             if [[ "$station_level" == "Y" && -f "$HOME/.zen/game/secret.NODE.dunikey" ]]; then
                 # Level Y: Use existing NODE wallet
                 log_output "ZEN ECONOMY: Using NODE wallet (Level Y): $HOME/.zen/game/secret.NODE.dunikey"
+                # TX Comment: UP:NetworkID:BURN:Period:Amount:Source (Deflationary mechanism)
+                # 4-week accumulated PAF burned to enable EUR conversion via OpenCollective
                 ${MY_PATH}/../tools/PAYforSURE.sh \
                     "$HOME/.zen/game/secret.NODE.dunikey" \
                     "$FOURWEEKS_PAF_G1" \
                     "${UPLANETG1PUB}" \
-                    "UPLANET:${UPLANETG1PUB:0:8}:NODE:BURN_PAF_4WEEKS:$period_key:${FOURWEEKS_PAF}ZEN" \
+                    "UP:${UPLANETG1PUB:0:8}:BURN:${period_key}:${FOURWEEKS_PAF}Z:NODE>DEFLATE" \
                     2>/dev/null
             elif [[ "$station_level" == "X" ]]; then
                 # Level X: Use CAPTAIN MULTIPASS as burn source (no NODE wallet available)
                 log_output "ZEN ECONOMY: Level X - Using CAPTAIN MULTIPASS for PAF burn (no NODE wallet available)"
                 # For Level X stations, use CAPTAIN MULTIPASS as burn source
                 if [[ -n "$CAPTAINEMAIL" && -f "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" ]]; then
+                    # TX Comment: UP:NetworkID:BURN:Period:Amount:Source (Level X fallback)
+                    # Level X stations use Captain wallet instead of NODE wallet for burn
                     ${MY_PATH}/../tools/PAYforSURE.sh \
                         "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" \
                         "$FOURWEEKS_PAF_G1" \
                         "${UPLANETG1PUB}" \
-                        "UPLANET:${UPLANETG1PUB:0:8}:CAPTAIN:BURN_PAF_4WEEKS_LEVELX:$period_key:${FOURWEEKS_PAF}ZEN" \
+                        "UP:${UPLANETG1PUB:0:8}:BURN:${period_key}:${FOURWEEKS_PAF}Z:CPT>DEFLATE_LvX" \
                         2>/dev/null
                 else
                     log_output "ZEN ECONOMY: Level X - No CAPTAIN MULTIPASS available for PAF burn"

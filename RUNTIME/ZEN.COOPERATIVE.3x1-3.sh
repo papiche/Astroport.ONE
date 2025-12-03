@@ -189,8 +189,9 @@ TAX_PROVISION_G1=$(echo "scale=2; $TAX_PROVISION / 10" | bc -l)
 
 echo "Tax provision (${TAX_RATE_USED}% of surplus): $TAX_PROVISION Ẑen ($TAX_PROVISION_G1 G1)"
 
-# Transfert de la provision fiscale
-tax_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$TAX_PROVISION_G1" "${IMPOTSG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:COOPERATIVE:TAX_PROVISION" 2>/dev/null)
+# TX Comment: UP:NetworkID:TAX:Week:Amount:Rate (Corporate tax provision)
+# Automatic IS provision (15% up to €42,500 / 25% above) on cooperative surplus
+tax_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$TAX_PROVISION_G1" "${IMPOTSG1PUB}" "UP:${UPLANETG1PUB:0:8}:TAX:${TODATE}:${TAX_PROVISION}Z:IS_${TAX_RATE_USED}pct" 2>/dev/null)
 TAX_SUCCESS=$?
 
 if [[ $TAX_SUCCESS -eq 0 ]]; then
@@ -242,8 +243,9 @@ TREASURYG1PUB=$(cat $HOME/.zen/game/uplanet.CASH.dunikey 2>/dev/null | grep "pub
 # Calcul en G1
 TREASURY_G1=$(echo "scale=2; $TREASURY_AMOUNT / 10" | bc -l)
 
-# Transfert vers le portefeuille trésorerie
-treasury_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$TREASURY_G1" "${TREASURYG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:COOPERATIVE:TREASURY" 2>/dev/null)
+# TX Comment: UP:NetworkID:COOP:Date:Amount:Allocation (1/3 Treasury reserves)
+# Cooperative liquidity and financial stability fund
+treasury_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$TREASURY_G1" "${TREASURYG1PUB}" "UP:${UPLANETG1PUB:0:8}:COOP:${TODATE}:${TREASURY_AMOUNT}Z:1/3_CASH" 2>/dev/null)
 TREASURY_SUCCESS=$?
 
 if [[ $TREASURY_SUCCESS -eq 0 ]]; then
@@ -267,8 +269,9 @@ RNDG1PUB=$(cat $HOME/.zen/game/uplanet.RnD.dunikey 2>/dev/null | grep "pub:" | c
 # Calcul en G1
 RND_G1=$(echo "scale=2; $RND_AMOUNT / 10" | bc -l)
 
-# Transfert vers le portefeuille R&D
-rnd_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$RND_G1" "${RNDG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:COOPERATIVE:RND" 2>/dev/null)
+# TX Comment: UP:NetworkID:COOP:Date:Amount:Allocation (1/3 R&D G1FabLab)
+# Research & Development fund for technological innovation
+rnd_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$RND_G1" "${RNDG1PUB}" "UP:${UPLANETG1PUB:0:8}:COOP:${TODATE}:${RND_AMOUNT}Z:1/3_RnD" 2>/dev/null)
 RND_SUCCESS=$?
 
 if [[ $RND_SUCCESS -eq 0 ]]; then
@@ -292,8 +295,9 @@ ASSETSG1PUB=$(cat $HOME/.zen/game/uplanet.ASSETS.dunikey 2>/dev/null | grep "pub
 # Calcul en G1
 ASSETS_G1=$(echo "scale=2; $ASSETS_AMOUNT / 10" | bc -l)
 
-# Transfert vers le portefeuille actifs
-assets_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$ASSETS_G1" "${ASSETSG1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:COOPERATIVE:ASSETS" 2>/dev/null)
+# TX Comment: UP:NetworkID:COOP:Date:Amount:Allocation (1/3 Real Assets)
+# Regenerative investment fund (Forest Gardens, tangible assets)
+assets_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$ASSETS_G1" "${ASSETSG1PUB}" "UP:${UPLANETG1PUB:0:8}:COOP:${TODATE}:${ASSETS_AMOUNT}Z:1/3_ASSETS" 2>/dev/null)
 ASSETS_SUCCESS=$?
 
 if [[ $ASSETS_SUCCESS -eq 0 ]]; then
