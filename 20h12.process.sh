@@ -33,6 +33,34 @@ start=`date +%s`
 echo "20H12 (♥‿‿♥) 🌐 /ipns/$IPFSNODEID 🤓 $CAPTAINEMAIL $(hostname -f) $(date)"
 # espeak "Ding" > /dev/null 2>&1
 
+########################################################################
+## SOLAR TIME CALIBRATION - Recalibrate cron for DST changes
+########################################################################
+# Check if we need to recalibrate (DST transition detection)
+# Compare current UTC offset with last recorded offset
+CURRENT_UTC_OFFSET=$(date +%z)
+LAST_UTC_OFFSET_FILE="$HOME/.zen/tmp/.last_utc_offset"
+
+if [[ -f "$LAST_UTC_OFFSET_FILE" ]]; then
+    LAST_UTC_OFFSET=$(cat "$LAST_UTC_OFFSET_FILE")
+    if [[ "$CURRENT_UTC_OFFSET" != "$LAST_UTC_OFFSET" ]]; then
+        echo "⏰ DST change detected: $LAST_UTC_OFFSET → $CURRENT_UTC_OFFSET"
+        echo "🔄 Recalibrating solar time cron job..."
+        
+        # Detect current mode (LOW or ON) based on IPFS service status
+        if systemctl is-enabled ipfs 2>/dev/null | grep -q "disabled"; then
+            echo "   Mode: LOW (IPFS disabled)"
+            ${MY_PATH}/tools/cron_VRFY.sh LOW
+        else
+            echo "   Mode: ON (IPFS enabled)"
+            ${MY_PATH}/tools/cron_VRFY.sh ON
+        fi
+        echo "✅ Solar 20H12 cron recalibrated"
+    fi
+fi
+# Save current UTC offset for next run comparison
+echo "$CURRENT_UTC_OFFSET" > "$LAST_UTC_OFFSET_FILE"
+
 echo "PATH=$PATH"
 
 ########################################################################
