@@ -1,122 +1,264 @@
-# 🎮 Transformez votre PC Gamer en Hub Économique Décentralisé
+# 🎮 Ton PC Gamer peut te Rapporter de l'Argent (même quand tu joues pas)
 
-## Introduction : Votre Machine, Votre Revenu
+## TL;DR pour les Gamers Pressés
 
-Vous possédez un PC Gamer puissant qui dort la plupart du temps ? Transformez-le en **Hub Central** de l'écosystème UPlanet ẐEN et générez des revenus passifs tout en participant à la construction d'un Internet décentralisé.
+**Tu as un PC Gamer qui dort 80% du temps ?** Fais-le bosser pour toi :
 
-Ce guide vous explique comment installer **Astroport.ONE** sur votre machine et la connecter à l'essaim local via **WireGuard VPN** pour devenir **Armateur** et **Capitaine** de votre propre constellation.
+- 💰 **Gagne ~1000€/mois** en hébergeant des services pour ta communauté
+- 🎮 **Partage ta bibliothèque Steam** avec tes potes via SteamLink
+- 🤖 **Lance des IA locales** (Ollama, Stable Diffusion) sur ton GPU
+- 🌐 **Rejoins un réseau décentralisé** qui respecte ta vie privée
+
+> **"Mais je suis sous Windows..."** → Pas de panique ! On t'explique pourquoi Linux Mint est ton ami (et comment faire la transition en douceur).
 
 ---
+
+## 🐧 Pourquoi passer à Linux Mint ? (Spoiler : c'est pas si terrible)
+
+### Les craintes légitimes d'un Gamer Windows
+
+| Ta peur | La réalité en 2025 |
+|---------|-------------------|
+| "Mes jeux vont plus marcher" | **Steam Proton** fait tourner 95%+ des jeux Windows nativement |
+| "C'est compliqué à installer" | **Linux Mint** s'installe en 20 min, plus simple que Windows |
+| "Je vais galérer avec les drivers" | Les drivers Nvidia/AMD s'installent en **1 clic** |
+| "Mon matos sera pas reconnu" | En 2025, Linux supporte **plus de hardware** que Windows 10 |
+| "Y'a pas de support" | **Communauté énorme** + forums + Discord dédiés |
+
+### Pourquoi Linux pour Astroport ?
+
+```
+Windows = Maison en location (Microsoft décide des règles)
+Linux   = Maison dont tu es propriétaire (tu fais ce que tu veux)
+```
+
+**Astroport.ONE** a besoin de :
+- ✅ Contrôle total sur ton système (impossible sous Windows)
+- ✅ Services qui tournent 24/7 sans interruption de mises à jour forcées
+- ✅ Accès direct au GPU pour l'IA (CUDA fonctionne mieux sous Linux)
+- ✅ Sécurité renforcée (pas de virus, pas de bloatware)
+
+### Option Dual-Boot : Le meilleur des deux mondes
+
+Tu peux garder Windows pour certains jeux ET avoir Linux Mint pour Astroport :
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    TON PC GAMER                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  SSD 1 (500 Go)              SSD 2 (1 To)                       │
+│  ┌─────────────┐             ┌─────────────┐                    │
+│  │   WINDOWS   │             │ LINUX MINT  │                    │
+│  │             │             │             │                    │
+│  │ • Jeux anti-│             │ • Astroport │                    │
+│  │   cheat     │             │ • Steam     │                    │
+│  │ • Game Pass │             │ • IA locale │                    │
+│  │             │             │ • Revenus   │                    │
+│  └─────────────┘             └─────────────┘                    │
+│                                                                  │
+│  Au démarrage : Tu choisis Windows OU Linux Mint                │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Pourquoi Linux Mint spécifiquement ?
+
+| Distro | Pour qui ? | Difficulté |
+|--------|-----------|------------|
+| **Linux Mint** 🏆 | Ex-Windows (interface familière) | ⭐ Très Facile |
+| Pop!_OS | Gamers (drivers Nvidia inclus) | ⭐ Facile |
+| Ubuntu | Tout le monde (le plus documenté) | ⭐ Facile |
+| Nobara | Gamers avancés (optimisé gaming) | ⭐⭐ Moyen |
+
+**Linux Mint** ressemble beaucoup à Windows :
+- Menu Démarrer en bas à gauche ✓
+- Barre des tâches familière ✓
+- Explorateur de fichiers similaire ✓
+- Clic droit = menu contextuel ✓
+
+### Installation Linux Mint (20 minutes chrono)
+
+```bash
+# 1. Télécharge Linux Mint Cinnamon
+#    https://linuxmint.com/download.php
+
+# 2. Crée une clé USB bootable avec Rufus (Windows)
+#    ou Balena Etcher
+
+# 3. Boot sur la clé USB (F12 au démarrage)
+
+# 4. Clique "Install Linux Mint"
+#    → Choisis "Installer à côté de Windows" pour dual-boot
+#    → OU "Effacer le disque" si tu veux tout Linux
+
+# 5. Redémarre et c'est prêt !
+```
+
+### Tes jeux Steam sous Linux Mint
+
+```bash
+# 1. Installe Steam depuis le Software Manager
+
+# 2. Active Steam Play (Proton) :
+#    Steam → Paramètres → Compatibilité
+#    → ☑️ Activer Steam Play pour tous les titres
+#    → Choisir "Proton Experimental"
+
+# 3. Installe tes jeux normalement !
+
+# Vérifie la compatibilité sur : https://www.protondb.com
+# 🟢 Native/Platinum = Parfait
+# 🟡 Gold = Très bien
+# 🟠 Silver = Jouable avec tweaks
+```
+
+---
+
+## 🎯 Ce que tu vas obtenir
+
+Ton PC Gamer devient un **Hub** qui génère des revenus pendant que tu joues (ou que tu dors) :
 
 ## 🏗️ Architecture : Le Rôle du Hub PC Gamer
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    VOTRE PC GAMER (HUB)                     │
+│                    TON PC GAMER (HUB)                        │
 │                                                             │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
 │  │   OLLAMA    │  │  COMFYUI    │  │ PERPLEXICA  │   IA     │
-│  │  LLM Local  │  │ Image Gen   │  │  Recherche  │          │
+│  │  ChatGPT    │  │  Stable     │  │  Moteur de  │  LOCAL   │
+│  │  local !    │  │  Diffusion  │  │  recherche  │          │
 │  └─────────────┘  └─────────────┘  └─────────────┘          │
 │                                                             │
 │  ┌─────────────────────────────────────────────────────┐    │
 │  │              ASTROPORT.ONE                          │    │
-│  │  • IPFS Node (stockage décentralisé)                │    │
-│  │  • NextCloud (128Go/sociétaire)                     │    │
-│  │  • TiddlyWiki (ZEN Cards)                           │    │
-│  │  • NOSTR Relay (MULTIPASS)                          │    │
+│  │  • Stockage décentralisé (comme un cloud privé)     │    │
+│  │  • NextCloud (128 Go par membre premium)            │    │
+│  │  • Réseau social décentralisé (NOSTR)               │    │
+│  │  • Économie automatisée (revenus passifs)           │    │
 │  └─────────────────────────────────────────────────────┘    │
 │                           │                                 │
-│                    WireGuard VPN                            │
-│                    (10.99.99.0/24)                          │
+│                    Réseau P2P                               │
+│              (comme BitTorrent, mais légal)                 │
 └───────────────────────────┬─────────────────────────────────┘
                             │
         ┌───────────────────┼───────────────────┐
         │                   │                   │
    ┌────▼────┐         ┌────▼────┐         ┌────▼────┐
-   │Satellite│         │Satellite│         │Satellite│
-   │  RPi 5  │         │  RPi 5  │         │  RPi 5  │
+   │ Pote 1  │         │ Pote 2  │         │ Pote 3  │
+   │ (RPi)   │         │ (RPi)   │         │ (PC)    │
    └─────────┘         └─────────┘         └─────────┘
 ```
 
-### Capacité d'un Hub PC Gamer
+### Ce que ton Hub peut héberger
 
-| Ressource | Capacité | Équivalent Immobilier |
-|-----------|----------|----------------------|
-| Sociétaires (ZEN Cards) | **24 max** | Copropriétaires |
-| Locataires (MULTIPASS) | **250+ max** | Studios numériques |
-| Stockage NextCloud | **128 Go × 24** | Appartements premium |
-| Stockage uDRIVE | **10 Go × 250** | Studios décentralisés |
+| Service | Capacité | C'est comme... |
+|---------|----------|----------------|
+| **Membres premium** | 24 personnes | Un serveur Discord privé avec stockage |
+| **Membres gratuits** | 250+ personnes | Des comptes invités |
+| **Stockage cloud** | 128 Go × 24 | Google Drive, mais c'est TOI qui contrôle |
+| **Stockage décentralisé** | 10 Go × 250 | Dropbox P2P |
 
 ---
 
-## 💰 Modèle Économique : Vos Revenus
+## 💰 Combien tu peux gagner ? (Le math)
 
-### Investissement Initial
+### Investissement de départ
 
-| Élément | Valeur |
-|---------|--------|
-| PC Gamer (occasion) | ~2000€ |
-| Capital ẐEN initial | **2000 Ẑen** |
+| Élément | Valeur | Comparaison gaming |
+|---------|--------|-------------------|
+| PC Gamer (occasion) | ~2000€ | Le prix d'une RTX 4090 |
+| Capital ẐEN initial | **2000 Ẑen** | Comme acheter des V-Bucks, mais utiles |
 
-### Revenus Hebdomadaires
+### Revenus Hebdomadaires (mode facile)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                  FLUX ÉCONOMIQUES HEBDO                     │
+│                  💸 TES REVENUS HEBDO                        │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  MULTIPASS (250 locataires)                                 │
-│  └── 250 × 1 Ẑ/semaine = 250 Ẑ HT                           │
-│  └── TVA collectée : 50 Ẑ (20%)                             │
+│  MULTIPASS (250 membres gratuits qui paient un peu)         │
+│  └── 250 × 1 Ẑ/semaine = 250 Ẑ                              │
+│  └── C'est comme 250 abos Twitch Tier 1                     │
 │                                                             │
-│  ZEN Cards (24 sociétaires)                                 │
-│  └── 24 × 4 Ẑ/semaine = 96 Ẑ HT                             │
-│  └── TVA collectée : 19.2 Ẑ (20%)                           │
+│  ZEN Cards (24 membres premium)                             │
+│  └── 24 × 4 Ẑ/semaine = 96 Ẑ                                │
+│  └── C'est comme 24 abos Twitch Tier 3                      │
 │                                                             │
-│  TOTAL REVENUS BRUTS : 346 Ẑ/semaine                        │
+│  TOTAL : ~346 Ẑ/semaine ≈ 86€/semaine                       │
 │                                                             │
 ├─────────────────────────────────────────────────────────────┤
-│  CHARGES                                                    │
-│  └── PAF (Armateur) : -14 Ẑ/semaine                         │
-│  └── Rémunération Capitaine : 28 Ẑ/semaine                  │
-│  └── TVA à reverser : -69.2 Ẑ/semaine                       │
+│  CHARGES (automatiques, tu fais rien)                       │
+│  └── Frais réseau : -14 Ẑ/semaine                           │
+│  └── Ta rémunération auto : +28 Ẑ/semaine                   │
+│  └── Taxes : ~70 Ẑ/semaine                                  │
 │                                                             │
-│  SURPLUS COOPÉRATIF : ~234 Ẑ/semaine                        │
-│  └── 1/3 Trésorerie : 78 Ẑ                                  │
-│  └── 1/3 R&D : 78 Ẑ                                         │
-│  └── 1/3 Actifs (Forêts/Jardins) : 78 Ẑ                     │
+│  CE QUI RESTE : ~234 Ẑ/semaine pour la communauté           │
+│  └── 1/3 Trésorerie (économies)                             │
+│  └── 1/3 R&D (améliorer le système)                         │
+│  └── 1/3 Projets écolos (forêts, jardins)                   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Simulation Annuelle (Hub PC Gamer complet)
+### Simulation Annuelle (si ton Hub est full)
 
-| Poste | Calcul | Montant |
-|-------|--------|---------|
-| Revenus locatifs bruts | 346 Ẑ × 52 sem | **17 992 Ẑ/an** |
-| Rémunération Capitaine | 28 Ẑ × 52 sem | **1 456 Ẑ/an** |
-| Conversion possible en € | ~12 000 Ẑ | **~12 000€/an** |
+| Poste | Calcul | En €uros |
+|-------|--------|----------|
+| Revenus bruts | 346 Ẑ × 52 sem | **~18 000€/an** |
+| Ta part (Capitaine) | 28 Ẑ × 52 sem | **~1 500€/an** |
+| Revenus additionnels possibles | Services IA, etc. | **Variable** |
 
-> **Parité fixe :** 1 Ẑen = 0.1 Ğ1 ≈ 1€
+> **Le taux :** 1 Ẑen ≈ 1€ (c'est simple à calculer)
 
 ---
 
-## 🔐 Installation : Connexion à l'Essaim via WireGuard
+## 🎮 Option Gaming : WireGuard + SteamLink
 
-### Étape 1 : Installer Astroport.ONE
+### Pourquoi WireGuard ?
 
-```bash
-# Cloner le dépôt
-git clone https://github.com/papinou/Astroport.ONE.git
-cd Astroport.ONE
+WireGuard VPN est destiné aux gamers qui souhaitent **partager leur bibliothèque Steam** avec les autres membres de l'essaim via **SteamLink**.
 
-# Lancer l'installation
-./install.sh
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    STEAMLINK VIA WIREGUARD                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  🎮 PC GAMER (HUB)                                              │
+│  └── Steam avec jeux installés                                  │
+│  └── WireGuard Server (10.99.99.1)                              │
+│  └── SteamLink Host                                             │
+│                                                                  │
+│         WireGuard VPN (latence < 5ms)                           │
+│              │                                                   │
+│    ┌─────────┴─────────┬─────────────────┐                      │
+│    ▼                   ▼                 ▼                      │
+│  📱 Client 1         📱 Client 2       📱 Client 3              │
+│  (10.99.99.2)        (10.99.99.3)      (10.99.99.4)             │
+│  SteamLink App       SteamLink App     SteamLink App            │
+│  └── Joue aux        └── Joue aux      └── Joue aux             │
+│      jeux du Hub         jeux du Hub       jeux du Hub          │
+│                                                                  │
+│  ► Partage de bibliothèque Steam entre membres                  │
+│  ► Streaming jeux en réseau local virtuel                       │
+│  ► Latence minimale via WireGuard                               │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### Étape 2 : Configurer le Hub WireGuard
+### Qui a besoin de WireGuard ?
 
-Votre PC Gamer devient le **HUB VPN** de l'essaim local.
+| Usage | WireGuard requis ? |
+|-------|-------------------|
+| Services Astroport (MULTIPASS, ZEN Cards) | ❌ Non (IPFS P2P) |
+| Services IA (Ollama, ComfyUI, Perplexica) | ❌ Non (IPFS P2P / SSH) |
+| Synchronisation 20H12 | ❌ Non (IPFS P2P) |
+| Partage de jeux Steam via SteamLink | ✅ **Oui** |
+| Remote Desktop vers le Hub | ✅ Optionnel |
+
+### Configuration WireGuard (Gaming uniquement)
+
+Votre PC Gamer devient le **HUB VPN** pour le streaming de jeux.
 
 ```bash
 # Installer WireGuard
@@ -158,21 +300,24 @@ Réseau: 10.99.99.0/24
 Clé publique serveur: <votre_clé_publique>
 ```
 
-### Étape 3 : Ajouter des Satellites (RPi)
+### Étape 3 : Ajouter des Clients SteamLink
 
-Chaque Raspberry Pi de l'essaim doit se connecter au Hub.
+Chaque appareil qui veut jouer aux jeux du Hub doit se connecter au VPN.
 
 **Sur le Hub (votre PC) :**
 ```bash
 ./wireguard_control.sh → Option 2 (Ajouter un client)
-# Nom : rpi-satellite-1
-# Clé publique : <clé du satellite>
+# Nom : salon-tv
+# Clé publique : <clé du client>
 ```
 
-**Sur le Satellite (RPi) :**
+**Sur le Client (TV, tablette, autre PC) :**
 ```bash
+# Si Linux/Raspberry Pi
 cd Astroport.ONE/tools
 ./wg-client-setup.sh
+
+# Si Android/iOS : importer le QR code dans l'app WireGuard
 ```
 
 Entrez les informations :
@@ -181,7 +326,17 @@ Entrez les informations :
 - Clé publique serveur : `<clé_affichée_par_le_hub>`
 - IP VPN attribuée : `10.99.99.X/32`
 
-### Étape 4 : Vérifier la Connexion
+### Étape 4 : Configurer SteamLink
+
+```bash
+# Sur le Hub : Activer le streaming distant dans Steam
+# Steam → Paramètres → Remote Play → Activer
+
+# Sur le client : Installer SteamLink
+# L'app détecte automatiquement le Hub via le réseau WireGuard
+```
+
+### Étape 5 : Vérifier la Connexion
 
 ```bash
 # Sur le Hub
@@ -205,82 +360,79 @@ ping 10.99.99.2
 
 ---
 
-## 📱 Services pour les Membres
+## 📱 Ce que tes membres obtiennent
 
-### MULTIPASS : Le Passeport Numérique (Locataire)
+### MULTIPASS : Le Pass Gratuit (enfin presque)
 
-> **"Je paie 1 Ẑen/semaine et je gagne ma liberté numérique."**
+> **"Je paie 1€/semaine et j'ai mon identité numérique + stockage."**
 
-| Service | Description |
-|---------|-------------|
-| Identité NOSTR | Clé publique souveraine |
-| Stockage uDRIVE | 10 Go décentralisé sur IPFS |
-| Terminal Astroport | Interface de gestion |
-| Gains par création | 1 Like = 1 Ẑen sur Coracle |
+| Service | C'est comme... |
+|---------|----------------|
+| Identité NOSTR | Ton compte Discord, mais tu le contrôles |
+| Stockage 10 Go | Dropbox décentralisé |
+| Réseau social | Twitter sans Elon |
+| Gains par création | Tu postes → tu gagnes des Ẑen |
 
-**Coût :** 1 Ẑ/semaine HT + 0.2 Ẑ TVA = **1.2 Ẑ/semaine** (~5€/mois)
+**Coût :** ~5€/mois (moins cher que Spotify)
 
-### ZEN Card : Parts Sociales (Copropriétaire)
+### ZEN Card : Le Pass Premium
 
-> **"J'investis 50€, je deviens co-propriétaire avec 128 Go de cloud privé."**
+> **"Je paie 50€ une fois, je deviens copropriétaire du Hub."**
 
-| Service | Description |
-|---------|-------------|
-| Parts sociales | 50 Ẑen (copropriété) |
-| NextCloud privé | 128 Go de stockage cloud |
-| Astrobot | Identité numérique personnelle |
-| Droit de vote | Participation aux décisions |
-| Exemption loyer | 1 an inclus dans les parts |
+| Service | C'est comme... |
+|---------|----------------|
+| Copropriété | T'as des parts dans le Hub |
+| 128 Go cloud | Google Drive privé |
+| Astrobot | Ton assistant IA personnel |
+| Droit de vote | Tu décides des règles |
+| 1 an gratuit | Pas de loyer la première année |
 
-**Coût après 1ère année :** 4 Ẑ/semaine HT + 0.8 Ẑ TVA = **4.8 Ẑ/semaine** (~20€/mois)
+**Coût après 1 an :** ~20€/mois (moins cher que Netflix + Spotify)
 
 ---
 
-## 🤖 Services IA via l'Essaim
+## 🤖 Les IA qui tournent sur ton GPU
 
-Votre Hub PC Gamer peut héberger des services IA accessibles à tout l'essaim :
+Ton GPU RTX ne sert pas qu'à jouer ! Tu peux faire tourner des IA locales :
 
-### Ollama (LLM Local)
+### Ollama = ChatGPT chez toi
 ```bash
-# Vérifier/établir la connexion
+# Lance ton ChatGPT local
 ./IA/ollama.me.sh
 
-# Tester l'API
+# Teste si ça marche
 ./IA/ollama.me.sh TEST
 
-# Découvrir les nœuds disponibles
-./IA/ollama.me.sh DISCOVER
+# Résultat : Tu as un ChatGPT gratuit et privé !
 ```
 
-### ComfyUI (Génération d'Images)
+### ComfyUI = Stable Diffusion (génération d'images)
 ```bash
 # Connexion automatique
 ./IA/comfyui.me.sh
 
-# Générer une image
-./IA/comfyui.me.sh "A futuristic decentralized network visualization"
+# Génère une image (comme Midjourney, mais gratuit)
+./IA/comfyui.me.sh "A dragon in cyberpunk style"
 ```
 
-### Perplexica (Recherche IA)
+### Perplexica = Moteur de recherche IA
 ```bash
 ./IA/perplexica.me.sh
+# C'est comme Perplexity.ai mais sur ton PC
 ```
 
-**Architecture de connexion IA :**
+**Comment ça se connecte (automatiquement) :**
 ```
-1. Port local déjà ouvert ?  ────────────────────► OK
+1. L'IA tourne sur ton PC ?  ──────────────────► Nice, on utilise ça
            │
            ▼ non
-2. SSH scorpio IPv6 (port 22) ───────────────────► OK
+2. Un pote du réseau l'a ?  ───────────────────► On utilise son GPU
            │
-           ▼ échec
-3. SSH scorpio IPv4 (port 2122 NAT) ─────────────► OK
+           ▼ non
+3. Serveur de demo dispo ?  ───────────────────► On utilise ça
            │
-           ▼ échec
-4. IPFS P2P swarm ZEN[0] ────────────────────────► OK
-           │
-           ▼ échec
-5. Erreur : aucun service disponible
+           ▼ non
+4. Pas d'IA dispo ──────────────────────────────► Installe Ollama !
 ```
 
 ---
@@ -366,11 +518,13 @@ Pour éviter les conflits, chaque Hub doit avoir :
 
 ---
 
-## ⏰ Synchronisation Solaire : Le Rendez-vous 20H12
+## ⏰ La Sync Quotidienne (20H12)
 
-### Principe : Chaque Station à son Heure Solaire
+### C'est quoi ce truc de "20H12 solaire" ?
 
-Toutes les stations Astroport se synchronisent quotidiennement à **20H12 heure SOLAIRE locale**. Ce n'est pas l'heure légale, mais l'heure réelle du soleil à votre position géographique.
+Tous les jours, tous les Hubs du réseau se synchronisent automatiquement. C'est comme un "daily reset" dans un MMO, sauf que l'heure dépend de où tu es sur la planète.
+
+**Pourquoi ?** Pour que tout le monde sync au même moment du soleil (et pas juste "20h12 heure de Paris").
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -557,6 +711,8 @@ Un **Hub PC Gamer** peut accueillir jusqu'à **24 Satellites** qui assurent :
 - **Passerelle IPFS** : Accès aux contenus décentralisés
 - **Services locaux** : MULTIPASS, ZEN Cards pour leur zone
 
+> **Important :** Les satellites se connectent via **IPFS P2P** (pas de WireGuard requis). WireGuard est uniquement pour le partage de jeux via SteamLink.
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         HUB PC GAMER                             │
@@ -569,7 +725,8 @@ Un **Hub PC Gamer** peut accueillir jusqu'à **24 Satellites** qui assurent :
 │  │  • Perplexica (Search) │  • Allocation 3×1/3            │    │
 │  └─────────────────────────────────────────────────────────┘    │
 │                              │                                   │
-│                    WireGuard VPN (10.99.99.0/24)                │
+│               IPFS P2P (swarm.key privé)                        │
+│               + NOSTR Relay constellation                        │
 │                              │                                   │
 ├──────────────────────────────┴──────────────────────────────────┤
 │                        24 SATELLITES                             │
@@ -577,8 +734,8 @@ Un **Hub PC Gamer** peut accueillir jusqu'à **24 Satellites** qui assurent :
 │                                                                  │
 │  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐        │
 │  │RPi #1  │ │RPi #2  │ │RPi #3  │ │RPi #4  │ │  ...   │        │
-│  │10.99.  │ │10.99.  │ │10.99.  │ │10.99.  │ │10.99.  │        │
-│  │99.2    │ │99.3    │ │99.4    │ │99.5    │ │99.X    │        │
+│  │Mode LOW│ │Mode LOW│ │Mode LOW│ │Mode LOW│ │Mode LOW│        │
+│  │ORE/IoT │ │ORE/IoT │ │ORE/IoT │ │ORE/IoT │ │ORE/IoT │        │
 │  └────────┘ └────────┘ └────────┘ └────────┘ └────────┘        │
 │      │          │          │          │          │              │
 │   NOSTR      NOSTR      NOSTR      NOSTR      NOSTR            │
@@ -586,6 +743,10 @@ Un **Hub PC Gamer** peut accueillir jusqu'à **24 Satellites** qui assurent :
 │      +          +          +          +          +              │
 │   IPFS       IPFS       IPFS       IPFS       IPFS             │
 │   Gateway   Gateway    Gateway    Gateway    Gateway            │
+│                                                                  │
+│  ► Connexion : IPFS P2P (pas de WireGuard)                     │
+│  ► Sync : 20H12 solaire (mode LOW = 1h/jour)                   │
+│  ► Usage : Capteurs ORE, relais NOSTR, passerelles IPFS        │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -610,61 +771,85 @@ Un **Hub PC Gamer** peut accueillir jusqu'à **24 Satellites** qui assurent :
 
 ---
 
-## 🚀 Démarrage Rapide (15 minutes)
+## 🚀 Installation Express (30 minutes avec Linux Mint)
+
+### Prérequis
+
+- ✅ Un PC Gamer avec GPU (Nvidia recommandé)
+- ✅ Linux Mint installé (voir section "Passer à Linux Mint")
+- ✅ Connexion Internet stable
+- ✅ 100 Go d'espace disque libre
+
+### Let's go !
 
 ```bash
-# 1. Cloner et installer Astroport.ONE
+# 1. Ouvre un terminal (Ctrl+Alt+T)
+
+# 2. Installe les dépendances
+sudo apt update && sudo apt install git curl jq -y
+
+# 3. Clone Astroport.ONE
 git clone https://github.com/papinou/Astroport.ONE.git
-cd Astroport.ONE && ./install.sh
+cd Astroport.ONE
 
-# 2. Initialiser le Hub WireGuard
-cd tools && ./wireguard_control.sh
-# → Option 1 : Initialiser serveur LAN
+# 4. Lance l'installation (ça prend ~10 min)
+./install.sh
 
-# 3. Noter la clé publique serveur affichée
+# 5. Configure ta position (pour la sync quotidienne)
+# Trouve tes coordonnées sur Google Maps
+echo "LAT=48.8566" > ~/.zen/GPS    # Remplace par ta latitude
+echo "LON=2.3522" >> ~/.zen/GPS    # Remplace par ta longitude
 
-# 4. Sur chaque Satellite (RPi) :
-./wg-client-setup.sh auto <IP_HUB> 51820 <CLÉ_SERVEUR> 10.99.99.X
+# 6. Active ton Hub
+cd tools && ./cron_VRFY.sh ON
 
-# 5. Retour sur le Hub : ajouter les clients
-./wireguard_control.sh → Option 2
+# 7. Crée ton compte Capitaine
+# Ouvre Firefox → http://localhost:54321/g1nostr
+# Suis les instructions
 
-# 6. Vérifier les connexions
-sudo wg show
-ping 10.99.99.2
+# 8. C'est prêt ! 🎉
+```
+
+### (Optionnel) Partage tes jeux Steam avec WireGuard
+
+```bash
+# Si tu veux partager ta bibliothèque Steam via SteamLink
+cd ~/Astroport.ONE/tools
+./wireguard_control.sh
+# → Choisis "1. Initialiser serveur LAN"
+# → Note la clé publique affichée
+# → Donne-la à tes potes pour qu'ils se connectent
 ```
 
 ---
 
-## 🔐 MULTIPASS : La Toile de Confiance Humaine
+## 🔐 MULTIPASS : Ton identité numérique (sans les GAFAM)
 
-### Authentification Web3 basée sur la Ğ1
+### Comment ça marche ?
 
-Le système **MULTIPASS** utilise la [Monnaie Libre Ğ1](https://monnaie-libre.fr) comme socle d'authentification. Chaque membre est vérifié par 5 personnes de confiance, créant une **toile de confiance humaine** (Web of Trust).
+Imagine Discord + un wallet crypto + une carte d'identité numérique. C'est ça le MULTIPASS.
+
+La différence avec un compte Google/Facebook : **c'est TOI qui contrôles tes données**, pas une entreprise.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    TOILE DE CONFIANCE Ğ1                         │
+│                    COMMENT ÇA MARCHE                             │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│              ┌───────────┐                                       │
-│         ┌────┤ Certifié  ├────┐                                  │
-│         │    │  par 5+   │    │                                  │
-│         ▼    └───────────┘    ▼                                  │
+│  Toi ────► Crée ton MULTIPASS ────► Tes potes te certifient     │
+│                                                                  │
+│  C'est comme le système de "vouching" dans certains jeux :      │
+│  5 personnes de confiance doivent confirmer que t'es un humain  │
+│                                                                  │
 │    ┌─────────┐           ┌─────────┐                             │
-│    │ Membre  │◄─────────►│ Membre  │                             │
-│    │   Ğ1    │           │   Ğ1    │                             │
-│    └────┬────┘           └────┬────┘                             │
-│         │                     │                                  │
-│         ▼                     ▼                                  │
-│    ┌─────────┐           ┌─────────┐                             │
-│    │MULTIPASS│           │MULTIPASS│     Identité NOSTR          │
-│    │  npub   │           │  npub   │     + Wallet Ğ1             │
+│    │   Toi   │◄─────────►│ Ton pote│                             │
+│    │  MULTI  │  certifie │  MULTI  │                             │
+│    │  PASS   │◄─────────►│  PASS   │                             │
 │    └─────────┘           └─────────┘                             │
 │                                                                  │
-│    ► Chaque humain = 1 identité vérifiée                        │
-│    ► Pas de bots, pas de faux comptes                           │
-│    ► Authentification NIP-42 sur les relais NOSTR               │
+│    ► 1 humain = 1 compte (pas de multi-compte)                  │
+│    ► Pas de bots (contrairement à Discord/Twitter)              │
+│    ► Tes données restent sur ton PC                             │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -828,34 +1013,36 @@ if (result.success) {
 
 ---
 
-## 🎓 WoTx2 : Certification des Savoir-Faire
+## 🎓 WoTx2 : Des badges de compétences vérifiés
 
-### Toiles de Confiance pour les Compétences
+### C'est comme un système de rangs/badges, mais vérifiable
 
-Le système **WoTx2** (Web of Trust eXtended 2) permet la certification décentralisée des compétences via des **maîtrises auto-proclamées** qui évoluent par validation des pairs.
+Tu connais les rangs dans les jeux compétitifs ? Bronze → Silver → Gold → Diamond...
+
+**WoTx2** c'est pareil, mais pour des **vraies compétences** (code, bricolage, jardinage, etc.) et c'est vérifié par d'autres humains, pas un algorithme.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    SYSTÈME WOTX2                                 │
+│                    SYSTÈME DE RANGS WOTX2                        │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  CRÉATION LIBRE DE MAÎTRISES                                    │
-│  └── N'importe qui peut créer une maîtrise                      │
-│  └── Ex: "Maître Nageur", "Permaculture", "Arduino"...          │
+│  N'importe qui peut créer une "guilde" de compétences           │
+│  Ex: "Arduino", "Impression 3D", "Jardinage", etc.              │
 │                                                                  │
-│  PROGRESSION AUTOMATIQUE ILLIMITÉE                              │
+│  PROGRESSION (comme les rangs LoL/Valorant)                     │
 │                                                                  │
 │  ┌───────┐    ┌───────┐    ┌───────┐    ┌───────┐              │
-│  │  X1   │───►│  X2   │───►│  X3   │───►│  Xn   │───► ...      │
-│  │1 sign.│    │2 sign.│    │3 sign.│    │N sign.│              │
+│  │  X1   │───►│  X2   │───►│  X3   │───►│  Xn   │───► ∞        │
+│  │Bronze │    │Silver │    │ Gold  │    │Diamond│              │
+│  │1 vote │    │2 votes│    │3 votes│    │N votes│              │
 │  └───────┘    └───────┘    └───────┘    └───────┘              │
 │                                                                  │
-│  LABELS DYNAMIQUES                                              │
-│  • X1-X4   : Apprenti                                           │
-│  • X5-X10  : Expert                                             │
-│  • X11-X50 : Maître                                             │
-│  • X51-X100: Grand Maître                                       │
-│  • X101+   : Maître Absolu                                      │
+│  TITRES DÉBLOQUÉS                                               │
+│  • X1-X4   : Apprenti (Bronze/Silver)                           │
+│  • X5-X10  : Expert (Gold/Platinum)                             │
+│  • X11-X50 : Maître (Diamond/Master)                            │
+│  • X51-X100: Grand Maître (Grandmaster)                         │
+│  • X101+   : Légende (Challenger)                               │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -904,17 +1091,15 @@ Le système **WoTx2** (Web of Trust eXtended 2) permet la certification décentr
 | **30503** | Verifiable Credential | Certificat W3C émis |
 | **22242** | NIP-42 Auth | Authentification pour API |
 
-### Comparaison : Diplômes Traditionnels vs WoTx2
+### Pourquoi c'est mieux qu'un diplôme ?
 
-| Critère | Diplôme Classique | WoTx2 |
-|---------|-------------------|-------|
-| **Création** | Institution (État, École) | Libre (auto-proclamé) |
-| **Validation** | Examen centralisé | Pairs décentralisés |
-| **Coût** | 1000€ - 50 000€ | Gratuit |
-| **Durée** | Années | Progression continue |
-| **Reconnaissance** | Légale | Toile de confiance |
-| **Évolution** | Statique | Dynamique (X1→X∞) |
-| **Compétences** | Prédéfinies | Révélées progressivement |
+| | Diplôme classique | WoTx2 |
+|---|-------------------|-------|
+| **Qui décide ?** | L'État/l'école | Tes pairs (les vrais experts) |
+| **Combien ça coûte ?** | 1000€ - 50 000€ | Gratuit |
+| **Combien de temps ?** | Des années | Tu progresses en continu |
+| **C'est reconnu ?** | Par les RH (peut-être) | Par les gens qui font vraiment le taf |
+| **Ça évolue ?** | Non, une fois obtenu c'est fini | Tu peux toujours monter de niveau |
 
 ### Intégration Hub + WoTx2
 
@@ -987,94 +1172,108 @@ PERMIT_OBSERVATEUR_FAUNE_X5 (Expert)
 
 ---
 
-## 📚 Ressources
+## 📚 Pour aller plus loin
 
-- **Guide WireGuard complet :** `tools/wg-workflow-guide.md`
+### Documentation technique
+- **Guide WireGuard (SteamLink) :** `tools/wg-workflow-guide.md`
 - **Économie ẐEN :** `RUNTIME/ZEN.ECONOMY.readme.md`
-- **Système WoTx2 :** `docs/WOTX2_SYSTEM.md`
-- **Système ORE :** `docs/ORE_SYSTEM.md`
+- **Système de badges WoTx2 :** `docs/WOTX2_SYSTEM.md`
+- **Système écologique ORE :** `docs/ORE_SYSTEM.md`
+
+### Liens utiles
+- **Linux Mint :** https://linuxmint.com (téléchargement)
+- **ProtonDB :** https://www.protondb.com (compatibilité jeux)
 - **Installation RPi Satellite :** https://pad.p2p.legal/s/RaspberryPi
 - **Simulateur économique :** https://ipfs.copylaradio.com/ipns/copylaradio.com/economy.html
 - **Monnaie Libre Ğ1 :** https://monnaie-libre.fr
-- **Documentation NostrTube :** `docs/README.NostrTube.DEV.md`
-- **NIP-101 (UPlanet Protocol) :** https://github.com/papiche/NIP-101
-
-- **Guide WireGuard complet :** `tools/wg-workflow-guide.md`
-- **Économie ẐEN :** `RUNTIME/ZEN.ECONOMY.readme.md`
-- **Installation RPi Satellite :** https://pad.p2p.legal/s/RaspberryPi
-- **Simulateur économique :** https://ipfs.copylaradio.com/ipns/copylaradio.com/economy.html
-- **Monnaie Libre Ğ1 :** https://monnaie-libre.fr
-- **Documentation NostrTube :** `docs/README.NostrTube.DEV.md`
-- **NIP-101 (UPlanet Protocol) :** https://github.com/papiche/NIP-101
+- **Protocole UPlanet (NIP-101) :** https://github.com/papiche/NIP-101
 
 ---
 
-## 💡 Conclusion
+## 💡 En résumé : Pourquoi tu devrais le faire
 
-En transformant votre PC Gamer en Hub Astroport.ONE, vous :
+En transformant ton PC Gamer en Hub Astroport.ONE, tu :
 
-1. **Générez des revenus passifs** (~1000€/mois potentiel avec un essaim complet)
-2. **Participez à l'économie circulaire** ẐEN
-3. **Hébergez des services IA** accessibles à votre communauté
-4. **Contribuez à un Internet décentralisé** respectueux de la vie privée
-5. **Devenez copropriétaire** d'une infrastructure numérique réelle
-6. **Certifiez les savoir-faire** via les toiles de confiance WoTx2
-7. **Protégez l'environnement** avec les contrats ORE décentralisés
+1. 💰 **Gagnes de l'argent passivement** (même en jouant)
+2. 🎮 **Partages ta bibliothèque Steam** avec tes potes (SteamLink)
+3. 🤖 **Lances des IA locales** sur ton GPU (Ollama, Stable Diffusion)
+4. 🌐 **Rejoins un vrai réseau décentralisé** (pas du crypto-bullshit)
+5. 🏠 **Deviens proprio** de ton infrastructure numérique
+6. 🎓 **Certifies tes skills** reconnus par la communauté
+7. 🌳 **Participes à des projets écolos** concrets
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    ÉCOSYSTÈME COMPLET                            │
+│                    CE QUE TU OBTIENS                             │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  🆔 MULTIPASS        → Identité humaine vérifiée (Ğ1 WoT)       │
-│  🎓 WoTx2            → Certification des compétences            │
-│  🌳 ORE              → Engagements environnementaux             │
-│  💰 ẐEN Economy      → Économie circulaire automatisée          │
-│  🤖 Services IA      → Ollama, ComfyUI, Perplexica              │
-│  📡 NOSTR/IPFS       → Communication décentralisée              │
-│  🛰️ Hub + Satellites → Infrastructure distribuée                │
+│  🆔 MULTIPASS        → Ton identité numérique (pas de fake)     │
+│  🎓 WoTx2            → Badges de compétences vérifiés           │
+│  🌳 ORE              → Impact environnemental réel              │
+│  💰 ẐEN Economy      → Revenus automatiques                     │
+│  🤖 Services IA      → ChatGPT/Stable Diffusion chez toi        │
+│  📡 NOSTR/IPFS       → Réseau social sans censure               │
+│  🛰️ Hub + Satellites → Ton propre mini-datacenter               │
 │                                                                  │
-│  ► Tout synchronisé à 20H12 solaire local                       │
-│  ► Répliqué sur l'essaim IPFS                                   │
-│  ► Gouverné par les toiles de confiance                         │
+│  ► Tout tourne automatiquement pendant que tu joues             │
+│  ► Tes données restent CHEZ TOI                                 │
+│  ► Tu fais partie d'une vraie communauté                        │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-> *"Le but est de vous libérer de la complexité pour que vous puissiez vous concentrer sur ce qui compte : bâtir un internet décentralisé et une économie régénératrice."*
+> *"Le but c'est que ton PC bosse pour toi, pas l'inverse. Et que tu fasses partie d'un truc plus grand que juste farm des skins."*
 
 ---
 
-## 🔬 À propos de UPlanet ẐEN
+## 🔬 C'est quoi UPlanet ẐEN ?
 
-**UPlanet ẐEN** est une expérience menée par le **G1FabLab** ([https://g1sms.fr](https://g1sms.fr)), un laboratoire d'innovation qui explore les synergies entre :
+**UPlanet ẐEN** est un projet expérimental du **G1FabLab** ([https://g1sms.fr](https://g1sms.fr)).
 
-- La **Monnaie Libre Ğ1** et son modèle de co-création monétaire
-- Les **technologies décentralisées** (IPFS, NOSTR, WireGuard)
-- L'**intelligence artificielle** locale et souveraine
-- Les **Obligations Réelles Environnementales** (ORE)
-- Les **toiles de confiance** pour la certification des compétences
-
-### Philosophie G1FabLab
+### En mode simple
 
 ```
-"Nous croyons que la souveraineté numérique commence
-par l'infrastructure. Chaque PC Gamer transformé en Hub
-est un pas vers un Internet plus libre, plus juste,
-et plus respectueux de l'environnement."
+C'est comme si Discord, Google Drive, ChatGPT et Patreon
+avaient un bébé... mais décentralisé et sans les GAFAM.
+
+Et TU es payé pour faire tourner le truc.
 ```
 
-### Rejoindre l'expérience
+### Ce qu'on essaie de construire
 
-1. **Installer Astroport.ONE** sur votre machine
-2. **Créer votre MULTIPASS** avec vos clés Ğ1
-3. **Connecter des satellites** (Raspberry Pi) à votre Hub
-4. **Participer à l'économie ẐEN** et aux toiles de confiance
+- 🪙 Une **économie qui ne dépend pas des banques** (Monnaie Libre Ğ1)
+- 🌐 Un **Internet qui appartient aux utilisateurs** (IPFS, NOSTR)
+- 🤖 Des **IA qui restent sur ton ordi** (pas dans le cloud d'OpenAI)
+- 🌳 Des **projets écolos** financés automatiquement
+- 🎓 Des **certifications de compétences** validées par les pairs
+
+### Comment rejoindre
+
+```bash
+# 1. Installe Linux Mint sur ton PC Gamer
+#    (dual-boot si tu veux garder Windows)
+
+# 2. Clone et installe Astroport.ONE
+git clone https://github.com/papinou/Astroport.ONE.git
+cd Astroport.ONE && ./install.sh
+
+# 3. Crée ton MULTIPASS
+#    → Va sur http://localhost:54321/g1nostr
+
+# 4. Invite tes potes à rejoindre ton Hub
+
+# 5. Profit (littéralement)
+```
+
+### Besoin d'aide ?
+
+- **Discord/Matrix :** Rejoins la communauté G1FabLab
+- **Email :** support@qo-op.com
+- **Forum :** https://forum.monnaie-libre.fr
 
 ---
 
 **Version :** 1.0 | **Dernière mise à jour :** Décembre 2025  
 **Projet :** UPlanet ẐEN - Une expérience G1FabLab  
-**Contact :** support@qo-op.com  
-**License :** AGPL-3.0
+**License :** AGPL-3.0 (Open Source, tu peux modifier le code)
 
