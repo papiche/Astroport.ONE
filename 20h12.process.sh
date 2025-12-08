@@ -225,11 +225,25 @@ done
 echo "IPFS DAEMON LEVEL"
 ######### IPFS DAMEON NOT RUNNING ALL DAY
 ## IF IPFS DAEMON DISABLED : WAIT 1H & STOP IT
-[[ $LOWMODE != "" ]] \
-    && echo "STOP IPFS $LOWMODE" \
-    && sleep 3600 \
-    && sudo systemctl stop ipfs \
-    && exit 0
+if [[ $LOWMODE != "" ]]; then
+    echo "LOW MODE: $LOWMODE - IPFS will run for 1 hour only"
+    
+    ## Run constellation sync before IPFS shutdown
+    if [[ -s ~/.zen/workspace/NIP-101/backfill_constellation.sh ]]; then
+        echo "🔄 Running constellation sync (LOW mode)..."
+        ~/.zen/workspace/NIP-101/backfill_constellation.sh --days 1 --verbose
+        echo "✅ Constellation sync completed"
+    else
+        echo "⚠️ backfill_constellation.sh not found, skipping constellation sync"
+    fi
+    
+    echo "💤 Sleeping 1 hour before IPFS shutdown..."
+    sleep 3600
+    
+    sudo systemctl stop ipfs
+    echo "🛑 IPFS stopped (LOW mode)"
+    exit 0
+fi
 
 echo "HIGH. RESTART IPFS"
 sleep 60
