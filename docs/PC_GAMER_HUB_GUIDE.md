@@ -153,16 +153,86 @@ Ton PC Gamer devient un **Hub** qui génère des revenus pendant que tu joues (o
 
 ### Ce que ton Hub peut héberger
 
-| Service | Capacité | C'est comme... |
-|---------|----------|----------------|
-| **Membres premium** | 24 personnes | Un serveur Discord privé avec stockage |
-| **Membres gratuits** | 250+ personnes | Des comptes invités |
-| **Stockage cloud** | 128 Go × 24 | Google Drive, mais c'est TOI qui contrôle |
-| **Stockage décentralisé** | 10 Go × 250 | Dropbox P2P |
+| Type de membre | Capacité | C'est comme... |
+|----------------|----------|----------------|
+| **ZEN Card** (proprios) | 24 max | Copropriétaires avec 128 Go chacun |
+| **MULTIPASS** (locataires) | 250+ | Abonnés avec 10 Go ou 128 Go |
+
+### Les deux types de membres
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  MULTIPASS = Jeton d'USAGE (locataire)                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  📱 Formule Basic : 1 Ẑen/semaine (~4€/mois)                    │
+│     └── 10 Go de stockage décentralisé (IPFS)                   │
+│     └── Identité NOSTR + wallet Ğ1                              │
+│     └── Accès aux services IA du Hub                            │
+│                                                                  │
+│  📱 Formule Pro : 5 Ẑen/semaine (~20€/mois)                     │
+│     └── 128 Go de stockage NextCloud                            │
+│     └── Tout le reste inclus                                    │
+│                                                                  │
+│  → Tu paies pour utiliser, comme un abonnement Netflix          │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  ZEN CARD = Jeton de PROPRIÉTÉ (copropriétaire)                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  🏠 Sur HUB (PC Gamer) : 540€ pour 3 ans (180€/an)              │
+│     └── Tu POSSÈDES une part de 128 Go du Hub                   │
+│     └── Pas de loyer à payer (c'est chez toi !)                 │
+│     └── Droit de vote sur les décisions                         │
+│                                                                  │
+│  🛰️ Sur Satellite (RPi) : 50€/an                                │
+│     └── Même principe, sur un Raspberry Pi                      │
+│                                                                  │
+│  💰 Option sous-location :                                       │
+│     └── Tu peux louer tes 128 Go en tranches de 10 Go           │
+│     └── Exemple : 12 sous-locataires × 1 Ẑ/sem = 12 Ẑ/sem       │
+│     └── Tu deviens toi-même un mini-bailleur !                  │
+│                                                                  │
+│  → C'est comme acheter un appart vs le louer                    │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## 💰 Combien tu peux gagner ? (Le math)
+
+### Les 3 rôles dans l'économie
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    QUI FAIT QUOI ?                               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  🚢 ARMATEUR = Toi (le proprio du PC)                           │
+│     └── Tu gardes ton Astroport allumé 24/7                     │
+│     └── Tu l'ouvres à la gestion coopérative CopyLaRadio        │
+│     └── Tu reçois la PAF (Participation Aux Frais)              │
+│        → Couvre : électricité + connexion internet + usure      │
+│                                                                  │
+│  👨‍✈️ CAPITAINE = Toi aussi (ou quelqu'un d'autre)                │
+│     └── Gère le Hub au quotidien                                │
+│     └── Accueille les nouveaux membres                          │
+│     └── Reçoit une rémunération pour le travail                 │
+│                                                                  │
+│  🏠 ZEN CARD = Copropriétaires (24 max)                         │
+│     └── Ont acheté une part du Hub (540€/3 ans)                 │
+│     └── Utilisent leur 128 Go ou le sous-louent                 │
+│     └── Votent sur les décisions                                │
+│                                                                  │
+│  📱 MULTIPASS = Locataires (250+)                               │
+│     └── Paient un loyer hebdomadaire                            │
+│     └── Utilisent les services du Hub                           │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ### Investissement de départ
 
@@ -171,45 +241,64 @@ Ton PC Gamer devient un **Hub** qui génère des revenus pendant que tu joues (o
 | PC Gamer (occasion) | ~2000€ | Le prix d'une RTX 4090 |
 | Capital ẐEN initial | **2000 Ẑen** | Comme acheter des V-Bucks, mais utiles |
 
-### Revenus Hebdomadaires (mode facile)
+### Revenus Hebdomadaires (exemple avec Hub full)
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                  💸 TES REVENUS HEBDO                        │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  MULTIPASS (250 membres gratuits qui paient un peu)         │
-│  └── 250 × 1 Ẑ/semaine = 250 Ẑ                              │
-│  └── C'est comme 250 abos Twitch Tier 1                     │
-│                                                             │
-│  ZEN Cards (24 membres premium)                             │
-│  └── 24 × 4 Ẑ/semaine = 96 Ẑ                                │
-│  └── C'est comme 24 abos Twitch Tier 3                      │
-│                                                             │
-│  TOTAL : ~346 Ẑ/semaine ≈ 86€/semaine                       │
-│                                                             │
-├─────────────────────────────────────────────────────────────┤
-│  CHARGES (automatiques, tu fais rien)                       │
-│  └── Frais réseau : -14 Ẑ/semaine                           │
-│  └── Ta rémunération auto : +28 Ẑ/semaine                   │
-│  └── Taxes : ~70 Ẑ/semaine                                  │
-│                                                             │
-│  CE QUI RESTE : ~234 Ẑ/semaine pour la communauté           │
-│  └── 1/3 Trésorerie (économies)                             │
-│  └── 1/3 R&D (améliorer le système)                         │
-│  └── 1/3 Projets écolos (forêts, jardins)                   │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                  💸 TES REVENUS HEBDO                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  MULTIPASS Basic (200 locataires × 10 Go)                       │
+│  └── 200 × 1 Ẑ/semaine = 200 Ẑ                                  │
+│                                                                  │
+│  MULTIPASS Pro (50 locataires × 128 Go)                         │
+│  └── 50 × 5 Ẑ/semaine = 250 Ẑ                                   │
+│                                                                  │
+│  ZEN Cards (24 copropriétaires)                                 │
+│  └── 24 × 540€/3ans ÷ 156 sem ≈ 83 Ẑ/semaine                    │
+│  └── (Ils sont CHEZ EUX, pas de loyer hebdo !)                  │
+│                                                                  │
+│  TOTAL REVENUS HUB : ~533 Ẑ/semaine                             │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  TA PART (ARMATEUR + CAPITAINE)                                 │
+│                                                                  │
+│  PAF Armateur (tes frais réels)                                 │
+│  └── Électricité + Internet + Usure ≈ 14 Ẑ/semaine             │
+│                                                                  │
+│  Rémunération Capitaine (ton "salaire")                         │
+│  └── Gestion quotidienne ≈ 28 Ẑ/semaine                         │
+│                                                                  │
+│  → TA PART : ~42 Ẑ/semaine (~170€/mois)                         │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  SURPLUS COOPÉRATIF (géré par CopyLaRadio)                      │
+│  └── 1/3 Trésorerie (économies du collectif)                    │
+│  └── 1/3 R&D (améliorer Astroport)                              │
+│  └── 1/3 Projets écolos (forêts, jardins)                       │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ### Simulation Annuelle (si ton Hub est full)
 
 | Poste | Calcul | En €uros |
 |-------|--------|----------|
-| Revenus bruts | 346 Ẑ × 52 sem | **~18 000€/an** |
-| Ta part (Capitaine) | 28 Ẑ × 52 sem | **~1 500€/an** |
-| Revenus additionnels possibles | Services IA, etc. | **Variable** |
+| Revenus MULTIPASS | (200×1 + 50×5) Ẑ × 52 sem | **~23 400€/an** |
+| Revenus ZEN Cards | 24 × 540€/3ans | **~4 320€/an** |
+| **Total brut** | | **~27 720€/an** |
+| Ta part (PAF + Capitaine) | 42 Ẑ × 52 sem | **~2 200€/an** |
 
 > **Le taux :** 1 Ẑen ≈ 1€ (c'est simple à calculer)
+
+### Résumé des tarifs
+
+| Type | Formule | Prix | Ce qu'ils obtiennent |
+|------|---------|------|---------------------|
+| MULTIPASS | Basic | 1 Ẑ/sem | 10 Go + identité |
+| MULTIPASS | Pro | 5 Ẑ/sem | 128 Go + identité |
+| ZEN Card | Hub | 540€/3 ans | 128 Go en propriété |
+| ZEN Card | Satellite | 50€/an | 128 Go en propriété |
 
 ---
 
@@ -362,32 +451,55 @@ ping 10.99.99.2
 
 ## 📱 Ce que tes membres obtiennent
 
-### MULTIPASS : Le Pass Gratuit (enfin presque)
+### MULTIPASS : L'abonnement (jeton d'usage)
 
-> **"Je paie 1€/semaine et j'ai mon identité numérique + stockage."**
+> **"Je paie un loyer et j'utilise les services du Hub."**
 
-| Service | C'est comme... |
-|---------|----------------|
-| Identité NOSTR | Ton compte Discord, mais tu le contrôles |
-| Stockage 10 Go | Dropbox décentralisé |
-| Réseau social | Twitter sans Elon |
-| Gains par création | Tu postes → tu gagnes des Ẑen |
+| Formule | Stockage | Coût | C'est comme... |
+|---------|----------|------|----------------|
+| **Basic** | 10 Go IPFS | 1 Ẑ/sem (~4€/mois) | Abonnement Spotify |
+| **Pro** | 128 Go NextCloud | 5 Ẑ/sem (~20€/mois) | Abonnement Netflix |
 
-**Coût :** ~5€/mois (moins cher que Spotify)
+**Ce que tu obtiens :**
+- 🆔 Identité NOSTR (ton compte décentralisé)
+- 💰 Wallet Ğ1 (monnaie libre)
+- 🤖 Accès aux IA du Hub (Ollama, ComfyUI...)
+- 📱 Réseau social sans censure
 
-### ZEN Card : Le Pass Premium
+### ZEN Card : La copropriété (jeton de propriété)
 
-> **"Je paie 50€ une fois, je deviens copropriétaire du Hub."**
+> **"J'achète ma part, je suis chez moi, je peux même sous-louer !"**
 
-| Service | C'est comme... |
-|---------|----------------|
-| Copropriété | T'as des parts dans le Hub |
-| 128 Go cloud | Google Drive privé |
-| Astrobot | Ton assistant IA personnel |
-| Droit de vote | Tu décides des règles |
-| 1 an gratuit | Pas de loyer la première année |
+| Plateforme | Coût | Durée | Ce que tu possèdes |
+|------------|------|-------|-------------------|
+| **Hub (PC Gamer)** | 540€ | 3 ans | 128 Go en copropriété |
+| **Satellite (RPi)** | 50€ | 1 an | 128 Go sur le satellite |
 
-**Coût après 1 an :** ~20€/mois (moins cher que Netflix + Spotify)
+**Ce que tu obtiens :**
+- 🏠 **Pas de loyer** → c'est CHEZ TOI
+- 🗳️ **Droit de vote** → tu décides des règles
+- 💰 **Option sous-location** → deviens mini-bailleur !
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  EXEMPLE DE SOUS-LOCATION (ZEN Card)                             │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Tu as acheté une ZEN Card (540€/3 ans = 180€/an)               │
+│  Tu as 128 Go de stockage                                        │
+│                                                                  │
+│  Option 1 : Tu utilises tout pour toi                           │
+│     └── 128 Go de cloud privé, pas de loyer                     │
+│                                                                  │
+│  Option 2 : Tu sous-loues                                        │
+│     └── 128 Go ÷ 10 Go = 12 sous-locataires max                 │
+│     └── 12 × 1 Ẑ/sem = 12 Ẑ/sem = ~624 Ẑ/an                     │
+│     └── Ton investissement : 180€/an                            │
+│     └── Tes revenus : ~624€/an                                  │
+│     └── PROFIT : ~444€/an 🎉                                    │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
