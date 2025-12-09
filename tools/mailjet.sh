@@ -202,7 +202,7 @@ fi
 
 SUBJECT="[UPlanet] ${title}"
 
-MESSAGESIGN="---<br>message sent by <a href='$(myIPFS)/ipns/$IPFSNODEID'>$(myHostName)</a> (Station Astroport.ONE)"
+MESSAGESIGN="---<br>message sent by <a href='${myIPFS}/ipns/$IPFSNODEID'>$(myHostName)</a> (Station Astroport.ONE)"
 
 echo "
 ########################################################################
