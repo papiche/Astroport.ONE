@@ -773,14 +773,18 @@ process_liked_video() {
             log_debug "Saved upload response (original format) to: $upload_output_file"
         fi
         
+        # Clean title for publication (replace underscores with spaces, like ajouter_media.sh does)
+        local title_for_publication=$(echo "$title" | sed 's/_/ /g' | sed 's/  */ /g' | sed 's/^ *//;s/ *$//')
+        log_debug "Title for publication: $title_for_publication"
+        
         # Build description
-        local description="YouTube sync: $title by $uploader"
+        local description="YouTube sync: $title_for_publication by $uploader"
         if [[ -n "$url" ]]; then
             description="${description}\n\nSource: ${url}"
         fi
         
         # Build publish command using --auto mode (reads from upload response JSON)
-        local publish_cmd=("$publish_script" "--auto" "$upload_output_file" "--nsec" "$secret_file" "--title" "$title")
+        local publish_cmd=("$publish_script" "--auto" "$upload_output_file" "--nsec" "$secret_file" "--title" "$title_for_publication")
         
         if [[ -n "$description" ]]; then
             publish_cmd+=("--description" "$description")
