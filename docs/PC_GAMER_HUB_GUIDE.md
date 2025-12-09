@@ -44,9 +44,9 @@ Tu peux garder Windows pour certains jeux ET avoir Linux Mint pour Astroport :
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    TON PC GAMER                                  │
+│                    TON PC GAMER                                 │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │  SSD 1 (500 Go)              SSD 2 (1 To)                       │
 │  ┌─────────────┐             ┌─────────────┐                    │
 │  │   WINDOWS   │             │ LINUX MINT  │                    │
@@ -56,9 +56,9 @@ Tu peux garder Windows pour certains jeux ET avoir Linux Mint pour Astroport :
 │  │ • Game Pass │             │ • IA locale │                    │
 │  │             │             │ • Revenus   │                    │
 │  └─────────────┘             └─────────────┘                    │
-│                                                                  │
+│                                                                 │
 │  Au démarrage : Tu choisis Windows OU Linux Mint                │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -123,7 +123,7 @@ Ton PC Gamer devient un **Hub** qui génère des revenus pendant que tu joues (o
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    TON PC GAMER (HUB)                        │
+│                    TON PC GAMER (HUB)                       │
 │                                                             │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
 │  │   OLLAMA    │  │  COMFYUI    │  │ PERPLEXICA  │   IA     │
@@ -175,7 +175,7 @@ Ton PC Gamer devient un **Hub** qui génère des revenus pendant que tu joues (o
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                  💸 TES REVENUS HEBDO                        │
+│                  💸 TES REVENUS HEBDO                       │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  MULTIPASS (250 membres gratuits qui paient un peu)         │
@@ -221,16 +221,16 @@ WireGuard VPN est destiné aux gamers qui souhaitent **partager leur bibliothèq
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    STEAMLINK VIA WIREGUARD                       │
+│                    STEAMLINK VIA WIREGUARD                      │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │  🎮 PC GAMER (HUB)                                              │
 │  └── Steam avec jeux installés                                  │
 │  └── WireGuard Server (10.99.99.1)                              │
 │  └── SteamLink Host                                             │
-│                                                                  │
+│                                                                 │
 │         WireGuard VPN (latence < 5ms)                           │
-│              │                                                   │
+│              │                                                  │
 │    ┌─────────┴─────────┬─────────────────┐                      │
 │    ▼                   ▼                 ▼                      │
 │  📱 Client 1         📱 Client 2       📱 Client 3              │
@@ -238,11 +238,11 @@ WireGuard VPN est destiné aux gamers qui souhaitent **partager leur bibliothèq
 │  SteamLink App       SteamLink App     SteamLink App            │
 │  └── Joue aux        └── Joue aux      └── Joue aux             │
 │      jeux du Hub         jeux du Hub       jeux du Hub          │
-│                                                                  │
+│                                                                 │
 │  ► Partage de bibliothèque Steam entre membres                  │
 │  ► Streaming jeux en réseau local virtuel                       │
 │  ► Latence minimale via WireGuard                               │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -272,7 +272,7 @@ cd tools
 **Menu Principal :**
 ```
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                          WIREGUARD LAN MANAGER                                ║
+║                          WIREGUARD LAN MANAGER                               ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
 1. 🚀 Initialiser serveur LAN     ← Première étape
@@ -437,6 +437,211 @@ Ton GPU RTX ne sert pas qu'à jouer ! Tu peux faire tourner des IA locales :
 
 ---
 
+## 🍪 Système de Cookies : Synchronise tes comptes automatiquement
+
+### C'est quoi ce système ?
+
+Tu connais les cookies de ton navigateur ? Ces petits fichiers qui te gardent connecté sur YouTube, Twitch, etc. ?
+
+**Astroport peut les utiliser pour toi** pour synchroniser automatiquement tes données depuis ces services vers ton uDRIVE ! C'est comme un bot qui fait le travail à ta place, chaque jour.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              SYSTÈME DE COOKIES AUTOMATISÉ                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  TOI                          TON HUB ASTROPORT                  │
+│    │                                │                            │
+│    │ 1. Exporte tes cookies        │                            │
+│    │    (extension navigateur)      │                            │
+│    │                                │                            │
+│    │ 2. Upload sur /cookie ────────►│                            │
+│    │                                │                            │
+│    │                         3. Stockage sécurisé                │
+│    │                            ~/.youtube.com.cookie            │
+│    │                                │                            │
+│    │                         4. 20H12 → Scraper auto             │
+│    │                            (NOSTRCARD.refresh.sh)           │
+│    │                                │                            │
+│    │◄───────────────────────────────│                            │
+│    │ 5. Tes vidéos likées          │                            │
+│    │    dans uDRIVE/Videos/        │                            │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Comment ça marche ?
+
+1. **Tu exportes tes cookies** avec une extension navigateur ("Get cookies.txt LOCALLY")
+2. **Tu les uploades** sur l'interface `/cookie` de ton Hub
+3. **Chaque jour à 20H12**, le script `NOSTRCARD.refresh.sh` exécute automatiquement le scraper
+4. **Tes données arrivent** dans ton uDRIVE (vidéos, annonces, etc.)
+
+### Services supportés
+
+| Service | Cookie | Scraper | Ce que ça fait |
+|---------|--------|---------|----------------|
+| **YouTube** | `.youtube.com.cookie` | `youtube.com.sh` | Sync tes vidéos likées → uDRIVE/Videos |
+| **Leboncoin** | `.leboncoin.fr.cookie` | `leboncoin.fr.sh` | Scrape tes recherches favorites |
+| **Ton service** | `.example.com.cookie` | `example.com.sh` | **Tu peux l'ajouter !** |
+
+### Exemple : YouTube Sync
+
+Quand tu uploades un cookie YouTube, voilà ce qui se passe chaque jour :
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              YOUTUBE SYNC (youtube.com.sh)                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  20H12 SOLAIRE : NOSTRCARD.refresh.sh se réveille               │
+│                                                                  │
+│  1. DÉTECTION                                                   │
+│     └── Scan des cookies : ~/.zen/game/nostr/EMAIL/.*.cookie    │
+│     └── Cookie YouTube trouvé ? → Lance youtube.com.sh          │
+│                                                                  │
+│  2. RÉCUPÉRATION (via yt-dlp + cookie)                          │
+│     └── Connexion à YouTube avec tes cookies                    │
+│     └── Liste tes vidéos likées (max 3/jour)                    │
+│     └── Filtre celles déjà téléchargées                         │
+│                                                                  │
+│  3. TÉLÉCHARGEMENT                                              │
+│     └── Download en MP4 (meilleure qualité)                     │
+│     └── Extraction des métadonnées                              │
+│                                                                  │
+│  4. UPLOAD IPFS                                                 │
+│     └── /api/fileupload → CID IPFS                              │
+│     └── Stockage dans uDRIVE/Videos/                            │
+│                                                                  │
+│  5. PUBLICATION NOSTR (NIP-71)                                  │
+│     └── publish_nostr_video.sh                                  │
+│     └── Kind 21/22 (vidéo longue/courte)                        │
+│     └── Visible sur NostrTube !                                 │
+│                                                                  │
+│  6. NOTIFICATION                                                │
+│     └── Email : "🎵 YouTube Sync - 3 nouvelles vidéos"          │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Upload de cookies (simple)
+
+```bash
+# Via l'interface web (recommandé)
+# → Va sur http://ton-hub:54321/cookie
+# → Upload ton fichier cookies
+
+# Ou via l'API (avec ton NPUB)
+curl -X POST 'http://ton-hub:54321/api/fileupload' \
+  -F 'file=@youtube_cookies.txt' \
+  -F 'npub=npub1...'
+```
+
+### 🛠️ Créer ton propre scraper (pour les devs)
+
+Tu veux synchroniser un autre service ? **Le système est extensible !**
+
+**Convention de nommage :**
+
+| Élément | Format | Exemple |
+|---------|--------|---------|
+| **Cookie** | `.DOMAINE.cookie` | `.youtube.com.cookie` |
+| **Scraper bash** | `DOMAINE.sh` | `youtube.com.sh` |
+| **Scraper Python** | `scraper_DOMAINE.py` | `scraper_leboncoin.py` |
+
+**Étape 1 : Crée le script bash**
+
+```bash
+# Astroport.ONE/IA/monservice.com.sh
+#!/bin/bash
+# Scraper pour monservice.com
+# Appelé automatiquement quand .monservice.com.cookie existe
+
+PLAYER="$1"           # Email du MULTIPASS
+COOKIE_FILE="$2"      # Chemin vers le cookie (optionnel)
+
+# Ton code de scraping ici...
+# Utilise $COOKIE_FILE pour t'authentifier
+# Sauvegarde dans uDRIVE du $PLAYER
+```
+
+**Étape 2 : (Optionnel) Backend Python pour logique complexe**
+
+```python
+# Astroport.ONE/IA/scraper_monservice.py
+import sys
+from http.cookiejar import MozillaCookieJar
+
+cookie_file = sys.argv[1]
+# Ta logique de scraping...
+```
+
+**Étape 3 : Upload un cookie et c'est automatique !**
+
+```
+Le système détecte automatiquement :
+• Cookie uploadé : .monservice.com.cookie
+• Scraper trouvé : monservice.com.sh
+• Exécution : 20H12 chaque jour par NOSTRCARD.refresh.sh
+```
+
+### Workflow de contribution
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              DEMANDER UN NOUVEAU SCRAPER                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  1. Toi → Upload cookie example.com                             │
+│                                                                  │
+│  2. Système → "🍪 Cookie: example.com - MISSING ASTROBOT"       │
+│              (email de notification)                             │
+│                                                                  │
+│  3. Toi → Décris ton besoin au Capitaine du Hub                 │
+│                                                                  │
+│  4. Capitaine/Dev → Code le scraper (ou délègue)                │
+│                                                                  │
+│  5. Codebase → example.com.sh ajouté au repo                    │
+│                                                                  │
+│  6. Tout le monde → En profite ! (Open Source)                  │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 🔒 Sécurité des cookies
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              🔒 TES COOKIES SONT PROTÉGÉS                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ✅ Fichiers cachés (préfixe .)                                 │
+│  ✅ Permissions 600 (lecture/écriture propriétaire uniquement)  │
+│  ✅ JAMAIS publiés sur IPFS (restent privés)                    │
+│  ✅ Stockés dans ton répertoire personnel                       │
+│  ✅ Authentification NIP-42 requise pour upload                 │
+│                                                                  │
+│  ⚠️ Bonnes pratiques :                                          │
+│  • Renouvelle tes cookies régulièrement                         │
+│  • Exporte uniquement les cookies nécessaires (1 domaine/fichier)│
+│  • Ne partage jamais tes fichiers cookies                       │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### En résumé : Pourquoi c'est cool ?
+
+| Sans cookies | Avec cookies |
+|--------------|--------------|
+| Tu dois télécharger manuellement | Sync automatique chaque jour |
+| Tes vidéos restent sur YouTube | Tes vidéos sont dans TON cloud |
+| Dépendant de YouTube | Backup décentralisé sur IPFS |
+| Pas de preuve de propriété | Publié sur NOSTR (NIP-71) |
+
+> *"C'est comme un bot Discord qui farm pour toi, mais pour tes vidéos YouTube."*
+
+---
+
 ## 📊 Tableau de Bord Fiscal
 
 Le système génère automatiquement vos justificatifs comptables :
@@ -467,18 +672,18 @@ Rien n'empêche plusieurs PC Gamers de rejoindre le **même essaim IPFS privé**
 │                    ESSAIM IPFS PRIVÉ                        │
 │                   (même swarm.key)                          │
 │                                                             │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐              │
-│  │ PC Gamer │◄──►│ PC Gamer │◄──►│ PC Gamer │   HUBS      │
-│  │  HUB A   │    │  HUB B   │    │  HUB C   │              │
-│  └────┬─────┘    └────┬─────┘    └────┬─────┘              │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐               │
+│  │ PC Gamer │◄──►│ PC Gamer │◄──►│ PC Gamer │   HUBS        │
+│  │  HUB A   │    │  HUB B   │    │  HUB C   │               │
+│  └────┬─────┘    └────┬─────┘    └────┬─────┘               │
 │       │               │               │                     │
-│  ┌────┴────┐     ┌────┴────┐     ┌────┴────┐               │
-│  │ RPi x8  │     │ RPi x8  │     │ RPi x8  │  SATELLITES   │
-│  └─────────┘     └─────────┘     └─────────┘               │
+│  ┌────┴────┐     ┌────┴────┐     ┌────┴────┐                │
+│  │ RPi x8  │     │ RPi x8  │     │ RPi x8  │  SATELLITES    │
+│  └─────────┘     └─────────┘     └─────────┘                │
 │                                                             │
-│  ► Réplication IPFS entre tous les nœuds                   │
-│  ► Load balancing automatique des services IA              │
-│  ► Redondance et haute disponibilité                       │
+│  ► Réplication IPFS entre tous les nœuds                    │
+│  ► Load balancing automatique des services IA               │
+│  ► Redondance et haute disponibilité                        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -518,190 +723,6 @@ Pour éviter les conflits, chaque Hub doit avoir :
 
 ---
 
-## ⏰ La Sync Quotidienne (20H12)
-
-### C'est quoi ce truc de "20H12 solaire" ?
-
-Tous les jours, tous les Hubs du réseau se synchronisent automatiquement. C'est comme un "daily reset" dans un MMO, sauf que l'heure dépend de où tu es sur la planète.
-
-**Pourquoi ?** Pour que tout le monde sync au même moment du soleil (et pas juste "20h12 heure de Paris").
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│              SYNCHRONISATION SOLAIRE 20H12                       │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│   Paris (LON=2.35°)        Brest (LON=-4.48°)                   │
-│   Solar 20h12 = 21:04      Solar 20h12 = 21:31                  │
-│   (été UTC+2)              (été UTC+2)                          │
-│                                                                  │
-│   ┌──────┐                 ┌──────┐                             │
-│   │ HUB  │◄── 27 min ───►│ HUB  │                              │
-│   │Paris │    décalage    │Brest │                              │
-│   └──────┘                 └──────┘                             │
-│      │                        │                                  │
-│   20h12 solaire            20h12 solaire                        │
-│   = même position          = même position                      │
-│     du soleil                du soleil                          │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Configuration GPS du Capitaine
-
-Le Capitaine déclare sa position dans `~/.zen/GPS` :
-
-```bash
-# Fichier ~/.zen/GPS
-LAT=48.8566    # Latitude (Paris)
-LON=2.3522     # Longitude (Paris)
-```
-
-Le script `cron_VRFY.sh` calcule automatiquement l'heure légale correspondant à 20H12 solaire :
-
-```bash
-# Calibration automatique
-./tools/cron_VRFY.sh ON
-
-# Résultat :
-# .... Calibrating to ~/.zen/GPS SOLAR 20H12
-#      LAT=48.8566 LON=2.3522
-#      Solar 20h12 = Legal time 21:04
-# ✅ ASTROPORT is ON
-#    - 20h12 cron: ENABLED (solar time: 4 21)
-```
-
-### Modes de Fonctionnement
-
-| Mode | 20H12 Cron | IPFS | API | Usage |
-|------|------------|------|-----|-------|
-| **ON** | ✅ | 24/7 | ✅ | Hub permanent (PC Gamer) |
-| **LOW** | ✅ | 1h/jour | ❌ | Capteurs ORE / Satellites économes |
-| **OFF** | ❌ | ❌ | ❌ | Station inactive |
-
-```bash
-# Activer le mode complet (Hub)
-./tools/cron_VRFY.sh ON
-
-# Mode économe (Capteurs ORE sur batterie/solaire)
-./tools/cron_VRFY.sh LOW
-
-# Désactiver complètement
-./tools/cron_VRFY.sh OFF
-```
-
-### Mode LOW : Capteurs ORE Environnementaux
-
-Le mode **LOW** est conçu pour les **capteurs ORE** (Obligations Réelles Environnementales) qui surveillent des parcelles géographiques (UMAP) :
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    CAPTEUR ORE (Mode LOW)                        │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  🌳 Parcelle UMAP (0.01° × 0.01° ≈ 1.2 km²)                     │
-│                                                                  │
-│  ┌─────────────────┐                                            │
-│  │  Raspberry Pi   │  ← Alimentation solaire/batterie           │
-│  │  + Capteurs     │                                            │
-│  │  • Température  │                                            │
-│  │  • Humidité     │                                            │
-│  │  • CO2          │                                            │
-│  │  • Caméra       │                                            │
-│  └────────┬────────┘                                            │
-│           │                                                      │
-│           ▼                                                      │
-│  ┌─────────────────────────────────────────┐                    │
-│  │ 20H12 Solaire (1h de sync/jour)         │                    │
-│  │                                          │                    │
-│  │ 1. Démarrage IPFS                       │                    │
-│  │ 2. Publication mesures (Kind 30312)     │                    │
-│  │ 3. Sync constellation                   │                    │
-│  │ 4. Arrêt IPFS (économie énergie)        │                    │
-│  └─────────────────────────────────────────┘                    │
-│                                                                  │
-│  ► Consommation : ~2W en veille, ~5W pendant sync              │
-│  ► Autonomie : Panneau solaire 10W + batterie 12V              │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Événements NOSTR publiés par les Capteurs ORE
-
-| Kind | Type | Description |
-|------|------|-------------|
-| **30800** | DID Document | Identité de l'UMAP (NIP-101) |
-| **30312** | ORE Meeting Space | Espace géographique pour vérifications |
-| **30313** | ORE Verification | Réunion de vérification planifiée |
-| **30009** | Badge Definition | Définition des badges ORE |
-| **8** | Badge Award | Attribution de badge après vérification |
-
-### Cycle de Vérification ORE
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│              VÉRIFICATION ORE AUTOMATISÉE                        │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  CAPTEUR (Mode LOW)              HUB (Mode ON)                  │
-│       │                               │                          │
-│       │ 20H12: Publie mesures         │                          │
-│       │ (température, humidité...)    │                          │
-│       │──────────────────────────────►│                          │
-│       │                               │                          │
-│       │                    Analyse conformité ORE               │
-│       │                    (couverture forestière, etc.)        │
-│       │                               │                          │
-│       │         Récompense Ẑen        │                          │
-│       │◄──────────────────────────────│                          │
-│       │ (UPLANETNAME_ASSETS → UMAP)   │                          │
-│       │                               │                          │
-│  Portefeuille UMAP                    │                          │
-│  crédité automatiquement              │                          │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Avantage Économique ORE
-
-| Critère | ORE Notarié | ORE UPlanet |
-|---------|-------------|-------------|
-| Coût initial | 6 500 - 19 000 € | < 1 € |
-| Coût annuel | 1 000 - 3 000 € | ~ 0 € |
-| Délai | 6-12 mois | 5 minutes |
-| Vérification | Expertise coûteuse | Capteurs automatiques |
-
-### Ce qui se passe à 20H12 Solaire
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                   20H12.PROCESS.SH                               │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  1. SYNCHRONISATION NOSTR                                        │
-│     └── Relai des événements NOSTR vers l'essaim                │
-│     └── Backup des profils MULTIPASS/ZEN Cards                  │
-│                                                                  │
-│  2. SYNCHRONISATION IPFS                                         │
-│     └── Pin des contenus prioritaires                           │
-│     └── Garbage collection des anciens pins                     │
-│     └── Réplication inter-nœuds                                 │
-│                                                                  │
-│  3. ÉCONOMIE ẐEN                                                 │
-│     └── Collecte des loyers (MULTIPASS, ZEN Cards)              │
-│     └── Paiement PAF (Participation Aux Frais)                  │
-│     └── Allocation coopérative 3×1/3                            │
-│                                                                  │
-│  4. CONSTELLATION                                                │
-│     └── Découverte des nouveaux nœuds                           │
-│     └── Mise à jour de la carte de l'essaim                     │
-│     └── Synchronisation des services IA disponibles             │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
----
-
 ## 🛰️ Architecture Hub + 24 Satellites
 
 ### Le Hub : Centre de Coordination
@@ -715,39 +736,39 @@ Un **Hub PC Gamer** peut accueillir jusqu'à **24 Satellites** qui assurent :
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         HUB PC GAMER                             │
-│                    (NOSTR Relay + IPFS Gateway)                  │
-│                                                                  │
+│                         HUB PC GAMER                            │
+│                    (NOSTR Relay + IPFS Gateway)                 │
+│                                                                 │
 │  ┌─────────────────────────────────────────────────────────┐    │
 │  │  Services IA (GPU)     │  Services Économiques          │    │
 │  │  • Ollama (LLM)        │  • Collecte loyers             │    │
 │  │  • ComfyUI (Images)    │  • Distribution PAF            │    │
 │  │  • Perplexica (Search) │  • Allocation 3×1/3            │    │
 │  └─────────────────────────────────────────────────────────┘    │
-│                              │                                   │
+│                              │                                  │
 │               IPFS P2P (swarm.key privé)                        │
-│               + NOSTR Relay constellation                        │
-│                              │                                   │
+│               + NOSTR Relay constellation                       │
+│                              │                                  │
 ├──────────────────────────────┴──────────────────────────────────┤
-│                        24 SATELLITES                             │
+│                        24 SATELLITES                            │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐        │
-│  │RPi #1  │ │RPi #2  │ │RPi #3  │ │RPi #4  │ │  ...   │        │
-│  │Mode LOW│ │Mode LOW│ │Mode LOW│ │Mode LOW│ │Mode LOW│        │
-│  │ORE/IoT │ │ORE/IoT │ │ORE/IoT │ │ORE/IoT │ │ORE/IoT │        │
-│  └────────┘ └────────┘ └────────┘ └────────┘ └────────┘        │
+│                                                                 │
+│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐         │
+│  │RPi #1  │ │RPi #2  │ │RPi #3  │ │RPi #4  │ │  ...   │         │
+│  │Mode LOW│ │Mode LOW│ │Mode LOW│ │Mode LOW│ │Mode LOW│         │
+│  │ORE/IoT │ │ORE/IoT │ │ORE/IoT │ │ORE/IoT │ │ORE/IoT │         │
+│  └────────┘ └────────┘ └────────┘ └────────┘ └────────┘         │
 │      │          │          │          │          │              │
-│   NOSTR      NOSTR      NOSTR      NOSTR      NOSTR            │
-│   Relay      Relay      Relay      Relay      Relay            │
+│   NOSTR      NOSTR      NOSTR      NOSTR      NOSTR             │
+│   Relay      Relay      Relay      Relay      Relay             │
 │      +          +          +          +          +              │
-│   IPFS       IPFS       IPFS       IPFS       IPFS             │
+│   IPFS       IPFS       IPFS       IPFS       IPFS              │
 │   Gateway   Gateway    Gateway    Gateway    Gateway            │
-│                                                                  │
-│  ► Connexion : IPFS P2P (pas de WireGuard)                     │
-│  ► Sync : 20H12 solaire (mode LOW = 1h/jour)                   │
-│  ► Usage : Capteurs ORE, relais NOSTR, passerelles IPFS        │
-│                                                                  │
+│                                                                 │
+│  ► Connexion : IPFS P2P (pas de WireGuard)                      │
+│  ► Sync : 20H12 solaire (mode LOW = 1h/jour)                    │
+│  ► Usage : Capteurs ORE, relais NOSTR, passerelles IPFS         │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -758,68 +779,13 @@ Un **Hub PC Gamer** peut accueillir jusqu'à **24 Satellites** qui assurent :
 | **Relai NOSTR** | Reçoit et redistribue les événements NOSTR locaux |
 | **Passerelle IPFS** | Sert de point d'accès IPFS pour sa zone géographique |
 | **Stockage local** | uDRIVE (10Go) + NextCloud (128Go) pour ses membres |
-| **Mode LOW** | Sync 1×/jour à 20H12 solaire pour économiser les ressources |
 
 ### Capacité Totale d'un Essaim
 
 | Élément | Par Satellite | Hub + 24 Satellites |
 |---------|---------------|---------------------|
-| Sociétaires (ZEN Cards) | 10 | **24 + 240 = 264** |
-| Locataires (MULTIPASS) | 50 | **250 + 1200 = 1450** |
-| Stockage NextCloud | 1 To | **~25 To** |
-| Stockage uDRIVE (IPFS) | 500 Go | **~12 To** |
-
----
-
-## 🚀 Installation Express (30 minutes avec Linux Mint)
-
-### Prérequis
-
-- ✅ Un PC Gamer avec GPU (Nvidia recommandé)
-- ✅ Linux Mint installé (voir section "Passer à Linux Mint")
-- ✅ Connexion Internet stable
-- ✅ 100 Go d'espace disque libre
-
-### Let's go !
-
-```bash
-# 1. Ouvre un terminal (Ctrl+Alt+T)
-
-# 2. Installe les dépendances
-sudo apt update && sudo apt install git curl jq -y
-
-# 3. Clone Astroport.ONE
-git clone https://github.com/papinou/Astroport.ONE.git
-cd Astroport.ONE
-
-# 4. Lance l'installation (ça prend ~10 min)
-./install.sh
-
-# 5. Configure ta position (pour la sync quotidienne)
-# Trouve tes coordonnées sur Google Maps
-echo "LAT=48.8566" > ~/.zen/GPS    # Remplace par ta latitude
-echo "LON=2.3522" >> ~/.zen/GPS    # Remplace par ta longitude
-
-# 6. Active ton Hub
-cd tools && ./cron_VRFY.sh ON
-
-# 7. Crée ton compte Capitaine
-# Ouvre Firefox → http://localhost:54321/g1nostr
-# Suis les instructions
-
-# 8. C'est prêt ! 🎉
-```
-
-### (Optionnel) Partage tes jeux Steam avec WireGuard
-
-```bash
-# Si tu veux partager ta bibliothèque Steam via SteamLink
-cd ~/Astroport.ONE/tools
-./wireguard_control.sh
-# → Choisis "1. Initialiser serveur LAN"
-# → Note la clé publique affichée
-# → Donne-la à tes potes pour qu'ils se connectent
-```
+| Stockage NextCloud | 2 To | **~50 To** |
+| Stockage uDRIVE (IPFS) | 2 To | **~50 To** |
 
 ---
 
@@ -833,24 +799,24 @@ La différence avec un compte Google/Facebook : **c'est TOI qui contrôles tes d
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    COMMENT ÇA MARCHE                             │
+│                    COMMENT ÇA MARCHE                            │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │  Toi ────► Crée ton MULTIPASS ────► Tes potes te certifient     │
-│                                                                  │
+│                                                                 │
 │  C'est comme le système de "vouching" dans certains jeux :      │
 │  5 personnes de confiance doivent confirmer que t'es un humain  │
-│                                                                  │
-│    ┌─────────┐           ┌─────────┐                             │
-│    │   Toi   │◄─────────►│ Ton pote│                             │
-│    │  MULTI  │  certifie │  MULTI  │                             │
-│    │  PASS   │◄─────────►│  PASS   │                             │
-│    └─────────┘           └─────────┘                             │
-│                                                                  │
+│                                                                 │
+│    ┌─────────┐           ┌─────────┐                            │
+│    │   Toi   │◄─────────►│ Ton pote│                            │
+│    │  MULTI  │  certifie │  MULTI  │                            │
+│    │  PASS   │◄─────────►│  PASS   │                            │
+│    └─────────┘           └─────────┘                            │
+│                                                                 │
 │    ► 1 humain = 1 compte (pas de multi-compte)                  │
 │    ► Pas de bots (contrairement à Discord/Twitter)              │
 │    ► Tes données restent sur ton PC                             │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -908,38 +874,6 @@ const response = await fetch(`${window.uSPOT}/api/test-nostr`, {
 | **ZEN Economy** | Transactions économiques | MULTIPASS + Ğ1 |
 | **Flora Stats** | Observations botaniques | MULTIPASS + Badges |
 
-### Synchronisation Constellation
-
-Le Hub synchronise les événements NOSTR de tous les membres via `backfill_constellation.sh` :
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│              RAPPORT DE SYNCHRONISATION CONSTELLATION            │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  📊 Statistiques du dernier sync (20H12 solaire)                │
-│                                                                  │
-│  • Peers connectés : 45/50 (90%)                                │
-│  • Événements collectés : 12,450                                │
-│  • Événements importés : 3,200                                  │
-│                                                                  │
-│  📨 Types de messages synchronisés :                            │
-│  • Profils (kind 0) : 150                                       │
-│  • Notes (kind 1) : 2,500                                       │
-│  • DMs (kind 4) : 450                                           │
-│  • Vidéos (kind 21/22) : 85                                     │
-│  • Commentaires (kind 1111) : 320                               │
-│  • Tags (kind 1985) : 180                                       │
-│  • DID Documents (kind 30800) : 45                              │
-│  • Oracle Permits (kind 30500-30503) : 25                       │
-│  • ORE Contracts (kind 30312-30313) : 12                        │
-│  • Badge Awards (kind 8) : 35                                   │
-│                                                                  │
-│  ⏰ Temps de sync : 45s                                         │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
 ### Avantages de la Toile de Confiance
 
 | Aspect | Web2 Classique | MULTIPASS + Ğ1 |
@@ -971,9 +905,9 @@ Le Hub synchronise les événements NOSTR de tous les membres via `backfill_cons
    └── Gestion des DID (NIP-101)
 
 4. Sync Constellation
-   └── Synchronisation inter-nœuds à 20H12 solaire
-   └── Rapport d'activité quotidien
+   └── Synchronisation N² inter-nœuds 
    └── Découverte des nouveaux membres
+   └── Rapport d'activité
 ```
 
 ### Exemple : Authentification pour Upload Vidéo
@@ -1023,27 +957,27 @@ Tu connais les rangs dans les jeux compétitifs ? Bronze → Silver → Gold →
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    SYSTÈME DE RANGS WOTX2                        │
+│                    SYSTÈME DE RANGS WOTX2                       │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │  N'importe qui peut créer une "guilde" de compétences           │
 │  Ex: "Arduino", "Impression 3D", "Jardinage", etc.              │
-│                                                                  │
+│                                                                 │
 │  PROGRESSION (comme les rangs LoL/Valorant)                     │
-│                                                                  │
-│  ┌───────┐    ┌───────┐    ┌───────┐    ┌───────┐              │
-│  │  X1   │───►│  X2   │───►│  X3   │───►│  Xn   │───► ∞        │
-│  │Bronze │    │Silver │    │ Gold  │    │Diamond│              │
-│  │1 vote │    │2 votes│    │3 votes│    │N votes│              │
-│  └───────┘    └───────┘    └───────┘    └───────┘              │
-│                                                                  │
+│                                                                 │
+│  ┌───────┐    ┌───────┐    ┌───────┐    ┌───────┐               │
+│  │  X1   │───►│  X2   │───►│  X3   │───►│  Xn   │───► ∞         │
+│  │Bronze │    │Silver │    │ Gold  │    │Diamond│               │
+│  │1 vote │    │2 votes│    │3 votes│    │N votes│               │
+│  └───────┘    └───────┘    └───────┘    └───────┘               │
+│                                                                 │
 │  TITRES DÉBLOQUÉS                                               │
 │  • X1-X4   : Apprenti (Bronze/Silver)                           │
 │  • X5-X10  : Expert (Gold/Platinum)                             │
 │  • X11-X50 : Maître (Diamond/Master)                            │
 │  • X51-X100: Grand Maître (Grandmaster)                         │
 │  • X101+   : Légende (Challenger)                               │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1051,33 +985,33 @@ Tu connais les rangs dans les jeux compétitifs ? Bronze → Silver → Gold →
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│              CYCLE DE CERTIFICATION WOTX2                        │
+│              CYCLE DE CERTIFICATION WOTX2                       │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │  1. CRÉATION (Kind 30500)                                       │
 │     └── Alice crée "PERMIT_JARDINAGE_X1"                        │
 │     └── Publié sur NOSTR via son Hub                            │
-│                                                                  │
+│                                                                 │
 │  2. DEMANDE (Kind 30501)                                        │
 │     └── Bob demande à devenir apprenti                          │
 │     └── Compétence réclamée : "Compostage"                      │
 │     └── Publié directement via MULTIPASS                        │
-│                                                                  │
+│                                                                 │
 │  3. ATTESTATION (Kind 30502)                                    │
 │     └── Alice atteste Bob (1 signature)                         │
 │     └── Compétences révélées : "Paillage", "Semis"              │
 │     └── Publié directement via MULTIPASS                        │
-│                                                                  │
+│                                                                 │
 │  4. VALIDATION (20H12 - ORACLE.refresh.sh)                      │
 │     └── Seuil atteint → Credential 30503 émis                   │
 │     └── Bob devient "Maître Certifié X1"                        │
 │     └── PERMIT_JARDINAGE_X2 créé automatiquement                │
-│                                                                  │
-│  5. PROGRESSION                                                  │
+│                                                                 │
+│  5. PROGRESSION                                                 │
 │     └── Carol demande X2 (2 attestations requises)              │
 │     └── Alice + Bob attestent Carol                             │
 │     └── X3 créé automatiquement...                              │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1126,29 +1060,29 @@ Tu connais les rangs dans les jeux compétitifs ? Bronze → Silver → Gold →
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│              FABLAB LOCAL → WOTX2 INTÉGRÉ                        │
+│              FABLAB LOCAL → WOTX2 INTÉGRÉ                       │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │  🔧 PERMIT_IMPRESSION3D_X1                                      │
 │     └── Créé par Maker expérimenté                              │
 │     └── Compétences : Calibration, PLA, PETG                    │
-│                                                                  │
+│                                                                 │
 │  ⚡ PERMIT_ELECTRONIQUE_X1                                       │
 │     └── Créé par Arduino Master                                 │
 │     └── Compétences : Soudure, Breadboard, I2C                  │
-│                                                                  │
-│  🌱 PERMIT_PERMACULTURE_X1                                       │
+│                                                                 │
+│  🌱 PERMIT_PERMACULTURE_X1                                      │
 │     └── Créé par Jardinier                                      │
 │     └── Compétences : Compost, Buttes, Associations             │
-│                                                                  │
-│  🎨 PERMIT_DECOUPE_LASER_X1                                      │
+│                                                                 │
+│  🎨 PERMIT_DECOUPE_LASER_X1                                     │
 │     └── Créé par Technicien                                     │
 │     └── Compétences : Vectorisation, Puissance, Matériaux       │
-│                                                                  │
+│                                                                 │
 │  ► Chaque maîtrise progresse indépendamment                     │
 │  ► Les compétences sont révélées par les attestations           │
 │  ► Pas besoin d'organisme certificateur                         │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1170,6 +1104,8 @@ PERMIT_OBSERVATEUR_FAUNE_X5 (Expert)
         sur les parcelles UMAP
 ```
 
+https://github.com/papiche/Astroport.ONE/blob/master/docs/contrib/0RE_WoTx2_Le_Cadastre_%C3%89cologique_D%C3%A9centralis%C3%A9.pdf
+
 ---
 
 ## 🌐 Datacenter vs Astroport : Pourquoi c'est révolutionnaire
@@ -1178,21 +1114,21 @@ PERMIT_OBSERVATEUR_FAUNE_X5 (Expert)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│              INTERNET CENTRALISÉ (GAFAM)                         │
+│              INTERNET CENTRALISÉ (GAFAM)                        │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│                    ┌─────────────┐                               │
-│                    │  DATACENTER │                               │
-│                    │   GOOGLE    │                               │
-│                    │   (ou AWS)  │                               │
-│                    └──────┬──────┘                               │
-│                           │                                      │
+│                                                                 │
+│                    ┌─────────────┐                              │
+│                    │  DATACENTER │                              │
+│                    │   GOOGLE    │                              │
+│                    │   (ou AWS)  │                              │
+│                    └──────┬──────┘                              │
+│                           │                                     │
 │    ┌──────────────────────┼──────────────────────┐              │
 │    │           │          │          │           │              │
 │    ▼           ▼          ▼          ▼           ▼              │
 │   👤          👤         👤         👤          👤              │
 │  User 1     User 2     User 3     User 4      User 5            │
-│                                                                  │
+│                                                                 │
 │  PROBLÈMES :                                                    │
 │  ❌ Point unique de défaillance (datacenter en panne = RIP)     │
 │  ❌ Censure facile (1 décision = millions d'utilisateurs coupés)│
@@ -1200,7 +1136,7 @@ PERMIT_OBSERVATEUR_FAUNE_X5 (Expert)
 │  ❌ Coûts énormes (climatisation, sécurité, personnel)          │
 │  ❌ Latence pour les utilisateurs éloignés                      │
 │  ❌ Tu paies POUR le service (pas AVEC le service)              │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1208,9 +1144,9 @@ PERMIT_OBSERVATEUR_FAUNE_X5 (Expert)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│              INTERNET DÉCENTRALISÉ (ASTROPORT)                   │
+│              INTERNET DÉCENTRALISÉ (ASTROPORT)                  │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │     Hub A ◄────────────► Hub B ◄────────────► Hub C             │
 │       │ ╲                  │                  ╱ │               │
 │       │   ╲                │                ╱   │               │
@@ -1219,10 +1155,10 @@ PERMIT_OBSERVATEUR_FAUNE_X5 (Expert)
 │       │         Hub D ◄────┴────► Hub E         │               │
 │       │           │                 │           │               │
 │       └───────────┴────────┬────────┴───────────┘               │
-│                            │                                     │
+│                            │                                    │
 │            Sync N² à 20H12 solaire                              │
 │            (chaque nœud sync avec tous)                         │
-│                                                                  │
+│                                                                 │
 │  AVANTAGES :                                                    │
 │  ✅ Aucun point unique de défaillance                           │
 │  ✅ Censure impossible (faudrait éteindre TOUS les Hubs)        │
@@ -1230,7 +1166,7 @@ PERMIT_OBSERVATEUR_FAUNE_X5 (Expert)
 │  ✅ Coûts répartis sur les utilisateurs                         │
 │  ✅ Latence optimale (Hub le plus proche)                       │
 │  ✅ Tu es PAYÉ pour participer                                  │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1356,7 +1292,7 @@ PERMIT_OBSERVATEUR_FAUNE_X5 (Expert)
 │  └── Tes photos analysées par IA (reconnaissance faciale)       │
 │  └── Valeur générée par utilisateur : ~300€/an                  │
 │                                                                 │
-│  Astroport MULTIPASS à 4€/mois :                                │
+│  Astroport MULTIPASS à 1€/semaine :                                │
 │  └── Tes données chiffrées et illisibles                        │
 │  └── Ta position : connue uniquement si tu le veux              │
 │  └── Ton historique : stocké localement sur TON Hub             │
@@ -1417,21 +1353,21 @@ En transformant ton PC Gamer en Hub Astroport.ONE, tu :
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    CE QUE TU OBTIENS                             │
+│                    CE QUE TU OBTIENS                            │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │  🆔 MULTIPASS        → Ton identité numérique (pas de fake)     │
-│  🎓 WoTx2            → Badges de compétences vérifiés           │
-│  🌳 ORE              → Impact environnemental réel              │
 │  💰 ẐEN Economy      → Revenus automatiques                     │
 │  🤖 Services IA      → ChatGPT/Stable Diffusion chez toi        │
 │  📡 NOSTR/IPFS       → Réseau social sans censure               │
 │  🛰️ Hub + Satellites → Ton propre mini-datacenter               │
-│                                                                  │
+│  +                                                              │
+│  🎓 WoTx2            → Badges de compétences vérifiés           │
+│  🌳 ORE              → Contrat environnemental réel             |│                                                                 │
 │  ► Tout tourne automatiquement pendant que tu joues             │
 │  ► Tes données restent CHEZ TOI                                 │
 │  ► Tu fais partie d'une vraie communauté                        │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1470,17 +1406,11 @@ Et TU es payé pour faire tourner le truc.
 git clone https://github.com/papinou/Astroport.ONE.git
 cd Astroport.ONE && ./install.sh
 
-# 3. Crée ton MULTIPASS
-#    → Va sur http://localhost:54321/g1nostr
-
-# 4. Invite tes potes à rejoindre ton Hub
-
-# 5. Profit (littéralement)
+# 3. Contacter support@qo-op.com pour rejoindre l'essaim ẐEN[0]
 ```
 
 ### Besoin d'aide ?
 
-- **Discord/Matrix :** Rejoins la communauté G1FabLab
 - **Email :** support@qo-op.com
 - **Forum :** https://forum.monnaie-libre.fr
 
@@ -1489,4 +1419,3 @@ cd Astroport.ONE && ./install.sh
 **Version :** 1.0 | **Dernière mise à jour :** Décembre 2025  
 **Projet :** UPlanet ẐEN - Une expérience G1FabLab  
 **License :** AGPL-3.0 (Open Source, tu peux modifier le code)
-
