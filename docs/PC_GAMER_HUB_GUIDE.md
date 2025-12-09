@@ -164,39 +164,39 @@ Ton PC Gamer devient un **Hub** qui génère des revenus pendant que tu joues (o
 ┌─────────────────────────────────────────────────────────────────┐
 │  MULTIPASS = Jeton d'USAGE (locataire)                          │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │  📱 Formule Basic : 1 Ẑen/semaine (~4€/mois)                    │
 │     └── 10 Go de stockage décentralisé (IPFS)                   │
-│     └── Identité NOSTR + wallet Ğ1                              │
+│     └── Identité NOSTR + wallet ẐEN                             │
 │     └── Accès aux services IA du Hub                            │
-│                                                                  │
+│                                                                 │
 │  📱 Formule Pro : 5 Ẑen/semaine (~20€/mois)                     │
 │     └── 128 Go de stockage NextCloud                            │
 │     └── Tout le reste inclus                                    │
-│                                                                  │
+│                                                                 │
 │  → Tu paies pour utiliser, comme un abonnement Netflix          │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
 │  ZEN CARD = Jeton de PROPRIÉTÉ (copropriétaire)                 │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │  🏠 Sur HUB (PC Gamer) : 540€ pour 3 ans (180€/an)              │
 │     └── Tu POSSÈDES une part de 128 Go du Hub                   │
 │     └── Pas de loyer à payer (c'est chez toi !)                 │
 │     └── Droit de vote sur les décisions                         │
-│                                                                  │
+│                                                                 │
 │  🛰️ Sur Satellite (RPi) : 50€/an                                │
 │     └── Même principe, sur un Raspberry Pi                      │
-│                                                                  │
-│  💰 Option sous-location :                                       │
+│                                                                 │
+│  💰 Option sous-location :                                      │
 │     └── Tu peux louer tes 128 Go en tranches de 10 Go           │
 │     └── Exemple : 12 sous-locataires × 1 Ẑ/sem = 12 Ẑ/sem       │
 │     └── Tu deviens toi-même un mini-bailleur !                  │
-│                                                                  │
+│                                                                 │
 │  → C'est comme acheter un appart vs le louer                    │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -245,38 +245,38 @@ Ton PC Gamer devient un **Hub** qui génère des revenus pendant que tu joues (o
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                  💸 TES REVENUS HEBDO                            │
+│                  💸 TES REVENUS HEBDO                           │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │  MULTIPASS Basic (200 locataires × 10 Go)                       │
 │  └── 200 × 1 Ẑ/semaine = 200 Ẑ                                  │
-│                                                                  │
+│                                                                 │
 │  MULTIPASS Pro (50 locataires × 128 Go)                         │
 │  └── 50 × 5 Ẑ/semaine = 250 Ẑ                                   │
-│                                                                  │
+│                                                                 │
 │  ZEN Cards (24 copropriétaires)                                 │
 │  └── 24 × 540€/3ans ÷ 156 sem ≈ 83 Ẑ/semaine                    │
 │  └── (Ils sont CHEZ EUX, pas de loyer hebdo !)                  │
-│                                                                  │
+│                                                                 │
 │  TOTAL REVENUS HUB : ~533 Ẑ/semaine                             │
-│                                                                  │
+│                                                                 │
 ├─────────────────────────────────────────────────────────────────┤
 │  TA PART (ARMATEUR + CAPITAINE)                                 │
-│                                                                  │
+│                                                                 │
 │  PAF Armateur (tes frais réels)                                 │
-│  └── Électricité + Internet + Usure ≈ 14 Ẑ/semaine             │
-│                                                                  │
+│  └── Électricité + Internet + Usure ≈ 14 Ẑ/semaine              │
+│                                                                 │
 │  Rémunération Capitaine (ton "salaire")                         │
 │  └── Gestion quotidienne ≈ 28 Ẑ/semaine                         │
-│                                                                  │
+│                                                                 │
 │  → TA PART : ~42 Ẑ/semaine (~170€/mois)                         │
-│                                                                  │
+│                                                                 │
 ├─────────────────────────────────────────────────────────────────┤
 │  SURPLUS COOPÉRATIF (géré par CopyLaRadio)                      │
 │  └── 1/3 Trésorerie (économies du collectif)                    │
 │  └── 1/3 R&D (améliorer Astroport)                              │
 │  └── 1/3 Projets écolos (forêts, jardins)                       │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -361,7 +361,7 @@ cd tools
 **Menu Principal :**
 ```
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                          WIREGUARD LAN MANAGER                                ║
+║                          WIREGUARD LAN MANAGER                               ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
 1. 🚀 Initialiser serveur LAN     ← Première étape
@@ -462,7 +462,7 @@ ping 10.99.99.2
 
 **Ce que tu obtiens :**
 - 🆔 Identité NOSTR (ton compte décentralisé)
-- 💰 Wallet Ğ1 (monnaie libre)
+- 💰 Wallet ẐEN (monnaie libre)
 - 🤖 Accès aux IA du Hub (Ollama, ComfyUI...)
 - 📱 Réseau social sans censure
 
@@ -980,7 +980,7 @@ POST /g1nostr
 }
 
 # Résultat : Création simultanée de
-# - Clé Ğ1 (wallet Duniter)
+# - Clé ẐEN (wallet Duniter)
 # - Clé NOSTR (npub/nsec)
 # - DID Document (NIP-101)
 # - Stockage uDRIVE (10 Go IPFS)
@@ -1017,7 +1017,7 @@ const response = await fetch(`${window.uSPOT}/api/test-nostr`, {
 | **NostrTube** | Plateforme vidéo décentralisée | MULTIPASS + NIP-42 |
 | **UPlanet ORE** | Certification environnementale | MULTIPASS + Oracle |
 | **UMAP Chat** | Chat géolocalisé (NIP-28) | MULTIPASS + GPS |
-| **ZEN Economy** | Transactions économiques | MULTIPASS + Ğ1 |
+| **ZEN Economy** | Transactions économiques | MULTIPASS + ẐEN |
 | **Flora Stats** | Observations botaniques | MULTIPASS + Badges |
 
 ### Synchronisation Constellation
@@ -1054,7 +1054,7 @@ Le Hub synchronise les événements NOSTR de tous les membres via `backfill_cons
 
 ### Avantages de la Toile de Confiance
 
-| Aspect | Web2 Classique | MULTIPASS + Ğ1 |
+| Aspect | Web2 Classique | MULTIPASS + ẐEN |
 |--------|----------------|----------------|
 | **Identité** | Email + mot de passe | Clé cryptographique + 5 certifications |
 | **Vérification** | CAPTCHA, SMS | Rencontre humaine IRL |
