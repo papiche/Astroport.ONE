@@ -251,7 +251,7 @@ if [[ -s ${INDEX} ]]; then
 
 fi
 
-export TEXTPART="$(myIPFS)/ipfs/${EMAILZ}"
+export TEXTPART="${myIPFS}/ipfs/${EMAILZ}"
 
 [[ $title == "" ]] && title="MESSAGE"
 
@@ -281,7 +281,7 @@ json_payload='{
                 }
             ],
             "Subject": "'${SUBJECT}'",
-            "TextPart": "'$(myIPFS)/ipfs/${EMAILZ}'",
+            "TextPart": "'${myIPFS}/ipfs/${EMAILZ}'",
             "HTMLPart": "<h1>Bro</h1><h3><a href=\"'${myIPFS}'/ipfs/'${EMAILZ}'\">'${title}'</a></h3><br>/ipfs/'${EMAILZ}'<br><a href=\"'${uSPOT}'/scan\">'${UPLANET}'</a> [ /ipns/'${pseudo}' ]<br /><br>'${MESSAGESIGN}'"
         }
     ]

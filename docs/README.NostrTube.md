@@ -190,7 +190,7 @@ Secure file upload endpoint with NIP-42 authentication.
   - `Documents/` - Text/PDF files
   - `Apps/` - Application files
 - **Cookie Detection**: Special handling for Netscape cookie files
-  - Saves to `~/.zen/game/nostr/{hex_pubkey}/.cookie.txt`
+  - Saves to `~/.zen/game/nostr/{email}/.cookie.txt`
   - No IPFS upload for security
 - **AI Filenames**: Images get AI-generated descriptive filenames
 - IPFS CID generation via `upload2ipfs.sh`

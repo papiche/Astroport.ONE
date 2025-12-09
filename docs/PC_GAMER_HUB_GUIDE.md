@@ -393,7 +393,7 @@ ping 10.99.99.2
 
 ## 🤖 Les IA qui tournent sur ton GPU
 
-Ton GPU RTX ne sert pas qu'à jouer ! Tu peux faire tourner des IA locales :
+Ton GPU RTX ne sert pas qu'à jouer ! Il sert à faire tourner des IA locales sur les Satellites :
 
 ### Ollama = ChatGPT chez toi
 ```bash
@@ -412,12 +412,13 @@ Ton GPU RTX ne sert pas qu'à jouer ! Tu peux faire tourner des IA locales :
 ./IA/comfyui.me.sh
 
 # Génère une image (comme Midjourney, mais gratuit)
-./IA/comfyui.me.sh "A dragon in cyberpunk style"
+./IA/generate_image.sh "A dragon in cyberpunk style"
 ```
 
 ### Perplexica = Moteur de recherche IA
 ```bash
 ./IA/perplexica.me.sh
+./IA/perplexica_search.sh "Best Open Source NOSTR Clients"
 # C'est comme Perplexity.ai mais sur ton PC
 ```
 
@@ -447,26 +448,26 @@ Tu connais les cookies de ton navigateur ? Ces petits fichiers qui te gardent co
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│              SYSTÈME DE COOKIES AUTOMATISÉ                       │
+│              SYSTÈME DE COOKIES AUTOMATISÉ                      │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  TOI                          TON HUB ASTROPORT                  │
-│    │                                │                            │
+│                                                                 │
+│  TOI                          TON HUB ASTROPORT                 │
+│    │                                │                           │
 │    │ 1. Exporte tes cookies        │                            │
-│    │    (extension navigateur)      │                            │
-│    │                                │                            │
-│    │ 2. Upload sur /cookie ────────►│                            │
-│    │                                │                            │
-│    │                         3. Stockage sécurisé                │
-│    │                            ~/.youtube.com.cookie            │
-│    │                                │                            │
-│    │                         4. 20H12 → Scraper auto             │
-│    │                            (NOSTRCARD.refresh.sh)           │
-│    │                                │                            │
-│    │◄───────────────────────────────│                            │
+│    │    (extension navigateur)      │                           │
+│    │                                │                           │
+│    │ 2. Upload sur /cookie ────────►│                           │
+│    │                                │                           │
+│    │                         3. Stockage sécurisé               │
+│    │                            ~/.youtube.com.cookie           │
+│    │                                │                           │
+│    │                         4. 20H12 → Scraper auto            │
+│    │                            (NOSTRCARD.refresh.sh)          │
+│    │                                │                           │
+│    │◄───────────────────────────────│                           │
 │    │ 5. Tes vidéos likées          │                            │
 │    │    dans uDRIVE/Videos/        │                            │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -491,36 +492,36 @@ Quand tu uploades un cookie YouTube, voilà ce qui se passe chaque jour :
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│              YOUTUBE SYNC (youtube.com.sh)                       │
+│              YOUTUBE SYNC (youtube.com.sh)                      │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │  20H12 SOLAIRE : NOSTRCARD.refresh.sh se réveille               │
-│                                                                  │
+│                                                                 │
 │  1. DÉTECTION                                                   │
 │     └── Scan des cookies : ~/.zen/game/nostr/EMAIL/.*.cookie    │
 │     └── Cookie YouTube trouvé ? → Lance youtube.com.sh          │
-│                                                                  │
+│                                                                 │
 │  2. RÉCUPÉRATION (via yt-dlp + cookie)                          │
 │     └── Connexion à YouTube avec tes cookies                    │
 │     └── Liste tes vidéos likées (max 3/jour)                    │
 │     └── Filtre celles déjà téléchargées                         │
-│                                                                  │
+│                                                                 │
 │  3. TÉLÉCHARGEMENT                                              │
 │     └── Download en MP4 (meilleure qualité)                     │
 │     └── Extraction des métadonnées                              │
-│                                                                  │
+│                                                                 │
 │  4. UPLOAD IPFS                                                 │
 │     └── /api/fileupload → CID IPFS                              │
 │     └── Stockage dans uDRIVE/Videos/                            │
-│                                                                  │
+│                                                                 │
 │  5. PUBLICATION NOSTR (NIP-71)                                  │
 │     └── publish_nostr_video.sh                                  │
 │     └── Kind 21/22 (vidéo longue/courte)                        │
 │     └── Visible sur NostrTube !                                 │
-│                                                                  │
+│                                                                 │
 │  6. NOTIFICATION                                                │
 │     └── Email : "🎵 YouTube Sync - 3 nouvelles vidéos"          │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
