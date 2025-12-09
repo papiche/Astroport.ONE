@@ -153,86 +153,16 @@ Ton PC Gamer devient un **Hub** qui génère des revenus pendant que tu joues (o
 
 ### Ce que ton Hub peut héberger
 
-| Type de membre | Capacité | C'est comme... |
-|----------------|----------|----------------|
-| **ZEN Card** (proprios) | 24 max | Copropriétaires avec 128 Go chacun |
-| **MULTIPASS** (locataires) | 250+ | Abonnés avec 10 Go ou 128 Go |
-
-### Les deux types de membres
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  MULTIPASS = Jeton d'USAGE (locataire)                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  📱 Formule Basic : 1 Ẑen/semaine (~4€/mois)                    │
-│     └── 10 Go de stockage décentralisé (IPFS)                   │
-│     └── Identité NOSTR + wallet ẐEN                             │
-│     └── Accès aux services IA du Hub                            │
-│                                                                 │
-│  📱 Formule Pro : 5 Ẑen/semaine (~20€/mois)                     │
-│     └── 128 Go de stockage NextCloud                            │
-│     └── Tout le reste inclus                                    │
-│                                                                 │
-│  → Tu paies pour utiliser, comme un abonnement Netflix          │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│  ZEN CARD = Jeton de PROPRIÉTÉ (copropriétaire)                 │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  🏠 Sur HUB (PC Gamer) : 540€ pour 3 ans (180€/an)              │
-│     └── Tu POSSÈDES une part de 128 Go du Hub                   │
-│     └── Pas de loyer à payer (c'est chez toi !)                 │
-│     └── Droit de vote sur les décisions                         │
-│                                                                 │
-│  🛰️ Sur Satellite (RPi) : 50€/an                                │
-│     └── Même principe, sur un Raspberry Pi                      │
-│                                                                 │
-│  💰 Option sous-location :                                      │
-│     └── Tu peux louer tes 128 Go en tranches de 10 Go           │
-│     └── Exemple : 12 sous-locataires × 1 Ẑ/sem = 12 Ẑ/sem       │
-│     └── Tu deviens toi-même un mini-bailleur !                  │
-│                                                                 │
-│  → C'est comme acheter un appart vs le louer                    │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
+| Service | Capacité | C'est comme... |
+|---------|----------|----------------|
+| **ZEN Card** | 24 personnes | Une copropriété de stockage et services |
+| **MULTIPASS** | 250+ personnes | Des comptes utilisateurs |
+| **Stockage cloud** | 128 Go × 24 | Google Drive, mais c'est TOI qui contrôle |
+| **Stockage décentralisé** | 10 Go × 250 | Dropbox P2P |
 
 ---
 
 ## 💰 Combien tu peux gagner ? (Le math)
-
-### Les 3 rôles dans l'économie
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    QUI FAIT QUOI ?                               │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  🚢 ARMATEUR = Toi (le proprio du PC)                           │
-│     └── Tu gardes ton Astroport allumé 24/7                     │
-│     └── Tu l'ouvres à la gestion coopérative CopyLaRadio        │
-│     └── Tu reçois la PAF (Participation Aux Frais)              │
-│        → Couvre : électricité + connexion internet + usure      │
-│                                                                  │
-│  👨‍✈️ CAPITAINE = Toi aussi (ou quelqu'un d'autre)                │
-│     └── Gère le Hub au quotidien                                │
-│     └── Accueille les nouveaux membres                          │
-│     └── Reçoit une rémunération pour le travail                 │
-│                                                                  │
-│  🏠 ZEN CARD = Copropriétaires (24 max)                         │
-│     └── Ont acheté une part du Hub (540€/3 ans)                 │
-│     └── Utilisent leur 128 Go ou le sous-louent                 │
-│     └── Votent sur les décisions                                │
-│                                                                  │
-│  📱 MULTIPASS = Locataires (250+)                               │
-│     └── Paient un loyer hebdomadaire                            │
-│     └── Utilisent les services du Hub                           │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
 
 ### Investissement de départ
 
@@ -241,64 +171,45 @@ Ton PC Gamer devient un **Hub** qui génère des revenus pendant que tu joues (o
 | PC Gamer (occasion) | ~2000€ | Le prix d'une RTX 4090 |
 | Capital ẐEN initial | **2000 Ẑen** | Comme acheter des V-Bucks, mais utiles |
 
-### Revenus Hebdomadaires (exemple avec Hub full)
+### Revenus Hebdomadaires (mode facile)
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                  💸 TES REVENUS HEBDO                           │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  MULTIPASS Basic (200 locataires × 10 Go)                       │
-│  └── 200 × 1 Ẑ/semaine = 200 Ẑ                                  │
-│                                                                 │
-│  MULTIPASS Pro (50 locataires × 128 Go)                         │
-│  └── 50 × 5 Ẑ/semaine = 250 Ẑ                                   │
-│                                                                 │
-│  ZEN Cards (24 copropriétaires)                                 │
-│  └── 24 × 540€/3ans ÷ 156 sem ≈ 83 Ẑ/semaine                    │
-│  └── (Ils sont CHEZ EUX, pas de loyer hebdo !)                  │
-│                                                                 │
-│  TOTAL REVENUS HUB : ~533 Ẑ/semaine                             │
-│                                                                 │
-├─────────────────────────────────────────────────────────────────┤
-│  TA PART (ARMATEUR + CAPITAINE)                                 │
-│                                                                 │
-│  PAF Armateur (tes frais réels)                                 │
-│  └── Électricité + Internet + Usure ≈ 14 Ẑ/semaine              │
-│                                                                 │
-│  Rémunération Capitaine (ton "salaire")                         │
-│  └── Gestion quotidienne ≈ 28 Ẑ/semaine                         │
-│                                                                 │
-│  → TA PART : ~42 Ẑ/semaine (~170€/mois)                         │
-│                                                                 │
-├─────────────────────────────────────────────────────────────────┤
-│  SURPLUS COOPÉRATIF (géré par CopyLaRadio)                      │
-│  └── 1/3 Trésorerie (économies du collectif)                    │
-│  └── 1/3 R&D (améliorer Astroport)                              │
-│  └── 1/3 Projets écolos (forêts, jardins)                       │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                  💸 TES REVENUS HEBDO                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  MULTIPASS (250 membres gratuits qui paient un peu)         │
+│  └── 250 × 1 Ẑ/semaine = 250 Ẑ                              │
+│  └── C'est comme 250 abos Twitch Tier 1                     │
+│                                                             │
+│  ZEN Cards (24 membres premium)                             │
+│  └── 24 × 4 Ẑ/semaine = 96 Ẑ                                │
+│  └── C'est comme 24 abos Twitch Tier 3                      │
+│                                                             │
+│  TOTAL : ~346 Ẑ/semaine ≈ 86€/semaine                       │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│  CHARGES (automatiques, tu fais rien)                       │
+│  └── Frais réseau : -14 Ẑ/semaine                           │
+│  └── Ta rémunération auto : +28 Ẑ/semaine                   │
+│  └── Taxes : ~70 Ẑ/semaine                                  │
+│                                                             │
+│  CE QUI RESTE : ~234 Ẑ/semaine pour la communauté           │
+│  └── 1/3 Trésorerie (économies)                             │
+│  └── 1/3 R&D (améliorer le système)                         │
+│  └── 1/3 Projets écolos (forêts, jardins)                   │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ### Simulation Annuelle (si ton Hub est full)
 
 | Poste | Calcul | En €uros |
 |-------|--------|----------|
-| Revenus MULTIPASS | (200×1 + 50×5) Ẑ × 52 sem | **~23 400€/an** |
-| Revenus ZEN Cards | 24 × 540€/3ans | **~4 320€/an** |
-| **Total brut** | | **~27 720€/an** |
-| Ta part (PAF + Capitaine) | 42 Ẑ × 52 sem | **~2 200€/an** |
+| Revenus bruts | 346 Ẑ × 52 sem | **~18 000€/an** |
+| Ta part (Capitaine) | 28 Ẑ × 52 sem | **~1 500€/an** |
+| Revenus additionnels possibles | Services IA, etc. | **Variable** |
 
 > **Le taux :** 1 Ẑen ≈ 1€ (c'est simple à calculer)
-
-### Résumé des tarifs
-
-| Type | Formule | Prix | Ce qu'ils obtiennent |
-|------|---------|------|---------------------|
-| MULTIPASS | Basic | 1 Ẑ/sem | 10 Go + identité |
-| MULTIPASS | Pro | 5 Ẑ/sem | 128 Go + identité |
-| ZEN Card | Hub | 540€/3 ans | 128 Go en propriété |
-| ZEN Card | Satellite | 50€/an | 128 Go en propriété |
 
 ---
 
@@ -361,7 +272,7 @@ cd tools
 **Menu Principal :**
 ```
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                          WIREGUARD LAN MANAGER                               ║
+║                          WIREGUARD LAN MANAGER                                ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
 1. 🚀 Initialiser serveur LAN     ← Première étape
@@ -451,55 +362,32 @@ ping 10.99.99.2
 
 ## 📱 Ce que tes membres obtiennent
 
-### MULTIPASS : L'abonnement (jeton d'usage)
+### MULTIPASS : Le Pass Gratuit (enfin presque)
 
-> **"Je paie un loyer et j'utilise les services du Hub."**
+> **"Je paie 1€/semaine et j'ai mon identité numérique + stockage."**
 
-| Formule | Stockage | Coût | C'est comme... |
-|---------|----------|------|----------------|
-| **Basic** | 10 Go IPFS | 1 Ẑ/sem (~4€/mois) | Abonnement Spotify |
-| **Pro** | 128 Go NextCloud | 5 Ẑ/sem (~20€/mois) | Abonnement Netflix |
+| Service | C'est comme... |
+|---------|----------------|
+| Identité NOSTR | Ton compte Discord, mais tu le contrôles |
+| Stockage 10 Go | Dropbox décentralisé |
+| Réseau social | Twitter sans Elon |
+| Gains par création | Tu postes → tu gagnes des Ẑen |
 
-**Ce que tu obtiens :**
-- 🆔 Identité NOSTR (ton compte décentralisé)
-- 💰 Wallet ẐEN (monnaie libre)
-- 🤖 Accès aux IA du Hub (Ollama, ComfyUI...)
-- 📱 Réseau social sans censure
+**Coût :** ~5€/mois (moins cher que Spotify)
 
-### ZEN Card : La copropriété (jeton de propriété)
+### ZEN Card : Le Pass Premium
 
-> **"J'achète ma part, je suis chez moi, je peux même sous-louer !"**
+> **"Je paie 50€ une fois, je deviens copropriétaire du Hub."**
 
-| Plateforme | Coût | Durée | Ce que tu possèdes |
-|------------|------|-------|-------------------|
-| **Hub (PC Gamer)** | 540€ | 3 ans | 128 Go en copropriété |
-| **Satellite (RPi)** | 50€ | 1 an | 128 Go sur le satellite |
+| Service | C'est comme... |
+|---------|----------------|
+| Copropriété | T'as des parts dans le Hub |
+| 128 Go cloud | Google Drive privé |
+| Astrobot | Ton assistant IA personnel |
+| Droit de vote | Tu décides des règles |
+| 1 an gratuit | Pas de loyer la première année |
 
-**Ce que tu obtiens :**
-- 🏠 **Pas de loyer** → c'est CHEZ TOI
-- 🗳️ **Droit de vote** → tu décides des règles
-- 💰 **Option sous-location** → deviens mini-bailleur !
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  EXEMPLE DE SOUS-LOCATION (ZEN Card)                             │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  Tu as acheté une ZEN Card (540€/3 ans = 180€/an)               │
-│  Tu as 128 Go de stockage                                        │
-│                                                                  │
-│  Option 1 : Tu utilises tout pour toi                           │
-│     └── 128 Go de cloud privé, pas de loyer                     │
-│                                                                  │
-│  Option 2 : Tu sous-loues                                        │
-│     └── 128 Go ÷ 10 Go = 12 sous-locataires max                 │
-│     └── 12 × 1 Ẑ/sem = 12 Ẑ/sem = ~624 Ẑ/an                     │
-│     └── Ton investissement : 180€/an                            │
-│     └── Tes revenus : ~624€/an                                  │
-│     └── PROFIT : ~444€/an 🎉                                    │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
+**Coût après 1 an :** ~20€/mois (moins cher que Netflix + Spotify)
 
 ---
 
@@ -980,7 +868,7 @@ POST /g1nostr
 }
 
 # Résultat : Création simultanée de
-# - Clé ẐEN (wallet Duniter)
+# - Clé Ğ1 (wallet Duniter)
 # - Clé NOSTR (npub/nsec)
 # - DID Document (NIP-101)
 # - Stockage uDRIVE (10 Go IPFS)
@@ -1017,7 +905,7 @@ const response = await fetch(`${window.uSPOT}/api/test-nostr`, {
 | **NostrTube** | Plateforme vidéo décentralisée | MULTIPASS + NIP-42 |
 | **UPlanet ORE** | Certification environnementale | MULTIPASS + Oracle |
 | **UMAP Chat** | Chat géolocalisé (NIP-28) | MULTIPASS + GPS |
-| **ZEN Economy** | Transactions économiques | MULTIPASS + ẐEN |
+| **ZEN Economy** | Transactions économiques | MULTIPASS + Ğ1 |
 | **Flora Stats** | Observations botaniques | MULTIPASS + Badges |
 
 ### Synchronisation Constellation
@@ -1054,7 +942,7 @@ Le Hub synchronise les événements NOSTR de tous les membres via `backfill_cons
 
 ### Avantages de la Toile de Confiance
 
-| Aspect | Web2 Classique | MULTIPASS + ẐEN |
+| Aspect | Web2 Classique | MULTIPASS + Ğ1 |
 |--------|----------------|----------------|
 | **Identité** | Email + mot de passe | Clé cryptographique + 5 certifications |
 | **Vérification** | CAPTCHA, SMS | Rencontre humaine IRL |
@@ -1281,6 +1169,219 @@ PERMIT_OBSERVATEUR_FAUNE_X5 (Expert)
     └── Habilité à valider des contrats ORE
         sur les parcelles UMAP
 ```
+
+---
+
+## 🌐 Datacenter vs Astroport : Pourquoi c'est révolutionnaire
+
+### Le problème avec les datacenters centralisés
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              INTERNET CENTRALISÉ (GAFAM)                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│                    ┌─────────────┐                               │
+│                    │  DATACENTER │                               │
+│                    │   GOOGLE    │                               │
+│                    │   (ou AWS)  │                               │
+│                    └──────┬──────┘                               │
+│                           │                                      │
+│    ┌──────────────────────┼──────────────────────┐              │
+│    │           │          │          │           │              │
+│    ▼           ▼          ▼          ▼           ▼              │
+│   👤          👤         👤         👤          👤              │
+│  User 1     User 2     User 3     User 4      User 5            │
+│                                                                  │
+│  PROBLÈMES :                                                    │
+│  ❌ Point unique de défaillance (datacenter en panne = RIP)     │
+│  ❌ Censure facile (1 décision = millions d'utilisateurs coupés)│
+│  ❌ Données vendues aux annonceurs                              │
+│  ❌ Coûts énormes (climatisation, sécurité, personnel)          │
+│  ❌ Latence pour les utilisateurs éloignés                      │
+│  ❌ Tu paies POUR le service (pas AVEC le service)              │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### La solution Astroport : Réseau N² (chacun parle à chacun)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              INTERNET DÉCENTRALISÉ (ASTROPORT)                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│     Hub A ◄────────────► Hub B ◄────────────► Hub C             │
+│       │ ╲                  │                  ╱ │               │
+│       │   ╲                │                ╱   │               │
+│       │     ╲              │              ╱     │               │
+│       │       ╲            │            ╱       │               │
+│       │         Hub D ◄────┴────► Hub E         │               │
+│       │           │                 │           │               │
+│       └───────────┴────────┬────────┴───────────┘               │
+│                            │                                     │
+│            Sync N² à 20H12 solaire                              │
+│            (chaque nœud sync avec tous)                         │
+│                                                                  │
+│  AVANTAGES :                                                    │
+│  ✅ Aucun point unique de défaillance                           │
+│  ✅ Censure impossible (faudrait éteindre TOUS les Hubs)        │
+│  ✅ Données chiffrées et réparties                              │
+│  ✅ Coûts répartis sur les utilisateurs                         │
+│  ✅ Latence optimale (Hub le plus proche)                       │
+│  ✅ Tu es PAYÉ pour participer                                  │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Comment fonctionne la Sync N² (backfill_constellation.sh)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              SYNCHRONISATION CONSTELLATION                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  20H12 SOLAIRE : Chaque Hub découvre ses voisins IPFS           │
+│                                                                 │
+│  1. DÉCOUVERTE (discover_constellation_peers)                   │
+│     └── Scan ~/.zen/tmp/swarm/*/12345.json                      │
+│     └── Extraction des myRELAY de chaque nœud                   │
+│     └── Création tunnels P2P IPFS si nécessaire                 │
+│                                                                 │
+│  2. BACKFILL WebSocket                                          │
+│     └── Connexion à chaque relay NOSTR découvert                │
+│     └── Requête des événements depuis timestamp                 │
+│     └── Filtrage par HEX pubkeys de la constellation            │
+│                                                                 │
+│  3. IMPORT strfry                                               │
+│     └── Filtrage des doublons et messages supprimés             │
+│     └── Import dans la base locale (--no-verify)                │
+│     └── ~10 000 événements/batch en parallèle                   │
+│                                                                 │
+│  KINDS SYNCHRONISÉS :                                           │
+│  • 0 (profils), 1 (notes), 3 (contacts), 4 (DMs)                │
+│  • 21/22 (vidéos), 1063 (fichiers), 1111 (commentaires)         │
+│  • 30800 (DID), 30312-30313 (ORE), 30500-30503 (Oracle)         │
+│  • 8, 30008, 30009 (badges NIP-58), ... Extensible ...          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Comparaison des coûts : Datacenter vs Astroport
+
+| Élément | Datacenter Google | Astroport (100 Hubs) |
+|---------|-------------------|----------------------|
+| **Infrastructure** | ~1 milliard € | ~200 000 € (PC existants) |
+| **Électricité/an** | ~50 millions € | ~50 000 € (répartis) |
+| **Climatisation** | ~10 millions € | 0 € (PC domestiques) |
+| **Personnel technique** | ~5 millions €/an | 0 € (automatisé) |
+| **Sécurité physique** | ~2 millions €/an | 0 € (chez les gens) |
+| **Bande passante** | ~10 millions €/an | ~100 000 € (répartis) |
+| **TOTAL annuel** | ~80 millions € | ~150 000 € |
+| **Ratio** | **1x** | **÷ 500** |
+
+### Pourquoi N² est supérieur
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              RÉSILIENCE DU RÉSEAU N²                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Avec N nœuds, il existe N×(N-1)/2 connexions possibles         │
+│                                                                 │
+│  Exemple avec 10 Hubs :                                         │
+│  └── Connexions possibles : 10×9/2 = 45 chemins                 │
+│  └── Si 1 Hub tombe : 9×8/2 = 36 chemins (80% de résilience)    │
+│  └── Si 5 Hubs tombent : 5×4/2 = 10 chemins (réseau toujours OK)│
+│                                                                 │
+│  Avec 100 Hubs :                                                │
+│  └── Connexions possibles : 100×99/2 = 4 950 chemins            │
+│  └── Même avec 50% des Hubs down : 1 225 chemins                │
+│  └── Le réseau reste TOUJOURS fonctionnel                       │
+│                                                                 │
+│  DATACENTER : 1 point de défaillance = 0% disponibilité         │
+│  ASTROPORT : Faudrait éteindre 99% des Hubs pour arrêter        │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Avantages sécurité
+
+| Menace | Datacenter | Astroport |
+|--------|------------|-----------|
+| **Panne serveur** | Service down pour tous | 1 Hub down, les autres continuent |
+| **Cyberattaque** | 1 cible = jackpot | 1000 cibles = impossible |
+| **Censure gouvernementale** | 1 ordre = service coupé | Faudrait couper Internet mondial |
+| **Catastrophe naturelle** | Datacenter détruit = game over | Quelques Hubs down, le reste OK |
+| **Espionnage** | Données en clair au même endroit | Données chiffrées et réparties |
+| **Fuite de données** | Millions de comptes compromis | Chaque Hub isolé |
+
+### Avantages écologiques
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              EMPREINTE CARBONE                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  DATACENTER GOOGLE (1 million d'utilisateurs)                   │
+│  └── Serveurs : 10 000+ machines dédiées                        │
+│  └── Climatisation : 24/7 (40% de l'énergie)                    │
+│  └── PUE (Power Usage Effectiveness) : ~1.2                     │
+│  └── Consommation : ~50 GWh/an                                  │
+│  └── Émissions : ~25 000 tonnes CO2/an                          │
+│                                                                 │
+│  ASTROPORT (1 million d'utilisateurs = 4000 Hubs)               │
+│  └── PC existants : 0 nouvelle production                       │
+│  └── Climatisation : 0 (les PC chauffent les maisons l'hiver)   │
+│  └── Utilisation : Machines qui dormaient 80% du temps          │
+│  └── Consommation : ~8 GWh/an (machines mutualisées)            │
+│  └── Émissions : ~4 000 tonnes CO2/an                           │
+│                                                                 │
+│  ÉCONOMIE : ~21 000 tonnes CO2/an (÷6)                          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Le vrai coût de "gratuit" (Google vs Astroport)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  QUAND C'EST GRATUIT, C'EST TOI LE PRODUIT                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Google "gratuit" :                                             │
+│  └── Tes emails analysés pour la pub                            │
+│  └── Ta position GPS vendue aux annonceurs                      │
+│  └── Ton historique de recherche = profil comportemental        │
+│  └── Tes photos analysées par IA (reconnaissance faciale)       │
+│  └── Valeur générée par utilisateur : ~300€/an                  │
+│                                                                 │
+│  Astroport MULTIPASS à 4€/mois :                                │
+│  └── Tes données chiffrées et illisibles                        │
+│  └── Ta position : connue uniquement si tu le veux              │
+│  └── Ton historique : stocké localement sur TON Hub             │
+│  └── Tes photos : sur TON IPFS, pas analysées                   │
+│  └── Valeur que TU gardes : ~300€/an de vie privée              │
+│                                                                 │
+│  CALCUL : Tu paies 48€/an au lieu de "donner" 300€/an           │
+│           → Tu ÉCONOMISES 250€/an en vie privée réelle          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Résumé : Web3 Astroport vs Web2 GAFAM
+
+| Critère | Web2 (GAFAM) | Web3 (Astroport) |
+|---------|--------------|------------------|
+| **Architecture** | Centralisée (1 point) | Décentralisée N² |
+| **Propriété données** | Entreprise | Utilisateur |
+| **Résilience** | Point unique de défaillance | Aucun SPOF |
+| **Censure** | 1 décision = coupé | Techniquement impossible |
+| **Coût infrastructure** | Milliards € | Réparti sur les Hubs |
+| **Impact écologique** | Énorme (datacenters) | Mutualisé (PC existants) |
+| **Modèle économique** | Tu es le produit | Tu es payé |
+| **Vie privée** | Vendue aux annonceurs | Chiffrée E2E |
+| **Scalabilité** | Coûteuse (plus de serveurs) | Gratuite (plus de Hubs = plus de N²) |
 
 ---
 
