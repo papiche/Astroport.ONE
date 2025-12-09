@@ -958,16 +958,12 @@ if [ $NOSTR_EXIT_CODE -eq 0 ]; then
         [[ "$uSPOT" == "http://127.0.0.1:54321" ]] && uSPOT="https://u.copylaradio.com"
         THEATER_URL="${uSPOT}/theater?video=${EVENT_ID}"
         
-        # Build kind 1 content with emojis and theater link
+        # Build kind 1 content with theater link
         KIND1_CONTENT="🎬 ${TITLE}
 
-📹 New video !
-🎥 Watch here: ${THEATER_URL}
+🎥 ${THEATER_URL}
 
-Duration: ${DURATION}s
-IPFS: /ipfs/${IPFS_CID}
-
-#NostrTube #UPlanet #video"
+#NostrTube #UPlanet #video #nostrfr"
         
         # Build kind 1 tags with video reference
         KIND1_TAGS="[
