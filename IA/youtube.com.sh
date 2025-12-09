@@ -1038,10 +1038,10 @@ send_sync_notification() {
             <li>🎬 <strong>Vidéos :</strong> uDRIVE/Videos/ (format MP4)</li>
         </ul>
         <p><strong>🔗 Accéder à votre uDRIVE :</strong> <a href="$myIPFS$(cat ~/.zen/game/nostr/${player}/NOSTRNS 2>/dev/null || echo 'NOSTRNS_NOT_FOUND')/${player}/APP/uDRIVE/" target="_blank">Ouvrir uDRIVE</a></p>
-        <p>Les vidéos sont également accessibles via IPFS pour un partage décentralisé.</p>
+        <p>Les vidéos sont également accessibles sur <a href="$uSPOT/youtube?html=1">Nostr Tube</a> pour un partage décentralisé.</p>
     </div>
     <div class='footer'>
-        <p>Cette synchronisation est automatique pour tous les utilisateurs UPlanet avec <a href="$uSPOT/cookie" target="_blank">cookie YouTube</a>.</p>
+        <p>Cette synchronisation est automatique pour tous les MULTIPASS avec <a href="$uSPOT/cookie" target="_blank">cookie YouTube</a>.</p>
     </div>
 </div>
 </body></html>"
