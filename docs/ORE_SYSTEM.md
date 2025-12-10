@@ -51,7 +51,6 @@ Les informations du contrat ORE sont intégrées directement dans le document DI
 
 **NOSTR Event Kinds utilisés par le système ORE :**
 - **30800** : DID Documents (UMAP identities - NIP-101)
-  > Note: Changé de 30311 à 30800 pour éviter conflit avec NIP-53 (Live Event)
 - **30312** : ORE Meeting Space (Persistent Geographic Space)
 - **30313** : ORE Verification Meeting (scheduled meetings for compliance verification)
 - **30009, 8, 30008** : Badges NIP-58 (pour matérialiser les compétences ORE validées)
