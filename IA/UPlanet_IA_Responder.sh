@@ -334,6 +334,13 @@ TAGS[rec2]=false
 TAGS[all]=false
 TAGS[plantnet]=false
 TAGS[cookie]=false
+TAGS[inventory]=false
+TAGS[plant]=false
+TAGS[insect]=false
+TAGS[animal]=false
+TAGS[person]=false
+TAGS[object]=false
+TAGS[place]=false
 
 # Single pass tag detection
 if [[ "$message_text" =~ \#BRO\ + ]]; then TAGS[BRO]=true; fi
@@ -351,6 +358,13 @@ if [[ "$message_text" =~ \#rec2 ]]; then TAGS[rec2]=true; fi
 if [[ "$message_text" =~ \#all ]]; then TAGS[all]=true; fi
 if [[ "$message_text" =~ \#plantnet ]]; then TAGS[plantnet]=true; fi
 if [[ "$message_text" =~ \#cookie ]]; then TAGS[cookie]=true; fi
+if [[ "$message_text" =~ \#inventory ]]; then TAGS[inventory]=true; fi
+if [[ "$message_text" =~ \#plant ]]; then TAGS[plant]=true; fi
+if [[ "$message_text" =~ \#insect ]]; then TAGS[insect]=true; fi
+if [[ "$message_text" =~ \#animal ]]; then TAGS[animal]=true; fi
+if [[ "$message_text" =~ \#person ]]; then TAGS[person]=true; fi
+if [[ "$message_text" =~ \#object ]]; then TAGS[object]=true; fi
+if [[ "$message_text" =~ \#place ]]; then TAGS[place]=true; fi
 
 # Detect memory slot once
 memory_slot=0
@@ -1323,6 +1337,190 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
 **Formats supportés :** JPG, JPEG, PNG, GIF, WEBP
 **Note :** Seuls les fichiers image sont analysés. Les autres types de fichiers sont ignorés.
 "
+                fi
+            ######################################################### #inventory (multi-type recognition)
+            elif [[ "${TAGS[inventory]}" == true || "${TAGS[plant]}" == true || "${TAGS[insect]}" == true || "${TAGS[animal]}" == true || "${TAGS[person]}" == true || "${TAGS[object]}" == true || "${TAGS[place]}" == true ]]; then
+                # UPlanet Inventory recognition - multi-type classification
+                echo "Processing UPlanet Inventory recognition request..." >&2
+                
+                # Determine forced type if specific tag is used
+                FORCE_TYPE=""
+                if [[ "${TAGS[plant]}" == true ]]; then FORCE_TYPE="plant"; fi
+                if [[ "${TAGS[insect]}" == true ]]; then FORCE_TYPE="insect"; fi
+                if [[ "${TAGS[animal]}" == true ]]; then FORCE_TYPE="animal"; fi
+                if [[ "${TAGS[person]}" == true ]]; then FORCE_TYPE="person"; fi
+                if [[ "${TAGS[object]}" == true ]]; then FORCE_TYPE="object"; fi
+                if [[ "${TAGS[place]}" == true ]]; then FORCE_TYPE="place"; fi
+                
+                echo "Inventory: Force type = $FORCE_TYPE" >&2
+                
+                # Extract image URL (same logic as plantnet)
+                image_url=""
+                if [[ -n "$URL" ]]; then
+                    image_url="$URL"
+                    echo "Inventory: Using URL from parameter: $image_url" >&2
+                else
+                    # Extract from message text
+                    image_url=$(echo "$message_text" | grep -oE 'https?://[^[:space:]#]+\.(jpg|jpeg|png|gif|webp|JPG|JPEG|PNG|GIF|WEBP)' | head -n1)
+                    if [[ -n "$image_url" ]]; then
+                        echo "Inventory: Found image URL from message: $image_url" >&2
+                    fi
+                fi
+                
+                if [[ -n "$image_url" ]]; then
+                    # Get coordinates
+                    ORIGINAL_LAT="${ORIGINAL_GEO_LAT:-$LAT}"
+                    ORIGINAL_LON="${ORIGINAL_GEO_LON:-$LON}"
+                    UMAP_LAT=$(echo "$ORIGINAL_LAT" | awk '{printf "%.2f", $1}')
+                    UMAP_LON=$(echo "$ORIGINAL_LON" | awk '{printf "%.2f", $1}')
+                    
+                    echo "Inventory: Coordinates ${ORIGINAL_LAT}, ${ORIGINAL_LON} (UMAP: ${UMAP_LAT}, ${UMAP_LON})" >&2
+                    
+                    # Build inventory recognition command
+                    INVENTORY_CMD="$MY_PATH/inventory_recognition.py \"$image_url\" $ORIGINAL_LAT $ORIGINAL_LON --json --contract"
+                    if [[ -n "$FORCE_TYPE" ]]; then
+                        INVENTORY_CMD="$INVENTORY_CMD --type $FORCE_TYPE"
+                    fi
+                    if [[ -n "$PUBKEY" ]]; then
+                        INVENTORY_CMD="$INVENTORY_CMD --pubkey $PUBKEY"
+                    fi
+                    if [[ -n "$EVENT" ]]; then
+                        INVENTORY_CMD="$INVENTORY_CMD --event-id $EVENT"
+                    fi
+                    
+                    echo "Inventory: Running recognition..." >&2
+                    INVENTORY_JSON=$(eval $INVENTORY_CMD 2>/dev/null)
+                    INVENTORY_EXIT=$?
+                    
+                    if [[ $INVENTORY_EXIT -eq 0 && -n "$INVENTORY_JSON" ]]; then
+                        # Parse JSON response
+                        INVENTORY_SUCCESS=$(echo "$INVENTORY_JSON" | jq -r '.success // false' 2>/dev/null)
+                        ITEM_TYPE=$(echo "$INVENTORY_JSON" | jq -r '.type // "object"' 2>/dev/null)
+                        ITEM_NAME=$(echo "$INVENTORY_JSON" | jq -r '.identification.name // "Non identifié"' 2>/dev/null)
+                        ITEM_DESCRIPTION=$(echo "$INVENTORY_JSON" | jq -r '.identification.description // ""' 2>/dev/null)
+                        TYPE_ICON=$(echo "$INVENTORY_JSON" | jq -r '.type_info.icon // "🔍"' 2>/dev/null)
+                        TYPE_NAME=$(echo "$INVENTORY_JSON" | jq -r '.type_info.name_fr // "Élément"' 2>/dev/null)
+                        CONFIDENCE=$(echo "$INVENTORY_JSON" | jq -r '.classification.confidence // 0' 2>/dev/null)
+                        CONFIDENCE_PCT=$(echo "$CONFIDENCE" | awk '{printf "%.0f", $1 * 100}')
+                        
+                        # Extract contract
+                        CONTRACT_CONTENT=$(echo "$INVENTORY_JSON" | jq -r '.contract.content // ""' 2>/dev/null)
+                        CONTRACT_TITLE=$(echo "$INVENTORY_JSON" | jq -r '.contract.title // ""' 2>/dev/null)
+                        
+                        if [[ "$INVENTORY_SUCCESS" == "true" ]]; then
+                            echo "Inventory: Recognition successful - Type: $ITEM_TYPE, Name: $ITEM_NAME" >&2
+                            
+                            # Build response content
+                            KeyANSWER=$(echo "$INVENTORY_JSON" | jq -r '.content // ""' 2>/dev/null)
+                            
+                            # Add tags for inventory
+                            ExtraTags="[['imeta', 'url $image_url'], ['g', '${ORIGINAL_LAT},${ORIGINAL_LON}'], ['umap', '${UMAP_LAT},${UMAP_LON}'], ['t', 'inventory'], ['t', 'UPlanet'], ['t', '$ITEM_TYPE'], ['inventory_type', '$ITEM_TYPE'], ['inventory_name', '$ITEM_NAME']]"
+                            
+                            # Use UMAP key for inventory responses (like plantnet)
+                            USE_UMAP_FOR_PLANTNET=true
+                            
+                            # Publish contract as separate kind 30023 article (signed by MULTIPASS/KNAME)
+                            if [[ -n "$CONTRACT_CONTENT" && -s ~/.zen/game/nostr/${KNAME}/.secret.nostr ]]; then
+                                echo "Inventory: Publishing maintenance contract as kind 30023 article..." >&2
+                                
+                                # Generate d_tag for the contract
+                                CONTRACT_D_TAG="contract_${ITEM_TYPE}_${UMAP_LAT}_${UMAP_LON}_$(date +%s)"
+                                
+                                # Build contract tags
+                                CONTRACT_TAGS=$(jq -n \
+                                    --arg d "$CONTRACT_D_TAG" \
+                                    --arg title "$CONTRACT_TITLE" \
+                                    --arg summary "Contrat de gestion pour $ITEM_NAME ($TYPE_NAME) à ${UMAP_LAT}, ${UMAP_LON}" \
+                                    --arg published_at "$(date -u +%s)" \
+                                    --arg image "$image_url" \
+                                    --arg lat "$ORIGINAL_LAT" \
+                                    --arg lon "$ORIGINAL_LON" \
+                                    --arg umap "${UMAP_LAT},${UMAP_LON}" \
+                                    --arg item_type "$ITEM_TYPE" \
+                                    --arg item_name "$ITEM_NAME" \
+                                    '[
+                                        ["d", $d],
+                                        ["title", $title],
+                                        ["summary", $summary],
+                                        ["published_at", $published_at],
+                                        ["image", $image],
+                                        ["g", ($lat + "," + $lon)],
+                                        ["umap", $umap],
+                                        ["t", "contract"],
+                                        ["t", "maintenance"],
+                                        ["t", "communs"],
+                                        ["t", "UPlanet"],
+                                        ["t", $item_type],
+                                        ["inventory_type", $item_type],
+                                        ["inventory_name", $item_name]
+                                    ]')
+                                
+                                # Publish contract with MULTIPASS key
+                                MULTIPASS_KEYFILE="$HOME/.zen/game/nostr/${KNAME}/.secret.nostr"
+                                
+                                CONTRACT_RESULT=$(python3 "$HOME/.zen/Astroport.ONE/tools/nostr_send_note.py" \
+                                    --keyfile "$MULTIPASS_KEYFILE" \
+                                    --content "$CONTRACT_CONTENT" \
+                                    --relays "$myRELAY" \
+                                    --tags "$CONTRACT_TAGS" \
+                                    --kind "30023" \
+                                    --json 2>&1)
+                                
+                                CONTRACT_EVENT_ID=$(echo "$CONTRACT_RESULT" | jq -r '.event_id // empty' 2>/dev/null)
+                                
+                                if [[ -n "$CONTRACT_EVENT_ID" ]]; then
+                                    echo "Inventory: Contract published - Event ID: $CONTRACT_EVENT_ID" >&2
+                                    
+                                    # Add contract reference to the inventory response
+                                    KeyANSWER="${KeyANSWER}
+
+📄 **Contrat de gestion publié**
+🔗 nostr:nevent1${CONTRACT_EVENT_ID:0:20}...
+👍 Likez ce contrat pour créditer des Ẑen aux gestionnaires !
+
+#contract #maintenance #communs"
+                                    
+                                    # Add contract reference tag
+                                    ExtraTags="[['imeta', 'url $image_url'], ['g', '${ORIGINAL_LAT},${ORIGINAL_LON}'], ['umap', '${UMAP_LAT},${UMAP_LON}'], ['t', 'inventory'], ['t', 'UPlanet'], ['t', '$ITEM_TYPE'], ['inventory_type', '$ITEM_TYPE'], ['inventory_name', '$ITEM_NAME'], ['contract', '$CONTRACT_EVENT_ID']]"
+                                else
+                                    echo "Inventory: Warning - Failed to publish contract" >&2
+                                fi
+                            fi
+                        else
+                            echo "Inventory: Recognition failed" >&2
+                            KeyANSWER="❌ Reconnaissance échouée
+
+L'élément n'a pas pu être identifié avec certitude.
+
+💡 Conseils :
+• Prenez une photo plus claire
+• Assurez-vous que l'élément occupe la majeure partie de l'image
+• Utilisez un tag spécifique (#plant, #object, #animal, etc.)
+
+📍 Localisation : ${ORIGINAL_LAT}, ${ORIGINAL_LON}
+
+#UPlanet #inventory"
+                        fi
+                    else
+                        echo "Inventory: Recognition script failed with exit code $INVENTORY_EXIT" >&2
+                        KeyANSWER="❌ Erreur lors de la reconnaissance
+
+Une erreur technique s'est produite.
+
+📍 Localisation : ${ORIGINAL_LAT:-0}, ${ORIGINAL_LON:-0}
+
+#UPlanet #inventory"
+                    fi
+                else
+                    echo "Inventory: No valid image URL found" >&2
+                    KeyANSWER="❌ Aucune image trouvée
+
+Veuillez inclure une image avec votre message pour l'inventaire UPlanet.
+
+**Usage :** #BRO #inventory [image]
+**Types spécifiques :** #plant, #insect, #animal, #person, #object, #place
+
+#UPlanet #inventory"
                 fi
             ######################################################### #cookie
             elif [[ "${TAGS[cookie]}" == true ]]; then
