@@ -1,7 +1,3 @@
-Absolument. Voici une version réécrite du fichier `ORE_SYSTEM.md`, clarifiée, corrigée et axée sur l'implémentation concrète et l'utilisation par un client Nostr.
-
----
-
 # Le Système ORE de UPlanet : Un Cadastre Écologique Décentralisé
 
 Le système ORE (Obligations Réelles Environnementales) intègre des engagements écologiques vérifiables à des parcelles géographiques (UMAP) en utilisant des identités décentralisées (DID) sur le réseau Nostr. Il crée ainsi un "cadastre écologique" mondial, où la protection de l'environnement devient une activité économiquement valorisée.
