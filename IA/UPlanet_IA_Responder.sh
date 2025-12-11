@@ -1419,33 +1419,42 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
                             # Use UMAP key for inventory responses (like plantnet)
                             USE_UMAP_FOR_PLANTNET=true
                             
-                            # Publish contract as separate kind 30023 article (signed by MULTIPASS/KNAME)
+                            # Publish contract as ORE-compatible event (kind 30312 - ORE Meeting Space)
+                            # Also publish as kind 30023 for blog readers compatibility
                             if [[ -n "$CONTRACT_CONTENT" && -s ~/.zen/game/nostr/${KNAME}/.secret.nostr ]]; then
-                                echo "Inventory: Publishing maintenance contract as kind 30023 article..." >&2
+                                echo "Inventory: Publishing ORE-compatible maintenance contract..." >&2
                                 
-                                # Generate d_tag for the contract
-                                CONTRACT_D_TAG="contract_${ITEM_TYPE}_${UMAP_LAT}_${UMAP_LON}_$(date +%s)"
+                                # Generate ORE-compatible d_tag (per ORE_SYSTEM.md)
+                                ORE_D_TAG="ore-inventory-${UMAP_LAT}-${UMAP_LON}"
+                                TIMESTAMP_NOW=$(date -u +%s)
                                 
-                                # Build contract tags
-                                CONTRACT_TAGS=$(jq -n \
-                                    --arg d "$CONTRACT_D_TAG" \
+                                # Build ORE-compatible contract tags (kind 30312 format - NIP-53 compliant)
+                                VDO_SERVICE="https://vdo.copylaradio.com/?room=UMAP_ORE_${UMAP_LAT}_${UMAP_LON}"
+                                ORE_CONTRACT_TAGS=$(jq -n \
+                                    --arg d "$ORE_D_TAG" \
                                     --arg title "$CONTRACT_TITLE" \
-                                    --arg summary "Contrat de gestion pour $ITEM_NAME ($TYPE_NAME) à ${UMAP_LAT}, ${UMAP_LON}" \
-                                    --arg published_at "$(date -u +%s)" \
+                                    --arg summary "Contrat de gestion: $ITEM_NAME ($TYPE_NAME)" \
+                                    --arg start "$TIMESTAMP_NOW" \
                                     --arg image "$image_url" \
                                     --arg lat "$ORIGINAL_LAT" \
                                     --arg lon "$ORIGINAL_LON" \
                                     --arg umap "${UMAP_LAT},${UMAP_LON}" \
+                                    --arg room "UMAP_ORE_${UMAP_LAT}_${UMAP_LON}" \
+                                    --arg service "$VDO_SERVICE" \
                                     --arg item_type "$ITEM_TYPE" \
                                     --arg item_name "$ITEM_NAME" \
                                     '[
                                         ["d", $d],
                                         ["title", $title],
                                         ["summary", $summary],
-                                        ["published_at", $published_at],
+                                        ["start", $start],
+                                        ["status", "open"],
                                         ["image", $image],
                                         ["g", ($lat + "," + $lon)],
                                         ["umap", $umap],
+                                        ["room", $room],
+                                        ["service", $service],
+                                        ["t", "ORE"],
                                         ["t", "contract"],
                                         ["t", "maintenance"],
                                         ["t", "communs"],
@@ -1455,35 +1464,69 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
                                         ["inventory_name", $item_name]
                                     ]')
                                 
-                                # Publish contract with MULTIPASS key
+                                # Publish ORE contract with MULTIPASS key (kind 30312)
                                 MULTIPASS_KEYFILE="$HOME/.zen/game/nostr/${KNAME}/.secret.nostr"
                                 
-                                CONTRACT_RESULT=$(python3 "$HOME/.zen/Astroport.ONE/tools/nostr_send_note.py" \
+                                ORE_RESULT=$(python3 "$HOME/.zen/Astroport.ONE/tools/nostr_send_note.py" \
                                     --keyfile "$MULTIPASS_KEYFILE" \
                                     --content "$CONTRACT_CONTENT" \
                                     --relays "$myRELAY" \
-                                    --tags "$CONTRACT_TAGS" \
-                                    --kind "30023" \
+                                    --tags "$ORE_CONTRACT_TAGS" \
+                                    --kind "30312" \
                                     --json 2>&1)
                                 
-                                CONTRACT_EVENT_ID=$(echo "$CONTRACT_RESULT" | jq -r '.event_id // empty' 2>/dev/null)
+                                ORE_EVENT_ID=$(echo "$ORE_RESULT" | jq -r '.event_id // empty' 2>/dev/null)
                                 
-                                if [[ -n "$CONTRACT_EVENT_ID" ]]; then
-                                    echo "Inventory: Contract published - Event ID: $CONTRACT_EVENT_ID" >&2
+                                # Also publish as kind 30023 for blog readers
+                                BLOG_D_TAG="contract_${ITEM_TYPE}_${UMAP_LAT}_${UMAP_LON}_${TIMESTAMP_NOW}"
+                                BLOG_TAGS=$(jq -n \
+                                    --arg d "$BLOG_D_TAG" \
+                                    --arg title "$CONTRACT_TITLE" \
+                                    --arg summary "Contrat de gestion pour $ITEM_NAME ($TYPE_NAME) à ${UMAP_LAT}, ${UMAP_LON}" \
+                                    --arg published_at "$TIMESTAMP_NOW" \
+                                    --arg image "$image_url" \
+                                    --arg ore_ref "$ORE_EVENT_ID" \
+                                    '[
+                                        ["d", $d],
+                                        ["title", $title],
+                                        ["summary", $summary],
+                                        ["published_at", $published_at],
+                                        ["image", $image],
+                                        ["t", "contract"],
+                                        ["t", "maintenance"],
+                                        ["t", "ORE"],
+                                        ["e", $ore_ref, "", "mention"]
+                                    ]')
+                                
+                                python3 "$HOME/.zen/Astroport.ONE/tools/nostr_send_note.py" \
+                                    --keyfile "$MULTIPASS_KEYFILE" \
+                                    --content "$CONTRACT_CONTENT" \
+                                    --relays "$myRELAY" \
+                                    --tags "$BLOG_TAGS" \
+                                    --kind "30023" \
+                                    --json >/dev/null 2>&1
+                                
+                                if [[ -n "$ORE_EVENT_ID" ]]; then
+                                    echo "Inventory: ORE Contract published - Event ID: $ORE_EVENT_ID" >&2
+                                    
+                                    # Update UMAP DID with inventory data (ORE_SYSTEM.md compliance)
+                                    echo "Inventory: Updating UMAP DID with inventory data..." >&2
+                                    $MY_PATH/../tools/did_manager_nostr.sh update "UMAP_${UMAP_LAT}_${UMAP_LON}" "INVENTORY_ITEM" 0 0 "" >/dev/null 2>&1
                                     
                                     # Add contract reference to the inventory response
                                     KeyANSWER="${KeyANSWER}
 
-📄 **Contrat de gestion publié**
-🔗 nostr:nevent1${CONTRACT_EVENT_ID:0:20}...
-👍 Likez ce contrat pour créditer des Ẑen aux gestionnaires !
+📄 **Contrat ORE publié**
+🔗 nostr:nevent1${ORE_EVENT_ID:0:20}...
+🏠 Salle: UMAP_ORE_${UMAP_LAT}_${UMAP_LON}
+👍 Likez pour créditer des Ẑen aux gestionnaires !
 
-#contract #maintenance #communs"
+#ORE #contract #maintenance #communs"
                                     
-                                    # Add contract reference tag
-                                    ExtraTags="[['imeta', 'url $image_url'], ['g', '${ORIGINAL_LAT},${ORIGINAL_LON}'], ['umap', '${UMAP_LAT},${UMAP_LON}'], ['t', 'inventory'], ['t', 'UPlanet'], ['t', '$ITEM_TYPE'], ['inventory_type', '$ITEM_TYPE'], ['inventory_name', '$ITEM_NAME'], ['contract', '$CONTRACT_EVENT_ID']]"
+                                    # Add ORE-compatible tags
+                                    ExtraTags="[['imeta', 'url $image_url'], ['g', '${ORIGINAL_LAT},${ORIGINAL_LON}'], ['umap', '${UMAP_LAT},${UMAP_LON}'], ['t', 'inventory'], ['t', 'UPlanet'], ['t', 'ORE'], ['t', '$ITEM_TYPE'], ['inventory_type', '$ITEM_TYPE'], ['inventory_name', '$ITEM_NAME'], ['e', '$ORE_EVENT_ID', '', 'mention']]"
                                 else
-                                    echo "Inventory: Warning - Failed to publish contract" >&2
+                                    echo "Inventory: Warning - Failed to publish ORE contract" >&2
                                 fi
                             fi
                         else

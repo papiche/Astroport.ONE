@@ -482,6 +482,11 @@ update_did_document() {
             services="PlantNet detection - Biodiversity observation recorded"
             contract_status="plantnet_detection_recorded"
             ;;
+        "INVENTORY_ITEM")
+            quota="N/A"
+            services="UPlanet Inventory - Commons maintenance item registered"
+            contract_status="inventory_item_registered"
+            ;;
         *)
             echo -e "${RED}❌ Unknown update type: ${update_type}${NC}"
             rm -f "$did_temp" "$did_updated"
@@ -1263,6 +1268,7 @@ Update Types:
   ORE_COMPLIANCE_VERIFIED     - ORE compliance verified
   ORE_REWARD_DISTRIBUTED      - ORE compliance reward distributed
   PLANTNET_DETECTION          - PlantNet biodiversity detection recorded
+  INVENTORY_ITEM              - UPlanet Inventory commons item registered
   ACCOUNT_DEACTIVATED         - Account deactivated/destroyed
 
 Examples:
