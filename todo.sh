@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Script pour générer automatiquement TODO.today.md basé sur les modifications Git des dernières 24h
+# Script pour générer automatiquement TODO.today.md ou TODO.week.md basé sur les modifications Git
 # Utilise question.py pour analyser les changements et générer un résumé
 
 set -euo pipefail
@@ -19,11 +19,74 @@ set +e
 source $HOME/.zen/Astroport.ONE/tools/my.sh
 set -e
 
+# Default values
+PERIOD="24h"
+PERIOD_LABEL="Dernières 24h"
+PERIOD_GIT="24 hours ago"
+PERIOD_REF="24.hours.ago"
 
-TODO_TODAY="$REPO_ROOT/TODO.today.md"
+TODO_OUTPUT="$REPO_ROOT/TODO.today.md"
 TODO_MAIN="$REPO_ROOT/TODO.md"
 QUESTION_PY="$REPO_ROOT/IA/question.py"
-GIT_LOG_FILE="$REPO_ROOT/.git_changes_24h.txt"
+GIT_LOG_FILE="$REPO_ROOT/.git_changes.txt"
+
+# Function to display help
+show_help() {
+    cat <<EOF
+${GREEN}todo.sh${NC} - Generate automatic TODO reports based on Git changes
+
+${YELLOW}USAGE:${NC}
+    $0 [OPTIONS]
+
+${YELLOW}OPTIONS:${NC}
+    ${GREEN}--help, -h${NC}      Display this help message
+    ${GREEN}--week, -w${NC}      Analyze Git changes from the last 7 days (default: 24h)
+
+${YELLOW}DESCRIPTION:${NC}
+    This script analyzes recent Git changes and generates a structured TODO report.
+    It uses question.py with an AI model to summarize modifications and suggest priorities.
+
+${YELLOW}OUTPUT:${NC}
+    Default (24h):  TODO.today.md
+    Weekly (--week): TODO.week.md
+
+${YELLOW}EXAMPLES:${NC}
+    $0              # Analyze last 24 hours, generate TODO.today.md
+    $0 --week       # Analyze last 7 days, generate TODO.week.md
+    $0 -w           # Same as --week
+
+${YELLOW}REQUIREMENTS:${NC}
+    - Git repository
+    - Python 3 with question.py
+    - Ollama (optional, falls back to basic summary)
+
+EOF
+    exit 0
+}
+
+# Parse command line arguments
+parse_args() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --help|-h)
+                show_help
+                ;;
+            --week|-w)
+                PERIOD="week"
+                PERIOD_LABEL="Derniers 7 jours"
+                PERIOD_GIT="7 days ago"
+                PERIOD_REF="7.days.ago"
+                TODO_OUTPUT="$REPO_ROOT/TODO.week.md"
+                shift
+                ;;
+            *)
+                echo -e "${RED}❌ Unknown option: $1${NC}"
+                echo -e "Use ${GREEN}--help${NC} for usage information"
+                exit 1
+                ;;
+        esac
+    done
+}
 
 
 # Vérifier que nous sommes dans un dépôt Git
@@ -32,25 +95,25 @@ if ! git rev-parse --git-dir > /dev/null 2>&1; then
     exit 1
 fi
 
-# Fonction pour obtenir les modifications des dernières 24h
-get_git_changes_24h() {
-    local since_date=$(date -d '24 hours ago' -Iseconds 2>/dev/null || date -v-24H -u +"%Y-%m-%dT%H:%M:%S" 2>/dev/null || date -u -d '24 hours ago' +"%Y-%m-%dT%H:%M:%S")
+# Fonction pour obtenir les modifications selon la période configurée
+get_git_changes() {
+    local since_date=$(date -d "$PERIOD_GIT" -Iseconds 2>/dev/null || date -v-${PERIOD_GIT// /} -u +"%Y-%m-%dT%H:%M:%S" 2>/dev/null || date -u -d "$PERIOD_GIT" +"%Y-%m-%dT%H:%M:%S")
     
-    echo -e "${BLUE}📊 Récupération des modifications Git des dernières 24h...${NC}"
+    echo -e "${BLUE}📊 Récupération des modifications Git ($PERIOD_LABEL)...${NC}"
     
-    # Récupérer les commits des dernières 24h
+    # Récupérer les commits de la période
     git log --since="$since_date" \
         --pretty=format:"%H|%an|%ae|%ad|%s" \
         --date=iso \
         --name-status \
         > "$GIT_LOG_FILE" 2>/dev/null || {
-        echo -e "${YELLOW}⚠️  Aucune modification trouvée dans les dernières 24h${NC}"
+        echo -e "${YELLOW}⚠️  Aucune modification trouvée ($PERIOD_LABEL)${NC}"
         return 1
     }
     
     # Compter les modifications
     local commit_count=$(git log --since="$since_date" --oneline | wc -l)
-    local file_count=$(git diff --name-only HEAD@{24.hours.ago} HEAD 2>/dev/null | wc -l)
+    local file_count=$(git diff --name-only HEAD@{$PERIOD_REF} HEAD 2>/dev/null | wc -l)
     
     echo -e "${GREEN}✅ ${commit_count} commit(s) trouvé(s), ${file_count} fichier(s) modifié(s)${NC}"
     return 0
@@ -78,7 +141,7 @@ analyze_changes_by_system() {
     
     for system in "${!systems[@]}"; do
         local patterns="${systems[$system]}"
-        local system_changes=$(git diff --name-only HEAD@{24.hours.ago} HEAD 2>/dev/null | grep -E "$patterns" || true)
+        local system_changes=$(git diff --name-only HEAD@{$PERIOD_REF} HEAD 2>/dev/null | grep -E "$patterns" || true)
         
         if [ -n "$system_changes" ]; then
             local file_list=$(echo "$system_changes" | sed 's/^/  - /' | head -10)
@@ -104,7 +167,7 @@ generate_ai_prompt() {
     fi
     
     cat <<EOF
-Compare le fichier TODO.md principal avec les modifications Git des dernières 24h et génère un résumé concis en français qui :
+Compare le fichier TODO.md principal avec les modifications Git ($PERIOD_LABEL) et génère un résumé concis en français qui :
 
 1. Identifie ce qui a été fait (tâches complétées, systèmes modifiés)
 2. Identifie ce qu'il reste à faire (tâches en cours, prochaines étapes)
@@ -118,7 +181,7 @@ $todo_main_content
 
 ---
 
-Modifications Git des dernières 24h :
+Modifications Git ($PERIOD_LABEL) :
 $git_summary
 
 Modifications par système :
@@ -128,10 +191,14 @@ EOF
 
 # Fonction principale
 main() {
-    echo -e "${GREEN}🚀 Génération de TODO.today.md${NC}\n"
+    # Parse command line arguments
+    parse_args "$@"
+    
+    local output_name=$(basename "$TODO_OUTPUT")
+    echo -e "${GREEN}🚀 Génération de $output_name ($PERIOD_LABEL)${NC}\n"
     
     # Récupérer les modifications Git
-    if ! get_git_changes_24h; then
+    if ! get_git_changes; then
         echo -e "${YELLOW}⚠️  Aucune modification à analyser${NC}"
         exit 0
     fi
@@ -177,12 +244,15 @@ main() {
     # Nettoyer le fichier temporaire
     rm -f "$prompt_file"
     
-    # Générer TODO.today.md avec le résumé concis (une seule question)
-    cat > "$TODO_TODAY" <<EOF
-# TODO Quotidien - $(date +"%Y-%m-%d")
+    # Générer le fichier TODO avec le résumé concis (une seule question)
+    local report_title="TODO Quotidien"
+    [[ "$PERIOD" == "week" ]] && report_title="TODO Hebdomadaire"
+    
+    cat > "$TODO_OUTPUT" <<EOF
+# $report_title - $(date +"%Y-%m-%d")
 
 **Généré automatiquement** : $(date +"%Y-%m-%d %H:%M:%S")  
-**Période analysée** : Dernières 24h
+**Période analysée** : $PERIOD_LABEL
 
 ---
 
@@ -209,13 +279,13 @@ $(analyze_changes_by_system)
 **Note** : Ce fichier est généré automatiquement par \`todo.sh\`. Le résumé IA compare déjà TODO.md avec les modifications Git pour assurer la continuité. Vérifiez et intégrez les informations pertinentes dans TODO.md manuellement.
 EOF
     
-    echo -e "${GREEN}✅ TODO.today.md généré avec succès${NC}"
-    echo -e "${BLUE}📄 Fichier: $TODO_TODAY${NC}\n"
+    echo -e "${GREEN}✅ $output_name généré avec succès${NC}"
+    echo -e "${BLUE}📄 Fichier: $TODO_OUTPUT${NC}\n"
     
     # Afficher un aperçu
     echo -e "${YELLOW}📋 Aperçu (premières 30 lignes):${NC}"
-    head -30 "$TODO_TODAY"
-    echo -e "\n${GREEN}💡 Utilisez votre éditeur pour ouvrir $TODO_TODAY et intégrer les informations dans TODO.md${NC}"
+    head -30 "$TODO_OUTPUT"
+    echo -e "\n${GREEN}💡 Utilisez votre éditeur pour ouvrir $output_name et intégrer les informations dans TODO.md${NC}"
     
     # Publier le rapport sur le mur du CAPTAIN
     publish_todo_report
@@ -233,8 +303,8 @@ publish_todo_report() {
     fi
     
     # Vérifier que le fichier TODO existe
-    if [[ ! -f "$TODO_TODAY" ]]; then
-        echo -e "${YELLOW}⚠️  Fichier TODO.today.md introuvable, publication annulée${NC}"
+    if [[ ! -f "$TODO_OUTPUT" ]]; then
+        echo -e "${YELLOW}⚠️  Fichier $(basename "$TODO_OUTPUT") introuvable, publication annulée${NC}"
         return 1
     fi
     
@@ -245,14 +315,22 @@ publish_todo_report() {
         return 1
     fi
     
-    echo -e "${BLUE}📤 Publication du rapport quotidien sur le mur du CAPTAIN...${NC}"
+    local report_type="quotidien"
+    [[ "$PERIOD" == "week" ]] && report_type="hebdomadaire"
+    echo -e "${BLUE}📤 Publication du rapport $report_type sur le mur du CAPTAIN...${NC}"
     
     # Lire le contenu du rapport (déjà généré avec résumé concis)
-    local report_content=$(cat "$TODO_TODAY")
+    local report_content=$(cat "$TODO_OUTPUT")
     
     # Extraire le titre (première ligne après le #)
     local title=$(echo "$report_content" | head -1 | sed 's/^# //' | sed 's/^## //')
-    [[ -z "$title" ]] && title="TODO Quotidien - $(date +"%Y-%m-%d")"
+    if [[ -z "$title" ]]; then
+        if [[ "$PERIOD" == "week" ]]; then
+            title="TODO Hebdomadaire - $(date +"%Y-%m-%d")"
+        else
+            title="TODO Quotidien - $(date +"%Y-%m-%d")"
+        fi
+    fi
     
     # Extraire le résumé pour les métadonnées (première section après "Résumé Généré par IA")
     local summary=$(echo "$report_content" | sed -n '/## 📊 Résumé Généré par IA/,/^---/p' | head -20 | tail -n +2 | sed '/^---/d' | head -10)
@@ -265,13 +343,17 @@ publish_todo_report() {
     # Utiliser le contenu complet du rapport (déjà concis grâce à la question unique)
     local article_content="$report_content"
     
-    # Calculer la date d'expiration (5 jours = 432000 secondes)
-    local expiration_seconds=432000
-    local expiration_timestamp=$(date -d "+5 days" +%s 2>/dev/null || date -v+5d +%s 2>/dev/null || echo $(($(date +%s) + expiration_seconds)))
+    # Calculer la date d'expiration (5 jours pour quotidien, 14 jours pour hebdomadaire)
+    local expiration_days=5
+    [[ "$PERIOD" == "week" ]] && expiration_days=14
+    local expiration_seconds=$((expiration_days * 86400))
+    local expiration_timestamp=$(date -d "+${expiration_days} days" +%s 2>/dev/null || date -v+${expiration_days}d +%s 2>/dev/null || echo $(($(date +%s) + expiration_seconds)))
     
     # Créer les tags pour l'article de blog (kind 30023)
     # Format: [["d", "unique-id"], ["title", "..."], ["summary", "..."], ["published_at", "timestamp"], ["expiration", "timestamp"], ["t", "todo"], ...]
-    local d_tag="todo_$(date +%Y%m%d)_$(echo -n "$title" | md5sum | cut -d' ' -f1 | head -c 8)"
+    local period_tag="daily"
+    [[ "$PERIOD" == "week" ]] && period_tag="weekly"
+    local d_tag="todo_${period_tag}_$(date +%Y%m%d)_$(echo -n "$title" | md5sum | cut -d' ' -f1 | head -c 8)"
     local published_at=$(date +%s)
     
     # Créer un fichier JSON temporaire pour les tags
@@ -285,7 +367,7 @@ publish_todo_report() {
   ["expiration", "$expiration_timestamp"],
   ["t", "todo"],
   ["t", "rapport"],
-  ["t", "quotidien"],
+  ["t", "$period_tag"],
   ["t", "git"],
   ["t", "UPlanet"]
 ]
@@ -327,7 +409,7 @@ EOF
             echo -e "${GREEN}✅ Rapport publié avec succès sur le mur du CAPTAIN${NC}"
             echo -e "${GREEN}   Event ID: ${event_id:0:16}...${NC}"
             echo -e "${GREEN}   Relays: $relays_success${NC}"
-            echo -e "${GREEN}   Expiration: 5 jours${NC}"
+            echo -e "${GREEN}   Expiration: $expiration_days jours${NC}"
             
             # Afficher l'événement créé avec nostr_get_events.sh
             echo -e "\n${BLUE}📋 Affichage de l'événement créé...${NC}"
@@ -357,13 +439,16 @@ EOF
 # Fonction de fallback si question.py échoue
 generate_basic_summary() {
     local changes_by_system=$(analyze_changes_by_system)
-    local commit_count=$(git log --since="24 hours ago" --oneline | wc -l)
+    local commit_count=$(git log --since="$PERIOD_GIT" --oneline | wc -l)
     
-    cat > "$TODO_TODAY" <<EOF
-# TODO Quotidien - $(date +"%Y-%m-%d")
+    local report_title="TODO Quotidien"
+    [[ "$PERIOD" == "week" ]] && report_title="TODO Hebdomadaire"
+    
+    cat > "$TODO_OUTPUT" <<EOF
+# $report_title - $(date +"%Y-%m-%d")
 
 **Généré automatiquement** : $(date +"%Y-%m-%d %H:%M:%S")  
-**Période analysée** : Dernières 24h  
+**Période analysée** : $PERIOD_LABEL  
 **Commits détectés** : $commit_count
 
 ---
@@ -378,7 +463,7 @@ $changes_by_system
 
 ## 📝 Détails des Modifications
 
-$(git log --since="24 hours ago" --pretty=format:"- **%ad** : %s (%an)" --date=short | head -20)
+$(git log --since="$PERIOD_GIT" --pretty=format:"- **%ad** : %s (%an)" --date=short | head -20)
 
 ---
 
