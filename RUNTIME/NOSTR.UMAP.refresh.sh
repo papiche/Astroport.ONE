@@ -363,6 +363,10 @@ process_umap_friends() {
 
     update_friends_list "${ACTIVE_FRIENDS[@]}"
     
+    # Clean up inventory/plantnet messages without likes in 28 days
+    # Per PLANTNET_SYSTEM_ANALYSIS.md: observations without likes are removed after 28 days
+    cleanup_inventory_without_likes "$NPRIV_HEX"
+    
     # Check if UMAP has no active friends and clean up cache if needed
     if [[ ${#ACTIVE_FRIENDS[@]} -eq 0 ]]; then
         log_always "⚠️  UMAP (${LAT}, ${LON}) has no active friends, removing all cache"
@@ -1038,6 +1042,116 @@ cleanup_orphaned_ads() {
         log_always "✅ Cleaned up $orphaned_count orphaned and $malformed_count malformed advertisements"
     else
         log "✅ No orphaned or malformed advertisements found"
+    fi
+}
+
+################################################################################
+# INVENTORY/PLANTNET MESSAGES CLEANUP (28 days without likes)
+################################################################################
+# This function cleans up inventory and plantnet messages that haven't received
+# any likes within 28 days, following the system requirements.
+
+cleanup_inventory_without_likes() {
+    local NPRIV_HEX=$1
+    
+    log "🔍 Checking for inventory/plantnet messages without likes (28 days)..."
+    
+    local MONTH_AGO=$(date -d "28 days ago" +%s)
+    local cleaned_count=0
+    
+    # Get current working directory
+    local current_dir=$(pwd)
+    
+    cd ~/.zen/strfry
+    
+    # Find all inventory and plantnet messages from this UMAP zone that are older than 28 days
+    # Filter by tags: inventory OR plantnet AND UPlanet
+    local old_inventory_messages=$(./strfry scan '{
+        "kinds": [1],
+        "since": 0,
+        "until": '"$MONTH_AGO"',
+        "limit": 500
+    }' 2>/dev/null | jq -c 'select(
+        .kind == 1 and 
+        ((.tags[] | select(.[0] == "t" and (.[1] == "inventory" or .[1] == "plantnet"))) != null) and
+        ((.tags[] | select(.[0] == "t" and .[1] == "UPlanet")) != null)
+    ) | {id: .id, pubkey: .pubkey, created_at: .created_at}')
+    
+    if [[ -z "$old_inventory_messages" ]]; then
+        log "✅ No old inventory/plantnet messages found"
+        cd "$current_dir"
+        return
+    fi
+    
+    # Check each message for likes
+    echo "$old_inventory_messages" | while read -r message; do
+        local msg_id=$(echo "$message" | jq -r '.id')
+        local msg_pubkey=$(echo "$message" | jq -r '.pubkey')
+        local msg_created=$(echo "$message" | jq -r '.created_at')
+        
+        if [[ -z "$msg_id" || "$msg_id" == "null" ]]; then
+            continue
+        fi
+        
+        # Count likes for this message
+        local likes=$(count_likes "$msg_id")
+        
+        if [[ $likes -eq 0 ]]; then
+            log "🗑️  Inventory message without likes (28+ days): $msg_id"
+            
+            # Get author's nprofile for notification
+            local author_nprofile=$($MY_PATH/../tools/nostr_hex2nprofile.sh "$msg_pubkey" 2>/dev/null)
+            
+            # Send notification to author before deletion (using UMAP key)
+            if [[ -n "$msg_pubkey" && "$msg_pubkey" != "null" ]]; then
+                local notification="🌱 nostr:$author_nprofile Votre observation (inventaire/plantnet) n'a pas reçu de like depuis 28 jours et sera archivée. Republiez si toujours pertinent! #UPlanet #inventory"
+                
+                # Regenerate UMAPNSEC for sending notification
+                local UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
+                
+                send_nostr_event_py "$UMAPNSEC" "$notification" "1" "[[\"p\", \"$msg_pubkey\"]]" "$myRELAY" 2>/dev/null
+            fi
+            
+            # Remove the message from local relay (strfry delete)
+            # Note: This only removes from local relay, not from other relays
+            if [[ -x ~/.zen/strfry/strfry ]]; then
+                echo "{\"ids\":[\"$msg_id\"]}" | ./strfry delete 2>/dev/null
+                log "✅ Deleted message $msg_id from local relay"
+                ((cleaned_count++))
+            fi
+            
+            # Also clean up any related ORE contracts (kind 30312) for this message
+            cleanup_related_ore_contracts "$msg_id"
+        fi
+    done
+    
+    cd "$current_dir"
+    
+    if [[ $cleaned_count -gt 0 ]]; then
+        log_always "🧹 Cleaned up $cleaned_count inventory/plantnet messages without likes (28+ days)"
+    else
+        log "✅ All inventory/plantnet messages have received likes"
+    fi
+}
+
+# Clean up related ORE contracts when parent inventory message is deleted
+cleanup_related_ore_contracts() {
+    local parent_msg_id=$1
+    
+    # Find any kind 30312 or 30023 events that reference this message
+    local related_contracts=$(./strfry scan '{
+        "kinds": [30312, 30023],
+        "#e": ["'"$parent_msg_id"'"],
+        "limit": 10
+    }' 2>/dev/null | jq -r '.id')
+    
+    if [[ -n "$related_contracts" ]]; then
+        echo "$related_contracts" | while read -r contract_id; do
+            if [[ -n "$contract_id" && "$contract_id" != "null" ]]; then
+                echo "{\"ids\":[\"$contract_id\"]}" | ./strfry delete 2>/dev/null
+                log "🗑️  Deleted related contract: $contract_id"
+            fi
+        done
     fi
 }
 

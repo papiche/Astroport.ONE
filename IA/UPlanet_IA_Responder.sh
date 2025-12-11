@@ -1410,11 +1410,22 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
                         if [[ "$INVENTORY_SUCCESS" == "true" ]]; then
                             echo "Inventory: Recognition successful - Type: $ITEM_TYPE, Name: $ITEM_NAME" >&2
                             
-                            # Build response content
-                            KeyANSWER=$(echo "$INVENTORY_JSON" | jq -r '.content // ""' 2>/dev/null)
+                            # Build markdown response content for blog (kind 30023)
+                            BLOG_CONTENT=$(echo "$INVENTORY_JSON" | jq -r '.content // ""' 2>/dev/null)
                             
-                            # Add tags for inventory
-                            ExtraTags="[['imeta', 'url $image_url'], ['g', '${ORIGINAL_LAT},${ORIGINAL_LON}'], ['umap', '${UMAP_LAT},${UMAP_LON}'], ['t', 'inventory'], ['t', 'UPlanet'], ['t', '$ITEM_TYPE'], ['inventory_type', '$ITEM_TYPE'], ['inventory_name', '$ITEM_NAME']]"
+                            # Build plain text response for kind 1 (NO MARKDOWN)
+                            # Strip markdown formatting for kind 1 message
+                            KeyANSWER="${TYPE_ICON} ${ITEM_NAME}
+📍 ${ORIGINAL_LAT}, ${ORIGINAL_LON}
+📊 Confiance: ${CONFIDENCE_PCT}%
+📸 ${image_url}
+
+👍 Likez pour créditer des Ẑen aux gestionnaires!
+
+#UPlanet #inventory #${ITEM_TYPE} #ORE"
+                            
+                            # Add tags for inventory (includes imeta for image)
+                            ExtraTags="[['imeta', 'url $image_url', 'm image/jpeg'], ['g', '${ORIGINAL_LAT},${ORIGINAL_LON}'], ['umap', '${UMAP_LAT},${UMAP_LON}'], ['t', 'inventory'], ['t', 'UPlanet'], ['t', '$ITEM_TYPE'], ['inventory_type', '$ITEM_TYPE'], ['inventory_name', '$ITEM_NAME']]"
                             
                             # Use UMAP key for inventory responses (like plantnet)
                             USE_UMAP_FOR_PLANTNET=true
@@ -1477,54 +1488,131 @@ Veuillez inclure une URL d'image valide dans votre message ou utiliser le tag #p
                                 
                                 ORE_EVENT_ID=$(echo "$ORE_RESULT" | jq -r '.event_id // empty' 2>/dev/null)
                                 
-                                # Also publish as kind 30023 for blog readers
+                                # Also publish as kind 30023 for blog readers with full markdown content
                                 BLOG_D_TAG="contract_${ITEM_TYPE}_${UMAP_LAT}_${UMAP_LON}_${TIMESTAMP_NOW}"
+                                
+                                # Build rich blog content with image and markdown
+                                BLOG_FULL_CONTENT="# ${CONTRACT_TITLE}
+
+![${ITEM_NAME}](${image_url})
+
+## Identification
+
+${BLOG_CONTENT}
+
+---
+
+## Détails du contrat
+
+- **Type**: ${TYPE_NAME}
+- **Nom**: ${ITEM_NAME}
+- **Localisation**: ${ORIGINAL_LAT}, ${ORIGINAL_LON}
+- **UMAP**: ${UMAP_LAT}, ${UMAP_LON}
+- **Confiance IA**: ${CONFIDENCE_PCT}%
+
+## Actions
+
+👍 **Likez ce contrat** pour créditer des Ẑen aux gestionnaires de cet élément!
+
+🏠 **Salle de gestion**: [UMAP_ORE_${UMAP_LAT}_${UMAP_LON}](${VDO_SERVICE})
+
+---
+
+*Contrat généré automatiquement par le système ORE UPlanet*
+
+#UPlanet #ORE #inventory #${ITEM_TYPE} #contract #maintenance #communs"
+                                
                                 BLOG_TAGS=$(jq -n \
                                     --arg d "$BLOG_D_TAG" \
                                     --arg title "$CONTRACT_TITLE" \
                                     --arg summary "Contrat de gestion pour $ITEM_NAME ($TYPE_NAME) à ${UMAP_LAT}, ${UMAP_LON}" \
                                     --arg published_at "$TIMESTAMP_NOW" \
                                     --arg image "$image_url" \
+                                    --arg lat "$ORIGINAL_LAT" \
+                                    --arg lon "$ORIGINAL_LON" \
                                     --arg ore_ref "$ORE_EVENT_ID" \
+                                    --arg item_type "$ITEM_TYPE" \
+                                    --arg item_name "$ITEM_NAME" \
                                     '[
                                         ["d", $d],
                                         ["title", $title],
                                         ["summary", $summary],
                                         ["published_at", $published_at],
                                         ["image", $image],
+                                        ["imeta", ("url " + $image), "m image/jpeg"],
+                                        ["g", ($lat + "," + $lon)],
                                         ["t", "contract"],
                                         ["t", "maintenance"],
                                         ["t", "ORE"],
+                                        ["t", "UPlanet"],
+                                        ["t", "inventory"],
+                                        ["t", $item_type],
+                                        ["inventory_type", $item_type],
+                                        ["inventory_name", $item_name],
                                         ["e", $ore_ref, "", "mention"]
                                     ]')
                                 
-                                python3 "$HOME/.zen/Astroport.ONE/tools/nostr_send_note.py" \
+                                BLOG_RESULT=$(python3 "$HOME/.zen/Astroport.ONE/tools/nostr_send_note.py" \
                                     --keyfile "$MULTIPASS_KEYFILE" \
-                                    --content "$CONTRACT_CONTENT" \
+                                    --content "$BLOG_FULL_CONTENT" \
                                     --relays "$myRELAY" \
                                     --tags "$BLOG_TAGS" \
                                     --kind "30023" \
-                                    --json >/dev/null 2>&1
+                                    --json 2>&1)
+                                
+                                BLOG_EVENT_ID=$(echo "$BLOG_RESULT" | jq -r '.event_id // empty' 2>/dev/null)
+                                if [[ -n "$BLOG_EVENT_ID" ]]; then
+                                    echo "Inventory: Blog (kind 30023) published - Event ID: $BLOG_EVENT_ID" >&2
+                                fi
                                 
                                 if [[ -n "$ORE_EVENT_ID" ]]; then
                                     echo "Inventory: ORE Contract published - Event ID: $ORE_EVENT_ID" >&2
                                     
-                                    # Update UMAP DID with inventory data (ORE_SYSTEM.md compliance)
-                                    echo "Inventory: Updating UMAP DID with inventory data..." >&2
+                                    # Record observation in extended diversity tracker (ALL inventory types)
+                                    # This updates ore_biodiversity.json with plant/insect/animal/object/place/person
+                                    echo "Inventory: Recording observation in diversity tracker..." >&2
+                                    UMAP_PATH="$HOME/.zen/tmp/${IPFSNODEID}/UPLANET/__/${UMAP_LAT:0:2}/${UMAP_LAT:3:2}/${UMAP_LAT},${UMAP_LON}"
+                                    mkdir -p "$UMAP_PATH"
+                                    
+                                    # Call Python to add inventory observation to diversity tracker
+                                    python3 -c "
+import sys
+sys.path.insert(0, '$HOME/.zen/Astroport.ONE/tools')
+from ore_system import OREBiodiversityTracker
+
+try:
+    tracker = OREBiodiversityTracker('$UMAP_PATH')
+    result = tracker.add_inventory_observation(
+        inventory_type='$ITEM_TYPE',
+        item_name='$ITEM_NAME',
+        item_id='$(echo "$ITEM_NAME" | tr ' ' '_' | tr '[:upper:]' '[:lower:]')_$(date +%Y%m%d)',
+        observer_pubkey='$pubkey',
+        confidence=$CONFIDENCE,
+        image_url='$image_url',
+        nostr_event_id='$ORE_EVENT_ID',
+        scientific_name='',
+        description='Contract: $CONTRACT_TITLE',
+        location='${ORIGINAL_LAT},${ORIGINAL_LON}'
+    )
+    print(f\"✅ Diversity: {result.get('type_icon', '📦')} {result.get('item_name')} recorded\")
+    print(f\"   Type: {result.get('inventory_type')} ({result.get('type_count')} total)\")
+    print(f\"   Diversity score: {result.get('diversity_score', 0):.2f}\")
+except Exception as e:
+    print(f'⚠️ Diversity tracker warning: {e}')
+" 2>&1 | while read line; do echo "Inventory: $line" >&2; done
+                                    
+                                    # Update UMAP DID with extended diversity data (ORE_SYSTEM.md compliance)
+                                    echo "Inventory: Updating UMAP DID with diversity data..." >&2
                                     $MY_PATH/../tools/did_manager_nostr.sh update "UMAP_${UMAP_LAT}_${UMAP_LON}" "INVENTORY_ITEM" 0 0 "" >/dev/null 2>&1
                                     
-                                    # Add contract reference to the inventory response
+                                    # Add contract reference to the inventory response (KIND 1 - NO MARKDOWN!)
+                                    # Plain text only for kind 1 messages
                                     KeyANSWER="${KeyANSWER}
 
-📄 **Contrat ORE publié**
-🔗 nostr:nevent1${ORE_EVENT_ID:0:20}...
-🏠 Salle: UMAP_ORE_${UMAP_LAT}_${UMAP_LON}
-👍 Likez pour créditer des Ẑen aux gestionnaires !
-
-#ORE #contract #maintenance #communs"
+📄 Contrat ORE: nostr:nevent1${ORE_EVENT_ID:0:20}..."
                                     
-                                    # Add ORE-compatible tags
-                                    ExtraTags="[['imeta', 'url $image_url'], ['g', '${ORIGINAL_LAT},${ORIGINAL_LON}'], ['umap', '${UMAP_LAT},${UMAP_LON}'], ['t', 'inventory'], ['t', 'UPlanet'], ['t', 'ORE'], ['t', '$ITEM_TYPE'], ['inventory_type', '$ITEM_TYPE'], ['inventory_name', '$ITEM_NAME'], ['e', '$ORE_EVENT_ID', '', 'mention']]"
+                                    # Add ORE-compatible tags with blog reference
+                                    ExtraTags="[['imeta', 'url $image_url', 'm image/jpeg'], ['g', '${ORIGINAL_LAT},${ORIGINAL_LON}'], ['umap', '${UMAP_LAT},${UMAP_LON}'], ['t', 'inventory'], ['t', 'UPlanet'], ['t', 'ORE'], ['t', '$ITEM_TYPE'], ['inventory_type', '$ITEM_TYPE'], ['inventory_name', '$ITEM_NAME'], ['e', '$ORE_EVENT_ID', '', 'mention']$(if [[ -n "$BLOG_EVENT_ID" ]]; then echo ", ['e', '$BLOG_EVENT_ID', '', 'mention']"; fi)]"
                                 else
                                     echo "Inventory: Warning - Failed to publish ORE contract" >&2
                                 fi

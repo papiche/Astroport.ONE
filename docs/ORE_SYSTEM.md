@@ -8,6 +8,7 @@ Le système ORE (Obligations Réelles Environnementales) intègre des engagement
 *   **DID (Identité Décentralisée)** : Chaque UMAP possède un identifiant unique `did:nostr:<clé_publique_hex>`, lui permettant d'avoir un profil, de posséder un portefeuille et de publier des informations sur Nostr.
 *   **Contrat ORE** : Un engagement environnemental (ex: "maintenir 80% de couverture forestière") attaché au DID d'une UMAP.
 *   **Récompense Ẑen** : La validation du respect d'un contrat ORE déclenche une récompense en Ẑen, la monnaie de l'écosystème UPlanet.
+*   **Inventaire Participatif** : Via `plantnet.html`, les citoyens photographient et inventorient les éléments de leur territoire (🌱 plantes, 🐛 insectes, 🦊 animaux, 🔧 équipements, 🏠 lieux). Chaque observation génère un contrat de maintenance et alimente le `diversity_score` de l'UMAP.
 
 ## Implémentation : Comment ça marche ?
 
@@ -50,23 +51,85 @@ Les informations du contrat ORE sont intégrées directement dans le document DI
 ```
 
 **NOSTR Event Kinds utilisés par le système ORE :**
-- **30800** : DID Documents (UMAP identities - NIP-101)
+- **30800** : DID Documents UMAP avec données de diversité attachées (NIP-101)
+- **30023** : Contrats de maintenance (Blog articles avec image et markdown)
 - **30312** : ORE Meeting Space (Persistent Geographic Space)
 - **30313** : ORE Verification Meeting (scheduled meetings for compliance verification)
 - **30009, 8, 30008** : Badges NIP-58 (pour matérialiser les compétences ORE validées)
 
+**Fichier de données locales :**
+- **ore_biodiversity.json** : Stockage local de toute la diversité inventoriée (plantes, insectes, animaux, objets, lieux, personnes)
+
 **⚠️ Important - Canonisation JSON (RFC 8785) :**
 Tous les événements NOSTR contenant du JSON (tags, contenu) sont canonisés selon RFC 8785 (JCS) avant signature pour garantir la cohérence des signatures cryptographiques. Cette canonisation est appliquée automatiquement dans `ore_system.py` via la fonction `canonicalize_json()`.
 
-### 3. Publication et Découverte sur Nostr
+### 3. Système de Diversité Étendu (ore_biodiversity.json)
+
+Le système ORE maintient un inventaire complet de la diversité de chaque UMAP via le fichier `ore_biodiversity.json`. Ce fichier est **attaché au DID UMAP** et publié sur Nostr.
+
+**Types d'inventaire supportés (capturés par plantnet.html) :**
+
+| Type | Icône | Poids | Description |
+|------|-------|-------|-------------|
+| `plant` | 🌱 | 2.0 | Plantes (reconnaissance PlantNet) |
+| `insect` | 🐛 | 1.5 | Insectes |
+| `animal` | 🦊 | 1.5 | Animaux |
+| `object` | 🔧 | 1.0 | Équipements et outils partagés |
+| `place` | 🏠 | 1.0 | Lieux d'intérêt |
+| `person` | 👤 | 0.5 | Personnes clés |
+
+**Structure du fichier ore_biodiversity.json :**
+```json
+{
+  "species": {...},                    // Legacy: plantes uniquement
+  "inventory": {
+    "plant": {"items": {...}, "count": 15},
+    "insect": {"items": {...}, "count": 3},
+    "animal": {"items": {...}, "count": 2},
+    "object": {"items": {...}, "count": 5},
+    "place": {"items": {...}, "count": 1},
+    "person": {"items": {...}, "count": 0}
+  },
+  "diversity_score": 0.78,             // Score global pondéré (0-1)
+  "total_observations": 42,
+  "observers": {...}
+}
+```
+
+**Calcul du diversity_score :**
+```
+items_score        = min(total_weighted_items × 1.5, 50)  # Pondéré par type
+type_diversity     = min(types_with_items × 4, 20)        # Bonus variété
+observation_score  = min(total_observations × 0.3, 20)
+observer_score     = min(observer_count × 2, 10)
+
+diversity_score = min((sum) / 100, 1.0)
+```
+
+**Classe Python :** `OREBiodiversityTracker` dans `ore_system.py`
+- `add_inventory_observation()` : Ajoute n'importe quel type d'inventaire
+- `get_diversity_summary()` : Résumé complet de tous les types
+- Migration automatique des anciens fichiers vers la structure étendue
+
+### 4. Publication et Découverte sur Nostr
 
 Les documents et événements ORE sont publiés sur les relais Nostr avec plusieurs event kinds :
 
-*   **Kind 30800** (DID Document) : Document DID de l'UMAP avec contrat ORE (NIP-101)
+*   **Kind 30800** (DID Document UMAP avec diversité) : Document DID complet (NIP-101)
     - Tag `["d", "did"]` pour identification
-    - Publication via `did_manager_nostr.sh`
-    - Découverte : clients s'abonnent aux événements kind 30800
-    - **Note:** Changé de 30311 à 30800 pour éviter conflit avec NIP-53 (Live Event)
+    - Tag `["g", "{lat},{lon}"]` pour géolocalisation
+    - Tag `["t", "inventory"]` pour marquer les données d'inventaire
+    - **Tags de diversité (nouveaux) :**
+      - `["diversity_score", "0.78"]` - Score global de diversité (0-1)
+      - `["biodiversity_score", "0.65"]` - Score legacy (plantes uniquement)
+      - `["species_count", "15"]` - Nombre d'espèces
+      - `["total_observations", "42"]` - Nombre total d'observations
+      - `["inventory_plant", "15"]` - Compteur par type
+      - `["inventory_object", "5"]`
+      - `["inventory_insect", "3"]`
+      - etc.
+    - Publication via `_publish_umap_did_with_biodiversity()` dans `ore_system.py`
+    - **Mise à jour automatique** à chaque nouvelle observation d'inventaire
     
 *   **Kind 30312** (ORE Meeting Space) : Espace géographique persistant pour vérifications
     - Tag `["d", "ore-space-{lat}-{lon}"]` pour identification unique
@@ -80,7 +143,36 @@ Les documents et événements ORE sont publiés sur les relais Nostr avec plusie
     - Tag `["start", "{unix_timestamp}"]` pour la date de vérification
     - Publication automatique lors de création de réunions de vérification
 
-### 4. Vérification et Récompense Économique
+### 5. Inventaire Participatif (plantnet.html)
+
+Le système ORE est alimenté par les observations des citoyens via l'interface `UPlanet/earth/plantnet.html` :
+
+**Workflow d'observation :**
+```
+1. Utilisateur photographie un élément (plante, objet, lieu...)
+   ↓
+2. Publication NOSTR (kind 1, tags: #BRO #inventory #[type])
+   ↓
+3. Bot IA détecte et identifie l'élément (PlantNet ou IA générique)
+   ↓
+4. Génération du contrat de maintenance :
+   - Kind 1 (réponse simple, sans markdown)
+   - Kind 30023 (blog avec image et détails en markdown)
+   - Kind 30312 (ORE Meeting Space)
+   ↓
+5. OREBiodiversityTracker.add_inventory_observation()
+   └─→ ore_biodiversity.json mis à jour
+   ↓
+6. DID UMAP (kind 30800) republié avec diversity_score à jour
+```
+
+**Règle des 28 jours :**
+- Si une observation/contrat n'a pas reçu de **like** dans les 28 jours :
+  - L'observation et ses événements associés sont **supprimés**
+  - Cela évite l'accumulation de données non validées par la communauté
+- Implémenté dans `NOSTR.UMAP.refresh.sh` via `cleanup_inventory_without_likes()`
+
+### 6. Vérification et Récompense Économique
 
 C'est le point crucial qui connecte l'action écologique à la valeur économique.
 

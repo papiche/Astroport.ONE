@@ -378,7 +378,29 @@ class OREUMAPDIDGenerator:
         return did, did_document, umap_nsec, umap_npub, umap_hex, umap_g1pub
 
 class OREBiodiversityTracker:
-    """Tracks plant observations for UMAP biodiversity scoring."""
+    """Tracks ALL inventory observations for UMAP diversity scoring.
+    
+    Tracks multiple inventory types to reflect the full diversity to conserve:
+    - plant: Plants (PlantNet recognized)
+    - insect: Insects
+    - animal: Animals
+    - object: Equipment and tools
+    - place: Locations and places of interest
+    - person: Key people/contacts for the UMAP
+    
+    This is used by plantnet.html to capture and store biodiversity data
+    in the DID UMAP reference.
+    """
+    
+    # Inventory types and their weights for diversity score calculation
+    INVENTORY_TYPES = {
+        "plant": {"weight": 2.0, "icon": "🌱", "name": "Plantes"},
+        "insect": {"weight": 1.5, "icon": "🐛", "name": "Insectes"},
+        "animal": {"weight": 1.5, "icon": "🦊", "name": "Animaux"},
+        "object": {"weight": 1.0, "icon": "🔧", "name": "Équipements"},
+        "place": {"weight": 1.0, "icon": "🏠", "name": "Lieux"},
+        "person": {"weight": 0.5, "icon": "👤", "name": "Personnes"}
+    }
     
     def __init__(self, umap_path: str):
         self.umap_path = umap_path
@@ -386,18 +408,271 @@ class OREBiodiversityTracker:
         self._ensure_biodiversity_file()
     
     def _ensure_biodiversity_file(self):
-        """Create biodiversity tracking file if it doesn't exist."""
+        """Create biodiversity tracking file if it doesn't exist.
+        
+        The file structure now supports ALL inventory types from plantnet.html:
+        - species: Plant species (backward compatible)
+        - inventory: All inventory items by type (new)
+        """
         if not os.path.exists(self.biodiversity_file):
             os.makedirs(self.umap_path, exist_ok=True)
             initial_data = {
+                # Backward compatible plant species tracking
                 "species": {},
                 "total_observations": 0,
                 "unique_species": 0,
+                # New: Track ALL inventory types
+                "inventory": {
+                    "plant": {"items": {}, "count": 0},
+                    "insect": {"items": {}, "count": 0},
+                    "animal": {"items": {}, "count": 0},
+                    "object": {"items": {}, "count": 0},
+                    "place": {"items": {}, "count": 0},
+                    "person": {"items": {}, "count": 0}
+                },
+                "diversity_score": 0.0,
                 "last_updated": datetime.utcnow().isoformat(),
                 "observers": {}
             }
             with open(self.biodiversity_file, 'w') as f:
                 json.dump(initial_data, f, indent=2)
+        else:
+            # Migrate existing file to new structure if needed
+            self._migrate_to_extended_structure()
+    
+    def _migrate_to_extended_structure(self):
+        """Migrate existing biodiversity file to extended structure with all inventory types."""
+        try:
+            with open(self.biodiversity_file, 'r') as f:
+                data = json.load(f)
+            
+            # Check if migration is needed
+            if "inventory" not in data:
+                # Initialize inventory structure
+                data["inventory"] = {
+                    "plant": {"items": {}, "count": 0},
+                    "insect": {"items": {}, "count": 0},
+                    "animal": {"items": {}, "count": 0},
+                    "object": {"items": {}, "count": 0},
+                    "place": {"items": {}, "count": 0},
+                    "person": {"items": {}, "count": 0}
+                }
+                
+                # Migrate existing plant species to inventory.plant
+                for scientific_name, species_data in data.get("species", {}).items():
+                    data["inventory"]["plant"]["items"][scientific_name] = {
+                        "name": species_data.get("common_name", scientific_name),
+                        "scientific_name": scientific_name,
+                        "first_observed": species_data.get("first_observed"),
+                        "observations": species_data.get("observations", []),
+                        "observers": species_data.get("observers", [])
+                    }
+                    data["inventory"]["plant"]["count"] += 1
+                
+                data["diversity_score"] = self._calculate_diversity_score(data)
+                
+                with open(self.biodiversity_file, 'w') as f:
+                    json.dump(data, f, indent=2)
+                    
+                print(f"✅ Migrated biodiversity file to extended structure")
+        except Exception as e:
+            print(f"⚠️ Migration warning: {e}")
+    
+    def add_inventory_observation(self, inventory_type: str, item_name: str,
+                                   item_id: str, observer_pubkey: str,
+                                   confidence: float = 1.0, image_url: str = "",
+                                   nostr_event_id: str = "", scientific_name: str = "",
+                                   description: str = "", location: str = "") -> Dict[str, Any]:
+        """Add ANY inventory observation to the UMAP diversity record.
+        
+        This is the generic method for ALL inventory types captured by plantnet.html:
+        - plant, insect, animal, object, place, person
+        
+        Args:
+            inventory_type: Type of inventory (plant, insect, animal, object, place, person)
+            item_name: Human-readable name of the item
+            item_id: Unique identifier (scientific name for species, or generated ID)
+            observer_pubkey: Nostr public key of the observer
+            confidence: Recognition confidence (0-1)
+            image_url: IPFS URL of the observation image
+            nostr_event_id: Nostr event ID of the observation
+            scientific_name: Scientific name (for species)
+            description: Description of the item
+            location: Location description
+            
+        Returns:
+            dict with observation result and diversity score
+        """
+        # Validate inventory type
+        if inventory_type not in self.INVENTORY_TYPES:
+            inventory_type = "object"  # Default to object for unknown types
+        
+        with open(self.biodiversity_file, 'r') as f:
+            data = json.load(f)
+        
+        # Ensure inventory structure exists (for backward compatibility)
+        if "inventory" not in data:
+            self._migrate_to_extended_structure()
+            with open(self.biodiversity_file, 'r') as f:
+                data = json.load(f)
+        
+        inv_type_data = data["inventory"].get(inventory_type, {"items": {}, "count": 0})
+        
+        is_new_item = item_id not in inv_type_data["items"]
+        
+        # Initialize item record if new
+        if is_new_item:
+            inv_type_data["items"][item_id] = {
+                "name": item_name,
+                "scientific_name": scientific_name if scientific_name else None,
+                "description": description,
+                "location": location,
+                "first_observed": datetime.utcnow().isoformat(),
+                "observations": [],
+                "observers": []
+            }
+            inv_type_data["count"] += 1
+        
+        # Add observation
+        observation = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "observer": observer_pubkey,
+            "confidence": confidence,
+            "image_url": image_url,
+            "nostr_event_id": nostr_event_id
+        }
+        inv_type_data["items"][item_id]["observations"].append(observation)
+        
+        # Track observer for this item
+        if observer_pubkey not in inv_type_data["items"][item_id]["observers"]:
+            inv_type_data["items"][item_id]["observers"].append(observer_pubkey)
+        
+        # Track global observer
+        if observer_pubkey not in data["observers"]:
+            data["observers"][observer_pubkey] = {
+                "first_observation": datetime.utcnow().isoformat(),
+                "observation_count": 0
+            }
+        data["observers"][observer_pubkey]["observation_count"] += 1
+        data["observers"][observer_pubkey]["last_observation"] = datetime.utcnow().isoformat()
+        
+        # Update totals
+        data["inventory"][inventory_type] = inv_type_data
+        data["total_observations"] += 1
+        
+        # For backward compatibility with plant species
+        if inventory_type == "plant" and scientific_name:
+            if scientific_name not in data["species"]:
+                data["species"][scientific_name] = {
+                    "common_name": item_name,
+                    "first_observed": datetime.utcnow().isoformat(),
+                    "observations": [],
+                    "observers": []
+                }
+                data["unique_species"] += 1
+            data["species"][scientific_name]["observations"].append(observation)
+            if observer_pubkey not in data["species"][scientific_name]["observers"]:
+                data["species"][scientific_name]["observers"].append(observer_pubkey)
+        
+        data["last_updated"] = datetime.utcnow().isoformat()
+        
+        # Calculate diversity score
+        diversity_score = self._calculate_diversity_score(data)
+        data["diversity_score"] = diversity_score
+        
+        # Save updated data
+        with open(self.biodiversity_file, 'w') as f:
+            json.dump(data, f, indent=2)
+        
+        return {
+            "is_new_item": is_new_item,
+            "inventory_type": inventory_type,
+            "item_id": item_id,
+            "item_name": item_name,
+            "observation_count": len(inv_type_data["items"][item_id]["observations"]),
+            "type_count": inv_type_data["count"],
+            "total_observations": data["total_observations"],
+            "diversity_score": diversity_score,
+            "type_icon": self.INVENTORY_TYPES[inventory_type]["icon"]
+        }
+    
+    def _calculate_diversity_score(self, data: Dict[str, Any]) -> float:
+        """Calculate overall diversity score based on ALL inventory types.
+        
+        Considers:
+        - Species/item count per type (weighted by type importance)
+        - Total observations
+        - Observer diversity
+        - Type diversity (having items in multiple categories)
+        """
+        total_weighted_items = 0
+        types_with_items = 0
+        
+        inventory = data.get("inventory", {})
+        for inv_type, type_data in inventory.items():
+            count = type_data.get("count", 0)
+            if count > 0:
+                types_with_items += 1
+                weight = self.INVENTORY_TYPES.get(inv_type, {}).get("weight", 1.0)
+                total_weighted_items += count * weight
+        
+        # Include legacy species count
+        unique_species = data.get("unique_species", 0)
+        total_observations = data.get("total_observations", 0)
+        observer_count = len(data.get("observers", {}))
+        
+        # Score components (0-100 total)
+        # Weighted items score (0-50 points)
+        items_score = min(total_weighted_items * 1.5, 50)
+        
+        # Type diversity bonus (0-20 points) - reward having diverse inventory
+        type_diversity_score = min(types_with_items * 4, 20)
+        
+        # Observation activity score (0-20 points)
+        observation_score = min(total_observations * 0.3, 20)
+        
+        # Observer diversity score (0-10 points)
+        observer_score = min(observer_count * 2, 10)
+        
+        total_score = items_score + type_diversity_score + observation_score + observer_score
+        
+        # Normalize to 0-1 scale
+        return min(total_score / 100.0, 1.0)
+    
+    def get_diversity_summary(self) -> Dict[str, Any]:
+        """Get complete diversity summary for this UMAP including ALL inventory types."""
+        if not os.path.exists(self.biodiversity_file):
+            return {
+                "diversity_score": 0.0,
+                "inventory_summary": {},
+                "total_observations": 0
+            }
+        
+        with open(self.biodiversity_file, 'r') as f:
+            data = json.load(f)
+        
+        # Build inventory summary
+        inventory_summary = {}
+        for inv_type, type_config in self.INVENTORY_TYPES.items():
+            type_data = data.get("inventory", {}).get(inv_type, {"items": {}, "count": 0})
+            inventory_summary[inv_type] = {
+                "icon": type_config["icon"],
+                "name": type_config["name"],
+                "count": type_data.get("count", 0),
+                "items": list(type_data.get("items", {}).keys())[:10]  # Top 10 items
+            }
+        
+        return {
+            "diversity_score": self._calculate_diversity_score(data),
+            "inventory_summary": inventory_summary,
+            "unique_species": data.get("unique_species", 0),
+            "total_observations": data.get("total_observations", 0),
+            "observer_count": len(data.get("observers", {})),
+            "last_updated": data.get("last_updated"),
+            # Legacy compatibility
+            "biodiversity_score": self._calculate_biodiversity_score(data),
+            "top_species": self._get_top_species(data, limit=5)
+        }
     
     def add_plant_observation(self, species_name: str, scientific_name: str, 
                              observer_pubkey: str, confidence: float,
@@ -822,8 +1097,8 @@ class OREUMAPManager:
                         total_reward = self._calculate_ore_rewards(lat, lon, compliance_score)
                         print(f"💰 ORE rewards calculated: {total_reward} Ẑen")
                         
-                        # Update UMAP DID with ORE information
-                        self._update_umap_did_with_ore(umappath, did, compliance_score, total_reward)
+                        # Update UMAP DID with ORE information and publish to Nostr (kind 30800)
+                        self._update_umap_did_with_ore(umappath, did, compliance_score, total_reward, lat, lon)
             
             # Publish ORE status to Nostr using UMAP's own keyfile
             self._publish_ore_status_to_nostr(lat, lon, umap_keyfile, did)
@@ -944,28 +1219,211 @@ class OREUMAPManager:
             print(f"⚠️  Error calculating ORE rewards: {e}")
             return 15.5  # Default reward
 
-    def _update_umap_did_with_ore(self, umappath: str, umap_did: str, compliance_score: float, total_reward: float) -> None:
-        """Update UMAP DID with ORE information."""
+    def _update_umap_did_with_ore(self, umappath: str, umap_did: str, compliance_score: float, total_reward: float, lat: str = "", lon: str = "") -> None:
+        """Update UMAP DID with ORE information and publish to Nostr (kind 30800).
+        
+        The biodiversity/diversity data (ore_biodiversity.json) is now attached to the DID document
+        and published to Nostr instead of just storing in the filesystem.
+        
+        Now includes ALL inventory types captured by plantnet.html:
+        - plant, insect, animal, object, place, person
+        """
         try:
-            # Create ORE metadata file
-            ore_metadata = os.path.join(umappath, "ore_metadata.json")
-            metadata = {
+            # Get biodiversity data if it exists
+            biodiversity_data = {}
+            biodiversity_file = os.path.join(umappath, "ore_biodiversity.json")
+            if os.path.exists(biodiversity_file):
+                with open(biodiversity_file, 'r') as f:
+                    biodiversity_data = json.load(f)
+            
+            # Build inventory summary from extended structure
+            inventory_summary = {}
+            inventory_data = biodiversity_data.get("inventory", {})
+            for inv_type in ["plant", "insect", "animal", "object", "place", "person"]:
+                type_data = inventory_data.get(inv_type, {"items": {}, "count": 0})
+                if type_data.get("count", 0) > 0:
+                    inventory_summary[inv_type] = {
+                        "count": type_data.get("count", 0),
+                        "items": list(type_data.get("items", {}).keys())[:20]  # Top 20 items per type
+                    }
+            
+            # Calculate diversity score using extended method
+            tracker = OREBiodiversityTracker(umappath)
+            diversity_summary = tracker.get_diversity_summary()
+            
+            # Create ORE metadata with FULL diversity data attached
+            ore_metadata = {
                 "umap_did": umap_did,
-                "coordinates": {"lat": "LAT", "lon": "LON"},  # Will be filled by caller
+                "coordinates": {"lat": lat, "lon": lon},
                 "ore_mode_activated": datetime.utcnow().isoformat(),
                 "compliance_score": compliance_score,
                 "total_reward": total_reward,
                 "guardian_authority": f"did:nostr:{self.uplanet_g1_pub[:8]}",
-                "uplanet_integration": True
+                "uplanet_integration": True,
+                # Extended diversity data (replaces simple biodiversity)
+                "diversity": {
+                    "diversity_score": diversity_summary.get("diversity_score", 0.0),
+                    "total_observations": biodiversity_data.get("total_observations", 0),
+                    "observer_count": len(biodiversity_data.get("observers", {})),
+                    "last_updated": biodiversity_data.get("last_updated", datetime.utcnow().isoformat()),
+                    # Inventory by type (from plantnet.html)
+                    "inventory_summary": inventory_summary
+                },
+                # Legacy: Keep biodiversity for backward compatibility
+                "biodiversity": {
+                    "unique_species": biodiversity_data.get("unique_species", 0),
+                    "total_observations": biodiversity_data.get("total_observations", 0),
+                    "species_list": list(biodiversity_data.get("species", {}).keys()),
+                    "observer_count": len(biodiversity_data.get("observers", {})),
+                    "last_updated": biodiversity_data.get("last_updated", datetime.utcnow().isoformat()),
+                    "biodiversity_score": self._calculate_biodiversity_score_from_data(biodiversity_data)
+                }
             }
             
-            with open(ore_metadata, 'w') as f:
-                json.dump(metadata, f, indent=2)
+            # Save local copy
+            ore_metadata_file = os.path.join(umappath, "ore_metadata.json")
+            with open(ore_metadata_file, 'w') as f:
+                json.dump(ore_metadata, f, indent=2)
             
-            print(f"✅ ORE metadata saved: {ore_metadata}")
+            print(f"✅ ORE metadata saved: {ore_metadata_file}")
+            
+            # Publish DID with biodiversity data to Nostr (kind 30800)
+            if lat and lon:
+                self._publish_umap_did_with_biodiversity(lat, lon, umap_did, ore_metadata, umappath)
             
         except Exception as e:
             print(f"❌ Error updating UMAP DID with ORE: {e}")
+    
+    def _calculate_biodiversity_score_from_data(self, data: Dict[str, Any]) -> float:
+        """Calculate biodiversity score from biodiversity data."""
+        unique_species = data.get("unique_species", 0)
+        total_observations = data.get("total_observations", 0)
+        observer_count = len(data.get("observers", {}))
+        
+        species_score = min(unique_species * 2, 70)
+        observation_score = min(total_observations * 0.5, 20)
+        observer_score = min(observer_count * 2, 10)
+        
+        return min((species_score + observation_score + observer_score) / 100.0, 1.0)
+    
+    def _publish_umap_did_with_biodiversity(self, lat: str, lon: str, umap_did: str, ore_metadata: Dict[str, Any], umappath: str) -> None:
+        """Publish UMAP DID with biodiversity data to Nostr (kind 30800).
+        
+        This attaches ore_biodiversity.json content directly to the DID document
+        following DID_IMPLEMENTATION.md specifications for UMAP DIDs.
+        """
+        try:
+            # Generate UMAP keys
+            umap_nsec_cmd = f'{os.path.expanduser("~")}/.zen/Astroport.ONE/tools/keygen -t nostr "{self.uplanet_name}{lat}" "{self.uplanet_name}{lon}" -s'
+            umap_nsec = subprocess.check_output(umap_nsec_cmd, shell=True, text=True).strip()
+            
+            umap_hex_cmd = f'{os.path.expanduser("~")}/.zen/Astroport.ONE/tools/keygen -t nostr "{self.uplanet_name}{lat}" "{self.uplanet_name}{lon}" | xargs {os.path.expanduser("~")}/.zen/Astroport.ONE/tools/nostr2hex.py'
+            umap_hex = subprocess.check_output(umap_hex_cmd, shell=True, text=True).strip()
+            
+            # Create temporary keyfile
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.nostr', delete=False) as f:
+                f.write(f"NSEC={umap_nsec};\n")
+                keyfile_path = f.name
+            
+            # Create DID document with biodiversity data
+            did_document = {
+                "@context": ["https://www.w3.org/ns/did/v1", "https://uplanet.copylaradio.com/did/ore/v1"],
+                "id": umap_did,
+                "type": "UMAP",
+                "geographicContext": {
+                    "latitude": lat,
+                    "longitude": lon,
+                    "precision": "0.01"
+                },
+                "verificationMethod": [
+                    {
+                        "id": f"{umap_did}#key-1",
+                        "type": "Ed25519VerificationKey2020",
+                        "controller": umap_did,
+                        "publicKeyHex": umap_hex
+                    }
+                ],
+                "authentication": [f"{umap_did}#key-1"],
+                "service": [
+                    {
+                        "id": f"{umap_did}#nostr-relay",
+                        "type": "NostrRelay",
+                        "serviceEndpoint": self.my_relay
+                    }
+                ],
+                "metadata": {
+                    "ore": ore_metadata,
+                    "updated": datetime.utcnow().isoformat()
+                }
+            }
+            
+            # Prepare content and tags for kind 30800 (DID document - NIP-101)
+            did_content = json.dumps(did_document, indent=2)
+            
+            # Build tags with extended diversity information
+            tags = [
+                ["d", "did"],  # Required for parameterized replaceable event
+                ["g", f"{lat},{lon}"],
+                ["t", "UMAP"],
+                ["t", "DID"],
+                ["t", "ORE"],
+                ["t", "UPlanet"],
+                ["t", "inventory"],  # Mark as having inventory data
+                # Extended diversity score (from all inventory types)
+                ["diversity_score", str(ore_metadata.get("diversity", {}).get("diversity_score", 0.0))],
+                # Legacy biodiversity score for backward compatibility
+                ["biodiversity_score", str(ore_metadata.get("biodiversity", {}).get("biodiversity_score", 0.0))],
+                ["species_count", str(ore_metadata.get("biodiversity", {}).get("unique_species", 0))],
+                ["compliance_score", str(ore_metadata.get("compliance_score", 0.0))],
+                ["total_observations", str(ore_metadata.get("diversity", {}).get("total_observations", 0))]
+            ]
+            
+            # Add inventory type counts as tags (from plantnet.html inventory types)
+            inventory_summary = ore_metadata.get("diversity", {}).get("inventory_summary", {})
+            for inv_type, inv_data in inventory_summary.items():
+                count = inv_data.get("count", 0)
+                if count > 0:
+                    tags.append([f"inventory_{inv_type}", str(count)])
+            
+            tags_json = json.dumps(tags)
+            
+            # Path to nostr_send_note.py
+            nostr_send_script = os.path.join(os.path.dirname(__file__), "nostr_send_note.py")
+            
+            print(f"📡 Publishing UMAP DID with biodiversity to Nostr (kind 30800) for ({lat}, {lon})")
+            
+            result = subprocess.run([
+                "python3", nostr_send_script,
+                "--keyfile", keyfile_path,
+                "--content", did_content,
+                "--kind", "30800",
+                "--tags", tags_json,
+                "--relays", self.my_relay,
+                "--json"
+            ], capture_output=True, text=True, timeout=60)
+            
+            # Clean up temporary keyfile
+            os.unlink(keyfile_path)
+            
+            if result.returncode == 0:
+                result_data = json.loads(result.stdout)
+                if result_data.get("success"):
+                    print(f"✅ UMAP DID with diversity data (kind 30800) published successfully")
+                    print(f"   Event ID: {result_data.get('event_id')}")
+                    print(f"   Diversity score: {ore_metadata.get('diversity', {}).get('diversity_score', 0.0):.2f}")
+                    print(f"   Species count: {ore_metadata.get('biodiversity', {}).get('unique_species', 0)}")
+                    inv_summary = ore_metadata.get('diversity', {}).get('inventory_summary', {})
+                    for inv_type, inv_data in inv_summary.items():
+                        if inv_data.get('count', 0) > 0:
+                            print(f"   📦 {inv_type}: {inv_data.get('count', 0)} items")
+                else:
+                    print(f"⚠️  UMAP DID publication had issues: {result_data.get('errors', [])}")
+            else:
+                print(f"❌ Failed to publish UMAP DID: {result.stderr}")
+                
+        except Exception as e:
+            print(f"❌ Error publishing UMAP DID with biodiversity: {e}")
 
     def _get_biodiversity_stats(self, lat: str, lon: str) -> Dict[str, Any]:
         """Get biodiversity statistics for a UMAP from NOSTR events.
