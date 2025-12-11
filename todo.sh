@@ -14,7 +14,10 @@ NC='\033[0m' # No Color
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$SCRIPT_DIR"
+# Disable set -e temporarily for sourcing my.sh (it has some commands that may return non-zero)
+set +e
 source $HOME/.zen/Astroport.ONE/tools/my.sh
+set -e
 
 
 TODO_TODAY="$REPO_ROOT/TODO.today.md"

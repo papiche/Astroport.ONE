@@ -253,26 +253,85 @@ for each inventory_event in umap:
 
 ## 📅 Calendrier Lunaire & Styles de Production
 
-L'onglet "Autonomie" propose un calendrier biodynamique avec plusieurs styles :
+L'onglet "Autonomie" propose un calendrier biodynamique avec plusieurs styles adaptés aux jardiniers de tous niveaux :
 
-| Style | Icône | Description |
-|-------|-------|-------------|
-| **UMAP Optimisé** | 🏙️ | Maximiser la diversité sur petite surface (~1km²) |
-| **Variété Nutritionnelle** | 🌿 | Couvrir tous les besoins alimentaires |
-| **Autonomie Complète** | 🏡 | Produire 100% de sa nourriture |
-| **Conservation Longue Durée** | 🥫 | Légumes de garde, stérilisation |
-| **Production Continue** | 🔄 | Récoltes toute l'année |
+| Style | Icône | Description | Niveau |
+|-------|-------|-------------|--------|
+| **🌳 Forêt Jardin** | 🌳 | Écosystème comestible auto-entretenu, 7 strates verticales | ⭐ Débutant |
+| **UMAP Optimisé** | 🏙️ | Maximiser la diversité sur petite surface (~1km²) | ⭐ Débutant |
+| **Variété Nutritionnelle** | 🌿 | Couvrir tous les besoins alimentaires | ⭐ Débutant |
+| **Autonomie Complète** | 🏡 | Produire 100% de sa nourriture | ⭐⭐⭐ Avancé |
+| **Conservation Longue Durée** | 🥫 | Légumes de garde, stérilisation | ⭐⭐ Intermédiaire |
+| **Production Continue** | 🔄 | Récoltes toute l'année | ⭐⭐⭐ Avancé |
+
+### 🌳 Style Recommandé : Forêt Jardin
+
+Le style **Forêt Jardin** est idéal pour les UMAPs car il :
+- Crée un écosystème qui s'auto-entretient avec le temps
+- Maximise la production sur 7 strates verticales
+- Réduit le travail annuel (plantes pérennes)
+- Favorise la biodiversité et les pollinisateurs
+- S'adapte parfaitement aux débutants
+
+**Les 7 strates de la Forêt Jardin :**
+1. 🌳 **Canopée** : Arbres fruitiers hauts (pommiers, poiriers)
+2. 🍎 **Arbres bas** : Fruitiers nains
+3. 🫐 **Arbustes** : Baies, petits fruits (framboises, groseilles)
+4. 🥬 **Herbacées** : Légumes perpétuels (chou Daubenton, oseille)
+5. 🍓 **Couvre-sol** : Fraisiers, trèfle
+6. 🥕 **Racines** : Ail des ours, topinambours
+7. 🍇 **Grimpantes** : Vignes, kiwis
+
+### 🌱 Guide Débutant : Rejoindre la Forêt Jardin UMAP
+
+**Année 1 - Les bases :**
+1. Plantez 2-3 arbres fruitiers (novembre = idéal)
+2. Installez framboisiers et groseilliers
+3. Semez trèfle et consoude (fertilité)
+4. Paillez généreusement TOUT
+
+**Année 2 - Développement :**
+1. Ajoutez légumes perpétuels
+2. Plantez couvre-sol (fraisiers)
+3. Installez aromatiques pérennes
+4. Premières récoltes de baies!
+
+**Année 3+ - Maturité :**
+- La forêt s'auto-gère
+- Récoltes abondantes
+- Très peu d'entretien
+
+### 🤝 Les Guildes : Associations Bénéfiques
+
+Une **guilde** est un groupe de plantes qui s'entraident :
+
+**Guilde du Pommier :**
+- 🍎 Pommier (centre)
+- 🌿 Consoude (nutriments)
+- ☘️ Trèfle (azote)
+- 🌸 Capucines (piège à pucerons)
+- 🧅 Ciboulette (répulsif)
+- 🍓 Fraisiers (couvre-sol)
+
+**Guilde des Tomates :**
+- 🍅 Tomates (centre)
+- 🌿 Basilic (répulsif + saveur)
+- 🥕 Carottes (profondeur différente)
+- 🌼 Œillets d'Inde (nématodes)
 
 ### Export iCal
 
 Le calendrier peut être exporté en `.ics` avec :
 - Semis optimaux selon les cycles lunaires
-- Rappels d'entretien hebdomadaires
+- Rappels d'entretien par strate (Forêt Jardin)
 - Dates de récolte estimées
-- Conseils nutritionnels saisonniers
+- Conseils pour débutants et progression
+- Rappels de contribution UMAP
 - Alertes météo générales
 
 **Fonction :** `lunar-calendar.js` → `generateVegetarianGardenerICal(year, style)`
+
+**Styles disponibles :** `foret`, `umap`, `variety`, `autonomy`, `conservation`, `continuous`
 
 ## 🏗️ Architecture Technique
 
