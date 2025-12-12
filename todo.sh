@@ -32,35 +32,33 @@ GIT_LOG_FILE="$REPO_ROOT/.git_changes.txt"
 
 # Function to display help
 show_help() {
-    cat <<EOF
-${GREEN}todo.sh${NC} - Generate automatic TODO reports based on Git changes
-
-${YELLOW}USAGE:${NC}
-    $0 [OPTIONS]
-
-${YELLOW}OPTIONS:${NC}
-    ${GREEN}--help, -h${NC}      Display this help message
-    ${GREEN}--week, -w${NC}      Analyze Git changes from the last 7 days (default: 24h)
-
-${YELLOW}DESCRIPTION:${NC}
-    This script analyzes recent Git changes and generates a structured TODO report.
-    It uses question.py with an AI model to summarize modifications and suggest priorities.
-
-${YELLOW}OUTPUT:${NC}
-    Default (24h):  TODO.today.md
-    Weekly (--week): TODO.week.md
-
-${YELLOW}EXAMPLES:${NC}
-    $0              # Analyze last 24 hours, generate TODO.today.md
-    $0 --week       # Analyze last 7 days, generate TODO.week.md
-    $0 -w           # Same as --week
-
-${YELLOW}REQUIREMENTS:${NC}
-    - Git repository
-    - Python 3 with question.py
-    - Ollama (optional, falls back to basic summary)
-
-EOF
+    echo -e "${GREEN}todo.sh${NC} - Generate automatic TODO reports based on Git changes"
+    echo ""
+    echo -e "${YELLOW}USAGE:${NC}"
+    echo "    $0 [OPTIONS]"
+    echo ""
+    echo -e "${YELLOW}OPTIONS:${NC}"
+    echo -e "    ${GREEN}--help, -h${NC}      Display this help message"
+    echo -e "    ${GREEN}--week, -w${NC}      Analyze Git changes from the last 7 days (default: 24h)"
+    echo ""
+    echo -e "${YELLOW}DESCRIPTION:${NC}"
+    echo "    This script analyzes recent Git changes and generates a structured TODO report."
+    echo "    It uses question.py with an AI model to summarize modifications and suggest priorities."
+    echo ""
+    echo -e "${YELLOW}OUTPUT:${NC}"
+    echo "    Default (24h):  TODO.today.md"
+    echo "    Weekly (--week): TODO.week.md"
+    echo ""
+    echo -e "${YELLOW}EXAMPLES:${NC}"
+    echo "    $0              # Analyze last 24 hours, generate TODO.today.md"
+    echo "    $0 --week       # Analyze last 7 days, generate TODO.week.md"
+    echo "    $0 -w           # Same as --week"
+    echo ""
+    echo -e "${YELLOW}REQUIREMENTS:${NC}"
+    echo "    - Git repository"
+    echo "    - Python 3 with question.py"
+    echo "    - Ollama (optional, falls back to basic summary)"
+    echo ""
     exit 0
 }
 
@@ -122,35 +120,112 @@ get_git_changes() {
 # Fonction pour analyser les modifications par système
 analyze_changes_by_system() {
     local changes_summary=""
+    local all_matched_files=""
     
-    # Systèmes à suivre
-    declare -A systems=(
-        ["ECONOMY"]="RUNTIME/ZEN.ECONOMY.readme.md|LEGAL.md|RUNTIME/ZEN.*.sh"
-        ["DID"]="DID_IMPLEMENTATION.md|tools/make_NOSTRCARD.sh|tools/did_manager.*.sh"
-        ["ORE"]="docs/ORE_SYSTEM.md|IA/ore_system.py|RUNTIME/NOSTR.UMAP.refresh.sh"
-        ["ORACLE"]="docs/ORACLE_SYSTEM.md|RUNTIME/ORACLE.refresh.sh|tools/oracle.*.sh|UPassport/templates/wotx2.html|UPassport/templates/oracle.html"
-        ["NostrTube"]="docs/README.NostrTube.md|IA/youtube.com.sh|IA/create_video_channel.py|UPassport/templates/youtube.html"
-        ["Cookie"]="docs/COOKIE_SYSTEM.md|IA/cookie_workflow_engine.sh|UPassport/templates/cookie.html"
-        ["N8N"]="docs/N8N.md|docs/N8N.todo.md|UPassport/templates/n8n.html|nostr-nips/101-cookie-workflow-extension.md"
-        ["PlantNet"]="docs/PLANTNET_ORE.md|IA/plantnet_recognition.py|IA/plantnet_ore_integration.py|UPlanet/earth/plantnet.html"
-        ["CoinFlip"]="docs/COINFLIP.md|UPlanet/earth/coinflip/index.html|UPlanet/earth/coinflip/README.md|UPassport/zen_send.sh"
-        ["uMARKET"]="docs/uMARKET.md|docs/uMARKET.todo.md|tools/_uMARKET.*.sh|RUNTIME/NOSTR.UMAP.refresh.sh"
+    # Get all changed files for the period
+    local all_changes=$(git diff --name-only HEAD@{$PERIOD_REF} HEAD 2>/dev/null || git log --since="$PERIOD_GIT" --name-only --pretty=format: | sort -u | grep -v '^$')
+    
+    if [[ -z "$all_changes" ]]; then
+        echo "Aucune modification détectée."
+        return
+    fi
+    
+    # Systèmes à suivre (patterns regex corrigés)
+    # Format: "NOM_SYSTEME:pattern1|pattern2|..."
+    local -a system_definitions=(
+        "UPassport:^UPassport/.*"
+        "UPlanet:^UPlanet/.*"
+        "RUNTIME:^RUNTIME/.*"
+        "IA:^IA/.*"
+        "Tools:^tools/.*"
+        "Nostr:nostr.*|.*nostr.*\.py|.*nostr.*\.sh"
+        "Economy:ZEN\.|LEGAL|economy|accounting"
+        "DID:did_|make_NOSTRCARD|DID_IMPLEMENTATION"
+        "ORE:ore_|ORE_SYSTEM"
+        "Oracle:oracle|ORACLE|wotx"
+        "PlantNet:plantnet|PLANTNET"
+        "Cookie:cookie|COOKIE"
+        "CoinFlip:coinflip|COINFLIP"
+        "uMARKET:uMARKET|umarket"
+        "NostrTube:youtube|NostrTube"
+        "N8N:n8n|N8N"
+        "Docs:^docs/.*|\.md$"
+        "Config:\.json$|\.env|\.conf|requirements"
     )
     
-    echo -e "${BLUE}🔍 Analyse des modifications par système...${NC}"
+    echo -e "${BLUE}🔍 Analyse des modifications par système...${NC}" >&2
     
-    for system in "${!systems[@]}"; do
-        local patterns="${systems[$system]}"
-        local system_changes=$(git diff --name-only HEAD@{$PERIOD_REF} HEAD 2>/dev/null | grep -E "$patterns" || true)
+    for system_def in "${system_definitions[@]}"; do
+        local system_name="${system_def%%:*}"
+        local patterns="${system_def#*:}"
         
-        if [ -n "$system_changes" ]; then
-            local file_list=$(echo "$system_changes" | sed 's/^/  - /' | head -10)
+        local system_changes=$(echo "$all_changes" | grep -iE "$patterns" 2>/dev/null || true)
+        
+        if [[ -n "$system_changes" ]]; then
             local file_count=$(echo "$system_changes" | wc -l)
-            changes_summary+="\n### $system ($file_count fichier(s))\n$file_list\n"
+            
+            # Calculate stats (lines added/removed)
+            local stats_add=0
+            local stats_del=0
+            while IFS= read -r file; do
+                if [[ -n "$file" ]]; then
+                    local file_stats=$(git diff --numstat HEAD@{$PERIOD_REF} HEAD -- "$file" 2>/dev/null || git log --since="$PERIOD_GIT" --numstat --pretty=format: -- "$file" 2>/dev/null | awk '{a+=$1; d+=$2} END {print a" "d}')
+                    if [[ -n "$file_stats" ]]; then
+                        local add=$(echo "$file_stats" | awk '{sum+=$1} END {print sum+0}')
+                        local del=$(echo "$file_stats" | awk '{sum+=$2} END {print sum+0}')
+                        stats_add=$((stats_add + add))
+                        stats_del=$((stats_del + del))
+                    fi
+                    all_matched_files+="$file"$'\n'
+                fi
+            done <<< "$system_changes"
+            
+            # Format file list (max 8 files shown)
+            local file_list=$(echo "$system_changes" | head -8 | sed 's/^/  - /')
+            local remaining=$((file_count - 8))
+            if [[ $remaining -gt 0 ]]; then
+                file_list+=$'\n'"  - ... et $remaining autre(s)"
+            fi
+            
+            # Add to summary with stats
+            if [[ $stats_add -gt 0 || $stats_del -gt 0 ]]; then
+                changes_summary+="\n### $system_name ($file_count fichier(s), +${stats_add}/-${stats_del} lignes)\n$file_list\n"
+            else
+                changes_summary+="\n### $system_name ($file_count fichier(s))\n$file_list\n"
+            fi
         fi
     done
     
-    echo "$changes_summary"
+    # Find uncategorized files (Autres)
+    local other_files=""
+    while IFS= read -r file; do
+        if [[ -n "$file" ]] && ! echo "$all_matched_files" | grep -qF "$file"; then
+            other_files+="$file"$'\n'
+        fi
+    done <<< "$all_changes"
+    
+    if [[ -n "$other_files" ]]; then
+        other_files=$(echo "$other_files" | grep -v '^$' | sort -u)
+        local other_count=$(echo "$other_files" | wc -l)
+        local other_list=$(echo "$other_files" | head -8 | sed 's/^/  - /')
+        local remaining=$((other_count - 8))
+        if [[ $remaining -gt 0 ]]; then
+            other_list+=$'\n'"  - ... et $remaining autre(s)"
+        fi
+        changes_summary+="\n### Autres ($other_count fichier(s))\n$other_list\n"
+    fi
+    
+    # Summary stats
+    local total_files=$(echo "$all_changes" | wc -l)
+    local total_stats=$(git diff --stat HEAD@{$PERIOD_REF} HEAD 2>/dev/null | tail -1 || echo "")
+    
+    if [[ -n "$total_stats" ]]; then
+        changes_summary="\n**Total: $total_files fichier(s) modifié(s)** - $total_stats\n$changes_summary"
+    else
+        changes_summary="\n**Total: $total_files fichier(s) modifié(s)**\n$changes_summary"
+    fi
+    
+    echo -e "$changes_summary"
 }
 
 # Fonction pour générer le prompt pour question.py (une seule question pour continuité)
@@ -265,14 +340,6 @@ $ai_summary
 ## 📝 Modifications Détectées
 
 $(analyze_changes_by_system)
-
----
-
-## 🔗 Liens Utiles
-
-- [TODO Principal](TODO.md)
-- [Documentation](DOCUMENTATION.md)
-- [TODO System](docs/TODO_SYSTEM.md)
 
 ---
 
