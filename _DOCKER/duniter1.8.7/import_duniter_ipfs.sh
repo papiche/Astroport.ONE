@@ -92,6 +92,10 @@ docker compose start duniter
 # Cleanup
 rm -rf "$WORK_DIR"
 
+# Unpin the imported CID to free space (we have it in our DB now)
+echo "Unpinning imported CID to free IPFS space..."
+ipfs pin rm "$CID" 2>/dev/null || true
+
 echo "----------------------------------------------------"
 echo "Import complete from IPFS: $CID"
 echo "Check logs: docker compose logs -f duniter"
