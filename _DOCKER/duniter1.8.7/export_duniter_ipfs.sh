@@ -181,18 +181,17 @@ echo "=== Step 2: Restarting node ==="
 docker compose start duniter
 echo "Node restarted. Processing backup in background..."
 
-echo "=== Step 3: Securing data (removing private keys) ==="
+echo "=== Step 3: Securing and compressing data ==="
+# Use Docker to remove private keys and compress (files have UID 1111 from container)
 # NEVER publish key.yml or keyring.yml to IPFS
-find "$WORK_DIR/data" -name "key.yml" -delete
-find "$WORK_DIR/data" -name "key.priv" -delete
-find "$WORK_DIR/data" -name "keyring.yml" -delete
+docker run --rm -v ${WORK_DIR}/data:/data -v ${WORK_DIR}:/output alpine sh -c "
+    find /data -name 'key.yml' -delete
+    find /data -name 'key.priv' -delete
+    find /data -name 'keyring.yml' -delete
+    cd /data && tar -czf /output/${ARCHIVE_NAME} .
+"
 
-echo "=== Step 4: Compressing database ==="
-cd "$WORK_DIR/data"
-tar -czf "$WORK_DIR/$ARCHIVE_NAME" .
-cd "$SCRIPT_DIR"
-
-echo "=== Step 5: Uploading to IPFS ==="
+echo "=== Step 4: Uploading to IPFS ==="
 # Get old CID before adding new one (for cleanup)
 OLD_CID=""
 if [[ -f "$CID_FILE" ]]; then
@@ -217,8 +216,9 @@ fi
 # Save CID to cache file
 echo "$CID" > "$CID_FILE"
 
-# Cleanup
-rm -rf "$WORK_DIR"
+# Cleanup (use Docker since files have UID 1111)
+docker run --rm -v ${WORK_DIR}:/work alpine rm -rf /work/data /work/${ARCHIVE_NAME}
+rmdir "$WORK_DIR" 2>/dev/null || true
 
 echo "----------------------------------------------------"
 echo "SUCCESS! Database exported to IPFS."
