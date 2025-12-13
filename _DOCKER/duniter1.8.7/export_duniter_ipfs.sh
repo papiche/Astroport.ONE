@@ -164,8 +164,10 @@ fi
 
 echo "Node is synchronized (diff: $BLOCK_DIFF blocks)"
 
-# Prepare work directory
-rm -rf "$WORK_DIR"
+# Prepare work directory (use Docker as root to clean up files with UID 1111)
+if [[ -d "$WORK_DIR" ]]; then
+    docker run --rm -u root -v "$WORK_DIR":/work alpine rm -rf /work
+fi
 mkdir -p "$WORK_DIR/data"
 
 echo "=== Step 1: Quick snapshot from volume (minimal downtime) ==="
@@ -216,9 +218,9 @@ fi
 # Save CID to cache file
 echo "$CID" > "$CID_FILE"
 
-# Cleanup (use Docker since files have UID 1111)
-docker run --rm -v ${WORK_DIR}:/work alpine rm -rf /work/data /work/${ARCHIVE_NAME}
-rmdir "$WORK_DIR" 2>/dev/null || true
+# Cleanup (use Docker as root since files have UID 1111)
+docker run --rm -u root -v ${WORK_DIR}:/work alpine rm -rf /work
+mkdir -p "$WORK_DIR" && rmdir "$WORK_DIR" 2>/dev/null || true
 
 echo "----------------------------------------------------"
 echo "SUCCESS! Database exported to IPFS."
