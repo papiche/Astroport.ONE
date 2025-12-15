@@ -681,9 +681,9 @@ for PLAYER in "${NOSTR[@]}"; do
 <div class='details'>
 <p><strong>Joueur:</strong> ${PLAYER}</p>
 <p><strong>Date:</strong> $TODATE</p>
-<p><strong>Montant HT:</strong> <span class='amount'>${Npaf_ZEN} ẐEN (${Npaf} Ğ1)</span></p>
-<p><strong>Montant TVA:</strong> <span class='amount'>${TVA_ZEN} ẐEN (${TVA_AMOUNT} Ğ1)</span></p>
-<p><strong>Total payé:</strong> <span class='amount'>${TOTAL_ZEN} ẐEN (${TOTAL_PAYMENT} Ğ1)</span></p>
+<p><strong>Montant HT:</strong> <span class='amount'>${Npaf_ZEN} ẐEN</span></p>
+<p><strong>Montant TVA:</strong> <span class='amount'>${TVA_ZEN} ẐEN</span></p>
+<p><strong>Total payé:</strong> <span class='amount'>${TOTAL_ZEN} ẐEN</span></p>
 <p><strong>Solde restant:</strong> $ZEN ẐEN</p>
 <p><strong>Prochain paiement:</strong> $NEXT_PAYMENT_DATE</p>
 </div>
@@ -715,16 +715,16 @@ for PLAYER in "${NOSTR[@]}"; do
     .error { color: red; font-weight: bold; }
     .details { background-color: #f5f5f5; padding: 10px; margin: 10px 0; }
 </style></head><body>
-<h2 class='error'>❌ MULTIPASS Payment Error</h2>
+<h2 class='error'>❌ Erreur de Paiement MULTIPASS</h2>
 <div class='details'>
-<p><strong>Player:</strong> ${PLAYER}</p>
+<p><strong>Joueur:</strong> ${PLAYER}</p>
 <p><strong>Date:</strong> $TODATE</p>
-<p><strong>Amount HT:</strong> ${Npaf_ZEN} ẐEN (${Npaf} Ğ1)</p>
-<p><strong>TVA Amount:</strong> ${TVA_ZEN} ẐEN (${TVA_AMOUNT} Ğ1)</p>
-<p><strong>Payment Status:</strong> Main: $([ $payment_success -eq 0 ] && echo "✅" || echo "❌") | TVA: $([ $tva_success -eq 0 ] && echo "✅" || echo "❌")</p>
-<p><strong>Balance:</strong> $COINS Ğ1 ($ZEN ẐEN)</p>
+<p><strong>Montant HT:</strong> ${Npaf_ZEN} ẐEN</p>
+<p><strong>Montant TVA:</strong> ${TVA_ZEN} ẐEN</p>
+<p><strong>Statut:</strong> Principal: $([ $payment_success -eq 0 ] && echo "✅" || echo "❌") | TVA: $([ $tva_success -eq 0 ] && echo "✅" || echo "❌")</p>
+<p><strong>Solde:</strong> $ZEN ẐEN</p>
 </div>
-<p>Both payments must succeed for fiscal compliance.</p>
+<p>Les deux paiements doivent réussir pour la conformité fiscale.</p>
 </body></html>"
 
                                 # Create temporary file for email content
