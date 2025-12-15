@@ -625,8 +625,12 @@ for PLAYER in "${NOSTR[@]}"; do
                         MIN_BALANCE=$(echo "scale=4; 1 + $TOTAL_PAYMENT" | bc -l)
                         
                         if [[ $(echo "$COINS >= $MIN_BALANCE" | bc -l) -eq 1 ]]; then
+                            # Convert Ğ1 to ẐEN for display (1 Ğ1 = 10 ẐEN)
+                            Npaf_ZEN=$(echo "scale=1; $Npaf * 10" | bc -l)
+                            TVA_ZEN=$(echo "scale=1; $TVA_AMOUNT * 10" | bc -l)
+                            TOTAL_ZEN=$(echo "scale=1; $TOTAL_PAYMENT * 10" | bc -l)
 
-                            log "INFO" "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS G1 >= $MIN_BALANCE G1 min) - Direct TVA split: $Npaf ẐEN to CAPTAIN + $TVA_AMOUNT ẐEN to IMPOTS"
+                            log "INFO" "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS Ğ1 >= $MIN_BALANCE Ğ1 min) - Direct TVA split: $Npaf_ZEN ẐEN ($Npaf Ğ1) to CAPTAIN + $TVA_ZEN ẐEN ($TVA_AMOUNT Ğ1) to IMPOTS"
 
                             # Ensure IMPOTS wallet exists before any payment
                             if [[ ! -s ~/.zen/game/uplanet.IMPOT.dunikey ]]; then
@@ -647,10 +651,10 @@ for PLAYER in "${NOSTR[@]}"; do
                                 tva_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$TVA_AMOUNT" "${IMPOTS_G1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:TVA" 2>/dev/null)
                                 tva_success=$?
                                 if [[ $tva_success -eq 0 ]]; then
-                                    log "INFO" "✅ TVA provision recorded directly from MULTIPASS for ${PLAYER} on $TODATE ($TVA_AMOUNT ẐEN)"
+                                    log "INFO" "✅ TVA provision recorded directly from MULTIPASS for ${PLAYER} on $TODATE ($TVA_ZEN ẐEN = $TVA_AMOUNT Ğ1)"
                                     log_metric "TVA_PROVISION_SUCCESS" "$TVA_AMOUNT" "${PLAYER}"
                                 else
-                                    log "WARN" "❌ TVA provision failed for ${PLAYER} on $TODATE ($TVA_AMOUNT ẐEN)"
+                                    log "WARN" "❌ TVA provision failed for ${PLAYER} on $TODATE ($TVA_ZEN ẐEN = $TVA_AMOUNT Ğ1)"
                                     log_metric "TVA_PROVISION_FAILED" "$TVA_AMOUNT" "${PLAYER}"
                                 fi
                             else
@@ -661,7 +665,7 @@ for PLAYER in "${NOSTR[@]}"; do
                             if [[ $payment_success -eq 0 && ($tva_success -eq 0 || $(echo "$TVA_AMOUNT == 0" | bc -l) -eq 1) ]]; then
                                 # Record successful payment
                                 echo "$TODATE" > "$last_payment_file"
-                                log "INFO" "✅ Weekly payment recorded for ${PLAYER} on $TODATE ($Npaf ẐEN HT + $TVA_AMOUNT ẐEN TVA) - Fiscally compliant split"
+                                log "INFO" "✅ Weekly payment recorded for ${PLAYER} on $TODATE ($Npaf_ZEN ẐEN HT + $TVA_ZEN ẐEN TVA = $TOTAL_ZEN ẐEN TTC) - Fiscally compliant split"
                                 log_metric "PAYMENT_SUCCESS" "$Npaf" "${PLAYER}"
                                 PAYMENTS_PROCESSED=$((PAYMENTS_PROCESSED + 1))
                                 
@@ -677,9 +681,9 @@ for PLAYER in "${NOSTR[@]}"; do
 <div class='details'>
 <p><strong>Joueur:</strong> ${PLAYER}</p>
 <p><strong>Date:</strong> $TODATE</p>
-<p><strong>Montant HT:</strong> <span class='amount'>$(echo "$Npaf * 10" | awk '{print $1 * $3}') ẐEN</span></p>
-<p><strong>Montant TVA:</strong> <span class='amount'>$(echo "$TVA_AMOUNT * 10" | awk '{print $1 * $3}') ẐEN</span></p>
-<p><strong>Total payé:</strong> <span class='amount'>$(echo "$TOTAL_PAYMENT * 10" | awk '{print $1 * $3}') ẐEN</span></p>
+<p><strong>Montant HT:</strong> <span class='amount'>${Npaf_ZEN} ẐEN (${Npaf} Ğ1)</span></p>
+<p><strong>Montant TVA:</strong> <span class='amount'>${TVA_ZEN} ẐEN (${TVA_AMOUNT} Ğ1)</span></p>
+<p><strong>Total payé:</strong> <span class='amount'>${TOTAL_ZEN} ẐEN (${TOTAL_PAYMENT} Ğ1)</span></p>
 <p><strong>Solde restant:</strong> $ZEN ẐEN</p>
 <p><strong>Prochain paiement:</strong> $NEXT_PAYMENT_DATE</p>
 </div>
@@ -696,11 +700,11 @@ for PLAYER in "${NOSTR[@]}"; do
                             else
                                 # Payment failed - send error email
                                 if [[ $payment_success -ne 0 ]]; then
-                                    log "ERROR" "❌ Main MULTIPASS payment failed for ${PLAYER} on $TODATE ($Npaf ẐEN)"
+                                    log "ERROR" "❌ Main MULTIPASS payment failed for ${PLAYER} on $TODATE ($Npaf_ZEN ẐEN = $Npaf Ğ1)"
                                     log_metric "PAYMENT_FAILED" "$Npaf" "${PLAYER}"
                                 fi
                                 if [[ $tva_success -ne 0 && $(echo "$TVA_AMOUNT > 0" | bc -l) -eq 1 ]]; then
-                                    log "ERROR" "❌ TVA provision failed for ${PLAYER} on $TODATE ($TVA_AMOUNT ẐEN)"
+                                    log "ERROR" "❌ TVA provision failed for ${PLAYER} on $TODATE ($TVA_ZEN ẐEN = $TVA_AMOUNT Ğ1)"
                                     log_metric "TVA_PROVISION_FAILED" "$TVA_AMOUNT" "${PLAYER}"
                                 fi
 
@@ -715,10 +719,10 @@ for PLAYER in "${NOSTR[@]}"; do
 <div class='details'>
 <p><strong>Player:</strong> ${PLAYER}</p>
 <p><strong>Date:</strong> $TODATE</p>
-<p><strong>Amount HT:</strong> $Npaf ẐEN</p>
-<p><strong>TVA Amount:</strong> $TVA_AMOUNT ẐEN</p>
+<p><strong>Amount HT:</strong> ${Npaf_ZEN} ẐEN (${Npaf} Ğ1)</p>
+<p><strong>TVA Amount:</strong> ${TVA_ZEN} ẐEN (${TVA_AMOUNT} Ğ1)</p>
 <p><strong>Payment Status:</strong> Main: $([ $payment_success -eq 0 ] && echo "✅" || echo "❌") | TVA: $([ $tva_success -eq 0 ] && echo "✅" || echo "❌")</p>
-<p><strong>Balance:</strong> $COINS G1 ($ZEN ẐEN)</p>
+<p><strong>Balance:</strong> $COINS Ğ1 ($ZEN ẐEN)</p>
 </div>
 <p>Both payments must succeed for fiscal compliance.</p>
 </body></html>"

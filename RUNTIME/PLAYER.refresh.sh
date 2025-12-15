@@ -150,8 +150,12 @@ for PLAYER in ${PLAYERONE[@]}; do
                 [[ -z $TVA_RATE ]] && TVA_RATE=20
                 TVA_AMOUNT=$(echo "scale=4; $Gpaf * $TVA_RATE / 100" | bc -l)
                 TVA_AMOUNT=$(makecoord $TVA_AMOUNT)
+                
+                # Convert Ğ1 to ẐEN for display (1 Ğ1 = 10 ẐEN)
+                Gpaf_ZEN=$(echo "scale=1; $Gpaf * 10" | bc -l)
+                TVA_ZEN=$(echo "scale=1; $TVA_AMOUNT * 10" | bc -l)
 
-                echo "[7 DAYS CYCLE] ZENCard payment - Direct TVA split: $Gpaf ẐEN to CAPTAIN + $TVA_AMOUNT ẐEN to IMPOTS"
+                echo "[7 DAYS CYCLE] ZENCard payment - Direct TVA split: $Gpaf_ZEN ẐEN ($Gpaf Ğ1) to CAPTAIN + $TVA_ZEN ẐEN ($TVA_AMOUNT Ğ1) to IMPOTS"
 
                 # Ensure IMPOTS wallet exists before any payment
                     if [[ ! -s ~/.zen/game/uplanet.IMPOT.dunikey ]]; then
@@ -172,9 +176,9 @@ for PLAYER in ${PLAYERONE[@]}; do
                     tva_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$TVA_AMOUNT" "${IMPOTS_G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:TVA" 2>/dev/null)
                     tva_success=$?
                     if [[ $tva_success -eq 0 ]]; then
-                        echo "✅ TVA provision recorded directly from ZENCard for ${PLAYER} on $TODATE ($TVA_AMOUNT ẐEN)"
+                        echo "✅ TVA provision recorded directly from ZENCard for ${PLAYER} on $TODATE ($TVA_ZEN ẐEN = $TVA_AMOUNT Ğ1)"
                     else
-                        echo "❌ TVA provision failed for ${PLAYER} on $TODATE ($TVA_AMOUNT ẐEN)"
+                        echo "❌ TVA provision failed for ${PLAYER} on $TODATE ($TVA_ZEN ẐEN = $TVA_AMOUNT Ğ1)"
                     fi
                     else
                         echo "❌ IMPOTS wallet not found for TVA provision"
@@ -182,11 +186,12 @@ for PLAYER in ${PLAYERONE[@]}; do
 
                 # Check if both payments succeeded
                 if [[ $payment_success -eq 0 && ($tva_success -eq 0 || $(echo "$TVA_AMOUNT == 0" | bc -l) -eq 1) ]]; then
-                    echo "✅ Weekly ZENCard payment recorded for ${PLAYER} on $TODATE ($Gpaf ẐEN HT + $TVA_AMOUNT ẐEN TVA) - Fiscally compliant split"
+                    TOTAL_ZEN=$(echo "scale=1; ($Gpaf + $TVA_AMOUNT) * 10" | bc -l)
+                    echo "✅ Weekly ZENCard payment recorded for ${PLAYER} on $TODATE ($Gpaf_ZEN ẐEN HT + $TVA_ZEN ẐEN TVA = $TOTAL_ZEN ẐEN TTC) - Fiscally compliant split"
                 else
                     # Payment failed - send error email
                     if [[ $payment_success -ne 0 ]]; then
-                        echo "❌ Main ZENCard payment failed for ${PLAYER} on $TODATE ($Gpaf ẐEN)"
+                        echo "❌ Main ZENCard payment failed for ${PLAYER} on $TODATE ($Gpaf_ZEN ẐEN = $Gpaf Ğ1)"
                     fi
                     if [[ $tva_success -ne 0 && $(echo "$TVA_AMOUNT > 0" | bc -l) -eq 1 ]]; then
                         echo "❌ TVA provision failed for ${PLAYER} on $TODATE ($TVA_AMOUNT ẐEN)"
