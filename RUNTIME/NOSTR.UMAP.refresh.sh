@@ -180,12 +180,14 @@ log_always() {
 }
 
 # Helper function to send Nostr events using nostr_send_note.py
+# Usage: send_nostr_event_py <nsec_key> <content> <kind> <tags_json> <relay_url> [ephemeral_seconds]
 send_nostr_event_py() {
     local nsec_key="$1"
     local content="$2"
     local kind="$3"
     local tags_json="$4"
     local relay_url="$5"
+    local ephemeral_seconds="${6:-}"  # Optional: expiration in seconds (NIP-40)
     
     # Create temporary keyfile
     local temp_keyfile=$(mktemp)
@@ -200,14 +202,23 @@ send_nostr_event_py() {
     # For kind 3 (contacts), content can be empty per NIP-02
     # nostr_send_note.py now allows empty content for kind 3
     
+    # Build command with optional ephemeral parameter
+    local cmd_args=(
+        --keyfile "$temp_keyfile"
+        --content "$content"
+        --relays "$relay_url"
+        --tags "$tags_json_fixed"
+        --kind "$kind"
+        --json
+    )
+    
+    # Add ephemeral parameter if specified (NIP-40 expiration)
+    if [[ -n "$ephemeral_seconds" && "$ephemeral_seconds" -gt 0 ]]; then
+        cmd_args+=(--ephemeral "$ephemeral_seconds")
+    fi
+    
     # Send event using nostr_send_note.py
-    local send_result=$(python3 "${MY_PATH}/../tools/nostr_send_note.py" \
-        --keyfile "$temp_keyfile" \
-        --content "$content" \
-        --relays "$relay_url" \
-        --tags "$tags_json_fixed" \
-        --kind "$kind" \
-        --json 2>&1)
+    local send_result=$(python3 "${MY_PATH}/../tools/nostr_send_note.py" "${cmd_args[@]}" 2>&1)
     local exit_code=$?
     
     # Clean up temporary keyfile
@@ -1103,13 +1114,15 @@ cleanup_inventory_without_likes() {
             local author_nprofile=$($MY_PATH/../tools/nostr_hex2nprofile.sh "$msg_pubkey" 2>/dev/null)
             
             # Send notification to author before deletion (using UMAP key)
+            # Notification expires in 24h (86400 seconds) per NIP-40
             if [[ -n "$msg_pubkey" && "$msg_pubkey" != "null" ]]; then
                 local notification="🌱 nostr:$author_nprofile Votre observation (inventaire/plantnet) n'a pas reçu de like depuis 28 jours et sera archivée. Republiez si toujours pertinent! #UPlanet #inventory"
                 
                 # Regenerate UMAPNSEC for sending notification
                 local UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
                 
-                send_nostr_event_py "$UMAPNSEC" "$notification" "1" "[[\"p\", \"$msg_pubkey\"]]" "$myRELAY" 2>/dev/null
+                # Send with 24h expiration (86400 seconds)
+                send_nostr_event_py "$UMAPNSEC" "$notification" "1" "[[\"p\", \"$msg_pubkey\"]]" "$myRELAY" "86400" 2>/dev/null
             fi
             
             # Remove the message from local relay (strfry delete)
