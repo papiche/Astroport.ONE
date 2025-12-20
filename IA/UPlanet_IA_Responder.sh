@@ -999,7 +999,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 
                 # Generate intelligent summary using the detected language
                 echo "Generating intelligent summary for article..." >&2
-                ARTICLE_SUMMARY="$($MY_PATH/question.py --json "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. The summary should capture the main points and be suitable for a blog article header. IMPORTANT: Respond directly and clearly ONLY in the language ${USER_LANG}. Article content: ${KeyANSWER}" --pubkey ${PUBKEY})"
+                ARTICLE_SUMMARY="$($MY_PATH/question.py --json "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. IMPORTANT: Respond directly and clearly ONLY in the language ${USER_LANG}. Article content: ${KeyANSWER}" --pubkey ${PUBKEY})"
                 
                 # Extract content from JSON response and clean it (less aggressive with JSON)
                 ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | jq -r '.answer // .' 2>/dev/null || echo "$ARTICLE_SUMMARY")"
@@ -1011,7 +1011,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 
                 # Extract and clean the tags
                 INTELLIGENT_TAGS="$(echo "$INTELLIGENT_TAGS" | jq -r '.answer // .' 2>/dev/null || echo "$INTELLIGENT_TAGS")"
-                INTELLIGENT_TAGS="$(echo "$INTELLIGENT_TAGS" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sed 's/#//g' | sed 's/\s\+/ /g' | head -c 200)"
+                INTELLIGENT_TAGS="$(echo "$INTELLIGENT_TAGS" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sed 's/#//g' | sed 's/,//g' | sed 's/\s\+/ /g' | head -c 200)"
                 
                 echo "Generated intelligent tags: $INTELLIGENT_TAGS" >&2
                 
