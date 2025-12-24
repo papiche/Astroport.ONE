@@ -339,17 +339,35 @@ get_liked_videos() {
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Trying URL: $url" >&2
         log_debug "Attempting yt-dlp with URL: $url"
         
-        # Single request with minimal options
+        # Capture both stdout and stderr to detect cookie issues
+        local yt_dlp_stderr_file="$HOME/.zen/tmp/yt_dlp_stderr_$$.txt"
+        
+        # Single request with minimal options (keep stderr for error detection)
         videos_json=$(yt-dlp \
             --cookies "$cookie_file" \
             --print '%(id)s&%(title)s&%(duration)s&%(uploader)s&%(webpage_url)s' \
             --playlist-end "$max_results" \
             --no-warnings \
-            --quiet \
-            "$url" 2>/dev/null)
+            "$url" 2>"$yt_dlp_stderr_file")
         
         exit_code=$?
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] yt-dlp exit code for $url: $exit_code" >&2
+        
+        # Check for cookie invalidation error
+        if [[ -f "$yt_dlp_stderr_file" ]]; then
+            if grep -q "cookies are no longer valid" "$yt_dlp_stderr_file" 2>/dev/null; then
+                echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️ COOKIE ERROR: YouTube cookies are no longer valid!" >&2
+                echo "[$(date '+%Y-%m-%d %H:%M:%S')] 💡 Please re-export cookies from a PRIVATE/INCOGNITO window" >&2
+                log_debug "Cookie invalidation detected - user needs to re-export cookies from private window"
+                rm -f "$yt_dlp_stderr_file"
+                return 2  # Special exit code for invalid cookies
+            fi
+            # Log other errors for debugging
+            if [[ -s "$yt_dlp_stderr_file" ]]; then
+                log_debug "yt-dlp stderr: $(cat "$yt_dlp_stderr_file")"
+            fi
+            rm -f "$yt_dlp_stderr_file"
+        fi
         
         # If we got results, break
         if [[ $exit_code -eq 0 && -n "$videos_json" ]]; then
@@ -906,8 +924,15 @@ sync_youtube_likes() {
     
     # Récupérer les vidéos likées (limiter à 5 pour minimiser les requêtes)
     local liked_videos=$(get_liked_videos "$player" "$cookie_file" 5)
+    local get_videos_exit_code=$?
     
-    if [[ $? -ne 0 || -z "$liked_videos" ]]; then
+    if [[ $get_videos_exit_code -eq 2 ]]; then
+        # Cookie invalidation detected
+        log_debug "Cookie invalidation detected for $player - cookies need to be re-exported"
+        echo "❌ COOKIE EXPIRED: Please re-export YouTube cookies from a PRIVATE/INCOGNITO window" >&2
+        echo "💡 Instructions: Open private window → Login to YouTube → Export cookies → Close private window" >&2
+        return 2
+    elif [[ $get_videos_exit_code -ne 0 || -z "$liked_videos" ]]; then
         log_debug "No liked videos found or failed to fetch for $player"
         return 1
     fi
@@ -1123,10 +1148,18 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Disk space check passed" >&2
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting YouTube likes synchronization..." >&2
 # Lancer la synchronisation
-if sync_youtube_likes "$PLAYER" "$COOKIE_FILE" "$PROCESSED_VIDEOS_FILE"; then
+sync_youtube_likes "$PLAYER" "$COOKIE_FILE" "$PROCESSED_VIDEOS_FILE"
+sync_exit_code=$?
+
+if [[ $sync_exit_code -eq 0 ]]; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] SUCCESS: YouTube likes sync completed successfully for $PLAYER" >&2
     log_debug "YouTube likes sync completed successfully for $PLAYER"
     exit 0
+elif [[ $sync_exit_code -eq 2 ]]; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] COOKIE_EXPIRED: YouTube cookies are no longer valid for $PLAYER" >&2
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Please visit /cookie page to re-upload fresh cookies from a private window" >&2
+    log_debug "YouTube cookies expired for $PLAYER - need re-export from private window"
+    exit 2
 else
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: YouTube likes sync failed for $PLAYER" >&2
     log_debug "YouTube likes sync failed for $PLAYER"
