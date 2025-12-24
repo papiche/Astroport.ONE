@@ -33,6 +33,9 @@ find ~/.zen/game/nostr/REGION* -mtime +3 -type d -exec rm -Rf '{}' \;
 find  ~/.zen/tmp/swarm/ -mtime +3 -type d -exec rm -Rf '{}' \;
 rm -Rf ~/.zen/tmp/swarm/${IPFSNODEID-null}
 ########################################################
+echo "## CLEANING DEACTIVATED PROFILES & OLD UMAP MESSAGES (NIP-40)"
+${MY_PATH}/../tools/nostr_cleanup_deactivated.sh --force 2>/dev/null || true
+########################################################
 #################################################################
 ## IPFSNODEID ASTRONAUTES SIGNALING ## 12345 port
 ############################
