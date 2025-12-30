@@ -494,6 +494,45 @@ while true; do
     [[ -z $NCARD ]] && NCARD=1
     [[ -z $ZCARD ]] && ZCARD=4
     BILAN=$(cat ~/.zen/tmp/Ustats.json 2>/dev/null | jq -r '.BILAN')
+    
+    ## ECONOMIC HEALTH DATA - For swarm aggregation
+    MULTIPASS_COUNT=$(ls ~/.zen/game/nostr 2>/dev/null | grep "@" | wc -l)
+    ZENCARD_COUNT=$(ls ~/.zen/game/players 2>/dev/null | grep "@" | wc -l)
+    
+    # Captain dedicated wallet (2xPAF remuneration from ZEN.ECONOMY.sh)
+    CAPTAIN_DEDICATED_ZEN=0
+    if [[ -f "$HOME/.zen/game/uplanet.captain.dunikey" ]]; then
+        CAPTAIN_DEDICATED_PUB=$(cat "$HOME/.zen/game/uplanet.captain.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+        if [[ -n "$CAPTAIN_DEDICATED_PUB" ]]; then
+            CAPTAIN_DEDICATED_COINS=$($MY_PATH/tools/G1check.sh ${CAPTAIN_DEDICATED_PUB} | tail -n 1)
+            CAPTAIN_DEDICATED_ZEN=$(echo "($CAPTAIN_DEDICATED_COINS - 1) * 10" | bc | cut -d '.' -f 1)
+        fi
+    fi
+    
+    # Treasury (CASH) balance for solidarity mechanism
+    TREASURY_ZEN=0
+    if [[ -n "$UPLANETNAME_TREASURY" ]]; then
+        TREASURY_COINS=$($MY_PATH/tools/G1check.sh ${UPLANETNAME_TREASURY} | tail -n 1)
+        TREASURY_ZEN=$(echo "($TREASURY_COINS - 1) * 10" | bc | cut -d '.' -f 1)
+    fi
+    
+    # Calculate weekly revenue and costs
+    WEEKLY_REVENUE=$(echo "$MULTIPASS_COUNT * $NCARD + $ZENCARD_COUNT * $ZCARD" | bc -l)
+    CAPTAIN_REMUNERATION=$(echo "$PAF * 2" | bc -l)
+    MIN_WEEKLY_COSTS=$(echo "$PAF + $CAPTAIN_REMUNERATION" | bc -l)
+    WEEKLY_BALANCE=$(echo "$WEEKLY_REVENUE - $MIN_WEEKLY_COSTS" | bc -l)
+    
+    # Determine economic risk level
+    ECONOMIC_RISK="GREEN"
+    if [[ $(echo "$CAPTAINZEN < $MIN_WEEKLY_COSTS" | bc -l) -eq 1 ]]; then
+        if [[ $(echo "$TREASURY_ZEN < $MIN_WEEKLY_COSTS" | bc -l) -eq 1 ]]; then
+            ECONOMIC_RISK="RED"
+        else
+            ECONOMIC_RISK="ORANGE"
+        fi
+    elif [[ $(echo "$WEEKLY_BALANCE < 0" | bc -l) -eq 1 ]]; then
+        ECONOMIC_RISK="YELLOW"
+    fi
 
     ## READ HEARTBOX ANALYSIS - Fast cache-based approach
     ANALYSIS_FILE=~/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json
@@ -522,7 +561,7 @@ while true; do
     fi
 
 NODE12345="{
-    \"version\" : \"3.0\",
+    \"version\" : \"3.1\",
     \"created\" : \"${MOATS}\",
     \"date\" : \"$(cat $HOME/.zen/tmp/${IPFSNODEID}/_MySwarm.staom)\",
     \"hostname\" : \"$(myHostName)\",
@@ -561,7 +600,18 @@ NODE12345="{
     \"ZCARD\" : \"${ZCARD}\",
     \"BILAN\" : \"${BILAN}\",
     \"capacities\" : ${CAPACITIES},
-    \"services\" : ${SERVICES}
+    \"services\" : ${SERVICES},
+    \"economy\" : {
+        \"multipass_count\" : ${MULTIPASS_COUNT:-0},
+        \"zencard_count\" : ${ZENCARD_COUNT:-0},
+        \"captain_dedicated_zen\" : ${CAPTAIN_DEDICATED_ZEN:-0},
+        \"treasury_zen\" : ${TREASURY_ZEN:-0},
+        \"weekly_revenue\" : ${WEEKLY_REVENUE:-0},
+        \"weekly_costs\" : ${MIN_WEEKLY_COSTS:-0},
+        \"weekly_balance\" : ${WEEKLY_BALANCE:-0},
+        \"captain_remuneration\" : ${CAPTAIN_REMUNERATION:-0},
+        \"risk_level\" : \"${ECONOMIC_RISK}\"
+    }
 }
 "
 

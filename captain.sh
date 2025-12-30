@@ -420,6 +420,61 @@ get_society_data() {
     fi
 }
 
+# Fonction pour afficher un résumé rapide de la santé de l'essaim
+show_quick_swarm_health() {
+    local swarm_cache="$HOME/.zen/tmp/swarm"
+    local stations_red=0
+    local stations_orange=0
+    local total_stations=1  # Station locale
+    
+    # Vérifier la station locale
+    local local_json="$HOME/.zen/tmp/${IPFSNODEID}/12345.json"
+    if [[ -f "$local_json" ]]; then
+        local local_risk=$(cat "$local_json" | jq -r '.economy.risk_level // "UNKNOWN"' 2>/dev/null)
+        [[ "$local_risk" == "RED" ]] && stations_red=$((stations_red + 1))
+        [[ "$local_risk" == "ORANGE" ]] && stations_orange=$((stations_orange + 1))
+    fi
+    
+    # Scanner les stations de l'essaim
+    if [[ -d "$swarm_cache" ]]; then
+        for station_json in "$swarm_cache"/*/12345.json; do
+            [[ ! -f "$station_json" ]] && continue
+            
+            # Vérifier la fraîcheur (< 24h)
+            local file_age=$(( $(date +%s) - $(stat -c %Y "$station_json" 2>/dev/null || echo 0) ))
+            [[ $file_age -gt 86400 ]] && continue
+            
+            # Vérifier le même UPlanet
+            local uplanet_pub=$(cat "$station_json" | jq -r '.UPLANETG1PUB // ""' 2>/dev/null)
+            [[ "$uplanet_pub" != "$UPLANETG1PUB" && -n "$uplanet_pub" ]] && continue
+            
+            local risk=$(cat "$station_json" | jq -r '.economy.risk_level // "UNKNOWN"' 2>/dev/null)
+            [[ "$risk" == "UNKNOWN" || "$risk" == "null" ]] && continue
+            
+            total_stations=$((total_stations + 1))
+            [[ "$risk" == "RED" ]] && stations_red=$((stations_red + 1))
+            [[ "$risk" == "ORANGE" ]] && stations_orange=$((stations_orange + 1))
+        done
+    fi
+    
+    # Afficher un résumé compact
+    if [[ $stations_red -gt 0 ]]; then
+        print_section "🚨 ALERTE ESSAIM"
+        echo -e "${RED}⛔ $stations_red station(s) en FAILLITE sur $total_stations${NC}"
+        echo -e "${YELLOW}💡 Utilisez l'option 6 pour plus de détails${NC}"
+        echo ""
+    elif [[ $stations_orange -gt 0 ]]; then
+        print_section "⚠️  SURVEILLANCE ESSAIM"
+        echo -e "${YELLOW}⚠️  $stations_orange station(s) en solidarité active sur $total_stations${NC}"
+        echo ""
+    else
+        if [[ $total_stations -gt 1 ]]; then
+            echo -e "${GREEN}🌐 Essaim: $total_stations stations en bonne santé${NC}"
+            echo ""
+        fi
+    fi
+}
+
 # Fonction pour afficher le tableau de bord économique du capitaine
 show_captain_dashboard() {
     print_header "ASTROPORT.ONE - TABLEAU DE BORD DU CAPITAINE"
@@ -580,6 +635,25 @@ show_captain_dashboard() {
         echo ""
     fi
     
+    # CAPTAIN dedicated wallet (2x PAF remuneration from ZEN.ECONOMY.sh)
+    local captain_dedicated_pubkey=""
+    if [[ -f "$HOME/.zen/game/uplanet.captain.dunikey" ]]; then
+        captain_dedicated_pubkey=$(cat "$HOME/.zen/game/uplanet.captain.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+    fi
+    
+    if [[ -n "$captain_dedicated_pubkey" ]]; then
+        local captain_dedicated_balance=$(get_wallet_balance "$captain_dedicated_pubkey")
+        local captain_dedicated_zen=$(calculate_zen "$captain_dedicated_balance")
+        echo -e "${BLUE}👑 CAPTAIN (Rémunération 2xPAF):${NC}"
+        echo -e "  💰 Solde: ${YELLOW}$captain_dedicated_balance Ğ1${NC} (${CYAN}$captain_dedicated_zen Ẑen${NC})"
+        echo -e "  📝 Usage: Revenus du Capitaine (2xPAF hebdomadaire via ZEN.ECONOMY.sh)"
+        echo ""
+    else
+        echo -e "${RED}👑 CAPTAIN (Rémunération): ${YELLOW}Non configuré${NC}"
+        echo -e "  💡 Sera créé automatiquement par ZEN.ECONOMY.sh"
+        echo ""
+    fi
+    
     # Portefeuilles Coopératifs
     print_section "PORTEFEUILLES COOPÉRATIFS (3x1/3)"
     
@@ -670,6 +744,9 @@ show_captain_dashboard() {
     done
     echo -e "${CYAN}⭐ Sociétaires: ${WHITE}$societaire_count${NC} membre(s)"
     echo ""
+    
+    # Résumé rapide de l'état de l'essaim
+    show_quick_swarm_health
     
     # Afficher le diagramme de flux économique
     show_economic_flow_diagram
@@ -856,6 +933,193 @@ show_economic_flow_diagram() {
     echo ""
 }
 
+# Fonction pour agréger les données économiques de l'essaim
+# Utilise le cache des stations depuis ~/.zen/tmp/swarm/*/12345.json
+show_swarm_economy() {
+    print_section "ÉCONOMIE DE L'ESSAIM UPLANET"
+    
+    local swarm_cache="$HOME/.zen/tmp/swarm"
+    
+    # Compteurs globaux
+    local total_stations=0
+    local stations_green=0
+    local stations_yellow=0
+    local stations_orange=0
+    local stations_red=0
+    local total_multipass=0
+    local total_zencard=0
+    local total_weekly_revenue=0
+    local total_weekly_costs=0
+    local total_captain_zen=0
+    local total_treasury_zen=0
+    local total_node_zen=0
+    
+    # Alertes des stations en difficulté
+    local alerts=""
+    
+    echo -e "${CYAN}🔄 Analyse des données économiques de l'essaim...${NC}"
+    echo ""
+    
+    # Station locale d'abord
+    local local_json="$HOME/.zen/tmp/${IPFSNODEID}/12345.json"
+    if [[ -f "$local_json" ]]; then
+        local hostname=$(cat "$local_json" | jq -r '.hostname // "local"')
+        local risk=$(cat "$local_json" | jq -r '.economy.risk_level // "UNKNOWN"')
+        local mp=$(cat "$local_json" | jq -r '.economy.multipass_count // 0')
+        local zc=$(cat "$local_json" | jq -r '.economy.zencard_count // 0')
+        local wr=$(cat "$local_json" | jq -r '.economy.weekly_revenue // 0')
+        local wc=$(cat "$local_json" | jq -r '.economy.weekly_costs // 0')
+        local captain_zen=$(cat "$local_json" | jq -r '.captainZEN // 0')
+        local treasury=$(cat "$local_json" | jq -r '.economy.treasury_zen // 0')
+        local node_zen=$(cat "$local_json" | jq -r '.NODEZEN // 0')
+        
+        total_stations=$((total_stations + 1))
+        total_multipass=$((total_multipass + mp))
+        total_zencard=$((total_zencard + zc))
+        total_weekly_revenue=$(echo "$total_weekly_revenue + $wr" | bc -l)
+        total_weekly_costs=$(echo "$total_weekly_costs + $wc" | bc -l)
+        total_captain_zen=$(echo "$total_captain_zen + $captain_zen" | bc -l)
+        total_treasury_zen=$(echo "$total_treasury_zen + $treasury" | bc -l)
+        total_node_zen=$(echo "$total_node_zen + $node_zen" | bc -l)
+        
+        case $risk in
+            "GREEN") stations_green=$((stations_green + 1)) ;;
+            "YELLOW") stations_yellow=$((stations_yellow + 1)) ;;
+            "ORANGE") stations_orange=$((stations_orange + 1)) ;;
+            "RED") stations_red=$((stations_red + 1)); alerts="${alerts}\n  ${RED}⛔ ${hostname} (LOCAL): FAILLITE IMMINENTE${NC}" ;;
+        esac
+        
+        echo -e "${GREEN}📍 Station locale ($hostname): $risk${NC}"
+    fi
+    
+    # Parcourir les stations de l'essaim (cache)
+    if [[ -d "$swarm_cache" ]]; then
+        for station_dir in "$swarm_cache"/*/; do
+            local station_id=$(basename "$station_dir")
+            local station_json="${station_dir}12345.json"
+            
+            # Ignorer si c'est notre propre station
+            [[ "$station_id" == "$IPFSNODEID" ]] && continue
+            
+            if [[ -f "$station_json" ]]; then
+                # Vérifier la fraîcheur des données (< 24h)
+                local file_age=$(( $(date +%s) - $(stat -c %Y "$station_json" 2>/dev/null || echo 0) ))
+                [[ $file_age -gt 86400 ]] && continue
+                
+                # Vérifier que c'est le même UPlanet
+                local uplanet_pub=$(cat "$station_json" | jq -r '.UPLANETG1PUB // ""')
+                [[ "$uplanet_pub" != "$UPLANETG1PUB" && -n "$uplanet_pub" ]] && continue
+                
+                local hostname=$(cat "$station_json" | jq -r '.hostname // "unknown"')
+                local risk=$(cat "$station_json" | jq -r '.economy.risk_level // "UNKNOWN"')
+                local mp=$(cat "$station_json" | jq -r '.economy.multipass_count // 0')
+                local zc=$(cat "$station_json" | jq -r '.economy.zencard_count // 0')
+                local wr=$(cat "$station_json" | jq -r '.economy.weekly_revenue // 0')
+                local wc=$(cat "$station_json" | jq -r '.economy.weekly_costs // 0')
+                local captain_zen=$(cat "$station_json" | jq -r '.captainZEN // 0')
+                local treasury=$(cat "$station_json" | jq -r '.economy.treasury_zen // 0')
+                local node_zen=$(cat "$station_json" | jq -r '.NODEZEN // 0')
+                
+                # Ignorer les stations sans données économiques valides
+                [[ "$risk" == "UNKNOWN" || "$risk" == "null" ]] && continue
+                
+                total_stations=$((total_stations + 1))
+                total_multipass=$((total_multipass + mp))
+                total_zencard=$((total_zencard + zc))
+                total_weekly_revenue=$(echo "$total_weekly_revenue + $wr" | bc -l)
+                total_weekly_costs=$(echo "$total_weekly_costs + $wc" | bc -l)
+                total_captain_zen=$(echo "$total_captain_zen + $captain_zen" | bc -l)
+                total_treasury_zen=$(echo "$total_treasury_zen + $treasury" | bc -l)
+                total_node_zen=$(echo "$total_node_zen + $node_zen" | bc -l)
+                
+                case $risk in
+                    "GREEN") stations_green=$((stations_green + 1)) ;;
+                    "YELLOW") stations_yellow=$((stations_yellow + 1)) ;;
+                    "ORANGE") 
+                        stations_orange=$((stations_orange + 1))
+                        alerts="${alerts}\n  ${YELLOW}⚠️  ${hostname}: Solidarité active${NC}"
+                        ;;
+                    "RED") 
+                        stations_red=$((stations_red + 1))
+                        alerts="${alerts}\n  ${RED}⛔ ${hostname}: FAILLITE IMMINENTE${NC}"
+                        ;;
+                esac
+                
+                echo -e "  📡 ${station_id:0:8}... ($hostname): $risk"
+            fi
+        done
+    fi
+    
+    echo ""
+    
+    # Calculer le bilan global
+    local total_balance=$(echo "$total_weekly_revenue - $total_weekly_costs" | bc -l)
+    local total_reserves=$(echo "$total_captain_zen + $total_treasury_zen" | bc -l)
+    
+    # Afficher le résumé
+    echo -e "${BLUE}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║                    📊 RÉSUMÉ ÉCONOMIQUE DE L'ESSAIM                          ║${NC}"
+    echo -e "${BLUE}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    
+    # Santé des stations
+    echo -e "${CYAN}🏥 SANTÉ DES STATIONS (${total_stations} total):${NC}"
+    echo -e "  ${GREEN}✅ En bonne santé:${NC}     $stations_green station(s)"
+    echo -e "  ${YELLOW}⚡ Surveillance:${NC}       $stations_yellow station(s)"
+    echo -e "  ${YELLOW}⚠️  Solidarité active:${NC} $stations_orange station(s)"
+    echo -e "  ${RED}⛔ Faillite:${NC}           $stations_red station(s)"
+    echo ""
+    
+    # Économie globale
+    echo -e "${CYAN}💰 ÉCONOMIE GLOBALE:${NC}"
+    echo -e "  👥 Total MULTIPASS:          ${WHITE}$total_multipass${NC} utilisateurs"
+    echo -e "  🎫 Total ZEN Cards:          ${WHITE}$total_zencard${NC} sociétaires"
+    echo -e "  📈 Revenus hebdo totaux:     ${GREEN}$total_weekly_revenue Ẑen${NC}"
+    echo -e "  📉 Coûts hebdo totaux:       ${RED}$total_weekly_costs Ẑen${NC}"
+    if [[ $(echo "$total_balance >= 0" | bc -l) -eq 1 ]]; then
+        echo -e "  📊 Balance globale:          ${GREEN}+$total_balance Ẑen/semaine${NC}"
+    else
+        echo -e "  📊 Balance globale:          ${RED}$total_balance Ẑen/semaine${NC}"
+    fi
+    echo ""
+    
+    # Réserves coopératives
+    echo -e "${CYAN}🏦 RÉSERVES COOPÉRATIVES:${NC}"
+    echo -e "  👑 Total Capitaines:         ${YELLOW}$total_captain_zen Ẑen${NC}"
+    echo -e "  💰 Total Trésoreries:        ${YELLOW}$total_treasury_zen Ẑen${NC}"
+    echo -e "  🖥️  Total Nodes:              ${YELLOW}$total_node_zen Ẑen${NC}"
+    echo -e "  📊 Réserves totales:         ${GREEN}$total_reserves Ẑen${NC}"
+    echo ""
+    
+    # Alertes
+    if [[ -n "$alerts" ]]; then
+        echo -e "${RED}🚨 ALERTES DE L'ESSAIM:${NC}"
+        echo -e "$alerts"
+        echo ""
+        
+        # Recommandations si stations en difficulté
+        if [[ $stations_red -gt 0 ]]; then
+            echo -e "${YELLOW}💡 ACTIONS RECOMMANDÉES:${NC}"
+            echo -e "  1️⃣  Contacter les capitaines des stations en faillite"
+            echo -e "  2️⃣  Proposer un transfert de solidarité depuis la trésorerie"
+            echo -e "  3️⃣  Aider à recruter des utilisateurs MULTIPASS"
+            echo -e "  4️⃣  Envisager une consolidation de stations"
+            echo ""
+        fi
+    else
+        echo -e "${GREEN}✅ Aucune alerte - Toutes les stations sont en bonne santé${NC}"
+        echo ""
+    fi
+    
+    # Afficher le template bankrupt.html si stations en faillite
+    if [[ $stations_red -gt 0 ]]; then
+        echo -e "${YELLOW}📋 Pour plus de détails sur les causes de faillite:${NC}"
+        echo -e "  Consultez le template: templates/NOSTR/bankrupt.html"
+        echo -e "  Ce rapport est envoyé automatiquement aux utilisateurs concernés"
+        echo ""
+    fi
+}
+
 # Fonction pour afficher le menu de navigation du capitaine
 show_captain_navigation_menu() {
     print_section "NAVIGATION DU CAPITAINE"
@@ -893,19 +1157,25 @@ show_captain_navigation_menu() {
     echo -e "   • Analyse des flux économiques"
     echo ""
     
-    echo -e "${GREEN}6. 🔄 Actualiser les Données${NC}"
+    echo -e "${GREEN}6. 🌐 Économie de l'Essaim${NC}"
+    echo -e "   • État économique de toutes les stations"
+    echo -e "   • Alertes de faillite du réseau"
+    echo -e "   • Vision globale de la coopérative"
+    echo ""
+    
+    echo -e "${GREEN}7. 🔄 Actualiser les Données${NC}"
     echo -e "   • Mise à jour des soldes et cache"
     echo -e "   • Synchronisation avec le réseau Ğ1"
     echo -e "   • Actualisation des statistiques"
     echo ""
     
-    echo -e "${GREEN}7. 📋 Nouvel Embarquement${NC}"
+    echo -e "${GREEN}8. 📋 Nouvel Embarquement${NC}"
     echo -e "   • Créer un nouveau MULTIPASS ou ZEN Card"
     echo -e "   • Configuration d'un nouvel utilisateur"
     echo -e "   • Intégration dans l'écosystème"
     echo ""
     
-    echo -e "${GREEN}8. 📢 Broadcast NOSTR${NC}"
+    echo -e "${GREEN}9. 📢 Broadcast NOSTR${NC}"
     echo -e "   • Envoyer un message à tous les utilisateurs MULTIPASS"
     echo -e "   • Communication réseau via NOSTR"
     echo -e "   • Diffusion d'annonces importantes"
@@ -939,12 +1209,17 @@ show_captain_navigation_menu() {
             show_detailed_dashboard
             ;;
         6)
-            refresh_data
+            show_swarm_economy
+            read -p "Appuyez sur ENTRÉE pour continuer..."
+            show_captain_dashboard
             ;;
         7)
-            embark_captain
+            refresh_data
             ;;
         8)
+            embark_captain
+            ;;
+        9)
             show_nostr_broadcast_menu
             ;;
         0)
@@ -1102,6 +1377,18 @@ show_detailed_dashboard() {
     local total_g1=0
     local total_zen=0
     
+    # Afficher le portefeuille CAPTAIN dédié (2xPAF)
+    if [[ -f "$HOME/.zen/game/uplanet.captain.dunikey" ]]; then
+        local captain_ded_pubkey=$(cat "$HOME/.zen/game/uplanet.captain.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+        if [[ -n "$captain_ded_pubkey" ]]; then
+            local captain_ded_balance=$(get_wallet_balance "$captain_ded_pubkey")
+            local captain_ded_zen=$(calculate_zen "$captain_ded_balance")
+            echo -e "${CYAN}👑 CAPTAIN WALLET (2xPAF Rémunération):${NC}"
+            echo -e "  💰 ${GREEN}Capitaine${NC}: ${YELLOW}$captain_ded_balance Ğ1${NC} (${CYAN}$captain_ded_zen Ẑen${NC})"
+            echo ""
+        fi
+    fi
+    
     # Total des portefeuilles système
     for wallet_file in "UPLANETNAME_G1" "UPLANETG1PUB" "UPLANETNAME_SOCIETY"; do
         if [[ -f "$HOME/.zen/tmp/$wallet_file" ]]; then
@@ -1154,6 +1441,14 @@ refresh_data() {
             fi
         fi
     done
+    
+    # Actualiser le portefeuille CAPTAIN dédié (2xPAF)
+    if [[ -f "$HOME/.zen/game/uplanet.captain.dunikey" ]]; then
+        local captain_pubkey=$(cat "$HOME/.zen/game/uplanet.captain.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+        if [[ -n "$captain_pubkey" ]]; then
+            "${MY_PATH}/tools/G1check.sh" "$captain_pubkey" >/dev/null 2>&1
+        fi
+    fi
     
     # Actualiser les portefeuilles utilisateurs
     if [[ -d ~/.zen/game/nostr ]]; then
