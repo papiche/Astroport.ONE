@@ -27,7 +27,7 @@ QRNS=$(${MY_PATH}/g1_to_ipfs.py ${G1PUB})
 mkdir -p ~/.zen/tmp/${MOATS}
 
 COINS=$(cat ~/.zen/tmp/coucou/${G1PUB}.COINS 2>/dev/null)
-ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
+ZEN=$(echo "scale=1; ($COINS - 1) * 10" | bc)
 
 echo "===== ${G1PUB} ===== ${COINS} G1 / ${ZEN} ZEN ($ME)"
 

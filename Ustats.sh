@@ -188,7 +188,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
 
         NCOINS=$(cat $HOME/.zen/tmp/coucou/${G1PUBNOSTR}.COINS 2>/dev/null)
         [[ -z "$NCOINS" ]] && NCOINS=$($MY_PATH/tools/G1check.sh ${G1PUBNOSTR} | tail -n 1)
-        ZEN=$(echo "($NCOINS - 1) * 10" | bc | cut -d '.' -f 1  2>/dev/null)
+        ZEN=$(echo "scale=1; ($NCOINS - 1) * 10" | bc 2>/dev/null)
         echo "export source=${source} HEX=${HEX} LAT=${LAT} LON=${LON} EMAIL=${EMAIL} G1PUBNOSTR=${G1PUBNOSTR} ZEN=${ZEN}" >&2
         # Construct JSON object using printf and associative array
         nostr_obj=$(printf '{"EMAIL": "%s", "HEX": "%s", "LAT": "%s", "LON": "%s", "G1PUBNOSTR": "%s", "ZEN": "%s", "SOURCE": "%s"}' \
@@ -318,7 +318,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
         # Fallback si G1revenue.sh échoue
         COINS=$(cat $HOME/.zen/tmp/coucou/$UPLANETG1PUB.COINS 2>/dev/null)
         [[ -z $COINS ]] && COINS=$($MY_PATH/tools/G1check.sh $UPLANETG1PUB | tail -n 1)
-        ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1 2>/dev/null)
+        ZEN=$(echo "scale=1; ($COINS - 1) * 10" | bc 2>/dev/null)
         REVENUE_TRANSACTIONS=0
     fi
 

@@ -40,7 +40,7 @@ output_result() {
     if [[ "$is_zen_request" == "true" ]]; then
         if validate_balance "$balance"; then
             # Formula: (COINS - 1) * 10, integer part
-            local zen_value=$(echo "($balance - 1) * 10" | bc | cut -d '.' -f 1)
+            local zen_value=$(echo "scale=1; ($balance - 1) * 10" | bc)
             log "Calculated ZEN value: $zen_value from G1 balance: $balance"
             echo "$zen_value"
         else

@@ -79,7 +79,7 @@ calculate_zen_balance() {
     local g1_balance="$1"
     
     if (( $(echo "$g1_balance > 1" | bc -l 2>/dev/null || echo 0) )); then
-        echo "($g1_balance - 1) * 10" | bc -l 2>/dev/null | cut -d '.' -f 1
+        echo "scale=1; ($g1_balance - 1) * 10" | bc -l 2>/dev/null
     else
         echo "0"
     fi

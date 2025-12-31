@@ -72,7 +72,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     $MY_PATH/../tools/G1check.sh ${G1PUBNOSTR} > ~/.zen/tmp/${MOATS}/${PLAYER}.G1check
     cat ~/.zen/tmp/${MOATS}/${PLAYER}.G1check ###DEBUG MODE
     COINS=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.G1check | tail -n 1)
-    ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
+    ZEN=$(echo "scale=1; ($COINS - 1) * 10" | bc)
     echo "+++ MULTIPASS WALLET BALANCE _ $COINS (G1) _ / $ZEN ZEN /"
 
     ######################################################################################
@@ -95,7 +95,7 @@ for PLAYER in ${PLAYERONE[@]}; do
         echo "🔍 Checking ZEN Card balance for cooperative member..."
         $MY_PATH/../tools/G1check.sh ${ZENCARD_G1PUB} > ~/.zen/tmp/${MOATS}/${PLAYER}.ZENCARD.G1check
         ZENCARD_COINS=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.ZENCARD.G1check | tail -n 1)
-        ZENCARD_ZEN=$(echo "($ZENCARD_COINS - 1) * 10" | bc | cut -d '.' -f 1)
+        ZENCARD_ZEN=$(echo "scale=1; ($ZENCARD_COINS - 1) * 10" | bc)
         echo "ZEN Card balance: $ZENCARD_COINS Ğ1 ($ZENCARD_ZEN ẐEN)"
         
         # If ZEN Card has surplus (not 1Ğ1), clean it up

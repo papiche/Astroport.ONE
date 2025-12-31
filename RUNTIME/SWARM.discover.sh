@@ -206,14 +206,14 @@ subscribe_to_node() {
     if [[ -f ~/.zen/game/secret.NODE.dunikey ]]; then
         # Node niveau Y
         local node_coins=$(${MY_PATH}/../tools/G1check.sh ${NODEG1PUB} | tail -n 1)
-        local node_zen=$(echo "($node_coins - 1) * 10" | bc | cut -d '.' -f 1)
+        local node_zen=$(echo "scale=1; ($node_coins - 1) * 10" | bc)
         available_zen=$node_zen
         payment_source="Node (Y Level)"
         echo "🖥️  Solde Node: $node_zen Ẑ"
     else
         # Solde Capitaine
         local captain_coins=$(${MY_PATH}/../tools/G1check.sh ${CAPTAING1PUB} | tail -n 1)
-        local captain_zen=$(echo "($captain_coins - 1) * 10" | bc | cut -d '.' -f 1)
+        local captain_zen=$(echo "scale=1; ($captain_coins - 1) * 10" | bc)
         available_zen=$captain_zen
         payment_source="Capitaine"
         echo "👨‍💼 Solde Capitaine: $captain_zen Ẑ"

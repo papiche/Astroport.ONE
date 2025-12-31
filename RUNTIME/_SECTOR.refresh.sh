@@ -73,7 +73,7 @@ for SECTOR in ${SECTORS[@]}; do
     [[ ! ${G1PUB} ]] && echo "ERROR generating SECTOR WALLET" && exit 1
 
     COINS=$($MY_PATH/../tools/G1check.sh ${G1PUB} | tail -n 1)
-    ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
+    ZEN=$(echo "scale=1; ($COINS - 1) * 10" | bc)
 
     ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/${SECTOR}.priv "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}"
     ipfs key rm ${G1PUB} > /dev/null 2>&1 ## AVOID ERROR ON IMPORT

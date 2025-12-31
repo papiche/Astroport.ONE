@@ -76,7 +76,7 @@ echo "🔄 Checking Captain dedicated wallet..."
 if [[ -s ~/.zen/game/uplanet.captain.dunikey ]]; then
     CAPTAING1PUB_DEDICATED=$(cat $HOME/.zen/game/uplanet.captain.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
     CAPTAIN_DEDICATED_COIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAING1PUB_DEDICATED} | tail -n 1)
-    CAPTAIN_DEDICATED_ZEN=$(echo "($CAPTAIN_DEDICATED_COIN - 1) * 10" | bc | cut -d '.' -f 1)
+    CAPTAIN_DEDICATED_ZEN=$(echo "scale=1; ($CAPTAIN_DEDICATED_COIN - 1) * 10" | bc)
     echo "Captain dedicated wallet balance: $CAPTAIN_DEDICATED_ZEN Ẑen"
 else
     echo "Captain dedicated wallet not found (will be created by ZEN.ECONOMY.sh)"
@@ -89,7 +89,7 @@ fi
 #######################################################################
 echo "CAPTAIN G1PUB : ${CAPTAING1PUB}"
 CAPTAINCOIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAING1PUB} | tail -n 1)
-CAPTAINZEN=$(echo "($CAPTAINCOIN - 1) * 10" | bc | cut -d '.' -f 1)
+CAPTAINZEN=$(echo "scale=1; ($CAPTAINCOIN - 1) * 10" | bc)
 echo "Captain MULTIPASS balance: $CAPTAINZEN Ẑen (solde actuel pour répartition)"
 
 # Configuration de la PAF hebdomadaire
@@ -125,7 +125,7 @@ fi
 #######################################################################
 echo "UPlanet Cooperative G1PUB : ${UPLANETG1PUB}"
 UPLANETCOIN=$(${MY_PATH}/../tools/G1check.sh ${UPLANETG1PUB} | tail -n 1)
-UPLANETZEN=$(echo "($UPLANETCOIN - 1) * 10" | bc | cut -d '.' -f 1)
+UPLANETZEN=$(echo "scale=1; ($UPLANETCOIN - 1) * 10" | bc)
 echo "Cooperative balance: $UPLANETZEN Ẑen"
 
 #######################################################################
@@ -337,18 +337,40 @@ else
     # Calculate values for template substitution
     INITIAL_BALANCE=$(echo "scale=2; $CAPTAINZEN + $TAX_PROVISION" | bc -l)
     REPORT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
-    if [[ -z "$CAPTAING1PUB_DEDICATED" ]]; then
-        CAPTAIN_DEDICATED_DISPLAY="Not created yet"
-    else
-        CAPTAIN_DEDICATED_DISPLAY="${CAPTAING1PUB_DEDICATED:0:16}..."
-    fi
-    TREASURY_DISPLAY="${TREASURYG1PUB:0:16}..."
-    RND_DISPLAY="${RNDG1PUB:0:16}..."
-    ASSETS_DISPLAY="${ASSETSG1PUB:0:16}..."
-    IMPOTS_DISPLAY="${IMPOTSG1PUB:0:16}..."
     UPLANET_ID="${UPLANETG1PUB:0:8}"
 
+    # Query wallet balances and convert to ẐEN: Ẑ = (Ğ1 - 1) * 10
+    # Precision: 0.1Ẑ (since Ğ1 has 2 decimal places)
+    echo "🔄 Querying wallet balances for report..."
+
+    # Captain Dedicated wallet balance
+    if [[ -z "$CAPTAING1PUB_DEDICATED" ]]; then
+        CAPTAIN_DEDICATED_BALANCE_ZEN="N/A"
+    else
+        CAPTAIN_DEDICATED_COIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAING1PUB_DEDICATED} | tail -n 1)
+        CAPTAIN_DEDICATED_BALANCE_ZEN=$(echo "scale=1; ($CAPTAIN_DEDICATED_COIN - 1) * 10" | bc)
+    fi
+
+    # Treasury wallet balance
+    TREASURY_COIN=$(${MY_PATH}/../tools/G1check.sh ${TREASURYG1PUB} | tail -n 1)
+    TREASURY_BALANCE_ZEN=$(echo "scale=1; ($TREASURY_COIN - 1) * 10" | bc)
+
+    # R&D wallet balance
+    RND_COIN=$(${MY_PATH}/../tools/G1check.sh ${RNDG1PUB} | tail -n 1)
+    RND_BALANCE_ZEN=$(echo "scale=1; ($RND_COIN - 1) * 10" | bc)
+
+    # Assets wallet balance
+    ASSETS_COIN=$(${MY_PATH}/../tools/G1check.sh ${ASSETSG1PUB} | tail -n 1)
+    ASSETS_BALANCE_ZEN=$(echo "scale=1; ($ASSETS_COIN - 1) * 10" | bc)
+
+    # Tax Provision wallet balance
+    IMPOTS_COIN=$(${MY_PATH}/../tools/G1check.sh ${IMPOTSG1PUB} | tail -n 1)
+    IMPOTS_BALANCE_ZEN=$(echo "scale=1; ($IMPOTS_COIN - 1) * 10" | bc)
+
+    echo "Wallet balances retrieved: Treasury=${TREASURY_BALANCE_ZEN}Ẑ, R&D=${RND_BALANCE_ZEN}Ẑ, Assets=${ASSETS_BALANCE_ZEN}Ẑ, Impots=${IMPOTS_BALANCE_ZEN}Ẑ"
+
     # Generate HTML report from template using sed substitutions
+    # Full public keys are passed for easy copy
     cat "$TEMPLATE_FILE" | sed \
         -e "s~_DATE_~${REPORT_DATE}~g" \
         -e "s~_TODATE_~${TODATE}~g" \
@@ -366,11 +388,16 @@ else
         -e "s~_RND_G1_~${RND_G1}~g" \
         -e "s~_ASSETS_AMOUNT_~${ASSETS_AMOUNT}~g" \
         -e "s~_ASSETS_G1_~${ASSETS_G1}~g" \
-        -e "s~_CAPTAIN_DEDICATED_PUB_~${CAPTAIN_DEDICATED_DISPLAY}~g" \
-        -e "s~_TREASURY_PUB_~${TREASURY_DISPLAY}~g" \
-        -e "s~_RND_PUB_~${RND_DISPLAY}~g" \
-        -e "s~_ASSETS_PUB_~${ASSETS_DISPLAY}~g" \
-        -e "s~_IMPOTS_PUB_~${IMPOTS_DISPLAY}~g" \
+        -e "s~_CAPTAIN_DEDICATED_PUB_~${CAPTAING1PUB_DEDICATED:-Not created yet}~g" \
+        -e "s~_CAPTAIN_DEDICATED_BALANCE_~${CAPTAIN_DEDICATED_BALANCE_ZEN}~g" \
+        -e "s~_TREASURY_PUB_~${TREASURYG1PUB}~g" \
+        -e "s~_TREASURY_BALANCE_~${TREASURY_BALANCE_ZEN}~g" \
+        -e "s~_RND_PUB_~${RNDG1PUB}~g" \
+        -e "s~_RND_BALANCE_~${RND_BALANCE_ZEN}~g" \
+        -e "s~_ASSETS_PUB_~${ASSETSG1PUB}~g" \
+        -e "s~_ASSETS_BALANCE_~${ASSETS_BALANCE_ZEN}~g" \
+        -e "s~_IMPOTS_PUB_~${IMPOTSG1PUB}~g" \
+        -e "s~_IMPOTS_BALANCE_~${IMPOTS_BALANCE_ZEN}~g" \
         > "$REPORT_FILE"
 
     # Envoyer le rapport par email au Capitaine

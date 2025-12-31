@@ -201,20 +201,88 @@
             padding: 0;
         }
         
-        .wallet-list li {
+        .wallet-item {
             background: white;
-            padding: 12px;
-            margin: 8px 0;
-            border-radius: 6px;
-            border-left: 3px solid #4caf50;
-            font-family: monospace;
-            font-size: 0.9em;
+            padding: 15px;
+            margin: 12px 0;
+            border-radius: 8px;
+            border-left: 4px solid #4caf50;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         
-        .wallet-list li strong {
+        .wallet-item.treasury { border-left-color: #4caf50; }
+        .wallet-item.rnd { border-left-color: #2196f3; }
+        .wallet-item.assets { border-left-color: #ff9800; }
+        .wallet-item.impots { border-left-color: #e91e63; }
+        .wallet-item.captain { border-left-color: #9c27b0; }
+        
+        .wallet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .wallet-header strong {
             color: #495057;
-            display: block;
-            margin-bottom: 4px;
+            font-size: 1.1em;
+        }
+        
+        .wallet-balance {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.95em;
+        }
+        
+        .wallet-key-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .wallet-key {
+            flex: 1;
+            background: #f1f3f4;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            word-break: break-all;
+            color: #37474f;
+            border: 1px solid #e0e0e0;
+            cursor: text;
+            user-select: all;
+        }
+        
+        .copy-btn {
+            background: linear-gradient(135deg, #4caf50, #45a049);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        
+        .copy-btn:hover {
+            background: linear-gradient(135deg, #45a049, #388e3c);
+            transform: translateY(-1px);
+        }
+        
+        .copy-btn:active {
+            transform: translateY(0);
+        }
+        
+        .wallet-note {
+            font-size: 0.8em;
+            color: #78909c;
+            margin-top: 8px;
+            font-style: italic;
         }
         
         .status-badge {
@@ -375,30 +443,93 @@
             </div>
             
             <div class="wallet-section">
-                <h2>🔑 Wallet Addresses</h2>
-                <ul class="wallet-list">
-                    <li>
-                        <strong>Captain Dedicated:</strong>
-                        _CAPTAIN_DEDICATED_PUB_
-                    </li>
-                    <li>
-                        <strong>Treasury:</strong>
-                        _TREASURY_PUB_
-                    </li>
-                    <li>
-                        <strong>R&D:</strong>
-                        _RND_PUB_
-                    </li>
-                    <li>
-                        <strong>Assets:</strong>
-                        _ASSETS_PUB_
-                    </li>
-                    <li>
-                        <strong>Tax Provision:</strong>
-                        _IMPOTS_PUB_
-                    </li>
-                </ul>
+                <h2>🔑 UPlanet Wallets</h2>
+                <p style="color: #666; margin-top: 0;">Ẑen balance formula: Ẑ = (Ğ1 - 1) × 10 (precise to 0.1Ẑ)</p>
+                
+                <div class="wallet-item captain">
+                    <div class="wallet-header">
+                        <strong>👨‍✈️ Captain Dedicated</strong>
+                        <span class="wallet-balance">_CAPTAIN_DEDICATED_BALANCE_ Ẑen</span>
+                    </div>
+                    <div class="wallet-key-container">
+                        <div class="wallet-key" id="key-captain">_CAPTAIN_DEDICATED_PUB_</div>
+                        <button class="copy-btn" onclick="copyKey('key-captain')">📋 Copy</button>
+                    </div>
+                </div>
+                
+                <div class="wallet-item treasury">
+                    <div class="wallet-header">
+                        <strong>🏦 Treasury (Reserves)</strong>
+                        <span class="wallet-balance">_TREASURY_BALANCE_ Ẑen</span>
+                    </div>
+                    <div class="wallet-key-container">
+                        <div class="wallet-key" id="key-treasury">_TREASURY_PUB_</div>
+                        <button class="copy-btn" onclick="copyKey('key-treasury')">📋 Copy</button>
+                    </div>
+                    <div class="wallet-note">Liquidity and financial stability fund</div>
+                </div>
+                
+                <div class="wallet-item rnd">
+                    <div class="wallet-header">
+                        <strong>🔬 R&D (G1FabLab)</strong>
+                        <span class="wallet-balance">_RND_BALANCE_ Ẑen</span>
+                    </div>
+                    <div class="wallet-key-container">
+                        <div class="wallet-key" id="key-rnd">_RND_PUB_</div>
+                        <button class="copy-btn" onclick="copyKey('key-rnd')">📋 Copy</button>
+                    </div>
+                    <div class="wallet-note">Research & Development fund</div>
+                </div>
+                
+                <div class="wallet-item assets">
+                    <div class="wallet-header">
+                        <strong>🌱 Assets (Forests & Gardens)</strong>
+                        <span class="wallet-balance">_ASSETS_BALANCE_ Ẑen</span>
+                    </div>
+                    <div class="wallet-key-container">
+                        <div class="wallet-key" id="key-assets">_ASSETS_PUB_</div>
+                        <button class="copy-btn" onclick="copyKey('key-assets')">📋 Copy</button>
+                    </div>
+                    <div class="wallet-note">Regenerative investment fund</div>
+                </div>
+                
+                <div class="wallet-item impots">
+                    <div class="wallet-header">
+                        <strong>💰 Tax Provision (IS)</strong>
+                        <span class="wallet-balance">_IMPOTS_BALANCE_ Ẑen</span>
+                    </div>
+                    <div class="wallet-key-container">
+                        <div class="wallet-key" id="key-impots">_IMPOTS_PUB_</div>
+                        <button class="copy-btn" onclick="copyKey('key-impots')">📋 Copy</button>
+                    </div>
+                    <div class="wallet-note">Corporate tax provision fund</div>
+                </div>
             </div>
+            
+            <script>
+            function copyKey(elementId) {
+                const keyElement = document.getElementById(elementId);
+                const keyText = keyElement.textContent;
+                navigator.clipboard.writeText(keyText).then(function() {
+                    const btn = keyElement.nextElementSibling;
+                    const originalText = btn.textContent;
+                    btn.textContent = '✅ Copied!';
+                    btn.style.background = 'linear-gradient(135deg, #2196f3, #1976d2)';
+                    setTimeout(function() {
+                        btn.textContent = originalText;
+                        btn.style.background = 'linear-gradient(135deg, #4caf50, #45a049)';
+                    }, 2000);
+                }).catch(function(err) {
+                    // Fallback for older browsers
+                    const range = document.createRange();
+                    range.selectNode(keyElement);
+                    window.getSelection().removeAllRanges();
+                    window.getSelection().addRange(range);
+                    document.execCommand('copy');
+                    window.getSelection().removeAllRanges();
+                });
+            }
+            </script>
             
             <div class="status-badge">
                 ✅ Allocation completed successfully

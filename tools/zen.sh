@@ -83,7 +83,7 @@ calculate_zen_balance() {
     local g1_balance="$1"
     
     if (( $(echo "$g1_balance > 1" | bc -l) )); then
-        echo "($g1_balance - 1) * 10" | bc | cut -d '.' -f 1
+        echo "scale=1; ($g1_balance - 1) * 10" | bc
     else
         echo "0"
     fi
@@ -758,7 +758,7 @@ execute_system_transaction() {
             
             # Create U.SOCIETY file if player found
             if [[ -n "$player_email" ]]; then
-                local zen_amount=$(echo "$amount * 10" | bc | cut -d '.' -f 1)
+                local zen_amount=$(echo "scale=1; $amount * 10" | bc)
                 create_usociety_file "$player_email" "$amount" "$zen_amount"
             else
                 echo -e "${YELLOW}⚠ Could not identify player for U.SOCIETY creation${NC}"
@@ -962,7 +962,7 @@ get_transaction_details() {
             echo -e "${BLUE}Amount:${NC} $amount Ğ1"
             ;;
         "UPLANETNAME"|"UPLANETNAME_SOCIETY")
-            zen_amount=$(echo "$amount * 10" | bc | cut -d '.' -f 1)
+            zen_amount=$(echo "scale=1; $amount * 10" | bc)
             echo -e "${BLUE}Amount:${NC} $amount Ğ1 (${CYAN}$zen_amount Ẑen${NC})"
             ;;
     esac
@@ -2036,7 +2036,7 @@ display_users_summary() {
                 if [[ -n "$multipass_pubkey" ]]; then
                     local multipass_coins=$(get_wallet_balance "$multipass_pubkey" false)
                     if [[ -n "$multipass_coins" && "$multipass_coins" != "0" ]]; then
-                        local multipass_zen=$(echo "($multipass_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                        local multipass_zen=$(echo "scale=1; ($multipass_coins - 1) * 10" | bc)
                         # Check primal source for MULTIPASS
                         local multipass_primal=$(get_primal_info "$multipass_pubkey")
                         if [[ -n "$multipass_primal" ]]; then
@@ -2056,7 +2056,7 @@ display_users_summary() {
                 if [[ -n "$zencard_pubkey" ]]; then
                     local zencard_coins=$(get_wallet_balance "$zencard_pubkey" false)
                     if [[ -n "$zencard_coins" && "$zencard_coins" != "0" ]]; then
-                        local zencard_zen=$(echo "($zencard_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                        local zencard_zen=$(echo "scale=1; ($zencard_coins - 1) * 10" | bc)
                         # Check primal source for ZenCard - determine if locataire or sociétaire
                         local zencard_primal=$(get_primal_info "$zencard_pubkey")
                         local primal_indicator=""
@@ -2157,7 +2157,7 @@ handle_opencollective_reporting() {
                     # This is an incoming transaction
                     local amount=$(echo "$line" | grep -o '+[0-9.]*' | sed 's/+//')
                     if [[ -n "$amount" ]]; then
-                        local zen_amount=$(echo "$amount * 10" | bc | cut -d '.' -f 1)
+                        local zen_amount=$(echo "scale=1; $amount * 10" | bc)
                         payments_list+=("$zen_amount Ẑen ($amount Ğ1)")
                         total_to_report=$((total_to_report + zen_amount))
                         echo -e "  • ${GREEN}+$zen_amount Ẑen${NC} (${YELLOW}$amount Ğ1${NC})"
@@ -2330,7 +2330,7 @@ generate_complete_payment_report() {
             if [[ -n "$multipass_pubkey" ]]; then
                 local multipass_coins=$(get_wallet_balance "$multipass_pubkey" false)
                 if [[ -n "$multipass_coins" && "$multipass_coins" != "0" ]]; then
-                    multipass_zen=$(echo "($multipass_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                    multipass_zen=$(echo "scale=1; ($multipass_coins - 1) * 10" | bc)
                     total_multipass_zen=$((total_multipass_zen + multipass_zen))
                 fi
             fi
@@ -2342,7 +2342,7 @@ generate_complete_payment_report() {
             if [[ -n "$zencard_pubkey" ]]; then
                 local zencard_coins=$(get_wallet_balance "$zencard_pubkey" false)
                 if [[ -n "$zencard_coins" && "$zencard_coins" != "0" ]]; then
-                    zencard_zen=$(echo "($zencard_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                    zencard_zen=$(echo "scale=1; ($zencard_coins - 1) * 10" | bc)
                     total_zencard_zen=$((total_zencard_zen + zencard_zen))
                     
                     # Determine primal source
@@ -2500,7 +2500,7 @@ transcribe_user_payments() {
         if [[ -n "$multipass_pubkey" ]]; then
             local multipass_coins=$(get_wallet_balance "$multipass_pubkey" false)
             if [[ -n "$multipass_coins" && "$multipass_coins" != "0" ]]; then
-                multipass_zen=$(echo "($multipass_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                multipass_zen=$(echo "scale=1; ($multipass_coins - 1) * 10" | bc)
                 echo -e "${CYAN}💳 MULTIPASS:${NC}"
                 echo -e "  • Clé publique: ${CYAN}$multipass_pubkey${NC}"
                 echo -e "  • Solde actuel: ${CYAN}${multipass_zen} Ẑen${NC} (${multipass_coins} Ğ1)"
@@ -2517,7 +2517,7 @@ transcribe_user_payments() {
         if [[ -n "$zencard_pubkey" ]]; then
             local zencard_coins=$(get_wallet_balance "$zencard_pubkey" false)
             if [[ -n "$zencard_coins" && "$zencard_coins" != "0" ]]; then
-                zencard_zen=$(echo "($zencard_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                zencard_zen=$(echo "scale=1; ($zencard_coins - 1) * 10" | bc)
                 echo -e "\n${PURPLE}💎 ZENCARD:${NC}"
                 echo -e "  • Clé publique: ${PURPLE}$zencard_pubkey${NC}"
                 echo -e "  • Solde actuel: ${PURPLE}${zencard_zen} Ẑen${NC} (${zencard_coins} Ğ1)"
@@ -2620,7 +2620,7 @@ transcribe_payments_by_source() {
             if [[ -n "$multipass_pubkey" ]]; then
                 local multipass_coins=$(get_wallet_balance "$multipass_pubkey" false)
                 if [[ -n "$multipass_coins" && "$multipass_coins" != "0" ]]; then
-                    local multipass_zen=$(echo "($multipass_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                    local multipass_zen=$(echo "scale=1; ($multipass_coins - 1) * 10" | bc)
                     user_zen=$((user_zen + multipass_zen))
                     multipass_total=$((multipass_total + multipass_zen))
                 fi
@@ -2633,7 +2633,7 @@ transcribe_payments_by_source() {
             if [[ -n "$zencard_pubkey" ]]; then
                 local zencard_coins=$(get_wallet_balance "$zencard_pubkey" false)
                 if [[ -n "$zencard_coins" && "$zencard_coins" != "0" ]]; then
-                    local zencard_zen=$(echo "($zencard_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                    local zencard_zen=$(echo "scale=1; ($zencard_coins - 1) * 10" | bc)
                     local zencard_primal=$(get_primal_info "$zencard_pubkey")
                     if [[ -n "$zencard_primal" ]]; then
                         local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME_SOCIETY" 2>/dev/null)
@@ -2668,7 +2668,7 @@ transcribe_payments_by_source() {
             if [[ -n "$zencard_pubkey" ]]; then
                 local zencard_coins=$(get_wallet_balance "$zencard_pubkey" false)
                 if [[ -n "$zencard_coins" && "$zencard_coins" != "0" ]]; then
-                    local zencard_zen=$(echo "($zencard_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                    local zencard_zen=$(echo "scale=1; ($zencard_coins - 1) * 10" | bc)
                     local zencard_primal=$(get_primal_info "$zencard_pubkey")
                     if [[ -n "$zencard_primal" ]]; then
                         local society_pubkey=$(get_system_wallet_public_key "UPLANETNAME_SOCIETY" 2>/dev/null)
@@ -2769,7 +2769,7 @@ generate_payment_csv_report() {
             if [[ -n "$multipass_pubkey" ]]; then
                 local multipass_coins=$(get_wallet_balance "$multipass_pubkey" false)
                 if [[ -n "$multipass_coins" && "$multipass_coins" != "0" ]]; then
-                    multipass_zen=$(echo "($multipass_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                    multipass_zen=$(echo "scale=1; ($multipass_coins - 1) * 10" | bc)
                 fi
             fi
         fi
@@ -2780,7 +2780,7 @@ generate_payment_csv_report() {
             if [[ -n "$zencard_pubkey" ]]; then
                 local zencard_coins=$(get_wallet_balance "$zencard_pubkey" false)
                 if [[ -n "$zencard_coins" && "$zencard_coins" != "0" ]]; then
-                    zencard_zen=$(echo "($zencard_coins - 1) * 10" | bc | cut -d '.' -f 1)
+                    zencard_zen=$(echo "scale=1; ($zencard_coins - 1) * 10" | bc)
                     
                     # Determine primal source
                     local zencard_primal=$(get_primal_info "$zencard_pubkey")
@@ -2880,7 +2880,7 @@ display_station_overview() {
                 local revenue_zen=$(echo "$revenue_json" | jq -r '.total_revenue_zen // 0' 2>/dev/null)
                 echo -e "  • ${GREEN}UPLANETNAME:${NC} ${YELLOW}$services_balance Ğ1${NC} (CA: ${CYAN}$revenue_zen Ẑen${NC})"
             else
-                local zen_balance=$(echo "($services_balance - 1) * 10" | bc | cut -d '.' -f 1)
+                local zen_balance=$(echo "scale=1; ($services_balance - 1) * 10" | bc)
                 echo -e "  • ${GREEN}UPLANETNAME:${NC} ${YELLOW}$services_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
             fi
         else
@@ -2902,7 +2902,7 @@ display_station_overview() {
                 local society_zen=$(echo "$society_json" | jq -r '.total_outgoing_zen // 0' 2>/dev/null)
                 echo -e "  • ${GREEN}UPLANETNAME_SOCIETY:${NC} ${YELLOW}$society_balance Ğ1${NC} (Parts: ${CYAN}$society_zen Ẑen${NC})"
             else
-                local zen_balance=$(echo "($society_balance - 1) * 10" | bc | cut -d '.' -f 1)
+                local zen_balance=$(echo "scale=1; ($society_balance - 1) * 10" | bc)
                 echo -e "  • ${GREEN}UPLANETNAME_SOCIETY:${NC} ${YELLOW}$society_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
             fi
         else
@@ -2956,7 +2956,7 @@ display_economic_dashboard() {
                 local revenue_txcount=$(echo "$revenue_json" | jq -r '.total_transactions // 0' 2>/dev/null)
                 echo -e "   • UPLANETNAME: ${YELLOW}$services_balance Ğ1${NC} (CA: ${CYAN}$revenue_zen Ẑen${NC}, ${WHITE}$revenue_txcount${NC} ventes)"
             else
-                local zen_balance=$(echo "($services_balance - 1) * 10" | bc | cut -d '.' -f 1)
+                local zen_balance=$(echo "scale=1; ($services_balance - 1) * 10" | bc)
                 echo -e "   • UPLANETNAME: ${YELLOW}$services_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
             fi
         else
@@ -2979,7 +2979,7 @@ display_economic_dashboard() {
                 local society_txcount=$(echo "$society_json" | jq -r '.total_transfers // 0' 2>/dev/null)
                 echo -e "   • UPLANETNAME_SOCIETY: ${YELLOW}$society_balance Ğ1${NC} (Parts: ${CYAN}$society_zen Ẑen${NC}, ${WHITE}$society_txcount${NC} sociétaires)"
             else
-                local zen_balance=$(echo "($society_balance - 1) * 10" | bc | cut -d '.' -f 1)
+                local zen_balance=$(echo "scale=1; ($society_balance - 1) * 10" | bc)
                 echo -e "   • UPLANETNAME_SOCIETY: ${YELLOW}$society_balance Ğ1${NC} (${CYAN}$zen_balance Ẑen${NC})"
             fi
         else

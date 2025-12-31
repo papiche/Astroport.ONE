@@ -329,7 +329,7 @@ for PLAYER in "${NOSTR[@]}"; do
 
     # Convert COINS value into ẐEN
     if [[ -n "$COINS" && "$COINS" != "null" ]]; then
-        ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
+        ZEN=$(echo "scale=1; ($COINS - 1) * 10" | bc)
     else
         ZEN=-10
     fi

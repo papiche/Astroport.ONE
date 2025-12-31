@@ -37,7 +37,7 @@ YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
 # Get PLAYER MULTIPASS wallet amount
 $MY_PATH/../tools/G1check.sh ${G1PUB} > ~/.zen/tmp/${MOATS}/${PLAYER}.G1check
 COINS=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.G1check | tail -n 1)
-ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
+ZEN=$(echo "scale=1; ($COINS - 1) * 10" | bc)
 
 echo "+++ MULTIPASS WALLET BALANCE _ $COINS (G1) _ / $ZEN ZEN /"
 

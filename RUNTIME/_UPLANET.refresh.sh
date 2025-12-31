@@ -72,7 +72,7 @@ for UMAP in ${unique_combined[@]}; do
     [[ ! ${UMAPG1PUB} ]] && echo "ERROR generating UMAP WALLET" && exit 1
 
     COINS=$($MY_PATH/../tools/G1check.sh ${UMAPG1PUB} | tail -n 1)
-    ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
+    ZEN=$(echo "scale=1; ($COINS - 1) * 10" | bc)
 
     echo "UMAP (${COINS} G1) ${ZEN} ZEN : ${UMAPG1PUB}"
 

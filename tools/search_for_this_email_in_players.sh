@@ -91,7 +91,7 @@ ASTRONAUTENS=$(jq -r '.[].astronautens' ${TMP_DIR}/Astroport.json)
 
 # Calculate ZEN
 COINS=$(cat ~/.zen/tmp/coucou/$ASTROG1.COINS)
-ZEN=$(echo "($COINS - 1) * 10" | bc | cut -d '.' -f 1)
+ZEN=$(echo "scale=1; ($COINS - 1) * 10" | bc)
 
 # Get NHEX from NOSTR Card
 NHEX=$(cat ~/.zen/game/nostr/${EMAIL}/HEX 2>/dev/null)

@@ -69,20 +69,20 @@ log_output "ZEN ECONOMY: Starting weekly payment process for week $WEEK_KEY"
 #######################################################################
 log_output "UPlanet G1PUB : ${UPLANETG1PUB}"
 UCOIN=$(${MY_PATH}/../tools/G1check.sh ${UPLANETG1PUB} | tail -n 1)
-UZEN=$(echo "($UCOIN - 1) * 10" | bc | cut -d '.' -f 1)
+UZEN=$(echo "scale=1; ($UCOIN - 1) * 10" | bc)
 log_output "$UZEN Ẑen"
 
 # Vérification du Node (Astroport)
 NODEG1PUB=$($MY_PATH/../tools/ipfs_to_g1.py ${IPFSNODEID})
 log_output "NODE G1PUB : ${NODEG1PUB}"
 NODECOIN=$(${MY_PATH}/../tools/G1check.sh ${NODEG1PUB} | tail -n 1)
-NODEZEN=$(echo "($NODECOIN - 1) * 10" | bc | cut -d '.' -f 1)
+NODEZEN=$(echo "scale=1; ($NODECOIN - 1) * 10" | bc)
 log_output "$NODEZEN Ẑen"
 
 # Vérification du Captain (gestionnaire) - MULTIPASS (NOSTR)
 log_output "CAPTAIN G1PUB : ${CAPTAING1PUB}"
 CAPTAINCOIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAING1PUB} | tail -n 1)
-CAPTAINZEN=$(echo "($CAPTAINCOIN - 1) * 10" | bc | cut -d '.' -f 1)
+CAPTAINZEN=$(echo "scale=1; ($CAPTAINCOIN - 1) * 10" | bc)
 log_output "Captain MULTIPASS balance: $CAPTAINZEN Ẑen"
 
 # Vérification de la ZEN Card du Captain (PLAYERS)
@@ -92,7 +92,7 @@ if [[ -n "$CAPTAINEMAIL" ]]; then
         CAPTAIN_ZENCARD_PUB=$(cat "$CAPTAIN_ZENCARD_PATH/secret.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
         if [[ -n "$CAPTAIN_ZENCARD_PUB" ]]; then
             CAPTAIN_ZENCARD_COIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAIN_ZENCARD_PUB} | tail -n 1)
-            CAPTAIN_ZENCARD_ZEN=$(echo "($CAPTAIN_ZENCARD_COIN - 1) * 10" | bc | cut -d '.' -f 1)
+            CAPTAIN_ZENCARD_ZEN=$(echo "scale=1; ($CAPTAIN_ZENCARD_COIN - 1) * 10" | bc)
             log_output "Captain ZEN Card balance: $CAPTAIN_ZENCARD_ZEN Ẑen"
         else
             CAPTAIN_ZENCARD_ZEN=0
@@ -154,7 +154,7 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
             if [[ -f "$HOME/.zen/game/uplanet.CASH.dunikey" ]]; then
                 CASH_G1PUB=$(cat "$HOME/.zen/game/uplanet.CASH.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
                 CASH_COIN=$(${MY_PATH}/../tools/G1check.sh ${CASH_G1PUB} | tail -n 1)
-                CASH_ZEN=$(echo "($CASH_COIN - 1) * 10" | bc | cut -d '.' -f 1)
+                CASH_ZEN=$(echo "scale=1; ($CASH_COIN - 1) * 10" | bc)
                 
                 if [[ $(echo "$CASH_ZEN > $WEEKLYPAF" | bc -l) -eq 1 ]]; then
                     # TX Comment: UP:NetworkID:PAF:Week:Amount:Source (Treasury solidarity)

@@ -50,7 +50,7 @@ ncrunning=$(pgrep -au $USER -f 'nc -l -p 12345' | tail -n 1 | xargs | cut -d " "
 ## WHAT IS NODEG1PUB
 NODEG1PUB=$($MY_PATH/tools/ipfs_to_g1.py ${IPFSNODEID})
 NODECOINS=$($MY_PATH/tools/G1check.sh ${NODEG1PUB} | tail -n 1)
-NODEZEN=$(echo "($NODECOINS - 1) * 10" | bc | cut -d '.' -f 1)
+NODEZEN=$(echo "scale=1; ($NODECOINS - 1) * 10" | bc)
 ##############################################
 [[ ${IPFSNODEID} == "" || ${IPFSNODEID} == "null" ]] && echo "IPFSNODEID is empty" && exit 1
 mkdir -p ~/.zen/tmp/swarm
@@ -119,7 +119,7 @@ if [[ ! -s ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr ]]; then
     if [[ -n $salt && -n $pepper ]]; then
         CAPTAING1PUB=$(${MY_PATH}/tools/keygen -t duniter "$salt" "$pepper")
         CAPTAINCOINS=$($MY_PATH/tools/G1check.sh ${CAPTAING1PUB} | tail -n 1)
-        CAPTAINZEN=$(echo "($CAPTAINCOINS - 1) * 10" | bc | cut -d '.' -f 1)
+        CAPTAINZEN=$(echo "scale=1; ($CAPTAINCOINS - 1) * 10" | bc)
         captainNPUB=$(${MY_PATH}/tools/keygen -t nostr "$salt" "$pepper")
         captainHEX=$(${MY_PATH}/tools/nostr2hex.py "$captainNPUB")
         captainNSEC=$(${MY_PATH}/tools/keygen -t nostr "$salt" "$pepper" -s)
@@ -139,7 +139,7 @@ if [[ ! -s ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr ]]; then
 else
     ## Get data from cache
     CAPTAING1=$(cat ~/.zen/tmp/coucou/$CAPTAING1PUB.COINS)
-    CAPTAINZEN=$(echo "($CAPTAING1 - 1) * 10" | bc | cut -d '.' -f 1)
+    CAPTAINZEN=$(echo "scale=1; ($CAPTAING1 - 1) * 10" | bc)
     captainHEX=$(cat ~/.zen/game/nostr/$CAPTAINEMAIL/HEX)
 fi
 ##################################################
@@ -154,7 +154,7 @@ echo 0 > ~/.zen/tmp/random.sleep
 ###################################################################
 ###############################################
 UPLANETCOINS=$($MY_PATH/tools/G1check.sh ${UPLANETG1PUB} | tail -n 1)
-UPLANETZEN=$(echo "($UPLANETCOINS - 1) * 10" | bc | cut -d '.' -f 1)
+UPLANETZEN=$(echo "scale=1; ($UPLANETCOINS - 1) * 10" | bc)
 
 ## CREATE UPLANET ECOSYSTEM WALLETS IF NOT EXISTS AND GET PUBKEYS
 # UPLANETNAME_TREASURY wallet
@@ -505,7 +505,7 @@ while true; do
         CAPTAIN_DEDICATED_PUB=$(cat "$HOME/.zen/game/uplanet.captain.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
         if [[ -n "$CAPTAIN_DEDICATED_PUB" ]]; then
             CAPTAIN_DEDICATED_COINS=$($MY_PATH/tools/G1check.sh ${CAPTAIN_DEDICATED_PUB} | tail -n 1)
-            CAPTAIN_DEDICATED_ZEN=$(echo "($CAPTAIN_DEDICATED_COINS - 1) * 10" | bc | cut -d '.' -f 1)
+            CAPTAIN_DEDICATED_ZEN=$(echo "scale=1; ($CAPTAIN_DEDICATED_COINS - 1) * 10" | bc)
         fi
     fi
     
@@ -513,7 +513,7 @@ while true; do
     TREASURY_ZEN=0
     if [[ -n "$UPLANETNAME_TREASURY" ]]; then
         TREASURY_COINS=$($MY_PATH/tools/G1check.sh ${UPLANETNAME_TREASURY} | tail -n 1)
-        TREASURY_ZEN=$(echo "($TREASURY_COINS - 1) * 10" | bc | cut -d '.' -f 1)
+        TREASURY_ZEN=$(echo "scale=1; ($TREASURY_COINS - 1) * 10" | bc)
     fi
     
     # Calculate weekly revenue and costs

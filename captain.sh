@@ -373,7 +373,7 @@ calculate_zen() {
     local g1_balance="$1"
     
     if (( $(echo "$g1_balance > 1" | bc -l 2>/dev/null) )); then
-        local zen=$(echo "($g1_balance - 1) * 10" | bc -l 2>/dev/null | cut -d '.' -f 1)
+        local zen=$(echo "scale=1; ($g1_balance - 1) * 10" | bc -l 2>/dev/null)
         echo "$zen"
     else
         echo "0"

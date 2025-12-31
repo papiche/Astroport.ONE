@@ -190,9 +190,9 @@ if [[ ${ISOK} == 0 ]]; then
     fi
     
     ## ZEN CONVERSION
-    ZENAMOUNT=$(echo "$AMOUNT * 10" | bc | cut -d '.' -f 1)
-    ZENCUR=$(echo "$COINS * 10" | bc | cut -d '.' -f 1)
-    ZENDES=$(echo "$DES * 10" | bc | cut -d '.' -f 1)
+    ZENAMOUNT=$(echo "scale=1; $AMOUNT * 10" | bc)
+    ZENCUR=$(echo "scale=1; ($COINS - 1) * 10" | bc)
+    ZENDES=$(echo "scale=1; ($DES - 1) * 10" | bc)
     
     # Generate HTML report
     cat << EOF > ${PENDINGDIR}/${MOATS}.result.html

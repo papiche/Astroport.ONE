@@ -168,7 +168,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
             echo "G1check.sh ${G1PUB}"
             ${MY_PATH}/../tools/G1check.sh ${G1PUB} > ~/.zen/tmp/${G1PUB}.curcoin
             CURCOINS=$(cat ~/.zen/tmp/${G1PUB}.curcoin | tail -n 1 | xargs | cut -d '.' -f 1)
-            CURZEN=$(echo "($CURCOINS - 1) * 10" | bc | cut -d '.' -f 1)
+            CURZEN=$(echo "scale=1; ($CURCOINS - 1) * 10" | bc)
             echo "= $CURCOINS G1 / $CURZEN ZEN"
 
             [[ ${WHAT} == "" ]] &&  echo "<br> Missing WHAT <br>" >> ~/.zen/tmp/${MOATS}/disco
@@ -180,7 +180,7 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             ## GET DESTINATION ACCOUNT AMOUNT
             DESTM=$(${MY_PATH}/../tools/G1check.sh ${G1DEST} | tail -n 1)
-            DESTMZEN=$(echo "($DESTM - 1) * 10" | bc | cut -d '.' -f 1)
+            DESTMZEN=$(echo "scale=1; ($DESTM - 1) * 10" | bc)
             echo "DEST WALLET = $DESTM G1 / $DESTMZEN ZEN"
 
             if [[ ${APPNAME} == "pay" ]]; then
@@ -677,7 +677,7 @@ echo ">>> ${QRCODE} g1_to_ipfs $ASTROTOIPNS"
     COINSFILE=$HOME/.zen/tmp/${MOATS}/${QRCODE}.COINS
 
     [[ ${VISITORCOINS} != "null" ]] \
-        && ZEN=$(echo "($VISITORCOINS - 1) * 10" | bc | cut -d '.' -f 1) \
+        && ZEN=$(echo "scale=1; ($VISITORCOINS - 1) * 10" | bc) \
         || ZEN="-10"
 
     DISPLAY="<h1>$VISITORCOINS G1</h1>"
