@@ -1061,13 +1061,21 @@ cleanup_orphaned_ads() {
 ################################################################################
 # This function cleans up inventory and plantnet messages that haven't received
 # any likes within 28 days, following the system requirements.
+#
+# OPTIMIZATION: Only scans messages in a 24h window (28-29 days old)
+# This prevents scanning the entire message history on each run.
+# Messages are checked exactly once when they reach the 28-day threshold.
 
 cleanup_inventory_without_likes() {
     local NPRIV_HEX=$1
     
-    log "🔍 Checking for inventory/plantnet messages without likes (28 days)..."
+    log "🔍 Checking for inventory/plantnet messages without likes (28 days window)..."
     
-    local MONTH_AGO=$(date -d "28 days ago" +%s)
+    # Only check messages in the 28-day window (not ALL old messages)
+    # Window: from 29 days ago to 28 days ago (24h window)
+    # This prevents scanning the entire history on each run
+    local WINDOW_START=$(date -d "29 days ago" +%s)
+    local WINDOW_END=$(date -d "28 days ago" +%s)
     local cleaned_count=0
     
     # Get current working directory
@@ -1075,12 +1083,13 @@ cleanup_inventory_without_likes() {
     
     cd ~/.zen/strfry
     
-    # Find all inventory and plantnet messages from this UMAP zone that are older than 28 days
+    # Find inventory/plantnet messages that just reached 28 days old (24h window)
+    # This is much more efficient than scanning all old messages
     # Filter by tags: inventory OR plantnet AND UPlanet
     local old_inventory_messages=$(./strfry scan '{
         "kinds": [1],
-        "since": 0,
-        "until": '"$MONTH_AGO"',
+        "since": '"$WINDOW_START"',
+        "until": '"$WINDOW_END"',
         "limit": 500
     }' 2>/dev/null | jq -c 'select(
         .kind == 1 and 
@@ -1335,12 +1344,14 @@ process_sectors() {
 }
 
 # Fonction utilitaire pour compter les likes d'un message Nostr (doit être dans ~/.zen/strfry)
+# Note: Limited to 100 likes max for performance (sufficient for threshold checks)
 count_likes() {
     local event_id="$1"
     cd ~/.zen/strfry
     strfry scan '{
       "kinds": [7],
-      "tags": [["e", "'"$event_id"'"]]
+      "#e": ["'"$event_id"'"],
+      "limit": 100
     }' 2>/dev/null | jq -r 'select(.content == "+" or .content == "👍" or .content == "❤️" or .content == "♥️") | .id' | wc -l
     cd - >/dev/null
 }
