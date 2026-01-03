@@ -175,6 +175,7 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting YouTube likes sync for $PLAYER" >&
 log_debug "Starting YouTube likes sync for $PLAYER"
 
 # Fonction pour vérifier si une vidéo a déjà été traitée
+# Supports both old format (video_id) and new format (video_id|event_id)
 is_video_processed() {
     local video_id="$1"
     local processed_file="$2"
@@ -183,8 +184,10 @@ is_video_processed() {
         return 1  # Fichier n'existe pas, vidéo pas traitée
     fi
     
-    # Vérifier si l'ID de la vidéo est dans le fichier
-    if grep -q "^$video_id$" "$processed_file" 2>/dev/null; then
+    # Vérifier si l'ID de la vidéo est dans le fichier (supports both formats)
+    # Old format: video_id
+    # New format: video_id|event_id
+    if grep -q "^${video_id}$\|^${video_id}|" "$processed_file" 2>/dev/null; then
         return 0  # Vidéo déjà traitée
     else
         return 1  # Vidéo pas encore traitée
@@ -192,9 +195,11 @@ is_video_processed() {
 }
 
 # Fonction pour marquer une vidéo comme traitée
+# Format: video_id|event_id (event_id optional, for verification)
 mark_video_processed() {
     local video_id="$1"
     local processed_file="$2"
+    local event_id="${3:-}"  # Optional: NOSTR event ID for verification
     
     # Créer le fichier s'il n'existe pas
     if [[ ! -f "$processed_file" ]]; then
@@ -202,9 +207,14 @@ mark_video_processed() {
         chmod 600 "$processed_file"
     fi
     
-    # Ajouter l'ID de la vidéo au fichier
-    echo "$video_id" >> "$processed_file"
-    log_debug "Marked video $video_id as processed"
+    # Format: video_id|event_id (event_id can be empty for videos found in uDRIVE)
+    if [[ -n "$event_id" ]]; then
+        echo "${video_id}|${event_id}" >> "$processed_file"
+        log_debug "Marked video $video_id as processed with event_id: ${event_id:0:16}..."
+    else
+        echo "${video_id}|" >> "$processed_file"
+        log_debug "Marked video $video_id as processed (no event_id)"
+    fi
 }
 
 # Fonction pour vérifier si une vidéo existe déjà dans uDRIVE
@@ -270,6 +280,144 @@ cleanup_processed_videos() {
         tail -n 100 "$processed_file" > "${processed_file}.tmp" && mv "${processed_file}.tmp" "$processed_file"
         log_debug "Cleaned up processed videos database (kept last 100 entries)"
     fi
+}
+
+# Fonction pour vérifier et nettoyer les vidéos marquées comme traitées mais sans événement NOSTR
+# Vérifie les 9 dernières entrées pour ne pas surcharger le système
+verify_processed_videos() {
+    local processed_file="$1"
+    local player="$2"
+    
+    log_debug "Starting verification of last 9 processed videos for $player"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Verifying last 9 processed videos..." >&2
+    
+    if [[ ! -f "$processed_file" ]]; then
+        log_debug "No processed videos file found, nothing to verify"
+        return 0
+    fi
+    
+    # Get the nostr_get_events.sh script path
+    local nostr_get_script="${MY_PATH}/../tools/nostr_get_events.sh"
+    if [[ ! -f "$nostr_get_script" ]]; then
+        log_debug "nostr_get_events.sh not found, skipping verification"
+        return 0
+    fi
+    
+    # Get player's HEX pubkey for querying their events
+    local hex_file="$HOME/.zen/game/nostr/${player}/HEX"
+    local player_hex=""
+    if [[ -f "$hex_file" ]]; then
+        player_hex=$(cat "$hex_file" 2>/dev/null)
+    fi
+    
+    if [[ -z "$player_hex" ]]; then
+        log_debug "No HEX pubkey found for $player, skipping verification"
+        return 0
+    fi
+    
+    # Read all entries into an array
+    local all_entries=()
+    while IFS= read -r line; do
+        [[ -n "$line" ]] && all_entries+=("$line")
+    done < "$processed_file"
+    
+    local total_entries=${#all_entries[@]}
+    if [[ $total_entries -eq 0 ]]; then
+        log_debug "No entries in processed videos file"
+        return 0
+    fi
+    
+    # Calculate start index for last 9 entries
+    local start_index=0
+    if [[ $total_entries -gt 9 ]]; then
+        start_index=$((total_entries - 9))
+    fi
+    
+    log_debug "Checking entries from index $start_index to $((total_entries - 1)) (last 9)"
+    
+    local entries_to_remove=()
+    local verified_count=0
+    local invalid_count=0
+    
+    for ((i = start_index; i < total_entries; i++)); do
+        local entry="${all_entries[$i]}"
+        local video_id=""
+        local event_id=""
+        
+        # Parse entry: video_id|event_id or just video_id (legacy)
+        if [[ "$entry" == *"|"* ]]; then
+            video_id=$(echo "$entry" | cut -d'|' -f1)
+            event_id=$(echo "$entry" | cut -d'|' -f2)
+        else
+            # Legacy format: just video_id
+            video_id="$entry"
+            event_id=""
+        fi
+        
+        log_debug "Checking entry: video_id=$video_id, event_id=${event_id:0:16}..."
+        
+        # Skip entries without event_id (videos found in uDRIVE, not published to NOSTR)
+        if [[ -z "$event_id" ]]; then
+            log_debug "Entry $video_id has no event_id, keeping (uDRIVE or legacy)"
+            continue
+        fi
+        
+        # Verify the event exists in the relay
+        # Query for the specific event by author and kind (21 or 22)
+        local event_exists=0
+        
+        # Try to find the event using strfry scan with the event ID
+        # Use jq to check if any event has this ID
+        local query_result=$("$nostr_get_script" --kind 21 --author "$player_hex" --limit 50 2>/dev/null | jq -r --arg eid "$event_id" 'select(.id == $eid) | .id' 2>/dev/null | head -1)
+        
+        if [[ -z "$query_result" ]]; then
+            # Also check kind 22 (short videos)
+            query_result=$("$nostr_get_script" --kind 22 --author "$player_hex" --limit 50 2>/dev/null | jq -r --arg eid "$event_id" 'select(.id == $eid) | .id' 2>/dev/null | head -1)
+        fi
+        
+        if [[ -n "$query_result" ]]; then
+            log_debug "Event $event_id verified, exists in relay"
+            verified_count=$((verified_count + 1))
+        else
+            log_debug "Event $event_id NOT FOUND in relay, marking for removal"
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️  Event not found for video $video_id, removing from history" >&2
+            entries_to_remove+=("$entry")
+            invalid_count=$((invalid_count + 1))
+        fi
+    done
+    
+    # Remove invalid entries from the file
+    if [[ ${#entries_to_remove[@]} -gt 0 ]]; then
+        log_debug "Removing ${#entries_to_remove[@]} invalid entries from processed videos file"
+        
+        # Create a new file without the invalid entries
+        local temp_file="${processed_file}.tmp"
+        > "$temp_file"
+        
+        for entry in "${all_entries[@]}"; do
+            local should_remove=0
+            for invalid in "${entries_to_remove[@]}"; do
+                if [[ "$entry" == "$invalid" ]]; then
+                    should_remove=1
+                    break
+                fi
+            done
+            
+            if [[ $should_remove -eq 0 ]]; then
+                echo "$entry" >> "$temp_file"
+            fi
+        done
+        
+        mv "$temp_file" "$processed_file"
+        chmod 600 "$processed_file"
+        
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cleaned up $invalid_count invalid entries from history" >&2
+        log_debug "Removed $invalid_count entries, verified $verified_count entries"
+    else
+        log_debug "All checked entries are valid, no cleanup needed"
+    fi
+    
+    return 0
 }
 
 # Fonction pour récupérer les vidéos likées via l'API YouTube
@@ -846,8 +994,8 @@ process_liked_video() {
                 log_debug "Video published successfully to NOSTR! Event ID: ${event_id:0:16}..."
                 echo "✅ $url_safe_title by $uploader -> Published (CID: ${ipfs_cid:0:16}..., Event: ${event_id:0:16}...)"
                 
-                # Marquer la vidéo comme traitée
-                mark_video_processed "$video_id" "$processed_file"
+                # Marquer la vidéo comme traitée avec l'event_id pour vérification future
+                mark_video_processed "$video_id" "$processed_file" "$event_id"
                 
                 # Cleanup temp directory
                 rm -rf "$temp_output_dir" 2>/dev/null || true
@@ -860,8 +1008,8 @@ process_liked_video() {
                     log_debug "Video published successfully to NOSTR! Event ID: ${event_id:0:16}..."
                     echo "✅ $url_safe_title by $uploader -> Published (CID: ${ipfs_cid:0:16}..., Event: ${event_id:0:16}...)"
                     
-                    # Marquer la vidéo comme traitée
-                    mark_video_processed "$video_id" "$processed_file"
+                    # Marquer la vidéo comme traitée avec l'event_id pour vérification future
+                    mark_video_processed "$video_id" "$processed_file" "$event_id"
                     
                     # Cleanup temp directory
                     rm -rf "$temp_output_dir" 2>/dev/null || true
@@ -871,26 +1019,27 @@ process_liked_video() {
                     log_debug "Video uploaded but event ID not found in output"
                     echo "⚠️ Video uploaded but event ID not found: $url_safe_title"
                     echo "Publish output: $publish_output"
-                    # Still mark as processed since file is in uDRIVE
-                    mark_video_processed "$video_id" "$processed_file"
+                    # Mark as processed WITHOUT event_id - will be flagged by verify_processed_videos
+                    # Do NOT mark as processed to allow retry on next sync
+                    log_debug "NOT marking video as processed to allow retry"
                     
                     # Cleanup temp directory
                     rm -rf "$temp_output_dir" 2>/dev/null || true
                     
-                    return 0  # Consider it success since file is uploaded
+                    return 1  # Return failure to allow retry
                 fi
             fi
         else
-            log_debug "Video uploaded but publication may have failed (exit code: $publish_exit_code)"
-            echo "⚠️ Video uploaded but publication may have failed: $url_safe_title"
+            log_debug "Video uploaded but publication failed (exit code: $publish_exit_code)"
+            echo "⚠️ Video uploaded but publication failed: $url_safe_title"
             echo "Publish output: $publish_output"
-            # Still mark as processed since file is in uDRIVE
-            mark_video_processed "$video_id" "$processed_file"
+            # Do NOT mark as processed when publication fails - allow retry on next sync
+            log_debug "NOT marking video as processed to allow retry"
             
             # Cleanup temp directory
             rm -rf "$temp_output_dir" 2>/dev/null || true
             
-            return 0  # Consider it success since file is uploaded
+            return 1  # Return failure to allow retry
         fi
     else
         log_debug "process_youtube.sh failed for: $url_safe_title"
@@ -921,6 +1070,9 @@ sync_youtube_likes() {
     
     # Nettoyer les anciennes entrées de la base de données
     cleanup_processed_videos "$processed_file"
+    
+    # Vérifier et nettoyer les vidéos marquées sans événement NOSTR (dernières 9 entrées)
+    verify_processed_videos "$processed_file" "$player"
     
     # Récupérer les vidéos likées (limiter à 5 pour minimiser les requêtes)
     local liked_videos=$(get_liked_videos "$player" "$cookie_file" 5)
