@@ -271,16 +271,6 @@ check_video_exists_in_udrive() {
     return 1
 }
 
-# Fonction pour nettoyer les anciennes entrées (garder seulement les 100 dernières)
-cleanup_processed_videos() {
-    local processed_file="$1"
-    
-    if [[ -f "$processed_file" ]]; then
-        # Garder seulement les 100 dernières entrées
-        tail -n 100 "$processed_file" > "${processed_file}.tmp" && mv "${processed_file}.tmp" "$processed_file"
-        log_debug "Cleaned up processed videos database (kept last 100 entries)"
-    fi
-}
 
 # Fonction pour vérifier et nettoyer les vidéos marquées comme traitées mais sans événement NOSTR
 # Vérifie les 9 dernières entrées pour ne pas surcharger le système
@@ -1067,9 +1057,6 @@ sync_youtube_likes() {
     local processed_file="$3"
     
     log_debug "Starting YouTube likes synchronization for $player"
-    
-    # Nettoyer les anciennes entrées de la base de données
-    cleanup_processed_videos "$processed_file"
     
     # Vérifier et nettoyer les vidéos marquées sans événement NOSTR (dernières 9 entrées)
     verify_processed_videos "$processed_file" "$player"
