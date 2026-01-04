@@ -8,14 +8,24 @@
 #~ Cooperative allocation system for UPlanet surplus (3x1/3 rule)
 ################################################################################
 # Ce script gère la répartition coopérative du surplus selon le modèle légal :
-# 1. 1/3 Trésorerie (Réserves) - Liquidité et stabilité
-# 2. 1/3 R&D (G1FabLab) - Recherche et développement
-# 3. 1/3 Forêts Jardins (Actifs Réels) - Investissement régénératif
+# 1. 1/3 Trésorerie (Réserves) - Liquidité et stabilité (CASH)
+# 2. 1/3 R&D (G1FabLab) - Recherche et développement (RND)
+# 3. 1/3 Ressources Durables (Actifs Réels) - Biens communs (ASSETS)
+#
+# MODÈLE ÉCONOMIQUE (flux correct) :
+# - Redevances collectées (loyers MULTIPASS) → CAPTAIN_DEDICATED (portefeuille d'exploitation)
+# - CAPTAIN_DEDICATED → Allocation 3x1/3 (après provision fiscale IS)
+# - CASH paie les coûts opérationnels via ZEN.ECONOMY.sh :
+#   * 1x PAF → NODE (loyer matériel Armateur)
+#   * 2x PAF → CAPTAIN MULTIPASS (rétribution travail personnelle)
+#
+# Séparation claire :
+# - CAPTAIN MULTIPASS = revenus personnels du capitaine (salaire)
+# - CAPTAIN_DEDICATED = recettes d'exploitation (loyers collectés)
 #
 # Déclenchement : Allocation hebdomadaire basée sur le birthday du capitaine
-# Le capitaine reçoit sa part chaque semaine (même si faible)
 #
-# Conformité fiscale : Provision automatique TVA (20%) et IS (25%)
+# Conformité fiscale : Provision automatique IS (15%/25%)
 # via le portefeuille UPLANETNAME_IMPOT
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
@@ -66,52 +76,44 @@ fi
 
 echo "ZEN COOPERATIVE: Starting weekly allocation process (captain's birthday: $CAPTAIN_BIRTHDAY)"
 
-#######################################################################
-# Vérification du portefeuille CAPTAIN dédié (géré par ZEN.ECONOMY.sh)
-#######################################################################
-echo "🔄 Checking Captain dedicated wallet..."
 
-# Le portefeuille CAPTAIN dédié est maintenant géré par ZEN.ECONOMY.sh
-# Vérifier s'il existe (créé par ZEN.ECONOMY.sh ou UPLANET.init.sh)
-if [[ -s ~/.zen/game/uplanet.captain.dunikey ]]; then
-    CAPTAING1PUB_DEDICATED=$(cat $HOME/.zen/game/uplanet.captain.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
-    CAPTAIN_DEDICATED_COIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAING1PUB_DEDICATED} | tail -n 1)
-    CAPTAIN_DEDICATED_ZEN=$(echo "scale=1; ($CAPTAIN_DEDICATED_COIN - 1) * 10" | bc)
-    echo "Captain dedicated wallet balance: $CAPTAIN_DEDICATED_ZEN Ẑen"
-else
-    echo "Captain dedicated wallet not found (will be created by ZEN.ECONOMY.sh)"
-    CAPTAING1PUB_DEDICATED=""
-    CAPTAIN_DEDICATED_ZEN=0
+#######################################################################
+# Vérification du solde du compte CAPTAIN_DEDICATED (collecte des loyers)
+# C'est le portefeuille d'exploitation qui collecte les redevances d'usage
+# et sert de source pour la répartition coopérative 3x1/3
+#######################################################################
+
+# Créer le portefeuille CAPTAIN_DEDICATED s'il n'existe pas
+if [[ ! -s ~/.zen/game/uplanet.captain.dunikey ]]; then
+    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.captain.dunikey "${UPLANETNAME}.${CAPTAINEMAIL}" "${UPLANETNAME}.${CAPTAINEMAIL}"
+    chmod 600 ~/.zen/game/uplanet.captain.dunikey
 fi
 
-#######################################################################
-# Vérification du solde du compte MULTIPASS du Capitaine
-#######################################################################
-echo "CAPTAIN G1PUB : ${CAPTAING1PUB}"
-CAPTAINCOIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAING1PUB} | tail -n 1)
-CAPTAINZEN=$(echo "scale=1; ($CAPTAINCOIN - 1) * 10" | bc)
-echo "Captain MULTIPASS balance: $CAPTAINZEN Ẑen (solde actuel pour répartition)"
+CAPTAIN_DEDICATED_G1PUB=$(cat $HOME/.zen/game/uplanet.captain.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+echo "CAPTAIN_DEDICATED G1PUB : ${CAPTAIN_DEDICATED_G1PUB}"
+CAPTAIN_DEDICATED_COIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAIN_DEDICATED_G1PUB} | tail -n 1)
+CAPTAIN_DEDICATED_ZEN=$(echo "scale=1; ($CAPTAIN_DEDICATED_COIN - 1) * 10" | bc)
+echo "Captain DEDICATED balance: $CAPTAIN_DEDICATED_ZEN Ẑen (recettes d'exploitation pour répartition)"
 
 # Configuration de la PAF hebdomadaire
 [[ -z $PAF ]] && PAF=14  # PAF hebdomadaire par défaut
 
-echo "Captain MULTIPASS balance: $CAPTAINZEN Ẑen"
-
 # Vérification du solde minimum pour allocation
-if [[ $(echo "$CAPTAINZEN <= 0" | bc -l) -eq 1 ]]; then
-    echo "ZEN COOPERATIVE: Captain's balance is zero or negative ($CAPTAINZEN Ẑen)"
+if [[ $(echo "$CAPTAIN_DEDICATED_ZEN <= 0" | bc -l) -eq 1 ]]; then
+    echo "ZEN COOPERATIVE: Captain DEDICATED balance is zero or negative ($CAPTAIN_DEDICATED_ZEN Ẑen)"
     echo "Skipping allocation process..."
     exit 0
 fi
 
-# Note: La rémunération du capitaine (2x PAF) est maintenant gérée par ZEN.ECONOMY.sh
-# Ce script se contente de gérer la répartition coopérative du surplus restant
+# Note: La rémunération du capitaine (2x PAF) est payée par CASH vers son MULTIPASS personnel
+# Ce script gère la répartition coopérative du surplus depuis CAPTAIN_DEDICATED
+# CAPTAIN_DEDICATED collecte les loyers (redevances) depuis NOSTRCARD.refresh.sh
 
 #######################################################################
 # Vérification du solde pour allocation coopérative
 #######################################################################
-REMAINING_BALANCE=$CAPTAINZEN
-echo "Balance available for cooperative allocation: $REMAINING_BALANCE Ẑen"
+REMAINING_BALANCE=$CAPTAIN_DEDICATED_ZEN
+echo "Balance available for cooperative allocation: $REMAINING_BALANCE Ẑen (from CAPTAIN_DEDICATED)"
 
 # Si le solde est insuffisant pour l'allocation coopérative, on arrête
 if [[ $(echo "$REMAINING_BALANCE <= 0" | bc -l) -eq 1 ]]; then
@@ -191,7 +193,8 @@ echo "Tax provision (${TAX_RATE_USED}% of surplus): $TAX_PROVISION Ẑen ($TAX_P
 
 # TX Comment: UP:NetworkID:TAX:Week:Amount:Rate (Corporate tax provision)
 # Automatic IS provision (15% up to €42,500 / 25% above) on cooperative surplus
-tax_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$TAX_PROVISION_G1" "${IMPOTSG1PUB}" "UP:${UPLANETG1PUB:0:8}:TAX:${TODATE}:${TAX_PROVISION}Z:IS_${TAX_RATE_USED}pct" 2>/dev/null)
+# Source: CAPTAIN_DEDICATED (business wallet collecting rentals)
+tax_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$TAX_PROVISION_G1" "${IMPOTSG1PUB}" "UP:${UPLANETG1PUB:0:8}:TAX:${TODATE}:${TAX_PROVISION}Z:IS_${TAX_RATE_USED}pct" 2>/dev/null)
 TAX_SUCCESS=$?
 
 if [[ $TAX_SUCCESS -eq 0 ]]; then
@@ -245,7 +248,8 @@ TREASURY_G1=$(echo "scale=2; $TREASURY_AMOUNT / 10" | bc -l)
 
 # TX Comment: UP:NetworkID:COOP:Date:Amount:Allocation (1/3 Treasury reserves)
 # Cooperative liquidity and financial stability fund
-treasury_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$TREASURY_G1" "${TREASURYG1PUB}" "UP:${UPLANETG1PUB:0:8}:COOP:${TODATE}:${TREASURY_AMOUNT}Z:1/3_CASH" 2>/dev/null)
+# Source: CAPTAIN_DEDICATED (business wallet collecting rentals)
+treasury_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$TREASURY_G1" "${TREASURYG1PUB}" "UP:${UPLANETG1PUB:0:8}:COOP:${TODATE}:${TREASURY_AMOUNT}Z:1/3_CASH" 2>/dev/null)
 TREASURY_SUCCESS=$?
 
 if [[ $TREASURY_SUCCESS -eq 0 ]]; then
@@ -271,7 +275,8 @@ RND_G1=$(echo "scale=2; $RND_AMOUNT / 10" | bc -l)
 
 # TX Comment: UP:NetworkID:COOP:Date:Amount:Allocation (1/3 R&D G1FabLab)
 # Research & Development fund for technological innovation
-rnd_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$RND_G1" "${RNDG1PUB}" "UP:${UPLANETG1PUB:0:8}:COOP:${TODATE}:${RND_AMOUNT}Z:1/3_RnD" 2>/dev/null)
+# Source: CAPTAIN_DEDICATED (business wallet collecting rentals)
+rnd_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$RND_G1" "${RNDG1PUB}" "UP:${UPLANETG1PUB:0:8}:COOP:${TODATE}:${RND_AMOUNT}Z:1/3_RnD" 2>/dev/null)
 RND_SUCCESS=$?
 
 if [[ $RND_SUCCESS -eq 0 ]]; then
@@ -297,7 +302,8 @@ ASSETS_G1=$(echo "scale=2; $ASSETS_AMOUNT / 10" | bc -l)
 
 # TX Comment: UP:NetworkID:COOP:Date:Amount:Allocation (1/3 Real Assets)
 # Regenerative investment fund (Forest Gardens, tangible assets)
-assets_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" "$ASSETS_G1" "${ASSETSG1PUB}" "UP:${UPLANETG1PUB:0:8}:COOP:${TODATE}:${ASSETS_AMOUNT}Z:1/3_ASSETS" 2>/dev/null)
+# Source: CAPTAIN_DEDICATED (business wallet collecting rentals)
+assets_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$ASSETS_G1" "${ASSETSG1PUB}" "UP:${UPLANETG1PUB:0:8}:COOP:${TODATE}:${ASSETS_AMOUNT}Z:1/3_ASSETS" 2>/dev/null)
 ASSETS_SUCCESS=$?
 
 if [[ $ASSETS_SUCCESS -eq 0 ]]; then
@@ -310,9 +316,9 @@ fi
 # Rapport d'allocation avec conformité fiscale
 #######################################################################
 echo "============================================ COOPERATIVE ALLOCATION SUMMARY"
-echo "📊 Initial Captain MULTIPASS balance: $(echo "scale=2; $CAPTAINZEN + $TAX_PROVISION" | bc -l) Ẑen"
-echo "💡 Note: Captain remuneration (2x PAF) is handled by ZEN.ECONOMY.sh"
-echo "📊 Balance for cooperative allocation: $REMAINING_BALANCE Ẑen"
+echo "📊 CAPTAIN_DEDICATED balance (recettes loyers): $CAPTAIN_DEDICATED_ZEN Ẑen"
+echo "💡 Note: CASH pays operational costs (1x PAF NODE + 2x PAF CAPTAIN MULTIPASS) via ZEN.ECONOMY.sh"
+echo "📊 Balance for cooperative allocation: $REMAINING_BALANCE Ẑen (from CAPTAIN_DEDICATED)"
 echo "💰 Tax provision (${TAX_RATE_USED}%): $TAX_PROVISION Ẑen"
 echo "📈 Net surplus allocated: $NET_SURPLUS Ẑen"
 echo "🏦 Treasury (1/3): $TREASURY_AMOUNT Ẑen"
@@ -335,7 +341,7 @@ if [[ ! -s "$TEMPLATE_FILE" ]]; then
     echo "Skipping HTML report generation..."
 else
     # Calculate values for template substitution
-    INITIAL_BALANCE=$(echo "scale=2; $CAPTAINZEN + $TAX_PROVISION" | bc -l)
+    INITIAL_BALANCE=$CAPTAIN_DEDICATED_ZEN
     REPORT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
     UPLANET_ID="${UPLANETG1PUB:0:8}"
 
@@ -343,13 +349,8 @@ else
     # Precision: 0.1Ẑ (since Ğ1 has 2 decimal places)
     echo "🔄 Querying wallet balances for report..."
 
-    # Captain Dedicated wallet balance
-    if [[ -z "$CAPTAING1PUB_DEDICATED" ]]; then
-        CAPTAIN_DEDICATED_BALANCE_ZEN="N/A"
-    else
-        CAPTAIN_DEDICATED_COIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAING1PUB_DEDICATED} | tail -n 1)
-        CAPTAIN_DEDICATED_BALANCE_ZEN=$(echo "scale=1; ($CAPTAIN_DEDICATED_COIN - 1) * 10" | bc)
-    fi
+    # Captain Dedicated wallet balance (already queried at start)
+    CAPTAIN_DEDICATED_BALANCE_ZEN=$CAPTAIN_DEDICATED_ZEN
 
     # Treasury wallet balance
     TREASURY_COIN=$(${MY_PATH}/../tools/G1check.sh ${TREASURYG1PUB} | tail -n 1)
@@ -388,7 +389,7 @@ else
         -e "s~_RND_G1_~${RND_G1}~g" \
         -e "s~_ASSETS_AMOUNT_~${ASSETS_AMOUNT}~g" \
         -e "s~_ASSETS_G1_~${ASSETS_G1}~g" \
-        -e "s~_CAPTAIN_DEDICATED_PUB_~${CAPTAING1PUB_DEDICATED:-Not created yet}~g" \
+        -e "s~_CAPTAIN_DEDICATED_PUB_~${CAPTAIN_DEDICATED_G1PUB}~g" \
         -e "s~_CAPTAIN_DEDICATED_BALANCE_~${CAPTAIN_DEDICATED_BALANCE_ZEN}~g" \
         -e "s~_TREASURY_PUB_~${TREASURYG1PUB}~g" \
         -e "s~_TREASURY_BALANCE_~${TREASURY_BALANCE_ZEN}~g" \

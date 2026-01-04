@@ -419,8 +419,11 @@
                         <strong>Le système d'allocation coopérative UPlanet a échoué en raison de fonds insuffisants.</strong>
                     </p>
                     <p>
-                        Le processus d'allocation coopérative hebdomadaire n'a pas pu se terminer car le portefeuille MULTIPASS du Capitaine 
-                        n'a pas assez de solde pour couvrir les allocations requises.
+                        Le processus d'allocation coopérative hebdomadaire n'a pas pu se terminer car le portefeuille <strong>CASH (Trésorerie)</strong> 
+                        n'a pas assez de solde pour couvrir les coûts opérationnels (PAF + Rémunération Capitaine).
+                    </p>
+                    <p style="margin-top: 10px; font-size: 0.95em; color: #856404;">
+                        <strong>Cascade de secours activée :</strong> Le système a tenté de transférer des fonds depuis ASSETS puis RnD vers CASH avant d'échouer.
                     </p>
                 </div>
                 
@@ -443,9 +446,9 @@
                     
                     <div style="margin-top: 20px;">
                         <div class="info-item" style="background: #fff3cd; border: 2px solid #ffc107;">
-                            <strong>Solde MULTIPASS Capitaine</strong>
-                            <span class="amount">_CAPTAIN_BALANCE_ Ẑen</span>
-                            <div class="amount-label">Insuffisant pour les allocations requises</div>
+                            <strong>Solde CASH (Trésorerie)</strong>
+                            <span class="amount">_CASH_BALANCE_ Ẑen</span>
+                            <div class="amount-label">Insuffisant pour les coûts opérationnels</div>
                         </div>
                     </div>
                 </div>
@@ -461,10 +464,10 @@
                 <div class="note-box">
                     <p><strong>💡 Ce que cela signifie :</strong></p>
                     <ul style="margin: 10px 0 0 20px; padding-left: 0;">
-                        <li>Le système d'allocation du surplus coopératif s'est arrêté</li>
-                        <li>Aucun fonds n'a été alloué à la Trésorerie, la R&D ou les Actifs</li>
-                        <li>Les provisions fiscales n'ont pas pu être effectuées</li>
-                        <li>Le système nécessite une action immédiate pour restaurer la santé financière</li>
+                        <li>Le paiement du NODE (1xPAF = _PAF_ Ẑ) a échoué → l'infrastructure ne peut plus fonctionner</li>
+                        <li>Le paiement du Capitaine (2xPAF = _CAPTAIN_REMUNERATION_ Ẑ) a échoué</li>
+                        <li>Les portefeuilles ASSETS et RnD ont été vidés dans la cascade de secours</li>
+                        <li>Le système nécessite une injection de fonds immédiate via OpenCollective</li>
                     </ul>
                 </div>
                 
@@ -489,7 +492,7 @@
                         + Provisions fiscales : _TAX_RATE_USED_% du surplus (seuil : _IS_THRESHOLD_ €)<br>
                         + Allocations coopératives : _TOTAL_ALLOCATIONS_ Ẑ/semaine<br>
                         <strong>Total nécessaire : _TOTAL_NEEDED_ Ẑ/semaine minimum</strong><br><br>
-                        Solde actuel : _CAPTAIN_BALANCE_ Ẑen<br>
+                        Solde actuel : _CASH_BALANCE_ Ẑen<br>
                         <strong>Déficit : _DEFICIT_ Ẑen</strong><br><br>
                         <strong>Configuration Fiscale :</strong><br>
                         Taux TVA : _TVA_RATE_% (référence uniquement, provisionné ailleurs)<br>
@@ -520,17 +523,18 @@
                         </div>
                         
                         <div class="recovery-card">
-                            <h3>2. Utiliser la Trésorerie Coopérative</h3>
-                            <p><strong>Objectif :</strong> Tirer parti des réserves de trésorerie accumulées</p>
+                            <h3>2. Cascade de Faillite (Automatique)</h3>
+                            <p><strong>État :</strong> Le système a déjà tenté les transferts de secours</p>
                             <ul class="action-list">
-                                <li>Vérifier le solde du portefeuille UPLANETNAME_CASH</li>
-                                <li>La trésorerie peut couvrir le PAF si le MULTIPASS du Capitaine est insuffisant</li>
-                                <li>Mécanisme de solidarité automatique dans ZEN.ECONOMY.sh</li>
-                                <li>C'est temporaire - il faut restaurer les flux de revenus</li>
+                                <li><strong>Étape 1 :</strong> ASSETS → CASH (forêts-jardins liquidées)</li>
+                                <li><strong>Étape 2 :</strong> RnD → CASH (budget R&D épuisé)</li>
+                                <li><strong>Étape 3 :</strong> Échec NODE → Faillite déclarée</li>
+                                <li>Valeur résiduelle : UPLANETNAME_CAPITAL (_CAPITAL_BALANCE_ Ẑ)</li>
                             </ul>
                             <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
-                                <strong>Note :</strong> Les réserves de trésorerie sont pour les urgences.<br>
-                                La solution à long terme nécessite une croissance des revenus.
+                                <strong>Valeur Machine :</strong> _MACHINE_VALUE_ Ẑ initial<br>
+                                <strong>Amortissement :</strong> _DEPRECIATION_PERCENT_% (semaine _WEEKS_PASSED_/_DEPRECIATION_WEEKS_)<br>
+                                <strong>Valeur Résiduelle :</strong> _CAPITAL_BALANCE_ Ẑ récupérable
                             </div>
                         </div>
                         
@@ -611,12 +615,14 @@
                 <div class="note-box" style="background: #f8d7da; border-left-color: #dc3545;">
                     <p style="color: #721c24;"><strong>🚨 Action Requise :</strong></p>
                     <p style="color: #721c24; margin-top: 10px;">
-                        Une intervention financière immédiate est requise. Le système d'allocation coopérative restera suspendu 
-                        jusqu'à ce que des fonds suffisants soient disponibles dans le portefeuille MULTIPASS du Capitaine.
+                        Une intervention financière immédiate est requise. Le NODE ne peut plus être payé, l'infrastructure va s'arrêter.
+                        Rechargez le portefeuille <strong>CASH</strong> via OpenCollective pour relancer le système.
                     </p>
                     <p style="color: #721c24; margin-top: 10px;">
-                        <strong>Prochaines Étapes :</strong> Examinez le plan de redressement ci-dessus et choisissez les actions les plus appropriées à votre situation. 
-                        Le système réessaiera automatiquement les allocations une fois que des fonds suffisants seront disponibles.
+                        <strong>Prochaines Étapes :</strong> 
+                        1) Convertir des € en Ẑen via OpenCollective → UPLANETNAME_G1 → CASH<br>
+                        2) Attirer de nouveaux locataires (MULTIPASS/ZEN Cards) → CAPTAIN_DEDICATED → CASH<br>
+                        Le système réessaiera automatiquement les paiements une fois CASH rechargé.
                     </p>
                 </div>
             </div>
@@ -631,8 +637,11 @@
                         <strong>The UPlanet cooperative allocation system has failed due to insufficient funds.</strong>
                     </p>
                     <p>
-                        The weekly cooperative allocation process could not complete because the Captain MULTIPASS wallet 
-                        does not have enough balance to cover the required allocations.
+                        The weekly cooperative allocation process could not complete because the <strong>CASH (Treasury)</strong> wallet 
+                        does not have enough balance to cover operational costs (PAF + Captain Remuneration).
+                    </p>
+                    <p style="margin-top: 10px; font-size: 0.95em; color: #856404;">
+                        <strong>Rescue cascade activated:</strong> The system attempted to transfer funds from ASSETS then RnD to CASH before failing.
                     </p>
                 </div>
                 
@@ -655,8 +664,8 @@
                     
                     <div style="margin-top: 20px;">
                         <div class="info-item" style="background: #fff3cd; border: 2px solid #ffc107;">
-                            <strong>Captain MULTIPASS Balance</strong>
-                            <span class="amount">_CAPTAIN_BALANCE_ Ẑen</span>
+                            <strong>CASH (Treasury) Balance</strong>
+                            <span class="amount">_CASH_BALANCE_ Ẑen</span>
                             <div class="amount-label">Insufficient for required allocations</div>
                         </div>
                     </div>
@@ -673,10 +682,10 @@
                 <div class="note-box">
                     <p><strong>💡 What This Means:</strong></p>
                     <ul style="margin: 10px 0 0 20px; padding-left: 0;">
-                        <li>The cooperative surplus allocation system has stopped</li>
-                        <li>No funds were allocated to Treasury, R&D, or Assets</li>
-                        <li>Tax provisions could not be made</li>
-                        <li>The system requires immediate action to restore financial health</li>
+                        <li>NODE payment (1xPAF = _PAF_ Ẑ) failed → infrastructure cannot operate</li>
+                        <li>Captain payment (2xPAF = _CAPTAIN_REMUNERATION_ Ẑ) failed</li>
+                        <li>ASSETS and RnD wallets were drained in the rescue cascade</li>
+                        <li>The system requires immediate fund injection via OpenCollective</li>
                     </ul>
                 </div>
                 
@@ -701,7 +710,7 @@
                         + Tax provisions: _TAX_RATE_USED_% of surplus (threshold: _IS_THRESHOLD_ €)<br>
                         + Cooperative allocations: _TOTAL_ALLOCATIONS_ Ẑ/week<br>
                         <strong>Total needed: _TOTAL_NEEDED_ Ẑ/week minimum</strong><br><br>
-                        Current balance: _CAPTAIN_BALANCE_ Ẑen<br>
+                        Current balance: _CASH_BALANCE_ Ẑen<br>
                         <strong>Deficit: _DEFICIT_ Ẑen</strong><br><br>
                         <strong>Tax Configuration:</strong><br>
                         VAT Rate: _TVA_RATE_% (reference only, provisioned elsewhere)<br>
@@ -732,17 +741,18 @@
                         </div>
                         
                         <div class="recovery-card">
-                            <h3>2. Use Cooperative Treasury</h3>
-                            <p><strong>Goal:</strong> Leverage accumulated treasury reserves</p>
+                            <h3>2. Bankruptcy Cascade (Automatic)</h3>
+                            <p><strong>Status:</strong> The system already attempted rescue transfers</p>
                             <ul class="action-list">
-                                <li>Check UPLANETNAME_CASH wallet balance</li>
-                                <li>Treasury can cover PAF if Captain MULTIPASS insufficient</li>
-                                <li>Automatic solidarity mechanism in ZEN.ECONOMY.sh</li>
-                                <li>This is temporary - must restore revenue streams</li>
+                                <li><strong>Step 1:</strong> ASSETS → CASH (forest-gardens liquidated)</li>
+                                <li><strong>Step 2:</strong> RnD → CASH (R&D budget depleted)</li>
+                                <li><strong>Step 3:</strong> NODE failure → Bankruptcy declared</li>
+                                <li>Residual value: UPLANETNAME_CAPITAL (_CAPITAL_BALANCE_ Ẑ)</li>
                             </ul>
                             <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
-                                <strong>Note:</strong> Treasury reserves are for emergencies.<br>
-                                Long-term solution requires revenue growth.
+                                <strong>Machine Value:</strong> _MACHINE_VALUE_ Ẑ initial<br>
+                                <strong>Depreciation:</strong> _DEPRECIATION_PERCENT_% (week _WEEKS_PASSED_/_DEPRECIATION_WEEKS_)<br>
+                                <strong>Residual Value:</strong> _CAPITAL_BALANCE_ Ẑ recoverable
                             </div>
                         </div>
                         
@@ -823,12 +833,14 @@
                 <div class="note-box" style="background: #f8d7da; border-left-color: #dc3545;">
                     <p style="color: #721c24;"><strong>🚨 Action Required:</strong></p>
                     <p style="color: #721c24; margin-top: 10px;">
-                        Immediate financial intervention is required. The cooperative allocation system will remain suspended 
-                        until sufficient funds are available in the Captain MULTIPASS wallet.
+                        Immediate financial intervention is required. The NODE cannot be paid, infrastructure will stop.
+                        Recharge the <strong>CASH</strong> wallet via OpenCollective to restart the system.
                     </p>
                     <p style="color: #721c24; margin-top: 10px;">
-                        <strong>Next Steps:</strong> Review the recovery plan above and choose the most appropriate actions for your situation. 
-                        The system will automatically retry allocations once sufficient funds are available.
+                        <strong>Next Steps:</strong> 
+                        1) Convert € to Ẑen via OpenCollective → UPLANETNAME_G1 → CASH<br>
+                        2) Attract new tenants (MULTIPASS/ZEN Cards) → CAPTAIN_DEDICATED → CASH<br>
+                        The system will automatically retry payments once CASH is recharged.
                     </p>
                 </div>
             </div>
@@ -843,8 +855,11 @@
                         <strong>El sistema de asignación cooperativa UPlanet ha fallado debido a fondos insuficientes.</strong>
                     </p>
                     <p>
-                        El proceso de asignación cooperativa semanal no pudo completarse porque la cartera MULTIPASS del Capitán 
-                        no tiene suficiente saldo para cubrir las asignaciones requeridas.
+                        El proceso de asignación cooperativa semanal no pudo completarse porque la cartera <strong>CASH (Tesorería)</strong> 
+                        no tiene suficiente saldo para cubrir los costos operativos (PAF + Remuneración Capitán).
+                    </p>
+                    <p style="margin-top: 10px; font-size: 0.95em; color: #856404;">
+                        <strong>Cascada de rescate activada:</strong> El sistema intentó transferir fondos desde ASSETS luego RnD a CASH antes de fallar.
                     </p>
                 </div>
                 
@@ -867,8 +882,8 @@
                     
                     <div style="margin-top: 20px;">
                         <div class="info-item" style="background: #fff3cd; border: 2px solid #ffc107;">
-                            <strong>Saldo MULTIPASS Capitán</strong>
-                            <span class="amount">_CAPTAIN_BALANCE_ Ẑen</span>
+                            <strong>Saldo CASH (Tesorería)</strong>
+                            <span class="amount">_CASH_BALANCE_ Ẑen</span>
                             <div class="amount-label">Insuficiente para las asignaciones requeridas</div>
                         </div>
                     </div>
@@ -885,10 +900,10 @@
                 <div class="note-box">
                     <p><strong>💡 Qué Significa Esto:</strong></p>
                     <ul style="margin: 10px 0 0 20px; padding-left: 0;">
-                        <li>El sistema de asignación de excedente cooperativo se ha detenido</li>
-                        <li>No se asignaron fondos a Tesorería, I+D o Activos</li>
-                        <li>No se pudieron hacer provisiones fiscales</li>
-                        <li>El sistema requiere acción inmediata para restaurar la salud financiera</li>
+                        <li>Pago del NODE (1xPAF = _PAF_ Ẑ) falló → la infraestructura no puede funcionar</li>
+                        <li>Pago del Capitán (2xPAF = _CAPTAIN_REMUNERATION_ Ẑ) falló</li>
+                        <li>Las carteras ASSETS y RnD fueron vaciadas en la cascada de rescate</li>
+                        <li>El sistema requiere inyección inmediata de fondos vía OpenCollective</li>
                     </ul>
                 </div>
                 
@@ -913,7 +928,7 @@
                         + Provisiones fiscales: _TAX_RATE_USED_% del excedente (umbral: _IS_THRESHOLD_ €)<br>
                         + Asignaciones cooperativas: _TOTAL_ALLOCATIONS_ Ẑ/semana<br>
                         <strong>Total necesario: _TOTAL_NEEDED_ Ẑ/semana mínimo</strong><br><br>
-                        Saldo actual: _CAPTAIN_BALANCE_ Ẑen<br>
+                        Saldo actual: _CASH_BALANCE_ Ẑen<br>
                         <strong>Déficit: _DEFICIT_ Ẑen</strong><br><br>
                         <strong>Configuración Fiscal :</strong><br>
                         Tasa IVA: _TVA_RATE_% (solo referencia, provisionado en otro lugar)<br>
@@ -944,17 +959,18 @@
                         </div>
                         
                         <div class="recovery-card">
-                            <h3>2. Usar la Tesorería Cooperativa</h3>
-                            <p><strong>Objetivo :</strong> Aprovechar las reservas de tesorería acumuladas</p>
+                            <h3>2. Cascada de Quiebra (Automática)</h3>
+                            <p><strong>Estado :</strong> El sistema ya intentó las transferencias de rescate</p>
                             <ul class="action-list">
-                                <li>Verificar el saldo de la cartera UPLANETNAME_CASH</li>
-                                <li>La tesorería puede cubrir el PAF si el MULTIPASS del Capitán es insuficiente</li>
-                                <li>Mecanismo de solidaridad automático en ZEN.ECONOMY.sh</li>
-                                <li>Esto es temporal - debe restaurarse los flujos de ingresos</li>
+                                <li><strong>Paso 1 :</strong> ASSETS → CASH (bosques-jardines liquidados)</li>
+                                <li><strong>Paso 2 :</strong> RnD → CASH (presupuesto I+D agotado)</li>
+                                <li><strong>Paso 3 :</strong> Fallo NODE → Quiebra declarada</li>
+                                <li>Valor residual: UPLANETNAME_CAPITAL (_CAPITAL_BALANCE_ Ẑ)</li>
                             </ul>
                             <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
-                                <strong>Nota :</strong> Las reservas de tesorería son para emergencias.<br>
-                                La solución a largo plazo requiere crecimiento de ingresos.
+                                <strong>Valor Máquina :</strong> _MACHINE_VALUE_ Ẑ inicial<br>
+                                <strong>Depreciación :</strong> _DEPRECIATION_PERCENT_% (semana _WEEKS_PASSED_/_DEPRECIATION_WEEKS_)<br>
+                                <strong>Valor Residual :</strong> _CAPITAL_BALANCE_ Ẑ recuperable
                             </div>
                         </div>
                         
@@ -1035,12 +1051,14 @@
                 <div class="note-box" style="background: #f8d7da; border-left-color: #dc3545;">
                     <p style="color: #721c24;"><strong>🚨 Acción Requerida :</strong></p>
                     <p style="color: #721c24; margin-top: 10px;">
-                        Se requiere intervención financiera inmediata. El sistema de asignación cooperativa permanecerá suspendido 
-                        hasta que haya fondos suficientes disponibles en la cartera MULTIPASS del Capitán.
+                        Se requiere intervención financiera inmediata. El NODE no puede ser pagado, la infraestructura se detendrá.
+                        Recargue la cartera <strong>CASH</strong> vía OpenCollective para reiniciar el sistema.
                     </p>
                     <p style="color: #721c24; margin-top: 10px;">
-                        <strong>Próximos Pasos :</strong> Revise el plan de recuperación anterior y elija las acciones más apropiadas para su situación. 
-                        El sistema reintentará automáticamente las asignaciones una vez que haya fondos suficientes disponibles.
+                        <strong>Próximos Pasos :</strong> 
+                        1) Convertir € a Ẑen vía OpenCollective → UPLANETNAME_G1 → CASH<br>
+                        2) Atraer nuevos inquilinos (MULTIPASS/ZEN Cards) → CAPTAIN_DEDICATED → CASH<br>
+                        El sistema reintentará automáticamente los pagos una vez que CASH esté recargado.
                     </p>
                 </div>
             </div>

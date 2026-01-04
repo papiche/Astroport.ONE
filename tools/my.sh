@@ -658,6 +658,23 @@ else
     echo ${UPLANETNAME_INTRUSION} > $HOME/.zen/tmp/UPLANETNAME_INTRUSION
 fi
 
+# UPLANETNAME_CAPITAL -- holds infrastructure capital value (machine depreciation over 3 years)
+# Compte 21 - Immobilisations corporelles. Weekly depreciation flows to CASH.
+[[ ! -s $HOME/.zen/game/uplanet.CAPITAL.dunikey ]] \
+    && $HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.CAPITAL.dunikey "${UPLANETNAME}.CAPITAL" "${UPLANETNAME}.CAPITAL" \
+    && UPLANETNAME_CAPITAL=$(cat $HOME/.zen/game/uplanet.CAPITAL.dunikey | grep "pub" | cut -d " " -f 2) \
+    && echo ${UPLANETNAME_CAPITAL} > $HOME/.zen/tmp/UPLANETNAME_CAPITAL
+
+# Cache optimization: read from cache first
+if [[ -f "$HOME/.zen/tmp/UPLANETNAME_CAPITAL" ]]; then
+    UPLANETNAME_CAPITAL=$(cat $HOME/.zen/tmp/UPLANETNAME_CAPITAL)
+else
+    if [[ -s $HOME/.zen/game/uplanet.CAPITAL.dunikey ]]; then
+        UPLANETNAME_CAPITAL=$(cat $HOME/.zen/game/uplanet.CAPITAL.dunikey | grep "pub" | cut -d " " -f 2)
+        echo ${UPLANETNAME_CAPITAL} > $HOME/.zen/tmp/UPLANETNAME_CAPITAL
+    fi
+fi
+
 # UPLANETNAME_IMPOT
 [[ ! -s $HOME/.zen/game/uplanet.IMPOT.dunikey ]] \
     && $HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.IMPOT.dunikey "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT" \

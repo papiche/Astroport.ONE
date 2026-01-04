@@ -26,8 +26,25 @@ graph TD;
           G1W -- "Collatéralise" --> UW;
           OC -- "Flux 'Locataire'" --> UW;
           UW -- "Crédite Ẑen de service" --> ZenCard["Wallet Utilisateur<br/><b>ZenCard</b>"];
-          Script["🤖 Script<br/>ZEN.ECONOMY.sh"] -- "Débite le loyer en Ẑen" --> ZenCard;
-          Script -- "Distribue les PAFs locaux" --> InfraWallets["Wallets Capitaine/Armateur Locaux"];
+          
+          %% CASH paie les coûts opérationnels
+          CASH["💰 CASH<br/><b>UPLANETNAME_TREASURY</b><br/>(Réserve de Fonctionnement)"];
+          CASH -- "1x PAF (14Ẑ)" --> NODE["Wallet Armateur<br/><b>NODE</b><br/>(Revenus locatifs)"];
+          CASH -- "2x PAF (28Ẑ)" --> Captain_MP["Wallet Capitaine<br/><b>MULTIPASS</b><br/>(Salaire personnel)"];
+          
+          %% Capital Machine (Immobilisations - Compte 21)
+          CAPITAL["🏭 Wallet Capital Machine<br/><b>UPLANETNAME_CAPITAL</b><br/>(Immobilisations - Compte 21)"];
+          CAPITAL -- "Amortissement hebdo<br/>(~3.2Ẑ sur 3 ans)" --> CASH;
+          
+          %% Collecte des loyers vers CAPTAIN_DEDICATED
+          ZenCard -- "Paiement Loyer HT" --> Captain_DED["Wallet Capitaine<br/><b>CAPTAIN_DEDICATED</b><br/>(Recettes exploitation)"];
+          ZenCard -- "TVA (20%)" --> IMPOT["Wallet Fiscal<br/><b>UPLANETNAME_IMPOT</b>"];
+          
+          %% Allocation coopérative depuis CAPTAIN_DEDICATED
+          Captain_DED -- "IS (15-25%)" --> IMPOT;
+          Captain_DED -- "1/3 Allocation" --> CASH;
+          Captain_DED -- "1/3 Allocation" --> RND["Wallet R&D<br/><b>UPLANETNAME_RND</b>"];
+          Captain_DED -- "1/3 Allocation" --> ASSETS["Wallet Actifs<br/><b>UPLANETNAME_ASSETS</b>"];
       end
       
       subgraph "Organe n°3 : Le Capital Social Local";
@@ -36,6 +53,5 @@ graph TD;
           G1W -- "Collatéralise" --> SW;
           OC -- "Flux 'Sociétaire Local'" --> SW;
           SW -- "Émet les parts Ẑen" --> ZeroCard["Wallet Sociétaire<br/><b>ZEROCARD</b><br/>(du UPassport)"];
-          SW -- "Envoie marqueur<br/>de non-paiement" --> Script;
       end
     end

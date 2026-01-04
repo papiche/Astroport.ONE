@@ -181,6 +181,12 @@ UPLANETNAME_ASSETS=$(cat ~/.zen/game/uplanet.ASSETS.dunikey 2>/dev/null | grep "
     && chmod 600 ~/.zen/game/uplanet.IMPOT.dunikey
 UPLANETNAME_IMPOT=$(cat ~/.zen/game/uplanet.IMPOT.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
 
+# UPLANETNAME_CAPITAL wallet (Immobilisations - Compte 21)
+[[ ! -s ~/.zen/game/uplanet.CAPITAL.dunikey ]] \
+    && ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/uplanet.CAPITAL.dunikey "${UPLANETNAME}.CAPITAL" "${UPLANETNAME}.CAPITAL" \
+    && chmod 600 ~/.zen/game/uplanet.CAPITAL.dunikey
+UPLANETNAME_CAPITAL=$(cat ~/.zen/game/uplanet.CAPITAL.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+
 ###############################################
 #### UPLANET GEOKEYS_refresh - not for UPlanet ORIGIN
 if [[ $UPLANETNAME != "EnfinLibre" ]]; then
@@ -591,6 +597,7 @@ NODE12345="{
     \"UPLANETNAME_RND\" : \"${UPLANETNAME_RND}\",
     \"UPLANETNAME_ASSETS\" : \"${UPLANETNAME_ASSETS}\",
     \"UPLANETNAME_IMPOT\" : \"${UPLANETNAME_IMPOT}\",
+    \"UPLANETNAME_CAPITAL\" : \"${UPLANETNAME_CAPITAL}\",
     \"UPLANETNAME_INTRUSION\" : \"${UPLANETNAME_INTRUSION}\",
     \"UPLANETG1PUB\" : \"${UPLANETG1PUB}\",
     \"UPLANETG1\" : \"${UPLANETCOINS}\",

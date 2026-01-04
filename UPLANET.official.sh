@@ -641,7 +641,10 @@ process_locataire() {
 }
 
 ################################################################################
-# Fonction pour apport capital infrastructure (pas de 3x1/3)
+# Fonction pour apport capital infrastructure (immobilisations - Compte 21)
+# Le capital va vers UPLANETNAME_CAPITAL (pas NODE) pour séparation comptable :
+# - UPLANETNAME_CAPITAL : Immobilisations corporelles (valeur machine, amortissement)
+# - NODE : Revenus locatifs Armateur (PAF, burn vers €)
 ################################################################################
 process_infrastructure() {
     local email="$1"
@@ -657,7 +660,8 @@ process_infrastructure() {
     local montant_g1=$(zen_to_g1 "$montant_euros")
     
     echo -e "${BLUE}⚙️ Traitement APPORT CAPITAL INFRASTRUCTURE pour: ${email}${NC}"
-    echo -e "${CYAN}💰 Montant: ${montant_euros} Ẑen = ${montant_g1} Ğ1 - DIRECT vers NODE${NC}"
+    echo -e "${CYAN}💰 Montant: ${montant_euros} Ẑen = ${montant_g1} Ğ1 → UPLANETNAME_CAPITAL${NC}"
+    echo -e "${YELLOW}📊 Amortissement linéaire sur 3 ans (156 semaines)${NC}"
     
     # Vérifier que les portefeuilles existent
     if [[ ! -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then
@@ -686,28 +690,25 @@ process_infrastructure() {
         return 1
     fi
     
-    # Récupérer la clé NODE
-    local node_pubkey=""
-    if [[ -f "$HOME/.zen/game/secret.NODE.dunikey" ]]; then
-        # Station avec niveau Y (Ylevel.sh) - utilise le fichier secret.NODE.dunikey
-        node_pubkey=$(cat "$HOME/.zen/game/secret.NODE.dunikey" | grep "pub:" | cut -d ' ' -f 2)
-        echo -e "${GREEN}✅ NODE trouvé (niveau Y): ${node_pubkey:0:8}...${NC}"
+    # Récupérer/créer le portefeuille UPLANETNAME_CAPITAL
+    local capital_pubkey=""
+    if [[ -f "$HOME/.zen/game/uplanet.CAPITAL.dunikey" ]]; then
+        capital_pubkey=$(cat "$HOME/.zen/game/uplanet.CAPITAL.dunikey" | grep "pub:" | cut -d ' ' -f 2)
+        echo -e "${GREEN}✅ UPLANETNAME_CAPITAL trouvé: ${capital_pubkey:0:8}...${NC}"
     else
-        # Station sans niveau Y - utilise la conversion G1 de IPFSNODEID
-        if [[ -n "$IPFSNODEID" ]]; then
-            node_pubkey=$(${MY_PATH}/../tools/ipfs_to_g1.py "$IPFSNODEID")
-            echo -e "${GREEN}✅ NODE généré (conversion IPFS): ${node_pubkey:0:8}...${NC}"
-        else
-            echo -e "${RED}❌ Impossible de déterminer la clé NODE${NC}"
-            echo -e "${CYAN}💡 IPFSNODEID non disponible pour la conversion G1${NC}"
-            return 1
-        fi
+        # Create CAPITAL wallet if it doesn't exist
+        echo -e "${YELLOW}📦 Création du portefeuille UPLANETNAME_CAPITAL...${NC}"
+        "${MY_PATH}/tools/keygen" -t duniter -o "$HOME/.zen/game/uplanet.CAPITAL.dunikey" "${UPLANETNAME}.CAPITAL" "${UPLANETNAME}.CAPITAL"
+        chmod 600 "$HOME/.zen/game/uplanet.CAPITAL.dunikey"
+        capital_pubkey=$(cat "$HOME/.zen/game/uplanet.CAPITAL.dunikey" | grep "pub:" | cut -d ' ' -f 2)
+        echo ${capital_pubkey} > $HOME/.zen/tmp/UPLANETNAME_CAPITAL
+        echo -e "${GREEN}✅ UPLANETNAME_CAPITAL créé: ${capital_pubkey:0:8}...${NC}"
     fi
     
     echo -e "${YELLOW}🔑 Portefeuilles identifiés:${NC}"
     echo -e "  UPLANETNAME_G1: ${g1_pubkey:0:8}..."
     echo -e "  ZEN Card ${email}: ${zencard_pubkey:0:8}..."
-    echo -e "  NODE (Armateur): ${node_pubkey:0:8}..."
+    echo -e "  UPLANETNAME_CAPITAL (Immobilisations): ${capital_pubkey:0:8}..."
     
     # Vérifier qu'il n'y a pas de transactions en cours avant de commencer
     echo -e "${BLUE}🔍 Vérification préalable des transactions en cours...${NC}"
@@ -717,27 +718,60 @@ process_infrastructure() {
         return 1
     fi
     
-    # Étape 1: UPLANETNAME_G1 -> ZEN Card
+    # Étape 1: UPLANETNAME_G1 -> ZEN Card (traçabilité de l'apporteur)
     echo -e "${BLUE}📤 Étape 1: Transfert UPLANETNAME_G1 → ZEN Card ${email}${NC}"
     if ! transfer_and_verify "$HOME/.zen/game/uplanet.G1.dunikey" "$zencard_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:CAPITAL:${email}:${IPFSNODEID}" "$email" "INFRASTRUCTURE" "Étape 1: G1→ZENCARD"; then
         echo -e "${RED}❌ Échec de l'étape 1${NC}"
         return 1
     fi
     
-    # Étape 2: ZEN Card -> NODE (DIRECT, pas de 3x1/3)
-    echo -e "${BLUE}📤 Étape 2: Transfert ZEN Card → NODE (APPORT CAPITAL)${NC}"
-    if ! transfer_and_verify "$zencard_dunikey" "$node_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:CAPITAL:${email}:${IPFSNODEID}" "$email" "INFRASTRUCTURE" "Étape 2: ZENCARD→NODE"; then
+    # Étape 2: ZEN Card -> UPLANETNAME_CAPITAL (Immobilisations corporelles)
+    echo -e "${BLUE}📤 Étape 2: Transfert ZEN Card → UPLANETNAME_CAPITAL (Immobilisations)${NC}"
+    if ! transfer_and_verify "$zencard_dunikey" "$capital_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:CAPITAL:${email}:${IPFSNODEID}" "$email" "INFRASTRUCTURE" "Étape 2: ZENCARD→CAPITAL"; then
         echo -e "${RED}❌ Échec de l'étape 2${NC}"
         return 1
     fi
     
+    # Enregistrer la date de début d'amortissement et la valeur dans .env
+    local env_file="$HOME/.zen/game/.env"
+    local capital_date=$(date +%Y%m%d%H%M%S)
+    
+    if [[ -f "$env_file" ]]; then
+        # Update existing values or add new ones
+        if grep -q "^MACHINE_VALUE=" "$env_file"; then
+            sed -i "s/^MACHINE_VALUE=.*/MACHINE_VALUE=$montant_euros/" "$env_file"
+        else
+            echo "MACHINE_VALUE=$montant_euros" >> "$env_file"
+        fi
+        if grep -q "^CAPITAL_DATE=" "$env_file"; then
+            sed -i "s/^CAPITAL_DATE=.*/CAPITAL_DATE=$capital_date/" "$env_file"
+        else
+            echo "CAPITAL_DATE=$capital_date" >> "$env_file"
+        fi
+        if grep -q "^DEPRECIATION_WEEKS=" "$env_file"; then
+            sed -i "s/^DEPRECIATION_WEEKS=.*/DEPRECIATION_WEEKS=156/" "$env_file"
+        else
+            echo "DEPRECIATION_WEEKS=156" >> "$env_file"
+        fi
+    else
+        # Create .env with capital info
+        echo "## ASTROPORT MACHINE CAPITAL CONFIGURATION" >> "$env_file"
+        echo "MACHINE_VALUE=$montant_euros" >> "$env_file"
+        echo "CAPITAL_DATE=$capital_date" >> "$env_file"
+        echo "DEPRECIATION_WEEKS=156" >> "$env_file"
+    fi
+    
+    # Calculate weekly depreciation for display
+    local weekly_depreciation=$(echo "scale=2; $montant_euros / 156" | bc -l)
+    
     echo -e "${GREEN}🎉 Apport capital infrastructure terminé avec succès!${NC}"
     echo -e "${CYAN}📊 Résumé:${NC}"
-    echo -e "  • ${montant_euros} Ẑen (${montant_g1} Ğ1) transférés directement au NODE"
-    echo -e "  • Apport au capital (non distribuable 3x1/3)"
-    echo -e "  • Valorisation infrastructure/machine enregistrée"
-    echo -e "  • Toutes les transactions confirmées sur la blockchain"
-    echo -e "  • ✅ Cohérence avec OpenCollective UPlanet Ẑen maintenue"
+    echo -e "  • ${montant_euros} Ẑen (${montant_g1} Ğ1) transférés vers UPLANETNAME_CAPITAL"
+    echo -e "  • Compte 21 - Immobilisations corporelles"
+    echo -e "  • Amortissement linéaire: ~${weekly_depreciation} Ẑen/semaine pendant 3 ans"
+    echo -e "  • Les amortissements hebdo iront vers CASH (réserve de fonctionnement)"
+    echo -e "  • NODE reste dédié aux revenus locatifs (PAF → BURN → €)"
+    echo -e "  • ✅ Séparation comptable Capital/Revenus respectée"
     
     # Mettre à jour le document DID avec le statut contributeur infrastructure
     "${MY_PATH}/tools/did_manager_nostr.sh" update "$email" "INFRASTRUCTURE" "$montant_euros" "$montant_g1"

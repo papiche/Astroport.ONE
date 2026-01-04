@@ -48,6 +48,7 @@ declare -A COOPERATIVE_WALLETS=(
     ["UPLANETNAME_IMPOT"]="$HOME/.zen/game/uplanet.IMPOT.dunikey"
     ["UPLANETNAME.CAPTAIN"]="$HOME/.zen/game/uplanet.captain.dunikey"
     ["UPLANETNAME_INTRUSION"]="$HOME/.zen/game/uplanet.INTRUSION.dunikey"
+    ["UPLANETNAME_CAPITAL"]="$HOME/.zen/game/uplanet.CAPITAL.dunikey"
 )
 
 # Node and Captain wallets to check and initialize (if they exist)
@@ -73,7 +74,8 @@ usage() {
     echo -e "  • UPLANETNAME_IMPOT (Fiscalité)"
     echo -e "  • UPLANETNAME.CAPTAIN (Rémunération capitaine)"
     echo -e "  • UPLANETNAME_INTRUSION (Fonds d'intrusions détectées)"
-    echo -e "  • NODE (Armateur - si existant)"
+    echo -e "  • UPLANETNAME_CAPITAL (Immobilisations - capital machine)"
+    echo -e "  • NODE (Armateur - revenus locatifs)"
     echo -e "  • CAPTAIN (si configuré)"
     echo ""
     echo -e "${BLUE}Options:${NC}"
@@ -246,6 +248,9 @@ create_missing_wallet() {
             ;;
         "UPLANETNAME_INTRUSION")
             "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.INTRUSION" "${UPLANETNAME}.INTRUSION"
+            ;;
+        "UPLANETNAME_CAPITAL")
+            "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.CAPITAL" "${UPLANETNAME}.CAPITAL"
             ;;
         *)
             echo -e "${RED}❌ Type de portefeuille non reconnu: $wallet_name${NC}"

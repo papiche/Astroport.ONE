@@ -630,7 +630,16 @@ for PLAYER in "${NOSTR[@]}"; do
                             TVA_ZEN=$(echo "scale=1; $TVA_AMOUNT * 10" | bc -l)
                             TOTAL_ZEN=$(echo "scale=1; $TOTAL_PAYMENT * 10" | bc -l)
 
-                            log "INFO" "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS Ğ1 >= $MIN_BALANCE Ğ1 min) - Direct TVA split: $Npaf_ZEN ẐEN ($Npaf Ğ1) to CAPTAIN + $TVA_ZEN ẐEN ($TVA_AMOUNT Ğ1) to IMPOTS"
+                            log "INFO" "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS Ğ1 >= $MIN_BALANCE Ğ1 min) - Direct TVA split: $Npaf_ZEN ẐEN ($Npaf Ğ1) to CAPTAIN_DEDICATED + $TVA_ZEN ẐEN ($TVA_AMOUNT Ğ1) to IMPOTS"
+
+                            # Ensure CAPTAIN_DEDICATED wallet exists (business wallet for rental collection)
+                            if [[ ! -s ~/.zen/game/uplanet.captain.dunikey ]]; then
+                                ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.captain.dunikey "${UPLANETNAME}.${CAPTAINEMAIL}" "${UPLANETNAME}.${CAPTAINEMAIL}"
+                                chmod 600 ~/.zen/game/uplanet.captain.dunikey
+                            fi
+
+                            # Get CAPTAIN_DEDICATED wallet G1PUB (receives rental payments for cooperative distribution)
+                            CAPTAIN_DEDICATED_G1PUB=$(cat ~/.zen/game/uplanet.captain.dunikey | grep "pub:" | cut -d ' ' -f 2)
 
                             # Ensure IMPOTS wallet exists before any payment
                             if [[ ! -s ~/.zen/game/uplanet.IMPOT.dunikey ]]; then
@@ -641,8 +650,9 @@ for PLAYER in "${NOSTR[@]}"; do
                             # Get IMPOTS wallet G1PUB
                             IMPOTS_G1PUB=$(cat ~/.zen/game/uplanet.IMPOT.dunikey |  grep "pub:" | cut -d ' ' -f 2)
 
-                            # Main rental payment to CAPTAIN (HT amount only)
-                            payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Npaf" "${CAPTAING1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:NCARD:HT" 2>/dev/null)
+                            # Main rental payment to CAPTAIN_DEDICATED (business wallet - HT amount only)
+                            # This wallet collects rentals and serves as source for cooperative allocation
+                            payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Npaf" "${CAPTAIN_DEDICATED_G1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:NCARD:HT" 2>/dev/null)
                             payment_success=$?
 
                             # TVA provision directly from MULTIPASS to IMPOTS (fiscally correct)

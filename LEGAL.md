@@ -54,12 +54,19 @@ La coopérative peut mandater des **hôtes fiscaux** (tels que OpenCollective) p
 ## **TITRE III : RÈGLES ÉCONOMIQUES FONDAMENTALES**
 
 ### **Article 7 : La Participation Aux Frais (PAF) et la Rémunération du Capitaine**
-1.  **PAF de l'Armateur :** Le Capitaine paie une PAF hebdomadaire de **14 Ẑen** au NODE (Armateur) pour couvrir les coûts d'infrastructure.
-2.  **Rémunération du Capitaine :** Le Capitaine est rémunéré pour son travail de maintenance à hauteur de **2x la PAF (28 Ẑen)** par semaine, versée sur son **portefeuille CAPTAIN dédié**.
-3.  **Hiérarchie de Paiement :** La PAF est prélevée en priorité sur le **MULTIPASS** (revenus) du Capitaine. Si insuffisant, le solde est prélevé sur la **trésorerie coopérative** (`UPLANETNAME_TREASURY`). La **ZenCard** (capital social) ne sert plus aux charges opérationnelles.
+1.  **PAF de l'Armateur :** La trésorerie coopérative (`UPLANETNAME_TREASURY` / CASH) paie une PAF hebdomadaire de **14 Ẑen** au NODE (Armateur) pour couvrir les coûts d'infrastructure.
+2.  **Rémunération du Capitaine :** Le Capitaine est rémunéré pour son travail de maintenance à hauteur de **2x la PAF (28 Ẑen)** par semaine, versée par CASH sur son **MULTIPASS personnel** (revenus personnels).
+3.  **Séparation des Flux :** 
+    - **CAPTAIN MULTIPASS** = revenus personnels du capitaine (salaire payé par CASH)
+    - **CAPTAIN_DEDICATED** = recettes d'exploitation (loyers collectés depuis les usagers)
+    - La **ZenCard** (capital social) ne sert plus aux charges opérationnelles.
 
-### **Article 8 : Gestion du Surplus**
-Si les revenus locatifs collectés par un Capitaine excèdent ses charges (TVA + PAF), après versement de sa rémunération (2x PAF) sur son **portefeuille CAPTAIN dédié**, le **surplus est automatiquement transféré** au portefeuille d'exploitation de la coopérative (`UPLANETNAME`).
+### **Article 8 : Gestion du Surplus et Allocation Coopérative**
+Les revenus locatifs des usagers sont collectés sur le portefeuille **CAPTAIN_DEDICATED** (recettes d'exploitation). Ce portefeuille sert de source pour l'allocation coopérative selon la règle des 3x1/3 :
+1.  **Provision fiscale (IS 15-25%)** prélevée sur le surplus
+2.  **1/3 → CASH (Trésorerie)** : finance les coûts opérationnels (PAF + salaires)
+3.  **1/3 → RND (R&D)** : recherche et développement
+4.  **1/3 → ASSETS** : acquisition d'actifs réels régénératifs
 
 ### **Article 9 : Règle de Conversion du 1/3**
 La conversion des Ẑen en Euros est un service offert par la coopérative. Pour protéger la trésorerie commune, la conversion des **revenus d'activité** (Ẑen acquis sur le MULTIPASS) est limitée à **1/3 du total acquis par année civile**. La conversion du capital social (contenu sur la ZenCard) est une opération exceptionnelle soumise au droit des sociétés et à la validation de l'Assemblée Générale.
@@ -79,20 +86,22 @@ Toutes les transactions vers les portefeuilles coopératifs doivent provenir de 
 | :--- | :--- | :--- |
 | **`UPLANETNAME_G1`** | **Réserve & Stabilité** | Émet et "brûle" les Ẑen lors des conversions avec l'Euro. |
 | **`UPLANETNAME_SOCIETY`** | **Capital Social** | Gère les apports des sociétaires et l'émission des parts. |
-| **`UPLANETNAME`** | **Exploitation** | Collecte les surplus et gère l'allocation 3x1/3. |
+| **`UPLANETNAME`** | **Exploitation** | Recharge les MULTIPASS des usagers. |
 | **`UPLANETNAME_IMPOT`** | **Provision Fiscale** | Isole la TVA et l'IS pour garantir la conformité. |
-| **`UPLANETNAME_TREASURY`** | **Trésorerie (1/3)** | Réserves impartageables pour la liquidité. |
+| **`UPLANETNAME_TREASURY` (CASH)** | **Trésorerie & Fonctionnement** | Paie les coûts opérationnels (1xPAF NODE + 2xPAF Capitaine), reçoit 1/3 allocation. |
 | **`UPLANETNAME_RND`** | **R&D (1/3)** | Financement du G1FabLab. |
 | **`UPLANETNAME_ASSETS`** | **Actifs Réels (1/3)** | Acquisition des forêts-jardins. |
-| **`UPLANETNAME.CAPTAIN`** | **Rémunération Capitaine** | Stocke la rémunération hebdomadaire du capitaine. |
+| **`UPLANETNAME.CAPTAIN`** | **Recettes d'Exploitation** | Collecte les loyers, source pour allocation 3x1/3. |
+| **`UPLANETNAME_CAPITAL`** | **Immobilisations (Compte 21)** | Valeur machine, amortissement linéaire sur 3 ans vers CASH. |
 | **`UPLANETNAME_INTRUSION`** | **Sécurité Anti-Intrusion** | Centralise les fonds provenant de transactions non autorisées. |
 
 ### **Article 13 : Portefeuilles Membres**
 | Portefeuille | Rôle | Fonction |
 | :--- | :--- | :--- |
-| **`MULTIPASS`** | **Compte Courant d'Activité** | Reçoit les revenus (likes, services), collecte les loyers, paie les charges. |
+| **`MULTIPASS`** | **Compte Courant d'Activité** | Reçoit les revenus personnels (likes, services, salaire 2xPAF pour le Capitaine). |
 | **`ZenCard`** | **Compte de Capital** | Stocke les parts sociales (Ẑen) du sociétaire. Capital non distribuable. |
-| **`CAPTAIN`** | **Rémunération Capitaine** | Reçoit la rémunération hebdomadaire (2x PAF) pour la gestion du node. |
+| **`CAPTAIN_DEDICATED`** | **Recettes d'Exploitation** | Collecte les loyers des usagers, sert de source pour l'allocation coopérative 3x1/3. |
+| **`NODE`** | **Revenus Locatifs Armateur** | Reçoit la PAF (14 Ẑen/sem) - revenus convertibles en € via burn 4-semaines. |
 
 ---
 
@@ -123,7 +132,7 @@ Ce document constitue la **Constitution de l'écosystème UPlanet ẐEN**. Il d�
 
 ---
 
-## **ANNEXE : DIAGRAMME DES FLUX ÉCONOMIQUES (Version 3.1)**
+## **ANNEXE : DIAGRAMME DES FLUX ÉCONOMIQUES (Version 3.2)**
 
 ```mermaid
 graph TD
@@ -151,10 +160,14 @@ graph TD
         UPLANETNAME_SOCIETY["UPLANETNAME_SOCIETY<br><b>Capital Social</b>"]:::cooperativeCentral
         UPLANETNAME["UPLANETNAME<br><b>Compte d'Exploitation</b>"]:::cooperativeCentral
         UPLANETNAME_IMPOT["UPLANETNAME_IMPOT<br><b>Provision Fiscale</b>"]:::cooperativeCentral
-        UPLANETNAME_TREASURY["UPLANETNAME_TREASURY<br><b>Trésorerie (1/3)</b>"]:::allocationType
+        UPLANETNAME_TREASURY["UPLANETNAME_TREASURY (CASH)<br><b>Trésorerie & Fonctionnement</b>"]:::allocationType
         UPLANETNAME_ASSETS["UPLANETNAME_ASSETS<br><b>Projets (1/3)</b>"]:::allocationType
         UPLANETNAME_RND["UPLANETNAME_RND<br><b>R&D (1/3)</b>"]:::allocationType
+        UPLANETNAME_CAPITAL["UPLANETNAME_CAPITAL<br><b>Immobilisations (Compte 21)</b>"]:::allocationType
         UPLANETNAME_INTRUSION["UPLANETNAME_INTRUSION<br><b>Sécurité Anti-Intrusion</b>"]:::cooperativeCentral
+        
+        %% Amortissement Capital → CASH
+        UPLANETNAME_CAPITAL -- "Amortissement hebdo (~3.2Ẑ/3ans)" --> UPLANETNAME_TREASURY
         
         MB_SCIC -- "2. Échange € → Ẑen" --> UPLANETNAME_G1
         UPLANETNAME_G1 -- "3. Émission Ẑen" --> UPLANETNAME_SOCIETY
@@ -162,38 +175,37 @@ graph TD
 
     subgraph "Portefeuilles Membre"
         MULTIPASS_Loc["Locataire (MULTIPASS)"]:::memberWallet
-        Capitaine_MP["Capitaine (MULTIPASS)<br><i>Compte Courant</i>"]:::memberWallet
+        Capitaine_MP["Capitaine (MULTIPASS)<br><i>Revenus Personnels</i>"]:::memberWallet
         Capitaine_ZC["Capitaine (ZenCard)<br><i>Compte Capital</i>"]:::memberWallet
-        Capitaine_Ded["Capitaine (CAPTAIN)<br><i>Rémunération</i>"]:::memberWallet
+        Capitaine_Ded["Capitaine (CAPTAIN_DEDICATED)<br><i>Recettes Exploitation</i>"]:::memberWallet
         Armateur_Node["Armateur (NODE)"]:::memberWallet
     end
 
     %% FLUX DE CAPITALISATION
     UPLANETNAME_SOCIETY -- "4. Attribution Parts Sociales" --> Capitaine_ZC
 
-    %% FLUX D'EXPLOITATION
-    MULTIPASS_Loc -- "5. Paiement Loyer (1 ou 4 Ẑen)" --> Capitaine_MP
+    %% FLUX D'EXPLOITATION - Coûts opérationnels payés par CASH
+    UPLANETNAME_TREASURY -- "5a. PAF (14 Ẑen/sem)" --> Armateur_Node
+    UPLANETNAME_TREASURY -- "5b. Salaire (28 Ẑen/sem)" --> Capitaine_MP
     
-    Capitaine_MP -- "6a. TVA (20%)" --> UPLANETNAME_IMPOT
-    Capitaine_MP -- "6b. PAF (14 Ẑen)" --> Armateur_Node
-    Capitaine_MP -- "6c. Rémunération (28 Ẑen)" --> Capitaine_Ded
-    UPLANETNAME -. "6d. Couverture PAF si déficit" .-> Armateur_Node:::internalFlow
+    %% FLUX D'EXPLOITATION - Collecte des loyers
+    MULTIPASS_Loc -- "6a. Paiement Loyer HT" --> Capitaine_Ded
+    MULTIPASS_Loc -- "6b. TVA (20%)" --> UPLANETNAME_IMPOT
     
-    Capitaine_MP -- "7. Versement Surplus" --> UPLANETNAME
-    
-    UPLANETNAME -- "8a. IS (25%)" --> UPLANETNAME_IMPOT
-    UPLANETNAME -- "8b. Allocation 3x1/3" --> UPLANETNAME_TREASURY
-    UPLANETNAME -- "8c. Allocation 3x1/3" --> UPLANETNAME_ASSETS
-    UPLANETNAME -- "8d. Allocation 3x1/3" --> UPLANETNAME_RND
+    %% FLUX COOPÉRATIF - Allocation 3x1/3 depuis CAPTAIN_DEDICATED
+    Capitaine_Ded -- "7a. IS (15-25%)" --> UPLANETNAME_IMPOT
+    Capitaine_Ded -- "7b. Allocation 1/3" --> UPLANETNAME_TREASURY
+    Capitaine_Ded -- "7c. Allocation 1/3" --> UPLANETNAME_ASSETS
+    Capitaine_Ded -- "7d. Allocation 1/3" --> UPLANETNAME_RND
 
     %% FLUX DE CONVERSION (PONT DE LIQUIDITÉ)
     subgraph "Pont de Liquidité"
-        Armateur_Node -- "9a. Demande Conversion (PAF)" --> UPLANETNAME_G1
-        Capitaine_Ded -- "9b. Demande Conversion (Rémunération)" --> UPLANETNAME_G1
-        Capitaine_ZC -- "9c. Demande Conversion (Capital)" --> UPLANETNAME_G1
+        Armateur_Node -- "8a. Demande Conversion (PAF)" --> UPLANETNAME_G1
+        Capitaine_MP -- "8b. Demande Conversion (Salaire)" --> UPLANETNAME_G1
+        Capitaine_ZC -- "8c. Demande Conversion (Capital)" --> UPLANETNAME_G1
 
-        UPLANETNAME_G1 -- "10. Burn & Validation" --> Validation{"Valide"}:::decisionPoint
-        Validation -- "11. Autorise Paiement €" --> MB_SCIC
-        MB_SCIC -- "12. Virement SEPA (€)" --> MembrePhysique
+        UPLANETNAME_G1 -- "9. Burn & Validation" --> Validation{"Valide"}:::decisionPoint
+        Validation -- "10. Autorise Paiement €" --> MB_SCIC
+        MB_SCIC -- "11. Virement SEPA (€)" --> MembrePhysique
     end
 ```

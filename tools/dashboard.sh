@@ -250,6 +250,26 @@ show_system_wallets_summary() {
         fi
     fi
     
+    # UPLANETNAME_CAPITAL (Immobilisations - valeur machine amortie)
+    if [[ -f "$HOME/.zen/game/uplanet.CAPITAL.dunikey" ]]; then
+        local capital_pubkey=$(cat "$HOME/.zen/game/uplanet.CAPITAL.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+        if [[ -n "$capital_pubkey" ]]; then
+            local capital_balance=$(get_wallet_balance "$capital_pubkey")
+            local capital_zen=$(calculate_zen_balance "$capital_balance")
+            local capital_str=$(safe_printf "%.2f" "$capital_balance")
+            local zen_str=$(safe_printf "%.0f" "$capital_zen")
+            
+            # Show depreciation info if available
+            local machine_value=$(grep "^MACHINE_VALUE=" "$HOME/.zen/game/.env" 2>/dev/null | cut -d'=' -f2)
+            if [[ -n "$machine_value" && "$machine_value" != "0" ]]; then
+                local residual_pct=$(echo "scale=0; $capital_zen * 100 / $machine_value" | bc -l 2>/dev/null || echo "?")
+                echo -e "  🏭 UPLANETNAME_CAPITAL: ${WHITE}$capital_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC}) [${residual_pct}% résiduel de ${machine_value}Ẑ]"
+            else
+                echo -e "  🏭 UPLANETNAME_CAPITAL: ${WHITE}$capital_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC})"
+            fi
+        fi
+    fi
+    
     # UPLANETNAME_INTRUSION (Fonds d'intrusions détectées)
     if [[ -f "$HOME/.zen/game/uplanet.INTRUSION.dunikey" ]]; then
         local intrusion_pubkey=$(cat "$HOME/.zen/game/uplanet.INTRUSION.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
