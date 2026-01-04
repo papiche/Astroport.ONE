@@ -63,7 +63,9 @@ show_help() {
     echo "  -l, --locataire EMAIL     Virement pour locataire (recharge MULTIPASS)"
     echo "  -s, --societaire EMAIL    Virement pour sociétaire (parts sociales)"
     echo "  -t, --type TYPE           Type de sociétaire: satellite|constellation|infrastructure"
-    echo "  -i, --infrastructure      Apport capital infrastructure (CAPTAIN → NODE)"
+    echo "  -i, --infrastructure      Apport capital infrastructure (CAPTAIN → CAPITAL)"
+    echo "      --force               Mode force : écrase le capital existant"
+    echo "      --add                 Mode ajout : cumule avec le capital existant"
     echo "  -o, --ore LAT LON         Virement ORE (récompenses environnementales UMAP depuis ASSETS)"
     echo "  -p, --permit EMAIL ID     Virement PERMIT (récompense WoT Dragon/permit holder)"
     echo "  -m, --montant MONTANT     Montant en euros (optionnel, auto-calculé par défaut)"
@@ -76,6 +78,8 @@ show_help() {
     echo "  $0 -s user@example.com -t satellite           # Parts sociales satellite"
     echo "  $0 -s user@example.com -t constellation       # Parts sociales constellation"
     echo "  $0 -i -m 500                                  # Apport capital infrastructure (500€)"
+    echo "  $0 -i -m 200 --add                            # Ajoute 200€ au capital existant"
+    echo "  $0 -i -m 500 --force                          # Réinitialise le capital à 500€"
     echo "  $0 -o 43.60 1.44 -m 10                       # Récompense ORE UMAP depuis ASSETS (10Ẑen)"
     echo "  $0 -p dragon@example.com PERMIT_WOT_DRAGON  # Récompense WoT Dragon"
     echo "  $0 -r                                         # Mode dépannage SOCIETY → 3x1/3"
@@ -84,7 +88,8 @@ show_help() {
     echo "Types de sociétaires:"
     echo "  satellite     : 50€/an (sans IA)"
     echo "  constellation : 540€/3ans (avec IA)"
-    echo "  infrastructure: 500€ (apport capital machine, direct vers NODE)"
+    echo "  infrastructure: 500€ (apport capital machine, vers UPLANETNAME_CAPITAL)"
+    echo "                  Protection contre double enregistrement (--force/--add pour contourner)"
 }
 
 # Fonction pour vérifier qu'il n'y a pas de transactions en cours avant de commencer
@@ -645,16 +650,80 @@ process_locataire() {
 # Le capital va vers UPLANETNAME_CAPITAL (pas NODE) pour séparation comptable :
 # - UPLANETNAME_CAPITAL : Immobilisations corporelles (valeur machine, amortissement)
 # - NODE : Revenus locatifs Armateur (PAF, burn vers €)
+#
+# PROTECTION: Un seul enregistrement initial autorisé. Utilisez --force pour
+# réinitialiser (écrase l'ancien) ou --add pour ajouter (cumule avec l'ancien).
 ################################################################################
 process_infrastructure() {
     local email="$1"
     local montant_euros="${2:-$(calculate_societaire_amount "infrastructure")}"
+    local force_mode="${3:-}"  # "--force" to overwrite, "--add" to accumulate
     
     # Valider que le montant est un nombre valide
     if [[ -z "$montant_euros" ]] || ! [[ "$montant_euros" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
         echo -e "${RED}❌ Montant invalide: '$montant_euros'${NC}"
         echo -e "${YELLOW}💡 Utilisez un nombre positif (ex: 500)${NC}"
         return 1
+    fi
+    
+    # ══════════════════════════════════════════════════════════════════════════
+    # PROTECTION CONTRE DOUBLE ENREGISTREMENT
+    # ══════════════════════════════════════════════════════════════════════════
+    local env_file="$HOME/.zen/game/.env"
+    local existing_machine_value=""
+    local existing_capital_date=""
+    local existing_depreciation_weeks=""
+    
+    if [[ -f "$env_file" ]]; then
+        existing_machine_value=$(grep "^MACHINE_VALUE=" "$env_file" | cut -d'=' -f2)
+        existing_capital_date=$(grep "^CAPITAL_DATE=" "$env_file" | cut -d'=' -f2)
+        existing_depreciation_weeks=$(grep "^DEPRECIATION_WEEKS=" "$env_file" | cut -d'=' -f2)
+    fi
+    
+    if [[ -n "$existing_machine_value" && "$existing_machine_value" != "0" ]]; then
+        echo -e "${YELLOW}⚠️  CAPITAL INFRASTRUCTURE DÉJÀ ENREGISTRÉ !${NC}"
+        echo -e "${CYAN}📊 Enregistrement existant :${NC}"
+        echo -e "   • Valeur machine : ${existing_machine_value} Ẑen"
+        echo -e "   • Date d'activation : ${existing_capital_date}"
+        echo -e "   • Durée amortissement : ${existing_depreciation_weeks} semaines"
+        
+        # Calculate current depreciation status
+        if [[ -n "$existing_capital_date" && -n "$existing_depreciation_weeks" ]]; then
+            local cap_timestamp=$(date -d "$existing_capital_date" +%s 2>/dev/null || echo "0")
+            local now_timestamp=$(date +%s)
+            local weeks_elapsed=$(( (now_timestamp - cap_timestamp) / (7 * 24 * 60 * 60) ))
+            local depreciation_pct=$(echo "scale=1; ($weeks_elapsed * 100) / $existing_depreciation_weeks" | bc -l 2>/dev/null || echo "0")
+            [[ $(echo "$depreciation_pct > 100" | bc -l) -eq 1 ]] && depreciation_pct="100"
+            local residual=$(echo "scale=2; $existing_machine_value * (1 - $weeks_elapsed / $existing_depreciation_weeks)" | bc -l 2>/dev/null || echo "0")
+            [[ $(echo "$residual < 0" | bc -l) -eq 1 ]] && residual="0"
+            echo -e "   • Semaines écoulées : ${weeks_elapsed}/${existing_depreciation_weeks}"
+            echo -e "   • Amortissement : ${depreciation_pct}%"
+            echo -e "   • Valeur résiduelle : ~${residual} Ẑen"
+        fi
+        echo ""
+        
+        if [[ "$force_mode" == "--force" ]]; then
+            echo -e "${RED}🔄 MODE FORCE : L'ancien capital sera ÉCRASÉ et remplacé${NC}"
+            echo -e "${YELLOW}⚠️  L'amortissement reprendra à zéro !${NC}"
+        elif [[ "$force_mode" == "--add" ]]; then
+            echo -e "${GREEN}➕ MODE ADD : Le nouveau capital sera AJOUTÉ à l'ancien${NC}"
+            # Calculate new total
+            local new_total=$(echo "scale=2; $existing_machine_value + $montant_euros" | bc -l)
+            echo -e "${CYAN}   Nouvelle valeur totale : ${new_total} Ẑen${NC}"
+            montant_euros="$new_total"
+            # Keep original depreciation start date
+            echo -e "${YELLOW}⚠️  La date d'amortissement reste inchangée (${existing_capital_date})${NC}"
+        else
+            echo -e "${RED}❌ Double enregistrement refusé pour préserver l'intégrité comptable${NC}"
+            echo ""
+            echo -e "${CYAN}💡 Options disponibles :${NC}"
+            echo -e "   $0 -i --force    # Écrase l'ancien capital (réinitialise amortissement)"
+            echo -e "   $0 -i --add      # Ajoute au capital existant (cumule valeur)"
+            echo ""
+            echo -e "${YELLOW}📋 Pour voir l'état actuel, utilisez : dashboard.sh${NC}"
+            return 1
+        fi
+        echo ""
     fi
     
     local montant_g1=$(zen_to_g1 "$montant_euros")
@@ -733,8 +802,16 @@ process_infrastructure() {
     fi
     
     # Enregistrer la date de début d'amortissement et la valeur dans .env
-    local env_file="$HOME/.zen/game/.env"
-    local capital_date=$(date +%Y%m%d%H%M%S)
+    # Note: env_file already defined at start of function for double-registration check
+    local capital_date=""
+    
+    # In --add mode, keep original date; otherwise use current date
+    if [[ "$force_mode" == "--add" && -n "$existing_capital_date" ]]; then
+        capital_date="$existing_capital_date"
+        echo -e "${CYAN}📅 Conservation de la date d'amortissement originale : ${capital_date}${NC}"
+    else
+        capital_date=$(date +%Y%m%d%H%M%S)
+    fi
     
     if [[ -f "$env_file" ]]; then
         # Update existing values or add new ones
@@ -1500,14 +1577,34 @@ show_menu() {
             ;;
         4)
             if [[ -n "$CAPTAINEMAIL" ]]; then
-                # Vérifier si MACHINE_VALUE_ZEN est définie, sinon la demander
+                # Check if capital already exists
+                local env_file="$HOME/.zen/game/.env"
+                local existing_value=""
+                if [[ -f "$env_file" ]]; then
+                    existing_value=$(grep "^MACHINE_VALUE=" "$env_file" | cut -d'=' -f2)
+                fi
+                
+                local infra_mode_menu=""
+                if [[ -n "$existing_value" && "$existing_value" != "0" ]]; then
+                    echo -e "${YELLOW}⚠️  Capital déjà enregistré: ${existing_value} Ẑen${NC}"
+                    echo "1. Annuler"
+                    echo "2. Écraser (--force) - Réinitialise l'amortissement"
+                    echo "3. Ajouter (--add) - Cumule avec l'ancien"
+                    read -p "Votre choix (1-3): " mode_choice
+                    case $mode_choice in
+                        2) infra_mode_menu="--force" ;;
+                        3) infra_mode_menu="--add" ;;
+                        *) echo -e "${YELLOW}🚫 Opération annulée${NC}"; return ;;
+                    esac
+                fi
+                
                 local machine_value="${MACHINE_VALUE_ZEN}"
                 if [[ -z "$machine_value" ]]; then
                     read -p "Valeur de la machine en Ẑen (défaut: 500): " machine_value
                     machine_value="${machine_value:-500}"
                 fi
                 echo -e "${CYAN}💰 Apport capital pour: ${CAPTAINEMAIL} (${machine_value} Ẑen)${NC}"
-                process_infrastructure "$CAPTAINEMAIL" "$machine_value"
+                process_infrastructure "$CAPTAINEMAIL" "$machine_value" "$infra_mode_menu"
             else
                 echo -e "${RED}❌ CAPTAINEMAIL non défini dans l'environnement${NC}"
                 echo -e "${CYAN}💡 Configurez votre email de capitaine dans my.sh${NC}"
@@ -1578,6 +1675,7 @@ main() {
         local lat=""
         local lon=""
         local permit_id=""
+        local infra_mode=""  # --force or --add for infrastructure
         
         while [[ $# -gt 0 ]]; do
             case "$1" in
@@ -1599,6 +1697,14 @@ main() {
                     ;;
                 -i|--infrastructure)
                     mode="infrastructure"
+                    shift
+                    ;;
+                --force)
+                    infra_mode="--force"
+                    shift
+                    ;;
+                --add)
+                    infra_mode="--add"
                     shift
                     ;;
                 -o|--ore)
@@ -1681,7 +1787,8 @@ main() {
                 if [[ -n "$CAPTAINEMAIL" ]]; then
                     local machine_value="${montant:-${MACHINE_VALUE_ZEN:-500}}"
                     echo -e "${CYAN}💰 Apport capital infrastructure: ${CAPTAINEMAIL} (${machine_value} Ẑen)${NC}"
-                    process_infrastructure "$CAPTAINEMAIL" "$machine_value"
+                    [[ -n "$infra_mode" ]] && echo -e "${YELLOW}📋 Mode: ${infra_mode}${NC}"
+                    process_infrastructure "$CAPTAINEMAIL" "$machine_value" "$infra_mode"
                 else
                     echo -e "${RED}❌ CAPTAINEMAIL non défini dans l'environnement${NC}"
                     echo -e "${CYAN}💡 Configurez votre email de capitaine dans my.sh${NC}"
