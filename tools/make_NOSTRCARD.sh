@@ -517,75 +517,26 @@ EOFNOSTR
     # No need to publish here - generate_ipfs_structure.sh will update the IPNS with the complete structure
 
 
-    ## SEND MULTIPASS CARD USAGE GUIDE TO EMAIL USING MAILJET
-    echo "Sending MULTIPASS card usage guide to ${EMAIL} via mailjet..."
-    
-    # Prepare template with variables
-    template_file="${MY_PATH}/../templates/NOSTR/multipass_card_usage.html"
-    if [[ -f "$template_file" ]]; then
-        # Get UPLANET8 identifier
-        [[ ${UPLANETG1PUB:0:8} == "AwdjhpJN" ]] && ORIGIN="ORIGIN" || ORIGIN="${UPLANETG1PUB:0:8}"
-        UPLANET8="UPlanet:${ORIGIN}"
-        
-        # Wait for MULTIPASS card to be generated (if still in background)
-        if [[ -n "$MULTIPASS_PRINT_PID" ]]; then
-            wait $MULTIPASS_PRINT_PID 2>/dev/null || true
-            echo "✅ MULTIPASS card generation completed"
-        fi
-        
-        # Extract CID from G1PUBNOSTRQR (format: "CID/path")
-        G1PUBNOSTRQR_CID=$(echo "$G1PUBNOSTRQR" | cut -d '/' -f 1)
-        
-        # Add MULTIPASS card to IPFS if it exists
-        MULTIPASS_CARD_IPFS=""
-        if [[ -f "${HOME}/.zen/game/nostr/${EMAIL}/.MULTIPASS.CARD.png" ]]; then
-            echo "📤 Adding MULTIPASS card to IPFS..."
-            MULTIPASS_CARD_IPFS=$(ipfs --timeout 30s add -q "${HOME}/.zen/game/nostr/${EMAIL}/.MULTIPASS.CARD.png" 2>/dev/null)
-            if [[ -n "$MULTIPASS_CARD_IPFS" ]]; then
-                echo "✅ MULTIPASS card added to IPFS: ${MULTIPASS_CARD_IPFS}"
-            else
-                echo "⚠️ Failed to add MULTIPASS card to IPFS"
-            fi
-        else
-            echo "⚠️ MULTIPASS card not found: ${HOME}/.zen/game/nostr/${EMAIL}/.MULTIPASS.CARD.png"
-        fi
-        
-        # Create temporary HTML file with substituted variables
-        temp_usage_guide=$(mktemp)
-        cat "$template_file" | \
-            sed "s|_DATE_|$(date -u +"%Y-%m-%d %H:%M:%S UTC")|g" | \
-            sed "s|_EMAIL_|${EMAIL}|g" | \
-            sed "s|_YOUSER_|${YOUSER}|g" | \
-            sed "s|_CAPTAINEMAIL_|${CAPTAINEMAIL}|g" | \
-            sed "s|_G1PUBNOSTR_|${G1PUBNOSTR}|g" | \
-            sed "s|_G1PUBNOSTRQR_CID_|${G1PUBNOSTRQR_CID}|g" | \
-            sed "s|_MULTIPASS_CARD_IPFS_|${MULTIPASS_CARD_IPFS}|g" | \
-            sed "s|_UPLANET8_|${UPLANET8}|g" | \
-            sed "s|_uSPOT_|${uSPOT}|g" | \
-            sed "s|_myIPFS_|${myIPFS}|g" > "$temp_usage_guide"
-        
-        # Send usage guide HTML via mailjet
-        ${MY_PATH}/mailjet.sh --expire 96h "${EMAIL}" "$temp_usage_guide" "🎫 MULTIPASS Card - Usage Guide" 2>/dev/null \
-            && echo "✅ MULTIPASS card usage guide sent successfully to ${EMAIL}" \
-            || echo "⚠️ Failed to send MULTIPASS card usage guide to ${EMAIL}"
-        
-        # Clean up temporary file
-        rm -f "$temp_usage_guide"
-    else
-        echo "⚠️ Template not found: $template_file"
-        echo "📧 Falling back to sending card image directly..."
-        ${MY_PATH}/mailjet.sh --expire 96h "${EMAIL}" "${HOME}/.zen/game/nostr/${EMAIL}/.MULTIPASS.CARD.png" "MULTIPASS /Scan" 2>/dev/null \
-            && echo "✅ MULTIPASS card image sent successfully to ${EMAIL}" \
-            || echo "⚠️ Failed to send MULTIPASS card image to ${EMAIL}"
-    fi
-
-    ## Wait for background processes to complete
-    echo "⏳ Waiting for background processes to complete..."
+    ## Wait for MULTIPASS card to be generated (if still in background)
     if [[ -n "$MULTIPASS_PRINT_PID" ]]; then
         wait $MULTIPASS_PRINT_PID 2>/dev/null || true
-        echo "✅ MULTIPASS print process completed"
+        echo "✅ MULTIPASS card generation completed"
     fi
     
+    ## Add MULTIPASS card to IPFS if it exists
+    MULTIPASS_CARD_IPFS=""
+    if [[ -f "${HOME}/.zen/game/nostr/${EMAIL}/.MULTIPASS.CARD.png" ]]; then
+        echo "📤 Adding MULTIPASS card to IPFS..."
+        MULTIPASS_CARD_IPFS=$(ipfs --timeout 30s add -q "${HOME}/.zen/game/nostr/${EMAIL}/.MULTIPASS.CARD.png" 2>/dev/null)
+        if [[ -n "$MULTIPASS_CARD_IPFS" ]]; then
+            echo "✅ MULTIPASS card added to IPFS: ${MULTIPASS_CARD_IPFS}"
+        else
+            echo "⚠️ Failed to add MULTIPASS card to IPFS"
+        fi
+    else
+        echo "⚠️ MULTIPASS card not found: ${HOME}/.zen/game/nostr/${EMAIL}/.MULTIPASS.CARD.png"
+    fi
+
     ## IPNS PUBLICATION - Publish entire ~/.zen/game/nostr/${EMAIL}/ directory to IPNS
     if [[ -n "$G1PUBNOSTR" ]] && [[ -d "${HOME}/.zen/game/nostr/${EMAIL}" ]]; then
         echo "📡 Publishing MULTIPASS directory to IPNS (${G1PUBNOSTR}:NOSTR)..."

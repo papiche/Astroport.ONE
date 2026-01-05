@@ -293,15 +293,67 @@ Pour renouveler votre certificat, obtenez de nouvelles validations de maîtres c
         
         if echo "$send_result" | grep -q "success\|published"; then
             echo "    [SUCCESS] ${urgency_text} notification sent to ${holder_npub:0:16}... (${days_until_expiry} days)"
-            return 0
         else
-            echo "    [WARNING] Failed to send notification to ${holder_npub:0:16}..."
-            return 1
+            echo "    [WARNING] Failed to send NOSTR notification to ${holder_npub:0:16}..."
         fi
     else
-        echo "    [WARNING] nostr_send_note.py not found, cannot send notification"
-        return 1
+        echo "    [WARNING] nostr_send_note.py not found, cannot send NOSTR notification"
     fi
+    
+    # =========================================================================
+    # ALSO SEND EMAIL NOTIFICATION
+    # =========================================================================
+    # Try to find user's email from NOSTR profile or MULTIPASS
+    local user_email=""
+    
+    # Search for email in NOSTR profile
+    if [[ -n "$holder_hex" ]]; then
+        # Check in game/nostr directory for any matching keyfile with email
+        local email_search=$(find "${HOME}/.zen/game/nostr" -name ".secret.nostr" -exec grep -l "$holder_hex" {} \; 2>/dev/null | head -n 1)
+        if [[ -n "$email_search" ]]; then
+            # Extract email from parent directory name
+            user_email=$(dirname "$email_search" | xargs basename)
+            # Verify it's an email format
+            [[ ! "$user_email" =~ ^[^@]+@[^@]+\.[^@]+$ ]] && user_email=""
+        fi
+        
+        # Also try searching in players
+        if [[ -z "$user_email" ]]; then
+            local player_search=$(find "${HOME}/.zen/game/players" -name "secret.nostr" -exec grep -l "$holder_hex" {} \; 2>/dev/null | head -n 1)
+            if [[ -n "$player_search" ]]; then
+                user_email=$(dirname "$player_search" | xargs basename)
+                [[ ! "$user_email" =~ ^[^@]+@[^@]+\.[^@]+$ ]] && user_email=""
+            fi
+        fi
+    fi
+    
+    # Send email if we found one
+    if [[ -n "$user_email" ]]; then
+        local send_email_script="${MY_PATH}/../tools/send_renewal_email.sh"
+        if [[ -f "$send_email_script" ]]; then
+            echo "    [INFO] Sending email notification to: $user_email"
+            "$send_email_script" \
+                "$user_email" \
+                "$permit_name" \
+                "$permit_id" \
+                "$credential_id" \
+                "$days_until_expiry" \
+                "$notification_level" \
+                2>/dev/null
+            
+            if [[ $? -eq 0 ]]; then
+                echo "    [SUCCESS] Email notification sent to: $user_email"
+            else
+                echo "    [WARNING] Failed to send email to: $user_email"
+            fi
+        else
+            echo "    [INFO] send_renewal_email.sh not found, skipping email"
+        fi
+    else
+        echo "    [INFO] No email found for ${holder_npub:0:16}..., skipping email notification"
+    fi
+    
+    return 0
 }
 
 ################################################################################

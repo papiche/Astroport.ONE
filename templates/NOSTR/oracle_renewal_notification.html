@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>🔄 Renouvellement de Certification - _PERMIT_NAME_</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+            min-height: 100vh;
+        }
+        .email-container {
+            max-width: 650px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, _HEADER_COLOR_START_ 0%, _HEADER_COLOR_END_ 100%);
+            color: white;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            position: relative;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.5;
+        }
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+        .header-emoji {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        .urgency-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            margin-top: 1rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .content {
+            padding: 2rem;
+        }
+        .greeting {
+            font-size: 1.1rem;
+            color: #4b5563;
+            margin-bottom: 1.5rem;
+        }
+        .info-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-left: 5px solid _ACCENT_COLOR_;
+        }
+        .info-card h3 {
+            margin: 0 0 1rem 0;
+            color: #1e293b;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        .info-value {
+            color: #1e293b;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .countdown-box {
+            background: _COUNTDOWN_BG_;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            margin: 1.5rem 0;
+        }
+        .countdown-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: _COUNTDOWN_COLOR_;
+        }
+        .countdown-label {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+        .cta-section {
+            text-align: center;
+            padding: 1.5rem 0;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, _CTA_COLOR_START_ 0%, _CTA_COLOR_END_ 100%);
+            color: white !important;
+            text-decoration: none;
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+            text-decoration: none;
+        }
+        .steps-section {
+            margin: 2rem 0;
+        }
+        .steps-section h3 {
+            color: #1e293b;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+        .step {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        .step-number {
+            width: 32px;
+            height: 32px;
+            background: _ACCENT_COLOR_;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .step-content {
+            padding-top: 0.25rem;
+        }
+        .step-title {
+            font-weight: 600;
+            color: #1e293b;
+        }
+        .step-desc {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        .masters-section {
+            background: #fef3c7;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        .masters-section h4 {
+            color: #92400e;
+            margin: 0 0 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .masters-section p {
+            color: #a16207;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        .footer {
+            padding: 1.5rem 2rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            text-align: center;
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+        .footer a {
+            color: #6366f1;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        .nostr-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #1e1b4b;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-top: 1rem;
+        }
+        .credential-code {
+            font-family: 'Courier New', monospace;
+            background: #e2e8f0;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            word-break: break-all;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .header {
+                padding: 1.5rem 1rem;
+            }
+            .content {
+                padding: 1.5rem;
+            }
+            .cta-button {
+                display: block;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="header-content">
+                <div class="header-emoji">_HEADER_EMOJI_</div>
+                <h1>_HEADER_TITLE_</h1>
+                <div class="urgency-badge">_URGENCY_BADGE_</div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <p class="greeting">Bonjour <strong>_USER_NAME_</strong>,</p>
+            
+            <p>_MESSAGE_INTRO_</p>
+            
+            <div class="countdown-box">
+                <div class="countdown-number">_DAYS_REMAINING_</div>
+                <div class="countdown-label">_COUNTDOWN_LABEL_</div>
+            </div>
+            
+            <div class="info-card">
+                <h3>📜 Détails du Certificat</h3>
+                <div class="info-row">
+                    <span class="info-label">Maîtrise</span>
+                    <span class="info-value">_PERMIT_NAME_</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Niveau</span>
+                    <span class="info-value">_PERMIT_LEVEL_</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Date d'émission</span>
+                    <span class="info-value">_ISSUED_DATE_</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Date d'expiration</span>
+                    <span class="info-value">_EXPIRY_DATE_</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">ID du certificat</span>
+                    <span class="credential-code">_CREDENTIAL_ID_</span>
+                </div>
+            </div>
+            
+            <div class="cta-section">
+                <a href="_RENEWAL_URL_" class="cta-button">🔄 Renouveler ma Certification</a>
+            </div>
+            
+            <div class="steps-section">
+                <h3>📋 Comment renouveler ?</h3>
+                
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Accédez à l'interface WoTx2</div>
+                        <div class="step-desc">Cliquez sur le bouton ci-dessus ou rendez-vous sur la page de renouvellement.</div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Demandez une nouvelle attestation</div>
+                        <div class="step-desc">Créez une demande de renouvellement pour votre maîtrise.</div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Faites valider par vos pairs</div>
+                        <div class="step-desc">Un maître certifié doit attester de vos compétences actuelles.</div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Recevez votre nouveau certificat</div>
+                        <div class="step-desc">L'Oracle émettra automatiquement votre certificat renouvelé.</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="masters-section">
+                <h4>👥 Besoin d'un Maître ?</h4>
+                <p>Si vous ne connaissez pas de maître certifié, explorez la liste des maîtres disponibles dans l'interface WoTx2. Ils pourront attester de vos compétences après vérification.</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Ce message a été envoyé par <strong>UPlanet Oracle System</strong></p>
+            <p>
+                <a href="_ORACLE_URL_">Voir mes certificats</a> •
+                <a href="_WOTX2_URL_">Interface WoTx2</a>
+            </p>
+            <div class="nostr-badge">
+                ⚡ Powered by NOSTR • Décentralisé • Vérifiable
+            </div>
+            <p style="margin-top: 1rem; font-size: 0.8rem; color: #94a3b8;">
+                Station: _STATION_NAME_ • IPFS: _IPFSNODEID_
+            </p>
+        </div>
+    </div>
+</body>
+</html>
