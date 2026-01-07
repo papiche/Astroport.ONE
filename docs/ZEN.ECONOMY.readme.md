@@ -134,11 +134,13 @@ Dans ce système, le ẐEN **n'est pas une monnaie financière convertible**, ma
 | Script | Fonction | Fréquence |
 | :--- | :--- | :--- |
 | `UPLANET.init.sh` | Initialisation de tous les portefeuilles (NODE, CAPTAIN, Collectifs) | Une seule fois |
-| `ZEN.ECONOMY.sh` | Paiement PAF + Burn 4-semaines + Mise à disposition machine | Hebdomadaire |
+| `ZEN.ECONOMY.sh` | Paiement PAF avec dégradation progressive + Burn 4-semaines | Hebdomadaire |
 | `ZEN.COOPERATIVE.3x1-3.sh` | Calcul de l'Excédent & Allocation 3x1/3 | Hebdomadaire |
 | `NOSTRCARD.refresh.sh` | Collecte redevances MULTIPASS (1Ẑ HT + 0.2Ẑ TVA) | Hebdomadaire |
 | `PLAYER.refresh.sh` | Collecte redevances ZEN Cards (4Ẑ HT + 0.8Ẑ TVA) | Hebdomadaire |
 | `UPLANET.official.sh` | Émission Crédits Service officiels (Usagers & Parrains) | À la demande |
+| `ECONOMY.broadcast.sh` | Diffusion Nostr de la santé économique (kind 30850) | Hebdomadaire |
+| `solar_time.sh` | Calcul heure solaire pour synchronisation distribuée | À la demande |
 
 ### **🔄 FLUX DE FONCTIONNEMENT DÉTAILLÉS (Cycle 7 jours)**
 
@@ -178,7 +180,10 @@ Contribution Parrainage : 50 Ẑ (versement unique annuel)
 ##### **Infrastructure NODE - `ZEN.ECONOMY.sh`**
 ```
 PAF Hebdomadaire : 14 Ẑ/semaine (1.4 Ğ1)
-├── Source : CASH (UPLANETNAME_TREASURY)
+├── Source (cascade) :
+│   ├── Phase 0 : CASH (UPLANETNAME_TREASURY) 🟢
+│   ├── Phase 1 : ASSETS (UPLANETNAME_ASSETS) 🟡
+│   └── Phase 2 : RnD (UPLANETNAME_RND) 🟠
 ├── Destination : NODE (portefeuille Armateur)
 └── Objectif : Électricité + Internet + Maintenance
 ```
@@ -186,10 +191,13 @@ PAF Hebdomadaire : 14 Ẑ/semaine (1.4 Ğ1)
 ##### **Rétribution CAPTAIN (Salaire Personnel)**
 ```
 Indemnité Opérateur : 28 Ẑ/semaine (2x PAF)
-├── Source : CASH (UPLANETNAME_TREASURY)
+├── Source (cascade) :
+│   ├── Phase 0 : CASH (UPLANETNAME_TREASURY) 🟢
+│   ├── Phase 1 : ASSETS (UPLANETNAME_ASSETS) 🟡
+│   └── Phase 2 : RnD (UPLANETNAME_RND) 🟠
 ├── Destination : CAPTAIN MULTIPASS (revenus personnels)
 ├── Nature : Rétribution de prestation (BNC)
-└── Périodicité : Hebdomadaire
+└── Périodicité : Hebdomadaire (synchronisé heure solaire)
 ```
 
 ##### **Conversion Fiat (Burn PAF)**
@@ -257,6 +265,248 @@ Les variables (`PAF`, `TVA_RATE`, `MACHINE_VALUE_ZEN`, etc.) sont définies dans
 - **Mise à disposition machine** : ZEN Card → NODE (une seule fois, valeur machine en Ẑen)
 - **TVA fiscalement correcte** : Répartition directe MULTIPASS → CAPTAIN HT + IMPOTS TVA
 - **Initialisation cohérente** : Tous les portefeuilles initialisés depuis `UPLANETNAME_G1`
+- **Dégradation progressive** : Système de phases avant faillite avec alertes précoces
+- **Gestion Essaim (Swarm)** : Portefeuilles partagés entre toutes les stations d'un même essaim
+- **Synchronisation Solaire** : Paiements décalés selon la longitude pour éviter les conflits
+- **Broadcast Nostr** : Diffusion de la santé économique vers la constellation (kind 30850)
+
+---
+
+### **🚨 SYSTÈME DE DÉGRADATION PROGRESSIVE (Avant Faillite)**
+
+Le système ẐEN Economy implémente une **cascade de dégradation progressive** au lieu d'une faillite brutale. Ce mécanisme transparent informe les actionnaires de l'état financier tout en préservant les opérations.
+
+#### **Philosophie : Transparence et Motivation**
+
+> **"Chaque phase de dégradation est une opportunité d'action collective, pas une sentence."**
+
+L'objectif n'est pas de masquer les difficultés, mais de les rendre visibles et compréhensibles pour que tous les acteurs puissent réagir et contribuer à la santé de la coopérative.
+
+#### **Les 4 Phases Opérationnelles**
+
+```
+Phase 0 : NORMAL (🟢 healthy)
+├── Source PAF : CASH (Trésorerie)
+├── Runway : > 8 semaines
+└── Message : "La coopérative fonctionne normalement"
+
+Phase 1 : RALENTISSEMENT CROISSANCE (🟡 growth_slowdown)
+├── Source PAF : ASSETS (Ressources Durables)
+├── Condition : CASH épuisé, ASSETS disponible
+├── Impact : Ralentissement des acquisitions d'actifs
+└── Message : "Pas de nouvelles ressources ce mois-ci"
+
+Phase 2 : RALENTISSEMENT INNOVATION (🟠 innovation_slowdown)
+├── Source PAF : RnD (Budget R&D)
+├── Condition : CASH + ASSETS épuisés, RnD disponible
+├── Impact : Gel des investissements R&D
+└── Message : "Développements suspendus temporairement"
+
+Phase 3 : FAILLITE (🔴 critical)
+├── Source PAF : Aucune
+├── Condition : CASH + ASSETS + RnD < PAF requise
+├── Impact : Arrêt des services
+└── Message : "Action urgente requise"
+```
+
+#### **Traçabilité des Paiements par Phase**
+
+Le marqueur de paiement inclut la phase pour une traçabilité complète :
+```
+UPLANET:${UPLANETG1PUB:0:8}:$WEEK_KEY:PHASE#:NODE#:CPT#
+
+Exemples :
+- UPLANET:AbCd1234:2026-W02:PHASE0:NODE✓:CPT✓  (Normal, tout depuis CASH)
+- UPLANET:AbCd1234:2026-W02:PHASE1:NODE✓:CPT✓  (NODE depuis ASSETS)
+- UPLANET:AbCd1234:2026-W02:PHASE2:NODE✓:CPT✓  (NODE depuis RnD)
+- UPLANET:AbCd1234:2026-W02:PHASE3:FAIL        (Faillite)
+```
+
+#### **Alertes et Notifications**
+
+Chaque changement de phase déclenche une notification aux actionnaires :
+
+| Phase | Template | Canal | Contenu |
+| :--- | :--- | :--- | :--- |
+| 1 | `pre_bankruptcy.html` | Email | Alerte croissance, soldes, appel à contribution |
+| 2 | `pre_bankruptcy.html` | Email | Alerte innovation, impact R&D, situation critique |
+| 3 | `bankrupt.html` | Email + Nostr DM | Faillite totale, suspension services |
+
+---
+
+### **🌐 GESTION D'ESSAIM (SWARM MANAGEMENT)**
+
+Le système UPlanet permet le déploiement de **plusieurs stations** partageant la même identité économique. Cette architecture distribuée offre résilience et scalabilité.
+
+#### **Portefeuilles Partagés vs Locaux**
+
+```
+PORTEFEUILLES PARTAGÉS (Identiques sur toutes les stations)
+├── CASH (UPLANETNAME_TREASURY) : Trésorerie commune
+├── ASSETS (UPLANETNAME_ASSETS) : Ressources durables communes
+├── RnD (UPLANETNAME_RND) : Budget R&D commun
+├── IMPOT (UPLANETNAME_IMPOT) : Provisions fiscales communes
+└── Dérivés de : UPLANETNAME (clé secrète de l'essaim IPFS)
+
+PORTEFEUILLES LOCAUX (Propres à chaque station)
+├── NODE : Portefeuille de l'armateur local
+├── CAPTAIN_MULTIPASS : Rétribution du capitaine local
+├── CAPTAIN_DEDICATED : Collecte redevances locale
+└── Dérivés de : Coordonnées GPS + IPFSNODEID
+```
+
+#### **Identification de l'Essaim**
+
+> ⚠️ **SÉCURITÉ** : La variable `UPLANETNAME` est le **secret partagé** de l'essaim IPFS. Elle ne doit **JAMAIS** être communiquée publiquement.
+
+**Identifiants Publics :**
+| Identifiant | Source | Usage |
+| :--- | :--- | :--- |
+| `swarm_id` | `UPLANETG1PUB` (clé publique G1) | Identification unique de l'essaim |
+| `station:name` | `myDAMAIN` ou `IPFSNODEID:0:12` | Nom lisible de la station |
+| `station` | `IPFSNODEID` | Identifiant technique IPFS |
+
+#### **Dashboard Essaim : `economy.Swarm.html`**
+
+Interface de visualisation agrégée de la santé économique de l'essaim :
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  🌍 SWARM ECONOMY DASHBOARD                                 │
+├─────────────────────────────────────────────────────────────┤
+│  PORTEFEUILLES PARTAGÉS (affichés une seule fois)           │
+│  ├── 💰 CASH: 1,234.56 Ẑ                                    │
+│  ├── 🌳 ASSETS: 567.89 Ẑ                                    │
+│  └── 🔬 RnD: 890.12 Ẑ                                       │
+├─────────────────────────────────────────────────────────────┤
+│  STATIONS DE L'ESSAIM                                       │
+│  ┌───────────────┬────────┬──────────┬──────────────┐       │
+│  │ Station       │ Status │ Runway   │ Sync ⏰      │       │
+│  ├───────────────┼────────┼──────────┼──────────────┤       │
+│  │ copylaradio   │ 🟢     │ 12 sem   │ 20:12 (+0h) │       │
+│  │ station-paris │ 🟡     │ 6 sem    │ 20:24 (+12m)│       │
+│  │ station-nyc   │ 🟢     │ 14 sem   │ 14:12 (-6h) │       │
+│  └───────────────┴────────┴──────────┴──────────────┘       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### **⏰ SYNCHRONISATION SOLAIRE (Paiements Distribués)**
+
+Pour éviter les **conditions de concurrence** sur les portefeuilles partagés, chaque station exécute ses paiements à une heure différente, calculée selon sa **longitude géographique**.
+
+#### **Principe : Heure Solaire Locale**
+
+```bash
+# solar_time.sh calcule l'heure légale correspondant à 20h12 solaire
+# pour une position GPS donnée
+
+Formule :
+SOLAR_OFFSET = (Longitude / 15) × 60  # minutes
+
+Exemples :
+- Paris (2.35°E)    → +9 min  → Paiement à 20:21 CET
+- New York (-74°W)  → -296 min → Paiement à 15:16 EST
+- Tokyo (139.69°E)  → +559 min → Paiement à 05:31+1 JST
+```
+
+#### **Script `solar_time.sh`**
+
+```bash
+# Usage : solar_time.sh <latitude> <longitude>
+# Retourne l'heure légale pour 20h12 solaire
+
+SOLAR_TIME="20:12"
+LEGAL_TIME=$(calculate_offset "$LONGITUDE")
+
+# Le script ZEN.ECONOMY.sh attend cette heure avant exécution
+```
+
+#### **Avantages de la Synchronisation Solaire**
+
+1. **Pas de conflits** : Chaque station a son créneau horaire unique
+2. **Répartition mondiale** : Paiements étalés sur 24h
+3. **Prédictibilité** : Heure fixe pour chaque station
+4. **Traçabilité** : Tag `sync:solar_offset` dans les événements Nostr
+
+---
+
+### **📡 DIFFUSION SANTÉ ÉCONOMIQUE (Nostr kind 30850)**
+
+Le script `ECONOMY.broadcast.sh` diffuse l'état économique de chaque station vers la constellation Nostr, permettant une visibilité globale.
+
+#### **Événement Nostr kind 30850**
+
+```json
+{
+  "kind": 30850,
+  "content": {
+    "station": {
+      "ipfsnodeid": "Qm...",
+      "name": "copylaradio.com",
+      "swarm_id": "GEf...",
+      "geo": { "lat": 48.8566, "lon": 2.3522 }
+    },
+    "wallets": {
+      "cash": { "balance_zen": 1234.56, "g1_pubkey": "..." },
+      "rnd": { "balance_zen": 567.89, "g1_pubkey": "..." },
+      "assets": { "balance_zen": 890.12, "g1_pubkey": "..." }
+    },
+    "health": {
+      "status": "healthy",
+      "bilan": 2692.57,
+      "runway_weeks": 64,
+      "degradation_phase": 0
+    },
+    "users": {
+      "multipass_total": 150,
+      "zencard_renters": 45,
+      "zencard_owners": 12
+    }
+  },
+  "tags": [
+    ["d", "uplanet-economy-2026-W02"],
+    ["week", "2026-W02"],
+    ["constellation", "UPlanetV1"],
+    ["station", "Qm..."],
+    ["station:name", "copylaradio.com"],
+    ["swarm_id", "GEf..."],
+    ["geo:lat", "48.8566"],
+    ["geo:lon", "2.3522"],
+    ["sync:solar_offset", "+00:09"],
+    ["health:status", "healthy"],
+    ["health:bilan", "2692.57"],
+    ["health:runway", "64"],
+    ["health:degradation_phase", "0"]
+  ]
+}
+```
+
+#### **Publication via Relai Local**
+
+```bash
+# ECONOMY.broadcast.sh utilise le relai strfry local
+# via nostpy-cli pour la publication
+
+nostpy-cli send_event \
+    -privkey "$CAPTAIN_PRIVKEY_HEX" \
+    -kind 30850 \
+    -content "$CONTENT_JSON" \
+    -tags "$TAGS_JSON" \
+    --relay "wss://${myDAMAIN}/relay"
+
+# Fallback : strfry import direct si nostpy-cli échoue
+./strfry import --no-verify < "$EVENT_FILE"
+```
+
+#### **Collecte et Agrégation**
+
+Le dashboard `economy.Swarm.html` collecte les événements kind 30850 :
+- Filtre par `constellation: UPlanetV1` et `swarm_id`
+- Agrège les données de toutes les stations
+- Affiche les portefeuilles partagés **une seule fois** (pas de somme)
+- Liste les stations avec leur statut et synchronisation
 
 ### **RÈGLE DE CONVERSION ẐEN**
 **Parité Fixe :** `0.1Ğ1 = 1Ẑ` est toujours vraie
@@ -451,18 +701,24 @@ C'est un service de remboursement offert par le collectif.
 4.  **Burn** : Le membre transfère ses Ẑen vers `UPLANETNAME_G1` (annulation du crédit).
 5.  **Paiement** : Virement SEPA en Euros via l'hôte fiscal (Expense sur Open Collective).
 
-### **DÉPLOIEMENT SYSTÈME : HUB + 24 SATELLITES**
+### **DÉPLOIEMENT SYSTÈME : ESSAIM DISTRIBUÉ (SWARM)**
 
-Le système UPlanet se déploie selon une architecture décentralisée innovante :
+Le système UPlanet se déploie selon une architecture **d'essaim distribué** où plusieurs stations partagent la même économie :
+
+#### **🌐 Architecture Essaim (Swarm)**
+- **Identité commune** : Toutes les stations partagent le même `UPLANETNAME` (clé secrète IPFS)
+- **Économie partagée** : Portefeuilles CASH, ASSETS, RnD identiques sur toutes les stations
+- **Autonomie locale** : Chaque station a son propre NODE et CAPTAIN
+- **Synchronisation** : Paiements décalés selon l'heure solaire locale
 
 #### **🏢 HUB Central (Constellation Principale)**
 - **Rôle** : Centre de coordination et de gestion des flux de fonctionnement
 - **Infrastructure** : Serveur principal avec capacités maximales (PC Gamer, 24 Parrains, 250+ Usagers)
 - **Fonctions** :
   - Gestion des flux ẐEN entre satellites
-  - Coordination des paiements PAF
-  - Centralisation des données de fonctionnement
+  - Coordination des paiements PAF (synchronisés par heure solaire)
   - Interface avec le monde fiat (OpenCollective)
+  - Relai Nostr principal (`strfry`)
 
 #### **🛰️ 24 Satellites (Constellations Locales)**
 - **Rôle** : Nœuds décentralisés de l'écosystème
@@ -470,8 +726,8 @@ Le système UPlanet se déploie selon une architecture décentralisée innovante
 - **Fonctions** :
   - Services locaux (MULTIPASS, ZEN Cards)
   - Collecte des redevances locales
-  - Gestion des portefeuilles collectifs locaux
-  - Communication avec le HUB central
+  - Paiement PAF à leur heure solaire spécifique
+  - Broadcast santé économique via Nostr (kind 30850)
 
 #### **🏠 Analogie Immobilière : Espaces Numériques**
 
@@ -492,20 +748,39 @@ Le système UPlanet fonctionne comme de l'**immobilier numérique** :
 - **Raspberry Pi 5** : Serveur d'espaces numériques
 - **Gestion** : Automatique via scripts UPlanet
 
-#### **🔄 Dynamique de Fonctionnement HUB-Satellites**
+#### **🔄 Dynamique de Fonctionnement Essaim**
 
 ```
-HUB Central (1)
-├── Coordonne 24 Satellites
-├── Gère les flux inter-satellites
-├── Interface OpenCollective
-└── Allocation collective globale
+PORTEFEUILLES PARTAGÉS (Identiques sur tout l'essaim)
+├── 💰 CASH (Trésorerie) ──────────────────┐
+├── 🌳 ASSETS (Ressources) ────────────────┤ Dérivés du secret
+├── 🔬 RnD (Innovation) ───────────────────┤ UPLANETNAME
+└── 🏛️ IMPOT (Fiscal) ────────────────────┘
 
-Satellites (24)
-├── Services locaux MULTIPASS
-├── Collecte redevances ZEN Cards  
-├── Paiement PAF local
-└── Excédent → HUB Central
+HUB Central (Station 1 - Paris, 20:21 CET)
+├── Services locaux MULTIPASS + ZEN Cards
+├── Collecte redevances → CAPTAIN_DEDICATED
+├── PAF hebdo à 20:21 (heure solaire 20:12)
+├── Broadcast Nostr kind 30850
+└── Interface OpenCollective
+
+Satellite 2 (Station 2 - NYC, 15:16 EST)
+├── Services locaux MULTIPASS + ZEN Cards
+├── Collecte redevances → CAPTAIN_DEDICATED
+├── PAF hebdo à 15:16 (heure solaire 20:12)
+└── Broadcast Nostr kind 30850
+
+Satellite 3 (Station 3 - Tokyo, 05:31+1 JST)
+├── Services locaux MULTIPASS + ZEN Cards
+├── Collecte redevances → CAPTAIN_DEDICATED
+├── PAF hebdo à 05:31+1 (heure solaire 20:12)
+└── Broadcast Nostr kind 30850
+
+Dashboard economy.Swarm.html
+├── Collecte events kind 30850 de toutes stations
+├── Affiche CASH/ASSETS/RnD une seule fois (partagés)
+├── Liste stations avec status + heure sync
+└── Agrège métriques (usagers, revenus, runway)
 ```
 
 ### **ARCHITECTURE COMPLÈTE DE L'ÉCOSYSTÈME ẐEN**
@@ -607,15 +882,19 @@ graph TD;
 
     subgraph "Scripts & Automatisation";
         style SCRIPTS fill:#f0f0f0,stroke:#666,stroke-width:1px
-        SCRIPT_ECONOMY["🤖 ZEN.ECONOMY.sh<br/>(Paiement PAF + Burn)"];
+        SCRIPT_ECONOMY["🤖 ZEN.ECONOMY.sh<br/>(PAF + Dégradation Progressive)"];
         SCRIPT_COOP["🤖 ZEN.COOPERATIVE.3x1-3.sh<br/>(Allocation 3x1/3)"];
         SCRIPT_NOSTR["🤖 NOSTRCARD.refresh.sh<br/>(Collecte MULTIPASS)"];
         SCRIPT_PLAYER["🤖 PLAYER.refresh.sh<br/>(Collecte ZEN Cards)"];
         SCRIPT_OFFICIAL["🤖 UPLANET.official.sh<br/>(Émission Crédits)"];
         SCRIPT_INIT["🤖 UPLANET.init.sh<br/>(Initialisation)"];
+        SCRIPT_BROADCAST["📡 ECONOMY.broadcast.sh<br/>(Nostr kind 30850)"];
+        SCRIPT_SOLAR["⏰ solar_time.sh<br/>(Sync Solaire)"];
         
         SCRIPT_ECONOMY -.-> NODE;
         SCRIPT_ECONOMY -.-> G1W;
+        SCRIPT_ECONOMY -.-> ASSETS;
+        SCRIPT_ECONOMY -.-> RND;
         SCRIPT_COOP -.-> CASH;
         SCRIPT_COOP -.-> RND;
         SCRIPT_COOP -.-> ASSETS;
@@ -623,6 +902,8 @@ graph TD;
         SCRIPT_PLAYER -.-> ZenCard;
         SCRIPT_OFFICIAL -.-> SW;
         SCRIPT_INIT -.-> G1W;
+        SCRIPT_BROADCAST -.-> NOSTR_RELAY["🌐 strfry<br/>(Relai Nostr)"];
+        SCRIPT_SOLAR -.-> SCRIPT_ECONOMY;
     end
 
     %% Styling
@@ -667,17 +948,75 @@ Quatre cycles automatisés orchestrent le fonctionnement :
 4. **Allocation Collective** : L'excédent est réparti selon la règle 3x1/3 + provision fiscale
 
 #### **🤖 Scripts & Automatisation**
-Six scripts orchestrent l'ensemble :
-- **ZEN.ECONOMY.sh** : Paiement PAF + Burn 4-semaines
+Huit scripts orchestrent l'ensemble :
+- **ZEN.ECONOMY.sh** : Paiement PAF avec dégradation progressive (CASH → ASSETS → RnD)
 - **ZEN.COOPERATIVE.3x1-3.sh** : Allocation collective 3x1/3
 - **NOSTRCARD.refresh.sh** : Collecte redevances MULTIPASS
 - **PLAYER.refresh.sh** : Collecte redevances ZEN Cards
 - **UPLANET.official.sh** : Émission Crédits Service officiels
 - **UPLANET.init.sh** : Initialisation de tous les portefeuilles
+- **ECONOMY.broadcast.sh** : Diffusion santé économique via Nostr (kind 30850)
+- **solar_time.sh** : Calcul de l'heure solaire pour synchronisation distribuée
 
 ---
 
 ## **Partie IV : Le Guide du Contributeur (Le "Et Vous ?")**
+
+### **🚀 MOTIVATION À LA CROISSANCE : REPRENDRE LE CONTRÔLE**
+
+> **"La vraie richesse n'est pas ce que vous possédez, mais ce que vous contrôlez."**
+
+Le système UPlanet n'est pas qu'une infrastructure technique. C'est une **déclaration d'indépendance numérique**. Chaque nouveau membre renforce la résilience collective et participe à la construction d'un monde post-GAFAM.
+
+#### **📦 128 Go NextCloud : FINI DE DONNER SES DONNÉES AUX GAFAM**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  🏢 AVANT (GAFAM)                    │  🏠 APRÈS (UPlanet)              │
+├─────────────────────────────────────────────────────────────────────────┤
+│  ❌ Vos photos sur Google Drive       │  ✅ Vos photos sur VOTRE cloud   │
+│  ❌ Vos docs analysés par l'IA        │  ✅ Vos docs chiffrés et privés  │
+│  ❌ Vos données vendues aux pubs      │  ✅ Vos données vous appartiennent│
+│  ❌ Compte supprimable sans préavis   │  ✅ Souveraineté totale          │
+│  ❌ 15 Go "gratuits" (vous êtes le    │  ✅ 128 Go pour 5€/mois          │
+│     produit)                          │     (vous êtes le client)        │
+├─────────────────────────────────────────────────────────────────────────┤
+│  💸 Prix réel : Votre vie privée      │  💎 Prix réel : 5 Ẑ/semaine     │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Ce que vous obtenez :**
+- **128 Go de stockage** NextCloud personnel, synchronisé sur tous vos appareils
+- **Calendrier, Contacts, Notes** intégrés et privés
+- **Partage sécurisé** avec qui vous voulez, quand vous voulez
+- **Backup automatique** sur l'infrastructure décentralisée IPFS
+- **Aucune publicité**, aucun tracking, aucune exploitation de vos données
+
+#### **🌐 10 Go NOSTR (uDRIVE) : CO-FONDATEUR DU NOUVEAU RÉSEAU SOCIAL**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  🐦 AVANT (Twitter/Facebook)          │  🦋 APRÈS (NOSTR/UPlanet)       │
+├─────────────────────────────────────────────────────────────────────────┤
+│  ❌ Algorithme qui vous manipule      │  ✅ Feed chronologique, libre   │
+│  ❌ Censure arbitraire                │  ✅ Résistant à la censure      │
+│  ❌ Shadowban invisible               │  ✅ Transparence totale         │
+│  ❌ Compte = propriété de la plateforme│  ✅ Clés = VOUS êtes propriétaire│
+│  ❌ Monétisation par la pub           │  ✅ 1 Like = 1 Ẑen (vraie valeur)│
+│  ❌ Spectateur passif                 │  ✅ CO-FONDATEUR actif          │
+├─────────────────────────────────────────────────────────────────────────┤
+│  🎯 Vous êtes : Le produit            │  🎯 Vous êtes : L'actionnaire   │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Ce que vous obtenez :**
+- **10 Go d'espace NOSTR** (uDRIVE) pour vos publications, médias et sauvegardes
+- **Identité souveraine** : Votre clé privée = Votre identité, portable partout
+- **Gains réels** : Chaque like reçu = 1 Ẑen sur votre compte
+- **Vote consultatif** sur les développements futurs de la plateforme
+- **Accès aux logiciels libres** que nous décidons de coder ensemble
+
+---
 
 ### **AVANTAGES MULTIPLES DU SYSTÈME UPLANET ẐEN**
 
@@ -713,14 +1052,23 @@ Six scripts orchestrent l'ensemble :
 ### **USER STORIES : LES AVANTAGES POUR CHAQUE MEMBRE**
 
 #### **🏠 LE MULTIPASS : Votre Passeport vers la Souveraineté**
-> **"Je paie 1 Ẑen/semaine (≈ 4€/mois) et je gagne ma liberté numérique."**
-*   **Ce que vous obtenez :** Une identité souveraine, un stockage décentralisé, et la possibilité de gagner des Ẑen en créant du contenu de qualité.
-*   **Pourquoi ?** C'est moins cher qu'un abonnement standard, mais vous n'êtes plus le produit. Vous êtes un citoyen du réseau.
+> **"Je paie 1 Ẑen/semaine (≈ 4€/mois) et je deviens co-fondateur d'un nouveau réseau social."**
+*   **Ce que vous obtenez :**
+    - **10 Go uDRIVE** : Espace NOSTR personnel pour vos publications et médias
+    - **Identité souveraine** : Clé cryptographique portable, résistante à la censure
+    - **Gains réels** : 1 Like = 1 Ẑen, monétisation directe de votre contenu
+    - **Accès au réseau** : Alternative décentralisée à Twitter/Facebook
+*   **Pourquoi ?** C'est moins cher qu'un café par semaine, mais vous n'êtes plus le produit. Vous êtes **actionnaire** du remplacement aux GAFAM.
 
-#### **👑 LE PARRAIN : Devenez Contributeur d'Infrastructure**
-> **"Je verse 50€/an comme crédit service, je deviens Parrain et mes services premium (128Go de Cloud Privé) sont inclus."**
-*   **Ce que vous obtenez :** Tous les avantages de l'Usager, PLUS 128Go de NextCloud, un statut de Parrain d'Infrastructure avec voix consultative, et des droits d'usage étendus.
-*   **Pourquoi ?** Vous dégooglez votre vie et vous contribuez à une infrastructure qui a un double impact : numérique et écologique.
+#### **👑 LE PARRAIN : Devenez Co-Fondateur avec Cloud Privé**
+> **"Je verse 50€/an, je me dégoogle complètement et je participe aux décisions."**
+*   **Ce que vous obtenez :**
+    - **128 Go NextCloud** : Votre cloud privé, fini Google Drive/Dropbox
+    - **Calendrier + Contacts + Notes** : Synchronisés, privés, à vous
+    - **10 Go uDRIVE** : Espace NOSTR inclus (tous les avantages MULTIPASS)
+    - **Voix consultative** : Participez aux choix des logiciels à développer
+    - **Statut Parrain** : Badge visible, reconnaissance dans la communauté
+*   **Pourquoi ?** Pour 50€/an (4€/mois), vous obtenez plus que les 200€/an d'iCloud/Google One, avec la souveraineté en bonus. **Vous dégooglez votre vie** tout en contribuant à une infrastructure à impact positif.
 
 #### **👨‍✈️ LE CAPITAINE : Créez de la Valeur, Recevez votre Rétribution**
 > **"Je transforme mon ordinateur en source de services et je participe à la construction d'un monde meilleur."**

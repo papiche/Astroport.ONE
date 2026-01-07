@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚠️ UPlanet Economic Health Warning</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            color: #333;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header .subtitle {
+            font-size: 1.2em;
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+        
+        .language-tabs {
+            display: flex;
+            justify-content: center;
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            gap: 5px;
+        }
+        
+        .language-tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            background-color: rgba(255,255,255,0.2);
+            color: white;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+        }
+        
+        .language-tab.active {
+            background-color: rgba(255,255,255,0.9);
+            color: #ff9800;
+            font-weight: bold;
+        }
+        
+        .language-section {
+            display: none;
+        }
+        
+        .language-section.active {
+            display: block;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .alert-box {
+            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+            border-left: 5px solid #ff9800;
+            padding: 25px;
+            margin: 25px;
+            border-radius: 8px;
+        }
+        
+        .alert-box h2 {
+            color: #e65100;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .alert-box h2::before {
+            content: "⚠️";
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .info-item strong {
+            color: #e65100;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .status-section {
+            padding: 25px;
+            margin: 25px;
+            border-radius: 8px;
+        }
+        
+        .status-assets {
+            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+            border-left: 5px solid #ff9800;
+        }
+        
+        .status-rnd {
+            background: linear-gradient(135deg, #fce4ec, #f8bbd9);
+            border-left: 5px solid #e91e63;
+        }
+        
+        .status-section h2 {
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .wallet-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .wallet-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .wallet-card.depleted {
+            background: #ffebee;
+            border: 2px solid #ef5350;
+        }
+        
+        .wallet-card.warning {
+            background: #fff3e0;
+            border: 2px solid #ff9800;
+        }
+        
+        .wallet-card.healthy {
+            background: #e8f5e9;
+            border: 2px solid #4caf50;
+        }
+        
+        .wallet-balance {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .wallet-card.depleted .wallet-balance { color: #c62828; }
+        .wallet-card.warning .wallet-balance { color: #e65100; }
+        .wallet-card.healthy .wallet-balance { color: #2e7d32; }
+        
+        .impact-section {
+            background: #e3f2fd;
+            border-left: 5px solid #2196f3;
+            padding: 25px;
+            margin: 25px;
+            border-radius: 8px;
+        }
+        
+        .impact-section h2 {
+            color: #1565c0;
+            margin-top: 0;
+        }
+        
+        .impact-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .impact-list li {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .impact-list li::before {
+            content: "📉";
+            margin-right: 15px;
+            font-size: 1.5em;
+        }
+        
+        .action-section {
+            background: linear-gradient(135deg, #c8e6c9, #a5d6a7);
+            border-left: 5px solid #4caf50;
+            padding: 25px;
+            margin: 25px;
+            border-radius: 8px;
+        }
+        
+        .action-section h2 {
+            color: #2e7d32;
+            margin-top: 0;
+        }
+        
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .action-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .action-card h3 {
+            color: #2e7d32;
+            margin-top: 0;
+        }
+        
+        .progress-bar {
+            background: #e0e0e0;
+            border-radius: 10px;
+            height: 20px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        .progress-fill.critical { background: linear-gradient(90deg, #ef5350, #c62828); }
+        .progress-fill.warning { background: linear-gradient(90deg, #ff9800, #f57c00); }
+        .progress-fill.healthy { background: linear-gradient(90deg, #66bb6a, #43a047); }
+        
+        .status-badge {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin: 30px auto;
+            max-width: 500px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .footer {
+            background: #263238;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .footer a {
+            color: #81c784;
+            text-decoration: none;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚠️ ALERTE ÉCONOMIQUE</h1>
+            <div class="subtitle">Pré-Faillite Coopérative UPlanet - Phase _DEGRADATION_PHASE_</div>
+            
+            <div class="language-tabs">
+                <div class="language-tab active" data-lang="fr">Français</div>
+                <div class="language-tab" data-lang="en">English</div>
+                <div class="language-tab" data-lang="es">Español</div>
+            </div>
+        </div>
+        
+        <!-- FRANÇAIS -->
+        <div class="language-section active" id="fr">
+            <div class="content">
+                <div class="alert-box">
+                    <h2>Situation de Déséquilibre Économique</h2>
+                    <p style="font-size: 1.1em; margin: 15px 0;">
+                        <strong>Le portefeuille CASH (Trésorerie) est insuffisant pour couvrir les coûts opérationnels.</strong>
+                    </p>
+                    <p>
+                        Conformément au pacte d'actionnaire, le système active le mode de dégradation progressive :
+                        les paiements PAF sont effectués depuis le portefeuille <strong>_PAYMENT_SOURCE_</strong>.
+                    </p>
+                    <p style="margin-top: 15px; padding: 15px; background: white; border-radius: 8px;">
+                        <strong>📋 Pacte d'Actionnaire :</strong> Cette situation est normale et prévue. 
+                        Les sociétaires sont informés pour permettre une action corrective collective.
+                    </p>
+                </div>
+                
+                <div class="status-section status-_PHASE_CLASS_">
+                    <h2>_PHASE_ICON_ Phase Actuelle : _PHASE_NAME_FR_</h2>
+                    <p>_PHASE_DESCRIPTION_FR_</p>
+                    
+                    <div class="wallet-grid">
+                        <div class="wallet-card _CASH_STATUS_">
+                            <div>💰 CASH (Trésorerie)</div>
+                            <div class="wallet-balance">_CASH_BALANCE_ Ẑen</div>
+                            <div>Requis : _TOTAL_PAF_REQUIRED_ Ẑen</div>
+                        </div>
+                        <div class="wallet-card _ASSETS_STATUS_">
+                            <div>🌱 ASSETS (Forêts-Jardins)</div>
+                            <div class="wallet-balance">_ASSETS_BALANCE_ Ẑen</div>
+                            <div>_ASSETS_STATUS_TEXT_</div>
+                        </div>
+                        <div class="wallet-card _RND_STATUS_">
+                            <div>🔬 R&D (Innovation)</div>
+                            <div class="wallet-balance">_RND_BALANCE_ Ẑen</div>
+                            <div>_RND_STATUS_TEXT_</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="impact-section">
+                    <h2>📊 Impact sur la Coopérative</h2>
+                    <ul class="impact-list">
+                        _IMPACT_LIST_FR_
+                    </ul>
+                    
+                    <div style="margin-top: 20px;">
+                        <strong>Paiements effectués cette semaine :</strong>
+                        <div class="info-grid" style="margin-top: 10px;">
+                            <div class="info-item">
+                                <strong>NODE (Infrastructure)</strong>
+                                <span>_NODE_PAYMENT_STATUS_FR_</span>
+                            </div>
+                            <div class="info-item">
+                                <strong>CAPITAINE (Rémunération)</strong>
+                                <span>_CAPTAIN_PAYMENT_STATUS_FR_</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="status-badge">
+                    ⚠️ STATUT : PRÉ-FAILLITE PHASE _DEGRADATION_PHASE_
+                </div>
+                
+                <div class="action-section">
+                    <h2>🌱 Actions Recommandées pour les Sociétaires</h2>
+                    <p style="margin-bottom: 20px;">Chaque sociétaire peut contribuer au redressement :</p>
+                    
+                    <div class="action-grid">
+                        <div class="action-card">
+                            <h3>1. 📣 Inviter de Nouveaux Membres</h3>
+                            <p>Chaque nouveau MULTIPASS génère <strong>_NCARD_ Ẑen/semaine</strong> de revenus.</p>
+                            <ul style="margin-top: 10px; padding-left: 20px;">
+                                <li>Partagez votre lien de parrainage</li>
+                                <li>Expliquez les avantages UPlanet</li>
+                                <li>Objectif : +10 membres = +_IMPACT_10_MULTIPASS_ Ẑen/semaine</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="action-card">
+                            <h3>2. 💳 Promouvoir les ZEN Cards</h3>
+                            <p>Chaque ZEN Card génère <strong>_ZCARD_ Ẑen/semaine</strong> de revenus.</p>
+                            <ul style="margin-top: 10px; padding-left: 20px;">
+                                <li>Plus de stockage (128Go)</li>
+                                <li>Fonctionnalités avancées</li>
+                                <li>Objectif : +5 ZEN Cards = +_IMPACT_5_ZENCARDS_ Ẑen/semaine</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="action-card">
+                            <h3>3. 💰 Contribution OpenCollective</h3>
+                            <p>Injection directe de capital : <strong>1€ = 1 Ẑen</strong></p>
+                            <ul style="margin-top: 10px; padding-left: 20px;">
+                                <li>opencollective.com/uplanet-zero</li>
+                                <li>Mentionner : "Urgence _UPLANET_ID_"</li>
+                                <li>Les fonds vont vers CASH</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="action-card">
+                            <h3>4. ❤️ Créer du Contenu</h3>
+                            <p>Chaque like = <strong>1 Ẑen</strong> automatiquement</p>
+                            <ul style="margin-top: 10px; padding-left: 20px;">
+                                <li>Publiez sur Coracle</li>
+                                <li>Engagez votre réseau N²</li>
+                                <li>Potentiel : 100+ Ẑen/semaine</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert-box" style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border-left-color: #4caf50;">
+                    <h2 style="color: #2e7d32;">✅ Ce qui fonctionne toujours</h2>
+                    <ul style="margin: 15px 0 0 20px;">
+                        <li>Infrastructure NODE opérationnelle</li>
+                        <li>Services MULTIPASS et ZEN Card actifs</li>
+                        <li>Stockage IPFS et NextCloud disponibles</li>
+                        <li>Réseau Nostr fonctionnel</li>
+                    </ul>
+                    <p style="margin-top: 15px; font-style: italic;">
+                        La coopérative continue de fonctionner. Seule la croissance est temporairement ralentie.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ENGLISH -->
+        <div class="language-section" id="en">
+            <div class="content">
+                <div class="alert-box">
+                    <h2>Economic Imbalance Situation</h2>
+                    <p style="font-size: 1.1em; margin: 15px 0;">
+                        <strong>The CASH (Treasury) wallet is insufficient to cover operational costs.</strong>
+                    </p>
+                    <p>
+                        According to the shareholder agreement, the system activates progressive degradation mode:
+                        PAF payments are made from the <strong>_PAYMENT_SOURCE_</strong> wallet.
+                    </p>
+                    <p style="margin-top: 15px; padding: 15px; background: white; border-radius: 8px;">
+                        <strong>📋 Shareholder Agreement:</strong> This situation is normal and expected. 
+                        Shareholders are informed to enable collective corrective action.
+                    </p>
+                </div>
+                
+                <div class="status-section status-_PHASE_CLASS_">
+                    <h2>_PHASE_ICON_ Current Phase: _PHASE_NAME_EN_</h2>
+                    <p>_PHASE_DESCRIPTION_EN_</p>
+                    
+                    <div class="wallet-grid">
+                        <div class="wallet-card _CASH_STATUS_">
+                            <div>💰 CASH (Treasury)</div>
+                            <div class="wallet-balance">_CASH_BALANCE_ Ẑen</div>
+                            <div>Required: _TOTAL_PAF_REQUIRED_ Ẑen</div>
+                        </div>
+                        <div class="wallet-card _ASSETS_STATUS_">
+                            <div>🌱 ASSETS (Forest-Gardens)</div>
+                            <div class="wallet-balance">_ASSETS_BALANCE_ Ẑen</div>
+                            <div>_ASSETS_STATUS_TEXT_EN_</div>
+                        </div>
+                        <div class="wallet-card _RND_STATUS_">
+                            <div>🔬 R&D (Innovation)</div>
+                            <div class="wallet-balance">_RND_BALANCE_ Ẑen</div>
+                            <div>_RND_STATUS_TEXT_EN_</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="impact-section">
+                    <h2>📊 Impact on the Cooperative</h2>
+                    <ul class="impact-list">
+                        _IMPACT_LIST_EN_
+                    </ul>
+                    
+                    <div style="margin-top: 20px;">
+                        <strong>Payments made this week:</strong>
+                        <div class="info-grid" style="margin-top: 10px;">
+                            <div class="info-item">
+                                <strong>NODE (Infrastructure)</strong>
+                                <span>_NODE_PAYMENT_STATUS_EN_</span>
+                            </div>
+                            <div class="info-item">
+                                <strong>CAPTAIN (Remuneration)</strong>
+                                <span>_CAPTAIN_PAYMENT_STATUS_EN_</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="status-badge">
+                    ⚠️ STATUS: PRE-BANKRUPTCY PHASE _DEGRADATION_PHASE_
+                </div>
+                
+                <div class="action-section">
+                    <h2>🌱 Recommended Actions for Shareholders</h2>
+                    <p style="margin-bottom: 20px;">Each shareholder can contribute to recovery:</p>
+                    
+                    <div class="action-grid">
+                        <div class="action-card">
+                            <h3>1. 📣 Invite New Members</h3>
+                            <p>Each new MULTIPASS generates <strong>_NCARD_ Ẑen/week</strong> revenue.</p>
+                            <ul style="margin-top: 10px; padding-left: 20px;">
+                                <li>Share your referral link</li>
+                                <li>Explain UPlanet benefits</li>
+                                <li>Goal: +10 members = +_IMPACT_10_MULTIPASS_ Ẑen/week</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="action-card">
+                            <h3>2. 💳 Promote ZEN Cards</h3>
+                            <p>Each ZEN Card generates <strong>_ZCARD_ Ẑen/week</strong> revenue.</p>
+                            <ul style="margin-top: 10px; padding-left: 20px;">
+                                <li>More storage (128Go)</li>
+                                <li>Advanced features</li>
+                                <li>Goal: +5 ZEN Cards = +_IMPACT_5_ZENCARDS_ Ẑen/week</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="action-card">
+                            <h3>3. 💰 OpenCollective Contribution</h3>
+                            <p>Direct capital injection: <strong>1€ = 1 Ẑen</strong></p>
+                            <ul style="margin-top: 10px; padding-left: 20px;">
+                                <li>opencollective.com/uplanet-zero</li>
+                                <li>Mention: "Emergency _UPLANET_ID_"</li>
+                                <li>Funds go to CASH</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="action-card">
+                            <h3>4. ❤️ Create Content</h3>
+                            <p>Each like = <strong>1 Ẑen</strong> automatically</p>
+                            <ul style="margin-top: 10px; padding-left: 20px;">
+                                <li>Publish on Coracle</li>
+                                <li>Engage your N² network</li>
+                                <li>Potential: 100+ Ẑen/week</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert-box" style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border-left-color: #4caf50;">
+                    <h2 style="color: #2e7d32;">✅ What Still Works</h2>
+                    <ul style="margin: 15px 0 0 20px;">
+                        <li>NODE infrastructure operational</li>
+                        <li>MULTIPASS and ZEN Card services active</li>
+                        <li>IPFS and NextCloud storage available</li>
+                        <li>Nostr network functional</li>
+                    </ul>
+                    <p style="margin-top: 15px; font-style: italic;">
+                        The cooperative continues to operate. Only growth is temporarily slowed.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ESPAÑOL -->
+        <div class="language-section" id="es">
+            <div class="content">
+                <div class="alert-box">
+                    <h2>Situación de Desequilibrio Económico</h2>
+                    <p style="font-size: 1.1em; margin: 15px 0;">
+                        <strong>La cartera CASH (Tesorería) es insuficiente para cubrir los costos operativos.</strong>
+                    </p>
+                    <p>
+                        Según el pacto de accionistas, el sistema activa el modo de degradación progresiva:
+                        los pagos PAF se realizan desde la cartera <strong>_PAYMENT_SOURCE_</strong>.
+                    </p>
+                    <p style="margin-top: 15px; padding: 15px; background: white; border-radius: 8px;">
+                        <strong>📋 Pacto de Accionistas:</strong> Esta situación es normal y esperada. 
+                        Los socios son informados para permitir una acción correctiva colectiva.
+                    </p>
+                </div>
+                
+                <div class="status-section status-_PHASE_CLASS_">
+                    <h2>_PHASE_ICON_ Fase Actual: _PHASE_NAME_ES_</h2>
+                    <p>_PHASE_DESCRIPTION_ES_</p>
+                    
+                    <div class="wallet-grid">
+                        <div class="wallet-card _CASH_STATUS_">
+                            <div>💰 CASH (Tesorería)</div>
+                            <div class="wallet-balance">_CASH_BALANCE_ Ẑen</div>
+                            <div>Requerido: _TOTAL_PAF_REQUIRED_ Ẑen</div>
+                        </div>
+                        <div class="wallet-card _ASSETS_STATUS_">
+                            <div>🌱 ASSETS (Bosques-Jardines)</div>
+                            <div class="wallet-balance">_ASSETS_BALANCE_ Ẑen</div>
+                            <div>_ASSETS_STATUS_TEXT_ES_</div>
+                        </div>
+                        <div class="wallet-card _RND_STATUS_">
+                            <div>🔬 R&D (Innovación)</div>
+                            <div class="wallet-balance">_RND_BALANCE_ Ẑen</div>
+                            <div>_RND_STATUS_TEXT_ES_</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="status-badge">
+                    ⚠️ ESTADO: PRE-QUIEBRA FASE _DEGRADATION_PHASE_
+                </div>
+                
+                <div class="action-section">
+                    <h2>🌱 Acciones Recomendadas para los Socios</h2>
+                    <p style="margin-bottom: 20px;">Cada socio puede contribuir a la recuperación:</p>
+                    
+                    <div class="action-grid">
+                        <div class="action-card">
+                            <h3>1. 📣 Invitar Nuevos Miembros</h3>
+                            <p>Cada nuevo MULTIPASS genera <strong>_NCARD_ Ẑen/semana</strong> de ingresos.</p>
+                        </div>
+                        
+                        <div class="action-card">
+                            <h3>2. 💳 Promover ZEN Cards</h3>
+                            <p>Cada ZEN Card genera <strong>_ZCARD_ Ẑen/semana</strong> de ingresos.</p>
+                        </div>
+                        
+                        <div class="action-card">
+                            <h3>3. 💰 Contribución OpenCollective</h3>
+                            <p>Inyección directa de capital: <strong>1€ = 1 Ẑen</strong></p>
+                        </div>
+                        
+                        <div class="action-card">
+                            <h3>4. ❤️ Crear Contenido</h3>
+                            <p>Cada like = <strong>1 Ẑen</strong> automáticamente</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <h3>🌍 Sistema Cooperativo UPlanet</h3>
+            <p>Esta es una alerta automática de pre-faillite del sistema ZEN.COOPERATIVE.</p>
+            <p><strong>ID Alerta:</strong> PRE-BANKRUPTCY-_TODATE_-PHASE-_DEGRADATION_PHASE_</p>
+            <p><strong>Generado:</strong> _DATE_</p>
+            <hr style="border: none; border-top: 1px solid #455a64; margin: 20px 0;">
+            <p><small>
+                Cette alerte est générée conformément au pacte d'actionnaire.<br>
+                La transparence financière est un pilier de la gouvernance coopérative.
+            </small></p>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.language-tab');
+            const sections = document.querySelectorAll('.language-section');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    sections.forEach(s => s.classList.remove('active'));
+
+                    tab.classList.add('active');
+                    const lang = tab.getAttribute('data-lang');
+                    document.getElementById(lang).classList.add('active');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

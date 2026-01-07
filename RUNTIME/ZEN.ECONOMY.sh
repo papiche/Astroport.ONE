@@ -170,107 +170,342 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
     if [[ $(echo "$NODECOIN >= 1" | bc -l) -eq 1 ]]; then
         
         #######################################################################
-        # BANKRUPTCY RECOVERY CASCADE
-        # If CASH is insufficient, try to recover from other wallets:
-        # 1. ASSETS → CASH (cooperative can't grow anymore)
-        # 2. RnD → CASH (cooperative can't pay its actors)
-        # 3. If NODE can't be paid = GAME OVER
+        # PROGRESSIVE DEGRADATION SYSTEM (Shareholder Agreement)
+        # Instead of transferring funds, pay directly from backup wallets:
+        # 
+        # PHASE 0: Normal operation - Pay from CASH
+        # PHASE 1: Growth slowdown - Pay from ASSETS (forest-gardens depleting)
+        # PHASE 2: Innovation slowdown - Pay from RnD (R&D budget depleting)
+        # PHASE 3: BANKRUPTCY - No funds available, GAME OVER
+        #
+        # Each phase sends notifications to all shareholders for transparency.
+        # This allows collective corrective action before total bankruptcy.
         #######################################################################
         
         BANKRUPTCY_TRIGGERED=0
+        PRE_BANKRUPTCY_PHASE=0
         CAPTAIN_PAID=0
         NODE_PAID=0
+        PAYMENT_SOURCE="CASH"
+        NODE_PAYMENT_SOURCE=""
+        CAPTAIN_PAYMENT_SOURCE=""
         
-        # First, check if we need to trigger recovery cascade
-        if [[ $(echo "$CASH_ZEN < $TOTAL_PAF_REQUIRED" | bc -l) -eq 1 ]]; then
-            log_output "🚨 CASH insufficient ($CASH_ZEN Ẑen < $TOTAL_PAF_REQUIRED Ẑen required)"
-            
-            DEFICIT=$(echo "scale=2; $TOTAL_PAF_REQUIRED - $CASH_ZEN" | bc -l)
-            DEFICIT_G1=$(echo "scale=4; $DEFICIT / 10" | bc -l)
-            log_output "   Deficit: $DEFICIT Ẑen"
-            
-            ## STEP 1: Try to recover from ASSETS (cooperative can't grow anymore)
-            if [[ -s ~/.zen/game/uplanet.ASSETS.dunikey ]]; then
-                ASSETS_G1PUB=$(cat ~/.zen/game/uplanet.ASSETS.dunikey | grep "pub:" | cut -d ' ' -f 2)
-                ASSETS_COIN=$(${MY_PATH}/../tools/G1check.sh ${ASSETS_G1PUB} | tail -n 1)
-                ASSETS_ZEN=$(echo "scale=1; ($ASSETS_COIN - 1) * 10" | bc)
-                
-                if [[ $(echo "$ASSETS_ZEN > 0" | bc -l) -eq 1 ]]; then
-                    # Transfer from ASSETS to CASH
-                    TRANSFER_AMOUNT=$DEFICIT
-                    if [[ $(echo "$ASSETS_ZEN < $DEFICIT" | bc -l) -eq 1 ]]; then
-                        TRANSFER_AMOUNT=$ASSETS_ZEN
-                    fi
-                    TRANSFER_G1=$(echo "scale=4; $TRANSFER_AMOUNT / 10" | bc -l)
-                    
-                    log_output "🔄 RECOVERY: Transferring $TRANSFER_AMOUNT Ẑen from ASSETS to CASH"
-                    ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/game/uplanet.ASSETS.dunikey "$TRANSFER_G1" "${CASH_G1PUB}" "UP:${UPLANETG1PUB:0:8}:RECOVERY:ASSETS>CASH:${TRANSFER_AMOUNT}Z" 2>/dev/null
-                    
-                    # Update CASH balance
-                    CASH_ZEN=$(echo "scale=1; $CASH_ZEN + $TRANSFER_AMOUNT" | bc)
-                    DEFICIT=$(echo "scale=2; $TOTAL_PAF_REQUIRED - $CASH_ZEN" | bc -l)
-                    log_output "   CASH after ASSETS recovery: $CASH_ZEN Ẑen (deficit: $DEFICIT Ẑen)"
-                    BANKRUPTCY_TRIGGERED=1
-                fi
-            fi
-            
-            ## STEP 2: If still insufficient, try RnD (cooperative can't pay its actors)
-            if [[ $(echo "$CASH_ZEN < $TOTAL_PAF_REQUIRED" | bc -l) -eq 1 ]]; then
-                if [[ -s ~/.zen/game/uplanet.RnD.dunikey ]]; then
-                    RND_G1PUB=$(cat ~/.zen/game/uplanet.RnD.dunikey | grep "pub:" | cut -d ' ' -f 2)
-                    RND_COIN=$(${MY_PATH}/../tools/G1check.sh ${RND_G1PUB} | tail -n 1)
-                    RND_ZEN=$(echo "scale=1; ($RND_COIN - 1) * 10" | bc)
-                    
-                    if [[ $(echo "$RND_ZEN > 0" | bc -l) -eq 1 ]]; then
-                        DEFICIT=$(echo "scale=2; $TOTAL_PAF_REQUIRED - $CASH_ZEN" | bc -l)
-                        TRANSFER_AMOUNT=$DEFICIT
-                        if [[ $(echo "$RND_ZEN < $DEFICIT" | bc -l) -eq 1 ]]; then
-                            TRANSFER_AMOUNT=$RND_ZEN
-                        fi
-                        TRANSFER_G1=$(echo "scale=4; $TRANSFER_AMOUNT / 10" | bc -l)
-                        
-                        log_output "🔄 RECOVERY: Transferring $TRANSFER_AMOUNT Ẑen from RnD to CASH"
-                        ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/game/uplanet.RnD.dunikey "$TRANSFER_G1" "${CASH_G1PUB}" "UP:${UPLANETG1PUB:0:8}:RECOVERY:RND>CASH:${TRANSFER_AMOUNT}Z" 2>/dev/null
-                        
-                        # Update CASH balance
-                        CASH_ZEN=$(echo "scale=1; $CASH_ZEN + $TRANSFER_AMOUNT" | bc)
-                        log_output "   CASH after RnD recovery: $CASH_ZEN Ẑen"
-                        BANKRUPTCY_TRIGGERED=1
-                    fi
-                fi
-            fi
-        fi
-        
-        #######################################################################
-        # PAYMENT PRIORITY: NODE first (infrastructure), then Captain (salary)
-        #######################################################################
-        
-        ## PRIORITY 1: Pay NODE (1x PAF) - Infrastructure is critical
-        if [[ $(echo "$CASH_ZEN >= $WEEKLYPAF" | bc -l) -eq 1 ]]; then
-            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.CASH.dunikey" "$WEEKLYG1" "${NODEG1PUB}" "UP:${UPLANETG1PUB:0:8}:PAF:W${CURRENT_WEEK}:${WEEKLYPAF}Z:CASH>NODE" 2>/dev/null
-            log_output "✅ CASH paid weekly PAF to NODE (Armateur): $WEEKLYPAF ZEN ($WEEKLYG1 G1)"
-            NODE_PAID=1
-            CASH_ZEN=$(echo "scale=1; $CASH_ZEN - $WEEKLYPAF" | bc)
-        else
-            ## GAME OVER - NODE cannot be paid, infrastructure cannot function
-            log_output "💀 GAME OVER: Cannot pay NODE PAF - Infrastructure cannot function!"
-            log_output "   Required: $WEEKLYPAF Ẑen, Available: $CASH_ZEN Ẑen"
-            BANKRUPTCY_TRIGGERED=1
-        fi
-        
-        ## PRIORITY 2: Pay Captain (2x PAF) - Only if enough funds remain
+        # Calculate remuneration amounts
         CAPTAIN_REMUNERATION=$(echo "scale=2; $WEEKLYPAF * 2" | bc -l)
         CAPTAIN_REMUNERATION_G1=$(makecoord $(echo "$CAPTAIN_REMUNERATION / 10" | bc -l))
         
-        if [[ $NODE_PAID -eq 1 && $(echo "$CASH_ZEN >= $CAPTAIN_REMUNERATION" | bc -l) -eq 1 ]]; then
-            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.CASH.dunikey" "$CAPTAIN_REMUNERATION_G1" "${CAPTAING1PUB}" "UP:${UPLANETG1PUB:0:8}:SALARY:W${CURRENT_WEEK}:${CAPTAIN_REMUNERATION}Z:CASH>CPT_MP" 2>/dev/null
-            log_output "✅ CASH paid weekly remuneration to CAPTAIN MULTIPASS: $CAPTAIN_REMUNERATION ZEN ($CAPTAIN_REMUNERATION_G1 G1)"
-            CAPTAIN_PAID=1
-        else
-            log_output "⚠️  CAPTAIN NOT PAID: Insufficient CASH for Captain remuneration"
-            log_output "   Required: $CAPTAIN_REMUNERATION Ẑen, Available: $CASH_ZEN Ẑen"
-            BANKRUPTCY_TRIGGERED=1
+        # Get ASSETS wallet balance
+        ASSETS_ZEN=0
+        ASSETS_G1PUB=""
+        if [[ -s ~/.zen/game/uplanet.ASSETS.dunikey ]]; then
+            ASSETS_G1PUB=$(cat ~/.zen/game/uplanet.ASSETS.dunikey | grep "pub:" | cut -d ' ' -f 2)
+            ASSETS_COIN=$(${MY_PATH}/../tools/G1check.sh ${ASSETS_G1PUB} | tail -n 1)
+            ASSETS_ZEN=$(echo "scale=1; ($ASSETS_COIN - 1) * 10" | bc)
         fi
+        log_output "ASSETS (Forest-Gardens) balance: $ASSETS_ZEN Ẑen"
+        
+        # Get RnD wallet balance
+        RND_ZEN=0
+        RND_G1PUB=""
+        if [[ -s ~/.zen/game/uplanet.RnD.dunikey ]]; then
+            RND_G1PUB=$(cat ~/.zen/game/uplanet.RnD.dunikey | grep "pub:" | cut -d ' ' -f 2)
+            RND_COIN=$(${MY_PATH}/../tools/G1check.sh ${RND_G1PUB} | tail -n 1)
+            RND_ZEN=$(echo "scale=1; ($RND_COIN - 1) * 10" | bc)
+        fi
+        log_output "RnD (Innovation) balance: $RND_ZEN Ẑen"
+        
+        #######################################################################
+        # PRIORITY 1: Pay NODE (1x PAF) - Infrastructure is critical
+        #######################################################################
+        log_output "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        log_output "📦 NODE PAYMENT (1x PAF = $WEEKLYPAF Ẑen)"
+        
+        if [[ $(echo "$CASH_ZEN >= $WEEKLYPAF" | bc -l) -eq 1 ]]; then
+            # PHASE 0: Normal - Pay from CASH
+            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.CASH.dunikey" "$WEEKLYG1" "${NODEG1PUB}" "UP:${UPLANETG1PUB:0:8}:PAF:W${CURRENT_WEEK}:${WEEKLYPAF}Z:CASH>NODE" 2>/dev/null
+            if [[ $? -eq 0 ]]; then
+                log_output "✅ CASH paid NODE PAF: $WEEKLYPAF Ẑen ($WEEKLYG1 G1)"
+                NODE_PAID=1
+                NODE_PAYMENT_SOURCE="CASH"
+                CASH_ZEN=$(echo "scale=1; $CASH_ZEN - $WEEKLYPAF" | bc)
+            else
+                log_output "❌ CASH payment to NODE failed - trying ASSETS"
+            fi
+        fi
+        
+        # PHASE 1: Growth slowdown - Try ASSETS if CASH insufficient/failed
+        if [[ $NODE_PAID -eq 0 && $(echo "$ASSETS_ZEN >= $WEEKLYPAF" | bc -l) -eq 1 ]]; then
+            PRE_BANKRUPTCY_PHASE=1
+            PAYMENT_SOURCE="ASSETS"
+            log_output "⚠️  PHASE 1: CASH insufficient - Paying NODE from ASSETS (growth slowdown)"
+            ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/game/uplanet.ASSETS.dunikey "$WEEKLYG1" "${NODEG1PUB}" "UP:${UPLANETG1PUB:0:8}:PAF:W${CURRENT_WEEK}:${WEEKLYPAF}Z:ASSETS>NODE:PHASE1" 2>/dev/null
+            if [[ $? -eq 0 ]]; then
+                log_output "✅ ASSETS paid NODE PAF: $WEEKLYPAF Ẑen (growth slowing)"
+                NODE_PAID=1
+                NODE_PAYMENT_SOURCE="ASSETS"
+                ASSETS_ZEN=$(echo "scale=1; $ASSETS_ZEN - $WEEKLYPAF" | bc)
+            else
+                log_output "❌ ASSETS payment to NODE failed - trying RnD"
+            fi
+        fi
+        
+        # PHASE 2: Innovation slowdown - Try RnD if ASSETS insufficient/failed
+        if [[ $NODE_PAID -eq 0 && $(echo "$RND_ZEN >= $WEEKLYPAF" | bc -l) -eq 1 ]]; then
+            PRE_BANKRUPTCY_PHASE=2
+            PAYMENT_SOURCE="RnD"
+            log_output "⚠️  PHASE 2: ASSETS depleted - Paying NODE from RnD (innovation slowdown)"
+            ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/game/uplanet.RnD.dunikey "$WEEKLYG1" "${NODEG1PUB}" "UP:${UPLANETG1PUB:0:8}:PAF:W${CURRENT_WEEK}:${WEEKLYPAF}Z:RND>NODE:PHASE2" 2>/dev/null
+            if [[ $? -eq 0 ]]; then
+                log_output "✅ RnD paid NODE PAF: $WEEKLYPAF Ẑen (innovation slowing)"
+                NODE_PAID=1
+                NODE_PAYMENT_SOURCE="RnD"
+                RND_ZEN=$(echo "scale=1; $RND_ZEN - $WEEKLYPAF" | bc)
+            else
+                log_output "❌ RnD payment to NODE failed"
+            fi
+        fi
+        
+        # PHASE 3: BANKRUPTCY - No funds available
+        if [[ $NODE_PAID -eq 0 ]]; then
+            PRE_BANKRUPTCY_PHASE=3
+            BANKRUPTCY_TRIGGERED=1
+            log_output "💀 PHASE 3: BANKRUPTCY - Cannot pay NODE PAF!"
+            log_output "   CASH: $CASH_ZEN Ẑen | ASSETS: $ASSETS_ZEN Ẑen | RnD: $RND_ZEN Ẑen"
+            log_output "   Required: $WEEKLYPAF Ẑen - Infrastructure cannot function!"
+        fi
+        
+        #######################################################################
+        # PRIORITY 2: Pay Captain (2x PAF) - Only if NODE was paid
+        #######################################################################
+        log_output "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        log_output "👨‍✈️ CAPTAIN PAYMENT (2x PAF = $CAPTAIN_REMUNERATION Ẑen)"
+        
+        if [[ $NODE_PAID -eq 1 ]]; then
+            # Try CASH first
+            if [[ $(echo "$CASH_ZEN >= $CAPTAIN_REMUNERATION" | bc -l) -eq 1 ]]; then
+                ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.CASH.dunikey" "$CAPTAIN_REMUNERATION_G1" "${CAPTAING1PUB}" "UP:${UPLANETG1PUB:0:8}:SALARY:W${CURRENT_WEEK}:${CAPTAIN_REMUNERATION}Z:CASH>CPT" 2>/dev/null
+                if [[ $? -eq 0 ]]; then
+                    log_output "✅ CASH paid Captain: $CAPTAIN_REMUNERATION Ẑen"
+                    CAPTAIN_PAID=1
+                    CAPTAIN_PAYMENT_SOURCE="CASH"
+                    CASH_ZEN=$(echo "scale=1; $CASH_ZEN - $CAPTAIN_REMUNERATION" | bc)
+                fi
+            fi
+            
+            # PHASE 1: Try ASSETS if CASH insufficient
+            if [[ $CAPTAIN_PAID -eq 0 && $(echo "$ASSETS_ZEN >= $CAPTAIN_REMUNERATION" | bc -l) -eq 1 ]]; then
+                [[ $PRE_BANKRUPTCY_PHASE -lt 1 ]] && PRE_BANKRUPTCY_PHASE=1
+                log_output "⚠️  PHASE 1: Paying Captain from ASSETS"
+                ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/game/uplanet.ASSETS.dunikey "$CAPTAIN_REMUNERATION_G1" "${CAPTAING1PUB}" "UP:${UPLANETG1PUB:0:8}:SALARY:W${CURRENT_WEEK}:${CAPTAIN_REMUNERATION}Z:ASSETS>CPT:PHASE1" 2>/dev/null
+                if [[ $? -eq 0 ]]; then
+                    log_output "✅ ASSETS paid Captain: $CAPTAIN_REMUNERATION Ẑen"
+                    CAPTAIN_PAID=1
+                    CAPTAIN_PAYMENT_SOURCE="ASSETS"
+                    ASSETS_ZEN=$(echo "scale=1; $ASSETS_ZEN - $CAPTAIN_REMUNERATION" | bc)
+                fi
+            fi
+            
+            # PHASE 2: Try RnD if ASSETS insufficient
+            if [[ $CAPTAIN_PAID -eq 0 && $(echo "$RND_ZEN >= $CAPTAIN_REMUNERATION" | bc -l) -eq 1 ]]; then
+                [[ $PRE_BANKRUPTCY_PHASE -lt 2 ]] && PRE_BANKRUPTCY_PHASE=2
+                log_output "⚠️  PHASE 2: Paying Captain from RnD"
+                ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/game/uplanet.RnD.dunikey "$CAPTAIN_REMUNERATION_G1" "${CAPTAING1PUB}" "UP:${UPLANETG1PUB:0:8}:SALARY:W${CURRENT_WEEK}:${CAPTAIN_REMUNERATION}Z:RND>CPT:PHASE2" 2>/dev/null
+                if [[ $? -eq 0 ]]; then
+                    log_output "✅ RnD paid Captain: $CAPTAIN_REMUNERATION Ẑen"
+                    CAPTAIN_PAID=1
+                    CAPTAIN_PAYMENT_SOURCE="RnD"
+                    RND_ZEN=$(echo "scale=1; $RND_ZEN - $CAPTAIN_REMUNERATION" | bc)
+                fi
+            fi
+            
+            # Captain not paid but NODE was - partial degradation
+            if [[ $CAPTAIN_PAID -eq 0 ]]; then
+                log_output "⚠️  Captain NOT PAID: Insufficient funds in all wallets"
+                log_output "   Required: $CAPTAIN_REMUNERATION Ẑen"
+                log_output "   CASH: $CASH_ZEN | ASSETS: $ASSETS_ZEN | RnD: $RND_ZEN"
+                [[ $PRE_BANKRUPTCY_PHASE -lt 2 ]] && PRE_BANKRUPTCY_PHASE=2
+            fi
+        else
+            log_output "⏭️  Captain payment skipped (NODE not paid - infrastructure priority)"
+        fi
+        
+        log_output "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        
+        #######################################################################
+        # SEND PRE-BANKRUPTCY NOTIFICATION (Shareholder Agreement Transparency)
+        #######################################################################
+        if [[ $PRE_BANKRUPTCY_PHASE -gt 0 && $PRE_BANKRUPTCY_PHASE -lt 3 ]]; then
+            log_output "📧 Sending pre-bankruptcy notification (Phase $PRE_BANKRUPTCY_PHASE)..."
+            
+            PRE_BANKRUPTCY_TEMPLATE="${MY_PATH}/../templates/NOSTR/pre_bankruptcy.html"
+            PRE_BANKRUPTCY_REPORT="$HOME/.zen/tmp/pre_bankruptcy_phase${PRE_BANKRUPTCY_PHASE}_$(date +%Y-%m-%d).html"
+            
+            if [[ -s "$PRE_BANKRUPTCY_TEMPLATE" ]]; then
+                REPORT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+                TODATE=$(date +%Y-%m-%d)
+                UPLANET_ID="${UPLANETG1PUB:0:8}"
+                
+                # Set phase-specific variables
+                case $PRE_BANKRUPTCY_PHASE in
+                    1)
+                        PHASE_CLASS="assets"
+                        PHASE_ICON="🌱"
+                        PHASE_NAME_FR="Ralentissement de Croissance"
+                        PHASE_NAME_EN="Growth Slowdown"
+                        PHASE_NAME_ES="Desaceleración del Crecimiento"
+                        PHASE_DESCRIPTION_FR="Les paiements sont effectués depuis le portefeuille ASSETS. Les investissements en forêts-jardins sont temporairement suspendus."
+                        PHASE_DESCRIPTION_EN="Payments are made from the ASSETS wallet. Forest-garden investments are temporarily suspended."
+                        PHASE_DESCRIPTION_ES="Los pagos se realizan desde la cartera ASSETS. Las inversiones en bosques-jardines están temporalmente suspendidas."
+                        IMPACT_LIST_FR="<li>Investissements forêts-jardins suspendus</li><li>Croissance de l'écosystème ralentie</li><li>Services opérationnels maintenus</li>"
+                        IMPACT_LIST_EN="<li>Forest-garden investments suspended</li><li>Ecosystem growth slowed</li><li>Operational services maintained</li>"
+                        ASSETS_STATUS_TEXT="Source de paiement active"
+                        ASSETS_STATUS_TEXT_EN="Active payment source"
+                        ASSETS_STATUS_TEXT_ES="Fuente de pago activa"
+                        RND_STATUS_TEXT="En réserve"
+                        RND_STATUS_TEXT_EN="In reserve"
+                        RND_STATUS_TEXT_ES="En reserva"
+                        ;;
+                    2)
+                        PHASE_CLASS="rnd"
+                        PHASE_ICON="🔬"
+                        PHASE_NAME_FR="Réduction R&D"
+                        PHASE_NAME_EN="R&D Reduction"
+                        PHASE_NAME_ES="Reducción de I+D"
+                        PHASE_DESCRIPTION_FR="Les paiements sont effectués depuis le portefeuille RnD. L'innovation et le développement sont temporairement suspendus."
+                        PHASE_DESCRIPTION_EN="Payments are made from the RnD wallet. Innovation and development are temporarily suspended."
+                        PHASE_DESCRIPTION_ES="Los pagos se realizan desde la cartera RnD. La innovación y el desarrollo están temporalmente suspendidos."
+                        IMPACT_LIST_FR="<li>Investissements forêts-jardins épuisés</li><li>Budget R&D utilisé pour l'opérationnel</li><li>Innovation temporairement suspendue</li><li>Services opérationnels maintenus</li>"
+                        IMPACT_LIST_EN="<li>Forest-garden investments depleted</li><li>R&D budget used for operations</li><li>Innovation temporarily suspended</li><li>Operational services maintained</li>"
+                        ASSETS_STATUS_TEXT="Épuisé (≤ 1Ğ1)"
+                        ASSETS_STATUS_TEXT_EN="Depleted (≤ 1Ğ1)"
+                        ASSETS_STATUS_TEXT_ES="Agotado (≤ 1Ğ1)"
+                        RND_STATUS_TEXT="Source de paiement active"
+                        RND_STATUS_TEXT_EN="Active payment source"
+                        RND_STATUS_TEXT_ES="Fuente de pago activa"
+                        ;;
+                esac
+                
+                # Determine wallet statuses
+                CASH_STATUS="depleted"
+                [[ $(echo "$ASSETS_ZEN > 0" | bc -l) -eq 1 ]] && ASSETS_STATUS="warning" || ASSETS_STATUS="depleted"
+                [[ $(echo "$RND_ZEN > 0" | bc -l) -eq 1 ]] && RND_STATUS="healthy" || RND_STATUS="warning"
+                [[ $PRE_BANKRUPTCY_PHASE -eq 2 ]] && RND_STATUS="warning"
+                
+                # Payment status texts
+                if [[ $NODE_PAID -eq 1 ]]; then
+                    NODE_PAYMENT_STATUS_FR="✅ Payé depuis $NODE_PAYMENT_SOURCE ($WEEKLYPAF Ẑen)"
+                    NODE_PAYMENT_STATUS_EN="✅ Paid from $NODE_PAYMENT_SOURCE ($WEEKLYPAF Ẑen)"
+                else
+                    NODE_PAYMENT_STATUS_FR="❌ Non payé"
+                    NODE_PAYMENT_STATUS_EN="❌ Not paid"
+                fi
+                
+                if [[ $CAPTAIN_PAID -eq 1 ]]; then
+                    CAPTAIN_PAYMENT_STATUS_FR="✅ Payé depuis $CAPTAIN_PAYMENT_SOURCE ($CAPTAIN_REMUNERATION Ẑen)"
+                    CAPTAIN_PAYMENT_STATUS_EN="✅ Paid from $CAPTAIN_PAYMENT_SOURCE ($CAPTAIN_REMUNERATION Ẑen)"
+                else
+                    CAPTAIN_PAYMENT_STATUS_FR="❌ Non payé - Fonds insuffisants"
+                    CAPTAIN_PAYMENT_STATUS_EN="❌ Not paid - Insufficient funds"
+                fi
+                
+                # Calculate impact examples
+                [[ -z $NCARD ]] && NCARD=1
+                [[ -z $ZCARD ]] && ZCARD=4
+                IMPACT_10_MULTIPASS=$(echo "scale=0; 10 * $NCARD" | bc)
+                IMPACT_5_ZENCARDS=$(echo "scale=0; 5 * $ZCARD" | bc)
+                
+                # Generate HTML report
+                cat "$PRE_BANKRUPTCY_TEMPLATE" | sed \
+                    -e "s~_DATE_~${REPORT_DATE}~g" \
+                    -e "s~_TODATE_~${TODATE}~g" \
+                    -e "s~_UPLANET_ID_~${UPLANET_ID}~g" \
+                    -e "s~_DEGRADATION_PHASE_~${PRE_BANKRUPTCY_PHASE}~g" \
+                    -e "s~_PAYMENT_SOURCE_~${PAYMENT_SOURCE}~g" \
+                    -e "s~_PHASE_CLASS_~${PHASE_CLASS}~g" \
+                    -e "s~_PHASE_ICON_~${PHASE_ICON}~g" \
+                    -e "s~_PHASE_NAME_FR_~${PHASE_NAME_FR}~g" \
+                    -e "s~_PHASE_NAME_EN_~${PHASE_NAME_EN}~g" \
+                    -e "s~_PHASE_NAME_ES_~${PHASE_NAME_ES}~g" \
+                    -e "s~_PHASE_DESCRIPTION_FR_~${PHASE_DESCRIPTION_FR}~g" \
+                    -e "s~_PHASE_DESCRIPTION_EN_~${PHASE_DESCRIPTION_EN}~g" \
+                    -e "s~_PHASE_DESCRIPTION_ES_~${PHASE_DESCRIPTION_ES}~g" \
+                    -e "s~_CASH_BALANCE_~${CASH_ZEN}~g" \
+                    -e "s~_ASSETS_BALANCE_~${ASSETS_ZEN}~g" \
+                    -e "s~_RND_BALANCE_~${RND_ZEN}~g" \
+                    -e "s~_TOTAL_PAF_REQUIRED_~${TOTAL_PAF_REQUIRED}~g" \
+                    -e "s~_CASH_STATUS_~${CASH_STATUS}~g" \
+                    -e "s~_ASSETS_STATUS_~${ASSETS_STATUS}~g" \
+                    -e "s~_RND_STATUS_~${RND_STATUS}~g" \
+                    -e "s~_ASSETS_STATUS_TEXT_~${ASSETS_STATUS_TEXT}~g" \
+                    -e "s~_ASSETS_STATUS_TEXT_EN_~${ASSETS_STATUS_TEXT_EN}~g" \
+                    -e "s~_ASSETS_STATUS_TEXT_ES_~${ASSETS_STATUS_TEXT_ES}~g" \
+                    -e "s~_RND_STATUS_TEXT_~${RND_STATUS_TEXT}~g" \
+                    -e "s~_RND_STATUS_TEXT_EN_~${RND_STATUS_TEXT_EN}~g" \
+                    -e "s~_RND_STATUS_TEXT_ES_~${RND_STATUS_TEXT_ES}~g" \
+                    -e "s~_IMPACT_LIST_FR_~${IMPACT_LIST_FR}~g" \
+                    -e "s~_IMPACT_LIST_EN_~${IMPACT_LIST_EN}~g" \
+                    -e "s~_NODE_PAYMENT_STATUS_FR_~${NODE_PAYMENT_STATUS_FR}~g" \
+                    -e "s~_NODE_PAYMENT_STATUS_EN_~${NODE_PAYMENT_STATUS_EN}~g" \
+                    -e "s~_CAPTAIN_PAYMENT_STATUS_FR_~${CAPTAIN_PAYMENT_STATUS_FR}~g" \
+                    -e "s~_CAPTAIN_PAYMENT_STATUS_EN_~${CAPTAIN_PAYMENT_STATUS_EN}~g" \
+                    -e "s~_NCARD_~${NCARD}~g" \
+                    -e "s~_ZCARD_~${ZCARD}~g" \
+                    -e "s~_IMPACT_10_MULTIPASS_~${IMPACT_10_MULTIPASS}~g" \
+                    -e "s~_IMPACT_5_ZENCARDS_~${IMPACT_5_ZENCARDS}~g" \
+                    > "$PRE_BANKRUPTCY_REPORT"
+                
+                # Send to Captain first
+                if [[ -n "$CAPTAINEMAIL" ]]; then
+                    ${MY_PATH}/../tools/mailjet.sh "$CAPTAINEMAIL" "$PRE_BANKRUPTCY_REPORT" "⚠️ UPlanet Pré-Faillite Phase $PRE_BANKRUPTCY_PHASE - $TODATE"
+                    log_output "📧 Pre-bankruptcy alert sent to Captain: $CAPTAINEMAIL"
+                fi
+                
+                # Send to all MULTIPASS users
+                for player_dir in ~/.zen/game/nostr/*/; do
+                    player_email=$(basename "$player_dir")
+                    if [[ "$player_email" =~ @ && "$player_email" != "$CAPTAINEMAIL" ]]; then
+                        ${MY_PATH}/../tools/mailjet.sh "$player_email" "$PRE_BANKRUPTCY_REPORT" "⚠️ UPlanet Pré-Faillite Phase $PRE_BANKRUPTCY_PHASE - $TODATE"
+                        log_output "📧 Pre-bankruptcy alert sent to: $player_email"
+                    fi
+                done
+            else
+                log_output "⚠️ Pre-bankruptcy template not found: $PRE_BANKRUPTCY_TEMPLATE"
+            fi
+        fi
+        
+        #######################################################################
+        # PAYMENT SUMMARY - Shareholder Transparency Report
+        #######################################################################
+        log_output ""
+        log_output "╔══════════════════════════════════════════════════════════════════════╗"
+        log_output "║              📊 WEEKLY PAYMENT SUMMARY - $WEEK_KEY                    "
+        log_output "╠══════════════════════════════════════════════════════════════════════╣"
+        log_output "║ DEGRADATION PHASE: $PRE_BANKRUPTCY_PHASE                              "
+        case $PRE_BANKRUPTCY_PHASE in
+            0) log_output "║ STATUS: ✅ NORMAL OPERATION                                          " ;;
+            1) log_output "║ STATUS: ⚠️ GROWTH SLOWDOWN (ASSETS depleting)                        " ;;
+            2) log_output "║ STATUS: ⚠️ INNOVATION SLOWDOWN (RnD depleting)                       " ;;
+            3) log_output "║ STATUS: 💀 BANKRUPTCY (No funds available)                           " ;;
+        esac
+        log_output "╠══════════════════════════════════════════════════════════════════════╣"
+        log_output "║ PAYMENTS:                                                             "
+        if [[ $NODE_PAID -eq 1 ]]; then
+            log_output "║   NODE:    ✅ $WEEKLYPAF Ẑen from $NODE_PAYMENT_SOURCE                  "
+        else
+            log_output "║   NODE:    ❌ NOT PAID - Infrastructure at risk!                        "
+        fi
+        if [[ $CAPTAIN_PAID -eq 1 ]]; then
+            log_output "║   CAPTAIN: ✅ $CAPTAIN_REMUNERATION Ẑen from $CAPTAIN_PAYMENT_SOURCE    "
+        else
+            log_output "║   CAPTAIN: ❌ NOT PAID                                                  "
+        fi
+        log_output "╠══════════════════════════════════════════════════════════════════════╣"
+        log_output "║ WALLET BALANCES (after payments):                                     "
+        log_output "║   💰 CASH:   $CASH_ZEN Ẑen                                            "
+        log_output "║   🌱 ASSETS: $ASSETS_ZEN Ẑen                                          "
+        log_output "║   🔬 RnD:    $RND_ZEN Ẑen                                             "
+        log_output "╚══════════════════════════════════════════════════════════════════════╝"
+        log_output ""
         
         #######################################################################
         # DEPRECIATION: UPLANETNAME_CAPITAL → UPLANETNAME_AMORTISSEMENT
@@ -776,9 +1011,15 @@ ${MY_PATH}/ZEN.COOPERATIVE.3x1-3.sh
 #######################################################################
 # Mark weekly payment as completed
 # Create marker file with current week to prevent duplicate payments
+# Include degradation phase for tracking
 #######################################################################
-echo "$WEEK_KEY" > "$PAYMENT_MARKER"
-log_output "ZEN ECONOMY: Weekly payment completed and marked for week $WEEK_KEY"
+echo "$WEEK_KEY:PHASE${PRE_BANKRUPTCY_PHASE:-0}:NODE${NODE_PAID:-0}:CPT${CAPTAIN_PAID:-0}" > "$PAYMENT_MARKER"
+log_output "ZEN ECONOMY: Weekly payment completed and marked for week $WEEK_KEY (Phase ${PRE_BANKRUPTCY_PHASE:-0})"
 log_output "========================================================================"
 
-exit 0
+# Exit code reflects system health:
+# 0 = Normal operation (Phase 0)
+# 1 = Pre-bankruptcy Phase 1 (ASSETS used)
+# 2 = Pre-bankruptcy Phase 2 (RnD used)
+# 3 = Bankruptcy (GAME OVER)
+exit ${PRE_BANKRUPTCY_PHASE:-0}

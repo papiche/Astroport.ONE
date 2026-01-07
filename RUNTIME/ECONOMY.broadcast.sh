@@ -55,26 +55,22 @@ if ! command -v jq &> /dev/null; then
     exit 1
 fi
 
-if ! command -v nostpy-cli &> /dev/null; then
-    log_output "⚠️ nostpy-cli not found, will use nak or strfry"
-fi
+# strfry relay is used for publishing
 
 # Check Captain credentials
-if [[ ! -s "$HOME/.zen/game/secret.nostr" ]]; then
-    echo "❌ Captain NOSTR credentials not found"
+# Captain's NOSTR secret is in ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
+if [[ -z "$CAPTAINEMAIL" ]]; then
+    CAPTAINEMAIL=$(cat "$HOME/.zen/game/players/.current/.player" 2>/dev/null)
+fi
+
+CAPTAIN_NOSTR_SECRET="$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
+if [[ ! -s "$CAPTAIN_NOSTR_SECRET" ]]; then
+    echo "❌ Captain NOSTR credentials not found: $CAPTAIN_NOSTR_SECRET"
     exit 1
 fi
 
 # Get NOSTR HEX from Captain
-CAPTAIN_HEX=$(cat "$HOME/.zen/game/nostr/HEX" 2>/dev/null)
-if [[ -z "$CAPTAIN_HEX" ]]; then
-    log_output "⚠️ Captain HEX not found, generating..."
-    CAPTAIN_NSEC=$(cat "$HOME/.zen/game/secret.nostr")
-    if command -v nak &> /dev/null; then
-        CAPTAIN_HEX=$(echo "$CAPTAIN_NSEC" | nak decode 2>/dev/null | jq -r '.pubkey // empty')
-    fi
-fi
-
+CAPTAIN_HEX=$(cat "$HOME/.zen/game/nostr/$CAPTAINEMAIL/HEX" 2>/dev/null)
 if [[ -z "$CAPTAIN_HEX" ]]; then
     echo "❌ Cannot determine Captain HEX pubkey"
     exit 1
@@ -90,17 +86,10 @@ log_output "✅ Captain HEX: ${CAPTAIN_HEX:0:8}..."
 CURRENT_WEEK="W$(date +%V)-$(date +%Y)"
 log_output "📅 Report for week: $CURRENT_WEEK"
 
-# Get wallet balances
+# Get wallet balance (G1check.sh handles caching internally)
 get_wallet_balance() {
     local pubkey="$1"
-    local cache_file="$HOME/.zen/tmp/coucou/${pubkey}.COINS"
-    
-    if [[ -f "$cache_file" ]]; then
-        cat "$cache_file" 2>/dev/null || echo "0"
-    else
-        # Try live check
-        ${MY_PATH}/../tools/G1check.sh "$pubkey" 2>/dev/null | tail -n 1 || echo "0"
-    fi
+    ${MY_PATH}/../tools/G1check.sh "$pubkey" 2>/dev/null | tail -n 1 || echo "0"
 }
 
 convert_to_zen() {
@@ -269,34 +258,69 @@ fi
 log_output "  Bilan: $BILAN Ẑ | Allocation 1/3: $ALLOCATION_THIRD Ẑ"
 
 ###############################################################################
-# CALCULATE HEALTH STATUS
+# CALCULATE HEALTH STATUS (Progressive Degradation Model)
+# Phase 0: Normal (CASH sufficient)
+# Phase 1: Growth Slowdown (CASH < costs, ASSETS > 0)
+# Phase 2: Innovation Slowdown (ASSETS depleted, RnD > 0)
+# Phase 3: Bankruptcy (All wallets depleted)
 ###############################################################################
 
 log_output "🏥 Determining health status..."
 
-# Calculate weeks runway
+# Calculate weeks runway based on CASH alone
 if [[ $(echo "$TOTAL_COSTS > 0" | bc -l) -eq 1 ]]; then
     WEEKS_RUNWAY=$(echo "scale=0; $CASH_ZEN / $TOTAL_COSTS" | bc -l 2>/dev/null || echo "0")
 else
     WEEKS_RUNWAY=999
 fi
 
-# Determine health status
-if [[ $(echo "$CASH_ZEN < 0" | bc -l 2>/dev/null) -eq 1 ]]; then
-    HEALTH_STATUS="bankrupt"
-    RISK_LEVEL="critical"
-elif [[ $(echo "$CASH_ZEN < $TOTAL_COSTS" | bc -l 2>/dev/null) -eq 1 ]]; then
-    HEALTH_STATUS="critical"
-    RISK_LEVEL="high"
-elif [[ $WEEKS_RUNWAY -lt 8 ]]; then
-    HEALTH_STATUS="warning"
-    RISK_LEVEL="medium"
-else
-    HEALTH_STATUS="healthy"
-    RISK_LEVEL="low"
+# Read last payment status from marker file
+PAYMENT_MARKER="$HOME/.zen/game/.weekly_payment.done"
+LAST_PHASE=0
+if [[ -f "$PAYMENT_MARKER" ]]; then
+    MARKER_CONTENT=$(cat "$PAYMENT_MARKER")
+    # Extract phase from format: WEEK_KEY:PHASE#:NODE#:CPT#
+    LAST_PHASE=$(echo "$MARKER_CONTENT" | grep -oP 'PHASE\K[0-9]+' || echo "0")
 fi
 
-log_output "  Status: $HEALTH_STATUS | Runway: $WEEKS_RUNWAY weeks"
+# Determine health status based on progressive degradation model
+DEGRADATION_PHASE=0
+
+# Check if CASH can cover operational costs (3x PAF)
+[[ -z $PAF ]] && PAF=14
+TOTAL_PAF_REQUIRED=$(echo "scale=2; $PAF * 3" | bc -l)
+
+if [[ $(echo "$CASH_ZEN >= $TOTAL_PAF_REQUIRED" | bc -l 2>/dev/null) -eq 1 ]]; then
+    # Phase 0: Normal operation
+    DEGRADATION_PHASE=0
+    HEALTH_STATUS="healthy"
+    RISK_LEVEL="low"
+elif [[ $(echo "$ASSETS_ZEN > 0" | bc -l 2>/dev/null) -eq 1 ]]; then
+    # Phase 1: CASH insufficient but ASSETS available
+    DEGRADATION_PHASE=1
+    HEALTH_STATUS="growth_slowdown"
+    RISK_LEVEL="medium"
+elif [[ $(echo "$RND_ZEN > 0" | bc -l 2>/dev/null) -eq 1 ]]; then
+    # Phase 2: ASSETS depleted, using RnD
+    DEGRADATION_PHASE=2
+    HEALTH_STATUS="innovation_slowdown"
+    RISK_LEVEL="high"
+else
+    # Phase 3: All wallets depleted - Bankruptcy
+    DEGRADATION_PHASE=3
+    HEALTH_STATUS="bankrupt"
+    RISK_LEVEL="critical"
+fi
+
+# Calculate total runway including backup wallets
+TOTAL_AVAILABLE=$(echo "scale=2; $CASH_ZEN + $ASSETS_ZEN + $RND_ZEN" | bc -l 2>/dev/null || echo "0")
+if [[ $(echo "$TOTAL_COSTS > 0" | bc -l) -eq 1 ]]; then
+    TOTAL_WEEKS_RUNWAY=$(echo "scale=0; $TOTAL_AVAILABLE / $TOTAL_COSTS" | bc -l 2>/dev/null || echo "0")
+else
+    TOTAL_WEEKS_RUNWAY=999
+fi
+
+log_output "  Status: $HEALTH_STATUS (Phase $DEGRADATION_PHASE) | CASH Runway: $WEEKS_RUNWAY weeks | Total Runway: $TOTAL_WEEKS_RUNWAY weeks"
 
 ###############################################################################
 # GET DEPRECIATION DATA
@@ -330,6 +354,36 @@ fi
 log_output "  Machine: $MACHINE_VALUE Ẑ | Residual: $RESIDUAL_VALUE Ẑ | Deprec: $DEPRECIATION_PERCENT%"
 
 ###############################################################################
+# STATION GPS & SOLAR TIME SYNC
+# Solar time synchronization spreads payment execution across swarm by longitude
+# Each station runs at 20h12 LOCAL SOLAR TIME - preventing concurrent payments
+###############################################################################
+
+# Get GPS coordinates for solar time sync visibility
+if [[ -f ~/.zen/GPS ]]; then
+    source ~/.zen/GPS
+    STATION_LAT="${LAT:-0}"
+    STATION_LON="${LON:-0}"
+else
+    STATION_LAT="0"
+    STATION_LON="0"
+fi
+
+# Calculate solar time offset (when this station runs its 20h12 cycle)
+# This shows when this station processes payments relative to others in the swarm
+SOLAR_OFFSET="--:--"
+if [[ -f "${MY_PATH}/../tools/solar_time.sh" && "$STATION_LAT" != "0" && "$STATION_LON" != "0" ]]; then
+    SOLAR_RESULT=$(${MY_PATH}/../tools/solar_time.sh "$STATION_LAT" "$STATION_LON" 2>/dev/null | tail -1)
+    if [[ -n "$SOLAR_RESULT" ]]; then
+        SOLAR_MINUTE=$(echo "$SOLAR_RESULT" | awk '{print $1}')
+        SOLAR_HOUR=$(echo "$SOLAR_RESULT" | awk '{print $2}')
+        SOLAR_OFFSET=$(printf "%02d:%02d" "${SOLAR_HOUR:-0}" "${SOLAR_MINUTE:-0}")
+    fi
+fi
+
+log_output "📍 Station GPS: $STATION_LAT, $STATION_LON | Solar sync: $SOLAR_OFFSET"
+
+###############################################################################
 # BUILD NOSTR EVENT
 ###############################################################################
 
@@ -342,14 +396,23 @@ EVENT_D="economic-health-$CURRENT_WEEK"
 # Build content JSON
 CONTENT_JSON=$(cat <<EOF
 {
-  "report_version": "1.0",
+  "report_version": "1.1",
   "report_type": "weekly_economic_health",
   "generated_at": "$GENERATED_AT",
   "station": {
     "ipfsnodeid": "$IPFSNODEID",
-    "uplanetname": "$UPLANETNAME",
+    "name": "${myDAMAIN:-${IPFSNODEID:0:12}}",
+    "swarm_id": "$UPLANETG1PUB",
     "relay_url": "wss://${myDAMAIN}/relay",
-    "captain_hex": "$CAPTAIN_HEX"
+    "captain_hex": "$CAPTAIN_HEX",
+    "geo": {
+      "lat": $STATION_LAT,
+      "lon": $STATION_LON
+    },
+    "sync": {
+      "solar_offset": "$SOLAR_OFFSET",
+      "solar_comment": "Station runs 20h12 cycle at this local time (spread across swarm by longitude)"
+    }
   },
   "wallets": {
     "g1_reserve": { "g1pub": "$UPLANETNAME_G1", "balance_g1": $G1_RESERVE_G1, "balance_zen": $G1_RESERVE_ZEN },
@@ -427,8 +490,12 @@ TAGS_JSON=$(cat <<EOF
   ["week", "$CURRENT_WEEK"],
   ["constellation", "UPlanetV1"],
   ["station", "$IPFSNODEID"],
+  ["station:name", "${myDAMAIN:-${IPFSNODEID:0:12}}"],
+  ["swarm_id", "$UPLANETG1PUB"],
   ["g1pub", "$UPLANETNAME_G1"],
-  ["uplanetname", "$UPLANETNAME"],
+  ["geo:lat", "$STATION_LAT"],
+  ["geo:lon", "$STATION_LON"],
+  ["sync:solar_offset", "$SOLAR_OFFSET"],
   ["balance:cash", "$CASH_ZEN"],
   ["balance:rnd", "$RND_ZEN"],
   ["balance:assets", "$ASSETS_ZEN"],
@@ -464,7 +531,7 @@ EOF
 )
 
 ###############################################################################
-# PUBLISH EVENT
+# PUBLISH EVENT TO LOCAL STRFRY RELAY
 ###############################################################################
 
 if [[ "$DRYRUN" == "true" ]]; then
@@ -496,72 +563,80 @@ if [[ "$DRYRUN" == "true" ]]; then
     exit 0
 fi
 
-log_output "📡 Publishing event to NOSTR..."
+log_output "📡 Publishing event to local strfry relay..."
 
-# Build unsigned event
-UNSIGNED_EVENT=$(cat <<EOF
+# Get Captain NSEC and convert to HEX for nostpy-cli
+CAPTAIN_NSEC=$(cat "$CAPTAIN_NOSTR_SECRET" 2>/dev/null)
+if [[ -z "$CAPTAIN_NSEC" ]]; then
+    echo "❌ Cannot read Captain NOSTR secret"
+    exit 1
+fi
+
+# Convert NSEC to HEX using nostr2hex.py
+CAPTAIN_PRIVKEY_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$CAPTAIN_NSEC" 2>/dev/null)
+if [[ -z "$CAPTAIN_PRIVKEY_HEX" ]]; then
+    echo "❌ Cannot convert Captain NSEC to HEX"
+    exit 1
+fi
+
+# Get local relay URL
+myRELAY="wss://${myDAMAIN}/relay"
+[[ -z "$myDAMAIN" ]] && myRELAY="ws://127.0.0.1:7777"
+
+# Publish using nostpy-cli send_event
+if command -v nostpy-cli &> /dev/null; then
+    log_output "Using nostpy-cli to publish event..."
+    
+    nostpy-cli send_event \
+        -privkey "$CAPTAIN_PRIVKEY_HEX" \
+        -kind 30850 \
+        -content "$CONTENT_ESCAPED" \
+        -tags "$TAGS_JSON" \
+        --relay "$myRELAY" 2>/dev/null
+    
+    PUBLISH_STATUS=$?
+    
+    if [[ $PUBLISH_STATUS -eq 0 ]]; then
+        log_output "✅ Event published to relay"
+        echo "✅ Economic health report published for $CURRENT_WEEK"
+        echo "   Status: $HEALTH_STATUS | Bilan: $BILAN Ẑ | Runway: $WEEKS_RUNWAY weeks"
+        echo "   Relay: $myRELAY"
+    else
+        echo "⚠️ nostpy-cli failed, trying strfry import..."
+        
+        # Fallback: create event JSON and import directly to strfry
+        MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+        TEMP_EVENT="$HOME/.zen/tmp/${MOATS}_economic_health.json"
+        mkdir -p "$HOME/.zen/tmp"
+        
+        # Build event for strfry import (strfry will sign with --no-verify)
+        cat > "$TEMP_EVENT" <<EOF
 {
   "kind": 30850,
+  "pubkey": "$CAPTAIN_HEX",
   "created_at": $CREATED_AT,
   "tags": $TAGS_JSON,
   "content": $CONTENT_ESCAPED
 }
 EOF
-)
-
-# Get Captain NSEC
-CAPTAIN_NSEC=$(cat "$HOME/.zen/game/secret.nostr")
-
-# Try to publish using nak (preferred)
-if command -v nak &> /dev/null; then
-    # Get relay URL
-    RELAY_URL="wss://${myDAMAIN}/relay"
-    [[ -z "$myDAMAIN" ]] && RELAY_URL="wss://relay.copylaradio.com"
-    
-    # Sign and publish
-    EVENT_ID=$(echo "$UNSIGNED_EVENT" | nak event --sec "$CAPTAIN_NSEC" 2>/dev/null | nak encode nevent 2>/dev/null | head -1)
-    
-    if [[ -n "$EVENT_ID" ]]; then
-        # Publish to relay
-        echo "$UNSIGNED_EVENT" | nak event --sec "$CAPTAIN_NSEC" | nak req -r "$RELAY_URL" 2>/dev/null
         
-        log_output "✅ Event published: $EVENT_ID"
-        echo "✅ Economic health report published for $CURRENT_WEEK"
-        echo "   Status: $HEALTH_STATUS | Bilan: $BILAN Ẑ | Runway: $WEEKS_RUNWAY weeks"
-    else
-        echo "❌ Failed to create event"
-        exit 1
+        cd ~/.zen/strfry
+        ./strfry import --no-verify < "$TEMP_EVENT" 2>/dev/null
+        
+        if [[ $? -eq 0 ]]; then
+            echo "✅ Economic health report stored locally for $CURRENT_WEEK"
+            echo "   (Will be synced via constellation backfill)"
+        else
+            echo "❌ Failed to store event"
+            exit 1
+        fi
+        
+        rm -f "$TEMP_EVENT"
     fi
-elif command -v nostpy-cli &> /dev/null; then
-    # Fallback to nostpy-cli
-    TEMP_EVENT="$HOME/.zen/tmp/economic_health_event.json"
-    echo "$UNSIGNED_EVENT" > "$TEMP_EVENT"
-    
-    nostpy-cli publish --sec "$CAPTAIN_NSEC" --file "$TEMP_EVENT" 2>/dev/null
-    
-    if [[ $? -eq 0 ]]; then
-        log_output "✅ Event published via nostpy-cli"
-        echo "✅ Economic health report published for $CURRENT_WEEK"
-    else
-        echo "❌ Failed to publish event"
-        exit 1
-    fi
-    
-    rm -f "$TEMP_EVENT"
 else
-    # Last resort: use strfry directly
-    log_output "⚠️ Using strfry for local storage only..."
-    
-    TEMP_EVENT="$HOME/.zen/tmp/economic_health_event.json"
-    echo "$UNSIGNED_EVENT" > "$TEMP_EVENT"
-    
-    cd "$HOME/.zen/strfry"
-    ./strfry import < "$TEMP_EVENT" 2>/dev/null
-    
-    echo "✅ Economic health report stored locally for $CURRENT_WEEK"
-    echo "   (Will be synced via constellation backfill)"
-    
-    rm -f "$TEMP_EVENT"
+    echo "❌ nostpy-cli not found - required for NOSTR publishing"
+    echo "   Install with: pip install nostpy-cli"
+    exit 1
 fi
 
 # Save last broadcast info
