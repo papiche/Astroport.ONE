@@ -279,20 +279,28 @@ Station 1 (Paris)        Station 2 (Toulouse)      Station 3 (Lyon)
 | `~/.zen/game/todo_last_run.marker` | Tracks last execution |
 | `~/.zen/Astroport.ONE/.env` | Environment variables |
 
-### Creating the Shared Key
+### Creating the Shared Key (Ğ1 Central Bank)
 
-All stations in the constellation must use the **same** key to share memory:
+The `uplanet.G1.nostr` key is the **Ğ1 Central Bank** key for the UPlanet constellation. It's shared between:
+- **Oracle System**: Signs credentials (kind 30503), NIP-42 auth
+- **N² Memory System**: Signs development recommendations (kind 31910)
+- **Economy**: Central authority for Ẑen transactions
+
+All stations in the constellation must use the **same** key:
 
 ```bash
-# Generate key from UPLANETNAME seed (same across all stations)
-$HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}N2" "${UPLANETNAME}N2" \
+# Recommended: Use UPLANET.init.sh which handles this automatically
+./UPLANET.init.sh
+
+# Manual creation (use exact same seed on all stations):
+$HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}.G1" "${UPLANETNAME}.G1" \
     > ~/.zen/game/uplanet.G1.nostr
 
 # Or copy from an existing station
 scp captain@station1:~/.zen/game/uplanet.G1.nostr ~/.zen/game/
 ```
 
-Format: `NSEC=nsec1...; NPUB=npub1...; HEX=...`
+⚠️ **CRITICAL**: The seed must be `${UPLANETNAME}.G1` (with a dot), consistent with `ORACLE_SYSTEM.md`.
 
 ### Environment Variables
 

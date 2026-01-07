@@ -57,6 +57,11 @@ declare -A NODE_CAPTAIN_WALLETS=(
     ["NODE"]="$HOME/.zen/game/secret.NODE.dunikey"
 )
 
+# NOSTR keys for Oracle and N² Memory systems
+declare -A NOSTR_KEYS=(
+    ["UPLANETNAME_G1_NOSTR"]="$HOME/.zen/game/uplanet.G1.nostr"
+)
+
 # Source wallet for initialization (uplanet.G1.dunikey is the primary source for primal transactions)
 SOURCE_WALLET="$HOME/.zen/game/uplanet.G1.dunikey"
 
@@ -79,6 +84,9 @@ usage() {
     echo -e "  • UPLANETNAME_AMORTISSEMENT (Amortissements - Compte 28)"
     echo -e "  • NODE (Armateur - revenus locatifs)"
     echo -e "  • CAPTAIN (si configuré)"
+    echo ""
+    echo -e "${GREEN}Et les clés NOSTR pour:${NC}"
+    echo -e "  • ${CYAN}uplanet.G1.nostr${NC} (Ğ1 Central Bank - Oracle + N² Memory)"
     echo ""
     echo -e "${BLUE}Options:${NC}"
     echo -e "  ${CYAN}--force${NC}     Forcer l'initialisation même si les portefeuilles ont des fonds"
@@ -275,6 +283,70 @@ create_missing_wallet() {
         echo -e "${RED}❌ Échec de la création du portefeuille $wallet_name${NC}"
         return 1
     fi
+}
+
+# Function to check and create NOSTR keys (for Oracle and N² Memory systems)
+check_and_create_nostr_keys() {
+    echo -e "${CYAN}🔑 VÉRIFICATION DES CLÉS NOSTR (Ğ1 Central Bank)${NC}"
+    echo -e "${YELLOW}================================================${NC}"
+    
+    local keys_created=0
+    local keys_exist=0
+    
+    for key_name in "${!NOSTR_KEYS[@]}"; do
+        local key_file="${NOSTR_KEYS[$key_name]}"
+        
+        if [[ -f "$key_file" ]]; then
+            # Extract NPUB from key file
+            local npub=$(grep -oP 'NPUB=\K[^;]+' "$key_file" 2>/dev/null || echo "")
+            if [[ -n "$npub" ]]; then
+                echo -e "${GREEN}✅ $key_name existe${NC}"
+                echo -e "   NPUB: ${CYAN}${npub:0:20}...${NC}"
+                ((keys_exist++))
+            else
+                echo -e "${YELLOW}⚠️  $key_name existe mais format invalide${NC}"
+            fi
+        else
+            echo -e "${BLUE}📝 Création de $key_name...${NC}"
+            
+            # Create directory if needed
+            local key_dir=$(dirname "$key_file")
+            [[ ! -d "$key_dir" ]] && mkdir -p "$key_dir"
+            
+            # Generate NOSTR key using UPLANETNAME.G1 seed (consistent with ORACLE_SYSTEM.md)
+            if [[ -x "${MY_PATH}/tools/keygen" ]]; then
+                "${MY_PATH}/tools/keygen" -t nostr "${UPLANETNAME}.G1" "${UPLANETNAME}.G1" > "$key_file" 2>/dev/null
+                chmod 600 "$key_file"
+                
+                if [[ -f "$key_file" ]]; then
+                    local npub=$(grep -oP 'NPUB=\K[^;]+' "$key_file" 2>/dev/null || echo "")
+                    echo -e "${GREEN}✅ $key_name créée avec succès${NC}"
+                    echo -e "   NPUB: ${CYAN}${npub:0:20}...${NC}"
+                    echo -e "   Seed: ${YELLOW}\${UPLANETNAME}.G1${NC}"
+                    ((keys_created++))
+                else
+                    echo -e "${RED}❌ Échec de la création de $key_name${NC}"
+                fi
+            else
+                echo -e "${RED}❌ keygen non disponible${NC}"
+            fi
+        fi
+    done
+    
+    echo ""
+    if [[ $keys_created -gt 0 ]]; then
+        echo -e "${GREEN}🔐 $keys_created clé(s) NOSTR créée(s)${NC}"
+        echo -e "${YELLOW}⚠️  Ces clés sont utilisées par:${NC}"
+        echo -e "   • Oracle System (NIP-42 auth, kind 30503 credentials)"
+        echo -e "   • N² Memory System (kind 31910 recommendations)"
+        echo -e "   • Economy (Ğ1 Central Bank authority)"
+    fi
+    
+    if [[ $keys_exist -gt 0 ]]; then
+        echo -e "${GREEN}✅ $keys_exist clé(s) NOSTR déjà présente(s)${NC}"
+    fi
+    
+    echo ""
 }
 
 # Function to get captain email
@@ -878,6 +950,9 @@ main() {
     
     # Check requirements
     check_requirements
+    
+    # Check and create NOSTR keys (Ğ1 Central Bank for Oracle + N² Memory)
+    check_and_create_nostr_keys
     
     # Check source wallet
     check_source_wallet
