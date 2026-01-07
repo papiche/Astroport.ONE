@@ -5,3 +5,9 @@ tiddlywiki.html
 tools/jaklis/.env
 .aider*
 A_boostrap_ssh.txt
+
+# todo.sh generated files
+.git_changes.txt
+TODO.last.md
+TODO.week.md
+.last_run_marker
