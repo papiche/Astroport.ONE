@@ -112,10 +112,13 @@ show_help() {
     echo -e "    ${GREEN}--week, -w${NC}      Analyze last 7 days"
     echo ""
     echo -e "${YELLOW}MEMORY COMMANDS (N² Learning):${NC}"
-    echo -e "    ${GREEN}--accept ID${NC}    Mark recommendation as accepted (human validated)"
-    echo -e "    ${GREEN}--reject ID${NC}    Mark recommendation as rejected (human override)"
-    echo -e "    ${GREEN}--done ID${NC}      Mark recommendation as implemented"
-    echo -e "    ${GREEN}--memory${NC}       Show recent memory entries (last 20)"
+    echo -e "    ${GREEN}--add \"text\"${NC}  Add a captain TODO (human-written idea)"
+    echo -e "    ${GREEN}--list${NC}        List pending recommendations (proposed/accepted)"
+    echo -e "    ${GREEN}--accept ID${NC}   Mark recommendation as accepted (human validated)"
+    echo -e "    ${GREEN}--reject ID${NC}   Mark recommendation as rejected (human override)"
+    echo -e "    ${GREEN}--done ID${NC}     Mark recommendation as implemented"
+    echo -e "    ${GREEN}--vote ID${NC}     Vote for a recommendation (+1 priority)"
+    echo -e "    ${GREEN}--memory${NC}      Show recent memory entries (last 20)"
     echo -e "    ${GREEN}--no-interactive${NC} Skip interactive selection (batch mode)"
     echo ""
     echo -e "${YELLOW}DESCRIPTION:${NC}"
@@ -222,6 +225,29 @@ parse_args() {
                     exit 0
                 else
                     echo -e "${RED}❌ --done requires a recommendation ID${NC}"
+                    exit 1
+                fi
+                ;;
+            --add)
+                if [[ -n "$2" ]]; then
+                    add_captain_todo "$2"
+                    exit 0
+                else
+                    echo -e "${RED}❌ --add requires a TODO text${NC}"
+                    echo -e "Usage: $0 --add \"Description of the TODO\""
+                    exit 1
+                fi
+                ;;
+            --list)
+                list_pending_recommendations
+                exit 0
+                ;;
+            --vote)
+                if [[ -n "$2" ]]; then
+                    vote_recommendation "$2"
+                    exit 0
+                else
+                    echo -e "${RED}❌ --vote requires a recommendation ID${NC}"
                     exit 1
                 fi
                 ;;
@@ -339,13 +365,15 @@ fetch_n2_memory() {
     fi
 }
 
-# Store a recommendation in N² memory
-# Args: $1=recommendation_id, $2=content, $3=status (proposed|accepted|rejected|done), $4=station_id
+# Store a recommendation in N² memory (each recommendation = 1 NOSTR event)
+# Args: $1=recommendation_id, $2=content, $3=status, $4=type, $5=priority
 store_n2_memory() {
     local rec_id="$1"
     local content="$2"
     local status="${3:-proposed}"
-    local station_id="${4:-$IPFSNODEID}"
+    local rec_type="${4:-ai_recommendation}"  # ai_recommendation | captain_todo | vote
+    local priority="${5:-medium}"  # high | medium | low
+    local station_id="${IPFSNODEID:-unknown}"
     local captain="${CAPTAINEMAIL:-unknown}"
     
     if [[ ! -f "$N2_MEMORY_KEYFILE" ]]; then
@@ -358,30 +386,38 @@ store_n2_memory() {
         return 1
     fi
     
+    # Generate unique ID if not provided
+    [[ -z "$rec_id" ]] && rec_id="$(date +%Y%m%d%H%M%S)_$(echo -n "$content" | md5sum | cut -c1-8)"
+    
     # Create memory entry as JSON
     local memory_json=$(cat <<EOF
 {
-    "type": "n2_memory",
-    "version": "1.0",
-    "recommendation_id": "$rec_id",
+    "type": "n2_todo",
+    "version": "2.0",
+    "id": "$rec_id",
+    "content": $(echo "$content" | jq -Rs '.'),
     "status": "$status",
+    "rec_type": "$rec_type",
+    "priority": "$priority",
     "station": "$station_id",
     "captain": "$captain",
-    "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-    "content": $(echo "$content" | jq -Rs '.')
+    "votes": 0,
+    "created_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
 EOF
 )
     
-    # Create tags for the event
+    # Create tags for the event (each tag enables filtering)
     local tags_json=$(cat <<EOF
 [
-    ["d", "n2_memory_$rec_id"],
-    ["t", "n2-memory"],
-    ["t", "todo-recommendation"],
+    ["d", "$rec_id"],
+    ["t", "n2-todo"],
+    ["t", "$rec_type"],
     ["status", "$status"],
+    ["priority", "$priority"],
     ["station", "$station_id"],
-    ["captain", "$captain"]
+    ["captain", "$captain"],
+    ["created", "$(date +%Y%m%d)"]
 ]
 EOF
 )
@@ -461,16 +497,35 @@ interactive_select_recommendations() {
         return 0
     fi
     
-    # Create array of recommendations
+    # Create array of recommendations and their IDs
     local -a recommendations=()
+    local -a rec_ids=()
     local idx=1
+    
+    echo -e "${BLUE}📤 Stockage des recommandations IA en événements NOSTR séparés...${NC}"
+    
     while IFS= read -r line; do
         if [[ -n "$line" ]]; then
             recommendations+=("$line")
-            # Extract priority emoji and clean line
-            local priority=$(echo "$line" | grep -oE '🔴|🟡|🟢' | head -1)
+            
+            # Extract priority from emoji
+            local priority="medium"
+            echo "$line" | grep -q "🔴" && priority="high"
+            echo "$line" | grep -q "🟡" && priority="medium"
+            echo "$line" | grep -q "🟢" && priority="low"
+            
+            # Store each recommendation as separate NOSTR event (proposed)
+            local rec_id="ai_$(date +%Y%m%d%H%M%S)_${idx}_$(echo -n "$line" | md5sum | cut -c1-6)"
+            rec_ids+=("$rec_id")
+            
+            # Store in NOSTR (silent, just track ID)
+            store_n2_memory "$rec_id" "$line" "proposed" "ai_recommendation" "$priority" >/dev/null 2>&1 || true
+            
+            # Display with ID
+            local priority_emoji=$(echo "$line" | grep -oE '🔴|🟡|🟢' | head -1)
             local clean_line=$(echo "$line" | sed 's/^|//; s/|$//; s/^\s*-\s*//' | tr -s ' ')
-            echo -e "  ${BLUE}[$idx]${NC} $priority $clean_line"
+            echo -e "  ${BLUE}[$idx]${NC} $priority_emoji $clean_line"
+            echo -e "      ${YELLOW}ID: ${rec_id}${NC}"
             ((idx++))
         fi
     done <<< "$rec_lines"
@@ -486,13 +541,14 @@ interactive_select_recommendations() {
     echo -e "${YELLOW}Actions disponibles:${NC}"
     echo -e "  ${GREEN}a <num>${NC}  - Accepter la recommandation (ajouter au TODO)"
     echo -e "  ${RED}r <num>${NC}  - Rejeter la recommandation"
+    echo -e "  ${BLUE}v <num>${NC}  - Voter pour cette recommandation"
     echo -e "  ${BLUE}s${NC}        - Tout sauter (skip)"
     echo -e "  ${GREEN}q${NC}        - Quitter la sélection"
     echo ""
     
     # Interactive loop
     while true; do
-        echo -ne "${GREEN}Votre choix [a/r/s/q + numéro]: ${NC}"
+        echo -ne "${GREEN}Votre choix [a/r/v/s/q + numéro]: ${NC}"
         read -r choice
         
         case "$choice" in
@@ -500,14 +556,15 @@ interactive_select_recommendations() {
                 local num=$(echo "$choice" | grep -oE '[0-9]+')
                 if [[ $num -ge 1 && $num -le $rec_count ]]; then
                     local selected="${recommendations[$((num-1))]}"
-                    local rec_id="rec_$(date +%Y%m%d%H%M%S)_$num"
+                    local rec_id="${rec_ids[$((num-1))]}"
                     echo -e "${GREEN}✅ Recommandation #$num acceptée${NC}"
-                    store_n2_memory "$rec_id" "$selected" "accepted"
+                    store_n2_memory "$rec_id" "$selected" "accepted" "ai_recommendation"
                     # Append to TODO.md
                     echo "" >> "$TODO_MAIN"
                     echo "## [$(date +%Y-%m-%d)] Recommandation acceptée" >> "$TODO_MAIN"
                     echo "" >> "$TODO_MAIN"
                     echo "- [ ] $selected" >> "$TODO_MAIN"
+                    echo "  - ID: $rec_id" >> "$TODO_MAIN"
                     echo -e "${GREEN}   → Ajoutée à TODO.md${NC}"
                 else
                     echo -e "${RED}Numéro invalide (1-$rec_count)${NC}"
@@ -517,23 +574,35 @@ interactive_select_recommendations() {
                 local num=$(echo "$choice" | grep -oE '[0-9]+')
                 if [[ $num -ge 1 && $num -le $rec_count ]]; then
                     local selected="${recommendations[$((num-1))]}"
-                    local rec_id="rec_$(date +%Y%m%d%H%M%S)_$num"
+                    local rec_id="${rec_ids[$((num-1))]}"
                     echo -e "${RED}❌ Recommandation #$num rejetée${NC}"
-                    store_n2_memory "$rec_id" "$selected" "rejected"
+                    store_n2_memory "$rec_id" "$selected" "rejected" "ai_recommendation"
+                    echo -e "${RED}   → Enregistrée comme rejetée (apprentissage N²)${NC}"
+                else
+                    echo -e "${RED}Numéro invalide (1-$rec_count)${NC}"
+                fi
+                ;;
+            v\ [0-9]*)
+                local num=$(echo "$choice" | grep -oE '[0-9]+')
+                if [[ $num -ge 1 && $num -le $rec_count ]]; then
+                    local rec_id="${rec_ids[$((num-1))]}"
+                    echo -e "${BLUE}🗳️  Vote pour recommandation #$num${NC}"
+                    vote_recommendation "$rec_id"
                 else
                     echo -e "${RED}Numéro invalide (1-$rec_count)${NC}"
                 fi
                 ;;
             s|S)
-                echo -e "${BLUE}⏭️  Sélection passée${NC}"
+                echo -e "${BLUE}⏭️  Sélection passée (recommandations restent 'proposed')${NC}"
                 break
                 ;;
             q|Q|"")
                 echo -e "${GREEN}✓ Fin de la sélection${NC}"
+                echo -e "${BLUE}ℹ️  Les recommandations non traitées restent disponibles avec --list${NC}"
                 break
                 ;;
             *)
-                echo -e "${YELLOW}Commande non reconnue. Utilisez: a 1, r 2, s, ou q${NC}"
+                echo -e "${YELLOW}Commande non reconnue. Utilisez: a 1, r 2, v 1, s, ou q${NC}"
                 ;;
         esac
     done
@@ -547,7 +616,140 @@ update_recommendation_status() {
     local new_status="$2"
     
     echo -e "${BLUE}🔄 Mise à jour du statut: $rec_id → $new_status${NC}"
-    store_n2_memory "$rec_id" "Status update" "$new_status"
+    store_n2_memory "$rec_id" "Status update: $new_status" "$new_status" "status_update"
+}
+
+# Add a captain TODO (human-written idea)
+# Usage: ./todo.sh --add "My new idea for the project"
+add_captain_todo() {
+    local content="$1"
+    local priority="${2:-medium}"
+    
+    if [[ -z "$content" ]]; then
+        echo -e "${RED}❌ TODO content cannot be empty${NC}"
+        return 1
+    fi
+    
+    # Generate unique ID
+    local rec_id="captain_$(date +%Y%m%d%H%M%S)_$(echo -n "$content" | md5sum | cut -c1-8)"
+    
+    echo -e "${BLUE}📝 Adding captain TODO...${NC}"
+    echo -e "   Content: $content"
+    echo -e "   Priority: $priority"
+    
+    # Store in NOSTR as individual event
+    if store_n2_memory "$rec_id" "$content" "proposed" "captain_todo" "$priority"; then
+        echo -e "${GREEN}✅ Captain TODO added successfully${NC}"
+        echo -e "${GREEN}   ID: $rec_id${NC}"
+        
+        # Also add to local TODO.md
+        echo "" >> "$TODO_MAIN"
+        echo "## [$(date +%Y-%m-%d)] Captain TODO" >> "$TODO_MAIN"
+        echo "" >> "$TODO_MAIN"
+        echo "- [ ] $content (ID: ${rec_id:0:20}...)" >> "$TODO_MAIN"
+        echo -e "${GREEN}   → Added to TODO.md${NC}"
+    else
+        echo -e "${RED}❌ Failed to store captain TODO${NC}"
+        return 1
+    fi
+}
+
+# List pending recommendations (proposed or accepted, not done)
+# Shows all constellation TODOs that can be worked on
+list_pending_recommendations() {
+    echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${GREEN}📋 N² Constellation - Pending Recommendations${NC}"
+    echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}\n"
+    
+    local memory=$(fetch_n2_memory 50)
+    
+    if [[ -z "$memory" || "$memory" == "[]" ]]; then
+        echo -e "${YELLOW}Aucune recommandation en attente.${NC}"
+        echo -e "Utilisez ${GREEN}./todo.sh${NC} pour générer des recommandations IA"
+        echo -e "ou ${GREEN}./todo.sh --add \"votre idée\"${NC} pour ajouter un TODO manuel."
+        return 0
+    fi
+    
+    # Parse and display by type and status
+    echo -e "${YELLOW}🤖 AI Recommendations:${NC}"
+    echo "$memory" | jq -r '
+        .[] |
+        select(.content != null) |
+        select((.content | fromjson? | .rec_type // "ai_recommendation") == "ai_recommendation") |
+        select((.content | fromjson? | .status // "proposed") | test("proposed|accepted")) |
+        "  [\(.content | fromjson? | .priority // "?")] " +
+        "[\(.content | fromjson? | .status // "?")] " +
+        (.content | fromjson? | .id[:16] // "?") + " - " +
+        (.content | fromjson? | .content[:60] // "?") + "..."
+    ' 2>/dev/null | head -15 || echo "  (none)"
+    
+    echo ""
+    echo -e "${YELLOW}👨‍✈️ Captain TODOs:${NC}"
+    echo "$memory" | jq -r '
+        .[] |
+        select(.content != null) |
+        select((.content | fromjson? | .rec_type // "") == "captain_todo") |
+        select((.content | fromjson? | .status // "proposed") | test("proposed|accepted")) |
+        "  [\(.content | fromjson? | .priority // "?")] " +
+        "[\(.content | fromjson? | .status // "?")] " +
+        (.content | fromjson? | .id[:16] // "?") + " - " +
+        (.content | fromjson? | .content[:60] // "?") + "..."
+    ' 2>/dev/null | head -15 || echo "  (none)"
+    
+    echo ""
+    echo -e "${BLUE}Actions:${NC}"
+    echo -e "  ${GREEN}./todo.sh --accept <ID>${NC} - Accept a recommendation"
+    echo -e "  ${GREEN}./todo.sh --reject <ID>${NC} - Reject a recommendation"
+    echo -e "  ${GREEN}./todo.sh --done <ID>${NC}   - Mark as implemented"
+    echo -e "  ${GREEN}./todo.sh --vote <ID>${NC}   - Vote for priority"
+}
+
+# Vote for a recommendation (increases priority)
+# Multiple votes from different stations = higher collective priority
+vote_recommendation() {
+    local rec_id="$1"
+    local station_id="${IPFSNODEID:-unknown}"
+    local captain="${CAPTAINEMAIL:-unknown}"
+    
+    echo -e "${BLUE}🗳️  Voting for recommendation: $rec_id${NC}"
+    
+    # Create a vote event (separate from the original recommendation)
+    local vote_id="vote_${rec_id}_${station_id}_$(date +%Y%m%d%H%M%S)"
+    local vote_content="Vote for $rec_id by $captain@$station_id"
+    
+    if store_n2_memory "$vote_id" "$vote_content" "vote" "vote" "high"; then
+        echo -e "${GREEN}✅ Vote recorded${NC}"
+        echo -e "${GREEN}   From: $captain @ ${station_id:0:12}...${NC}"
+        echo -e "${GREEN}   For: $rec_id${NC}"
+    else
+        echo -e "${RED}❌ Failed to record vote${NC}"
+        return 1
+    fi
+}
+
+# Store each AI recommendation as a separate NOSTR event
+# Called from interactive_select_recommendations
+store_ai_recommendation() {
+    local content="$1"
+    local priority="$2"  # high | medium | low based on emoji
+    
+    # Extract priority from emoji if present
+    if echo "$content" | grep -q "🔴"; then
+        priority="high"
+    elif echo "$content" | grep -q "🟡"; then
+        priority="medium"
+    elif echo "$content" | grep -q "🟢"; then
+        priority="low"
+    fi
+    [[ -z "$priority" ]] && priority="medium"
+    
+    # Generate unique ID
+    local rec_id="ai_$(date +%Y%m%d%H%M%S)_$(echo -n "$content" | md5sum | cut -c1-8)"
+    
+    # Store as individual event
+    store_n2_memory "$rec_id" "$content" "proposed" "ai_recommendation" "$priority"
+    
+    echo "$rec_id"
 }
 
 
