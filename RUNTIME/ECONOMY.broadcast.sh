@@ -5,7 +5,7 @@
 # Publishes a kind:30850 event containing the station's economic health data.
 # This enables swarm-level economic visibility and legal compliance reporting.
 #
-# Part of NIP-101 Economic Health Extension
+# Part of NIP-101 Economic Health Extension 
 # https://github.com/papiche/nostr-nips/blob/main/101-economic-health-extension.md
 #
 # Usage: ./ECONOMY.broadcast.sh [--dryrun] [--verbose]
