@@ -529,12 +529,13 @@
                                 <li><strong>Étape 1 :</strong> ASSETS → CASH (forêts-jardins liquidées)</li>
                                 <li><strong>Étape 2 :</strong> RnD → CASH (budget R&D épuisé)</li>
                                 <li><strong>Étape 3 :</strong> Échec NODE → Faillite déclarée</li>
-                                <li>Valeur résiduelle : UPLANETNAME_CAPITAL (_CAPITAL_BALANCE_ Ẑ)</li>
+                                <li>VNC (Valeur Nette Comptable) : _CAPITAL_BALANCE_ Ẑ récupérable</li>
                             </ul>
                             <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
-                                <strong>Valeur Machine :</strong> _MACHINE_VALUE_ Ẑ initial<br>
+                                <strong>Valeur Brute (Compte 21) :</strong> _MACHINE_VALUE_ Ẑ initial<br>
+                                <strong>Amortissements Cumulés (Compte 28) :</strong> _AMORT_BALANCE_ Ẑ consommés<br>
                                 <strong>Amortissement :</strong> _DEPRECIATION_PERCENT_% (semaine _WEEKS_PASSED_/_DEPRECIATION_WEEKS_)<br>
-                                <strong>Valeur Résiduelle :</strong> _CAPITAL_BALANCE_ Ẑ récupérable
+                                <strong>VNC = CAPITAL - AMORT :</strong> _CAPITAL_BALANCE_ Ẑ récupérable
                             </div>
                         </div>
                         
@@ -747,12 +748,13 @@
                                 <li><strong>Step 1:</strong> ASSETS → CASH (forest-gardens liquidated)</li>
                                 <li><strong>Step 2:</strong> RnD → CASH (R&D budget depleted)</li>
                                 <li><strong>Step 3:</strong> NODE failure → Bankruptcy declared</li>
-                                <li>Residual value: UPLANETNAME_CAPITAL (_CAPITAL_BALANCE_ Ẑ)</li>
+                                <li>NBV (Net Book Value): _CAPITAL_BALANCE_ Ẑ recoverable</li>
                             </ul>
                             <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
-                                <strong>Machine Value:</strong> _MACHINE_VALUE_ Ẑ initial<br>
+                                <strong>Gross Value (Account 21):</strong> _MACHINE_VALUE_ Ẑ initial<br>
+                                <strong>Cumulative Depreciation (Account 28):</strong> _AMORT_BALANCE_ Ẑ consumed<br>
                                 <strong>Depreciation:</strong> _DEPRECIATION_PERCENT_% (week _WEEKS_PASSED_/_DEPRECIATION_WEEKS_)<br>
-                                <strong>Residual Value:</strong> _CAPITAL_BALANCE_ Ẑ recoverable
+                                <strong>NBV = CAPITAL - AMORT:</strong> _CAPITAL_BALANCE_ Ẑ recoverable
                             </div>
                         </div>
                         
@@ -965,12 +967,13 @@
                                 <li><strong>Paso 1 :</strong> ASSETS → CASH (bosques-jardines liquidados)</li>
                                 <li><strong>Paso 2 :</strong> RnD → CASH (presupuesto I+D agotado)</li>
                                 <li><strong>Paso 3 :</strong> Fallo NODE → Quiebra declarada</li>
-                                <li>Valor residual: UPLANETNAME_CAPITAL (_CAPITAL_BALANCE_ Ẑ)</li>
+                                <li>VNC (Valor Neto Contable): _CAPITAL_BALANCE_ Ẑ recuperable</li>
                             </ul>
                             <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
-                                <strong>Valor Máquina :</strong> _MACHINE_VALUE_ Ẑ inicial<br>
-                                <strong>Depreciación :</strong> _DEPRECIATION_PERCENT_% (semana _WEEKS_PASSED_/_DEPRECIATION_WEEKS_)<br>
-                                <strong>Valor Residual :</strong> _CAPITAL_BALANCE_ Ẑ recuperable
+                                <strong>Valor Bruto (Cuenta 21):</strong> _MACHINE_VALUE_ Ẑ inicial<br>
+                                <strong>Amortización Acumulada (Cuenta 28):</strong> _AMORT_BALANCE_ Ẑ consumidos<br>
+                                <strong>Depreciación:</strong> _DEPRECIATION_PERCENT_% (semana _WEEKS_PASSED_/_DEPRECIATION_WEEKS_)<br>
+                                <strong>VNC = CAPITAL - AMORT:</strong> _CAPITAL_BALANCE_ Ẑ recuperable
                             </div>
                         </div>
                         

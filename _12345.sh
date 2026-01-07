@@ -181,11 +181,17 @@ UPLANETNAME_ASSETS=$(cat ~/.zen/game/uplanet.ASSETS.dunikey 2>/dev/null | grep "
     && chmod 600 ~/.zen/game/uplanet.IMPOT.dunikey
 UPLANETNAME_IMPOT=$(cat ~/.zen/game/uplanet.IMPOT.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
 
-# UPLANETNAME_CAPITAL wallet (Immobilisations - Compte 21)
+# UPLANETNAME_CAPITAL wallet (Immobilisations - Compte 21 - Valeur Brute)
 [[ ! -s ~/.zen/game/uplanet.CAPITAL.dunikey ]] \
     && ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/uplanet.CAPITAL.dunikey "${UPLANETNAME}.CAPITAL" "${UPLANETNAME}.CAPITAL" \
     && chmod 600 ~/.zen/game/uplanet.CAPITAL.dunikey
 UPLANETNAME_CAPITAL=$(cat ~/.zen/game/uplanet.CAPITAL.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+
+# UPLANETNAME_AMORTISSEMENT wallet (Amortissements - Compte 28 - Valeur Consommée)
+[[ ! -s ~/.zen/game/uplanet.AMORTISSEMENT.dunikey ]] \
+    && ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/uplanet.AMORTISSEMENT.dunikey "${UPLANETNAME}.AMORTISSEMENT" "${UPLANETNAME}.AMORTISSEMENT" \
+    && chmod 600 ~/.zen/game/uplanet.AMORTISSEMENT.dunikey
+UPLANETNAME_AMORTISSEMENT=$(cat ~/.zen/game/uplanet.AMORTISSEMENT.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
 
 ###############################################
 #### UPLANET GEOKEYS_refresh - not for UPlanet ORIGIN
@@ -598,6 +604,7 @@ NODE12345="{
     \"UPLANETNAME_ASSETS\" : \"${UPLANETNAME_ASSETS}\",
     \"UPLANETNAME_IMPOT\" : \"${UPLANETNAME_IMPOT}\",
     \"UPLANETNAME_CAPITAL\" : \"${UPLANETNAME_CAPITAL}\",
+    \"UPLANETNAME_AMORTISSEMENT\" : \"${UPLANETNAME_AMORTISSEMENT}\",
     \"UPLANETNAME_INTRUSION\" : \"${UPLANETNAME_INTRUSION}\",
     \"UPLANETG1PUB\" : \"${UPLANETG1PUB}\",
     \"UPLANETG1\" : \"${UPLANETCOINS}\",

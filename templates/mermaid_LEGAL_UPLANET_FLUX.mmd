@@ -16,13 +16,16 @@ graph TD
         TRE["UPLANETNAME_TREASURY (CASH)<br><b>Réserves/Trésorerie</b>"]
         ASS["UPLANETNAME_ASSETS<br><b>Projets (Forêts)</b>"]
         RND["UPLANETNAME_RND<br><b>R&D G1FabLab</b>"]
-        CAP["UPLANETNAME_CAPITAL<br><b>Immobilisations (Compte 21)</b><br>(Valeur machine, amortissement)"]
+        CAP["UPLANETNAME_CAPITAL<br><b>Immobilisations (Compte 21)</b><br>(Valeur brute machine)"]
+        AMORT["UPLANETNAME_AMORTISSEMENT<br><b>Amortissements (Compte 28)</b><br>(Valeur consommée cumulée)"]
         
         A -- "2. Échange euro → Ẑen" --> G1
         G1 -- "Émission Ẑen" --> SOC & OPE
         
-        %% Amortissement du capital machine
-        CAP -- "Amortissement hebdo (~3.2Ẑ/3ans)" --> TRE
+        %% Amortissement comptable (pas du cash €)
+        CAP -- "Amortissement hebdo (~3.2Ẑ)" --> AMORT
+        
+        %% Valeur Nette Comptable = CAP - AMORT
     end
 
     subgraph "Portefeuilles Membre"
@@ -74,7 +77,7 @@ graph TD
     classDef flowbox fill:#fff,stroke:#ccc,stroke-width:1px,stroke-dasharray: 5 5
 
     class A,B,C real
-    class G1,SOC,OPE,IMP,TRE,ASS,RND,CAP central
+    class G1,SOC,OPE,IMP,TRE,ASS,RND,CAP,AMORT central
     class MP,ZC,MP_Cap,CPT_DED,NODE member
     class Flux_Capitalisation,Flux_Exploitation,Flux_Conversion_Don flowbox
     class Pont_de_Liquidité process

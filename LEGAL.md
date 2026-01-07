@@ -92,7 +92,8 @@ Toutes les transactions vers les portefeuilles coopératifs doivent provenir de 
 | **`UPLANETNAME_RND`** | **R&D (1/3)** | Financement du G1FabLab. |
 | **`UPLANETNAME_ASSETS`** | **Actifs Réels (1/3)** | Acquisition des forêts-jardins. |
 | **`UPLANETNAME.CAPTAIN`** | **Recettes d'Exploitation** | Collecte les loyers, source pour allocation 3x1/3. |
-| **`UPLANETNAME_CAPITAL`** | **Immobilisations (Compte 21)** | Valeur machine, amortissement linéaire sur 3 ans vers CASH. |
+| **`UPLANETNAME_CAPITAL`** | **Immobilisations (Compte 21)** | Valeur brute machine, transfert hebdo vers AMORTISSEMENT. |
+| **`UPLANETNAME_AMORTISSEMENT`** | **Amortissements (Compte 28)** | Valeur consommée cumulée. VNC = CAPITAL - AMORTISSEMENT. |
 | **`UPLANETNAME_INTRUSION`** | **Sécurité Anti-Intrusion** | Centralise les fonds provenant de transactions non autorisées. |
 
 ### **Article 13 : Portefeuilles Membres**
@@ -163,11 +164,13 @@ graph TD
         UPLANETNAME_TREASURY["UPLANETNAME_TREASURY (CASH)<br><b>Trésorerie & Fonctionnement</b>"]:::allocationType
         UPLANETNAME_ASSETS["UPLANETNAME_ASSETS<br><b>Projets (1/3)</b>"]:::allocationType
         UPLANETNAME_RND["UPLANETNAME_RND<br><b>R&D (1/3)</b>"]:::allocationType
-        UPLANETNAME_CAPITAL["UPLANETNAME_CAPITAL<br><b>Immobilisations (Compte 21)</b>"]:::allocationType
+        UPLANETNAME_CAPITAL["UPLANETNAME_CAPITAL<br><b>Immobilisations (Compte 21)</b><br>Valeur Brute"]:::allocationType
+        UPLANETNAME_AMORT["UPLANETNAME_AMORTISSEMENT<br><b>Amortissements (Compte 28)</b><br>Valeur Consommée"]:::allocationType
         UPLANETNAME_INTRUSION["UPLANETNAME_INTRUSION<br><b>Sécurité Anti-Intrusion</b>"]:::cooperativeCentral
         
-        %% Amortissement Capital → CASH
-        UPLANETNAME_CAPITAL -- "Amortissement hebdo (~3.2Ẑ/3ans)" --> UPLANETNAME_TREASURY
+        %% Amortissement comptable (pas du cash €)
+        UPLANETNAME_CAPITAL -- "Amortissement hebdo (~3.2Ẑ)" --> UPLANETNAME_AMORT
+        %% VNC = CAPITAL - AMORT (valeur résiduelle récupérable)
         
         MB_SCIC -- "2. Échange € → Ẑen" --> UPLANETNAME_G1
         UPLANETNAME_G1 -- "3. Émission Ẑen" --> UPLANETNAME_SOCIETY

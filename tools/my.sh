@@ -658,8 +658,8 @@ else
     echo ${UPLANETNAME_INTRUSION} > $HOME/.zen/tmp/UPLANETNAME_INTRUSION
 fi
 
-# UPLANETNAME_CAPITAL -- holds infrastructure capital value (machine depreciation over 3 years)
-# Compte 21 - Immobilisations corporelles. Weekly depreciation flows to CASH.
+# UPLANETNAME_CAPITAL -- holds infrastructure capital value (Compte 21 - Valeur Brute)
+# Weekly depreciation flows to AMORTISSEMENT (not CASH - accounting entry only)
 [[ ! -s $HOME/.zen/game/uplanet.CAPITAL.dunikey ]] \
     && $HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.CAPITAL.dunikey "${UPLANETNAME}.CAPITAL" "${UPLANETNAME}.CAPITAL" \
     && UPLANETNAME_CAPITAL=$(cat $HOME/.zen/game/uplanet.CAPITAL.dunikey | grep "pub" | cut -d " " -f 2) \
@@ -672,6 +672,23 @@ else
     if [[ -s $HOME/.zen/game/uplanet.CAPITAL.dunikey ]]; then
         UPLANETNAME_CAPITAL=$(cat $HOME/.zen/game/uplanet.CAPITAL.dunikey | grep "pub" | cut -d " " -f 2)
         echo ${UPLANETNAME_CAPITAL} > $HOME/.zen/tmp/UPLANETNAME_CAPITAL
+    fi
+fi
+
+# UPLANETNAME_AMORTISSEMENT -- cumulative depreciation value (Compte 28 - Valeur Consommée)
+# VNC (Valeur Nette Comptable) = CAPITAL - AMORTISSEMENT
+[[ ! -s $HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey ]] \
+    && $HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey "${UPLANETNAME}.AMORTISSEMENT" "${UPLANETNAME}.AMORTISSEMENT" \
+    && UPLANETNAME_AMORTISSEMENT=$(cat $HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey | grep "pub" | cut -d " " -f 2) \
+    && echo ${UPLANETNAME_AMORTISSEMENT} > $HOME/.zen/tmp/UPLANETNAME_AMORTISSEMENT
+
+# Cache optimization: read from cache first
+if [[ -f "$HOME/.zen/tmp/UPLANETNAME_AMORTISSEMENT" ]]; then
+    UPLANETNAME_AMORTISSEMENT=$(cat $HOME/.zen/tmp/UPLANETNAME_AMORTISSEMENT)
+else
+    if [[ -s $HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey ]]; then
+        UPLANETNAME_AMORTISSEMENT=$(cat $HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey | grep "pub" | cut -d " " -f 2)
+        echo ${UPLANETNAME_AMORTISSEMENT} > $HOME/.zen/tmp/UPLANETNAME_AMORTISSEMENT
     fi
 fi
 

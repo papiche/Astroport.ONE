@@ -33,8 +33,10 @@ graph TD;
           CASH -- "2x PAF (28Ẑ)" --> Captain_MP["Wallet Capitaine<br/><b>MULTIPASS</b><br/>(Salaire personnel)"];
           
           %% Capital Machine (Immobilisations - Compte 21)
-          CAPITAL["🏭 Wallet Capital Machine<br/><b>UPLANETNAME_CAPITAL</b><br/>(Immobilisations - Compte 21)"];
-          CAPITAL -- "Amortissement hebdo<br/>(~3.2Ẑ sur 3 ans)" --> CASH;
+          CAPITAL["🏭 Wallet Capital Machine<br/><b>UPLANETNAME_CAPITAL</b><br/>(Immobilisations - Compte 21)<br/>Valeur Brute"];
+          AMORT["📉 Wallet Amortissement<br/><b>UPLANETNAME_AMORTISSEMENT</b><br/>(Compte 28)<br/>Valeur Consommée"];
+          CAPITAL -- "Amortissement hebdo<br/>(~3.2Ẑ sur 3 ans)" --> AMORT;
+          %% Valeur Nette Comptable = CAPITAL - AMORT (pas de flux vers CASH)
           
           %% Collecte des loyers vers CAPTAIN_DEDICATED
           ZenCard -- "Paiement Loyer HT" --> Captain_DED["Wallet Capitaine<br/><b>CAPTAIN_DEDICATED</b><br/>(Recettes exploitation)"];

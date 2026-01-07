@@ -273,9 +273,13 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
         fi
         
         #######################################################################
-        # DEPRECIATION: UPLANETNAME_CAPITAL → CASH (Weekly machine amortization)
+        # DEPRECIATION: UPLANETNAME_CAPITAL → UPLANETNAME_AMORTISSEMENT
         # Linear depreciation over 3 years (156 weeks)
-        # Compte 21 (Immobilisations) → Compte 512 (Banque/Trésorerie)
+        # Compte 21 (Immobilisations) → Compte 28 (Amortissements)
+        # 
+        # NOTE: Amortissement n'est PAS du cash convertible en €
+        # C'est une écriture comptable représentant la valeur "consommée"
+        # Valeur Nette Comptable = CAPITAL - AMORTISSEMENT
         #######################################################################
         
         if [[ -s "$HOME/.zen/game/.env" ]] && [[ -s "$HOME/.zen/game/uplanet.CAPITAL.dunikey" ]]; then
@@ -284,6 +288,20 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
             CAPITAL_DATE=$(grep "^CAPITAL_DATE=" "$HOME/.zen/game/.env" 2>/dev/null | cut -d'=' -f2)
             DEPRECIATION_WEEKS=$(grep "^DEPRECIATION_WEEKS=" "$HOME/.zen/game/.env" 2>/dev/null | cut -d'=' -f2)
             [[ -z $DEPRECIATION_WEEKS ]] && DEPRECIATION_WEEKS=156  # Default: 3 years
+            
+            # Initialize AMORTISSEMENT wallet if not exists
+            if [[ ! -s "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" ]]; then
+                log_output "📦 Creating UPLANETNAME_AMORTISSEMENT wallet (Compte 28)..."
+                ${MY_PATH}/../tools/keygen -t duniter -o "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" "${UPLANETNAME}.AMORTISSEMENT" "${UPLANETNAME}.AMORTISSEMENT"
+                chmod 600 "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey"
+                # Initialize with 1Ğ1 for transaction capability
+                AMORT_G1PUB=$(cat "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" | grep "pub:" | cut -d ' ' -f 2)
+                ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.G1.dunikey" "1" "${AMORT_G1PUB}" "UP:${UPLANETG1PUB:0:8}:INIT:AMORT:1G1:GENESIS" 2>/dev/null
+                log_output "✅ UPLANETNAME_AMORTISSEMENT initialized: ${AMORT_G1PUB:0:8}..."
+            fi
+            
+            # Get AMORTISSEMENT wallet public key
+            AMORT_G1PUB=$(cat "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" | grep "pub:" | cut -d ' ' -f 2)
             
             if [[ -n "$MACHINE_VALUE" ]] && [[ -n "$CAPITAL_DATE" ]] && [[ "$MACHINE_VALUE" != "0" ]]; then
                 # Calculate weeks since capital date
@@ -304,17 +322,24 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                     CAPITAL_COIN=$(${MY_PATH}/../tools/G1check.sh ${CAPITAL_G1PUB} | tail -n 1)
                     CAPITAL_ZEN=$(echo "scale=1; ($CAPITAL_COIN - 1) * 10" | bc)
                     
-                    # Calculate residual value for logging
+                    # Calculate values for logging
                     TOTAL_DEPRECIATED=$(echo "scale=2; $WEEKLY_DEPRECIATION * $WEEKS_ELAPSED" | bc -l)
                     RESIDUAL_VALUE=$(echo "scale=2; $MACHINE_VALUE - $TOTAL_DEPRECIATED" | bc -l)
                     
+                    # Get current AMORTISSEMENT balance
+                    AMORT_COIN=$(${MY_PATH}/../tools/G1check.sh ${AMORT_G1PUB} | tail -n 1)
+                    AMORT_ZEN=$(echo "scale=1; ($AMORT_COIN - 1) * 10" | bc)
+                    
                     if [[ $(echo "$CAPITAL_ZEN >= $WEEKLY_DEPRECIATION" | bc -l) -eq 1 ]]; then
-                        # Transfer depreciation from CAPITAL → CASH
-                        ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.CAPITAL.dunikey" "$WEEKLY_DEPRECIATION_G1" "${CASH_G1PUB}" "UP:${UPLANETG1PUB:0:8}:DEPREC:W${CURRENT_WEEK}:${WEEKLY_DEPRECIATION}Z:CAP>CASH" 2>/dev/null
+                        # Transfer depreciation from CAPITAL → AMORTISSEMENT (Compte 21 → Compte 28)
+                        ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.CAPITAL.dunikey" "$WEEKLY_DEPRECIATION_G1" "${AMORT_G1PUB}" "UP:${UPLANETG1PUB:0:8}:AMORT:W${CURRENT_WEEK}:${WEEKLY_DEPRECIATION}Z:C21>C28" 2>/dev/null
                         
                         if [[ $? -eq 0 ]]; then
-                            log_output "✅ DEPRECIATION: $WEEKLY_DEPRECIATION Ẑen transferred from CAPITAL to CASH"
-                            log_output "   Residual machine value: $RESIDUAL_VALUE Ẑen (after $WEEKS_ELAPSED weeks)"
+                            NEW_AMORT_ZEN=$(echo "scale=2; $AMORT_ZEN + $WEEKLY_DEPRECIATION" | bc -l)
+                            log_output "✅ DEPRECIATION: $WEEKLY_DEPRECIATION Ẑen → AMORTISSEMENT (Compte 28)"
+                            log_output "   Valeur Brute (Compte 21): $MACHINE_VALUE Ẑen"
+                            log_output "   Amortissements Cumulés (Compte 28): ~$NEW_AMORT_ZEN Ẑen"
+                            log_output "   Valeur Nette Comptable: ~$RESIDUAL_VALUE Ẑen (après $WEEKS_ELAPSED semaines)"
                         else
                             log_output "⚠️  DEPRECIATION transfer failed - will retry next week"
                         fi
@@ -324,8 +349,9 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                     fi
                 else
                     log_output "📊 DEPRECIATION COMPLETE: Machine fully amortized after $DEPRECIATION_WEEKS weeks"
+                    log_output "   Valeur Nette Comptable = 0 (machine peut être vendue à valeur résiduelle)"
                     # After full depreciation, CAPITAL wallet should be empty
-                    # Residual value = 0, machine can only be sold for scrap value
+                    # AMORTISSEMENT wallet contains total depreciated value
                 fi
             fi
         fi
@@ -369,8 +395,9 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                 SOCIETAIRE_SHARE_PRICE_EUR=50
                 SOCIETAIRE_CAPITAL=$(echo "scale=2; 10 * $SOCIETAIRE_SHARE_PRICE" | bc -l)
                 
-                # Get CAPITAL wallet values for report
+                # Get CAPITAL and AMORTISSEMENT wallet values for report
                 CAPITAL_BALANCE="0"
+                AMORT_BALANCE="0"
                 MACHINE_VALUE_REPORT="0"
                 DEPRECIATION_PERCENT="0"
                 WEEKS_PASSED_REPORT="0"
@@ -380,6 +407,13 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                     CAPITAL_G1PUB_RPT=$(cat "$HOME/.zen/game/uplanet.CAPITAL.dunikey" | grep "pub:" | cut -d ' ' -f 2)
                     CAPITAL_COIN_RPT=$(${MY_PATH}/../tools/G1check.sh ${CAPITAL_G1PUB_RPT} 2>/dev/null | tail -n 1)
                     CAPITAL_BALANCE=$(echo "scale=1; ($CAPITAL_COIN_RPT - 1) * 10" | bc 2>/dev/null || echo "0")
+                    
+                    # Get AMORTISSEMENT balance (Compte 28)
+                    if [[ -f "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" ]]; then
+                        AMORT_G1PUB_RPT=$(cat "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" | grep "pub:" | cut -d ' ' -f 2)
+                        AMORT_COIN_RPT=$(${MY_PATH}/../tools/G1check.sh ${AMORT_G1PUB_RPT} 2>/dev/null | tail -n 1)
+                        AMORT_BALANCE=$(echo "scale=1; ($AMORT_COIN_RPT - 1) * 10" | bc 2>/dev/null || echo "0")
+                    fi
                     
                     # Read config values
                     if [[ -f "$HOME/.zen/game/uplanet.conf" ]]; then
@@ -431,6 +465,7 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                     -e "s~_SOCIETAIRE_CAPITAL_~${SOCIETAIRE_CAPITAL}~g" \
                     -e "s~_FAILED_ALLOCATIONS_~${FAILED_ALLOCATIONS}~g" \
                     -e "s~_CAPITAL_BALANCE_~${CAPITAL_BALANCE}~g" \
+                    -e "s~_AMORT_BALANCE_~${AMORT_BALANCE}~g" \
                     -e "s~_MACHINE_VALUE_~${MACHINE_VALUE_REPORT}~g" \
                     -e "s~_DEPRECIATION_PERCENT_~${DEPRECIATION_PERCENT}~g" \
                     -e "s~_WEEKS_PASSED_~${WEEKS_PASSED_REPORT}~g" \
@@ -685,6 +720,7 @@ declare -A COOPERATIVE_WALLETS=(
     ["UPLANETNAME.CAPTAIN"]="$HOME/.zen/game/uplanet.captain.dunikey"
     ["UPLANETNAME_INTRUSION"]="$HOME/.zen/game/uplanet.INTRUSION.dunikey"
     ["UPLANETNAME_CAPITAL"]="$HOME/.zen/game/uplanet.CAPITAL.dunikey"
+    ["UPLANETNAME_AMORTISSEMENT"]="$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey"
     ["NODE"]="$HOME/.zen/game/secret.NODE.dunikey"
 )
 

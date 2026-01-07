@@ -250,7 +250,7 @@ show_system_wallets_summary() {
         fi
     fi
     
-    # UPLANETNAME_CAPITAL (Immobilisations - valeur machine amortie)
+    # UPLANETNAME_CAPITAL (Immobilisations - Compte 21 - Valeur Brute)
     if [[ -f "$HOME/.zen/game/uplanet.CAPITAL.dunikey" ]]; then
         local capital_pubkey=$(cat "$HOME/.zen/game/uplanet.CAPITAL.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
         if [[ -n "$capital_pubkey" ]]; then
@@ -259,13 +259,43 @@ show_system_wallets_summary() {
             local capital_str=$(safe_printf "%.2f" "$capital_balance")
             local zen_str=$(safe_printf "%.0f" "$capital_zen")
             
-            # Show depreciation info if available
+            # Get AMORTISSEMENT balance for VNC calculation
+            local amort_zen=0
+            if [[ -f "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" ]]; then
+                local amort_pubkey=$(cat "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+                if [[ -n "$amort_pubkey" ]]; then
+                    local amort_balance=$(get_wallet_balance "$amort_pubkey")
+                    amort_zen=$(calculate_zen_balance "$amort_balance")
+                fi
+            fi
+            
+            # Calculate Valeur Nette Comptable (VNC = CAPITAL - AMORTISSEMENT)
             local machine_value=$(grep "^MACHINE_VALUE=" "$HOME/.zen/game/.env" 2>/dev/null | cut -d'=' -f2)
             if [[ -n "$machine_value" && "$machine_value" != "0" ]]; then
-                local residual_pct=$(echo "scale=0; $capital_zen * 100 / $machine_value" | bc -l 2>/dev/null || echo "?")
-                echo -e "  🏭 UPLANETNAME_CAPITAL: ${WHITE}$capital_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC}) [${residual_pct}% résiduel de ${machine_value}Ẑ]"
+                local vnc=$(echo "scale=0; $capital_zen" | bc -l 2>/dev/null || echo "0")
+                local depreciation_pct=$(echo "scale=0; $amort_zen * 100 / $machine_value" | bc -l 2>/dev/null || echo "0")
+                echo -e "  🏭 CAPITAL (Compte 21): ${WHITE}$capital_str Ğ1${NC} (VNC: ${CYAN}$vnc Ẑen${NC}) [Brut: ${machine_value}Ẑ]"
             else
-                echo -e "  🏭 UPLANETNAME_CAPITAL: ${WHITE}$capital_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC})"
+                echo -e "  🏭 CAPITAL (Compte 21): ${WHITE}$capital_str Ğ1${NC} (${CYAN}$zen_str Ẑen${NC})"
+            fi
+        fi
+    fi
+    
+    # UPLANETNAME_AMORTISSEMENT (Amortissements - Compte 28 - Valeur Consommée)
+    if [[ -f "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" ]]; then
+        local amort_pubkey=$(cat "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
+        if [[ -n "$amort_pubkey" ]]; then
+            local amort_balance=$(get_wallet_balance "$amort_pubkey")
+            local amort_zen=$(calculate_zen_balance "$amort_balance")
+            local amort_str=$(safe_printf "%.2f" "$amort_balance")
+            local zen_str=$(safe_printf "%.0f" "$amort_zen")
+            
+            local machine_value=$(grep "^MACHINE_VALUE=" "$HOME/.zen/game/.env" 2>/dev/null | cut -d'=' -f2)
+            if [[ -n "$machine_value" && "$machine_value" != "0" ]]; then
+                local depreciation_pct=$(echo "scale=0; $amort_zen * 100 / $machine_value" | bc -l 2>/dev/null || echo "0")
+                echo -e "  📉 AMORTISSEMENT (Compte 28): ${WHITE}$amort_str Ğ1${NC} (${RED}$zen_str Ẑen${NC}) [${depreciation_pct}% amorti]"
+            else
+                echo -e "  📉 AMORTISSEMENT (Compte 28): ${WHITE}$amort_str Ğ1${NC} (${RED}$zen_str Ẑen${NC})"
             fi
         fi
     fi
