@@ -999,7 +999,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 
                 # Generate intelligent summary using the detected language
                 echo "Generating intelligent summary for article..." >&2
-                ARTICLE_SUMMARY="$($MY_PATH/question.py --json "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. IMPORTANT: Respond directly and clearly ONLY in the language ${USER_LANG}. Article content: ${KeyANSWER}" --pubkey ${PUBKEY})"
+                ARTICLE_SUMMARY="$($MY_PATH/question.py --json "Create a 2-3 sentence summary for this article. RULES: 1) Start DIRECTLY with the summary content 2) NO introductions like 'Here is...' or 'Voici...' 3) Language: ${USER_LANG}. Article: ${KeyANSWER}" --pubkey ${PUBKEY})"
                 
                 # Extract content from JSON response and clean it (less aggressive with JSON)
                 ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | jq -r '.answer // .' 2>/dev/null || echo "$ARTICLE_SUMMARY")"
@@ -1007,7 +1007,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 
                 # Generate intelligent tags based on article content
                 echo "Generating intelligent tags for article..." >&2
-                INTELLIGENT_TAGS="$($MY_PATH/question.py --json "Analyze this blog article and generate 5-8 relevant hashtags in ${USER_LANG} language. Focus on: 1) Main topics/subjects, 2) Key concepts, 3) Industry/domain tags, 4) Content type tags. IMPORTANT: Return ONLY the hashtags separated by spaces, no explanations. Article content: ${KeyANSWER}" --pubkey ${PUBKEY})"
+                INTELLIGENT_TAGS="$($MY_PATH/question.py --json "Generate 5-8 hashtags for this article. OUTPUT FORMAT: Only hashtags separated by spaces. NO explanations, NO introductions, NO 'Here are...'. Example output: technology blockchain innovation. Article: ${KeyANSWER}" --pubkey ${PUBKEY})"
                 
                 # Extract and clean the tags
                 INTELLIGENT_TAGS="$(echo "$INTELLIGENT_TAGS" | jq -r '.answer // .' 2>/dev/null || echo "$INTELLIGENT_TAGS")"
@@ -1021,7 +1021,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 
                 # Use AI to create an optimized Stable Diffusion prompt based on the summary
                 echo "Creating AI-generated prompt for illustration based on article summary..." >&2
-                SD_PROMPT="$($MY_PATH/question.py --json "Create a Stable Diffusion prompt for an illustrative image based on this article summary: ${ARTICLE_SUMMARY} --- CRITICAL RULES: 1) Output ONLY the prompt text, no explanations 2) NO emojis, NO special characters, NO text, NO words, NO brands, NO writing 3) ONLY visual elements and descriptive words 4) Use simple English words only 5) Focus on visual composition, colors, style, objects, scenes" --pubkey ${PUBKEY})"
+                SD_PROMPT="$($MY_PATH/question.py --json "Stable Diffusion prompt for: ${ARTICLE_SUMMARY} --- OUTPUT: ONLY the prompt words, NO explanations. FORBIDDEN: emojis, 'Here is', introductions, text/words in image. REQUIRED: visual elements, colors, composition, style. English only." --pubkey ${PUBKEY})"
                 
                 # Extract content from JSON response and clean the prompt
                 SD_PROMPT="$(echo "$SD_PROMPT" | jq -r '.answer // .' 2>/dev/null || echo "$SD_PROMPT")"
