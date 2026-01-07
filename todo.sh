@@ -157,6 +157,10 @@ show_help() {
     echo "    Get your token at:"
     echo "      https://opencollective.com/dashboard/monnaie-libre/admin/for-developers"
     echo ""
+    echo -e "${YELLOW}DOCUMENTATION:${NC}"
+    echo "    Full documentation: docs/N2_MEMORY_SYSTEM.md"
+    echo "    Architecture: nostr-nips/101-n2-constellation-sync-extension.md"
+    echo ""
     exit 0
 }
 
