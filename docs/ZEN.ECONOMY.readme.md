@@ -508,6 +508,90 @@ Le dashboard `economy.Swarm.html` collecte les événements kind 30850 :
 - Affiche les portefeuilles partagés **une seule fois** (pas de somme)
 - Liste les stations avec leur statut et synchronisation
 
+---
+
+### **🔗 SYNCHRONISATION CONSTELLATION (amisOfAmis.txt)**
+
+Pour que les relais strfry de la constellation synchronisent correctement les événements, les clés HEX des entités géographiques et du système doivent être dans `amisOfAmis.txt`.
+
+#### **Principe : Friends of Friends (N²)**
+
+```
+CONSTELLATION SYNC = Graphe N² (Amis d'Amis)
+├── Chaque station a son CAPTAIN_HEX (identité Nostr du capitaine)
+├── Chaque UMAP a son UMAPHEX (identité Nostr de la zone géographique)
+├── Chaque SECTOR a son SECTORHEX (identité Nostr du secteur 0.1°)
+├── Chaque REGION a son REGIONHEX (identité Nostr de la région 1°)
+└── uplanet.G1.nostr = HEX de l'Oracle Central (N² Memory)
+```
+
+#### **Fichier `~/.zen/strfry/amisOfAmis.txt`**
+
+Ce fichier contient les clés HEX publiques autorisées pour la synchronisation :
+
+```bash
+# Structure du fichier (une clé HEX par ligne)
+a1b2c3d4e5f6...  # CAPTAIN_HEX - Capitaine station 1
+f6e5d4c3b2a1...  # UMAP_43.12_-1.45 - Zone géographique
+1234567890ab...  # SECTOR_43.1_-1.4 - Secteur
+abcdef123456...  # REGION_43_-1 - Région
+deadbeef1234...  # uplanet.G1.nostr - Oracle Central
+```
+
+#### **Ajout Automatique (NODE.refresh.sh)**
+
+Le script `NODE.refresh.sh` ajoute automatiquement les clés géographiques **LOCALES** uniquement :
+
+```bash
+# Clés ajoutées à amisOfAmis.txt (FILTRAGE LOCAL)
+# Seules les clés gérées par CE nœud sont ajoutées (pas les clés du swarm)
+
+├── uplanet.G1.nostr HEX (Oracle Central - N² Memory)
+│
+├── ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*_*/_*_*/HEX
+│   └── UMAPs LOCALES uniquement (zones avec amis actifs sur ce nœud)
+│
+├── ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_*_*/_*_*/SECTORHEX
+│   └── SECTORs LOCAUX uniquement (agrégation de ce nœud)
+│
+├── ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_*_*/REGIONHEX
+│   └── REGIONs LOCALES uniquement (agrégation de ce nœud)
+│
+└── ~/.zen/game/nostr/UNODE_*/HEX
+    └── Autres nœuds de la constellation (toujours ajoutés)
+```
+
+> ⚠️ **IMPORTANT** : Ce filtrage suit la même logique que `NOSTR.UMAP.refresh.sh` qui ne traite que les UMAPs ayant des amis actifs. Les UMAPs du swarm sans amis locaux ne sont PAS ajoutées à `amisOfAmis.txt`.
+
+#### **Pourquoi c'est Nécessaire**
+
+| Clé | Rôle | Sans sync | Filtrage |
+| :--- | :--- | :--- | :--- |
+| `uplanet.G1.nostr` | Oracle Central, N² Memory | ❌ Pas de mémoire partagée | Global |
+| `UMAP HEX` | Messages géolocalisés, PlantNet | ❌ Observations non propagées | **Local** |
+| `SECTOR HEX` | Agrégation sectorielle | ❌ Stats secteur incomplètes | **Local** |
+| `REGION HEX` | Agrégation régionale | ❌ Stats région incomplètes | **Local** |
+| `UNODE HEX` | Autres stations de l'essaim | ❌ Constellation fragmentée | Global |
+
+> **Local** = Seules les clés des zones gérées par ce nœud (avec amis actifs)
+> **Global** = Clés partagées par tout l'essaim
+
+#### **Vérification de la Synchronisation**
+
+```bash
+# Vérifier le contenu de amisOfAmis.txt
+cat ~/.zen/strfry/amisOfAmis.txt | wc -l
+# Devrait contenir : Captains + UMAPs + Sectors + Regions + Oracle
+
+# Vérifier la présence de l'Oracle Central
+grep -i "$(grep HEX= ~/.zen/game/uplanet.G1.nostr | cut -d= -f2 | tr -d ';')" \
+    ~/.zen/strfry/amisOfAmis.txt && echo "✅ Oracle synced" || echo "❌ Oracle missing"
+
+# Vérifier les UMAPs
+ls ~/.zen/game/nostr/UMAP*/HEX | wc -l
+# Devrait correspondre aux UMAPs actives sur la station
+```
+
 ### **RÈGLE DE CONVERSION ẐEN**
 **Parité Fixe :** `0.1Ğ1 = 1Ẑ` est toujours vraie
 **Formule :** `#ZEN = (#G1 - 1) × 10` pour tous les portefeuilles UPlanet

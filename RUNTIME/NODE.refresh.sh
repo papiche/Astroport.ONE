@@ -248,6 +248,89 @@ mkdir -p ~/.zen/game/nostr/ZSWARM
 cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/*/HEX > ~/.zen/game/nostr/ZSWARM/HEX
 cat ~/.zen/tmp/swarm/*/HEX* >> ~/.zen/game/nostr/ZSWARM/HEX
 
+########################################################
+## ADD UMAP, SECTOR, REGION, UPLANET HEX to amisOfAmis.txt
+## Required for strfry constellation sync (N² Memory)
+## IMPORTANT: Only add LOCAL keys (managed by this node), not swarm keys
+## This follows the same filtering as NOSTR.UMAP.refresh.sh
+########################################################
+echo "############################################"
+echo "ADDING LOCAL GEOGRAPHIC KEYS TO amisOfAmis.txt"
+
+# Initialize amisOfAmis.txt if it doesn't exist
+touch "${HOME}/.zen/strfry/amisOfAmis.txt"
+
+# Add uplanet.G1.nostr HEX (Central Oracle key)
+if [[ -f "$HOME/.zen/game/uplanet.G1.nostr" ]]; then
+    UPLANET_G1_HEX=$(grep "HEX=" "$HOME/.zen/game/uplanet.G1.nostr" 2>/dev/null | cut -d'=' -f2 | tr -d ';' | tr -d ' ')
+    if [[ -n "$UPLANET_G1_HEX" && ${#UPLANET_G1_HEX} -eq 64 ]]; then
+        if ! grep -qi "^${UPLANET_G1_HEX}$" "${HOME}/.zen/strfry/amisOfAmis.txt" 2>/dev/null; then
+            echo "$UPLANET_G1_HEX" >> "${HOME}/.zen/strfry/amisOfAmis.txt"
+            echo "Added uplanet.G1.nostr HEX: ${UPLANET_G1_HEX:0:16}..."
+        fi
+    fi
+fi
+
+# Add LOCAL UMAP HEX keys only (from this node's IPFSNODEID, not swarm)
+# These are the UMAPs that NOSTR.UMAP.refresh.sh will actually process
+UMAP_COUNT=0
+for hexfile in ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*_*/_*_*/_*_*/HEX; do
+    [[ -f "$hexfile" ]] || continue
+    hex=$(cat "$hexfile" 2>/dev/null | tr -d '[:space:]')
+    if [[ -n "$hex" && ${#hex} -eq 64 && "$hex" =~ ^[0-9a-fA-F]{64}$ ]]; then
+        if ! grep -qi "^${hex}$" "${HOME}/.zen/strfry/amisOfAmis.txt" 2>/dev/null; then
+            echo "$hex" >> "${HOME}/.zen/strfry/amisOfAmis.txt"
+            ((UMAP_COUNT++))
+        fi
+    fi
+done
+echo "Added $UMAP_COUNT LOCAL UMAP HEX keys to amisOfAmis.txt"
+
+# Add LOCAL SECTOR HEX keys only (from this node's IPFSNODEID)
+SECTOR_COUNT=0
+for hexfile in ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_*_*/_*_*/SECTORHEX; do
+    [[ -f "$hexfile" ]] || continue
+    hex=$(cat "$hexfile" 2>/dev/null | tr -d '[:space:]')
+    if [[ -n "$hex" && ${#hex} -eq 64 && "$hex" =~ ^[0-9a-fA-F]{64}$ ]]; then
+        if ! grep -qi "^${hex}$" "${HOME}/.zen/strfry/amisOfAmis.txt" 2>/dev/null; then
+            echo "$hex" >> "${HOME}/.zen/strfry/amisOfAmis.txt"
+            ((SECTOR_COUNT++))
+        fi
+    fi
+done
+echo "Added $SECTOR_COUNT LOCAL SECTOR HEX keys to amisOfAmis.txt"
+
+# Add LOCAL REGION HEX keys only (from this node's IPFSNODEID)
+REGION_COUNT=0
+for hexfile in ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_*_*/REGIONHEX; do
+    [[ -f "$hexfile" ]] || continue
+    hex=$(cat "$hexfile" 2>/dev/null | tr -d '[:space:]')
+    if [[ -n "$hex" && ${#hex} -eq 64 && "$hex" =~ ^[0-9a-fA-F]{64}$ ]]; then
+        if ! grep -qi "^${hex}$" "${HOME}/.zen/strfry/amisOfAmis.txt" 2>/dev/null; then
+            echo "$hex" >> "${HOME}/.zen/strfry/amisOfAmis.txt"
+            ((REGION_COUNT++))
+        fi
+    fi
+done
+echo "Added $REGION_COUNT LOCAL REGION HEX keys to amisOfAmis.txt"
+
+# Add UNODE HEX keys (other constellation nodes - these are always added for swarm sync)
+UNODE_COUNT=0
+for hexfile in ~/.zen/game/nostr/UNODE_*/HEX; do
+    [[ -f "$hexfile" ]] || continue
+    hex=$(cat "$hexfile" 2>/dev/null | tr -d '[:space:]')
+    if [[ -n "$hex" && ${#hex} -eq 64 && "$hex" =~ ^[0-9a-fA-F]{64}$ ]]; then
+        if ! grep -qi "^${hex}$" "${HOME}/.zen/strfry/amisOfAmis.txt" 2>/dev/null; then
+            echo "$hex" >> "${HOME}/.zen/strfry/amisOfAmis.txt"
+            ((UNODE_COUNT++))
+        fi
+    fi
+done
+echo "Added $UNODE_COUNT UNODE HEX keys to amisOfAmis.txt"
+
+# Remove duplicates and sort
+sort -u "${HOME}/.zen/strfry/amisOfAmis.txt" -o "${HOME}/.zen/strfry/amisOfAmis.txt"
+echo "Total amisOfAmis.txt entries after geographic sync: $(wc -l < ${HOME}/.zen/strfry/amisOfAmis.txt)"
 
 echo "COPYing blacklist.txt $(cat $HOME/.zen/strfry/blacklist.txt | wc -l) + amisOfAmis.txt $(cat $HOME/.zen/strfry/amisOfAmis.txt | wc -l)"
 cp -f "$HOME/.zen/strfry/blacklist.txt" ~/.zen/tmp/$IPFSNODEID/
