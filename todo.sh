@@ -134,6 +134,16 @@ show_help() {
     echo "    This memory is shared across ALL stations in the constellation."
     echo "    The AI learns from accepted/rejected recommendations to improve advice."
     echo ""
+    echo -e "${YELLOW}KEY SETUP (required for N² Memory):${NC}"
+    echo "    Create the shared constellation key:"
+    echo ""
+    echo "      # Generate key from your UPLANETNAME seed (same across all stations)"
+    echo "      \$HOME/.zen/Astroport.ONE/tools/keygen -t nostr \"\${UPLANETNAME}N2\" \"\${UPLANETNAME}N2\" \\"
+    echo "          > ~/.zen/game/uplanet.G1.nostr"
+    echo ""
+    echo "    Or copy from an existing station (all stations share the same key)."
+    echo "    Format: NSEC=nsec1...; NPUB=npub1...; HEX=..."
+    echo ""
     echo -e "${YELLOW}OUTPUT:${NC}"
     echo "    Default (--last): TODO.last.md"
     echo "    Daily (--day):    TODO.today.md"
@@ -370,13 +380,14 @@ fetch_n2_memory() {
 }
 
 # Store a recommendation in N² memory (each recommendation = 1 NOSTR event)
-# Args: $1=recommendation_id, $2=content, $3=status, $4=type, $5=priority
+# Args: $1=recommendation_id, $2=content, $3=status, $4=type, $5=priority, $6=reference_id (for votes)
 store_n2_memory() {
     local rec_id="$1"
     local content="$2"
     local status="${3:-proposed}"
-    local rec_type="${4:-ai_recommendation}"  # ai_recommendation | captain_todo | vote
+    local rec_type="${4:-ai_recommendation}"  # ai_recommendation | captain_todo | vote | status_update
     local priority="${5:-medium}"  # high | medium | low
+    local reference_id="${6:-}"  # Optional: ID of the recommendation this event references (for votes)
     local station_id="${IPFSNODEID:-unknown}"
     local captain="${CAPTAINEMAIL:-unknown}"
     
@@ -390,14 +401,17 @@ store_n2_memory() {
         return 1
     fi
     
-    # Generate unique ID if not provided
-    [[ -z "$rec_id" ]] && rec_id="$(date +%Y%m%d%H%M%S)_$(echo -n "$content" | md5sum | cut -c1-8)"
+    # Generate unique ID if not provided (12 chars = 281 trillion combinations, collision-resistant)
+    [[ -z "$rec_id" ]] && rec_id="$(date +%Y%m%d%H%M%S)_$(echo -n "$content" | md5sum | cut -c1-12)"
     
-    # Create memory entry as JSON
+    # Create memory entry as JSON (include reference_id for votes)
+    local ref_field=""
+    [[ -n "$reference_id" ]] && ref_field=",\"reference_id\": \"$reference_id\""
+    
     local memory_json=$(cat <<EOF
 {
     "type": "n2_todo",
-    "version": "2.0",
+    "version": "2.1",
     "id": "$rec_id",
     "content": $(echo "$content" | jq -Rs '.'),
     "status": "$status",
@@ -406,12 +420,17 @@ store_n2_memory() {
     "station": "$station_id",
     "captain": "$captain",
     "votes": 0,
-    "created_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    "created_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"$ref_field
 }
 EOF
 )
     
     # Create tags for the event (each tag enables filtering)
+    # Add ["e", reference_id] tag for votes to link to original recommendation (NIP-10 compliant)
+    local ref_tag=""
+    [[ -n "$reference_id" ]] && ref_tag=",
+    [\"e\", \"$reference_id\", \"\", \"reply\"]"
+    
     local tags_json=$(cat <<EOF
 [
     ["d", "$rec_id"],
@@ -421,7 +440,7 @@ EOF
     ["priority", "$priority"],
     ["station", "$station_id"],
     ["captain", "$captain"],
-    ["created", "$(date +%Y%m%d)"]
+    ["created", "$(date +%Y%m%d)"]$ref_tag
 ]
 EOF
 )
@@ -519,7 +538,7 @@ interactive_select_recommendations() {
             echo "$line" | grep -q "🟢" && priority="low"
             
             # Store each recommendation as separate NOSTR event (proposed)
-            local rec_id="ai_$(date +%Y%m%d%H%M%S)_${idx}_$(echo -n "$line" | md5sum | cut -c1-6)"
+            local rec_id="ai_$(date +%Y%m%d%H%M%S)_${idx}_$(echo -n "$line" | md5sum | cut -c1-12)"
             rec_ids+=("$rec_id")
             
             # Store in NOSTR (silent, just track ID)
@@ -634,8 +653,8 @@ add_captain_todo() {
         return 1
     fi
     
-    # Generate unique ID
-    local rec_id="captain_$(date +%Y%m%d%H%M%S)_$(echo -n "$content" | md5sum | cut -c1-8)"
+    # Generate unique ID (12 chars hash for collision resistance)
+    local rec_id="captain_$(date +%Y%m%d%H%M%S)_$(echo -n "$content" | md5sum | cut -c1-12)"
     
     echo -e "${BLUE}📝 Adding captain TODO...${NC}"
     echo -e "   Content: $content"
@@ -710,6 +729,7 @@ list_pending_recommendations() {
 
 # Vote for a recommendation (increases priority)
 # Multiple votes from different stations = higher collective priority
+# Votes are linked to the original recommendation via ["e", rec_id] tag
 vote_recommendation() {
     local rec_id="$1"
     local station_id="${IPFSNODEID:-unknown}"
@@ -717,18 +737,46 @@ vote_recommendation() {
     
     echo -e "${BLUE}🗳️  Voting for recommendation: $rec_id${NC}"
     
-    # Create a vote event (separate from the original recommendation)
-    local vote_id="vote_${rec_id}_${station_id}_$(date +%Y%m%d%H%M%S)"
-    local vote_content="Vote for $rec_id by $captain@$station_id"
+    # Create a vote event linked to the original recommendation
+    local vote_id="vote_${rec_id}_${station_id:0:12}_$(date +%Y%m%d%H%M%S)"
+    local vote_content="Vote for $rec_id by $captain"
     
-    if store_n2_memory "$vote_id" "$vote_content" "vote" "vote" "high"; then
+    # Store vote with reference to original recommendation
+    if store_n2_memory "$vote_id" "$vote_content" "vote" "vote" "high" "$rec_id"; then
         echo -e "${GREEN}✅ Vote recorded${NC}"
         echo -e "${GREEN}   From: $captain @ ${station_id:0:12}...${NC}"
         echo -e "${GREEN}   For: $rec_id${NC}"
+        
+        # Display current vote count for this recommendation
+        local vote_count=$(count_votes_for_recommendation "$rec_id")
+        echo -e "${GREEN}   Total votes: $vote_count${NC}"
     else
         echo -e "${RED}❌ Failed to record vote${NC}"
         return 1
     fi
+}
+
+# Count votes for a specific recommendation
+# Queries NOSTR for all vote events referencing this recommendation ID
+count_votes_for_recommendation() {
+    local rec_id="$1"
+    local memory=$(fetch_n2_memory 100)
+    
+    if [[ -z "$memory" || "$memory" == "[]" ]]; then
+        echo "0"
+        return 0
+    fi
+    
+    # Count events where rec_type=vote AND content references the rec_id
+    local count=$(echo "$memory" | jq -r "
+        [.[] | 
+         select(.content != null) |
+         select((.content | fromjson? | .rec_type // \"\") == \"vote\") |
+         select(.content | contains(\"$rec_id\"))
+        ] | length
+    " 2>/dev/null || echo "0")
+    
+    echo "$count"
 }
 
 # Store each AI recommendation as a separate NOSTR event
@@ -747,8 +795,8 @@ store_ai_recommendation() {
     fi
     [[ -z "$priority" ]] && priority="medium"
     
-    # Generate unique ID
-    local rec_id="ai_$(date +%Y%m%d%H%M%S)_$(echo -n "$content" | md5sum | cut -c1-8)"
+    # Generate unique ID (12 chars hash for collision resistance)
+    local rec_id="ai_$(date +%Y%m%d%H%M%S)_$(echo -n "$content" | md5sum | cut -c1-12)"
     
     # Store as individual event
     store_n2_memory "$rec_id" "$content" "proposed" "ai_recommendation" "$priority"
