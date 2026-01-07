@@ -658,6 +658,61 @@ update_recommendation_status() {
 # CAPTAIN UX: Edit and Publish Menu
 # ═══════════════════════════════════════════════════════════════
 
+# Open file with appropriate application
+# Uses xdg-open for graphical apps, falls back to $EDITOR for terminal
+open_for_editing() {
+    local file="$1"
+    local wait_for_close="${2:-true}"
+    
+    # Check if we have a display (graphical environment)
+    if [[ -n "${DISPLAY:-}" ]] && command -v xdg-open &>/dev/null; then
+        echo -e "${BLUE}🖥️  Ouverture avec l'application par défaut...${NC}"
+        
+        if [[ "$wait_for_close" == "true" ]]; then
+            # For some file types, we can detect the app and wait
+            local mime_type=$(file --mime-type -b "$file" 2>/dev/null)
+            
+            case "$mime_type" in
+                text/html)
+                    # Open in browser, don't wait
+                    xdg-open "$file" 2>/dev/null &
+                    echo -e "${YELLOW}📌 Fichier HTML ouvert dans le navigateur${NC}"
+                    echo -e "${YELLOW}   Appuyez sur Entrée quand vous avez terminé l'édition...${NC}"
+                    read -r
+                    ;;
+                text/markdown|text/plain|text/x-*)
+                    # Try to open with a text editor that blocks
+                    if command -v gedit &>/dev/null; then
+                        gedit --wait "$file" 2>/dev/null
+                    elif command -v kate &>/dev/null; then
+                        kate --block "$file" 2>/dev/null
+                    elif command -v code &>/dev/null; then
+                        code --wait "$file" 2>/dev/null
+                    else
+                        xdg-open "$file" 2>/dev/null &
+                        echo -e "${YELLOW}   Appuyez sur Entrée quand vous avez terminé...${NC}"
+                        read -r
+                    fi
+                    ;;
+                *)
+                    xdg-open "$file" 2>/dev/null &
+                    echo -e "${YELLOW}   Appuyez sur Entrée quand vous avez terminé...${NC}"
+                    read -r
+                    ;;
+            esac
+        else
+            xdg-open "$file" 2>/dev/null &
+        fi
+        return 0
+    else
+        # No display, use terminal editor
+        local editor="${EDITOR:-nano}"
+        echo -e "${BLUE}📝 Ouverture avec $editor...${NC}"
+        $editor "$file"
+        return 0
+    fi
+}
+
 # Allow Captain to edit the AI-generated report before publishing
 captain_edit_report() {
     local report_file="$1"
@@ -674,14 +729,20 @@ captain_edit_report() {
     echo ""
     echo -e "${BLUE}Le rapport IA a été généré. Voulez-vous l'éditer avant publication ?${NC}"
     echo ""
+    echo -e "  ${GREEN}o${NC} - Ouvrir avec xdg-open (application par défaut)"
     echo -e "  ${GREEN}e${NC} - Éditer avec \$EDITOR (${EDITOR:-nano})"
-    echo -e "  ${GREEN}v${NC} - Voir le rapport complet"
+    echo -e "  ${GREEN}v${NC} - Voir dans le terminal"
     echo -e "  ${GREEN}s${NC} - Continuer sans éditer"
     echo ""
     
-    read -p "Votre choix [e/v/s]: " edit_choice
+    read -p "Votre choix [o/e/v/s]: " edit_choice
     
     case "$edit_choice" in
+        o|O)
+            open_for_editing "$report_file" true
+            echo -e "${GREEN}✅ Rapport modifié${NC}"
+            return 0
+            ;;
         e|E)
             local editor="${EDITOR:-nano}"
             echo -e "${BLUE}📝 Ouverture avec $editor...${NC}"
@@ -696,11 +757,11 @@ captain_edit_report() {
             echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
             echo ""
             # Ask again after viewing
-            read -p "Éditer maintenant ? [e/s]: " edit_again
-            if [[ "$edit_again" == "e" || "$edit_again" == "E" ]]; then
-                ${EDITOR:-nano} "$report_file"
-                echo -e "${GREEN}✅ Rapport modifié${NC}"
-            fi
+            read -p "Éditer maintenant ? [o/e/s]: " edit_again
+            case "$edit_again" in
+                o|O) open_for_editing "$report_file" true ;;
+                e|E) ${EDITOR:-nano} "$report_file" ;;
+            esac
             return 0
             ;;
         s|S|"")
@@ -854,59 +915,116 @@ EOF
     
     echo -e "${YELLOW}📋 Un brouillon simplifié a été créé.${NC}"
     echo ""
-    echo -e "  ${GREEN}e${NC} - Éditer le message public"
-    echo -e "  ${GREEN}v${NC} - Voir le brouillon"
+    echo -e "  ${GREEN}o${NC} - Ouvrir avec xdg-open (éditeur par défaut)"
+    echo -e "  ${GREEN}e${NC} - Éditer avec \$EDITOR (${EDITOR:-nano})"
+    echo -e "  ${GREEN}h${NC} - Ouvrir en HTML dans le navigateur"
+    echo -e "  ${GREEN}v${NC} - Voir dans le terminal"
     echo -e "  ${GREEN}p${NC} - Publier tel quel"
     echo -e "  ${GREEN}s${NC} - Annuler (ne pas publier)"
     echo ""
     
-    read -p "Votre choix [e/v/p/s]: " oc_choice
+    read -p "Votre choix [o/e/h/v/p/s]: " oc_choice
+    
+    # Function to clean and publish
+    clean_and_publish() {
+        # Remove the reference section before publishing
+        sed -i '/<!-- ═══.*RÉFÉRENCE TECHNIQUE/,/^$/d' "$oc_temp_file" 2>/dev/null
+        sed -i '/Résumé IA original/,/^$/d' "$oc_temp_file" 2>/dev/null
+        
+        # Publish
+        publish_opencollective_update "$oc_temp_file"
+        local result=$?
+        rm -f "$oc_temp_file" "$oc_html_file" 2>/dev/null
+        return $result
+    }
     
     case "$oc_choice" in
+        o|O)
+            open_for_editing "$oc_temp_file" true
+            echo -e "${GREEN}✅ Message modifié${NC}"
+            clean_and_publish
+            return $?
+            ;;
         e|E)
             ${EDITOR:-nano} "$oc_temp_file"
             echo -e "${GREEN}✅ Message modifié${NC}"
+            clean_and_publish
+            return $?
+            ;;
+        h|H)
+            # Convert to HTML and open in browser for preview/editing
+            local oc_html_file="$REPO_ROOT/.oc_public_draft_$$.html"
             
-            # Remove the reference section before publishing
-            sed -i '/<!-- ═══.*RÉFÉRENCE TECHNIQUE/,/^EOF$/d' "$oc_temp_file" 2>/dev/null
-            sed -i '/Résumé IA original/,/^$/d' "$oc_temp_file" 2>/dev/null
+            # Convert Markdown to HTML with styling
+            cat > "$oc_html_file" <<HTMLEOF
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Open Collective Update Preview</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2em auto; padding: 1em; line-height: 1.6; }
+        h1, h2, h3 { color: #1a1a1a; }
+        pre { background: #f5f5f5; padding: 1em; overflow-x: auto; }
+        .warning { background: #fff3cd; border: 1px solid #ffc107; padding: 1em; margin: 1em 0; border-radius: 4px; }
+        .edit-notice { background: #d4edda; border: 1px solid #28a745; padding: 1em; margin: 1em 0; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="edit-notice">
+        <strong>📝 Mode Prévisualisation</strong><br>
+        Éditez le fichier .md source, pas ce HTML. Revenez au terminal pour publier.
+    </div>
+    <hr>
+$(cat "$oc_temp_file" | sed 's/^# /\n<h1>/;s/^## /\n<h2>/;s/^### /\n<h3>/;s/$/<\/h1>/;s/<\/h1><\/h1>/<\/h1>/' | sed 's/^- /<li>/g')
+</body>
+</html>
+HTMLEOF
             
-            # Publish
-            publish_opencollective_update "$oc_temp_file"
-            local result=$?
-            rm -f "$oc_temp_file"
-            return $result
+            echo -e "${BLUE}🌐 Ouverture de la prévisualisation HTML...${NC}"
+            xdg-open "$oc_html_file" 2>/dev/null &
+            
+            echo ""
+            echo -e "${YELLOW}📝 Le HTML est une PRÉVISUALISATION uniquement.${NC}"
+            echo -e "${YELLOW}   Éditez le fichier Markdown source si besoin.${NC}"
+            echo ""
+            read -p "Action: [e]diter MD, [p]ublier, [s]kip ? " html_action
+            
+            case "$html_action" in
+                e|E)
+                    ${EDITOR:-nano} "$oc_temp_file"
+                    ;;
+            esac
+            
+            if [[ "$html_action" != "s" && "$html_action" != "S" ]]; then
+                clean_and_publish
+                return $?
+            fi
+            
+            rm -f "$oc_temp_file" "$oc_html_file" 2>/dev/null
+            return 1
             ;;
         v|V)
             echo ""
             cat "$oc_temp_file"
             echo ""
-            read -p "Éditer maintenant ? [e/p/s]: " oc_choice2
-            if [[ "$oc_choice2" == "e" || "$oc_choice2" == "E" ]]; then
-                ${EDITOR:-nano} "$oc_temp_file"
-                sed -i '/<!-- ═══.*RÉFÉRENCE TECHNIQUE/,/^EOF$/d' "$oc_temp_file" 2>/dev/null
-                publish_opencollective_update "$oc_temp_file"
-                local result=$?
-                rm -f "$oc_temp_file"
-                return $result
-            elif [[ "$oc_choice2" == "p" || "$oc_choice2" == "P" ]]; then
-                sed -i '/<!-- ═══.*RÉFÉRENCE TECHNIQUE/,/^EOF$/d' "$oc_temp_file" 2>/dev/null
-                publish_opencollective_update "$oc_temp_file"
-                local result=$?
-                rm -f "$oc_temp_file"
-                return $result
+            read -p "Action: [o]uvrir, [e]diter, [p]ublier, [s]kip ? " view_action
+            case "$view_action" in
+                o|O) open_for_editing "$oc_temp_file" true ;;
+                e|E) ${EDITOR:-nano} "$oc_temp_file" ;;
+            esac
+            
+            if [[ "$view_action" != "s" && "$view_action" != "S" ]]; then
+                clean_and_publish
+                return $?
             fi
+            
             rm -f "$oc_temp_file"
             return 1
             ;;
         p|P)
-            # Remove technical reference and publish
-            sed -i '/<!-- ═══.*RÉFÉRENCE TECHNIQUE/,/^EOF$/d' "$oc_temp_file" 2>/dev/null
-            sed -i '/Résumé IA original/,/^$/d' "$oc_temp_file" 2>/dev/null
-            publish_opencollective_update "$oc_temp_file"
-            local result=$?
-            rm -f "$oc_temp_file"
-            return $result
+            clean_and_publish
+            return $?
             ;;
         s|S|"")
             echo -e "${BLUE}⏭️  Publication Open Collective annulée${NC}"
