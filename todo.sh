@@ -82,6 +82,19 @@ N2_CONTEXT='## Architecture N² Constellation Protocol
 - ❌ Synchroniser IPFS globalement (saturation réseau)
 - ❌ Ignorer le graphe social N² (perte de relativisme)
 - ❌ Créer des kinds NOSTR non documentés
+
+### Roadmap Intégrations (Développement Décentralisé)
+1. **Radicle** (https://radicle.xyz/) - Forge P2P pour le code
+   - Remplacer GitHub/GitLab par COBs (Collaborative Objects)
+   - Identités crypto compatibles Ed25519
+   - Issues/Patches décentralisés
+
+2. **NextGraph** (https://nextgraph.org/) - Documents CRDT + RDF
+   - Collaboration temps réel sur documents UPlanet
+   - Requêtes SPARQL sur données géographiques
+   - Fusion sans conflit (CRDTs)
+
+Ces intégrations permettront la prise de décision collective distribuée.
 '
 
 # Function to display help
