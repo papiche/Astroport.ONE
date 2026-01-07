@@ -1,0 +1,572 @@
+#!/bin/bash
+################################################################################
+# ECONOMY.broadcast.sh - Broadcast Economic Health to NOSTR Constellation
+# 
+# Publishes a kind:30850 event containing the station's economic health data.
+# This enables swarm-level economic visibility and legal compliance reporting.
+#
+# Part of NIP-101 Economic Health Extension
+# https://github.com/papiche/nostr-nips/blob/main/101-economic-health-extension.md
+#
+# Usage: ./ECONOMY.broadcast.sh [--dryrun] [--verbose]
+#
+# Author: Fred (support@qo-op.com)
+# License: AGPL-3.0
+################################################################################
+
+MY_PATH="`dirname \"$0\"`"
+MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
+
+# Source environment
+. "${MY_PATH}/../tools/my.sh"
+
+# Parse arguments
+DRYRUN=false
+VERBOSE=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --dryrun) DRYRUN=true; shift ;;
+        --verbose|-v) VERBOSE=true; shift ;;
+        --help|-h)
+            echo "Usage: $0 [--dryrun] [--verbose]"
+            echo "Broadcasts economic health data as NOSTR event (kind 30850)"
+            exit 0
+            ;;
+        *) shift ;;
+    esac
+done
+
+# Logging
+log_output() {
+    if [[ "$VERBOSE" == "true" ]]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+    fi
+}
+
+log_output "📊 Starting ECONOMY.broadcast.sh..."
+
+###############################################################################
+# PREREQUISITES CHECK
+###############################################################################
+
+# Check for required tools
+if ! command -v jq &> /dev/null; then
+    echo "❌ jq is required but not installed"
+    exit 1
+fi
+
+if ! command -v nostpy-cli &> /dev/null; then
+    log_output "⚠️ nostpy-cli not found, will use nak or strfry"
+fi
+
+# Check Captain credentials
+if [[ ! -s "$HOME/.zen/game/secret.nostr" ]]; then
+    echo "❌ Captain NOSTR credentials not found"
+    exit 1
+fi
+
+# Get NOSTR HEX from Captain
+CAPTAIN_HEX=$(cat "$HOME/.zen/game/nostr/HEX" 2>/dev/null)
+if [[ -z "$CAPTAIN_HEX" ]]; then
+    log_output "⚠️ Captain HEX not found, generating..."
+    CAPTAIN_NSEC=$(cat "$HOME/.zen/game/secret.nostr")
+    if command -v nak &> /dev/null; then
+        CAPTAIN_HEX=$(echo "$CAPTAIN_NSEC" | nak decode 2>/dev/null | jq -r '.pubkey // empty')
+    fi
+fi
+
+if [[ -z "$CAPTAIN_HEX" ]]; then
+    echo "❌ Cannot determine Captain HEX pubkey"
+    exit 1
+fi
+
+log_output "✅ Captain HEX: ${CAPTAIN_HEX:0:8}..."
+
+###############################################################################
+# COLLECT ECONOMIC DATA
+###############################################################################
+
+# Get week identifier
+CURRENT_WEEK="W$(date +%V)-$(date +%Y)"
+log_output "📅 Report for week: $CURRENT_WEEK"
+
+# Get wallet balances
+get_wallet_balance() {
+    local pubkey="$1"
+    local cache_file="$HOME/.zen/tmp/coucou/${pubkey}.COINS"
+    
+    if [[ -f "$cache_file" ]]; then
+        cat "$cache_file" 2>/dev/null || echo "0"
+    else
+        # Try live check
+        ${MY_PATH}/../tools/G1check.sh "$pubkey" 2>/dev/null | tail -n 1 || echo "0"
+    fi
+}
+
+convert_to_zen() {
+    local g1_balance="$1"
+    if [[ $(echo "$g1_balance > 1" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
+        echo "scale=2; ($g1_balance - 1) * 10" | bc -l 2>/dev/null
+    else
+        echo "0"
+    fi
+}
+
+# Get all wallet balances
+log_output "💰 Collecting wallet balances..."
+
+# G1 Reserve
+G1_RESERVE_G1=$(get_wallet_balance "$UPLANETNAME_G1")
+G1_RESERVE_ZEN=$(convert_to_zen "$G1_RESERVE_G1")
+
+# CASH (Treasury)
+CASH_PUBKEY=$(cat "$HOME/.zen/game/uplanet.CASH.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+CASH_G1=$(get_wallet_balance "$CASH_PUBKEY")
+CASH_ZEN=$(convert_to_zen "$CASH_G1")
+
+# RnD
+RND_PUBKEY=$(cat "$HOME/.zen/game/uplanet.RnD.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+RND_G1=$(get_wallet_balance "$RND_PUBKEY")
+RND_ZEN=$(convert_to_zen "$RND_G1")
+
+# ASSETS
+ASSETS_PUBKEY=$(cat "$HOME/.zen/game/uplanet.ASSETS.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+ASSETS_G1=$(get_wallet_balance "$ASSETS_PUBKEY")
+ASSETS_ZEN=$(convert_to_zen "$ASSETS_G1")
+
+# IMPOT
+IMPOT_PUBKEY=$(cat "$HOME/.zen/game/uplanet.IMPOT.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+IMPOT_G1=$(get_wallet_balance "$IMPOT_PUBKEY")
+IMPOT_ZEN=$(convert_to_zen "$IMPOT_G1")
+
+# CAPITAL
+CAPITAL_PUBKEY=$(cat "$HOME/.zen/game/uplanet.CAPITAL.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+CAPITAL_G1=$(get_wallet_balance "$CAPITAL_PUBKEY")
+CAPITAL_ZEN=$(convert_to_zen "$CAPITAL_G1")
+
+# AMORTISSEMENT
+AMORT_PUBKEY=$(cat "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+AMORT_G1=$(get_wallet_balance "$AMORT_PUBKEY")
+AMORT_ZEN=$(convert_to_zen "$AMORT_G1")
+
+# NODE
+NODE_PUBKEY=$(cat "$HOME/.zen/game/secret.NODE.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+NODE_G1=$(get_wallet_balance "$NODE_PUBKEY")
+NODE_ZEN=$(convert_to_zen "$NODE_G1")
+
+# CAPTAIN DEDICATED
+CAPTAIN_DED_PUBKEY=$(cat "$HOME/.zen/game/uplanet.captain.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+CAPTAIN_DED_G1=$(get_wallet_balance "$CAPTAIN_DED_PUBKEY")
+CAPTAIN_DED_ZEN=$(convert_to_zen "$CAPTAIN_DED_G1")
+
+log_output "  CASH: $CASH_ZEN Ẑ | RND: $RND_ZEN Ẑ | ASSETS: $ASSETS_ZEN Ẑ"
+
+###############################################################################
+# COLLECT CAPACITY DATA
+###############################################################################
+
+log_output "📈 Collecting capacity data..."
+
+# Count MULTIPASS users (only directories with "@" in the name)
+MULTIPASS_COUNT=0
+if [[ -d "$HOME/.zen/game/nostr" ]]; then
+    MULTIPASS_COUNT=$(find "$HOME/.zen/game/nostr" -maxdepth 1 -type d -name '*@*' | wc -l)
+fi
+
+# Count ZEN Card users - distinguish between RENTERS and OWNERS (sociétaires)
+# - RENTERS (locataires): No U.SOCIETY file OR expired membership → pay weekly ZCARD rent
+# - OWNERS (sociétaires): Valid U.SOCIETY file → made capital contribution, no weekly rent
+ZENCARD_COUNT=0
+ZENCARD_RENTERS=0
+ZENCARD_OWNERS=0
+
+if [[ -d "$HOME/.zen/game/players" ]]; then
+    CURRENT_DATE=$(date -u +%Y%m%d%H%M%S%4N)
+    
+    for player_dir in "$HOME/.zen/game/players"/*@*/; do
+        [[ ! -d "$player_dir" ]] && continue
+        ZENCARD_COUNT=$((ZENCARD_COUNT + 1))
+        
+        # Check U.SOCIETY status
+        if [[ -s "${player_dir}U.SOCIETY" ]]; then
+            # Has U.SOCIETY - check if it has an end date
+            if [[ -s "${player_dir}U.SOCIETY.end" ]]; then
+                USOCIETY_END=$(cat "${player_dir}U.SOCIETY.end" 2>/dev/null)
+                if [[ "$CURRENT_DATE" < "$USOCIETY_END" ]]; then
+                    # Active sociétaire membership - OWNER (no rent)
+                    ZENCARD_OWNERS=$((ZENCARD_OWNERS + 1))
+                else
+                    # Expired membership - now a RENTER
+                    ZENCARD_RENTERS=$((ZENCARD_RENTERS + 1))
+                fi
+            else
+                # No end date = permanent membership - OWNER (no rent)
+                ZENCARD_OWNERS=$((ZENCARD_OWNERS + 1))
+            fi
+        else
+            # No U.SOCIETY file - RENTER (pays rent)
+            ZENCARD_RENTERS=$((ZENCARD_RENTERS + 1))
+        fi
+    done
+fi
+
+# Get capacities from config
+MULTIPASS_CAPACITY=${NOSTRCARD_SLOTS:-250}
+ZENCARD_CAPACITY=${ZENCARD_SLOTS:-24}
+
+log_output "  MULTIPASS: $MULTIPASS_COUNT/$MULTIPASS_CAPACITY"
+log_output "  ZENCARD: $ZENCARD_COUNT total ($ZENCARD_RENTERS renters, $ZENCARD_OWNERS owners)"
+
+###############################################################################
+# COLLECT REVENUE DATA
+###############################################################################
+
+log_output "💵 Collecting revenue data..."
+
+# Get rental rates from config
+NCARD=${NCARD:-1}  # MULTIPASS weekly rate (HT)
+ZCARD=${ZCARD:-4}  # ZENCARD weekly rate (HT)
+PAF=${PAF:-14}     # Weekly PAF
+
+# Calculate weekly revenue
+# - MULTIPASS: All users pay rent
+# - ZENCARD: Only RENTERS pay rent, OWNERS (sociétaires) don't pay weekly rent
+MULTIPASS_REVENUE=$(echo "$MULTIPASS_COUNT * $NCARD" | bc -l)
+ZENCARD_REVENUE=$(echo "$ZENCARD_RENTERS * $ZCARD" | bc -l)  # Only renters, not owners!
+TOTAL_REVENUE=$(echo "$MULTIPASS_REVENUE + $ZENCARD_REVENUE" | bc -l)
+
+# TVA calculation (20%)
+TVA_RATE=0.20
+TOTAL_TVA=$(echo "scale=2; $TOTAL_REVENUE * $TVA_RATE" | bc -l)
+
+log_output "  Revenue: $TOTAL_REVENUE Ẑ HT (MP: $MULTIPASS_COUNT × $NCARD + ZC renters: $ZENCARD_RENTERS × $ZCARD)"
+log_output "  TVA: $TOTAL_TVA Ẑ | ZenCard owners (no rent): $ZENCARD_OWNERS"
+
+###############################################################################
+# CALCULATE COSTS AND BILAN
+###############################################################################
+
+log_output "📊 Calculating bilan..."
+
+CAPTAIN_REMUNERATION=$(echo "$PAF * 2" | bc -l)
+TOTAL_COSTS=$(echo "$PAF + $CAPTAIN_REMUNERATION" | bc -l)
+BILAN=$(echo "scale=2; $TOTAL_REVENUE - $TOTAL_COSTS" | bc -l)
+
+# Calculate allocation (if positive bilan)
+if [[ $(echo "$BILAN > 0" | bc -l) -eq 1 ]]; then
+    # IS provision (25%)
+    IS_PROVISION=$(echo "scale=2; $BILAN * 0.25" | bc -l)
+    NET_SURPLUS=$(echo "scale=2; $BILAN - $IS_PROVISION" | bc -l)
+    
+    # 3x1/3 allocation
+    ALLOCATION_THIRD=$(echo "scale=2; $NET_SURPLUS / 3" | bc -l)
+else
+    IS_PROVISION="0"
+    NET_SURPLUS="0"
+    ALLOCATION_THIRD="0"
+fi
+
+log_output "  Bilan: $BILAN Ẑ | Allocation 1/3: $ALLOCATION_THIRD Ẑ"
+
+###############################################################################
+# CALCULATE HEALTH STATUS
+###############################################################################
+
+log_output "🏥 Determining health status..."
+
+# Calculate weeks runway
+if [[ $(echo "$TOTAL_COSTS > 0" | bc -l) -eq 1 ]]; then
+    WEEKS_RUNWAY=$(echo "scale=0; $CASH_ZEN / $TOTAL_COSTS" | bc -l 2>/dev/null || echo "0")
+else
+    WEEKS_RUNWAY=999
+fi
+
+# Determine health status
+if [[ $(echo "$CASH_ZEN < 0" | bc -l 2>/dev/null) -eq 1 ]]; then
+    HEALTH_STATUS="bankrupt"
+    RISK_LEVEL="critical"
+elif [[ $(echo "$CASH_ZEN < $TOTAL_COSTS" | bc -l 2>/dev/null) -eq 1 ]]; then
+    HEALTH_STATUS="critical"
+    RISK_LEVEL="high"
+elif [[ $WEEKS_RUNWAY -lt 8 ]]; then
+    HEALTH_STATUS="warning"
+    RISK_LEVEL="medium"
+else
+    HEALTH_STATUS="healthy"
+    RISK_LEVEL="low"
+fi
+
+log_output "  Status: $HEALTH_STATUS | Runway: $WEEKS_RUNWAY weeks"
+
+###############################################################################
+# GET DEPRECIATION DATA
+###############################################################################
+
+log_output "📉 Collecting depreciation data..."
+
+MACHINE_VALUE=$(grep "^MACHINE_VALUE=" "$HOME/.zen/game/.env" 2>/dev/null | cut -d'=' -f2 || echo "0")
+CAPITAL_DATE=$(grep "^CAPITAL_DATE=" "$HOME/.zen/game/.env" 2>/dev/null | cut -d'=' -f2 || echo "")
+DEPRECIATION_WEEKS=$(grep "^DEPRECIATION_WEEKS=" "$HOME/.zen/game/.env" 2>/dev/null | cut -d'=' -f2 || echo "156")
+
+if [[ -n "$MACHINE_VALUE" && "$MACHINE_VALUE" != "0" && -n "$CAPITAL_DATE" ]]; then
+    CAPITAL_TIMESTAMP=$(date -d "${CAPITAL_DATE:0:8}" +%s 2>/dev/null || echo "0")
+    CURRENT_TIMESTAMP=$(date +%s)
+    SECONDS_ELAPSED=$((CURRENT_TIMESTAMP - CAPITAL_TIMESTAMP))
+    WEEKS_ELAPSED=$((SECONDS_ELAPSED / 604800))
+    
+    WEEKLY_DEPRECIATION=$(echo "scale=2; $MACHINE_VALUE / $DEPRECIATION_WEEKS" | bc -l)
+    TOTAL_DEPRECIATED=$(echo "scale=2; $WEEKLY_DEPRECIATION * $WEEKS_ELAPSED" | bc -l)
+    RESIDUAL_VALUE=$(echo "scale=2; $MACHINE_VALUE - $TOTAL_DEPRECIATED" | bc -l)
+    DEPRECIATION_PERCENT=$(echo "scale=2; ($WEEKS_ELAPSED * 100) / $DEPRECIATION_WEEKS" | bc -l)
+else
+    MACHINE_VALUE="0"
+    WEEKS_ELAPSED=0
+    WEEKLY_DEPRECIATION="0"
+    TOTAL_DEPRECIATED="0"
+    RESIDUAL_VALUE="0"
+    DEPRECIATION_PERCENT="0"
+fi
+
+log_output "  Machine: $MACHINE_VALUE Ẑ | Residual: $RESIDUAL_VALUE Ẑ | Deprec: $DEPRECIATION_PERCENT%"
+
+###############################################################################
+# BUILD NOSTR EVENT
+###############################################################################
+
+log_output "📝 Building NOSTR event..."
+
+GENERATED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+CREATED_AT=$(date +%s)
+EVENT_D="economic-health-$CURRENT_WEEK"
+
+# Build content JSON
+CONTENT_JSON=$(cat <<EOF
+{
+  "report_version": "1.0",
+  "report_type": "weekly_economic_health",
+  "generated_at": "$GENERATED_AT",
+  "station": {
+    "ipfsnodeid": "$IPFSNODEID",
+    "uplanetname": "$UPLANETNAME",
+    "relay_url": "wss://${myDAMAIN}/relay",
+    "captain_hex": "$CAPTAIN_HEX"
+  },
+  "wallets": {
+    "g1_reserve": { "g1pub": "$UPLANETNAME_G1", "balance_g1": $G1_RESERVE_G1, "balance_zen": $G1_RESERVE_ZEN },
+    "cash": { "g1pub": "$CASH_PUBKEY", "balance_g1": $CASH_G1, "balance_zen": $CASH_ZEN },
+    "rnd": { "g1pub": "$RND_PUBKEY", "balance_g1": $RND_G1, "balance_zen": $RND_ZEN },
+    "assets": { "g1pub": "$ASSETS_PUBKEY", "balance_g1": $ASSETS_G1, "balance_zen": $ASSETS_ZEN },
+    "impot": { "g1pub": "$IMPOT_PUBKEY", "balance_g1": $IMPOT_G1, "balance_zen": $IMPOT_ZEN },
+    "capital": { "g1pub": "$CAPITAL_PUBKEY", "balance_g1": $CAPITAL_G1, "balance_zen": $CAPITAL_ZEN },
+    "amortissement": { "g1pub": "$AMORT_PUBKEY", "balance_g1": $AMORT_G1, "balance_zen": $AMORT_ZEN },
+    "node": { "g1pub": "$NODE_PUBKEY", "balance_g1": $NODE_G1, "balance_zen": $NODE_ZEN },
+    "captain_dedicated": { "g1pub": "$CAPTAIN_DED_PUBKEY", "balance_g1": $CAPTAIN_DED_G1, "balance_zen": $CAPTAIN_DED_ZEN }
+  },
+  "revenue": {
+    "multipass": { "count": $MULTIPASS_COUNT, "rate": $NCARD, "total": $MULTIPASS_REVENUE },
+    "zencard": { "renters": $ZENCARD_RENTERS, "rate": $ZCARD, "total": $ZENCARD_REVENUE },
+    "total_ht": $TOTAL_REVENUE,
+    "total_tva": $TOTAL_TVA
+  },
+  "costs": {
+    "paf_node": $PAF,
+    "captain_salary": $CAPTAIN_REMUNERATION,
+    "total": $TOTAL_COSTS
+  },
+  "allocation": {
+    "surplus": $BILAN,
+    "is_provision": $IS_PROVISION,
+    "net_surplus": $NET_SURPLUS,
+    "treasury": $ALLOCATION_THIRD,
+    "rnd": $ALLOCATION_THIRD,
+    "assets": $ALLOCATION_THIRD
+  },
+  "capacity": {
+    "multipass": { "used": $MULTIPASS_COUNT, "total": $MULTIPASS_CAPACITY },
+    "zencard": { "total": $ZENCARD_COUNT, "renters": $ZENCARD_RENTERS, "owners": $ZENCARD_OWNERS, "capacity": $ZENCARD_CAPACITY }
+  },
+  "health": {
+    "status": "$HEALTH_STATUS",
+    "bilan": $BILAN,
+    "weeks_runway": $WEEKS_RUNWAY,
+    "risk_level": "$RISK_LEVEL"
+  },
+  "depreciation": {
+    "machine_value": $MACHINE_VALUE,
+    "weeks_elapsed": $WEEKS_ELAPSED,
+    "depreciation_weeks": $DEPRECIATION_WEEKS,
+    "weekly_depreciation": $WEEKLY_DEPRECIATION,
+    "total_depreciated": $TOTAL_DEPRECIATED,
+    "residual_value": $RESIDUAL_VALUE,
+    "percent": $DEPRECIATION_PERCENT
+  },
+  "compliance": {
+    "tva_provisioned": $IMPOT_ZEN,
+    "audit_ready": true
+  }
+}
+EOF
+)
+
+# Validate JSON
+if ! echo "$CONTENT_JSON" | jq empty 2>/dev/null; then
+    echo "❌ Invalid JSON content"
+    exit 1
+fi
+
+# Escape content for NOSTR event
+CONTENT_ESCAPED=$(echo "$CONTENT_JSON" | jq -c .)
+
+# Build tags array
+TAGS_JSON=$(cat <<EOF
+[
+  ["d", "$EVENT_D"],
+  ["t", "uplanet"],
+  ["t", "economic-health"],
+  ["t", "weekly-report"],
+  ["week", "$CURRENT_WEEK"],
+  ["constellation", "UPlanetV1"],
+  ["station", "$IPFSNODEID"],
+  ["g1pub", "$UPLANETNAME_G1"],
+  ["uplanetname", "$UPLANETNAME"],
+  ["balance:cash", "$CASH_ZEN"],
+  ["balance:rnd", "$RND_ZEN"],
+  ["balance:assets", "$ASSETS_ZEN"],
+  ["balance:impot", "$IMPOT_ZEN"],
+  ["balance:capital", "$CAPITAL_ZEN"],
+  ["balance:amortissement", "$AMORT_ZEN"],
+  ["balance:node", "$NODE_ZEN"],
+  ["revenue:multipass", "$MULTIPASS_REVENUE"],
+  ["revenue:zencard", "$ZENCARD_REVENUE"],
+  ["revenue:total", "$TOTAL_REVENUE"],
+  ["cost:paf", "$PAF"],
+  ["cost:captain", "$CAPTAIN_REMUNERATION"],
+  ["cost:total", "$TOTAL_COSTS"],
+  ["allocation:treasury", "$ALLOCATION_THIRD"],
+  ["allocation:rnd", "$ALLOCATION_THIRD"],
+  ["allocation:assets", "$ALLOCATION_THIRD"],
+  ["capacity:multipass_used", "$MULTIPASS_COUNT"],
+  ["capacity:multipass_total", "$MULTIPASS_CAPACITY"],
+  ["capacity:zencard_total", "$ZENCARD_COUNT"],
+  ["capacity:zencard_renters", "$ZENCARD_RENTERS"],
+  ["capacity:zencard_owners", "$ZENCARD_OWNERS"],
+  ["capacity:zencard_capacity", "$ZENCARD_CAPACITY"],
+  ["health:status", "$HEALTH_STATUS"],
+  ["health:weeks_runway", "$WEEKS_RUNWAY"],
+  ["health:bilan", "$BILAN"],
+  ["provision:tva", "$TOTAL_TVA"],
+  ["provision:is", "$IS_PROVISION"],
+  ["depreciation:machine_value", "$MACHINE_VALUE"],
+  ["depreciation:residual", "$RESIDUAL_VALUE"],
+  ["depreciation:percent", "$DEPRECIATION_PERCENT"]
+]
+EOF
+)
+
+###############################################################################
+# PUBLISH EVENT
+###############################################################################
+
+if [[ "$DRYRUN" == "true" ]]; then
+    echo "🔍 DRYRUN MODE - Event would be published:"
+    echo ""
+    echo "Kind: 30850 (Economic Health Report)"
+    echo "Author: ${CAPTAIN_HEX:0:16}..."
+    echo "Week: $CURRENT_WEEK"
+    echo "Status: $HEALTH_STATUS"
+    echo ""
+    echo "Wallets:"
+    echo "  CASH: $CASH_ZEN Ẑ"
+    echo "  RND: $RND_ZEN Ẑ"
+    echo "  ASSETS: $ASSETS_ZEN Ẑ"
+    echo "  IMPOT: $IMPOT_ZEN Ẑ"
+    echo ""
+    echo "Capacity:"
+    echo "  MULTIPASS: $MULTIPASS_COUNT/$MULTIPASS_CAPACITY"
+    echo "  ZENCARD: $ZENCARD_COUNT total ($ZENCARD_RENTERS renters, $ZENCARD_OWNERS owners)"
+    echo ""
+    echo "Revenue: $TOTAL_REVENUE Ẑ (MP: $MULTIPASS_COUNT × $NCARD + ZC renters: $ZENCARD_RENTERS × $ZCARD)"
+    echo "  Note: $ZENCARD_OWNERS ZenCard owners (sociétaires) don't pay weekly rent"
+    echo "Costs: $TOTAL_COSTS Ẑ (PAF: $PAF + Captain: $CAPTAIN_REMUNERATION)"
+    echo "Bilan: $BILAN Ẑ"
+    echo "Runway: $WEEKS_RUNWAY weeks"
+    echo ""
+    echo "Content JSON:"
+    echo "$CONTENT_JSON" | jq .
+    exit 0
+fi
+
+log_output "📡 Publishing event to NOSTR..."
+
+# Build unsigned event
+UNSIGNED_EVENT=$(cat <<EOF
+{
+  "kind": 30850,
+  "created_at": $CREATED_AT,
+  "tags": $TAGS_JSON,
+  "content": $CONTENT_ESCAPED
+}
+EOF
+)
+
+# Get Captain NSEC
+CAPTAIN_NSEC=$(cat "$HOME/.zen/game/secret.nostr")
+
+# Try to publish using nak (preferred)
+if command -v nak &> /dev/null; then
+    # Get relay URL
+    RELAY_URL="wss://${myDAMAIN}/relay"
+    [[ -z "$myDAMAIN" ]] && RELAY_URL="wss://relay.copylaradio.com"
+    
+    # Sign and publish
+    EVENT_ID=$(echo "$UNSIGNED_EVENT" | nak event --sec "$CAPTAIN_NSEC" 2>/dev/null | nak encode nevent 2>/dev/null | head -1)
+    
+    if [[ -n "$EVENT_ID" ]]; then
+        # Publish to relay
+        echo "$UNSIGNED_EVENT" | nak event --sec "$CAPTAIN_NSEC" | nak req -r "$RELAY_URL" 2>/dev/null
+        
+        log_output "✅ Event published: $EVENT_ID"
+        echo "✅ Economic health report published for $CURRENT_WEEK"
+        echo "   Status: $HEALTH_STATUS | Bilan: $BILAN Ẑ | Runway: $WEEKS_RUNWAY weeks"
+    else
+        echo "❌ Failed to create event"
+        exit 1
+    fi
+elif command -v nostpy-cli &> /dev/null; then
+    # Fallback to nostpy-cli
+    TEMP_EVENT="$HOME/.zen/tmp/economic_health_event.json"
+    echo "$UNSIGNED_EVENT" > "$TEMP_EVENT"
+    
+    nostpy-cli publish --sec "$CAPTAIN_NSEC" --file "$TEMP_EVENT" 2>/dev/null
+    
+    if [[ $? -eq 0 ]]; then
+        log_output "✅ Event published via nostpy-cli"
+        echo "✅ Economic health report published for $CURRENT_WEEK"
+    else
+        echo "❌ Failed to publish event"
+        exit 1
+    fi
+    
+    rm -f "$TEMP_EVENT"
+else
+    # Last resort: use strfry directly
+    log_output "⚠️ Using strfry for local storage only..."
+    
+    TEMP_EVENT="$HOME/.zen/tmp/economic_health_event.json"
+    echo "$UNSIGNED_EVENT" > "$TEMP_EVENT"
+    
+    cd "$HOME/.zen/strfry"
+    ./strfry import < "$TEMP_EVENT" 2>/dev/null
+    
+    echo "✅ Economic health report stored locally for $CURRENT_WEEK"
+    echo "   (Will be synced via constellation backfill)"
+    
+    rm -f "$TEMP_EVENT"
+fi
+
+# Save last broadcast info
+echo "$CURRENT_WEEK" > "$HOME/.zen/tmp/last_economy_broadcast.txt"
+echo "$GENERATED_AT" >> "$HOME/.zen/tmp/last_economy_broadcast.txt"
+
+log_output "📊 ECONOMY.broadcast.sh completed"
+exit 0
