@@ -715,6 +715,9 @@ captain_edit_report() {
 }
 
 # Interactive publishing menu - Captain chooses where to publish
+# Different audiences require different content:
+# - Open Collective: Public (non-developers, investors, community)
+# - NOSTR/N² Memory: Developers (technical details)
 captain_publish_menu() {
     local report_file="$1"
     local ai_summary="$2"
@@ -726,13 +729,14 @@ captain_publish_menu() {
     echo ""
     echo -e "${BLUE}Où souhaitez-vous publier le rapport ?${NC}"
     echo ""
-    echo -e "  ${GREEN}1${NC} | ${GREEN}n${NC} - NOSTR kind 1 (mur personnel du Capitaine)"
-    echo -e "  ${GREEN}2${NC} | ${GREEN}o${NC} - Open Collective (update public)"
-    echo -e "  ${GREEN}3${NC} | ${GREEN}m${NC} - N² Memory (kind 31910 - mémoire constellation)"
-    echo -e "  ${GREEN}a${NC}     - Publier PARTOUT (1+2+3)"
-    echo -e "  ${GREEN}s${NC}     - Sauver localement seulement (ne rien publier)"
+    echo -e "  ${GREEN}1${NC} | ${GREEN}n${NC} - NOSTR kind 1 ${PURPLE}[Développeurs]${NC} (mur Capitaine)"
+    echo -e "  ${GREEN}2${NC} | ${GREEN}o${NC} - Open Collective ${YELLOW}[Public]${NC} (update communauté)"
+    echo -e "  ${GREEN}3${NC} | ${GREEN}m${NC} - N² Memory ${PURPLE}[Développeurs]${NC} (mémoire constellation)"
+    echo -e "  ${GREEN}a${NC}     - Publier PARTOUT (avec édition pour chaque audience)"
+    echo -e "  ${GREEN}s${NC}     - Sauver localement seulement"
     echo ""
-    echo -e "${YELLOW}💡 Vous pouvez combiner: 12, 13, 23, etc.${NC}"
+    echo -e "${YELLOW}💡 Open Collective = version simplifiée pour le public${NC}"
+    echo -e "${YELLOW}💡 NOSTR/N² = version technique pour développeurs${NC}"
     echo ""
     
     read -p "Votre choix [1/2/3/a/s]: " pub_choice
@@ -744,10 +748,16 @@ captain_publish_menu() {
     
     case "$pub_choice" in
         a|A)
-            # Publish everywhere
-            echo -e "\n${BLUE}📤 Publication sur tous les canaux...${NC}"
+            # Publish everywhere with appropriate content for each
+            echo -e "\n${BLUE}📤 Publication multi-audience...${NC}"
+            
+            # 1. NOSTR (developers) - use full report
             publish_todo_report && published_nostr=true
-            publish_opencollective_update && published_oc=true
+            
+            # 2. Open Collective (public) - offer to edit for non-developers
+            prepare_and_publish_opencollective "$ai_summary" && published_oc=true
+            
+            # 3. N² Memory (developers) - use full summary
             publish_summary_to_n2_memory "$ai_summary" && published_n2=true
             ;;
         s|S|"")
@@ -755,17 +765,17 @@ captain_publish_menu() {
             echo -e "   Fichier: $report_file"
             ;;
         *)
-            # Parse individual choices (1, 2, 3, 12, 13, 23, 123, etc.)
+            # Parse individual choices
             if [[ "$pub_choice" =~ [1n] ]]; then
-                echo -e "${BLUE}📤 Publication NOSTR kind 1...${NC}"
+                echo -e "${BLUE}📤 Publication NOSTR kind 1 [Développeurs]...${NC}"
                 publish_todo_report && published_nostr=true
             fi
             if [[ "$pub_choice" =~ [2o] ]]; then
-                echo -e "${BLUE}📤 Publication Open Collective...${NC}"
-                publish_opencollective_update && published_oc=true
+                echo -e "${BLUE}📤 Publication Open Collective [Public]...${NC}"
+                prepare_and_publish_opencollective "$ai_summary" && published_oc=true
             fi
             if [[ "$pub_choice" =~ [3m] ]]; then
-                echo -e "${BLUE}📤 Publication N² Memory...${NC}"
+                echo -e "${BLUE}📤 Publication N² Memory [Développeurs]...${NC}"
                 publish_summary_to_n2_memory "$ai_summary" && published_n2=true
             fi
             ;;
@@ -776,14 +786,139 @@ captain_publish_menu() {
     echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
     echo -e "${GREEN}📊 RÉSUMÉ DE PUBLICATION${NC}"
     echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
-    [[ "$published_nostr" == true ]] && echo -e "  ${GREEN}✅${NC} NOSTR kind 1 (mur Capitaine)"
+    [[ "$published_nostr" == true ]] && echo -e "  ${GREEN}✅${NC} NOSTR kind 1 ${PURPLE}[Dev]${NC}"
     [[ "$published_nostr" == false ]] && echo -e "  ${YELLOW}⏭️${NC}  NOSTR kind 1 (non publié)"
-    [[ "$published_oc" == true ]] && echo -e "  ${GREEN}✅${NC} Open Collective"
+    [[ "$published_oc" == true ]] && echo -e "  ${GREEN}✅${NC} Open Collective ${YELLOW}[Public]${NC}"
     [[ "$published_oc" == false ]] && echo -e "  ${YELLOW}⏭️${NC}  Open Collective (non publié)"
-    [[ "$published_n2" == true ]] && echo -e "  ${GREEN}✅${NC} N² Memory (kind 31910)"
+    [[ "$published_n2" == true ]] && echo -e "  ${GREEN}✅${NC} N² Memory ${PURPLE}[Dev]${NC}"
     [[ "$published_n2" == false ]] && echo -e "  ${YELLOW}⏭️${NC}  N² Memory (non publié)"
     echo -e "  ${BLUE}💾${NC} Fichier local: $report_file"
     echo ""
+}
+
+# Prepare a public-friendly version for Open Collective and let Captain edit it
+prepare_and_publish_opencollective() {
+    local ai_summary="$1"
+    
+    echo ""
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${YELLOW}📝 OPEN COLLECTIVE - VERSION PUBLIQUE${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "${BLUE}L'audience Open Collective n'est PAS développeur.${NC}"
+    echo -e "${BLUE}Simplifiez le message pour la communauté et les investisseurs.${NC}"
+    echo ""
+    
+    # Create a public-friendly template
+    local oc_temp_file="$REPO_ROOT/.oc_public_draft_$$.md"
+    local report_date=$(date +"%Y-%m-%d")
+    
+    # Generate simplified public version
+    cat > "$oc_temp_file" <<EOF
+# 📢 Mise à jour du projet - $report_date
+
+## 🎯 Résumé pour la communauté
+
+<!-- ÉDITEZ CE TEXTE pour le rendre accessible au grand public -->
+<!-- Évitez le jargon technique (Git, NOSTR, IPFS, kinds, etc.) -->
+<!-- Concentrez-vous sur: Ce qui a été accompli, Ce qui arrive ensuite -->
+
+### ✨ Ce qui a été fait cette semaine
+
+- [Décrivez les progrès en termes simples]
+- [Utilisez des métaphores accessibles]
+- [Mettez en avant l'impact pour les utilisateurs]
+
+### 🚀 Prochaines étapes
+
+- [Objectifs à venir]
+- [Comment la communauté peut aider]
+
+### 💡 Message du Capitaine
+
+[Votre message personnel à la communauté]
+
+---
+
+**Merci pour votre soutien !** 🙏
+
+---
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- RÉFÉRENCE TECHNIQUE (à supprimer avant publication) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+Résumé IA original (pour référence):
+$ai_summary
+EOF
+    
+    echo -e "${YELLOW}📋 Un brouillon simplifié a été créé.${NC}"
+    echo ""
+    echo -e "  ${GREEN}e${NC} - Éditer le message public"
+    echo -e "  ${GREEN}v${NC} - Voir le brouillon"
+    echo -e "  ${GREEN}p${NC} - Publier tel quel"
+    echo -e "  ${GREEN}s${NC} - Annuler (ne pas publier)"
+    echo ""
+    
+    read -p "Votre choix [e/v/p/s]: " oc_choice
+    
+    case "$oc_choice" in
+        e|E)
+            ${EDITOR:-nano} "$oc_temp_file"
+            echo -e "${GREEN}✅ Message modifié${NC}"
+            
+            # Remove the reference section before publishing
+            sed -i '/<!-- ═══.*RÉFÉRENCE TECHNIQUE/,/^EOF$/d' "$oc_temp_file" 2>/dev/null
+            sed -i '/Résumé IA original/,/^$/d' "$oc_temp_file" 2>/dev/null
+            
+            # Publish
+            publish_opencollective_update "$oc_temp_file"
+            local result=$?
+            rm -f "$oc_temp_file"
+            return $result
+            ;;
+        v|V)
+            echo ""
+            cat "$oc_temp_file"
+            echo ""
+            read -p "Éditer maintenant ? [e/p/s]: " oc_choice2
+            if [[ "$oc_choice2" == "e" || "$oc_choice2" == "E" ]]; then
+                ${EDITOR:-nano} "$oc_temp_file"
+                sed -i '/<!-- ═══.*RÉFÉRENCE TECHNIQUE/,/^EOF$/d' "$oc_temp_file" 2>/dev/null
+                publish_opencollective_update "$oc_temp_file"
+                local result=$?
+                rm -f "$oc_temp_file"
+                return $result
+            elif [[ "$oc_choice2" == "p" || "$oc_choice2" == "P" ]]; then
+                sed -i '/<!-- ═══.*RÉFÉRENCE TECHNIQUE/,/^EOF$/d' "$oc_temp_file" 2>/dev/null
+                publish_opencollective_update "$oc_temp_file"
+                local result=$?
+                rm -f "$oc_temp_file"
+                return $result
+            fi
+            rm -f "$oc_temp_file"
+            return 1
+            ;;
+        p|P)
+            # Remove technical reference and publish
+            sed -i '/<!-- ═══.*RÉFÉRENCE TECHNIQUE/,/^EOF$/d' "$oc_temp_file" 2>/dev/null
+            sed -i '/Résumé IA original/,/^$/d' "$oc_temp_file" 2>/dev/null
+            publish_opencollective_update "$oc_temp_file"
+            local result=$?
+            rm -f "$oc_temp_file"
+            return $result
+            ;;
+        s|S|"")
+            echo -e "${BLUE}⏭️  Publication Open Collective annulée${NC}"
+            rm -f "$oc_temp_file"
+            return 1
+            ;;
+        *)
+            echo -e "${YELLOW}Choix non reconnu, publication annulée${NC}"
+            rm -f "$oc_temp_file"
+            return 1
+            ;;
+    esac
 }
 
 # Publish AI summary to N² Memory as a report event
@@ -1519,6 +1654,9 @@ EOF
 # Requires OPENCOLLECTIVE_PERSONAL_TOKEN in ~/.zen/Astroport.ONE/.env
 # Ref: https://graphql-docs-v2.opencollective.com
 publish_opencollective_update() {
+    # Accept optional file parameter (for public-friendly version)
+    local content_file="${1:-$TODO_OUTPUT}"
+    
     # Check if Open Collective token is configured (use :- to avoid unbound variable error with set -u)
     local oc_token="${OPENCOLLECTIVE_PERSONAL_TOKEN:-}"
     if [[ -z "$oc_token" ]]; then
@@ -1529,9 +1667,9 @@ publish_opencollective_update() {
         return 1
     fi
     
-    # Check if TODO file exists
-    if [[ ! -f "$TODO_OUTPUT" ]]; then
-        echo -e "${YELLOW}⚠️  TODO file not found, skipping Open Collective publish${NC}"
+    # Check if content file exists
+    if [[ ! -f "$content_file" ]]; then
+        echo -e "${YELLOW}⚠️  Content file not found: $content_file${NC}"
         return 1
     fi
     
@@ -1560,8 +1698,8 @@ publish_opencollective_update() {
     [[ "$PERIOD" == "week" ]] && report_type="hebdomadaire"
     echo -e "${BLUE}📤 Publishing $report_type update to Open Collective ($OC_COLLECTIVE_SLUG)...${NC}"
     
-    # Prepare content for Open Collective (convert Markdown to HTML-compatible)
-    local report_content=$(cat "$TODO_OUTPUT")
+    # Prepare content for Open Collective (use provided file or default)
+    local report_content=$(cat "$content_file")
     
     # Create title based on period
     local oc_title="Development Report - $(date +"%Y-%m-%d")"
