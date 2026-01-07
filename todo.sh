@@ -128,6 +128,15 @@ show_help() {
     echo "      2. Recommend NEXT STEPS based on N² architecture"
     echo "      3. LEARN from past decisions (memory stored in NOSTR)"
     echo ""
+    echo -e "${YELLOW}CAPTAIN UX (Interactive Mode):${NC}"
+    echo "    After AI generates the report, the Captain can:"
+    echo "      1. SELECT AI recommendations (accept/reject/vote)"
+    echo "      2. EDIT the report before publishing"
+    echo "      3. CHOOSE where to publish:"
+    echo "         - NOSTR kind 1 (personal wall)"
+    echo "         - Open Collective (public update)"
+    echo "         - N² Memory (kind 31910 - constellation learning)"
+    echo ""
     echo -e "${YELLOW}N² MEMORY SYSTEM:${NC}"
     echo "    Recommendations are stored in NOSTR (kind $N2_MEMORY_KIND) using:"
     echo "      Key: ~/.zen/game/uplanet.G1.nostr"
@@ -641,6 +650,182 @@ update_recommendation_status() {
     
     echo -e "${BLUE}🔄 Mise à jour du statut: $rec_id → $new_status${NC}"
     store_n2_memory "$rec_id" "Status update: $new_status" "$new_status" "status_update"
+}
+
+# ═══════════════════════════════════════════════════════════════
+# CAPTAIN UX: Edit and Publish Menu
+# ═══════════════════════════════════════════════════════════════
+
+# Allow Captain to edit the AI-generated report before publishing
+captain_edit_report() {
+    local report_file="$1"
+    
+    if [[ ! -f "$report_file" ]]; then
+        echo -e "${RED}❌ Report file not found: $report_file${NC}"
+        return 1
+    fi
+    
+    echo ""
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${YELLOW}✏️  ÉDITION DU RAPPORT (Capitaine)${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "${BLUE}Le rapport IA a été généré. Voulez-vous l'éditer avant publication ?${NC}"
+    echo ""
+    echo -e "  ${GREEN}e${NC} - Éditer avec \$EDITOR (${EDITOR:-nano})"
+    echo -e "  ${GREEN}v${NC} - Voir le rapport complet"
+    echo -e "  ${GREEN}s${NC} - Continuer sans éditer"
+    echo ""
+    
+    read -p "Votre choix [e/v/s]: " edit_choice
+    
+    case "$edit_choice" in
+        e|E)
+            local editor="${EDITOR:-nano}"
+            echo -e "${BLUE}📝 Ouverture avec $editor...${NC}"
+            $editor "$report_file"
+            echo -e "${GREEN}✅ Rapport modifié${NC}"
+            return 0
+            ;;
+        v|V)
+            echo ""
+            echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+            cat "$report_file"
+            echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+            echo ""
+            # Ask again after viewing
+            read -p "Éditer maintenant ? [e/s]: " edit_again
+            if [[ "$edit_again" == "e" || "$edit_again" == "E" ]]; then
+                ${EDITOR:-nano} "$report_file"
+                echo -e "${GREEN}✅ Rapport modifié${NC}"
+            fi
+            return 0
+            ;;
+        s|S|"")
+            echo -e "${BLUE}⏭️  Rapport conservé tel quel${NC}"
+            return 0
+            ;;
+        *)
+            echo -e "${YELLOW}Choix non reconnu, rapport conservé${NC}"
+            return 0
+            ;;
+    esac
+}
+
+# Interactive publishing menu - Captain chooses where to publish
+captain_publish_menu() {
+    local report_file="$1"
+    local ai_summary="$2"
+    
+    echo ""
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${YELLOW}📤 MENU DE PUBLICATION (Capitaine décide)${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "${BLUE}Où souhaitez-vous publier le rapport ?${NC}"
+    echo ""
+    echo -e "  ${GREEN}1${NC} | ${GREEN}n${NC} - NOSTR kind 1 (mur personnel du Capitaine)"
+    echo -e "  ${GREEN}2${NC} | ${GREEN}o${NC} - Open Collective (update public)"
+    echo -e "  ${GREEN}3${NC} | ${GREEN}m${NC} - N² Memory (kind 31910 - mémoire constellation)"
+    echo -e "  ${GREEN}a${NC}     - Publier PARTOUT (1+2+3)"
+    echo -e "  ${GREEN}s${NC}     - Sauver localement seulement (ne rien publier)"
+    echo ""
+    echo -e "${YELLOW}💡 Vous pouvez combiner: 12, 13, 23, etc.${NC}"
+    echo ""
+    
+    read -p "Votre choix [1/2/3/a/s]: " pub_choice
+    
+    # Track what was published
+    local published_nostr=false
+    local published_oc=false
+    local published_n2=false
+    
+    case "$pub_choice" in
+        a|A)
+            # Publish everywhere
+            echo -e "\n${BLUE}📤 Publication sur tous les canaux...${NC}"
+            publish_todo_report && published_nostr=true
+            publish_opencollective_update && published_oc=true
+            publish_summary_to_n2_memory "$ai_summary" && published_n2=true
+            ;;
+        s|S|"")
+            echo -e "${BLUE}💾 Rapport sauvegardé localement uniquement${NC}"
+            echo -e "   Fichier: $report_file"
+            ;;
+        *)
+            # Parse individual choices (1, 2, 3, 12, 13, 23, 123, etc.)
+            if [[ "$pub_choice" =~ [1n] ]]; then
+                echo -e "${BLUE}📤 Publication NOSTR kind 1...${NC}"
+                publish_todo_report && published_nostr=true
+            fi
+            if [[ "$pub_choice" =~ [2o] ]]; then
+                echo -e "${BLUE}📤 Publication Open Collective...${NC}"
+                publish_opencollective_update && published_oc=true
+            fi
+            if [[ "$pub_choice" =~ [3m] ]]; then
+                echo -e "${BLUE}📤 Publication N² Memory...${NC}"
+                publish_summary_to_n2_memory "$ai_summary" && published_n2=true
+            fi
+            ;;
+    esac
+    
+    # Summary
+    echo ""
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${GREEN}📊 RÉSUMÉ DE PUBLICATION${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+    [[ "$published_nostr" == true ]] && echo -e "  ${GREEN}✅${NC} NOSTR kind 1 (mur Capitaine)"
+    [[ "$published_nostr" == false ]] && echo -e "  ${YELLOW}⏭️${NC}  NOSTR kind 1 (non publié)"
+    [[ "$published_oc" == true ]] && echo -e "  ${GREEN}✅${NC} Open Collective"
+    [[ "$published_oc" == false ]] && echo -e "  ${YELLOW}⏭️${NC}  Open Collective (non publié)"
+    [[ "$published_n2" == true ]] && echo -e "  ${GREEN}✅${NC} N² Memory (kind 31910)"
+    [[ "$published_n2" == false ]] && echo -e "  ${YELLOW}⏭️${NC}  N² Memory (non publié)"
+    echo -e "  ${BLUE}💾${NC} Fichier local: $report_file"
+    echo ""
+}
+
+# Publish AI summary to N² Memory as a report event
+publish_summary_to_n2_memory() {
+    local ai_summary="$1"
+    
+    if [[ -z "$ai_summary" ]]; then
+        echo -e "${YELLOW}⚠️  Pas de résumé IA à publier${NC}"
+        return 1
+    fi
+    
+    # Check if N² Memory key exists
+    if [[ ! -f "$N2_MEMORY_KEYFILE" ]]; then
+        echo -e "${YELLOW}⚠️  Clé N² Memory introuvable: $N2_MEMORY_KEYFILE${NC}"
+        echo -e "${BLUE}   Exécutez: ./UPLANET.init.sh pour créer la clé${NC}"
+        return 1
+    fi
+    
+    # Create report event
+    local report_id="report_$(date +%Y%m%d%H%M%S)_$(echo -n "$ai_summary" | md5sum | cut -c1-12)"
+    local report_date=$(date +"%Y-%m-%d")
+    local period_label="${PERIOD_LABEL:-daily}"
+    
+    # Truncate summary for N² Memory (max 2000 chars)
+    local truncated_summary=$(echo "$ai_summary" | head -c 2000)
+    
+    local content="📋 Rapport N² ($report_date - $period_label)
+
+$truncated_summary
+
+---
+Station: ${IPFSNODEID:-unknown}
+Capitaine: ${CAPTAINEMAIL:-unknown}"
+    
+    echo -e "${BLUE}📤 Publication du rapport dans N² Memory...${NC}"
+    
+    if store_n2_memory "$report_id" "$content" "published" "daily_report" "medium"; then
+        echo -e "${GREEN}✅ Rapport publié dans N² Memory${NC}"
+        echo -e "   ID: $report_id"
+        return 0
+    else
+        echo -e "${RED}❌ Échec de publication N² Memory${NC}"
+        return 1
+    fi
 }
 
 # Add a captain TODO (human-written idea)
@@ -1159,20 +1344,25 @@ EOF
     echo -e "${YELLOW}📋 Aperçu (premières 30 lignes):${NC}"
     head -30 "$TODO_OUTPUT"
     
-    # Interactive mode: let captain select recommendations
+    # ═══════════════════════════════════════════════════════════════
+    # CAPTAIN UX: Interactive editing, recommendations, and publishing
+    # ═══════════════════════════════════════════════════════════════
+    
     if [[ "$INTERACTIVE_MODE" == "true" ]]; then
+        # Step 1: Let captain select AI recommendations
         interactive_select_recommendations "$ai_summary"
+        
+        # Step 2: Let captain edit the report before publishing
+        captain_edit_report "$TODO_OUTPUT"
+        
+        # Step 3: Let captain choose where to publish
+        captain_publish_menu "$TODO_OUTPUT" "$ai_summary"
     else
+        # Batch mode: no interactive UI
         echo -e "\n${GREEN}💡 Mode batch: utilisez --accept/--reject pour valider les recommandations${NC}"
+        echo -e "${BLUE}   Publications automatiques désactivées en mode batch${NC}"
+        echo -e "${BLUE}   Utilisez les options de commande pour publier${NC}"
     fi
-    
-    echo -e "\n${GREEN}💡 Utilisez votre éditeur pour ouvrir $output_name et intégrer les informations dans TODO.md${NC}"
-    
-    # Publier le rapport sur le mur du CAPTAIN
-    publish_todo_report
-    
-    # Publier sur Open Collective (si configuré)
-    publish_opencollective_update
     
     # Save run marker for next --last execution
     save_run_marker
