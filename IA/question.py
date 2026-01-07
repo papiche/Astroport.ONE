@@ -78,12 +78,12 @@ def get_ollama_answer(prompt, model_name="gemma3:latest"):
             messages=[
                 {
                     'role': 'system',
-                    'content': '''# INSTRUCTIONS OBLIGATOIRES:
-## 1. RÉPONDRE DIRECTEMENT - Pas de "Voici...", "Je vais...", "Okay...", "D'accord..."
-## 2. Langue: Français ou la même langue que le message précédent
-## 3. Format: PAS de markdown (sauf si demandé explicitement)
-## 4. Style: Utilise des emojis pour rendre le message lisible
-## 5. PREMIÈRE PHRASE = Réponse directe au sujet, pas une introduction''',
+                    'content': '''# RÈGLES OBLIGATOIRES:
+1. COMMENCE DIRECTEMENT par la réponse (JAMAIS "Voici...", "Je vais...", "Okay...", "Bien sûr...")
+2. Réponds dans la même langue que le message précédent (français par défaut)
+3. PAS de format markdown (pas de #, **, ```)
+4. Utilise des emojis pour rendre le message lisible
+5. Sois concis et direct''',
                 },
                 {
                     'role': 'user',
