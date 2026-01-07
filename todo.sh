@@ -19,48 +19,134 @@ set +e
 source $HOME/.zen/Astroport.ONE/tools/my.sh
 set -e
 
-# Default values
-PERIOD="24h"
-PERIOD_LABEL="Dernières 24h"
-PERIOD_GIT="24 hours ago"
-PERIOD_REF="24.hours.ago"
+# Default values - "last" mode (since last execution)
+PERIOD="last"
+PERIOD_LABEL="Depuis dernière exécution"
+PERIOD_GIT=""  # Will be set from marker file
+PERIOD_REF=""  # Will be set from marker file
+LAST_RUN_MARKER="$HOME/.zen/game/todo_last_run.marker"
 
-TODO_OUTPUT="$REPO_ROOT/TODO.today.md"
+TODO_OUTPUT="$REPO_ROOT/TODO.last.md"
 TODO_MAIN="$REPO_ROOT/TODO.md"
 QUESTION_PY="$REPO_ROOT/IA/question.py"
 GIT_LOG_FILE="$REPO_ROOT/.git_changes.txt"
 
+# N² Memory System - Shared across all stations via NOSTR
+# Uses uplanet.G1.nostr key for constellation-wide learning
+N2_MEMORY_KIND=31910  # Dedicated kind for N² development memory
+N2_MEMORY_KEYFILE="$HOME/.zen/game/uplanet.G1.nostr"
+N2_MEMORY_RELAY="${myRELAY:-wss://relay.copylaradio.com}"
+NOSTR_SEND_SCRIPT="$REPO_ROOT/tools/nostr_send_note.py"
+NOSTR_GET_SCRIPT="$REPO_ROOT/tools/nostr_get_events.sh"
+
+# N² Architecture context for AI recommendations (comprehensive)
+N2_CONTEXT='## Architecture N² Constellation Protocol
+
+### Principe Fondamental: Conway Angel Game
+- Un "ange de force 2" peut toujours échapper au démon (prouvé mathématiquement)
+- Force 2 = graphe social N1 (amis) + N2 (amis d amis)
+- Résultat: coordination décentralisée sans autorité centrale
+
+### Architecture Hybride NOSTR/IPFS
+| Couche | Technologie | Portée | Synchronisation |
+|--------|-------------|--------|-----------------|
+| Coordination | NOSTR | Globale (N²) | 40 event kinds entre tous les essaims |
+| Stockage | IPFS | Locale (Essaim) | Isolé par constellation |
+
+### Topologie: Hub + 24 Satellites
+- Hub Central: coordonne, agrège économie, sync globale
+- Satellites: services locaux (MULTIPASS, ZEN Cards), gestion UMAP (0.01° = 1.2km²)
+- Chaque satellite publie amisOfAmis.txt via IPFS pour le graphe N²
+
+### Économie Ẑen
+- 1Ẑ = 1€ (parité maintenue via PAF burn + Open Collective)
+- Flux: CASH → NODE (loyer) + CAPTAIN (travail)
+- Burn 4 semaines: conversion Ẑen → € sur Open Collective
+
+### Systèmes Clés et Priorités
+1. **RUNTIME/** - Scripts "smart contract" exécutés par le scheduler N² (20h12.process.sh)
+2. **NOSTR (NIP-101)** - Extensions: DID (30800), ORE (30312-30313), Permits (30500-30503), Economy (30850-30851)
+3. **DID/ORE** - Identité décentralisée + Object Resource Events (attestations environnementales)
+4. **UPlanet** - Grille géographique, chaque UMAP = communauté locale
+5. **Economy** - ZEN.ECONOMY.sh, ZEN.COOPERATIVE.3x1-3.sh, flux coopératifs
+
+### Patterns de Développement Recommandés
+- Toujours synchroniser les événements NOSTR entre essaims (backfill_constellation.sh)
+- Garder les données volumineuses en IPFS local (pas de sync globale)
+- Utiliser les tags géographiques ["g", "lat,lon"] pour le routage intelligent
+- Implémenter les nouveaux kinds selon NIP-101 extensions
+- Respecter la parité 1Ẑ=1€ dans tous les calculs économiques
+
+### Anti-Patterns à Éviter
+- ❌ Centraliser les données (casser la force 2)
+- ❌ Synchroniser IPFS globalement (saturation réseau)
+- ❌ Ignorer le graphe social N² (perte de relativisme)
+- ❌ Créer des kinds NOSTR non documentés
+'
+
 # Function to display help
 show_help() {
     echo -e "${GREEN}todo.sh${NC} - Generate automatic TODO reports based on Git changes"
+    echo -e "${BLUE}N² Constellation Protocol - Conway's Angel Game (force 2 escapes demon)${NC}"
     echo ""
     echo -e "${YELLOW}USAGE:${NC}"
     echo "    $0 [OPTIONS]"
     echo ""
     echo -e "${YELLOW}OPTIONS:${NC}"
     echo -e "    ${GREEN}--help, -h${NC}      Display this help message"
-    echo -e "    ${GREEN}--week, -w${NC}      Analyze Git changes from the last 7 days (default: 24h)"
+    echo -e "    ${GREEN}--last, -l${NC}      Analyze since last execution (DEFAULT)"
+    echo -e "    ${GREEN}--day, -d${NC}       Analyze last 24 hours"
+    echo -e "    ${GREEN}--week, -w${NC}      Analyze last 7 days"
+    echo ""
+    echo -e "${YELLOW}MEMORY COMMANDS (N² Learning):${NC}"
+    echo -e "    ${GREEN}--accept ID${NC}    Mark recommendation as accepted (human validated)"
+    echo -e "    ${GREEN}--reject ID${NC}    Mark recommendation as rejected (human override)"
+    echo -e "    ${GREEN}--done ID${NC}      Mark recommendation as implemented"
+    echo -e "    ${GREEN}--memory${NC}       Show recent memory entries (last 20)"
+    echo -e "    ${GREEN}--no-interactive${NC} Skip interactive selection (batch mode)"
     echo ""
     echo -e "${YELLOW}DESCRIPTION:${NC}"
-    echo "    This script analyzes recent Git changes and generates a structured TODO report."
-    echo "    It uses question.py with an AI model to summarize modifications and suggest priorities."
+    echo "    This script analyzes Git changes and generates a structured TODO report."
+    echo "    It uses question.py with AI to:"
+    echo "      1. Summarize what was coded"
+    echo "      2. Recommend NEXT STEPS based on N² architecture"
+    echo "      3. LEARN from past decisions (memory stored in NOSTR)"
+    echo ""
+    echo -e "${YELLOW}N² MEMORY SYSTEM:${NC}"
+    echo "    Recommendations are stored in NOSTR (kind $N2_MEMORY_KIND) using:"
+    echo "      Key: ~/.zen/game/uplanet.G1.nostr"
+    echo "    This memory is shared across ALL stations in the constellation."
+    echo "    The AI learns from accepted/rejected recommendations to improve advice."
     echo ""
     echo -e "${YELLOW}OUTPUT:${NC}"
-    echo "    Default (24h):  TODO.today.md"
-    echo "    Weekly (--week): TODO.week.md"
+    echo "    Default (--last): TODO.last.md"
+    echo "    Daily (--day):    TODO.today.md"
+    echo "    Weekly (--week):  TODO.week.md"
     echo ""
     echo -e "${YELLOW}EXAMPLES:${NC}"
-    echo "    $0              # Analyze last 24 hours, generate TODO.today.md"
+    echo "    $0              # Analyze since last run, generate TODO.last.md"
+    echo "    $0 --day        # Analyze last 24 hours, generate TODO.today.md"
     echo "    $0 --week       # Analyze last 7 days, generate TODO.week.md"
-    echo "    $0 -w           # Same as --week"
     echo ""
     echo -e "${YELLOW}REQUIREMENTS:${NC}"
     echo "    - Git repository"
     echo "    - Python 3 with question.py"
     echo "    - Ollama (optional, falls back to basic summary)"
     echo ""
+    echo -e "${YELLOW}OPEN COLLECTIVE INTEGRATION:${NC}"
+    echo "    Add to ~/.zen/Astroport.ONE/.env:"
+    echo "      OPENCOLLECTIVE_PERSONAL_TOKEN=\"your_token\""
+    echo "      OPENCOLLECTIVE_SLUG=\"monnaie-libre\"  # optional, default: monnaie-libre"
+    echo ""
+    echo "    Get your token at:"
+    echo "      https://opencollective.com/dashboard/monnaie-libre/admin/for-developers"
+    echo ""
     exit 0
 }
+
+# Global flags
+INTERACTIVE_MODE=true
+SHOW_MEMORY_ONLY=false
 
 # Parse command line arguments
 parse_args() {
@@ -68,6 +154,20 @@ parse_args() {
         case "$1" in
             --help|-h)
                 show_help
+                ;;
+            --last|-l)
+                # Default mode - since last execution
+                PERIOD="last"
+                TODO_OUTPUT="$REPO_ROOT/TODO.last.md"
+                shift
+                ;;
+            --day|-d)
+                PERIOD="day"
+                PERIOD_LABEL="Dernières 24h"
+                PERIOD_GIT="24 hours ago"
+                PERIOD_REF="24.hours.ago"
+                TODO_OUTPUT="$REPO_ROOT/TODO.today.md"
+                shift
                 ;;
             --week|-w)
                 PERIOD="week"
@@ -77,6 +177,41 @@ parse_args() {
                 TODO_OUTPUT="$REPO_ROOT/TODO.week.md"
                 shift
                 ;;
+            --no-interactive)
+                INTERACTIVE_MODE=false
+                shift
+                ;;
+            --memory)
+                SHOW_MEMORY_ONLY=true
+                shift
+                ;;
+            --accept)
+                if [[ -n "$2" ]]; then
+                    update_recommendation_status "$2" "accepted"
+                    exit 0
+                else
+                    echo -e "${RED}❌ --accept requires a recommendation ID${NC}"
+                    exit 1
+                fi
+                ;;
+            --reject)
+                if [[ -n "$2" ]]; then
+                    update_recommendation_status "$2" "rejected"
+                    exit 0
+                else
+                    echo -e "${RED}❌ --reject requires a recommendation ID${NC}"
+                    exit 1
+                fi
+                ;;
+            --done)
+                if [[ -n "$2" ]]; then
+                    update_recommendation_status "$2" "done"
+                    exit 0
+                else
+                    echo -e "${RED}❌ --done requires a recommendation ID${NC}"
+                    exit 1
+                fi
+                ;;
             *)
                 echo -e "${RED}❌ Unknown option: $1${NC}"
                 echo -e "Use ${GREEN}--help${NC} for usage information"
@@ -84,6 +219,322 @@ parse_args() {
                 ;;
         esac
     done
+    
+    # Handle --memory command
+    if [[ "$SHOW_MEMORY_ONLY" == "true" ]]; then
+        echo -e "${BLUE}📚 N² Memory - Recent constellation decisions${NC}\n"
+        local memory=$(fetch_n2_memory 20)
+        if [[ -n "$memory" && "$memory" != "[]" ]]; then
+            echo "$memory" | jq -r '
+                .[] |
+                "[\(.created_at // "?")] " +
+                (.tags | map(select(.[0]=="status")) | .[0][1] // "?") + " - " +
+                (.content | fromjson? | .content[:80] // "?") + "..."
+            ' 2>/dev/null || echo "$memory" | head -20
+        else
+            echo -e "${YELLOW}Aucune mémoire N² trouvée.${NC}"
+            echo -e "La mémoire sera créée lors de la première sélection de recommandation."
+        fi
+        exit 0
+    fi
+}
+
+# Initialize period based on last run marker (for --last mode)
+init_last_run_period() {
+    if [[ "$PERIOD" != "last" ]]; then
+        return 0
+    fi
+    
+    local last_commit=""
+    local last_timestamp=""
+    
+    if [[ -f "$LAST_RUN_MARKER" ]]; then
+        last_commit=$(sed -n '1p' "$LAST_RUN_MARKER" 2>/dev/null)
+        last_timestamp=$(sed -n '2p' "$LAST_RUN_MARKER" 2>/dev/null)
+        
+        if [[ -n "$last_timestamp" ]]; then
+            PERIOD_LABEL="Depuis $last_timestamp"
+            # Use commit hash for precise diff
+            if [[ -n "$last_commit" ]] && git rev-parse "$last_commit" >/dev/null 2>&1; then
+                PERIOD_GIT="$last_commit"
+                PERIOD_REF=""  # Will use commit hash directly
+                echo -e "${BLUE}📍 Last run: $last_timestamp (commit: ${last_commit:0:8})${NC}"
+            else
+                # Fallback to timestamp-based
+                PERIOD_GIT="$last_timestamp"
+                PERIOD_REF=""
+                echo -e "${BLUE}📍 Last run: $last_timestamp${NC}"
+            fi
+        else
+            # First run - default to 24h
+            echo -e "${YELLOW}⚠️  First run detected, using last 24 hours${NC}"
+            PERIOD_LABEL="Dernières 24h (première exécution)"
+            PERIOD_GIT="24 hours ago"
+            PERIOD_REF="24.hours.ago"
+        fi
+    else
+        # First run - default to 24h
+        echo -e "${YELLOW}⚠️  First run detected, using last 24 hours${NC}"
+        PERIOD_LABEL="Dernières 24h (première exécution)"
+        PERIOD_GIT="24 hours ago"
+        PERIOD_REF="24.hours.ago"
+    fi
+}
+
+# Save current run marker
+save_run_marker() {
+    mkdir -p "$(dirname "$LAST_RUN_MARKER")"
+    local current_commit=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+    local current_time=$(date +"%Y-%m-%d %H:%M:%S")
+    echo "$current_commit" > "$LAST_RUN_MARKER"
+    echo "$current_time" >> "$LAST_RUN_MARKER"
+    echo -e "${GREEN}📍 Saved run marker: $current_time${NC}"
+}
+
+#######################################################################
+# N² MEMORY SYSTEM - Shared learning across constellation
+# Events stored in NOSTR (kind 31910) using uplanet.G1.nostr key
+#######################################################################
+
+# Fetch recent N² memory entries from NOSTR
+# Returns JSON array of past recommendations and their outcomes
+fetch_n2_memory() {
+    local limit="${1:-20}"
+    
+    if [[ ! -f "$N2_MEMORY_KEYFILE" ]]; then
+        echo "[]"
+        return 0
+    fi
+    
+    # Get pubkey from keyfile
+    local pubkey=$(grep -E "^npub|^pub:" "$N2_MEMORY_KEYFILE" 2>/dev/null | head -1 | awk '{print $NF}')
+    if [[ -z "$pubkey" ]]; then
+        echo "[]"
+        return 0
+    fi
+    
+    # Fetch memory events from NOSTR
+    if [[ -f "$NOSTR_GET_SCRIPT" ]]; then
+        local memory_events=$("$NOSTR_GET_SCRIPT" \
+            --kind "$N2_MEMORY_KIND" \
+            --author "$pubkey" \
+            --limit "$limit" \
+            --relay "$N2_MEMORY_RELAY" 2>/dev/null || echo "[]")
+        echo "$memory_events"
+    else
+        echo "[]"
+    fi
+}
+
+# Store a recommendation in N² memory
+# Args: $1=recommendation_id, $2=content, $3=status (proposed|accepted|rejected|done), $4=station_id
+store_n2_memory() {
+    local rec_id="$1"
+    local content="$2"
+    local status="${3:-proposed}"
+    local station_id="${4:-$IPFSNODEID}"
+    local captain="${CAPTAINEMAIL:-unknown}"
+    
+    if [[ ! -f "$N2_MEMORY_KEYFILE" ]]; then
+        echo -e "${YELLOW}⚠️  N² memory key not found: $N2_MEMORY_KEYFILE${NC}"
+        return 1
+    fi
+    
+    if [[ ! -f "$NOSTR_SEND_SCRIPT" ]]; then
+        echo -e "${YELLOW}⚠️  NOSTR send script not found${NC}"
+        return 1
+    fi
+    
+    # Create memory entry as JSON
+    local memory_json=$(cat <<EOF
+{
+    "type": "n2_memory",
+    "version": "1.0",
+    "recommendation_id": "$rec_id",
+    "status": "$status",
+    "station": "$station_id",
+    "captain": "$captain",
+    "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+    "content": $(echo "$content" | jq -Rs '.')
+}
+EOF
+)
+    
+    # Create tags for the event
+    local tags_json=$(cat <<EOF
+[
+    ["d", "n2_memory_$rec_id"],
+    ["t", "n2-memory"],
+    ["t", "todo-recommendation"],
+    ["status", "$status"],
+    ["station", "$station_id"],
+    ["captain", "$captain"]
+]
+EOF
+)
+    
+    # Publish to NOSTR
+    local result=$(python3 "$NOSTR_SEND_SCRIPT" \
+        --keyfile "$N2_MEMORY_KEYFILE" \
+        --content "$memory_json" \
+        --tags "$tags_json" \
+        --kind "$N2_MEMORY_KIND" \
+        --relays "$N2_MEMORY_RELAY" \
+        --json 2>&1)
+    
+    if [[ $? -eq 0 ]]; then
+        local event_id=$(echo "$result" | jq -r '.event_id // empty' 2>/dev/null)
+        if [[ -n "$event_id" ]]; then
+            echo -e "${GREEN}✅ N² memory stored: $status → ${event_id:0:16}...${NC}"
+            return 0
+        fi
+    fi
+    
+    echo -e "${YELLOW}⚠️  Failed to store N² memory${NC}"
+    return 1
+}
+
+# Format memory for AI context (extract learnings from past decisions)
+format_memory_for_ai() {
+    local memory_json="$1"
+    
+    if [[ -z "$memory_json" || "$memory_json" == "[]" ]]; then
+        echo "Aucune mémoire N² disponible (première utilisation ou clé non configurée)."
+        return 0
+    fi
+    
+    # Parse and format memory entries
+    local formatted=$(echo "$memory_json" | jq -r '
+        .[] | 
+        select(.content != null) |
+        "- [\(.tags | map(select(.[0]=="status")) | .[0][1] // "unknown")] " +
+        (.content | fromjson? | .content // .recommendation_id // "?") + 
+        " (station: " + (.tags | map(select(.[0]=="station")) | .[0][1] // "?") + ")"
+    ' 2>/dev/null || echo "Erreur de parsing mémoire")
+    
+    if [[ -n "$formatted" ]]; then
+        echo "### Mémoire N² (décisions passées de la constellation)"
+        echo ""
+        echo "$formatted" | head -15
+        echo ""
+        echo "_Les recommandations 'accepted' ont été validées par un humain, 'rejected' ont été refusées._"
+    else
+        echo "Aucune entrée mémoire valide."
+    fi
+}
+
+# Interactive UX for captain to select recommendations
+# Parses AI output and presents numbered choices
+interactive_select_recommendations() {
+    local ai_output="$1"
+    local recommendations_file="$REPO_ROOT/.todo_recommendations_$$.json"
+    
+    echo -e "\n${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${GREEN}🎯 SÉLECTION DES RECOMMANDATIONS (Capitaine décide)${NC}"
+    echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}\n"
+    
+    # Extract recommendations from AI output (look for table rows or bullet points)
+    # Format: lines starting with | 🔴 or | 🟡 or | 🟢 or - 🔴 etc.
+    local rec_lines=$(echo "$ai_output" | grep -E '^\|?\s*(🔴|🟡|🟢|-\s*(🔴|🟡|🟢))' | head -10)
+    
+    if [[ -z "$rec_lines" ]]; then
+        # Try alternative format: numbered list or bullet points with priority keywords
+        rec_lines=$(echo "$ai_output" | grep -iE '(haute|moyenne|basse|high|medium|low|priorit)' | head -10)
+    fi
+    
+    if [[ -z "$rec_lines" ]]; then
+        echo -e "${YELLOW}⚠️  Aucune recommandation structurée détectée dans la sortie IA${NC}"
+        echo -e "${YELLOW}   Consultez le fichier TODO généré pour les détails.${NC}"
+        return 0
+    fi
+    
+    # Create array of recommendations
+    local -a recommendations=()
+    local idx=1
+    while IFS= read -r line; do
+        if [[ -n "$line" ]]; then
+            recommendations+=("$line")
+            # Extract priority emoji and clean line
+            local priority=$(echo "$line" | grep -oE '🔴|🟡|🟢' | head -1)
+            local clean_line=$(echo "$line" | sed 's/^|//; s/|$//; s/^\s*-\s*//' | tr -s ' ')
+            echo -e "  ${BLUE}[$idx]${NC} $priority $clean_line"
+            ((idx++))
+        fi
+    done <<< "$rec_lines"
+    
+    local rec_count=${#recommendations[@]}
+    
+    if [[ $rec_count -eq 0 ]]; then
+        echo -e "${YELLOW}⚠️  Aucune recommandation à sélectionner${NC}"
+        return 0
+    fi
+    
+    echo ""
+    echo -e "${YELLOW}Actions disponibles:${NC}"
+    echo -e "  ${GREEN}a <num>${NC}  - Accepter la recommandation (ajouter au TODO)"
+    echo -e "  ${RED}r <num>${NC}  - Rejeter la recommandation"
+    echo -e "  ${BLUE}s${NC}        - Tout sauter (skip)"
+    echo -e "  ${GREEN}q${NC}        - Quitter la sélection"
+    echo ""
+    
+    # Interactive loop
+    while true; do
+        echo -ne "${GREEN}Votre choix [a/r/s/q + numéro]: ${NC}"
+        read -r choice
+        
+        case "$choice" in
+            a\ [0-9]*)
+                local num=$(echo "$choice" | grep -oE '[0-9]+')
+                if [[ $num -ge 1 && $num -le $rec_count ]]; then
+                    local selected="${recommendations[$((num-1))]}"
+                    local rec_id="rec_$(date +%Y%m%d%H%M%S)_$num"
+                    echo -e "${GREEN}✅ Recommandation #$num acceptée${NC}"
+                    store_n2_memory "$rec_id" "$selected" "accepted"
+                    # Append to TODO.md
+                    echo "" >> "$TODO_MAIN"
+                    echo "## [$(date +%Y-%m-%d)] Recommandation acceptée" >> "$TODO_MAIN"
+                    echo "" >> "$TODO_MAIN"
+                    echo "- [ ] $selected" >> "$TODO_MAIN"
+                    echo -e "${GREEN}   → Ajoutée à TODO.md${NC}"
+                else
+                    echo -e "${RED}Numéro invalide (1-$rec_count)${NC}"
+                fi
+                ;;
+            r\ [0-9]*)
+                local num=$(echo "$choice" | grep -oE '[0-9]+')
+                if [[ $num -ge 1 && $num -le $rec_count ]]; then
+                    local selected="${recommendations[$((num-1))]}"
+                    local rec_id="rec_$(date +%Y%m%d%H%M%S)_$num"
+                    echo -e "${RED}❌ Recommandation #$num rejetée${NC}"
+                    store_n2_memory "$rec_id" "$selected" "rejected"
+                else
+                    echo -e "${RED}Numéro invalide (1-$rec_count)${NC}"
+                fi
+                ;;
+            s|S)
+                echo -e "${BLUE}⏭️  Sélection passée${NC}"
+                break
+                ;;
+            q|Q|"")
+                echo -e "${GREEN}✓ Fin de la sélection${NC}"
+                break
+                ;;
+            *)
+                echo -e "${YELLOW}Commande non reconnue. Utilisez: a 1, r 2, s, ou q${NC}"
+                ;;
+        esac
+    done
+    
+    rm -f "$recommendations_file"
+}
+
+# Update recommendation status (for --accept, --reject, --done commands)
+update_recommendation_status() {
+    local rec_id="$1"
+    local new_status="$2"
+    
+    echo -e "${BLUE}🔄 Mise à jour du statut: $rec_id → $new_status${NC}"
+    store_n2_memory "$rec_id" "Status update" "$new_status"
 }
 
 
@@ -95,23 +546,54 @@ fi
 
 # Fonction pour obtenir les modifications selon la période configurée
 get_git_changes() {
-    local since_date=$(date -d "$PERIOD_GIT" -Iseconds 2>/dev/null || date -v-${PERIOD_GIT// /} -u +"%Y-%m-%dT%H:%M:%S" 2>/dev/null || date -u -d "$PERIOD_GIT" +"%Y-%m-%dT%H:%M:%S")
-    
     echo -e "${BLUE}📊 Récupération des modifications Git ($PERIOD_LABEL)...${NC}"
     
-    # Récupérer les commits de la période
-    git log --since="$since_date" \
-        --pretty=format:"%H|%an|%ae|%ad|%s" \
-        --date=iso \
-        --name-status \
-        > "$GIT_LOG_FILE" 2>/dev/null || {
+    local commit_count=0
+    local file_count=0
+    
+    # Check if PERIOD_GIT looks like a commit hash (40 hex chars or short hash)
+    if [[ "$PERIOD_GIT" =~ ^[a-f0-9]{7,40}$ ]] && git rev-parse "$PERIOD_GIT" >/dev/null 2>&1; then
+        # Use commit range for precise diff
+        git log "${PERIOD_GIT}..HEAD" \
+            --pretty=format:"%H|%an|%ae|%ad|%s" \
+            --date=iso \
+            --name-status \
+            > "$GIT_LOG_FILE" 2>/dev/null || {
+            echo -e "${YELLOW}⚠️  Aucune modification trouvée ($PERIOD_LABEL)${NC}"
+            return 1
+        }
+        commit_count=$(git log "${PERIOD_GIT}..HEAD" --oneline 2>/dev/null | wc -l)
+        file_count=$(git diff --name-only "$PERIOD_GIT" HEAD 2>/dev/null | wc -l)
+    else
+        # Use date-based query
+        local since_date=$(date -d "$PERIOD_GIT" -Iseconds 2>/dev/null || date -v-${PERIOD_GIT// /} -u +"%Y-%m-%dT%H:%M:%S" 2>/dev/null || date -u -d "$PERIOD_GIT" +"%Y-%m-%dT%H:%M:%S" 2>/dev/null || echo "")
+        
+        if [[ -z "$since_date" ]]; then
+            echo -e "${YELLOW}⚠️  Cannot parse date '$PERIOD_GIT', using 24h fallback${NC}"
+            since_date=$(date -d "24 hours ago" -Iseconds 2>/dev/null || date -v-24H -u +"%Y-%m-%dT%H:%M:%S")
+        fi
+        
+        git log --since="$since_date" \
+            --pretty=format:"%H|%an|%ae|%ad|%s" \
+            --date=iso \
+            --name-status \
+            > "$GIT_LOG_FILE" 2>/dev/null || {
+            echo -e "${YELLOW}⚠️  Aucune modification trouvée ($PERIOD_LABEL)${NC}"
+            return 1
+        }
+        commit_count=$(git log --since="$since_date" --oneline 2>/dev/null | wc -l)
+        
+        if [[ -n "$PERIOD_REF" ]]; then
+            file_count=$(git diff --name-only "HEAD@{$PERIOD_REF}" HEAD 2>/dev/null | wc -l)
+        else
+            file_count=$(git log --since="$since_date" --name-only --pretty=format: 2>/dev/null | sort -u | grep -v '^$' | wc -l)
+        fi
+    fi
+    
+    if [[ $commit_count -eq 0 ]]; then
         echo -e "${YELLOW}⚠️  Aucune modification trouvée ($PERIOD_LABEL)${NC}"
         return 1
-    }
-    
-    # Compter les modifications
-    local commit_count=$(git log --since="$since_date" --oneline | wc -l)
-    local file_count=$(git diff --name-only HEAD@{$PERIOD_REF} HEAD 2>/dev/null | wc -l)
+    fi
     
     echo -e "${GREEN}✅ ${commit_count} commit(s) trouvé(s), ${file_count} fichier(s) modifié(s)${NC}"
     return 0
@@ -228,7 +710,7 @@ analyze_changes_by_system() {
     echo -e "$changes_summary"
 }
 
-# Fonction pour générer le prompt pour question.py (une seule question pour continuité)
+# Fonction pour générer le prompt pour question.py (analyse + recommandations)
 generate_ai_prompt() {
     local git_summary=$(cat "$GIT_LOG_FILE" 2>/dev/null | head -100)
     local changes_by_system=$(analyze_changes_by_system)
@@ -236,30 +718,79 @@ generate_ai_prompt() {
     # Lire TODO.md principal pour assurer la continuité
     local todo_main_content=""
     if [[ -f "$TODO_MAIN" ]]; then
-        todo_main_content=$(cat "$TODO_MAIN")
+        todo_main_content=$(cat "$TODO_MAIN" | head -200)
     else
         todo_main_content="TODO.md n'existe pas encore."
     fi
     
+    # Fetch N² memory for learning context
+    echo -e "${BLUE}📚 Récupération de la mémoire N²...${NC}" >&2
+    local memory_json=$(fetch_n2_memory 15)
+    local memory_context=$(format_memory_for_ai "$memory_json")
+    
     cat <<EOF
-Compare le fichier TODO.md principal avec les modifications Git ($PERIOD_LABEL) et génère un résumé concis en français qui :
+Tu es un architecte logiciel expert en systèmes distribués, protocoles décentralisés (NOSTR, IPFS), et économie des communs.
 
-1. Identifie ce qui a été fait (tâches complétées, systèmes modifiés)
-2. Identifie ce qu'il reste à faire (tâches en cours, prochaines étapes)
-3. Met en évidence les avancées importantes
-4. Suggère les priorités pour la suite
+**IMPORTANT - Apprentissage N²:**
+Tu as accès à la mémoire partagée de la constellation. Les recommandations marquées "accepted" ont été validées par des humains (capitaines/développeurs). Les recommandations "rejected" ont été refusées. Apprends de ces décisions pour améliorer tes conseils.
 
-Format de réponse : Markdown structuré, concis (maximum 500 mots), avec des sections claires.
+$N2_CONTEXT
 
-TODO.md principal :
+---
+
+## Ta Mission
+
+Analyse les modifications Git ($PERIOD_LABEL) et génère un rapport **actionnable** en français.
+
+### PARTIE 1 - BILAN (50% du rapport)
+- **Résumé exécutif** : 2-3 phrases sur les avancées majeures
+- **Par système** : liste les modifications significatives (pas les détails mineurs)
+- **Cohérence N²** : est-ce que les changements respectent l'architecture hybride NOSTR/IPFS ?
+
+### PARTIE 2 - RECOMMANDATIONS STRATÉGIQUES (50% du rapport)
+
+Propose **3-5 actions concrètes** en suivant ce format :
+
+| Priorité | Action | Système | Justification N² |
+|----------|--------|---------|------------------|
+| 🔴 Haute | ... | RUNTIME/NOSTR/... | Pourquoi c'est critique pour la force 2 |
+| 🟡 Moyenne | ... | ... | ... |
+| 🟢 Basse | ... | ... | ... |
+
+**Critères pour une bonne recommandation :**
+1. **Renforce la force 2** : améliore le graphe social N1+N2 ou la sync constellation
+2. **Respecte l'hybride** : NOSTR global, IPFS local
+3. **Économiquement viable** : compatible avec le modèle Ẑen (1Ẑ=1€)
+4. **Concrète** : peut être implémentée en 1-3 jours
+
+**Exemples de bonnes recommandations :**
+- "Ajouter le kind 30851 (Swarm Aggregate) au backfill_constellation.sh" → renforce sync N²
+- "Implémenter expiration automatique des événements DID" → respect du protocole
+- "Optimiser amisOfAmis.txt pour réduire la taille IPFS" → améliore perf locale
+
+**Évite les recommandations génériques :**
+- ❌ "Améliorer la documentation"
+- ❌ "Ajouter des tests"
+- ❌ "Refactoriser le code"
+
+Format: Markdown structuré, **maximum 500 mots**, privilégie les tableaux.
+
+---
+
+## TODO.md principal (extrait) :
 $todo_main_content
 
 ---
 
-Modifications Git ($PERIOD_LABEL) :
+## Mémoire N² (apprentissage constellation) :
+$memory_context
+
+---
+
+## Modifications Git ($PERIOD_LABEL) :
 $git_summary
 
-Modifications par système :
+## Modifications par système :
 $changes_by_system
 EOF
 }
@@ -269,12 +800,18 @@ main() {
     # Parse command line arguments
     parse_args "$@"
     
+    # Initialize period for --last mode (since last execution)
+    init_last_run_period
+    
     local output_name=$(basename "$TODO_OUTPUT")
-    echo -e "${GREEN}🚀 Génération de $output_name ($PERIOD_LABEL)${NC}\n"
+    echo -e "${GREEN}🚀 Génération de $output_name ($PERIOD_LABEL)${NC}"
+    echo -e "${BLUE}🎮 N² Constellation Protocol (Conway's Angel Game - force 2)${NC}\n"
     
     # Récupérer les modifications Git
     if ! get_git_changes; then
         echo -e "${YELLOW}⚠️  Aucune modification à analyser${NC}"
+        # Still save marker for next run
+        save_run_marker
         exit 0
     fi
     
@@ -319,8 +856,9 @@ main() {
     # Nettoyer le fichier temporaire
     rm -f "$prompt_file"
     
-    # Générer le fichier TODO avec le résumé concis (une seule question)
-    local report_title="TODO Quotidien"
+    # Générer le fichier TODO avec le résumé et recommandations
+    local report_title="TODO - Dernière Session"
+    [[ "$PERIOD" == "day" ]] && report_title="TODO Quotidien"
     [[ "$PERIOD" == "week" ]] && report_title="TODO Hebdomadaire"
     
     cat > "$TODO_OUTPUT" <<EOF
@@ -352,10 +890,24 @@ EOF
     # Afficher un aperçu
     echo -e "${YELLOW}📋 Aperçu (premières 30 lignes):${NC}"
     head -30 "$TODO_OUTPUT"
+    
+    # Interactive mode: let captain select recommendations
+    if [[ "$INTERACTIVE_MODE" == "true" ]]; then
+        interactive_select_recommendations "$ai_summary"
+    else
+        echo -e "\n${GREEN}💡 Mode batch: utilisez --accept/--reject pour valider les recommandations${NC}"
+    fi
+    
     echo -e "\n${GREEN}💡 Utilisez votre éditeur pour ouvrir $output_name et intégrer les informations dans TODO.md${NC}"
     
     # Publier le rapport sur le mur du CAPTAIN
     publish_todo_report
+    
+    # Publier sur Open Collective (si configuré)
+    publish_opencollective_update
+    
+    # Save run marker for next --last execution
+    save_run_marker
     
     # Nettoyer le fichier temporaire
     rm -f "$GIT_LOG_FILE"
@@ -503,6 +1055,129 @@ EOF
     rm -f "$temp_tags_file"
 }
 
+# Function to publish update to Open Collective using GraphQL API
+# Requires OPENCOLLECTIVE_PERSONAL_TOKEN in ~/.zen/Astroport.ONE/.env
+# Ref: https://graphql-docs-v2.opencollective.com
+publish_opencollective_update() {
+    # Check if Open Collective token is configured (use :- to avoid unbound variable error with set -u)
+    local oc_token="${OPENCOLLECTIVE_PERSONAL_TOKEN:-}"
+    if [[ -z "$oc_token" ]]; then
+        echo -e "${YELLOW}⚠️  OPENCOLLECTIVE_PERSONAL_TOKEN not configured${NC}"
+        echo -e "${YELLOW}   Add to ~/.zen/Astroport.ONE/.env:${NC}"
+        echo -e "${YELLOW}   OPENCOLLECTIVE_PERSONAL_TOKEN=\"your_personal_token\"${NC}"
+        echo -e "${YELLOW}   Get token: https://opencollective.com/dashboard/monnaie-libre/admin/for-developers${NC}"
+        return 1
+    fi
+    
+    # Check if TODO file exists
+    if [[ ! -f "$TODO_OUTPUT" ]]; then
+        echo -e "${YELLOW}⚠️  TODO file not found, skipping Open Collective publish${NC}"
+        return 1
+    fi
+    
+    # Track last update to avoid duplicates
+    local OC_MARKER_DIR="$HOME/.zen/game/opencollective"
+    local OC_MARKER_FILE="$OC_MARKER_DIR/last_update_${PERIOD}.marker"
+    local OC_COLLECTIVE_SLUG="${OPENCOLLECTIVE_SLUG:-monnaie-libre}"
+    
+    mkdir -p "$OC_MARKER_DIR"
+    
+    # Get the last commit hash that was published
+    local current_commit=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+    local last_published_commit=""
+    
+    if [[ -f "$OC_MARKER_FILE" ]]; then
+        last_published_commit=$(cat "$OC_MARKER_FILE" 2>/dev/null | head -1)
+    fi
+    
+    # Check if we have new commits since last publish
+    if [[ "$current_commit" == "$last_published_commit" ]]; then
+        echo -e "${YELLOW}⚠️  No new commits since last Open Collective update, skipping${NC}"
+        return 0
+    fi
+    
+    local report_type="quotidien"
+    [[ "$PERIOD" == "week" ]] && report_type="hebdomadaire"
+    echo -e "${BLUE}📤 Publishing $report_type update to Open Collective ($OC_COLLECTIVE_SLUG)...${NC}"
+    
+    # Prepare content for Open Collective (convert Markdown to HTML-compatible)
+    local report_content=$(cat "$TODO_OUTPUT")
+    
+    # Create title based on period
+    local oc_title="Development Report - $(date +"%Y-%m-%d")"
+    [[ "$PERIOD" == "week" ]] && oc_title="Weekly Development Report - $(date +"%Y-%m-%d")"
+    
+    # Extract summary from the report (first section after AI summary)
+    local oc_summary=$(echo "$report_content" | sed -n '/## 📊 Résumé/,/^---/p' | head -15 | tail -n +2 | sed '/^---/d')
+    [[ -z "$oc_summary" ]] && oc_summary="Automatic development report generated from Git changes"
+    
+    # Escape content for JSON (handle newlines, quotes, special chars)
+    local escaped_content=$(echo "$report_content" | jq -Rs '.' | sed 's/^"//;s/"$//')
+    local escaped_title=$(echo "$oc_title" | jq -Rs '.' | sed 's/^"//;s/"$//')
+    
+    # Prepare GraphQL mutation for createUpdate
+    # Ref: https://docs.opencollective.com/help/contributing/development/api
+    local graphql_query=$(cat <<EOF
+{
+    "query": "mutation CreateUpdate(\$update: UpdateCreateInput!) { createUpdate(update: \$update) { id slug title publishedAt } }",
+    "variables": {
+        "update": {
+            "account": { "slug": "$OC_COLLECTIVE_SLUG" },
+            "title": "$escaped_title",
+            "html": "<pre style='white-space: pre-wrap; font-family: monospace;'>$escaped_content</pre>",
+            "isPrivate": false,
+            "makePublicOn": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        }
+    }
+}
+EOF
+)
+    
+    # Send GraphQL request
+    local response=$(curl -s -X POST "https://api.opencollective.com/graphql/v2" \
+        -H "Personal-Token: $oc_token" \
+        -H "Content-Type: application/json" \
+        -d "$graphql_query" 2>/dev/null)
+    
+    local curl_exit_code=$?
+    
+    if [[ $curl_exit_code -eq 0 && -n "$response" ]]; then
+        # Check for GraphQL errors
+        local errors=$(echo "$response" | jq -r '.errors // empty' 2>/dev/null)
+        
+        if [[ -n "$errors" && "$errors" != "null" && "$errors" != "[]" ]]; then
+            echo -e "${RED}❌ Open Collective GraphQL API errors:${NC}"
+            echo "$errors" | jq -r '.[] | "  - \(.message // .)"' 2>/dev/null || echo "  $errors"
+            return 1
+        else
+            # Parse successful response
+            local update_id=$(echo "$response" | jq -r '.data.createUpdate.id // empty' 2>/dev/null)
+            local update_slug=$(echo "$response" | jq -r '.data.createUpdate.slug // empty' 2>/dev/null)
+            
+            if [[ -n "$update_id" ]]; then
+                echo -e "${GREEN}✅ Open Collective update published successfully${NC}"
+                echo -e "${GREEN}   ID: $update_id${NC}"
+                echo -e "${GREEN}   Title: $oc_title${NC}"
+                echo -e "${GREEN}   URL: https://opencollective.com/$OC_COLLECTIVE_SLUG/updates/$update_slug${NC}"
+                
+                # Save marker with current commit hash
+                echo "$current_commit" > "$OC_MARKER_FILE"
+                echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$OC_MARKER_FILE"
+                echo "$update_id" >> "$OC_MARKER_FILE"
+                
+                # Log for tracking
+                echo "$(date -u +%Y%m%d%H%M%S) UPDATE_PUBLISHED $update_id $OC_COLLECTIVE_SLUG $PERIOD $current_commit" >> "$OC_MARKER_DIR/updates.log"
+            else
+                echo -e "${YELLOW}⚠️  Unexpected response format:${NC}"
+                echo "$response" | head -c 300
+            fi
+        fi
+    else
+        echo -e "${RED}❌ Open Collective API request failed (exit code: $curl_exit_code)${NC}"
+        return 1
+    fi
+}
+
 # Fonction de fallback si question.py échoue
 generate_basic_summary() {
     local changes_by_system=$(analyze_changes_by_system)
@@ -546,6 +1221,9 @@ EOF
     
     # Publier le rapport sur le mur du CAPTAIN même en mode fallback
     publish_todo_report
+    
+    # Publier sur Open Collective même en mode fallback
+    publish_opencollective_update
 }
 
 # Exécuter le script
