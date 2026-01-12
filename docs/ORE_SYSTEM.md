@@ -272,3 +272,15 @@ Le système ORE de UPlanet ne se contente pas de reproduire le mécanisme des OR
 C'est cette accessibilité qui permettra au "cadastre écologique" de devenir une réalité mondiale, où chaque parcelle de terre peut devenir un acteur rémunéré de la régénération écologique.
 
 ---
+
+## 🔗 Liens Utiles
+
+- **Interface PlantNet** : `UPlanet/earth/plantnet.html`
+- **Commons Editor** : `UPlanet/earth/collaborative-editor.html`
+- **Système PlantNet** : `Astroport.ONE/docs/PLANTNET_SYSTEM.md`
+- **Documents Collaboratifs** : `Astroport.ONE/docs/COLLABORATIVE_COMMONS_SYSTEM.md`
+- **Journaux N²** : `Astroport.ONE/docs/JOURNAUX_N2_NOSTRCARD.md`
+- **Script UMAP** : `Astroport.ONE/RUNTIME/NOSTR.UMAP.refresh.sh`
+- **Tracker Python** : `Astroport.ONE/tools/ore_system.py`
+
+---

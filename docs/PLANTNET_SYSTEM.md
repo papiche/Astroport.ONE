@@ -391,9 +391,32 @@ Astroport.ONE/
 ## 🔗 Liens Utiles
 
 - **Interface** : `UPlanet/earth/plantnet.html`
+- **Commons Editor** : `UPlanet/earth/collaborative-editor.html`
 - **Système ORE** : `Astroport.ONE/docs/ORE_SYSTEM.md`
+- **Documents Collaboratifs** : `Astroport.ONE/docs/COLLABORATIVE_COMMONS_SYSTEM.md`
+- **Journaux N²** : `Astroport.ONE/docs/JOURNAUX_N2_NOSTRCARD.md`
 - **PlantNet** : https://plantnet.org
 - **Nostr NIPs** : https://github.com/nostr-protocol/nips
+
+## 🔄 Intégration avec les Documents Collaboratifs
+
+Le système PlantNet s'intègre avec l'éditeur collaboratif de Commons pour permettre la création de plans de jardins validés par la communauté :
+
+```
+Observation PlantNet (kind 1 + #plantnet)
+         ↓
+Bot IA génère contrat maintenance (kind 30023)
+         ↓
+Utilisateur crée Plan de Jardin (Commons Editor)
+         ↓
+Document kind 30023 avec type "garden"
+         ↓
+Communauté valide via likes (kind 7)
+         ↓
+UMAP agrège et calcule score ORE
+```
+
+Voir `COLLABORATIVE_COMMONS_SYSTEM.md` pour le détail du workflow de co-édition.
 
 ---
 

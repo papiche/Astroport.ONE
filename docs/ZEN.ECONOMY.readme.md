@@ -1379,3 +1379,14 @@ Ivan voit des **"Expenses" (Frais)** légitimes :
 | Surplus / Profit | **Excédent de fonctionnement** |
 | Capital social | **Budget de fonctionnement** |
 | Sociétaire | **Parrain** / **Contributeur** |
+
+---
+
+## 🔗 Liens Utiles
+
+- **Système ORE** : `Astroport.ONE/docs/ORE_SYSTEM.md`
+- **Documents Collaboratifs** : `Astroport.ONE/docs/COLLABORATIVE_COMMONS_SYSTEM.md`
+- **Système PlantNet** : `Astroport.ONE/docs/PLANTNET_SYSTEM.md`
+- **Système WoTx2** : `Astroport.ONE/docs/WOTX2_SYSTEM.md`
+- **Politique d'Intrusion** : `Astroport.ONE/docs/ZEN.INTRUSION.POLICY.md`
+- **Oracle** : `Astroport.ONE/docs/ORACLE_SYSTEM.md`

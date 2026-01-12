@@ -303,17 +303,33 @@ Yearly (lit les monthly journals des 12 derniers mois - 365 jours)
 - Les journaux vides (aucun ami ou aucun message) ne sont pas publiés
 - **Vérification de doublons** : Avant publication, vérifie si un journal avec le même `d_tag` existe déjà pour éviter les doublons
 
-## 🔄 Comparaison avec UMAP Journals
+## 🔄 Comparaison avec Autres Systèmes
 
-**MULTIPASS Journals (NOSTRCARD)** :
+### MULTIPASS Journals (NOSTRCARD)
 - Hiérarchie : Daily → Weekly → Monthly → Yearly
 - Source Daily : Messages kind 1 du réseau N²
 - Source Weekly+ : Lit les journaux précédents (format blog kind 30023)
 - Personnalisé : Basé sur le réseau N² unique de chaque MULTIPASS
 
-**UMAP Journals (NOSTR.UMAP)** :
+### UMAP Journals (NOSTR.UMAP)
 - Pas de hiérarchie daily/weekly/monthly
 - Source : Messages des amis de la zone géographique UMAP
 - Filtre par likes : SECTOR (≥3 likes), REGION (≥12 likes)
 - Géographique : Basé sur la localisation (0.01° pour UMAP)
+
+### Documents Collaboratifs (Commons)
+- Kind 30023 avec tag `collaborative`
+- Signé par l'UMAP (collectif) et non par l'individu
+- Validation par vote communautaire (kind 7)
+- Édition WYSIWYG avec Milkdown
+- Système de gouvernance (quorum, majorité, fork)
+- Voir : `COLLABORATIVE_COMMONS_SYSTEM.md`
+
+## 🔗 Liens Utiles
+
+- **Interface PlantNet** : `UPlanet/earth/plantnet.html`
+- **Commons Editor** : `UPlanet/earth/collaborative-editor.html`
+- **Système ORE** : `Astroport.ONE/docs/ORE_SYSTEM.md`
+- **Système PlantNet** : `Astroport.ONE/docs/PLANTNET_SYSTEM.md`
+- **Documents Collaboratifs** : `Astroport.ONE/docs/COLLABORATIVE_COMMONS_SYSTEM.md`
 

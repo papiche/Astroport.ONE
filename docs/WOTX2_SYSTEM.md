@@ -982,6 +982,16 @@ Le Système WoTx2 est un système **100% dynamique** qui permet :
 
 ---
 
+## 🔗 Liens Utiles
+
+- **Système ORE** : `Astroport.ONE/docs/ORE_SYSTEM.md`
+- **Documents Collaboratifs** : `Astroport.ONE/docs/COLLABORATIVE_COMMONS_SYSTEM.md`
+- **Système PlantNet** : `Astroport.ONE/docs/PLANTNET_SYSTEM.md`
+- **Journaux N²** : `Astroport.ONE/docs/JOURNAUX_N2_NOSTRCARD.md`
+- **Économie Ẑen** : `Astroport.ONE/docs/ZEN.ECONOMY.readme.md`
+
+---
+
 **Documentation générée le** : $(date -u +"%Y-%m-%dT%H:%M:%SZ")  
 **Version du système** : 1.0 - 100% Dynamique  
 **Contact** : support@qo-op.com  
