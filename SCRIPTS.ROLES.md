@@ -20,14 +20,51 @@ Script **PRINCIPAL** pour l'embarquement des nouveaux capitaines dans l'écosyst
 - **Configuration réseau** : Swarm IPFS selon le mode choisi
 - **Initialisation complète** : Portefeuilles et infrastructure
 - **Embarquement capitaine** : Création identité et formation
+- **⚡ Configuration RAPIDE** : Setup automatique pour nouveaux capitaines (option `q`)
+- **🔄 Sync coopérative** : Synchronisation avec configuration DID NOSTR (option `s`)
+- **📊 Affichage config** : Vue complète config locale + DID (option `c`)
+- **👨‍✈️ Dashboard direct** : Accès captain.sh (option `d`)
+
+#### **🎮 Menu Principal**
+```
+1. Présentation et introduction
+2. Configuration économique (.env)
+3. Valorisation de votre machine
+4. Choix du mode UPlanet (ORIGIN/ẐEN)
+5. Configuration réseau
+6. Initialisation UPLANET
+7. Passage au niveau Y (ẐEN seulement)
+8. Embarquement capitaine
+9. Résumé et finalisation
+
+a. Embarquement complet automatique
+q. ⚡ Configuration RAPIDE (nouveaux capitaines) ← NOUVEAU
+s. 🔄 Sync configuration coopérative (DID) ← NOUVEAU
+c. 📊 Vérifier la configuration actuelle ← AMÉLIORÉ
+d. 👨‍✈️ Dashboard Capitaine (captain.sh) ← NOUVEAU
+0. Quitter
+```
 
 #### **🎮 Usage**
 ```bash
 # Lancement complet
 ./uplanet_onboarding.sh
 
-# Étapes individuelles disponibles dans le menu interactif
+# Pour nouveaux capitaines : option 'q' (RAPIDE)
+# Configure tout automatiquement en 5 minutes :
+# - Paramètres économiques recommandés
+# - Valorisation machine automatique
+# - Initialisation UPLANET
+# - Création compte capitaine
 ```
+
+#### **⚡ Mode Configuration Rapide**
+L'option `q` offre une configuration simplifiée :
+1. **PAF=14, NCARD=1, ZCARD=4** (valeurs recommandées)
+2. **Détection automatique** CPU/RAM/Disque → valorisation
+3. **Mode auto** selon présence `swarm.key`
+4. **UPLANET.init.sh** automatique
+5. **captain.sh** pour création MULTIPASS + ZEN Card
 
 ### **🔧 update_config.sh** - Gestionnaire de Configuration
 
@@ -156,22 +193,107 @@ Interface **PRINCIPALE** pour le monitoring quotidien et les actions rapides.
 
 ---
 
-## 🏴‍☠️ **captain.sh** - Embarquement et Gestion Capitaine
+## 🏴‍☠️ **captain.sh** - Dashboard Capitaine et Gestion
 
 ### **🎯 Rôle Principal**
-Script **SPÉCIALISÉ** pour l'embarquement des nouveaux utilisateurs et la gestion des capitaines.
+Script **CENTRAL** pour le tableau de bord économique et la gestion quotidienne de la station.
 
 ### **✅ Fonctionnalités**
-- **Embarquement** nouveaux capitaines
-- **Création** MULTIPASS et ZEN Cards
-- **Initialisation** infrastructure UPLANET
-- **Gestion** des comptes capitaines
-- **Navigation** vers les scripts économiques
+- **Tableau de bord économique** : Soldes de tous les portefeuilles (CASH, ASSETS, RnD, IMPOT, NODE, CAPTAIN)
+- **Statistiques utilisateurs** : MULTIPASS, ZEN Cards, Sociétaires
+- **Économie de l'essaim** : État de toutes les stations du réseau
+- **Configuration coopérative DID** : Gestion des paramètres partagés via NOSTR (kind 30800)
+- **Clés API chiffrées** : Configuration OpenCollective, PlantNet (AES-256-CBC)
+- **Embarquement** : Création MULTIPASS et ZEN Cards
+- **Broadcast NOSTR** : Communication réseau vers les utilisateurs
+- **Navigation** vers tous les scripts économiques
+
+### **🎮 Menu Principal**
+```
+1. Gestion Économique (zen.sh)
+2. Infrastructure UPLANET (UPLANET.init.sh)
+3. Scripts Économiques Automatisés
+4. Interface Principale (command.sh)
+5. Tableau de Bord Détaillé
+6. Économie de l'Essaim
+7. Actualiser les Données
+8. Nouvel Embarquement
+9. Broadcast NOSTR
+c. Configuration Coopérative (DID) ← NOUVEAU
+u. Assistant UPlanet (onboarding) ← NOUVEAU
+0. Quitter
+```
 
 ### **🎮 Usage**
 ```bash
+# Lancement standard
 ./captain.sh
+
+# Mode automatique (pour scripts)
+./captain.sh --auto
+./captain.sh --auto --email user@example.com
 ```
+
+---
+
+## ⚙️ **cooperative_config.sh** - Configuration Coopérative DID
+
+### **🎯 Rôle Principal**
+Script **UTILITAIRE** pour la gestion de la configuration coopérative partagée via DID NOSTR (kind 30800).
+
+### **✅ Fonctionnalités**
+- **Stockage DID NOSTR** : Configuration dans kind 30800, d-tag "cooperative-config"
+- **Chiffrement automatique** : Valeurs sensibles (TOKEN, SECRET, KEY, PASSWORD, API) chiffrées AES-256-CBC
+- **Cache local** : `~/.zen/tmp/cooperative_config.cache.json` (TTL 1h)
+- **Synchronisation essaim** : Toutes les stations partagent la même configuration
+- **Fonctions shell** : `coop_config_get`, `coop_config_set`, `coop_config_list`, `coop_config_refresh`
+
+### **📋 Variables Supportées**
+
+| Variable | Description | Chiffrée |
+| :--- | :--- | :--- |
+| `NCARD` | Tarif MULTIPASS (Ẑen/semaine) | Non |
+| `ZCARD` | Tarif ZEN Card (Ẑen/semaine) | Non |
+| `TVA_RATE` | Taux de TVA (%) | Non |
+| `IS_RATE_REDUCED` | Taux IS réduit (%) | Non |
+| `IS_RATE_NORMAL` | Taux IS normal (%) | Non |
+| `ZENCARD_SATELLITE` | Prix part sociale Satellite (€) | Non |
+| `ZENCARD_CONSTELLATION` | Prix part sociale Constellation (€) | Non |
+| `TREASURY_PERCENT`, `RND_PERCENT`, `ASSETS_PERCENT` | Règle 3x1/3 (%) | Non |
+| `OPENCOLLECTIVE_PERSONAL_TOKEN` | Token API OpenCollective | **Oui** |
+| `OPENCOLLECTIVE_API_KEY` | Clé API OpenCollective | **Oui** |
+| `PLANTNET_API_KEY` | Clé API PlantNet | **Oui** |
+
+### **🎮 Usage**
+```bash
+# En tant que bibliothèque (dans un script)
+source ~/.zen/Astroport.ONE/tools/cooperative_config.sh
+
+# Récupérer une valeur (auto-déchiffrement)
+TVA=$(coop_config_get "TVA_RATE")
+TOKEN=$(coop_config_get "OPENCOLLECTIVE_PERSONAL_TOKEN")
+
+# Définir une valeur (auto-chiffrement si sensible)
+coop_config_set "NCARD" "1"
+coop_config_set "OPENCOLLECTIVE_PERSONAL_TOKEN" "mon_token_secret"
+
+# Lister toutes les clés
+coop_config_list
+
+# Actualiser depuis le DID
+coop_config_refresh
+
+# En ligne de commande
+./tools/cooperative_config.sh list
+./tools/cooperative_config.sh get TVA_RATE
+./tools/cooperative_config.sh set NCARD 1
+```
+
+### **🔐 Sécurité**
+- Les valeurs contenant `TOKEN`, `SECRET`, `KEY`, `PASSWORD`, `API` sont **automatiquement chiffrées**
+- Clé de chiffrement : `$UPLANETNAME` (dérivée de `swarm.key`)
+- Algorithme : AES-256-CBC avec IV aléatoire
+- Les valeurs sont stockées en base64 sur NOSTR
 
 ---
 

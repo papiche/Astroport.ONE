@@ -88,6 +88,11 @@ usage() {
     echo -e "${GREEN}Et les clés NOSTR pour:${NC}"
     echo -e "  • ${CYAN}uplanet.G1.nostr${NC} (Ğ1 Central Bank - Oracle + N² Memory)"
     echo ""
+    echo -e "${GREEN}Configuration coopérative via DID NOSTR:${NC}"
+    echo -e "  • ${CYAN}cooperative-config${NC} (Configuration partagée essaim IPFS)"
+    echo -e "  • Valeurs chiffrées avec \$UPLANETNAME (AES-256-CBC)"
+    echo -e "  • Stocké dans kind 30800, d-tag 'cooperative-config'"
+    echo ""
     echo -e "${BLUE}Options:${NC}"
     echo -e "  ${CYAN}--force${NC}     Forcer l'initialisation même si les portefeuilles ont des fonds"
     echo -e "  ${CYAN}--dry-run${NC}   Simulation sans effectuer de transactions"
@@ -344,6 +349,104 @@ check_and_create_nostr_keys() {
     
     if [[ $keys_exist -gt 0 ]]; then
         echo -e "${GREEN}✅ $keys_exist clé(s) NOSTR déjà présente(s)${NC}"
+    fi
+    
+    echo ""
+}
+
+# Function to check and initialize cooperative config DID
+# Stores encrypted configuration in NOSTR DID for swarm-wide access
+check_and_init_cooperative_config() {
+    echo -e "${CYAN}📋 VÉRIFICATION DE LA CONFIGURATION COOPÉRATIVE DID${NC}"
+    echo -e "${YELLOW}==================================================${NC}"
+    
+    local config_helper="${MY_PATH}/tools/cooperative_config.sh"
+    
+    if [[ ! -f "$config_helper" ]]; then
+        echo -e "${RED}❌ cooperative_config.sh non trouvé${NC}"
+        return 1
+    fi
+    
+    # Source the helper
+    source "$config_helper"
+    
+    # Check if NOSTR key exists
+    if [[ ! -f "$COOP_CONFIG_KEYFILE" ]]; then
+        echo -e "${YELLOW}⚠️  Clé NOSTR UPLANETNAME_G1 non trouvée${NC}"
+        echo -e "${BLUE}   La configuration coopérative sera initialisée après création de la clé${NC}"
+        return 1
+    fi
+    
+    # Get pubkey for display
+    local pubkey=$(coop_get_pubkey 2>/dev/null)
+    if [[ -z "$pubkey" ]]; then
+        echo -e "${RED}❌ Impossible d'extraire la clé publique${NC}"
+        return 1
+    fi
+    
+    echo -e "${BLUE}DID Coopératif:${NC} ${CYAN}did:nostr:${pubkey:0:16}...${NC}"
+    echo -e "${BLUE}D-tag:${NC} ${CYAN}$COOP_CONFIG_D_TAG${NC}"
+    
+    # Try to load existing config
+    local existing_config=$(coop_load_config 2>/dev/null)
+    
+    if [[ -n "$existing_config" ]] && [[ "$existing_config" != "{}" ]]; then
+        echo -e "${GREEN}✅ Configuration coopérative existante trouvée${NC}"
+        
+        # Show config summary (without sensitive values)
+        local config_keys=$(echo "$existing_config" | jq -r 'keys | length' 2>/dev/null || echo "0")
+        echo -e "${BLUE}   Nombre de clés:${NC} ${CYAN}$config_keys${NC}"
+        
+        # Check for OpenCollective token
+        local has_oc_token=$(echo "$existing_config" | jq -r 'has("OPENCOLLECTIVE_PERSONAL_TOKEN")' 2>/dev/null)
+        if [[ "$has_oc_token" == "true" ]]; then
+            echo -e "${GREEN}   ✓ OPENCOLLECTIVE_PERSONAL_TOKEN configuré${NC}"
+        else
+            echo -e "${YELLOW}   ⚠️  OPENCOLLECTIVE_PERSONAL_TOKEN non configuré${NC}"
+        fi
+        
+        # Check for slug
+        local oc_slug=$(echo "$existing_config" | jq -r '.OPENCOLLECTIVE_SLUG // "monnaie-libre"' 2>/dev/null)
+        echo -e "${BLUE}   OpenCollective Slug:${NC} ${CYAN}$oc_slug${NC}"
+        
+    else
+        echo -e "${YELLOW}⚠️  Aucune configuration coopérative trouvée${NC}"
+        echo -e "${BLUE}   Initialisation de la configuration par défaut...${NC}"
+        
+        # Initialize default config
+        coop_config_init 2>/dev/null
+        
+        if [[ $? -eq 0 ]]; then
+            echo -e "${GREEN}✅ Configuration coopérative initialisée${NC}"
+            echo ""
+            echo -e "${YELLOW}📝 CONFIGURATION OPENCOLLECTIVE (optionnel):${NC}"
+            echo -e "${BLUE}   Pour configurer le token OpenCollective, exécutez:${NC}"
+            echo ""
+            echo -e "   ${CYAN}source ${config_helper}${NC}"
+            echo -e "   ${CYAN}coop_config_set OPENCOLLECTIVE_PERSONAL_TOKEN \"votre_token\"${NC}"
+            echo ""
+            echo -e "${BLUE}   Obtenez votre token sur:${NC}"
+            echo -e "   ${CYAN}https://opencollective.com/dashboard/monnaie-libre/admin/for-developers${NC}"
+        else
+            echo -e "${RED}❌ Échec de l'initialisation${NC}"
+        fi
+    fi
+    
+    echo ""
+}
+
+# Function to display cooperative config
+show_cooperative_config() {
+    echo -e "${CYAN}📋 CONFIGURATION COOPÉRATIVE (DID NOSTR)${NC}"
+    echo -e "${YELLOW}========================================${NC}"
+    
+    local config_helper="${MY_PATH}/tools/cooperative_config.sh"
+    
+    if [[ -f "$config_helper" ]]; then
+        source "$config_helper"
+        coop_config_list
+    else
+        echo -e "${YELLOW}⚠️  cooperative_config.sh non disponible${NC}"
     fi
     
     echo ""
@@ -954,6 +1057,9 @@ main() {
     # Check and create NOSTR keys (Ğ1 Central Bank for Oracle + N² Memory)
     check_and_create_nostr_keys
     
+    # Check and initialize cooperative config DID (encrypted config in NOSTR)
+    check_and_init_cooperative_config
+    
     # Check source wallet
     check_source_wallet
     
@@ -989,8 +1095,15 @@ main() {
     # Display final status
     display_final_status
     
+    # Display cooperative config summary
+    show_cooperative_config
+    
     echo -e "\n${GREEN}🎯 Initialisation terminée !${NC}"
     echo -e "${BLUE}Les portefeuilles coopératifs sont maintenant prêts à fonctionner.${NC}"
+    echo ""
+    echo -e "${CYAN}💡 Configuration coopérative partagée via DID NOSTR:${NC}"
+    echo -e "   ${BLUE}Toutes les machines de l'essaim IPFS partagent la même configuration.${NC}"
+    echo -e "   ${BLUE}Les valeurs sensibles sont chiffrées avec \$UPLANETNAME.${NC}"
 }
 
 # Check if help is requested

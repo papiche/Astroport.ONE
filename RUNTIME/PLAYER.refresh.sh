@@ -17,6 +17,8 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/../tools/my.sh"
+# Load cooperative config from DID NOSTR (shared across swarm)
+. "${MY_PATH}/../tools/cooperative_config.sh" 2>/dev/null && coop_load_env_vars 2>/dev/null || true
 ################################################################################
 ## Publish All PLAYER TW,
 # Run TAG subprocess: tube, voeu

@@ -19,6 +19,8 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 
 # Source environment
 . "${MY_PATH}/../tools/my.sh"
+# Load cooperative config from DID NOSTR (shared across swarm)
+. "${MY_PATH}/../tools/cooperative_config.sh" 2>/dev/null && coop_load_env_vars 2>/dev/null || true
 
 # Parse arguments
 DRYRUN=false

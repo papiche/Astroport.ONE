@@ -220,9 +220,35 @@ Installation → Configuration → Initialisation → Identité Capitaine
 
 | Script | Rôle | Intégration |
 |--------|------|-------------|
-| **`uplanet_onboarding.sh`** | Embarquement complet | Lance UPLANET.init.sh automatiquement |
+| **`uplanet_onboarding.sh`** | Embarquement complet | Lance UPLANET.init.sh automatiquement, option `q` pour config rapide |
+| **`captain.sh`** | Dashboard Capitaine | Gestion config coopérative, embarquement, monitoring |
+| **`cooperative_config.sh`** | Configuration DID NOSTR | Paramètres partagés essaim (kind 30800, chiffrés) |
 | **`update_config.sh`** | Migration et mise à jour | Peut relancer UPLANET.init.sh si nécessaire |
 | **`heartbox_analysis.sh`** | Analyse système | Fournit les capacités pour la valorisation |
+
+### **📋 Configuration Coopérative DID (Nouveauté)**
+
+UPLANET.init.sh initialise également la **configuration coopérative DID** dans NOSTR (kind 30800) :
+
+| Paramètre | Description | Chiffré |
+|-----------|-------------|---------|
+| `NCARD`, `ZCARD` | Tarifs MULTIPASS/ZEN Card | Non |
+| `TVA_RATE`, `IS_RATE_*` | Taux fiscaux | Non |
+| `ZENCARD_SATELLITE`, `ZENCARD_CONSTELLATION` | Prix parts sociales | Non |
+| `TREASURY_PERCENT`, `RND_PERCENT`, `ASSETS_PERCENT` | Règle 3x1/3 | Non |
+| `OPENCOLLECTIVE_*` | Tokens API OpenCollective | **Oui** (AES-256-CBC) |
+| `PLANTNET_API_KEY` | Clé API PlantNet | **Oui** (AES-256-CBC) |
+
+**Fonctionnement :**
+```bash
+# Configuration automatique lors de UPLANET.init.sh
+check_and_init_cooperative_config()
+
+# Utilisation dans les scripts
+source ~/.zen/Astroport.ONE/tools/cooperative_config.sh
+TVA=$(coop_config_get "TVA_RATE")
+coop_config_set "OPENCOLLECTIVE_PERSONAL_TOKEN" "mon_token"
+```
 
 ### **🛡️ Sécurité et Contrôle**
 
@@ -267,8 +293,10 @@ Installation → Configuration → Initialisation → Identité Capitaine
 - **[RUNTIME/ZEN.INTRUSION.POLICY.md](RUNTIME/ZEN.INTRUSION.POLICY.md)** : Politique anti-intrusion
 
 ### **🔧 Configuration**
-- **[.env.template](.env.template)** : Template de configuration avec toutes les variables
+- **[.env.template](.env.template)** : Template de configuration locale avec toutes les variables
 - **Configuration dynamique** via `heartbox_analysis.sh`
+- **Configuration coopérative DID** via `cooperative_config.sh` (paramètres partagés essaim)
+- **Dashboard Capitaine** via `captain.sh` (gestion centralisée configuration)
 
 **Note de cohérence** : Les noms des fichiers dunikey sont **identiques** à ceux utilisés dans tous les scripts économiques (`ZEN.ECONOMY.sh`, `ZEN.COOPERATIVE.3x1-3.sh`, etc.), garantissant une **parfaite cohérence** dans l'écosystème UPlanet ẐEN.
 

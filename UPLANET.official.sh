@@ -35,6 +35,8 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/tools/my.sh"
+# Load cooperative config from DID NOSTR (shared across swarm)
+. "${MY_PATH}/tools/cooperative_config.sh" 2>/dev/null && coop_load_env_vars 2>/dev/null || true
 
 # Configuration des montants (définis dans my.sh et .env)
 # Les valeurs par défaut sont définies dans my.sh (NCARD, etc.)
@@ -86,10 +88,20 @@ show_help() {
     echo "  $0 --recovery-3x13                            # Mode dépannage ZEN Card → 3x1/3"
     echo ""
     echo "Types de sociétaires:"
-    echo "  satellite     : 50€/an (sans IA)"
-    echo "  constellation : 540€/3ans (avec IA)"
+    echo "  satellite     : ${ZENCARD_SATELLITE:-50}€/an (sans IA)"
+    echo "  constellation : ${ZENCARD_CONSTELLATION:-540}€/3ans (avec IA)"
     echo "  infrastructure: 500€ (apport capital machine, vers UPLANETNAME_CAPITAL)"
     echo "                  Protection contre double enregistrement (--force/--add pour contourner)"
+    echo ""
+    echo -e "${CYAN}Configuration Coopérative (DID NOSTR):${NC}"
+    echo "  Les paramètres fiscaux et coopératifs sont partagés via DID NOSTR (kind 30800)"
+    echo "  Toutes les machines de l'essaim utilisent les mêmes valeurs."
+    echo ""
+    echo "  Voir/modifier la config:"
+    echo "    source ~/.zen/Astroport.ONE/tools/cooperative_config.sh"
+    echo "    coop_config_list                    # Liste toutes les clés"
+    echo "    coop_config_set KEY VALUE           # Définit une valeur (auto-chiffre si sensible)"
+    echo "    coop_config_refresh                 # Force la mise à jour depuis NOSTR"
 }
 
 # Fonction pour vérifier qu'il n'y a pas de transactions en cours avant de commencer

@@ -22,6 +22,8 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/../tools/my.sh"
+# Source cooperative config for DID-based configuration (encrypted in NOSTR)
+. "${MY_PATH}/../tools/cooperative_config.sh" 2>/dev/null || true
 ################################################################################
 start=`date +%s`
 
@@ -665,22 +667,10 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                         AMORT_BALANCE=$(echo "scale=1; ($AMORT_COIN_RPT - 1) * 10" | bc 2>/dev/null || echo "0")
                     fi
                     
-                    # Read config values
-                    if [[ -f "$HOME/.zen/game/uplanet.conf" ]]; then
-                        MACHINE_VALUE_REPORT=$(grep "^MACHINE_VALUE=" "$HOME/.zen/game/uplanet.conf" | cut -d'=' -f2 || echo "0")
-                        CAPITAL_DATE_RPT=$(grep "^CAPITAL_DATE=" "$HOME/.zen/game/uplanet.conf" | cut -d'=' -f2 || echo "")
-                        DEPRECIATION_WEEKS_REPORT=$(grep "^DEPRECIATION_WEEKS=" "$HOME/.zen/game/uplanet.conf" | cut -d'=' -f2 || echo "156")
-                        
-                        if [[ -n "$CAPITAL_DATE_RPT" && $(echo "$DEPRECIATION_WEEKS_REPORT > 0" | bc -l) -eq 1 ]]; then
-                            CAPITAL_TIMESTAMP_RPT=$(date -d "$CAPITAL_DATE_RPT" +%s 2>/dev/null || echo "0")
-                            CURRENT_TIMESTAMP_RPT=$(date +%s)
-                            SECONDS_IN_WEEK=$((7 * 24 * 60 * 60))
-                            WEEKS_PASSED_REPORT=$(( (CURRENT_TIMESTAMP_RPT - CAPITAL_TIMESTAMP_RPT) / SECONDS_IN_WEEK ))
-                            [[ $WEEKS_PASSED_REPORT -lt 0 ]] && WEEKS_PASSED_REPORT=0
-                            DEPRECIATION_PERCENT=$(echo "scale=1; ($WEEKS_PASSED_REPORT * 100) / $DEPRECIATION_WEEKS_REPORT" | bc -l 2>/dev/null || echo "0")
-                            [[ $(echo "$DEPRECIATION_PERCENT > 100" | bc -l) -eq 1 ]] && DEPRECIATION_PERCENT="100"
-                        fi
-                    fi
+                    # Read config values from .env (MACHINE_VALUE_ZEN)
+                    MACHINE_VALUE_REPORT="${MACHINE_VALUE_ZEN:-0}"
+                    DEPRECIATION_WEEKS_REPORT="${DEPRECIATION_WEEKS:-156}"
+                    DEPRECIATION_PERCENT="0"
                 fi
                 
                 # Build failed allocations list
@@ -866,8 +856,16 @@ request_opencollective_conversion() {
     log_output "  Amount: $zen_amount Ẑen → $euro_amount €"
     log_output "  Period: $period"
     
+    # Try to get token from cooperative DID config first (encrypted in NOSTR)
+    local OC_TOKEN=""
+    if type coop_config_get &>/dev/null; then
+        OC_TOKEN=$(coop_config_get "OPENCOLLECTIVE_PERSONAL_TOKEN" 2>/dev/null || echo "")
+    fi
+    # Fallback to environment variable (legacy support)
+    [[ -z "$OC_TOKEN" ]] && OC_TOKEN="${OPENCOLLECTIVE_PERSONAL_TOKEN:-}"
+    
     # Check if OpenCollective Personal Token is configured (GraphQL API)
-    if [[ -n "$OPENCOLLECTIVE_PERSONAL_TOKEN" ]]; then
+    if [[ -n "$OC_TOKEN" ]]; then
         # Use GraphQL API (recommended by OpenCollective docs)
         # https://graphql-docs-v2.opencollective.com
         local graphql_query='{
@@ -885,7 +883,7 @@ request_opencollective_conversion() {
         }'
         
         local response=$(curl -s -X POST "https://api.opencollective.com/graphql/v2" \
-            -H "Personal-Token: $OPENCOLLECTIVE_PERSONAL_TOKEN" \
+            -H "Personal-Token: $OC_TOKEN" \
             -H "Content-Type: application/json" \
             -d "$graphql_query" 2>/dev/null)
         
@@ -934,7 +932,10 @@ request_opencollective_conversion() {
         fi
     else
         log_output "⚠️  No OpenCollective credentials configured"
-        log_output "   Configure OPENCOLLECTIVE_PERSONAL_TOKEN (GraphQL) or OPENCOLLECTIVE_API_KEY (REST)"
+        log_output "   Configure via cooperative DID (recommended - encrypted & shared):"
+        log_output "     source ~/.zen/Astroport.ONE/tools/cooperative_config.sh"
+        log_output "     coop_config_set OPENCOLLECTIVE_PERSONAL_TOKEN \"your_token\""
+        log_output "   Legacy: Set OPENCOLLECTIVE_PERSONAL_TOKEN or OPENCOLLECTIVE_API_KEY"
         log_output "   Manual conversion needed: $zen_amount Ẑen → $euro_amount €"
         
         # Log for manual processing

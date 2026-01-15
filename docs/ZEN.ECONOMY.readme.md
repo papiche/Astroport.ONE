@@ -133,6 +133,8 @@ Dans ce système, le ẐEN **n'est pas une monnaie financière convertible**, ma
 
 | Script | Fonction | Fréquence |
 | :--- | :--- | :--- |
+| `uplanet_onboarding.sh` | **Assistant d'embarquement** - Configuration complète de la station | Au démarrage |
+| `captain.sh` | **Dashboard Capitaine** - Tableau de bord économique et navigation | À la demande |
 | `UPLANET.init.sh` | Initialisation de tous les portefeuilles (NODE, CAPTAIN, Collectifs) | Une seule fois |
 | `ZEN.ECONOMY.sh` | Paiement PAF avec dégradation progressive + Burn 4-semaines | Hebdomadaire |
 | `ZEN.COOPERATIVE.3x1-3.sh` | Calcul de l'Excédent & Allocation 3x1/3 | Hebdomadaire |
@@ -140,6 +142,7 @@ Dans ce système, le ẐEN **n'est pas une monnaie financière convertible**, ma
 | `PLAYER.refresh.sh` | Collecte redevances ZEN Cards (4Ẑ HT + 0.8Ẑ TVA) | Hebdomadaire |
 | `UPLANET.official.sh` | Émission Crédits Service officiels (Usagers & Parrains) | À la demande |
 | `ECONOMY.broadcast.sh` | Diffusion Nostr de la santé économique (kind 30850) | Hebdomadaire |
+| `cooperative_config.sh` | Gestion configuration coopérative via DID NOSTR (kind 30800) | À la demande |
 | `solar_time.sh` | Calcul heure solaire pour synchronisation distribuée | À la demande |
 
 ### **🔄 FLUX DE FONCTIONNEMENT DÉTAILLÉS (Cycle 7 jours)**
@@ -258,7 +261,53 @@ Raspberry Pi 5 + NVMe 4To (Recommandé)
 **Référence Technique :** [Guide complet Raspberry Pi 5 + NVMe 4To](https://pad.p2p.legal/s/RaspberryPi#)
 
 ### **CONFIGURATION**
-Les variables (`PAF`, `TVA_RATE`, `MACHINE_VALUE_ZEN`, etc.) sont définies dans un fichier `.env`. Les portefeuilles sont initialisés automatiquement par `UPLANET.init.sh` avec source primale unique `UPLANETNAME_G1`.
+
+#### **Configuration Locale (.env)**
+Les variables locales à chaque station sont définies dans `~/.zen/Astroport.ONE/.env` :
+- `PAF` : Participation Aux Frais hebdomadaire (spécifique à la station)
+- `MACHINE_VALUE_ZEN` : Valorisation de la machine
+- `myRELAY`, `myIPFS`, etc. : Endpoints réseau locaux
+
+#### **Configuration Coopérative (DID NOSTR)**
+Les variables partagées entre toutes les stations de l'essaim sont stockées dans le DID NOSTR de `UPLANETNAME_G1` (kind 30800, d-tag "cooperative-config") :
+
+| Variable | Description | Chiffrée |
+| :--- | :--- | :--- |
+| `NCARD` | Tarif MULTIPASS (Ẑen/semaine) | Non |
+| `ZCARD` | Tarif ZEN Card (Ẑen/semaine) | Non |
+| `TVA_RATE` | Taux de TVA (%) | Non |
+| `IS_RATE_REDUCED` | Taux IS réduit (%) | Non |
+| `IS_RATE_NORMAL` | Taux IS normal (%) | Non |
+| `ZENCARD_SATELLITE` | Prix part sociale Satellite (€) | Non |
+| `ZENCARD_CONSTELLATION` | Prix part sociale Constellation (€) | Non |
+| `TREASURY_PERCENT` | Part Trésorerie (%) | Non |
+| `RND_PERCENT` | Part R&D (%) | Non |
+| `ASSETS_PERCENT` | Part Actifs (%) | Non |
+| `OPENCOLLECTIVE_PERSONAL_TOKEN` | Token API OpenCollective | **Oui** (AES-256-CBC) |
+| `OPENCOLLECTIVE_API_KEY` | Clé API OpenCollective | **Oui** (AES-256-CBC) |
+| `PLANTNET_API_KEY` | Clé API PlantNet | **Oui** (AES-256-CBC) |
+
+**Sécurité :** Les valeurs sensibles (TOKEN, SECRET, KEY, PASSWORD, API) sont automatiquement chiffrées avec `$UPLANETNAME` (AES-256-CBC) avant publication sur NOSTR.
+
+**Utilisation :**
+```bash
+# Charger la configuration coopérative
+source ~/.zen/Astroport.ONE/tools/cooperative_config.sh
+
+# Récupérer une valeur (auto-déchiffrement)
+TVA=$(coop_config_get "TVA_RATE")
+
+# Définir une valeur (auto-chiffrement si sensible)
+coop_config_set "OPENCOLLECTIVE_PERSONAL_TOKEN" "votre_token"
+
+# Lister toutes les clés
+coop_config_list
+
+# Actualiser depuis le DID
+coop_config_refresh
+```
+
+Les portefeuilles sont initialisés automatiquement par `UPLANET.init.sh` avec source primale unique `UPLANETNAME_G1`.
 
 ### **NOUVEAUTÉS SYSTÈME**
 - **Burn 4-semaines** : NODE → UPLANETNAME_G1 → OpenCollective (56Ẑ toutes les 4 semaines)
@@ -269,6 +318,137 @@ Les variables (`PAF`, `TVA_RATE`, `MACHINE_VALUE_ZEN`, etc.) sont définies dans
 - **Gestion Essaim (Swarm)** : Portefeuilles partagés entre toutes les stations d'un même essaim
 - **Synchronisation Solaire** : Paiements décalés selon la longitude pour éviter les conflits
 - **Broadcast Nostr** : Diffusion de la santé économique vers la constellation (kind 30850)
+- **Configuration Coopérative DID** : Paramètres partagés via NOSTR (kind 30800) avec chiffrement automatique
+- **Assistant d'embarquement** : `uplanet_onboarding.sh` avec configuration rapide pour nouveaux capitaines
+- **Dashboard Capitaine** : `captain.sh` avec gestion centralisée de la configuration coopérative
+
+---
+
+### **🏴‍☠️ EMBARQUEMENT DU CAPITAINE**
+
+L'embarquement d'un nouveau capitaine est facilité par deux scripts complémentaires qui guident la configuration complète de la station.
+
+#### **Assistant d'Embarquement (`uplanet_onboarding.sh`)**
+
+Script interactif principal pour la configuration initiale :
+
+```bash
+~/.zen/Astroport.ONE/uplanet_onboarding.sh
+```
+
+**Options du menu :**
+- `1-9` : Étapes individuelles de configuration
+- `a` : **Embarquement complet automatique** (toutes les étapes)
+- `q` : **⚡ Configuration RAPIDE** (recommandé pour nouveaux capitaines)
+- `s` : Synchronisation configuration coopérative (DID)
+- `c` : Vérifier la configuration actuelle
+- `d` : Accès direct au Dashboard Capitaine
+
+**Mode Configuration Rapide (`q`) :**
+```
+1. Configuration économique (valeurs recommandées)
+   → PAF: 14 Ẑen/semaine, MULTIPASS: 1 Ẑen, ZEN Card: 4 Ẑen
+
+2. Détection automatique de la machine
+   → CPU, RAM, Disque → Valorisation automatique
+
+3. Détection du mode (ORIGIN/ẐEN)
+   → Selon présence de swarm.key
+
+4. Initialisation UPLANET
+   → Création des portefeuilles coopératifs
+
+5. Création compte Capitaine
+   → MULTIPASS + ZEN Card automatiques
+```
+
+#### **Dashboard Capitaine (`captain.sh`)**
+
+Interface de gestion quotidienne pour le capitaine :
+
+```bash
+~/.zen/Astroport.ONE/captain.sh
+```
+
+**Fonctionnalités principales :**
+- 📊 **Tableau de bord économique** : Soldes portefeuilles, statistiques utilisateurs
+- 🌐 **Économie de l'essaim** : État de toutes les stations du réseau
+- ⚙️ **Configuration coopérative (DID)** : Gestion des paramètres partagés
+- 🔐 **Clés API chiffrées** : Configuration OpenCollective, PlantNet
+- 📢 **Broadcast NOSTR** : Communication réseau
+
+**Menu Configuration Coopérative (`c`) :**
+```
+1. Lister toutes les clés de configuration
+2. Modifier une valeur
+3. Actualiser depuis le DID
+4. Publier config locale vers DID
+5. Configurer clé API (chiffrée)
+```
+
+#### **Flux d'Embarquement Recommandé**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    EMBARQUEMENT CAPITAINE                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  1. install.sh                                                   │
+│     └── Installation Astroport.ONE                               │
+│                                                                  │
+│  2. uplanet_onboarding.sh (option 'q' = rapide)                  │
+│     ├── Configuration économique                                 │
+│     ├── Valorisation machine                                     │
+│     ├── Choix mode ORIGIN/ẐEN                                    │
+│     └── Appel UPLANET.init.sh                                    │
+│                                                                  │
+│  3. UPLANET.init.sh (automatique)                                │
+│     ├── Création portefeuilles coopératifs                       │
+│     ├── Initialisation configuration DID                         │
+│     └── Appel captain.sh                                         │
+│                                                                  │
+│  4. captain.sh (automatique)                                     │
+│     ├── Création MULTIPASS                                       │
+│     ├── Création ZEN Card                                        │
+│     └── Inscription Armateur                                     │
+│                                                                  │
+│  ✅ Station opérationnelle !                                     │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### **Synchronisation Configuration Essaim**
+
+Toutes les stations d'un même essaim IPFS partagent la même configuration coopérative via le DID NOSTR :
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    ESSAIM IPFS (swarm.key)                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │          DID NOSTR UPLANETNAME_G1 (kind 30800)           │   │
+│  │          d-tag: "cooperative-config"                      │   │
+│  ├──────────────────────────────────────────────────────────┤   │
+│  │  NCARD=1, ZCARD=4, TVA_RATE=20.0, ...                    │   │
+│  │  OPENCOLLECTIVE_TOKEN=[chiffré]                          │   │
+│  │  PLANTNET_API_KEY=[chiffré]                              │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                           │                                      │
+│              ┌────────────┼────────────┐                         │
+│              ▼            ▼            ▼                         │
+│         Station A    Station B    Station C                      │
+│         (Paris)      (Lyon)       (Marseille)                    │
+│              │            │            │                         │
+│         .env local   .env local   .env local                     │
+│         PAF=14       PAF=12       PAF=16                         │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Règle de synchronisation :**
+- **Paramètres coopératifs** (NCARD, ZCARD, TVA, etc.) → DID NOSTR (partagés)
+- **Paramètres locaux** (PAF, endpoints, audio) → `.env` local (spécifiques)
 
 ---
 

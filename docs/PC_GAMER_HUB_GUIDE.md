@@ -1407,8 +1407,36 @@ Et TU es payé pour faire tourner le truc.
 git clone https://github.com/papinou/Astroport.ONE.git
 cd Astroport.ONE && ./install.sh
 
-# 3. Contacter support@qo-op.com pour rejoindre l'essaim ẐEN[0]
+# 3. Lance l'assistant d'embarquement
+~/.zen/Astroport.ONE/uplanet_onboarding.sh
+# → Option 'q' pour configuration RAPIDE (recommandé)
+# → Ou option 'a' pour embarquement complet guidé
+
+# 4. Utilise le Dashboard Capitaine pour gérer ta station
+~/.zen/Astroport.ONE/captain.sh
+# → Tableau de bord économique
+# → Gestion configuration coopérative
+# → Monitoring de l'essaim
 ```
+
+#### Configuration Rapide (Option `q`)
+
+L'assistant d'embarquement propose une **configuration rapide** qui :
+- ✅ Applique les paramètres économiques recommandés
+- ✅ Détecte et valorise automatiquement ta machine
+- ✅ Initialise les portefeuilles coopératifs
+- ✅ Crée ton compte Capitaine (MULTIPASS + ZEN Card)
+
+**Temps estimé : 5 minutes** au lieu de 30 min en mode manuel.
+
+#### Dashboard Capitaine
+
+Après l'embarquement, utilise `captain.sh` pour :
+- 📊 Voir les soldes de tous les portefeuilles
+- 🌐 Surveiller l'état de l'essaim
+- ⚙️ Configurer les paramètres coopératifs (partagés via DID NOSTR)
+- 🔐 Gérer les clés API (chiffrées automatiquement)
+- 📢 Communiquer avec les utilisateurs via NOSTR
 
 ### Besoin d'aide ?
 

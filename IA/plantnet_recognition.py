@@ -25,6 +25,43 @@ sys.path.append(f'{HOME_DIR}/.zen/Astroport.ONE/tools')
 # Load environment variables
 load_dotenv(f'{HOME_DIR}/.zen/Astroport.ONE/.env')
 
+def get_cooperative_config_value(key):
+    """Get a value from cooperative DID config (NOSTR kind 30800)
+    
+    Tries to read from local cache first, falls back to calling cooperative_config.sh
+    Values containing TOKEN, SECRET, KEY, PASSWORD, API are encrypted with UPLANETNAME
+    """
+    try:
+        # Try local cache first (faster)
+        cache_file = f'{HOME_DIR}/.zen/tmp/cooperative_config.cache.json'
+        if os.path.exists(cache_file):
+            with open(cache_file, 'r') as f:
+                config = json.load(f)
+                encrypted_value = config.get(key, '')
+                
+                if encrypted_value and ':' in encrypted_value:
+                    # Value is encrypted - use bash helper to decrypt
+                    result = subprocess.run(
+                        ['bash', '-c', f'source {HOME_DIR}/.zen/Astroport.ONE/tools/cooperative_config.sh && coop_config_get "{key}"'],
+                        capture_output=True, text=True, timeout=10
+                    )
+                    if result.returncode == 0 and result.stdout.strip():
+                        return result.stdout.strip()
+                elif encrypted_value:
+                    return encrypted_value
+        
+        # Fallback: call cooperative_config.sh directly
+        result = subprocess.run(
+            ['bash', '-c', f'source {HOME_DIR}/.zen/Astroport.ONE/tools/cooperative_config.sh && coop_config_get "{key}"'],
+            capture_output=True, text=True, timeout=15
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    except Exception as e:
+        pass  # Silent fail, will use environment fallback
+    
+    return None
+
 def log_message(message):
     """Log message to UPlanet log file"""
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -72,10 +109,13 @@ def download_image(image_url):
 def call_plantnet_api(image_data):
     """Call PlantNet API for plant recognition"""
     try:
-        # Get API key from environment
-        api_key = os.getenv('PLANTNET_API_KEY')
+        # Get API key from cooperative DID config first, then fallback to environment
+        api_key = get_cooperative_config_value('PLANTNET_API_KEY')
         if not api_key:
-            log_message("PLANTNET_API_KEY not found in environment variables")
+            api_key = os.getenv('PLANTNET_API_KEY')
+        if not api_key:
+            log_message("PLANTNET_API_KEY not found in cooperative DID config or environment variables")
+            log_message("Configure via: coop_config_set PLANTNET_API_KEY 'your_key'")
             return None
         
         # Validate API key format (should be a string)

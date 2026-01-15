@@ -28,6 +28,15 @@ NC='\033[0m' # No Color
 # Configuration
 ENV_FILE="$HOME/.zen/Astroport.ONE/.env"
 ENV_TEMPLATE="$MY_PATH/.env.template"
+COOP_CONFIG_HELPER="$MY_PATH/tools/cooperative_config.sh"
+
+# Source cooperative config helper if available
+if [[ -f "$COOP_CONFIG_HELPER" ]]; then
+    source "$COOP_CONFIG_HELPER" 2>/dev/null || true
+    COOP_CONFIG_AVAILABLE=true
+else
+    COOP_CONFIG_AVAILABLE=false
+fi
 
 ################################################################################
 # Fonctions utilitaires
@@ -250,6 +259,100 @@ step_economic_configuration() {
     echo -e "   • MULTIPASS: ${YELLOW}$new_ncard Ẑen/semaine${NC} (vos revenus)"
     echo -e "   • ZEN Card: ${YELLOW}$new_zcard Ẑen/semaine${NC} (vos revenus)"
     echo -e "   • Bénéfice potentiel: ${GREEN}$(echo "($new_ncard + $new_zcard) - $new_paf" | bc) Ẑen/semaine${NC} (par utilisateur)"
+    echo ""
+}
+
+# Étape 2b: Synchronisation de la configuration coopérative avec le DID
+step_sync_cooperative_config() {
+    print_section "SYNCHRONISATION CONFIGURATION COOPÉRATIVE"
+    
+    if [[ "$COOP_CONFIG_AVAILABLE" != "true" ]]; then
+        print_warning "Configuration coopérative DID non disponible"
+        echo -e "${YELLOW}Le système de configuration DID n'est pas encore initialisé.${NC}"
+        echo -e "${CYAN}Il sera configuré automatiquement lors de l'initialisation UPLANET.${NC}"
+        return 0
+    fi
+    
+    # Vérifier si la configuration DID existe
+    if ! coop_config_exists 2>/dev/null; then
+        print_info "Configuration coopérative DID non encore créée"
+        echo -e "${CYAN}Elle sera initialisée lors de UPLANET.init.sh${NC}"
+        return 0
+    fi
+    
+    echo -e "${BLUE}🔄 La configuration coopérative permet de partager les paramètres${NC}"
+    echo -e "${BLUE}   économiques avec toutes les stations de l'essaim IPFS.${NC}"
+    echo ""
+    
+    # Lire la configuration locale
+    local local_paf=$(grep "^PAF=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2 || echo "")
+    local local_ncard=$(grep "^NCARD=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2 || echo "")
+    local local_zcard=$(grep "^ZCARD=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2 || echo "")
+    local local_tva=$(grep "^TVA_RATE=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2 || echo "")
+    
+    # Lire la configuration DID (si existante)
+    local did_ncard=$(coop_config_get "NCARD" 2>/dev/null || echo "")
+    local did_zcard=$(coop_config_get "ZCARD" 2>/dev/null || echo "")
+    local did_tva=$(coop_config_get "TVA_RATE" 2>/dev/null || echo "")
+    
+    echo -e "${CYAN}Paramètres coopératifs (partagés via DID NOSTR):${NC}"
+    echo -e "  • NCARD (MULTIPASS): ${YELLOW}local=$local_ncard${NC} | ${GREEN}DID=$did_ncard${NC}"
+    echo -e "  • ZCARD (ZEN Card): ${YELLOW}local=$local_zcard${NC} | ${GREEN}DID=$did_zcard${NC}"
+    echo -e "  • TVA_RATE: ${YELLOW}local=$local_tva${NC} | ${GREEN}DID=$did_tva${NC}"
+    echo ""
+    echo -e "${CYAN}Paramètres locaux (spécifiques à cette station):${NC}"
+    echo -e "  • PAF: ${YELLOW}$local_paf Ẑen/semaine${NC} (coûts personnels)"
+    echo ""
+    
+    # Si les valeurs DID diffèrent des valeurs locales, proposer sync
+    local need_sync=false
+    if [[ -n "$did_ncard" && "$did_ncard" != "$local_ncard" ]]; then
+        need_sync=true
+    fi
+    if [[ -n "$did_zcard" && "$did_zcard" != "$local_zcard" ]]; then
+        need_sync=true
+    fi
+    
+    if [[ "$need_sync" == "true" ]]; then
+        print_warning "Différence détectée entre config locale et coopérative"
+        echo -e "${YELLOW}Voulez-vous synchroniser avec la configuration coopérative ?${NC}"
+        read -p "(o/N): " sync_choice
+        
+        if [[ "$sync_choice" == "o" || "$sync_choice" == "O" ]]; then
+            # Mettre à jour .env avec les valeurs DID
+            if [[ -n "$did_ncard" ]]; then
+                sed -i "s/^NCARD=.*/NCARD=$did_ncard/" "$ENV_FILE"
+                print_success "NCARD synchronisé: $did_ncard"
+            fi
+            if [[ -n "$did_zcard" ]]; then
+                sed -i "s/^ZCARD=.*/ZCARD=$did_zcard/" "$ENV_FILE"
+                print_success "ZCARD synchronisé: $did_zcard"
+            fi
+            if [[ -n "$did_tva" ]]; then
+                sed -i "s/^TVA_RATE=.*/TVA_RATE=$did_tva/" "$ENV_FILE"
+                print_success "TVA_RATE synchronisé: $did_tva"
+            fi
+        else
+            print_info "Conservation de la configuration locale"
+        fi
+    elif [[ -z "$did_ncard" && -n "$local_ncard" ]]; then
+        # Config locale existe mais pas de DID - proposer de publier
+        echo -e "${YELLOW}Aucune configuration coopérative trouvée dans le DID.${NC}"
+        echo -e "${CYAN}Voulez-vous publier votre configuration locale vers le DID ?${NC}"
+        read -p "(o/N): " publish_choice
+        
+        if [[ "$publish_choice" == "o" || "$publish_choice" == "O" ]]; then
+            # Publier vers le DID
+            coop_config_set "NCARD" "$local_ncard" 2>/dev/null && print_success "NCARD publié: $local_ncard" || true
+            coop_config_set "ZCARD" "$local_zcard" 2>/dev/null && print_success "ZCARD publié: $local_zcard" || true
+            coop_config_set "TVA_RATE" "$local_tva" 2>/dev/null && print_success "TVA_RATE publié: $local_tva" || true
+            
+            print_success "Configuration publiée vers le DID coopératif"
+        fi
+    else
+        print_success "Configuration synchronisée avec le DID coopératif"
+    fi
+    
     echo ""
 }
 
@@ -1088,7 +1191,10 @@ show_menu() {
     echo -e "  9. 📋 Résumé et finalisation"
     echo ""
     echo -e "  ${GREEN}a${NC}. 🚀 Embarquement complet automatique"
+    echo -e "  ${GREEN}q${NC}. ⚡ Configuration RAPIDE (nouveaux capitaines)"
+    echo -e "  ${GREEN}s${NC}. 🔄 Sync configuration coopérative (DID)"
     echo -e "  ${GREEN}c${NC}. 📊 Vérifier la configuration actuelle"
+    echo -e "  ${GREEN}d${NC}. 👨‍✈️ Dashboard Capitaine (captain.sh)"
     echo -e "  ${GREEN}0${NC}. ❌ Quitter"
     echo ""
     
@@ -1108,6 +1214,7 @@ show_menu() {
             echo -e "${CYAN}🚀 Embarquement complet automatique...${NC}"
             step_introduction && \
             step_economic_configuration && \
+            step_sync_cooperative_config && \
             step_machine_valuation && \
             step_uplanet_mode_choice && \
             step_network_configuration && \
@@ -1116,18 +1223,25 @@ show_menu() {
             step_captain_onboarding && \
             step_final_summary
             ;;
-        c|C)
-            print_section "CONFIGURATION ACTUELLE"
-            if [[ -f "$ENV_FILE" ]]; then
-                echo -e "${GREEN}Fichier de configuration: $ENV_FILE${NC}"
-                echo ""
-                grep -E "^(PAF|NCARD|ZCARD|MACHINE_VALUE_ZEN|MACHINE_TYPE)=" "$ENV_FILE" 2>/dev/null || echo "Configuration de base non trouvée"
-            else
-                echo -e "${YELLOW}Aucune configuration trouvée${NC}"
-            fi
-            echo ""
+        q|Q)
+            quick_setup_wizard
+            ;;
+        s|S)
+            step_sync_cooperative_config
             read -p "Appuyez sur Entrée pour continuer..."
             show_menu
+            ;;
+        c|C)
+            show_current_configuration
+            read -p "Appuyez sur Entrée pour continuer..."
+            show_menu
+            ;;
+        d|D)
+            if [[ -f "$MY_PATH/captain.sh" ]]; then
+                "$MY_PATH/captain.sh"
+            else
+                print_error "captain.sh non trouvé"
+            fi
             ;;
         0)
             echo -e "${GREEN}Au revoir ! Vous pouvez relancer cet assistant à tout moment.${NC}"
@@ -1139,6 +1253,203 @@ show_menu() {
             show_menu
             ;;
     esac
+}
+
+# Quick Setup Wizard for new captains
+quick_setup_wizard() {
+    print_header
+    print_section "⚡ CONFIGURATION RAPIDE - NOUVEAU CAPITAINE"
+    
+    echo -e "${GREEN}🎉 Bienvenue ! Ce mode simplifié configure tout automatiquement.${NC}"
+    echo ""
+    echo -e "${CYAN}Nous allons:${NC}"
+    echo "  1. Configurer les paramètres économiques (valeurs recommandées)"
+    echo "  2. Détecter et valoriser votre machine"
+    echo "  3. Initialiser l'infrastructure UPlanet"
+    echo "  4. Créer votre compte Capitaine (MULTIPASS + ZEN Card)"
+    echo ""
+    
+    read -p "Commencer la configuration rapide ? (O/n): " start_quick
+    if [[ "$start_quick" == "n" || "$start_quick" == "N" ]]; then
+        show_menu
+        return
+    fi
+    
+    echo ""
+    
+    # Étape 1: Configuration économique avec valeurs par défaut
+    print_info "📦 Configuration économique avec valeurs recommandées..."
+    
+    # Copier le template si nécessaire
+    if [[ ! -f "$ENV_FILE" ]]; then
+        if [[ -f "$ENV_TEMPLATE" ]]; then
+            cp "$ENV_TEMPLATE" "$ENV_FILE"
+        fi
+    fi
+    
+    # Appliquer les valeurs par défaut
+    sed -i "s/^PAF=.*/PAF=14/" "$ENV_FILE" 2>/dev/null || true
+    sed -i "s/^NCARD=.*/NCARD=1/" "$ENV_FILE" 2>/dev/null || true
+    sed -i "s/^ZCARD=.*/ZCARD=4/" "$ENV_FILE" 2>/dev/null || true
+    sed -i "s/^TVA_RATE=.*/TVA_RATE=20.0/" "$ENV_FILE" 2>/dev/null || true
+    
+    echo -e "${GREEN}✅ Configuration économique appliquée:${NC}"
+    echo -e "   • PAF: ${YELLOW}14 Ẑen/semaine${NC}"
+    echo -e "   • MULTIPASS: ${YELLOW}1 Ẑen/semaine${NC}"
+    echo -e "   • ZEN Card: ${YELLOW}4 Ẑen/semaine${NC}"
+    echo ""
+    
+    # Étape 2: Détection et valorisation automatique de la machine
+    print_info "💻 Détection automatique de votre machine..."
+    
+    local resources=$(detect_system_resources)
+    local cpu_cores=$(echo "$resources" | cut -d'|' -f1)
+    local ram_gb=$(echo "$resources" | cut -d'|' -f2)
+    local disk_gb=$(echo "$resources" | cut -d'|' -f3)
+    
+    echo -e "${BLUE}Ressources détectées:${NC}"
+    echo -e "   • CPU: ${CYAN}$cpu_cores cœurs${NC}"
+    echo -e "   • RAM: ${CYAN}$ram_gb Go${NC}"
+    echo -e "   • Disque: ${CYAN}$disk_gb Go${NC}"
+    
+    # Suggestion automatique du type de machine
+    local machine_value="500"
+    local machine_type="Satellite"
+    
+    if [[ $cpu_cores -ge 8 && $ram_gb -ge 16 ]]; then
+        machine_value="8000"
+        machine_type="Serveur Pro"
+    elif [[ $cpu_cores -ge 4 && $ram_gb -ge 8 ]]; then
+        machine_value="4000"
+        machine_type="PC Gamer"
+    fi
+    
+    echo -e "${GREEN}✅ Machine valorisée: ${YELLOW}$machine_type${NC} (${CYAN}$machine_value Ẑen${NC})"
+    
+    # Mettre à jour .env
+    sed -i "s/^MACHINE_VALUE_ZEN=.*/MACHINE_VALUE_ZEN=$machine_value/" "$ENV_FILE" 2>/dev/null || true
+    sed -i "s/^MACHINE_TYPE=.*/MACHINE_TYPE=\"$machine_type\"/" "$ENV_FILE" 2>/dev/null || true
+    echo ""
+    
+    # Étape 3: Mode ORIGIN par défaut (plus simple pour débutants)
+    UPLANET_MODE="origin"
+    
+    # Vérifier si swarm.key existe (si oui, on est en mode ẐEN)
+    if [[ -f "$HOME/.ipfs/swarm.key" ]]; then
+        UPLANET_MODE="zen"
+        echo -e "${GREEN}✅ Mode ${YELLOW}ẐEN${NC} détecté (swarm.key présente)"
+    else
+        echo -e "${GREEN}✅ Mode ${YELLOW}ORIGIN${NC} (réseau public)"
+    fi
+    echo ""
+    
+    # Étape 4: Initialisation UPLANET
+    print_info "🏛️  Initialisation de l'infrastructure UPLANET..."
+    
+    if [[ -f "$MY_PATH/UPLANET.init.sh" ]]; then
+        if "$MY_PATH/UPLANET.init.sh" --quick 2>/dev/null || "$MY_PATH/UPLANET.init.sh"; then
+            echo -e "${GREEN}✅ Infrastructure UPLANET initialisée${NC}"
+        else
+            print_warning "⚠️  Initialisation UPLANET partielle (continuez manuellement si nécessaire)"
+        fi
+    else
+        print_warning "⚠️  UPLANET.init.sh non trouvé"
+    fi
+    echo ""
+    
+    # Étape 5: Embarquement capitaine via captain.sh
+    print_info "🏴‍☠️ Création de votre compte Capitaine..."
+    echo ""
+    
+    if [[ -f "$MY_PATH/captain.sh" ]]; then
+        # Lancer captain.sh en mode auto si possible
+        "$MY_PATH/captain.sh" --auto 2>/dev/null || "$MY_PATH/captain.sh"
+    else
+        print_error "captain.sh non trouvé"
+        return 1
+    fi
+    
+    # Résumé final
+    print_section "⚡ CONFIGURATION RAPIDE TERMINÉE"
+    echo -e "${GREEN}🎉 Votre station est prête !${NC}"
+    echo ""
+    show_current_configuration
+}
+
+# Show current configuration (local + DID)
+show_current_configuration() {
+    print_section "CONFIGURATION ACTUELLE"
+    
+    echo -e "${CYAN}📄 Configuration locale (.env):${NC}"
+    if [[ -f "$ENV_FILE" ]]; then
+        echo -e "${GREEN}Fichier: $ENV_FILE${NC}"
+        echo ""
+        grep -E "^(PAF|NCARD|ZCARD|MACHINE_VALUE_ZEN|MACHINE_TYPE|TVA_RATE)=" "$ENV_FILE" 2>/dev/null | while read line; do
+            local key=$(echo "$line" | cut -d'=' -f1)
+            local value=$(echo "$line" | cut -d'=' -f2 | tr -d '"')
+            echo -e "   • $key: ${YELLOW}$value${NC}"
+        done
+    else
+        echo -e "${YELLOW}Aucune configuration locale trouvée${NC}"
+    fi
+    echo ""
+    
+    # Afficher la configuration DID si disponible
+    if [[ "$COOP_CONFIG_AVAILABLE" == "true" ]]; then
+        echo -e "${CYAN}🔗 Configuration coopérative (DID NOSTR):${NC}"
+        
+        # Vérifier si le DID existe
+        if coop_config_exists 2>/dev/null; then
+            echo -e "${GREEN}DID coopératif configuré${NC}"
+            
+            # Afficher quelques valeurs clés
+            local keys=("NCARD" "ZCARD" "TVA_RATE" "IS_RATE_REDUCED" "IS_RATE_NORMAL" "ZENCARD_SATELLITE" "ZENCARD_CONSTELLATION")
+            for key in "${keys[@]}"; do
+                local value=$(coop_config_get "$key" 2>/dev/null)
+                if [[ -n "$value" ]]; then
+                    echo -e "   • $key: ${GREEN}$value${NC}"
+                fi
+            done
+        else
+            echo -e "${YELLOW}DID coopératif non encore initialisé${NC}"
+            echo -e "   (Sera créé lors de UPLANET.init.sh)"
+        fi
+    else
+        echo -e "${YELLOW}Système de configuration coopérative non disponible${NC}"
+    fi
+    echo ""
+    
+    # Afficher l'état des portefeuilles si disponibles
+    echo -e "${CYAN}💰 État des portefeuilles:${NC}"
+    
+    local wallets=(
+        "uplanet.G1.dunikey:UPLANETNAME_G1 (Réserve)"
+        "uplanet.dunikey:UPLANETNAME (Services)"
+        "uplanet.SOCIETY.dunikey:UPLANETNAME_SOCIETY (Capital Social)"
+        "secret.NODE.dunikey:NODE (Armateur)"
+    )
+    
+    for wallet_info in "${wallets[@]}"; do
+        local wallet_file=$(echo "$wallet_info" | cut -d':' -f1)
+        local wallet_name=$(echo "$wallet_info" | cut -d':' -f2)
+        
+        if [[ -f "$HOME/.zen/game/$wallet_file" ]]; then
+            echo -e "   • $wallet_name: ${GREEN}✅ Configuré${NC}"
+        else
+            echo -e "   • $wallet_name: ${YELLOW}❌ Non initialisé${NC}"
+        fi
+    done
+    echo ""
+    
+    # Afficher l'état du capitaine
+    echo -e "${CYAN}👨‍✈️ Capitaine:${NC}"
+    if [[ -L "$HOME/.zen/game/players/.current" ]] && [[ -f "$HOME/.zen/game/players/.current/.player" ]]; then
+        local captain=$(cat "$HOME/.zen/game/players/.current/.player" 2>/dev/null)
+        echo -e "   • Capitaine actuel: ${GREEN}$captain${NC}"
+    else
+        echo -e "   • ${YELLOW}Aucun capitaine configuré${NC}"
+    fi
+    echo ""
 }
 
 ################################################################################

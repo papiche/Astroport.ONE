@@ -23,6 +23,15 @@ ME="${0##*/}"
 # Chargement des variables d'environnement
 . "${MY_PATH}/tools/my.sh"
 
+# Chargement de la configuration coopérative (DID NOSTR)
+COOP_CONFIG_HELPER="${MY_PATH}/tools/cooperative_config.sh"
+if [[ -f "$COOP_CONFIG_HELPER" ]]; then
+    source "$COOP_CONFIG_HELPER" 2>/dev/null || true
+    COOP_CONFIG_AVAILABLE=true
+else
+    COOP_CONFIG_AVAILABLE=false
+fi
+
 # Configuration des couleurs
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -420,6 +429,50 @@ get_society_data() {
     fi
 }
 
+# Fonction pour afficher le statut de la configuration coopérative
+show_cooperative_config_status() {
+    if [[ "$COOP_CONFIG_AVAILABLE" != "true" ]]; then
+        return
+    fi
+    
+    # Vérifier rapidement l'état de la configuration DID
+    local config_ok=true
+    local missing_keys=0
+    local configured_apis=0
+    
+    # Vérifier les clés essentielles
+    local essential_keys=("NCARD" "ZCARD" "TVA_RATE")
+    for key in "${essential_keys[@]}"; do
+        local value=$(coop_config_get "$key" 2>/dev/null)
+        if [[ -z "$value" ]]; then
+            missing_keys=$((missing_keys + 1))
+            config_ok=false
+        fi
+    done
+    
+    # Vérifier les APIs configurées
+    local api_keys=("OPENCOLLECTIVE_PERSONAL_TOKEN" "PLANTNET_API_KEY")
+    for key in "${api_keys[@]}"; do
+        local value=$(coop_config_get "$key" 2>/dev/null)
+        if [[ -n "$value" ]]; then
+            configured_apis=$((configured_apis + 1))
+        fi
+    done
+    
+    # Afficher un résumé compact
+    if [[ "$config_ok" == "true" ]]; then
+        if [[ $configured_apis -gt 0 ]]; then
+            echo -e "${GREEN}⚙️  Config coopérative DID: ✅ OK (${configured_apis} API configurées)${NC}"
+        else
+            echo -e "${GREEN}⚙️  Config coopérative DID: ✅ OK${NC} ${YELLOW}(APIs non configurées)${NC}"
+        fi
+    else
+        echo -e "${YELLOW}⚙️  Config coopérative DID: ⚠️  ${missing_keys} paramètres manquants${NC}"
+        echo -e "   ${CYAN}→ Utilisez 'c' pour configurer${NC}"
+    fi
+    echo ""
+}
+
 # Fonction pour afficher un résumé rapide de la santé de l'essaim
 show_quick_swarm_health() {
     local swarm_cache="$HOME/.zen/tmp/swarm"
@@ -747,6 +800,9 @@ show_captain_dashboard() {
     
     # Résumé rapide de l'état de l'essaim
     show_quick_swarm_health
+    
+    # Statut de la configuration coopérative DID
+    show_cooperative_config_status
     
     # Afficher le diagramme de flux économique
     show_economic_flow_diagram
@@ -1120,6 +1176,237 @@ show_swarm_economy() {
     fi
 }
 
+# Fonction pour afficher et gérer la configuration coopérative
+show_cooperative_config_menu() {
+    print_header "CONFIGURATION COOPÉRATIVE (DID NOSTR)"
+    
+    if [[ "$COOP_CONFIG_AVAILABLE" != "true" ]]; then
+        print_error "Système de configuration coopérative non disponible"
+        echo -e "${YELLOW}Le fichier cooperative_config.sh n'est pas trouvé.${NC}"
+        read -p "Appuyez sur ENTRÉE pour continuer..."
+        show_captain_dashboard
+        return
+    fi
+    
+    print_section "PARAMÈTRES COOPÉRATIFS (PARTAGÉS VIA DID)"
+    
+    echo -e "${CYAN}Ces paramètres sont partagés entre toutes les stations de l'essaim.${NC}"
+    echo -e "${CYAN}Ils sont stockés dans le DID NOSTR de UPLANETNAME_G1 (kind 30800).${NC}"
+    echo -e "${CYAN}Les valeurs sensibles sont chiffrées avec \$UPLANETNAME.${NC}"
+    echo ""
+    
+    # Vérifier si la configuration DID existe
+    if coop_config_exists 2>/dev/null; then
+        echo -e "${GREEN}✅ Configuration coopérative DID active${NC}"
+        echo ""
+        
+        # Afficher les paramètres économiques
+        echo -e "${BLUE}📊 Paramètres économiques:${NC}"
+        local econ_keys=("NCARD" "ZCARD" "TVA_RATE" "IS_RATE_REDUCED" "IS_RATE_NORMAL" "IS_THRESHOLD")
+        for key in "${econ_keys[@]}"; do
+            local value=$(coop_config_get "$key" 2>/dev/null)
+            if [[ -n "$value" ]]; then
+                echo -e "   • $key: ${GREEN}$value${NC}"
+            else
+                echo -e "   • $key: ${YELLOW}(non défini)${NC}"
+            fi
+        done
+        echo ""
+        
+        # Afficher les paramètres de parts sociales
+        echo -e "${BLUE}⭐ Parts sociales:${NC}"
+        local society_keys=("ZENCARD_SATELLITE" "ZENCARD_CONSTELLATION")
+        for key in "${society_keys[@]}"; do
+            local value=$(coop_config_get "$key" 2>/dev/null)
+            if [[ -n "$value" ]]; then
+                echo -e "   • $key: ${GREEN}$value${NC}"
+            else
+                echo -e "   • $key: ${YELLOW}(non défini)${NC}"
+            fi
+        done
+        echo ""
+        
+        # Afficher les règles 3x1/3
+        echo -e "${BLUE}🤝 Règle 3x1/3 (répartition surplus):${NC}"
+        local rule_keys=("TREASURY_PERCENT" "RND_PERCENT" "ASSETS_PERCENT")
+        for key in "${rule_keys[@]}"; do
+            local value=$(coop_config_get "$key" 2>/dev/null)
+            if [[ -n "$value" ]]; then
+                echo -e "   • $key: ${GREEN}$value%${NC}"
+            else
+                echo -e "   • $key: ${YELLOW}(non défini)${NC}"
+            fi
+        done
+        echo ""
+        
+        # Statut des clés API (masquées)
+        echo -e "${BLUE}🔐 Clés API (chiffrées):${NC}"
+        local api_keys=("OPENCOLLECTIVE_PERSONAL_TOKEN" "OPENCOLLECTIVE_API_KEY" "PLANTNET_API_KEY")
+        for key in "${api_keys[@]}"; do
+            local value=$(coop_config_get "$key" 2>/dev/null)
+            if [[ -n "$value" && "$value" != "" ]]; then
+                echo -e "   • $key: ${GREEN}✅ Configurée${NC}"
+            else
+                echo -e "   • $key: ${YELLOW}❌ Non configurée${NC}"
+            fi
+        done
+        echo ""
+    else
+        echo -e "${YELLOW}⚠️  Configuration coopérative DID non initialisée${NC}"
+        echo -e "${CYAN}Lancez UPLANET.init.sh pour initialiser la configuration.${NC}"
+        echo ""
+    fi
+    
+    # Menu d'actions
+    echo -e "${WHITE}Actions disponibles:${NC}"
+    echo ""
+    echo -e "${GREEN}1. 📋 Lister toutes les clés de configuration${NC}"
+    echo -e "${GREEN}2. ✏️  Modifier une valeur${NC}"
+    echo -e "${GREEN}3. 🔄 Actualiser depuis le DID${NC}"
+    echo -e "${GREEN}4. 📤 Publier config locale vers DID${NC}"
+    echo -e "${GREEN}5. 🔐 Configurer clé API (chiffrée)${NC}"
+    echo -e "${GREEN}0. ⬅️  Retour au tableau de bord${NC}"
+    echo ""
+    
+    read -p "Votre choix: " config_choice
+    
+    case $config_choice in
+        1)
+            print_section "TOUTES LES CLÉS DE CONFIGURATION"
+            coop_config_list 2>/dev/null || echo "Impossible de lister la configuration"
+            read -p "Appuyez sur ENTRÉE pour continuer..."
+            show_cooperative_config_menu
+            ;;
+        2)
+            echo ""
+            read -p "Nom de la clé à modifier: " key_name
+            read -p "Nouvelle valeur: " key_value
+            if [[ -n "$key_name" && -n "$key_value" ]]; then
+                if coop_config_set "$key_name" "$key_value" 2>/dev/null; then
+                    print_success "Valeur '$key_name' mise à jour: $key_value"
+                else
+                    print_error "Erreur lors de la mise à jour"
+                fi
+            else
+                print_error "Clé ou valeur vide"
+            fi
+            read -p "Appuyez sur ENTRÉE pour continuer..."
+            show_cooperative_config_menu
+            ;;
+        3)
+            print_info "Actualisation depuis le DID..."
+            coop_config_refresh 2>/dev/null && print_success "Configuration actualisée" || print_error "Erreur d'actualisation"
+            read -p "Appuyez sur ENTRÉE pour continuer..."
+            show_cooperative_config_menu
+            ;;
+        4)
+            publish_local_config_to_did
+            read -p "Appuyez sur ENTRÉE pour continuer..."
+            show_cooperative_config_menu
+            ;;
+        5)
+            configure_api_key
+            read -p "Appuyez sur ENTRÉE pour continuer..."
+            show_cooperative_config_menu
+            ;;
+        0)
+            show_captain_dashboard
+            return
+            ;;
+        *)
+            print_error "Choix invalide"
+            sleep 1
+            show_cooperative_config_menu
+            ;;
+    esac
+}
+
+# Fonction pour publier la config locale vers le DID
+publish_local_config_to_did() {
+    print_section "PUBLICATION CONFIG LOCALE → DID"
+    
+    local env_file="$HOME/.zen/Astroport.ONE/.env"
+    
+    if [[ ! -f "$env_file" ]]; then
+        print_error "Fichier .env non trouvé"
+        return 1
+    fi
+    
+    echo -e "${CYAN}Paramètres à publier depuis .env:${NC}"
+    
+    local keys_to_publish=("NCARD" "ZCARD" "TVA_RATE" "IS_RATE_REDUCED" "IS_RATE_NORMAL" "IS_THRESHOLD" "ZENCARD_SATELLITE" "ZENCARD_CONSTELLATION" "TREASURY_PERCENT" "RND_PERCENT" "ASSETS_PERCENT")
+    
+    for key in "${keys_to_publish[@]}"; do
+        local value=$(grep "^$key=" "$env_file" 2>/dev/null | cut -d'=' -f2)
+        if [[ -n "$value" ]]; then
+            echo -e "   • $key: ${YELLOW}$value${NC}"
+        fi
+    done
+    echo ""
+    
+    read -p "Confirmer la publication vers le DID ? (oui/non): " confirm
+    if [[ "$confirm" == "oui" || "$confirm" == "o" ]]; then
+        for key in "${keys_to_publish[@]}"; do
+            local value=$(grep "^$key=" "$env_file" 2>/dev/null | cut -d'=' -f2)
+            if [[ -n "$value" ]]; then
+                if coop_config_set "$key" "$value" 2>/dev/null; then
+                    echo -e "${GREEN}✅ $key${NC}"
+                else
+                    echo -e "${RED}❌ $key${NC}"
+                fi
+            fi
+        done
+        print_success "Publication terminée"
+    else
+        print_info "Publication annulée"
+    fi
+}
+
+# Fonction pour configurer une clé API (chiffrée)
+configure_api_key() {
+    print_section "CONFIGURATION CLÉ API (CHIFFRÉE)"
+    
+    echo -e "${CYAN}Les clés API sont automatiquement chiffrées avec \$UPLANETNAME.${NC}"
+    echo ""
+    echo -e "${WHITE}Clés API disponibles:${NC}"
+    echo "  1. OPENCOLLECTIVE_PERSONAL_TOKEN"
+    echo "  2. OPENCOLLECTIVE_API_KEY"
+    echo "  3. PLANTNET_API_KEY"
+    echo "  4. Autre (personnalisée)"
+    echo ""
+    
+    read -p "Votre choix: " api_choice
+    
+    local key_name=""
+    case $api_choice in
+        1) key_name="OPENCOLLECTIVE_PERSONAL_TOKEN" ;;
+        2) key_name="OPENCOLLECTIVE_API_KEY" ;;
+        3) key_name="PLANTNET_API_KEY" ;;
+        4) 
+            read -p "Nom de la clé API: " key_name
+            ;;
+        *) 
+            print_error "Choix invalide"
+            return 1
+            ;;
+    esac
+    
+    echo ""
+    echo -e "${YELLOW}⚠️  Saisissez la valeur (elle ne sera pas affichée):${NC}"
+    read -s -p "$key_name: " key_value
+    echo ""
+    
+    if [[ -n "$key_value" ]]; then
+        if coop_config_set "$key_name" "$key_value" 2>/dev/null; then
+            print_success "Clé API '$key_name' configurée et chiffrée"
+        else
+            print_error "Erreur lors de la configuration"
+        fi
+    else
+        print_error "Valeur vide"
+    fi
+}
+
 # Fonction pour afficher le menu de navigation du capitaine
 show_captain_navigation_menu() {
     print_section "NAVIGATION DU CAPITAINE"
@@ -1181,6 +1468,18 @@ show_captain_navigation_menu() {
     echo -e "   • Diffusion d'annonces importantes"
     echo ""
     
+    echo -e "${GREEN}c. ⚙️  Configuration Coopérative (DID)${NC}"
+    echo -e "   • Paramètres partagés entre stations"
+    echo -e "   • Clés API chiffrées (OpenCollective, PlantNet)"
+    echo -e "   • Règles économiques de l'essaim"
+    echo ""
+    
+    echo -e "${GREEN}u. 🚀 Assistant UPlanet (onboarding)${NC}"
+    echo -e "   • Configuration complète de la station"
+    echo -e "   • Valorisation machine et économie"
+    echo -e "   • Mode ORIGIN/ẐEN"
+    echo ""
+    
     echo -e "${GREEN}0. ❌ Quitter${NC}"
     echo ""
     
@@ -1221,6 +1520,20 @@ show_captain_navigation_menu() {
             ;;
         9)
             show_nostr_broadcast_menu
+            ;;
+        c|C)
+            show_cooperative_config_menu
+            ;;
+        u|U)
+            if [[ -f "${MY_PATH}/uplanet_onboarding.sh" ]]; then
+                print_info "Lancement de l'assistant UPlanet..."
+                echo ""
+                "${MY_PATH}/uplanet_onboarding.sh"
+            else
+                print_error "uplanet_onboarding.sh non trouvé"
+                sleep 2
+                show_captain_dashboard
+            fi
             ;;
         0)
             print_success "Au revoir, Capitaine !"
