@@ -414,7 +414,22 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                 IMPACT_10_MULTIPASS=$(echo "scale=0; 10 * $NCARD" | bc)
                 IMPACT_5_ZENCARDS=$(echo "scale=0; 5 * $ZCARD" | bc)
                 
+                # Escape special sed characters in replacement strings
+                # The & character is special in sed (represents matched pattern)
+                escape_sed_replacement() {
+                    echo "$1" | sed 's/[&/\]/\\&/g'
+                }
+                
+                # Escape variables that may contain special characters (& in R&D)
+                PHASE_NAME_FR_SAFE=$(escape_sed_replacement "$PHASE_NAME_FR")
+                PHASE_NAME_EN_SAFE=$(escape_sed_replacement "$PHASE_NAME_EN")
+                PHASE_NAME_ES_SAFE=$(escape_sed_replacement "$PHASE_NAME_ES")
+                IMPACT_LIST_FR_SAFE=$(escape_sed_replacement "$IMPACT_LIST_FR")
+                IMPACT_LIST_EN_SAFE=$(escape_sed_replacement "$IMPACT_LIST_EN")
+                
                 # Generate HTML report
+                # IMPORTANT: Process longer variable names FIRST to avoid collision
+                # e.g., _ASSETS_STATUS_TEXT_ES_ before _ASSETS_STATUS_TEXT_ before _ASSETS_STATUS_
                 cat "$PRE_BANKRUPTCY_TEMPLATE" | sed \
                     -e "s~_DATE_~${REPORT_DATE}~g" \
                     -e "s~_TODATE_~${TODATE}~g" \
@@ -423,9 +438,9 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                     -e "s~_PAYMENT_SOURCE_~${PAYMENT_SOURCE}~g" \
                     -e "s~_PHASE_CLASS_~${PHASE_CLASS}~g" \
                     -e "s~_PHASE_ICON_~${PHASE_ICON}~g" \
-                    -e "s~_PHASE_NAME_FR_~${PHASE_NAME_FR}~g" \
-                    -e "s~_PHASE_NAME_EN_~${PHASE_NAME_EN}~g" \
-                    -e "s~_PHASE_NAME_ES_~${PHASE_NAME_ES}~g" \
+                    -e "s~_PHASE_NAME_FR_~${PHASE_NAME_FR_SAFE}~g" \
+                    -e "s~_PHASE_NAME_EN_~${PHASE_NAME_EN_SAFE}~g" \
+                    -e "s~_PHASE_NAME_ES_~${PHASE_NAME_ES_SAFE}~g" \
                     -e "s~_PHASE_DESCRIPTION_FR_~${PHASE_DESCRIPTION_FR}~g" \
                     -e "s~_PHASE_DESCRIPTION_EN_~${PHASE_DESCRIPTION_EN}~g" \
                     -e "s~_PHASE_DESCRIPTION_ES_~${PHASE_DESCRIPTION_ES}~g" \
@@ -433,17 +448,17 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                     -e "s~_ASSETS_BALANCE_~${ASSETS_ZEN}~g" \
                     -e "s~_RND_BALANCE_~${RND_ZEN}~g" \
                     -e "s~_TOTAL_PAF_REQUIRED_~${TOTAL_PAF_REQUIRED}~g" \
+                    -e "s~_ASSETS_STATUS_TEXT_ES_~${ASSETS_STATUS_TEXT_ES}~g" \
+                    -e "s~_ASSETS_STATUS_TEXT_EN_~${ASSETS_STATUS_TEXT_EN}~g" \
+                    -e "s~_ASSETS_STATUS_TEXT_~${ASSETS_STATUS_TEXT}~g" \
+                    -e "s~_RND_STATUS_TEXT_ES_~${RND_STATUS_TEXT_ES}~g" \
+                    -e "s~_RND_STATUS_TEXT_EN_~${RND_STATUS_TEXT_EN}~g" \
+                    -e "s~_RND_STATUS_TEXT_~${RND_STATUS_TEXT}~g" \
                     -e "s~_CASH_STATUS_~${CASH_STATUS}~g" \
                     -e "s~_ASSETS_STATUS_~${ASSETS_STATUS}~g" \
                     -e "s~_RND_STATUS_~${RND_STATUS}~g" \
-                    -e "s~_ASSETS_STATUS_TEXT_~${ASSETS_STATUS_TEXT}~g" \
-                    -e "s~_ASSETS_STATUS_TEXT_EN_~${ASSETS_STATUS_TEXT_EN}~g" \
-                    -e "s~_ASSETS_STATUS_TEXT_ES_~${ASSETS_STATUS_TEXT_ES}~g" \
-                    -e "s~_RND_STATUS_TEXT_~${RND_STATUS_TEXT}~g" \
-                    -e "s~_RND_STATUS_TEXT_EN_~${RND_STATUS_TEXT_EN}~g" \
-                    -e "s~_RND_STATUS_TEXT_ES_~${RND_STATUS_TEXT_ES}~g" \
-                    -e "s~_IMPACT_LIST_FR_~${IMPACT_LIST_FR}~g" \
-                    -e "s~_IMPACT_LIST_EN_~${IMPACT_LIST_EN}~g" \
+                    -e "s~_IMPACT_LIST_FR_~${IMPACT_LIST_FR_SAFE}~g" \
+                    -e "s~_IMPACT_LIST_EN_~${IMPACT_LIST_EN_SAFE}~g" \
                     -e "s~_NODE_PAYMENT_STATUS_FR_~${NODE_PAYMENT_STATUS_FR}~g" \
                     -e "s~_NODE_PAYMENT_STATUS_EN_~${NODE_PAYMENT_STATUS_EN}~g" \
                     -e "s~_CAPTAIN_PAYMENT_STATUS_FR_~${CAPTAIN_PAYMENT_STATUS_FR}~g" \

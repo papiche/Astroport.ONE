@@ -508,6 +508,15 @@ if [[ $BANKRUPTCY_DETECTED -eq 1 ]]; then
         # Calculate sociétaire capital (10 sociétaires)
         SOCIETAIRE_CAPITAL=$(echo "scale=2; 10 * $SOCIETAIRE_SHARE_PRICE" | bc -l)
         
+        # Escape special sed characters in replacement strings
+        # The & character is special in sed (represents matched pattern)
+        escape_sed_replacement() {
+            echo "$1" | sed 's/[&/\]/\\&/g'
+        }
+        
+        # Escape FAILED_ALLOCATIONS which may contain "R&D"
+        FAILED_ALLOCATIONS_SAFE=$(escape_sed_replacement "$FAILED_ALLOCATIONS")
+        
         # Generate HTML report from template using sed substitutions
         cat "$BANKRUPTCY_TEMPLATE" | sed \
             -e "s~_DATE_~${REPORT_DATE}~g" \
@@ -533,7 +542,7 @@ if [[ $BANKRUPTCY_DETECTED -eq 1 ]]; then
             -e "s~_SOCIETAIRE_SHARE_PRICE_~${SOCIETAIRE_SHARE_PRICE}~g" \
             -e "s~_SOCIETAIRE_SHARE_PRICE_EUR_~${SOCIETAIRE_SHARE_PRICE_EUR}~g" \
             -e "s~_SOCIETAIRE_CAPITAL_~${SOCIETAIRE_CAPITAL}~g" \
-            -e "s~_FAILED_ALLOCATIONS_~${FAILED_ALLOCATIONS}~g" \
+            -e "s~_FAILED_ALLOCATIONS_~${FAILED_ALLOCATIONS_SAFE}~g" \
             > "$BANKRUPTCY_REPORT"
         
         # Collect all user emails from ~/.zen/game/nostr/*/
