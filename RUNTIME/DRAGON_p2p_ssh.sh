@@ -246,9 +246,16 @@ cp ~/.zen/install.errors.log ~/.zen/tmp/${IPFSNODEID}/ 2>/dev/null
 ############################################
 ### FORWARD SSH PORT over /x/ssh-${IPFSNODEID}
 ############################################
-echo "SSH tunnel: /x/ssh-${IPFSNODEID}"
+## Detect local SSH port (default 22)
+## 1. Read from sshd_config (most reliable)
+SSHPORT=$(grep -E "^Port " /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -1)
+## 2. If not found, check if port 22 is listening
+[[ -z "$SSHPORT" ]] && ss -tln 2>/dev/null | grep -qE ":22\s" && SSHPORT=22
+## 3. Default to 22
+[[ -z "$SSHPORT" ]] && SSHPORT=22
+echo "SSH tunnel: /x/ssh-${IPFSNODEID} (local SSH port: ${SSHPORT})"
 [[ ! $(ipfs p2p ls | grep "/x/ssh-${IPFSNODEID}") ]] \
-    && ipfs p2p listen /x/ssh-${IPFSNODEID} /ip4/127.0.0.1/tcp/22
+    && ipfs p2p listen /x/ssh-${IPFSNODEID} /ip4/127.0.0.1/tcp/${SSHPORT}
 ############################################
 ## PREPARE x_ssh.sh
 ## REMOTE ACCESS COMMAND FROM DRAGONS
