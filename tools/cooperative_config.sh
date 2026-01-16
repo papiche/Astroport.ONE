@@ -419,9 +419,15 @@ coop_config_list() {
     echo "=== Cooperative Configuration (UPLANETNAME_G1 DID) ==="
     echo ""
     
+    # SECURITY: Keys that should ALWAYS be masked (even if stored unencrypted)
+    # COOPERATIVE_NAME reveals $UPLANETNAME which is the encryption key!
+    local sensitive_keys="COOPERATIVE_NAME"
+    
     # List all keys with encryption status
-    echo "$config" | jq -r 'to_entries[] | 
-        if (.value | test(":")) then
+    echo "$config" | jq -r --arg sensitive "$sensitive_keys" 'to_entries[] | 
+        if (.key | inside($sensitive)) then
+            "\(.key) = [SENSITIVE - HIDDEN]"
+        elif (.value | test(":")) then
             "\(.key) = [ENCRYPTED]"
         else
             "\(.key) = \(.value)"
@@ -488,9 +494,10 @@ coop_config_init() {
     
     # Create default config structure with ALL cooperative variables
     # These values MUST be the same across all swarm nodes
+    # NOTE: COOPERATIVE_NAME is NOT stored - it would reveal the encryption key ($UPLANETNAME)
+    # Each node already has $UPLANETNAME in their environment
     local default_config=$(cat <<EOF
 {
-    "COOPERATIVE_NAME": "$UPLANETNAME",
     "COOPERATIVE_VERSION": "1.0",
     "CREATED_AT": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
     
