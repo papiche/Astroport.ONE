@@ -202,16 +202,27 @@ check_source_wallet() {
 get_wallet_balance() {
     local pubkey="$1"
     
-    # Use G1check.sh to get balance
+    # Use G1check.sh to get balance (stderr to /dev/null to hide log messages)
     local balance_result=$("${MY_PATH}/tools/G1check.sh" "$pubkey" 2>/dev/null)
+    local exit_code=$?
     
-    # Extract balance from result (assuming G1check.sh returns just the number)
-    local balance=$(echo "$balance_result" | grep -E '^[0-9]+\.?[0-9]*$' | head -1)
+    # Debug: show raw result if DEBUG mode
+    [[ -n "$DEBUG" ]] && echo -e "${YELLOW}DEBUG G1check result: '$balance_result' (exit: $exit_code)${NC}" >&2
     
-    if [[ -z "$balance" ]]; then
-        echo "0"
-    else
+    # Clean the result: remove whitespace, handle bc format (.45 -> 0.45)
+    local balance=$(echo "$balance_result" | tr -d '[:space:]')
+    
+    # Handle bc format where numbers < 1 start with decimal point (e.g., .45 -> 0.45)
+    if [[ "$balance" =~ ^\.([0-9]+)$ ]]; then
+        balance="0${balance}"
+    fi
+    
+    # Validate: accept numbers like 123, 123.45, 0.45, .45, 0
+    if [[ "$balance" =~ ^[0-9]*\.?[0-9]+$ ]]; then
         echo "$balance"
+    else
+        # If G1check.sh failed or returned invalid data, return 0
+        echo "0"
     fi
 }
 
@@ -367,8 +378,10 @@ check_and_init_cooperative_config() {
         return 1
     fi
     
-    # Source the helper
+    # Source the helper (save/restore MY_PATH as cooperative_config.sh overwrites it)
+    local _saved_my_path="$MY_PATH"
     source "$config_helper"
+    MY_PATH="$_saved_my_path"
     
     # Check if NOSTR key exists
     if [[ ! -f "$COOP_CONFIG_KEYFILE" ]]; then
@@ -443,7 +456,10 @@ show_cooperative_config() {
     local config_helper="${MY_PATH}/tools/cooperative_config.sh"
     
     if [[ -f "$config_helper" ]]; then
+        # Save/restore MY_PATH as cooperative_config.sh overwrites it
+        local _saved_my_path="$MY_PATH"
         source "$config_helper"
+        MY_PATH="$_saved_my_path"
         coop_config_list
     else
         echo -e "${YELLOW}⚠️  cooperative_config.sh non disponible${NC}"
