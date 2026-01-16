@@ -50,7 +50,7 @@ JSON_PAYLOAD=$(cat <<EOF
 {
   "chatModel": {
     "provider": "ollama",
-    "name": "gemma3:12b"
+    "name": "orieg/gemma3-tools:12b"
   },
   "embeddingModel": {
     "provider": "ollama",
