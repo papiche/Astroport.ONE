@@ -1025,6 +1025,21 @@ log_output "ZEN ECONOMY: Checking cooperative allocation conditions..."
 ${MY_PATH}/../RUNTIME/ZEN.COOPERATIVE.3x1-3.sh
 
 #######################################################################
+# BROADCAST ECONOMIC HEALTH TO NOSTR (kind 30850) - DAILY
+# Enables swarm-level economic visibility and legal compliance reporting
+# See: nostr-nips/101-economic-health-extension.md
+#######################################################################
+if [[ -x "${MY_PATH}/ECONOMY.broadcast.sh" ]]; then
+    log_output "📡 Broadcasting economic health to NOSTR constellation..."
+    ${MY_PATH}/ECONOMY.broadcast.sh 2>/dev/null
+    if [[ $? -eq 0 ]]; then
+        log_output "✅ Economic health report broadcasted successfully"
+    else
+        log_output "⚠️  Economic health broadcast failed (non-critical)"
+    fi
+fi
+
+#######################################################################
 # Mark weekly payment as completed
 # Create marker file with current week to prevent duplicate payments
 # Include degradation phase for tracking

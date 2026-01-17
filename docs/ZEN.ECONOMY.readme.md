@@ -141,7 +141,7 @@ Dans ce système, le ẐEN **n'est pas une monnaie financière convertible**, ma
 | `NOSTRCARD.refresh.sh` | Collecte redevances MULTIPASS (1Ẑ HT + 0.2Ẑ TVA) | Hebdomadaire |
 | `PLAYER.refresh.sh` | Collecte redevances ZEN Cards (4Ẑ HT + 0.8Ẑ TVA) | Hebdomadaire |
 | `UPLANET.official.sh` | Émission Crédits Service officiels (Usagers & Parrains) | À la demande |
-| `ECONOMY.broadcast.sh` | Diffusion Nostr de la santé économique (kind 30850) | Hebdomadaire |
+| `ECONOMY.broadcast.sh` | Diffusion Nostr de la santé économique (kind 30850) | Quotidien |
 | `cooperative_config.sh` | Gestion configuration coopérative via DID NOSTR (kind 30800) | À la demande |
 | `solar_time.sh` | Calcul heure solaire pour synchronisation distribuée | À la demande |
 

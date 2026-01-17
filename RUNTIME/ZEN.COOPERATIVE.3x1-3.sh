@@ -601,20 +601,4 @@ fi
 echo "$TODATE" > "$ALLOCATION_MARKER"
 echo "ZEN COOPERATIVE: Weekly allocation completed and marked for $TODATE"
 
-#######################################################################
-# BROADCAST ECONOMIC HEALTH TO NOSTR (kind 30850)
-# Enables swarm-level economic visibility and legal compliance reporting
-# See: nostr-nips/101-economic-health-extension.md
-#######################################################################
-if [[ -x "${MY_PATH}/ECONOMY.broadcast.sh" ]]; then
-    echo ""
-    echo "📡 Broadcasting economic health to NOSTR constellation..."
-    ${MY_PATH}/ECONOMY.broadcast.sh 2>/dev/null
-    if [[ $? -eq 0 ]]; then
-        echo "✅ Economic health report broadcasted successfully"
-    else
-        echo "⚠️  Economic health broadcast failed (non-critical)"
-    fi
-fi
-
 exit 0
