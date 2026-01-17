@@ -17,7 +17,7 @@ case $ARCH in
     aarch64*) ARCH=arm64 ;;
 esac
 
-VERSION="v0.24.1"
+VERSION="v0.24.4"
 GITHUB_FILE="lazydocker_${VERSION//v/}_$(uname -s)_${ARCH}.tar.gz"
 GITHUB_URL="https://github.com/jesseduffield/lazydocker/releases/download/${VERSION}/${GITHUB_FILE}"
 ######################################################
