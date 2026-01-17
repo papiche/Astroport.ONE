@@ -567,7 +567,7 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                 if [[ $WEEKS_ELAPSED -lt $DEPRECIATION_WEEKS ]]; then
                     # Calculate weekly depreciation amount
                     WEEKLY_DEPRECIATION=$(echo "scale=2; $MACHINE_VALUE / $DEPRECIATION_WEEKS" | bc -l)
-                    WEEKLY_DEPRECIATION_G1=$(echo "scale=4; $WEEKLY_DEPRECIATION / 10" | bc -l)
+                    WEEKLY_DEPRECIATION_G1=$(makecoord $(echo "$WEEKLY_DEPRECIATION / 10" | bc -l))
                     
                     # Check CAPITAL wallet balance
                     CAPITAL_G1PUB=$(cat "$HOME/.zen/game/uplanet.CAPITAL.dunikey" | grep "pub:" | cut -d ' ' -f 2)

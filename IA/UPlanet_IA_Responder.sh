@@ -995,7 +995,33 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g; s/"//g' <<< "$message_text")
                 USER_LANG=$(get_user_language "$KNAME")
                 echo "User language for search: $USER_LANG" >&2
-                KeyANSWER="$($MY_PATH/perplexica_search.sh "${cleaned_text}" "${USER_LANG}")"
+                # Capture stderr separately for debugging
+                SEARCH_STDERR=$(mktemp)
+                KeyANSWER="$($MY_PATH/perplexica_search.sh "${cleaned_text}" "${USER_LANG}" 2>"$SEARCH_STDERR")"
+                SEARCH_EXIT_CODE=$?
+                SEARCH_DEBUG=$(cat "$SEARCH_STDERR" 2>/dev/null)
+                rm -f "$SEARCH_STDERR"
+                
+                # Check if Perplexica search failed
+                # Only check for actual errors (exit code non-zero, empty response, or error in first line)
+                if [[ $SEARCH_EXIT_CODE -ne 0 ]] || [[ -z "$KeyANSWER" ]]; then
+                    echo "ERROR: Perplexica search failed (exit: $SEARCH_EXIT_CODE)" >&2
+                    echo "Search debug: $SEARCH_DEBUG" >&2
+                    # Set a user-friendly error message
+                    ERROR_DETAIL="${SEARCH_DEBUG:-Aucune réponse du serveur Perplexica}"
+                    # Extract only the last error line for user display
+                    ERROR_LINE=$(echo "$ERROR_DETAIL" | grep -i "error" | tail -1)
+                    [[ -z "$ERROR_LINE" ]] && ERROR_LINE="$ERROR_DETAIL"
+                    KeyANSWER="❌ La recherche Perplexica a échoué.
+
+🔍 Requête: ${cleaned_text}
+
+⚠️ Erreur technique lors de la recherche. Veuillez réessayer plus tard ou contacter le support.
+
+Détails: ${ERROR_LINE}"
+                    # Skip the rest of the search processing
+                    AnswerKind="1"  # Simple note instead of blog article
+                else
                 
                 # Generate intelligent summary using the detected language
                 echo "Generating intelligent summary for article..." >&2
@@ -1097,6 +1123,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 ExtraTags=$(cat "$temp_json")
                 echo "Generated ExtraTags: $ExtraTags" >&2
                 rm -f "$temp_json"
+                fi  # End of successful Perplexica search processing
             ######################################################### #image
             elif [[ "${TAGS[image]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#image//g; s/"//g' <<< "$message_text")
