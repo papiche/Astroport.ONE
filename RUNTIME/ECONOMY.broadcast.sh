@@ -490,7 +490,7 @@ TAGS_JSON=$(cat <<EOF
   ["t", "economic-health"],
   ["t", "weekly-report"],
   ["week", "$CURRENT_WEEK"],
-  ["constellation", "UPlanetV1"],
+  ["constellation", "$UPLANETG1PUB"],
   ["station", "$IPFSNODEID"],
   ["station:name", "${myDAMAIN:-${IPFSNODEID:0:12}}"],
   ["swarm_id", "$UPLANETG1PUB"],
