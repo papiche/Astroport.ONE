@@ -358,6 +358,7 @@ cmd_scan() {
     # 2. IPFS P2P (no SSH for Orpheus)
     echo -e "\n${BOLD}[P2P]${NC} IPFS Swarm Nodes"
     local p2p_count=$(count_p2p_nodes)
+    local p2p_active=false
     
     if [[ $p2p_count -gt 0 ]]; then
         print_status "OK" "$p2p_count node(s) available:"
@@ -384,11 +385,15 @@ cmd_scan() {
     if check_p2p_connections "true"; then
         local active_p2p=$(ipfs p2p ls 2>/dev/null | grep "/x/${SERVICE_NAME}" | awk '{print $3}' | head -1)
         echo -e "  ${GREEN}●${NC} P2P currently ACTIVE: $active_p2p"
+        p2p_active=true
     fi
     
-    # Summary
+    # Summary - consider active connections as available
+    local local_avail=$(check_local_service true && echo Y || echo N)
+    local p2p_avail=$([[ $p2p_count -gt 0 || "$p2p_active" == "true" ]] && echo Y || echo N)
+    
     echo -e "\n${BOLD}Summary:${NC}"
-    echo -e "  Available methods: LOCAL=$(check_local_service true && echo Y || echo N) P2P=$([[ $p2p_count -gt 0 ]] && echo Y || echo N)"
+    echo -e "  Available methods: LOCAL=$local_avail P2P=$p2p_avail"
     echo -e "\n${YELLOW}Note:${NC} Orpheus TTS uses LOCAL and P2P only (no SSH tunnel)"
 }
 
