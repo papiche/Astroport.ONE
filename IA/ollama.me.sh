@@ -252,65 +252,135 @@ close_ssh_tunnel() {
     return 1
 }
 
-# Connect via IPFS P2P swarm
+# Connect via IPFS P2P swarm with node selection
 connect_via_swarm() {
-    local target_node="${1:-}"
+    local target="${1:-}"
     
     echo -e "\n${BOLD}Connecting via IPFS P2P swarm...${NC}"
     
     local nodes=()
+    local node_ids=()
     
     # Collect available nodes
     for script in ~/.zen/tmp/swarm/*/x_${SERVICE_NAME}.sh; do
-        [[ -f "$script" ]] && nodes+=("$script")
+        if [[ -f "$script" ]]; then
+            nodes+=("$script")
+            node_ids+=($(basename $(dirname "$script")))
+        fi
     done
-    [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh ]] && \
+    
+    # Add local node if available
+    if [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh ]]; then
         nodes+=("$HOME/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh")
+        node_ids+=("$IPFSNODEID")
+    fi
     
     if [[ ${#nodes[@]} -eq 0 ]]; then
         print_status "FAIL" "No ${SERVICE_NAME} nodes found in swarm"
         return 1
     fi
     
-    # If target node specified, filter
-    if [[ -n "$target_node" ]]; then
-        for script in "${nodes[@]}"; do
-            local node_id=$(basename $(dirname "$script"))
-            if [[ "$node_id" == "$target_node" || "$node_id" == *"$target_node"* ]]; then
-                if bash "$script" 2>/dev/null; then
-                    sleep 2
-                    if test_api "true"; then
-                        save_connection_status "P2P" "$node_id"
-                        print_status "OK" "Connected to $node_id via IPFS P2P"
-                        return 0
+    local selected_script=""
+    local selected_node=""
+    
+    # Handle different target specifications
+    if [[ -n "$target" ]]; then
+        case "$target" in
+            "auto"|"random"|"AUTO"|"RANDOM")
+                local shuffled=($(printf '%s\n' "${!nodes[@]}" | sort -R))
+                for idx in "${shuffled[@]}"; do
+                    selected_script="${nodes[$idx]}"
+                    selected_node="${node_ids[$idx]}"
+                    echo "Trying node: $selected_node"
+                    if bash "$selected_script" 2>/dev/null; then
+                        sleep 2
+                        if test_api "true"; then
+                            save_connection_status "P2P" "$selected_node"
+                            print_status "OK" "Connected to $selected_node via IPFS P2P"
+                            return 0
+                        fi
+                        ipfs p2p close -p "/x/${SERVICE_NAME}-$selected_node" 2>/dev/null
                     fi
+                done
+                print_status "FAIL" "No working nodes available"
+                return 1
+                ;;
+            [0-9]|[0-9][0-9])
+                local idx=$((target - 1))
+                if [[ $idx -ge 0 && $idx -lt ${#nodes[@]} ]]; then
+                    selected_script="${nodes[$idx]}"
+                    selected_node="${node_ids[$idx]}"
+                else
+                    print_status "FAIL" "Invalid selection: $target (valid: 1-${#nodes[@]})"
+                    return 1
                 fi
-            fi
-        done
-        print_status "FAIL" "Target node $target_node not found or not responding"
-        return 1
+                ;;
+            *)
+                for i in "${!node_ids[@]}"; do
+                    if [[ "${node_ids[$i]}" == "$target" || "${node_ids[$i]}" == *"$target"* ]]; then
+                        selected_script="${nodes[$i]}"
+                        selected_node="${node_ids[$i]}"
+                        break
+                    fi
+                done
+                if [[ -z "$selected_script" ]]; then
+                    print_status "FAIL" "Node not found: $target"
+                    echo -e "\nAvailable nodes:"
+                    for i in "${!node_ids[@]}"; do
+                        echo -e "  [$((i+1))] ${node_ids[$i]:0:30}..."
+                    done
+                    return 1
+                fi
+                ;;
+        esac
+    else
+        # No target specified - show selection if multiple nodes
+        if [[ ${#nodes[@]} -gt 1 ]]; then
+            echo -e "\n${BOLD}Available P2P nodes:${NC}\n"
+            for i in "${!node_ids[@]}"; do
+                local idx=$((i + 1))
+                local node_id="${node_ids[$i]}"
+                local script="${nodes[$i]}"
+                local myipfs_file=$(dirname "$script")/myIPFS.txt
+                local gateway=""
+                [[ -f "$myipfs_file" ]] && gateway=$(cat "$myipfs_file")
+                
+                local local_marker=""
+                [[ "$node_id" == "$IPFSNODEID" ]] && local_marker=" ${GREEN}(local)${NC}"
+                
+                echo -e "  ${CYAN}[$idx]${NC} ${node_id:0:20}...${local_marker}"
+                [[ -n "$gateway" ]] && echo -e "      └─ $gateway"
+            done
+            
+            echo ""
+            echo -e "${YELLOW}Tip:${NC} Use 'P2P <number>' or 'P2P <node_id>' to select"
+            echo ""
+            echo -e "Connecting to first available node..."
+        fi
+        selected_script="${nodes[0]}"
+        selected_node="${node_ids[0]}"
     fi
     
-    # Auto-select: shuffle and try
-    local shuffled=($(printf '%s\n' "${nodes[@]}" | sort -R))
-    
-    for script in "${shuffled[@]}"; do
-        local node_id=$(basename $(dirname "$script"))
-        echo "Trying node: $node_id"
-        
-        if bash "$script" 2>/dev/null; then
+    # Connect to selected node
+    if [[ -n "$selected_script" ]]; then
+        echo "Connecting to: $selected_node"
+        if bash "$selected_script" 2>/dev/null; then
             sleep 2
             if test_api "true"; then
-                save_connection_status "P2P" "$node_id"
-                print_status "OK" "Connected to $node_id via IPFS P2P"
+                save_connection_status "P2P" "$selected_node"
+                print_status "OK" "Connected to $selected_node via IPFS P2P"
                 return 0
             else
-                ipfs p2p close -p "/x/${SERVICE_NAME}-$node_id" 2>/dev/null
+                ipfs p2p close -p "/x/${SERVICE_NAME}-$selected_node" 2>/dev/null
+                print_status "FAIL" "Connected but API not responding"
+                return 1
             fi
+        else
+            print_status "FAIL" "Failed to establish P2P connection to $selected_node"
+            return 1
         fi
-    done
+    fi
     
-    print_status "FAIL" "No working ${SERVICE_NAME} nodes available"
     return 1
 }
 
@@ -471,27 +541,34 @@ cmd_help() {
     echo -e "\n${BOLD}Usage:${NC} $(basename $0) [COMMAND] [OPTIONS]\n"
     
     echo -e "${BOLD}Commands:${NC}"
-    echo -e "  ${CYAN}(none)${NC}      Auto-connect (LOCAL → SSH → P2P)"
-    echo -e "  ${CYAN}STATUS${NC}      Show current connection status"
-    echo -e "  ${CYAN}SCAN${NC}        Detect all available connections"
-    echo -e "  ${CYAN}LOCAL${NC}       Connect via local service"
-    echo -e "  ${CYAN}SSH${NC}         Connect via SSH tunnel"
-    echo -e "  ${CYAN}SSH6${NC}        Connect via SSH tunnel (IPv6 only)"
-    echo -e "  ${CYAN}SSH4${NC}        Connect via SSH tunnel (IPv4 only)"
-    echo -e "  ${CYAN}P2P${NC}         Connect via IPFS P2P swarm"
-    echo -e "  ${CYAN}P2P <node>${NC}  Connect to specific P2P node"
-    echo -e "  ${CYAN}MODELS${NC}      List available models"
-    echo -e "  ${CYAN}OFF${NC}         Disconnect all connections"
-    echo -e "  ${CYAN}TEST${NC}        Test current API connection"
-    echo -e "  ${CYAN}HELP${NC}        Show this help message"
+    echo -e "  ${CYAN}(none)${NC}       Auto-connect (LOCAL → SSH → P2P)"
+    echo -e "  ${CYAN}STATUS${NC}       Show current connection status"
+    echo -e "  ${CYAN}SCAN${NC}         Detect all available connections"
+    echo -e "  ${CYAN}LOCAL${NC}        Connect via local service"
+    echo -e "  ${CYAN}SSH${NC}          Connect via SSH tunnel (auto IPv6/IPv4)"
+    echo -e "  ${CYAN}SSH6${NC}         Connect via SSH tunnel (IPv6 only)"
+    echo -e "  ${CYAN}SSH4${NC}         Connect via SSH tunnel (IPv4 only)"
+    echo -e "  ${CYAN}P2P${NC}          Connect via IPFS P2P (show nodes if multiple)"
+    echo -e "  ${CYAN}P2P <n>${NC}      Connect to node by number (1, 2, 3...)"
+    echo -e "  ${CYAN}P2P <id>${NC}     Connect to node by ID (partial match)"
+    echo -e "  ${CYAN}P2P auto${NC}     Random node selection"
+    echo -e "  ${CYAN}MODELS${NC}       List available models"
+    echo -e "  ${CYAN}OFF${NC}          Disconnect all connections"
+    echo -e "  ${CYAN}TEST${NC}         Test current API connection"
+    echo -e "  ${CYAN}HELP${NC}         Show this help message"
     
-    echo -e "\n${BOLD}Examples:${NC}"
-    echo -e "  $(basename $0)                    # Auto-connect"
-    echo -e "  $(basename $0) SCAN               # See available options"
-    echo -e "  $(basename $0) SSH                # Force SSH connection"
-    echo -e "  $(basename $0) P2P 12D3KooW...    # Connect to specific node"
-    echo -e "  $(basename $0) MODELS             # List available models"
-    echo -e "  $(basename $0) OFF                # Disconnect"
+    echo -e "\n${BOLD}P2P Examples:${NC}"
+    echo -e "  $(basename $0) P2P               # List nodes, connect to first"
+    echo -e "  $(basename $0) P2P 1             # Connect to node #1"
+    echo -e "  $(basename $0) P2P 2             # Connect to node #2"
+    echo -e "  $(basename $0) P2P 12D3KooW      # Connect by partial ID"
+    echo -e "  $(basename $0) P2P auto          # Random selection"
+    
+    echo -e "\n${BOLD}General Examples:${NC}"
+    echo -e "  $(basename $0)                   # Auto-connect"
+    echo -e "  $(basename $0) SCAN              # See all available options"
+    echo -e "  $(basename $0) MODELS            # List available models"
+    echo -e "  $(basename $0) OFF               # Disconnect"
 }
 
 ########################################################
