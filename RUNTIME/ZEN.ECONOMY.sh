@@ -1022,7 +1022,7 @@ log_output "ZEN ECONOMY: Primal wallet control completed for all cooperative wal
 # This will be executed after PAF payment to ensure proper economic flow
 #######################################################################
 log_output "ZEN ECONOMY: Checking cooperative allocation conditions..."
-${MY_PATH}/ZEN.COOPERATIVE.3x1-3.sh
+${MY_PATH}/../RUNTIME/ZEN.COOPERATIVE.3x1-3.sh
 
 #######################################################################
 # Mark weekly payment as completed
