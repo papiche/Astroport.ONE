@@ -135,6 +135,8 @@ show_help() {
     echo -e "    ${GREEN}--vote ID${NC}     Vote for a recommendation (+1 priority)"
     echo -e "    ${GREEN}--memory${NC}      Show recent memory entries (last 20)"
     echo -e "    ${GREEN}--no-interactive${NC} Skip interactive selection (batch mode)"
+    echo -e "    ${GREEN}--quick, -q${NC}     Quick mode: generate + publish NOSTR (no prompts)"
+    echo -e "    ${GREEN}--publish TARGET${NC} Direct publish: nostr, n2, global, all (skip menus)"
     echo ""
     echo -e "${YELLOW}GLOBAL COMMONS (UMAP 0.00, 0.00):${NC}"
     echo -e "    ${GREEN}--propose-global${NC}  Publish report as collaborative document"
@@ -228,6 +230,8 @@ show_help() {
 # Global flags
 INTERACTIVE_MODE=true
 SHOW_MEMORY_ONLY=false
+QUICK_MODE=false
+DIRECT_PUBLISH=""  # nostr, n2, global, all, or empty
 
 # Parse command line arguments
 parse_args() {
@@ -261,6 +265,22 @@ parse_args() {
             --no-interactive)
                 INTERACTIVE_MODE=false
                 shift
+                ;;
+            --quick|-q)
+                QUICK_MODE=true
+                INTERACTIVE_MODE=false
+                DIRECT_PUBLISH="nostr"
+                shift
+                ;;
+            --publish)
+                if [[ -n "$2" && "$2" =~ ^(nostr|n2|global|all)$ ]]; then
+                    INTERACTIVE_MODE=false
+                    DIRECT_PUBLISH="$2"
+                    shift 2
+                else
+                    echo -e "${RED}❌ --publish requires: nostr, n2, global, or all${NC}"
+                    exit 1
+                fi
                 ;;
             --memory)
                 SHOW_MEMORY_ONLY=true
@@ -640,39 +660,58 @@ interactive_select_recommendations() {
     fi
     
     echo ""
-    echo -e "${YELLOW}Actions disponibles:${NC}"
-    echo -e "  ${GREEN}a <num>${NC}  - Accepter la recommandation (ajouter au TODO)"
-    echo -e "  ${RED}r <num>${NC}  - Rejeter la recommandation"
-    echo -e "  ${BLUE}v <num>${NC}  - Voter pour cette recommandation"
-    echo -e "  ${BLUE}s${NC}        - Tout sauter (skip)"
-    echo -e "  ${GREEN}q${NC}        - Quitter la sélection"
+    echo -e "${YELLOW}Actions rapides:${NC}"
+    echo -e "  ${GREEN}<num>${NC}    - Accepter (ex: ${GREEN}1${NC} ou ${GREEN}1 2 3${NC})"
+    echo -e "  ${GREEN}a${NC}        - Accepter TOUTES"
+    echo -e "  ${RED}r <num>${NC}  - Rejeter"
+    echo -e "  ${BLUE}v <num>${NC}  - Voter"
+    echo -e "  ${BLUE}Entrée${NC}   - Passer et continuer →"
     echo ""
     
     # Interactive loop
     while true; do
-        echo -ne "${GREEN}Votre choix [a/r/v/s/q + numéro]: ${NC}"
+        echo -ne "${GREEN}Choix (numéros, a=all, r=reject, Entrée=passer): ${NC}"
         read -r choice
         
+        # Default: skip on empty input
+        [[ -z "$choice" ]] && { echo -e "${BLUE}⏭️  Passé${NC}"; break; }
+        
         case "$choice" in
-            a\ [0-9]*)
-                local num=$(echo "$choice" | grep -oE '[0-9]+')
-                if [[ $num -ge 1 && $num -le $rec_count ]]; then
-                    local selected="${recommendations[$((num-1))]}"
-                    local rec_id="${rec_ids[$((num-1))]}"
-                    echo -e "${GREEN}✅ Recommandation #$num acceptée${NC}"
+            # Accept all
+            a|A|all)
+                echo -e "${GREEN}✅ Toutes les recommandations acceptées${NC}"
+                for i in $(seq 0 $((rec_count-1))); do
+                    local selected="${recommendations[$i]}"
+                    local rec_id="${rec_ids[$i]}"
                     store_n2_memory "$rec_id" "$selected" "accepted" "ai_recommendation"
-                    # Append to TODO.md
                     echo "" >> "$TODO_MAIN"
                     echo "## [$(date +%Y-%m-%d)] Recommandation acceptée" >> "$TODO_MAIN"
-                    echo "" >> "$TODO_MAIN"
                     echo "- [ ] $selected" >> "$TODO_MAIN"
                     echo "  - ID: $rec_id" >> "$TODO_MAIN"
-                    echo -e "${GREEN}   → Ajoutée à TODO.md${NC}"
-                else
-                    echo -e "${RED}Numéro invalide (1-$rec_count)${NC}"
-                fi
+                done
+                echo -e "${GREEN}   → $rec_count recommandations ajoutées à TODO.md${NC}"
+                break
                 ;;
-            r\ [0-9]*)
+            # Accept by number(s) - just numbers without 'a' prefix
+            [0-9]*)
+                # Handle multiple numbers: "1 2 3" or "1"
+                for num in $choice; do
+                    if [[ $num =~ ^[0-9]+$ && $num -ge 1 && $num -le $rec_count ]]; then
+                        local selected="${recommendations[$((num-1))]}"
+                        local rec_id="${rec_ids[$((num-1))]}"
+                        echo -e "${GREEN}✅ #$num acceptée${NC}"
+                        store_n2_memory "$rec_id" "$selected" "accepted" "ai_recommendation"
+                        echo "" >> "$TODO_MAIN"
+                        echo "## [$(date +%Y-%m-%d)] Recommandation acceptée" >> "$TODO_MAIN"
+                        echo "- [ ] $selected" >> "$TODO_MAIN"
+                        echo "  - ID: $rec_id" >> "$TODO_MAIN"
+                    else
+                        echo -e "${RED}#$num invalide (1-$rec_count)${NC}"
+                    fi
+                done
+                break
+                ;;
+            r\ [0-9]*|r[0-9]*)
                 local num=$(echo "$choice" | grep -oE '[0-9]+')
                 if [[ $num -ge 1 && $num -le $rec_count ]]; then
                     local selected="${recommendations[$((num-1))]}"
@@ -684,7 +723,7 @@ interactive_select_recommendations() {
                     echo -e "${RED}Numéro invalide (1-$rec_count)${NC}"
                 fi
                 ;;
-            v\ [0-9]*)
+            v\ [0-9]*|v[0-9]*)
                 local num=$(echo "$choice" | grep -oE '[0-9]+')
                 if [[ $num -ge 1 && $num -le $rec_count ]]; then
                     local rec_id="${rec_ids[$((num-1))]}"
@@ -694,17 +733,12 @@ interactive_select_recommendations() {
                     echo -e "${RED}Numéro invalide (1-$rec_count)${NC}"
                 fi
                 ;;
-            s|S)
-                echo -e "${BLUE}⏭️  Sélection passée (recommandations restent 'proposed')${NC}"
-                break
-                ;;
-            q|Q|"")
-                echo -e "${GREEN}✓ Fin de la sélection${NC}"
-                echo -e "${BLUE}ℹ️  Les recommandations non traitées restent disponibles avec --list${NC}"
+            s|S|q|Q)
+                echo -e "${BLUE}⏭️  Passé${NC}"
                 break
                 ;;
             *)
-                echo -e "${YELLOW}Commande non reconnue. Utilisez: a 1, r 2, v 1, s, ou q${NC}"
+                echo -e "${YELLOW}? Tapez: numéro(s), a, r<num>, v<num>, ou Entrée${NC}"
                 ;;
         esac
     done
@@ -789,24 +823,14 @@ captain_edit_report() {
         return 1
     fi
     
-    echo ""
-    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
-    echo -e "${YELLOW}✏️  ÉDITION DU RAPPORT (Capitaine)${NC}"
-    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
-    echo ""
-    echo -e "${BLUE}Le rapport IA a été généré. Voulez-vous l'éditer avant publication ?${NC}"
-    echo ""
-    echo -e "  ${GREEN}o${NC} - Ouvrir avec xdg-open (application par défaut)"
-    echo -e "  ${GREEN}e${NC} - Éditer avec \$EDITOR (${EDITOR:-nano})"
-    echo -e "  ${GREEN}v${NC} - Voir dans le terminal"
-    echo -e "  ${GREEN}s${NC} - Continuer sans éditer (par défaut)"
+    echo -e "  ${GREEN}o${NC}=ouvrir  ${GREEN}e${NC}=éditeur  ${GREEN}v${NC}=voir  ${DIM}Entrée=passer${NC}"
     echo ""
     
-    echo -ne "${GREEN}Votre choix [o/e/v/s]: ${NC}"
+    echo -ne "${YELLOW}Éditer le rapport ? [o/e/v/Entrée]: ${NC}"
     read -r edit_choice
     
-    # Default to 's' (skip) if empty
-    [[ -z "$edit_choice" ]] && edit_choice="s"
+    # Default to skip if empty
+    [[ -z "$edit_choice" ]] && { echo -e "  ${DIM}→ Rapport non modifié${NC}"; return 0; }
     
     case "$edit_choice" in
         o|O)
@@ -854,26 +878,15 @@ captain_publish_menu() {
     local report_file="$1"
     local ai_summary="$2"
     
-    echo ""
-    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
-    echo -e "${YELLOW}📤 MENU DE PUBLICATION (Capitaine décide)${NC}"
-    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
-    echo ""
-    echo -e "${BLUE}Où souhaitez-vous publier le rapport ?${NC}"
-    echo ""
-    echo -e "  ${GREEN}1${NC} | ${GREEN}n${NC} - NOSTR kind 30023 ${PURPLE}[Développeurs]${NC} (blog Capitaine)"
-    echo -e "  ${GREEN}2${NC} | ${GREEN}o${NC} - Open Collective ${YELLOW}[Public]${NC} (update communauté) ${RED}⚠️ TEST${NC}"
-    echo -e "  ${GREEN}3${NC} | ${GREEN}m${NC} - N² Memory ${PURPLE}[Développeurs]${NC} (mémoire constellation)"
-    echo -e "  ${GREEN}4${NC} | ${GREEN}g${NC} - Global Commons ${CYAN}[Constellation]${NC} (UMAP 0.00,0.00 - vote)"
-    echo -e "  ${GREEN}a${NC}     - Publier PARTOUT (avec édition pour chaque audience)"
-    echo -e "  ${GREEN}s${NC}     - Sauver localement seulement"
-    echo ""
-    echo -e "${YELLOW}💡 Open Collective = version simplifiée pour le public ${RED}(⚠️ API en cours de test)${NC}"
-    echo -e "${YELLOW}💡 NOSTR/N² = version technique pour développeurs${NC}"
-    echo -e "${YELLOW}💡 Global Commons = document collaboratif soumis au vote (quorum: 1/3 stations, expire: 28j)${NC}"
+    echo -e "  ${GREEN}1${NC} NOSTR blog     ${GREEN}2${NC} Open Collective ${RED}⚠️${NC}  ${GREEN}3${NC} N² Memory"
+    echo -e "  ${GREEN}4${NC} Global Commons ${GREEN}a${NC} TOUT publier      ${DIM}Entrée=local seulement${NC}"
     echo ""
     
-    read -p "Votre choix [1/2/3/4/a/s]: " pub_choice
+    echo -ne "${YELLOW}Où publier ? [1/2/3/4/a/Entrée]: ${NC}"
+    read -r pub_choice
+    
+    # Default to local save if empty
+    [[ -z "$pub_choice" ]] && pub_choice="s"
     
     # Track what was published
     local published_nostr=false
@@ -898,9 +911,8 @@ captain_publish_menu() {
             # 4. Global Commons (constellation vote)
             publish_report_to_global_commons && published_global=true
             ;;
-        s|S|"")
-            echo -e "${BLUE}💾 Rapport sauvegardé localement uniquement${NC}"
-            echo -e "   Fichier: $report_file"
+        s|S)
+            echo -e "  ${DIM}→ Sauvegardé localement: $report_file${NC}"
             ;;
         *)
             # Parse individual choices
@@ -1986,6 +1998,10 @@ EOF
     echo -e "${GREEN}✅ $output_name généré avec succès${NC}"
     echo -e "${BLUE}📄 Fichier: $TODO_OUTPUT${NC}\n"
     
+    # Save run marker IMMEDIATELY after report generation (before interactive mode)
+    # This ensures next run won't re-analyze same commits even if user exits early
+    save_run_marker
+    
     # Afficher un aperçu
     echo -e "${YELLOW}📋 Aperçu (premières 30 lignes):${NC}"
     head -30 "$TODO_OUTPUT"
@@ -1997,26 +2013,91 @@ EOF
     if [[ "$INTERACTIVE_MODE" == "true" ]]; then
         echo ""
         echo -e "${CYAN}╔═══════════════════════════════════════════════════════════════╗${NC}"
-        echo -e "${CYAN}║       MODE INTERACTIF - CAPITAINE EN CONTRÔLE                 ║${NC}"
+        echo -e "${CYAN}║  🧭 ASSISTANT TODO - 3 étapes simples                         ║${NC}"
+        echo -e "${CYAN}╠═══════════════════════════════════════════════════════════════╣${NC}"
+        echo -e "${CYAN}║  ${GREEN}[1]${CYAN} Recommandations IA  →  ${YELLOW}[2]${CYAN} Édition  →  ${BLUE}[3]${CYAN} Publication  ║${NC}"
         echo -e "${CYAN}╚═══════════════════════════════════════════════════════════════╝${NC}"
+        echo ""
+        echo -e "${YELLOW}💡 Astuce: Appuyez sur Entrée à chaque étape pour passer avec les défauts${NC}"
+        echo -e "${YELLOW}💡 Mode rapide: ./todo.sh --quick (aucun prompt)${NC}"
         
-        # Step 1: Let captain select AI recommendations
+        # ─────────────────────────────────────────────────────────────────
+        # STEP 1: AI Recommendations
+        # ─────────────────────────────────────────────────────────────────
+        echo ""
+        echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo -e "${GREEN}  ÉTAPE 1/3 : RECOMMANDATIONS IA${NC}"
+        echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo -e "${BLUE}  L'IA a analysé vos commits et propose des actions.${NC}"
+        echo -e "${BLUE}  Acceptez celles qui vous semblent pertinentes.${NC}"
+        echo ""
         interactive_select_recommendations "$ai_summary"
         
-        # Step 2: Let captain edit the report before publishing
+        # ─────────────────────────────────────────────────────────────────
+        # STEP 2: Edit Report
+        # ─────────────────────────────────────────────────────────────────
+        echo ""
+        echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo -e "${YELLOW}  ÉTAPE 2/3 : ÉDITION DU RAPPORT${NC}"
+        echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo -e "${BLUE}  Vous pouvez relire/modifier le rapport avant publication.${NC}"
+        echo -e "${BLUE}  Fichier: ${TODO_OUTPUT}${NC}"
+        echo ""
         captain_edit_report "$TODO_OUTPUT"
         
-        # Step 3: Let captain choose where to publish
+        # ─────────────────────────────────────────────────────────────────
+        # STEP 3: Publish
+        # ─────────────────────────────────────────────────────────────────
+        echo ""
+        echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo -e "${BLUE}  ÉTAPE 3/3 : PUBLICATION${NC}"
+        echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo -e "${BLUE}  Choisissez où partager votre rapport.${NC}"
+        echo ""
         captain_publish_menu "$TODO_OUTPUT" "$ai_summary"
+        
+        # ─────────────────────────────────────────────────────────────────
+        # DONE
+        # ─────────────────────────────────────────────────────────────────
+        echo ""
+        echo -e "${GREEN}╔═══════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${GREEN}║  ✅ TERMINÉ ! Rapport généré et traité.                       ║${NC}"
+        echo -e "${GREEN}╚═══════════════════════════════════════════════════════════════╝${NC}"
+    elif [[ -n "$DIRECT_PUBLISH" ]]; then
+        # Direct publish mode (--quick or --publish)
+        echo ""
+        echo -e "${CYAN}╔═══════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${CYAN}║       MODE RAPIDE - PUBLICATION DIRECTE                       ║${NC}"
+        echo -e "${CYAN}╚═══════════════════════════════════════════════════════════════╝${NC}"
+        
+        case "$DIRECT_PUBLISH" in
+            nostr)
+                echo -e "${BLUE}📤 Publication NOSTR kind 30023 (blog)...${NC}"
+                publish_todo_report
+                ;;
+            n2)
+                echo -e "${BLUE}📤 Publication N² Memory...${NC}"
+                publish_summary_to_n2_memory "$ai_summary"
+                ;;
+            global)
+                echo -e "${BLUE}📤 Publication Global Commons...${NC}"
+                publish_report_to_global_commons "$TODO_OUTPUT"
+                ;;
+            all)
+                echo -e "${BLUE}📤 Publication PARTOUT...${NC}"
+                publish_todo_report
+                publish_summary_to_n2_memory "$ai_summary"
+                publish_report_to_global_commons "$TODO_OUTPUT"
+                ;;
+        esac
+        
+        echo -e "\n${GREEN}✅ Publication terminée !${NC}"
     else
-        # Batch mode: no interactive UI
+        # Batch mode: no interactive UI, no direct publish
         echo -e "\n${GREEN}💡 Mode batch: utilisez --accept/--reject pour valider les recommandations${NC}"
         echo -e "${BLUE}   Publications automatiques désactivées en mode batch${NC}"
-        echo -e "${BLUE}   Utilisez les options de commande pour publier${NC}"
+        echo -e "${BLUE}   Utilisez --quick ou --publish <target> pour publier${NC}"
     fi
-    
-    # Save run marker for next --last execution
-    save_run_marker
     
     # Nettoyer le fichier temporaire
     rm -f "$GIT_LOG_FILE"
