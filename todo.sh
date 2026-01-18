@@ -566,18 +566,36 @@ interactive_select_recommendations() {
     echo -e "${GREEN}🎯 SÉLECTION DES RECOMMANDATIONS (Capitaine décide)${NC}"
     echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}\n"
     
-    # Extract recommendations from AI output (look for table rows or bullet points)
-    # Format: lines starting with | 🔴 or | 🟡 or | 🟢 or - 🔴 etc.
-    local rec_lines=$(echo "$ai_output" | grep -E '^\|?\s*(🔴|🟡|🟢|-\s*(🔴|🟡|🟢))' | head -10)
+    # Extract recommendations from AI output (multiple strategies)
+    # Strategy 1: Table rows with emoji priority (🔴🟡🟢)
+    local rec_lines=$(echo "$ai_output" | grep -E '^\|?\s*(🔴|🟡|🟢)' | head -10)
     
     if [[ -z "$rec_lines" ]]; then
-        # Try alternative format: numbered list or bullet points with priority keywords
-        rec_lines=$(echo "$ai_output" | grep -iE '(haute|moyenne|basse|high|medium|low|priorit)' | head -10)
+        # Strategy 2: Bullet points with emoji priority
+        rec_lines=$(echo "$ai_output" | grep -E '^[-*]\s*(🔴|🟡|🟢)' | head -10)
     fi
     
     if [[ -z "$rec_lines" ]]; then
+        # Strategy 3: Lines with priority keywords (Haute, Moyenne, Basse, etc.)
+        rec_lines=$(echo "$ai_output" | grep -iE '(priorit[ée]|haute|moyenne|basse|high|medium|low|critique|urgent)' | grep -vE '^(#|##|\*\*|Ce rapport|Cette|Le|La|Les|Au total|Des)' | head -10)
+    fi
+    
+    if [[ -z "$rec_lines" ]]; then
+        # Strategy 4: Look for action items (recommandation, à faire, TODO, devrait, doit)
+        rec_lines=$(echo "$ai_output" | grep -iE '(recommand|à faire|todo|devrait|doit être|nécessite|implémenter|ajouter|créer|optimiser)' | grep -vE '^(#|##|\*\*|Ce|Cette|Le|La|Les)' | head -10)
+    fi
+    
+    if [[ -z "$rec_lines" ]]; then
+        echo ""
+        echo -e "${YELLOW}════════════════════════════════════════════════════════${NC}"
         echo -e "${YELLOW}⚠️  Aucune recommandation structurée détectée dans la sortie IA${NC}"
-        echo -e "${YELLOW}   Consultez le fichier TODO généré pour les détails.${NC}"
+        echo -e "${YELLOW}════════════════════════════════════════════════════════${NC}"
+        echo ""
+        echo -e "${BLUE}💡 L'IA n'a pas généré de tableau avec 🔴🟡🟢${NC}"
+        echo -e "${BLUE}   Consultez le fichier TODO généré pour les détails.${NC}"
+        echo ""
+        echo -e "${GREEN}Appuyez sur Entrée pour continuer vers le menu de publication...${NC}"
+        read -r
         return 0
     fi
     
@@ -781,10 +799,14 @@ captain_edit_report() {
     echo -e "  ${GREEN}o${NC} - Ouvrir avec xdg-open (application par défaut)"
     echo -e "  ${GREEN}e${NC} - Éditer avec \$EDITOR (${EDITOR:-nano})"
     echo -e "  ${GREEN}v${NC} - Voir dans le terminal"
-    echo -e "  ${GREEN}s${NC} - Continuer sans éditer"
+    echo -e "  ${GREEN}s${NC} - Continuer sans éditer (par défaut)"
     echo ""
     
-    read -p "Votre choix [o/e/v/s]: " edit_choice
+    echo -ne "${GREEN}Votre choix [o/e/v/s]: ${NC}"
+    read -r edit_choice
+    
+    # Default to 's' (skip) if empty
+    [[ -z "$edit_choice" ]] && edit_choice="s"
     
     case "$edit_choice" in
         o|O)
@@ -813,12 +835,12 @@ captain_edit_report() {
             esac
             return 0
             ;;
-        s|S|"")
+        s|S)
             echo -e "${BLUE}⏭️  Rapport conservé tel quel${NC}"
             return 0
             ;;
         *)
-            echo -e "${YELLOW}Choix non reconnu, rapport conservé${NC}"
+            echo -e "${YELLOW}Choix '$edit_choice' non reconnu, rapport conservé${NC}"
             return 0
             ;;
     esac
@@ -1839,16 +1861,16 @@ Propose **3-5 actions concrètes** en suivant ce format :
 4. **Concrète** : peut être implémentée en 1-3 jours
 
 **Exemples de bonnes recommandations :**
-- "Ajouter le kind 30851 (Swarm Aggregate) au backfill_constellation.sh" → renforce sync N²
-- "Implémenter expiration automatique des événements DID" → respect du protocole
-- "Optimiser amisOfAmis.txt pour réduire la taille IPFS" → améliore perf locale
+- 🔴 "Ajouter le kind 30851 (Swarm Aggregate) au backfill_constellation.sh" → renforce sync N²
+- 🟡 "Implémenter expiration automatique des événements DID" → respect du protocole
+- 🟢 "Optimiser amisOfAmis.txt pour réduire la taille IPFS" → améliore perf locale
 
 **Évite les recommandations génériques :**
 - ❌ "Améliorer la documentation"
 - ❌ "Ajouter des tests"
 - ❌ "Refactoriser le code"
 
-Format: Markdown structuré, **maximum 500 mots**, privilégie les tableaux.
+Format: Markdown structuré, **maximum 500 mots**, **OBLIGATOIRE: utilise les emojis 🔴🟡🟢 pour les recommandations**.
 
 **RAPPEL:** Commence DIRECTEMENT par "## Rapport" ou "## Bilan" - AUCUNE phrase d'introduction type "Voici...", "Je vais...", "Okay...".
 
@@ -1973,6 +1995,11 @@ EOF
     # ═══════════════════════════════════════════════════════════════
     
     if [[ "$INTERACTIVE_MODE" == "true" ]]; then
+        echo ""
+        echo -e "${CYAN}╔═══════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${CYAN}║       MODE INTERACTIF - CAPITAINE EN CONTRÔLE                 ║${NC}"
+        echo -e "${CYAN}╚═══════════════════════════════════════════════════════════════╝${NC}"
+        
         # Step 1: Let captain select AI recommendations
         interactive_select_recommendations "$ai_summary"
         
