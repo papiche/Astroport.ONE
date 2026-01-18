@@ -152,9 +152,10 @@ show_help() {
     echo "      1. SELECT AI recommendations (accept/reject/vote)"
     echo "      2. EDIT the report before publishing"
     echo "      3. CHOOSE where to publish:"
-    echo "         - NOSTR kind 1 (personal wall)"
-    echo "         - Open Collective (public update)"
+    echo "         - NOSTR kind 30023 (blog article)"
+    echo "         - Open Collective (public update) ⚠️ API in test"
     echo "         - N² Memory (kind 31910 - constellation learning)"
+    echo "         - Global Commons (kind 30023 - constellation vote)"
     echo ""
     echo -e "${YELLOW}N² MEMORY SYSTEM:${NC}"
     echo "    Recommendations are stored in NOSTR (kind $N2_MEMORY_KIND) using:"
@@ -838,14 +839,14 @@ captain_publish_menu() {
     echo ""
     echo -e "${BLUE}Où souhaitez-vous publier le rapport ?${NC}"
     echo ""
-    echo -e "  ${GREEN}1${NC} | ${GREEN}n${NC} - NOSTR kind 1 ${PURPLE}[Développeurs]${NC} (mur Capitaine)"
-    echo -e "  ${GREEN}2${NC} | ${GREEN}o${NC} - Open Collective ${YELLOW}[Public]${NC} (update communauté)"
+    echo -e "  ${GREEN}1${NC} | ${GREEN}n${NC} - NOSTR kind 30023 ${PURPLE}[Développeurs]${NC} (blog Capitaine)"
+    echo -e "  ${GREEN}2${NC} | ${GREEN}o${NC} - Open Collective ${YELLOW}[Public]${NC} (update communauté) ${RED}⚠️ TEST${NC}"
     echo -e "  ${GREEN}3${NC} | ${GREEN}m${NC} - N² Memory ${PURPLE}[Développeurs]${NC} (mémoire constellation)"
     echo -e "  ${GREEN}4${NC} | ${GREEN}g${NC} - Global Commons ${CYAN}[Constellation]${NC} (UMAP 0.00,0.00 - vote)"
     echo -e "  ${GREEN}a${NC}     - Publier PARTOUT (avec édition pour chaque audience)"
     echo -e "  ${GREEN}s${NC}     - Sauver localement seulement"
     echo ""
-    echo -e "${YELLOW}💡 Open Collective = version simplifiée pour le public${NC}"
+    echo -e "${YELLOW}💡 Open Collective = version simplifiée pour le public ${RED}(⚠️ API en cours de test)${NC}"
     echo -e "${YELLOW}💡 NOSTR/N² = version technique pour développeurs${NC}"
     echo -e "${YELLOW}💡 Global Commons = document collaboratif soumis au vote (quorum: 1/3 stations, expire: 28j)${NC}"
     echo ""
@@ -882,7 +883,7 @@ captain_publish_menu() {
         *)
             # Parse individual choices
             if [[ "$pub_choice" =~ [1n] ]]; then
-                echo -e "${BLUE}📤 Publication NOSTR kind 1 [Développeurs]...${NC}"
+                echo -e "${BLUE}📤 Publication NOSTR kind 30023 (blog) [Développeurs]...${NC}"
                 publish_todo_report && published_nostr=true
             fi
             if [[ "$pub_choice" =~ [2o] ]]; then
@@ -905,9 +906,9 @@ captain_publish_menu() {
     echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
     echo -e "${GREEN}📊 RÉSUMÉ DE PUBLICATION${NC}"
     echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
-    [[ "$published_nostr" == true ]] && echo -e "  ${GREEN}✅${NC} NOSTR kind 1 ${PURPLE}[Dev]${NC}"
-    [[ "$published_nostr" == false ]] && echo -e "  ${YELLOW}⏭️${NC}  NOSTR kind 1 (non publié)"
-    [[ "$published_oc" == true ]] && echo -e "  ${GREEN}✅${NC} Open Collective ${YELLOW}[Public]${NC}"
+    [[ "$published_nostr" == true ]] && echo -e "  ${GREEN}✅${NC} NOSTR kind 30023 (blog) ${PURPLE}[Dev]${NC}"
+    [[ "$published_nostr" == false ]] && echo -e "  ${YELLOW}⏭️${NC}  NOSTR kind 30023 (non publié)"
+    [[ "$published_oc" == true ]] && echo -e "  ${GREEN}✅${NC} Open Collective ${YELLOW}[Public]${NC} ${RED}(⚠️ vérifier)${NC}"
     [[ "$published_oc" == false ]] && echo -e "  ${YELLOW}⏭️${NC}  Open Collective (non publié)"
     [[ "$published_n2" == true ]] && echo -e "  ${GREEN}✅${NC} N² Memory ${PURPLE}[Dev]${NC}"
     [[ "$published_n2" == false ]] && echo -e "  ${YELLOW}⏭️${NC}  N² Memory (non publié)"
