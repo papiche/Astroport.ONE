@@ -38,9 +38,11 @@ UPlanet/earth/collaborative-editor.html
 
 ### Accès
 ```
-https://[IPFS_GATEWAY]/ipns/copylaradio.com/collaborative-editor.html?lat=43.60&lon=1.44
-https://[IPFS_GATEWAY]/ipns/copylaradio.com/collaborative-editor.html?lat=43.60&lon=1.44&doc=<event_id>
+https://[IPFS_GATEWAY]/ipns/copylaradio.com/collaborative-editor.html?lat=43.60&lon=1.44&umap=<UMAP_PUBKEY_HEX>
+https://[IPFS_GATEWAY]/ipns/copylaradio.com/collaborative-editor.html?lat=43.60&lon=1.44&umap=<UMAP_PUBKEY_HEX>&doc=<event_id>
 ```
+
+**IMPORTANT**: Le paramètre `umap` est **obligatoire** pour que les documents soient correctement tagués avec la clé publique de l'UMAP et découvrables par la zone.
 
 ### Fonctionnalités
 
@@ -154,6 +156,13 @@ L'éditeur utilise [Milkdown](https://milkdown.dev/), un éditeur Markdown modul
 | `g` | Géolocalisation | `43.60,1.44` |
 | `author` | Pubkey de l'auteur original | `hex_pubkey` |
 | `version` | Numéro de version | `1`, `2`, `3`... |
+| `p` | **CRITIQUE** - Référence à l'UMAP | `["p", "UMAP_PUBKEY_HEX", "", "umap"]` |
+
+**⚠️ IMPORTANT - Tag `p` pour la visibilité :**
+
+Le tag `["p", UMAP_PUBKEY_HEX, "", "umap"]` est **indispensable** pour que le document apparaisse dans l'index UMAP. Sans ce tag, le document ne sera pas découvert par la requête Nostr `#p: [UMAP_PUBKEY]`.
+
+L'éditeur collaboratif ajoute automatiquement ce tag si le paramètre `umap` est présent dans l'URL.
 
 **Tags de gouvernance :**
 
@@ -201,49 +210,90 @@ L'éditeur utilise [Milkdown](https://milkdown.dev/), un éditeur Markdown modul
 
 Le template `umap_index.html` inclut :
 
-1. **Bouton dans le header** :
+1. **Bouton pour créer un nouveau document** :
 ```html
-<a href="_MYIPFS_/ipns/copylaradio.com/collaborative-editor.html?lat=_LAT_&lon=_LON_" 
-   class="btn btn-primary">
-    📝 Commons Editor
+<a href="/ipns/copylaradio.com/collaborative-editor.html?lat=_LAT_&lon=_LON_&umap=_UMAPHEX_" 
+   class="btn btn-primary btn-small">
+    ➕ New Document
 </a>
 ```
 
-2. **Section Commons Documents** dans la sidebar :
+2. **Section Collaborative Documents** (chargée dynamiquement via JavaScript) :
 ```html
 <div class="card">
     <div class="card-header">
-        <span>📄</span> Commons Documents
-        <span class="card-badge">_DOCSCOUNT_</span>
+        <div class="card-title">📄 Collaborative Documents</div>
+        <span class="card-badge">#collaborative</span>
     </div>
     <div class="card-content">
-        _COMMONSDOCS_
+        <div id="docs-feed">
+            <!-- Documents loaded dynamically from Nostr -->
+        </div>
     </div>
 </div>
 ```
 
+**Note**: Les documents sont maintenant chargés dynamiquement côté client via la fonction `loadCollaborativeDocs()` qui interroge les relays Nostr.
+
 ### Agrégation par NOSTR.UMAP.refresh.sh
 
-Le script `NOSTR.UMAP.refresh.sh` agrège automatiquement les documents collaboratifs :
+Le script `NOSTR.UMAP.refresh.sh` génère la page `umap_index.html` en injectant les coordonnées et clés Nostr de l'UMAP :
 
 ```bash
-# Query collaborative documents from local strfry relay
-collab_docs=$(./strfry scan "{
-    \"kinds\": [30023],
-    \"limit\": 20
-}" | jq -c 'select(.tags | map(select(.[0] == "t" and .[1] == "collaborative")) | length > 0)')
+# Get UMAP Nostr keys (npub and hex)
+local UMAPNPUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
+local UMAPHEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "${UMAPNPUB}" 2>/dev/null)
+
+# Replace placeholders in template
+sed -i "s|_LAT_|${LAT}|g" "${UMAPPATH}/index.html"
+sed -i "s|_LON_|${LON}|g" "${UMAPPATH}/index.html"
+sed -i "s|_UMAPHEX_|${UMAPHEX}|g" "${UMAPPATH}/index.html"
+sed -i "s|_UMAPNPUB_|${UMAPNPUB}|g" "${UMAPPATH}/index.html"
 ```
 
-**Données extraites :**
-- Titre du document
-- Version
-- Type (commons, project, decision, garden, resource)
-- Nombre de likes
-- Date de création
+**Placeholders injectés par le serveur :**
 
-**Placeholders générés :**
-- `_DOCSCOUNT_` : Nombre de documents
-- `_COMMONSDOCS_` : HTML des documents pour la sidebar
+| Placeholder | Description | Exemple |
+|-------------|-------------|---------|
+| `_LAT_` | Latitude de l'UMAP | `43.60` |
+| `_LON_` | Longitude de l'UMAP | `1.44` |
+| `_UMAPHEX_` | Clé publique UMAP (format hex) | `ab12cd34...` |
+| `_UMAPNPUB_` | Clé publique UMAP (format npub) | `npub1abc...` |
+| `_MYRELAY_` | URL du relay Nostr | `wss://relay.example.com` |
+| `_MYIPFS_` | URL de la passerelle IPFS | `https://ipfs.example.com` |
+| `_CORACLEURL_` | URL de Coracle | `https://coracle.copylaradio.com` |
+
+**Chargement dynamique côté client :**
+Les documents collaboratifs sont maintenant chargés dynamiquement via JavaScript dans `umap_index.html`, utilisant les clés UMAP injectées pour filtrer les documents pertinents.
+
+### Logique de Filtrage des Documents
+
+Dans `umap_index.html`, la fonction `loadCollaborativeDocs()` applique un **filtrage strict** pour n'afficher que les documents valides :
+
+**Deux types de documents valides :**
+
+1. **Documents Officiels** (signés par l'UMAP elle-même)
+   - `e.pubkey === ZONE_CONFIG.umapPubkeyHex`
+   - Ce sont les propositions adoptées, republiées par `NOSTR.UMAP.refresh.sh`
+
+2. **Propositions Utilisateur** (signées par un ami de l'UMAP)
+   - Doivent avoir le tag `["p", UMAP_PUBKEY_HEX]`
+   - L'auteur (`e.pubkey`) doit être dans la liste d'amis de l'UMAP
+
+```javascript
+// Filtrage strict dans umap_index.html
+const validDocs = allDocs.filter(e => {
+    // Type 1: Document officiel signé par UMAP
+    if (e.pubkey === ZONE_CONFIG.umapPubkeyHex) return true;
+    
+    // Type 2: Proposition d'un ami référençant cette UMAP
+    const refsThisUmap = e.tags.some(t => t[0] === 'p' && t[1] === ZONE_CONFIG.umapPubkeyHex);
+    const isFromFriend = friends.includes(e.pubkey);
+    return refsThisUmap && isFromFriend;
+});
+```
+
+Ce filtrage empêche les "faux" documents d'apparaître dans l'index UMAP.
 
 ### Lien avec PlantNet/ORE
 
@@ -366,17 +416,21 @@ Quand l'UMAP republie un document, elle ajoute des tags spéciaux :
 ### 1. Création
 
 ```
-Utilisateur connecté
+Utilisateur connecté (via extension Nostr)
     │
-    ├─ Choisit type de document
-    ├─ Rédige avec template
-    ├─ Configure gouvernance
+    ├─ Ouvre collaborative-editor.html?lat=X&lon=Y&umap=UMAP_HEX
+    ├─ Choisit type de document (commons, project, decision, garden, resource)
+    ├─ Rédige avec template Markdown
+    ├─ Configure gouvernance (quorum, fork policy)
     │
     └─→ Publication kind 30023
-        • Signé par utilisateur (ou UMAP si serveur)
-        • Tag author = utilisateur
+        • Signé par l'utilisateur (clé MULTIPASS)
+        • Tag ["p", UMAP_PUBKEY_HEX, "", "umap"] pour visibilité
+        • Tag ["author", USER_PUBKEY] pour attribution
         • Version = 1
 ```
+
+**Important**: Le document est signé par l'utilisateur, pas par l'UMAP. Il devient "officiel" uniquement après republication par l'UMAP suite à suffisamment de likes.
 
 ### 2. Proposition de Modification
 
@@ -418,19 +472,27 @@ Système vérifie quorum
     └─→ Notification aux éditeurs
 ```
 
-### 5. Agrégation UMAP
+### 5. Affichage dans l'UMAP
 
 ```
-NOSTR.UMAP.refresh.sh (cron)
+Visiteur ouvre umap_index.html
     │
-    ├─ Scan documents collaboratifs
-    ├─ Compte likes par document
-    ├─ Génère HTML pour index.html
+    ├─ JavaScript charge les données depuis Nostr
+    │   ├─ loadFriends() → kind 3 (liste d'amis)
+    │   ├─ loadMessages() → kind 1 (messages récents)
+    │   └─ loadCollaborativeDocs() → kind 30023
     │
-    └─→ Mise à jour umap_index.html
-        • _DOCSCOUNT_
-        • _COMMONSDOCS_
+    ├─ Filtrage strict des documents
+    │   ├─ Documents signés par UMAP = Officiels ✅
+    │   └─ Documents d'amis avec tag p=UMAP = Propositions 📝
+    │
+    └─→ Affichage avec distinction visuelle
+        • Bordure verte = Document Adopté
+        • Bordure orange = En Attente de votes
+        • Boutons "Lire/Éditer" → collaborative-editor.html?doc=ID
 ```
+
+**Note**: Le script `NOSTR.UMAP.refresh.sh` génère la page statique avec les coordonnées et clés UMAP. Le chargement des documents est dynamique côté client.
 
 ## 🔄 Comparaison avec Autres Systèmes
 

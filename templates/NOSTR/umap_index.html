@@ -7,9 +7,9 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
     
     <!-- NostrTools for Nostr protocol -->
-    <script src="_MYIPFS_/ipns/copylaradio.com/nostr.bundle.js"></script>
+    <script src="/ipns/copylaradio.com/nostr.bundle.js"></script>
     <!-- UPlanet Common.js for Nostr interactions -->
-    <script src="_MYIPFS_/ipns/copylaradio.com/common.js"></script>
+    <script src="/ipns/copylaradio.com/common.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap');
@@ -32,11 +32,7 @@
             --glow-emerald: rgba(16, 185, 129, 0.3);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -46,14 +42,11 @@
             line-height: 1.6;
         }
 
-        /* Animated background */
         body::before {
             content: '';
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             background: 
                 radial-gradient(ellipse at 20% 20%, rgba(6, 182, 212, 0.08) 0%, transparent 50%),
                 radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
@@ -62,716 +55,143 @@
             z-index: 0;
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-            position: relative;
-            z-index: 1;
-        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; position: relative; z-index: 1; }
 
-        /* Header */
         .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            display: flex; align-items: center; justify-content: space-between;
             padding: 20px 30px;
             background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-secondary) 100%);
-            border-radius: 20px;
-            border: 1px solid var(--border-color);
+            border-radius: 20px; border: 1px solid var(--border-color);
             margin-bottom: 30px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            flex-wrap: wrap; gap: 20px;
         }
 
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .zone-icon {
-            font-size: 3rem;
-            filter: drop-shadow(0 0 20px var(--glow-cyan));
-        }
-
+        .header-left { display: flex; align-items: center; gap: 20px; }
+        .zone-icon { font-size: 3rem; filter: drop-shadow(0 0 20px var(--glow-cyan)); }
         .zone-info h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
+            font-size: 1.8rem; font-weight: 700;
             background: linear-gradient(135deg, var(--accent-cyan), var(--accent-emerald));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
-
-        .zone-coords {
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-
-        .zone-date {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
+        .zone-coords { font-family: 'JetBrains Mono', monospace; color: var(--text-secondary); font-size: 0.9rem; }
+        .header-actions { display: flex; gap: 12px; flex-wrap: wrap; }
 
         .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 20px;
-            border-radius: 12px;
-            font-weight: 500;
-            font-size: 0.9rem;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
-            font-family: inherit;
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 12px 20px; border-radius: 12px;
+            font-weight: 500; font-size: 0.9rem;
+            text-decoration: none; transition: all 0.3s ease;
+            border: none; cursor: pointer; font-family: inherit;
         }
+        .btn-primary { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-emerald)); color: var(--bg-primary); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px var(--glow-cyan); }
+        .btn-secondary { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); }
+        .btn-secondary:hover { background: var(--bg-card-hover); border-color: var(--accent-cyan); }
+        .btn-nostr { background: linear-gradient(135deg, var(--accent-violet), #6366f1); color: white; }
+        .btn-nostr:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4); }
+        .btn-nostr.connected { background: linear-gradient(135deg, var(--accent-emerald), #059669); }
+        .btn-small { padding: 6px 12px; font-size: 0.8rem; }
 
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-emerald));
-            color: var(--bg-primary);
-        }
+        .connection-status { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--bg-secondary); border-radius: 20px; font-size: 0.85rem; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-rose); }
+        .status-dot.connected { background: var(--accent-emerald); box-shadow: 0 0 10px var(--accent-emerald); }
 
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px var(--glow-cyan);
-        }
+        .main-grid { display: grid; grid-template-columns: 1fr 350px; gap: 30px; }
+        @media (max-width: 1024px) { .main-grid { grid-template-columns: 1fr; } }
 
-        .btn-secondary {
-            background: var(--bg-card);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
-
-        .btn-secondary:hover {
-            background: var(--bg-card-hover);
-            border-color: var(--accent-cyan);
-        }
-
-        .btn-nostr {
-            background: linear-gradient(135deg, var(--accent-violet), #6366f1);
-            color: white;
-        }
-
-        .btn-nostr:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
-        }
-
-        .btn-nostr.connected {
-            background: linear-gradient(135deg, var(--accent-emerald), #059669);
-        }
-
-        .btn-small {
-            padding: 6px 12px;
-            font-size: 0.8rem;
-        }
-
-        /* Connection status */
-        .connection-status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: var(--bg-secondary);
-            border-radius: 20px;
-            font-size: 0.85rem;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--accent-rose);
-        }
-
-        .status-dot.connected {
-            background: var(--accent-emerald);
-            box-shadow: 0 0 10px var(--accent-emerald);
-        }
-
-        /* Main Grid */
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr 350px;
-            gap: 30px;
-        }
-
-        @media (max-width: 1024px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Cards */
         .card {
-            background: var(--bg-card);
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
-            overflow: hidden;
-            transition: all 0.3s ease;
+            background: var(--bg-card); border-radius: 16px;
+            border: 1px solid var(--border-color); overflow: hidden;
+            transition: all 0.3s ease; margin-bottom: 20px;
         }
-
-        .card:hover {
-            border-color: var(--accent-cyan);
-            box-shadow: 0 10px 40px rgba(6, 182, 212, 0.1);
-        }
-
+        .card:hover { border-color: var(--accent-cyan); box-shadow: 0 10px 40px rgba(6, 182, 212, 0.1); }
         .card-header {
-            padding: 20px 24px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            padding: 20px 24px; border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center; justify-content: space-between;
         }
+        .card-title { font-size: 1.1rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+        .card-badge { background: var(--bg-secondary); padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; color: var(--accent-cyan); font-family: 'JetBrains Mono', monospace; }
+        .card-content { padding: 20px 24px; }
 
-        .card-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .compose-box { background: var(--bg-secondary); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid var(--border-color); }
+        .compose-box:focus-within { border-color: var(--accent-cyan); }
+        .compose-box textarea { width: 100%; background: transparent; border: none; color: var(--text-primary); font-family: inherit; font-size: 0.95rem; resize: none; min-height: 80px; outline: none; }
+        .compose-box textarea::placeholder { color: var(--text-muted); }
+        .compose-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color); }
+        .compose-tags { display: flex; gap: 8px; }
+        .compose-tag { background: var(--bg-card); padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; color: var(--accent-cyan); font-family: 'JetBrains Mono', monospace; }
 
-        .card-title-icon {
-            font-size: 1.2rem;
-        }
+        .feed { display: flex; flex-direction: column; gap: 16px; max-height: 600px; overflow-y: auto; }
+        .feed::-webkit-scrollbar { width: 6px; }
+        .feed::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 3px; }
+        .feed::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
 
-        .card-badge {
-            background: var(--bg-secondary);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            color: var(--accent-cyan);
-            font-family: 'JetBrains Mono', monospace;
+        .item {
+            padding: 16px; background: var(--bg-secondary); border-radius: 12px;
+            border-left: 3px solid var(--accent-cyan); transition: all 0.2s ease;
         }
-
-        .card-content {
-            padding: 20px 24px;
-        }
-
-        /* Compose Box */
-        .compose-box {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 20px;
-            border: 1px solid var(--border-color);
-            transition: border-color 0.3s ease;
-        }
-
-        .compose-box:focus-within {
-            border-color: var(--accent-cyan);
-        }
-
-        .compose-box textarea {
-            width: 100%;
-            background: transparent;
-            border: none;
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 0.95rem;
-            resize: none;
-            min-height: 80px;
-            outline: none;
-        }
-
-        .compose-box textarea::placeholder {
-            color: var(--text-muted);
-        }
-
-        .compose-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .compose-tags {
-            display: flex;
-            gap: 8px;
-        }
-
-        .compose-tag {
-            background: var(--bg-card);
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            color: var(--accent-cyan);
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .char-count {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        /* Messages Feed */
-        .messages-feed {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            max-height: 600px;
-            overflow-y: auto;
-        }
-
-        .messages-feed::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .messages-feed::-webkit-scrollbar-track {
-            background: var(--bg-secondary);
-            border-radius: 3px;
-        }
-
-        .messages-feed::-webkit-scrollbar-thumb {
-            background: var(--border-color);
-            border-radius: 3px;
-        }
-
-        .message-item {
-            padding: 16px;
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            border-left: 3px solid var(--accent-cyan);
-            transition: all 0.2s ease;
-        }
-
-        .message-item:hover {
-            background: var(--bg-card-hover);
-            transform: translateX(4px);
-        }
-
-        .message-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
-
-        .message-author {
-            font-weight: 500;
-            color: var(--accent-cyan);
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: color 0.2s ease;
-        }
-
-        .message-author:hover {
-            color: var(--accent-emerald);
-        }
-
-        .message-time {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .message-content {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-            line-height: 1.7;
-            word-wrap: break-word;
-        }
-
-        .message-actions {
-            display: flex;
-            gap: 16px;
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid var(--border-color);
-        }
+        .item:hover { background: var(--bg-card-hover); transform: translateX(4px); }
+        .item-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .item-author { font-weight: 500; color: var(--accent-cyan); font-size: 0.9rem; cursor: pointer; }
+        .item-author:hover { color: var(--accent-emerald); }
+        .item-time { font-size: 0.8rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+        .item-content { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7; word-wrap: break-word; }
+        .item-actions { display: flex; gap: 16px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color); }
 
         .action-btn {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            cursor: pointer;
-            padding: 6px 10px;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-            font-family: inherit;
+            display: flex; align-items: center; gap: 6px;
+            background: transparent; border: none; color: var(--text-muted);
+            font-size: 0.85rem; cursor: pointer; padding: 6px 10px;
+            border-radius: 8px; transition: all 0.2s ease; font-family: inherit;
         }
+        .action-btn:hover { background: var(--bg-card); color: var(--accent-cyan); }
+        .action-btn.liked { color: var(--accent-rose); }
 
-        .action-btn:hover {
-            background: var(--bg-card);
-            color: var(--accent-cyan);
-        }
+        .friend-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-secondary); border-radius: 10px; transition: all 0.2s ease; cursor: pointer; margin-bottom: 8px; }
+        .friend-item:hover { background: var(--bg-card-hover); transform: translateX(4px); }
+        .friend-avatar { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, var(--accent-violet), var(--accent-cyan)); display: flex; align-items: center; justify-content: center; font-weight: 600; overflow: hidden; }
+        .friend-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .friend-info { flex: 1; }
+        .friend-name { font-weight: 500; font-size: 0.9rem; }
+        .friend-status { font-size: 0.8rem; color: var(--text-muted); }
+        .friend-status.active { color: var(--accent-emerald); }
 
-        .action-btn.liked {
-            color: var(--accent-rose);
-        }
+        .doc-item { padding: 12px; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border-color); }
+        .doc-header { display: flex; justify-content: space-between; align-items: center; }
+        .doc-title { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+        .doc-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
 
-        .action-btn.liked:hover {
-            color: var(--accent-rose);
-        }
+        .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 30px; }
+        @media (max-width: 768px) { .stats-bar { grid-template-columns: repeat(2, 1fr); } }
+        .stat-item { background: var(--bg-card); border-radius: 12px; padding: 20px; text-align: center; border: 1px solid var(--border-color); }
+        .stat-value { font-size: 2rem; font-weight: 700; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-emerald)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .stat-label { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
 
-        .action-btn .count {
-            font-family: 'JetBrains Mono', monospace;
-        }
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+        .empty-state-icon { font-size: 3rem; margin-bottom: 16px; opacity: 0.5; }
 
-        /* Friends List */
-        .friends-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
+        .loading { display: flex; justify-content: center; padding: 40px; }
+        .loading-spinner { width: 30px; height: 30px; border: 3px solid var(--border-color); border-top-color: var(--accent-cyan); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        .friend-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px;
-            background: var(--bg-secondary);
-            border-radius: 10px;
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
+        .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px 20px; color: var(--text-primary); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); animation: slideIn 0.3s ease; min-width: 300px; }
+        .toast.success { border-color: var(--accent-emerald); }
+        .toast.error { border-color: var(--accent-rose); }
+        .toast.info { border-color: var(--accent-cyan); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-        .friend-item:hover {
-            background: var(--bg-card-hover);
-            transform: translateX(4px);
-        }
+        .footer { text-align: center; padding: 30px; color: var(--text-muted); font-size: 0.85rem; }
+        .footer a { color: var(--accent-cyan); text-decoration: none; }
 
-        .friend-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, var(--accent-violet), var(--accent-cyan));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 1rem;
-            overflow: hidden;
-        }
+        .nostr-ref { color: var(--accent-violet); text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: rgba(139, 92, 246, 0.1); padding: 2px 6px; border-radius: 4px; }
 
-        .friend-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .friend-info {
-            flex: 1;
-        }
-
-        .friend-name {
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-
-        .friend-status {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .friend-status.active {
-            color: var(--accent-emerald);
-        }
-
-        /* Map Preview */
-        .map-preview {
-            width: 100%;
-            height: 200px;
-            border-radius: 12px;
-            overflow: hidden;
-            position: relative;
-            background: var(--bg-secondary);
-        }
-
-        .map-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .map-overlay {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 16px;
-            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
-        }
-
-        .map-overlay a {
-            color: var(--accent-cyan);
-            text-decoration: none;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .map-overlay a:hover {
-            text-decoration: underline;
-        }
-
-        /* Market Ads */
-        .market-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 16px;
-        }
-
-        .market-item {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .market-item:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .market-image {
-            width: 100%;
-            height: 120px;
-            background: linear-gradient(135deg, var(--accent-amber), var(--accent-rose));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-        }
-
-        .market-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .market-info {
-            padding: 14px;
-        }
-
-        .market-title {
-            font-weight: 500;
-            font-size: 0.9rem;
-            margin-bottom: 6px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .market-author {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        /* Stats Bar */
-        .stats-bar {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-bottom: 30px;
-        }
-
-        @media (max-width: 768px) {
-            .stats-bar {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        .stat-item {
-            background: var(--bg-card);
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
-        }
-
-        .stat-item:hover {
-            border-color: var(--accent-cyan);
-            transform: translateY(-2px);
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-emerald));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .stat-label {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-muted);
-        }
-
-        .empty-state-icon {
-            font-size: 3rem;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-
-        .empty-state-text {
-            font-size: 0.95rem;
-        }
-
-        /* Toast Notifications */
-        .toast-container {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .toast {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 16px 20px;
-            color: var(--text-primary);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            animation: slideIn 0.3s ease;
-            min-width: 300px;
-        }
-
-        .toast.success {
-            border-color: var(--accent-emerald);
-        }
-
-        .toast.error {
-            border-color: var(--accent-rose);
-        }
-
-        .toast.info {
-            border-color: var(--accent-cyan);
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        /* Footer */
-        .footer {
-            text-align: center;
-            padding: 30px;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            margin-top: 40px;
-        }
-
-        .footer a {
-            color: var(--accent-cyan);
-            text-decoration: none;
-        }
-
-        .footer a:hover {
-            text-decoration: underline;
-        }
-
-        /* Nostr reference styling */
-        .nostr-ref {
-            color: var(--accent-violet);
-            text-decoration: none;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85em;
-            background: rgba(139, 92, 246, 0.1);
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-
-        .nostr-ref:hover {
-            background: rgba(139, 92, 246, 0.2);
-        }
-
-        /* Loading spinner */
-        .loading-spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--border-color);
-            border-top-color: var(--accent-cyan);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Live indicator */
-        .live-indicator {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.75rem;
-            color: var(--accent-emerald);
-        }
-
-        .live-dot {
-            width: 6px;
-            height: 6px;
-            background: var(--accent-emerald);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        /* Responsive */
         @media (max-width: 640px) {
-            .header {
-                flex-direction: column;
-                gap: 20px;
-                text-align: center;
-            }
-
-            .header-left {
-                flex-direction: column;
-            }
-
-            .header-actions {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .zone-info h1 {
-                font-size: 1.4rem;
-            }
+            .header { flex-direction: column; text-align: center; }
+            .header-left { flex-direction: column; }
+            .header-actions { width: 100%; justify-content: center; }
+            .zone-info h1 { font-size: 1.4rem; }
         }
     </style>
 </head>
@@ -783,83 +203,46 @@
                 <div class="zone-icon">🗺️</div>
                 <div class="zone-info">
                     <h1>UMAP Zone _LAT_,_LON_</h1>
-                    <div class="zone-coords">📍 Latitude: _LAT_ | Longitude: _LON_</div>
-                    <div class="zone-date">🕐 Updated: _DATE_</div>
+                    <div class="zone-coords">📍 _LAT_, _LON_ | 🔑 <span id="umap-npub-short"></span></div>
                 </div>
             </div>
             <div class="header-actions">
-                <div class="connection-status" id="connection-status">
+                <div class="connection-status">
                     <span class="status-dot" id="status-dot"></span>
                     <span id="status-text">Disconnected</span>
                 </div>
-                <button class="btn btn-nostr" id="nostr-connect-btn" onclick="handleNostrConnect()">
-                    🔑 Connect Nostr
-                </button>
-                <a href="_MAPURL_" class="btn btn-primary" target="_blank">
-                    🗺️ Open Map
-                </a>
-                <a href="_CORACLEURL_" class="btn btn-secondary" target="_blank">
-                    💬 Coracle
-                </a>
-                <a href="_VISIOURL_" class="btn btn-secondary" target="_blank">
-                    📹 Visio
-                </a>
-                <a href="_MYIPFS_/ipns/copylaradio.com/collaborative-editor.html?lat=_LAT_&lon=_LON_" class="btn btn-primary" target="_blank">
-                    📝 Commons Editor
-                </a>
+                <button class="btn btn-nostr" id="nostr-connect-btn" onclick="handleNostrConnect()">🔑 Connect Nostr</button>
+                <a href="_MAPURL_" class="btn btn-primary" target="_blank">🗺️ Map</a>
+                <a href="_CORACLEURL_/_UMAPNPUB_" class="btn btn-secondary" target="_blank">💬 Coracle</a>
             </div>
         </header>
 
         <!-- Stats Bar -->
         <div class="stats-bar">
-            <div class="stat-item">
-                <div class="stat-value" id="friends-count">_FRIENDSCOUNT_</div>
-                <div class="stat-label">Active Friends</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="messages-count">_MESSAGESCOUNT_</div>
-                <div class="stat-label">Messages (24h)</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="market-count">_MARKETCOUNT_</div>
-                <div class="stat-label">Market Ads</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="likes-count">_LIKESCOUNT_</div>
-                <div class="stat-label">Total Likes</div>
-            </div>
+            <div class="stat-item"><div class="stat-value" id="friends-count">-</div><div class="stat-label">Friends</div></div>
+            <div class="stat-item"><div class="stat-value" id="messages-count">-</div><div class="stat-label">Messages</div></div>
+            <div class="stat-item"><div class="stat-value" id="docs-count">-</div><div class="stat-label">Documents</div></div>
+            <div class="stat-item"><div class="stat-value" id="likes-count">-</div><div class="stat-label">Likes</div></div>
         </div>
 
         <!-- Main Grid -->
         <div class="main-grid">
-            <!-- Left Column: Messages -->
+            <!-- Left Column -->
             <div class="main-column">
-                <!-- Compose Box -->
+                <!-- Compose Box (hidden until connected) -->
                 <div class="card" id="compose-card" style="display: none;">
                     <div class="card-header">
-                        <div class="card-title">
-                            <span class="card-title-icon">✍️</span>
-                            Post to Zone
-                        </div>
-                        <div class="live-indicator">
-                            <span class="live-dot"></span>
-                            <span>Live</span>
-                        </div>
+                        <div class="card-title">✍️ Post to Zone</div>
                     </div>
                     <div class="card-content">
                         <div class="compose-box">
-                            <textarea id="compose-content" placeholder="Share something with this zone... (geolocation will be added automatically)" maxlength="500"></textarea>
+                            <textarea id="compose-content" placeholder="Share something with this zone..." maxlength="500"></textarea>
                             <div class="compose-actions">
                                 <div class="compose-tags">
                                     <span class="compose-tag">📍 _LAT_,_LON_</span>
                                     <span class="compose-tag">#UPlanet</span>
                                 </div>
-                                <div style="display: flex; align-items: center; gap: 12px;">
-                                    <span class="char-count"><span id="char-count">0</span>/500</span>
-                                    <button class="btn btn-primary btn-small" id="publish-btn" onclick="publishToZone()">
-                                        📤 Publish
-                                    </button>
-                                </div>
+                                <button class="btn btn-primary btn-small" onclick="publishToZone()">📤 Publish</button>
                             </div>
                         </div>
                     </div>
@@ -868,36 +251,28 @@
                 <!-- Messages Feed -->
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">
-                            <span class="card-title-icon">📝</span>
-                            Recent Messages
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <span class="card-badge">Last 24h</span>
-                            <button class="btn btn-secondary btn-small" onclick="refreshMessages()" title="Refresh">
-                                🔄
-                            </button>
-                        </div>
+                        <div class="card-title">📝 Recent Messages</div>
+                        <button class="btn btn-secondary btn-small" onclick="loadMessages()">🔄</button>
                     </div>
                     <div class="card-content">
-                        <div class="messages-feed" id="messages-feed">
-                            _MESSAGES_
+                        <div class="feed" id="messages-feed">
+                            <div class="loading"><div class="loading-spinner"></div></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Market Section -->
-                <div class="card" style="margin-top: 30px;">
+                <!-- Collaborative Documents -->
+                <div class="card">
                     <div class="card-header">
-                        <div class="card-title">
-                            <span class="card-title-icon">🛒</span>
-                            uMARKET - Local Ads
-                        </div>
-                        <span class="card-badge">#market</span>
+                        <div class="card-title">📄 Collaborative Documents</div>
+                        <span class="card-badge">#collaborative</span>
                     </div>
                     <div class="card-content">
-                        <div class="market-grid" id="market-grid">
-                            _MARKET_
+                        <div id="docs-feed">
+                            <div class="loading"><div class="loading-spinner"></div></div>
+                        </div>
+                        <div style="margin-top: 12px; text-align: center;">
+                            <a href="/ipns/copylaradio.com/collaborative-editor.html?lat=_LAT_&lon=_LON_&umap=_UMAPHEX_" class="btn btn-primary btn-small">➕ New Document</a>
                         </div>
                     </div>
                 </div>
@@ -905,91 +280,29 @@
 
             <!-- Right Column: Sidebar -->
             <div class="sidebar">
-                <!-- Map Preview -->
+                <!-- Friends -->
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">
-                            <span class="card-title-icon">🛰️</span>
-                            Zone Preview
-                        </div>
+                        <div class="card-title">👥 Friends</div>
+                        <span class="card-badge" id="friends-badge">0</span>
                     </div>
                     <div class="card-content">
-                        <div class="map-preview">
-                            <img src="_MAPIMAGEURL_" alt="Zone Map" onerror="this.parentElement.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:100%;font-size:3rem;\'>🌍</div>'">
-                            <div class="map-overlay">
-                                <a href="_MAPURL_" target="_blank">
-                                    🔗 Open Full Map →
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Active Friends -->
-                <div class="card" style="margin-top: 20px;">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <span class="card-title-icon">👥</span>
-                            Active Friends
-                        </div>
-                        <span class="card-badge" id="friends-badge">_FRIENDSCOUNT_</span>
-                    </div>
-                    <div class="card-content">
-                        <div class="friends-list" id="friends-list">
-                            _FRIENDS_
+                        <div id="friends-list">
+                            <div class="loading"><div class="loading-spinner"></div></div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Quick Links -->
-                <div class="card" style="margin-top: 20px;">
+                <div class="card">
                     <div class="card-header">
-                        <div class="card-title">
-                            <span class="card-title-icon">🔗</span>
-                            Quick Links
-                        </div>
+                        <div class="card-title">🔗 Quick Links</div>
                     </div>
                     <div class="card-content">
                         <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <a href="_SECTORURL_" class="btn btn-secondary" style="justify-content: center;">
-                                📦 Parent Sector (_SECTOR_)
-                            </a>
-                            <a href="_REGIONURL_" class="btn btn-secondary" style="justify-content: center;">
-                                🌍 Parent Region (_REGION_)
-                            </a>
-                            <a href="_IPFSURL_" class="btn btn-secondary" style="justify-content: center;">
-                                📂 IPFS Archive
-                            </a>
-                            <a href="_NOSTRPROFILEURL_" class="btn btn-secondary" style="justify-content: center;">
-                                🔑 Nostr Profile
-                            </a>
-                            <a href="_MYIPFS_/ipns/copylaradio.com/collaborative-editor.html?lat=_LAT_&lon=_LON_" class="btn btn-primary" style="justify-content: center;">
-                                📝 Commons Editor
-                            </a>
-                            <a href="_MYIPFS_/ipns/copylaradio.com/plantnet.html" class="btn btn-secondary" style="justify-content: center;">
-                                🌱 PlantNet Inventory
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Collaborative Documents -->
-                <div class="card" style="margin-top: 20px;">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <span class="card-title-icon">📄</span>
-                            Commons Documents
-                        </div>
-                        <span class="card-badge" id="docs-count">_DOCSCOUNT_</span>
-                    </div>
-                    <div class="card-content">
-                        <div id="commons-docs-list">
-                            _COMMONSDOCS_
-                        </div>
-                        <div style="margin-top: 12px; text-align: center;">
-                            <a href="_MYIPFS_/ipns/copylaradio.com/collaborative-editor.html?lat=_LAT_&lon=_LON_" class="btn btn-primary btn-small">
-                                ➕ New Document
-                            </a>
+                            <a href="_SECTORURL_" class="btn btn-secondary" style="justify-content: center;">📦 Sector _SECTOR_</a>
+                            <a href="_REGIONURL_" class="btn btn-secondary" style="justify-content: center;">🌍 Region _REGION_</a>
+                            <a href="/ipns/copylaradio.com/collaborative-editor.html?lat=_LAT_&lon=_LON_&umap=_UMAPHEX_" class="btn btn-primary" style="justify-content: center;">📝 Commons Editor</a>
                         </div>
                     </div>
                 </div>
@@ -998,14 +311,7 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p>
-                Generated by <a href="https://github.com/papiche/Astroport.ONE" target="_blank">Astroport.ONE</a> | 
-                UPlanet Geo Key System | 
-                <a href="_MYIPFS_/ipns/copylaradio.com" target="_blank">copylaradio.com</a>
-            </p>
-            <p style="margin-top: 8px;">
-                Node: <code style="background: var(--bg-card); padding: 2px 8px; border-radius: 4px;">_NODEID_</code>
-            </p>
+            <p>Generated by <a href="https://github.com/papiche/Astroport.ONE" target="_blank">Astroport.ONE</a> | UPlanet Geo Key System</p>
         </footer>
     </div>
 
@@ -1013,10 +319,14 @@
     <div class="toast-container" id="toast-container"></div>
 
     <script>
-        // Zone configuration
+        // ═══════════════════════════════════════════════════════════════════
+        // ZONE CONFIGURATION (injected by server)
+        // ═══════════════════════════════════════════════════════════════════
         const ZONE_CONFIG = {
             lat: '_LAT_',
             lon: '_LON_',
+            umapPubkeyHex: '_UMAPHEX_',
+            umapNpub: '_UMAPNPUB_',
             relay: '_MYRELAY_',
             ipfs: '_MYIPFS_',
             coracle: '_CORACLEURL_'
@@ -1024,244 +334,455 @@
 
         // State
         let isConnected = false;
-        let userPubkeyLocal = null;
+        let userPubkey = null;
+        let pool = null;
+        let friends = [];
 
-        // Initialize when common.js is loaded
+        // ═══════════════════════════════════════════════════════════════════
+        // INITIALIZATION
+        // ═══════════════════════════════════════════════════════════════════
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🗺️ UMAP Index loaded for zone:', ZONE_CONFIG.lat, ZONE_CONFIG.lon);
+            console.log('🔑 UMAP Pubkey:', ZONE_CONFIG.umapPubkeyHex);
             
-            // Format nostr references as clickable links
-            formatNostrReferences();
-            
-            // Setup compose box character counter
-            const composeContent = document.getElementById('compose-content');
-            if (composeContent) {
-                composeContent.addEventListener('input', () => {
-                    document.getElementById('char-count').textContent = composeContent.value.length;
-                });
-            }
+            // Display short npub
+            document.getElementById('umap-npub-short').textContent = 
+                ZONE_CONFIG.umapNpub ? `${ZONE_CONFIG.umapNpub.slice(0, 12)}...` : '';
 
-            // Check if common.js is loaded and try auto-connect
-            if (typeof window.connectNostr === 'function') {
-                console.log('✅ common.js loaded successfully');
-                // Try to auto-connect if user has extension
-                setTimeout(tryAutoConnect, 1000);
-            } else {
-                console.warn('⚠️ common.js not fully loaded, some features may be unavailable');
-            }
+            // Initialize relay pool
+            await initRelayPool();
+            
+            // Load all data from Nostr
+            await Promise.all([
+                loadFriends(),
+                loadMessages(),
+                loadCollaborativeDocs()
+            ]);
+
+            // Try auto-connect if extension available
+            setTimeout(tryAutoConnect, 500);
         });
 
-        // Auto-connect if nostr extension available
-        async function tryAutoConnect() {
-            if (window.nostr) {
-                try {
-                    const pubkey = await window.nostr.getPublicKey();
-                    if (pubkey) {
-                        updateConnectionStatus(true, pubkey);
-                    }
-                } catch (e) {
-                    console.log('Auto-connect not available, user must click connect');
-                }
-            }
-        }
-
-        // Handle Nostr connection
-        async function handleNostrConnect() {
-            const btn = document.getElementById('nostr-connect-btn');
-            btn.innerHTML = '<div class="loading-spinner"></div> Connecting...';
-            btn.disabled = true;
-
+        // ═══════════════════════════════════════════════════════════════════
+        // RELAY POOL MANAGEMENT
+        // ═══════════════════════════════════════════════════════════════════
+        async function initRelayPool() {
             try {
-                if (typeof connectNostr === 'function') {
-                    const result = await connectNostr();
-                    if (result && window.userPubkey) {
-                        updateConnectionStatus(true, window.userPubkey);
-                        showToast('✅ Connected to Nostr!', 'success');
-                    } else {
-                        throw new Error('Connection failed');
-                    }
-                } else if (window.nostr) {
-                    // Fallback: direct extension call
-                    const pubkey = await window.nostr.getPublicKey();
-                    userPubkeyLocal = pubkey;
-                    updateConnectionStatus(true, pubkey);
-                    showToast('✅ Connected to Nostr!', 'success');
-                } else {
-                    throw new Error('Nostr extension not found. Install nos2x or Alby.');
-                }
-            } catch (error) {
-                console.error('Connection error:', error);
-                showToast(`❌ ${error.message}`, 'error');
-                btn.innerHTML = '🔑 Connect Nostr';
-                btn.disabled = false;
-            }
-        }
-
-        // Update connection UI
-        function updateConnectionStatus(connected, pubkey = null) {
-            isConnected = connected;
-            userPubkeyLocal = pubkey;
-            
-            const statusDot = document.getElementById('status-dot');
-            const statusText = document.getElementById('status-text');
-            const btn = document.getElementById('nostr-connect-btn');
-            const composeCard = document.getElementById('compose-card');
-
-            if (connected) {
-                statusDot.classList.add('connected');
-                statusText.textContent = pubkey ? `${pubkey.slice(0, 8)}...` : 'Connected';
-                btn.classList.add('connected');
-                btn.innerHTML = '✅ Connected';
-                btn.disabled = true;
-                composeCard.style.display = 'block';
+                if (typeof NostrTools !== 'undefined' && NostrTools.SimplePool) {
+                    pool = new NostrTools.SimplePool();
+                    console.log('✅ Relay pool initialized');
+                } else if (typeof SimplePool !== 'undefined') {
+                    pool = new SimplePool();
+                    console.log('✅ Relay pool initialized (global)');
             } else {
-                statusDot.classList.remove('connected');
-                statusText.textContent = 'Disconnected';
-                btn.classList.remove('connected');
-                btn.innerHTML = '🔑 Connect Nostr';
-                btn.disabled = false;
-                composeCard.style.display = 'none';
+                    console.warn('⚠️ NostrTools not available, using fetch fallback');
+                }
+            } catch (e) {
+                console.error('Failed to init pool:', e);
             }
         }
 
-        // Publish message to zone
-        async function publishToZone() {
-            const content = document.getElementById('compose-content').value.trim();
-            if (!content) {
-                showToast('⚠️ Please enter a message', 'error');
-                return;
+        function getRelays() {
+            const relays = [ZONE_CONFIG.relay];
+            if (!relays[0].startsWith('wss://')) {
+                relays[0] = 'wss://relay.music-music-music.com';
             }
+            // Add fallback relays
+            relays.push('wss://relay.damus.io', 'wss://nos.lol');
+            return relays;
+        }
 
-            if (!isConnected) {
-                showToast('⚠️ Please connect to Nostr first', 'error');
-                return;
-            }
-
-            const btn = document.getElementById('publish-btn');
-            btn.innerHTML = '<div class="loading-spinner"></div>';
-            btn.disabled = true;
-
+        // ═══════════════════════════════════════════════════════════════════
+        // LOAD FRIENDS (kind 3 - Contact List)
+        // ═══════════════════════════════════════════════════════════════════
+        async function loadFriends() {
+            const container = document.getElementById('friends-list');
+            
             try {
-                // Build tags with geolocation
-                const tags = [
-                    ['t', 'UPlanet'],
-                    ['t', 'UMAP'],
-                    ['latitude', ZONE_CONFIG.lat],
-                    ['longitude', ZONE_CONFIG.lon],
-                    ['g', `${ZONE_CONFIG.lat},${ZONE_CONFIG.lon}`],
-                    ['application', 'UPlanet']
-                ];
-
-                if (typeof publishNote === 'function') {
-                    const result = await publishNote(content, tags, 1, { silent: true });
-                    if (result && result.success) {
-                        showToast('✅ Message published!', 'success');
-                        document.getElementById('compose-content').value = '';
-                        document.getElementById('char-count').textContent = '0';
-                        
-                        // Add message to feed visually
-                        addMessageToFeed({
-                            content: content,
-                            author: userPubkeyLocal,
-                            time: new Date().toLocaleString()
-                        });
-                    } else {
-                        throw new Error(result?.errors?.join(', ') || 'Publication failed');
-                    }
-                } else {
-                    throw new Error('Publishing not available');
+                if (!pool || !ZONE_CONFIG.umapPubkeyHex) {
+                    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-text">No friends data</div></div>';
+                    return;
                 }
-            } catch (error) {
-                console.error('Publish error:', error);
-                showToast(`❌ ${error.message}`, 'error');
-            } finally {
-                btn.innerHTML = '📤 Publish';
-                btn.disabled = false;
+
+                const events = await pool.querySync(getRelays(), {
+                    kinds: [3],
+                    authors: [ZONE_CONFIG.umapPubkeyHex],
+                    limit: 1
+                });
+
+                if (!events || events.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-text">No friends yet</div></div>';
+                    updateStats('friends', 0);
+                    return;
+                }
+
+                // Parse friends from tags
+                const contactEvent = events[0];
+                friends = contactEvent.tags
+                    .filter(t => t[0] === 'p')
+                    .map(t => t[1]);
+
+                updateStats('friends', friends.length);
+                document.getElementById('friends-badge').textContent = friends.length;
+
+                if (friends.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-text">No friends yet</div></div>';
+                    return;
+                }
+
+                // Fetch profiles for first 10 friends
+                const profilesToFetch = friends.slice(0, 10);
+                const profiles = await pool.querySync(getRelays(), {
+                    kinds: [0],
+                    authors: profilesToFetch,
+                    limit: 10
+                });
+
+                const profileMap = {};
+                profiles.forEach(p => {
+                    try {
+                        profileMap[p.pubkey] = JSON.parse(p.content);
+                    } catch (e) {}
+                });
+
+                let html = '';
+                profilesToFetch.forEach(pubkey => {
+                    const profile = profileMap[pubkey] || {};
+                    const name = profile.name || profile.display_name || `${pubkey.slice(0, 8)}...`;
+                    const avatar = profile.picture;
+                    const avatarHtml = avatar 
+                        ? `<img src="${escapeHtml(avatar)}" alt="" onerror="this.parentElement.textContent='${name[0].toUpperCase()}'">` 
+                        : name[0].toUpperCase();
+
+                    html += `
+                        <div class="friend-item" onclick="window.open('${ZONE_CONFIG.coracle}/people/${pubkey}', '_blank')">
+                            <div class="friend-avatar">${avatarHtml}</div>
+                            <div class="friend-info">
+                                <div class="friend-name">${escapeHtml(name)}</div>
+                                <div class="friend-status active">● Active</div>
+                            </div>
+                        </div>`;
+                });
+
+                if (friends.length > 10) {
+                    html += `<div style="text-align: center; color: var(--text-muted); padding: 10px;">+${friends.length - 10} more...</div>`;
+                }
+
+                container.innerHTML = html;
+
+            } catch (e) {
+                console.error('Error loading friends:', e);
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-text">Error loading friends</div></div>';
             }
         }
 
-        // Add message to feed dynamically
-        function addMessageToFeed(message) {
-            const feed = document.getElementById('messages-feed');
-            const messageHtml = `
-                <div class="message-item" style="border-left-color: var(--accent-emerald);">
-                    <div class="message-header">
-                        <span class="message-author">${message.author?.slice(0, 12) || 'You'}...</span>
-                        <span class="message-time">${message.time}</span>
-                    </div>
-                    <div class="message-content">${escapeHtml(message.content)}</div>
-                    <div class="message-actions">
-                        <button class="action-btn">❤️ <span class="count">0</span></button>
-                        <button class="action-btn">💬 Reply</button>
-                    </div>
-                </div>
-            `;
-            feed.insertAdjacentHTML('afterbegin', messageHtml);
-        }
-
-        // Like a message
-        async function likeMessage(eventId, authorPubkey, button) {
-            if (!isConnected) {
-                showToast('⚠️ Please connect to Nostr first', 'error');
-                return;
-            }
-
-            button.disabled = true;
-            const originalHtml = button.innerHTML;
-            button.innerHTML = '<div class="loading-spinner"></div>';
-
+        // ═══════════════════════════════════════════════════════════════════
+        // LOAD MESSAGES (kind 1 from friends)
+        // ═══════════════════════════════════════════════════════════════════
+        async function loadMessages() {
+            const container = document.getElementById('messages-feed');
+            
             try {
-                if (typeof sendLike === 'function') {
-                    const result = await sendLike(eventId, authorPubkey);
-                    if (result) {
-                        button.classList.add('liked');
-                        const countEl = button.querySelector('.count');
-                        if (countEl) {
-                            countEl.textContent = parseInt(countEl.textContent) + 1;
-                        }
-                        showToast('❤️ Liked!', 'success');
-                    }
-                } else {
-                    throw new Error('Like function not available');
+                if (!pool) {
+                    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Relay not available</div></div>';
+                    return;
                 }
-            } catch (error) {
-                console.error('Like error:', error);
-                showToast(`❌ ${error.message}`, 'error');
-                button.innerHTML = originalHtml;
-            } finally {
-                button.disabled = false;
-                if (!button.classList.contains('liked')) {
-                    button.innerHTML = originalHtml;
+
+                // Wait for friends to load if not already
+                if (friends.length === 0) {
+                    await new Promise(r => setTimeout(r, 1000));
                 }
+
+                const authors = friends.length > 0 ? friends : [ZONE_CONFIG.umapPubkeyHex];
+                const since = Math.floor(Date.now() / 1000) - (48 * 3600); // 48 hours
+
+                const events = await pool.querySync(getRelays(), {
+                    kinds: [1],
+                    authors: authors.slice(0, 50), // Limit authors for performance
+                    since: since,
+                    limit: 50
+                });
+
+                if (!events || events.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">No messages in the last 48 hours</div></div>';
+                    updateStats('messages', 0);
+                    return;
+                }
+
+                // Sort by created_at descending
+                events.sort((a, b) => b.created_at - a.created_at);
+                updateStats('messages', events.length);
+
+                // Fetch profiles for message authors
+                const authorPubkeys = [...new Set(events.map(e => e.pubkey))];
+                const profiles = await pool.querySync(getRelays(), {
+                    kinds: [0],
+                    authors: authorPubkeys.slice(0, 20),
+                    limit: 20
+                });
+
+                const profileMap = {};
+                profiles.forEach(p => {
+                    try { profileMap[p.pubkey] = JSON.parse(p.content); } catch (e) {}
+                });
+
+                let html = '';
+                events.slice(0, 20).forEach(event => {
+                    const profile = profileMap[event.pubkey] || {};
+                    const name = profile.name || `${event.pubkey.slice(0, 8)}...`;
+                    const time = new Date(event.created_at * 1000).toLocaleString();
+                    const content = formatContent(event.content);
+
+                    html += `
+                        <div class="item">
+                            <div class="item-header">
+                                <span class="item-author" onclick="window.open('${ZONE_CONFIG.coracle}/people/${event.pubkey}', '_blank')">${escapeHtml(name)}</span>
+                                <span class="item-time">${time}</span>
+                            </div>
+                            <div class="item-content">${content}</div>
+                            <div class="item-actions">
+                                <button class="action-btn" onclick="likeMessage('${event.id}', '${event.pubkey}', this)">❤️ Like</button>
+                                <button class="action-btn" onclick="window.open('${ZONE_CONFIG.coracle}/notes/${event.id}', '_blank')">💬 Reply</button>
+                            </div>
+                        </div>`;
+                });
+
+                container.innerHTML = html;
+
+            } catch (e) {
+                console.error('Error loading messages:', e);
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-text">Error loading messages</div></div>';
             }
         }
 
-        // Refresh messages from relay
-        async function refreshMessages() {
-            showToast('🔄 Refreshing...', 'info');
-            // This would fetch new messages from the relay
-            // For now, just reload the page
-            setTimeout(() => location.reload(), 1000);
+        // ═══════════════════════════════════════════════════════════════════
+        // LOAD COLLABORATIVE DOCUMENTS (kind 30023)
+        // STRICT FILTER: Only documents that:
+        // 1. Reference this UMAP via ["p", UMAP_PUBKEY] tag
+        // 2. Come from a friend of this UMAP (in contact list)
+        // This prevents "fake" documents from appearing
+        // ═══════════════════════════════════════════════════════════════════
+        async function loadCollaborativeDocs() {
+            const container = document.getElementById('docs-feed');
+            
+            try {
+                if (!pool || !ZONE_CONFIG.umapPubkeyHex) {
+                    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📄</div><div class="empty-state-text">Configuration unavailable</div></div>';
+                    return;
+                }
+
+                // Wait for friends list to be loaded
+                if (friends.length === 0) {
+                    await new Promise(r => setTimeout(r, 1500));
+                }
+
+                let allDocs = [];
+
+                // Query 1: Official documents signed by UMAP itself
+                try {
+                    const umapSignedDocs = await pool.querySync(getRelays(), {
+                        kinds: [30023],
+                        authors: [ZONE_CONFIG.umapPubkeyHex],
+                        limit: 30
+                    });
+                    if (umapSignedDocs) allDocs.push(...umapSignedDocs);
+                    console.log(`📄 Found ${umapSignedDocs?.length || 0} official UMAP docs`);
+                } catch (e) {
+                    console.log('UMAP signed docs query failed:', e);
+                }
+
+                // Query 2: User proposals that reference this UMAP via #p tag
+                try {
+                    const umapRefDocs = await pool.querySync(getRelays(), {
+                        kinds: [30023],
+                        '#p': [ZONE_CONFIG.umapPubkeyHex],
+                        limit: 50
+                    });
+                    if (umapRefDocs) allDocs.push(...umapRefDocs);
+                    console.log(`📄 Found ${umapRefDocs?.length || 0} proposals referencing UMAP`);
+                } catch (e) {
+                    console.log('UMAP ref query failed:', e);
+                }
+
+                // STRICT FILTER - Two types of valid documents:
+                // 
+                // Type 1: OFFICIAL DOCUMENTS (signed by UMAP itself)
+                //   → Document where pubkey = UMAP pubkey
+                //   → These are adopted proposals republished by NOSTR.UMAP.refresh.sh
+                //
+                // Type 2: USER PROPOSALS (signed by friends, referencing UMAP)
+                //   → Must have ["p", UMAP_PUBKEY] tag
+                //   → Must be signed by a friend of this UMAP
+                //
+                const validDocs = allDocs.filter(e => {
+                    const tags = e.tags || [];
+                    
+                    // Type 1: Official document signed by UMAP itself
+                    const isSignedByUmap = e.pubkey === ZONE_CONFIG.umapPubkeyHex;
+                    if (isSignedByUmap) {
+                        console.log(`✅ Official UMAP document: ${e.id.slice(0,8)}`);
+                        return true;
+                    }
+                    
+                    // Type 2: User proposal - must reference UMAP AND be from friend
+                    const refsThisUmap = tags.some(t => 
+                        t[0] === 'p' && t[1] === ZONE_CONFIG.umapPubkeyHex
+                    );
+                    const isFromFriend = friends.includes(e.pubkey);
+                    
+                    if (refsThisUmap && isFromFriend) {
+                        console.log(`✅ Valid proposal from friend: ${e.id.slice(0,8)}`);
+                        return true;
+                    }
+                    
+                    // Reject: doesn't meet either criteria
+                    if (!refsThisUmap) {
+                        console.log(`⚠️ Rejected ${e.id.slice(0,8)}: no UMAP reference`);
+                    } else if (!isFromFriend) {
+                        console.log(`⚠️ Rejected ${e.id.slice(0,8)}: author ${e.pubkey.slice(0,8)} not a friend`);
+                    }
+                    return false;
+                });
+
+                // Deduplicate by event id
+                const uniqueDocs = [...new Map(validDocs.map(d => [d.id, d])).values()];
+                
+                console.log(`✅ ${uniqueDocs.length} valid documents (from ${allDocs.length} candidates)`);
+                updateStats('docs', uniqueDocs.length);
+
+                if (uniqueDocs.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📄</div><div class="empty-state-text">No collaborative documents yet<br><small>Create the first one!</small></div></div>';
+                    return;
+                }
+
+                // Sort by created_at descending
+                uniqueDocs.sort((a, b) => b.created_at - a.created_at);
+
+                // Separate: Official (UMAP-signed) vs Proposals (user-signed)
+                const officialDocs = uniqueDocs.filter(d => d.pubkey === ZONE_CONFIG.umapPubkeyHex);
+                const proposalDocs = uniqueDocs.filter(d => d.pubkey !== ZONE_CONFIG.umapPubkeyHex);
+
+                let html = '';
+                
+                // Official documents first
+                if (officialDocs.length > 0) {
+                    html += '<div style="font-size: 0.75rem; color: var(--accent-emerald); margin-bottom: 8px; font-weight: 600;">✅ DOCUMENTS OFFICIELS</div>';
+                    officialDocs.slice(0, 5).forEach(doc => {
+                        html += renderDocItem(doc, true);
+                    });
+                }
+                
+                // User proposals
+                if (proposalDocs.length > 0) {
+                    if (officialDocs.length > 0) {
+                        html += '<div style="font-size: 0.75rem; color: var(--accent-amber); margin: 16px 0 8px 0; font-weight: 600;">📝 PROPOSITIONS</div>';
+                    }
+                    proposalDocs.slice(0, 5).forEach(doc => {
+                        html += renderDocItem(doc, false);
+                    });
+                }
+                
+                function renderDocItem(doc, isOfficial) {
+                    const tags = doc.tags || [];
+                    const title = tags.find(t => t[0] === 'title')?.[1] || 'Untitled';
+                    const version = tags.find(t => t[0] === 'version')?.[1] || '1';
+                    const docType = tags.find(t => t[0] === 't' && ['commons', 'project', 'decision', 'garden', 'resource'].includes(t[1]))?.[1] || 'commons';
+                    const authorPubkey = tags.find(t => t[0] === 'author')?.[1] || doc.pubkey;
+                    const date = new Date(doc.created_at * 1000).toLocaleDateString();
+
+                    const typeIcons = { commons: '🤝', project: '🎯', decision: '🗳️', garden: '🌱', resource: '📦' };
+                    const icon = typeIcons[docType] || '📄';
+                    
+                    const borderColor = isOfficial ? 'var(--accent-emerald)' : 'var(--accent-amber)';
+                    const statusLabel = isOfficial ? 'Adopté' : 'En attente';
+                    
+                    // Build editor URL with document ID for direct editing
+                    const editorUrl = `/ipns/copylaradio.com/collaborative-editor.html?lat=${ZONE_CONFIG.lat}&lon=${ZONE_CONFIG.lon}&umap=${ZONE_CONFIG.umapPubkeyHex}&doc=${doc.id}`;
+
+                    return `
+                        <div class="doc-item" style="border-left: 3px solid ${borderColor};">
+                            <div class="doc-header">
+                                <div class="doc-title"><span>${icon}</span><span>${escapeHtml(title)}</span></div>
+                                <span style="font-size: 0.8rem; color: var(--accent-emerald);">v${version}</span>
+                            </div>
+                            <div class="doc-meta">${date} • ${statusLabel} • #${docType}</div>
+                            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                                <a href="${editorUrl}" class="btn btn-small" style="flex: 1; justify-content: center; padding: 6px 10px; font-size: 0.75rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); text-decoration: none;">
+                                    ✏️ Lire / Éditer
+                                </a>
+                                <button onclick="window.open('${ZONE_CONFIG.coracle}/notes/${doc.id}', '_blank')" class="btn btn-small" style="padding: 6px 10px; font-size: 0.75rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-muted);">
+                                    🔗
+                                </button>
+                            </div>
+                        </div>`;
+                }
+
+                container.innerHTML = html;
+
+                // Count likes for stats
+                countTotalLikes(uniqueDocs.map(d => d.id));
+
+            } catch (e) {
+                console.error('Error loading documents:', e);
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-text">Error loading documents</div></div>';
+            }
         }
 
-        // Format nostr references
-        function formatNostrReferences() {
-            document.querySelectorAll('.message-content').forEach(el => {
-                el.innerHTML = el.innerHTML.replace(
-                    /(nostr:n(?:pub|profile|event|ote|addr)1[a-z0-9]+)/g, 
-                    `<a href="${ZONE_CONFIG.coracle}/$1" class="nostr-ref" target="_blank">$1</a>`
-                );
-            });
+        // ═══════════════════════════════════════════════════════════════════
+        // COUNT LIKES
+        // ═══════════════════════════════════════════════════════════════════
+        async function countTotalLikes(eventIds) {
+            if (!pool || eventIds.length === 0) return;
+            
+            try {
+                const likes = await pool.querySync(getRelays(), {
+                    kinds: [7],
+                    '#e': eventIds,
+                    limit: 200
+                });
+                
+                const validLikes = likes.filter(l => ['+', '❤️', '👍', '✅', '🤙'].includes(l.content));
+                updateStats('likes', validLikes.length);
+            } catch (e) {
+                console.error('Error counting likes:', e);
+            }
         }
 
-        // Toast notifications
+        // ═══════════════════════════════════════════════════════════════════
+        // UI HELPERS
+        // ═══════════════════════════════════════════════════════════════════
+        function updateStats(type, count) {
+            const el = document.getElementById(`${type}-count`);
+            if (el) el.textContent = count;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatContent(content) {
+            if (!content) return '';
+            // Escape HTML
+            let safe = escapeHtml(content);
+            // Convert URLs to links
+            safe = safe.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color: var(--accent-cyan);">$1</a>');
+            // Convert nostr: references
+            safe = safe.replace(/(nostr:n(?:pub|profile|event|ote|addr)1[a-z0-9]+)/g, 
+                `<a href="${ZONE_CONFIG.coracle}/$1" class="nostr-ref" target="_blank">$1</a>`);
+            // Convert newlines
+            safe = safe.replace(/\n/g, '<br>');
+            return safe;
+        }
+
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.innerHTML = `<span>${message}</span>`;
             container.appendChild(toast);
-            
             setTimeout(() => {
                 toast.style.opacity = '0';
                 toast.style.transform = 'translateX(100%)';
@@ -1269,15 +790,112 @@
             }, 3000);
         }
 
-        // Escape HTML
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+        // ═══════════════════════════════════════════════════════════════════
+        // NOSTR CONNECTION & PUBLISHING
+        // ═══════════════════════════════════════════════════════════════════
+        async function tryAutoConnect() {
+            if (window.nostr) {
+                try {
+                    const pubkey = await window.nostr.getPublicKey();
+                    if (pubkey) updateConnectionStatus(true, pubkey);
+                } catch (e) {
+                    console.log('Auto-connect not available');
+                }
+            }
         }
 
-        // Auto-refresh every 5 minutes
-        setTimeout(() => location.reload(), 300000);
+        async function handleNostrConnect() {
+            const btn = document.getElementById('nostr-connect-btn');
+            btn.innerHTML = '<div class="loading-spinner" style="width:16px;height:16px;"></div>';
+            btn.disabled = true;
+
+            try {
+                if (typeof connectNostr === 'function') {
+                    await connectNostr();
+                    if (window.userPubkey) {
+                        updateConnectionStatus(true, window.userPubkey);
+                        showToast('✅ Connected to Nostr!', 'success');
+                        return;
+                    }
+                }
+                
+                if (window.nostr) {
+                    const pubkey = await window.nostr.getPublicKey();
+                    updateConnectionStatus(true, pubkey);
+                    showToast('✅ Connected to Nostr!', 'success');
+                } else {
+                    throw new Error('Nostr extension not found. Install nos2x or Alby.');
+                }
+            } catch (error) {
+                showToast(`❌ ${error.message}`, 'error');
+                btn.innerHTML = '🔑 Connect Nostr';
+                btn.disabled = false;
+            }
+        }
+
+        function updateConnectionStatus(connected, pubkey = null) {
+            isConnected = connected;
+            userPubkey = pubkey;
+            
+            document.getElementById('status-dot').classList.toggle('connected', connected);
+            document.getElementById('status-text').textContent = connected ? `${pubkey?.slice(0, 8)}...` : 'Disconnected';
+            
+            const btn = document.getElementById('nostr-connect-btn');
+            btn.classList.toggle('connected', connected);
+            btn.innerHTML = connected ? '✅ Connected' : '🔑 Connect Nostr';
+            btn.disabled = connected;
+            
+            document.getElementById('compose-card').style.display = connected ? 'block' : 'none';
+        }
+
+        async function publishToZone() {
+            const content = document.getElementById('compose-content').value.trim();
+            if (!content) return showToast('⚠️ Please enter a message', 'error');
+            if (!isConnected) return showToast('⚠️ Please connect to Nostr first', 'error');
+
+            try {
+                const tags = [
+                    ['t', 'UPlanet'], ['t', 'UMAP'],
+                    ['latitude', ZONE_CONFIG.lat], ['longitude', ZONE_CONFIG.lon],
+                    ['g', `${ZONE_CONFIG.lat},${ZONE_CONFIG.lon}`],
+                    ['p', ZONE_CONFIG.umapPubkeyHex] // Reference UMAP
+                ];
+
+                if (typeof publishNote === 'function') {
+                    const result = await publishNote(content, tags, 1, { silent: true });
+                    if (result?.success) {
+                        showToast('✅ Message published!', 'success');
+                        document.getElementById('compose-content').value = '';
+                        setTimeout(loadMessages, 1000);
+                    } else {
+                        throw new Error('Publication failed');
+                    }
+                } else {
+                    throw new Error('Publishing not available');
+                }
+            } catch (error) {
+                showToast(`❌ ${error.message}`, 'error');
+            }
+        }
+
+        async function likeMessage(eventId, authorPubkey, button) {
+            if (!isConnected) return showToast('⚠️ Please connect to Nostr first', 'error');
+
+            button.disabled = true;
+            try {
+                if (typeof sendLike === 'function') {
+                    const result = await sendLike(eventId, authorPubkey);
+                    if (result) {
+                        button.classList.add('liked');
+                        button.innerHTML = '❤️ Liked';
+                        showToast('❤️ Liked!', 'success');
+                    }
+                }
+            } catch (error) {
+                showToast(`❌ ${error.message}`, 'error');
+            }
+                button.disabled = false;
+        }
     </script>
 </body>
 </html>

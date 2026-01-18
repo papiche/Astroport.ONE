@@ -911,14 +911,17 @@ EOF
 # Generates an interactive HTML index page for UMAP zone visualization
 # Uses templates/NOSTR/umap_index.html as the base template
 #
+# The page fetches data dynamically from Nostr using the UMAP's public key.
+# Server only injects: coordinates, UMAP pubkey (hex + npub), relay/IPFS URLs
+#
 # Template placeholders:
 # _LAT_, _LON_ - Coordinates
-# _DATE_ - Generation date
-# _MESSAGES_ - HTML formatted messages
-# _FRIENDS_ - HTML formatted friends list
-# _MARKET_ - HTML formatted market ads
-# _*COUNT_ - Various counters
-# _*URL_ - Various URLs
+# _UMAPHEX_ - UMAP public key in hex format
+# _UMAPNPUB_ - UMAP public key in npub format
+# _MYRELAY_, _MYIPFS_ - Node URLs
+# _CORACLEURL_ - Coracle URL
+# _MAPURL_, _SECTORURL_, _REGIONURL_ - Navigation URLs
+# _SECTOR_, _REGION_ - Zone identifiers
 
 generate_umap_index() {
     local UMAPPATH=$1
@@ -940,225 +943,23 @@ generate_umap_index() {
     local RLAT=$(echo ${LAT} | cut -d '.' -f 1)
     local RLON=$(echo ${LON} | cut -d '.' -f 1)
     
-    # Count statistics
-    local messages_count=0
-    local likes_count=0
-    local market_count=0
-    local friends_count=${#ACTIVE_FRIENDS[@]}
+    # Get UMAP Nostr keys (npub and hex)
+    local UMAPNPUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
+    local UMAPHEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "${UMAPNPUB}" 2>/dev/null)
     
-    if [[ -f "${UMAPPATH}/NOSTR_messages" ]]; then
-        messages_count=$(grep -c '^### 📝' "${UMAPPATH}/NOSTR_messages" 2>/dev/null || echo "0")
+    if [[ -z "$UMAPNPUB" || -z "$UMAPHEX" ]]; then
+        log "⚠️  Failed to generate UMAP Nostr keys"
+        return 1
     fi
     
-    if [[ -d "${UMAPPATH}/APP/uMARKET/ads" ]]; then
-        market_count=$(find "${UMAPPATH}/APP/uMARKET/ads" -name "*.json" 2>/dev/null | wc -l)
-    fi
-    
-    # Generate messages HTML
-    local messages_html=""
-    if [[ -f "${UMAPPATH}/NOSTR_messages" && -s "${UMAPPATH}/NOSTR_messages" ]]; then
-        # Parse NOSTR_messages and convert to HTML
-        local current_author=""
-        local current_time=""
-        local current_content=""
-        local in_message=false
-        
-        while IFS= read -r line || [[ -n "$line" ]]; do
-            if [[ "$line" =~ ^###\ 📝\ (.+)$ ]]; then
-                # New message header - save previous if exists
-                if [[ "$in_message" == true && -n "$current_content" ]]; then
-                    messages_html+="<div class=\"message-item\">"
-                    messages_html+="<div class=\"message-header\">"
-                    messages_html+="<span class=\"message-author\">$current_author</span>"
-                    messages_html+="<span class=\"message-time\">$current_time</span>"
-                    messages_html+="</div>"
-                    messages_html+="<div class=\"message-content\">$(echo "$current_content" | sed 's/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g')</div>"
-                    messages_html+="</div>"
-                fi
-                current_time="${BASH_REMATCH[1]}"
-                current_author=""
-                current_content=""
-                in_message=true
-            elif [[ "$line" =~ ^\*\*Author\*\*:\ (.+)$ ]]; then
-                current_author="${BASH_REMATCH[1]}"
-            elif [[ "$line" =~ ^---+$ ]] || [[ -z "$line" ]]; then
-                continue
-            elif [[ "$in_message" == true && ! "$line" =~ ^\*\* ]]; then
-                if [[ -n "$current_content" ]]; then
-                    current_content+="<br>"
-                fi
-                current_content+="$line"
-            fi
-        done < "${UMAPPATH}/NOSTR_messages"
-        
-        # Add last message
-        if [[ "$in_message" == true && -n "$current_content" ]]; then
-            messages_html+="<div class=\"message-item\">"
-            messages_html+="<div class=\"message-header\">"
-            messages_html+="<span class=\"message-author\">$current_author</span>"
-            messages_html+="<span class=\"message-time\">$current_time</span>"
-            messages_html+="</div>"
-            messages_html+="<div class=\"message-content\">$(echo "$current_content" | sed 's/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g')</div>"
-            messages_html+="</div>"
-        fi
-    fi
-    
-    # Empty state for messages
-    if [[ -z "$messages_html" ]]; then
-        messages_html="<div class=\"empty-state\"><div class=\"empty-state-icon\">📭</div><div class=\"empty-state-text\">No messages in the last 24 hours</div></div>"
-    fi
-    
-    # Generate friends HTML
-    local friends_html=""
-    local friend_index=0
-    for ami in "${ACTIVE_FRIENDS[@]}"; do
-        local ami_short="${ami:0:8}...${ami: -4}"
-        local avatar_letter="${ami:0:1}"
-        avatar_letter=$(echo "$avatar_letter" | tr '[:lower:]' '[:upper:]')
-        
-        friends_html+="<div class=\"friend-item\">"
-        friends_html+="<div class=\"friend-avatar\">$avatar_letter</div>"
-        friends_html+="<div class=\"friend-info\">"
-        friends_html+="<div class=\"friend-name\">$ami_short</div>"
-        friends_html+="<div class=\"friend-status active\">● Active</div>"
-        friends_html+="</div></div>"
-        
-        ((friend_index++))
-        if [[ $friend_index -ge 10 ]]; then
-            friends_html+="<div class=\"friend-item\" style=\"justify-content: center; color: var(--text-muted);\">+$((${#ACTIVE_FRIENDS[@]} - 10)) more...</div>"
-            break
-        fi
-    done
-    
-    # Empty state for friends
-    if [[ -z "$friends_html" ]]; then
-        friends_html="<div class=\"empty-state\"><div class=\"empty-state-icon\">👤</div><div class=\"empty-state-text\">No active friends</div></div>"
-    fi
-    
-    # Generate market HTML
-    local market_html=""
-    if [[ -d "${UMAPPATH}/APP/uMARKET/ads" ]]; then
-        for ad_file in "${UMAPPATH}/APP/uMARKET/ads"/*.json; do
-            [[ ! -f "$ad_file" ]] && continue
-            
-            local ad_content=$(jq -r '.content // "No description"' "$ad_file" 2>/dev/null | head -c 100)
-            local ad_author=$(jq -r '.author_nprofile // .author_pubkey // "Unknown"' "$ad_file" 2>/dev/null)
-            local ad_author_short="${ad_author:0:16}..."
-            
-            market_html+="<div class=\"market-item\">"
-            market_html+="<div class=\"market-image\">🛒</div>"
-            market_html+="<div class=\"market-info\">"
-            market_html+="<div class=\"market-title\">$(echo "$ad_content" | sed 's/</\&lt;/g; s/>/\&gt;/g' | head -c 50)...</div>"
-            market_html+="<div class=\"market-author\">$ad_author_short</div>"
-            market_html+="</div></div>"
-        done
-    fi
-    
-    # Empty state for market
-    if [[ -z "$market_html" ]]; then
-        market_html="<div class=\"empty-state\"><div class=\"empty-state-icon\">🏪</div><div class=\"empty-state-text\">No market ads in this zone<br><small>Use #market in your posts!</small></div></div>"
-    fi
-    
-    # ═══════════════════════════════════════════════════════════════════
-    # COLLABORATIVE DOCUMENTS (Commons)
-    # Fetch kind 30023 articles with #collaborative #UPlanet tags for this UMAP
-    # ═══════════════════════════════════════════════════════════════════
-    local docs_count=0
-    local commons_docs_html=""
-    
-    # Query collaborative documents from local strfry relay
-    if [[ -x ~/.zen/strfry/strfry ]]; then
-        cd ~/.zen/strfry
-        
-        # Fetch collaborative documents for this UMAP zone
-        local collab_docs=$(./strfry scan "{
-            \"kinds\": [30023],
-            \"limit\": 20
-        }" 2>/dev/null | jq -c 'select(.tags | map(select(.[0] == "t" and (.[1] == "collaborative" or .[1] == "UPlanet"))) | length >= 2) | select(.tags | map(select(.[0] == "g" and (.[1] | startswith("'"${LAT}"'") or .[1] | contains("'"${LAT},${LON}"'")))) | length > 0)')
-        
-        # If no geo-tagged docs, try broader search by #UPlanet tag only
-        if [[ -z "$collab_docs" ]]; then
-            collab_docs=$(./strfry scan "{
-                \"kinds\": [30023],
-                \"limit\": 10
-            }" 2>/dev/null | jq -c 'select(.tags | map(select(.[0] == "t" and .[1] == "collaborative")) | length > 0)')
-        fi
-        
-        cd - >/dev/null
-        
-        # Parse and render documents
-        if [[ -n "$collab_docs" ]]; then
-            while IFS= read -r doc_json; do
-                [[ -z "$doc_json" ]] && continue
-                
-                local doc_id=$(echo "$doc_json" | jq -r '.id // ""')
-                local doc_title=$(echo "$doc_json" | jq -r '(.tags | map(select(.[0] == "title")) | .[0][1]) // "Sans titre"')
-                local doc_version=$(echo "$doc_json" | jq -r '(.tags | map(select(.[0] == "version")) | .[0][1]) // "1"')
-                local doc_type=$(echo "$doc_json" | jq -r '(.tags | map(select(.[0] == "t" and (.[1] == "commons" or .[1] == "project" or .[1] == "decision" or .[1] == "garden" or .[1] == "resource"))) | .[0][1]) // "commons"')
-                local doc_author=$(echo "$doc_json" | jq -r '(.tags | map(select(.[0] == "author")) | .[0][1]) // .pubkey // ""')
-                local doc_created=$(echo "$doc_json" | jq -r '.created_at // 0')
-                local doc_date=$(date -d "@${doc_created}" '+%d/%m/%Y' 2>/dev/null || echo "")
-                
-                # Get likes count for this document
-                local doc_likes=0
-                if [[ -x ~/.zen/strfry/strfry ]]; then
-                    cd ~/.zen/strfry
-                    doc_likes=$(./strfry scan "{\"kinds\": [7], \"#e\": [\"${doc_id}\"], \"limit\": 100}" 2>/dev/null | jq -r 'select(.content == "+" or .content == "✅" or .content == "👍" or .content == "❤️") | .id' | wc -l)
-                    cd - >/dev/null
-                fi
-                
-                # Type icons
-                local type_icon="🤝"
-                case "$doc_type" in
-                    project) type_icon="🎯" ;;
-                    decision) type_icon="🗳️" ;;
-                    garden) type_icon="🌱" ;;
-                    resource) type_icon="📦" ;;
-                esac
-                
-                # Escape title for HTML
-                doc_title=$(echo "$doc_title" | sed 's/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g' | head -c 50)
-                
-                commons_docs_html+="<div style=\"padding: 12px; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border-color);\">"
-                commons_docs_html+="<div style=\"display: flex; justify-content: space-between; align-items: center;\">"
-                commons_docs_html+="<div style=\"display: flex; align-items: center; gap: 8px;\">"
-                commons_docs_html+="<span>${type_icon}</span>"
-                commons_docs_html+="<span style=\"font-weight: 500;\">${doc_title}</span>"
-                commons_docs_html+="</div>"
-                commons_docs_html+="<span style=\"font-size: 0.8rem; color: var(--accent-emerald);\">v${doc_version}</span>"
-                commons_docs_html+="</div>"
-                commons_docs_html+="<div style=\"font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;\">"
-                commons_docs_html+="${doc_date} • ❤️ ${doc_likes} likes"
-                commons_docs_html+="</div>"
-                commons_docs_html+="</div>"
-                
-                ((docs_count++))
-                
-                # Limit to 5 documents in the sidebar
-                [[ $docs_count -ge 5 ]] && break
-                
-            done <<< "$collab_docs"
-        fi
-    fi
-    
-    # Empty state for commons docs
-    if [[ -z "$commons_docs_html" || $docs_count -eq 0 ]]; then
-        commons_docs_html="<div class=\"empty-state\"><div class=\"empty-state-icon\">📄</div><div class=\"empty-state-text\">No collaborative documents yet<br><small>Create the first one!</small></div></div>"
-        docs_count=0
-    fi
+    log "🔑 UMAP npub: ${UMAPNPUB}"
+    log "🔑 UMAP hex: ${UMAPHEX}"
     
     # Build URLs
     local MAP_URL="${myIPFS}/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
-    local MAP_IMAGE_URL="${myIPFS}/ipns/copylaradio.com/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
     local CORACLE_URL="https://coracle.copylaradio.com"
-    local VISIO_URL="${VDONINJA}/?room=UMAP_${LAT}_${LON}&effects&record"
     local SECTOR_URL="${myIPFS}/ipns/copylaradio.com/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}/"
     local REGION_URL="${myIPFS}/ipns/copylaradio.com/REGIONS/_${RLAT}_${RLON}/"
-    local IPFS_URL="${myIPFS}/ipfs/"
-    
-    # Get UMAP npub for profile URL
-    local UMAPNPUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
-    local NOSTR_PROFILE_URL="${CORACLE_URL}/${UMAPNPUB}"
     
     # Copy template and replace placeholders
     cp "$TEMPLATE_FILE" "${UMAPPATH}/index.html"
@@ -1166,41 +967,16 @@ generate_umap_index() {
     # Replace all placeholders using sed
     sed -i "s|_LAT_|${LAT}|g" "${UMAPPATH}/index.html"
     sed -i "s|_LON_|${LON}|g" "${UMAPPATH}/index.html"
-    sed -i "s|_DATE_|${TODATE}|g" "${UMAPPATH}/index.html"
-    sed -i "s|_FRIENDSCOUNT_|${friends_count}|g" "${UMAPPATH}/index.html"
-    sed -i "s|_MESSAGESCOUNT_|${messages_count}|g" "${UMAPPATH}/index.html"
-    sed -i "s|_MARKETCOUNT_|${market_count}|g" "${UMAPPATH}/index.html"
-    sed -i "s|_LIKESCOUNT_|${likes_count}|g" "${UMAPPATH}/index.html"
+    sed -i "s|_UMAPHEX_|${UMAPHEX}|g" "${UMAPPATH}/index.html"
+    sed -i "s|_UMAPNPUB_|${UMAPNPUB}|g" "${UMAPPATH}/index.html"
     sed -i "s|_SECTOR_|_${SLAT}_${SLON}|g" "${UMAPPATH}/index.html"
     sed -i "s|_REGION_|_${RLAT}_${RLON}|g" "${UMAPPATH}/index.html"
-    sed -i "s|_NODEID_|${IPFSNODEID:0:12}|g" "${UMAPPATH}/index.html"
     sed -i "s|_MAPURL_|${MAP_URL}|g" "${UMAPPATH}/index.html"
-    sed -i "s|_MAPIMAGEURL_|${MAP_IMAGE_URL}|g" "${UMAPPATH}/index.html"
     sed -i "s|_CORACLEURL_|${CORACLE_URL}|g" "${UMAPPATH}/index.html"
-    sed -i "s|_VISIOURL_|${VISIO_URL}|g" "${UMAPPATH}/index.html"
     sed -i "s|_SECTORURL_|${SECTOR_URL}|g" "${UMAPPATH}/index.html"
     sed -i "s|_REGIONURL_|${REGION_URL}|g" "${UMAPPATH}/index.html"
-    sed -i "s|_IPFSURL_|${IPFS_URL}|g" "${UMAPPATH}/index.html"
-    sed -i "s|_NOSTRPROFILEURL_|${NOSTR_PROFILE_URL}|g" "${UMAPPATH}/index.html"
     sed -i "s|_MYIPFS_|${myIPFS}|g" "${UMAPPATH}/index.html"
     sed -i "s|_MYRELAY_|${myRELAY}|g" "${UMAPPATH}/index.html"
-    sed -i "s|_DOCSCOUNT_|${docs_count}|g" "${UMAPPATH}/index.html"
-    
-    # Replace HTML content blocks (need to escape for sed)
-    # Write to temp files to handle multiline content properly
-    echo "$messages_html" > "${UMAPPATH}/.messages_html.tmp"
-    echo "$friends_html" > "${UMAPPATH}/.friends_html.tmp"
-    echo "$market_html" > "${UMAPPATH}/.market_html.tmp"
-    echo "$commons_docs_html" > "${UMAPPATH}/.commonsdocs_html.tmp"
-    
-    # Use awk to replace multiline content
-    awk -v messages="$(cat ${UMAPPATH}/.messages_html.tmp)" '{gsub(/_MESSAGES_/, messages); print}' "${UMAPPATH}/index.html" > "${UMAPPATH}/index.html.tmp" && mv "${UMAPPATH}/index.html.tmp" "${UMAPPATH}/index.html"
-    awk -v friends="$(cat ${UMAPPATH}/.friends_html.tmp)" '{gsub(/_FRIENDS_/, friends); print}' "${UMAPPATH}/index.html" > "${UMAPPATH}/index.html.tmp" && mv "${UMAPPATH}/index.html.tmp" "${UMAPPATH}/index.html"
-    awk -v market="$(cat ${UMAPPATH}/.market_html.tmp)" '{gsub(/_MARKET_/, market); print}' "${UMAPPATH}/index.html" > "${UMAPPATH}/index.html.tmp" && mv "${UMAPPATH}/index.html.tmp" "${UMAPPATH}/index.html"
-    awk -v commonsdocs="$(cat ${UMAPPATH}/.commonsdocs_html.tmp)" '{gsub(/_COMMONSDOCS_/, commonsdocs); print}' "${UMAPPATH}/index.html" > "${UMAPPATH}/index.html.tmp" && mv "${UMAPPATH}/index.html.tmp" "${UMAPPATH}/index.html"
-    
-    # Cleanup temp files
-    rm -f "${UMAPPATH}/.messages_html.tmp" "${UMAPPATH}/.friends_html.tmp" "${UMAPPATH}/.market_html.tmp" "${UMAPPATH}/.commonsdocs_html.tmp"
     
     log "✅ Generated UMAP index: ${UMAPPATH}/index.html"
     return 0
