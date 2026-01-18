@@ -182,6 +182,41 @@
         .toast.info { border-color: var(--accent-cyan); }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
+        /* Fixed Connection Badge */
+        .connection-badge {
+            position: fixed; top: 20px; right: 20px; z-index: 9999;
+            background: rgba(10, 15, 26, 0.95); backdrop-filter: blur(10px);
+            padding: 12px 16px; border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            display: flex; align-items: center; gap: 12px;
+            transition: all 0.3s ease; border: 2px solid var(--border-color);
+            cursor: pointer; min-width: 180px;
+        }
+        .connection-badge:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(0, 0, 0, 0.5); }
+        .connection-badge.authenticated { border-color: var(--accent-emerald); background: rgba(16, 185, 129, 0.15); }
+        .connection-badge.connected-not-auth { border-color: var(--accent-amber); background: rgba(245, 158, 11, 0.15); }
+        .connection-badge.disconnected { border-color: var(--border-color); }
+        
+        .badge-avatar { width: 36px; height: 36px; border-radius: 10px; border: 2px solid var(--accent-cyan); object-fit: cover; }
+        .badge-info { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+        .badge-status { font-size: 0.75rem; color: var(--text-muted); }
+        .badge-name { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
+        .badge-actions { display: flex; gap: 6px; }
+        .badge-btn { padding: 6px 10px; border-radius: 8px; border: none; background: var(--bg-card); color: var(--text-secondary); font-size: 0.75rem; cursor: pointer; transition: all 0.2s; }
+        .badge-btn:hover { background: var(--bg-card-hover); color: var(--accent-cyan); }
+        .badge-btn.primary { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-emerald)); color: var(--bg-primary); }
+        
+        .badge-panel { position: absolute; top: 100%; right: 0; margin-top: 8px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; min-width: 280px; display: none; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4); }
+        .badge-panel.show { display: block; }
+        .panel-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border-color); }
+        .panel-row:last-child { border-bottom: none; }
+        .panel-row-icon { font-size: 1.2rem; }
+        .panel-row-content { flex: 1; }
+        .panel-row-label { font-size: 0.75rem; color: var(--text-muted); }
+        .panel-row-value { font-size: 0.85rem; color: var(--text-primary); font-weight: 500; }
+        .panel-row-value a { color: var(--accent-cyan); text-decoration: none; }
+        .panel-row-value a:hover { text-decoration: underline; }
+
         .footer { text-align: center; padding: 30px; color: var(--text-muted); font-size: 0.85rem; }
         .footer a { color: var(--accent-cyan); text-decoration: none; }
 
@@ -196,6 +231,50 @@
     </style>
 </head>
 <body>
+    <!-- Fixed Connection Badge -->
+    <div class="connection-badge disconnected" id="connection-badge" onclick="toggleBadgePanel()">
+        <img class="badge-avatar" id="badge-avatar" src="https://robohash.org/anonymous?set=set4&size=36x36" alt="">
+        <div class="badge-info">
+            <span class="badge-status" id="badge-status">Not connected</span>
+            <span class="badge-name" id="badge-name">Click to connect</span>
+        </div>
+        <div class="badge-actions">
+            <button class="badge-btn primary" id="badge-connect-btn" onclick="event.stopPropagation(); handleNostrConnect()">🔑</button>
+        </div>
+        
+        <!-- Dropdown Panel -->
+        <div class="badge-panel" id="badge-panel" onclick="event.stopPropagation()">
+            <div class="panel-row" id="panel-pubkey-row" style="display: none;">
+                <span class="panel-row-icon">🔑</span>
+                <div class="panel-row-content">
+                    <div class="panel-row-label">Public Key</div>
+                    <div class="panel-row-value" id="panel-pubkey">...</div>
+                </div>
+            </div>
+            <div class="panel-row" id="panel-udrive-row" style="display: none;">
+                <span class="panel-row-icon">📁</span>
+                <div class="panel-row-content">
+                    <div class="panel-row-label">uDRIVE</div>
+                    <div class="panel-row-value"><a href="#" id="panel-udrive-link" target="_blank">Open storage</a></div>
+                </div>
+            </div>
+            <div class="panel-row" id="panel-wallet-row" style="display: none;">
+                <span class="panel-row-icon">💰</span>
+                <div class="panel-row-content">
+                    <div class="panel-row-label">G1 Wallet</div>
+                    <div class="panel-row-value" id="panel-wallet">...</div>
+                </div>
+            </div>
+            <div class="panel-row" id="panel-auth-row">
+                <span class="panel-row-icon" id="panel-auth-icon">⚠️</span>
+                <div class="panel-row-content">
+                    <div class="panel-row-label">NIP-42 Auth</div>
+                    <div class="panel-row-value" id="panel-auth-status">Not authenticated</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <!-- Header -->
         <header class="header">
@@ -385,11 +464,169 @@
         function getRelays() {
             const relays = [ZONE_CONFIG.relay];
             if (!relays[0].startsWith('wss://')) {
-                relays[0] = 'wss://relay.music-music-music.com';
+                relays[0] = 'wss://relay.copylaradio.com';
             }
             // Add fallback relays
             relays.push('wss://relay.damus.io', 'wss://nos.lol');
             return relays;
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // CONNECTION BADGE MANAGEMENT
+        // ═══════════════════════════════════════════════════════════════════
+        let userProfile = null;
+        let isAuthenticated = false;
+        
+        window.toggleBadgePanel = function() {
+            const panel = document.getElementById('badge-panel');
+            panel.classList.toggle('show');
+        };
+        
+        // Close badge panel when clicking outside
+        document.addEventListener('click', (e) => {
+            const badge = document.getElementById('connection-badge');
+            const panel = document.getElementById('badge-panel');
+            if (badge && panel && !badge.contains(e.target)) {
+                panel.classList.remove('show');
+            }
+        });
+        
+        function updateConnectionBadge(state, profile = null) {
+            const badge = document.getElementById('connection-badge');
+            const avatar = document.getElementById('badge-avatar');
+            const status = document.getElementById('badge-status');
+            const name = document.getElementById('badge-name');
+            const connectBtn = document.getElementById('badge-connect-btn');
+            
+            badge.className = 'connection-badge ' + state;
+            
+            switch(state) {
+                case 'disconnected':
+                    status.textContent = 'Not connected';
+                    name.textContent = 'Click to connect';
+                    avatar.src = 'https://robohash.org/anonymous?set=set4&size=36x36';
+                    connectBtn.innerHTML = '🔑';
+                    connectBtn.style.display = 'block';
+                    break;
+                    
+                case 'connected-not-auth':
+                    const displayName = profile?.display_name || profile?.name || '';
+                    status.textContent = '🟡 Connected';
+                    name.textContent = displayName || (userPubkey ? userPubkey.slice(0, 12) + '...' : 'User');
+                    avatar.src = profile?.picture || `https://robohash.org/${userPubkey}?set=set4&size=36x36`;
+                    connectBtn.innerHTML = '🔐';
+                    connectBtn.onclick = (e) => { e.stopPropagation(); authenticateNIP42(); };
+                    break;
+                    
+                case 'authenticated':
+                    status.textContent = '🟢 Authenticated';
+                    name.textContent = profile?.display_name || profile?.name || (userPubkey ? userPubkey.slice(0, 12) + '...' : 'User');
+                    avatar.src = profile?.picture || `https://robohash.org/${userPubkey}?set=set4&size=36x36`;
+                    connectBtn.style.display = 'none';
+                    break;
+            }
+            
+            // Update panel info
+            if (userPubkey) {
+                document.getElementById('panel-pubkey-row').style.display = 'flex';
+                let npub = userPubkey;
+                if (typeof NostrTools !== 'undefined' && NostrTools.nip19) {
+                    try { npub = NostrTools.nip19.npubEncode(userPubkey); } catch(e) {}
+                }
+                document.getElementById('panel-pubkey').textContent = npub.slice(0, 20) + '...';
+            }
+            
+            // Update uDRIVE if available
+            if (userProfile?.ipns_vault) {
+                const udriveRow = document.getElementById('panel-udrive-row');
+                const udriveLink = document.getElementById('panel-udrive-link');
+                udriveRow.style.display = 'flex';
+                const ipfsGw = userProfile.ipfs_gw || 'https://ipfs.copylaradio.com';
+                udriveLink.href = `${ipfsGw}/ipns/${userProfile.ipns_vault}`;
+            }
+            
+            // Update G1 wallet if available
+            if (userProfile?.g1_address || userProfile?.g1_address_v2) {
+                document.getElementById('panel-wallet-row').style.display = 'flex';
+                const addr = userProfile.g1_address || userProfile.g1_address_v2;
+                document.getElementById('panel-wallet').textContent = addr.slice(0, 12) + '...';
+            }
+        }
+        
+        // Fetch user profile from Nostr (kind 0)
+        async function fetchUserProfile(pubkey) {
+            if (!pool) return null;
+            
+            try {
+                const events = await pool.querySync(getRelays(), {
+                    kinds: [0],
+                    authors: [pubkey],
+                    limit: 1
+                });
+                
+                if (events && events.length > 0) {
+                    const profileEvent = events[0];
+                    const profile = JSON.parse(profileEvent.content);
+                    
+                    // Extract additional data from 'i' tags (UPlanet extensions)
+                    if (profileEvent.tags) {
+                        profileEvent.tags.forEach(tag => {
+                            if (tag[0] === 'i') {
+                                const [type, value] = tag[1].split(':');
+                                switch(type) {
+                                    case 'g1pub': profile.g1_address = value; break;
+                                    case 'g1pubv2': profile.g1_address_v2 = value; break;
+                                    case 'zencard': profile.zen_address = value; break;
+                                    case 'ipfs_gw': profile.ipfs_gw = value; break;
+                                    case 'ipns_vault': profile.ipns_vault = value; break;
+                                }
+                            }
+                        });
+                    }
+                    
+                    userProfile = profile;
+                    console.log('📝 User profile loaded:', profile);
+                    return profile;
+                }
+            } catch (error) {
+                console.error('Error fetching profile:', error);
+            }
+            return null;
+        }
+        
+        // NIP-42 Authentication
+        async function authenticateNIP42() {
+            if (!userPubkey) {
+                showToast('⚠️ Connect to Nostr first', 'error');
+                return;
+            }
+            
+            try {
+                const authEvent = {
+                    kind: 22242,
+                    created_at: Math.floor(Date.now() / 1000),
+                    tags: [
+                        ['relay', 'wss://relay.copylaradio.com'],
+                        ['challenge', 'uplanet-umap']
+                    ],
+                    content: ''
+                };
+                
+                const signedEvent = await window.nostr.signEvent(authEvent);
+                window.nip42Auth = signedEvent;
+                isAuthenticated = true;
+                
+                updateConnectionBadge('authenticated', userProfile);
+                
+                document.getElementById('panel-auth-icon').textContent = '✅';
+                document.getElementById('panel-auth-status').textContent = 'Authenticated (NIP-42)';
+                
+                showToast('✅ NIP-42 authenticated!', 'success');
+                
+            } catch (error) {
+                console.error('NIP-42 auth error:', error);
+                showToast('❌ Authentication failed: ' + error.message, 'error');
+            }
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -813,16 +1050,16 @@
                 if (typeof connectNostr === 'function') {
                     await connectNostr();
                     if (window.userPubkey) {
-                        updateConnectionStatus(true, window.userPubkey);
-                        showToast('✅ Connected to Nostr!', 'success');
+                        await updateConnectionStatus(true, window.userPubkey);
+                        showToast('✅ Connected! Click 🔐 for full access', 'success');
                         return;
                     }
                 }
                 
                 if (window.nostr) {
                     const pubkey = await window.nostr.getPublicKey();
-                    updateConnectionStatus(true, pubkey);
-                    showToast('✅ Connected to Nostr!', 'success');
+                    await updateConnectionStatus(true, pubkey);
+                    showToast('✅ Connected! Click 🔐 for full access', 'success');
                 } else {
                     throw new Error('Nostr extension not found. Install nos2x or Alby.');
                 }
@@ -830,10 +1067,11 @@
                 showToast(`❌ ${error.message}`, 'error');
                 btn.innerHTML = '🔑 Connect Nostr';
                 btn.disabled = false;
+                updateConnectionBadge('disconnected');
             }
         }
 
-        function updateConnectionStatus(connected, pubkey = null) {
+        async function updateConnectionStatus(connected, pubkey = null) {
             isConnected = connected;
             userPubkey = pubkey;
             
@@ -846,6 +1084,14 @@
             btn.disabled = connected;
             
             document.getElementById('compose-card').style.display = connected ? 'block' : 'none';
+            
+            // Fetch user profile for uDRIVE info
+            if (connected && pubkey) {
+                const profile = await fetchUserProfile(pubkey);
+                updateConnectionBadge('connected-not-auth', profile);
+            } else {
+                updateConnectionBadge('disconnected');
+            }
         }
 
         async function publishToZone() {
