@@ -43,6 +43,17 @@ N2_MEMORY_RELAY="${myRELAY:-wss://relay.copylaradio.com}"
 NOSTR_SEND_SCRIPT="$REPO_ROOT/tools/nostr_send_note.py"
 NOSTR_GET_SCRIPT="$REPO_ROOT/tools/nostr_get_events.sh"
 
+# ═══════════════════════════════════════════════════════════════
+# GLOBAL COMMONS - UMAP 0.00, 0.00
+# Constellation-wide collaborative governance via kind 30023
+# Quorum = 1/3 of swarm stations, expiration = 28 days
+# ═══════════════════════════════════════════════════════════════
+GLOBAL_UMAP_LAT="0.00"
+GLOBAL_UMAP_LON="0.00"
+GLOBAL_UMAP_KEYFILE="$HOME/.zen/game/nostr/UMAP_0.00_0.00/.secret.nostr"
+GLOBAL_COMMONS_EXPIRATION_DAYS=28
+SWARM_DIR="$HOME/.zen/tmp/swarm"
+
 # N² Architecture context for AI recommendations (comprehensive)
 N2_CONTEXT='## Architecture N² Constellation Protocol
 
@@ -125,6 +136,10 @@ show_help() {
     echo -e "    ${GREEN}--memory${NC}      Show recent memory entries (last 20)"
     echo -e "    ${GREEN}--no-interactive${NC} Skip interactive selection (batch mode)"
     echo ""
+    echo -e "${YELLOW}GLOBAL COMMONS (UMAP 0.00, 0.00):${NC}"
+    echo -e "    ${GREEN}--propose-global${NC}  Publish report as collaborative document"
+    echo -e "    ${GREEN}--commons${NC}         List pending Global Commons proposals"
+    echo ""
     echo -e "${YELLOW}DESCRIPTION:${NC}"
     echo "    This script analyzes Git changes and generates a structured TODO report."
     echo "    It uses question.py with AI to:"
@@ -188,8 +203,22 @@ show_help() {
     echo "    Get your token at:"
     echo "      https://opencollective.com/dashboard/monnaie-libre/admin/for-developers"
     echo ""
+    echo -e "${YELLOW}GLOBAL COMMONS SYSTEM (UMAP 0.00, 0.00):${NC}"
+    echo "    The Global Commons is a special UMAP at coordinates 0.00, 0.00"
+    echo "    used for constellation-wide governance decisions."
+    echo ""
+    echo "    Reports are published as collaborative documents (kind 30023)"
+    echo "    that the entire community can vote on (kind 7)."
+    echo ""
+    echo "    Quorum: 1/3 of stations in ~/.zen/tmp/swarm (minimum 2)"
+    echo "    Expiration: 28 days"
+    echo "    Who can vote: Everyone (propagation through users)"
+    echo ""
+    echo "    URL: collaborative-editor.html?lat=0.00&lon=0.00&umap=<GLOBAL_UMAP_HEX>"
+    echo ""
     echo -e "${YELLOW}DOCUMENTATION:${NC}"
     echo "    Full documentation: docs/N2_MEMORY_SYSTEM.md"
+    echo "    Collaborative Commons: docs/COLLABORATIVE_COMMONS_SYSTEM.md"
     echo "    Architecture: nostr-nips/101-n2-constellation-sync-extension.md"
     echo ""
     exit 0
@@ -285,6 +314,16 @@ parse_args() {
                     echo -e "${RED}❌ --vote requires a recommendation ID${NC}"
                     exit 1
                 fi
+                ;;
+            --propose-global)
+                # Publish last report to Global Commons
+                publish_report_to_global_commons
+                exit 0
+                ;;
+            --commons)
+                # List pending Global Commons proposals
+                list_global_commons_proposals
+                exit 0
                 ;;
             *)
                 echo -e "${RED}❌ Unknown option: $1${NC}"
@@ -802,19 +841,22 @@ captain_publish_menu() {
     echo -e "  ${GREEN}1${NC} | ${GREEN}n${NC} - NOSTR kind 1 ${PURPLE}[Développeurs]${NC} (mur Capitaine)"
     echo -e "  ${GREEN}2${NC} | ${GREEN}o${NC} - Open Collective ${YELLOW}[Public]${NC} (update communauté)"
     echo -e "  ${GREEN}3${NC} | ${GREEN}m${NC} - N² Memory ${PURPLE}[Développeurs]${NC} (mémoire constellation)"
+    echo -e "  ${GREEN}4${NC} | ${GREEN}g${NC} - Global Commons ${CYAN}[Constellation]${NC} (UMAP 0.00,0.00 - vote)"
     echo -e "  ${GREEN}a${NC}     - Publier PARTOUT (avec édition pour chaque audience)"
     echo -e "  ${GREEN}s${NC}     - Sauver localement seulement"
     echo ""
     echo -e "${YELLOW}💡 Open Collective = version simplifiée pour le public${NC}"
     echo -e "${YELLOW}💡 NOSTR/N² = version technique pour développeurs${NC}"
+    echo -e "${YELLOW}💡 Global Commons = document collaboratif soumis au vote (quorum: 1/3 stations, expire: 28j)${NC}"
     echo ""
     
-    read -p "Votre choix [1/2/3/a/s]: " pub_choice
+    read -p "Votre choix [1/2/3/4/a/s]: " pub_choice
     
     # Track what was published
     local published_nostr=false
     local published_oc=false
     local published_n2=false
+    local published_global=false
     
     case "$pub_choice" in
         a|A)
@@ -829,6 +871,9 @@ captain_publish_menu() {
             
             # 3. N² Memory (developers) - use full summary
             publish_summary_to_n2_memory "$ai_summary" && published_n2=true
+            
+            # 4. Global Commons (constellation vote)
+            publish_report_to_global_commons && published_global=true
             ;;
         s|S|"")
             echo -e "${BLUE}💾 Rapport sauvegardé localement uniquement${NC}"
@@ -848,6 +893,10 @@ captain_publish_menu() {
                 echo -e "${BLUE}📤 Publication N² Memory [Développeurs]...${NC}"
                 publish_summary_to_n2_memory "$ai_summary" && published_n2=true
             fi
+            if [[ "$pub_choice" =~ [4g] ]]; then
+                echo -e "${BLUE}📤 Publication Global Commons [Constellation]...${NC}"
+                publish_report_to_global_commons && published_global=true
+            fi
             ;;
     esac
     
@@ -862,6 +911,8 @@ captain_publish_menu() {
     [[ "$published_oc" == false ]] && echo -e "  ${YELLOW}⏭️${NC}  Open Collective (non publié)"
     [[ "$published_n2" == true ]] && echo -e "  ${GREEN}✅${NC} N² Memory ${PURPLE}[Dev]${NC}"
     [[ "$published_n2" == false ]] && echo -e "  ${YELLOW}⏭️${NC}  N² Memory (non publié)"
+    [[ "$published_global" == true ]] && echo -e "  ${GREEN}✅${NC} Global Commons ${CYAN}[Constellation]${NC} (en attente de votes)"
+    [[ "$published_global" == false ]] && echo -e "  ${YELLOW}⏭️${NC}  Global Commons (non publié)"
     echo -e "  ${BLUE}💾${NC} Fichier local: $report_file"
     echo ""
 }
@@ -1252,6 +1303,305 @@ store_ai_recommendation() {
     store_n2_memory "$rec_id" "$content" "proposed" "ai_recommendation" "$priority"
     
     echo "$rec_id"
+}
+
+
+#######################################################################
+# GLOBAL COMMONS SYSTEM - UMAP 0.00, 0.00
+# Collaborative governance for the entire N² constellation
+# Documents are kind 30023, votes are kind 7
+# Quorum = 1/3 of swarm stations, expiration = 28 days
+#######################################################################
+
+# Count stations in the swarm directory
+# Returns the number of IPFS node directories in ~/.zen/tmp/swarm
+get_swarm_station_count() {
+    if [[ ! -d "$SWARM_DIR" ]]; then
+        echo "0"
+        return 0
+    fi
+    
+    # Count directories starting with "12D3KooW" (IPFS peer IDs)
+    local count=$(find "$SWARM_DIR" -maxdepth 1 -type d -name "12D3KooW*" 2>/dev/null | wc -l)
+    echo "$count"
+}
+
+# Calculate quorum for Global Commons (1/3 of stations, minimum 2)
+calculate_global_quorum() {
+    local station_count=$(get_swarm_station_count)
+    
+    if [[ $station_count -eq 0 ]]; then
+        # No swarm data, use minimum quorum
+        echo "2"
+        return 0
+    fi
+    
+    # Calculate 1/3 of stations (rounded up)
+    local quorum=$(( (station_count + 2) / 3 ))
+    
+    # Minimum quorum is 2
+    [[ $quorum -lt 2 ]] && quorum=2
+    
+    echo "$quorum"
+}
+
+# Get or create the Global UMAP key (0.00, 0.00)
+# This key is deterministic based on UPLANETNAME
+get_global_umap_key() {
+    if [[ ! -f "$GLOBAL_UMAP_KEYFILE" ]]; then
+        echo -e "${YELLOW}⚠️  Creating Global UMAP key (0.00, 0.00)...${NC}" >&2
+        
+        local UMAP_SALT="${UPLANETNAME}${GLOBAL_UMAP_LAT}"
+        local UMAP_PEPPER="${UPLANETNAME}${GLOBAL_UMAP_LON}"
+        
+        mkdir -p "$(dirname "$GLOBAL_UMAP_KEYFILE")"
+        $HOME/.zen/Astroport.ONE/tools/keygen -t nostr "$UMAP_SALT" "$UMAP_PEPPER" \
+            > "$GLOBAL_UMAP_KEYFILE" 2>/dev/null
+        
+        if [[ ! -f "$GLOBAL_UMAP_KEYFILE" ]]; then
+            echo -e "${RED}❌ Failed to create Global UMAP key${NC}" >&2
+            return 1
+        fi
+        
+        echo -e "${GREEN}✅ Global UMAP key created${NC}" >&2
+    fi
+    
+    echo "$GLOBAL_UMAP_KEYFILE"
+}
+
+# Get Global UMAP pubkey in hex format
+get_global_umap_hex() {
+    local keyfile=$(get_global_umap_key)
+    [[ -z "$keyfile" ]] && return 1
+    
+    local npub=$(grep -E "^npub" "$keyfile" 2>/dev/null | awk '{print $NF}')
+    if [[ -z "$npub" ]]; then
+        echo -e "${RED}❌ Cannot extract npub from Global UMAP keyfile${NC}" >&2
+        return 1
+    fi
+    
+    # Convert npub to hex
+    local hex=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$npub" 2>/dev/null)
+    if [[ -z "$hex" ]]; then
+        echo -e "${RED}❌ Cannot convert npub to hex${NC}" >&2
+        return 1
+    fi
+    
+    echo "$hex"
+}
+
+# Publish report to Global Commons as a collaborative document (kind 30023)
+# This creates a proposal that the entire constellation can vote on
+publish_report_to_global_commons() {
+    echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${GREEN}🌍 GLOBAL COMMONS - UMAP 0.00, 0.00${NC}"
+    echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}\n"
+    
+    # Check if CAPTAINEMAIL is defined
+    if [[ -z "$CAPTAINEMAIL" ]]; then
+        echo -e "${RED}❌ CAPTAINEMAIL not defined${NC}"
+        return 1
+    fi
+    
+    # Check captain keyfile
+    local CAPTAIN_KEYFILE="$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
+    if [[ ! -f "$CAPTAIN_KEYFILE" ]]; then
+        echo -e "${RED}❌ Captain keyfile not found: $CAPTAIN_KEYFILE${NC}"
+        return 1
+    fi
+    
+    # Find the most recent TODO output
+    local report_file=""
+    if [[ -f "$TODO_OUTPUT" ]]; then
+        report_file="$TODO_OUTPUT"
+    elif [[ -f "$REPO_ROOT/TODO.last.md" ]]; then
+        report_file="$REPO_ROOT/TODO.last.md"
+    elif [[ -f "$REPO_ROOT/TODO.today.md" ]]; then
+        report_file="$REPO_ROOT/TODO.today.md"
+    elif [[ -f "$REPO_ROOT/TODO.week.md" ]]; then
+        report_file="$REPO_ROOT/TODO.week.md"
+    else
+        echo -e "${RED}❌ No TODO report found. Run ./todo.sh first.${NC}"
+        return 1
+    fi
+    
+    echo -e "${BLUE}📄 Report file: $(basename "$report_file")${NC}"
+    
+    # Get Global UMAP hex pubkey
+    local GLOBAL_UMAP_HEX=$(get_global_umap_hex)
+    if [[ -z "$GLOBAL_UMAP_HEX" ]]; then
+        echo -e "${RED}❌ Cannot get Global UMAP pubkey${NC}"
+        return 1
+    fi
+    
+    echo -e "${BLUE}🔑 Global UMAP hex: ${GLOBAL_UMAP_HEX:0:16}...${NC}"
+    
+    # Calculate quorum
+    local station_count=$(get_swarm_station_count)
+    local quorum=$(calculate_global_quorum)
+    
+    echo -e "${BLUE}📊 Swarm stations: $station_count${NC}"
+    echo -e "${BLUE}🗳️  Required quorum: $quorum votes${NC}"
+    echo -e "${BLUE}⏰ Expiration: $GLOBAL_COMMONS_EXPIRATION_DAYS days${NC}"
+    echo ""
+    
+    # Read report content
+    local report_content=$(cat "$report_file")
+    
+    # Extract title from report
+    local title=$(echo "$report_content" | head -1 | sed 's/^# //')
+    [[ -z "$title" ]] && title="N² Development Report - $(date +%Y-%m-%d)"
+    
+    # Generate unique document ID
+    local d_tag="n2-report-$(date +%Y%m%d)-$(echo -n "$title" | md5sum | cut -c1-8)"
+    local published_at=$(date +%s)
+    
+    # Calculate expiration timestamp (28 days)
+    local expiration_seconds=$((GLOBAL_COMMONS_EXPIRATION_DAYS * 86400))
+    local expiration_timestamp=$((published_at + expiration_seconds))
+    
+    # Get captain npub for author tag
+    local captain_npub=$(grep -E "^npub" "$CAPTAIN_KEYFILE" 2>/dev/null | awk '{print $NF}')
+    
+    # Create tags for collaborative document
+    local tags_json=$(cat <<EOF
+[
+    ["d", "$d_tag"],
+    ["title", "$title"],
+    ["t", "collaborative"],
+    ["t", "UPlanet"],
+    ["t", "n2-report"],
+    ["t", "constellation"],
+    ["t", "development"],
+    ["g", "${GLOBAL_UMAP_LAT},${GLOBAL_UMAP_LON}"],
+    ["p", "$GLOBAL_UMAP_HEX", "", "umap"],
+    ["author", "$captain_npub"],
+    ["version", "1"],
+    ["quorum", "$quorum"],
+    ["governance", "majority"],
+    ["fork-policy", "allowed"],
+    ["published_at", "$published_at"],
+    ["expiration", "$expiration_timestamp"],
+    ["station", "${IPFSNODEID:-unknown}"],
+    ["captain", "$CAPTAINEMAIL"],
+    ["swarm-stations", "$station_count"]
+]
+EOF
+)
+    
+    echo -e "${BLUE}📤 Publishing to Global Commons...${NC}"
+    
+    # Publish with Captain's key (proposal, not official yet)
+    local result=$(python3 "$NOSTR_SEND_SCRIPT" \
+        --keyfile "$CAPTAIN_KEYFILE" \
+        --kind 30023 \
+        --content "$report_content" \
+        --tags "$tags_json" \
+        --relays "$N2_MEMORY_RELAY" \
+        --json 2>&1)
+    
+    local exit_code=$?
+    
+    if [[ $exit_code -eq 0 ]]; then
+        local event_id=$(echo "$result" | jq -r '.event_id // empty' 2>/dev/null)
+        local relays_success=$(echo "$result" | jq -r '.relays_success // 0' 2>/dev/null)
+        
+        if [[ -n "$event_id" ]]; then
+            echo ""
+            echo -e "${GREEN}✅ PROPOSAL PUBLISHED TO GLOBAL COMMONS${NC}"
+            echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+            echo -e "${GREEN}   Event ID: ${event_id:0:24}...${NC}"
+            echo -e "${GREEN}   Document: $d_tag${NC}"
+            echo -e "${GREEN}   Title: $title${NC}"
+            echo -e "${GREEN}   Relays: $relays_success${NC}"
+            echo -e "${GREEN}   Quorum: $quorum votes needed${NC}"
+            echo -e "${GREEN}   Expires: $(date -d "@$expiration_timestamp" +"%Y-%m-%d %H:%M" 2>/dev/null || date -r "$expiration_timestamp" +"%Y-%m-%d %H:%M" 2>/dev/null)${NC}"
+            echo ""
+            echo -e "${YELLOW}📋 Community can vote using:${NC}"
+            echo -e "${YELLOW}   ✅ Approve: kind 7 with content '+' or '✅'${NC}"
+            echo -e "${YELLOW}   ❌ Reject:  kind 7 with content '-' or '❌'${NC}"
+            echo ""
+            echo -e "${BLUE}🔗 View/Edit URL:${NC}"
+            echo -e "${BLUE}   collaborative-editor.html?lat=0.00&lon=0.00&umap=$GLOBAL_UMAP_HEX&doc=$d_tag${NC}"
+            echo ""
+            
+            # Store in N² Memory for tracking
+            store_n2_memory "global_${d_tag}" "Global Commons proposal: $title (quorum: $quorum)" \
+                "proposed" "global_commons_proposal" "high" >/dev/null 2>&1 || true
+            
+            return 0
+        fi
+    fi
+    
+    echo -e "${RED}❌ Failed to publish to Global Commons${NC}"
+    echo -e "${RED}   Error: $result${NC}"
+    return 1
+}
+
+# List pending Global Commons proposals
+# Fetches kind 30023 events tagged with p=GLOBAL_UMAP and t=collaborative
+list_global_commons_proposals() {
+    echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${GREEN}🌍 GLOBAL COMMONS - Pending Proposals${NC}"
+    echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}\n"
+    
+    local GLOBAL_UMAP_HEX=$(get_global_umap_hex)
+    if [[ -z "$GLOBAL_UMAP_HEX" ]]; then
+        echo -e "${YELLOW}⚠️  Cannot get Global UMAP pubkey${NC}"
+        return 1
+    fi
+    
+    local quorum=$(calculate_global_quorum)
+    local station_count=$(get_swarm_station_count)
+    
+    echo -e "${BLUE}📊 Swarm stations: $station_count${NC}"
+    echo -e "${BLUE}🗳️  Required quorum: $quorum votes${NC}"
+    echo -e "${BLUE}🔑 Global UMAP: ${GLOBAL_UMAP_HEX:0:16}...${NC}"
+    echo ""
+    
+    # Fetch proposals from NOSTR (kind 30023 with tag t=n2-report)
+    if [[ -f "$NOSTR_GET_SCRIPT" ]]; then
+        echo -e "${BLUE}📥 Fetching proposals from relays...${NC}"
+        
+        local proposals=$("$NOSTR_GET_SCRIPT" \
+            --kind 30023 \
+            --tag-t "n2-report" \
+            --limit 20 \
+            --relay "$N2_MEMORY_RELAY" 2>/dev/null || echo "[]")
+        
+        if [[ -z "$proposals" || "$proposals" == "[]" ]]; then
+            echo -e "${YELLOW}⚠️  No Global Commons proposals found${NC}"
+            echo ""
+            echo -e "${BLUE}💡 Create a proposal with:${NC}"
+            echo -e "${BLUE}   ./todo.sh --day && ./todo.sh --propose-global${NC}"
+            return 0
+        fi
+        
+        echo ""
+        echo -e "${YELLOW}📋 Pending Proposals:${NC}"
+        echo ""
+        
+        # Parse and display proposals
+        echo "$proposals" | jq -r '
+            .[] |
+            select(.tags | any(.[0] == "t" and .[1] == "n2-report")) |
+            "  📄 " + (.tags | map(select(.[0] == "title")) | .[0][1] // "Untitled") +
+            "\n     ID: " + (.tags | map(select(.[0] == "d")) | .[0][1] // "unknown") +
+            "\n     Author: " + (.pubkey[:16] // "unknown") + "..." +
+            "\n     Quorum: " + (.tags | map(select(.[0] == "quorum")) | .[0][1] // "?") + " votes" +
+            "\n     Expires: " + (.tags | map(select(.[0] == "expiration")) | .[0][1] // "?") +
+            "\n"
+        ' 2>/dev/null || echo "  (Error parsing proposals)"
+        
+    else
+        echo -e "${YELLOW}⚠️  nostr_get_events.sh not found${NC}"
+        echo -e "${YELLOW}   Cannot fetch proposals from relays${NC}"
+    fi
+    
+    echo ""
+    echo -e "${BLUE}Actions:${NC}"
+    echo -e "  ${GREEN}./todo.sh --propose-global${NC}  - Publish new proposal"
+    echo -e "  ${GREEN}Vote via collaborative-editor.html?lat=0.00&lon=0.00&umap=$GLOBAL_UMAP_HEX${NC}"
 }
 
 
