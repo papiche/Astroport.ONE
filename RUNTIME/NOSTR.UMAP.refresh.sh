@@ -185,6 +185,33 @@ log_always() {
     echo "$1"
 }
 
+## Validate that a CID points to a valid image (JPEG or PNG)
+## Returns 0 if valid image, 1 if invalid/corrupted
+validate_image_cid() {
+    local cid="$1"
+    local name="$2"
+    
+    [[ -z "$cid" ]] && return 1
+    
+    # Fetch first 16 bytes to check magic numbers
+    local magic=$(ipfs cat --timeout=10s "$cid" 2>/dev/null | head -c 16 | xxd -p 2>/dev/null)
+    
+    # Check JPEG magic: FF D8 FF
+    if [[ "${magic:0:6}" == "ffd8ff" ]]; then
+        log "✓ $name ($cid) is valid JPEG"
+        return 0
+    fi
+    
+    # Check PNG magic: 89 50 4E 47 (0x89 P N G)
+    if [[ "${magic:0:8}" == "89504e47" ]]; then
+        log "✓ $name ($cid) is valid PNG"
+        return 0
+    fi
+    
+    log_always "✗ $name ($cid) INVALID - not a valid image (magic: ${magic:0:16})"
+    return 1
+}
+
 # Helper function to send Nostr events using nostr_send_note.py
 # Usage: send_nostr_event_py <nsec_key> <content> <kind> <tags_json> <relay_url> [ephemeral_seconds]
 send_nostr_event_py() {
@@ -1779,8 +1806,35 @@ generate_sector_images() {
         
         log "SECTOR images last updated: $EXISTING_UPDATED ($age_days days ago)"
         
-        [[ $age_days -lt $SECTOR_MAP_REFRESH_DAYS && -n "$EXISTING_ZMAP_CID" ]] && need_map_refresh=false
-        [[ $age_days -lt $SECTOR_SAT_REFRESH_DAYS && -n "$EXISTING_SAT_CID" ]] && need_sat_refresh=false
+        # Validate existing CIDs - check all 4 images
+        local map_images_valid=true
+        local sat_images_valid=true
+        
+        log "Validating existing SECTOR image CIDs..."
+        if [[ -n "$EXISTING_ZMAP_CID" ]] && ! validate_image_cid "$EXISTING_ZMAP_CID" "zSectorMap.jpg"; then
+            map_images_valid=false
+        fi
+        if [[ -n "$EXISTING_MAP_CID" ]] && ! validate_image_cid "$EXISTING_MAP_CID" "SectorMap.jpg"; then
+            map_images_valid=false
+        fi
+        if [[ -n "$EXISTING_SAT_CID" ]] && ! validate_image_cid "$EXISTING_SAT_CID" "SectorSat.jpg"; then
+            sat_images_valid=false
+        fi
+        if [[ -n "$EXISTING_ZSAT_CID" ]] && ! validate_image_cid "$EXISTING_ZSAT_CID" "zSectorSat.jpg"; then
+            sat_images_valid=false
+        fi
+        
+        # Check age AND validity for road maps
+        if [[ $age_days -lt $SECTOR_MAP_REFRESH_DAYS && -n "$EXISTING_ZMAP_CID" && "$map_images_valid" == true ]]; then
+            need_map_refresh=false
+        fi
+        # Check age AND validity for satellite images
+        if [[ $age_days -lt $SECTOR_SAT_REFRESH_DAYS && -n "$EXISTING_SAT_CID" && "$sat_images_valid" == true ]]; then
+            need_sat_refresh=false
+        fi
+        
+        [[ "$map_images_valid" == false ]] && log_always "✗ SECTOR road maps corrupted - forcing regeneration"
+        [[ "$sat_images_valid" == false ]] && log_always "✗ SECTOR satellite images corrupted - forcing regeneration"
     fi
     
     # Calculate coordinates for the sector
@@ -2025,14 +2079,11 @@ update_sector_nostr_profile() {
     # Profile picture = zSectorMap.jpg (zoomed road map)
     # Banner = SectorSat.jpg (large satellite)
     # Using public gateway ($myLIBRA) for profile accessibility
+    # NOTE: No fallback - images are stored as individual CIDs, not in SECROOT directory
     local SECTOR_PROFILE=""
     local SECTOR_BANNER=""
     [[ -n "$SECTOR_ZMAP_CID" ]] && SECTOR_PROFILE="${myLIBRA}/ipfs/${SECTOR_ZMAP_CID}"
     [[ -n "$SECTOR_SAT_CID" ]] && SECTOR_BANNER="${myLIBRA}/ipfs/${SECTOR_SAT_CID}"
-    
-    # Fallback to SECROOT paths if CIDs not available
-    [[ -z "$SECTOR_PROFILE" ]] && SECTOR_PROFILE="${myLIBRA}/ipfs/${SECROOT}/zSectorMap.jpg"
-    [[ -z "$SECTOR_BANNER" ]] && SECTOR_BANNER="${myLIBRA}/ipfs/${SECROOT}/SectorSat.jpg"
 
     # Build optional arguments for ALL 4 image CIDs and update date
     local SECTOR_CID_ARGS=""
@@ -2179,8 +2230,35 @@ generate_region_images() {
         
         log "REGION images last updated: $EXISTING_UPDATED ($age_days days ago)"
         
-        [[ $age_days -lt $REGION_MAP_REFRESH_DAYS && -n "$EXISTING_ZMAP_CID" ]] && need_map_refresh=false
-        [[ $age_days -lt $REGION_SAT_REFRESH_DAYS && -n "$EXISTING_SAT_CID" ]] && need_sat_refresh=false
+        # Validate existing CIDs - check all 4 images
+        local map_images_valid=true
+        local sat_images_valid=true
+        
+        log "Validating existing REGION image CIDs..."
+        if [[ -n "$EXISTING_ZMAP_CID" ]] && ! validate_image_cid "$EXISTING_ZMAP_CID" "zRegionMap.jpg"; then
+            map_images_valid=false
+        fi
+        if [[ -n "$EXISTING_MAP_CID" ]] && ! validate_image_cid "$EXISTING_MAP_CID" "RegionMap.jpg"; then
+            map_images_valid=false
+        fi
+        if [[ -n "$EXISTING_SAT_CID" ]] && ! validate_image_cid "$EXISTING_SAT_CID" "RegionSat.jpg"; then
+            sat_images_valid=false
+        fi
+        if [[ -n "$EXISTING_ZSAT_CID" ]] && ! validate_image_cid "$EXISTING_ZSAT_CID" "zRegionSat.jpg"; then
+            sat_images_valid=false
+        fi
+        
+        # Check age AND validity for road maps
+        if [[ $age_days -lt $REGION_MAP_REFRESH_DAYS && -n "$EXISTING_ZMAP_CID" && "$map_images_valid" == true ]]; then
+            need_map_refresh=false
+        fi
+        # Check age AND validity for satellite images
+        if [[ $age_days -lt $REGION_SAT_REFRESH_DAYS && -n "$EXISTING_SAT_CID" && "$sat_images_valid" == true ]]; then
+            need_sat_refresh=false
+        fi
+        
+        [[ "$map_images_valid" == false ]] && log_always "✗ REGION road maps corrupted - forcing regeneration"
+        [[ "$sat_images_valid" == false ]] && log_always "✗ REGION satellite images corrupted - forcing regeneration"
     fi
     
     # Calculate coordinates for the region
@@ -2389,14 +2467,11 @@ update_region_nostr_profile() {
     # Profile picture = zRegionMap.jpg (zoomed road map)
     # Banner = RegionSat.jpg (large satellite)
     # Using public gateway ($myLIBRA) for profile accessibility
+    # NOTE: No fallback - images are stored as individual CIDs, not in REGROOT directory
     local REGION_PROFILE=""
     local REGION_BANNER=""
     [[ -n "$REGION_ZMAP_CID" ]] && REGION_PROFILE="${myLIBRA}/ipfs/${REGION_ZMAP_CID}"
     [[ -n "$REGION_SAT_CID" ]] && REGION_BANNER="${myLIBRA}/ipfs/${REGION_SAT_CID}"
-    
-    # Fallback to REGROOT paths if CIDs not available
-    [[ -z "$REGION_PROFILE" ]] && REGION_PROFILE="${myLIBRA}/ipfs/${REGROOT}/zRegionMap.jpg"
-    [[ -z "$REGION_BANNER" ]] && REGION_BANNER="${myLIBRA}/ipfs/${REGROOT}/RegionSat.jpg"
 
     # Build optional arguments for ALL 4 image CIDs and update date
     local REGION_CID_ARGS=""

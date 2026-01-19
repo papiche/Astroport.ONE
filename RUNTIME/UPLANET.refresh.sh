@@ -112,7 +112,34 @@ for UMAP in ${unique_combined[@]}; do
     UMAP_REFRESH_DAYS=30   # Road map refresh interval
     USAT_REFRESH_DAYS=60   # Satellite refresh interval
     
-    ## Check if images need refresh based on NOSTR profile date
+    ## Validate that a CID points to a valid image (JPEG or PNG)
+    ## Returns 0 if valid image, 1 if invalid/corrupted
+    validate_image_cid() {
+        local cid="$1"
+        local name="$2"
+        
+        [[ -z "$cid" ]] && return 1
+        
+        # Fetch first 16 bytes to check magic numbers
+        local magic=$(ipfs cat --timeout=10s "$cid" 2>/dev/null | head -c 16 | xxd -p 2>/dev/null)
+        
+        # Check JPEG magic: FF D8 FF
+        if [[ "${magic:0:6}" == "ffd8ff" ]]; then
+            echo "✓ $name ($cid) is valid JPEG"
+            return 0
+        fi
+        
+        # Check PNG magic: 89 50 4E 47 (0x89 P N G)
+        if [[ "${magic:0:8}" == "89504e47" ]]; then
+            echo "✓ $name ($cid) is valid PNG"
+            return 0
+        fi
+        
+        echo "✗ $name ($cid) INVALID - not a valid image (magic: ${magic:0:16})"
+        return 1
+    }
+    
+    ## Check if images need refresh based on NOSTR profile date AND validity
     check_images_need_refresh() {
         local nostr_data=$(${MY_PATH}/../tools/nostr_get_umap_images.sh "$HEX" "" --check-only 2>/dev/null)
         EXISTING_ZUMAP_CID=$(echo "$nostr_data" | grep "^UMAP_CID=" | cut -d'=' -f2)        # zUmap.jpg
@@ -134,22 +161,48 @@ for UMAP in ${unique_combined[@]}; do
         
         echo "Images last updated: $EXISTING_UMAP_UPDATED ($age_days days ago)"
         
-        # Check if road maps need refresh (30 days)
-        if [[ $age_days -ge $UMAP_REFRESH_DAYS || -z "$EXISTING_ZUMAP_CID" ]]; then
-            NEED_UMAP_REFRESH=true
-            echo "✗ Road maps need refresh (> $UMAP_REFRESH_DAYS days)"
-        else
-            NEED_UMAP_REFRESH=false
-            echo "✓ Road maps fresh (< $UMAP_REFRESH_DAYS days)"
+        # Validate existing CIDs - check all 4 images
+        local map_images_valid=true
+        local sat_images_valid=true
+        
+        echo "Validating existing image CIDs..."
+        if [[ -n "$EXISTING_ZUMAP_CID" ]] && ! validate_image_cid "$EXISTING_ZUMAP_CID" "zUmap.jpg"; then
+            map_images_valid=false
+        fi
+        if [[ -n "$EXISTING_UMAP_CID" ]] && ! validate_image_cid "$EXISTING_UMAP_CID" "Umap.jpg"; then
+            map_images_valid=false
+        fi
+        if [[ -n "$EXISTING_USAT_CID" ]] && ! validate_image_cid "$EXISTING_USAT_CID" "Usat.jpg"; then
+            sat_images_valid=false
+        fi
+        if [[ -n "$EXISTING_ZUSAT_CID" ]] && ! validate_image_cid "$EXISTING_ZUSAT_CID" "zUsat.jpg"; then
+            sat_images_valid=false
         fi
         
-        # Check if satellite images need refresh (60 days)
-        if [[ $age_days -ge $USAT_REFRESH_DAYS || -z "$EXISTING_USAT_CID" ]]; then
+        # Check if road maps need refresh (30 days OR invalid)
+        if [[ $age_days -ge $UMAP_REFRESH_DAYS || -z "$EXISTING_ZUMAP_CID" || "$map_images_valid" == false ]]; then
+            NEED_UMAP_REFRESH=true
+            if [[ "$map_images_valid" == false ]]; then
+                echo "✗ Road maps need refresh (corrupted/invalid CIDs)"
+            else
+                echo "✗ Road maps need refresh (> $UMAP_REFRESH_DAYS days or missing)"
+            fi
+        else
+            NEED_UMAP_REFRESH=false
+            echo "✓ Road maps fresh and valid (< $UMAP_REFRESH_DAYS days)"
+        fi
+        
+        # Check if satellite images need refresh (60 days OR invalid)
+        if [[ $age_days -ge $USAT_REFRESH_DAYS || -z "$EXISTING_USAT_CID" || "$sat_images_valid" == false ]]; then
             NEED_USAT_REFRESH=true
-            echo "✗ Satellite images need refresh (> $USAT_REFRESH_DAYS days)"
+            if [[ "$sat_images_valid" == false ]]; then
+                echo "✗ Satellite images need refresh (corrupted/invalid CIDs)"
+            else
+                echo "✗ Satellite images need refresh (> $USAT_REFRESH_DAYS days or missing)"
+            fi
         else
             NEED_USAT_REFRESH=false
-            echo "✓ Satellite images fresh (< $USAT_REFRESH_DAYS days)"
+            echo "✓ Satellite images fresh and valid (< $USAT_REFRESH_DAYS days)"
         fi
         
         [[ "$NEED_UMAP_REFRESH" == true || "$NEED_USAT_REFRESH" == true ]] && return 0
@@ -304,21 +357,23 @@ for UMAP in ${unique_combined[@]}; do
     rm ${UMAPPATH}/ipfs.${YESTERDATE} 2>/dev/null
     
     ##########################################################
-    # profile picture - direct CID (using public gateway for accessibility)
+    # profile picture - direct CID only (no fallback - images not in UMAPROOT)
     if [[ -n "$ZUMAP_CID" ]]; then
         PIC_PROFILE="${myLIBRA}/ipfs/${ZUMAP_CID}"
+        echo "PIC_PROFILE : ${PIC_PROFILE}"
     else
-        PIC_PROFILE="${myLIBRA}/ipfs/${UMAPROOT}/zUmap.jpg"  # fallback
+        PIC_PROFILE=""
+        echo "PIC_PROFILE : (none - will use default)"
     fi
     ##########################################################
-    # profile banner - direct CID (using public gateway for accessibility)
+    # profile banner - direct CID only (no fallback - images not in UMAPROOT)
     if [[ -n "$USAT_CID" ]]; then
         PIC_BANNER="${myLIBRA}/ipfs/${USAT_CID}"
+        echo "PIC_BANNER : ${PIC_BANNER}"
     else
-        PIC_BANNER="${myLIBRA}/ipfs/${UMAPROOT}/Usat.jpg"  # fallback
+        PIC_BANNER=""
+        echo "PIC_BANNER : (none - will use default)"
     fi
-    echo "PIC_PROFILE : ${PIC_PROFILE}"
-    echo "PIC_BANNER : ${PIC_BANNER}"
 
     ##########################################################
     ######### UMAP GCHANGE & CESIUM PROFILE

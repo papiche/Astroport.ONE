@@ -112,19 +112,8 @@ if [[ -n "$USAT_FULL_CID" && ! -s "${OUTPUT_DIR}/zUsat.jpg" ]]; then
     fi
 fi
 
-# Alternative: fetch from UMAPROOT if individual CIDs not available
-if [[ -n "$UMAPROOT" ]]; then
-    if [[ ! -s "${OUTPUT_DIR}/zUmap.jpg" ]]; then
-        echo "Fetching zUmap.jpg from UMAPROOT: $UMAPROOT"
-        ipfs --timeout 30s cat "${UMAPROOT}/zUmap.jpg" > "${OUTPUT_DIR}/zUmap.jpg" 2>/dev/null
-        [[ -s "${OUTPUT_DIR}/zUmap.jpg" ]] && ((FETCHED++)) || rm -f "${OUTPUT_DIR}/zUmap.jpg"
-    fi
-    if [[ ! -s "${OUTPUT_DIR}/Usat.jpg" ]]; then
-        echo "Fetching Usat.jpg from UMAPROOT: $UMAPROOT"
-        ipfs --timeout 30s cat "${UMAPROOT}/Usat.jpg" > "${OUTPUT_DIR}/Usat.jpg" 2>/dev/null
-        [[ -s "${OUTPUT_DIR}/Usat.jpg" ]] && ((FETCHED++)) || rm -f "${OUTPUT_DIR}/Usat.jpg"
-    fi
-fi
+# NOTE: UMAPROOT no longer contains images (they are stored individually via CIDs)
+# Images must be fetched via individual CIDs above
 
 echo "FETCHED=$FETCHED"
 exit 0
