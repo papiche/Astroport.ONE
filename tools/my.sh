@@ -433,10 +433,18 @@ function makecoord() {
 
     # Formate à 2 décimales (comme original)
     input=$(echo "${input}" | sed 's/\([0-9]*\.[0-9]\{2\}\).*/\1/')
+    
+    # First: add leading zero for values like .5 or -.5
+    if [[ ${input} =~ ^\.[0-9]+$ ]]; then
+        input="0${input}"
+    elif [[ ${input} =~ ^-\.[0-9]+$ ]]; then
+        # Handle negative with leading dot: -.20 → -0.20
+        input="-0${input:1}"
+    fi
+    
+    # Then: ensure 2 decimal places
     if [[ ${input} =~ ^-?[0-9]+\.[0-9]$ ]]; then
         input="${input}0"
-    elif [[ ${input} =~ ^\.[0-9]+$ ]]; then
-        input="0${input}"
     elif [[ ${input} =~ ^-?[0-9]+\.$ ]]; then
         input="${input}00"
     elif [[ ${input} =~ ^-?[0-9]+$ ]]; then

@@ -330,10 +330,12 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     # Convert COINS value into ẐEN
+    # Use makecoord to ensure proper formatting (e.g., 0.20 not .20)
     if [[ -n "$COINS" && "$COINS" != "null" ]]; then
-        ZEN=$(echo "scale=1; ($COINS - 1) * 10" | bc)
+        ZEN=$(makecoord $(echo "scale=2; ($COINS - 1) * 10" | bc))
+        [[ -z "$ZEN" ]] && ZEN="-10.00"
     else
-        ZEN=-10
+        ZEN="-10.00"
     fi
 
     log "INFO" "${G1PUBNOSTR} AMOUNT (${COINS} G1) = ${ZEN} ZEN"
@@ -628,9 +630,10 @@ for PLAYER in "${NOSTR[@]}"; do
                         
                         if [[ $(echo "$COINS >= $MIN_BALANCE" | bc -l) -eq 1 ]]; then
                             # Convert Ğ1 to ẐEN for display (1 Ğ1 = 10 ẐEN)
-                            Npaf_ZEN=$(echo "scale=1; $Npaf * 10" | bc -l)
-                            TVA_ZEN=$(echo "scale=1; $TVA_AMOUNT * 10" | bc -l)
-                            TOTAL_ZEN=$(echo "scale=1; $TOTAL_PAYMENT * 10" | bc -l)
+                            # Use makecoord to ensure proper formatting (e.g., 0.20 not .20)
+                            Npaf_ZEN=$(makecoord $(echo "scale=2; $Npaf * 10" | bc -l))
+                            TVA_ZEN=$(makecoord $(echo "scale=2; $TVA_AMOUNT * 10" | bc -l))
+                            TOTAL_ZEN=$(makecoord $(echo "scale=2; $TOTAL_PAYMENT * 10" | bc -l))
 
                             log "INFO" "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS Ğ1 >= $MIN_BALANCE Ğ1 min) - Direct TVA split: $Npaf_ZEN ẐEN ($Npaf Ğ1) to CAPTAIN_DEDICATED + $TVA_ZEN ẐEN ($TVA_AMOUNT Ğ1) to IMPOTS"
 
