@@ -88,6 +88,23 @@ log_output "✅ Captain HEX: ${CAPTAIN_HEX:0:8}..."
 CURRENT_WEEK="W$(date +%V)-$(date +%Y)"
 log_output "📅 Report for week: $CURRENT_WEEK"
 
+# Normalize bc output: ensure leading zero for decimals (e.g., .25 -> 0.25)
+# This is required for valid JSON output
+normalize_number() {
+    local num="$1"
+    # Handle empty or null
+    [[ -z "$num" ]] && echo "0" && return
+    # Add leading zero if starts with .
+    if [[ "$num" == .* ]]; then
+        echo "0$num"
+    # Add leading zero if starts with -.
+    elif [[ "$num" == -.* ]]; then
+        echo "-0${num:1}"
+    else
+        echo "$num"
+    fi
+}
+
 # Get wallet balance (G1check.sh handles caching internally)
 get_wallet_balance() {
     local pubkey="$1"
@@ -97,7 +114,7 @@ get_wallet_balance() {
 convert_to_zen() {
     local g1_balance="$1"
     if [[ $(echo "$g1_balance > 1" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
-        echo "scale=2; ($g1_balance - 1) * 10" | bc -l 2>/dev/null
+        normalize_number "$(echo "scale=2; ($g1_balance - 1) * 10" | bc -l 2>/dev/null)"
     else
         echo "0"
     fi
@@ -222,13 +239,13 @@ PAF=${PAF:-14}     # Weekly PAF
 # Calculate weekly revenue
 # - MULTIPASS: All users pay rent
 # - ZENCARD: Only RENTERS pay rent, OWNERS (sociétaires) don't pay weekly rent
-MULTIPASS_REVENUE=$(echo "$MULTIPASS_COUNT * $NCARD" | bc -l)
-ZENCARD_REVENUE=$(echo "$ZENCARD_RENTERS * $ZCARD" | bc -l)  # Only renters, not owners!
-TOTAL_REVENUE=$(echo "$MULTIPASS_REVENUE + $ZENCARD_REVENUE" | bc -l)
+MULTIPASS_REVENUE=$(normalize_number "$(echo "$MULTIPASS_COUNT * $NCARD" | bc -l)")
+ZENCARD_REVENUE=$(normalize_number "$(echo "$ZENCARD_RENTERS * $ZCARD" | bc -l)")  # Only renters, not owners!
+TOTAL_REVENUE=$(normalize_number "$(echo "$MULTIPASS_REVENUE + $ZENCARD_REVENUE" | bc -l)")
 
 # TVA calculation (20%)
 TVA_RATE=0.20
-TOTAL_TVA=$(echo "scale=2; $TOTAL_REVENUE * $TVA_RATE" | bc -l)
+TOTAL_TVA=$(normalize_number "$(echo "scale=2; $TOTAL_REVENUE * $TVA_RATE" | bc -l)")
 
 log_output "  Revenue: $TOTAL_REVENUE Ẑ HT (MP: $MULTIPASS_COUNT × $NCARD + ZC renters: $ZENCARD_RENTERS × $ZCARD)"
 log_output "  TVA: $TOTAL_TVA Ẑ | ZenCard owners (no rent): $ZENCARD_OWNERS"
@@ -239,18 +256,18 @@ log_output "  TVA: $TOTAL_TVA Ẑ | ZenCard owners (no rent): $ZENCARD_OWNERS"
 
 log_output "📊 Calculating bilan..."
 
-CAPTAIN_REMUNERATION=$(echo "$PAF * 2" | bc -l)
-TOTAL_COSTS=$(echo "$PAF + $CAPTAIN_REMUNERATION" | bc -l)
-BILAN=$(echo "scale=2; $TOTAL_REVENUE - $TOTAL_COSTS" | bc -l)
+CAPTAIN_REMUNERATION=$(normalize_number "$(echo "$PAF * 2" | bc -l)")
+TOTAL_COSTS=$(normalize_number "$(echo "$PAF + $CAPTAIN_REMUNERATION" | bc -l)")
+BILAN=$(normalize_number "$(echo "scale=2; $TOTAL_REVENUE - $TOTAL_COSTS" | bc -l)")
 
 # Calculate allocation (if positive bilan)
 if [[ $(echo "$BILAN > 0" | bc -l) -eq 1 ]]; then
     # IS provision (25%)
-    IS_PROVISION=$(echo "scale=2; $BILAN * 0.25" | bc -l)
-    NET_SURPLUS=$(echo "scale=2; $BILAN - $IS_PROVISION" | bc -l)
+    IS_PROVISION=$(normalize_number "$(echo "scale=2; $BILAN * 0.25" | bc -l)")
+    NET_SURPLUS=$(normalize_number "$(echo "scale=2; $BILAN - $IS_PROVISION" | bc -l)")
     
     # 3x1/3 allocation
-    ALLOCATION_THIRD=$(echo "scale=2; $NET_SURPLUS / 3" | bc -l)
+    ALLOCATION_THIRD=$(normalize_number "$(echo "scale=2; $NET_SURPLUS / 3" | bc -l)")
 else
     IS_PROVISION="0"
     NET_SURPLUS="0"
@@ -271,7 +288,7 @@ log_output "🏥 Determining health status..."
 
 # Calculate weeks runway based on CASH alone
 if [[ $(echo "$TOTAL_COSTS > 0" | bc -l) -eq 1 ]]; then
-    WEEKS_RUNWAY=$(echo "scale=0; $CASH_ZEN / $TOTAL_COSTS" | bc -l 2>/dev/null || echo "0")
+    WEEKS_RUNWAY=$(normalize_number "$(echo "scale=0; $CASH_ZEN / $TOTAL_COSTS" | bc -l 2>/dev/null || echo "0")")
 else
     WEEKS_RUNWAY=999
 fi
@@ -290,7 +307,7 @@ DEGRADATION_PHASE=0
 
 # Check if CASH can cover operational costs (3x PAF)
 [[ -z $PAF ]] && PAF=14
-TOTAL_PAF_REQUIRED=$(echo "scale=2; $PAF * 3" | bc -l)
+TOTAL_PAF_REQUIRED=$(normalize_number "$(echo "scale=2; $PAF * 3" | bc -l)")
 
 if [[ $(echo "$CASH_ZEN >= $TOTAL_PAF_REQUIRED" | bc -l 2>/dev/null) -eq 1 ]]; then
     # Phase 0: Normal operation
@@ -315,9 +332,9 @@ else
 fi
 
 # Calculate total runway including backup wallets
-TOTAL_AVAILABLE=$(echo "scale=2; $CASH_ZEN + $ASSETS_ZEN + $RND_ZEN" | bc -l 2>/dev/null || echo "0")
+TOTAL_AVAILABLE=$(normalize_number "$(echo "scale=2; $CASH_ZEN + $ASSETS_ZEN + $RND_ZEN" | bc -l 2>/dev/null || echo "0")")
 if [[ $(echo "$TOTAL_COSTS > 0" | bc -l) -eq 1 ]]; then
-    TOTAL_WEEKS_RUNWAY=$(echo "scale=0; $TOTAL_AVAILABLE / $TOTAL_COSTS" | bc -l 2>/dev/null || echo "0")
+    TOTAL_WEEKS_RUNWAY=$(normalize_number "$(echo "scale=0; $TOTAL_AVAILABLE / $TOTAL_COSTS" | bc -l 2>/dev/null || echo "0")")
 else
     TOTAL_WEEKS_RUNWAY=999
 fi
@@ -330,9 +347,13 @@ log_output "  Status: $HEALTH_STATUS (Phase $DEGRADATION_PHASE) | CASH Runway: $
 
 log_output "📉 Collecting depreciation data..."
 
-MACHINE_VALUE=$(grep "^MACHINE_VALUE=" "$HOME/.zen/game/.env" 2>/dev/null | cut -d'=' -f2 || echo "0")
-CAPITAL_DATE=$(grep "^CAPITAL_DATE=" "$HOME/.zen/game/.env" 2>/dev/null | cut -d'=' -f2 || echo "")
-DEPRECIATION_WEEKS=$(grep "^DEPRECIATION_WEEKS=" "$HOME/.zen/game/.env" 2>/dev/null | cut -d'=' -f2 || echo "156")
+MACHINE_VALUE=$(grep "^MACHINE_VALUE=" "$HOME/.zen/game/.env" 2>/dev/null | cut -d'=' -f2)
+CAPITAL_DATE=$(grep "^CAPITAL_DATE=" "$HOME/.zen/game/.env" 2>/dev/null | cut -d'=' -f2)
+DEPRECIATION_WEEKS=$(grep "^DEPRECIATION_WEEKS=" "$HOME/.zen/game/.env" 2>/dev/null | cut -d'=' -f2)
+
+# Apply defaults for empty values
+[[ -z "$MACHINE_VALUE" ]] && MACHINE_VALUE="0"
+[[ -z "$DEPRECIATION_WEEKS" ]] && DEPRECIATION_WEEKS="156"
 
 if [[ -n "$MACHINE_VALUE" && "$MACHINE_VALUE" != "0" && -n "$CAPITAL_DATE" ]]; then
     CAPITAL_TIMESTAMP=$(date -d "${CAPITAL_DATE:0:8}" +%s 2>/dev/null || echo "0")
@@ -340,10 +361,10 @@ if [[ -n "$MACHINE_VALUE" && "$MACHINE_VALUE" != "0" && -n "$CAPITAL_DATE" ]]; t
     SECONDS_ELAPSED=$((CURRENT_TIMESTAMP - CAPITAL_TIMESTAMP))
     WEEKS_ELAPSED=$((SECONDS_ELAPSED / 604800))
     
-    WEEKLY_DEPRECIATION=$(echo "scale=2; $MACHINE_VALUE / $DEPRECIATION_WEEKS" | bc -l)
-    TOTAL_DEPRECIATED=$(echo "scale=2; $WEEKLY_DEPRECIATION * $WEEKS_ELAPSED" | bc -l)
-    RESIDUAL_VALUE=$(echo "scale=2; $MACHINE_VALUE - $TOTAL_DEPRECIATED" | bc -l)
-    DEPRECIATION_PERCENT=$(echo "scale=2; ($WEEKS_ELAPSED * 100) / $DEPRECIATION_WEEKS" | bc -l)
+    WEEKLY_DEPRECIATION=$(normalize_number "$(echo "scale=2; $MACHINE_VALUE / $DEPRECIATION_WEEKS" | bc -l)")
+    TOTAL_DEPRECIATED=$(normalize_number "$(echo "scale=2; $WEEKLY_DEPRECIATION * $WEEKS_ELAPSED" | bc -l)")
+    RESIDUAL_VALUE=$(normalize_number "$(echo "scale=2; $MACHINE_VALUE - $TOTAL_DEPRECIATED" | bc -l)")
+    DEPRECIATION_PERCENT=$(normalize_number "$(echo "scale=2; ($WEEKS_ELAPSED * 100) / $DEPRECIATION_WEEKS" | bc -l)")
 else
     MACHINE_VALUE="0"
     WEEKS_ELAPSED=0
@@ -476,6 +497,7 @@ EOF
 # Validate JSON
 if ! echo "$CONTENT_JSON" | jq empty 2>/dev/null; then
     echo "❌ Invalid JSON content"
+    echo "$CONTENT_JSON" | jq . 2>&1 | head -5
     exit 1
 fi
 
@@ -570,11 +592,17 @@ fi
 log_output "📡 Publishing event to local strfry relay..."
 
 # Get Captain NSEC and convert to HEX for nostpy-cli
-CAPTAIN_NSEC=$(cat "$CAPTAIN_NOSTR_SECRET" 2>/dev/null)
-if [[ -z "$CAPTAIN_NSEC" ]]; then
+# The .secret.nostr file format: "NSEC=nsec1...; NPUB=npub1..."
+CAPTAIN_NSEC_RAW=$(cat "$CAPTAIN_NOSTR_SECRET" 2>/dev/null)
+if [[ -z "$CAPTAIN_NSEC_RAW" ]]; then
     echo "❌ Cannot read Captain NOSTR secret"
     exit 1
 fi
+
+# Extract just the NSEC value (between "NSEC=" and ";")
+CAPTAIN_NSEC=$(echo "$CAPTAIN_NSEC_RAW" | grep -oP 'NSEC=\K[^;]+' || echo "$CAPTAIN_NSEC_RAW")
+# Fallback: if file just contains "nsec1...", use as-is
+[[ "$CAPTAIN_NSEC" != nsec1* ]] && CAPTAIN_NSEC=$(echo "$CAPTAIN_NSEC_RAW" | grep -oP 'nsec1[a-z0-9]+')
 
 # Convert NSEC to HEX using nostr2hex.py
 CAPTAIN_PRIVKEY_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$CAPTAIN_NSEC" 2>/dev/null)

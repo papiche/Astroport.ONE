@@ -384,7 +384,8 @@ EOFNOSTR
         ### CAPTAIN FOLLOWS NEW MULTIPASS AUTOMATICALLY
         # CAPTAIN should follow the new MULTIPASS to monitor and provide support
         if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
-            CAPTAINNSEC=$(grep "NSEC=" ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr | cut -d '=' -f 2)
+            # Extract NSEC value (between "NSEC=" and ";") from format: NSEC=nsec1...; NPUB=...
+            CAPTAINNSEC=$(grep -oP 'NSEC=\K[^;]+' ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr)
             if [[ -n "$CAPTAINNSEC" ]]; then
                 echo "👥 CAPTAIN ${CAPTAINEMAIL} following new MULTIPASS ${EMAIL} (${HEX})"
                 ${MY_PATH}/../tools/nostr_follow.sh "$CAPTAINNSEC" "$HEX" "$myRELAY" 2>/dev/null \

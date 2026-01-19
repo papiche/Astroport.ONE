@@ -209,8 +209,8 @@ find_hex_from_email() {
     # Find directory matching email
     for dir in "$player_dir"/*/"$email"; do
         if [[ -d "$dir" ]] && [[ -f "$dir/.secret.nostr" ]]; then
-            # Extract hex from .secret.nostr
-            local hex=$(grep -oP 'NPUB=[a-f0-9]{64}' "$dir/.secret.nostr" 2>/dev/null | cut -d= -f2)
+            # Extract HEX from .secret.nostr (format: NSEC=...; NPUB=...; HEX=...;)
+            local hex=$(grep -oP 'HEX=\K[a-f0-9]{64}' "$dir/.secret.nostr" 2>/dev/null)
             if [[ -n "$hex" ]]; then
                 echo "$hex"
                 return 0
