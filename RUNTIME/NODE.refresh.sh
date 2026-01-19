@@ -328,6 +328,52 @@ for hexfile in ~/.zen/game/nostr/UNODE_*/HEX; do
 done
 echo "Added $UNODE_COUNT UNODE HEX keys to amisOfAmis.txt"
 
+# Add SWARM SECTOR HEX keys (geographic sectors from all swarm nodes)
+# Required for N² constellation sync across sectors
+SWARM_SECTOR_COUNT=0
+for hexfile in ~/.zen/game/nostr/SECTOR_*/HEX; do
+    [[ -f "$hexfile" ]] || continue
+    hex=$(cat "$hexfile" 2>/dev/null | tr -d '[:space:]')
+    if [[ -n "$hex" && ${#hex} -eq 64 && "$hex" =~ ^[0-9a-fA-F]{64}$ ]]; then
+        if ! grep -qi "^${hex}$" "${HOME}/.zen/strfry/amisOfAmis.txt" 2>/dev/null; then
+            echo "$hex" >> "${HOME}/.zen/strfry/amisOfAmis.txt"
+            ((SWARM_SECTOR_COUNT++))
+        fi
+    fi
+done
+echo "Added $SWARM_SECTOR_COUNT SWARM SECTOR HEX keys to amisOfAmis.txt"
+
+# Add SWARM REGION HEX keys (geographic regions from all swarm nodes)
+# Required for N² constellation sync across regions
+SWARM_REGION_COUNT=0
+for hexfile in ~/.zen/game/nostr/REGION_*/HEX; do
+    [[ -f "$hexfile" ]] || continue
+    hex=$(cat "$hexfile" 2>/dev/null | tr -d '[:space:]')
+    if [[ -n "$hex" && ${#hex} -eq 64 && "$hex" =~ ^[0-9a-fA-F]{64}$ ]]; then
+        if ! grep -qi "^${hex}$" "${HOME}/.zen/strfry/amisOfAmis.txt" 2>/dev/null; then
+            echo "$hex" >> "${HOME}/.zen/strfry/amisOfAmis.txt"
+            ((SWARM_REGION_COUNT++))
+        fi
+    fi
+done
+echo "Added $SWARM_REGION_COUNT SWARM REGION HEX keys to amisOfAmis.txt"
+
+# Add SWARM UMAP HEX keys (all UMAPs from swarm nodes)
+# Required for Collaborative Commons System (kind 30023 documents)
+# See docs/COLLABORATIVE_COMMONS_SYSTEM.md - documents need UMAP pubkeys synced
+SWARM_UMAP_COUNT=0
+for hexfile in ~/.zen/game/nostr/UMAP_*/HEX; do
+    [[ -f "$hexfile" ]] || continue
+    hex=$(cat "$hexfile" 2>/dev/null | tr -d '[:space:]')
+    if [[ -n "$hex" && ${#hex} -eq 64 && "$hex" =~ ^[0-9a-fA-F]{64}$ ]]; then
+        if ! grep -qi "^${hex}$" "${HOME}/.zen/strfry/amisOfAmis.txt" 2>/dev/null; then
+            echo "$hex" >> "${HOME}/.zen/strfry/amisOfAmis.txt"
+            ((SWARM_UMAP_COUNT++))
+        fi
+    fi
+done
+echo "Added $SWARM_UMAP_COUNT SWARM UMAP HEX keys to amisOfAmis.txt (Collaborative Commons)"
+
 # Remove duplicates and sort
 sort -u "${HOME}/.zen/strfry/amisOfAmis.txt" -o "${HOME}/.zen/strfry/amisOfAmis.txt"
 echo "Total amisOfAmis.txt entries after geographic sync: $(wc -l < ${HOME}/.zen/strfry/amisOfAmis.txt)"
