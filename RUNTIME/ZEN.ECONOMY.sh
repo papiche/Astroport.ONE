@@ -59,8 +59,9 @@ CURRENT_YEAR=$(date +%Y)
 WEEK_KEY="${CURRENT_YEAR}-W${CURRENT_WEEK}"
 
 # Check if payment was already done this week
+# Marker format: "YEAR-Wxx:PHASEn:NODEn:CPTn" - extract week key for comparison
 if [[ -f "$PAYMENT_MARKER" ]]; then
-    LAST_PAYMENT_WEEK=$(cat "$PAYMENT_MARKER")
+    LAST_PAYMENT_WEEK=$(cat "$PAYMENT_MARKER" | cut -d':' -f1)
     if [[ "$LAST_PAYMENT_WEEK" == "$WEEK_KEY" ]]; then
         log_output "ZEN ECONOMY: Weekly payment already completed this week ($WEEK_KEY)"
         log_output "Skipping payment process..."
