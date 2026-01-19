@@ -46,10 +46,18 @@ if [[ -z "$STRFRY_OUTPUT" ]]; then
 fi
 
 if [[ "$JSON_OUTPUT" == true ]]; then
-    # Output in JSON format
+    # Output in JSON format with UMAP CIDs extracted
     echo "$STRFRY_OUTPUT" | jq -c '{
         profile: (.content | fromjson),
-        identities: [.tags[] | select(.[0] == "i") | .[1]]
+        identities: [.tags[] | select(.[0] == "i") | .[1]],
+        umap_images: {
+            umap_cid: ([.tags[] | select(.[0] == "i" and (.[1] | startswith("umap_cid:"))) | .[1] | split(":")[1]] | first // null),
+            usat_cid: ([.tags[] | select(.[0] == "i" and (.[1] | startswith("usat_cid:"))) | .[1] | split(":")[1]] | first // null),
+            umap_full_cid: ([.tags[] | select(.[0] == "i" and (.[1] | startswith("umap_full_cid:"))) | .[1] | split(":")[1]] | first // null),
+            usat_full_cid: ([.tags[] | select(.[0] == "i" and (.[1] | startswith("usat_full_cid:"))) | .[1] | split(":")[1]] | first // null),
+            umaproot: ([.tags[] | select(.[0] == "i" and (.[1] | startswith("umaproot:"))) | .[1] | split(":")[1]] | first // null),
+            umap_updated: ([.tags[] | select(.[0] == "i" and (.[1] | startswith("umap_updated:"))) | .[1] | split(":")[1]] | first // null)
+        }
     }'
 else
     # Extract and display profile information
@@ -71,6 +79,19 @@ Bot: \(.bot // false)"
     echo "$STRFRY_OUTPUT" | jq -r '.tags[] | select(.[0] == "i") | "\(.[1])"' | while read -r identity; do
         echo "$identity"
     done
+    
+    # Display UMAP image CIDs if present
+    UMAP_CID=$(echo "$STRFRY_OUTPUT" | jq -r '[.tags[] | select(.[0] == "i" and (.[1] | startswith("umap_cid:"))) | .[1] | split(":")[1]] | first // empty')
+    USAT_CID=$(echo "$STRFRY_OUTPUT" | jq -r '[.tags[] | select(.[0] == "i" and (.[1] | startswith("usat_cid:"))) | .[1] | split(":")[1]] | first // empty')
+    UMAPROOT=$(echo "$STRFRY_OUTPUT" | jq -r '[.tags[] | select(.[0] == "i" and (.[1] | startswith("umaproot:"))) | .[1] | split(":")[1]] | first // empty')
+    
+    if [[ -n "$UMAP_CID" || -n "$USAT_CID" || -n "$UMAPROOT" ]]; then
+        echo -e "\nUMAP Images (IPFS CIDs):"
+        echo "------------------------"
+        [[ -n "$UMAP_CID" ]] && echo "zUmap.jpg (profile): $UMAP_CID"
+        [[ -n "$USAT_CID" ]] && echo "Usat.jpg (banner):   $USAT_CID"
+        [[ -n "$UMAPROOT" ]] && echo "UMAP Root:           $UMAPROOT"
+    fi
 fi
 
-exit 0 
+exit 0

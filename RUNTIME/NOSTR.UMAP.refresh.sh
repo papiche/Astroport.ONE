@@ -1724,57 +1724,137 @@ find_or_copy_from_swarm() {
 ################################################################################
 
 # Generate 4 cartographic images for a SECTOR zone (0.1° = ~11km)
+# NOSTR-NATIVE: Images stored only in IPFS via CIDs in profile (no local storage)
 #
-# Images generated:
+# Images generated (4 total):
 # - SectorMap.jpg  : OpenStreetMap large view (0.1°) → archive/web
 # - zSectorMap.jpg : OpenStreetMap zoomed (0.01°) → NOSTR profile picture
 # - SectorSat.jpg  : Satellite large view (0.1°) → NOSTR banner
 # - zSectorSat.jpg : Satellite zoomed (0.01°) → archive/detail
 #
-# Optimization: Checks swarm cache before generating (99% faster if found)
-# Each image: ~900x900px, generated via page_screenshot.py
+# Refresh intervals: road maps = 30 days, satellite = 60 days
+# Returns: CID variables via global: SECTOR_MAP_CID, SECTOR_ZMAP_CID, SECTOR_SAT_CID, SECTOR_ZSAT_CID, SECTOR_UPDATED
 generate_sector_images() {
     local slat=$1
     local slon=$2
     local sectorpath=$3
+    local sector_hex=$4  # NOSTR HEX of the sector
     local rlat=$(echo ${slat} | cut -d '.' -f 1)
     local rlon=$(echo ${slon} | cut -d '.' -f 1)
     
-    log "Generating SECTOR images for _${slat}_${slon}..."
+    log "Checking SECTOR _${slat}_${slon} images in NOSTR profile..."
     
-    # Calculate coordinates for the sector (center of 0.1° square)
+    # Refresh intervals
+    local SECTOR_MAP_REFRESH_DAYS=30
+    local SECTOR_SAT_REFRESH_DAYS=60
+    
+    # Get existing CIDs and date from NOSTR profile
+    local nostr_data=""
+    if [[ -n "$sector_hex" ]]; then
+        nostr_data=$(${MY_PATH}/../tools/nostr_get_umap_images.sh "$sector_hex" "" --check-only 2>/dev/null)
+    fi
+    
+    local EXISTING_ZMAP_CID=$(echo "$nostr_data" | grep "^UMAP_CID=" | cut -d'=' -f2)
+    local EXISTING_SAT_CID=$(echo "$nostr_data" | grep "^USAT_CID=" | cut -d'=' -f2)
+    local EXISTING_MAP_CID=$(echo "$nostr_data" | grep "^UMAP_FULL_CID=" | cut -d'=' -f2)
+    local EXISTING_ZSAT_CID=$(echo "$nostr_data" | grep "^USAT_FULL_CID=" | cut -d'=' -f2)
+    local EXISTING_UPDATED=$(echo "$nostr_data" | grep "^UMAP_UPDATED=" | cut -d'=' -f2)
+    
+    # Initialize return variables (4 images)
+    SECTOR_MAP_CID=""    # SectorMap.jpg (large road map)
+    SECTOR_ZMAP_CID=""   # zSectorMap.jpg (zoomed road map - PROFILE)
+    SECTOR_SAT_CID=""    # SectorSat.jpg (large satellite - BANNER)
+    SECTOR_ZSAT_CID=""   # zSectorSat.jpg (zoomed satellite)
+    SECTOR_UPDATED=""
+    SECTOR_IMAGES_REFRESHED=false
+    
+    # Check if refresh needed
+    local need_map_refresh=true
+    local need_sat_refresh=true
+    
+    if [[ -n "$EXISTING_UPDATED" && "$EXISTING_UPDATED" != "null" ]]; then
+        local update_timestamp=$(date -d "${EXISTING_UPDATED:0:4}-${EXISTING_UPDATED:4:2}-${EXISTING_UPDATED:6:2}" +%s 2>/dev/null || echo 0)
+        local current_timestamp=$(date +%s)
+        local age_days=$(( (current_timestamp - update_timestamp) / 86400 ))
+        
+        log "SECTOR images last updated: $EXISTING_UPDATED ($age_days days ago)"
+        
+        [[ $age_days -lt $SECTOR_MAP_REFRESH_DAYS && -n "$EXISTING_ZMAP_CID" ]] && need_map_refresh=false
+        [[ $age_days -lt $SECTOR_SAT_REFRESH_DAYS && -n "$EXISTING_SAT_CID" ]] && need_sat_refresh=false
+    fi
+    
+    # Calculate coordinates for the sector
     local lat="${slat}0"
     local lon="${slon}0"
+    local tmp_dir="${HOME}/.zen/tmp/${MOATS}"
     
-    # Generate SectorMap.jpg (large view 0.1°)
-    if ! find_or_copy_from_swarm "SectorMap.jpg" "$sectorpath" "*/UPLANET/SECTORS/_${rlat}_${rlon}/_${slat}_${slon}/SectorMap.jpg"; then
+    # Generate road maps if needed
+    if [[ "$need_map_refresh" == true ]]; then
+        # SectorMap.jpg (large view 0.1°)
         local SECTORMAP_URL="/ipns/copylaradio.com/Umap.html?southWestLat=${lat}&southWestLon=${lon}&deg=0.1"
         log "Generating SectorMap.jpg via page_screenshot.py..."
-        python "${MY_PATH}/../tools/page_screenshot.py" "${myIPFS}${SECTORMAP_URL}" "${sectorpath}/SectorMap.jpg" 900 900
-    fi
-    
-    # Generate zSectorMap.jpg (profile picture - zoomed view 0.01°)
-    if ! find_or_copy_from_swarm "zSectorMap.jpg" "$sectorpath" "*/UPLANET/SECTORS/_${rlat}_${rlon}/_${slat}_${slon}/zSectorMap.jpg"; then
+        python "${MY_PATH}/../tools/page_screenshot.py" "${myIPFS}${SECTORMAP_URL}" "${tmp_dir}/SectorMap.jpg" 900 900
+        if [[ -s "${tmp_dir}/SectorMap.jpg" ]]; then
+            SECTOR_MAP_CID=$(ipfs add -q "${tmp_dir}/SectorMap.jpg" 2>/dev/null)
+            rm -f "${tmp_dir}/SectorMap.jpg"
+            log "✓ SectorMap.jpg CID: $SECTOR_MAP_CID"
+        fi
+        
+        # zSectorMap.jpg (zoomed view 0.01° - PROFILE PICTURE)
         local ZSECTORMAP_URL="/ipns/copylaradio.com/Umap.html?southWestLat=${lat}&southWestLon=${lon}&deg=0.01"
         log "Generating zSectorMap.jpg via page_screenshot.py..."
-        python "${MY_PATH}/../tools/page_screenshot.py" "${myIPFS}${ZSECTORMAP_URL}" "${sectorpath}/zSectorMap.jpg" 900 900
+        python "${MY_PATH}/../tools/page_screenshot.py" "${myIPFS}${ZSECTORMAP_URL}" "${tmp_dir}/zSectorMap.jpg" 900 900
+        if [[ -s "${tmp_dir}/zSectorMap.jpg" ]]; then
+            SECTOR_ZMAP_CID=$(ipfs add -q "${tmp_dir}/zSectorMap.jpg" 2>/dev/null)
+            rm -f "${tmp_dir}/zSectorMap.jpg"
+            log "✓ zSectorMap.jpg CID: $SECTOR_ZMAP_CID"
+            SECTOR_IMAGES_REFRESHED=true
+        fi
+    else
+        SECTOR_MAP_CID="$EXISTING_MAP_CID"
+        SECTOR_ZMAP_CID="$EXISTING_ZMAP_CID"
+        log "✓ Road maps fresh (< $SECTOR_MAP_REFRESH_DAYS days)"
     fi
     
-    # Generate SectorSat.jpg (banner - wide view 0.1°)
-    if ! find_or_copy_from_swarm "SectorSat.jpg" "$sectorpath" "*/UPLANET/SECTORS/_${rlat}_${rlon}/_${slat}_${slon}/SectorSat.jpg"; then
+    # Generate satellite images if needed
+    if [[ "$need_sat_refresh" == true ]]; then
+        # SectorSat.jpg (large view 0.1° - BANNER)
         local SECTORSAT_URL="/ipns/copylaradio.com/Usat.html?southWestLat=${lat}&southWestLon=${lon}&deg=0.1"
         log "Generating SectorSat.jpg via page_screenshot.py..."
-        python "${MY_PATH}/../tools/page_screenshot.py" "${myIPFS}${SECTORSAT_URL}" "${sectorpath}/SectorSat.jpg" 900 900
-    fi
-    
-    # Generate zSectorSat.jpg (zoomed satellite view 0.01°)
-    if ! find_or_copy_from_swarm "zSectorSat.jpg" "$sectorpath" "*/UPLANET/SECTORS/_${rlat}_${rlon}/_${slat}_${slon}/zSectorSat.jpg"; then
+        python "${MY_PATH}/../tools/page_screenshot.py" "${myIPFS}${SECTORSAT_URL}" "${tmp_dir}/SectorSat.jpg" 900 900
+        if [[ -s "${tmp_dir}/SectorSat.jpg" ]]; then
+            SECTOR_SAT_CID=$(ipfs add -q "${tmp_dir}/SectorSat.jpg" 2>/dev/null)
+            rm -f "${tmp_dir}/SectorSat.jpg"
+            log "✓ SectorSat.jpg CID: $SECTOR_SAT_CID"
+            SECTOR_IMAGES_REFRESHED=true
+        fi
+        
+        # zSectorSat.jpg (zoomed satellite view 0.01°)
         local ZSECTORSAT_URL="/ipns/copylaradio.com/Usat.html?southWestLat=${lat}&southWestLon=${lon}&deg=0.01"
         log "Generating zSectorSat.jpg via page_screenshot.py..."
-        python "${MY_PATH}/../tools/page_screenshot.py" "${myIPFS}${ZSECTORSAT_URL}" "${sectorpath}/zSectorSat.jpg" 900 900
+        python "${MY_PATH}/../tools/page_screenshot.py" "${myIPFS}${ZSECTORSAT_URL}" "${tmp_dir}/zSectorSat.jpg" 900 900
+        if [[ -s "${tmp_dir}/zSectorSat.jpg" ]]; then
+            SECTOR_ZSAT_CID=$(ipfs add -q "${tmp_dir}/zSectorSat.jpg" 2>/dev/null)
+            rm -f "${tmp_dir}/zSectorSat.jpg"
+            log "✓ zSectorSat.jpg CID: $SECTOR_ZSAT_CID"
+        fi
+    else
+        SECTOR_SAT_CID="$EXISTING_SAT_CID"
+        SECTOR_ZSAT_CID="$EXISTING_ZSAT_CID"
+        log "✓ Satellite images fresh (< $SECTOR_SAT_REFRESH_DAYS days)"
     fi
     
-    log "SECTOR images complete: 4/4 images ready"
+    # Set update date
+    if [[ "$SECTOR_IMAGES_REFRESHED" == true ]]; then
+        SECTOR_UPDATED=$(date +%Y%m%d)
+    else
+        SECTOR_UPDATED="$EXISTING_UPDATED"
+    fi
+    
+    # Cleanup any old local images (TODO REMOVE after migration)
+    rm -f "${sectorpath}"/*.jpg "${sectorpath}"/*.png 2>/dev/null
+    
+    log "SECTOR images ready: 4 CIDs in NOSTR profile"
 }
 
 save_sector_journal() {
@@ -1791,8 +1871,13 @@ save_sector_journal() {
     mkdir -p $sectorpath
     echo "$ANSWER" > $sectorpath/${IPFSNODEID: -12}.NOSTR_journal
 
-    # Generate sector images before IPFS add
-    generate_sector_images "$slat" "$slon" "$sectorpath"
+    # Get SECTOR NOSTR HEX for image lookup
+    local SECTORNSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${sector}" "${UPLANETNAME}${sector}" -s)
+    local SECTOR_NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${sector}" "${UPLANETNAME}${sector}")
+    local SECTOR_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$SECTOR_NPUB")
+
+    # Generate sector images (NOSTR-native: returns CIDs, no local storage)
+    generate_sector_images "$slat" "$slon" "$sectorpath" "$SECTOR_HEX"
 
     # Update manifest before IPFS add to include it in the CID
     local temp_manifest="${sectorpath}/manifest.tmp"
@@ -1801,7 +1886,7 @@ save_sector_journal() {
         previous_cid=$(jq -r '.current_cid // ""' "${sectorpath}/manifest.json" 2>/dev/null)
     fi
     
-    # Add to IPFS (excluding manifest temporarily)
+    # Add to IPFS (no images - they are stored via CIDs in NOSTR profile)
     local SECROOT=$(ipfs add -rwHq $sectorpath/* | tail -n 1)
     
     # Now update manifest with the new CID
@@ -1936,9 +2021,27 @@ update_sector_nostr_profile() {
     local SECTORNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}" -s)
     local NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$SECTORNSEC")
 
-    # Use generated SECTOR images for profile
-    local SECTOR_PROFILE="${myIPFS}/ipfs/${SECROOT}/zSectorMap.jpg"
-    local SECTOR_BANNER="${myIPFS}/ipfs/${SECROOT}/SectorSat.jpg"
+    # Use NOSTR-native image CIDs (set by generate_sector_images)
+    # Profile picture = zSectorMap.jpg (zoomed road map)
+    # Banner = SectorSat.jpg (large satellite)
+    # Using public gateway ($myLIBRA) for profile accessibility
+    local SECTOR_PROFILE=""
+    local SECTOR_BANNER=""
+    [[ -n "$SECTOR_ZMAP_CID" ]] && SECTOR_PROFILE="${myLIBRA}/ipfs/${SECTOR_ZMAP_CID}"
+    [[ -n "$SECTOR_SAT_CID" ]] && SECTOR_BANNER="${myLIBRA}/ipfs/${SECTOR_SAT_CID}"
+    
+    # Fallback to SECROOT paths if CIDs not available
+    [[ -z "$SECTOR_PROFILE" ]] && SECTOR_PROFILE="${myLIBRA}/ipfs/${SECROOT}/zSectorMap.jpg"
+    [[ -z "$SECTOR_BANNER" ]] && SECTOR_BANNER="${myLIBRA}/ipfs/${SECROOT}/SectorSat.jpg"
+
+    # Build optional arguments for ALL 4 image CIDs and update date
+    local SECTOR_CID_ARGS=""
+    [[ -n "$SECTOR_ZMAP_CID" ]] && SECTOR_CID_ARGS="$SECTOR_CID_ARGS --umap_cid $SECTOR_ZMAP_CID"
+    [[ -n "$SECTOR_SAT_CID" ]] && SECTOR_CID_ARGS="$SECTOR_CID_ARGS --usat_cid $SECTOR_SAT_CID"
+    [[ -n "$SECTOR_MAP_CID" ]] && SECTOR_CID_ARGS="$SECTOR_CID_ARGS --umap_full_cid $SECTOR_MAP_CID"
+    [[ -n "$SECTOR_ZSAT_CID" ]] && SECTOR_CID_ARGS="$SECTOR_CID_ARGS --usat_full_cid $SECTOR_ZSAT_CID"
+    [[ -n "$SECROOT" ]] && SECTOR_CID_ARGS="$SECTOR_CID_ARGS --umaproot $SECROOT"
+    [[ -n "$SECTOR_UPDATED" ]] && SECTOR_CID_ARGS="$SECTOR_CID_ARGS --umap_updated $SECTOR_UPDATED"
 
     ${MY_PATH}/../tools/nostr_setup_profile.py \
         "$SECTORNSEC" \
@@ -1948,7 +2051,7 @@ update_sector_nostr_profile() {
         "${SECTOR_BANNER}" \
         "" "${myIPFS}/ipfs/${SECROOT}" "" "${VDONINJA}/?room=${SECTORG1PUB:0:8}&effects&record" "" "" \
         "$myRELAY" "wss://relay.copylaradio.com" \
-        --zencard "$UPLANETG1PUB"
+        --zencard "$UPLANETG1PUB" $SECTOR_CID_ARGS
 
     local TAGS_JSON=$(printf '%s\n' "${STAGS[@]}" | jq -c . | tr '\n' ',' | sed 's/,$//')
     TAGS_JSON="[$TAGS_JSON]"
@@ -2023,55 +2126,135 @@ create_region_journal() {
 }
 
 # Generate 4 cartographic images for a REGION zone (1° = ~111km)
+# NOSTR-NATIVE: Images stored only in IPFS via CIDs in profile (no local storage)
 #
-# Images generated:
+# Images generated (4 total):
 # - RegionMap.jpg  : OpenStreetMap large view (1°) → archive/web
 # - zRegionMap.jpg : OpenStreetMap zoomed (0.1°) → NOSTR profile picture
 # - RegionSat.jpg  : Satellite large view (1°) → NOSTR banner
 # - zRegionSat.jpg : Satellite zoomed (0.1°) → archive/detail
 #
-# Optimization: Checks swarm cache before generating (99% faster if found)
-# Each image: ~900x900px, generated via page_screenshot.py
+# Refresh intervals: road maps = 30 days, satellite = 60 days
+# Returns: CID variables via global: REGION_MAP_CID, REGION_ZMAP_CID, REGION_SAT_CID, REGION_ZSAT_CID, REGION_UPDATED
 generate_region_images() {
     local rlat=$1
     local rlon=$2
     local regionpath=$3
+    local region_hex=$4  # NOSTR HEX of the region
     
-    log "Generating REGION images for _${rlat}_${rlon}..."
+    log "Checking REGION _${rlat}_${rlon} images in NOSTR profile..."
     
-    # Calculate coordinates for the region (1° square)
+    # Refresh intervals
+    local REGION_MAP_REFRESH_DAYS=30
+    local REGION_SAT_REFRESH_DAYS=60
+    
+    # Get existing CIDs and date from NOSTR profile
+    local nostr_data=""
+    if [[ -n "$region_hex" ]]; then
+        nostr_data=$(${MY_PATH}/../tools/nostr_get_umap_images.sh "$region_hex" "" --check-only 2>/dev/null)
+    fi
+    
+    local EXISTING_ZMAP_CID=$(echo "$nostr_data" | grep "^UMAP_CID=" | cut -d'=' -f2)
+    local EXISTING_SAT_CID=$(echo "$nostr_data" | grep "^USAT_CID=" | cut -d'=' -f2)
+    local EXISTING_MAP_CID=$(echo "$nostr_data" | grep "^UMAP_FULL_CID=" | cut -d'=' -f2)
+    local EXISTING_ZSAT_CID=$(echo "$nostr_data" | grep "^USAT_FULL_CID=" | cut -d'=' -f2)
+    local EXISTING_UPDATED=$(echo "$nostr_data" | grep "^UMAP_UPDATED=" | cut -d'=' -f2)
+    
+    # Initialize return variables (4 images)
+    REGION_MAP_CID=""    # RegionMap.jpg (large road map)
+    REGION_ZMAP_CID=""   # zRegionMap.jpg (zoomed road map - PROFILE)
+    REGION_SAT_CID=""    # RegionSat.jpg (large satellite - BANNER)
+    REGION_ZSAT_CID=""   # zRegionSat.jpg (zoomed satellite)
+    REGION_UPDATED=""
+    REGION_IMAGES_REFRESHED=false
+    
+    # Check if refresh needed
+    local need_map_refresh=true
+    local need_sat_refresh=true
+    
+    if [[ -n "$EXISTING_UPDATED" && "$EXISTING_UPDATED" != "null" ]]; then
+        local update_timestamp=$(date -d "${EXISTING_UPDATED:0:4}-${EXISTING_UPDATED:4:2}-${EXISTING_UPDATED:6:2}" +%s 2>/dev/null || echo 0)
+        local current_timestamp=$(date +%s)
+        local age_days=$(( (current_timestamp - update_timestamp) / 86400 ))
+        
+        log "REGION images last updated: $EXISTING_UPDATED ($age_days days ago)"
+        
+        [[ $age_days -lt $REGION_MAP_REFRESH_DAYS && -n "$EXISTING_ZMAP_CID" ]] && need_map_refresh=false
+        [[ $age_days -lt $REGION_SAT_REFRESH_DAYS && -n "$EXISTING_SAT_CID" ]] && need_sat_refresh=false
+    fi
+    
+    # Calculate coordinates for the region
     local lat="${rlat}.00"
     local lon="${rlon}.00"
+    local tmp_dir="${HOME}/.zen/tmp/${MOATS}"
     
-    # Generate RegionMap.jpg (large view 1°)
-    if ! find_or_copy_from_swarm "RegionMap.jpg" "$regionpath" "*/UPLANET/REGIONS/_${rlat}_${rlon}/RegionMap.jpg"; then
+    # Generate road maps if needed
+    if [[ "$need_map_refresh" == true ]]; then
+        # RegionMap.jpg (large view 1°)
         local REGIONMAP_URL="/ipns/copylaradio.com/Umap.html?southWestLat=${lat}&southWestLon=${lon}&deg=1"
         log "Generating RegionMap.jpg via page_screenshot.py..."
-        python "${MY_PATH}/../tools/page_screenshot.py" "${myIPFS}${REGIONMAP_URL}" "${regionpath}/RegionMap.jpg" 900 900
-    fi
-    
-    # Generate zRegionMap.jpg (profile picture - zoomed view 0.1°)
-    if ! find_or_copy_from_swarm "zRegionMap.jpg" "$regionpath" "*/UPLANET/REGIONS/_${rlat}_${rlon}/zRegionMap.jpg"; then
+        python "${MY_PATH}/../tools/page_screenshot.py" "${myIPFS}${REGIONMAP_URL}" "${tmp_dir}/RegionMap.jpg" 900 900
+        if [[ -s "${tmp_dir}/RegionMap.jpg" ]]; then
+            REGION_MAP_CID=$(ipfs add -q "${tmp_dir}/RegionMap.jpg" 2>/dev/null)
+            rm -f "${tmp_dir}/RegionMap.jpg"
+            log "✓ RegionMap.jpg CID: $REGION_MAP_CID"
+        fi
+        
+        # zRegionMap.jpg (zoomed view 0.1° - PROFILE PICTURE)
         local ZREGIONMAP_URL="/ipns/copylaradio.com/Umap.html?southWestLat=${lat}&southWestLon=${lon}&deg=0.1"
         log "Generating zRegionMap.jpg via page_screenshot.py..."
-        python "${MY_PATH}/../tools/page_screenshot.py" "${myIPFS}${ZREGIONMAP_URL}" "${regionpath}/zRegionMap.jpg" 900 900
+        python "${MY_PATH}/../tools/page_screenshot.py" "${myIPFS}${ZREGIONMAP_URL}" "${tmp_dir}/zRegionMap.jpg" 900 900
+        if [[ -s "${tmp_dir}/zRegionMap.jpg" ]]; then
+            REGION_ZMAP_CID=$(ipfs add -q "${tmp_dir}/zRegionMap.jpg" 2>/dev/null)
+            rm -f "${tmp_dir}/zRegionMap.jpg"
+            log "✓ zRegionMap.jpg CID: $REGION_ZMAP_CID"
+            REGION_IMAGES_REFRESHED=true
+        fi
+    else
+        REGION_MAP_CID="$EXISTING_MAP_CID"
+        REGION_ZMAP_CID="$EXISTING_ZMAP_CID"
+        log "✓ Road maps fresh (< $REGION_MAP_REFRESH_DAYS days)"
     fi
     
-    # Generate RegionSat.jpg (banner - wide view 1°)
-    if ! find_or_copy_from_swarm "RegionSat.jpg" "$regionpath" "*/UPLANET/REGIONS/_${rlat}_${rlon}/RegionSat.jpg"; then
+    # Generate satellite images if needed
+    if [[ "$need_sat_refresh" == true ]]; then
+        # RegionSat.jpg (large view 1° - BANNER)
         local REGIONSAT_URL="/ipns/copylaradio.com/Usat.html?southWestLat=${lat}&southWestLon=${lon}&deg=1"
         log "Generating RegionSat.jpg via page_screenshot.py..."
-        python "${MY_PATH}/../tools/page_screenshot.py" "${myIPFS}${REGIONSAT_URL}" "${regionpath}/RegionSat.jpg" 900 900
-    fi
-    
-    # Generate zRegionSat.jpg (zoomed satellite view 0.1°)
-    if ! find_or_copy_from_swarm "zRegionSat.jpg" "$regionpath" "*/UPLANET/REGIONS/_${rlat}_${rlon}/zRegionSat.jpg"; then
+        python "${MY_PATH}/../tools/page_screenshot.py" "${myIPFS}${REGIONSAT_URL}" "${tmp_dir}/RegionSat.jpg" 900 900
+        if [[ -s "${tmp_dir}/RegionSat.jpg" ]]; then
+            REGION_SAT_CID=$(ipfs add -q "${tmp_dir}/RegionSat.jpg" 2>/dev/null)
+            rm -f "${tmp_dir}/RegionSat.jpg"
+            log "✓ RegionSat.jpg CID: $REGION_SAT_CID"
+            REGION_IMAGES_REFRESHED=true
+        fi
+        
+        # zRegionSat.jpg (zoomed satellite view 0.1°)
         local ZREGIONSAT_URL="/ipns/copylaradio.com/Usat.html?southWestLat=${lat}&southWestLon=${lon}&deg=0.1"
         log "Generating zRegionSat.jpg via page_screenshot.py..."
-        python "${MY_PATH}/../tools/page_screenshot.py" "${myIPFS}${ZREGIONSAT_URL}" "${regionpath}/zRegionSat.jpg" 900 900
+        python "${MY_PATH}/../tools/page_screenshot.py" "${myIPFS}${ZREGIONSAT_URL}" "${tmp_dir}/zRegionSat.jpg" 900 900
+        if [[ -s "${tmp_dir}/zRegionSat.jpg" ]]; then
+            REGION_ZSAT_CID=$(ipfs add -q "${tmp_dir}/zRegionSat.jpg" 2>/dev/null)
+            rm -f "${tmp_dir}/zRegionSat.jpg"
+            log "✓ zRegionSat.jpg CID: $REGION_ZSAT_CID"
+        fi
+    else
+        REGION_SAT_CID="$EXISTING_SAT_CID"
+        REGION_ZSAT_CID="$EXISTING_ZSAT_CID"
+        log "✓ Satellite images fresh (< $REGION_SAT_REFRESH_DAYS days)"
     fi
     
-    log "REGION images complete: 4/4 images ready"
+    # Set update date
+    if [[ "$REGION_IMAGES_REFRESHED" == true ]]; then
+        REGION_UPDATED=$(date +%Y%m%d)
+    else
+        REGION_UPDATED="$EXISTING_UPDATED"
+    fi
+    
+    # Cleanup any old local images (TODO REMOVE after migration)
+    rm -f "${regionpath}"/*.jpg "${regionpath}"/*.png 2>/dev/null
+    
+    log "REGION images ready: 4 CIDs in NOSTR profile"
 }
 
 save_region_journal() {
@@ -2083,10 +2266,14 @@ save_region_journal() {
     mkdir -p "$regionpath"
     echo "$content" > "$regionpath/${IPFSNODEID: -12}.NOSTR_journal"
 
-    # Generate region images before IPFS add
-    generate_region_images "$rlat" "$rlon" "$regionpath"
+    # Get REGION NOSTR HEX for image lookup
+    local REGION_NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${region}" "${UPLANETNAME}${region}")
+    local REGION_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$REGION_NPUB")
 
-    # Add to IPFS
+    # Generate region images (NOSTR-native: returns CIDs, no local storage)
+    generate_region_images "$rlat" "$rlon" "$regionpath" "$REGION_HEX"
+
+    # Add to IPFS (no images - they are stored via CIDs in NOSTR profile)
     local REGROOT=$(ipfs add -rwHq "$regionpath"/* | tail -n 1)
     log "Published Region ${region} to IPFS: ${REGROOT}"
     
@@ -2198,11 +2385,29 @@ update_region_nostr_profile() {
     local REGSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${region}" "${UPLANETNAME}${region}" -s)
     local NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$REGSEC")
 
-    # Use generated REGION images for profile
-    local REGION_PROFILE="${myIPFS}/ipfs/${REGROOT}/zRegionMap.jpg"
-    local REGION_BANNER="${myIPFS}/ipfs/${REGROOT}/RegionSat.jpg"
+    # Use NOSTR-native image CIDs (set by generate_region_images)
+    # Profile picture = zRegionMap.jpg (zoomed road map)
+    # Banner = RegionSat.jpg (large satellite)
+    # Using public gateway ($myLIBRA) for profile accessibility
+    local REGION_PROFILE=""
+    local REGION_BANNER=""
+    [[ -n "$REGION_ZMAP_CID" ]] && REGION_PROFILE="${myLIBRA}/ipfs/${REGION_ZMAP_CID}"
+    [[ -n "$REGION_SAT_CID" ]] && REGION_BANNER="${myLIBRA}/ipfs/${REGION_SAT_CID}"
+    
+    # Fallback to REGROOT paths if CIDs not available
+    [[ -z "$REGION_PROFILE" ]] && REGION_PROFILE="${myLIBRA}/ipfs/${REGROOT}/zRegionMap.jpg"
+    [[ -z "$REGION_BANNER" ]] && REGION_BANNER="${myLIBRA}/ipfs/${REGROOT}/RegionSat.jpg"
 
-    ## Update profile with new REGROOT
+    # Build optional arguments for ALL 4 image CIDs and update date
+    local REGION_CID_ARGS=""
+    [[ -n "$REGION_ZMAP_CID" ]] && REGION_CID_ARGS="$REGION_CID_ARGS --umap_cid $REGION_ZMAP_CID"
+    [[ -n "$REGION_SAT_CID" ]] && REGION_CID_ARGS="$REGION_CID_ARGS --usat_cid $REGION_SAT_CID"
+    [[ -n "$REGION_MAP_CID" ]] && REGION_CID_ARGS="$REGION_CID_ARGS --umap_full_cid $REGION_MAP_CID"
+    [[ -n "$REGION_ZSAT_CID" ]] && REGION_CID_ARGS="$REGION_CID_ARGS --usat_full_cid $REGION_ZSAT_CID"
+    [[ -n "$REGROOT" ]] && REGION_CID_ARGS="$REGION_CID_ARGS --umaproot $REGROOT"
+    [[ -n "$REGION_UPDATED" ]] && REGION_CID_ARGS="$REGION_CID_ARGS --umap_updated $REGION_UPDATED"
+
+    ## Update profile with new REGROOT and image CIDs
     ${MY_PATH}/../tools/nostr_setup_profile.py \
         "$REGSEC" \
         "REGION_${UPLANETG1PUB:0:8}${region}" "${REGIONG1PUB}" \
@@ -2211,7 +2416,7 @@ update_region_nostr_profile() {
         "${REGION_BANNER}" \
         "" "${myIPFS}/ipfs/${REGROOT}" "" "${VDONINJA}/?room=${REGIONG1PUB:0:8}&effects&record" "" "" \
         "$myRELAY" "wss://relay.copylaradio.com" \
-        --zencard "$UPLANETG1PUB"
+        --zencard "$UPLANETG1PUB" $REGION_CID_ARGS
 
     local TAGS_JSON=$(printf '%s\n' "${RTAGS[@]}" | jq -c . | tr '\n' ',' | sed 's/,$//')
     TAGS_JSON="[$TAGS_JSON]"

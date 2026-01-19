@@ -51,6 +51,20 @@ def nostr_setup_profile(args):
         tags.append(["i", f"email:{args.email}", ""])
     if args.tw_feed:
         tags.append(["i", f"tw_feed:{args.tw_feed}", ""])
+    
+    # UMAP image CIDs - for swarm-less image distribution (no local storage)
+    if args.umap_cid:
+        tags.append(["i", f"umap_cid:{args.umap_cid}", ""])  # zUmap.jpg - zoomed road map
+    if args.usat_cid:
+        tags.append(["i", f"usat_cid:{args.usat_cid}", ""])  # Usat.jpg - satellite view
+    if args.umap_full_cid:
+        tags.append(["i", f"umap_full_cid:{args.umap_full_cid}", ""])  # Umap.jpg - full road map
+    if args.usat_full_cid:
+        tags.append(["i", f"usat_full_cid:{args.usat_full_cid}", ""])  # full satellite view
+    if args.umaproot:
+        tags.append(["i", f"umaproot:{args.umaproot}", ""])  # IPFS root CID of UMAP directory
+    if args.umap_updated:
+        tags.append(["i", f"umap_updated:{args.umap_updated}", ""])  # Last map refresh date (YYYYMMDD)
 
     # Create and publish PROFILE + metadata event
     metadata_event = Event(kind=0, content=json.dumps(metadata), tags=tags)
@@ -95,6 +109,13 @@ if __name__ == "__main__":
     parser.add_argument("--zencard", help="ZenCard wallet address", default=None)
     parser.add_argument("--email", help="Email address", default=None)
     parser.add_argument("--tw_feed", help="TW Feed IPNS key", default=None)
+    # UMAP image CIDs for swarm-less distribution
+    parser.add_argument("--umap_cid", help="IPFS CID of zUmap.jpg (zoomed road map)", default=None)
+    parser.add_argument("--usat_cid", help="IPFS CID of Usat.jpg (satellite view)", default=None)
+    parser.add_argument("--umap_full_cid", help="IPFS CID of Umap.jpg (full road map)", default=None)
+    parser.add_argument("--usat_full_cid", help="IPFS CID of full satellite view", default=None)
+    parser.add_argument("--umaproot", help="IPFS root CID of UMAP directory", default=None)
+    parser.add_argument("--umap_updated", help="Last map refresh date (YYYYMMDD format)", default=None)
 
     args = parser.parse_args()
     nostr_setup_profile(args)
