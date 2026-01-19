@@ -424,7 +424,7 @@ CONTENT_JSON=$(cat <<EOF
   "generated_at": "$GENERATED_AT",
   "station": {
     "ipfsnodeid": "$IPFSNODEID",
-    "name": "${myDAMAIN:-${IPFSNODEID:0:12}}",
+    "name": "${myDAMAIN:-...${IPFSNODEID: -8}}",
     "swarm_id": "$UPLANETG1PUB",
     "relay_url": "wss://${myDAMAIN}/relay",
     "captain_hex": "$CAPTAIN_HEX",
@@ -514,7 +514,7 @@ TAGS_JSON=$(cat <<EOF
   ["week", "$CURRENT_WEEK"],
   ["constellation", "$UPLANETG1PUB"],
   ["station", "$IPFSNODEID"],
-  ["station:name", "${myDAMAIN:-${IPFSNODEID:0:12}}"],
+  ["station:name", "${myDAMAIN:-...${IPFSNODEID: -8}}"],
   ["swarm_id", "$UPLANETG1PUB"],
   ["g1pub", "$UPLANETNAME_G1"],
   ["geo:lat", "$STATION_LAT"],
