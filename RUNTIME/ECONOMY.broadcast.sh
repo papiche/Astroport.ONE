@@ -511,6 +511,8 @@ TAGS_JSON=$(cat <<EOF
   ["cost:paf", "$PAF"],
   ["cost:captain", "$CAPTAIN_REMUNERATION"],
   ["cost:total", "$TOTAL_COSTS"],
+  ["price:multipass", "$NCARD"],
+  ["price:zencard", "$ZCARD"],
   ["allocation:treasury", "$ALLOCATION_THIRD"],
   ["allocation:rnd", "$ALLOCATION_THIRD"],
   ["allocation:assets", "$ALLOCATION_THIRD"],
