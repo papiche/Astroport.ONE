@@ -11,8 +11,8 @@
 # clé publique de destination spécifiée par l'utilisateur.
 #
 # PORTEFEUILLES VIDÉS :
-# - Portefeuilles coopératifs (UPLANETNAME, SOCIETY, CASH, RND, ASSETS, etc.)
-# - Portefeuille NODE (Armateur)
+# - Portefeuilles coopératifs (UPLANETNAME, G1, SOCIETY, CASH, RND, ASSETS, CAPITAL, AMORTISSEMENT, IMPOT, CAPTAIN, INTRUSION)
+# - Portefeuille NODE (Armateur) et MYSWARM (Identité Swarm)
 # - TOUS les portefeuilles MULTIPASS (NOSTR)
 # - TOUTES les ZEN Cards (PLAYERS) - y compris celle du capitaine
 #
@@ -52,7 +52,7 @@ FAILURE_COUNT=0
 MIGRATION_NOTIFICATIONS_SENT=0
 MIGRATION_NOTIFICATIONS_FAILED=0
 
-# Portefeuilles coopératifs (basés sur UPLANET.init.sh)
+# Portefeuilles coopératifs (basés sur UPLANET.init.sh et my.sh)
 declare -A COOPERATIVE_WALLETS=(
     ["UPLANETNAME"]="$HOME/.zen/game/uplanet.dunikey"
     ["UPLANETNAME_G1"]="$HOME/.zen/game/uplanet.G1.dunikey"
@@ -63,11 +63,14 @@ declare -A COOPERATIVE_WALLETS=(
     ["UPLANETNAME_IMPOT"]="$HOME/.zen/game/uplanet.IMPOT.dunikey"
     ["UPLANETNAME.CAPTAIN"]="$HOME/.zen/game/uplanet.captain.dunikey"
     ["UPLANETNAME_INTRUSION"]="$HOME/.zen/game/uplanet.INTRUSION.dunikey"
+    ["UPLANETNAME_CAPITAL"]="$HOME/.zen/game/uplanet.CAPITAL.dunikey"
+    ["UPLANETNAME_AMORTISSEMENT"]="$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey"
 )
 
-# Portefeuilles NODE et CAPTAIN
+# Portefeuilles NODE et SWARM
 declare -A NODE_CAPTAIN_WALLETS=(
     ["NODE"]="$HOME/.zen/game/secret.NODE.dunikey"
+    ["MYSWARM"]="$HOME/.zen/game/myswarm_secret.dunikey"
 )
 
 ################################################################################
@@ -90,8 +93,8 @@ show_help() {
     echo "  -h, --help    Affiche cette aide"
     echo ""
     echo -e "${YELLOW}Portefeuilles concernés :${NC}"
-    echo "  • Portefeuilles coopératifs (UPLANETNAME, SOCIETY, CASH, RND, ASSETS, etc.)"
-    echo "  • Portefeuille NODE (Armateur)"
+    echo "  • Portefeuilles coopératifs (UPLANETNAME, SOCIETY, CASH, RND, ASSETS, CAPITAL, AMORTISSEMENT, etc.)"
+    echo "  • Portefeuille NODE (Armateur) et MYSWARM (Identité Swarm)"
     echo "  • TOUS les portefeuilles MULTIPASS (NOSTR)"
     echo "  • TOUTES les ZEN Cards (PLAYERS) - y compris celle du capitaine"
     echo ""
@@ -549,8 +552,8 @@ security_confirmation() {
     echo -e "${CYAN}${BOLD}$DESTINATION_PUBKEY${NC}"
     echo ""
     echo -e "${YELLOW}Portefeuilles qui seront vidés:${NC}"
-    echo -e "  • Portefeuilles coopératifs (UPLANETNAME, SOCIETY, CASH, RND, ASSETS, etc.)"
-    echo -e "  • Portefeuille NODE (Armateur)"
+    echo -e "  • Portefeuilles coopératifs (UPLANETNAME, SOCIETY, CASH, RND, ASSETS, CAPITAL, AMORTISSEMENT, IMPOT, etc.)"
+    echo -e "  • Portefeuille NODE (Armateur) et MYSWARM (Identité Swarm)"
     echo -e "  • TOUS les portefeuilles MULTIPASS"
     echo -e "  • TOUTES les ZEN Cards (y compris celle du capitaine)"
     echo ""

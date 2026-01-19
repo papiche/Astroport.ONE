@@ -112,10 +112,28 @@ Les redevances d'usage des usagers sont collectées sur un portefeuille **CAPTAI
 Ce portefeuille d'exploitation sert de **source pour l'allocation coopérative**.
 
 #### **3. Allocation Collective 3x1/3 (depuis CAPTAIN_DEDICATED)**
-Après provision fiscale (IS 15-25%), le surplus de `CAPTAIN_DEDICATED` est alloué selon la règle des **3x1/3** :
-*   **1/3 CASH** (`UPLANETNAME_TREASURY`) : Finance les coûts opérationnels (PAF + salaires)
-*   **1/3 R&D** (`UPLANETNAME_RND`) : Recherche & Développement
-*   **1/3 Actifs** (`UPLANETNAME_ASSETS`) : Acquisition de biens communs régénératifs
+
+**Déclenchement :** Hebdomadaire, synchronisé avec l'anniversaire d'inscription du Capitaine (fichier `~/.zen/game/nostr/$CAPTAINEMAIL/TODATE`).
+
+**Processus d'allocation :**
+```
+CAPTAIN_DEDICATED (Surplus Brut)
+│
+├── 1. Provision IS (15-25%)
+│   ├── 15% si surplus ≤ 42 500 € (taux réduit PME)
+│   └── 25% si surplus > 42 500 € (taux normal)
+│   └── Destination : UPLANETNAME_IMPOT
+│
+└── 2. Surplus Net = Surplus Brut - Provision IS
+    │
+    ├── 33.33% → CASH (UPLANETNAME_TREASURY) : Trésorerie opérationnelle
+    ├── 33.33% → RnD (UPLANETNAME_RND) : Recherche & Développement
+    └── 33.34% → ASSETS (UPLANETNAME_ASSETS) : Actifs réels régénératifs
+```
+
+**Condition d'exécution :** L'allocation n'a lieu que si le solde de `CAPTAIN_DEDICATED` est positif.
+
+**Notification :** Un rapport HTML détaillé est envoyé par email au Capitaine après chaque allocation réussie.
 
 ---
 
@@ -137,7 +155,7 @@ Dans ce système, le ẐEN **n'est pas une monnaie financière convertible**, ma
 | `captain.sh` | **Dashboard Capitaine** - Tableau de bord économique et navigation | À la demande |
 | `UPLANET.init.sh` | Initialisation de tous les portefeuilles (NODE, CAPTAIN, Collectifs) | Une seule fois |
 | `ZEN.ECONOMY.sh` | Paiement PAF avec dégradation progressive + Burn 4-semaines | Hebdomadaire |
-| `ZEN.COOPERATIVE.3x1-3.sh` | Calcul de l'Excédent & Allocation 3x1/3 | Hebdomadaire |
+| `ZEN.COOPERATIVE.3x1-3.sh` | Provision IS + Allocation 3x1/3 depuis CAPTAIN_DEDICATED | Hebdomadaire (anniversaire Capitaine) |
 | `NOSTRCARD.refresh.sh` | Collecte redevances MULTIPASS (1Ẑ HT + 0.2Ẑ TVA) | Hebdomadaire |
 | `PLAYER.refresh.sh` | Collecte redevances ZEN Cards (4Ẑ HT + 0.8Ẑ TVA) | Hebdomadaire |
 | `UPLANET.official.sh` | Émission Crédits Service officiels (Usagers & Parrains) | À la demande |
@@ -147,10 +165,67 @@ Dans ce système, le ẐEN **n'est pas une monnaie financière convertible**, ma
 
 ### **🔄 FLUX DE FONCTIONNEMENT DÉTAILLÉS (Cycle 7 jours)**
 
+#### **📊 Synthèse des Flux Économiques**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         CYCLE ÉCONOMIQUE HEBDOMADAIRE                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  1️⃣ COLLECTE REDEVANCES (NOSTRCARD.refresh.sh / PLAYER.refresh.sh)          │
+│     ┌───────────────────┐                                                    │
+│     │ MULTIPASS/ZenCard │                                                    │
+│     └─────────┬─────────┘                                                    │
+│               │                                                              │
+│       ┌───────┴───────┐                                                      │
+│       ▼               ▼                                                      │
+│  ┌─────────┐    ┌─────────────┐                                              │
+│  │ HT      │    │ TVA (20%)   │                                              │
+│  │ CAPTAIN │    │ IMPOTS      │                                              │
+│  │ DEDICATED│    └─────────────┘                                              │
+│  └────┬────┘                                                                 │
+│       │                                                                      │
+│  2️⃣ PAIEMENT PAF (ZEN.ECONOMY.sh)                                            │
+│       │                                                                      │
+│  ┌────┴────────────────────────────────────────────────────────────────┐     │
+│  │ CASH (Trésorerie)                                                   │     │
+│  └────┬───────────────────────────┬────────────────────────────────────┘     │
+│       │                           │                                          │
+│       ▼                           ▼                                          │
+│  ┌─────────────┐           ┌─────────────────┐                               │
+│  │ NODE        │           │ CAPTAIN MULTIPASS│                               │
+│  │ (Armateur)  │           │ (Salaire perso)  │                               │
+│  │ 14 Ẑen/sem  │           │ 28 Ẑen/sem       │                               │
+│  └─────────────┘           └─────────────────┘                               │
+│                                                                              │
+│  3️⃣ ALLOCATION 3x1/3 (ZEN.COOPERATIVE.3x1-3.sh)                              │
+│     Déclencheur: Anniversaire Capitaine (TODATE)                             │
+│       │                                                                      │
+│  ┌────┴────────────────────────────────────────────────────────────────┐     │
+│  │ CAPTAIN_DEDICATED (Surplus Brut)                                    │     │
+│  └────┬────────────────────────────────────────────────────────────────┘     │
+│       │                                                                      │
+│       ▼                                                                      │
+│  ┌─────────────────────────┐                                                 │
+│  │ IS (15% ≤42.5k€ / 25%)  │───────────▶ IMPOTS                              │
+│  └────────────┬────────────┘                                                 │
+│               │                                                              │
+│               ▼ Surplus Net                                                  │
+│       ┌───────┼───────┐                                                      │
+│       │       │       │                                                      │
+│       ▼       ▼       ▼                                                      │
+│  ┌────────┐ ┌─────┐ ┌────────┐                                               │
+│  │ CASH   │ │ RnD │ │ ASSETS │                                               │
+│  │ 33.33% │ │33.33%│ │ 33.34% │                                               │
+│  └────────┘ └─────┘ └────────┘                                               │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
 #### **MULTIPASS (NOSTR Cards) - `NOSTRCARD.refresh.sh`**
 ```
 Redevance MULTIPASS : 1 Ẑ HT/semaine + 0.2 Ẑ TVA (20%)
-├── 1.0 Ẑ → CAPTAIN (prestation hosting)
+├── 1.0 Ẑ → CAPTAIN_DEDICATED (recettes exploitation - source pour 3x1/3)
 └── 0.2 Ẑ → UPLANETNAME_IMPOT (provision TVA)
 ```
 - **Gestion** : Prélèvement automatique tous les 7 jours depuis la date d'inscription
@@ -160,7 +235,7 @@ Redevance MULTIPASS : 1 Ẑ HT/semaine + 0.2 Ẑ TVA (20%)
 #### **ZEN Cards - `PLAYER.refresh.sh`**
 ```
 Redevance ZEN Card : 4 Ẑ HT/semaine + 0.8 Ẑ TVA (20%)
-├── 4.0 Ẑ → CAPTAIN (prestation premium)
+├── 4.0 Ẑ → CAPTAIN_DEDICATED (recettes exploitation - source pour 3x1/3)
 └── 0.8 Ẑ → UPLANETNAME_IMPOT (provision TVA)
 ```
 - **Services** : Accès TiddlyWiki + 128Go stockage
@@ -223,11 +298,40 @@ UPLANETNAME_IMPOT : 20% × (MULTIPASS + ZEN Cards)
 
 ##### **Répartition Collective 3x1/3 - `ZEN.COOPERATIVE.3x1-3.sh`**
 ```
-Excédent Hebdomadaire → Allocation Automatique :
-├── UPLANETNAME_TREASURY (33.33%) : Réserve de fonctionnement
-├── UPLANETNAME_RND (33.33%) : Recherche & Développement
-└── UPLANETNAME_ASSETS (33.34%) : Ressources durables
+Source : CAPTAIN_DEDICATED (recettes d'exploitation - loyers HT collectés)
+Déclencheur : Anniversaire hebdomadaire du Capitaine (TODATE)
+Condition : Solde CAPTAIN_DEDICATED > 0
+
+Flux d'allocation :
+┌─────────────────────────────────────────────────────────────┐
+│ CAPTAIN_DEDICATED (Surplus Brut)                             │
+└───────────────────────┬─────────────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 1. PROVISION IS (Impôt sur les Sociétés)                     │
+│    ├── 15% si surplus ≤ 42 500 € (taux réduit PME)           │
+│    └── 25% si surplus > 42 500 € (taux normal)               │
+│    → Destination : UPLANETNAME_IMPOT                         │
+└───────────────────────┬─────────────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 2. SURPLUS NET = Surplus Brut - Provision IS                 │
+└───────────────────────┬─────────────────────────────────────┘
+                        │
+        ┌───────────────┼───────────────┐
+        │               │               │
+        ▼               ▼               ▼
+┌───────────────┐ ┌───────────────┐ ┌───────────────┐
+│ CASH (33.33%) │ │ RnD (33.33%)  │ │ ASSETS(33.34%)│
+│ Trésorerie    │ │ Innovation    │ │ Biens Réels   │
+└───────────────┘ └───────────────┘ └───────────────┘
 ```
+
+**Fichiers clés :**
+- Marqueur d'allocation : `~/.zen/game/.cooperative_allocation.done`
+- Rapport HTML : `~/.zen/tmp/cooperative_allocation_report_${TODATE}.html`
 
 #### **📈 Modèle de Fonctionnement par Usager (Immobilier Numérique)**
 
@@ -262,8 +366,77 @@ Raspberry Pi 5 + NVMe 4To (Recommandé)
 
 ### **CONFIGURATION**
 
+#### **🔑 Identité UPlanet : swarm.key**
+
+Chaque constellation UPlanet est identifiée par son **swarm.key IPFS** qui sert de secret partagé :
+
+```bash
+# Le UPLANETNAME est extrait du swarm.key (identique sur tous les nœuds)
+UPLANETNAME=$(cat ~/.ipfs/swarm.key | tail -n 1)
+```
+
+**Rôle du UPLANETNAME :**
+1. **Seed cryptographique** : Génère tous les portefeuilles coopératifs de manière déterministe
+2. **Clé de chiffrement** : SHA256($UPLANETNAME) chiffre les valeurs sensibles (AES-256-CBC)
+3. **Identité commune** : Tous les nœuds avec le même swarm.key partagent la même économie
+
+> ⚠️ **SÉCURITÉ** : Le `swarm.key` est le secret absolu de la constellation. Ne JAMAIS le partager publiquement.
+
+#### **🌐 Configuration Coopérative (DID NOSTR)**
+
+Les paramètres partagés entre **toutes les stations de l'essaim** sont stockés dans le DID NOSTR (kind 30800, d-tag: "cooperative-config") :
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  DID NOSTR UPLANETNAME_G1 (kind 30800)                                       │
+│  Identité : uplanet.G1.nostr (dérivée de $UPLANETNAME.G1)                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  PARAMÈTRES FISCAUX (publics)          PARAMÈTRES ÉCONOMIQUES (publics)     │
+│  ┌─────────────────────────────┐       ┌─────────────────────────────┐      │
+│  │ TVA_RATE: "20.0"            │       │ TREASURY_PERCENT: "33.33"   │      │
+│  │ IS_RATE_REDUCED: "15.0"     │       │ RND_PERCENT: "33.33"        │      │
+│  │ IS_RATE_NORMAL: "25.0"      │       │ ASSETS_PERCENT: "33.34"     │      │
+│  │ IS_THRESHOLD: "42500"       │       │ ZENCARD_SATELLITE: "50"     │      │
+│  └─────────────────────────────┘       │ ZENCARD_CONSTELLATION: "540"│      │
+│                                        └─────────────────────────────┘      │
+│  SECRETS CHIFFRÉS (AES-256-CBC avec SHA256($UPLANETNAME))                   │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ OPENCOLLECTIVE_PERSONAL_TOKEN: "iv:encrypted_base64..."             │    │
+│  │ OPENCOLLECTIVE_API_KEY: "iv:encrypted_base64..."                    │    │
+│  │ PLANTNET_API_KEY: "iv:encrypted_base64..."                          │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Utilisation dans les scripts :**
+```bash
+# Charger les variables coopératives (auto-déchiffrement)
+source ~/.zen/Astroport.ONE/tools/cooperative_config.sh
+coop_load_env_vars
+
+# Variables maintenant disponibles :
+echo "TVA: $TVA_RATE%"
+echo "IS réduit: $IS_RATE_REDUCED%"
+echo "Token OC: $OPENCOLLECTIVE_PERSONAL_TOKEN"  # Déchiffré automatiquement
+```
+
+**Gestion via CLI :**
+```bash
+# Lister la configuration
+cooperative_config.sh list
+
+# Modifier une valeur (auto-chiffre si sensible)
+cooperative_config.sh set TVA_RATE "20.0"
+cooperative_config.sh set OPENCOLLECTIVE_PERSONAL_TOKEN "mon_token_secret"
+
+# Synchroniser depuis NOSTR
+cooperative_config.sh refresh
+```
+
 #### **Configuration Locale (.env)**
-Les variables locales à chaque station sont définies dans `~/.zen/Astroport.ONE/.env` :
+Les variables **spécifiques à chaque station** sont définies dans `~/.zen/Astroport.ONE/.env` :
 - `PAF` : Participation Aux Frais hebdomadaire (spécifique à la station)
 - `MACHINE_VALUE_ZEN` : Valorisation de la machine
 - `myRELAY`, `myIPFS`, etc. : Endpoints réseau locaux
@@ -447,8 +620,16 @@ Toutes les stations d'un même essaim IPFS partagent la même configuration coop
 ```
 
 **Règle de synchronisation :**
-- **Paramètres coopératifs** (NCARD, ZCARD, TVA, etc.) → DID NOSTR (partagés)
-- **Paramètres locaux** (PAF, endpoints, audio) → `.env` local (spécifiques)
+
+| Type | Stockage | Variables | Pourquoi |
+| :--- | :--- | :--- | :--- |
+| **Coopératifs** | DID NOSTR (partagés) | TVA_RATE, IS_RATE_*, ZENCARD_*, *_PERCENT, tokens API | Uniformité légale/fiscale |
+| **Locaux** | `.env` (spécifiques) | PAF, MACHINE_VALUE_ZEN, myRELAY, myIPFS | Adaptation à l'infrastructure locale |
+
+**Clé de partage :** Le fichier `~/.ipfs/swarm.key` est **identique** sur tous les nœuds de la constellation, permettant :
+1. La génération des **mêmes portefeuilles** sur chaque nœud
+2. Le **déchiffrement** des valeurs sensibles du DID NOSTR
+3. L'**authentification** mutuelle des nœuds
 
 ---
 
@@ -504,6 +685,7 @@ Exemples :
 
 #### **Alertes et Notifications**
 
+##### **Alertes PAF (ZEN.ECONOMY.sh)**
 Chaque changement de phase déclenche une notification aux actionnaires :
 
 | Phase | Template | Canal | Contenu |
@@ -511,6 +693,16 @@ Chaque changement de phase déclenche une notification aux actionnaires :
 | 1 | `pre_bankruptcy.html` | Email | Alerte croissance, soldes, appel à contribution |
 | 2 | `pre_bankruptcy.html` | Email | Alerte innovation, impact R&D, situation critique |
 | 3 | `bankrupt.html` | Email + Nostr DM | Faillite totale, suspension services |
+
+##### **Alertes Allocation Coopérative (ZEN.COOPERATIVE.3x1-3.sh)**
+En cas d'échec d'une allocation 3x1/3, le système déclenche des alertes :
+
+| Type | Destinataires | Contenu |
+| :--- | :--- | :--- |
+| Rapport Hebdomadaire | Capitaine | `cooperative_allocation_report.html` - Détails des allocations réussies |
+| Alerte Faillite | Tous les usagers | `bankrupt.html` - Liste des allocations échouées, déficit calculé, plan de redressement |
+
+**Détection automatique :** Le script vérifie le succès de chaque transaction (TAX, TREASURY, RND, ASSETS). Si une seule échoue, l'alerte faillite est envoyée à **tous les utilisateurs MULTIPASS** pour transparence collective.
 
 ---
 

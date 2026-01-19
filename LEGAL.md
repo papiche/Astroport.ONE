@@ -62,17 +62,49 @@ La coopérative peut mandater des **hôtes fiscaux** (tels que OpenCollective) p
     - La **ZenCard** (capital social) ne sert plus aux charges opérationnelles.
 
 ### **Article 8 : Gestion du Surplus et Allocation Coopérative**
-Les revenus locatifs des usagers sont collectés sur le portefeuille **CAPTAIN_DEDICATED** (recettes d'exploitation). Ce portefeuille sert de source pour l'allocation coopérative selon la règle des 3x1/3 :
-1.  **Provision fiscale (IS 15-25%)** prélevée sur le surplus
-2.  **1/3 → CASH (Trésorerie)** : finance les coûts opérationnels (PAF + salaires)
-3.  **1/3 → RND (R&D)** : recherche et développement
-4.  **1/3 → ASSETS** : acquisition d'actifs réels régénératifs
+Les revenus locatifs des usagers (loyers HT) sont collectés sur le portefeuille **CAPTAIN_DEDICATED** (recettes d'exploitation). Ce portefeuille sert de source pour l'allocation coopérative hebdomadaire selon la règle des 3x1/3.
+
+**Déclenchement :** L'allocation est exécutée une fois par semaine, synchronisée avec l'anniversaire d'inscription du Capitaine (fichier `TODATE`).
+
+**Ordre des opérations :**
+1.  **Provision fiscale IS** : Prélevée sur le surplus brut de CAPTAIN_DEDICATED
+    - **15%** si surplus annuel ≤ 42 500 € (taux réduit PME)
+    - **25%** si surplus annuel > 42 500 € (taux normal)
+    - Destination : `UPLANETNAME_IMPOT`
+2.  **Calcul du surplus net** : Surplus brut - Provision IS
+3.  **Allocation 3x1/3 sur le surplus net** :
+    - **1/3 → CASH (Trésorerie)** : finance les coûts opérationnels (PAF + salaires)
+    - **1/3 → RND (R&D)** : recherche et développement
+    - **1/3 → ASSETS** : acquisition d'actifs réels régénératifs
+
+**Notification :** Un rapport HTML détaillé est envoyé par email au Capitaine après chaque allocation.
 
 ### **Article 9 : Règle de Conversion du 1/3**
 La conversion des Ẑen en Euros est un service offert par la coopérative. Pour protéger la trésorerie commune, la conversion des **revenus d'activité** (Ẑen acquis sur le MULTIPASS) est limitée à **1/3 du total acquis par année civile**. La conversion du capital social (contenu sur la ZenCard) est une opération exceptionnelle soumise au droit des sociétés et à la validation de l'Assemblée Générale.
 
-### **Article 10 : Provision Fiscale Automatique**
-La coopérative provisionne automatiquement la **TVA (20%)** sur les services et l'**Impôt sur les Sociétés (15%/25%)** sur les bénéfices dans le portefeuille `UPLANETNAME_IMPOT`.
+### **Article 10 : Provision Fiscale Automatique et Configuration Partagée**
+
+La coopérative provisionne automatiquement la **TVA** sur les services et l'**Impôt sur les Sociétés (IS)** sur les bénéfices dans le portefeuille `UPLANETNAME_IMPOT`.
+
+**Source de la configuration :** Les paramètres fiscaux sont stockés dans le **DID NOSTR** (kind 30800) de la coopérative et partagés entre tous les nœuds de la constellation via le fichier `~/.ipfs/swarm.key` :
+
+```
+UPLANETNAME = $(cat ~/.ipfs/swarm.key | tail -n 1)
+```
+
+**Variables partagées (configurables via Dashboard Économique) :**
+
+| Variable | Défaut | Description |
+| :--- | :--- | :--- |
+| `TVA_RATE` | 20.0 | Taux de TVA sur les services |
+| `IS_RATE_REDUCED` | 15.0 | Taux IS réduit (≤ 42 500 €) |
+| `IS_RATE_NORMAL` | 25.0 | Taux IS normal (> 42 500 €) |
+| `IS_THRESHOLD` | 42500 | Seuil IS en euros |
+| `TREASURY_PERCENT` | 33.33 | Part allocation Trésorerie |
+| `RND_PERCENT` | 33.33 | Part allocation R&D |
+| `ASSETS_PERCENT` | 33.34 | Part allocation Actifs |
+
+**Sécurité :** Les valeurs sensibles (tokens API) sont chiffrées avec AES-256-CBC en utilisant SHA256($UPLANETNAME) comme clé. Seuls les nœuds possédant le même `swarm.key` peuvent déchiffrer ces valeurs.
 
 ### **Article 11 : Sécurité Anti-Intrusion**
 Toutes les transactions vers les portefeuilles coopératifs doivent provenir de **sources primales autorisées**. Les fonds provenant de sources non autorisées sont automatiquement redirigés vers `UPLANETNAME_INTRUSION` pour centraliser leur gestion et garantir la pureté comptable de l'écosystème.
@@ -196,10 +228,12 @@ graph TD
     MULTIPASS_Loc -- "6b. TVA (20%)" --> UPLANETNAME_IMPOT
     
     %% FLUX COOPÉRATIF - Allocation 3x1/3 depuis CAPTAIN_DEDICATED
-    Capitaine_Ded -- "7a. IS (15-25%)" --> UPLANETNAME_IMPOT
-    Capitaine_Ded -- "7b. Allocation 1/3" --> UPLANETNAME_TREASURY
-    Capitaine_Ded -- "7c. Allocation 1/3" --> UPLANETNAME_ASSETS
-    Capitaine_Ded -- "7d. Allocation 1/3" --> UPLANETNAME_RND
+    %% Déclencheur : Anniversaire hebdomadaire du Capitaine (TODATE)
+    %% Ordre : 1) Provision IS, 2) Surplus Net, 3) Allocation 3x1/3
+    Capitaine_Ded -- "7a. IS (15% ≤42.5k€ / 25%)" --> UPLANETNAME_IMPOT
+    Capitaine_Ded -- "7b. 1/3 Surplus Net" --> UPLANETNAME_TREASURY
+    Capitaine_Ded -- "7c. 1/3 Surplus Net" --> UPLANETNAME_ASSETS
+    Capitaine_Ded -- "7d. 1/3 Surplus Net" --> UPLANETNAME_RND
 
     %% FLUX DE CONVERSION (PONT DE LIQUIDITÉ)
     subgraph "Pont de Liquidité"
