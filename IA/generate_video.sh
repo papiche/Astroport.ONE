@@ -219,25 +219,34 @@ get_video_result() {
   
   # Auto-detect video output node - try common node IDs and formats
   # Supports: VHS_VideoCombine (node 49), SaveVideo (node 58, 108), etc.
+  # Note: Some workflows output video files in "images" array (not "video")
   local video_node_outputs=""
   
   # Try node 49 (VHS_VideoCombine) with gifs format
   video_node_outputs=$(echo "$prompt_data" | jq '.outputs."49".gifs // empty')
   
   # Try node 58 (SaveVideo from video_wan2_2_5B_ti2v.json)
+  # Check video, videos, gifs, AND images (some workflows use images for video output)
   if [ -z "$video_node_outputs" ] || [ "$video_node_outputs" = "null" ]; then
-    video_node_outputs=$(echo "$prompt_data" | jq '.outputs."58".video // .outputs."58".videos // .outputs."58".gifs // empty')
+    video_node_outputs=$(echo "$prompt_data" | jq '.outputs."58".video // .outputs."58".videos // .outputs."58".gifs // .outputs."58".images // empty')
   fi
   
   # Try node 108 (SaveVideo from video_wan2_2_14B_i2v.json)
   if [ -z "$video_node_outputs" ] || [ "$video_node_outputs" = "null" ]; then
-    video_node_outputs=$(echo "$prompt_data" | jq '.outputs."108".video // .outputs."108".videos // .outputs."108".gifs // empty')
+    video_node_outputs=$(echo "$prompt_data" | jq '.outputs."108".video // .outputs."108".videos // .outputs."108".gifs // .outputs."108".images // empty')
   fi
   
-  # Fallback: search for any node with video/gifs output
+  # Fallback: search for any node with video/gifs/images output containing .mp4/.webm/.gif files
   if [ -z "$video_node_outputs" ] || [ "$video_node_outputs" = "null" ]; then
     echo "Known video nodes not found, searching for any video output..." >&2
+    # First try video/videos/gifs keys
     video_node_outputs=$(echo "$prompt_data" | jq '[.outputs | to_entries[] | select(.value.video or .value.videos or .value.gifs) | .value.video // .value.videos // .value.gifs][0] // empty')
+  fi
+  
+  # Final fallback: check images arrays for video files (.mp4, .webm, .gif)
+  if [ -z "$video_node_outputs" ] || [ "$video_node_outputs" = "null" ]; then
+    echo "Checking images arrays for video files..." >&2
+    video_node_outputs=$(echo "$prompt_data" | jq '[.outputs | to_entries[] | select(.value.images) | .value.images | select(.[0].filename | test("\\.(mp4|webm|gif)$"; "i"))][0] // empty')
   fi
   
   if [ -z "$video_node_outputs" ] || [ "$video_node_outputs" = "null" ]; then
