@@ -426,7 +426,9 @@ Pour devenir sociétaire : $myIPFS/ipns/copylaradio.com
 Votre Capitaine.
 #CopyLaRadio #mem"
 
-        TAGS_JSON='[["e","'$event_id'"],["p","'$pubkey'"],["t","MemoryAccessDenied"]]'
+        # Add 1-hour TTL (NIP-40 expiration) for error messages
+        EXPIRATION_TS=$(($(date +%s) + 3600))
+        TAGS_JSON='[["e","'$event_id'"],["p","'$pubkey'"],["t","MemoryAccessDenied"],["expiration","'$EXPIRATION_TS'"]]'
         
         python3 "$HOME/.zen/Astroport.ONE/tools/nostr_send_note.py" \
           --keyfile "$KEYFILE_PATH" \
@@ -1879,6 +1881,15 @@ Error: $WORKFLOW_RESULT"
             # Send public message with appropriate tags using nostr_send_note.py
             echo "DEBUG: AnswerKind=$AnswerKind, ExtraTags=$ExtraTags" >&2
             
+            # Detect if this is an error message (add 1-hour TTL via NIP-40)
+            IS_ERROR_MESSAGE=false
+            if [[ "$KeyANSWER" =~ ^❌ ]] || [[ "$KeyANSWER" =~ ^⚠️ ]] || [[ "$KeyANSWER" =~ ^Désolé ]] || \
+               [[ "$KeyANSWER" =~ "Erreur" ]] || [[ "$KeyANSWER" =~ "échoué" ]] || [[ "$KeyANSWER" =~ "Accès refusé" ]]; then
+                IS_ERROR_MESSAGE=true
+                EXPIRATION_TS=$(($(date +%s) + 3600))
+                echo "DEBUG: Error message detected - adding 1h TTL (expiration: $EXPIRATION_TS)" >&2
+            fi
+            
             # Prepare tags in JSON format
             if [[ -n "$ExtraTags" ]]; then
                 # For kind 30023, use only the specific blog tags
@@ -1890,11 +1901,19 @@ Error: $WORKFLOW_RESULT"
                     ExtraTagsJSON=$(echo "$ExtraTags" | sed "s/'/\"/g")
                     # Remove outer brackets and add standard tags
                     ExtraTagsContent=$(echo "$ExtraTagsJSON" | sed 's/^\[//' | sed 's/\]$//')
-                    TAGS_JSON='[["e","'$EVENT'"],["p","'$PUBKEY'"],'$ExtraTagsContent']'
+                    if [[ "$IS_ERROR_MESSAGE" == true ]]; then
+                        TAGS_JSON='[["e","'$EVENT'"],["p","'$PUBKEY'"],["expiration","'$EXPIRATION_TS'"],'$ExtraTagsContent']'
+                    else
+                        TAGS_JSON='[["e","'$EVENT'"],["p","'$PUBKEY'"],'$ExtraTagsContent']'
+                    fi
                 fi
             else
                 # Use standard tags only
-                TAGS_JSON='[["e","'$EVENT'"],["p","'$PUBKEY'"]]'
+                if [[ "$IS_ERROR_MESSAGE" == true ]]; then
+                    TAGS_JSON='[["e","'$EVENT'"],["p","'$PUBKEY'"],["expiration","'$EXPIRATION_TS'"]]'
+                else
+                    TAGS_JSON='[["e","'$EVENT'"],["p","'$PUBKEY'"]]'
+                fi
             fi
             
             echo "DEBUG: Sending to relay $myRELAY with tags: $TAGS_JSON" >&2
