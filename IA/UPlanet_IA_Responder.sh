@@ -394,12 +394,158 @@ check_memory_slot_access() {
         return 0
     fi
     
-    # For slots 1-12, check if user is in ~/.zen/game/players/
+    # For slots 1-12, check if user is in ~/.zen/game/players/ OR is a sociétaire via DID
     if [[ "$slot" -ge 1 && "$slot" -le 12 ]]; then
-        [[ -d "$HOME/.zen/game/players/$user_id" ]] && return 0 || return 1
+        # Method 1: Local directory check (legacy)
+        [[ -d "$HOME/.zen/game/players/$user_id" ]] && return 0
+        
+        # Method 2: DID-based check (kind 30800)
+        is_societaire_from_did "$user_id" && return 0
+        
+        return 1
     fi
     
     return 0  # Default allow for other cases
+}
+
+# Function to check sociétaire status from DID document (kind 30800)
+# Returns 0 (true) if user is a cooperative member, 1 (false) otherwise
+is_societaire_from_did() {
+    local user_id="$1"
+    
+    # Get user's HEX pubkey from their NOSTR card
+    local user_hex=""
+    
+    # Check if user_id is an email (has .secret.nostr)
+    if [[ -f "$HOME/.zen/game/nostr/${user_id}/.secret.nostr" ]]; then
+        source "$HOME/.zen/game/nostr/${user_id}/.secret.nostr"
+        user_hex="$HEX"
+    elif [[ "$user_id" =~ ^[a-f0-9]{64}$ ]]; then
+        # user_id is already a hex pubkey
+        user_hex="$user_id"
+    fi
+    
+    [[ -z "$user_hex" ]] && return 1
+    
+    # Query DID document (kind 30800) from strfry
+    local did_event=""
+    if [[ -d "$HOME/.zen/strfry" ]]; then
+        did_event=$(cd $HOME/.zen/strfry && ./strfry scan '{"authors":["'"$user_hex"'"],"kinds":[30800],"#d":["did"]}' 2>/dev/null | head -n1 && cd - >/dev/null 2>&1)
+    fi
+    
+    if [[ -z "$did_event" ]]; then
+        echo "DEBUG: No DID document (kind 30800) found for user: $user_id" >&2
+        return 1
+    fi
+    
+    # Extract content and parse as JSON
+    local did_content=$(echo "$did_event" | jq -r '.content // ""' 2>/dev/null)
+    
+    if [[ -z "$did_content" ]]; then
+        echo "DEBUG: DID document has no content" >&2
+        return 1
+    fi
+    
+    # Extract contractStatus from DID metadata
+    local contract_status=$(echo "$did_content" | jq -r '.metadata.contractStatus // ""' 2>/dev/null)
+    
+    echo "DEBUG: DID contractStatus for $user_id: $contract_status" >&2
+    
+    # Check if contractStatus indicates cooperative membership
+    # Cooperative statuses: cooperative_member_satellite, cooperative_member_constellation, 
+    # infrastructure_contributor, cooperative_treasury_contributor, cooperative_rnd_contributor, 
+    # cooperative_assets_contributor
+    case "$contract_status" in
+        *"cooperative_member"*|*"infrastructure_contributor"*|*"cooperative_treasury_contributor"*|*"cooperative_rnd_contributor"*|*"cooperative_assets_contributor"*)
+            echo "DEBUG: User $user_id is a sociétaire (status: $contract_status)" >&2
+            return 0
+            ;;
+        *)
+            echo "DEBUG: User $user_id is NOT a sociétaire (status: $contract_status)" >&2
+            return 1
+            ;;
+    esac
+}
+
+# Function to check if user is a CONSTELLATION sociétaire (highest tier)
+# Returns 0 (true) if user is a constellation member, 1 (false) otherwise
+is_constellation_from_did() {
+    local user_id="$1"
+    
+    # Get user's HEX pubkey from their NOSTR card
+    local user_hex=""
+    
+    if [[ -f "$HOME/.zen/game/nostr/${user_id}/.secret.nostr" ]]; then
+        source "$HOME/.zen/game/nostr/${user_id}/.secret.nostr"
+        user_hex="$HEX"
+    elif [[ "$user_id" =~ ^[a-f0-9]{64}$ ]]; then
+        user_hex="$user_id"
+    fi
+    
+    [[ -z "$user_hex" ]] && return 1
+    
+    # Query DID document (kind 30800) from strfry
+    local did_event=""
+    if [[ -d "$HOME/.zen/strfry" ]]; then
+        did_event=$(cd $HOME/.zen/strfry && ./strfry scan '{"authors":["'"$user_hex"'"],"kinds":[30800],"#d":["did"]}' 2>/dev/null | head -n1 && cd - >/dev/null 2>&1)
+    fi
+    
+    [[ -z "$did_event" ]] && return 1
+    
+    local did_content=$(echo "$did_event" | jq -r '.content // ""' 2>/dev/null)
+    [[ -z "$did_content" ]] && return 1
+    
+    local contract_status=$(echo "$did_content" | jq -r '.metadata.contractStatus // ""' 2>/dev/null)
+    
+    echo "DEBUG: Checking CONSTELLATION status for $user_id: $contract_status" >&2
+    
+    # Only constellation and infrastructure contributors have I2V access
+    case "$contract_status" in
+        *"cooperative_member_constellation"*|*"infrastructure_contributor"*)
+            echo "DEBUG: User $user_id is CONSTELLATION tier (I2V access)" >&2
+            return 0
+            ;;
+        *)
+            echo "DEBUG: User $user_id is NOT CONSTELLATION tier" >&2
+            return 1
+            ;;
+    esac
+}
+
+# Function to get societaire status message for non-members
+get_societaire_required_message() {
+    local feature="$1"
+    echo "⚠️ Accès réservé aux sociétaires CopyLaRadio.
+
+La fonctionnalité $feature est réservée aux membres de la coopérative.
+
+Pour devenir sociétaire et accéder à :
+- 🎬 Génération vidéo Text-to-Video (Satellite)
+- 🎥 Génération vidéo Image-to-Video (Constellation)
+- 🧠 Slots mémoire 1-12 (#mem)
+- 📁 128 Go de stockage NextCloud
+- 🗳️ Droit de vote sur les évolutions
+
+Rejoignez la coopérative : $myIPFS/ipns/copylaradio.com
+
+#CopyLaRadio #UPlanet"
+}
+
+# Function to get constellation-required message
+get_constellation_required_message() {
+    local feature="$1"
+    echo "⚠️ Accès réservé aux sociétaires CONSTELLATION.
+
+La fonctionnalité $feature nécessite le niveau Constellation.
+
+📊 Niveaux d'accès #video :
+- ⭐ Satellite : Text-to-Video (T2V)
+- 🌟 Constellation : Text-to-Video + Image-to-Video (I2V)
+
+Vous avez un abonnement Satellite ? Passez à Constellation :
+$myIPFS/ipns/copylaradio.com
+
+#CopyLaRadio #UPlanet"
 }
 
 # Function to send memory access denied message
@@ -1152,48 +1298,65 @@ Détails: ${ERROR_LINE}"
                 fi
             elif [[ "${TAGS[video]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#video//g; s/#i2v//g; s/"//g' <<< "$message_text")
-                $MY_PATH/comfyui.me.sh
                 
-                # Get user uDRIVE path
-                USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
-                
-                # Check if an image is attached - if yes, use Image-to-Video (i2v)
-                # Otherwise use Text-to-Video
+                # Check if an image is attached - determines T2V vs I2V mode
                 if [[ -n "$URL" ]]; then
-                    echo "Image detected: Using Image-to-Video (Wan2.2 14B i2v) workflow" >&2
-                    echo "Source image: $URL" >&2
-                    echo "Prompt: $cleaned_text" >&2
-                    
-                    if [ $? -eq 0 ] && [ -n "$USER_UDRIVE_PATH" ]; then
-                        VIDEO_AI_RETURN="$($MY_PATH/image_to_video.sh "${cleaned_text}" "$URL" "$USER_UDRIVE_PATH")"
+                    # IMAGE-TO-VIDEO (I2V) - Requires CONSTELLATION tier
+                    if ! is_constellation_from_did "$user_id"; then
+                        echo "VIDEO I2V: Access denied - user $user_id is not CONSTELLATION tier" >&2
+                        KeyANSWER=$(get_constellation_required_message "#BRO #video I2V (Image-to-Video)")
+                        # Add 1-hour TTL for access denied messages (NIP-40)
+                        EXPIRATION_TS=$(($(date +%s) + 3600))
+                        ExtraTags="[['t', 'I2VAccessDenied'], ['expiration', '$EXPIRATION_TS']]"
                     else
-                        echo "Warning: Using default location for i2v video generation" >&2
-                        VIDEO_AI_RETURN="$($MY_PATH/image_to_video.sh "${cleaned_text}" "$URL")"
-                    fi
-                    
-                    if [ -n "$VIDEO_AI_RETURN" ]; then
-                        KeyANSWER="$VIDEO_AI_RETURN"
-                        # Add tags for i2v video generation
-                        ExtraTags="[['t', 'video'], ['t', 'i2v'], ['t', 'comfyui'], ['t', 'ai-generated'], ['imeta', 'url $URL']]"
-                    else
-                        KeyANSWER="Désolé, je n'ai pas pu générer la vidéo à partir de l'image fournie."
+                        echo "Image detected: Using Image-to-Video (Wan2.2 14B i2v) workflow" >&2
+                        echo "Source image: $URL" >&2
+                        echo "Prompt: $cleaned_text" >&2
+                        
+                        $MY_PATH/comfyui.me.sh
+                        USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
+                        
+                        if [ $? -eq 0 ] && [ -n "$USER_UDRIVE_PATH" ]; then
+                            VIDEO_AI_RETURN="$($MY_PATH/image_to_video.sh "${cleaned_text}" "$URL" "$USER_UDRIVE_PATH")"
+                        else
+                            echo "Warning: Using default location for i2v video generation" >&2
+                            VIDEO_AI_RETURN="$($MY_PATH/image_to_video.sh "${cleaned_text}" "$URL")"
+                        fi
+                        
+                        if [ -n "$VIDEO_AI_RETURN" ]; then
+                            KeyANSWER="$VIDEO_AI_RETURN"
+                            ExtraTags="[['t', 'video'], ['t', 'i2v'], ['t', 'comfyui'], ['t', 'ai-generated'], ['imeta', 'url $URL']]"
+                        else
+                            KeyANSWER="Désolé, je n'ai pas pu générer la vidéo à partir de l'image fournie."
+                        fi
                     fi
                 else
-                    echo "No image attached: Using Text-to-Video workflow" >&2
-                    
-                    if [ $? -eq 0 ] && [ -n "$USER_UDRIVE_PATH" ]; then
-                        VIDEO_AI_RETURN="$($MY_PATH/generate_video.sh "${cleaned_text}" "$MY_PATH/workflow/video_wan2_2_5B_ti2v.json" "$USER_UDRIVE_PATH")"
+                    # TEXT-TO-VIDEO (T2V) - Requires SATELLITE tier minimum
+                    if ! is_societaire_from_did "$user_id"; then
+                        echo "VIDEO T2V: Access denied - user $user_id is not a sociétaire" >&2
+                        KeyANSWER=$(get_societaire_required_message "#BRO #video T2V (Text-to-Video)")
+                        # Add 1-hour TTL for access denied messages (NIP-40)
+                        EXPIRATION_TS=$(($(date +%s) + 3600))
+                        ExtraTags="[['t', 'T2VAccessDenied'], ['expiration', '$EXPIRATION_TS']]"
                     else
-                        echo "Warning: Using default location for video generation" >&2
-                        VIDEO_AI_RETURN="$($MY_PATH/generate_video.sh "${cleaned_text}" "$MY_PATH/workflow/video_wan2_2_5B_ti2v.json")"
-                    fi
-                    
-                    if [ -n "$VIDEO_AI_RETURN" ]; then
-                        KeyANSWER="$VIDEO_AI_RETURN"
-                        # Add tags for text2video generation
-                        ExtraTags="[['t', 'video'], ['t', 't2v'], ['t', 'comfyui'], ['t', 'ai-generated']]"
-                    else
-                        KeyANSWER="Désolé, je n'ai pas pu générer la vidéo demandée."
+                        echo "No image attached: Using Text-to-Video workflow (Satellite+)" >&2
+                        
+                        $MY_PATH/comfyui.me.sh
+                        USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
+                        
+                        if [ $? -eq 0 ] && [ -n "$USER_UDRIVE_PATH" ]; then
+                            VIDEO_AI_RETURN="$($MY_PATH/generate_video.sh "${cleaned_text}" "$MY_PATH/workflow/video_wan2_2_5B_ti2v.json" "$USER_UDRIVE_PATH")"
+                        else
+                            echo "Warning: Using default location for video generation" >&2
+                            VIDEO_AI_RETURN="$($MY_PATH/generate_video.sh "${cleaned_text}" "$MY_PATH/workflow/video_wan2_2_5B_ti2v.json")"
+                        fi
+                        
+                        if [ -n "$VIDEO_AI_RETURN" ]; then
+                            KeyANSWER="$VIDEO_AI_RETURN"
+                            ExtraTags="[['t', 'video'], ['t', 't2v'], ['t', 'comfyui'], ['t', 'ai-generated']]"
+                        else
+                            KeyANSWER="Désolé, je n'ai pas pu générer la vidéo demandée."
+                        fi
                     fi
                 fi
             ######################################################### #music
