@@ -217,25 +217,44 @@ get_video_result() {
   echo "Structure complète des sorties :" >&2
   echo "$prompt_data" | jq '.outputs' >&2
   
-  # Find the VideoCombine node (should be node 49)
-  local video_node_outputs
-  video_node_outputs=$(echo "$prompt_data" | jq '.outputs."49".gifs')
+  # Auto-detect video output node - try common node IDs and formats
+  # Supports: VHS_VideoCombine (node 49), SaveVideo (node 58, 108), etc.
+  local video_node_outputs=""
+  
+  # Try node 49 (VHS_VideoCombine) with gifs format
+  video_node_outputs=$(echo "$prompt_data" | jq '.outputs."49".gifs // empty')
+  
+  # Try node 58 (SaveVideo from video_wan2_2_5B_ti2v.json)
+  if [ -z "$video_node_outputs" ] || [ "$video_node_outputs" = "null" ]; then
+    video_node_outputs=$(echo "$prompt_data" | jq '.outputs."58".video // .outputs."58".videos // .outputs."58".gifs // empty')
+  fi
+  
+  # Try node 108 (SaveVideo from video_wan2_2_14B_i2v.json)
+  if [ -z "$video_node_outputs" ] || [ "$video_node_outputs" = "null" ]; then
+    video_node_outputs=$(echo "$prompt_data" | jq '.outputs."108".video // .outputs."108".videos // .outputs."108".gifs // empty')
+  fi
+  
+  # Fallback: search for any node with video/gifs output
+  if [ -z "$video_node_outputs" ] || [ "$video_node_outputs" = "null" ]; then
+    echo "Known video nodes not found, searching for any video output..." >&2
+    video_node_outputs=$(echo "$prompt_data" | jq '[.outputs | to_entries[] | select(.value.video or .value.videos or .value.gifs) | .value.video // .value.videos // .value.gifs][0] // empty')
+  fi
   
   if [ -z "$video_node_outputs" ] || [ "$video_node_outputs" = "null" ]; then
-    echo "Erreur: Sorties du nœud VHS_VideoCombine introuvables" >&2
-    echo "Contenu du prompt_data pour debug:" >&2
-    echo "$prompt_data" | jq '.outputs."49"' >&2
+    echo "Erreur: Aucune sortie vidéo trouvée dans les nodes" >&2
+    echo "Nodes disponibles pour debug:" >&2
+    echo "$prompt_data" | jq '.outputs | keys' >&2
     return 1
   fi
   
   # Get the video filename and subfolder
   local video_filename
   local video_subfolder
-  video_filename=$(echo "$video_node_outputs" | jq -r '.[0].filename')
-  video_subfolder=$(echo "$video_node_outputs" | jq -r '.[0].subfolder')
+  video_filename=$(echo "$video_node_outputs" | jq -r '.[0].filename // .[0]')
+  video_subfolder=$(echo "$video_node_outputs" | jq -r '.[0].subfolder // ""')
   
   if [ -z "$video_filename" ] || [ "$video_filename" = "null" ]; then
-    echo "Erreur: Informations de fichier non trouvées dans la sortie du nœud VHS_VideoCombine" >&2
+    echo "Erreur: Informations de fichier non trouvées dans la sortie vidéo" >&2
     return 1
   fi
 

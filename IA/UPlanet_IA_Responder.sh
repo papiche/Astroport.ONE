@@ -1149,24 +1149,50 @@ Détails: ${ERROR_LINE}"
                     KeyANSWER="Désolé, je n'ai pas pu générer l'image demandée."
                 fi
             elif [[ "${TAGS[video]}" == true ]]; then
-                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#video//g; s/"//g' <<< "$message_text")
+                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#video//g; s/#i2v//g; s/"//g' <<< "$message_text")
                 $MY_PATH/comfyui.me.sh
                 
-                # Get user uDRIVE path and generate video
+                # Get user uDRIVE path
                 USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
-                if [ $? -eq 0 ]; then
-                    VIDEO_AI_RETURN="$($MY_PATH/generate_video.sh "${cleaned_text}" "$MY_PATH/workflow/Text2VideoWan2.1.json" "$USER_UDRIVE_PATH")"
-                else
-                    echo "Warning: Using default location for video generation" >&2
-                    VIDEO_AI_RETURN="$($MY_PATH/generate_video.sh "${cleaned_text}" "$MY_PATH/workflow/Text2VideoWan2.1.json")"
-                fi
                 
-                if [ -n "$VIDEO_AI_RETURN" ]; then
-                    KeyANSWER="$VIDEO_AI_RETURN"
-                    # Add tags for video generation
-                    ExtraTags="[['t', 'video'], ['t', 'comfyui'], ['t', 'ai-generated']]"
+                # Check if an image is attached - if yes, use Image-to-Video (i2v)
+                # Otherwise use Text-to-Video
+                if [[ -n "$URL" ]]; then
+                    echo "Image detected: Using Image-to-Video (Wan2.2 14B i2v) workflow" >&2
+                    echo "Source image: $URL" >&2
+                    echo "Prompt: $cleaned_text" >&2
+                    
+                    if [ $? -eq 0 ] && [ -n "$USER_UDRIVE_PATH" ]; then
+                        VIDEO_AI_RETURN="$($MY_PATH/image_to_video.sh "${cleaned_text}" "$URL" "$USER_UDRIVE_PATH")"
+                    else
+                        echo "Warning: Using default location for i2v video generation" >&2
+                        VIDEO_AI_RETURN="$($MY_PATH/image_to_video.sh "${cleaned_text}" "$URL")"
+                    fi
+                    
+                    if [ -n "$VIDEO_AI_RETURN" ]; then
+                        KeyANSWER="$VIDEO_AI_RETURN"
+                        # Add tags for i2v video generation
+                        ExtraTags="[['t', 'video'], ['t', 'i2v'], ['t', 'comfyui'], ['t', 'ai-generated'], ['imeta', 'url $URL']]"
+                    else
+                        KeyANSWER="Désolé, je n'ai pas pu générer la vidéo à partir de l'image fournie."
+                    fi
                 else
-                    KeyANSWER="Désolé, je n'ai pas pu générer la vidéo demandée."
+                    echo "No image attached: Using Text-to-Video workflow" >&2
+                    
+                    if [ $? -eq 0 ] && [ -n "$USER_UDRIVE_PATH" ]; then
+                        VIDEO_AI_RETURN="$($MY_PATH/generate_video.sh "${cleaned_text}" "$MY_PATH/workflow/video_wan2_2_5B_ti2v.json" "$USER_UDRIVE_PATH")"
+                    else
+                        echo "Warning: Using default location for video generation" >&2
+                        VIDEO_AI_RETURN="$($MY_PATH/generate_video.sh "${cleaned_text}" "$MY_PATH/workflow/video_wan2_2_5B_ti2v.json")"
+                    fi
+                    
+                    if [ -n "$VIDEO_AI_RETURN" ]; then
+                        KeyANSWER="$VIDEO_AI_RETURN"
+                        # Add tags for text2video generation
+                        ExtraTags="[['t', 'video'], ['t', 't2v'], ['t', 'comfyui'], ['t', 'ai-generated']]"
+                    else
+                        KeyANSWER="Désolé, je n'ai pas pu générer la vidéo demandée."
+                    fi
                 fi
             ######################################################### #music
             elif [[ "${TAGS[music]}" == true ]]; then

@@ -12,15 +12,22 @@ Welcome to the UPlanet IA Bot System! This is a powerful, multi-functional AI as
 - **Access control**: Slots 1-12 reserved for CopyLaRadio sociétaires (ZenCard holders)
 
 ### 🎨 **AI Generation Capabilities**
-- **Image generation** with ComfyUI
-- **Video creation** with Text2Video models
+- **Image generation** with ComfyUI (Stable Diffusion)
+- **Text-to-Video** with Wan2.2 5B model
+- **Image-to-Video** with Wan2.2 14B model (attach image + prompt)
 - **Music composition** with AI audio models
-- **Text-to-speech** with multiple voices (Pierre, Amélie)
+- **Text-to-speech** with multiple voices (Pierre, Amélie via Orpheus TTS)
+
+### 🌿 **Recognition & Inventory**
+- **Plant recognition** with PlantNet API + ORE biodiversity tracking
+- **Multi-type inventory** - Auto-detect plants, insects, animals, persons, objects, places
+- **ORE Contracts** - Automatic maintenance contracts for recognized items
+- **Diversity tracking** - Biodiversity scoring per UMAP location
 
 ### 🔍 **Information & Media**
-- **Web search** with Perplexica
-- **YouTube download** with format conversion
-- **Image analysis** with LLaVA vision model
+- **Web search** with Perplexica (+ AI summary, tags, illustration)
+- **YouTube download** with format conversion (supports all yt-dlp platforms)
+- **Image analysis** with LLaVA/MiniCPM-V vision model
 - **Cookie-based scraping** - Upload cookies for authenticated web scraping (see [COOKIE_SYSTEM.md](./COOKIE_SYSTEM.md))
 
 ## 🚀 Quick Start
@@ -66,12 +73,26 @@ Welcome to the UPlanet IA Bot System! This is a powerful, multi-functional AI as
 
 | Command | Description | Example | Access |
 |---------|-------------|---------|---------|
-| `#image` | Generate image | `#BRO #image A sunset over mountains` | All users |
-| `#video` | Generate video | `#BRO #video A cat playing in the garden` | All users |
+| `#image` | Generate image (Stable Diffusion) | `#BRO #image A sunset over mountains` | All users |
+| `#video` | Generate video (Text-to-Video) | `#BRO #video A cat playing in the garden` | All users |
+| `#video` + image | Generate video from image (Image-to-Video) | `#BRO #video The cat turns its head` + attached image | All users |
 | `#music` | Generate music | `#BRO #music A peaceful piano melody` | All users |
 | `#parole` | Add lyrics to music | `#BRO #music #parole A song about friendship` | All users |
 | `#BRO #N` | Use slot context for AI | `#BRO #3 #image Dashboard design` | Sociétaires only |
 | `#BOT #N` | Use slot context for AI | `#BOT #5 #music Personal theme` | Sociétaires only |
+
+### 🌿 **Recognition & Inventory Commands**
+
+| Command | Description | Example | Access |
+|---------|-------------|---------|---------|
+| `#plantnet` | Plant recognition (PlantNet API) | `#BRO #plantnet` + plant image | All users |
+| `#inventory` | Multi-type recognition (auto-detect) | `#BRO #inventory` + image | All users |
+| `#plant` | Force plant classification | `#BRO #plant` + image | All users |
+| `#insect` | Force insect classification | `#BRO #insect` + image | All users |
+| `#animal` | Force animal classification | `#BRO #animal` + image | All users |
+| `#person` | Force person classification | `#BRO #person` + image | All users |
+| `#object` | Force object classification | `#BRO #object` + image | All users |
+| `#place` | Force place classification | `#BRO #place` + image | All users |
 
 ### 🎤 **Voice Synthesis**
 
@@ -94,6 +115,130 @@ Welcome to the UPlanet IA Bot System! This is a powerful, multi-functional AI as
 |---------|-------------|---------|---------|
 | `#secret` | Send private DM instead of public reply | `#BRO #secret Tell me something private` | All users |
 | `#secret #N` | Private DM with slot context | `#BRO #secret #3 Private meeting notes` | Sociétaires only |
+
+## 🌳 **Complete Decision Tree**
+
+### **#BRO / #BOT Processing Flow**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           UPlanet_IA_Responder.sh                               │
+│                        Complete Decision Tree #BRO / #BOT                       │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+                              NOSTR Message Received
+                                     │
+                                     ▼
+                        ┌────────────────────────┐
+                        │  #BRO or #BOT present? │
+                        └────────────────────────┘
+                                     │
+                    ┌────────────────┴────────────────┐
+                   NO                                YES
+                    │                                 │
+                    ▼                                 ▼
+               [IGNORED]                    ┌──────────────────┐
+                                           │   Tag Analysis    │
+                                           └──────────────────┘
+                                                    │
+        ┌───────────────────────────────────────────┼───────────────────────────────────────────┐
+        │                                           │                                           │
+        ▼                                           ▼                                           ▼
+┌───────────────┐                         ┌─────────────────┐                         ┌─────────────────┐
+│    MEMORY     │                         │   GENERATION    │                         │   UTILITIES     │
+└───────────────┘                         └─────────────────┘                         └─────────────────┘
+        │                                           │                                           │
+        ├─► #reset                                  ├─► #search                                 ├─► #youtube
+        │   ├─► #all → Reset slots 0-12            │   └─► Perplexica + AI                     │   └─► yt-dlp download
+        │   ├─► #N → Reset slot N                  │       ├─► AI Summary                      │       ├─► #mp3 → audio
+        │   └─► (default) → Reset slot 0           │       ├─► AI Tags                         │       └─► (default) → mp4
+        │                                          │       ├─► AI Image                        │
+        ├─► #mem                                   │       └─► Kind 30023 (blog)               ├─► #cookie
+        │   ├─► #N → Display slot N               │                                            │   └─► Workflow engine
+        │   └─► (default) → Display slot 0        ├─► #image                                   │
+        │                                          │   └─► ComfyUI generate_image.sh           ├─► #pierre / #amelie
+        └─► #rec2                                  │       └─► → IPFS URL                      │   └─► Orpheus TTS
+            └─► Auto-save bot response            │                                            │       └─► → Audio URL
+                in memory                          ├─► #video ─────────────────────┐           │
+                                                   │                               │           └─► (default)
+                                                   │   ┌───────────────────────────┤               └─► Ollama question.py
+                                                   │   │                           │
+                                                   │   ▼                           ▼
+                                                   │ Image attached?          No image
+                                                   │   │                           │
+                                                   │   ▼                           ▼
+                                                   │ image_to_video.sh      generate_video.sh
+                                                   │ video_wan2_2_14B_i2v   video_wan2_2_5B_ti2v
+                                                   │ Tags: #i2v             Tags: #t2v
+                                                   │
+                                                   ├─► #music
+                                                   │   └─► ComfyUI generate_music.sh
+                                                   │       └─► → IPFS Audio URL
+                                                   │
+                                                   ├─► #plantnet (+ image)
+                                                   │   └─► PlantNet API
+                                                   │       ├─► Recognition JSON
+                                                   │       ├─► ORE integration
+                                                   │       ├─► UMAP DID update
+                                                   │       └─► Tags: #plantnet #UPlanet
+                                                   │
+                                                   └─► #inventory / #plant / #insect /
+                                                       #animal / #person / #object / #place
+                                                       └─► inventory_recognition.py
+                                                           ├─► AI Type detection
+                                                           ├─► ORE Contract (kind 30312)
+                                                           ├─► Blog (kind 30023)
+                                                           └─► Diversity tracker
+```
+
+### **Complete Tag Reference Table**
+
+| Tag | Function | Script/Service | Output | Prerequisites |
+|-----|----------|----------------|--------|---------------|
+| `#search` | Perplexica web search + AI summary | `perplexica_search.sh` | Kind 30023 (blog article) | Perplexica |
+| `#image` | Image generation (Stable Diffusion) | `generate_image.sh` | IPFS URL | ComfyUI |
+| `#video` | Text-to-Video (Wan2.2 5B) | `generate_video.sh` | IPFS URL | ComfyUI |
+| `#video` + image | Image-to-Video (Wan2.2 14B) | `image_to_video.sh` | IPFS URL | ComfyUI + image |
+| `#music` | AI music generation | `generate_music.sh` | IPFS URL | ComfyUI |
+| `#youtube` | Video download (all platforms) | `process_youtube.sh` | IPFS URL | yt-dlp |
+| `#youtube #mp3` | Audio extraction | `process_youtube.sh` | IPFS MP3 URL | yt-dlp + ffmpeg |
+| `#plantnet` | Plant recognition | `plantnet_recognition.py` | JSON + ORE | PlantNet API + image |
+| `#inventory` | Multi-type classification (auto) | `inventory_recognition.py` | ORE Contract | Image |
+| `#plant` | Force plant type | `inventory_recognition.py` | ORE Contract | Image |
+| `#insect` | Force insect type | `inventory_recognition.py` | ORE Contract | Image |
+| `#animal` | Force animal type | `inventory_recognition.py` | ORE Contract | Image |
+| `#person` | Force person type | `inventory_recognition.py` | ORE Contract | Image |
+| `#object` | Force object type | `inventory_recognition.py` | ORE Contract | Image |
+| `#place` | Force place type | `inventory_recognition.py` | ORE Contract | Image |
+| `#pierre` | Text-to-Speech (Pierre voice) | `generate_speech.sh` | IPFS Audio URL | Orpheus TTS |
+| `#amelie` | Text-to-Speech (Amélie voice) | `generate_speech.sh` | IPFS Audio URL | Orpheus TTS |
+| `#mem` | Display memory content | - | Text | - |
+| `#mem #N` | Display slot N memory | - | Text | Sociétaire (1-12) |
+| `#reset` | Clear slot 0 memory | - | Confirmation | - |
+| `#reset #N` | Clear slot N memory | - | Confirmation | Sociétaire (1-12) |
+| `#reset #all` | Clear all slots (0-12) | - | Confirmation | Sociétaire |
+| `#rec2` | Auto-save bot response | `short_memory.py` | - | - |
+| `#cookie` | Workflow automation | `cookie_workflow_engine.sh` | Variable | - |
+| `#secret` | Private DM response | NOSTR kind 4 | Encrypted DM | - |
+| `#N` (1-12) | Use memory slot N | - | Context | Sociétaire |
+| (default) | AI conversation | `question.py` | Text response | Ollama |
+
+### **Response Key Priority**
+
+The bot uses different NOSTR keys depending on context:
+
+| Priority | Key Type | Used When |
+|----------|----------|-----------|
+| 1 | **UMAP Key** | `#plantnet` / `#inventory` (geolocated responses) |
+| 2 | **USER Key** | KNAME (email) available |
+| 3 | **CAPTAIN Key** | Fallback when no user key |
+
+### **Video Generation Workflows**
+
+| Mode | Trigger | Workflow File | Model | Resolution | Frames |
+|------|---------|---------------|-------|------------|--------|
+| **Text-to-Video** | `#video` (no image) | `video_wan2_2_5B_ti2v.json` | Wan2.2 5B | 640×480 | 121 |
+| **Image-to-Video** | `#video` + image | `video_wan2_2_14B_i2v.json` | Wan2.2 14B | 640×640 | 81 |
 
 ## 🏗️ **Technical Architecture**
 
@@ -266,6 +411,35 @@ The bot integrates with UPlanet's geolocation system:
 #BRO #4 #image An abstract painting with blue and gold
 #BRO #4 #music Ambient music for the art gallery
 #BRO #4 #video A timelapse of the painting process
+```
+
+### **Video Generation (Text-to-Video vs Image-to-Video)**
+```
+# Text-to-Video (no image attached) - Uses Wan2.2 5B
+#BRO #video A dragon flying over a mountain at sunset
+
+# Image-to-Video (with image attached) - Uses Wan2.2 14B
+#BRO #video The character slowly turns their head toward the camera
+[attach your source image]
+```
+
+### **Plant Recognition & Biodiversity**
+```
+# Recognize a plant (attach plant photo)
+#BRO #plantnet
+→ Returns: Scientific name, common names, confidence score, Wikipedia link
+→ Creates: ORE biodiversity record, UMAP DID update
+
+# Multi-type inventory (auto-detect type)
+#BRO #inventory
+→ Auto-detects: plant, insect, animal, person, object, or place
+→ Creates: ORE maintenance contract (kind 30312) + blog (kind 30023)
+
+# Force specific type classification
+#BRO #insect    # Force insect classification
+#BRO #animal    # Force animal classification
+#BRO #object    # Force object classification
+#BRO #place     # Force place/location classification
 ```
 
 ### **Private Communication**
