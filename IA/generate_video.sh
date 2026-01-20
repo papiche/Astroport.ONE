@@ -268,13 +268,15 @@ get_video_result() {
   fi
 
   echo "Nom du fichier vidéo : $video_filename" >&2
+  echo "Sous-dossier : $video_subfolder" >&2
   
-  # Build proper URL
+  # Build proper URL with correct ComfyUI API parameters
+  # Format: /api/viewvideo?filename=<filename>&type=output&subfolder=<subfolder>
   local video_url
   if [ -z "$video_subfolder" ] || [ "$video_subfolder" = "null" ] || [ "$video_subfolder" = "" ]; then
-    video_url="$COMFYUI_URL/view?filename=$video_filename"
+    video_url="$COMFYUI_URL/api/viewvideo?filename=$video_filename&type=output"
   else
-    video_url="$COMFYUI_URL/view?filename=$video_subfolder/$video_filename"
+    video_url="$COMFYUI_URL/api/viewvideo?filename=$video_filename&type=output&subfolder=$video_subfolder"
   fi
   
   echo "URL de la vidéo : $video_url" >&2
