@@ -526,7 +526,7 @@ Pour devenir sociétaire et accéder à :
 - 📁 128 Go de stockage NextCloud
 - 🗳️ Droit de vote sur les évolutions
 
-Rejoignez la coopérative : $myIPFS/ipns/copylaradio.com
+Rejoignez la coopérative : https://opencollective.com/uplanet-zero
 
 #CopyLaRadio #UPlanet"
 }
@@ -543,7 +543,7 @@ La fonctionnalité $feature nécessite le niveau Constellation.
 - 🌟 Constellation : Text-to-Video + Image-to-Video (I2V)
 
 Vous avez un abonnement Satellite ? Passez à Constellation :
-$myIPFS/ipns/copylaradio.com
+https://opencollective.com/uplanet-zero/contribute/proprio-128-go-71400
 
 #CopyLaRadio #UPlanet"
 }
@@ -567,7 +567,7 @@ Pour utiliser les slots de mémoire 1-12, vous devez être sociétaire CopyLaRad
 
 Le slot 0 reste accessible pour tous les utilisateurs autorisés.
 
-Pour devenir sociétaire : $myIPFS/ipns/copylaradio.com
+Pour devenir sociétaire : https://opencollective.com/uplanet-zero/contribute
 
 Votre Capitaine.
 #CopyLaRadio #mem"
