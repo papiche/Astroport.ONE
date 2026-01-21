@@ -1,4 +1,11 @@
 #!/bin/bash 
+################################################################################
+# primal.cache.fix.sh
+# Clean and fix corrupted primal cache files using G1primal.sh wrapper
+################################################################################
+
+MY_PATH="`dirname \"$0\"`"
+MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 
 is_valid_g1pub() {
     [[ "$1" =~ ^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{43,44}$ ]]
@@ -12,23 +19,16 @@ for f in ~/.zen/tmp/coucou/*.primal; do
     if ! is_valid_g1pub "$key"; then
         # Get the G1 pubkey from the filename (remove .primal extension)
         g1pub=$(basename "$f" .primal)
-        echo "Invalid primal in $f ($key) - trying to fix with silkaj..."
+        echo "Invalid primal in $f ($key) - trying to fix with G1primal.sh..."
         
-        # Try to recover the primal using silkaj with better error handling
-        silkaj_output=$(silkaj --json money primal "$g1pub" 2>&1)
+        # Use G1primal.sh wrapper instead of direct silkaj call
+        primal=$("${MY_PATH}/G1primal.sh" "$g1pub" 2>/dev/null)
         
-        # Check if silkaj command was successful and returned valid JSON
-        if echo "$silkaj_output" | jq . >/dev/null 2>&1; then
-            primal=$(echo "$silkaj_output" | jq -r .primal_source_pubkey 2>/dev/null)
-            if is_valid_g1pub "$primal"; then
-                echo "Fixed: $g1pub.primal -> $primal"
-                echo "$primal" > "$f"
-            else
-                echo "Could not fix $f - invalid primal returned: $primal"
-            fi
+        if is_valid_g1pub "$primal"; then
+            echo "Fixed: $g1pub.primal -> $primal"
+            echo "$primal" > "$f"
         else
-            echo "Could not fix $f - silkaj error or invalid JSON:"
-            echo "$silkaj_output" | head -3
+            echo "Could not fix $f - invalid primal returned: $primal"
         fi
     fi
 done
@@ -41,28 +41,23 @@ for player_dir in ~/.zen/game/nostr/*/; do
     g1prime_file="$player_dir/G1PRIME"
     [[ ! -f "$g1prime_file" ]] && continue
 
-    g1pub=$(cat $player_dir/G1PUBNOSTR)
+    g1pub=$(cat $player_dir/G1PUBNOSTR 2>/dev/null)
+    [[ -z "$g1pub" ]] && continue
     
     content=$(cat "$g1prime_file")
     
     # Look for a valid G1PUB pattern in the content
     if ! is_valid_g1pub "$content"; then
-        echo "Invalid G1PRIME in $player_dir ($content) - trying to fix with silkaj..."
-        # Try to recover the primal using silkaj with better error handling
-        silkaj_output=$(silkaj --json money primal "$g1pub" 2>&1)
+        echo "Invalid G1PRIME in $player_dir ($content) - trying to fix with G1primal.sh..."
         
-        # Check if silkaj command was successful and returned valid JSON
-        if echo "$silkaj_output" | jq . >/dev/null 2>&1; then
-            primal=$(echo "$silkaj_output" | jq -r .primal_source_pubkey 2>/dev/null)
-            if is_valid_g1pub "$primal"; then
-                echo "Fixed: $g1pub.primal -> $primal"
-                echo "$primal" > "$g1prime_file"
-            else
-                echo "Could not fix $g1prime_file - invalid primal returned: $primal"
-            fi
+        # Use G1primal.sh wrapper instead of direct silkaj call
+        primal=$("${MY_PATH}/G1primal.sh" "$g1pub" 2>/dev/null)
+        
+        if is_valid_g1pub "$primal"; then
+            echo "Fixed: $g1pub.primal -> $primal"
+            echo "$primal" > "$g1prime_file"
         else
-            echo "Could not fix $g1prime_file - silkaj error or invalid JSON:"
-            echo "$silkaj_output" | head -3
+            echo "Could not fix $g1prime_file - invalid primal returned: $primal"
         fi
     fi
 done

@@ -2,6 +2,7 @@
 ################################################################################
 # verify_transaction.sh
 # Background script to verify transactions after 1 hour and send Nostr notifications
+# Uses G1history.sh wrapper for blockchain history queries
 #
 # Usage: verify_transaction.sh <source_pubkey> <amount_g1> <reference> <transaction_type> <email> <zen_amount>
 ################################################################################
@@ -24,12 +25,12 @@ sleep "$VERIFY_DELAY"
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting verification for transaction: ${REFERENCE:0:50}..."
 
-# Check if transaction is in history
-HISTORY_JSON=$(silkaj --json money history "$SOURCE_PUBKEY" 2>/dev/null)
+# Get transaction history using G1history.sh wrapper
+HISTORY_JSON=$("${MY_PATH}/G1history.sh" "$SOURCE_PUBKEY" 2>/dev/null)
 
-if [[ $? -eq 0 ]]; then
+if [[ $? -eq 0 ]] && echo "$HISTORY_JSON" | jq empty 2>/dev/null; then
     # Search for the transaction in history by reference
-    # silkaj history uses "Reference" field (with capital R)
+    # G1history.sh returns format: { "history": [...] }
     # Try to match the reference (may be truncated in history)
     REFERENCE_SHORT=$(echo "$REFERENCE" | cut -c1-50)
     
@@ -118,4 +119,3 @@ Error time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
     fi
     exit 1
 fi
-
