@@ -1,11 +1,11 @@
 #!/bin/bash 
 ################################################################################
 # primal.cache.fix.sh
-# Clean and fix corrupted primal cache files using G1primal.sh wrapper
+# Clean and fix invalid primal cache files using G1primal.sh wrapper
 ################################################################################
 
-MY_PATH="`dirname \"$0\"`"
-MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
+MY_PATH="`dirname \"$0\"`"              # relative
+MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
 is_valid_g1pub() {
     [[ "$1" =~ ^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{43,44}$ ]]
@@ -19,16 +19,18 @@ for f in ~/.zen/tmp/coucou/*.primal; do
     if ! is_valid_g1pub "$key"; then
         # Get the G1 pubkey from the filename (remove .primal extension)
         g1pub=$(basename "$f" .primal)
-        echo "Invalid primal in $f ($key) - trying to fix with G1primal.sh..."
+        echo "Invalid primal in $f ($key) - trying to fix via G1primal.sh..."
         
-        # Use G1primal.sh wrapper instead of direct silkaj call
-        primal=$("${MY_PATH}/G1primal.sh" "$g1pub" 2>/dev/null)
+        # Remove the invalid cache file so G1primal.sh will fetch fresh data
+        rm -f "$f"
+        
+        # Use G1primal.sh wrapper which handles caching, retries, and BMAS rotation
+        primal=$(${MY_PATH}/G1primal.sh "$g1pub" 2>/dev/null)
         
         if is_valid_g1pub "$primal"; then
             echo "Fixed: $g1pub.primal -> $primal"
-            echo "$primal" > "$f"
         else
-            echo "Could not fix $f - invalid primal returned: $primal"
+            echo "Could not fix $f - G1primal.sh returned: $primal"
         fi
     fi
 done
@@ -48,16 +50,16 @@ for player_dir in ~/.zen/game/nostr/*/; do
     
     # Look for a valid G1PUB pattern in the content
     if ! is_valid_g1pub "$content"; then
-        echo "Invalid G1PRIME in $player_dir ($content) - trying to fix with G1primal.sh..."
+        echo "Invalid G1PRIME in $player_dir ($content) - trying to fix via G1primal.sh..."
         
-        # Use G1primal.sh wrapper instead of direct silkaj call
-        primal=$("${MY_PATH}/G1primal.sh" "$g1pub" 2>/dev/null)
+        # Use G1primal.sh wrapper which handles caching, retries, and BMAS rotation
+        primal=$(${MY_PATH}/G1primal.sh "$g1pub" 2>/dev/null)
         
         if is_valid_g1pub "$primal"; then
-            echo "Fixed: $g1pub.primal -> $primal"
+            echo "Fixed: $g1pub G1PRIME -> $primal"
             echo "$primal" > "$g1prime_file"
         else
-            echo "Could not fix $g1prime_file - invalid primal returned: $primal"
+            echo "Could not fix $g1prime_file - G1primal.sh returned: $primal"
         fi
     fi
 done

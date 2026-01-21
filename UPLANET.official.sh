@@ -105,16 +105,16 @@ show_help() {
 }
 
 # Fonction pour vérifier qu'il n'y a pas de transactions en cours avant de commencer
-# NOTE: Dans UPLANET.central.sh, cette fonction n'attend pas et affiche juste un avertissement
 check_no_pending_transactions() {
     local wallet_pubkey="$1"
     
     echo -e "${YELLOW}🔍 Vérification rapide des transactions en cours: ${wallet_pubkey:0:8}...${NC}"
     
-    local balance_json=$(silkaj --json money balance "$wallet_pubkey" 2>/dev/null)
+    # Use G1balance.sh wrapper for full JSON balance (includes pending)
+    local balance_json=$("${MY_PATH}/tools/G1balance.sh" "$wallet_pubkey" 2>/dev/null)
     
-    if [[ $? -eq 0 ]]; then
-        # silkaj retourne les montants en centimes, il faut diviser par 100
+    if [[ -n "$balance_json" ]] && echo "$balance_json" | jq -e '.balances' >/dev/null 2>&1; then
+        # G1balance.sh returns raw silkaj JSON (montants en centimes, diviser par 100)
         local pending_centimes=$(echo "$balance_json" | jq -r '.balances.pending // 0' 2>/dev/null)
         local total_centimes=$(echo "$balance_json" | jq -r '.balances.total // 0' 2>/dev/null)
         
@@ -146,13 +146,13 @@ check_balance() {
     
     echo -e "${YELLOW}🔍 Vérification du solde du portefeuille: ${wallet_pubkey:0:8}...${NC}"
     
-    # Récupérer le solde initial (blockchain) pour calculer le solde attendu
-    local initial_balance_json=$(silkaj --json money balance "$wallet_pubkey" 2>/dev/null)
+    # Récupérer le solde initial via G1balance.sh (includes pending info)
+    local initial_balance_json=$("${MY_PATH}/tools/G1balance.sh" "$wallet_pubkey" 2>/dev/null)
     local initial_blockchain=0
     local initial_pending=0
     
-    if [[ $? -eq 0 ]]; then
-        # silkaj retourne les montants en centimes, il faut diviser par 100
+    if [[ -n "$initial_balance_json" ]] && echo "$initial_balance_json" | jq -e '.balances' >/dev/null 2>&1; then
+        # G1balance.sh returns montants en centimes, diviser par 100
         local initial_blockchain_centimes=$(echo "$initial_balance_json" | jq -r '.balances.blockchain // 0' 2>/dev/null)
         local initial_pending_centimes=$(echo "$initial_balance_json" | jq -r '.balances.pending // 0' 2>/dev/null)
         
@@ -169,10 +169,10 @@ check_balance() {
     fi
     
     while [[ $wait_time -lt $max_wait ]]; do
-        local balance_json=$(silkaj --json money balance "$wallet_pubkey" 2>/dev/null)
+        local balance_json=$("${MY_PATH}/tools/G1balance.sh" "$wallet_pubkey" 2>/dev/null)
         
-        if [[ $? -eq 0 ]]; then
-            # silkaj retourne les montants en centimes, il faut diviser par 100
+        if [[ -n "$balance_json" ]] && echo "$balance_json" | jq -e '.balances' >/dev/null 2>&1; then
+            # G1balance.sh returns montants en centimes, diviser par 100
             local pending_centimes=$(echo "$balance_json" | jq -r '.balances.pending // 0' 2>/dev/null)
             local total_centimes=$(echo "$balance_json" | jq -r '.balances.total // 0' 2>/dev/null)
             local blockchain_centimes=$(echo "$balance_json" | jq -r '.balances.blockchain // 0' 2>/dev/null)
@@ -1091,11 +1091,11 @@ process_recovery() {
     echo -e "${CYAN}🔑 Wallet SOCIETY: ${society_pubkey:0:8}...${NC}"
     echo ""
     
-    # Afficher le solde du wallet SOCIETY
+    # Afficher le solde du wallet SOCIETY via G1balance.sh
     echo -e "${YELLOW}📊 Récupération du solde SOCIETY...${NC}"
-    local balance_json=$(silkaj --json money balance "$society_pubkey" 2>/dev/null)
+    local balance_json=$("${MY_PATH}/tools/G1balance.sh" "$society_pubkey" 2>/dev/null)
     
-    if [[ $? -ne 0 ]]; then
+    if [[ -z "$balance_json" ]] || ! echo "$balance_json" | jq -e '.balances' >/dev/null 2>&1; then
         echo -e "${RED}❌ Impossible de récupérer le solde du wallet SOCIETY${NC}"
         return 1
     fi
@@ -1289,11 +1289,11 @@ process_recovery() {
     echo -e "  • Toutes les transactions confirmées sur la blockchain"
     echo ""
     
-    # Afficher le nouveau solde SOCIETY
+    # Afficher le nouveau solde SOCIETY via G1balance.sh
     echo -e "${YELLOW}📊 Nouveau solde du wallet SOCIETY...${NC}"
     sleep 2
-    local new_balance_json=$(silkaj --json money balance "$society_pubkey" 2>/dev/null)
-    if [[ $? -eq 0 ]]; then
+    local new_balance_json=$("${MY_PATH}/tools/G1balance.sh" "$society_pubkey" 2>/dev/null)
+    if [[ -n "$new_balance_json" ]] && echo "$new_balance_json" | jq -e '.balances' >/dev/null 2>&1; then
         local new_blockchain_centimes=$(echo "$new_balance_json" | jq -r '.balances.blockchain // 0' 2>/dev/null)
         [[ -z "$new_blockchain_centimes" || "$new_blockchain_centimes" == "null" ]] && new_blockchain_centimes="0"
         local new_blockchain_g1=$(echo "scale=2; $new_blockchain_centimes / 100" | bc -l)
@@ -1343,12 +1343,12 @@ process_recovery_3x13() {
         return 1
     fi
     
-    # Afficher le solde de la ZEN Card
+    # Afficher le solde de la ZEN Card via G1balance.sh
     echo ""
     echo -e "${YELLOW}📊 Récupération du solde de la ZEN Card...${NC}"
-    local balance_json=$(silkaj --json money balance "$zencard_pubkey" 2>/dev/null)
+    local balance_json=$("${MY_PATH}/tools/G1balance.sh" "$zencard_pubkey" 2>/dev/null)
     
-    if [[ $? -ne 0 ]]; then
+    if [[ -z "$balance_json" ]] || ! echo "$balance_json" | jq -e '.balances' >/dev/null 2>&1; then
         echo -e "${RED}❌ Impossible de récupérer le solde de la ZEN Card${NC}"
         return 1
     fi
@@ -1502,11 +1502,11 @@ process_recovery_3x13() {
         # Mettre à jour DID pour contribution
         "${MY_PATH}/tools/did_manager_nostr.sh" update "$email_ref" "$did_contribution_type" "$zen_amount" "$g1_amount"
         
-        # Afficher le nouveau solde de la ZEN Card
+        # Afficher le nouveau solde de la ZEN Card via G1balance.sh
         echo -e "${YELLOW}📊 Nouveau solde de la ZEN Card...${NC}"
         sleep 2
-        local new_balance_json=$(silkaj --json money balance "$zencard_pubkey" 2>/dev/null)
-        if [[ $? -eq 0 ]]; then
+        local new_balance_json=$("${MY_PATH}/tools/G1balance.sh" "$zencard_pubkey" 2>/dev/null)
+        if [[ -n "$new_balance_json" ]] && echo "$new_balance_json" | jq -e '.balances' >/dev/null 2>&1; then
             local new_blockchain_centimes=$(echo "$new_balance_json" | jq -r '.balances.blockchain // 0' 2>/dev/null)
             [[ -z "$new_blockchain_centimes" || "$new_blockchain_centimes" == "null" ]] && new_blockchain_centimes="0"
             local new_blockchain_g1=$(echo "scale=2; $new_blockchain_centimes / 100" | bc -l)

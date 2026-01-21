@@ -58,68 +58,27 @@ display_wallet_info() {
 }
 
 # Function to get primal source of a wallet
-# This function creates and maintains permanent cache files in ~/.zen/tmp/coucou/
+# Uses G1primal.sh wrapper which handles caching, retries, and BMAS rotation
 # Primal source never changes on blockchain, so cache is valid indefinitely
 get_primal_source() {
     local wallet_pubkey="$1"
-    local attempts=0
-    local success=false
-    local result=""
     local silent_mode="${2:-false}"  # Optional parameter for silent output
 
-    # Ensure cache directory exists
-    mkdir -p "$HOME/.zen/tmp/coucou"
-
-    # Check if cache exists (primal source never changes, so cache is permanently valid)
-    local cache_file="$HOME/.zen/tmp/coucou/${wallet_pubkey}.primal"
-    if [[ -f "$cache_file" && -s "$cache_file" ]]; then
-        local cached_primal=$(cat "$cache_file" 2>/dev/null)
-        if [[ -n "$cached_primal" && "$cached_primal" != "null" ]]; then
-            [[ "$silent_mode" != "true" ]] && echo "Using cached primal source for ${wallet_pubkey:0:8}"
-            [[ "$silent_mode" != "true" ]] && echo "🔗 Cesium: $(generate_cesium_link "$wallet_pubkey")"
-            echo "$cached_primal"
-            return 0
-        fi
-    fi
-
-    # No valid cache found, query blockchain
-    [[ "$silent_mode" != "true" ]] && echo "Fetching primal source for ${wallet_pubkey:0:8} from blockchain..."
+    [[ "$silent_mode" != "true" ]] && echo "Fetching primal source for ${wallet_pubkey:0:8}..."
     
-    while [[ $attempts -lt 3 && $success == false ]]; do
-        BMAS_NODE=$(${MY_PATH}/duniter_getnode.sh BMAS | tail -n 1)
-        if [[ ! -z $BMAS_NODE ]]; then
-            [[ "$silent_mode" != "true" ]] && echo "Trying primal check with BMAS NODE: $BMAS_NODE (attempt $((attempts + 1)))"
-
-            silkaj_output=$(silkaj --endpoint "$BMAS_NODE" --json money primal ${wallet_pubkey} 2>/dev/null)
-            if echo "$silkaj_output" | jq empty 2>/dev/null; then
-                result=$(echo "$silkaj_output" | jq -r '.primal_source_pubkey')
-                if [[ ! -z ${result} && ${result} != "null" ]]; then
-                    success=true
-                    # Cache the result (permanently valid - primal never changes)
-                    echo "$result" > "$cache_file"
-                    chmod 644 "$cache_file"
-                    [[ "$silent_mode" != "true" ]] && echo "✅ Primal source cached: $cache_file"
-                    [[ "$silent_mode" != "true" ]] && echo "🔗 Cesium: $(generate_cesium_link "$wallet_pubkey")"
-                    break
-                fi
-            else
-                [[ "$silent_mode" != "true" ]] && echo "Warning: silkaj did not return valid JSON for $wallet_pubkey"
-            fi
-        fi
-
-        attempts=$((attempts + 1))
-        if [[ $attempts -lt 3 ]]; then
-            sleep 2
-        fi
-    done
-
-    if [[ "$success" == false ]]; then
-        [[ "$silent_mode" != "true" ]] && echo "❌ Failed to fetch primal source for ${wallet_pubkey:0:8} after $attempts attempts"
-        # Create empty cache file to indicate failure and avoid repeated queries
-        touch "$cache_file"
+    # Use G1primal.sh wrapper which handles all caching and retries
+    local result=$(${MY_PATH}/G1primal.sh "$wallet_pubkey" 2>/dev/null)
+    
+    if [[ -n "$result" && "$result" != "null" ]]; then
+        [[ "$silent_mode" != "true" ]] && echo "✅ Primal source: $result"
+        [[ "$silent_mode" != "true" ]] && echo "🔗 Cesium: $(generate_cesium_link "$wallet_pubkey")"
+        echo "$result"
+        return 0
+    else
+        [[ "$silent_mode" != "true" ]] && echo "❌ Failed to fetch primal source for ${wallet_pubkey:0:8}"
+        echo ""
+        return 1
     fi
-
-    echo "$result"
 }
 
 # Utility function to ensure primal cache exists for a wallet
@@ -138,64 +97,36 @@ ensure_primal_cache() {
 }
 
 # Function to get wallet transaction history
+# Uses G1history.sh wrapper which handles caching and BMAS rotation
 get_wallet_history() {
     local wallet_pubkey="$1"
     local output_file="$2"
-    local attempts=0
-    local success=false
 
-    # Check if cache exists and is recent (less than 30 minutes old)
-    local cache_file="$HOME/.zen/tmp/coucou/${wallet_pubkey}.history"
-    if [[ -f "$cache_file" ]]; then
-        local cache_age=$(($(date +%s) - $(stat -c %Y "$cache_file" 2>/dev/null || echo 0)))
-        if [[ $cache_age -lt 1800 ]]; then  # 30 minutes = 1800 seconds
-            if [[ -s "$cache_file" ]]; then
-                echo "Using cached transaction history for ${wallet_pubkey:0:8}"
-                cp "$cache_file" "$output_file"
-                return 0
-            fi
+    echo "Fetching transaction history for ${wallet_pubkey:0:8} via G1history.sh..."
+    
+    # Use G1history.sh wrapper which handles caching, retries, and BMAS rotation
+    local history_json=$(${MY_PATH}/G1history.sh "$wallet_pubkey" 2>/dev/null)
+    
+    if [[ -n "$history_json" ]] && echo "$history_json" | jq empty 2>/dev/null; then
+        # Transform the silkaj format to the expected format
+        echo "$history_json" | jq -r '.history[] | {
+            date: .Date,
+            pubkey: (.["Issuers/Recipients"] | split(":")[0]),
+            amount: (.["Amounts Ğ1"] | tonumber),
+            comment: (.Reference // "")
+        }' 2>/dev/null | jq -s '.' > "$output_file"
+        
+        if [[ -s "$output_file" ]]; then
+            echo "✅ Transaction history retrieved"
+            return 0
+        else
+            echo "Warning: No valid transaction history extracted"
         fi
+    else
+        echo "❌ Failed to get transaction history"
     fi
-
-    while [[ $attempts -lt 3 && $success == false ]]; do
-        BMAS_NODE=$(cat ~/.zen/tmp/current.duniter.bmas 2>/dev/null)
-        if [[ ! -z $BMAS_NODE ]]; then
-            echo "Trying history with BMAS NODE: $BMAS_NODE (attempt $((attempts + 1)))"
-
-            # Get the full JSON response and extract history array
-            ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-            silkaj --endpoint "$BMAS_NODE" --json money history ${wallet_pubkey} 2>/dev/null > ${output_file}.full
-
-            if [[ -s ${output_file}.full ]]; then
-                # Extract and transform the history to the expected format
-                jq -r '.history[] | {
-                    date: .Date,
-                    pubkey: (.["Issuers/Recipients"] | split(":")[0]),
-                    amount: (.["Amounts Ğ1"] | tonumber),
-                    comment: (.Reference // "")
-                }' ${output_file}.full | jq -s '.' > ${output_file}
-
-                if [[ -s ${output_file} ]]; then
-                    success=true
-                    # Cache the result
-                    mkdir -p "$HOME/.zen/tmp/coucou"
-                    cp "$output_file" "$cache_file"
-                    rm -f ${output_file}.full
-                    break
-                else
-                    echo "Warning: No valid transaction history extracted from silkaj response"
-                fi
-            fi
-            rm -f ${output_file}.full
-        fi
-
-        attempts=$((attempts + 1))
-        if [[ $attempts -lt 3 ]]; then
-            BMAS_NODE=$(${MY_PATH}/duniter_getnode.sh BMAS | tail -n 1)
-        fi
-    done
-
-    return $([[ $success == true ]])
+    
+    return 1
 }
 
 # Function to create INTRUSION wallet if it doesn't exist

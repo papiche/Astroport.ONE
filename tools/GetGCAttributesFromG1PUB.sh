@@ -1,13 +1,10 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 0.3
+# Version: 0.2
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
-# GetGCAttributesFromG1PUB.sh
-# Scan for presence in GChange & Cesium Elastic Search Databases
-# Uses G1check.sh and G1history.sh wrappers for blockchain queries
-#################################################### 
+#################################################### GetGCAttributesFromG1PUB.sh
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
@@ -17,7 +14,7 @@ ME="${0##*/}"
 [[ ${1} == "-h" || ${1} == "--help" ]] && echo "#################################################
 # GIVEN A PUBKEY -
 # This program scan for presence in GChange & Cesium Elastic Search Databases
-# So it detect attributes attached to actual key \$G1PUB
+# So it detect attributes attached to actual key $G1PUB
 # .g1history.json .cesium.json ( .gchange.json .cplus.json )
 #################################################"
 G1PUB="$1"
@@ -34,24 +31,24 @@ ZEN=$(echo "scale=1; ($COINS - 1) * 10" | bc)
 
 echo "===== ${G1PUB} ===== ${COINS} G1 / ${ZEN} ZEN ($ME)"
 
-## GET G1 WALLET HISTORY using G1history.sh wrapper
+## GET G1 WALLET HISTORY (using G1history.sh wrapper)
 if [[ ${COINS} != "null" && $(echo "$COINS > 0" | bc -l) -eq 1 ]]; then
-
-    [[ ! -s ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json ]] && {
-        echo "Getting transaction history via G1history.sh wrapper..."
-        # Use G1history.sh wrapper - it handles BMAS server selection, retries and caching
-        HISTORY_JSON=$("${MY_PATH}/G1history.sh" "${G1PUB}" 2>/dev/null)
+    echo "Fetching wallet history via G1history.sh..."
+    
+    # Use G1history.sh wrapper which handles caching, retries, and BMAS rotation
+    HISTORY_JSON=$(${MY_PATH}/timeout.sh -t 30 ${MY_PATH}/G1history.sh ${G1PUB} 2>/dev/null)
+    
+    if [[ -n "$HISTORY_JSON" ]] && echo "$HISTORY_JSON" | jq empty 2>/dev/null; then
+        # Extract .history array from the response
+        echo "$HISTORY_JSON" | jq '.history // .' > ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json
         
-        if [[ -n "$HISTORY_JSON" ]] && echo "$HISTORY_JSON" | jq empty 2>/dev/null; then
-            # Extract the history array from the response
-            echo "$HISTORY_JSON" | jq '.history // []' > ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json
+        if [[ -s ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json ]]; then
+            echo "++ HISTORY OK"
+        else
+            echo "-- HISTORY FAILED (empty result)"
         fi
-    }
-
-    if [[ -s ~/.zen/tmp/${MOATS}/${G1PUB}.g1history.json ]]; then
-        echo "++ HISTORY OK"
     else
-        echo "-- HISTORY FAILED"
+        echo "-- HISTORY FAILED (invalid JSON)"
     fi
 fi
 

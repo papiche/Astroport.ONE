@@ -2,7 +2,6 @@
 ################################################################################
 # verify_transaction.sh
 # Background script to verify transactions after 1 hour and send Nostr notifications
-# Uses G1history.sh wrapper for blockchain history queries
 #
 # Usage: verify_transaction.sh <source_pubkey> <amount_g1> <reference> <transaction_type> <email> <zen_amount>
 ################################################################################
@@ -25,12 +24,12 @@ sleep "$VERIFY_DELAY"
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting verification for transaction: ${REFERENCE:0:50}..."
 
-# Get transaction history using G1history.sh wrapper
-HISTORY_JSON=$("${MY_PATH}/G1history.sh" "$SOURCE_PUBKEY" 2>/dev/null)
+# Check if transaction is in history (using G1history.sh wrapper)
+HISTORY_JSON=$(${MY_PATH}/G1history.sh "$SOURCE_PUBKEY" 2>/dev/null)
 
-if [[ $? -eq 0 ]] && echo "$HISTORY_JSON" | jq empty 2>/dev/null; then
+if [[ -n "$HISTORY_JSON" ]] && echo "$HISTORY_JSON" | jq empty 2>/dev/null; then
     # Search for the transaction in history by reference
-    # G1history.sh returns format: { "history": [...] }
+    # G1history.sh returns silkaj format with "Reference" field (with capital R)
     # Try to match the reference (may be truncated in history)
     REFERENCE_SHORT=$(echo "$REFERENCE" | cut -c1-50)
     
@@ -97,8 +96,8 @@ Verified: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
         exit 1
     fi
 else
-    # Error getting history
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ❌ Error retrieving transaction history"
+    # Error getting history (G1history.sh returned empty or invalid JSON)
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ❌ Error retrieving transaction history via G1history.sh"
     
     # Send error alert
     if [[ -n "$CAPTAINEMAIL" && -f "$HOME/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr" ]]; then
@@ -119,3 +118,4 @@ Error time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
     fi
     exit 1
 fi
+
