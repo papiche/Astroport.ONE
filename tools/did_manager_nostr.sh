@@ -433,6 +433,11 @@ update_did_document() {
             services="Node infrastructure capital"
             contract_status="infrastructure_contributor"
             ;;
+        "CAPTAIN")
+            quota="unlimited"
+            services="Full access: uDRIVE + NextCloud + AI + #BRO + video i2s/t2s + Admin"
+            contract_status="astroport_captain"
+            ;;
         "TREASURY_CONTRIBUTION")
             contract_status="cooperative_treasury_contributor"
             ;;
@@ -503,7 +508,8 @@ update_did_document() {
        [[ "$existing_contract_status" == *"infrastructure_contributor"* ]] || \
        [[ "$existing_contract_status" == *"cooperative_treasury_contributor"* ]] || \
        [[ "$existing_contract_status" == *"cooperative_rnd_contributor"* ]] || \
-       [[ "$existing_contract_status" == *"cooperative_assets_contributor"* ]]; then
+       [[ "$existing_contract_status" == *"cooperative_assets_contributor"* ]] || \
+       [[ "$existing_contract_status" == *"astroport_captain"* ]]; then
         is_cooperative_member=true
     fi
     
@@ -536,7 +542,7 @@ update_did_document() {
         "MULTIPASS")
             new_token_type="ZENCOIN"  # Usage tokens
             ;;
-        "SOCIETAIRE_SATELLITE"|"SOCIETAIRE_CONSTELLATION"|"INFRASTRUCTURE")
+        "SOCIETAIRE_SATELLITE"|"SOCIETAIRE_CONSTELLATION"|"INFRASTRUCTURE"|"CAPTAIN")
             new_token_type="ZENCARD"  # Ownership tokens (cooperative shares)
             ;;
     esac

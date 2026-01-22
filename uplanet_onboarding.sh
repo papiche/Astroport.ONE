@@ -430,12 +430,42 @@ step_machine_valuation() {
     
     print_success "Valorisation machine configurée"
     
+    # Calcul de l'amortissement et PAF minimum suggérée
+    local amortization_weeks="${MACHINE_AMORTIZATION_WEEKS:-156}"  # 3 ans par défaut
+    local paf_minimum=$(echo "scale=2; $machine_value / $amortization_weeks" | bc -l)
+    local current_paf=$(grep "^PAF=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2 || echo "14")
+    
+    # Sauvegarder la PAF minimum suggérée
+    sed -i "s/^PAF_MINIMUM=.*/PAF_MINIMUM=$paf_minimum/" "$ENV_FILE" 2>/dev/null || \
+        echo "PAF_MINIMUM=$paf_minimum" >> "$ENV_FILE"
+    
     echo ""
     echo -e "${BLUE}💰 Votre apport au capital social:${NC}"
     echo -e "   • Type: ${YELLOW}$machine_type${NC}"
     echo -e "   • Valeur: ${YELLOW}$machine_value €${NC} = ${CYAN}$machine_value Ẑen${NC}"
     echo -e "   • Parts sociales: Vous devenez sociétaire de la coopérative"
     echo -e "   • Droits: Vote, gouvernance, répartition des bénéfices"
+    echo ""
+    
+    echo -e "${BLUE}📊 Calcul de l'amortissement:${NC}"
+    echo -e "   • Période d'amortissement: ${YELLOW}$amortization_weeks semaines${NC} ($(echo "scale=1; $amortization_weeks / 52" | bc -l) ans)"
+    echo -e "   • PAF minimum suggérée: ${GREEN}$paf_minimum Ẑen/semaine${NC}"
+    echo -e "   • PAF actuelle: ${YELLOW}$current_paf Ẑen/semaine${NC}"
+    echo ""
+    
+    if [[ $(echo "$current_paf < $paf_minimum" | bc -l) -eq 1 ]]; then
+        print_warning "⚠️  Votre PAF actuelle ($current_paf) est inférieure à l'amortissement minimum ($paf_minimum)"
+        echo -e "${YELLOW}💡 Conseil: Augmentez votre PAF pour couvrir l'amortissement de votre machine${NC}"
+        echo ""
+        
+        read -p "Voulez-vous ajuster la PAF à $paf_minimum Ẑen/semaine ? (o/N): " adjust_paf
+        if [[ "$adjust_paf" == "o" || "$adjust_paf" == "O" ]]; then
+            sed -i "s/^PAF=.*/PAF=$paf_minimum/" "$ENV_FILE"
+            print_success "PAF mise à jour: $paf_minimum Ẑen/semaine"
+        fi
+    else
+        print_success "✅ PAF actuelle ($current_paf) couvre l'amortissement ($paf_minimum)"
+    fi
     echo ""
 }
 

@@ -66,6 +66,7 @@ show_help() {
     echo "  -s, --societaire EMAIL    Virement pour sociétaire (parts sociales)"
     echo "  -t, --type TYPE           Type de sociétaire: satellite|constellation|infrastructure"
     echo "  -i, --infrastructure      Apport capital infrastructure (CAPTAIN → CAPITAL)"
+    echo "  -c, --captain EMAIL       Inscription capitaine (accès complet aux services)"
     echo "      --force               Mode force : écrase le capital existant"
     echo "      --add                 Mode ajout : cumule avec le capital existant"
     echo "  -o, --ore LAT LON         Virement ORE (récompenses environnementales UMAP depuis ASSETS)"
@@ -82,6 +83,7 @@ show_help() {
     echo "  $0 -i -m 500                                  # Apport capital infrastructure (500€)"
     echo "  $0 -i -m 200 --add                            # Ajoute 200€ au capital existant"
     echo "  $0 -i -m 500 --force                          # Réinitialise le capital à 500€"
+    echo "  $0 -c support@qo-op.com                      # Inscription capitaine Astroport"
     echo "  $0 -o 43.60 1.44 -m 10                       # Récompense ORE UMAP depuis ASSETS (10Ẑen)"
     echo "  $0 -p dragon@example.com PERMIT_WOT_DRAGON  # Récompense WoT Dragon"
     echo "  $0 -r                                         # Mode dépannage SOCIETY → 3x1/3"
@@ -1711,6 +1713,14 @@ main() {
                     mode="infrastructure"
                     shift
                     ;;
+                -c|--captain)
+                    mode="captain"
+                    shift
+                    if [[ -n "$1" && ! "$1" =~ ^- ]]; then
+                        email="$1"
+                        shift
+                    fi
+                    ;;
                 --force)
                     infra_mode="--force"
                     shift
@@ -1804,6 +1814,35 @@ main() {
                 else
                     echo -e "${RED}❌ CAPTAINEMAIL non défini dans l'environnement${NC}"
                     echo -e "${CYAN}💡 Configurez votre email de capitaine dans my.sh${NC}"
+                    exit 1
+                fi
+                ;;
+            "captain")
+                local captain_email="${email:-$CAPTAINEMAIL}"
+                if [[ -n "$captain_email" ]]; then
+                    echo -e "${CYAN}🚢 Inscription Capitaine Astroport: ${captain_email}${NC}"
+                    # Vérifier que le compte existe
+                    if [[ ! -d "$HOME/.zen/game/nostr/${captain_email}" ]]; then
+                        echo -e "${RED}❌ Compte non trouvé: ${captain_email}${NC}"
+                        echo -e "${CYAN}💡 Créez d'abord le compte avec make_NOSTRCARD.sh${NC}"
+                        exit 1
+                    fi
+                    # Mettre à jour le DID avec le statut CAPTAIN
+                    echo -e "${YELLOW}📝 Mise à jour du DID avec statut CAPTAIN...${NC}"
+                    "${MY_PATH}/tools/did_manager_nostr.sh" update "$captain_email" "CAPTAIN" 0 0
+                    if [[ $? -eq 0 ]]; then
+                        echo -e "${GREEN}✅ Capitaine inscrit avec succès !${NC}"
+                        echo -e "  • Email: ${captain_email}"
+                        echo -e "  • Statut: astroport_captain"
+                        echo -e "  • Quota: unlimited"
+                        echo -e "  • Services: Full access (uDRIVE + NextCloud + AI + #BRO + video)"
+                    else
+                        echo -e "${RED}❌ Échec de l'inscription capitaine${NC}"
+                        exit 1
+                    fi
+                else
+                    echo -e "${RED}❌ Email requis pour l'option --captain${NC}"
+                    echo -e "${CYAN}💡 Usage: $0 -c support@qo-op.com${NC}"
                     exit 1
                 fi
                 ;;

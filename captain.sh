@@ -2147,8 +2147,10 @@ embark_captain() {
     echo "  1. Initialiser l'infrastructure UPLANET (portefeuilles coopératifs)"
     echo "  2. Créer un compte MULTIPASS (interface CLI)"
     echo "  3. Créer une ZEN Card (interface CLI)"
-    echo "  4. Inscrire l'Armateur avec apport capital infrastructure"
-    echo "  5. Vérifier que les comptes coopératifs peuvent couvrir 3xPAF/semaine"
+    echo "  4. Inscrire le Capitaine avec DID (astroport_captain)"
+    echo "  5. Inscrire l'Armateur avec apport capital infrastructure"
+    echo "  6. Calculer la PAF minimum depuis l'amortissement machine"
+    echo "  7. Vérifier que les comptes coopératifs peuvent couvrir 3xPAF/semaine"
     echo ""
     echo -e "${YELLOW}Cette configuration vous permettra de:${NC}"
     echo "  • Gérer une constellation locale UPlanet"
@@ -2253,7 +2255,23 @@ embark_captain() {
         return 1
     fi
     
-    # Étape 3: Inscrire l'Armateur avec apport capital infrastructure
+    # Étape 3: Mettre à jour le DID avec le statut CAPTAIN
+    print_section "INSCRIPTION CAPITAINE - MISE À JOUR DU DID"
+    
+    echo -e "${CYAN}Mise à jour de votre identité décentralisée avec le statut Capitaine...${NC}"
+    
+    if "${MY_PATH}/tools/did_manager_nostr.sh" update "$email" "CAPTAIN" 0 0; then
+        print_success "✅ DID mis à jour avec statut astroport_captain"
+        echo -e "  • contractStatus: ${GREEN}astroport_captain${NC}"
+        echo -e "  • storageQuota: ${GREEN}unlimited${NC}"
+        echo -e "  • services: ${GREEN}Full access${NC}"
+    else
+        print_warning "⚠️  Mise à jour DID échouée - vous pouvez la faire manuellement:"
+        echo -e "${CYAN}   ${MY_PATH}/UPLANET.official.sh -c $email${NC}"
+    fi
+    echo ""
+    
+    # Étape 4: Inscrire l'Armateur avec apport capital infrastructure
     print_section "INSCRIPTION ARMATEUR - APPORT CAPITAL INFRASTRUCTURE"
     
     echo -e "${CYAN}Nous allons maintenant enregistrer votre apport capital infrastructure.${NC}"
@@ -2273,7 +2291,36 @@ embark_captain() {
         machine_value="500"
     fi
     
+    # Calculer l'amortissement suggéré pour la PAF (3 ans = 156 semaines)
+    local amortization_weeks="${MACHINE_AMORTIZATION_WEEKS:-156}"  # 3 ans par défaut
+    local paf_minimum=$(echo "scale=2; $machine_value / $amortization_weeks" | bc -l)
+    local current_paf=$(grep "^PAF=" "${MY_PATH}/.env" 2>/dev/null | cut -d'=' -f2 || echo "10")
+    
     echo -e "${CYAN}💰 Apport capital infrastructure: ${machine_value} Ẑen${NC}"
+    echo ""
+    echo -e "${BLUE}📊 Calcul de l'amortissement:${NC}"
+    echo -e "  • Valeur machine: ${YELLOW}${machine_value} Ẑen${NC}"
+    echo -e "  • Période d'amortissement: ${YELLOW}${amortization_weeks} semaines${NC} ($(echo "scale=1; $amortization_weeks / 52" | bc -l) ans)"
+    echo -e "  • PAF minimum suggérée: ${GREEN}${paf_minimum} Ẑen/semaine${NC}"
+    echo -e "  • PAF actuelle configurée: ${YELLOW}${current_paf} Ẑen/semaine${NC}"
+    echo ""
+    
+    if [[ $(echo "$current_paf < $paf_minimum" | bc -l) -eq 1 ]]; then
+        print_warning "⚠️  Votre PAF actuelle (${current_paf}) est inférieure à l'amortissement minimum (${paf_minimum})"
+        echo -e "${YELLOW}💡 Conseil: Augmentez votre PAF à au moins ${paf_minimum} Ẑen/semaine pour couvrir l'amortissement${NC}"
+        echo ""
+        
+        if [[ "$AUTO_MODE" == "false" ]]; then
+            read -p "Voulez-vous mettre à jour la PAF à ${paf_minimum} Ẑen/semaine ? (oui/non): " update_paf
+            if [[ "$update_paf" == "oui" || "$update_paf" == "o" || "$update_paf" == "y" || "$update_paf" == "yes" ]]; then
+                sed -i "s/^PAF=.*/PAF=$paf_minimum/" "${MY_PATH}/.env" 2>/dev/null || \
+                    echo "PAF=$paf_minimum" >> "${MY_PATH}/.env"
+                print_success "PAF mise à jour: ${paf_minimum} Ẑen/semaine"
+            fi
+        fi
+    else
+        print_success "✅ PAF actuelle (${current_paf}) couvre l'amortissement (${paf_minimum})"
+    fi
     echo ""
     
     if [[ "$AUTO_MODE" == "false" ]]; then
@@ -2301,7 +2348,7 @@ embark_captain() {
     
     echo ""
     
-    # Étape 4: Vérifier que les comptes coopératifs peuvent couvrir 3xPAF/semaine
+    # Étape 5: Vérifier que les comptes coopératifs peuvent couvrir 3xPAF/semaine
     if ! check_cooperative_balance; then
         print_warning "⚠️  Les comptes coopératifs sont insuffisants"
         echo -e "${YELLOW}💡 Important: Assurez-vous d'alimenter les comptes depuis OpenCollective avant de lancer ZEN.ECONOMY.sh${NC}"
@@ -2317,7 +2364,9 @@ embark_captain() {
     echo -e "${GREEN}✅ Votre station Astroport.ONE est maintenant configurée:${NC}"
     echo -e "  • Compte MULTIPASS: $email"
     echo -e "  • ZEN Card: $email"
+    echo -e "  • DID: ${GREEN}astroport_captain${NC} (accès complet)"
     echo -e "  • Armateur: Apport capital ${machine_value} Ẑen"
+    echo -e "  • PAF minimum: ${paf_minimum} Ẑen/semaine (amortissement ${amortization_weeks} semaines)"
     echo ""
     echo -e "${CYAN}📋 Prochaines étapes:${NC}"
     echo -e "  1. Alimenter UPLANETNAME_G1 depuis OpenCollective si nécessaire"

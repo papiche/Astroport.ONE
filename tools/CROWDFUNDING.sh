@@ -72,6 +72,177 @@ generate_project_id() {
     echo "CF-$(date +%Y%m%d)-$(openssl rand -hex 4 | tr 'a-f' 'A-F')"
 }
 
+################################################################################
+# "Bien" Identity Functions - Each crowdfunding project has its own NOSTR/G1 keys
+# Derived from UMAP coordinates + PROJECT_ID for deterministic regeneration
+################################################################################
+
+# Generate NOSTR and G1 keys for a crowdfunding "Bien" (property/asset)
+# Keys are derived from: salt="${UPLANETNAME}${LAT}_${PROJECT_ID}" pepper="${UPLANETNAME}${LON}_${PROJECT_ID}"
+# This allows the "Bien" to receive +ZEN via NOSTR kind 7 reactions
+generate_bien_keys() {
+    local lat="$1"
+    local lon="$2"
+    local project_id="$3"
+    local project_dir="$4"
+    
+    # Deterministic derivation from UMAP + PROJECT_ID
+    local BIEN_SALT="${UPLANETNAME}${lat}_${project_id}"
+    local BIEN_PEPPER="${UPLANETNAME}${lon}_${project_id}"
+    
+    echo -e "${CYAN}🔑 Génération de l'identité du Bien ${project_id}...${NC}"
+    echo -e "   Salt: ${BIEN_SALT:0:20}..."
+    echo -e "   Pepper: ${BIEN_PEPPER:0:20}..."
+    
+    # Generate NOSTR keys (npub and nsec)
+    local BIEN_NPUB=$("${MY_PATH}/keygen" -t nostr "$BIEN_SALT" "$BIEN_PEPPER" 2>/dev/null)
+    local BIEN_NSEC=$("${MY_PATH}/keygen" -t nostr "$BIEN_SALT" "$BIEN_PEPPER" -s 2>/dev/null)
+    local BIEN_HEX=$("${MY_PATH}/nostr2hex.py" "$BIEN_NPUB" 2>/dev/null)
+    
+    if [[ -z "$BIEN_NPUB" || -z "$BIEN_NSEC" ]]; then
+        echo -e "${RED}❌ Erreur lors de la génération des clés NOSTR du Bien${NC}"
+        return 1
+    fi
+    
+    # Generate Duniter/G1 wallet
+    local dunikey_file="$project_dir/bien.dunikey"
+    "${MY_PATH}/keygen" -t duniter -o "$dunikey_file" "$BIEN_SALT" "$BIEN_PEPPER" 2>/dev/null
+    
+    if [[ ! -f "$dunikey_file" ]]; then
+        echo -e "${RED}❌ Erreur lors de la génération du wallet Ğ1 du Bien${NC}"
+        return 1
+    fi
+    
+    chmod 600 "$dunikey_file"
+    local BIEN_G1PUB=$(cat "$dunikey_file" | grep 'pub:' | cut -d ' ' -f 2)
+    
+    # Store NOSTR secrets securely
+    local nostr_secret_file="$project_dir/.bien.nostr"
+    echo "NSEC=$BIEN_NSEC; NPUB=$BIEN_NPUB; HEX=$BIEN_HEX" > "$nostr_secret_file"
+    chmod 600 "$nostr_secret_file"
+    
+    # Store public keys in accessible file
+    local pubkeys_file="$project_dir/bien.pubkeys"
+    cat > "$pubkeys_file" << EOF
+# Bien Identity for ${project_id}
+# Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+# Location: (${lat}, ${lon})
+BIEN_NPUB=$BIEN_NPUB
+BIEN_HEX=$BIEN_HEX
+BIEN_G1PUB=$BIEN_G1PUB
+EOF
+    
+    echo -e "${GREEN}✅ Identité du Bien créée !${NC}"
+    echo -e "   NOSTR npub: ${BIEN_NPUB:0:20}..."
+    echo -e "   NOSTR hex:  ${BIEN_HEX:0:16}..."
+    echo -e "   Ğ1 wallet:  ${BIEN_G1PUB:0:8}..."
+    
+    # Return the values for use in project.json
+    echo "$BIEN_NPUB|$BIEN_HEX|$BIEN_G1PUB"
+}
+
+# Get Bien keys from project directory
+get_bien_keys() {
+    local project_id="$1"
+    local project_dir="$CROWDFUNDING_DIR/$project_id"
+    local pubkeys_file="$project_dir/bien.pubkeys"
+    
+    if [[ -f "$pubkeys_file" ]]; then
+        source "$pubkeys_file"
+        echo "$BIEN_NPUB|$BIEN_HEX|$BIEN_G1PUB"
+    else
+        echo ""
+    fi
+}
+
+# Get Bien NSEC for signing (use with caution)
+get_bien_nsec() {
+    local project_id="$1"
+    local project_dir="$CROWDFUNDING_DIR/$project_id"
+    local nostr_secret_file="$project_dir/.bien.nostr"
+    
+    if [[ -f "$nostr_secret_file" ]]; then
+        source "$nostr_secret_file"
+        echo "$NSEC"
+    else
+        echo ""
+    fi
+}
+
+# Setup Bien profile on NOSTR
+setup_bien_nostr_profile() {
+    local project_id="$1"
+    local project_name="$2"
+    local lat="$3"
+    local lon="$4"
+    local description="${5:-Bien Commun UPlanet}"
+    
+    local project_dir="$CROWDFUNDING_DIR/$project_id"
+    local nostr_secret_file="$project_dir/.bien.nostr"
+    local pubkeys_file="$project_dir/bien.pubkeys"
+    
+    if [[ ! -f "$nostr_secret_file" || ! -f "$pubkeys_file" ]]; then
+        echo -e "${RED}❌ Clés du Bien non trouvées pour ${project_id}${NC}"
+        return 1
+    fi
+    
+    source "$nostr_secret_file"
+    source "$pubkeys_file"
+    
+    echo -e "${CYAN}📡 Configuration du profil NOSTR du Bien...${NC}"
+    
+    # Create profile with location and crowdfunding info
+    local profile_name="🌳 ${project_name}"
+    local profile_about="Bien Commun - ${description} | 📍 (${lat}, ${lon}) | Crowdfunding UPlanet ẐEN | ID: ${project_id}"
+    local profile_picture="https://robohash.org/${BIEN_HEX}?set=set4"
+    local profile_banner=""
+    local profile_nip05=""
+    local profile_lud16=""
+    
+    # Use nostr_setup_profile.py to create the profile
+    if [[ -x "${MY_PATH}/nostr_setup_profile.py" ]]; then
+        "${MY_PATH}/nostr_setup_profile.py" \
+            "$NSEC" \
+            "$profile_name" \
+            "$BIEN_G1PUB" \
+            "$profile_about" \
+            "$profile_picture" \
+            "$profile_banner" \
+            "$profile_nip05" \
+            "$profile_lud16" \
+            2>/dev/null
+        
+        if [[ $? -eq 0 ]]; then
+            echo -e "${GREEN}✅ Profil NOSTR du Bien publié !${NC}"
+        else
+            echo -e "${YELLOW}⚠️  Échec de publication du profil NOSTR${NC}"
+        fi
+    fi
+    
+    # Update project.json with published status
+    local project_file="$project_dir/project.json"
+    if [[ -f "$project_file" ]]; then
+        local temp_file=$(mktemp)
+        jq '.bien_profile_published = true | .bien_profile_published_at = "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"' \
+            "$project_file" > "$temp_file"
+        mv "$temp_file" "$project_file"
+    fi
+}
+
+# Check balance of Bien wallet
+get_bien_balance() {
+    local project_id="$1"
+    local project_dir="$CROWDFUNDING_DIR/$project_id"
+    local pubkeys_file="$project_dir/bien.pubkeys"
+    
+    if [[ -f "$pubkeys_file" ]]; then
+        source "$pubkeys_file"
+        check_wallet_balance "$BIEN_G1PUB"
+    else
+        echo "0"
+    fi
+}
+
 # Check wallet balance using G1check.sh (cached, with retries)
 check_wallet_balance() {
     local wallet_pubkey="$1"
@@ -137,7 +308,7 @@ create_project() {
     local lat="$1"
     local lon="$2"
     local project_name="$3"
-    local description="${4:-Projet de forêt jardin collaborative}"
+    local description="${4:-Projet de bien commun collaboratif}"
     
     if [[ -z "$lat" || -z "$lon" || -z "$project_name" ]]; then
         echo -e "${RED}❌ Usage: $0 create LAT LON \"PROJECT_NAME\" [DESCRIPTION]${NC}"
@@ -149,7 +320,25 @@ create_project() {
     
     mkdir -p "$project_dir"
     
-    # Initialize project JSON
+    echo -e "${BLUE}🌳 Création du projet crowdfunding: ${project_name}${NC}"
+    echo ""
+    
+    # Generate Bien identity (NOSTR + G1 wallet)
+    local bien_keys_result=$(generate_bien_keys "$lat" "$lon" "$project_id" "$project_dir")
+    
+    if [[ -z "$bien_keys_result" ]]; then
+        echo -e "${RED}❌ Échec de génération de l'identité du Bien${NC}"
+        rm -rf "$project_dir"
+        return 1
+    fi
+    
+    # Parse the generated keys
+    IFS='|' read -r BIEN_NPUB BIEN_HEX BIEN_G1PUB <<< "$bien_keys_result"
+    
+    # Calculate UMAP ID for reference
+    local UMAP_ID="UMAP_$(printf "%.2f" $lat)_$(printf "%.2f" $lon)"
+    
+    # Initialize project JSON with Bien identity
     local created_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     local created_ts=$(date +%s)
     
@@ -161,6 +350,16 @@ create_project() {
     "location": {
         "latitude": $lat,
         "longitude": $lon
+    },
+    "umap_id": "$UMAP_ID",
+    "bien_identity": {
+        "npub": "$BIEN_NPUB",
+        "hex": "$BIEN_HEX",
+        "g1pub": "$BIEN_G1PUB",
+        "derivation": {
+            "salt": "${UPLANETNAME}${lat}_${project_id}",
+            "pepper": "${UPLANETNAME}${lon}_${project_id}"
+        }
     },
     "status": "draft",
     "created_at": "$created_at",
@@ -179,21 +378,33 @@ create_project() {
         "g1_campaign_active": false,
         "zen_convertible_campaign_active": false
     },
+    "bien_profile_published": false,
     "captain_email": "$CAPTAINEMAIL",
     "uplanet_g1pub": "$UPLANETG1PUB",
     "ipfsnodeid": "$IPFSNODEID"
 }
 EOF
 
+    echo ""
     echo -e "${GREEN}✅ Projet créé avec succès !${NC}"
     echo -e "${CYAN}📋 ID du projet: ${project_id}${NC}"
     echo -e "${CYAN}📍 Localisation: (${lat}, ${lon})${NC}"
     echo -e "${CYAN}🏷️  Nom: ${project_name}${NC}"
     echo ""
+    echo -e "${MAGENTA}🔐 IDENTITÉ DU BIEN (receveur de +ZEN):${NC}"
+    echo -e "   NOSTR npub: ${BIEN_NPUB}"
+    echo -e "   NOSTR hex:  ${BIEN_HEX}"
+    echo -e "   Ğ1 wallet:  ${BIEN_G1PUB}"
+    echo ""
     echo -e "${YELLOW}💡 Prochaines étapes:${NC}"
-    echo -e "   1. Ajoutez les propriétaires: $0 add-owner $project_id EMAIL MODE AMOUNT"
-    echo -e "   2. Vérifiez le statut: $0 status $project_id"
-    echo -e "   3. Finalisez: $0 finalize $project_id"
+    echo -e "   1. Publiez le profil NOSTR: $0 publish-profile $project_id"
+    echo -e "   2. Ajoutez les propriétaires: $0 add-owner $project_id EMAIL MODE AMOUNT"
+    echo -e "   3. Vérifiez le statut: $0 status $project_id"
+    echo -e "   4. Finalisez: $0 finalize $project_id"
+    echo ""
+    echo -e "${CYAN}📡 Les contributions +ZEN seront envoyées à ce Bien via:${NC}"
+    echo -e "   Tag NOSTR: [\"p\", \"$BIEN_HEX\"]"
+    echo -e "   Commentaire Ğ1: CF:$project_id"
     
     echo "$project_id"
 }
@@ -279,6 +490,10 @@ EOF
     echo -e "${GREEN}✅ Propriétaire ajouté !${NC}"
 }
 
+# Vote thresholds for ASSETS usage
+ASSETS_VOTE_THRESHOLD="${ASSETS_VOTE_THRESHOLD:-100}"  # Minimum Ẑen votes required
+ASSETS_VOTE_QUORUM="${ASSETS_VOTE_QUORUM:-10}"         # Minimum number of voters
+
 # Check wallet balances and launch campaigns if needed
 check_and_launch_campaigns() {
     local project_id="$1"
@@ -307,22 +522,53 @@ check_and_launch_campaigns() {
     echo -e "   UPLANETNAME_G1: $g1_balance Ğ1"
     echo ""
     
-    # Check if ASSETS can cover cash sales
-    local need_zen_crowdfunding=false
+    # Check if project needs cash (ASSETS usage)
+    local need_assets_vote=false
+    local need_crowdfunding=false
+    local zen_from_assets=0
     local zen_shortfall=0
     
-    if [[ $(echo "$g1_for_cash > $assets_balance" | bc -l) -eq 1 ]]; then
-        zen_shortfall=$(echo "scale=2; ($g1_for_cash - $assets_balance) * 10" | bc -l)
-        need_zen_crowdfunding=true
-        
-        echo -e "${YELLOW}⚠️  ASSETS insuffisant pour les ventes €${NC}"
-        echo -e "${YELLOW}   Manque: $zen_shortfall Ẑen (convertible €)${NC}"
-        
-        # Update project with Ẑen convertible campaign
-        jq ".campaigns.zen_convertible_campaign_active = true | .totals.zen_convertible_target = $zen_shortfall" "$project_file" > "${project_file}.tmp"
-        mv "${project_file}.tmp" "$project_file"
+    if [[ $(echo "$cash_eur_needed > 0" | bc -l) -eq 1 ]]; then
+        # Project requires cash payment - needs ASSETS vote
+        if [[ $(echo "$g1_for_cash <= $assets_balance" | bc -l) -eq 1 ]]; then
+            # ASSETS could cover the need, but requires VOTE first
+            need_assets_vote=true
+            zen_from_assets=$(echo "scale=2; $g1_for_cash * 10" | bc -l)
+            
+            echo -e "${MAGENTA}🗳️  UTILISATION ASSETS REQUIERT UN VOTE !${NC}"
+            echo -e "${MAGENTA}   Montant proposé: $zen_from_assets Ẑen depuis ASSETS${NC}"
+            echo -e "${MAGENTA}   Seuil d'approbation: $ASSETS_VOTE_THRESHOLD Ẑen de votes${NC}"
+            echo -e "${MAGENTA}   Quorum minimum: $ASSETS_VOTE_QUORUM votants${NC}"
+            echo ""
+            echo -e "${YELLOW}   → Les sociétaires doivent voter avec +1Ẑen pour approuver${NC}"
+            
+            # Update project with vote requirement
+            jq ".vote = {
+                \"assets_vote_active\": true,
+                \"assets_amount_zen\": $zen_from_assets,
+                \"vote_threshold\": $ASSETS_VOTE_THRESHOLD,
+                \"vote_quorum\": $ASSETS_VOTE_QUORUM,
+                \"votes_zen_total\": 0,
+                \"voters_count\": 0,
+                \"voters\": [],
+                \"vote_status\": \"pending\",
+                \"vote_started_at\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+            }" "$project_file" > "${project_file}.tmp"
+            mv "${project_file}.tmp" "$project_file"
+        else
+            # ASSETS insufficient - needs crowdfunding
+            zen_shortfall=$(echo "scale=2; ($g1_for_cash - $assets_balance) * 10" | bc -l)
+            need_crowdfunding=true
+            
+            echo -e "${YELLOW}⚠️  ASSETS insuffisant pour les ventes €${NC}"
+            echo -e "${YELLOW}   Manque: $zen_shortfall Ẑen (crowdfunding requis)${NC}"
+            
+            # Update project with Ẑen crowdfunding campaign
+            jq ".campaigns.zen_convertible_campaign_active = true | .totals.zen_convertible_target = $zen_shortfall" "$project_file" > "${project_file}.tmp"
+            mv "${project_file}.tmp" "$project_file"
+        fi
     else
-        echo -e "${GREEN}✅ ASSETS suffisant pour les ventes €${NC}"
+        echo -e "${GREEN}✅ Pas de besoin cash (vente €)${NC}"
     fi
     
     # Check if UPLANETNAME_G1 is low (needs Ğ1 donation campaign)
@@ -343,8 +589,12 @@ check_and_launch_campaigns() {
         echo -e "${GREEN}✅ UPLANETNAME_G1 suffisant${NC}"
     fi
     
-    # Update project status
-    if [[ "$need_zen_crowdfunding" == true || "$need_g1_campaign" == true ]]; then
+    # Update project status based on needs
+    if [[ "$need_assets_vote" == true ]]; then
+        jq '.status = "vote_pending"' "$project_file" > "${project_file}.tmp"
+        mv "${project_file}.tmp" "$project_file"
+        echo -e "${MAGENTA}📋 Statut: VOTE EN ATTENTE${NC}"
+    elif [[ "$need_crowdfunding" == true || "$need_g1_campaign" == true ]]; then
         jq '.status = "crowdfunding"' "$project_file" > "${project_file}.tmp"
         mv "${project_file}.tmp" "$project_file"
         
@@ -420,19 +670,48 @@ Envoyez vos Ğ1 vers le portefeuille UPLANETNAME_G1 avec le commentaire:
 ID: $project_id
 "
 
-    # Publish as kind 30023 (long-form content) with crowdfunding tags
-    if [[ -f "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr" ]]; then
-        source "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
+    # Get Bien identity for publishing FROM the Bien's account
+    local bien_nsec=$(get_bien_nsec "$project_id")
+    local bien_hex=$(jq -r '.bien_identity.hex // empty' "$project_file")
+    local bien_g1pub=$(jq -r '.bien_identity.g1pub // empty' "$project_file")
+    
+    if [[ -n "$bien_nsec" ]]; then
+        echo -e "${CYAN}📡 Publication depuis l'identité du Bien...${NC}"
         
+        # Publish as kind 30023 (long-form content) with crowdfunding tags
+        # The "p" tag references the Bien itself as the recipient of +ZEN reactions
         python3 "${MY_PATH}/nostr_send_note.py" \
-            --nsec "$NSEC" \
+            --nsec "$bien_nsec" \
             --kind 30023 \
             --content "$content" \
-            --tags "[[\"d\", \"crowdfunding-$project_id\"], [\"title\", \"🌳 Crowdfunding: $project_name\"], [\"t\", \"crowdfunding\"], [\"t\", \"UPlanet\"], [\"t\", \"commons\"], [\"t\", \"foret-jardin\"], [\"g\", \"$lat,$lon\"], [\"project-id\", \"$project_id\"]]" \
+            --tags "[[\"d\", \"crowdfunding-$project_id\"], [\"title\", \"🌳 Crowdfunding: $project_name\"], [\"t\", \"crowdfunding\"], [\"t\", \"UPlanet\"], [\"t\", \"commons\"], [\"t\", \"foret-jardin\"], [\"g\", \"$lat,$lon\"], [\"project-id\", \"$project_id\"], [\"i\", \"g1pub:$bien_g1pub\"]]" \
             2>/dev/null
         
         if [[ $? -eq 0 ]]; then
-            echo -e "${GREEN}✅ Campagne publiée sur Nostr !${NC}"
+            echo -e "${GREEN}✅ Campagne publiée sur Nostr depuis le Bien !${NC}"
+            echo -e "${CYAN}   Contributions +ZEN: tag [\"p\", \"$bien_hex\"]${NC}"
+            
+            # Update project with publication status
+            jq '.campaign_published = true | .campaign_published_at = "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"' \
+                "$project_file" > "${project_file}.tmp"
+            mv "${project_file}.tmp" "$project_file"
+        fi
+    else
+        # Fallback to captain's account if Bien keys not available
+        echo -e "${YELLOW}⚠️  Clés du Bien non disponibles, utilisation du compte capitaine...${NC}"
+        if [[ -f "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr" ]]; then
+            source "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
+            
+            python3 "${MY_PATH}/nostr_send_note.py" \
+                --nsec "$NSEC" \
+                --kind 30023 \
+                --content "$content" \
+                --tags "[[\"d\", \"crowdfunding-$project_id\"], [\"title\", \"🌳 Crowdfunding: $project_name\"], [\"t\", \"crowdfunding\"], [\"t\", \"UPlanet\"], [\"t\", \"commons\"], [\"t\", \"foret-jardin\"], [\"g\", \"$lat,$lon\"], [\"project-id\", \"$project_id\"]]" \
+                2>/dev/null
+            
+            if [[ $? -eq 0 ]]; then
+                echo -e "${GREEN}✅ Campagne publiée sur Nostr (compte capitaine)${NC}"
+            fi
         fi
     fi
 }
@@ -462,8 +741,39 @@ show_status() {
     echo -e "${CYAN}📊 Statut: $(echo "$project" | jq -r '.status')${NC}"
     echo ""
     
+    # Display Bien identity if available
+    local bien_npub=$(echo "$project" | jq -r '.bien_identity.npub // empty')
+    local bien_hex=$(echo "$project" | jq -r '.bien_identity.hex // empty')
+    local bien_g1pub=$(echo "$project" | jq -r '.bien_identity.g1pub // empty')
+    local bien_profile=$(echo "$project" | jq -r '.bien_profile_published // false')
+    
+    if [[ -n "$bien_npub" ]]; then
+        echo -e "${MAGENTA}🔐 IDENTITÉ DU BIEN (receveur de +ZEN):${NC}"
+        echo -e "   NOSTR npub: ${bien_npub}"
+        echo -e "   NOSTR hex:  ${bien_hex}"
+        echo -e "   Ğ1 wallet:  ${bien_g1pub}"
+        
+        # Check Bien wallet balance
+        local bien_balance=$(get_bien_balance "$project_id")
+        local bien_zen=$(echo "scale=2; ($bien_balance - 1) * 10" | bc -l 2>/dev/null || echo "0")
+        [[ $(echo "$bien_zen < 0" | bc -l) -eq 1 ]] && bien_zen="0"
+        echo -e "   💰 Solde:   ${bien_balance} Ğ1 (~${bien_zen} Ẑen)"
+        
+        if [[ "$bien_profile" == "true" ]]; then
+            echo -e "   📡 Profil:  ${GREEN}Publié sur NOSTR${NC}"
+        else
+            echo -e "   📡 Profil:  ${YELLOW}Non publié (./CROWDFUNDING.sh publish-profile $project_id)${NC}"
+        fi
+        echo ""
+    fi
+    
     echo -e "${YELLOW}👥 PROPRIÉTAIRES:${NC}"
-    echo "$project" | jq -r '.owners[] | "   • \(.email) [\(.mode)] - \(if .mode == "commons" then "\(.amount_zen) Ẑen (donation)" else "\(.amount_eur)€ (cash)" end) [\(.status)]"'
+    local owner_count=$(echo "$project" | jq '.owners | length')
+    if [[ "$owner_count" == "0" ]]; then
+        echo -e "   (aucun propriétaire ajouté)"
+    else
+        echo "$project" | jq -r '.owners[] | "   • \(.email) [\(.mode)] - \(if .mode == "commons" then "\(.amount_zen) Ẑen (donation)" else "\(.amount_eur)€ (cash)" end) [\(.status)]"'
+    fi
     echo ""
     
     echo -e "${YELLOW}💰 TOTAUX:${NC}"
@@ -586,6 +896,173 @@ EOF
     check_goals_reached "$project_id"
 }
 
+# Record a vote for ASSETS usage
+# Votes are sent as +Ẑen reactions (kind 7) with tag ["t", "vote-assets"]
+record_vote() {
+    local project_id="$1"
+    local voter_pubkey="$2"
+    local vote_amount="$3"  # Amount of Ẑen used to vote
+    
+    if [[ -z "$project_id" || -z "$voter_pubkey" || -z "$vote_amount" ]]; then
+        echo -e "${RED}❌ Usage: $0 vote PROJECT_ID VOTER_PUBKEY AMOUNT${NC}"
+        return 1
+    fi
+    
+    local project_dir="$CROWDFUNDING_DIR/$project_id"
+    local project_file="$project_dir/project.json"
+    
+    if [[ ! -f "$project_file" ]]; then
+        echo -e "${RED}❌ Projet non trouvé: $project_id${NC}"
+        return 1
+    fi
+    
+    # Check if vote is active
+    local vote_active=$(jq -r '.vote.assets_vote_active // false' "$project_file")
+    if [[ "$vote_active" != "true" ]]; then
+        echo -e "${YELLOW}⚠️  Pas de vote actif pour ce projet${NC}"
+        return 1
+    fi
+    
+    # Check if already voted
+    local already_voted=$(jq -r --arg pubkey "$voter_pubkey" '.vote.voters[] | select(. == $pubkey)' "$project_file")
+    if [[ -n "$already_voted" ]]; then
+        echo -e "${YELLOW}⚠️  Ce votant a déjà voté pour ce projet${NC}"
+        return 1
+    fi
+    
+    # Record vote
+    local temp_file=$(mktemp)
+    jq --arg pubkey "$voter_pubkey" --argjson amount "$vote_amount" '
+        .vote.voters += [$pubkey] |
+        .vote.voters_count = (.vote.voters | length) |
+        .vote.votes_zen_total += $amount
+    ' "$project_file" > "$temp_file"
+    mv "$temp_file" "$project_file"
+    
+    # Get updated vote status
+    local votes_total=$(jq -r '.vote.votes_zen_total' "$project_file")
+    local voters_count=$(jq -r '.vote.voters_count' "$project_file")
+    local threshold=$(jq -r '.vote.vote_threshold' "$project_file")
+    local quorum=$(jq -r '.vote.vote_quorum' "$project_file")
+    
+    echo -e "${GREEN}✅ Vote enregistré !${NC}"
+    echo -e "${CYAN}   Votant: ${voter_pubkey:0:8}...${NC}"
+    echo -e "${CYAN}   Poids du vote: $vote_amount Ẑen${NC}"
+    echo ""
+    echo -e "${MAGENTA}🗳️  Progression du vote:${NC}"
+    echo -e "   Votes collectés: $votes_total / $threshold Ẑen"
+    echo -e "   Nombre de votants: $voters_count / $quorum"
+    
+    # Check if vote threshold is reached
+    check_vote_result "$project_id"
+}
+
+# Check if vote has passed
+check_vote_result() {
+    local project_id="$1"
+    local project_dir="$CROWDFUNDING_DIR/$project_id"
+    local project_file="$project_dir/project.json"
+    
+    local votes_total=$(jq -r '.vote.votes_zen_total' "$project_file")
+    local voters_count=$(jq -r '.vote.voters_count' "$project_file")
+    local threshold=$(jq -r '.vote.vote_threshold' "$project_file")
+    local quorum=$(jq -r '.vote.vote_quorum' "$project_file")
+    
+    # Check both threshold AND quorum
+    if [[ $(echo "$votes_total >= $threshold" | bc -l) -eq 1 ]] && \
+       [[ $(echo "$voters_count >= $quorum" | bc -l) -eq 1 ]]; then
+        
+        echo ""
+        echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
+        echo -e "${GREEN}✅ VOTE APPROUVÉ !${NC}"
+        echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
+        echo -e "${CYAN}   Seuil atteint: $votes_total Ẑen (requis: $threshold)${NC}"
+        echo -e "${CYAN}   Quorum atteint: $voters_count votants (requis: $quorum)${NC}"
+        echo ""
+        
+        # Update vote status to approved
+        jq '.vote.vote_status = "approved" | .vote.approved_at = "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'" | .status = "funded"' "$project_file" > "${project_file}.tmp"
+        mv "${project_file}.tmp" "$project_file"
+        
+        echo -e "${GREEN}   → Les fonds ASSETS peuvent maintenant être utilisés${NC}"
+        echo -e "${YELLOW}   → Exécutez: $0 finalize $project_id${NC}"
+    else
+        local zen_needed=$((threshold - votes_total))
+        local voters_needed=$((quorum - voters_count))
+        [[ $zen_needed -lt 0 ]] && zen_needed=0
+        [[ $voters_needed -lt 0 ]] && voters_needed=0
+        
+        echo ""
+        echo -e "${YELLOW}⏳ Vote en cours...${NC}"
+        [[ $zen_needed -gt 0 ]] && echo -e "   Encore $zen_needed Ẑen de votes requis"
+        [[ $voters_needed -gt 0 ]] && echo -e "   Encore $voters_needed votant(s) requis"
+    fi
+}
+
+# Get vote status
+vote_status() {
+    local project_id="$1"
+    local project_dir="$CROWDFUNDING_DIR/$project_id"
+    local project_file="$project_dir/project.json"
+    
+    if [[ ! -f "$project_file" ]]; then
+        echo -e "${RED}❌ Projet non trouvé: $project_id${NC}"
+        return 1
+    fi
+    
+    local vote_active=$(jq -r '.vote.assets_vote_active // false' "$project_file")
+    
+    if [[ "$vote_active" != "true" ]]; then
+        echo -e "${CYAN}ℹ️  Pas de vote actif pour ce projet${NC}"
+        return 0
+    fi
+    
+    local assets_amount=$(jq -r '.vote.assets_amount_zen' "$project_file")
+    local votes_total=$(jq -r '.vote.votes_zen_total' "$project_file")
+    local voters_count=$(jq -r '.vote.voters_count' "$project_file")
+    local threshold=$(jq -r '.vote.vote_threshold' "$project_file")
+    local quorum=$(jq -r '.vote.vote_quorum' "$project_file")
+    local status=$(jq -r '.vote.vote_status' "$project_file")
+    local started_at=$(jq -r '.vote.vote_started_at' "$project_file")
+    
+    echo ""
+    echo -e "${MAGENTA}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${MAGENTA}🗳️  VOTE ASSETS - $project_id${NC}"
+    echo -e "${MAGENTA}═══════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "${CYAN}📋 Proposition:${NC}"
+    echo -e "   Utiliser $assets_amount Ẑen depuis le portefeuille ASSETS"
+    echo -e "   pour financer les rachats cash de ce projet."
+    echo ""
+    echo -e "${CYAN}📊 Progression:${NC}"
+    
+    local zen_pct=$(echo "scale=0; $votes_total * 100 / $threshold" | bc -l 2>/dev/null || echo "0")
+    local voter_pct=$(echo "scale=0; $voters_count * 100 / $quorum" | bc -l 2>/dev/null || echo "0")
+    
+    echo -e "   Ẑen votes: $votes_total / $threshold ($zen_pct%)"
+    draw_progress_bar "$votes_total" "$threshold"
+    echo -e "   Votants: $voters_count / $quorum ($voter_pct%)"
+    draw_progress_bar "$voters_count" "$quorum"
+    echo ""
+    
+    if [[ "$status" == "approved" ]]; then
+        echo -e "${GREEN}✅ STATUT: APPROUVÉ${NC}"
+    elif [[ "$status" == "rejected" ]]; then
+        echo -e "${RED}❌ STATUT: REJETÉ${NC}"
+    else
+        echo -e "${YELLOW}⏳ STATUT: EN COURS${NC}"
+        echo ""
+        echo -e "${CYAN}💡 Pour voter, envoyez une réaction Nostr:${NC}"
+        echo -e "   kind: 7"
+        echo -e "   content: \"+1\" (ou \"+N\" pour N Ẑen)"
+        echo -e "   tags: [[\"t\", \"vote-assets\"], [\"project-id\", \"$project_id\"]]"
+    fi
+    
+    echo ""
+    echo -e "${CYAN}📅 Vote démarré: $started_at${NC}"
+    echo ""
+}
+
 # Check if crowdfunding goals are reached
 check_goals_reached() {
     local project_id="$1"
@@ -627,6 +1104,18 @@ finalize_project() {
     fi
     
     local status=$(jq -r '.status' "$project_file")
+    
+    # Check for vote approval if ASSETS usage is required
+    local vote_active=$(jq -r '.vote.assets_vote_active // false' "$project_file")
+    local vote_status=$(jq -r '.vote.vote_status // "none"' "$project_file")
+    
+    if [[ "$vote_active" == "true" && "$vote_status" != "approved" ]]; then
+        echo -e "${RED}❌ VOTE NON APPROUVÉ !${NC}"
+        echo -e "${YELLOW}   L'utilisation des fonds ASSETS nécessite l'approbation des sociétaires.${NC}"
+        echo ""
+        vote_status "$project_id"
+        return 1
+    fi
     
     if [[ "$status" != "funded" ]]; then
         echo -e "${YELLOW}⚠️  Le projet n'est pas encore entièrement financé (statut: $status)${NC}"
@@ -842,29 +1331,111 @@ show_dashboard() {
     esac
 }
 
+# Publish Bien profile to NOSTR
+publish_bien_profile() {
+    local project_id="$1"
+    local project_dir="$CROWDFUNDING_DIR/$project_id"
+    local project_file="$project_dir/project.json"
+    
+    if [[ ! -f "$project_file" ]]; then
+        echo -e "${RED}❌ Projet non trouvé: $project_id${NC}"
+        return 1
+    fi
+    
+    local project_name=$(jq -r '.name' "$project_file")
+    local lat=$(jq -r '.location.latitude' "$project_file")
+    local lon=$(jq -r '.location.longitude' "$project_file")
+    local description=$(jq -r '.description' "$project_file")
+    
+    setup_bien_nostr_profile "$project_id" "$project_name" "$lat" "$lon" "$description"
+}
+
+# Regenerate Bien keys (for recovery or swarm sync)
+regenerate_bien_keys() {
+    local project_id="$1"
+    local project_dir="$CROWDFUNDING_DIR/$project_id"
+    local project_file="$project_dir/project.json"
+    
+    if [[ ! -f "$project_file" ]]; then
+        echo -e "${RED}❌ Projet non trouvé: $project_id${NC}"
+        return 1
+    fi
+    
+    local lat=$(jq -r '.location.latitude' "$project_file")
+    local lon=$(jq -r '.location.longitude' "$project_file")
+    
+    echo -e "${CYAN}🔄 Régénération des clés du Bien ${project_id}...${NC}"
+    
+    # Keys are deterministic, so regenerating will produce the same keys
+    local bien_keys_result=$(generate_bien_keys "$lat" "$lon" "$project_id" "$project_dir")
+    
+    if [[ -n "$bien_keys_result" ]]; then
+        IFS='|' read -r BIEN_NPUB BIEN_HEX BIEN_G1PUB <<< "$bien_keys_result"
+        
+        # Update project.json with regenerated keys
+        local temp_file=$(mktemp)
+        jq ".bien_identity = {
+            \"npub\": \"$BIEN_NPUB\",
+            \"hex\": \"$BIEN_HEX\",
+            \"g1pub\": \"$BIEN_G1PUB\",
+            \"derivation\": {
+                \"salt\": \"${UPLANETNAME}${lat}_${project_id}\",
+                \"pepper\": \"${UPLANETNAME}${lon}_${project_id}\"
+            },
+            \"regenerated_at\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+        }" "$project_file" > "$temp_file"
+        mv "$temp_file" "$project_file"
+        
+        echo -e "${GREEN}✅ Clés régénérées avec succès !${NC}"
+    else
+        echo -e "${RED}❌ Échec de la régénération${NC}"
+        return 1
+    fi
+}
+
 # Show help
 show_help() {
     echo ""
-    echo -e "${BLUE}CROWDFUNDING.sh - Système d'acquisition de Forêts Jardins${NC}"
+    echo -e "${BLUE}CROWDFUNDING.sh - Système de Crowdfunding des Communs${NC}"
     echo ""
     echo "Usage:"
     echo "  $0 create LAT LON \"PROJECT_NAME\" [DESCRIPTION]"
+    echo "  $0 publish-profile PROJECT_ID              # Publier le profil NOSTR du Bien"
+    echo "  $0 regenerate-keys PROJECT_ID              # Régénérer les clés du Bien"
     echo "  $0 add-owner PROJECT_ID EMAIL MODE AMOUNT [CURRENCY]"
     echo "  $0 status PROJECT_ID"
     echo "  $0 contribute PROJECT_ID CONTRIBUTOR_EMAIL AMOUNT CURRENCY"
+    echo "  $0 vote PROJECT_ID VOTER_PUBKEY AMOUNT     # Vote +Ẑen pour utilisation ASSETS"
+    echo "  $0 vote-status PROJECT_ID                  # Voir le statut du vote"
     echo "  $0 finalize PROJECT_ID"
     echo "  $0 list [--active|--completed|--all]"
     echo "  $0 dashboard"
     echo ""
+    echo -e "${MAGENTA}🔐 IDENTITÉ DU BIEN:${NC}"
+    echo "  Chaque projet crowdfunding possède sa propre identité NOSTR et wallet Ğ1."
+    echo "  Les clés sont dérivées de: salt=\${UPLANETNAME}\${LAT}_\${PROJECT_ID}"
+    echo "                            pepper=\${UPLANETNAME}\${LON}_\${PROJECT_ID}"
+    echo "  Le Bien peut recevoir des +ZEN via les réactions NOSTR (kind 7)."
+    echo ""
     echo "Modes de propriétaires:"
     echo "  commons  - Donation aux communs (Ẑen non-convertible €)"
-    echo "  cash     - Vente en € (nécessite liquidité ASSETS ou crowdfunding)"
+    echo "  cash     - Vente en € (nécessite vote pour utiliser ASSETS)"
     echo ""
-    echo "Exemple - Forêt avec 2 propriétaires:"
-    echo "  $0 create 43.60 1.44 \"Forêt Enchantée\" \"Projet forêt jardin collaborative\""
-    echo "  $0 add-owner CF-20250120-XXXX alice@example.com commons 500"
-    echo "  $0 add-owner CF-20250120-XXXX bob@example.com cash 1000"
-    echo "  $0 status CF-20250120-XXXX"
+    echo -e "${MAGENTA}Système de vote ASSETS:${NC}"
+    echo "  Quand un projet nécessite des fonds ASSETS, un vote est lancé."
+    echo "  Les sociétaires votent en envoyant +Ẑen (réaction kind 7 Nostr)."
+    echo "  Le vote passe si: seuil Ẑen atteint ET quorum de votants atteint."
+    echo ""
+    echo "Exemple - Bien commun avec 2 propriétaires:"
+    echo "  $0 create 43.60 1.44 \"Forêt Enchantée\" \"Projet de bien commun collaboratif\""
+    echo "  # Le Bien reçoit automatiquement une identité NOSTR et un wallet Ğ1"
+    echo "  $0 publish-profile CF-20250122-XXXX         # Publie le profil sur NOSTR"
+    echo "  $0 add-owner CF-20250122-XXXX alice@example.com commons 500"
+    echo "  $0 add-owner CF-20250122-XXXX bob@example.com cash 1000  # Déclenche vote"
+    echo "  $0 vote-status CF-20250122-XXXX"
+    echo "  # Contributions reçues via +ZEN sur le npub du Bien"
+    echo "  # Après vote approuvé:"
+    echo "  $0 finalize CF-20250122-XXXX"
     echo ""
 }
 
@@ -878,6 +1449,12 @@ case "$1" in
     "create")
         create_project "$2" "$3" "$4" "$5"
         ;;
+    "publish-profile")
+        publish_bien_profile "$2"
+        ;;
+    "regenerate-keys")
+        regenerate_bien_keys "$2"
+        ;;
     "add-owner")
         add_owner "$2" "$3" "$4" "$5" "$6"
         ;;
@@ -887,6 +1464,12 @@ case "$1" in
     "contribute")
         record_contribution "$2" "$3" "$4" "$5"
         ;;
+    "vote")
+        record_vote "$2" "$3" "$4"
+        ;;
+    "vote-status")
+        vote_status "$2"
+        ;;
     "finalize")
         finalize_project "$2"
         ;;
@@ -895,6 +1478,17 @@ case "$1" in
         ;;
     "dashboard")
         show_dashboard
+        ;;
+    "bien-balance")
+        # Quick command to check Bien wallet balance
+        if [[ -n "$2" ]]; then
+            balance=$(get_bien_balance "$2")
+            zen=$(echo "scale=2; ($balance - 1) * 10" | bc -l 2>/dev/null || echo "0")
+            [[ $(echo "$zen < 0" | bc -l) -eq 1 ]] && zen="0"
+            echo -e "${CYAN}💰 Solde du Bien $2: ${balance} Ğ1 (~${zen} Ẑen)${NC}"
+        else
+            echo -e "${RED}❌ Usage: $0 bien-balance PROJECT_ID${NC}"
+        fi
         ;;
     "help"|"-h"|"--help")
         show_help

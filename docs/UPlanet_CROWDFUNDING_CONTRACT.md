@@ -1,16 +1,16 @@
 # UPlanet Crowdfunding Contract
 
-**A Decentralized Commons Acquisition Protocol for Forest Gardens**
+**A Decentralized Commons Acquisition Protocol**
 
 ---
 
 ## Abstract
 
-This document specifies the UPlanet Crowdfunding Contract, a protocol for collaborative acquisition of shared natural spaces (forest gardens, permaculture sites, etc.) using a dual-mode ownership transfer system. The protocol distinguishes between **Commons Donations** (non-convertible Ẑen → CAPITAL wallet) and **Cash Sales** (€ → from ASSETS wallet or crowdfunding). Metadata publication occurs via the NOSTR protocol, enabling transparent tracking of campaigns and contributions through kind 7 reactions.
+This document specifies the UPlanet Crowdfunding Contract, a protocol for collaborative acquisition of shared assets (land, buildings, equipment, digital infrastructure, etc.) using a dual-mode ownership transfer system. The protocol distinguishes between **Commons Donations** (non-convertible Ẑen → CAPITAL wallet) and **Cash Sales** (€ → from ASSETS wallet or crowdfunding). Metadata publication occurs via the NOSTR protocol, enabling transparent tracking of campaigns and contributions through kind 7 reactions.
 
 **Protocol Version**: 1.0.0  
-**Document Version**: 1.0  
-**Keywords**: Crowdfunding, Commons, Forest Garden, Ẑen, Ğ1, Nostr, IPFS, Dual-Mode Acquisition, Cooperative Wallets
+**Document Version**: 1.1  
+**Keywords**: Crowdfunding, Commons, Shared Assets, Ẑen, Ğ1, Nostr, IPFS, Dual-Mode Acquisition, Cooperative Wallets
 
 ---
 
@@ -40,7 +40,7 @@ Traditional property acquisition presents several challenges for collaborative c
 - **Exit difficulty**: Owners cannot easily transfer their share
 - **Transparency**: Funding flows are opaque
 
-The UPlanet Crowdfunding Contract addresses these limitations by:
+The **Crowdfunding des Communs** addresses these limitations by:
 
 - **Dual-mode acquisition**: Flexible exit strategies (donation vs. cash sale)
 - **Decentralized funding**: Crowdfunding via Ẑen (convertible €) and Ğ1 donations
@@ -289,36 +289,89 @@ The UPlanet crowdfunding system relies on three predefined cooperative wallets:
 
 | State | Description | Transitions |
 |-------|-------------|-------------|
-| `draft` | Project created, no owners yet | → crowdfunding (add-owner) |
+| `draft` | Project created, no owners yet | → vote_pending or crowdfunding (add-owner) |
+| `vote_pending` | ASSETS usage requires member vote | → funded (vote approved) |
 | `crowdfunding` | Active campaign (insufficient ASSETS) | → funded (goals reached) |
 | `funded` | All goals reached, ready for finalization | → completed (finalize) |
 | `completed` | All transfers executed | Terminal state |
 
-### 5.3 Automatic Campaign Launch
+### 5.3 Campaign Launch and Vote System
 
-When an owner is added with `mode=cash`, the system automatically:
+When an owner is added with `mode=cash`, the system follows this decision tree:
 
 1. **Check ASSETS balance**:
    ```bash
    assets_balance=$(get_assets_balance)
    cash_eur_needed=$(jq -r '.totals.cash_eur' "$project_file")
+   g1_for_cash=$(zen_to_g1 "$cash_eur_needed")
    ```
 
-2. **Calculate shortfall**:
+2. **If ASSETS sufficient → Launch VOTE**:
    ```bash
-   g1_for_cash=$(zen_to_g1 "$cash_eur_needed")
-   if (( g1_for_cash > assets_balance )); then
-       zen_shortfall=$((g1_for_cash - assets_balance) * 10)
-       # Launch Ẑen convertible campaign
+   if (( g1_for_cash <= assets_balance )); then
+       # ASSETS could cover, but requires member vote first
+       zen_from_assets=$((g1_for_cash * 10))
+       jq ".vote = {
+           \"assets_vote_active\": true,
+           \"assets_amount_zen\": $zen_from_assets,
+           \"vote_threshold\": $ASSETS_VOTE_THRESHOLD,  # Default: 100 Ẑen
+           \"vote_quorum\": $ASSETS_VOTE_QUORUM,        # Default: 10 voters
+           \"vote_status\": \"pending\"
+       }" "$project_file"
+       # Status: vote_pending
    fi
    ```
 
-3. **Check UPLANETNAME_G1 threshold**:
+3. **If ASSETS insufficient → Launch Crowdfunding**:
+   ```bash
+   if (( g1_for_cash > assets_balance )); then
+       zen_shortfall=$((g1_for_cash - assets_balance) * 10)
+       # Launch Ẑen convertible campaign (no vote needed)
+   fi
+   ```
+
+4. **Check UPLANETNAME_G1 threshold**:
    ```bash
    if (( g1_balance < G1_LOW_THRESHOLD )); then
        # Attach Ğ1 donation campaign
    fi
    ```
+
+### 5.4 Vote Mechanism for ASSETS Usage
+
+The decision to use cooperative ASSETS funds **requires member approval** via Nostr reactions.
+
+**Vote Thresholds**:
+| Threshold | Default | Description |
+|-----------|---------|-------------|
+| `ASSETS_VOTE_THRESHOLD` | 100 Ẑen | Minimum total Ẑen votes required |
+| `ASSETS_VOTE_QUORUM` | 10 | Minimum number of distinct voters |
+
+**Vote Validation**: Both conditions must be met for approval.
+
+**Vote Flow**:
+```
+┌─────────────┐     ┌──────────────┐     ┌─────────────┐
+│   Cash      │────>│  ASSETS      │────>│   VOTE      │
+│   Owner     │     │  Sufficient? │     │   LAUNCHED  │
+│   Added     │     │              │     │             │
+└─────────────┘     └──────────────┘     └─────────────┘
+                           │                    │
+                           │ NO                 │ Members vote +Ẑen
+                           ▼                    ▼
+                    ┌─────────────┐     ┌─────────────┐
+                    │ CROWDFUND   │     │  Threshold  │
+                    │ Campaign    │     │  + Quorum?  │
+                    └─────────────┘     └──────┬──────┘
+                                               │
+                                        YES    │    NO
+                                        ┌──────┴──────┐
+                                        ▼             ▼
+                                   ┌─────────┐  ┌──────────┐
+                                   │ APPROVED│  │ PENDING  │
+                                   │→ funded │  │(wait)    │
+                                   └─────────┘  └──────────┘
+```
 
 ---
 
@@ -336,7 +389,7 @@ Long-form markdown document describing the crowdfunding campaign.
   ["t", "crowdfunding"],
   ["t", "UPlanet"],
   ["t", "commons"],
-  ["t", "foret-jardin"],
+  ["t", "communs"],
   ["g", "{LAT},{LON}"],
   ["project-id", "{PROJECT_ID}"]
 ]
@@ -374,7 +427,7 @@ Envoyez vos Ğ1 vers le portefeuille UPLANETNAME_G1 avec le commentaire:
 `CF:{PROJECT_ID}:G1`
 
 ---
-*Projet UPlanet ẐEN - Forêt Jardin Collaborative*
+*Projet UPlanet ẐEN - Crowdfunding des Communs*
 ID: {PROJECT_ID}
 ```
 
@@ -389,7 +442,7 @@ Structured JSON event for machine parsing by `crowdfunding.html`.
   ["title", "{PROJECT_NAME}"],
   ["t", "crowdfunding"],
   ["t", "UPlanet"],
-  ["t", "foret-jardin"],
+  ["t", "communs"],
   ["g", "{LAT},{LON}"],
   ["e", "{DOCUMENT_EVENT_ID}", "", "document"],
   ["p", "{UMAP_PUBKEY}", "", "umap"],
@@ -402,7 +455,7 @@ Structured JSON event for machine parsing by `crowdfunding.html`.
 ```json
 {
   "id": "CF-20250120-XXXX",
-  "name": "Forêt Enchantée",
+  "name": "Atelier Partagé",
   "location": {
     "latitude": 43.60,
     "longitude": 1.44
@@ -455,15 +508,18 @@ Structured JSON event for machine parsing by `crowdfunding.html`.
   "content": "+50",
   "tags": [
     ["e", "{PROJECT_EVENT_ID}"],
-    ["p", "{UMAP_PUBKEY}"],
+    ["p", "{BIEN_HEX_PUBKEY}"],
     ["t", "crowdfunding"],
     ["t", "UPlanet"],
     ["project-id", "{PROJECT_ID}"],
     ["target", "ZEN_CONVERTIBLE"],
+    ["i", "g1pub:{BIEN_G1PUB}"],
     ["k", "30904"]
   ]
 }
 ```
+
+**Note**: The `["p", BIEN_HEX_PUBKEY]` tag now targets the **Bien's own NOSTR identity** (not the UMAP). This ensures contributions go directly to the project's dedicated wallet. The `["i", "g1pub:..."]` tag provides blockchain traceability.
 
 **Content Interpretation**:
 | Content | Meaning |
@@ -471,21 +527,113 @@ Structured JSON event for machine parsing by `crowdfunding.html`.
 | `+` | Send 1 Ẑen |
 | `+{N}` | Send N Ẑen (e.g., `+50` = 50 Ẑen) |
 
-**Processing by 7.sh**:
+**Processing by 7.sh (relay.writePolicy.plugin/filter/)**:
 ```bash
-# Extract amount from content
-AMOUNT=$(echo "$CONTENT" | sed 's/+//')
-[[ -z "$AMOUNT" ]] && AMOUNT=1
+#!/bin/bash
+# 7.sh - Kind 7 Reaction Filter for Crowdfunding
+# Part of NIP-101 relay.writePolicy.plugin
 
-# Check for crowdfunding tag
+# Extract event data (passed by strfry filter)
+EVENT_JSON="$1"
+CONTENT=$(echo "$EVENT_JSON" | jq -r '.content')
+TAGS=$(echo "$EVENT_JSON" | jq '.tags')
+SENDER_PUBKEY=$(echo "$EVENT_JSON" | jq -r '.pubkey')
+
+# Extract amount from content (+50 → 50, + → 1)
+AMOUNT=$(echo "$CONTENT" | sed 's/+//')
+[[ -z "$AMOUNT" || "$AMOUNT" == "$CONTENT" ]] && AMOUNT=1
+
+# Check for crowdfunding contribution tag
 IS_CROWDFUNDING=$(echo "$TAGS" | jq 'any(.[0] == "t" and .[1] == "crowdfunding")')
 
 if [[ "$IS_CROWDFUNDING" == "true" ]]; then
+    # Extract project info
     PROJECT_ID=$(echo "$TAGS" | jq -r '.[] | select(.[0] == "project-id") | .[1]')
-    # Route to crowdfunding contribution handler
-    CROWDFUNDING.sh contribute "$PROJECT_ID" "$SENDER_EMAIL" "$AMOUNT" "ZEN"
+    BIEN_HEX=$(echo "$TAGS" | jq -r '.[] | select(.[0] == "p") | .[1]')
+    
+    # Get sender email from DID (kind 30800)
+    SENDER_EMAIL=$(~/.zen/Astroport.ONE/tools/nostr_did_client.py get "$SENDER_PUBKEY" | jq -r '.email // empty')
+    
+    if [[ -n "$PROJECT_ID" && -n "$SENDER_EMAIL" ]]; then
+        # 1. Validate sender has sufficient ZEN balance
+        SENDER_G1PUB=$(~/.zen/Astroport.ONE/tools/nostr_did_client.py get "$SENDER_PUBKEY" | jq -r '.g1pub // empty')
+        SENDER_BALANCE=$(~/.zen/Astroport.ONE/tools/G1check.sh "${SENDER_G1PUB}:ZEN" 2>/dev/null)
+        
+        if [[ $(echo "$SENDER_BALANCE >= $AMOUNT" | bc -l) -eq 1 ]]; then
+            # 2. Get Bien wallet from project
+            PROJECT_DIR="$HOME/.zen/game/crowdfunding/$PROJECT_ID"
+            if [[ -f "$PROJECT_DIR/bien.pubkeys" ]]; then
+                source "$PROJECT_DIR/bien.pubkeys"
+                
+                # 3. Execute transfer: Sender → Bien wallet
+                ~/.zen/Astroport.ONE/tools/PAYforSURE.sh \
+                    "$SENDER_G1PUB" \
+                    "$BIEN_G1PUB" \
+                    "$AMOUNT" \
+                    "CF:$PROJECT_ID:$SENDER_EMAIL"
+                
+                # 4. Record contribution
+                ~/.zen/Astroport.ONE/tools/CROWDFUNDING.sh contribute \
+                    "$PROJECT_ID" "$SENDER_EMAIL" "$AMOUNT" "ZEN"
+            fi
+        fi
+    fi
 fi
 ```
+
+### 6.4 Kind 7: Vote Reaction (ASSETS Usage)
+
+Members vote on ASSETS usage via Nostr kind 7 reactions with the `vote-assets` tag.
+
+**Event Structure**:
+```json
+{
+  "kind": 7,
+  "content": "+5",
+  "tags": [
+    ["e", "{PROJECT_EVENT_ID}"],
+    ["p", "{BIEN_HEX_PUBKEY}"],
+    ["t", "vote-assets"],
+    ["t", "UPlanet"],
+    ["project-id", "{PROJECT_ID}"],
+    ["vote-type", "ASSETS_USAGE"],
+    ["k", "30904"]
+  ]
+}
+```
+
+**Note**: The `["p", BIEN_HEX_PUBKEY]` tag targets the Bien's NOSTR identity for vote routing.
+
+**Vote Weight**:
+| Content | Vote Weight |
+|---------|-------------|
+| `+` | 1 Ẑen vote |
+| `+{N}` | N Ẑen votes (e.g., `+5` = 5 Ẑen) |
+
+**Processing (in 7.sh)**:
+```bash
+# Check for vote-assets tag
+IS_VOTE=$(echo "$TAGS" | jq 'any(.[0] == "t" and .[1] == "vote-assets")')
+
+if [[ "$IS_VOTE" == "true" ]]; then
+    PROJECT_ID=$(echo "$TAGS" | jq -r '.[] | select(.[0] == "project-id") | .[1]')
+    VOTER_PUBKEY="$SENDER_PUBKEY"
+    
+    # Validate voter is a SOCIÉTAIRE (has ZEN balance)
+    VOTER_BALANCE=$(~/.zen/Astroport.ONE/tools/G1check.sh "${VOTER_G1PUB}:ZEN" 2>/dev/null)
+    
+    if [[ $(echo "$VOTER_BALANCE >= $AMOUNT" | bc -l) -eq 1 ]]; then
+        # Route to vote handler (deducts from voter balance)
+        ~/.zen/Astroport.ONE/tools/CROWDFUNDING.sh vote \
+            "$PROJECT_ID" "$VOTER_PUBKEY" "$AMOUNT"
+    fi
+fi
+```
+
+**Validation Rules**:
+- Each pubkey can only vote once per project
+- Vote amount is deducted from voter's balance
+- Both threshold AND quorum must be reached for approval
 
 ---
 
@@ -690,13 +838,13 @@ coop_load_env_vars
 
 ## 10. Use Cases and Examples
 
-### 10.1 Example: Forest Garden with Mixed Owners
+### 10.1 Example: Commons with Mixed Owners
 
-**Scenario**: A forest garden with 2 owners, different intentions.
+**Scenario**: A shared asset with 2 owners, different intentions.
 
 ```bash
 # 1. Create project
-./CROWDFUNDING.sh create 43.60 1.44 "Forêt Enchantée" "Projet forêt jardin collaborative"
+./CROWDFUNDING.sh create 43.60 1.44 "Atelier Partagé" "Projet de bien commun collaboratif"
 # → CF-20250120-A1B2
 
 # 2. Add commons owner (Alice donates to commons)
@@ -706,7 +854,17 @@ coop_load_env_vars
 # 3. Add cash owner (Bob wants € payment)
 ./CROWDFUNDING.sh add-owner CF-20250120-A1B2 bob@example.com cash 1000
 # → Checks ASSETS balance
-# → If insufficient: launches Ẑen convertible campaign
+# → If ASSETS sufficient: launches VOTE (status: vote_pending)
+# → If ASSETS insufficient: launches Ẑen convertible campaign
+
+# 4. Check vote status (if vote was launched)
+./CROWDFUNDING.sh vote-status CF-20250120-A1B2
+# → Shows vote progress: X/100 Ẑen, Y/10 voters
+
+# 5. Members vote (via Nostr or CLI)
+./CROWDFUNDING.sh vote CF-20250120-A1B2 PUBKEY1 5   # Member votes +5 Ẑen
+./CROWDFUNDING.sh vote CF-20250120-A1B2 PUBKEY2 10  # Member votes +10 Ẑen
+# ... more votes until threshold (100 Ẑen) and quorum (10 voters) reached
 
 # 4. Check status
 ./CROWDFUNDING.sh status CF-20250120-A1B2
@@ -767,7 +925,9 @@ coop_load_env_vars
 | `add-owner ID EMAIL MODE AMT` | Add property owner |
 | `status ID` | Show project status |
 | `contribute ID EMAIL AMT CUR` | Record contribution |
-| `finalize ID` | Execute transfers |
+| `vote ID PUBKEY AMT` | Vote +Ẑen for ASSETS usage |
+| `vote-status ID` | Show vote progress |
+| `finalize ID` | Execute transfers (requires vote approval) |
 | `list [--active\|--completed]` | List projects |
 | `dashboard` | Interactive dashboard |
 
