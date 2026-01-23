@@ -132,6 +132,15 @@ BIEN_HEX=$BIEN_HEX
 BIEN_G1PUB=$BIEN_G1PUB
 EOF
     
+    # Register Bien HEX in amisOfAmis for payment authorization
+    local AMISOFAMIS_FILE="${HOME}/.zen/strfry/amisOfAmis.txt"
+    mkdir -p "$(dirname "$AMISOFAMIS_FILE")"
+    if ! grep -q "^$BIEN_HEX$" "$AMISOFAMIS_FILE" 2>/dev/null; then
+        echo "# Crowdfunding Bien: ${project_id}" >> "$AMISOFAMIS_FILE"
+        echo "$BIEN_HEX" >> "$AMISOFAMIS_FILE"
+        echo -e "${CYAN}🔐 Bien HEX ajouté à amisOfAmis pour autorisation des paiements${NC}"
+    fi
+    
     echo -e "${GREEN}✅ Identité du Bien créée !${NC}"
     echo -e "   NOSTR npub: ${BIEN_NPUB:0:20}..."
     echo -e "   NOSTR hex:  ${BIEN_HEX:0:16}..."
