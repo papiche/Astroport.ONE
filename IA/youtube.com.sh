@@ -1070,9 +1070,13 @@ sync_youtube_likes() {
         log_debug "Cookie invalidation detected for $player - cookies need to be re-exported"
         echo "❌ COOKIE EXPIRED: Please re-export YouTube cookies from a PRIVATE/INCOGNITO window" >&2
         echo "💡 Instructions: Open private window → Login to YouTube → Export cookies → Close private window" >&2
+        # Envoyer une notification d'erreur pour cookie expiré
+        send_error_notification "$player" "cookie_expired" ""
         return 2
     elif [[ $get_videos_exit_code -ne 0 || -z "$liked_videos" ]]; then
         log_debug "No liked videos found or failed to fetch for $player"
+        # Envoyer une notification d'erreur pour échec de synchronisation
+        send_error_notification "$player" "sync_failed" "Failed to fetch liked videos"
         return 1
     fi
     
@@ -1162,6 +1166,11 @@ sync_youtube_likes() {
         send_sync_notification "$player" "$success_count" "$failed_count" "$skipped_count"
     fi
     
+    # Envoyer une notification d'erreur si des échecs ont eu lieu
+    if [[ $failed_count -gt 0 ]]; then
+        send_error_notification "$player" "download_failures" "$failed_count" "$success_count"
+    fi
+    
     return 0
 }
 
@@ -1227,6 +1236,112 @@ send_sync_notification() {
     fi
 }
 
+# Fonction d'envoi de notification d'erreur par email
+send_error_notification() {
+    local player="$1"
+    local error_type="$2"
+    local error_details="$3"
+    local success_count="${4:-0}"
+    
+    log_debug "Sending error notification to $player: type=$error_type, details=$error_details"
+    
+    # Déterminer le message d'erreur selon le type
+    local error_title=""
+    local error_message=""
+    local error_instructions=""
+    
+    case "$error_type" in
+        "cookie_expired")
+            error_title="⚠️ Cookie YouTube Expiré"
+            error_message="Vos cookies YouTube ne sont plus valides et doivent être réexportés."
+            error_instructions="<p><strong>💡 Instructions pour réexporter vos cookies :</strong></p>
+            <ol>
+                <li>Ouvrez une fenêtre de navigation <strong>PRIVÉE/INCOGNITO</strong></li>
+                <li>Connectez-vous à YouTube dans cette fenêtre</li>
+                <li>Exportez vos cookies (extension de navigateur ou outil d'export)</li>
+                <li>Fermez la fenêtre privée</li>
+                <li>Uploadez les nouveaux cookies sur <a href=\"$uSPOT/cookie\" target=\"_blank\">la page cookie</a></li>
+            </ol>
+            <p><strong>⚠️ Important :</strong> Les cookies doivent être exportés depuis une fenêtre privée pour éviter les conflits avec votre session normale.</p>"
+            ;;
+        "download_failures")
+            error_title="⚠️ Échecs de Téléchargement"
+            error_message="Certaines vidéos n'ont pas pu être téléchargées lors de la synchronisation."
+            error_instructions="<p><strong>Détails :</strong></p>
+            <ul>
+                <li><strong>Échecs :</strong> $error_details</li>
+                <li><strong>Succès :</strong> $success_count</li>
+            </ul>
+            <p>Les vidéos qui ont échoué seront réessayées lors de la prochaine synchronisation automatique.</p>
+            <p>Si le problème persiste, vérifiez :</p>
+            <ul>
+                <li>Votre connexion Internet</li>
+                <li>L'espace disque disponible dans votre uDRIVE</li>
+                <li>Les logs dans <code>~/.zen/tmp/IA.log</code></li>
+            </ul>"
+            ;;
+        "sync_failed")
+            error_title="⚠️ Échec de Synchronisation"
+            error_message="La synchronisation YouTube a échoué."
+            error_instructions="<p>La synchronisation n'a pas pu récupérer vos vidéos likées.</p>
+            <p><strong>Vérifications à effectuer :</strong></p>
+            <ul>
+                <li>Vos cookies YouTube sont-ils valides ? (<a href=\"$uSPOT/cookie\" target=\"_blank\">Vérifier</a>)</li>
+                <li>Votre connexion Internet fonctionne-t-elle ?</li>
+                <li>YouTube est-il accessible ?</li>
+            </ul>
+            <p>La synchronisation sera réessayée automatiquement lors du prochain cycle.</p>"
+            ;;
+        "disk_space")
+            error_title="⚠️ Espace Disque Insuffisant"
+            error_message="Il n'y a pas assez d'espace disque pour télécharger de nouvelles vidéos."
+            error_instructions="<p><strong>Espace disponible :</strong> $error_details</p>
+            <p><strong>Espace requis :</strong> Au moins 1 GB</p>
+            <p><strong>Actions recommandées :</strong></p>
+            <ul>
+                <li>Libérez de l'espace disque sur votre système</li>
+                <li>Supprimez d'anciennes vidéos de votre uDRIVE si nécessaire</li>
+                <li>Vérifiez l'espace disponible : <code>df -h ~/.zen/game/nostr/${player}/APP/uDRIVE</code></li>
+            </ul>"
+            ;;
+        *)
+            error_title="⚠️ Erreur de Synchronisation"
+            error_message="Une erreur s'est produite lors de la synchronisation YouTube."
+            error_instructions="<p><strong>Détails :</strong> $error_details</p>
+            <p>Vérifiez les logs dans <code>~/.zen/tmp/IA.log</code> pour plus d'informations.</p>"
+            ;;
+    esac
+    
+    # Chemin vers le template HTML
+    local template_file="${MY_PATH}/../templates/NOSTR/cookie.youtube.alert.html"
+    
+    # Utiliser le template et remplacer les placeholders avec sed
+    local temp_email_file="$HOME/.zen/tmp/youtube_error_email_$(date +%Y%m%d_%H%M%S).html"
+    local current_date=$(date '+%d/%m/%Y à %H:%M')
+    
+    # Copier le template et remplacer les placeholders
+    sed -e "s|_ERROR_TITLE_|$error_title|g" \
+        -e "s|_ERROR_MESSAGE_|$error_message|g" \
+        -e "s|_ERROR_INSTRUCTIONS_|$error_instructions|g" \
+        -e "s|_DATE_|$current_date|g" \
+        -e "s|_uSPOT_|$uSPOT|g" \
+        "$template_file" > "$temp_email_file"
+    
+    log_debug "Template loaded from: $template_file"
+    
+    # Envoyer l'email via mailjet avec durée éphémère de 24h
+    ${MY_PATH}/../tools/mailjet.sh --expire 24h "${player}" "$temp_email_file" "$error_title" 2>/dev/null
+    
+    # Nettoyer le fichier temporaire
+    rm -f "$temp_email_file"
+    
+    if [[ $? -eq 0 ]]; then
+        log_debug "Error notification sent successfully to $player"
+    else
+        log_debug "Failed to send error notification to $player"
+    fi
+}
+
 # Fonction de nettoyage des anciens processus
 cleanup_old_sync_processes() {
     local player="$1"
@@ -1281,6 +1396,14 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Checking disk space for $UDRIVE_PATH" >&2
 if ! check_disk_space "$UDRIVE_PATH"; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: Insufficient disk space, skipping YouTube sync for $PLAYER" >&2
     log_debug "Insufficient disk space, skipping YouTube sync for $PLAYER"
+    # Récupérer l'espace disponible pour la notification
+    local available_space=$(df "$UDRIVE_PATH" 2>/dev/null | awk 'NR==2 {print $4}' || echo "0")
+    local available_mb="unknown"
+    if [[ "$available_space" =~ ^[0-9]+$ ]]; then
+        available_mb=$((available_space / 1024))
+    fi
+    # Envoyer une notification d'erreur pour espace disque insuffisant
+    send_error_notification "$PLAYER" "disk_space" "${available_mb}MB"
     exit 1
 fi
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Disk space check passed" >&2
@@ -1298,9 +1421,11 @@ elif [[ $sync_exit_code -eq 2 ]]; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] COOKIE_EXPIRED: YouTube cookies are no longer valid for $PLAYER" >&2
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Please visit /cookie page to re-upload fresh cookies from a private window" >&2
     log_debug "YouTube cookies expired for $PLAYER - need re-export from private window"
+    # La notification d'erreur pour cookie expiré est déjà envoyée dans sync_youtube_likes
     exit 2
 else
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: YouTube likes sync failed for $PLAYER" >&2
     log_debug "YouTube likes sync failed for $PLAYER"
+    # La notification d'erreur pour sync_failed est déjà envoyée dans sync_youtube_likes
     exit 1
 fi
