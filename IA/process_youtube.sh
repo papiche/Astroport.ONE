@@ -289,7 +289,7 @@ log_debug "Extracting metadata with yt-dlp..."
 # Run yt-dlp with --quiet to suppress warnings, but keep errors
 # Use --no-warnings to suppress warnings, but keep errors in stderr
 # Single video processing only (playlists handled by ajouter_media.sh)
-metadata_output=$(yt-dlp --cookies "$cookie_file" --no-warnings --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
+metadata_output=$(yt-dlp --js-runtimes node --cookies "$cookie_file" --no-warnings --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
 metadata_exit_code=$?
 log_debug "yt-dlp metadata extraction exit code: $metadata_exit_code"
 
@@ -425,7 +425,7 @@ log_debug "Starting download with cookies"
 case "$FORMAT" in
     mp3)
         log_debug "Running yt-dlp for MP3 download..."
-        download_output=$(yt-dlp --cookies "$cookie_file" -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+        download_output=$(yt-dlp --js-runtimes node --cookies "$cookie_file" -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
             --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
             -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" 2>&1)
         download_exit_code=$?
@@ -438,7 +438,7 @@ case "$FORMAT" in
         # Use format filter to select appropriate resolution based on duration
         # The format filter ensures we download at the right resolution to stay under size limit
         # If recoding is needed, yt-dlp will handle it with default settings
-        download_output=$(yt-dlp --cookies "$cookie_file" -f "$VIDEO_FORMAT_FILTER" \
+        download_output=$(yt-dlp --js-runtimes node --cookies "$cookie_file" -f "$VIDEO_FORMAT_FILTER" \
             --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
             --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
             -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)

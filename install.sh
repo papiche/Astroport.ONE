@@ -207,6 +207,10 @@ ${MY_PATH}/install.lazydocker.sh
 echo "##INSTALL yt-dlp & SYMLINK youtube-dl ##########################"
 ~/.zen/Astroport.ONE/youtube-dl.sh
 
+###############################################################
+echo "## CONFIGURE yt-dlp JavaScript runtime (Node + EJS) ############"
+~/.zen/Astroport.ONE/tools/install_yt_dlp_ejs_node.sh
+
 echo "=== SETUP ASTROPORT"
 ~/.zen/Astroport.ONE/setup.sh
 
