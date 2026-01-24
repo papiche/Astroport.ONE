@@ -9,19 +9,25 @@ Le système UPlanet IA utilise une architecture de gestion des connexions en plu
 #### **Ollama (Port 11434)**
 - **Script**: `ollama.me.sh`
 - **Vérification**: `netstat -tulnp | grep 11434`
-- **Tunnel SSH**: `scorpio.copylaradio.com:2122`
+- **Test API**: `curl http://localhost:11434/api/tags`
+- **Tunnel SSH**: `scorpio.copylaradio.com` (IPv4:2122, IPv6:22)
+- **Fallback**: IPFS P2P swarm discovery
 - **Usage**: Réponses IA conversationnelles, analyse d'images
 
 #### **ComfyUI (Port 8188)**
 - **Script**: `comfyui.me.sh`
 - **Vérification**: `netstat -tulnp | grep 8188`
-- **Tunnel SSH**: `scorpio.copylaradio.com:2122`
+- **Test API**: `curl http://localhost:8188/system_stats`
+- **Tunnel SSH**: `scorpio.copylaradio.com` (IPv4:2122, IPv6:22)
+- **Fallback**: IPFS P2P swarm discovery
 - **Usage**: Génération d'images, vidéos, musique
 
 #### **Perplexica (Port 3001)**
 - **Script**: `perplexica.me.sh`
 - **Vérification**: `netstat -tulnp | grep 3001`
-- **Test API**: `curl http://localhost:3001/api/models`
+- **Test API**: `curl http://localhost:3001/api/providers`
+- **Tunnel SSH**: `scorpio.copylaradio.com` (IPv4:2122, IPv6:22)
+- **Fallback**: IPFS P2P swarm discovery
 - **Usage**: Recherche web intelligente
 
 #### **Orpheus TTS (Port 5005)**
@@ -35,32 +41,57 @@ Le système UPlanet IA utilise une architecture de gestion des connexions en plu
 ```
 UPlanet_IA_Responder.sh
 ├── 1. Vérification Ollama (OBLIGATOIRE)
-│   └── ollama.me.sh
-│       ├── Check local port 11434
-│       ├── Si fermé → Tunnel SSH vers scorpio.copylaradio.com
-│       └── Exit si échec
+│   └── ollama.me.sh (mode auto-connect)
+│       ├── Check port 11434 + test API
+│       ├── Si OK → Connexion active, continuer
+│       ├── Sinon → Tentative SSH (IPv6 puis IPv4)
+│       ├── Si SSH échoue → Fallback IPFS P2P swarm
+│       └── Exit si tous échecs
 │
 ├── 2. Vérifications Spécialisées (selon tags)
 │   ├── #search → perplexica.me.sh
-│   │   ├── Check port 3001
-│   │   ├── Test API /api/models
-│   │   └── Tunnel SSH si nécessaire
+│   │   ├── Check port 3001 + test API /api/providers
+│   │   ├── Si OK → Connexion active
+│   │   ├── Sinon → Tentative SSH (IPv6 puis IPv4)
+│   │   └── Si SSH échoue → Fallback IPFS P2P swarm
 │   │
 │   ├── #image/#video/#music → comfyui.me.sh
-│   │   ├── Check port 8188
-│   │   ├── Test connexion ComfyUI
-│   │   └── Tunnel SSH si nécessaire
+│   │   ├── Check port 8188 + test API /system_stats
+│   │   ├── Si OK → Connexion active
+│   │   ├── Sinon → Tentative SSH (IPv6 puis IPv4)
+│   │   └── Si SSH échoue → Fallback IPFS P2P swarm
 │   │
-│   └── #pierre/#amelie → orpheus.me.sh
-│       ├── Check Docker + port 5005
-│       ├── Découverte nodes swarm
-│       ├── Connexion IPFS P2P
-│       └── Test API /docs
+│   └── #pierre/#amelie → generate_speech.sh → orpheus.me.sh
+│       ├── Check Docker + port 5005 + test API /docs
+│       ├── Si OK → Connexion locale active
+│       └── Sinon → Fallback IPFS P2P swarm (pas de SSH)
 │
 └── 3. Traitement de la Requête
     ├── Si toutes connexions OK → Exécution
     └── Si échec → Message d'erreur
 ```
+
+#### **Ordre de Priorité des Connexions (Tous Services)**
+
+Chaque script `*.me.sh` suit cet ordre de priorité lors de l'auto-connexion :
+
+1. **Vérification connexion existante**
+   - Port ouvert + API répond → Utilisation directe
+   
+2. **Service local** (si disponible)
+   - Processus/service actif localement → Connexion locale
+   
+3. **Tunnel SSH** (sauf Orpheus)
+   - Tentative IPv6 en premier (port 22)
+   - Fallback IPv4 si IPv6 indisponible (port 2122)
+   - Connexion vers `scorpio.copylaradio.com`
+   
+4. **IPFS P2P Swarm** (tous services)
+   - Découverte automatique des nodes disponibles
+   - Sélection du premier node disponible
+   - Support sélection manuelle (numéro, ID, aléatoire)
+
+**Note spéciale :** Orpheus TTS n'utilise **pas** de tunnel SSH, uniquement LOCAL et IPFS P2P.
 
 ### 3. Mécanismes de Vérification
 
@@ -89,20 +120,67 @@ test_api() {
 }
 ```
 
-#### **Établissement de Tunnel SSH**
+#### **Établissement de Tunnel SSH (IPv6/IPv4)**
 ```bash
-establish_tunnel() {
-    ssh -fN -L 127.0.0.1:$LOCAL_PORT:127.0.0.1:$REMOTE_PORT $USER@$HOST -p $SSH_PORT
+establish_ssh_tunnel() {
+    local protocol="${1:-auto}"  # auto, ipv6, ipv4
+    
+    # Essai IPv6 en premier (plus rapide si disponible)
+    if [[ "$protocol" == "auto" || "$protocol" == "ipv6" ]]; then
+        if check_ipv6_available; then
+            ssh -fN -L 127.0.0.1:$LOCAL_PORT:127.0.0.1:$REMOTE_PORT \
+                -6 $USER@$HOST -p $SSH_PORT_IPV6
+            return $?
+        fi
+    fi
+    
+    # Fallback IPv4
+    if [[ "$protocol" == "auto" || "$protocol" == "ipv4" ]]; then
+        ssh -fN -L 127.0.0.1:$LOCAL_PORT:127.0.0.1:$REMOTE_PORT \
+            -4 $USER@$HOST -p $SSH_PORT_IPV4
+        return $?
+    fi
 }
 ```
 
-#### **Connexion IPFS P2P (Orpheus)**
+#### **Connexion IPFS P2P (Tous Services)**
 ```bash
-establish_ipfs_p2p() {
-    # Découverte des nodes swarm
-    for orpheus_script in ~/.zen/tmp/swarm/*/x_orpheus.sh; do
-        bash "$orpheus_script"  # Établit tunnel IPFS P2P
+connect_via_swarm() {
+    local service_name="$1"  # ollama, comfyui, perplexica, orpheus
+    local target="${2:-}"    # auto, <numéro>, <node_id>
+    
+    # Collecte des nodes disponibles
+    local nodes=()
+    for script in ~/.zen/tmp/swarm/*/x_${service_name}.sh; do
+        [[ -f "$script" ]] && nodes+=("$script")
     done
+    
+    # Ajout du node local si disponible
+    if [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${service_name}.sh ]]; then
+        nodes+=("$HOME/.zen/tmp/$IPFSNODEID/x_${service_name}.sh")
+    fi
+    
+    # Sélection du node (auto, numéro, ID, ou premier disponible)
+    local selected_script=""
+    case "$target" in
+        "auto"|"random")
+            selected_script=$(printf '%s\n' "${nodes[@]}" | sort -R | head -1)
+            ;;
+        [0-9]*)
+            local idx=$((target - 1))
+            selected_script="${nodes[$idx]}"
+            ;;
+        *)
+            # Recherche par ID partiel
+            for script in "${nodes[@]}"; do
+                local node_id=$(basename $(dirname "$script"))
+                [[ "$node_id" == *"$target"* ]] && selected_script="$script" && break
+            done
+            ;;
+    esac
+    
+    # Établissement de la connexion P2P
+    [[ -n "$selected_script" ]] && bash "$selected_script"
 }
 ```
 
@@ -130,7 +208,11 @@ establish_ipfs_p2p() {
 #### **Gestion des Tunnels**
 - Fermeture automatique des tunnels inactifs
 - Réutilisation des connexions existantes
-- Load balancing sur les nodes swarm (Orpheus)
+- Support dual-stack IPv6/IPv4 avec fallback automatique
+- Détection automatique de la meilleure méthode (IPv6 prioritaire)
+- Load balancing sur les nodes swarm (tous services)
+- Sélection de nodes P2P par numéro, ID ou aléatoire
+- Fichiers de statut pour suivi des connexions
 
 ### 6. Configuration des Services
 
@@ -139,17 +221,25 @@ establish_ipfs_p2p() {
 # Ollama
 OLLAMA_PORT=11434
 REMOTE_HOST="scorpio.copylaradio.com"
-REMOTE_PORT=2122
+REMOTE_PORT_IPV4=2122  # Port pour accès IPv4 NAT
+REMOTE_PORT_IPV6=22     # Port pour accès IPv6 direct
 
 # ComfyUI
 COMFYUI_PORT=8188
 COMFYUI_URL="http://127.0.0.1:8188"
+REMOTE_HOST="scorpio.copylaradio.com"
+REMOTE_PORT_IPV4=2122
+REMOTE_PORT_IPV6=22
 
 # Perplexica
 PERPLEXICA_PORT=3001
+REMOTE_HOST="scorpio.copylaradio.com"
+REMOTE_PORT_IPV4=2122
+REMOTE_PORT_IPV6=22
 
-# Orpheus
+# Orpheus (pas de SSH)
 ORPHEUS_PORT=5005
+# Orpheus utilise uniquement LOCAL et IPFS P2P
 ```
 
 #### **Scripts de Maintenance**
@@ -157,6 +247,54 @@ ORPHEUS_PORT=5005
 - `comfyui.me.sh OFF` - Fermer tunnel ComfyUI
 - `perplexica.me.sh OFF` - Fermer tunnel Perplexica
 - `orpheus.me.sh OFF` - Fermer connexions IPFS P2P
+
+#### **Commandes Avancées Disponibles**
+
+Tous les scripts `*.me.sh` supportent des commandes avancées :
+
+- **`STATUS`** - Affiche le statut de connexion actuel (LOCAL/SSH/P2P)
+- **`SCAN`** - Détecte toutes les connexions disponibles (LOCAL, SSH, P2P)
+- **`LOCAL`** - Force la connexion via service local uniquement
+- **`SSH`** - Force la connexion via tunnel SSH (auto IPv6/IPv4)
+- **`SSH6`** - Force la connexion via tunnel SSH IPv6 uniquement
+- **`SSH4`** - Force la connexion via tunnel SSH IPv4 uniquement
+- **`P2P`** - Connecte via IPFS P2P (affiche les nodes si multiples)
+- **`P2P <n>`** - Connecte au node P2P numéro n (1, 2, 3...)
+- **`P2P <id>`** - Connecte au node P2P par ID (correspondance partielle)
+- **`P2P auto`** - Sélection aléatoire d'un node P2P
+- **`MODELS`** - Liste les modèles disponibles (Ollama uniquement)
+- **`TEST`** - Teste la connexion API actuelle
+- **`HELP`** - Affiche l'aide complète
+
+**Exemples :**
+```bash
+ollama.me.sh STATUS      # Voir le statut actuel
+ollama.me.sh SCAN        # Scanner toutes les options
+ollama.me.sh P2P 1       # Connecter au node P2P #1
+comfyui.me.sh SSH6       # Forcer connexion SSH IPv6
+perplexica.me.sh P2P auto # Sélection aléatoire P2P
+```
+
+#### **Fichiers de Statut de Connexion**
+
+Chaque script sauvegarde le statut de connexion dans :
+```
+~/.zen/tmp/{service}_connection.status
+```
+
+**Contenu du fichier :**
+```bash
+CONNECTION_TYPE=SSH_IPv6|SSH_IPv4|P2P|LOCAL
+CONNECTION_DETAILS=scorpio.copylaradio.com:22|node_id|Local service
+CONNECTION_TIME=2026-01-24T10:30:45+00:00
+CONNECTION_PORT=11434|8188|3001|5005
+```
+
+Ces fichiers permettent de :
+- Suivre l'historique des connexions
+- Identifier rapidement le type de connexion active
+- Détecter les problèmes de connexion
+- Optimiser la sélection de méthode de connexion
 
 ### 7. Migration vers IPFS P2P en Production UPlanet ẐEN[0]
 
@@ -547,22 +685,49 @@ Ce système transforme UPlanet en une **plateforme IA véritablement décentrali
 
 ### 8. Intégration avec UPlanet
 
-#### **Déclenchement des Vérifications (Version Future)**
+#### **Déclenchement des Vérifications (Implémenté)**
 ```bash
-# Dans UPlanet_IA_Responder.sh - Version IPFS P2P
+# Dans UPlanet_IA_Responder.sh - Ligne 206
+# Vérification Ollama OBLIGATOIRE au démarrage
 if ! $MY_PATH/ollama.me.sh; then
-    echo "Error: Failed to maintain Ollama P2P connection" >&2
+    echo "Error: Failed to maintain Ollama connection" >&2
     exit 1
 fi
 
-# Vérifications spécialisées selon tags (toutes via IPFS P2P)
+# Vérifications spécialisées selon tags détectés
 if [[ "${TAGS[search]}" == true ]]; then
-    $MY_PATH/perplexica.me.sh  # Via IPFS P2P
+    $MY_PATH/perplexica.me.sh  # Auto: LOCAL → SSH → P2P
 fi
 
-if [[ "${TAGS[image]}" == true ]]; then
-    $MY_PATH/comfyui.me.sh     # Via IPFS P2P
+if [[ "${TAGS[image]}" == true || "${TAGS[video]}" == true || "${TAGS[music]}" == true ]]; then
+    $MY_PATH/comfyui.me.sh     # Auto: LOCAL → SSH → P2P
+fi
+
+if [[ "${TAGS[pierre]}" == true || "${TAGS[amelie]}" == true ]]; then
+    # generate_speech.sh appelle orpheus.me.sh en interne
+    $MY_PATH/generate_speech.sh "$text" "$voice"  # Auto: LOCAL → P2P (pas SSH)
 fi
 ```
 
-Cette architecture future garantit une décentralisation complète des services IA via IPFS P2P, éliminant toute dépendance aux serveurs centralisés.
+#### **Architecture Actuelle (Dual Mode)**
+
+L'architecture actuelle supporte **deux modes de connexion** :
+
+1. **Mode SSH** (compatibilité)
+   - Tunnels SSH IPv6/IPv4 vers `scorpio.copylaradio.com`
+   - Utilisé si disponible et si P2P non configuré
+   - Fallback automatique vers P2P si SSH échoue
+
+2. **Mode IPFS P2P** (décentralisé)
+   - Découverte automatique via `DRAGON_p2p_ssh.sh`
+   - Connexions directes entre nodes du swarm
+   - Load balancing automatique
+   - Utilisé en priorité si nodes disponibles
+
+**Avantages du Dual Mode :**
+- Résilience : Si SSH échoue, P2P prend le relais
+- Flexibilité : Support des deux architectures
+- Migration progressive : Transition douce vers P2P complet
+- Compatibilité : Fonctionne même sans nodes P2P disponibles
+
+Cette architecture garantit une disponibilité maximale des services IA avec décentralisation progressive via IPFS P2P.
