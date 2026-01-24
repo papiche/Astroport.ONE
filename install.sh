@@ -211,6 +211,10 @@ echo "##INSTALL yt-dlp & SYMLINK youtube-dl ##########################"
 echo "## CONFIGURE yt-dlp JavaScript runtime (Node + EJS) ############"
 ~/.zen/Astroport.ONE/tools/install_yt_dlp_ejs_node.sh
 
+###############################################################
+echo "## INSTALL PowerJoular (Power consumption monitoring) ##########"
+~/.zen/Astroport.ONE/tools/install_powerjoular.sh
+
 echo "=== SETUP ASTROPORT"
 ~/.zen/Astroport.ONE/setup.sh
 
