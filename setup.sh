@@ -83,7 +83,7 @@ mkdir -p ~/.zen/tmp
 ## USED FOR RAMDISK (video live streaming)
 ## USED FOR SYSTEM UPGRADE
 ## USED FOR "systemctl restart ipfs"
-for bin in fail2ban-client mount umount apt-get apt systemctl docker hdparm; do
+for bin in fail2ban-client mount umount apt-get apt systemctl docker hdparm powerjoular; do
 binpath=$(which $bin)
 [[ -x $binpath ]] \
     && echo "$USER ALL=(ALL) NOPASSWD:$binpath" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/'$bin) \

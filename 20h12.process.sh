@@ -34,6 +34,30 @@ echo "20H12 (♥‿‿♥) 🌐 /ipns/$IPFSNODEID 🤓 $CAPTAINEMAIL $(hostname 
 # espeak "Ding" > /dev/null 2>&1
 
 ########################################################################
+## POWER CONSUMPTION MONITORING - Start PowerJoular measurement
+########################################################################
+# Use /tmp/ to avoid cleanup by this script (which cleans ~/.zen/tmp/)
+POWERJOULAR_CSV="/tmp/20h12_power_consumption.csv"
+POWERJOULAR_GRAPH="/tmp/20h12_power_graph.png"
+
+# Start PowerJoular monitoring using generic power_monitor.sh
+# PID file is automatically derived from CSV file
+if [[ -f "${MY_PATH}/tools/power_monitor.sh" ]]; then
+    echo "⚡ Starting power consumption monitoring..."
+    MONITOR_OUTPUT=$("${MY_PATH}/tools/power_monitor.sh" start "$POWERJOULAR_CSV" 2>&1)
+    if [[ $? -eq 0 ]]; then
+        POWERJOULAR_PID=$(echo "$MONITOR_OUTPUT" | head -1)
+        echo "⚡ Power monitoring started (PID: $POWERJOULAR_PID)"
+    else
+        echo "⚠️ Failed to start power monitoring: $MONITOR_OUTPUT"
+        POWERJOULAR_CSV=""
+    fi
+else
+    echo "⚠️ power_monitor.sh not available, skipping power consumption monitoring"
+    POWERJOULAR_CSV=""
+fi
+
+########################################################################
 ## SOLAR TIME CALIBRATION - Recalibrate cron for DST changes
 ########################################################################
 # Check if we need to recalibrate (DST transition detection)
@@ -420,8 +444,48 @@ seconds=$((dur % 60))
 echo "TOTAL DURATION ${hours} hours ${minutes} minutes ${seconds} seconds"
 echo "20H12 (♥‿‿♥) Execution time was $dur seconds."
 
+########################################################################
+## POWER CONSUMPTION MONITORING - Stop PowerJoular and generate report
+########################################################################
+# Use /tmp/ to avoid cleanup by this script (which cleans ~/.zen/tmp/)
+POWER_REPORT_HTML="/tmp/20h12_power_report.html"
+
+if [[ -n "$POWERJOULAR_CSV" ]] && [[ -f "${MY_PATH}/tools/power_monitor.sh" ]]; then
+    echo "⚡ Stopping power consumption monitoring..."
+    "${MY_PATH}/tools/power_monitor.sh" stop "$POWERJOULAR_CSV" 2>&1 | tee -a /tmp/20h12.log
+    
+    # Generate power consumption report
+    if [[ -f "$POWERJOULAR_CSV" ]] && [[ -s "$POWERJOULAR_CSV" ]]; then
+        echo "📊 Generating power consumption report..."
+        "${MY_PATH}/tools/power_monitor.sh" report \
+            "$POWERJOULAR_CSV" \
+            "$POWER_REPORT_HTML" \
+            "20H12 Process Power Consumption" \
+            "/tmp/20h12.log" \
+            "$(hostname -f)" \
+            "${hours}h ${minutes}m ${seconds}s" 2>&1 | tee -a /tmp/20h12.log
+        
+        if [[ -f "$POWER_REPORT_HTML" ]]; then
+            echo "✅ Power consumption report generated: $POWER_REPORT_HTML" >> /tmp/20h12.log
+        fi
+    else
+        echo "⚠️ PowerJoular CSV file not found or empty" >> /tmp/20h12.log
+    fi
+else
+    echo "⚠️ Power monitoring was not started or power_monitor.sh not available" >> /tmp/20h12.log
+fi
+
 ## MAIL LOG : support@qo-op.com ##
-${MY_PATH}/tools/mailjet.sh --expire 48h "$CAPTAINEMAIL" "/tmp/20h12.log" "20H12 : $(cat ~/.zen/game/players/.current/.player 2>/dev/null) ($(cat ~/.zen/GPS 2>/dev/null))"
+# Send email with power consumption report if available
+POWER_REPORT_HTML="$HOME/.zen/tmp/20h12_power_report.html"
+if [[ -f "$POWER_REPORT_HTML" ]]; then
+    echo "📧 Sending 20H12 report with power consumption analysis..."
+    ${MY_PATH}/tools/mailjet.sh --expire 48h "$CAPTAINEMAIL" "$POWER_REPORT_HTML" \
+        "20H12 : $(cat ~/.zen/game/players/.current/.player 2>/dev/null) ($(cat ~/.zen/GPS 2>/dev/null)) - Power Consumption Report"
+else
+    ${MY_PATH}/tools/mailjet.sh --expire 48h "$CAPTAINEMAIL" "/tmp/20h12.log" \
+        "20H12 : $(cat ~/.zen/game/players/.current/.player 2>/dev/null) ($(cat ~/.zen/GPS 2>/dev/null))"
+fi
 
 # espeak "TOTAL DURATION ${hours} hours ${minutes} minutes ${seconds} seconds" > /dev/null 2>&1 &
 

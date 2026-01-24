@@ -111,13 +111,7 @@ if [[ -f "systemd/powerjoular.service" ]]; then
     echo "[install_powerjoular][$(timestamp)] Installing systemd service..." >&2
     sudo cp "systemd/powerjoular.service" /etc/systemd/system/powerjoular.service
     sudo systemctl daemon-reload
-    echo "[install_powerjoular][$(timestamp)] Enabling PowerJoular service (auto-start on boot)..." >&2
-    sudo systemctl enable powerjoular.service
-    echo "[install_powerjoular][$(timestamp)] Starting PowerJoular service..." >&2
-    sudo systemctl start powerjoular.service || {
-        echo "[install_powerjoular][$(timestamp)] WARNING: Failed to start service (may require root privileges for RAPL access)" >&2
-    }
-    echo "[install_powerjoular][$(timestamp)] PowerJoular systemd service installed, enabled, and started" >&2
+    echo "[install_powerjoular][$(timestamp)] PowerJoular systemd service installed" >&2
 fi
 
 # Verify installation
