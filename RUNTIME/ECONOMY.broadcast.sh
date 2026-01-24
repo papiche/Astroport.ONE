@@ -84,9 +84,9 @@ log_output "✅ Captain HEX: ${CAPTAIN_HEX:0:8}..."
 # COLLECT ECONOMIC DATA
 ###############################################################################
 
-# Get week identifier
-CURRENT_WEEK="W$(date +%V)-$(date +%Y)"
-log_output "📅 Report for week: $CURRENT_WEEK"
+# Event identifier (replaceable event per station)
+EVENT_D="economic-health"
+log_output "📅 Publishing economic health report"
 
 # Normalize bc output: ensure leading zero for decimals (e.g., .25 -> 0.25)
 # This is required for valid JSON output
@@ -414,13 +414,12 @@ log_output "📝 Building NOSTR event..."
 
 GENERATED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 CREATED_AT=$(date +%s)
-EVENT_D="economic-health-$CURRENT_WEEK"
 
 # Build content JSON
 CONTENT_JSON=$(cat <<EOF
 {
   "report_version": "1.1",
-  "report_type": "weekly_economic_health",
+  "report_type": "economic_health",
   "generated_at": "$GENERATED_AT",
   "station": {
     "ipfsnodeid": "$IPFSNODEID",
@@ -510,8 +509,6 @@ TAGS_JSON=$(cat <<EOF
   ["d", "$EVENT_D"],
   ["t", "uplanet"],
   ["t", "economic-health"],
-  ["t", "weekly-report"],
-  ["week", "$CURRENT_WEEK"],
   ["constellation", "$UPLANETG1PUB"],
   ["station", "$IPFSNODEID"],
   ["station:name", "${myDAMAIN:-...${IPFSNODEID: -8}}"],
@@ -565,7 +562,6 @@ if [[ "$DRYRUN" == "true" ]]; then
     echo ""
     echo "Kind: 30850 (Economic Health Report)"
     echo "Author: ${CAPTAIN_HEX:0:16}..."
-    echo "Week: $CURRENT_WEEK"
     echo "Status: $HEALTH_STATUS"
     echo ""
     echo "Wallets:"
@@ -630,7 +626,7 @@ if command -v nostpy-cli &> /dev/null; then
     
     if [[ $PUBLISH_STATUS -eq 0 ]]; then
         log_output "✅ Event published to relay"
-        echo "✅ Economic health report published for $CURRENT_WEEK"
+        echo "✅ Economic health report published"
         echo "   Status: $HEALTH_STATUS | Bilan: $BILAN Ẑ | Runway: $WEEKS_RUNWAY weeks"
         echo "   Relay: $myRELAY"
     else
@@ -656,7 +652,7 @@ EOF
         ./strfry import --no-verify < "$TEMP_EVENT" 2>/dev/null
         
         if [[ $? -eq 0 ]]; then
-            echo "✅ Economic health report stored locally for $CURRENT_WEEK"
+            echo "✅ Economic health report stored locally"
             echo "   (Will be synced via constellation backfill)"
         else
             echo "❌ Failed to store event"
@@ -672,8 +668,7 @@ else
 fi
 
 # Save last broadcast info
-echo "$CURRENT_WEEK" > "$HOME/.zen/tmp/last_economy_broadcast.txt"
-echo "$GENERATED_AT" >> "$HOME/.zen/tmp/last_economy_broadcast.txt"
+echo "$GENERATED_AT" > "$HOME/.zen/tmp/last_economy_broadcast.txt"
 
 log_output "📊 ECONOMY.broadcast.sh completed"
 exit 0
