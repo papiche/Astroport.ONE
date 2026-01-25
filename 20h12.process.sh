@@ -243,7 +243,7 @@ else
     #####################################
     ${MY_PATH}/RUNTIME/PLAYER.refresh.sh
     #####################################
-    ${MY_PATH}/RUNTIME/_UPLANET.refresh.sh
+    # ${MY_PATH}/RUNTIME/_UPLANET.refresh.sh - old methods -
 fi
 ######################################################### UPLANET ######
 #####################################
