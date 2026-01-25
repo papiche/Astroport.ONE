@@ -411,11 +411,9 @@
             coracle: '_CORACLEURL_'
         };
 
-        // State
-        let isConnected = false;
-        let userPubkey = null;
-        let pool = null;
+        // State - uses common.js globals (window.userPubkey, window.nostrRelay)
         let friends = [];
+        let userProfile = null;
 
         // ═══════════════════════════════════════════════════════════════════
         // INITIALIZATION
@@ -428,8 +426,10 @@
             document.getElementById('umap-npub-short').textContent = 
                 ZONE_CONFIG.umapNpub ? `${ZONE_CONFIG.umapNpub.slice(0, 12)}...` : '';
 
-            // Initialize relay pool
-            await initRelayPool();
+            // Connect to relay using common.js
+            if (typeof connectToRelay === 'function') {
+                await connectToRelay();
+            }
             
             // Load all data from Nostr
             await Promise.all([
@@ -443,30 +443,25 @@
         });
 
         // ═══════════════════════════════════════════════════════════════════
-        // RELAY POOL MANAGEMENT
+        // RELAY HELPERS (uses common.js pool)
         // ═══════════════════════════════════════════════════════════════════
-        async function initRelayPool() {
-            try {
-                if (typeof NostrTools !== 'undefined' && NostrTools.SimplePool) {
-                    pool = new NostrTools.SimplePool();
-                    console.log('✅ Relay pool initialized');
-                } else if (typeof SimplePool !== 'undefined') {
-                    pool = new SimplePool();
-                    console.log('✅ Relay pool initialized (global)');
-            } else {
-                    console.warn('⚠️ NostrTools not available, using fetch fallback');
-                }
-            } catch (e) {
-                console.error('Failed to init pool:', e);
+        function getPool() {
+            // Use common.js SimplePool if available
+            if (typeof NostrTools !== 'undefined' && NostrTools.SimplePool) {
+                return new NostrTools.SimplePool();
             }
+            return null;
         }
 
         function getRelays() {
+            // Use common.js DEFAULT_RELAYS if available, else fallback
+            if (window.DEFAULT_RELAYS && window.DEFAULT_RELAYS.length > 0) {
+                return window.DEFAULT_RELAYS;
+            }
             const relays = [ZONE_CONFIG.relay];
             if (!relays[0].startsWith('wss://')) {
                 relays[0] = 'wss://relay.copylaradio.com';
             }
-            // Add fallback relays
             relays.push('wss://relay.damus.io', 'wss://nos.lol');
             return relays;
         }
@@ -474,9 +469,6 @@
         // ═══════════════════════════════════════════════════════════════════
         // CONNECTION BADGE MANAGEMENT
         // ═══════════════════════════════════════════════════════════════════
-        let userProfile = null;
-        let isAuthenticated = false;
-        
         window.toggleBadgePanel = function() {
             const panel = document.getElementById('badge-panel');
             panel.classList.toggle('show');
@@ -499,6 +491,7 @@
             const connectBtn = document.getElementById('badge-connect-btn');
             
             badge.className = 'connection-badge ' + state;
+            const pubkey = window.userPubkey;
             
             switch(state) {
                 case 'disconnected':
@@ -512,37 +505,35 @@
                 case 'connected-not-auth':
                     const displayName = profile?.display_name || profile?.name || '';
                     status.textContent = '🟡 Connected';
-                    name.textContent = displayName || (userPubkey ? userPubkey.slice(0, 12) + '...' : 'User');
-                    avatar.src = profile?.picture || `https://robohash.org/${userPubkey}?set=set4&size=36x36`;
+                    name.textContent = displayName || (pubkey ? pubkey.slice(0, 12) + '...' : 'User');
+                    avatar.src = profile?.picture || `https://robohash.org/${pubkey}?set=set4&size=36x36`;
                     connectBtn.innerHTML = '🔐';
                     connectBtn.onclick = (e) => { e.stopPropagation(); authenticateNIP42(); };
                     break;
                     
                 case 'authenticated':
                     status.textContent = '🟢 Authenticated';
-                    name.textContent = profile?.display_name || profile?.name || (userPubkey ? userPubkey.slice(0, 12) + '...' : 'User');
-                    avatar.src = profile?.picture || `https://robohash.org/${userPubkey}?set=set4&size=36x36`;
+                    name.textContent = profile?.display_name || profile?.name || (pubkey ? pubkey.slice(0, 12) + '...' : 'User');
+                    avatar.src = profile?.picture || `https://robohash.org/${pubkey}?set=set4&size=36x36`;
                     connectBtn.style.display = 'none';
                     break;
             }
             
             // Update panel info
-            if (userPubkey) {
+            if (pubkey) {
                 document.getElementById('panel-pubkey-row').style.display = 'flex';
-                let npub = userPubkey;
-                if (typeof NostrTools !== 'undefined' && NostrTools.nip19) {
-                    try { npub = NostrTools.nip19.npubEncode(userPubkey); } catch(e) {}
+                let npub = pubkey;
+                if (typeof hexToNpub === 'function') {
+                    try { npub = hexToNpub(pubkey); } catch(e) {}
                 }
                 document.getElementById('panel-pubkey').textContent = npub.slice(0, 20) + '...';
             }
             
             // Update uDRIVE if available
             if (userProfile?.ipns_vault) {
-                const udriveRow = document.getElementById('panel-udrive-row');
-                const udriveLink = document.getElementById('panel-udrive-link');
-                udriveRow.style.display = 'flex';
-                const ipfsGw = userProfile.ipfs_gw || 'https://ipfs.copylaradio.com';
-                udriveLink.href = `${ipfsGw}/ipns/${userProfile.ipns_vault}`;
+                document.getElementById('panel-udrive-row').style.display = 'flex';
+                const ipfsGw = userProfile.ipfs_gw || ZONE_CONFIG.ipfs;
+                document.getElementById('panel-udrive-link').href = `${ipfsGw}/ipns/${userProfile.ipns_vault}`;
             }
             
             // Update G1 wallet if available
@@ -553,74 +544,37 @@
             }
         }
         
-        // Fetch user profile from Nostr (kind 0)
-        async function fetchUserProfile(pubkey) {
-            if (!pool) return null;
-            
-            try {
-                const events = await pool.querySync(getRelays(), {
-                    kinds: [0],
-                    authors: [pubkey],
-                    limit: 1
-                });
-                
-                if (events && events.length > 0) {
-                    const profileEvent = events[0];
-                    const profile = JSON.parse(profileEvent.content);
-                    
-                    // Extract additional data from 'i' tags (UPlanet extensions)
-                    if (profileEvent.tags) {
-                        profileEvent.tags.forEach(tag => {
-                            if (tag[0] === 'i') {
-                                const [type, value] = tag[1].split(':');
-                                switch(type) {
-                                    case 'g1pub': profile.g1_address = value; break;
-                                    case 'g1pubv2': profile.g1_address_v2 = value; break;
-                                    case 'zencard': profile.zen_address = value; break;
-                                    case 'ipfs_gw': profile.ipfs_gw = value; break;
-                                    case 'ipns_vault': profile.ipns_vault = value; break;
-                                }
-                            }
-                        });
-                    }
-                    
-                    userProfile = profile;
-                    console.log('📝 User profile loaded:', profile);
-                    return profile;
-                }
-            } catch (error) {
-                console.error('Error fetching profile:', error);
-            }
-            return null;
-        }
-        
-        // NIP-42 Authentication
+        // NIP-42 Authentication - uses common.js sendNIP42Auth if available
         async function authenticateNIP42() {
-            if (!userPubkey) {
+            if (!window.userPubkey) {
                 showToast('⚠️ Connect to Nostr first', 'error');
                 return;
             }
             
             try {
+                // Use common.js sendNIP42Auth if available
+                if (typeof sendNIP42Auth === 'function') {
+                    await sendNIP42Auth(getRelays()[0], true);
+                    updateConnectionBadge('authenticated', userProfile);
+                    document.getElementById('panel-auth-icon').textContent = '✅';
+                    document.getElementById('panel-auth-status').textContent = 'Authenticated (NIP-42)';
+                    showToast('✅ NIP-42 authenticated!', 'success');
+                    return;
+                }
+                
+                // Fallback to manual auth
                 const authEvent = {
                     kind: 22242,
                     created_at: Math.floor(Date.now() / 1000),
-                    tags: [
-                        ['relay', 'wss://relay.copylaradio.com'],
-                        ['challenge', 'uplanet-umap']
-                    ],
+                    tags: [['relay', getRelays()[0]], ['challenge', 'uplanet-umap']],
                     content: ''
                 };
-                
                 const signedEvent = await window.nostr.signEvent(authEvent);
                 window.nip42Auth = signedEvent;
-                isAuthenticated = true;
                 
                 updateConnectionBadge('authenticated', userProfile);
-                
                 document.getElementById('panel-auth-icon').textContent = '✅';
                 document.getElementById('panel-auth-status').textContent = 'Authenticated (NIP-42)';
-                
                 showToast('✅ NIP-42 authenticated!', 'success');
                 
             } catch (error) {
@@ -634,6 +588,7 @@
         // ═══════════════════════════════════════════════════════════════════
         async function loadFriends() {
             const container = document.getElementById('friends-list');
+            const pool = getPool();
             
             try {
                 if (!pool || !ZONE_CONFIG.umapPubkeyHex) {
@@ -718,6 +673,7 @@
         // ═══════════════════════════════════════════════════════════════════
         async function loadMessages() {
             const container = document.getElementById('messages-feed');
+            const pool = getPool();
             
             try {
                 if (!pool) {
@@ -801,6 +757,7 @@
         // ═══════════════════════════════════════════════════════════════════
         async function loadCollaborativeDocs() {
             const container = document.getElementById('docs-feed');
+            const pool = getPool();
             
             try {
                 if (!pool || !ZONE_CONFIG.umapPubkeyHex) {
@@ -969,6 +926,7 @@
         // COUNT LIKES
         // ═══════════════════════════════════════════════════════════════════
         async function countTotalLikes(eventIds) {
+            const pool = getPool();
             if (!pool || eventIds.length === 0) return;
             
             try {
@@ -1072,8 +1030,7 @@
         }
 
         async function updateConnectionStatus(connected, pubkey = null) {
-            isConnected = connected;
-            userPubkey = pubkey;
+            window.userPubkey = pubkey;
             
             document.getElementById('status-dot').classList.toggle('connected', connected);
             document.getElementById('status-text').textContent = connected ? `${pubkey?.slice(0, 8)}...` : 'Disconnected';
@@ -1085,10 +1042,12 @@
             
             document.getElementById('compose-card').style.display = connected ? 'block' : 'none';
             
-            // Fetch user profile for uDRIVE info
+            // Fetch user profile using common.js fetchUserMetadata
             if (connected && pubkey) {
-                const profile = await fetchUserProfile(pubkey);
-                updateConnectionBadge('connected-not-auth', profile);
+                if (typeof fetchUserMetadata === 'function') {
+                    userProfile = await fetchUserMetadata(pubkey);
+                }
+                updateConnectionBadge('connected-not-auth', userProfile);
             } else {
                 updateConnectionBadge('disconnected');
             }
@@ -1097,7 +1056,7 @@
         async function publishToZone() {
             const content = document.getElementById('compose-content').value.trim();
             if (!content) return showToast('⚠️ Please enter a message', 'error');
-            if (!isConnected) return showToast('⚠️ Please connect to Nostr first', 'error');
+            if (!window.userPubkey) return showToast('⚠️ Please connect to Nostr first', 'error');
 
             try {
                 const tags = [
@@ -1125,7 +1084,7 @@
         }
 
         async function likeMessage(eventId, authorPubkey, button) {
-            if (!isConnected) return showToast('⚠️ Please connect to Nostr first', 'error');
+            if (!window.userPubkey) return showToast('⚠️ Please connect to Nostr first', 'error');
 
             button.disabled = true;
             try {
@@ -1140,7 +1099,7 @@
             } catch (error) {
                 showToast(`❌ ${error.message}`, 'error');
             }
-                button.disabled = false;
+            button.disabled = false;
         }
     </script>
 </body>
