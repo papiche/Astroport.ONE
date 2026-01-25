@@ -91,9 +91,12 @@ sudo rm -f /etc/sudoers.d/umount
 sudo rm -f /etc/sudoers.d/apt-get
 sudo rm -f /etc/sudoers.d/apt
 sudo rm -f /etc/sudoers.d/systemctl
+sudo rm -f /etc/sudoers.d/ufw
 sudo rm -f /etc/sudoers.d/docker
 sudo rm -f /etc/sudoers.d/hdparm
 sudo rm -f /etc/sudoers.d/brother_ql_print
+sudo rm -f /etc/sudoers.d/powerjoular
+sudo rm -f /etc/sudoers.d/sudo
 
 ########################################################################
 echo "REMOVING LOCAL BINARIES AND SYMLINKS"

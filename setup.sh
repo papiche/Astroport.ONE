@@ -83,7 +83,7 @@ mkdir -p ~/.zen/tmp
 ## USED FOR RAMDISK (video live streaming)
 ## USED FOR SYSTEM UPGRADE
 ## USED FOR "systemctl restart ipfs"
-for bin in fail2ban-client mount umount apt-get apt systemctl docker hdparm powerjoular; do
+for bin in fail2ban-client mount umount apt-get apt systemctl ufw sudo docker hdparm powerjoular; do
 binpath=$(which $bin)
 [[ -x $binpath ]] \
     && echo "$USER ALL=(ALL) NOPASSWD:$binpath" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/'$bin) \
@@ -91,7 +91,7 @@ binpath=$(which $bin)
     || echo "ERROR MISSING $bin"
 done
 ### MODIFIYING /etc/sudoers ###
-[[ "$USER" == "xbian" ]] && echo "xbian ALL=(ALL) NOPASSWD:ALL" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/astroport')
+[[ "$USER" == "core" ]] && echo "xbian ALL=(ALL) NOPASSWD:ALL" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/core')
 
 echo "#############################################"
 echo "# ADDING <<<Astroport & REC >>>  DESKTOP SHORTCUT"
