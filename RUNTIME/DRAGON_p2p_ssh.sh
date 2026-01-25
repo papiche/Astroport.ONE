@@ -430,6 +430,198 @@ if [[ ! -z $(ps auxf | grep "strfry relay" | grep -v grep) ]]; then
 
 fi
 
+############################################
+## PREPARE x_cups.sh
+## REMOTE ACCESS TO CUPS PRINT SERVICE
+## Detects USB printer (/dev/usb/lp*) or active CUPS service
+############################################
+rm -f ~/.zen/tmp/${IPFSNODEID}/x_cups.sh 2>/dev/null
+LP=$(ls /dev/usb/lp* 2>/dev/null)
+CUPS_ACTIVE=$(systemctl is-active cups 2>/dev/null)
+if [[ ! -z "$LP" || "$CUPS_ACTIVE" == "active" ]]; then
+    PORT=631
+
+    echo "CUPS print service tunnel: /x/cups-${IPFSNODEID}"
+    [[ -n "$LP" ]] && echo "Detected USB printer: $LP"
+    [[ ! $(ipfs p2p ls | grep "/x/cups-${IPFSNODEID}") ]] \
+        && ipfs p2p listen /x/cups-${IPFSNODEID} /ip4/127.0.0.1/tcp/${PORT}
+
+    ## Get short IPFSNODEID for printer naming (last 8 chars)
+    NODEID_SHORT="${IPFSNODEID: -8}"
+    
+    echo '#!/bin/bash
+############################################
+## x_cups.sh - CUPS Print Service Tunnel
+## Forward CUPS port from Astroport station
+## Auto-configures remote printers locally
+############################################
+## Usage: x_cups.sh [command]
+##   (no arg) : setup tunnel and auto-add printers
+##   list     : list available remote printers
+##   remove   : remove astro printers and close tunnel
+##   print <file> [printer] : print file to remote printer
+############################################
+IPFSNODEID="'${IPFSNODEID}'"
+NODEID_SHORT="'${NODEID_SHORT}'"
+LOCAL_PORT=6310
+PRINTER_PREFIX="astro_${NODEID_SHORT}"
+
+## Function: Establish IPFS P2P tunnel
+setup_tunnel() {
+    if [[ ! $(ipfs p2p ls | grep "x/cups-${IPFSNODEID}") ]]; then
+        echo "Connecting to CUPS service on ${IPFSNODEID}..."
+        ipfs --timeout=10s ping -n 4 /p2p/${IPFSNODEID}
+        if [[ $? != 0 ]]; then
+            echo "ERROR: Cannot reach IPFSNODEID ${IPFSNODEID}"
+            return 1
+        fi
+        ipfs p2p forward /x/cups-${IPFSNODEID} /ip4/127.0.0.1/tcp/${LOCAL_PORT} /p2p/${IPFSNODEID}
+        echo "Tunnel established on port ${LOCAL_PORT}"
+        sleep 2  # Wait for tunnel to be ready
+    else
+        echo "Tunnel already active on port ${LOCAL_PORT}"
+    fi
+    return 0
+}
+
+## Function: List remote printers
+list_printers() {
+    echo "Querying remote printers..."
+    # Try lpstat first
+    PRINTERS=$(lpstat -h 127.0.0.1:${LOCAL_PORT} -a 2>/dev/null | awk "{print \$1}")
+    if [[ -z "$PRINTERS" ]]; then
+        # Fallback: query CUPS API directly
+        PRINTERS=$(curl -s "http://127.0.0.1:${LOCAL_PORT}/printers/" 2>/dev/null \
+            | grep -oP "(?<=<A HREF=\"/printers/)[^\"]+(?=\">)" | head -10)
+    fi
+    echo "$PRINTERS"
+}
+
+## Function: Auto-add remote printers to local system
+auto_add_printers() {
+    PRINTERS=$(list_printers)
+    if [[ -z "$PRINTERS" ]]; then
+        echo "No printers found on remote station"
+        return 1
+    fi
+    
+    echo "=========================================="
+    echo "Found printers on ${IPFSNODEID}:"
+    echo "$PRINTERS"
+    echo "=========================================="
+    
+    ADDED=0
+    for PRINTER in $PRINTERS; do
+        LOCAL_NAME="${PRINTER_PREFIX}_${PRINTER}"
+        # Check if already exists
+        if lpstat -p "$LOCAL_NAME" &>/dev/null; then
+            echo "Printer $LOCAL_NAME already configured"
+        else
+            echo "Adding printer: $LOCAL_NAME"
+            # Add printer via IPP protocol
+            lpadmin -p "$LOCAL_NAME" \
+                -E \
+                -v "ipp://127.0.0.1:${LOCAL_PORT}/printers/${PRINTER}" \
+                -m everywhere \
+                -o printer-is-shared=false \
+                2>/dev/null
+            
+            if [[ $? == 0 ]]; then
+                echo "  OK: $LOCAL_NAME added"
+                ((ADDED++))
+            else
+                # Try with raw driver if "everywhere" fails
+                lpadmin -p "$LOCAL_NAME" \
+                    -E \
+                    -v "ipp://127.0.0.1:${LOCAL_PORT}/printers/${PRINTER}" \
+                    -m raw \
+                    -o printer-is-shared=false \
+                    2>/dev/null
+                [[ $? == 0 ]] && echo "  OK: $LOCAL_NAME added (raw)" && ((ADDED++))
+            fi
+        fi
+    done
+    
+    if [[ $ADDED -gt 0 ]]; then
+        # Set first printer as default if no default exists
+        if [[ -z $(lpstat -d 2>/dev/null | grep "system default") ]]; then
+            FIRST_PRINTER="${PRINTER_PREFIX}_$(echo $PRINTERS | awk "{print \$1}")"
+            lpadmin -d "$FIRST_PRINTER" 2>/dev/null
+            echo "Default printer set to: $FIRST_PRINTER"
+        fi
+    fi
+    
+    echo "=========================================="
+    echo "Local printers from this Astroport station:"
+    lpstat -p 2>/dev/null | grep "$PRINTER_PREFIX"
+    echo "=========================================="
+    echo "Print command: lp -d ${PRINTER_PREFIX}_<name> <file>"
+    echo "Or simply: lp <file>  (uses default printer)"
+    echo "=========================================="
+}
+
+## Function: Remove astro printers and close tunnel
+remove_printers() {
+    echo "Removing Astroport printers (${PRINTER_PREFIX}_*)..."
+    for PRINTER in $(lpstat -p 2>/dev/null | grep "$PRINTER_PREFIX" | awk "{print \$2}"); do
+        echo "Removing: $PRINTER"
+        lpadmin -x "$PRINTER" 2>/dev/null
+    done
+    
+    echo "Closing IPFS tunnel..."
+    ipfs p2p close -p /x/cups-${IPFSNODEID} 2>/dev/null
+    echo "Done."
+}
+
+## Function: Print a file
+print_file() {
+    FILE="$1"
+    PRINTER="$2"
+    
+    if [[ ! -f "$FILE" ]]; then
+        echo "ERROR: File not found: $FILE"
+        return 1
+    fi
+    
+    if [[ -z "$PRINTER" ]]; then
+        # Use first astro printer or default
+        PRINTER=$(lpstat -p 2>/dev/null | grep "$PRINTER_PREFIX" | awk "{print \$2}" | head -1)
+        [[ -z "$PRINTER" ]] && PRINTER=$(lpstat -d 2>/dev/null | awk "{print \$NF}")
+    fi
+    
+    if [[ -z "$PRINTER" ]]; then
+        echo "ERROR: No printer available"
+        return 1
+    fi
+    
+    echo "Printing $FILE to $PRINTER..."
+    lp -d "$PRINTER" "$FILE"
+}
+
+## Main
+case "${1:-setup}" in
+    setup)
+        setup_tunnel && auto_add_printers
+        ;;
+    list)
+        setup_tunnel && list_printers
+        ;;
+    remove)
+        remove_printers
+        ;;
+    print)
+        setup_tunnel && print_file "$2" "$3"
+        ;;
+    *)
+        echo "Usage: $0 [setup|list|remove|print <file> [printer]]"
+        ;;
+esac
+' > ~/.zen/tmp/${IPFSNODEID}/x_cups.sh
+
+    echo "ipfs cat /ipns/${IPFSNODEID}/x_cups.sh | bash"
+
+fi
+
 echo "Active P2P tunnels:"
 ipfs p2p ls
 
