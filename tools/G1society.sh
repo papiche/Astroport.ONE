@@ -38,13 +38,13 @@ NC='\033[0m' # No Color
 # Fonction pour récupérer seulement les données DID (mode --did)
 ################################################################################
 fetch_did_data_only() {
-    echo -e "${BLUE}🔍 Récupération des données DID uniquement...${NC}"
+    echo -e "${BLUE}🔍 Récupération des données DID uniquement...${NC}" >&2
     
     # Scanner les répertoires utilisateurs
     local emails=$(find ~/.zen/game/nostr -name ".secret.nostr" -exec dirname {} \; | xargs -I {} basename {} | sort -u)
     
     if [[ -z "$emails" ]]; then
-        echo -e "${YELLOW}⚠️  Aucun utilisateur Nostr trouvé${NC}"
+        echo -e "${YELLOW}⚠️  Aucun utilisateur Nostr trouvé${NC}" >&2
         echo "[]"
         return 0
     fi
@@ -54,7 +54,7 @@ fetch_did_data_only() {
     
     # Vérifier si le script nostr_did_client.py existe
     if [[ ! -f "$NOSTR_DID_CLIENT_SCRIPT" ]]; then
-        echo -e "${YELLOW}⚠️  Script nostr_did_client.py non trouvé${NC}"
+        echo -e "${YELLOW}⚠️  Script nostr_did_client.py non trouvé${NC}" >&2
         echo "[]"
         return 0
     fi
@@ -64,12 +64,12 @@ fetch_did_data_only() {
             continue
         fi
         
-        echo -e "${CYAN}📧 Récupération DID Nostr pour: ${email}${NC}"
+        echo -e "${CYAN}📧 Récupération DID Nostr pour: ${email}${NC}" >&2
         
         # Récupérer les clés Nostr de l'utilisateur
         local nostr_keys_file="$HOME/.zen/game/nostr/${email}/.secret.nostr"
         if [[ ! -f "$nostr_keys_file" ]]; then
-            echo -e "${YELLOW}⚠️  Clés Nostr non trouvées pour ${email}${NC}"
+            echo -e "${YELLOW}⚠️  Clés Nostr non trouvées pour ${email}${NC}" >&2
             continue
         fi
         
@@ -78,26 +78,26 @@ fetch_did_data_only() {
         if source "$nostr_keys_file" 2>/dev/null && [[ -n "$NPUB" ]]; then
             npub="$NPUB"
         else
-            echo -e "${YELLOW}⚠️  Impossible d'extraire NPUB pour ${email}${NC}"
+            echo -e "${YELLOW}⚠️  Impossible d'extraire NPUB pour ${email}${NC}" >&2
             continue
         fi
         
         # Récupérer le DID depuis Nostr
         local did_content=""
         for relay in $NOSTR_RELAYS; do
-            echo -e "${BLUE}   Interrogation: ${relay}${NC}"
+            echo -e "${BLUE}   Interrogation: ${relay}${NC}" >&2
             
             # Utiliser le script de récupération DID
             did_content=$(python3 "$NOSTR_DID_CLIENT_SCRIPT" fetch --author "$npub" --relay "$relay" --kind "$DID_EVENT_KIND" -q 2>/dev/null)
             
             if [[ -n "$did_content" ]] && [[ "$did_content" != "null" ]] && echo "$did_content" | jq empty 2>/dev/null; then
-                echo -e "${GREEN}✅ DID trouvé sur ${relay}${NC}"
+                echo -e "${GREEN}✅ DID trouvé sur ${relay}${NC}" >&2
                 break
             fi
         done
         
         if [[ -z "$did_content" ]] || [[ "$did_content" == "null" ]]; then
-            echo -e "${YELLOW}⚠️  Aucun DID trouvé sur Nostr pour ${email}${NC}"
+            echo -e "${YELLOW}⚠️  Aucun DID trouvé sur Nostr pour ${email}${NC}" >&2
             continue
         fi
         
@@ -123,11 +123,11 @@ fetch_did_data_only() {
         nostr_data=$(echo "$nostr_data" | jq --argjson did_info "$did_info" '. + [$did_info]')
         ((nostr_count++))
         
-        echo -e "${GREEN}✅ Données Nostr récupérées pour ${email}${NC}"
+        echo -e "${GREEN}✅ Données Nostr récupérées pour ${email}${NC}" >&2
         
     done <<< "$emails"
     
-    echo -e "${GREEN}📊 ${nostr_count} document(s) DID récupéré(s) depuis Nostr${NC}"
+    echo -e "${GREEN}📊 ${nostr_count} document(s) DID récupéré(s) depuis Nostr${NC}" >&2
     
     # Retourner les données Nostr
     echo "$nostr_data"
@@ -139,7 +139,7 @@ fetch_did_data_only() {
 fetch_nostr_society_data() {
     local transfers_json="$1"
     
-    echo -e "${BLUE}🔍 Récupération des données Nostr pour les parts sociales...${NC}"
+    echo -e "${BLUE}🔍 Récupération des données Nostr pour les parts sociales...${NC}" >&2
     
     # Extraire les emails des transferts ou scanner les répertoires utilisateurs
     local emails=""
@@ -149,7 +149,7 @@ fetch_nostr_society_data() {
     
     # Si aucun email trouvé dans les transferts, utiliser le script séparé
     if [[ -z "$emails" ]]; then
-        echo -e "${YELLOW}⚠️  Aucun email trouvé dans les transferts, utilisation du script DID séparé...${NC}"
+        echo -e "${YELLOW}⚠️  Aucun email trouvé dans les transferts, utilisation du script DID séparé...${NC}" >&2
         # Utiliser le script nostr_did_client.py pour récupérer les données DID
         local did_result=$(fetch_did_data_only)
         echo "$did_result"
@@ -161,7 +161,7 @@ fetch_nostr_society_data() {
     
     # Vérifier si le script nostr_did_client.py existe
     if [[ ! -f "$NOSTR_DID_CLIENT_SCRIPT" ]]; then
-        echo -e "${YELLOW}⚠️  Script nostr_did_client.py non trouvé, impossible de récupérer les données Nostr${NC}"
+        echo -e "${YELLOW}⚠️  Script nostr_did_client.py non trouvé, impossible de récupérer les données Nostr${NC}" >&2
         return 0
     fi
     
@@ -170,12 +170,12 @@ fetch_nostr_society_data() {
             continue
         fi
         
-        echo -e "${CYAN}📧 Récupération DID Nostr pour: ${email}${NC}"
+        echo -e "${CYAN}📧 Récupération DID Nostr pour: ${email}${NC}" >&2
         
         # Récupérer les clés Nostr de l'utilisateur
         local nostr_keys_file="$HOME/.zen/game/nostr/${email}/.secret.nostr"
         if [[ ! -f "$nostr_keys_file" ]]; then
-            echo -e "${YELLOW}⚠️  Clés Nostr non trouvées pour ${email}${NC}"
+            echo -e "${YELLOW}⚠️  Clés Nostr non trouvées pour ${email}${NC}" >&2
             continue
         fi
         
@@ -184,26 +184,26 @@ fetch_nostr_society_data() {
         if source "$nostr_keys_file" 2>/dev/null && [[ -n "$NPUB" ]]; then
             npub="$NPUB"
         else
-            echo -e "${YELLOW}⚠️  Impossible d'extraire NPUB pour ${email}${NC}"
+            echo -e "${YELLOW}⚠️  Impossible d'extraire NPUB pour ${email}${NC}" >&2
             continue
         fi
         
         # Récupérer le DID depuis Nostr
         local did_content=""
         for relay in $NOSTR_RELAYS; do
-            echo -e "${BLUE}   Interrogation: ${relay}${NC}"
+            echo -e "${BLUE}   Interrogation: ${relay}${NC}" >&2
             
             # Utiliser le script de récupération DID
                 did_content=$(python3 "$NOSTR_DID_CLIENT_SCRIPT" fetch --author "$npub" --relay "$relay" --kind "$DID_EVENT_KIND" -q 2>/dev/null)
             
             if [[ -n "$did_content" ]] && [[ "$did_content" != "null" ]] && echo "$did_content" | jq empty 2>/dev/null; then
-                echo -e "${GREEN}✅ DID trouvé sur ${relay}${NC}"
+                echo -e "${GREEN}✅ DID trouvé sur ${relay}${NC}" >&2
                 break
             fi
         done
         
         if [[ -z "$did_content" ]] || [[ "$did_content" == "null" ]]; then
-            echo -e "${YELLOW}⚠️  Aucun DID trouvé sur Nostr pour ${email}${NC}"
+            echo -e "${YELLOW}⚠️  Aucun DID trouvé sur Nostr pour ${email}${NC}" >&2
             continue
         fi
         
@@ -229,11 +229,11 @@ fetch_nostr_society_data() {
         nostr_data=$(echo "$nostr_data" | jq --argjson did_info "$did_info" '. + [$did_info]')
         ((nostr_count++))
         
-        echo -e "${GREEN}✅ Données Nostr récupérées pour ${email}${NC}"
+        echo -e "${GREEN}✅ Données Nostr récupérées pour ${email}${NC}" >&2
         
     done <<< "$emails"
     
-    echo -e "${GREEN}📊 ${nostr_count} document(s) DID récupéré(s) depuis Nostr${NC}"
+    echo -e "${GREEN}📊 ${nostr_count} document(s) DID récupéré(s) depuis Nostr${NC}" >&2
     
     # Retourner les données Nostr
     echo "$nostr_data"
@@ -246,13 +246,13 @@ check_and_fix_usociety_files() {
     local transfers_json="$1"
     local fix_mode="${2:-false}"  # true pour corriger, false pour juste vérifier
     
-    echo -e "${BLUE}🔍 Vérification des fichiers U.SOCIETY...${NC}"
+    echo -e "${BLUE}🔍 Vérification des fichiers U.SOCIETY...${NC}" >&2
     
     # Extraire les emails des transferts
     local emails=$(echo "$transfers_json" | jq -r '.transfers[]?.recipient // empty' | grep -v "N/A" | sort -u)
     
     if [[ -z "$emails" ]]; then
-        echo -e "${YELLOW}⚠️  Aucun email trouvé dans les transferts${NC}"
+        echo -e "${YELLOW}⚠️  Aucun email trouvé dans les transferts${NC}" >&2
         return 0
     fi
     
@@ -265,12 +265,12 @@ check_and_fix_usociety_files() {
             continue
         fi
         
-        echo -e "${CYAN}📧 Vérification: ${email}${NC}"
+        echo -e "${CYAN}📧 Vérification: ${email}${NC}" >&2
         
         # Vérifier si le dossier player existe
         local player_dir="$HOME/.zen/game/players/${email}"
         if [[ ! -d "$player_dir" ]]; then
-            echo -e "${YELLOW}⚠️  Dossier player non trouvé: ${player_dir}${NC}"
+            echo -e "${YELLOW}⚠️  Dossier player non trouvé: ${player_dir}${NC}" >&2
             continue
         fi
         
@@ -288,7 +288,7 @@ check_and_fix_usociety_files() {
         ' | sort -r | head -n 1)
         
         if [[ -z "$latest_transaction_date" || "$latest_transaction_date" == "null" ]]; then
-            echo -e "${YELLOW}⚠️  Aucune date de transaction trouvée pour ${email}${NC}"
+            echo -e "${YELLOW}⚠️  Aucune date de transaction trouvée pour ${email}${NC}" >&2
             continue
         fi
         
@@ -320,50 +320,50 @@ check_and_fix_usociety_files() {
             local current_date=$(cat "$usociety_file" 2>/dev/null)
             
             if [[ "$current_date" != "$transaction_date" ]]; then
-                echo -e "${YELLOW}⚠️  Date U.SOCIETY obsolète: ${current_date} (transaction: ${transaction_date})${NC}"
+                echo -e "${YELLOW}⚠️  Date U.SOCIETY obsolète: ${current_date} (transaction: ${transaction_date})${NC}" >&2
                 ((outdated_count++))
                 
                 if [[ "$fix_mode" == "true" ]]; then
                     # Corriger la date
                     echo "$transaction_date" > "$usociety_file"
-                    echo -e "${GREEN}✅ Date U.SOCIETY corrigée: ${transaction_date}${NC}"
+                    echo -e "${GREEN}✅ Date U.SOCIETY corrigée: ${transaction_date}${NC}" >&2
                     
                     # Mettre à jour le fichier U.SOCIETY.end
                     echo "$end_date" > "$usociety_end_file"
-                    echo -e "${GREEN}✅ Date U.SOCIETY.end mise à jour: ${end_date}${NC}"
+                    echo -e "${GREEN}✅ Date U.SOCIETY.end mise à jour: ${end_date}${NC}" >&2
                     
                     # Mettre à jour les liens symboliques dans nostr si il existe
                     if [[ -d "$HOME/.zen/game/nostr/${email}" ]]; then
                         ln -sf "$usociety_file" "$nostr_usociety"
                         ln -sf "$usociety_end_file" "$nostr_usociety_end"
-                        echo -e "${GREEN}✅ Liens symboliques nostr mis à jour${NC}"
+                        echo -e "${GREEN}✅ Liens symboliques nostr mis à jour${NC}" >&2
                     fi
                     ((fixed_count++))
                 fi
             else
-                echo -e "${GREEN}✅ U.SOCIETY à jour: ${current_date}${NC}"
+                echo -e "${GREEN}✅ U.SOCIETY à jour: ${current_date}${NC}" >&2
                 
                 # Vérifier aussi U.SOCIETY.end
                 if [[ -f "$usociety_end_file" ]]; then
                     local current_end_date=$(cat "$usociety_end_file" 2>/dev/null)
                     if [[ "$current_end_date" != "$end_date" ]]; then
-                        echo -e "${YELLOW}⚠️  Date U.SOCIETY.end obsolète: ${current_end_date} (calculée: ${end_date})${NC}"
+                        echo -e "${YELLOW}⚠️  Date U.SOCIETY.end obsolète: ${current_end_date} (calculée: ${end_date})${NC}" >&2
                         if [[ "$fix_mode" == "true" ]]; then
                             echo "$end_date" > "$usociety_end_file"
-                            echo -e "${GREEN}✅ Date U.SOCIETY.end corrigée: ${end_date}${NC}"
+                            echo -e "${GREEN}✅ Date U.SOCIETY.end corrigée: ${end_date}${NC}" >&2
                             if [[ -d "$HOME/.zen/game/nostr/${email}" ]]; then
                                 ln -sf "$usociety_end_file" "$nostr_usociety_end"
                             fi
                             ((fixed_count++))
                         fi
                     else
-                        echo -e "${GREEN}✅ U.SOCIETY.end à jour: ${current_end_date}${NC}"
+                        echo -e "${GREEN}✅ U.SOCIETY.end à jour: ${current_end_date}${NC}" >&2
                     fi
                 else
-                    echo -e "${YELLOW}⚠️  Fichier U.SOCIETY.end manquant${NC}"
+                    echo -e "${YELLOW}⚠️  Fichier U.SOCIETY.end manquant${NC}" >&2
                     if [[ "$fix_mode" == "true" ]]; then
                         echo "$end_date" > "$usociety_end_file"
-                        echo -e "${GREEN}✅ Fichier U.SOCIETY.end créé: ${end_date}${NC}"
+                        echo -e "${GREEN}✅ Fichier U.SOCIETY.end créé: ${end_date}${NC}" >&2
                         if [[ -d "$HOME/.zen/game/nostr/${email}" ]]; then
                             ln -sf "$usociety_end_file" "$nostr_usociety_end"
                         fi
@@ -373,20 +373,20 @@ check_and_fix_usociety_files() {
             fi
         else
             # Fichier manquant
-            echo -e "${RED}❌ Fichier U.SOCIETY manquant pour ${email}${NC}"
+            echo -e "${RED}❌ Fichier U.SOCIETY manquant pour ${email}${NC}" >&2
             ((missing_count++))
             
             if [[ "$fix_mode" == "true" ]]; then
                 # Créer les fichiers U.SOCIETY et U.SOCIETY.end
                 echo "$transaction_date" > "$usociety_file"
                 echo "$end_date" > "$usociety_end_file"
-                echo -e "${GREEN}✅ Fichiers U.SOCIETY créés: ${transaction_date} → ${end_date}${NC}"
+                echo -e "${GREEN}✅ Fichiers U.SOCIETY créés: ${transaction_date} → ${end_date}${NC}" >&2
                 
                 # Créer les liens symboliques dans nostr si le dossier existe
                 if [[ -d "$HOME/.zen/game/nostr/${email}" ]]; then
                     ln -sf "$usociety_file" "$nostr_usociety"
                     ln -sf "$usociety_end_file" "$nostr_usociety_end"
-                    echo -e "${GREEN}✅ Liens symboliques nostr créés${NC}"
+                    echo -e "${GREEN}✅ Liens symboliques nostr créés${NC}" >&2
                 fi
                 ((fixed_count++))
             fi
@@ -394,15 +394,15 @@ check_and_fix_usociety_files() {
     done <<< "$emails"
     
     # Résumé
-    echo -e "\n${BLUE}📊 Résumé de la vérification U.SOCIETY:${NC}"
-    echo -e "  • Fichiers manquants: ${missing_count}"
-    echo -e "  • Fichiers obsolètes: ${outdated_count}"
-    echo -e "  • Fichiers corrigés: ${fixed_count}"
+    echo -e "\n${BLUE}📊 Résumé de la vérification U.SOCIETY:${NC}" >&2
+    echo -e "  • Fichiers manquants: ${missing_count}" >&2
+    echo -e "  • Fichiers obsolètes: ${outdated_count}" >&2
+    echo -e "  • Fichiers corrigés: ${fixed_count}" >&2
     
     if [[ "$fix_mode" == "true" && $fixed_count -gt 0 ]]; then
-        echo -e "${GREEN}🎉 Correction terminée! ${fixed_count} fichier(s) U.SOCIETY corrigé(s)${NC}"
+        echo -e "${GREEN}🎉 Correction terminée! ${fixed_count} fichier(s) U.SOCIETY corrigé(s)${NC}" >&2
     elif [[ "$fix_mode" == "false" && $((missing_count + outdated_count)) -gt 0 ]]; then
-        echo -e "${YELLOW}💡 Utilisez l'option --fix pour corriger les fichiers U.SOCIETY${NC}"
+        echo -e "${YELLOW}💡 Utilisez l'option --fix pour corriger les fichiers U.SOCIETY${NC}" >&2
     fi
     
     return 0
@@ -487,7 +487,7 @@ log "UPLANET G1 wallet: $UPLANET_G1PUB"
 
 # Si mode --did, retourner seulement les données DID
 if [[ "$DID_ONLY" == "true" ]]; then
-    echo -e "${BLUE}🔍 Mode DID uniquement - Récupération des données DID...${NC}"
+    echo -e "${BLUE}🔍 Mode DID uniquement - Récupération des données DID...${NC}" >&2
     
     # Créer un JSON de base pour les données DID
     base_json='{
@@ -636,7 +636,7 @@ end
 
 # Récupérer les données Nostr si demandé
 if [[ "$INCLUDE_NOSTR" == "true" ]]; then
-    echo ""
+    echo "" >&2
     # Utiliser la fonction intégrée pour récupérer les données DID
     NOSTR_DATA=$(fetch_did_data_only)
     
@@ -652,7 +652,7 @@ log "SOCIETY analysis completed: $(echo "$RESULT" | jq -r '.total_transfers // 0
 # Vérifier et corriger les fichiers U.SOCIETY si demandé
 if [[ "$JSON_ONLY" == "false" ]]; then
     if [[ "$CHECK_USOCIETY" == "true" || "$FIX_USOCIETY" == "true" ]]; then
-        echo ""
+        echo "" >&2
         check_and_fix_usociety_files "$RESULT" "$FIX_USOCIETY"
     fi
 fi
