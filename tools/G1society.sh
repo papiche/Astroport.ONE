@@ -117,20 +117,34 @@ fetch_did_data_only() {
             zencard_wallet: .metadata.zencardWallet // null,
             wot_duniter_member: .metadata.wotDuniterMember // null
         }
-        ')
+        ' 2>/dev/null)
+        
+        # Validate did_info is valid JSON before adding
+        if [[ -z "$did_info" ]] || ! echo "$did_info" | jq empty 2>/dev/null; then
+            echo -e "${YELLOW}⚠️  DID info invalide pour ${email}, ignoré${NC}" >&2
+            continue
+        fi
         
         # Ajouter les informations Nostr aux données
-        nostr_data=$(echo "$nostr_data" | jq --argjson did_info "$did_info" '. + [$did_info]')
-        ((nostr_count++))
-        
-        echo -e "${GREEN}✅ Données Nostr récupérées pour ${email}${NC}" >&2
+        local new_nostr_data=$(echo "$nostr_data" | jq --argjson did_info "$did_info" '. + [$did_info]' 2>/dev/null)
+        if [[ -n "$new_nostr_data" ]] && echo "$new_nostr_data" | jq empty 2>/dev/null; then
+            nostr_data="$new_nostr_data"
+            ((nostr_count++))
+            echo -e "${GREEN}✅ Données Nostr récupérées pour ${email}${NC}" >&2
+        else
+            echo -e "${YELLOW}⚠️  Échec ajout DID pour ${email}${NC}" >&2
+        fi
         
     done <<< "$emails"
     
     echo -e "${GREEN}📊 ${nostr_count} document(s) DID récupéré(s) depuis Nostr${NC}" >&2
     
-    # Retourner les données Nostr
-    echo "$nostr_data"
+    # Validate final result, return empty array if invalid
+    if [[ -z "$nostr_data" ]] || ! echo "$nostr_data" | jq empty 2>/dev/null; then
+        echo "[]"
+    else
+        echo "$nostr_data"
+    fi
 }
 
 ################################################################################
@@ -223,20 +237,34 @@ fetch_nostr_society_data() {
             zencard_wallet: .metadata.zencardWallet // null,
             wot_duniter_member: .metadata.wotDuniterMember // null
         }
-        ')
+        ' 2>/dev/null)
+        
+        # Validate did_info is valid JSON before adding
+        if [[ -z "$did_info" ]] || ! echo "$did_info" | jq empty 2>/dev/null; then
+            echo -e "${YELLOW}⚠️  DID info invalide pour ${email}, ignoré${NC}" >&2
+            continue
+        fi
         
         # Ajouter les informations Nostr aux données
-        nostr_data=$(echo "$nostr_data" | jq --argjson did_info "$did_info" '. + [$did_info]')
-        ((nostr_count++))
-        
-        echo -e "${GREEN}✅ Données Nostr récupérées pour ${email}${NC}" >&2
+        local new_nostr_data=$(echo "$nostr_data" | jq --argjson did_info "$did_info" '. + [$did_info]' 2>/dev/null)
+        if [[ -n "$new_nostr_data" ]] && echo "$new_nostr_data" | jq empty 2>/dev/null; then
+            nostr_data="$new_nostr_data"
+            ((nostr_count++))
+            echo -e "${GREEN}✅ Données Nostr récupérées pour ${email}${NC}" >&2
+        else
+            echo -e "${YELLOW}⚠️  Échec ajout DID pour ${email}${NC}" >&2
+        fi
         
     done <<< "$emails"
     
     echo -e "${GREEN}📊 ${nostr_count} document(s) DID récupéré(s) depuis Nostr${NC}" >&2
     
-    # Retourner les données Nostr
-    echo "$nostr_data"
+    # Validate final result, return empty array if invalid
+    if [[ -z "$nostr_data" ]] || ! echo "$nostr_data" | jq empty 2>/dev/null; then
+        echo "[]"
+    else
+        echo "$nostr_data"
+    fi
 }
 
 ################################################################################
@@ -640,8 +668,19 @@ if [[ "$INCLUDE_NOSTR" == "true" ]]; then
     # Utiliser la fonction intégrée pour récupérer les données DID
     NOSTR_DATA=$(fetch_did_data_only)
     
+    # Validate NOSTR_DATA is valid JSON, default to empty array if not
+    if [[ -z "$NOSTR_DATA" ]] || ! echo "$NOSTR_DATA" | jq empty 2>/dev/null; then
+        log "WARNING: Invalid or empty NOSTR_DATA, using empty array"
+        NOSTR_DATA="[]"
+    fi
+    
     # Intégrer les données Nostr dans le résultat
-    RESULT=$(echo "$RESULT" | jq --argjson nostr_data "$NOSTR_DATA" '. + {nostr_did_data: $nostr_data}')
+    NEW_RESULT=$(echo "$RESULT" | jq --argjson nostr_data "$NOSTR_DATA" '. + {nostr_did_data: $nostr_data}' 2>/dev/null)
+    if [[ -n "$NEW_RESULT" ]] && echo "$NEW_RESULT" | jq empty 2>/dev/null; then
+        RESULT="$NEW_RESULT"
+    else
+        log "WARNING: Failed to merge NOSTR_DATA, keeping original RESULT"
+    fi
 fi
 
 # Output the result
