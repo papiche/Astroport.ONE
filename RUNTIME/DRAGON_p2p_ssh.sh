@@ -487,8 +487,8 @@ setup_tunnel() {
 ## Function: List remote printers
 list_printers() {
     echo "Querying remote printers..."
-    # Try lpstat first
-    PRINTERS=$(lpstat -h 127.0.0.1:${LOCAL_PORT} -a 2>/dev/null | awk "{print \$1}")
+    # Try lpstat first (use cut instead of awk for simpler escaping)
+    PRINTERS=$(lpstat -h 127.0.0.1:${LOCAL_PORT} -a 2>/dev/null | cut -d" " -f1)
     if [[ -z "$PRINTERS" ]]; then
         # Fallback: query CUPS API directly
         PRINTERS=$(curl -s "http://127.0.0.1:${LOCAL_PORT}/printers/" 2>/dev/null \
@@ -545,7 +545,7 @@ auto_add_printers() {
     if [[ $ADDED -gt 0 ]]; then
         # Set first printer as default if no default exists
         if [[ -z $(lpstat -d 2>/dev/null | grep "system default") ]]; then
-            FIRST_PRINTER="${PRINTER_PREFIX}_$(echo $PRINTERS | awk "{print \$1}")"
+            FIRST_PRINTER="${PRINTER_PREFIX}_$(echo $PRINTERS | head -1)"
             lpadmin -d "$FIRST_PRINTER" 2>/dev/null
             echo "Default printer set to: $FIRST_PRINTER"
         fi
@@ -563,7 +563,7 @@ auto_add_printers() {
 ## Function: Remove astro printers and close tunnel
 remove_printers() {
     echo "Removing Astroport printers (${PRINTER_PREFIX}_*)..."
-    for PRINTER in $(lpstat -p 2>/dev/null | grep "$PRINTER_PREFIX" | awk "{print \$2}"); do
+    for PRINTER in $(lpstat -p 2>/dev/null | grep "$PRINTER_PREFIX" | cut -d" " -f2); do
         echo "Removing: $PRINTER"
         lpadmin -x "$PRINTER" 2>/dev/null
     done
@@ -585,8 +585,8 @@ print_file() {
     
     if [[ -z "$PRINTER" ]]; then
         # Use first astro printer or default
-        PRINTER=$(lpstat -p 2>/dev/null | grep "$PRINTER_PREFIX" | awk "{print \$2}" | head -1)
-        [[ -z "$PRINTER" ]] && PRINTER=$(lpstat -d 2>/dev/null | awk "{print \$NF}")
+        PRINTER=$(lpstat -p 2>/dev/null | grep "$PRINTER_PREFIX" | cut -d" " -f2 | head -1)
+        [[ -z "$PRINTER" ]] && PRINTER=$(lpstat -d 2>/dev/null | sed "s/.*: //")
     fi
     
     if [[ -z "$PRINTER" ]]; then
