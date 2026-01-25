@@ -1256,85 +1256,91 @@ send_error_notification() {
         "cookie_expired")
             error_title="⚠️ Cookie YouTube Expiré"
             error_message="Vos cookies YouTube ne sont plus valides et doivent être réexportés."
-            error_instructions="<p><strong>💡 Instructions pour réexporter vos cookies :</strong></p>
-            <ol>
-                <li>Ouvrez une fenêtre de navigation <strong>PRIVÉE/INCOGNITO</strong></li>
-                <li>Connectez-vous à YouTube dans cette fenêtre</li>
-                <li>Exportez vos cookies (extension de navigateur ou outil d'export)</li>
-                <li>Fermez la fenêtre privée</li>
-                <li>Uploadez les nouveaux cookies sur <a href=\"$uSPOT/cookie\" target=\"_blank\">la page cookie</a></li>
-            </ol>
-            <p><strong>⚠️ Important :</strong> Les cookies doivent être exportés depuis une fenêtre privée pour éviter les conflits avec votre session normale.</p>"
+            error_instructions="<p><strong>💡 Instructions pour réexporter vos cookies :</strong></p><ol><li>Ouvrez une fenêtre de navigation <strong>PRIVÉE/INCOGNITO</strong></li><li>Connectez-vous à YouTube dans cette fenêtre</li><li>Exportez vos cookies (extension de navigateur ou outil d'export)</li><li>Fermez la fenêtre privée</li><li>Uploadez les nouveaux cookies sur <a href=\"${uSPOT}/cookie\" target=\"_blank\">la page cookie</a></li></ol><p><strong>⚠️ Important :</strong> Les cookies doivent être exportés depuis une fenêtre privée pour éviter les conflits avec votre session normale.</p>"
             ;;
         "download_failures")
             error_title="⚠️ Échecs de Téléchargement"
             error_message="Certaines vidéos n'ont pas pu être téléchargées lors de la synchronisation."
-            error_instructions="<p><strong>Détails :</strong></p>
-            <ul>
-                <li><strong>Échecs :</strong> $error_details</li>
-                <li><strong>Succès :</strong> $success_count</li>
-            </ul>
-            <p>Les vidéos qui ont échoué seront réessayées lors de la prochaine synchronisation automatique.</p>
-            <p>Si le problème persiste, vérifiez :</p>
-            <ul>
-                <li>Votre connexion Internet</li>
-                <li>L'espace disque disponible dans votre uDRIVE</li>
-                <li>Les logs dans <code>~/.zen/tmp/IA.log</code></li>
-            </ul>"
+            error_instructions="<p><strong>Détails :</strong></p><ul><li><strong>Échecs :</strong> ${error_details}</li><li><strong>Succès :</strong> ${success_count}</li></ul><p>Les vidéos qui ont échoué seront réessayées lors de la prochaine synchronisation automatique.</p><p>Si le problème persiste, vérifiez :</p><ul><li>Votre connexion Internet</li><li>L'espace disque disponible dans votre uDRIVE</li><li>Les logs dans <code>~/.zen/tmp/IA.log</code></li></ul>"
             ;;
         "sync_failed")
             error_title="⚠️ Échec de Synchronisation"
             error_message="La synchronisation YouTube a échoué."
-            error_instructions="<p>La synchronisation n'a pas pu récupérer vos vidéos likées.</p>
-            <p><strong>Vérifications à effectuer :</strong></p>
-            <ul>
-                <li>Vos cookies YouTube sont-ils valides ? (<a href=\"$uSPOT/cookie\" target=\"_blank\">Vérifier</a>)</li>
-                <li>Votre connexion Internet fonctionne-t-elle ?</li>
-                <li>YouTube est-il accessible ?</li>
-            </ul>
-            <p>La synchronisation sera réessayée automatiquement lors du prochain cycle.</p>"
+            error_instructions="<p>La synchronisation n'a pas pu récupérer vos vidéos likées.</p><p><strong>Vérifications à effectuer :</strong></p><ul><li>Vos cookies YouTube sont-ils valides ? (<a href=\"${uSPOT}/cookie\" target=\"_blank\">Vérifier</a>)</li><li>Votre connexion Internet fonctionne-t-elle ?</li><li>YouTube est-il accessible ?</li></ul><p>La synchronisation sera réessayée automatiquement lors du prochain cycle.</p>"
             ;;
         "disk_space")
             error_title="⚠️ Espace Disque Insuffisant"
             error_message="Il n'y a pas assez d'espace disque pour télécharger de nouvelles vidéos."
-            error_instructions="<p><strong>Espace disponible :</strong> $error_details</p>
-            <p><strong>Espace requis :</strong> Au moins 1 GB</p>
-            <p><strong>Actions recommandées :</strong></p>
-            <ul>
-                <li>Libérez de l'espace disque sur votre système</li>
-                <li>Supprimez d'anciennes vidéos de votre uDRIVE si nécessaire</li>
-                <li>Vérifiez l'espace disponible : <code>df -h ~/.zen/game/nostr/${player}/APP/uDRIVE</code></li>
-            </ul>"
+            error_instructions="<p><strong>Espace disponible :</strong> ${error_details}</p><p><strong>Espace requis :</strong> Au moins 1 GB</p><p><strong>Actions recommandées :</strong></p><ul><li>Libérez de l'espace disque sur votre système</li><li>Supprimez d'anciennes vidéos de votre uDRIVE si nécessaire</li><li>Vérifiez l'espace disponible : <code>df -h ~/.zen/game/nostr/${player}/APP/uDRIVE</code></li></ul>"
             ;;
         *)
             error_title="⚠️ Erreur de Synchronisation"
             error_message="Une erreur s'est produite lors de la synchronisation YouTube."
-            error_instructions="<p><strong>Détails :</strong> $error_details</p>
-            <p>Vérifiez les logs dans <code>~/.zen/tmp/IA.log</code> pour plus d'informations.</p>"
+            error_instructions="<p><strong>Détails :</strong> ${error_details}</p><p>Vérifiez les logs dans <code>~/.zen/tmp/IA.log</code> pour plus d'informations.</p>"
             ;;
     esac
     
     # Chemin vers le template HTML
     local template_file="${MY_PATH}/../templates/NOSTR/cookie.youtube.alert.html"
     
-    # Utiliser le template et remplacer les placeholders avec sed
+    # Check if template file exists
+    if [[ ! -f "$template_file" ]]; then
+        log_debug "ERROR: Template file not found: $template_file"
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: Template file not found: $template_file" >&2
+        return 1
+    fi
+    
     local temp_email_file="$HOME/.zen/tmp/youtube_error_email_$(date +%Y%m%d_%H%M%S).html"
     local current_date=$(date '+%d/%m/%Y à %H:%M')
     
-    # Copier le template et remplacer les placeholders
-    sed -e "s|_ERROR_TITLE_|$error_title|g" \
-        -e "s|_ERROR_MESSAGE_|$error_message|g" \
-        -e "s|_ERROR_INSTRUCTIONS_|$error_instructions|g" \
-        -e "s|_DATE_|$current_date|g" \
-        -e "s|_uSPOT_|$uSPOT|g" \
-        "$template_file" > "$temp_email_file"
+    # Use awk instead of sed to handle multi-line replacement properly
+    # This avoids issues with special characters and newlines in HTML content
+    awk -v error_title="$error_title" \
+        -v error_message="$error_message" \
+        -v error_instructions="$error_instructions" \
+        -v current_date="$current_date" \
+        -v uspot="${uSPOT}" \
+        '{
+            gsub(/_ERROR_TITLE_/, error_title);
+            gsub(/_ERROR_MESSAGE_/, error_message);
+            gsub(/_ERROR_INSTRUCTIONS_/, error_instructions);
+            gsub(/_DATE_/, current_date);
+            gsub(/_uSPOT_/, uspot);
+            print
+        }' "$template_file" > "$temp_email_file"
+    
+    # Verify the output file is not empty
+    if [[ ! -s "$temp_email_file" ]]; then
+        log_debug "ERROR: Generated email file is empty"
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: Generated email file is empty" >&2
+        # Fallback: create a simple HTML email directly
+        cat > "$temp_email_file" << EOF
+<!DOCTYPE html>
+<html>
+<head><meta charset='UTF-8'><title>${error_title}</title></head>
+<body style="font-family: 'Courier New', monospace; background: #f5f5f5; padding: 20px;">
+<div style="max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px;">
+<h2 style="color: #f5576c;">${error_title}</h2>
+<p>${error_message}</p>
+<div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 5px; margin: 15px 0;">
+${error_instructions}
+<p><strong>Date :</strong> ${current_date}</p>
+</div>
+<p><a href="${uSPOT}/cookie">Gérer vos cookies YouTube</a></p>
+</div>
+</body>
+</html>
+EOF
+        log_debug "Created fallback email file"
+    fi
     
     log_debug "Template loaded from: $template_file"
+    log_debug "Email file created: $temp_email_file (size: $(stat -c%s "$temp_email_file" 2>/dev/null || echo 0) bytes)"
     
     # Envoyer l'email via mailjet avec durée éphémère de 24h
     ${MY_PATH}/../tools/mailjet.sh --expire 24h "${player}" "$temp_email_file" "$error_title" 2>/dev/null
     
-      if [[ $? -eq 0 ]]; then
+    if [[ $? -eq 0 ]]; then
         log_debug "Error notification sent successfully to $player"
     else
         log_debug "Failed to send error notification to $player"
