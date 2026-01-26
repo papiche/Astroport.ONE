@@ -257,6 +257,19 @@ export_json() {
     # Get Prometheus metrics if available
     local prometheus_metrics=$(get_prometheus_metrics)
     
+    # Get CPU info with safe fallbacks for empty values
+    local cpu_model=$(grep "model name" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null)
+    [[ -z "$cpu_model" ]] && cpu_model="Unknown"
+    
+    local cpu_cores=$(grep -c "processor" /proc/cpuinfo 2>/dev/null)
+    [[ -z "$cpu_cores" || "$cpu_cores" -eq 0 ]] && cpu_cores=1
+    
+    local cpu_freq=$(grep "cpu MHz" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null)
+    [[ -z "$cpu_freq" ]] && cpu_freq=0
+    
+    local load_avg=$(uptime | awk -F'load average:' '{ print $2 }' | xargs | cut -d',' -f1)
+    [[ -z "$load_avg" ]] && load_avg="0.00"
+
     # Generate JSON
     cat << EOF
 {
@@ -269,10 +282,10 @@ export_json() {
     },
     "system": {
         "cpu": {
-            "model": "$(grep "model name" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null || echo "Unknown")",
-            "cores": $(grep "processor" /proc/cpuinfo | wc -l 2>/dev/null || echo "0"),
-            "frequency_mhz": $(grep "cpu MHz" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null || echo "0"),
-            "load_average": "$(uptime | awk -F'load average:' '{ print $2 }' | xargs | cut -d',' -f1)"
+            "model": "$cpu_model",
+            "cores": $cpu_cores,
+            "frequency_mhz": $cpu_freq,
+            "load_average": "$load_avg"
         },
         "memory": {
             "total_gb": $(( $(grep "MemTotal" /proc/meminfo | awk '{print $2}' 2>/dev/null || echo "0") / 1024 / 1024 )),
