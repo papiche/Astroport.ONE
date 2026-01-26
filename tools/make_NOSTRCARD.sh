@@ -250,6 +250,12 @@ EOFNOSTR
     echo "_${ZLAT}_${ZLON}" > ${HOME}/.zen/game/nostr/${EMAIL}/ZUMAP # RUNTIME/NOSTR.UMAP.refresh.sh
     echo "LAT=${ZLAT}; LON=${ZLON};" > ${HOME}/.zen/game/nostr/${EMAIL}/GPS # IA/UPlanet_IA_Responder.sh
 
+    ## Initialize station GPS if not set (first MULTIPASS becomes CAPTAIN GPS)
+    if [[ ! -s ~/.zen/GPS ]]; then
+        echo "LAT=${ZLAT}; LON=${ZLON}" > ~/.zen/GPS
+        echo "📍 Station GPS initialized: LAT=${ZLAT}, LON=${ZLON}"
+    fi
+
     ## Create a .secret.disco file with the DISCO seed (needed for UPlanet Captain) -
     # for Captain use # HARDER SECURITY # use encrypted RAM fs cycled every 20h12
     echo "$DISCO" > "${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco"

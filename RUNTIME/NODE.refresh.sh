@@ -54,7 +54,7 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     ## COPY 20h12.log
     cp -f /tmp/20h12.log ~/.zen/tmp/${IPFSNODEID}/20h12.txt
 
-    ## INFORM NODE GPS LOCATION from CAPTAIN player
+    ## INFORM NODE GPS LOCATION from CAPTAIN (TW)
     [[ -s ~/.zen/game/players/.current/GPS.json ]] \
         && cp ~/.zen/game/players/.current/GPS.json ~/.zen/tmp/${IPFSNODEID}/ \
         && LAT=$(cat ~/.zen/tmp/${IPFSNODEID}/GPS.json | jq -r .[].lat) \
