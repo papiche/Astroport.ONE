@@ -213,17 +213,47 @@ for UMAP in ${unique_combined[@]}; do
     generate_image_to_ipfs() {
         local gen_url="$1"
         local tmp_file="$2"
+        local img_name=$(basename "$tmp_file")
         
-        echo "Generating screenshot: $gen_url"
-        python "${MY_PATH}/../tools/page_screenshot.py" "$gen_url" "$tmp_file" 900 900
+        echo "  → Generating $img_name from: $gen_url" >&2
         
-        if [[ -s "$tmp_file" ]]; then
-            local cid=$(ipfs add -q "$tmp_file" 2>/dev/null)
-            rm -f "$tmp_file"
-            echo "$cid"
-        else
+        # Run screenshot with error capture
+        local screenshot_output
+        screenshot_output=$(python "${MY_PATH}/../tools/page_screenshot.py" "$gen_url" "$tmp_file" 900 900 2>&1)
+        local screenshot_exit=$?
+        
+        if [[ $screenshot_exit -ne 0 ]]; then
+            echo "  ✗ Screenshot FAILED for $img_name (exit code: $screenshot_exit)" >&2
+            [[ -n "$screenshot_output" ]] && echo "    Error: $screenshot_output" >&2
             echo ""
+            return 1
         fi
+        
+        if [[ ! -s "$tmp_file" ]]; then
+            echo "  ✗ Screenshot produced empty file for $img_name" >&2
+            [[ -n "$screenshot_output" ]] && echo "    Output: $screenshot_output" >&2
+            rm -f "$tmp_file" 2>/dev/null
+            echo ""
+            return 1
+        fi
+        
+        # Add to IPFS
+        local cid
+        cid=$(ipfs add -q "$tmp_file" 2>&1)
+        local ipfs_exit=$?
+        
+        if [[ $ipfs_exit -ne 0 || -z "$cid" ]]; then
+            echo "  ✗ IPFS add FAILED for $img_name" >&2
+            [[ -n "$cid" ]] && echo "    Error: $cid" >&2
+            rm -f "$tmp_file" 2>/dev/null
+            echo ""
+            return 1
+        fi
+        
+        local file_size=$(stat -c%s "$tmp_file" 2>/dev/null || echo "?")
+        echo "  ✓ $img_name OK (${file_size} bytes) → $cid" >&2
+        rm -f "$tmp_file"
+        echo "$cid"
     }
     
     echo "Checking NOSTR profile for image CIDs and update date..."
@@ -234,24 +264,39 @@ for UMAP in ${unique_combined[@]}; do
     USAT_CID=""    # Usat.jpg (full satellite - BANNER)
     ZUSAT_CID=""   # zUsat.jpg (zoomed satellite)
     IMAGES_UPDATED=false
+    IMG_SUCCESS=0
+    IMG_FAILED=0
     
     if check_images_need_refresh; then
         echo "Generating/updating map images..."
+        echo "IPFS Gateway: ${myIPFS}"
         
         # Generate road maps if needed
         if [[ "$NEED_UMAP_REFRESH" == true ]]; then
             # zUmap.jpg (zoomed road map 0.001° - PROFILE PICTURE)
             ZUMAP_GEN="/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.001"
             ZUMAP_CID=$(generate_image_to_ipfs "${myIPFS}${ZUMAP_GEN}" "${HOME}/.zen/tmp/${MOATS}/zUmap.jpg")
-            [[ -n "$ZUMAP_CID" ]] && echo "✓ zUmap.jpg generated: $ZUMAP_CID" && IMAGES_UPDATED=true
+            if [[ -n "$ZUMAP_CID" ]]; then
+                ((IMG_SUCCESS++))
+                IMAGES_UPDATED=true
+            else
+                ((IMG_FAILED++))
+                echo "  ⚠ zUmap.jpg generation failed - check logs above"
+            fi
             
             # Umap.jpg (full road map 0.01°)
             UMAP_GEN="/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
             UMAP_CID=$(generate_image_to_ipfs "${myIPFS}${UMAP_GEN}" "${HOME}/.zen/tmp/${MOATS}/Umap.jpg")
-            [[ -n "$UMAP_CID" ]] && echo "✓ Umap.jpg generated: $UMAP_CID"
+            if [[ -n "$UMAP_CID" ]]; then
+                ((IMG_SUCCESS++))
+            else
+                ((IMG_FAILED++))
+                echo "  ⚠ Umap.jpg generation failed - check logs above"
+            fi
         else
             ZUMAP_CID="$EXISTING_ZUMAP_CID"
             UMAP_CID="$EXISTING_UMAP_CID"
+            echo "  Using existing road map CIDs (still fresh)"
         fi
         
         # Generate satellite images if needed
@@ -259,15 +304,34 @@ for UMAP in ${unique_combined[@]}; do
             # Usat.jpg (full satellite 0.1° - BANNER)
             USAT_GEN="/ipns/copylaradio.com/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.1"
             USAT_CID=$(generate_image_to_ipfs "${myIPFS}${USAT_GEN}" "${HOME}/.zen/tmp/${MOATS}/Usat.jpg")
-            [[ -n "$USAT_CID" ]] && echo "✓ Usat.jpg generated: $USAT_CID" && IMAGES_UPDATED=true
+            if [[ -n "$USAT_CID" ]]; then
+                ((IMG_SUCCESS++))
+                IMAGES_UPDATED=true
+            else
+                ((IMG_FAILED++))
+                echo "  ⚠ Usat.jpg generation failed - check logs above"
+            fi
             
             # zUsat.jpg (zoomed satellite 0.01°)
             ZUSAT_GEN="/ipns/copylaradio.com/Usat.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
             ZUSAT_CID=$(generate_image_to_ipfs "${myIPFS}${ZUSAT_GEN}" "${HOME}/.zen/tmp/${MOATS}/zUsat.jpg")
-            [[ -n "$ZUSAT_CID" ]] && echo "✓ zUsat.jpg generated: $ZUSAT_CID"
+            if [[ -n "$ZUSAT_CID" ]]; then
+                ((IMG_SUCCESS++))
+            else
+                ((IMG_FAILED++))
+                echo "  ⚠ zUsat.jpg generation failed - check logs above"
+            fi
         else
             USAT_CID="$EXISTING_USAT_CID"
             ZUSAT_CID="$EXISTING_ZUSAT_CID"
+            echo "  Using existing satellite CIDs (still fresh)"
+        fi
+        
+        # Summary
+        if [[ $IMG_FAILED -gt 0 ]]; then
+            echo "⚠ Image generation: $IMG_SUCCESS succeeded, $IMG_FAILED failed"
+        elif [[ $IMG_SUCCESS -gt 0 ]]; then
+            echo "✓ Image generation: $IMG_SUCCESS images generated successfully"
         fi
     else
         # Use existing CIDs from NOSTR profile
@@ -275,7 +339,7 @@ for UMAP in ${unique_combined[@]}; do
         UMAP_CID="$EXISTING_UMAP_CID"
         USAT_CID="$EXISTING_USAT_CID"
         ZUSAT_CID="$EXISTING_ZUSAT_CID"
-        echo "Using existing image CIDs from NOSTR profile"
+        echo "✓ Using existing image CIDs from NOSTR profile (all fresh)"
     fi
     
     # Set update date (today if images were refreshed, or keep existing)
@@ -285,7 +349,7 @@ for UMAP in ${unique_combined[@]}; do
         UMAP_UPDATE_DATE="$EXISTING_UMAP_UPDATED"
     fi
     
-    echo "NOSTR images ready! (zUmap: $ZUMAP_CID, Umap: $UMAP_CID, Usat: $USAT_CID, zUsat: $ZUSAT_CID)"
+    echo "NOSTR images: zUmap=${ZUMAP_CID:-NONE} | Umap=${UMAP_CID:-NONE} | Usat=${USAT_CID:-NONE} | zUsat=${ZUSAT_CID:-NONE}"
     
     ########################################################## TODO REMOVE
     ## CLEANUP: Remove local image files (migration to NOSTR-native storage)
