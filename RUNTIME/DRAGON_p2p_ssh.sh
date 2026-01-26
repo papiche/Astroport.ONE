@@ -277,6 +277,7 @@ fi
 ' > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
 
 echo "ipfs cat /ipns/${IPFSNODEID}/x_ssh.sh | bash"
+chmod +x ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
 
 
 ############################################
@@ -307,6 +308,7 @@ if [[ ! -z $(pgrep ollama) ]]; then
     #~ cat ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh
 
     echo "ipfs cat /ipns/${IPFSNODEID}/x_ollama.sh | bash"
+    chmod +x ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh
 
 fi
 
@@ -335,6 +337,7 @@ if [[ ! -z $(systemctl status comfyui.service 2>/dev/null | grep "active (runnin
     ' > ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh
 
     echo "ipfs cat /ipns/${IPFSNODEID}/x_comfyui.sh | bash"
+    chmod +x ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh
 
 fi
 
@@ -365,6 +368,7 @@ if [[ ! -z $(docker ps | grep orpheus) ]]; then
     ' > ~/.zen/tmp/${IPFSNODEID}/x_orpheus.sh
 
     echo "ipfs cat /ipns/${IPFSNODEID}/x_orpheus.sh | bash"
+    chmod +x ~/.zen/tmp/${IPFSNODEID}/x_orpheus.sh
 
 fi
 
@@ -395,6 +399,7 @@ if [[ ! -z $(docker ps | grep perplexica) ]]; then
     ' > ~/.zen/tmp/${IPFSNODEID}/x_perplexica.sh
 
     echo "ipfs cat /ipns/${IPFSNODEID}/x_perplexica.sh | bash"
+    chmod +x ~/.zen/tmp/${IPFSNODEID}/x_perplexica.sh
 
 fi
 
@@ -427,8 +432,10 @@ if [[ ! -z $(ps auxf | grep "strfry relay" | grep -v grep) ]]; then
     ' > ~/.zen/tmp/${IPFSNODEID}/x_strfry.sh
 
     echo "ipfs cat /ipns/${IPFSNODEID}/x_strfry.sh | bash"
+    chmod +x ~/.zen/tmp/${IPFSNODEID}/x_strfry.sh
 
 fi
+
 
 ############################################
 ## PREPARE x_cups.sh
@@ -619,6 +626,7 @@ esac
 ' > ~/.zen/tmp/${IPFSNODEID}/x_cups.sh
 
     echo "ipfs cat /ipns/${IPFSNODEID}/x_cups.sh | bash"
+    chmod +x ~/.zen/tmp/${IPFSNODEID}/x_cups.sh
 
 fi
 

@@ -206,47 +206,37 @@ while true; do
     echo "CMD=THAT&AND=THIS&APPNAME=WHAT&OBJ=VAL"
     echo "$CMD=$THAT&$AND=$THIS&$APPNAME=$WHAT&$OBJ=$VAL"
 
-    case $CMD in
-        "salt")
-            # TWISTY API PLAYGROUND - FORMATION BASH : http protocol + nc twisted API (NIVEAU 1)
-            exec ${MY_PATH}/API/SALT.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
-        ;;
+    ############################################################################
+    ## API EXECUTION DISABLED - Port 1234 only serves as launcher for _12345.sh
+    ## Commands are no longer executed for security reasons
+    ############################################################################
+    echo "API DISABLED - Command '$CMD' ignored : ${MOATS} : $(date)"
+    echo "$HTTPCORS
+{\"error\": \"API disabled\", \"message\": \"Port 1234 API execution is disabled. Use port 12345 for swarm sync.\", \"timestamp\": \"${MOATS}\"}" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
 
-        "player")
-            exec ${MY_PATH}/API/PLAYER.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
-        ;;
-
-        "qrcode")
-            exec ${MY_PATH}/API/QRCODE.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
-        ;;
-
-        "uplanet")
-            echo ${MY_PATH}/API/UPLANET.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE"
-            exec ${MY_PATH}/API/UPLANET.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
-        ;;
-
-        "amzqr")
-            exec ${MY_PATH}/API/AMZQR.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
-        ;;
-
-        "")
-            echo "$HTTPCORS
-            ERROR UNKNOWN $CMD : ${MOATS} : $(date)"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-
-        ;;
-
-        ### ADD API SCRIPT INTO /API
-        ## FORGE YOUR HTTPCORS FOR CLIENT ONLY SECURITTY
-        *)
-
-            [[ ! -s ${MY_PATH}/API/${CMD^^}.sh ]] \
-            && ( echo "$HTTPCORS
-            ERROR UNKNOWN $CMD : ${MOATS} : $(date)"  | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 & ) \
-            || exec ${MY_PATH}/API/${CMD^^}.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
-
-        ;;
-
-    esac
+    #~ ## ORIGINAL API EXECUTION CODE (DISABLED)
+    #~ case $CMD in
+        #~ "salt")
+            #~ exec ${MY_PATH}/API/SALT.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
+        #~ ;;
+        #~ "player")
+            #~ exec ${MY_PATH}/API/PLAYER.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
+        #~ ;;
+        #~ "qrcode")
+            #~ exec ${MY_PATH}/API/QRCODE.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
+        #~ ;;
+        #~ "uplanet")
+            #~ exec ${MY_PATH}/API/UPLANET.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
+        #~ ;;
+        #~ "amzqr")
+            #~ exec ${MY_PATH}/API/AMZQR.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
+        #~ ;;
+        #~ *)
+            #~ [[ ! -s ${MY_PATH}/API/${CMD^^}.sh ]] \
+            #~ && ( echo "$HTTPCORS ERROR UNKNOWN $CMD" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 & ) \
+            #~ || exec ${MY_PATH}/API/${CMD^^}.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
+        #~ ;;
+    #~ esac
 
     end=`date +%s`
     echo " ($CMD) $myHOST:$PORT / Launching time was "`expr $end - $start` seconds.
