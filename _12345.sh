@@ -403,15 +403,36 @@ while true; do
                         && continue
 
                     echo "REFRESHING MY SWARM DATA WITH ZNOD=${znod}"
+                    ## Check if this is a new station (not seen before)
+                    IS_NEW_STATION=0
+                    [[ ! -d ~/.zen/tmp/swarm/${znod} || ! -s ~/.zen/tmp/swarm/${znod}/_MySwarm.moats ]] && IS_NEW_STATION=1
                     mkdir -p ~/.zen/tmp/swarm/${znod}
                     ipfs --timeout 180s get --progress="false" -o ~/.zen/tmp/swarm/${znod} /ipns/${znod}
+                    
+                    ## Notify captain about new station appearance
+                    if [[ ${IS_NEW_STATION} -eq 1 && -s ~/.zen/tmp/swarm/${znod}/_MySwarm.moats && -n "${CAPTAINEMAIL}" ]]; then
+                        ZNOD_HOSTNAME=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.hostname // "unknown"')
+                        ZNOD_IP=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.myIP // "unknown"')
+                        ZNOD_CAPTAIN=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.captain // "unknown"')
+                        echo "<h2>New Station Online!</h2><p>A new station <b>${ZNOD_HOSTNAME}</b> (${znod:0:16}...) has joined the swarm.</p><p>IP: ${ZNOD_IP}<br>Captain: ${ZNOD_CAPTAIN}</p><p>Detected: $(date -u)</p>" > ~/.zen/tmp/station_online_${znod:0:8}.html
+                        ${MY_PATH}/tools/mailjet.sh --expire 24h "${CAPTAINEMAIL}" ~/.zen/tmp/station_online_${znod:0:8}.html "Station ONLINE: ${ZNOD_HOSTNAME}"
+                        rm -f ~/.zen/tmp/station_online_${znod:0:8}.html
+                    fi
 
                     ZMOATS=$(cat ~/.zen/tmp/swarm/${znod}/_MySwarm.moats 2>/dev/null)
                     MOATS_SECONDS=$(${MY_PATH}/tools/MOATS2seconds.sh ${MOATS})
                     ZMOATS_SECONDS=$(${MY_PATH}/tools/MOATS2seconds.sh ${ZMOATS})
                     DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
-                    if [ ${DIFF_SECONDS} -gt $(( 3 * 24 * 60 * 60 )) ]; then
-                        echo "STATION IS STUCK... FOR MORE THAN 3 DAYS... REMOVING ${znod} FROM SWARM"
+                    if [ ${DIFF_SECONDS} -gt $(( 3 * 60 * 60 )) ]; then
+                        echo "STATION IS STUCK... FOR MORE THAN 3 HOURS... REMOVING ${znod} FROM SWARM"
+                        ## Notify captain about station disappearance
+                        if [[ -n "${CAPTAINEMAIL}" ]]; then
+                            ZNOD_HOSTNAME=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.hostname // "unknown"')
+                            ZNOD_IP=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.myIP // "unknown"')
+                            echo "<h2>Station Offline Alert</h2><p>Station <b>${ZNOD_HOSTNAME}</b> (${znod:0:16}...) at IP ${ZNOD_IP} has been offline for more than 3 hours and has been removed from swarm.</p><p>Last seen: $(cat ~/.zen/tmp/swarm/${znod}/_MySwarm.staom 2>/dev/null)</p>" > ~/.zen/tmp/station_offline_${znod:0:8}.html
+                            ${MY_PATH}/tools/mailjet.sh --expire 24h "${CAPTAINEMAIL}" ~/.zen/tmp/station_offline_${znod:0:8}.html "Station OFFLINE: ${ZNOD_HOSTNAME}"
+                            rm -f ~/.zen/tmp/station_offline_${znod:0:8}.html
+                        fi
                         rm -Rf ~/.zen/tmp/swarm/${znod}/
                     else
                         echo "${DIFF_SECONDS} seconds old"
