@@ -546,6 +546,15 @@ while true; do
         ECONOMIC_RISK="YELLOW"
     fi
 
+    ## STATION GPS COORDINATES - For UMAP proximity determination in swarm
+    STATION_LAT="0"
+    STATION_LON="0"
+    if [[ -f ~/.zen/GPS ]]; then
+        source ~/.zen/GPS
+        STATION_LAT="${LAT:-0}"
+        STATION_LON="${LON:-0}"
+    fi
+
     ## READ HEARTBOX ANALYSIS - Fast cache-based approach
     ANALYSIS_FILE=~/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json
     
@@ -596,7 +605,9 @@ NODE12345="{
     \"SSHPUB\" : \"$(cat $HOME/.ssh/id_ed25519.pub)\",
     \"NODEZEN\" : \"${NODEZEN}\",
     \"NODEHEX\" : \"${hex}\",
-    \"NODEG1PUB\" : \"${NODEG1PUB}\",    
+    \"NODEG1PUB\" : \"${NODEG1PUB}\",
+    \"STATION_LAT\" : \"${STATION_LAT}\",
+    \"STATION_LON\" : \"${STATION_LON}\",
     \"UPLANETNAME_G1\" : \"${UPLANETNAME_G1}\",
     \"UPLANETNAME_SOCIETY\" : \"${UPLANETNAME_SOCIETY}\",
     \"UPLANETNAME_TREASURY\" : \"${UPLANETNAME_TREASURY}\",

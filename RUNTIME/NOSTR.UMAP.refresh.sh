@@ -1341,6 +1341,13 @@ send_nostr_events() {
         
         # Only publish if there's real content
         if [[ "$has_real_content" == "true" ]]; then
+            # Check if this station is closest to the UMAP zone (GPS proximity)
+            # This ensures only the geographically closest station publishes the journal
+            if ! is_closest_node_for_umap "$LAT" "$LON"; then
+                log "⏭️  Skipping UMAP journal for ${LAT},${LON} (not closest station in swarm)"
+                return 0
+            fi
+            
             local umap_title="UMAP Journal - ${LAT},${LON}"
             
             # Generate image for UMAP journal if ComfyUI is available
@@ -1704,6 +1711,64 @@ is_closest_node() {
     done
     
     log "✅ This node is the closest, can create manifest"
+    return 0
+}
+
+# Check if this node is closest to a UMAP zone using swarm 12345.json data
+# This enables geographic responsibility distribution for UMAP journal publication
+#
+# Process:
+# 1. Get local station GPS from ~/.zen/GPS
+# 2. Calculate distance from local station to UMAP zone center
+# 3. Scan all swarm stations via ~/.zen/tmp/swarm/*/12345.json
+# 4. Compare distances - return true only if this station is closest
+#
+# Returns: 0 (true) if closest, 1 (false) otherwise
+is_closest_node_for_umap() {
+    local zone_lat=$1
+    local zone_lon=$2
+    
+    # Get local station GPS from ~/.zen/GPS
+    if [[ ! -f "$HOME/.zen/GPS" ]]; then
+        log "❌ No GPS configured (~/.zen/GPS missing), cannot determine proximity"
+        return 1
+    fi
+    source "$HOME/.zen/GPS"
+    local local_lat="${LAT:-0}"
+    local local_lon="${LON:-0}"
+    
+    if [[ "$local_lat" == "0" || "$local_lon" == "0" ]]; then
+        log "❌ Invalid GPS (0,0), cannot determine proximity"
+        return 1
+    fi
+    
+    local local_distance=$(calculate_distance "$local_lat" "$local_lon" "$zone_lat" "$zone_lon")
+    log "📍 Local station (${local_lat},${local_lon}) distance to UMAP ${zone_lat},${zone_lon}: ${local_distance} km"
+    
+    # Check all swarm stations via 12345.json
+    for swarm_json in $(find "$HOME/.zen/tmp/swarm/" -name "12345.json" 2>/dev/null); do
+        local swarm_lat=$(jq -r '.STATION_LAT // "0"' "$swarm_json" 2>/dev/null)
+        local swarm_lon=$(jq -r '.STATION_LON // "0"' "$swarm_json" 2>/dev/null)
+        local swarm_captain=$(jq -r '.captain // "unknown"' "$swarm_json" 2>/dev/null)
+        
+        # Skip if no valid GPS
+        if [[ "$swarm_lat" == "0" || "$swarm_lat" == "null" || -z "$swarm_lat" ]]; then
+            continue
+        fi
+        if [[ "$swarm_lon" == "0" || "$swarm_lon" == "null" || -z "$swarm_lon" ]]; then
+            continue
+        fi
+        
+        local swarm_distance=$(calculate_distance "$swarm_lat" "$swarm_lon" "$zone_lat" "$zone_lon")
+        
+        # If swarm node is closer, defer to them
+        if (( $(echo "$swarm_distance < $local_distance" | bc -l) )); then
+            log "🌐 Swarm station ($swarm_captain at ${swarm_lat},${swarm_lon}) is closer: ${swarm_distance} km vs ${local_distance} km"
+            return 1
+        fi
+    done
+    
+    log "✅ This station is closest to UMAP ${zone_lat},${zone_lon}"
     return 0
 }
 
