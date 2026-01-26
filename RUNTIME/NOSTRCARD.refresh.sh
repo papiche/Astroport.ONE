@@ -1233,48 +1233,49 @@ for PLAYER in "${NOSTR[@]}"; do
     ## FRIENDS SUMMARY - Publish friends activity summary to MULTIPASS wall
     ## Delegated to IA/N2.journal.sh for cleaner code organization
     ## Daily (24h), Weekly (7 days), Monthly (28 days), Yearly (365 days)
+    ## DISABLED: Polluting the feed with too many journal posts
     ########################################################################################
-    if [[ "$REFRESH_REASON" == "daily_update" ]]; then
-        log "INFO" "📝 Generating N² journal for ${PLAYER} via N2.journal.sh"
-        
-        # Call the dedicated N² journal script
-        n2_start=$(date +%s)
-        N2_RESULT=$(${MY_PATH}/../IA/N2.journal.sh "${PLAYER}" 2>&1)
-        N2_EXIT_CODE=$?
-        n2_end=$(date +%s)
-        n2_duration=$((n2_end - n2_start))
-        
-        if [[ $N2_EXIT_CODE -eq 0 ]]; then
-            # Check if an event ID was returned (success)
-            if [[ "$N2_RESULT" =~ ^[a-f0-9]{64}$ ]]; then
-                log "INFO" "✅ N² journal published for ${PLAYER} (ID: $N2_RESULT) in ${n2_duration}s"
-                FRIENDS_SUMMARIES_PUBLISHED=$((FRIENDS_SUMMARIES_PUBLISHED + 1))
-                
-                # Determine summary type for counter increment
-                birthdate_seconds=$(date -d "$BIRTHDATE" +%s)
-                today_seconds=$(date -d "$TODATE" +%s)
-                days_since_birth=$(( (today_seconds - birthdate_seconds) / 86400 ))
-                
-                if [[ $((days_since_birth % 365)) -eq 0 && $days_since_birth -ge 365 ]]; then
-                    YEARLY_SUMMARIES=$((YEARLY_SUMMARIES + 1))
-                elif [[ $((days_since_birth % 28)) -eq 0 && $days_since_birth -ge 28 ]]; then
-                    MONTHLY_SUMMARIES=$((MONTHLY_SUMMARIES + 1))
-                elif [[ $((days_since_birth % 7)) -eq 0 && $days_since_birth -ge 7 ]]; then
-                    WEEKLY_SUMMARIES=$((WEEKLY_SUMMARIES + 1))
-                else
-                    DAILY_SUMMARIES=$((DAILY_SUMMARIES + 1))
-                fi
-                
-                USOCIETY_N2_EXPANSIONS=$((USOCIETY_N2_EXPANSIONS + 1))
-                log_metric "N2_JOURNAL_DURATION" "$n2_duration" "${PLAYER}"
-            else
-                log "DEBUG" "N² journal completed but no event published for ${PLAYER} (no messages or skipped)"
-            fi
-        else
-            log "WARN" "⚠️ N² journal generation failed for ${PLAYER} (exit: $N2_EXIT_CODE)"
-            log "DEBUG" "N2.journal.sh output: $N2_RESULT"
-        fi
-    fi
+    # if [[ "$REFRESH_REASON" == "daily_update" ]]; then
+    #     log "INFO" "📝 Generating N² journal for ${PLAYER} via N2.journal.sh"
+    #     
+    #     # Call the dedicated N² journal script
+    #     n2_start=$(date +%s)
+    #     N2_RESULT=$(${MY_PATH}/../IA/N2.journal.sh "${PLAYER}" 2>&1)
+    #     N2_EXIT_CODE=$?
+    #     n2_end=$(date +%s)
+    #     n2_duration=$((n2_end - n2_start))
+    #     
+    #     if [[ $N2_EXIT_CODE -eq 0 ]]; then
+    #         # Check if an event ID was returned (success)
+    #         if [[ "$N2_RESULT" =~ ^[a-f0-9]{64}$ ]]; then
+    #             log "INFO" "✅ N² journal published for ${PLAYER} (ID: $N2_RESULT) in ${n2_duration}s"
+    #             FRIENDS_SUMMARIES_PUBLISHED=$((FRIENDS_SUMMARIES_PUBLISHED + 1))
+    #             
+    #             # Determine summary type for counter increment
+    #             birthdate_seconds=$(date -d "$BIRTHDATE" +%s)
+    #             today_seconds=$(date -d "$TODATE" +%s)
+    #             days_since_birth=$(( (today_seconds - birthdate_seconds) / 86400 ))
+    #             
+    #             if [[ $((days_since_birth % 365)) -eq 0 && $days_since_birth -ge 365 ]]; then
+    #                 YEARLY_SUMMARIES=$((YEARLY_SUMMARIES + 1))
+    #             elif [[ $((days_since_birth % 28)) -eq 0 && $days_since_birth -ge 28 ]]; then
+    #                 MONTHLY_SUMMARIES=$((MONTHLY_SUMMARIES + 1))
+    #             elif [[ $((days_since_birth % 7)) -eq 0 && $days_since_birth -ge 7 ]]; then
+    #                 WEEKLY_SUMMARIES=$((WEEKLY_SUMMARIES + 1))
+    #             else
+    #                 DAILY_SUMMARIES=$((DAILY_SUMMARIES + 1))
+    #             fi
+    #             
+    #             USOCIETY_N2_EXPANSIONS=$((USOCIETY_N2_EXPANSIONS + 1))
+    #             log_metric "N2_JOURNAL_DURATION" "$n2_duration" "${PLAYER}"
+    #         else
+    #             log "DEBUG" "N² journal completed but no event published for ${PLAYER} (no messages or skipped)"
+    #         fi
+    #     else
+    #         log "WARN" "⚠️ N² journal generation failed for ${PLAYER} (exit: $N2_EXIT_CODE)"
+    #         log "DEBUG" "N2.journal.sh output: $N2_RESULT"
+    #     fi
+    # fi
 
     ########################################################################################
     ########################################################################
