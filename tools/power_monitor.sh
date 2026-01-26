@@ -92,8 +92,11 @@ start_monitoring() {
         rm -f "$pid_file"
     fi
     
-    # Remove old CSV file if exists
+    # Remove old CSV file if exists and pre-create with current user ownership
+    # This ensures powerjoular writes to a user-owned file (even when run with sudo)
     rm -f "$csv_file"
+    touch "$csv_file"
+    chown "$USER:$USER" "$csv_file" 2>/dev/null || true
     
     # Start PowerJoular in background with append mode (-f) to accumulate measurements
     log_info "Starting PowerJoular monitoring..."
