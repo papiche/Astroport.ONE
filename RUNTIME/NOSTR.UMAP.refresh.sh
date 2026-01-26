@@ -1343,7 +1343,7 @@ send_nostr_events() {
         if [[ "$has_real_content" == "true" ]]; then
             # Check if this station is closest to the UMAP zone (GPS proximity)
             # This ensures only the geographically closest station publishes the journal
-            if ! is_closest_node_for_umap "$LAT" "$LON"; then
+            if ! is_closest_station "$LAT" "$LON"; then
                 log "⏭️  Skipping UMAP journal for ${LAT},${LON} (not closest station in swarm)"
                 return 0
             fi
@@ -1642,89 +1642,22 @@ get_local_gps() {
     return 0
 }
 
-# Check if this node is the closest to a geographic zone
-# This is the KEY FUNCTION for manifest ownership determination
+# Unified function to check if this station is closest to a geographic zone
+# Used for UMAP, SECTOR, and REGION responsibility distribution
 #
-# Process:
-# 1. Reads local captain GPS (REQUIRED - returns false if missing)
-# 2. Calculates distance from local captain to zone center
-# 3. Scans all swarm manifests for this zone
-# 4. Compares distances from swarm captains (from manifest captain_gps)
-# 5. Returns true ONLY if this node is the closest
-#
-# Returns: 0 (true) if closest, 1 (false) otherwise
-# Usage: is_closest_node "zone_lat" "zone_lon" "SECTOR|REGION" "zone_id"
-is_closest_node() {
-    local zone_lat=$1
-    local zone_lon=$2
-    local zone_type=$3  # "SECTOR" or "REGION"
-    local zone_id=$4    # e.g., "_45.4_1.2" or "_45_1"
-    
-    # Get local captain GPS
-    local local_gps=$(get_local_gps)
-    if [[ -z "$local_gps" ]]; then
-        log "❌ No GPS coordinates for local captain, cannot create manifest (untrusted node)"
-        return 1  # If no GPS, deny creation
-    fi
-    
-    local local_lat=$(echo "$local_gps" | cut -d',' -f1)
-    local local_lon=$(echo "$local_gps" | cut -d',' -f2)
-    
-    # Calculate local distance
-    local local_distance=$(calculate_distance "$local_lat" "$local_lon" "$zone_lat" "$zone_lon")
-    log "📍 Local captain distance to zone: ${local_distance} km"
-    
-    # Check swarm nodes
-    local search_path
-    if [[ "$zone_type" == "SECTOR" ]]; then
-        local rlat=$(echo ${zone_id} | cut -d'_' -f2 | cut -d'.' -f1)
-        local rlon=$(echo ${zone_id} | cut -d'_' -f3 | cut -d'.' -f1)
-        search_path="*/UPLANET/SECTORS/_${rlat}_${rlon}/${zone_id}/manifest.json"
-    else
-        search_path="*/UPLANET/REGIONS/${zone_id}/manifest.json"
-    fi
-    
-    # Check all swarm manifests
-    for swarm_manifest in $(find "$HOME/.zen/tmp/swarm/" -path "$search_path" 2>/dev/null); do
-        # Extract swarm node captain GPS directly from manifest
-        local swarm_node_id=$(jq -r '.node_id // ""' "$swarm_manifest" 2>/dev/null)
-        local swarm_lat=$(jq -r '.captain_gps.lat // ""' "$swarm_manifest" 2>/dev/null)
-        local swarm_lon=$(jq -r '.captain_gps.lon // ""' "$swarm_manifest" 2>/dev/null)
-        local swarm_email=$(jq -r '.captain_gps.email // ""' "$swarm_manifest" 2>/dev/null)
-        
-        # Skip if no GPS data in manifest
-        if [[ -z "$swarm_lat" || -z "$swarm_lon" || "$swarm_lat" == "null" || "$swarm_lon" == "null" ]]; then
-            log "⚠️  Swarm node ${swarm_node_id:0:8}... has no GPS data, skipping"
-            continue
-        fi
-        
-        # Calculate swarm node distance
-        local swarm_distance=$(calculate_distance "$swarm_lat" "$swarm_lon" "$zone_lat" "$zone_lon")
-        
-        log "🌐 Swarm node ${swarm_node_id:0:8}... ($swarm_email) distance: ${swarm_distance} km"
-        
-        # If swarm node is closer, we're not the closest
-        if (( $(echo "$swarm_distance < $local_distance" | bc -l) )); then
-            log "❌ Swarm node is closer, skipping manifest creation"
-            return 1
-        fi
-    done
-    
-    log "✅ This node is the closest, can create manifest"
-    return 0
-}
-
-# Check if this node is closest to a UMAP zone using swarm 12345.json data
-# This enables geographic responsibility distribution for UMAP journal publication
+# Uses 12345.json from swarm for GPS data (more reliable than manifest.json)
+# Tie-breaker: alphabetical order on IPFSNODEID when distances are equal
 #
 # Process:
 # 1. Get local station GPS from ~/.zen/GPS
-# 2. Calculate distance from local station to UMAP zone center
+# 2. Calculate distance from local station to zone center
 # 3. Scan all swarm stations via ~/.zen/tmp/swarm/*/12345.json
-# 4. Compare distances - return true only if this station is closest
+# 4. Compare distances - if equal, use IPFSNODEID alphabetical order
+# 5. Return true only if this station should handle the zone
 #
-# Returns: 0 (true) if closest, 1 (false) otherwise
-is_closest_node_for_umap() {
+# Returns: 0 (true) if this station is responsible, 1 (false) otherwise
+# Usage: is_closest_station "zone_lat" "zone_lon"
+is_closest_station() {
     local zone_lat=$1
     local zone_lon=$2
     
@@ -1743,33 +1676,117 @@ is_closest_node_for_umap() {
     fi
     
     local local_distance=$(calculate_distance "$local_lat" "$local_lon" "$zone_lat" "$zone_lon")
-    log "📍 Local station (${local_lat},${local_lon}) distance to UMAP ${zone_lat},${zone_lon}: ${local_distance} km"
+    log "📍 Local station ${IPFSNODEID: -8}... (${local_lat},${local_lon}) distance to zone ${zone_lat},${zone_lon}: ${local_distance} km"
     
     # Check all swarm stations via 12345.json
     for swarm_json in $(find "$HOME/.zen/tmp/swarm/" -name "12345.json" 2>/dev/null); do
         local swarm_lat=$(jq -r '.STATION_LAT // "0"' "$swarm_json" 2>/dev/null)
         local swarm_lon=$(jq -r '.STATION_LON // "0"' "$swarm_json" 2>/dev/null)
+        local swarm_ipfsnodeid=$(jq -r '.ipfsnodeid // ""' "$swarm_json" 2>/dev/null)
         local swarm_captain=$(jq -r '.captain // "unknown"' "$swarm_json" 2>/dev/null)
         
-        # Skip if no valid GPS
-        if [[ "$swarm_lat" == "0" || "$swarm_lat" == "null" || -z "$swarm_lat" ]]; then
-            continue
-        fi
-        if [[ "$swarm_lon" == "0" || "$swarm_lon" == "null" || -z "$swarm_lon" ]]; then
-            continue
-        fi
+        # Skip if no valid GPS or IPFSNODEID
+        [[ "$swarm_lat" == "0" || "$swarm_lat" == "null" || -z "$swarm_lat" ]] && continue
+        [[ "$swarm_lon" == "0" || "$swarm_lon" == "null" || -z "$swarm_lon" ]] && continue
+        [[ -z "$swarm_ipfsnodeid" || "$swarm_ipfsnodeid" == "null" ]] && continue
         
         local swarm_distance=$(calculate_distance "$swarm_lat" "$swarm_lon" "$zone_lat" "$zone_lon")
         
-        # If swarm node is closer, defer to them
-        if (( $(echo "$swarm_distance < $local_distance" | bc -l) )); then
-            log "🌐 Swarm station ($swarm_captain at ${swarm_lat},${swarm_lon}) is closer: ${swarm_distance} km vs ${local_distance} km"
+        # Compare distances
+        local cmp=$(echo "$swarm_distance < $local_distance" | bc -l)
+        if [[ "$cmp" == "1" ]]; then
+            # Swarm station is closer
+            log "🌐 Station ${swarm_ipfsnodeid:0:8}... ($swarm_captain) is closer: ${swarm_distance} km vs ${local_distance} km"
             return 1
+        fi
+        
+        # If equal distance, use IPFSNODEID alphabetical order as tie-breaker
+        local equal=$(echo "$swarm_distance == $local_distance" | bc -l)
+        if [[ "$equal" == "1" ]]; then
+            # Alphabetically lower IPFSNODEID wins
+            if [[ "$swarm_ipfsnodeid" < "$IPFSNODEID" ]]; then
+                log "🎲 Equal distance (${local_distance} km), station ${swarm_ipfsnodeid:0:8}... wins by IPFSNODEID order"
+                return 1
+            fi
         fi
     done
     
-    log "✅ This station is closest to UMAP ${zone_lat},${zone_lon}"
+    log "✅ This station is responsible for zone ${zone_lat},${zone_lon}"
     return 0
+}
+
+# Clean up local cache for zones this station is NOT responsible for
+# This ensures each station only maintains cache for zones it manages
+#
+# Process:
+# 1. Iterate through all cached UMAP/SECTOR/REGION zones
+# 2. For each zone, check if is_closest_station() returns true
+# 3. If not responsible, remove the cache directory
+#
+# Called at end of main() after all processing is complete
+cleanup_non_responsible_zones() {
+    log "🧹 Cleaning up zones this station is not responsible for..."
+    local cleaned_umaps=0
+    local cleaned_sectors=0
+    local cleaned_regions=0
+    
+    # Clean UMAP caches
+    for umap_path in $(find "$HOME/.zen/tmp/${IPFSNODEID}/UPLANET/__" -mindepth 3 -maxdepth 3 -type d -name "_*.*_*.*" 2>/dev/null); do
+        local umap_name=$(basename "$umap_path")
+        local umap_lat=$(echo "$umap_name" | cut -d '_' -f 2)
+        local umap_lon=$(echo "$umap_name" | cut -d '_' -f 3)
+        
+        # Skip invalid coordinates
+        [[ -z "$umap_lat" || -z "$umap_lon" ]] && continue
+        
+        if ! is_closest_station "$umap_lat" "$umap_lon" 2>/dev/null; then
+            log "🗑️  Removing UMAP cache ${umap_name} (not responsible)"
+            rm -Rf "$umap_path"
+            ((cleaned_umaps++))
+        fi
+    done
+    
+    # Clean SECTOR caches
+    for sector_path in $(find "$HOME/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS" -mindepth 2 -maxdepth 2 -type d -name "_*.*_*.*" 2>/dev/null); do
+        local sector_name=$(basename "$sector_path")
+        local sector_lat=$(echo "$sector_name" | cut -d '_' -f 2)
+        local sector_lon=$(echo "$sector_name" | cut -d '_' -f 3)
+        
+        # Skip invalid coordinates
+        [[ -z "$sector_lat" || -z "$sector_lon" ]] && continue
+        
+        # Calculate zone center (add 0 to make it X.X0)
+        local zone_lat="${sector_lat}0"
+        local zone_lon="${sector_lon}0"
+        
+        if ! is_closest_station "$zone_lat" "$zone_lon" 2>/dev/null; then
+            log "🗑️  Removing SECTOR cache ${sector_name} (not responsible)"
+            rm -Rf "$sector_path"
+            ((cleaned_sectors++))
+        fi
+    done
+    
+    # Clean REGION caches
+    for region_path in $(find "$HOME/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS" -mindepth 1 -maxdepth 1 -type d -name "_*_*" 2>/dev/null); do
+        local region_name=$(basename "$region_path")
+        local region_lat=$(echo "$region_name" | cut -d '_' -f 2)
+        local region_lon=$(echo "$region_name" | cut -d '_' -f 3)
+        
+        # Skip invalid coordinates
+        [[ -z "$region_lat" || -z "$region_lon" ]] && continue
+        
+        # Calculate zone center (middle of region: X.50)
+        local zone_lat="${region_lat}.50"
+        local zone_lon="${region_lon}.50"
+        
+        if ! is_closest_station "$zone_lat" "$zone_lon" 2>/dev/null; then
+            log "🗑️  Removing REGION cache ${region_name} (not responsible)"
+            rm -Rf "$region_path"
+            ((cleaned_regions++))
+        fi
+    done
+    
+    log "✅ Cleanup complete: removed $cleaned_umaps UMAPs, $cleaned_sectors SECTORs, $cleaned_regions REGIONs"
 }
 
 ################################################################################
@@ -2048,9 +2065,9 @@ update_sector_manifest() {
     local zone_lat="${slat}0"
     local zone_lon="${slon}0"
     
-    # Check if this node is the closest to the zone
-    if ! is_closest_node "$zone_lat" "$zone_lon" "SECTOR" "$sector"; then
-        log "⏭️  Skipping manifest creation for SECTOR ${sector} (not closest node)"
+    # Check if this station is closest to the zone (uses 12345.json + IPFSNODEID tie-breaker)
+    if ! is_closest_station "$zone_lat" "$zone_lon"; then
+        log "⏭️  Skipping manifest creation for SECTOR ${sector} (not closest station)"
         return 0
     fi
     
@@ -2447,9 +2464,9 @@ update_region_manifest() {
     local zone_lat="${rlat}.50"
     local zone_lon="${rlon}.50"
     
-    # Check if this node is the closest to the zone
-    if ! is_closest_node "$zone_lat" "$zone_lon" "REGION" "$region"; then
-        log "⏭️  Skipping manifest creation for REGION ${region} (not closest node)"
+    # Check if this station is closest to the zone (uses 12345.json + IPFSNODEID tie-breaker)
+    if ! is_closest_station "$zone_lat" "$zone_lon"; then
+        log "⏭️  Skipping manifest creation for REGION ${region} (not closest station)"
         return 0
     fi
     
@@ -2727,6 +2744,9 @@ main() {
     elif [[ ! -f "$AMISOFAMIS_FILE" ]]; then
         echo "Info: $AMISOFAMIS_FILE not found, no friends of friends list for cleaning blacklist."
     fi
+
+    # Clean up zones this station is not responsible for
+    cleanup_non_responsible_zones
 
     exit 0
 }

@@ -65,72 +65,9 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
     echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
 
-    #################################################################
-    ## REGION, SECTOR, AND UMAP CACHE CLEANING
-    if [[ -s ~/.zen/GPS ]]; then
-        source ~/.zen/GPS
-        if [[ -n "$LAT" && -n "$LON" && "$LAT" != "0.00" && "$LON" != "0.00" ]]; then
-            echo "## CLEANING NON-LOCAL REGION / SECTOR / UMAP CACHES"
-
-            # Current region coordinates (integer part of LAT/LON)
-            RLAT=$(LC_NUMERIC=C printf "%.0f" "$LAT")
-            RLON=$(LC_NUMERIC=C printf "%.0f" "$LON")
-            echo "Node's current region is _${RLAT}_${RLON}"
-
-            # Create a list of regions to keep (current + 8 neighbors)
-            REGIONS_TO_KEEP=()
-            for i in -1 0 1; do
-                for j in -1 0 1; do
-                    REGIONS_TO_KEEP+=("_$(($RLAT + i))_$(($RLON + j))")
-                done
-            done
-            echo "Keeping regions: ${REGIONS_TO_KEEP[@]}"
-
-            ## CLEANING REGIONS
-            for region_path in $(find ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS -mindepth 1 -maxdepth 1 -type d -name "R*_*"); do
-                region_name=$(basename "$region_path")
-                if [[ ! " ${REGIONS_TO_KEEP[@]} " =~ " ${region_name} " ]]; then
-                    echo "Deleting non-local REGION cache: $region_path"
-                    rm -Rf "$region_path"
-                fi
-            done
-
-            ## CLEANING SECTORS
-            for sector_path in $(find ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS -mindepth 1 -maxdepth 1 -type d -name "_*_*"); do
-                sector_name=$(basename "$sector_path")
-                sector_lat=$(echo "$sector_name" | cut -d '_' -f 2)
-                sector_lon=$(echo "$sector_name" | cut -d '_' -f 3)
-                # Determine the region for this sector
-                sector_region="_$(LC_NUMERIC=C printf "%.0f" "$sector_lat")_$(LC_NUMERIC=C printf "%.0f" "$sector_lon")"
-
-                if [[ ! " ${REGIONS_TO_KEEP[@]} " =~ " ${sector_region} " ]]; then
-                    echo "Deleting non-local SECTOR cache: $sector_path (Region: $sector_region)"
-                    rm -Rf "$sector_path"
-                fi
-            done
-
-            ## CLEANING UMAPs
-            for umap_path in $(find ~/.zen/tmp/${IPFSNODEID}/UPLANET/__ -mindepth 3 -maxdepth 3 -type d -name "_*.*_*.*"); do
-                umap_name=$(basename "$umap_path")
-                umap_lat=$(echo "$umap_name" | cut -d '_' -f 2)
-                umap_lon=$(echo "$umap_name" | cut -d '_' -f 3)
-
-                # Determine the region for this umap
-                umap_region="_$(LC_NUMERIC=C printf "%.0f" "$umap_lat")_$(LC_NUMERIC=C printf "%.0f" "$umap_lon")"
-
-                if [[ ! " ${REGIONS_TO_KEEP[@]} " =~ " ${umap_region} " ]]; then
-                    echo "Deleting non-local UMAP cache: $umap_path (Region: $umap_region)"
-                    rm -Rf "$umap_path"
-                fi
-            done
-            echo "Cleanup of non-local caches complete."
-        else
-            echo "LAT/LON are 0.00. Skipping cleanup."
-        fi
-    else
-        echo "Node GPS file ~/.zen/GPS not found."
-    fi
-    #################################################################
+    ## NOTE: UPLANET cache cleanup (UMAP/SECTOR/REGION) is now handled by
+    ## NOSTR.UMAP.refresh.sh using is_closest_station() for intelligent
+    ## geographic responsibility distribution
 
     echo "############################################ MY MAP "
     ls ~/.zen/tmp/${IPFSNODEID}/
@@ -240,13 +177,6 @@ for nhex in ${REGIONHEXLIST[@]}; do
     mkdir -p ~/.zen/game/nostr/REGION$hexumap
     echo "$hex" > ~/.zen/game/nostr/REGION$hexumap/HEX
 done
-
-########################################################
-## REFRESH ZSWARM collect HEX & HEX_CAPTAIN
-########################################################
-mkdir -p ~/.zen/game/nostr/ZSWARM
-cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/*/HEX > ~/.zen/game/nostr/ZSWARM/HEX
-cat ~/.zen/tmp/swarm/*/HEX* >> ~/.zen/game/nostr/ZSWARM/HEX
 
 ########################################################
 ## ADD UMAP, SECTOR, REGION, UPLANET HEX to amisOfAmis.txt
