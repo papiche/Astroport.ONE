@@ -382,98 +382,85 @@ unpin_ipfs_hash() {
 }
 
 # Fonction pour dépinner les hashes des fichiers supprimés
+# Utilise manifest-1.json (ancien) pour récupérer les CID IPFS des fichiers supprimés
 unpin_deleted_files() {
     local deleted_count="$1"
-    local manifest_file="$SOURCE_DIR/manifest.json"
-    local deleted_files_list="~/.zen/tmp/deleted_files_$$"
+    local old_manifest="$SOURCE_DIR/manifest-1.json"
+    local deleted_files_list="/tmp/deleted_files_$$"
 
     if [ "$deleted_count" -eq 0 ] || [ ! -f "$deleted_files_list" ]; then
         return 0
     fi
 
+    if [ ! -f "$old_manifest" ]; then
+        log_message "⚠️  manifest-1.json non trouvé, impossible de dépinner les fichiers supprimés"
+        return 0
+    fi
+
     log_message "🗑️  Dépinnage des hashes des fichiers supprimés..."
 
-    # Pour chaque fichier supprimé, récupérer son ancien lien IPFS et le dépinner
+    # Pour chaque fichier supprimé, récupérer son ancien lien IPFS depuis manifest-1.json et le dépinner
     while IFS= read -r deleted_path; do
         if [ -n "$deleted_path" ]; then
-            # Récupérer l'ancien lien IPFS depuis le manifest
+            # Récupérer l'ancien lien IPFS depuis manifest-1.json
             local old_ipfs_link=""
-            if [ -f "$manifest_file" ] && command -v jq >/dev/null 2>&1; then
+            if command -v jq >/dev/null 2>&1; then
                 old_ipfs_link=$(jq -r --arg path "$deleted_path" '
                     .files[]? | select(.path == $path) | .ipfs_link // ""
-                ' "$manifest_file" 2>/dev/null)
+                ' "$old_manifest" 2>/dev/null)
             fi
 
-            if [ -n "$old_ipfs_link" ] && [ "$old_ipfs_link" != "null" ]; then
+            if [ -n "$old_ipfs_link" ] && [ "$old_ipfs_link" != "null" ] && [ "$old_ipfs_link" != "" ]; then
                 unpin_ipfs_hash "$old_ipfs_link" "fichier supprimé: $deleted_path"
+            else
+                log_message "   ⚠️  Pas de CID IPFS trouvé pour le fichier supprimé: $deleted_path"
             fi
         fi
     done < "$deleted_files_list"
+
+    # Nettoyer le fichier temporaire
+    rm -f "$deleted_files_list"
 }
 
-# Fonction pour créer un fichier temporaire avec la liste des fichiers actuels
-create_current_files_list() {
-    local temp_file="$1"
-
-    # Créer la liste des fichiers actuels avec leurs chemins relatifs
-    find "$SOURCE_DIR" -type f -print0 | while IFS= read -r -d '' file; do
-        basename_file=$(basename "$file")
-        relative_path="${file#$SOURCE_DIR/}"
-
-        # Ignorer les fichiers générés par ce script et les fichiers cachés (sauf .well-known)
-        if [[ "$basename_file" == manifest.json ]] || \
-           [[ "$relative_path" == "index.html" ]] || \
-           [[ "$basename_file" == upload_test.html ]] || \
-           [[ "$basename_file" == generate_ipfs_structure.sh ]] || \
-           [[ "$relative_path" == *"__pycache__"* ]]; then
-            continue
-        fi
-        
-        # Ignore hidden files/dirs but allow .well-known (W3C standard for metadata)
-        if [[ "$basename_file" == .* ]] || [[ "$relative_path" == .* ]]; then
-            if [[ "$relative_path" != .well-known* ]]; then
-                continue
-            fi
-        fi
-
-        echo "$relative_path" >> "$temp_file"
-    done
-}
-
-# Fonction pour détecter les fichiers supprimés
-detect_deleted_files() {
-    local manifest_file="$SOURCE_DIR/manifest.json"
+# Fonction pour détecter les fichiers supprimés en comparant les manifests
+# Compare manifest-1.json (ancien) avec le nouveau manifest.json généré
+detect_deleted_files_from_manifests() {
+    local old_manifest="$SOURCE_DIR/manifest-1.json"
+    local new_manifest="$SOURCE_DIR/manifest.json"
     local deleted_files=()
     local deleted_count=0
 
-    if [ ! -f "$manifest_file" ] || ! command -v jq >/dev/null 2>&1; then
-        # Pas de manifest existant ou pas de jq, rien à supprimer
+    if [ ! -f "$old_manifest" ] || ! command -v jq >/dev/null 2>&1; then
+        # Pas de manifest précédent, rien à comparer
         echo "0"
         return 0
     fi
 
-    # Créer un fichier temporaire avec la liste des fichiers actuels
-    local current_files_temp=$(mktemp)
-    create_current_files_list "$current_files_temp"
+    if [ ! -f "$new_manifest" ]; then
+        # Pas de nouveau manifest, rien à comparer
+        echo "0"
+        return 0
+    }
 
-    log_message "🗑️  Détection des fichiers supprimés..." >&2
+    log_message "🗑️  Détection des fichiers supprimés (comparaison manifests)..." >&2
 
     # Récupérer tous les chemins de fichiers depuis l'ancien manifest
-    local manifest_files=$(jq -r '.files[]?.path // empty' "$manifest_file" 2>/dev/null)
+    local old_manifest_paths=$(jq -r '.files[]?.path // empty' "$old_manifest" 2>/dev/null)
 
-    while IFS= read -r manifest_path; do
-        if [ -n "$manifest_path" ]; then
-            # Vérifier si ce fichier existe encore sur le disque
-            if ! grep -Fxq "$manifest_path" "$current_files_temp" 2>/dev/null; then
-                log_message "   🗑️  Fichier supprimé détecté: $manifest_path" >&2
-                deleted_files+=("$manifest_path")
+    while IFS= read -r old_path; do
+        if [ -n "$old_path" ]; then
+            # Vérifier si ce fichier existe encore dans le nouveau manifest
+            local exists_in_new=$(jq -r --arg path "$old_path" '.files[]? | select(.path == $path) | .path // ""' "$new_manifest" 2>/dev/null)
+            
+            if [ -z "$exists_in_new" ] || [ "$exists_in_new" = "" ]; then
+                # Le fichier n'est plus dans le nouveau manifest
+                # C'est une vraie suppression
+                log_message "   🗑️  Fichier supprimé du manifest: $old_path" >&2
+                deleted_files+=("$old_path")
                 deleted_count=$((deleted_count + 1))
             fi
         fi
-    done <<< "$manifest_files"
-
-    # Nettoyer le fichier temporaire
-    rm -f "$current_files_temp"
+    done <<< "$old_manifest_paths"
 
     if [ $deleted_count -gt 0 ]; then
         log_message "   📊 $deleted_count fichier(s) supprimé(s) détecté(s)" >&2
@@ -487,64 +474,22 @@ detect_deleted_files() {
     echo "$deleted_count"
 }
 
-# Fonction pour filtrer les fichiers supprimés du JSON
-filter_deleted_files_from_json() {
-    local deleted_count="$1"
-    local manifest_file="$SOURCE_DIR/manifest.json"
-    local deleted_files_list="/tmp/deleted_files_$$"
-
-    if [ "$deleted_count" -eq 0 ] || [ ! -f "$deleted_files_list" ]; then
-        return 0
-    fi
-
-    log_message "🗑️  Suppression des fichiers supprimés du manifest..."
-
-    # Créer un filtre jq pour exclure les fichiers supprimés
-    local jq_filter='def deleted_paths: ['
-
-    while IFS= read -r deleted_path; do
-        if [ -n "$deleted_path" ]; then
-            jq_filter="$jq_filter\"$deleted_path\","
-        fi
-    done < "$deleted_files_list"
-
-    # Enlever la dernière virgule et fermer le tableau
-    jq_filter="${jq_filter%,}]; .files |= map(select(.path as \$p | deleted_paths | index(\$p) | not))"
-
-    # Appliquer le filtre pour supprimer les fichiers supprimés
-    if command -v jq >/dev/null 2>&1; then
-        local temp_manifest=$(mktemp)
-        jq "$jq_filter" "$manifest_file" > "$temp_manifest" 2>/dev/null
-        if [ $? -eq 0 ]; then
-            mv "$temp_manifest" "$manifest_file"
-            log_message "   ✅ Fichiers supprimés retirés du manifest"
-        else
-            rm -f "$temp_manifest"
-            log_message "   ⚠️  Erreur lors du filtrage - manifest non modifié"
-        fi
-    fi
-
-    # Nettoyer le fichier temporaire
-    rm -f "$deleted_files_list"
-}
-
 # Générer le manifest.json
 log_message "📋 Génération du manifest.json..."
 
-# Sauvegarder le CID existant avant de régénérer le manifest
-EXISTING_FINAL_CID=""
+# Sauvegarder le manifest existant en manifest-1.json avant de le régénérer
 if [ -f "$SOURCE_DIR/manifest.json" ]; then
+    cp "$SOURCE_DIR/manifest.json" "$SOURCE_DIR/manifest-1.json"
+    log_message "   💾 Manifest précédent sauvegardé: manifest-1.json"
+    
+    # Sauvegarder aussi le CID existant
     EXISTING_FINAL_CID=$(get_existing_final_cid)
     if [ -n "$EXISTING_FINAL_CID" ]; then
         log_message "   💾 CID existant sauvegardé: $EXISTING_FINAL_CID"
     fi
+else
+    EXISTING_FINAL_CID=""
 fi
-
-# Détecter les fichiers supprimés avant le traitement
-deleted_count=$(detect_deleted_files)
-
-# Dépinner les hashes des fichiers supprimés
-unpin_deleted_files "$deleted_count"
 
 # Variables pour collecter les données
 directories_json=""
@@ -554,12 +499,13 @@ file_count=0
 dir_count=0
 updated_count=0
 cached_count=0
+deleted_count=0  # Sera mis à jour après génération du manifest
 OWNER_HEX_PUBKEY=""
 # Récupérer la gateway IPFS depuis le fichier .env ou utiliser la valeur par défaut
 if [ -f "$HOME/.zen/Astroport.ONE/.env" ]; then
     ORIGIN_IPFS_GATEWAY=$(grep "^myIPFS=" "$HOME/.zen/Astroport.ONE/.env" | cut -d'=' -f2)
 fi
-ORIGIN_IPFS_GATEWAY="${ORIGIN_IPFS_GATEWAY:-http://127.0.0.1:8080}"
+ORIGIN_IPFS_GATEWAY="${ORIGIN_IPFS_GATEWAY:-https://ipfs.copylaradio.com}"
 ##############################################################
 ## Get OWNER_EMAIL and OWNER_HEX_FILE
 ############################################################## MULTIPLE APP on UPLANET
@@ -651,8 +597,8 @@ while IFS= read -r -d '' file; do
     log_message "🔍 Examen du fichier: $relative_path"
 
     # Ignorer les fichiers générés par ce script et les fichiers cachés (sauf .well-known)
-    if [[ "$basename_file" == manifest.json ]]; then
-        log_message "   ⏭️  Ignoré: fichier manifest.json (généré par ce script)"
+    if [[ "$basename_file" == manifest.json ]] || [[ "$basename_file" == manifest-1.json ]]; then
+        log_message "   ⏭️  Ignoré: fichier $basename_file (généré par ce script)"
         continue
     elif [[ "$relative_path" == "index.html" ]]; then
         log_message "   ⏭️  Ignoré: fichier index.html racine (généré par ce script)"
@@ -700,6 +646,10 @@ while IFS= read -r -d '' file; do
     clean_basename=$(clean_filename "$basename_file")
     clean_path=$(clean_filename "$relative_path")
 
+    # Obtenir les métadonnées média AVANT toute modification/suppression
+    log_message "      🔍 Extraction des métadonnées..."
+    metadata=$(get_media_metadata "$file" "$file_type")
+
     # Vérifier si le fichier a été modifié ou est nouveau
     ipfs_link=""
     if file_needs_update "$file" "$relative_path"; then
@@ -721,18 +671,36 @@ while IFS= read -r -d '' file; do
             if [ -n "$old_ipfs_link" ] && [ "$old_ipfs_link" != "$ipfs_link" ]; then
                 unpin_ipfs_hash "$old_ipfs_link" "fichier modifié: $relative_path"
             fi
+
+            # Supprimer le fichier du disque APRÈS ajout IPFS réussi (sauf manifest.json et index.html)
+            # Les métadonnées ont déjà été extraites ci-dessus
+            if [[ "$basename_file" != "manifest.json" ]] && [[ "$relative_path" != "index.html" ]]; then
+                if rm -f "$file" 2>/dev/null; then
+                    log_message "      🗑️  Fichier supprimé du disque (référencé dans manifest.json via CID IPFS)"
+                else
+                    log_message "      ⚠️  Impossible de supprimer le fichier du disque (peut-être déjà supprimé)"
+                fi
+            fi
         else
-            log_message "      ❌ Échec de l'ajout IPFS"
+            log_message "      ❌ Échec de l'ajout IPFS - fichier conservé sur le disque"
+            # En cas d'échec IPFS, le fichier n'est pas ajouté au manifest
+            # et reste sur le disque pour une nouvelle tentative
         fi
     else
         # Fichier inchangé - récupérer l'ancien lien
         ipfs_link=$(get_existing_ipfs_link "$relative_path")
         cached_count=$((cached_count + 1))
+        
+        # Supprimer le fichier du disque s'il a un CID IPFS (sauf manifest.json et index.html)
+        # Cela permet de libérer l'espace disque pour les fichiers déjà dans IPFS
+        if [ -n "$ipfs_link" ] && [[ "$basename_file" != "manifest.json" ]] && [[ "$relative_path" != "index.html" ]]; then
+            if rm -f "$file" 2>/dev/null; then
+                log_message "      🗑️  Fichier supprimé du disque (déjà dans IPFS via CID: ${ipfs_link%%/*})"
+            else
+                log_message "      ⚠️  Impossible de supprimer le fichier du disque"
+            fi
+        fi
     fi
-
-    # Obtenir les métadonnées média
-    log_message "      🔍 Extraction des métadonnées..."
-    metadata=$(get_media_metadata "$file" "$file_type")
     metadata_fields=""
     if [ -n "$metadata" ]; then
         metadata_fields=", $metadata"
@@ -756,12 +724,15 @@ while IFS= read -r -d '' file; do
         app_category_field=", \"category\": \"app\""
     fi
 
-    # Ajouter à la collection
-    if [ -n "$files_json" ]; then
-        files_json="${files_json},"
-    fi
+    # Ajouter à la collection seulement si le fichier a un lien IPFS valide
+    # (soit nouvellement ajouté, soit déjà en cache)
+    if [ -n "$ipfs_link" ]; then
+        # Ajouter à la collection
+        if [ -n "$files_json" ]; then
+            files_json="${files_json},"
+        fi
 
-    files_json="${files_json}
+        files_json="${files_json}
         {
             \"name\": \"$clean_basename\",
             \"path\": \"$clean_path\",
@@ -771,8 +742,12 @@ while IFS= read -r -d '' file; do
             \"last_modified\": $current_timestamp$metadata_fields$ipfs_link_field$app_category_field
         }"
 
-    total_size=$((total_size + file_size))
-    file_count=$((file_count + 1))
+        total_size=$((total_size + file_size))
+        file_count=$((file_count + 1))
+    else
+        log_message "      ⚠️  Fichier ignoré dans le manifest (échec IPFS - pas de CID disponible)"
+        # Le fichier reste sur le disque pour une nouvelle tentative
+    fi
 
     log_message "   ✅ Fichier traité avec succès ($file_count/$((file_count + cached_count + updated_count)) total)"
     log_message ""
@@ -799,8 +774,11 @@ cat > "$SOURCE_DIR/manifest.json" << EOF
 }
 EOF
 
-# Filtrer les fichiers supprimés du manifest final
-filter_deleted_files_from_json "$deleted_count"
+# Détecter les fichiers supprimés en comparant le nouveau manifest avec manifest-1.json
+deleted_count=$(detect_deleted_files_from_manifests)
+
+# Dépinner les hashes des fichiers supprimés depuis manifest-1.json
+unpin_deleted_files "$deleted_count"
 
 # Fonction pour mettre à jour le CID final dans le manifest
 update_final_cid_in_manifest() {
