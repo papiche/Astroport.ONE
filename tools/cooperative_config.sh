@@ -24,11 +24,11 @@
 # Encryption: AES-256-CBC with $UPLANETNAME as key (base64 encoded)
 ################################################################################
 
-MY_PATH="$(dirname "${BASH_SOURCE[0]}")"
-MY_PATH="$(cd "$MY_PATH" && pwd)"
+_COOP_DIR="$(dirname "${BASH_SOURCE[0]}")"
+_COOP_DIR="$(cd "$_COOP_DIR" && pwd)"
 
 # Source environment if not already done
-[[ -z "$UPLANETNAME" ]] && source "${MY_PATH}/my.sh" 2>/dev/null
+[[ -z "$UPLANETNAME" ]] && source "${_COOP_DIR}/my.sh" 2>/dev/null
 
 # Configuration
 COOP_CONFIG_KIND=30800
@@ -165,8 +165,8 @@ coop_fetch_config_from_nostr() {
     
     for relay in "${relays[@]}"; do
         # Use nostr_get_events.sh if available
-        if [[ -x "${MY_PATH}/nostr_get_events.sh" ]]; then
-            local result=$("${MY_PATH}/nostr_get_events.sh" \
+        if [[ -x "${_COOP_DIR}/nostr_get_events.sh" ]]; then
+            local result=$("${_COOP_DIR}/nostr_get_events.sh" \
                 --kind "$COOP_CONFIG_KIND" \
                 --author "$pubkey" \
                 --tag-d "$COOP_CONFIG_D_TAG" \
@@ -185,8 +185,8 @@ coop_fetch_config_from_nostr() {
         fi
         
         # Fallback: direct websocket query with Python
-        if [[ -x "${MY_PATH}/nostr_cooperative_did.py" ]]; then
-            local result=$(python3 "${MY_PATH}/nostr_cooperative_did.py" fetch \
+        if [[ -x "${_COOP_DIR}/nostr_cooperative_did.py" ]]; then
+            local result=$(python3 "${_COOP_DIR}/nostr_cooperative_did.py" fetch \
                 --relay "$relay" \
                 --pubkey "$pubkey" \
                 --d-tag "$COOP_CONFIG_D_TAG" 2>/dev/null)
@@ -221,10 +221,10 @@ coop_publish_config_to_nostr() {
     fi
     
     # Use nostr_send_note.py if available
-    if [[ -x "${MY_PATH}/nostr_send_note.py" ]] || command -v python3 >/dev/null 2>&1; then
+    if [[ -x "${_COOP_DIR}/nostr_send_note.py" ]] || command -v python3 >/dev/null 2>&1; then
         local tags_json="[[\"d\", \"$COOP_CONFIG_D_TAG\"], [\"t\", \"cooperative-config\"], [\"t\", \"uplanet\"]]"
         
-        local result=$(python3 "${MY_PATH}/nostr_send_note.py" \
+        local result=$(python3 "${_COOP_DIR}/nostr_send_note.py" \
             --keyfile "$COOP_CONFIG_KEYFILE" \
             --content "$config_json" \
             --tags "$tags_json" \
@@ -244,8 +244,8 @@ coop_publish_config_to_nostr() {
     fi
     
     # Fallback: use nostr_cooperative_did.py
-    if [[ -x "${MY_PATH}/nostr_cooperative_did.py" ]]; then
-        python3 "${MY_PATH}/nostr_cooperative_did.py" publish \
+    if [[ -x "${_COOP_DIR}/nostr_cooperative_did.py" ]]; then
+        python3 "${_COOP_DIR}/nostr_cooperative_did.py" publish \
             --keyfile "$COOP_CONFIG_KEYFILE" \
             --config "$config_json" \
             --relay "$COOP_CONFIG_LOCAL_RELAY" \
@@ -532,7 +532,7 @@ EOF
     echo "Cooperative variables now shared via DID NOSTR (kind 30800)"
     echo ""
     echo "To add sensitive credentials (will be encrypted with \$UPLANETNAME):"
-    echo "  source ${MY_PATH}/cooperative_config.sh"
+    echo "  source ${_COOP_DIR}/cooperative_config.sh"
     echo "  coop_config_set OPENCOLLECTIVE_PERSONAL_TOKEN \"your_token\""
     echo "  coop_config_set OPENCOLLECTIVE_API_KEY \"your_api_key\""
     echo "  coop_config_set PLANTNET_API_KEY \"your_plantnet_key\""
