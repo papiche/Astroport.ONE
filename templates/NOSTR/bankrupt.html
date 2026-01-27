@@ -240,6 +240,53 @@
             color: #856404;
         }
         
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .action-button {
+            display: inline-flex;
+            align-items: center;
+            padding: 15px 25px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .action-button.multipass {
+            background: linear-gradient(135deg, #4caf50, #388e3c);
+            color: white;
+        }
+        
+        .action-button.multipass:hover {
+            background: linear-gradient(135deg, #388e3c, #2e7d32);
+        }
+        
+        .action-button.zencard {
+            background: linear-gradient(135deg, #2196f3, #1976d2);
+            color: white;
+        }
+        
+        .action-button.zencard:hover {
+            background: linear-gradient(135deg, #1976d2, #1565c0);
+        }
+        
+        .action-button span {
+            margin-left: 8px;
+        }
+        
         .reasons-section {
             background: linear-gradient(135deg, #ffe0b2, #ffcc80);
             border-left: 5px solid #ff9800;
@@ -475,6 +522,19 @@
                     ⚠️ STATUT DE FAILLITE : ACTIF
                 </div>
                 
+                <div style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border: 3px solid #4caf50; border-radius: 12px; padding: 25px; margin: 25px; text-align: center;">
+                    <h3 style="color: #2e7d32; margin-top: 0;">💚 Contribuez maintenant pour sauver le NODE</h3>
+                    <p style="color: #1b5e20; margin-bottom: 20px;">Rechargez votre compte pour maintenir l'infrastructure en fonctionnement</p>
+                    <div class="action-buttons">
+                        <a href="https://opencollective.com/uplanet-zero/contribute/recharge-multipass-91197" target="_blank" class="action-button multipass">
+                            🔋 <span>Recharger MULTIPASS (1 Ẑ/semaine)</span>
+                        </a>
+                        <a href="https://opencollective.com/uplanet-zero/contribute/recharge-zencard-91198" target="_blank" class="action-button zencard">
+                            ☁️ <span>Recharger ZEN Card (4 Ẑ/semaine)</span>
+                        </a>
+                    </div>
+                </div>
+                
                 <div class="reasons-section">
                     <h2>Analyse des Causes Racines</h2>
                     <p style="margin-bottom: 15px;">La faillite a été déclenchée par un ou plusieurs des déséquilibres économiques suivants :</p>
@@ -550,8 +610,10 @@
                             </ul>
                             <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
                                 <strong>Impact :</strong> 10 nouveaux sociétaires = _SOCIETAIRE_CAPITAL_ Ẑ de capital<br>
-                                <strong>Prix de la Part :</strong> _SOCIETAIRE_SHARE_PRICE_ Ẑ/an (_SOCIETAIRE_SHARE_PRICE_EUR_ €)<br>
-                                <strong>Utiliser OpenCollective :</strong> opencollective.com/uplanet-zero
+                                <strong>Prix de la Part :</strong> _SOCIETAIRE_SHARE_PRICE_ Ẑ/an (_SOCIETAIRE_SHARE_PRICE_EUR_ €)
+                            </div>
+                            <div style="margin-top: 10px; text-align: center;">
+                                <a href="https://opencollective.com/uplanet-zero" target="_blank" style="color: #2e7d32; font-weight: bold;">➡️ opencollective.com/uplanet-zero</a>
                             </div>
                         </div>
                         
@@ -565,8 +627,15 @@
                                 <li>Peut être alloué au MULTIPASS du Capitaine si nécessaire</li>
                             </ul>
                             <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
-                                <strong>Lien :</strong> opencollective.com/uplanet-zero<br>
                                 <strong>Objectif :</strong> "Fonds d'urgence - UPlanet _UPLANET_ID_"
+                            </div>
+                            <div class="action-buttons" style="margin-top: 15px;">
+                                <a href="https://opencollective.com/uplanet-zero/contribute/recharge-multipass-91197" target="_blank" class="action-button multipass" style="padding: 10px 15px; font-size: 0.9em;">
+                                    🔋 <span>MULTIPASS</span>
+                                </a>
+                                <a href="https://opencollective.com/uplanet-zero/contribute/recharge-zencard-91198" target="_blank" class="action-button zencard" style="padding: 10px 15px; font-size: 0.9em;">
+                                    ☁️ <span>ZEN Card</span>
+                                </a>
                             </div>
                         </div>
                         
@@ -619,6 +688,16 @@
                         Une intervention financière immédiate est requise. Le NODE ne peut plus être payé, l'infrastructure va s'arrêter.
                         Rechargez le portefeuille <strong>CASH</strong> via OpenCollective pour relancer le système.
                     </p>
+                    
+                    <div class="action-buttons">
+                        <a href="https://opencollective.com/uplanet-zero/contribute/recharge-multipass-91197" target="_blank" class="action-button multipass">
+                            🔋 <span>Recharger MULTIPASS</span>
+                        </a>
+                        <a href="https://opencollective.com/uplanet-zero/contribute/recharge-zencard-91198" target="_blank" class="action-button zencard">
+                            ☁️ <span>Recharge AUTO</span>
+                        </a>
+                    </div>
+                    
                     <p style="color: #721c24; margin-top: 10px;">
                         <strong>Prochaines Étapes :</strong> 
                         1) Convertir des € en Ẑen via OpenCollective → UPLANETNAME_G1 → CASH<br>
@@ -692,6 +771,19 @@
                 
                 <div class="status-badge">
                     ⚠️ BANKRUPTCY STATUS: ACTIVE
+                </div>
+                
+                <div style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border: 3px solid #4caf50; border-radius: 12px; padding: 25px; margin: 25px; text-align: center;">
+                    <h3 style="color: #2e7d32; margin-top: 0;">💚 Contribute now to save the NODE</h3>
+                    <p style="color: #1b5e20; margin-bottom: 20px;">Recharge your account to keep the infrastructure running</p>
+                    <div class="action-buttons">
+                        <a href="https://opencollective.com/uplanet-zero/contribute/recharge-multipass-91197" target="_blank" class="action-button multipass">
+                            🔋 <span>Recharge MULTIPASS (1 Ẑ/week)</span>
+                        </a>
+                        <a href="https://opencollective.com/uplanet-zero/contribute/recharge-zencard-91198" target="_blank" class="action-button zencard">
+                            ☁️ <span>Recharge ZEN Card (4 Ẑ/week)</span>
+                        </a>
+                    </div>
                 </div>
                 
                 <div class="reasons-section">
@@ -769,8 +861,10 @@
                             </ul>
                             <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
                                 <strong>Impact:</strong> 10 new sociétaires = _SOCIETAIRE_CAPITAL_ Ẑ capital<br>
-                                <strong>Share Price:</strong> _SOCIETAIRE_SHARE_PRICE_ Ẑ/year (_SOCIETAIRE_SHARE_PRICE_EUR_ €)<br>
-                                <strong>Use OpenCollective:</strong> opencollective.com/uplanet-zero
+                                <strong>Share Price:</strong> _SOCIETAIRE_SHARE_PRICE_ Ẑ/year (_SOCIETAIRE_SHARE_PRICE_EUR_ €)
+                            </div>
+                            <div style="margin-top: 10px; text-align: center;">
+                                <a href="https://opencollective.com/uplanet-zero" target="_blank" style="color: #2e7d32; font-weight: bold;">➡️ opencollective.com/uplanet-zero</a>
                             </div>
                         </div>
                         
@@ -784,8 +878,15 @@
                                 <li>Can be allocated to Captain MULTIPASS if needed</li>
                             </ul>
                             <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
-                                <strong>Link:</strong> opencollective.com/uplanet-zero<br>
                                 <strong>Purpose:</strong> "Emergency fund - UPlanet _UPLANET_ID_"
+                            </div>
+                            <div class="action-buttons" style="margin-top: 15px;">
+                                <a href="https://opencollective.com/uplanet-zero/contribute/recharge-multipass-91197" target="_blank" class="action-button multipass" style="padding: 10px 15px; font-size: 0.9em;">
+                                    🔋 <span>MULTIPASS</span>
+                                </a>
+                                <a href="https://opencollective.com/uplanet-zero/contribute/recharge-zencard-91198" target="_blank" class="action-button zencard" style="padding: 10px 15px; font-size: 0.9em;">
+                                    ☁️ <span>ZEN Card</span>
+                                </a>
                             </div>
                         </div>
                         
@@ -838,6 +939,16 @@
                         Immediate financial intervention is required. The NODE cannot be paid, infrastructure will stop.
                         Recharge the <strong>CASH</strong> wallet via OpenCollective to restart the system.
                     </p>
+                    
+                    <div class="action-buttons">
+                        <a href="https://opencollective.com/uplanet-zero/contribute/recharge-multipass-91197" target="_blank" class="action-button multipass">
+                            🔋 <span>Recharge MULTIPASS</span>
+                        </a>
+                        <a href="https://opencollective.com/uplanet-zero/contribute/recharge-zencard-91198" target="_blank" class="action-button zencard">
+                            ☁️ <span>Recharge ZEN Card</span>
+                        </a>
+                    </div>
+                    
                     <p style="color: #721c24; margin-top: 10px;">
                         <strong>Next Steps:</strong> 
                         1) Convert € to Ẑen via OpenCollective → UPLANETNAME_G1 → CASH<br>
@@ -911,6 +1022,19 @@
                 
                 <div class="status-badge">
                     ⚠️ ESTADO DE QUIEBRA: ACTIVO
+                </div>
+                
+                <div style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border: 3px solid #4caf50; border-radius: 12px; padding: 25px; margin: 25px; text-align: center;">
+                    <h3 style="color: #2e7d32; margin-top: 0;">💚 Contribuya ahora para salvar el NODE</h3>
+                    <p style="color: #1b5e20; margin-bottom: 20px;">Recargue su cuenta para mantener la infraestructura en funcionamiento</p>
+                    <div class="action-buttons">
+                        <a href="https://opencollective.com/uplanet-zero/contribute/recharge-multipass-91197" target="_blank" class="action-button multipass">
+                            🔋 <span>Recargar MULTIPASS (1 Ẑ/semana)</span>
+                        </a>
+                        <a href="https://opencollective.com/uplanet-zero/contribute/recharge-zencard-91198" target="_blank" class="action-button zencard">
+                            ☁️ <span>Recargar ZEN Card (4 Ẑ/semana)</span>
+                        </a>
+                    </div>
                 </div>
                 
                 <div class="reasons-section">
@@ -988,8 +1112,10 @@
                             </ul>
                             <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
                                 <strong>Impacto :</strong> 10 nuevos sociétaires = _SOCIETAIRE_CAPITAL_ Ẑ de capital<br>
-                                <strong>Precio de la Participación :</strong> _SOCIETAIRE_SHARE_PRICE_ Ẑ/año (_SOCIETAIRE_SHARE_PRICE_EUR_ €)<br>
-                                <strong>Usar OpenCollective :</strong> opencollective.com/uplanet-zero
+                                <strong>Precio de la Participación :</strong> _SOCIETAIRE_SHARE_PRICE_ Ẑ/año (_SOCIETAIRE_SHARE_PRICE_EUR_ €)
+                            </div>
+                            <div style="margin-top: 10px; text-align: center;">
+                                <a href="https://opencollective.com/uplanet-zero" target="_blank" style="color: #2e7d32; font-weight: bold;">➡️ opencollective.com/uplanet-zero</a>
                             </div>
                         </div>
                         
@@ -1003,8 +1129,15 @@
                                 <li>Puede ser asignado al MULTIPASS del Capitán si es necesario</li>
                             </ul>
                             <div class="calculation-box" style="margin-top: 10px; font-size: 0.85em;">
-                                <strong>Enlace :</strong> opencollective.com/uplanet-zero<br>
                                 <strong>Propósito :</strong> "Fondo de emergencia - UPlanet _UPLANET_ID_"
+                            </div>
+                            <div class="action-buttons" style="margin-top: 15px;">
+                                <a href="https://opencollective.com/uplanet-zero/contribute/recharge-multipass-91197" target="_blank" class="action-button multipass" style="padding: 10px 15px; font-size: 0.9em;">
+                                    🔋 <span>MULTIPASS</span>
+                                </a>
+                                <a href="https://opencollective.com/uplanet-zero/contribute/recharge-zencard-91198" target="_blank" class="action-button zencard" style="padding: 10px 15px; font-size: 0.9em;">
+                                    ☁️ <span>ZEN Card</span>
+                                </a>
                             </div>
                         </div>
                         
@@ -1057,6 +1190,16 @@
                         Se requiere intervención financiera inmediata. El NODE no puede ser pagado, la infraestructura se detendrá.
                         Recargue la cartera <strong>CASH</strong> vía OpenCollective para reiniciar el sistema.
                     </p>
+                    
+                    <div class="action-buttons">
+                        <a href="https://opencollective.com/uplanet-zero/contribute/recharge-multipass-91197" target="_blank" class="action-button multipass">
+                            🔋 <span>Recargar MULTIPASS</span>
+                        </a>
+                        <a href="https://opencollective.com/uplanet-zero/contribute/recharge-zencard-91198" target="_blank" class="action-button zencard">
+                            ☁️ <span>Recargar ZEN Card</span>
+                        </a>
+                    </div>
+                    
                     <p style="color: #721c24; margin-top: 10px;">
                         <strong>Próximos Pasos :</strong> 
                         1) Convertir € a Ẑen vía OpenCollective → UPLANETNAME_G1 → CASH<br>
@@ -1072,6 +1215,15 @@
             <p>Ceci est une alerte automatisée de faillite du système d'allocation ZEN.COOPERATIVE.</p>
             <p><strong>ID Alerte :</strong> BANKRUPTCY-_TODATE_</p>
             <p><strong>Généré :</strong> _DATE_</p>
+            
+            <div style="margin: 20px 0;">
+                <p style="color: #81c784; font-weight: bold;">🔗 Liens de recharge OpenCollective :</p>
+                <div style="margin: 10px 0;">
+                    <a href="https://opencollective.com/uplanet-zero/contribute/recharge-multipass-91197" target="_blank" style="color: #81c784; margin-right: 20px;">🔋 MULTIPASS</a>
+                    <a href="https://opencollective.com/uplanet-zero/contribute/recharge-zencard-91198" target="_blank" style="color: #81c784;">☁️ ZEN Card</a>
+                </div>
+            </div>
+            
             <hr style="border: none; border-top: 1px solid #455a64; margin: 20px 0;">
             <p><small>
                 Cette alerte est générée automatiquement lorsque le système d'allocation coopérative échoue en raison de fonds insuffisants.<br>
