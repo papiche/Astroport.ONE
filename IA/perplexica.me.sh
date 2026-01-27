@@ -135,9 +135,13 @@ check_ipv6_available() {
 # Check IPv4 connectivity
 check_ipv4_available() {
     local silent="${1:-false}"
-    if timeout 3 bash -c "echo >/dev/tcp/$REMOTE_HOST/$REMOTE_PORT_IPV4" 2>/dev/null; then
-        [[ "$silent" != "true" ]] && print_status "OK" "IPv4 to $REMOTE_HOST:$REMOTE_PORT_IPV4"
-        return 0
+    local ipv4_addr
+    ipv4_addr=$(dig +short A "$REMOTE_HOST" 2>/dev/null | head -1)
+    if [ -n "$ipv4_addr" ]; then
+        if timeout 3 bash -c "echo >/dev/tcp/$ipv4_addr/$REMOTE_PORT_IPV4" 2>/dev/null; then
+            [[ "$silent" != "true" ]] && print_status "OK" "IPv4 to $REMOTE_HOST ($ipv4_addr:$REMOTE_PORT_IPV4)"
+            return 0
+        fi
     fi
     [[ "$silent" != "true" ]] && print_status "FAIL" "IPv4 not available"
     return 1
