@@ -325,6 +325,19 @@ get_image_result() {
   fi
 }
 
+# Function to free VRAM after generation (switch to lowram mode)
+# This calls the ComfyUI /free endpoint to release GPU memory
+free_vram() {
+    echo "Freeing VRAM (lowram mode)..." >&2
+    local response
+    response=$(curl -s -X POST "$COMFYUI_URL/free" -H "Content-Type: application/json" -d '{"unload_models": true, "free_memory": true}' 2>/dev/null)
+    if [ $? -eq 0 ]; then
+        echo "VRAM freed successfully" >&2
+    else
+        echo "Warning: Could not free VRAM" >&2
+    fi
+}
+
 # Main script execution
 # This script generates a high-quality image from a text prompt and returns an IPFS URL
 
@@ -341,6 +354,13 @@ update_prompt
 # Step 3: Submit workflow to ComfyUI and monitor generation
 # This will generate the image and return the IPFS URL
 send_workflow
+RESULT=$?
+
+# Step 4: Free VRAM after generation to switch to lowram mode
+free_vram
+
+# Exit with the result of send_workflow
+exit $RESULT
 
 # Final Output:
 # - Success: Returns IPFS URL (e.g., "https://ipfs.copylaradio.com/ipfs/QmHash/image_123456.png")

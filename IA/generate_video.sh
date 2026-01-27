@@ -315,6 +315,19 @@ get_video_result() {
   fi
 }
 
+# Function to free VRAM after generation (switch to lowram mode)
+# This calls the ComfyUI /free endpoint to release GPU memory
+free_vram() {
+    echo "Freeing VRAM (lowram mode)..." >&2
+    local response
+    response=$(curl -s -X POST "$COMFYUI_URL/free" -H "Content-Type: application/json" -d '{"unload_models": true, "free_memory": true}' 2>/dev/null)
+    if [ $? -eq 0 ]; then
+        echo "VRAM freed successfully" >&2
+    else
+        echo "Warning: Could not free VRAM" >&2
+    fi
+}
+
 # Main script execution
 
 # Check if ComfyUI is accessible
@@ -327,4 +340,11 @@ fi
 update_prompt
 
 # Send the workflow to ComfyUI for processing
-send_workflow 
+send_workflow
+RESULT=$?
+
+# Free VRAM after generation to switch to lowram mode
+free_vram
+
+# Exit with the result of send_workflow
+exit $RESULT 
