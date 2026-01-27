@@ -454,9 +454,9 @@ is_societaire_from_did() {
     # Check if contractStatus indicates cooperative membership
     # Cooperative statuses: cooperative_member_satellite, cooperative_member_constellation, 
     # infrastructure_contributor, cooperative_treasury_contributor, cooperative_rnd_contributor, 
-    # cooperative_assets_contributor
+    # cooperative_assets_contributor, astroport_captain (full access)
     case "$contract_status" in
-        *"cooperative_member"*|*"infrastructure_contributor"*|*"cooperative_treasury_contributor"*|*"cooperative_rnd_contributor"*|*"cooperative_assets_contributor"*)
+        *"cooperative_member"*|*"infrastructure_contributor"*|*"cooperative_treasury_contributor"*|*"cooperative_rnd_contributor"*|*"cooperative_assets_contributor"*|*"astroport_captain"*)
             echo "DEBUG: User $user_id is a sociétaire (status: $contract_status)" >&2
             return 0
             ;;
@@ -499,14 +499,14 @@ is_constellation_from_did() {
     
     echo "DEBUG: Checking CONSTELLATION status for $user_id: $contract_status" >&2
     
-    # Only constellation and infrastructure contributors have I2V access
+    # Constellation, infrastructure contributors and captains have I2V access
     case "$contract_status" in
-        *"cooperative_member_constellation"*|*"infrastructure_contributor"*)
-            echo "DEBUG: User $user_id is CONSTELLATION tier (I2V access)" >&2
+        *"cooperative_member_constellation"*|*"infrastructure_contributor"*|*"astroport_captain"*)
+            echo "DEBUG: User $user_id is CONSTELLATION tier or CAPTAIN (I2V access)" >&2
             return 0
             ;;
         *)
-            echo "DEBUG: User $user_id is NOT CONSTELLATION tier" >&2
+            echo "DEBUG: User $user_id is NOT CONSTELLATION tier or CAPTAIN" >&2
             return 1
             ;;
     esac
