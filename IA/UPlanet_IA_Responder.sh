@@ -248,7 +248,7 @@ fi
 if [ -z "$URL" ]; then
     # First, try to get URL from original event's imeta tags (most reliable)
     if [[ -n "$EVENT" ]]; then
-        local original_event=$(get_event_by_id "$EVENT" 2>/dev/null)
+        original_event=$(get_event_by_id "$EVENT" 2>/dev/null)
         if [[ -n "$original_event" ]]; then
             # Extract imeta tag with url
             URL=$(echo "$original_event" | jq -r '.tags[] | select(.[0] == "imeta") | .[1] // empty' 2>/dev/null | grep -oP 'url\s+\K[^\s]+' | head -n1)
