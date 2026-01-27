@@ -88,6 +88,28 @@
         .links a:hover {
             text-decoration: underline;
         }
+        .log-section {
+            background: #2d2d2d;
+            color: #a6e22e;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .log-section h4 {
+            color: #f8f8f2;
+            margin: 0 0 10px 0;
+            font-size: 0.9rem;
+        }
+        .log-section pre {
+            margin: 0;
+            color: #f92672;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
@@ -102,6 +124,7 @@
                 _ERROR_INSTRUCTIONS_
                 <p><strong>Date :</strong> _DATE_</p>
             </div>
+            _LOG_SECTION_
             <div class='links'>
                 <p><strong>🔗 Pages utiles :</strong></p>
                 <ul>

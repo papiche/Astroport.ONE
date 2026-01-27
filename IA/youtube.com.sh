@@ -1280,6 +1280,24 @@ send_error_notification() {
             ;;
     esac
     
+    # Extract last 42 lines from IA.log for debugging
+    local log_lines=""
+    local log_section=""
+    if [[ -f "$LOGFILE" ]]; then
+        # Extract last 42 lines and escape HTML special characters
+        log_lines=$(tail -n 42 "$LOGFILE" 2>/dev/null | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g' || echo "")
+        if [[ -n "$log_lines" ]]; then
+            log_section="<div class='log-section'><h4>🔍 Dernières lignes du log (IA.log)</h4><pre>${log_lines}</pre></div>"
+            log_debug "Extracted $(echo "$log_lines" | wc -l) lines from log file for notification"
+        else
+            log_section=""
+            log_debug "Log file is empty or could not be read"
+        fi
+    else
+        log_section=""
+        log_debug "Log file not found: $LOGFILE"
+    fi
+    
     # Chemin vers le template HTML
     local template_file="${MY_PATH}/../templates/NOSTR/cookie.youtube.alert.html"
     
@@ -1293,21 +1311,39 @@ send_error_notification() {
     local temp_email_file="$HOME/.zen/tmp/youtube_error_email_$(date +%Y%m%d_%H%M%S).html"
     local current_date=$(date '+%d/%m/%Y à %H:%M')
     
+    # Write log_section to a temp file to avoid shell escaping issues with awk
+    local log_section_file="$HOME/.zen/tmp/log_section_$$.html"
+    echo "$log_section" > "$log_section_file"
+    
     # Use awk instead of sed to handle multi-line replacement properly
     # This avoids issues with special characters and newlines in HTML content
+    # Read log_section from file to avoid argument length limits
     awk -v error_title="$error_title" \
         -v error_message="$error_message" \
         -v error_instructions="$error_instructions" \
         -v current_date="$current_date" \
         -v uspot="${uSPOT}" \
-        '{
+        -v log_section_file="$log_section_file" \
+        'BEGIN {
+            # Read log section from file
+            log_section = ""
+            while ((getline line < log_section_file) > 0) {
+                log_section = log_section line "\n"
+            }
+            close(log_section_file)
+        }
+        {
             gsub(/_ERROR_TITLE_/, error_title);
             gsub(/_ERROR_MESSAGE_/, error_message);
             gsub(/_ERROR_INSTRUCTIONS_/, error_instructions);
             gsub(/_DATE_/, current_date);
             gsub(/_uSPOT_/, uspot);
+            gsub(/_LOG_SECTION_/, log_section);
             print
         }' "$template_file" > "$temp_email_file"
+    
+    # Clean up temp log section file
+    rm -f "$log_section_file" 2>/dev/null
     
     # Verify the output file is not empty
     if [[ ! -s "$temp_email_file" ]]; then
@@ -1326,6 +1362,7 @@ send_error_notification() {
 ${error_instructions}
 <p><strong>Date :</strong> ${current_date}</p>
 </div>
+${log_section}
 <p><a href="${uSPOT}/cookie">Gérer vos cookies YouTube</a></p>
 </div>
 </body>
