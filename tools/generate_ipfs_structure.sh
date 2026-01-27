@@ -1029,9 +1029,6 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             opacity: 1;
         }
 
-        .file-card:hover .delete-btn {
-            opacity: 1;
-        }
 
         .file-actions {
             position: absolute;
@@ -1062,19 +1059,9 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             z-index: 10;
         }
 
-        .file-action-btn.delete-btn { /* Supprimer la règle spécifique au download-btn et la réappliquer ici */
-            left: 8px; /* Override for delete button */
-            right: auto;
-            background: rgba(244, 67, 54, 0.8);
-        }
-
         .file-action-btn:hover {
             background: rgba(76, 175, 80, 1);
             transform: scale(1.1);
-        }
-
-        .file-action-btn.delete-btn:hover { /* Override pour le delete button */
-            background: rgba(244, 67, 54, 1);
         }
 
         .file-icon {
@@ -3266,17 +3253,11 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                 }
 
                 let actionButtonHtml = '';
-                let deleteButtonHtml = '';
 
                 if (isConnected && !isForeignDrive) { // Connecté et c'est VOTRE Drive
                     actionButtonHtml = `
                         <button class="file-action-btn download-btn" data-index="${index}" title="Download File">
                             <i class="fas fa-download"></i>
-                        </button>
-                    `;
-                    deleteButtonHtml = `
-                        <button class="file-action-btn delete-btn" data-index="${index}" title="Delete File">
-                            <i class="fas fa-trash-alt"></i>
                         </button>
                     `;
                 } else if (isConnected && isForeignDrive) { // Connecté à un Drive ÉTRANGER
@@ -3310,7 +3291,6 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                             Path: ${item.path}
                         </div>
                         ${actionButtonHtml}
-                        ${deleteButtonHtml}
                     </div>
                 `;
                 return generatedCardHtml;
@@ -3332,11 +3312,6 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                 e.stopPropagation();
                 const index = $(this).data('index');
                 downloadFileByIndex(index);
-            });
-            $('.delete-btn').click(function(e) {
-                e.stopPropagation();
-                const index = $(this).data('index');
-                deleteFileByIndex(index);
             });
             $('.sync-btn').click(function(e) {
                 e.stopPropagation();
@@ -4219,56 +4194,6 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
 
 
 
-        function deleteFileByIndex(index) {
-            if (!isNostrConnected || !userPublicKey) {
-                alert('Please connect to NOSTR to delete files.');
-                return;
-            }
-
-            const item = filteredItems[index];
-            if (!item) return;
-
-            if (!confirm(`Are you sure you want to delete "${item.name}"? This action cannot be undone.`)) {
-                return;
-            }
-
-            const deleteUrl = `${upassportUrl}/api/delete`;
-            const payload = {
-                file_path: item.path,
-                npub: userPublicKey
-            };
-
-            console.log('Deleting file:', payload);
-
-            $.ajax({
-                url: deleteUrl,
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(payload),
-                success: function(response) {
-                    console.log('Delete response:', response);
-                    if (response.success) {
-                        alert('File deleted successfully. The view will now reload.');
-                        if (response.new_cid) {
-                            reloadManifest(response.new_cid, false);
-                        } else {
-                            loadManifest(); // Fallback
-                        }
-                    } else {
-                        alert('Failed to delete file: ' + (response.message || 'Unknown error'));
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error deleting file:', xhr.responseText);
-                    let errorMsg = 'An error occurred while deleting the file.';
-                    try {
-                        const err_json = JSON.parse(xhr.responseText);
-                        errorMsg = err_json.detail || err_json.error || errorMsg;
-                    } catch (e) {}
-                    alert('Error: ' + errorMsg);
-                }
-            });
-        }
 
 
 
