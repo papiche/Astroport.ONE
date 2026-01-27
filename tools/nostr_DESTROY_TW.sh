@@ -120,8 +120,10 @@ echo "Exported ${COUNT} events to ${OUTPUT_DIR}/nostr_export.json"
 ## PREGENERATE NEXT .disco FOR RESTORATION (before creating instructions)
 echo "🔮 Pre-generating next .disco for restoration on new relay/captain..."
 # Generate new SALT and PEPPER for restoration
-NEW_SALT=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w42 | head -n1)
-NEW_PEPPER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w42 | head -n1)
+# Use head -c to limit input first, avoiding infinite stream blocking
+# Read enough bytes to ensure we get 42 alphanumeric chars after filtering
+NEW_SALT=$(head -c 200 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 42)
+NEW_PEPPER=$(head -c 200 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 42)
 NEW_DISCO="/?${email}=${NEW_SALT}&nostr=${NEW_PEPPER}"
 
 # Generate next HEX from new SALT/PEPPER
