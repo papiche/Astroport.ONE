@@ -125,6 +125,44 @@ fi
 
 log_message "🚀 Génération de la structure IPFS..."
 log_message "📁 Répertoire source: $SOURCE_DIR"
+
+# Sauvegarder le manifest existant en manifest-1.json dès le début (si manifest.json existe)
+# Cela permet de récupérer les fichiers et le CID même si les fichiers ont été supprimés du disque
+if [ -f "$SOURCE_DIR/manifest.json" ] && [ ! -f "$SOURCE_DIR/manifest-1.json" ]; then
+    cp "$SOURCE_DIR/manifest.json" "$SOURCE_DIR/manifest-1.json"
+    log_message "   💾 Manifest sauvegardé en manifest-1.json"
+    
+    # Sauvegarder aussi le CID existant
+    if command -v jq >/dev/null 2>&1; then
+        EXISTING_FINAL_CID=$(jq -r '.final_cid // ""' "$SOURCE_DIR/manifest.json" 2>/dev/null)
+        if [ -n "$EXISTING_FINAL_CID" ] && [ "$EXISTING_FINAL_CID" != "null" ] && [ "$EXISTING_FINAL_CID" != "" ]; then
+            log_message "   💾 CID existant sauvegardé: $EXISTING_FINAL_CID"
+        else
+            EXISTING_FINAL_CID=""
+        fi
+    else
+        EXISTING_FINAL_CID=""
+    fi
+elif [ -f "$SOURCE_DIR/manifest.json" ] && [ -f "$SOURCE_DIR/manifest-1.json" ]; then
+    # Si manifest-1.json existe déjà, mettre à jour avec le manifest.json actuel
+    cp "$SOURCE_DIR/manifest.json" "$SOURCE_DIR/manifest-1.json"
+    log_message "   💾 Manifest mis à jour en manifest-1.json"
+    
+    # Sauvegarder aussi le CID existant
+    if command -v jq >/dev/null 2>&1; then
+        EXISTING_FINAL_CID=$(jq -r '.final_cid // ""' "$SOURCE_DIR/manifest.json" 2>/dev/null)
+        if [ -n "$EXISTING_FINAL_CID" ] && [ "$EXISTING_FINAL_CID" != "null" ] && [ "$EXISTING_FINAL_CID" != "" ]; then
+            log_message "   💾 CID existant sauvegardé: $EXISTING_FINAL_CID"
+        else
+            EXISTING_FINAL_CID=""
+        fi
+    else
+        EXISTING_FINAL_CID=""
+    fi
+else
+    EXISTING_FINAL_CID=""
+fi
+
 log_message ""
 
 # Fonction pour obtenir la taille d'un fichier
@@ -321,16 +359,24 @@ file_needs_update() {
 }
 
 # Fonction pour récupérer l'ancien lien IPFS d'un fichier
+# Lit depuis manifest-1.json (sauvegardé au début) ou manifest.json (si manifest-1.json n'existe pas)
 get_existing_ipfs_link() {
     local relative_path="$1"
-    local manifest_file="$SOURCE_DIR/manifest.json"
+    local manifest_file=""
+    
+    # Essayer d'abord manifest-1.json (sauvegardé au début), puis manifest.json
+    if [ -f "$SOURCE_DIR/manifest-1.json" ]; then
+        manifest_file="$SOURCE_DIR/manifest-1.json"
+    elif [ -f "$SOURCE_DIR/manifest.json" ]; then
+        manifest_file="$SOURCE_DIR/manifest.json"
+    fi
 
-    if [ -f "$manifest_file" ] && command -v jq >/dev/null 2>&1; then
+    if [ -n "$manifest_file" ] && command -v jq >/dev/null 2>&1; then
         local existing_link=$(jq -r --arg path "$relative_path" '
             .files[]? | select(.path == $path) | .ipfs_link // ""
         ' "$manifest_file" 2>/dev/null)
 
-        if [ -n "$existing_link" ] && [ "$existing_link" != "null" ]; then
+        if [ -n "$existing_link" ] && [ "$existing_link" != "null" ] && [ "$existing_link" != "" ]; then
             echo "$existing_link"
         else
             echo ""
@@ -493,20 +539,6 @@ detect_deleted_files_from_manifests() {
 
 # Générer le manifest.json
 log_message "📋 Génération du manifest.json..."
-
-# Sauvegarder le manifest existant en manifest-1.json avant de le régénérer
-if [ -f "$SOURCE_DIR/manifest.json" ]; then
-    cp "$SOURCE_DIR/manifest.json" "$SOURCE_DIR/manifest-1.json"
-    log_message "   💾 Manifest précédent sauvegardé: manifest-1.json"
-    
-    # Sauvegarder aussi le CID existant
-    EXISTING_FINAL_CID=$(get_existing_final_cid)
-    if [ -n "$EXISTING_FINAL_CID" ]; then
-        log_message "   💾 CID existant sauvegardé: $EXISTING_FINAL_CID"
-    fi
-else
-    EXISTING_FINAL_CID=""
-fi
 
 # Variables pour collecter les données
 directories_json=""
