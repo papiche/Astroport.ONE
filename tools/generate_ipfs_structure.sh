@@ -170,13 +170,22 @@ elif [ -f "$SOURCE_DIR/manifest.json" ] && [ -f "$SOURCE_DIR/manifest-1.json" ];
         cp "$SOURCE_DIR/manifest-1.json" "$SOURCE_DIR/manifest.json"
         log_message "   💾 Manifest restauré depuis manifest-1.json (dernière mise à jour)"
         
-        # Sauvegarder aussi le CID existant depuis manifest-1.json (plus fiable)
+        # Sauvegarder aussi le CID existant depuis manifest-1.json et s'assurer qu'il est dans manifest.json
         if command -v jq >/dev/null 2>&1; then
             EXISTING_FINAL_CID=$(jq -r '.final_cid // ""' "$SOURCE_DIR/manifest-1.json" 2>/dev/null)
             if [ -n "$EXISTING_FINAL_CID" ] && [ "$EXISTING_FINAL_CID" != "null" ] && [ "$EXISTING_FINAL_CID" != "" ]; then
                 log_message "   💾 CID existant sauvegardé: $EXISTING_FINAL_CID"
+                # S'assurer que le CID est bien dans manifest.json (même si déjà copié, on force la mise à jour)
+                update_final_cid_in_manifest "$EXISTING_FINAL_CID"
             else
-                EXISTING_FINAL_CID=""
+                # Si manifest-1.json n'a pas de CID, essayer de le récupérer depuis manifest.json original
+                EXISTING_FINAL_CID=$(jq -r '.final_cid // ""' "$SOURCE_DIR/manifest.json" 2>/dev/null)
+                if [ -n "$EXISTING_FINAL_CID" ] && [ "$EXISTING_FINAL_CID" != "null" ] && [ "$EXISTING_FINAL_CID" != "" ]; then
+                    log_message "   💾 CID récupéré depuis manifest.json: $EXISTING_FINAL_CID"
+                    update_final_cid_in_manifest "$EXISTING_FINAL_CID"
+                else
+                    EXISTING_FINAL_CID=""
+                fi
             fi
         else
             EXISTING_FINAL_CID=""
@@ -689,6 +698,11 @@ if quick_check_for_changes; then
     log_message "✅ Manifest généré avec $dir_count répertoires et $file_count fichiers ($(format_size $total_size))"
     log_message "   📊 Statistiques IPFS: 0 nouveaux/modifiés, $cached_count en cache, 0 supprimés"
     
+    # S'assurer que le CID est bien dans manifest.json (même si déjà présent, on force la mise à jour)
+    if [ -n "$EXISTING_FINAL_CID" ] && [ "$EXISTING_FINAL_CID" != "" ]; then
+        update_final_cid_in_manifest "$EXISTING_FINAL_CID"
+    fi
+    
     # Passer directement à la génération de index.html (sauter le traitement des fichiers)
     SKIP_FILE_PROCESSING=true
 else
@@ -1069,11 +1083,13 @@ if [ -f "$SOURCE_DIR/manifest-1.json" ] && command -v jq >/dev/null 2>&1; then
 fi
 
 # Générer le JSON final
+# Utiliser le CID existant si disponible, sinon vide (sera mis à jour plus tard)
+FINAL_CID_FOR_MANIFEST="${EXISTING_FINAL_CID:-}"
 cat > "$SOURCE_DIR/manifest.json" << EOF
 {
     "generated_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
     "version": "1.0.0",
-    "final_cid": "",
+    "final_cid": "${FINAL_CID_FOR_MANIFEST}",
     "owner_email": "$OWNER_EMAIL",
     "owner_hex_pubkey": "$OWNER_HEX_PUBKEY",
     "my_ipfs_gateway": "$ORIGIN_IPFS_GATEWAY",
@@ -4590,6 +4606,8 @@ if [ "$updated_count" -eq 0 ] && [ "$deleted_count" -eq 0 ]; then
             FINAL_CID=$(jq -r '.final_cid // ""' "$SOURCE_DIR/manifest.json" 2>/dev/null)
             if [ -n "$FINAL_CID" ] && [ "$FINAL_CID" != "null" ] && [ "$FINAL_CID" != "" ]; then
                 log_message "✅ CID préservé depuis manifest.json: $FINAL_CID"
+                # S'assurer que le CID est bien sauvegardé dans manifest.json
+                update_final_cid_in_manifest "$FINAL_CID"
             else
                 FINAL_CID=""
             fi
