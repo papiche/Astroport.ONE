@@ -1317,7 +1317,10 @@ Détails: ${ERROR_LINE}"
                         USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
                         
                         if [ $? -eq 0 ] && [ -n "$USER_UDRIVE_PATH" ]; then
-                            VIDEO_AI_RETURN="$($MY_PATH/image_to_video.sh "${cleaned_text}" "$URL" "$USER_UDRIVE_PATH")"
+                            # Ensure Videos directory exists
+                            mkdir -p "$USER_UDRIVE_PATH/Videos"
+                            echo "Using user uDRIVE/Videos for i2v video output: $USER_UDRIVE_PATH/Videos" >&2
+                            VIDEO_AI_RETURN="$($MY_PATH/image_to_video.sh "${cleaned_text}" "$URL" "$USER_UDRIVE_PATH/Videos")"
                         else
                             echo "Warning: Using default location for i2v video generation" >&2
                             VIDEO_AI_RETURN="$($MY_PATH/image_to_video.sh "${cleaned_text}" "$URL")"
@@ -1345,7 +1348,10 @@ Détails: ${ERROR_LINE}"
                         USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
                         
                         if [ $? -eq 0 ] && [ -n "$USER_UDRIVE_PATH" ]; then
-                            VIDEO_AI_RETURN="$($MY_PATH/generate_video.sh "${cleaned_text}" "$MY_PATH/workflow/video_wan2_2_5B_ti2v.json" "$USER_UDRIVE_PATH")"
+                            # Ensure Videos directory exists
+                            mkdir -p "$USER_UDRIVE_PATH/Videos"
+                            echo "Using user uDRIVE/Videos for T2V video output: $USER_UDRIVE_PATH/Videos" >&2
+                            VIDEO_AI_RETURN="$($MY_PATH/generate_video.sh "${cleaned_text}" "$MY_PATH/workflow/video_wan2_2_5B_ti2v.json" "$USER_UDRIVE_PATH/Videos")"
                         else
                             echo "Warning: Using default location for video generation" >&2
                             VIDEO_AI_RETURN="$($MY_PATH/generate_video.sh "${cleaned_text}" "$MY_PATH/workflow/video_wan2_2_5B_ti2v.json")"
@@ -1367,7 +1373,10 @@ Détails: ${ERROR_LINE}"
                 # Get user uDRIVE path and generate music
                 USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
                 if [ $? -eq 0 ]; then
-                    MUSIC_URL="$($MY_PATH/generate_music.sh "${cleaned_text}" "$USER_UDRIVE_PATH")"
+                    # Ensure Music directory exists
+                    mkdir -p "$USER_UDRIVE_PATH/Music"
+                    echo "Using user uDRIVE/Music for music output: $USER_UDRIVE_PATH/Music" >&2
+                    MUSIC_URL="$($MY_PATH/generate_music.sh "${cleaned_text}" "$USER_UDRIVE_PATH/Music")"
                 else
                     echo "Warning: Using default location for music generation" >&2
                     MUSIC_URL="$($MY_PATH/generate_music.sh "${cleaned_text}")"
