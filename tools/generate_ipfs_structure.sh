@@ -143,21 +143,44 @@ if [ -f "$SOURCE_DIR/manifest.json" ] && [ ! -f "$SOURCE_DIR/manifest-1.json" ];
         EXISTING_FINAL_CID=""
     fi
 elif [ -f "$SOURCE_DIR/manifest.json" ] && [ -f "$SOURCE_DIR/manifest-1.json" ]; then
-    # Si manifest-1.json existe déjà, restaurer manifest.json depuis manifest-1.json
-    # Cela permet à get_existing_ipfs_link() de trouver les liens IPFS directement
-    cp "$SOURCE_DIR/manifest-1.json" "$SOURCE_DIR/manifest.json"
-    log_message "   💾 Manifest restauré depuis manifest-1.json (dernière mise à jour)"
+    # Comparer les dates de modification pour déterminer quel manifest est le plus récent
+    manifest_mtime=$(stat -c %Y "$SOURCE_DIR/manifest.json" 2>/dev/null || echo "0")
+    manifest1_mtime=$(stat -c %Y "$SOURCE_DIR/manifest-1.json" 2>/dev/null || echo "0")
     
-    # Sauvegarder aussi le CID existant depuis manifest-1.json (plus fiable)
-    if command -v jq >/dev/null 2>&1; then
-        EXISTING_FINAL_CID=$(jq -r '.final_cid // ""' "$SOURCE_DIR/manifest-1.json" 2>/dev/null)
-        if [ -n "$EXISTING_FINAL_CID" ] && [ "$EXISTING_FINAL_CID" != "null" ] && [ "$EXISTING_FINAL_CID" != "" ]; then
-            log_message "   💾 CID existant sauvegardé: $EXISTING_FINAL_CID"
+    if [ "$manifest_mtime" -gt "$manifest1_mtime" ]; then
+        # manifest.json est plus récent (nouveau fichier uploadé via API)
+        # Sauvegarder manifest.json en manifest-1.json pour la prochaine fois
+        cp "$SOURCE_DIR/manifest.json" "$SOURCE_DIR/manifest-1.json"
+        log_message "   💾 manifest.json est plus récent - sauvegardé en manifest-1.json"
+        
+        # Récupérer le CID depuis manifest.json (le plus récent)
+        if command -v jq >/dev/null 2>&1; then
+            EXISTING_FINAL_CID=$(jq -r '.final_cid // ""' "$SOURCE_DIR/manifest.json" 2>/dev/null)
+            if [ -n "$EXISTING_FINAL_CID" ] && [ "$EXISTING_FINAL_CID" != "null" ] && [ "$EXISTING_FINAL_CID" != "" ]; then
+                log_message "   💾 CID existant sauvegardé depuis manifest.json: $EXISTING_FINAL_CID"
+            else
+                EXISTING_FINAL_CID=""
+            fi
         else
             EXISTING_FINAL_CID=""
         fi
     else
-        EXISTING_FINAL_CID=""
+        # manifest-1.json est plus récent ou égal, restaurer manifest.json depuis manifest-1.json
+        # Cela permet à get_existing_ipfs_link() de trouver les liens IPFS directement
+        cp "$SOURCE_DIR/manifest-1.json" "$SOURCE_DIR/manifest.json"
+        log_message "   💾 Manifest restauré depuis manifest-1.json (dernière mise à jour)"
+        
+        # Sauvegarder aussi le CID existant depuis manifest-1.json (plus fiable)
+        if command -v jq >/dev/null 2>&1; then
+            EXISTING_FINAL_CID=$(jq -r '.final_cid // ""' "$SOURCE_DIR/manifest-1.json" 2>/dev/null)
+            if [ -n "$EXISTING_FINAL_CID" ] && [ "$EXISTING_FINAL_CID" != "null" ] && [ "$EXISTING_FINAL_CID" != "" ]; then
+                log_message "   💾 CID existant sauvegardé: $EXISTING_FINAL_CID"
+            else
+                EXISTING_FINAL_CID=""
+            fi
+        else
+            EXISTING_FINAL_CID=""
+        fi
     fi
 else
     EXISTING_FINAL_CID=""
@@ -224,9 +247,9 @@ quick_check_for_changes() {
     done
     
     # Vérifier s'il y a de nouveaux fichiers sur le disque (non présents dans manifest-1.json)
-    # On limite la vérification aux premiers fichiers trouvés pour être plus rapide
+    # On parcourt tous les fichiers pour détecter les nouveaux (pas de limite)
     local new_files_found=0
-    while IFS= read -r -d '' file && [ $new_files_found -lt 10 ]; do
+    while IFS= read -r -d '' file; do
         local relative_path="${file#$SOURCE_DIR/}"
         local basename_file=$(basename "$relative_path")
         
@@ -251,8 +274,7 @@ quick_check_for_changes() {
             rm -f "$manifest_index"
             return 1
         fi
-        new_files_found=$((new_files_found + 1))
-    done < <(find "$SOURCE_DIR" -type f -print0 2>/dev/null | head -z -n 1000)
+    done < <(find "$SOURCE_DIR" -type f -print0 2>/dev/null)
     
     rm -f "$manifest_index"
     log_message "   ✅ Aucun changement détecté ($checked_count fichier(s) vérifié(s)) - utilisation du manifest existant"
