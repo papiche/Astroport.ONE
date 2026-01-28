@@ -127,7 +127,6 @@ log_message "🚀 Génération de la structure IPFS..."
 log_message "📁 Répertoire source: $SOURCE_DIR"
 
 # Sauvegarder le manifest existant en manifest-1.json dès le début (si manifest.json existe)
-# Cela permet de récupérer les fichiers et le CID même si les fichiers ont été supprimés du disque
 if [ -f "$SOURCE_DIR/manifest.json" ] && [ ! -f "$SOURCE_DIR/manifest-1.json" ]; then
     cp "$SOURCE_DIR/manifest.json" "$SOURCE_DIR/manifest-1.json"
     log_message "   💾 Manifest sauvegardé en manifest-1.json"
@@ -144,13 +143,14 @@ if [ -f "$SOURCE_DIR/manifest.json" ] && [ ! -f "$SOURCE_DIR/manifest-1.json" ];
         EXISTING_FINAL_CID=""
     fi
 elif [ -f "$SOURCE_DIR/manifest.json" ] && [ -f "$SOURCE_DIR/manifest-1.json" ]; then
-    # Si manifest-1.json existe déjà, mettre à jour avec le manifest.json actuel
-    cp "$SOURCE_DIR/manifest.json" "$SOURCE_DIR/manifest-1.json"
-    log_message "   💾 Manifest mis à jour en manifest-1.json"
+    # Si manifest-1.json existe déjà, restaurer manifest.json depuis manifest-1.json
+    # Cela permet à get_existing_ipfs_link() de trouver les liens IPFS directement
+    cp "$SOURCE_DIR/manifest-1.json" "$SOURCE_DIR/manifest.json"
+    log_message "   💾 Manifest restauré depuis manifest-1.json (dernière mise à jour)"
     
-    # Sauvegarder aussi le CID existant
+    # Sauvegarder aussi le CID existant depuis manifest-1.json (plus fiable)
     if command -v jq >/dev/null 2>&1; then
-        EXISTING_FINAL_CID=$(jq -r '.final_cid // ""' "$SOURCE_DIR/manifest.json" 2>/dev/null)
+        EXISTING_FINAL_CID=$(jq -r '.final_cid // ""' "$SOURCE_DIR/manifest-1.json" 2>/dev/null)
         if [ -n "$EXISTING_FINAL_CID" ] && [ "$EXISTING_FINAL_CID" != "null" ] && [ "$EXISTING_FINAL_CID" != "" ]; then
             log_message "   💾 CID existant sauvegardé: $EXISTING_FINAL_CID"
         else
@@ -164,6 +164,100 @@ else
 fi
 
 log_message ""
+
+# Fonction pour obtenir le timestamp d'un fichier
+get_file_timestamp() {
+    local file="$1"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        stat -f%m "$file" 2>/dev/null || echo "0"
+    else
+        # Linux
+        stat -c%Y "$file" 2>/dev/null || echo "0"
+    fi
+}
+
+# Fonction pour vérifier rapidement si des changements ont été détectés
+# Retourne 0 si aucun changement, 1 si des changements détectés
+# Optimisé : crée un cache des fichiers du manifest pour éviter les appels jq répétés
+quick_check_for_changes() {
+    if [ ! -f "$SOURCE_DIR/manifest-1.json" ] || ! command -v jq >/dev/null 2>&1; then
+        return 1  # Pas de manifest précédent, traitement complet nécessaire
+    fi
+    
+    log_message "🔍 Vérification rapide des changements..."
+    
+    # Créer un fichier temporaire avec un index des fichiers du manifest (path:timestamp)
+    local manifest_index=$(mktemp)
+    jq -r '.files[]? | "\(.path)|\(.last_modified)"' "$SOURCE_DIR/manifest-1.json" 2>/dev/null > "$manifest_index"
+    
+    # Créer un tableau associatif bash pour les chemins (plus rapide que jq répété)
+    declare -A manifest_paths_map
+    while IFS='|' read -r path timestamp; do
+        if [ -n "$path" ]; then
+            manifest_paths_map["$path"]="$timestamp"
+        fi
+    done < "$manifest_index"
+    
+    local manifest_paths_count=${#manifest_paths_map[@]}
+    log_message "   📊 $manifest_paths_count fichier(s) dans manifest-1.json"
+    
+    # Vérifier chaque fichier du manifest (seulement ceux qui existent sur le disque)
+    local checked_count=0
+    local modified_count=0
+    for manifest_path in "${!manifest_paths_map[@]}"; do
+        local disk_file="$SOURCE_DIR/$manifest_path"
+        
+        # Si le fichier existe sur le disque, vérifier s'il a été modifié
+        if [ -f "$disk_file" ]; then
+            checked_count=$((checked_count + 1))
+            local current_timestamp=$(get_file_timestamp "$disk_file")
+            local stored_timestamp="${manifest_paths_map[$manifest_path]}"
+            
+            # Si le timestamp a changé, le fichier a été modifié
+            if [ "$current_timestamp" != "$stored_timestamp" ]; then
+                log_message "   ⚠️  Fichier modifié détecté: $manifest_path"
+                rm -f "$manifest_index"
+                return 1
+            fi
+        fi
+    done
+    
+    # Vérifier s'il y a de nouveaux fichiers sur le disque (non présents dans manifest-1.json)
+    # On limite la vérification aux premiers fichiers trouvés pour être plus rapide
+    local new_files_found=0
+    while IFS= read -r -d '' file && [ $new_files_found -lt 10 ]; do
+        local relative_path="${file#$SOURCE_DIR/}"
+        local basename_file=$(basename "$relative_path")
+        
+        # Ignorer les fichiers générés par le script
+        if [[ "$basename_file" == manifest.json ]] || [[ "$basename_file" == manifest-1.json ]] || [[ "$relative_path" == "index.html" ]] || [[ "$basename_file" == generate_ipfs_structure.sh ]] || [[ "$relative_path" == *"__pycache__"* ]]; then
+            continue
+        fi
+        
+        # Ignorer les fichiers cachés sauf .well-known
+        if [[ "$basename_file" == .* ]] && [[ "$relative_path" != .well-known* ]]; then
+            continue
+        fi
+        
+        # Ignorer les répertoires
+        if [ -d "$file" ]; then
+            continue
+        fi
+        
+        # Vérifier si ce fichier est dans le cache (plus rapide que jq)
+        if [ -z "${manifest_paths_map[$relative_path]:-}" ]; then
+            log_message "   ⚠️  Nouveau fichier détecté: $relative_path"
+            rm -f "$manifest_index"
+            return 1
+        fi
+        new_files_found=$((new_files_found + 1))
+    done < <(find "$SOURCE_DIR" -type f -print0 2>/dev/null | head -z -n 1000)
+    
+    rm -f "$manifest_index"
+    log_message "   ✅ Aucun changement détecté ($checked_count fichier(s) vérifié(s)) - utilisation du manifest existant"
+    return 0
+}
 
 # Fonction pour obtenir la taille d'un fichier
 get_file_size() {
@@ -540,6 +634,37 @@ detect_deleted_files_from_manifests() {
 # Générer le manifest.json
 log_message "📋 Génération du manifest.json..."
 
+# Optimisation: vérifier rapidement si des changements ont été détectés
+# Si aucun changement, manifest.json est déjà à jour (copié au début), sauter le traitement complet
+if quick_check_for_changes; then
+    log_message "⚡ Aucun changement détecté - manifest.json déjà à jour"
+    
+    # Récupérer les statistiques depuis le manifest
+    if command -v jq >/dev/null 2>&1; then
+        file_count=$(jq '.total_files // 0' "$SOURCE_DIR/manifest.json" 2>/dev/null || echo "0")
+        dir_count=$(jq '.total_directories // 0' "$SOURCE_DIR/manifest.json" 2>/dev/null || echo "0")
+        total_size=$(jq '.total_size // 0' "$SOURCE_DIR/manifest.json" 2>/dev/null || echo "0")
+        updated_count=0
+        cached_count=$file_count
+        deleted_count=0
+    else
+        file_count=0
+        dir_count=0
+        total_size=0
+        updated_count=0
+        cached_count=0
+        deleted_count=0
+    fi
+    
+    log_message "✅ Manifest généré avec $dir_count répertoires et $file_count fichiers ($(format_size $total_size))"
+    log_message "   📊 Statistiques IPFS: 0 nouveaux/modifiés, $cached_count en cache, 0 supprimés"
+    
+    # Passer directement à la génération de index.html (sauter le traitement des fichiers)
+    SKIP_FILE_PROCESSING=true
+else
+    SKIP_FILE_PROCESSING=false
+fi
+
 # Variables pour collecter les données
 directories_json=""
 files_json=""
@@ -579,8 +704,16 @@ fi
 
 log_message "🔍 Analyse des répertoires..."
 
-# Parcourir tous les répertoires d'abord
-while IFS= read -r -d '' dir; do
+# Si aucun changement détecté, récupérer les répertoires depuis le manifest existant
+if [ "$SKIP_FILE_PROCESSING" = "true" ] && command -v jq >/dev/null 2>&1; then
+    log_message "⚡ Récupération des répertoires depuis manifest.json (aucun changement)"
+    # Récupérer les répertoires depuis le manifest
+    directories_json=$(jq -c '.directories[]?' "$SOURCE_DIR/manifest.json" 2>/dev/null | jq -r 'if .category then "{\"name\": \"\(.name)\", \"path\": \"\(.path)\", \"type\": \"\(.type)\", \"files_count\": \(.files_count // 0), \"subdirs_count\": \(.subdirs_count // 0), \"category\": \"\(.category)\"}" else "{\"name\": \"\(.name)\", \"path\": \"\(.path)\", \"type\": \"\(.type)\", \"files_count\": \(.files_count // 0), \"subdirs_count\": \(.subdirs_count // 0)}" end' | sed 's/^/        /' | paste -sd ',' -)
+    dir_count=$(jq '.total_directories // 0' "$SOURCE_DIR/manifest.json" 2>/dev/null || echo "0")
+    log_message "   📁 $dir_count répertoires récupérés depuis manifest.json"
+else
+    # Parcourir tous les répertoires d'abord
+    while IFS= read -r -d '' dir; do
     # Obtenir le nom de base et le chemin relatif
     basename_dir=$(basename "$dir")
     relative_path="${dir#$SOURCE_DIR/}"
@@ -633,11 +766,17 @@ while IFS= read -r -d '' dir; do
         log_message "   📁 $dir_count répertoires traités..."
     fi
 
-done < <(find "$SOURCE_DIR" -type d -print0 | sort -z)
+    done < <(find "$SOURCE_DIR" -type d -print0 | sort -z)
+fi
 
 log_message "🔍 Analyse des fichiers..."
 
-# Parcourir tous les fichiers du répertoire (récursif)
+# Si aucun changement détecté, sauter le traitement des fichiers
+if [ "$SKIP_FILE_PROCESSING" = "true" ]; then
+    log_message "⚡ Traitement des fichiers ignoré (aucun changement)"
+    # Le manifest a déjà été copié, on passe directement à la génération de index.html
+else
+    # Parcourir tous les fichiers du répertoire (récursif)
 while IFS= read -r -d '' file; do
     # Obtenir le nom de base et le chemin relatif
     basename_file=$(basename "$file")
@@ -812,12 +951,18 @@ if [ -f "$SOURCE_DIR/manifest-1.json" ] && command -v jq >/dev/null 2>&1; then
     old_file_count=$(jq '.files | length' "$SOURCE_DIR/manifest-1.json" 2>/dev/null || echo "0")
     log_message "   📊 Fichiers dans manifest-1.json: $old_file_count"
     
-    # Créer une liste temporaire des chemins déjà traités depuis files_json
-    temp_manifest_file=$(mktemp)
+    # Créer un cache des chemins déjà traités (plus rapide que jq répété)
+    declare -A processed_paths
     if [ -n "$files_json" ]; then
+        # Extraire tous les chemins depuis files_json (une seule fois)
+        temp_manifest_file=$(mktemp)
         echo "{\"files\": [$files_json]}" > "$temp_manifest_file" 2>/dev/null || true
-    else
-        echo "{\"files\": []}" > "$temp_manifest_file" 2>/dev/null || true
+        while IFS= read -r path; do
+            if [ -n "$path" ]; then
+                processed_paths["$path"]=1
+            fi
+        done < <(jq -r '.files[]?.path // empty' "$temp_manifest_file" 2>/dev/null)
+        rm -f "$temp_manifest_file"
     fi
     
     recovered_count=0
@@ -835,10 +980,8 @@ if [ -f "$SOURCE_DIR/manifest-1.json" ] && command -v jq >/dev/null 2>&1; then
                 # Vérifier si le fichier existe sur le disque
                 disk_file="$SOURCE_DIR/$old_path"
                 if [ ! -f "$disk_file" ]; then
-                    # Vérifier si le fichier n'est pas déjà dans le nouveau manifest
-                    already_in_manifest=$(jq -r --arg path "$old_path" '.files[]? | select(.path == $path) | .path // ""' "$temp_manifest_file" 2>/dev/null || echo "")
-                    
-                    if [ -z "$already_in_manifest" ]; then
+                    # Vérifier si le fichier n'est pas déjà dans le nouveau manifest (utilisation du cache)
+                    if [ -z "${processed_paths[$old_path]:-}" ]; then
                         # Le fichier n'est plus sur le disque mais a un ipfs_link, l'ajouter au manifest
                         clean_basename=$(basename "$old_path" | sed 's/"/\\"/g')
                         clean_path=$(echo "$old_path" | sed 's/"/\\"/g')
@@ -921,6 +1064,8 @@ deleted_count=$(detect_deleted_files_from_manifests)
 # Dépinner les hashes des fichiers supprimés depuis manifest-1.json
 unpin_deleted_files "$deleted_count"
 
+fi  # Fin du bloc else (traitement complet des fichiers)
+
 # Fonction pour mettre à jour le CID final dans le manifest
 update_final_cid_in_manifest() {
     local final_cid="$1"
@@ -939,8 +1084,11 @@ update_final_cid_in_manifest() {
     fi
 }
 
-log_message "✅ Manifest généré avec $dir_count répertoires et $file_count fichiers ($(format_size $total_size))"
-log_message "   📊 Statistiques IPFS: $updated_count nouveaux/modifiés, $cached_count en cache, $deleted_count supprimés"
+# Afficher les statistiques seulement si on a fait le traitement complet
+if [ "$SKIP_FILE_PROCESSING" != "true" ]; then
+    log_message "✅ Manifest généré avec $dir_count répertoires et $file_count fichiers ($(format_size $total_size))"
+    log_message "   📊 Statistiques IPFS: $updated_count nouveaux/modifiés, $cached_count en cache, $deleted_count supprimés"
+fi
 
 # Générer index.html
 log_message "🎨 Génération de index.html..."
