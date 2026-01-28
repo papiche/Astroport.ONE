@@ -754,6 +754,88 @@ while IFS= read -r -d '' file; do
 
 done < <(find "$SOURCE_DIR" -type f -print0 | sort -z)
 
+# Récupérer les fichiers de manifest-1.json qui ne sont plus sur le disque mais qui ont un ipfs_link
+# Cela permet de conserver les fichiers déjà dans IPFS même s'ils ont été supprimés du disque
+if [ -f "$SOURCE_DIR/manifest-1.json" ] && command -v jq >/dev/null 2>&1; then
+    log_message "🔄 Récupération des fichiers de manifest-1.json non présents sur le disque..."
+    
+    # Créer une liste temporaire des chemins déjà traités depuis files_json
+    temp_manifest_file=$(mktemp)
+    if [ -n "$files_json" ]; then
+        echo "{\"files\": [$files_json]}" > "$temp_manifest_file" 2>/dev/null || true
+    else
+        echo "{\"files\": []}" > "$temp_manifest_file" 2>/dev/null || true
+    fi
+    
+    # Parcourir tous les fichiers de manifest-1.json
+    while IFS= read -r file_entry; do
+        if [ -n "$file_entry" ]; then
+            old_path=$(echo "$file_entry" | jq -r '.path // ""' 2>/dev/null)
+            old_ipfs_link=$(echo "$file_entry" | jq -r '.ipfs_link // ""' 2>/dev/null)
+            old_size=$(echo "$file_entry" | jq -r '.size // 0' 2>/dev/null)
+            old_type=$(echo "$file_entry" | jq -r '.type // "unknown"' 2>/dev/null)
+            old_last_modified=$(echo "$file_entry" | jq -r '.last_modified // 0' 2>/dev/null)
+            
+            # Vérifier si ce fichier a un ipfs_link et n'est pas déjà dans le nouveau manifest
+            if [ -n "$old_path" ] && [ -n "$old_ipfs_link" ] && [ "$old_ipfs_link" != "null" ] && [ "$old_ipfs_link" != "" ]; then
+                # Vérifier si le fichier existe sur le disque
+                disk_file="$SOURCE_DIR/$old_path"
+                if [ ! -f "$disk_file" ]; then
+                    # Vérifier si le fichier n'est pas déjà dans le nouveau manifest
+                    already_in_manifest=$(jq -r --arg path "$old_path" '.files[]? | select(.path == $path) | .path // ""' "$temp_manifest_file" 2>/dev/null || echo "")
+                    
+                    if [ -z "$already_in_manifest" ]; then
+                        # Le fichier n'est plus sur le disque mais a un ipfs_link, l'ajouter au manifest
+                        clean_basename=$(basename "$old_path" | sed 's/"/\\"/g')
+                        clean_path=$(echo "$old_path" | sed 's/"/\\"/g')
+                        formatted_size=$(format_size $old_size)
+                        
+                        # Construire les métadonnées depuis l'ancien manifest
+                        metadata_fields=""
+                        metadata_json=$(echo "$file_entry" | jq -r 'del(.ipfs_link, .path, .name, .size, .type, .last_modified, .formatted_size, .category) | to_entries | map("\"\(.key)\": \"\(.value)\"") | join(", ")' 2>/dev/null)
+                        if [ -n "$metadata_json" ] && [ "$metadata_json" != "" ] && [ "$metadata_json" != "{}" ]; then
+                            metadata_fields=", $metadata_json"
+                        fi
+                        
+                        # Ajouter la catégorie "app" si le fichier est dans "Apps"
+                        app_category_field=""
+                        if [[ "$old_path" == Apps* ]]; then
+                            app_category_field=", \"category\": \"app\""
+                        fi
+                        
+                        # Ajouter à la collection
+                        if [ -n "$files_json" ]; then
+                            files_json="${files_json},"
+                        fi
+                        
+                        files_json="${files_json}
+        {
+            \"name\": \"$clean_basename\",
+            \"path\": \"$clean_path\",
+            \"size\": $old_size,
+            \"formatted_size\": \"$formatted_size\",
+            \"type\": \"$old_type\",
+            \"last_modified\": $old_last_modified,
+            \"ipfs_link\": \"$old_ipfs_link\"$metadata_fields$app_category_field
+        }"
+                        
+                        total_size=$((total_size + old_size))
+                        file_count=$((file_count + 1))
+                        cached_count=$((cached_count + 1))
+                        
+                        log_message "   ✅ Fichier récupéré depuis manifest-1.json: $old_path (IPFS: ${old_ipfs_link%%/*})"
+                    fi
+                fi
+            fi
+        fi
+    done < <(jq -c '.files[]?' "$SOURCE_DIR/manifest-1.json" 2>/dev/null)
+    
+    # Nettoyer le fichier temporaire
+    rm -f "$temp_manifest_file"
+    
+    log_message "✅ Récupération terminée"
+fi
+
 # Générer le JSON final
 cat > "$SOURCE_DIR/manifest.json" << EOF
 {
