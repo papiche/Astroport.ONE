@@ -126,6 +126,25 @@ fi
 log_message "🚀 Génération de la structure IPFS..."
 log_message "📁 Répertoire source: $SOURCE_DIR"
 
+# Fonction pour mettre à jour le CID final dans le manifest
+# Définie tôt pour être disponible partout dans le script
+update_final_cid_in_manifest() {
+    local final_cid="$1"
+    local manifest_file="$SOURCE_DIR/manifest.json"
+
+    if [ -n "$final_cid" ] && [ -f "$manifest_file" ] && command -v jq >/dev/null 2>&1; then
+        local temp_manifest=$(mktemp)
+        jq --arg cid "$final_cid" '.final_cid = $cid' "$manifest_file" > "$temp_manifest" 2>/dev/null
+        if [ $? -eq 0 ]; then
+            mv "$temp_manifest" "$manifest_file"
+            log_message "   📝 CID final sauvegardé dans le manifest: $final_cid"
+        else
+            rm -f "$temp_manifest"
+            log_message "   ⚠️  Erreur lors de la sauvegarde du CID final"
+        fi
+    fi
+}
+
 # Sauvegarder le manifest existant en manifest-1.json dès le début (si manifest.json existe)
 if [ -f "$SOURCE_DIR/manifest.json" ] && [ ! -f "$SOURCE_DIR/manifest-1.json" ]; then
     cp "$SOURCE_DIR/manifest.json" "$SOURCE_DIR/manifest-1.json"
@@ -542,24 +561,6 @@ get_final_cid_from_old_manifest() {
         fi
     else
         echo ""
-    fi
-}
-
-# Fonction pour mettre à jour le CID final dans le manifest
-update_final_cid_in_manifest() {
-    local final_cid="$1"
-    local manifest_file="$SOURCE_DIR/manifest.json"
-
-    if [ -n "$final_cid" ] && [ -f "$manifest_file" ] && command -v jq >/dev/null 2>&1; then
-        local temp_manifest=$(mktemp)
-        jq --arg cid "$final_cid" '.final_cid = $cid' "$manifest_file" > "$temp_manifest" 2>/dev/null
-        if [ $? -eq 0 ]; then
-            mv "$temp_manifest" "$manifest_file"
-            log_message "   📝 CID final sauvegardé dans le manifest: $final_cid"
-        else
-            rm -f "$temp_manifest"
-            log_message "   ⚠️  Erreur lors de la sauvegarde du CID final"
-        fi
     fi
 }
 
