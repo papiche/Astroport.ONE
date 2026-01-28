@@ -357,6 +357,23 @@ get_existing_final_cid() {
     fi
 }
 
+# Fonction pour récupérer le CID final depuis manifest-1.json
+get_final_cid_from_old_manifest() {
+    local old_manifest="$SOURCE_DIR/manifest-1.json"
+
+    if [ -f "$old_manifest" ] && command -v jq >/dev/null 2>&1; then
+        local existing_cid=$(jq -r '.final_cid // ""' "$old_manifest" 2>/dev/null)
+
+        if [ -n "$existing_cid" ] && [ "$existing_cid" != "null" ] && [ "$existing_cid" != "" ]; then
+            echo "$existing_cid"
+        else
+            echo ""
+        fi
+    else
+        echo ""
+    fi
+}
+
 # Fonction pour extraire le hash d'un lien IPFS et le dépinner
 unpin_ipfs_hash() {
     local ipfs_link="$1"
@@ -759,6 +776,10 @@ done < <(find "$SOURCE_DIR" -type f -print0 | sort -z)
 if [ -f "$SOURCE_DIR/manifest-1.json" ] && command -v jq >/dev/null 2>&1; then
     log_message "🔄 Récupération des fichiers de manifest-1.json non présents sur le disque..."
     
+    # Compter les fichiers dans manifest-1.json pour le debug
+    old_file_count=$(jq '.files | length' "$SOURCE_DIR/manifest-1.json" 2>/dev/null || echo "0")
+    log_message "   📊 Fichiers dans manifest-1.json: $old_file_count"
+    
     # Créer une liste temporaire des chemins déjà traités depuis files_json
     temp_manifest_file=$(mktemp)
     if [ -n "$files_json" ]; then
@@ -767,6 +788,7 @@ if [ -f "$SOURCE_DIR/manifest-1.json" ] && command -v jq >/dev/null 2>&1; then
         echo "{\"files\": []}" > "$temp_manifest_file" 2>/dev/null || true
     fi
     
+    recovered_count=0
     # Parcourir tous les fichiers de manifest-1.json
     while IFS= read -r file_entry; do
         if [ -n "$file_entry" ]; then
@@ -822,6 +844,7 @@ if [ -f "$SOURCE_DIR/manifest-1.json" ] && command -v jq >/dev/null 2>&1; then
                         total_size=$((total_size + old_size))
                         file_count=$((file_count + 1))
                         cached_count=$((cached_count + 1))
+                        recovered_count=$((recovered_count + 1))
                         
                         log_message "   ✅ Fichier récupéré depuis manifest-1.json: $old_path (IPFS: ${old_ipfs_link%%/*})"
                     fi
@@ -833,7 +856,11 @@ if [ -f "$SOURCE_DIR/manifest-1.json" ] && command -v jq >/dev/null 2>&1; then
     # Nettoyer le fichier temporaire
     rm -f "$temp_manifest_file"
     
-    log_message "✅ Récupération terminée"
+    if [ $recovered_count -gt 0 ]; then
+        log_message "✅ Récupération terminée: $recovered_count fichier(s) récupéré(s)"
+    else
+        log_message "✅ Récupération terminée: aucun fichier à récupérer"
+    fi
 fi
 
 # Générer le JSON final
@@ -4348,25 +4375,33 @@ if [ "$updated_count" -eq 0 ] && [ "$deleted_count" -eq 0 ]; then
         update_final_cid_in_manifest "$EXISTING_FINAL_CID"
         echo "$EXISTING_FINAL_CID"  # Sortie principale : le CID final
     else
-        log_message "⚠️  Aucun CID sauvegardé - calcul du CID..."
-        FINAL_CID=$(get_current_directory_cid)
-
-        if [ -n "$FINAL_CID" ]; then
-            log_message "✅ CID calculé: $FINAL_CID"
-            update_final_cid_in_manifest "$FINAL_CID"
-            echo "$FINAL_CID"  # Sortie principale : le CID final
+        # Essayer de récupérer le CID depuis manifest-1.json
+        EXISTING_FINAL_CID=$(get_final_cid_from_old_manifest)
+        if [ -n "$EXISTING_FINAL_CID" ]; then
+            log_message "✅ CID récupéré depuis manifest-1.json: $EXISTING_FINAL_CID"
+            update_final_cid_in_manifest "$EXISTING_FINAL_CID"
+            echo "$EXISTING_FINAL_CID"  # Sortie principale : le CID final
         else
-            log_message "⚠️  Impossible de calculer le CID - ajout IPFS forcé..."
-            log_message "🔗 Ajout final du répertoire complet à IPFS..."
-            FINAL_CID=$(cd "$SOURCE_DIR" && ipfs add -rw ./* 2>/dev/null | tail -1 | awk '{print $2}')
+            log_message "⚠️  Aucun CID sauvegardé - calcul du CID..."
+            FINAL_CID=$(get_current_directory_cid)
 
             if [ -n "$FINAL_CID" ]; then
+                log_message "✅ CID calculé: $FINAL_CID"
                 update_final_cid_in_manifest "$FINAL_CID"
                 echo "$FINAL_CID"  # Sortie principale : le CID final
-                log_message "✅ CID final de l'application: $FINAL_CID"
             else
-                error_message "❌ Erreur lors de l'ajout final à IPFS"
-                exit 1
+                log_message "⚠️  Impossible de calculer le CID - ajout IPFS forcé..."
+                log_message "🔗 Ajout final du répertoire complet à IPFS..."
+                FINAL_CID=$(cd "$SOURCE_DIR" && ipfs add -rw ./* 2>/dev/null | tail -1 | awk '{print $2}')
+
+                if [ -n "$FINAL_CID" ]; then
+                    update_final_cid_in_manifest "$FINAL_CID"
+                    echo "$FINAL_CID"  # Sortie principale : le CID final
+                    log_message "✅ CID final de l'application: $FINAL_CID"
+                else
+                    error_message "❌ Erreur lors de l'ajout final à IPFS"
+                    exit 1
+                fi
             fi
         fi
     fi
