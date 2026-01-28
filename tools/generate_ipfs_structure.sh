@@ -639,14 +639,21 @@ log_message "📋 Génération du manifest.json..."
 if quick_check_for_changes; then
     log_message "⚡ Aucun changement détecté - manifest.json déjà à jour"
     
-    # Récupérer les statistiques depuis le manifest
+    # Récupérer les statistiques et le CID depuis le manifest
     if command -v jq >/dev/null 2>&1; then
         file_count=$(jq '.total_files // 0' "$SOURCE_DIR/manifest.json" 2>/dev/null || echo "0")
         dir_count=$(jq '.total_directories // 0' "$SOURCE_DIR/manifest.json" 2>/dev/null || echo "0")
         total_size=$(jq '.total_size // 0' "$SOURCE_DIR/manifest.json" 2>/dev/null || echo "0")
+        EXISTING_FINAL_CID=$(jq -r '.final_cid // ""' "$SOURCE_DIR/manifest.json" 2>/dev/null)
         updated_count=0
         cached_count=$file_count
         deleted_count=0
+        
+        if [ -n "$EXISTING_FINAL_CID" ] && [ "$EXISTING_FINAL_CID" != "null" ] && [ "$EXISTING_FINAL_CID" != "" ]; then
+            log_message "   💾 CID préservé depuis manifest.json: $EXISTING_FINAL_CID"
+        else
+            EXISTING_FINAL_CID=""
+        fi
     else
         file_count=0
         dir_count=0
@@ -654,6 +661,7 @@ if quick_check_for_changes; then
         updated_count=0
         cached_count=0
         deleted_count=0
+        EXISTING_FINAL_CID=""
     fi
     
     log_message "✅ Manifest généré avec $dir_count répertoires et $file_count fichiers ($(format_size $total_size))"
@@ -4547,28 +4555,41 @@ log_message ""
 
 # Optimisation: si aucun fichier n'a changé ET aucun fichier supprimé, pas besoin de refaire l'ajout IPFS
 if [ "$updated_count" -eq 0 ] && [ "$deleted_count" -eq 0 ]; then
-    log_message "💾 Aucun fichier modifié ou supprimé - récupération du CID existant..."
+    log_message "💾 Aucun fichier modifié ou supprimé - préservation du CID existant..."
 
-    # Utiliser le CID sauvegardé avant la régénération du manifest
+    # Utiliser le CID sauvegardé (priorité au CID déjà dans EXISTING_FINAL_CID)
     if [ -n "$EXISTING_FINAL_CID" ]; then
-        log_message "✅ CID récupéré depuis le manifest précédent: $EXISTING_FINAL_CID"
+        log_message "✅ CID préservé depuis le manifest: $EXISTING_FINAL_CID"
         update_final_cid_in_manifest "$EXISTING_FINAL_CID"
-        echo "$EXISTING_FINAL_CID"  # Sortie principale : le CID final
+        FINAL_CID="$EXISTING_FINAL_CID"
     else
-        # Essayer de récupérer le CID depuis manifest-1.json
-        EXISTING_FINAL_CID=$(get_final_cid_from_old_manifest)
-        if [ -n "$EXISTING_FINAL_CID" ]; then
-            log_message "✅ CID récupéré depuis manifest-1.json: $EXISTING_FINAL_CID"
-            update_final_cid_in_manifest "$EXISTING_FINAL_CID"
-            echo "$EXISTING_FINAL_CID"  # Sortie principale : le CID final
-        else
-            log_message "⚠️  Aucun CID sauvegardé - calcul du CID..."
+        # Essayer de récupérer le CID depuis manifest.json (qui devrait contenir le CID)
+        if [ -f "$SOURCE_DIR/manifest.json" ] && command -v jq >/dev/null 2>&1; then
+            FINAL_CID=$(jq -r '.final_cid // ""' "$SOURCE_DIR/manifest.json" 2>/dev/null)
+            if [ -n "$FINAL_CID" ] && [ "$FINAL_CID" != "null" ] && [ "$FINAL_CID" != "" ]; then
+                log_message "✅ CID préservé depuis manifest.json: $FINAL_CID"
+            else
+                FINAL_CID=""
+            fi
+        fi
+        
+        # Dernier recours : récupérer depuis manifest-1.json
+        if [ -z "$FINAL_CID" ]; then
+            FINAL_CID=$(get_final_cid_from_old_manifest)
+            if [ -n "$FINAL_CID" ]; then
+                log_message "✅ CID préservé depuis manifest-1.json: $FINAL_CID"
+                update_final_cid_in_manifest "$FINAL_CID"
+            fi
+        fi
+        
+        # Si toujours pas de CID, essayer de le calculer (ne devrait jamais arriver si manifest-1.json existe)
+        if [ -z "$FINAL_CID" ]; then
+            log_message "⚠️  Aucun CID trouvé dans les manifests - calcul du CID..."
             FINAL_CID=$(get_current_directory_cid)
 
             if [ -n "$FINAL_CID" ]; then
                 log_message "✅ CID calculé: $FINAL_CID"
                 update_final_cid_in_manifest "$FINAL_CID"
-                echo "$FINAL_CID"  # Sortie principale : le CID final
             else
                 log_message "⚠️  Impossible de calculer le CID - ajout IPFS forcé..."
                 log_message "🔗 Ajout final du répertoire complet à IPFS..."
@@ -4576,7 +4597,6 @@ if [ "$updated_count" -eq 0 ] && [ "$deleted_count" -eq 0 ]; then
 
                 if [ -n "$FINAL_CID" ]; then
                     update_final_cid_in_manifest "$FINAL_CID"
-                    echo "$FINAL_CID"  # Sortie principale : le CID final
                     log_message "✅ CID final de l'application: $FINAL_CID"
                 else
                     error_message "❌ Erreur lors de l'ajout final à IPFS"
@@ -4585,6 +4605,9 @@ if [ "$updated_count" -eq 0 ] && [ "$deleted_count" -eq 0 ]; then
             fi
         fi
     fi
+    
+    # Afficher le CID préservé et continuer (index.html sera généré après)
+    echo "$FINAL_CID"  # Sortie principale : le CID final (inchangé)
 else
     changes_description=""
     if [ "$updated_count" -gt 0 ] && [ "$deleted_count" -gt 0 ]; then
