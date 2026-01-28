@@ -440,7 +440,7 @@ detect_deleted_files_from_manifests() {
         # Pas de nouveau manifest, rien à comparer
         echo "0"
         return 0
-    }
+    fi
 
     log_message "🗑️  Détection des fichiers supprimés (comparaison manifests)..." >&2
 
