@@ -242,6 +242,30 @@ if [[ -z "$cookie_file" || ! -f "$cookie_file" ]]; then
     fi
 fi
 
+# Optional: manual PO Token for YouTube GVS (reduces 403 when client requires PO Token)
+# See https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide
+po_token_file=""
+if [[ -n "$PLAYER_EMAIL" ]]; then
+    user_dir_po="$HOME/.zen/game/nostr/$PLAYER_EMAIL"
+    for f in "$user_dir_po/.youtube.potoken" "$user_dir_po/.youtube_po_token"; do
+        if [[ -f "$f" && -s "$f" ]]; then
+            po_token_file="$f"
+            log_debug "Using manual PO token file: $po_token_file"
+            break
+        fi
+    done
+fi
+if [[ -z "$po_token_file" && -n "$cookie_file" ]]; then
+    cookie_dir=$(dirname "$cookie_file")
+    for f in "$cookie_dir/.youtube.potoken" "$cookie_dir/.youtube_po_token"; do
+        if [[ -f "$f" && -s "$f" ]]; then
+            po_token_file="$f"
+            log_debug "Using manual PO token file: $po_token_file"
+            break
+        fi
+    done
+fi
+
 if [[ -z "$cookie_file" || ! -f "$cookie_file" ]]; then
     # Build detailed error message
     error_msg="❌ No YouTube cookie file found"
@@ -285,11 +309,27 @@ fi
 # it will download only the first video (or the video specified by ?v= parameter)
 # ajouter_media.sh will detect playlists and loop through videos if needed
 
+# YouTube 403 workaround (PO Token Guide: https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide)
+# If manual PO token file exists: use mweb client with po_token (recommended when 403 persists).
+# Else: prefer clients that do not require PO token (tv_embedded, tv), then android, web.
+if [[ -n "$po_token_file" ]]; then
+    po_token_value=$(tr -d '\n\r' < "$po_token_file" | head -c 5000)
+    if [[ -n "$po_token_value" ]]; then
+        # Escape double-quotes for safe use in extractor-args (token is typically alphanumeric/base64)
+        po_token_value="${po_token_value//\"/\\\"}"
+        YT_EXTRACTOR_ARGS="--extractor-args \"youtube:player_client=default,mweb;po_token=mweb.gvs+$po_token_value\""
+        log_debug "Using mweb client with manual PO token (GVS)"
+    fi
+fi
+if [[ -z "$YT_EXTRACTOR_ARGS" ]]; then
+    YT_EXTRACTOR_ARGS='--extractor-args "youtube:player_client=tv_embedded,tv,android,web"'
+fi
+
 log_debug "Extracting metadata with yt-dlp..."
 # Run yt-dlp with --quiet to suppress warnings, but keep errors
 # Use --no-warnings to suppress warnings, but keep errors in stderr
 # Single video processing only (playlists handled by ajouter_media.sh)
-metadata_output=$(yt-dlp --js-runtimes node --cookies "$cookie_file" --no-warnings --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
+metadata_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS --cookies "$cookie_file" --no-warnings --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
 metadata_exit_code=$?
 log_debug "yt-dlp metadata extraction exit code: $metadata_exit_code"
 
@@ -421,11 +461,12 @@ if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ && "$duration" -gt 0 ]]; then
 fi
 
 # Simple download with cookies (guaranteed to exist by youtube.com.sh)
+# --concurrent-fragments 1 reduces 403 rate limit on DASH fragment requests
 log_debug "Starting download with cookies"
 case "$FORMAT" in
     mp3)
         log_debug "Running yt-dlp for MP3 download..."
-        download_output=$(yt-dlp --js-runtimes node --cookies "$cookie_file" -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+        download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS --cookies "$cookie_file" --concurrent-fragments 1 -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
             --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
             -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" 2>&1)
         download_exit_code=$?
@@ -438,7 +479,7 @@ case "$FORMAT" in
         # Use format filter to select appropriate resolution based on duration
         # The format filter ensures we download at the right resolution to stay under size limit
         # If recoding is needed, yt-dlp will handle it with default settings
-        download_output=$(yt-dlp --js-runtimes node --cookies "$cookie_file" -f "$VIDEO_FORMAT_FILTER" \
+        download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS --cookies "$cookie_file" --concurrent-fragments 1 -f "$VIDEO_FORMAT_FILTER" \
             --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
             --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
             -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)
@@ -448,6 +489,34 @@ case "$FORMAT" in
         (echo "$download_output" >&2) 2>/dev/null || true
         ;;
 esac
+
+# On 403/Forbidden (DASH fragments), retry once with tv_embedded,tv (no PO token required per PO Token Guide)
+if [[ $download_exit_code -ne 0 ]] && echo "$download_output" | grep -qE "403|Forbidden|fragment not found"; then
+    log_debug "403/Forbidden or fragment errors detected, retrying with tv_embedded,tv client (no PO token required)..."
+    echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] Retrying download with tv_embedded,tv player client (403 workaround)" >> "$LOGFILE"
+    # Remove any empty or partial file from first attempt
+    for f in "$OUTPUT_DIR"/*.mp4 "$OUTPUT_DIR"/*.mp3 "$OUTPUT_DIR"/*.m4a "$OUTPUT_DIR"/*.webm 2>/dev/null; do
+        [[ -f "$f" ]] && [[ $(stat -c%s "$f" 2>/dev/null || echo 0) -lt 1000 ]] && rm -f "$f"
+    done
+    YT_EXTRACTOR_ARGS='--extractor-args "youtube:player_client=tv_embedded,tv"'
+    case "$FORMAT" in
+        mp3)
+            download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS --cookies "$cookie_file" --concurrent-fragments 1 -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+                --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
+                -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" 2>&1)
+            download_exit_code=$?
+            ;;
+        mp4)
+            download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS --cookies "$cookie_file" --concurrent-fragments 1 -f "$VIDEO_FORMAT_FILTER" \
+                --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
+                --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
+                -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)
+            download_exit_code=$?
+            ;;
+    esac
+    echo "$download_output" >> "$LOGFILE"
+    (echo "$download_output" >&2) 2>/dev/null || true
+fi
 
 log_debug "Download exit code: $download_exit_code"
 if [[ $download_exit_code -ne 0 ]]; then

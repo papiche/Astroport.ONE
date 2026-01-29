@@ -133,6 +133,22 @@ if [[ ! -f "$COOKIE_FILE" || -z "$COOKIE_FILE" ]]; then
 fi
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cookie file found: $COOKIE_FILE" >&2
 
+# Optional: manual PO Token for YouTube (PO Token Guide: https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide)
+# If present, playlist fetch and process_youtube.sh will use mweb + po_token to reduce 403.
+YT_PLAYLIST_EXTRACTOR_ARGS=""
+for pot in "$USER_DIR/.youtube.potoken" "$USER_DIR/.youtube_po_token" "$(dirname "$COOKIE_FILE")/.youtube.potoken" "$(dirname "$COOKIE_FILE")/.youtube_po_token"; do
+    if [[ -f "$pot" && -s "$pot" ]]; then
+        po_token_value=$(tr -d '\n\r' < "$pot" | head -c 5000)
+        if [[ -n "$po_token_value" ]]; then
+            po_token_value="${po_token_value//\"/\\\"}"
+            YT_PLAYLIST_EXTRACTOR_ARGS="--extractor-args \"youtube:player_client=default,mweb;po_token=mweb.gvs+$po_token_value\""
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Using manual PO token file for YouTube (GVS)" >&2
+            break
+        fi
+    fi
+done
+[[ -z "$YT_PLAYLIST_EXTRACTOR_ARGS" ]] && YT_PLAYLIST_EXTRACTOR_ARGS='--extractor-args "youtube:player_client=tv_embedded,tv,android,web"'
+
 # Vérifier l'existence du répertoire uDRIVE
 UDRIVE_PATH="$HOME/.zen/game/nostr/${PLAYER}/APP/uDRIVE"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Checking uDRIVE directory: $UDRIVE_PATH" >&2
@@ -483,7 +499,9 @@ get_liked_videos() {
         local yt_dlp_stderr_file="$HOME/.zen/tmp/yt_dlp_stderr_$$.txt"
         
         # Single request with minimal options (keep stderr for error detection)
+        # Use YT_PLAYLIST_EXTRACTOR_ARGS (PO token or tv_embedded,tv,android,web per PO Token Guide)
         videos_json=$(yt-dlp \
+            $YT_PLAYLIST_EXTRACTOR_ARGS \
             --cookies "$cookie_file" \
             --print '%(id)s&%(title)s&%(duration)s&%(uploader)s&%(webpage_url)s' \
             --playlist-end "$max_results" \

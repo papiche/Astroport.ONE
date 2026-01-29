@@ -165,6 +165,20 @@ stat ~/.zen/game/nostr/<email>/.cookie.txt
 
 ```
 
+### Issue 4: HTTP 403 Forbidden / fragment not found (DASH)
+
+**Cause:** YouTube requires a Proof of Origin (PO) token for some clients. See [yt-dlp PO Token Guide](https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide).
+
+**Solutions (in order):**
+1. **Update yt-dlp** – Already done daily by `install_yt_dlp_ejs_node.sh`.
+2. **PO Token Provider plugin** – Installed optionally by the same script. Run the provider:  
+   `docker run -d -p 4416:4416 --name bgutil-provider brainicism/bgutil-ytdlp-pot-provider`
+3. **Manual PO token (GVS)** – Put the token in one line (no spaces) in:  
+   `~/.zen/game/nostr/<your-email>/.youtube.potoken`  
+   How to get it: [PO Token Guide – PO Token for GVS](https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide#po-token-for-gvs) (YouTube Music → Network → v1/player → `serviceIntegrityDimensions.poToken`).
+
+The scripts prefer clients that do not require a PO token (`tv_embedded`, `tv`) and retry with them on 403.
+
 ## 📊 Debug Mode
 
 Debug mode is **automatically enabled** in `UPlanet_IA_Responder.sh` for all YouTube downloads.
