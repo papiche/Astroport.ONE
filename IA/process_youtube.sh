@@ -321,10 +321,15 @@ if [[ -n "$po_token_file" ]]; then
         log_debug "Using mweb client with manual PO token (GVS)"
     fi
 fi
-# If no manual PO token: use tv_embedded,tv for download (GVS often stalls with mweb+provider; tv_embedded does not require PO token)
+# If no manual PO token: use PO Token Provider (mweb) when reachable so metadata extraction succeeds for accounts that get "no longer supported" with tv_embedded; else fallback clients
 if [[ -z "$YT_EXTRACTOR_ARGS" ]]; then
-    YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=tv_embedded,tv,android,web'
-    log_debug "Using player_client=tv_embedded,tv,android,web for download (no PO token required for GVS)"
+    if command -v curl >/dev/null 2>&1 && curl -s -o /dev/null --connect-timeout 1 http://127.0.0.1:4416/ 2>/dev/null; then
+        YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=default,mweb'
+        log_debug "Using PO Token Provider (bgutil) on 127.0.0.1:4416 (mweb) for metadata and download"
+    else
+        YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=tv_embedded,tv,android,web'
+        log_debug "Using player_client=tv_embedded,tv,android,web (no provider)"
+    fi
 fi
 
 log_debug "Extracting metadata with yt-dlp..."
