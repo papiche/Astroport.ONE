@@ -141,13 +141,13 @@ for pot in "$USER_DIR/.youtube.potoken" "$USER_DIR/.youtube_po_token" "$(dirname
         po_token_value=$(tr -d '\n\r' < "$pot" | head -c 5000)
         if [[ -n "$po_token_value" ]]; then
             po_token_value="${po_token_value//\"/\\\"}"
-            YT_PLAYLIST_EXTRACTOR_ARGS="--extractor-args \"youtube:player_client=default,mweb;po_token=mweb.gvs+$po_token_value\""
+            YT_PLAYLIST_EXTRACTOR_ARGS="--extractor-args youtube:player_client=default,mweb;po_token=mweb.gvs+$po_token_value"
             echo "[$(date '+%Y-%m-%d %H:%M:%S')] Using manual PO token file for YouTube (GVS)" >&2
             break
         fi
     fi
 done
-[[ -z "$YT_PLAYLIST_EXTRACTOR_ARGS" ]] && YT_PLAYLIST_EXTRACTOR_ARGS='--extractor-args "youtube:player_client=tv_embedded,tv,android,web"'
+[[ -z "$YT_PLAYLIST_EXTRACTOR_ARGS" ]] && YT_PLAYLIST_EXTRACTOR_ARGS='--extractor-args youtube:player_client=tv_embedded,tv,android,web'
 
 # Vérifier l'existence du répertoire uDRIVE
 UDRIVE_PATH="$HOME/.zen/game/nostr/${PLAYER}/APP/uDRIVE"

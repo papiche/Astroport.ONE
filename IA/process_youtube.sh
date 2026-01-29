@@ -317,12 +317,12 @@ if [[ -n "$po_token_file" ]]; then
     if [[ -n "$po_token_value" ]]; then
         # Escape double-quotes for safe use in extractor-args (token is typically alphanumeric/base64)
         po_token_value="${po_token_value//\"/\\\"}"
-        YT_EXTRACTOR_ARGS="--extractor-args \"youtube:player_client=default,mweb;po_token=mweb.gvs+$po_token_value\""
+        YT_EXTRACTOR_ARGS="--extractor-args youtube:player_client=default,mweb;po_token=mweb.gvs+$po_token_value"
         log_debug "Using mweb client with manual PO token (GVS)"
     fi
 fi
 if [[ -z "$YT_EXTRACTOR_ARGS" ]]; then
-    YT_EXTRACTOR_ARGS='--extractor-args "youtube:player_client=tv_embedded,tv,android,web"'
+    YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=tv_embedded,tv,android,web'
 fi
 
 log_debug "Extracting metadata with yt-dlp..."
@@ -498,7 +498,7 @@ if [[ $download_exit_code -ne 0 ]] && echo "$download_output" | grep -qE "403|Fo
     for f in "$OUTPUT_DIR"/*.mp4 "$OUTPUT_DIR"/*.mp3 "$OUTPUT_DIR"/*.m4a "$OUTPUT_DIR"/*.webm 2>/dev/null; do
         [[ -f "$f" ]] && [[ $(stat -c%s "$f" 2>/dev/null || echo 0) -lt 1000 ]] && rm -f "$f"
     done
-    YT_EXTRACTOR_ARGS='--extractor-args "youtube:player_client=tv_embedded,tv"'
+    YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=tv_embedded,tv'
     case "$FORMAT" in
         mp3)
             download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS --cookies "$cookie_file" --concurrent-fragments 1 -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
