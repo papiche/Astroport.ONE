@@ -468,11 +468,12 @@ fi
 
 # Simple download with cookies (guaranteed to exist by youtube.com.sh)
 # --concurrent-fragments 1 reduces 403 rate limit on DASH fragment requests
+# --socket-timeout 120: avoid hanging forever if GVS/fragment request stalls (e.g. PO token delay)
 log_debug "Starting download with cookies"
 case "$FORMAT" in
     mp3)
         log_debug "Running yt-dlp for MP3 download..."
-        download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS --cookies "$cookie_file" --concurrent-fragments 1 -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+        download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS --cookies "$cookie_file" --concurrent-fragments 1 --socket-timeout 120 -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
             --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
             -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" 2>&1)
         download_exit_code=$?
@@ -485,7 +486,7 @@ case "$FORMAT" in
         # Use format filter to select appropriate resolution based on duration
         # The format filter ensures we download at the right resolution to stay under size limit
         # If recoding is needed, yt-dlp will handle it with default settings
-        download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS --cookies "$cookie_file" --concurrent-fragments 1 -f "$VIDEO_FORMAT_FILTER" \
+        download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS --cookies "$cookie_file" --concurrent-fragments 1 --socket-timeout 120 -f "$VIDEO_FORMAT_FILTER" \
             --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
             --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
             -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)
@@ -496,11 +497,23 @@ case "$FORMAT" in
         ;;
 esac
 
-# On 403/Forbidden (DASH fragments), retry once with tv_embedded,tv (no PO token required per PO Token Guide)
+# On 403/Forbidden/stall/empty: retry once with tv_embedded,tv (no PO token required per PO Token Guide)
+download_failed_retry=0
 if [[ $download_exit_code -ne 0 ]] && echo "$download_output" | grep -qE "403|Forbidden|fragment not found"; then
-    log_debug "403/Forbidden or fragment errors detected, retrying with tv_embedded,tv client (no PO token required)..."
-    echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] Retrying download with tv_embedded,tv player client (403 workaround)" >> "$LOGFILE"
-    # Remove any empty or partial file from first attempt
+    download_failed_retry=1
+fi
+# Also retry if output file is missing or empty (e.g. socket timeout, GVS stall with mweb)
+if [[ $download_failed_retry -eq 0 ]]; then
+    main_file=$(find "$OUTPUT_DIR" -maxdepth 1 -type f \( -name "*.mp4" -o -name "*.mp3" -o -name "*.m4a" \) ! -name "*.part" ! -name "*.info.json" 2>/dev/null | head -n 1)
+    if [[ -z "$main_file" ]] || [[ ! -s "$main_file" ]]; then
+        download_failed_retry=1
+    fi
+fi
+if [[ $download_failed_retry -eq 1 ]]; then
+    log_debug "Download failed or empty, retrying with tv_embedded,tv client (no PO token required)..."
+    echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] Retrying download with tv_embedded,tv player client" >> "$LOGFILE"
+    # Remove any empty, partial or .part/.ytdl from first attempt
+    rm -f "$OUTPUT_DIR"/*.part "$OUTPUT_DIR"/*.ytdl 2>/dev/null
     for f in "$OUTPUT_DIR"/*.mp4 "$OUTPUT_DIR"/*.mp3 "$OUTPUT_DIR"/*.m4a "$OUTPUT_DIR"/*.webm 2>/dev/null; do
         [[ -f "$f" ]] && [[ $(stat -c%s "$f" 2>/dev/null || echo 0) -lt 1000 ]] && rm -f "$f"
     done
