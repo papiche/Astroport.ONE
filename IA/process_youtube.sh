@@ -321,14 +321,10 @@ if [[ -n "$po_token_file" ]]; then
         log_debug "Using mweb client with manual PO token (GVS)"
     fi
 fi
-# If no manual PO token: use PO Token Provider (bgutil Docker) if reachable, else fallback clients
+# If no manual PO token: use tv_embedded,tv for download (GVS often stalls with mweb+provider; tv_embedded does not require PO token)
 if [[ -z "$YT_EXTRACTOR_ARGS" ]]; then
-    if command -v curl >/dev/null 2>&1 && curl -s -o /dev/null --connect-timeout 1 http://127.0.0.1:4416/ 2>/dev/null; then
-        YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=default,mweb'
-        log_debug "Using PO Token Provider (bgutil) on 127.0.0.1:4416 (mweb client)"
-    else
-        YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=tv_embedded,tv,android,web'
-    fi
+    YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=tv_embedded,tv,android,web'
+    log_debug "Using player_client=tv_embedded,tv,android,web for download (no PO token required for GVS)"
 fi
 
 log_debug "Extracting metadata with yt-dlp..."
@@ -510,23 +506,30 @@ if [[ $download_failed_retry -eq 0 ]]; then
     fi
 fi
 if [[ $download_failed_retry -eq 1 ]]; then
-    log_debug "Download failed or empty, retrying with tv_embedded,tv client (no PO token required)..."
-    echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] Retrying download with tv_embedded,tv player client" >> "$LOGFILE"
+    # If "no longer supported": try mweb (PO token provider may help). Else: tv_embedded,tv for 403/empty.
+    if echo "$download_output" | grep -q "no longer supported in this application"; then
+        YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=default,mweb'
+        log_debug "Download failed (no longer supported), retrying with mweb client (PO token provider)..."
+        echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] Retrying download with mweb player client (PO token provider)" >> "$LOGFILE"
+    else
+        YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=tv_embedded,tv'
+        log_debug "Download failed or empty, retrying with tv_embedded,tv client..."
+        echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] Retrying download with tv_embedded,tv player client" >> "$LOGFILE"
+    fi
     # Remove any empty, partial or .part/.ytdl from first attempt
     rm -f "$OUTPUT_DIR"/*.part "$OUTPUT_DIR"/*.ytdl 2>/dev/null
     for f in "$OUTPUT_DIR"/*.mp4 "$OUTPUT_DIR"/*.mp3 "$OUTPUT_DIR"/*.m4a "$OUTPUT_DIR"/*.webm 2>/dev/null; do
         [[ -f "$f" ]] && [[ $(stat -c%s "$f" 2>/dev/null || echo 0) -lt 1000 ]] && rm -f "$f"
     done
-    YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=tv_embedded,tv'
     case "$FORMAT" in
         mp3)
-            download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS --cookies "$cookie_file" --concurrent-fragments 1 -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+            download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS --cookies "$cookie_file" --concurrent-fragments 1 --socket-timeout 120 -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
                 --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
                 -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" 2>&1)
             download_exit_code=$?
             ;;
         mp4)
-            download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS --cookies "$cookie_file" --concurrent-fragments 1 -f "$VIDEO_FORMAT_FILTER" \
+            download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS --cookies "$cookie_file" --concurrent-fragments 1 --socket-timeout 120 -f "$VIDEO_FORMAT_FILTER" \
                 --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
                 --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
                 -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)
