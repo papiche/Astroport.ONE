@@ -321,8 +321,14 @@ if [[ -n "$po_token_file" ]]; then
         log_debug "Using mweb client with manual PO token (GVS)"
     fi
 fi
+# If no manual PO token: use PO Token Provider (bgutil Docker) if reachable, else fallback clients
 if [[ -z "$YT_EXTRACTOR_ARGS" ]]; then
-    YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=tv_embedded,tv,android,web'
+    if command -v curl >/dev/null 2>&1 && curl -s -o /dev/null --connect-timeout 1 http://127.0.0.1:4416/ 2>/dev/null; then
+        YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=default,mweb'
+        log_debug "Using PO Token Provider (bgutil) on 127.0.0.1:4416 (mweb client)"
+    else
+        YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=tv_embedded,tv,android,web'
+    fi
 fi
 
 log_debug "Extracting metadata with yt-dlp..."

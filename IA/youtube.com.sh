@@ -147,7 +147,15 @@ for pot in "$USER_DIR/.youtube.potoken" "$USER_DIR/.youtube_po_token" "$(dirname
         fi
     fi
 done
-[[ -z "$YT_PLAYLIST_EXTRACTOR_ARGS" ]] && YT_PLAYLIST_EXTRACTOR_ARGS='--extractor-args youtube:player_client=tv_embedded,tv,android,web'
+# If no manual PO token: use PO Token Provider (bgutil Docker) if reachable, else fallback clients
+if [[ -z "$YT_PLAYLIST_EXTRACTOR_ARGS" ]]; then
+    if command -v curl >/dev/null 2>&1 && curl -s -o /dev/null --connect-timeout 1 http://127.0.0.1:4416/ 2>/dev/null; then
+        YT_PLAYLIST_EXTRACTOR_ARGS='--extractor-args youtube:player_client=default,mweb'
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Using PO Token Provider (bgutil) on 127.0.0.1:4416 (mweb client)" >&2
+    else
+        YT_PLAYLIST_EXTRACTOR_ARGS='--extractor-args youtube:player_client=tv_embedded,tv,android,web'
+    fi
+fi
 
 # Vérifier l'existence du répertoire uDRIVE
 UDRIVE_PATH="$HOME/.zen/game/nostr/${PLAYER}/APP/uDRIVE"
