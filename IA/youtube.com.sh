@@ -1127,6 +1127,9 @@ sync_youtube_likes() {
     fi
     log_debug "Total videos already processed: $total_processed"
     
+    # Max duration for auto-sync (seconds). Longer videos are skipped to avoid blocking on Pi (download takes too long).
+    MAX_SYNC_VIDEO_DURATION_SEC=5400  # 90 min
+    
     # Traiter chaque vidéo likée jusqu'à avoir 2 succès (réduit pour minimiser les requêtes)
     while IFS= read -r line; do
         if [[ -n "$line" ]]; then
@@ -1158,6 +1161,12 @@ sync_youtube_likes() {
                 skipped_count=$((skipped_count + 1))
                 log_debug "Skipping already processed video: $title (ID: $video_id)"
                 echo "⏭️ Skipping already processed: $title"
+            elif [[ -n "$duration" && "$duration" =~ ^[0-9]+$ && "$duration" -gt "$MAX_SYNC_VIDEO_DURATION_SEC" ]]; then
+                # Skip videos longer than 90 min in auto-sync (download would block too long on Pi)
+                skipped_count=$((skipped_count + 1))
+                local duration_min=$((duration / 60))
+                echo "⏭️ Skipping (too long for sync, ${duration_min} min > 90 min): $title"
+                log_debug "Skipping video $video_id (duration ${duration}s > ${MAX_SYNC_VIDEO_DURATION_SEC}s)"
             else
                 # Traiter la vidéo
                 echo "🔄 Processing video: $title (ID: $video_id)"
