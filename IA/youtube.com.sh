@@ -511,7 +511,7 @@ get_liked_videos() {
         exit_code=$?
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] yt-dlp exit code for $url: $exit_code" >&2
         
-        # Check for cookie invalidation error
+        # Check for cookie invalidation error and surface yt-dlp errors on failure
         if [[ -f "$yt_dlp_stderr_file" ]]; then
             if grep -q "cookies are no longer valid" "$yt_dlp_stderr_file" 2>/dev/null; then
                 echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️ COOKIE ERROR: YouTube cookies are no longer valid!" >&2
@@ -520,8 +520,10 @@ get_liked_videos() {
                 rm -f "$yt_dlp_stderr_file"
                 return 2  # Special exit code for invalid cookies
             fi
-            # Log other errors for debugging
-            if [[ -s "$yt_dlp_stderr_file" ]]; then
+            # On failure, show yt-dlp stderr so user sees the actual reason (e.g. login required, private, 403)
+            if [[ $exit_code -ne 0 && -s "$yt_dlp_stderr_file" ]]; then
+                echo "[$(date '+%Y-%m-%d %H:%M:%S')] yt-dlp error output:" >&2
+                tail -20 "$yt_dlp_stderr_file" | sed 's/^/  /' >&2
                 log_debug "yt-dlp stderr: $(cat "$yt_dlp_stderr_file")"
             fi
             rm -f "$yt_dlp_stderr_file"
