@@ -1261,7 +1261,7 @@ send_error_notification() {
         "download_failures")
             error_title="⚠️ Échecs de Téléchargement"
             error_message="Certaines vidéos n'ont pas pu être téléchargées lors de la synchronisation."
-            error_instructions="<p><strong>Détails :</strong></p><ul><li><strong>Échecs :</strong> ${error_details}</li><li><strong>Succès :</strong> ${success_count}</li></ul><p>Les vidéos qui ont échoué seront réessayées lors de la prochaine synchronisation automatique.</p><p>Si le problème persiste, vérifiez :</p><ul><li>Votre connexion Internet</li><li>L'espace disque disponible dans votre uDRIVE</li><li>Les logs dans <code>~/.zen/tmp/IA.log</code></li></ul>"
+            error_instructions="<p><strong>Détails :</strong></p><ul><li><strong>Échecs :</strong> ${error_details}</li><li><strong>Succès :</strong> ${success_count}</li></ul><p>Les vidéos qui ont échoué seront réessayées lors de la prochaine synchronisation automatique.</p><p>Si le problème persiste, vérifiez :</p><ul><li>Votre connexion Internet</li><li>L'espace disque disponible dans votre uDRIVE</li><li>Les logs YouTube dans <code>~/.zen/tmp/ajouter_media.log</code></li></ul>"
             ;;
         "sync_failed")
             error_title="⚠️ Échec de Synchronisation"
@@ -1276,26 +1276,27 @@ send_error_notification() {
         *)
             error_title="⚠️ Erreur de Synchronisation"
             error_message="Une erreur s'est produite lors de la synchronisation YouTube."
-            error_instructions="<p><strong>Détails :</strong> ${error_details}</p><p>Vérifiez les logs dans <code>~/.zen/tmp/IA.log</code> pour plus d'informations.</p>"
+            error_instructions="<p><strong>Détails :</strong> ${error_details}</p><p>Vérifiez les logs YouTube dans <code>~/.zen/tmp/ajouter_media.log</code> pour plus d'informations.</p>"
             ;;
     esac
     
-    # Extract last 42 lines from IA.log for debugging
+    # Extract last 42 lines from YouTube sync logs for debugging (process_youtube.sh writes to ajouter_media.log)
     local log_lines=""
     local log_section=""
-    if [[ -f "$LOGFILE" ]]; then
-        # Extract last 42 lines and escape HTML special characters
-        log_lines=$(tail -n 42 "$LOGFILE" 2>/dev/null | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g' || echo "")
+    local youtube_log="$HOME/.zen/tmp/ajouter_media.log"
+    if [[ -f "$youtube_log" ]] && [[ -s "$youtube_log" ]]; then
+        log_lines=$(tail -n 42 "$youtube_log" 2>/dev/null | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g' || echo "")
         if [[ -n "$log_lines" ]]; then
-            log_section="<div class='log-section'><h4>🔍 Dernières lignes du log (IA.log)</h4><pre>${log_lines}</pre></div>"
-            log_debug "Extracted $(echo "$log_lines" | wc -l) lines from log file for notification"
+            log_section="<div class='log-section'><h4>🔍 Dernières lignes du log (YouTube sync / ajouter_media.log)</h4><pre>${log_lines}</pre></div>"
+            log_debug "Extracted $(echo "$log_lines" | wc -l) lines from ajouter_media.log for notification"
         else
             log_section=""
-            log_debug "Log file is empty or could not be read"
+            log_debug "ajouter_media.log is empty or could not be read"
         fi
     else
-        log_section=""
-        log_debug "Log file not found: $LOGFILE"
+        # No YouTube log yet (e.g. failure before process_youtube was called: cookie, get_liked_videos)
+        log_section="<div class='log-section'><h4>🔍 Log YouTube sync</h4><pre>No entries yet in ajouter_media.log (sync failed before download, e.g. cookie or playlist fetch). Check server stderr or run youtube.com.sh with --debug.</pre></div>"
+        log_debug "Log file empty or not found: $youtube_log"
     fi
     
     # Chemin vers le template HTML
