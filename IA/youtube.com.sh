@@ -500,12 +500,14 @@ get_liked_videos() {
         
         # Single request with minimal options (keep stderr for error detection)
         # Use YT_PLAYLIST_EXTRACTOR_ARGS (PO token or tv_embedded,tv,android,web per PO Token Guide)
+        # --ignore-errors: get partial list when some entries fail ("no longer supported", geo-block, etc.)
         videos_json=$(yt-dlp \
             $YT_PLAYLIST_EXTRACTOR_ARGS \
             --cookies "$cookie_file" \
             --print '%(id)s&%(title)s&%(duration)s&%(uploader)s&%(webpage_url)s' \
             --playlist-end "$max_results" \
             --no-warnings \
+            --ignore-errors \
             "$url" 2>"$yt_dlp_stderr_file")
         
         exit_code=$?
@@ -524,14 +526,17 @@ get_liked_videos() {
             if [[ $exit_code -ne 0 && -s "$yt_dlp_stderr_file" ]]; then
                 echo "[$(date '+%Y-%m-%d %H:%M:%S')] yt-dlp error output:" >&2
                 tail -20 "$yt_dlp_stderr_file" | sed 's/^/  /' >&2
+                if grep -q "no longer supported in this application" "$yt_dlp_stderr_file" 2>/dev/null; then
+                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 💡 Tip: Use PO token (.youtube.potoken) or Docker provider to reduce this error. See PO Token Guide in README_YOUTUBE.md" >&2
+                fi
                 log_debug "yt-dlp stderr: $(cat "$yt_dlp_stderr_file")"
             fi
             rm -f "$yt_dlp_stderr_file"
         fi
         
-        # If we got results, break
-        if [[ $exit_code -eq 0 && -n "$videos_json" ]]; then
-            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Success with URL: $url" >&2
+        # If we got results, break (accept partial output: exit 0 or non-empty stdout)
+        if [[ -n "$videos_json" ]]; then
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Success with URL: $url ($(echo "$videos_json" | grep -c '^[a-zA-Z0-9_-]\{11\}&' || echo 0) entries)" >&2
             log_debug "Successfully fetched videos from: $url"
             break
         else
