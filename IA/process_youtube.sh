@@ -524,7 +524,7 @@ if [[ $download_failed_retry -eq 1 ]]; then
     fi
     # Remove any empty, partial or .part/.ytdl from first attempt
     rm -f "$OUTPUT_DIR"/*.part "$OUTPUT_DIR"/*.ytdl 2>/dev/null
-    for f in "$OUTPUT_DIR"/*.mp4 "$OUTPUT_DIR"/*.mp3 "$OUTPUT_DIR"/*.m4a "$OUTPUT_DIR"/*.webm 2>/dev/null; do
+    for f in "$OUTPUT_DIR"/*.mp4 "$OUTPUT_DIR"/*.mp3 "$OUTPUT_DIR"/*.m4a "$OUTPUT_DIR"/*.webm; do
         [[ -f "$f" ]] && [[ $(stat -c%s "$f" 2>/dev/null || echo 0) -lt 1000 ]] && rm -f "$f"
     done
     case "$FORMAT" in

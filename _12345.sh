@@ -429,7 +429,7 @@ while true; do
                         if [[ -n "${CAPTAINEMAIL}" ]]; then
                             ZNOD_HOSTNAME=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.hostname // "unknown"')
                             ZNOD_IP=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.myIP // "unknown"')
-                            echo "<h2>Station Offline Alert</h2><p>Station <b>${ZNOD_HOSTNAME}</b> (${znod:0:16}...) at IP ${ZNOD_IP} has been offline for more than 6 hours and has been removed from swarm.</p><p>Last seen: $(cat ~/.zen/tmp/swarm/${znod}/_MySwarm.staom 2>/dev/null)</p>" > ~/.zen/tmp/station_offline_${znod:0:8}.html
+                            echo "<html><body><h2>Station Offline Alert</h2><p>Station <b>${ZNOD_HOSTNAME}</b> (${znod:0:16}...) at IP ${ZNOD_IP} has been offline for more than 6 hours and has been removed from swarm.</p><p>Last seen: $(cat ~/.zen/tmp/swarm/${znod}/_MySwarm.staom 2>/dev/null)</p></body></html>" > ~/.zen/tmp/station_offline_${znod:0:8}.html
                             ${MY_PATH}/tools/mailjet.sh --expire 24h "${CAPTAINEMAIL}" ~/.zen/tmp/station_offline_${znod:0:8}.html "Station OFFLINE: ${ZNOD_HOSTNAME}"
                             rm -f ~/.zen/tmp/station_offline_${znod:0:8}.html
                         fi
