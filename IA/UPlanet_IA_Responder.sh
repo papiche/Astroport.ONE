@@ -1127,6 +1127,21 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
     else
         QUESTION="$message_text ---"
     fi
+    # If we are in a thread (trigger replies to root/reply), add thread context so the IA can answer relevantly
+    if [[ -n "$EVENT" ]]; then
+        thread_content=$(get_conversation_thread "$EVENT" 2>/dev/null)
+        if [[ -n "$thread_content" ]]; then
+            # Only add thread context when it brings more than the current message (i.e. has parent/root)
+            if [[ "$thread_content" =~ Thread: ]] || [[ "$thread_content" =~ Re: ]]; then
+                if [[ -n "$DESC" ]]; then
+                    QUESTION="[IMAGE received]: $DESC --- [Thread context]: $thread_content ---"
+                else
+                    QUESTION="[Thread context]: $thread_content ---"
+                fi
+                echo "DEBUG: Added thread context to QUESTION for IA" >&2
+            fi
+        fi
+    fi
     fi
 
     AnswerKind="1"

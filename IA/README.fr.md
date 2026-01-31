@@ -47,6 +47,51 @@ Bienvenue dans le Système Bot IA UPlanet ! C'est un assistant IA puissant et mu
 | `#BRO` | Activer le bot avec une question | `#BRO Quelle est la capitale de la France ?` |
 | `#BOT` | Activation alternative du bot | `#BOT Racontez-moi une blague` |
 
+### 📖 **Ce que fait #BRO (comportement détaillé)**
+
+Le tag **#BRO** (ou **#BOT**) déclenche le script `UPlanet_IA_Responder.sh`. Seuls les messages contenant `#BRO` ou `#BOT` sont traités ; les autres sont ignorés.
+
+#### 1. **Entrée et préparation**
+- Le script reçoit : `pubkey`, `event_id` (message déclencheur), coordonnées, contenu, URL d’image éventuelle, KNAME (email NOSTR).
+- Il parse une seule fois tous les **#tags** du message (`#search`, `#image`, `#video`, `#mem`, `#reset`, `#rec2`, `#plantnet`, `#inventory`, `#cookie`, `#pierre`, `#amelie`, `#N` pour le slot mémoire, etc.).
+- Si une image est jointe (URL ou tag `imeta` de l’événement), une description est générée via `describe_image.py` (LLaVA/MiniCPM-V) et sera fournie à l’IA.
+
+#### 2. **Construction de la question pour l’IA**
+- **Question de base** : texte du message (et éventuellement `[IMAGE received]: <description> --- <texte>`).
+- **Contexte de fil (thread)** : si le message déclencheur est une **réponse** à un autre message (tags NIP-10 `root` / `reply`), le script récupère le contenu du fil (message racine, parent, message actuel) via `get_conversation_thread` et l’ajoute à la question sous la forme `[Thread context]: Thread: ... Re: ... <message actuel> ---`. L’IA reçoit ainsi tout le fil pour répondre de façon pertinente.
+
+#### 3. **Branchement selon les tags (ordre de priorité)**
+
+| Priorité | Tag(s) | Action |
+|----------|--------|--------|
+| 1 | `#reset` | Réinitialisation mémoire : slot 0 par défaut, `#reset #N` pour le slot N, `#reset #all` pour tous (0–12). Slots 1–12 réservés aux sociétaires. |
+| 2 | `#mem` | Affichage du contenu mémoire : 30 derniers messages du slot 0 ou du slot `#N`. |
+| 3 | `#search` | Recherche web Perplexica + résumé IA, tags, illustration, publication en kind 30023 (article). |
+| 4 | `#image` | Génération d’image via ComfyUI (Stable Diffusion), dépôt IPFS, renvoi de l’URL. |
+| 5 | `#video` | Avec image jointe : Image-to-Video (Wan2.2 14B). Sans image : Text-to-Video (Wan2.2 5B). |
+| 6 | `#music` | Génération musicale ComfyUI, option `#parole` pour les paroles. |
+| 7 | `#youtube` | Téléchargement (yt-dlp), option `#mp3` pour l’audio. |
+| 8 | `#plantnet` | Reconnaissance de plante (PlantNet) si une image est fournie ; intégration ORE, mise à jour UMAP DID. |
+| 9 | `#inventory` / `#plant` / `#insect` / `#animal` / `#person` / `#object` / `#place` | Reconnaissance multi-type (ou type forcé), contrat ORE (kind 30312), blog (kind 30023), suivi diversité. |
+| 10 | `#cookie` | Exécution d’un workflow nommé via `cookie_workflow_engine.sh`. |
+| 11 | `#pierre` / `#amelie` | Synthèse vocale (Orpheus TTS), renvoi de l’URL audio. |
+| 12 | (aucun tag spécial) | Réponse IA conversationnelle : `question.py` (Ollama) avec la question construite (contexte de fil + slot mémoire si `#N`). |
+
+Le **slot mémoire** `#N` (1–12) est détecté dans le message ; s’il est présent et que l’utilisateur a accès (sociétaire), les 20 derniers messages de ce slot sont chargés comme contexte pour l’IA.
+
+#### 4. **Publication de la réponse**
+- **Clé utilisée** : UMAP (réponses PlantNet/inventory géolocalisées), sinon clé utilisateur (KNAME) si connue, sinon clé Capitaine.
+- **Mode secret** (réponse en DM) : si le script est appelé avec `--secret`, la réponse est envoyée en message privé NOSTR (kind 4) au lieu d’être publiée publiquement.
+- **Tags NOSTR de la réponse** :
+  - Si le **message déclencheur est éphémère** (tag NIP-40 `expiration`) : le bot **ne met pas** de lien `e` vers ce message (il sera supprimé). S’il répond à un **fil** (root/reply), le tag `e` pointe vers la racine ou le message parent du fil pour garder la conversation cohérente.
+  - Sinon : tag `e` = id du message déclencheur, tag `p` = auteur. Les messages d’erreur reçoivent un tag `expiration` (TTL 1 h).
+- **#rec2** : si présent, la réponse du bot est enregistrée automatiquement dans le slot mémoire courant.
+
+#### 5. **Résumé**
+- **#BRO** active le pipeline IA (mémoire, recherche, image, vidéo, musique, YouTube, PlantNet, inventory, cookie, TTS, ou conversation par défaut).
+- Le **contexte de fil** est toujours inclus dans la question quand le message est une réponse dans un thread.
+- Les **messages éphémères** ne reçoivent pas de lien `e` ; la réponse est rattachée au fil (root/reply) si il y en a un.
+
 ### 🧠 **Gestion de la Mémoire**
 
 | Commande | Description | Exemple | Accès |

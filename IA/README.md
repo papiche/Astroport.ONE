@@ -55,6 +55,51 @@ Welcome to the UPlanet IA Bot System! This is a powerful, multi-functional AI as
 | `#BRO` | Activate bot with question | `#BRO What's the capital of France?` |
 | `#BOT` | Alternative bot activation | `#BOT Tell me a joke` |
 
+### 📖 **What #BRO Does (Full Behavior)**
+
+The **#BRO** (or **#BOT**) tag triggers the `UPlanet_IA_Responder.sh` script. Only messages containing `#BRO` or `#BOT` are processed; others are ignored.
+
+#### 1. **Input and Setup**
+- The script receives: `pubkey`, `event_id` (trigger message), coordinates, content, optional image URL, KNAME (NOSTR email).
+- It parses all **#tags** once (`#search`, `#image`, `#video`, `#mem`, `#reset`, `#rec2`, `#plantnet`, `#inventory`, `#cookie`, `#pierre`, `#amelie`, `#N` for memory slot, etc.).
+- If an image is attached (URL or event `imeta` tag), a description is generated via `describe_image.py` (LLaVA/MiniCPM-V) and provided to the IA.
+
+#### 2. **Building the Question for the IA**
+- **Base question**: message text (and optionally `[IMAGE received]: <description> --- <text>`).
+- **Thread context**: If the trigger message is a **reply** to another message (NIP-10 `root`/`reply` tags), the script fetches the full thread content (root, parent, current message) via `get_conversation_thread` and prepends it as `[Thread context]: Thread: ... Re: ... <current message> ---`. The IA thus receives the full thread for a relevant answer.
+
+#### 3. **Branching by Tags (Priority Order)**
+
+| Priority | Tag(s) | Action |
+|----------|--------|--------|
+| 1 | `#reset` | Memory reset: slot 0 by default, `#reset #N` for slot N, `#reset #all` for all (0–12). Slots 1–12 require sociétaire access. |
+| 2 | `#mem` | Display memory content: last 30 messages of slot 0 or slot `#N`. |
+| 3 | `#search` | Perplexica web search + IA summary, tags, illustration, published as kind 30023 (blog). |
+| 4 | `#image` | Image generation via ComfyUI (Stable Diffusion), IPFS upload, return URL. |
+| 5 | `#video` | With attached image: Image-to-Video (Wan2.2 14B). Without image: Text-to-Video (Wan2.2 5B). |
+| 6 | `#music` | ComfyUI music generation, `#parole` for lyrics. |
+| 7 | `#youtube` | Download (yt-dlp), `#mp3` for audio. |
+| 8 | `#plantnet` | Plant recognition (PlantNet) if image provided; ORE integration, UMAP DID update. |
+| 9 | `#inventory` / `#plant` / `#insect` / `#animal` / `#person` / `#object` / `#place` | Multi-type (or forced-type) recognition, ORE contract (kind 30312), blog (kind 30023), diversity tracking. |
+| 10 | `#cookie` | Run a named workflow via `cookie_workflow_engine.sh`. |
+| 11 | `#pierre` / `#amelie` | Text-to-speech (Orpheus TTS), return audio URL. |
+| 12 | (no special tag) | Conversational IA: `question.py` (Ollama) with the built question (thread context + memory slot context if `#N`). |
+
+The **memory slot** `#N` (1–12) is detected in the message; when present and the user has access (sociétaire), the last 20 messages of that slot are loaded as context for the IA.
+
+#### 4. **Publishing the Reply**
+- **Key used**: UMAP for geolocated PlantNet/inventory replies, else user key (KNAME) if known, else Captain key.
+- **Secret mode** (DM reply): If the script is invoked with `--secret`, the reply is sent as a NOSTR private message (kind 4) instead of being published publicly.
+- **NOSTR reply tags**:
+  - If the **trigger message is ephemeral** (NIP-40 `expiration` tag): the bot **does not** add an `e` link to that message (it will be deleted). If the trigger is part of a **thread** (root/reply), the `e` tag points to the thread root or parent so the reply stays in the same thread.
+  - Otherwise: `e` = trigger event id, `p` = author. Error messages get an `expiration` tag (1h TTL).
+- **#rec2**: When present, the bot’s reply is automatically recorded into the current memory slot.
+
+#### 5. **Summary**
+- **#BRO** activates the full IA pipeline (memory, search, image, video, music, YouTube, PlantNet, inventory, cookie, TTS, or default conversation).
+- **Thread context** is always included in the question when the message is a reply in a thread.
+- **Ephemeral messages** are not linked via `e`; the reply is attached to the thread (root/reply) when one exists.
+
 ### 🧠 **Memory Management**
 
 | Command | Description | Example | Access |
