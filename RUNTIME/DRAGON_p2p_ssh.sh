@@ -193,17 +193,32 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     fi
 
     ## FOLLOW EVERY NOSTR CARD AND ACTIVE UMAP NODE (single kind3 event)
+    [[ -z "${NSEC:-}" ]] && NSEC=$(grep -oP 'NSEC=\K[^;]+' ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr 2>/dev/null)
     nostrhex=($(cat ~/.zen/game/nostr/*@*.*/HEX 2>/dev/null))
     umaphex=()
     if [[ -d ~/.zen/tmp/${IPFSNODEID}/UPLANET ]]; then
         umaphex=($(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*/*/*/HEX 2>/dev/null))
     fi
+    ## Same-uplanet captains (kind 30850, swarm_id = UPLANETG1PUB, station != me) so Captain follows other captains on NOSTR
+    captainhex=()
+    if [[ -n "${UPLANETG1PUB:-}" ]] && [[ -f "${MY_PATH}/../tools/nostr_get_events.sh" ]] && command -v jq &>/dev/null; then
+        UPLANET_30850=$("${MY_PATH}/../tools/nostr_get_events.sh" --kind 30850 --limit 300 2>/dev/null)
+        if [[ -n "$UPLANET_30850" ]]; then
+            while read -r pub; do
+                [[ -n "$pub" ]] && captainhex+=("$pub")
+            done < <(echo "$UPLANET_30850" | jq -r --arg sid "$UPLANETG1PUB" --arg me "$IPFSNODEID" '
+                select(
+                    ([(.tags[]? | select(.[0]=="swarm_id"))] | .[0][1]) == $sid
+                    and ([(.tags[]? | select(.[0]=="station"))] | .[0][1]) != $me
+                ) | .pubkey
+            ' 2>/dev/null)
+        fi
+    fi
+    # Combine all lists (NOSTR cards, UMAP nodes, same-uplanet captains)
+    allhex=("${nostrhex[@]}" "${umaphex[@]}" "${captainhex[@]}")
     
-    # Combine both lists
-    allhex=("${nostrhex[@]}" "${umaphex[@]}")
-    
-    if [[ ${#allhex[@]} -gt 0 ]]; then
-        echo "Following ${#nostrhex[@]} NOSTR cards and ${#umaphex[@]} active UMAP nodes (single kind3)"
+    if [[ ${#allhex[@]} -gt 0 ]] && [[ -n "${NSEC:-}" ]]; then
+        echo "Following ${#nostrhex[@]} NOSTR cards, ${#umaphex[@]} UMAP nodes, ${#captainhex[@]} same-uplanet captains (single kind3)"
         ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "${allhex[@]}" >/dev/null 2>&1
     fi
 fi
@@ -234,6 +249,27 @@ do
 done < ${SSHAUTHFILE} ## INITIALIZED DURING BLOOM.Me PRIVATE SWARM ACTIVATION
 ## ADDING ${HOME}/.zen/game/players/${PLAYER}/ssh.pub (made during PLAYER.refresh)
 cat ${HOME}/.zen/game/players/*/ssh.pub >> ~/.zen/tmp/${MOATS}/authorized_keys 2>/dev/null
+## ADDING SSH KEYS OF CAPTAINS FROM SAME UPLANET (kind 30850 economic-health, swarm_id = UPLANETG1PUB)
+## Links captains of the same uplanet for P2P SSH (see ECONOMY.broadcast.sh ssh_pub tag and economy.Swarm.html)
+if [[ -n "${UPLANETG1PUB:-}" ]] && [[ -f "${MY_PATH}/../tools/nostr_get_events.sh" ]] && command -v jq &>/dev/null; then
+    UPLANET_30850=$("${MY_PATH}/../tools/nostr_get_events.sh" --kind 30850 --limit 300 2>/dev/null)
+    if [[ -n "$UPLANET_30850" ]]; then
+        echo "$UPLANET_30850" | jq -c --arg sid "$UPLANETG1PUB" --arg me "$IPFSNODEID" '
+            select(
+                ([(.tags[]? | select(.[0]=="swarm_id"))] | .[0][1]) == $sid
+                and ([(.tags[]? | select(.[0]=="station"))] | .[0][1]) != $me
+            )
+        ' 2>/dev/null | while read -r ev; do
+            ssh_pub=$(echo "$ev" | jq -r '[.tags[]? | select(.[0]=="ssh_pub")] | .[0][1] // empty' 2>/dev/null)
+            if [[ -n "$ssh_pub" ]] && echo "$ssh_pub" | grep -q "ssh-ed25519"; then
+                if ! grep -qF "$ssh_pub" ~/.zen/tmp/${MOATS}/authorized_keys 2>/dev/null; then
+                    echo "Adding same-uplanet captain SSH key to authorized_keys"
+                    echo "$ssh_pub" >> ~/.zen/tmp/${MOATS}/authorized_keys
+                fi
+            fi
+        done
+    fi
+fi
 ### REMOVING DUPLICATION (NO ORDER CHANGING)
 awk '!seen[$0]++' ~/.zen/tmp/${MOATS}/authorized_keys > ~/.zen/tmp/${MOATS}/authorized_keys.clean
 cat ~/.zen/tmp/${MOATS}/authorized_keys.clean > ~/.ssh/authorized_keys

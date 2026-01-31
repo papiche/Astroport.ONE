@@ -503,6 +503,9 @@ fi
 # Escape content for NOSTR event
 CONTENT_ESCAPED=$(echo "$CONTENT_JSON" | jq -c .)
 
+# Station SSH public key (for same-uplanet captain P2P SSH linking via DRAGON_p2p_ssh.sh)
+STATION_SSH_PUB=$(head -1 "$HOME/.zen/tmp/${IPFSNODEID}/z_ssh.pub" 2>/dev/null || head -1 "$HOME/.zen/tmp/${IPFSNODEID}/y_ssh.pub" 2>/dev/null || head -1 "$HOME/.zen/tmp/${IPFSNODEID}/x_ssh.pub" 2>/dev/null)
+
 # Build tags array
 TAGS_JSON=$(cat <<EOF
 [
@@ -552,6 +555,10 @@ TAGS_JSON=$(cat <<EOF
 ]
 EOF
 )
+# Append ssh_pub tag so other captains of same uplanet can add this station to their authorized_keys (DRAGON_p2p_ssh.sh)
+if [[ -n "$STATION_SSH_PUB" ]]; then
+    TAGS_JSON=$(echo "$TAGS_JSON" | jq --arg pub "$STATION_SSH_PUB" '. + [["ssh_pub", $pub]]' 2>/dev/null) || TAGS_JSON="$TAGS_JSON"
+fi
 
 ###############################################################################
 # PUBLISH EVENT TO LOCAL STRFRY RELAY

@@ -237,7 +237,8 @@ ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh
 ########################################################################
 if [[ ${UPLANETNAME} == "EnfinLibre" ]]; then
     #################### UPLANET ORIGIN : <<<<< DETECT PRIVATE SWARM BLOOM >>>>> #########
-    ${MY_PATH}/RUNTIME/BLOOM.Me.sh
+    ## ${MY_PATH}/RUNTIME/BLOOM.Me.sh (old automatic swarm.key creation... Need more test...)
+    echo "UPlanet ORIGIN - where new captains meets DRAGON's WoT captains"
 else
     # UPlanet Zen MULTIPASS / real ZenCard + TW hidden mode
     #####################################
