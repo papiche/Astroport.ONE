@@ -2062,16 +2062,33 @@ Error: $WORKFLOW_RESULT"
                 echo "DEBUG: Error message detected - adding 1h TTL (expiration: $EXPIRATION_TS)" >&2
             fi
             
-            # If trigger message is ephemeral (NIP-40 expiration), do not add "e" tag (link to it will break when deleted)
+            # If trigger message is ephemeral (NIP-40 expiration), do not link to it (will be deleted).
+            # If it replies to a thread (NIP-10 root/reply), link our reply to that thread instead.
             TRIGGER_IS_EPHEMERAL=false
+            REPLY_TO_EVENT=""   # event id to use in "e" tag: EVENT, or thread root/reply when trigger is ephemeral
             if [[ -n "$EVENT" ]]; then
                 trigger_event_json=$(get_event_by_id "$EVENT" 2>/dev/null)
                 if [[ -n "$trigger_event_json" ]] && echo "$trigger_event_json" | jq -e '.tags[] | select(.[0] == "expiration")' >/dev/null 2>&1; then
                     TRIGGER_IS_EPHEMERAL=true
-                    echo "DEBUG: Trigger message is ephemeral - not adding reply link (e tag)" >&2
+                    # Check if trigger is part of a thread (has root or reply e-tags)
+                    root_id=$(echo "$trigger_event_json" | jq -r '[.tags[] | select(.[0] == "e") | select(.[3] == "root") | .[1]] | .[0] // empty')
+                    reply_id=$(echo "$trigger_event_json" | jq -r '[.tags[] | select(.[0] == "e") | select(.[3] == "reply") | .[1]] | .[0] // empty')
+                    if [[ -n "$root_id" ]]; then
+                        REPLY_TO_EVENT="$root_id"
+                        echo "DEBUG: Trigger is ephemeral but has thread root - replying to thread (e=$REPLY_TO_EVENT)" >&2
+                    elif [[ -n "$reply_id" ]]; then
+                        REPLY_TO_EVENT="$reply_id"
+                        echo "DEBUG: Trigger is ephemeral but has reply - replying to thread (e=$REPLY_TO_EVENT)" >&2
+                    else
+                        echo "DEBUG: Trigger message is ephemeral - not adding reply link (e tag)" >&2
+                    fi
+                else
+                    REPLY_TO_EVENT="$EVENT"
                 fi
             fi
-            
+            # When not ephemeral, REPLY_TO_EVENT was set above; when ephemeral with no thread, REPLY_TO_EVENT is empty
+            [[ -z "$REPLY_TO_EVENT" && -n "$EVENT" && "$TRIGGER_IS_EPHEMERAL" != true ]] && REPLY_TO_EVENT="$EVENT"
+
             # Prepare tags in JSON format
             if [[ -n "$ExtraTags" ]]; then
                 # For kind 30023, use only the specific blog tags
@@ -2083,33 +2100,33 @@ Error: $WORKFLOW_RESULT"
                     ExtraTagsJSON=$(echo "$ExtraTags" | sed "s/'/\"/g")
                     # Remove outer brackets and add standard tags
                     ExtraTagsContent=$(echo "$ExtraTagsJSON" | sed 's/^\[//' | sed 's/\]$//')
-                    if [[ "$TRIGGER_IS_EPHEMERAL" == true ]]; then
+                    if [[ -n "$REPLY_TO_EVENT" ]]; then
+                        if [[ "$IS_ERROR_MESSAGE" == true ]]; then
+                            TAGS_JSON='[["e","'$REPLY_TO_EVENT'"],["p","'$PUBKEY'"],["expiration","'$EXPIRATION_TS'"],'$ExtraTagsContent']'
+                        else
+                            TAGS_JSON='[["e","'$REPLY_TO_EVENT'"],["p","'$PUBKEY'"],'$ExtraTagsContent']'
+                        fi
+                    else
                         if [[ "$IS_ERROR_MESSAGE" == true ]]; then
                             TAGS_JSON='[["p","'$PUBKEY'"],["expiration","'$EXPIRATION_TS'"],'$ExtraTagsContent']'
                         else
                             TAGS_JSON='[["p","'$PUBKEY'"],'$ExtraTagsContent']'
                         fi
-                    else
-                        if [[ "$IS_ERROR_MESSAGE" == true ]]; then
-                            TAGS_JSON='[["e","'$EVENT'"],["p","'$PUBKEY'"],["expiration","'$EXPIRATION_TS'"],'$ExtraTagsContent']'
-                        else
-                            TAGS_JSON='[["e","'$EVENT'"],["p","'$PUBKEY'"],'$ExtraTagsContent']'
-                        fi
                     fi
                 fi
             else
                 # Use standard tags only
-                if [[ "$TRIGGER_IS_EPHEMERAL" == true ]]; then
+                if [[ -n "$REPLY_TO_EVENT" ]]; then
+                    if [[ "$IS_ERROR_MESSAGE" == true ]]; then
+                        TAGS_JSON='[["e","'$REPLY_TO_EVENT'"],["p","'$PUBKEY'"],["expiration","'$EXPIRATION_TS'"]]'
+                    else
+                        TAGS_JSON='[["e","'$REPLY_TO_EVENT'"],["p","'$PUBKEY'"]]'
+                    fi
+                else
                     if [[ "$IS_ERROR_MESSAGE" == true ]]; then
                         TAGS_JSON='[["p","'$PUBKEY'"],["expiration","'$EXPIRATION_TS'"]]'
                     else
                         TAGS_JSON='[["p","'$PUBKEY'"]]'
-                    fi
-                else
-                    if [[ "$IS_ERROR_MESSAGE" == true ]]; then
-                        TAGS_JSON='[["e","'$EVENT'"],["p","'$PUBKEY'"],["expiration","'$EXPIRATION_TS'"]]'
-                    else
-                        TAGS_JSON='[["e","'$EVENT'"],["p","'$PUBKEY'"]]'
                     fi
                 fi
             fi
