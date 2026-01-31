@@ -464,12 +464,13 @@ handle_active_friend() {
 
     local profile=$($MY_PATH/../tools/nostr_hex2nprofile.sh $ami 2>/dev/null)
 
+    # Exclude system messages (e.g. mailjet) from activity count: only count kind 1 without tag t=mailjet
     local RECENT_ACTIVITY=$(./strfry scan '{
       "kinds": [1],
       "authors": ["'"$ami"'"],
       "since": '"$MONTH_AGO"',
-      "limit": 1
-    }' 2>/dev/null | jq -r 'select(.kind == 1) | .created_at')
+      "limit": 20
+    }' 2>/dev/null | jq -r 'select(.kind == 1 and ([.tags[]? | select(.[0] == "t" and .[1] == "mailjet")] | length) == 0) | .created_at' | head -n 1)
 
     if [[ -z "$RECENT_ACTIVITY" ]]; then
         handle_inactive_friend "$ami" "$profile" "$NPRIV_HEX"
@@ -505,12 +506,13 @@ handle_active_friend_activity() {
     ACTIVE_FRIENDS+=("$ami")
     TAGS+=("[\"p\", \"$ami\", \"$myRELAY\", \"Ufriend\"]")
 
+    # Exclude system messages (e.g. mailjet) from activity count
     local WEEK_ACTIVITY=$(./strfry scan '{
       "kinds": [1],
       "authors": ["'"$ami"'"],
       "since": '"$WEEK_AGO"',
-      "limit": 1
-    }' 2>/dev/null | jq -r 'select(.kind == 1) | .created_at')
+      "limit": 20
+    }' 2>/dev/null | jq -r 'select(.kind == 1 and ([.tags[]? | select(.[0] == "t" and .[1] == "mailjet")] | length) == 0) | .created_at' | head -n 1)
 
     if [[ -z "$WEEK_ACTIVITY" ]]; then
         send_reminder_message "$ami" "$profile" "$NPRIV_HEX"

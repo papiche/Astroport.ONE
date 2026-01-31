@@ -369,9 +369,10 @@ ${ephemeral_duration:+⏰ $(convert_seconds_to_human ${ephemeral_duration})}
     fi
     
     # Prepare tags (reference recipient if we have their HEX)
-    TAGS_JSON="[]"
+    # Tag "t":"mailjet" marks system-sent messages so UMAP refresh does not count them as user activity
+    TAGS_JSON="[[\"t\",\"mailjet\"]]"
     if [[ -n "$HEX" ]]; then
-        TAGS_JSON="[[\"p\",\"${HEX}\"]]"
+        TAGS_JSON="[[\"p\",\"${HEX}\"],[\"t\",\"mailjet\"]]"
         echo "🏷️ Adding tag for recipient: ${HEX}"
     fi
     
