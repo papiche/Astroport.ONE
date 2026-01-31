@@ -477,8 +477,8 @@ else
 fi
 
 ## MAIL LOG : support@qo-op.com ##
-# Send email with power consumption report if available
-POWER_REPORT_HTML="$HOME/.zen/tmp/20h12_power_report.html"
+# Send email with power consumption report if available (report is written to /tmp/)
+POWER_REPORT_HTML="/tmp/20h12_power_report.html"
 if [[ -f "$POWER_REPORT_HTML" ]]; then
     echo "📧 Sending 20H12 report with power consumption analysis..."
     ${MY_PATH}/tools/mailjet.sh --expire 48h "$CAPTAINEMAIL" "$POWER_REPORT_HTML" \
