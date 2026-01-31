@@ -234,6 +234,9 @@ SSHAUTHFILE="${MY_PATH}/../A_boostrap_ssh.txt"
 [[ -s ~/.ssh/authorized_keys ]] \
     && cp ~/.ssh/authorized_keys ~/.zen/tmp/${MOATS}/authorized_keys \
     || echo "# ASTRO # ~/.ssh/authorized_keys" > ~/.zen/tmp/${MOATS}/authorized_keys
+## Remove old same-uplanet captain keys (tagged with " uplanet:") so they are replaced by current uplanet's captains (if station changed UPlanet)
+grep -v " uplanet:" ~/.zen/tmp/${MOATS}/authorized_keys > ~/.zen/tmp/${MOATS}/authorized_keys.no_uplanet 2>/dev/null
+mv ~/.zen/tmp/${MOATS}/authorized_keys.no_uplanet ~/.zen/tmp/${MOATS}/authorized_keys 2>/dev/null || true
 
 while IFS= read -r line
 do
@@ -262,9 +265,11 @@ if [[ -n "${UPLANETG1PUB:-}" ]] && [[ -f "${MY_PATH}/../tools/nostr_get_events.s
         ' 2>/dev/null | while read -r ev; do
             ssh_pub=$(echo "$ev" | jq -r '[.tags[]? | select(.[0]=="ssh_pub")] | .[0][1] // empty' 2>/dev/null)
             if [[ -n "$ssh_pub" ]] && echo "$ssh_pub" | grep -q "ssh-ed25519"; then
+                # Comment with uplanet id so these keys can be removed if station changes UPlanet (grep -v "uplanet:...")
+                ssh_line="${ssh_pub} uplanet:${UPLANETG1PUB:0:8}"
                 if ! grep -qF "$ssh_pub" ~/.zen/tmp/${MOATS}/authorized_keys 2>/dev/null; then
-                    echo "Adding same-uplanet captain SSH key to authorized_keys"
-                    echo "$ssh_pub" >> ~/.zen/tmp/${MOATS}/authorized_keys
+                    echo "Adding same-uplanet captain SSH key to authorized_keys (uplanet:${UPLANETG1PUB:0:8})"
+                    echo "$ssh_line" >> ~/.zen/tmp/${MOATS}/authorized_keys
                 fi
             fi
         done
