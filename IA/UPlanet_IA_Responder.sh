@@ -2062,6 +2062,16 @@ Error: $WORKFLOW_RESULT"
                 echo "DEBUG: Error message detected - adding 1h TTL (expiration: $EXPIRATION_TS)" >&2
             fi
             
+            # If trigger message is ephemeral (NIP-40 expiration), do not add "e" tag (link to it will break when deleted)
+            TRIGGER_IS_EPHEMERAL=false
+            if [[ -n "$EVENT" ]]; then
+                trigger_event_json=$(get_event_by_id "$EVENT" 2>/dev/null)
+                if [[ -n "$trigger_event_json" ]] && echo "$trigger_event_json" | jq -e '.tags[] | select(.[0] == "expiration")' >/dev/null 2>&1; then
+                    TRIGGER_IS_EPHEMERAL=true
+                    echo "DEBUG: Trigger message is ephemeral - not adding reply link (e tag)" >&2
+                fi
+            fi
+            
             # Prepare tags in JSON format
             if [[ -n "$ExtraTags" ]]; then
                 # For kind 30023, use only the specific blog tags
@@ -2073,18 +2083,34 @@ Error: $WORKFLOW_RESULT"
                     ExtraTagsJSON=$(echo "$ExtraTags" | sed "s/'/\"/g")
                     # Remove outer brackets and add standard tags
                     ExtraTagsContent=$(echo "$ExtraTagsJSON" | sed 's/^\[//' | sed 's/\]$//')
-                    if [[ "$IS_ERROR_MESSAGE" == true ]]; then
-                        TAGS_JSON='[["e","'$EVENT'"],["p","'$PUBKEY'"],["expiration","'$EXPIRATION_TS'"],'$ExtraTagsContent']'
+                    if [[ "$TRIGGER_IS_EPHEMERAL" == true ]]; then
+                        if [[ "$IS_ERROR_MESSAGE" == true ]]; then
+                            TAGS_JSON='[["p","'$PUBKEY'"],["expiration","'$EXPIRATION_TS'"],'$ExtraTagsContent']'
+                        else
+                            TAGS_JSON='[["p","'$PUBKEY'"],'$ExtraTagsContent']'
+                        fi
                     else
-                        TAGS_JSON='[["e","'$EVENT'"],["p","'$PUBKEY'"],'$ExtraTagsContent']'
+                        if [[ "$IS_ERROR_MESSAGE" == true ]]; then
+                            TAGS_JSON='[["e","'$EVENT'"],["p","'$PUBKEY'"],["expiration","'$EXPIRATION_TS'"],'$ExtraTagsContent']'
+                        else
+                            TAGS_JSON='[["e","'$EVENT'"],["p","'$PUBKEY'"],'$ExtraTagsContent']'
+                        fi
                     fi
                 fi
             else
                 # Use standard tags only
-                if [[ "$IS_ERROR_MESSAGE" == true ]]; then
-                    TAGS_JSON='[["e","'$EVENT'"],["p","'$PUBKEY'"],["expiration","'$EXPIRATION_TS'"]]'
+                if [[ "$TRIGGER_IS_EPHEMERAL" == true ]]; then
+                    if [[ "$IS_ERROR_MESSAGE" == true ]]; then
+                        TAGS_JSON='[["p","'$PUBKEY'"],["expiration","'$EXPIRATION_TS'"]]'
+                    else
+                        TAGS_JSON='[["p","'$PUBKEY'"]]'
+                    fi
                 else
-                    TAGS_JSON='[["e","'$EVENT'"],["p","'$PUBKEY'"]]'
+                    if [[ "$IS_ERROR_MESSAGE" == true ]]; then
+                        TAGS_JSON='[["e","'$EVENT'"],["p","'$PUBKEY'"],["expiration","'$EXPIRATION_TS'"]]'
+                    else
+                        TAGS_JSON='[["e","'$EVENT'"],["p","'$PUBKEY'"]]'
+                    fi
                 fi
             fi
             
