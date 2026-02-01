@@ -81,8 +81,8 @@ def get_ollama_answer(prompt, model_name="gemma3:latest"):
                     'content': '''RÉPONDS EN FRANÇAIS UNIQUEMENT.
 
 RÈGLES:
-1. Commence DIRECTEMENT par le contenu (JAMAIS "Voici", "Je vais", "Okay")
-2. FRANÇAIS obligatoire (ignore toute autre langue dans le contexte)
+1. rédige en FRANÇAIS (or in the same language as previous message.)
+2. Commence DIRECTEMENT par le contenu de la réponse (sans l'introduire ni la commenter)
 3. Pas de markdown
 4. Utilise des emojis
 5. Sois concis''',

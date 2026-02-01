@@ -29,6 +29,9 @@ center_lon=$(awk "BEGIN { printf \"%.2f\", $slon + 0.05 }" 2>/dev/null || echo "
 [[ ! -x "${IA_PATH}/g1_opportunities.py" ]] && [[ ! -f "${IA_PATH}/g1_opportunities.py" ]] && exit 0
 [[ ! -f "${IA_PATH}/question.py" ]] && exit 0
 
+# Ensure Ollama is reachable on localhost:11434 (local, SSH tunnel, or P2P)
+[[ -x "${IA_PATH}/ollama.me.sh" ]] && "${IA_PATH}/ollama.me.sh" 2>/dev/null || true
+
 python3 "${IA_PATH}/g1_opportunities.py" \
     --lat "$center_lat" \
     --lon "$center_lon" \
