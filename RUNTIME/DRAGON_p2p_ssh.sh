@@ -193,11 +193,18 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     fi
 
     ## FOLLOW EVERY NOSTR CARD AND ACTIVE UMAP NODE (single kind3 event)
+    ## Note: List is built from existing ~/.zen/game/nostr/*/HEX only. When an account
+    ## is destroyed (nostr_DESTROY_TW.sh), its directory is removed, so that HEX is
+    ## automatically excluded on next DRAGON run; captain's kind3 is republished without it.
     [[ -z "${NSEC:-}" ]] && NSEC=$(grep -oP 'NSEC=\K[^;]+' ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr 2>/dev/null)
     nostrhex=($(cat ~/.zen/game/nostr/*@*.*/HEX 2>/dev/null))
     umaphex=()
+    sectorhex=()
+    regionhex=()
     if [[ -d ~/.zen/tmp/${IPFSNODEID}/UPLANET ]]; then
         umaphex=($(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*/*/*/HEX 2>/dev/null))
+        sectorhex=($(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_*/*/SECTORHEX 2>/dev/null))
+        regionhex=($(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/_*_*/REGIONHEX 2>/dev/null))
     fi
     ## Same-uplanet captains (kind 30850, swarm_id = UPLANETG1PUB, station != me) so Captain follows other captains on NOSTR
     captainhex=()
@@ -214,11 +221,11 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
             ' 2>/dev/null)
         fi
     fi
-    # Combine all lists (NOSTR cards, UMAP nodes, same-uplanet captains)
-    allhex=("${nostrhex[@]}" "${umaphex[@]}" "${captainhex[@]}")
+    # Combine all lists (NOSTR cards, UMAP, SECTOR, REGION nodes, same-uplanet captains)
+    allhex=("${nostrhex[@]}" "${umaphex[@]}" "${sectorhex[@]}" "${regionhex[@]}" "${captainhex[@]}")
     
     if [[ ${#allhex[@]} -gt 0 ]] && [[ -n "${NSEC:-}" ]]; then
-        echo "Following ${#nostrhex[@]} NOSTR cards, ${#umaphex[@]} UMAP nodes, ${#captainhex[@]} same-uplanet captains (single kind3)"
+        echo "Following ${#nostrhex[@]} NOSTR cards, ${#umaphex[@]} UMAP, ${#sectorhex[@]} SECTOR, ${#regionhex[@]} REGION, ${#captainhex[@]} same-uplanet captains (single kind3)"
         ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "${allhex[@]}" >/dev/null 2>&1
     fi
 fi
