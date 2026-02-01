@@ -407,7 +407,7 @@ Ce script est le **cœur du système de gestion des identités MULTIPASS**. Il s
 ~/.zen/game/nostr/${PLAYER}/NPUB             # Clé publique NOSTR
 ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR       # Clé publique G1
 
-# Cache pour propagation réseau
+# Cache pour propagation (TW = convention de chemin, identité : NOSTR)
 ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/HEX    # Cache hex pour swarm
 ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS    # Cache GPS pour swarm
 ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/NPUB   # Cache NPUB pour swarm

@@ -1,8 +1,6 @@
-# PLAYER.sh
+# PLAYER.sh (Legacy API)
 
-Le script `PLAYER.sh` dans le répertoire `/API` de l'écosystème Astroport.ONE est conçu pour gérer les interactions avec les joueurs, en particulier les opérations liées aux TiddlyWikis (TW) des joueurs.
-
-Il permet d'exporter des tiddlers spécifiques, de gérer les passes (fonctionnalité désactivée), et d'ajouter des médias au TiddlyWiki des joueurs (fonctionnalité désactivée). Le script utilise des requêtes HTTP pour communiquer avec les clients et renvoie les données sous forme de JSON.
+`PLAYER.sh` dans `/API` : gestion legacy des joueurs (export tiddlers, passes/médias désactivés). Réponse JSON.
 
 
 

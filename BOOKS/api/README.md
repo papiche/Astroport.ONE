@@ -1,6 +1,6 @@
-# API
+# API (Legacy v1, port 1234 deprecated)
 
-Les scripts situés dans le répertoire `/API` de l'écosystème Astroport.ONE fournissent une variété de fonctionnalités via une interface API, allant de la gestion des joueurs et des zones géographiques à la génération de clés et la gestion des QR codes
+Auth et profils : UPassport (54321), NOSTR. Les scripts `/API` fournissent des fonctionnalités legacy : joueurs, zones, clés, QR codes.
 
 #### 1. `PLAYER.sh`
 
@@ -35,12 +35,7 @@ GET /?dragons
 
 #### 3. `ZONE.sh`
 
-Ce script est utilisé pour rechercher les numéros de TW dans une zone géographique spécifiée.
-
-**Fonctionnalités Principales :**
-
-* **Détection des TW dans une Zone** : Recherche les numéros de TW dans une zone géographique spécifiée par des coordonnées de latitude et de longitude.
-* **Retour des Données en JSON** : Retourne les données des TW trouvés au format JSON.
+Recherche de joueurs dans une zone géographique (lat/lon), retour JSON.
 
 **Exemple de Commande :**
 

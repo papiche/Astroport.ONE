@@ -327,7 +327,7 @@ The MULTIPASS is fully integrated with the UPlanet ecosystem:
 
 6. **Astroport.ONE** - Control center
    - Default: `https://astroport.copylaradio.com`
-   - Local: `http://{hostname}:1234`
+   - Local: UPassport 54321 (port 1234 deprecated)
    - **Taille** : Interface de gestion
 
 #### Services Privés (ZEN Card)

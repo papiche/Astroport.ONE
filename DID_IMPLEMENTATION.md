@@ -680,7 +680,7 @@ Le script `NOSTRCARD.refresh.sh` gère automatiquement :
 Le script `PLAYER.refresh.sh` gère automatiquement :
 - **Paiements ZEN Card** : Cycle de paiement pour l'accès aux services
 - **Intégration uDRIVE** : Mise à jour des applications cloud
-- **Synchronisation TiddlyWiki** : Gestion des données personnelles
+- **Synchronisation NOSTR (MULTIPASS)** : Données identité
 - **Réseau social** : Gestion des amis et relations
 - **Services géolocalisés** : Intégration UMAP et secteurs
 

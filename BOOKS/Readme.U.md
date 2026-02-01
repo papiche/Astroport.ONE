@@ -53,6 +53,6 @@ Formations dispensés :
  * NIVEAU 3 : Astroport.ONE & lazydocker = NextCloud AIO, Ollama, SearxNG, Perplexica
 
 UPassport = ZeroCard -> email + GPS => CAPTAIN
-MULTIPASS = ZenCard - UPLANET wallet + TW
+ZEN Card = MULTIPASS + UPLANET wallet (+ services)
 
 

@@ -56,8 +56,8 @@
 * [WWW Documentation](WWW/Readme.md) - Web interface
 * [FAVICON](WWW/FAVICON/Readme.md) - Favicon management
 
-### Runtime & TiddlyWiki
-* [Runtime TW](RUNTIME/TW/readme.md) - Runtime TiddlyWiki system
+### Runtime
+* [Runtime TW](RUNTIME/TW/readme.md) - TW optionnel. Identité : NOSTR.
 
 ## 📚 Additional Resources
 

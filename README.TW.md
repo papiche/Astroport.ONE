@@ -1,5 +1,7 @@
 # TW : TiddlyWiki
 
+*(Documentation historique. Identité et sync : NOSTR/MULTIPASS.)*
+
 Clarifions quelques points concernant TiddlyWiki :
 
 * Les Tiddlers peuvent contenir n'importe quelle donnée (notes, tâches, numéros de téléphone, photos, vidéos musicales, recettes, produits, membres de la famille, ...).
@@ -20,7 +22,7 @@ Astroport.ONE attache une clé (2 pass phrase NaCl generattion) et un email à u
 
 Le projet reproduit le "[protocole Scuttlebut](https://scuttlebot.io/more/protocols/secure-scuttlebutt.html)", d'où emerge le réseau Ŋ1, Ŋ2,... une fois généralisé à toute clef IPFS enchaînées par un mappage "Web of Trust", créant ainsi un service d'hébergement partagé "peer to peer".
 
-Chaque jour, à 20h12, tous les noeuds synchronisent leur TW en fonction des niveaux de confiance exprimés. Le niveau de confiance est défini en échangeant des étoiles via l'application https://gchange.fr.
+Sync et confiance : NOSTR (MULTIPASS) ; niveau de confiance via https://gchange.fr.
 
 **Nous utilisons [la Ğ1](https://monnaie-libre.fr/) comme "la meilleure invention d'une crypto-monnaie"**
 

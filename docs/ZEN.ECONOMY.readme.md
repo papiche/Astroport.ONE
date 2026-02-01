@@ -238,7 +238,7 @@ Redevance ZEN Card : 4 Ẑ HT/semaine + 0.8 Ẑ TVA (20%)
 ├── 4.0 Ẑ → CAPTAIN_DEDICATED (recettes exploitation - source pour 3x1/3)
 └── 0.8 Ẑ → UPLANETNAME_IMPOT (provision TVA)
 ```
-- **Services** : Accès TiddlyWiki + 128Go stockage
+- **Services** : 128Go stockage (NOSTR/MULTIPASS)
 - **Gestion** : Cycle 7 jours depuis BIRTHDATE
 - **Contrôle** : Suspension si crédit < 6.8 Ẑ (4+0.8+1 sécurité)
 
@@ -338,7 +338,7 @@ Flux d'allocation :
 ##### **Usager Standard (MULTIPASS + ZEN Card)**
 ```
 Coût Total : 5 Ẑ HT + 1 Ẑ TVA = 6 Ẑ/semaine
-├── Services : 128Go NextCloud + TW + NOSTR
+├── Services : 128Go NextCloud + NOSTR
 ├── Équivalent : Studio + Appartement premium
 ├── Contribution UPlanet : 6 Ẑ/semaine
 └── Excédent Collectif : Surplus après PAF

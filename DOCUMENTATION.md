@@ -64,7 +64,7 @@
 ### Deployment & Infrastructure
 * **[Docker Setup](_DOCKER/Readme.md)** - Docker configuration
 * **[WWW Interface](WWW/Readme.md)** - Web interface documentation
-* **[Runtime TW](RUNTIME/TW/readme.md)** - Runtime TiddlyWiki system
+* **[Runtime TW](RUNTIME/TW/readme.md)** - Runtime TW (optionnel). Identité : NOSTR.
 
 ### Project Management & Tracking
 * **[📋 TODO System](docs/TODO_SYSTEM.md)** - **Daily Progress Tracking** - Système automatisé de suivi quotidien des avancées sur tous les systèmes UPlanet (ECONOMY, DID, ORE, ORACLE, Nostr Tube, Cookie & N8N, PlantNet, CoinFlip, uMARKET). Utilise l'analyse Git et la synthèse IA via `todo.sh` pour générer des rapports quotidiens et publier automatiquement sur le mur du CAPTAIN.
@@ -149,7 +149,7 @@ Astroport.ONE/
 ### For System Administrators
 1. Read **[ARCHITECTURE.md](ARCHITECTURE.md)** for deployment details
 2. Check **[Docker Setup](_DOCKER/Readme.md)** for containerization
-3. Review **[Runtime TW](RUNTIME/TW/readme.md)** for runtime management
+3. Review **[Runtime TW](RUNTIME/TW/readme.md)** (optionnel)
 
 ### For Security Focus
 1. Study **[Primal Wallet Control](tools/primal_wallet_control.README.md)**

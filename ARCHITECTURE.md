@@ -241,7 +241,7 @@ function validate_primal_transaction() {
 - **Usage** : Gouvernance coopérative et propriété d'infrastructure
 - **Accès** : Disponible aux détenteurs de ZENCARD et dépositaires uPASSPORT
 
-### 2. G1PalPay.sh - Surveillance "TW" quotidienne (avec ZEN.ECONOMY.sh, NOSTRCARD.refresh.sh, PLAYERS.refresh.sh, ...) 
+### 2. G1PalPay.sh - Surveillance Ğ1/NOSTR (ZEN.ECONOMY.sh, NOSTRCARD.refresh.sh, PLAYER.refresh.sh) 
 
 ```bash
 # Surveillance des transactions Ğ1
@@ -282,7 +282,7 @@ function monitor_g1_transactions() {
 │   ├── .current/        # Capitaine actuel
 │   └── */               # Données par joueur
 │       ├── secret.dunikey
-│       ├── ipfs/        # Stockage IPFS TW personnel
+│       ├── ipfs/        # Stockage IPFS (legacy)
 ├── nostr/               # Données NOSTR
 │   └── */               # Données par MULTIPASS (@, UMAP, ZCARD, ...)
 └── tmp/                 # Cache temporaire
@@ -307,7 +307,7 @@ function monitor_g1_transactions() {
 
 ## 🔌 APIs et Services
 
-### 1. API Gateway (Port 1234) - script example zone - you can break it ;)
+### 1. API Gateway (Port 1234, deprecated) - UPassport 54321 pour l’auth
 
 ```bash
 # Point d'entrée principal
