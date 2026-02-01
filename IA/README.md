@@ -311,6 +311,16 @@ All services will migrate to **IPFS P2P connections** via the `DRAGON_p2p_ssh.sh
 - **Resilience** - No single point of failure
 - **Security** - End-to-end encrypted P2P connections
 
+### **SECTOR G1 opportunities (ASTROBOT)**
+
+The **g1_opportunities.py** script (triggered by the SECTOR key in `NOSTR.UMAP.refresh.sh`) fetches Ğchange offers around a sector’s center and uses **question.py** (Ollama) to identify value-creation opportunities. The result is:
+
+- **Saved** to `~/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${rlat}_${rlon}/_${slat}_${slon}/g1_opportunities.md`
+- **Emailed** to the captain via **mailjet.sh** (subject: "G1 opportunities SECTOR _slat_slon")
+- **Published** as a NOSTR kind 30023 article on the **SECTOR’s Nostr identity** (tag `t: G1opportunities`, identifier `sector-G1opportunities-${sector}-${TODATE}`)
+
+Diffusion (mailjet + kind 30023) runs only when this station is the **closest** to the sector (`is_closest_station`). The trigger is in **NOSTR.UMAP.refresh.sh** (not UPLANET.refresh.sh) because SECTORs are defined and iterated there, and G1 opportunities are SECTOR-scoped content on the same Nostr identity and captain logic.
+
 ### **File Structure**
 ```
 ~/.zen/tmp/flashmem/

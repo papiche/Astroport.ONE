@@ -1456,13 +1456,86 @@ send_nostr_events() {
 ################################################################################
 # Sector Management Functions
 ################################################################################
+#
+# Why trigger G1 opportunities (ASTROBOT SECTOR) here and not in UPLANET.refresh.sh?
+# - SECTORs are defined and iterated only in NOSTR.UMAP.refresh.sh (process_sectors).
+# - UPLANET.refresh.sh only calls NOSTR.UMAP.refresh.sh once; it does not iterate
+#   SECTORs. The SECTOR list is built from UMAP processing (SECTORS+= in process_umap_messages).
+# - G1 opportunities are SECTOR-scoped content: same geographic entity (0.1° zone),
+#   same Nostr identity (SECTOR key), same captain logic (is_closest_station).
+# - Diffusion (mailjet to captain, kind 30023 on SECTOR identity) belongs in the same
+#   pipeline as the sector journal and manifest. So the trigger stays in NOSTR.UMAP.refresh.sh.
 
 process_sectors() {
     local UNIQUE_SECTORS=($(echo "${SECTORS[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
 
     for sector in ${UNIQUE_SECTORS[@]}; do
         create_sector_journal "$sector"
+        # ASTROBOT SECTOR: G1 value opportunities (Ğchange + question.py)
+        local G1_OPP_RESULT=""
+        if [[ -x "${MY_PATH}/../ASTROBOT/SECTOR.sh" ]]; then
+            G1_OPP_RESULT=$("${MY_PATH}/../ASTROBOT/SECTOR.sh" "$sector" 2>/dev/null) || true
+            diffuse_sector_g1_opportunities "$sector" "$G1_OPP_RESULT"
+        fi
     done
+}
+
+# Diffuse G1 opportunities result: save to sector path, email captain (mailjet), publish kind 30023 on SECTOR Nostr identity.
+# Only runs if this station is closest to the sector (captain).
+diffuse_sector_g1_opportunities() {
+    local sector=$1
+    local g1_result=$2
+    [[ -z "$g1_result" ]] && return 0
+
+    local slat=$(echo "${sector}" | cut -d'_' -f2)
+    local slon=$(echo "${sector}" | cut -d'_' -f3)
+    local rlat=$(echo "${slat}" | cut -d'.' -f1)
+    local rlon=$(echo "${slon}" | cut -d'.' -f1)
+    local sectorpath="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${rlat}_${rlon}/_${slat}_${slon}"
+    local zone_lat="${slat}0"
+    local zone_lon="${slon}0"
+
+    if ! is_closest_station "$zone_lat" "$zone_lon" 2>/dev/null; then
+        return 0
+    fi
+
+    mkdir -p "$sectorpath"
+    echo "$g1_result" > "${sectorpath}/g1_opportunities.md"
+
+    # Notify captain by email (mailjet)
+    if [[ -n "${CAPTAINEMAIL:-}" && -x "${MY_PATH}/../tools/mailjet.sh" ]]; then
+        local mailjet_msg=$(mktemp)
+        echo "<h2>G1 value opportunities – SECTOR ${sector}</h2><p>Location: ${slat}, ${slon}</p><pre>$(echo "$g1_result" | sed 's/</\&lt;/g;s/>/\&gt;/g')</pre>" > "$mailjet_msg"
+        "${MY_PATH}/../tools/mailjet.sh" "${CAPTAINEMAIL}" "$mailjet_msg" "G1 opportunities SECTOR ${sector}" 2>/dev/null || true
+        rm -f "$mailjet_msg"
+    fi
+
+    # Publish blog article (kind 30023) on SECTOR Nostr identity
+    local SECTORNSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${sector}" "${UPLANETNAME}${sector}" -s 2>/dev/null)
+    [[ -z "$SECTORNSEC" ]] && return 0
+
+    local g1_title="G1 opportunities - ${sector}"
+    local g1_content
+    g1_content=$(format_content_as_markdown "$g1_result" "$g1_title" "SECTOR" "$sector" "")
+    local d_tag="sector-G1opportunities-${sector}-${TODATE}"
+    local published_at=$(date +%s)
+    local sector_lat=$(echo "scale=1; $slat + 0.05" | bc -l 2>/dev/null || echo "${slat}")
+    local sector_lon=$(echo "scale=1; $slon + 0.05" | bc -l 2>/dev/null || echo "${slon}")
+    local TAGS_JSON="[]"
+    [[ ${#STAGS[@]} -gt 0 ]] && TAGS_JSON=$(printf '%s\n' "${STAGS[@]}" | jq -c . 2>/dev/null | tr '\n' ',' | sed 's/,$//') && TAGS_JSON="[$TAGS_JSON]"
+    local article_tags=$(echo "$TAGS_JSON" | jq '. + [["d", "'"$d_tag"'"], ["title", "'"$g1_title"'"], ["published_at", "'"$published_at"'"], ["latitude", "'"${sector_lat}"'"], ["longitude", "'"${sector_lon}"'"], ["g", "'"${slat},${slon}"'"], ["application", "UPlanet"], ["t", "UPlanet"], ["t", "SECTOR"], ["t", "G1opportunities"]]' 2>/dev/null)
+    [[ -z "$article_tags" ]] && return 0
+
+    local temp_keyfile=$(mktemp)
+    echo "NSEC=$SECTORNSEC;" > "$temp_keyfile"
+    python3 "${MY_PATH}/../tools/nostr_send_note.py" \
+        --keyfile "$temp_keyfile" \
+        --content "$g1_content" \
+        --relays "$myRELAY" \
+        --tags "$article_tags" \
+        --kind 30023 \
+        --json 2>/dev/null && log "✅ Published G1 opportunities article for SECTOR ${sector}" || true
+    rm -f "$temp_keyfile"
 }
 
 # Fonction utilitaire pour compter les likes d'un message Nostr (doit être dans ~/.zen/strfry)
