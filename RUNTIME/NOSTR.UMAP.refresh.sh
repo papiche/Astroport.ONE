@@ -1406,6 +1406,44 @@ send_nostr_events() {
             fi
             
             log "✅ No existing journal found, proceeding with creation for ${LAT},${LON}"
+
+            # UMAP IPFS chain: memorize state changes in DID (current_cid + previous_cid), unpin dropped CID
+            local umap_chain_file="${UMAPPATH}/ipfs_chain.json"
+            local old_umap_current=""
+            local old_umap_previous_to_unpin=""
+            if [[ -f "$umap_chain_file" ]]; then
+                old_umap_current=$(jq -r '.current_cid // ""' "$umap_chain_file" 2>/dev/null)
+                old_umap_previous_to_unpin=$(jq -r '.previous_cid // ""' "$umap_chain_file" 2>/dev/null)
+            fi
+            local UMAPROOT
+            UMAPROOT=$(ipfs add -rwHq "${UMAPPATH}"/* 2>/dev/null | tail -n 1)
+            if [[ -n "$UMAPROOT" ]]; then
+                echo "{\"current_cid\":\"${UMAPROOT}\",\"previous_cid\":\"${old_umap_current}\"}" > "$umap_chain_file"
+                if [[ -n "$old_umap_previous_to_unpin" && "$old_umap_previous_to_unpin" != "$UMAPROOT" ]]; then
+                    ipfs pin rm "$old_umap_previous_to_unpin" 2>/dev/null && log "📌 Unpinned old UMAP CID (dropped from chain): ${old_umap_previous_to_unpin:0:20}..." || true
+                fi
+                # Publish UMAP DID (kind 30800) per NIP-28 - ipfsChain for discovery and chain of information
+                local UMAP_NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
+                local UMAP_HEX_DID=$(${MY_PATH}/../tools/nostr2hex.py "$UMAP_NPUB")
+                if [[ -n "$UMAP_HEX_DID" ]]; then
+                    local umap_did_content
+                    umap_did_content=$(cat << DIDEOF
+{"@context":["https://w3id.org/did/v1"],"id":"did:nostr:${UMAP_HEX_DID}","type":"UMAPGeographicCell","uplanetId":"${UPLANETG1PUB:-}","geographicMetadata":{"coordinates":{"lat":${LAT},"lon":${LON}},"precision":"0.01"},"verificationMethod":[{"id":"did:nostr:${UMAP_HEX_DID}#key-1","type":"Ed25519VerificationKey2020","controller":"did:nostr:${UMAP_HEX_DID}","publicKeyHex":"${UMAP_HEX_DID}"}],"authentication":["did:nostr:${UMAP_HEX_DID}#key-1"],"ipfsChain":{"current_cid":"${UMAPROOT}","previous_cid":"${old_umap_current}"}}
+DIDEOF
+                    )
+                    local umap_did_tags="[[\"d\",\"did\"],[\"g\",\"${LAT},${LON}\"],[\"t\",\"UMAP\"],[\"t\",\"UPlanet\"]]"
+                    local temp_keyfile_umap=$(mktemp)
+                    echo "NSEC=$UMAPNSEC;" > "$temp_keyfile_umap"
+                    python3 "${MY_PATH}/../tools/nostr_send_note.py" \
+                        --keyfile "$temp_keyfile_umap" \
+                        --content "$umap_did_content" \
+                        --relays "$myRELAY" \
+                        --tags "$umap_did_tags" \
+                        --kind 30800 \
+                        --json 2>/dev/null && log "✅ Published UMAP DID (kind 30800) for ${LAT},${LON} (NIP-28)" || true
+                    rm -f "$temp_keyfile_umap"
+                fi
+            fi
             
             # Add kind 30023 specific tags according to NIP-23 and NIP-101 (latitide et longitude sont à précision limité pour garantir une localisation floue)
             # NIP-23: ["d", "identifier"], ["title", "..."], ["published_at", "timestamp"]
@@ -2090,6 +2128,12 @@ save_sector_journal() {
     # Generate sector images (NOSTR-native: returns CIDs, no local storage)
     generate_sector_images "$slat" "$slon" "$sectorpath" "$SECTOR_HEX"
 
+    # Capture old previous_cid before update (CID to unpin after chain roll - no longer in chain)
+    local old_previous_to_unpin=""
+    if [[ -f "${sectorpath}/manifest.json" ]]; then
+        old_previous_to_unpin=$(jq -r '.previous_cid // ""' "${sectorpath}/manifest.json" 2>/dev/null)
+    fi
+
     # Update manifest before IPFS add to include it in the CID
     local temp_manifest="${sectorpath}/manifest.tmp"
     local previous_cid=""
@@ -2100,8 +2144,13 @@ save_sector_journal() {
     # Add to IPFS (no images - they are stored via CIDs in NOSTR profile)
     local SECROOT=$(ipfs add -rwHq $sectorpath/* | tail -n 1)
     
-    # Now update manifest with the new CID
+    # Now update manifest with the new CID (current_cid=SECROOT, previous_cid=old current)
     update_sector_manifest "$sectorpath" "$sector" "$SECROOT"
+    
+    # Unpin CID that dropped out of the 2-link chain (current + previous only)
+    if [[ -n "$old_previous_to_unpin" && "$old_previous_to_unpin" != "$SECROOT" && "$old_previous_to_unpin" != "$previous_cid" ]]; then
+        ipfs pin rm "$old_previous_to_unpin" 2>/dev/null && log "📌 Unpinned old SECTOR CID (dropped from chain): ${old_previous_to_unpin:0:20}..." || true
+    fi
     
     echo "$SECROOT"
 }
@@ -2231,6 +2280,37 @@ update_sector_nostr_profile() {
 
     local SECTORNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}" -s)
     local NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$SECTORNSEC")
+    local SECTOR_NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${SECTOR}" "${UPLANETNAME}${SECTOR}")
+    local SECTOR_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$SECTOR_NPUB")
+    local sector_lat=$(echo "scale=1; $slat + 0.05" | bc -l 2>/dev/null || echo "${slat}")
+    local sector_lon=$(echo "scale=1; $slon + 0.05" | bc -l 2>/dev/null || echo "${slon}")
+
+    # Read manifest for IPFS chain (current_cid + previous_cid) - chain of information for SECTOR
+    local sectorpath="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/SECTORS/_${rlat}_${rlon}/_${slat}_${slon}"
+    local sector_previous_cid=""
+    [[ -f "${sectorpath}/manifest.json" ]] && sector_previous_cid=$(jq -r '.previous_cid // ""' "${sectorpath}/manifest.json" 2>/dev/null)
+    local sector_current_cid="$SECROOT"
+
+    # Publish SECTOR DID (kind 30800) per NIP-28 UMAP extension - enables discovery by coordinates (#g tag)
+    # DID stores current_cid + previous_cid to form an IPFS information chain; older CIDs are unpinned in save_sector_journal
+    if [[ -n "$SECTOR_HEX" ]]; then
+        local sector_did_content
+        sector_did_content=$(cat << DIDEOF
+{"@context":["https://w3id.org/did/v1"],"id":"did:nostr:${SECTOR_HEX}","type":"SECTORGeographicCell","uplanetId":"${UPLANETG1PUB:-}","geographicMetadata":{"coordinates":{"lat":${sector_lat},"lon":${sector_lon}},"precision":"0.1"},"verificationMethod":[{"id":"did:nostr:${SECTOR_HEX}#key-1","type":"Ed25519VerificationKey2020","controller":"did:nostr:${SECTOR_HEX}","publicKeyHex":"${SECTOR_HEX}"}],"authentication":["did:nostr:${SECTOR_HEX}#key-1"],"ipfsChain":{"current_cid":"${sector_current_cid}","previous_cid":"${sector_previous_cid}"}}
+DIDEOF
+        )
+        local sector_did_tags="[[\"d\",\"did\"],[\"g\",\"${sector_lat},${sector_lon}\"],[\"t\",\"SECTOR\"],[\"t\",\"UPlanet\"]]"
+        local temp_keyfile_did=$(mktemp)
+        echo "NSEC=$SECTORNSEC;" > "$temp_keyfile_did"
+        python3 "${MY_PATH}/../tools/nostr_send_note.py" \
+            --keyfile "$temp_keyfile_did" \
+            --content "$sector_did_content" \
+            --relays "$myRELAY" \
+            --tags "$sector_did_tags" \
+            --kind 30800 \
+            --json 2>/dev/null && log "✅ Published SECTOR DID (kind 30800) for ${sector} (NIP-28)" || true
+        rm -f "$temp_keyfile_did"
+    fi
 
     # Use NOSTR-native image CIDs (set by generate_sector_images)
     # Profile picture = zSectorMap.jpg (zoomed road map)
@@ -2277,9 +2357,7 @@ update_sector_nostr_profile() {
         # NIP-23: ["d", "identifier"], ["title", "..."], ["published_at", "timestamp"]
         # NIP-101: ["latitude", "FLOAT"], ["longitude", "FLOAT"], ["g", "lat,lon"], ["application", "UPlanet"]
         # Calculate sector center coordinates for latitude/longitude tags (center of 0.1° sector)
-        local sector_lat=$(echo "scale=1; $slat + 0.05" | bc -l)
-        local sector_lon=$(echo "scale=1; $slon + 0.05" | bc -l)
-        local article_tags=$(echo "$TAGS_JSON" | jq '. + [["d", "'"$d_tag"'"], ["title", "'"$sector_title"'"], ["published_at", "'"$published_at"'"], ["latitude", "'"${sector_lat}"'"], ["longitude", "'"${sector_lon}"'"], ["g", "'"${slat},${slon}"'"], ["application", "UPlanet"], ["t", "UPlanet"], ["t", "SECTOR"]]')
+        local article_tags=$(echo "$TAGS_JSON" | jq '. + [["d", "'"$d_tag"'"], ["title", "'"$sector_title"'"], ["published_at", "'"$published_at"'"], ["latitude", "'"${sector_lat}"'"], ["longitude", "'"${sector_lon}"'"], ["g", "'"${sector_lat},${sector_lon}"'"], ["application", "UPlanet"], ["t", "UPlanet"], ["t", "SECTOR"]]')
         
         # Create temporary keyfile for nostr_send_note.py (same method as NOSTRCARD.refresh.sh)
         local temp_keyfile=$(mktemp)
@@ -2508,12 +2586,23 @@ save_region_journal() {
     # Generate region images (NOSTR-native: returns CIDs, no local storage)
     generate_region_images "$rlat" "$rlon" "$regionpath" "$REGION_HEX"
 
+    # Capture old previous_cid before update (CID to unpin after chain roll - no longer in chain)
+    local old_previous_to_unpin=""
+    if [[ -f "${regionpath}/manifest.json" ]]; then
+        old_previous_to_unpin=$(jq -r '.previous_cid // ""' "${regionpath}/manifest.json" 2>/dev/null)
+    fi
+
     # Add to IPFS (no images - they are stored via CIDs in NOSTR profile)
     local REGROOT=$(ipfs add -rwHq "$regionpath"/* | tail -n 1)
     log "Published Region ${region} to IPFS: ${REGROOT}"
     
-    # Update manifest with the new CID
+    # Update manifest with the new CID (current_cid=REGROOT, previous_cid=old current)
     update_region_manifest "$regionpath" "$region" "$REGROOT"
+
+    # Unpin CID that dropped out of the 2-link chain (current + previous only)
+    if [[ -n "$old_previous_to_unpin" && "$old_previous_to_unpin" != "$REGROOT" ]]; then
+        ipfs pin rm "$old_previous_to_unpin" 2>/dev/null && log "📌 Unpinned old REGION CID (dropped from chain): ${old_previous_to_unpin:0:20}..." || true
+    fi
 
     # Publish to Nostr
     update_region_nostr_profile "$region" "$content" "$REGROOT"
@@ -2619,6 +2708,37 @@ update_region_nostr_profile() {
     $(${MY_PATH}/../tools/getUMAP_ENV.sh "${rlat}.00" "${rlon}.00" | tail -n 1) ## Get UMAP ENV for REGION = export REGIONHEX...
     local REGSEC=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${region}" "${UPLANETNAME}${region}" -s)
     local NPRIV_HEX=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$REGSEC")
+    local REGION_NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}${region}" "${UPLANETNAME}${region}")
+    local REGION_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$REGION_NPUB")
+    local region_lat=$(echo "scale=1; $rlat + 0.5" | bc -l 2>/dev/null || echo "${rlat}")
+    local region_lon=$(echo "scale=1; $rlon + 0.5" | bc -l 2>/dev/null || echo "${rlon}")
+
+    # Read manifest for IPFS chain (current_cid + previous_cid) - chain of information for REGION
+    local regionpath="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/REGIONS/${region}"
+    local region_previous_cid=""
+    [[ -f "${regionpath}/manifest.json" ]] && region_previous_cid=$(jq -r '.previous_cid // ""' "${regionpath}/manifest.json" 2>/dev/null)
+    local region_current_cid="$REGROOT"
+
+    # Publish REGION DID (kind 30800) per NIP-28 UMAP extension - enables discovery by coordinates (#g tag)
+    # DID stores current_cid + previous_cid to form an IPFS information chain; older CIDs are unpinned in save_region_journal
+    if [[ -n "$REGION_HEX" ]]; then
+        local region_did_content
+        region_did_content=$(cat << DIDEOF
+{"@context":["https://w3id.org/did/v1"],"id":"did:nostr:${REGION_HEX}","type":"REGIONGeographicCell","uplanetId":"${UPLANETG1PUB:-}","geographicMetadata":{"coordinates":{"lat":${region_lat},"lon":${region_lon}},"precision":"1"},"verificationMethod":[{"id":"did:nostr:${REGION_HEX}#key-1","type":"Ed25519VerificationKey2020","controller":"did:nostr:${REGION_HEX}","publicKeyHex":"${REGION_HEX}"}],"authentication":["did:nostr:${REGION_HEX}#key-1"],"ipfsChain":{"current_cid":"${region_current_cid}","previous_cid":"${region_previous_cid}"}}
+DIDEOF
+        )
+        local region_did_tags="[[\"d\",\"did\"],[\"g\",\"${region_lat},${region_lon}\"],[\"t\",\"REGION\"],[\"t\",\"UPlanet\"]]"
+        local temp_keyfile_did=$(mktemp)
+        echo "NSEC=$REGSEC;" > "$temp_keyfile_did"
+        python3 "${MY_PATH}/../tools/nostr_send_note.py" \
+            --keyfile "$temp_keyfile_did" \
+            --content "$region_did_content" \
+            --relays "$myRELAY" \
+            --tags "$region_did_tags" \
+            --kind 30800 \
+            --json 2>/dev/null && log "✅ Published REGION DID (kind 30800) for ${region} (NIP-28)" || true
+        rm -f "$temp_keyfile_did"
+    fi
 
     # Use NOSTR-native image CIDs (set by generate_region_images)
     # Profile picture = zRegionMap.jpg (zoomed road map)
@@ -2666,10 +2786,8 @@ update_region_nostr_profile() {
     # Build article tags according to NIP-23 and NIP-101
     # NIP-23: ["d", "identifier"], ["title", "..."], ["published_at", "timestamp"]
     # NIP-101: ["latitude", "FLOAT"], ["longitude", "FLOAT"], ["g", "lat,lon"], ["application", "UPlanet"]
-    # Calculate region center coordinates for latitude/longitude tags (center of 1° region)
-    local region_lat=$(echo "scale=1; $rlat + 0.5" | bc -l)
-    local region_lon=$(echo "scale=1; $rlon + 0.5" | bc -l)
-    local article_tags=$(echo "$TAGS_JSON" | jq '. + [["d", "'"$d_tag"'"], ["title", "'"$region_title"'"], ["published_at", "'"$published_at"'"], ["latitude", "'"${region_lat}"'"], ["longitude", "'"${region_lon}"'"], ["g", "'"${rlat},${rlon}"'"], ["application", "UPlanet"], ["t", "UPlanet"], ["t", "REGION"]]')
+    # region_lat, region_lon already set at top of function (center of 1° region)
+    local article_tags=$(echo "$TAGS_JSON" | jq '. + [["d", "'"$d_tag"'"], ["title", "'"$region_title"'"], ["published_at", "'"$published_at"'"], ["latitude", "'"${region_lat}"'"], ["longitude", "'"${region_lon}"'"], ["g", "'"${region_lat},${region_lon}"'"], ["application", "UPlanet"], ["t", "UPlanet"], ["t", "REGION"]]')
     
     # Create temporary keyfile for nostr_send_note.py (same method as NOSTRCARD.refresh.sh)
     local temp_keyfile=$(mktemp)
