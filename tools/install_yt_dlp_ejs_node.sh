@@ -85,6 +85,18 @@ if command -v pip3 >/dev/null 2>&1 || command -v pip >/dev/null 2>&1; then
     fi
 fi
 
+# Default YouTube player_client: prefer tv_embedded/tv (no PO token) so formats are available when web JS fails
+if [[ -f "$YT_DLP_CONFIG_FILE" ]] && grep -q -- 'extractor-args.*youtube' "$YT_DLP_CONFIG_FILE" 2>/dev/null; then
+    echo "[install_yt_dlp_ejs_node][$(timestamp)] yt-dlp config already defines youtube extractor-args, leaving it unchanged." >&2
+else
+    {
+        echo ""
+        echo "# YouTube: prefer TV/Android clients (no PO token) when web client has no formats"
+        echo "--extractor-args youtube:player_client=tv_embedded,tv,android,web"
+    } >> "$YT_DLP_CONFIG_FILE"
+    echo "[install_yt_dlp_ejs_node][$(timestamp)] Added default player_client=tv_embedded,tv,android,web." >&2
+fi
+
 # Append PO Token Guide reference to config if not already present
 if [[ -f "$YT_DLP_CONFIG_FILE" ]] && ! grep -q "PO-Token-Guide" "$YT_DLP_CONFIG_FILE" 2>/dev/null; then
     {
