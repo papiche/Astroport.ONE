@@ -85,16 +85,23 @@ if command -v pip3 >/dev/null 2>&1 || command -v pip >/dev/null 2>&1; then
     fi
 fi
 
-# Default YouTube player_client: prefer tv_embedded/tv (no PO token) so formats are available when web JS fails
-if [[ -f "$YT_DLP_CONFIG_FILE" ]] && grep -q -- 'extractor-args.*youtube' "$YT_DLP_CONFIG_FILE" 2>/dev/null; then
-    echo "[install_yt_dlp_ejs_node][$(timestamp)] yt-dlp config already defines youtube extractor-args, leaving it unchanged." >&2
+# Default YouTube player_client: android_vr first (no JS runtime needed, gets full format list), then tv/tv_embedded (no PO token)
+PLAYER_CLIENTS="android_vr,tv_embedded,tv,android,web"
+if [[ -f "$YT_DLP_CONFIG_FILE" ]] && grep -q -- 'player_client=' "$YT_DLP_CONFIG_FILE" 2>/dev/null; then
+    # Update to include android_vr first if missing (fixes "Only images" when Node/EJS fails)
+    if ! grep -q -- 'player_client=android_vr' "$YT_DLP_CONFIG_FILE" 2>/dev/null; then
+        sed -i "s|youtube:player_client=[^ ]*|youtube:player_client=$PLAYER_CLIENTS|" "$YT_DLP_CONFIG_FILE"
+        echo "[install_yt_dlp_ejs_node][$(timestamp)] Updated player_client to $PLAYER_CLIENTS (android_vr first, no JS needed)." >&2
+    else
+        echo "[install_yt_dlp_ejs_node][$(timestamp)] yt-dlp config already has android_vr player_client." >&2
+    fi
 else
     {
         echo ""
-        echo "# YouTube: prefer TV/Android clients (no PO token) when web client has no formats"
-        echo "--extractor-args youtube:player_client=tv_embedded,tv,android,web"
+        echo "# YouTube: android_vr first (no JS runtime), then tv/tv_embedded (no PO token)"
+        echo "--extractor-args youtube:player_client=$PLAYER_CLIENTS"
     } >> "$YT_DLP_CONFIG_FILE"
-    echo "[install_yt_dlp_ejs_node][$(timestamp)] Added default player_client=tv_embedded,tv,android,web." >&2
+    echo "[install_yt_dlp_ejs_node][$(timestamp)] Added default player_client=$PLAYER_CLIENTS." >&2
 fi
 
 # Append PO Token Guide reference to config if not already present
