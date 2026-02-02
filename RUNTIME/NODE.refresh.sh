@@ -26,11 +26,11 @@ echo "## RUNNING NODE.refresh"
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
 ########################################################
-echo "## CLEANING NOSTR & NODE SWARM > 3 DAYS OLD"
+echo "## CLEANING NOSTR & NODE SWARM (UMAP/SECTOR/REGION > 3 days, swarm nodes > 8h offline)"
 find ~/.zen/game/nostr/UMAP* -mtime +3 -type d -exec rm -Rf '{}' \;
 find ~/.zen/game/nostr/SECTOR* -mtime +3 -type d -exec rm -Rf '{}' \;
 find ~/.zen/game/nostr/REGION* -mtime +3 -type d -exec rm -Rf '{}' \;
-find  ~/.zen/tmp/swarm/ -mtime +3 -type d -exec rm -Rf '{}' \;
+find  ~/.zen/tmp/swarm/ -mmin +480 -type d -exec rm -Rf '{}' \;
 rm -Rf ~/.zen/tmp/swarm/${IPFSNODEID-null}
 ########################################################
 echo "## CLEANING DEACTIVATED PROFILES & OLD UMAP MESSAGES (NIP-40)"
