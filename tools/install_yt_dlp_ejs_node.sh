@@ -15,9 +15,18 @@ timestamp() {
 
 echo "[install_yt_dlp_ejs_node][$(timestamp)] Configuring yt-dlp JavaScript runtime (Node + EJS)" >&2
 
-# Ensure Node.js is available (Astroport.ONE/install.sh should have installed it already)
-if ! command -v node >/dev/null 2>&1; then
-    echo "[install_yt_dlp_ejs_node][$(timestamp)] ERROR: Node.js is not available in PATH. Please run Astroport.ONE/install.sh first." >&2
+# Resolve Node.js binary: yt-dlp looks for "node"; on Ubuntu/Debian the package installs "nodejs"
+# Always use explicit path (node:/path/to/binary) so yt-dlp finds the runtime even when run without conda/same PATH
+NODE_RUNTIME=""
+if command -v node >/dev/null 2>&1; then
+    NODE_RUNTIME="node:$(command -v node)"
+    echo "[install_yt_dlp_ejs_node][$(timestamp)] Using Node: $NODE_RUNTIME" >&2
+elif command -v nodejs >/dev/null 2>&1; then
+    NODE_RUNTIME="node:$(command -v nodejs)"
+    echo "[install_yt_dlp_ejs_node][$(timestamp)] Using nodejs (yt-dlp expects 'node'): $NODE_RUNTIME" >&2
+fi
+if [[ -z "$NODE_RUNTIME" ]]; then
+    echo "[install_yt_dlp_ejs_node][$(timestamp)] ERROR: Neither 'node' nor 'nodejs' found in PATH. Install Node.js or run Astroport.ONE/install.sh first." >&2
     exit 1
 fi
 
@@ -32,14 +41,16 @@ YT_DLP_CONFIG_FILE="$YT_DLP_CONFIG_DIR/config"
 
 mkdir -p "$YT_DLP_CONFIG_DIR"
 
-# If a runtime is already configured, do not override it silently
+# Write or update --js-runtimes with explicit path so yt-dlp finds Node regardless of invocation PATH
 if [[ -f "$YT_DLP_CONFIG_FILE" ]] && grep -q -- '--js-runtimes' "$YT_DLP_CONFIG_FILE"; then
-    echo "[install_yt_dlp_ejs_node][$(timestamp)] yt-dlp config already defines --js-runtimes, leaving it unchanged." >&2
+    # Update existing line to current resolved path
+    sed -i "s|^--js-runtimes .*|--js-runtimes $NODE_RUNTIME|" "$YT_DLP_CONFIG_FILE"
+    echo "[install_yt_dlp_ejs_node][$(timestamp)] Updated --js-runtimes to: $NODE_RUNTIME" >&2
 else
     {
         echo ""
         echo "# Enable Node.js as JavaScript runtime for yt-dlp EJS challenges"
-        echo "--js-runtimes node"
+        echo "--js-runtimes $NODE_RUNTIME"
     } >> "$YT_DLP_CONFIG_FILE"
 fi
 
