@@ -1,10 +1,10 @@
 #!/bin/bash
 ########################################################################
 # install_yt_dlp_ejs_node.sh
-# Configure yt-dlp to use Node.js as JavaScript runtime for EJS
-# (YouTube JavaScript challenge solver).
+# Configure yt-dlp to use Deno (preferred) or Node.js as JavaScript runtime for EJS
+# (YouTube JavaScript challenge solver). Deno is recommended by yt-dlp; Node >= 20 required.
 # Optionally install PO Token Provider plugin for YouTube 403 workaround.
-# See https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide
+# See https://github.com/yt-dlp/yt-dlp/wiki/EJS and PO-Token-Guide
 ########################################################################
 
 set -euo pipefail
@@ -13,21 +13,43 @@ timestamp() {
     date '+%Y-%m-%d %H:%M:%S'
 }
 
-echo "[install_yt_dlp_ejs_node][$(timestamp)] Configuring yt-dlp JavaScript runtime (Node + EJS)" >&2
+echo "[install_yt_dlp_ejs_node][$(timestamp)] Configuring yt-dlp JavaScript runtime (Deno preferred, else Node + EJS)" >&2
 
-# Resolve Node.js binary: yt-dlp looks for "node"; on Ubuntu/Debian the package installs "nodejs"
-# Always use explicit path (node:/path/to/binary) so yt-dlp finds the runtime even when run without conda/same PATH
-NODE_RUNTIME=""
-if command -v node >/dev/null 2>&1; then
-    NODE_RUNTIME="node:$(command -v node)"
-    echo "[install_yt_dlp_ejs_node][$(timestamp)] Using Node: $NODE_RUNTIME" >&2
-elif command -v nodejs >/dev/null 2>&1; then
-    NODE_RUNTIME="node:$(command -v nodejs)"
-    echo "[install_yt_dlp_ejs_node][$(timestamp)] Using nodejs (yt-dlp expects 'node'): $NODE_RUNTIME" >&2
+# Resolve JS runtime: prefer Deno (yt-dlp recommended, works with Node 18 kept for TiddlyWiki); else Node >= 20
+JS_RUNTIME=""
+DENO_BIN=""
+if command -v deno >/dev/null 2>&1; then
+    DENO_BIN="$(command -v deno)"
+elif [[ -x "$HOME/.deno/bin/deno" ]]; then
+    DENO_BIN="$HOME/.deno/bin/deno"
 fi
-if [[ -z "$NODE_RUNTIME" ]]; then
-    echo "[install_yt_dlp_ejs_node][$(timestamp)] ERROR: Neither 'node' nor 'nodejs' found in PATH. Install Node.js or run Astroport.ONE/install.sh first." >&2
-    exit 1
+if [[ -n "$DENO_BIN" ]]; then
+    JS_RUNTIME="deno:$DENO_BIN"
+    DENO_VER=$("$DENO_BIN" --version 2>/dev/null | head -1 || true)
+    echo "[install_yt_dlp_ejs_node][$(timestamp)] Using Deno: $JS_RUNTIME ($DENO_VER)" >&2
+else
+    # Fallback to Node: yt-dlp EJS requires Node >= 20 (Node 18 is unsupported)
+    NODE_BIN=""
+    if command -v node >/dev/null 2>&1; then
+        NODE_BIN="$(command -v node)"
+    elif command -v nodejs >/dev/null 2>&1; then
+        NODE_BIN="$(command -v nodejs)"
+    fi
+    if [[ -n "$NODE_BIN" ]]; then
+        NODE_VER=$("$NODE_BIN" --version 2>/dev/null || true)
+        NODE_MAJOR="${NODE_VER#v}"; NODE_MAJOR="${NODE_MAJOR%%.*}"
+        if [[ -n "$NODE_MAJOR" ]] && [[ "$NODE_MAJOR" -ge 20 ]] 2>/dev/null; then
+            JS_RUNTIME="node:$NODE_BIN"
+            echo "[install_yt_dlp_ejs_node][$(timestamp)] Using Node: $JS_RUNTIME ($NODE_VER)" >&2
+        else
+            echo "[install_yt_dlp_ejs_node][$(timestamp)] Node $NODE_VER is unsupported by yt-dlp EJS (need >= 20). Install Deno: ~/.zen/Astroport.ONE/tools/install_deno.sh" >&2
+            echo "[install_yt_dlp_ejs_node][$(timestamp)] Then re-run this script. Node 18 is kept for TiddlyWiki; Deno is used only for yt-dlp." >&2
+            exit 1
+        fi
+    else
+        echo "[install_yt_dlp_ejs_node][$(timestamp)] ERROR: No Deno and no Node. Install Deno: ~/.zen/Astroport.ONE/tools/install_deno.sh" >&2
+        exit 1
+    fi
 fi
 
 # yt-dlp must be present to configure its runtime
@@ -41,16 +63,15 @@ YT_DLP_CONFIG_FILE="$YT_DLP_CONFIG_DIR/config"
 
 mkdir -p "$YT_DLP_CONFIG_DIR"
 
-# Write or update --js-runtimes with explicit path so yt-dlp finds Node regardless of invocation PATH
+# Write or update --js-runtimes with explicit path (Deno or Node)
 if [[ -f "$YT_DLP_CONFIG_FILE" ]] && grep -q -- '--js-runtimes' "$YT_DLP_CONFIG_FILE"; then
-    # Update existing line to current resolved path
-    sed -i "s|^--js-runtimes .*|--js-runtimes $NODE_RUNTIME|" "$YT_DLP_CONFIG_FILE"
-    echo "[install_yt_dlp_ejs_node][$(timestamp)] Updated --js-runtimes to: $NODE_RUNTIME" >&2
+    sed -i "s|^--js-runtimes .*|--js-runtimes $JS_RUNTIME|" "$YT_DLP_CONFIG_FILE"
+    echo "[install_yt_dlp_ejs_node][$(timestamp)] Updated --js-runtimes to: $JS_RUNTIME" >&2
 else
     {
         echo ""
-        echo "# Enable Node.js as JavaScript runtime for yt-dlp EJS challenges"
-        echo "--js-runtimes $NODE_RUNTIME"
+        echo "# JavaScript runtime for yt-dlp EJS (Deno preferred, or Node >= 20)"
+        echo "--js-runtimes $JS_RUNTIME"
     } >> "$YT_DLP_CONFIG_FILE"
 fi
 
@@ -99,6 +120,7 @@ else
     {
         echo ""
         echo "# YouTube: android_vr first (no JS runtime), then tv/tv_embedded (no PO token)"
+        echo "# With --cookies-from-browser, android_vr/android are skipped; if EJS fails, run without cookies for public videos"
         echo "--extractor-args youtube:player_client=$PLAYER_CLIENTS"
     } >> "$YT_DLP_CONFIG_FILE"
     echo "[install_yt_dlp_ejs_node][$(timestamp)] Added default player_client=$PLAYER_CLIENTS." >&2
@@ -113,5 +135,7 @@ if [[ -f "$YT_DLP_CONFIG_FILE" ]] && ! grep -q "PO-Token-Guide" "$YT_DLP_CONFIG_
     } >> "$YT_DLP_CONFIG_FILE"
 fi
 
-echo "[install_yt_dlp_ejs_node][$(timestamp)] yt-dlp EJS configuration completed (Node runtime enabled)." >&2
+echo "[install_yt_dlp_ejs_node][$(timestamp)] yt-dlp EJS configuration completed (runtime: $JS_RUNTIME)." >&2
+echo "[install_yt_dlp_ejs_node][$(timestamp)] If downloads fail with cookies (only images): try without --cookies-from-browser for public videos (android_vr will be used)." >&2
+echo "[install_yt_dlp_ejs_node][$(timestamp)] If EJS fails (Signature/n challenge solving failed): see docs/YT_DLP_EJS.md (Node version, Deno, debug)." >&2
 

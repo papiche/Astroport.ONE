@@ -208,7 +208,11 @@ echo "##INSTALL yt-dlp & SYMLINK youtube-dl ##########################"
 ~/.zen/Astroport.ONE/youtube-dl.sh
 
 ###############################################################
-echo "## CONFIGURE yt-dlp JavaScript runtime (Node + EJS) ############"
+echo "## INSTALL Deno (for yt-dlp EJS when Node < 20) ##################"
+~/.zen/Astroport.ONE/tools/install_deno.sh
+
+###############################################################
+echo "## CONFIGURE yt-dlp JavaScript runtime (Deno or Node + EJS) ######"
 ~/.zen/Astroport.ONE/tools/install_yt_dlp_ejs_node.sh
 
 ###############################################################
