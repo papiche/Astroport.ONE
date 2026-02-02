@@ -39,9 +39,20 @@ else
     {
         echo ""
         echo "# Enable Node.js as JavaScript runtime for yt-dlp EJS challenges"
-        echo "--js-runtimes"
-        echo "node"
+        echo "--js-runtimes node"
     } >> "$YT_DLP_CONFIG_FILE"
+fi
+
+# EJS challenge solver scripts: allow yt-dlp to fetch from GitHub (fixes "Signature solving failed")
+if [[ -f "$YT_DLP_CONFIG_FILE" ]] && grep -q -- '--remote-components' "$YT_DLP_CONFIG_FILE"; then
+    echo "[install_yt_dlp_ejs_node][$(timestamp)] yt-dlp config already defines --remote-components, leaving it unchanged." >&2
+else
+    {
+        echo ""
+        echo "# EJS scripts: download challenge solver from GitHub (required for YouTube)"
+        echo "--remote-components ejs:github"
+    } >> "$YT_DLP_CONFIG_FILE"
+    echo "[install_yt_dlp_ejs_node][$(timestamp)] Added --remote-components ejs:github to config." >&2
 fi
 
 # Optional: install PO Token Provider plugin (recommended for YouTube 403 / GVS)
