@@ -21,6 +21,9 @@ Usage:
     # Check mode (for scripts)
     python nostr_did_client.py check <npub> [relay_urls...]
     
+    # Check-email mode (for make_NOSTRCARD.sh: refuse if email already has DID on NOSTR)
+    python nostr_did_client.py check-email <email> [relay_urls...]
+    
     # List mode (find all DIDs for an author)
     python nostr_did_client.py list --author <npub> --relay <relay_url>
 
@@ -154,7 +157,67 @@ class NostrWebSocketClient:
         except Exception as e:
             print(f"❌ Error querying relay: {e}", file=sys.stderr)
             return None
-    
+
+    def query_did_by_email(self, email: str, timeout: int = READ_TIMEOUT) -> Optional[Dict[str, Any]]:
+        """
+        Query for a DID document by email tag (kind 30800 with #email tag).
+        Used to detect if an email is already activated on NOSTR (another station).
+        """
+        if not self.connected:
+            return None
+
+        try:
+            subscription_id = f"did_email_{int(time.time())}"
+            req_message = json.dumps([
+                "REQ",
+                subscription_id,
+                {
+                    "kinds": [DID_EVENT_KIND],
+                    "#email": [email],
+                    "#d": [DID_TAG_IDENTIFIER],
+                    "limit": 1
+                }
+            ])
+
+            self.ws.send(req_message)
+
+            start_time = time.time()
+            found_event = None
+
+            while time.time() - start_time < timeout:
+                try:
+                    self.ws.settimeout(1.0)
+                    response = self.ws.recv()
+
+                    if response:
+                        data = json.loads(response)
+
+                        if isinstance(data, list) and len(data) > 0:
+                            msg_type = data[0]
+
+                            if msg_type == "EVENT" and len(data) >= 3:
+                                event = data[2]
+                                if event.get("kind") == DID_EVENT_KIND:
+                                    found_event = event
+
+                            elif msg_type == "EOSE":
+                                break
+
+                except websocket.WebSocketTimeoutException:
+                    continue
+                except Exception as e:
+                    print(f"⚠️ Error receiving: {e}", file=sys.stderr)
+                    break
+
+            close_message = json.dumps(["CLOSE", subscription_id])
+            self.ws.send(close_message)
+
+            return found_event
+
+        except Exception as e:
+            print(f"❌ Error querying relay by email: {e}", file=sys.stderr)
+            return None
+
     def fetch_events(self, author_pubkey: str, kind: int, timeout: int = READ_TIMEOUT) -> List[Dict[str, Any]]:
         """Fetch all events from the relay for an author and kind"""
         if not self.connected:
@@ -453,6 +516,48 @@ def fetch_did_from_nostr(author_pubkey: str, relay_url: str, kind: int = DID_EVE
         if client:
             client.close()
 
+def check_email_exists_on_nostr(email: str, relay_urls: List[str] = None) -> bool:
+    """
+    Check if a DID for this email already exists on NOSTR and is active (not deactivated).
+    Used by make_NOSTRCARD.sh to refuse creation when the same email is already
+    activated on another station of the same UPlanet ẐEN.
+    Returns False (allow creation) when:
+    - No DID found for this email, or
+    - DID exists but is deactivated (contractStatus == account_deactivated),
+      i.e. user ran nostr_DESTROY_TW.sh and is restoring on a new station.
+    """
+    if relay_urls is None:
+        relay_urls = DEFAULT_RELAYS
+
+    for relay_url in relay_urls:
+        client = None
+        try:
+            client = NostrWebSocketClient(relay_url)
+            if not client.connect():
+                continue
+            event = client.query_did_by_email(email)
+            if event:
+                content = event.get("content", "")
+                if not content:
+                    return True  # Has event but no content, treat as active (refuse)
+                try:
+                    did_obj = json.loads(content)
+                    contract_status = (did_obj.get("metadata") or {}).get("contractStatus", "")
+                    if (contract_status or "").lower() == "account_deactivated":
+                        # Destroyed account: allow creation (restore after move)
+                        return False
+                except (json.JSONDecodeError, TypeError):
+                    pass
+                return True  # Active DID: refuse
+        except Exception as e:
+            print(f"⚠️ Relay {relay_url}: {e}", file=sys.stderr)
+        finally:
+            if client:
+                client.close()
+
+    return False
+
+
 def list_dids_from_nostr(author_pubkey: str, relay_url: str, kind: int = DID_EVENT_KIND) -> List[Dict[str, Any]]:
     """
     List all DID documents for an author from a relay.
@@ -550,6 +655,13 @@ def main():
     list_parser.add_argument("--relay", required=True, help="Relay URL to query")
     list_parser.add_argument("--kind", type=int, default=DID_EVENT_KIND, help=f"Event kind (default: {DID_EVENT_KIND})")
     list_parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
+
+    # Check-email command (for make_NOSTRCARD.sh: refuse if email already has DID on NOSTR)
+    check_email_parser = subparsers.add_parser('check-email', help='Check if a DID for this email already exists on NOSTR (exit 0 if exists, 1 if not)')
+    check_email_parser.add_argument("email", help="Email address to check")
+    check_email_parser.add_argument("relay_urls", nargs="*", default=DEFAULT_RELAYS,
+                                    help=f"Relay URLs (default: {', '.join(DEFAULT_RELAYS)})")
+    check_email_parser.add_argument("-q", "--quiet", action="store_true", help="Quiet mode (no stderr output)")
     
     args = parser.parse_args()
     
@@ -634,6 +746,16 @@ def main():
             print(json.dumps(dids, indent=2))
         
         sys.exit(0 if dids else 1)
+
+    elif args.command == 'check-email':
+        exists = check_email_exists_on_nostr(
+            args.email,
+            args.relay_urls if args.relay_urls else DEFAULT_RELAYS
+        )
+        if not args.quiet and exists:
+            print(f"⚠️  DID for {args.email} already exists on NOSTR (email already activated on this UPlanet ẐEN)", file=sys.stderr)
+        # Exit 0 = active DID exists (refuse creation), 1 = no active DID (allow creation or restore after destroy)
+        sys.exit(0 if exists else 1)
 
 if __name__ == "__main__":
     main()

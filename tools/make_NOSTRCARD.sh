@@ -96,6 +96,16 @@ mkdir -p ~/.zen/tmp/${MOATS}/
 
 if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
+    ############################################## CHECK DID ON NOSTR (email already activated on another station?)
+    # UPlanet does not allow the same email on 2 stations of the same UPlanet ẐEN
+    if [[ -f "${MY_PATH}/nostr_did_client.py" ]]; then
+        if python3 "${MY_PATH}/nostr_did_client.py" check-email "$EMAIL" -q 2>/dev/null; then
+            echo "❌ REFUSED: ${EMAIL} already has a DID on NOSTR (email already activated on this UPlanet ẐEN)."
+            echo "   Use the existing MULTIPASS or another email."
+            exit 1
+        fi
+    fi
+
     ############################################## PREPARE SALT PEPPER
     if [[ -z "$SALT" ]]; then
         SALT=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w42 | head -n1)
@@ -501,6 +511,19 @@ EOFNOSTR
     ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${EMAIL}.multipass.dunikey \
         set --name "${YOUSER} MULTIPASS" --avatar "$HOME/.zen/game/nostr/${EMAIL}/IPNS.QR.png" \
         --site "$myIPFS/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" -d "UPlanet ${UPLANETG1PUB:0:8} MULTIPASS ($HEX)" &>/dev/null
+
+    ## CHECK DESTINATION WALLET NOT ALREADY CREDITED (refuse double credit)
+    DEST_BALANCE=""
+    if [[ -f "${MY_PATH}/G1check.sh" ]] && [[ -n "$G1PUBNOSTR" ]]; then
+        DEST_BALANCE=$("${MY_PATH}/G1check.sh" "$G1PUBNOSTR" 2>/dev/null | tr -d '[:space:]')
+    fi
+    if [[ -n "$DEST_BALANCE" ]] && [[ "$DEST_BALANCE" =~ ^[0-9]+\.?[0-9]*$ ]]; then
+        if (( $(echo "${DEST_BALANCE} > 0" | bc -l 2>/dev/null || echo 0) )); then
+            echo "❌ REFUSED: Wallet ${G1PUBNOSTR} already has balance ${DEST_BALANCE} Ğ1 (already credited)."
+            echo "   MULTIPASS creation aborted to avoid external Ğ1 entrance (or member account registration)."
+            exit 1
+        fi
+    fi
 
     ## SEND PRIMO TRANSACTION FROM UPLANETNAME_G1 (source primale unique)
     echo "UPlanet ẐEN : Sending PRIMO TX from UPLANETNAME_G1 to MULTIPASS"
