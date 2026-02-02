@@ -24,6 +24,10 @@
 #
 #   # Generate report
 #   power_monitor.sh report my_process_power.csv report.html "My Process" process.log
+#
+#   # Report from 24/7 PowerJoular CSV (last 24h only)
+#   power_monitor.sh report-from-24h <output_html> [title] [log_file] [hostname] [duration]
+#   Uses POWER_24H_CSV (default /var/lib/powerjoular/power_24h.csv) from systemd powerjoular.service
 ########################################################################
 
 set -euo pipefail
@@ -34,6 +38,8 @@ MY_PATH="$(cd "$MY_PATH" && pwd)"
 # Default paths - use /tmp/ to avoid cleanup by 20h12.process.sh
 # Note: 20h12.process.sh cleans ~/.zen/tmp/ during execution
 DEFAULT_CSV="/tmp/power_monitor_$$.csv"
+# 24/7 PowerJoular systemd service CSV (see tools/systemd/powerjoular.service)
+POWER_24H_CSV="${POWER_24H_CSV:-/var/lib/powerjoular/power_24h.csv}"
 
 # Helper function to derive PID file from CSV file
 get_pid_file() {
@@ -298,6 +304,134 @@ generate_report() {
     fi
 }
 
+# Extract last 24 hours from 24/7 PowerJoular CSV into output CSV (PowerJoular format: timestamp,power,cpu_power,gpu_power)
+extract_last_24h() {
+    local source_csv="$1"
+    local output_csv="$2"
+    if [[ -z "$source_csv" ]] || [[ -z "$output_csv" ]]; then
+        log_error "extract_last_24h requires <source_csv> <output_csv>"
+        return 1
+    fi
+    local readable_csv="$source_csv"
+    if [[ ! -r "$source_csv" ]]; then
+        readable_csv="/tmp/power_monitor_24h_source_$$.csv"
+        if ! sudo cp "$source_csv" "$readable_csv" 2>/dev/null; then
+            log_error "Cannot read 24/7 CSV (use sudo to copy): $source_csv"
+            return 1
+        fi
+        trap "rm -f '$readable_csv'" RETURN
+    fi
+    if [[ ! -s "$readable_csv" ]]; then
+        log_error "24/7 CSV is empty: $source_csv"
+        return 1
+    fi
+    python3 - "${readable_csv}" "$output_csv" << 'PYEXTRACT'
+import sys
+from datetime import datetime, timedelta
+
+if len(sys.argv) != 3:
+    sys.exit(1)
+in_path, out_path = sys.argv[1], sys.argv[2]
+cutoff = datetime.now() - timedelta(hours=24)
+out_lines = []
+with open(in_path, 'r') as f:
+    for i, line in enumerate(f):
+        line = line.rstrip('\n')
+        if not line:
+            continue
+        if i == 0 and (line.startswith('timestamp') or line.startswith('date') or not line[0].isdigit()):
+            out_lines.append(line + '\n')
+            continue
+        parts = line.split(',', 1)
+        if len(parts) < 2:
+            continue
+        try:
+            ts = datetime.strptime(parts[0].strip(), '%Y-%m-%d %H:%M:%S')
+        except ValueError:
+            try:
+                ts = datetime.strptime(parts[0].strip(), '%Y-%m-%d %H:%M:%S.%f')
+            except ValueError:
+                continue
+        if ts >= cutoff:
+            out_lines.append(line + '\n')
+with open(out_path, 'w') as out_f:
+    out_f.writelines(out_lines)
+PYEXTRACT
+}
+
+# Generate report from 24/7 CSV (last 24h only). Uses POWER_24H_CSV.
+report_from_24h() {
+    local output_html="$1"
+    local title="${2:-Power Consumption Report - Last 24h}"
+    local log_file="${3:-}"
+    local hostname="${4:-$(hostname -f)}"
+    local duration="${5:-24h}"
+    local source_csv="${POWER_24H_CSV}"
+    if [[ -z "$output_html" ]]; then
+        log_error "Usage: power_monitor.sh report-from-24h <output_html> [title] [log_file] [hostname] [duration]"
+        return 1
+    fi
+    if [[ ! -f "$source_csv" ]]; then
+        log_error "24/7 PowerJoular CSV not found: $source_csv (is powerjoular.service running?)"
+        return 1
+    fi
+    local last24_csv="/tmp/power_monitor_last24h_$$.csv"
+    trap "rm -f '$last24_csv'" RETURN
+    log_info "Extracting last 24h from $source_csv..."
+    if ! extract_last_24h "$source_csv" "$last24_csv"; then
+        return 1
+    fi
+    local line_count=$(wc -l < "$last24_csv" 2>/dev/null || echo "0")
+    if [[ "$line_count" -le 1 ]]; then
+        log_error "Insufficient data in last 24h (only $line_count lines)"
+        return 1
+    fi
+    log_info "Reporting from $line_count samples (last 24h)"
+    generate_report "$last24_csv" "$output_html" "$title" "$log_file" "$hostname" "$duration"
+}
+
+# Trim 24/7 PowerJoular CSV to last 24h only (saves disk space). Stops powerjoular.service, overwrites CSV, restarts.
+trim_24h_csv() {
+    local source_csv="${1:-$POWER_24H_CSV}"
+    if [[ -z "$source_csv" ]]; then
+        log_error "Usage: power_monitor.sh trim-24h-csv [csv_path]"
+        return 1
+    fi
+    if [[ ! -f "$source_csv" ]] && ! sudo test -f "$source_csv" 2>/dev/null; then
+        log_error "24/7 CSV not found: $source_csv"
+        return 1
+    fi
+    local trimmed_csv="/tmp/power_monitor_trimmed_$$.csv"
+    trap "rm -f '$trimmed_csv'" RETURN
+    log_info "Trimming 24/7 CSV to last 24h (to save disk space)..."
+    if ! extract_last_24h "$source_csv" "$trimmed_csv"; then
+        return 1
+    fi
+    local line_count=$(wc -l < "$trimmed_csv" 2>/dev/null || echo "0")
+    if [[ "$line_count" -le 1 ]]; then
+        log_error "Insufficient data to trim (only $line_count lines in last 24h)"
+        return 1
+    fi
+    log_info "Stopping powerjoular.service to replace CSV..."
+    if ! sudo systemctl stop powerjoular.service 2>/dev/null; then
+        log_error "Failed to stop powerjoular.service (sudo systemctl stop powerjoular)"
+        return 1
+    fi
+    sleep 1
+    if ! sudo cp "$trimmed_csv" "$source_csv"; then
+        log_error "Failed to overwrite $source_csv with trimmed data"
+        sudo systemctl start powerjoular.service 2>/dev/null || true
+        return 1
+    fi
+    log_info "Starting powerjoular.service..."
+    if ! sudo systemctl start powerjoular.service; then
+        log_error "Failed to start powerjoular.service"
+        return 1
+    fi
+    log_info "Trimmed 24/7 CSV to last 24h ($line_count lines). Service restarted."
+    return 0
+}
+
 # Main command dispatcher
 main() {
     local command="${1:-help}"
@@ -323,6 +457,18 @@ main() {
             shift
             generate_report "$@"
             ;;
+        report-from-24h)
+            if [[ $# -lt 2 ]]; then
+                log_error "Usage: power_monitor.sh report-from-24h <output_html> [title] [log_file] [hostname] [duration]"
+                return 1
+            fi
+            shift
+            report_from_24h "$@"
+            ;;
+        trim-24h-csv)
+            shift
+            trim_24h_csv "$@"
+            ;;
         help|--help|-h)
             cat << EOF
 Power Monitor - Generic power consumption monitoring wrapper
@@ -345,6 +491,14 @@ Commands:
     
   report <csv_file> <output_html> [title] [log_file] [hostname] [duration]
     Generate HTML report with power consumption graph.
+    
+  report-from-24h <output_html> [title] [log_file] [hostname] [duration]
+    Generate report from 24/7 PowerJoular CSV (last 24h). Uses POWER_24H_CSV
+    (default /var/lib/powerjoular/power_24h.csv). Requires powerjoular.service.
+    
+  trim-24h-csv [csv_path]
+    Trim 24/7 CSV to last 24h only (saves disk). Stops powerjoular.service,
+    overwrites CSV, restarts. Call after report-from-24h in 20h12. Uses POWER_24H_CSV if omitted.
 
 Examples:
   # Start monitoring with default paths

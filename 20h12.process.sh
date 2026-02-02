@@ -34,28 +34,10 @@ echo "20H12 (♥‿‿♥) 🌐 /ipns/$IPFSNODEID 🤓 $CAPTAINEMAIL $(hostname 
 # espeak "Ding" > /dev/null 2>&1
 
 ########################################################################
-## POWER CONSUMPTION MONITORING - Start PowerJoular measurement
+## POWER CONSUMPTION - 24/7 PowerJoular (systemd powerjoular.service)
 ########################################################################
-# Use /tmp/ to avoid cleanup by this script (which cleans ~/.zen/tmp/)
-POWERJOULAR_CSV="/tmp/20h12_power_consumption.csv"
-POWERJOULAR_GRAPH="/tmp/20h12_power_graph.png"
-
-# Start PowerJoular monitoring using generic power_monitor.sh
-# PID file is automatically derived from CSV file
-if [[ -f "${MY_PATH}/tools/power_monitor.sh" ]]; then
-    echo "⚡ Starting power consumption monitoring..."
-    MONITOR_OUTPUT=$("${MY_PATH}/tools/power_monitor.sh" start "$POWERJOULAR_CSV" 2>&1)
-    if [[ $? -eq 0 ]]; then
-        POWERJOULAR_PID=$(echo "$MONITOR_OUTPUT" | head -1)
-        echo "⚡ Power monitoring started (PID: $POWERJOULAR_PID)"
-    else
-        echo "⚠️ Failed to start power monitoring: $MONITOR_OUTPUT"
-        POWERJOULAR_CSV=""
-    fi
-else
-    echo "⚠️ power_monitor.sh not available, skipping power consumption monitoring"
-    POWERJOULAR_CSV=""
-fi
+# Report uses last 24h from /var/lib/powerjoular/power_24h.csv (no start/stop in this script)
+POWER_24H_CSV="${POWER_24H_CSV:-/var/lib/powerjoular/power_24h.csv}"
 
 ########################################################################
 ## SOLAR TIME CALIBRATION - Recalibrate cron for DST changes
@@ -446,34 +428,29 @@ echo "TOTAL DURATION ${hours} hours ${minutes} minutes ${seconds} seconds"
 echo "20H12 (♥‿‿♥) Execution time was $dur seconds."
 
 ########################################################################
-## POWER CONSUMPTION MONITORING - Stop PowerJoular and generate report
+## POWER CONSUMPTION REPORT - Last 24h from 24/7 PowerJoular (powerjoular.service)
 ########################################################################
-# Use /tmp/ to avoid cleanup by this script (which cleans ~/.zen/tmp/)
 POWER_REPORT_HTML="/tmp/20h12_power_report.html"
 
-if [[ -n "$POWERJOULAR_CSV" ]] && [[ -f "${MY_PATH}/tools/power_monitor.sh" ]]; then
-    echo "⚡ Stopping power consumption monitoring..."
-    "${MY_PATH}/tools/power_monitor.sh" stop "$POWERJOULAR_CSV" 2>&1 | tee -a /tmp/20h12.log
-    
-    # Generate power consumption report
-    if [[ -f "$POWERJOULAR_CSV" ]] && [[ -s "$POWERJOULAR_CSV" ]]; then
-        echo "📊 Generating power consumption report..."
-        "${MY_PATH}/tools/power_monitor.sh" report \
-            "$POWERJOULAR_CSV" \
+if [[ -f "${MY_PATH}/tools/power_monitor.sh" ]] && [[ -f "$POWER_24H_CSV" ]] || sudo test -f "$POWER_24H_CSV" 2>/dev/null; then
+    echo "📊 Generating power consumption report (last 24h from 24/7 CSV)..."
+    if "${MY_PATH}/tools/power_monitor.sh" report-from-24h \
             "$POWER_REPORT_HTML" \
-            "20H12 Process Power Consumption" \
+            "20H12 Power Consumption - Last 24h" \
             "/tmp/20h12.log" \
             "$(hostname -f)" \
-            "${hours}h ${minutes}m ${seconds}s" 2>&1 | tee -a /tmp/20h12.log
-        
+            "24h" 2>&1 | tee -a /tmp/20h12.log; then
         if [[ -f "$POWER_REPORT_HTML" ]]; then
             echo "✅ Power consumption report generated: $POWER_REPORT_HTML" >> /tmp/20h12.log
         fi
+        # Trim 24/7 CSV to last 24h only to avoid filling disk
+        echo "🗜️ Trimming 24/7 power CSV to last 24h..." >> /tmp/20h12.log
+        "${MY_PATH}/tools/power_monitor.sh" trim-24h-csv "$POWER_24H_CSV" 2>&1 | tee -a /tmp/20h12.log || true
     else
-        echo "⚠️ PowerJoular CSV file not found or empty" >> /tmp/20h12.log
+        echo "⚠️ Power report from 24/7 CSV failed or insufficient data" >> /tmp/20h12.log
     fi
 else
-    echo "⚠️ Power monitoring was not started or power_monitor.sh not available" >> /tmp/20h12.log
+    echo "⚠️ 24/7 PowerJoular CSV not found ($POWER_24H_CSV); is powerjoular.service running?" >> /tmp/20h12.log
 fi
 
 ## MAIL LOG : support@qo-op.com ##

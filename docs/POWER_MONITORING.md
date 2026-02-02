@@ -4,6 +4,8 @@
 
 The Power Monitoring system provides a generic, reusable interface for measuring and reporting power consumption of processes using PowerJoular. It can be integrated into any script to track energy usage during execution.
 
+**24/7 mode (recommended for 20H12):** PowerJoular can run as a systemd service (`powerjoular.service`) and write continuously to `/var/lib/powerjoular/power_24h.csv`. The 20H12 process then uses the **last 24 hours** of this CSV to generate the daily power report (full-day consumption). See [24/7 systemd service](#247-systemd-service-powerjoularservice) below.
+
 **Important:** Files are stored in `/tmp/` by default (not `~/.zen/tmp/`) to avoid cleanup by scripts like `20h12.process.sh` which clean `~/.zen/tmp/` during execution. This ensures monitoring data persists throughout script execution.
 
 ## Components
@@ -13,10 +15,12 @@ The Power Monitoring system provides a generic, reusable interface for measuring
 Main script that provides a unified interface for power monitoring operations.
 
 **Commands:**
-- `start [csv_file] [pid_file]` - Start power monitoring
+- `start [csv_file] [pid_file]` - Start power monitoring (one-off)
 - `stop [pid_file]` - Stop power monitoring
 - `status [pid_file]` - Get monitoring status
-- `report <csv_file> <output_html> [title] [log_file] [hostname] [duration]` - Generate HTML report
+- `report <csv_file> <output_html> [title] [log_file] [hostname] [duration]` - Generate HTML report from a CSV
+- `report-from-24h <output_html> [title] [log_file] [hostname] [duration]` - Generate report from last 24h of 24/7 CSV (uses `POWER_24H_CSV`, default `/var/lib/powerjoular/power_24h.csv`)
+- `trim-24h-csv [csv_path]` - Trim 24/7 CSV to last 24h only (stops powerjoular.service, overwrites CSV, restarts). Call after report-from-24h in 20H12 to avoid filling disk.
 
 ### 2. `tools/generate_powerjoular_graph.py` - Graph Generator
 
@@ -25,6 +29,16 @@ Python script that generates power consumption graphs from CSV data using matplo
 ### 3. `tools/generate_power_report.sh` - HTML Report Generator
 
 Generates comprehensive HTML reports with embedded graphs and statistics. Generic version that accepts a custom report title.
+
+### 4. 24/7 systemd service (`powerjoular.service`)
+
+Installed by `tools/install_powerjoular.sh` from `tools/systemd/powerjoular.service`. Runs PowerJoular continuously and appends to `/var/lib/powerjoular/power_24h.csv`. The 20H12 script uses this file to report **full-day** power consumption (last 24h).
+
+To avoid filling disk, **20H12 trims the CSV to last 24h** after generating the report (`power_monitor.sh trim-24h-csv`): it stops the service, overwrites the CSV with only the last 24h of data, then restarts the service.
+
+- **Enable/start:** `sudo systemctl enable --now powerjoular`
+- **Status:** `sudo systemctl status powerjoular`
+- **CSV path:** `/var/lib/powerjoular/power_24h.csv` (override with env `POWER_24H_CSV`)
 
 ## Usage
 
@@ -331,26 +345,27 @@ Generates HTML report with power consumption graph.
 
 ### In 20h12.process.sh
 
-The `20h12.process.sh` script demonstrates full integration:
+The `20h12.process.sh` script uses the **24/7 PowerJoular service** to report **full-day** (last 24h) power consumption. No start/stop in the script; the systemd service writes continuously to `/var/lib/powerjoular/power_24h.csv`.
 
 ```bash
-# Start monitoring (PID file auto-derived)
-# Use /tmp/ to avoid cleanup by 20h12.process.sh which cleans ~/.zen/tmp/
-POWER_CSV="/tmp/20h12_power_consumption.csv"
-"${MY_PATH}/tools/power_monitor.sh" start "$POWER_CSV"
+# 24/7 CSV from powerjoular.service (install: tools/install_powerjoular.sh)
+POWER_24H_CSV="${POWER_24H_CSV:-/var/lib/powerjoular/power_24h.csv}"
 
 # ... script execution ...
 
-# Stop and generate report (using CSV file, PID file auto-detected)
-"${MY_PATH}/tools/power_monitor.sh" stop "$POWER_CSV"
-"${MY_PATH}/tools/power_monitor.sh" report \
-    "$POWER_CSV" \
+# Generate report from last 24h of 24/7 CSV (full-day consumption)
+"${MY_PATH}/tools/power_monitor.sh" report-from-24h \
     "/tmp/20h12_power_report.html" \
-    "20H12 Process Power Consumption" \
+    "20H12 Power Consumption - Last 24h" \
     "/tmp/20h12.log" \
     "$(hostname -f)" \
-    "${hours}h ${minutes}m ${seconds}s"
+    "24h"
+
+# Trim 24/7 CSV to last 24h only to avoid filling disk (stops service, overwrites CSV, restarts)
+"${MY_PATH}/tools/power_monitor.sh" trim-24h-csv "$POWER_24H_CSV"
 ```
+
+For one-off monitoring (start/stop within a script), use `start`, `stop`, and `report` as in the [Custom Scripts](#in-custom-scripts) example below.
 
 ### In Custom Scripts
 

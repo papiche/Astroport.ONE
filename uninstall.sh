@@ -61,6 +61,7 @@ sudo rm -f /etc/systemd/system/ipfs-exporter.service
 sudo rm -f /etc/systemd/system/nextcloud-exporter.service
 sudo rm -f /etc/systemd/system/astroport-exporter.service
 sudo rm -f /etc/systemd/system/comfyui.service
+sudo rm -f /etc/systemd/system/powerjoular.service
 
 sudo systemctl daemon-reload
 

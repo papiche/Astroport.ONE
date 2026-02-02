@@ -1,0 +1,20 @@
+[Unit]
+Description=PowerJoular 24/7 power consumption monitoring (RAPL)
+Documentation=https://github.com/papiche/powerjoular
+After=multi-user.target
+
+[Service]
+Type=simple
+# PowerJoular requires root for RAPL access on Linux 5.10+
+ExecStartPre=/bin/mkdir -p /var/lib/powerjoular
+ExecStartPre=/bin/chown root:root /var/lib/powerjoular
+ExecStart=/usr/bin/powerjoular -f /var/lib/powerjoular/power_24h.csv -t
+# CSV is created with root umask (typically 644). If not readable by captain, 20h12 uses sudo to copy.
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=powerjoular
+
+[Install]
+WantedBy=multi-user.target

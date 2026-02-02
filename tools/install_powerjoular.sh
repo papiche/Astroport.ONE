@@ -106,12 +106,21 @@ echo "[install_powerjoular][$(timestamp)] Installing PowerJoular binary..." >&2
 sudo cp "$POWERJOULAR_BINARY" /usr/bin/powerjoular
 sudo chmod +x /usr/bin/powerjoular
 
-# Install systemd service if available
-if [[ -f "systemd/powerjoular.service" ]]; then
-    echo "[install_powerjoular][$(timestamp)] Installing systemd service..." >&2
-    sudo cp "systemd/powerjoular.service" /etc/systemd/system/powerjoular.service
+# Install systemd service for 24/7 monitoring (prefer Astroport.ONE's service with /var/lib/powerjoular/power_24h.csv)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+POWERJOULAR_SVC=""
+if [[ -f "${SCRIPT_DIR}/systemd/powerjoular.service" ]]; then
+    POWERJOULAR_SVC="${SCRIPT_DIR}/systemd/powerjoular.service"
+elif [[ -f "systemd/powerjoular.service" ]]; then
+    POWERJOULAR_SVC="systemd/powerjoular.service"
+fi
+if [[ -n "$POWERJOULAR_SVC" ]]; then
+    echo "[install_powerjoular][$(timestamp)] Installing systemd service (24/7 power monitoring)..." >&2
+    sudo cp "$POWERJOULAR_SVC" /etc/systemd/system/powerjoular.service
     sudo systemctl daemon-reload
-    echo "[install_powerjoular][$(timestamp)] PowerJoular systemd service installed" >&2
+    sudo systemctl enable powerjoular.service
+    sudo systemctl start powerjoular.service 2>/dev/null || true
+    echo "[install_powerjoular][$(timestamp)] PowerJoular systemd service installed and enabled (CSV: /var/lib/powerjoular/power_24h.csv)" >&2
 fi
 
 # Verify installation
