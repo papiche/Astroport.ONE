@@ -80,18 +80,19 @@ mkdir -p ~/.zen/tmp
 ########################################################################
 # SUDO permissions
 ########################################################################
-## USED FOR RAMDISK (video live streaming)
-## USED FOR SYSTEM UPGRADE
-## USED FOR "systemctl restart ipfs"
-# for bin in fail2ban-client mount umount apt-get apt systemctl ufw docker hdparm powerjoular kill; do
-# binpath=$(which $bin)
-# [[ -x $binpath ]] \
-#     && echo "$USER ALL=(ALL) NOPASSWD:$binpath" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/'$bin) \
-#    && echo "SUDOERS RIGHT SET FOR : $binpath" \
-#    || echo "ERROR MISSING $bin"
-# done
-### MODIFIYING /etc/sudoers ###
+## Full sudo for captain (NOPASSWD:ALL)
 echo "$USER ALL=(ALL) NOPASSWD:ALL" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/captain')
+## Explicit NOPASSWD for services used by Astroport (ramdisk, systemctl, powerjoular, etc.)
+for bin in fail2ban-client mount umount apt-get apt systemctl ufw docker hdparm powerjoular kill; do
+  binpath=$(which $bin 2>/dev/null)
+  if [[ -n "$binpath" ]] && [[ -x "$binpath" ]]; then
+    echo "$USER ALL=(ALL) NOPASSWD:$binpath" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/'"$bin") \
+      && echo "SUDOERS RIGHT SET FOR : $binpath" \
+      || echo "ERROR setting sudoers for $bin"
+  else
+    echo "SKIP (not found or not executable): $bin"
+  fi
+done
 
 echo "#############################################"
 echo "# ADDING <<<Astroport & REC >>>  DESKTOP SHORTCUT"
