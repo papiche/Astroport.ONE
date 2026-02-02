@@ -1138,7 +1138,7 @@ class OREUMAPManager:
             
             # Create basic ORE contract structure
             contract_data = {
-                "@context": ["https://www.w3.org/2018/credentials/v1", "https://uplanet.org/contexts/ore/v1"],
+                "@context": ["https://www.w3.org/2018/credentials/v1", "https://u.copylaradio.com/contexts/ore/v1"],
                 "type": ["VerifiableCredential", "EcologicalRealObligation"],
                 "credentialSubject": {
                     "id": f"did:nostr:{self.uplanet_g1_pub[:8]}",

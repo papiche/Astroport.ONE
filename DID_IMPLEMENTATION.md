@@ -279,6 +279,16 @@ Pour les DIDs UMAP avec obligations environnementales :
 - **Récompenses économiques** : Historique des Ẑen distribués depuis ASSETS
 - **Métadonnées ORE** : Détails des contrats et obligations environnementales
 
+#### 7. **Contextes JSON-LD et API Astroport (u)**
+
+Les documents DID et les Verifiable Credentials référencent des contextes JSON-LD servis par l’API Astroport (domaine **u** de la constellation, par défaut `https://u.(station.)copylaradio.com`) :
+
+- **Document DID** (ex. `dashboard.DID.manager.sh`) : le `@context` inclut `https://u.copylaradio.com/ns/v1`, qui définit les termes UPlanet (CooperativeWallet, IPFSGateway, CooperativeDID, etc.). Ce contexte est servi en **GET** `https://u.copylaradio.com/ns/v1` (ou `/ns/v1/`) par `UPassport/54321.py` (`Content-Type: application/ld+json`).
+
+- **Verifiable Credential** (Oracle / WoTx2, kind 30503) : le `@context` inclut `https://u.copylaradio.com/credentials/v1`, qui définit les termes UPlanet (UPlanetLicense, license, licenseName, holderNpub, attestationsCount, status). Ce contexte est servi en **GET** `https://u.copylaradio.com/credentials/v1` (ou `/credentials/v1/`) par `UPassport/54321.py` (`Content-Type: application/ld+json`).
+
+Chaque constellation et ses stations exposent par défaut les passerelles IPFS, le relais Nostr et l’API u (ipfs, relay, u sur host.domain.tld).
+
 ## 5. Flux Opérationnel : De la Création à l'Utilisation
 
 ### 5.1. Génération de l'Identité (make_NOSTRCARD.sh)

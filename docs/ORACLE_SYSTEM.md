@@ -466,7 +466,7 @@ Le système **WoTx2** permet la création de **maîtrises auto-proclamées** qui
   "content": "{
     \"@context\": [
       \"https://www.w3.org/2018/credentials/v1\",
-      \"https://uplanet.org/credentials/v1\"
+      \"https://u.copylaradio.com/credentials/v1\"
     ],
     \"type\": [\"VerifiableCredential\", \"UPlanetLicense\"],
     \"id\": \"urn:uuid:...\",
@@ -556,6 +556,8 @@ L'API `/api/permit/define` nécessite une authentification NIP-42 pour :
 ## 7. API Reference
 
 ### 7.1. Endpoints Principaux
+
+**Contextes JSON-LD** : L’API (54321.py) sert les contextes référencés dans les credentials et les DIDs : **GET** `/credentials/v1` et **GET** `/credentials/v1/` (termes UPlanetLicense, license, licenseName, holderNpub, attestationsCount, status) ; **GET** `/ns/v1` et **GET** `/ns/v1/` (termes DID : CooperativeWallet, IPFSGateway, etc.). Réponses en `application/ld+json`. Voir [DID_IMPLEMENTATION.md](../DID_IMPLEMENTATION.md) (section « Contextes JSON-LD et API Astroport (u) »).
 
 #### GET `/api/permit/definitions`
 Récupère toutes les définitions de permits (30500)

@@ -1222,7 +1222,7 @@ create_coop_did() {
   "@context": [
     "https://www.w3.org/ns/did/v1",
     "https://w3id.org/security/v1",
-    "https://uplanet.org/ns/v1"
+    "https://u.copylaradio.com/ns/v1"
   ],
   "id": "did:nostr:${hex}",
   "alsoKnownAs": [

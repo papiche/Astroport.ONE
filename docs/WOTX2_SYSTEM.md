@@ -475,7 +475,7 @@ Les compétences ne sont **pas définies à la création** mais **révélées pr
   "content": "{
     \"@context\": [
       \"https://www.w3.org/2018/credentials/v1\",
-      \"https://uplanet.org/credentials/v1\"
+      \"https://u.copylaradio.com/credentials/v1\"
     ],
     \"type\": [\"VerifiableCredential\", \"UPlanetLicense\"],
     \"id\": \"urn:uuid:...\",
@@ -598,6 +598,10 @@ Le système WoTx2 s'intègre avec `oracle_system.py` pour :
 - Validation des demandes et attestations
 - Émission de credentials W3C
 - Progression automatique (via `ORACLE.refresh.sh`)
+
+### 6.5. Contextes JSON-LD (API u)
+
+Le `@context` des Verifiable Credentials (kind 30503) inclut `https://u.copylaradio.com/credentials/v1`. Ce contexte est servi par l’API (54321.py) : **GET** `/credentials/v1` et **GET** `/credentials/v1/` retournent le document JSON-LD (`Content-Type: application/ld+json`) qui définit les termes UPlanet (UPlanetLicense, license, licenseName, holderNpub, attestationsCount, status). L’API sert également **GET** `/ns/v1` (et `/ns/v1/`) pour le contexte des documents DID (CooperativeWallet, IPFSGateway, etc.). Voir [DID_IMPLEMENTATION.md](../DID_IMPLEMENTATION.md) (section « Contextes JSON-LD et API Astroport (u) »).
 
 ---
 
