@@ -420,7 +420,7 @@ while true; do
 
                     ## Notify captain about new station only if data is fresh (avoid stale IPNS cache)
                     ## Otherwise we would send "New Station Online!" then immediately "Station Offline" for cached old data
-                    if [[ ${IS_NEW_STATION} -eq 1 && -s ~/.zen/tmp/swarm/${znod}/_MySwarm.moats && ${DIFF_SECONDS} -le $(( 6 * 60 * 60 )) && -n "${CAPTAINEMAIL}" ]]; then
+                    if [[ ${IS_NEW_STATION} -eq 1 && -s ~/.zen/tmp/swarm/${znod}/_MySwarm.moats && ${DIFF_SECONDS} -le $(( 1 * 60 * 60 )) && -n "${CAPTAINEMAIL}" ]]; then
                         ZNOD_HOSTNAME=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.hostname // "unknown"')
                         ZNOD_IP=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.myIP // "unknown"')
                         ZNOD_CAPTAIN=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.captain // "unknown"')
@@ -429,18 +429,18 @@ while true; do
                         rm -f ~/.zen/tmp/station_online_${znod:0:8}.html
                     fi
                     ## Clear offline-sent marker when station is back online (fresh data) so future OFFLINE can be alerted
-                    if [[ ${DIFF_SECONDS} -le $(( 8 * 60 * 60 )) && -f ~/.zen/tmp/station_offline_sent/${znod} ]]; then
+                    if [[ ${DIFF_SECONDS} -le $(( 1 * 60 * 60 )) && -f ~/.zen/tmp/station_offline_sent/${znod} ]]; then
                         rm -f ~/.zen/tmp/station_offline_sent/${znod}
                     fi
 
-                    if [ ${DIFF_SECONDS} -gt $(( 8 * 60 * 60 )) ]; then
-                        echo "STATION IS STUCK... FOR MORE THAN 8 HOURS... REMOVING ${znod} FROM SWARM"
+                    if [ ${DIFF_SECONDS} -gt $(( 1 * 60 * 60 )) ]; then
+                        echo "STATION IS STUCK... BALISE IPNS NOT UPDATED FOR MORE THAN 1 HOUR... REMOVING ${znod} FROM SWARM"
                         ## Notify captain only once per offline event (avoid repeating OFFLINE alert every cycle)
                         mkdir -p ~/.zen/tmp/station_offline_sent
                         if [[ -n "${CAPTAINEMAIL}" && ! -f ~/.zen/tmp/station_offline_sent/${znod} ]]; then
                             ZNOD_HOSTNAME=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.hostname // "unknown"')
                             ZNOD_IP=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.myIP // "unknown"')
-                            echo "<html><body><h2>Station OFFLINE Alert</h2><p>Station <b>${ZNOD_HOSTNAME}</b> (...${znod: -8}) at IP ${ZNOD_IP} has been offline for more than 8 hours and has been removed from swarm.</p><p>Last seen: $(cat ~/.zen/tmp/swarm/${znod}/_MySwarm.staom 2>/dev/null)</p></body></html>" > ~/.zen/tmp/station_offline_${znod:0:8}.html
+                            echo "<html><body><h2>Station OFFLINE Alert</h2><p>Station <b>${ZNOD_HOSTNAME}</b> (...${znod: -8}) at IP ${ZNOD_IP} has not updated its IPNS balise for more than 1 hour and has been removed from swarm. Services (DRAGON_p2p, /IA/*.me.sh) are no longer shared.</p><p>Last seen: $(cat ~/.zen/tmp/swarm/${znod}/_MySwarm.staom 2>/dev/null)</p></body></html>" > ~/.zen/tmp/station_offline_${znod:0:8}.html
                             ${MY_PATH}/tools/mailjet.sh --expire 24h "${CAPTAINEMAIL}" ~/.zen/tmp/station_offline_${znod:0:8}.html "Station OFFLINE: ${ZNOD_HOSTNAME}"
                             rm -f ~/.zen/tmp/station_offline_${znod:0:8}.html
                             touch ~/.zen/tmp/station_offline_sent/${znod}
