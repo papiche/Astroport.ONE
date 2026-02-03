@@ -200,7 +200,7 @@ L'éditeur collaboratif ajoute automatiquement ce tag si le paramètre `umap` es
 
 | Vote | Emoji | Tag vote |
 |------|-------|----------|
-| Approuver | ✅, +, 👍, ❤️, ♥️ (comptés comme like par le script et l'index) | `approve` |
+| Approuver | ✅, +, 👍, ❤️, ♥️, 🤙 (comptés comme like par le script et l'index) | `approve` |
 | Rejeter | ❌ ou - ou 👎 | `reject` |
 | Fork | 🔀 | `fork` |
 
@@ -337,7 +337,7 @@ Les documents collaboratifs suivent un processus de validation démocratique :
   Utilisateur publie                 Communauté vote              UMAP officialise
   ─────────────────                 ─────────────────            ─────────────────
   kind 30023                        kind 7 (likes)               kind 30023
-  signé par USER                    ✅ +1, 👍, ❤️                signé par UMAP
+  signé par USER                    ✅ +, 👍, ❤️, 🤙             signé par UMAP
         │                                 │                            │
         └─────────────────────────────────┴────────────────────────────┘
                                           │

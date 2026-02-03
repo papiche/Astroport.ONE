@@ -1589,7 +1589,7 @@ count_likes() {
       "kinds": [7],
       "#e": ["'"$event_id"'"],
       "limit": 100
-    }' 2>/dev/null | jq -r 'select(.content == "+" or .content == "👍" or .content == "❤️" or .content == "♥️" or .content == "✅") | .id' | wc -l
+    }' 2>/dev/null | jq -r 'select(.content == "+" or .content == "👍" or .content == "❤️" or .content == "♥️" or .content == "✅" or .content == "🤙") | .id' | wc -l
     cd - >/dev/null
 }
 
