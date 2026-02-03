@@ -32,12 +32,12 @@ if [[ -f "$GRAPH_FILE" ]]; then
     GRAPH_BASE64=$(base64 -w 0 "$GRAPH_FILE" 2>/dev/null || base64 "$GRAPH_FILE" 2>/dev/null || echo "")
 fi
 
-# Extract power statistics from CSV if available
+# Extract power statistics from CSV if available (skip header line: NR>1)
 POWER_STATS=""
 if [[ -f "$CSV_FILE" ]] && command -v awk >/dev/null 2>&1; then
-    avg_power=$(awk -F',' 'NR>0 {sum+=$2; count++} END {if(count>0) printf "%.2f", sum/count; else print "0"}' "$CSV_FILE" 2>/dev/null || echo "0")
-    max_power=$(awk -F',' 'NR>0 {if($2>max || NR==1) max=$2} END {printf "%.2f", max}' "$CSV_FILE" 2>/dev/null || echo "0")
-    min_power=$(awk -F',' 'NR>0 {if($2<min || NR==1) min=$2} END {printf "%.2f", min}' "$CSV_FILE" 2>/dev/null || echo "0")
+    avg_power=$(awk -F',' 'NR>1 {sum+=$2+0; count++} END {if(count>0) printf "%.2f", sum/count; else print "0"}' "$CSV_FILE" 2>/dev/null || echo "0")
+    max_power=$(awk -F',' 'NR>1 {v=$2+0; if(NR==2 || v>max) max=v} END {if(NR>1) printf "%.2f", max+0; else print "0"}' "$CSV_FILE" 2>/dev/null || echo "0")
+    min_power=$(awk -F',' 'NR>1 {v=$2+0; if(NR==2 || v<min) min=v} END {if(NR>1) printf "%.2f", min+0; else print "0"}' "$CSV_FILE" 2>/dev/null || echo "0")
     
     if [[ "$avg_power" != "0" ]]; then
         POWER_STATS="<div style='background: #e8f4fd; padding: 15px; border-radius: 5px; margin: 15px 0;'>
@@ -138,8 +138,8 @@ cat > "$OUTPUT_HTML" << EOF
             <img src='data:image/png;base64,$GRAPH_BASE64' alt='Power Consumption Graph' />
         </div>")
         $([ -f "$LOG_FILE" ] && [[ "$LOG_FILE" != "/dev/null" ]] && echo "<div class='log-section'>
-            <h3>📋 Execution Log</h3>
-            <pre>$(head -500 "$LOG_FILE" | sed 's/</\&lt;/g; s/>/\&gt;/g')</pre>
+            <h3>📋 Execution Log (20h12.log - full)</h3>
+            <pre>$(sed 's/</\&lt;/g; s/>/\&gt;/g' "$LOG_FILE")</pre>
         </div>")
     </div>
     <div class="footer">
