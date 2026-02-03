@@ -689,14 +689,19 @@ ID: $project_id
         
         # Publish as kind 30023 (long-form content) with crowdfunding tags
         # The "p" tag references the Bien itself as the recipient of +ZEN reactions
+        # nostr_send_note.py requires --keyfile (not --nsec); use temp keyfile
+        local temp_keyfile=$(mktemp)
+        echo "NSEC=$bien_nsec;" > "$temp_keyfile"
         python3 "${MY_PATH}/nostr_send_note.py" \
-            --nsec "$bien_nsec" \
+            --keyfile "$temp_keyfile" \
             --kind 30023 \
             --content "$content" \
             --tags "[[\"d\", \"crowdfunding-$project_id\"], [\"title\", \"🌳 Crowdfunding: $project_name\"], [\"t\", \"crowdfunding\"], [\"t\", \"UPlanet\"], [\"t\", \"commons\"], [\"t\", \"foret-jardin\"], [\"g\", \"$lat,$lon\"], [\"project-id\", \"$project_id\"], [\"i\", \"g1pub:$bien_g1pub\"]]" \
             2>/dev/null
+        local py_ret=$?
+        rm -f "$temp_keyfile"
         
-        if [[ $? -eq 0 ]]; then
+        if [[ $py_ret -eq 0 ]]; then
             echo -e "${GREEN}✅ Campagne publiée sur Nostr depuis le Bien !${NC}"
             echo -e "${CYAN}   Contributions +ZEN: tag [\"p\", \"$bien_hex\"]${NC}"
             
@@ -710,15 +715,18 @@ ID: $project_id
         echo -e "${YELLOW}⚠️  Clés du Bien non disponibles, utilisation du compte capitaine...${NC}"
         if [[ -f "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr" ]]; then
             source "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
-            
+            local temp_keyfile=$(mktemp)
+            echo "NSEC=$NSEC;" > "$temp_keyfile"
             python3 "${MY_PATH}/nostr_send_note.py" \
-                --nsec "$NSEC" \
+                --keyfile "$temp_keyfile" \
                 --kind 30023 \
                 --content "$content" \
                 --tags "[[\"d\", \"crowdfunding-$project_id\"], [\"title\", \"🌳 Crowdfunding: $project_name\"], [\"t\", \"crowdfunding\"], [\"t\", \"UPlanet\"], [\"t\", \"commons\"], [\"t\", \"foret-jardin\"], [\"g\", \"$lat,$lon\"], [\"project-id\", \"$project_id\"]]" \
                 2>/dev/null
+            local py_ret=$?
+            rm -f "$temp_keyfile"
             
-            if [[ $? -eq 0 ]]; then
+            if [[ $py_ret -eq 0 ]]; then
                 echo -e "${GREEN}✅ Campagne publiée sur Nostr (compte capitaine)${NC}"
             fi
         fi

@@ -515,11 +515,11 @@ fi
 
 ### Campagne "Don Ğ1"
 
-**Condition :** `UPLANETNAME_G1 < G1_LOW_THRESHOLD (100 Ğ1 par défaut)`
+**Condition :** `UPLANETNAME_G1 < G1_LOW_THRESHOLD (10000 Ğ1 par défaut)`
 
 ```bash
-# Vérification automatique
-G1_LOW_THRESHOLD=100
+# Vérification automatique (seuil 10000 Ğ1 ≈ capacité ~100k Ẑen)
+G1_LOW_THRESHOLD=10000
 if [[ $(echo "$g1_balance < $G1_LOW_THRESHOLD" | bc -l) -eq 1 ]]; then
     # Lance campagne don Ğ1
 fi

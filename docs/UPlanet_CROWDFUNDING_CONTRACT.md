@@ -138,7 +138,7 @@ The UPlanet crowdfunding system relies on three predefined cooperative wallets:
                     │     UPLANETNAME_G1          │
                     │  (Ğ1 Donation Wallet)       │
                     │  • Receives Ğ1 donations    │
-                    │  • Low threshold: 100 Ğ1    │
+                    │  • Low threshold: 10000 Ğ1 │
                     └──────────────┬──────────────┘
                                    │
           ┌────────────────────────┼────────────────────────┐
@@ -433,7 +433,7 @@ ID: {PROJECT_ID}
 
 ### 6.2 Kind 30904: Crowdfunding Metadata (JSON)
 
-Structured JSON event for machine parsing by `crowdfunding.html`.
+Structured JSON event for machine parsing by `crowdfunding.html`. **Note:** The CLI `CROWDFUNDING.sh` currently publishes only kind 30023 (long-form campaign document). Kind 30904 is specified here for optional use by the web UI or relay indexing; implementations may derive 30904 from project data or publish it separately.
 
 **Tags**:
 ```json
@@ -528,6 +528,10 @@ Structured JSON event for machine parsing by `crowdfunding.html`.
 | `+{N}` | Send N Ẑen (e.g., `+50` = 50 Ẑen) |
 
 **Processing by 7.sh (relay.writePolicy.plugin/filter/)**:
+
+- **Routing order:** Check `vote-assets` first, then `crowdfunding`, so vote events are not processed as contributions.
+- **No redundancy:** `CROWDFUNDING.sh contribute` and `CROWDFUNDING.sh vote` only record state; 7.sh is the single place for balance validation and (when applicable) blockchain transfer.
+
 ```bash
 #!/bin/bash
 # 7.sh - Kind 7 Reaction Filter for Crowdfunding
@@ -539,47 +543,49 @@ CONTENT=$(echo "$EVENT_JSON" | jq -r '.content')
 TAGS=$(echo "$EVENT_JSON" | jq '.tags')
 SENDER_PUBKEY=$(echo "$EVENT_JSON" | jq -r '.pubkey')
 
-# Extract amount from content (+50 → 50, + → 1)
+# Extract amount from content (+50 → 50, + → 1) in Ẑen
 AMOUNT=$(echo "$CONTENT" | sed 's/+//')
 [[ -z "$AMOUNT" || "$AMOUNT" == "$CONTENT" ]] && AMOUNT=1
 
-# Check for crowdfunding contribution tag
-IS_CROWDFUNDING=$(echo "$TAGS" | jq 'any(.[0] == "t" and .[1] == "crowdfunding")')
+# --- 1. VOTE-ASSETS (check first to avoid misrouting) ---
+IS_VOTE=$(echo "$TAGS" | jq 'any(.[0] == "t" and .[1] == "vote-assets")')
+if [[ "$IS_VOTE" == "true" ]]; then
+    PROJECT_ID=$(echo "$TAGS" | jq -r '.[] | select(.[0] == "project-id") | .[1]')
+    VOTER_G1PUB=$(~/.zen/Astroport.ONE/tools/nostr_did_client.py get "$SENDER_PUBKEY" | jq -r '.g1pub // empty')
+    VOTER_BALANCE=$(~/.zen/Astroport.ONE/tools/G1check.sh "${VOTER_G1PUB}:ZEN" 2>/dev/null)
+    if [[ -n "$PROJECT_ID" && -n "$VOTER_G1PUB" ]] && [[ $(echo "$VOTER_BALANCE >= $AMOUNT" | bc -l) -eq 1 ]]; then
+        # Optional: deduct vote from voter (requires VOTER_KEYFILE path from relay config/DID)
+        ~/.zen/Astroport.ONE/tools/CROWDFUNDING.sh vote "$PROJECT_ID" "$SENDER_PUBKEY" "$AMOUNT"
+    fi
+    exit 0
+fi
 
+# --- 2. CROWDFUNDING CONTRIBUTION ---
+IS_CROWDFUNDING=$(echo "$TAGS" | jq 'any(.[0] == "t" and .[1] == "crowdfunding")')
 if [[ "$IS_CROWDFUNDING" == "true" ]]; then
-    # Extract project info
     PROJECT_ID=$(echo "$TAGS" | jq -r '.[] | select(.[0] == "project-id") | .[1]')
     BIEN_HEX=$(echo "$TAGS" | jq -r '.[] | select(.[0] == "p") | .[1]')
-    
-    # Get sender email from DID (kind 30800)
     SENDER_EMAIL=$(~/.zen/Astroport.ONE/tools/nostr_did_client.py get "$SENDER_PUBKEY" | jq -r '.email // empty')
-    
-    if [[ -n "$PROJECT_ID" && -n "$SENDER_EMAIL" ]]; then
-        # 1. Validate sender has sufficient ZEN balance
-        SENDER_G1PUB=$(~/.zen/Astroport.ONE/tools/nostr_did_client.py get "$SENDER_PUBKEY" | jq -r '.g1pub // empty')
-        SENDER_BALANCE=$(~/.zen/Astroport.ONE/tools/G1check.sh "${SENDER_G1PUB}:ZEN" 2>/dev/null)
-        
-        if [[ $(echo "$SENDER_BALANCE >= $AMOUNT" | bc -l) -eq 1 ]]; then
-            # 2. Get Bien wallet from project
-            PROJECT_DIR="$HOME/.zen/game/crowdfunding/$PROJECT_ID"
-            if [[ -f "$PROJECT_DIR/bien.pubkeys" ]]; then
-                source "$PROJECT_DIR/bien.pubkeys"
-                
-                # 3. Execute transfer: Sender → Bien wallet
-                ~/.zen/Astroport.ONE/tools/PAYforSURE.sh \
-                    "$SENDER_G1PUB" \
-                    "$BIEN_G1PUB" \
-                    "$AMOUNT" \
-                    "CF:$PROJECT_ID:$SENDER_EMAIL"
-                
-                # 4. Record contribution
-                ~/.zen/Astroport.ONE/tools/CROWDFUNDING.sh contribute \
-                    "$PROJECT_ID" "$SENDER_EMAIL" "$AMOUNT" "ZEN"
+    SENDER_G1PUB=$(~/.zen/Astroport.ONE/tools/nostr_did_client.py get "$SENDER_PUBKEY" | jq -r '.g1pub // empty')
+    SENDER_BALANCE=$(~/.zen/Astroport.ONE/tools/G1check.sh "${SENDER_G1PUB}:ZEN" 2>/dev/null)
+
+    if [[ -n "$PROJECT_ID" && -n "$SENDER_EMAIL" && -n "$SENDER_G1PUB" ]] && [[ $(echo "$SENDER_BALANCE >= $AMOUNT" | bc -l) -eq 1 ]]; then
+        PROJECT_DIR="$HOME/.zen/game/crowdfunding/$PROJECT_ID"
+        if [[ -f "$PROJECT_DIR/bien.pubkeys" ]]; then
+            source "$PROJECT_DIR/bien.pubkeys"
+            # PAYforSURE.sh: keyfile amount_g1 recipient_g1pub comment (amount in Ğ1: Ẑen/10)
+            AMOUNT_G1=$(echo "scale=2; $AMOUNT / 10" | bc -l)
+            SENDER_KEYFILE="$HOME/.zen/game/nostr/${SENDER_EMAIL}/.secret.dunikey"
+            if [[ -f "$SENDER_KEYFILE" ]]; then
+                ~/.zen/Astroport.ONE/tools/PAYforSURE.sh "$SENDER_KEYFILE" "$AMOUNT_G1" "$BIEN_G1PUB" "CF:$PROJECT_ID:$SENDER_EMAIL"
             fi
+            ~/.zen/Astroport.ONE/tools/CROWDFUNDING.sh contribute "$PROJECT_ID" "$SENDER_EMAIL" "$AMOUNT" "ZEN"
         fi
     fi
 fi
 ```
+
+**7.sh conformity (NIP-101/relay.writePolicy.plugin/filter/7.sh):** The filter must (1) evaluate vote-assets before crowdfunding; (2) use PAYforSURE only with keyfile path and amount in Ğ1; (3) call `CROWDFUNDING.sh contribute` / `CROWDFUNDING.sh vote` only after validation. `CROWDFUNDING.sh` does not perform balance checks or PAYforSURE when invoked by 7.sh—no redundancy.
 
 ### 6.4 Kind 7: Vote Reaction (ASSETS Usage)
 
@@ -610,25 +616,7 @@ Members vote on ASSETS usage via Nostr kind 7 reactions with the `vote-assets` t
 | `+` | 1 Ẑen vote |
 | `+{N}` | N Ẑen votes (e.g., `+5` = 5 Ẑen) |
 
-**Processing (in 7.sh)**:
-```bash
-# Check for vote-assets tag
-IS_VOTE=$(echo "$TAGS" | jq 'any(.[0] == "t" and .[1] == "vote-assets")')
-
-if [[ "$IS_VOTE" == "true" ]]; then
-    PROJECT_ID=$(echo "$TAGS" | jq -r '.[] | select(.[0] == "project-id") | .[1]')
-    VOTER_PUBKEY="$SENDER_PUBKEY"
-    
-    # Validate voter is a SOCIÉTAIRE (has ZEN balance)
-    VOTER_BALANCE=$(~/.zen/Astroport.ONE/tools/G1check.sh "${VOTER_G1PUB}:ZEN" 2>/dev/null)
-    
-    if [[ $(echo "$VOTER_BALANCE >= $AMOUNT" | bc -l) -eq 1 ]]; then
-        # Route to vote handler (deducts from voter balance)
-        ~/.zen/Astroport.ONE/tools/CROWDFUNDING.sh vote \
-            "$PROJECT_ID" "$VOTER_PUBKEY" "$AMOUNT"
-    fi
-fi
-```
+**Processing:** Handled in the same 7.sh filter (see §6.3); vote-assets branch is evaluated first. Vote recording is done by `CROWDFUNDING.sh vote`; optional deduction from voter balance requires relay access to voter keyfile (same pattern as contribution).
 
 **Validation Rules**:
 - Each pubkey can only vote once per project
