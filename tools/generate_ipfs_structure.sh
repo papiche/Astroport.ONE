@@ -167,16 +167,18 @@ elif [ -f "$SOURCE_DIR/manifest.json" ] && [ -f "$SOURCE_DIR/manifest-1.json" ];
     manifest1_mtime=$(stat -c %Y "$SOURCE_DIR/manifest-1.json" 2>/dev/null || echo "0")
     
     if [ "$manifest_mtime" -gt "$manifest1_mtime" ]; then
-        # manifest.json est plus récent (nouveau fichier uploadé via API)
-        # Sauvegarder manifest.json en manifest-1.json pour la prochaine fois
-        cp "$SOURCE_DIR/manifest.json" "$SOURCE_DIR/manifest-1.json"
-        log_message "   💾 manifest.json est plus récent - sauvegardé en manifest-1.json"
+        # manifest.json is newer (e.g. file uploaded via API may have written a sparse manifest).
+        # Do NOT overwrite manifest-1.json with it (would lose uDRIVE content).
+        # Restore manifest.json from manifest-1.json to keep full uDRIVE; new file(s) on disk
+        # will be detected by quick_check_for_changes and merged into the rebuilt manifest.
+        cp "$SOURCE_DIR/manifest-1.json" "$SOURCE_DIR/manifest.json"
+        log_message "   💾 manifest.json restored from manifest-1.json (preserve full uDRIVE, new upload will be merged)"
         
-        # Récupérer le CID depuis manifest.json (le plus récent)
         if command -v jq >/dev/null 2>&1; then
-            EXISTING_FINAL_CID=$(jq -r '.final_cid // ""' "$SOURCE_DIR/manifest.json" 2>/dev/null)
+            EXISTING_FINAL_CID=$(jq -r '.final_cid // ""' "$SOURCE_DIR/manifest-1.json" 2>/dev/null)
             if [ -n "$EXISTING_FINAL_CID" ] && [ "$EXISTING_FINAL_CID" != "null" ] && [ "$EXISTING_FINAL_CID" != "" ]; then
-                log_message "   💾 CID existant sauvegardé depuis manifest.json: $EXISTING_FINAL_CID"
+                log_message "   💾 Existing CID from manifest-1.json: $EXISTING_FINAL_CID"
+                update_final_cid_in_manifest "$EXISTING_FINAL_CID"
             else
                 EXISTING_FINAL_CID=""
             fi
