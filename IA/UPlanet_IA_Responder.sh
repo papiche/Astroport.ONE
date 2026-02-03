@@ -1365,6 +1365,17 @@ Détails: ${ERROR_LINE}"
                 ExtraTags=$(cat "$temp_json")
                 echo "Generated ExtraTags: $ExtraTags" >&2
                 rm -f "$temp_json"
+                
+                # Save search result markdown to user uDRIVE/Documents when available
+                if [[ -n "$USER_UDRIVE_PATH" ]]; then
+                    mkdir -p "$USER_UDRIVE_PATH/Documents"
+                    SAFE_QUERY=$(echo "$cleaned_text" | sed 's/[^a-zA-Z0-9_-]/_/g' | head -c 50)
+                    [[ -z "$SAFE_QUERY" ]] && SAFE_QUERY="search"
+                    MD_FILE="$USER_UDRIVE_PATH/Documents/search_${SAFE_QUERY}_$(date +%Y%m%d_%H%M%S).md"
+                    if echo "$KeyANSWER" > "$MD_FILE" 2>/dev/null; then
+                        echo "Saved search result to uDRIVE/Documents: $MD_FILE" >&2
+                    fi
+                fi
                 fi  # End of successful Perplexica search processing
             ######################################################### #image
             elif [[ "${TAGS[image]}" == true ]]; then
@@ -1492,22 +1503,44 @@ Détails: ${ERROR_LINE}"
                 else
                     echo "Processing YouTube video: $video_url" >&2
                     
-                    # Get user email for video downloads
+                    YOUTUBE_OUTPUT_DIR=""
                     if [[ "$KNAME" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
                         echo "Using player email for video download: $KNAME" >&2
-                        # Pass player email to process_youtube.sh (supports all yt-dlp platforms)
-                        if [[ "$message_text" =~ \#mp3 ]]; then
-                            $MY_PATH/process_youtube.sh --debug "$video_url" "mp3" "$KNAME" >/dev/null 2>&1
-                        else
-                            $MY_PATH/process_youtube.sh --debug "$video_url" "mp4" "$KNAME" >/dev/null 2>&1
+                        USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
+                        if [[ -n "$USER_UDRIVE_PATH" ]]; then
+                            if [[ "$message_text" =~ \#mp3 ]]; then
+                                mkdir -p "$USER_UDRIVE_PATH/Music"
+                                YOUTUBE_OUTPUT_DIR="$USER_UDRIVE_PATH/Music"
+                                echo "Using user uDRIVE/Music for YouTube output: $YOUTUBE_OUTPUT_DIR" >&2
+                            else
+                                mkdir -p "$USER_UDRIVE_PATH/Videos"
+                                YOUTUBE_OUTPUT_DIR="$USER_UDRIVE_PATH/Videos"
+                                echo "Using user uDRIVE/Videos for YouTube output: $YOUTUBE_OUTPUT_DIR" >&2
+                            fi
                         fi
                     else
                         echo "Warning: Using default location for video download" >&2
-                        # Enable debug mode for video processing (supports all yt-dlp platforms)
+                    fi
+                    
+                    if [[ -n "$YOUTUBE_OUTPUT_DIR" ]]; then
                         if [[ "$message_text" =~ \#mp3 ]]; then
-                            $MY_PATH/process_youtube.sh --debug "$video_url" "mp3" >/dev/null 2>&1
+                            $MY_PATH/process_youtube.sh --debug --output-dir "$YOUTUBE_OUTPUT_DIR" "$video_url" "mp3" "$KNAME" >/dev/null 2>&1
                         else
-                            $MY_PATH/process_youtube.sh --debug "$video_url" "mp4" >/dev/null 2>&1
+                            $MY_PATH/process_youtube.sh --debug --output-dir "$YOUTUBE_OUTPUT_DIR" "$video_url" "mp4" "$KNAME" >/dev/null 2>&1
+                        fi
+                    else
+                        if [[ "$KNAME" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+                            if [[ "$message_text" =~ \#mp3 ]]; then
+                                $MY_PATH/process_youtube.sh --debug "$video_url" "mp3" "$KNAME" >/dev/null 2>&1
+                            else
+                                $MY_PATH/process_youtube.sh --debug "$video_url" "mp4" "$KNAME" >/dev/null 2>&1
+                            fi
+                        else
+                            if [[ "$message_text" =~ \#mp3 ]]; then
+                                $MY_PATH/process_youtube.sh --debug "$video_url" "mp3" >/dev/null 2>&1
+                            else
+                                $MY_PATH/process_youtube.sh --debug "$video_url" "mp4" >/dev/null 2>&1
+                            fi
                         fi
                     fi
                     
