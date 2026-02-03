@@ -1512,6 +1512,8 @@ Détails: ${ERROR_LINE}"
                     fi
                     
                     echo "Video processing completed. NOSTR notification sent by process_youtube.sh" >&2
+                    # Set reply content so Nostr event is valid (process_youtube.sh already sent the real result)
+                    KeyANSWER="Video processing completed. Check the notification sent by process_youtube for the link."
                 fi
             ######################################################### #plantnet
             elif [[ "${TAGS[plantnet]}" == true ]]; then
