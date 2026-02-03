@@ -1084,7 +1084,8 @@ if [ -f "$SOURCE_DIR/manifest-1.json" ] && command -v jq >/dev/null 2>&1; then
     recovered_count=0
     # Iterate over flat file (one pass, no jq per entry) or fallback to jq -c '.files[]?'
     if [ -n "$MANIFEST_FLAT_FILE" ] && [ -f "$MANIFEST_FLAT_FILE" ]; then
-        while IFS=$'\t' read -r old_path old_last_modified old_ipfs_link old_size old_type; do
+        # Flat file uses \x1f (US) delimiter (same as cache build above), not tab
+        while IFS=$'\x1f' read -r old_path old_last_modified old_ipfs_link old_size old_type; do
             [ -z "$old_path" ] && continue
             [ -z "$old_ipfs_link" ] && continue
             disk_file="$SOURCE_DIR/$old_path"
