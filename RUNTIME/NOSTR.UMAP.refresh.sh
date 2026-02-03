@@ -357,6 +357,9 @@ process_umap_messages() {
     else
         log "⏭️  No messages to publish for UMAP (${LAT}, ${LON})"
     fi
+
+    # Republish collaborative documents (commons) that reached the like threshold (≥3)
+    republish_umap_commons "$hex"
 }
 
 process_umap_friends() {
@@ -1578,6 +1581,7 @@ diffuse_sector_g1_opportunities() {
 
 # Fonction utilitaire pour compter les likes d'un message Nostr (doit être dans ~/.zen/strfry)
 # Note: Limited to 100 likes max for performance (sufficient for threshold checks)
+# Includes approve-style reactions: +, 👍, ❤️, ♥️, ✅ (for commons and journals)
 count_likes() {
     local event_id="$1"
     cd ~/.zen/strfry
@@ -1585,8 +1589,97 @@ count_likes() {
       "kinds": [7],
       "#e": ["'"$event_id"'"],
       "limit": 100
-    }' 2>/dev/null | jq -r 'select(.content == "+" or .content == "👍" or .content == "❤️" or .content == "♥️") | .id' | wc -l
+    }' 2>/dev/null | jq -r 'select(.content == "+" or .content == "👍" or .content == "❤️" or .content == "♥️" or .content == "✅") | .id' | wc -l
     cd - >/dev/null
+}
+
+# Republish collaborative documents (commons) that reached the like threshold as UMAP-signed kind 30023.
+# Queries kind 30023 with #p=UMAP that have tag t=collaborative or t=commons; counts kind 7 likes;
+# if likes >= COMMONS_LIKE_THRESHOLD (3), republishes with UMAP key and tags original-author, original-event, likes, adopted-at.
+republish_umap_commons() {
+    local UMAP_HEX="$1"
+    local COMMONS_LIKE_THRESHOLD=3
+    [[ -z "$UMAP_HEX" || -z "$LAT" || -z "$LON" ]] && return 0
+    [[ -z "$myRELAY" ]] && source "$MY_PATH/../tools/my.sh" 2>/dev/null
+    [[ -z "$myRELAY" ]] && return 0
+
+    cd ~/.zen/strfry || return 0
+    local proposals
+    proposals=$(./strfry scan "{\"kinds\": [30023], \"#p\": [\"$UMAP_HEX\"], \"limit\": 50}" 2>/dev/null | jq -c --arg umap "$UMAP_HEX" 'select(.kind == 30023 and .pubkey != $umap and ([.tags[]? | select(.[0] == "t" and (.[1] == "collaborative" or .[1] == "commons"))] | length) > 0)')
+    cd - >/dev/null
+
+    [[ -z "$proposals" ]] && return 0
+
+    local adopted_ids
+    cd ~/.zen/strfry
+    adopted_ids=$(./strfry scan "{\"kinds\": [30023], \"authors\": [\"$UMAP_HEX\"], \"limit\": 100}" 2>/dev/null | jq -r '[.tags[]? | select(.[0] == "original-event") | .[1]] | .[]' 2>/dev/null)
+    cd - >/dev/null
+
+    echo "$proposals" | while read -r proposal; do
+        [[ -z "$proposal" ]] && continue
+        local orig_id orig_pubkey content
+        orig_id=$(echo "$proposal" | jq -r .id)
+        orig_pubkey=$(echo "$proposal" | jq -r .pubkey)
+        content=$(echo "$proposal" | jq -r -c .content)
+        if echo "$adopted_ids" | grep -qFx "$orig_id" 2>/dev/null; then
+            continue
+        fi
+        local likes
+        likes=$(count_likes "$orig_id")
+        [[ -z "$likes" || "$likes" -lt "$COMMONS_LIKE_THRESHOLD" ]] && continue
+
+        local title g_tag version
+        title=$(echo "$proposal" | jq -r '[.tags[]? | select(.[0] == "title") | .[1]] | first // "Commons"')
+        g_tag=$(echo "$proposal" | jq -r '[.tags[]? | select(.[0] == "g") | .[1]] | first // "'"${LAT},${LON}"'"')
+        version=$(echo "$proposal" | jq -r '[.tags[]? | select(.[0] == "version") | .[1]] | first // "1"')
+        local adopted_at d_tag
+        adopted_at=$(date +%s)
+        d_tag="commons-${LAT}-${LON}-${orig_id:0:12}"
+
+        local article_tags
+        article_tags=$(jq -n -c \
+            --arg d "$d_tag" --arg title "$title" --arg g "$g_tag" --arg author "$orig_pubkey" \
+            --arg ver "$version" --arg orig_ev "$orig_id" --arg likes "$likes" --arg adopted "$adopted_at" \
+            --arg lat "$LAT" --arg lon "$LON" \
+            '[
+                ["d", $d],
+                ["title", $title],
+                ["t", "collaborative"],
+                ["t", "UPlanet"],
+                ["t", "commons"],
+                ["g", $g],
+                ["latitude", $lat],
+                ["longitude", $lon],
+                ["author", $author],
+                ["version", $ver],
+                ["original-author", $author],
+                ["original-event", $orig_ev],
+                ["likes", $likes],
+                ["adopted-at", $adopted],
+                ["published_at", $adopted]
+            ]')
+
+        local UMAPNSEC temp_keyfile
+        UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
+        temp_keyfile=$(mktemp)
+        echo "NSEC=$UMAPNSEC;" > "$temp_keyfile"
+
+        local send_result
+        send_result=$(python3 "${MY_PATH}/../tools/nostr_send_note.py" \
+            --keyfile "$temp_keyfile" \
+            --content "$content" \
+            --relays "$myRELAY" \
+            --tags "$article_tags" \
+            --kind 30023 \
+            --json 2>&1)
+        rm -f "$temp_keyfile"
+
+        if echo "$send_result" | jq -e '.event_id' >/dev/null 2>&1; then
+            log "✅ Adopted commons document (original: ${orig_id:0:8}..., likes: $likes) for UMAP ${LAT},${LON}"
+        else
+            log "⚠️ Failed to republish commons ${orig_id:0:8}... for UMAP ${LAT},${LON}: $send_result"
+        fi
+    done
 }
 
 create_aggregate_journal() {

@@ -7,7 +7,7 @@ Le système de Documents Collaboratifs permet aux citoyens d'une UMAP de co-réd
 **Processus de validation :**
 1. Les utilisateurs publient leurs propositions (signées avec leur clé personnelle)
 2. La communauté vote via des likes (kind 7)
-3. Les documents populaires (suffisamment likés) sont **republiés par l'UMAP** pour officialiser la décision collective
+3. Les documents qui atteignent le seuil (≥3 likes) sont **republiés par l'UMAP** via `NOSTR.UMAP.refresh.sh` (fonction `republish_umap_commons`), officialisant la décision collective
 
 ## 🎯 Objectifs
 
@@ -32,9 +32,9 @@ Le système de Documents Collaboratifs permet aux citoyens d'une UMAP de co-réd
 ## 📱 Interface Utilisateur : `collaborative-editor.html`
 
 ### Emplacement
-```
-UPlanet/earth/collaborative-editor.html
-```
+L’éditeur fait partie du projet UPlanet et est servi via IPNS (pas dans le dépôt Astroport.ONE) :
+- Fichier : `UPlanet/earth/collaborative-editor.html` (dépôt UPlanet)
+- URL utilisée dans les templates : `/ipns/copylaradio.com/collaborative-editor.html`
 
 ### Accès
 ```
@@ -200,7 +200,7 @@ L'éditeur collaboratif ajoute automatiquement ce tag si le paramètre `umap` es
 
 | Vote | Emoji | Tag vote |
 |------|-------|----------|
-| Approuver | ✅ ou + ou 👍 | `approve` |
+| Approuver | ✅, +, 👍, ❤️, ♥️ (comptés comme like par le script et l'index) | `approve` |
 | Rejeter | ❌ ou - ou 👎 | `reject` |
 | Fork | 🔀 | `fork` |
 
@@ -262,6 +262,11 @@ sed -i "s|_UMAPNPUB_|${UMAPNPUB}|g" "${UMAPPATH}/index.html"
 | `_MYRELAY_` | URL du relay Nostr | `wss://relay.example.com` |
 | `_MYIPFS_` | URL de la passerelle IPFS | `https://ipfs.example.com` |
 | `_CORACLEURL_` | URL de Coracle | `https://coracle.copylaradio.com` |
+| `_MAPURL_` | URL de la carte UMAP (IPNS) | `https://.../Umap.html?southWestLat=...` |
+| `_SECTOR_` | Identifiant secteur (0.1°) | `_43.6_1.4` |
+| `_REGION_` | Identifiant région (1°) | `_43_1` |
+| `_SECTORURL_` | URL de la page secteur | `https://.../SECTORS/...` |
+| `_REGIONURL_` | URL de la page région | `https://.../REGIONS/...` |
 
 **Chargement dynamique côté client :**
 Les documents collaboratifs sont maintenant chargés dynamiquement via JavaScript dans `umap_index.html`, utilisant les clés UMAP injectées pour filtrer les documents pertinents.
@@ -318,9 +323,9 @@ UMAP agrège et calcule score ORE
 Les documents collaboratifs suivent un processus de validation démocratique :
 1. **Les utilisateurs publient** leurs propositions (signées avec leur propre clé)
 2. **La communauté vote** via des likes (kind 7)
-3. **L'UMAP republie** automatiquement les documents les plus populaires
+3. **L'UMAP republie** automatiquement les documents qui atteignent le seuil
 
-Quand un document atteint un seuil de likes suffisant, `NOSTR.UMAP.refresh.sh` le republie avec la clé de l'UMAP, officialisant ainsi la décision collective.
+À chaque passage de `NOSTR.UMAP.refresh.sh`, la fonction `republish_umap_commons` interroge les kind 30023 qui référencent l'UMAP (tag `p`) et ont le tag `t` = `collaborative` ou `commons`. Pour chaque document non encore adopté, le script compte les réactions kind 7 (+, 👍, ❤️, ♥️, ✅). Si le nombre de likes est ≥ 3, le document est republié avec la clé de l'UMAP et les tags `original-author`, `original-event`, `likes`, `adopted-at`. Les documents déjà adoptés (présence d'un kind 30023 signé UMAP avec tag `original-event` égal à l'id du document) ne sont pas republiés à nouveau.
 
 ### Workflow de Publication UMAP
 
@@ -349,23 +354,23 @@ Quand un document atteint un seuil de likes suffisant, `NOSTR.UMAP.refresh.sh` l
                     (reste proposal)              (UMAP publie)
 ```
 
-### Seuils de Validation
+### Seuil de validation UMAP (commons)
 
 | Niveau | Seuil | Description |
 |--------|-------|-------------|
-| **UMAP** | ≥ 3 likes | Document adopté par l'UMAP locale |
-| **SECTOR** | ≥ 6 likes | Propagé au niveau secteur (0.1°) |
-| **REGION** | ≥ 12 likes | Propagé au niveau région (1°) |
+| **UMAP** | ≥ 3 likes | Document adopté : republié par l'UMAP (kind 30023 signé UMAP, tags adoption) |
 
-### Script de Publication : `nostr_send_note.py`
+La propagation au niveau SECTOR ou REGION pour les documents collaboratifs n'est pas implémentée. Les seuils de likes SECTOR (≥3) et REGION (≥12) dans le même script s'appliquent aux **journaux** (agrégation de messages kind 1 en kind 30023), pas aux commons.
 
-La publication officielle par l'UMAP utilise `nostr_send_note.py` avec le keyfile de l'UMAP :
+### Script de publication : `nostr_send_note.py`
+
+La republication des commons (et la publication des journaux UMAP) utilise `nostr_send_note.py` avec un keyfile temporaire : le script dérive la clé UMAP à la volée via `keygen` et ne crée pas de keyfile persistant. Pour une publication manuelle, un keyfile peut être créé comme ci-dessous.
 
 ```bash
-# Le keyfile UMAP est généré lors de la création de l'UMAP
-UMAP_KEYFILE="~/.zen/game/nostr/UMAP_${LAT}_${LON}/.secret.nostr"
+# Optionnel : keyfile persistant pour publication manuelle
+UMAP_KEYFILE="$HOME/.zen/game/nostr/UMAP_${LAT}_${LON}/.secret.nostr"
 
-# Publication du document officiel
+# Exemple : publication manuelle d'un document adopté
 python3 nostr_send_note.py \
     --keyfile "$UMAP_KEYFILE" \
     --kind 30023 \
@@ -377,7 +382,7 @@ python3 nostr_send_note.py \
         ["t", "commons"],
         ["t", "UPlanet"],
         ["g", "43.60,1.44"],
-        ["original-author", "npub1..."],
+        ["original-author", "<author_hex>"],
         ["original-event", "event_id_original"],
         ["likes", "7"],
         ["adopted-at", "1704931200"]
@@ -386,27 +391,29 @@ python3 nostr_send_note.py \
 
 ### Génération de la clé UMAP
 
-La clé UMAP est générée de manière déterministe à partir des coordonnées :
+La clé UMAP est générée de manière déterministe à partir des coordonnées. Dans `NOSTR.UMAP.refresh.sh`, la clé est dérivée à chaque besoin (journaux, commons, kind 3) et un keyfile temporaire est utilisé pour `nostr_send_note.py` ; aucun keyfile persistant n'est créé par le script.
 
 ```bash
-# Génération initiale (fait une seule fois par NOSTR.UMAP.refresh.sh)
-UMAP_SALT="${UPLANETNAME}${LAT}"
-UMAP_PEPPER="${UPLANETNAME}${LON}"
+# Méthode utilisée dans NOSTR.UMAP.refresh.sh (dérivation à la volée)
+UMAP_NSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
+UMAP_NPUB=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}")
 
-UMAP_NSEC=$(keygen -t nostr "$UMAP_SALT" "$UMAP_PEPPER" -s)
-UMAP_NPUB=$(keygen -t nostr "$UMAP_SALT" "$UMAP_PEPPER")
-
-# Création du keyfile
+# Optionnel : keyfile persistant pour publication manuelle (répertoire UMAP contient en général seulement HEX)
+mkdir -p ~/.zen/game/nostr/UMAP_${LAT}_${LON}
 echo "NSEC=${UMAP_NSEC}; NPUB=${UMAP_NPUB};" > ~/.zen/game/nostr/UMAP_${LAT}_${LON}/.secret.nostr
 ```
 
-### Tags Spéciaux pour Documents Adoptés
+### Tags pour Documents Adoptés
 
-Quand l'UMAP republie un document, elle ajoute des tags spéciaux :
+Quand l'UMAP republie un document (`republish_umap_commons`), l'événement kind 30023 signé UMAP contient notamment :
+
+- **Identifiant :** `d` = `commons-{LAT}-{LON}-{12 premiers caractères de l'id de l'événement original}` (ex. `commons-43.60-1.44-a1b2c3d4e5f6`).
+- **Tags NIP-23 / géo :** `title`, `t` (collaborative, UPlanet, commons), `g`, `latitude`, `longitude`, `author`, `version`, `published_at`.
+- **Tags d'adoption :**
 
 | Tag | Description | Exemple |
 |-----|-------------|---------|
-| `original-author` | Pubkey de l'auteur initial | `npub1abc...` |
+| `original-author` | Clé publique (hex) de l'auteur initial | `a1b2c3...` |
 | `original-event` | ID de l'événement original | `event_id` |
 | `likes` | Nombre de likes au moment de l'adoption | `7` |
 | `adopted-at` | Timestamp de l'adoption | `1704931200` |
@@ -464,13 +471,14 @@ Communauté
 ### 4. Résolution
 
 ```
-Système vérifie quorum
+NOSTR.UMAP.refresh.sh (republish_umap_commons)
     │
-    ├─ Si approuvé → Document devient version officielle
-    ├─ Si rejeté → Fork possible
-    │
-    └─→ Notification aux éditeurs
+    ├─ Pour chaque kind 30023 référençant l'UMAP avec tag collaborative/commons
+    ├─ Compte les likes (kind 7) ; si ≥ 3 et pas déjà adopté → republish signé UMAP
+    └─ Document adopté = kind 30023 signé par l'UMAP (tags original-event, likes, adopted-at)
 ```
+
+Côté client/éditeur, le quorum peut être vérifié pour afficher le statut ; la republication officielle est faite par le script.
 
 ### 5. Affichage dans l'UMAP
 
@@ -521,18 +529,19 @@ Visiteur ouvre umap_index.html
 ### Fichiers Principaux
 
 ```
-UPlanet/
+UPlanet/ (dépôt séparé, servi via IPNS)
 ├── earth/
-│   └── collaborative-editor.html  # Interface utilisateur
+│   └── collaborative-editor.html  # Interface utilisateur (éditeur collaboratif)
 
 Astroport.ONE/
 ├── templates/NOSTR/
-│   └── umap_index.html           # Template avec section Commons
+│   └── umap_index.html           # Template avec section Commons, loadCollaborativeDocs(), filtrage
 ├── tools/
-│   ├── nostr_send_note.py        # Publication Nostr (utilisé par UMAP)
-│   └── keygen                    # Génération clés UMAP
+│   ├── nostr_send_note.py        # Publication Nostr (keyfile temporaire UMAP dans refresh)
+│   ├── keygen                    # Génération clés UMAP (dérivation à la volée)
+│   └── nostr2hex.py              # Conversion NSEC → HEX pour requêtes
 ├── RUNTIME/
-│   └── NOSTR.UMAP.refresh.sh     # Agrégation et publication UMAP
+│   └── NOSTR.UMAP.refresh.sh     # Journaux UMAP/SECTOR/REGION (kind 1 → 30023) ; republish_umap_commons (≥3 likes)
 └── docs/
     └── COLLABORATIVE_COMMONS_SYSTEM.md  # Cette documentation
 ```
