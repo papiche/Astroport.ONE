@@ -424,7 +424,7 @@ while true; do
                         ZNOD_HOSTNAME=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.hostname // "unknown"')
                         ZNOD_IP=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.myIP // "unknown"')
                         ZNOD_CAPTAIN=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.captain // "unknown"')
-                        echo "<html><body><h2>New Station Online!</h2><p>A new station <b>${ZNOD_HOSTNAME}</b> (${znod:0:16}...) has joined the swarm.</p><p>IP: ${ZNOD_IP}<br>Captain: ${ZNOD_CAPTAIN}</p><p>Detected: $(date -u)</p></body></html>" > ~/.zen/tmp/station_online_${znod:0:8}.html
+                        echo "<html><body><h2>New Station Online!</h2><p>A new station <b>${ZNOD_HOSTNAME}</b> (...${znod: -8}...) has joined the swarm.</p><p>IP: ${ZNOD_IP}<br>Captain: ${ZNOD_CAPTAIN}</p><p>Detected: $(date -u)</p></body></html>" > ~/.zen/tmp/station_online_${znod:0:8}.html
                         ${MY_PATH}/tools/mailjet.sh --expire 24h "${CAPTAINEMAIL}" ~/.zen/tmp/station_online_${znod:0:8}.html "Station ONLINE: ${ZNOD_HOSTNAME}"
                         rm -f ~/.zen/tmp/station_online_${znod:0:8}.html
                     fi
@@ -435,7 +435,7 @@ while true; do
                         if [[ -n "${CAPTAINEMAIL}" ]]; then
                             ZNOD_HOSTNAME=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.hostname // "unknown"')
                             ZNOD_IP=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.myIP // "unknown"')
-                            echo "<html><body><h2>Station Offline Alert</h2><p>Station <b>${ZNOD_HOSTNAME}</b> (${znod:0:16}...) at IP ${ZNOD_IP} has been offline for more than 8 hours and has been removed from swarm.</p><p>Last seen: $(cat ~/.zen/tmp/swarm/${znod}/_MySwarm.staom 2>/dev/null)</p></body></html>" > ~/.zen/tmp/station_offline_${znod:0:8}.html
+                            echo "<html><body><h2>Station OFFLINE Alert</h2><p>Station <b>${ZNOD_HOSTNAME}</b> (...${znod: -8}) at IP ${ZNOD_IP} has been offline for more than 8 hours and has been removed from swarm.</p><p>Last seen: $(cat ~/.zen/tmp/swarm/${znod}/_MySwarm.staom 2>/dev/null)</p></body></html>" > ~/.zen/tmp/station_offline_${znod:0:8}.html
                             ${MY_PATH}/tools/mailjet.sh --expire 24h "${CAPTAINEMAIL}" ~/.zen/tmp/station_offline_${znod:0:8}.html "Station OFFLINE: ${ZNOD_HOSTNAME}"
                             rm -f ~/.zen/tmp/station_offline_${znod:0:8}.html
                         fi
