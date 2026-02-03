@@ -5,8 +5,8 @@
 The UPlanet Analytics System (`astro.js`) provides a standardized way to collect and send analytics data in the UPlanet ecosystem. It supports multiple modes of operation depending on which libraries are loaded, from simple HTTP-based analytics to decentralized NOSTR events with optional encryption.
 
 **Related NIPs:**
-- [NIP-10000: UPlanet Analytics Events](/papiche/nostr-nips/blob/NIP-101/10000-analytics-extension.md) - Analytics events (kind 10000, encrypted/non-encrypted determined by content)
-- Note: Kind 10001 is now reserved for NIP-51 playlists (pin list)
+- [NIP-10000: UPlanet Analytics Events](/papiche/nostr-nips/blob/NIP-101/10000-analytics-extension.md) - Analytics events use **kind 10600** (encrypted/non-encrypted determined by content). Kind 10000 is reserved by [NIP-51](https://nips.nostr.com/51) for mute lists.
+- Note: Kind 10001 is reserved for NIP-51 pin list
 
 ---
 
@@ -101,13 +101,13 @@ Backend stores analytics
 
 **Use case**: Legacy websites, traditional web applications, or sites that need analytics without requiring users to have NOSTR capabilities.
 
-**However**, a **pure NOSTR approach (kind 10000 events)** is **more robust and flexible** because:
+**However**, a **pure NOSTR approach (kind 10600 events)** is **more robust and flexible** because:
 - ✅ **Decentralized**: Data stored on user-controlled relays (not centralized server)
 - ✅ **Verifiable**: Cryptographically signed by user
 - ✅ **Queryable**: Can query analytics via standard NOSTR filters
 - ✅ **User ownership**: User controls which relays store their data
 - ✅ **No single point of failure**: No dependency on `/ping` endpoint availability
-- ✅ **Privacy**: Optional encryption (kind 10000 with encrypted content) for sensitive analytics
+- ✅ **Privacy**: Optional encryption (kind 10600 with encrypted content) for sensitive analytics
 - ✅ **Interoperable**: Works with any NOSTR client or relay
 
 **Recommendation**: For new projects or sites that can require NOSTR, prefer **Mode 2** (NOSTR events) or **Mode 3** (Encrypted NOSTR events) over HTTP `/ping`. Use HTTP `/ping` only as a fallback or for web2 compatibility.
@@ -169,7 +169,7 @@ User Action → uPlanetAnalytics.smartSend()
     ↓
 Check if NOSTR available (via common.js)
     ↓
-YES → Send as NOSTR event (kind 10000)
+YES → Send as NOSTR event (kind 10600)
     ↓
 NOSTR Relay stores event
     ↓
@@ -184,7 +184,7 @@ NO → Fallback to HTTP POST /ping
 - ✅ **User control**: User chooses which relays store data
 - ✅ **Graceful fallback**: Falls back to HTTP if NOSTR unavailable
 
-#### NOSTR Event Structure (kind 10000)
+#### NOSTR Event Structure (kind 10600)
 
 ```json
 {
@@ -218,7 +218,7 @@ When `astro.js` is loaded **after** `common.js` and `nostr.bundle.js`, it gains 
   - Returns `boolean`
 
 - **`uPlanetAnalytics.sendEncryptedAsNostrEvent(data, includeContext, useIPFS)`**
-  - Sends encrypted analytics as NOSTR event (kind 10000 with encrypted content)
+  - Sends encrypted analytics as NOSTR event (kind 10600 with encrypted content)
   - Requires: `nostr.bundle.js` + `common.js` + user private key
   - Uses NIP-44 encryption (ChaCha20-Poly1305)
   - Only user can decrypt their own analytics
@@ -319,7 +319,7 @@ Only user can decrypt (with their private key)
 | Function | Description | Returns |
 |----------|-------------|---------|
 | `isNostrAvailable()` | Check if NOSTR is available | `boolean` |
-| `sendAsNostrEvent(data, includeContext)` | Send as NOSTR event (kind 10000) | `Promise<boolean>` |
+| `sendAsNostrEvent(data, includeContext)` | Send as NOSTR event (kind 10600) | `Promise<boolean>` |
 | `smartSend(data, includeContext, preferNostr, preferEncrypted, preferIPFS)` | Auto-select best method | `Promise<boolean>` |
 
 ### Encryption Functions (Requires nostr.bundle.js + common.js)
@@ -327,7 +327,7 @@ Only user can decrypt (with their private key)
 | Function | Description | Returns |
 |----------|-------------|---------|
 | `isEncryptionAvailable()` | Check if encryption is available | `boolean` |
-| `sendEncryptedAsNostrEvent(data, includeContext, useIPFS)` | Send encrypted (kind 10000 with encrypted content) | `Promise<boolean>` |
+| `sendEncryptedAsNostrEvent(data, includeContext, useIPFS)` | Send encrypted (kind 10600 with encrypted content) | `Promise<boolean>` |
 | `sendEncryptedAsNostrEventWithIPFS(data, includeContext)` | Send encrypted via IPFS | `Promise<boolean>` |
 
 ---
@@ -473,12 +473,12 @@ Use HTTP `/ping` endpoint when:
 
 ### When to Use Pure NOSTR (Mode 2/3)
 
-Use NOSTR events (kind 10000) when:
+Use NOSTR events (kind 10600) when:
 - ✅ **Decentralization priority**: Want user-controlled data storage
 - ✅ **Verifiability needed**: Cryptographically signed analytics
 - ✅ **Queryability required**: Need to query analytics via NOSTR filters
 - ✅ **User ownership**: Users should control their analytics data
-- ✅ **Privacy concerns**: Sensitive data requires encryption (kind 10000 with encrypted content)
+- ✅ **Privacy concerns**: Sensitive data requires encryption (kind 10600 with encrypted content)
 - ✅ **Interoperability**: Want to work with any NOSTR client/relay
 
 **Trade-offs**:
@@ -496,7 +496,7 @@ Use NOSTR events (kind 10000) when:
 4. **Use smartSend**: Let the system choose the best method automatically
 5. **Include context**: Use `sendWithContext()` for automatic page data
 6. **Handle errors gracefully**: System already does this, but be aware of fallbacks
-7. **Prefer NOSTR**: For new projects, use pure NOSTR events (kind 10000) over HTTP `/ping` when possible
+7. **Prefer NOSTR**: For new projects, use pure NOSTR events (kind 10600) over HTTP `/ping` when possible
 
 ---
 
