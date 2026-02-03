@@ -420,6 +420,13 @@ if [[ "$message_text" =~ \#url ]]; then TAGS[url]=true; fi
 if [[ "$message_text" =~ \#status ]]; then TAGS[status]=true; fi
 if [[ "$message_text" =~ \#whoami ]]; then TAGS[whoami]=true; fi
 
+# Only process messages that explicitly request the bot (#BRO or #BOT). Exit silently otherwise.
+# This avoids error reports when the relay filter forwards messages that were not meant for the IA.
+if [[ "${TAGS[BRO]}" != true && "${TAGS[BOT]}" != true ]]; then
+    echo "Message does not contain #BRO or #BOT - skipping (no reply)." >&2
+    exit 0
+fi
+
 # Detect memory slot once
 memory_slot=0
 for i in {1..12}; do
