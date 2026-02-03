@@ -3,6 +3,7 @@ import ollama
 import argparse
 import json
 import os
+import sys
 
 def load_context(latitude=None, longitude=None, pubkey=None, user_id=None, slot=0):
     """
@@ -102,7 +103,8 @@ RÈGLES:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Answer a question using Ollama, with optional UMAP, PUBKEY, or slot-based context.")
-    parser.add_argument("question", help="The question to ask Ollama.")
+    parser.add_argument("question", nargs="?", default=None, help="The question to ask Ollama (or use --prompt-file).")
+    parser.add_argument("--prompt-file", type=str, help="Read prompt from file (overrides question argument).")
     parser.add_argument("-m", "--model", dest="ollama_model_name", default="gemma3:latest", help="The name of the Ollama model to use (default: gemma3:latest).")
     parser.add_argument("--lat", type=str, help="Latitude to load UMAP memory context.")
     parser.add_argument("--lon", type=str, help="Longitude to load UMAP memory context.")
@@ -112,6 +114,16 @@ if __name__ == "__main__":
     parser.add_argument("--json", action="store_true", help="Output answer in JSON format.")
 
     args = parser.parse_args()
+
+    question_text = ""
+    if args.prompt_file and os.path.isfile(args.prompt_file):
+        with open(args.prompt_file, "r", encoding="utf-8", errors="replace") as f:
+            question_text = f.read().strip()
+    if not question_text and args.question:
+        question_text = args.question
+    if not question_text:
+        print("Error: provide question as argument or --prompt-file with an existing file.")
+        sys.exit(1)
 
     # Load context based on available parameters
     context_text = ""
@@ -129,7 +141,7 @@ if __name__ == "__main__":
     final_prompt = ""
     if context_text:
         final_prompt += f"Contexte :\n{context_text}\n\n"
-    final_prompt += f"Question: {args.question}"
+    final_prompt += f"Question: {question_text}"
     
     # Log the final prompt to IA.log
     log_file_path = os.path.expanduser("~/.zen/tmp/IA.log")

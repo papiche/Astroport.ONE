@@ -132,7 +132,7 @@ echo "#####################################"
 export PATH=$HOME/.local/bin:$PATH
 pipx install duniterpy --include-deps ## keeps own dep
 ## add monero & bitcoin compatible keys
-for i in pip python-dotenv setuptools wheel termcolor amzqr ollama requests geohash beautifulsoup4 pyppeteer cryptography jwcrypto secp256k1 Ed25519 gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 nostpy-cli matplotlib; do
+for i in pip python-dotenv setuptools wheel termcolor amzqr ollama requests geohash beautifulsoup4 pyppeteer cryptography jwcrypto secp256k1 Ed25519 gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 nostpy-cli matplotlib readability-lxml; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         pip install -U $i 2>> ~/.zen/install.errors.log
         # [[ $? != 0 ]] && pipx install $i 2>> ~/.zen/install.errors.log

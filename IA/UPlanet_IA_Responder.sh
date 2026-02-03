@@ -26,6 +26,9 @@
 # - #amelie : Synthèse vocale avec la voix Aurélie (Orpheus TTS)
 # - #plantnet : Reconnaissance de plantes avec PlantNet (image requise)
 # - #help : Show short help (BRO tags summary)
+# - #url : Fetch URL(s) from message, extract main content, then answer with Ollama (link understanding)
+# - #status : Show system status (Ollama, ComfyUI, Perplexica, Orpheus ports)
+# - #whoami : Show sender identity (PUBKEY / KNAME)
 ###################################################################
 PUBKEY="$1"
 EVENT="$2"
@@ -213,7 +216,29 @@ Voice (TTS)
 Tools
   #plantnet [image]  |  #cookie <workflow>  |  #inventory [image]
 
+Meta
+  #url [URLs in message]  |  #status  |  #whoami
+
 HELPEOF
+}
+
+# Build status message (ports and services) - no LLM
+build_bro_status_message() {
+  local o=""; local c=""; local p=""; local t=""
+  curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 "http://localhost:11434/api/tags" 2>/dev/null | grep -q 200 && o="11434 ✓" || o="11434 ✗"
+  curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 "http://localhost:8188/system_stats" 2>/dev/null | grep -q 200 && c="8188 ✓" || c="8188 ✗"
+  curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 "http://localhost:3001/api/providers" 2>/dev/null | grep -q 200 && p="3001 ✓" || p="3001 ✗"
+  curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 "http://localhost:5005/docs" 2>/dev/null | grep -q 200 && t="5005 ✓" || t="5005 ✗"
+  echo "BRO status — Ollama: $o | ComfyUI: $c | Perplexica: $p | Orpheus: $t"
+}
+
+# Build whoami message - no LLM
+build_bro_whoami_message() {
+  if [[ -n "$KNAME" && "$KNAME" != "CAPTAIN" ]]; then
+    echo "You are $KNAME (pubkey: ${PUBKEY:0:16}…)"
+  else
+    echo "You are pubkey ${PUBKEY:0:20}…"
+  fi
 }
 
 # Optimisation: Pre-compute current timestamp
@@ -363,6 +388,9 @@ TAGS[person]=false
 TAGS[object]=false
 TAGS[place]=false
 TAGS[help]=false
+TAGS[url]=false
+TAGS[status]=false
+TAGS[whoami]=false
 
 # Single pass tag detection
 if [[ "$message_text" =~ \#BRO\ + ]]; then TAGS[BRO]=true; fi
@@ -388,6 +416,9 @@ if [[ "$message_text" =~ \#person ]]; then TAGS[person]=true; fi
 if [[ "$message_text" =~ \#object ]]; then TAGS[object]=true; fi
 if [[ "$message_text" =~ \#place ]]; then TAGS[place]=true; fi
 if [[ "$message_text" =~ \#help ]]; then TAGS[help]=true; fi
+if [[ "$message_text" =~ \#url ]]; then TAGS[url]=true; fi
+if [[ "$message_text" =~ \#status ]]; then TAGS[status]=true; fi
+if [[ "$message_text" =~ \#whoami ]]; then TAGS[whoami]=true; fi
 
 # Detect memory slot once
 memory_slot=0
@@ -1175,9 +1206,31 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
         # Only generate an answer if KeyANSWER is not already set
         if [[ -z "$KeyANSWER" ]]; then
             # Optimisation: Process specialized #commands
-            ######################################################### #help / #commands (no LLM)
+            ######################################################### #help / #status / #whoami (no LLM)
             if [[ "${TAGS[help]}" == true ]]; then
                 KeyANSWER="$(build_bro_help_message)"
+            elif [[ "${TAGS[status]}" == true ]]; then
+                KeyANSWER="$(build_bro_status_message)"
+            elif [[ "${TAGS[whoami]}" == true ]]; then
+                KeyANSWER="$(build_bro_whoami_message)"
+            ######################################################### #url (link understanding: fetch URL content then Ollama)
+            elif [[ "${TAGS[url]}" == true ]]; then
+                cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#url//g; s/"//g' <<< "$message_text")
+                URL_CONTENT_FILE="$HOME/.zen/tmp/bro_url_content_$$.txt"
+                URL_PROMPT_FILE="$HOME/.zen/tmp/bro_url_prompt_$$.txt"
+                $MY_PATH/bro_url_content.py "$cleaned_text" 2>/dev/null > "$URL_CONTENT_FILE"
+                if [[ -s "$URL_CONTENT_FILE" ]]; then
+                    printf 'Context from URL(s) (main content extracted):\n\n%s\n\n---\nUser message: %s\n\nAnswer based on the URL content above. If the user asks a question, answer it concisely.' "$(cat "$URL_CONTENT_FILE")" "$cleaned_text" > "$URL_PROMPT_FILE"
+                    if [[ -n "$user_id" ]] && check_memory_slot_access "$user_id" "$memory_slot"; then
+                        KeyANSWER="$($MY_PATH/question.py --prompt-file "$URL_PROMPT_FILE" --user-id "${user_id}" --slot ${memory_slot} 2>/dev/null)"
+                    else
+                        KeyANSWER="$($MY_PATH/question.py --prompt-file "$URL_PROMPT_FILE" --pubkey "${PUBKEY}" 2>/dev/null)"
+                    fi
+                fi
+                rm -f "$URL_CONTENT_FILE" "$URL_PROMPT_FILE"
+                if [[ -z "$KeyANSWER" ]]; then
+                    KeyANSWER="❌ No URL found in message or could not fetch content. Add one or more http(s) links and use #url."
+                fi
             ######################################################### #search
             elif [[ "${TAGS[search]}" == true ]]; then
                 $MY_PATH/perplexica.me.sh
