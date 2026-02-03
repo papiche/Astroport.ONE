@@ -196,8 +196,10 @@ elif [ -f "$SOURCE_DIR/manifest.json" ] && [ -f "$SOURCE_DIR/manifest-1.json" ];
                     log_message "   💾 Merge failed, manifest.json restored from manifest-1.json"
                 fi
             else
-                cp "$SOURCE_DIR/manifest-1.json" "$SOURCE_DIR/manifest.json"
-                log_message "   💾 manifest.json restored from manifest-1.json (preserve full uDRIVE, new upload will be merged)"
+                # manifest.json is newer and has same or more files (e.g. after API upload run).
+                # Keep manifest.json and sync manifest-1.json so next run does not overwrite with older content.
+                cp "$SOURCE_DIR/manifest.json" "$SOURCE_DIR/manifest-1.json"
+                log_message "   💾 manifest-1.json updated from manifest.json ($inc_count file(s), keep full uDRIVE)"
             fi
             EXISTING_FINAL_CID=$(jq -r '.final_cid // ""' "$SOURCE_DIR/manifest.json" 2>/dev/null)
             if [ -n "$EXISTING_FINAL_CID" ] && [ "$EXISTING_FINAL_CID" != "null" ] && [ "$EXISTING_FINAL_CID" != "" ]; then
