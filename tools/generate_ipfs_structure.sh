@@ -168,21 +168,46 @@ elif [ -f "$SOURCE_DIR/manifest.json" ] && [ -f "$SOURCE_DIR/manifest-1.json" ];
     
     if [ "$manifest_mtime" -gt "$manifest1_mtime" ]; then
         # manifest.json is newer (e.g. file uploaded via API may have written a sparse manifest).
-        # Do NOT overwrite manifest-1.json with it (would lose uDRIVE content).
-        # Restore manifest.json from manifest-1.json to keep full uDRIVE; new file(s) on disk
-        # will be detected by quick_check_for_changes and merged into the rebuilt manifest.
-        cp "$SOURCE_DIR/manifest-1.json" "$SOURCE_DIR/manifest.json"
-        log_message "   💾 manifest.json restored from manifest-1.json (preserve full uDRIVE, new upload will be merged)"
-        
+        # If incoming has fewer files than base, MERGE to preserve full uDRIVE (base + new entries from incoming).
+        # Otherwise restore manifest.json from manifest-1.json.
         if command -v jq >/dev/null 2>&1; then
-            EXISTING_FINAL_CID=$(jq -r '.final_cid // ""' "$SOURCE_DIR/manifest-1.json" 2>/dev/null)
+            base_count=$(jq '.files | length' "$SOURCE_DIR/manifest-1.json" 2>/dev/null || echo "0")
+            inc_count=$(jq '.files | length' "$SOURCE_DIR/manifest.json" 2>/dev/null || echo "0")
+            if [ -n "$base_count" ] && [ -n "$inc_count" ] && [ "$inc_count" -lt "$base_count" ]; then
+                log_message "   💾 Merging manifest (incoming $inc_count file(s) < base $base_count) - preserving full uDRIVE"
+                merge_tmp=$(mktemp)
+                if jq -n --slurpfile b "$SOURCE_DIR/manifest-1.json" --slurpfile i "$SOURCE_DIR/manifest.json" '
+                    $b[0] as $base | $i[0] as $incoming |
+                    ($incoming.files | map(.path)) as $inc_paths |
+                    (($base.files | map(select(.path as $p | ($inc_paths | index($p) | not)))) + $incoming.files) as $merged |
+                    ($merged | length) as $total_files |
+                    ($merged | map(.size) | add) as $total_size |
+                    $base | .files = $merged | .total_files = $total_files | .total_size = $total_size |
+                    .formatted_total_size = (if $total_size >= 1048576 then "\($total_size / 1048576) MB" elif $total_size >= 1024 then "\($total_size / 1024) KB" else "\($total_size) B" end) |
+                    .generated_at = (now | gmtime | strftime("%Y-%m-%dT%H:%M:%SZ")) |
+                    .final_cid = ($incoming.final_cid // .final_cid)
+                ' > "$merge_tmp" 2>/dev/null && [ -s "$merge_tmp" ]; then
+                    mv "$merge_tmp" "$SOURCE_DIR/manifest.json"
+                    cp "$SOURCE_DIR/manifest.json" "$SOURCE_DIR/manifest-1.json"
+                    log_message "   ✅ manifest.json merged: $base_count existing + new upload(s) = $(jq '.files | length' "$SOURCE_DIR/manifest.json") file(s); manifest-1.json updated"
+                else
+                    rm -f "$merge_tmp"
+                    cp "$SOURCE_DIR/manifest-1.json" "$SOURCE_DIR/manifest.json"
+                    log_message "   💾 Merge failed, manifest.json restored from manifest-1.json"
+                fi
+            else
+                cp "$SOURCE_DIR/manifest-1.json" "$SOURCE_DIR/manifest.json"
+                log_message "   💾 manifest.json restored from manifest-1.json (preserve full uDRIVE, new upload will be merged)"
+            fi
+            EXISTING_FINAL_CID=$(jq -r '.final_cid // ""' "$SOURCE_DIR/manifest.json" 2>/dev/null)
             if [ -n "$EXISTING_FINAL_CID" ] && [ "$EXISTING_FINAL_CID" != "null" ] && [ "$EXISTING_FINAL_CID" != "" ]; then
-                log_message "   💾 Existing CID from manifest-1.json: $EXISTING_FINAL_CID"
-                update_final_cid_in_manifest "$EXISTING_FINAL_CID"
+                log_message "   💾 Existing CID: $EXISTING_FINAL_CID"
             else
                 EXISTING_FINAL_CID=""
             fi
         else
+            cp "$SOURCE_DIR/manifest-1.json" "$SOURCE_DIR/manifest.json"
+            log_message "   💾 manifest.json restored from manifest-1.json (jq not available)"
             EXISTING_FINAL_CID=""
         fi
     else
