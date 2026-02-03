@@ -555,9 +555,11 @@ Cette migration vers IPFS P2P transformera UPlanet en une plateforme IA véritab
 
 ### 9. Rôle Central de DRAGON_p2p_ssh.sh
 
-#### **Système de Découverte Automatique**
+**Note**: Le script existe dans `RUNTIME/DRAGON_p2p_ssh.sh`. La version actuelle gère principalement le **SSH over IPFS P2P** (canal `/x/ssh-*`, clés `y_ssh.pub`/`z_ssh.pub`). La détection automatique de tous les services (Ollama, ComfyUI, Orpheus, Perplexica) et la génération des `x_ollama.sh`, `x_comfyui.sh`, etc. correspondent à l’**architecture cible** décrite ci‑dessous.
 
-`DRAGON_p2p_ssh.sh` est le **système nerveux central** du swarm UPlanet. Il fonctionne comme un **service registry distribué** qui :
+#### **Système de Découverte Automatique (cible)**
+
+`DRAGON_p2p_ssh.sh` est conçu comme le **système nerveux central** du swarm UPlanet. Il fonctionne comme un **service registry distribué** qui :
 
 1. **Détecte automatiquement** les services disponibles sur chaque node
 2. **Publie les services** via IPFS P2P sur des canaux dédiés
@@ -687,14 +689,17 @@ Ce système transforme UPlanet en une **plateforme IA véritablement décentrali
 
 #### **Déclenchement des Vérifications (Implémenté)**
 ```bash
-# Dans UPlanet_IA_Responder.sh - Ligne 206
+# Dans UPlanet_IA_Responder.sh - au démarrage (après source my.sh)
 # Vérification Ollama OBLIGATOIRE au démarrage
 if ! $MY_PATH/ollama.me.sh; then
     echo "Error: Failed to maintain Ollama connection" >&2
     exit 1
 fi
 
-# Vérifications spécialisées selon tags détectés
+# Vérifications spécialisées selon tags détectés (dans le bloc des commandes)
+# #search → perplexica.me.sh (puis comfyui.me.sh pour l'illustration)
+# #image / #video / #music → comfyui.me.sh
+# #pierre / #amelie → generate_speech.sh (qui appelle orpheus.me.sh en interne)
 if [[ "${TAGS[search]}" == true ]]; then
     $MY_PATH/perplexica.me.sh  # Auto: LOCAL → SSH → P2P
 fi
