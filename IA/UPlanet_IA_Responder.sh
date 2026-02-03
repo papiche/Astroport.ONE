@@ -25,6 +25,7 @@
 # - #pierre : Synthèse vocale avec la voix Pierre (Orpheus TTS)
 # - #amelie : Synthèse vocale avec la voix Aurélie (Orpheus TTS)
 # - #plantnet : Reconnaissance de plantes avec PlantNet (image requise)
+# - #help : Show short help (BRO tags summary)
 ###################################################################
 PUBKEY="$1"
 EVENT="$2"
@@ -195,6 +196,26 @@ get_user_udrive_from_kname() {
     fi
 }
 
+# Build short help message (inspired by openclaw buildHelpMessage)
+build_bro_help_message() {
+  cat << 'HELPEOF'
+ℹ️ BRO Help
+
+Session / memory
+  #mem [#1..#12]  |  #rec  |  #rec2  |  #reset
+
+Search & media
+  #search  |  #image  |  #video  |  #music  |  #youtube [#mp3]
+
+Voice (TTS)
+  #pierre  |  #amelie
+
+Tools
+  #plantnet [image]  |  #cookie <workflow>  |  #inventory [image]
+
+HELPEOF
+}
+
 # Optimisation: Pre-compute current timestamp
 CURRENT_TIMESTAMP=$(date +%s)
 CURRENT_TIME_STR=$(date '+%Y-%m-%d %H:%M:%S')
@@ -341,6 +362,7 @@ TAGS[animal]=false
 TAGS[person]=false
 TAGS[object]=false
 TAGS[place]=false
+TAGS[help]=false
 
 # Single pass tag detection
 if [[ "$message_text" =~ \#BRO\ + ]]; then TAGS[BRO]=true; fi
@@ -365,6 +387,7 @@ if [[ "$message_text" =~ \#animal ]]; then TAGS[animal]=true; fi
 if [[ "$message_text" =~ \#person ]]; then TAGS[person]=true; fi
 if [[ "$message_text" =~ \#object ]]; then TAGS[object]=true; fi
 if [[ "$message_text" =~ \#place ]]; then TAGS[place]=true; fi
+if [[ "$message_text" =~ \#help ]]; then TAGS[help]=true; fi
 
 # Detect memory slot once
 memory_slot=0
@@ -1151,9 +1174,12 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
     if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ || $KNAME == "CAPTAIN" ]]; then
         # Only generate an answer if KeyANSWER is not already set
         if [[ -z "$KeyANSWER" ]]; then
-            # Optimisation: Process specialized commands
+            # Optimisation: Process specialized #commands
+            ######################################################### #help / #commands (no LLM)
+            if [[ "${TAGS[help]}" == true ]]; then
+                KeyANSWER="$(build_bro_help_message)"
             ######################################################### #search
-            if [[ "${TAGS[search]}" == true ]]; then
+            elif [[ "${TAGS[search]}" == true ]]; then
                 $MY_PATH/perplexica.me.sh
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g; s/"//g' <<< "$message_text")
                 USER_LANG=$(get_user_language "$KNAME")
