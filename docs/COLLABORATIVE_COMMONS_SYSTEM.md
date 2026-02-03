@@ -49,15 +49,15 @@ https://[IPFS_GATEWAY]/ipns/copylaradio.com/collaborative-editor.html?lat=43.60&
 | Section | Fonction | Description |
 |---------|----------|-------------|
 | **Header** | Connexion Nostr | Authentification via extension (nos2x, Alby) |
-| **Éditeur** | Rédaction Markdown | Éditeur WYSIWYG Milkdown |
+| **Éditeur** | Rédaction Markdown | Textarea + marked.js (split Edit/Preview) |
 | **Sidebar** | Workflow | Guide des étapes de publication |
 | **Sidebar** | Propositions | Liste des documents en attente de vote |
 | **Sidebar** | Historique | Versions précédentes |
 | **Modales** | Charger/Proposer | Gestion des documents |
 
-### Éditeur Milkdown
+### Éditeur Markdown
 
-L'éditeur utilise [Milkdown](https://milkdown.dev/), un éditeur Markdown modulaire basé sur ProseMirror :
+L'éditeur utilise un **textarea** pour la saisie et [marked.js](https://marked.js.org/) pour le rendu en temps réel dans un panneau Preview (vue split Edit | Preview) :
 
 **Fonctionnalités supportées :**
 - Titres (H1, H2, H3)
@@ -81,7 +81,7 @@ L'éditeur utilise [Milkdown](https://milkdown.dev/), un éditeur Markdown modul
 
   1. CONNEXION                    2. RÉDACTION                   3. PROPOSITION
   ─────────────────              ─────────────────              ─────────────────
-  • Extension Nostr              • Éditeur Milkdown             • Résumé des modifs
+  • Extension Nostr              • Éditeur Markdown (split)     • Résumé des modifs
   • Identification               • Templates par type           • Choix du quorum
   • Clé publique                 • Sauvegarde auto              • Politique de fork
         │                              │                              │
@@ -550,7 +550,7 @@ Astroport.ONE/
 
 | Composant | Technologie | Rôle |
 |-----------|-------------|------|
-| **Éditeur** | Milkdown | Édition Markdown WYSIWYG |
+| **Éditeur** | textarea + marked.js | Édition Markdown avec prévisualisation (split view) |
 | **Nostr Client** | nostr.bundle.js | Protocole de publication (côté client) |
 | **Nostr Server** | nostr_send_note.py | Publication UMAP (côté serveur) |
 | **Common** | common.js | Fonctions partagées UPlanet |
