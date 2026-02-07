@@ -2,6 +2,10 @@
 
 ## **Partie I : Le Manifeste (Le "Pourquoi")**
 
+### **Cadre : Une Coopérative d'Infrastructure Numérique**
+
+Le G1FabLab est une **Coopérative d'Infrastructure Numérique** : on mutualise du matériel pour faire tourner un service, et ceux qui hébergent le service sont défrayés. Les membres (Parrains, Armateurs, Co-Bâtisseurs) mettent des ressources à disposition ; en contrepartie, ils perçoivent une redevance d'hébergement ou une indemnité, et non des dividendes.
+
 ### **Politique de Transparence Budgétaire**
 
 Ce document définit la politique de transparence budgétaire et de redistribution des ressources au sein du collectif G1FabLab (hébergé par Open Collective Europe).
@@ -61,9 +65,9 @@ Notre écosystème fonctionne comme un **atelier partagé (FabLab)** :
 
 Chaque redevance payée par un usager sert à défrayer l'opérateur et le fournisseur de matériel, et l'excédent permet au collectif d'acquérir des ressources communes durables.
 
-### **PHILOSOPHIE : UNE COOPÉRATIVE DE MOYENS**
+### **PHILOSOPHIE : UNE COOPÉRATIVE DE MOYENS (Infrastructure Numérique)**
 
-Le G1FabLab **ne génère pas de profits spéculatifs**. Il collecte des contributions (dons, redevances de service) pour financer son fonctionnement. Chaque Euro collecté est immédiatement alloué selon une clé de répartition fixe garantissant que ceux qui travaillent et ceux qui fournissent le matériel sont justement défrayés.
+Le G1FabLab **ne génère pas de profits spéculatifs**. Il fonctionne comme une **coopérative d'infrastructure** : il collecte des contributions (dons, redevances de service) pour financer son fonctionnement. Chaque Euro collecté est immédiatement alloué selon une clé de répartition fixe garantissant que ceux qui travaillent et ceux qui mettent du matériel à disposition sont justement défrayés (indemnités et redevances d'hébergement, pas de dividendes).
 
 ### **LA RÈGLE DES 3 TIERS (Allocation des Contributions)**
 
@@ -75,7 +79,7 @@ Pour chaque service facturé ou contribution reçue (ex: Location d'un nœud de 
 
 *   Paiement des charges incompressibles (Assurance, Frais Open Collective, Électricité directe).
 *   Constitution d'une trésorerie de secours pour le remplacement du matériel en panne.
-*   **Gestion :** Reste sur le compte Open Collective du projet (`UPLANETNAME_TREASURY`).
+*   **Gestion :** Reste sur le compte Open Collective du projet (`UPLANETNAME_CASH` — Trésorerie).
 
 #### **🔵 1/3 : Rétribution du Travail (Les Capitaines)**
 
@@ -89,16 +93,17 @@ Pour chaque service facturé ou contribution reçue (ex: Location d'un nœud de 
 
 **Objet :** Défrayer les fournisseurs du matériel et du foncier mis à disposition.
 
-*   Le réseau repose sur du matériel (Serveurs, Dômes, Capteurs) financé ou détenu par des tiers ("Les Armateurs").
+*   Le membre **Armateur** finance le déploiement matériel d'un nœud du réseau (parrainage infrastructure). En contrepartie de la mise à disposition de ce matériel et de son hébergement (électricité, réseau), l'Armateur facture une **redevance d'hébergement** au collectif (correspondant à 1/3 de la valorisation du service), réglée via le système de crédits internes.
+*   Le réseau repose sur du matériel (Serveurs, Dômes, Capteurs) mis à disposition par des tiers ("Les Armateurs").
 *   **Mécanisme :** Le Collectif verse une **indemnité d'occupation** ou un **loyer de matériel** aux fournisseurs, calculé pour amortir la mise à disposition initiale et couvrir l'usure.
-*   **Exemple :** Si un Armateur met à disposition un Serveur d'une valeur de 500€, il perçoit un loyer mensuel issu de l'activité de ce serveur (`UPLANETNAME_ASSETS`).
+*   **Exemple :** Si un Armateur met à disposition un Serveur d'une valeur de 500€, il perçoit une redevance d'hébergement (loyer) issue de l'activité de ce serveur (`UPLANETNAME_ASSETS`).
 
 ---
 
 ### **MODÈLE ÉCONOMIQUE DE FONCTIONNEMENT**
 
 #### **1. Le Coût de Production du Service (Payé par CASH)**
-Les coûts opérationnels sont payés par la **Trésorerie Coopérative** (`UPLANETNAME_TREASURY` / CASH). Total : **3x PAF = 42 Ẑen/semaine** :
+Les coûts opérationnels sont payés par la **Trésorerie Coopérative** (`UPLANETNAME_CASH`). Total : **3x PAF = 42 Ẑen/semaine** :
 *   **1x PAF (14 Ẑen) :** Versé au **NODE** (portefeuille Armateur) → loyer du matériel.
 *   **2x PAF (28 Ẑen) :** Versé au **MULTIPASS Capitaine** → salaire personnel.
 
@@ -126,7 +131,7 @@ CAPTAIN_DEDICATED (Surplus Brut)
 │
 └── 2. Surplus Net = Surplus Brut - Provision IS
     │
-    ├── 33.33% → CASH (UPLANETNAME_TREASURY) : Trésorerie opérationnelle
+    ├── 33.33% → CASH (UPLANETNAME_CASH) : Trésorerie opérationnelle
     ├── 33.33% → RnD (UPLANETNAME_RND) : Recherche & Développement
     └── 33.34% → ASSETS (UPLANETNAME_ASSETS) : Actifs réels régénératifs
 ```
@@ -146,6 +151,21 @@ Dans ce système, le ẐEN **n'est pas une monnaie financière convertible**, ma
 *   **Gouvernance & Transparence :** Il permet de tracer sur la Blockchain qui a fourni quoi (Preuve d'Apport) et qui a fait quoi (Preuve de Travail).
 *   **Droits d'Usage :** Il donne accès aux services (Stockage, Hébergement) prioritairement.
 *   **Clé de Répartition :** Il sert d'unité de compte pour calculer les factures que les Capitaines et Armateurs peuvent présenter à Open Collective en Euros.
+
+### **CONFORMITÉ DES NOMS DE PORTEFEUILLES (Compta Interne)**
+
+Les noms ci-dessous sont ceux utilisés dans les scripts (`UPLANET.init.sh`, `ZEN.ECONOMY.sh`, `ZEN.COOPERATIVE.3x1-3.sh`, `captain.sh`). Chaque wallet est identifié par un **nom logique** et un **fichier dunikey** dans `~/.zen/game/`.
+
+| Nom logique (doc & code) | Fichier dunikey | Rôle |
+| :--- | :--- | :--- |
+| **UPLANETNAME_CASH** | `uplanet.CASH.dunikey` | Trésorerie (1/3) — réserve de fonctionnement |
+| **UPLANETNAME_RND** | `uplanet.RnD.dunikey` | R&D (1/3) |
+| **UPLANETNAME_ASSETS** | `uplanet.ASSETS.dunikey` | Actifs (1/3) |
+| **UPLANETNAME_IMPOT** | `uplanet.IMPOT.dunikey` | Provisions fiscales (TVA, IS) |
+| **CAPTAIN_DEDICATED** | `uplanet.captain.dunikey` | Collecte redevances (source 3x1/3) |
+| **NODE** | `secret.NODE.dunikey` | Portefeuille Armateur (redevance hébergement) |
+
+*Note :* La variable shell pour la clé publique de la trésorerie est parfois `UPLANETNAME_TREASURY` dans certains scripts (`_12345.sh`, `my.sh`) ; elle pointe sur le même wallet que **UPLANETNAME_CASH** (`uplanet.CASH.dunikey`).
 
 ### **ARCHITECTURE DU SYSTÈME**
 
@@ -259,7 +279,7 @@ Contribution Parrainage : 50 Ẑ (versement unique annuel)
 ```
 PAF Hebdomadaire : 14 Ẑ/semaine (1.4 Ğ1)
 ├── Source (cascade) :
-│   ├── Phase 0 : CASH (UPLANETNAME_TREASURY) 🟢
+│   ├── Phase 0 : CASH (UPLANETNAME_CASH) 🟢
 │   ├── Phase 1 : ASSETS (UPLANETNAME_ASSETS) 🟡
 │   └── Phase 2 : RnD (UPLANETNAME_RND) 🟠
 ├── Destination : NODE (portefeuille Armateur)
@@ -270,7 +290,7 @@ PAF Hebdomadaire : 14 Ẑ/semaine (1.4 Ğ1)
 ```
 Indemnité Opérateur : 28 Ẑ/semaine (2x PAF)
 ├── Source (cascade) :
-│   ├── Phase 0 : CASH (UPLANETNAME_TREASURY) 🟢
+│   ├── Phase 0 : CASH (UPLANETNAME_CASH) 🟢
 │   ├── Phase 1 : ASSETS (UPLANETNAME_ASSETS) 🟡
 │   └── Phase 2 : RnD (UPLANETNAME_RND) 🟠
 ├── Destination : CAPTAIN MULTIPASS (revenus personnels)
@@ -635,7 +655,7 @@ Toutes les stations d'un même essaim IPFS partagent la même configuration coop
 
 ### **🚨 SYSTÈME DE DÉGRADATION PROGRESSIVE (Avant Faillite)**
 
-Le système ẐEN Economy implémente une **cascade de dégradation progressive** au lieu d'une faillite brutale. Ce mécanisme transparent informe les actionnaires de l'état financier tout en préservant les opérations.
+Le système ẐEN Economy implémente une **cascade de dégradation progressive** au lieu d'une faillite brutale. Ce mécanisme transparent informe les Parrains et Armateurs (co-bâtisseurs de l'infrastructure) de l'état financier tout en préservant les opérations.
 
 #### **Philosophie : Transparence et Motivation**
 
@@ -714,7 +734,7 @@ Le système UPlanet permet le déploiement de **plusieurs stations** partageant 
 
 ```
 PORTEFEUILLES PARTAGÉS (Identiques sur toutes les stations)
-├── CASH (UPLANETNAME_TREASURY) : Trésorerie commune
+├── CASH (UPLANETNAME_CASH) : Trésorerie commune
 ├── ASSETS (UPLANETNAME_ASSETS) : Ressources durables communes
 ├── RnD (UPLANETNAME_RND) : Budget R&D commun
 ├── IMPOT (UPLANETNAME_IMPOT) : Provisions fiscales communes
@@ -1461,7 +1481,7 @@ Le système UPlanet n'est pas qu'une infrastructure technique. C'est une **décl
 │  ❌ Monétisation par la pub           │  ✅ 1 Like = 1 Ẑen (vraie valeur)│
 │  ❌ Spectateur passif                 │  ✅ CO-FONDATEUR actif          │
 ├─────────────────────────────────────────────────────────────────────────┤
-│  🎯 Vous êtes : Le produit            │  🎯 Vous êtes : L'actionnaire   │
+│  🎯 Vous êtes : Le produit            │  🎯 Vous êtes : Le co-bâtisseur  │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1514,7 +1534,7 @@ Le système UPlanet n'est pas qu'une infrastructure technique. C'est une **décl
     - **Identité souveraine** : Clé cryptographique portable, résistante à la censure
     - **Gains réels** : 1 Like = 1 Ẑen, monétisation directe de votre contenu
     - **Accès au réseau** : Alternative décentralisée à Twitter/Facebook
-*   **Pourquoi ?** C'est moins cher qu'un café par semaine, mais vous n'êtes plus le produit. Vous êtes **actionnaire** du remplacement aux GAFAM.
+*   **Pourquoi ?** C'est moins cher qu'un café par semaine, mais vous n'êtes plus le produit. Vous êtes **co-bâtisseur** du remplacement aux GAFAM (droit d'accès et économie circulaire, pas un investissement financier).
 
 #### **👑 LE PARRAIN : Devenez Co-Fondateur avec Cloud Privé**
 > **"Je verse 50€/an, je me dégoogle complètement et je participe aux décisions."**
@@ -1717,7 +1737,7 @@ Le but est de vous libérer de la complexité pour que vous puissiez vous concen
 ### **Pour Open Collective Europe (OCE)**
 
 Ivan voit des **"Expenses" (Frais)** légitimes :
-- **Loyer du serveur** = Frais légitime (indemnité d'occupation)
+- **Loyer du serveur** = Frais légitime (indemnité d'occupation / redevance d'hébergement)
 - **Facture du développeur** = Frais légitime (prestation de service)
 - Il n'y a plus de notion de "dividende" (qui est interdit pour une Asso/Non-Profit)
 
@@ -1727,29 +1747,37 @@ Ivan voit des **"Expenses" (Frais)** légitimes :
 - Le **Capitaine** déclare du Chiffre d'Affaires de prestation. C'est clair.
 - Il n'y a pas de zone grise "Crypto-actif spéculatif".
 
+### **Argumentaire pour l'Armateur : pourquoi ce vocabulaire protège tout le monde**
+
+Ce changement de vocabulaire (Coopérative d'Infrastructure Numérique, redevance d'hébergement, crédit d'usage) protège explicitement les membres :
+
+1. **Éviter la requalification** : Cela évite à l'Armateur d'être requalifié en "Banque" ou "Vendeur de titres". On mutualise du matériel et on perçoit une indemnité ou un loyer, pas un dividende sur un capital.
+2. **Fiscalité simple et légale** : L'Armateur peut déclarer ses revenus en **BIC (Location de matériel)** ou **BNC (Prestation de service)**, ce qui est légal et simple, plutôt qu'en "plus-value sur actifs numériques" (complexe et très taxé). Les justificatifs (loyer, redevance d'hébergement) correspondent à cette qualification.
+
 ### **Pour la "Zen Economy"**
 
-- La **mathématique reste exactement la même** : si le service rapporte 90€, 30€ vont au projet (réserve), 30€ à l'opérateur (prestation), 30€ au fournisseur de matériel (loyer).
-- Seul le **"Label" change** sur le virement bancaire et dans les justificatifs.
+- La **mathématique reste exactement la même** : si le service rapporte 90€, 30€ vont au projet (réserve), 30€ à l'opérateur (prestation), 30€ au fournisseur de matériel (redevance d'hébergement / loyer).
+- Seul le **"Label" change** sur le virement bancaire et dans les justificatifs — au profit de la conformité et de la clarté fiscale.
 
 ---
 
-## **DICTIONNAIRE DE TRADUCTION (Sémantique de Conformité)**
+## **DICTIONNAIRE DE REMPLACEMENT (Sémantique de Conformité OCE)**
 
-| Vocabulaire Ancien (RISQUE) | Nouveau Vocabulaire (CONFORME) |
+À appliquer systématiquement dans toute communication : présenter le projet comme une **Coopérative d'Infrastructure Numérique** (mutualisation de matériel, défraiement des hébergeurs), jamais comme une DAO d'investissement.
+
+| ❌ Terme à BANNIR (Financier) | ✅ Terme à UTILISER (Service/Commun) |
 | :--- | :--- |
-| Investisseur / Actionnaire | **Parrain d'Infrastructure** ou **Fournisseur de Ressources** |
-| Dividende / Rente | **Redevance d'Usage** ou **Loyer de mise à disposition** |
-| Capital / Levée de fonds | **Financement Participatif d'Équipement** ou **Mise à disposition** |
-| Achat de Token | **Droit d'Accès** ou **Crédit Service** |
-| Bénéfice | **Excédent de Gestion** |
+| Investisseur / Actionnaire | **Parrain** / **Armateur** / **Co-Bâtisseur** |
+| Dividende / Rente | **Redevance d'hébergement** / **Indemnité** |
+| Capital (Social) | **Patrimoine Commun** / **Infrastructure** |
+| Achat de Token | **Crédit d'Usage** / **Droit d'Accès** |
+| Retour sur Investissement (ROI) | **Économie Circulaire** / **Compensation** |
+| Cours du ẐEN | **Valeur d'échange interne** |
+| Bénéfice / Profit | **Excédent de Gestion** / **Excédent de fonctionnement** |
 | Pacte d'Actionnaires | **Charte de Redistribution Budgétaire** |
-| Parts sociales | **Crédits Service** ou **Droits d'usage** |
-| ROI / Retour sur investissement | **Accès aux services** / **Droits d'usage étendus** |
+| Parts sociales | **Crédits Service** / **Droits d'usage** |
 | Co-propriétaire | **Parrain d'Infrastructure** |
 | Revenus locatifs | **Redevances d'usage** |
-| Surplus / Profit | **Excédent de fonctionnement** |
-| Capital social | **Budget de fonctionnement** |
 | Sociétaire | **Parrain** / **Contributeur** |
 
 ---
