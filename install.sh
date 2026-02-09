@@ -201,7 +201,7 @@ echo
 ###############################################################
 echo "##  ADDING lazydocker ================"
 # INSTALL lazydocker GUI
-${MY_PATH}/install.lazydocker.sh
+~/.zen/Astroport.ONE/install.lazydocker.sh
 
 ###############################################################
 echo "##INSTALL yt-dlp & SYMLINK youtube-dl ##########################"

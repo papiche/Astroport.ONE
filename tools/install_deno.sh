@@ -25,7 +25,9 @@ if [[ -x "$DENO_INSTALL/bin/deno" ]]; then
 fi
 
 # Official install script (installs to $HOME/.deno by default when DENO_INSTALL not set)
-if ! curl -fsSL https://deno.land/install.sh | sh -s --; then
+# CI=1 skips interactive shell setup (no .bashrc prompt); -y skips any remaining prompts
+export CI=1
+if ! curl -fsSL https://deno.land/install.sh | sh -s -- -y; then
     echo "[install_deno][$(timestamp)] ERROR: Deno install failed. Check network and https://deno.com/" >&2
     exit 1
 fi
