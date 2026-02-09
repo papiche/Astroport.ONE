@@ -861,10 +861,11 @@ step_uplanet_init_origin() {
         echo ""
         print_info "Initialisation ORIGIN en cours..."
         
-        # Lancer UPLANET.init.sh
+        # Lancer UPLANET.init.sh (exits 0 even when balance is 0 – wallets created, PAY skipped)
         if "$MY_PATH/UPLANET.init.sh"; then
-            print_success "Initialisation UPLANET ORIGIN terminée avec succès"
-            print_success "Votre station est prête en mode ORIGIN (Niveau X)"
+            print_success "Portefeuilles créés / initialisation UPLANET ORIGIN"
+            echo -e "${CYAN}Si le script a indiqué d’alimenter le portefeuille source : ajoutez au moins 1 Ğ1 puis relancez $MY_PATH/UPLANET.init.sh${NC}"
+            print_success "Vous pouvez déjà créer votre compte capitaine (étape suivante)"
         else
             print_error "Erreur lors de l'initialisation UPLANET ORIGIN"
             echo -e "${YELLOW}Vous pouvez relancer manuellement:${NC}"
@@ -1209,26 +1210,25 @@ show_menu() {
     
     echo -e "${BLUE}🎯 Assistant d'embarquement UPlanet ẐEN${NC}"
     echo ""
-    echo -e "${CYAN}Étapes d'embarquement:${NC}"
-    echo -e "  1. 📖 Présentation et introduction"
+    echo -e "  ${GREEN}q${NC}. ⚡ Configuration RAPIDE (recommandé – nouveaux capitaines)"
+    echo -e "  ${GREEN}a${NC}. 🚀 Embarquement complet (toutes les étapes)"
+    echo ""
+    echo -e "${CYAN}Étapes individuelles:${NC}"
+    echo -e "  1. 📖 Présentation"
     echo -e "  2. 💰 Configuration économique (.env)"
-    echo -e "  3. 💻 Valorisation de votre machine"
-    echo -e "  4. 🎯 Choix du mode UPlanet (ORIGIN/ẐEN)"
+    echo -e "  3. 💻 Valorisation machine"
+    echo -e "  4. 🎯 Mode UPlanet (ORIGIN/ẐEN)"
     echo -e "  5. 🌐 Configuration réseau"
     echo -e "  6. 🏛️  Initialisation UPLANET"
-    echo -e "  7. 🚀 Passage au niveau Y (ẐEN seulement)"
-    echo -e "  8. 🏴‍☠️ Embarquement capitaine"
-    echo -e "  9. 📋 Résumé et finalisation"
+    echo -e "  7. 🚀 Niveau Y (ẐEN)"
+    echo -e "  8. 🏴‍☠️ Compte capitaine"
+    echo -e "  9. 📋 Résumé"
     echo ""
-    echo -e "  ${GREEN}a${NC}. 🚀 Embarquement complet automatique"
-    echo -e "  ${GREEN}q${NC}. ⚡ Configuration RAPIDE (nouveaux capitaines)"
-    echo -e "  ${GREEN}s${NC}. 🔄 Sync configuration coopérative (DID)"
-    echo -e "  ${GREEN}c${NC}. 📊 Vérifier la configuration actuelle"
-    echo -e "  ${GREEN}d${NC}. 👨‍✈️ Dashboard Capitaine (captain.sh)"
-    echo -e "  ${GREEN}0${NC}. ❌ Quitter"
+    echo -e "  ${GREEN}s${NC}. 🔄 Sync coop (DID)   ${GREEN}c${NC}. 📊 Config actuelle   ${GREEN}d${NC}. 👨‍✈️ Dashboard   ${GREEN}0${NC}. Quitter"
     echo ""
     
-    read -p "Votre choix: " choice
+    read -p "Votre choix [q]: " choice
+    choice="${choice:-q}"
     
     case "$choice" in
         1) step_introduction ;;
@@ -1373,21 +1373,22 @@ quick_setup_wizard() {
     fi
     echo ""
     
-    # Étape 4: Initialisation UPLANET
+    # Étape 4: Initialisation UPLANET (crée les portefeuilles ; si 0 Ğ1, indique d’alimenter puis relancer)
     print_info "🏛️  Initialisation de l'infrastructure UPLANET..."
     
     if [[ -f "$MY_PATH/UPLANET.init.sh" ]]; then
-        if "$MY_PATH/UPLANET.init.sh" --quick 2>/dev/null || "$MY_PATH/UPLANET.init.sh"; then
-            echo -e "${GREEN}✅ Infrastructure UPLANET initialisée${NC}"
+        if "$MY_PATH/UPLANET.init.sh"; then
+            echo -e "${GREEN}✅ Portefeuilles créés / UPLANET prêt${NC}"
+            echo -e "${CYAN}Si demandé : ajoutez 1 Ğ1 au portefeuille source puis relancez UPLANET.init.sh pour finaliser.${NC}"
         else
-            print_warning "⚠️  Initialisation UPLANET partielle (continuez manuellement si nécessaire)"
+            print_warning "⚠️  Initialisation partielle – relancez UPLANET.init.sh si besoin"
         fi
     else
         print_warning "⚠️  UPLANET.init.sh non trouvé"
     fi
     echo ""
     
-    # Étape 5: Embarquement capitaine via captain.sh
+    # Étape 5: Compte capitaine (possible même sans avoir encore alimenté les portefeuilles)
     print_info "🏴‍☠️ Création de votre compte Capitaine..."
     echo ""
     

@@ -181,11 +181,12 @@ check_source_wallet() {
     fi
     
     if (( $(echo "$available_balance < 1" | bc -l) )); then
-        echo -e "${RED}❌ Solde insuffisant pour l'initialisation${NC}"
+        echo -e "${YELLOW}⚠️  Solde insuffisant pour les transactions primales${NC}"
         echo -e "${BLUE}Solde disponible:${NC} ${YELLOW}$available_balance Ğ1${NC}"
-        echo -e "${BLUE}Solde requis:${NC} ${YELLOW}1 Ğ1 minimum${NC}"
-        echo -e "${YELLOW}Veuillez alimenter le portefeuille source.${NC}"
-        exit 1
+        echo -e "${BLUE}Solde requis pour initialisation complète:${NC} ${YELLOW}1 Ğ1 minimum${NC}"
+        echo -e "${CYAN}Les portefeuilles seront créés ; ajoutez au moins 1 Ğ1 au portefeuille source puis relancez ce script pour finaliser.${NC}"
+        SOURCE_INSUFFICIENT=1
+        return 1
     fi
     
     echo -e "${GREEN}✅ Portefeuille source vérifié avec succès${NC}"
@@ -313,9 +314,24 @@ check_and_create_nostr_keys() {
         local key_file="${NOSTR_KEYS[$key_name]}"
         
         if [[ -f "$key_file" ]]; then
-            # Extract NPUB from key file
-            local npub=$(grep -oP 'NPUB=\K[^;]+' "$key_file" 2>/dev/null || echo "")
+            # Prefer NSEC=; NPUB=; HEX= format (same as myswarm_secret.nostr for NIP-101 backfill)
+            local npub=$(grep -oP 'NPUB=\K[^;]+' "$key_file" 2>/dev/null || grep -oE 'npub1[a-zA-Z0-9]{58}' "$key_file" 2>/dev/null | head -1)
+            local has_hex=$(grep -c 'HEX=' "$key_file" 2>/dev/null || echo 0)
             if [[ -n "$npub" ]]; then
+                # Upgrade old format (npub only) to NSEC=; NPUB=; HEX=
+                if [[ "$has_hex" -eq 0 ]] && [[ -x "${MY_PATH}/tools/keygen" ]] && [[ -x "${MY_PATH}/tools/nostr2hex.py" ]]; then
+                    local nsec=$(grep -oE 'nsec1[a-zA-Z0-9]{58}' "$key_file" 2>/dev/null | head -1)
+                    if [[ -z "$nsec" ]]; then
+                        nsec=$("${MY_PATH}/tools/keygen" -t nostr "${UPLANETNAME}.G1" "${UPLANETNAME}.G1" -s 2>/dev/null | grep -oE 'nsec1[a-zA-Z0-9]{58}' | head -1)
+                    fi
+                    if [[ -n "$nsec" ]]; then
+                        local hex=$("${MY_PATH}/tools/nostr2hex.py" "$npub" 2>/dev/null)
+                        if [[ -n "$hex" ]]; then
+                            echo "NSEC=$nsec; NPUB=$npub; HEX=$hex" > "$key_file"
+                            chmod 600 "$key_file"
+                        fi
+                    fi
+                fi
                 echo -e "${GREEN}✅ $key_name existe${NC}"
                 echo -e "   NPUB: ${CYAN}${npub:0:20}...${NC}"
                 ((keys_exist++))
@@ -329,13 +345,19 @@ check_and_create_nostr_keys() {
             local key_dir=$(dirname "$key_file")
             [[ ! -d "$key_dir" ]] && mkdir -p "$key_dir"
             
-            # Generate NOSTR key using UPLANETNAME.G1 seed (consistent with ORACLE_SYSTEM.md)
-            if [[ -x "${MY_PATH}/tools/keygen" ]]; then
-                "${MY_PATH}/tools/keygen" -t nostr "${UPLANETNAME}.G1" "${UPLANETNAME}.G1" > "$key_file" 2>/dev/null
-                chmod 600 "$key_file"
-                
-                if [[ -f "$key_file" ]]; then
-                    local npub=$(grep -oP 'NPUB=\K[^;]+' "$key_file" 2>/dev/null || echo "")
+            # Generate NOSTR key in NSEC=; NPUB=; HEX= format (same as myswarm_secret.nostr, NIP-101 backfill)
+            if [[ -x "${MY_PATH}/tools/keygen" ]] && [[ -x "${MY_PATH}/tools/nostr2hex.py" ]]; then
+                local keygen_out=$("${MY_PATH}/tools/keygen" -t nostr "${UPLANETNAME}.G1" "${UPLANETNAME}.G1" 2>/dev/null)
+                local npub=$(echo "$keygen_out" | grep -oE 'npub1[a-zA-Z0-9]{58}' | head -1)
+                local nsec=$(echo "$keygen_out" | grep -oE 'nsec1[a-zA-Z0-9]{58}' | head -1)
+                if [[ -z "$nsec" ]]; then
+                    nsec=$("${MY_PATH}/tools/keygen" -t nostr "${UPLANETNAME}.G1" "${UPLANETNAME}.G1" -s 2>/dev/null | grep -oE 'nsec1[a-zA-Z0-9]{58}' | head -1)
+                fi
+                local hex=""
+                [[ -n "$npub" ]] && hex=$("${MY_PATH}/tools/nostr2hex.py" "$npub" 2>/dev/null)
+                if [[ -n "$npub" ]] && [[ -n "$nsec" ]] && [[ -n "$hex" ]]; then
+                    echo "NSEC=$nsec; NPUB=$npub; HEX=$hex" > "$key_file"
+                    chmod 600 "$key_file"
                     echo -e "${GREEN}✅ $key_name créée avec succès${NC}"
                     echo -e "   NPUB: ${CYAN}${npub:0:20}...${NC}"
                     echo -e "   Seed: ${YELLOW}\${UPLANETNAME}.G1${NC}"
@@ -344,7 +366,7 @@ check_and_create_nostr_keys() {
                     echo -e "${RED}❌ Échec de la création de $key_name${NC}"
                 fi
             else
-                echo -e "${RED}❌ keygen non disponible${NC}"
+                echo -e "${RED}❌ keygen ou nostr2hex.py non disponible${NC}"
             fi
         fi
     done
@@ -390,10 +412,10 @@ check_and_init_cooperative_config() {
         return 1
     fi
     
-    # Get pubkey for display
+    # Get pubkey for display (keyfile may use npub: format from keygen; coop_get_pubkey converts via nostr2hex)
     local pubkey=$(coop_get_pubkey 2>/dev/null)
     if [[ -z "$pubkey" ]]; then
-        echo -e "${RED}❌ Impossible d'extraire la clé publique${NC}"
+        echo -e "${YELLOW}⚠️  Clé coopérative non lisible (format keyfile) – DID sera initialisé après prochaine exécution${NC}"
         return 1
     fi
     
@@ -1076,10 +1098,11 @@ main() {
     # Check and initialize cooperative config DID (encrypted config in NOSTR)
     check_and_init_cooperative_config
     
-    # Check source wallet
-    check_source_wallet
+    # Check source wallet (may set SOURCE_INSUFFICIENT=1 without exiting)
+    SOURCE_INSUFFICIENT=0
+    check_source_wallet || true
     
-    # Check cooperative wallet status
+    # Check cooperative wallet status (creates missing wallet files even if source has 0 balance)
     cooperative_needs_init=false
     if ! check_cooperative_wallets; then
         cooperative_needs_init=true
@@ -1098,7 +1121,21 @@ main() {
         exit 0
     fi
     
-    # Initialize cooperative wallets
+    # Skip PAY steps when source has insufficient balance (wallets already created above)
+    if [[ "${SOURCE_INSUFFICIENT:-0}" == "1" ]]; then
+        echo ""
+        echo -e "${YELLOW}════════════════════════════════════════════════════════════════${NC}"
+        echo -e "${CYAN}📋 Portefeuilles créés. Pour finaliser l'initialisation :${NC}"
+        echo -e "   1. Alimentez le portefeuille source avec au moins ${GREEN}1 Ğ1${NC}"
+        local source_pub=$(cat "$SOURCE_WALLET" 2>/dev/null | grep 'pub:' | cut -d ' ' -f 2)
+        [[ -n "$source_pub" ]] && echo -e "   2. Adresse source (uplanet.G1) : ${CYAN}$source_pub${NC}"
+        echo -e "   3. Relancez : ${CYAN}$MY_PATH/UPLANET.init.sh${NC}"
+        echo -e "${YELLOW}════════════════════════════════════════════════════════════════${NC}"
+        display_final_status
+        exit 0
+    fi
+    
+    # Initialize cooperative wallets (PAY 1 G1 to each)
     if [[ "$cooperative_needs_init" == true ]]; then
     initialize_cooperative_wallets
     fi

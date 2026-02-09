@@ -778,29 +778,25 @@ get_coop_dunikey_path() {
     esac
 }
 
-# Get NOSTR key file path for a wallet type (same naming as dunikey but with .nostr extension)
-# Files are stored in ~/.zen/game/ alongside dunikey files
+# Get NOSTR key file path for a wallet type
+# G1: ~/.zen/game/uplanet.G1.nostr (root key)
+# Others: ~/.zen/game/nostr/COOP_<TYPE>/.secret.nostr (dir with .secret.nostr + HEX for NIP-101 backfill)
 get_coop_nostr_path() {
     local wallet_type="$1"
     
     case "$wallet_type" in
-        # Primary source wallet
         G1)           echo "${HOME}/.zen/game/uplanet.G1.nostr" ;;
-        # Base cooperative wallets
-        UPLANET)      echo "${HOME}/.zen/game/uplanet.nostr" ;;
-        SOCIETY)      echo "${HOME}/.zen/game/uplanet.SOCIETY.nostr" ;;
-        # Governance wallets (3x1/3)
-        TREASURY)     echo "${HOME}/.zen/game/uplanet.CASH.nostr" ;;  # TREASURY uses CASH file
-        RND)          echo "${HOME}/.zen/game/uplanet.RnD.nostr" ;;
-        ASSETS)       echo "${HOME}/.zen/game/uplanet.ASSETS.nostr" ;;
-        # Fiscal and accounting
-        IMPOT)        echo "${HOME}/.zen/game/uplanet.IMPOT.nostr" ;;
-        CAPITAL)      echo "${HOME}/.zen/game/uplanet.CAPITAL.nostr" ;;
-        AMORTISSEMENT) echo "${HOME}/.zen/game/uplanet.AMORTISSEMENT.nostr" ;;
-        # Security and operational
-        INTRUSION)    echo "${HOME}/.zen/game/uplanet.INTRUSION.nostr" ;;
-        CAPTAIN)      echo "${HOME}/.zen/game/uplanet.captain.nostr" ;;
-        *)            echo "${HOME}/.zen/game/uplanet.${wallet_type}.nostr" ;;
+        UPLANET)      echo "${HOME}/.zen/game/nostr/COOP_UPLANET/.secret.nostr" ;;
+        SOCIETY)      echo "${HOME}/.zen/game/nostr/COOP_SOCIETY/.secret.nostr" ;;
+        TREASURY)     echo "${HOME}/.zen/game/nostr/COOP_TREASURY/.secret.nostr" ;;
+        RND)          echo "${HOME}/.zen/game/nostr/COOP_RND/.secret.nostr" ;;
+        ASSETS)       echo "${HOME}/.zen/game/nostr/COOP_ASSETS/.secret.nostr" ;;
+        IMPOT)        echo "${HOME}/.zen/game/nostr/COOP_IMPOT/.secret.nostr" ;;
+        CAPITAL)      echo "${HOME}/.zen/game/nostr/COOP_CAPITAL/.secret.nostr" ;;
+        AMORTISSEMENT) echo "${HOME}/.zen/game/nostr/COOP_AMORTISSEMENT/.secret.nostr" ;;
+        INTRUSION)    echo "${HOME}/.zen/game/nostr/COOP_INTRUSION/.secret.nostr" ;;
+        CAPTAIN)      echo "${HOME}/.zen/game/nostr/COOP_CAPTAIN/.secret.nostr" ;;
+        *)            echo "${HOME}/.zen/game/nostr/COOP_${wallet_type}/.secret.nostr" ;;
     esac
 }
 
@@ -940,39 +936,37 @@ create_coop_dunikey() {
 }
 
 # Create cooperative NOSTR root key (uplanet.G1.nostr)
+# Format: NSEC=...; NPUB=...; HEX=... (same as myswarm_secret.nostr for NIP-101 backfill)
 create_coop_nostr_root_key() {
     local uplanetname="$1"
     
     local nostr_key_file="${HOME}/.zen/game/uplanet.G1.nostr"
     
-    if [[ -f "$nostr_key_file" ]]; then
+    if [[ -f "$nostr_key_file" ]] && grep -q 'HEX=' "$nostr_key_file" 2>/dev/null; then
         log_info "Cooperative NOSTR root key already exists"
         return 0
     fi
     
     log_info "Creating cooperative NOSTR root key (uplanet.G1.nostr)..."
     
-    # Use keygen to create NOSTR key (same seed as G1 wallet)
-    if [[ -x "${MY_PATH}/keygen" ]]; then
-        "${MY_PATH}/keygen" -t nostr "${uplanetname}.G1" "${uplanetname}.G1" > "$nostr_key_file" 2>/dev/null
-        
-        if [[ -f "$nostr_key_file" ]] && [[ -s "$nostr_key_file" ]]; then
+    if [[ -x "${MY_PATH}/keygen" ]] && [[ -x "${MY_PATH}/nostr2hex.py" ]]; then
+        local keygen_out=$("${MY_PATH}/keygen" -t nostr "${uplanetname}.G1" "${uplanetname}.G1" 2>/dev/null)
+        local npub=$(echo "$keygen_out" | grep -oE 'npub1[a-zA-Z0-9]{58}' | head -1)
+        local nsec=$(echo "$keygen_out" | grep -oE 'nsec1[a-zA-Z0-9]{58}' | head -1)
+        [[ -z "$nsec" ]] && nsec=$("${MY_PATH}/keygen" -t nostr "${uplanetname}.G1" "${uplanetname}.G1" -s 2>/dev/null | grep -oE 'nsec1[a-zA-Z0-9]{58}' | head -1)
+        local hex=""
+        [[ -n "$npub" ]] && hex=$("${MY_PATH}/nostr2hex.py" "$npub" 2>/dev/null)
+        if [[ -n "$npub" ]] && [[ -n "$nsec" ]] && [[ -n "$hex" ]]; then
+            echo "NSEC=$nsec; NPUB=$npub; HEX=$hex" > "$nostr_key_file"
             chmod 600 "$nostr_key_file"
-            
-            local npub=$(grep -oP 'NPUB=\K[^;]+' "$nostr_key_file" 2>/dev/null | head -1)
             log_success "Cooperative NOSTR root key created"
             log_info "NPUB: ${npub:0:20}..."
-            
             return 0
-        else
-            log_error "Failed to create cooperative NOSTR root key"
-            rm -f "$nostr_key_file"
-            return 1
         fi
-    else
-        log_error "keygen tool not found"
-        return 1
     fi
+    log_error "Failed to create cooperative NOSTR root key (keygen or nostr2hex.py)"
+    rm -f "$nostr_key_file"
+    return 1
 }
 
 # Initialize all missing cooperative infrastructure
@@ -1149,28 +1143,32 @@ create_coop_did() {
     
     if [[ ! -f "$nostr_file" ]] || ! grep -q "NSEC=" "$nostr_file" 2>/dev/null; then
         log_warning "No Nostr keys found for $wallet_type"
-        log_info "Generating Nostr keys to $(basename "$nostr_file")..."
+        log_info "Generating Nostr keys to $(dirname "$nostr_file")/..."
         
-        # Generate Nostr keys using keygen with -k flag
+        local coop_nostr_dir=$(dirname "$nostr_file")
+        mkdir -p "$coop_nostr_dir"
+        
         if [[ -x "${MY_PATH}/keygen" ]]; then
             local keygen_output=$("${MY_PATH}/keygen" -t nostr -k "$seed" "$seed" 2>/dev/null)
-            local gen_npub=$(echo "$keygen_output" | grep -E '^npub1' | head -1)
-            local gen_nsec=$(echo "$keygen_output" | grep -E '^nsec1' | head -1)
+            local gen_npub=$(echo "$keygen_output" | grep -oE 'npub1[a-zA-Z0-9]{58}' | head -1)
+            local gen_nsec=$(echo "$keygen_output" | grep -oE 'nsec1[a-zA-Z0-9]{58}' | head -1)
+            local gen_hex=""
+            if [[ -n "$gen_npub" ]] && [[ -x "${MY_PATH}/nostr2hex.py" ]]; then
+                gen_hex=$("${MY_PATH}/nostr2hex.py" "$gen_npub" 2>/dev/null)
+            fi
+            if [[ -z "$gen_hex" ]] && [[ -f "${MY_PATH}/nostr_nsec2npub2hex.py" ]] && [[ -n "$gen_nsec" ]]; then
+                gen_hex=$(python3 "${MY_PATH}/nostr_nsec2npub2hex.py" "$gen_nsec" 2>/dev/null | tail -1)
+            fi
             
-            if [[ -n "$gen_npub" ]] && [[ -n "$gen_nsec" ]]; then
-                # Get HEX from nsec using nostr_nsec2npub2hex.py
-                local gen_hex=""
-                if [[ -f "${MY_PATH}/nostr_nsec2npub2hex.py" ]]; then
-                    gen_hex=$(python3 "${MY_PATH}/nostr_nsec2npub2hex.py" "$gen_nsec" 2>/dev/null)
-                fi
-                
-                # Write formatted output: NSEC=...; NPUB=...; HEX=...;
+            if [[ -n "$gen_npub" ]] && [[ -n "$gen_nsec" ]] && [[ -n "$gen_hex" ]]; then
                 echo "NSEC=${gen_nsec}; NPUB=${gen_npub}; HEX=${gen_hex};" > "$nostr_file"
                 chmod 600 "$nostr_file"
-                log_success "Nostr keys generated: $(basename "$nostr_file")"
+                echo "$gen_hex" > "${coop_nostr_dir}/HEX"
+                chmod 600 "${coop_nostr_dir}/HEX"
+                log_success "Nostr keys generated: ${coop_nostr_dir}/ (.secret.nostr + HEX for NIP-101 backfill)"
             else
                 log_error "Failed to generate Nostr keys"
-                rm -f "$nostr_file"
+                rm -f "$nostr_file" "${coop_nostr_dir}/HEX"
                 return 1
             fi
         else
@@ -1191,13 +1189,20 @@ create_coop_did() {
     
     # Get hex pubkey
     if [[ -z "$hex" ]]; then
-        if [[ -f "${MY_PATH}/nostr2hex.py" ]]; then
-            hex=$(python3 "${MY_PATH}/nostr2hex.py" "$npub" 2>/dev/null)
+        if [[ -x "${MY_PATH}/nostr2hex.py" ]]; then
+            hex=$("${MY_PATH}/nostr2hex.py" "$npub" 2>/dev/null)
         fi
     fi
     
-    # Create DID document (stored alongside the nostr key file)
-    local did_file="${nostr_file%.nostr}.did.json"
+    # Ensure HEX file exists in same dir for NIP-101 backfill_constellation.sh
+    local coop_nostr_dir=$(dirname "$nostr_file")
+    if [[ -n "$hex" ]] && [[ -d "$coop_nostr_dir" ]] && [[ ! -f "${coop_nostr_dir}/HEX" ]]; then
+        echo "$hex" > "${coop_nostr_dir}/HEX"
+        chmod 600 "${coop_nostr_dir}/HEX"
+    fi
+    
+    # Create DID document in same dir as .secret.nostr (e.g. COOP_RND/did.json)
+    local did_file="${coop_nostr_dir}/did.json"
     local timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     
     # Get cooperative root DID from UPLANET.init.sh (source of truth)
@@ -2231,7 +2236,7 @@ update_user_metadata_custom() {
                 local nsec=""
                 
                 if [[ -f "$nsec_file" ]]; then
-                    nsec=$(grep -oP 'NSEC=\K[^\s]+' "$nsec_file" 2>/dev/null || grep -oP 'nsec=\K[^\s]+' "$nsec_file" 2>/dev/null)
+                    nsec=$(grep -oP 'NSEC=\K[^;]+' "$nsec_file" 2>/dev/null | head -1 | tr -d ' ')
                 fi
                 
                 if [[ -n "$nsec" ]] && [[ -f "${MY_PATH}/nostr_publish_did.py" ]]; then

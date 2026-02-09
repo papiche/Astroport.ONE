@@ -123,6 +123,7 @@ coop_decrypt() {
 ################################################################################
 
 # Get the NPUB/HEX from uplanet.G1.nostr keyfile
+# Accepts keyfile format: HEX=... or npub: npub1... or NPUB=npub1... (from keygen stdout)
 coop_get_pubkey() {
     if [[ ! -f "$COOP_CONFIG_KEYFILE" ]]; then
         echo "[ERROR] Keyfile not found: $COOP_CONFIG_KEYFILE" >&2
@@ -131,12 +132,26 @@ coop_get_pubkey() {
     fi
     
     local hex=$(grep "HEX=" "$COOP_CONFIG_KEYFILE" 2>/dev/null | cut -d'=' -f2 | tr -d ';' | tr -d ' ')
-    if [[ -z "$hex" ]]; then
-        echo "[ERROR] Cannot extract HEX from keyfile" >&2
-        return 1
+    if [[ -n "$hex" ]]; then
+        echo "$hex"
+        return 0
     fi
     
-    echo "$hex"
+    # Keygen writes "npub: npub1..." - extract npub and convert to hex for did:nostr:
+    local npub=$(grep -oE 'npub1[a-zA-Z0-9]{58}' "$COOP_CONFIG_KEYFILE" 2>/dev/null | head -1)
+    if [[ -n "$npub" ]]; then
+        local nostr2hex="${_COOP_DIR}/nostr2hex.py"
+        if [[ -x "$nostr2hex" ]]; then
+            hex=$("$nostr2hex" "$npub" 2>/dev/null)
+            if [[ -n "$hex" ]]; then
+                echo "$hex"
+                return 0
+            fi
+        fi
+    fi
+    
+    echo "[ERROR] Cannot extract HEX or NPUB from keyfile" >&2
+    return 1
 }
 
 # Get the NSEC from uplanet.G1.nostr keyfile
@@ -146,7 +161,7 @@ coop_get_nsec() {
         return 1
     fi
     
-    local nsec=$(grep "NSEC=" "$COOP_CONFIG_KEYFILE" 2>/dev/null | cut -d'=' -f2 | tr -d ';' | tr -d ' ')
+    local nsec=$(grep -oP 'NSEC=\K[^;]+' "$COOP_CONFIG_KEYFILE" 2>/dev/null | head -1 | tr -d ' ')
     if [[ -z "$nsec" ]]; then
         echo "[ERROR] Cannot extract NSEC from keyfile" >&2
         return 1

@@ -51,19 +51,25 @@ class NostrCooperativeConfig:
         self.relays = relays or DEFAULT_RELAYS
     
     def load_keyfile(self, keyfile_path):
-        """Load NSEC/NPUB/HEX from keyfile"""
+        """Load NSEC/NPUB/HEX from keyfile.
+        Accepts format: NSEC=...; NPUB=...; HEX=... (one line or multiple lines).
+        """
         keyfile = Path(keyfile_path).expanduser()
         if not keyfile.exists():
             raise FileNotFoundError(f"Keyfile not found: {keyfile}")
         
-        content = keyfile.read_text()
+        content = keyfile.read_text().strip()
         keys = {}
         
-        for line in content.split('\n'):
-            line = line.strip()
-            if '=' in line:
-                key, value = line.split('=', 1)
-                keys[key.strip()] = value.strip().rstrip(';').strip()
+        # Parse semicolon-separated format (NSEC=...; NPUB=...; HEX=...)
+        for part in content.replace('\n', ' ').split(';'):
+            part = part.strip()
+            if '=' in part:
+                key, value = part.split('=', 1)
+                key = key.strip()
+                value = value.strip().rstrip(';').strip()
+                if key and value:
+                    keys[key] = value
         
         return keys
     
