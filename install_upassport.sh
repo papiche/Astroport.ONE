@@ -3,6 +3,8 @@
 ################################################################################
 MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+# Activate venv so keygen (sourced via my.sh) has duniterpy and other deps
+[[ -s "$HOME/.astro/bin/activate" ]] && . "$HOME/.astro/bin/activate"
 . "${MY_PATH}/tools/my.sh"
 
 echo "INSTALLING UPassport API : http://localhost:54321"

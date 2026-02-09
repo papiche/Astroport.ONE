@@ -195,8 +195,10 @@ myIpfsKeyStore() {
 }
 
 myIpfsPeerId() {
-    local myIpfsPeerId=$(jq -r .Identity.PeerID "$(myHome)"/.ipfs/config)
-    [ -n "$myIpfsPeerId" ] && echo "$myIpfsPeerId"
+    local config="$(myHome)/.ipfs/config"
+    [ ! -f "$config" ] && return 0
+    local myIpfsPeerId=$(jq -r .Identity.PeerID "$config" 2>/dev/null)
+    [ -n "$myIpfsPeerId" ] && [ "$myIpfsPeerId" != "null" ] && echo "$myIpfsPeerId"
 }
 
 myIpns() {
