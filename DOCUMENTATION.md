@@ -109,7 +109,7 @@
 ### Official Websites
 * **[CopyLaRadio](https://copylaradio.com)** - Cooperative website
 * **[Monnaie Libre](https://monnaie-libre.fr)** - Ğ1 cryptocurrency
-* **[UPlanet Ẑen](https://opencollective.com/uplanet-zero)** - UPlanet Ẑen collective
+* **[UPlanet Ẑen](https://opencollective.com/monnaie-libre)** - UPlanet Ẑen collective
 
 ### Documentation
 * **[GitBook Documentation](https://astroport-1.gitbook.io/astroport.one/)** - User documentation

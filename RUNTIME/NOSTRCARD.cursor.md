@@ -286,7 +286,7 @@ Le script génère le fichier `.nostr.zine.html` basé sur le template `nostr.ht
 ### **Page 6 - Services ẐEN**
 - **♥BOX** (réseau de confiance)
 - **Offres MULTIPASS** et ZENCARD
-- Liens vers [Open Collective](https://opencollective.com/uplanet-zero)
+- Liens vers [Open Collective](https://opencollective.com/monnaie-libre)
 
 ### **Page 7 - QR Code SCAN**
 - **Grand QR code SSSS** pour récupération d'urgence

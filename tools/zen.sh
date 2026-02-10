@@ -2130,7 +2130,7 @@ handle_opencollective_reporting() {
     echo -e "\n${CYAN}💰 REPORTING OPENCOLLECTIVE${NC}"
     echo -e "${YELLOW}===========================${NC}"
     echo -e "${GREEN}Reporter les paiements reçus vers OpenCollective UPlanet${NC}"
-    echo -e "${BLUE}URL: https://opencollective.com/uplanet-zero${NC}"
+    echo -e "${BLUE}URL: https://opencollective.com/monnaie-libre${NC}"
     
     # Display current pending payments
     echo -e "\n${CYAN}📋 PAIEMENTS EN ATTENTE DE REPORT:${NC}"
@@ -2178,7 +2178,7 @@ handle_opencollective_reporting() {
     
     if [[ $total_to_report -gt 0 ]]; then
         echo -e "\n${BLUE}ÉTAPES POUR REPORTER SUR OPENCOLLECTIVE:${NC}"
-        echo -e "  1. ${YELLOW}Ouvrir: https://opencollective.com/uplanet-zeropar${NC}"
+        echo -e "  1. ${YELLOW}Ouvrir: https://opencollective.com/monnaie-librepar${NC}"
         echo -e "  2. ${YELLOW}Se connecter avec le compte administrateur${NC}"
         echo -e "  3. ${YELLOW}Aller dans 'Submit Expense' ou 'Add Funds'${NC}"
         echo -e "  4. ${YELLOW}Montant: $total_to_report Ẑen (équivalent $(echo "scale=2; $total_to_report / 10" | bc) Ğ1)${NC}"

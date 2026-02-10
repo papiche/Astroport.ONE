@@ -493,7 +493,7 @@ Structured JSON event for machine parsing by `crowdfunding.html`. **Note:** The 
     "g1_campaign_active": true
   },
   "contributions": [],
-  "opencollective": "https://opencollective.com/uplanet-zero"
+  "opencollective": "https://opencollective.com/monnaie-libre"
 }
 ```
 
@@ -696,7 +696,7 @@ For users without existing Ẑen balance:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  OpenCollective UPlanet (https://opencollective.com/uplanet-zero)        │
+│  OpenCollective UPlanet (https://opencollective.com/monnaie-libre)        │
 └─────────────────────────────────────────────────────────────────────────┘
                               │
                               │ Payment (€)

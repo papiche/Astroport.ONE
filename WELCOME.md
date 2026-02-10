@@ -106,7 +106,7 @@ UPlanet propose une alternative complète aux systèmes centralisés actuels, en
 - ✅ **Collaboration** : Partage sécurisé de documents (uDRIVE, en cours de développement...)
 - ✅ **Échanges ZENCARD** : Transferts entre détenteurs de ZENCARD (entre UPlanet #made-in-zen)
 
-**Recharge :** [UPlanet Ẑen](https://opencollective.com/uplanet-zero#category-CONTRIBUTE) - 1 Ẑen = 1€
+**Recharge :** [UPlanet Ẑen](https://opencollective.com/monnaie-libre#category-CONTRIBUTE) - 1 Ẑen = 1€
 Bénévole sur UPlanet ORIGIN 1 Ẑen = 0.1 Ğ1
 
 ---
@@ -254,7 +254,7 @@ bash <(curl -sL https://install.astroport.com)
 
 ### 🌐 **Étape 2 : Rejoindre la Communauté**
 - [support@qo-op.com](mailto:support@qo-op.com) : Contactez la coopérative des auto-hébergeurs Web3
-- [UPlanet Ẑen](https://opencollective.com/uplanet-zero) : Obtenir des €/Ẑ (locataire et sociétaire UPlanet ẐEN)
+- [UPlanet Ẑen](https://opencollective.com/monnaie-libre) : Obtenir des €/Ẑ (locataire et sociétaire UPlanet ẐEN)
 
 ### 📚 **Étape 3 : Découvrir les Ressources**
 - [Documentation UPlanet (en cours...)](https://astroport-1.gitbook.io/astroport.one/)
@@ -269,7 +269,7 @@ bash <(curl -sL https://install.astroport.com)
 - 🌐 **Site CopyLaRadio** : [copylaradio.com](https://copylaradio.com)
 - 🌐 **MULTIPASS** : [UPlanet ORIGIN](https://qo-op.com)
 - 🤝 **Adhésion G1FabLab** : [opencollective.com/monnaie-libre](https://opencollective.com/monnaie-libre)
-- 💰 **Jeton de parité "€ / Ẑen"** : [Open Collective UPlanet Ẑen](https://opencollective.com/uplanet-zero)
+- 💰 **Jeton de parité "€ / Ẑen"** : [Open Collective UPlanet Ẑen](https://opencollective.com/monnaie-libre)
 - 📧 **Contact** : support@qo-op.com : '@qoop' sur le [Forum Monnaie Libre](https://forum.monnaie-libre.fr) de la Communauté Ğ1
 
 ---

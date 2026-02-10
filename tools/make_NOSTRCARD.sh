@@ -174,9 +174,14 @@ EOFNOSTR
     # echo "${MY_PATH}/../tools/natools.py encrypt -p $G1PUBNOSTR -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head -o ${HOME}/.zen/game/nostr/${EMAIL}/.ssss.head.player.enc"
     ${MY_PATH}/../tools/natools.py encrypt -p "$G1PUBNOSTR" -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head -o ${HOME}/.zen/game/nostr/${EMAIL}/.ssss.head.player.enc >/dev/null
 
-    ## DISCO MIDDLE ENCRYPT WITH CAPTAING1PUB
-    # echo "${MY_PATH}/../tools/natools.py encrypt -p $CAPTAING1PUB -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.mid -o ${HOME}/.zen/game/nostr/${EMAIL}/.ssss.mid.captain.enc"
-    ${MY_PATH}/../tools/natools.py encrypt -p "$CAPTAING1PUB" -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.mid -o ${HOME}/.zen/game/nostr/${EMAIL}/.ssss.mid.captain.enc >/dev/null
+    ## DISCO MIDDLE ENCRYPT WITH CAPTAING1PUB (or UPLANETG1PUB for first captain bootstrap)
+    # When no captain exists yet, CAPTAING1PUB is empty; use the new user's key so the first MULTIPASS becomes captain.
+    MID_ENC_KEY="${CAPTAING1PUB:-$UPLANETG1PUB}"
+    if [[ -z "$MID_ENC_KEY" ]]; then
+        echo "❌ REFUSED: No CAPTAING1PUB and UPLANETG1PUB not set. Run UPLANET.init.sh first."
+        exit 1
+    fi
+    ${MY_PATH}/../tools/natools.py encrypt -p "$MID_ENC_KEY" -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.mid -o ${HOME}/.zen/game/nostr/${EMAIL}/.ssss.mid.captain.enc >/dev/null
 
     ## DISCO TAIL ENCRYPT WITH UPLANETG1PUB
     # echo "${MY_PATH}/../tools/natools.py encrypt -p $UPLANETG1PUB -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.tail -o ${HOME}/.zen/game/nostr/${EMAIL}/ssss.tail.uplanet.enc"

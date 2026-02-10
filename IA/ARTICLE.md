@@ -137,7 +137,7 @@ Votre cerveau numérique `#BRO` répond à tous vos souhaits créatifs :
 
 Rejoignez la coopérative CopyLaRadio en souscrivant à l'offre **Parrainage Infrastructure : Module GPU** :
 
-👉 **[Souscrire sur OpenCollective](https://opencollective.com/uplanet-zero/contribute/proprio-128-go-71400)** (dispo mars 2026)
+👉 **[Souscrire sur OpenCollective](https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-module-gpu-1-24-98385)** (dispo mars 2026)
 
 ### 2️⃣ Obtenez votre MULTIPASS
 
@@ -189,7 +189,7 @@ Rejoignez les pionniers de l'Internet coopératif. Les premiers inscrits bénéf
 
 <div align="center">
 
-### 🚀 **[Devenir Co-Propriétaire](https://opencollective.com/uplanet-zero/contribute/proprio-128-go-71400)**
+### 🚀 **[Devenir Co-Propriétaire](https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-module-gpu-1-24-98385)**
 
 ### 🌍 **[Pourquoi choisir UPlanet](https://ipfs.copylaradio.com/ipns/copylaradio.com/entrance.html)**
 

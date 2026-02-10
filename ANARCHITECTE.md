@@ -76,7 +76,7 @@ Pour rejoindre l'écosystème, il existe deux chemins distincts répondant à de
 | Caractéristique | **Porte A : 🧭 L'EXPLORATEUR (UPlanet ORIGIN)** | **Porte B : 🛠️ LE BÂTISSEUR (UPlanet Ẑen)** |
 | :--- | :--- | :--- |
 | **Public Cible** | Toute personne curieuse, membre Ğ1 ou non. | Membres de la Toile de Confiance Ğ1 voulant s'investir. |
-| **Point d'Entrée**| **[https://qo-op.com](https://qo-op.com)** (inscription par EMAIL) | **[OpenCollective UPlanet Ẑen](https://opencollective.com/uplanet-zero)** (achat de parts) |
+| **Point d'Entrée**| **[https://qo-op.com](https://qo-op.com)** (inscription par EMAIL) | **[OpenCollective UPlanet Ẑen](https://opencollective.com/monnaie-libre)** (achat de parts) |
 | **Parité du Ẑen**| **1 Ẑen = 0.1 Ğ1** (économie interne, bac à sable) | **1 Ẑen = 1€** (économie réelle de la coopérative) |
 | **Objectif** | Découvrir, tester les services (IA, NOSTR), comprendre le potentiel. | Devenir co-propriétaire de l'infra, participer à la gouvernance, avoir un impact. |
 | **Processus**| Inscription rapide en 1 minute. | 1. Rejoindre le G1FabLab. 2. Achat de parts. 3. Sceller le pacte avec une PRIMO TX depuis son compte Ğ1 certifié. |
@@ -87,7 +87,7 @@ Pour rejoindre l'écosystème, il existe deux chemins distincts répondant à de
 ### **6. Liens Clés et Ressources**
 
 *   **Porte d'Entrée "Explorateur" :** [https://qo-op.com](https://qo-op.com)
-*   **Porte d'Entrée "Bâtisseur" (Sociétaires) :** [https://opencollective.com/uplanet-zero](https://opencollective.com/uplanet-zero)
+*   **Porte d'Entrée "Bâtisseur" (Sociétaires) :** [https://opencollective.com/monnaie-libre](https://opencollective.com/monnaie-libre)
 *   **Communauté des Bâtisseurs (G1FabLab) :** [https://opencollective.com/monnaie-libre](https://opencollective.com/monnaie-libre)
 *   **Code Source Astroport.ONE :** [https://github.com/papiche/Astroport.ONE](https://github.com/papiche/Astroport.ONE)
 *   **Statuts de la SCIC CopyLaRadio :** [https://pad.p2p.legal/s/CopyLaRadio#](https://pad.p2p.legal/s/CopyLaRadio#)

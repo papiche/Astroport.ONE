@@ -55,8 +55,8 @@ Le point de départ n'est pas technique, il est humain.
 
 **Acte 2 : L'Apport au Capital - Devenir Co-Propriétaire**
 C'est l'acte qui vous transforme de visiteur en associé.
-*   **Rendez-vous sur [UPlanet Ẑen - Devenir Sociétaire](https://opencollective.com/uplanet-zero)**.
-*   Choisissez votre niveau d'implication (ex: [**Part "Satellite" à 50€/an**](https://opencollective.com/uplanet-zero/contribute/achat-128-go-sur-nanopi5-86611)).
+*   **Rendez-vous sur [UPlanet Ẑen - Devenir Sociétaire](https://opencollective.com/monnaie-libre)**.
+*   Choisissez votre niveau d'implication (ex: [**Part "Satellite" à 50€/an**](https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-extension-128-go-98386)).
 *   **IMPORTANT :** Utilisez le **même email** que celui que vous voulez pour votre MULTIPASS.
 *   Ce paiement déclenche la création de vos actifs de sociétaire : votre **MULTIPASS** (compte d'action), votre **ZenCard** (compte de capital) et votre **UPassport** (clé de gouvernance).
 
@@ -150,7 +150,7 @@ Chaque jour passé sur les plateformes centralisées enrichit un système qui ex
 
 **Étape 2 : Engagez-vous en tant que "Bâtisseur"**
 *   **[Adhérez au G1FabLab](https://opencollective.com/monnaie-libre)** : C'est la porte d'entrée communautaire pour soutenir la R&D et échanger avec les autres bâtisseurs.
-*   **Devenez [sociétaire UPlanet Ẑen](https://opencollective.com/uplanet-zero)** : C'est l'acte qui vous fait devenir co-propriétaire. Vous entrez dans l'économie réelle où 1 Ẑen = 1€.
+*   **Devenez [sociétaire UPlanet Ẑen](https://opencollective.com/monnaie-libre)** : C'est l'acte qui vous fait devenir co-propriétaire. Vous entrez dans l'économie réelle où 1 Ẑen = 1€.
 *   **Entrez au [capital de MadeInZen](https://opencollective.com/made-in-zen)** : Pour un investissement plus conséquent nous vous apprenons comment créer votre propre UPlanet ẐEN (selon vos règles).
 
 **Votre avenir numérique vous appartient. Avec UPlanet, son fruit appartient à la Terre.**

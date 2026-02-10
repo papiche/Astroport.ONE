@@ -352,6 +352,43 @@ ls -la ~/.zen/game/*.dunikey
 - Pause entre transactions pour éviter la surcharge
 - Gestion des erreurs et rollback si nécessaire
 
+---
+
+## 🚀 Après `install.sh` : embarquement et inscription capitaine
+
+### Contexte : nouvelle station rejoint « UPlanet ORIGIN »
+
+Après `Astroport.ONE/install.sh`, la nouvelle station est en **UPlanet ORIGIN** (niveau X) : réseau IPFS public, économie UPlanet simplifiée, pas de `swarm.key`. L’embarquement (création du premier capitaine et liaison à l’écosystème) se fait via :
+
+1. **`uplanet_onboarding.sh`** – assistant complet (config économique, mode ORIGIN/ẐEN, init UPLANET, puis capitaine)
+2. **`captain.sh`** – soit lancé à la fin de l’onboarding, soit directement pour « embarquement simple »
+
+### Ce qui se passe concrètement
+
+| Étape | Script / action | Rôle |
+|-------|-----------------|------|
+| 1 | `uplanet_onboarding.sh` (ou choix « Configuration rapide ») | Config .env (PAF, NCARD, ZCARD), valorisation machine, choix ORIGIN/ẐEN |
+| 2 | `UPLANET.init.sh` | Création des portefeuilles coopératifs (uplanet.G1, uplanet, SOCIETY, CASH, RND, ASSETS, IMPOT, NODE) depuis `UPLANETNAME_G1` |
+| 3 | `captain.sh` → **`make_NOSTRCARD.sh`** | Création du **MULTIPASS** du capitaine (clés NOSTR, wallet Ğ1, IPNS, SSSS, DID) |
+| 4 | `captain.sh` → **`VISA.new.sh`** | Création de la **ZEN Card** du capitaine (identité économique, parts sociales) |
+| 5 | `did_manager_nostr.sh update … CAPTAIN` | Inscription du capitaine dans le DID (statut `astroport_captain`) |
+| 6 | `UPLANET.official.sh --infrastructure` | Inscription Armateur (apport capital machine) |
+
+En résumé : **MULTIPASS** = identité NOSTR + wallet ; **ZEN Card** = identité économique + capital social. Le capitaine est le premier MULTIPASS + première ZEN Card de la station, puis marqué CAPTAIN dans le DID.
+
+### Pourquoi `make_NOSTRCARD.sh` peut échouer pour inscrire le capitaine
+
+`make_NOSTRCARD.sh` crée un MULTIPASS (email, clés NOSTR/Ğ1, SSSS, DID). Il a besoin de :
+
+- **`UPLANETG1PUB`** – clé publique du portefeuille « Services » (créé par `UPLANET.init.sh`) → en général OK après `UPLANET.init.sh`
+- **`CAPTAING1PUB`** – clé publique Ğ1 du **capitaine actuel** (lue dans `my.sh` depuis `~/.zen/game/nostr/${CAPTAINEMAIL}/G1PUBNOSTR`)
+
+Pour le **premier** capitaine, il n’y a pas encore de capitaine : `~/.zen/game/players/.current` est vide ou absent, donc `CAPTAINEMAIL` et **`CAPTAING1PUB`** sont vides. Or le script chiffre la part SSSS « middle » avec `CAPTAING1PUB` (ligne ~179). Si `CAPTAING1PUB` est vide, l’appel à `natools.py encrypt -p "$CAPTAING1PUB" …` échoue ou produit un fichier inutilisable, et l’inscription du capitaine via MULTIPASS échoue.
+
+**Correctif** : pour le premier utilisateur (aucun capitaine existant), il faut utiliser la clé du MULTIPASS en cours de création (`G1PUBNOSTR`) à la place de `CAPTAING1PUB` pour chiffrer la part SSSS « middle ». Ainsi le premier compte devient capitaine et chiffre sa propre part « captain » avec sa propre clé.
+
+---
+
 ## 🤝 Contribution et Support
 
 ### Signaler un Problème

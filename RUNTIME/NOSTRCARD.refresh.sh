@@ -408,7 +408,7 @@ for PLAYER in "${NOSTR[@]}"; do
 <li>🔄 <strong>Recharge automatique :</strong> À partir de 20€/mois</li>
 <li>🏛️ <strong>Devenez Sociétaire :</strong> 50€/an (plus de paiements hebdomadaires)</li>
 </ul>
-<p><strong>👉 Rechargez sur :</strong> <a href='https://opencollective.com/uplanet-zero/contribute/' target='_blank'>https://opencollective.com/uplanet-zero/contribute/</a></p>
+<p><strong>👉 Rechargez sur :</strong> <a href='https://opencollective.com/monnaie-libre/contribute/' target='_blank'>https://opencollective.com/monnaie-libre/contribute/</a></p>
 </div>
 <p><strong>🚨 Important :</strong> Si votre solde tombe à 0, votre MULTIPASS sera suspendu.</p>
 </body></html>"

@@ -24,7 +24,7 @@ ZenCard ou page « Devenir sociétaire » (Open Collective, etc.).
 Rejoins le commun. Utilise BRO. Contribue à une IA qui nous appartient.
 
 ## [TEXTE]
-Devenir sociétaire : opencollective.com/uplanet-zero  
+Devenir sociétaire : opencollective.com/monnaie-libre  
 #BRO · UPlanet · CopyLaRadio
 
 ## [VO]

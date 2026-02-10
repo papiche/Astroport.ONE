@@ -58,8 +58,8 @@ Prêt à dé-googliser votre vie ? La ZenCard vous donne un cloud privé complet
     *   ✅ **128 Go de NextCloud Privé** pour synchroniser vos fichiers, contacts, et calendriers.
     *   ✅ Un chemin pour devenir **co-propriétaire de l'infrastructure** en achetant des parts coopératives.
     *   **Niveaux d'Investissement :**
-        *   **[UPlanet SATELLITE (50€/an)](https://opencollective.com/uplanet-zero/contribute/achat-128-go-sur-nanopi5-86611) :** Possédez une part d'un nœud Raspberry Pi 5.
-        *   **[Constellation Sagittarius](https://opencollective.com/uplanet-zero/contribute/proprio-128-go-71400) :** Investissez dans un nœud PC Gamer haute performance et partagez ses revenus.
+        *   **[UPlanet SATELLITE (50€/an)](https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-extension-128-go-98386) :** Possédez une part d'un nœud Raspberry Pi 5.
+        *   **[Constellation Sagittarius](https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-module-gpu-1-24-98385) :** Investissez dans un nœud PC Gamer haute performance et partagez ses revenus.
 
 ### 3. ⚡ [CAPTAIN](https://ipfs.copylaradio.com/ipfs/QmPuTCooApPu3wFiUFdmxRNyFpf8KxdBv4sQ6i4qrdEb1e/captain.html) - Le Constructeur
 **Le Chemin du Contributeur**

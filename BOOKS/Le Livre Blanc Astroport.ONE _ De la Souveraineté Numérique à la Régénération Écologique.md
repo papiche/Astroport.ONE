@@ -18,7 +18,7 @@ Pour garantir une porte d'entrée simple tout en assurant la robustesse de notre
 | :--- | :--- | :--- |
 | **Objectif** | Découvrir, tester, jouer, comprendre les mécanismes. | **Construire, financer et posséder collectivement** l'infrastructure. |
 | **Public Cible**| Toute personne curieuse ("Explorateur"). | Membres de la Toile de Confiance ("Bâtisseur"). |
-| **Point d'Entrée**| [qo-op.com](https://qo-op.com) (Inscription par email). | [OpenCollective UPlanet Ẑen](https://opencollective.com/uplanet-zero) (Achat de parts). |
+| **Point d'Entrée**| [qo-op.com](https://qo-op.com) (Inscription par email). | [OpenCollective UPlanet Ẑen](https://opencollective.com/monnaie-libre) (Achat de parts). |
 | **Économie** | Économie-jouet : **1 Ẑen = 0.1 Ğ1**. | Économie coopérative : **1 Ẑen = 1 €**. |
 | **Infrastructure**| Maintenue par des **bénévoles**. | Maintenue par les **sociétaires**, via le modèle des Capitaines/Armateurs. |
 
@@ -152,7 +152,7 @@ UPlanet ORIGIN est la vision originelle dans sa forme la plus pure. C'est notre 
 ---
 
 ## **Monde 2 : UPlanet Ẑen - Le Moteur, L'Économie Coopérative**
-**(Point d'Entrée : [https://opencollective.com/uplanet-zero](https://opencollective.com/uplanet-zero))**
+**(Point d'Entrée : [https://opencollective.com/monnaie-libre](https://opencollective.com/monnaie-libre))**
 
 UPlanet Ẑen est l'évolution de ce rêve en un projet durable et ancré dans le monde réel. C'est la couche économique propulsée par la **SCIC CopyLaRadio**, notre coopérative de copropriétaires et de bâtisseurs.
 
@@ -168,7 +168,7 @@ UPlanet Ẑen est l'évolution de ce rêve en un projet durable et ancré dans l
 | **Objectif** | Explorer, connecter, inventorier les biens communs. | **Construire, financer et posséder collectivement** une infrastructure résiliente. |
 | **Économie** | 1 Ẑen = 0,1 Ğ1 (Interne, basée sur la Ğ1) | **1 Ẑen = 1 €** (Stable, pour une comptabilité réelle) |
 | **Statut Utilisateur**| Explorateur, Usager | **Bâtisseur, Sociétaire, Copropriétaire** |
-| **Point d'Entrée** | [qo-op.com](https://qo-op.com) (Inscription par e-mail) | [OpenCollective](https://opencollective.com/uplanet-zero) (Acquisition de parts) |
+| **Point d'Entrée** | [qo-op.com](https://qo-op.com) (Inscription par e-mail) | [OpenCollective](https://opencollective.com/monnaie-libre) (Acquisition de parts) |
 
 ---
 
@@ -199,7 +199,7 @@ En adoptant cette double structure, nous créons une voie durable vers un avenir
 
 **Rejoignez l'aventure :**
 *   **Pour Explorer :** [https://qo-op.com](https://qo-op.com)
-*   **Pour Construire :** [https://opencollective.com/uplanet-zero](https://opencollective.com/uplanet-zero)
+*   **Pour Construire :** [https://opencollective.com/monnaie-libre](https://opencollective.com/monnaie-libre)
 *   **Le Code :** [https://github.com/papiche/Astroport.ONE](https://github.com/papiche/Astroport.ONE)
 
 ---

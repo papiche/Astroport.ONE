@@ -58,8 +58,8 @@ Este es tu pasaporte digital. Es la forma más fácil de explorar el ecosistema,
     *   ✅ **128 GB de NextCloud Privado** para sincronizar tus archivos, contactos y calendarios.
     *   ✅ Un camino para convertirte en **co-propietario de la infraestructura** comprando acciones cooperativas.
     *   **Niveles de Inversión:**
-        *   **[UPlanet SATELLITE (50€/año)](https://opencollective.com/uplanet-zero/contribute/achat-128-go-sur-nanopi5-86611):** Posee una parte de un nodo Raspberry Pi 5.
-        *   **[Constelación Sagittarius](https://opencollective.com/uplanet-zero/contribute/proprio-128-go-71400):** Invierte en un nodo PC Gamer de alto rendimiento y comparte sus ingresos.
+        *   **[UPlanet SATELLITE (50€/año)](https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-extension-128-go-98386):** Posee una parte de un nodo Raspberry Pi 5.
+        *   **[Constelación Sagittarius](https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-module-gpu-1-24-98385):** Invierte en un nodo PC Gamer de alto rendimiento y comparte sus ingresos.
 
 ### 3. ⚡ [CAPTAIN](https://ipfs.copylaradio.com/ipfs/QmPuTCooApPu3wFiUFdmxRNyFpf8KxdBv4sQ6i4qrdEb1e/captain.html) - El Constructor
 **El Camino del Contribuidor**

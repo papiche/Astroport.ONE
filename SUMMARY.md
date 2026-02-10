@@ -69,7 +69,7 @@
 * [User Documentation](https://astroport-1.gitbook.io/astroport.one/) - GitBook documentation
 * [CopyLaRadio](https://copylaradio.com) - Cooperative website
 * [Monnaie Libre](https://monnaie-libre.fr) - Ğ1 cryptocurrency
-* [UPlanet Ẑen](https://opencollective.com/uplanet-zero) - 1st UPlanet Ẑen for CopyLaRadio collective
+* [UPlanet Ẑen](https://opencollective.com/monnaie-libre) - 1st UPlanet Ẑen for CopyLaRadio collective
 
 ---
 
