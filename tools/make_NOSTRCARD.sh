@@ -175,7 +175,7 @@ EOFNOSTR
     ${MY_PATH}/../tools/natools.py encrypt -p "$G1PUBNOSTR" -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head -o ${HOME}/.zen/game/nostr/${EMAIL}/.ssss.head.player.enc >/dev/null
 
     ## DISCO MIDDLE ENCRYPT WITH CAPTAING1PUB (or UPLANETG1PUB for first captain bootstrap)
-    # When no captain exists yet, CAPTAING1PUB is empty; use the new user's key so the first MULTIPASS becomes captain.
+    # When no captain exists yet, CAPTAING1PUB is empty; use UPLANETG1PUB (station Services wallet) so the first MULTIPASS can be created.
     MID_ENC_KEY="${CAPTAING1PUB:-$UPLANETG1PUB}"
     if [[ -z "$MID_ENC_KEY" ]]; then
         echo "❌ REFUSED: No CAPTAING1PUB and UPLANETG1PUB not set. Run UPLANET.init.sh first."

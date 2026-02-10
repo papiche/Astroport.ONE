@@ -354,38 +354,61 @@ ls -la ~/.zen/game/*.dunikey
 
 ---
 
-## 🚀 Après `install.sh` : embarquement et inscription capitaine
+## ✅ **CONFORMITÉ : ENCHAÎNEMENT CODE, NOSTR ET CACHE**
 
-### Contexte : nouvelle station rejoint « UPlanet ORIGIN »
+Cette section vérifie la conformité du README avec l’enchaînement réel du code, les événements NOSTR et le cache.
 
-Après `Astroport.ONE/install.sh`, la nouvelle station est en **UPlanet ORIGIN** (niveau X) : réseau IPFS public, économie UPlanet simplifiée, pas de `swarm.key`. L’embarquement (création du premier capitaine et liaison à l’écosystème) se fait via :
+### **1. Enchaînement après `install.sh` (UPlanet ORIGIN)**
 
-1. **`uplanet_onboarding.sh`** – assistant complet (config économique, mode ORIGIN/ẐEN, init UPLANET, puis capitaine)
-2. **`captain.sh`** – soit lancé à la fin de l’onboarding, soit directement pour « embarquement simple »
+| Ordre | Script / Fichier | Rôle vérifié dans le code |
+|-------|-------------------|----------------------------|
+| 1 | `install.sh` | Clone Astroport.ONE, installe deps, appelle `setup.sh`, propose `uplanet_onboarding.sh` |
+| 2 | `uplanet_onboarding.sh` | Config .env, mode ORIGIN/ẐEN, appelle `UPLANET.init.sh` puis `captain.sh` (étape 8 ou config rapide) |
+| 3 | `UPLANET.init.sh` | Source `tools/my.sh` (crée si besoin uplanet.G1, uplanet, SOCIETY, etc.), crée les dunikey manquants (keygen), alimente les portefeuilles vides depuis `uplanet.G1.dunikey` ; initialise config coopérative DID |
+| 4 | `captain.sh` | Vérifie `.current` ; sinon appelle `embark_captain` → `check_and_init_uplanet_infrastructure` (relance UPLANET.init si besoin) → `create_multipass` → `create_zen_card` → `did_manager_nostr.sh update … CAPTAIN` → `UPLANET.official.sh --infrastructure` |
+| 5 | `make_NOSTRCARD.sh` | Création MULTIPASS : clés NOSTR/Ğ1, SSSS (head=G1PUBNOSTR, **middle=CAPTAING1PUB ou UPLANETG1PUB** si premier capitaine, tail=UPLANETG1PUB), IPNS, DID initial via `did_manager_nostr.sh` |
+| 6 | `VISA.new.sh` | Création ZEN Card (secret.dunikey, MOA, lien `.current`) |
+| 7 | `did_manager_nostr.sh update $email CAPTAIN` | Met à jour le DID (contractStatus astroport_captain, quota unlimited) |
+| 8 | `UPLANET.official.sh --infrastructure -m $machine_value` | Inscription Armateur, apport capital |
 
-### Ce qui se passe concrètement
+**Bootstrap premier capitaine** : dans `make_NOSTRCARD.sh`, la part SSSS « middle » est chiffrée avec `CAPTAING1PUB` si définie, sinon **`UPLANETG1PUB`** (pas de capitaine existant). `UPLANETG1PUB` est défini par `my.sh` depuis `~/.zen/game/uplanet.dunikey` et écrit dans `~/.zen/tmp/UPLANETG1PUB`. Donc `UPLANET.init.sh` doit avoir été exécuté (ou `my.sh` sourcé) avant la création du premier MULTIPASS.
 
-| Étape | Script / action | Rôle |
-|-------|-----------------|------|
-| 1 | `uplanet_onboarding.sh` (ou choix « Configuration rapide ») | Config .env (PAF, NCARD, ZCARD), valorisation machine, choix ORIGIN/ẐEN |
-| 2 | `UPLANET.init.sh` | Création des portefeuilles coopératifs (uplanet.G1, uplanet, SOCIETY, CASH, RND, ASSETS, IMPOT, NODE) depuis `UPLANETNAME_G1` |
-| 3 | `captain.sh` → **`make_NOSTRCARD.sh`** | Création du **MULTIPASS** du capitaine (clés NOSTR, wallet Ğ1, IPNS, SSSS, DID) |
-| 4 | `captain.sh` → **`VISA.new.sh`** | Création de la **ZEN Card** du capitaine (identité économique, parts sociales) |
-| 5 | `did_manager_nostr.sh update … CAPTAIN` | Inscription du capitaine dans le DID (statut `astroport_captain`) |
-| 6 | `UPLANET.official.sh --infrastructure` | Inscription Armateur (apport capital machine) |
+### **2. Portefeuilles créés / gérés**
 
-En résumé : **MULTIPASS** = identité NOSTR + wallet ; **ZEN Card** = identité économique + capital social. Le capitaine est le premier MULTIPASS + première ZEN Card de la station, puis marqué CAPTAIN dans le DID.
+- **Création des fichiers dunikey** : `my.sh` (sourcé partout) crée à la volée uplanet.G1, uplanet, SOCIETY, CASH, RnD, ASSETS, IMPOT, INTRUSION, CAPITAL, AMORTISSEMENT, TREASURY. `UPLANET.init.sh` crée aussi les dunikey manquants (dont uplanet.captain.dunikey si `CAPTAINEMAIL` est set) et **alimente** tous les portefeuilles vides depuis `uplanet.G1.dunikey`.
+- **Nombre** : 10 portefeuilles coopératifs (COOPERATIVE_WALLETS) + NODE (NODE_CAPTAIN_WALLETS). Le README parle de « 8 portefeuilles + NODE + CAPTAIN » : en pratique le script gère 10 entrées coopératives (dont UPLANETNAME.CAPTAIN = `uplanet.captain.dunikey`) + NODE. L’**identité** Capitaine (MULTIPASS + ZEN Card) est créée par `captain.sh` / `make_NOSTRCARD.sh` + `VISA.new.sh`, pas par UPLANET.init.sh.
 
-### Pourquoi `make_NOSTRCARD.sh` peut échouer pour inscrire le capitaine
+### **3. Documents et événements NOSTR**
 
-`make_NOSTRCARD.sh` crée un MULTIPASS (email, clés NOSTR/Ğ1, SSSS, DID). Il a besoin de :
+| Usage | Kind | D-tag / identifiant | Script | Cache / stockage |
+|-------|------|----------------------|--------|-------------------|
+| DID utilisateur (MULTIPASS / Capitaine) | **30800** | `did` | `did_manager_nostr.sh` | `~/.zen/game/nostr/${email}/did.json.cache` |
+| Config coopérative (essaim) | **30800** | `cooperative-config` | `cooperative_config.sh` | Lecture/écriture via `nostr_did_client.py` / publish DID |
+| Vérification email déjà inscrit | — | — | `nostr_did_client.py check-email` | Utilisé dans `make_NOSTRCARD.sh` avant création |
 
-- **`UPLANETG1PUB`** – clé publique du portefeuille « Services » (créé par `UPLANET.init.sh`) → en général OK après `UPLANET.init.sh`
-- **`CAPTAING1PUB`** – clé publique Ğ1 du **capitaine actuel** (lue dans `my.sh` depuis `~/.zen/game/nostr/${CAPTAINEMAIL}/G1PUBNOSTR`)
+- **DID (kind 30800)** : `did_manager_nostr.sh` utilise `DID_EVENT_KIND=30800`, fetch/publish via `nostr_did_client.py` et `nostr_publish_did.py`. Source de vérité = NOSTR ; cache local = `did.json.cache`.
+- **Config coopérative** : `cooperative_config.sh` utilise `COOP_CONFIG_KIND=30800`, `COOP_CONFIG_D_TAG="cooperative-config"`, stockée dans le DID de UPLANETNAME_G1.
 
-Pour le **premier** capitaine, il n’y a pas encore de capitaine : `~/.zen/game/players/.current` est vide ou absent, donc `CAPTAINEMAIL` et **`CAPTAING1PUB`** sont vides. Or le script chiffre la part SSSS « middle » avec `CAPTAING1PUB` (ligne ~179). Si `CAPTAING1PUB` est vide, l’appel à `natools.py encrypt -p "$CAPTAING1PUB" …` échoue ou produit un fichier inutilisable, et l’inscription du capitaine via MULTIPASS échoue.
+### **4. Cache (`~/.zen/tmp` et associés)**
 
-**Correctif** : pour le premier utilisateur (aucun capitaine existant), il faut utiliser la clé du MULTIPASS en cours de création (`G1PUBNOSTR`) à la place de `CAPTAING1PUB` pour chiffrer la part SSSS « middle ». Ainsi le premier compte devient capitaine et chiffre sa propre part « captain » avec sa propre clé.
+| Fichier / répertoire | Rôle | Script / source |
+|----------------------|------|-------------------|
+| `~/.zen/tmp/UPLANETG1PUB` | Clé publique Services (uplanet.dunikey) | `my.sh` |
+| `~/.zen/tmp/UPLANETNAME_G1` | Clé publique réserve (uplanet.G1.dunikey) | `my.sh` |
+| `~/.zen/tmp/UPLANETNAME_SOCIETY` | Clé publique capital social | `my.sh` |
+| `~/.zen/tmp/UPLANETNAME_*` | Autres clés coopératives (CASH, RND, IMPOT, etc.) | `my.sh` |
+| `~/.zen/tmp/coucou/${pubkey}.COINS` | Solde Ğ1 par clé (TTL 24h) | `G1check.sh` |
+| `~/.zen/tmp/coucou/${pubkey}.primal` | Marqueur source primale | `make_NOSTRCARD.sh` (PAYforSURE), etc. |
+| `~/.zen/game/nostr/${email}/did.json.cache` | Cache DID local par utilisateur | `did_manager_nostr.sh` |
+
+`UPLANET.init.sh` s’appuie sur `my.sh` (donc sur ce cache) et sur `G1check.sh` pour les soldes (cache `coucou`).
+
+### **5. Résumé des corrections de conformité**
+
+- **Bootstrap premier capitaine** : la part SSSS « middle » dans `make_NOSTRCARD.sh` utilise bien **`UPLANETG1PUB`** en fallback (pas G1PUBNOSTR), conforme au code actuel.
+- **Flux** : install → uplanet_onboarding → UPLANET.init → captain → make_NOSTRCARD (avec UPLANETG1PUB si pas de capitaine) → VISA.new → did_manager_nostr (CAPTAIN) → UPLANET.official (infrastructure).
+- **NOSTR** : kind 30800 pour DID et pour config coopérative (d-tag cooperative-config).
+- **Cache** : `~/.zen/tmp/*` pour les clés publiques, `~/.zen/tmp/coucou/*.COINS` pour les soldes, `did.json.cache` pour les DID.
 
 ---
 
@@ -408,7 +431,7 @@ Pour le **premier** capitaine, il n’y a pas encore de capitaine : `~/.zen/game
 `UPLANET.init.sh` est le **script fondamental** qui transforme une installation Astroport.ONE en infrastructure UPlanet ẐEN complète. Il :
 
 1. **🔐 Garantit la sécurité** via la source primale unique `UPLANETNAME_G1`
-2. **🏛️ Crée l'infrastructure** complète (8 portefeuilles + NODE + CAPTAIN)
+2. **🏛️ Crée l'infrastructure** complète (10 portefeuilles coopératifs + NODE ; l’identité Capitaine est créée par captain.sh)
 3. **🎯 S'adapte automatiquement** au mode choisi (ORIGIN ou ẐEN)
 4. **🔄 Intègre parfaitement** avec tous les scripts économiques
 5. **🛡️ Assure la cohérence** de l'écosystème coopératif
