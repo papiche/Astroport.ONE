@@ -237,14 +237,23 @@ echo "================================== TW $days days old"
 
 ######################################
 #### UPLANET GEO COORD EXTRACTION
-## GET "GPS" TIDDLER - 0.00 0.00 (if empty: null)
+## DEFAULT: read existing "GPS" Tiddler (0.00 0.00 if empty)
 ZLAT=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lat)
-    [[ $ZLAT == "null" || $ZLAT == "" ]] && ZLAT="0.00"
+[[ $ZLAT == "null" || $ZLAT == "" ]] && ZLAT="0.00"
 ZLON=$(cat ~/.zen/tmp/${MOATS}/GPS.json | jq -r .[].lon)
-    [[ $ZLON == "null" || $ZLON == "" ]] && ZLON="0.00"
+[[ $ZLON == "null" || $ZLON == "" ]] && ZLON="0.00"
 
-LAT=$(makecoord ${ZLAT})
-LON=$(makecoord ${ZLON})
+## OVERRIDE: force coordinates from NOSTR GPS file if present
+GPS_FILE="$HOME/.zen/game/nostr/${PLAYER}/GPS"
+if [[ -s "$GPS_FILE" ]]; then
+    # shellcheck disable=SC1090
+    . "$GPS_FILE"
+    [[ -n "$LAT" ]] && ZLAT="$LAT"
+    [[ -n "$LON" ]] && ZLON="$LON"
+fi
+
+LAT=$(makecoord "${ZLAT}")
+LON=$(makecoord "${ZLON}")
 
 ### GET UMAP ENV
 $(${MY_PATH}/../tools/getUMAP_ENV.sh "${LAT}" "${LON}" | tail -n 1)

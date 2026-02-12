@@ -355,7 +355,7 @@ for UMAP in ${unique_combined[@]}; do
     ## CLEANUP: Remove local image files (migration to NOSTR-native storage)
     ## Images are now stored only in IPFS via CIDs in NOSTR profile
     rm -f "${UMAPPATH}/zUmap.jpg" "${UMAPPATH}/Usat.jpg" "${UMAPPATH}/Umap.jpg" 2>/dev/null
-    rm -f "${UMAPPATH}/*.jpg" "${UMAPPATH}/*.png" 2>/dev/null
+    rm -f "${UMAPPATH}"/*.jpg "${UMAPPATH}"/*.png 2>/dev/null
     echo "✓ Local images removed (CIDs in NOSTR profile)"
     ##########################################################
 
@@ -389,10 +389,10 @@ for UMAP in ${unique_combined[@]}; do
     ####################################################################################
     ## COPY SECTOR & REGION IFPSROOT
     ## SWARM INIT
-    cat ~/.zen/tmp/swarm/*/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}/ipfs.${TODATE}  2>/dev/null | tail -f 1 2>/dev/null \
+    cat ~/.zen/tmp/swarm/*/UPLANET/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}/ipfs.${TODATE}  2>/dev/null | tail -n 1 2>/dev/null \
         > ${UMAPPATH}/SECTORROOT
 
-    cat ~/.zen/tmp/swarm/*/UPLANET/REGIONS/_${RLAT}_${RLON}/ipfs.${TODATE} 2>/dev/null | tail -f 1 2>/dev/null \
+    cat ~/.zen/tmp/swarm/*/UPLANET/REGIONS/_${RLAT}_${RLON}/ipfs.${TODATE} 2>/dev/null | tail -n 1 2>/dev/null \
         > ${UMAPPATH}/REGIONROOT
 
     ## LOCAL UPDATE PRIORITY --- could be ipfs added ...

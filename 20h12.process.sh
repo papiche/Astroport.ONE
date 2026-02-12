@@ -101,7 +101,7 @@ cat $HOME/.zen/tmp/nostr_video_* >> /tmp/20h12.log
 ########################################################################
 # show ZONE.sh cache of the day
 echo "TODAY UPlanet landings"
-ls ~/.zen/tmp/ZONE_* 2>/dev/null # API v1
+# ls ~/.zen/tmp/ZONE_* 2>/dev/null # API v1 deprecated
 ls ~/.zen/tmp/Ustats*.json 2>/dev/null # API v2
 ########################################################################
 ## REMOVE TMP BUT KEEP swarm, flashmem and coucou
@@ -226,7 +226,6 @@ else
     #####################################
     ${MY_PATH}/RUNTIME/PLAYER.refresh.sh
     #####################################
-    # ${MY_PATH}/RUNTIME/_UPLANET.refresh.sh - old methods -
 fi
 ######################################################### UPLANET ######
 #####################################

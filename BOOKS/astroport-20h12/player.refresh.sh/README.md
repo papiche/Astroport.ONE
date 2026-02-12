@@ -8,7 +8,7 @@ description: >-
 
 Le script `PLAYER.refresh.sh` est essentiel pour maintenir la synchronisation et l'actualisation des données des joueurs sur la plateforme Astroport.ONE.&#x20;
 
-Il gère les clés IPFS/IPNS, vérifie et met à jour les tiddlers, surveille les transactions, et assure la publication et la sauvegarde des données. Ce script permet de garantir que les joueurs disposent toujours des informations les plus récentes et que leurs interactions sur la plateforme sont fluides et sécurisées.
+Il orchestre maintenant surtout la partie **économique et coopérative** (MULTIPASS/ZEN Card, loyers U.SOCIETY, TVA, etc.) et délègue la gestion fine des TiddlyWiki à `TW.refresh.sh`. La couche d’adresse géographique et d’identité publique repose de plus en plus sur Nostr (profils, GPS, journaux UMAP).
 
 #### Fonctionnalités Principales
 
@@ -17,21 +17,22 @@ Il gère les clés IPFS/IPNS, vérifie et met à jour les tiddlers, surveille le
    * Il identifie les joueurs locaux en lisant les fichiers dans le répertoire `~/.zen/game/players/`.
 2. **Vérification et Nettoyage des Comptes** :
    * Pour chaque joueur, le script vérifie l'existence de la clé secrète `secret.dunikey`. Si elle est absente, le compte du joueur est supprimé.
-3. **Mise à Jour des Données du Joueur** :
-   * Le script crée ou met à jour les répertoires et fichiers nécessaires pour chaque joueur, y compris les données IPFS.
-   * Il vérifie et importe les clés IPNS du joueur si elles sont manquantes.
-4. **Téléchargement et Vérification des Tiddlers** :
-   * Le script télécharge le TiddlyWiki (TW) du joueur depuis IPFS et vérifie la présence de tiddlers spécifiques comme `GPS`, `MadeInZion`, `AstroID`, et `Astroport`.
-   * Si des tiddlers sont manquants ou incorrects, le joueur est déconnecté et une alerte est envoyée.
-5. **Mise à Jour des Coordonnées Géographiques** :
-   * Le script extrait les coordonnées GPS du tiddler `GPS` et les met à jour dans le cache du joueur.
-   * Il génère des tiddlers supplémentaires comme `VISIO` et `CESIUM` en fonction de l'âge du compte du joueur.
-6. **Gestion des Amis et des Vœux** :
-   * Le script analyse les tiddlers tagués avec [`$:/moa`](usd-moa.md) pour gérer les amis du joueur et leurs tiddlers associés.
-   * Il crée et actualise les vœux des joueurs en utilisant les scripts [`VOEUX.create.sh`](../voeux.create.sh/) et `VOEUX.refresh.sh`.
-7. **Surveillance des Transactions** :
-   * Le script exécute `G1PalPay.sh` pour surveiller les transactions sur la blockchain Ğ1 et exécuter des commandes basées sur les commentaires des transactions.
-8. **Publication et Sauvegarde** :
-   * Le script publie le TiddlyWiki mis à jour du joueur sur IPFS et met à jour les caches locaux.
-   * Il envoie des notifications par email et publie des flux RSS pour les tiddlers modifiés.
+3. **Gestion économique du MULTIPASS / ZEN Card** :
+   * Vérifie les soldes Ğ1 des wallets MULTIPASS (`G1PUBNOSTR`) et ZENCARD (`.g1pub`) via `G1check.sh`.
+   * Applique les règles coopératives:
+     * ZEN Card à 1 Ğ1 (0 ẐEN) pour les membres, sinon nettoyage via `G1zencard_0zen.sh`.
+     * Loyers hebdomadaires pour les non‑U.SOCIETY (paiements vers CAPTAIN + IMPOT via `PAYforSURE.sh` et TVA calculée).
+4. **Gestion U.SOCIETY** :
+   * Lit les fichiers `U.SOCIETY` et `U.SOCIETY.end` pour déterminer si un joueur est couvert par un contrat de société.
+   * Exempte de loyer les membres actifs, marque ceux arrivés à échéance.
+5. **Délégation TiddlyWiki & GPS** :
+   * Pour chaque joueur valide, appelle `TW.refresh.sh` qui:
+     * synchronise le TW via IPFS/IPNS,
+     * force le GPS du TW à partir de `~/.zen/game/nostr/EMAIL/GPS`,
+     * met à jour le cache `~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_RLAT_RLON/_SLAT_SLON/_LAT_LON/...`.
+6. **Surveillance et notifications** :
+   * En cas d’incohérence grave (TW invalide, absence de clés, TW déplacé sur un autre Astroport, etc.), appelle `PLAYER.unplug.sh` et peut envoyer des emails via `mailjet.sh`.
+
+Les anciennes responsabilités directes de `PLAYER.refresh.sh` sur les clés IPNS et la géolocalisation ont été allégées :  
+il pilote maintenant la **logique métier des joueurs** et laisse `TW.refresh.sh`, `UPLANET.refresh.sh` et `NOSTR.UMAP.refresh.sh` gérer respectivement le TW, les tuiles géographiques UPLANET et les journaux/identités Nostr associés.
 
