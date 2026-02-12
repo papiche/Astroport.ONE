@@ -95,12 +95,5 @@ Le script copie les flux RSS des nouveaux tiddlers du secteur en les récupéran
     combinedrss=("${RSSNODE[@]}" "${RSSWARM[@]}")
     RSSALL=($(echo "${combinedrss[@]}" | tr ' ' '\n' | sort -u))
     ```
-2.  **Ajout des Tiddlers au TiddlyWiki du Secteur** :
-
-    ```bash
-    for RSS in ${RSSALL[@]}; do
-        ${MY_PATH}/RSS2UPlanetSECTORTW.sh "${RSS}" "${SECTOR}" "${MOATS}" "${INDEX}"
-    done
-    ```
 
 ####
