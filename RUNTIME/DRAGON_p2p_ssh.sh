@@ -47,7 +47,7 @@ if [[ -s ~/.ssh/id_ed25519.pub ]]; then
     fi
 fi
 
-## DRAGONz PGP style
+## DRAGONz PGP style - UBiKEY mode - foopgp.org 
 gpg --export-ssh-key $(cat ~/.zen/game/players/.current/.player) 2>/dev/null > ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub
 [[ ! -s ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub ]] && rm ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub 2>/dev/null # remove empty file
 
@@ -235,7 +235,7 @@ fi
 ##################################################################################
 ############################################ $HOME/.zen/game/My_boostrap_ssh.txt
 ## DISTRIBUTE DRAGON SSH WOT AUTHORIZED KEYS
-SSHAUTHFILE="${MY_PATH}/../A_boostrap_ssh.txt"
+SSHAUTHFILE="$HOME/.zen/Astroport.ONE/A_boostrap_ssh.txt"
 [[ -s $HOME/.zen/game/My_boostrap_ssh.txt ]] && SSHAUTHFILE="$HOME/.zen/game/My_boostrap_ssh.txt"
 ############################################
 [[ -s ~/.ssh/authorized_keys ]] \
