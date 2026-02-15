@@ -1,11 +1,11 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 0.2
+# Version: 0.3
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 #~ NOSTRCARD.refresh.sh
-#~ Refresh NOSTR Card data & wallet
+#~ Synchronize NOSTR Card identities, check payment cycles, and refresh IPNS data.
 ################################################################################
 # Ce script gère l'évolution des cartes NOSTR (MULTIPASS) selon leur état :
 # 1. Vérifie et met à jour les données des cartes NOSTR
@@ -127,13 +127,6 @@ mkdir -p ~/.zen/tmp/${MOATS}
     PAYMENTS_PROCESSED=0
     PAYMENTS_FAILED=0
     PAYMENTS_ALREADY_DONE=0
-    FRIENDS_SUMMARIES_PUBLISHED=0
-    DAILY_SUMMARIES=0
-    WEEKLY_SUMMARIES=0
-    MONTHLY_SUMMARIES=0
-    YEARLY_SUMMARIES=0
-    USOCIETY_N2_EXPANSIONS=0
-    YOUTUBE_SYNC_USERS=0
 
 # Fonction pour générer une heure aléatoire de rafraîchissement
 get_random_refresh_time() {
@@ -958,7 +951,7 @@ for PLAYER in "${NOSTR[@]}"; do
   ########################################################################
 
     ########################################################################
-    echo ">>> CHECKING MULTIPASS ($pcoins G1)"
+    echo ">>> CHECKING MULTIPASS ($COINS G1)"
     ########################################################################
     ## ACTIVATED NOSTR CARD
     NOSTRNS=$(cat ~/.zen/game/nostr/${PLAYER}/NOSTRNS)
@@ -1230,54 +1223,6 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
 
     ########################################################################################
-    ## FRIENDS SUMMARY - Publish friends activity summary to MULTIPASS wall
-    ## Delegated to IA/N2.journal.sh for cleaner code organization
-    ## Daily (24h), Weekly (7 days), Monthly (28 days), Yearly (365 days)
-    ## DISABLED: Polluting the feed with too many journal posts
-    ########################################################################################
-    # if [[ "$REFRESH_REASON" == "daily_update" ]]; then
-    #     log "INFO" "📝 Generating N² journal for ${PLAYER} via N2.journal.sh"
-    #     
-    #     # Call the dedicated N² journal script
-    #     n2_start=$(date +%s)
-    #     N2_RESULT=$(${MY_PATH}/../IA/N2.journal.sh "${PLAYER}" 2>&1)
-    #     N2_EXIT_CODE=$?
-    #     n2_end=$(date +%s)
-    #     n2_duration=$((n2_end - n2_start))
-    #     
-    #     if [[ $N2_EXIT_CODE -eq 0 ]]; then
-    #         # Check if an event ID was returned (success)
-    #         if [[ "$N2_RESULT" =~ ^[a-f0-9]{64}$ ]]; then
-    #             log "INFO" "✅ N² journal published for ${PLAYER} (ID: $N2_RESULT) in ${n2_duration}s"
-    #             FRIENDS_SUMMARIES_PUBLISHED=$((FRIENDS_SUMMARIES_PUBLISHED + 1))
-    #             
-    #             # Determine summary type for counter increment
-    #             birthdate_seconds=$(date -d "$BIRTHDATE" +%s)
-    #             today_seconds=$(date -d "$TODATE" +%s)
-    #             days_since_birth=$(( (today_seconds - birthdate_seconds) / 86400 ))
-    #             
-    #             if [[ $((days_since_birth % 365)) -eq 0 && $days_since_birth -ge 365 ]]; then
-    #                 YEARLY_SUMMARIES=$((YEARLY_SUMMARIES + 1))
-    #             elif [[ $((days_since_birth % 28)) -eq 0 && $days_since_birth -ge 28 ]]; then
-    #                 MONTHLY_SUMMARIES=$((MONTHLY_SUMMARIES + 1))
-    #             elif [[ $((days_since_birth % 7)) -eq 0 && $days_since_birth -ge 7 ]]; then
-    #                 WEEKLY_SUMMARIES=$((WEEKLY_SUMMARIES + 1))
-    #             else
-    #                 DAILY_SUMMARIES=$((DAILY_SUMMARIES + 1))
-    #             fi
-    #             
-    #             USOCIETY_N2_EXPANSIONS=$((USOCIETY_N2_EXPANSIONS + 1))
-    #             log_metric "N2_JOURNAL_DURATION" "$n2_duration" "${PLAYER}"
-    #         else
-    #             log "DEBUG" "N² journal completed but no event published for ${PLAYER} (no messages or skipped)"
-    #         fi
-    #     else
-    #         log "WARN" "⚠️ N² journal generation failed for ${PLAYER} (exit: $N2_EXIT_CODE)"
-    #         log "DEBUG" "N2.journal.sh output: $N2_RESULT"
-    #     fi
-    # fi
-
-    ########################################################################################
     ########################################################################
     ## UPDATE IPNS NOSTRVAULT KEY - Only when refresh is needed
     if [[ $refresh_needed -eq 0 ]]; then
@@ -1331,8 +1276,11 @@ for PLAYER in "${NOSTR[@]}"; do
 
         ########################################################################
         ## AUTOMATED DOMAIN SCRAPERS - Once per day PER USER at uDRIVE sync time
-        ## Detects all *.cookie files and runs corresponding domain.sh scripts
         ########################################################################
+        # Domain-specific scrapers (youtube.com.sh, leboncoin.fr.sh, etc.)
+        # are handled for each user during their refresh cycle when uDRIVE sync occurs.
+        # Cookie files are automatically detected as .DOMAIN.cookie files.
+        # If a scraper doesn't exist for a domain, the user is notified by email.
         PLAYER_DIR="$HOME/.zen/game/nostr/${PLAYER}"
         
         # Find all cookie files (hidden files starting with . and ending with .cookie)
@@ -1385,11 +1333,6 @@ for PLAYER in "${NOSTR[@]}"; do
                     
                     # Mark as done for today
                     touch "$DOMAIN_SYNC_TODAY_FILE"
-                    
-                    # Increment counter for specific domains
-                    if [[ "$DOMAIN" == "youtube.com" ]]; then
-                        YOUTUBE_SYNC_USERS=$((YOUTUBE_SYNC_USERS + 1))
-                    fi
                     
                     log_metric "${DOMAIN}_SYNC_SCHEDULED" "1" "${PLAYER}"
                     
@@ -1467,14 +1410,6 @@ for PLAYER in "${NOSTR[@]}"; do
 
 done
 
-########################################################################
-## AUTOMATED DOMAIN SCRAPERS - Once per day PER USER at uDRIVE sync time
-########################################################################
-# Domain-specific scrapers (youtube.com.sh, leboncoin.fr.sh, etc.)
-# are handled for each user during their refresh cycle when uDRIVE sync occurs.
-# Cookie files are automatically detected as .DOMAIN.cookie files.
-# If a scraper doesn't exist for a domain, the user is notified by email.
-
 end=`date +%s`
 dur=`expr $end - $gstart`
 hours=$((dur / 3600)); minutes=$(( (dur % 3600) / 60 )); seconds=$((dur % 60))
@@ -1483,9 +1418,6 @@ hours=$((dur / 3600)); minutes=$(( (dur % 3600) / 60 )); seconds=$((dur % 60))
 log "INFO" "============================================ NOSTR REFRESH SUMMARY"
 log "INFO" "📊 Players: ${#NOSTR[@]} total | $DAILY_UPDATES daily | $FILE_UPDATES files | $SKIPPED_PLAYERS skipped"
 log "INFO" "💰 Payments: $PAYMENTS_PROCESSED processed | $PAYMENTS_FAILED failed | $PAYMENTS_ALREADY_DONE already done"
-log "INFO" "👥 Personal N² Journals: $FRIENDS_SUMMARIES_PUBLISHED total ($DAILY_SUMMARIES daily | $WEEKLY_SUMMARIES weekly | $MONTHLY_SUMMARIES monthly | $YEARLY_SUMMARIES yearly)"
-log "INFO" "🔗 N² Network Expansions: $USOCIETY_N2_EXPANSIONS"
-log "INFO" "🎵 YouTube Sync: $YOUTUBE_SYNC_USERS users"
 log "INFO" "⏱️  Duration: ${hours}h ${minutes}m ${seconds}s"
 log "INFO" "============================================ NOSTR.refresh DONE."
 
@@ -1496,13 +1428,6 @@ log_metric "FILE_UPDATES" "$FILE_UPDATES"
 log_metric "SKIPPED_PLAYERS" "$SKIPPED_PLAYERS"
 log_metric "PAYMENTS_PROCESSED" "$PAYMENTS_PROCESSED"
 log_metric "PAYMENTS_FAILED" "$PAYMENTS_FAILED"
-log_metric "PERSONAL_N2_JOURNALS_PUBLISHED" "$FRIENDS_SUMMARIES_PUBLISHED"
-log_metric "DAILY_N2_JOURNALS" "$DAILY_SUMMARIES"
-log_metric "WEEKLY_N2_JOURNALS" "$WEEKLY_SUMMARIES"
-log_metric "MONTHLY_N2_JOURNALS" "$MONTHLY_SUMMARIES"
-log_metric "YEARLY_N2_JOURNALS" "$YEARLY_SUMMARIES"
-log_metric "N2_NETWORK_EXPANSIONS" "$USOCIETY_N2_EXPANSIONS"
-log_metric "YOUTUBE_SYNC_USERS" "$YOUTUBE_SYNC_USERS"
 log_metric "EXECUTION_TIME_SECONDS" "$dur"
 rm -Rf ~/.zen/tmp/${MOATS}
 rm -f "$LOCKFILE"
