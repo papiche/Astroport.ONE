@@ -1546,7 +1546,7 @@ diffuse_sector_g1_opportunities() {
     # Notify captain by email (mailjet)
     if [[ -n "${CAPTAINEMAIL:-}" && -x "${MY_PATH}/../tools/mailjet.sh" ]]; then
         local mailjet_msg=$(mktemp)
-        echo "<h2>G1 value opportunities – SECTOR ${sector}</h2><p>Location: ${slat}, ${slon}</p><pre>$(echo "$g1_result" | sed 's/</\&lt;/g;s/>/\&gt;/g')</pre>" > "$mailjet_msg"
+        echo "<html><body><h2>G1 value opportunities – SECTOR ${sector}</h2><p>Location: ${slat}, ${slon}</p><pre>$(echo "$g1_result" | sed 's/</\&lt;/g;s/>/\&gt;/g')</pre></body></html>" > "$mailjet_msg"
         "${MY_PATH}/../tools/mailjet.sh" "${CAPTAINEMAIL}" "$mailjet_msg" "G1 opportunities SECTOR ${sector}" 2>/dev/null || true
         rm -f "$mailjet_msg"
     fi

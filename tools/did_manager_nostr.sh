@@ -29,7 +29,7 @@ NOSTR_PUBLISH_DID_SCRIPT="${MY_PATH}/nostr_publish_did.py"
 NOSTR_FETCH_DID_SCRIPT="${MY_PATH}/nostr_did_client.py"
 
 # DID Event configuration (NIP-101)
-DID_EVENT_KIND=30800  # Changed from 30311 to avoid conflict with NIP-53 (Live Event)
+DID_EVENT_KIND=30800
 DID_TAG_IDENTIFIER="did"
 
 # JSON Canonicalization script (RFC 8785 - JCS)
