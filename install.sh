@@ -102,6 +102,7 @@ git clone --recurse-submodules --depth 1 https://github.com/papiche/UPlanet
 cd ~/.zen
 git clone --recurse-submodules --depth 1 https://github.com/papiche/Astroport.ONE.git
 # TODO INSTALL FROM IPFS / IPNS
+git config --global submodule.recurse true
 
 echo "#############################################"
 echo "######### INSTALL TIDDLYWIKI ############"

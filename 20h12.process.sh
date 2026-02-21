@@ -201,7 +201,8 @@ fi
 ########################################################################
 ## UPDATE Astroport.ONE code
 cd ${MY_PATH}/
-git pull
+git submodule update --init --recursive
+git pull --recurse-submodules
 
 ########################################################################
 ## Updating yt-dlp
