@@ -1,9 +1,24 @@
 #!/bin/bash
 # Script pour extraire les fichiers texte avec une extension spécifique
 # d'un dossier source et copier le contenu dans le presse-papier.
+
+# Fonction d'aide
+show_help() {
+    echo "Usage : $0 [--help] <extension> <dossier_source>"
+    echo "Options :"
+    echo "  --help    Affiche cette aide."
+    exit 0
+}
+
+# Vérifie si l'utilisateur demande l'aide
+if [ "$1" == "--help" ]; then
+    show_help
+fi
+
 # Vérifie que les arguments nécessaires sont fournis
 if [ "$#" -lt 2 ]; then
-    echo "Usage : $0 <extension> <dossier_source>"
+    echo "Erreur : Arguments manquants."
+    show_help
     exit 1
 fi
 
@@ -23,27 +38,56 @@ fi
 
 # Initialise une variable pour contenir le résultat
 RESULT=""
+TEMP_FILE="/tmp/$MOATS"
 
-echo find "$SOURCE_DIR" -type f -name "*.$EXTENSION"
+# Vérifie si le dossier source existe
+if [ ! -d "$SOURCE_DIR" ]; then
+    echo "Erreur : Le dossier source '$SOURCE_DIR' n'existe pas."
+    exit 1
+fi
+
 # Parcourt les fichiers avec l'extension donnée dans le dossier source
-find "$SOURCE_DIR" -type f -name "*.$EXTENSION" | while read -r FILE; do
+while IFS= read -r -d '' FILE; do
     # Vérifie si le fichier est un fichier texte
     if file "$FILE" | grep -q "text"; then
         # Récupère le chemin relatif et le nom de fichier sans extension
         RELATIVE_PATH=$(realpath --relative-to="$SOURCE_DIR" "$FILE")
         FILENAME=$(basename "$FILE" ".$EXTENSION")
-        echo "Adding $FILE"
+        echo "Ajout de : $FILE"
         # Ajoute le chemin, le titre et le contenu au résultat
         RESULT+="Chemin : $RELATIVE_PATH\n"
         RESULT+="Titre : $FILENAME\n\n"
         RESULT+="$(cat "$FILE")\n\n"
-        echo "$RESULT" >> /tmp/$MOATS
     fi
-done
+done < <(find "$SOURCE_DIR" -type f -name "*.$EXTENSION" -print0)
 
+# Écrit le résultat dans le fichier temporaire
+echo "$RESULT" > "$TEMP_FILE"
+
+# Vérifie si le fichier temporaire a été créé et n'est pas vide
+if [ ! -f "$TEMP_FILE" ] || [ ! -s "$TEMP_FILE" ]; then
+    echo "Erreur : Aucun fichier trouvé avec l'extension '$EXTENSION' dans '$SOURCE_DIR'."
+    echo "Contenu du fichier temporaire (pour débogage) :"
+    cat "$TEMP_FILE" 2>/dev/null || echo "(fichier temporaire vide ou inexistant)"
+    rm -f "$TEMP_FILE"
+    exit 1
+fi
+
+# Affiche le contenu du fichier temporaire pour débogage
+echo "Contenu du fichier temporaire (pour débogage) :"
 echo "==========================================================="
+cat "$TEMP_FILE"
+echo "==========================================================="
+
 # Copie le résultat dans le presse-papier
-cat /tmp/$MOATS | $CLIP_CMD
-echo "Le contenu texte a été copié dans le presse-papier."
-rm /tmp/$MOATS
-exit 0
+cat "$TEMP_FILE" | $CLIP_CMD
+CLIPBOARD_CONTENT=$(xclip -o -selection clipboard 2>/dev/null || pbcopy -paste 2>/dev/null)
+if [ -z "$CLIPBOARD_CONTENT" ]; then
+    echo "Erreur : Impossible de copier dans le presse-papiers."
+else
+    echo "Le contenu texte a été copié dans le presse-papiers."
+fi
+
+# Supprime le fichier temporaire
+rm -f "$TEMP_FILE"
+

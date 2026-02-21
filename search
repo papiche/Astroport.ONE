@@ -4,19 +4,19 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 ## THIS IS A GREAT RETRO ENGINEERING AND CODE SNIFFING TOOLS
 clear
-[[ ! -s ~/.local/bin/${ME} ]] && cp ${MY_PATH}/${ME} ~/.local/bin/ && echo "Auto Install into ~/.local/bin/${ME}"
+[[ ! -s ~/.local/bin/${ME} ]] && cp ${MY_PATH}/${ME} ~/.local/bin/ && echo "Auto Install into ~/.locallocal/bin/${ME}"
 echo "------------------------------------------------------------------------------"
 if [ "$1" == "" ]; then
     echo "  Nothing to search for!"
 else
     echo "  Searching for \"$1\" recursively. Please Wait..."
     echo "------------------------------------------------------------------------------"
-    grep -h -r --exclude-dir='.git*' --exclude='twsector.html' --exclude='twuplanet.html' --exclude='twdefault.html' -H --colour=always "$1" ./
+    grep -h -r --exclude-dir='.git*' --exclude='twsector.html' --exclude='twuplanet.html' --exclude='twdefault.html' --binary-files=without-match -H --colour=always "$1" ./
 fi
 echo "------------------------------------------------------------------------------"
 if [ "$2" != "" ]; then
     echo "  To replace \"$1\" with \"$2\", please run:"
-    echo "  grep -rl --exclude-dir='.git*' --exclude='twsector.html' --exclude='twuplanet.html' --exclude='twdefault.html' '$1' ./ | xargs -d '\n' sed -i 's~$1~$2~g'"
+    echo "  grep -rl --exclude-dir='.git*' --exclude='twsector.html' --exclude='twuplanet.html' --exclude='twdefault.html' --binary-files=without-match '$1' ./ | xargs -d '\n' sed -i 's~$1~$2~g'"
 fi
 exit 0
 

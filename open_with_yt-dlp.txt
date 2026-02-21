@@ -1,0 +1,10 @@
+# Open With https://addons.mozilla.org/fr/firefox/addon/open-with/
+
+Astroport - IPFS
+_HOME_/.zen/Astroport.ONE/ajouter_media.sh
+
+Vidéos/MP4
+_HOME_/.local/bin/yt-dlp --cookies-from-browser firefox --download-archive _HOME_/.zen/.yt-dlp.list -f "[height=480]/best" --write-info-json --no-mtime -o _HOME_/Vidéos/MP4/%(title)s.%(ext)s
+
+Musique/MP3
+_HOME_/.local/bin/yt-dlp --cookies-from-browser firefox  --download-archive _HOME_/.zen/.yt-dlp.list -x --no-mtime --audio-format mp3 --embed-thumbnail --add-metadata -o _HOME_/Musique/MP3/%(autonumber)s_%(title)s.%(ext)s
