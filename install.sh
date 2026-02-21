@@ -98,9 +98,9 @@ echo "=== CODE CLONING TO '~/.zen/Astroport.ONE' ==="
 echo "#############################################"
 mkdir -p ~/.zen/workspace
 cd ~/.zen/workspace
-git clone --depth 1 https://github.com/papiche/UPlanet
+git clone --recurse-submodules --depth 1 https://github.com/papiche/UPlanet
 cd ~/.zen
-git clone --depth 1 https://github.com/papiche/Astroport.ONE.git
+git clone --recurse-submodules --depth 1 https://github.com/papiche/Astroport.ONE.git
 # TODO INSTALL FROM IPFS / IPNS
 
 echo "#############################################"
