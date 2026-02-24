@@ -2,7 +2,6 @@
 # Script pour extraire les fichiers texte avec plusieurs extensions spécifiques
 # d'un dossier source et copier le contenu dans le presse-papier.
 
-# Fonction d'aide
 show_help() {
     echo "Usage : $0 [--help] <extension1> [<extension2> ...] <dossier_source>"
     echo "Options :"
@@ -10,23 +9,19 @@ show_help() {
     exit 0
 }
 
-# Vérifie si l'utilisateur demande l'aide
 if [ "$1" == "--help" ]; then
     show_help
 fi
 
-# Vérifie que les arguments nécessaires sont fournis
 if [ "$#" -lt 2 ]; then
     echo "Erreur : Arguments manquants."
     show_help
     exit 1
 fi
 
-# Récupère les extensions (tous les arguments sauf le dernier)
 EXTENSIONS=("${@:1:$#-1}")
 SOURCE_DIR="${@: -1}"
 
-# Vérifie si l'utilitaire de gestion du presse-papier est disponible
 if command -v xclip &>/dev/null; then
     CLIP_CMD="xclip -selection clipboard"
 elif command -v pbcopy &>/dev/null; then
@@ -35,47 +30,39 @@ else
     CLIP_CMD=""
 fi
 
-# Initialise une variable pour contenir le résultat
 RESULT=""
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 TEMP_FILE="/tmp/$MOATS"
 
-# Vérifie si le dossier source existe
 if [ ! -d "$SOURCE_DIR" ]; then
     echo "Erreur : Le dossier source '$SOURCE_DIR' n'existe pas."
     exit 1
 fi
 
 # Parcourt les fichiers avec les extensions données dans le dossier source
+# grep -v '/\.' exclut tous les fichiers dans des dossiers cachés (ex: .env)
 for EXT in "${EXTENSIONS[@]}"; do
-    while IFS= read -r -d '' FILE; do
-        # Vérifie si le fichier est un fichier texte
+    while IFS= read -r FILE; do
         if file "$FILE" | grep -q "text"; then
-            # Récupère le chemin relatif et le nom de fichier sans extension
             RELATIVE_PATH=$(realpath --relative-to="$SOURCE_DIR" "$FILE")
             FILENAME=$(basename "$FILE" | sed "s/\.$EXT$//")
             echo "Ajout de : $FILE"
-            # Ajoute le chemin, le titre et le contenu au résultat
             RESULT+="Chemin : $RELATIVE_PATH\n"
             RESULT+="Titre : $FILENAME\n\n"
             RESULT+="$(cat "$FILE")\n\n"
         fi
-    done < <(find "$SOURCE_DIR" \( -type d -name '.*' -prune \) -o \( -type f -name "*.$EXT" -print0 \))
+    done < <(find "$SOURCE_DIR" -type f -name "*.$EXT" | grep -v '/\.')
 done
 
-# Écrit le résultat dans le fichier temporaire
 echo -e "$RESULT" > "$TEMP_FILE"
 
-# Vérifie si le fichier temporaire a été créé et n'est pas vide
 if [ ! -f "$TEMP_FILE" ] || [ ! -s "$TEMP_FILE" ]; then
     echo "Erreur : Aucun fichier trouvé avec les extensions spécifiées dans '$SOURCE_DIR'."
     rm -f "$TEMP_FILE"
     exit 1
 fi
 
-# Copie le résultat dans le presse-papier ou dans un fichier de sortie
 if [ -n "$CLIP_CMD" ] && [ -n "$DISPLAY" ] && cat "$TEMP_FILE" | $CLIP_CMD 2>/dev/null; then
-    # Vérifie que le presse-papier contient bien quelque chose
     CLIPBOARD_CONTENT=$(xclip -o -selection clipboard 2>/dev/null || pbpaste 2>/dev/null)
     if [ -n "$CLIPBOARD_CONTENT" ]; then
         echo "Le contenu texte a été copié dans le presse-papiers."
@@ -83,11 +70,9 @@ if [ -n "$CLIP_CMD" ] && [ -n "$DISPLAY" ] && cat "$TEMP_FILE" | $CLIP_CMD 2>/de
         echo "Avertissement : la copie dans le presse-papiers a peut-être échoué."
     fi
 else
-    # Fallback : écriture dans un fichier
     OUTPUT_FILE="$(realpath "$SOURCE_DIR")/cpcode_output.txt"
     cp "$TEMP_FILE" "$OUTPUT_FILE"
-    echo "Pas de display disponible ou xclip absent. Résultat écrit dans : $OUTPUT_FILE"
+    echo "Résultat écrit dans : $OUTPUT_FILE"
 fi
 
-# Supprime le fichier temporaire
 rm -f "$TEMP_FILE"
