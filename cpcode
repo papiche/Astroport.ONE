@@ -32,8 +32,7 @@ if command -v xclip &>/dev/null; then
 elif command -v pbcopy &>/dev/null; then
     CLIP_CMD="pbcopy"
 else
-    echo "Erreur : ni 'xclip' (Linux) ni 'pbcopy' (macOS) n'est installé."
-    exit 1
+    CLIP_CMD=""
 fi
 
 # Initialise une variable pour contenir le résultat
@@ -61,7 +60,7 @@ for EXT in "${EXTENSIONS[@]}"; do
             RESULT+="Titre : $FILENAME\n\n"
             RESULT+="$(cat "$FILE")\n\n"
         fi
-    done < <(find "$SOURCE_DIR" -type f -name "*.$EXT" -print0)
+    done < <(find "$SOURCE_DIR" \( -type d -name '.*' -prune \) -o \( -type f -name "*.$EXT" -print0 \))
 done
 
 # Écrit le résultat dans le fichier temporaire
@@ -70,27 +69,25 @@ echo -e "$RESULT" > "$TEMP_FILE"
 # Vérifie si le fichier temporaire a été créé et n'est pas vide
 if [ ! -f "$TEMP_FILE" ] || [ ! -s "$TEMP_FILE" ]; then
     echo "Erreur : Aucun fichier trouvé avec les extensions spécifiées dans '$SOURCE_DIR'."
-    echo "Contenu du fichier temporaire (pour débogage) :"
-    cat "$TEMP_FILE" 2>/dev/null || echo "(fichier temporaire vide ou inexistant)"
     rm -f "$TEMP_FILE"
     exit 1
 fi
 
-# Affiche le contenu du fichier temporaire pour débogage
-echo "Contenu du fichier temporaire (pour débogage) :"
-echo "==========================================================="
-cat "$TEMP_FILE"
-echo "==========================================================="
-
-# Copie le résultat dans le presse-papier
-cat "$TEMP_FILE" | $CLIP_CMD
-CLIPBOARD_CONTENT=$(xclip -o -selection clipboard 2>/dev/null || pbcopy -paste 2>/dev/null)
-if [ -z "$CLIPBOARD_CONTENT" ]; then
-    echo "Erreur : Impossible de copier dans le presse-papiers."
+# Copie le résultat dans le presse-papier ou dans un fichier de sortie
+if [ -n "$CLIP_CMD" ] && [ -n "$DISPLAY" ] && cat "$TEMP_FILE" | $CLIP_CMD 2>/dev/null; then
+    # Vérifie que le presse-papier contient bien quelque chose
+    CLIPBOARD_CONTENT=$(xclip -o -selection clipboard 2>/dev/null || pbpaste 2>/dev/null)
+    if [ -n "$CLIPBOARD_CONTENT" ]; then
+        echo "Le contenu texte a été copié dans le presse-papiers."
+    else
+        echo "Avertissement : la copie dans le presse-papiers a peut-être échoué."
+    fi
 else
-    echo "Le contenu texte a été copié dans le presse-papiers."
+    # Fallback : écriture dans un fichier
+    OUTPUT_FILE="$(realpath "$SOURCE_DIR")/cpcode_output.txt"
+    cp "$TEMP_FILE" "$OUTPUT_FILE"
+    echo "Pas de display disponible ou xclip absent. Résultat écrit dans : $OUTPUT_FILE"
 fi
 
 # Supprime le fichier temporaire
 rm -f "$TEMP_FILE"
-
