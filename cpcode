@@ -1,18 +1,11 @@
 #!/bin/bash
-# Script pour extraire les fichiers texte avec plusieurs extensions spécifiques
-# d'un dossier source et copier le contenu dans le presse-papier.
-
 show_help() {
     echo "Usage : $0 [--help] <extension1> [<extension2> ...] <dossier_source>"
     echo "Options :"
     echo "  --help    Affiche cette aide."
     exit 0
 }
-
-if [ "$1" == "--help" ]; then
-    show_help
-fi
-
+if [ "$1" == "--help" ]; then show_help; fi
 if [ "$#" -lt 2 ]; then
     echo "Erreur : Arguments manquants."
     show_help
@@ -22,25 +15,15 @@ fi
 EXTENSIONS=("${@:1:$#-1}")
 SOURCE_DIR="${@: -1}"
 
-if command -v xclip &>/dev/null; then
-    CLIP_CMD="xclip -selection clipboard"
-elif command -v pbcopy &>/dev/null; then
-    CLIP_CMD="pbcopy"
-else
-    CLIP_CMD=""
-fi
-
-RESULT=""
-MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-TEMP_FILE="/tmp/$MOATS"
-
 if [ ! -d "$SOURCE_DIR" ]; then
     echo "Erreur : Le dossier source '$SOURCE_DIR' n'existe pas."
     exit 1
 fi
 
-# Parcourt les fichiers avec les extensions données dans le dossier source
-# grep -v '/\.' exclut tous les fichiers dans des dossiers cachés (ex: .env)
+MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+TEMP_FILE="/tmp/$MOATS.txt"
+RESULT=""
+
 for EXT in "${EXTENSIONS[@]}"; do
     while IFS= read -r FILE; do
         if file "$FILE" | grep -q "text"; then
@@ -56,23 +39,26 @@ done
 
 echo -e "$RESULT" > "$TEMP_FILE"
 
-if [ ! -f "$TEMP_FILE" ] || [ ! -s "$TEMP_FILE" ]; then
+if [ ! -s "$TEMP_FILE" ]; then
     echo "Erreur : Aucun fichier trouvé avec les extensions spécifiées dans '$SOURCE_DIR'."
     rm -f "$TEMP_FILE"
     exit 1
 fi
 
-if [ -n "$CLIP_CMD" ] && [ -n "$DISPLAY" ] && cat "$TEMP_FILE" | $CLIP_CMD 2>/dev/null; then
-    CLIPBOARD_CONTENT=$(xclip -o -selection clipboard 2>/dev/null || pbpaste 2>/dev/null)
-    if [ -n "$CLIPBOARD_CONTENT" ]; then
-        echo "Le contenu texte a été copié dans le presse-papiers."
-    else
-        echo "Avertissement : la copie dans le presse-papiers a peut-être échoué."
+# Tenter le presse-papiers sans vérification bloquante
+COPIED=false
+if [ -n "$DISPLAY" ] && command -v xclip &>/dev/null; then
+    if cat "$TEMP_FILE" | xclip -selection clipboard 2>/dev/null; then
+        COPIED=true
+        echo "Contenu copié dans le presse-papiers."
     fi
-else
-    OUTPUT_FILE="$(realpath "$SOURCE_DIR")/cpcode_output.txt"
-    cp "$TEMP_FILE" "$OUTPUT_FILE"
-    echo "Résultat écrit dans : $OUTPUT_FILE"
+elif command -v pbcopy &>/dev/null; then
+    if cat "$TEMP_FILE" | pbcopy 2>/dev/null; then
+        COPIED=true
+        echo "Contenu copié dans le presse-papiers."
+    fi
 fi
 
-rm -f "$TEMP_FILE"
+
+echo "Résultat écrit dans : $TEMP_FILE"
+

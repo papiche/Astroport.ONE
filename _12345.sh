@@ -44,7 +44,7 @@ exec 2>&1 >> ~/.zen/tmp/_12345.log
 PORT=12345
 ## Balise stale threshold (seconds): remove station from swarm if IPNS not updated longer than this.
 ## Must be above this script's refresh cycle (duree > 3600000 ms = ~1h) to avoid false OFFLINE.
-BALISE_STALE_SECONDS=$(( 2 * 60 * 60 ))   # 2 hours
+BALISE_STALE_SECONDS=$(( 4 * 60 * 60 ))   # 4 hours
 
 ## KILLING OLD DAEMON OF MYSELF
 ncrunning=$(pgrep -au $USER -f 'nc -l -p 12345' | tail -n 1 | xargs | cut -d " " -f 1)
