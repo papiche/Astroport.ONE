@@ -230,21 +230,23 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     fi
 fi
 ##################################################################################
-
-##################################################################################
-##################################################################################
-############################################ $HOME/.zen/game/My_boostrap_ssh.txt
 ## DISTRIBUTE DRAGON SSH WOT AUTHORIZED KEYS
+##################################################################################
+######################################## $HOME/.zen/game/(A)(My)_boostrap_ssh.txt
 SSHAUTHFILE="$HOME/.zen/Astroport.ONE/A_boostrap_ssh.txt"
-[[ -s $HOME/.zen/game/My_boostrap_ssh.txt ]] && SSHAUTHFILE="$HOME/.zen/game/My_boostrap_ssh.txt"
-############################################
+[[ -s $HOME/.zen/game/My_boostrap_ssh.txt ]] \
+    && SSHAUTHFILE="$HOME/.zen/game/My_boostrap_ssh.txt"
+##################################################################################
 [[ -s ~/.ssh/authorized_keys ]] \
     && cp ~/.ssh/authorized_keys ~/.zen/tmp/${MOATS}/authorized_keys \
     || echo "# ASTRO # ~/.ssh/authorized_keys" > ~/.zen/tmp/${MOATS}/authorized_keys
-## Remove old same-uplanet captain keys (tagged with " uplanet:") so they are replaced by current uplanet's captains (if station changed UPlanet)
+
+## Remove old same-uplanet captain keys (tagged with " uplanet:") 
+## so they are replaced by current uplanet's captains (if station changed UPlanet)
 grep -v " uplanet:" ~/.zen/tmp/${MOATS}/authorized_keys > ~/.zen/tmp/${MOATS}/authorized_keys.no_uplanet 2>/dev/null
 mv ~/.zen/tmp/${MOATS}/authorized_keys.no_uplanet ~/.zen/tmp/${MOATS}/authorized_keys 2>/dev/null || true
 
+## Ajout clefs publiques de SSHAUTHFILE
 while IFS= read -r line
 do
     LINE=$(echo "$line" | grep "ssh-ed25519" | grep -Ev "#") # Remove # & not ssh-ed25519
@@ -257,8 +259,10 @@ do
         echo "SSH key already trusted"
     fi
 done < ${SSHAUTHFILE} ## INITIALIZED DURING BLOOM.Me PRIVATE SWARM ACTIVATION
+
 ## ADDING ${HOME}/.zen/game/players/${PLAYER}/ssh.pub (made during PLAYER.refresh)
 cat ${HOME}/.zen/game/players/*/ssh.pub >> ~/.zen/tmp/${MOATS}/authorized_keys 2>/dev/null
+
 ## ADDING SSH KEYS OF CAPTAINS FROM SAME UPLANET (kind 30850 economic-health, swarm_id = UPLANETG1PUB)
 ## Links captains of the same uplanet for P2P SSH (see ECONOMY.broadcast.sh ssh_pub tag and economy.Swarm.html)
 if [[ -n "${UPLANETG1PUB:-}" ]] && [[ -f "${MY_PATH}/../tools/nostr_get_events.sh" ]] && command -v jq &>/dev/null; then
@@ -282,11 +286,14 @@ if [[ -n "${UPLANETG1PUB:-}" ]] && [[ -f "${MY_PATH}/../tools/nostr_get_events.s
         done
     fi
 fi
+
 ### REMOVING DUPLICATION (NO ORDER CHANGING)
 awk '!seen[$0]++' ~/.zen/tmp/${MOATS}/authorized_keys > ~/.zen/tmp/${MOATS}/authorized_keys.clean
 cat ~/.zen/tmp/${MOATS}/authorized_keys.clean > ~/.ssh/authorized_keys
+echo "##################################################################################"
 echo "SSH authorized_keys updated"
-##################################################################################
+cat ~/.ssh/authorized_keys
+echo "##################################################################################"
 ##################################################################################
 cp ~/.zen/install.errors.log ~/.zen/tmp/${IPFSNODEID}/ 2>/dev/null
 

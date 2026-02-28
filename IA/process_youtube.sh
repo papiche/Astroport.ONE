@@ -293,7 +293,7 @@ if [[ -z "$cookie_file" || ! -f "$cookie_file" ]]; then
     error_msg_json=$(echo "$error_msg" | sed 's/"/\\"/g')
     if [[ $JSON_OUTPUT -eq 1 ]]; then
         # JSON-only output mode
-        local error_json="{\"error\":\"${error_msg_json}\",\"success\":false}"
+        error_json="{\"error\":\"${error_msg_json}\",\"success\":false}"
         output_json "$error_json"
     else
         # Legacy mode with markers
