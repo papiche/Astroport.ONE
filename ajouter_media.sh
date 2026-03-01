@@ -409,7 +409,7 @@ if [[ -n "$YOUTUBE_JSON" ]] && echo "$YOUTUBE_JSON" | jq -e '.error' >/dev/null 
             --text="$ERROR_DISPLAY" 2>/dev/null || true
     fi
     
-    # Also display in console
+    # Also display in consolea
     echo "$ERROR_DISPLAY" | sed 's/\\n/\n/g'
     echo ""
     echo "Full output from process_youtube.sh:"

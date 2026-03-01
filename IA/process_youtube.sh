@@ -26,6 +26,27 @@ log_debug() {
     fi
 }
 
+get_default_browser() {
+    if command -v xdg-settings &> /dev/null; then
+        default_browser_desktop=$(xdg-settings get default-web-browser 2>/dev/null)
+        case "$default_browser_desktop" in
+            *firefox*|*iceweasel*|*seamonkey*|*icecat*)
+                echo "firefox" ;;
+            *google-chrome*|*chrome*|*chromium*|*brave*|*edge*)
+                # Extraire le nom de base (chrome, chromium, brave, edge)
+                basename "${default_browser_desktop%.*}" ;;
+            *opera*)
+                echo "opera" ;;
+            *vivaldi*)
+                echo "vivaldi" ;;
+            *safari*)
+                echo "safari" ;;
+            *)
+                echo "" ;;
+        esac
+    fi
+}
+
 # Function to output JSON safely (to file if specified, and to stdout)
 output_json() {
     local json_content="$1"
@@ -239,105 +260,24 @@ if [[ -z "$cookie_file" || ! -f "$cookie_file" ]]; then
     if [[ -n "$BROWSER_COOKIE_FILE" ]] && [[ -f "$BROWSER_COOKIE_FILE" ]]; then
         cookie_file="$BROWSER_COOKIE_FILE"
         log_debug "Using browser cookie file: $cookie_file"
+        COOKIESRC="--cookies \"$cookie_file\""
     fi
-fi
-
-# Optional: manual PO Token for YouTube GVS (reduces 403 when client requires PO Token)
-# See https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide
-po_token_file=""
-if [[ -n "$PLAYER_EMAIL" ]]; then
-    user_dir_po="$HOME/.zen/game/nostr/$PLAYER_EMAIL"
-    for f in "$user_dir_po/.youtube.potoken" "$user_dir_po/.youtube_po_token"; do
-        if [[ -f "$f" && -s "$f" ]]; then
-            po_token_file="$f"
-            log_debug "Using manual PO token file: $po_token_file"
-            break
-        fi
-    done
-fi
-if [[ -z "$po_token_file" && -n "$cookie_file" ]]; then
-    cookie_dir=$(dirname "$cookie_file")
-    for f in "$cookie_dir/.youtube.potoken" "$cookie_dir/.youtube_po_token"; do
-        if [[ -f "$f" && -s "$f" ]]; then
-            po_token_file="$f"
-            log_debug "Using manual PO token file: $po_token_file"
-            break
-        fi
-    done
 fi
 
 if [[ -z "$cookie_file" || ! -f "$cookie_file" ]]; then
-    # Build detailed error message
-    error_msg="❌ No YouTube cookie file found"
-    if [[ -n "$PLAYER_EMAIL" ]]; then
-        error_msg="${error_msg} for MULTIPASS: ${PLAYER_EMAIL}"
-    fi
-    error_msg="${error_msg}. Please upload a YouTube cookie file via /api/fileupload"
-    
-    if [[ -n "$PLAYER_EMAIL" ]]; then
-        error_msg="${error_msg}. Expected location: ~/.zen/game/nostr/${PLAYER_EMAIL}/.youtube.com.cookie or ~/.zen/game/nostr/${PLAYER_EMAIL}/.cookie.txt"
-    fi
-    error_msg="${error_msg}. Also tried to extract cookies from browser but failed."
-    
-    # Log detailed error to file
-    echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $error_msg" >> "$LOGFILE"
-    if [[ -n "$PLAYER_EMAIL" ]]; then
-        echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] Checked paths:" >> "$LOGFILE"
-        echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')]   - $HOME/.zen/game/nostr/${PLAYER_EMAIL}/.youtube.com.cookie" >> "$LOGFILE"
-        echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')]   - $HOME/.zen/game/nostr/${PLAYER_EMAIL}/.cookie.txt" >> "$LOGFILE"
-    fi
-    echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] Also tried browser cookie extraction (Chrome/Firefox)" >> "$LOGFILE"
-    
-    # Output JSON to stdout (not stderr) to avoid broken pipe issues
-    # Escape quotes for JSON
-    error_msg_json=$(echo "$error_msg" | sed 's/"/\\"/g')
-    if [[ $JSON_OUTPUT -eq 1 ]]; then
-        # JSON-only output mode
-        error_json="{\"error\":\"${error_msg_json}\",\"success\":false}"
-        output_json "$error_json"
-    else
-        # Legacy mode with markers
-        (echo "=== JSON OUTPUT START ===" >&2) 2>/dev/null || true
-        echo "{\"error\":\"${error_msg_json}\"}" 2>/dev/null || echo "{\"error\":\"No cookie file found\"}"
-        (echo "=== JSON OUTPUT END ===" >&2) 2>/dev/null || true
-    fi
-    exit 1
+    browser=$(get_default_browser)
+    COOKIESRC="--cookies-from-browser \"$browser\""
 fi
 
 # Note: Playlist handling is now done by ajouter_media.sh
 # This script only processes single videos. If a playlist URL is provided,
 # it will download only the first video (or the video specified by ?v= parameter)
 # ajouter_media.sh will detect playlists and loop through videos if needed
-
-# YouTube 403 workaround (PO Token Guide: https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide)
-# If manual PO token file exists: use mweb client with po_token (recommended when 403 persists).
-# Else: prefer clients that do not require PO token (tv_embedded, tv), then android, web.
-if [[ -n "$po_token_file" ]]; then
-    po_token_value=$(tr -d '\n\r' < "$po_token_file" | head -c 5000)
-    if [[ -n "$po_token_value" ]]; then
-        # Escape double-quotes for safe use in extractor-args (token is typically alphanumeric/base64)
-        po_token_value="${po_token_value//\"/\\\"}"
-        YT_EXTRACTOR_ARGS="--extractor-args youtube:player_client=default,mweb;po_token=mweb.gvs+$po_token_value"
-        log_debug "Using mweb client with manual PO token (GVS)"
-    fi
-fi
-# If no manual PO token: when provider reachable try web_safari first (HLS without GVS PO token per PO Token Guide), then mweb; else fallback clients
-if [[ -z "$YT_EXTRACTOR_ARGS" ]]; then
-    if command -v curl >/dev/null 2>&1 && curl -s -o /dev/null --connect-timeout 1 http://127.0.0.1:4416/ 2>/dev/null; then
-        # web_safari provides HLS (m3u8) formats that do not require PO Token for GVS (per PO Token Guide); tv_embedded/tv no token; mweb when provider supplies token
-        YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=default,web_safari,tv_embedded,tv,mweb'
-        log_debug "Using provider: web_safari (HLS no GVS token), tv_embedded, tv, mweb"
-    else
-        YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=tv_embedded,tv,android,web'
-        log_debug "Using player_client=tv_embedded,tv,android,web (no provider)"
-    fi
-fi
-
 log_debug "Extracting metadata with yt-dlp..."
 # Run yt-dlp with --quiet to suppress warnings, but keep errors
 # Use --no-warnings to suppress warnings, but keep errors in stderr
 # Single video processing only (playlists handled by ajouter_media.sh)
-metadata_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS --cookies "$cookie_file" --no-warnings --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
+metadata_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS $COOKIESRC --no-warnings --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
 metadata_exit_code=$?
 log_debug "yt-dlp metadata extraction exit code: $metadata_exit_code"
 
@@ -475,7 +415,7 @@ log_debug "Starting download with cookies"
 case "$FORMAT" in
     mp3)
         log_debug "Running yt-dlp for MP3 download..."
-        download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS --cookies "$cookie_file" --concurrent-fragments 1 --socket-timeout 120 -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+        download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS $COOKIESRC --concurrent-fragments 1 --socket-timeout 120 -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
             --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
             -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" 2>&1)
         download_exit_code=$?
@@ -488,7 +428,7 @@ case "$FORMAT" in
         # Use format filter to select appropriate resolution based on duration
         # The format filter ensures we download at the right resolution to stay under size limit
         # If recoding is needed, yt-dlp will handle it with default settings
-        download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS --cookies "$cookie_file" --concurrent-fragments 1 --socket-timeout 120 -f "$VIDEO_FORMAT_FILTER" \
+        download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS $COOKIESRC --concurrent-fragments 1 --socket-timeout 120 -f "$VIDEO_FORMAT_FILTER" \
             --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
             --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
             -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)
@@ -529,13 +469,13 @@ if [[ $download_failed_retry -eq 1 ]]; then
     done
     case "$FORMAT" in
         mp3)
-            download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS --cookies "$cookie_file" --concurrent-fragments 1 --socket-timeout 120 -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+            download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS $COOKIESRC --concurrent-fragments 1 --socket-timeout 120 -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
                 --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
                 -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" 2>&1)
             download_exit_code=$?
             ;;
         mp4)
-            download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS --cookies "$cookie_file" --concurrent-fragments 1 --socket-timeout 120 -f "$VIDEO_FORMAT_FILTER" \
+            download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS $COOKIESRC --concurrent-fragments 1 --socket-timeout 120 -f "$VIDEO_FORMAT_FILTER" \
                 --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
                 --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
                 -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)
