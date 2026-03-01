@@ -768,7 +768,7 @@ fi
                 >/dev/null 2>&1; then
                 echo "✅ NIP-42 authentication event sent"
                 # Wait a bit for the event to be processed by the relay
-                sleep 2
+                sleep 5
             else
                 echo "⚠️  Warning: Failed to send NIP-42 authentication event (upload may still work if already authenticated)"
             fi
