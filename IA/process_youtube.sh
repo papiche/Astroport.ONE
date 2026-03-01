@@ -260,13 +260,13 @@ if [[ -z "$cookie_file" || ! -f "$cookie_file" ]]; then
     if [[ -n "$BROWSER_COOKIE_FILE" ]] && [[ -f "$BROWSER_COOKIE_FILE" ]]; then
         cookie_file="$BROWSER_COOKIE_FILE"
         log_debug "Using browser cookie file: $cookie_file"
-        COOKIESRC="--cookies \"$cookie_file\""
+        COOKIESRC="--cookies $cookie_file"
     fi
 fi
 
 if [[ -z "$cookie_file" || ! -f "$cookie_file" ]]; then
     browser=$(get_default_browser)
-    COOKIESRC="--cookies-from-browser \"$browser\""
+    COOKIESRC="--cookies-from-browser $browser"
 fi
 
 # Note: Playlist handling is now done by ajouter_media.sh
