@@ -276,40 +276,7 @@ echo "║     → http://astroport.localhost/ipns/copylaradio.com               
 echo "║                                                                              ║"
 echo "╚══════════════════════════════════════════════════════════════════════════════╝"
 echo
-
-# Proposer l'embarquement UPlanet ẐEN
-echo "🎯 VOULEZ-VOUS REJOINDRE LA COOPÉRATIVE UPLANET ẐEN ?"
-echo
-echo "La coopérative UPlanet ẐEN vous permet de:"
-echo "• 💰 Monétiser votre infrastructure (hébergement, stockage, calcul)"
-echo "• 🤝 Participer à une économie décentralisée et équitable"
-echo "• 🏛️  Devenir sociétaire d'une coopérative technologique"
-echo "• 🌍 Contribuer à un internet libre et décentralisé"
-echo
-echo "L'assistant d'embarquement vous guidera pour:"
-echo "• Configurer vos paramètres économiques (PAF, tarifs)"
-echo "• Valoriser votre machine comme capital social"
-echo "• Rejoindre le réseau swarm UPlanet"
-echo "• Initialiser votre infrastructure économique"
-echo "• Passer au niveau Y (autonome)"
-echo
-
-read -p "🚀 Lancer l'assistant d'embarquement UPlanet ẐEN maintenant ? (O/n): " launch_onboarding
-
-if [[ "$launch_onboarding" != "n" && "$launch_onboarding" != "N" ]]; then
-    echo
-    echo "🏴‍☠️ Lancement de l'assistant d'embarquement UPlanet ẐEN..."
-    echo
-    ~/.zen/Astroport.ONE/uplanet_onboarding.sh
-else
-    echo
-    echo "📋 MÉMO POUR PLUS TARD:"
-    echo "• Embarquement UPlanet ẐEN: ~/.zen/Astroport.ONE/uplanet_onboarding.sh"
-    echo "• Embarquement simple: ~/.zen/Astroport.ONE/captain.sh"
-    echo "• Tableau de bord: ~/.zen/Astroport.ONE/tools/dashboard.sh"
-    echo
-fi
-
+echo "🏴‍☠️ Embarquement UPlanet ẐEN ORIGIN... Terminé"
 echo "#############################################"
 . ~/.bashrc
 

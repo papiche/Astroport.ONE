@@ -502,10 +502,11 @@ my_LatLon() {
     local url="http://ip-api.com/json/$ip"
     local geolocalisation=$(curl -s "$url")
 
+    local countrycode=$(echo "$geolocalisation" | jq -r '.countryCode')
     local lat=$(echo "$geolocalisation" | jq -r '.lat')
     local lon=$(echo "$geolocalisation" | jq -r '.lon')
 
-    echo "$lat,$lon"
+    echo "$countrycode $lat $lon"
 }
 
 IPFSNODEID="$(myIpfsPeerId)"

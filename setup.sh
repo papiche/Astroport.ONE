@@ -81,15 +81,15 @@ mkdir -p ~/.zen/tmp
 ########################################################################
 # open_with_linux.py install
 #######################################################################
-    echo "#############################################"
-    ## https://darktrojan.github.io/openwith/webextension.html"
-    ~/.zen/Astroport.ONE/open_with_linux.py install
-	cat ~/.zen/Astroport.ONE/open_with_yt-dlp.txt | sed "s|_HOME_|$HOME|g"
-    echo "#############################################
-    # INSTALLEZ L'EXTENSTION FIREFOX
-    # https://addons.mozilla.org/firefox/addon/open-with
-    #############################################
-    #############################################"
+echo "#############################################"
+## https://darktrojan.github.io/openwith/webextension.html"
+~/.zen/Astroport.ONE/open_with_linux.py install
+cat ~/.zen/Astroport.ONE/open_with_yt-dlp.txt | sed "s|_HOME_|$HOME|g"
+echo "#############################################
+# INSTALLEZ L'EXTENSTION FIREFOX
+# https://addons.mozilla.org/firefox/addon/open-with
+#############################################
+#############################################"
 
 ########################################################################
 # SUDO permissions
@@ -212,11 +212,20 @@ echo ">>> SWITHCIN ASTROPORT ON <<<
 
 ##########################################################
 ## ON BOARDING PLAYER
+ipfs --timeout 30s cat /ipfs/QmVy7FKd1MGZqee4b7B5jmBKNgTJBvKKkoDhodnJWy23oN > ~/.zen/MJ_APIKEY
+source ${HOME}/.zen/Astroport.ONE/tools/my.sh
+GO=$(my_LatLon)
 echo "##### CAPTAIN ###################### ON BOARDING"
 espeak "Welcome CAPTAIN" 2>/dev/null
 echo "Adapt ~/.zen/Astroport.ONE/.env file to your needs"
 echo "#####################################################"
 echo ">>> Create CAPTAIN MULTIPASS <<<
-http://127.0.0.1:54321/g1"
+support+$(hostname)@qo-op.com" 
 
-# xdg-open http://127.0.0.1:8080/ipns/copylaradio.com
+~/.zen/Astroport.ONE/tools/make_NOSTRCARD.sh "support+$(hostname)@qo-op.com" $GO
+ZSALT=$(${HOME}/.zen/Astroport.ONE/tools/diceware.sh $(( ${HOME}/.zen/Astroport.ONE/tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
+ZPEPS=$(${HOME}/.zen/Astroport.ONE/tools/diceware.sh $(( ${HOME}/.zen/Astroport.ONE/tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
+source ~/.zen/game/nostr/support+$(hostname)@qo-op.com/.secret.nostr
+~/.zen/Astroport.ONE/RUNTIME/VISA.new.sh" "$ZSALT" "$ZPEPS" "support+$(hostname)@qo-op.com" "UPlanet" $GO "$NPUB" "$HEX"
+
+exit 0
