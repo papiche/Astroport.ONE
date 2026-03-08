@@ -399,7 +399,7 @@ Script **ANALYTIQUE** pour l'analyse complète du système et des capacités.
 - **Scripts principaux** : `uplanet_onboarding.sh`, `UPLANET.official.sh`, `dashboard.sh`
 - **Réseau** : IPFS public, pas de `swarm.key`
 - **Économie** : Simplifiée, idéale pour débuter
-- **Source primale** : `EnfinLibre` (fixe)
+- **Source primale** : `0000000000000000000000000000000000000000000000000000000000000000` (fixe)
 
 ### **🏴‍☠️ Mode ẐEN (Niveau Y) - Coopérative Complète**
 - **Scripts principaux** : Tous les scripts + `BLOOM.Me.sh` + `heartbox_analysis.sh`

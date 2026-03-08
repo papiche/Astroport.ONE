@@ -5,8 +5,8 @@
 /ip4/149.102.158.67/tcp/4001/p2p/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u
 
 ### UPLanet ORIGIN : OFFICIAL RELAY LIST #######################
-# ipfs.host.yourdomain.tld #
-
+/dnsaddr/ipfs.g1sms.fr/p2p/12D3KooWAvWWWtscBjFwybk8WSr2tmiwDtvNzJEh8vwyFntbpxPX
+/dnsaddr/ipfs.guenoel.fr/p2p/12D3KooWCtc4epzfpwvsbh7rgnj1J8DQLtLNu5bNReGLKi6MTfiX
 
 #################################################################
 ###### ADD YOUR NODE TO OFFICIAL ASTROPORT BOOSTRAP LIST !!!

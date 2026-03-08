@@ -10,7 +10,7 @@ The `primal_wallet_control.sh` script provides a generic solution for monitoring
 
 The UPlanet ecosystem operates on two distinct levels with different security requirements:
 
-#### **UPlanet ORIGIN (EnfinLibre)**
+#### **UPlanet ORIGIN (0000000000000000000000000000000000000000000000000000000000000000)**
 - **Level**: Basic access level for all users
 - **Security**: Standard Ğ1 transaction monitoring
 - **No Swarm Key**: Uses no swarm key
@@ -274,7 +274,7 @@ source ./primal_wallet_control.sh
 control_primal_transactions \
     "/path/to/wallet.dunikey" \
     "5fTwfbYUtCeoaFLbyzaBYUcq46nBS26rciWJAkBugqpo" \
-    "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" \
+    "4ZqazktD8FpExLLhE58QTqKu9nosLNtwDUPrxu43mXGi" \
     "player@example.com"
 ```
 

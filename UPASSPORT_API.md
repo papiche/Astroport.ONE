@@ -272,7 +272,7 @@ GET /check_society?html={0|1}
       "amount_zen": 530.0,
       "part_type": "constellation",
       "ipfs_node": "12D3KooWL2FcDJ41U9...",
-      "comment": "Constellation - UPLANET:AwdjhpJN:SOCIETY:support@qo-op.com:constellation:12D3KooW..."
+      "comment": "Constellation - UPLANET:4ZqazktD:SOCIETY:support@qo-op.com:constellation:12D3KooW..."
     }
   ],
   "timestamp": "2025-10-09T13:57:21"
@@ -313,7 +313,7 @@ GET /check_revenue?html={0|1}&year={YYYY}
 **Réponse JSON** :
 ```json
 {
-  "g1pub": "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z",
+  "g1pub": "4ZqazktD8FpExLLhE58QTqKu9nosLNtwDUPrxu43mXGi",
   "filter_year": "all",
   "total_revenue_g1": 120.5,
   "total_revenue_zen": 1195.0,
@@ -340,7 +340,7 @@ GET /check_revenue?html={0|1}&year={YYYY}
       "amount_g1": 2.0,
       "amount_zen": 20.0,
       "transaction_type": "ZENCOIN",
-      "comment": "Service ZENCOIN - UPLANET:AwdjhpJN:ZENCOIN:frenault@linkeo.com"
+      "comment": "Service ZENCOIN - UPLANET:4ZqazktD:ZENCOIN:frenault@linkeo.com"
     }
   ],
   "timestamp": "2025-10-09T16:30:42"

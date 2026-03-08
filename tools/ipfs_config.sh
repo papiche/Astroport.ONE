@@ -1,10 +1,10 @@
 #!/bin/bash
+################################################################## ipfs_config.sh
 # Version: 0.1
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 myIP=$(hostname -I | awk '{print $1}')
 isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-
 
 sudo systemctl stop ipfs
 
@@ -25,17 +25,7 @@ ipfs config Datastore.StorageMax $diskSize
 ipfs config --json Experimental.Libp2pStreamMounting true
 ipfs config --json Experimental.P2pHttpProxy true
 
-#~ ## Activate Experimental.AcceleratedDHTClient
-#~ ipfs config Reprovider.Interval '42s'
-#~ ipfs config Reprovider.Strategy "roots"
-#~ ipfs config Routing.Routers.WanDHT --json '{
-  #~ "Type": "dht",
-  #~ "Parameters": {
-    #~ "Mode": "auto",
-    #~ "PublicIPNetwork": true,
-    #~ "AcceleratedDHTClient": true
-  #~ }
-#~ }'
+#~ ## Activate AcceleratedDHTClient
 ipfs config --json Routing.AcceleratedDHTClient true
 
 
@@ -43,7 +33,7 @@ ipfs config --json Swarm.ConnMgr.LowWater 20
 ipfs config --json Swarm.ConnMgr.HighWater 40
 
 [[ ! $isLAN ]] && ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://'$(hostname)'.localhost:8080", "http://ipfs.localhost:8080", "http://127.0.0.1:8080", "http://127.0.1.1:8080", "https://ipfs.'$(hostname)'", "https://ipfs.copylaradio.com" ]' \
-            ||   ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://'$(hostname)'.local:8080","http://'$(hostname)':8080", "http://'$(hostname)'.localhost:8080", "http://127.0.0.1:8080", "http://ipfs.localhost:8080", "http://127.0.1.1:8080" ]'
+			   || ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://'$(hostname)'.local:8080","http://'$(hostname)':8080", "http://'$(hostname)'.localhost:8080", "http://127.0.0.1:8080", "http://ipfs.localhost:8080", "http://127.0.1.1:8080" ]'
 
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "GET", "POST"]'
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Credentials '["true"]'
@@ -55,13 +45,23 @@ ipfs config --json API.HTTPHeaders.Access-Control-Allow-Credentials '["true"]'
 ipfs config Addresses.API "/ip4/0.0.0.0/tcp/5001"
 ipfs config Addresses.Gateway "/ip4/0.0.0.0/tcp/8080"
 
+################################################################
+# Créer le fichier swarm.key UPlanet ZERO
+cat > ~/.ipfs/swarm.key <<EOF
+/key/swarm/psk/1.0.0/
+/base16/
+0000000000000000000000000000000000000000000000000000000000000000
+EOF
+################################################################
+chmod 600 ~/.ipfs/swarm.key
+
 ######### CLEAN DEFAULT BOOSTRAP ADD Astroport.ONE Officials ###########
 ipfs bootstrap rm --all
 
- for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
-    do
-        ipfsnodeid=${bootnode##*/}
-        ipfs bootstrap add $bootnode
-    done
+for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
+do
+	ipfsnodeid=${bootnode##*/}
+	ipfs bootstrap add $bootnode
+done
 
 sudo systemctl start ipfs

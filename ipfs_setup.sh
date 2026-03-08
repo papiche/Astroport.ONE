@@ -1,5 +1,5 @@
 #!/bin/bash
-########################################################################
+################################################################### ipfs_setup.sh
 { # this ensures the entire script is downloaded #
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized

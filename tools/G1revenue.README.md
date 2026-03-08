@@ -62,7 +62,7 @@
 
 ```json
 {
-  "g1pub": "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z",
+  "g1pub": "4ZqazktD8FpExLLhE58QTqKu9nosLNtwDUPrxu43mXGi",
   "filter_year": "all",
   "total_revenue_g1": 120.5,
   "total_revenue_zen": 1195.0,
@@ -89,7 +89,7 @@
       "amount_g1": 2.0,
       "amount_zen": 20.0,
       "transaction_type": "ZENCOIN",
-      "comment": "Service ZENCOIN - UPLANET:AwdjhpJN:ZENCOIN:frenault@linkeo.com"
+      "comment": "Service ZENCOIN - UPLANET:4ZqazktD:ZENCOIN:frenault@linkeo.com"
     }
   ],
   "timestamp": "2025-10-09T16:30:42"
@@ -127,7 +127,7 @@ UPLANET:${UPLANETG1PUB:0:8}:ZENCOIN:${email}
 
 **Exemple** :
 ```
-UPLANET:AwdjhpJN:ZENCOIN:bidule@machintruc.com
+UPLANET:4ZqazktD:ZENCOIN:bidule@machintruc.com
 ```
 
 ### Formule de Conversion

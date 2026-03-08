@@ -551,7 +551,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         echo "Example:"
         echo "  $0 ~/.zen/game/players/player/secret.dunikey \\"
         echo "      5fTwfbYUtCeoaFLbyzaBYUcq46nBS26rciWJAkBugqpo \\"
-        echo "      AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z \\"
+        echo "      4ZqazktD8FpExLLhE58QTqKu9nosLNtwDUPrxu43mXGi \\"
         echo "      player@example.com"
         exit 1
     fi

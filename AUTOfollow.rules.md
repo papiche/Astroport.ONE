@@ -128,9 +128,9 @@ update_friends_list() {
 **Follow de l'UPlanet Origin** :
 
 ```bash
-originpub=$(${MY_PATH}/../tools/keygen -t nostr "EnfinLibre" "EnfinLibre")
+originpub=$(${MY_PATH}/../tools/keygen -t nostr "0000000000000000000000000000000000000000000000000000000000000000" "0000000000000000000000000000000000000000000000000000000000000000")
 originhex=$(${MY_PATH}/../tools/nostr2hex.py $originpub)
-if [[ ${UPLANETNAME} == "EnfinLibre" ]]; then
+if [[ ${UPLANETNAME} == "0000000000000000000000000000000000000000000000000000000000000000" ]]; then
     echo "UPLANET ORIGIN : Seek for ${originhex} followers"
     ${MY_PATH}/../tools/nostr_followers.sh "${originhex}"
 else

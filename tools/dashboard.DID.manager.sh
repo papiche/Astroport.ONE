@@ -644,7 +644,7 @@ cmd_coop_create() {
     # Get UPlanet name from my.sh (computed from swarm.key)
     local uplanetname=""
     if [[ -f "${MY_PATH}/my.sh" ]]; then
-        # Source my.sh to get UPLANETNAME (computed from swarm.key or "EnfinLibre")
+        # Source my.sh to get UPLANETNAME (computed from swarm.key or "0000000000000000000000000000000000000000000000000000000000000000")
         source "${MY_PATH}/my.sh" 2>/dev/null
         uplanetname="$UPLANETNAME"
     fi

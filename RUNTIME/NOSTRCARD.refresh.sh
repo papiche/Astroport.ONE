@@ -276,7 +276,7 @@ should_refresh() {
     return 1
 }
 
-[[ ${UPLANETG1PUB:0:8} == "AwdjhpJN" ]] && ORIGIN="ORIGIN" || ORIGIN="${UPLANETG1PUB:0:8}"
+[[ ${UPLANETG1PUB:0:8} == "4ZqazktD" ]] && ORIGIN="ORIGIN" || ORIGIN="${UPLANETG1PUB:0:8}"
 
 ########################################################################
 # Get all emails from ~/.zen/game/nostr/
@@ -1138,7 +1138,7 @@ for PLAYER in "${NOSTR[@]}"; do
         fi
         ########################################################################
         ## Create ZENCARD ONLY FOR UPlanet Zen #################################################
-        if [[ "$UPLANETG1PUB" != "AwdjhpJNqzQgmSrvpUk5Fd2GxBZMJVQkBQmXn4JQLr6z" ]]; then
+        if [[ "$UPLANETG1PUB" != "4ZqazktD8FpExLLhE58QTqKu9nosLNtwDUPrxu43mXGi" ]]; then
             ## CREATE UPlanet AstroID + ZenCard using EMAIL and GPS ##
             if [[ ! -d ~/.zen/game/players/${PLAYER} ]]; then
                 echo "## UPlanet ZEN : Zen Card creation "
@@ -1189,7 +1189,7 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
     echo "## CONTROL TRANSACTIONS PRIMAL CONFORMITY..."
     # Call the generic primal wallet control function (using UPLANETNAME_G1 as unique primal source)
-    if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
+    if [[ ${UPLANETNAME} != "0000000000000000000000000000000000000000000000000000000000000000" ]]; then
         echo "CONTROL UPLANET ZEN - NOSTR Card primal control"
         ${MY_PATH}/../tools/primal_wallet_control.sh \
             "${HOME}/.zen/game/nostr/${PLAYER}/.secret.dunikey" \

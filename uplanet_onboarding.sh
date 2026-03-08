@@ -571,7 +571,7 @@ step_uplanet_mode_choice() {
                     print_warning "Passage ORIGIN → ẐEN détecté"
                     echo -e "${YELLOW}Comptes ORIGIN existants détectés${NC}"
                     echo -e "${RED}Ces comptes doivent être désinscrits car ils proviennent${NC}"
-                    echo -e "${RED}de la mauvaise source primale (EnfinLibre vs swarm.key)${NC}"
+                    echo -e "${RED}de la mauvaise source primale (0000000000000000000000000000000000000000000000000000000000000000 vs swarm.key)${NC}"
                     echo ""
                     echo -e "${CYAN}Actions qui seront effectuées:${NC}"
                     echo "   • Désinscription de tous les MULTIPASS NOSTR"

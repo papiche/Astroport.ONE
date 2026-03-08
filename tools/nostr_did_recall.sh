@@ -177,7 +177,7 @@ create_did_from_filesystem() {
     local YOUSER=$(echo "$email" | cut -d'@' -f1)
     
     # Get UPLANETG1PUB from environment or default
-    local UPLANETG1PUB="${UPLANETG1PUB:-AwdjhpJNDQQNMsL8Kqndrz6rkRDsJ8wNDp7MRQJmKLGg}"
+    local UPLANETG1PUB="${UPLANETG1PUB:-4ZqazktD8FpExLLhE58QTqKu9nosLNtwDUPrxu43mXGi}"
     
     # Create DID document
     local did_file="$user_dir/did.json.cache"

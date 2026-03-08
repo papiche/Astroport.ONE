@@ -992,7 +992,7 @@ for wallet_name in "${!COOPERATIVE_WALLETS[@]}"; do
             log_output "ZEN ECONOMY: Checking primal control for $wallet_name (${wallet_pubkey:0:8}...)"
             
             # Run primal wallet control for this cooperative wallet
-            if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
+            if [[ ${UPLANETNAME} != "0000000000000000000000000000000000000000000000000000000000000000" ]]; then
                 log_output "CONTROL UPLANET ZEN - Cooperative wallet primal control"
                 ${MY_PATH}/../tools/primal_wallet_control.sh \
                     "$wallet_dunikey" \

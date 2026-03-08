@@ -66,7 +66,7 @@ cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | 
 ########################################################################################
 echo "## CONTROL WALLET PRIMAL RX"
 ########################################################################################
-if [[ ${UPLANETNAME} != "EnfinLibre" ]]; then
+if [[ ${UPLANETNAME} != "0000000000000000000000000000000000000000000000000000000000000000" ]]; then
     echo "CONTROL UPLANET ZEN - ZenCard primal control"
     
     # For ZenCard wallets, use UPLANETNAME_G1 as unique primal source (unified architecture)

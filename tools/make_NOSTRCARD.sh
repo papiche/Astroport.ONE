@@ -234,7 +234,7 @@ EOFNOSTR
         && FDQR=${HOME}/.zen/game/nostr/${EMAIL}/picture.png \
         || FDQR=${MY_PATH}/../templates/img/nature_cloud_face.png
 
-    [[ $UPLANETNAME != "EnfinLibre" ]] && Z=":ZEN" || Z="" ## Add :ZEN only for UPlanet ẐEN
+    [[ $UPLANETNAME != "0000000000000000000000000000000000000000000000000000000000000000" ]] && Z=":ZEN" || Z="" ## Add :ZEN only for UPlanet ẐEN
     amzqr "${G1PUBNOSTR}${Z}" -l H -p "$FDQR" -c -n MULTIPASS.QR.o.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
 
     ## Add white margins around the QR code image (for a flashable coracle profile picture)
@@ -496,7 +496,7 @@ EOFNOSTR
     #~ cd -
     ###############################################################################################
     ## ORIGIN or ẐEN's
-    [[ ${UPLANETG1PUB:0:8} == "AwdjhpJN" ]] && ORIGIN="ORIGIN" || ORIGIN="${UPLANETG1PUB:0:8}"
+    [[ ${UPLANETG1PUB:0:8} == "4ZqazktD" ]] && ORIGIN="ORIGIN" || ORIGIN="${UPLANETG1PUB:0:8}"
     ZENCARDG1=$(cat ~/.zen/game/players/${EMAIL}/.g1pub 2>/dev/null) ## Does ZenCard already existing
 
     ### CREATE TEPORARY PROFILE in NOSTR RELAYS

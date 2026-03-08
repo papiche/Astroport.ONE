@@ -8,7 +8,7 @@ UPlanet est un écosystème révolutionnaire qui combine **monnaie libre**, **r�
 
 L'écosystème UPlanet fonctionne sur **deux niveaux distincts** avec des capacités et des exigences de sécurité différentes :
 
-### 🌐 **UPlanet ORIGIN (EnfinLibre)**
+### 🌐 **UPlanet ORIGIN (0000000000000000000000000000000000000000000000000000000000000000)**
 - **Niveau** : Accès de base pour tous les utilisateurs
 - **Sécurité** : Surveillance standard des transactions Ğ1
 - **Réseau** : Réseau public sans restrictions de swarm key

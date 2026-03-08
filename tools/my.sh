@@ -492,6 +492,22 @@ my_IPCity() {
     echo "$ville,$pays"
 }
 
+my_LatLon() {
+    local ip=$1
+
+    if [ -z "$ip" ]; then
+        ip=$(curl 'https://api.ipify.org?format=json' --silent | jq -r '.ip')
+    fi
+
+    local url="http://ip-api.com/json/$ip"
+    local geolocalisation=$(curl -s "$url")
+
+    local lat=$(echo "$geolocalisation" | jq -r '.lat')
+    local lon=$(echo "$geolocalisation" | jq -r '.lon')
+
+    echo "$lat,$lon"
+}
+
 IPFSNODEID="$(myIpfsPeerId)"
 
 isLAN="$(isLan)"
@@ -607,10 +623,10 @@ uSPOT=$(echo $myIPFS | sed 's|https://ipfs|https://u|') ## https://u. OR :54321
 myUPLANET="${myIPFS}/ipns/copylaradio.com" ## UPLANET ENTRANCE
 myLIBRA="https://ipfs.copylaradio.com" ## PUBLIC IPFS GATEWAY
 ##########################
-## UPLANETNAME IS $HOME/.zen/ipfs/swarm.key OR EnfinLibre
+## UPLANETNAME IS $HOME/.zen/ipfs/swarm.key OR 0000000000000000000000000000000000000000000000000000000000000000
 [ -n "$(UPlanetSharedSecret)" ] \
     && UPLANETNAME="$(UPlanetSharedSecret)" \
-    || UPLANETNAME="EnfinLibre"
+    || UPLANETNAME="0000000000000000000000000000000000000000000000000000000000000000"
 
 CAPTAINZENCARDG1PUB=$(cat $HOME/.zen/game/players/.current/.g1pub 2>/dev/null) ## PLAYER ONE ZEN CARD G1PUB
 CAPTAINEMAIL=$(cat $HOME/.zen/game/players/.current/.player 2>/dev/null) ## PLAYER ONE EMAIL

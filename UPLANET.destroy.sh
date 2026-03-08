@@ -222,7 +222,7 @@ send_multipass_migration_notification() {
     sed -i "s/_COMMUNITY_LINK_/https:\/\/forum.monnaie-libre.fr/g" "$notification_file"
     
     # Ajouter le secret UPLANET pour la récupération des GeoKeys
-    local uplanet_secret="${UPLANETNAME:-EnfinLibre}"
+    local uplanet_secret="${UPLANETNAME:-0000000000000000000000000000000000000000000000000000000000000000}"
     sed -i "s/_UPLANET_SECRET_/$uplanet_secret/g" "$notification_file"
     
     # Envoyer la notification via mailjet.sh

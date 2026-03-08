@@ -95,7 +95,7 @@ else
 fi
 
 ## Is it UPlanet ORIGIN or Ẑen ?
-[[ $UPLANETNAME != "EnfinLibre" ]] && UPLANET="UPlanet Ẑen ${UPLANETG1PUB:0:8}" || UPLANET="UPlanet ORIGIN"
+[[ $UPLANETNAME != "0000000000000000000000000000000000000000000000000000000000000000" ]] && UPLANET="UPlanet Ẑen ${UPLANETG1PUB:0:8}" || UPLANET="UPlanet ORIGIN"
 
 #~ echo "DEST=$mail"
 # mail=geg-la_debrouille@super.chez-moi.com

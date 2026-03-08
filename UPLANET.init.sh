@@ -319,7 +319,7 @@ check_and_create_nostr_keys() {
             local has_hex=$(grep -c 'HEX=' "$key_file" 2>/dev/null || echo 0)
             if [[ -n "$npub" ]]; then
                 # Upgrade old format (npub only) to NSEC=; NPUB=; HEX=
-                if [[ "$has_hex" -eq 0 ]] && [[ -x "${MY_PATH}/tools/keygen" ]] && [[ -x "${MY_PATH}/tools/nostr2hex.py" ]]; then
+                if [[ "$has_hex" == "0" ]] && [[ -x "${MY_PATH}/tools/keygen" ]] && [[ -x "${MY_PATH}/tools/nostr2hex.py" ]]; then
                     local nsec=$(grep -oE 'nsec1[a-zA-Z0-9]{58}' "$key_file" 2>/dev/null | head -1)
                     if [[ -z "$nsec" ]]; then
                         nsec=$("${MY_PATH}/tools/keygen" -t nostr "${UPLANETNAME}.G1" "${UPLANETNAME}.G1" -s 2>/dev/null | grep -oE 'nsec1[a-zA-Z0-9]{58}' | head -1)

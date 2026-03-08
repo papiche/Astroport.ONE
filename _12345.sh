@@ -198,7 +198,7 @@ UPLANETNAME_AMORTISSEMENT=$(cat ~/.zen/game/uplanet.AMORTISSEMENT.dunikey 2>/dev
 
 ###############################################
 #### UPLANET GEOKEYS_refresh - not for UPlanet ORIGIN
-if [[ $UPLANETNAME != "EnfinLibre" ]]; then
+if [[ $UPLANETNAME != "0000000000000000000000000000000000000000000000000000000000000000" ]]; then
     ${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
 fi
 

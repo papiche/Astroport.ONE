@@ -1,6 +1,6 @@
 #!/bin/bash
-########################################################################
-# Version: 0.3
+############################################################ install.sh
+# Version: 0.4
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
 {
@@ -196,6 +196,14 @@ cd ~/.zen
 git clone https://github.com/papiche/G1BILLET.git
 cd G1BILLET && ./setup_systemd.sh
 cd -
+
+## TROCZEN
+echo "######### TROCZEN ##############"
+echo "INSTALL TROCZEN API : http://localhost:5000"
+cd ~/.zen/workspace
+git clone https://github.com/papiche/troczen.git
+cd troczen/api && ./install_service.sh
+cd $MY_PATH
 
 echo
 

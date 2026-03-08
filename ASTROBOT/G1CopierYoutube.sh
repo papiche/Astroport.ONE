@@ -159,7 +159,7 @@ send_youtube_nostr_message() {
     fi
     
     # Send to public relay if different from primary relay and on UPlanet ORIGIN
-    if [[ "$myRELAY" != "wss://relay.copylaradio.com" && "$UPLANETNAME" == "EnfinLibre" ]]; then
+    if [[ "$myRELAY" != "wss://relay.copylaradio.com" && "$UPLANETNAME" == "0000000000000000000000000000000000000000000000000000000000000000" ]]; then
         echo "Sending NOSTR message to public relay: wss://relay.copylaradio.com"
         nostpy-cli send_event \
             -privkey "$NPRIV_HEX" \

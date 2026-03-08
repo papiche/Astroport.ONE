@@ -243,7 +243,7 @@ handle_origin_to_zen_migration() {
     echo "   • Nettoyage complet du cache"
     echo ""
     echo -e "${YELLOW}Raison: Les comptes ORIGIN proviennent de la source primale${NC}"
-    echo -e "${YELLOW}'EnfinLibre', incompatible avec la source ẐEN (swarm.key)${NC}"
+    echo -e "${YELLOW}'0000000000000000000000000000000000000000000000000000000000000000', incompatible avec la source ẐEN (swarm.key)${NC}"
     echo ""
     
     read -p "Êtes-vous ABSOLUMENT SÛR de vouloir migrer vers ẐEN ? (tapez 'OUI'): " confirm_migration

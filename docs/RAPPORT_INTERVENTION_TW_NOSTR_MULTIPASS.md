@@ -72,7 +72,7 @@
 
 | Fichier | Référence | Contexte |
 |---------|-----------|----------|
-| **20h12.process.sh** | L.243–247 : si pas EnfinLibre, exécute `PLAYER.refresh.sh` puis **commentaire** “# ${MY_PATH}/RUNTIME/_UPLANET.refresh.sh - old methods -” | **Source de vérité** : _UPLANET.refresh désactivé, remplacé par PLAYER.refresh + UPLANET.refresh (geo). |
+| **20h12.process.sh** | L.243–247 : si pas 0000000000000000000000000000000000000000000000000000000000000000, exécute `PLAYER.refresh.sh` puis **commentaire** “# ${MY_PATH}/RUNTIME/_UPLANET.refresh.sh - old methods -” | **Source de vérité** : _UPLANET.refresh désactivé, remplacé par PLAYER.refresh + UPLANET.refresh (geo). |
 | **_12345.sh** | “IPNS flashmem desactivated - reactivate as needed - _UPLANET.refresh.sh TW system” | Cohérent : flashmem / ancien système TW désactivé. |
 | **RUNTIME/ORACLE.refresh.sh** | Réutilise logique STRAPFILE “same as _UPLANET.refresh.sh” | Référence interne OK (extraction STRAPS). |
 | **docs/WOTX2_SYSTEM.md** | Détection bootstrap “même logique que _UPLANET.refresh.sh” | OK. |
@@ -84,7 +84,7 @@
 2. Copie des logs, nettoyage ~/.zen/tmp (en préservant swarm, flashmem, coucou).
 3. Arrêt astroport, mise à jour dépôts (G1BILLET, UPassport, NIP-101, Astroport, OC2UPlanet, silkaj, yt-dlp), ping bootstrap.
 4. **NOSTRCARD.refresh.sh** (MULTIPASS).
-5. Si **UPLANETNAME != "EnfinLibre"** : **PLAYER.refresh.sh** (ZEN Cards) ; **_UPLANET.refresh.sh** **non exécuté** (commenté).
+5. Si **UPLANETNAME != "0000000000000000000000000000000000000000000000000000000000000000"** : **PLAYER.refresh.sh** (ZEN Cards) ; **_UPLANET.refresh.sh** **non exécuté** (commenté).
 6. **UPLANET.refresh.sh** (clés UMAP / SECTOR / REGION).
 7. Nettoyage tmp, bootstrap IPFS, gestion LOWMODE IPFS, DRAGON_p2p_ssh, redémarrage astroport (12345.sh, etc.).
 

@@ -21,6 +21,10 @@ YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER") || er+=" ipf
 PARAM="$1"
 if [[ "${PARAM,,}" == "off" || "${PARAM,,}" == "stop" ]]; then
     ipfs p2p close --all
+	### RESET NODE & UPLANET KEYS -- will be refreshed on next astroport restart
+	rm ~/.zen/game/myswarm_secret.*
+	rm ~/.zen/game/uplanet.*
+	########################################################################################
     rm ~/.zen/tmp/${IPFSNODEID}/x_*.sh 2>/dev/null
     rm ~/.zen/tmp/${IPFSNODEID}/y_ssh.pub 2>/dev/null
     rm ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub 2>/dev/null
@@ -28,6 +32,10 @@ if [[ "${PARAM,,}" == "off" || "${PARAM,,}" == "stop" ]]; then
 fi
 
 
+########################################################################################
+### CHECK & FORCE YLEVEL 
+~/.zen/Astroport.ONE/tools/Ylevel.sh
+########################################################################################
 ############################################
 ## Y LEVEL = SSH PUBKEY OVER IPFS y_ssh.pub
 ## https://pad.p2p.legal/keygen
@@ -57,6 +65,18 @@ if [[ -s ~/.zen/tmp/${IPFSNODEID}/z_ssh.pub || -s ~/.zen/tmp/${IPFSNODEID}/y_ssh
         && head -c 12 /dev/urandom | od -t x1 -A none - | tr -d ' ' \
                 > ~/.zen/tmp/${IPFSNODEID}/_swarm.egg.txt
 fi
+
+################################################################
+# Créer le fichier swarm.key UPlanet ORIGIN
+if [[ ! -s ~/.ipfs/swarm.key ]]; then
+cat > ~/.ipfs/swarm.key <<EOF
+/key/swarm/psk/1.0.0/
+/base16/
+0000000000000000000000000000000000000000000000000000000000000000
+EOF
+chmod 600 ~/.ipfs/swarm.key
+fi
+################################################################
 
 echo "${YIPNS}
 
@@ -234,8 +254,8 @@ fi
 ##################################################################################
 ######################################## $HOME/.zen/game/(A)(My)_boostrap_ssh.txt
 SSHAUTHFILE="$HOME/.zen/Astroport.ONE/A_boostrap_ssh.txt"
-[[ -s $HOME/.zen/game/My_boostrap_ssh.txt ]] \
-    && SSHAUTHFILE="$HOME/.zen/game/My_boostrap_ssh.txt"
+#~ [[ -s $HOME/.zen/game/My_boostrap_ssh.txt ]] \
+    #~ && SSHAUTHFILE="$HOME/.zen/game/My_boostrap_ssh.txt" ### AUTHORIZED KEYS ARE CAPTAIN from same UPLANET
 ##################################################################################
 [[ -s ~/.ssh/authorized_keys ]] \
     && cp ~/.ssh/authorized_keys ~/.zen/tmp/${MOATS}/authorized_keys \

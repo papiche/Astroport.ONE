@@ -175,7 +175,7 @@ create_initial_did() {
     # Get UPlanet info from environment or defaults
     local uplanet_g1pub_8="${UPLANETG1PUB:0:8}"
     if [[ -z "$uplanet_g1pub_8" ]]; then
-        uplanet_g1pub_8="AwdjhpJN"
+        uplanet_g1pub_8="4ZqazktD"
     fi
     local my_relay="${myRELAY:-wss://relay.copylaradio.com}"
     local my_ipfs="${myIPFS:-http://127.0.0.1:8080}"

@@ -60,8 +60,8 @@ Le script utilise **exclusivement** `UPLANETNAME_G1` comme source primale pour g
 #### **🎯 Modes UPlanet Supportés**
 
 **🌍 Mode ORIGIN (Niveau X) :**
-- `UPLANETNAME = "EnfinLibre"` (fixe)
-- Source primale : `EnfinLibre.G1`
+- `UPLANETNAME = "0000000000000000000000000000000000000000000000000000000000000000"` (fixe)
+- Source primale : `0000000000000000000000000000000000000000000000000000000000000000.G1`
 - Réseau IPFS public
 
 **🏴‍☠️ Mode ẐEN (Niveau Y) :**
@@ -75,7 +75,7 @@ Le script utilise **exclusivement** `UPLANETNAME_G1` comme source primale pour g
 if [[ -f ~/.ipfs/swarm.key ]]; then
     UPLANETNAME=$(cat ~/.ipfs/swarm.key)  # Mode ẐEN
 else
-    UPLANETNAME="EnfinLibre"              # Mode ORIGIN
+    UPLANETNAME="0000000000000000000000000000000000000000000000000000000000000000"              # Mode ORIGIN
 fi
 ```
 

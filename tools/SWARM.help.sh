@@ -74,7 +74,7 @@ autres nodes et recevoir des abonnements sur son propre node.
 
 ⚠️ PRÉREQUIS
 -----------
-• Node de niveau Y (UPlanet Zen) ou UPLANETNAME='EnfinLibre'
+• Node de niveau Y (UPlanet Zen) ou UPLANETNAME='0000000000000000000000000000000000000000000000000000000000000000'
 • Fonds suffisants (ZEN ou G1) pour les abonnements
 • Connexion IPFS active et essaim configuré
 

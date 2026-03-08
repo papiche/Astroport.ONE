@@ -1,5 +1,5 @@
 #!/bin/bash
-################################################################################
+###################################################################### setup.sh
 # Author: Fred (support@qo-op.com)
 # Version: 0.1
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
@@ -12,6 +12,23 @@ ME="${0##*/}"
 sudo usermod -aG adm $USER
 sudo usermod -aG docker $USER
 echo
+
+echo "#############################################"
+echo "######### HOSTNAME SETUP  ###################"
+echo "#############################################"
+# Générer un mot aléatoire avec diceware.sh
+WORD=$($HOME/.zen/Astroport.ONE/tools/diceware.sh 1)
+# Générer un nombre aléatoire entre 01 et 99
+NUMBER=$(printf "%02d" $((RANDOM % 99 + 1)))
+# Construire le nouveau hostname
+NEW_HOSTNAME="${WORD}-${NUMBER}"
+# Afficher le nouveau hostname
+sudo hostnamectl set-hostname "$NEW_HOSTNAME"
+# Mettre à jour le fichier /etc/hosts
+sudo sed -i "s/127.0.1.1.*/127.0.1.1\t$NEW_HOSTNAME/" /etc/hosts
+echo "NOUVEAU Hostname :"
+hostname
+
 echo "#############################################"
 echo "######### IPFS SETUP  #########################"
 echo "#############################################"
@@ -64,18 +81,15 @@ mkdir -p ~/.zen/tmp
 ########################################################################
 # open_with_linux.py install
 #######################################################################
-# DEPRECATED
-
-    #~ echo "#############################################"
-    #~ ## https://darktrojan.github.io/openwith/webextension.html"
-    #~ ~/.zen/Astroport.ONE/open_with_linux.py install
-
-    #~ echo "#############################################
-    #~ # NOURRISSEZ VOTRE BLOB depuis Firefox !!
-    #~ # https://addons.mozilla.org/firefox/addon/open-with
-    #~ #############################################
-    #~ ##    $HOME/.zen/Astroport.ONE/ajouter_media.sh      ##
-    #~ #############################################"
+    echo "#############################################"
+    ## https://darktrojan.github.io/openwith/webextension.html"
+    ~/.zen/Astroport.ONE/open_with_linux.py install
+	cat ~/.zen/Astroport.ONE/open_with_yt-dlp.txt | sed "s|_HOME_|$HOME|g"
+    echo "#############################################
+    # INSTALLEZ L'EXTENSTION FIREFOX
+    # https://addons.mozilla.org/firefox/addon/open-with
+    #############################################
+    #############################################"
 
 ########################################################################
 # SUDO permissions
@@ -186,23 +200,23 @@ if [[ -d ~/.zen/strfry && -d ~/.zen/workspace/NIP-101 ]]; then
     ~/.zen/workspace/NIP-101/systemd.setup.sh
 fi
 
+echo "#####################################################"
+echo "#### UPLANET ORIGIN ############# ♥BOX X LEVEL ###"
+echo "#### UPlanet ẐEN Activation needs Y LEVEL (SSH=IPFS)"
+~/.zen/Astroport.ONE/tools/Ylevel.sh
+
 # ACTIVATING ASTROPORT CRON
 echo ">>> SWITHCIN ASTROPORT ON <<<
 ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON"
 ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
 
-echo "#####################################################"
-echo "#### UPLANET ORIGIN ############# ♥BOX X LEVEL ###"
-echo "#### UPlanet ẐEN Activation needs Y LEVEL (SSH=IPFS)"
-echo "RUN: ~/.zen/Astroport.ONE/tools/Ylevel.sh"
 ##########################################################
 ## ON BOARDING PLAYER
 echo "##### CAPTAIN ###################### ON BOARDING"
 espeak "Welcome CAPTAIN" 2>/dev/null
 echo "Adapt ~/.zen/Astroport.ONE/.env file to your needs"
-echo "then use 'coeurbox' command to create ZEN Card and control your ♥BOX station as a CAPTAIN"
 echo "#####################################################"
 echo ">>> Create CAPTAIN MULTIPASS <<<
 http://127.0.0.1:54321/g1"
 
-xdg-open http://127.0.0.1:8080/ipns/copylaradio.com
+# xdg-open http://127.0.0.1:8080/ipns/copylaradio.com

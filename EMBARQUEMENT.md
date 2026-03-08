@@ -84,7 +84,7 @@ Le passage d'ORIGIN vers ẐEN est **possible** mais **destructif** :
 4. **Passage au niveau Y** obligatoire
 5. **Réinitialisation UPLANET** avec nouveau UPLANETNAME
 
-**⚠️ Raison :** Les comptes ORIGIN proviennent de la source primale `EnfinLibre`, incompatible avec la source ẐEN `$(cat ~/.ipfs/swarm.key)`.
+**⚠️ Raison :** Les comptes ORIGIN proviennent de la source primale `0000000000000000000000000000000000000000000000000000000000000000`, incompatible avec la source ẐEN `$(cat ~/.ipfs/swarm.key)`.
 
 **🔧 Outil de migration :**
 ```bash

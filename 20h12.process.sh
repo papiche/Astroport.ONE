@@ -96,8 +96,7 @@ done
 #### COPY LOGS - before erase
 # cat $HOME/.zen/tmp/MULTIPASS.refresh.log >> /tmp/20h12.log
 cat $HOME/.zen/tmp/youtube.com_* >> /tmp/20h12.log
-cat $HOME/.zen/tmp/nostr.auth.22242.log >> /tmp/20h12.log
-cat $HOME/.zen/tmp/nostr_video_* >> /tmp/20h12.log
+cat $HOME/.zen/tmp/nostr*.log >> /tmp/20h12.log
 ########################################################################
 # show ZONE.sh cache of the day
 echo "TODAY UPlanet landings"
@@ -201,8 +200,7 @@ fi
 ########################################################################
 ## UPDATE Astroport.ONE code
 cd ${MY_PATH}/
-git submodule update --init --recursive
-git pull --recurse-submodules
+git pull
 
 ########################################################################
 ## Updating yt-dlp
@@ -218,7 +216,7 @@ rm "${HOME}/.zen/strfry/amisOfAmis.txt" 2>/dev/null ## RESET Friends of Friends 
 ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh
 
 ########################################################################
-if [[ ${UPLANETNAME} == "EnfinLibre" ]]; then
+if [[ ${UPLANETNAME} == "0000000000000000000000000000000000000000000000000000000000000000" ]]; then
     #################### UPLANET ORIGIN : <<<<< DETECT PRIVATE SWARM BLOOM >>>>> #########
     ## ${MY_PATH}/RUNTIME/BLOOM.Me.sh (old automatic swarm.key creation... Need more test...)
     echo "UPlanet ORIGIN - where new captains meets DRAGON's WoT captains"
