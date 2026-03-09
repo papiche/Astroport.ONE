@@ -84,11 +84,12 @@ mkdir -p ~/.zen/tmp
 echo "#############################################"
 ## https://darktrojan.github.io/openwith/webextension.html"
 ~/.zen/Astroport.ONE/open_with_linux.py install
-cat ~/.zen/Astroport.ONE/open_with_yt-dlp.txt | sed "s|_HOME_|$HOME|g"
+cat ~/.zen/Astroport.ONE/open_with_yt-dlp.txt | sed "s|_HOME_|$HOME|g" > ~/.zen/open_with_yt-dlp.txt
 echo "#############################################
 # INSTALLEZ L'EXTENSTION FIREFOX
 # https://addons.mozilla.org/firefox/addon/open-with
 #############################################
+recopier le contenu de xed ~/.zen/open_with_yt-dlp.txt
 #############################################"
 
 ########################################################################
@@ -96,6 +97,7 @@ echo "#############################################
 ########################################################################
 ## Full sudo for captain (NOPASSWD:ALL)
 echo "$USER ALL=(ALL) NOPASSWD:ALL" | (sudo su -c 'EDITOR="tee" visudo -f /etc/sudoers.d/captain')
+########################################################################
 ## Explicit NOPASSWD for services used by Astroport (ramdisk, systemctl, powerjoular, etc.)
 for bin in fail2ban-client mount umount apt-get apt systemctl ufw docker hdparm powerjoular kill; do
   binpath=$(which $bin 2>/dev/null)
@@ -114,8 +116,8 @@ echo "# ADDING <<<Astroport & REC >>>  DESKTOP SHORTCUT"
 [[ -d ~/Desktop ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/astroport.desktop > ~/Desktop/astroport.desktop && chmod +x ~/Desktop/astroport.desktop
 [[ -d ~/Bureau ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/rec.desktop > ~/Bureau/rec.desktop && chmod +x ~/Bureau/rec.desktop
 [[ -d ~/Desktop ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/rec.desktop > ~/Desktop/rec.desktop && chmod +x ~/Desktop/rec.desktop
-[[ -d ~/Bureau ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/g1billet.desktop > ~/Bureau/g1billet.desktop && chmod +x ~/Bureau/g1billet.desktop
-[[ -d ~/Desktop ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/g1billet.desktop > ~/Desktop/g1billet.desktop && chmod +x ~/Desktop/g1billet.desktop
+#~ [[ -d ~/Bureau ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/g1billet.desktop > ~/Bureau/g1billet.desktop && chmod +x ~/Bureau/g1billet.desktop
+#~ [[ -d ~/Desktop ]] && sed "s/_USER_/$USER/g" ~/.zen/Astroport.ONE/g1billet.desktop > ~/Desktop/g1billet.desktop && chmod +x ~/Desktop/g1billet.desktop
 
 ######### SUPER PRATIQUE :: DOES NOT WORK WITH SPACE IN FILENAME
 echo "# ADD NEMO 'Add To IPFS' ACTION"

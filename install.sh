@@ -279,6 +279,7 @@ echo
 echo "🏴‍☠️ Embarquement UPlanet ẐEN ORIGIN... Terminé"
 echo "#############################################"
 . ~/.bashrc
+cat ~/.zen/game/players/.current/secret.june
 
 
 else
