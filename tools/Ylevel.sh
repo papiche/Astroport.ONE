@@ -195,7 +195,7 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
 
 else
     echo "GENERATING FIRST SSH ED25519 KEY"
-    ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -C "$(hostname)"
+    ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -C "support+$(hostname)@qo-op.com"
     echo "FINISH SSH TRANSFORMATION. RUNNING $ME AGAIN
     (╯°□°)--︻╦╤─ - - - "
     ~/.zen/Astroport.ONE/tools/Ylevel.sh AUTOMATIC

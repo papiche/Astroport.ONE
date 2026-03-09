@@ -41,7 +41,7 @@ fi
 ## https://pad.p2p.legal/keygen
 if [[ -s ~/.ssh/id_ed25519.pub ]]; then
     ## TEST IF TRANSMUTATION IS MADE
-    YIPNS=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py "$(cat ~/.ssh/id_ed25519.pub)")
+    YIPNS=$($HOME/.zen/Astroport.ONE/tools/ssh_to_g1ipfs.py "$(cat ~/.ssh/id_ed25519.pub)")
     if [[ ${IPFSNODEID} == ${YIPNS} ]]; then
         # Y LEVEL CONFIRMED !
             echo "Y LEVEL CONFIRMED !" \
@@ -117,7 +117,7 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     
     # Use nostr_update_profile.py instead of nostr_setup_profile.py to preserve existing profile data
     # Note: We don't update all to let the captain modify them manually
-    ${MY_PATH}/../tools/nostr_update_profile.py \
+    $HOME/.zen/Astroport.ONE/tools/nostr_update_profile.py \
     "${CAPTAINEMAIL}" \
     "wss://relay.copylaradio.com" "$myRELAY" \
     --g1pub "$CAPTAING1PUB" \
@@ -130,7 +130,7 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     
     # Update DID document - Read from NOSTR relay (source of truth) instead of local cache
     # IMPORTANT: Preserve existing contract status (sociétaire, infrastructure, etc.)
-    if [[ -f "${MY_PATH}/../tools/did_manager_nostr.sh" ]] && [[ -f "${MY_PATH}/../tools/nostr_get_events.sh" ]]; then
+    if [[ -f "$HOME/.zen/Astroport.ONE/tools/did_manager_nostr.sh" ]] && [[ -f "$HOME/.zen/Astroport.ONE/tools/nostr_get_events.sh" ]]; then
         echo "Reading DID document from NOSTR relay (source of truth)"
         
         # Get Captain's HEX pubkey
@@ -138,7 +138,7 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
         
         if [[ -n "$CAPTAIN_HEX" ]]; then
             # Query NOSTR relay for DID document (kind 30800 with d=did tag)
-            did_event=$(${MY_PATH}/../tools/nostr_get_events.sh \
+            did_event=$($HOME/.zen/Astroport.ONE/tools/nostr_get_events.sh \
                 --kind 30800 \
                 --author "$CAPTAIN_HEX" \
                 --tag-d "did" \
@@ -198,7 +198,7 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
             fi
             
             # Update or create DID document
-            ${MY_PATH}/../tools/did_manager_nostr.sh update "${CAPTAINEMAIL}" "$update_type" "0" "0" >/dev/null 2>&1
+            $HOME/.zen/Astroport.ONE/tools/did_manager_nostr.sh update "${CAPTAINEMAIL}" "$update_type" "0" "0" >/dev/null 2>&1
             
             if [[ $? -eq 0 ]]; then
                 echo "✅ DID document updated for Captain (type: ${update_type})"
@@ -228,8 +228,8 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     fi
     ## Same-uplanet captains (kind 30850, swarm_id = UPLANETG1PUB, station != me) so Captain follows other captains on NOSTR
     captainhex=()
-    if [[ -n "${UPLANETG1PUB:-}" ]] && [[ -f "${MY_PATH}/../tools/nostr_get_events.sh" ]] && command -v jq &>/dev/null; then
-        UPLANET_30850=$("${MY_PATH}/../tools/nostr_get_events.sh" --kind 30850 --limit 300 2>/dev/null)
+    if [[ -n "${UPLANETG1PUB:-}" ]] && [[ -f "$HOME/.zen/Astroport.ONE/tools/nostr_get_events.sh" ]] && command -v jq &>/dev/null; then
+        UPLANET_30850=$("$HOME/.zen/Astroport.ONE/tools/nostr_get_events.sh" --kind 30850 --limit 300 2>/dev/null)
         if [[ -n "$UPLANET_30850" ]]; then
             while read -r pub; do
                 [[ -n "$pub" ]] && captainhex+=("$pub")
@@ -246,7 +246,7 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     
     if [[ ${#allhex[@]} -gt 0 ]] && [[ -n "${NSEC:-}" ]]; then
         echo "Following ${#nostrhex[@]} NOSTR cards, ${#umaphex[@]} UMAP, ${#sectorhex[@]} SECTOR, ${#regionhex[@]} REGION, ${#captainhex[@]} same-uplanet captains (single kind3)"
-        ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "${allhex[@]}" >/dev/null 2>&1
+        $HOME/.zen/Astroport.ONE/tools/nostr_follow.sh "$NSEC" "${allhex[@]}" >/dev/null 2>&1
     fi
 fi
 ##################################################################################
@@ -285,8 +285,8 @@ cat ${HOME}/.zen/game/players/*/ssh.pub >> ~/.zen/tmp/${MOATS}/authorized_keys 2
 
 ## ADDING SSH KEYS OF CAPTAINS FROM SAME UPLANET (kind 30850 economic-health, swarm_id = UPLANETG1PUB)
 ## Links captains of the same uplanet for P2P SSH (see ECONOMY.broadcast.sh ssh_pub tag and economy.Swarm.html)
-if [[ -n "${UPLANETG1PUB:-}" ]] && [[ -f "${MY_PATH}/../tools/nostr_get_events.sh" ]] && command -v jq &>/dev/null; then
-    UPLANET_30850=$("${MY_PATH}/../tools/nostr_get_events.sh" --kind 30850 --limit 300 2>/dev/null)
+if [[ -n "${UPLANETG1PUB:-}" ]] && [[ -f "$HOME/.zen/Astroport.ONE/tools/nostr_get_events.sh" ]] && command -v jq &>/dev/null; then
+    UPLANET_30850=$("$HOME/.zen/Astroport.ONE/tools/nostr_get_events.sh" --kind 30850 --limit 300 2>/dev/null)
     if [[ -n "$UPLANET_30850" ]]; then
         echo "$UPLANET_30850" | jq -c --arg sid "$UPLANETG1PUB" --arg me "$IPFSNODEID" '
             select(
