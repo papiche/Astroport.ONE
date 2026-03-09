@@ -279,8 +279,8 @@ echo
 echo "🏴‍☠️ Embarquement UPlanet ẐEN ORIGIN... Terminé"
 echo "#############################################"
 . ~/.bashrc
-cat ~/.zen/game/players/.current/secret.june
-
+##########################################################
+~/.zen/Astroport.ONE/RUNTIME/DRAGON_p2p_ssh.sh ON
 
 else
 

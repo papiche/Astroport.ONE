@@ -216,23 +216,24 @@ echo ">>> SWITHCIN ASTROPORT ON <<<
 ## ON BOARDING PLAYER
 ipfs --timeout 30s cat /ipfs/QmVy7FKd1MGZqee4b7B5jmBKNgTJBvKKkoDhodnJWy23oN > ~/.zen/MJ_APIKEY
 source ${HOME}/.zen/Astroport.ONE/tools/my.sh
-GO=$(my_LatLon) ## FR 34.46 1.51 (lang/lat/lon) 0.01° precision
+GO=$(my_LatLon) ## FR 34.46 1.51 # (country lat lon) with 0.01° precision
 GMARKMAIL="support+$(echo $(hostname) $GO | sed "s| |-|g")@qo-op.com" # ex: support+nexus-55-FR-34.46-1.51@qo-op.com
-echo "##### CAPTAIN ################## ON BOARDING $GMARKMAIL"
+
+##########################################################
+echo "##### CAPTAIN ################## ON BOARDING ${GMARKMAIL}"
 espeak "Welcome CAPTAIN" 2>/dev/null
 echo "Adapt ~/.zen/Astroport.ONE/.env file to your needs"
 echo "#####################################################"
 ################ COMPTE CAPTAINE AUTOMATIQUE
 ## MULTIPASS --->
 echo ">>> Create CAPTAIN MULTIPASS <<<" 
-~/.zen/Astroport.ONE/tools/make_NOSTRCARD.sh "$GMARKMAIL" $GO
+~/.zen/Astroport.ONE/tools/make_NOSTRCARD.sh "${GMARKMAIL}" $GO
 
 ## ZEN CARD --->
 echo ">>> Create CAPTAIN ZENCARD <<<"
 ZSALT=$(${HOME}/.zen/Astroport.ONE/tools/diceware.sh $(( ${HOME}/.zen/Astroport.ONE/tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
 ZPEPS=$(${HOME}/.zen/Astroport.ONE/tools/diceware.sh $(( ${HOME}/.zen/Astroport.ONE/tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
 
-source ~/.zen/game/nostr/$GMARKMAIL/.secret.nostr ## get NPUB & HEX
-~/.zen/Astroport.ONE/RUNTIME/VISA.new.sh" "$ZSALT" "$ZPEPS" "$GMARKMAIL" "UPlanet" $GO "$NPUB" "$HEX"
+source ~/.zen/game/nostr/${GMARKMAIL}/.secret.nostr ## get NPUB & HEX
+~/.zen/Astroport.ONE/RUNTIME/VISA.new.sh" "$ZSALT" "$ZPEPS" "${GMARKMAIL}" "UPlanet" ${GO} "$NPUB" "$HEX"
 
-exit 0
