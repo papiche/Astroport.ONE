@@ -2,7 +2,7 @@
 # https://ipfs.copylaradio.com ipfs.copylaradio.com
 #################################################################
 # astroport.libra.copylaradio.com # 
-/ip4/149.102.158.67/tcp/4001/p2p/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u
+/ip4/149.102.158.67/tcp/4001/p2p/12D3KooWM6jEPqDEgnjmTjnB4vCBkGoQp7rtS5m9mpikSHoDD581
 
 ### UPLanet ORIGIN : OFFICIAL RELAY LIST #######################
 /dnsaddr/ipfs.g1sms.fr/p2p/12D3KooWAvWWWtscBjFwybk8WSr2tmiwDtvNzJEh8vwyFntbpxPX

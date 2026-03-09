@@ -182,13 +182,20 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
 
 	fi
 
+	ipfs bootstrap rm --all
+	for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
+	do
+		ipfsnodeid=${bootnode##*/}
+		ipfs bootstrap add $bootnode
+	done
+
     NODEG1PUB=$(cat ~/.zen/game/secret.NODE.dunikey | grep 'pub:' | cut -d ' ' -f 2)
     echo "NODEG1PUB=${NODEG1PUB}"
     cat ~/.zen/Astroport.ONE/.env
 
 else
     echo "GENERATING FIRST SSH ED25519 KEY"
-    ssh-keygen -t ed25519
+    ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -C "$(hostname)"
     echo "FINISH SSH TRANSFORMATION. RUNNING $ME AGAIN
     (╯°□°)--︻╦╤─ - - - "
     ~/.zen/Astroport.ONE/tools/Ylevel.sh AUTOMATIC
