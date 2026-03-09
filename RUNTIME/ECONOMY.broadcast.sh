@@ -512,6 +512,8 @@ TAGS_JSON=$(cat <<EOF
   ["d", "$EVENT_D"],
   ["t", "uplanet"],
   ["t", "economic-health"],
+  ["t", "$UPLANETG1PUB"],
+  ["t", "$IPFSNODEID"],
   ["constellation", "$UPLANETG1PUB"],
   ["station", "$IPFSNODEID"],
   ["station:name", "${myDAMAIN:-...${IPFSNODEID: -8}}"],
