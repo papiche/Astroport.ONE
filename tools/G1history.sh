@@ -1,230 +1,165 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 0.1
+# Version: 2.0 — Duniter v2 (squid GraphQL)
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 #~ G1history.sh
-#~ Indiquez une clef publique G1.
-#~ Il récupère l'historique des transactions en JSON
-#~ Utilise silkaj au lieu de jaklis.py
-#~ Utilise les serveurs BMAS sélectionnés par duniter_getnode.sh
-#~ Compatible avec le format attendu par upassport.sh
+#~ Retourne l'historique des transactions d'un wallet G1 en JSON.
+#~ Source : indexeur Squid Duniter v2 (GraphQL)
+#~ Cache ~/.zen/tmp/coucou/<G1PUB>.TX.json (TTL 1h)
+#
+# Usage:
+#   G1history.sh <G1PUB> [limit]    → JSON tableau de transactions
+#
+# Format de sortie (compatible avec G1impots.sh) :
+# {
+#   "history": [
+#     {
+#       "Date": "2024-01-15T10:30:00",
+#       "Amounts Ğ1": 2.48,          ← positif = reçu, négatif = envoyé
+#       "Issuers/Recipients": "<pubkey>",
+#       "Reference": "<commentaire>",
+#       "blockNumber": 12345,
+#       "direction": "received|sent"
+#     }, ...
+#   ]
+# }
+#
+# Note: Les montants bruts squid sont en centimes (DECIMALS=2).
 ################################################################################
 
-MY_PATH="`dirname \"$0\"`"              # relative
-MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-. "${MY_PATH}/my.sh"
+MY_PATH="`dirname \"$0\"`"
+MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
+[[ -f "${MY_PATH}/my.sh" ]] && . "${MY_PATH}/my.sh"
 
-# Constants
-MAX_RETRIES=3
-CACHE_DIR="$HOME/.zen/tmp/coucou"
-CACHE_TTL_HOURS=1  # Cache TTL in hours for transaction history
-BMAS_CACHE_TTL_HOURS=6  # BMAS server cache TTL in hours
-DEFAULT_TX_LIMIT=25  # Default number of transactions to retrieve
+# ── Configuration ─────────────────────────────────────────────────────────────
+DECIMALS=2
+SQUID_URL="${SQUID_URL:-https://squid.g1.gyroi.de/v1/graphql}"
+CACHE_DIR="${HOME}/.zen/tmp/coucou"
+CACHE_TTL_SEC=3600     # 1h
+DEFAULT_LIMIT=50       # transactions max par défaut
 
-# Logging function
-log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
-}
+# Mise à jour squid dynamique
+if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
+    _sq=$("${MY_PATH}/duniter_getnode.sh" squid 2>/dev/null)
+    [[ -n "$_sq" ]] && SQUID_URL="$_sq"
+fi
 
-# Check if file is within TTL (in hours)
-is_file_fresh() {
-    local file_path="$1"
-    local ttl_hours="$2"
-    
-    if [[ ! -s "$file_path" ]]; then
-        return 1
-    fi
-    
-    local file_age=$(stat -c %Y "$file_path" 2>/dev/null || echo 0)
-    local current_time=$(date +%s)
-    local age_hours=$(( (current_time - file_age) / 3600 ))
-    
-    if [[ $age_hours -lt $ttl_hours ]]; then
-        return 0
-    fi
-    return 1
-}
+log() { echo "[G1history] $*" >&2; }
 
-# Get cached transaction history if fresh
-get_cached_history() {
-    local cache_file="$1"
-    
-    if is_file_fresh "$cache_file" "$CACHE_TTL_HOURS"; then
-        if [[ -s "$cache_file" ]]; then
-            # Validate JSON format
-            if jq empty "$cache_file" 2>/dev/null; then
-                log "Using fresh cached transaction history"
-                cat "$cache_file"
-                return 0
-            else
-                log "Cached history is invalid JSON, removing corrupted cache"
-                rm -f "$cache_file"
-            fi
-        fi
-    fi
-    return 1
-}
-
-# Function to get BMAS server using duniter_getnode.sh with TTL check
-get_bmas_server() {
-    local server=""
-    local cache_file="$HOME/.zen/tmp/current.duniter.bmas"
-    local force_refresh="${1:-false}"
-    
-    # Check if cached BMAS server is still fresh (unless force refresh)
-    if [[ "$force_refresh" != "true" ]] && is_file_fresh "$cache_file" "$BMAS_CACHE_TTL_HOURS"; then
-        server=$(cat "$cache_file" 2>/dev/null)
-        if [[ -n "$server" && "$server" != "ERROR" ]]; then
-            echo "$server"
-            return 0
-        fi
-    fi
-    
-    # Get fresh BMAS server
-    log "Getting fresh BMAS server..."
-    server=$(${MY_PATH}/../tools/duniter_getnode.sh "BMAS" 2>/dev/null | tail -n 1)
-    if [[ -n "$server" && "$server" != "ERROR" ]]; then
-        echo "$server" > "$cache_file"
-        log "Cached new BMAS server: $server"
-        echo "$server"
-        return 0
-    fi
-    return 1
-}
-
-# Function to get transaction history with retries using silkaj
-get_transaction_history() {
-    local g1pub="$1"
-    local server="$2"
-    local retries=0
-    local history=""
-    
-    while [[ $retries -lt $MAX_RETRIES ]]; do
-        # Use silkaj to get transaction history with specific BMAS server
-        if [[ -n "$server" ]]; then
-            log "Trying silkaj history with server: $server"
-            history=$(timeout 30 silkaj --json --endpoint "$server" money history "$g1pub" 2>/dev/null)
-        else
-            log "Trying silkaj history without specific endpoint"
-            history=$(timeout 30 silkaj --json money history "$g1pub" 2>/dev/null)
-        fi
-        
-        # Check if we got valid JSON
-        if [[ -n "$history" ]] && echo "$history" | jq empty 2>/dev/null; then
-            log "Retrieved transaction history successfully"
-            echo "$history"
-            return 0
-        else
-            log "Failed to get transaction history from server: $server"
-        fi
-        
-        retries=$((retries + 1))
-        if [[ $retries -lt $MAX_RETRIES ]]; then
-            log "Retry $retries/$MAX_RETRIES - getting new server..."
-            server=$(get_bmas_server "true")
-        fi
-    done
-    return 1
-}
-
-# Validate input
+# ── Validation ────────────────────────────────────────────────────────────────
 G1PUB="${1:-}"
-TX_LIMIT="${2:-$DEFAULT_TX_LIMIT}"
+TX_LIMIT="${2:-$DEFAULT_LIMIT}"
 
-if [[ -z "$G1PUB" ]]; then
-    log "ERROR: PLEASE ENTER WALLET G1PUB"
-    exit 1
-fi
+[[ -z "$G1PUB" ]] && { log "USAGE: G1history.sh <G1PUB> [limit]"; exit 1; }
+[[ ! "$G1PUB" =~ ^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{43,44}$ ]] && {
+    log "ERREUR: G1PUB invalide : $G1PUB"; exit 1; }
 
-log "Starting transaction history retrieval for $G1PUB using silkaj with BMAS servers"
-
-# Get IPFS address for validation
-ASTROTOIPFS=$(~/.zen/Astroport.ONE/tools/g1_to_ipfs.py ${G1PUB} 2>/dev/null)
-if [[ -z "${ASTROTOIPFS}" ]]; then
-    log "ERROR: INVALID G1PUB: ${G1PUB}"
-    exit 1
-fi
-
-log "G1HISTORY ${G1PUB} (/ipns/${ASTROTOIPFS})"
-
-#######################################################
-## CLEANING OLD CACHE FILES
-log "Cleaning old cache files..."
-# Ensure cache directory exists
 mkdir -p "$CACHE_DIR"
+HISTFILE="$CACHE_DIR/${G1PUB}.TX.json"
 
-# Remove old .TX.json files (older than 1 day)
-find "$CACHE_DIR" -mtime +1 -type f -name "*.TX.json" -exec rm -f '{}' \;
-
-# Clean old BMAS cache if expired
-bmas_cache_file="$HOME/.zen/tmp/current.duniter.bmas"
-if [[ -f "$bmas_cache_file" ]] && ! is_file_fresh "$bmas_cache_file" "$BMAS_CACHE_TTL_HOURS"; then
-    log "Removing expired BMAS cache"
-    rm -f "$bmas_cache_file"
-fi
-#######################################################
-
-HISTORYFILE="$CACHE_DIR/${G1PUB}.TX.json"
-
-# First, try to get fresh cached history
-cached_history=$(get_cached_history "$HISTORYFILE")
-if [[ $? -eq 0 ]]; then
-    echo "$cached_history"
-    exit 0
+# ── Cache (1h) ────────────────────────────────────────────────────────────────
+if [[ -s "$HISTFILE" ]]; then
+    age=$(( $(date +%s) - $(stat -c %Y "$HISTFILE") ))
+    if [[ $age -lt $CACHE_TTL_SEC ]]; then
+        jq empty "$HISTFILE" 2>/dev/null && { cat "$HISTFILE"; exit 0; }
+    fi
+    find "$CACHE_DIR" -mtime +1 -name "*.TX.json" -delete 2>/dev/null
 fi
 
-# Get BMAS server
-log "Getting BMAS server from cache..."
-BMAS_SERVER=$(get_bmas_server)
-if [[ -n "$BMAS_SERVER" ]]; then
-    log "Using BMAS server for silkaj: $BMAS_SERVER"
-else
-    log "No BMAS server available, will try without specific endpoint"
+# ── Requête squid : toutes les TX (reçues + envoyées) ────────────────────────
+# On récupère les 2 sens en une seule requête (transfers filter)
+squid_query() {
+    local addr="$1"
+    local limit="$2"
+    jq -cn --arg a "$addr" --argjson n "$limit" '{
+        query: "query($a:String!,$n:Int!){
+            received: transfers(filter:{toId:{equalTo:$a}}, orderBy:BLOCK_NUMBER_DESC, first:$n){
+                nodes{ fromId toId amount timestamp blockNumber comment{message} }
+            }
+            sent: transfers(filter:{fromId:{equalTo:$a}}, orderBy:BLOCK_NUMBER_DESC, first:$n){
+                nodes{ fromId toId amount timestamp blockNumber comment{message} }
+            }
+        }",
+        variables: {a: $a, n: $n}
+    }'
+}
+
+log "Fetch squid pour ${G1PUB:0:12}... (limit=$TX_LIMIT)"
+
+SQUIDS=("$SQUID_URL"
+    "https://squid.g1.gyroi.de/v1/graphql"
+    "https://squid.g1.coinduf.eu/v1/graphql"
+)
+mapfile -t SQUIDS < <(printf '%s\n' "${SQUIDS[@]}" | awk '!seen[$0]++')
+
+RAW_RESP=""
+for sq in "${SQUIDS[@]}"; do
+    RAW_RESP=$(curl -sf --max-time 15 \
+        -X POST -H "Content-Type: application/json" \
+        --data "$(squid_query "$G1PUB" "$TX_LIMIT")" \
+        "$sq" 2>/dev/null)
+    jq -e '.data.received' <<<"$RAW_RESP" >/dev/null 2>&1 && {
+        SQUID_URL="$sq"; break; }
+    RAW_RESP=""
+    log "Échec sur $sq"
+done
+
+if [[ -z "$RAW_RESP" ]]; then
+    log "ERREUR: Aucun squid disponible"
+    echo "{}"
+    exit 1
 fi
 
-# Try to get transaction history with BMAS server
-HISTORY_JSON=$(get_transaction_history "$G1PUB" "$BMAS_SERVER")
+# ── Transformation → format G1history compatible ─────────────────────────────
+# Format cible :
+#   { "history": [ { "Date", "Amounts Ğ1", "Issuers/Recipients", "Reference",
+#                    "blockNumber", "direction" } ] }
+#
+# Montant : positif si reçu, négatif si envoyé (en Ğ1 float)
 
-# If immediate check fails, try with different servers
-if [[ -z "$HISTORY_JSON" ]]; then
-    log "Primary BMAS server failed, trying alternative servers..."
-    attempts=0
-    while [[ $attempts -lt $MAX_RETRIES ]]; do
-        # Try to get a new BMAS server (force refresh)
-        NEW_SERVER=$(get_bmas_server "true")
-        if [[ -n "$NEW_SERVER" && "$NEW_SERVER" != "$BMAS_SERVER" ]]; then
-            log "Trying with new BMAS server: $NEW_SERVER"
-            
-            # Retry with new server
-            history=$(get_transaction_history "$G1PUB" "$NEW_SERVER")
-            if [[ -n "$history" ]]; then
-                HISTORY_JSON="$history"
-                break
-            fi
-        else
-            log "No different server available, trying without specific endpoint"
-            history=$(get_transaction_history "$G1PUB" "")
-            if [[ -n "$history" ]]; then
-                HISTORY_JSON="$history"
-                break
-            fi
-        fi
-        attempts=$((attempts + 1))
-        [[ $attempts -lt $MAX_RETRIES ]] && sleep 2
-    done
+HISTORY_JSON=$(echo "$RAW_RESP" | jq --arg wallet "$G1PUB" '
+    def to_g1(raw): (raw | tonumber) / 100;
+
+    [
+      # TX reçues (positives)
+      (.data.received.nodes // [])[] |
+      {
+        "Date":               (.timestamp // ""),
+        "Amounts Ğ1":         (.amount | to_g1(.)),
+        "Issuers/Recipients": (.fromId // ""),
+        "Reference":          (.comment.message // ""),
+        "blockNumber":        (.blockNumber // 0),
+        "direction":          "received"
+      }
+    ] +
+    [
+      # TX envoyées (négatives)
+      (.data.sent.nodes // [])[] |
+      {
+        "Date":               (.timestamp // ""),
+        "Amounts Ğ1":         ((.amount | tonumber) / 100 * -1),
+        "Issuers/Recipients": (.toId // ""),
+        "Reference":          (.comment.message // ""),
+        "blockNumber":        (.blockNumber // 0),
+        "direction":          "sent"
+      }
+    ] |
+    sort_by(.blockNumber) | reverse
+')
+
+# Wrapper final
+RESULT=$(jq -n --argjson h "$HISTORY_JSON" '{"history": $h}')
+
+# Validation JSON
+if ! jq -e '.history | length >= 0' <<<"$RESULT" >/dev/null 2>&1; then
+    log "ERREUR: JSON invalide produit"
+    echo "{}"
+    exit 1
 fi
 
-# If we got valid history, save it to cache
-if [[ -n "$HISTORY_JSON" ]] && echo "$HISTORY_JSON" | jq empty 2>/dev/null; then
-    log "Successfully retrieved transaction history"
-    echo "$HISTORY_JSON" > "$HISTORYFILE"
-    echo "$HISTORY_JSON"
-    exit 0
-fi
-
-# If all else fails, return empty JSON object
-log "ERROR: Failed to get transaction history after all attempts"
-echo "{}"
-exit 1
+# Écriture cache
+echo "$RESULT" > "$HISTFILE"
+echo "$RESULT"
+exit 0
