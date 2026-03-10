@@ -262,7 +262,7 @@ Le système respecte les usages de la **Web of Trust DRAGON** :
 ### **Dépendances Système**
 ```bash
 # Outils requis
-silkaj      # Interface blockchain Ğ1
+gcli        # Client Duniter v2s (g1cli)
 jq          # Traitement JSON
 bc          # Calculs mathématiques
 ```
@@ -481,7 +481,7 @@ Type de sociétaire (satellite/constellation): satellite
 - **Portefeuilles non configurés** : Le script vérifie l'existence des fichiers dunikey
 - **Portefeuilles coopératifs manquants** : Message d'aide pour exécuter `ZEN.COOPERATIVE.3x1-3.sh`
 - **Timeout blockchain** : Si une transaction n'est pas confirmée en 40 minutes (configurable)
-- **Dépendances manquantes** : Vérification de `silkaj`, `jq`, `bc`
+- **Dépendances manquantes** : Vérification de `gcli`, `jq`, `bc`
 - **ZEN Card non trouvée** : Vérifier que le dossier `~/.zen/game/players/${email}/` existe
 - **Solde insuffisant ZEN Card** : Le script vérifie qu'il y a > 1Ğ1 pour effectuer un transfert
 
@@ -533,10 +533,9 @@ UPLANET:4ZqazktD:SOCIETY:support@qo-op.com:constellation:12D3KooWL2FcDJ41U9SyLuv
 
 ### **Vérification des Transactions**
 ```bash
-# Le script utilise silkaj --json money balance pour :
-1. Récupérer le solde initial (blockchain + pending)
-2. Attendre que pending = 0
-3. Vérifier que le solde final = blockchain initial - pending initial
+# Le script utilise G1balance.sh (GraphQL squid) pour :
+1. Récupérer le solde initial
+2. Vérifier le solde avant et après transfert
 ```
 
 ### **Gestion des Clés Privées**

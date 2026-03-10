@@ -82,7 +82,7 @@
 
 1. Power monitoring, solar time, vérification IPFS.
 2. Copie des logs, nettoyage ~/.zen/tmp (en préservant swarm, flashmem, coucou).
-3. Arrêt astroport, mise à jour dépôts (G1BILLET, UPassport, NIP-101, Astroport, OC2UPlanet, silkaj, yt-dlp), ping bootstrap.
+3. Arrêt astroport, mise à jour dépôts (G1BILLET, UPassport, NIP-101, Astroport, OC2UPlanet, yt-dlp), install/upgrade gcli, ping bootstrap.
 4. **NOSTRCARD.refresh.sh** (MULTIPASS).
 5. Si **UPLANETNAME != "0000000000000000000000000000000000000000000000000000000000000000"** : **PLAYER.refresh.sh** (ZEN Cards) ; **_UPLANET.refresh.sh** **non exécuté** (commenté).
 6. **UPLANET.refresh.sh** (clés UMAP / SECTOR / REGION).

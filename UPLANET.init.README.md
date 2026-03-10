@@ -44,7 +44,7 @@ Le script crée et initialise l'infrastructure complète UPlanet ẐEN :
 ## 🔧 Fonctionnement
 
 ### 1. Vérification des Prérequis
-- Outils requis : `silkaj`, `jq`, `bc`, `G1check.sh`
+- Outils requis : `gcli`, `jq`, `bc`, `G1check.sh`
 - Portefeuille source disponible avec solde suffisant
 
 ### 2. Source Primale Unique : UPLANETNAME_G1

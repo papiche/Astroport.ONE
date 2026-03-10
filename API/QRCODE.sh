@@ -219,12 +219,10 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
 
             if [[ ${APPNAME} == "history" || ${APPNAME} == "read" ]]; then
 
-                ## history & read ## CANNOT USE jaklis CLI formated output (JSON output)
+                ## history & read (DEPRECATED - jaklis removed)
                 echo "$HTTPCORS" > ~/.zen/tmp/${MOATS}/disco
                 sed -i "s~text/html~application/json~g"  ~/.zen/tmp/${MOATS}/disco
-                # cp ~/.zen/tmp/${MOATS}/secret.key ~/.zen/tmp/
-                echo "${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/secret.key $APPNAME -j"
-                ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key $APPNAME -j >> ~/.zen/tmp/${MOATS}/disco
+                echo "[]" >> ~/.zen/tmp/${MOATS}/disco
 
             fi
 
@@ -245,11 +243,8 @@ if [[ ${QRCODE:0:5} == "~~~~~" ]]; then
                 ${MY_PATH}/../tools/timeout.sh -t 5 \
                     curl -s ${myDATA}/user/profile/${G1DEST} > ~/.zen/tmp/${MOATS}/gchange.json
 
-                ## Send ॐ★ॐ
-                [[ -s ~/.zen/tmp/${MOATS}/gchange.json ]] \
-                    && ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/secret.key stars -p ${G1DEST} -n ${WHAT} >> ~/.zen/tmp/${MOATS}/disco \
-                    && rm ~/.zen/tmp/${MOATS}/gchange.json \
-                    || echo "/${G1DEST} profile is not existing yet..." >> ~/.zen/tmp/${MOATS}/disco
+                ## Send ★ (DEPRECATED - jaklis/Cesium+ stars removed)
+                echo "Stars feature deprecated (jaklis removed)" >> ~/.zen/tmp/${MOATS}/disco
 
             fi
 
@@ -425,7 +420,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
                 && echo "$VoeuName $PLAYERORIG1 @PASS"
 
             ## CHECK PLAYERORIG1 WALLETS
-            echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${PLAYERORIG1}"
+            echo "${MY_PATH}/../tools/G1check.sh ${PLAYERORIG1}"
             PLAYERCOINS=$(${MY_PATH}/../tools/G1check.sh ${PLAYERORIG1} | tail -n 1)
             echo "<br><b>${player} $PLAYERCOINS G1</b>" >> ~/.zen/tmp/${MOATS}/disco
             ###  IF EMPTY ??? WHAT  TODO
@@ -468,7 +463,7 @@ if [[ ${QRCODE:0:5} == "@@@@@" ]]; then
             #~ ISTHERE=$(ipfs key list -l | grep -w ${player} | head -n1 | cut -d ' ' -f1)
             #~ echo "<h1>$player G1MISSIVE<h1> $ISTHERE" >> ~/.zen/tmp/${MOATS}/disco
 
-            echo "${MY_PATH}/../tools/jaklis/jaklis.py balance -p ${G1VOEUPUB}"
+            echo "${MY_PATH}/../tools/G1check.sh ${G1VOEUPUB}"
             G1VOEUCOINS=$(${MY_PATH}/../tools/G1check.sh ${G1VOEUPUB} | tail -n 1)
             echo "<br><b>${VoeuName} $G1VOEUCOINS G1</b>" >> ~/.zen/tmp/${MOATS}/disco
 

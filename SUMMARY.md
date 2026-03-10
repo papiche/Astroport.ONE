@@ -41,7 +41,6 @@
 
 ### Tools & Utilities
 * [Keygen Documentation](tools/keygen.readme.md) - Key generation utilities
-* [Jaklis Tools](tools/jaklis/README.md) - Jaklis integration tools
 * [uMARKET](tools/README_uMARKET.md) - Market utilities
 
 ## 🔧 Advanced Topics

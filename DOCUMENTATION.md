@@ -49,7 +49,6 @@
 
 ### Tools & Utilities
 * **[Keygen Documentation](tools/keygen.readme.md)** - Key generation utilities
-* **[Jaklis Tools](tools/jaklis/README.md)** - Jaklis integration tools
 * **[🛒 uMARKET](docs/uMARKET.md)** - **Decentralized Marketplace System** - Système de marketplace décentralisé avec tag `#market`. ⚠️ **À refondre** : Intégration ORE UMAP requise. [TODO](docs/uMARKET.todo.md)
 
 ## 🔧 Advanced Topics

@@ -512,11 +512,6 @@ EOFNOSTR
         --email "$EMAIL" \
         --ipns_vault "/ipns/${NOSTRNS}" &>/dev/null
 
-    ## CREATE CESIUM + PROFILE
-    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${EMAIL}.multipass.dunikey \
-        set --name "${YOUSER} MULTIPASS" --avatar "$HOME/.zen/game/nostr/${EMAIL}/IPNS.QR.png" \
-        --site "$myIPFS/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" -d "UPlanet ${UPLANETG1PUB:0:8} MULTIPASS ($HEX)" &>/dev/null
-
     ## CHECK DESTINATION WALLET NOT ALREADY CREDITED (refuse double credit)
     DEST_BALANCE=""
     if [[ -f "${MY_PATH}/G1check.sh" ]] && [[ -n "$G1PUBNOSTR" ]]; then

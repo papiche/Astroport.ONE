@@ -627,11 +627,6 @@ main() {
     done
     
     # Vérifier les outils requis
-    if ! command -v silkaj &> /dev/null; then
-        echo -e "${RED}❌ Erreur: silkaj n'est pas installé${NC}"
-        exit 1
-    fi
-    
     if ! command -v bc &> /dev/null; then
         echo -e "${RED}❌ Erreur: bc n'est pas installé${NC}"
         exit 1

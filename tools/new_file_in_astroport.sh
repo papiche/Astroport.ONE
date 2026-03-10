@@ -599,11 +599,8 @@ then
 #############################################################################
 
 
-    # echo "SEND TW LINK to GCHANGE MESSAGE & MULTIPASS nostr messaging"
+    # echo "SEND TW LINK via NOSTR messaging"
     if [[ -n $3 ]]; then
-        ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py \
-        -k ~/.zen/game/players/$PLAYER/secret.dunikey -n "$myDATA" send -d "$3" \
-        -t "${TITLE} ${MEDIAKEY}" -m "MEDIA : $myIPFSGW/ipfs/${IPFSREPFILEID}"
 
         ## SEND VIDEO AS NIP-71 NOSTR EVENT (if video and upload_info.json exists)
         if [[ $(echo "$MIME" | grep 'video') ]] && [[ -f ~/Astroport/${PLAYER}/${TyPE}/${REFERENCE}/upload_info.json ]]; then

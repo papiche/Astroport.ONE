@@ -77,14 +77,9 @@ if [[ $APPNAME == "messaging" ]]; then
 
     ( ## & SUB PROCESS
 
-    echo "Extracting ${G1PUB} messages..."
-    ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${MOATS}.secret.key read -n 10 -j  > ~/.zen/tmp/${MOATS}/messin.${G1PUB}.json
-    [[ ! -s ~/.zen/tmp/${MOATS}/messin.${G1PUB}.json || $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/${MOATS}/messin.${G1PUB}.json) == "True" ]] && echo "[]" > ~/.zen/tmp/${MOATS}/messin.${G1PUB}.json
-
-    ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${MOATS}.secret.key read -n 10 -j -o > ~/.zen/tmp/${MOATS}/messout.${G1PUB}.json
-    [[ ! -s ~/.zen/tmp/${MOATS}/messout.${G1PUB}.json || $(grep  -v -E 'Aucun message à afficher' ~/.zen/tmp/${MOATS}/messout.${G1PUB}.json) == "True" ]] && echo "[]" > ~/.zen/tmp/${MOATS}/messout.${G1PUB}.json
+    echo "Messaging deprecated (jaklis/Cesium+ removed)"
+    echo "[]" > ~/.zen/tmp/${MOATS}/messin.${G1PUB}.json
+    echo "[]" > ~/.zen/tmp/${MOATS}/messout.${G1PUB}.json
 
     echo "Creating messages In/Out JSON ~/.zen/tmp/${MOATS}/${MOATS}.messaging.json"
     echo '[' > ~/.zen/tmp/${MOATS}/${MOATS}.messaging.json
@@ -363,19 +358,16 @@ if [[ $APPNAME == "pay" ]]; then
 
     if [[ "$WHAT" == "history" ]]; then
         sed -i "s~text/html~application/json~g"  ~/.zen/tmp/$PLAYER.pay.$WHAT.http
-        ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
-        ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${MOATS}.secret.key history -j >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+        ${MY_PATH}/../tools/G1history.sh ${G1PUB} 30 >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
     fi
 
     if [[ "$WHAT" == "get" ]]; then
         sed -i "s~text/html~application/json~g"  ~/.zen/tmp/$PLAYER.pay.$WHAT.http
-        ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
-        ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${MOATS}.secret.key get >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+        echo '{"deprecated": "Cesium+ profile removed"}' >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
     fi
 
     if [[ "$WHAT" == "balance" ]]; then
-            ~/.zen/Astroport.ONE/tools/timeout.sh -t 20 \
-            ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${MOATS}.secret.key balance >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
+        ${MY_PATH}/../tools/G1check.sh ${G1PUB} >> ~/.zen/tmp/$PLAYER.pay.$WHAT.http
     fi
 
     cat ~/.zen/tmp/$PLAYER.pay.$WHAT.http
@@ -398,7 +390,7 @@ if [[ $APPNAME == "friend" ]]; then
     g1friend=${WHAT}
     stars=${VAL:-1} // Default 1 ★
 
-    $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${MOATS}.secret.key stars -p $g1friend -n $stars > ~/.zen/tmp/${MOATS}/${MOATS}.log
+    echo "Stars feature deprecated (jaklis/Cesium+ removed)" > ~/.zen/tmp/${MOATS}/${MOATS}.log
 
     (
         echo "$HTTPCORS $(cat ~/.zen/tmp/${MOATS}/${MOATS}.log)"| nc -l -p ${PORT} -q 1 > /dev/null 2>&1

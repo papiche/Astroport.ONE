@@ -65,11 +65,6 @@ echo "<<< UPDATED>>> PATH=$PATH"
 echo "#############################################"
 echo ">>>>>>>>>>> SYSTEM SETUP  "
 echo "#############################################"
-#### SETUP JAKLIS ###############################################################
-echo "=== SETUP jaklis"
-cd ~/.zen/Astroport.ONE/tools/jaklis
-./setup.sh
-
 ## XBIAN fail2ban ERROR correction ##
 #[....] Starting authentication failure monitor: fail2ban No file(s) found for glob /var/log/auth.log
 [[ "$USER" == "xbian" ]] && sudo sed -i "s/auth.log/faillog/g" /etc/fail2ban/paths-common.conf
@@ -192,9 +187,10 @@ sudo sed -i 's/^.*ClientAliveCountMax .*/ClientAliveCountMax 3/' /etc/ssh/sshd_c
 
 # Astroport Basic Tools Linking
 ln -f -s ~/.zen/Astroport.ONE/tools/natools.py ~/.local/bin/natools
-ln -f -s ~/.zen/Astroport.ONE/tools/jaklis/jaklis.py ~/.local/bin/jaklis
 ln -f -s ~/.zen/Astroport.ONE/tools/keygen ~/.local/bin/keygen
 ln -f -s ~/.zen/Astroport.ONE/command.sh ~/.local/bin/coeurbox
+## gcli symlink (g1cli Duniter v2s client)
+[[ $(which gcli 2>/dev/null) ]] && ln -f -s $(which gcli) ~/.local/bin/gcli
 
 # NIP-101 strfry setup
 if [[ -d ~/.zen/strfry && -d ~/.zen/workspace/NIP-101 ]]; then

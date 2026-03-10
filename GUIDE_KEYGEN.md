@@ -208,14 +208,9 @@ Une fois votre portefeuille généré :
    cp ~/.zen/portefeuille.pubsec ~/.config/duniter/
    ```
 
-2. **Utilisez avec Silkaj** :
+2. **Vérifiez votre solde** :
    ```bash
-   silkaj --wallet ~/.zen/portefeuille.pubsec
-   ```
-
-3. **Vérifiez votre solde** :
-   ```bash
-   silkaj --wallet ~/.zen/portefeuille.pubsec balance
+   G1check.sh <G1PUB>
    ```
 
 ## Sécurité
@@ -291,8 +286,8 @@ python3 tools/keygen -i ~/.zen/mon_portefeuille.dunikey -t monero
 # Copier le fichier .dunikey dans le répertoire Duniter
 cp ~/.zen/mon_portefeuille.dunikey ~/.config/duniter/
 
-# Utiliser avec Silkaj
-silkaj --wallet ~/.zen/mon_portefeuille.dunikey balance
+# Vérifier le solde
+G1check.sh <G1PUB>
 ```
 
 ## 📝 Résumé des avantages du format .dunikey

@@ -116,7 +116,7 @@ check_no_pending_transactions() {
     local balance_json=$("${MY_PATH}/tools/G1balance.sh" "$wallet_pubkey" 2>/dev/null)
     
     if [[ -n "$balance_json" ]] && echo "$balance_json" | jq -e '.balances' >/dev/null 2>&1; then
-        # G1balance.sh returns raw silkaj JSON (montants en centimes, diviser par 100)
+        # G1balance.sh returns JSON (montants en centimes, diviser par 100)
         local pending_centimes=$(echo "$balance_json" | jq -r '.balances.pending // 0' 2>/dev/null)
         local total_centimes=$(echo "$balance_json" | jq -r '.balances.total // 0' 2>/dev/null)
         
@@ -1661,12 +1661,6 @@ show_menu() {
 # Point d'entrée principal
 ################################################################################
 main() {
-    # Vérifier que silkaj est disponible
-    if ! command -v silkaj &> /dev/null; then
-        echo -e "${RED}❌ Erreur: silkaj n'est pas installé ou n'est pas dans le PATH${NC}"
-        exit 1
-    fi
-    
     # Vérifier que jq est disponible
     if ! command -v jq &> /dev/null; then
         echo -e "${RED}❌ Erreur: jq n'est pas installé ou n'est pas dans le PATH${NC}"

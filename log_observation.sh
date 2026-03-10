@@ -90,8 +90,7 @@ LOGS SURVEILLÉS PAR CATÉGORIE:
 
 💰 BLOCKCHAIN & ECONOMY (Ğ1 & ẐEN):
     - ~/.zen/tmp/duniter.log (Duniter blockchain)
-    - ~/.zen/tmp/silkaj.log (Client Silkaj)
-    - ~/.zen/tmp/jaklis.log (Client Jaklis)
+    - ~/.zen/tmp/gcli.log (Client g1cli Duniter v2s)
     - ~/.zen/tmp/zen_payment.log (Paiements ẐEN)
     - ~/.zen/tmp/palpal.log (Terminal PalPay)
     - ~/.zen/tmp/COINS.log (Balance checks)

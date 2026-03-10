@@ -1,9 +1,0 @@
-wheel
-base58
-pybase64
-duniterpy
-termcolor
-python-dotenv
-gql
-requests
-aiohttp

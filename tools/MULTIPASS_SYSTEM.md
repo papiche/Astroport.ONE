@@ -401,7 +401,7 @@ This creates a truly decentralized identity system where users can access their 
 - **IPFS** - Distributed file system
 - **ssss** - Shamir Secret Sharing implementation
 - **NaCl** - Cryptographic library (Ed25519)
-- **silkaj** - G1/Duniter blockchain client
+- **gcli** - Duniter v2s blockchain client (g1cli)
 - **nostpy-cli** - NOSTR protocol client
 
 ## Best Practices

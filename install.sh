@@ -181,13 +181,47 @@ echo "######### NIP-101 strfry NOSTR relay ##############"
 echo "INSTALL NOSTR RELAY : wss://localhost:7777"
 bash <(wget -qO- https://github.com/papiche/NIP-101/raw/refs/heads/main/install_strfry.sh)
 
-## silkaj 0.20 + json + primal
-echo "######### silkaj Duniter v1 Client + json output ##############"
-mkdir -p ~/.zen/workspace
-cd ~/.zen/workspace
-git clone --depth 1 https://git.duniter.org/zicmama/silkaj.git
-cd silkaj
-./install_silkaj_json.sh
+## g1cli (gcli) — Duniter v2s CLI client (.deb from GitLab CI artifacts)
+echo "######### g1cli Duniter v2 Client ##############"
+if [[ ! $(which gcli 2>/dev/null) ]]; then
+    GCLI_API="https://git.duniter.org/api/v4/projects/clients%2Frust%2Fg1cli"
+    architecture=$(uname -m)
+    case "$architecture" in
+        x86_64)  DEB_ARCH="amd64"; TARGET_ARCH="x86_64-unknown-linux-musl" ;;
+        aarch64) DEB_ARCH="arm64"; TARGET_ARCH="aarch64-unknown-linux-musl" ;;
+        *) echo "g1cli: unsupported architecture $architecture" && DEB_ARCH="" ;;
+    esac
+    if [[ -n "$DEB_ARCH" ]]; then
+        GCLI_VERSION=$(curl -sL "${GCLI_API}/releases" | jq -r '.[0].tag_name' 2>/dev/null)
+        if [[ -n "$GCLI_VERSION" && "$GCLI_VERSION" != "null" ]]; then
+            echo "Installing g1cli ${GCLI_VERSION} (.deb ${DEB_ARCH})..."
+            ## Find the CI pipeline for this release tag
+            PIPELINE_ID=$(curl -sL "${GCLI_API}/pipelines?ref=${GCLI_VERSION}&status=success&per_page=1" | jq -r '.[0].id' 2>/dev/null)
+            if [[ -n "$PIPELINE_ID" && "$PIPELINE_ID" != "null" ]]; then
+                ## Find the build job matching our target architecture
+                JOB_ID=$(curl -sL "${GCLI_API}/pipelines/${PIPELINE_ID}/jobs?per_page=100" \
+                    | jq -r "[.[] | select(.name | test(\"${TARGET_ARCH}\"))] | .[0].id" 2>/dev/null)
+                if [[ -n "$JOB_ID" && "$JOB_ID" != "null" ]]; then
+                    DEB_NAME="g1cli_${GCLI_VERSION}-1_${DEB_ARCH}.deb"
+                    DEB_URL="https://git.duniter.org/clients/rust/g1cli/-/jobs/${JOB_ID}/artifacts/file/target/${TARGET_ARCH}/debian/${DEB_NAME}"
+                    curl -sL "$DEB_URL" -o /tmp/${DEB_NAME} \
+                        && sudo dpkg -i /tmp/${DEB_NAME} \
+                        && rm -f /tmp/${DEB_NAME} \
+                        && echo "g1cli installed: $(gcli --version 2>/dev/null)" \
+                        || echo "INSTALL g1cli FAILED." >> ~/.zen/install.errors.log
+                else
+                    echo "INSTALL g1cli FAILED: no CI job found for ${TARGET_ARCH}" >> ~/.zen/install.errors.log
+                fi
+            else
+                echo "INSTALL g1cli FAILED: no pipeline found for ${GCLI_VERSION}" >> ~/.zen/install.errors.log
+            fi
+        else
+            echo "INSTALL g1cli FAILED: cannot fetch latest version." >> ~/.zen/install.errors.log
+        fi
+    fi
+else
+    echo "=== g1cli FOUND === $(gcli --version 2>/dev/null)"
+fi
 
 ## G1BILLET
 echo "######### G1BILLET ##############"

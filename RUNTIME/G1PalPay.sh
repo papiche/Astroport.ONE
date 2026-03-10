@@ -50,10 +50,8 @@ echo "=====(•‿‿•)====== ( ◕‿◕) (◕‿◕ ) =======(•‿‿•)=
 ${INDEX}"
 echo "(✜‿‿✜) G1PalPay : CHECK LAST 30 TX comment"
 
-## BMAS direct https://g1.astroport.com/tx/history/DsEx1pS33vzYZg4MroyBV9hCw98j1gtHEhwiZ5tK7ech/times/1728864000/1729295999
-# CHECK LAST 30 TRANSACTIONS
-~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -n 30 -j \
+# CHECK LAST 30 TRANSACTIONS (via GraphQL squid)
+${MY_PATH}/../tools/G1history.sh ${G1PUB} 30 \
     > $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json
 
 [[ ! -s $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json ]] \

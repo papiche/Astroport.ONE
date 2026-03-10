@@ -440,20 +440,6 @@ for UMAP in ${unique_combined[@]}; do
     fi
 
     ##########################################################
-    ######### UMAP GCHANGE & CESIUM PROFILE
-    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${UMAP}.dunikey "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}"
-    ################# PUBLISH UPlanet UMAP to G1PODs (no avatar - images in NOSTR/IPFS)
-    ${MY_PATH}/../tools/timeout.sh -t 20 \
-    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${UMAP}.dunikey -n ${myDATA} \
-            set -n "UMAP_${UPLANETG1PUB:0:8}${UMAP}" -v " " -a " " -d "UPlanet ${UPLANETG1PUB}" \
-            -pos ${LAT} ${LON} -s ${myLIBRA}/ipfs/${UMAPROOT}
-
-    ${MY_PATH}/../tools/timeout.sh -t 20 \
-    ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/tmp/${MOATS}/${UMAP}.dunikey -n ${myCESIUM} \
-            set -n "UMAP_${UPLANETG1PUB:0:8}${UMAP}" -v " " -a " " -d "UPlanet ${UPLANETG1PUB}" \
-            -pos ${LAT} ${LON} -s ${myLIBRA}/ipfs/${UMAPROOT}
-
-    ##########################################################
     ######### UMAP NOSTR PROFILE
     #### PUBLISH TO NOSTR
     echo "###################### PUBLISH UMAP PROFILE ##########################"
@@ -484,8 +470,6 @@ for UMAP in ${unique_combined[@]}; do
     "" "${myLIBRA}/ipfs/${UMAPROOT}" "" "${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record" "" "" \
     "$myRELAY" \
     --zencard "$UPLANETNAME_G1" $UMAP_CID_ARGS
-
-    rm ~/.zen/tmp/${MOATS}/${UMAP}.dunikey
 
 done
 

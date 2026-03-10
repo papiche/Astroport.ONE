@@ -47,8 +47,7 @@ curl -s ${myDATA}/user/profile/${G1PUB} > ~/.zen/tmp/coucou/${G1PUB}.gchange.jso
 
 [[ ! $(cat ~/.zen/tmp/coucou/${G1PUB}.gchange.json | jq -r '.title' 2>/dev/null) ]] \
     && echo "xxxxx GCHANGE+ MISSING ACCOUNT ${myDATA} xxxxx" \
-    && ${MY_PATH}/timeout.sh -t 20 \
-    ${MY_PATH}/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey set -n "qo-op" -v " " -a " " -d " " -pos ${ZLAT} ${ZLON} -s https://qo-op.com -A ${MY_PATH}/../images/plain.png \
+    && echo "DEPRECATED: Cesium+/GChange+ profile creation removed (Duniter v2 migration)" \
     && exit 0
 
 ## GET AVATAR PICTURE
@@ -149,11 +148,7 @@ echo ">> CESIUM+ : ${CPSEUDO} - ${CDESCR} : ${G1PUB} <<"
 #~ fi
 
 
-## GET LAST ONLINE gchange & cesium PROFILE
-${MY_PATH}/timeout.sh -t 20 \
-$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myDATA} get > ~/.zen/tmp/coucou/${G1PUB}.gchange.json
-${MY_PATH}/timeout.sh -t 20 \
-$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myCESIUM} get > ~/.zen/tmp/coucou/${G1PUB}.cesium.json
+## DEPRECATED: GChange+/Cesium+ profile retrieval removed (Duniter v2 migration)
 
 ########################################################################
         # Get PLAYER wallet amount :: ~/.zen/tmp/coucou/${G1PUB}
@@ -172,10 +167,8 @@ rm -f ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/my_star_level
 
 ## Getting Gchange  liking_me list
 echo "Checking received stars ON $myDATA"
-################################## JAKLIS PLAYER stars
-${MY_PATH}/timeout.sh -t 30 \
-${MY_PATH}/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n "$myDATA" stars > ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/received_stars.json
-[[ ! $? == 0 ]] && echo "> WARNING $myDATA UNREACHABLE"
+################################## DEPRECATED: GChange+ stars removed (Duniter v2 migration)
+echo "DEPRECATED: GChange+ stars system removed" > ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/received_stars.json
 
 [[ ! $(cat ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/received_stars.json | jq -r '.likes[].issuer') ]] && echo "Activez votre Toile de Confiance Ŋ1" && exit 0
 
@@ -196,11 +189,8 @@ do
     echo "TW ? $LIBRA/ipns/${FRIENDNS} "
 
 ##### CHECKING IF WE LIKE EACH OTHER Ŋ1 LEVEL
-    ################################## JAKLIS LIKING_ME stars
-    ${MY_PATH}/timeout.sh -t 20 \
-    ${MY_PATH}/jaklis/jaklis.py \
-    -k ~/.zen/game/players/${PLAYER}/secret.dunikey \
-    stars -p ${liking_me} > ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/${liking_me}.Gstars.json
+    ################################## DEPRECATED: GChange+ stars removed (Duniter v2 migration)
+    echo '{"likes":[],"score":0}' > ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/${liking_me}.Gstars.json
 
     cat ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/${liking_me}.Gstars.json | jq -rc
 
@@ -240,11 +230,8 @@ do
         echo "${my_star_level}" > ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/${liking_me}.stars.level ## SWARM
         echo "***** ${my_star_level} STARS *****"
 
-        ## GET FRIEND GCHANGE PROFILE
-        echo "GET FRIEND gchange.json"
-        ${MY_PATH}/timeout.sh -t 20 \
-        ${MY_PATH}/jaklis/jaklis.py get \
-        -p ${liking_me} > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/gchange.json
+        ## DEPRECATED: GChange+ profile retrieval removed (Duniter v2 migration)
+        echo '{}' > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/gchange.json
 
         cp ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/gchange.json \
                 ~/.zen/tmp/${IPFSNODEID}/GCHANGE/${PLAYER}/${liking_me}.gchange.json
@@ -267,10 +254,8 @@ do
         ## PLAYER TW EXISTING ?
         if [ ! -s ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}/index.html ]; then
 
-            ## AUCUN VISA ASTRONAUTE ENVOYER UN MESSAGE PAR GCHANGE
-            echo "AUCUN TW ACTIF $try " -t "HEY BRO !" -m "G1 TW : https://ipfs.copylaradio.com/ipns/$ASTRONAUTENS"
-            ${MY_PATH}/timeout.sh -t 20 \
-            $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${liking_me}" -t "HEY BRO !" -m "G1 TW UPlanet : https://qo-op.com"
+            ## DEPRECATED: GChange+ messaging removed (Duniter v2 migration)
+            echo "AUCUN TW ACTIF $try - messaging deprecated"
 
             ## +1 TRY
             try=$((try+1)) && echo $try > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try
@@ -368,12 +353,7 @@ do
         #########################################
         ## COOL FEATURE FOR GCHANGE ACCOUNT CONFIDENCE
         ## IS IT REALLY A FRIEND I LIKE ?
-        echo "BRO?"
-        ${MY_PATH}/timeout.sh -t 20 \
-        $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey send -d "${G1PUB}" -t "Bro ?" -m "$myGCHANGE/#/app/user/${liking_me}/"
-
-        ${MY_PATH}/timeout.sh -t 20 \
-        $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myCESIUM} send -d "${G1PUB}" -t "Bro ?" -m "$myGCHANGE/#/app/user/${liking_me}/"
+        echo "BRO? - DEPRECATED: GChange+/Cesium+ messaging removed (Duniter v2 migration)"
         mkdir -p ~/.zen/game/players/${PLAYER}/FRIENDS/
         try=$((try+1)) && echo $try > ~/.zen/game/players/${PLAYER}/FRIENDS/${liking_me}.try
 

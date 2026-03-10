@@ -76,10 +76,9 @@ if [[ $(cat ~/.zen/tmp/${MOATS}/TH.json) != "[]" ]]; then
 
     ## TODO CREATE A TEMP IPNS KEY ?!
 
-    ## SENDING GCHANGE & CESIUM+ MESSAGE
-    $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myDATA} send -d "${IPUBKEY}" -t "${TITLE}" -m "N1Kodi : https://${myTUBE}${DECIPFS}"
-
-    $MY_PATH/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myCESIUM} send -d "${IPUBKEY}" -t "${TITLE}" -m "N1Kodi : https://${myTUBE}${DECIPFS}"
+    ## SENDING GCHANGE & CESIUM+ MESSAGE (DEPRECATED - jaklis removed)
+    ## TODO: replace with NOSTR DM or alternative notification
+    echo "N1Kodi notification skipped (jaklis deprecated): ${TITLE} -> ${IPUBKEY}"
 
 else
 

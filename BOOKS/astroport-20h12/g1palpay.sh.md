@@ -10,11 +10,10 @@ Le script `G1PalPay.sh` est un outil puissant pour surveiller les transactions s
 2. **Vérification des Paramètres** :
    * Le script vérifie si le fichier TiddlyWiki (TW) et le joueur (`PLAYER`) sont fournis en arguments. Si ce n'est pas le cas, il utilise des valeurs par défaut ou affiche un message d'erreur.
 3. **Extraction des Transactions Récentes** :
-   *   Le script utilise `jaklis.py` pour extraire les 30 dernières transactions du portefeuille Ğ1 du joueur et les enregistre dans un fichier JSON :
+   *   Le script utilise `G1history.sh` (GraphQL squid) pour extraire les 30 dernières transactions du portefeuille Ğ1 du joueur et les enregistre dans un fichier JSON :
 
        ```bash
-       ~/.zen/Astroport.ONE/tools/timeout.sh -t 12 \
-       ${MY_PATH}/../tools/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey history -n 30 -j \
+       ${MY_PATH}/../tools/G1history.sh ${G1PUB} 30 \
        > $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json
        ```
 4. **Traitement des Transactions** :

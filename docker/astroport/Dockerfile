@@ -91,13 +91,6 @@ RUN set -x && buildDeps=' \
     ' \
  && apt-get update \
  && apt-get install -y $buildDeps --no-install-recommends \
- && mkdir -p /usr/local/src/jaklis \
- && wget -qO - https://github.com/aynicos/jaklis/archive/master.tar.gz \
-     |tar --strip-components 1 -C /usr/local/src/jaklis -xzf - \
- && pip3 install --break-system-packages -r /usr/local/src/jaklis/requirements.txt \
- && ln -s /usr/local/src/jaklis/jaklis.py /usr/local/bin/jaklis \
- && chmod 0755 /usr/local/bin/jaklis \
- && /usr/local/bin/jaklis --help >/dev/null \
  && mkdir -p /usr/local/src/dpgpid \
  && wget -qO - https://github.com/aynicos/dpgpid/archive/master.tar.gz \
      |tar --strip-components 1 -C /usr/local/src/dpgpid -xzf - \

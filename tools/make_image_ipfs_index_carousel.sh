@@ -28,7 +28,6 @@ if [[ ! -d $img_dir ]]; then
         pub=$(cat ~/.zen/game/players/$PLAYER/.g1pub)
 
         # Get PLAYER wallet amount
-        echo "$MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey balance"
         COINS=$($MY_PATH/G1check.sh ${pub} | tail -n 1)
         echo "+++ ${PLAYER} have $COINS Ğ1 Coins +++"
 

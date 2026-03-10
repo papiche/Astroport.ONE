@@ -105,13 +105,11 @@ echo "REMOVING LOCAL BINARIES AND SYMLINKS"
 
 # Remove symlinks and binaries in ~/.local/bin
 rm -f ~/.local/bin/natools
-rm -f ~/.local/bin/jaklis
 rm -f ~/.local/bin/keygen
 rm -f ~/.local/bin/coeurbox
 rm -f ~/.local/bin/youtube-dl
 rm -f ~/.local/bin/yt-dlp
 rm -f ~/.local/bin/lazydocker
-rm -f ~/.local/bin/silkaj
 rm -f ~/.local/bin/espeak
 
 ########################################################################
@@ -189,7 +187,7 @@ fi
 read -p "Remove Python packages installed by Astroport? (y/n): " remove_python
 if [[ $remove_python == "y" ]]; then
     echo "Removing Python packages..."
-    pip3 uninstall -y duniterpy python-dotenv termcolor amzqr ollama requests beautifulsoup4 pyppeteer cryptography jwcrypto secp256k1 Ed25519 gql base58 pybase64 google silkaj pynacl python-gnupg pgpy pynentry paho-mqtt aiohttp ipfshttpclient bitcoin monero ecdsa pynostr nostpy-cli bech32 brother_ql 2>/dev/null
+    pip3 uninstall -y duniterpy python-dotenv termcolor amzqr ollama requests beautifulsoup4 pyppeteer cryptography jwcrypto secp256k1 Ed25519 gql base58 pybase64 google pynacl python-gnupg pgpy pynentry paho-mqtt aiohttp ipfshttpclient bitcoin monero ecdsa pynostr nostpy-cli bech32 brother_ql 2>/dev/null
     pipx uninstall duniterpy 2>/dev/null
 fi
 

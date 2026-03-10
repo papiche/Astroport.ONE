@@ -176,26 +176,8 @@ else
     git clone --depth 1 https://github.com/papiche/OC2UPlanet.git
 fi
 
-## UPDATE Silkaj Ğ1 tool
-if [[ -d ~/.zen/workspace/silkaj ]]; then
-    cd ~/.zen/workspace/silkaj
-    # Store current commit hash before pull
-    BEFORE_HASH=$(git rev-parse HEAD)
-    git pull
-    # Store new commit hash after pull
-    AFTER_HASH=$(git rev-parse HEAD)
-    # Compare hashes to detect changes and reinstall if needed
-    if [[ "$BEFORE_HASH" != "$AFTER_HASH" ]]; then
-        echo "Silkaj updated from $BEFORE_HASH to $AFTER_HASH - reinstalling new silkaj"
-        ./install_silkaj_json.sh
-    fi
-else
-    mkdir -p ~/.zen/workspace
-    cd ~/.zen/workspace
-    git clone --depth 1 https://git.duniter.org/zicmama/silkaj.git
-    cd silkaj
-    ./install_silkaj_json.sh
-fi
+## INSTALL/UPGRADE gcli + cleanup legacy jaklis/silkaj
+${MY_PATH}/tools/install_gcli.sh
 
 ########################################################################
 ## UPDATE Astroport.ONE code

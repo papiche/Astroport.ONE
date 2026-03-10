@@ -76,30 +76,23 @@ On va utiliser “natools” pour faire voyager les données en sécurité dans 
 ```
 natools.py encrypt -p $UserBPubKey -i ~/.zen/file.clear -o ~/.zen/file.toB.enc
 ```
-“jaklis” va servir distribuer la toile de confiance.
+On utilise `PAYforSURE.sh` (gcli Duniter v2s) pour distribuer la toile de confiance.
 On envoi entre 1 et 100 G1 aux UserXPubKey des clefs SSH avec lesquelles ont veut signifier un niveau de confiance.
 
 UserB devra faire de même avec le même montant (ou pas, on verra plus tard ce cas…)
 ```
 MACHINE A
-jaklis.py -k ~/.zen/secretA.dunikey pay -a 100 -p ${UserBPubKey} -c "ASTRO#SSH" -m
+PAYforSURE.sh ~/.zen/secretA.dunikey 100 ${UserBPubKey} “ASTRO#SSH”
 
 MACHINE B
-jaklis.py -k ~/.zen/secretB.dunikey pay -a 100 -p ${UserAPubKey} -c "ASTRO#SSH" -m
+PAYforSURE.sh ~/.zen/secretB.dunikey 100 ${UserAPubKey} “ASTRO#SSH”
 ```
 Maintenant.
 Il reste à maintenir à jour et appliquer la ToileDeConfiance ASTRO#SSH
 
-Pour cela, jaklis va extraire l’historique des transactions reçues qui portent le tag ASTRO#SSH
+Pour cela, G1history.sh extrait l’historique des transactions via GraphQL squid
 ```
-jaklis.py history -p UserAPubKey
-
-+---------------------------------------------------------------------------------------------------------------------------------------
-|        Date        |    De / À    |   Ḡ1    |  DU/ḡ1  | Commentaire                   |
-|---------------------------------------------------------------------------------------------------------------------------------------
-| 04/04/2023 à 20:01 | HV7o…jG61:Bu6 | 100.00    |  ~~~   | ASTRO#SSH
-|---------------------------------------------------------------------------------------------------------------------------------------
-| 04/04/2023 à 20:01 | 54yA…UvJm:3px | 70.00    | ~~~   | ASTRO#SSH
+G1history.sh UserAPubKey
 ```
 Extraire et vérifier qu’au moins une TX entrante et sortante existent (leur somme fait 0)… (“jq”)
 
@@ -122,7 +115,7 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEtg3SlRxtzsQnsBSeU83W0tvUyBTUvOU5lhjlbZVPCZ
 
 * “keygen” https://git.p2p.legal/STI/Astroport.ONE/src/branch/master/tools/keygen
 * “natools” https://git.p2p.legal/STI/Astroport.ONE/src/branch/master/tools/natools.py
-* “jaklis” https://git.p2p.legal/axiom-team/jaklis
+* “gcli” https://git.duniter.org/clients/rust/g1cli
 * “ipfs” https://git.p2p.legal/STI/Astroport.ONE/src/branch/master/install.kubo_v0.20.0_linux.sh
 
 ## ASTROPORT CREW GILET https://astroport.myspreadshop.fr/create?product=a68ad31e-d554-4c75-821d-97b00d6ad13f&view=2

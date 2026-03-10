@@ -170,7 +170,7 @@ This implementation extracts and generalizes the primal transaction control func
 ### Key Features Implemented
 
 #### 1. Generic Primal Transaction Control
-- **Real-time Verification**: Uses `silkaj --json money primal` for live primal source verification
+- **Real-time Verification**: Uses `G1primal.sh (GraphQL squid)` for live primal source verification
 - **Smart Cache Usage**: Uses existing cache files when available and recent for performance optimization
 - **History-based Detection**: Analyzes transaction history to count existing intrusions without cache dependency
 - **Automatic Redirection**: Immediately redirects unauthorized transactions to UPLANETNAME_G1
@@ -192,7 +192,7 @@ This implementation extracts and generalizes the primal transaction control func
 
 ## Features
 
-- **Primal Transaction Verification**: Uses `silkaj --json money primal` to verify the primal source of incoming transactions
+- **Primal Transaction Verification**: Uses `G1primal.sh (GraphQL squid)` to verify the primal source of incoming transactions
 - **WoT Dragon Identification Exception**: Allows 0.01 Ğ1 transactions ONLY as second incoming transaction for WoT captain identification without primal control
 - **Automatic Redirection**: Automatically redirects unauthorized transactions to UPLANETNAME_INTRUSION
 - **Intrusion Detection**: Tracks intrusion attempts for monitoring and cooperative fund recovery
@@ -206,7 +206,7 @@ This implementation extracts and generalizes the primal transaction control func
 
 ### Core Functions
 
-1. **`get_primal_source()`** - Retrieves primal source using silkaj
+1. **`get_primal_source()`** - Retrieves primal source using G1primal.sh (GraphQL squid)
 2. **`get_wallet_history()`** - Gets transaction history with retry logic
 3. **`create_intrusion_wallet()`** - Creates UPLANETNAME_INTRUSION wallet if it doesn't exist
 4. **`send_alert_email()`** - Sends email alerts using templates
@@ -216,10 +216,10 @@ This implementation extracts and generalizes the primal transaction control func
 ### How It Works
 
 1. **Cache Check**: Checks for existing cache files (`~/.zen/tmp/coucou/$pubkey.primal` and `~/.zen/tmp/coucou/$pubkey.history`)
-2. **Transaction History Retrieval**: Gets the wallet's complete transaction history using `silkaj --json money history` (or from cache if recent)
+2. **Transaction History Retrieval**: Gets the wallet's complete transaction history using `G1history.sh (GraphQL squid)` (or from cache if recent)
 3. **Existing Intrusion Analysis**: Scans transaction history for existing intrusion transactions to avoid cache dependency
 4. **WoT Dragon Exception**: if transaction is exactly 0.01 Ğ1 AND is the second incoming transaction it informs about WoT member identification.
-5. **Primal Source Verification**: For each incoming transaction, verifies the primal source using `silkaj --json money primal` (or from cache if recent)
+5. **Primal Source Verification**: For each incoming transaction, verifies the primal source using `G1primal.sh (GraphQL squid)` (or from cache if recent)
 6. **Intrusion Detection**: Compares the primal source with the expected master primal
 7. **INTRUSION Wallet Creation**: Automatically creates UPLANETNAME_INTRUSION wallet if it doesn't exist
 8. **Automatic Redirection**: If an intrusion is detected, automatically redirects the transaction to UPLANETNAME_INTRUSION
@@ -316,7 +316,8 @@ ${MY_PATH}/../tools/primal_wallet_control.sh \
 ## Dependencies
 
 ### Required Tools
-- `silkaj` - Blockchain interaction and primal verification
+- `gcli` - Duniter v2s blockchain client (payments via PAYforSURE.sh)
+- `G1primal.sh` / `G1history.sh` - GraphQL squid queries
 - `jq` - JSON parsing
 - `bc` - Mathematical calculations
 - `mailjet.sh` - Email notifications
@@ -388,7 +389,7 @@ The script provides detailed logging for:
 
 ### Common Issues
 
-1. **"silkaj not found"**: Install silkaj or ensure it's in PATH
+1. **"gcli not found"**: Install gcli via `tools/install_gcli.sh`
 2. **"Invalid JSON response"**: Check network connectivity to BMAS nodes
 3. **"Permission denied"**: Check file permissions for dunikey and log files
 4. **"Email sending failed"**: Verify mailjet.sh configuration
