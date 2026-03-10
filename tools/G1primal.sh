@@ -33,7 +33,7 @@ fi
 log() { echo "[G1primal] $*" >&2; }
 
 is_valid_g1pub() {
-    [[ "$1" =~ ^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{43,44}$ ]]
+    [[ "$1" =~ ^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{43,50}$ ]]
 }
 
 # ── Parse args ────────────────────────────────────────────────────────────────
@@ -48,6 +48,13 @@ done
 
 [[ -z "$G1PUB" ]] && { log "USAGE: G1primal.sh [--json] <G1PUB>"; exit 1; }
 is_valid_g1pub "$G1PUB" || { log "ERREUR: G1PUB invalide : $G1PUB"; exit 1; }
+
+# Conversion v1 pubkey → SS58 pour requête squid
+G1PUB_QUERY="$G1PUB"
+if [[ -x "${MY_PATH}/g1pub_to_ss58.py" ]] && ! [[ "$G1PUB" =~ ^g1 ]]; then
+    SS58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$G1PUB" 2>/dev/null)
+    [[ -n "$SS58" ]] && G1PUB_QUERY="$SS58" && log "Conversion v1→SS58 : $G1PUB → $SS58"
+fi
 
 mkdir -p "$CACHE_DIR"
 PRIMALFILE="$CACHE_DIR/${G1PUB}.primal"
@@ -93,7 +100,7 @@ mapfile -t SQUIDS < <(printf '%s\n' "${SQUIDS[@]}" | awk '!seen[$0]++')
 
 PRIMAL=""
 for sq in "${SQUIDS[@]}"; do
-    candidate=$(squid_primal "$G1PUB" "$sq")
+    candidate=$(squid_primal "$G1PUB_QUERY" "$sq")
     if is_valid_g1pub "$candidate"; then
         PRIMAL="$candidate"
         log "Primal trouvé via $sq : ${PRIMAL:0:12}..."

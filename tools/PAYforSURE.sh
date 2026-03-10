@@ -16,7 +16,7 @@
 #
 # Variables d'environnement utilisées (depuis my.sh) :
 #   GCLI           : chemin vers le binaire gcli (défaut: gcli dans $PATH)
-#   GCLI_PASSWORD  : mot de passe du vault gcli (évite le prompt interactif)
+#   GCLI_PASSWORD  : (obsolète depuis --no-password) mot de passe vault gcli
 #   SQUID_URL      : endpoint GraphQL squid pour vérification solde
 #   G1_WS_NODE     : nœud WebSocket principal (ex: wss://g1.p2p.legal/ws)
 #   UPLANETG1PUB   : pubkey UPlanet (pour commentaire par défaut)
@@ -145,29 +145,13 @@ resolve_vault() {
         VAULT_NAME="paytemp_${MOATS}"
 
         log "Import dunikey g1v1 dans vault gcli sous le nom : $VAULT_NAME"
-        # gcli vault import -S g1v1 → demande id puis secret interactivement
-        # On passe les valeurs via expect ou printf
-        if command -v expect &>/dev/null; then
-            expect -c "
-                spawn $GCLI vault import -S g1v1
-                expect \"id:\" { send \"${id}\r\" }
-                expect \"secret:\" { send \"${secret}\r\" }
-                expect \"Password\" { send \"${GCLI_PASSWORD:-}\r\" }
-                expect eof
-            " 2>/dev/null
-        else
-            # Sans expect : tentative via echo | gcli (peut ne pas fonctionner selon TTY)
-            printf '%s\n%s\n%s\n' "$id" "$secret" "${GCLI_PASSWORD:-}" \
-                | $GCLI vault import -S g1v1 2>/dev/null
-        fi
-
-        # Renommer si possible
-        VAULT_ADDRESS=$(
-            $GCLI vault list base 2>/dev/null \
-            | awk 'NR==1{print $1}' \
-        )
-        [[ -n "$VAULT_ADDRESS" ]] && \
-            $GCLI vault rename "$VAULT_ADDRESS" "$VAULT_NAME" 2>/dev/null
+        # g1cli v0.8.0+ : import non-interactif avec --g1v1-id/--g1v1-password/--no-password
+        $GCLI vault import -S g1v1 \
+            --g1v1-id "$id" \
+            --g1v1-password "$secret" \
+            --no-password \
+            -n "$VAULT_NAME" \
+            2>/dev/null
 
         TEMP_VAULT_IMPORTED=true
         return 0
@@ -192,8 +176,8 @@ resolve_vault || exit 1
 # ── Récupérer l'adresse publique depuis le vault ──────────────────────────────
 get_address_from_vault() {
     local name="$1"
-    # gcli -v "<name>" account balance → affiche l'adresse
-    $GCLI -i "$SQUID_URL" -v "$name" account balance 2>/dev/null \
+    # gcli --no-password -v "<name>" account balance → affiche l'adresse
+    $GCLI --no-password -i "$SQUID_URL" -v "$name" account balance 2>/dev/null \
         | grep -oE 'g1[A-Za-z0-9]{40,}' | head -1
 }
 
@@ -264,46 +248,24 @@ make_payment_gcli() {
 
     log "Tentative paiement g1cli → nœud: ${ws_node:-défaut} | ${amount} Ğ1 → ${dest:0:12}..."
 
-    # Syntaxe gcli confirmée :
-    #   gcli [-u <wss://...>] [-i <squid_url>] -v "<vault_name>" account transfer <AMOUNT> <ADDRESS>
-    # Note : pas d'option --comment sur account transfer
-    # Le commentaire est envoyé séparément via gcli system remark (best-effort)
+    # Syntaxe g1cli v0.8.0+ :
+    #   gcli --no-password [-u <wss://...>] [-i <squid_url>] -v "<vault_name>" \
+    #        account transfer <AMOUNT> <ADDRESS> [--comment "msg"]
+    # Le --comment crée un batch atomique (transfer + system.remark) on-chain
 
-    local base_opts=()
+    local base_opts=(--no-password)
     [[ -n "$ws_node" ]] && base_opts+=(-u "$ws_node")
     [[ -n "$SQUID_URL" ]] && base_opts+=(-i "$SQUID_URL")
 
-    local transfer_rc
-    if [[ -n "$GCLI_PASSWORD" ]]; then
-        echo "$GCLI_PASSWORD" | $GCLI "${base_opts[@]}" \
-            -v "$vault_name" \
-            account transfer "$amount" "$dest" \
-            > "$result_file" 2>&1
-    else
-        $GCLI "${base_opts[@]}" \
-            -v "$vault_name" \
-            account transfer "$amount" "$dest" \
-            > "$result_file" 2>&1
-    fi
-    transfer_rc=$?
+    local transfer_opts=()
+    [[ -n "$comment" ]] && transfer_opts+=(--comment "$comment")
 
-    # Commentaire best-effort via system remark (non bloquant sur le paiement)
-    if [[ $transfer_rc -eq 0 && -n "$comment" ]]; then
-        log "Envoi du commentaire via system remark..."
-        if [[ -n "$GCLI_PASSWORD" ]]; then
-            echo "$GCLI_PASSWORD" | $GCLI "${base_opts[@]}" \
-                -v "$vault_name" \
-                system remark "$comment" \
-                >> "$result_file" 2>&1 \
-            || logw "system remark non disponible — commentaire ignoré (non bloquant)"
-        else
-            $GCLI "${base_opts[@]}" \
-                -v "$vault_name" \
-                system remark "$comment" \
-                >> "$result_file" 2>&1 \
-            || logw "system remark non disponible — commentaire ignoré (non bloquant)"
-        fi
-    fi
+    local transfer_rc
+    $GCLI "${base_opts[@]}" \
+        -v "$vault_name" \
+        account transfer "$amount" "$dest" "${transfer_opts[@]}" \
+        > "$result_file" 2>&1
+    transfer_rc=$?
 
     return $transfer_rc
 }

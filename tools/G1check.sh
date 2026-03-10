@@ -118,10 +118,17 @@ else
     G1PUB="$G1PUB_ORIGINAL"
 fi
 
-# Validation basique de format (base58, 43-44 chars)
-if ! [[ "$G1PUB" =~ ^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{43,44}$ ]]; then
+# Validation basique de format (base58, 43-44 chars ou SS58 g1...)
+if ! [[ "$G1PUB" =~ ^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{43,50}$ ]]; then
     log "ERREUR: G1PUB invalide : $G1PUB"
     exit 1
+fi
+
+# Conversion v1 pubkey → SS58 pour requête squid (le squid indexe par SS58)
+G1PUB_QUERY="$G1PUB"
+if [[ -x "${MY_PATH}/g1pub_to_ss58.py" ]] && ! [[ "$G1PUB" =~ ^g1 ]]; then
+    SS58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$G1PUB" 2>/dev/null)
+    [[ -n "$SS58" ]] && G1PUB_QUERY="$SS58" && log "Conversion v1→SS58 : $G1PUB → $SS58"
 fi
 
 # ── Nettoyage cache anciens ───────────────────────────────────────────────────
@@ -154,7 +161,7 @@ if [[ $age -lt $CACHE_STALE_SEC ]]; then
             [[ -x "${MY_PATH}/duniter_getnode.sh" ]] && \
                 _sq_bg=$("${MY_PATH}/duniter_getnode.sh" squid 2>/dev/null)
             [[ -n "$_sq_bg" ]] && SQUID_URL="$_sq_bg"
-            raw=$(squid_balance_raw "$G1PUB")
+            raw=$(squid_balance_raw "$G1PUB_QUERY")
             fresh=$(raw_to_g1 "$raw")
             is_valid_balance "$fresh" && write_cache "$COINSFILE" "$fresh"
         ) &>/dev/null &
@@ -184,7 +191,7 @@ mapfile -t SQUIDS < <(printf '%s\n' "${SQUIDS[@]}" | awk '!seen[$0]++')
 BALANCE=""
 for sq in "${SQUIDS[@]}"; do
     SQUID_URL="$sq"
-    raw=$(squid_balance_raw "$G1PUB")
+    raw=$(squid_balance_raw "$G1PUB_QUERY")
     if [[ -n "$raw" ]]; then
         g1=$(raw_to_g1 "$raw")
         BALANCE="$g1"

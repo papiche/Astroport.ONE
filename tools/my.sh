@@ -812,7 +812,7 @@ else
         
     else
         # Will be created by ZEN.ECONOMY.sh when needed
-        echo "⚠️  Captain dedicated wallet not found (will be created by ZEN.ECONOMY.sh)"
+        echo "⚠️  Captain dedicated wallet not found (will be created by ZEN.ECONOMY.sh)" >&2
     fi
 fi
 

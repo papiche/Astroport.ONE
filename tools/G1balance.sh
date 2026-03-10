@@ -38,7 +38,7 @@ fi
 log() { echo "[G1balance] $*" >&2; }
 
 is_valid_g1pub() {
-    [[ "$1" =~ ^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{43,44}$ ]]
+    [[ "$1" =~ ^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{43,50}$ ]]
 }
 
 # ── Parse args ────────────────────────────────────────────────────────────────
@@ -61,6 +61,13 @@ is_valid_g1pub "$G1PUB" || {
     echo '{"balances": {"pending": 0, "blockchain": 0, "total": 0}}'
     exit 1
 }
+
+# Conversion v1 pubkey → SS58 pour requête squid
+G1PUB_QUERY="$G1PUB"
+if [[ -x "${MY_PATH}/g1pub_to_ss58.py" ]] && ! [[ "$G1PUB" =~ ^g1 ]]; then
+    SS58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$G1PUB" 2>/dev/null)
+    [[ -n "$SS58" ]] && G1PUB_QUERY="$SS58" && log "Conversion v1→SS58 : $G1PUB → $SS58"
+fi
 
 # ── Requête squid ─────────────────────────────────────────────────────────────
 squid_balance() {
@@ -87,7 +94,7 @@ mapfile -t SQUIDS < <(printf '%s\n' "${SQUIDS[@]}" | awk '!seen[$0]++')
 
 RAW=""
 for sq in "${SQUIDS[@]}"; do
-    candidate=$(squid_balance "$G1PUB" "$sq")
+    candidate=$(squid_balance "$G1PUB_QUERY" "$sq")
     if [[ -n "$candidate" && "$candidate" != "null" ]]; then
         RAW="$candidate"
         log "Balance brute : $RAW centimes"

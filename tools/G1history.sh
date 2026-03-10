@@ -53,8 +53,15 @@ G1PUB="${1:-}"
 TX_LIMIT="${2:-$DEFAULT_LIMIT}"
 
 [[ -z "$G1PUB" ]] && { log "USAGE: G1history.sh <G1PUB> [limit]"; exit 1; }
-[[ ! "$G1PUB" =~ ^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{43,44}$ ]] && {
+[[ ! "$G1PUB" =~ ^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{43,50}$ ]] && {
     log "ERREUR: G1PUB invalide : $G1PUB"; exit 1; }
+
+# Conversion v1 pubkey → SS58 pour requête squid
+G1PUB_QUERY="$G1PUB"
+if [[ -x "${MY_PATH}/g1pub_to_ss58.py" ]] && ! [[ "$G1PUB" =~ ^g1 ]]; then
+    SS58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$G1PUB" 2>/dev/null)
+    [[ -n "$SS58" ]] && G1PUB_QUERY="$SS58" && log "Conversion v1→SS58 : $G1PUB → $SS58"
+fi
 
 mkdir -p "$CACHE_DIR"
 HISTFILE="$CACHE_DIR/${G1PUB}.TX.json"
@@ -86,7 +93,7 @@ squid_query() {
     }'
 }
 
-log "Fetch squid pour ${G1PUB:0:12}... (limit=$TX_LIMIT)"
+log "Fetch squid pour ${G1PUB_QUERY:0:16}... (limit=$TX_LIMIT)"
 
 SQUIDS=("$SQUID_URL"
     "https://squid.g1.gyroi.de/v1/graphql"
@@ -99,7 +106,7 @@ RAW_RESP=""
 for sq in "${SQUIDS[@]}"; do
     RAW_RESP=$(curl -sf --max-time 15 \
         -X POST -H "Content-Type: application/json" \
-        --data "$(squid_query "$G1PUB" "$TX_LIMIT")" \
+        --data "$(squid_query "$G1PUB_QUERY" "$TX_LIMIT")" \
         "$sq" 2>/dev/null)
     jq -e '.data.received' <<<"$RAW_RESP" >/dev/null 2>&1 && {
         SQUID_URL="$sq"; break; }

@@ -18,8 +18,25 @@
 # =============================================================================
 
 # --- Configuration -----------------------------------------------------------
+MY_PATH="`dirname \"$0\"`"
+MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
+
 SQUID_URL="${SQUID_URL:-https://squid.g1.gyroi.de/v1/graphql}"
-# Surcharger avec : export SQUID_URL="https://autre-instance.fr/graphql"
+
+# Mise à jour squid dynamique via duniter_getnode.sh
+if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
+    _sq=$("${MY_PATH}/duniter_getnode.sh" squid 2>/dev/null)
+    [[ -n "$_sq" ]] && SQUID_URL="$_sq"
+fi
+
+# Liste de squids avec fallback
+SQUIDS=("$SQUID_URL"
+    "https://squid.g1.gyroi.de/v1/graphql"
+    "https://squid.g1.coinduf.eu/v1/graphql"
+    "https://g1-squid.axiom-team.fr/v1/graphql"
+)
+# Dédupliquer
+mapfile -t SQUIDS < <(printf '%s\n' "${SQUIDS[@]}" | awk '!seen[$0]++')
 
 # --- Couleurs ----------------------------------------------------------------
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
@@ -37,22 +54,28 @@ require_cmd() { command -v "$1" &>/dev/null || die "'$1' est requis (apt/brew in
 
 graphql_query() {
   # $1 = query JSON (compact)
+  # Essaie chaque squid jusqu'à succès
   local response
-  response=$(curl -sf \
-    -X POST \
-    -H "Content-Type: application/json" \
-    -H "Accept: application/json" \
-    --data "$1" \
-    "$SQUID_URL") || die "Requête échouée vers $SQUID_URL"
+  for sq in "${SQUIDS[@]}"; do
+    response=$(curl -sf --max-time 10 \
+      -X POST \
+      -H "Content-Type: application/json" \
+      -H "Accept: application/json" \
+      --data "$1" \
+      "$sq" 2>/dev/null) || { echo -e "${YELLOW}Échec sur $sq${RESET}" >&2; continue; }
 
-  # Vérifie les erreurs GraphQL
-  if echo "$response" | grep -q '"errors"'; then
-    echo -e "${RED}Erreur GraphQL :${RESET}"
-    echo "$response" | jq '.errors' 2>/dev/null || echo "$response"
-    exit 1
-  fi
+    # Vérifie les erreurs GraphQL
+    if echo "$response" | grep -q '"errors"'; then
+      echo -e "${YELLOW}Erreur GraphQL sur $sq${RESET}" >&2
+      continue
+    fi
 
-  echo "$response"
+    SQUID_URL="$sq"
+    echo "$response"
+    return 0
+  done
+
+  die "Requête échouée sur tous les squids"
 }
 
 # Formate un BigInt Ğ1 en valeur lisible (divise par 10^4 = 4 décimales)
@@ -306,6 +329,15 @@ require_cmd jq
 
 MODE="${1:-}"
 WALLET="${2:-}"
+
+# Conversion automatique v1 pubkey → SS58 pour requêtes squid
+if [[ -n "$WALLET" ]] && [[ -x "${MY_PATH}/g1pub_to_ss58.py" ]] && ! [[ "$WALLET" =~ ^g1 ]]; then
+    _SS58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$WALLET" 2>/dev/null)
+    if [[ -n "$_SS58" ]]; then
+        echo -e "${CYAN}Conversion v1→SS58 :${RESET} $WALLET → $_SS58" >&2
+        WALLET="$_SS58"
+    fi
+fi
 
 case "$MODE" in
   uplanet)   mode_uplanet   "$WALLET" ;;
