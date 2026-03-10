@@ -91,6 +91,7 @@ log "Fetch squid pour ${G1PUB:0:12}... (limit=$TX_LIMIT)"
 SQUIDS=("$SQUID_URL"
     "https://squid.g1.gyroi.de/v1/graphql"
     "https://squid.g1.coinduf.eu/v1/graphql"
+    "https://g1-squid.axiom-team.fr/v1/graphql"
 )
 mapfile -t SQUIDS < <(printf '%s\n' "${SQUIDS[@]}" | awk '!seen[$0]++')
 
@@ -108,8 +109,9 @@ done
 
 if [[ -z "$RAW_RESP" ]]; then
     log "ERREUR: Aucun squid disponible"
-    echo "{}"
-    exit 1
+    # Retourner un historique vide plutôt qu'une erreur fatale
+    echo '{"history":[]}'
+    exit 0
 fi
 
 # ── Transformation → format G1history compatible ─────────────────────────────

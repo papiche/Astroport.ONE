@@ -185,10 +185,19 @@ BALANCE=""
 for sq in "${SQUIDS[@]}"; do
     SQUID_URL="$sq"
     raw=$(squid_balance_raw "$G1PUB")
-    g1=$(raw_to_g1 "$raw")
-    if is_valid_balance "$g1" && [[ "$g1" != "0" || -n "$raw" ]]; then
+    if [[ -n "$raw" ]]; then
+        g1=$(raw_to_g1 "$raw")
         BALANCE="$g1"
         log "Solde obtenu depuis $sq : $BALANCE Ğ1"
+        break
+    fi
+    # raw vide = réponse squid OK mais compte inexistant → solde 0
+    # Vérifier que le squid a bien répondu (pas un timeout)
+    test_query=$(curl -sf --max-time 5 -X POST -H "Content-Type: application/json" \
+        --data '{"query":"{ __typename }"}' "$sq" 2>/dev/null)
+    if [[ -n "$test_query" ]]; then
+        BALANCE="0"
+        log "Compte inexistant sur $sq → solde 0 Ğ1"
         break
     fi
     log "Échec sur $sq"
