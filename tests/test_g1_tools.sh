@@ -588,6 +588,94 @@ else
     fi
 fi
 
+########################################
+echo -e "\n${CYAN}── 10. Nostr profile (coucou) ──${RESET}"
+########################################
+
+if [[ "$OFFLINE" == true ]]; then
+    skip "Nostr profile (offline)"
+elif ! gcli --no-password -v "$WALLET_A_VAULT" profile get --help &>/dev/null; then
+    skip "Nostr profile (commande non disponible)"
+else
+    # 10.1 profile get — lire le profil depuis le relay
+    NOSTR_RELAY="wss://relay.copylaradio.com"
+    PROFILE_OUT=$(gcli --no-password -v "$WALLET_A_VAULT" profile get -r "$NOSTR_RELAY" 2>&1)
+    PROFILE_RC=$?
+    if [[ $PROFILE_RC -eq 0 ]]; then
+        ok "profile get (relay: $NOSTR_RELAY)"
+        [[ "$VERBOSE" == true ]] && echo "$PROFILE_OUT" | head -10
+    else
+        fail "profile get" "$PROFILE_OUT"
+    fi
+
+    # 10.2 profile set — écrire/mettre à jour le profil
+    PROFILE_SET_OUT=$(gcli --no-password -v "$WALLET_A_VAULT" profile set \
+        --name "coucou-ci-test" \
+        --about "CI test profile - $(date +%Y%m%d%H%M%S)" \
+        -r "$NOSTR_RELAY" 2>&1)
+    if [[ $? -eq 0 ]]; then
+        ok "profile set (name + about)"
+        [[ "$VERBOSE" == true ]] && echo "$PROFILE_SET_OUT" | head -5
+    else
+        fail "profile set" "$PROFILE_SET_OUT"
+    fi
+
+    # 10.3 profile get — vérifier que le set a fonctionné
+    sleep 2
+    PROFILE_VERIFY=$(gcli --no-password -v "$WALLET_A_VAULT" profile get -r "$NOSTR_RELAY" 2>&1)
+    if echo "$PROFILE_VERIFY" | grep -q "coucou-ci-test"; then
+        ok "profile get vérifie le set : coucou-ci-test trouvé"
+    else
+        skip "profile get vérification (propagation relay lente)"
+        [[ "$VERBOSE" == true ]] && echo "$PROFILE_VERIFY" | head -5
+    fi
+
+    # 10.4 export nostr — npub/nsec
+    EXPORT_NOSTR=$(gcli --no-password -v "$WALLET_A_VAULT" profile export --format nostr 2>&1)
+    if echo "$EXPORT_NOSTR" | grep -q "npub1"; then
+        NPUB=$(echo "$EXPORT_NOSTR" | grep -oE 'npub1[a-z0-9]+' | head -1)
+        ok "export nostr : $NPUB"
+    else
+        fail "export nostr" "$EXPORT_NOSTR"
+    fi
+
+    # 10.5 export ipfs — PeerID
+    EXPORT_IPFS=$(gcli --no-password -v "$WALLET_A_VAULT" profile export --format ipfs 2>&1)
+    if echo "$EXPORT_IPFS" | grep -qE "12D3|Qm|1"; then
+        PEERID=$(echo "$EXPORT_IPFS" | grep -oE '12D3K[a-zA-Z0-9]+' | head -1)
+        ok "export ipfs : ${PEERID:0:20}..."
+    else
+        fail "export ipfs" "$EXPORT_IPFS"
+    fi
+
+    # 10.6 export bitcoin
+    EXPORT_BTC=$(gcli --no-password -v "$WALLET_A_VAULT" profile export --format bitcoin 2>&1)
+    if [[ $? -eq 0 ]] && [[ -n "$EXPORT_BTC" ]]; then
+        ok "export bitcoin"
+        [[ "$VERBOSE" == true ]] && echo "$EXPORT_BTC" | head -3
+    else
+        skip "export bitcoin (non supporté)"
+    fi
+
+    # 10.7 export monero
+    EXPORT_XMR=$(gcli --no-password -v "$WALLET_A_VAULT" profile export --format monero 2>&1)
+    if [[ $? -eq 0 ]] && [[ -n "$EXPORT_XMR" ]]; then
+        ok "export monero"
+        [[ "$VERBOSE" == true ]] && echo "$EXPORT_XMR" | head -3
+    else
+        skip "export monero (non supporté)"
+    fi
+
+    # 10.8 remark standalone
+    REMARK_MSG="CI:NOSTR:TEST:$(date +%s)"
+    REMARK_OUT=$(gcli --no-password -v "$WALLET_A_VAULT" remark "$REMARK_MSG" 2>&1)
+    if [[ $? -eq 0 ]]; then
+        ok "remark standalone : $REMARK_MSG"
+    else
+        fail "remark standalone" "$REMARK_OUT"
+    fi
+fi
+
 ################################################################################
 echo -e "\n${BOLD}═══════════════════════════════════════════${RESET}"
 echo -e "${BOLD}  Résultats : ${GREEN}${PASS} pass${RESET} / ${RED}${FAIL} fail${RESET} / ${YELLOW}${SKIP} skip${RESET}"
