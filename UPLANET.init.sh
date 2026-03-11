@@ -736,6 +736,11 @@ initialize_node_captain_wallet() {
     if [[ $? -eq 0 ]]; then
         echo -e "${GREEN}✅ Transaction réussie pour $wallet_type${NC}"
         echo -e "${GREEN}✅ $wallet_type initialisé avec succès${NC}"
+        # Invalider le cache pour ce wallet et la source
+        rm -f "${HOME}/.zen/tmp/coucou/${pubkey}.COINS" 2>/dev/null
+        local source_pub
+        source_pub=$(grep '^pub:' "$SOURCE_WALLET" | awk '{print $2}')
+        [[ -n "$source_pub" ]] && rm -f "${HOME}/.zen/tmp/coucou/${source_pub}.COINS" 2>/dev/null
         return 0
     else
         echo -e "${RED}❌ Échec de la transaction pour $wallet_type${NC}"
@@ -783,6 +788,11 @@ initialize_wallet() {
     if [[ $? -eq 0 ]]; then
         echo -e "${GREEN}✅ Transaction réussie pour $wallet_name${NC}"
         echo -e "${GREEN}✅ $wallet_name initialisé avec succès${NC}"
+        # Invalider le cache pour ce wallet et la source
+        rm -f "${HOME}/.zen/tmp/coucou/${pubkey}.COINS" 2>/dev/null
+        local source_pub
+        source_pub=$(grep '^pub:' "$SOURCE_WALLET" | awk '{print $2}')
+        [[ -n "$source_pub" ]] && rm -f "${HOME}/.zen/tmp/coucou/${source_pub}.COINS" 2>/dev/null
         return 0
     else
         echo -e "${RED}❌ Échec de la transaction pour $wallet_name${NC}"
@@ -945,6 +955,10 @@ initialize_node_captain_wallets() {
 
 # Function to display final status
 display_final_status() {
+    # Invalider le cache G1check pour forcer un refresh depuis le squid
+    echo -e "\n${YELLOW}Invalidation du cache G1check...${NC}"
+    find "${HOME}/.zen/tmp/coucou" -name "*.COINS" -delete 2>/dev/null
+
     echo -e "\n${CYAN}📊 STATUT FINAL DE TOUS LES PORTEFEUILLES${NC}"
     echo -e "${YELLOW}=========================================${NC}"
     
