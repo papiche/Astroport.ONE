@@ -64,21 +64,14 @@ cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | 
 ########################################################################################
 echo "## CONTROL WALLET PRIMAL RX"
 ########################################################################################
-if [[ ${UPLANETNAME} != "0000000000000000000000000000000000000000000000000000000000000000" ]]; then
-    echo "CONTROL UPLANET ZEN - ZenCard primal control"
-    
-    # For ZenCard wallets, use UPLANETNAME_G1 as unique primal source (unified architecture)
-    ${MY_PATH}/../tools/primal_wallet_control.sh \
-        "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" \
-        "${G1PUB}" \
-        "${UPLANETNAME_G1}" \
-        "${PLAYER}"
+echo "CONTROL UPLANET ZEN - ZenCard primal control"
 
-else
-
-    echo "UPlanet ORIGIN - No Control -"
-
-fi
+# For ZenCard wallets, use UPLANETNAME_G1 as unique primal source (unified architecture)
+${MY_PATH}/../tools/primal_wallet_control.sh \
+    "${HOME}/.zen/game/players/${PLAYER}/secret.dunikey" \
+    "${G1PUB}" \
+    "${UPLANETNAME_G1}" \
+    "${PLAYER}"
 
 ##########################################################
 echo "############# CHECK FOR N1COMMANDs IN PAYMENT COMMENT"

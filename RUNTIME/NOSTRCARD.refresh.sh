@@ -1189,16 +1189,12 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
     echo "## CONTROL TRANSACTIONS PRIMAL CONFORMITY..."
     # Call the generic primal wallet control function (using UPLANETNAME_G1 as unique primal source)
-    if [[ ${UPLANETNAME} != "0000000000000000000000000000000000000000000000000000000000000000" ]]; then
-        echo "CONTROL UPLANET ZEN - NOSTR Card primal control"
-        ${MY_PATH}/../tools/primal_wallet_control.sh \
-            "${HOME}/.zen/game/nostr/${PLAYER}/.secret.dunikey" \
-            "${G1PUBNOSTR}" \
-            "${UPLANETNAME_G1}" \
-            "${PLAYER}"
-    else
-        echo "UPlanet ORIGIN - No Control -"
-    fi
+    echo "CONTROL UPLANET ZEN - NOSTR Card primal control"
+    ${MY_PATH}/../tools/primal_wallet_control.sh \
+        "${HOME}/.zen/game/nostr/${PLAYER}/.secret.dunikey" \
+        "${G1PUBNOSTR}" \
+        "${UPLANETNAME_G1}" \
+        "${PLAYER}"
 
     ## ADD AMIS of AMIS -- friends of registered MULTIPASS can use our nostr relay
     fof_list=($($MY_PATH/../tools/nostr_get_N1.sh $HEX 2>/dev/null))

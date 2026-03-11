@@ -93,14 +93,7 @@ get_wallet_history_squid() {
 
     local query
     query=$(jq -cn --arg w "$wallet_pubkey" '{
-        query: "query($w:String!){
-            rx:transfers(filter:{toId:{equalTo:$w}},orderBy:BLOCK_NUMBER_ASC){
-                nodes{fromId toId amount timestamp blockNumber comment{message}}
-            }
-            tx:transfers(filter:{fromId:{equalTo:$w}},orderBy:BLOCK_NUMBER_ASC){
-                nodes{fromId toId amount timestamp blockNumber comment{message}}
-            }
-        }",
+        query: "query($w:String!){rx:transfers(filter:{toId:{equalTo:$w}},orderBy:BLOCK_NUMBER_ASC){nodes{fromId toId amount timestamp blockNumber comment{remark}}} tx:transfers(filter:{fromId:{equalTo:$w}},orderBy:BLOCK_NUMBER_ASC){nodes{fromId toId amount timestamp blockNumber comment{remark}}}}",
         variables: {w: $w}
     }')
 
@@ -117,7 +110,7 @@ get_wallet_history_squid() {
             pubkey: .fromId,
             amount: ((.amount | tonumber) / pow(10; $dec)),
             amount_raw: (.amount | tonumber),
-            comment: (.comment.message // "")
+            comment: (.comment.remark // "")
         }),
         (.data.tx.nodes[] | {
             direction: "out",
@@ -126,7 +119,7 @@ get_wallet_history_squid() {
             pubkey: .toId,
             amount: (-((.amount | tonumber) / pow(10; $dec))),
             amount_raw: (.amount | tonumber),
-            comment: (.comment.message // "")
+            comment: (.comment.remark // "")
         })
     ] | sort_by(.blockNumber)' > "$output_file"
 
@@ -314,11 +307,44 @@ control_primal_transactions() {
 
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
+    # ── Conversion v1 pubkeys → SS58 (le squid indexe par SS58) ────────────
+    if [[ -x "${MY_PATH}/g1pub_to_ss58.py" ]]; then
+        if ! [[ "$wallet_pubkey" =~ ^g1 ]]; then
+            local _ss58
+            _ss58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$wallet_pubkey" 2>/dev/null)
+            if [[ -n "$_ss58" ]]; then
+                log "Conversion wallet v1→SS58 : $wallet_pubkey → $_ss58"
+                wallet_pubkey="$_ss58"
+            fi
+        fi
+        if ! [[ "$master_primal" =~ ^g1 ]]; then
+            local _ss58m
+            _ss58m=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$master_primal" 2>/dev/null)
+            if [[ -n "$_ss58m" ]]; then
+                log "Conversion primal v1→SS58 : $master_primal → $_ss58m"
+                master_primal="$_ss58m"
+            fi
+        fi
+    fi
+
+    # ── Conversion variables globales v1→SS58 ─────────────────────────────────
+    local UPLANETG1PUB_SS58="${UPLANETG1PUB:-}"
+    local UPLANETNAME_SOCIETY_SS58="${UPLANETNAME_SOCIETY:-}"
+    local UPLANETNAME_G1_SS58="${UPLANETNAME_G1:-}"
+    if [[ -x "${MY_PATH}/g1pub_to_ss58.py" ]]; then
+        [[ -n "$UPLANETG1PUB_SS58" && ! "$UPLANETG1PUB_SS58" =~ ^g1 ]] && \
+            UPLANETG1PUB_SS58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$UPLANETG1PUB_SS58" 2>/dev/null)
+        [[ -n "$UPLANETNAME_SOCIETY_SS58" && ! "$UPLANETNAME_SOCIETY_SS58" =~ ^g1 ]] && \
+            UPLANETNAME_SOCIETY_SS58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$UPLANETNAME_SOCIETY_SS58" 2>/dev/null)
+        [[ -n "$UPLANETNAME_G1_SS58" && ! "$UPLANETNAME_G1_SS58" =~ ^g1 ]] && \
+            UPLANETNAME_G1_SS58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$UPLANETNAME_G1_SS58" 2>/dev/null)
+    fi
+
     # ── Détection CAPTAIN ────────────────────────────────────────────────────
     local is_captain=false
     [[ "$player_email" == "${CAPTAINEMAIL:-}" ]] && {
         is_captain=true
-        log "🎖️  CAPTAIN détecté — sources UPLANET autorisées"
+        log "CAPTAIN détecté — sources UPLANET autorisées"
     }
 
     # ── Affichage wallet surveillé ───────────────────────────────────────────
@@ -326,10 +352,10 @@ control_primal_transactions() {
     display_wallet_info "PRIMAL MAÎTRE" "$master_primal" "Source primale attendue pour les tx valides"
 
     if [[ "$is_captain" == true ]]; then
-        echo "🌍 Sources UPLANET autorisées pour CAPTAIN :"
-        [[ -n "${UPLANETG1PUB:-}" ]]        && echo "  • UPLANET MAIN    : $UPLANETG1PUB"
-        [[ -n "${UPLANETNAME_SOCIETY:-}" ]]  && echo "  • UPLANET SOCIETY : $UPLANETNAME_SOCIETY"
-        [[ -n "${UPLANETNAME_G1:-}" ]]       && echo "  • UPLANET G1      : $UPLANETNAME_G1"
+        echo "Sources UPLANET autorisées pour CAPTAIN :"
+        [[ -n "$UPLANETG1PUB_SS58" ]]        && echo "  UPLANET MAIN    : $UPLANETG1PUB_SS58"
+        [[ -n "$UPLANETNAME_SOCIETY_SS58" ]]  && echo "  UPLANET SOCIETY : $UPLANETNAME_SOCIETY_SS58"
+        [[ -n "$UPLANETNAME_G1_SS58" ]]       && echo "  UPLANET G1      : $UPLANETNAME_G1_SS58"
         echo
     fi
 
@@ -426,13 +452,13 @@ control_primal_transactions() {
 
         if [[ "$is_captain" == true ]]; then
             # CAPTAIN : accepte aussi les wallets système UPLANET directement
-            [[ "$master_primal" == "$pubkey"          ]] && is_valid=true
-            [[ "$pubkey" == "${UPLANETG1PUB:-}"        ]] && is_valid=true
-            [[ "$pubkey" == "${UPLANETNAME_SOCIETY:-}" ]] && is_valid=true
-            [[ "$pubkey" == "${UPLANETNAME_G1:-}"      ]] && is_valid=true
-            [[ "$master_primal" == "$tx_primal"        ]] && is_valid=true
-            [[ "$tx_primal" == "${UPLANETG1PUB:-}"     ]] && is_valid=true
-            [[ "$tx_primal" == "${UPLANETNAME_SOCIETY:-}" ]] && is_valid=true
+            [[ "$master_primal" == "$pubkey"              ]] && is_valid=true
+            [[ "$pubkey" == "$UPLANETG1PUB_SS58"          ]] && is_valid=true
+            [[ "$pubkey" == "$UPLANETNAME_SOCIETY_SS58"   ]] && is_valid=true
+            [[ "$pubkey" == "$UPLANETNAME_G1_SS58"        ]] && is_valid=true
+            [[ "$master_primal" == "$tx_primal"           ]] && is_valid=true
+            [[ "$tx_primal" == "$UPLANETG1PUB_SS58"       ]] && is_valid=true
+            [[ "$tx_primal" == "$UPLANETNAME_SOCIETY_SS58" ]] && is_valid=true
         else
             # Joueur normal : seul master_primal est valide
             [[ "$master_primal" == "$pubkey"    ]] && is_valid=true
