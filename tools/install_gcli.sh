@@ -64,6 +64,12 @@ download_prebuilt_binary() {
     if curl -fSL --connect-timeout 30 -o "${TMP_DIR}/${FILENAME}" "${DOWNLOAD_URL}" 2>&1; then
         tar xzf "${TMP_DIR}/${FILENAME}" -C "${TMP_DIR}"
         if [[ -x "${TMP_DIR}/g1cli" ]]; then
+            # Vérifier que le binaire fonctionne (compatibilité glibc)
+            if ! "${TMP_DIR}/g1cli" --version &>/dev/null; then
+                loge "Binaire incompatible (glibc trop ancien ?): $(ldd "${TMP_DIR}/g1cli" 2>&1 | grep 'not found' | head -3)"
+                rm -rf "$TMP_DIR"
+                return 1
+            fi
             cp "${TMP_DIR}/g1cli" "$GCLI_BIN"
             chmod +x "$GCLI_BIN"
             log "g1cli téléchargé et installé: $($GCLI_BIN --version 2>/dev/null)"
@@ -137,7 +143,19 @@ if [[ -d "$GCLI_SRC" && -f "$GCLI_SRC/Cargo.toml" ]]; then
         # Vérifier la version minimale de Rust
         if printf '%s\n' "$RUST_MIN" "$RUST_VER" | sort -V | head -1 | grep -qv "$RUST_MIN"; then
             log "Rust $RUST_VER trop ancien, mise à jour vers stable..."
-            rustup update stable 2>&1 | tail -3
+            # S'assurer que rustup est dans le PATH
+            [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+            if ! command -v rustup &>/dev/null; then
+                log "rustup introuvable, installation..."
+                curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+                    | sh -s -- -y --default-toolchain stable 2>&1 | tail -3
+                source "$HOME/.cargo/env"
+            else
+                rustup update stable 2>&1 | tail -3
+            fi
+            # Utiliser le cargo/rustc de rustup (pas celui du système)
+            [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+            export PATH="$HOME/.cargo/bin:$PATH"
             RUST_VER=$(rustc --version 2>/dev/null | grep -oP '[0-9]+\.[0-9]+\.[0-9]+')
             log "Rust mis à jour: $RUST_VER"
         fi
