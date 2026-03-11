@@ -423,7 +423,7 @@ cat > "$HTML_FILE" << HTMLEOF
         <div class="addr">${ISSUERPUB}</div>
         <div class="bal">${ZENCUR} ZEN</div>
         <div class="links">
-          <a href="${CESIUM}/#/app/wot/tx/${ISSUERPUB}/" target="_blank">📊 Cesium</a>
+          <a href="${CESIUM}/#/wot/${ISSUERPUB}/" target="_blank">📊 Cesium</a>
           $([[ -n "$UPLANET" ]] && echo "<a href=\"${UPLANET}/g1gate/?pubkey=${ISSUERPUB}\" class=\"sec\" target=\"_blank\">🔍 Scanner</a>")
         </div>
       </div>
@@ -433,7 +433,7 @@ cat > "$HTML_FILE" << HTMLEOF
         <div class="addr">${G1PUB}</div>
         <div class="bal">${ZENDES} ZEN</div>
         <div class="links">
-          <a href="${CESIUM}/#/app/wot/tx/${G1PUB}/" target="_blank">📊 Cesium</a>
+          <a href="${CESIUM}/#/wot/${G1PUB}/" target="_blank">📊 Cesium</a>
           $([[ -n "$UPLANET" ]] && echo "<a href=\"${UPLANET}/g1gate/?pubkey=${G1PUB}\" class=\"sec\" target=\"_blank\">🔍 Scanner</a>")
         </div>
       </div>
