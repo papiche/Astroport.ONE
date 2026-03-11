@@ -1,11 +1,12 @@
 #!/bin/bash
 ################################################################################
-# install_gcli.sh — Install/upgrade gcli from source (Astroport fork)
+# install_gcli.sh — Install/upgrade g1cli (gcli) for Astroport.ONE
 # Called by 20h12.process.sh for auto-migration of existing stations
 # Can also be run standalone: ~/.zen/Astroport.ONE/tools/install_gcli.sh
 #
-# Compile depuis ~/workspace/AAA/gcli-v2s (branche nostr) si disponible,
-# sinon fallback sur le .deb officiel depuis GitLab CI.
+# Strategy:
+#   1. Compile from source (branche nostr) — preferred
+#   2. Download pre-built binary from GitLab release — fallback
 #
 # Author: Fred (support@qo-op.com)
 # License: AGPL-3.0
@@ -20,8 +21,62 @@ loge() { echo "$LOG_TAG ERROR: $*" >&2; }
 
 GCLI_SRC="${GCLI_SRC:-$HOME/workspace/AAA/gcli-v2s}"
 GCLI_BIN="$HOME/.local/bin/gcli"
+GCLI_VERSION="0.8.0-g1-RC2"
+GCLI_RELEASE_BASE="https://git.duniter.org/clients/rust/g1cli/-/releases"
 
 mkdir -p "$HOME/.local/bin"
+
+########################################################################
+## Detect architecture for binary download
+########################################################################
+detect_arch() {
+    case "$(uname -m)" in
+        x86_64)  echo "amd64" ;;
+        aarch64) echo "arm64" ;;
+        *)       echo "" ;;
+    esac
+}
+
+########################################################################
+## Download pre-built binary from GitLab release
+########################################################################
+download_prebuilt_binary() {
+    local ARCH
+    ARCH=$(detect_arch)
+    if [[ -z "$ARCH" ]]; then
+        loge "Architecture $(uname -m) non supportée pour le téléchargement"
+        return 1
+    fi
+
+    local TAG="v${GCLI_VERSION}"
+    local FILENAME="g1cli-${TAG}-linux-${ARCH}.tar.gz"
+    local DOWNLOAD_URL="${GCLI_RELEASE_BASE}/${TAG}/downloads/${FILENAME}"
+    local TMP_DIR
+    TMP_DIR=$(mktemp -d)
+
+    log "Téléchargement de g1cli ${TAG} (${ARCH})..."
+    log "URL: ${DOWNLOAD_URL}"
+
+    if curl -fSL --connect-timeout 30 -o "${TMP_DIR}/${FILENAME}" "${DOWNLOAD_URL}" 2>&1; then
+        tar xzf "${TMP_DIR}/${FILENAME}" -C "${TMP_DIR}"
+        if [[ -x "${TMP_DIR}/g1cli" ]]; then
+            cp "${TMP_DIR}/g1cli" "$GCLI_BIN"
+            chmod +x "$GCLI_BIN"
+            log "g1cli téléchargé et installé: $($GCLI_BIN --version 2>/dev/null)"
+        else
+            loge "Binaire g1cli introuvable dans l'archive"
+            rm -rf "$TMP_DIR"
+            return 1
+        fi
+    else
+        loge "Échec du téléchargement depuis ${DOWNLOAD_URL}"
+        rm -rf "$TMP_DIR"
+        return 1
+    fi
+
+    rm -rf "$TMP_DIR"
+    return 0
+}
 
 ########################################################################
 ## 1. Supprimer l'ancien .deb s'il est installé
@@ -94,13 +149,17 @@ if [[ -d "$GCLI_SRC" && -f "$GCLI_SRC/Cargo.toml" ]]; then
             log "gcli compilé et installé: $($GCLI_BIN --version 2>/dev/null)"
         else
             loge "Compilation échouée (exit $RC)"
+            log "Tentative de téléchargement du binaire pré-compilé..."
+            download_prebuilt_binary
         fi
     else
         loge "cargo introuvable après tentative d'installation rustup"
+        log "Tentative de téléchargement du binaire pré-compilé..."
+        download_prebuilt_binary
     fi
 else
-    loge "Impossible de trouver ou cloner les sources gcli"
-    exit 1
+    log "Sources non disponibles, téléchargement du binaire pré-compilé..."
+    download_prebuilt_binary
 fi
 
 ########################################################################
