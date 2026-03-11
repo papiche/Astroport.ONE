@@ -116,30 +116,7 @@ TEMP_VAULT_IMPORTED=false
 
 resolve_vault() {
     if [[ -f "$KEY_OR_VAULT" ]]; then
-        # Fichier dunikey v1 (id/secret format)
         log "Fichier dunikey détecté : $KEY_OR_VAULT"
-
-        # Extraire id/secret depuis le dunikey
-        local id secret
-        id=$(grep -E '^uid:|^pub:' "$KEY_OR_VAULT" | head -1 | awk '{print $2}')
-        secret=$(grep -E '^sec:|^sec:|^salt:|^password:' "$KEY_OR_VAULT" | head -1 | awk '{print $2}')
-
-        # Fallback : format JSON {"pub":"...","sec":"..."}
-        if [[ -z "$id" ]]; then
-            id=$(jq -r '.pub // .uid // empty' "$KEY_OR_VAULT" 2>/dev/null)
-            secret=$(jq -r '.sec // .salt // empty' "$KEY_OR_VAULT" 2>/dev/null)
-        fi
-
-        # Fallback : format cesium v1 {"salt":"...","password":"..."}
-        if [[ -z "$id" ]]; then
-            id=$(jq -r '.salt // empty' "$KEY_OR_VAULT" 2>/dev/null)
-            secret=$(jq -r '.password // empty' "$KEY_OR_VAULT" 2>/dev/null)
-        fi
-
-        if [[ -z "$id" || -z "$secret" ]]; then
-            loge "Impossible d'extraire id/secret depuis $KEY_OR_VAULT"
-            return 1
-        fi
 
         # Nom vault temporaire basé sur MOATS
         VAULT_NAME="paytemp_${MOATS}"
@@ -153,17 +130,55 @@ resolve_vault() {
                 $GCLI --no-password vault remove -v "$old_name" 2>/dev/null || true
             done
 
-        log "Import dunikey g1v1 dans vault gcli sous le nom : $VAULT_NAME"
-        # g1cli v0.8.0+ : import non-interactif avec --g1v1-id/--g1v1-password/--no-password
-        $GCLI vault import -S g1v1 \
-            --g1v1-id "$id" \
-            --g1v1-password "$secret" \
-            --no-password \
-            -n "$VAULT_NAME" \
-            2>/dev/null
+        # Déterminer le format du fichier et la méthode d'import
+        local sec_key
+        sec_key=$(grep -E '^sec:' "$KEY_OR_VAULT" | head -1 | awk '{print $2}')
 
-        TEMP_VAULT_IMPORTED=true
-        return 0
+        if [[ -n "$sec_key" ]]; then
+            # Format PubSec (Type: PubSec) — contient clé ed25519 brute en base58
+            # Extraire la seed (32 premiers bytes de la clé secrète)
+            local seed_hex
+            seed_hex=$(python3 -c "
+import base58, sys
+try:
+    sec = base58.b58decode('$sec_key')
+    print(sec[:32].hex())
+except Exception as e:
+    print('', file=sys.stderr)
+    sys.exit(1)
+" 2>/dev/null)
+
+            if [[ -n "$seed_hex" ]]; then
+                log "Import dunikey PubSec (seed ed25519) sous le nom : $VAULT_NAME"
+                $GCLI vault import -S substrate \
+                    --uri "0x${seed_hex}" \
+                    --no-password \
+                    -n "$VAULT_NAME" \
+                    2>/dev/null
+                TEMP_VAULT_IMPORTED=true
+                return 0
+            fi
+        fi
+
+        # Fallback : format JSON cesium v1 {"salt":"...","password":"..."} ou {"pub":"...","sec":"..."}
+        local id secret
+        id=$(jq -r '.salt // .pub // .uid // empty' "$KEY_OR_VAULT" 2>/dev/null)
+        secret=$(jq -r '.password // .sec // empty' "$KEY_OR_VAULT" 2>/dev/null)
+
+        if [[ -n "$id" && -n "$secret" ]]; then
+            log "Import dunikey g1v1 (salt/password) sous le nom : $VAULT_NAME"
+            $GCLI vault import -S g1v1 \
+                --g1v1-id "$id" \
+                --g1v1-password "$secret" \
+                --no-password \
+                -n "$VAULT_NAME" \
+                2>/dev/null
+            TEMP_VAULT_IMPORTED=true
+            return 0
+        fi
+
+        loge "Impossible d'extraire les clés depuis $KEY_OR_VAULT"
+        return 1
     else
         # C'est un nom vault ou une adresse directe
         VAULT_NAME="$KEY_OR_VAULT"
