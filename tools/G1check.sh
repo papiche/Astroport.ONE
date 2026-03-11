@@ -25,9 +25,9 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 DECIMALS=2                   # 1 Ğ1 = 100 centimes bruts (confirmé sur réseau réel)
 SQUID_URL="${SQUID_URL:-https://squid.g1.gyroi.de/v1/graphql}"
 CACHE_DIR="${HOME}/.zen/tmp/coucou"
-CACHE_FRESH_SEC=900          # 15 min : retour immédiat
-CACHE_STALE_SEC=86400        # 24h  : après ça on force le refresh
-CACHE_COINS_LIMIT=7          # jours avant suppression du fichier cache
+CACHE_FRESH_SEC=12           # 12s : 2 blocs Duniter v2 (1 bloc = 6s)
+CACHE_STALE_SEC=60           # 1 min : après ça on force le refresh
+CACHE_COINS_LIMIT=1          # jours avant suppression du fichier cache
 
 # Mise à jour squid dynamique via duniter_getnode.sh
 if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
