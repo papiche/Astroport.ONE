@@ -22,7 +22,8 @@ loge() { echo "$LOG_TAG ERROR: $*" >&2; }
 GCLI_SRC="${GCLI_SRC:-$HOME/workspace/AAA/gcli-v2s}"
 GCLI_BIN="$HOME/.local/bin/gcli"
 GCLI_VERSION="0.8.0-g1-RC2"
-GCLI_RELEASE_BASE="https://git.duniter.org/clients/rust/g1cli/-/releases"
+GCLI_URL_AMD64="https://git.duniter.org/-/project/604/uploads/bb4d3ee2030db6d09d954c469870e1ef/g1cli-v0.8.0-g1-RC2-linux-amd64.tar.gz"
+GCLI_URL_ARM64="https://git.duniter.org/-/project/604/uploads/3d2ea125ba58e71cf5919a33c8329f24/g1cli-v0.8.0-g1-RC2-linux-arm64.tar.gz"
 
 mkdir -p "$HOME/.local/bin"
 
@@ -48,9 +49,12 @@ download_prebuilt_binary() {
         return 1
     fi
 
-    local TAG="v${GCLI_VERSION}"
-    local FILENAME="g1cli-${TAG}-linux-${ARCH}.tar.gz"
-    local DOWNLOAD_URL="${GCLI_RELEASE_BASE}/${TAG}/downloads/${FILENAME}"
+    local DOWNLOAD_URL
+    case "$ARCH" in
+        amd64) DOWNLOAD_URL="$GCLI_URL_AMD64" ;;
+        arm64) DOWNLOAD_URL="$GCLI_URL_ARM64" ;;
+    esac
+    local FILENAME="g1cli-v${GCLI_VERSION}-linux-${ARCH}.tar.gz"
     local TMP_DIR
     TMP_DIR=$(mktemp -d)
 
