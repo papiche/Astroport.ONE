@@ -89,6 +89,18 @@ MOATS="${5:-}"
     && MOATS=$(date -u +"%Y%m%d%H%M%S%4N") \
     || log "Reprise de paiement échoué — ID: $MOATS"
 
+# ── Conversion v1 pubkey → SS58 pour l'adresse de destination ───────────────
+# gcli exige une adresse SS58 (préfixe g1...), pas une pubkey v1 base58
+if [[ -n "$G1PUB" ]] && ! [[ "$G1PUB" =~ ^g1 ]]; then
+    if [[ -x "${MY_PATH}/g1pub_to_ss58.py" ]]; then
+        _SS58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$G1PUB" 2>/dev/null)
+        if [[ -n "$_SS58" ]]; then
+            log "Conversion DEST v1→SS58 : $G1PUB → $_SS58"
+            G1PUB="$_SS58"
+        fi
+    fi
+fi
+
 log "=== PAYforSURE démarrage ==="
 log "DEST   : $G1PUB"
 log "AMOUNT : $AMOUNT"
