@@ -144,6 +144,15 @@ resolve_vault() {
         # Nom vault temporaire basé sur MOATS
         VAULT_NAME="paytemp_${MOATS}"
 
+        # Nettoyer les entrées paytemp_* résiduelles pour éviter le prompt
+        # interactif "Do you want to: 1. keep 2. overwrite" quand la même
+        # adresse SS58 est déjà dans le vault
+        $GCLI --no-password vault list all 2>/dev/null \
+            | grep -oP 'paytemp_\S+' \
+            | while read -r old_name; do
+                $GCLI --no-password vault remove -v "$old_name" 2>/dev/null || true
+            done
+
         log "Import dunikey g1v1 dans vault gcli sous le nom : $VAULT_NAME"
         # g1cli v0.8.0+ : import non-interactif avec --g1v1-id/--g1v1-password/--no-password
         $GCLI vault import -S g1v1 \
@@ -166,7 +175,7 @@ resolve_vault() {
 cleanup_temp_vault() {
     if [[ "$TEMP_VAULT_IMPORTED" == true && -n "$VAULT_NAME" ]]; then
         log "Suppression entrée vault temporaire : $VAULT_NAME"
-        $GCLI vault remove "$VAULT_NAME" 2>/dev/null || true
+        $GCLI --no-password vault remove -v "$VAULT_NAME" 2>/dev/null || true
     fi
 }
 trap cleanup_temp_vault EXIT
