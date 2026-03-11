@@ -203,6 +203,8 @@ main() {
         run_test_script "$MY_PATH/test_wotx2_system.sh" "WoTx2"
         run_test_script "$MY_PATH/test_ore_system.sh" "ORE"
         run_test_script "$MY_PATH/test_badge_system.sh" "Badge"
+        run_test_script "$MY_PATH/test_g1_tools.sh" "G1Tools"
+        run_test_script "$MY_PATH/test_primal_control.sh" "PrimalControl"
         
         # Run captain validation test (creates real data)
         echo ""
@@ -231,12 +233,18 @@ main() {
             badge)
                 run_test_script "$MY_PATH/test_badge_system.sh" "Badge"
                 ;;
+            g1tools)
+                run_test_script "$MY_PATH/test_g1_tools.sh" "G1Tools"
+                ;;
+            primal)
+                run_test_script "$MY_PATH/test_primal_control.sh" "PrimalControl"
+                ;;
             captain)
                 run_test_script "$MY_PATH/test_captain_validation.sh" "Captain Validation"
                 ;;
             *)
                 log_error "Unknown system: $TEST_SYSTEM"
-                echo "Available systems: did, oracle, wotx2, ore, badge, captain"
+                echo "Available systems: did, oracle, wotx2, ore, badge, g1tools, primal, captain"
                 exit 1
                 ;;
         esac
