@@ -306,15 +306,31 @@ make_payment_gcli() {
     return $transfer_rc
 }
 
+# ── Conversion montant Ğ1 → centimes pour gcli ─────────────────────────────
+# gcli utilise des centimes : 100 = 1.00 Ğ1 (DECIMALS=2)
+AMOUNT_GCLI=$(python3 -c "print(int(round(float('$AMOUNT') * 10**$DECIMALS)))" 2>/dev/null)
+if [[ -z "$AMOUNT_GCLI" || "$AMOUNT_GCLI" == "0" ]]; then
+    loge "Conversion montant échouée : $AMOUNT Ğ1 → centimes"
+    exit 1
+fi
+log "Montant gcli : $AMOUNT Ğ1 = $AMOUNT_GCLI centimes"
+
 # ── Boucle retry sur les nœuds ────────────────────────────────────────────────
 RESULT_FILE="${PENDINGDIR}/${MOATS}.result.txt"
 ISOK=1
 
 for ws_node in "${G1_WS_NODES[@]}"; do
     make_payment_gcli \
-        "$VAULT_NAME" "$AMOUNT" "$G1PUB" "$COMMENT" \
+        "$VAULT_NAME" "$AMOUNT_GCLI" "$G1PUB" "$COMMENT" \
         "$ws_node" "$RESULT_FILE"
     ISOK=$?
+
+    # gcli retourne 0 même en cas d'erreur on-chain — vérifier le résultat
+    if [[ $ISOK -eq 0 ]] && grep -q "error\|Error\|failed\|cannot exist" "$RESULT_FILE" 2>/dev/null; then
+        logw "gcli exit 0 mais erreur détectée dans le résultat"
+        ISOK=1
+    fi
+
     [[ $ISOK -eq 0 ]] && { logok "Paiement réussi via $ws_node"; break; }
     logw "Échec sur $ws_node, essai suivant..."
     sleep 2
