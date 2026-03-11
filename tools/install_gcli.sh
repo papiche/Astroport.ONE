@@ -71,16 +71,25 @@ if [[ -d "$GCLI_SRC" && -f "$GCLI_SRC/Cargo.toml" ]]; then
     fi
 
     if command -v cargo &>/dev/null; then
-        RUST_VER=$(rustc --version 2>/dev/null)
-        log "Rust: $RUST_VER"
+        RUST_VER=$(rustc --version 2>/dev/null | grep -oP '[0-9]+\.[0-9]+\.[0-9]+')
+        RUST_MIN="1.94.0"
+        log "Rust: $RUST_VER (minimum requis: $RUST_MIN)"
+
+        # Vérifier la version minimale de Rust
+        if printf '%s\n' "$RUST_MIN" "$RUST_VER" | sort -V | head -1 | grep -qv "$RUST_MIN"; then
+            log "Rust $RUST_VER trop ancien, mise à jour vers stable..."
+            rustup update stable 2>&1 | tail -3
+            RUST_VER=$(rustc --version 2>/dev/null | grep -oP '[0-9]+\.[0-9]+\.[0-9]+')
+            log "Rust mis à jour: $RUST_VER"
+        fi
 
         # Compiler en release
         log "Compilation gcli (release) depuis branche nostr..."
         cargo build --release 2>&1 | tail -5
         RC=$?
 
-        if [[ $RC -eq 0 && -x "$GCLI_SRC/target/release/gcli" ]]; then
-            cp "$GCLI_SRC/target/release/gcli" "$GCLI_BIN"
+        if [[ $RC -eq 0 && -x "$GCLI_SRC/target/release/g1cli" ]]; then
+            cp "$GCLI_SRC/target/release/g1cli" "$GCLI_BIN"
             chmod +x "$GCLI_BIN"
             log "gcli compilé et installé: $($GCLI_BIN --version 2>/dev/null)"
         else
