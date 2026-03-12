@@ -119,10 +119,10 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
 		~/.zen/Astroport.ONE/tools/keygen -i ~/.zen/game/secret.ipns -t duniter -o ~/.zen/game/secret.NODE.dunikey
 
 		## Creating SSH from SECRETS
-		~/.zen/Astroport.ONE/tools/keygen -t ssh -o ~/.zen/game/id_ssh "$SECRET1" "$SECRET2"
+		~/.zen/Astroport.ONE/tools/keygen -t ssh -o ~/.zen/game/id_ssh "$SECRET1" "$SECRET2" 2>&1>/dev/null
 
 		## BitCOIN key reveal (BONUS)
-		~/.zen/Astroport.ONE/tools/keygen -t bitcoin "$SECRET1" "$SECRET2"
+		~/.zen/Astroport.ONE/tools/keygen -t bitcoin "$SECRET1" "$SECRET2" 2>&1>/dev/null
 
 		##### IPFSNODEID UPGRADE
 		## EXTRACT PUB/PRIV KEY
@@ -173,9 +173,9 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
 
 		## SUCCESS
 		echo "YOUR PREVIOUS SSH KEY IS ~/.ssh/origin.key"
-		echo "\(^-^)/ SSH/IPFS Twin key secrets"
-		echo "SECRET1=$SECRET1"
-		echo "SECRET2=$SECRET2"
+		echo "\(^-^)/ SSH/IPFS Twin key linking done"
+		# echo "SECRET1=$SECRET1"
+		# echo "SECRET2=$SECRET2"
 
 	else
 		echo "Y LEVEL ALREADY ACTIVATED : $IPFSNODEID "

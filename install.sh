@@ -193,14 +193,6 @@ git clone https://github.com/papiche/G1BILLET.git
 cd G1BILLET && ./setup_systemd.sh
 cd -
 
-## TROCZEN
-echo "######### TROCZEN ##############"
-echo "INSTALL TROCZEN API : http://localhost:5000"
-cd ~/.zen/workspace
-git clone https://github.com/papiche/troczen.git
-cd troczen/api && ./install_service.sh
-cd $MY_PATH
-
 echo
 
 ###############################################################

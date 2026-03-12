@@ -22,10 +22,15 @@ WORD=$($HOME/.zen/Astroport.ONE/tools/diceware.sh 1)
 NUMBER=$(printf "%02d" $((RANDOM % 99 + 1)))
 # Construire le nouveau hostname
 NEW_HOSTNAME="${WORD}-${NUMBER}"
-# Afficher le nouveau hostname
-sudo hostnamectl set-hostname "$NEW_HOSTNAME"
+# Mettre à jour le fichier /etc/hostname
+echo "$NEW_HOSTNAME" | sudo tee /etc/hostname > /dev/null
 # Mettre à jour le fichier /etc/hosts
-sudo sed -i "s/127.0.1.1.*/127.0.1.1\t$NEW_HOSTNAME/" /etc/hosts
+sudo sed -i "/127.0.1.1/c\127.0.1.1\t$NEW_HOSTNAME" /etc/hosts
+# Changer le hostname avec hostnamectl
+sudo hostnamectl set-hostname "$NEW_HOSTNAME"
+# Forcer la mise à jour du hostname actuel
+sudo hostname -F /etc/hostname
+# Afficher le nouveau hostname
 echo "NOUVEAU Hostname :"
 hostname
 
@@ -227,8 +232,8 @@ echo ">>> Create CAPTAIN MULTIPASS <<<"
 
 ## ZEN CARD --->
 echo ">>> Create CAPTAIN ZENCARD <<<"
-ZSALT=$(${HOME}/.zen/Astroport.ONE/tools/diceware.sh $(( ${HOME}/.zen/Astroport.ONE/tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
-ZPEPS=$(${HOME}/.zen/Astroport.ONE/tools/diceware.sh $(( ${HOME}/.zen/Astroport.ONE/tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
+ZSALT=$(${HOME}/.zen/Astroport.ONE/tools/diceware.sh $(( $(${HOME}/.zen/Astroport.ONE/tools/getcoins_from_gratitude_box.sh) + 3 )))
+ZPEPS=$(${HOME}/.zen/Astroport.ONE/tools/diceware.sh $(( $(${HOME}/.zen/Astroport.ONE/tools/getcoins_from_gratitude_box.sh) + 3 )))
 
 source ~/.zen/game/nostr/${GMARKMAIL}/.secret.nostr ## get NPUB & HEX
 ~/.zen/Astroport.ONE/RUNTIME/VISA.new.sh" "$ZSALT" "$ZPEPS" "${GMARKMAIL}" "UPlanet" ${GO} "$NPUB" "$HEX"
