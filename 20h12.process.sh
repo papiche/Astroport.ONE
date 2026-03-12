@@ -176,6 +176,22 @@ else
     git clone --depth 1 https://github.com/papiche/OC2UPlanet.git
 fi
 
+## RUN OC2UPlanet monthly — recharge MULTIPASS des membres résidents
+## Traite les transactions CREDIT du mois en cours via oc2uplanet.sh
+## (cotisation cloud-usage + membre-resident → process_locataire)
+OC2UP_MARKER="$HOME/.zen/game/.oc2uplanet_monthly.done"
+OC2UP_MONTH=$(date +%Y-%m)
+OC2UP_LAST=$(cat "$OC2UP_MARKER" 2>/dev/null)
+if [[ "$OC2UP_LAST" != "$OC2UP_MONTH" ]]; then
+    if [[ -s ~/.zen/workspace/OC2UPlanet/.env && -x ~/.zen/workspace/OC2UPlanet/oc2uplanet.sh ]]; then
+        echo "OC2UPlanet: monthly sync for $OC2UP_MONTH"
+        (cd ~/.zen/workspace/OC2UPlanet && ./oc2uplanet.sh) \
+            && echo "$OC2UP_MONTH" > "$OC2UP_MARKER"
+    else
+        echo "OC2UPlanet: .env missing or oc2uplanet.sh not executable — skipping"
+    fi
+fi
+
 ## INSTALL/UPGRADE gcli + cleanup legacy jaklis/silkaj
 ${MY_PATH}/tools/install_gcli.sh
 
