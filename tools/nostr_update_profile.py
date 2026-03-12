@@ -322,7 +322,7 @@ def merge_profile_data(existing_event: Optional[dict], new_args: argparse.Namesp
     metadata = existing_metadata.copy()
     
     # Mettre à jour avec les nouveaux champs fournis
-    fields = ['name', 'about', 'picture', 'banner', 'nip05', 'website']
+    fields = ['name', 'about', 'picture', 'banner', 'nip05', 'website', 'city', 'g1pub']
     for field in fields:
         val = getattr(new_args, field, None)
         if val is not None:
@@ -463,6 +463,7 @@ Examples:
     parser.add_argument("--banner", help="Banner URL")
     parser.add_argument("--nip05", help="NIP-05 identifier")
     parser.add_argument("--website", help="Website URL")
+    parser.add_argument("--city", help="City/location")
     parser.add_argument("--g1pub", help="G1 Pubkey")
     parser.add_argument("--github", help="GitHub username")
     parser.add_argument("--twitter", help="Twitter handle")

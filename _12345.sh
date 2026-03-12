@@ -623,6 +623,7 @@ NODE12345="{
     \"date\" : \"$(cat $HOME/.zen/tmp/${IPFSNODEID}/_MySwarm.staom)\",
     \"hostname\" : \"$(myHostName)\",
     \"myIP\" : \"${myIP}\",
+    \"IPCity\" : \"$(cat ~/.zen/IPCity 2>/dev/null)\",
     \"myIPv6\" : \"$(${MY_PATH}/tools/ipv6.sh | head -n 1)\",
     \"myASTROPORT\" : \"${myASTROPORT}\",
     \"myIPFS\" : \"${myIPFS}\",

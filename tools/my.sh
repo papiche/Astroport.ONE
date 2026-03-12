@@ -809,10 +809,14 @@ else
     if [[ -f "$HOME/.zen/game/uplanet.captain.dunikey" ]]; then
         UPLANETNAME_CAPTAIN=$(cat $HOME/.zen/game/uplanet.captain.dunikey | grep "pub" | cut -d " " -f 2)
         echo ${UPLANETNAME_CAPTAIN} > $HOME/.zen/tmp/UPLANETNAME_CAPTAIN
-        
-    else
-        # Will be created by ZEN.ECONOMY.sh when needed
-        echo "⚠️  Captain dedicated wallet not found (will be created by ZEN.ECONOMY.sh)" >&2
+    else 
+        if [[ -n ${CAPTAINEMAIL} ]]; then
+        $HOME/.zen/Astroport.ONE/tools/keygen -t duniter -o $HOME/.zen/game/uplanet.captain.dunikey "${UPLANETNAME}.${CAPTAINEMAIL}" "${UPLANETNAME}.${CAPTAINEMAIL}"
+        UPLANETNAME_CAPTAIN=$(cat $HOME/.zen/game/uplanet.captain.dunikey | grep "pub" | cut -d " " -f 2)
+        echo ${UPLANETNAME_CAPTAIN} > $HOME/.zen/tmp/UPLANETNAME_CAPTAIN
+        else
+            echo "⚠️  Captain EMAIL is empty" >&2
+        fi
     fi
 fi
 

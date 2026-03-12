@@ -117,10 +117,15 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     
     # Use nostr_update_profile.py instead of nostr_setup_profile.py to preserve existing profile data
     # Note: We don't update all to let the captain modify them manually
+    ## Use cached IPCity (Ville,Pays from ip-api.com) for NOSTR profile city field
+    [[ ! -s ~/.zen/IPCity ]] && my_IPCity > ~/.zen/IPCity
+    CAPTAIN_CITY=$(cat ~/.zen/IPCity 2>/dev/null)
+    [[ -z "$CAPTAIN_CITY" ]] && CAPTAIN_CITY="UPlanet"
     $HOME/.zen/Astroport.ONE/tools/nostr_update_profile.py \
     "${CAPTAINEMAIL}" \
     "wss://relay.copylaradio.com" "$myRELAY" \
     --g1pub "$CAPTAING1PUB" \
+    --city "$CAPTAIN_CITY" \
     --picture "${myIPFS}/ipfs/QmfBK5h8R4LjS2qMtHKze3nnFrtdm85pCbUw3oPSirik5M/logo.uplanet.png" \
     --banner "${myIPFS}/ipfs/QmVwnUSH9ZAUfHxh9FU19szax2F8ukcfJMeDfH8UQHXkrY/FutureFork.png" \
     --zencard "$(cat ~/.zen/game/players/${CAPTAINEMAIL}/.g1pub 2>/dev/null)" \

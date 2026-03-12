@@ -8,4 +8,7 @@ cd -
 cd ~/.zen/UPassport
 git pull
 cd -
+cd ~/.zen/workspace/OC2UPlanet
+git pull
+cd -
 

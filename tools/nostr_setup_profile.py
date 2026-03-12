@@ -26,6 +26,11 @@ def nostr_setup_profile(args):
         "website": args.website,
         "bot": False
     }
+    # Add optional content fields (compatible with Ginkgo NostrProfile)
+    if args.g1pub:
+        metadata["g1pub"] = args.g1pub
+    if args.city:
+        metadata["city"] = args.city
 
     # Prepare tags for external identities
     tags = []
@@ -104,6 +109,7 @@ if __name__ == "__main__":
     parser.add_argument("mastodon", help="Mastodon URL")
     parser.add_argument("telegram", help="Telegram URL")
     parser.add_argument("relays", nargs="+", help="List of relays")
+    parser.add_argument("--city", help="City/location", default=None)
     parser.add_argument("--ipfs_gw", help="IPFS Gateway URL", default=None)
     parser.add_argument("--ipns_vault", help="NOSTR Card IPNS vault key", default=None)
     parser.add_argument("--zencard", help="ZenCard wallet address", default=None)

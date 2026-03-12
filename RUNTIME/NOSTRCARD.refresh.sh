@@ -964,7 +964,10 @@ for PLAYER in "${NOSTR[@]}"; do
 
         ## SETUP PROFILE VARIABLES
         title="$YOUSER"
-        city="UPlanet ${ORIGIN}"
+        ## Use cached IPCity (Ville,Pays) for NOSTR profile city field
+        [[ ! -s ~/.zen/IPCity ]] && my_IPCity > ~/.zen/IPCity
+        city=$(cat ~/.zen/IPCity 2>/dev/null)
+        [[ -z "$city" ]] && city="UPlanet ${ORIGIN}"
         description="💬 + ❤️ => Ẑen : ${uSPOT}/check_balance?g1pub=${PLAYER}"
         zavatar="/ipfs/"$(cat ${HOME}/.zen/game/nostr/${PLAYER}/MULTIPASS.QR.png.cid 2>/dev/null)
         ## ELSE ASTROPORT LOGO
@@ -977,11 +980,12 @@ for PLAYER in "${NOSTR[@]}"; do
         ${MY_PATH}/../tools/nostr_setup_profile.py \
             "$NSEC" \
             "✌(◕‿-)✌ $title" "$G1PUBNOSTR" \
-            "$description - $city" \
+            "$description" \
             "$myIPFS/$zavatar" \
             "$myIPFS/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
             "" "$myIPFS${NOSTRNS}/${PLAYER}/APP/uDRIVE" "" "" "" "" \
             "wss://relay.copylaradio.com" "$myRELAY" \
+            --city "$city" \
             --ipfs_gw "$myIPFS" \
             --zencard "$ZENCARDG1" \
             --email "$PLAYER" \
