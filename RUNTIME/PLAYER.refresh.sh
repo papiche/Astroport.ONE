@@ -168,8 +168,15 @@ for PLAYER in ${PLAYERONE[@]}; do
                     # Get IMPOTS wallet G1PUB
                 IMPOTS_G1PUB=$(cat $HOME/.zen/game/uplanet.IMPOT.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
 
-                # Main ZENCard payment to CAPTAIN (HT amount only)
-                payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Gpaf" "${CAPTAING1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZCARD:HT" 2>/dev/null)
+                # Ensure CAPTAIN_DEDICATED wallet exists (business wallet for rental collection)
+                if [[ ! -s ~/.zen/game/uplanet.captain.dunikey ]]; then
+                    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.captain.dunikey "${UPLANETNAME}.${CAPTAINEMAIL}" "${UPLANETNAME}.${CAPTAINEMAIL}"
+                    chmod 600 ~/.zen/game/uplanet.captain.dunikey
+                fi
+                CAPTAIN_DEDICATED_G1PUB=$(cat ~/.zen/game/uplanet.captain.dunikey | grep "pub:" | cut -d ' ' -f 2)
+
+                # Main ZENCard payment to CAPTAIN_DEDICATED (HT amount — cooperative wallet)
+                payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Gpaf" "${CAPTAIN_DEDICATED_G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZCARD:HT" 2>/dev/null)
                 payment_success=$?
 
                 # TVA provision directly from PLAYER to IMPOTS (fiscally correct)

@@ -100,7 +100,7 @@ print_transfer() {
   amount=$(echo "$node"  | jq -r '.amount')
   ts=$(echo "$node"      | jq -r '.timestamp // .blockNumber')
   block=$(echo "$node"   | jq -r '.blockNumber // "?"')
-  comment=$(echo "$node" | jq -r '.comment.message // ""')
+  comment=$(echo "$node" | jq -r '.comment.remark // ""')
 
   if [[ "$to" == "$wallet" ]]; then
     direction="${GREEN}← REÇU  ${RESET}"
@@ -161,7 +161,7 @@ mode_uplanet() {
 
   local query
   query=$(jq -cn --arg w "$wallet" '{
-    query: "query($w:String!){accounts(condition:{id:$w}){nodes{transferWithUd(orderBy:BLOCK_NUMBER_ASC,first:1){nodes{amount timestamp blockNumber fromId toId comment{message}}}}}}",
+    query: "query($w:String!){accounts(condition:{id:$w}){nodes{transferWithUd(orderBy:BLOCK_NUMBER_ASC,first:1){nodes{amount timestamp blockNumber fromId toId comment{remark}}}}}}",
     variables: {w: $w}
   }')
 
@@ -187,7 +187,7 @@ mode_upassport() {
 
   local query
   query=$(jq -cn --arg w "$wallet" --arg m "$montant" '{
-    query: "query($w:String!,$m:BigInt!){transfers(filter:{toId:{equalTo:$w},amount:{equalTo:$m}},orderBy:BLOCK_NUMBER_ASC,first:2){nodes{fromId toId amount timestamp blockNumber comment{message}}totalCount}}",
+    query: "query($w:String!,$m:BigInt!){transfers(condition:{toId:$w,amount:$m},orderBy:BLOCK_NUMBER_ASC,first:2){nodes{fromId toId amount timestamp blockNumber comment{remark}}totalCount}}",
     variables: {w: $w, m: $m}
   }')
 
@@ -226,7 +226,7 @@ mode_history() {
 
   local query
   query=$(jq -cn --arg w "$wallet" '{
-    query: "query($w:String!){accounts(condition:{id:$w}){nodes{balance transferWithUd(orderBy:BLOCK_NUMBER_ASC){totalCount nodes{amount timestamp blockNumber fromId toId comment{message}}}}}}",
+    query: "query($w:String!){accounts(condition:{id:$w}){nodes{balance transferWithUd(orderBy:BLOCK_NUMBER_ASC){totalCount nodes{amount timestamp blockNumber fromId toId comment{remark}}}}}}",
     variables: {w: $w}
   }')
 
@@ -268,7 +268,7 @@ mode_period() {
 
   local query
   query=$(jq -cn --arg w "$wallet" --arg d "$debut" --arg f "$fin" '{
-    query: "query($w:String!,$d:Datetime!,$f:Datetime!){accounts(condition:{id:$w}){nodes{transferWithUd(filter:{timestamp:{greaterThanOrEqualTo:$d,lessThanOrEqualTo:$f}},orderBy:BLOCK_NUMBER_ASC){totalCount nodes{amount timestamp blockNumber fromId toId comment{message}}}}}}",
+    query: "query($w:String!,$d:Datetime!,$f:Datetime!){accounts(condition:{id:$w}){nodes{transferWithUd(filter:{timestamp:{greaterThanOrEqualTo:$d,lessThanOrEqualTo:$f}},orderBy:BLOCK_NUMBER_ASC){totalCount nodes{amount timestamp blockNumber fromId toId comment{remark}}}}}}",
     variables: {w: $w, d: $d, f: $f}
   }')
 
@@ -296,7 +296,7 @@ mode_transfers() {
 
   local query
   query=$(jq -cn --arg w "$wallet" '{
-    query: "query($w:String!){recu:transfers(filter:{toId:{equalTo:$w}},orderBy:BLOCK_NUMBER_ASC){totalCount nodes{fromId toId amount timestamp blockNumber comment{message}}} envoye:transfers(filter:{fromId:{equalTo:$w}},orderBy:BLOCK_NUMBER_ASC){totalCount nodes{fromId toId amount timestamp blockNumber comment{message}}}}",
+    query: "query($w:String!){recu:transfers(condition:{toId:$w},orderBy:BLOCK_NUMBER_ASC){totalCount nodes{fromId toId amount timestamp blockNumber comment{remark}}} envoye:transfers(condition:{fromId:$w},orderBy:BLOCK_NUMBER_ASC){totalCount nodes{fromId toId amount timestamp blockNumber comment{remark}}}}",
     variables: {w: $w}
   }')
 

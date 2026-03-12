@@ -525,15 +525,8 @@ fi
 
 echo "💰 Current G1 balance: ${AMOUNT} Ğ1"
 
-## EMPTY AMOUNT G1 to UPLANETNAME_G1 (central bank) PRIMAL
-prime=$(cat ~/.zen/tmp/coucou/${g1pubnostr}.primal 2>/dev/null)
-
-## Real value when Humans understand that Commons needs aggradation instead of degradation. 
-[[ $UPLANETNAME == "Enfin Libre" ]] \
-    && [[ -f ~/.zen/tmp/coucou/${g1pubnostr}.2nd ]] \
-    && prime=$(cat ~/.zen/tmp/coucou/${g1pubnostr}.2nd) ## REFILL REAL OWNER
-
-[[ -z $prime ]] && prime=${UPLANETNAME_G1}
+## EMPTY AMOUNT G1 to UPLANETNAME_G1 (central bank = source primale)
+prime=${UPLANETNAME_G1}
 
 # Convert amount to numeric for precise comparison using bc
 AMOUNT_NUM=$(echo "${AMOUNT}" | sed 's/[^0-9.]//g')

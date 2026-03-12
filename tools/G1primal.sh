@@ -80,7 +80,7 @@ squid_primal() {
     local sq="$2"
     local query
     query=$(jq -cn --arg a "$addr" '{
-        query: "query($a:String!){transfers(filter:{toId:{equalTo:$a}},orderBy:BLOCK_NUMBER_ASC,first:1){nodes{fromId blockNumber}}}",
+        query: "query($a:String!){transfers(condition:{toId:$a},orderBy:BLOCK_NUMBER_ASC,first:1){nodes{fromId blockNumber}}}",
         variables: {a: $a}
     }')
     curl -sf --max-time 10 \

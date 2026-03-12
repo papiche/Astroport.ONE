@@ -93,7 +93,7 @@ get_wallet_history_squid() {
 
     local query
     query=$(jq -cn --arg w "$wallet_pubkey" '{
-        query: "query($w:String!){rx:transfers(filter:{toId:{equalTo:$w}},orderBy:BLOCK_NUMBER_ASC){nodes{fromId toId amount timestamp blockNumber comment{remark}}} tx:transfers(filter:{fromId:{equalTo:$w}},orderBy:BLOCK_NUMBER_ASC){nodes{fromId toId amount timestamp blockNumber comment{remark}}}}",
+        query: "query($w:String!){rx:transfers(condition:{toId:$w},orderBy:BLOCK_NUMBER_ASC){nodes{fromId toId amount timestamp blockNumber comment{remark}}} tx:transfers(condition:{fromId:$w},orderBy:BLOCK_NUMBER_ASC){nodes{fromId toId amount timestamp blockNumber comment{remark}}}}",
         variables: {w: $w}
     }')
 
@@ -151,7 +151,7 @@ get_primal_source_squid() {
 
     local query
     query=$(jq -cn --arg w "$wallet_pubkey" '{
-        query: "query($w:String!){transfers(filter:{toId:{equalTo:$w}},orderBy:BLOCK_NUMBER_ASC,first:1){nodes{fromId blockNumber}}}",
+        query: "query($w:String!){transfers(condition:{toId:$w},orderBy:BLOCK_NUMBER_ASC,first:1){nodes{fromId blockNumber}}}",
         variables: {w: $w}
     }')
 
@@ -327,37 +327,9 @@ control_primal_transactions() {
         fi
     fi
 
-    # ── Conversion variables globales v1→SS58 ─────────────────────────────────
-    local UPLANETG1PUB_SS58="${UPLANETG1PUB:-}"
-    local UPLANETNAME_SOCIETY_SS58="${UPLANETNAME_SOCIETY:-}"
-    local UPLANETNAME_G1_SS58="${UPLANETNAME_G1:-}"
-    if [[ -x "${MY_PATH}/g1pub_to_ss58.py" ]]; then
-        [[ -n "$UPLANETG1PUB_SS58" && ! "$UPLANETG1PUB_SS58" =~ ^g1 ]] && \
-            UPLANETG1PUB_SS58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$UPLANETG1PUB_SS58" 2>/dev/null)
-        [[ -n "$UPLANETNAME_SOCIETY_SS58" && ! "$UPLANETNAME_SOCIETY_SS58" =~ ^g1 ]] && \
-            UPLANETNAME_SOCIETY_SS58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$UPLANETNAME_SOCIETY_SS58" 2>/dev/null)
-        [[ -n "$UPLANETNAME_G1_SS58" && ! "$UPLANETNAME_G1_SS58" =~ ^g1 ]] && \
-            UPLANETNAME_G1_SS58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$UPLANETNAME_G1_SS58" 2>/dev/null)
-    fi
-
-    # ── Détection CAPTAIN ────────────────────────────────────────────────────
-    local is_captain=false
-    [[ "$player_email" == "${CAPTAINEMAIL:-}" ]] && {
-        is_captain=true
-        log "CAPTAIN détecté — sources UPLANET autorisées"
-    }
-
     # ── Affichage wallet surveillé ───────────────────────────────────────────
     display_wallet_info "WALLET SURVEILLÉ" "$wallet_pubkey" "Wallet sous contrôle primal"
     display_wallet_info "PRIMAL MAÎTRE" "$master_primal" "Source primale attendue pour les tx valides"
-
-    if [[ "$is_captain" == true ]]; then
-        echo "Sources UPLANET autorisées pour CAPTAIN :"
-        [[ -n "$UPLANETG1PUB_SS58" ]]        && echo "  UPLANET MAIN    : $UPLANETG1PUB_SS58"
-        [[ -n "$UPLANETNAME_SOCIETY_SS58" ]]  && echo "  UPLANET SOCIETY : $UPLANETNAME_SOCIETY_SS58"
-        [[ -n "$UPLANETNAME_G1_SS58" ]]       && echo "  UPLANET G1      : $UPLANETNAME_G1_SS58"
-        echo
-    fi
 
     # ── Récupération de l'historique ─────────────────────────────────────────
     local tmp_history
@@ -409,25 +381,30 @@ control_primal_transactions() {
         log "━ TX entrante #${incoming_count} | bloc ${block_num} | ${amount} Ğ1 | de ${pubkey:0:12}..."
 
         # ── Exception UPassport : 2ème tx entrante à 0.01 Ğ1 ────────────────
+        # La 2ème TX est envoyée par un forgeron Ğ1 (membre WoT) pour
+        # valider l'appartenance du portefeuille (relation de confiance 3 tiers).
+        # Le montant 0.01 Ğ1 est invisible dans le solde ẐEN : (Ğ1-1)*10 arrondi à 10cts.
+        # Pas de vérification primal : l'expéditeur est un compte WoT externe, pas UPlanet.
         if [[ "$incoming_count" -eq 2 && "$amount_raw" -eq "$UPASSPORT_AMOUNT" ]]; then
-            logok "🪪 UPassport détecté : 0.01 Ğ1 de ${pubkey:0:12} — 2ème TX — AUTORISÉ"
+            logok "🪪 UPassport WoT : 0.01 Ğ1 de forgeron ${pubkey:0:12} — validation membre"
+            log "  🔗 $(cesium_link "$pubkey")"
 
-            # Cache de la 2ème tx
+            # Cache du validateur WoT (2ème tx)
             local cache_2nd="$HOME/.zen/tmp/coucou/${wallet_pubkey}.2nd"
             mkdir -p "$(dirname "$cache_2nd")"
             echo "$pubkey" > "$cache_2nd"
-            log "📝 2ème tx mise en cache : $cache_2nd"
+            log "📝 Validateur WoT mis en cache : $cache_2nd"
 
-            # Vérification ZEN Card
+            # Mise à jour DID avec le statut WOT_MEMBER
             local owner_email
             owner_email=$(get_zencard_owner "$comment" "$pubkey")
             if [[ -n "$owner_email" ]]; then
-                logok "ZEN Card vérifiée pour $owner_email"
+                logok "ZEN Card vérifiée pour $owner_email — WOT_MEMBER via ${pubkey:0:12}"
                 [[ -x "${MY_PATH}/../tools/did_manager_nostr.sh" ]] && \
                     "${MY_PATH}/../tools/did_manager_nostr.sh" \
                         update "$owner_email" "WOT_MEMBER" "0" "0" "$pubkey" 2>/dev/null || true
             else
-                logw "Pas de ZEN Card trouvée — utilisation email joueur"
+                logok "Email joueur $player_email — WOT_MEMBER via ${pubkey:0:12}"
                 [[ -x "${MY_PATH}/../tools/did_manager_nostr.sh" ]] && \
                     "${MY_PATH}/../tools/did_manager_nostr.sh" \
                         update "$player_email" "WOT_MEMBER" "0" "0" "$pubkey" 2>/dev/null || true
@@ -440,30 +417,19 @@ control_primal_transactions() {
         tx_primal=$(get_primal_source_squid "$pubkey" "true")
 
         if [[ -z "$tx_primal" || "$tx_primal" == "null" ]]; then
-            logw "Impossible de déterminer le primal de ${pubkey:0:12} — tx ignorée"
-            continue
+            logw "Impossible de déterminer le primal de ${pubkey:0:12} — traité comme INTRUSION"
+            tx_primal="UNKNOWN"
         fi
 
         log "  Primal de ${pubkey:0:12} : ${tx_primal:0:12}..."
         log "  🔗 $(cesium_link "$pubkey")"
 
-        # ── Validation : même primal que master ? ─────────────────────────
+        # ── Validation : même primal UPLANETNAME_G1 pour tous ────────────
         local is_valid=false
 
-        if [[ "$is_captain" == true ]]; then
-            # CAPTAIN : accepte aussi les wallets système UPLANET directement
-            [[ "$master_primal" == "$pubkey"              ]] && is_valid=true
-            [[ "$pubkey" == "$UPLANETG1PUB_SS58"          ]] && is_valid=true
-            [[ "$pubkey" == "$UPLANETNAME_SOCIETY_SS58"   ]] && is_valid=true
-            [[ "$pubkey" == "$UPLANETNAME_G1_SS58"        ]] && is_valid=true
-            [[ "$master_primal" == "$tx_primal"           ]] && is_valid=true
-            [[ "$tx_primal" == "$UPLANETG1PUB_SS58"       ]] && is_valid=true
-            [[ "$tx_primal" == "$UPLANETNAME_SOCIETY_SS58" ]] && is_valid=true
-        else
-            # Joueur normal : seul master_primal est valide
-            [[ "$master_primal" == "$pubkey"    ]] && is_valid=true
-            [[ "$master_primal" == "$tx_primal" ]] && is_valid=true
-        fi
+        # Règle unique : le primal de la TX doit être UPLANETNAME_G1 (master_primal)
+        [[ "$master_primal" == "$pubkey"    ]] && is_valid=true
+        [[ "$master_primal" == "$tx_primal" ]] && is_valid=true
 
         if [[ "$is_valid" == true ]]; then
             logok "TX valide — primal OK : ${tx_primal:0:12}"
@@ -473,7 +439,7 @@ control_primal_transactions() {
         # ── INTRUSION détectée ────────────────────────────────────────────
         # ID unique basé sur bloc + pubkey (immuable, reproductible)
         local tx_id
-        tx_id=$(echo "${block_num}_${pubkey:0:12}" | tr -d ':-. ')
+        tx_id=$(echo "${block_num}_${pubkey:0:12}" | tr -d ':. -')
 
         if is_intrusion_already_processed "$tmp_history" "$tx_id"; then
             log "Intrusion déjà traitée (ID: $tx_id) — skip"

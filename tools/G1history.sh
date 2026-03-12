@@ -82,11 +82,11 @@ squid_query() {
     local limit="$2"
     jq -cn --arg a "$addr" --argjson n "$limit" '{
         query: "query($a:String!,$n:Int!){
-            received: transfers(filter:{toId:{equalTo:$a}}, orderBy:BLOCK_NUMBER_DESC, first:$n){
-                nodes{ fromId toId amount timestamp blockNumber comment{message} }
+            received: transfers(condition:{toId:$a}, orderBy:BLOCK_NUMBER_DESC, first:$n){
+                nodes{ fromId toId amount timestamp blockNumber comment{remark} }
             }
-            sent: transfers(filter:{fromId:{equalTo:$a}}, orderBy:BLOCK_NUMBER_DESC, first:$n){
-                nodes{ fromId toId amount timestamp blockNumber comment{message} }
+            sent: transfers(condition:{fromId:$a}, orderBy:BLOCK_NUMBER_DESC, first:$n){
+                nodes{ fromId toId amount timestamp blockNumber comment{remark} }
             }
         }",
         variables: {a: $a, n: $n}
@@ -138,7 +138,7 @@ HISTORY_JSON=$(echo "$RAW_RESP" | jq --arg wallet "$G1PUB" '
         "Date":               (.timestamp // ""),
         "Amounts Ğ1":         (.amount | to_g1(.)),
         "Issuers/Recipients": (.fromId // ""),
-        "Reference":          (.comment.message // ""),
+        "Reference":          (.comment.remark // ""),
         "blockNumber":        (.blockNumber // 0),
         "direction":          "received"
       }
@@ -150,7 +150,7 @@ HISTORY_JSON=$(echo "$RAW_RESP" | jq --arg wallet "$G1PUB" '
         "Date":               (.timestamp // ""),
         "Amounts Ğ1":         ((.amount | tonumber) / 100 * -1),
         "Issuers/Recipients": (.toId // ""),
-        "Reference":          (.comment.message // ""),
+        "Reference":          (.comment.remark // ""),
         "blockNumber":        (.blockNumber // 0),
         "direction":          "sent"
       }
