@@ -957,14 +957,16 @@ process_societaire() {
         return 1
     fi
     
-    # Étape 3: Répartition 3x1/3 depuis ZEN Card
-    echo -e "${BLUE}📤 Étape 3: Répartition 3x1/3 depuis ZEN Card${NC}"
-    
+    # Étape 3: Répartition 33/33/33/1 depuis ZEN Card
+    echo -e "${BLUE}📤 Étape 3: Répartition 33%+33%+33%+1% depuis ZEN Card${NC}"
+
     # Calculer les montants de répartition (en Ẑen pour l'affichage, en Ğ1 pour les transferts)
+    # 33% CASH + 33% RnD + 33% ASSETS + 1% Captain MULTIPASS = 100%
     local montant_zen=$montant_euros
-    local part_treasury_zen=$(echo "scale=2; $montant_zen / 3" | bc)
-    local part_rnd_zen=$(echo "scale=2; $montant_zen / 3" | bc)
-    local part_assets_zen=$(echo "scale=2; $montant_zen - $part_treasury_zen - $part_rnd_zen" | bc)
+    local part_captain_zen=$(echo "scale=2; $montant_zen * 1 / 100" | bc)
+    local part_treasury_zen=$(echo "scale=2; $montant_zen * 33 / 100" | bc)
+    local part_rnd_zen=$(echo "scale=2; $montant_zen * 33 / 100" | bc)
+    local part_assets_zen=$(echo "scale=2; $montant_zen - $part_treasury_zen - $part_rnd_zen - $part_captain_zen" | bc)
     
     # Utiliser les mêmes portefeuilles que ZEN.COOPERATIVE.3x1-3.sh
     local treasury_pubkey=""
@@ -1030,15 +1032,26 @@ process_societaire() {
     
     # Mettre à jour DID pour contribution Assets
     "${MY_PATH}/tools/did_manager_nostr.sh" update "$email" "ASSETS_CONTRIBUTION" "$part_assets_zen" "$(zen_to_g1 "$part_assets_zen")"
-    
+
+    # Transfert vers Captain MULTIPASS (1% prime de gestion)
+    if [[ -n "$CAPTAING1PUB" ]]; then
+        echo -e "${CYAN}  📤 Captain bonus (1%): ${part_captain_zen} Ẑen${NC}"
+        if transfer_and_verify "$zencard_dunikey" "$CAPTAING1PUB" "$part_captain_zen" "UPLANET:${UPLANETG1PUB:0:8}:CPT1pct:${email}:${type}:${IPFSNODEID}" "$email" "SOCIETAIRE_${type^^}" "Étape 3d: ZENCARD→CAPTAIN"; then
+            echo -e "${GREEN}  ✅ Captain bonus: ${part_captain_zen} Ẑen → MULTIPASS${NC}"
+        else
+            echo -e "${YELLOW}  ⚠️  Captain bonus failed (non-critical)${NC}"
+        fi
+    fi
+
     echo -e "${GREEN}🎉 Virement sociétaire terminé avec succès!${NC}"
     echo -e "${CYAN}📊 Résumé:${NC}"
     echo -e "  • ${montant_euros} Ẑen transférés vers ZEN Card ${email}"
     echo -e "  • Parts sociales attribuées (type: ${type})"
-    echo -e "  • Répartition 3x1/3 effectuée:"
+    echo -e "  • Répartition 33/33/33/1 effectuée:"
     echo -e "    - Treasury: ${part_treasury_zen} Ẑen"
     echo -e "    - R&D: ${part_rnd_zen} Ẑen"
     echo -e "    - Assets: ${part_assets_zen} Ẑen"
+    echo -e "    - Captain: ${part_captain_zen} Ẑen"
     echo -e "  • Toutes les transactions confirmées sur la blockchain"
     
     # Mettre à jour le document DID avec le statut de sociétaire

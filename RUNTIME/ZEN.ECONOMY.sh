@@ -790,30 +790,28 @@ fourweeks_paf_burn_and_convert() {
             
             # Burn: NODE → UPLANETNAME_G1
             # Check station level and use appropriate method
+            local burn_result=1
             if [[ "$station_level" == "Y" && -f "$HOME/.zen/game/secret.NODE.dunikey" ]]; then
                 # Level Y: Use existing NODE wallet
                 log_output "ZEN ECONOMY: Using NODE wallet (Level Y): $HOME/.zen/game/secret.NODE.dunikey"
-                # TX Comment: UP:NetworkID:BURN:Period:Amount:Source (Deflationary mechanism)
-                # 4-week accumulated PAF burned to enable EUR conversion via OpenCollective
                 ${MY_PATH}/../tools/PAYforSURE.sh \
                     "$HOME/.zen/game/secret.NODE.dunikey" \
                     "$FOURWEEKS_PAF_G1" \
                     "${UPLANETG1PUB}" \
                     "UP:${UPLANETG1PUB:0:8}:BURN:${period_key}:${FOURWEEKS_PAF}Z:NODE>DEFLATE" \
                     2>/dev/null
+                burn_result=$?
             elif [[ "$station_level" == "X" ]]; then
                 # Level X: Use CAPTAIN MULTIPASS as burn source (no NODE wallet available)
                 log_output "ZEN ECONOMY: Level X - Using CAPTAIN MULTIPASS for PAF burn (no NODE wallet available)"
-                # For Level X stations, use CAPTAIN MULTIPASS as burn source
                 if [[ -n "$CAPTAINEMAIL" && -f "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" ]]; then
-                    # TX Comment: UP:NetworkID:BURN:Period:Amount:Source (Level X fallback)
-                    # Level X stations use Captain wallet instead of NODE wallet for burn
                     ${MY_PATH}/../tools/PAYforSURE.sh \
                         "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" \
                         "$FOURWEEKS_PAF_G1" \
                         "${UPLANETG1PUB}" \
                         "UP:${UPLANETG1PUB:0:8}:BURN:${period_key}:${FOURWEEKS_PAF}Z:CPT>DEFLATE_LvX" \
                         2>/dev/null
+                    burn_result=$?
                 else
                     log_output "ZEN ECONOMY: Level X - No CAPTAIN MULTIPASS available for PAF burn"
                     return 1
@@ -822,8 +820,8 @@ fourweeks_paf_burn_and_convert() {
                 log_output "ZEN ECONOMY: Unknown station level or missing NODE wallet"
                 return 1
             fi
-            
-            if [[ $? -eq 0 ]]; then
+
+            if [[ $burn_result -eq 0 ]]; then
                 log_output "✅ 4-week PAF burn completed: $FOURWEEKS_PAF Ẑen"
                 
                 # Request OpenCollective conversion (1Ẑ = 1€)
@@ -845,102 +843,145 @@ fourweeks_paf_burn_and_convert() {
     fi
 }
 
-# Function to request OpenCollective conversion using GraphQL API (recommended)
-# Conforms to https://docs.opencollective.com/help/contributing/development/api
+# Function to request OpenCollective conversion using GraphQL API
+# Creates an Expense (INVOICE) on the collective so the PAF burn can be converted to €
+# Conforms to https://graphql-docs-v2.opencollective.com
 request_opencollective_conversion() {
     local zen_amount="$1"
     local period="${2:-$(date +%Y%m%d)}"
     local euro_amount=$(echo "scale=2; $zen_amount * 1" | bc -l)  # 1Ẑ = 1€
     local euro_cents=$(echo "$euro_amount * 100" | bc | cut -d. -f1)
-    
+
     log_output "ZEN ECONOMY: Requesting OpenCollective conversion..."
     log_output "  Amount: $zen_amount Ẑen → $euro_amount €"
     log_output "  Period: $period"
-    
-    # Try to get token from cooperative DID config first (encrypted in NOSTR)
+
+    ## Resolve OC token — try cooperative DID config, then OC2UPlanet .env, then env var
     local OC_TOKEN=""
     if type coop_config_get &>/dev/null; then
         OC_TOKEN=$(coop_config_get "OPENCOLLECTIVE_PERSONAL_TOKEN" 2>/dev/null || echo "")
     fi
-    # Fallback to environment variable (legacy support)
+    ## Fallback: read OCAPIKEY from OC2UPlanet .env (same token used by oc2uplanet.sh)
+    if [[ -z "$OC_TOKEN" && -s "$HOME/.zen/workspace/OC2UPlanet/.env" ]]; then
+        OC_TOKEN=$(grep "^OCAPIKEY=" "$HOME/.zen/workspace/OC2UPlanet/.env" 2>/dev/null \
+            | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+    fi
+    ## Fallback: environment variable
     [[ -z "$OC_TOKEN" ]] && OC_TOKEN="${OPENCOLLECTIVE_PERSONAL_TOKEN:-}"
-    
-    # Check if OpenCollective Personal Token is configured (GraphQL API)
-    if [[ -n "$OC_TOKEN" ]]; then
-        # Use GraphQL API (recommended by OpenCollective docs)
-        # https://graphql-docs-v2.opencollective.com
-        local graphql_query='{
-            "query": "mutation CreateExpense($expense: ExpenseCreateInput!) { createExpense(expense: $expense) { id legacyId status amount { valueInCents currency } description reference tags } }",
-            "variables": {
-                "expense": {
-                    "account": { "slug": "uplanet-zero" },
-                    "type": "INVOICE",
-                    "amount": { "valueInCents": '$euro_cents', "currency": "EUR" },
-                    "description": "PAF Burn Conversion - '$IPFSNODEID' Node Operational Costs (4-week cycle)",
-                    "reference": "BURN:PAF:'$period':'$zen_amount'ZEN",
-                    "tags": ["paf-burn", "operational-costs", "zen-conversion", "4weeks"]
-                }
-            }
-        }'
-        
-        local response=$(curl -s -X POST "https://api.opencollective.com/graphql/v2" \
-            -H "Personal-Token: $OC_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "$graphql_query" 2>/dev/null)
-        
-        if [[ $? -eq 0 && -n "$response" ]]; then
-            # Check for GraphQL errors
-            local errors=$(echo "$response" | jq -r '.errors // empty' 2>/dev/null)
-            if [[ -n "$errors" && "$errors" != "null" ]]; then
-                log_output "⚠️  OpenCollective GraphQL API errors:"
-                echo "$errors" | jq -r '.[] | "  - \(.message)"' 2>/dev/null | tee -a "$LOG_FILE" || log_output "$errors"
-            else
-                local expense_id=$(echo "$response" | jq -r '.data.createExpense.id // empty' 2>/dev/null)
-                if [[ -n "$expense_id" ]]; then
-                    log_output "✅ OpenCollective expense created: $euro_amount €"
-                    log_output "   Expense ID: $expense_id"
-                    log_output "   Reference: BURN:PAF:$period:${zen_amount}ZEN"
-                else
-                    log_output "⚠️  Unexpected response format:"
-                    echo "$response" | head -c 200 | tee -a "$LOG_FILE"
-                fi
-            fi
-        else
-            log_output "⚠️  OpenCollective GraphQL API request failed"
+
+    ## Resolve OC slug — from OC2UPlanet .env or default
+    local OC_SLUG=""
+    if [[ -s "$HOME/.zen/workspace/OC2UPlanet/.env" ]]; then
+        OC_SLUG=$(grep "^OCSLUG=" "$HOME/.zen/workspace/OC2UPlanet/.env" 2>/dev/null \
+            | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+    fi
+    [[ -z "$OC_SLUG" ]] && OC_SLUG="${OCSLUG:-}"
+
+    if [[ -z "$OC_SLUG" ]]; then
+        log_output "⚠️  No OCSLUG configured — cannot create OC expense"
+        log_output "   Configure OCSLUG in ~/.zen/workspace/OC2UPlanet/.env"
+        echo "$(date -u +%Y%m%d%H%M%S) MANUAL_CONVERSION_NEEDED $zen_amount ZEN $euro_amount EUR $period" \
+            >> "$HOME/.zen/game/opencollective_conversion.log"
+        return 1
+    fi
+
+    ## Resolve OC API URL — ORIGIN mode = staging, else production
+    local OC_API_URL="https://api.opencollective.com/graphql/v2"
+    local ORIGIN_KEY="0000000000000000000000000000000000000000000000000000000000000000"
+    if [[ -s ~/.ipfs/swarm.key ]]; then
+        local swarm_last=$(tail -n 1 ~/.ipfs/swarm.key 2>/dev/null)
+        if [[ "$swarm_last" == "$ORIGIN_KEY" || -z "$swarm_last" ]]; then
+            OC_API_URL="https://api-staging.opencollective.com/graphql/v2"
+            log_output "  Mode: ORIGIN (staging API)"
         fi
-    elif [[ -n "$OPENCOLLECTIVE_API_KEY" ]]; then
-        # Fallback to REST API (deprecated but still supported)
-        log_output "⚠️  Using deprecated REST API (configure OPENCOLLECTIVE_PERSONAL_TOKEN for GraphQL)"
-        
-        local response=$(curl -s -X POST "https://api.opencollective.com/v2/expenses" \
-            -H "Authorization: Bearer $OPENCOLLECTIVE_API_KEY" \
-            -H "Content-Type: application/json" \
-            -d "{
-                \"collective\": \"uplanet-zero\",
-                \"type\": \"INVOICE\",
-                \"amount\": $euro_cents,
-                \"currency\": \"EUR\",
-                \"description\": \"PAF Burn Conversion - '$IPFSNODEID' Node Operational Costs (4-week cycle)\",
-                \"reference\": \"BURN:PAF:$period:${zen_amount}ZEN\",
-                \"tags\": [\"paf-burn\", \"operational-costs\", \"zen-conversion\", \"4weeks\"]
-            }" 2>/dev/null)
-        
-        if [[ $? -eq 0 && -n "$response" ]]; then
-            log_output "✅ OpenCollective REST expense created: $euro_amount €"
-            echo "   Response: $response" | head -c 100 | tee -a "$LOG_FILE"
-        else
-            log_output "⚠️  OpenCollective REST API request failed"
-        fi
-    else
-        log_output "⚠️  No OpenCollective credentials configured"
-        log_output "   Configure via cooperative DID (recommended - encrypted & shared):"
-        log_output "     source ~/.zen/Astroport.ONE/tools/cooperative_config.sh"
-        log_output "     coop_config_set OPENCOLLECTIVE_PERSONAL_TOKEN \"your_token\""
-        log_output "   Legacy: Set OPENCOLLECTIVE_PERSONAL_TOKEN or OPENCOLLECTIVE_API_KEY"
+    fi
+
+    if [[ -z "$OC_TOKEN" ]]; then
+        log_output "⚠️  No OpenCollective token configured"
+        log_output "   Options:"
+        log_output "   1. coop_config_set OPENCOLLECTIVE_PERSONAL_TOKEN \"token\""
+        log_output "   2. Set OCAPIKEY in ~/.zen/workspace/OC2UPlanet/.env"
         log_output "   Manual conversion needed: $zen_amount Ẑen → $euro_amount €"
-        
-        # Log for manual processing
-        echo "$(date -u +%Y%m%d%H%M%S) MANUAL_CONVERSION_NEEDED $zen_amount ZEN $euro_amount EUR $period" >> "$HOME/.zen/game/opencollective_conversion.log"
+        echo "$(date -u +%Y%m%d%H%M%S) MANUAL_CONVERSION_NEEDED $zen_amount ZEN $euro_amount EUR $period" \
+            >> "$HOME/.zen/game/opencollective_conversion.log"
+        return 1
+    fi
+
+    ## Resolve payee — Captain email for expense submission
+    local PAYEE_EMAIL="${CAPTAINEMAIL:-}"
+    if [[ -z "$PAYEE_EMAIL" ]]; then
+        log_output "⚠️  No CAPTAINEMAIL — cannot identify expense payee"
+        echo "$(date -u +%Y%m%d%H%M%S) MANUAL_CONVERSION_NEEDED $zen_amount ZEN $euro_amount EUR $period NO_PAYEE" \
+            >> "$HOME/.zen/game/opencollective_conversion.log"
+        return 1
+    fi
+
+    ## Build GraphQL createExpense mutation
+    ## Required fields: account (collective), payee, type, description, items[]
+    local description="PAF Burn Conversion - ${IPFSNODEID:0:8} Node Operational Costs (${period})"
+    local reference="BURN:PAF:${period}:${zen_amount}ZEN"
+
+    local graphql_payload
+    graphql_payload=$(cat <<EOGQL
+{
+    "query": "mutation CreateExpense(\$expense: ExpenseCreateInput!) { createExpense(expense: \$expense) { id legacyId status amount { valueInCents currency } description } }",
+    "variables": {
+        "expense": {
+            "account": { "slug": "${OC_SLUG}" },
+            "payee": { "email": "${PAYEE_EMAIL}" },
+            "type": "INVOICE",
+            "description": "${description}",
+            "tags": ["paf-burn", "operational-costs", "zen-conversion"],
+            "items": [
+                {
+                    "description": "${reference}",
+                    "amount": ${euro_cents}
+                }
+            ]
+        }
+    }
+}
+EOGQL
+    )
+
+    log_output "  Collective: $OC_SLUG"
+    log_output "  Payee: $PAYEE_EMAIL"
+    log_output "  API: $OC_API_URL"
+
+    local response
+    response=$(curl -s -X POST "$OC_API_URL" \
+        -H "Personal-Token: $OC_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "$graphql_payload" 2>/dev/null)
+
+    if [[ $? -ne 0 || -z "$response" ]]; then
+        log_output "⚠️  OpenCollective API request failed (network error)"
+        echo "$(date -u +%Y%m%d%H%M%S) OC_API_FAILED $zen_amount ZEN $euro_amount EUR $period" \
+            >> "$HOME/.zen/game/opencollective_conversion.log"
+        return 1
+    fi
+
+    ## Check for GraphQL errors
+    local errors
+    errors=$(echo "$response" | jq -r '.errors // empty' 2>/dev/null)
+    if [[ -n "$errors" && "$errors" != "null" ]]; then
+        log_output "⚠️  OpenCollective GraphQL errors:"
+        echo "$response" | jq -r '.errors[] | "  - \(.message)"' 2>/dev/null | tee -a "$LOG_FILE"
+        echo "$(date -u +%Y%m%d%H%M%S) OC_GRAPHQL_ERROR $zen_amount ZEN $euro_amount EUR $period" \
+            >> "$HOME/.zen/game/opencollective_conversion.log"
+        return 1
+    fi
+
+    local expense_id
+    expense_id=$(echo "$response" | jq -r '.data.createExpense.id // empty' 2>/dev/null)
+    if [[ -n "$expense_id" ]]; then
+        log_output "✅ OpenCollective expense created: $euro_amount €"
+        log_output "   Expense ID: $expense_id"
+        log_output "   Reference: $reference"
+    else
+        log_output "⚠️  Unexpected OC response:"
+        echo "$response" | head -c 300 | tee -a "$LOG_FILE"
+        return 1
     fi
 }
 

@@ -217,12 +217,15 @@ fi
 
 #######################################################################
 # Configuration des paramètres d'allocation (sur le surplus net)
+# 33% + 33% + 33% + 1% = 100%
+# Le 1% va au MULTIPASS du Capitaine (prime de gestion)
 #######################################################################
-[[ -z $TREASURY_RATIO ]] && TREASURY_RATIO=33.33  # 1/3 pour la trésorerie
-[[ -z $RND_RATIO ]] && RND_RATIO=33.33  # 1/3 pour la R&D
-[[ -z $ASSETS_RATIO ]] && ASSETS_RATIO=33.34  # 1/3 pour les actifs réels
+[[ -z $TREASURY_RATIO ]] && TREASURY_RATIO=33  # 1/3 pour la trésorerie
+[[ -z $RND_RATIO ]] && RND_RATIO=33            # 1/3 pour la R&D
+[[ -z $ASSETS_RATIO ]] && ASSETS_RATIO=33      # 1/3 pour les actifs réels
+[[ -z $CAPTAIN_BONUS_RATIO ]] && CAPTAIN_BONUS_RATIO=1  # 1% prime Capitaine
 
-echo "ZEN COOPERATIVE: Allocation ratios - Treasury: $TREASURY_RATIO% | R&D: $RND_RATIO% | Assets: $ASSETS_RATIO%"
+echo "ZEN COOPERATIVE: Allocation ratios - Treasury: $TREASURY_RATIO% | R&D: $RND_RATIO% | Assets: $ASSETS_RATIO% | Captain: $CAPTAIN_BONUS_RATIO%"
 
 #######################################################################
 # Calcul des montants d'allocation (sur le surplus net)
@@ -230,8 +233,9 @@ echo "ZEN COOPERATIVE: Allocation ratios - Treasury: $TREASURY_RATIO% | R&D: $RN
 TREASURY_AMOUNT=$(echo "scale=2; $NET_SURPLUS * $TREASURY_RATIO / 100" | bc -l)
 RND_AMOUNT=$(echo "scale=2; $NET_SURPLUS * $RND_RATIO / 100" | bc -l)
 ASSETS_AMOUNT=$(echo "scale=2; $NET_SURPLUS * $ASSETS_RATIO / 100" | bc -l)
+CAPTAIN_BONUS_AMOUNT=$(echo "scale=2; $NET_SURPLUS * $CAPTAIN_BONUS_RATIO / 100" | bc -l)
 
-echo "ZEN COOPERATIVE: Allocation amounts - Treasury: $TREASURY_AMOUNT Ẑen | R&D: $RND_AMOUNT Ẑen | Assets: $ASSETS_AMOUNT Ẑen"
+echo "ZEN COOPERATIVE: Allocation amounts - Treasury: $TREASURY_AMOUNT Ẑen | R&D: $RND_AMOUNT Ẑen | Assets: $ASSETS_AMOUNT Ẑen | Captain: $CAPTAIN_BONUS_AMOUNT Ẑen"
 
 #######################################################################
 # 1/3 Trésorerie (Réserves) - Liquidité et stabilité
@@ -315,6 +319,36 @@ else
 fi
 
 #######################################################################
+# 1% Prime Capitaine → MULTIPASS du Capitaine
+# Reconnaissance du travail de gestion et d'animation de la station
+#######################################################################
+CAPTAIN_BONUS_SUCCESS=1
+if [[ -n "$CAPTAINEMAIL" && -n "$CAPTAING1PUB" ]]; then
+    echo "🔄 Processing Captain bonus (1%): $CAPTAIN_BONUS_AMOUNT Ẑen → MULTIPASS $CAPTAINEMAIL"
+
+    CAPTAIN_BONUS_G1=$(echo "scale=2; $CAPTAIN_BONUS_AMOUNT / 10" | bc -l)
+
+    # TX Comment: UP:NetworkID:COOP:Date:Amount:Allocation (1% Captain management bonus)
+    # Management recognition bonus sent to Captain's MULTIPASS
+    # Source: CAPTAIN_DEDICATED (business wallet collecting rentals)
+    captain_bonus_result=$(${MY_PATH}/../tools/PAYforSURE.sh \
+        "$HOME/.zen/game/uplanet.captain.dunikey" \
+        "$CAPTAIN_BONUS_G1" \
+        "${CAPTAING1PUB}" \
+        "UP:${UPLANETG1PUB:0:8}:COOP:${TODATE}:${CAPTAIN_BONUS_AMOUNT}Z:1pct_CPT" \
+        2>/dev/null)
+    CAPTAIN_BONUS_SUCCESS=$?
+
+    if [[ $CAPTAIN_BONUS_SUCCESS -eq 0 ]]; then
+        echo "✅ Captain bonus completed: $CAPTAIN_BONUS_AMOUNT Ẑen ($CAPTAIN_BONUS_G1 G1) → $CAPTAINEMAIL"
+    else
+        echo "❌ Captain bonus failed: $CAPTAIN_BONUS_AMOUNT Ẑen"
+    fi
+else
+    echo "⚠️  Captain bonus skipped: CAPTAINEMAIL or CAPTAING1PUB not set"
+fi
+
+#######################################################################
 # Rapport d'allocation avec conformité fiscale
 #######################################################################
 echo "============================================ COOPERATIVE ALLOCATION SUMMARY"
@@ -326,6 +360,7 @@ echo "📈 Net surplus allocated: $NET_SURPLUS Ẑen"
 echo "🏦 Treasury (1/3): $TREASURY_AMOUNT Ẑen"
 echo "🔬 R&D (1/3): $RND_AMOUNT Ẑen"
 echo "🌱 Assets (1/3): $ASSETS_AMOUNT Ẑen"
+echo "👨‍✈️ Captain (1%): $CAPTAIN_BONUS_AMOUNT Ẑen"
 echo "============================================ COOPERATIVE ALLOCATION DONE."
 
 #######################################################################
@@ -444,6 +479,11 @@ fi
 if [[ $ASSETS_SUCCESS -ne 0 ]]; then
     BANKRUPTCY_DETECTED=1
     FAILED_ALLOCATIONS="${FAILED_ALLOCATIONS}<li>Assets: ${ASSETS_AMOUNT} Ẑen (${ASSETS_G1} G1)</li>"
+fi
+
+if [[ $CAPTAIN_BONUS_SUCCESS -ne 0 && -n "$CAPTAINEMAIL" ]]; then
+    # Captain bonus failure is not bankruptcy-triggering but logged for transparency
+    FAILED_ALLOCATIONS="${FAILED_ALLOCATIONS}<li>Captain bonus (1%): ${CAPTAIN_BONUS_AMOUNT} Ẑen (non-critical)</li>"
 fi
 
 if [[ $BANKRUPTCY_DETECTED -eq 1 ]]; then

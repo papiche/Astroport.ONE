@@ -10,7 +10,7 @@ Le G1FabLab est une **Coopérative d'Infrastructure Numérique** : on mutualise 
 
 Ce document définit la politique de transparence budgétaire et de redistribution des ressources au sein du collectif G1FabLab (hébergé par Open Collective Europe).
 
-Notre objectif est d'assurer la pérennité de nos infrastructures numériques (Cloud Libre) et physiques (Stations UPlanet) via un modèle économique équitable : le **3x1/3**.
+Notre objectif est d'assurer la pérennité de nos infrastructures numériques (Cloud Libre) et physiques (Stations UPlanet) via un modèle économique équitable : le **33/33/33/1**.
 
 ### **Extension des Logiciels de Comptabilité Traditionnels**
 
@@ -116,7 +116,7 @@ Les redevances d'usage des usagers sont collectées sur un portefeuille **CAPTAI
 
 Ce portefeuille d'exploitation sert de **source pour l'allocation coopérative**.
 
-#### **3. Allocation Collective 3x1/3 (depuis CAPTAIN_DEDICATED)**
+#### **3. Allocation Collective 33/33/33/1 (depuis CAPTAIN_DEDICATED)**
 
 **Déclenchement :** Hebdomadaire, synchronisé avec l'anniversaire d'inscription du Capitaine (fichier `~/.zen/game/nostr/$CAPTAINEMAIL/TODATE`).
 
@@ -131,9 +131,10 @@ CAPTAIN_DEDICATED (Surplus Brut)
 │
 └── 2. Surplus Net = Surplus Brut - Provision IS
     │
-    ├── 33.33% → CASH (UPLANETNAME_CASH) : Trésorerie opérationnelle
-    ├── 33.33% → RnD (UPLANETNAME_RND) : Recherche & Développement
-    └── 33.34% → ASSETS (UPLANETNAME_ASSETS) : Actifs réels régénératifs
+    ├── 33% → CASH (UPLANETNAME_CASH) : Trésorerie opérationnelle
+    ├── 33% → RnD (UPLANETNAME_RND) : Recherche & Développement
+    ├── 33% → ASSETS (UPLANETNAME_ASSETS) : Actifs réels régénératifs
+    └──  1% → CAPTAIN MULTIPASS : Prime de gestion Capitaine
 ```
 
 **Condition d'exécution :** L'allocation n'a lieu que si le solde de `CAPTAIN_DEDICATED` est positif.
@@ -231,13 +232,14 @@ Les noms ci-dessous sont ceux utilisés dans les scripts (`UPLANET.init.sh`, `ZE
 │  └────────────┬────────────┘                                                 │
 │               │                                                              │
 │               ▼ Surplus Net                                                  │
-│       ┌───────┼───────┐                                                      │
-│       │       │       │                                                      │
-│       ▼       ▼       ▼                                                      │
-│  ┌────────┐ ┌─────┐ ┌────────┐                                               │
-│  │ CASH   │ │ RnD │ │ ASSETS │                                               │
-│  │ 33.33% │ │33.33%│ │ 33.34% │                                               │
-│  └────────┘ └─────┘ └────────┘                                               │
+│       ┌───────┼───────┬───────┐                                              │
+│       │       │       │       │                                              │
+│       ▼       ▼       ▼       ▼                                              │
+│  ┌──────┐ ┌─────┐ ┌──────┐ ┌─────────┐                                      │
+│  │ CASH │ │ RnD │ │ASSETS│ │ CAPTAIN │                                      │
+│  │  33% │ │ 33% │ │  33% │ │MULTIPASS│                                      │
+│  └──────┘ └─────┘ └──────┘ │   1%    │                                      │
+│                             └─────────┘                                      │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -316,7 +318,7 @@ UPLANETNAME_IMPOT : 20% × (MULTIPASS + ZEN Cards)
 └── Déclaration : Mensuelle (CA3)
 ```
 
-##### **Répartition Collective 3x1/3 - `ZEN.COOPERATIVE.3x1-3.sh`**
+##### **Répartition Collective 33/33/33/1 - `ZEN.COOPERATIVE.3x1-3.sh`**
 ```
 Source : CAPTAIN_DEDICATED (recettes d'exploitation - loyers HT collectés)
 Déclencheur : Anniversaire hebdomadaire du Capitaine (TODATE)
@@ -340,13 +342,13 @@ Flux d'allocation :
 │ 2. SURPLUS NET = Surplus Brut - Provision IS                 │
 └───────────────────────┬─────────────────────────────────────┘
                         │
-        ┌───────────────┼───────────────┐
-        │               │               │
-        ▼               ▼               ▼
-┌───────────────┐ ┌───────────────┐ ┌───────────────┐
-│ CASH (33.33%) │ │ RnD (33.33%)  │ │ ASSETS(33.34%)│
-│ Trésorerie    │ │ Innovation    │ │ Biens Réels   │
-└───────────────┘ └───────────────┘ └───────────────┘
+        ┌───────────────┼───────────┬───────────┐
+        │               │           │           │
+        ▼               ▼           ▼           ▼
+┌───────────┐ ┌───────────┐ ┌───────────┐ ┌─────────────┐
+│ CASH (33%)│ │ RnD (33%) │ │ASSETS(33%)│ │CAPTAIN (1%) │
+│ Trésorerie│ │ Innovation│ │Biens Réels│ │  MULTIPASS  │
+└───────────┘ └───────────┘ └───────────┘ └─────────────┘
 ```
 
 **Fichiers clés :**
@@ -414,10 +416,11 @@ Les paramètres partagés entre **toutes les stations de l'essaim** sont stocké
 │                                                                              │
 │  PARAMÈTRES FISCAUX (publics)          PARAMÈTRES ÉCONOMIQUES (publics)     │
 │  ┌─────────────────────────────┐       ┌─────────────────────────────┐      │
-│  │ TVA_RATE: "20.0"            │       │ TREASURY_PERCENT: "33.33"   │      │
-│  │ IS_RATE_REDUCED: "15.0"     │       │ RND_PERCENT: "33.33"        │      │
-│  │ IS_RATE_NORMAL: "25.0"      │       │ ASSETS_PERCENT: "33.34"     │      │
-│  │ IS_THRESHOLD: "42500"       │       │ ZENCARD_SATELLITE: "50"     │      │
+│  │ TVA_RATE: "20.0"            │       │ TREASURY_PERCENT: "33"      │      │
+│  │ IS_RATE_REDUCED: "15.0"     │       │ RND_PERCENT: "33"           │      │
+│  │ IS_RATE_NORMAL: "25.0"      │       │ ASSETS_PERCENT: "33"        │      │
+│  │ IS_THRESHOLD: "42500"       │       │ CAPTAIN_BONUS_PERCENT: "1"  │      │
+│  │                             │       │ ZENCARD_SATELLITE: "50"     │      │
 │  └─────────────────────────────┘       │ ZENCARD_CONSTELLATION: "540"│      │
 │                                        └─────────────────────────────┘      │
 │  SECRETS CHIFFRÉS (AES-256-CBC avec SHA256($UPLANETNAME))                   │
@@ -1079,7 +1082,7 @@ UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:TVA (TVA 20%)
 - **Gestion automatique** : Scripts UPlanet gèrent l'allocation des espaces
 - **Optimisation** : Répartition intelligente des ressources selon la demande
 
-#### **🏦 Transactions Collectives - Répartition 3x1/3**
+#### **🏦 Transactions Collectives - Répartition 33/33/33/1**
 
 ##### **Provision Fiscale**
 ```
@@ -1093,7 +1096,7 @@ UPLANET:${UPLANETG1PUB:0:8}:COOPERATIVE:TAX_PROVISION
 ```
 UPLANET:${UPLANETG1PUB:0:8}:COOPERATIVE:TREASURY
 ```
-- **Nature juridique** : Réserves de fonctionnement (33.33%)
+- **Nature juridique** : Réserves de fonctionnement (33%)
 - **Comptabilité** : Compte 512 - Banques
 - **Usage** : Fonds de roulement et ressources de secours
 
@@ -1101,7 +1104,7 @@ UPLANET:${UPLANETG1PUB:0:8}:COOPERATIVE:TREASURY
 ```
 UPLANET:${UPLANETG1PUB:0:8}:COOPERATIVE:RND
 ```
-- **Nature juridique** : Budget R&D (33.33%)
+- **Nature juridique** : Budget R&D (33%)
 - **Comptabilité** : Compte 20 - Immobilisations incorporelles
 - **Fiscal** : Crédit d'impôt recherche (CIR) applicable
 
@@ -1109,7 +1112,7 @@ UPLANET:${UPLANETG1PUB:0:8}:COOPERATIVE:RND
 ```
 UPLANET:${UPLANETG1PUB:0:8}:COOPERATIVE:ASSETS
 ```
-- **Nature juridique** : Portefeuille de ressources durables (33.34%)
+- **Nature juridique** : Portefeuille de ressources durables (33%)
 - **Comptabilité** : Compte 50 - Valeurs mobilières de placement
 - **Fiscal** : Plus-values soumises à IS
 
