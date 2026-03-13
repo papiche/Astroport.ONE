@@ -1253,7 +1253,7 @@ create_coop_did() {
         "g1pub": "${g1pub}",
         "walletType": "${wallet_type}",
         "cooperative": "${uplanetname}",
-        "cesiumLink": "https://cesium.app/#/app/wot/${g1pub}/"
+        "cesiumLink": "https://cesium.copylaradio.com/#/wot/${g1pub}/"
       }
     },
     {

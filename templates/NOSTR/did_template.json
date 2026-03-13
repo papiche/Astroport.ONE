@@ -76,7 +76,7 @@
     {
       "id": "did:nostr:_HEX_PUBKEY_#cesium",
       "type": "CredentialRegistry",
-      "serviceEndpoint": "_MY_IPFS_/ipfs/QmYZWzSfPgb1y83fWTmKBEHdA9QoxsYBmqLkEJU2KQ1DYW/#/app/wot/_G1_PUBKEY_/",
+      "serviceEndpoint": "_MY_IPFS_/ipfs/QmTnSdXe5nuAyYKWikU9vtRA84EDhwWc3michnevFFpR3g/#/wot/_G1_PUBKEY_/",
       "description": "G1 Cesium+ wallet interface"
     }
   ],

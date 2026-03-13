@@ -384,7 +384,7 @@ EOFNOSTR
     if [[ "$Z" == ":ZEN" ]]; then
         ## Replace Cesium Access with uSPOT/check_balance?g1pub=email (html output)
         # Escape special characters in URLs for sed
-        sed -i "s~${myIPFS}/ipfs/QmYZWzSfPgb1y83fWTmKBEHdA9QoxsYBmqLkEJU2KQ1DYW/#/app/wot/${G1PUBNOSTR}/~${uSPOT}/check_balance?g1pub=${EMAIL}~g" \
+        sed -i "s~${myIPFS}/ipfs/QmTnSdXe5nuAyYKWikU9vtRA84EDhwWc3michnevFFpR3g/#/wot/${G1PUBNOSTR}/~${uSPOT}/check_balance?g1pub=${EMAIL}~g" \
             "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html"
 
     fi
@@ -466,7 +466,7 @@ EOFNOSTR
     #~ Application dans un dossier : Apps/MonApp/index.html avec son icône Apps/MonApp/icon.png.
     #~ Application "flat" : Apps/index.MonApp.html avec son icône Apps/MonApp.png.
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/Cesium.v1
-    echo '<meta http-equiv="refresh" content="0;url='${CESIUMIPFS}/#/app/wot/${G1PUBNOSTR}/'">' \
+    echo '<meta http-equiv="refresh" content="0;url='${CESIUMIPFS}/#/wot/${G1PUBNOSTR}/'">' \
         > ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/Cesium.v1/index.html
     cp ${MY_PATH}/../images/cesium.png ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/Cesium.v1/icon.png
     ## Add you App !

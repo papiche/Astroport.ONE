@@ -103,7 +103,7 @@ TIMESTAMP=$(date -u +"%s")
 TOTAL=$(cat /tmp/gchange.json | jq .hits.total)
 echo 'tail -f ~/.zen/tmp/gchange.txt'
 echo 'Annonces_Gchange' > ~/.zen/tmp/gchange.txt
-echo "Portefeuille_[June_:heart:](https://demo.cesium.app/#/app/wot/$g1pub/)" >> ~/.zen/tmp/gchange.txt
+echo "Portefeuille_[June_:heart:](https://demo.cesium.app/#/wot/$g1pub/)" >> ~/.zen/tmp/gchange.txt
 echo "Carte_[$RAD](https://www.openstreetmap.org/#map=10/$LAT/$LON) " >> ~/.zen/tmp/gchange.txt
 chunk=0
 fullcount=0

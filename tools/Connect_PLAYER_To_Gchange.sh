@@ -138,7 +138,7 @@ echo ">> CESIUM+ : ${CPSEUDO} - ${CDESCR} : ${G1PUB} <<"
     #~ [[ ! $? == 0 ]] && echo "GCHANGE PROFILE CREATION FAILED" \
     #~ || cat ~/.zen/tmp/coucou/${G1PUB}.gchange.json > ~/.zen/tmp/coucou/${G1PUB}gchange.1st.json
 
-    #~ echo " CREATING CESIUM+ https://demo.cesium.app/#/app/wot/lg?q=${G1PUB}"
+    #~ echo " CREATING CESIUM+ https://cesium.copylaradio.com/#/wot/lg?q=${G1PUB}"
 
     #~ ${MY_PATH}/timeout.sh -t 20 \
     #~ $MY_PATH/jaklis/jaklis.py -k ~/.zen/game/players/${PLAYER}/secret.dunikey -n ${myCESIUM} set -n "${CPSEUDO}" -d "${CDESCR}" -v "${CVILLE}" -a "${CADRESSE}" --s "http://ipfs.localhost:8080/ipns/$ASTRONAUTENS" -A ~/.zen/game/players/${PLAYER}/QRTWavatar.png #CESIUM+
