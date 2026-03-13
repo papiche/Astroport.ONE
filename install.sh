@@ -257,7 +257,7 @@ echo "  Reseau:   ${NETWORK_DISPLAY}"
 echo "  Capitaine: $(cat ~/.zen/game/players/.current/.player 2>/dev/null || echo 'embarquement en cours...')"
 echo
 echo "  SERVICES:"
-echo "    Station    http://localhost:12345"
+echo "    Astroport  http://localhost:12345"
 echo "    UPassport  http://localhost:54321"
 echo "    IPFS       http://localhost:8080"
 echo "    NOSTR      ws://localhost:7777"
