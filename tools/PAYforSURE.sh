@@ -255,7 +255,7 @@ get_balance_gcli() {
         raw=$($GCLI --no-password -a "$addr" -u "$rpc" -o json account balance 2>/dev/null \
             | jq -r '.transferable_balance // empty')
         if [[ -n "$raw" && "$raw" != "null" ]]; then
-            echo "scale=4; ${raw} / 100" | bc
+            echo "scale=2; ${raw} / 100" | bc
             return 0
         fi
     done
@@ -399,9 +399,9 @@ DES=$(cat "$DESTFILE" 2>/dev/null || echo "0")
 echo "$DES + $AMOUNT" | bc > "$DESTFILE"
 
 # ── Conversions ZEN ───────────────────────────────────────────────────────────
-ZENAMOUNT=$(echo "scale=1; $AMOUNT * 10" | bc)
-ZENCUR=$(echo "scale=1; ($COINS - $AMOUNT) * 10" | bc)
-ZENDES=$(echo "scale=1; ($DES + $AMOUNT) * 10" | bc)
+ZENAMOUNT=$(printf "%.1f" "$(echo "$AMOUNT * 10" | bc)")
+ZENCUR=$(printf "%.1f" "$(echo "($COINS - $AMOUNT) * 10" | bc)")
+ZENDES=$(printf "%.1f" "$(echo "($DES + $AMOUNT) * 10" | bc)")
 
 # ── Rapport HTML ──────────────────────────────────────────────────────────────
 HTML_FILE="${PENDINGDIR}/${MOATS}.result.html"
@@ -465,7 +465,6 @@ cat > "$HTML_FILE" << HTMLEOF
         <div class="bal">${ZENCUR} ZEN</div>
         <div class="links">
           <a href="${CESIUM}/#/wot/${ISSUERPUB}/" target="_blank">📊 Cesium</a>
-          $([[ -n "$UPLANET" ]] && echo "<a href=\"${UPLANET}/g1gate/?pubkey=${ISSUERPUB}\" class=\"sec\" target=\"_blank\">🔍 Scanner</a>")
         </div>
       </div>
       <div class="arrow">➡️</div>
@@ -475,7 +474,6 @@ cat > "$HTML_FILE" << HTMLEOF
         <div class="bal">${ZENDES} ZEN</div>
         <div class="links">
           <a href="${CESIUM}/#/wot/${G1PUB}/" target="_blank">📊 Cesium</a>
-          $([[ -n "$UPLANET" ]] && echo "<a href=\"${UPLANET}/g1gate/?pubkey=${G1PUB}\" class=\"sec\" target=\"_blank\">🔍 Scanner</a>")
         </div>
       </div>
     </div>
