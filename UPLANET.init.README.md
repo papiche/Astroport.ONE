@@ -362,7 +362,7 @@ Cette section vérifie la conformité du README avec l’enchaînement réel du 
 
 | Ordre | Script / Fichier | Rôle vérifié dans le code |
 |-------|-------------------|----------------------------|
-| 1 | `install.sh` | Clone Astroport.ONE, installe deps, appelle `setup.sh`, propose `uplanet_onboarding.sh` |
+| 1 | `install.sh` | Clone Astroport.ONE, installe deps, appelle `install/setup/setup.sh`, propose `uplanet_onboarding.sh` |
 | 2 | `uplanet_onboarding.sh` | Config .env, mode ORIGIN/ẐEN, appelle `UPLANET.init.sh` puis `captain.sh` (étape 8 ou config rapide) |
 | 3 | `UPLANET.init.sh` | Source `tools/my.sh` (crée si besoin uplanet.G1, uplanet, SOCIETY, etc.), crée les dunikey manquants (keygen), alimente les portefeuilles vides depuis `uplanet.G1.dunikey` ; initialise config coopérative DID |
 | 4 | `captain.sh` | Vérifie `.current` ; sinon appelle `embark_captain` → `check_and_init_uplanet_infrastructure` (relance UPLANET.init si besoin) → `create_multipass` → `create_zen_card` → `did_manager_nostr.sh update … CAPTAIN` → `UPLANET.official.sh --infrastructure` |

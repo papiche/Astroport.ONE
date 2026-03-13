@@ -472,7 +472,9 @@ Les bénéfices sont répartis selon la règle coopérative :
 ### **🌐 Liens Utiles**
 
 - **Blog** : https://www.copylaradio.com
-- **Interface Web** : http://astroport.localhost/ipns/copylaradio.com
+- **Station** : http://localhost:12345
+- **UPassport** : http://localhost:54321
+- **Passerelle IPFS** : https://ipfs.copylaradio.com
 - **Support** : support@qo-op.com
 
 ### **🔧 Dépannage**

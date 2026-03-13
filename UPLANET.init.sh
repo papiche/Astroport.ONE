@@ -146,24 +146,34 @@ check_requirements() {
 check_source_wallet() {
     echo -e "${CYAN}💰 VÉRIFICATION DU PORTEFEUILLE SOURCE${NC}"
     echo -e "${YELLOW}=====================================${NC}"
+
+    # Check if source wallet file exists
+    if [[ ! -f "$SOURCE_WALLET" ]]; then
+        echo -e "${RED}❌ Portefeuille source non trouvé: $SOURCE_WALLET${NC}"
+        SOURCE_INSUFFICIENT=1
+        return 1
+    fi
+
     echo -e "${GREEN}✅ Portefeuille source trouvé: ${CYAN}$SOURCE_WALLET${NC}"
-    
+
     # Extract public key from source wallet
     local source_pubkey=$(cat "$SOURCE_WALLET" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
     if [[ -z "$source_pubkey" ]]; then
         echo -e "${RED}❌ Impossible d'extraire la clé publique depuis $SOURCE_WALLET${NC}"
-        exit 1
+        SOURCE_INSUFFICIENT=1
+        return 1
     fi
-    
+
     echo -e "${BLUE}Portefeuille source:${NC} ${CYAN}${source_pubkey:0:8}...${NC}"
-    
+
     # Check source wallet balance using G1check.sh
     echo -e "${YELLOW}Vérification du solde...${NC}"
     local source_balance=$(get_wallet_balance "$source_pubkey")
-    
+
     if [[ -z "$source_balance" || "$source_balance" == "null" ]]; then
-        echo -e "${RED}❌ Impossible de récupérer le solde du portefeuille source${NC}"
-        exit 1
+        echo -e "${YELLOW}⚠️  Impossible de récupérer le solde (réseau indisponible ?)${NC}"
+        SOURCE_INSUFFICIENT=1
+        return 1
     fi
     
     echo -e "${BLUE}Solde actuel:${NC} ${YELLOW}$source_balance Ğ1${NC}"
@@ -526,11 +536,11 @@ check_node_captain_wallets() {
     # Check CAPTAIN wallets if captain is configured
     if [[ -n "$captain_email" ]]; then
         echo -e "${BLUE}👑 Captain configuré: ${captain_email}${NC}"
-        
-        # Check CAPTAIN MULTIPASS
-        local captain_multipass="$HOME/.zen/game/nostr/${captain_email}/.secret.dunikey"
-        if [[ -f "$captain_multipass" ]]; then
-            local multipass_pubkey=$(get_wallet_public_key "$captain_multipass")
+
+        # Check CAPTAIN MULTIPASS (G1 pubkey is in G1PUBNOSTR, primo TX done by make_NOSTRCARD.sh)
+        local captain_multipass_pub="$HOME/.zen/game/nostr/${captain_email}/G1PUBNOSTR"
+        if [[ -s "$captain_multipass_pub" ]]; then
+            local multipass_pubkey=$(cat "$captain_multipass_pub" 2>/dev/null)
             if [[ -n "$multipass_pubkey" ]]; then
                 local balance=$(get_wallet_balance "$multipass_pubkey")
                 if (( $(echo "$balance < $MIN_BALANCE" | bc -l) )); then
@@ -691,23 +701,25 @@ initialize_node_captain_wallet() {
         "NODE")
             dunikey_file="${NODE_CAPTAIN_WALLETS["NODE"]}"
             description="Initialisation NODE (Armateur)"
+            pubkey=$(get_wallet_public_key "$dunikey_file")
             ;;
         "CAPTAIN_MULTIPASS")
-            dunikey_file="$HOME/.zen/game/nostr/${captain_email}/.secret.dunikey"
             description="Initialisation CAPTAIN MULTIPASS"
+            ## MULTIPASS has no dunikey — G1 pubkey is in G1PUBNOSTR (primo TX done by make_NOSTRCARD.sh)
+            pubkey=$(cat "$HOME/.zen/game/nostr/${captain_email}/G1PUBNOSTR" 2>/dev/null)
             ;;
         "CAPTAIN_ZENCARD")
             dunikey_file="$HOME/.zen/game/players/${captain_email}/secret.dunikey"
             description="Initialisation CAPTAIN ZEN Card"
+            pubkey=$(get_wallet_public_key "$dunikey_file")
             ;;
         *)
             echo -e "${RED}❌ Type de portefeuille non reconnu: $wallet_type${NC}"
             return 1
             ;;
     esac
-    
+
     # Get destination public key
-    pubkey=$(get_wallet_public_key "$dunikey_file")
     if [[ -z "$pubkey" ]]; then
         echo -e "${RED}❌ Impossible de récupérer la clé publique de $wallet_type${NC}"
         return 1
@@ -1028,10 +1040,10 @@ display_final_status() {
     # CAPTAIN wallets
     local captain_email=$(get_captain_email)
     if [[ -n "$captain_email" ]]; then
-        # CAPTAIN MULTIPASS
-        local captain_multipass="$HOME/.zen/game/nostr/${captain_email}/.secret.dunikey"
-        if [[ -f "$captain_multipass" ]]; then
-            local multipass_pubkey=$(get_wallet_public_key "$captain_multipass")
+        # CAPTAIN MULTIPASS (G1 pubkey is in G1PUBNOSTR, not in a dunikey file)
+        local captain_multipass_pub="$HOME/.zen/game/nostr/${captain_email}/G1PUBNOSTR"
+        if [[ -s "$captain_multipass_pub" ]]; then
+            local multipass_pubkey=$(cat "$captain_multipass_pub" 2>/dev/null)
             if [[ -n "$multipass_pubkey" ]]; then
                 local balance=$(get_wallet_balance "$multipass_pubkey")
                 local status=""
@@ -1151,7 +1163,7 @@ main() {
     
     # Initialize cooperative wallets (PAY 1 G1 to each)
     if [[ "$cooperative_needs_init" == true ]]; then
-    initialize_cooperative_wallets
+        initialize_cooperative_wallets
     fi
     
     # Initialize node and captain wallets

@@ -102,7 +102,19 @@ get_fast_service_status() {
     if pgrep -f "G1BILLETS" >/dev/null 2>&1; then
         g1billet_active="true"
     fi
-    
+
+    # Nginx Proxy Manager - Docker or port check
+    local npm_active="false"
+    local npm_ssl="false"
+    if command -v docker >/dev/null 2>&1 && docker ps --format '{{.Image}}' 2>/dev/null | grep -q 'nginx-proxy-manager'; then
+        npm_active="true"
+    elif ss -tln 2>/dev/null | grep -q ":81 "; then
+        npm_active="true"
+    fi
+    if ss -tln 2>/dev/null | grep -q ":443 "; then
+        npm_ssl="true"
+    fi
+
     # NextCloud ports
     local nextcloud_aio_active="false"
     local nextcloud_cloud_active="false"
@@ -156,6 +168,11 @@ get_fast_service_status() {
     "nostr_relay": {
         "active": $nostr_relay_active,
         "port": 7777
+    },
+    "npm": {
+        "active": $npm_active,
+        "ssl": $npm_ssl,
+        "admin_port": 81
     },
     "ipfs_p2p_services": $p2p_services,
     "g1billet": {

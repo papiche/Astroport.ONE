@@ -109,7 +109,8 @@ Astroport.ONE alimente l'écosystème **UPlanet** qui fonctionne sur deux niveau
 | **54321** | UPassport | UPassport 'FastApi' API | HTTP |
 | **8080, 4001, 5001** | IPFS Gateway | Accès stockage décentralisé | HTTP |
 | **7777** | NOSTR Relay | Réseau social décentralisé | HTTP/WebSocket |
-| **80, 443** | Proxy SSL | Nginx Proxy Manager (docker n°1) | HTTP |
+| **80, 443, 81** | Proxy SSL | Nginx Proxy Manager (NPM) | HTTPS |
+| **8002, 8443** | NextCloud AIO | Administration NextCloud | HTTPS |
 
 ### 3. Structure des Répertoires
 
@@ -119,23 +120,30 @@ Astroport.ONE/
 ├── 12345.sh               # Serveur API
 ├── _12345.sh              # Cartographie stations
 ├── 20h12.process.sh       # Maintenance quotidienne
-├── install.sh             # Installation automatique
+├── install.sh             # Installation (bare metal)
+├── install/               # Scripts d'installation secondaires (build-time)
+│   ├── install_system.sh  # Sudoers, systemd, SSH, symlinks
+│   ├── install_upassport.sh
+│   ├── install_gcli.sh
+│   ├── install_deno.sh
+│   └── setup/             # Configuration runtime
+│       ├── setup.sh       # Hostname, IPFS init, .env, captain
+│       ├── ipfs_setup.sh  # Initialisation noeud IPFS
+│       └── setup_npm.sh   # Config auto Nginx Proxy Manager
+├── docker/                # Déploiement Docker
+│   ├── docker-compose.yml # Stack complète (Astroport + NPM + NextCloud)
+│   └── astroport/         # Image container
+│       ├── Dockerfile
+│       └── astroport.sh   # Entrypoint container
 ├── tools/                 # Utilitaires système
 │   ├── my.sh             # Bibliothèque de fonctions
 │   ├── keygen            # Générateur de clés
 │   └── heartbox_analysis.sh # Analyse système
 ├── API/                   # API Sandbox Examples
-│   ├── QRCODE.sh         # Gestion QR codes
-│   ├── SALT.sh           # Authentification
-│   └── UPLANET.sh        # Données UPlanet
 ├── RUNTIME/               # Services en arrière-plan
-│   ├── G1PalPay.sh       # Surveillance Ğ1
-│   ├── NOSTRCARD.refresh.sh # Comptes MULTIPASS
-│   └── PLAYER.refresh.sh # Comptes ZEN Cards
-├── ASTROBOT/              # Automatisation  (Players Smart Contract)
-│   └── N1*.sh            # Commandes N1
+├── ASTROBOT/              # Automatisation (Players Smart Contract)
 ├── templates/             # Templates HTML
-└── _DOCKER/               # Official Docker Compose (Duniter, NextCloud, PeerTube, ...)
+└── _DOCKER/               # Services tiers (Duniter, PeerTube, etc.)
 ```
 
 ---
@@ -396,16 +404,16 @@ cd ~/.zen/Astroport.ONE
 
 ```bash
 # Configuration IPFS
-~/.zen/Astroport.ONE/ipfs_setup.sh
+~/.zen/Astroport.ONE/install/setup/ipfs_setup.sh
 
 # Configuration RELAI NOSTR (strfry)
 ~/.zen/workspace/NIP-101/setup.sh
 
 # Configuration UPassport
-~/.zen/Astroport.ONE/install_upassport.sh
+~/.zen/Astroport.ONE/install/install_upassport.sh
 ```
 
-### 3. Services Systemd
+### 3. Services Systemd (bare metal)
 
 ```bash
 # Service Astroport
@@ -420,6 +428,40 @@ sudo systemctl start upassport
 sudo systemctl enable strfry
 sudo systemctl start strfry
 ```
+
+### 4. Déploiement Docker
+
+```bash
+cd ~/.zen/Astroport.ONE/docker/
+
+# Astroport + Nginx Proxy Manager (SSL)
+docker compose up -d
+
+# + NextCloud AIO (stockage cloud pour ZenCard)
+docker compose --profile full up -d
+
+# Avec un domaine personnalisé
+ASTRO_DOMAIN=mondomaine.fr docker compose up -d
+
+# Logs
+docker compose logs -f astroport
+```
+
+Architecture Docker (3 containers frères sur réseau `astronet`) :
+- **astroport** : IPFS + API 12345 + NOSTR + UPassport + G1Billet
+- **npm** : Nginx Proxy Manager (SSL Let's Encrypt ou auto-signé)
+- **nextcloud** : NextCloud AIO (optionnel, `--profile full`)
+
+Sous-domaines configurés automatiquement par NPM :
+- `astroport.DOMAIN` → :12345
+- `ipfs.DOMAIN` → :8080
+- `relay.DOMAIN` → :7777 (WebSocket)
+- `u.DOMAIN` → :54321
+- `cloud.DOMAIN` → :8001 (NextCloud)
+
+Documentation NextCloud :
+- https://pad.p2p.legal/NextCloud#
+- https://pad.p2p.legal/Smartphone2NextCloud#
 
 ---
 

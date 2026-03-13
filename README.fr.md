@@ -101,6 +101,39 @@ bash <(curl -sL https://install.astroport.com)
 ```
 Ce script configurera votre Station Astroport.ONE. En l'installant, vous apparaîtrez automatiquement sur la carte swarm [UPlanet ORIGIN](https://ipfs.copylaradio.com/ipns/copylaradio). Pour rejoindre les réseaux coopératifs `UPlanet Ẑen`, vous devrez activer les fonctionnalités avancées et devenir membre.
 
+### 🖥️ Mode Bureau Docker (VDI)
+
+Envie de tester Astroport sans modifier votre système ? Lancez un bureau complet dans votre navigateur via Docker :
+
+```bash
+cd docker/
+docker compose -f docker-compose.desktop.yml up -d
+```
+
+Puis ouvrez **http://localhost:6080** dans votre navigateur (mot de passe : `astroport`).
+
+Vous obtenez un **bureau XFCE complet** avec Astroport.ONE pré-installé, accessible depuis n'importe quel appareil via noVNC. Fonctionne sur **x86_64 et ARM64** (Raspberry Pi, Mac M-series).
+
+| Variable | Défaut | Description |
+|----------|--------|-------------|
+| `VNC_PASSWORD` | `astroport` | Mot de passe d'accès au bureau |
+| `VNC_RESOLUTION` | `1280x720` | Résolution de l'écran |
+| `ASTRO_DOMAIN` | `copylaradio.com` | Domaine de votre station |
+| `CAPTAIN_EMAIL` | *(auto)* | Email du capitaine pour l'embarquement |
+
+Au premier lancement, `install.sh` s'exécute automatiquement pour installer tous les services (IPFS, relai NOSTR, UPassport, Flutter, gcli...). Cela prend 10-30 minutes. Les démarrages suivants sont instantanés.
+
+### 🐳 Docker Headless (Serveur)
+
+Pour les stations de production sans bureau :
+
+```bash
+cd docker/
+docker compose up -d
+```
+
+Voir [`docker/docker-compose.yml`](docker/docker-compose.yml) pour la stack complète (Astroport + Nginx Proxy Manager + NextCloud).
+
 ## 📚 Documentation & Détails Techniques
 
 Pour ceux qui veulent plonger plus profondément dans les rouages de notre système.

@@ -389,7 +389,7 @@ The script provides detailed logging for:
 
 ### Common Issues
 
-1. **"gcli not found"**: Install gcli via `tools/install_gcli.sh`
+1. **"gcli not found"**: Install gcli via `install/install_gcli.sh`
 2. **"Invalid JSON response"**: Check network connectivity to BMAS nodes
 3. **"Permission denied"**: Check file permissions for dunikey and log files
 4. **"Email sending failed"**: Verify mailjet.sh configuration

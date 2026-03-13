@@ -174,7 +174,7 @@ fi
 ## UPASSPORT API
 echo "######### UPASSPORT ##############"
 echo "INSTALL UPASSPORT : http://localhost:54321"
-~/.zen/Astroport.ONE/install_upassport.sh
+~/.zen/Astroport.ONE/install/install_upassport.sh
 
 ## NIP-101 strfry NOSTR relay
 echo "######### NIP-101 strfry NOSTR relay ##############"
@@ -183,7 +183,7 @@ bash <(wget -qO- https://github.com/papiche/NIP-101/raw/refs/heads/main/install_
 
 ## g1cli (gcli) — Duniter v2s CLI client (compiled from source, branche nostr)
 echo "######### g1cli Duniter v2 Client ##############"
-~/.zen/Astroport.ONE/tools/install_gcli.sh
+~/.zen/Astroport.ONE/install/install_gcli.sh
 
 ## G1BILLET
 echo "######### G1BILLET ##############"
@@ -198,74 +198,87 @@ echo
 ###############################################################
 echo "##  ADDING lazydocker ================"
 # INSTALL lazydocker GUI
-~/.zen/Astroport.ONE/install.lazydocker.sh
+~/.zen/Astroport.ONE/install/install.lazydocker.sh
 
 ###############################################################
 echo "##INSTALL yt-dlp & SYMLINK youtube-dl ##########################"
-~/.zen/Astroport.ONE/youtube-dl.sh
+~/.zen/Astroport.ONE/install/youtube-dl.sh
 
 ###############################################################
 echo "## INSTALL Deno (for yt-dlp EJS when Node < 20) ##################"
-~/.zen/Astroport.ONE/tools/install_deno.sh
+~/.zen/Astroport.ONE/install/install_deno.sh
 
 ###############################################################
 echo "## CONFIGURE yt-dlp JavaScript runtime (Deno or Node + EJS) ######"
-~/.zen/Astroport.ONE/tools/install_yt_dlp_ejs_node.sh
+~/.zen/Astroport.ONE/install/install_yt_dlp_ejs_node.sh
 
 ###############################################################
 echo "## INSTALL PowerJoular (Power consumption monitoring) ##########"
-~/.zen/Astroport.ONE/tools/install_powerjoular.sh
+~/.zen/Astroport.ONE/install/install_powerjoular.sh
 
-echo "=== SETUP ASTROPORT"
-~/.zen/Astroport.ONE/setup.sh
+###############################################################
+echo "## INSTALL Flutter SDK (web builds for Ginkgo app) ##########"
+~/.zen/Astroport.ONE/install/install_flutter.sh
+## Add Flutter to PATH for the rest of install
+export PATH="$HOME/.flutter/bin:$PATH"
+
+echo "=== INSTALL SYSTEM (sudoers, systemd, SSH, symlinks)"
+~/.zen/Astroport.ONE/install/install_system.sh
+
+echo "=== SETUP ASTROPORT (runtime config)"
+~/.zen/Astroport.ONE/install/setup/setup.sh
 
 end=`date +%s`
-echo Installation time was `expr $end - $start` seconds.
+DURATION=$((end - start))
+MINUTES=$((DURATION / 60))
+SECONDS_REM=$((DURATION % 60))
 
-echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-echo "xXX LOG ERRORS XXx"
-echo "~/.zen/install.errors.log"
-echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-echo "xXX please report any errors encountered during install  XXx"
-echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-echo "RUN TEST : ~/.zen/Astroport.ONE/test.sh"
-echo
-echo "#########################################################"
-echo "Astroport.ONE - Web3 Information System over IPFS - "
-echo "#############################################"
-echo "### ASK FOR SUPPORT #########################"
-echo "### support@qo-op.com"
-echo "#############################################"
+## Source my.sh for display variables (domain, hostname, network type)
+. ~/.zen/Astroport.ONE/tools/my.sh 2>/dev/null
+HOSTNAME_DISPLAY=$(hostname)
+DOMAIN_DISPLAY="${myDOMAIN:-copylaradio.com}"
+IPFS_DISPLAY="${myIPFS:-https://ipfs.${DOMAIN_DISPLAY}}"
+RELAY_DISPLAY="${myRELAY:-wss://relay.${DOMAIN_DISPLAY}}"
+USPOT_DISPLAY="${uSPOT:-https://u.${DOMAIN_DISPLAY}}"
+
+if [[ "${UPLANETNAME}" == "0000000000000000000000000000000000000000000000000000000000000000" ]]; then
+    NETWORK_DISPLAY="UPlanet ORIGIN (sandbox)"
+else
+    NETWORK_DISPLAY="UPlanet ZEN (${DOMAIN_DISPLAY})"
+fi
 
 echo
-echo "╔══════════════════════════════════════════════════════════════════════════════╗"
-echo "║                    🏴‍☠️ INSTALLATION TERMINÉE 🏴‍☠️                            ║"
-echo "║                                                                              ║"
-echo "║  Félicitations ! Astroport.ONE est maintenant installé sur votre machine.   ║"
-echo "║                                                                              ║"
-echo "║  🎯 PROCHAINES ÉTAPES:                                                       ║"
-echo "║                                                                              ║"
-echo "║  1. 🚀 EMBARQUEMENT UPLANET ẐEN (Recommandé)                                ║"
-echo "║     Rejoignez la coopérative des autohébergeurs                             ║"
-echo "║     → ~/.zen/Astroport.ONE/uplanet_onboarding.sh                            ║"
-echo "║                                                                              ║"
-echo "║  2. 🏴‍☠️ EMBARQUEMENT CAPITAINE SIMPLE                                        ║"
-echo "║     Configuration basique pour commencer                                    ║"
-echo "║     → ~/.zen/Astroport.ONE/captain.sh                                       ║"
-echo "║                                                                              ║"
-echo "║  3. 📊 TABLEAU DE BORD                                                       ║"
-echo "║     Interface principale de gestion                                         ║"
-echo "║     → ~/.zen/Astroport.ONE/tools/dashboard.sh                               ║"
-echo "║                                                                              ║"
-echo "║  4. 🌐 INTERFACE WEB                                                         ║"
-echo "║     → http://astroport.localhost/ipns/copylaradio.com                       ║"
-echo "║                                                                              ║"
-echo "╚══════════════════════════════════════════════════════════════════════════════╝"
-echo
-echo "🏴‍☠️ Embarquement UPlanet ẐEN ORIGIN... Terminé"
 echo "#############################################"
+echo "  INSTALLATION TERMINEE (${MINUTES}min ${SECONDS_REM}s)"
+echo "#############################################"
+echo
+echo "  Station:  ${HOSTNAME_DISPLAY}"
+echo "  Reseau:   ${NETWORK_DISPLAY}"
+echo "  Capitaine: $(cat ~/.zen/game/players/.current/.player 2>/dev/null || echo 'embarquement en cours...')"
+echo
+echo "  SERVICES:"
+echo "    Station    http://localhost:12345"
+echo "    UPassport  http://localhost:54321"
+echo "    IPFS       http://localhost:8080"
+echo "    NOSTR      ws://localhost:7777"
+echo "    G1Billet   http://localhost:33101"
+echo
+echo "  ESSAIM (ipfs.domain = round-robin DNS vers toutes les stations):"
+echo "    IPFS       ${IPFS_DISPLAY}"
+echo "  STATION D'ATTACHE (celle ou votre MULTIPASS est enregistre):"
+echo "    Relay      ${RELAY_DISPLAY}"
+echo "    UPassport  ${USPOT_DISPLAY}"
+echo
+echo "  COMMANDES:"
+echo "    dashboard    ~/.zen/Astroport.ONE/tools/dashboard.sh"
+echo "    media        ~/.zen/Astroport.ONE/ajouter_media.sh"
+echo "    test         ~/.zen/Astroport.ONE/test.sh"
+echo "    start/stop   ~/.zen/Astroport.ONE/start.sh | stop.sh"
+echo
+echo "  ERREURS: ~/.zen/install.errors.log"
+echo "  SUPPORT: support@qo-op.com"
+echo "#############################################"
+echo
 . ~/.bashrc
 ##########################################################
 ~/.zen/Astroport.ONE/RUNTIME/DRAGON_p2p_ssh.sh ON

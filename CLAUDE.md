@@ -10,12 +10,22 @@ Licensed under AGPL-3.0. Author: Fred (support@qo-op.com).
 
 ## Key Commands
 
-### Installation
+### Bare Metal Installation
 ```bash
 ./install.sh          # Full install (requires non-root user with sudo)
-./setup.sh            # Post-install system configuration (IPFS, systemd, SSH, cron)
 ./start.sh            # Start all services (ipfs, astroport, g1billet, upassport)
 ./stop.sh             # Stop services
+```
+
+### Docker Installation
+```bash
+cd docker/
+docker compose up -d                    # Astroport + Nginx Proxy Manager
+docker compose --profile full up -d     # + NextCloud AIO
+docker compose logs -f astroport        # Follow logs
+
+# Custom domain:
+ASTRO_DOMAIN=mydomain.tld docker compose up -d
 ```
 
 ### Testing
@@ -86,7 +96,18 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
   - `make_NOSTRCARD.sh` - NOSTR Card creation
 - **`RUNTIME/TW/`** - TiddlyWiki templates and management
 - **`templates/`** - HTML templates
-- **`_DOCKER/`** - Docker Compose files (Duniter, NextCloud, PeerTube, etc.)
+- **`install/`** - Secondary install scripts (build-time):
+  - `install_system.sh` - Sudoers, systemd, SSH, symlinks
+  - `install_upassport.sh`, `install_gcli.sh`, `install_deno.sh`, etc.
+  - `setup/` - Runtime configuration scripts:
+    - `setup.sh` - Hostname, IPFS init, .env, cron, captain onboarding
+    - `ipfs_setup.sh` - IPFS node initialization
+    - `setup_npm.sh` - Nginx Proxy Manager auto-configuration
+- **`docker/`** - Docker deployment:
+  - `docker-compose.yml` - Full stack (Astroport + NPM + NextCloud)
+  - `astroport/Dockerfile` - Astroport container image
+  - `astroport/astroport.sh` - Container entrypoint
+- **`_DOCKER/`** - Third-party service configs (Duniter, PeerTube, etc.)
 - **`specs/`** - ShellSpec test specs
 - **`tests/`** - Integration test scripts
 
@@ -98,21 +119,54 @@ All runtime data lives under `~/.zen/` (not in the repo):
 - `~/.zen/.pid` - Service PID file
 
 ### Service Ports
-| Port | Service |
-|------|---------|
-| 1234 | Twist BASH API (deprecated) |
-| 12345 | Station Map / UPlanet cartography |
-| 33101 | G1Billet |
-| 54321 | UPassport FastAPI |
-| 7777 | NOSTR Relay (strfry) |
-| 8080/4001/5001 | IPFS Gateway |
+| Port | Service | Subdomain |
+|------|---------|-----------|
+| 12345 | Station Map / UPlanet cartography | `astroport.DOMAIN` |
+| 8080/4001/5001 | IPFS Gateway/Swarm/API | `ipfs.DOMAIN` |
+| 7777 | NOSTR Relay (strfry) | `relay.DOMAIN` |
+| 54321 | UPassport FastAPI | `u.DOMAIN` |
+| 33101 | G1Billet | `libra.DOMAIN` |
+| 80/443/81 | Nginx Proxy Manager (SSL) | — |
+| 8002/8443 | NextCloud AIO admin | `cloud.DOMAIN` |
+| 1234 | Twist BASH API (deprecated) | — |
 
-### Systemd Services
+### Systemd Services (bare metal)
 - `astroport` - Main API server (`12345.sh`)
 - `upassport` - UPassport API
 - `strfry` - NOSTR relay
 - `ipfs` - IPFS daemon
 - `g1billet` - G1Billet service
+
+### Docker Services (docker-compose)
+- `astroport` - All-in-one station container
+- `npm` - Nginx Proxy Manager (SSL termination)
+- `nextcloud` - NextCloud AIO (optional, `--profile full`)
+
+## Deployment Modes
+
+### Bare Metal (Debian/Ubuntu/Mint)
+`install.sh` handles everything: apt packages, IPFS, Python venv, git clone, then calls:
+1. `install/install_system.sh` — build-time ops (sudoers, systemd, SSH, symlinks)
+2. `install/setup/setup.sh` — runtime ops (hostname, IPFS init, .env, NPM, captain)
+
+### Docker
+`docker/docker-compose.yml` orchestrates 3 sibling containers on `astronet` bridge:
+- **astroport** — station services (IPFS, API, NOSTR, UPassport)
+- **npm** — Nginx Proxy Manager (SSL termination for all subdomains)
+- **nextcloud** — NextCloud AIO (optional, `--profile full`)
+
+The entrypoint (`docker/astroport/astroport.sh`) runs idempotent setup on each start:
+- IPFS init (if no repo), .env generation, captain onboarding (once only)
+- Domain configurable via `ASTRO_DOMAIN` env var (default: `copylaradio.com`)
+
+SSL is managed by NPM:
+- `copylaradio.com` → skip (managed centrally by support@qo-op.com)
+- Local domains → self-signed certificates (openssl)
+- Public domains → Let's Encrypt (automatic)
+
+### Install/Setup Separation (Docker-ready)
+- `install/` — build-time (Dockerfile RUN): packages, binaries, config files
+- `install/setup/` — runtime (entrypoint): identity, keys, network, .env, cron
 
 ## Development Notes
 

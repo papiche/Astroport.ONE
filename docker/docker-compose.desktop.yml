@@ -1,0 +1,98 @@
+########################################################################
+# Astroport.ONE — Desktop VDI (noVNC)
+#
+# Bureau distant accessible depuis un navigateur.
+# Debian + XFCE + TigerVNC + noVNC
+# install.sh tourne au premier démarrage (10-30 min).
+#
+# === UPlanet ORIGIN (bac à sable, par défaut) ===
+#   docker compose -f docker-compose.desktop.yml up -d
+#
+# === UPlanet ZEN (réseau coopératif) ===
+#   ASTRO_DOMAIN=votredomaine.com \
+#   IPFS_SWARM_KEY=<clé-swarm-64-hex-de-votre-UPlanet-ZEN> \
+#   CAPTAIN_EMAIL=vous@domaine.tld \
+#   docker compose -f docker-compose.desktop.yml up -d
+#
+# → http://localhost:6080 (mot de passe: astroport)
+#
+# Multi-arch build (x86_64 + ARM64):
+#   docker buildx build --platform linux/amd64,linux/arm64 \
+#     -f astroport/Dockerfile.desktop -t astroport-desktop astroport/
+########################################################################
+
+services:
+  desktop:
+    build:
+      context: ./astroport
+      dockerfile: Dockerfile.desktop
+      args:
+        UID: ${HOST_UID:-1000}
+        GID: ${HOST_GID:-1000}
+    container_name: ${COMPOSE_PROJECT_NAME:-astroport}-desktop
+    hostname: ${HOSTNAME:-astroport-desktop}
+    image: ${DOCKER_REPOSITORY:-localhost}/astroport-desktop:${DOCKER_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    tty: true
+    shm_size: "2gb"
+
+    environment:
+      ## Desktop
+      - VNC_PASSWORD=${VNC_PASSWORD:-astroport}
+      - VNC_RESOLUTION=${VNC_RESOLUTION:-1280x720}
+      ## UPlanet network selection
+      ## Sans IPFS_SWARM_KEY → UPlanet ORIGIN (sandbox, 1 Zen = 0.1 G1)
+      ## Avec IPFS_SWARM_KEY → UPlanet ZEN (coopérative, 1 Zen = 1 EUR)
+      - ASTRO_DOMAIN=${ASTRO_DOMAIN:-copylaradio.com}
+      - CAPTAIN_EMAIL=${CAPTAIN_EMAIL:-}
+      - IPFS_SWARM_KEY=${IPFS_SWARM_KEY:-}
+      ## Economy
+      - MACHINE_VALUE_ZEN=${MACHINE_VALUE_ZEN:-500}
+      - PAF=${PAF:-14}
+      - NCARD=${NCARD:-1}
+      - ZCARD=${ZCARD:-4}
+
+    ports:
+      - "${NOVNC_PORT:-6080}:6080"          # noVNC (navigateur)
+      - "4001:4001"                          # IPFS Swarm (P2P)
+      - "12345:12345"                        # Station Map
+      - "127.0.0.1:1234:1234"               # Twist API
+      - "127.0.0.1:33101:33101"             # G1Billet
+      - "127.0.0.1:54321:54321"             # UPassport
+      - "127.0.0.1:7777:7777"               # NOSTR Relay
+      - "127.0.0.1:8080:8080"               # IPFS Gateway
+      - "127.0.0.1:5001:5001"               # IPFS API
+
+    volumes:
+      - desktop_home:/home/zen               # Home complet (desktop + .zen)
+      - desktop_ipfs:/home/zen/.ipfs         # IPFS datastore
+
+    networks:
+      - astronet
+
+    ## Optionnel: Nginx Proxy Manager pour SSL/sous-domaines
+    # depends_on:
+    #   - npm
+
+  # npm:
+  #   image: jc21/nginx-proxy-manager:latest
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #     - "127.0.0.1:81:81"
+  #   volumes:
+  #     - npm_data:/data
+  #     - npm_certs:/etc/letsencrypt
+  #   networks:
+  #     - astronet
+
+networks:
+  astronet:
+    driver: bridge
+
+volumes:
+  desktop_home:
+  desktop_ipfs:
+  # npm_data:
+  # npm_certs:

@@ -66,7 +66,7 @@ if command -v gcli &>/dev/null; then
     GCLI_VER=$(gcli --version 2>/dev/null | head -1)
     ok "gcli installé ($GCLI_VER)"
 else
-    fail "gcli non installé" "Installer via tools/install_gcli.sh"
+    fail "gcli non installé" "Installer via install/install_gcli.sh"
 fi
 
 # 1.3 python3 + base58

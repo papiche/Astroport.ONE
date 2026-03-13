@@ -1,0 +1,105 @@
+########################################################################
+# Dockerfile.desktop — Astroport.ONE Desktop VDI (noVNC)
+#
+# Multi-arch (amd64 + arm64): Debian bookworm + XFCE + TigerVNC + noVNC
+# Astroport install runs at first boot via install.sh (not build time).
+#
+# Build:
+#   docker compose -f docker-compose.desktop.yml build
+#
+# Usage:
+#   docker compose -f docker-compose.desktop.yml up -d
+#   Open browser → http://localhost:6080
+########################################################################
+
+FROM debian:bookworm AS dist
+LABEL maintainer="Fred <support@qo-op.com>"
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=fr_FR.UTF-8
+
+########################################################################
+## 1. DESKTOP + VNC + noVNC
+########################################################################
+RUN apt-get update \
+ && apt-get -fy upgrade \
+ && apt-get -fy install --no-install-recommends \
+        # Desktop environment (XFCE — light, VNC-friendly)
+        xfce4 xfce4-terminal xfce4-taskmanager thunar \
+        dbus-x11 at-spi2-core \
+        # VNC server (TigerVNC — modern, multi-arch)
+        tigervnc-standalone-server tigervnc-common \
+        # noVNC (browser-based VNC client)
+        novnc python3-websockify \
+        # Desktop utilities (install.sh + ajouter_media.sh need these)
+        x11-utils xclip zenity libnotify-bin xdg-utils \
+        # Network tools (ajouter_media.sh uses netstat)
+        net-tools \
+        # Multimedia (ajouter_media.sh needs ffmpeg, espeak, vlc)
+        ffmpeg espeak vlc jq \
+        # Browser (access Astroport web interfaces from desktop)
+        firefox-esr \
+        # Locale
+        locales \
+        # Core tools needed by install.sh
+        sudo git wget curl ca-certificates procps coreutils gawk bc \
+ && sed -i 's/# fr_FR.UTF-8/fr_FR.UTF-8/' /etc/locale.gen \
+ && sed -i 's/# en_US.UTF-8/en_US.UTF-8/' /etc/locale.gen \
+ && locale-gen \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+
+## noVNC: symlink for clean URL access (http://host:6080/ → vnc_lite.html)
+RUN ln -sf /usr/share/novnc/vnc_lite.html /usr/share/novnc/index.html
+
+########################################################################
+## STAGE: master (user setup)
+########################################################################
+FROM dist AS master
+ARG SHELL=/bin/bash
+ARG UID=1000
+ARG GID=1000
+ENV USER=zen
+ENV HOME=/home/zen
+
+## Create user with sudo (install.sh requires non-root + sudo)
+RUN groupadd -g ${GID} ${USER} 2>/dev/null || true \
+ && useradd -m -u ${UID} -g ${GID} -s ${SHELL} ${USER} 2>/dev/null || true \
+ && echo "${USER} ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/${USER} \
+ && chmod 0440 /etc/sudoers.d/${USER}
+
+## Pre-clone code (install.sh runs at first boot)
+RUN git clone --recurse-submodules --depth 1 \
+    https://github.com/papiche/Astroport.ONE.git ${HOME}/.zen/Astroport.ONE \
+ && git clone --recurse-submodules --depth 1 \
+    https://github.com/papiche/UPlanet ${HOME}/.zen/workspace/UPlanet \
+ && mkdir -p ${HOME}/.zen/tmp ${HOME}/.zen/game \
+ && chown -R ${USER}:${USER} ${HOME}
+
+########################################################################
+## PORTS
+########################################################################
+# 6080:  noVNC (browser-based desktop)
+# 12345: Station Map / UPlanet
+# 54321: UPassport
+# 7777:  NOSTR Relay
+# 8080:  IPFS Gateway
+# 4001:  IPFS Swarm
+EXPOSE 6080 1234 12345 33101 54321 7777 8080 4001 5001
+
+########################################################################
+## VOLUMES (full home for desktop persistence)
+########################################################################
+VOLUME ["${HOME}"]
+VOLUME ["${HOME}/.ipfs"]
+
+########################################################################
+## ENTRYPOINT
+########################################################################
+COPY astroport-desktop.sh /app/astroport-desktop.sh
+RUN chmod +x /app/astroport-desktop.sh
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD curl -sf http://127.0.0.1:6080/ > /dev/null || exit 1
+
+CMD ["/app/astroport-desktop.sh"]

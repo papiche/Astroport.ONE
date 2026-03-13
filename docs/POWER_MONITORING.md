@@ -32,7 +32,7 @@ Generates comprehensive HTML reports with embedded graphs and statistics. Generi
 
 ### 4. 24/7 systemd service (`powerjoular.service`)
 
-Installed by `tools/install_powerjoular.sh` from `tools/systemd/powerjoular.service`. Runs PowerJoular continuously and appends to `/var/lib/powerjoular/power_24h.csv`. The 20H12 script uses this file to report **full-day** power consumption (last 24h).
+Installed by `install/install_powerjoular.sh` from `tools/systemd/powerjoular.service`. Runs PowerJoular continuously and appends to `/var/lib/powerjoular/power_24h.csv`. The 20H12 script uses this file to report **full-day** power consumption (last 24h).
 
 To avoid filling disk, **20H12 trims the CSV to last 24h** after generating the report (`power_monitor.sh trim-24h-csv`): it stops the service, overwrites the CSV with only the last 24h of data, then restarts the service.
 
@@ -227,7 +227,7 @@ The generated HTML report includes:
 ### System Requirements
 
 - **PowerJoular**: Must be installed and available in PATH
-  - Installation: `~/.zen/Astroport.ONE/tools/install_powerjoular.sh`
+  - Installation: `~/.zen/Astroport.ONE/install/install_powerjoular.sh`
   - Requires: GNAT compiler, gprbuild
   - Supports: Intel RAPL, AMD Ryzen/EPYC, Raspberry Pi, Asus Tinker Board
 
@@ -348,7 +348,7 @@ Generates HTML report with power consumption graph.
 The `20h12.process.sh` script uses the **24/7 PowerJoular service** to report **full-day** (last 24h) power consumption. No start/stop in the script; the systemd service writes continuously to `/var/lib/powerjoular/power_24h.csv`.
 
 ```bash
-# 24/7 CSV from powerjoular.service (install: tools/install_powerjoular.sh)
+# 24/7 CSV from powerjoular.service (install: install/install_powerjoular.sh)
 POWER_24H_CSV="${POWER_24H_CSV:-/var/lib/powerjoular/power_24h.csv}"
 
 # ... script execution ...
@@ -408,7 +408,7 @@ fi
 
 **Solution:**
 ```bash
-~/.zen/Astroport.ONE/tools/install_powerjoular.sh
+~/.zen/Astroport.ONE/install/install_powerjoular.sh
 ```
 
 ### Permission Denied
@@ -505,7 +505,7 @@ Or ensure matplotlib is installed via Astroport.ONE install.sh.
 
 - **PowerJoular Documentation:** https://www.noureddine.org/research/joular/powerjoular
 - **PowerJoular GitHub:** https://github.com/papiche/powerjoular
-- **Installation Script:** `tools/install_powerjoular.sh`
+- **Installation Script:** `install/install_powerjoular.sh`
 - **Example Integration:** `20h12.process.sh`
 
 ## License

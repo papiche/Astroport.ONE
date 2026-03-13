@@ -1,41 +1,169 @@
-version: '3.6'
+########################################################################
+# Astroport.ONE — Full Stack Docker Compose
+# Orchestrates: Astroport + Nginx Proxy Manager + NextCloud AIO
+#
+# Usage:
+#   docker compose up -d                    # Astroport + NPM (UPlanet ORIGIN)
+#   CAPTAIN_EMAIL=me@d.tld IPFS_SWARM_KEY=<hex64> docker compose up -d  # UPlanet ẐEN
+#   docker compose --profile full up -d     # + NextCloud AIO
+#   docker compose logs -f astroport        # Follow logs
+#
+# Environment variables (set in .env or shell):
+#   ASTRO_DOMAIN=copylaradio.com           # Your domain (default: copylaradio.com)
+#   CAPTAIN_EMAIL=captain@example.com      # Captain email (default: auto-generated)
+#   IPFS_SWARM_KEY=<64-char hex>           # IPFS private network key (default: ORIGIN 000...0)
+#   MACHINE_VALUE_ZEN=500                  # Machine value in ZEN (default: 500)
+#   PAF=14                                 # Weekly node cost in ZEN (default: 14)
+#   NCARD=1                                # MULTIPASS weekly fee in ZEN (default: 1)
+#   ZCARD=4                                # ZEN Card weekly fee in ZEN (default: 4)
+#   HOST_UID=1000                           # Host user UID
+#   HOST_GID=1000                           # Host user GID
+#
+# Subdomains (configured via NPM):
+#   astroport.${ASTRO_DOMAIN}       -> astroport:12345  (Station Map)
+#   ipfs.${ASTRO_DOMAIN}            -> astroport:8080   (IPFS Gateway)
+#   ipfs.${ASTRO_DOMAIN}/12345/     -> astroport:12345  (swarm UPSYNC discovery)
+#   relay.${ASTRO_DOMAIN}           -> astroport:7777   (WebSocket)
+#   u.${ASTRO_DOMAIN}               -> astroport:54321  (UPassport API, /health)
+#   cloud.${ASTRO_DOMAIN}           -> nextcloud:8001   (NextCloud AIO)
+#
+# NextCloud documentation:
+#   https://pad.p2p.legal/NextCloud#
+#   https://pad.p2p.legal/Smartphone2NextCloud#
+########################################################################
 
 services:
+
+  ##############################################################
+  ## ASTROPORT — Web3 Station (IPFS + NOSTR + G1)
+  ##############################################################
   astroport:
     build:
+      context: ./astroport
       args:
-      - DOCKER_BUILD_DIR=docker/astroport
-      - GID=${HOST_GID:-123}
-      - IPFS_VERSION=${IPFS_VERSION:-0.24.0}
-      - UID=${HOST_UID:-123}
-      context: ../
-      dockerfile: docker/astroport/Dockerfile
-    container_name: ${COMPOSE_PROJECT_NAME:-localhost}-astroport
-    domainname: ${DOMAINNAME:-localhost}
+        UID: ${HOST_UID:-1000}
+        GID: ${HOST_GID:-1000}
+    container_name: ${COMPOSE_PROJECT_NAME:-astroport}
     hostname: ${HOSTNAME:-astroport}
+    domainname: ${ASTRO_DOMAIN:-copylaradio.com}
     image: ${DOCKER_REPOSITORY:-localhost}/astroport:${DOCKER_IMAGE_TAG:-latest}
     restart: unless-stopped
-    ports:
-    - 1234
-    - 12345
-    - 45780
-    - 45781
-    - 45782
-    - 45783
-    - 45784
-    - 45785
-    - 45786
-    - 45787
-    - 45788
-    - 45789
-    - 45790
-    - 33101
-    - 33102
     tty: true
+    environment:
+      - ASTRO_DOMAIN=${ASTRO_DOMAIN:-copylaradio.com}
+      - CAPTAIN_EMAIL=${CAPTAIN_EMAIL:-}
+      - IPFS_SWARM_KEY=${IPFS_SWARM_KEY:-}
+      - MACHINE_VALUE_ZEN=${MACHINE_VALUE_ZEN:-500}
+      - PAF=${PAF:-14}
+      - NCARD=${NCARD:-1}
+      - ZCARD=${ZCARD:-4}
+    ports:
+      ## Network-accessible (P2P)
+      - "4001:4001"                 # IPFS Swarm (P2P)
+      ## Local only — proxied by NPM (astroport/ipfs/relay/u .DOMAIN)
+      - "12345:12345"               # Station Map (swarm UPSYNC discovery)
+      - "127.0.0.1:1234:1234"      # Twist API (deprecated)
+      - "127.0.0.1:33101:33101"    # G1Billet
+      - "127.0.0.1:54321:54321"    # UPassport
+      - "127.0.0.1:7777:7777"      # NOSTR Relay
+      - "127.0.0.1:8080:8080"      # IPFS Gateway
+      - "127.0.0.1:5001:5001"      # IPFS API (admin, never expose)
+      - "127.0.0.1:45780:45780"    # Dynamic API port
+      - "127.0.0.1:45781:45781"    # Dynamic API port
+      - "127.0.0.1:45782:45782"    # Dynamic API port
     volumes:
-    - home:/home:delegated
-    - home:/home/zen/.zen/game/players:delegated
-    working_dir: /home/zen
+      - astro_game:/home/zen/.zen/game
+      - astro_tmp:/home/zen/.zen/tmp
+      - astro_ipfs:/home/zen/.ipfs
+      - astro_workspace:/home/zen/.zen/workspace
+    networks:
+      - astronet
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:noexec,nosuid
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:54321/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
 
+  ##############################################################
+  ## NGINX PROXY MANAGER — SSL reverse proxy
+  ##############################################################
+  npm:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-astroport}-npm
+    restart: unless-stopped
+    ports:
+      - "80:80"                     # HTTP (public)
+      - "443:443"                   # HTTPS (public)
+      - "127.0.0.1:81:81"          # Admin UI (local only)
+    volumes:
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
+    networks:
+      - astronet
+    depends_on:
+      - astroport
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:81"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  ##############################################################
+  ## NEXTCLOUD AIO — Cloud storage for ZenCard holders
+  ## Activate with: docker compose --profile full up -d
+  ## Setup: https://pad.p2p.legal/NextCloud#
+  ## Mobile: https://pad.p2p.legal/Smartphone2NextCloud#
+  ##############################################################
+  nextcloud:
+    image: nextcloud/all-in-one:latest
+    container_name: nextcloud-aio-mastercontainer
+    restart: always
+    init: true
+    ports:
+      - "127.0.0.1:8002:8080"      # AIO admin interface (local only)
+      - "127.0.0.1:8443:8443"      # AIO HTTPS admin (local only)
+    environment:
+      - SKIP_DOMAIN_VALIDATION=true
+      - APACHE_PORT=8001
+      - APACHE_IP_BINDING=0.0.0.0
+      - NEXTCLOUD_DATADIR=/nextcloud-data
+    volumes:
+      - nextcloud_aio_config:/mnt/docker-aio-config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    networks:
+      - astronet
+    profiles:
+      - full              # Optional: only with --profile full
+
+##############################################################
+## NETWORKS
+##############################################################
+networks:
+  astronet:
+    driver: bridge
+    internal: false             # NPM needs external access (Let's Encrypt, HTTP)
+
+##############################################################
+## VOLUMES (persistent data)
+##############################################################
 volumes:
-  home:
+  # Astroport
+  astro_game:           # Captain account, player keys, NOSTR identities
+  astro_tmp:            # Cache, swarm, logs
+  astro_ipfs:           # IPFS node identity + datastore
+  astro_workspace:      # UPlanet workspace
+  # Nginx Proxy Manager
+  npm_data:             # NPM configuration
+  npm_letsencrypt:      # SSL certificates
+  # NextCloud
+  nextcloud_aio_config:
+    name: nextcloud_aio_mastercontainer

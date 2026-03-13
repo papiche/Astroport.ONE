@@ -2,7 +2,7 @@
 ################################################################################
 # install_gcli.sh — Install/upgrade g1cli (gcli) for Astroport.ONE
 # Called by 20h12.process.sh for auto-migration of existing stations
-# Can also be run standalone: ~/.zen/Astroport.ONE/tools/install_gcli.sh
+# Can also be run standalone: ~/.zen/Astroport.ONE/install/install_gcli.sh
 #
 # Strategy:
 #   1. Compile from source (branche nostr) — preferred

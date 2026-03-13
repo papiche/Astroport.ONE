@@ -62,13 +62,13 @@ Avec Node 18, la sortie verbose contient par exemple :
 
 1. **Installation de Deno** (dossier utilisateur, pas système) :
    ```bash
-   ~/.zen/Astroport.ONE/tools/install_deno.sh
+   ~/.zen/Astroport.ONE/install/install_deno.sh
    ```
    Installe Deno dans `$HOME/.deno/bin/deno`. Optionnel : ajouter `$HOME/.deno/bin` au `PATH` dans `~/.bashrc`.
 
 2. **Configuration de yt-dlp** :
    ```bash
-   ~/.zen/Astroport.ONE/tools/install_yt_dlp_ejs_node.sh
+   ~/.zen/Astroport.ONE/install/install_yt_dlp_ejs_node.sh
    ```
    Le script détecte Deno (dans le PATH ou `~/.deno/bin/deno`) et écrit dans `~/.config/yt-dlp/config` :
    - `--js-runtimes deno:/chemin/vers/deno` (ou `node:/chemin` si Node ≥ 20 et pas de Deno).
@@ -92,8 +92,8 @@ D’où l’importance d’un runtime EJS valide (Deno ou Node ≥ 20) pour un u
 
 | Fichier | Rôle |
 |--------|------|
-| `tools/install_deno.sh` | Installe Deno dans `~/.deno`. |
-| `tools/install_yt_dlp_ejs_node.sh` | Configure `~/.config/yt-dlp/config` : préfère Deno, sinon Node ≥ 20 ; ajoute `--remote-components ejs:github` et `player_client=...`. |
+| `install/install_deno.sh` | Installe Deno dans `~/.deno`. |
+| `install/install_yt_dlp_ejs_node.sh` | Configure `~/.config/yt-dlp/config` : préfère Deno, sinon Node ≥ 20 ; ajoute `--remote-components ejs:github` et `player_client=...`. |
 | `docs/YT_DLP_EJS.md` | Dépannage EJS (causes, debug, références). |
 | `install.sh` | Appelle `install_deno.sh` puis `install_yt_dlp_ejs_node.sh` pour une installation complète. |
 

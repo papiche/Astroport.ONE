@@ -27,7 +27,7 @@ UPassport est automatiquement installé lors de la configuration d'Astroport.ONE
 
 ```bash
 # Installation via Astroport.ONE
-~/.zen/Astroport.ONE/install_upassport.sh
+~/.zen/Astroport.ONE/install/install_upassport.sh
 
 # Installation manuelle
 git clone https://github.com/papiche/UPassport.git ~/.zen/UPassport

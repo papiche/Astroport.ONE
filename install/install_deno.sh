@@ -20,7 +20,7 @@ export DENO_INSTALL
 if [[ -x "$DENO_INSTALL/bin/deno" ]]; then
     echo "[install_deno][$(timestamp)] Deno already installed at $DENO_INSTALL/bin/deno" >&2
     "$DENO_INSTALL/bin/deno" --version
-    echo "[install_deno][$(timestamp)] To configure yt-dlp to use it, run: ~/.zen/Astroport.ONE/tools/install_yt_dlp_ejs_node.sh" >&2
+    echo "[install_deno][$(timestamp)] To configure yt-dlp to use it, run: ~/.zen/Astroport.ONE/install/install_yt_dlp_ejs_node.sh" >&2
     exit 0
 fi
 
@@ -41,7 +41,7 @@ if [[ -x "$DENO_INSTALL/bin/deno" ]]; then
     echo "  export DENO_INSTALL=\"\$HOME/.deno\"" >&2
     echo "  export PATH=\"\$DENO_INSTALL/bin:\$PATH\"" >&2
     echo "" >&2
-    echo "[install_deno][$(timestamp)] Configure yt-dlp to use Deno: ~/.zen/Astroport.ONE/tools/install_yt_dlp_ejs_node.sh" >&2
+    echo "[install_deno][$(timestamp)] Configure yt-dlp to use Deno: ~/.zen/Astroport.ONE/install/install_yt_dlp_ejs_node.sh" >&2
 else
     echo "[install_deno][$(timestamp)] ERROR: Deno binary not found after install." >&2
     exit 1

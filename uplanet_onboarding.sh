@@ -1150,8 +1150,9 @@ step_final_summary() {
     echo ""
     
     echo -e "${BLUE}🌐 Accès Web:${NC}"
-    echo -e "   • Interface: ${CYAN}http://astroport.localhost/ipns/copylaradio.com${NC}"
-    echo -e "   • API: ${CYAN}http://localhost:1234${NC}"
+    echo -e "   • Station:   ${CYAN}http://localhost:12345${NC}"
+    echo -e "   • UPassport: ${CYAN}http://localhost:54321${NC}"
+    echo -e "   • IPFS:      ${CYAN}http://localhost:8080${NC}"
     echo ""
     
     # Vérifier l'état des services via heartbox_analysis.sh

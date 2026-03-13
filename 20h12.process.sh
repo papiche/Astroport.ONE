@@ -192,8 +192,74 @@ if [[ "$OC2UP_LAST" != "$OC2UP_MONTH" ]]; then
     fi
 fi
 
+## UPDATE/BUILD Ginkgo Flutter web app (zen branch)
+## Generates station-specific .env from my.sh variables and builds for IPFS
+GINKGO_DIR="$HOME/.zen/workspace/ginkgo"
+GINKGO_REPO="https://git.duniter.org/zicmama/ginkgo.git"
+GINKGO_MARKER="$HOME/.zen/game/.ginkgo_build.done"
+GINKGO_LAST=$(cat "$GINKGO_MARKER" 2>/dev/null)
+GINKGO_TODAY=$(date +%Y-%m-%d)
+
+if command -v flutter &>/dev/null; then
+    if [[ -d "$GINKGO_DIR" ]]; then
+        cd "$GINKGO_DIR"
+        git checkout zen 2>/dev/null
+        GINKGO_PULL=$(git pull 2>&1)
+    else
+        mkdir -p "$HOME/.zen/workspace"
+        cd "$HOME/.zen/workspace"
+        git clone -b zen --depth 1 "$GINKGO_REPO" ginkgo
+        GINKGO_PULL="freshly cloned"
+    fi
+
+    ## Rebuild only if code changed or never built
+    if [[ "$GINKGO_PULL" != "Already up to date." || "$GINKGO_LAST" != "$GINKGO_TODAY" || ! -d "$GINKGO_DIR/build/web" ]]; then
+        cd "$GINKGO_DIR"
+
+        ## Generate .env with station-specific values
+        cat > .env <<ENVEOF
+CURRENCY=g1
+GENESIS_HASH=0xfeb770bbb0344dabc8366b0d1f889a8e4e6ca09b914006655fe795920deb6d56
+GITLAB_TOKEN=
+SENTRY_DSN=https://306345cb87ee4e1cbbe9023fb4afc5fc@sentry.comunes.org/6
+ENDPOINTS=wss://rpc.duniter.org wss://g1.axiom-team.fr/ws/ wss://g1.p2p.legal/ws wss://g1.asycn.io/ws/ wss://g1.coinduf.eu wss://g1.gyroi.de wss://archive-rpc.g1.brussels.ovh wss://g1.rendall.fr/ws wss://g1.pini.fr/ws wss://g1v2archive.syoul.fr/ wss://g1.1000i100.fr
+DUNITER_INDEXER_NODES=https://indexer.duniter.org/v1/graphql https://g1-squid.axiom-team.fr/v1/graphql https://g1-squid.asycn.io/v1/graphql https://squid.g1.coinduf.eu/v1/graphql https://squid.g1.gyroi.de/v1/graphql https://squid.g1.brussels.ovh/v1/graphql https://g1-squid.pini.fr/v1/graphql https://squidv2s.syoul.fr/v1/graphql https://g1.1000i100.fr/v1/graphql
+DATAPOD_ENDPOINTS=https://datapod.gyroi.de/v1/graphql
+IPFS_GATEWAYS=${myIPFSW:-https://gyroi.de} https://gateway.datapod.coinduf.eu/
+CESIUM_PLUS_NODES=https://g1.data.e-is.pro
+UPASSPORT_URL=${uSPOT:-https://u.copylaradio.com}
+ENVEOF
+        cp .env .env.dev
+
+        echo "Ginkgo: building Flutter web for station ($myDOMAIN)..."
+        flutter pub get
+        dart run build_runner build --delete-conflicting-outputs 2>/dev/null || true
+        if flutter build web; then
+            ## Patch for IPFS relative paths
+            sed -i 's|<base href="/">|<base href="./">|' build/web/index.html
+            sed -i 's|href="/icons/|href="icons/|g' build/web/index.html
+            sed -i 's|"src": "/icons/|"src": "icons/|g' build/web/manifest.json
+
+            ## Add to IPFS and publish
+            GINKGO_CID=$(ipfs add -rQ build/web/ 2>/dev/null)
+            if [[ -n "$GINKGO_CID" ]]; then
+                echo "Ginkgo: IPFS CID = $GINKGO_CID"
+                echo "$GINKGO_CID" > "$HOME/.zen/tmp/${IPFSNODEID}/ginkgo.cid"
+                echo "$GINKGO_TODAY" > "$GINKGO_MARKER"
+                echo "✅ Ginkgo web build published to IPFS"
+            fi
+        else
+            echo "❌ Ginkgo: flutter build web failed"
+        fi
+    else
+        echo "Ginkgo: no changes, skipping build"
+    fi
+else
+    echo "Ginkgo: flutter not installed — skipping"
+fi
+
 ## INSTALL/UPGRADE gcli + cleanup legacy jaklis/silkaj
-${MY_PATH}/tools/install_gcli.sh
+${MY_PATH}/install/install_gcli.sh
 
 ########################################################################
 ## UPDATE Astroport.ONE code
@@ -202,7 +268,7 @@ git pull
 
 ########################################################################
 ## Updating yt-dlp
-${MY_PATH}/youtube-dl.sh # retry install if needed
+${MY_PATH}/install/youtube-dl.sh # retry install if needed
 yt-dlp -U #Update yt-dlp
 
 ########################################################################

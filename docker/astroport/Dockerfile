@@ -1,204 +1,169 @@
-FROM debian:stable as dist
-LABEL maintainer aynic.os <support+docker@asycn.io>
-ARG DOCKER_BUILD_DIR
+FROM debian:stable AS dist
+LABEL maintainer="Fred <support@qo-op.com>"
 ARG DOCKER_MACHINE=x86_64
 ARG DOCKER_SYSTEM=Linux
 
+########################################################################
+## 1. SYSTEM PACKAGES (mirrors install.sh apt-get loops)
+########################################################################
 RUN apt-get update \
  && apt-get -fy upgrade \
- && DEBIAN_FRONTEND=noninteractive apt-get -fy install \
-        argon2 \
-        basez \
-        bash \
-        bc \
-        ca-certificates \
-        chromium \
-        cmake \
-        cron \
-        curl \
-        dnsutils \
-        detox \
-        espeak \
-        fail2ban \
-        file \
-        ffmpeg \
-        gawk \
-        gettext \
-        git \
-        gnupg \
-        gpg \
-        gpg-agent \
-        html2text \
-        httrack \
-        imagemagick \
-        inotify-tools \
-        jq \
-        kodi \
-        libcurl4-openssl-dev \
-        libsodium* \
-        make \
-        miller \
-        mp3info \
-        mpack \
-        msmtp \
-        musl-dev \
-        nano \
-        ncdu \
-        net-tools \
-        netcat-traditional \
-        nmap \
+ && DEBIAN_FRONTEND=noninteractive apt-get -fy install --no-install-recommends \
+        # Core tools
+        bash git zip make cmake sudo cron curl wget ca-certificates \
+        # Network & security
+        openssh-client fail2ban iptables ufw dnsutils ntpdate net-tools \
+        netcat-traditional nmap socat \
+        # IPFS & data
+        jq bc file gawk parallel inotify-tools ncdu pv \
+        # Python3 system
+        pipx python3-pip python3-setuptools python3-wheel python3-dotenv \
+        python3-gpg python3-jwcrypto python3-brotli python3-aiohttp \
+        python3-prometheus-client python3-tk python3 \
+        # Multimedia & data tools
+        qrencode gnupg pandoc btop sox imagemagick ffmpeg \
+        espeak vlc mp3info html2text detox basez markdown \
+        geoip-bin v4l-utils ocrmypdf \
+        # Crypto build deps
+        cargo libsodium-dev libcurl4-openssl-dev libgpgme-dev libffi-dev \
+        musl-dev openssl libssl-dev build-essential swig python3-dev \
+        # ASCII art
+        figlet cowsay fonts-hack-ttf \
+        # Node
         npm \
-        ntpdate \
-        openssh-client \
-        openssl* \
-        pandoc \
-        pv \
-        python3 \
-        python3-brotli \
-        python3-dotenv \
-        python3-gpg \
-        python3-jwcrypto \
-        python3-libnacl \
-        python3-opencv \
-        python3-pip \
-        python3-setuptools \
-        python3-wheel \
-        qrencode \
-        screen \
-        socat \
-        ssmtp \
-        sudo \
-        tmux \
-        v4l-utils \
-        vlc \
-        vim-nox \
-        wget \
-        x11-utils \
-        xclip \
-        xz-utils \
-        zenity \
+        # Mail
+        msmtp \
  && sed -i '/PDF/d' /etc/ImageMagick-6/policy.xml \
- && ln -f -s  /usr/bin/python3 /usr/bin/python \
+ && ln -f -s /usr/bin/python3 /usr/bin/python \
  && rm -rf /var/lib/apt/lists/*
 
-RUN set -x && buildDeps=' \
-    build-essential \
-    libssl-dev \
-    cargo \
-    libffi-dev \
-    python3-dev \
-    swig \
-    ' \
- && apt-get update \
- && apt-get install -y $buildDeps --no-install-recommends \
- && mkdir -p /usr/local/src/dpgpid \
- && wget -qO - https://github.com/aynicos/dpgpid/archive/master.tar.gz \
-     |tar --strip-components 1 -C /usr/local/src/dpgpid -xzf - \
- && pip3 install --break-system-packages -r /usr/local/src/dpgpid/requirements.txt \
- && ln -s /usr/local/src/dpgpid/keygen /usr/local/bin/keygen \
- && chmod 0755 /usr/local/bin/keygen \
- && /usr/local/bin/keygen --help >/dev/null \
- && pip3 install --break-system-packages amzqr pdf2docx pyppeteer \
- && rm -rf /root/.cache \
- && apt-get clean
+########################################################################
+## 2. TIDDLYWIKI
+########################################################################
+RUN npm install -g tiddlywiki@5.2.3
 
-RUN npm install -g tiddlywiki
+########################################################################
+## 3. IPFS KUBO
+########################################################################
+ARG IPFS_VERSION=0.30.0
+RUN OS="$(echo ${DOCKER_SYSTEM} | awk '{print tolower($0)}')" \
+ && ARCH="$(echo ${DOCKER_MACHINE} | awk '{print /x86_64/ ? "amd64" : /aarch64/ ? "arm64" : /armv7l/ ? "arm" : $0}')" \
+ && wget -qO - https://github.com/ipfs/kubo/releases/download/v${IPFS_VERSION}/kubo_v${IPFS_VERSION}_${OS}-${ARCH}.tar.gz \
+    | tar --strip-components 1 -C /usr/local/bin -xzf - kubo/ipfs
 
-ARG COMPOSE_REMOTE=https://github.com/docker/compose
-ARG COMPOSE_VERSION=2.5.0
-ARG IPFS_VERSION=0.24.0
-
-RUN OS="$(echo ${DOCKER_SYSTEM} |awk '{print tolower($0)}')" \
- && ARCH="$(echo ${DOCKER_MACHINE} |awk '{print /armv7l/ ? "armv7" : $0}')" \
- && wget -qO /usr/bin/docker-compose ${COMPOSE_REMOTE}/releases/download/v${COMPOSE_VERSION}/docker-compose-${OS}-${ARCH} \
- && chmod +x /usr/bin/docker-compose \
+########################################################################
+## 4. SHELLCHECK + SHELLSPEC (for testing)
+########################################################################
+RUN OS="$(echo ${DOCKER_SYSTEM} | awk '{print tolower($0)}')" \
  && ARCH="$(echo ${DOCKER_MACHINE})" \
  && wget -qO - https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.${OS}.${ARCH}.tar.xz \
-     |tar --strip-components 1 -C /usr/local/bin -xJf - shellcheck-stable/shellcheck \
- && ARCH="$(echo ${DOCKER_MACHINE} |awk '{print /x86_64/ ? "amd64" : /arch64/ ? "arm64" : /armv(6|7)/ ? "arm" : $0}')" \
- && wget -qO - https://github.com/ipfs/kubo/releases/download/v${IPFS_VERSION}/kubo_v${IPFS_VERSION}_${OS}-${ARCH}.tar.gz \
-     |tar --strip-components 1 -C /usr/local/bin -xzf - kubo/ipfs \
+    | tar --strip-components 1 -C /usr/local/bin -xJf - shellcheck-stable/shellcheck \
  && mkdir -p /usr/local/lib/shellspec \
  && wget -qO - https://github.com/shellspec/shellspec/archive/refs/heads/master.tar.gz \
-     |tar --strip-components 1 -C /usr/local/lib/shellspec -xzf - \
+    | tar --strip-components 1 -C /usr/local/lib/shellspec -xzf - \
  && ln -s /usr/local/lib/shellspec/shellspec /usr/local/bin/shellspec
 
-ADD https://raw.github.com/kvz/cronlock/master/cronlock /usr/local/bin/cronlock
-RUN chmod +rx /usr/local/bin/cronlock
+########################################################################
+## 5. FLUTTER SDK (web builds for Ginkgo app)
+########################################################################
+ARG INSTALL_FLUTTER=true
+RUN if [ "$INSTALL_FLUTTER" = "true" ]; then \
+        apt-get update \
+     && DEBIAN_FRONTEND=noninteractive apt-get -fy install --no-install-recommends \
+            unzip xz-utils clang cmake ninja-build pkg-config libgtk-3-dev \
+     && rm -rf /var/lib/apt/lists/* \
+     && git clone -b stable --depth 1 https://github.com/flutter/flutter.git /opt/flutter \
+     && /opt/flutter/bin/flutter precache --web \
+     && /opt/flutter/bin/flutter config --no-analytics \
+     && /opt/flutter/bin/dart --disable-analytics; \
+    fi
+ENV PATH="/opt/flutter/bin:${PATH}"
 
-# config ssmtp
-COPY templates/.ssmtprc /etc/ssmtp/ssmtp.conf
-RUN chmod 640 /etc/ssmtp/ssmtp.conf && chgrp mail /etc/ssmtp/ssmtp.conf
+########################################################################
+## 6. EXPOSE PORTS (Astroport services only — NPM/NextCloud are sibling containers)
+########################################################################
+# 1234:  Twist BASH API (deprecated)
+# 12345: Station Map / UPlanet cartography
+# 33101: G1Billet
+# 54321: UPassport FastAPI
+# 7777:  NOSTR Relay (strfry)
+# 8080:  IPFS Gateway
+# 4001:  IPFS Swarm
+# 5001:  IPFS API
+# 45780-45782: Dynamic ports
+EXPOSE 1234 12345 33101 54321 7777 8080 4001 5001 45780 45781 45782
 
-EXPOSE 1234 12345 33101 33012 45780 45781 45782 45783 45784 45785 45786 45787 45788 45789 45790
-
-COPY install.sh /install.sh
-COPY ${DOCKER_BUILD_DIR}/*.sh /app/
-COPY ${DOCKER_BUILD_DIR}/.*aliases /etc/skel/
-CMD ["/app/astroport.sh", "start"]
-
-FROM dist as master
-ARG DOCKER_BUILD_DIR
-ARG DOCKER_GID
-ARG GID
+########################################################################
+## STAGE: master (user setup)
+########################################################################
+FROM dist AS master
 ARG SHELL=/bin/bash
-ARG UID
-ARG USER
-ENV GID=${GID}
-ENV UID=${UID}
+ARG UID=1000
+ARG GID=1000
 ENV USER=zen
+ENV HOME=/home/zen
 
-# If we provide a numeric UID
-RUN if [ "${UID}" -eq "${UID}" ] 2>/dev/null; then \
-  # Force $UID of $USER if it exists
-  if [ "$(awk -F: '$1 == "'"${USER}"'" {print $3}' /etc/passwd)" != "${UID}" ]; then \
-    sed -i 's/^\('"${USER}"':x\):[0-9]\+:/\1:'"${UID}"':/' /etc/passwd; \
-  fi; \
-  # Create $USER if $UID does not exist
-  if [ "$(awk -F: '$3 == "'"${UID}"'" {print $1}' /etc/passwd)" = "" ]; then \
-    echo "${USER}:x:${UID}:${GID:-${UID}}::/home/${USER}:${SHELL:-/bin/sh}" >> /etc/passwd; \
-    echo "${USER}:\!:$(($(date +%s) / 60 / 60 / 24)):0:99999:7:::" >> /etc/shadow; \
-    mkdir -p /home/"${USER}"; \
-  fi; \
-  chown "${UID}" $(awk -F: '$1 == "'"${USER}"'" {print $(NF-1)}' /etc/passwd); \
-fi
+# Create user
+RUN groupadd -g ${GID} ${USER} 2>/dev/null || true \
+ && useradd -m -u ${UID} -g ${GID} -s ${SHELL} ${USER} 2>/dev/null || true \
+ && echo "${USER} ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/${USER}
 
-# If we provide a numeric GID
-RUN if [ "${GID}" -eq "${GID}" ] 2>/dev/null; then \
-  # Force $GID of $GROUP if it already exists
-  if [ "$(awk -F: '$1 == "'"${GROUP}"'" {print $3}' /etc/group)" != "${GID}" ]; then \
-    sed -i 's/^\('"${GROUP}"':x\):[0-9]\+:/\1:'"${GID}"':/' /etc/group; \
-  fi; \
-  # Create $GROUP if $GID does not exist
-  if [ "$(awk -F: '$3 == "'"${GID}"'" {print $1}' /etc/group)" = "" ]; then \
-    echo "${GROUP}:x:${GID}:" >> /etc/group; \
-  fi; \
-  # Force $GID of $USER if it exists
-  if [ "$(awk -F: '$1 == "'"${USER}"'" {print $4}' /etc/passwd)" != "${GID}" ]; then \
-    sed -i 's/^\('"${USER}"':x:[0-9]\+\):[0-9]\+:/\1:'"${GID}"':/' /etc/passwd; \
-  fi; \
-  chgrp "${GID}" $(awk -F: '$1 == "'"${USER}"'" {print $(NF-1)}' /etc/passwd); \
-fi
+# Clone Astroport.ONE into image
+RUN git clone --recurse-submodules --depth 1 \
+    https://github.com/papiche/Astroport.ONE.git ${HOME}/.zen/Astroport.ONE \
+ && git clone --recurse-submodules --depth 1 \
+    https://github.com/papiche/UPlanet ${HOME}/.zen/workspace/UPlanet \
+ && chown -R ${USER}:${USER} ${HOME}
 
-## sudo
-RUN echo "$USER ALL=(ALL:ALL) NOPASSWD: ALL" > "/etc/sudoers.d/$USER"
+# Switch to user for python venv + pip installs
+USER ${USER}
+WORKDIR ${HOME}
 
-# config ssmtp
-RUN echo "$USER:support@g1sms.fr:mail.asycn.io:587" >> /etc/ssmtp/revaliases
+########################################################################
+## 7. PYTHON VENV + PACKAGES (mirrors install.sh pip loop)
+########################################################################
+RUN python3 -m venv ${HOME}/.astro \
+ && . ${HOME}/.astro/bin/activate \
+ && pip install --upgrade pip setuptools wheel \
+ && pipx install duniterpy --include-deps \
+ && pip install -U \
+    python-dotenv termcolor amzqr ollama requests geohash \
+    beautifulsoup4 pyppeteer cryptography jwcrypto secp256k1 \
+    gql base58 pybase64 pynacl python-gnupg pynentry \
+    paho-mqtt aiohttp ipfshttpclient \
+    bitcoin monero ecdsa \
+    pynostr bech32 nostpy-cli \
+    matplotlib readability-lxml duniterpy \
+ && rm -rf ${HOME}/.cache/pip
 
-# config crontab
-RUN echo "SHELL=/bin/bash" > "/var/spool/cron/crontabs/$USER" \
- && echo "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> "/var/spool/cron/crontabs/$USER" \
- && echo "12  20  *  *  *   /bin/bash /home/zen/.zen/Astroport.ONE/20h12.process.sh > /tmp/20h12.log 2>&1" >> "/var/spool/cron/crontabs/$USER" \
- && chown "$USER" "/var/spool/cron/crontabs/$USER"
+########################################################################
+## 8. BUILD-TIME INSTALL (install_system.sh equivalent)
+########################################################################
+RUN mkdir -p ${HOME}/.local/bin \
+ && ln -f -s ${HOME}/.zen/Astroport.ONE/tools/natools.py ${HOME}/.local/bin/natools \
+ && ln -f -s ${HOME}/.zen/Astroport.ONE/tools/keygen ${HOME}/.local/bin/keygen \
+ && ln -f -s ${HOME}/.zen/Astroport.ONE/command.sh ${HOME}/.local/bin/coeurbox
 
-VOLUME "/home/$USER/.zen/game/players"
+########################################################################
+## 9. VOLUMES (persistent data across container restarts)
+########################################################################
+# Game data (captain account, player keys, NOSTR identities)
+VOLUME ["${HOME}/.zen/game"]
+# Temp/cache data (swarm, logs, IPFS cache)
+VOLUME ["${HOME}/.zen/tmp"]
+# IPFS repo (node identity + datastore)
+VOLUME ["${HOME}/.ipfs"]
+# Nginx Proxy Manager data
+VOLUME ["${HOME}/.zen/nginx-proxy-manager"]
 
-# homedir
-RUN mkdir -p "/home/$USER/.zen/game/players" \
- && chown -R "$USER" "/home/$USER"
+########################################################################
+## 10. HEALTHCHECK
+########################################################################
+HEALTHCHECK --interval=60s --timeout=10s --retries=3 \
+  CMD curl -sf http://127.0.0.1:54321/health > /dev/null || exit 1
 
-HEALTHCHECK CMD [ $(ps aux |grep 'nc -l -p' |wc -l) -lt 199 ] && echo -n OK
-
-USER "$USER"
-WORKDIR "/home/$USER"
+########################################################################
+## 11. ENTRYPOINT
+########################################################################
+COPY astroport.sh /app/astroport.sh
+CMD ["/app/astroport.sh", "start"]

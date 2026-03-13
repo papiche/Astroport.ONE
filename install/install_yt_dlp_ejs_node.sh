@@ -42,12 +42,12 @@ else
             JS_RUNTIME="node:$NODE_BIN"
             echo "[install_yt_dlp_ejs_node][$(timestamp)] Using Node: $JS_RUNTIME ($NODE_VER)" >&2
         else
-            echo "[install_yt_dlp_ejs_node][$(timestamp)] Node $NODE_VER is unsupported by yt-dlp EJS (need >= 20). Install Deno: ~/.zen/Astroport.ONE/tools/install_deno.sh" >&2
+            echo "[install_yt_dlp_ejs_node][$(timestamp)] Node $NODE_VER is unsupported by yt-dlp EJS (need >= 20). Install Deno: ~/.zen/Astroport.ONE/install/install_deno.sh" >&2
             echo "[install_yt_dlp_ejs_node][$(timestamp)] Then re-run this script. Node 18 is kept for TiddlyWiki; Deno is used only for yt-dlp." >&2
             exit 1
         fi
     else
-        echo "[install_yt_dlp_ejs_node][$(timestamp)] ERROR: No Deno and no Node. Install Deno: ~/.zen/Astroport.ONE/tools/install_deno.sh" >&2
+        echo "[install_yt_dlp_ejs_node][$(timestamp)] ERROR: No Deno and no Node. Install Deno: ~/.zen/Astroport.ONE/install/install_deno.sh" >&2
         exit 1
     fi
 fi

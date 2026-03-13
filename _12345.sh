@@ -220,6 +220,8 @@ while true; do
         && myIP=${zipit} \
         && echo "/ip4/${zipit}/udp/4001/p2p/${IPFSNODEID}" > ~/.zen/tmp/${IPFSNODEID}/myIPFS.txt
 
+    ## Derive myDNSADDR from myIPFS (https://ipfs.DOMAIN -> ipfs.DOMAIN)
+    myDNSADDR=$(echo "${myIPFS}" | sed -n 's|https://\(.*\)|\1|p')
     [[ ! -z ${myDNSADDR} ]] \
         && echo "/dnsaddr/${myDNSADDR}/udp/4001/p2p/${IPFSNODEID}" > ~/.zen/tmp/${IPFSNODEID}/myIPFS.txt
 
