@@ -80,6 +80,45 @@ echo "ZEN COOPERATIVE: Starting weekly allocation process (captain's birthday: $
 
 
 #######################################################################
+# Reversement INTRUSION → CAPTAIN_DEDICATED
+# Les fonds intrusifs collectés par primal_wallet_control.sh sont
+# réinjectés dans le circuit coopératif (en gardant 1 Ğ1 existential deposit)
+#######################################################################
+INTRUSION_DUNIKEY="$HOME/.zen/game/uplanet.INTRUSION.dunikey"
+if [[ -s "$INTRUSION_DUNIKEY" ]]; then
+    INTRUSION_G1PUB=$(grep "pub:" "$INTRUSION_DUNIKEY" | awk '{print $2}')
+    INTRUSION_COIN=$(${MY_PATH}/../tools/G1check.sh "${INTRUSION_G1PUB}" | tail -n 1)
+    INTRUSION_ZEN=$(echo "scale=1; ($INTRUSION_COIN - 1) * 10" | bc)
+    echo "INTRUSION wallet: ${INTRUSION_ZEN} Ẑen (${INTRUSION_COIN} Ğ1)"
+
+    if [[ $(echo "$INTRUSION_ZEN > 0" | bc -l) -eq 1 ]]; then
+        # Reversement vers UPLANETNAME_G1 (réserve coopérative centrale)
+        UPLANETG1_DUNIKEY="$HOME/.zen/game/uplanet.G1.dunikey"
+        UPLANETG1_PUB=$(grep "pub:" "$UPLANETG1_DUNIKEY" 2>/dev/null | awk '{print $2}')
+
+        if [[ -n "$UPLANETG1_PUB" ]]; then
+            echo "🔄 Reversement INTRUSION → UPLANETNAME_G1 : ALL (garde 1 Ğ1)"
+            intrusion_result=$(${MY_PATH}/../tools/PAYforSURE.sh \
+                "$INTRUSION_DUNIKEY" \
+                "ALL" \
+                "${UPLANETG1_PUB}" \
+                "UP:${UPLANETG1PUB:0:8}:INTRUSION:REVERSE:${TODATE}")
+            if [[ $? -eq 0 ]]; then
+                echo "✅ Reversement INTRUSION réussi : ${INTRUSION_ZEN} Ẑen → UPLANETNAME_G1"
+            else
+                echo "❌ Échec reversement INTRUSION"
+            fi
+        else
+            echo "⚠️  UPLANETNAME_G1 dunikey introuvable — reversement INTRUSION reporté"
+        fi
+    else
+        echo "ℹ️  INTRUSION wallet vide (0 Ẑen) — rien à reverser"
+    fi
+else
+    echo "ℹ️  Wallet INTRUSION inexistant — aucun reversement"
+fi
+
+#######################################################################
 # Vérification du solde du compte CAPTAIN_DEDICATED (collecte des loyers)
 # C'est le portefeuille d'exploitation qui collecte les redevances d'usage
 # et sert de source pour la répartition coopérative 3x1/3
