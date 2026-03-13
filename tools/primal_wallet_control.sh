@@ -85,7 +85,7 @@ get_wallet_balance() {
 }
 
 # Génère un lien Cesium
-cesium_link() { echo "${CESIUMIPFS}/#/app/wot/${1}/"; }
+cesium_link() { echo "${CESIUMIPFS}/#/wot/${1}/"; }
 
 # ── Requête GraphQL générique ─────────────────────────────────────────────────
 graphql() {
@@ -514,6 +514,22 @@ control_primal_transactions() {
         wallet_balance=$(get_wallet_balance "$wallet_pubkey")
         if (( $(echo "${wallet_balance:-0} < $amount" | bc -l) )); then
             logw "Solde insuffisant pour rediriger ${amount} Ğ1 (solde: ${wallet_balance} Ğ1, ID: $tx_id)"
+
+            # Vider TOUT le solde (y compris 1 Ğ1 existential deposit) vers INTRUSION
+            local drain_comment="UPLANET:${UPLANETG1PUB:0:8}:DRAIN:${wallet_pubkey:0:8}:INTRUSION"
+            logw "💸 Vidage total du wallet vers INTRUSION (DRAIN)..."
+            if "${MY_PATH}/PAYforSURE.sh" \
+                "$wallet_dunikey" \
+                "DRAIN" \
+                "$intrusion_pub" \
+                "$drain_comment" \
+                "$MOATS"; then
+                logok "Wallet vidé complètement → INTRUSION (${intrusion_pub:0:12})"
+            else
+                loge "Échec du vidage wallet vers INTRUSION"
+            fi
+
+            # Désactiver le MULTIPASS (migration relay/capitaine)
             logw "🔥 Déclenchement nostr_DESTROY_TW.sh pour $player_email"
             if [[ -x "${MY_PATH}/nostr_DESTROY_TW.sh" ]]; then
                 "${MY_PATH}/nostr_DESTROY_TW.sh" "$player_email" 2>&1 || \
@@ -521,7 +537,7 @@ control_primal_transactions() {
             else
                 loge "nostr_DESTROY_TW.sh introuvable dans ${MY_PATH}/"
             fi
-            break  # Plus de solde — inutile de continuer les redirections
+            break  # Wallet vidé et détruit — inutile de continuer
         fi
 
         # ── Redirection vers INTRUSION ────────────────────────────────────

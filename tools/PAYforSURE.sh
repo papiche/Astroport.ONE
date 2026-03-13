@@ -108,7 +108,7 @@ if (( $(echo "${AMOUNT} == 0" | bc -l) )); then
 fi
 
 # ── Validation montant ────────────────────────────────────────────────────────
-if ! [[ "$AMOUNT" =~ ^[0-9]+([.][0-9]+)?$|^ALL$ ]]; then
+if ! [[ "$AMOUNT" =~ ^[0-9]+([.][0-9]+)?$|^ALL$|^DRAIN$ ]]; then
     loge "Montant invalide : $AMOUNT"
     exit 1
 fi
@@ -272,8 +272,27 @@ if [[ -z "$COINS" || "$COINS" == "0" || "$COINS" == ".0000" ]]; then
     exit 1
 fi
 
-# ── ALL = vider le wallet ─────────────────────────────────────────────────────
-[[ "$AMOUNT" == "ALL" ]] && AMOUNT="$COINS"
+# ── ALL = transférable / DRAIN = tout (y compris 1 Ğ1 existential deposit) ────
+if [[ "$AMOUNT" == "DRAIN" ]]; then
+    # Récupérer total_balance pour vider entièrement le wallet
+    TOTAL_COINS=""
+    for rpc in "${G1_WS_NODES[@]}"; do
+        raw=$($GCLI --no-password -a "$ISSUERPUB" -u "$rpc" -o json account balance 2>/dev/null \
+            | jq -r '.total_balance // empty')
+        if [[ -n "$raw" && "$raw" != "null" ]]; then
+            TOTAL_COINS=$(echo "scale=2; ${raw} / 100" | bc)
+            break
+        fi
+    done
+    if [[ -z "$TOTAL_COINS" || "$TOTAL_COINS" == "0" ]]; then
+        loge "Impossible de récupérer le total_balance pour DRAIN"
+        exit 1
+    fi
+    log "DRAIN : vidage total du wallet (${TOTAL_COINS} Ğ1 incluant 1 Ğ1 existential deposit)"
+    AMOUNT="$TOTAL_COINS"
+elif [[ "$AMOUNT" == "ALL" ]]; then
+    AMOUNT="$COINS"
+fi
 
 # ── Vérifier le solde suffisant ───────────────────────────────────────────────
 if (( $(echo "$COINS < $AMOUNT" | bc -l) )); then
@@ -399,9 +418,9 @@ DES=$(cat "$DESTFILE" 2>/dev/null || echo "0")
 echo "$DES + $AMOUNT" | bc > "$DESTFILE"
 
 # ── Conversions ZEN ───────────────────────────────────────────────────────────
-ZENAMOUNT=$(printf "%.1f" "$(echo "$AMOUNT * 10" | bc)")
-ZENCUR=$(printf "%.1f" "$(echo "($COINS - $AMOUNT) * 10" | bc)")
-ZENDES=$(printf "%.1f" "$(echo "($DES + $AMOUNT) * 10" | bc)")
+ZENAMOUNT=$(LC_NUMERIC=C printf "%.1f" "$(echo "$AMOUNT * 10" | bc)")
+ZENCUR=$(LC_NUMERIC=C printf "%.1f" "$(echo "($COINS - $AMOUNT) * 10" | bc)")
+ZENDES=$(LC_NUMERIC=C printf "%.1f" "$(echo "($DES + $AMOUNT) * 10" | bc)")
 
 # ── Rapport HTML ──────────────────────────────────────────────────────────────
 HTML_FILE="${PENDINGDIR}/${MOATS}.result.html"
