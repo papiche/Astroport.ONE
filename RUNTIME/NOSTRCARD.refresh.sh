@@ -650,13 +650,13 @@ for PLAYER in "${NOSTR[@]}"; do
 
                             # Main rental payment to CAPTAIN_DEDICATED (business wallet - HT amount only)
                             # This wallet collects rentals and serves as source for cooperative allocation
-                            payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Npaf" "${CAPTAIN_DEDICATED_G1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:NCARD:HT" 2>/dev/null)
+                            payment_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$Npaf" "${CAPTAIN_DEDICATED_G1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:NCARD:HT")
                             payment_success=$?
 
                             # TVA provision directly from MULTIPASS to IMPOTS (fiscally correct)
-                            tva_success=0
+                            tva_success=1
                             if [[ $payment_success -eq 0 && $(echo "$TVA_AMOUNT > 0" | bc -l) -eq 1 && -n "$IMPOTS_G1PUB" ]]; then
-                                tva_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$TVA_AMOUNT" "${IMPOTS_G1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:TVA" 2>/dev/null)
+                                tva_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$TVA_AMOUNT" "${IMPOTS_G1PUB}" "UPLANET:${ORIGIN}:${IPFSNODEID: -12}:$YOUSER:TVA")
                                 tva_success=$?
                                 if [[ $tva_success -eq 0 ]]; then
                                     log "INFO" "✅ TVA provision recorded directly from MULTIPASS for ${PLAYER} on $TODATE ($TVA_ZEN ẐEN = $TVA_AMOUNT Ğ1)"
@@ -665,7 +665,9 @@ for PLAYER in "${NOSTR[@]}"; do
                                     log "WARN" "❌ TVA provision failed for ${PLAYER} on $TODATE ($TVA_ZEN ẐEN = $TVA_AMOUNT Ğ1)"
                                     log_metric "TVA_PROVISION_FAILED" "$TVA_AMOUNT" "${PLAYER}"
                                 fi
-                            else
+                            elif [[ $payment_success -ne 0 ]]; then
+                                log "WARN" "⏭️ TVA provision skipped — main payment failed"
+                            elif [[ -z "$IMPOTS_G1PUB" ]]; then
                                 log "ERROR" "❌ IMPOTS wallet not found for TVA provision"
                             fi
 

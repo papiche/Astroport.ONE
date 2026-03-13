@@ -501,6 +501,8 @@ EOFNOSTR
     ZENCARDG1=$(cat ~/.zen/game/players/${EMAIL}/.g1pub 2>/dev/null) ## Does ZenCard already existing
 
     ### CREATE TEPORARY PROFILE in NOSTR RELAYS
+    ## Derive SS58 v2 address from G1 v1 pubkey
+    G1V2ADDRESS=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$G1PUBNOSTR" 2>/dev/null)
     ${MY_PATH}/../tools/nostr_setup_profile.py \
         "$NPRIV" \
         "[•͡˘㇁•͡˘] $YOUSER" "${G1PUBNOSTR}" \
@@ -509,6 +511,7 @@ EOFNOSTR
         "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg" \
         "" "$myIPFS/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" "" "" "" "" \
         "wss://relay.copylaradio.com" "$myRELAY" \
+        --g1v2 "$G1V2ADDRESS" \
         --zencard "$ZENCARDG1" \
         --email "$EMAIL" \
         --ipns_vault "/ipns/${NOSTRNS}" &>/dev/null

@@ -356,6 +356,9 @@ control_primal_transactions() {
     # ── Boucle sur les transactions ──────────────────────────────────────────
     local new_intrusions=0
     local incoming_count=0
+    local consecutive_failures=0
+    local MAX_CONSECUTIVE_FAILURES=3   # Stop after 3 consecutive PAYforSURE failures
+    local MAX_REDIRECTIONS_PER_RUN=5   # Max intrusion redirections per execution
 
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
@@ -446,6 +449,16 @@ control_primal_transactions() {
             continue
         fi
 
+        # ── Fail-fast : stop si trop d'échecs consécutifs ou limite atteinte ──
+        if [[ $consecutive_failures -ge $MAX_CONSECUTIVE_FAILURES ]]; then
+            logw "⏭️ Arrêt des redirections : $MAX_CONSECUTIVE_FAILURES échecs consécutifs (noeud blockchain indisponible ?)"
+            break
+        fi
+        if [[ $new_intrusions -ge $MAX_REDIRECTIONS_PER_RUN ]]; then
+            logw "⏭️ Limite de $MAX_REDIRECTIONS_PER_RUN redirections par exécution atteinte — reprise au prochain cycle"
+            break
+        fi
+
         local current_total=$(( existing_intrusions + new_intrusions + 1 ))
         local intrusion_comment="UPLANET:${UPLANETG1PUB:0:8}:INTRUSION:${pubkey:0:8}:ID:${tx_id}"
 
@@ -478,18 +491,19 @@ control_primal_transactions() {
             "$amount" \
             "$intrusion_pub" \
             "$intrusion_comment" \
-            "$MOATS" \
-            2>/dev/null; then
+            "$MOATS"; then
 
             logok "Intrusion redirigée : ${amount} Ğ1 → INTRUSION (${intrusion_pub:0:12})"
             new_intrusions=$(( new_intrusions + 1 ))
+            consecutive_failures=0
 
             send_redirection_alert \
                 "$player_email" "$wallet_pubkey" "$pubkey" \
                 "$tx_primal"    "$amount"        "$master_primal" \
                 "$current_total" "$intrusion_pub"
         else
-            loge "Échec de la redirection de l'intrusion (ID: $tx_id)"
+            consecutive_failures=$(( consecutive_failures + 1 ))
+            loge "Échec de la redirection de l'intrusion (ID: $tx_id) [$consecutive_failures/$MAX_CONSECUTIVE_FAILURES]"
         fi
 
     done < <(jq -c '.[]' "$tmp_history")

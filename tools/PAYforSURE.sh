@@ -319,25 +319,49 @@ log "Montant gcli : $AMOUNT Ğ1 = $AMOUNT_GCLI centimes"
 RESULT_FILE="${PENDINGDIR}/${MOATS}.result.txt"
 ISOK=1
 
-for ws_node in "${G1_WS_NODES[@]}"; do
-    make_payment_gcli \
-        "$VAULT_NAME" "$AMOUNT_GCLI" "$G1PUB" "$COMMENT" \
-        "$ws_node" "$RESULT_FILE"
-    ISOK=$?
+try_all_nodes() {
+    local nodes=("$@")
+    for ws_node in "${nodes[@]}"; do
+        make_payment_gcli \
+            "$VAULT_NAME" "$AMOUNT_GCLI" "$G1PUB" "$COMMENT" \
+            "$ws_node" "$RESULT_FILE"
+        ISOK=$?
 
-    # gcli retourne 0 même en cas d'erreur on-chain — vérifier le résultat
-    if [[ $ISOK -eq 0 ]] && grep -q "error\|Error\|failed\|cannot exist" "$RESULT_FILE" 2>/dev/null; then
-        logw "gcli exit 0 mais erreur détectée dans le résultat"
-        ISOK=1
+        # gcli retourne 0 même en cas d'erreur on-chain — vérifier le résultat
+        if [[ $ISOK -eq 0 ]] && grep -q "error\|Error\|failed\|cannot exist" "$RESULT_FILE" 2>/dev/null; then
+            logw "gcli exit 0 mais erreur détectée dans le résultat"
+            ISOK=1
+        fi
+
+        [[ $ISOK -eq 0 ]] && { logok "Paiement réussi via $ws_node"; return 0; }
+        logw "Échec sur $ws_node, essai suivant..."
+        sleep 2
+    done
+    return 1
+}
+
+# Premier essai avec les nœuds du cache
+try_all_nodes "${G1_WS_NODES[@]}"
+
+# Si échec total → forcer un refresh et réessayer avec les nouveaux nœuds
+if [[ $ISOK -ne 0 && -x "${MY_PATH}/duniter_getnode.sh" ]]; then
+    logw "Tous les nœuds ont échoué — rafraîchissement forcé de la liste..."
+    "${MY_PATH}/duniter_getnode.sh" refresh >/dev/null 2>&1
+
+    # Recharger les nœuds depuis le cache rafraîchi
+    G1_WS_NODES_FRESH=()
+    while IFS= read -r node; do
+        [[ -n "$node" ]] && G1_WS_NODES_FRESH+=("$node")
+    done < <("${MY_PATH}/duniter_getnode.sh" all 2>/dev/null | jq -r '.rpc[].url' 2>/dev/null)
+
+    if [[ "${#G1_WS_NODES_FRESH[@]}" -gt 0 ]]; then
+        log "Retry avec ${#G1_WS_NODES_FRESH[@]} nœuds frais"
+        try_all_nodes "${G1_WS_NODES_FRESH[@]}"
     fi
-
-    [[ $ISOK -eq 0 ]] && { logok "Paiement réussi via $ws_node"; break; }
-    logw "Échec sur $ws_node, essai suivant..."
-    sleep 2
-done
+fi
 
 if [[ $ISOK -ne 0 ]]; then
-    loge "Paiement échoué sur tous les nœuds"
+    loge "Paiement échoué sur tous les nœuds (y compris après refresh)"
     cat "$RESULT_FILE" 2>/dev/null
     exit 1
 fi
