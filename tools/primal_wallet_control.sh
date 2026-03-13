@@ -60,6 +60,30 @@ bigint_to_g1() {
     echo "scale=4; ${raw:-0} / $(python3 -c "print(10**$DECIMALS)" 2>/dev/null || echo 100)" | bc
 }
 
+# Récupère le solde d'un wallet via gcli (noeud Duniter RPC — on-chain, fiable)
+# Retourne le solde en Ğ1 (ex: 4.94)
+get_wallet_balance() {
+    local pubkey="$1"
+    local GCLI="${GCLI:-gcli}"
+    local rpc_url=""
+
+    # Récupérer un noeud RPC via duniter_getnode.sh
+    if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
+        rpc_url=$("${MY_PATH}/duniter_getnode.sh" rpc 2>/dev/null)
+    fi
+    [[ -z "$rpc_url" ]] && rpc_url="${G1_WS_NODE:-wss://g1.libra.music:443}"
+
+    local json_out raw_centimes
+    json_out=$($GCLI --no-password -a "$pubkey" -u "$rpc_url" -o json account balance 2>/dev/null)
+    raw_centimes=$(echo "$json_out" | jq -r '.transferable_balance // "0"' 2>/dev/null)
+
+    if [[ -n "$raw_centimes" && "$raw_centimes" != "null" && "$raw_centimes" != "0" ]]; then
+        echo "scale=4; ${raw_centimes} / 100" | bc
+    else
+        echo "0"
+    fi
+}
+
 # Génère un lien Cesium
 cesium_link() { echo "${CESIUMIPFS}/#/app/wot/${1}/"; }
 
@@ -484,6 +508,21 @@ control_primal_transactions() {
         fi
 
         log "🔗 Wallet INTRUSION : $(cesium_link "$intrusion_pub")"
+
+        # ── Vérification solde avant redirection ────────────────────────
+        local wallet_balance
+        wallet_balance=$(get_wallet_balance "$wallet_pubkey")
+        if (( $(echo "${wallet_balance:-0} < $amount" | bc -l) )); then
+            logw "Solde insuffisant pour rediriger ${amount} Ğ1 (solde: ${wallet_balance} Ğ1, ID: $tx_id)"
+            logw "🔥 Déclenchement nostr_DESTROY_TW.sh pour $player_email"
+            if [[ -x "${MY_PATH}/nostr_DESTROY_TW.sh" ]]; then
+                "${MY_PATH}/nostr_DESTROY_TW.sh" "$player_email" 2>&1 || \
+                    loge "Échec nostr_DESTROY_TW.sh pour $player_email"
+            else
+                loge "nostr_DESTROY_TW.sh introuvable dans ${MY_PATH}/"
+            fi
+            break  # Plus de solde — inutile de continuer les redirections
+        fi
 
         # ── Redirection vers INTRUSION ────────────────────────────────────
         if "${MY_PATH}/PAYforSURE.sh" \

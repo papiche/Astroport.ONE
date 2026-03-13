@@ -17,7 +17,6 @@
 # Variables d'environnement utilisées (depuis my.sh) :
 #   GCLI           : chemin vers le binaire gcli (défaut: gcli dans $PATH)
 #   GCLI_PASSWORD  : (obsolète depuis --no-password) mot de passe vault gcli
-#   SQUID_URL      : endpoint GraphQL squid pour vérification solde
 #   G1_WS_NODE     : nœud WebSocket principal (ex: wss://g1.p2p.legal/ws)
 #   UPLANETG1PUB   : pubkey UPlanet (pour commentaire par défaut)
 #   CAPTAINEMAIL   : email du capitaine (pour rapport)
@@ -34,20 +33,16 @@ ME="${0##*/}"
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 GCLI="${GCLI:-gcli}"
-SQUID_URL="${SQUID_URL:-https://squid.g1.gyroi.de/v1/graphql}"
 DECIMALS=2   # 1 Ğ1 = 100 centimes en brut (confirmé: amount=1 → 0.01 Ğ1)
 
 # Nœuds WebSocket — peuplés dynamiquement via duniter_getnode.sh si disponible
-# gcli utilise -u <URL> pour le nœud et -i <INDEXER> pour le squid
+# gcli utilise -u <URL> pour le nœud RPC
 G1_WS_NODES=()
 if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
     # Récupère les N meilleurs nœuds RPC depuis le cache / découverte
     while IFS= read -r node; do
         [[ -n "$node" ]] && G1_WS_NODES+=("$node")
-    done < <("${MY_PATH}/duniter_getnode.sh" all 2>/dev/null               | jq -r '.rpc[0:3][].url' 2>/dev/null)
-    # Mise à jour du squid depuis le cache aussi
-    _best_squid=$("${MY_PATH}/duniter_getnode.sh" squid 2>/dev/null)
-    [[ -n "$_best_squid" ]] && SQUID_URL="$_best_squid"
+    done < <("${MY_PATH}/duniter_getnode.sh" all 2>/dev/null | jq -r '.rpc[0:3][].url' 2>/dev/null)
 fi
 # Fallback hardcodé si duniter_getnode.sh absent ou cache vide
 if [[ "${#G1_WS_NODES[@]}" -eq 0 ]]; then
@@ -213,7 +208,7 @@ resolve_vault || exit 1
 get_address_from_vault() {
     local name="$1"
     # gcli --no-password -v "<name>" account balance → affiche l'adresse
-    $GCLI --no-password -i "$SQUID_URL" -v "$name" account balance 2>/dev/null \
+    $GCLI --no-password -u "${G1_WS_NODES[0]:-wss://g1.1000i100.fr/ws}" -v "$name" account balance 2>/dev/null \
         | grep -oE 'g1[A-Za-z0-9]{40,}' | head -1
 }
 
@@ -251,24 +246,25 @@ if [[ -z "$ISSUERPUB" ]]; then
 fi
 log "Adresse émettrice : $ISSUERPUB"
 
-# ── Récupérer le solde via squid ──────────────────────────────────────────────
-get_balance_squid() {
+# ── Récupérer le solde via gcli (Duniter RPC — source de vérité on-chain) ─────
+get_balance_gcli() {
     local addr="$1"
-    local query
-    query=$(jq -cn --arg a "$addr" '{
-        query: "query($a:String!){accounts(condition:{id:$a}){nodes{balance}}}",
-        variables: {a: $a}
-    }')
     local raw
-    raw=$(curl -sf -X POST -H "Content-Type: application/json" \
-        --data "$query" "$SQUID_URL" 2>/dev/null \
-        | jq -r '.data.accounts.nodes[0].balance // "0"')
-    # Convertir BigInt → Ğ1 flottant
-    echo "scale=4; ${raw:-0} / $(python3 -c "print(10**$DECIMALS)" 2>/dev/null || echo 100)" | bc
+    # Essayer chaque noeud RPC disponible
+    for rpc in "${G1_WS_NODES[@]}"; do
+        raw=$($GCLI --no-password -a "$addr" -u "$rpc" -o json account balance 2>/dev/null \
+            | jq -r '.transferable_balance // empty')
+        if [[ -n "$raw" && "$raw" != "null" ]]; then
+            echo "scale=4; ${raw} / 100" | bc
+            return 0
+        fi
+    done
+    echo "0"
+    return 1
 }
 
-log "Récupération du solde via squid..."
-COINS=$(get_balance_squid "$ISSUERPUB")
+log "Récupération du solde via Duniter RPC..."
+COINS=$(get_balance_gcli "$ISSUERPUB")
 log "Solde de $ISSUERPUB : ${COINS} Ğ1"
 
 if [[ -z "$COINS" || "$COINS" == "0" || "$COINS" == ".0000" ]]; then
@@ -313,7 +309,6 @@ make_payment_gcli() {
 
     local base_opts=(--no-password)
     [[ -n "$ws_node" ]] && base_opts+=(-u "$ws_node")
-    [[ -n "$SQUID_URL" ]] && base_opts+=(-i "$SQUID_URL")
 
     local transfer_opts=()
     [[ -n "$comment" ]] && transfer_opts+=(--comment "$comment")

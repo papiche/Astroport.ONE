@@ -9,7 +9,8 @@
 #   history    <wallet>                          Historique complet TX + DU
 #   transfers  <wallet>                          Transferts seuls (entrée+sortie)
 #   period     <wallet> <date_debut> <date_fin>  Historique sur une période
-#   balance    <wallet>                          Solde actuel
+#   balance    <wallet>                          Solde actuel (RPC vs squid)
+#   check      <wallet>                          Vérification RPC vs squid (exit 0=ok, 1=divergence)
 #
 # Exemples :
 #   ./g1wallet.sh uplanet   5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
@@ -22,14 +23,22 @@ MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 
 SQUID_URL="${SQUID_URL:-https://squid.g1.gyroi.de/v1/graphql}"
+GCLI="${GCLI:-gcli}"
 
-# Mise à jour squid dynamique via duniter_getnode.sh
+# Mise à jour squid dynamique via duniter_getnode.sh (historique uniquement)
 if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
     _sq=$("${MY_PATH}/duniter_getnode.sh" squid 2>/dev/null)
     [[ -n "$_sq" ]] && SQUID_URL="$_sq"
 fi
 
-# Liste de squids avec fallback
+# Noeud RPC Duniter (source de vérité pour le solde)
+RPC_URL=""
+if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
+    RPC_URL=$("${MY_PATH}/duniter_getnode.sh" rpc 2>/dev/null)
+fi
+[[ -z "$RPC_URL" ]] && RPC_URL="${G1_WS_NODE:-wss://g1.1000i100.fr/ws}"
+
+# Liste de squids avec fallback (pour l'historique)
 SQUIDS=("$SQUID_URL"
     "https://squid.g1.gyroi.de/v1/graphql"
     "https://squid.g1.coinduf.eu/v1/graphql"
@@ -120,7 +129,7 @@ print_transfer() {
 }
 
 # =============================================================================
-# MODE : balance
+# MODE : balance — compare Duniter RPC (vérité) et squid (indexeur)
 # =============================================================================
 mode_balance() {
   local wallet="$1"
@@ -128,26 +137,62 @@ mode_balance() {
 
   echo -e "${CYAN}Solde du wallet :${RESET} $wallet"
 
-  local query
-  query=$(jq -cn --arg w "$wallet" '{
-    query: "query($w:String!){accounts(condition:{id:$w}){nodes{id balance totalBalance}}}",
+  # ── Source 1 : Duniter RPC (on-chain, source de vérité) ──────────────
+  local rpc_json rpc_transferable rpc_total rpc_unclaim rpc_ok="false"
+  rpc_json=$($GCLI --no-password -a "$wallet" -u "$RPC_URL" -o json account balance 2>/dev/null)
+  if [[ -n "$rpc_json" ]]; then
+    rpc_transferable=$(echo "$rpc_json" | jq -r '.transferable_balance // 0')
+    rpc_total=$(echo "$rpc_json" | jq -r '.total_balance // 0')
+    rpc_unclaim=$(echo "$rpc_json" | jq -r '.unclaim_uds // 0')
+    rpc_ok="true"
+  fi
+
+  # ── Source 2 : squid indexeur (historique) ───────────────────────────
+  local squid_balance squid_ok="false"
+  local sq_query
+  sq_query=$(jq -cn --arg w "$wallet" '{
+    query: "query($w:String!){accounts(condition:{id:$w}){nodes{balance totalBalance}}}",
     variables: {w: $w}
   }')
+  local sq_resp sq_node
+  sq_resp=$(graphql_query "$sq_query" 2>/dev/null) && {
+    sq_node=$(echo "$sq_resp" | jq '.data.accounts.nodes[0]')
+    if [[ "$sq_node" != "null" && -n "$sq_node" ]]; then
+      squid_balance=$(echo "$sq_node" | jq -r '.balance // 0')
+      squid_ok="true"
+    fi
+  }
 
-  local resp
-  resp=$(graphql_query "$query")
+  # ── Affichage ───────────────────────────────────────────────────────
+  if [[ "$rpc_ok" == "true" ]]; then
+    echo -e "  ${BOLD}🔗 Duniter RPC${RESET} ($RPC_URL)"
+    echo -e "    Transférable  : $(format_amount "$rpc_transferable") (total - 1 Ğ1 primo bloquée)"
+    echo -e "    Total         : $(format_amount "$rpc_total")"
+    [[ "$rpc_unclaim" -gt 0 ]] && \
+    echo -e "    DU non réclamé: $(format_amount "$rpc_unclaim")"
+  else
+    echo -e "  ${RED}🔗 Duniter RPC : indisponible ($RPC_URL)${RESET}"
+  fi
 
-  local node
-  node=$(echo "$resp" | jq '.data.accounts.nodes[0]')
-  [[ "$node" == "null" || -z "$node" ]] && die "Wallet introuvable dans l'indexeur"
+  if [[ "$squid_ok" == "true" ]]; then
+    echo -e "  ${BOLD}📊 Squid indexeur${RESET}"
+    echo -e "    Balance indexée : $(format_amount "$squid_balance")"
+  else
+    echo -e "  ${YELLOW}📊 Squid indexeur : indisponible${RESET}"
+  fi
 
-  local balance total
-  balance=$(echo "$node" | jq -r '.balance')
-  total=$(echo "$node"   | jq -r '.totalBalance // "N/A"')
-
-  echo -e "  ${BOLD}Solde actuel  :${RESET} $(format_amount "$balance")"
-  [[ "$total" != "N/A" ]] && \
-  echo -e "  ${BOLD}Total (+ DU)  :${RESET} $(format_amount "$total")"
+  # ── Comparaison ─────────────────────────────────────────────────────
+  if [[ "$rpc_ok" == "true" && "$squid_ok" == "true" ]]; then
+    if [[ "$rpc_total" != "$squid_balance" ]]; then
+      echo -e "\n  ${RED}⚠️  DIVERGENCE DÉTECTÉE :${RESET}"
+      echo -e "    RPC total     = $(format_amount "$rpc_total")"
+      echo -e "    Squid balance = $(format_amount "$squid_balance")"
+      echo -e "    Δ = $(format_amount $(( rpc_total - squid_balance )))"
+      echo -e "    ${YELLOW}→ Le squid indexeur est en retard ou désynchronisé${RESET}"
+    else
+      echo -e "\n  ${GREEN}✅ RPC et Squid concordent${RESET}"
+    fi
+  fi
 }
 
 # =============================================================================
@@ -239,9 +284,11 @@ mode_history() {
 
   local total balance
   total=$(echo "$account"   | jq '.transferWithUd.totalCount')
-  balance=$(echo "$account" | jq -r '.balance')
+  # Solde via gcli (source de vérité on-chain)
+  balance=$($GCLI --no-password -a "$wallet" -u "$RPC_URL" -o json account balance 2>/dev/null \
+      | jq -r '.transferable_balance // 0')
 
-  echo -e "  Solde actuel  : ${BOLD}$(format_amount "$balance")${RESET}"
+  echo -e "  Solde actuel  : ${BOLD}$(format_amount "$balance")${RESET} (Duniter RPC)"
   echo -e "  Nb opérations : ${BOLD}$total${RESET}\n"
 
   echo "$account" | jq -c '.transferWithUd.nodes[]' | while IFS= read -r node; do
@@ -322,6 +369,52 @@ mode_transfers() {
 }
 
 # =============================================================================
+# MODE : check — Vérification RPC vs squid (scriptable, exit code)
+#   Exit 0 = concordance, Exit 1 = divergence ou erreur
+#   Stdout : JSON { "rpc": N, "squid": N, "match": true/false }
+# =============================================================================
+mode_check() {
+  local wallet="$1"
+  [[ -z "$wallet" ]] && die "Usage: $0 check <wallet>"
+
+  # RPC (source de vérité) — total_balance pour comparaison avec squid
+  local rpc_raw="" rpc_transferable=""
+  local rpc_json
+  rpc_json=$($GCLI --no-password -a "$wallet" -u "$RPC_URL" -o json account balance 2>/dev/null)
+  if [[ -n "$rpc_json" ]]; then
+    rpc_raw=$(echo "$rpc_json" | jq -r '.total_balance // empty')
+    rpc_transferable=$(echo "$rpc_json" | jq -r '.transferable_balance // empty')
+  fi
+
+  # Squid (indexeur)
+  local squid_raw=""
+  local sq_query
+  sq_query=$(jq -cn --arg w "$wallet" '{
+    query: "query($w:String!){accounts(condition:{id:$w}){nodes{balance}}}",
+    variables: {w: $w}
+  }')
+  local sq_resp
+  sq_resp=$(graphql_query "$sq_query" 2>/dev/null) && \
+    squid_raw=$(echo "$sq_resp" | jq -r '.data.accounts.nodes[0].balance // empty')
+
+  # Résultat
+  local rpc_val="${rpc_raw:-null}"
+  local squid_val="${squid_raw:-null}"
+  local match="false"
+  [[ "$rpc_val" != "null" && "$squid_val" != "null" && "$rpc_val" == "$squid_val" ]] && match="true"
+
+  local xfer_val="${rpc_transferable:-null}"
+  jq -n --arg rpc "$rpc_val" --arg squid "$squid_val" --arg xfer "$xfer_val" --argjson match "$match" '{
+    rpc_total: ($rpc | tonumber? // null),
+    rpc_transferable: ($xfer | tonumber? // null),
+    squid: ($squid | tonumber? // null),
+    match: $match
+  }'
+
+  [[ "$match" == "true" ]] && return 0 || return 1
+}
+
+# =============================================================================
 # Point d'entrée
 # =============================================================================
 require_cmd curl
@@ -346,6 +439,7 @@ case "$MODE" in
   transfers) mode_transfers "$WALLET" ;;
   period)    mode_period    "$WALLET" "${3:-}" "${4:-}" ;;
   balance)   mode_balance   "$WALLET" ;;
+  check)     mode_check     "$WALLET" ;;
   help|--help|-h|"") usage ;;
   *) die "Mode inconnu : '$MODE'. Lancez '$0 help' pour l'aide." ;;
 esac

@@ -1,12 +1,13 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 2.0 — Duniter v2 (squid GraphQL)
+# Version: 3.0 — Duniter v2 (gcli RPC — source de vérité on-chain)
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 #~ G1check.sh
 #~ Retourne le solde d'un wallet G1 (en Ğ1, 2 décimales).
-#~ Cache ~/.zen/tmp/coucou/<G1PUB>.COINS (TTL 15 min actif, 24h stale)
+#~ Source de vérité : gcli account balance (Duniter RPC, on-chain)
+#~ Cache ~/.zen/tmp/coucou/<G1PUB>.COINS (TTL 12s frais, 60s périmé)
 #~ Rafraîchissement en arrière-plan si cache périmé.
 #
 # Usage:
@@ -14,7 +15,7 @@
 #   G1check.sh <G1PUB>:ZEN    → solde converti en Ẑen (= (Ğ1-1)*10)
 #
 # Compatibilité : retourne le même format que l'ancienne version silkaj.
-# Décimales : 1 Ğ1 = 100 centimes bruts dans squid (DECIMALS=2)
+# Décimales : 1 Ğ1 = 100 centimes bruts (DECIMALS=2)
 ################################################################################
 
 MY_PATH="`dirname \"$0\"`"
@@ -23,17 +24,18 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 DECIMALS=2                   # 1 Ğ1 = 100 centimes bruts (confirmé sur réseau réel)
-SQUID_URL="${SQUID_URL:-https://squid.g1.gyroi.de/v1/graphql}"
+GCLI="${GCLI:-gcli}"
 CACHE_DIR="${HOME}/.zen/tmp/coucou"
 CACHE_FRESH_SEC=12           # 12s : 2 blocs Duniter v2 (1 bloc = 6s)
 CACHE_STALE_SEC=60           # 1 min : après ça on force le refresh
 CACHE_COINS_LIMIT=1          # jours avant suppression du fichier cache
 
-# Mise à jour squid dynamique via duniter_getnode.sh
+# Noeud RPC Duniter (source de vérité on-chain)
+RPC_URL=""
 if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
-    _sq=$("${MY_PATH}/duniter_getnode.sh" squid 2>/dev/null)
-    [[ -n "$_sq" ]] && SQUID_URL="$_sq"
+    RPC_URL=$("${MY_PATH}/duniter_getnode.sh" rpc 2>/dev/null)
 fi
+[[ -z "$RPC_URL" ]] && RPC_URL="${G1_WS_NODE:-wss://g1.1000i100.fr/ws}"
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 log() { echo "[G1check] $*" >&2; }
@@ -51,18 +53,14 @@ file_age_sec() {
     echo $(( $(date +%s) - $(stat -c %Y "$f" 2>/dev/null || echo 0) ))
 }
 
-# ── Requête squid : retourne solde brut (BigInt) ─────────────────────────────
-squid_balance_raw() {
+# ── Requête gcli : retourne solde total brut en centimes via Duniter RPC ──────
+# Note : retourne total_balance (pas transferable_balance) car la formule
+# ẐEN = (Ğ1 - 1) * 10 soustrait déjà le 1 Ğ1 bloqué (primo tx / existential deposit)
+gcli_balance_raw() {
     local addr="$1"
-    local query
-    query=$(jq -cn --arg a "$addr" '{
-        query: "query($a:String!){accounts(condition:{id:$a}){nodes{balance}}}",
-        variables: {a: $a}
-    }')
-    curl -sf --max-time 10 \
-        -X POST -H "Content-Type: application/json" \
-        --data "$query" "$SQUID_URL" 2>/dev/null \
-    | jq -r '.data.accounts.nodes[0].balance // empty'
+    local rpc="${2:-$RPC_URL}"
+    $GCLI --no-password -a "$addr" -u "$rpc" -o json account balance 2>/dev/null \
+        | jq -r '.total_balance // empty'
 }
 
 # ── Conversion BigInt → Ğ1 ───────────────────────────────────────────────────
@@ -124,7 +122,7 @@ if ! [[ "$G1PUB" =~ ^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz
     exit 1
 fi
 
-# Conversion v1 pubkey → SS58 pour requête squid (le squid indexe par SS58)
+# Conversion v1 pubkey → SS58 (gcli utilise le format SS58)
 G1PUB_QUERY="$G1PUB"
 if [[ -x "${MY_PATH}/g1pub_to_ss58.py" ]] && ! [[ "$G1PUB" =~ ^g1 ]]; then
     SS58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$G1PUB" 2>/dev/null)
@@ -156,12 +154,11 @@ if [[ $age -lt $CACHE_STALE_SEC ]]; then
         (
             exec >/dev/null 2>&1
             sleep 1
-            # Essayer d'abord duniter_getnode squid, puis fallback
-            _sq_bg=""
+            _rpc_bg=""
             [[ -x "${MY_PATH}/duniter_getnode.sh" ]] && \
-                _sq_bg=$("${MY_PATH}/duniter_getnode.sh" squid 2>/dev/null)
-            [[ -n "$_sq_bg" ]] && SQUID_URL="$_sq_bg"
-            raw=$(squid_balance_raw "$G1PUB_QUERY")
+                _rpc_bg=$("${MY_PATH}/duniter_getnode.sh" rpc 2>/dev/null)
+            [[ -z "$_rpc_bg" ]] && _rpc_bg="$RPC_URL"
+            raw=$(gcli_balance_raw "$G1PUB_QUERY" "$_rpc_bg")
             fresh=$(raw_to_g1 "$raw")
             is_valid_balance "$fresh" && write_cache "$COINSFILE" "$fresh"
         ) &>/dev/null &
@@ -172,42 +169,40 @@ if [[ $age -lt $CACHE_STALE_SEC ]]; then
 fi
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 3. Pas de cache valide → fetch synchrone avec retry multi-squid
+# 3. Pas de cache valide → fetch synchrone via gcli (Duniter RPC)
 # ══════════════════════════════════════════════════════════════════════════════
-log "Fetch synchrone squid pour $G1PUB"
+log "Fetch synchrone Duniter RPC pour $G1PUB"
 
-# Liste de squids à essayer
-SQUIDS=()
-[[ -n "$SQUID_URL" ]] && SQUIDS+=("$SQUID_URL")
-SQUIDS+=(
-    "https://squid.g1.gyroi.de/v1/graphql"
-    "https://squid.g1.coinduf.eu/v1/graphql"
-    "https://g1-squid.axiom-team.fr/v1/graphql"
+# Liste de noeuds RPC à essayer
+RPC_NODES=()
+[[ -n "$RPC_URL" ]] && RPC_NODES+=("$RPC_URL")
+
+# Récupérer tous les noeuds disponibles via duniter_getnode.sh
+if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
+    while IFS= read -r node; do
+        [[ -n "$node" ]] && RPC_NODES+=("$node")
+    done < <("${MY_PATH}/duniter_getnode.sh" all 2>/dev/null | jq -r '.rpc[].url' 2>/dev/null)
+fi
+
+# Fallbacks statiques
+RPC_NODES+=(
+    "wss://g1.1000i100.fr/ws"
+    "wss://g1.libra.music:443"
 )
 
 # Dédupliquer
-mapfile -t SQUIDS < <(printf '%s\n' "${SQUIDS[@]}" | awk '!seen[$0]++')
+mapfile -t RPC_NODES < <(printf '%s\n' "${RPC_NODES[@]}" | awk '!seen[$0]++')
 
 BALANCE=""
-for sq in "${SQUIDS[@]}"; do
-    SQUID_URL="$sq"
-    raw=$(squid_balance_raw "$G1PUB_QUERY")
+for rpc in "${RPC_NODES[@]}"; do
+    raw=$(gcli_balance_raw "$G1PUB_QUERY" "$rpc")
     if [[ -n "$raw" ]]; then
         g1=$(raw_to_g1 "$raw")
         BALANCE="$g1"
-        log "Solde obtenu depuis $sq : $BALANCE Ğ1"
+        log "Solde obtenu depuis $rpc : $BALANCE Ğ1"
         break
     fi
-    # raw vide = réponse squid OK mais compte inexistant → solde 0
-    # Vérifier que le squid a bien répondu (pas un timeout)
-    test_query=$(curl -sf --max-time 5 -X POST -H "Content-Type: application/json" \
-        --data '{"query":"{ __typename }"}' "$sq" 2>/dev/null)
-    if [[ -n "$test_query" ]]; then
-        BALANCE="0"
-        log "Compte inexistant sur $sq → solde 0 Ğ1"
-        break
-    fi
-    log "Échec sur $sq"
+    log "Échec sur $rpc"
 done
 
 if is_valid_balance "$BALANCE"; then
