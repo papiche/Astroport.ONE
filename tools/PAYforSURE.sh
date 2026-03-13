@@ -217,9 +217,31 @@ get_address_from_vault() {
         | grep -oE 'g1[A-Za-z0-9]{40,}' | head -1
 }
 
-ISSUERPUB=$(get_address_from_vault "$VAULT_NAME")
+# Méthode directe : extraire la pub du dunikey et convertir en SS58
+get_address_from_dunikey() {
+    local keyfile="$1"
+    local pub_v1
+    pub_v1=$(grep -E '^pub:' "$keyfile" | head -1 | awk '{print $2}')
+    if [[ -n "$pub_v1" && -x "${MY_PATH}/g1pub_to_ss58.py" ]]; then
+        python3 "${MY_PATH}/g1pub_to_ss58.py" "$pub_v1" 2>/dev/null
+    fi
+}
+
+ISSUERPUB=""
+
+# 1. Si dunikey → extraire l'adresse SS58 directement (pas besoin du squid)
+if [[ -f "$KEY_OR_VAULT" ]]; then
+    ISSUERPUB=$(get_address_from_dunikey "$KEY_OR_VAULT")
+    [[ -n "$ISSUERPUB" ]] && log "Adresse SS58 (depuis dunikey) : $ISSUERPUB"
+fi
+
+# 2. Fallback : interroger le vault gcli
 if [[ -z "$ISSUERPUB" ]]; then
-    # Tentative directe avec -a si c'est une adresse
+    ISSUERPUB=$(get_address_from_vault "$VAULT_NAME")
+fi
+
+# 3. Dernier recours : si c'est déjà une adresse g1
+if [[ -z "$ISSUERPUB" ]]; then
     if [[ "$VAULT_NAME" =~ ^g1 ]]; then
         ISSUERPUB="$VAULT_NAME"
     else
