@@ -361,22 +361,7 @@ transfer_and_verify() {
     local transfer_exit_code=$?
     
     if [[ $transfer_exit_code -eq 0 ]]; then
-        echo -e "${GREEN}✅ Transfert envoyé avec succès (vérification différée dans 1 heure)${NC}"
-        
-        # Lancer la vérification en arrière-plan après 1 heure
-        echo -e "${CYAN}⏰ Vérification programmée dans 1 heure...${NC}"
-        nohup "${MY_PATH}/tools/verify_transaction.sh" \
-            "$source_pubkey" \
-            "$g1_amount" \
-            "$description" \
-            "$transaction_type" \
-            "$user_email" \
-            "$zen_amount" \
-            3600 >/dev/null 2>&1 &
-        
-        local verify_pid=$!
-        echo -e "${GREEN}✅ Vérification en arrière-plan lancée (PID: $verify_pid)${NC}"
-        
+        echo -e "${GREEN}✅ Transfert confirmé${NC}"
         return 0
     else
         echo -e "${RED}❌ Erreur lors du transfert (code: $transfer_exit_code)${NC}"

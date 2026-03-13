@@ -2087,10 +2087,17 @@ check_cooperative_balance() {
         print_warning "⚠️  UPLANETNAME_G1 non configuré"
     fi
     
-    # Vérifier les portefeuilles coopératifs
+    # UPLANETNAME_G1 est la source de tous les ẐEN de la UPlanet
     local total_coop_zen=0
+    if [[ -n "$g1_pubkey" ]]; then
+        local g1_balance_val=$(get_wallet_balance "$g1_pubkey")
+        local g1_zen_val=$(calculate_zen "$g1_balance_val")
+        total_coop_zen=$(echo "$total_coop_zen + $g1_zen_val" | bc -l)
+    fi
+
+    # Vérifier les portefeuilles coopératifs dérivés
     local coop_wallets=("CASH" "RnD" "ASSETS")
-    
+
     for wallet_type in "${coop_wallets[@]}"; do
         local wallet_file="$HOME/.zen/game/uplanet.${wallet_type}.dunikey"
         if [[ -f "$wallet_file" ]]; then
@@ -2099,7 +2106,7 @@ check_cooperative_balance() {
                 local wallet_balance=$(get_wallet_balance "$wallet_pubkey")
                 local wallet_zen=$(calculate_zen "$wallet_balance")
                 total_coop_zen=$(echo "$total_coop_zen + $wallet_zen" | bc -l)
-                
+
                 case $wallet_type in
                     "CASH")
                         echo -e "${GREEN}💰 UPLANETNAME_CASH: ${wallet_zen} Ẑen${NC}"
@@ -2114,10 +2121,10 @@ check_cooperative_balance() {
             fi
         fi
     done
-    
+
     echo ""
-    echo -e "${BLUE}📊 Total coopératif: ${total_coop_zen} Ẑen${NC}"
-    
+    echo -e "${BLUE}📊 Total coopératif (UPLANETNAME_G1 + dérivés): ${total_coop_zen} Ẑen${NC}"
+
     if (( $(echo "$total_coop_zen >= $required_zen" | bc -l) )); then
         print_success "✅ Les comptes coopératifs peuvent couvrir 3xPAF/semaine"
         return 0
@@ -2294,7 +2301,8 @@ embark_captain() {
     # Calculer l'amortissement suggéré pour la PAF (3 ans = 156 semaines)
     local amortization_weeks="${MACHINE_AMORTIZATION_WEEKS:-156}"  # 3 ans par défaut
     local paf_minimum=$(echo "scale=2; $machine_value / $amortization_weeks" | bc -l)
-    local current_paf=$(grep "^PAF=" "${MY_PATH}/.env" 2>/dev/null | cut -d'=' -f2 || echo "10")
+    local current_paf=$(grep "^PAF=" "${MY_PATH}/.env" 2>/dev/null | cut -d'=' -f2)
+    [[ -z "$current_paf" ]] && current_paf="0"
     
     echo -e "${CYAN}💰 Apport capital infrastructure: ${machine_value} Ẑen${NC}"
     echo ""

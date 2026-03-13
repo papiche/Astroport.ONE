@@ -404,6 +404,25 @@ fi
 
 logok "=== TRANSACTION ENVOYÉE ==="
 
+# ── Vérification blockchain (Duniter v2 : 1 bloc = 6s) ──────────────────────
+log "Vérification confirmation blockchain..."
+CONFIRMED="false"
+for _try in 1 2 3 4 5; do
+    sleep 6
+    _dest_raw=$($GCLI --no-password -a "$G1PUB" -u "${G1_WS_NODES[0]}" -o json account balance 2>/dev/null \
+        | jq -r '.total_balance // empty')
+    if [[ -n "$_dest_raw" && "$_dest_raw" != "null" && "$_dest_raw" != "0" ]]; then
+        _dest_g1=$(echo "scale=2; ${_dest_raw} / 100" | bc)
+        logok "Confirmation blockchain: ${_dest_g1} Ğ1 sur ${G1PUB:0:12}..."
+        CONFIRMED="true"
+        break
+    fi
+    log "Attente bloc ${_try}/5..."
+done
+if [[ "$CONFIRMED" != "true" ]]; then
+    logw "Pas de confirmation après 30s — la transaction a été soumise mais non encore confirmée"
+fi
+
 # ── Mise à jour du cache de solde ─────────────────────────────────────────────
 COUCOU="$HOME/.zen/tmp/coucou"
 mkdir -p "$COUCOU"
@@ -418,9 +437,9 @@ DES=$(cat "$DESTFILE" 2>/dev/null || echo "0")
 echo "$DES + $AMOUNT" | bc > "$DESTFILE"
 
 # ── Conversions ZEN ───────────────────────────────────────────────────────────
-ZENAMOUNT=$(LC_NUMERIC=C printf "%.1f" "$(echo "$AMOUNT * 10" | bc)")
-ZENCUR=$(LC_NUMERIC=C printf "%.1f" "$(echo "($COINS - $AMOUNT) * 10" | bc)")
-ZENDES=$(LC_NUMERIC=C printf "%.1f" "$(echo "($DES + $AMOUNT) * 10" | bc)")
+ZENAMOUNT=$(echo "$AMOUNT * 10" | awk '{printf "%.1f", $1}')
+ZENCUR=$(echo "($COINS - $AMOUNT) * 10" | bc | awk '{printf "%.1f", $1}')
+ZENDES=$(echo "($DES + $AMOUNT) * 10" | bc | awk '{printf "%.1f", $1}')
 
 # ── Rapport HTML ──────────────────────────────────────────────────────────────
 HTML_FILE="${PENDINGDIR}/${MOATS}.result.html"
@@ -474,7 +493,7 @@ cat > "$HTML_FILE" << HTMLEOF
 <div class="box">
   <div class="head"><h1>🚀 Transaction ZEN</h1><p>Opération blockchain Duniter v2 réussie</p></div>
   <div class="body">
-    <span class="badge">✅ Transaction soumise</span>
+    <span class="badge">✅ Transaction confirmée</span>
     <div class="amount"><div class="val">${ZENAMOUNT}</div><div>ZEN</div></div>
     <div class="comment"><strong>Référence :</strong> ${COMMENT}</div>
     <div class="flow">
