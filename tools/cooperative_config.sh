@@ -532,9 +532,9 @@ coop_config_init() {
     "ASSETS_PERCENT": "33",
     "CAPTAIN_BONUS_PERCENT": "1",
     
-    "_comment_oc": "=== OPENCOLLECTIVE (shared credentials - encrypted) ===",
-    "OPENCOLLECTIVE_COLLECTIVE": "uplanet-zero",
-    "OPENCOLLECTIVE_SLUG": "monnaie-libre",
+    "_comment_oc": "=== OPENCOLLECTIVE (shared credentials) ===",
+    "OCSLUG": "monnaie-libre",
+    "OCAPIKEY": "",
 
     "_comment_mj": "=== MAILJET (shared credentials - auto-encrypted) ===",
     "MJ_APIKEY_PUBLIC": "",
@@ -611,19 +611,15 @@ coop_load_env_vars() {
     val=$(echo "$config" | jq -r '.CAPTAIN_BONUS_PERCENT // empty' 2>/dev/null)
     [[ -n "$val" ]] && export CAPTAIN_BONUS_PERCENT="$val" && export CAPTAIN_BONUS_RATIO="$val"
 
-    # Load OpenCollective (non-sensitive)
-    val=$(echo "$config" | jq -r '.OPENCOLLECTIVE_COLLECTIVE // empty' 2>/dev/null)
-    [[ -n "$val" ]] && export OPENCOLLECTIVE_COLLECTIVE="$val"
-    
-    val=$(echo "$config" | jq -r '.OPENCOLLECTIVE_SLUG // empty' 2>/dev/null)
-    [[ -n "$val" ]] && export OPENCOLLECTIVE_SLUG="$val"
-    
-    # Load encrypted credentials (auto-decrypted by coop_config_get)
-    val=$(coop_config_get "OPENCOLLECTIVE_PERSONAL_TOKEN" 2>/dev/null)
-    [[ -n "$val" ]] && export OPENCOLLECTIVE_PERSONAL_TOKEN="$val"
-    
-    val=$(coop_config_get "OPENCOLLECTIVE_API_KEY" 2>/dev/null)
-    [[ -n "$val" ]] && export OPENCOLLECTIVE_API_KEY="$val"
+    # Load OpenCollective — supports both naming conventions:
+    #   cooperative-config: OCSLUG, OCAPIKEY (matches OC2UPlanet .env)
+    #   legacy: OPENCOLLECTIVE_SLUG, OPENCOLLECTIVE_PERSONAL_TOKEN
+    val=$(echo "$config" | jq -r '.OCSLUG // .OPENCOLLECTIVE_SLUG // empty' 2>/dev/null)
+    [[ -n "$val" ]] && export OCSLUG="$val" && export OPENCOLLECTIVE_SLUG="$val"
+
+    val=$(coop_config_get "OCAPIKEY" 2>/dev/null)
+    [[ -z "$val" ]] && val=$(coop_config_get "OPENCOLLECTIVE_PERSONAL_TOKEN" 2>/dev/null)
+    [[ -n "$val" ]] && export OCAPIKEY="$val" && export OPENCOLLECTIVE_PERSONAL_TOKEN="$val"
     
     val=$(coop_config_get "PLANTNET_API_KEY" 2>/dev/null)
     [[ -n "$val" ]] && export PLANTNET_API_KEY="$val"
