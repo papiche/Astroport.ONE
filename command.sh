@@ -46,7 +46,7 @@ CURRENT=$(cat ~/.zen/game/players/.current/.player 2>/dev/null)
     && lastplayer=$(ls -t ~/.zen/game/players 2>/dev/null | grep "@" | head -n 1) \
     && [[ ${lastplayer} ]] \
     && rm -f ~/.zen/game/players/.current \
-    && ln -s ~/.zen/game/players/${lastplayer} ~/.zen/game/players/.current && CURRENT=${lastplayer}
+    && ln -s ~/.zen/game/nostr/${lastplayer} ~/.zen/game/players/.current && CURRENT=${lastplayer}
 
 # Vérifier que le capitaine est bien connecté
 if [[ -n "$CURRENT" ]]; then
@@ -934,7 +934,7 @@ create_multipass() {
                     local player="$EMAIL"
                     if [[ -d ~/.zen/game/players/$player ]]; then
                         rm -f ~/.zen/game/players/.current
-                        ln -s ~/.zen/game/players/${player} ~/.zen/game/players/.current
+                        ln -s ~/.zen/game/nostr/${player} ~/.zen/game/players/.current
                         
                         # Mettre à jour les variables globales
                         PLAYER="$player"
@@ -1096,7 +1096,7 @@ connect_existing_card() {
     
     # Mettre à jour .current
     rm -f ~/.zen/game/players/.current
-    ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
+    ln -s ~/.zen/game/nostr/${PLAYER} ~/.zen/game/players/.current
     
     print_success "Connexion réussie! Bienvenue $PLAYER"
     read -p "Appuyez sur ENTRÉE pour continuer..."
