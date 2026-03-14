@@ -34,15 +34,19 @@ SQUID_URL="${SQUID_URL:-https://squid.g1.gyroi.de/v1/graphql}"
 
 # ── Nœuds de bootstrap hardcodés (toujours valides en dernier recours) ────────
 BOOTSTRAP_RPC=(
-    "wss://g1.p2p.legal/ws"
-    "wss://duniter.g1.coinduf.eu/ws"
-    "wss://g1.duniter.fr/ws"
     "wss://g1.1000i100.fr/ws"
+    "wss://g1-v2s.cgeek.fr"
+    "wss://g1.coinduf.eu"
+    "wss://g1.gyroi.de"
+    "wss://g1.p2p.legal/ws"
+    "wss://rpc.duniter.org"
 )
 BOOTSTRAP_SQUID=(
+    "https://g1-squid.axiom-team.fr/v1/graphql"
     "https://squid.g1.gyroi.de/v1/graphql"
     "https://squid.g1.coinduf.eu/v1/graphql"
-    "https://g1-squid.axiom-team.fr/v1/graphql"
+    "https://indexer.duniter.org/v1/graphql"
+    "https://g1-squid.cgeek.fr/v1/graphql"
 )
 
 # ── URL du fichier réseau officiel GitLab ────────────────────────────────────
@@ -221,11 +225,19 @@ refresh_nodes() {
     local rpc_candidates=("${BOOTSTRAP_RPC[@]}")
     local squid_candidates=("${BOOTSTRAP_SQUID[@]}")
 
-    # Découverte P2P depuis le premier bootstrap
+    # Découverte P2P depuis le premier bootstrap qui répond
     log "Découverte P2P via peerings..."
-    while IFS= read -r node; do
-        [[ -n "$node" ]] && rpc_candidates+=("$node")
-    done < <(discover_via_peerings "${BOOTSTRAP_RPC[0]}" 2>/dev/null)
+    for bootstrap in "${BOOTSTRAP_RPC[@]}"; do
+        local peering_result
+        peering_result=$(discover_via_peerings "$bootstrap" 2>/dev/null)
+        if [[ -n "$peering_result" ]]; then
+            while IFS= read -r node; do
+                [[ -n "$node" ]] && rpc_candidates+=("$node")
+            done <<< "$peering_result"
+            logok "Peerings découverts via $bootstrap"
+            break
+        fi
+    done
 
     # Fichier réseau GitLab
     log "Lecture du fichier réseau GitLab..."
