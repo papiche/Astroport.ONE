@@ -201,14 +201,14 @@ if [[ -f "$HOME/.zen/game/uplanet.G1.nostr" ]]; then
     fi
 fi
 
-# Write station bot HEX (UMAP 0.00,0.00) into node cache so the UMAP HEX loop below picks it up
-STATION_BOT_NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}0.00" "${UPLANETNAME}0.00" 2>/dev/null)
-if [[ -n "$STATION_BOT_NPUB" ]]; then
-    STATION_BOT_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$STATION_BOT_NPUB" 2>/dev/null)
-    if [[ -n "$STATION_BOT_HEX" && ${#STATION_BOT_HEX} -eq 64 ]]; then
-        UMAP_BOT_PATH="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/__/_0_0/_0.0_0.0/_0.00_0.00"
-        mkdir -p "$UMAP_BOT_PATH"
-        echo "$STATION_BOT_HEX" > "$UMAP_BOT_PATH/HEX"
+# Write UMAP0_BOT HEX (UMAP 0.00,0.00) into node cache so the UMAP HEX loop below picks it up
+UMAP0_BOT_NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}0.00" "${UPLANETNAME}0.00" 2>/dev/null)
+if [[ -n "$UMAP0_BOT_NPUB" ]]; then
+    UMAP0_BOT_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$UMAP0_BOT_NPUB" 2>/dev/null)
+    if [[ -n "$UMAP0_BOT_HEX" && ${#UMAP0_BOT_HEX} -eq 64 ]]; then
+        UMAP0_BOT_PATH="${HOME}/.zen/tmp/${IPFSNODEID}/UPLANET/__/_0_0/_0.0_0.0/_0.00_0.00"
+        mkdir -p "$UMAP0_BOT_PATH"
+        echo "$UMAP0_BOT_HEX" > "$UMAP0_BOT_PATH/HEX"
     fi
 fi
 
