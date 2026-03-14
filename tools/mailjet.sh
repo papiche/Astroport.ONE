@@ -255,10 +255,27 @@ export TEXTPART="${myIPFS}/ipfs/${EMAILZ}"
 
 [[ $title == "" ]] && title="MESSAGE"
 
-############# GETTING MAILJET API ############### from ~/.zen/MJ_APIKEY
-if [[ -s ~/.zen/MJ_APIKEY ]]; then
-## LOAD SENDER API KEYS
-source ~/.zen/MJ_APIKEY
+############# GETTING MAILJET API ############### from cooperative-config or ~/.zen/MJ_APIKEY
+## Try cooperative-config first (shared via NOSTR, encrypted with UPLANETNAME)
+if [[ -f "${MY_PATH}/cooperative_config.sh" ]]; then
+    source "${MY_PATH}/cooperative_config.sh"
+    _mj_pub=$(coop_config_get "MJ_APIKEY_PUBLIC" 2>/dev/null)
+    _mj_priv=$(coop_config_get "MJ_APIKEY_PRIVATE" 2>/dev/null)
+    _mj_sender=$(coop_config_get "MJ_SENDER_EMAIL" 2>/dev/null)
+    if [[ -n "$_mj_pub" && -n "$_mj_priv" && -n "$_mj_sender" ]]; then
+        export MJ_APIKEY_PUBLIC="$_mj_pub"
+        export MJ_APIKEY_PRIVATE="$_mj_priv"
+        export SENDER_EMAIL="$_mj_sender"
+        echo "MailJet credentials loaded from cooperative-config (NOSTR DID)"
+    fi
+fi
+## Fallback: local file (legacy)
+if [[ -z "$MJ_APIKEY_PUBLIC" && -s ~/.zen/MJ_APIKEY ]]; then
+    source ~/.zen/MJ_APIKEY
+    echo "MailJet credentials loaded from ~/.zen/MJ_APIKEY (legacy)"
+fi
+
+if [[ -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRIVATE" && -n "$SENDER_EMAIL" ]]; then
 export RECIPIENT_EMAIL=${mail}
 
 json_payload='{

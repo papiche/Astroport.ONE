@@ -534,7 +534,12 @@ coop_config_init() {
     
     "_comment_oc": "=== OPENCOLLECTIVE (shared credentials - encrypted) ===",
     "OPENCOLLECTIVE_COLLECTIVE": "uplanet-zero",
-    "OPENCOLLECTIVE_SLUG": "monnaie-libre"
+    "OPENCOLLECTIVE_SLUG": "monnaie-libre",
+
+    "_comment_mj": "=== MAILJET (shared credentials - auto-encrypted) ===",
+    "MJ_APIKEY_PUBLIC": "",
+    "MJ_APIKEY_PRIVATE": "",
+    "MJ_SENDER_EMAIL": ""
 }
 EOF
 )
