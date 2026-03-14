@@ -354,14 +354,24 @@ else
     echo "⚠️  .secret.disco not found (no secret key to backup)"
 fi
 
-# Copy ZEN Card secret.june if it exists (for transaction history)
+# Copy ZEN Card secret.june (cooperative shares history)
+# Numbering only happens when changing UPlanet (different UPLANETNAME)
 ZEN_SECRET_JUNE="${HOME}/.zen/game/players/${email}/secret.june"
 if [[ -f "${ZEN_SECRET_JUNE}" ]]; then
+    # Copy current secret.june to backup
     cp "${ZEN_SECRET_JUNE}" "${BACKUP_DIR}/secret.june"
-    echo "✅ ZEN Card secret.june exported (capital owner history preserved)"
+    # Copy all existing numbered versions into backup
+    for f in "${HOME}/.zen/game/players/${email}"/secret.june.[0-9]*; do
+        [[ -f "$f" ]] && cp "$f" "${BACKUP_DIR}/"
+    done
+    # Count existing history
+    HISTORY_COUNT=$(ls "${HOME}/.zen/game/players/${email}"/secret.june.[0-9]* 2>/dev/null | wc -l)
+    echo "✅ ZEN Card secret.june exported (${HISTORY_COUNT} historical version(s))"
 else
     echo "⚠️  ZEN Card secret.june not found (no transaction history to backup)"
 fi
+# Save current UPLANETNAME for migration detection on restore
+echo "${UPLANETNAME}" > "${BACKUP_DIR}/.uplanetname"
 
 # Copy ZEN Card .g1pub if it exists (for G1 wallet access)
 ZEN_G1PUB="${HOME}/.zen/game/players/${email}/.g1pub"
@@ -405,6 +415,16 @@ if [[ -f "${OUTPUT_DIR}/README_BACKUP.txt" ]]; then
     cp "${OUTPUT_DIR}/README_BACKUP.txt" "${BACKUP_DIR}/"
 fi
 
+# Save G1 balance for cashback restoration on new relay
+echo "🔄 Recording G1 balance for cashback restoration..."
+CASHBACK_AMOUNT=$(${MY_PATH}/../tools/G1check.sh ${g1pubnostr} --fresh 2>/dev/null | tail -n 1)
+if [[ -z "${CASHBACK_AMOUNT}" ]] || [[ "${CASHBACK_AMOUNT}" == "null" ]]; then
+    CASHBACK_AMOUNT="0"
+fi
+echo "${CASHBACK_AMOUNT}" > "${BACKUP_DIR}/.cashback_amount"
+echo "${g1pubnostr}" > "${BACKUP_DIR}/.cashback_g1pub"
+echo "✅ Cashback amount recorded: ${CASHBACK_AMOUNT} Ğ1"
+
 # Create password-protected ZIP with essential files
 ZIP_FILE="${BACKUP_DIR}.zip"
 echo "Creating password-protected ZIP archive: ${ZIP_FILE}"
@@ -416,6 +436,22 @@ if zip -r -P "${ZEN_PASSWORD}" "${ZIP_FILE}" "$(basename "${BACKUP_DIR}")" 2>/de
     echo "🔑 Password: ${ZEN_PASSWORD}"
     cd - > /dev/null 2>&1
     
+    # Also encrypt ZIP with uplanet key (allows new captain to restore without .pass)
+    echo "🔐 Encrypting backup with uplanet key (captain fallback)..."
+    if [[ ! -s ~/.zen/game/uplanet.dunikey ]]; then
+        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}"
+        chmod 600 ~/.zen/game/uplanet.dunikey
+    fi
+    UPLANET_PUBKEY=$(${MY_PATH}/../tools/natools.py pubkey -f pubsec -k ~/.zen/game/uplanet.dunikey -O 58 2>/dev/null)
+    UPLANET_ENC_FILE="${ZIP_FILE}.uplanet.enc"
+    if [[ -n "$UPLANET_PUBKEY" ]] && ${MY_PATH}/../tools/natools.py encrypt \
+            -p "$UPLANET_PUBKEY" -i "${ZIP_FILE}" -o "${UPLANET_ENC_FILE}" 2>/dev/null; then
+        echo "✅ Backup also encrypted with uplanet key"
+    else
+        echo "⚠️  Failed to encrypt with uplanet key (password-protected ZIP still available)"
+        UPLANET_ENC_FILE=""
+    fi
+
     # Add ZIP to IPFS
     echo "Adding encrypted backup to IPFS..."
     NOSTRIFS=$(ipfs add -q "${ZIP_FILE}" | tail -n 1)
@@ -426,7 +462,19 @@ if zip -r -P "${ZEN_PASSWORD}" "${ZIP_FILE}" "$(basename "${BACKUP_DIR}")" 2>/de
     else
         echo "❌ Failed to add encrypted backup to IPFS"
     fi
-    
+
+    # Add uplanet-encrypted version to IPFS (captain fallback)
+    NOSTRIFS_UPLANET=""
+    if [[ -n "${UPLANET_ENC_FILE}" ]] && [[ -f "${UPLANET_ENC_FILE}" ]]; then
+        NOSTRIFS_UPLANET=$(ipfs add -q "${UPLANET_ENC_FILE}" | tail -n 1)
+        if [[ -n "${NOSTRIFS_UPLANET}" ]]; then
+            ipfs pin rm ${NOSTRIFS_UPLANET} 2>/dev/null
+            echo "✅ Uplanet-encrypted backup on IPFS: ${NOSTRIFS_UPLANET}"
+            echo "   🔓 Decrypt: natools.py decrypt -f pubsec -i backup.zip.uplanet.enc -k uplanet.dunikey -o backup.zip"
+        fi
+        rm -f "${UPLANET_ENC_FILE}"
+    fi
+
     # Clean up temporary files
     rm -f "${ZIP_FILE}"
     rm -rf "${BACKUP_DIR}"
@@ -451,7 +499,9 @@ if [[ -f "${MY_PATH}/did_manager_nostr.sh" ]]; then
         did_cache_file="${HOME}/.zen/game/nostr/${player}/did.json.cache"
         if [[ -f "$did_cache_file" ]] && command -v jq >/dev/null 2>&1; then
             # Add next restoration HEX to deactivation metadata
-            jq ".metadata.deactivation.nextRestorationHex = \"${NEXT_HEX}\"" "$did_cache_file" > "${did_cache_file}.tmp" 2>/dev/null
+            jq ".metadata.deactivation.nextRestorationHex = \"${NEXT_HEX}\"
+                | .metadata.deactivation.backupCID = \"${NOSTRIFS}\"
+                | .metadata.deactivation.backupUplanetCID = \"${NOSTRIFS_UPLANET}\"" "$did_cache_file" > "${did_cache_file}.tmp" 2>/dev/null
             if [[ -s "${did_cache_file}.tmp" ]]; then
                 mv "${did_cache_file}.tmp" "$did_cache_file"
                 echo "   🔮 Next restoration HEX added to DID metadata: ${NEXT_HEX:0:20}..."
@@ -476,9 +526,10 @@ fi
 ## 1. UPDATE NOSTR PROFILE - Mark as deactivated and include next HEX
 echo "📝 Updating NOSTR profile to mark as deactivated..."
 if [[ -f "${MY_PATH}/nostr_update_profile.py" ]]; then
-    # Build about message with backup link and next HEX
+    # Build about message with backup links and next HEX
     if [[ -n "$NEXT_HEX" ]]; then
         ABOUT_MSG="Account deactivated - Backup: ${myIPFS}/ipfs/${NOSTRIFS} | Next HEX: ${NEXT_HEX:0:16}..."
+        [[ -n "$NOSTRIFS_UPLANET" ]] && ABOUT_MSG="${ABOUT_MSG} | Captain: ${myIPFS}/ipfs/${NOSTRIFS_UPLANET}"
     else
         ABOUT_MSG="Account deactivated - backup available at ${myIPFS}/ipfs/${NOSTRIFS}"
     fi
@@ -568,6 +619,7 @@ fi
 ## SEND EMAIL to CAPTAIN with backup information (SECURE - no sensitive data)
 EMAIL_TEMPLATE=$(cat "${MY_PATH}/../templates/NOSTR/wallet_deactivation.html" \
     | sed -e "s~_myIPFS_~${myIPFS}~g" \
+          -e "s~_NOSTRIFS_UPLANET_~${NOSTRIFS_UPLANET:-N/A}~g" \
           -e "s~_NOSTRIFS_~${NOSTRIFS}~g" \
           -e "s~_SALT_~[PROTECTED]~g" \
           -e "s~_PEPPER_~[PROTECTED]~g" \

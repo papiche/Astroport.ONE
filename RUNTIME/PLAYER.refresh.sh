@@ -80,6 +80,18 @@ for PLAYER in ${PLAYERONE[@]}; do
     ######################################################################################
     ######## COOPERATIVE ZEN CARD MANAGEMENT
     ######################################################################################
+    ## Load OC URLs from cooperative config (or defaults)
+    [[ -z "$OC_URL_SATELLITE" ]] && OC_URL_SATELLITE="https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-extension-128-go-98386"
+    [[ -z "$OC_URL_CONSTELLATION" ]] && OC_URL_CONSTELLATION="https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-module-gpu-1-24-98385"
+    ## Helper: prepare email template with OC URLs injected
+    _prepare_email_template() {
+        local tpl="$1"
+        local tmp_email=$(mktemp)
+        sed -e "s~_OC_URL_SATELLITE_~${OC_URL_SATELLITE}~g" \
+            -e "s~_OC_URL_CONSTELLATION_~${OC_URL_CONSTELLATION}~g" \
+            "$tpl" > "$tmp_email"
+        echo "$tmp_email"
+    }
     [[ -z ${BIRTHDATE} ]] && BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/TODATE 2>/dev/null)
     [[ -z ${BIRTHDATE} ]] \
         && BIRTHDATE="$TODATE" \
@@ -118,11 +130,50 @@ for PLAYER in ${PLAYERONE[@]}; do
             USOCIETY_END=$(cat ~/.zen/game/players/${PLAYER}/U.SOCIETY.end)
             CURRENT_DATE=$(date -u +%Y%m%d%H%M%S%4N)
             
-            # Compare dates (U.SOCIETY.end format: YYYYMMDDHHMMSSNNNN)
+            # Compare dates and calculate days remaining (U.SOCIETY.end format: YYYYMMDDHHMMSSNNNN)
+            CURRENT_SECONDS=$(date -u +%s)
+            END_DATE_FMT="${USOCIETY_END:0:4}-${USOCIETY_END:4:2}-${USOCIETY_END:6:2}"
+            END_SECONDS=$(date -d "$END_DATE_FMT" +%s 2>/dev/null || echo "$CURRENT_SECONDS")
+            DAYS_LEFT=$(( (END_SECONDS - CURRENT_SECONDS) / 86400 ))
+
             if [[ "$CURRENT_DATE" < "$USOCIETY_END" ]]; then
-                echo "✅ U.SOCIETY membership active until $USOCIETY_END - No rent payment required"
+                echo "✅ U.SOCIETY membership active until $USOCIETY_END ($DAYS_LEFT days left)"
+
+                ## RENEWAL REMINDERS (30 days, 7 days before expiration)
+                REMINDER_FILE="${HOME}/.zen/game/players/${PLAYER}/.usociety_reminder"
+                LAST_REMINDER=$(cat "$REMINDER_FILE" 2>/dev/null || echo "0")
+
+                if [[ $DAYS_LEFT -le 30 && $DAYS_LEFT -gt 7 && "$LAST_REMINDER" != "30" ]]; then
+                    echo "📬 Sending 30-day renewal reminder to ${PLAYER}"
+                    _tpl=$(_prepare_email_template "${MY_PATH}/../templates/NOSTR/usociety_renewal.html")
+                    ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$_tpl" \
+                        "Votre parrainage expire dans ${DAYS_LEFT} jours"
+                    rm -f "$_tpl"
+                    echo "30" > "$REMINDER_FILE"
+                elif [[ $DAYS_LEFT -le 7 && $DAYS_LEFT -gt 0 && "$LAST_REMINDER" != "7" ]]; then
+                    echo "📬 Sending 7-day URGENT renewal reminder to ${PLAYER}"
+                    _tpl=$(_prepare_email_template "${MY_PATH}/../templates/NOSTR/usociety_renewal_urgent.html")
+                    ${MY_PATH}/../tools/mailjet.sh --expire 3d "${PLAYER}" "$_tpl" \
+                        "URGENT : Parrainage expire dans ${DAYS_LEFT} jours !"
+                    rm -f "$_tpl"
+                    echo "7" > "$REMINDER_FILE"
+                fi
             else
                 echo "⚠️  U.SOCIETY membership expired on $USOCIETY_END - Rent payment required"
+                # Send expiration notice (once per week max)
+                EXPIRED_NOTICE="${HOME}/.zen/game/players/${PLAYER}/.usociety_expired_notice"
+                LAST_NOTICE=$(cat "$EXPIRED_NOTICE" 2>/dev/null || echo "0")
+                NOTICE_AGE=$(( CURRENT_SECONDS - LAST_NOTICE ))
+                if [[ $NOTICE_AGE -gt 604800 ]]; then  # 7 days in seconds
+                    echo "📬 Sending expiration notice to ${PLAYER} (balance: $ZEN ẐEN)"
+                    _tpl=$(_prepare_email_template "${MY_PATH}/../templates/NOSTR/usociety_expired.html")
+                    ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$_tpl" \
+                        "Parrainage expire ! Solde : ${ZEN} ẐEN"
+                    rm -f "$_tpl"
+                    echo "$CURRENT_SECONDS" > "$EXPIRED_NOTICE"
+                fi
+                # Clean reminder file for next cycle
+                rm -f "${HOME}/.zen/game/players/${PLAYER}/.usociety_reminder"
                 # Fall through to rent payment logic
             fi
         else
@@ -229,8 +280,11 @@ for PLAYER in ${PLAYERONE[@]}; do
                     echo "Error email sent to ${PLAYER} for payment failure"
                 fi
             else
-                echo "[7 DAYS CYCLE] ZENCARD ($COINS G1) UNPLUG !!"
-                $MY_PATH/../tools/mailjet.sh --expire 7d "${PLAYER}" "$COINS Ğ1" "MULTIPASS is missing Ẑen for paying ZEN Card..."
+                echo "[7 DAYS CYCLE] ZENCARD ($COINS G1 / $ZEN ZEN) UNPLUG !!"
+                _tpl=$(_prepare_email_template "${MY_PATH}/../templates/NOSTR/zencard_insufficient.html")
+                $MY_PATH/../tools/mailjet.sh --expire 7d "${PLAYER}" "$_tpl" \
+                    "Solde insuffisant (${ZEN} ZEN) - ZEN Card desactivee"
+                rm -f "$_tpl"
                 if [[ ${PLAYER} != ${CAPTAINEMAIL} ]]; then
                     ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL"
                 fi

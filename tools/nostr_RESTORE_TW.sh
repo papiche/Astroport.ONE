@@ -16,6 +16,14 @@
 #   - Attempts restoration with original credentials
 #
 # Usage: ./nostr_RESTORE_TW.sh <IPFS_CID> [target_relay_url]
+#
+# The IPFS_CID can point to either:
+#   - A password-protected ZIP (requires user's .pass)
+#   - A uplanet-encrypted file (.zip.uplanet.enc) — captain can decrypt
+#     without user password using uplanet.dunikey
+#
+# Numbered secret.june files (secret.june.000.IPFSNODEID, etc.) preserve
+# the cumulative cooperative capital shares history across migrations.
 # -----------------------------------------------------------------------------
 
 MY_PATH="`dirname \"$0\"`"
@@ -88,23 +96,45 @@ else
     exit 1
 fi
 
-# Step 2: Extract backup ZIP (with password prompt if needed)
+# Step 2: Extract backup (ZIP or uplanet-encrypted)
 echo -e "${YELLOW}Step 2/4:${NC} ${CYAN}Extracting backup archive...${NC}"
 cd "${RESTORE_DIR}"
 
+# Check if this is a natools uplanet-encrypted file (captain fallback without .pass)
+IS_UPLANET_ENC=false
+if ! file "${BACKUP_ZIP}" 2>/dev/null | grep -q "Zip archive"; then
+    echo -e "${YELLOW}⚠️  Not a ZIP file - trying uplanet key decryption (captain fallback)...${NC}"
+    # Ensure uplanet.dunikey exists
+    if [[ ! -s ~/.zen/game/uplanet.dunikey ]]; then
+        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}"
+        chmod 600 ~/.zen/game/uplanet.dunikey
+    fi
+    DECRYPTED_ZIP="${RESTORE_DIR}/backup_decrypted.zip"
+    if ${MY_PATH}/../tools/natools.py decrypt -f pubsec \
+            -i "${BACKUP_ZIP}" -k ~/.zen/game/uplanet.dunikey -o "${DECRYPTED_ZIP}" 2>/dev/null; then
+        echo -e "${GREEN}✅ Decrypted with uplanet key (captain fallback)${NC}"
+        BACKUP_ZIP="${DECRYPTED_ZIP}"
+        IS_UPLANET_ENC=true
+    else
+        echo -e "${RED}❌ Failed to decrypt with uplanet key${NC}"
+        rm -rf "${RESTORE_DIR}"
+        exit 1
+    fi
+fi
+
 # Try to extract without password first
 if unzip -q "${BACKUP_ZIP}" 2>/dev/null; then
-    echo -e "${GREEN}✅ Backup extracted successfully (no password required)${NC}"
+    echo -e "${GREEN}✅ Backup extracted successfully${NC}"
 else
     # If that fails, try with password prompt
     echo -e "${YELLOW}⚠️  Backup appears to be password-protected${NC}"
     echo -e "${CYAN}Please enter the ZEN Card password (from the user's .pass file):${NC}"
-    echo -e "${YELLOW}💡 The user should provide their ZEN Card password to decrypt the backup${NC}"
+    echo -e "${YELLOW}💡 If password unknown, use the uplanet-encrypted CID instead${NC}"
     if unzip "${BACKUP_ZIP}" 2>/dev/null; then
         echo -e "${GREEN}✅ Encrypted backup extracted successfully${NC}"
     else
         echo -e "${RED}❌ Failed to extract backup (wrong password or corrupted file)${NC}"
-        echo -e "${YELLOW}💡 Make sure the user provides the correct ZEN Card password${NC}"
+        echo -e "${YELLOW}💡 Ask the captain for the uplanet-encrypted backup CID (no password needed)${NC}"
         rm -rf "${RESTORE_DIR}"
         exit 1
     fi
@@ -153,7 +183,7 @@ if [[ -f "${NEXT_DISCO_FILE}" ]]; then
     echo -e "${CYAN}   📋 Next DISCO content: ${DISCO_CONTENT:0:50}...${NC}"
     
     # Parse DISCO format: /?email=salt&nostr=pepper
-    if [[ "$DISCO_CONTENT" =~ ^/\?([^=]+)=([^&]+)&nostr=(.+)$ ]]; then
+    if [[ "$DISCO_CONTENT" =~ ^/\?([^=]+)=([^&]+)\&nostr=(.+)$ ]]; then
         RESTORE_EMAIL="${BASH_REMATCH[1]}"
         RESTORE_SALT="${BASH_REMATCH[2]}"
         RESTORE_PEPPER="${BASH_REMATCH[3]}"
@@ -198,7 +228,7 @@ elif [[ -f "${OLD_DISCO_FILE}" ]]; then
     echo -e "${CYAN}   📋 Old DISCO content: ${DISCO_CONTENT:0:50}...${NC}"
     
     # Parse DISCO format: /?email=salt&nostr=pepper
-    if [[ "$DISCO_CONTENT" =~ ^/\?([^=]+)=([^&]+)&nostr=(.+)$ ]]; then
+    if [[ "$DISCO_CONTENT" =~ ^/\?([^=]+)=([^&]+)\&nostr=(.+)$ ]]; then
         RESTORE_EMAIL="${BASH_REMATCH[1]}"
         RESTORE_SALT="${BASH_REMATCH[2]}"
         RESTORE_PEPPER="${BASH_REMATCH[3]}"
@@ -223,13 +253,24 @@ else
     RESTORE_PEPPER=""
 fi
 
-# Check for ZEN Card files
-ZEN_SECRET_JUNE=$(find "${RESTORE_DIR}" -name "secret.june" | head -1)
+# Check for ZEN Card files (current + numbered historical versions)
+ZEN_SECRET_JUNE=$(find "${RESTORE_DIR}" -name "secret.june" -not -name "secret.june.*" | head -1)
 ZEN_G1PUB=$(find "${RESTORE_DIR}" -name ".g1pub" | head -1)
+# Find all numbered secret.june.NNN.* (cooperative shares history)
+ZEN_JUNE_HISTORY=()
+while IFS= read -r -d '' f; do
+    ZEN_JUNE_HISTORY+=("$f")
+done < <(find "${RESTORE_DIR}" -name "secret.june.[0-9]*" -print0 2>/dev/null | sort -z)
 
 if [[ -f "${ZEN_SECRET_JUNE}" ]]; then
     echo -e "${GREEN}✅ ZEN Card secret.june found${NC}"
     echo -e "${CYAN}   💰 Capital history preserved${NC}"
+    if [[ ${#ZEN_JUNE_HISTORY[@]} -gt 0 ]]; then
+        echo -e "${GREEN}   📜 ${#ZEN_JUNE_HISTORY[@]} historical version(s) found (cooperative shares)${NC}"
+        for f in "${ZEN_JUNE_HISTORY[@]}"; do
+            echo -e "${CYAN}      $(basename "$f")${NC}"
+        done
+    fi
 else
     echo -e "${YELLOW}⚠️  No ZEN Card secret.june found (no capital history)${NC}"
 fi
@@ -239,6 +280,23 @@ if [[ -f "${ZEN_G1PUB}" ]]; then
     echo -e "${CYAN}   🏦 G1 wallet access preserved${NC}"
 else
     echo -e "${YELLOW}⚠️  No ZEN Card .g1pub found (no G1 wallet)${NC}"
+fi
+
+# Detect UPlanet change (different UPLANETNAME = different cooperative)
+BACKUP_UPLANETNAME_FILE=$(find "${RESTORE_DIR}" -name ".uplanetname" | head -1)
+SAME_UPLANET=true
+if [[ -f "${BACKUP_UPLANETNAME_FILE}" ]]; then
+    BACKUP_UPLANETNAME=$(cat "${BACKUP_UPLANETNAME_FILE}")
+    if [[ "${BACKUP_UPLANETNAME}" != "${UPLANETNAME}" ]]; then
+        SAME_UPLANET=false
+        echo -e "${YELLOW}⚠️  UPlanet change detected: ${BACKUP_UPLANETNAME} → ${UPLANETNAME}${NC}"
+        echo -e "${CYAN}   📜 ZEN Card history will be archived (new cooperative)${NC}"
+        echo -e "${CYAN}   💰 No cashback restoration (different UPlanet)${NC}"
+    else
+        echo -e "${GREEN}✅ Same UPlanet: ${UPLANETNAME} (cashback will be restored)${NC}"
+    fi
+else
+    echo -e "${CYAN}   ℹ️  No UPlanet info in backup (legacy format, assuming same UPlanet)${NC}"
 fi
 
 # Step 3: Process and import events (using same logic as backfill_constellation.sh)
@@ -425,7 +483,31 @@ if [[ -n "$RESTORE_EMAIL" && -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
                                 "${RESTORE_HEX}" 2>/dev/null; then
                                 
                                 echo -e "${GREEN}✅ ZEN Card recreated successfully with original credentials${NC}"
-                                
+
+                                # Restore secret.june history
+                                ZEN_CARD_DIR="${HOME}/.zen/game/players/${RESTORE_EMAIL}"
+                                if [[ "$SAME_UPLANET" == "false" ]]; then
+                                    # UPlanet changed: archive current secret.june with number
+                                    MIGRATION_NUM=0
+                                    for f in "${ZEN_CARD_DIR}"/secret.june.[0-9]*; do
+                                        [[ -f "$f" ]] || continue
+                                        num_part=$(basename "$f" | sed -n 's/^secret\.june\.\([0-9]\{3\}\)\..*/\1/p')
+                                        [[ -n "$num_part" ]] && (( 10#$num_part >= MIGRATION_NUM )) && MIGRATION_NUM=$((10#$num_part + 1))
+                                    done
+                                    MIGRATION_TAG=$(printf "%03d" "${MIGRATION_NUM}")
+                                    if [[ -f "${ZEN_SECRET_JUNE}" ]]; then
+                                        cp "${ZEN_SECRET_JUNE}" "${ZEN_CARD_DIR}/secret.june.${MIGRATION_TAG}.${BACKUP_UPLANETNAME:-unknown}"
+                                        echo -e "${YELLOW}   📜 Previous secret.june archived as secret.june.${MIGRATION_TAG} (UPlanet change)${NC}"
+                                    fi
+                                fi
+                                # Copy all existing numbered versions from backup
+                                if [[ ${#ZEN_JUNE_HISTORY[@]} -gt 0 ]]; then
+                                    for f in "${ZEN_JUNE_HISTORY[@]}"; do
+                                        cp "$f" "${ZEN_CARD_DIR}/$(basename "$f")"
+                                    done
+                                    echo -e "${GREEN}   📜 Restored ${#ZEN_JUNE_HISTORY[@]} historical secret.june version(s)${NC}"
+                                fi
+
                                 # Verify the recreated ZEN Card
                                 if [[ -f "${HOME}/.zen/game/players/${RESTORE_EMAIL}/.g1pub" ]]; then
                                     NEW_G1PUB=$(cat "${HOME}/.zen/game/players/${RESTORE_EMAIL}/.g1pub")
@@ -457,8 +539,61 @@ if [[ -n "$RESTORE_EMAIL" && -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
                         mkdir -p "${ZEN_CARD_DIR}"
                         cp "${ZEN_G1PUB}" "${ZEN_CARD_DIR}/.g1pub"
                         echo -e "${GREEN}✅ ZEN Card .g1pub restored (G1 wallet access)${NC}"
+                        # Restore numbered secret.june history if available
+                        if [[ ${#ZEN_JUNE_HISTORY[@]} -gt 0 ]]; then
+                            for f in "${ZEN_JUNE_HISTORY[@]}"; do
+                                cp "$f" "${ZEN_CARD_DIR}/$(basename "$f")"
+                            done
+                            echo -e "${GREEN}   📜 Restored ${#ZEN_JUNE_HISTORY[@]} historical secret.june version(s)${NC}"
+                        fi
                     fi
             
+            ## CASHBACK RESTORATION: send back ẐEN from UPLANETNAME_G1
+            ## Only on same UPlanet (different UPlanet = different cooperative, no cashback)
+            ## Primo TX already sent 1 G1 to new wallet, subtract it from cashback
+            CASHBACK_FILE=$(find "${RESTORE_DIR}" -name ".cashback_amount" | head -1)
+            RESTORE_G1PUB=""
+            if [[ -f "${HOME}/.zen/game/nostr/${RESTORE_EMAIL}/G1PUBNOSTR" ]]; then
+                RESTORE_G1PUB=$(cat "${HOME}/.zen/game/nostr/${RESTORE_EMAIL}/G1PUBNOSTR")
+            fi
+
+            if [[ "$SAME_UPLANET" == "false" ]]; then
+                echo -e "${YELLOW}   ℹ️  No cashback restoration (UPlanet changed: ${BACKUP_UPLANETNAME:-?} → ${UPLANETNAME})${NC}"
+            elif [[ -f "${CASHBACK_FILE}" ]] && [[ -n "${RESTORE_G1PUB}" ]]; then
+                CASHBACK_RAW=$(cat "${CASHBACK_FILE}" | sed 's/[^0-9.]//g')
+                # Subtract 1 G1 (primo TX already credited to new wallet)
+                if command -v bc >/dev/null 2>&1; then
+                    CASHBACK_AMT=$(echo "scale=2; ${CASHBACK_RAW} - 1" | bc -l 2>/dev/null)
+                    CASHBACK_HAS_VALUE=false
+                    echo "${CASHBACK_AMT} > 0" | bc -l 2>/dev/null | grep -q "1" && CASHBACK_HAS_VALUE=true
+                else
+                    # Rough fallback without bc
+                    CASHBACK_AMT="${CASHBACK_RAW}"
+                    CASHBACK_HAS_VALUE=false
+                    [[ -n "${CASHBACK_AMT}" ]] && [[ "${CASHBACK_AMT}" != "0" ]] && [[ "${CASHBACK_AMT}" != "0.00" ]] && [[ "${CASHBACK_AMT}" != "1" ]] && [[ "${CASHBACK_AMT}" != "1.00" ]] && CASHBACK_HAS_VALUE=true
+                fi
+
+                if [[ "$CASHBACK_HAS_VALUE" == "true" ]]; then
+                    echo -e "${CYAN}   💸 Restoring cashback: ${CASHBACK_AMT} Ğ1 (original ${CASHBACK_RAW} - 1 primo) → ${RESTORE_G1PUB:0:16}...${NC}"
+                    # Use UPLANETNAME_G1 dunikey for payment (source primale)
+                    if [[ ! -s ~/.zen/game/uplanet.G1.dunikey ]]; then
+                        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.G1.dunikey "${UPLANETNAME}.G1" "${UPLANETNAME}.G1"
+                        chmod 600 ~/.zen/game/uplanet.G1.dunikey
+                    fi
+                    if ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/game/uplanet.G1.dunikey \
+                            "${CASHBACK_AMT}" "${RESTORE_G1PUB}" \
+                            "MULTIPASS:RESTORE:CASHBACK" 2>/dev/null; then
+                        echo -e "${GREEN}   ✅ Cashback ${CASHBACK_AMT} Ğ1 sent to restored MULTIPASS${NC}"
+                    else
+                        echo -e "${YELLOW}   ⚠️  Cashback transfer failed (UPLANETNAME_G1 may lack funds)${NC}"
+                    fi
+                else
+                    echo -e "${CYAN}   ℹ️  No cashback to restore (${CASHBACK_RAW} Ğ1 ≤ 1 Ğ1 primo)${NC}"
+                fi
+            else
+                echo -e "${CYAN}   ℹ️  No cashback info in backup (pre-cashback format)${NC}"
+            fi
+
             echo -e "${GREEN}✅ Complete account restoration finished${NC}"
         else
             echo -e "${RED}❌ Failed to recreate MULTIPASS${NC}"

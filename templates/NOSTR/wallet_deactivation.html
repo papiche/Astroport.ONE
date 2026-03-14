@@ -361,45 +361,47 @@
             <div class='section keys'>
                 <div class='lang-content' data-lang='en'>
                     <h4>🔑 For New Captains: Account Migration & Restoration</h4>
-                    <p><strong>This account is ready for migration to your Astroport.ONE station:</strong></p>
-                    <ol>
-                        <li>Download the backup ZIP: <code>ipfs get _NOSTRIFS_ -o backup.zip</code></li>
-                        <li>Extract with user's ZEN Card password: <code>unzip backup.zip</code></li>
-                        <li>Run automated restoration: <code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></li>
-                        <li>User provides their ZEN Card password when prompted</li>
-                    </ol>
-                    <p><strong>✅ Automated restoration process (uses .next.disco):</strong></p>
+                    <p><strong>This account is ready for migration to your Astroport.ONE station.</strong></p>
+                    <h4>Method A — User knows their password</h4>
+                    <p>Run the restore script with the password-protected backup:</p>
+                    <p><code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></p>
+                    <p>The user will be prompted for their ZEN Card password (<code>.pass</code>).</p>
+                    <h4>Method B — User lost their password (same UPlanet only)</h4>
+                    <p>Use the uplanet-encrypted backup (no password needed — your station decrypts it with its own uplanet key):</p>
+                    <p><code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_UPLANET_</code></p>
+                    <p><strong>Note:</strong> This only works if the new captain is on the <strong>same UPlanet</strong>. For migration to a different UPlanet, the user must provide their <code>.pass</code> password.</p>
+                    <p><strong>The restore script handles everything automatically:</strong></p>
                     <ul>
-                        <li>✅ <strong>MULTIPASS recreation</strong>: Uses <code>.next.disco</code> to create MULTIPASS with NEW credentials on your relay</li>
-                        <li>✅ <strong>Next HEX</strong>: Pre-generated HEX stored in backup, DID document, and NOSTR profile</li>
-                        <li>✅ <strong>NOSTR events import</strong>: All messages and profile data restored</li>
-                        <li>✅ <strong>uDRIVE structure download</strong>: Complete directory structure restored from final_cid</li>
-                        <li>✅ <strong>ZEN Card restoration</strong>: Capital shares history preserved in secret.june</li>
-                        <li>✅ <strong>Complete account</strong>: Fully functional MULTIPASS ready on your relay</li>
+                        <li>✅ Creates MULTIPASS with new credentials (<code>.next.disco</code>)</li>
+                        <li>✅ Imports all NOSTR events and profile</li>
+                        <li>✅ Restores uDRIVE file structure</li>
+                        <li>✅ Recreates ZEN Card with original credentials (capital shares history preserved)</li>
+                        <li>✅ Sends back MULTIPASS cashback from UPLANETNAME_G1 (minus 1 Ğ1 primo)</li>
                     </ul>
-                    <p><strong>⚠️ Important:</strong> The script automatically detects and uses <code>.next.disco</code> for new relay migration. The old <code>.secret.disco</code> will NOT work on a new relay.</p>
-                    <small>Deactivated: _DEACTIVATION_DATE_ | Backup CID: _NOSTRIFS_ | Next HEX: Available in DID and NOSTR profile</small>
+                    <p><strong>⚠️ Important:</strong> The old <code>.secret.disco</code> will NOT work on a new relay — only <code>.next.disco</code> works.</p>
+                    <small>Deactivated: _DEACTIVATION_DATE_ | ZIP CID: _NOSTRIFS_ | Captain CID: _NOSTRIFS_UPLANET_</small>
                 </div>
                 <div class='lang-content' data-lang='fr'>
                     <h4>🔑 Pour les Nouveaux Capitaines : Migration et Restauration du Compte</h4>
-                    <p><strong>Ce compte est prêt pour la migration vers votre station Astroport.ONE :</strong></p>
-                    <ol>
-                        <li>Téléchargez le ZIP de sauvegarde : <code>ipfs get _NOSTRIFS_ -o backup.zip</code></li>
-                        <li>Extrayez avec le mot de passe ZEN Card de l'utilisateur : <code>unzip backup.zip</code></li>
-                        <li>Lancez la restauration automatisée : <code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></li>
-                        <li>L'utilisateur fournit son mot de passe ZEN Card quand demandé</li>
-                    </ol>
-                    <p><strong>✅ Processus de restauration automatisée (utilise .next.disco) :</strong></p>
+                    <p><strong>Ce compte est prêt pour la migration vers votre station Astroport.ONE.</strong></p>
+                    <h4>Méthode A — L'utilisateur connaît son mot de passe</h4>
+                    <p>Lancez le script de restauration avec le backup protégé par mot de passe :</p>
+                    <p><code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></p>
+                    <p>L'utilisateur sera invité à saisir son mot de passe ZEN Card (<code>.pass</code>).</p>
+                    <h4>Méthode B — L'utilisateur a perdu son mot de passe (même UPlanet uniquement)</h4>
+                    <p>Utilisez le backup chiffré uplanet (aucun mot de passe requis — votre station le déchiffre avec sa propre clé uplanet) :</p>
+                    <p><code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_UPLANET_</code></p>
+                    <p><strong>Note :</strong> Ceci ne fonctionne que si le nouveau capitaine est sur la <strong>même UPlanet</strong>. Pour migrer vers une UPlanet différente, l'utilisateur doit fournir son mot de passe <code>.pass</code>.</p>
+                    <p><strong>Le script de restauration gère tout automatiquement :</strong></p>
                     <ul>
-                        <li>✅ <strong>Recréation MULTIPASS</strong> : Utilise <code>.next.disco</code> pour créer MULTIPASS avec NOUVEAUX identifiants sur votre relais</li>
-                        <li>✅ <strong>Prochain HEX</strong> : HEX pré-généré stocké dans la sauvegarde, le document DID et le profil NOSTR</li>
-                        <li>✅ <strong>Import événements NOSTR</strong> : Tous les messages et données de profil restaurés</li>
-                        <li>✅ <strong>Téléchargement structure uDRIVE</strong> : Structure complète restaurée depuis final_cid</li>
-                        <li>✅ <strong>Restauration ZEN Card</strong> : Historique des parts sociales préservé dans secret.june</li>
-                        <li>✅ <strong>Compte complet</strong> : MULTIPASS entièrement fonctionnel prêt sur votre relais</li>
+                        <li>✅ Crée le MULTIPASS avec les nouveaux identifiants (<code>.next.disco</code>)</li>
+                        <li>✅ Importe tous les événements NOSTR et le profil</li>
+                        <li>✅ Restaure la structure uDRIVE</li>
+                        <li>✅ Recrée la ZEN Card avec les identifiants originaux (historique des parts préservé)</li>
+                        <li>✅ Renvoie le cashback MULTIPASS depuis UPLANETNAME_G1 (moins 1 Ğ1 primo)</li>
                     </ul>
-                    <p><strong>⚠️ Important :</strong> Le script détecte automatiquement et utilise <code>.next.disco</code> pour la migration vers un nouveau relais. L'ancien <code>.secret.disco</code> ne fonctionnera PAS sur un nouveau relais.</p>
-                    <small>Désactivé : _DEACTIVATION_DATE_ | CID de Sauvegarde : _NOSTRIFS_ | Prochain HEX : Disponible dans DID et profil NOSTR</small>
+                    <p><strong>⚠️ Important :</strong> L'ancien <code>.secret.disco</code> ne fonctionnera PAS sur un nouveau relais — seul <code>.next.disco</code> fonctionne.</p>
+                    <small>Désactivé : _DEACTIVATION_DATE_ | CID ZIP : _NOSTRIFS_ | CID Capitaine : _NOSTRIFS_UPLANET_</small>
                 </div>
             </div>
 
@@ -407,13 +409,13 @@
                 <div class='lang-content' data-lang='en'>
                     <h3>🚀 Account Migration Options</h3>
                     <p><strong>Option 1: Migrate to a New Relay/Captain (Recommended)</strong></p>
-                    <p>Your account is ready for migration! Contact any Astroport.ONE captain and provide them with:</p>
+                    <p>Your account is ready for migration! Contact any Astroport.ONE captain and give them:</p>
                     <ul>
-                        <li>📦 Your backup ZIP file (CID: <code>_NOSTRIFS_</code>)</li>
-                        <li>🔑 Your ZEN Card password (from your .pass file)</li>
+                        <li>📦 Your backup CID: <code>_NOSTRIFS_</code></li>
+                        <li>🔑 Your ZEN Card password (if you remember it)</li>
                     </ul>
-                    <p>The new captain can restore your account using: <code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></p>
-                    <p><strong>✅ What happens:</strong> The script automatically uses <code>.next.disco</code> to create your MULTIPASS on the new relay with pre-generated credentials. Your ZEN Card capital shares (secret.june) are preserved.</p>
+                    <p><strong>Lost your password?</strong> If you stay on the same UPlanet, no problem — the captain can use the alternative CID that doesn't require any password. If you're moving to a different UPlanet, you must recover your password.</p>
+                    <p>The captain restores your account with one command. Your MULTIPASS, NOSTR events, uDRIVE, ZEN Card history, and Ğ1 balance are all restored automatically.</p>
                     
                     <p><strong>Option 2: Get Ẑen and Reactivate on This Station</strong></p>
                     <p>Earn Ẑen and reactivate your account on this station.</p>
@@ -427,13 +429,13 @@
                 <div class='lang-content' data-lang='fr'>
                     <h3>🚀 Options de Migration du Compte</h3>
                     <p><strong>Option 1 : Migrer vers un Nouveau Relais/Capitaine (Recommandé)</strong></p>
-                    <p>Votre compte est prêt pour la migration ! Contactez n'importe quel capitaine Astroport.ONE et fournissez-lui :</p>
+                    <p>Votre compte est prêt pour la migration ! Contactez n'importe quel capitaine Astroport.ONE et donnez-lui :</p>
                     <ul>
-                        <li>📦 Votre fichier ZIP de sauvegarde (CID : <code>_NOSTRIFS_</code>)</li>
-                        <li>🔑 Votre mot de passe ZEN Card (depuis votre fichier .pass)</li>
+                        <li>📦 Votre CID de sauvegarde : <code>_NOSTRIFS_</code></li>
+                        <li>🔑 Votre mot de passe ZEN Card (si vous vous en souvenez)</li>
                     </ul>
-                    <p>Le nouveau capitaine peut restaurer votre compte avec : <code>./tools/nostr_RESTORE_TW.sh _NOSTRIFS_</code></p>
-                    <p><strong>✅ Ce qui se passe :</strong> Le script utilise automatiquement <code>.next.disco</code> pour créer votre MULTIPASS sur le nouveau relais avec les identifiants pré-générés. Vos parts sociales ZEN Card (secret.june) sont préservées.</p>
+                    <p><strong>Mot de passe perdu ?</strong> Si vous restez sur la même UPlanet, pas de problème — le capitaine peut utiliser le CID alternatif qui ne nécessite aucun mot de passe. Si vous changez d'UPlanet, vous devez retrouver votre mot de passe.</p>
+                    <p>Le capitaine restaure votre compte en une seule commande. Votre MULTIPASS, événements NOSTR, uDRIVE, historique ZEN Card et solde Ğ1 sont tous restaurés automatiquement.</p>
                     
                     <p><strong>Option 2 : Obtenir des Ẑen et Réactiver sur Cette Station</strong></p>
                     <p>Gagnez des Ẑen et réactivez votre compte sur cette station.</p>

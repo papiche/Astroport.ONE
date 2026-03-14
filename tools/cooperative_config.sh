@@ -535,8 +535,8 @@ coop_config_init() {
     "_comment_oc": "=== OPENCOLLECTIVE ===",
     "OCSLUG": "monnaie-libre",
     "OCAPIKEY": "",
-    "OC_URL_SATELLITE": "",
-    "OC_URL_CONSTELLATION": "",
+    "OC_URL_SATELLITE": "https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-extension-128-go-98386",
+    "OC_URL_CONSTELLATION": "https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-module-gpu-1-24-98385",
 
     "_comment_api": "=== API KEYS (auto-encrypted) ===",
     "PLANTNET_API_KEY": "",
@@ -624,6 +624,12 @@ coop_load_env_vars() {
 
     val=$(coop_config_get "OCAPIKEY" 2>/dev/null)
     [[ -n "$val" ]] && export OCAPIKEY="$val" && export OPENCOLLECTIVE_PERSONAL_TOKEN="$val"
+
+    val=$(echo "$config" | jq -r '.OC_URL_SATELLITE // empty' 2>/dev/null)
+    [[ -n "$val" ]] && export OC_URL_SATELLITE="$val"
+
+    val=$(echo "$config" | jq -r '.OC_URL_CONSTELLATION // empty' 2>/dev/null)
+    [[ -n "$val" ]] && export OC_URL_CONSTELLATION="$val"
     
     val=$(coop_config_get "PLANTNET_API_KEY" 2>/dev/null)
     [[ -n "$val" ]] && export PLANTNET_API_KEY="$val"

@@ -653,8 +653,8 @@ cat ${ZINE} \
             -e "s~_ASTRODID_~${ipns2did:1}~g" \
             -e "s~0448~${PASS}~g" \
             -e "s~_UPLANET8_~UPlanet:${UPLANETG1PUB:0:8}~g" \
-            -e "s~_SALT_~${SALT}~g" \
-            -e "s~_PEPPER_~${PEPPER}~g" \
+            -e "s~_SALT_~[PROTECTED]~g" \
+            -e "s~_PEPPER_~[PROTECTED]~g" \
             -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
             -e "s~_EARTHCID_~/ipns/copylaradio.com~g" \
             -e "s~_SECTOR_~${SECTOR}~g" \
