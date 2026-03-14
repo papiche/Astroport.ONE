@@ -637,9 +637,21 @@ done
 # Print the result with leading space removed
 echo -e "${ipns2did:1}"
 ####################################################### EMAIL
-[[ -s ${MY_PATH}/../templates/UPlanetZINE/day0/index.${LANG}.html ]] \
-    && ZINE="${MY_PATH}/../templates/UPlanetZINE/day0/index.${LANG}.html" \
-    || ZINE="${MY_PATH}/../templates/UPlanetZINE/day0/index.html"
+## Captain gets captain-specific day0 ZINE
+IS_CAPTAIN=false
+CURRENT_PLAYER=$(readlink ~/.zen/game/players/.current 2>/dev/null | rev | cut -d '/' -f 1 | rev)
+[[ "${PLAYER}" == "${CAPTAINEMAIL}" ]] && IS_CAPTAIN=true
+[[ "${PLAYER}" == "${CURRENT_PLAYER}" || -z "${CURRENT_PLAYER}" ]] && IS_CAPTAIN=true
+
+if [[ "$IS_CAPTAIN" == "true" ]]; then
+    ZINE="${MY_PATH}/../templates/UPlanetZINE/day0/captain.${LANG}.html"
+    [[ ! -s ${ZINE} ]] && ZINE="${MY_PATH}/../templates/UPlanetZINE/day0/captain.html"
+    [[ ! -s ${ZINE} ]] && ZINE="${MY_PATH}/../templates/UPlanetZINE/day0/index.html"
+else
+    [[ -s ${MY_PATH}/../templates/UPlanetZINE/day0/index.${LANG}.html ]] \
+        && ZINE="${MY_PATH}/../templates/UPlanetZINE/day0/index.${LANG}.html" \
+        || ZINE="${MY_PATH}/../templates/UPlanetZINE/day0/index.html"
+fi
 ##UPlanetZine::/ipfs/QmUjgQYK74UgRoyLFfmR2LMX7rd6vNxmtWeUtRxjemELuZ - chained release -
 cat ${ZINE} \
     | sed -e "s~/ipfs/QmdmeZhD8ncBFptmD5VSJoszmu41edtT265Xq3HVh8PhZP~${ASTROQR}~g" \

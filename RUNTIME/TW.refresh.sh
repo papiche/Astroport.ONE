@@ -475,9 +475,21 @@ tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
 
 ########################
 ## SEND TODAY ZINE
-#### UPlanetZINE/day${days}/index.${lang}.html
-TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.${lang}.html"
-[[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.html"
+#### Captain gets captain-specific ZINE, others get regular day ZINE
+IS_CAPTAIN=false
+[[ "${PLAYER}" == "${CAPTAINEMAIL}" ]] && IS_CAPTAIN=true
+[[ "${CURRENT}" == "${PLAYER}" && -z "${CAPTAINEMAIL}" ]] && IS_CAPTAIN=true
+
+if [[ "$IS_CAPTAIN" == "true" ]]; then
+    ## Captain ZINE: try captain-specific, then day_/captain.html, then regular
+    TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/captain.${lang}.html"
+    [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/captain.html"
+    [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day_/captain.html"
+    echo "CAPTAIN ZINE: ${TODAYZINE}"
+else
+    TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.${lang}.html"
+    [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.html"
+fi
 if [[ -s ${TODAYZINE} && ${days} -gt 0 ]]; then
     echo "SENDING TODAYZINE DAY ${days} + mailjet TW import "
     cat ${TODAYZINE} \

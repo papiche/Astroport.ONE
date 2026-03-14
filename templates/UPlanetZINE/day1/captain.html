@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <title>[Captain Jour 1 - Gestion de votre station]</title>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="/ipfs/QmU8XZpK2rGGJC8ZCFrKRo5cdDWr78vCgx68mCXDcXUpiv" />
+  <link rel="stylesheet" href="/ipfs/QmXU3GJkfhKW5mkPMTFDG9NtzAiiR7uErSxckYsiC4v5xk/style.css" />
+  <meta name="Description" content="Captain Jour 1 : Gestion de votre station Astroport" />
+  <meta name="theme-color" content="#741b47" />
+</head>
+
+<main class="zine">
+  <header class="zine-page page-1">
+    <h2><button class="print-button">Print</button> Captain Jour 1 : Votre station tourne</h2>
+    <img class="full-img" src="/ipfs/QmdrA3CToFjkwW3qkKPJVYWWnirGjhAgvvomCZqpHyUV7A" alt="UPlanet Station">
+    <p style="font-size:90%"><strong>Votre Astroport.ONE est operationnel.</strong> Voici ce qui tourne et comment le surveiller.</p>
+  </header>
+
+  <section class="zine-page page-2">
+    <h2>Services actifs sur votre station</h2>
+    <ul>
+      <li class="zine-li"><strong>IPFS daemon</strong> : stockage distribue (port 8080/4001/5001)</li>
+      <li class="zine-li"><strong>strfry relay</strong> : relais NOSTR (port 7777)</li>
+      <li class="zine-li"><strong>UPassport API</strong> : creation MULTIPASS (port 54321)</li>
+      <li class="zine-li"><strong>Station API</strong> : cartographie UPlanet (port 12345)</li>
+      <li class="zine-li"><strong>20h12</strong> : cron quotidien (maintenance, journaux, paiements)</li>
+    </ul>
+    <p style="font-size:85%">Commande : <code>systemctl status astroport</code></p>
+  </section>
+
+  <section class="zine-page page-3">
+    <h2>Dashboard economique</h2>
+    <p>Votre dashboard en temps reel :</p>
+    <ul>
+      <li class="zine-li"><strong>economy.html</strong> : bilan, portefeuilles cooperatifs, simulateur</li>
+      <li class="zine-li"><strong>economy.Swarm.html</strong> : monitoring de toute la constellation N2</li>
+      <li class="zine-li"><strong>Cooperative Config</strong> : editable avec UPLANETNAME (fiscalite, OC, 3x1/3)</li>
+    </ul>
+    <p>Acces : <code>https://ipfs.VOTREDOMAINE/ipns/VOTREIPFSNODEID/</code></p>
+  </section>
+
+  <section class="zine-page page-4">
+    <h2>Cycle economique hebdomadaire</h2>
+    <p>Chaque semaine, le systeme automatiquement :</p>
+    <ul>
+      <li class="zine-li"><strong>Collecte</strong> : MULTIPASS 1 Zen + ZEN Card 4 Zen (+ TVA 20%)</li>
+      <li class="zine-li"><strong>Paye le PAF</strong> : 1x PAF Armateur + 2x PAF Capitaine</li>
+      <li class="zine-li"><strong>Alloue le surplus</strong> : 33% Tresorerie + 33% R&D + 33% Actifs</li>
+    </ul>
+    <p style="font-size:85%">Script : ZEN.COOPERATIVE.3x1-3.sh (declenche a l'anniversaire capitaine)</p>
+  </section>
+
+  <section class="zine-page page-5">
+    <h2>Accueillir des utilisateurs</h2>
+    <p>Pour creer un MULTIPASS utilisateur :</p>
+    <ul>
+      <li class="zine-li"><strong>Web</strong> : l'utilisateur va sur votre UPassport et scanne le QR</li>
+      <li class="zine-li"><strong>CLI</strong> : <code>./tools/make_NOSTRCARD.sh email lang lat lon</code></li>
+      <li class="zine-li"><strong>ZEN Card</strong> : creee automatiquement par <code>VISA.new.sh</code></li>
+    </ul>
+    <p>L'utilisateur recoit un email avec sa ZEN Card (day0) et les ZINE suivants automatiquement.</p>
+  </section>
+
+  <section class="zine-page page-6">
+    <h2>Restauration et migration</h2>
+    <p>Si un utilisateur arrive d'une autre station :</p>
+    <ul>
+      <li class="zine-li"><strong>Avec .pass</strong> : <code>./tools/nostr_RESTORE_TW.sh CID_ZIP</code></li>
+      <li class="zine-li"><strong>Sans .pass (meme UPlanet)</strong> : <code>./tools/nostr_RESTORE_TW.sh CID_UPLANET</code></li>
+      <li class="zine-li">Le cashback G1 est renvoye automatiquement (moins 1 G1 primo)</li>
+      <li class="zine-li">L'historique secret.june (parts cooperatives) est preserve</li>
+    </ul>
+    <p style="font-size:85%">Si UPlanet differente : .pass obligatoire, pas de cashback.</p>
+  </section>
+
+  <section class="zine-page page-7">
+    <h2>Prochaines etapes</h2>
+    <ul>
+      <li class="zine-li"><strong>Verifiez le dashboard</strong> : economy.html (bilan, portefeuilles)</li>
+      <li class="zine-li"><strong>Configurez OC</strong> : economy.Swarm.html > EDIT (URLs parrainage)</li>
+      <li class="zine-li"><strong>Invitez 3 utilisateurs</strong> : seuil de viabilite = PAF couvert</li>
+      <li class="zine-li"><strong>Trouvez un Armateur</strong> : hebergeur avec fibre et espace</li>
+    </ul>
+    <p>Demain : recruter des Parrains et developper votre constellation.</p>
+  </section>
+
+  <footer class="zine-page page-8">
+    <h2>Captain : le jardinier du numerique</h2>
+    <p><strong>Vous cultivez le jardin. Les utilisateurs recoltent les fruits. Les Parrains financent le terrain.</strong></p>
+    <p style="font-size:85%">G1FabLab / CopyLaRadio SCIC</p>
+    <p style="font-size:85%">support@qo-op.com</p>
+  </footer>
+</main>
+
+<script src="/ipfs/QmdVAm49eURSGa4ipHFXkCrN8BVX5qWGAjNov7gPVFpuu4/script.js" async defer></script>
+</body>
+</html>
