@@ -32,11 +32,20 @@ NPM_API="${NPM_URL}/api"
 DOMAIN=$(echo "$myIPFS" | sed 's|https://ipfs\.||;s|http://.*||')
 [[ -z "$DOMAIN" || "$DOMAIN" == "$myIPFS" ]] && echo "ERROR: Cannot extract domain from myIPFS=$myIPFS" && exit 1
 
-## Skip for copylaradio.com (SSL managed centrally by support@qo-op.com)
+## Skip for copylaradio.com root domain (SSL managed centrally by support@qo-op.com)
+## But allow subdomains like NODEoo.copylaradio.com for automatic installations
 if [[ "$DOMAIN" == "copylaradio.com" ]]; then
     echo "SKIP NPM: domain copylaradio.com — SSL managed by support@qo-op.com"
     echo ">>> Using public gateways: ipfs/relay/u/astroport.copylaradio.com"
     exit 0
+fi
+
+## For NODEoo.copylaradio.com subdomains, use self-signed certs
+## (SSL will be managed by the central copylaradio.com infrastructure)
+if [[ "$DOMAIN" == *".copylaradio.com" ]]; then
+    echo ">>> Subdomain of copylaradio.com detected: ${DOMAIN}"
+    echo ">>> Using self-signed certificates (SSL termination at central infrastructure)"
+    SSL_MODE="selfsigned"
 fi
 
 ## Detect SSL mode: self-signed for local, letsencrypt for public
