@@ -526,10 +526,11 @@ coop_config_init() {
     "ZENCARD_SATELLITE": "50",
     "ZENCARD_CONSTELLATION": "540",
     
-    "_comment_3x13": "=== 3x1/3 RULE (constitutional - must be uniform) ===",
-    "TREASURY_PERCENT": "33.33",
-    "RND_PERCENT": "33.33",
-    "ASSETS_PERCENT": "33.34",
+    "_comment_3x13": "=== 3x1/3 + 1% RULE (constitutional - must be uniform) ===",
+    "TREASURY_PERCENT": "33",
+    "RND_PERCENT": "33",
+    "ASSETS_PERCENT": "33",
+    "CAPTAIN_BONUS_PERCENT": "1",
     
     "_comment_oc": "=== OPENCOLLECTIVE (shared credentials - encrypted) ===",
     "OPENCOLLECTIVE_COLLECTIVE": "uplanet-zero",
@@ -601,7 +602,10 @@ coop_load_env_vars() {
     
     val=$(echo "$config" | jq -r '.ASSETS_PERCENT // empty' 2>/dev/null)
     [[ -n "$val" ]] && export ASSETS_PERCENT="$val" && export ASSETS_RATIO="$val"
-    
+
+    val=$(echo "$config" | jq -r '.CAPTAIN_BONUS_PERCENT // empty' 2>/dev/null)
+    [[ -n "$val" ]] && export CAPTAIN_BONUS_PERCENT="$val" && export CAPTAIN_BONUS_RATIO="$val"
+
     # Load OpenCollective (non-sensitive)
     val=$(echo "$config" | jq -r '.OPENCOLLECTIVE_COLLECTIVE // empty' 2>/dev/null)
     [[ -n "$val" ]] && export OPENCOLLECTIVE_COLLECTIVE="$val"
