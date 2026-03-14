@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>[Captain Day 1 - Managing your station]</title>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="/ipfs/QmU8XZpK2rGGJC8ZCFrKRo5cdDWr78vCgx68mCXDcXUpiv" />
+  <link rel="stylesheet" href="/ipfs/QmXU3GJkfhKW5mkPMTFDG9NtzAiiR7uErSxckYsiC4v5xk/style.css" />
+  <meta name="Description" content="Captain Day 1: Managing your Astroport station" />
+  <meta name="theme-color" content="#741b47" />
+</head>
+
+<main class="zine">
+  <header class="zine-page page-1">
+    <h2><button class="print-button">Print</button> Captain Day 1: Your station is running</h2>
+    <img class="full-img" src="/ipfs/QmdrA3CToFjkwW3qkKPJVYWWnirGjhAgvvomCZqpHyUV7A" alt="UPlanet Station">
+    <p style="font-size:90%"><strong>Your Astroport.ONE is operational.</strong> Here is what is running and how to monitor it.</p>
+  </header>
+
+  <section class="zine-page page-2">
+    <h2>Active services on your station</h2>
+    <ul>
+      <li class="zine-li"><strong>IPFS daemon</strong>: distributed storage (port 8080/4001/5001)</li>
+      <li class="zine-li"><strong>strfry relay</strong>: NOSTR relay (port 7777)</li>
+      <li class="zine-li"><strong>UPassport API</strong>: MULTIPASS creation (port 54321)</li>
+      <li class="zine-li"><strong>Station API</strong>: UPlanet cartography (port 12345)</li>
+      <li class="zine-li"><strong>20h12</strong>: daily cron (maintenance, journals, payments)</li>
+    </ul>
+    <p style="font-size:85%">Command: <code>systemctl status astroport</code></p>
+  </section>
+
+  <section class="zine-page page-3">
+    <h2>Economic dashboard</h2>
+    <p>Your real-time dashboard:</p>
+    <ul>
+      <li class="zine-li"><strong>economy.html</strong>: balance sheet, cooperative wallets, simulator</li>
+      <li class="zine-li"><strong>economy.Swarm.html</strong>: monitoring of the entire N2 constellation</li>
+      <li class="zine-li"><strong>Cooperative Config</strong>: editable with UPLANETNAME (tax, OC, 3x1/3)</li>
+    </ul>
+    <p>Access: <code>https://ipfs.YOURDOMAIN/ipns/YOURIPFSNODEID/</code></p>
+  </section>
+
+  <section class="zine-page page-4">
+    <h2>Weekly economic cycle</h2>
+    <p>Each week, the system automatically:</p>
+    <ul>
+      <li class="zine-li"><strong>Collects</strong>: MULTIPASS 1 Zen + ZEN Card 4 Zen (+ VAT 20%)</li>
+      <li class="zine-li"><strong>Pays the PAF</strong>: 1x PAF Shipowner + 2x PAF Captain</li>
+      <li class="zine-li"><strong>Allocates surplus</strong>: 33% Treasury + 33% R&D + 33% Assets</li>
+    </ul>
+    <p style="font-size:85%">Script: ZEN.COOPERATIVE.3x1-3.sh (triggered on captain anniversary)</p>
+  </section>
+
+  <section class="zine-page page-5">
+    <h2>Onboarding users</h2>
+    <p>To create a user MULTIPASS:</p>
+    <ul>
+      <li class="zine-li"><strong>Web</strong>: the user goes to your UPassport and scans the QR</li>
+      <li class="zine-li"><strong>CLI</strong>: <code>./tools/make_NOSTRCARD.sh email lang lat lon</code></li>
+      <li class="zine-li"><strong>ZEN Card</strong>: created automatically by <code>VISA.new.sh</code></li>
+    </ul>
+    <p>The user receives an email with their ZEN Card (day0) and the following ZINEs automatically.</p>
+  </section>
+
+  <section class="zine-page page-6">
+    <h2>Restoration and migration</h2>
+    <p>If a user arrives from another station:</p>
+    <ul>
+      <li class="zine-li"><strong>With .pass</strong>: <code>./tools/nostr_RESTORE_TW.sh CID_ZIP</code></li>
+      <li class="zine-li"><strong>Without .pass (same UPlanet)</strong>: <code>./tools/nostr_RESTORE_TW.sh CID_UPLANET</code></li>
+      <li class="zine-li">The G1 cashback is sent back automatically (minus 1 G1 primo)</li>
+      <li class="zine-li">The secret.june history (cooperative shares) is preserved</li>
+    </ul>
+    <p style="font-size:85%">If different UPlanet: .pass mandatory, no cashback.</p>
+  </section>
+
+  <section class="zine-page page-7">
+    <h2>Next steps</h2>
+    <ul>
+      <li class="zine-li"><strong>Check the dashboard</strong>: economy.html (balance sheet, wallets)</li>
+      <li class="zine-li"><strong>Configure OC</strong>: economy.Swarm.html > EDIT (sponsorship URLs)</li>
+      <li class="zine-li"><strong>Invite 3 users</strong>: viability threshold = PAF covered</li>
+      <li class="zine-li"><strong>Find a Shipowner</strong>: host with fiber and space</li>
+    </ul>
+    <p>Tomorrow: recruiting Sponsors and growing your constellation.</p>
+  </section>
+
+  <footer class="zine-page page-8">
+    <h2>Captain: the digital gardener</h2>
+    <p><strong>You cultivate the garden. Users harvest the fruits. Sponsors fund the land.</strong></p>
+    <p style="font-size:85%">G1FabLab / CopyLaRadio SCIC</p>
+    <p style="font-size:85%">support@qo-op.com</p>
+  </footer>
+</main>
+
+<script src="/ipfs/QmdVAm49eURSGa4ipHFXkCrN8BVX5qWGAjNov7gPVFpuu4/script.js" async defer></script>
+</body>
+</html>

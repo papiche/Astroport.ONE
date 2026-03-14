@@ -643,8 +643,18 @@ CURRENT_PLAYER=$(readlink ~/.zen/game/players/.current 2>/dev/null | rev | cut -
 [[ "${PLAYER}" == "${CAPTAINEMAIL}" ]] && IS_CAPTAIN=true
 [[ "${PLAYER}" == "${CURRENT_PLAYER}" || -z "${CURRENT_PLAYER}" ]] && IS_CAPTAIN=true
 
+## Detect ORIGIN mode (sandbox — captain needs tech skills)
+ORIGIN_KEY="0000000000000000000000000000000000000000000000000000000000000000"
+IS_ORIGIN=false
+[[ "${UPLANETNAME}" == "${ORIGIN_KEY}" || -z "${UPLANETNAME}" ]] && IS_ORIGIN=true
+
 if [[ "$IS_CAPTAIN" == "true" ]]; then
-    ZINE="${MY_PATH}/../templates/UPlanetZINE/day0/captain.${LANG}.html"
+    ## ORIGIN captain: try origin-specific, then captain, then default
+    if [[ "$IS_ORIGIN" == "true" ]]; then
+        ZINE="${MY_PATH}/../templates/UPlanetZINE/day0/captain.origin.${LANG}.html"
+        [[ ! -s ${ZINE} ]] && ZINE="${MY_PATH}/../templates/UPlanetZINE/day0/captain.origin.html"
+    fi
+    [[ ! -s ${ZINE} ]] && ZINE="${MY_PATH}/../templates/UPlanetZINE/day0/captain.${LANG}.html"
     [[ ! -s ${ZINE} ]] && ZINE="${MY_PATH}/../templates/UPlanetZINE/day0/captain.html"
     [[ ! -s ${ZINE} ]] && ZINE="${MY_PATH}/../templates/UPlanetZINE/day0/index.html"
 else

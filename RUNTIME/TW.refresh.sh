@@ -480,12 +480,22 @@ IS_CAPTAIN=false
 [[ "${PLAYER}" == "${CAPTAINEMAIL}" ]] && IS_CAPTAIN=true
 [[ "${CURRENT}" == "${PLAYER}" && -z "${CAPTAINEMAIL}" ]] && IS_CAPTAIN=true
 
+## Detect ORIGIN mode
+ORIGIN_KEY="0000000000000000000000000000000000000000000000000000000000000000"
+IS_ORIGIN=false
+[[ "${UPLANETNAME}" == "${ORIGIN_KEY}" || -z "${UPLANETNAME}" ]] && IS_ORIGIN=true
+
 if [[ "$IS_CAPTAIN" == "true" ]]; then
+    ## ORIGIN captain: try origin-specific variant first
+    if [[ "$IS_ORIGIN" == "true" ]]; then
+        TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/captain.origin.${lang}.html"
+        [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/captain.origin.html"
+    fi
     ## Captain ZINE: try captain-specific, then day_/captain.html, then regular
-    TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/captain.${lang}.html"
+    [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/captain.${lang}.html"
     [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/captain.html"
     [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day_/captain.html"
-    echo "CAPTAIN ZINE: ${TODAYZINE}"
+    echo "CAPTAIN ZINE ($([[ $IS_ORIGIN == true ]] && echo 'ORIGIN' || echo 'ZEN')): ${TODAYZINE}"
 else
     TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.${lang}.html"
     [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.html"

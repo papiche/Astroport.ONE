@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <title>[Captain Jour 4 - Constellation N2 et croissance]</title>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="/ipfs/QmU8XZpK2rGGJC8ZCFrKRo5cdDWr78vCgx68mCXDcXUpiv" />
+  <link rel="stylesheet" href="/ipfs/QmXU3GJkfhKW5mkPMTFDG9NtzAiiR7uErSxckYsiC4v5xk/style.css" />
+  <meta name="Description" content="Captain Jour 4 : Constellation N2, interconnexion et croissance" />
+  <meta name="theme-color" content="#741b47" />
+</head>
+
+<main class="zine">
+  <header class="zine-page page-1">
+    <h2><button class="print-button">Print</button> Captain Jour 4 : Votre constellation</h2>
+    <p style="font-size:105%; padding:0.5rem"><strong>Votre station n'est pas seule.</strong> Le Protocole N2 synchronise automatiquement les evenements NOSTR entre les stations de votre essaim.</p>
+  </header>
+
+  <section class="zine-page page-2">
+    <h2>Le swarm IPFS prive</h2>
+    <p>Toutes les stations qui partagent le meme <code>swarm.key</code> forment un essaim :</p>
+    <ul>
+      <li class="zine-li">Donnees repliquees entre stations</li>
+      <li class="zine-li">Tunnels P2P chiffres (<code>DRAGON_p2p_ssh.sh</code>)</li>
+      <li class="zine-li">Decouverte automatique des pairs</li>
+    </ul>
+    <pre><code class="language-text"># Verifier les pairs
+ipfs swarm peers | wc -l
+# Voir les connexions
+ipfs swarm peers</code></pre>
+  </section>
+
+  <section class="zine-page page-3">
+    <h2>Backfill constellation</h2>
+    <p>Le script <code>backfill_constellation.sh</code> synchronise les evenements NOSTR entre relays :</p>
+    <ul>
+      <li class="zine-li">Toutes les heures : sync des kinds filtres (0, 1, 3, 7...)</li>
+      <li class="zine-li">N2 : amis des amis de vos utilisateurs</li>
+      <li class="zine-li">Geo Keys : journaux UMAP/SECTOR/REGION</li>
+    </ul>
+    <p style="font-size:85%">Script NIP-101 : <code>backfill_constellation.sh</code> dans le repo NIP-101/</p>
+  </section>
+
+  <section class="zine-page page-4">
+    <h2>Monitoring constellation</h2>
+    <p>Chaque station publie un event kind 30850 avec son etat economique :</p>
+    <ul>
+      <li class="zine-li"><strong>economy.Swarm.html</strong> : vue constellation temps reel</li>
+      <li class="zine-li">Bilan, revenus, nombre d'utilisateurs par station</li>
+      <li class="zine-li">Sante : healthy / warning / critical / bankrupt</li>
+      <li class="zine-li">Portefeuilles cooperatifs partages (CASH, R&D, ASSETS)</li>
+    </ul>
+    <p style="font-size:85%">Les portefeuilles cooperatifs sont partages entre toutes les stations du meme essaim.</p>
+  </section>
+
+  <section class="zine-page page-5">
+    <h2>Ajouter une station</h2>
+    <p>Pour agrandir votre constellation :</p>
+    <ul>
+      <li class="zine-li"><strong>1.</strong> Trouvez un nouvel Armateur (fibre + espace)</li>
+      <li class="zine-li"><strong>2.</strong> Installez Astroport.ONE sur la machine</li>
+      <li class="zine-li"><strong>3.</strong> Copiez le meme <code>swarm.key</code></li>
+      <li class="zine-li"><strong>4.</strong> Le nouveau capitaine cree son MULTIPASS</li>
+      <li class="zine-li"><strong>5.</strong> Les stations se decouvrent automatiquement</li>
+    </ul>
+    <p style="font-size:85%">Installation : <code>git clone; ./install.sh; ./start.sh</code></p>
+  </section>
+
+  <section class="zine-page page-6">
+    <h2>Facturation et remboursement</h2>
+    <p>Convertissez vos Zen en euros via le G1FabLab :</p>
+    <ul>
+      <li class="zine-li"><strong>1.</strong> Le protocole mesure votre activite (hebergement, maintenance)</li>
+      <li class="zine-li"><strong>2.</strong> Emettez une facture sur opencollective.com/monnaie-libre</li>
+      <li class="zine-li"><strong>3.</strong> Le collectif valide et vire par SEPA</li>
+      <li class="zine-li"><strong>4.</strong> Declarez en BNC (auto-entrepreneur)</li>
+    </ul>
+    <p style="font-size:85%">SIRET requis. TVA non applicable si micro-entreprise.</p>
+  </section>
+
+  <section class="zine-page page-7">
+    <h2>Bilan semaine 1</h2>
+    <p>Verifiez votre progression :</p>
+    <ul>
+      <li class="zine-li">Dashboard economy.html : PAF couvert ?</li>
+      <li class="zine-li">Nombre d'utilisateurs MULTIPASS actifs ?</li>
+      <li class="zine-li">Nombre de cooperateurs ZEN Card ?</li>
+      <li class="zine-li">Parrains Satellite recrutes ?</li>
+      <li class="zine-li">NextCloud active pour les cooperateurs ?</li>
+      <li class="zine-li">Constellation : autres stations visibles ?</li>
+    </ul>
+    <p><strong>Prochain objectif : 2 stations interconnectees.</strong></p>
+  </section>
+
+  <footer class="zine-page page-8">
+    <h2>Ensemble, plus forts</h2>
+    <p><strong>1 station = 1 jardin. 2 stations = 1 ferme. 10 stations = 1 foret comestible.</strong></p>
+    <p>Le reseau grandit par les amis d'amis. Chaque station renforce toutes les autres.</p>
+    <p style="font-size:85%">G1FabLab / CopyLaRadio SCIC - support@qo-op.com</p>
+  </footer>
+</main>
+
+<script src="/ipfs/QmdVAm49eURSGa4ipHFXkCrN8BVX5qWGAjNov7gPVFpuu4/script.js" async defer></script>
+</body>
+</html>

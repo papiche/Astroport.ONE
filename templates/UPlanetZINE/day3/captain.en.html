@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>[Captain Day 3 - Docker NPM NextCloud]</title>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="/ipfs/QmU8XZpK2rGGJC8ZCFrKRo5cdDWr78vCgx68mCXDcXUpiv" />
+  <link rel="stylesheet" href="/ipfs/QmXU3GJkfhKW5mkPMTFDG9NtzAiiR7uErSxckYsiC4v5xk/style.css" />
+  <meta name="Description" content="Captain Day 3: Docker, Nginx Proxy Manager, NextCloud" />
+  <meta name="theme-color" content="#741b47" />
+</head>
+
+<main class="zine">
+  <header class="zine-page page-1">
+    <h2><button class="print-button">Print</button> Captain Day 3: Your infrastructure</h2>
+    <p style="font-size:105%; padding:0.5rem"><strong>Your station runs on 3 Docker containers.</strong> Here is how to check, maintain and activate each service.</p>
+  </header>
+
+  <section class="zine-page page-2">
+    <h2>The 3 Docker containers</h2>
+    <ul>
+      <li class="zine-li"><strong>astroport</strong>: IPFS + strfry + UPassport + APIs (always active)</li>
+      <li class="zine-li"><strong>npm</strong>: Nginx Proxy Manager — SSL and reverse proxy (always active)</li>
+      <li class="zine-li"><strong>nextcloud</strong>: NextCloud AIO 128 GB (optional, full profile)</li>
+    </ul>
+    <p>Basic commands:</p>
+    <pre><code class="language-text">docker compose ps
+docker compose logs -f astroport
+docker compose logs -f npm</code></pre>
+  </section>
+
+  <section class="zine-page page-3">
+    <h2>Nginx Proxy Manager (NPM)</h2>
+    <p>NPM manages SSL and subdomains:</p>
+    <ul>
+      <li class="zine-li"><strong>astroport.DOMAIN</strong>: Station Map (port 12345)</li>
+      <li class="zine-li"><strong>ipfs.DOMAIN</strong>: IPFS Gateway (port 8080)</li>
+      <li class="zine-li"><strong>relay.DOMAIN</strong>: NOSTR Relay (port 7777)</li>
+      <li class="zine-li"><strong>u.DOMAIN</strong>: UPassport API (port 54321)</li>
+      <li class="zine-li"><strong>cloud.DOMAIN</strong>: NextCloud (port 8001)</li>
+    </ul>
+    <p style="font-size:85%">NPM Admin: <code>http://127.0.0.1:81</code> (local only)</p>
+  </section>
+
+  <section class="zine-page page-4">
+    <h2>Verify everything is working</h2>
+    <pre><code class="language-text"># Service health
+curl -sf http://127.0.0.1:54321/health
+curl -sf http://127.0.0.1:81
+curl -sf http://127.0.0.1:8080/ipfs/QmTest
+
+# Real-time logs
+docker compose logs -f --tail=50
+
+# Restart a service
+docker compose restart astroport
+docker compose restart npm</code></pre>
+    <p style="font-size:85%">On bare metal: <code>sudo systemctl status astroport upassport strfry ipfs</code></p>
+  </section>
+
+  <section class="zine-page page-5">
+    <h2>Activate NextCloud (128 GB)</h2>
+    <p>NextCloud provides synchronized storage for ZEN Card cooperators:</p>
+    <pre><code class="language-text"># Activate NextCloud
+docker compose --profile full up -d
+
+# NextCloud AIO Admin
+https://127.0.0.1:8443
+
+# Verify
+docker compose logs -f nextcloud</code></pre>
+    <ul>
+      <li class="zine-li">First connection: configure the domain <code>cloud.YOURDOMAIN</code></li>
+      <li class="zine-li">NPM automatically creates the proxy cloud.DOMAIN -> port 8001</li>
+      <li class="zine-li">Each ZEN Card = 1 NextCloud account 128 GB</li>
+    </ul>
+  </section>
+
+  <section class="zine-page page-6">
+    <h2>SSL and certificates</h2>
+    <ul>
+      <li class="zine-li"><strong>Public domain</strong>: Let's Encrypt automatic via NPM</li>
+      <li class="zine-li"><strong>Local domain</strong> (.local, 192.168.x): self-signed openssl (10 years)</li>
+      <li class="zine-li"><strong>copylaradio.com</strong>: managed centrally (do not modify)</li>
+    </ul>
+    <p>The NPM setup is automatic on first start (<code>setup_npm.sh</code>). Certificates renew themselves.</p>
+    <p style="font-size:85%">NPM Token: <code>~/.zen/nginx-proxy-manager/data/.api_token</code></p>
+  </section>
+
+  <section class="zine-page page-7">
+    <h2>Smartphone -> NextCloud</h2>
+    <p>For ZEN Card cooperators, configure smartphone sync:</p>
+    <ul>
+      <li class="zine-li"><strong>Android</strong>: install NextCloud (F-Droid or Play Store)</li>
+      <li class="zine-li"><strong>Server</strong>: <code>https://cloud.YOURDOMAIN</code></li>
+      <li class="zine-li"><strong>Auto sync</strong>: photos, contacts, calendar</li>
+    </ul>
+    <p style="font-size:85%">Guides: pad.p2p.legal/NextCloud and pad.p2p.legal/Smartphone2NextCloud</p>
+    <p>Tomorrow: the N2 constellation and how to interconnect your stations.</p>
+  </section>
+
+  <footer class="zine-page page-8">
+    <h2>The infrastructure belongs to you</h2>
+    <p><strong>No Amazon cloud. No Google server. Your machine, at your Shipowner's place, with your domain.</strong></p>
+    <p style="font-size:85%">G1FabLab / CopyLaRadio SCIC</p>
+    <p style="font-size:85%">support@qo-op.com</p>
+  </footer>
+</main>
+
+<script src="/ipfs/QmdVAm49eURSGa4ipHFXkCrN8BVX5qWGAjNov7gPVFpuu4/script.js" async defer></script>
+</body>
+</html>
