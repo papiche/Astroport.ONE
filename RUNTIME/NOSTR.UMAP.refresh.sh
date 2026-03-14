@@ -409,11 +409,11 @@ process_umap_friends() {
     done
 
     update_friends_list "${ACTIVE_FRIENDS[@]}"
-    
+
     # Clean up inventory/plantnet messages without likes in 28 days
     # Per PLANTNET_SYSTEM_ANALYSIS.md: observations without likes are removed after 28 days
     cleanup_inventory_without_likes "$NPRIV_HEX"
-    
+
     # Check if UMAP has no active friends and clean up cache if needed
     if [[ ${#ACTIVE_FRIENDS[@]} -eq 0 ]]; then
         log_always "⚠️  UMAP (${LAT}, ${LON}) has no active friends, removing all cache"
@@ -421,7 +421,136 @@ process_umap_friends() {
         rm -Rf "$UMAPDIR"  ## Remove source UMAP directory
     else
         setup_ipfs_structure "$UMAPPATH" "$NPRIV_HEX"
+        # UMAP-level G1+Leboncoin opportunities (published as kind 30023 blog article)
+        process_umap_opportunities "$UMAPPATH" "$NPRIV_HEX"
     fi
+}
+
+# Fetch G1 offers + Leboncoin donations around UMAP zone, analyze with IA,
+# apply blog post-processing pipeline (summary, tags, illustration),
+# and publish result as kind 30023 blog article on UMAP Nostr identity.
+# Runs once per day per UMAP (skip if already published today).
+process_umap_opportunities() {
+    local UMAPPATH=$1
+    local NPRIV_HEX=$2
+
+    # Skip if no ASTROBOT/SECTOR.sh
+    [[ ! -f "${MY_PATH}/../ASTROBOT/SECTOR.sh" ]] && return 0
+
+    # Once per day: check marker file
+    local opp_marker="${UMAPPATH}/.opportunities_${TODATE}"
+    [[ -f "$opp_marker" ]] && return 0
+
+    log "🔍 Fetching G1+Leboncoin opportunities for UMAP (${LAT}, ${LON})..."
+    local OPP_RESULT=""
+    OPP_RESULT=$("${MY_PATH}/../ASTROBOT/SECTOR.sh" "$LAT" "$LON" 100 2>/dev/null) || true
+    [[ -z "$OPP_RESULT" ]] && return 0
+
+    # Save result
+    echo "$OPP_RESULT" > "${UMAPPATH}/g1_opportunities.md"
+    touch "$opp_marker"
+
+    # Publish as kind 30023 blog article on UMAP identity
+    local UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s 2>/dev/null)
+    [[ -z "$UMAPNSEC" ]] && return 0
+
+    local opp_title="Économie circulaire – UMAP ${LAT},${LON}"
+    local opp_content
+    opp_content=$(format_content_as_markdown "$OPP_RESULT" "$opp_title" "UMAP" "${LAT}_${LON}" "")
+    local d_tag="umap-opportunities-${LAT}_${LON}-${TODATE}"
+    local published_at
+    published_at=$(date +%s)
+
+    ############################################################################
+    # POST-PROCESSING PIPELINE (same as BRO #search)
+    ############################################################################
+
+    # 1. Generate summary (2-3 sentences)
+    local article_summary=""
+    article_summary=$("${MY_PATH}/../IA/question.py" --json \
+        "Write 2-3 sentences summarizing this article. Language: fr. START DIRECTLY with the summary, no introduction. Article: ${opp_content}" \
+        --pubkey "$NPRIV_HEX" 2>/dev/null \
+        | jq -r '.answer // .' 2>/dev/null) || true
+    article_summary=$(echo "$article_summary" | tr -d '\n' | sed 's/\s\+/ /g' | sed 's/"/\\"/g' | head -c 500)
+    [[ -z "$article_summary" ]] && article_summary="Opportunités d'économie circulaire pour la zone ${LAT},${LON}"
+    log "📝 Summary: ${article_summary:0:80}..."
+
+    # 2. Generate intelligent tags
+    local intelligent_tags=""
+    intelligent_tags=$("${MY_PATH}/../IA/question.py" --json \
+        "Output 5-8 hashtags for this article. Format: tag1 tag2 tag3 (space-separated, no # symbol, no explanation). Article: ${opp_content:0:1500}" \
+        --pubkey "$NPRIV_HEX" 2>/dev/null \
+        | jq -r '.answer // .' 2>/dev/null) || true
+    intelligent_tags=$(echo "$intelligent_tags" | sed 's/#//g; s/,//g' | tr -s ' ' | head -c 200)
+    log "🏷️  Tags: ${intelligent_tags}"
+
+    # 3. Generate illustration (ComfyUI if available)
+    local illustration_url=""
+    if "${MY_PATH}/../IA/comfyui.me.sh" >/dev/null 2>&1; then
+        local sd_prompt=""
+        sd_prompt=$("${MY_PATH}/../IA/question.py" --json \
+            "Stable Diffusion prompt for: ${article_summary} --- OUTPUT ONLY: visual descriptors in English. NO text/words/emojis/brands. Focus: composition, colors, style, objects." \
+            --pubkey "$NPRIV_HEX" 2>/dev/null \
+            | jq -r '.answer // .' 2>/dev/null) || true
+        sd_prompt=$(echo "$sd_prompt" | sed 's/\s\+/ /g' | head -c 400)
+        if [[ -n "$sd_prompt" ]]; then
+            mkdir -p "${UMAPPATH}/Images"
+            illustration_url=$("${MY_PATH}/../IA/generate_image.sh" "$sd_prompt" "${UMAPPATH}/Images" 2>/dev/null) || true
+            [[ -n "$illustration_url" ]] && log "🎨 Illustration: ${illustration_url}"
+        fi
+    fi
+
+    ############################################################################
+    # BUILD NIP-23 TAGS & PUBLISH
+    ############################################################################
+
+    # Build tag array with intelligent tags
+    local tag_array=""
+    for tag in $intelligent_tags; do
+        [[ -n "$tag" ]] && tag_array="${tag_array}[\"t\", \"$tag\"],"
+    done
+    tag_array="${tag_array%,}"
+
+    local standard_tags='["t","economie-circulaire"],["t","G1opportunities"],["t","UPlanet"],["t","UMAP"]'
+    local all_tags="$standard_tags"
+    [[ -n "$tag_array" ]] && all_tags="${standard_tags},${tag_array}"
+
+    # Build complete NIP-23 tags with jq
+    local temp_json
+    temp_json=$(mktemp)
+    if [[ -n "$illustration_url" ]]; then
+        jq -n --arg d "$d_tag" --arg title "$opp_title" \
+            --arg summary "$article_summary" --arg image "$illustration_url" \
+            --arg pub "$published_at" --arg lat "$LAT" --arg lon "$LON" \
+            --arg g "${LAT},${LON}" \
+            --argjson extra_tags "[${all_tags}]" \
+            '[["d",$d],["title",$title],["summary",$summary],["published_at",$pub],["image",$image],["latitude",$lat],["longitude",$lon],["g",$g],["application","UPlanet"]] + $extra_tags' \
+            > "$temp_json"
+    else
+        jq -n --arg d "$d_tag" --arg title "$opp_title" \
+            --arg summary "$article_summary" \
+            --arg pub "$published_at" --arg lat "$LAT" --arg lon "$LON" \
+            --arg g "${LAT},${LON}" \
+            --argjson extra_tags "[${all_tags}]" \
+            '[["d",$d],["title",$title],["summary",$summary],["published_at",$pub],["latitude",$lat],["longitude",$lon],["g",$g],["application","UPlanet"]] + $extra_tags' \
+            > "$temp_json"
+    fi
+
+    local article_tags
+    article_tags=$(cat "$temp_json")
+    rm -f "$temp_json"
+
+    local temp_keyfile
+    temp_keyfile=$(mktemp)
+    echo "NSEC=$UMAPNSEC;" > "$temp_keyfile"
+    python3 "${MY_PATH}/../tools/nostr_send_note.py" \
+        --keyfile "$temp_keyfile" \
+        --content "$opp_content" \
+        --relays "$myRELAY" \
+        --tags "$article_tags" \
+        --kind 30023 \
+        --json 2>/dev/null && log "✅ Published G1+LBC opportunities article for UMAP (${LAT},${LON})" || true
+    rm -f "$temp_keyfile"
 }
 
 process_friend_messages() {
@@ -989,7 +1118,7 @@ generate_umap_index() {
     
     # Build URLs
     local MAP_URL="${myIPFS}/ipns/copylaradio.com/Umap.html?southWestLat=${LAT}&southWestLon=${LON}&deg=0.01"
-    local CORACLE_URL="https://coracle.copylaradio.com"
+    local CORACLE_URL="${myCORACLE:-https://ipfs.copylaradio.com/ipns/coracle.copylaradio.com}"
     local SECTOR_URL="${myIPFS}/ipns/copylaradio.com/SECTORS/_${RLAT}_${RLON}/_${SLAT}_${SLON}/"
     local REGION_URL="${myIPFS}/ipns/copylaradio.com/REGIONS/_${RLAT}_${RLON}/"
     
@@ -1512,10 +1641,14 @@ process_sectors() {
 
     for sector in ${UNIQUE_SECTORS[@]}; do
         create_sector_journal "$sector"
-        # ASTROBOT SECTOR: G1 value opportunities (Ğchange + question.py)
+        # ASTROBOT SECTOR: G1 value opportunities (Ğchange + Leboncoin donations + question.py)
         local G1_OPP_RESULT=""
         if [[ -x "${MY_PATH}/../ASTROBOT/SECTOR.sh" ]]; then
-            G1_OPP_RESULT=$("${MY_PATH}/../ASTROBOT/SECTOR.sh" "$sector" 2>/dev/null) || true
+            local _slat=$(echo "${sector}" | cut -d'_' -f2)
+            local _slon=$(echo "${sector}" | cut -d'_' -f3)
+            local _clat=$(awk "BEGIN { printf \"%.2f\", ${_slat} + 0.05 }" 2>/dev/null || echo "${_slat}")
+            local _clon=$(awk "BEGIN { printf \"%.2f\", ${_slon} + 0.05 }" 2>/dev/null || echo "${_slon}")
+            G1_OPP_RESULT=$("${MY_PATH}/../ASTROBOT/SECTOR.sh" "$_clat" "$_clon" 50 2>/dev/null) || true
             diffuse_sector_g1_opportunities "$sector" "$G1_OPP_RESULT"
         fi
     done
