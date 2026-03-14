@@ -243,9 +243,9 @@ MULTIPASS_REVENUE=$(normalize_number "$(echo "$MULTIPASS_COUNT * $NCARD" | bc -l
 ZENCARD_REVENUE=$(normalize_number "$(echo "$ZENCARD_RENTERS * $ZCARD" | bc -l)")  # Only renters, not owners!
 TOTAL_REVENUE=$(normalize_number "$(echo "$MULTIPASS_REVENUE + $ZENCARD_REVENUE" | bc -l)")
 
-# TVA calculation (20%)
-TVA_RATE=0.20
-TOTAL_TVA=$(normalize_number "$(echo "scale=2; $TOTAL_REVENUE * $TVA_RATE" | bc -l)")
+# TVA calculation (from cooperative config, default 20%)
+_TVA_RATE_PCT=${TVA_RATE:-20}
+TOTAL_TVA=$(normalize_number "$(echo "scale=2; $TOTAL_REVENUE * $_TVA_RATE_PCT / 100" | bc -l)")
 
 log_output "  Revenue: $TOTAL_REVENUE Ẑ HT (MP: $MULTIPASS_COUNT × $NCARD + ZC renters: $ZENCARD_RENTERS × $ZCARD)"
 log_output "  TVA: $TOTAL_TVA Ẑ | ZenCard owners (no rent): $ZENCARD_OWNERS"
@@ -261,20 +261,42 @@ TOTAL_COSTS=$(normalize_number "$(echo "$PAF + $CAPTAIN_REMUNERATION" | bc -l)")
 BILAN=$(normalize_number "$(echo "scale=2; $TOTAL_REVENUE - $TOTAL_COSTS" | bc -l)")
 
 # Calculate allocation (if positive bilan)
+# Uses IS rates from cooperative_config (progressive: reduced/normal with threshold)
+_IS_RATE_REDUCED=${IS_RATE_REDUCED:-15}
+_IS_RATE_NORMAL=${IS_RATE_NORMAL:-25}
+_IS_THRESHOLD=${IS_THRESHOLD:-42500}
+_TREASURY_PCT=${TREASURY_PERCENT:-33}
+_RND_PCT=${RND_PERCENT:-33}
+_ASSETS_PCT=${ASSETS_PERCENT:-33}
+_CAPTAIN_BONUS_PCT=${CAPTAIN_BONUS_PERCENT:-1}
+
 if [[ $(echo "$BILAN > 0" | bc -l) -eq 1 ]]; then
-    # IS provision (25%)
-    IS_PROVISION=$(normalize_number "$(echo "scale=2; $BILAN * 0.25" | bc -l)")
+    # IS provision (progressive: 15% up to threshold, 25% above)
+    if [[ $(echo "$BILAN <= $_IS_THRESHOLD" | bc -l) -eq 1 ]]; then
+        IS_PROVISION=$(normalize_number "$(echo "scale=2; $BILAN * $_IS_RATE_REDUCED / 100" | bc -l)")
+    else
+        IS_PROVISION=$(normalize_number "$(echo "scale=2; $BILAN * $_IS_RATE_NORMAL / 100" | bc -l)")
+    fi
     NET_SURPLUS=$(normalize_number "$(echo "scale=2; $BILAN - $IS_PROVISION" | bc -l)")
-    
-    # 3x1/3 allocation
-    ALLOCATION_THIRD=$(normalize_number "$(echo "scale=2; $NET_SURPLUS / 3" | bc -l)")
+
+    # Allocation using cooperative ratios (must match ZEN.COOPERATIVE.3x1-3.sh)
+    ALLOC_TREASURY=$(normalize_number "$(echo "scale=2; $NET_SURPLUS * $_TREASURY_PCT / 100" | bc -l)")
+    ALLOC_RND=$(normalize_number "$(echo "scale=2; $NET_SURPLUS * $_RND_PCT / 100" | bc -l)")
+    ALLOC_ASSETS=$(normalize_number "$(echo "scale=2; $NET_SURPLUS * $_ASSETS_PCT / 100" | bc -l)")
+    ALLOC_CAPTAIN_BONUS=$(normalize_number "$(echo "scale=2; $NET_SURPLUS * $_CAPTAIN_BONUS_PCT / 100" | bc -l)")
+    ALLOCATION_THIRD="$ALLOC_TREASURY"  # Legacy compat (used in tags)
 else
     IS_PROVISION="0"
     NET_SURPLUS="0"
     ALLOCATION_THIRD="0"
+    ALLOC_TREASURY="0"
+    ALLOC_RND="0"
+    ALLOC_ASSETS="0"
+    ALLOC_CAPTAIN_BONUS="0"
 fi
 
-log_output "  Bilan: $BILAN Ẑ | Allocation 1/3: $ALLOCATION_THIRD Ẑ"
+log_output "  Bilan: $BILAN Ẑ | IS: ${IS_PROVISION} Ẑ | Net: ${NET_SURPLUS} Ẑ"
+log_output "  Allocation: Treasury=${ALLOC_TREASURY} R&D=${ALLOC_RND} Assets=${ALLOC_ASSETS} Captain=${ALLOC_CAPTAIN_BONUS}"
 
 ###############################################################################
 # CALCULATE HEALTH STATUS (Progressive Degradation Model)
@@ -462,9 +484,10 @@ CONTENT_JSON=$(cat <<EOF
     "surplus": $BILAN,
     "is_provision": $IS_PROVISION,
     "net_surplus": $NET_SURPLUS,
-    "treasury": $ALLOCATION_THIRD,
-    "rnd": $ALLOCATION_THIRD,
-    "assets": $ALLOCATION_THIRD,
+    "treasury": $ALLOC_TREASURY,
+    "rnd": $ALLOC_RND,
+    "assets": $ALLOC_ASSETS,
+    "captain_bonus": $ALLOC_CAPTAIN_BONUS,
     "treasury_pct": ${TREASURY_PERCENT:-33},
     "rnd_pct": ${RND_PERCENT:-33},
     "assets_pct": ${ASSETS_PERCENT:-33},
@@ -541,9 +564,10 @@ TAGS_JSON=$(cat <<EOF
   ["cost:total", "$TOTAL_COSTS"],
   ["price:multipass", "$NCARD"],
   ["price:zencard", "$ZCARD"],
-  ["allocation:treasury", "$ALLOCATION_THIRD"],
-  ["allocation:rnd", "$ALLOCATION_THIRD"],
-  ["allocation:assets", "$ALLOCATION_THIRD"],
+  ["allocation:treasury", "$ALLOC_TREASURY"],
+  ["allocation:rnd", "$ALLOC_RND"],
+  ["allocation:assets", "$ALLOC_ASSETS"],
+  ["allocation:captain_bonus", "$ALLOC_CAPTAIN_BONUS"],
   ["allocation:treasury_pct", "${TREASURY_PERCENT:-33}"],
   ["allocation:rnd_pct", "${RND_PERCENT:-33}"],
   ["allocation:assets_pct", "${ASSETS_PERCENT:-33}"],
