@@ -624,6 +624,7 @@ EMAIL_TEMPLATE=$(cat "${MY_PATH}/../templates/NOSTR/wallet_deactivation.html" \
           -e "s~_SALT_~[PROTECTED]~g" \
           -e "s~_PEPPER_~[PROTECTED]~g" \
           -e "s~_uSPOT_~${uSPOT}~g" \
+          -e "s~_CORACLEURL_~${myCORACLE:-https://ipfs.copylaradio.com/ipns/coracle.copylaradio.com}~g" \
           -e "s~_DEACTIVATION_DATE_~$(date '+%Y-%m-%d %H:%M:%S')~g")
 
 # Send email to CAPTAIN (not to the user)

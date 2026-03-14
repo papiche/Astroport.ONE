@@ -379,6 +379,7 @@ EOFNOSTR
             -e "s~_HEX_~${HEX}~g" \
             -e "s~_DATE_~$(date -u)~g" \
             -e "s~http://127.0.0.1:8080~${myIPFS}~g" \
+            -e "s~_CORACLEURL_~${myCORACLE:-https://ipfs.copylaradio.com/ipns/coracle.copylaradio.com}~g" \
         > ${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html
 
     if [[ "$Z" == ":ZEN" ]]; then
