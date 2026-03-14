@@ -260,8 +260,8 @@ Script **UTILITAIRE** pour la gestion de la configuration coopérative partagée
 | `ZENCARD_SATELLITE` | Prix part sociale Satellite (€) | Non |
 | `ZENCARD_CONSTELLATION` | Prix part sociale Constellation (€) | Non |
 | `TREASURY_PERCENT`, `RND_PERCENT`, `ASSETS_PERCENT` | Règle 3x1/3 (%) | Non |
-| `OPENCOLLECTIVE_PERSONAL_TOKEN` | Token API OpenCollective | **Oui** |
-| `OPENCOLLECTIVE_API_KEY` | Clé API OpenCollective | **Oui** |
+| `OCAPIKEY` | Token API OpenCollective | **Oui** |
+| `OCAPIKEY` | Clé API OpenCollective | **Oui** |
 | `PLANTNET_API_KEY` | Clé API PlantNet | **Oui** |
 
 ### **🎮 Usage**
@@ -271,11 +271,11 @@ source ~/.zen/Astroport.ONE/tools/cooperative_config.sh
 
 # Récupérer une valeur (auto-déchiffrement)
 TVA=$(coop_config_get "TVA_RATE")
-TOKEN=$(coop_config_get "OPENCOLLECTIVE_PERSONAL_TOKEN")
+TOKEN=$(coop_config_get "OCAPIKEY")
 
 # Définir une valeur (auto-chiffrement si sensible)
 coop_config_set "NCARD" "1"
-coop_config_set "OPENCOLLECTIVE_PERSONAL_TOKEN" "mon_token_secret"
+coop_config_set "OCAPIKEY" "mon_token_secret"
 
 # Lister toutes les clés
 coop_config_list

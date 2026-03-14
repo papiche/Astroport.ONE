@@ -451,7 +451,7 @@ show_cooperative_config_status() {
     done
     
     # Vérifier les APIs configurées
-    local api_keys=("OPENCOLLECTIVE_PERSONAL_TOKEN" "PLANTNET_API_KEY")
+    local api_keys=("OCAPIKEY" "PLANTNET_API_KEY")
     for key in "${api_keys[@]}"; do
         local value=$(coop_config_get "$key" 2>/dev/null)
         if [[ -n "$value" ]]; then
@@ -1241,7 +1241,7 @@ show_cooperative_config_menu() {
         
         # Statut des clés API (masquées)
         echo -e "${BLUE}🔐 Clés API (chiffrées):${NC}"
-        local api_keys=("OPENCOLLECTIVE_PERSONAL_TOKEN" "OPENCOLLECTIVE_API_KEY" "PLANTNET_API_KEY")
+        local api_keys=("OCAPIKEY" "OCAPIKEY" "PLANTNET_API_KEY")
         for key in "${api_keys[@]}"; do
             local value=$(coop_config_get "$key" 2>/dev/null)
             if [[ -n "$value" && "$value" != "" ]]; then
@@ -1369,8 +1369,8 @@ configure_api_key() {
     echo -e "${CYAN}Les clés API sont automatiquement chiffrées avec \$UPLANETNAME.${NC}"
     echo ""
     echo -e "${WHITE}Clés API disponibles:${NC}"
-    echo "  1. OPENCOLLECTIVE_PERSONAL_TOKEN"
-    echo "  2. OPENCOLLECTIVE_API_KEY"
+    echo "  1. OCAPIKEY"
+    echo "  2. OCAPIKEY"
     echo "  3. PLANTNET_API_KEY"
     echo "  4. Autre (personnalisée)"
     echo ""
@@ -1379,8 +1379,8 @@ configure_api_key() {
     
     local key_name=""
     case $api_choice in
-        1) key_name="OPENCOLLECTIVE_PERSONAL_TOKEN" ;;
-        2) key_name="OPENCOLLECTIVE_API_KEY" ;;
+        1) key_name="OCAPIKEY" ;;
+        2) key_name="OCAPIKEY" ;;
         3) key_name="PLANTNET_API_KEY" ;;
         4) 
             read -p "Nom de la clé API: " key_name

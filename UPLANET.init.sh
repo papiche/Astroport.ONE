@@ -443,15 +443,15 @@ check_and_init_cooperative_config() {
         echo -e "${BLUE}   Nombre de clés:${NC} ${CYAN}$config_keys${NC}"
         
         # Check for OpenCollective token
-        local has_oc_token=$(echo "$existing_config" | jq -r 'has("OPENCOLLECTIVE_PERSONAL_TOKEN")' 2>/dev/null)
+        local has_oc_token=$(echo "$existing_config" | jq -r 'has("OCAPIKEY")' 2>/dev/null)
         if [[ "$has_oc_token" == "true" ]]; then
-            echo -e "${GREEN}   ✓ OPENCOLLECTIVE_PERSONAL_TOKEN configuré${NC}"
+            echo -e "${GREEN}   ✓ OCAPIKEY configuré${NC}"
         else
-            echo -e "${YELLOW}   ⚠️  OPENCOLLECTIVE_PERSONAL_TOKEN non configuré${NC}"
+            echo -e "${YELLOW}   ⚠️  OCAPIKEY non configuré${NC}"
         fi
         
         # Check for slug
-        local oc_slug=$(echo "$existing_config" | jq -r '.OPENCOLLECTIVE_SLUG // "monnaie-libre"' 2>/dev/null)
+        local oc_slug=$(echo "$existing_config" | jq -r '.OCSLUG // "monnaie-libre"' 2>/dev/null)
         echo -e "${BLUE}   OpenCollective Slug:${NC} ${CYAN}$oc_slug${NC}"
         
     else
@@ -468,7 +468,7 @@ check_and_init_cooperative_config() {
             echo -e "${BLUE}   Pour configurer le token OpenCollective, exécutez:${NC}"
             echo ""
             echo -e "   ${CYAN}source ${config_helper}${NC}"
-            echo -e "   ${CYAN}coop_config_set OPENCOLLECTIVE_PERSONAL_TOKEN \"votre_token\"${NC}"
+            echo -e "   ${CYAN}coop_config_set OCAPIKEY \"votre_token\"${NC}"
             echo ""
             echo -e "${BLUE}   Obtenez votre token sur:${NC}"
             echo -e "   ${CYAN}https://opencollective.com/dashboard/monnaie-libre/admin/for-developers${NC}"

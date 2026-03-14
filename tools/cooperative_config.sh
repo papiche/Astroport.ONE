@@ -12,10 +12,10 @@
 #   source cooperative_config.sh
 #   
 #   # Get a config value (automatically decrypts)
-#   OC_TOKEN=$(coop_config_get "OPENCOLLECTIVE_PERSONAL_TOKEN")
+#   OC_TOKEN=$(coop_config_get "OCAPIKEY")
 #   
-#   # Set a config value (automatically encrypts)
-#   coop_config_set "OPENCOLLECTIVE_PERSONAL_TOKEN" "my_secret_token"
+#   # Set a config value (automatically encrypts sensitive keys)
+#   coop_config_set "OCAPIKEY" "my_secret_token"
 #   
 #   # List all config keys
 #   coop_config_list
@@ -554,8 +554,8 @@ EOF
     echo ""
     echo "To add sensitive credentials (will be encrypted with \$UPLANETNAME):"
     echo "  source ${_COOP_DIR}/cooperative_config.sh"
-    echo "  coop_config_set OPENCOLLECTIVE_PERSONAL_TOKEN \"your_token\""
-    echo "  coop_config_set OPENCOLLECTIVE_API_KEY \"your_api_key\""
+    echo "  coop_config_set OCAPIKEY \"your_token\""
+    echo "  coop_config_set OCAPIKEY \"your_api_key\""
     echo "  coop_config_set PLANTNET_API_KEY \"your_plantnet_key\""
     echo ""
 }
@@ -618,7 +618,6 @@ coop_load_env_vars() {
     [[ -n "$val" ]] && export OCSLUG="$val" && export OPENCOLLECTIVE_SLUG="$val"
 
     val=$(coop_config_get "OCAPIKEY" 2>/dev/null)
-    [[ -z "$val" ]] && val=$(coop_config_get "OPENCOLLECTIVE_PERSONAL_TOKEN" 2>/dev/null)
     [[ -n "$val" ]] && export OCAPIKEY="$val" && export OPENCOLLECTIVE_PERSONAL_TOKEN="$val"
     
     val=$(coop_config_get "PLANTNET_API_KEY" 2>/dev/null)
@@ -633,18 +632,18 @@ coop_load_env_vars() {
 
 # Get OpenCollective Personal Token
 get_oc_token() {
-    coop_config_get "OPENCOLLECTIVE_PERSONAL_TOKEN"
+    coop_config_get "OCAPIKEY"
 }
 
 # Get OpenCollective Slug
 get_oc_slug() {
-    local slug=$(coop_config_get "OPENCOLLECTIVE_SLUG")
+    local slug=$(coop_config_get "OCSLUG")
     echo "${slug:-monnaie-libre}"
 }
 
 # Get OpenCollective API Key (deprecated, for backward compatibility)
 get_oc_api_key() {
-    coop_config_get "OPENCOLLECTIVE_API_KEY"
+    coop_config_get "OCAPIKEY"
 }
 
 ################################################################################
@@ -697,7 +696,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             echo ""
             echo "As a library (source it):"
             echo "  source cooperative_config.sh"
-            echo "  OC_TOKEN=\$(coop_config_get 'OPENCOLLECTIVE_PERSONAL_TOKEN')"
+            echo "  OC_TOKEN=\$(coop_config_get 'OCAPIKEY')"
             echo "  coop_config_set 'MY_KEY' 'my_value'"
             echo ""
             echo "Environment:"

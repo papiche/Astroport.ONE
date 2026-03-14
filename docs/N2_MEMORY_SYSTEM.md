@@ -308,8 +308,8 @@ scp captain@station1:~/.zen/game/uplanet.G1.nostr ~/.zen/game/
 # In ~/.zen/Astroport.ONE/.env
 
 # Open Collective integration
-OPENCOLLECTIVE_PERSONAL_TOKEN="your_token"
-OPENCOLLECTIVE_SLUG="monnaie-libre"
+OCAPIKEY="your_token"
+OCSLUG="monnaie-libre"
 
 # Captain identification
 CAPTAINEMAIL="captain@yourstation.org"

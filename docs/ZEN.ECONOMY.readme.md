@@ -425,8 +425,8 @@ Les paramètres partagés entre **toutes les stations de l'essaim** sont stocké
 │                                        └─────────────────────────────┘      │
 │  SECRETS CHIFFRÉS (AES-256-CBC avec SHA256($UPLANETNAME))                   │
 │  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │ OPENCOLLECTIVE_PERSONAL_TOKEN: "iv:encrypted_base64..."             │    │
-│  │ OPENCOLLECTIVE_API_KEY: "iv:encrypted_base64..."                    │    │
+│  │ OCAPIKEY: "iv:encrypted_base64..."             │    │
+│  │ OCAPIKEY: "iv:encrypted_base64..."                    │    │
 │  │ PLANTNET_API_KEY: "iv:encrypted_base64..."                          │    │
 │  └─────────────────────────────────────────────────────────────────────┘    │
 │                                                                              │
@@ -442,7 +442,7 @@ coop_load_env_vars
 # Variables maintenant disponibles :
 echo "TVA: $TVA_RATE%"
 echo "IS réduit: $IS_RATE_REDUCED%"
-echo "Token OC: $OPENCOLLECTIVE_PERSONAL_TOKEN"  # Déchiffré automatiquement
+echo "Token OC: $OCAPIKEY"  # Déchiffré automatiquement
 ```
 
 **Gestion via CLI :**
@@ -452,7 +452,7 @@ cooperative_config.sh list
 
 # Modifier une valeur (auto-chiffre si sensible)
 cooperative_config.sh set TVA_RATE "20.0"
-cooperative_config.sh set OPENCOLLECTIVE_PERSONAL_TOKEN "mon_token_secret"
+cooperative_config.sh set OCAPIKEY "mon_token_secret"
 
 # Synchroniser depuis NOSTR
 cooperative_config.sh refresh
@@ -479,8 +479,8 @@ Les variables partagées entre toutes les stations de l'essaim sont stockées da
 | `TREASURY_PERCENT` | Part Trésorerie (%) | Non |
 | `RND_PERCENT` | Part R&D (%) | Non |
 | `ASSETS_PERCENT` | Part Actifs (%) | Non |
-| `OPENCOLLECTIVE_PERSONAL_TOKEN` | Token API OpenCollective | **Oui** (AES-256-CBC) |
-| `OPENCOLLECTIVE_API_KEY` | Clé API OpenCollective | **Oui** (AES-256-CBC) |
+| `OCAPIKEY` | Token API OpenCollective | **Oui** (AES-256-CBC) |
+| `OCAPIKEY` | Clé API OpenCollective | **Oui** (AES-256-CBC) |
 | `PLANTNET_API_KEY` | Clé API PlantNet | **Oui** (AES-256-CBC) |
 
 **Sécurité :** Les valeurs sensibles (TOKEN, SECRET, KEY, PASSWORD, API) sont automatiquement chiffrées avec `$UPLANETNAME` (AES-256-CBC) avant publication sur NOSTR.
@@ -494,7 +494,7 @@ source ~/.zen/Astroport.ONE/tools/cooperative_config.sh
 TVA=$(coop_config_get "TVA_RATE")
 
 # Définir une valeur (auto-chiffrement si sensible)
-coop_config_set "OPENCOLLECTIVE_PERSONAL_TOKEN" "votre_token"
+coop_config_set "OCAPIKEY" "votre_token"
 
 # Lister toutes les clés
 coop_config_list

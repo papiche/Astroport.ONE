@@ -195,14 +195,14 @@ show_help() {
     echo -e "${YELLOW}OPEN COLLECTIVE INTEGRATION (via Cooperative DID):${NC}"
     echo "    Configure via cooperative DID (recommended - encrypted & shared):"
     echo "      source ~/.zen/Astroport.ONE/tools/cooperative_config.sh"
-    echo "      coop_config_set OPENCOLLECTIVE_PERSONAL_TOKEN \"your_token\""
+    echo "      coop_config_set OCAPIKEY \"your_token\""
     echo "      coop_config_set OPENCOLLECTIVE_SLUG \"monnaie-libre\"  # optional"
     echo ""
     echo "    The token is encrypted with \$UPLANETNAME and stored in NOSTR DID."
     echo "    All machines in the IPFS swarm can access the same configuration."
     echo ""
     echo "    Legacy (fallback): Add to ~/.zen/Astroport.ONE/.env:"
-    echo "      OPENCOLLECTIVE_PERSONAL_TOKEN=\"your_token\""
+    echo "      OCAPIKEY=\"your_token\""
     echo ""
     echo "    Get your token at:"
     echo "      https://opencollective.com/dashboard/monnaie-libre/admin/for-developers"
@@ -2248,7 +2248,7 @@ EOF
 
 # Function to publish update to Open Collective using GraphQL API
 # Token is stored encrypted in cooperative DID NOSTR (kind 30800, d-tag "cooperative-config")
-# Fallback: OPENCOLLECTIVE_PERSONAL_TOKEN in ~/.zen/Astroport.ONE/.env
+# Fallback: OCAPIKEY in ~/.zen/Astroport.ONE/.env
 # Ref: https://graphql-docs-v2.opencollective.com
 publish_opencollective_update() {
     # Accept optional file parameter (for public-friendly version)
@@ -2257,19 +2257,19 @@ publish_opencollective_update() {
     # Try to get token from cooperative DID config first (encrypted in NOSTR)
     local oc_token=""
     if type coop_config_get &>/dev/null; then
-        oc_token=$(coop_config_get "OPENCOLLECTIVE_PERSONAL_TOKEN" 2>/dev/null || echo "")
+        oc_token=$(coop_config_get "OCAPIKEY" 2>/dev/null || echo "")
     fi
     
     # Fallback to environment variable (legacy support)
     if [[ -z "$oc_token" ]]; then
-        oc_token="${OPENCOLLECTIVE_PERSONAL_TOKEN:-}"
+        oc_token="${OCAPIKEY:-}"
     fi
     
     if [[ -z "$oc_token" ]]; then
-        echo -e "${YELLOW}⚠️  OPENCOLLECTIVE_PERSONAL_TOKEN not configured${NC}"
+        echo -e "${YELLOW}⚠️  OCAPIKEY not configured${NC}"
         echo -e "${YELLOW}   Configure via cooperative DID (recommended):${NC}"
         echo -e "${YELLOW}   source ~/.zen/Astroport.ONE/tools/cooperative_config.sh${NC}"
-        echo -e "${YELLOW}   coop_config_set OPENCOLLECTIVE_PERSONAL_TOKEN \"your_token\"${NC}"
+        echo -e "${YELLOW}   coop_config_set OCAPIKEY \"your_token\"${NC}"
         echo -e "${YELLOW}   (Value will be encrypted with \$UPLANETNAME and shared via NOSTR)${NC}"
         echo -e "${YELLOW}   Get token: https://opencollective.com/dashboard/monnaie-libre/admin/for-developers${NC}"
         return 1

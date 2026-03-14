@@ -247,7 +247,7 @@ check_and_init_cooperative_config()
 # Utilisation dans les scripts
 source ~/.zen/Astroport.ONE/tools/cooperative_config.sh
 TVA=$(coop_config_get "TVA_RATE")
-coop_config_set "OPENCOLLECTIVE_PERSONAL_TOKEN" "mon_token"
+coop_config_set "OCAPIKEY" "mon_token"
 ```
 
 ### **🛡️ Sécurité et Contrôle**

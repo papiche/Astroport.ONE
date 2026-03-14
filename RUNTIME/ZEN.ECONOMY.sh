@@ -859,7 +859,7 @@ request_opencollective_conversion() {
     ## Resolve OC token — try cooperative DID config, then OC2UPlanet .env, then env var
     local OC_TOKEN=""
     if type coop_config_get &>/dev/null; then
-        OC_TOKEN=$(coop_config_get "OPENCOLLECTIVE_PERSONAL_TOKEN" 2>/dev/null || echo "")
+        OC_TOKEN=$(coop_config_get "OCAPIKEY" 2>/dev/null || echo "")
     fi
     ## Fallback: read OCAPIKEY from OC2UPlanet .env (same token used by oc2uplanet.sh)
     if [[ -z "$OC_TOKEN" && -s "$HOME/.zen/workspace/OC2UPlanet/.env" ]]; then
@@ -867,7 +867,7 @@ request_opencollective_conversion() {
             | cut -d'=' -f2 | tr -d '"' | tr -d "'")
     fi
     ## Fallback: environment variable
-    [[ -z "$OC_TOKEN" ]] && OC_TOKEN="${OPENCOLLECTIVE_PERSONAL_TOKEN:-}"
+    [[ -z "$OC_TOKEN" ]] && OC_TOKEN="${OCAPIKEY:-}"
 
     ## Resolve OC slug — from OC2UPlanet .env or default
     local OC_SLUG=""
@@ -899,7 +899,7 @@ request_opencollective_conversion() {
     if [[ -z "$OC_TOKEN" ]]; then
         log_output "⚠️  No OpenCollective token configured"
         log_output "   Options:"
-        log_output "   1. coop_config_set OPENCOLLECTIVE_PERSONAL_TOKEN \"token\""
+        log_output "   1. coop_config_set OCAPIKEY \"token\""
         log_output "   2. Set OCAPIKEY in ~/.zen/workspace/OC2UPlanet/.env"
         log_output "   Manual conversion needed: $zen_amount Ẑen → $euro_amount €"
         echo "$(date -u +%Y%m%d%H%M%S) MANUAL_CONVERSION_NEEDED $zen_amount ZEN $euro_amount EUR $period" \

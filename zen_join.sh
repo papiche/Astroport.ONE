@@ -275,7 +275,7 @@ if [[ -f "$MY_PATH/tools/cooperative_config.sh" ]]; then
         echo "$COOP_REMOTE" > "$COOP_CONFIG_CACHE"
 
         ## Extraire les credentials OC (auto-déchiffrement via UPLANETNAME)
-        OC_TOKEN=$(coop_config_get "OPENCOLLECTIVE_PERSONAL_TOKEN" 2>/dev/null) || true
+        OC_TOKEN=$(coop_config_get "OCAPIKEY" 2>/dev/null) || true
         OC_SLUG=$(coop_config_get "OPENCOLLECTIVE_SLUG" 2>/dev/null) || true
         [[ -z "$OC_SLUG" ]] && OC_SLUG=$(echo "$COOP_REMOTE" | jq -r '.OPENCOLLECTIVE_SLUG // empty' 2>/dev/null)
 
@@ -299,7 +299,7 @@ if [[ -f "$MY_PATH/tools/cooperative_config.sh" ]]; then
             [[ -z "$OC_SLUG" ]] && OC_SLUG="monnaie-libre"
 
             ## Stocker dans cooperative_config (chiffré NOSTR DID kind 30800)
-            coop_config_set "OPENCOLLECTIVE_PERSONAL_TOKEN" "$OC_TOKEN" 2>/dev/null || true
+            coop_config_set "OCAPIKEY" "$OC_TOKEN" 2>/dev/null || true
             coop_config_set "OPENCOLLECTIVE_SLUG" "$OC_SLUG" --no-encrypt 2>/dev/null || true
             echo -e "${GREEN}  Credentials OC stockés dans cooperative_config (NOSTR DID)${NC}"
         fi
@@ -369,7 +369,7 @@ echo ""
 echo -e "${YELLOW}Config coopérative (kind 30800) — synchronisée automatiquement via le relay.${NC}"
 echo -e "${YELLOW}Pour configurer manuellement:${NC}"
 echo -e "  ${CYAN}source $MY_PATH/tools/cooperative_config.sh${NC}"
-echo -e "  ${CYAN}coop_config_set OPENCOLLECTIVE_PERSONAL_TOKEN <token>${NC}"
+echo -e "  ${CYAN}coop_config_set OCAPIKEY <token>${NC}"
 echo -e "  ${CYAN}coop_config_set OPENCOLLECTIVE_SLUG <slug> --no-encrypt${NC}"
 echo -e "  ${CYAN}coop_config_refresh  # récupérer la config depuis le relay${NC}"
 echo ""
