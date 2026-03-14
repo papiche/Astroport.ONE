@@ -532,11 +532,16 @@ coop_config_init() {
     "ASSETS_PERCENT": "33",
     "CAPTAIN_BONUS_PERCENT": "1",
     
-    "_comment_oc": "=== OPENCOLLECTIVE (shared credentials) ===",
+    "_comment_oc": "=== OPENCOLLECTIVE ===",
     "OCSLUG": "monnaie-libre",
     "OCAPIKEY": "",
+    "OC_URL_SATELLITE": "",
+    "OC_URL_CONSTELLATION": "",
 
-    "_comment_mj": "=== MAILJET (shared credentials - auto-encrypted) ===",
+    "_comment_api": "=== API KEYS (auto-encrypted) ===",
+    "PLANTNET_API_KEY": "",
+
+    "_comment_mj": "=== MAILJET (auto-encrypted) ===",
     "MJ_APIKEY_PUBLIC": "",
     "MJ_APIKEY_PRIVATE": "",
     "MJ_SENDER_EMAIL": ""
@@ -622,7 +627,15 @@ coop_load_env_vars() {
     
     val=$(coop_config_get "PLANTNET_API_KEY" 2>/dev/null)
     [[ -n "$val" ]] && export PLANTNET_API_KEY="$val"
-    
+
+    # Load MailJet credentials (auto-decrypted)
+    val=$(coop_config_get "MJ_APIKEY_PUBLIC" 2>/dev/null)
+    [[ -n "$val" ]] && export MJ_APIKEY_PUBLIC="$val"
+    val=$(coop_config_get "MJ_APIKEY_PRIVATE" 2>/dev/null)
+    [[ -n "$val" ]] && export MJ_APIKEY_PRIVATE="$val"
+    val=$(coop_config_get "MJ_SENDER_EMAIL" 2>/dev/null)
+    [[ -n "$val" ]] && export MJ_SENDER_EMAIL="$val" && export SENDER_EMAIL="$val"
+
     return 0
 }
 

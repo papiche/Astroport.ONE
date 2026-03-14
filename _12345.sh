@@ -662,6 +662,7 @@ NODE12345="{
     \"PAF\" : \"${PAF}\",
     \"NCARD\" : \"${NCARD}\",
     \"ZCARD\" : \"${ZCARD}\",
+    \"MACHINE_VALUE_ZEN\" : \"${MACHINE_VALUE_ZEN:-500}\",
     \"BILAN\" : \"${BILAN}\",
     \"capacities\" : ${CAPACITIES},
     \"services\" : ${SERVICES},
