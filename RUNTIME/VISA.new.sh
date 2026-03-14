@@ -695,12 +695,27 @@ if [[ -s ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]]; then
     
     if [[ -n "$ZENCARDG1" ]]; then
         echo "## Adding ZENCARD: $ZENCARDG1 to NOSTR profile"
-        
+
+        # Derive SS58 addresses for Duniter v2s compatibility
+        ZENCARDG1_V2=""
+        G1PUB_V2=""
+        if [[ -x "${MY_PATH}/../tools/g1pub_to_ss58.py" ]]; then
+            ZENCARDG1_V2=$(python3 "${MY_PATH}/../tools/g1pub_to_ss58.py" "$ZENCARDG1" 2>/dev/null)
+            G1PUB_V2=$(python3 "${MY_PATH}/../tools/g1pub_to_ss58.py" "$G1PUB" 2>/dev/null)
+        fi
+
+        # Build update command with v2s addresses
+        UPDATE_ARGS=(
+            "${PLAYER}"
+            "wss://relay.copylaradio.com" "$myRELAY"
+            --zencard "$ZENCARDG1"
+        )
+        [[ -n "$ZENCARDG1_V2" ]] && UPDATE_ARGS+=(--zencard_v2 "$ZENCARDG1_V2")
+        [[ -n "$G1PUB_V2" ]] && UPDATE_ARGS+=(--g1v2 "$G1PUB_V2")
+
         # Update NOSTR profile using nostr_update_profile.py
         ${MY_PATH}/../tools/nostr_update_profile.py \
-            "${PLAYER}" \
-            "wss://relay.copylaradio.com" "$myRELAY" \
-            --zencard "$ZENCARDG1" \
+            "${UPDATE_ARGS[@]}" \
             > ~/.zen/game/nostr/${PLAYER}/nostr_update_zencard.log 2>&1
         
         if [[ $? -eq 0 ]]; then

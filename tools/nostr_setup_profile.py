@@ -31,6 +31,8 @@ def nostr_setup_profile(args):
         metadata["g1pub"] = args.g1pub
     if args.g1v2:
         metadata["g1v2"] = args.g1v2
+    if args.zencard_v2:
+        metadata["zencard_v2"] = args.zencard_v2
     if args.city:
         metadata["city"] = args.city
 
@@ -56,6 +58,8 @@ def nostr_setup_profile(args):
         tags.append(["i", f"ipns_vault:{args.ipns_vault}", ""])
     if args.zencard:
         tags.append(["i", f"zencard:{args.zencard}", ""])
+    if args.zencard_v2:
+        tags.append(["i", f"zencard_v2:{args.zencard_v2}", ""])
     if args.email:
         tags.append(["i", f"email:{args.email}", ""])
     if args.tw_feed:
@@ -117,7 +121,8 @@ if __name__ == "__main__":
     parser.add_argument("--city", help="City/location", default=None)
     parser.add_argument("--ipfs_gw", help="IPFS Gateway URL", default=None)
     parser.add_argument("--ipns_vault", help="NOSTR Card IPNS vault key", default=None)
-    parser.add_argument("--zencard", help="ZenCard wallet address", default=None)
+    parser.add_argument("--zencard", help="ZenCard wallet address (G1 v1)", default=None)
+    parser.add_argument("--zencard_v2", help="ZenCard SS58 address (Duniter v2s)", default=None)
     parser.add_argument("--email", help="Email address", default=None)
     parser.add_argument("--tw_feed", help="TW Feed IPNS key", default=None)
     # UMAP image CIDs for swarm-less distribution

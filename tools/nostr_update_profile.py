@@ -322,7 +322,7 @@ def merge_profile_data(existing_event: Optional[dict], new_args: argparse.Namesp
     metadata = existing_metadata.copy()
     
     # Mettre à jour avec les nouveaux champs fournis
-    fields = ['name', 'about', 'picture', 'banner', 'nip05', 'website', 'city', 'g1pub']
+    fields = ['name', 'about', 'picture', 'banner', 'nip05', 'website', 'city', 'g1pub', 'g1v2', 'zencard_v2']
     for field in fields:
         val = getattr(new_args, field, None)
         if val is not None:
@@ -343,8 +343,8 @@ def merge_profile_data(existing_event: Optional[dict], new_args: argparse.Namesp
             tag_map[key] = value
     
     # Mettre à jour avec les nouveaux tags
-    tag_fields = ['g1pub', 'github', 'twitter', 'mastodon', 'telegram',
-                  'ipfs_gw', 'ipns_vault', 'zencard', 'email', 'tw_feed']
+    tag_fields = ['g1pub', 'g1v2', 'github', 'twitter', 'mastodon', 'telegram',
+                  'ipfs_gw', 'ipns_vault', 'zencard', 'zencard_v2', 'email', 'tw_feed']
     
     for field in tag_fields:
         val = getattr(new_args, field, None)
@@ -465,13 +465,15 @@ Examples:
     parser.add_argument("--website", help="Website URL")
     parser.add_argument("--city", help="City/location")
     parser.add_argument("--g1pub", help="G1 Pubkey")
+    parser.add_argument("--g1v2", help="G1 v2 SS58 address (Duniter v2s)")
     parser.add_argument("--github", help="GitHub username")
     parser.add_argument("--twitter", help="Twitter handle")
     parser.add_argument("--mastodon", help="Mastodon handle")
     parser.add_argument("--telegram", help="Telegram handle")
     parser.add_argument("--ipfs_gw", help="IPFS Gateway URL")
     parser.add_argument("--ipns_vault", help="NOSTR Card IPNS vault key")
-    parser.add_argument("--zencard", help="ZenCard wallet address")
+    parser.add_argument("--zencard", help="ZenCard wallet address (G1 v1)")
+    parser.add_argument("--zencard_v2", help="ZenCard SS58 address (Duniter v2s)")
     parser.add_argument("--email", help="Email address")
     parser.add_argument("--tw_feed", help="TW Feed IPNS key")
 

@@ -978,20 +978,33 @@ for PLAYER in "${NOSTR[@]}"; do
 
         ZENCARDG1=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
         G1PUBNOSTR=$(cat ${HOME}/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
+        ## Derive SS58 addresses for Duniter v2s
+        G1V2ADDRESS=""
+        ZENCARDG1_V2=""
+        if [[ -x "${MY_PATH}/../tools/g1pub_to_ss58.py" ]]; then
+            G1V2ADDRESS=$(python3 "${MY_PATH}/../tools/g1pub_to_ss58.py" "$G1PUBNOSTR" 2>/dev/null)
+            [[ -n "$ZENCARDG1" ]] && ZENCARDG1_V2=$(python3 "${MY_PATH}/../tools/g1pub_to_ss58.py" "$ZENCARDG1" 2>/dev/null)
+        fi
         ### SEND PROFILE TO NOSTR RELAYS
+        SETUP_ARGS=(
+            "$NSEC"
+            "✌(◕‿-)✌ $title" "$G1PUBNOSTR"
+            "$description"
+            "$myIPFS/$zavatar"
+            "$myIPFS/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg"
+            "" "$myIPFS${NOSTRNS}/${PLAYER}/APP/uDRIVE" "" "" "" ""
+            "wss://relay.copylaradio.com" "$myRELAY"
+            --city "$city"
+            --ipfs_gw "$myIPFS"
+            --zencard "$ZENCARDG1"
+            --email "$PLAYER"
+            --ipns_vault "${NOSTRNS}"
+        )
+        [[ -n "$G1V2ADDRESS" ]] && SETUP_ARGS+=(--g1v2 "$G1V2ADDRESS")
+        [[ -n "$ZENCARDG1_V2" ]] && SETUP_ARGS+=(--zencard_v2 "$ZENCARDG1_V2")
+
         ${MY_PATH}/../tools/nostr_setup_profile.py \
-            "$NSEC" \
-            "✌(◕‿-)✌ $title" "$G1PUBNOSTR" \
-            "$description" \
-            "$myIPFS/$zavatar" \
-            "$myIPFS/ipfs/QmX1TWhFZwVFBSPthw1Q3gW5rQc1Gc4qrSbKj4q1tXPicT/P2Pmesh.jpg" \
-            "" "$myIPFS${NOSTRNS}/${PLAYER}/APP/uDRIVE" "" "" "" "" \
-            "wss://relay.copylaradio.com" "$myRELAY" \
-            --city "$city" \
-            --ipfs_gw "$myIPFS" \
-            --zencard "$ZENCARDG1" \
-            --email "$PLAYER" \
-            --ipns_vault "${NOSTRNS}" \
+            "${SETUP_ARGS[@]}" \
             > ~/.zen/game/nostr/${PLAYER}/nostr_setup_profile
 
         ## DOES COMMAND SUCCEED ?
