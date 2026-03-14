@@ -319,6 +319,11 @@ fi
 
 
 ############################################## SEND NOSTR PUBLIC NOTE (Kind 1)
+# --expire 0s means "email only, no NOSTR publication" (security: avoid leaking secrets)
+if [[ "$ephemeral_duration" == "0" ]]; then
+    echo "📧 Email-only mode (--expire 0s): skipping NOSTR publication"
+else
+
 # Try to use destination's NSEC if available, otherwise use captain's NSEC
 SENDER_NSEC=""
 SENDER_IDENTITY=""
@@ -332,14 +337,14 @@ if [[ -s "$HOME/.zen/game/nostr/${DEST_EMAIL}/.secret.nostr" ]]; then
     source "$NOSTR_KEYFILE"
     SENDER_NSEC="$NSEC"
     SENDER_IDENTITY="${DEST_EMAIL}"
-    echo "👤 Using destination's NOSTR key: ${NSEC:0:20}..."
+    echo "👤 Using destination's NOSTR key"
 elif [[ -n "$CAPTAINEMAIL" && -s "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr" ]]; then
     echo "🔑 Destination's key not found, using captain's key"
     NOSTR_KEYFILE="$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
     source "$NOSTR_KEYFILE"
     SENDER_NSEC="$NSEC"
     SENDER_IDENTITY="${CAPTAINEMAIL} (Captain)"
-    echo "👨‍✈️ Using captain's NOSTR key: ${NSEC:0:20}..."
+    echo "👨‍✈️ Using captain's NOSTR key"
 fi
 
 if [[ -n "$SENDER_NSEC" && -n "$NOSTR_KEYFILE" ]]; then
@@ -509,6 +514,8 @@ else
     echo "    - $HOME/.zen/game/nostr/${DEST_EMAIL}/.secret.nostr (destination)"
     echo "    - $HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr (captain)"
 fi
+
+fi # end of ephemeral_duration != 0 check
 
 
 # This call sends an email to one recipient.

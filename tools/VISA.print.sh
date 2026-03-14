@@ -151,7 +151,7 @@ if [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] ; then
             > ~/.zen/tmp/${MOATS}/UPlanetZine.html
 
 
-    $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/UPlanetZine.html "${PLAYER} ZENCARD"
+    $MY_PATH/../tools/mailjet.sh --expire 0s "${PLAYER}" ~/.zen/tmp/${MOATS}/UPlanetZine.html "${PLAYER} ZENCARD"
 fi
 
 echo "DEBUG ~/.zen/tmp/${MOATS}"
