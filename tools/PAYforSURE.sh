@@ -420,7 +420,8 @@ for _try in 1 2 3 4 5; do
     log "Attente bloc ${_try}/5..."
 done
 if [[ "$CONFIRMED" != "true" ]]; then
-    logw "Pas de confirmation après 30s — la transaction a été soumise mais non encore confirmée"
+    loge "Pas de confirmation après 30s — la transaction n'a pas été confirmée sur la blockchain"
+    exit 1
 fi
 
 # ── Mise à jour du cache de solde ─────────────────────────────────────────────

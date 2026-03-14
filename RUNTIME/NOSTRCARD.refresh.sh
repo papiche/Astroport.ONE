@@ -1182,6 +1182,25 @@ for PLAYER in "${NOSTR[@]}"; do
         fi
 
     ########################################################################################
+    ## PRIMO TX RECOVERY: retry if wallet has 0 balance and G1PRIME is missing
+    if [[ "$COINS" == "0" || -z "$COINS" || "$COINS" == "null" ]] && [[ ! -s ~/.zen/game/nostr/${PLAYER}/G1PRIME ]]; then
+        echo "⚠️  PRIMO TX RECOVERY: wallet $G1PUBNOSTR has 0 G1 and no G1PRIME marker"
+        echo "   Retrying primo transaction from UPLANETNAME_G1..."
+        if [[ -f ~/.zen/game/uplanet.G1.dunikey ]]; then
+            YOUSER_RETRY=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
+            ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.G1.dunikey" \
+                "1" "${G1PUBNOSTR}" \
+                "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER_RETRY}:MULTIPASS:PRIMAL:RETRY" 2>/dev/null \
+            && echo "${UPLANETNAME_G1}" > ~/.zen/game/nostr/${PLAYER}/G1PRIME \
+            && echo "${UPLANETNAME_G1}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal \
+            && echo "✅ PRIMO TX RETRY successful for ${PLAYER}" \
+            || echo "❌ PRIMO TX RETRY failed for ${PLAYER} (check UPLANETNAME_G1 balance)"
+        else
+            echo "❌ Cannot retry PRIMO TX: uplanet.G1.dunikey not found"
+        fi
+    fi
+
+    ########################################################################################
     # Use the generic primal wallet control function
     echo "Checking MULTIPASS wallet for $PLAYER: $G1PUBNOSTR"
     # Get DISCO from MULTIPASS to create dunikey if needed

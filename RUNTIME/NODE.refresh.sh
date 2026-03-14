@@ -201,6 +201,18 @@ if [[ -f "$HOME/.zen/game/uplanet.G1.nostr" ]]; then
     fi
 fi
 
+# Add station bot pubkey (UMAP 0.00,0.00 - used by filter/1.sh for visitor warnings/BRO responses)
+STATION_BOT_NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}0.00" "${UPLANETNAME}0.00" 2>/dev/null)
+if [[ -n "$STATION_BOT_NPUB" ]]; then
+    STATION_BOT_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$STATION_BOT_NPUB" 2>/dev/null)
+    if [[ -n "$STATION_BOT_HEX" && ${#STATION_BOT_HEX} -eq 64 ]]; then
+        if ! grep -qi "^${STATION_BOT_HEX}$" "${HOME}/.zen/strfry/amisOfAmis.txt" 2>/dev/null; then
+            echo "$STATION_BOT_HEX" >> "${HOME}/.zen/strfry/amisOfAmis.txt"
+            echo "Added station bot HEX (UMAP 0.00,0.00): ${STATION_BOT_HEX:0:16}..."
+        fi
+    fi
+fi
+
 # Add LOCAL UMAP HEX keys only (from this node's IPFSNODEID, not swarm)
 # These are the UMAPs that NOSTR.UMAP.refresh.sh will actually process
 UMAP_COUNT=0

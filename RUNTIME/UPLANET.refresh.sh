@@ -502,7 +502,10 @@ ${MY_PATH}/../tools/nostr_setup_profile.py \
 "" "${myLIBRA}/ipns/copylaradio.com" "" "${VDONINJA}/?room=${UPLANETG1PUB:0:8}&effects&record" "" "" \
 "$myRELAY" \
 --zencard "$UPLANETNAME_G1" \
-| tail -n 1 | rev | cut -d ' ' -f 1 | rev > ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX
+| tail -n 1 | rev | cut -d ' ' -f 1 | rev > /dev/null
+
+mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET
+${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}" "${UPLANETNAME}" | xargs ${MY_PATH}/../tools/nostr2hex.py > ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX
 ####################################################################################
 
 ######################################################
