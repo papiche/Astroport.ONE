@@ -222,6 +222,28 @@ if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
     done < <("${MY_PATH}/duniter_getnode.sh" all 2>/dev/null | jq -r '.rpc[].url' 2>/dev/null)
 fi
 
+# ── Fallback squid : requête GraphQL HTTPS (pas de WSS, contourne les firewalls) ──
+if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
+    log "Tentative fallback via Squid GraphQL (HTTPS)..."
+    while IFS= read -r squid_url; do
+        [[ -z "$squid_url" ]] && continue
+        squid_resp=$(curl -sf --max-time 8 -X POST "$squid_url" \
+            -H "Content-Type: application/json" \
+            --data-binary "{\"query\":\"query(\$w:String!){accounts(condition:{id:\$w}){nodes{totalBalance}}}\",\"variables\":{\"w\":\"$G1PUB_QUERY\"}}" \
+            2>/dev/null)
+        squid_raw=$(echo "$squid_resp" | jq -r '.data.accounts.nodes[0].totalBalance // empty' 2>/dev/null)
+        if [[ -n "$squid_raw" && "$squid_raw" != "null" ]]; then
+            BALANCE=$(raw_to_g1 "$squid_raw")
+            if is_valid_balance "$BALANCE"; then
+                log "Solde obtenu via Squid $squid_url : $BALANCE Ğ1"
+                write_cache "$COINSFILE" "$BALANCE"
+                output "$BALANCE"
+                exit 0
+            fi
+        fi
+    done < <("${MY_PATH}/duniter_getnode.sh" all 2>/dev/null | jq -r '.squid[].url' 2>/dev/null)
+fi
+
 # ── Fallback : dernier backup disponible ─────────────────────────────────────
 bak=$(find "${HOME}/.zen/tmp" -maxdepth 1 -name "backup.${G1PUB}.*" \
     | sort -r | head -1)
