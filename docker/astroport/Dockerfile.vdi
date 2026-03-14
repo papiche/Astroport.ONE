@@ -99,7 +99,7 @@ RUN npm install -g tiddlywiki
 
 ARG COMPOSE_REMOTE=https://github.com/docker/compose
 ARG COMPOSE_VERSION=2.5.0
-ARG IPFS_VERSION=0.24.0
+ARG IPFS_VERSION=0.40.0
 
 RUN OS="$(echo ${DOCKER_SYSTEM} |awk '{print tolower($0)}')" \
  && ARCH="$(echo ${DOCKER_MACHINE} |awk '{print /armv7l/ ? "armv7" : $0}')" \

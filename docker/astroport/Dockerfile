@@ -45,7 +45,7 @@ RUN npm install -g tiddlywiki@5.2.3
 ########################################################################
 ## 3. IPFS KUBO
 ########################################################################
-ARG IPFS_VERSION=0.30.0
+ARG IPFS_VERSION=0.40.0
 RUN OS="$(echo ${DOCKER_SYSTEM} | awk '{print tolower($0)}')" \
  && ARCH="$(echo ${DOCKER_MACHINE} | awk '{print /x86_64/ ? "amd64" : /aarch64/ ? "arm64" : /armv7l/ ? "arm" : $0}')" \
  && wget -qO - https://github.com/ipfs/kubo/releases/download/v${IPFS_VERSION}/kubo_v${IPFS_VERSION}_${OS}-${ARCH}.tar.gz \

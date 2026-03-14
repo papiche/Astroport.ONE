@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UPlanet " MULTIPASS"</title>
+    <title>UPlanet "MULTIPASS" - L'AMAP Numérique</title>
     <style>
         :root {
             --primary-color: #3498db;
@@ -16,6 +16,7 @@
             --warning-box-bg: #fff3cd;
             --table-header-bg: #f8f9fa;
             --table-hover-bg: #f5f5f5;
+            --amap-color: #27ae60;
         }
 
         [data-theme="dark"] {
@@ -29,6 +30,7 @@
             --warning-box-bg: #332d1a;
             --table-header-bg: #2d2d2d;
             --table-hover-bg: #363636;
+            --amap-color: #2ecc71;
         }
 
         body {
@@ -145,6 +147,14 @@
             border-radius: 0 5px 5px 0;
         }
 
+        .amap-box {
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.05));
+            border-left: 4px solid var(--amap-color);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
         .setup-steps {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -169,27 +179,6 @@
             margin-bottom: 15px;
         }
 
-        .offer-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 15px 0;
-        }
-
-        .offer-table th, .offer-table td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .offer-table th {
-            background-color: var(--table-header-bg);
-            color: var(--primary-color);
-        }
-
-        .offer-table tr:hover {
-            background-color: var(--table-hover-bg);
-        }
-
         .offer-features {
             list-style-type: none;
             padding-left: 0;
@@ -203,19 +192,11 @@
 
         .offer-features li:before {
             content: "✓";
-            color: #27ae60;
+            color: var(--amap-color);
             position: absolute;
             left: 0;
         }
 
-        .highlight {
-            background-color: var(--highlight-bg);
-            padding: 2px 5px;
-            border-radius: 3px;
-            font-family: monospace;
-        }
-
-        /* Hero optimizations */
         .hero-box {
             background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(52, 152, 219, 0.05));
             padding: 30px;
@@ -253,7 +234,7 @@
         }
 
         .cta-primary {
-            background: linear-gradient(135deg, var(--primary-color), #2980b9);
+            background: linear-gradient(135deg, var(--amap-color), #219a52);
             color: white;
             padding: 20px 30px;
             border-radius: 12px;
@@ -268,7 +249,8 @@
 
         .cta-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+            box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+            color: white;
         }
 
         .resource-link {
@@ -315,26 +297,10 @@
         }
 
         @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-            }
-
-            .setup-steps {
-                grid-template-columns: 1fr;
-            }
-
-            .offer-table {
-                display: block;
-                overflow-x: auto;
-            }
-
-            .language-tabs {
-                flex-wrap: wrap;
-            }
-
-            .language-tab {
-                margin-bottom: 5px;
-            }
+            .container { padding: 15px; }
+            .setup-steps { grid-template-columns: 1fr; }
+            .language-tabs { flex-wrap: wrap; }
+            .language-tab { margin-bottom: 5px; }
         }
     </style>
 </head>
@@ -343,14 +309,13 @@
         <button onclick="toggleTheme()">🌓</button>
     </div>
 
-    <!-- Nouveau logo UPlanet en haut de la page -->
     <img src="http://127.0.0.1:8080/ipfs/QmfBK5h8R4LjS2qMtHKze3nnFrtdm85pCbUw3oPSirik5M/logo.uplanet.png" 
          alt="UPlanet Logo" 
          style="max-width: 150px; display: block; margin: 20px auto 0 auto;">
 
     <div class="container">
-        <h1>🚀 Bienvenue dans UPlanet !</h1>
-        <p style="text-align: center; font-size: 1.2em; color: var(--primary-color); margin-bottom: 30px;">
+        <h1>🚀 Bienvenue dans l'AMAP du Numérique</h1>
+        <p style="text-align: center; font-size: 1.2em; color: var(--amap-color); margin-bottom: 30px;">
             <strong>Reprenez le contrôle d'Internet. Brique par brique.</strong>
         </p>
 
@@ -360,1010 +325,418 @@
             <div class="language-tab" data-lang="es">Español</div>
         </div>
 
+        <!-- ================= FRANÇAIS ================= -->
         <div class="language-section active" id="fr">
-            <div class="language-title">Français</div>
             
-            <!-- Hero Section Optimisée -->
             <div class="hero-box">
                 <h2 style="color: var(--primary-color); text-align: center; margin: 0 0 20px 0; font-size: 2em;">
-                    🎉 Bienvenue dans l'Internet de Confiance !
+                    🎉 Finis les abonnements, place aux Communs !
                 </h2>
                 <p style="text-align: center; font-size: 1.2em; margin-bottom: 30px;">
-                    <strong>Votre MULTIPASS est actif.</strong> Vous ne louez plus Internet, vous en êtes <strong>copropriétaire</strong>.
+                    <strong>Votre MULTIPASS est actif.</strong> Vous venez de quitter le "supermarché de la donnée" pour rejoindre le <strong>circuit court numérique</strong>.
                 </p>
                 
                 <div class="benefit-grid">
                     <div class="benefit-item">
-                        <div class="benefit-icon">💰</div>
+                        <div class="benefit-icon">🥕</div>
                         <div class="benefit-text">
-                            <strong>Vous gagnez de l'argent</strong>
-                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Chaque like = 1Ẑ automatique dans votre portefeuille</span>
+                            <strong>Le Circuit Court</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Vos données restent sur un nœud Astroport local géré par la communauté.</span>
                         </div>
                     </div>
                     <div class="benefit-item">
-                        <div class="benefit-icon">🤖</div>
+                        <div class="benefit-icon">🧺</div>
                         <div class="benefit-text">
-                            <strong>Votre IA personnelle</strong>
-                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Bot Astro crée vos journaux quotidiens 24/7</span>
+                            <strong>Votre Panier Numérique</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Stockage uDRIVE, IA locale et réseau N² en échange de votre soutien.</span>
                         </div>
                     </div>
                     <div class="benefit-item">
-                        <div class="benefit-icon">🏠</div>
+                        <div class="benefit-icon">🏛️</div>
                         <div class="benefit-text">
-                            <strong>Vous êtes propriétaire</strong>
-                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Plus de loyer éternel, vous possédez vos données</span>
+                            <strong>Gouvernance SCIC</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">1 membre = 1 voix. Vous devenez sociétaire de l'infrastructure commune.</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Ressources Essentielles -->
-            <div class="info-box" style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.05));">
-                <h3 style="margin: 0 0 15px 0; color: #27ae60;">📚 Vos Ressources Clés</h3>
-                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                    <a href="http://127.0.0.1:8080/ipfs/QmZbbuh7XTerEb1XLdMDu2MCbFQw3w1RWzda1swxK6nYJ3" target="_blank" class="resource-link">
-                        🖨️ Imprimer mon MULTIPASS (Zine)
-                    </a>
-                    <a href="http://127.0.0.1:8080/ipns/copylaradio.com/uplanet_com.html" target="_blank" class="resource-link">
-                        🌍 Comprendre UPlanet
-                    </a>
-                    <a href="http://127.0.0.1:8080/ipns/copylaradio.com/nostr_com.html" target="_blank" class="resource-link">
-                        📡 Découvrir Nostr
-                    </a>
-                    <a href="_CORACLEURL_" target="_blank" class="resource-link">
-                        💬 Rejoindre le Forum
-                    </a>
-                </div>
+            <div class="info-box" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+                <a href="http://127.0.0.1:8080/ipfs/QmZbbuh7XTerEb1XLdMDu2MCbFQw3w1RWzda1swxK6nYJ3" target="_blank" class="resource-link">🖨️ Imprimer mon MULTIPASS</a>
+                <a href="http://127.0.0.1:8080/ipns/copylaradio.com/entrance.html" target="_blank" class="resource-link">🌍 L'Ère de la Souveraineté</a>
+                <a href="http://127.0.0.1:8080/ipns/copylaradio.com/nostr_com.html" target="_blank" class="resource-link">📡 Découvrir Nostr</a>
+                <a href="_CORACLEURL_" target="_blank" class="resource-link">💬 Rejoindre le Forum N²</a>
             </div>
 
             <div class="section">
-                <h2 class="section-title">🎫 Votre MULTIPASS : Votre Identité Universelle</h2>
-                <p>Votre MULTIPASS est votre <strong>identité numérique complète</strong> dans l'écosystème UPlanet. Plus qu'un simple compte, c'est votre clé d'accès à un Internet libre et décentralisé.</p>
+                <h2 class="section-title">🌱 Qu'est-ce que l'AMAP Numérique ?</h2>
+                <p>Dans l'ancien monde (Web2), les multinationales capturaient votre valeur et vous rendaient dépendant de leurs services. Avec UPlanet, nous appliquons le principe d'une <strong>AMAP</strong> à la technologie.</p>
                 
                 <div class="setup-steps">
-                    <div class="setup-step">
-                        <h3>🔐 Sécurité Maximale</h3>
-                        <p>Votre identité est protégée par le <strong>système SSSS (Shamir Secret Sharing)</strong> : votre clé est divisée en 3 parts, 2 suffisent pour la reconstituer. Impossible à pirater, impossible à perdre définitivement.</p>
+                    <div class="setup-step" style="border-top: 4px solid var(--amap-color);">
+                        <h3 style="color: var(--amap-color);">🤝 Préfinancement</h3>
+                        <p>Plutôt que de payer une location aveugle à un Cloud géant, les membres <strong>préfinancent l'infrastructure locale</strong> (achat de disques, électricité, serveurs Astroport) en prenant une part sociale.</p>
                     </div>
-                    <div class="setup-step">
-                        <h3>🌐 Accès Universel</h3>
-                        <p>Utilisez votre MULTIPASS sur <strong>n'importe quel terminal UPlanet</strong> dans le monde. Scannez votre QR code SSSS, entrez votre code PASS, et accédez instantanément à votre univers numérique.</p>
+                    <div class="setup-step" style="border-top: 4px solid var(--amap-color);">
+                        <h3 style="color: var(--amap-color);">🎁 La Récolte (Services)</h3>
+                        <p>En échange, la coopérative vous fournit votre "récolte" numérique : votre identité souveraine, un Cloud personnel NextCloud privé, et l'accès à une IA non-censurée.</p>
                     </div>
-                    <div class="setup-step">
-                        <h3>💰 Économie Transparente</h3>
-                        <p>Chaque like sur vos posts = <strong>1 ẐEN automatique</strong>. Créez du contenu de qualité et gagnez de l'argent. L'économie UPlanet récompense la valeur, pas la surveillance.</p>
+                    <div class="setup-step" style="border-top: 4px solid var(--amap-color);">
+                        <h3 style="color: var(--amap-color);">💎 Le rôle du ẐEN</h3>
+                        <p>Le <strong>ẐEN</strong> est notre outil de comptabilité. Il capture la valeur du monde en Euro pour financer nos outils sans spéculation, préservant ainsi la pureté de la <strong>Monnaie Libre (Ğ1)</strong>.</p>
                     </div>
                 </div>
+            </div>
+
+            <div class="amap-box">
+                <h3 style="margin: 0 0 10px 0; color: var(--amap-color);">🏛️ Les 5 Piliers de la Souveraineté</h3>
+                <p style="margin: 0;">UPlanet est un projet global pour reprendre la main sur la base physique de notre existence :<br>
+                <strong>1. Énergie</strong> (Modules Tesla-HDD, Rocket Stove) • <strong>2. Information</strong> (Nœuds Astroport, Nostr) • <strong>3. Monnaie</strong> (Ğ1 + ẐEN) • <strong>4. Inclusion</strong> (Cartes MULTIPASS papier) • <strong>5. Communs</strong> (Acquisition de terres collectives).</p>
             </div>
 
             <div class="section">
                 <h2 class="section-title">🗺️ Votre Parcours en 4 Étapes</h2>
-                <p style="text-align: center; font-size: 1.1em; margin-bottom: 30px;">Votre MULTIPASS est déjà <strong>100% fonctionnel</strong> ! Suivez ce guide pour démarrer :</p>
-                
                 <div class="setup-steps">
-                    <!-- Étape 1 -->
                     <div class="setup-step" style="border-left: 4px solid var(--primary-color);">
-                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                            <span class="step-number">1</span>
-                            <h3 style="margin: 0;">📚 Comprendre</h3>
-                        </div>
-                        <p><strong>Lisez vos ressources clés :</strong></p>
-                        <ul>
-                            <li>🖨️ <strong>Imprimez votre MULTIPASS</strong> (Zine PDF ci-dessus)</li>
-                            <li>🌍 <a href="http://127.0.0.1:8080/ipns/copylaradio.com/uplanet_com.html" target="_blank" style="color: var(--primary-color); font-weight: 600;">Comprendre UPlanet</a> (5 min de lecture)</li>
-                            <li>📡 <a href="http://127.0.0.1:8080/ipns/copylaradio.com/nostr_com.html" target="_blank" style="color: var(--primary-color); font-weight: 600;">Découvrir Nostr</a> (protocole décentralisé)</li>
-                        </ul>
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;"><span class="step-number">1</span><h3 style="margin: 0;">Sécuriser</h3></div>
+                        <p><strong>Votre Identité (SSSS) :</strong> Imprimez le Zine MULTIPASS. Votre clé est divisée en 3 parts, impossible à pirater ou à perdre définitivement.</p>
                     </div>
-                    
-                    <!-- Étape 2 -->
                     <div class="setup-step" style="border-left: 4px solid var(--primary-color);">
-                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                            <span class="step-number">2</span>
-                            <h3 style="margin: 0;">🔌 Connecter</h3>
-                        </div>
-                        <p><strong>Accédez à votre terminal MULTIPASS :</strong></p>
-                        <ul>
-                            <li>🌐 Allez sur <strong><a href="_USPOT_/scan" target="_blank">/SCAN</a></strong></li>
-                            <li>📱 Scannez votre <strong>QR code SSSS</strong> (dans votre Zine)</li>
-                            <li>🔑 Entrez votre <strong>code PASS</strong> (vide = rapide, 1111 = complet)</li>
-                            <li>✅ Profitez de votre <strong>uDRIVE 10GB</strong> + IA personnelle</li>
-                        </ul>
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;"><span class="step-number">2</span><h3 style="margin: 0;">Connecter</h3></div>
+                        <p><strong>Terminal Universel :</strong> Allez sur <strong><a href="_USPOT_/scan" target="_blank">/SCAN</a></strong>, scannez votre QR code, entrez votre code PASS. Vous êtes chez vous.</p>
                     </div>
-                    
-                    <!-- Étape 3 -->
                     <div class="setup-step" style="border-left: 4px solid var(--primary-color);">
-                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                            <span class="step-number">3</span>
-                            <h3 style="margin: 0;">💬 Participer</h3>
-                        </div>
-                        <p><strong>Rejoignez le réseau social N² :</strong></p>
-                        <ul>
-                            <li>🦊 Installez l'extension <strong>NOSTR Connect</strong> (Firefox recommandé)</li>
-                            <li>🔐 Recopiez votre clé <strong>NSec</strong> (dans votre Zine)</li>
-                            <li>💬 Rejoignez <a href="_CORACLEURL_" target="_blank" style="color: var(--primary-color); font-weight: 600;">Coracle ẐEN</a></li>
-                            <li>💰 Chaque like = <strong>1 ẐEN automatique</strong> dans votre portefeuille</li>
-                        </ul>
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;"><span class="step-number">3</span><h3 style="margin: 0;">Participer</h3></div>
+                        <p><strong>Réseau N² :</strong> Sur Coracle, interagissez avec la communauté. Le protocole chronologique supprime les algorithmes toxiques.</p>
                     </div>
-                    
-                    <!-- Étape 4 -->
-                    <div class="setup-step" style="border-left: 4px solid #27ae60; background: linear-gradient(135deg, rgba(46, 204, 113, 0.08), rgba(46, 204, 113, 0.04));">
-                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                            <span class="step-number" style="background: #27ae60;">4</span>
-                            <h3 style="margin: 0; color: #27ae60;">🏛️ Devenir Co-Propriétaire</h3>
-                        </div>
-                        <p><strong>Passez de locataire à sociétaire :</strong></p>
-                        <ul>
-                            <li>💰 Part sociale <strong>50€/an</strong> (Welcome Offer)</li>
-                            <li>🚫 Plus de loyer hebdomadaire (1 Ẑen/semaine économisé)</li>
-                            <li>🗳️ <strong>Droit de vote</strong> sur les décisions de la coopérative</li>
-                            <li>🌳 Part de propriété des <strong>biens réels</strong> (serveurs, forêts...)</li>
-                        </ul>
-                        <div style="text-align: center; margin-top: 15px;">
-                            <a href="https://opencollective.com/monnaie-libre" target="_blank" class="cta-primary" style="display: inline-block;">
-                                Rejoindre ẐEN[0] Maintenant →
-                            </a>
-                        </div>
+                    <div class="setup-step" style="border-left: 4px solid var(--amap-color); background: rgba(46, 204, 113, 0.05);">
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;"><span class="step-number" style="background: var(--amap-color);">4</span><h3 style="margin: 0; color: var(--amap-color);">Co-Bâtir</h3></div>
+                        <p><strong>Financer le Commun :</strong> Devenez sociétaire. Transformez votre statut de consommateur en architecte du réseau.</p>
                     </div>
                 </div>
                 
-                <div class="warning-box" style="margin-top: 30px;">
-                    <p><strong>🔑 Codes PASS de votre MULTIPASS :</strong></p>
-                    <ul style="margin: 10px 0 0 20px;">
-                        <li><strong>Vide</strong> → Accès rapide (sécurisé pour terminaux publics)</li>
-                        <li><strong>1111</strong> → Accès complet (interface Astro Base + Messenger)</li>
-                        <li><strong>0000</strong> → Régénération d'urgence (si perdu/volé)</li>
-                    </ul>
+                <div class="warning-box">
+                    <p><strong>🔑 Codes PASS d'accès :</strong> Vide = Accès rapide (public) | 1111 = Accès complet (privé) | 0000 = Régénération d'urgence.</p>
                 </div>
             </div>
 
             <div class="section">
-                <h2 class="section-title">🌐 Votre Station Personnelle</h2>
-                <p>Votre <strong>Astroport.ONE</strong> est un nœud de cet Internet souverain. Il est hébergé par vous ou un membre de confiance de votre réseau, pas par une multinationale.</p>
-                
+                <h2 class="section-title">💰 Transparence Totale : La Règle des 3 Tiers</h2>
+                <p>Dans l'AMAP UPlanet, chaque part sociale est investie dans la robustesse du réseau, selon une règle stricte codée dans le protocole :</p>
                 <div class="setup-steps">
                     <div class="setup-step">
-                        <h3>🔍 Voir Notre Comptabilité en Direct</h3>
-                        <p>Chaque euro qui entre dans notre coopérative est une graine que nous plantons pour l'avenir. Le protocole ẐEN la répartit automatiquement et de manière transparente sur trois piliers essentiels.</p>
+                        <h3 style="text-align: center;">33.3%<br>Trésorerie</h3>
+                        <p style="text-align: center; font-size: 0.9em;">Assure la stabilité et paye les factures incompressibles de l'ancien monde.</p>
                     </div>
                     <div class="setup-step">
-                        <h3>🏛️ Gouvernance Démocratique</h3>
-                        <p>Notre structure légale est une <strong>SCIC (Société Coopérative)</strong>. Les décisions critiques sont prises démocratiquement : <strong>1 membre = 1 voix</strong>. Pas d'actionnaires distants, juste des co-bâtisseurs.</p>
+                        <h3 style="text-align: center;">33.3%<br>R&D Open Source</h3>
+                        <p style="text-align: center; font-size: 0.9em;">Rétribue les développeurs (Architectes) pour améliorer les logiciels libres de tous.</p>
                     </div>
                     <div class="setup-step">
-                        <h3>🌱 Impact Écologique</h3>
-                        <p>La finalité de notre économie n'est pas le profit, mais la création de communs. Le tiers alloué aux "Biens Communs" est utilisé pour acquérir et régénérer des terres, créant un patrimoine physique pour tous les sociétaires.</p>
+                        <h3 style="text-align: center;">33.3%<br>Biens Communs</h3>
+                        <p style="text-align: center; font-size: 0.9em;">Achat de forêts, de terres et de matériel physique appartenant à la SCIC.</p>
                     </div>
                 </div>
             </div>
 
-            <div class="section" style="background: linear-gradient(135deg, rgba(52, 152, 219, 0.05), rgba(52, 152, 219, 0.02)); border: 2px solid var(--primary-color);">
-                <h2 class="section-title" style="text-align: center;">🆚 Web2 vs Web3 : Résumé en 10 Secondes</h2>
-                
-                <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; max-width: 700px; margin: 30px auto; padding: 20px; background: var(--container-bg); border-radius: 12px;">
-                    <!-- Web2 GAFAM -->
-                    <div style="text-align: right;">
-                        <div style="font-size: 14px; color: var(--text-color); opacity: 0.7; margin-bottom: 8px;">Web2 (GAFAM)</div>
-                        <div style="font-size: 32px; margin-bottom: 8px;">❌</div>
-                        <ul style="text-align: right; list-style: none; padding: 0; font-size: 14px; color: var(--text-color);">
-                            <li>Location</li>
-                            <li>Surveillance</li>
-                            <li>Algorithme</li>
-                            <li>0 revenu</li>
-                            <li>Censure</li>
-                        </ul>
-                    </div>
-                    
-                    <!-- VS -->
-                    <div style="text-align: center; font-size: 24px; font-weight: 700; color: var(--primary-color);">
-                        VS
-                    </div>
-                    
-                    <!-- Web3 UPlanet -->
-                    <div style="text-align: left;">
-                        <div style="font-size: 14px; color: var(--text-color); opacity: 0.7; margin-bottom: 8px;">Web3 (UPlanet)</div>
-                        <div style="font-size: 32px; margin-bottom: 8px;">✅</div>
-                        <ul style="text-align: left; list-style: none; padding: 0; font-size: 14px; color: var(--primary-color); font-weight: 600;">
-                            <li>Propriété</li>
-                            <li>Privé (uDRIVE)</li>
-                            <li>Chronologie</li>
-                            <li>Chaque like = 1Ẑ</li>
-                            <li>Impossible</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <p style="text-align: center; font-size: 1.2em; padding: 20px; background: var(--info-box-bg); border-radius: 8px; margin-top: 20px;">
-                    <strong>En une phrase :</strong> GAFAM = vous êtes le produit. UPlanet = vous êtes le propriétaire.
-                </p>
-            </div>
-
-            <div class="section">
-                <h2 class="section-title">💰 Économie Transparente : La Règle des Tiers</h2>
-                <p>Chaque euro qui entre dans notre coopérative est réparti automatiquement et de manière transparente :</p>
-                
+            <div class="section" style="border: 2px solid var(--amap-color);">
+                <h2 class="section-title" style="text-align: center; color: var(--amap-color);">🚀 Devenir Architecte du Réseau</h2>
                 <div class="setup-steps">
                     <div class="setup-step">
-                        <h3>33.3% → Trésorerie</h3>
-                        <p><strong>Stabilité & Liquidité</strong><br>
-                        Assure la pérennité financière de la coopérative</p>
-                    </div>
-                    <div class="setup-step">
-                        <h3>33.3% → R&D Open Source</h3>
-                        <p><strong>Innovation</strong><br>
-                        Développement de logiciels libres pour tous</p>
-                    </div>
-                    <div class="setup-step">
-                        <h3>33.3% → Biens Communs</h3>
-                        <p><strong>Forêts & Terres</strong><br>
-                        Patrimoine physique pour tous les sociétaires</p>
-                    </div>
-                </div>
-                
-                <div class="info-box">
-                    <p><strong>🎯 Votre Impact Direct :</strong> En tant que Bâtisseur, vous ne faites pas que financer un service : vous construisez un patrimoine commun, numérique et physique.</p>
-                </div>
-            </div>
-
-            <div class="section">
-                <h2 class="section-title">🚀 Prêt à Reprendre le Contrôle ?</h2>
-                <div class="setup-steps">
-                    <div class="setup-step">
-                        <h3>🎫 MULTIPASS (Gratuit)</h3>
+                        <h3>🧭 Explorateur (Test)</h3>
                         <ul class="offer-features">
                             <li>Identité numérique complète</li>
-                            <li>uDRIVE 10GB (stockage public)</li>
-                            <li>IA personnelle</li>
-                            <li>Réseau social N²</li>
-                            <li>Terminal universel</li>
+                            <li>Droit de passage sur le réseau</li>
+                            <li>Accès au réseau social N²</li>
                         </ul>
-                        <p class="offer-price"><strong>Gratuit</strong> - Déjà actif !</p>
+                        <p style="text-align: center; margin-top: 20px;"><strong>Statut actuel (Gratuit)</strong></p>
                     </div>
-                    <div class="setup-step">
-                        <h3>🏛️ Co-Bâtisseur (50€/an)</h3>
+                    <div class="setup-step" style="background: rgba(46, 204, 113, 0.05); border-color: var(--amap-color);">
+                        <h3 style="color: var(--amap-color);">🏛️ Co-Bâtisseur (Part Sociale)</h3>
                         <ul class="offer-features">
-                            <li>Tout du MULTIPASS</li>
-                            <li>NextCloud illimité (privé)</li>
-                            <li>PeerTube illimité (vidéos privées)</li>
-                            <li>Accès SSH aux relais</li>
-                            <li>Droit de vote (1 personne = 1 voix)</li>
-                            <li>Part de propriété des biens réels</li>
+                            <li>Le "Panier Numérique" Complet (NextCloud, IA)</li>
+                            <li>Droit de Vote SCIC (1 personne = 1 voix)</li>
+                            <li>Propriétaire partiel des Biens Communs</li>
+                            <li>Rémunération ẐEN pour création de contenu</li>
                         </ul>
-                        <p class="offer-price"><strong>Welcome Offer : 50€/an</strong></p>
+                        <a href="https://opencollective.com/monnaie-libre" target="_blank" class="cta-primary">
+                            Prendre une part (50€/an) →
+                        </a>
                     </div>
-                </div>
-            </div>
-
-            <div class="warning-box">
-                <p><strong>🔑 Votre MULTIPASS est votre clé d'accès universel !</strong><br>
-                Gardez précieusement votre QR code SSSS - c'est votre passeport pour l'Internet de confiance.</p>
-            </div>
-
-            <div class="section" style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.08), rgba(46, 204, 113, 0.04)); border: 2px solid #27ae60;">
-                <h2 class="section-title" style="color: #27ae60; text-align: center;">🌟 Partagez l'Internet de Confiance</h2>
-                <p style="text-align: center; font-size: 1.1em; margin-bottom: 30px;">Vous venez de rejoindre une <strong>révolution silencieuse</strong>. Maintenant, aidez vos amis à reprendre le contrôle !</p>
-                
-                <div class="benefit-grid" style="margin-bottom: 30px;">
-                    <div class="benefit-item" style="border-left: 4px solid #27ae60;">
-                        <div class="benefit-icon">💬</div>
-                        <div class="benefit-text">
-                            <strong>Parlez-en autour de vous</strong>
-                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">"Je gagne de l'argent en créant du contenu, sans surveillance"</span>
-                        </div>
-                    </div>
-                    <div class="benefit-item" style="border-left: 4px solid #27ae60;">
-                        <div class="benefit-icon">🎁</div>
-                        <div class="benefit-text">
-                            <strong>Invitez vos amis</strong>
-                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Chaque ami renforce votre réseau N² et augmente vos revenus</span>
-                        </div>
-                    </div>
-                    <div class="benefit-item" style="border-left: 4px solid #27ae60;">
-                        <div class="benefit-icon">🚀</div>
-                        <div class="benefit-text">
-                            <strong>Devenez ambassadeur</strong>
-                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Plus de réseau = plus de likes = plus de ẐEN. C'est mathématique !</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="info-box" style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.15), rgba(46, 204, 113, 0.08)); border-left-color: #27ae60; text-align: center;">
-                    <p style="font-size: 1.1em; margin: 0;"><strong>🎯 Votre Mission :</strong> Chaque personne que vous invitez à UPlanet est une brique de plus dans l'Internet de confiance. Vous ne partagez pas juste un service, <strong>vous construisez l'avenir</strong> !</p>
-                </div>
-                
-                <div style="margin-top: 30px; padding: 30px; background: var(--container-bg); border-radius: 12px; border: 2px solid #27ae60;">
-                    <h3 style="text-align: center; color: #27ae60; margin: 0 0 20px 0;">📱 Comment Inviter Vos Amis</h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-                        <div style="text-align: center; padding: 15px;">
-                            <div style="font-size: 48px; margin-bottom: 10px;">1️⃣</div>
-                            <strong>Partagez nos ressources</strong>
-                            <p style="font-size: 0.9em; opacity: 0.8; margin: 10px 0 0 0;">Montrez-leur <a href="http://127.0.0.1:8080/ipns/copylaradio.com/uplanet_com.html" target="_blank" style="color: var(--primary-color);">#UPlanet ẐEN</a></p>
-                        </div>
-                        <div style="text-align: center; padding: 15px;">
-                            <div style="font-size: 48px; margin-bottom: 10px;">2️⃣</div>
-                            <strong>Créez des MULTIPASS</strong>
-                            <p style="font-size: 0.9em; opacity: 0.8; margin: 10px 0 0 0;">Demandez à vos amis <a href="_USPOT_/g1" target="_blank" style="color: var(--primary-color);">d'ouvrir leur compte</a></p>
-                        </div>
-                        <div style="text-align: center; padding: 15px;">
-                            <div style="font-size: 48px; margin-bottom: 10px;">3️⃣</div>
-                            <strong>Connectez-vous sur Coracle</strong>
-                            <p style="font-size: 0.9em; opacity: 0.8; margin: 10px 0 0 0;">Ensemble sur <a href="_CORACLEURL_" target="_blank" style="color: var(--primary-color);">Coracle ẐEN</a></p>
-                        </div>
-                    </div>
-                    <p style="text-align: center; font-size: 1.3em; margin: 30px 0 0 0; font-weight: bold; color: #27ae60;">
-                        🌍 Ensemble, reprenons le contrôle d'Internet !
-                    </p>
                 </div>
             </div>
         </div>
 
+        <!-- ================= ENGLISH ================= -->
         <div class="language-section" id="en">
-            <div class="language-title">English</div>
             
-            <!-- Hero Section Optimized -->
             <div class="hero-box">
                 <h2 style="color: var(--primary-color); text-align: center; margin: 0 0 20px 0; font-size: 2em;">
-                    🎉 Welcome to the Internet of Trust!
+                    🎉 Stop renting, start owning the Commons!
                 </h2>
                 <p style="text-align: center; font-size: 1.2em; margin-bottom: 30px;">
-                    <strong>Your MULTIPASS is active.</strong> You no longer rent the Internet, you are a <strong>co-owner</strong>.
+                    <strong>Your MULTIPASS is active.</strong> You've just left the "data supermarket" to join the <strong>Digital CSA (Community Supported Agriculture)</strong>.
                 </p>
                 
                 <div class="benefit-grid">
                     <div class="benefit-item">
-                        <div class="benefit-icon">💰</div>
+                        <div class="benefit-icon">🥕</div>
                         <div class="benefit-text">
-                            <strong>You earn money</strong>
-                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Every like = 1Ẑ automatically in your wallet</span>
+                            <strong>Local Sourcing</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Your data stays on a local Astroport node managed by the community.</span>
                         </div>
                     </div>
                     <div class="benefit-item">
-                        <div class="benefit-icon">🤖</div>
+                        <div class="benefit-icon">🧺</div>
                         <div class="benefit-text">
-                            <strong>Your personal AI</strong>
-                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Astro Bot creates your daily journals 24/7</span>
+                            <strong>Digital Harvest</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">uDRIVE storage, local AI, and N² network in exchange for your support.</span>
                         </div>
                     </div>
                     <div class="benefit-item">
-                        <div class="benefit-icon">🏠</div>
+                        <div class="benefit-icon">🏛️</div>
                         <div class="benefit-text">
-                            <strong>You are the owner</strong>
-                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">No more eternal rent, you own your data</span>
+                            <strong>Co-op Governance</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">1 member = 1 vote. You become a shareholder of the common infrastructure.</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Essential Resources -->
-            <div class="info-box" style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.05));">
-                <h3 style="margin: 0 0 15px 0; color: #27ae60;">📚 Your Key Resources</h3>
-                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                    <a href="http://127.0.0.1:8080/ipfs/QmZbbuh7XTerEb1XLdMDu2MCbFQw3w1RWzda1swxK6nYJ3" target="_blank" class="resource-link">
-                        🖨️ Print my MULTIPASS (Zine)
-                    </a>
-                    <a href="http://127.0.0.1:8080/ipns/copylaradio.com/uplanet_com.html" target="_blank" class="resource-link">
-                        🌍 Understand UPlanet
-                    </a>
-                    <a href="http://127.0.0.1:8080/ipns/copylaradio.com/nostr_com.html" target="_blank" class="resource-link">
-                        📡 Discover Nostr
-                    </a>
-                    <a href="_CORACLEURL_" target="_blank" class="resource-link">
-                        💬 Join the Forum
-                    </a>
-                </div>
+            <div class="info-box" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+                <a href="http://127.0.0.1:8080/ipfs/QmZbbuh7XTerEb1XLdMDu2MCbFQw3w1RWzda1swxK6nYJ3" target="_blank" class="resource-link">🖨️ Print my MULTIPASS</a>
+                <a href="http://127.0.0.1:8080/ipns/copylaradio.com/entrance.html" target="_blank" class="resource-link">🌍 The Era of Sovereignty</a>
+                <a href="http://127.0.0.1:8080/ipns/copylaradio.com/nostr_com.html" target="_blank" class="resource-link">📡 Discover Nostr</a>
+                <a href="_CORACLEURL_" target="_blank" class="resource-link">💬 Join the N² Forum</a>
             </div>
 
             <div class="section">
-                <h2 class="section-title">🎫 Your MULTIPASS: Your Universal Identity</h2>
-                <p>Your MULTIPASS is your <strong>complete digital identity</strong> in the UPlanet ecosystem. More than just an account, it's your key to a free and decentralized Internet.</p>
+                <h2 class="section-title">🌱 What is a Digital CSA?</h2>
+                <p>In the old Web2 world, mega-corporations captured your value and made you dependent. With UPlanet, we apply the concept of <strong>Community Supported Agriculture (CSA)</strong> to technology.</p>
                 
                 <div class="setup-steps">
-                    <div class="setup-step">
-                        <h3>🔐 Maximum Security</h3>
-                        <p>Your identity is protected by the <strong>SSSS system (Shamir Secret Sharing)</strong>: your key is split into 3 parts, 2 are enough to reconstruct it. Impossible to hack, impossible to lose permanently.</p>
+                    <div class="setup-step" style="border-top: 4px solid var(--amap-color);">
+                        <h3 style="color: var(--amap-color);">🤝 Pre-financing</h3>
+                        <p>Instead of paying blind rent to a giant Cloud, members <strong>pre-finance the local infrastructure</strong> (hard drives, electricity, Astroport servers) by buying a cooperative share.</p>
                     </div>
-                    <div class="setup-step">
-                        <h3>🌐 Universal Access</h3>
-                        <p>Use your MULTIPASS on <strong>any UPlanet terminal</strong> worldwide. Scan your SSSS QR code, enter your PASS code, and instantly access your digital universe.</p>
+                    <div class="setup-step" style="border-top: 4px solid var(--amap-color);">
+                        <h3 style="color: var(--amap-color);">🎁 The Harvest</h3>
+                        <p>In exchange, the cooperative provides your digital "harvest": a sovereign identity, a private NextCloud, and access to uncensored AI.</p>
                     </div>
-                    <div class="setup-step">
-                        <h3>💰 Transparent Economy</h3>
-                        <p>Every like on your posts = <strong>1 ẐEN automatically</strong>. Create quality content and earn money. The UPlanet economy rewards value, not surveillance.</p>
+                    <div class="setup-step" style="border-top: 4px solid var(--amap-color);">
+                        <h3 style="color: var(--amap-color);">💎 The Role of ẐEN</h3>
+                        <p><strong>ẐEN</strong> is our accounting tool. It captures the value of the old world (Euro) to fund our tools without speculation, preserving the purity of the <strong>Free Currency (Ğ1)</strong>.</p>
                     </div>
                 </div>
             </div>
 
+            <div class="amap-box">
+                <h3 style="margin: 0 0 10px 0; color: var(--amap-color);">🏛️ The 5 Pillars of Sovereignty</h3>
+                <p style="margin: 0;">UPlanet is a global project to reclaim the physical basis of our existence:<br>
+                <strong>1. Energy</strong> (Tesla-HDD, Rocket Stove) • <strong>2. Information</strong> (Astroport Nodes) • <strong>3. Money</strong> (Ğ1 + ẐEN) • <strong>4. Inclusion</strong> (Paper MULTIPASS) • <strong>5. Commons</strong> (Collective lands).</p>
+            </div>
+
             <div class="section">
-                <h2 class="section-title">🗺️ Your Journey in 4 Steps</h2>
-                <p style="text-align: center; font-size: 1.1em; margin-bottom: 30px;">Your MULTIPASS is already <strong>100% functional</strong>! Follow this guide to get started:</p>
-                
+                <h2 class="section-title">🗺️ Your 4-Step Journey</h2>
                 <div class="setup-steps">
-                    <!-- Step 1 -->
                     <div class="setup-step" style="border-left: 4px solid var(--primary-color);">
-                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                            <span class="step-number">1</span>
-                            <h3 style="margin: 0;">📚 Understand</h3>
-                        </div>
-                        <p><strong>Read your key resources:</strong></p>
-                        <ul>
-                            <li>🖨️ <strong>Print your MULTIPASS</strong> (Zine PDF above)</li>
-                            <li>🌍 <a href="http://127.0.0.1:8080/ipns/copylaradio.com/uplanet_com.html" target="_blank" style="color: var(--primary-color); font-weight: 600;">Understand UPlanet</a> (5 min read)</li>
-                            <li>📡 <a href="http://127.0.0.1:8080/ipns/copylaradio.com/nostr_com.html" target="_blank" style="color: var(--primary-color); font-weight: 600;">Discover Nostr</a> (decentralized protocol)</li>
-                        </ul>
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;"><span class="step-number">1</span><h3 style="margin: 0;">Secure</h3></div>
+                        <p>Print the MULTIPASS Zine. Your key uses SSSS (split in 3 parts), making it unhackable and preventing permanent loss.</p>
                     </div>
-                    
-                    <!-- Step 2 -->
                     <div class="setup-step" style="border-left: 4px solid var(--primary-color);">
-                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                            <span class="step-number">2</span>
-                            <h3 style="margin: 0;">🔌 Connect</h3>
-                        </div>
-                        <p><strong>Access your MULTIPASS terminal:</strong></p>
-                        <ul>
-                            <li>🌐 Go to <strong><a href="_USPOT_/scan" target="_blank">/SCAN</a></strong></li>
-                            <li>📱 Scan your <strong>SSSS QR code</strong> (in your Zine)</li>
-                            <li>🔑 Enter your <strong>PASS code</strong> (empty = quick, 1111 = complete)</li>
-                            <li>✅ Enjoy your <strong>10GB uDRIVE</strong> + personal AI</li>
-                        </ul>
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;"><span class="step-number">2</span><h3 style="margin: 0;">Connect</h3></div>
+                        <p>Go to <strong><a href="_USPOT_/scan" target="_blank">/SCAN</a></strong>, scan your QR code, enter your PASS code. You're home.</p>
                     </div>
-                    
-                    <!-- Step 3 -->
                     <div class="setup-step" style="border-left: 4px solid var(--primary-color);">
-                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                            <span class="step-number">3</span>
-                            <h3 style="margin: 0;">💬 Participate</h3>
-                        </div>
-                        <p><strong>Join the N² social network:</strong></p>
-                        <ul>
-                            <li>🦊 Install the <strong>NOSTR Connect</strong> extension (Firefox recommended)</li>
-                            <li>🔐 Copy your <strong>NSec</strong> key (in your Zine)</li>
-                            <li>💬 Join <a href="_CORACLEURL_" target="_blank" style="color: var(--primary-color); font-weight: 600;">Coracle ẐEN</a></li>
-                            <li>💰 Every like = <strong>1 ẐEN automatically</strong> in your wallet</li>
-                        </ul>
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;"><span class="step-number">3</span><h3 style="margin: 0;">Participate</h3></div>
+                        <p>On Coracle, interact with the community. The chronological protocol eliminates toxic algorithms.</p>
                     </div>
-                    
-                    <!-- Step 4 -->
-                    <div class="setup-step" style="border-left: 4px solid #27ae60; background: linear-gradient(135deg, rgba(46, 204, 113, 0.08), rgba(46, 204, 113, 0.04));">
-                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                            <span class="step-number" style="background: #27ae60;">4</span>
-                            <h3 style="margin: 0; color: #27ae60;">🏛️ Become a Co-Owner</h3>
-                        </div>
-                        <p><strong>Go from tenant to member:</strong></p>
-                        <ul>
-                            <li>💰 Membership <strong>50€/year</strong> (Welcome Offer)</li>
-                            <li>🚫 No more weekly rent (1 Ẑ/week saved)</li>
-                            <li>🗳️ <strong>Voting rights</strong> on cooperative decisions</li>
-                            <li>🌳 Share of ownership in <strong>real assets</strong> (servers, forests...)</li>
-                        </ul>
-                        <div style="text-align: center; margin-top: 15px;">
-                            <a href="https://opencollective.com/monnaie-libre" target="_blank" class="cta-primary" style="display: inline-block;">
-                                Join ẐEN[0] Now →
-                            </a>
-                        </div>
+                    <div class="setup-step" style="border-left: 4px solid var(--amap-color); background: rgba(46, 204, 113, 0.05);">
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;"><span class="step-number" style="background: var(--amap-color);">4</span><h3 style="margin: 0; color: var(--amap-color);">Co-Build</h3></div>
+                        <p>Become a shareholder. Transform your status from consumer to network architect.</p>
                     </div>
-                </div>
-                
-                <div class="warning-box" style="margin-top: 30px;">
-                    <p><strong>🔑 Your MULTIPASS PASS codes:</strong></p>
-                    <ul style="margin: 10px 0 0 20px;">
-                        <li><strong>Empty</strong> → Quick access (secure for public terminals)</li>
-                        <li><strong>1111</strong> → Full access (Astro Base interface + Messenger)</li>
-                        <li><strong>0000</strong> → Emergency regeneration (if lost/stolen)</li>
-                    </ul>
                 </div>
             </div>
 
             <div class="section">
-                <h2 class="section-title">🌐 Your Personal Station</h2>
-                <p>Your <strong>Astroport.ONE</strong> is a node of this sovereign Internet. It's hosted by you or a trusted member of your network, not by a multinational.</p>
-                
+                <h2 class="section-title">💰 Total Transparency: Rule of Thirds</h2>
                 <div class="setup-steps">
                     <div class="setup-step">
-                        <h3>🔍 See Our Live Accounting</h3>
-                        <p>Every euro that enters our cooperative is a seed we plant for the future. The ẐEN protocol distributes it automatically and transparently across three essential pillars.</p>
+                        <h3 style="text-align: center;">33.3%<br>Treasury</h3>
+                        <p style="text-align: center; font-size: 0.9em;">Ensures stability and pays incompressible real-world bills.</p>
                     </div>
                     <div class="setup-step">
-                        <h3>🏛️ Democratic Governance</h3>
-                        <p>Our legal structure is a <strong>SCIC (Cooperative Society)</strong>. Critical decisions are made democratically: <strong>1 member = 1 vote</strong>. No distant shareholders, just co-builders.</p>
+                        <h3 style="text-align: center;">33.3%<br>Open Source R&D</h3>
+                        <p style="text-align: center; font-size: 0.9em;">Rewards developers for improving free software for everyone.</p>
                     </div>
                     <div class="setup-step">
-                        <h3>🌱 Ecological Impact</h3>
-                        <p>The purpose of our economy is not profit, but the creation of commons. The third allocated to "Common Goods" is used to acquire and regenerate lands, creating physical heritage for all members.</p>
+                        <h3 style="text-align: center;">33.3%<br>Common Goods</h3>
+                        <p style="text-align: center; font-size: 0.9em;">Purchasing forests, lands, and physical hardware owned by the co-op.</p>
                     </div>
                 </div>
             </div>
 
-            <div class="section" style="background: linear-gradient(135deg, rgba(52, 152, 219, 0.05), rgba(52, 152, 219, 0.02)); border: 2px solid var(--primary-color);">
-                <h2 class="section-title" style="text-align: center;">🆚 Web2 vs Web3: 10 Second Summary</h2>
-                
-                <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; max-width: 700px; margin: 30px auto; padding: 20px; background: var(--container-bg); border-radius: 12px;">
-                    <!-- Web2 GAFAM -->
-                    <div style="text-align: right;">
-                        <div style="font-size: 14px; color: var(--text-color); opacity: 0.7; margin-bottom: 8px;">Web2 (GAFAM)</div>
-                        <div style="font-size: 32px; margin-bottom: 8px;">❌</div>
-                        <ul style="text-align: right; list-style: none; padding: 0; font-size: 14px; color: var(--text-color);">
-                            <li>Rental</li>
-                            <li>Surveillance</li>
-                            <li>Algorithm</li>
-                            <li>0 revenue</li>
-                            <li>Censorship</li>
-                        </ul>
-                    </div>
-                    
-                    <!-- VS -->
-                    <div style="text-align: center; font-size: 24px; font-weight: 700; color: var(--primary-color);">
-                        VS
-                    </div>
-                    
-                    <!-- Web3 UPlanet -->
-                    <div style="text-align: left;">
-                        <div style="font-size: 14px; color: var(--text-color); opacity: 0.7; margin-bottom: 8px;">Web3 (UPlanet)</div>
-                        <div style="font-size: 32px; margin-bottom: 8px;">✅</div>
-                        <ul style="text-align: left; list-style: none; padding: 0; font-size: 14px; color: var(--primary-color); font-weight: 600;">
-                            <li>Ownership</li>
-                            <li>Private (uDRIVE)</li>
-                            <li>Chronological</li>
-                            <li>Every like = 1Ẑ</li>
-                            <li>Impossible</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <p style="text-align: center; font-size: 1.2em; padding: 20px; background: var(--info-box-bg); border-radius: 8px; margin-top: 20px;">
-                    <strong>In one sentence:</strong> GAFAM = you are the product. UPlanet = you are the owner.
-                </p>
-            </div>
-
-            <div class="section">
-                <h2 class="section-title">💰 Transparent Economy: The Rule of Thirds</h2>
-                <p>Every euro that enters our cooperative is distributed automatically and transparently:</p>
-                
+            <div class="section" style="border: 2px solid var(--amap-color);">
+                <h2 class="section-title" style="text-align: center; color: var(--amap-color);">🚀 Become a Network Architect</h2>
                 <div class="setup-steps">
                     <div class="setup-step">
-                        <h3>33.3% → Treasury</h3>
-                        <p><strong>Stability & Liquidity</strong><br>
-                        Ensures the financial sustainability of the cooperative</p>
-                    </div>
-                    <div class="setup-step">
-                        <h3>33.3% → Open Source R&D</h3>
-                        <p><strong>Innovation</strong><br>
-                        Development of free software for everyone</p>
-                    </div>
-                    <div class="setup-step">
-                        <h3>33.3% → Common Goods</h3>
-                        <p><strong>Forests & Lands</strong><br>
-                        Physical heritage for all members</p>
-                    </div>
-                </div>
-                
-                <div class="info-box">
-                    <p><strong>🎯 Your Direct Impact:</strong> As a Builder, you don't just fund a service: you build a common heritage, both digital and physical.</p>
-                </div>
-            </div>
-
-            <div class="section">
-                <h2 class="section-title">🚀 Ready to Take Back Control?</h2>
-                <div class="setup-steps">
-                    <div class="setup-step">
-                        <h3>🎫 MULTIPASS (Free)</h3>
+                        <h3>🧭 Explorer (Test)</h3>
                         <ul class="offer-features">
                             <li>Complete digital identity</li>
-                            <li>10GB uDRIVE (public storage)</li>
-                            <li>Personal AI</li>
-                            <li>N² social network</li>
-                            <li>Universal terminal</li>
+                            <li>Right of passage on the network</li>
+                            <li>Access to N² social network</li>
                         </ul>
-                        <p class="offer-price"><strong>Free</strong> - Already active!</p>
+                        <p style="text-align: center; margin-top: 20px;"><strong>Current Status (Free)</strong></p>
                     </div>
-                    <div class="setup-step">
-                        <h3>🏛️ Co-Builder (50€/year)</h3>
+                    <div class="setup-step" style="background: rgba(46, 204, 113, 0.05); border-color: var(--amap-color);">
+                        <h3 style="color: var(--amap-color);">🏛️ Co-Builder (CSA Share)</h3>
                         <ul class="offer-features">
-                            <li>Everything from MULTIPASS</li>
-                            <li>Unlimited NextCloud (private)</li>
-                            <li>Unlimited PeerTube (private videos)</li>
-                            <li>SSH access to relays</li>
-                            <li>Voting rights (1 person = 1 vote)</li>
-                            <li>Share of real asset ownership</li>
+                            <li>Full "Digital Harvest" (NextCloud, AI)</li>
+                            <li>Voting Rights (1 person = 1 vote)</li>
+                            <li>Partial owner of Common Goods</li>
+                            <li>ẐEN rewards for content creation</li>
                         </ul>
-                        <p class="offer-price"><strong>Welcome Offer: 50€/year</strong></p>
+                        <a href="https://opencollective.com/monnaie-libre" target="_blank" class="cta-primary">
+                            Take a share (€50/year) →
+                        </a>
                     </div>
-                </div>
-            </div>
-
-            <div class="warning-box">
-                <p><strong>🔑 Your MULTIPASS is your universal access key!</strong><br>
-                Keep your SSSS QR code safe - it's your passport to the Internet of Trust.</p>
-            </div>
-
-            <div class="section" style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.08), rgba(46, 204, 113, 0.04)); border: 2px solid #27ae60;">
-                <h2 class="section-title" style="color: #27ae60; text-align: center;">🌟 Share the Internet of Trust</h2>
-                <p style="text-align: center; font-size: 1.1em; margin-bottom: 30px;">You've just joined a <strong>silent revolution</strong>. Now, help your friends take back control!</p>
-                
-                <div class="benefit-grid" style="margin-bottom: 30px;">
-                    <div class="benefit-item" style="border-left: 4px solid #27ae60;">
-                        <div class="benefit-icon">💬</div>
-                        <div class="benefit-text">
-                            <strong>Talk about it</strong>
-                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">"I earn money creating content, without surveillance"</span>
-                        </div>
-                    </div>
-                    <div class="benefit-item" style="border-left: 4px solid #27ae60;">
-                        <div class="benefit-icon">🎁</div>
-                        <div class="benefit-text">
-                            <strong>Invite your friends</strong>
-                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Every friend strengthens your N² network and increases your revenue</span>
-                        </div>
-                    </div>
-                    <div class="benefit-item" style="border-left: 4px solid #27ae60;">
-                        <div class="benefit-icon">🚀</div>
-                        <div class="benefit-text">
-                            <strong>Become an ambassador</strong>
-                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">More network = more likes = more ẐEN. It's mathematical!</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="info-box" style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.15), rgba(46, 204, 113, 0.08)); border-left-color: #27ae60; text-align: center;">
-                    <p style="font-size: 1.1em; margin: 0;"><strong>🎯 Your Mission:</strong> Every person you invite to UPlanet is another brick in the Internet of Trust. You're not just sharing a service, <strong>you're building the future</strong>!</p>
-                </div>
-                
-                <div style="margin-top: 30px; padding: 30px; background: var(--container-bg); border-radius: 12px; border: 2px solid #27ae60;">
-                    <h3 style="text-align: center; color: #27ae60; margin: 0 0 20px 0;">📱 How to Invite Your Friends</h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-                        <div style="text-align: center; padding: 15px;">
-                            <div style="font-size: 48px; margin-bottom: 10px;">1️⃣</div>
-                            <strong>Share your resources</strong>
-                            <p style="font-size: 0.9em; opacity: 0.8; margin: 10px 0 0 0;">Show them <a href="http://127.0.0.1:8080/ipns/copylaradio.com/uplanet_com.html" target="_blank" style="color: var(--primary-color);">uplanet_com.html</a></p>
-                        </div>
-                        <div style="text-align: center; padding: 15px;">
-                            <div style="font-size: 48px; margin-bottom: 10px;">2️⃣</div>
-                            <strong>Create a MULTIPASS</strong>
-                            <p style="font-size: 0.9em; opacity: 0.8; margin: 10px 0 0 0;">Invite your friends to <a href="_USPOT_/g1" target="_blank" style="color: var(--primary-color);">create their account</a></p>
-                        </div>
-                        <div style="text-align: center; padding: 15px;">
-                            <div style="font-size: 48px; margin-bottom: 10px;">3️⃣</div>
-                            <strong>Connect on Coracle</strong>
-                            <p style="font-size: 0.9em; opacity: 0.8; margin: 10px 0 0 0;">Together on <a href="_CORACLEURL_" target="_blank" style="color: var(--primary-color);">Coracle ẐEN</a></p>
-                        </div>
-                    </div>
-                    <p style="text-align: center; font-size: 1.3em; margin: 30px 0 0 0; font-weight: bold; color: #27ae60;">
-                        🌍 Together, let's take back control of the Internet!
-                    </p>
                 </div>
             </div>
         </div>
 
+        <!-- ================= ESPAÑOL ================= -->
         <div class="language-section" id="es">
-            <div class="language-title">Español</div>
             
-            <!-- Hero Section Optimizada -->
             <div class="hero-box">
                 <h2 style="color: var(--primary-color); text-align: center; margin: 0 0 20px 0; font-size: 2em;">
-                    🎉 ¡Bienvenido a la Internet de Confianza!
+                    🎉 ¡Basta de alquileres, construyamos lo Común!
                 </h2>
                 <p style="text-align: center; font-size: 1.2em; margin-bottom: 30px;">
-                    <strong>Tu MULTIPASS está activo.</strong> Ya no alquilas Internet, eres <strong>copropietario</strong>.
+                    <strong>Tu MULTIPASS está activo.</strong> Acabas de dejar el "supermercado de datos" para unirte a la <strong>AMAP Digital (Agricultura Sostenida por la Comunidad)</strong>.
                 </p>
                 
                 <div class="benefit-grid">
                     <div class="benefit-item">
-                        <div class="benefit-icon">💰</div>
+                        <div class="benefit-icon">🥕</div>
                         <div class="benefit-text">
-                            <strong>Ganas dinero</strong>
-                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Cada like = 1Ẑ automático en tu cartera</span>
+                            <strong>Circuito Corto</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Tus datos se quedan en un nodo local Astroport gestionado por la comunidad.</span>
                         </div>
                     </div>
                     <div class="benefit-item">
-                        <div class="benefit-icon">🤖</div>
+                        <div class="benefit-icon">🧺</div>
                         <div class="benefit-text">
-                            <strong>Tu IA personal</strong>
-                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Bot Astro crea tus diarios diarios 24/7</span>
+                            <strong>Cosecha Digital</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Almacenamiento, IA local y red N² a cambio de tu apoyo.</span>
                         </div>
                     </div>
                     <div class="benefit-item">
-                        <div class="benefit-icon">🏠</div>
+                        <div class="benefit-icon">🏛️</div>
                         <div class="benefit-text">
-                            <strong>Eres propietario</strong>
-                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">No más alquiler eterno, posees tus datos</span>
+                            <strong>Gobernanza SCIC</strong>
+                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">1 miembro = 1 voto. Te conviertes en socio de la infraestructura común.</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Recursos Esenciales -->
-            <div class="info-box" style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.05));">
-                <h3 style="margin: 0 0 15px 0; color: #27ae60;">📚 Tus Recursos Clave</h3>
-                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                    <a href="http://127.0.0.1:8080/ipfs/QmZbbuh7XTerEb1XLdMDu2MCbFQw3w1RWzda1swxK6nYJ3" target="_blank" class="resource-link">
-                        🖨️ Imprimir mi MULTIPASS (Zine)
-                    </a>
-                    <a href="http://127.0.0.1:8080/ipns/copylaradio.com/uplanet_com.html" target="_blank" class="resource-link">
-                        🌍 Comprender UPlanet
-                    </a>
-                    <a href="http://127.0.0.1:8080/ipns/copylaradio.com/nostr_com.html" target="_blank" class="resource-link">
-                        📡 Descubrir Nostr
-                    </a>
-                    <a href="_CORACLEURL_" target="_blank" class="resource-link">
-                        💬 Unirse al Foro
-                    </a>
-                </div>
+            <div class="info-box" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+                <a href="http://127.0.0.1:8080/ipfs/QmZbbuh7XTerEb1XLdMDu2MCbFQw3w1RWzda1swxK6nYJ3" target="_blank" class="resource-link">🖨️ Imprimir mi MULTIPASS</a>
+                <a href="http://127.0.0.1:8080/ipns/copylaradio.com/entrance.html" target="_blank" class="resource-link">🌍 La Era de la Soberanía</a>
+                <a href="http://127.0.0.1:8080/ipns/copylaradio.com/nostr_com.html" target="_blank" class="resource-link">📡 Descubrir Nostr</a>
+                <a href="_CORACLEURL_" target="_blank" class="resource-link">💬 Unirse al Foro N²</a>
             </div>
 
             <div class="section">
-                <h2 class="section-title">🎫 Tu MULTIPASS: Tu Identidad Universal</h2>
-                <p>Tu MULTIPASS es tu <strong>identidad digital completa</strong> en el ecosistema UPlanet. Más que una simple cuenta, es tu llave de acceso a una Internet libre y descentralizada.</p>
+                <h2 class="section-title">🌱 ¿Qué es una AMAP Digital?</h2>
+                <p>En el viejo mundo Web2, las multinacionales te hacían dependiente de sus servicios. Con UPlanet, aplicamos el principio de la <strong>Agricultura Sostenida por la Comunidad (AMAP)</strong> a la tecnología.</p>
                 
                 <div class="setup-steps">
-                    <div class="setup-step">
-                        <h3>🔐 Seguridad Máxima</h3>
-                        <p>Tu identidad está protegida por el <strong>sistema SSSS (Shamir Secret Sharing)</strong>: tu clave se divide en 3 partes, 2 son suficientes para reconstituirla. Imposible de hackear, imposible de perder definitivamente.</p>
+                    <div class="setup-step" style="border-top: 4px solid var(--amap-color);">
+                        <h3 style="color: var(--amap-color);">🤝 Prefinanciación</h3>
+                        <p>En lugar de pagar un alquiler ciego a un Cloud gigante, los miembros <strong>prefinancian la infraestructura local</strong> (discos duros, electricidad, servidores) tomando una participación social.</p>
                     </div>
-                    <div class="setup-step">
-                        <h3>🌐 Acceso Universal</h3>
-                        <p>Usa tu MULTIPASS en <strong>cualquier terminal UPlanet</strong> del mundo. Escanea tu código QR SSSS, introduce tu código PASS, y accede instantáneamente a tu universo digital.</p>
+                    <div class="setup-step" style="border-top: 4px solid var(--amap-color);">
+                        <h3 style="color: var(--amap-color);">🎁 La Cosecha</h3>
+                        <p>A cambio, la cooperativa te entrega tu "cosecha" digital: identidad soberana, nube personal NextCloud privada y acceso a una IA sin censura.</p>
                     </div>
-                    <div class="setup-step">
-                        <h3>💰 Economía Transparente</h3>
-                        <p>Cada like en tus posts = <strong>1 ẐEN automáticamente</strong>. Crea contenido de calidad y gana dinero. La economía UPlanet recompensa el valor, no la vigilancia.</p>
+                    <div class="setup-step" style="border-top: 4px solid var(--amap-color);">
+                        <h3 style="color: var(--amap-color);">💎 El Rol de ẐEN</h3>
+                        <p><strong>ẐEN</strong> es nuestra herramienta contable. Captura el valor del mundo antiguo (Euros) para financiar herramientas sin especulación, protegiendo la <strong>Moneda Libre (Ğ1)</strong>.</p>
                     </div>
                 </div>
+            </div>
+
+            <div class="amap-box">
+                <h3 style="margin: 0 0 10px 0; color: var(--amap-color);">🏛️ Los 5 Pilares de la Soberanía</h3>
+                <p style="margin: 0;">UPlanet es un proyecto global para recuperar la base física de nuestra existencia:<br>
+                <strong>1. Energía</strong> (Tesla-HDD) • <strong>2. Información</strong> (Nodos Astroport) • <strong>3. Moneda</strong> (Ğ1 + ẐEN) • <strong>4. Inclusión</strong> (MULTIPASS papel) • <strong>5. Comunes</strong> (Tierras colectivas).</p>
             </div>
 
             <div class="section">
                 <h2 class="section-title">🗺️ Tu Recorrido en 4 Pasos</h2>
-                <p style="text-align: center; font-size: 1.1em; margin-bottom: 30px;">¡Tu MULTIPASS ya está <strong>100% funcional</strong>! Sigue esta guía para empezar:</p>
-                
                 <div class="setup-steps">
-                    <!-- Paso 1 -->
                     <div class="setup-step" style="border-left: 4px solid var(--primary-color);">
-                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                            <span class="step-number">1</span>
-                            <h3 style="margin: 0;">📚 Comprender</h3>
-                        </div>
-                        <p><strong>Lee tus recursos clave:</strong></p>
-                        <ul>
-                            <li>🖨️ <strong>Imprime tu MULTIPASS</strong> (Zine PDF arriba)</li>
-                            <li>🌍 <a href="http://127.0.0.1:8080/ipns/copylaradio.com/uplanet_com.html" target="_blank" style="color: var(--primary-color); font-weight: 600;">Comprender UPlanet</a> (5 min de lectura)</li>
-                            <li>📡 <a href="http://127.0.0.1:8080/ipns/copylaradio.com/nostr_com.html" target="_blank" style="color: var(--primary-color); font-weight: 600;">Descubrir Nostr</a> (protocolo descentralizado)</li>
-                        </ul>
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;"><span class="step-number">1</span><h3 style="margin: 0;">Asegurar</h3></div>
+                        <p>Imprime el Zine MULTIPASS. Tu clave se divide en 3 partes (SSSS), imposible de hackear o perder definitivamente.</p>
                     </div>
-                    
-                    <!-- Paso 2 -->
                     <div class="setup-step" style="border-left: 4px solid var(--primary-color);">
-                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                            <span class="step-number">2</span>
-                            <h3 style="margin: 0;">🔌 Conectar</h3>
-                        </div>
-                        <p><strong>Accede a tu terminal MULTIPASS:</strong></p>
-                        <ul>
-                            <li>🌐 Ve a <strong><a href="_USPOT_/scan" target="_blank">/SCAN</a></strong></li>
-                            <li>📱 Escanea tu <strong>código QR SSSS</strong> (en tu Zine)</li>
-                            <li>🔑 Introduce tu <strong>código PASS</strong> (vacío = rápido, 1111 = completo)</li>
-                            <li>✅ Disfruta de tu <strong>uDRIVE 10GB</strong> + IA personal</li>
-                        </ul>
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;"><span class="step-number">2</span><h3 style="margin: 0;">Conectar</h3></div>
+                        <p>Ve a <strong><a href="_USPOT_/scan" target="_blank">/SCAN</a></strong>, escanea tu código QR, introduce tu código PASS. Estás en casa.</p>
                     </div>
-                    
-                    <!-- Paso 3 -->
                     <div class="setup-step" style="border-left: 4px solid var(--primary-color);">
-                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                            <span class="step-number">3</span>
-                            <h3 style="margin: 0;">💬 Participar</h3>
-                        </div>
-                        <p><strong>Únete a la red social N²:</strong></p>
-                        <ul>
-                            <li>🦊 Instala la extensión <strong>NOSTR Connect</strong> (Firefox recomendado)</li>
-                            <li>🔐 Copia tu clave <strong>NSec</strong> (en tu Zine)</li>
-                            <li>💬 Únete a <a href="_CORACLEURL_" target="_blank" style="color: var(--primary-color); font-weight: 600;">Coracle ẐEN</a></li>
-                            <li>💰 Cada like = <strong>1 ẐEN automáticamente</strong> en tu cartera</li>
-                        </ul>
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;"><span class="step-number">3</span><h3 style="margin: 0;">Participar</h3></div>
+                        <p>En Coracle, interactúa con la comunidad. El protocolo cronológico elimina los algoritmos tóxicos.</p>
                     </div>
-                    
-                    <!-- Paso 4 -->
-                    <div class="setup-step" style="border-left: 4px solid #27ae60; background: linear-gradient(135deg, rgba(46, 204, 113, 0.08), rgba(46, 204, 113, 0.04));">
-                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                            <span class="step-number" style="background: #27ae60;">4</span>
-                            <h3 style="margin: 0; color: #27ae60;">🏛️ Convertirse en Co-Propietario</h3>
-                        </div>
-                        <p><strong>Pasa de inquilino a miembro:</strong></p>
-                        <ul>
-                            <li>💰 Membresía <strong>50€/año</strong> (Oferta de Bienvenida)</li>
-                            <li>🚫 No más alquiler semanal (1 Ẑ/semana ahorrado)</li>
-                            <li>🗳️ <strong>Derecho a voto</strong> en decisiones cooperativas</li>
-                            <li>🌳 Parte de propiedad de <strong>bienes reales</strong> (servidores, bosques...)</li>
-                        </ul>
-                        <div style="text-align: center; margin-top: 15px;">
-                            <a href="https://opencollective.com/monnaie-libre" target="_blank" class="cta-primary" style="display: inline-block;">
-                                Unirse a ẐEN[0] Ahora →
-                            </a>
-                        </div>
+                    <div class="setup-step" style="border-left: 4px solid var(--amap-color); background: rgba(46, 204, 113, 0.05);">
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;"><span class="step-number" style="background: var(--amap-color);">4</span><h3 style="margin: 0; color: var(--amap-color);">Co-Construir</h3></div>
+                        <p>Conviértete en socio. Transforma tu estado de consumidor a arquitecto de red.</p>
                     </div>
-                </div>
-                
-                <div class="warning-box" style="margin-top: 30px;">
-                    <p><strong>🔑 Códigos PASS de tu MULTIPASS:</strong></p>
-                    <ul style="margin: 10px 0 0 20px;">
-                        <li><strong>Vacío</strong> → Acceso rápido (seguro para terminales públicos)</li>
-                        <li><strong>1111</strong> → Acceso completo (interfaz Astro Base + Messenger)</li>
-                        <li><strong>0000</strong> → Regeneración de emergencia (si se pierde/roba)</li>
-                    </ul>
                 </div>
             </div>
 
             <div class="section">
-                <h2 class="section-title">🌐 Tu Estación Personal</h2>
-                <p>Tu <strong>Astroport.ONE</strong> es un nodo de esta Internet soberana. Está alojado por ti o un miembro de confianza de tu red, no por una multinacional.</p>
-                
+                <h2 class="section-title">💰 Regla de los Tres Tercios</h2>
                 <div class="setup-steps">
                     <div class="setup-step">
-                        <h3>🔍 Ver Nuestra Contabilidad en Directo</h3>
-                        <p>Cada euro que entra en nuestra cooperativa es una semilla que plantamos para el futuro. El protocolo ẐEN la distribuye automáticamente y de manera transparente en tres pilares esenciales.</p>
+                        <h3 style="text-align: center;">33.3%<br>Tesorería</h3>
+                        <p style="text-align: center; font-size: 0.9em;">Asegura la estabilidad y paga las facturas del mundo real.</p>
                     </div>
                     <div class="setup-step">
-                        <h3>🏛️ Gobernanza Democrática</h3>
-                        <p>Nuestra estructura legal es una <strong>SCIC (Sociedad Cooperativa)</strong>. Las decisiones críticas se toman democráticamente: <strong>1 miembro = 1 voto</strong>. Sin accionistas distantes, solo co-constructores.</p>
+                        <h3 style="text-align: center;">33.3%<br>I+D Open Source</h3>
+                        <p style="text-align: center; font-size: 0.9em;">Recompensa a los desarrolladores por mejorar el software libre de todos.</p>
                     </div>
                     <div class="setup-step">
-                        <h3>🌱 Impacto Ecológico</h3>
-                        <p>El propósito de nuestra economía no es el beneficio, sino la creación de bienes comunes. El tercio asignado a "Bienes Comunes" se utiliza para adquirir y regenerar tierras, creando patrimonio físico para todos los miembros.</p>
+                        <h3 style="text-align: center;">33.3%<br>Bienes Comunes</h3>
+                        <p style="text-align: center; font-size: 0.9em;">Compra de bosques, tierras y hardware físico propiedad de la cooperativa.</p>
                     </div>
                 </div>
             </div>
 
-            <div class="section" style="background: linear-gradient(135deg, rgba(52, 152, 219, 0.05), rgba(52, 152, 219, 0.02)); border: 2px solid var(--primary-color);">
-                <h2 class="section-title" style="text-align: center;">🆚 Web2 vs Web3: Resumen en 10 Segundos</h2>
-                
-                <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; max-width: 700px; margin: 30px auto; padding: 20px; background: var(--container-bg); border-radius: 12px;">
-                    <!-- Web2 GAFAM -->
-                    <div style="text-align: right;">
-                        <div style="font-size: 14px; color: var(--text-color); opacity: 0.7; margin-bottom: 8px;">Web2 (GAFAM)</div>
-                        <div style="font-size: 32px; margin-bottom: 8px;">❌</div>
-                        <ul style="text-align: right; list-style: none; padding: 0; font-size: 14px; color: var(--text-color);">
-                            <li>Alquiler</li>
-                            <li>Vigilancia</li>
-                            <li>Algoritmo</li>
-                            <li>0 ingresos</li>
-                            <li>Censura</li>
-                        </ul>
-                    </div>
-                    
-                    <!-- VS -->
-                    <div style="text-align: center; font-size: 24px; font-weight: 700; color: var(--primary-color);">
-                        VS
-                    </div>
-                    
-                    <!-- Web3 UPlanet -->
-                    <div style="text-align: left;">
-                        <div style="font-size: 14px; color: var(--text-color); opacity: 0.7; margin-bottom: 8px;">Web3 (UPlanet)</div>
-                        <div style="font-size: 32px; margin-bottom: 8px;">✅</div>
-                        <ul style="text-align: left; list-style: none; padding: 0; font-size: 14px; color: var(--primary-color); font-weight: 600;">
-                            <li>Propiedad</li>
-                            <li>Privado (uDRIVE)</li>
-                            <li>Cronológico</li>
-                            <li>Cada like = 1Ẑ</li>
-                            <li>Imposible</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <p style="text-align: center; font-size: 1.2em; padding: 20px; background: var(--info-box-bg); border-radius: 8px; margin-top: 20px;">
-                    <strong>En una frase:</strong> GAFAM = tú eres el producto. UPlanet = tú eres el propietario.
-                </p>
-            </div>
-
-            <div class="section">
-                <h2 class="section-title">💰 Economía Transparente: La Regla de los Tercios</h2>
-                <p>Cada euro que entra en nuestra cooperativa se distribuye automáticamente y de manera transparente:</p>
-                
+            <div class="section" style="border: 2px solid var(--amap-color);">
+                <h2 class="section-title" style="text-align: center; color: var(--amap-color);">🚀 Conviértete en Arquitecto de Red</h2>
                 <div class="setup-steps">
                     <div class="setup-step">
-                        <h3>33.3% → Tesorería</h3>
-                        <p><strong>Estabilidad & Liquidez</strong><br>
-                        Asegura la sostenibilidad financiera de la cooperativa</p>
-                    </div>
-                    <div class="setup-step">
-                        <h3>33.3% → I+D Open Source</h3>
-                        <p><strong>Innovación</strong><br>
-                        Desarrollo de software libre para todos</p>
-                    </div>
-                    <div class="setup-step">
-                        <h3>33.3% → Bienes Comunes</h3>
-                        <p><strong>Bosques & Tierras</strong><br>
-                        Patrimonio físico para todos los miembros</p>
-                    </div>
-                </div>
-                
-                <div class="info-box">
-                    <p><strong>🎯 Tu Impacto Directo:</strong> Como Constructor, no solo financias un servicio: construyes un patrimonio común, tanto digital como físico.</p>
-                </div>
-            </div>
-
-            <div class="section">
-                <h2 class="section-title">🚀 ¿Listo para Recuperar el Control?</h2>
-                <div class="setup-steps">
-                    <div class="setup-step">
-                        <h3>🎫 MULTIPASS (Gratuito)</h3>
+                        <h3>🧭 Explorador (Prueba)</h3>
                         <ul class="offer-features">
                             <li>Identidad digital completa</li>
-                            <li>uDRIVE 10GB (almacenamiento público)</li>
-                            <li>IA personal</li>
-                            <li>Red social N²</li>
-                            <li>Terminal universal</li>
+                            <li>Derecho de paso en la red</li>
+                            <li>Acceso a la red social N²</li>
                         </ul>
-                        <p class="offer-price"><strong>Gratuito</strong> - ¡Ya activo!</p>
+                        <p style="text-align: center; margin-top: 20px;"><strong>Estado Actual (Gratuito)</strong></p>
                     </div>
-                    <div class="setup-step">
-                        <h3>🏛️ Co-Constructor (50€/año)</h3>
+                    <div class="setup-step" style="background: rgba(46, 204, 113, 0.05); border-color: var(--amap-color);">
+                        <h3 style="color: var(--amap-color);">🏛️ Co-Constructor (Cuota AMAP)</h3>
                         <ul class="offer-features">
-                            <li>Todo del MULTIPASS</li>
-                            <li>NextCloud ilimitado (privado)</li>
-                            <li>PeerTube ilimitado (videos privados)</li>
-                            <li>Acceso SSH a los relés</li>
-                            <li>Derecho a voto (1 persona = 1 voto)</li>
-                            <li>Parte de propiedad de bienes reales</li>
+                            <li>"Cosecha Digital" completa (NextCloud, IA)</li>
+                            <li>Derecho a Voto (1 persona = 1 voto)</li>
+                            <li>Propietario parcial de Bienes Comunes</li>
+                            <li>Recompensas ẐEN por crear contenido</li>
                         </ul>
-                        <p class="offer-price"><strong>Oferta de Bienvenida: 50€/año</strong></p>
+                        <a href="https://opencollective.com/monnaie-libre" target="_blank" class="cta-primary">
+                            Tomar una participación (50€/año) →
+                        </a>
                     </div>
-                </div>
-            </div>
-
-            <div class="warning-box">
-                <p><strong>🔑 ¡Tu MULTIPASS es tu llave de acceso universal!</strong><br>
-                Guarda tu código QR SSSS con cuidado - es tu pasaporte para la Internet de Confianza.</p>
-            </div>
-
-            <div class="section" style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.08), rgba(46, 204, 113, 0.04)); border: 2px solid #27ae60;">
-                <h2 class="section-title" style="color: #27ae60; text-align: center;">🌟 Comparte la Internet de Confianza</h2>
-                <p style="text-align: center; font-size: 1.1em; margin-bottom: 30px;">Acabas de unirte a una <strong>revolución silenciosa</strong>. ¡Ahora ayuda a tus amigos a recuperar el control!</p>
-                
-                <div class="benefit-grid" style="margin-bottom: 30px;">
-                    <div class="benefit-item" style="border-left: 4px solid #27ae60;">
-                        <div class="benefit-icon">💬</div>
-                        <div class="benefit-text">
-                            <strong>Habla de ello</strong>
-                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">"Gano dinero creando contenido, sin vigilancia"</span>
-                        </div>
-                    </div>
-                    <div class="benefit-item" style="border-left: 4px solid #27ae60;">
-                        <div class="benefit-icon">🎁</div>
-                        <div class="benefit-text">
-                            <strong>Invita a tus amigos</strong>
-                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Cada amigo refuerza tu red N² y aumenta tus ingresos</span>
-                        </div>
-                    </div>
-                    <div class="benefit-item" style="border-left: 4px solid #27ae60;">
-                        <div class="benefit-icon">🚀</div>
-                        <div class="benefit-text">
-                            <strong>Conviértete en embajador</strong>
-                            <span style="color: var(--text-color); opacity: 0.8; font-size: 0.9em;">Más red = más likes = más ẐEN. ¡Es matemático!</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="info-box" style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.15), rgba(46, 204, 113, 0.08)); border-left-color: #27ae60; text-align: center;">
-                    <p style="font-size: 1.1em; margin: 0;"><strong>🎯 Tu Misión:</strong> Cada persona que invites a UPlanet es otra piedra en la Internet de Confianza. No solo compartes un servicio, <strong>¡construyes el futuro</strong>!</p>
-                </div>
-                
-                <div style="margin-top: 30px; padding: 30px; background: var(--container-bg); border-radius: 12px; border: 2px solid #27ae60;">
-                    <h3 style="text-align: center; color: #27ae60; margin: 0 0 20px 0;">📱 Cómo Invitar a Tus Amigos</h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-                        <div style="text-align: center; padding: 15px;">
-                            <div style="font-size: 48px; margin-bottom: 10px;">1️⃣</div>
-                            <strong>Comparte tus recursos</strong>
-                            <p style="font-size: 0.9em; opacity: 0.8; margin: 10px 0 0 0;">Muéstrales <a href="http://127.0.0.1:8080/ipns/copylaradio.com/uplanet_com.html" target="_blank" style="color: var(--primary-color);">uplanet_com.html</a></p>
-                        </div>
-                        <div style="text-align: center; padding: 15px;">
-                            <div style="font-size: 48px; margin-bottom: 10px;">2️⃣</div>
-                            <strong>Crea su MULTIPASS</strong>
-                            <p style="font-size: 0.9em; opacity: 0.8; margin: 10px 0 0 0;">Ayúdales a <a href="_USPOT_/g1" target="_blank" style="color: var(--primary-color);">abrir una cuenta</a></p>
-                        </div>
-                        <div style="text-align: center; padding: 15px;">
-                            <div style="font-size: 48px; margin-bottom: 10px;">3️⃣</div>
-                            <strong>Conéctense en Coracle</strong>
-                            <p style="font-size: 0.9em; opacity: 0.8; margin: 10px 0 0 0;">Juntos en <a href="_CORACLEURL_" target="_blank" style="color: var(--primary-color);">Coracle ẐEN</a></p>
-                        </div>
-                    </div>
-                    <p style="text-align: center; font-size: 1.3em; margin: 30px 0 0 0; font-weight: bold; color: #27ae60;">
-                        🌍 ¡Juntos, recuperemos el control de Internet!
-                    </p>
                 </div>
             </div>
         </div>
@@ -1371,18 +744,12 @@
         <div class="footer">
             <p>Nos logiciels libres sont en constant développement...<br>
             N'hésitez pas à poser vos questions, remonter vos difficultés, proposer des améliorations !</p>
-
-            <p>Our free software is constantly being developed...<br>
-            Don't hesitate to ask questions, report problems or suggest improvements!</p>
-            
-            <!-- Nouveau lien vers copylaradio.com -->
             <p><a href="https://copylaradio.com" target="_blank" style="color: var(--primary-color); text-decoration: none;">Visitez CopyLaRadio.com</a></p>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Language tabs functionality
             const tabs = document.querySelectorAll('.language-tab');
             const sections = document.querySelectorAll('.language-section');
 
@@ -1398,7 +765,6 @@
             });
         });
 
-        // Theme switcher functionality
         function toggleTheme() {
             const body = document.body;
             const currentTheme = body.getAttribute('data-theme');
@@ -1407,7 +773,6 @@
             localStorage.setItem('theme', newTheme);
         }
 
-        // Check for saved theme preference
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme) {
             document.body.setAttribute('data-theme', savedTheme);
