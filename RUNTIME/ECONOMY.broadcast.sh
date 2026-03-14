@@ -464,7 +464,11 @@ CONTENT_JSON=$(cat <<EOF
     "net_surplus": $NET_SURPLUS,
     "treasury": $ALLOCATION_THIRD,
     "rnd": $ALLOCATION_THIRD,
-    "assets": $ALLOCATION_THIRD
+    "assets": $ALLOCATION_THIRD,
+    "treasury_pct": ${TREASURY_PERCENT:-33},
+    "rnd_pct": ${RND_PERCENT:-33},
+    "assets_pct": ${ASSETS_PERCENT:-33},
+    "captain_bonus_pct": ${CAPTAIN_BONUS_PERCENT:-1}
   },
   "capacity": {
     "multipass": { "used": $MULTIPASS_COUNT, "total": $MULTIPASS_CAPACITY },
@@ -540,6 +544,10 @@ TAGS_JSON=$(cat <<EOF
   ["allocation:treasury", "$ALLOCATION_THIRD"],
   ["allocation:rnd", "$ALLOCATION_THIRD"],
   ["allocation:assets", "$ALLOCATION_THIRD"],
+  ["allocation:treasury_pct", "${TREASURY_PERCENT:-33}"],
+  ["allocation:rnd_pct", "${RND_PERCENT:-33}"],
+  ["allocation:assets_pct", "${ASSETS_PERCENT:-33}"],
+  ["allocation:captain_bonus_pct", "${CAPTAIN_BONUS_PERCENT:-1}"],
   ["capacity:multipass_used", "$MULTIPASS_COUNT"],
   ["capacity:multipass_total", "$MULTIPASS_CAPACITY"],
   ["capacity:zencard_total", "$ZENCARD_COUNT"],
