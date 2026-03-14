@@ -161,6 +161,18 @@ create_initial_did() {
     local longitude=$(cat "${user_dir}/GPS" 2>/dev/null | grep "LON=" | cut -d'=' -f2 | cut -d';' -f1 || echo "")
     local language=$(cat "${user_dir}/LANG" 2>/dev/null || echo "fr")
     local youser=${email}
+
+    # Birthdate: use stored date or fall back to profile creation date
+    local birthdate=$(cat "${user_dir}/BIRTHDATE" 2>/dev/null)
+    [[ -z "$birthdate" ]] && birthdate=$(echo "$current_date" | cut -dT -f1)
+
+    # Calculate Maya Kin badge from birthdate
+    local badges_json=""
+    if [[ -f "${MY_PATH}/kin.sh" ]]; then
+        source "${MY_PATH}/kin.sh"
+        local kin_badge=$(maya_kin_json "$birthdate" 2>/dev/null)
+        [[ -n "$kin_badge" ]] && badges_json="$kin_badge"
+    fi
     
     # If no user directory exists, try to get G1PUB from the email parameter or environment
     if [[ -z "$g1_pubkey" ]]; then
@@ -208,6 +220,8 @@ create_initial_did() {
         -e "s|_LONGITUDE_|$(escape_sed "${longitude}")|g" \
         -e "s|_LANGUAGE_|$(escape_sed "${language}")|g" \
         -e "s|_YOUSER_|$(escape_sed "${youser}")|g" \
+        -e "s|_BIRTHDATE_|$(escape_sed "${birthdate}")|g" \
+        -e "s|_BADGES_|${badges_json}|g" \
         -e "s|_IPFS_NODE_ID_|$(escape_sed "${ipfs_node_id}")|g" \
         "$template_file" > "$temp_template"; then
         echo -e "${RED}❌ Template processing failed${NC}" >&2

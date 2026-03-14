@@ -5,6 +5,9 @@
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 #################################################### GetGCAttributesFromG1PUB.sh
+## DEPRECATED: Legacy Ğ1v1 profile scanner (Cesium+/GChange+ Elasticsearch).
+## Will be removed after migration of simple Ğ1v1 wallets to UPlanet ORIGIN.
+## Profile data will come from NOSTR (kind 0) only when Duniter v2s is fully adopted.
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"

@@ -94,6 +94,8 @@
     },
     "language": "_LANGUAGE_",
     "youser": "_YOUSER_",
+    "birthdate": "_BIRTHDATE_",
+    "badges": [_BADGES_],
     "astroportStation": {
       "ipns": "_IPFS_NODE_ID_",
       "description": "Astroport station IPNS address",

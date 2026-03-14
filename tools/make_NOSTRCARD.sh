@@ -500,21 +500,83 @@ EOFNOSTR
     [[ ${UPLANETG1PUB:0:8} == "4ZqazktD" ]] && ORIGIN="ORIGIN" || ORIGIN="${UPLANETG1PUB:0:8}"
     ZENCARDG1=$(cat ~/.zen/game/players/${EMAIL}/.g1pub 2>/dev/null) ## Does ZenCard already existing
 
-    ### CREATE TEPORARY PROFILE in NOSTR RELAYS
+    ### IMPORT CESIUM+ / GCHANGE+ PROFILE (if exists) for NOSTR profile enrichment
+    ## DEPRECATED: This section imports legacy Ğ1v1 profiles from Cesium+/GChange+ Elasticsearch.
+    ## It will be removed after migration of simple Ğ1v1 wallets to UPlanet ORIGIN.
+    ## When Duniter v2s is fully adopted, profiles will come from NOSTR (kind 0) only.
+    CESIUM_NAME=""
+    CESIUM_ABOUT=""
+    CESIUM_AVATAR_CID=""
+    CESIUM_CITY=""
+    PROFILE_SOURCE=""
+
+    ## 1. Try Cesium+ first
+    CESIUM_JSON=$(curl -s --max-time 5 "${myCESIUM}/user/profile/${G1PUBNOSTR}" 2>/dev/null)
+    if [[ -n "$CESIUM_JSON" ]] && echo "$CESIUM_JSON" | jq -e '.found == true' &>/dev/null; then
+        PROFILE_SOURCE="Cesium+"
+    else
+        ## 2. Fallback: try GChange+
+        CESIUM_JSON=$(curl -s --max-time 5 "${myDATA}/user/profile/${G1PUBNOSTR}" 2>/dev/null)
+        if [[ -n "$CESIUM_JSON" ]] && echo "$CESIUM_JSON" | jq -e '.found == true' &>/dev/null; then
+            PROFILE_SOURCE="GChange+"
+            ## GChange+ may link to a different Cesium+ member pubkey
+            GCHANGE_LINKED=$(echo "$CESIUM_JSON" | jq -r '._source.pubkey // empty' 2>/dev/null)
+            if [[ -n "$GCHANGE_LINKED" && "$GCHANGE_LINKED" != "null" && "$GCHANGE_LINKED" != "$G1PUBNOSTR" ]]; then
+                echo "   GChange+ linked to member: ${GCHANGE_LINKED}"
+                ## Try to get richer profile from linked Cesium+ member
+                LINKED_JSON=$(curl -s --max-time 5 "${myCESIUM}/user/profile/${GCHANGE_LINKED}" 2>/dev/null)
+                if [[ -n "$LINKED_JSON" ]] && echo "$LINKED_JSON" | jq -e '.found == true' &>/dev/null; then
+                    CESIUM_JSON="$LINKED_JSON"
+                    PROFILE_SOURCE="Cesium+ (via GChange+ link)"
+                fi
+            fi
+        fi
+    fi
+
+    ## Extract profile data if found
+    if [[ -n "$PROFILE_SOURCE" ]]; then
+        echo "✅ ${PROFILE_SOURCE} profile found for ${G1PUBNOSTR}"
+        CESIUM_NAME=$(echo "$CESIUM_JSON" | jq -r '._source.title // empty' 2>/dev/null)
+        CESIUM_ABOUT=$(echo "$CESIUM_JSON" | jq -r '._source.description // empty' 2>/dev/null)
+        CESIUM_CITY=$(echo "$CESIUM_JSON" | jq -r '._source.city // empty' 2>/dev/null)
+        ## Extract and publish avatar to IPFS if present
+        CESIUM_AVATAR_B64=$(echo "$CESIUM_JSON" | jq -r '._source.avatar._content // empty' 2>/dev/null)
+        if [[ -n "$CESIUM_AVATAR_B64" ]]; then
+            echo "$CESIUM_AVATAR_B64" | base64 -d > ~/.zen/tmp/${MOATS}/cesium_avatar.png 2>/dev/null
+            if [[ -s ~/.zen/tmp/${MOATS}/cesium_avatar.png ]] && file -b ~/.zen/tmp/${MOATS}/cesium_avatar.png | grep -qi "image"; then
+                CESIUM_AVATAR_CID=$(ipfs --timeout 20s add -q ~/.zen/tmp/${MOATS}/cesium_avatar.png 2>/dev/null)
+                echo "   Avatar ${PROFILE_SOURCE} → IPFS: ${CESIUM_AVATAR_CID}"
+            fi
+            rm -f ~/.zen/tmp/${MOATS}/cesium_avatar.png
+        fi
+    fi
+
+    ## Build profile name and about (Cesium+ overrides defaults if available)
+    PROFILE_NAME="${CESIUM_NAME:-[•͡˘㇁•͡˘] $YOUSER}"
+    PROFILE_ABOUT="${CESIUM_ABOUT:-⏰ UPlanet Ẑen ${ORIGIN} // Welcome // ${myIPFS}/ipns/copylaradio.com // DID: did:nostr:${HEX}}"
+    PROFILE_AVATAR="$myIPFS/ipfs/${G1PUBNOSTRQR}"
+    [[ -n "$CESIUM_AVATAR_CID" ]] && PROFILE_AVATAR="$myIPFS/ipfs/${CESIUM_AVATAR_CID}"
+
+    ### CREATE PROFILE in NOSTR RELAYS
     ## Derive SS58 v2 address from G1 v1 pubkey
     G1V2ADDRESS=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$G1PUBNOSTR" 2>/dev/null)
-    ${MY_PATH}/../tools/nostr_setup_profile.py \
-        "$NPRIV" \
-        "[•͡˘㇁•͡˘] $YOUSER" "${G1PUBNOSTR}" \
-        "⏰ UPlanet Ẑen ${ORIGIN} // Welcome // ${myIPFS}/ipns/copylaradio.com // DID: did:nostr:${HEX}" \
-        "$myIPFS/ipfs/${G1PUBNOSTRQR}" \
-        "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg" \
-        "" "$myIPFS/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" "" "" "" "" \
-        "wss://relay.copylaradio.com" "$myRELAY" \
-        --g1v2 "$G1V2ADDRESS" \
-        --zencard "$ZENCARDG1" \
-        --email "$EMAIL" \
-        --ipns_vault "/ipns/${NOSTRNS}" &>/dev/null
+
+    SETUP_ARGS=(
+        "$NPRIV"
+        "$PROFILE_NAME" "${G1PUBNOSTR}"
+        "$PROFILE_ABOUT"
+        "$PROFILE_AVATAR"
+        "$myIPFS/ipfs/QmSMQCQDtcjzsNBec1EHLE78Q1S8UXGfjXmjt8P6o9B8UY/ComfyUI_00841_.jpg"
+        "" "$myIPFS/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE" "" "" "" ""
+        "wss://relay.copylaradio.com" "$myRELAY"
+        --g1v2 "$G1V2ADDRESS"
+        --zencard "$ZENCARDG1"
+        --email "$EMAIL"
+        --ipns_vault "/ipns/${NOSTRNS}"
+    )
+    [[ -n "$CESIUM_CITY" ]] && SETUP_ARGS+=(--city "$CESIUM_CITY")
+
+    ${MY_PATH}/../tools/nostr_setup_profile.py "${SETUP_ARGS[@]}" &>/dev/null
 
     ## CHECK DESTINATION WALLET NOT ALREADY CREDITED (refuse double credit)
     DEST_BALANCE=""
