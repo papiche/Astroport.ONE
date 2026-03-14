@@ -319,6 +319,12 @@ refresh_nodes() {
     > "$CACHE_FILE"
 
     logok "Cache mis à jour : ${#valid_rpc[@]} RPC, ${#valid_squid[@]} Squid"
+
+    # Publish to IPNS node directory (available at /ipns/$IPFSNODEID/duniter_nodes.json)
+    if [[ -n "${IPFSNODEID}" && -d "${HOME}/.zen/tmp/${IPFSNODEID}" ]]; then
+        cp -f "$CACHE_FILE" "${HOME}/.zen/tmp/${IPFSNODEID}/duniter_nodes.json"
+        logok "Copié vers IPNS : ~/.zen/tmp/${IPFSNODEID}/duniter_nodes.json"
+    fi
 }
 
 # ════════════════════════════════════════════════════════════════════════════════

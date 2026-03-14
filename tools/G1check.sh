@@ -184,12 +184,6 @@ if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
     done < <("${MY_PATH}/duniter_getnode.sh" all 2>/dev/null | jq -r '.rpc[].url' 2>/dev/null)
 fi
 
-# Fallbacks statiques
-RPC_NODES+=(
-    "wss://g1.1000i100.fr/ws"
-    "wss://g1.libra.music:443"
-)
-
 # Dédupliquer
 mapfile -t RPC_NODES < <(printf '%s\n' "${RPC_NODES[@]}" | awk '!seen[$0]++')
 
@@ -209,6 +203,23 @@ if is_valid_balance "$BALANCE"; then
     write_cache "$COINSFILE" "$BALANCE"
     output "$BALANCE"
     exit 0
+fi
+
+# ── Retry : forcer une redécouverte des noeuds et réessayer ──────────────────
+if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
+    log "Tous les noeuds ont échoué — redécouverte forcée..."
+    "${MY_PATH}/duniter_getnode.sh" refresh >/dev/null 2>&1
+    while IFS= read -r rpc; do
+        [[ -z "$rpc" ]] && continue
+        raw=$(gcli_balance_raw "$G1PUB_QUERY" "$rpc")
+        if [[ -n "$raw" ]]; then
+            BALANCE=$(raw_to_g1 "$raw")
+            log "Solde obtenu après refresh depuis $rpc : $BALANCE Ğ1"
+            write_cache "$COINSFILE" "$BALANCE"
+            output "$BALANCE"
+            exit 0
+        fi
+    done < <("${MY_PATH}/duniter_getnode.sh" all 2>/dev/null | jq -r '.rpc[].url' 2>/dev/null)
 fi
 
 # ── Fallback : dernier backup disponible ─────────────────────────────────────
