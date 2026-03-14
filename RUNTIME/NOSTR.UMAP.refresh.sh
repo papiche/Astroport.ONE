@@ -2186,16 +2186,32 @@ generate_sector_images() {
         log "✓ Satellite images fresh (< $SECTOR_SAT_REFRESH_DAYS days)"
     fi
     
+    # Protection: if ALL screenshots failed, preserve existing CIDs
+    local sector_img_count=0
+    [[ -n "$SECTOR_MAP_CID" ]] && ((sector_img_count++))
+    [[ -n "$SECTOR_ZMAP_CID" ]] && ((sector_img_count++))
+    [[ -n "$SECTOR_SAT_CID" ]] && ((sector_img_count++))
+    [[ -n "$SECTOR_ZSAT_CID" ]] && ((sector_img_count++))
+
+    if [[ "$need_map_refresh" == true || "$need_sat_refresh" == true ]] && [[ $sector_img_count -eq 0 ]]; then
+        log_always "⚠ All SECTOR image generation failed — preserving existing NOSTR CIDs"
+        SECTOR_MAP_CID="$EXISTING_MAP_CID"
+        SECTOR_ZMAP_CID="$EXISTING_ZMAP_CID"
+        SECTOR_SAT_CID="$EXISTING_SAT_CID"
+        SECTOR_ZSAT_CID="$EXISTING_ZSAT_CID"
+        SECTOR_IMAGES_REFRESHED=false
+    fi
+
     # Set update date
     if [[ "$SECTOR_IMAGES_REFRESHED" == true ]]; then
         SECTOR_UPDATED=$(date +%Y%m%d)
     else
         SECTOR_UPDATED="$EXISTING_UPDATED"
     fi
-    
+
     # Cleanup any old local images (TODO REMOVE after migration)
     rm -f "${sectorpath}"/*.jpg "${sectorpath}"/*.png 2>/dev/null
-    
+
     log "SECTOR images ready: 4 CIDs in NOSTR profile"
 }
 
@@ -2650,16 +2666,32 @@ generate_region_images() {
         log "✓ Satellite images fresh (< $REGION_SAT_REFRESH_DAYS days)"
     fi
     
+    # Protection: if ALL screenshots failed, preserve existing CIDs
+    local region_img_count=0
+    [[ -n "$REGION_MAP_CID" ]] && ((region_img_count++))
+    [[ -n "$REGION_ZMAP_CID" ]] && ((region_img_count++))
+    [[ -n "$REGION_SAT_CID" ]] && ((region_img_count++))
+    [[ -n "$REGION_ZSAT_CID" ]] && ((region_img_count++))
+
+    if [[ "$need_map_refresh" == true || "$need_sat_refresh" == true ]] && [[ $region_img_count -eq 0 ]]; then
+        log_always "⚠ All REGION image generation failed — preserving existing NOSTR CIDs"
+        REGION_MAP_CID="$EXISTING_MAP_CID"
+        REGION_ZMAP_CID="$EXISTING_ZMAP_CID"
+        REGION_SAT_CID="$EXISTING_SAT_CID"
+        REGION_ZSAT_CID="$EXISTING_ZSAT_CID"
+        REGION_IMAGES_REFRESHED=false
+    fi
+
     # Set update date
     if [[ "$REGION_IMAGES_REFRESHED" == true ]]; then
         REGION_UPDATED=$(date +%Y%m%d)
     else
         REGION_UPDATED="$EXISTING_UPDATED"
     fi
-    
+
     # Cleanup any old local images (TODO REMOVE after migration)
     rm -f "${regionpath}"/*.jpg "${regionpath}"/*.png 2>/dev/null
-    
+
     log "REGION images ready: 4 CIDs in NOSTR profile"
 }
 

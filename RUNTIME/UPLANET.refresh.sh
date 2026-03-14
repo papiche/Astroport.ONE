@@ -333,6 +333,16 @@ for UMAP in ${unique_combined[@]}; do
         elif [[ $IMG_SUCCESS -gt 0 ]]; then
             echo "✓ Image generation: $IMG_SUCCESS images generated successfully"
         fi
+
+        # Protection: if ALL screenshots failed, preserve existing CIDs (pyppeteer missing or broken)
+        if [[ $IMG_SUCCESS -eq 0 && $IMG_FAILED -gt 0 ]]; then
+            echo "⚠ All image generation failed (pyppeteer missing?) — preserving existing NOSTR CIDs"
+            ZUMAP_CID="${EXISTING_ZUMAP_CID}"
+            UMAP_CID="${EXISTING_UMAP_CID}"
+            USAT_CID="${EXISTING_USAT_CID}"
+            ZUSAT_CID="${EXISTING_ZUSAT_CID}"
+            IMAGES_UPDATED=false
+        fi
     else
         # Use existing CIDs from NOSTR profile
         ZUMAP_CID="$EXISTING_ZUMAP_CID"
@@ -468,7 +478,7 @@ for UMAP in ${unique_combined[@]}; do
     "${PIC_PROFILE}" \
     "${PIC_BANNER}" \
     "" "${myLIBRA}/ipfs/${UMAPROOT}" "" "${VDONINJA}/?room=${UMAPG1PUB:0:8}&effects&record" "" "" \
-    "$myRELAY" \
+    "$myRELAY" "wss://relay.copylaradio.com" \
     --zencard "$UPLANETNAME_G1" $UMAP_CID_ARGS
 
 done
