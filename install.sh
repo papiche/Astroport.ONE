@@ -217,6 +217,10 @@ echo "## INSTALL PowerJoular (Power consumption monitoring) ##########"
 ~/.zen/Astroport.ONE/install/install_powerjoular.sh
 
 ###############################################################
+echo "## INSTALL Prometheus exporters (heartbox monitoring) ##########"
+~/.zen/Astroport.ONE/install/install_prometheus.sh
+
+###############################################################
 echo "## INSTALL Flutter SDK (web builds for Ginkgo app) ##########"
 ~/.zen/Astroport.ONE/install/install_flutter.sh
 ## Add Flutter to PATH for the rest of install

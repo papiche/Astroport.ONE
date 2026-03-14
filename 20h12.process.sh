@@ -435,8 +435,8 @@ if [[ -n "$ANALYSIS_JSON" ]]; then
     IPFS_ACTIVE=$(echo "$ANALYSIS_JSON" | jq -r '.services.ipfs.active' 2>/dev/null)
     ASTROPORT_ACTIVE=$(echo "$ANALYSIS_JSON" | jq -r '.services.astroport.active' 2>/dev/null)
     NEXTCLOUD_ACTIVE=$(echo "$ANALYSIS_JSON" | jq -r '.services.nextcloud.active' 2>/dev/null)
-    NOSTR_RELAY_ACTIVE=$(echo "$ANALYSIS_JSON" | jq -r '.services.nostr_relay.active' 2>/dev/null)
-    USPOT_ACTIVE=$(echo "$ANALYSIS_JSON" | jq -r '.services.uspot.active' 2>/dev/null)
+    STRFRY_ACTIVE=$(echo "$ANALYSIS_JSON" | jq -r '.services.strfry.active' 2>/dev/null)
+    UPASSPORT_ACTIVE=$(echo "$ANALYSIS_JSON" | jq -r '.services.upassport.active' 2>/dev/null)
     G1BILLET_ACTIVE=$(echo "$ANALYSIS_JSON" | jq -r '.services.g1billet.active' 2>/dev/null)
 
     echo "Capacités UPlanet détectées:"
@@ -448,8 +448,8 @@ if [[ -n "$ANALYSIS_JSON" ]]; then
     echo "  IPFS: $IPFS_ACTIVE"
     echo "  Astroport: $ASTROPORT_ACTIVE"
     echo "  NextCloud: $NEXTCLOUD_ACTIVE"
-    echo "  NOSTR Relay: $NOSTR_RELAY_ACTIVE"
-    echo "  uSPOT: $USPOT_ACTIVE"
+    echo "  strfry: $STRFRY_ACTIVE"
+    echo "  UPassport: $UPASSPORT_ACTIVE"
     echo "  G1Billet: $G1BILLET_ACTIVE"
 
     # Sauvegarder l'analyse JSON dans le cache

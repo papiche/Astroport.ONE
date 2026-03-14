@@ -148,27 +148,27 @@ check_services_status() {
         # Lire les statuts depuis le cache heartbox_analysis
         local ipfs_active=$(jq -r '.services.ipfs.active // false' "$heartbox_cache" 2>/dev/null)
         local astroport_active=$(jq -r '.services.astroport.active // false' "$heartbox_cache" 2>/dev/null)
-        local uspot_active=$(jq -r '.services.uspot.active // false' "$heartbox_cache" 2>/dev/null)
+        local upassport_active=$(jq -r '.services.upassport.active // false' "$heartbox_cache" 2>/dev/null)
         local nextcloud_active=$(jq -r '.services.nextcloud.active // false' "$heartbox_cache" 2>/dev/null)
-        local nostr_relay_active=$(jq -r '.services.nostr_relay.active // false' "$heartbox_cache" 2>/dev/null)
+        local strfry_active=$(jq -r '.services.strfry.active // false' "$heartbox_cache" 2>/dev/null)
         local g1billet_active=$(jq -r '.services.g1billet.active // false' "$heartbox_cache" 2>/dev/null)
         
         # Récupérer les détails IPFS depuis le cache
         ipfs_peers=$(jq -r '.services.ipfs.peers_connected // 0' "$heartbox_cache" 2>/dev/null)
         
-        # Récupérer les détails uSPOT et NOSTR depuis le cache
-        uspot_proc=""
-        nostr_proc=""
-        
+        # Récupérer les détails UPassport et strfry depuis le cache
+        upassport_proc=""
+        strfry_proc=""
+
     else
         # Vérification en temps réel (fallback)
         local ipfs_active=false
         local astroport_active=false
-        local uspot_active=false
+        local upassport_active=false
         local nextcloud_active=false
-        local nostr_relay_active=false
+        local strfry_active=false
         local g1billet_active=false
-        
+
         # IPFS - vérifier le processus
         ipfs_active=false
         ipfs_peers=0
@@ -176,35 +176,35 @@ check_services_status() {
             ipfs_active=true
             ipfs_peers=$(ipfs swarm peers 2>/dev/null | wc -l)
         fi
-        
+
         # Astroport - vérifier le processus principal
         if pgrep -f "12345" >/dev/null; then
             astroport_active=true
         fi
-        
-        # uSPOT/uPassport - simple port check
+
+        # UPassport API - simple port check
         if ss -tlnp 2>/dev/null | grep -q ":54321 "; then
-            uspot_active=true
-            uspot_proc=$(ss -tlnp 2>/dev/null | grep ":54321 " | sed -n 's/.*users:((("\([^"]*\)".*/\1/p' | head -n1)
+            upassport_active=true
+            upassport_proc=$(ss -tlnp 2>/dev/null | grep ":54321 " | sed -n 's/.*users:((("\([^"]*\)".*/\1/p' | head -n1)
         else
-            uspot_active=false
-            uspot_proc=""
+            upassport_active=false
+            upassport_proc=""
         fi
-        
+
         # NextCloud - vérifier les conteneurs Docker
         if command -v docker >/dev/null 2>&1 && docker ps --filter "name=nextcloud" --format "{{.Names}}" 2>/dev/null | grep -q nextcloud; then
             nextcloud_active=true
         fi
-        
-        # NOSTR Relay - simple port check
+
+        # strfry NOSTR relay - simple port check
         if ss -tlnp 2>/dev/null | grep -q ":7777 "; then
-            nostr_relay_active=true
-            nostr_proc=$(ss -tlnp 2>/dev/null | grep ":7777 " | sed -n 's/.*users:((("\([^"]*\)".*/\1/p' | head -n1)
+            strfry_active=true
+            strfry_proc=$(ss -tlnp 2>/dev/null | grep ":7777 " | sed -n 's/.*users:((("\([^"]*\)".*/\1/p' | head -n1)
         else
-            nostr_relay_active=false
-            nostr_proc=""
+            strfry_active=false
+            strfry_proc=""
         fi
-        
+
         # G1Billet - vérifier le processus
         if pgrep -f "G1BILLETS" >/dev/null; then
             g1billet_active=true
@@ -225,9 +225,9 @@ check_services_status() {
     services_status=(
         "IPFS:$ipfs_active"
         "Astroport:$astroport_active"
-        "uSPOT/uPassport:$uspot_active"
+        "UPassport:$upassport_active"
         "NextCloud:$nextcloud_active"
-        "NOSTR_Relay:$nostr_relay_active"
+        "strfry:$strfry_active"
         "G1Billet:$g1billet_active"
     )
     
@@ -343,17 +343,17 @@ show_services_status() {
         ipfs_active=true
         ipfs_peers=$(ipfs swarm peers 2>/dev/null | wc -l)
     fi
-    local uspot_active=false
-    local uspot_proc=""
+    local upassport_active=false
+    local upassport_proc=""
     if ss -tlnp 2>/dev/null | grep -q ":54321 "; then
-        uspot_active=true
-        uspot_proc=$(ss -tlnp 2>/dev/null | grep ":54321 " | sed -n 's/.*users:((("\([^"]*\)".*/\1/p' | head -n1)
+        upassport_active=true
+        upassport_proc=$(ss -tlnp 2>/dev/null | grep ":54321 " | sed -n 's/.*users:((("\([^"]*\)".*/\1/p' | head -n1)
     fi
-    local nostr_relay_active=false
-    local nostr_proc=""
+    local strfry_active=false
+    local strfry_proc=""
     if ss -tlnp 2>/dev/null | grep -q ":7777 "; then
-        nostr_relay_active=true
-        nostr_proc=$(ss -tlnp 2>/dev/null | grep ":7777 " | sed -n 's/.*users:((("\([^"]*\)".*/\1/p' | head -n1)
+        strfry_active=true
+        strfry_proc=$(ss -tlnp 2>/dev/null | grep ":7777 " | sed -n 's/.*users:((("\([^"]*\)".*/\1/p' | head -n1)
     fi
     
     # Extraire la disponibilité de NextCloud
@@ -374,19 +374,19 @@ show_services_status() {
         local service_name="${service_info%:*}"
         local service_active="${service_info#*:}"
         
-        if [[ "$service_name" == "uSPOT/uPassport" ]]; then
-            if [[ "$uspot_active" == true ]]; then
-                print_status "uSPOT/uPassport" "ACTIVE" "(Services locaux)${uspot_proc:+ - $uspot_proc}"
+        if [[ "$service_name" == "UPassport" ]]; then
+            if [[ "$upassport_active" == true ]]; then
+                print_status "UPassport" "ACTIVE" "(API :54321)${upassport_proc:+ - $upassport_proc}"
             else
-                print_status "uSPOT/uPassport" "INACTIVE" "(Services locaux)"
+                print_status "UPassport" "INACTIVE" "(API :54321)"
             fi
             continue
         fi
-        if [[ "$service_name" == "NOSTR_Relay" ]]; then
-            if [[ "$nostr_relay_active" == true ]]; then
-                print_status "NOSTR Relay" "ACTIVE" "(Réseau social)${nostr_proc:+ - $nostr_proc}"
+        if [[ "$service_name" == "strfry" ]]; then
+            if [[ "$strfry_active" == true ]]; then
+                print_status "strfry" "ACTIVE" "(NOSTR relay :7777)${strfry_proc:+ - $strfry_proc}"
             else
-                print_status "NOSTR Relay" "INACTIVE" "(Réseau social)"
+                print_status "strfry" "INACTIVE" "(NOSTR relay :7777)"
             fi
             continue
         fi
@@ -406,14 +406,14 @@ show_services_status() {
                 "Astroport")
                     print_status "Astroport" "ACTIVE" "(Interface web)"
                     ;;
-                "uSPOT/uPassport")
-                    print_status "uSPOT/uPassport" "ACTIVE" "(Services locaux)${uspot_proc:+ - $uspot_proc}"
+                "UPassport")
+                    print_status "UPassport" "ACTIVE" "(API :54321)${upassport_proc:+ - $upassport_proc}"
                     ;;
                 "NextCloud")
                     print_status "NextCloud" "ACTIVE" "(Stockage personnel)"
                     ;;
-                "NOSTR_Relay")
-                    print_status "NOSTR Relay" "ACTIVE" "(Réseau social)${nostr_proc:+ - $nostr_proc}"
+                "strfry")
+                    print_status "strfry" "ACTIVE" "(NOSTR relay :7777)${strfry_proc:+ - $strfry_proc}"
                     ;;
                 "G1Billet")
                     print_status "G1Billet" "ACTIVE" "(Économie G1)"
@@ -431,8 +431,8 @@ show_services_status() {
                 "Astroport")
                     print_status "Astroport" "INACTIVE" "(Interface web)"
                     ;;
-                "uSPOT/uPassport")
-                    print_status "uSPOT/uPassport" "INACTIVE" "(Services locaux)"
+                "UPassport")
+                    print_status "UPassport" "INACTIVE" "(API :54321)"
                     ;;
                 "NextCloud")
                     if [[ "$nextcloud_available" == "true" ]]; then
@@ -441,8 +441,8 @@ show_services_status() {
                         print_status "NextCloud" "MISSING" "(Stockage personnel) - Non installé"
                     fi
                     ;;
-                "NOSTR_Relay")
-                    print_status "NOSTR Relay" "INACTIVE" "(Réseau social)"
+                "strfry")
+                    print_status "strfry" "INACTIVE" "(NOSTR relay :7777)"
                     ;;
                 "G1Billet")
                     print_status "G1Billet" "INACTIVE" "(Économie G1)"
@@ -468,14 +468,14 @@ show_services_status() {
                         missing_services+=("NextCloud")
                     fi
                     ;;
-                "uSPOT/uPassport")
-                    if [[ "$uspot_active" == false ]]; then
-                        missing_services+=("uSPOT/uPassport")
+                "UPassport")
+                    if [[ "$upassport_active" == false ]]; then
+                        missing_services+=("UPassport")
                     fi
                     ;;
-                "NOSTR_Relay")
-                    if [[ "$nostr_relay_active" == false ]]; then
-                        missing_services+=("NOSTR_Relay")
+                "strfry")
+                    if [[ "$strfry_active" == false ]]; then
+                        missing_services+=("strfry")
                     fi
                     ;;
                 "IPFS"|"Astroport"|"G1Billet")

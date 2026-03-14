@@ -138,31 +138,47 @@ analyze_services() {
     echo "
 === ÉTAT DES SERVICES ==="
     
-    # IPFS
-    local ipfs_up=$(get_instant_metric 'up{job="ipfs"}')
+    # IPFS (metrics from textfile collector via node_exporter)
+    local ipfs_up=$(get_instant_metric 'ipfs_up')
     local ipfs_peers=$(get_instant_metric 'ipfs_peers_total')
     local ipfs_repo_size=$(get_instant_metric 'ipfs_repo_size_bytes')
-    
+
     echo "IPFS:"
     echo "  État: $(if [ "$ipfs_up" = "1" ]; then echo "✅ Actif"; else echo "❌ Inactif"; fi)"
     echo "  Peers: $ipfs_peers"
     echo "  Taille repo: $(echo "scale=2; $ipfs_repo_size/1024/1024/1024" | bc) GB"
-    
+
     # NextCloud
-    local nextcloud_up=$(get_instant_metric 'up{job="nextcloud"}')
+    local nextcloud_up=$(get_instant_metric 'nextcloud_up')
     local nextcloud_users=$(get_instant_metric 'nextcloud_users_total')
-    
+
     echo "
 NextCloud:"
     echo "  État: $(if [ "$nextcloud_up" = "1" ]; then echo "✅ Actif"; else echo "❌ Inactif"; fi)"
     echo "  Utilisateurs: $nextcloud_users"
-    
+
     # Astroport
-    local astroport_up=$(get_instant_metric 'up{job="astroport"}')
-    
+    local astroport_up=$(get_instant_metric 'astroport_up')
+
     echo "
 Astroport:"
     echo "  État: $(if [ "$astroport_up" = "1" ]; then echo "✅ Actif"; else echo "❌ Inactif"; fi)"
+
+    # UPassport API
+    local upassport_up=$(get_instant_metric 'upassport_up')
+
+    echo "
+UPassport API:"
+    echo "  État: $(if [ "$upassport_up" = "1" ]; then echo "✅ Actif"; else echo "❌ Inactif"; fi)"
+
+    # strfry NOSTR relay
+    local strfry_up=$(get_instant_metric 'strfry_up')
+    local strfry_db_size=$(get_instant_metric 'strfry_db_size_bytes')
+
+    echo "
+NOSTR Relay (strfry):"
+    echo "  État: $(if [ "$strfry_up" = "1" ]; then echo "✅ Actif"; else echo "❌ Inactif"; fi)"
+    echo "  DB: $(echo "scale=2; $strfry_db_size/1024/1024" | bc) MB"
 }
 
 # Analyse des capacités
@@ -212,12 +228,15 @@ export_json() {
     local disk_total=$(get_instant_metric 'node_filesystem_size_bytes{mountpoint="/"}')
     local disk_free=$(get_instant_metric 'node_filesystem_free_bytes{mountpoint="/"}')
     
-    # Récupérer les métriques des services
-    local ipfs_up=$(get_instant_metric 'up{job="ipfs"}')
+    # Récupérer les métriques des services (textfile collector)
+    local ipfs_up=$(get_instant_metric 'ipfs_up')
     local ipfs_peers=$(get_instant_metric 'ipfs_peers_total')
-    local nextcloud_up=$(get_instant_metric 'up{job="nextcloud"}')
-    local astroport_up=$(get_instant_metric 'up{job="astroport"}')
-    
+    local nextcloud_up=$(get_instant_metric 'nextcloud_up')
+    local astroport_up=$(get_instant_metric 'astroport_up')
+    local upassport_up=$(get_instant_metric 'upassport_up')
+    local strfry_up=$(get_instant_metric 'strfry_up')
+    local strfry_db_size=$(get_instant_metric 'strfry_db_size_bytes')
+
     cat << EOF
 {
     "timestamp": "$timestamp",
@@ -250,6 +269,13 @@ export_json() {
         },
         "astroport": {
             "active": $(if [ "$astroport_up" = "1" ]; then echo "true"; else echo "false"; fi)
+        },
+        "upassport": {
+            "active": $(if [ "$upassport_up" = "1" ]; then echo "true"; else echo "false"; fi)
+        },
+        "strfry": {
+            "active": $(if [ "$strfry_up" = "1" ]; then echo "true"; else echo "false"; fi),
+            "db_size_bytes": $strfry_db_size
         }
     }
 }

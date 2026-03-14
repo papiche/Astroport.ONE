@@ -75,10 +75,10 @@ get_fast_service_status() {
         astroport_active="true"
     fi
     
-    # uSPOT - fast port check
-    local uspot_active="false"
+    # UPassport API - fast port check
+    local upassport_active="false"
     if ss -tln 2>/dev/null | grep -q ":54321 "; then
-        uspot_active="true"
+        upassport_active="true"
     fi
     
     # NextCloud - fast Docker check
@@ -91,10 +91,14 @@ get_fast_service_status() {
         fi
     fi
     
-    # NOSTR Relay - fast port check
-    local nostr_relay_active="false"
+    # strfry NOSTR relay - fast port check + DB size
+    local strfry_active="false"
+    local strfry_db_size="0"
     if ss -tln 2>/dev/null | grep -q ":7777 "; then
-        nostr_relay_active="true"
+        strfry_active="true"
+    fi
+    if [[ -f "$HOME/.zen/strfry/strfry-db/data.mdb" ]]; then
+        strfry_db_size=$(stat -c%s "$HOME/.zen/strfry/strfry-db/data.mdb" 2>/dev/null || echo "0")
     fi
     
     # G1Billet - fast process check
@@ -149,8 +153,8 @@ get_fast_service_status() {
     "astroport": {
         "active": $astroport_active
     },
-    "uspot": {
-        "active": $uspot_active,
+    "upassport": {
+        "active": $upassport_active,
         "port": 54321
     },
     "nextcloud": {
@@ -165,9 +169,10 @@ get_fast_service_status() {
             "port": 8001
         }
     },
-    "nostr_relay": {
-        "active": $nostr_relay_active,
-        "port": 7777
+    "strfry": {
+        "active": $strfry_active,
+        "port": 7777,
+        "db_size_bytes": $strfry_db_size
     },
     "npm": {
         "active": $npm_active,

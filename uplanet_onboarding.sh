@@ -1165,8 +1165,8 @@ step_final_summary() {
             
             local ipfs_active=$(echo "$analysis_json" | jq -r '.services.ipfs.active // false' 2>/dev/null)
             local astroport_active=$(echo "$analysis_json" | jq -r '.services.astroport.active // false' 2>/dev/null)
-            local uspot_active=$(echo "$analysis_json" | jq -r '.services.uspot.active // false' 2>/dev/null)
-            local nostr_active=$(echo "$analysis_json" | jq -r '.services.nostr_relay.active // false' 2>/dev/null)
+            local upassport_active=$(echo "$analysis_json" | jq -r '.services.upassport.active // false' 2>/dev/null)
+            local strfry_active=$(echo "$analysis_json" | jq -r '.services.strfry.active // false' 2>/dev/null)
             
             if [[ "$ipfs_active" == "true" ]]; then
                 local ipfs_peers=$(echo "$analysis_json" | jq -r '.services.ipfs.peers_connected // 0' 2>/dev/null)
@@ -1181,16 +1181,16 @@ step_final_summary() {
                 echo -e "   • Astroport: ${RED}❌ Inactif${NC}"
             fi
             
-            if [[ "$uspot_active" == "true" ]]; then
-                echo -e "   • uSPOT: ${GREEN}✅ Actif${NC} (port 54321)"
+            if [[ "$upassport_active" == "true" ]]; then
+                echo -e "   • UPassport: ${GREEN}✅ Actif${NC} (port 54321)"
             else
-                echo -e "   • uSPOT: ${RED}❌ Inactif${NC}"
+                echo -e "   • UPassport: ${RED}❌ Inactif${NC}"
             fi
-            
-            if [[ "$nostr_active" == "true" ]]; then
-                echo -e "   • NOSTR Relay: ${GREEN}✅ Actif${NC} (port 7777)"
+
+            if [[ "$strfry_active" == "true" ]]; then
+                echo -e "   • strfry: ${GREEN}✅ Actif${NC} (NOSTR relay :7777)"
             else
-                echo -e "   • NOSTR Relay: ${RED}❌ Inactif${NC}"
+                echo -e "   • strfry: ${RED}❌ Inactif${NC}"
             fi
             
             echo ""

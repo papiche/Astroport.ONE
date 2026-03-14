@@ -194,12 +194,12 @@ display_services_status() {
             print_status "Astroport" "INACTIVE" ""
         fi
     
-    # uSPOT
-    local uspot_active=$(jq -r '.services.uspot.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
-    if [[ "$uspot_active" == "true" ]]; then
-        print_status "uSPOT" "ACTIVE" "(Services locaux: 54321)"
+    # UPassport API
+    local upassport_active=$(jq -r '.services.upassport.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    if [[ "$upassport_active" == "true" ]]; then
+        print_status "UPassport" "ACTIVE" "(API :54321)"
     else
-        print_status "uSPOT" "INACTIVE" ""
+        print_status "UPassport" "INACTIVE" ""
     fi
         
         # NextCloud
@@ -216,13 +216,15 @@ display_services_status() {
         print_status "NextCloud" "INACTIVE" ""
     fi
     
-    # NOSTR Relay
-    local nostr_active=$(jq -r '.services.nostr_relay.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
-    if [[ "$nostr_active" == "true" ]]; then
-        print_status "NOSTR Relay" "ACTIVE" "(Réseau social: 7777)"
+    # strfry NOSTR relay
+    local strfry_active=$(jq -r '.services.strfry.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    local strfry_db=$(jq -r '.services.strfry.db_size_bytes // 0' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
+    local strfry_db_mb=$(echo "scale=1; $strfry_db / 1048576" | bc 2>/dev/null || echo "0")
+    if [[ "$strfry_active" == "true" ]]; then
+        print_status "strfry" "ACTIVE" "(NOSTR relay :7777, DB: ${strfry_db_mb}MB)"
     else
-        print_status "NOSTR Relay" "INACTIVE" ""
-        fi
+        print_status "strfry" "INACTIVE" ""
+    fi
         
         # G1Billet
     local g1billet_active=$(jq -r '.services.g1billet.active' "$HEARTBOX_CACHE_FILE" 2>/dev/null)
