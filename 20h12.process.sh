@@ -279,18 +279,11 @@ ${MY_PATH}/ping_bootstrap.sh > /dev/null 2>&1
 rm "${HOME}/.zen/strfry/amisOfAmis.txt" 2>/dev/null ## RESET Friends of Friends List
 ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh
 
-########################################################################
-if [[ ${UPLANETNAME} == "0000000000000000000000000000000000000000000000000000000000000000" ]]; then
-    #################### UPLANET ORIGIN : <<<<< DETECT PRIVATE SWARM BLOOM >>>>> #########
-    ## ${MY_PATH}/RUNTIME/BLOOM.Me.sh (old automatic swarm.key creation... Need more test...)
-    echo "UPlanet ORIGIN - where new captains meets DRAGON's WoT captains"
-else
-    # UPlanet Zen MULTIPASS / real ZenCard + TW hidden mode
-    #####################################
-    ${MY_PATH}/RUNTIME/PLAYER.refresh.sh
-    #####################################
-fi
 ######################################################### UPLANET ######
+########################################################################
+## ZEN CARD -- send ZINEs seeking for GODFATHERs -- 
+${MY_PATH}/RUNTIME/PLAYER.refresh.sh
+
 #####################################
 # UPLANET : GeoKeys UMAP / SECTOR / REGION ...
 ##################################### ORIGIN
