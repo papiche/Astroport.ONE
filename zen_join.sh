@@ -122,25 +122,14 @@ echo -e "${CYAN}[1/8] Arrêt des services...${NC}"
 ########################################################################
 echo -e "${CYAN}[2/8] Nettoyage des comptes ORIGIN...${NC}"
 
-## Supprimer les MULTIPASS ORIGIN
+## Supprimer les MULTIPASS et ZEN Card ORIGIN
 if [[ -d "$HOME/.zen/game/nostr" ]]; then
     for nostr_dir in "$HOME/.zen/game/nostr"/*@*.*; do
         [[ -d "$nostr_dir" ]] || continue
         email=$(basename "$nostr_dir")
         echo "  Suppression MULTIPASS: $email"
-        rm -rf "$nostr_dir"
+        ~/.zen/Astroport.ONE/tools/nostr_DESTROY_TW.sh $email
     done
-fi
-
-## Supprimer les ZEN Card ORIGIN
-if [[ -d "$HOME/.zen/game/players" ]]; then
-    for player_dir in "$HOME/.zen/game/players"/*@*.*; do
-        [[ -d "$player_dir" ]] || continue
-        email=$(basename "$player_dir")
-        echo "  Suppression ZEN Card: $email"
-        rm -rf "$player_dir"
-    done
-    rm -f "$HOME/.zen/game/players/.current"
 fi
 
 ## Supprimer les wallets coopératifs ORIGIN (seront régénérés avec le bon UPLANETNAME)
@@ -153,7 +142,7 @@ for wallet in uplanet.dunikey uplanet.G1.dunikey uplanet.SOCIETY.dunikey \
 done
 
 ## Nettoyer les caches
-rm -rf "$HOME/.zen/tmp/coucou" "$HOME/.zen/tmp/UPLANET"*
+rm -rf "$HOME/.zen/tmp/coucou"
 rm -f "$HOME/.zen/game/MY_boostrap_nodes.txt"
 
 echo -e "${GREEN}  Nettoyage ORIGIN terminé${NC}"
@@ -231,7 +220,7 @@ sleep 3
 . "$MY_PATH/tools/my.sh"
 
 ## Créer MULTIPASS (clés NOSTR + G1 via SALT/PEPPER disco)
-GO=$(my_LatLon 2>/dev/null || echo "FR 48.86 2.35")
+GO=$(my_LatLon 2>/dev/null || echo "FR 33.33 33.33")
 "$MY_PATH/tools/make_NOSTRCARD.sh" "${CAPTAIN_EMAIL}" $GO || true
 
 ## Créer ZENCARD (clés G1 via SALT/PEPPER aléatoires)

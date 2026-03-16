@@ -1909,12 +1909,9 @@ fi
         # Get upload2ipfs.sh path
         UPLOAD_SCRIPT="${MY_PATH}/../UPassport/upload2ipfs.sh"
         if [[ ! -f "$UPLOAD_SCRIPT" ]]; then
-            UPLOAD_SCRIPT="${HOME}/.zen/Astroport.ONE/UPassport/upload2ipfs.sh"
+            UPLOAD_SCRIPT="${HOME}/.zen/UPassport/upload2ipfs.sh"
         fi
-        if [[ ! -f "$UPLOAD_SCRIPT" ]]; then
-            UPLOAD_SCRIPT="${HOME}/workspace/AAA/UPassport/upload2ipfs.sh"
-        fi
-        
+
         if [[ ! -f "$UPLOAD_SCRIPT" ]]; then
             echo "❌ ERROR: upload2ipfs.sh not found"
             espeak "Upload script not found"
