@@ -506,13 +506,12 @@ my_LatLon() {
     local lat=$(echo "$geolocalisation" | jq -r '.lat')
     local lon=$(echo "$geolocalisation" | jq -r '.lon')
 
-    # Formater lat et lon avec 2 décimales
-    local lat_formatted=$(printf "%.2f" "$lat")
-    local lon_formatted=$(printf "%.2f" "$lon")
+    # Format lat and lon with 2 decimals using awk
+    local lat_formatted=$(echo "$lat" | awk '{printf "%.2f", $0}')
+    local lon_formatted=$(echo "$lon" | awk '{printf "%.2f", $0}')
 
     echo "$countrycode $lat_formatted $lon_formatted"
 }
-
 
 IPFSNODEID="$(myIpfsPeerId)"
 

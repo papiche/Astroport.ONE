@@ -16,12 +16,10 @@
 #
 # Variables d'environnement utilisées (depuis my.sh) :
 #   GCLI           : chemin vers le binaire gcli (défaut: gcli dans $PATH)
-#   GCLI_PASSWORD  : (obsolète depuis --no-password) mot de passe vault gcli
 #   G1_WS_NODE     : nœud WebSocket principal (ex: wss://g1.p2p.legal/ws)
 #   UPLANETG1PUB   : pubkey UPlanet (pour commentaire par défaut)
 #   CAPTAINEMAIL   : email du capitaine (pour rapport)
 #   CESIUMIPFS     : base URL Cesium (pour liens HTML)
-#   myUPLANET      : URL UPlanet locale
 ################################################################################
 # set -euo pipefail
 
@@ -102,9 +100,12 @@ log "AMOUNT : $AMOUNT"
 log "MOATS  : $MOATS"
 
 # ── Montant nul ───────────────────────────────────────────────────────────────
-if (( $(echo "${AMOUNT} == 0" | bc -l) )); then
-    log "Montant nul, rien à payer."
-    exit 0
+# Ne pas évaluer avec bc si AMOUNT est un mot-clé (ALL, DRAIN)
+if [[ "$AMOUNT" != "ALL" && "$AMOUNT" != "DRAIN" ]]; then
+    if (( $(echo "${AMOUNT} == 0" | bc -l) )); then
+        log "Montant nul, rien à payer."
+        exit 0
+    fi
 fi
 
 # ── Validation montant ────────────────────────────────────────────────────────
@@ -268,8 +269,14 @@ COINS=$(get_balance_gcli "$ISSUERPUB")
 log "Solde de $ISSUERPUB : ${COINS} Ğ1"
 
 if [[ -z "$COINS" || "$COINS" == "0" || "$COINS" == ".0000" ]]; then
-    loge "Portefeuille vide ou introuvable : $ISSUERPUB"
-    exit 1
+    if [[ "$AMOUNT" != "DRAIN" ]]; then
+        loge "Portefeuille vide ou introuvable : $ISSUERPUB"
+        exit 1
+    fi
+    # Pour DRAIN : transferable_balance peut être 0 (seul l'existential deposit reste)
+    # On continue — total_balance sera récupéré dans le bloc DRAIN ci-dessous
+    logw "Solde transférable nul — DRAIN tentera de vider via total_balance (existential deposit)"
+    COINS="0"
 fi
 
 # ── ALL = transférable / DRAIN = tout (y compris 1 Ğ1 existential deposit) ────
@@ -445,8 +452,7 @@ ZENDES=$(echo "($DES + $AMOUNT) * 10" | bc | awk '{printf "%.1f", $1}')
 # ── Rapport HTML ──────────────────────────────────────────────────────────────
 HTML_FILE="${PENDINGDIR}/${MOATS}.result.html"
 TIMESTAMP=$(date '+%d/%m/%Y à %H:%M:%S')
-CESIUM="${CESIUMIPFS:-https://cesium.app}"
-UPLANET="${myUPLANET:-}"
+CESIUM="${CESIUMIPFS:-https://cesium.copylaradio.com}"
 
 cat > "$HTML_FILE" << HTMLEOF
 <!DOCTYPE html>

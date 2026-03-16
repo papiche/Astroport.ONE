@@ -35,7 +35,7 @@ fi
 DECIMALS=2   # 1 Ğ1 = 100 centimes en brut (v1 migré + v2 natif)
 UPASSPORT_AMOUNT=1   # 0.01 Ğ1 = 1 centime brut (DECIMALS=2)
 
-CESIUMIPFS="${CESIUMIPFS:-https://cesium.app}"
+CESIUMIPFS="${CESIUMIPFS:-https://cesium.copylaradio.com}"
 
 # ── Couleurs ──────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
@@ -71,7 +71,7 @@ get_wallet_balance() {
     if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
         rpc_url=$("${MY_PATH}/duniter_getnode.sh" rpc 2>/dev/null)
     fi
-    [[ -z "$rpc_url" ]] && rpc_url="${G1_WS_NODE:-wss://g1.libra.music:443}"
+    [[ -z "$rpc_url" ]] && rpc_url="${G1_WS_NODE:-wss://g1.axiom-team.fr:443/ws/}"
 
     local json_out raw_centimes
     json_out=$($GCLI --no-password -a "$pubkey" -u "$rpc_url" -o json account balance 2>/dev/null)
@@ -113,7 +113,7 @@ get_wallet_history_squid() {
     local wallet_pubkey="$1"
     local output_file="$2"
 
-    log "Récupération historique squid pour ${wallet_pubkey:0:12}..."
+    log "Récupération historique squid pour ${wallet_pubkey}..."
 
     local query
     query=$(jq -cn --arg w "$wallet_pubkey" '{
@@ -166,12 +166,12 @@ get_primal_source_squid() {
     if [[ -s "$cache_file" ]]; then
         local cached
         cached=$(cat "$cache_file")
-        [[ "$silent" != "true" ]] && log "Primal (cache) pour ${wallet_pubkey:0:12} : ${cached:0:12}..."
+        [[ "$silent" != "true" ]] && log "Primal (cache) pour ${wallet_pubkey} : ${cached:0:12}..."
         echo "$cached"
         return 0
     fi
 
-    [[ "$silent" != "true" ]] && log "Recherche primal pour ${wallet_pubkey:0:12}..."
+    [[ "$silent" != "true" ]] && log "Recherche primal pour ${wallet_pubkey}..."
 
     local query
     query=$(jq -cn --arg w "$wallet_pubkey" '{
@@ -185,11 +185,11 @@ get_primal_source_squid() {
 
     if [[ -n "$primal" && "$primal" != "null" ]]; then
         echo "$primal" > "$cache_file"
-        [[ "$silent" != "true" ]] && logok "Primal de ${wallet_pubkey:0:12} : ${primal:0:12}..."
+        [[ "$silent" != "true" ]] && logok "Primal de ${wallet_pubkey} : ${primal}..."
         echo "$primal"
         return 0
     else
-        [[ "$silent" != "true" ]] && logw "Pas de primal trouvé pour ${wallet_pubkey:0:12} (wallet sans historique ?)"
+        [[ "$silent" != "true" ]] && logw "Pas de primal trouvé pour ${wallet_pubkey} (wallet sans historique ?)"
         echo ""
         return 1
     fi
@@ -230,7 +230,7 @@ create_intrusion_wallet() {
 
     if [[ -x "${MY_PATH}/keygen" ]]; then
         "${MY_PATH}/keygen" -t duniter -o "$dunikey" \
-            "${UPLANETNAME:-UPLANET}.INTRUSION" "${UPLANETNAME:-UPLANET}.INTRUSION"
+            "${UPLANETNAME}.INTRUSION" "${UPLANETNAME}.INTRUSION"
         chmod 600 "$dunikey"
         logok "Wallet INTRUSION créé"
         return 0
@@ -240,10 +240,24 @@ create_intrusion_wallet() {
 }
 
 # ── get_intrusion_pubkey ──────────────────────────────────────────────────────
+# Retourne la pubkey du wallet INTRUSION en format SS58 (g1...)
+# pour que les liens Cesium HTML et les appels gcli soient corrects.
 get_intrusion_pubkey() {
     local dunikey="$HOME/.zen/game/uplanet.INTRUSION.dunikey"
     [[ ! -f "$dunikey" ]] && return 1
-    grep 'pub:' "$dunikey" | awk '{print $2}'
+    local pub
+    pub=$(grep 'pub:' "$dunikey" | awk '{print $2}')
+    [[ -z "$pub" ]] && return 1
+
+    # Conversion v1 → SS58 si nécessaire (liens HTML + gcli)
+    if ! [[ "$pub" =~ ^g1 ]]; then
+        if [[ -x "${MY_PATH}/g1pub_to_ss58.py" ]]; then
+            local ss58
+            ss58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$pub" 2>/dev/null)
+            [[ -n "$ss58" ]] && pub="$ss58"
+        fi
+    fi
+    echo "$pub"
 }
 
 # ── count_existing_intrusions ─────────────────────────────────────────────────

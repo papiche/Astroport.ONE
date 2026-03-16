@@ -87,7 +87,7 @@ if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
         [[ -n "$node" ]] && RPC_NODES+=("$node")
     done < <("${MY_PATH}/duniter_getnode.sh" all 2>/dev/null | jq -r '.rpc[].url' 2>/dev/null)
 fi
-RPC_NODES+=("wss://g1.1000i100.fr/ws" "wss://g1.libra.music:443")
+RPC_NODES+=("wss://g1.1000i100.fr/ws" "wss://g1.axiom-team.fr:443/ws/")
 mapfile -t RPC_NODES < <(printf '%s\n' "${RPC_NODES[@]}" | awk '!seen[$0]++')
 
 RAW=""
