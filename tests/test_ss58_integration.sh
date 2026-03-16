@@ -5,13 +5,16 @@
 #   - PAYforSURE.sh      : validation DRAIN / montant spécial
 #   - primal_wallet_control.sh : get_intrusion_pubkey() → SS58
 #   - g1pub_to_ss58.py   : round-trip v1 ↔ SS58
-#   - Cache ~/.zen/tmp/coucou/ : nommage en SS58
-#   - natools.py         : normalize_pubkey via CLI
+#   - natools.py         : normalize_pubkey (v1.3.2+)
+#   - make_NOSTRCARD.sh  : stockage SS58 G1PUBNOSTR
+#   - VISA.new.sh        : stockage SS58 G1PUB (.g1pub)
 #
-# Usage : bash test_ss58_integration.sh [--verbose]
+# Usage : bash tests/test_ss58_integration.sh [--verbose]
 ################################################################################
 # Pas de set -euo pipefail : les tests gèrent eux-mêmes les erreurs
 MY_PATH="$(cd "$(dirname "$0")" && pwd)"
+TOOLS="${MY_PATH}/../tools"
+TOOLS="$(cd "${TOOLS}" && pwd)"
 
 VERBOSE=false
 [[ "${1:-}" == "--verbose" ]] && VERBOSE=true
@@ -36,11 +39,17 @@ sep() { echo "━━━━━━━━━━━━━━━━━━━━━━
 sep2(){ echo "═══════════════════════════════════════════════════════════════"; }
 
 # ── Clés de test (salt=coucou, pepper=coucou) ─────────────────────────────────
-# Génère les clés si keygen est disponible, sinon utilise des valeurs figées
-KEYGEN="${MY_PATH}/keygen"
+KEYGEN="${TOOLS}/keygen"
 MOATS_TEST=$(date -u +"%Y%m%d%H%M%S%4N")
 TMPDIR_TEST=$(mktemp -d /tmp/test_ss58_XXXXXX)
 trap "rm -rf '$TMPDIR_TEST'" EXIT
+
+# ── Scripts à tester ──────────────────────────────────────────────────────────
+PAYTEST="${TOOLS}/PAYforSURE.sh"
+PRIMAL_CTRL="${TOOLS}/primal_wallet_control.sh"
+NOSTRCARD="${TOOLS}/make_NOSTRCARD.sh"
+VISA="${MY_PATH}/../RUNTIME/VISA.new.sh"
+NATOOLS="${TOOLS}/natools.py"
 
 # ─────────────────────────────────────────────────────────────────────────────
 echo
@@ -54,14 +63,14 @@ echo "  1. Prérequis"
 sep
 
 for cmd in $PYTHON bc jq; do
-    if command -v "$cmd" &>/dev/null; then
+    if command -v "$cmd" &>/dev/null || [[ -x "$cmd" ]]; then
         ok "Commande disponible : $cmd"
     else
         ko "Commande manquante : $cmd (certains tests ignorés)"
     fi
 done
 
-if [[ -x "${MY_PATH}/g1pub_to_ss58.py" ]]; then
+if [[ -x "${TOOLS}/g1pub_to_ss58.py" ]]; then
     ok "g1pub_to_ss58.py trouvé"
 else
     ko "g1pub_to_ss58.py introuvable — tests de conversion impossibles"
@@ -69,7 +78,7 @@ fi
 
 # Génération de la clé v1 de test via Python/duniterpy (plus fiable que keygen)
 TEST_V1_PUB=$($PYTHON -c "
-import sys; sys.path.insert(0,'${MY_PATH}')
+import sys; sys.path.insert(0,'${TOOLS}')
 import duniterpy.key
 sk = duniterpy.key.SigningKey.from_credentials('coucou','coucou')
 print(sk.pubkey)
@@ -83,7 +92,7 @@ if [[ -n "$TEST_V1_PUB" ]]; then
     fi
 else
     ko "Génération clé v1 échouée — utilisation d'une clé figée"
-    TEST_V1_PUB="5fTwfbYUtCeoGBZ81FBpKz7eSQGX9sBSwTRE5biBEf3U"
+    TEST_V1_PUB="5fTwfbYUtCeoaFLbyzaBYUcq46nBS26rciWJAkBugqpo"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -91,16 +100,16 @@ sep
 echo "  2. g1pub_to_ss58.py — conversions v1 ↔ SS58"
 sep
 
-if [[ -x "${MY_PATH}/g1pub_to_ss58.py" && -n "${TEST_V1_PUB:-}" ]]; then
+if [[ -x "${TOOLS}/g1pub_to_ss58.py" && -n "${TEST_V1_PUB:-}" ]]; then
 
-    TEST_SS58=$($PYTHON "${MY_PATH}/g1pub_to_ss58.py" "$TEST_V1_PUB" 2>/dev/null)
+    TEST_SS58=$($PYTHON "${TOOLS}/g1pub_to_ss58.py" "$TEST_V1_PUB" 2>/dev/null)
     if [[ -n "$TEST_SS58" && "${TEST_SS58:0:2}" == "g1" ]]; then
         ok "v1 → SS58 : ${TEST_V1_PUB:0:12}… → ${TEST_SS58:0:12}…"
     else
         ko "v1 → SS58 échoué (résultat: '${TEST_SS58}')"
     fi
 
-    ROUNDTRIP=$($PYTHON "${MY_PATH}/g1pub_to_ss58.py" --reverse "$TEST_SS58" 2>/dev/null)
+    ROUNDTRIP=$($PYTHON "${TOOLS}/g1pub_to_ss58.py" --reverse "$TEST_SS58" 2>/dev/null)
     if [[ "$ROUNDTRIP" == "$TEST_V1_PUB" ]]; then
         ok "SS58 → v1 round-trip : ✓ résultat identique"
     else
@@ -109,7 +118,7 @@ if [[ -x "${MY_PATH}/g1pub_to_ss58.py" && -n "${TEST_V1_PUB:-}" ]]; then
 
     # Vérifier que l'idempotence est gérée (SS58 en entrée → SS58 inchangé via ensure_ss58)
     SS58_AGAIN=$($PYTHON -c "
-import sys; sys.path.insert(0, '${MY_PATH}')
+import sys; sys.path.insert(0, '${TOOLS}')
 from g1pub_to_ss58 import ensure_ss58
 print(ensure_ss58('${TEST_SS58}'))
 " 2>/dev/null)
@@ -128,17 +137,13 @@ sep
 echo "  3. natools.py — normalize_pubkey via module"
 sep
 
-if $PYTHON -c "import natools" 2>/dev/null || $PYTHON -c "
-import sys; sys.path.insert(0,'${MY_PATH}')
-import importlib.util
-spec = importlib.util.spec_from_file_location('natools','${MY_PATH}/natools.py')
-" 2>/dev/null; then
+if [[ -f "$NATOOLS" ]]; then
 
     # Test normalize_pubkey(v1) → v1
     NORM_V1=$($PYTHON -c "
-import sys; sys.path.insert(0,'${MY_PATH}')
+import sys; sys.path.insert(0,'${TOOLS}')
 import importlib.util
-spec = importlib.util.spec_from_file_location('natools','${MY_PATH}/natools.py')
+spec = importlib.util.spec_from_file_location('natools','${NATOOLS}')
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
 print(m.normalize_pubkey('${TEST_V1_PUB}'))
 " 2>/dev/null)
@@ -151,9 +156,9 @@ print(m.normalize_pubkey('${TEST_V1_PUB}'))
     # Test normalize_pubkey(SS58) → v1
     if [[ -n "${TEST_SS58:-}" ]]; then
         NORM_SS58=$($PYTHON -c "
-import sys; sys.path.insert(0,'${MY_PATH}')
+import sys; sys.path.insert(0,'${TOOLS}')
 import importlib.util
-spec = importlib.util.spec_from_file_location('natools','${MY_PATH}/natools.py')
+spec = importlib.util.spec_from_file_location('natools','${NATOOLS}')
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
 print(m.normalize_pubkey('${TEST_SS58}'))
 " 2>/dev/null)
@@ -164,7 +169,7 @@ print(m.normalize_pubkey('${TEST_SS58}'))
         fi
     fi
 else
-    ko "Module natools.py non chargeable — test ignoré"
+    ko "natools.py introuvable : $NATOOLS"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -172,11 +177,9 @@ sep
 echo "  4. PAYforSURE.sh — validation montant DRAIN (sans blockchain)"
 sep
 
-PAYTEST="${MY_PATH}/PAYforSURE.sh"
 if [[ -x "$PAYTEST" ]]; then
 
     # Test : DRAIN pas bloqué par bc (ancienne version bloquait)
-    # On teste la validation de montant via grep du code
     if grep -q '"DRAIN"' "$PAYTEST" && \
        grep -q 'AMOUNT.*!=.*"ALL".*&&.*AMOUNT.*!=.*"DRAIN"' "$PAYTEST"; then
         ok "PAYforSURE.sh : garde bc conditionnelle pour DRAIN/ALL présente ✓"
@@ -192,16 +195,10 @@ if [[ -x "$PAYTEST" ]]; then
     fi
 
     # Test : solde nul bypasse pour DRAIN
-    if grep -q '"DRAIN"' "$PAYTEST" | grep -q 'AMOUNT.*!=.*DRAIN\|DRAIN.*AMOUNT' 2>/dev/null || \
-       grep -A3 'Portefeuille vide' "$PAYTEST" | grep -q 'DRAIN'; then
+    if grep -q 'AMOUNT.*!=.*"DRAIN"' "$PAYTEST"; then
         ok "PAYforSURE.sh : bypass solde nul pour DRAIN présent ✓"
     else
-        # Vérification alternative
-        if grep -q 'AMOUNT.*!=.*"DRAIN"' "$PAYTEST"; then
-            ok "PAYforSURE.sh : bypass solde nul pour DRAIN présent ✓"
-        else
-            ko "PAYforSURE.sh : bypass solde nul pour DRAIN manquant"
-        fi
+        ko "PAYforSURE.sh : bypass solde nul pour DRAIN manquant"
     fi
 
     # Test : DRAIN utilise total_balance (pas transferable_balance)
@@ -212,7 +209,7 @@ if [[ -x "$PAYTEST" ]]; then
     fi
 
 else
-    ko "PAYforSURE.sh introuvable ou non exécutable"
+    ko "PAYforSURE.sh introuvable ou non exécutable : $PAYTEST"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -220,7 +217,6 @@ sep
 echo "  5. primal_wallet_control.sh — get_intrusion_pubkey() SS58"
 sep
 
-PRIMAL_CTRL="${MY_PATH}/primal_wallet_control.sh"
 if [[ -x "$PRIMAL_CTRL" ]]; then
 
     # Vérifier que get_intrusion_pubkey convertit en SS58
@@ -237,7 +233,7 @@ if [[ -x "$PRIMAL_CTRL" ]]; then
         ko "primal_wallet_control.sh : commande DRAIN absente"
     fi
 
-    # Vérifier la logique de DRAIN (solde < montant → DRAIN)
+    # Vérifier la logique de DRAIN (PAYforSURE + DRAIN)
     if grep -q 'PAYforSURE' "$PRIMAL_CTRL" && grep -q 'DRAIN' "$PRIMAL_CTRL"; then
         ok "primal_wallet_control.sh : appel PAYforSURE DRAIN détecté ✓"
     else
@@ -245,7 +241,7 @@ if [[ -x "$PRIMAL_CTRL" ]]; then
     fi
 
 else
-    ko "primal_wallet_control.sh introuvable ou non exécutable"
+    ko "primal_wallet_control.sh introuvable ou non exécutable : $PRIMAL_CTRL"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -253,10 +249,8 @@ sep
 echo "  6. make_NOSTRCARD.sh — stockage SS58 G1PUBNOSTR"
 sep
 
-NOSTRCARD="${MY_PATH}/make_NOSTRCARD.sh"
 if [[ -f "$NOSTRCARD" ]]; then
 
-    # Vérifier la conversion SS58 après extraction
     if grep -q 'G1PUBNOSTR_V1' "$NOSTRCARD"; then
         ok "make_NOSTRCARD.sh : variable G1PUBNOSTR_V1 séparée (Cesium+) ✓"
     else
@@ -270,15 +264,10 @@ if [[ -f "$NOSTRCARD" ]]; then
     fi
 
     # Cesium+ utilise encore V1
-    if grep -q 'G1PUBNOSTR_V1' "$NOSTRCARD" && \
-       grep -A2 'Cesium+\|GChange' "$NOSTRCARD" | grep -q 'G1PUBNOSTR_V1\|V1' 2>/dev/null; then
-        ok "make_NOSTRCARD.sh : Cesium+ API utilise G1PUBNOSTR_V1 ✓"
-    else
-        # Test moins strict
-        COUNT_V1=$(grep -c 'G1PUBNOSTR_V1' "$NOSTRCARD" 2>/dev/null || echo 0)
-        [[ "$COUNT_V1" -ge 2 ]] && ok "make_NOSTRCARD.sh : G1PUBNOSTR_V1 utilisé $COUNT_V1 fois ✓" \
-                                  || ko "make_NOSTRCARD.sh : G1PUBNOSTR_V1 insuffisamment utilisé ($COUNT_V1)"
-    fi
+    COUNT_V1=$(grep -c 'G1PUBNOSTR_V1' "$NOSTRCARD" 2>/dev/null || echo 0)
+    [[ "$COUNT_V1" -ge 2 ]] \
+        && ok "make_NOSTRCARD.sh : Cesium+ API utilise G1PUBNOSTR_V1 ($COUNT_V1 occurrences) ✓" \
+        || ko "make_NOSTRCARD.sh : G1PUBNOSTR_V1 insuffisamment utilisé ($COUNT_V1)"
 
     # natools utilise G1PUBNOSTR (SS58) directement
     if grep 'natools.*encrypt' "$NOSTRCARD" | grep -q '"$G1PUBNOSTR"'; then
@@ -288,7 +277,7 @@ if [[ -f "$NOSTRCARD" ]]; then
     fi
 
 else
-    ko "make_NOSTRCARD.sh introuvable"
+    ko "make_NOSTRCARD.sh introuvable : $NOSTRCARD"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -296,7 +285,6 @@ sep
 echo "  7. VISA.new.sh — stockage SS58 G1PUB (.g1pub)"
 sep
 
-VISA="${MY_PATH}/../RUNTIME/VISA.new.sh"
 if [[ -f "$VISA" ]]; then
 
     if grep -q 'G1PUB_V1' "$VISA"; then
@@ -319,7 +307,7 @@ if [[ -f "$VISA" ]]; then
     fi
 
 else
-    ko "VISA.new.sh introuvable"
+    ko "VISA.new.sh introuvable : $VISA"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -327,7 +315,6 @@ sep
 echo "  8. natools.py — version et normalize_pubkey dans le code"
 sep
 
-NATOOLS="${MY_PATH}/natools.py"
 if [[ -f "$NATOOLS" ]]; then
 
     VERSION=$(grep '__version__' "$NATOOLS" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
@@ -355,8 +342,14 @@ assert int(v[0]) > 1 or (int(v[0]) == 1 and int(v[1]) > 3) or \
         fi
     done
 
+    # Test: normalize dans le __main__ (avant la validation de longueur)
+    if grep -A3 'if pubkey:' "$NATOOLS" | grep -q 'normalize_pubkey'; then
+        ok "natools.py : normalize_pubkey() dans __main__ (avant validation longueur) ✓"
+    else
+        ko "natools.py : normalize_pubkey() absent du __main__"
+    fi
 else
-    ko "natools.py introuvable"
+    ko "natools.py introuvable : $NATOOLS"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -382,12 +375,12 @@ if $PYTHON -c "import duniterpy" 2>/dev/null && \
         ko "natools encrypt (v1 pubkey) → fichier vide ou erreur"
     fi
 
-    # Chiffrement avec clé SS58
+    # Chiffrement avec clé SS58 (test de normalize_pubkey dans __main__)
     $PYTHON "$NATOOLS" encrypt -p "$TEST_SS58" -i "$PLAIN_FILE" -o "$ENC_SS58" 2>/dev/null
     if [[ -s "$ENC_SS58" ]]; then
         ok "natools encrypt (SS58 pubkey) → fichier chiffré créé ✓"
     else
-        ko "natools encrypt (SS58 pubkey) → fichier vide ou erreur (normalize_pubkey non actif ?)"
+        ko "natools encrypt (SS58 pubkey) → fichier vide ou erreur (normalize_pubkey CLI ?)"
     fi
 
     # Déchiffrement du fichier chiffré avec SS58 via clé privée

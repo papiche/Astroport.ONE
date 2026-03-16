@@ -4,10 +4,11 @@ Tests d'intégration SS58 pour natools.py et g1pub_to_ss58.py
 Couvre :
   - normalize_pubkey() : v1 pass-through, SS58 → v1
   - encrypt/decrypt round-trip avec clé SS58
-  - box_encrypt/box_decrypt avec clé SS58
+  - box_encrypt/box_decrypt avec clé SS58 (NaCl Box DH)
   - g1pub_to_ss58 round-trip v1 ↔ SS58
+  - Simulation SSSS (cas make_NOSTRCARD.sh)
 
-Usage : python3 test_ss58_integration.py
+Usage : ~/.astro/bin/python tests/test_ss58_integration.py
 """
 
 import sys, os, importlib.util, base64, tempfile
@@ -19,9 +20,13 @@ def load_module(name, path):
     spec.loader.exec_module(mod)
     return mod
 
-TOOLS = os.path.dirname(os.path.abspath(__file__))
-natools    = load_module("natools",           os.path.join(TOOLS, "natools.py"))
-g1pub_mod  = load_module("g1pub_to_ss58",    os.path.join(TOOLS, "g1pub_to_ss58.py"))
+# Le script est dans tests/, les outils sont dans ../tools/
+TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
+TOOLS     = os.path.join(TESTS_DIR, '..', 'tools')
+TOOLS     = os.path.normpath(TOOLS)
+
+natools   = load_module("natools",        os.path.join(TOOLS, "natools.py"))
+g1pub_mod = load_module("g1pub_to_ss58",  os.path.join(TOOLS, "g1pub_to_ss58.py"))
 
 import duniterpy.key, libnacl, base58
 
@@ -171,8 +176,6 @@ except Exception as e:
 section("5. Chiffrement SSSS simulé (cas make_NOSTRCARD.sh)")
 
 try:
-    import io, subprocess, sys as _sys
-
     ssss_secret = b"2-c3a7f1b2e4d5a6b8:some_nostr_vault_key"
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".ssss.head") as f:

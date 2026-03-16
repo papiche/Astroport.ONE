@@ -12,6 +12,7 @@ This test suite validates:
 - **WoTx2 System**: Auto-proclaimed masteries with automatic progression
 - **ORE System**: Environmental contracts and UMAP DIDs
 - **Badge System**: NIP-58 badge definitions, awards, and profile badges
+- **SS58 Integration**: Conversion v1↔SS58, natools.py normalize_pubkey, PAYforSURE DRAIN
 
 ## Prerequisites
 
@@ -59,6 +60,9 @@ cd ~/.zen/Astroport.ONE/tests
 # Test Badge system only
 ./test_all_systems.sh --system badge
 
+# Test SS58 integration (natools, PAYforSURE DRAIN, conversions)
+./test_all_systems.sh --system ss58
+
 # Captain Validation Test (creates real data)
 ./test_captain_validation.sh
 ./test_captain_validation.sh --cleanup  # Clean up after test
@@ -87,6 +91,12 @@ cd ~/.zen/Astroport.ONE/tests
 
 # Badge System
 ./test_badge_system.sh
+
+# SS58 Integration (shell — analyse statique + CLI natools)
+./test_ss58_integration.sh
+
+# SS58 Integration (Python — tests unitaires duniterpy/NaCl)
+~/.astro/bin/python test_ss58_integration.py
 ```
 
 ## Test Configuration
@@ -240,6 +250,17 @@ After running tests, clean up test events:
 ```
 
 ## Test Coverage
+
+### SS58 Integration
+- ✅ `g1pub_to_ss58.py` : round-trip v1 ↔ SS58, idempotence `ensure_ss58`
+- ✅ `natools.py` v1.3.2 : `normalize_pubkey()` dans toutes les fonctions crypto
+- ✅ `natools.py` CLI : SS58 accepté via `-p` (validation longueur après normalize)
+- ✅ `PAYforSURE.sh` : DRAIN accepté sans erreur `bc`, bypass solde nul, `total_balance`
+- ✅ `primal_wallet_control.sh` : `get_intrusion_pubkey()` retourne SS58
+- ✅ `make_NOSTRCARD.sh` : G1PUBNOSTR stocké en SS58, `G1PUBNOSTR_V1` pour Cesium+
+- ✅ `VISA.new.sh` : `.g1pub` stocké en SS58, `G1PUB_V1` pour Cesium+
+- ✅ NaCl `encrypt/decrypt` round-trip v1 et SS58
+- ✅ NaCl `box_encrypt/box_decrypt` DH (Bob→Alice) v1 et SS58
 
 ### DID System
 - ✅ DID document creation and structure
