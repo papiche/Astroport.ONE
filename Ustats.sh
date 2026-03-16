@@ -28,6 +28,12 @@ fi
 ISrunning=$(pgrep -au $USER -f "$ME" | wc -l)
 [[ $ISrunning -gt 2 ]] && echo "ISrunning = $ISrunning" >&2 && echo "$HOME/.zen/tmp/${CACHE_FILE}" && exit 0
 
+if command -v parallel >/dev/null 2>&1; then
+    USE_PARALLEL=1
+else
+    USE_PARALLEL=0
+fi
+
 echo "=== $ME =============================== //$ULAT//$ULON" >&2
 ########################################
 # Get start time for generation duration
@@ -83,17 +89,22 @@ find_closest_umaps() {
     # Array to store distances and UMAP data
     declare -a distances_umaps=()
     
-    for umap in "${umap_list[@]}"; do
-        # Extract lat/lon from UMAP name (format: _lat_lon)
-        local umap_lat=$(echo "$umap" | cut -d '_' -f 2)
-        local umap_lon=$(echo "$umap" | cut -d '_' -f 3)
-        
-        # Calculate distance to center
-        local distance=$(calculate_distance "$center_lat" "$center_lon" "$umap_lat" "$umap_lon")
-        
-        # Store distance and UMAP name
-        distances_umaps+=("$distance:$umap")
-    done
+    if [[ $USE_PARALLEL -eq 1 ]]; then
+        export -f calculate_distance
+        mapfile -t distances_umaps < <(printf "%s\n" "${umap_list[@]}" | parallel -j 4 "
+            umap_lat=\$(echo {} | cut -d '_' -f 2)
+            umap_lon=\$(echo {} | cut -d '_' -f 3)
+            distance=\$(calculate_distance $center_lat $center_lon \$umap_lat \$umap_lon)
+            echo \"\$distance:{}\"
+        ")
+    else
+        for umap in "${umap_list[@]}"; do
+            local umap_lat=$(echo "$umap" | cut -d '_' -f 2)
+            local umap_lon=$(echo "$umap" | cut -d '_' -f 3)
+            local distance=$(calculate_distance "$center_lat" "$center_lon" "$umap_lat" "$umap_lon")
+            distances_umaps+=("$distance:$umap")
+        done
+    fi
     
     # Sort by distance and take the 4 closest
     IFS=$'\n' sorted_umaps=($(sort -t: -k1,1n <<<"${distances_umaps[*]}"))
@@ -163,39 +174,45 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     echo "===========================================================" >&2
     nostr_array=()
     nostrcount=0
-    for player in ${MENOSTR[@]}; do
-        $(${MY_PATH}/tools/search_for_this_email_in_nostr.sh "$player" | tail -n 1)
-        [[ -z $LAT ]] && LAT="0.00"
-        [[ -z $LON ]] && LON="0.00"
-
-        # Filter by geographic area if coordinates are provided
-        if [[ -n "$ULAT" && -n "$ULON" && -n "$DEG" ]]; then
-            # Convert coordinates to float for comparison
-            LAT_FLOAT=$(echo "$LAT" | bc -l)
-            LON_FLOAT=$(echo "$LON" | bc -l)
-            ULAT_FLOAT=$(echo "$ULAT" | bc -l)
-            ULON_FLOAT=$(echo "$ULON" | bc -l)
-            DEG_FLOAT=$(echo "$DEG" | bc -l)
-
-            # Check if coordinates are within the area
-            LAT_IN_RANGE=$(echo "$LAT_FLOAT >= $ULAT_FLOAT && $LAT_FLOAT <= ($ULAT_FLOAT + $DEG_FLOAT)" | bc -l)
-            LON_IN_RANGE=$(echo "$LON_FLOAT >= $ULON_FLOAT && $LON_FLOAT <= ($ULON_FLOAT + $DEG_FLOAT)" | bc -l)
-
-            if [[ $LAT_IN_RANGE -eq 0 || $LON_IN_RANGE -eq 0 ]]; then
-                continue
+    if [[ $USE_PARALLEL -eq 1 ]]; then
+        mapfile -t nostr_results < <(printf "%s\n" "${MENOSTR[@]}" | parallel -j 4 process_nostr {} "$ULAT" "$ULON" "$DEG" "$MY_PATH")
+        for res in "${nostr_results[@]}"; do
+            [[ -z "$res" ]] && continue
+            nostr_array+=("$res")
+            if [[ "$res" =~ \"ZEN\":\ \"([0-9.]+)\" ]]; then
+                ZEN_VAL="${BASH_REMATCH[1]}"
+                if (( $(echo "$ZEN_VAL > 0" | bc -l) )); then
+                    nostrcount=$((nostrcount + 1))
+                fi
             fi
-        fi
-
-        NCOINS=$(cat $HOME/.zen/tmp/coucou/${G1PUBNOSTR}.COINS 2>/dev/null)
-        [[ -z "$NCOINS" ]] && NCOINS=$($MY_PATH/tools/G1check.sh ${G1PUBNOSTR} | tail -n 1)
-        ZEN=$(echo "scale=1; ($NCOINS - 1) * 10" | bc 2>/dev/null)
-        echo "export source=${source} HEX=${HEX} LAT=${LAT} LON=${LON} EMAIL=${EMAIL} G1PUBNOSTR=${G1PUBNOSTR} ZEN=${ZEN}" >&2
-        # Construct JSON object using printf and associative array
-        nostr_obj=$(printf '{"EMAIL": "%s", "HEX": "%s", "LAT": "%s", "LON": "%s", "G1PUBNOSTR": "%s", "ZEN": "%s", "SOURCE": "%s"}' \
-                        "${EMAIL}" "${HEX}" "$LAT" "$LON" "$G1PUBNOSTR" "$ZEN" "${source}")
-        nostr_array+=("$nostr_obj")
-        [[ $ZEN -gt 0 ]] && nostrcount=$((nostrcount + 1))
-    done
+        done
+    else
+        for player in ${MENOSTR[@]}; do
+            eval "$(${MY_PATH}/tools/search_for_this_email_in_nostr.sh "$player" | tail -n 1)"
+            [[ -z $LAT ]] && LAT="0.00"
+            [[ -z $LON ]] && LON="0.00"
+            if [[ -n "$ULAT" && -n "$ULON" && -n "$DEG" ]]; then
+                LAT_FLOAT=$(echo "$LAT" | bc -l)
+                LON_FLOAT=$(echo "$LON" | bc -l)
+                ULAT_FLOAT=$(echo "$ULAT" | bc -l)
+                ULON_FLOAT=$(echo "$ULON" | bc -l)
+                DEG_FLOAT=$(echo "$DEG" | bc -l)
+                LAT_IN_RANGE=$(echo "$LAT_FLOAT >= $ULAT_FLOAT && $LAT_FLOAT <= ($ULAT_FLOAT + $DEG_FLOAT)" | bc -l)
+                LON_IN_RANGE=$(echo "$LON_FLOAT >= $ULON_FLOAT && $LON_FLOAT <= ($ULON_FLOAT + $DEG_FLOAT)" | bc -l)
+                if [[ $LAT_IN_RANGE -eq 0 || $LON_IN_RANGE -eq 0 ]]; then
+                    continue
+                fi
+            fi
+            NCOINS=$(cat $HOME/.zen/tmp/coucou/${G1PUBNOSTR}.COINS 2>/dev/null)
+            [[ -z "$NCOINS" ]] && NCOINS=$($MY_PATH/tools/G1check.sh ${G1PUBNOSTR} | tail -n 1)
+            ZEN=$(echo "scale=1; ($NCOINS - 1) * 10" | bc 2>/dev/null)
+            echo "export source=${source} HEX=${HEX} LAT=${LAT} LON=${LON} EMAIL=${EMAIL} G1PUBNOSTR=${G1PUBNOSTR} ZEN=${ZEN}" >&2
+            nostr_obj=$(printf '{"EMAIL": "%s", "HEX": "%s", "LAT": "%s", "LON": "%s", "G1PUBNOSTR": "%s", "ZEN": "%s", "SOURCE": "%s"}' \
+                            "${EMAIL}" "${HEX}" "$LAT" "$LON" "$G1PUBNOSTR" "$ZEN" "${source}")
+            nostr_array+=("$nostr_obj")
+            [[ $(echo "$ZEN > 0" | bc -l) -eq 1 ]] && nostrcount=$((nostrcount + 1))
+        done
+    fi
     ####################################
     # search for active UMAPS
     ####################################
