@@ -38,6 +38,7 @@ Les événements NOSTR sont la **source de vérité** pour tout le système UPla
 | **7** | Reaction | **Économie** | +ZEN, votes, likes | NIP-25 |
 | **21** | Video | Média | Vidéo longue (NostrTube) | NIP-71 |
 | **22** | Short Video | Média | Vidéo courte | NIP-71 |
+| **1000** | **MUTE** | Modération | Liste de muting (utilisateurs, mots-clés, événements à ignorer) | NIP-51 |
 | **1063** | File Metadata | Média | Métadonnées fichiers IPFS | NIP-94 |
 | **1111** | Comment | Interaction | Commentaires vidéo | NIP-22 |
 | **22242** | Auth Challenge | Auth | Authentification NIP-42 | NIP-42 |

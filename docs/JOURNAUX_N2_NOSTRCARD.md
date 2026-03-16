@@ -1,5 +1,8 @@
 # 📝 Journal N² Personnel - Documentation
 
+SPAMMY SERVICE !! IT IS NOT ACTIVATED BY DEFAULT ... 
+BETTER JOURNAL ARE MADE BY GEO KEYS
+
 ## Vue d'ensemble
 
 Le système de journaux N² personnel génère automatiquement des résumés de l'activité du réseau social NOSTR pour chaque MULTIPASS. Ces journaux sont **individuels et personnalisés** selon le réseau de chaque utilisateur (N1 + N²).
