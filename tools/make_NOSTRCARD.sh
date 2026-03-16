@@ -151,6 +151,17 @@ EOFNOSTR
     G1PUBNOSTR=$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.multipass.dunikey  | grep 'pub:' | cut -d ' ' -f 2)
     # echo "G1NOSTR _WALLET: $G1PUBNOSTR"
 
+    # Conversion SS58 pour Duniter v2s (stockage persistant, cache, liens, gcli)
+    # G1PUBNOSTR_V1 conservé UNIQUEMENT pour les API Cesium+/GChange+ (indexées en v1)
+    # natools.py v1.3.2+ accepte nativement SS58 → normalize_pubkey() interne
+    G1PUBNOSTR_V1="$G1PUBNOSTR"
+    if [[ -x "${MY_PATH}/g1pub_to_ss58.py" ]]; then
+        _g1nostr_ss58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$G1PUBNOSTR" 2>/dev/null)
+        [[ -n "$_g1nostr_ss58" ]] && G1PUBNOSTR="$_g1nostr_ss58"
+    fi
+    echo "MULTIPASS G1PUBNOSTR SS58 : $G1PUBNOSTR"
+    echo "MULTIPASS G1PUBNOSTR  V1  : $G1PUBNOSTR_V1"
+
     ############ CREATE LOCAL USER SPACE
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/
     [[ -s ${IMAGE} ]] && cp ${IMAGE} ${HOME}/.zen/game/nostr/${EMAIL}/picture.png 2>/dev/null
@@ -170,7 +181,7 @@ EOFNOSTR
     echo "$MONERO" > ${HOME}/.zen/game/nostr/${EMAIL}/MONERO
 
     ### CRYPTO ZONE
-    ## ENCODE HEAD SSSS SECRET WITH G1PUBNOSTR PUBKEY
+    ## ENCODE HEAD SSSS SECRET WITH G1PUBNOSTR PUBKEY (natools v1.3.2+ accepte SS58)
     # echo "${MY_PATH}/../tools/natools.py encrypt -p $G1PUBNOSTR -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head -o ${HOME}/.zen/game/nostr/${EMAIL}/.ssss.head.player.enc"
     ${MY_PATH}/../tools/natools.py encrypt -p "$G1PUBNOSTR" -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head -o ${HOME}/.zen/game/nostr/${EMAIL}/.ssss.head.player.enc >/dev/null
 
@@ -241,7 +252,7 @@ EOFNOSTR
     ## Add white margins around the QR code image (for a flashable coracle profile picture)
     convert ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.o.png -bordercolor white -border 90x90 ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png
 
-    echo "${G1PUBNOSTR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR
+    echo "${G1PUBNOSTR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR  ## SS58 (Duniter v2s)
 
     ## MOVE webcam picture
     mv ${HOME}/.zen/game/nostr/${EMAIL}/picture.png ${HOME}/.zen/game/nostr/${EMAIL}/scan_${MOATS}.png 2>/dev/null
@@ -511,13 +522,13 @@ EOFNOSTR
     CESIUM_CITY=""
     PROFILE_SOURCE=""
 
-    ## 1. Try Cesium+ first
-    CESIUM_JSON=$(curl -s --max-time 5 "${myCESIUM}/user/profile/${G1PUBNOSTR}" 2>/dev/null)
+    ## 1. Try Cesium+ first (API v1 — clé base58 v1 obligatoire)
+    CESIUM_JSON=$(curl -s --max-time 5 "${myCESIUM}/user/profile/${G1PUBNOSTR_V1}" 2>/dev/null)
     if [[ -n "$CESIUM_JSON" ]] && echo "$CESIUM_JSON" | jq -e '.found == true' &>/dev/null; then
         PROFILE_SOURCE="Cesium+"
     else
         ## 2. Fallback: try GChange+
-        CESIUM_JSON=$(curl -s --max-time 5 "${myDATA}/user/profile/${G1PUBNOSTR}" 2>/dev/null)
+        CESIUM_JSON=$(curl -s --max-time 5 "${myDATA}/user/profile/${G1PUBNOSTR_V1}" 2>/dev/null)
         if [[ -n "$CESIUM_JSON" ]] && echo "$CESIUM_JSON" | jq -e '.found == true' &>/dev/null; then
             PROFILE_SOURCE="GChange+"
             ## GChange+ may link to a different Cesium+ member pubkey
@@ -559,8 +570,9 @@ EOFNOSTR
     [[ -n "$CESIUM_AVATAR_CID" ]] && PROFILE_AVATAR="$myIPFS/ipfs/${CESIUM_AVATAR_CID}"
 
     ### CREATE PROFILE in NOSTR RELAYS
-    ## Derive SS58 v2 address from G1 v1 pubkey
-    G1V2ADDRESS=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$G1PUBNOSTR" 2>/dev/null)
+    ## Derive SS58 v2 address from G1 v1 pubkey (G1PUBNOSTR_V1 = base58 v1 requis ici)
+    G1V2ADDRESS=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$G1PUBNOSTR_V1" 2>/dev/null)
+    [[ -z "$G1V2ADDRESS" ]] && G1V2ADDRESS="$G1PUBNOSTR"  # déjà SS58 si conversion préalable OK
 
     SETUP_ARGS=(
         "$NPRIV"
@@ -604,7 +616,7 @@ EOFNOSTR
     # Send primo transaction from UPLANETNAME_G1 to establish primal chain for MULTIPASS
     ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.G1.dunikey" "1" "${G1PUBNOSTR}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:MULTIPASS:PRIMAL" 2>/dev/null \
     && echo "${UPLANETNAME_G1}" > ~/.zen/game/nostr/${EMAIL}/G1PRIME \
-    && echo "${UPLANETNAME_G1}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal \
+    && echo "${UPLANETNAME_G1}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal \  ## G1PUBNOSTR = SS58
     && echo "✅ PRIMO TX sent successfully - PRIMAL marked from ${UPLANETNAME_G1} wallet" \
     || echo "⚠️ PRIMO TX failed for MULTIPASS ${EMAIL}"
 

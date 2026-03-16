@@ -17,9 +17,28 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-__version__ = "1.3.1"
+__version__ = "1.3.2"
 
 import os, sys, duniterpy.key, libnacl, base58, base64, getpass
+
+def normalize_pubkey(pubkey: str) -> str:
+	"""Normalise une clé publique en format v1 base58 NaCl-compatible.
+
+	Accepte deux formats :
+	  - Duniter v1  : base58 brut 32 bytes (ex: "3rouA2FYv…")
+	  - Duniter v2s : SS58 Ğ1 débutant par "g1" (2 bytes préfixe + 32 bytes + 2 bytes checksum)
+
+	Retourne toujours la clé v1 base58 (32 bytes) attendue par libnacl/duniterpy.
+	"""
+	if pubkey and pubkey.startswith('g1'):
+		try:
+			raw = base58.b58decode(pubkey)
+			# SS58 Ğ1 : 2 bytes prefix + 32 bytes ed25519 + 2 bytes checksum = 36 bytes
+			if len(raw) == 36:
+				return base58.b58encode(raw[2:-2]).decode()
+		except Exception:
+			pass  # Si le décodage échoue, on renvoie la clé telle quelle
+	return pubkey
 
 def getargv(arg:str, default:str="", n:int=1, args:list=sys.argv) -> str:
 	if arg in args and len(args) > args.index(arg)+n:
@@ -43,7 +62,7 @@ def write_data(data, result_path):
 		open(os.path.expanduser(result_path), "wb").write(data)
 
 def encrypt(data, pubkey):
-	return duniterpy.key.PublicKey(pubkey).encrypt_seal(data)
+	return duniterpy.key.PublicKey(normalize_pubkey(pubkey)).encrypt_seal(data)
 
 def decrypt(data, privkey):
 	return privkey.decrypt_seal(data)
@@ -51,7 +70,7 @@ def decrypt(data, privkey):
 def box_encrypt(data, privkey, pubkey, nonce=None, attach_nonce=False):
 	signer = libnacl.sign.Signer(privkey.seed)
 	sk = libnacl.public.SecretKey(libnacl.crypto_sign_ed25519_sk_to_curve25519(signer.sk))
-	verifier = libnacl.sign.Verifier(base58.b58decode(pubkey).hex())
+	verifier = libnacl.sign.Verifier(base58.b58decode(normalize_pubkey(pubkey)).hex())
 	pk = libnacl.public.PublicKey(libnacl.crypto_sign_ed25519_pk_to_curve25519(verifier.vk))
 	box = libnacl.public.Box(sk.sk, pk.pk)
 	data = box.encrypt(data, nonce) if nonce else box.encrypt(data)
@@ -60,7 +79,7 @@ def box_encrypt(data, privkey, pubkey, nonce=None, attach_nonce=False):
 def box_decrypt(data, privkey, pubkey, nonce=None):
 	signer = libnacl.sign.Signer(privkey.seed)
 	sk = libnacl.public.SecretKey(libnacl.crypto_sign_ed25519_sk_to_curve25519(signer.sk))
-	verifier = libnacl.sign.Verifier(base58.b58decode(pubkey).hex())
+	verifier = libnacl.sign.Verifier(base58.b58decode(normalize_pubkey(pubkey)).hex())
 	pk = libnacl.public.PublicKey(libnacl.crypto_sign_ed25519_pk_to_curve25519(verifier.vk))
 	box = libnacl.public.Box(sk.sk, pk.pk)
 	return box.decrypt(data, nonce) if nonce else box.decrypt(data)
@@ -70,7 +89,7 @@ def sign(data, privkey):
 
 def verify(data, pubkey):
 	try:
-		ret = libnacl.sign.Verifier(duniterpy.key.PublicKey(pubkey).hex_pk()).verify(data)
+		ret = libnacl.sign.Verifier(duniterpy.key.PublicKey(normalize_pubkey(pubkey)).hex_pk()).verify(data)
 		sys.stderr.write("Signature OK!\n")
 		return ret
 	except ValueError:
@@ -232,6 +251,8 @@ if __name__ == "__main__":
 	input_format = getargv("-I", "raw")
 	
 	if pubkey:
+		# Normalisation SS58 → v1 base58 avant toute validation (Duniter v2s)
+		pubkey = normalize_pubkey(pubkey)
 		pubkey, len_deprecated = check_pubkey(pubkey)
 		if not pubkey:
 			print("Invalid pubkey checksum! Please check spelling.")

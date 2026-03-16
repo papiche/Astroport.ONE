@@ -204,6 +204,16 @@ G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 
 [[ ! $G1PUB ]] && echo "Désolé. clef Cesium absente. ERROR" && exit 1
 
+# Conversion SS58 pour Duniter v2s (stockage persistant .g1pub, comparaisons squid)
+# G1PUB_V1 conservé pour natools.py (natools v1.3.2+ accepte SS58 — garde v1 pour Cesium+)
+G1PUB_V1="$G1PUB"
+if [[ -x "${MY_PATH}/../tools/g1pub_to_ss58.py" ]]; then
+_g1pub_ss58=$(python3 "${MY_PATH}/../tools/g1pub_to_ss58.py" "$G1PUB" 2>/dev/null)
+[[ -n "$_g1pub_ss58" ]] && G1PUB="$_g1pub_ss58"
+fi
+echo "ZenCard G1PUB SS58 : $G1PUB"
+echo "ZenCard G1PUB  V1  : $G1PUB_V1"
+
 ## CREATE Player personnal files storage and IPFS publish directory
 mkdir -p ~/.zen/game/players/${PLAYER}/.ipfs # Prepare PLAYER datastructure
 echo "/ip4/127.0.0.1/tcp/5001" > ~/.zen/game/players/${PLAYER}/.ipfs/api
@@ -536,7 +546,7 @@ echo $MOATS > ~/.zen/game/players/${PLAYER}/ipfs/moa/.moats
 ## MEMORISE PLAYER Ŋ1 ZONE
 echo "${PLAYER}" > ~/.zen/game/players/${PLAYER}/.player
 echo "$PSEUDO" > ~/.zen/game/players/${PLAYER}/.pseudo
-echo "$G1PUB" > ~/.zen/game/players/${PLAYER}/.g1pub
+echo "$G1PUB" > ~/.zen/game/players/${PLAYER}/.g1pub  ## SS58 (Duniter v2s)
 
 echo "${ASTRONAUTENS}" > ~/.zen/game/players/${PLAYER}/.playerns
 
@@ -544,8 +554,8 @@ echo "${ASTRONAUTENS}" > ~/.zen/game/players/${PLAYER}/.playerns
 # Create the TW directory structure for IPFS publication
 mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}
 # Copy the G1PUB to _g1pub for IPFS publication (avoid .g1pub filtering)
-echo "$G1PUB" > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/_g1pub
-echo "✅ Created _g1pub for IPFS publication: ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/_g1pub"
+echo "$G1PUB" > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/_g1pub  ## SS58 (Duniter v2s)
+echo "✅ Created _g1pub SS58 for IPFS publication: ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/_g1pub"
 
 #~ echo; echo "Création Clefs et QR codes pour accès au niveau Astroport Ŋ1"; sleep 1
 
