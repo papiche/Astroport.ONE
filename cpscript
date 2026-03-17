@@ -1,0 +1,276 @@
+#!/bin/bash
+########################################################################
+# cpscript — Regroupe un script et toutes ses dépendances dans le presse-papiers
+#
+# Analyse récursivement un script d'entrée (.sh ou .py) et inclut
+# tous les scripts qu'il appelle directement ou indirectement :
+#
+#   Scripts SHELL : source, bash, python3, ${MY_PATH}/..., ./..., /abs/...
+#   Scripts PYTHON : from X import Y → X/Y.py
+#                    import X        → X.py
+#                    subprocess.run / os.system → script.sh/.py
+#                    string literals "script.sh", settings.PATH / "script.py"
+#
+# Convention : MY_PATH = répertoire du script principal (standard du projet)
+# Fallback   : recherche par basename dans le projet parent (maxdepth 3)
+#
+# Usage : cpscript [--help] <script.sh|script.py>
+#
+# Sortie : fichier /tmp/<timestamp>.txt + copie dans le presse-papiers
+#          (xclip / wl-copy / pbcopy selon l'environnement)
+########################################################################
+
+show_help() {
+    echo ""
+    echo "  Usage : $(basename "$0") <script.sh|script.py>"
+    echo ""
+    echo "  Regroupe un script et toutes ses dépendances (.sh/.py) dans"
+    echo "  le presse-papiers, en les suivant récursivement."
+    echo ""
+    echo "  Détection Shell :"
+    echo "    source, bash, python3, \${MY_PATH}/..., ./script.sh, /abs/path.sh"
+    echo ""
+    echo "  Détection Python :"
+    echo "    from core.config import settings  →  core/config.py"
+    echo "    from routers import system, nostr  →  routers/system.py ..."
+    echo "    subprocess.run([\"upload2ipfs.sh\"])  →  upload2ipfs.sh"
+    echo "    settings.TOOLS_PATH / \"script.sh\"  →  script.sh (trouvé par basename)"
+    echo ""
+    echo "  Options :"
+    echo "    --help    Affiche cette aide."
+    echo ""
+    exit 0
+}
+
+if [ "$1" == "--help" ]; then show_help; fi
+if [ "$#" -lt 1 ]; then
+    echo "Erreur : Argument manquant."
+    show_help
+    exit 1
+fi
+
+MAIN_SCRIPT="$1"
+
+if [ ! -f "$MAIN_SCRIPT" ]; then
+    echo "Erreur : Le fichier '$MAIN_SCRIPT' n'existe pas."
+    exit 1
+fi
+
+MAIN_SCRIPT=$(realpath "$MAIN_SCRIPT")
+MAIN_DIR=$(dirname "$MAIN_SCRIPT")
+
+MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+TEMP_FILE="/tmp/$MOATS.txt"
+# Le fichier est écrit directement (évite la corruption binaire via $RESULT)
+> "$TEMP_FILE"
+
+# Tableau associatif pour éviter les doublons
+declare -A VISITED
+
+# Extraction pour les fichiers SHELL (.sh)
+extract_shell_deps() {
+    local FILE="$1"
+    {
+        # Chemin relatif avec au moins un segment : tools/my.sh, IA/proc.sh, ../proj/x.sh
+        grep -oP '[a-zA-Z0-9_.][a-zA-Z0-9_./]*(?:\.\.|\.)?/[a-zA-Z0-9_./-]+\.(?:sh|py)' "$FILE"
+        # Chemin absolu
+        grep -oP '(?<![a-zA-Z0-9_])/[a-zA-Z0-9_./+-]+\.(?:sh|py)' "$FILE"
+        # Chemin explicite ./script
+        grep -oP '\./[a-zA-Z0-9_./-]+\.(?:sh|py)' "$FILE"
+    } 2>/dev/null | grep -v '^[[:space:]]*#' | sort -u
+}
+
+# Extraction pour les fichiers PYTHON (.py)
+extract_python_deps() {
+    local FILE="$1"
+    local FILE_DIR
+    FILE_DIR=$(dirname "$FILE")
+
+    {
+        # 1) from package.module import X, Y  →  package/module.py
+        grep -P '^\s*from\s+[a-zA-Z0-9_.]+\s+import' "$FILE" 2>/dev/null \
+        | grep -oP '(?<=from\s)[a-zA-Z0-9_.]+' \
+        | while IFS= read -r MOD; do
+            local MODPATH="${MOD//.//}"
+            echo "${MODPATH}.py"
+            echo "${MODPATH}/__init__.py"
+        done
+
+        # 2) from package import mod1, mod2  →  package/mod1.py, package/mod2.py
+        grep -P '^\s*from\s+[a-zA-Z0-9_]+\s+import' "$FILE" 2>/dev/null \
+        | sed 's/^[[:space:]]*from[[:space:]]\+\([a-zA-Z0-9_]\+\)[[:space:]]\+import[[:space:]]\+/\1 /' \
+        | while IFS= read -r LINE; do
+            local PKG IMPORTS IMP
+            PKG=$(echo "$LINE" | cut -d' ' -f1)
+            IMPORTS=$(echo "$LINE" | cut -d' ' -f2- | tr ',' '\n' | tr -d ' ()')
+            while IFS= read -r IMP; do
+                IMP=$(echo "$IMP" | tr -d ' \t')
+                [ -z "$IMP" ] && continue
+                [[ "$IMP" == "as" ]] && continue
+                [ -f "$FILE_DIR/$PKG/$IMP.py" ] && echo "$PKG/$IMP.py"
+            done <<< "$IMPORTS"
+        done
+
+        # 3) import module  →  module.py
+        grep -P '^\s*import\s+[a-zA-Z0-9_]+' "$FILE" 2>/dev/null \
+        | grep -oP '(?<=import\s)[a-zA-Z0-9_]+' \
+        | while IFS= read -r MOD; do
+            echo "${MOD}.py"
+            echo "${MOD}/__init__.py"
+        done
+
+        # 4) Appels subprocess/os.system vers scripts shell ou python
+        grep -oP '(?:subprocess\.(?:run|call|check_output|Popen)|os\.system|os\.popen)\s*\(\s*[\["]?\K[a-zA-Z0-9_./-]+\.(?:sh|py)' "$FILE" 2>/dev/null
+
+        # 5) Chemins directs vers .sh ou .py dans les strings (avec segment de chemin)
+        grep -oP '[a-zA-Z0-9_.][a-zA-Z0-9_./]*/[a-zA-Z0-9_./-]+\.(?:sh|py)' "$FILE" 2>/dev/null \
+        | grep -v '^[[:space:]]*#'
+
+        # 6) String literals en quotes contenant un nom de script .sh ou .py
+        #    ex: settings.TOOLS_PATH / "publish_nostr_video.sh"  ou  "./g1.sh"
+        grep -oP "(?<=[\"'])[a-zA-Z0-9_./-]*\.(?:sh|py)(?=[\"'])" "$FILE" 2>/dev/null
+
+    } | sort -u
+}
+
+# Dispatcher selon le type de fichier
+extract_called_scripts() {
+    local FILE="$1"
+    local EXT="${FILE##*.}"
+    if [ "$EXT" = "py" ]; then
+        extract_python_deps "$FILE"
+    else
+        extract_shell_deps "$FILE"
+    fi
+}
+
+# Fonction récursive pour traiter un script
+process_script() {
+    local FILE="$1"
+    local FILE_DIR
+    FILE_DIR=$(dirname "$FILE")
+
+    # Vérifier si déjà visité
+    if [ -n "${VISITED[$FILE]}" ]; then
+        return
+    fi
+    VISITED[$FILE]=1
+
+    if [ ! -f "$FILE" ]; then
+        echo "  [MANQUANT] $FILE"
+        return
+    fi
+
+    if ! file "$FILE" | grep -q "text"; then
+        echo "  [IGNORÉ - binaire] $FILE"
+        return
+    fi
+
+    RELATIVE_PATH=$(realpath --relative-to="$MAIN_DIR" "$FILE" 2>/dev/null || echo "$FILE")
+    FILENAME=$(basename "$FILE")
+    echo "Ajout de : $FILE"
+
+    {
+        echo "### Chemin : $RELATIVE_PATH"
+        echo "### Fichier : $FILENAME"
+        echo ""
+        echo '```'
+        cat "$FILE"
+        echo ""
+        echo '```'
+        echo ""
+    } >> "$TEMP_FILE"
+
+    # Extraire et traiter récursivement les scripts appelés
+    while IFS= read -r RAW; do
+        [ -z "$RAW" ] && continue
+
+        # Nettoyer : supprimer les variables bash en tête ($VAR/ ou ${VAR}/)
+        # MY_PATH est une convention = répertoire du script principal
+        local REF
+        REF=$(echo "$RAW" | sed \
+            -e 's/^["'"'"']//' \
+            -e 's/["'"'"']$//' \
+            -e 's|^\${\?[A-Za-z_][A-Za-z0-9_]*}\?/||g' \
+            -e 's|^\$[A-Za-z_][A-Za-z0-9_]*/||g' \
+        )
+        # Ignorer si encore une variable ou vide
+        [[ "$REF" == \$* ]] && continue
+        [ -z "$REF" ] && continue
+        # Ignorer les lignes qui ressemblent à des commentaires ou messages
+        [[ "$REF" == *.sh\ * || "$REF" == *.py\ * ]] && REF="${REF%% *}"
+
+        # Résoudre le chemin
+        local RESOLVED=""
+        if [[ "$REF" == /* ]]; then
+            # Chemin absolu
+            [ -f "$REF" ] && RESOLVED="$REF"
+        else
+            # Essayer relatif au fichier courant puis au répertoire principal
+            local TRY1 TRY2
+            TRY1=$(realpath --no-symlinks "$FILE_DIR/$REF" 2>/dev/null)
+            TRY2=$(realpath --no-symlinks "$MAIN_DIR/$REF" 2>/dev/null)
+            if [ -n "$TRY1" ] && [ -f "$TRY1" ]; then
+                RESOLVED="$TRY1"
+            elif [ -n "$TRY2" ] && [ -f "$TRY2" ]; then
+                RESOLVED="$TRY2"
+            else
+                # Fallback : chercher par basename dans le répertoire parent du projet
+                local BASENAME PARENT
+                BASENAME=$(basename "$REF")
+                PARENT=$(realpath "$MAIN_DIR/.." 2>/dev/null)
+                local FOUND
+                FOUND=$(find "$PARENT" -maxdepth 3 -name "$BASENAME" -type f 2>/dev/null \
+                    | grep -v '/\.' | head -1)
+                [ -n "$FOUND" ] && [ -f "$FOUND" ] && RESOLVED="$FOUND"
+            fi
+        fi
+
+        if [ -n "$RESOLVED" ]; then
+            process_script "$RESOLVED"
+        fi
+        # (on tait silencieusement les refs introuvables — chemins runtime, etc.)
+    done < <(extract_called_scripts "$FILE")
+}
+
+echo "=== Analyse de : $MAIN_SCRIPT ==="
+echo ""
+
+# Traiter le script principal (et récursivement ses dépendances)
+process_script "$MAIN_SCRIPT"
+
+if [ ! -s "$TEMP_FILE" ]; then
+    echo "Erreur : Aucun contenu généré."
+    rm -f "$TEMP_FILE"
+    exit 1
+fi
+
+# Compter les fichiers inclus
+NB_FILES=${#VISITED[@]}
+echo ""
+echo "=== $NB_FILES fichier(s) inclus ==="
+
+# Copier dans le presse-papiers
+COPIED=false
+if [ -n "$DISPLAY" ] && command -v xclip &>/dev/null; then
+    if cat "$TEMP_FILE" | xclip -selection clipboard 2>/dev/null; then
+        COPIED=true
+        echo "Contenu copié dans le presse-papiers (xclip)."
+    fi
+elif [ -n "$WAYLAND_DISPLAY" ] && command -v wl-copy &>/dev/null; then
+    if cat "$TEMP_FILE" | wl-copy 2>/dev/null; then
+        COPIED=true
+        echo "Contenu copié dans le presse-papiers (wl-copy)."
+    fi
+elif command -v pbcopy &>/dev/null; then
+    if cat "$TEMP_FILE" | pbcopy 2>/dev/null; then
+        COPIED=true
+        echo "Contenu copié dans le presse-papiers (pbcopy)."
+    fi
+fi
+
+if [ "$COPIED" = false ]; then
+    echo "Avertissement : Impossible de copier dans le presse-papiers."
+fi
+
+echo "Résultat écrit dans : $TEMP_FILE"
