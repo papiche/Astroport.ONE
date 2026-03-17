@@ -480,7 +480,7 @@ else
     # Envoyer le rapport par email au Capitaine
     if [[ -n "$CAPTAINEMAIL" && -s "$REPORT_FILE" ]]; then
         echo "📧 Sending HTML report to Captain: $CAPTAINEMAIL"
-        ${MY_PATH}/../tools/mailjet.sh "$CAPTAINEMAIL" "$REPORT_FILE" "Cooperative Allocation Report - $TODATE"
+        ${MY_PATH}/../tools/mailjet.sh --expire 7d "$CAPTAINEMAIL" "$REPORT_FILE" "Cooperative Allocation Report - $TODATE"
 
         if [[ $? -eq 0 ]]; then
             echo "✅ HTML report sent successfully to Captain"
@@ -649,7 +649,7 @@ if [[ $BANKRUPTCY_DETECTED -eq 1 ]]; then
         
         for user_email in "${USER_EMAILS[@]}"; do
             echo "📧 Sending bankruptcy alert to: $user_email"
-            ${MY_PATH}/../tools/mailjet.sh "$user_email" "$BANKRUPTCY_REPORT" "⚠️ UPlanet Bankruptcy Alert - $TODATE"
+            ${MY_PATH}/../tools/mailjet.sh --expire 7d "$user_email" "$BANKRUPTCY_REPORT" "⚠️ UPlanet Bankruptcy Alert - $TODATE"
             
             if [[ $? -eq 0 ]]; then
                 echo "✅ Bankruptcy alert sent successfully to $user_email"

@@ -117,7 +117,7 @@ if [ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html ]; then
     try=$((try-1))
     echo "$try" > ~/.zen/game/players/${PLAYER}/ipfs/moa/.try
 
-    $MY_PATH/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/result "${PLAYER} TW LOADING TIMEOUT $try"
+    $MY_PATH/../tools/mailjet.sh --expire 48h "${PLAYER}" ~/.zen/tmp/result "${PLAYER} TW LOADING TIMEOUT $try"
     exit 1
 fi
 
@@ -527,7 +527,7 @@ if [[ -s ${TODAYZINE} && ${days} -gt 0 && ${days} -le 7 ]]; then
             -e "s~_PEPPER_~[PROTECTED]~g" \
             > ~/.zen/tmp/${MOATS}/UPlanetZine.html
 
-    ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" $HOME/.zen/tmp/${MOATS}/UPlanetZine.html \
+    ${MY_PATH}/../tools/mailjet.sh --expire 48h "${PLAYER}" $HOME/.zen/tmp/${MOATS}/UPlanetZine.html \
                                     "ZINE #${days}" "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html"
 
 else
@@ -606,7 +606,7 @@ if [[ $(cat ~/.zen/game/players/${PLAYER}/ipfs/${PLAYER}.rss.json) == "[]" && "$
         </style></head><body><h1>🔋WARNING</h1>" > ~/.zen/tmp/alert
         echo "<br><h3><a href=$(myIpfsGw)/ipfs/${CURCHAIN}> ${PLAYER} TW 🔌📺 </a></h3> 🌥 $ZEN ZEN 🌥 </body></html>" >> ~/.zen/tmp/alert
 
-        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/alert "TW ZEN ALERT"
+        ${MY_PATH}/../tools/mailjet.sh --expire 48h "${PLAYER}" ~/.zen/tmp/alert "TW ZEN ALERT"
         echo "<<<< PLAYER TW WARNING <<<< ${DIFF_SECONDS} > ${days} days"
     fi
 

@@ -209,7 +209,7 @@ cat > "$UNPLUG_EMAIL" << EOF
 EOF
 
 # Send the professional notification email
-${MY_PATH}/../tools/mailjet.sh "${CAPTAINEMAIL}" "$UNPLUG_EMAIL" "🚀 Player Unplugged: ${PLAYER} - ${SHOUT:-'Standard unplug'}"
+${MY_PATH}/../tools/mailjet.sh --expire 7d "${CAPTAINEMAIL}" "$UNPLUG_EMAIL" "🚀 Player Unplugged: ${PLAYER} - ${SHOUT:-'Standard unplug'}"
 
 # Clean up temporary email file
 rm -f "$UNPLUG_EMAIL"

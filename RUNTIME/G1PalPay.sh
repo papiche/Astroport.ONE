@@ -203,7 +203,7 @@ while read LINE; do
             <br>(♥‿‿♥)... on <a href='https://qo-op.com'>UPlanet</a>
             </body></html>" >> ~/.zen/tmp/palpay.bro
 
-            ${MY_PATH}/../tools/mailjet.sh "${EMAIL}" ~/.zen/tmp/palpay.bro "BRO. $PLAYER INVITATION"
+            ${MY_PATH}/../tools/mailjet.sh --expire 48h "${EMAIL}" ~/.zen/tmp/palpay.bro "BRO. $PLAYER INVITATION"
             continue
         fi
 
@@ -315,7 +315,7 @@ while read LINE; do
                 <h2>PIN: <a href='${myIPFSGW}${TOPIN}'>$TOPIN</a></h2>(☼‿‿☼)" >> ~/.zen/tmp/${MOATS}/g1message
             ## lazy mode... NOT FINISHING HTML TAGGING... browser shoud display html page ;)
 
-        ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message "BRO. ${ZMAIL} TW5 PIN"
+        ${MY_PATH}/../tools/mailjet.sh --expire 48h "${PLAYER}" ~/.zen/tmp/${MOATS}/g1message "BRO. ${ZMAIL} TW5 PIN"
 
     else
         ## ${ZMAIL} NOT A PLAYER YET
@@ -336,7 +336,7 @@ while read LINE; do
         ... Join <a href='https://qo-op.com'>UPlanet</a>
         </body></html>" > ~/.zen/tmp/palpay.bro
 
-        ${MY_PATH}/../tools/mailjet.sh "${ZMAIL}" ~/.zen/tmp/palpay.bro "BRO. ${PLAYER} TW5 LINKING"
+        ${MY_PATH}/../tools/mailjet.sh --expire 48h "${ZMAIL}" ~/.zen/tmp/palpay.bro "BRO. ${PLAYER} TW5 LINKING"
 
     fi
 

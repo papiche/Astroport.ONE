@@ -561,7 +561,7 @@ for PLAYER in "${NOSTR[@]}"; do
         && sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
         && sed -i "s~_USPOT_~${uSPOT}~g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
         && sed -i "s~_CORACLEURL_~${myCORACLE:-https://ipfs.copylaradio.com/ipns/coracle.copylaradio.com}~g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
-        && ${MY_PATH}/../tools/mailjet.sh "${PLAYER}" "${HOME}/.zen/game/nostr/${PLAYER}/.welcome.html" "Welcome on UPlanet"
+        && ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "${HOME}/.zen/game/nostr/${PLAYER}/.welcome.html" "Welcome on UPlanet"
         log "INFO" "Welcome email sent to new MULTIPASS: ${PLAYER}"
         log_metric "WELCOME_EMAIL_SENT" "1" "${PLAYER}"
     fi

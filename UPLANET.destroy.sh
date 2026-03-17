@@ -235,7 +235,7 @@ send_multipass_migration_notification() {
     
     echo -e "${CYAN}📧 Sending migration notification to: $email${NC}"
     
-    if "${MY_PATH}/tools/mailjet.sh" "$email" "$notification_file" "$subject" >/dev/null 2>&1; then
+    if "${MY_PATH}/tools/mailjet.sh" --expire 7d "$email" "$notification_file" "$subject" >/dev/null 2>&1; then
         echo -e "${GREEN}✅ Migration notification sent successfully${NC}"
         ((MIGRATION_NOTIFICATIONS_SENT++))
         
@@ -335,7 +335,7 @@ EOF
 EOF
     
     # Envoyer l'alerte via mailjet.sh
-    "${MY_PATH}/tools/mailjet.sh" "$CAPTAINEMAIL" "$alert_file" "🚨 UPLANET Destruction - $wallet_name ($status)" >/dev/null 2>&1
+    "${MY_PATH}/tools/mailjet.sh" --expire 48h "$CAPTAINEMAIL" "$alert_file" "🚨 UPLANET Destruction - $wallet_name ($status)" >/dev/null 2>&1
     
     # Garder le fichier d'alerte pour les logs
     mkdir -p "$HOME/.zen/tmp/alerts/"

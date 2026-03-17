@@ -474,7 +474,7 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                 
                 # Send to Captain first
                 if [[ -n "$CAPTAINEMAIL" ]]; then
-                    ${MY_PATH}/../tools/mailjet.sh "$CAPTAINEMAIL" "$PRE_BANKRUPTCY_REPORT" "⚠️ UPlanet Pré-Faillite Phase $PRE_BANKRUPTCY_PHASE - $TODATE"
+                    ${MY_PATH}/../tools/mailjet.sh --expire 7d "$CAPTAINEMAIL" "$PRE_BANKRUPTCY_REPORT" "⚠️ UPlanet Pré-Faillite Phase $PRE_BANKRUPTCY_PHASE - $TODATE"
                     log_output "📧 Pre-bankruptcy alert sent to Captain: $CAPTAINEMAIL"
                 fi
                 
@@ -482,7 +482,7 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                 for player_dir in ~/.zen/game/nostr/*/; do
                     player_email=$(basename "$player_dir")
                     if [[ "$player_email" =~ @ && "$player_email" != "$CAPTAINEMAIL" ]]; then
-                        ${MY_PATH}/../tools/mailjet.sh "$player_email" "$PRE_BANKRUPTCY_REPORT" "⚠️ UPlanet Pré-Faillite Phase $PRE_BANKRUPTCY_PHASE - $TODATE"
+                        ${MY_PATH}/../tools/mailjet.sh --expire 7d "$player_email" "$PRE_BANKRUPTCY_REPORT" "⚠️ UPlanet Pré-Faillite Phase $PRE_BANKRUPTCY_PHASE - $TODATE"
                         log_output "📧 Pre-bankruptcy alert sent to: $player_email"
                     fi
                 done
@@ -715,7 +715,7 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                 
                 # Send to Captain
                 if [[ -n "$CAPTAINEMAIL" ]]; then
-                    ${MY_PATH}/../tools/mailjet.sh "$CAPTAINEMAIL" "$BANKRUPTCY_REPORT" "⚠️ UPlanet BANKRUPTCY ALERT - $TODATE"
+                    ${MY_PATH}/../tools/mailjet.sh --expire 7d "$CAPTAINEMAIL" "$BANKRUPTCY_REPORT" "⚠️ UPlanet BANKRUPTCY ALERT - $TODATE"
                     log_output "📧 Bankruptcy alert sent to Captain: $CAPTAINEMAIL"
                 fi
                 
@@ -723,7 +723,7 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                 for player_dir in ~/.zen/game/nostr/*/; do
                     player_email=$(basename "$player_dir")
                     if [[ "$player_email" =~ @ && "$player_email" != "$CAPTAINEMAIL" ]]; then
-                        ${MY_PATH}/../tools/mailjet.sh "$player_email" "$BANKRUPTCY_REPORT" "⚠️ UPlanet BANKRUPTCY ALERT - $TODATE"
+                        ${MY_PATH}/../tools/mailjet.sh --expire 7d "$player_email" "$BANKRUPTCY_REPORT" "⚠️ UPlanet BANKRUPTCY ALERT - $TODATE"
                         log_output "📧 Bankruptcy alert sent to: $player_email"
                     fi
                 done

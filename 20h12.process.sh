@@ -89,7 +89,7 @@ while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
     sleep 10
     ((floop++)) && [ $floop -gt 36 ] \
         && echo "ERROR. IPFS daemon not restarting" \
-        && ${MY_PATH}/tools/mailjet.sh "support@qo-op.com" "/tmp/20h12.log" "IPFS RESTART ERROR 20H12" \
+        && ${MY_PATH}/tools/mailjet.sh --expire 48h "support@qo-op.com" "/tmp/20h12.log" "IPFS RESTART ERROR 20H12" \
         && exit 1
 done
 
