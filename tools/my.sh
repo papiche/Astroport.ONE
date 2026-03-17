@@ -535,8 +535,7 @@ myCESIUM="https://g1.data.e-is.pro" ## CESIUM +
 myG1BILLET="http://127.0.0.1:33101"
 myHOST="$(myHostName)"
 
-myIPFSW="http://$(hostname).local:8080" ## ipfs.localhost (IP works better in LAN deported desktop), but not in docker.
-myIPFS="http://127.0.0.1:8080" ## ipfs.localhost (IP works better in LAN deported desktop), but not in docker.
+myIPFS="http://ipfs.copylaradio.com" ## Used to create IPFS URL
 myIPFSGW="$(myIpfsGw)"
 myTUBE="$(myTube)"
 myASTROTUBE="https://$(myAstroTube)"
@@ -551,7 +550,7 @@ myASTROTUBE="https://$(myAstroTube)"
  && myIPFSW="https://ipfs.${myDOMAIN}" \
  || true
 
-## zIP :: PUT YOUR Internet Box IP IN $HOME/.zen/♥Box  ( Forward PORTS 8080 4001 5001 33101 33102 1234 12345 45780 to 45782 )
+## zIP :: PUT YOUR Internet Box IP IN $HOME/.zen/♥Box  -> Forward PORTS 8080 4001 (5001) 12345 54321 (33101 33102)
 [ -n "$(zIp)" ] \
  && myASTROPORT="http://$(zIp):1234" \
  && myAPI="http://$(zIp):5001" \

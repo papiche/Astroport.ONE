@@ -173,18 +173,6 @@ while true; do
     echo "GET RECEPTION : $URL"
     arr=(${URL//[=&]/ })
 
-    #~ #####################################################################
-    #~ ### /?poule
-    #~ #####################################################################
-    #~ if [[ ${arr[0]} == "poule" ]]; then
-        #~ echo "UPDATING CODE git pull > ~/.zen/tmp/.lastpull"
-        #~ echo "$HTTPCORS" > ~/.zen/tmp/.lastpull
-        #~ cd ~/.zen/Astroport.ONE
-        #~ git pull >> ~/.zen/tmp/.lastpull
-        #~ rm ~/.zen/game/players/localhost/latest
-        #~ (cat ~/.zen/tmp/.lastpull | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
-    #~ fi
-
 ########## CHECK GET PARAM NAMES
 ###################################################################################################
     [[ ${arr[0]} == "" || ${arr[1]} == "" ]] && (echo "$HTTPCORS ERROR - MISSING DATA" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &) && continue
@@ -213,30 +201,6 @@ while true; do
     echo "API DISABLED - Command '$CMD' ignored : ${MOATS} : $(date)"
     echo "$HTTPCORS
 {\"error\": \"API disabled\", \"message\": \"Port 1234 API execution is disabled. Use port 12345 for swarm sync.\", \"timestamp\": \"${MOATS}\"}" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 &
-
-    #~ ## ORIGINAL API EXECUTION CODE (DISABLED)
-    #~ case $CMD in
-        #~ "salt")
-            #~ exec ${MY_PATH}/API/SALT.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
-        #~ ;;
-        #~ "player")
-            #~ exec ${MY_PATH}/API/PLAYER.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
-        #~ ;;
-        #~ "qrcode")
-            #~ exec ${MY_PATH}/API/QRCODE.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
-        #~ ;;
-        #~ "uplanet")
-            #~ exec ${MY_PATH}/API/UPLANET.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
-        #~ ;;
-        #~ "amzqr")
-            #~ exec ${MY_PATH}/API/AMZQR.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
-        #~ ;;
-        #~ *)
-            #~ [[ ! -s ${MY_PATH}/API/${CMD^^}.sh ]] \
-            #~ && ( echo "$HTTPCORS ERROR UNKNOWN $CMD" | nc -l -p ${PORT} -q 1 > /dev/null 2>&1 & ) \
-            #~ || exec ${MY_PATH}/API/${CMD^^}.sh "$PORT" "$THAT" "$AND" "$THIS" "$APPNAME" "$WHAT" "$OBJ" "$VAL" "${MOATS}" "$COOKIE" &
-        #~ ;;
-    #~ esac
 
     end=`date +%s`
     echo " ($CMD) $myHOST:$PORT / Launching time was "`expr $end - $start` seconds.
