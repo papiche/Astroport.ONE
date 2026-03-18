@@ -1,7 +1,7 @@
 #!/bin/bash
 ######################## Ustats.sh
 # analyse LOCAL & SWARM data structure
-# and cache the result for 1 hour
+# and cache the result for some hours
 ####################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
