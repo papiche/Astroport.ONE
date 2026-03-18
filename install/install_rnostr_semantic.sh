@@ -85,8 +85,10 @@ services:
     image: qdrant/qdrant:latest
     container_name: qdrant
     ports:
-      - "6333:6333"
-      - "6334:6334"
+      # Bind sur localhost UNIQUEMENT — pas d'exposition publique directe
+      # L'accès externe passe par NPM (si activé) ou reste interne
+      - "127.0.0.1:6333:6333"
+      - "127.0.0.1:6334:6334"
     volumes:
       - ~/.zen/qdrant-data:/qdrant/storage
     healthcheck:
@@ -94,7 +96,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
-    restart: unless-stopped
+    restart: always
 
   embed-worker:
     image: papiche/embed-worker:latest
@@ -107,13 +109,14 @@ services:
     depends_on:
       qdrant:
         condition: service_healthy
-    restart: unless-stopped
+    restart: always
 
   rnostr:
     image: papiche/rnostr:latest
     container_name: rnostr
     ports:
-      - "7777:7777"
+      # rnostr écoute sur localhost — NPM proxie vers relay.DOMAIN (wss://)
+      - "127.0.0.1:7777:7777"
     volumes:
       - ~/.zen/game/nostr:/data/nostr:ro
       - ~/.zen/strfry/amisOfAmis.txt:/data/amisOfAmis.txt:ro
@@ -121,7 +124,7 @@ services:
       - ~/.zen/rnostr/extensions:/data/extensions:ro
     depends_on:
       - embed-worker
-    restart: unless-stopped
+    restart: always
 EOF
 
 echo "=== [6/7] Initialisation de Qdrant et création de la collection ==="

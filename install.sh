@@ -116,6 +116,10 @@ sudo npm install -g tiddlywiki@5.2.3
 ## Correct PDF restrictions for imagemagick
 echo "######### IMAGEMAGICK PDF ############"
 if [[ $(cat /etc/ImageMagick-6/policy.xml | grep PDF) ]]; then
+    ## Backup AVANT modification (pour restauration par uninstall.sh)
+    [[ ! -f /etc/ImageMagick-6/policy.xml.backup ]] \
+        && sudo cp /etc/ImageMagick-6/policy.xml /etc/ImageMagick-6/policy.xml.backup \
+        && echo "Backup ImageMagick policy.xml → policy.xml.backup"
     cat /etc/ImageMagick-6/policy.xml | grep -Ev PDF > /tmp/policy.xml
     sudo cp /tmp/policy.xml /etc/ImageMagick-6/policy.xml
 fi
@@ -235,6 +239,10 @@ echo "=== INSTALL SYSTEM (sudoers, systemd, SSH, symlinks)"
 echo "=== SETUP ASTROPORT (runtime config)"
 ~/.zen/Astroport.ONE/install/setup/setup.sh
 
+###############################################################
+echo "## ACTIVER LE PARE-FEU UFW ################################"
+~/.zen/Astroport.ONE/tools/firewall.sh ON
+
 end=`date +%s`
 DURATION=$((end - start))
 MINUTES=$((DURATION / 60))
@@ -283,8 +291,32 @@ echo "    test         ~/.zen/Astroport.ONE/test.sh"
 echo "    start/stop   ~/.zen/Astroport.ONE/start.sh | stop.sh"
 echo
 echo "  ERREURS: ~/.zen/install.errors.log"
-echo "  SUPPORT: support@qo-op.com"
 echo "#############################################"
+echo
+echo "╔══════════════════════════════════════════════════════════════════════════════╗"
+echo "║                    🚀 PROCHAINE ÉTAPE — ACTIVATION CAPITAINE               ║"
+echo "╠══════════════════════════════════════════════════════════════════════════════╣"
+echo "║                                                                              ║"
+echo "║  Votre station est installée et votre compte GMARKMAIL créé.                ║"
+echo "║                                                                              ║"
+echo "║  ⚠️  IMPORTANT : Pour activer votre statut de Capitaine, un autre           ║"
+echo "║  Capitaine de la constellation doit valider votre recrutement en            ║"
+echo "║  envoyant la Primo-Transaction Ğ1 vers votre ZEN Card.                     ║"
+echo "║                                                                              ║"
+echo "║  Sans cette validation, votre compte sera progressivement supprimé         ║"
+echo "║  (DESTROY) et la station réinitialisée.                                    ║"
+echo "║                                                                              ║"
+echo "║  📧 Contactez-nous pour rejoindre la constellation :                        ║"
+echo "║     support@qo-op.com                                                       ║"
+echo "║                                                                              ║"
+echo "║  Indiquez dans votre email :                                                ║"
+echo "║    • Votre email GMARKMAIL : $(cat ~/.zen/game/players/.current/.player 2>/dev/null || echo 'voir ci-dessus')  ║"
+echo "║    • Votre hostname : $(hostname)                                           ║"
+echo "║    • Votre position GPS : $(cat ~/.zen/GPS 2>/dev/null || echo 'non détectée')         ║"
+echo "║                                                                              ║"
+echo "║  🌐 Notre Sytème d'Information Décentralisé : https://qo-op.com                                        ║"
+echo "║  📚 Documentation : https://astroport.com                              ║"
+echo "╚══════════════════════════════════════════════════════════════════════════════╝"
 echo
 . ~/.bashrc
 ##########################################################

@@ -38,6 +38,21 @@ for service in astroport ipfs g1billet upassport strfry ollama comfyui; do
     fi
 done
 
+# Arrêter la stack Docker rnostr/qdrant/embed-worker (always-on)
+if [[ -f ~/.zen/rnostr/docker-compose.yml ]]; then
+    echo "Stopping rnostr/qdrant/embed-worker docker stack..."
+    if docker compose version &>/dev/null 2>&1; then
+        docker compose -f ~/.zen/rnostr/docker-compose.yml down 2>/dev/null
+    else
+        docker-compose -f ~/.zen/rnostr/docker-compose.yml down 2>/dev/null
+    fi
+fi
+# Retirer les containers individuels si encore présents
+for container in qdrant embed-worker rnostr; do
+    docker stop  "$container" 2>/dev/null
+    docker rm    "$container" 2>/dev/null
+done
+
 # Kill any remaining processes
 echo "Killing remaining processes..."
 [[ -s ~/.zen/.pid ]] && kill -9 $(cat ~/.zen/.pid) > /dev/null 2>&1
@@ -52,7 +67,7 @@ echo "REMOVING SYSTEMD SERVICE FILES"
 
 # Remove systemd service files
 sudo rm -f /etc/systemd/system/astroport.service
-sudo rm -f /etc/systemd/system/ipfs.service  
+sudo rm -f /etc/systemd/system/ipfs.service
 sudo rm -f /etc/systemd/system/g1billet.service
 sudo rm -f /etc/systemd/system/upassport.service
 sudo rm -f /etc/systemd/system/strfry.service
@@ -62,6 +77,11 @@ sudo rm -f /etc/systemd/system/nextcloud-exporter.service
 sudo rm -f /etc/systemd/system/astroport-exporter.service
 sudo rm -f /etc/systemd/system/comfyui.service
 sudo rm -f /etc/systemd/system/powerjoular.service
+# Prometheus metrics collector timer+service (install_prometheus.sh)
+sudo systemctl stop    astroport-metrics.timer  2>/dev/null || true
+sudo systemctl disable astroport-metrics.timer  2>/dev/null || true
+sudo rm -f /etc/systemd/system/astroport-metrics.service
+sudo rm -f /etc/systemd/system/astroport-metrics.timer
 
 sudo systemctl daemon-reload
 
@@ -77,6 +97,10 @@ awk -i inplace -v rmv="cron_MINUTE" '!index($0,rmv)' /tmp/mycron
 awk -i inplace -v rmv="ipfs repo gc" '!index($0,rmv)' /tmp/mycron
 awk -i inplace -v rmv="ASTROPORT" '!index($0,rmv)' /tmp/mycron
 awk -i inplace -v rmv="Astroport" '!index($0,rmv)' /tmp/mycron
+# Supprimer les lignes d'environnement injectées par cron_VRFY.sh (SHELL=, USER=, PATH= astro)
+awk -i inplace -v rmv="SHELL=/bin/bash" '!index($0,rmv)' /tmp/mycron
+awk -i inplace -v rmv="USER=$USER" '!index($0,rmv)' /tmp/mycron
+awk -i inplace -v rmv=".astro/bin:" '!index($0,rmv)' /tmp/mycron
 crontab /tmp/mycron
 rm -f /tmp/mycron
 
@@ -86,6 +110,7 @@ echo "REMOVING /etc/sudoers EXTRA PERMISSIONS"
 
 # Remove custom sudoers files
 [[ "$USER" == "xbian" ]] && sudo rm -f /etc/sudoers.d/astroport
+sudo rm -f /etc/sudoers.d/captain          # NOPASSWD:ALL — créé par install_system.sh
 sudo rm -f /etc/sudoers.d/fail2ban-client
 sudo rm -f /etc/sudoers.d/mount
 sudo rm -f /etc/sudoers.d/umount
@@ -95,6 +120,7 @@ sudo rm -f /etc/sudoers.d/systemctl
 sudo rm -f /etc/sudoers.d/ufw
 sudo rm -f /etc/sudoers.d/docker
 sudo rm -f /etc/sudoers.d/hdparm
+sudo rm -f /etc/sudoers.d/kill
 sudo rm -f /etc/sudoers.d/brother_ql_print
 sudo rm -f /etc/sudoers.d/powerjoular
 sudo rm -f /etc/sudoers.d/sudo
@@ -107,10 +133,45 @@ echo "REMOVING LOCAL BINARIES AND SYMLINKS"
 rm -f ~/.local/bin/natools
 rm -f ~/.local/bin/keygen
 rm -f ~/.local/bin/coeurbox
+rm -f ~/.local/bin/gcli
 rm -f ~/.local/bin/youtube-dl
 rm -f ~/.local/bin/yt-dlp
 rm -f ~/.local/bin/lazydocker
 rm -f ~/.local/bin/espeak
+
+# Supprimer le symlink /usr/bin/python créé par install.sh
+if [[ -L /usr/bin/python ]]; then
+    echo "Removing /usr/bin/python symlink..."
+    sudo rm -f /usr/bin/python
+fi
+
+# Supprimer powerjoular (compilé depuis source, installé dans /usr/bin)
+if [[ -f /usr/bin/powerjoular ]]; then
+    echo "Removing powerjoular binary..."
+    sudo rm -f /usr/bin/powerjoular
+fi
+# Données PowerJoular
+sudo rm -rf /var/lib/powerjoular 2>/dev/null || true
+
+# Supprimer le collector Prometheus créé par install_prometheus.sh
+sudo rm -f /usr/local/bin/astroport-metrics-collector.sh
+
+# Supprimer l'action Nemo "Add to IPFS"
+rm -f ~/.local/share/nemo/actions/add2ipfs.nemo_action
+
+# Désinstaller open_with_linux.py (helper Firefox)
+if [[ -x ~/.zen/Astroport.ONE/open_with_linux.py ]]; then
+    ~/.zen/Astroport.ONE/open_with_linux.py uninstall 2>/dev/null || true
+fi
+
+# Restaurer youtube-dl original si sauvegardé lors du remplacement par yt-dlp
+for ytdl_old in /usr/bin/youtube-dl.old /usr/local/bin/youtube-dl.old; do
+    if [[ -f "$ytdl_old" ]]; then
+        echo "Restoring original youtube-dl from $ytdl_old..."
+        sudo mv "$ytdl_old" "${ytdl_old%.old}"
+        break
+    fi
+done
 
 ########################################################################
 echo "RESTORING SYSTEM CONFIGURATION FILES"
@@ -137,10 +198,12 @@ fi
     && sudo cp /etc/ssh/sshd_config.bak /etc/ssh/sshd_config \
     && sudo systemctl restart ssh
 
-# Remove custom hosts entries  
+# Remove custom hosts entries (ajoutées par setup.sh)
 if [[ $(cat /etc/hosts | grep -w "astroport.local" | head -n 1) ]]; then
     echo "Removing custom hosts entries..."
     sudo sed -i '/astroport\.local/d' /etc/hosts
+    sudo sed -i '/astroport\..*\.local/d' /etc/hosts
+    sudo sed -i '/ipfs\..*\.local/d' /etc/hosts
     sudo sed -i '/duniter\.localhost/d' /etc/hosts
 fi
 
@@ -148,7 +211,30 @@ fi
 if [[ -f /etc/ImageMagick-6/policy.xml.backup ]]; then
     echo "Restoring ImageMagick policy..."
     sudo cp /etc/ImageMagick-6/policy.xml.backup /etc/ImageMagick-6/policy.xml
+elif [[ -f /etc/ImageMagick-6/policy.xml ]]; then
+    # Fallback : re-insérer la restriction PDF si le backup n'existe pas
+    echo "Re-adding ImageMagick PDF restriction (no backup found)..."
+    sudo sed -i 's|<policymap>|<policymap>\n  <policy domain="coder" rights="none" pattern="PDF"/>|' \
+        /etc/ImageMagick-6/policy.xml 2>/dev/null || true
 fi
+
+# Nettoyer la configuration custom de prometheus-node-exporter
+if [[ -f /etc/default/prometheus-node-exporter ]]; then
+    echo "Cleaning prometheus-node-exporter ARGS..."
+    sudo sed -i '/astroport.*textfile\|textfile.*astroport\|^ARGS=.*textfile/d' \
+        /etc/default/prometheus-node-exporter 2>/dev/null || true
+fi
+# Supprimer le fichier .prom créé par le collector
+sudo rm -f /var/lib/prometheus/node-exporter/astroport_heartbox.prom 2>/dev/null || true
+
+# Revert cups remote admin (activé par install.sh pour les imprimantes)
+if which cupsctl &>/dev/null; then
+    echo "Disabling CUPS remote admin..."
+    sudo cupsctl --no-remote-admin 2>/dev/null || true
+fi
+
+# Revert git global config (submodule.recurse = true positionné par install.sh)
+git config --global --unset submodule.recurse 2>/dev/null || true
 
 ########################################################################
 echo "REMOVING DESKTOP SHORTCUTS"
@@ -257,14 +343,49 @@ if [[ -f ~/.bashrc.bak ]]; then
     cp ~/.bashrc.bak ~/.bashrc
 else
     echo "Cleaning bashrc manually..."
-    # Remove Astroport-specific lines
+    # Remove Astroport-specific lines (ajoutées par setup.sh / install_flutter.sh)
     sed -i '/ASTROPORT/d' ~/.bashrc
-    sed -i '/astro\/bin\/activate/d' ~/.bashrc  
+    sed -i '/astro\/bin\/activate/d' ~/.bashrc
     sed -i '/\.zen\/Astroport\.ONE/d' ~/.bashrc
     sed -i '/IPFSNODEID/d' ~/.bashrc
     sed -i '/UPLANET/d' ~/.bashrc
     sed -i '/CAPTAIN/d' ~/.bashrc
     sed -i '/cowsay.*hostname/d' ~/.bashrc
+    # Flutter SDK (ajouté par install_flutter.sh)
+    sed -i '/Flutter SDK/d' ~/.bashrc
+    sed -i '/\.flutter\/bin/d' ~/.bashrc
+    # Deno (si ajouté manuellement)
+    sed -i '/DENO_INSTALL/d' ~/.bashrc
+    sed -i '/\.deno\/bin/d' ~/.bashrc
+    # Ligne PATH ~/.local/bin (ajoutée par setup.sh)
+    sed -i '/export PATH=\$HOME\/.local\/bin/d' ~/.bashrc
+fi
+
+########################################################################
+echo "DISABLING FIREWALL RULES"
+########################################################################
+
+# Désactiver UFW (révoque toutes les règles posées par firewall.sh ON)
+if which ufw &>/dev/null && sudo ufw status | grep -q "Status: active"; then
+    echo "Disabling UFW firewall..."
+    ~/.zen/Astroport.ONE/tools/firewall.sh OFF 2>/dev/null \
+        || sudo ufw --force disable 2>/dev/null
+fi
+
+########################################################################
+echo "REMOVING OPTIONAL TOOLS (Deno, Flutter)"
+########################################################################
+
+read -p "Remove Deno (~/.deno)? (y/n): " remove_deno
+if [[ $remove_deno == "y" ]]; then
+    echo "Removing Deno..."
+    rm -rf ~/.deno
+fi
+
+read -p "Remove Flutter SDK (~/.flutter)? (y/n): " remove_flutter
+if [[ $remove_flutter == "y" ]]; then
+    echo "Removing Flutter SDK..."
+    rm -rf ~/.flutter ~/.flutter_tool_state
 fi
 
 ########################################################################
@@ -275,7 +396,9 @@ echo "FINAL CLEANUP"
 mv ~/.zen ~/.zen.todelete 2>/dev/null
 
 # Clean temporary files
-rm -rf /tmp/20h12.log /tmp/astroport.* /tmp/ipfs.* /tmp/strfry.* /tmp/g1billet.* /tmp/upassport.* 2>/dev/null
+rm -rf /tmp/20h12.log /tmp/20h12_power_report.html \
+    /tmp/astroport.* /tmp/ipfs.* /tmp/strfry.* \
+    /tmp/g1billet.* /tmp/upassport.* 2>/dev/null
 
 echo ""
 echo "========================================"
@@ -310,6 +433,12 @@ if [[ $remove_apt != "y" ]]; then
 fi
 if [[ $remove_ipfs != "y" ]]; then
     echo "- Remove IPFS: sudo rm -f /usr/local/bin/ipfs && rm -rf ~/.ipfs"
+fi
+if [[ $remove_deno != "y" ]]; then
+    echo "- Remove Deno: rm -rf ~/.deno"
+fi
+if [[ $remove_flutter != "y" ]]; then
+    echo "- Remove Flutter: rm -rf ~/.flutter"
 fi
 echo ""
 echo "REBOOT RECOMMENDED to ensure all changes take effect."

@@ -237,12 +237,18 @@ if [[ ! -d ~/.zen/game/players/.current ]]; then
     ################ COMPTE CAPTAINE AUTOMATIQUE
     ## MULTIPASS --->
     echo ">>> Create CAPTAIN MULTIPASS <<<"
+    # Bootstrap : exporter CAPTAINEMAIL dès maintenant pour que my.sh trouver l'email
+    # lors de son rechargement dans make_NOSTRCARD.sh et VISA.new.sh (évite "Captain EMAIL is empty")
+    export CAPTAINEMAIL="${GMARKMAIL}"
     ~/.zen/Astroport.ONE/tools/make_NOSTRCARD.sh "${GMARKMAIL}" $GO
 
     ## ZEN CARD --->
     echo ">>> Create CAPTAIN ZENCARD <<<"
     ZSALT=$(${HOME}/.zen/Astroport.ONE/tools/diceware.sh $(( $(${HOME}/.zen/Astroport.ONE/tools/getcoins_from_gratitude_box.sh) + 3 )))
     ZPEPS=$(${HOME}/.zen/Astroport.ONE/tools/diceware.sh $(( $(${HOME}/.zen/Astroport.ONE/tools/getcoins_from_gratitude_box.sh) + 3 )))
+
+    # Récupérer CAPTAING1PUB depuis le MULTIPASS fraîchement créé (pour chiffrement SSSS middle share)
+    export CAPTAING1PUB=$(cat ~/.zen/game/nostr/${GMARKMAIL}/G1PUBNOSTR 2>/dev/null)
 
     source ~/.zen/game/nostr/${GMARKMAIL}/.secret.nostr ## get NPUB & HEX
     ~/.zen/Astroport.ONE/RUNTIME/VISA.new.sh "$ZSALT" "$ZPEPS" "${GMARKMAIL}" "UPlanet" ${GO} "$NPUB" "$HEX"
