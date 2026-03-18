@@ -7,7 +7,7 @@ set -e
 
 # Configuration
 LOG_FILE="/tmp/flashmem/umarket_monitor.log"
-ALERT_EMAIL="admin@uplanet.com"
+ALERT_EMAIL="admin@qo-op.com"
 MAX_ERROR_RATE=0.1  # 10% error rate threshold
 MAX_PROCESSING_TIME=300  # 5 minutes max processing time
 

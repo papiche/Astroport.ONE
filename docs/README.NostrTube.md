@@ -464,7 +464,7 @@ Web interface for browsing and watching videos.
 
 ```bash
 # 1. User uploads YouTube cookie
-curl -X POST https://uplanet.com/api/fileupload \
+curl -X POST https://u.copylaradio.com/api/fileupload \
   -F "file=@youtube_cookies.txt" \
   -F "npub={npub}"
 
@@ -504,17 +504,17 @@ const publishResponse = await fetch('/webcam', {
 
 ```bash
 # 1. Fetch channel from NOSTR
-curl "https://uplanet.com/youtube?channel=MyChannel&html=1"
+curl "https://u.copylaradio.com/youtube?channel=MyChannel&html=1"
 
 # 2. Or via API
-curl "https://uplanet.com/youtube?channel=MyChannel" | jq '.channels.MyChannel'
+curl "https://u.copylaradio.com/youtube?channel=MyChannel" | jq '.channels.MyChannel'
 ```
 
 ### Example 4: Search Videos by Location
 
 ```bash
 # Find videos within 5km of Paris
-curl "https://uplanet.com/youtube?lat=48.8566&lon=2.3522&radius=5"
+curl "https://u.copylaradio.com/youtube?lat=48.8566&lon=2.3522&radius=5"
 ```
 
 ---

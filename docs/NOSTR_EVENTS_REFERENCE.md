@@ -131,7 +131,7 @@ Profil public visible sur les clients Nostr.
     "name": "Alice",
     "about": "Description",
     "picture": "https://...",
-    "nip05": "alice@uplanet.com",
+    "nip05": "alice@qo-op.com",
     "lud16": "alice@getalby.com"
   }
 }
