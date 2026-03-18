@@ -751,8 +751,21 @@ for PLAYER in "${NOSTR[@]}"; do
                                 log "INFO" "[7 DAYS CYCLE] NOSTR Card ($COINS G1) - Grace period for new MULTIPASS (${DIFF_DAYS} days old)"
                                 continue
                             fi
-                            
+
+                            # Grace period : primo TX différée — wallet non encore activé
+                            # Si G1PRIME absent ET solde == 0, l'utilisateur n'a pas encore reçu
+                            # de virement officiel (oc2uplanet ou UPLANET.official.sh).
+                            # On lui laisse 7 jours supplémentaires avant tout DESTROY.
+                            if [[ ! -s ~/.zen/game/nostr/${PLAYER}/G1PRIME ]] && \
+                               [[ -z "$COINS" || "$COINS" == "0" || "$COINS" == "null" || \
+                                  $(echo "${COINS:-0} <= 0" | bc -l 2>/dev/null) -eq 1 ]]; then
+                                log "INFO" "[GRACE PERIOD] MULTIPASS ${PLAYER} - primo TX différée, wallet en attente d'activation (${DIFF_DAYS} jours)"
+                                log "INFO" "             Pour activer : UPLANET.official.sh -l ${PLAYER} -m 1"
+                                continue
+                            fi
+
                             log "WARN" "[7 DAYS CYCLE] NOSTR Card ($COINS G1) - insufficient funds! Need at least $MIN_BALANCE Ğ1 (1 Ğ1 minimum + $TOTAL_PAYMENT Ğ1 payment). Destroying if not captain"
+                            # Capitaine : jamais DESTROY
                             if [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]]; then
                                 ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}"
                             fi

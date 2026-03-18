@@ -634,7 +634,13 @@ myCORACLE="${myCORACLE:-${myIPFS}/ipns/coracle.copylaradio.com}" ## CORACLE NOST
     || UPLANETNAME="0000000000000000000000000000000000000000000000000000000000000000"
 
 CAPTAINZENCARDG1PUB=$(cat $HOME/.zen/game/players/.current/.g1pub 2>/dev/null) ## PLAYER ONE ZEN CARD G1PUB
-CAPTAINEMAIL=$(cat $HOME/.zen/game/players/.current/.player 2>/dev/null) ## PLAYER ONE EMAIL
+# Lire CAPTAINEMAIL depuis .current/.player — conserver la valeur exportée comme fallback
+# (utile lors du bootstrap : handle_captain_setup() exporte CAPTAINEMAIL avant .current existe)
+_captainemail_from_current=$(cat $HOME/.zen/game/players/.current/.player 2>/dev/null)
+[[ -n "$_captainemail_from_current" ]] \
+    && CAPTAINEMAIL="$_captainemail_from_current" \
+    || CAPTAINEMAIL="${CAPTAINEMAIL:-}"   # conserver la valeur déjà exportée (bootstrap)
+unset _captainemail_from_current
 CAPTAINHEX=$(cat $HOME/.zen/game/nostr/${CAPTAINEMAIL}/HEX 2>/dev/null) ## PLAYER ONE HEX
 CAPTAING1PUB=$(cat $HOME/.zen/game/nostr/${CAPTAINEMAIL}/G1PUBNOSTR 2>/dev/null) ## PLAYER ONE MULTIPASS G1PUBNOSTR
 

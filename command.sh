@@ -602,6 +602,257 @@ check_first_time_usage() {
     fi
 }
 
+# ── Création automatique du compte capitaine GMARKMAIL ───────────────────────
+# Reproduit la logique de setup.sh : hostname + localisation GPS → email unique
+create_gmarkmail_captain() {
+    print_section "🤖 CRÉATION AUTOMATIQUE — Compte GMARKMAIL"
+
+    source "${MY_PATH}/tools/my.sh" 2>/dev/null
+
+    # Générer la position GPS (my_LatLon ou fallback ipinfo)
+    local GO
+    GO=$(my_LatLon 2>/dev/null)
+    if [[ -z "$GO" || "$GO" == "0.00 0.00" ]]; then
+        local GEO_INFO
+        GEO_INFO=$(curl -s --connect-timeout 5 ipinfo.io/json 2>/dev/null)
+        local auto_lat auto_lon
+        auto_lat=$(echo "$GEO_INFO" | jq -r '.loc // "0.00"' | cut -d',' -f1 2>/dev/null)
+        auto_lon=$(echo "$GEO_INFO" | jq -r '.loc // "0.00"' | cut -d',' -f2 2>/dev/null)
+        GO="${auto_lat:-0.00} ${auto_lon:-0.00}"
+    fi
+
+    # Email GMARKMAIL : support+hostname-GPS@qo-op.com
+    local GMARKMAIL
+    GMARKMAIL="support+$(echo "$(hostname) $GO" | sed "s| |-|g")@qo-op.com"
+    local GLAT GLON
+    GLAT=$(echo "$GO" | awk '{print $1}')
+    GLON=$(echo "$GO"  | awk '{print $NF}')
+
+    echo -e "${CYAN}  Email généré :${NC} ${WHITE}${GMARKMAIL}${NC}"
+    echo -e "${CYAN}  Hostname     :${NC} ${WHITE}$(hostname)${NC}"
+    echo -e "${CYAN}  Position GPS :${NC} ${WHITE}${GO}${NC}"
+    echo ""
+    read -p "Confirmer la création ? (oui/non) [oui]: " confirm_gm
+    confirm_gm="${confirm_gm:-oui}"
+    [[ ! "$confirm_gm" =~ ^(oui|o|y|yes)$ ]] && print_info "Annulé." && return 1
+
+    # 1. MULTIPASS
+    print_info "Création du MULTIPASS ${GMARKMAIL}..."
+    if ! "${MY_PATH}/tools/make_NOSTRCARD.sh" "${GMARKMAIL}" "${SYSLANG:-fr}" "$GLAT" "$GLON"; then
+        print_error "Échec make_NOSTRCARD.sh"
+        return 1
+    fi
+
+    # 2. ZEN Card — secrets aléatoires (diceware)
+    local ZSALT ZPEPS
+    ZSALT=$(${MY_PATH}/tools/diceware.sh $(( $(${MY_PATH}/tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
+    ZPEPS=$(${MY_PATH}/tools/diceware.sh $(( $(${MY_PATH}/tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
+    echo -e "${YELLOW}⚠️  Conservez ces secrets :${NC}"
+    echo -e "   SALT   : ${WHITE}${ZSALT}${NC}"
+    echo -e "   PEPPER : ${WHITE}${ZPEPS}${NC}"
+    echo ""
+
+    # Récupérer NPUB & HEX depuis .secret.nostr du MULTIPASS fraîchement créé
+    local NPUB="" HEX=""
+    if [[ -f ~/.zen/game/nostr/${GMARKMAIL}/.secret.nostr ]]; then
+        source ~/.zen/game/nostr/${GMARKMAIL}/.secret.nostr
+    fi
+
+    # Bootstrap : VISA.new.sh a besoin de CAPTAINEMAIL pour chiffrer le share
+    # lors d'un premier démarrage on s'auto-définit comme capitaine provisoire
+    export CAPTAINEMAIL="${GMARKMAIL}"
+    local _gm_g1pub
+    _gm_g1pub=$(cat ~/.zen/game/nostr/${GMARKMAIL}/G1PUBNOSTR 2>/dev/null)
+    [[ -n "$_gm_g1pub" ]] && export CAPTAING1PUB="$_gm_g1pub"
+
+    print_info "Création de la ZEN Card..."
+    if ! "${MY_PATH}/RUNTIME/VISA.new.sh" "$ZSALT" "$ZPEPS" "${GMARKMAIL}" "UPlanet" "${SYSLANG:-fr}" "$GLAT" "$GLON" "$NPUB" "$HEX"; then
+        print_error "Échec VISA.new.sh"
+        return 1
+    fi
+
+    # 3. Configurer comme capitaine + recharger l'environnement
+    rm -f ~/.zen/game/players/.current
+    ln -s ~/.zen/game/players/${GMARKMAIL} ~/.zen/game/players/.current
+    PLAYER="$GMARKMAIL"
+    CAPTAINEMAIL="$GMARKMAIL"
+    CURRENT="$GMARKMAIL"
+    G1PUB=$(cat ~/.zen/game/players/${GMARKMAIL}/secret.dunikey 2>/dev/null | grep 'pub:' | cut -d ' ' -f 2)
+    CAPTAING1PUB="$G1PUB"
+    ASTRONAUTENS=$(ipfs key list -l 2>/dev/null | grep -w "${GMARKMAIL}" | head -n1 | cut -d ' ' -f 1)
+    # Recharger my.sh pour propager les nouvelles variables dans toute la session
+    . "${MY_PATH}/tools/my.sh" 2>/dev/null || true
+
+    print_success "Capitaine automatique configuré : ${GMARKMAIL}"
+    return 0
+}
+
+# ── Fonction de configuration du capitaine ───────────────────────────────────
+# Appelée quand CAPTAINEMAIL est absent ou players/.current invalide.
+# Propose :
+#   1. Sélectionner une ZEN Card existante comme capitaine
+#   2. Créer une ZEN Card à partir d'un MULTIPASS existant
+#   3. Créer un MULTIPASS puis une ZEN Card (si aucun compte)
+handle_captain_setup() {
+    print_header "⚙️  CONFIGURATION DU CAPITAINE"
+
+    echo -e "${YELLOW}⚠️  Aucun capitaine n'est configuré sur cette station.${NC}"
+    echo -e "${CYAN}Le capitaine est le gestionnaire principal de la station Astroport.${NC}"
+    echo ""
+
+    # ── Cas 1 : Des ZEN Cards existent ──────────────────────────────────────
+    local zen_cards=()
+    while IFS= read -r zc; do
+        [[ -n "$zc" ]] && zen_cards+=("$zc")
+    done < <(ls -t ~/.zen/game/players/ 2>/dev/null | grep "@")
+
+    if [[ ${#zen_cards[@]} -gt 0 ]]; then
+        print_section "ZEN Cards disponibles — Choisissez le capitaine"
+        echo ""
+        for i in "${!zen_cards[@]}"; do
+            local zc="${zen_cards[$i]}"
+            local g1pub=$(cat ~/.zen/game/players/${zc}/secret.dunikey 2>/dev/null | grep 'pub:' | cut -d ' ' -f 2)
+            local is_current=""
+            [[ "$(readlink ~/.zen/game/players/.current 2>/dev/null | rev | cut -d '/' -f 1 | rev)" == "$zc" ]] && is_current=" ${GREEN}← actuel${NC}"
+            echo -e "  ${BLUE}$((i+1)))${NC} ${WHITE}${zc}${NC}${is_current}"
+            [[ -n "$g1pub" ]] && echo -e "       G1PUB: ${CYAN}${g1pub:0:20}...${NC}"
+            echo ""
+        done
+        echo "  0. ➕ Créer une nouvelle ZEN Card"
+        echo "  a. 🤖 Création automatique (GMARKMAIL)"
+        echo ""
+
+        local choice
+        read -p "Votre choix (numéro, 0 ou a): " choice
+
+        if [[ "$choice" =~ ^(a|A)$ ]]; then
+            create_gmarkmail_captain
+            return $?
+        elif [[ "$choice" =~ ^[1-9][0-9]*$ ]] && (( choice >= 1 && choice <= ${#zen_cards[@]} )); then
+            local selected="${zen_cards[$((choice-1))]}"
+            print_info "Sélection de ${selected} comme capitaine..."
+            rm -f ~/.zen/game/players/.current
+            ln -s ~/.zen/game/players/${selected} ~/.zen/game/players/.current
+            # Recharger les variables globales
+            PLAYER="$selected"
+            CAPTAINEMAIL="$selected"
+            G1PUB=$(cat ~/.zen/game/players/${selected}/secret.dunikey 2>/dev/null | grep 'pub:' | cut -d ' ' -f 2)
+            ASTRONAUTENS=$(ipfs key list -l 2>/dev/null | grep -w "${selected}" | head -n1 | cut -d ' ' -f 1)
+            CURRENT="$selected"
+            print_success "Capitaine configuré : ${selected}"
+            echo ""
+            return 0
+        elif [[ "$choice" == "0" ]]; then
+            : # Tombe dans le bloc de création ci-dessous
+        else
+            print_error "Choix invalide — configuration annulée"
+            return 1
+        fi
+    fi
+
+    # ── Cas 2 : Pas de ZEN Card — chercher un MULTIPASS de référence ─────────
+    local multipass_list=()
+    while IFS= read -r mp; do
+        [[ -n "$mp" ]] && multipass_list+=("$mp")
+    done < <(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@")
+
+    if [[ ${#multipass_list[@]} -gt 0 ]]; then
+        print_section "Aucune ZEN Card — Créer une ZEN Card à partir d'un MULTIPASS"
+        echo -e "${CYAN}Sélectionnez le MULTIPASS dont les données (email, GPS, NOSTR) seront utilisées :${NC}"
+        echo ""
+
+        for i in "${!multipass_list[@]}"; do
+            local mp="${multipass_list[$i]}"
+            local npub=$(cat ~/.zen/game/nostr/${mp}/NPUB 2>/dev/null | head -c 20)
+            local gps=""
+            [[ -f ~/.zen/game/nostr/${mp}/GPS ]] && gps=$(grep "LAT=" ~/.zen/game/nostr/${mp}/GPS | cut -d'=' -f2 | tr -d ';')
+            echo -e "  ${BLUE}$((i+1)))${NC} ${WHITE}${mp}${NC}"
+            [[ -n "$npub" ]] && echo -e "       NPUB: ${CYAN}${npub}...${NC}"
+            [[ -n "$gps" ]]  && echo -e "       GPS:  ${CYAN}${gps}${NC}"
+            echo ""
+        done
+        echo "  0. ➕ Créer un nouveau MULTIPASS d'abord"
+        echo "  a. 🤖 Création automatique (GMARKMAIL)"
+        echo ""
+
+        local mp_choice
+        read -p "Votre choix (numéro, 0 ou a): " mp_choice
+
+        if [[ "$mp_choice" =~ ^(a|A)$ ]]; then
+            create_gmarkmail_captain
+            return $?
+        elif [[ "$mp_choice" =~ ^[1-9][0-9]*$ ]] && (( mp_choice >= 1 && mp_choice <= ${#multipass_list[@]} )); then
+            local ref_mp="${multipass_list[$((mp_choice-1))]}"
+            local mp_dir="$HOME/.zen/game/nostr/${ref_mp}"
+
+            # Lire les données du MULTIPASS
+            local mp_lat="" mp_lon="" mp_npub="" mp_hex=""
+            [[ -f "${mp_dir}/GPS" ]] && source "${mp_dir}/GPS"
+            mp_lat="${LAT:-0.00}"
+            mp_lon="${LON:-0.00}"
+            [[ -f "${mp_dir}/NPUB" ]] && mp_npub=$(cat "${mp_dir}/NPUB")
+            [[ -f "${mp_dir}/HEX"  ]] && mp_hex=$(cat "${mp_dir}/HEX")
+
+            print_info "Génération des secrets pour la ZEN Card de ${ref_mp}..."
+            local ppass=$(${MY_PATH}/tools/diceware.sh $(( $(${MY_PATH}/tools/getcoins_from_gratitude_box.sh) + 3 )) | xargs)
+            local npass=$(${MY_PATH}/tools/diceware.sh $(( $(${MY_PATH}/tools/getcoins_from_gratitude_box.sh) + 1 )) | xargs)
+            echo -e "  Secret 1 : ${CYAN}${ppass}${NC}"
+            echo -e "  Secret 2 : ${CYAN}${npass}${NC}"
+            echo ""
+            read -p "Personnaliser les secrets ? (oui/non) [non]: " custom_secrets
+            if [[ "$custom_secrets" =~ ^(oui|o|y|yes)$ ]]; then
+                read -p "Secret 1: " ppass_in; [[ -n "$ppass_in" ]] && ppass="$ppass_in"
+                read -p "Secret 2: " npass_in; [[ -n "$npass_in" ]] && npass="$npass_in"
+            fi
+
+            # Bootstrap : VISA.new.sh a besoin de CAPTAINEMAIL pour chiffrer le share
+            # lors d'un premier démarrage, on utilise l'email en cours de création
+            export CAPTAINEMAIL="${ref_mp}"
+            local _boot_g1pub
+            _boot_g1pub=$(cat ~/.zen/game/nostr/${ref_mp}/G1PUBNOSTR 2>/dev/null)
+            [[ -n "$_boot_g1pub" ]] && export CAPTAING1PUB="$_boot_g1pub"
+
+            print_info "Création de la ZEN Card pour ${ref_mp}..."
+            if "${MY_PATH}/RUNTIME/VISA.new.sh" "$ppass" "$npass" "$ref_mp" "UPlanet" "$SYSLANG" "$mp_lat" "$mp_lon" "$mp_npub" "$mp_hex"; then
+                rm -f ~/.zen/game/players/.current
+                ln -s ~/.zen/game/players/${ref_mp} ~/.zen/game/players/.current
+                PLAYER="$ref_mp"
+                CAPTAINEMAIL="$ref_mp"
+                CURRENT="$ref_mp"
+                G1PUB=$(cat ~/.zen/game/players/${ref_mp}/secret.dunikey 2>/dev/null | grep 'pub:' | cut -d ' ' -f 2)
+                CAPTAING1PUB="$G1PUB"
+                ASTRONAUTENS=$(ipfs key list -l 2>/dev/null | grep -w "${ref_mp}" | head -n1 | cut -d ' ' -f 1)
+                # Recharger my.sh pour propager les nouvelles variables dans toute la session
+                . "${MY_PATH}/tools/my.sh" 2>/dev/null || true
+                print_success "ZEN Card créée et capitaine configuré : ${ref_mp}"
+                return 0
+            else
+                print_error "Échec de la création de la ZEN Card"
+                return 1
+            fi
+        fi
+        # choice == "0" → créer MULTIPASS + ZEN Card (tombe dans cas 3)
+    fi
+
+    # ── Cas 3 : Aucun MULTIPASS — créer de zéro ──────────────────────────────
+    print_section "Aucun compte trouvé — Création complète"
+    echo -e "${CYAN}Choisissez le mode de création :${NC}"
+    echo ""
+    echo "  1. 🤖 Automatique — compte GMARKMAIL (hostname + GPS), identique à setup.sh"
+    echo "  2. ✏️  Manuel      — saisir email, GPS et secrets"
+    echo ""
+    local cas3_choice
+    read -p "Votre choix [1]: " cas3_choice
+    cas3_choice="${cas3_choice:-1}"
+
+    if [[ "$cas3_choice" == "1" || "$cas3_choice" =~ ^(a|A)$ ]]; then
+        create_gmarkmail_captain
+    else
+        create_multipass   # saisie manuelle (inclut la création enchaînée ZEN Card)
+    fi
+    return $?
+}
+
 # Fonction d'onboarding pour nouveaux utilisateurs
 handle_first_time_onboarding() {
     print_header "BIENVENUE SUR ASTROPORT.ONE - PREMIÈRE CONFIGURATION"
@@ -2046,7 +2297,17 @@ handle_extra_menu() {
 main() {
     # Vérifier les dépendances
     check_dependencies
-    
+
+    # ── Vérification du capitaine ─────────────────────────────────────────────
+    # Si CAPTAINEMAIL est absent ou players/.current invalide → configuration requise
+    if [[ -z "$CAPTAINEMAIL" ]] || [[ ! -d "$(readlink -f ~/.zen/game/players/.current 2>/dev/null)" ]]; then
+        echo -e "\033[1;33m⚠️  Aucun capitaine configuré — lancement de l'assistant de configuration...\033[0m"
+        sleep 1
+        handle_captain_setup
+        # Recharger my.sh pour mettre à jour CAPTAINEMAIL et les variables dérivées
+        [[ -n "$CAPTAINEMAIL" ]] && . "${MY_PATH}/tools/my.sh" 2>/dev/null || true
+    fi
+
     # Vérifier si c'est la première utilisation
     if check_first_time_usage; then
         print_header "BIENVENUE SUR ASTROPORT.ONE"

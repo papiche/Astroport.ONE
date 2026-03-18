@@ -65,6 +65,7 @@ show_help() {
     echo "  -l, --locataire EMAIL     Virement pour locataire (recharge MULTIPASS)"
     echo "  -s, --societaire EMAIL    Virement pour sociétaire (parts sociales)"
     echo "  -t, --type TYPE           Type de sociétaire: satellite|constellation|infrastructure"
+    echo "  -f, --referrer EMAIL      Code parrain : le 1% de prime lui est versé (au lieu du Capitaine)"
     echo "  -i, --infrastructure      Apport capital infrastructure (CAPTAIN → CAPITAL)"
     echo "  -c, --captain EMAIL       Inscription capitaine (accès complet aux services)"
     echo "      --force               Mode force : écrase le capital existant"
@@ -79,6 +80,7 @@ show_help() {
     echo "Exemples:"
     echo "  $0 -l user@example.com -m 20                  # Recharge MULTIPASS locataire"
     echo "  $0 -s user@example.com -t satellite           # Parts sociales satellite"
+    echo "  $0 -s user@example.com -t satellite -f parrain@example.com  # Avec parrain"
     echo "  $0 -s user@example.com -t constellation       # Parts sociales constellation"
     echo "  $0 -i -m 500                                  # Apport capital infrastructure (500€)"
     echo "  $0 -i -m 200 --add                            # Ajoute 200€ au capital existant"
@@ -569,6 +571,67 @@ process_ore() {
 }
 
 ################################################################################
+# Fonction pour s'assurer qu'un portefeuille est initialisé (primo TX différée)
+# La primo TX (1 Ğ1) n'est envoyée que lorsque des ẐEN sont effectivement reçus,
+# évitant ainsi de perdre des Ğ1 pour des MULTIPASS/ZEN Card jamais activés.
+#
+# Duniter v2 : un wallet non initialisé (solde = 0) ne peut pas recevoir de tx.
+# On envoie 1 Ğ1 depuis UPLANETNAME_G1 pour établir le lien primal.
+################################################################################
+ensure_wallet_initialized() {
+    local pubkey="$1"
+    local label="${2:-wallet}"   # Description pour les logs
+    local email="${3:-}"         # Email associé (pour archivage G1PRIME)
+
+    # Vérification rapide via cache primal
+    if [[ -s "$HOME/.zen/tmp/coucou/${pubkey}.primal" ]]; then
+        echo -e "${GREEN}✅ ${label} déjà initialisé (primal cache)${NC}"
+        return 0
+    fi
+
+    # Vérifier le solde blockchain
+    echo -e "${YELLOW}🔍 Vérification initialisation ${label}: ${pubkey:0:8}...${NC}"
+    local balance
+    balance=$("${MY_PATH}/tools/G1check.sh" "${pubkey}" 2>/dev/null | tail -n 1)
+
+    if [[ -n "$balance" ]] && (( $(echo "${balance:-0} > 0" | bc -l 2>/dev/null || echo 0) )); then
+        echo -e "${GREEN}✅ ${label} déjà initialisé (solde: ${balance} Ğ1)${NC}"
+        # Mettre le cache à jour
+        echo "${UPLANETNAME_G1}" > "$HOME/.zen/tmp/coucou/${pubkey}.primal"
+        return 0
+    fi
+
+    # Wallet non initialisé → envoyer la primo TX
+    echo -e "${BLUE}📤 Primo TX: initialisation ${label} depuis UPLANETNAME_G1...${NC}"
+
+    if [[ ! -f "$HOME/.zen/game/uplanet.G1.dunikey" ]]; then
+        echo -e "${RED}❌ Fichier uplanet.G1.dunikey manquant — impossible d'initialiser ${label}${NC}"
+        return 1
+    fi
+
+    local youser=""
+    [[ -n "$email" ]] && youser=$("${MY_PATH}/tools/clyuseryomail.sh" "${email}" 2>/dev/null)
+    local primo_comment="UPLANET:${UPLANETG1PUB:0:8}:${youser:-INIT}:${label}:PRIMAL"
+
+    "${MY_PATH}/tools/PAYforSURE.sh" \
+        "${HOME}/.zen/game/uplanet.G1.dunikey" \
+        "1" \
+        "${pubkey}" \
+        "${primo_comment}" 2>/dev/null
+
+    if [[ $? -eq 0 ]]; then
+        echo -e "${GREEN}✅ Primo TX envoyée: 1 Ğ1 → ${label} (${pubkey:0:8}...)${NC}"
+        # Marquer comme initialisé
+        echo "${UPLANETNAME_G1}" > "$HOME/.zen/tmp/coucou/${pubkey}.primal"
+        [[ -n "$email" ]] && echo "${UPLANETNAME_G1}" > "$HOME/.zen/game/nostr/${email}/G1PRIME" 2>/dev/null
+        return 0
+    else
+        echo -e "${RED}❌ Primo TX échouée pour ${label} — blocage Duniter v2 possible${NC}"
+        return 1
+    fi
+}
+
+################################################################################
 # Fonction principale pour virement locataire
 ################################################################################
 process_locataire() {
@@ -609,7 +672,13 @@ process_locataire() {
     echo -e "  UPLANETNAME_G1: ${g1_pubkey:0:8}..."
     echo -e "  UPLANETNAME: ${uplanet_pubkey:0:8}..."
     echo -e "  MULTIPASS ${email}: ${multipass_pubkey:0:8}..."
-    
+
+    # Primo TX différée : initialiser le MULTIPASS uniquement si nécessaire
+    if ! ensure_wallet_initialized "$multipass_pubkey" "MULTIPASS" "$email"; then
+        echo -e "${RED}❌ Impossible d'initialiser le MULTIPASS — Duniter v2 indisponible ?${NC}"
+        return 1
+    fi
+
     # Vérifier qu'il n'y a pas de transactions en cours avant de commencer
     echo -e "${BLUE}🔍 Vérification préalable des transactions en cours...${NC}"
     if ! check_no_pending_transactions "$g1_pubkey"; then
@@ -862,6 +931,7 @@ process_societaire() {
     local email="$1"
     local type="$2"
     local montant_euros="${3:-$(calculate_societaire_amount "$type")}"
+    local referrer="${4:-}"   # Email du parrain (optionnel) : reçoit le 1% à la place du Capitaine
     
     # Valider que le montant est un nombre valide
     if [[ -z "$montant_euros" ]] || ! [[ "$montant_euros" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
@@ -919,7 +989,16 @@ process_societaire() {
     echo -e "  UPLANETNAME_G1: ${g1_pubkey:0:8}..."
     echo -e "  UPLANETNAME_SOCIETY: ${society_pubkey:0:8}..."
     echo -e "  ZEN Card ${email}: ${zencard_pubkey:0:8}..."
-    
+
+    # Primo TX différée : initialiser ZEN Card et MULTIPASS si nécessaire
+    if ! ensure_wallet_initialized "$zencard_pubkey" "ZENCARD" "$email"; then
+        echo -e "${RED}❌ Impossible d'initialiser la ZEN Card — Duniter v2 indisponible ?${NC}"
+        return 1
+    fi
+    if [[ -n "$multipass_pubkey" ]]; then
+        ensure_wallet_initialized "$multipass_pubkey" "MULTIPASS" "$email" || true  # non-bloquant
+    fi
+
     # Vérifier qu'il n'y a pas de transactions en cours avant de commencer
     echo -e "${BLUE}🔍 Vérification préalable des transactions en cours...${NC}"
     if ! check_no_pending_transactions "$g1_pubkey"; then
@@ -946,28 +1025,20 @@ process_societaire() {
     echo -e "${BLUE}📤 Étape 3: Répartition 33%+33%+33%+1% depuis ZEN Card${NC}"
 
     # Calculer les montants de répartition (en Ẑen pour l'affichage, en Ğ1 pour les transferts)
-    # 33% CASH + 33% RnD + 33% ASSETS + 1% Captain MULTIPASS = 100%
+    # 33% MULTIPASS sociétaire (crédit usage) + 33% RnD + 33% ASSETS + 1% Captain MULTIPASS = 100%
     local montant_zen=$montant_euros
     local part_captain_zen=$(echo "scale=2; $montant_zen * 1 / 100" | bc)
-    local part_treasury_zen=$(echo "scale=2; $montant_zen * 33 / 100" | bc)
+    local part_multipass_zen=$(echo "scale=2; $montant_zen * 33 / 100" | bc)
     local part_rnd_zen=$(echo "scale=2; $montant_zen * 33 / 100" | bc)
-    local part_assets_zen=$(echo "scale=2; $montant_zen - $part_treasury_zen - $part_rnd_zen - $part_captain_zen" | bc)
-    
-    # Utiliser les mêmes portefeuilles que ZEN.COOPERATIVE.3x1-3.sh
-    local treasury_pubkey=""
+    local part_assets_zen=$(echo "scale=2; $montant_zen - $part_multipass_zen - $part_rnd_zen - $part_captain_zen" | bc)
+
+    # Note: 1/3 revient au MULTIPASS du sociétaire (crédit usage, déjà récupéré ci-dessus)
+    echo -e "${GREEN}✅ MULTIPASS sociétaire (1/3 crédit usage): ${multipass_pubkey:0:8}...${NC}"
+
+    # Portefeuilles coopératifs R&D et ASSETS
     local rnd_pubkey=""
     local assets_pubkey=""
-    
-    # Treasury (CASH)
-    if [[ -f "$HOME/.zen/game/uplanet.CASH.dunikey" ]]; then
-        treasury_pubkey=$(cat "$HOME/.zen/game/uplanet.CASH.dunikey" | grep "pub:" | cut -d ' ' -f 2)
-        echo -e "${GREEN}✅ Treasury trouvé: ${treasury_pubkey:0:8}...${NC}"
-    else
-        echo -e "${RED}❌ Portefeuille Treasury non trouvé: ~/.zen/game/uplanet.CASH.dunikey${NC}"
-        echo -e "${CYAN}💡 Exécutez ZEN.COOPERATIVE.3x1-3.sh pour créer les portefeuilles coopératifs${NC}"
-        return 1
-    fi
-    
+
     # R&D
     if [[ -f "$HOME/.zen/game/uplanet.RnD.dunikey" ]]; then
         rnd_pubkey=$(cat "$HOME/.zen/game/uplanet.RnD.dunikey" | grep "pub:" | cut -d ' ' -f 2)
@@ -988,15 +1059,15 @@ process_societaire() {
         return 1
     fi
     
-    # Transfert vers Treasury (1/3)
-    echo -e "${CYAN}  📤 Treasury (1/3): ${part_treasury_zen} Ẑen${NC}"
-    if ! transfer_and_verify "$zencard_dunikey" "$treasury_pubkey" "$part_treasury_zen" "UPLANET:${UPLANETG1PUB:0:8}:TREASURY:${email}:${type}:${IPFSNODEID}" "$email" "SOCIETAIRE_${type^^}" "Étape 3a: ZENCARD→TREASURY"; then
-        echo -e "${RED}❌ Échec transfert Treasury${NC}"
+    # Transfert (1/3) → MULTIPASS du sociétaire (crédit usage retourné)
+    echo -e "${CYAN}  📤 MULTIPASS sociétaire (1/3 crédit usage): ${part_multipass_zen} Ẑen${NC}"
+    if ! transfer_and_verify "$zencard_dunikey" "$multipass_pubkey" "$part_multipass_zen" "UPLANET:${UPLANETG1PUB:0:8}:ZENCOIN:${email}" "$email" "SOCIETAIRE_${type^^}" "Étape 3a: ZENCARD→MULTIPASS"; then
+        echo -e "${RED}❌ Échec transfert MULTIPASS sociétaire${NC}"
         return 1
     fi
-    
-    # Mettre à jour DID pour contribution Treasury
-    "${MY_PATH}/tools/did_manager_nostr.sh" update "$email" "TREASURY_CONTRIBUTION" "$part_treasury_zen" "$(zen_to_g1 "$part_treasury_zen")"
+
+    # Mettre à jour DID pour crédit MULTIPASS
+    "${MY_PATH}/tools/did_manager_nostr.sh" update "$email" "MULTIPASS_CREDIT" "$part_multipass_zen" "$(zen_to_g1 "$part_multipass_zen")"
     
     # Transfert vers R&D (1/3)
     echo -e "${CYAN}  📤 R&D (1/3): ${part_rnd_zen} Ẑen${NC}"
@@ -1018,25 +1089,53 @@ process_societaire() {
     # Mettre à jour DID pour contribution Assets
     "${MY_PATH}/tools/did_manager_nostr.sh" update "$email" "ASSETS_CONTRIBUTION" "$part_assets_zen" "$(zen_to_g1 "$part_assets_zen")"
 
-    # Transfert vers Captain MULTIPASS (1% prime de gestion)
-    if [[ -n "$CAPTAING1PUB" ]]; then
-        echo -e "${CYAN}  📤 Captain bonus (1%): ${part_captain_zen} Ẑen${NC}"
-        if transfer_and_verify "$zencard_dunikey" "$CAPTAING1PUB" "$part_captain_zen" "UPLANET:${UPLANETG1PUB:0:8}:CPT1pct:${email}:${type}:${IPFSNODEID}" "$email" "SOCIETAIRE_${type^^}" "Étape 3d: ZENCARD→CAPTAIN"; then
-            echo -e "${GREEN}  ✅ Captain bonus: ${part_captain_zen} Ẑen → MULTIPASS${NC}"
+    # Transfert 1% prime → Parrain (si défini et MULTIPASS trouvé) ou Capitaine
+    # Cherche le parrain dans LOCAL, CACHE et SWARM via search_for_this_email_in_nostr.sh
+    local bonus_target_pubkey="$CAPTAING1PUB"
+    local bonus_target_label="Capitaine"
+    local bonus_tx_type="CPT1pct"
+
+    if [[ -n "$referrer" ]]; then
+        echo -e "${CYAN}  🔍 Recherche du parrain: ${referrer}...${NC}"
+        local referrer_search_result
+        referrer_search_result=$("${MY_PATH}/tools/search_for_this_email_in_nostr.sh" "${referrer}" 2>/dev/null)
+        if [[ -n "$referrer_search_result" ]]; then
+            # Évaluation sécurisée : extrait uniquement G1PUBNOSTR depuis l'export
+            local referrer_multipass
+            referrer_multipass=$(echo "$referrer_search_result" | grep -oP 'G1PUBNOSTR=\K\S+')
+            local referrer_source
+            referrer_source=$(echo "$referrer_search_result" | grep -oP 'source=\K\S+')
+            if [[ -n "$referrer_multipass" ]]; then
+                bonus_target_pubkey="$referrer_multipass"
+                bonus_target_label="Parrain ${referrer}"
+                bonus_tx_type="REF1pct"
+                echo -e "${GREEN}  🤝 Parrain trouvé (${referrer_source}): ${referrer} (${referrer_multipass:0:8}...)${NC}"
+            else
+                echo -e "${YELLOW}  ⚠️  G1PUBNOSTR introuvable pour '${referrer}' — prime reversée au Capitaine${NC}"
+            fi
         else
-            echo -e "${YELLOW}  ⚠️  Captain bonus failed (non-critical)${NC}"
+            echo -e "${YELLOW}  ⚠️  Parrain '${referrer}' non trouvé (LOCAL/CACHE/SWARM) — prime reversée au Capitaine${NC}"
+        fi
+    fi
+
+    if [[ -n "$bonus_target_pubkey" ]]; then
+        echo -e "${CYAN}  📤 Prime 1% → ${bonus_target_label}: ${part_captain_zen} Ẑen${NC}"
+        if transfer_and_verify "$zencard_dunikey" "$bonus_target_pubkey" "$part_captain_zen" "UPLANET:${UPLANETG1PUB:0:8}:${bonus_tx_type}:${email}:${type}:${IPFSNODEID}" "$email" "SOCIETAIRE_${type^^}" "Étape 3d: ZENCARD→${bonus_tx_type}"; then
+            echo -e "${GREEN}  ✅ Prime 1%: ${part_captain_zen} Ẑen → ${bonus_target_label}${NC}"
+        else
+            echo -e "${YELLOW}  ⚠️  Prime 1% failed (non-critical)${NC}"
         fi
     fi
 
     echo -e "${GREEN}🎉 Virement sociétaire terminé avec succès!${NC}"
     echo -e "${CYAN}📊 Résumé:${NC}"
     echo -e "  • ${montant_euros} Ẑen transférés vers ZEN Card ${email}"
-    echo -e "  • Parts sociales attribuées (type: ${type})"
+    echo -e "  • Droits d'usage attribués (type: ${type})"
     echo -e "  • Répartition 33/33/33/1 effectuée:"
-    echo -e "    - Treasury: ${part_treasury_zen} Ẑen"
+    echo -e "    - MULTIPASS (crédit usage): ${part_multipass_zen} Ẑen"
     echo -e "    - R&D: ${part_rnd_zen} Ẑen"
     echo -e "    - Assets: ${part_assets_zen} Ẑen"
-    echo -e "    - Captain: ${part_captain_zen} Ẑen"
+    echo -e "    - ${bonus_target_label} (1%): ${part_captain_zen} Ẑen"
     echo -e "  • Toutes les transactions confirmées sur la blockchain"
     
     # Mettre à jour le document DID avec le statut de sociétaire
@@ -1155,19 +1254,19 @@ process_recovery() {
         return 1
     fi
     
-    # Vérifier les portefeuilles 3x1/3
-    local treasury_pubkey=""
-    local rnd_pubkey=""
-    local assets_pubkey=""
-    
-    if [[ -f "$HOME/.zen/game/uplanet.CASH.dunikey" ]]; then
-        treasury_pubkey=$(cat "$HOME/.zen/game/uplanet.CASH.dunikey" | grep "pub:" | cut -d ' ' -f 2)
-        echo -e "${GREEN}✅ Treasury trouvé: ${treasury_pubkey:0:8}...${NC}"
-    else
-        echo -e "${RED}❌ Wallet TREASURY non trouvé: ~/.zen/game/uplanet.CASH.dunikey${NC}"
+    # Récupérer le MULTIPASS du sociétaire (crédit usage, 1/3)
+    local multipass_pubkey_ref=$(cat "$HOME/.zen/game/nostr/${email_ref}/G1PUBNOSTR" 2>/dev/null)
+    if [[ -z "$multipass_pubkey_ref" ]]; then
+        echo -e "${RED}❌ MULTIPASS non trouvé pour ${email_ref}${NC}"
+        echo -e "${CYAN}💡 Créez un MULTIPASS avec make_NOSTRCARD.sh${NC}"
         return 1
     fi
-    
+    echo -e "${GREEN}✅ MULTIPASS trouvé: ${multipass_pubkey_ref:0:8}...${NC}"
+
+    # Vérifier les portefeuilles coopératifs R&D et ASSETS
+    local rnd_pubkey=""
+    local assets_pubkey=""
+
     if [[ -f "$HOME/.zen/game/uplanet.RnD.dunikey" ]]; then
         rnd_pubkey=$(cat "$HOME/.zen/game/uplanet.RnD.dunikey" | grep "pub:" | cut -d ' ' -f 2)
         echo -e "${GREEN}✅ R&D trouvé: ${rnd_pubkey:0:8}...${NC}"
@@ -1215,18 +1314,20 @@ process_recovery() {
     read -p "Type de sociétaire (satellite/constellation): " type_ref
     type_ref="${type_ref:-satellite}"
     
-    # Calculer les montants 3x1/3
-    local part_treasury_zen=$(echo "scale=2; $zen_amount / 3" | bc)
-    local part_rnd_zen=$(echo "scale=2; $zen_amount / 3" | bc)
-    local part_assets_zen=$(echo "scale=2; $zen_amount - $part_treasury_zen - $part_rnd_zen" | bc)
-    
+    # Calculer les montants 33/33/33/1
+    local part_captain_zen=$(echo "scale=2; $zen_amount * 1 / 100" | bc)
+    local part_multipass_zen=$(echo "scale=2; $zen_amount * 33 / 100" | bc)
+    local part_rnd_zen=$(echo "scale=2; $zen_amount * 33 / 100" | bc)
+    local part_assets_zen=$(echo "scale=2; $zen_amount - $part_multipass_zen - $part_rnd_zen - $part_captain_zen" | bc)
+
     echo ""
     echo -e "${YELLOW}📋 Récapitulatif de l'opération:${NC}"
     echo -e "  • Étape 1: SOCIETY → ZEN Card ${email_ref}: ${zen_amount} Ẑen (${g1_amount} Ğ1)"
-    echo -e "  • Étape 2: ZEN Card → 3x1/3:"
-    echo -e "    - Treasury: ${part_treasury_zen} Ẑen"
+    echo -e "  • Étape 2: ZEN Card → 33/33/33/1:"
+    echo -e "    - MULTIPASS (crédit usage): ${part_multipass_zen} Ẑen"
     echo -e "    - R&D: ${part_rnd_zen} Ẑen"
     echo -e "    - Assets: ${part_assets_zen} Ẑen"
+    echo -e "    - Captain (1%): ${part_captain_zen} Ẑen"
     echo ""
     read -p "Confirmer le transfert? (oui/non): " confirm
     
@@ -1248,15 +1349,15 @@ process_recovery() {
     # ÉTAPE 2: ZEN Card → 3x1/3
     echo -e "${BLUE}📤 Étape 2: Répartition 3x1/3 depuis ZEN Card${NC}"
     
-    # Transfert vers Treasury (1/3)
-    echo -e "${CYAN}  📤 Treasury (1/3): ${part_treasury_zen} Ẑen${NC}"
-    if ! transfer_and_verify "$zencard_dunikey" "$treasury_pubkey" "$part_treasury_zen" "UPLANET:${UPLANETG1PUB:0:8}:TREASURY:${email_ref}:${type_ref}:${IPFSNODEID}" "$email_ref" "RECOVERY_TREASURY" "Recovery: ZENCARD→TREASURY"; then
-        echo -e "${RED}❌ Échec transfert Treasury${NC}"
+    # Transfert (1/3) → MULTIPASS du sociétaire (crédit usage retourné)
+    echo -e "${CYAN}  📤 MULTIPASS sociétaire (1/3 crédit usage): ${part_multipass_zen} Ẑen${NC}"
+    if ! transfer_and_verify "$zencard_dunikey" "$multipass_pubkey_ref" "$part_multipass_zen" "UPLANET:${UPLANETG1PUB:0:8}:ZENCOIN:${email_ref}" "$email_ref" "RECOVERY_MULTIPASS" "Recovery: ZENCARD→MULTIPASS"; then
+        echo -e "${RED}❌ Échec transfert MULTIPASS sociétaire${NC}"
         return 1
     fi
-    
-    # Mettre à jour DID pour contribution Treasury
-    "${MY_PATH}/tools/did_manager_nostr.sh" update "$email_ref" "TREASURY_CONTRIBUTION" "$part_treasury_zen" "$(zen_to_g1 "$part_treasury_zen")"
+
+    # Mettre à jour DID pour crédit MULTIPASS
+    "${MY_PATH}/tools/did_manager_nostr.sh" update "$email_ref" "MULTIPASS_CREDIT" "$part_multipass_zen" "$(zen_to_g1 "$part_multipass_zen")"
     
     # Transfert vers R&D (1/3)
     echo -e "${CYAN}  📤 R&D (1/3): ${part_rnd_zen} Ẑen${NC}"
@@ -1278,14 +1379,25 @@ process_recovery() {
     # Mettre à jour DID pour contribution Assets
     "${MY_PATH}/tools/did_manager_nostr.sh" update "$email_ref" "ASSETS_CONTRIBUTION" "$part_assets_zen" "$(zen_to_g1 "$part_assets_zen")"
     
+    # Transfert vers Captain MULTIPASS (1% prime de gestion)
+    if [[ -n "$CAPTAING1PUB" ]]; then
+        echo -e "${CYAN}  📤 Captain bonus (1%): ${part_captain_zen} Ẑen${NC}"
+        if transfer_and_verify "$zencard_dunikey" "$CAPTAING1PUB" "$part_captain_zen" "UPLANET:${UPLANETG1PUB:0:8}:CPT1pct:${email_ref}:${type_ref}:${IPFSNODEID}" "$email_ref" "RECOVERY_CPT" "Recovery: ZENCARD→CAPTAIN"; then
+            echo -e "${GREEN}  ✅ Captain bonus: ${part_captain_zen} Ẑen → MULTIPASS${NC}"
+        else
+            echo -e "${YELLOW}  ⚠️  Captain bonus failed (non-critical)${NC}"
+        fi
+    fi
+
     echo ""
     echo -e "${GREEN}🎉 Transfert de récupération terminé avec succès!${NC}"
     echo -e "${CYAN}📊 Résumé:${NC}"
     echo -e "  • ${zen_amount} Ẑen (${g1_amount} Ğ1) transférés de SOCIETY vers ZEN Card ${email_ref}"
-    echo -e "  • Répartition 3x1/3 effectuée:"
-    echo -e "    - Treasury: ${part_treasury_zen} Ẑen"
+    echo -e "  • Répartition 33/33/33/1 effectuée:"
+    echo -e "    - MULTIPASS (crédit usage): ${part_multipass_zen} Ẑen"
     echo -e "    - R&D: ${part_rnd_zen} Ẑen"
     echo -e "    - Assets: ${part_assets_zen} Ẑen"
+    echo -e "    - Captain (1%): ${part_captain_zen} Ẑen"
     echo -e "  • Toutes les transactions confirmées sur la blockchain"
     echo ""
     
@@ -1682,6 +1794,7 @@ main() {
         local lon=""
         local permit_id=""
         local infra_mode=""  # --force or --add for infrastructure
+        local referrer=""    # Code parrain (email) : reçoit le 1% prime à la place du Capitaine
         
         while [[ $# -gt 0 ]]; do
             case "$1" in
@@ -1767,6 +1880,13 @@ main() {
                         shift
                     fi
                     ;;
+                -f|--referrer)
+                    shift
+                    if [[ -n "$1" && ! "$1" =~ ^- ]]; then
+                        referrer="$1"
+                        shift
+                    fi
+                    ;;
                 -h|--help)
                     show_help
                     exit 0
@@ -1791,7 +1911,8 @@ main() {
                 ;;
             "societaire")
                 if [[ -n "$email" ]]; then
-                    process_societaire "$email" "$type" "$montant"
+                    [[ -n "$referrer" ]] && echo -e "${CYAN}🤝 Parrainage: ${referrer}${NC}"
+                    process_societaire "$email" "$type" "$montant" "$referrer"
                 else
                     echo -e "${RED}❌ Email requis pour l'option --societaire${NC}"
                     exit 1

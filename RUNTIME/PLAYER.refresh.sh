@@ -189,6 +189,12 @@ for PLAYER in ${PLAYERONE[@]}; do
         DAYS_UNTIL_NEXT_PAYMENT=$(( 7 - (DIFF_DAYS % 7) ))
         echo "Next payment in $DAYS_UNTIL_NEXT_PAYMENT days"
 
+        # Grace period CAPITAINE : jamais UNPLUG (U.SOCIETY permanent, même à 0Ğ1)
+        if [[ "${PLAYER}" == "${CAPTAINEMAIL}" ]]; then
+            echo "👑 CAPTAIN ${PLAYER} — ZEN Card protégée (pas d'UNPLUG)"
+            DIFF_DAYS=999  # Force skip du cycle de paiement
+        fi
+
         [[ -z $NCARD ]] && NCARD=1
         Npaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
         [[ -z $ZCARD ]] && ZCARD=4
@@ -280,12 +286,22 @@ for PLAYER in ${PLAYERONE[@]}; do
                     echo "Error email sent to ${PLAYER} for payment failure"
                 fi
             else
-                echo "[7 DAYS CYCLE] ZENCARD ($COINS G1 / $ZEN ZEN) UNPLUG !!"
-                _tpl=$(_prepare_email_template "${MY_PATH}/../templates/NOSTR/zencard_insufficient.html")
-                $MY_PATH/../tools/mailjet.sh --expire 7d "${PLAYER}" "$_tpl" \
-                    "Solde insuffisant (${ZEN} ZEN) - ZEN Card desactivee"
-                rm -f "$_tpl"
-                if [[ ${PLAYER} != ${CAPTAINEMAIL} ]]; then
+                # Grace period : primo TX différée — ZEN Card non encore activée
+                # Si G1PRIME absent sur le MULTIPASS ET solde == 0, l'utilisateur n'a pas encore
+                # reçu de virement officiel. On lui donne 7 jours supplémentaires.
+                MULTIPASS_G1PRIME="${HOME}/.zen/game/nostr/${PLAYER}/G1PRIME"
+                ZENCARD_COINS_CHECK="${COINS:-0}"
+                if [[ ! -s "$MULTIPASS_G1PRIME" ]] && \
+                   [[ -z "$ZENCARD_COINS_CHECK" || "$ZENCARD_COINS_CHECK" == "0" || \
+                      $(echo "${ZENCARD_COINS_CHECK:-0} <= 1" | bc -l 2>/dev/null) -eq 1 ]]; then
+                    echo "⏳ [GRACE PERIOD] ZEN Card ${PLAYER} — primo TX différée, wallet en attente d'activation (${DIFF_DAYS} jours)"
+                    echo "   Pour activer : UPLANET.official.sh -s ${PLAYER} -t satellite -m 50"
+                elif [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]]; then
+                    echo "[7 DAYS CYCLE] ZENCARD ($COINS G1 / $ZEN ZEN) UNPLUG !!"
+                    _tpl=$(_prepare_email_template "${MY_PATH}/../templates/NOSTR/zencard_insufficient.html")
+                    $MY_PATH/../tools/mailjet.sh --expire 7d "${PLAYER}" "$_tpl" \
+                        "Solde insuffisant (${ZEN} ZEN) - ZEN Card desactivee"
+                    rm -f "$_tpl"
                     ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL"
                 fi
             fi

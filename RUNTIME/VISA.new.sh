@@ -697,22 +697,25 @@ cat ${ZINE} \
 
 $MY_PATH/../tools/mailjet.sh --expire 7d "${PLAYER}" ~/.zen/game/players/${PLAYER}/.ZENCard.html "✅ ẐEN Card activated"
 
-### SEND INITIAL G1 - PRIMO TRANSACTION FROM UPLANETNAME_G1 FOR ZENCARD
+### PRIMO TX DIFFÉRÉE — ZEN Card (désactivée à la création)
+## La primo TX (1 Ğ1) sera envoyée par UPLANET.official.sh via ensure_wallet_initialized()
+## uniquement lorsque des ẐEN réels sont reçus (via OC2UPlanet ou virement officiel).
+## Cela évite de perdre des Ğ1 pour des ZEN Cards jamais activées (Duniter v2 bloqué ou wallet abandonné).
+##
+## Pour forcer l'initialisation manuelle :
+##   ~/.zen/Astroport.ONE/UPLANET.official.sh -s ${PLAYER} -t satellite -m 1
 
 YOUSER=$($MY_PATH/../tools/clyuseryomail.sh "${PLAYER}")
 
-# For any UPlanet ORIGIN/Ẑen, send primo transaction from UPLANETNAME_G1 wallet (source primale unique)
-echo "UPlanet ẐEN : Sending PRIMO TX from UPLANETNAME_G1 to ZenCard"
-
-# Ensure UPLANETNAME_G1 dunikey exists (source primale unique)
-if [[ ! -f ~/.zen/game/uplanet.G1.dunikey ]]; then
-    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.G1.dunikey "${UPLANETNAME}.G1" "${UPLANETNAME}.G1"
-    chmod 600 ~/.zen/game/uplanet.G1.dunikey
+# Vérifier si la ZEN Card a déjà un solde (wallet existant) et mettre le cache primal à jour
+DEST_ZEN_BALANCE=$($MY_PATH/../tools/G1check.sh "${G1PUB}" 2>/dev/null | tail -n 1 | tr -d '[:space:]')
+if [[ -n "$DEST_ZEN_BALANCE" ]] && (( $(echo "${DEST_ZEN_BALANCE:-0} > 0" | bc -l 2>/dev/null || echo 0) )); then
+    echo "ℹ️  ZEN Card ${G1PUB} déjà initialisée (solde: ${DEST_ZEN_BALANCE} Ğ1) — cache primal mis à jour"
+    UPLANETNAME_G1=$(cat ~/.zen/tmp/UPLANETNAME_G1 2>/dev/null || echo "")
+    [[ -n "$UPLANETNAME_G1" ]] && echo "${UPLANETNAME_G1}" > ~/.zen/tmp/coucou/${G1PUB}.primal 2>/dev/null
+else
+    echo "ℹ️  PRIMO TX ZEN Card différée — sera envoyée lors du premier virement ẐEN réel (UPLANET.official.sh)"
 fi
-
-# Send primo transaction from UPLANETNAME_G1 to establish primal chain (consistent with MULTIPASS)
-${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.G1.dunikey" "1" "${G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:PRIMAL" 2>/dev/null \
-&& echo "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:ZENCARD:PRIMAL" && echo "(⌐■_■) ~~~ G1 PRIMO TX ~~ _${LAT}_${LON} ~~~ $ASTRONAUTENS"
 
 ## CLEANING CACHE
 rm -Rf ~/.zen/tmp/${MOATS}

@@ -591,34 +591,29 @@ EOFNOSTR
 
     ${MY_PATH}/../tools/nostr_setup_profile.py "${SETUP_ARGS[@]}" &>/dev/null
 
-    ## CHECK DESTINATION WALLET NOT ALREADY CREDITED (refuse double credit)
+    ## CHECK DESTINATION WALLET NOT ALREADY CREDITED
+    ## Note: ne bloque plus la création — la primo TX est maintenant différée et envoyée
+    ## par UPLANET.official.sh (ensure_wallet_initialized) lors du premier virement réel.
     DEST_BALANCE=""
     if [[ -f "${MY_PATH}/G1check.sh" ]] && [[ -n "$G1PUBNOSTR" ]]; then
         DEST_BALANCE=$("${MY_PATH}/G1check.sh" "$G1PUBNOSTR" 2>/dev/null | tr -d '[:space:]')
     fi
     if [[ -n "$DEST_BALANCE" ]] && [[ "$DEST_BALANCE" =~ ^[0-9]+\.?[0-9]*$ ]]; then
         if (( $(echo "${DEST_BALANCE} > 0" | bc -l 2>/dev/null || echo 0) )); then
-            echo "❌ REFUSED: Wallet ${G1PUBNOSTR} already has balance ${DEST_BALANCE} Ğ1 (already credited)."
-            echo "   MULTIPASS creation aborted to avoid external Ğ1 entrance (or member account registration)."
-            exit 1
+            echo "ℹ️  Wallet ${G1PUBNOSTR} has existing balance ${DEST_BALANCE} Ğ1 (already initialized)."
+            echo "${UPLANETNAME_G1}" > ~/.zen/game/nostr/${EMAIL}/G1PRIME 2>/dev/null
+            echo "${UPLANETNAME_G1}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null
         fi
     fi
 
-    ## SEND PRIMO TRANSACTION FROM UPLANETNAME_G1 (source primale unique)
-    echo "UPlanet ẐEN : Sending PRIMO TX from UPLANETNAME_G1 to MULTIPASS"
-    
-    # Ensure UPLANETNAME_G1 dunikey exists (source primale unique)
-    if [[ ! -f ~/.zen/game/uplanet.G1.dunikey ]]; then
-        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.G1.dunikey "${UPLANETNAME}.G1" "${UPLANETNAME}.G1"
-        chmod 600 ~/.zen/game/uplanet.G1.dunikey
-    fi
-    
-    # Send primo transaction from UPLANETNAME_G1 to establish primal chain for MULTIPASS
-    ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.G1.dunikey" "1" "${G1PUBNOSTR}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:MULTIPASS:PRIMAL" 2>/dev/null \
-    && echo "${UPLANETNAME_G1}" > ~/.zen/game/nostr/${EMAIL}/G1PRIME \
-    && echo "${UPLANETNAME_G1}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal \  ## G1PUBNOSTR = SS58
-    && echo "✅ PRIMO TX sent successfully - PRIMAL marked from ${UPLANETNAME_G1} wallet" \
-    || echo "⚠️ PRIMO TX failed for MULTIPASS ${EMAIL}"
+    ## PRIMO TX DIFFÉRÉE — désactivée à la création
+    ## La primo TX (1 Ğ1) sera envoyée par UPLANET.official.sh via ensure_wallet_initialized()
+    ## uniquement lorsque des ẐEN réels sont reçus (via OC2UPlanet ou virement officiel).
+    ## Cela évite de perdre des Ğ1 pour des MULTIPASS jamais activés (Duniter v2 bloqué ou wallet abandonné).
+    ##
+    ## Pour forcer l'initialisation manuelle :
+    ##   ~/.zen/Astroport.ONE/UPLANET.official.sh -l ${EMAIL} -m 1
+    echo "ℹ️  PRIMO TX différée — sera envoyée lors du premier virement ẐEN réel (UPLANET.official.sh)"
 
     ### IPNS PUBLICATION
     # Note: IPNS publication is handled by generate_ipfs_structure.sh (line 462)

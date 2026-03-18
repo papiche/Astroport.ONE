@@ -46,23 +46,27 @@ Le G1FabLab **ne génère pas de profits spéculatifs**. Il collecte des contrib
 
 ### La règle des 3 tiers et la 3xPAF
 
-Sur chaque Astroport, la **règle des 3xPAF** répartit le versement des ẐEN d’usage entre l’Armateur et le Capitaine : **1× PAF** → NODE (Armateur), **2× PAF** → MULTIPASS Capitaine (soit 3× PAF au total par station et par semaine, ex. 14 + 28 = 42 Ẑen).
+Sur chaque Astroport, la **règle des 3xPAF** répartit le versement des ẐEN d'usage entre l'Armateur et le Capitaine : **1× PAF** → NODE (Armateur), **2× PAF** → MULTIPASS Capitaine (soit 3× PAF au total par station et par semaine, ex. 14 + 28 = 42 Ẑen).
 
-Pour chaque service facturé ou contribution reçue au niveau collectif, le montant est en outre divisé en **trois parts égales** (allocation 3×1/3) :
+Pour chaque **contribution d'un Parrain/Contributeur** (ZEN Card Satellite ou Constellation), le montant est divisé en **trois parts égales + 1% prime** (allocation 33/33/33/1) depuis la ZEN Card du contributeur :
 
-| Tiers | Bénéficiaire | Objet |
-|-------|--------------|--------|
-| **1/3** | Réserve de fonctionnement (Projet) | Trésorerie : charges, assurance, secours, remplacement matériel. Géré sur le compte du projet (`UPLANETNAME_CASH`). |
-| **1/3** | Capitaines | Rétribution du travail (maintenance, astreinte, développement). Facturation au collectif. |
-| **1/3** | Armateurs | Redevance d’hébergement / indemnité d’occupation ou loyer de matériel. Réglée via le système de crédits internes (ex. 1/3 de la valorisation du service). |
+| Part | Bénéficiaire | Objet |
+|------|--------------|--------|
+| **33%** | MULTIPASS du contributeur | Crédit d'usage retourné au contributeur : accès services, économie circulaire. Via `UPLANET:{id}:ZENCOIN:{email}`. |
+| **33%** | R&D (`UPLANETNAME_RND`) | Recherche et développement technologique (G1FabLab). |
+| **33%** | Actifs durables (`UPLANETNAME_ASSETS`) | Investissement régénératif : Forêts-Jardins, biens communs. |
+| **1%** | MULTIPASS Capitaine | Prime de gestion (reconnaissance du travail d'animation de la station). |
 
-**Exemple Armateur** : mise à disposition d’un serveur (ex. 500€) → redevance d’hébergement issue de l’activité de ce serveur (portefeuille collectif `UPLANETNAME_ASSETS` et flux NODE).
+> **Note** : La **Trésorerie (CASH)** est alimentée par la répartition automatique hebdomadaire depuis `CAPTAIN_DEDICATED` via `ZEN.COOPERATIVE.3x1-3.sh` (loyers collectés), et non par les contributions directes des Parrains. Cela préserve la liquidité opérationnelle de manière continue.
+
+**Exemple Armateur** : mise à disposition d'un serveur (ex. 500€) → redevance d'hébergement issue de l'activité de ce serveur (portefeuille collectif `UPLANETNAME_ASSETS` et flux NODE).
 
 ### Modèle de fonctionnement (résumé)
 
 - **Coûts opérationnels** : payés par la **Trésorerie Coopérative** (`UPLANETNAME_CASH`). Ex. 3× PAF = 42 Ẑen/semaine (1× PAF → NODE Armateur, 2× PAF → MULTIPASS Capitaine).
-- **Collecte des redevances** : portefeuille d’exploitation **CAPTAIN_DEDICATED** (loyers HT usagers) ; TVA (20 %) → `UPLANETNAME_IMPOT`.
-- **Allocation 3×1/3** : depuis CAPTAIN_DEDICATED (surplus brut) → provision IS (15–25 %) → surplus net réparti en 33,33 % CASH, 33,33 % RnD, 33,34 % ASSETS. Déclenchement hebdomadaire (anniversaire Capitaine) si solde CAPTAIN_DEDICATED > 0.
+- **Collecte des redevances** : portefeuille d'exploitation **CAPTAIN_DEDICATED** (loyers HT usagers) ; TVA (20 %) → `UPLANETNAME_IMPOT`.
+- **Allocation hebdomadaire depuis CAPTAIN_DEDICATED** (loyers NOSTRCARD/PLAYER) : depuis CAPTAIN_DEDICATED (surplus brut) → provision IS (15–25 %) → surplus net réparti en 33,33 % CASH, 33,33 % RnD, 33,34 % ASSETS. Déclenchement hebdomadaire (anniversaire Capitaine) si solde CAPTAIN_DEDICATED > 0.
+- **Contribution Parrain (ZEN Card officielle)** : depuis `UPLANET.official.sh`, le versement d'une ZEN Card alloue 33 % → MULTIPASS du contributeur (crédit usage), 33 % → RnD, 33 % → ASSETS, 1 % → MULTIPASS Capitaine. La Trésorerie est alimentée séparément par le flux opérationnel.
 
 **Règlement des contributions aux coûts (frais d’occupation et charges)** : **à la charge du collectif G1FabLab**. Le collectif règle les indemnités et redevances d’hébergement ainsi que les prestations dues aux Armateurs et Capitaines. Les modalités de paiement (ex. virement SEPA) sont effectuées par le collectif en son nom propre ; aucun tiers n’est responsable du paiement direct envers le bailleur ou le prestataire.
 
@@ -92,12 +96,20 @@ Pour chaque service facturé ou contribution reçue au niveau collectif, le mont
 | `PLAYER.refresh.sh` | Collecte redevances ZEN Cards (4Ẑ HT + 0,8Ẑ TVA) | Hebdomadaire |
 | `uplanet_onboarding.sh` / `captain.sh` | Embarquement et dashboard | À la demande |
 
-### Flux hebdomadaire (schéma)
+### Flux économique (schéma)
 
 ```
+── FLUX HEBDOMADAIRE AUTOMATIQUE ──────────────────────────────────────────
 1. COLLECTE REDEVANCES  →  CAPTAIN_DEDICATED (HT)  +  UPLANETNAME_IMPOT (TVA)
-2. PAIEMENT PAF          →  CASH → NODE (Armateur) + CAPTAIN MULTIPASS (salaire)
-3. ALLOCATION 3×1/3      →  CAPTAIN_DEDICATED (surplus) → IS → CASH / RnD / ASSETS
+2. PAIEMENT PAF         →  CASH → NODE (Armateur) + CAPTAIN MULTIPASS (salaire)
+3. ALLOCATION 3×1/3     →  CAPTAIN_DEDICATED (surplus) → IS → CASH / RnD / ASSETS
+
+── FLUX CONTRIBUTION PARRAIN (UPLANET.official.sh) ────────────────────────
+ZEN Card émise  →  UPLANETNAME_G1 → UPLANETNAME_SOCIETY → ZENCARD
+                   ZENCARD →  33% MULTIPASS contributeur (crédit usage)
+                           →  33% RnD
+                           →  33% ASSETS
+                           →   1% MULTIPASS Capitaine (prime gestion)
 ```
 
 ### Service de remboursement (conversion ẐEN → euros)
