@@ -14,7 +14,14 @@
 # Convention : MY_PATH = répertoire du script principal (standard du projet)
 # Fallback   : recherche par basename dans le projet parent (maxdepth 3)
 #
-# Usage : cpscript [--help] <script.sh|script.py>
+# Usage : cpscript [options] <script.sh|script.py>
+#   --only sh|py      filtre le type de fichier inclus dans la sortie
+#   --depth N         profondeur max de récursion (0=illimité, défaut)
+#   --maxchars N      limite de caractères totaux (1 token ≈ 4 chars)
+#   --maxtoken N      idem en tokens (= N × 4 chars)
+#   --route <pat>     [Python] extrait uniquement la/les route(s) FastAPI du script fourni
+#   --exclude <file>  exclure un fichier par basename (répétable)
+#   --json            sortie JSON (pour LLM tool / API)
 #
 # Sortie : fichier /tmp/<timestamp>.txt + copie dans le presse-papiers
 #          (xclip / wl-copy / pbcopy selon l'environnement)
@@ -22,7 +29,7 @@
 
 show_help() {
     echo ""
-    echo "  Usage : $(basename "$0") <script.sh|script.py>"
+    echo "  Usage : $(basename "$0") [options] <script.sh|script.py>"
     echo ""
     echo "  Regroupe un script et toutes ses dépendances (.sh/.py) dans"
     echo "  le presse-papiers, en les suivant récursivement."
@@ -37,19 +44,141 @@ show_help() {
     echo "    settings.TOOLS_PATH / \"script.sh\"  →  script.sh (trouvé par basename)"
     echo ""
     echo "  Options :"
-    echo "    --help    Affiche cette aide."
+    echo "    --only sh|py   N'inclure que les .sh ou les .py dans la sortie"
+    echo "    --depth N      Profondeur max de récursion (0 = illimité, défaut)"
+    echo "                   1 = script + dépendances directes, 2 = + leurs deps..."
+    echo "    --maxchars N   Limite de caractères totaux (1 token ≈ 4 chars)"
+    echo "    --maxtoken N   Limite en tokens (= N × 4 chars)"
+    echo "                   Défaut : 500 000 tokens. Ex: --maxtoken 128000"
+    echo "    --route <pat>  [Python] N'extraire que la/les route(s) FastAPI"
+    echo "                   dont le chemin contient <pat> (script fourni uniquement)"
+    echo "                   Ex: --route /upload  --route geo  --route /api/v1"
+    echo "    --exclude <f>     Exclure un fichier par basename (répétable)"
+    echo "                      Ex: --exclude my.sh  --exclude config.py"
+    echo "    --maxfilesize N   P3: Limite la taille par fichier en octets"
+    echo "                      Tronque les fichiers volumineux (logs, minifiés...)"
+    echo "                      Ex: --maxfilesize 51200  (50 Ko par fichier)"
+    echo "    --json            Sortie JSON pour usage comme LLM tool"
+    echo "                      Format : { tool, script, stats{}, files[{path,content}] }"
+    echo "    --clean           Renomme script.sh → script._sh dans les commentaires"
+    echo "                      Évite les faux positifs d'extraction (prompt par ligne)"
+    echo "    --human           Mode interactif : valider chaque dépendance trouvée"
+    echo "                      [Y=inclure / n=ignorer / a=tout inclure / q=quitter]"
+    echo "    --doc             Inclure les .md de docs/ qui référencent ce script"
+    echo "                      Permet la mise en conformité code ↔ documentation"
+    echo "    --help            Affiche cette aide."
     echo ""
     exit 0
 }
 
-if [ "$1" == "--help" ]; then show_help; fi
-if [ "$#" -lt 1 ]; then
+# Parsing des options
+FILTER_EXT=""
+MAX_DEPTH=0          # 0 = illimité
+MAX_CHARS=$(( 500000 * 4 ))  # défaut : 500 000 tokens (~2 Mo)
+MAX_FILE_SIZE=0      # 0 = illimité — P3: limite par fichier en octets
+ROUTE_FILTER=""      # pattern de route FastAPI à extraire (main script .py uniquement)
+JSON_MODE=false      # sortie JSON pour LLM tool
+CLEAN_MODE=false     # --clean : renommer .sh/.py → ._sh/._py dans les commentaires
+HUMAN_MODE=false     # --human : mode interactif - valider chaque dépendance
+DOC_MODE=false       # --doc : inclure les .md de docs/ qui référencent ce script
+declare -A EXCLUDED  # basenames à exclure (--exclude)
+POSITIONAL=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --help) show_help ;;
+        --only)
+            shift
+            case "$1" in
+                sh|py) FILTER_EXT="$1" ;;
+                *) echo "Erreur : --only attend 'sh' ou 'py', pas '$1'."; exit 1 ;;
+            esac
+            shift
+            ;;
+        --only=sh) FILTER_EXT="sh"; shift ;;
+        --only=py) FILTER_EXT="py"; shift ;;
+        --depth)
+            shift
+            if [[ "$1" =~ ^[0-9]+$ ]]; then
+                MAX_DEPTH="$1"
+            else
+                echo "Erreur : --depth attend un entier positif, pas '$1'."; exit 1
+            fi
+            shift
+            ;;
+        --depth=*)
+            VAL="${1#--depth=}"
+            if [[ "$VAL" =~ ^[0-9]+$ ]]; then
+                MAX_DEPTH="$VAL"
+            else
+                echo "Erreur : --depth attend un entier positif, pas '$VAL'."; exit 1
+            fi
+            shift
+            ;;
+        --maxchars)
+            shift
+            if [[ "$1" =~ ^[0-9]+$ ]]; then
+                MAX_CHARS="$1"
+            else
+                echo "Erreur : --maxchars attend un entier, pas '$1'."; exit 1
+            fi
+            shift
+            ;;
+        --maxchars=*)
+            VAL="${1#--maxchars=}"
+            if [[ "$VAL" =~ ^[0-9]+$ ]]; then MAX_CHARS="$VAL"
+            else echo "Erreur : --maxchars attend un entier, pas '$VAL'."; exit 1; fi
+            shift
+            ;;
+        --route)
+            shift
+            ROUTE_FILTER="$1"
+            shift
+            ;;
+        --route=*)
+            ROUTE_FILTER="${1#--route=}"
+            shift
+            ;;
+        --maxtoken)
+            shift
+            if [[ "$1" =~ ^[0-9]+$ ]]; then MAX_CHARS=$(( $1 * 4 ))
+            else echo "Erreur : --maxtoken attend un entier, pas '$1'."; exit 1; fi
+            shift
+            ;;
+        --maxtoken=*)
+            VAL="${1#--maxtoken=}"
+            if [[ "$VAL" =~ ^[0-9]+$ ]]; then MAX_CHARS=$(( VAL * 4 ))
+            else echo "Erreur : --maxtoken attend un entier, pas '$VAL'."; exit 1; fi
+            shift
+            ;;
+        --exclude)
+            shift
+            EXCLUDED["$1"]=1
+            shift
+            ;;
+        --exclude=*)
+            EXCLUDED["${1#--exclude=}"]=1
+            shift
+            ;;
+        --maxfilesize)
+            MAX_FILE_SIZE="$2"; shift 2 ;;
+        --maxfilesize=*)
+            MAX_FILE_SIZE="${1#--maxfilesize=}"; shift ;;
+        --json)  JSON_MODE=true;  shift ;;
+        --clean) CLEAN_MODE=true; shift ;;
+        --human) HUMAN_MODE=true; shift ;;
+        --doc)   DOC_MODE=true;   shift ;;
+        -*) echo "Option inconnue : $1"; show_help ;;
+        *) POSITIONAL+=("$1"); shift ;;
+    esac
+done
+
+if [ "${#POSITIONAL[@]}" -lt 1 ]; then
     echo "Erreur : Argument manquant."
     show_help
     exit 1
 fi
 
-MAIN_SCRIPT="$1"
+MAIN_SCRIPT="${POSITIONAL[0]}"
 
 if [ ! -f "$MAIN_SCRIPT" ]; then
     echo "Erreur : Le fichier '$MAIN_SCRIPT' n'existe pas."
@@ -59,25 +188,177 @@ fi
 MAIN_SCRIPT=$(realpath "$MAIN_SCRIPT")
 MAIN_DIR=$(dirname "$MAIN_SCRIPT")
 
+# ── Mode --clean : nettoyer les commentaires du script principal ──────────
+if $CLEAN_MODE; then
+    do_clean "$MAIN_SCRIPT"
+    echo ""
+    echo "💡 Relancez sans --clean pour analyser le script nettoyé :"
+    echo "   $(basename "$0") $(basename "$MAIN_SCRIPT")"
+    exit 0
+fi
+
+# Python : préférer l'environnement .astro si disponible (Astroport.ONE convention)
+PYTHON3="${HOME}/.astro/bin/python3"
+command -v "$PYTHON3" &>/dev/null || PYTHON3="$(command -v python3 2>/dev/null || echo python3)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Fonction --clean : renommer script.sh → script._sh dans les commentaires
+# Évite les faux positifs d'extraction (comments ≠ deps réelles)
+# ─────────────────────────────────────────────────────────────────────────────
+do_clean() {
+    local FILE="$1"
+    local CHANGES=0
+    echo ""
+    echo "🧹 Nettoyage des commentaires de : $FILE"
+    echo "   (renomme script.sh → script._sh pour éviter les faux positifs)"
+    echo ""
+
+    while IFS= read -r match; do
+        local LINE_NUM="${match%%:*}"
+        local LINE_CONTENT="${match#*:}"
+        # Remplacer .sh et .py → ._sh et ._py dans la ligne
+        local NEW_LINE
+        NEW_LINE=$(echo "$LINE_CONTENT" | sed 's/\.\(sh\|py\)\b/._\1/g')
+        [ "$NEW_LINE" = "$LINE_CONTENT" ] && continue
+
+        echo "  L.${LINE_NUM}: $LINE_CONTENT"
+        echo "         → $NEW_LINE"
+        local confirm="y"
+        [ -t 0 ] && read -r -p "  Appliquer ? [Y/n] " confirm
+        if [[ ! "$confirm" =~ ^[nN]$ ]]; then
+            # Échapper les caractères spéciaux pour sed
+            local ESCAPED
+            ESCAPED=$(printf '%s\n' "$NEW_LINE" | sed 's/[[\.*^$()+?{|]/\\&/g; s/\//\\\//g')
+            sed -i "${LINE_NUM}s/.*/$ESCAPED/" "$FILE"
+            (( CHANGES++ )) || true
+        fi
+        echo ""
+    done < <(grep -nP '^\s*#.*\.(sh|py)\b' "$FILE" 2>/dev/null)
+
+    echo "✅ $CHANGES modification(s) appliquée(s) dans $FILE"
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Fonction --human : demander confirmation avant d'inclure chaque dépendance
+# ─────────────────────────────────────────────────────────────────────────────
+_ask_human() {
+    local RESOLVED_FILE="$1"
+    local FROM_FILE="$2"
+    local REL_R REL_F
+    REL_R=$(realpath --relative-to="$MAIN_DIR" "$RESOLVED_FILE" 2>/dev/null || echo "$RESOLVED_FILE")
+    REL_F=$(realpath --relative-to="$MAIN_DIR" "$FROM_FILE"     2>/dev/null || echo "$FROM_FILE")
+
+    # IMPORTANT: tous les messages vont sur stderr (→ /dev/tty) pour ne pas polluer stdout (JSON)
+    echo "" >&2
+    echo "  🔍 Dépendance : $REL_R" >&2
+    echo "     Trouvée dans : $REL_F" >&2
+    echo "     [Y=inclure / n=ignorer / a=tout / q=quitter]" >&2
+    # Prompt + lecture depuis /dev/tty (stdin peut être redirigé dans le while loop)
+    printf "     Y/n/a/q > " >/dev/tty
+    read -r answer < /dev/tty
+    case "${answer,,}" in
+        n) return 1 ;;
+        a) HUMAN_MODE=false; return 0 ;;
+        q) echo "⛔ Interruption demandée."; exit 0 ;;
+        *) return 0 ;;
+    esac
+}
+
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 TEMP_FILE="/tmp/$MOATS.txt"
 # Le fichier est écrit directement (évite la corruption binaire via $RESULT)
 > "$TEMP_FILE"
+# Encoder une chaîne en JSON string (utilise jq ou python3)
+_json_encode() {
+    if command -v jq &>/dev/null; then
+        jq -Rs . <<< "$1"
+    else
+        $PYTHON3 -c "import json,sys; print(json.dumps(sys.stdin.read()))" <<< "$1"
+    fi
+}
+# Compteur pour séparer les entrées JSON (virgule avant chaque fichier sauf le premier)
+JSON_FILE_COUNT=0
 
-# Tableau associatif pour éviter les doublons
+# Tableau associatif pour éviter les doublons (protection contre les cycles)
 declare -A VISITED
+# Index des scripts du projet + projets frères (basename → chemin absolu)
+# Construit UNE SEULE FOIS au démarrage via globs ls bornés, lookup O(1)
+declare -A FILE_INDEX
+# Log silencieux pour les doublons (évite le bruit sur le terminal)
+CPSCRIPT_LOG="${HOME}/.zen/tmp/cpscript.log"
+mkdir -p "$(dirname "$CPSCRIPT_LOG")"
+
+_build_index() {
+    local f b
+    local SKIP_RE='/(dist|build|__pycache__|node_modules|\.git|\.venv|venv|env|_DOCKER|docker)/'
+    # Niveaux 0, 1, 2 dans MAIN_DIR
+    for f in \
+        "$MAIN_DIR"/*.sh   "$MAIN_DIR"/*.py \
+        "$MAIN_DIR"/*/*.sh "$MAIN_DIR"/*/*.py \
+        "$MAIN_DIR"/*/*/*.sh "$MAIN_DIR"/*/*/*.py; do
+        [ -f "$f" ] || continue
+        [[ "$f" =~ $SKIP_RE ]] && continue
+        b="${f##*/}"
+        [[ "$b" == "__init__.py" ]] && continue
+        if [ -z "${FILE_INDEX[$b]+x}" ]; then
+            FILE_INDEX[$b]="$f"
+        else
+            # Log silencieux vers fichier (pas de bruit sur le terminal)
+            local EXISTING="${FILE_INDEX[$b]}"
+            [[ "${EXISTING%/*}" != "${f%/*}" ]] && \
+                echo "  [DOUBLON] $b : ${EXISTING##*/workspace/AAA/} vs ${f##*/workspace/AAA/}" >> "$CPSCRIPT_LOG"
+        fi
+    done
+    # Projets frères : niveaux 1 et 2
+    for f in \
+        "$MAIN_DIR"/../*/*.sh   "$MAIN_DIR"/../*/*.py \
+        "$MAIN_DIR"/../*/*/*.sh "$MAIN_DIR"/../*/*/*.py; do
+        [ -f "$f" ] || continue
+        [[ "$f" =~ $SKIP_RE ]] && continue
+        b="${f##*/}"
+        [[ "$b" == "__init__.py" ]] && continue
+        [ -z "${FILE_INDEX[$b]+x}" ] && FILE_INDEX[$b]="$f"
+    done
+}
+_build_index
+# En JSON mode : messages de progression → stderr (pour 2>/dev/tty dans code_assistant)
+# En mode texte : messages → stdout (affichage normal)
+if $JSON_MODE; then
+    echo "Index : ${#FILE_INDEX[@]} scripts répertoriés" >&2
+else
+    echo "Index : ${#FILE_INDEX[@]} scripts répertoriés"
+fi
 
 # Extraction pour les fichiers SHELL (.sh)
 extract_shell_deps() {
     local FILE="$1"
+    local FILE_DIR
+    FILE_DIR=$(dirname "$FILE")
+    # Filtrer les lignes commentées avant extraction (Fix#1 : évite les faux positifs)
+    local STRIPPED
+    STRIPPED=$(grep -v '^\s*#' "$FILE" 2>/dev/null)
     {
-        # Chemin relatif avec au moins un segment : tools/my.sh, IA/proc.sh, ../proj/x.sh
-        grep -oP '[a-zA-Z0-9_.][a-zA-Z0-9_./]*(?:\.\.|\.)?/[a-zA-Z0-9_./-]+\.(?:sh|py)' "$FILE"
-        # Chemin absolu
-        grep -oP '(?<![a-zA-Z0-9_])/[a-zA-Z0-9_./+-]+\.(?:sh|py)' "$FILE"
-        # Chemin explicite ./script
-        grep -oP '\./[a-zA-Z0-9_./-]+\.(?:sh|py)' "$FILE"
-    } 2>/dev/null | grep -v '^[[:space:]]*#' | sort -u
+        # Chemins avec extension .sh/.py (relatifs, absolus, ./...)
+        echo "$STRIPPED" | grep -oP '[a-zA-Z0-9_.][a-zA-Z0-9_./]*(?:\.\.|\.)?/[a-zA-Z0-9_./-]+\.(?:sh|py)'
+        echo "$STRIPPED" | grep -oP '(?<![a-zA-Z0-9_])/[a-zA-Z0-9_./+-]+\.(?:sh|py)'
+        echo "$STRIPPED" | grep -oP '\./[a-zA-Z0-9_./-]+\.(?:sh|py)'
+
+        # Fix#D : source <fichier> et . <fichier> — même sans extension .sh
+        echo "$STRIPPED" \
+        | grep -oP '(?:^|;|\s)(?:source|\.)[ \t]+\K[^\s#;]+' \
+        | while IFS= read -r SOURCED; do
+            # Ignorer les patterns shell comme ". $VAR" ou ". ~/"
+            [[ "$SOURCED" =~ \$ ]] && continue
+            [[ "$SOURCED" =~ ^[~-] ]] && continue
+            # Résoudre par rapport au répertoire du fichier
+            for CANDIDATE in "$SOURCED" "$FILE_DIR/$SOURCED"; do
+                if [ -f "$CANDIDATE" ]; then
+                    realpath "$CANDIDATE" 2>/dev/null || echo "$CANDIDATE"
+                    break
+                fi
+            done
+        done
+    } 2>/dev/null | sort -u | head -300
 }
 
 # Extraction pour les fichiers PYTHON (.py)
@@ -87,48 +368,49 @@ extract_python_deps() {
     FILE_DIR=$(dirname "$FILE")
 
     {
-        # 1) from package.module import X, Y  →  package/module.py
-        grep -P '^\s*from\s+[a-zA-Z0-9_.]+\s+import' "$FILE" 2>/dev/null \
-        | grep -oP '(?<=from\s)[a-zA-Z0-9_.]+' \
-        | while IFS= read -r MOD; do
-            local MODPATH="${MOD//.//}"
-            echo "${MODPATH}.py"
-            echo "${MODPATH}/__init__.py"
-        done
+        # 1-3) Imports Python (mono et multi-lignes) via ast — 100% fiable (Fix#C)
+        python3 - "$FILE" "$FILE_DIR" 2>/dev/null <<'PYEOF'
+import ast, sys, os
 
-        # 2) from package import mod1, mod2  →  package/mod1.py, package/mod2.py
-        grep -P '^\s*from\s+[a-zA-Z0-9_]+\s+import' "$FILE" 2>/dev/null \
-        | sed 's/^[[:space:]]*from[[:space:]]\+\([a-zA-Z0-9_]\+\)[[:space:]]\+import[[:space:]]\+/\1 /' \
-        | while IFS= read -r LINE; do
-            local PKG IMPORTS IMP
-            PKG=$(echo "$LINE" | cut -d' ' -f1)
-            IMPORTS=$(echo "$LINE" | cut -d' ' -f2- | tr ',' '\n' | tr -d ' ()')
-            while IFS= read -r IMP; do
-                IMP=$(echo "$IMP" | tr -d ' \t')
-                [ -z "$IMP" ] && continue
-                [[ "$IMP" == "as" ]] && continue
-                [ -f "$FILE_DIR/$PKG/$IMP.py" ] && echo "$PKG/$IMP.py"
-            done <<< "$IMPORTS"
-        done
+filepath  = sys.argv[1]
+file_dir  = sys.argv[2]
 
-        # 3) import module  →  module.py
-        grep -P '^\s*import\s+[a-zA-Z0-9_]+' "$FILE" 2>/dev/null \
-        | grep -oP '(?<=import\s)[a-zA-Z0-9_]+' \
-        | while IFS= read -r MOD; do
-            echo "${MOD}.py"
-            echo "${MOD}/__init__.py"
-        done
+try:
+    with open(filepath, "r", encoding="utf-8", errors="replace") as fh:
+        tree = ast.parse(fh.read(), filename=filepath)
+except SyntaxError:
+    sys.exit(0)
 
-        # 4) Appels subprocess/os.system vers scripts shell ou python
-        grep -oP '(?:subprocess\.(?:run|call|check_output|Popen)|os\.system|os\.popen)\s*\(\s*[\["]?\K[a-zA-Z0-9_./-]+\.(?:sh|py)' "$FILE" 2>/dev/null
+for node in ast.walk(tree):
+    # from package.module import X, Y  →  package/module.py
+    if isinstance(node, ast.ImportFrom) and node.module:
+        modpath = node.module.replace(".", "/") + ".py"
+        print(modpath)
+        # from package import mod1, mod2  →  package/mod1.py (si le fichier existe)
+        pkg = node.module.split(".")[0]
+        for alias in node.names:
+            name = alias.name
+            candidate = os.path.join(file_dir, pkg, name + ".py")
+            if os.path.isfile(candidate):
+                print(f"{pkg}/{name}.py")
+    # import module  →  module.py
+    elif isinstance(node, ast.Import):
+        for alias in node.names:
+            top = alias.name.split(".")[0]
+            print(f"{top}.py")
+PYEOF
 
-        # 5) Chemins directs vers .sh ou .py dans les strings (avec segment de chemin)
-        grep -oP '[a-zA-Z0-9_.][a-zA-Z0-9_./]*/[a-zA-Z0-9_./-]+\.(?:sh|py)' "$FILE" 2>/dev/null \
-        | grep -v '^[[:space:]]*#'
+        # 4) Appels subprocess/os.system → filtrer commentaires (Fix#1)
+        grep -v '^\s*#' "$FILE" 2>/dev/null \
+        | grep -oP '(?:subprocess\.(?:run|call|check_output|Popen)|os\.system|os\.popen)\s*\(\s*[\["]?\K[a-zA-Z0-9_./-]+\.(?:sh|py)'
+
+        # 5) Chemins directs vers .sh ou .py dans les strings (sans commentaires)
+        grep -v '^\s*#' "$FILE" 2>/dev/null \
+        | grep -oP '[a-zA-Z0-9_.][a-zA-Z0-9_./]*/[a-zA-Z0-9_./-]+\.(?:sh|py)'
 
         # 6) String literals en quotes contenant un nom de script .sh ou .py
-        #    ex: settings.TOOLS_PATH / "publish_nostr_video.sh"  ou  "./g1.sh"
-        grep -oP "(?<=[\"'])[a-zA-Z0-9_./-]*\.(?:sh|py)(?=[\"'])" "$FILE" 2>/dev/null
+        grep -v '^\s*#' "$FILE" 2>/dev/null \
+        | grep -oP "(?<=[\"'])[a-zA-Z0-9_./-]*\.(?:sh|py)(?=[\"'])"
 
     } | sort -u
 }
@@ -144,11 +426,66 @@ extract_called_scripts() {
     fi
 }
 
+# Extraction d'une route FastAPI spécifique depuis un fichier Python
+# Usage : extract_route_from_python <fichier> <pattern>
+# Retourne le code des routes dont le chemin contient <pattern>
+extract_route_from_python() {
+    local FILE="$1"
+    local PATTERN="$2"
+    local TOTAL_LINES
+    TOTAL_LINES=$(wc -l < "$FILE")
+
+    # Lignes de décorateurs @router.X ou @app.X contenant le pattern
+    local MATCH_LINES
+    MATCH_LINES=$(grep -n \
+        "@\(router\|app\)\.\(get\|post\|put\|delete\|patch\|options\|head\).*${PATTERN}" \
+        "$FILE" | cut -d: -f1)
+
+    if [ -z "$MATCH_LINES" ]; then
+        echo "  # [aucune route '${PATTERN}' dans $(basename "$FILE")]"
+        return
+    fi
+
+    while IFS= read -r START; do
+        # Trouver le prochain décorateur @... de niveau 0 après START
+        local NEXT
+        NEXT=$(awk -v s="$START" 'NR > s && /^@/ { print NR; exit }' "$FILE")
+        local END
+        END="${NEXT:-$TOTAL_LINES}"
+        # Reculer pour exclure la ligne du décorateur suivant
+        [ -n "$NEXT" ] && END=$(( NEXT - 1 ))
+        sed -n "${START},${END}p" "$FILE"
+        echo ""
+    done <<< "$MATCH_LINES"
+}
+
 # Fonction récursive pour traiter un script
+# $1 = fichier, $2 = profondeur courante (défaut 0)
 process_script() {
     local FILE="$1"
+    local DEPTH="${2:-0}"
     local FILE_DIR
     FILE_DIR=$(dirname "$FILE")
+
+    # Vérifier la limite de profondeur
+    # --depth 1 = script principal + dépendances directes seulement
+    # --depth 2 = + dépendances des dépendances, etc.
+    if [ "$MAX_DEPTH" -gt 0 ] && [ "$DEPTH" -gt "$MAX_DEPTH" ]; then
+        return
+    fi
+
+    # Fix#4 : vérifier si le fichier est exclu par --exclude
+    local FILENAME_CHECK="${FILE##*/}"
+    if [ -n "${EXCLUDED[$FILENAME_CHECK]+x}" ]; then
+        echo "  [EXCLU] $FILE"
+        return
+    fi
+
+    # N5: Exclusion automatique des répertoires de build/cache/vcs (builtin, zéro fork)
+    # Applicable même si le chemin vient de FILE_INDEX ou d'un chemin absolu direct
+    if [[ "$FILE" =~ /(\.(git|svn|hg)|node_modules|__pycache__|\.venv|venv|env|dist|build)/ ]]; then
+        return
+    fi
 
     # Vérifier si déjà visité
     if [ -n "${VISITED[$FILE]}" ]; then
@@ -161,116 +498,321 @@ process_script() {
         return
     fi
 
-    if ! file "$FILE" | grep -q "text"; then
-        echo "  [IGNORÉ - binaire] $FILE"
-        return
+    # Fix#6 : vérification binaire — check shebang pour les fichiers sans extension
+    local FILE_EXT_CHECK="${FILE##*.}"
+    local FILENAME_ONLY="${FILE##*/}"
+    # Fichiers sans extension (ex: cpscript, cpcode, code_assistant) : vérifier shebang
+    if [[ "$FILE_EXT_CHECK" == "$FILENAME_ONLY" ]]; then
+        # Pas d'extension → lire première ligne, accepter si shebang
+        local SHEBANG_LINE
+        IFS= read -r SHEBANG_LINE < "$FILE" 2>/dev/null
+        if [[ "$SHEBANG_LINE" != "#!"* ]]; then
+            $JSON_MODE && echo "  [IGNORÉ - binaire] $FILE" >&2 || echo "  [IGNORÉ - binaire] $FILE"
+            return
+        fi
+    elif [[ "$FILE_EXT_CHECK" != "sh" && "$FILE_EXT_CHECK" != "py" ]]; then
+        # Extension inconnue : utiliser grep pour détecter bytes nuls (plus fiable que $'\0')
+        if grep -qPa '\x00' "$FILE" 2>/dev/null; then
+            $JSON_MODE && echo "  [IGNORÉ - binaire] $FILE" >&2 || echo "  [IGNORÉ - binaire] $FILE"
+            return
+        fi
     fi
+    # .sh et .py sont toujours du texte → pas de check
 
     RELATIVE_PATH=$(realpath --relative-to="$MAIN_DIR" "$FILE" 2>/dev/null || echo "$FILE")
     FILENAME=$(basename "$FILE")
-    echo "Ajout de : $FILE"
+    FILE_EXT="${FILE##*.}"
 
-    {
-        echo "### Chemin : $RELATIVE_PATH"
-        echo "### Fichier : $FILENAME"
-        echo ""
-        echo '```'
-        cat "$FILE"
-        echo ""
-        echo '```'
-        echo ""
-    } >> "$TEMP_FILE"
+    # Appliquer le filtre --only si défini
+    if [ -n "$FILTER_EXT" ] && [ "$FILE_EXT" != "$FILTER_EXT" ]; then
+        echo "  [FILTRÉ .$FILE_EXT] $FILE"
+    else
+        # En JSON mode → progress sur stderr pour libérer stdout pour le JSON
+        if $JSON_MODE; then
+            echo "Ajout de : $FILE" >&2
+        else
+            echo "Ajout de : $FILE"
+        fi
+        if $JSON_MODE; then
+            # Mode JSON : chaque fichier est un objet { path, filename, extension, content }
+            local CONTENT
+            if [ -n "$ROUTE_FILTER" ] && [ "$FILE_EXT" = "py" ] && [ "$FILE" = "$MAIN_SCRIPT" ]; then
+                CONTENT=$(extract_route_from_python "$FILE" "$ROUTE_FILTER")
+            elif [ "$MAX_FILE_SIZE" -gt 0 ]; then
+                # P3 : tronquer si le fichier dépasse la limite
+                local FILE_BYTES
+                FILE_BYTES=$(wc -c < "$FILE" 2>/dev/null || echo 0)
+                CONTENT=$(head -c "$MAX_FILE_SIZE" "$FILE")
+                if [ "$FILE_BYTES" -gt "$MAX_FILE_SIZE" ]; then
+                    CONTENT+=$'\n'"[... TRONQUÉ : ${FILE_BYTES} octets → ${MAX_FILE_SIZE} max (--maxfilesize) ...]"
+                fi
+            else
+                CONTENT=$(cat "$FILE")
+            fi
+            local CONTENT_JSON
+            CONTENT_JSON=$(_json_encode "$CONTENT")
+            local COMMA=""
+            [ "$JSON_FILE_COUNT" -gt 0 ] && COMMA=","
+            {
+                echo "${COMMA}{"
+                printf '  "path": %s,\n' "$(printf '%s' "$RELATIVE_PATH" | $PYTHON3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')"
+                printf '  "filename": %s,\n' "$(printf '%s' "$FILENAME" | $PYTHON3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')"
+                printf '  "extension": "%s",\n' "$FILE_EXT"
+                printf '  "content": %s\n' "$CONTENT_JSON"
+                echo "}"
+            } >> "$TEMP_FILE"
+            (( JSON_FILE_COUNT++ )) || true
+        else
+            {
+                echo "### Chemin : $RELATIVE_PATH"
+                echo "### Fichier : $FILENAME"
+                echo ""
+                echo '```'
+                # Fix#3 : --route sur main script seulement ; P3 : limite taille
+                if [ -n "$ROUTE_FILTER" ] && [ "$FILE_EXT" = "py" ] && [ "$FILE" = "$MAIN_SCRIPT" ]; then
+                    extract_route_from_python "$FILE" "$ROUTE_FILTER"
+                elif [ "$MAX_FILE_SIZE" -gt 0 ]; then
+                    local _FB; _FB=$(wc -c < "$FILE" 2>/dev/null || echo 0)
+                    head -c "$MAX_FILE_SIZE" "$FILE"
+                    [ "$_FB" -gt "$MAX_FILE_SIZE" ] && \
+                        echo $'\n'"[... TRONQUÉ : ${_FB} octets → ${MAX_FILE_SIZE} max ...]"
+                else
+                    cat "$FILE"
+                fi
+                echo ""
+                echo '```'
+                echo ""
+            } >> "$TEMP_FILE"
+        fi
+    fi
+
+    # Optimisation : si la prochaine profondeur dépasse la limite, inutile de résoudre
+    if [ "$MAX_DEPTH" -gt 0 ] && [ $(( DEPTH + 1 )) -gt "$MAX_DEPTH" ]; then
+        return
+    fi
 
     # Extraire et traiter récursivement les scripts appelés
     while IFS= read -r RAW; do
         [ -z "$RAW" ] && continue
 
-        # Nettoyer : supprimer les variables bash en tête ($VAR/ ou ${VAR}/)
-        # MY_PATH est une convention = répertoire du script principal
-        local REF
-        REF=$(echo "$RAW" | sed \
-            -e 's/^["'"'"']//' \
-            -e 's/["'"'"']$//' \
-            -e 's|^\${\?[A-Za-z_][A-Za-z0-9_]*}\?/||g' \
-            -e 's|^\$[A-Za-z_][A-Za-z0-9_]*/||g' \
-        )
-        # Ignorer si encore une variable ou vide
-        [[ "$REF" == \$* ]] && continue
-        [ -z "$REF" ] && continue
-        # Ignorer les lignes qui ressemblent à des commentaires ou messages
-        [[ "$REF" == *.sh\ * || "$REF" == *.py\ * ]] && REF="${REF%% *}"
+        # --- Nettoyage sans sous-processus (builtin bash uniquement) ---
+        local REF="$RAW"
+        # Supprimer guillemets en tête/fin
+        [[ "$REF" == \"* ]] && REF="${REF#\"}"
+        [[ "$REF" == \'* ]] && REF="${REF#\'}"
+        [[ "$REF" == *\" ]] && REF="${REF%\"}"
+        [[ "$REF" == *\' ]] && REF="${REF%\'}"
+        # Supprimer les variables bash en tête : $VAR/ ou ${VAR}/
+        # (MY_PATH = répertoire du script, convention du projet)
+        while [[ "$REF" =~ ^\$\{?[A-Za-z_][A-Za-z0-9_]*\}?/ ]]; do
+            REF="${REF#*/}"   # avance jusqu'au / suivant
+        done
+        [[ "$REF" == \$* ]] && continue   # encore une variable non résolue
+        [[ -z "$REF" ]] && continue
+        # Tronquer après un espace (suffix type ".sh args")
+        [[ "$REF" == *\ * ]] && REF="${REF%% *}"
 
-        # Résoudre le chemin
+        # --- Résolution sans sous-processus ([ -f ] est un builtin) ---
         local RESOLVED=""
         if [[ "$REF" == /* ]]; then
-            # Chemin absolu
             [ -f "$REF" ] && RESOLVED="$REF"
         else
-            # Essayer relatif au fichier courant puis au répertoire principal
-            local TRY1 TRY2
-            TRY1=$(realpath --no-symlinks "$FILE_DIR/$REF" 2>/dev/null)
-            TRY2=$(realpath --no-symlinks "$MAIN_DIR/$REF" 2>/dev/null)
-            if [ -n "$TRY1" ] && [ -f "$TRY1" ]; then
-                RESOLVED="$TRY1"
-            elif [ -n "$TRY2" ] && [ -f "$TRY2" ]; then
-                RESOLVED="$TRY2"
+            # Essai direct : relatif au fichier courant, puis au répertoire principal
+            if   [ -f "$FILE_DIR/$REF" ]; then RESOLVED="$FILE_DIR/$REF"
+            elif [ -f "$MAIN_DIR/$REF" ]; then RESOLVED="$MAIN_DIR/$REF"
             else
-                # Fallback : chercher par basename dans le répertoire parent du projet
-                local BASENAME PARENT
-                BASENAME=$(basename "$REF")
-                PARENT=$(realpath "$MAIN_DIR/.." 2>/dev/null)
-                local FOUND
-                FOUND=$(find "$PARENT" -maxdepth 3 -name "$BASENAME" -type f 2>/dev/null \
-                    | grep -v '/\.' | head -1)
-                [ -n "$FOUND" ] && [ -f "$FOUND" ] && RESOLVED="$FOUND"
+                # Fallback via l'index pré-calculé (O(1), zéro fork, zéro glob)
+                local BASENAME="${REF##*/}"
+                [[ "$BASENAME" == "__init__.py" ]] && continue
+                [ -n "${FILE_INDEX[$BASENAME]+x}" ] && RESOLVED="${FILE_INDEX[$BASENAME]}"
             fi
         fi
 
         if [ -n "$RESOLVED" ]; then
-            process_script "$RESOLVED"
+            # Normaliser le chemin pour éviter les boucles ./././ dans VISITED
+            # Cas simple /./  → géré sans fork
+            RESOLVED="${RESOLVED//\/.\//\/}"
+            RESOLVED="${RESOLVED%/.}"
+            while [[ "$RESOLVED" == *//* ]]; do RESOLVED="${RESOLVED//\/\//\/}"; done
+            # Cas avec /../ → realpath une seule fois (chemin cross-projet)
+            if [[ "$RESOLVED" == *"/../"* ]]; then
+                RESOLVED=$(realpath -m "$RESOLVED" 2>/dev/null) || true
+            fi
+            if [ -n "$RESOLVED" ]; then
+                # ── Mode --human : demander confirmation avant incl. ──────
+                if $HUMAN_MODE; then
+                    _ask_human "$RESOLVED" "$FILE" || continue
+                fi
+                process_script "$RESOLVED" $(( DEPTH + 1 ))
+            fi
         fi
         # (on tait silencieusement les refs introuvables — chemins runtime, etc.)
     done < <(extract_called_scripts "$FILE")
 }
 
-echo "=== Analyse de : $MAIN_SCRIPT ==="
-echo ""
+if $JSON_MODE; then
+    [ -n "$FILTER_EXT" ] && echo "  [filtre actif : --only $FILTER_EXT]" >&2
+    echo "=== Analyse de : $MAIN_SCRIPT ===" >&2
+    echo "" >&2
+else
+    [ -n "$FILTER_EXT" ] && echo "  [filtre actif : --only $FILTER_EXT]"
+    echo "=== Analyse de : $MAIN_SCRIPT ==="
+    echo ""
+fi
 
 # Traiter le script principal (et récursivement ses dépendances)
 process_script "$MAIN_SCRIPT"
 
+# ── Mode --doc : inclure les fichiers .md qui référencent ce script ──────
+if $DOC_MODE; then
+    SCRIPT_BASE=$(basename "$MAIN_SCRIPT")
+    SCRIPT_NAME="${SCRIPT_BASE%.*}"  # sans extension
+    DOC_COUNT=0
+    $JSON_MODE && echo "  [doc] Scan des fichiers .md référençant '$SCRIPT_BASE'..." >&2 \
+               || echo "  [doc] Scan des fichiers .md référençant '$SCRIPT_BASE'..."
+
+    # Chercher les .md dans docs/ du projet et du répertoire parent
+    for DOC_FILE in \
+        "$MAIN_DIR"/docs/*.md \
+        "$MAIN_DIR"/docs/**/*.md \
+        "$MAIN_DIR"/../docs/*.md \
+        "$MAIN_DIR"/*.md \
+        "$MAIN_DIR"/../*.md; do
+        [ -f "$DOC_FILE" ] || continue
+        # Vérifier si le .md référence le script (par basename ou nom sans extension)
+        if grep -qiF "$SCRIPT_BASE" "$DOC_FILE" 2>/dev/null || \
+           grep -qiF "$SCRIPT_NAME" "$DOC_FILE" 2>/dev/null; then
+            DOC_REL=$(realpath --relative-to="$MAIN_DIR" "$DOC_FILE" 2>/dev/null || echo "$DOC_FILE")
+            DOC_FNAME=$(basename "$DOC_FILE")
+            $JSON_MODE && echo "  [doc] ✓ $DOC_REL" >&2 || echo "  [doc] ✓ $DOC_REL"
+            if $JSON_MODE; then
+                DOC_CONTENT_JSON=$($PYTHON3 -c "import json,sys; print(json.dumps(sys.stdin.read()))" < "$DOC_FILE" 2>/dev/null)
+                {
+                    echo ","
+                    echo "{"
+                    printf '  "path": %s,\n' "$($PYTHON3 -c "import json; print(json.dumps('$DOC_REL'))" 2>/dev/null || echo '"'"$DOC_REL"'"')"
+                    printf '  "filename": %s,\n' "$($PYTHON3 -c "import json; print(json.dumps('$DOC_FNAME'))" 2>/dev/null || echo '"'"$DOC_FNAME"'"')"
+                    printf '  "extension": "md",\n'
+                    printf '  "role": "documentation",\n'
+                    printf '  "content": %s\n' "$DOC_CONTENT_JSON"
+                    echo "}"
+                } >> "$TEMP_FILE"
+                (( JSON_FILE_COUNT++ )) || true
+            else
+                {
+                    echo "### Doc : $DOC_REL"
+                    echo ""
+                    echo '```markdown'
+                    cat "$DOC_FILE"
+                    echo '```'
+                    echo ""
+                } >> "$TEMP_FILE"
+            fi
+            (( DOC_COUNT++ )) || true
+            VISITED["$DOC_FILE"]=1
+        fi
+    done
+    $JSON_MODE && echo "  [doc] $DOC_COUNT doc(s) incluse(s)" >&2 \
+               || echo "  [doc] $DOC_COUNT doc(s) incluse(s)"
+fi
+
 if [ ! -s "$TEMP_FILE" ]; then
-    echo "Erreur : Aucun contenu généré."
+    echo ""
+    echo "Erreur : Aucun contenu généré depuis '$MAIN_SCRIPT'."
+    echo ""
+    echo "Causes possibles et solutions :"
+    echo "  → Tous les fichiers sont exclus (--exclude trop large ?)"
+    echo "  → Profondeur trop faible : essayez --depth 2 ou sans --depth"
+    echo "  → Filtre --only trop restrictif : retirez --only"
+    echo "  → Le script ne référence pas de fichiers .sh/.py détectables"
+    echo "  → Vérifiez que '${MAIN_SCRIPT##*/}' n'est pas lui-même exclu"
+    echo ""
     rm -f "$TEMP_FILE"
     exit 1
 fi
 
-# Compter les fichiers inclus
+# Mode JSON : encapsuler les entrées dans l'enveloppe JSON finale
+if $JSON_MODE; then
+    NB_FILES=${#VISITED[@]}
+    TOTAL_CHARS_INNER=$(wc -c < "$TEMP_FILE" 2>/dev/null || echo 0)
+    TOTAL_TOKENS_INNER=$(( TOTAL_CHARS_INNER / 4 ))
+
+    # Détection Qdrant (si disponible, signalé dans le JSON pour enrichissement futur)
+    QDRANT_STATUS="unavailable"
+    if curl -sf --max-time 1 http://localhost:6333/health &>/dev/null; then
+        QDRANT_STATUS="available"
+        echo "  [Qdrant] détecté sur localhost:6333 — contexte sémantique possible"
+    fi
+
+    JSON_FINAL="/tmp/${MOATS}.json"
+    {
+        echo "{"
+        printf '  "tool": "cpscript",\n'
+        printf '  "version": "2.0",\n'
+        printf '  "script": %s,\n' "$(printf '%s' "${MAIN_SCRIPT##*/}" | $PYTHON3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')"
+        printf '  "stats": { "files_count": %d, "total_chars": %d, "total_tokens": %d },\n' \
+            "$NB_FILES" "$TOTAL_CHARS_INNER" "$TOTAL_TOKENS_INNER"
+        printf '  "qdrant": "%s",\n' "$QDRANT_STATUS"
+        echo '  "files": ['
+        cat "$TEMP_FILE"
+        echo '  ]'
+        echo "}"
+    } > "$JSON_FINAL"
+    mv "$JSON_FINAL" "$TEMP_FILE"
+fi
+
+# Compter les fichiers inclus et la taille totale
 NB_FILES=${#VISITED[@]}
-echo ""
-echo "=== $NB_FILES fichier(s) inclus ==="
+TOTAL_CHARS=$(wc -c < "$TEMP_FILE" 2>/dev/null || echo 0)
+# R3: ratio 3.2 chars/token pour du code (plus précis que /4 utilisé pour du texte)
+TOTAL_TOKENS=$($PYTHON3 -c "print(int($TOTAL_CHARS / 3.2))" 2>/dev/null || echo $(( TOTAL_CHARS / 4 )))
+$JSON_MODE || echo ""   # ligne vide uniquement en mode texte
+if $JSON_MODE; then
+    echo "=== $NB_FILES fichier(s) — JSON ${TOTAL_CHARS} chars (~${TOTAL_TOKENS} tokens) ===" >&2
+else
+    echo "=== $NB_FILES fichier(s) inclus — ${TOTAL_CHARS} chars (~${TOTAL_TOKENS} tokens) ===" >&2
+fi
 
-# Copier dans le presse-papiers
+# Vérifier la limite de tokens sur le résultat final (messages → stderr en JSON mode)
+if [ "$MAX_CHARS" -gt 0 ]; then
+    MAX_TOKENS=$(( MAX_CHARS / 4 ))
+    if [ "$TOTAL_CHARS" -gt "$MAX_CHARS" ]; then
+        { echo ""
+          echo "⚠️  Limite dépassée : ~${TOTAL_TOKENS} tokens > ${MAX_TOKENS} tokens demandés."
+          echo "   Relancez avec une combinaison de :"
+          echo "     --depth N      (ex: --depth 1 ou --depth 2)"
+          echo "     --only sh|py   (filtrer par type)"
+          echo "     --route <pat>  (extraire une route spécifique)"
+          echo "     --maxtoken ${TOTAL_TOKENS}  (relancer avec la taille découverte)"
+        } >&2
+    # Pas de message si dans la limite (c'est le comportement normal)
+    fi
+fi
+
+# En JSON mode : PAS de presse-papiers (usage programmatique = stdin/stdout)
+# xclip peut bloquer en subshell → toujours skiper en JSON mode
 COPIED=false
-if [ -n "$DISPLAY" ] && command -v xclip &>/dev/null; then
-    if cat "$TEMP_FILE" | xclip -selection clipboard 2>/dev/null; then
-        COPIED=true
-        echo "Contenu copié dans le presse-papiers (xclip)."
+if ! $JSON_MODE; then
+    if [ -n "$DISPLAY" ] && command -v xclip &>/dev/null; then
+        if cat "$TEMP_FILE" | xclip -selection clipboard 2>/dev/null; then
+            COPIED=true; echo "Contenu copié dans le presse-papiers (xclip)."
+        fi
+    elif [ -n "$WAYLAND_DISPLAY" ] && command -v wl-copy &>/dev/null; then
+        if cat "$TEMP_FILE" | wl-copy 2>/dev/null; then
+            COPIED=true; echo "Contenu copié dans le presse-papiers (wl-copy)."
+        fi
+    elif command -v pbcopy &>/dev/null; then
+        if cat "$TEMP_FILE" | pbcopy 2>/dev/null; then
+            COPIED=true; echo "Contenu copié dans le presse-papiers (pbcopy)."
+        fi
     fi
-elif [ -n "$WAYLAND_DISPLAY" ] && command -v wl-copy &>/dev/null; then
-    if cat "$TEMP_FILE" | wl-copy 2>/dev/null; then
-        COPIED=true
-        echo "Contenu copié dans le presse-papiers (wl-copy)."
-    fi
-elif command -v pbcopy &>/dev/null; then
-    if cat "$TEMP_FILE" | pbcopy 2>/dev/null; then
-        COPIED=true
-        echo "Contenu copié dans le presse-papiers (pbcopy)."
-    fi
+    [ "$COPIED" = false ] && echo "Avertissement : Impossible de copier dans le presse-papiers."
 fi
 
-if [ "$COPIED" = false ]; then
-    echo "Avertissement : Impossible de copier dans le presse-papiers."
+if $JSON_MODE; then
+    echo "Résultat écrit dans : $TEMP_FILE" >&2
+    # CRITIQUE : imprimer le JSON sur stdout pour que CODE_JSON=$(cpscript --json ...) fonctionne
+    cat "$TEMP_FILE"
+else
+    echo "Résultat écrit dans : $TEMP_FILE"
 fi
-
-echo "Résultat écrit dans : $TEMP_FILE"

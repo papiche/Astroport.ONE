@@ -104,6 +104,74 @@ test_api() {
     fi
 }
 
+# P5: Tester la latence du nœud + disponibilité des modèles requis
+# Utilisé après qu'une connexion (SSH/P2P) est établie pour valider le nœud
+test_node_quality() {
+    local silent="${1:-false}"
+    local required_models=("gemma3:latest" "nomic-embed-text")
+    local port="$OLLAMA_PORT"
+
+    # ── Latence (ms) ──────────────────────────────────────────────────────
+    local start_ms end_ms latency_ms
+    start_ms=$(date +%s%3N 2>/dev/null || echo 0)
+    if ! curl -sf --max-time 3 "http://localhost:$port/api/tags" -o /tmp/_ollama_tags.json 2>/dev/null; then
+        [[ "$silent" != "true" ]] && print_status "FAIL" "Nœud non répondant (latence test)"
+        return 1
+    fi
+    end_ms=$(date +%s%3N 2>/dev/null || echo 0)
+    latency_ms=$(( end_ms - start_ms ))
+
+    # N4: Détecter les nœuds lents (>500ms) et suggérer une alternative
+    if [ "$latency_ms" -gt 500 ]; then
+        [[ "$silent" != "true" ]] && \
+            print_status "WARN" "Nœud LENT : ${latency_ms}ms (seuil : 500ms)"
+        [[ "$silent" != "true" ]] && \
+            echo "  → Ce nœud est lent. Lancez 'ollama.me.sh P2P' pour chercher un nœud plus rapide."
+        # Retourner 3 = nœud fonctionnel mais lent (ne bloque pas la connexion)
+        local _node_slow=true
+    else
+        [[ "$silent" != "true" ]] && print_status "INFO" "Latence API : ${latency_ms}ms ✓"
+        local _node_slow=false
+    fi
+
+    # ── Modèles disponibles ───────────────────────────────────────────────
+    local available_models
+    available_models=$(python3 -c "
+import json, sys
+try:
+    d = json.load(open('/tmp/_ollama_tags.json'))
+    names = [m.get('name','') + ' ' + m.get('model','') for m in d.get('models',[])]
+    print(' '.join(names))
+except: pass
+" 2>/dev/null)
+
+    local missing_models=()
+    for model in "${required_models[@]}"; do
+        local base="${model%%:*}"  # ex: gemma3 depuis gemma3:latest
+        if ! echo "$available_models" | grep -qi "$base"; then
+            missing_models+=("$model")
+        fi
+    done
+
+    rm -f /tmp/_ollama_tags.json
+
+    if [ ${#missing_models[@]} -gt 0 ]; then
+        [[ "$silent" != "true" ]] && {
+            print_status "WARN" "Modèles manquants sur ce nœud : ${missing_models[*]}"
+            echo "  ⚠️  La qualité de réponse sera réduite sans ces modèles."
+            echo "  → Pour les télécharger manuellement (connexion requise) :"
+            for _missing in "${missing_models[@]}"; do
+                echo "       ollama pull $_missing"
+            done
+        }
+        return 2  # Nœud valide mais modèles manquants
+    fi
+
+    [[ "$silent" != "true" ]] && \
+        print_status "OK" "Nœud validé : latence=${latency_ms}ms, modèles=${required_models[*]}"
+    return 0
+}
+
 # Check if LOCAL service is running
 check_local_service() {
     local silent="${1:-false}"
@@ -210,6 +278,7 @@ establish_ssh_tunnel() {
             if ssh $SSH_OPTIONS -6 $REMOTE_USER@$REMOTE_HOST -p $REMOTE_PORT_IPV6 2>/dev/null; then
                 sleep 2
                 if check_port "true" && test_api "true"; then
+                    test_node_quality "true"   # P5: latence + modèles
                     save_connection_status "SSH_IPv6" "$REMOTE_HOST:$REMOTE_PORT_IPV6"
                     print_status "OK" "SSH tunnel established via IPv6"
                     return 0
@@ -226,6 +295,7 @@ establish_ssh_tunnel() {
             if ssh $SSH_OPTIONS -4 $REMOTE_USER@$REMOTE_HOST -p $REMOTE_PORT_IPV4 2>/dev/null; then
                 sleep 2
                 if check_port "true" && test_api "true"; then
+                    test_node_quality "true"   # P5: latence + modèles
                     save_connection_status "SSH_IPv4" "$REMOTE_HOST:$REMOTE_PORT_IPV4"
                     print_status "OK" "SSH tunnel established via IPv4"
                     return 0
@@ -299,6 +369,7 @@ connect_via_swarm() {
                     if bash "$selected_script" 2>/dev/null; then
                         sleep 2
                         if test_api "true"; then
+                            test_node_quality "true"   # P5: latence + modèles
                             save_connection_status "P2P" "$selected_node"
                             print_status "OK" "Connected to $selected_node via IPFS P2P"
                             return 0
@@ -371,6 +442,7 @@ connect_via_swarm() {
         if bash "$selected_script" 2>/dev/null; then
             sleep 2
             if test_api "true"; then
+                test_node_quality "true"   # P5: latence + modèles
                 save_connection_status "P2P" "$selected_node"
                 print_status "OK" "Connected to $selected_node via IPFS P2P"
                 return 0

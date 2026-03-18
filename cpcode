@@ -1,19 +1,50 @@
 #!/bin/bash
+########################################################################
+# cpcode — Regroupe des fichiers par extension dans le presse-papiers
+#
+# Usage : cpcode [--json] [--maxfilesize N] <extension1> [ext2 ...] <dossier>
+#
+# Options :
+#   --json          Sortie JSON compatible code_assistant / LLM tool
+#   --maxfilesize N Limite la taille par fichier en octets (défaut: illimité)
+#                   Ex: --maxfilesize 102400  (100 Ko par fichier)
+#   --help          Affiche cette aide
+########################################################################
+
 show_help() {
-    echo "Usage : $0 [--help] <extension1> [<extension2> ...] <dossier_source>"
+    echo "Usage : $0 [--json] [--maxfilesize N] <ext1> [ext2 ...] <dossier>"
+    echo ""
     echo "Options :"
-    echo "  --help    Affiche cette aide."
+    echo "  --json           Sortie JSON (compatible code_assistant / LLM tool)"
+    echo "  --maxfilesize N  Limite par fichier en octets (P3)"
+    echo "  --help           Affiche cette aide."
     exit 0
 }
-if [ "$1" == "--help" ]; then show_help; fi
-if [ "$#" -lt 2 ]; then
+
+# ── Parsing des options ───────────────────────────────────────────────────
+JSON_MODE=false
+MAX_FILE_SIZE=0
+POSITIONAL=()
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --help)             show_help ;;
+        --json)             JSON_MODE=true; shift ;;
+        --maxfilesize)      MAX_FILE_SIZE="$2"; shift 2 ;;
+        --maxfilesize=*)    MAX_FILE_SIZE="${1#--maxfilesize=}"; shift ;;
+        *)                  POSITIONAL+=("$1"); shift ;;
+    esac
+done
+
+if [ "${#POSITIONAL[@]}" -lt 2 ]; then
     echo "Erreur : Arguments manquants."
     show_help
     exit 1
 fi
 
-EXTENSIONS=("${@:1:$#-1}")
-SOURCE_DIR="${@: -1}"
+# Séparer extensions (tout sauf dernier) et dossier (dernier)
+EXTENSIONS=("${POSITIONAL[@]:0:${#POSITIONAL[@]}-1}")
+SOURCE_DIR="${POSITIONAL[-1]}"
 
 if [ ! -d "$SOURCE_DIR" ]; then
     echo "Erreur : Le dossier source '$SOURCE_DIR' n'existe pas."
@@ -22,43 +53,117 @@ fi
 
 MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 TEMP_FILE="/tmp/$MOATS.txt"
-RESULT=""
+> "$TEMP_FILE"
 
+NB_FILES=0
+JSON_FILE_COUNT=0
+
+# ── Traitement des fichiers ───────────────────────────────────────────────
 for EXT in "${EXTENSIONS[@]}"; do
     while IFS= read -r FILE; do
-        if file "$FILE" | grep -q "text"; then
-            RELATIVE_PATH=$(realpath --relative-to="$SOURCE_DIR" "$FILE")
-            FILENAME=$(basename "$FILE" | sed "s/\.$EXT$//")
-            echo "Ajout de : $FILE"
-            RESULT+="Chemin : $RELATIVE_PATH\n"
-            RESULT+="Titre : $FILENAME\n\n"
-            RESULT+="$(cat "$FILE")\n\n"
+        # Vérifier que c'est un fichier texte (entête, sans fork file)
+        local_header=""
+        IFS= read -r local_header < "$FILE" 2>/dev/null
+        if [[ "$local_header" == *$'\0'* ]]; then
+            echo "  [IGNORÉ - binaire] $FILE"
+            continue
         fi
+
+        RELATIVE_PATH=$(realpath --relative-to="$SOURCE_DIR" "$FILE")
+        FILENAME=$(basename "$FILE" | sed "s/\.$EXT$//")
+        echo "Ajout de : $FILE"
+
+        # Lire le contenu (avec limite optionnelle par fichier)
+        local CONTENT
+        if [ "$MAX_FILE_SIZE" -gt 0 ]; then
+            CONTENT=$(head -c "$MAX_FILE_SIZE" "$FILE")
+            local FULL_SIZE
+            FULL_SIZE=$(wc -c < "$FILE" 2>/dev/null || echo 0)
+            if [ "$FULL_SIZE" -gt "$MAX_FILE_SIZE" ]; then
+                CONTENT="${CONTENT}"$'\n'"[... TRONQUÉ à ${MAX_FILE_SIZE} octets / ${FULL_SIZE} total ...]"
+            fi
+        else
+            CONTENT=$(cat "$FILE")
+        fi
+
+        if $JSON_MODE; then
+            # Sortie JSON : un objet par fichier
+            local COMMA=""
+            [ "$JSON_FILE_COUNT" -gt 0 ] && COMMA=","
+            local CONTENT_JSON
+            CONTENT_JSON=$(python3 -c "import json,sys; print(json.dumps(sys.stdin.read()))" <<< "$CONTENT" 2>/dev/null || echo '""')
+            {
+                echo "${COMMA}{"
+                printf '  "path": %s,\n' "$(python3 -c "import json; print(json.dumps('$RELATIVE_PATH'))" 2>/dev/null || echo '"'"$RELATIVE_PATH"'"')"
+                printf '  "filename": %s,\n' "$(python3 -c "import json; print(json.dumps('$FILENAME'))" 2>/dev/null || echo '"'"$FILENAME"'"')"
+                printf '  "extension": "%s",\n' "$EXT"
+                printf '  "content": %s\n' "$CONTENT_JSON"
+                echo "}"
+            } >> "$TEMP_FILE"
+            (( JSON_FILE_COUNT++ )) || true
+        else
+            # Sortie texte classique (écriture directe, pas de RESULT+= pour éviter corruption)
+            {
+                echo "Chemin : $RELATIVE_PATH"
+                echo "Titre : $FILENAME"
+                echo ""
+                echo "$CONTENT"
+                echo ""
+            } >> "$TEMP_FILE"
+        fi
+
+        (( NB_FILES++ )) || true
+
     done < <(find "$SOURCE_DIR" -type f -name "*.$EXT" | grep -v '/\.')
 done
 
-echo -e "$RESULT" > "$TEMP_FILE"
+# ── Enveloppe JSON finale ────────────────────────────────────────────────
+if $JSON_MODE; then
+    TOTAL_CHARS=$(wc -c < "$TEMP_FILE" 2>/dev/null || echo 0)
+    TOTAL_TOKENS=$(( TOTAL_CHARS / 4 ))
+    JSON_FINAL="/tmp/${MOATS}.json"
+    {
+        echo "{"
+        printf '  "tool": "cpcode",\n'
+        printf '  "source_dir": %s,\n' "$(python3 -c "import json; print(json.dumps('$(realpath "$SOURCE_DIR")'))" 2>/dev/null)"
+        printf '  "extensions": %s,\n' "$(python3 -c "import json; print(json.dumps($(printf '[%s]' "$(printf '"%s",' "${EXTENSIONS[@]}" | sed 's/,$//')"  )))" 2>/dev/null || echo "[]")"
+        printf '  "stats": { "files_count": %d, "total_chars": %d, "total_tokens": %d },\n' \
+            "$NB_FILES" "$TOTAL_CHARS" "$TOTAL_TOKENS"
+        echo '  "files": ['
+        cat "$TEMP_FILE"
+        echo '  ]'
+        echo "}"
+    } > "$JSON_FINAL"
+    mv "$JSON_FINAL" "$TEMP_FILE"
+fi
 
+# ── Validation ────────────────────────────────────────────────────────────
 if [ ! -s "$TEMP_FILE" ]; then
     echo "Erreur : Aucun fichier trouvé avec les extensions spécifiées dans '$SOURCE_DIR'."
     rm -f "$TEMP_FILE"
     exit 1
 fi
 
-# Tenter le presse-papiers sans vérification bloquante
+TOTAL_CHARS=$(wc -c < "$TEMP_FILE" 2>/dev/null || echo 0)
+TOTAL_TOKENS=$(( TOTAL_CHARS / 4 ))
+echo ""
+echo "=== $NB_FILES fichier(s) — ${TOTAL_CHARS} chars (~${TOTAL_TOKENS} tokens) ==="
+
+# ── Presse-papiers ────────────────────────────────────────────────────────
 COPIED=false
 if [ -n "$DISPLAY" ] && command -v xclip &>/dev/null; then
     if cat "$TEMP_FILE" | xclip -selection clipboard 2>/dev/null; then
-        COPIED=true
-        echo "Contenu copié dans le presse-papiers."
+        COPIED=true; echo "Contenu copié dans le presse-papiers (xclip)."
+    fi
+elif [ -n "$WAYLAND_DISPLAY" ] && command -v wl-copy &>/dev/null; then
+    if cat "$TEMP_FILE" | wl-copy 2>/dev/null; then
+        COPIED=true; echo "Contenu copié dans le presse-papiers (wl-copy)."
     fi
 elif command -v pbcopy &>/dev/null; then
     if cat "$TEMP_FILE" | pbcopy 2>/dev/null; then
-        COPIED=true
-        echo "Contenu copié dans le presse-papiers."
+        COPIED=true; echo "Contenu copié dans le presse-papiers (pbcopy)."
     fi
 fi
 
-
+[ "$COPIED" = false ] && echo "Avertissement : Impossible de copier dans le presse-papiers."
 echo "Résultat écrit dans : $TEMP_FILE"
-

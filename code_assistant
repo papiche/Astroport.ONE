@@ -1,0 +1,1030 @@
+#!/bin/bash
+########################################################################
+# code_assistant — Assistant IA interactif pour analyse et correction de code
+#
+# Utilise cpscript pour extraire le contexte, puis IA/code_assistant.py
+# pour les phases d'analyse, correction et contrôle.
+#
+# Flux recommandé :
+#   1. ./code_assistant 54321.py --kvbasename mon-projet
+#   2. ./code_assistant 54321.py --kvbasename mon-projet --phase correction --choice 2
+#   3. ./code_assistant 54321.py --kvbasename mon-projet --phase controle --choice a --patch
+########################################################################
+
+MY_PATH=$(dirname "$(realpath "$0")")
+CPSCRIPT="$MY_PATH/cpscript"
+PY_BACKEND="$MY_PATH/IA/code_assistant.py"
+OLLAMA_STARTER="$MY_PATH/IA/ollama.me.sh"
+EMBED_PY="$MY_PATH/IA/embed.py"
+# Python : préférer l'environnement .astro si disponible
+PYTHON3="${HOME}/.astro/bin/python3"
+command -v "$PYTHON3" &>/dev/null || PYTHON3="$(command -v python3 2>/dev/null || echo python3)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Fonctions
+# ─────────────────────────────────────────────────────────────────────────────
+
+show_help() {
+    echo ""
+    echo "  Usage : $(basename "$0") <script> [options]"
+    echo ""
+    echo "  Options :"
+    echo "    --kvbasename <nom>   Nom de session persistante (mémoire entre runs)"
+    echo "    --model <nom>        Modèle Ollama (auto par phase si omis)"
+    echo "                         Analyse → deepseek-r1:14b | Correction → qwen2.5-coder:14b"
+    echo "    --phase <phase>      analyse | correction | controle (défaut: analyse)"
+    echo "    --depth N            Profondeur cpscript (défaut: 1 = script + deps directes)"
+    echo "    --maxtoken N         Limite tokens contexte LLM (défaut: 32000)"
+    echo "    --exclude <f>        Exclure un fichier par basename (répétable)"
+    echo "    --choice <N|a|b|c>   Choix direct (évite le prompt interactif)"
+    echo "    --supplement <txt>   Contexte humain injecté dans le prompt LLM"
+    echo "                         Inline : \"2 Focus sur le timeout IPFS ligne 131\""
+    echo "    --human              Mode interactif extraction : valider chaque dépendance"
+    echo "                         [Y=inclure / n=ignorer / a=tout / q=quitter]"
+    echo "    --doc                Inclure les .md de docs/ qui référencent ce script"
+    echo "                         Permet la mise en conformité code ↔ documentation"
+    echo "    --test               Charger les tests depuis tests/ et vérifier la couverture"
+    echo "                         Cherche test_<script>.* et <script>_test.* dans tests/"
+    echo "                         Si aucun test trouvé, propose la création d'une suite complète"
+    echo "    --patch              Appliquer la correction choisie dans le fichier source"
+    echo "    --no-qdrant          Désactiver Qdrant même s'il est disponible"
+    echo "    --diff-format <fmt>  Format des patches : json (défaut) | unified (diff -u)"
+    echo "    --setup              Télécharger les modèles recommandés (deepseek-r1, qwen2.5-coder)"
+    echo "    --help               Affiche cette aide"
+    echo ""
+    echo "  Profils automatiques (détectés via l'extension du fichier source) :"
+    echo "    server  .sh .py .md   Scripts serveur Linux, Python, documentation"
+    echo "    client  .html .js .css .md   Web old-school : HTML5, CSS3, jQuery/vanilla JS"
+    echo "            ⚠️  PAS de frameworks JS modernes (React, Vue, Angular, npm, webpack)"
+    echo "            Uniquement bibliothèques chargées via <script src='...'> (CDN)"
+    echo ""
+    echo "  Flux recommandé :"
+    echo "    # Phase analyse (identifie 3 problèmes)"
+    echo "    code_assistant mon_script.py --kvbasename session1"
+    echo "    code_assistant index.html   --kvbasename webapp1   # → profil client auto"
+    echo ""
+    echo "    # Phase correction du problème 2"
+    echo "    code_assistant mon_script.py --kvbasename session1 --phase correction --choice 2"
+    echo ""
+    echo "    # Phase contrôle + application de la variante a dans le fichier"
+    echo "    code_assistant mon_script.py --kvbasename session1 --phase controle --choice a --patch"
+    echo ""
+    exit 0
+}
+
+# Applique les patches JSON retournés par le backend Python
+apply_patches() {
+    local patch_json="$1"
+    local source_file="$2"
+    local source_dir
+    source_dir=$(dirname "$source_file")
+
+    echo ""
+    echo "🔧 Application des patches..."
+
+    # Extraire les patches via Python (fiable pour l'encodage)
+    local patch_script
+    patch_script=$($PYTHON3 -c "
+import json, sys
+
+raw = sys.stdin.read().strip()
+try:
+    d = json.loads(raw)
+except Exception as e:
+    print('ERROR:' + str(e), file=sys.stderr)
+    sys.exit(1)
+
+patches = d.get('patches', {})
+if not patches:
+    print('NO_PATCHES')
+    sys.exit(0)
+
+for filename, content in patches.items():
+    print('---FILE---')
+    print(filename)
+    print('---CONTENT---')
+    print(content)
+    print('---END---')
+" <<< "$patch_json" 2>/dev/tty)
+
+    if [ "$patch_script" = "NO_PATCHES" ] || [ -z "$patch_script" ]; then
+        echo "  ⚠️  Aucun patch dans la réponse LLM."
+        echo "     Consultez ~/.zen/tmp/IA.log pour la réponse complète."
+        return 1
+    fi
+
+    local current_file="" in_content=false content_lines=""
+
+    while IFS= read -r line; do
+        case "$line" in
+            "---FILE---")
+                in_content=false
+                current_file=""
+                ;;
+            "---CONTENT---")
+                in_content=true
+                content_lines=""
+                ;;
+            "---END---")
+                in_content=false
+                if [ -n "$current_file" ] && [ -n "$content_lines" ]; then
+                    # Résoudre le chemin du fichier cible
+                    local target=""
+                    if   [ -f "$current_file" ];               then target="$current_file"
+                    elif [ -f "$source_dir/$current_file" ];   then target="$source_dir/$current_file"
+                    else
+                        target=$(find "$source_dir" -name "$current_file" -type f 2>/dev/null | head -1)
+                    fi
+
+                    if [ -z "$target" ]; then
+                        echo "  ⚠️  Fichier '$current_file' introuvable — patch ignoré"
+                        continue
+                    fi
+
+                    # P1: Afficher le diff avant d'appliquer
+                    local rel_target
+                    rel_target=$(realpath --relative-to="$(pwd)" "$target" 2>/dev/null || echo "$target")
+                    echo ""
+                    echo "  📄 $rel_target"
+                    echo "  ┌─── DIFF (original → correction) ───────────────────"
+                    # Utiliser less -R si dispo pour les longs diffs, sinon head -60
+                    if command -v less &>/dev/null && [ -t 1 ]; then
+                        diff --color=always -u "$target" <(printf '%s\n' "$content_lines") \
+                            2>/dev/null | sed 's/^/  │ /' | less -R
+                    else
+                        diff --color=always -u "$target" <(printf '%s\n' "$content_lines") \
+                            2>/dev/null | sed 's/^/  │ /' | head -80
+                    fi
+                    local nb_diff_lines
+                    nb_diff_lines=$(diff "$target" <(printf '%s\n' "$content_lines") 2>/dev/null | wc -l)
+                    echo "  └─── $nb_diff_lines lignes modifiées ────────────────"
+                    echo ""
+
+                    # N3: Validation syntaxique AVANT d'appliquer
+                    local syntax_ok=true
+                    local file_ext="${target##*.}"
+                    if [[ "$file_ext" == "py" ]] && command -v "$PYTHON3" &>/dev/null; then
+                        if ! $PYTHON3 -m py_compile <(printf '%s\n' "$content_lines") 2>/tmp/_syntax_err; then
+                            echo "  ❌ Erreur de syntaxe Python détectée :"
+                            cat /tmp/_syntax_err | sed 's/^/     /'
+                            syntax_ok=false
+                        else
+                            echo "  ✓ Syntaxe Python valide"
+                        fi
+                    elif [[ "$file_ext" == "sh" ]]; then
+                        if ! bash -n <(printf '%s\n' "$content_lines") 2>/tmp/_syntax_err; then
+                            echo "  ❌ Erreur de syntaxe Bash détectée :"
+                            cat /tmp/_syntax_err | sed 's/^/     /'
+                            syntax_ok=false
+                        else
+                            echo "  ✓ Syntaxe Bash valide"
+                        fi
+                    elif [[ "$file_ext" == "json" ]]; then
+                        if command -v jq &>/dev/null; then
+                            if ! printf '%s\n' "$content_lines" | jq . &>/dev/null 2>/tmp/_syntax_err; then
+                                echo "  ❌ JSON invalide détecté :"
+                                cat /tmp/_syntax_err | sed 's/^/     /'
+                                syntax_ok=false
+                            else
+                                echo "  ✓ JSON valide"
+                            fi
+                        else
+                            echo "  ⚠️  jq absent — validation JSON ignorée (installez jq)"
+                        fi
+                    elif [[ "$file_ext" == "js" ]]; then
+                        if command -v node &>/dev/null; then
+                            if ! printf '%s\n' "$content_lines" | node --check 2>/tmp/_syntax_err; then
+                                echo "  ❌ Erreur de syntaxe JavaScript détectée :"
+                                cat /tmp/_syntax_err | sed 's/^/     /'
+                                syntax_ok=false
+                            else
+                                echo "  ✓ Syntaxe JavaScript valide (node)"
+                            fi
+                        else
+                            echo "  ⚠️  node absent — validation JS ignorée"
+                        fi
+                    elif [[ "$file_ext" == "html" ]]; then
+                        # Vérification basique : balises ouvrantes sans fermeture (heuristique légère)
+                        local unclosed
+                        unclosed=$(printf '%s\n' "$content_lines" | $PYTHON3 -c "
+import sys, re
+content = sys.stdin.read()
+open_tags  = re.findall(r'<([a-zA-Z][a-zA-Z0-9]*)\b[^>]*(?<!/)>', content)
+close_tags = re.findall(r'</([a-zA-Z][a-zA-Z0-9]*)>', content)
+void = {'area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'}
+stack = []
+for t in open_tags:
+    if t.lower() not in void:
+        stack.append(t.lower())
+for t in close_tags:
+    tl = t.lower()
+    if tl in stack:
+        stack.remove(tl)
+if stack:
+    print('Balises non fermées : ' + ', '.join(stack))
+" 2>/dev/null)
+                        if [ -n "$unclosed" ]; then
+                            echo "  ⚠️  HTML : $unclosed"
+                            # Avertissement seulement (pas bloquant — le HTML est permissif)
+                        else
+                            echo "  ✓ Structure HTML cohérente"
+                        fi
+                    fi
+                    rm -f /tmp/_syntax_err
+
+                    if ! $syntax_ok; then
+                        echo "  ⚠️  Patch NON appliqué (syntaxe invalide). Essayez une autre variante."
+                    else
+                        # ── Sécurité anti-destruction : vérification de taille minimale ──
+                        local orig_lines patch_lines pct
+                        orig_lines=$(wc -l < "$target")
+                        patch_lines=$(printf '%s\n' "$content_lines" | wc -l)
+                        if [ "$orig_lines" -gt 20 ] && [ "$patch_lines" -lt "$(( orig_lines * 70 / 100 ))" ]; then
+                            pct=$(( patch_lines * 100 / orig_lines ))
+                            echo ""
+                            echo "  ⚠️  ⚠️  RISQUE DE TRONCATURE DÉTECTÉ !"
+                            echo "     Original : ${orig_lines} lignes  →  Patch : ${patch_lines} lignes (${pct}%)"
+                            echo "     Le LLM a peut-être renvoyé du code tronqué (ex: '// ... reste inchangé ...')"
+                            read -r -p "  Forcer quand même l'application ? [y/N] " _force_confirm
+                            _force_confirm="${_force_confirm:-n}"
+                            if [[ ! "$_force_confirm" =~ ^[yY]$ ]]; then
+                                echo "  ⛔ Patch annulé — fichier original conservé."
+                                continue
+                            fi
+                            echo "  ⚠️  Application forcée malgré troncature suspectée."
+                        fi
+
+                        # Demander confirmation (sauf mode non-interactif)
+                        local confirm="y"
+                        if [ -t 0 ]; then
+                            read -r -p "  Appliquer ce patch ? [Y/n] " confirm
+                            confirm="${confirm:-y}"
+                        fi
+
+                        if [[ "$confirm" =~ ^[yYoO]$ ]]; then
+                            local backup="${target}.bak.$(date +%Y%m%d%H%M%S)"
+                            cp "$target" "$backup"
+                            printf '%s\n' "$content_lines" > "$target"
+                            echo "  ✅ Patché : $rel_target"
+                            echo "  📋 Backup : $backup"
+                        else
+                            echo "  ⏭️  Patch ignoré pour $rel_target"
+                            # ── Apprentissage des refus via Qdrant ─────────────────────────
+                            if [ -t 0 ] && [ -f "$EMBED_PY" ]; then
+                                read -r -p "  📝 Raison du refus (optionnel, mémoire IA) : " _refusal_reason
+                                if [ -n "$_refusal_reason" ]; then
+                                    export _CA_REFUSAL_FILE="$rel_target"
+                                    export _CA_REFUSAL_REASON="$_refusal_reason"
+                                    $PYTHON3 -c "
+import sys, os
+sys.path.insert(0, os.path.dirname(os.environ.get('_CA_EMBED_PY','')))
+try:
+    from embed import qdrant_index
+    f = os.environ.get('_CA_REFUSAL_FILE','?')
+    r = os.environ.get('_CA_REFUSAL_REASON','?')
+    qdrant_index('ca_refusals', f, f'REFUS [{f}]: {r}')
+except Exception:
+    pass
+" 2>/dev/null &
+                                    export _CA_EMBED_PY="$EMBED_PY"
+                                    unset _CA_REFUSAL_FILE _CA_REFUSAL_REASON
+                                fi
+                            fi
+                        fi
+                    fi
+                fi
+                ;;
+            *)
+                if [ -z "$current_file" ] && ! $in_content; then
+                    current_file="$line"
+                elif $in_content; then
+                    content_lines+="${line}"$'\n'
+                fi
+                ;;
+        esac
+    done <<< "$patch_script"
+}
+
+# Affiche les instructions pour la prochaine étape
+show_next_hint() {
+    local script="$1" phase="$2" kvbasename="$3" choice="$4"
+    local next_phase=""
+
+    case "$phase" in
+        analyse)    next_phase="correction" ;;
+        correction) next_phase="controle"   ;;
+        controle)   next_phase=""           ;;
+    esac
+
+    echo "────────────────────────────────────────────────────────────────"
+    if [ -n "$choice" ]; then
+        echo "  Choix : $choice  |  Session : $kvbasename"
+    fi
+
+    if [ -n "$next_phase" ]; then
+        echo ""
+        echo "  💡 Prochaine phase — $next_phase :"
+        echo "     $(basename "$0") $(basename "$script") --kvbasename $kvbasename \\"
+        echo "       --phase $next_phase --choice <valeur>"
+    else
+        echo ""
+        echo "  ✅ Session '$kvbasename' complète."
+        echo "     Mémoire : ~/.zen/tmp/flashmem/code_assistant/${kvbasename}.json"
+    fi
+    echo "────────────────────────────────────────────────────────────────"
+}
+
+# Prompt interactif de choix (avec injection de contexte humain)
+ask_choice() {
+    local script="$1" phase="$2" kvbasename="$3"
+
+    echo ""
+    case "$phase" in
+        analyse)
+            echo "┌──────────────────────────────────────────────────────────────────┐"
+            echo "│  Quel problème ? 1/2/3 + contexte optionnel  ou q pour quitter  │"
+            echo "│  Ex: \"2 Focus sur le timeout IPFS ligne 131\"                   │"
+            echo "└──────────────────────────────────────────────────────────────────┘"
+            read -r -p "> " user_input
+            [ "${user_input,,}" = "q" ] && exit 0
+            # Extraire le choix (1er mot) et le supplement (reste)
+            local user_choice="${user_input%% *}"
+            local user_supplement="${user_input#* }"
+            [ "$user_supplement" = "$user_choice" ] && user_supplement=""
+            echo ""
+            echo "  💡 Lancez ensuite :"
+            printf "     %s %s --kvbasename %s \\\\\n" \
+                "$(basename "$0")" "$(basename "$script")" "$kvbasename"
+            printf "       --phase correction --choice %s" "$user_choice"
+            [ -n "$user_supplement" ] && printf " \\\\\n       --supplement \"%s\"" "$user_supplement"
+            echo ""
+            ;;
+        correction)
+            echo "┌──────────────────────────────────────────────────────────────────┐"
+            echo "│  Variante ? a/b/c + contexte optionnel  ou q pour quitter       │"
+            echo "│  Ex: \"b Préfère une solution async compatible asyncio\"          │"
+            echo "│  Ajoutez --patch pour modifier le fichier directement            │"
+            echo "└──────────────────────────────────────────────────────────────────┘"
+            read -r -p "> " user_input
+            [ "${user_input,,}" = "q" ] && exit 0
+            local user_choice="${user_input%% *}"
+            local user_supplement="${user_input#* }"
+            [ "$user_supplement" = "$user_choice" ] && user_supplement=""
+            echo ""
+            echo "  💡 Lancez ensuite (avec --patch pour appliquer) :"
+            printf "     %s %s --kvbasename %s \\\\\n" \
+                "$(basename "$0")" "$(basename "$script")" "$kvbasename"
+            printf "       --phase controle --choice %s" "$user_choice"
+            [ -n "$user_supplement" ] && printf " \\\\\n       --supplement \"%s\"" "$user_supplement"
+            echo " [--patch]"
+            ;;
+        controle)
+            local _patch_mode="${4:-false}"
+            echo "┌────────────────────────────────────────────────────────────┐"
+            echo "│  Appliquer la correction ? (o = oui / n = non)            │"
+            echo "└────────────────────────────────────────────────────────────┘"
+            read -r -p "> " user_choice
+            if [[ "$user_choice" == "o" || "$user_choice" == "y" ]]; then
+                local last_v
+                last_v=$($PYTHON3 -c "
+import json, os
+p = os.path.expanduser('~/.zen/tmp/flashmem/code_assistant/$kvbasename.json')
+d = json.load(open(p)) if os.path.isfile(p) else {}
+print(d.get('last_variant_choice', 'a'))
+" 2>/dev/null)
+                if $_patch_mode; then
+                    echo ""
+                    echo "  🔧 Application directe de la variante ${last_v} (--patch actif)..."
+                    exec "$0" "$script" --kvbasename "$kvbasename" \
+                        --phase correction --choice "$last_v" --patch
+                else
+                    echo ""
+                    echo "  💡 Pour appliquer :"
+                    echo "     $(basename "$0") $(basename "$script") --kvbasename $kvbasename \\"
+                    echo "       --phase correction --choice $last_v --patch"
+                fi
+            fi
+            ;;
+    esac
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Vérifications préalables
+# ─────────────────────────────────────────────────────────────────────────────
+
+for dep in "$PYTHON3"; do
+    if ! command -v "$dep" &>/dev/null; then
+        echo "Erreur : $dep est requis"
+        exit 1
+    fi
+done
+
+if [ ! -f "$CPSCRIPT" ]; then
+    echo "Erreur : cpscript introuvable dans $MY_PATH"
+    echo "  → code_assistant doit être dans le même répertoire que cpscript"
+    exit 1
+fi
+
+if [ ! -f "$PY_BACKEND" ]; then
+    echo "Erreur : IA/code_assistant.py introuvable dans $MY_PATH/IA/"
+    exit 1
+fi
+
+# ── Assurer qu'Ollama est disponible via ollama.me.sh ────────────────────
+if ! curl -sf --max-time 1 http://localhost:11434/api/tags &>/dev/null; then
+    if [ -f "$OLLAMA_STARTER" ]; then
+        echo "🔌 Démarrage d'Ollama via ollama.me.sh..."
+        bash "$OLLAMA_STARTER" &>/dev/null &
+        echo -n "  Attente Ollama"
+        for i in $(seq 1 15); do
+            sleep 1; echo -n "."
+            if curl -sf --max-time 1 http://localhost:11434/api/tags &>/dev/null; then
+                echo " ✓"; break
+            fi
+        done
+        if ! curl -sf --max-time 1 http://localhost:11434/api/tags &>/dev/null; then
+            echo ""
+            echo "  ⚠️  Ollama non accessible après 15s"
+            echo "     Relancez manuellement : bash $OLLAMA_STARTER"
+            exit 1
+        fi
+    else
+        echo "  ⚠️  Ollama non disponible (localhost:11434) et ollama.me.sh absent"
+        echo "     Installez Ollama : https://ollama.ai  puis : ollama serve"
+        exit 1
+    fi
+fi
+
+# ── Vérifier le modèle d'embedding nomic-embed-text ───────────────────────
+if [ -f "$EMBED_PY" ]; then
+    if ! python3 "$EMBED_PY" --check &>/dev/null 2>&1; then
+        echo "  📥 Téléchargement de nomic-embed-text..."
+        python3 "$EMBED_PY" --pull 2>/dev/null
+    fi
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Parsing des options
+# ─────────────────────────────────────────────────────────────────────────────
+
+SCRIPT=""
+KVBASENAME="default"
+MODEL=""          # vide = auto-sélection par phase (deepseek-r1 analyse, qwen2.5-coder correction)
+MODEL_EXPLICIT=false
+PHASE="analyse"
+DEPTH=1   # défaut : script + dépendances directes seulement (plus rapide)
+MAX_TOKEN=32000
+CHOICE=""
+PATCH_MODE=false
+NO_QDRANT=false
+DIFF_FORMAT="unified"  # H1: unified par défaut (économise tokens vs json complet)
+SETUP_MODE=false
+HUMAN_EXTRACT=false    # --human : mode interactif sélection des dépendances
+HUMAN_LLM=false       # --human : mode interactif LLM (voir/modifier chaque prompt)
+DOC_EXTRACT=false      # --doc : inclure les .md de docs/ dans le contexte LLM
+TEST_MODE=false        # --test : inclure les tests unitaires dans le contexte + vérification couverture
+SUPPLEMENT=""          # contexte humain injecté dans le prompt LLM
+EXCLUDE_ARGS=()
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --help|-h)        show_help ;;
+        --kvbasename)     KVBASENAME="$2"; shift 2 ;;
+        --kvbasename=*)   KVBASENAME="${1#--kvbasename=}"; shift ;;
+        --model)          MODEL="$2"; MODEL_EXPLICIT=true; shift 2 ;;
+        --model=*)        MODEL="${1#--model=}"; MODEL_EXPLICIT=true; shift ;;
+        --phase)          PHASE="$2"; shift 2 ;;
+        --phase=*)        PHASE="${1#--phase=}"; shift ;;
+        --depth)          DEPTH="$2"; shift 2 ;;
+        --depth=*)        DEPTH="${1#--depth=}"; shift ;;
+        --maxtoken)       MAX_TOKEN="$2"; shift 2 ;;
+        --maxtoken=*)     MAX_TOKEN="${1#--maxtoken=}"; shift ;;
+        --exclude)        EXCLUDE_ARGS+=("--exclude" "$2"); shift 2 ;;
+        --exclude=*)      EXCLUDE_ARGS+=("--exclude" "${1#--exclude=}"); shift ;;
+        --choice)         CHOICE="$2"; shift 2 ;;
+        --choice=*)       CHOICE="${1#--choice=}"; shift ;;
+        --patch)          PATCH_MODE=true; shift ;;
+        --no-qdrant)      NO_QDRANT=true; shift ;;
+        --diff-format)    DIFF_FORMAT="$2"; shift 2 ;;
+        --diff-format=*)  DIFF_FORMAT="${1#--diff-format=}"; shift ;;
+        --supplement)     SUPPLEMENT="$2"; shift 2 ;;
+        --supplement=*)   SUPPLEMENT="${1#--supplement=}"; shift ;;
+        --human)          HUMAN_EXTRACT=true; HUMAN_LLM=true; shift ;;
+        --doc)            DOC_EXTRACT=true;   shift ;;
+        --test)           TEST_MODE=true;     shift ;;
+        --setup)          SETUP_MODE=true; shift ;;
+        -*)               echo "Option inconnue : $1"; show_help ;;
+        *)                [ -z "$SCRIPT" ] && SCRIPT="$1"; shift ;;
+    esac
+done
+
+# Validations
+if [ -z "$SCRIPT" ]; then
+    echo "Erreur : script non spécifié."
+    show_help
+fi
+
+if [ ! -f "$SCRIPT" ]; then
+    echo "Erreur : '$SCRIPT' introuvable."
+    echo "  → Vérifiez le chemin du fichier source"
+    exit 1
+fi
+
+case "$PHASE" in
+    analyse|correction|controle) ;;
+    *) echo "Erreur : phase invalide '$PHASE'. Valeurs : analyse | correction | controle"
+       exit 1 ;;
+esac
+
+if $PATCH_MODE && [ -z "$CHOICE" ]; then
+    echo "Erreur : --patch nécessite --choice pour désigner la variante à appliquer."
+    echo "  Ex: --phase correction --choice a --patch"
+    exit 1
+fi
+
+SCRIPT_REALPATH=$(realpath "$SCRIPT")
+SCRIPT_BASENAME=$(basename "$SCRIPT")
+SCRIPT_EXT="${SCRIPT_BASENAME##*.}"
+
+# ── Détection automatique du profil selon l'extension ───────────────────────
+# server : .sh .py .md  →  scripts Linux/Python, documentation
+# client : .html .js .css .json .md  →  web old-school (jQuery/vanilla, CDN)
+case "${SCRIPT_EXT,,}" in
+    sh|py)            PROFILE="server" ;;
+    html|js|css)      PROFILE="client" ;;
+    md|json)
+        # Ambiguïté : regarder si un fichier .html ou .js existe à côté
+        _script_dir=$(dirname "$SCRIPT_REALPATH")
+        if ls "$_script_dir"/*.html "$_script_dir"/*.js &>/dev/null 2>&1; then
+            PROFILE="client"
+        else
+            PROFILE="server"
+        fi ;;
+    *)                PROFILE="server" ;;
+esac
+
+# ── Supplement automatique profil CLIENT (enrichi + CDN détectés) ────────────
+if [ -z "$SUPPLEMENT" ] && [[ "$PROFILE" == "client" ]]; then
+    # Détecter les bibliothèques CDN déjà utilisées dans les fichiers HTML du projet
+    _script_dir_for_cdn=$(dirname "$SCRIPT_REALPATH")
+    _detected_cdns=""
+    for _html_file in "$_script_dir_for_cdn"/*.html "$_script_dir_for_cdn"/../*.html; do
+        [ -f "$_html_file" ] || continue
+        # Extraire les attributs src puis filtrer les libs connues (évite les quotes dans la regex)
+        _cdns=$(grep -oiE 'src="[^"]*"|src='"'"'[^'"'"']*'"'" "$_html_file" 2>/dev/null \
+            | grep -iE 'jquery|bootstrap|moment|axios|lodash|d3|chartjs|chart\.js|fontawesome|leaflet|swiper' \
+            | grep -oE '[a-zA-Z0-9._/-]+\.(js|css)' \
+            | sort -u | tr '\n' '  ')
+        [ -n "$_cdns" ] && { _detected_cdns="$_cdns"; break; }
+    done
+
+    SUPPLEMENT="PROFIL CLIENT — web old-school : HTML5 + CSS3 + JavaScript vanilla ou jQuery. \
+Bibliothèques chargées uniquement via balises <script src='...'> (CDN). \
+PAS de frameworks modernes (React, Vue, Angular, Svelte, Next.js, Lit). \
+PAS de npm, webpack, vite, rollup, TypeScript, Babel ni transpileur. \
+PAS de modules ES6 (import/export) — utilise uniquement du code compatible <script> direct. \
+Syntaxe ES5/ES6 classique, compatible navigateurs courants sans build step."
+    if [ -n "$_detected_cdns" ]; then
+        SUPPLEMENT="${SUPPLEMENT} CDN déjà présents dans le projet : ${_detected_cdns}— \
+utilise ces bibliothèques en priorité et n'en introduis pas d'autres."
+    fi
+fi
+
+# ── Lecture des règles projet (.assistant_rules) — injectées dans le contexte LLM ──
+ASSISTANT_RULES_FILE=""
+ASSISTANT_RULES_CONTENT=""
+for _rules_candidate in \
+    "$(dirname "$SCRIPT_REALPATH")/.assistant_rules" \
+    "$(dirname "$SCRIPT_REALPATH")/../.assistant_rules" \
+    "$MY_PATH/.assistant_rules"; do
+    if [ -f "$_rules_candidate" ]; then
+        ASSISTANT_RULES_FILE="$_rules_candidate"
+        ASSISTANT_RULES_CONTENT=$(cat "$_rules_candidate")
+        break
+    fi
+done
+
+if [ -n "$ASSISTANT_RULES_CONTENT" ]; then
+    _rules_rel=$(realpath --relative-to="$(pwd)" "$ASSISTANT_RULES_FILE" 2>/dev/null \
+                 || echo "$ASSISTANT_RULES_FILE")
+    if [ -n "$SUPPLEMENT" ]; then
+        SUPPLEMENT="${SUPPLEMENT}
+
+RÈGLES PROJET (${_rules_rel}) :
+${ASSISTANT_RULES_CONTENT}"
+    else
+        SUPPLEMENT="RÈGLES PROJET (${_rules_rel}) :
+${ASSISTANT_RULES_CONTENT}"
+    fi
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# En-tête
+# ─────────────────────────────────────────────────────────────────────────────
+
+echo ""
+echo "╔══════════════════════════════════════════════════════════════╗"
+printf "║  🤖 CODE ASSISTANT — Phase : %-32s ║\n" "${PHASE^^}"
+echo "╠══════════════════════════════════════════════════════════════╣"
+printf "║  Script  : %-50s ║\n" "$SCRIPT_BASENAME"
+printf "║  Session : %-50s ║\n" "$KVBASENAME"
+printf "║  Modèle  : %-50s ║\n" "$MODEL"
+if [[ "$PROFILE" == "client" ]]; then
+    printf "║  Profil  : %-50s ║\n" "🌐 client  (HTML/CSS/JS vanilla·jQuery·CDN)"
+else
+    printf "║  Profil  : %-50s ║\n" "🖥️  server  (Bash/Python/Markdown)"
+fi
+[ -n "$ASSISTANT_RULES_FILE" ] && \
+    printf "║  Rules   : %-50s ║\n" "📋 $(basename "$ASSISTANT_RULES_FILE") chargé"
+echo "╚══════════════════════════════════════════════════════════════╝"
+echo ""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Étape 1 : Extraction du contexte via cpscript
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Spinner d'attente ────────────────────────────────────────────────────
+_spinner_pid=""
+start_spinner() {
+    local msg="$1"
+    { while true; do
+        for s in '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏'; do
+            printf "\r  %s %s  " "$s" "$msg"
+            sleep 0.1
+        done
+    done } &
+    _spinner_pid=$!
+    disown $_spinner_pid 2>/dev/null
+}
+stop_spinner() {
+    [ -n "$_spinner_pid" ] && kill "$_spinner_pid" 2>/dev/null && _spinner_pid=""
+    printf "\r\033[K"  # Effacer la ligne du spinner
+}
+
+# ── Extraction du contexte avec progression visible ─────────────────────
+echo "📦 Extraction du contexte (depth=$DEPTH, maxtoken=$MAX_TOKEN)..."
+echo "   Scan des dépendances en cours..."
+CPSCRIPT_ARGS=(--json --depth "$DEPTH" --maxtoken "$MAX_TOKEN" "${EXCLUDE_ARGS[@]}")
+$HUMAN_EXTRACT && CPSCRIPT_ARGS+=(--human)
+$DOC_EXTRACT   && CPSCRIPT_ARGS+=(--doc)
+
+# Lancer cpscript avec la progression visible sur le terminal (stderr → tty)
+CODE_JSON=$("$CPSCRIPT" "${CPSCRIPT_ARGS[@]}" "$SCRIPT_REALPATH" 2>/dev/tty)
+
+# Vérification JSON
+if ! echo "$CODE_JSON" | $PYTHON3 -c "import json,sys; json.load(sys.stdin)" &>/dev/null 2>&1; then
+    echo "  ⚠️  cpscript n'a pas produit de JSON valide — utilisation du fichier seul"
+    CONTENT_JSON=$($PYTHON3 -c "import json,sys; print(json.dumps(open('$SCRIPT_REALPATH').read()))")
+    CODE_JSON="{\"script\":\"$SCRIPT_BASENAME\",\"files\":[{\"path\":\"$SCRIPT_BASENAME\",\"content\":$CONTENT_JSON,\"extension\":\"${SCRIPT_BASENAME##*.}\"}],\"stats\":{}}"
+fi
+
+FILES_COUNT=$(echo "$CODE_JSON" | $PYTHON3 -c \
+    "import json,sys; d=json.load(sys.stdin); print(d.get('stats',{}).get('files_count',len(d.get('files',[]))))" 2>/dev/null)
+TOTAL_TOKENS=$(echo "$CODE_JSON" | $PYTHON3 -c \
+    "import json,sys; d=json.load(sys.stdin); print(d.get('stats',{}).get('total_tokens','?'))" 2>/dev/null)
+
+echo "  ✓ $FILES_COUNT fichier(s) — ~$TOTAL_TOKENS tokens"
+echo ""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Mode --test : détection et injection des fichiers de tests unitaires
+# ─────────────────────────────────────────────────────────────────────────────
+if $TEST_MODE; then
+    SCRIPT_DIR=$(dirname "$SCRIPT_REALPATH")
+    SCRIPT_STEM="${SCRIPT_BASENAME%.*}"
+    SCRIPT_EXT="${SCRIPT_BASENAME##*.}"
+
+    # Répertoires candidats pour les tests (relatif au script et au projet)
+    TEST_DIRS=("$SCRIPT_DIR/tests" "$SCRIPT_DIR/../tests" "$SCRIPT_DIR/test" "$SCRIPT_DIR/../test")
+    TEST_FILES_FOUND=()
+
+    for TDIR in "${TEST_DIRS[@]}"; do
+        [ -d "$TDIR" ] || continue
+        while IFS= read -r -d '' tf; do
+            TEST_FILES_FOUND+=("$tf")
+        done < <(find "$TDIR" -maxdepth 2 \( \
+            -name "test_${SCRIPT_STEM}.*" -o \
+            -name "${SCRIPT_STEM}_test.*" -o \
+            -name "test_${SCRIPT_STEM}" \
+        \) -type f -print0 2>/dev/null)
+    done
+
+    echo "🧪 Mode --test : diagnostic actif des tests unitaires"
+
+    if [ ${#TEST_FILES_FOUND[@]} -gt 0 ]; then
+        echo "  ✓ Fichier(s) de test trouvé(s) :"
+        for tf in "${TEST_FILES_FOUND[@]}"; do
+            echo "    • $(realpath --relative-to="$SCRIPT_DIR" "$tf" 2>/dev/null || echo "$tf")"
+        done
+
+        # ── Injection des fichiers de tests dans CODE_JSON ────────────────────
+        export _CA_TEST_FILES=$(printf '%s\n' "${TEST_FILES_FOUND[@]}" | $PYTHON3 -c "
+import json, sys
+files = [l.rstrip('\n') for l in sys.stdin if l.strip()]
+print(json.dumps(files))
+")
+        CODE_JSON=$(echo "$CODE_JSON" | $PYTHON3 -c "
+import json, sys, os
+code_data = json.load(sys.stdin)
+test_paths = json.loads(os.environ.get('_CA_TEST_FILES', '[]'))
+existing = {f.get('path','') for f in code_data.get('files',[])}
+for tp in test_paths:
+    try:
+        with open(tp, 'r', encoding='utf-8', errors='replace') as fh:
+            content = fh.read()
+        rp = os.path.basename(tp)
+        if rp not in existing:
+            code_data.setdefault('files', []).append({
+                'path': rp, 'content': content,
+                'extension': (tp.rsplit('.',1)[-1] if '.' in tp else ''),
+                '_test_file': True
+            })
+    except Exception:
+        pass
+code_data.setdefault('stats', {})['files_count'] = len(code_data['files'])
+print(json.dumps(code_data))
+" 2>/dev/null)
+        unset _CA_TEST_FILES
+        echo "  ✓ Fichiers de test injectés dans le contexte LLM"
+
+        # ── Dry Run : exécuter les tests pour capturer les erreurs réelles ────
+        TEST_RUN_OUTPUT=""
+        TEST_FAILED=false
+        _TEST_RUNNER=""
+        for tf in "${TEST_FILES_FOUND[@]}"; do
+            case "${tf##*.}" in
+                py)
+                    if $PYTHON3 -m pytest --version &>/dev/null 2>&1; then
+                        echo "  🏃 Dry run pytest..."
+                        TEST_RUN_OUTPUT=$(cd "$(dirname "$SCRIPT_REALPATH")" && \
+                            $PYTHON3 -m pytest "$tf" -x --tb=short -q 2>&1 | head -80)
+                        _TEST_RUNNER="pytest"
+                    else
+                        echo "  🏃 Dry run unittest..."
+                        TEST_RUN_OUTPUT=$(cd "$(dirname "$SCRIPT_REALPATH")" && \
+                            $PYTHON3 -m unittest "$(basename "${tf%.*}")" 2>&1 | head -60)
+                        _TEST_RUNNER="unittest"
+                    fi ;;
+                sh)
+                    if command -v bats &>/dev/null; then
+                        echo "  🏃 Dry run bats..."
+                        TEST_RUN_OUTPUT=$(bats "$tf" 2>&1 | head -50)
+                        _TEST_RUNNER="bats"
+                    else
+                        echo "  🏃 Dry run bash..."
+                        TEST_RUN_OUTPUT=$(bash "$tf" 2>&1 | head -50)
+                        _TEST_RUNNER="bash"
+                    fi ;;
+            esac
+            [ -n "$TEST_RUN_OUTPUT" ] && break
+        done
+
+        if [ -n "$TEST_RUN_OUTPUT" ]; then
+            _fail_count=$(echo "$TEST_RUN_OUTPUT" | grep -c -iE 'FAILED|ERROR|error:' 2>/dev/null || echo 0)
+            if [ "$_fail_count" -gt 0 ]; then
+                TEST_FAILED=true
+                echo "  ❌ $_fail_count test(s) en échec (${_TEST_RUNNER}) :"
+                echo "$TEST_RUN_OUTPUT" | grep -iE 'FAILED|ERROR|assert|error:' | head -8 | sed 's/^/     /'
+            else
+                echo "  ✅ Tests passants (${_TEST_RUNNER})"
+            fi
+        fi
+
+        # ── Coverage Map : fonctions du script non référencées dans les tests ──
+        COVERAGE_GAPS=""
+        if [[ "$SCRIPT_EXT" == "py" ]]; then
+            COVERAGE_GAPS=$($PYTHON3 - "$SCRIPT_REALPATH" "${TEST_FILES_FOUND[@]}" 2>/dev/null <<'COVEOF'
+import ast, sys
+source_file = sys.argv[1]
+test_files  = sys.argv[2:]
+
+def get_public_funcs(path):
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            tree = ast.parse(fh.read())
+        return [n.name for n in ast.walk(tree)
+                if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+                and not n.name.startswith("_")]
+    except Exception:
+        return []
+
+test_content = ""
+for tf in test_files:
+    try:
+        with open(tf, "r", encoding="utf-8", errors="replace") as fh:
+            test_content += fh.read() + "\n"
+    except Exception:
+        pass
+
+funcs = get_public_funcs(source_file)
+uncovered = [f for f in funcs if f not in test_content]
+if uncovered:
+    print("Fonctions sans couverture détectée : " + ", ".join(uncovered[:20]))
+COVEOF
+)
+            [ -n "$COVERAGE_GAPS" ] && echo "  📊 $COVERAGE_GAPS"
+        fi
+
+        # ── Injecter résultats dry run + coverage dans CODE_JSON ──────────────
+        if [ -n "$TEST_RUN_OUTPUT" ] || [ -n "$COVERAGE_GAPS" ]; then
+            export _CA_TEST_RESULTS="$TEST_RUN_OUTPUT"
+            export _CA_COVERAGE_GAPS="$COVERAGE_GAPS"
+            CODE_JSON=$(echo "$CODE_JSON" | $PYTHON3 -c "
+import json, sys, os
+d = json.load(sys.stdin)
+d['_test_results']  = os.environ.get('_CA_TEST_RESULTS', '')
+d['_coverage_gaps'] = os.environ.get('_CA_COVERAGE_GAPS', '')
+print(json.dumps(d))
+" 2>/dev/null)
+            unset _CA_TEST_RESULTS _CA_COVERAGE_GAPS
+        fi
+
+        # ── Supplement automatique selon résultats ────────────────────────────
+        if [ -z "$SUPPLEMENT" ]; then
+            if $TEST_FAILED; then
+                SUPPLEMENT="MODE TEST — diagnostic actif : ${_fail_count} test(s) en échec (voir _test_results). Résous UNIQUEMENT les erreurs de tests réelles sans casser les tests passants. En phase contrôle, fournis impérativement un test de non-régression."
+            else
+                SUPPLEMENT="MODE TEST — couverture : tests passants. Analyse la couverture (voir _coverage_gaps) et identifie les fonctions non testées. Propose des tests manquants en priorité."
+            fi
+        fi
+    else
+        echo "  ⚠️  Aucun test trouvé pour '${SCRIPT_STEM}' dans : $(printf '%s  ' "${TEST_DIRS[@]}")"
+        echo "     Patterns cherchés : test_${SCRIPT_STEM}.*  /  ${SCRIPT_STEM}_test.*"
+        if [ -z "$SUPPLEMENT" ]; then
+            SUPPLEMENT="MODE TEST — création : aucun test trouvé pour '${SCRIPT_STEM}'. Propose une suite de tests complète dans tests/test_${SCRIPT_STEM}.${SCRIPT_EXT}. Couvre les cas nominaux, erreurs et cas limites."
+        fi
+    fi
+    echo ""
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Mode --doc : diagnostic actif incohérences doc ↔ code
+# ─────────────────────────────────────────────────────────────────────────────
+if $DOC_EXTRACT; then
+    echo "📖 Mode --doc : diagnostic actif doc ↔ code..."
+    _doc_issues_found=""
+
+    # Extraire les signatures de fonctions du script principal (Python uniquement)
+    if [[ "$SCRIPT_EXT" == "py" ]]; then
+        _doc_issues_found=$($PYTHON3 - "$SCRIPT_REALPATH" "$CODE_JSON" 2>/dev/null <<'DOCEOF'
+import ast, sys, re, json
+
+source_file = sys.argv[1]
+# Lire les fichiers .md depuis CODE_JSON (stdin n'est pas dispo ici, on passe via arg)
+try:
+    code_data = json.loads(sys.argv[2])
+except Exception:
+    code_data = {}
+
+# Extraire signatures du code source
+def get_signatures(path):
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            tree = ast.parse(fh.read())
+        sigs = {}
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                args_list = [a.arg for a in node.args.args]
+                sigs[node.name] = args_list
+        return sigs
+    except Exception:
+        return {}
+
+code_sigs = get_signatures(source_file)
+
+# Extraire les blocs code dans les .md
+md_files = [f for f in code_data.get("files", [])
+            if f.get("extension") in ("md",) or f.get("path","").endswith(".md")]
+
+issues = []
+for md_file in md_files:
+    content = md_file.get("content", "")
+    # Chercher les signatures citées dans la doc (nom_fonction(...)
+    for fname, fargs in code_sigs.items():
+        if fname in content:
+            # Chercher si la doc mentionne des args qui n'existent plus
+            pattern = rf'{re.escape(fname)}\(([^)]*)\)'
+            for m in re.finditer(pattern, content):
+                doc_args = [a.strip() for a in m.group(1).split(",") if a.strip() and a.strip() != "..."]
+                unknown = [a for a in doc_args if a not in fargs and not a.startswith("#")]
+                if unknown:
+                    issues.append(f"[{md_file['path']}] {fname}(): args inconnus dans la doc : {', '.join(unknown)}")
+                    break
+    # Chercher les fonctions citées dans la doc mais absentes du code
+    for m in re.finditer(r'`([a-z_][a-z0-9_]+)\(\)', content):
+        fn = m.group(1)
+        if fn not in code_sigs and len(fn) > 3:
+            issues.append(f"[{md_file['path']}] `{fn}()` mentionné mais absent du code")
+
+if issues:
+    print("\n".join(issues[:15]))
+DOCEOF
+)
+    fi
+
+    if [ -n "$_doc_issues_found" ]; then
+        echo "  ⚠️  Incohérences doc ↔ code détectées :"
+        echo "$_doc_issues_found" | head -8 | sed 's/^/    • /'
+        # Injecter dans CODE_JSON
+        export _CA_DOC_ISSUES="$_doc_issues_found"
+        CODE_JSON=$(echo "$CODE_JSON" | $PYTHON3 -c "
+import json, sys, os
+d = json.load(sys.stdin)
+d['_doc_issues'] = os.environ.get('_CA_DOC_ISSUES', '')
+print(json.dumps(d))
+" 2>/dev/null)
+        unset _CA_DOC_ISSUES
+    else
+        echo "  ✓ Aucune incohérence doc ↔ code détectée"
+    fi
+    echo ""
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Étape 2 : Appel du backend Python (une seule phase)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# A2: Mode setup — déléguer directement au backend Python
+if $SETUP_MODE; then
+    echo "🔧 Installation des modèles recommandés pour code_assistant..."
+    python3 "$PY_BACKEND" --setup 2>&1
+    exit $?
+fi
+
+PY_ARGS=(
+    --phase      "$PHASE"
+    --diff-format "$DIFF_FORMAT"
+    --kvbasename  "$KVBASENAME"
+    --script     "$SCRIPT_REALPATH"
+)
+# --model uniquement si l'utilisateur l'a spécifié explicitement
+# Sinon, code_assistant.py utilise PHASE_MODELS (deepseek-r1 pour analyse, qwen2.5-coder pour correction)
+$MODEL_EXPLICIT && PY_ARGS+=(--model "$MODEL")
+$NO_QDRANT      && PY_ARGS+=(--no-qdrant)
+$HUMAN_LLM      && PY_ARGS+=(--human-llm)
+$TEST_MODE      && PY_ARGS+=(--test-mode)   # signale au backend que --test est actif
+$DOC_EXTRACT    && PY_ARGS+=(--doc-mode)    # signale au backend que --doc est actif
+[ -n "$SUPPLEMENT" ] && PY_ARGS+=(--supplement "$SUPPLEMENT")
+[ -n "$CHOICE" ] && PY_ARGS+=(--choice "$CHOICE")
+
+# Mode patch : récupérer le JSON de patch depuis le backend
+if $PATCH_MODE && [ "$PHASE" = "correction" ] && [ -n "$CHOICE" ]; then
+    PY_ARGS_PATCH=("${PY_ARGS[@]}" --patch)
+    echo "🔍 Génération du patch (choix $CHOICE) via $effective_model..."
+    start_spinner "Génération du patch avec ${effective_model:-LLM} (peut prendre 30-120s)..."
+    PATCH_JSON=$(echo "$CODE_JSON" | python3 "$PY_BACKEND" "${PY_ARGS_PATCH[@]}" 2>/dev/tty)
+    stop_spinner
+    apply_patches "$PATCH_JSON" "$SCRIPT_REALPATH"
+    show_next_hint "$SCRIPT_REALPATH" "$PHASE" "$KVBASENAME" "$CHOICE"
+    exit 0
+fi
+
+# Mode normal : capturer la réponse LLM (spinner pendant la génération, puis afficher)
+# H3 : En mode --human, demander le contexte initial avant d'envoyer le prompt au LLM
+if $HUMAN_LLM && [ -z "$SUPPLEMENT" ] && [ -t 0 ]; then
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════════════════╗"
+    echo "║  💬 Contexte initial (optionnel)                                    ║"
+    echo "║  Entrez vos contraintes/focus pour cette phase (Enter = aucun)     ║"
+    echo "╚══════════════════════════════════════════════════════════════════════╝"
+    read -r -p "  > " INITIAL_CONTEXT
+    if [ -n "$INITIAL_CONTEXT" ]; then
+        SUPPLEMENT="$INITIAL_CONTEXT"
+        PY_ARGS+=(--supplement "$SUPPLEMENT")
+        echo "  ✓ Contexte enregistré : $INITIAL_CONTEXT"
+    fi
+    echo ""
+fi
+
+echo ""
+echo "🤔 Phase ${PHASE^^} — modèle auto-sélectionné selon la phase"
+echo "   (depth=$DEPTH, ~$(echo "$CODE_JSON" | $PYTHON3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('stats',{}).get('total_tokens','?'))" 2>/dev/null) tokens)"
+echo ""
+start_spinner "Génération LLM en cours..."
+LLM_OUTPUT=$(echo "$CODE_JSON" | $PYTHON3 "$PY_BACKEND" "${PY_ARGS[@]}" 2>/dev/tty)
+LLM_EXIT=$?
+stop_spinner
+
+if [ $LLM_EXIT -ne 0 ]; then
+    echo "❌ Erreur du backend LLM (code $LLM_EXIT)"
+    echo "   Consultez ~/.zen/tmp/IA.log pour le détail"
+    echo "   Piste : vérifiez qu'Ollama est disponible → bash IA/ollama.me.sh"
+    exit $LLM_EXIT
+fi
+
+echo "$LLM_OUTPUT"
+
+# Mode --patch sur phase controle : application directe sans copier-coller
+if $PATCH_MODE && [ "$PHASE" = "controle" ] && [ -n "$CHOICE" ]; then
+    echo ""
+    echo "  ✅ Contrôle terminé — application directe de la variante $CHOICE (--patch actif)..."
+    exec "$0" "$SCRIPT_REALPATH" --kvbasename "$KVBASENAME" \
+        --phase correction --choice "$CHOICE" --patch
+fi
+
+# Afficher le prochain hint ou demander le choix interactivement
+if [ -n "$CHOICE" ]; then
+    show_next_hint "$SCRIPT_REALPATH" "$PHASE" "$KVBASENAME" "$CHOICE"
+else
+    ask_choice "$SCRIPT_REALPATH" "$PHASE" "$KVBASENAME" "$PATCH_MODE"
+fi
