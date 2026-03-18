@@ -636,11 +636,28 @@ create_gmarkmail_captain() {
     confirm_gm="${confirm_gm:-oui}"
     [[ ! "$confirm_gm" =~ ^(oui|o|y|yes)$ ]] && print_info "Annulé." && return 1
 
+    # Bootstrap : CAPTAINEMAIL doit être exporté AVANT make_NOSTRCARD.sh
+    # pour que my.sh puisse trouver l'email (évite "Captain EMAIL is empty")
+    # Identique à la logique de setup.sh (ligne : export CAPTAINEMAIL="${GMARKMAIL}")
+    export CAPTAINEMAIL="${GMARKMAIL}"
+
     # 1. MULTIPASS
     print_info "Création du MULTIPASS ${GMARKMAIL}..."
     if ! "${MY_PATH}/tools/make_NOSTRCARD.sh" "${GMARKMAIL}" "${SYSLANG:-fr}" "$GLAT" "$GLON"; then
         print_error "Échec make_NOSTRCARD.sh"
         return 1
+    fi
+
+    # Récupérer CAPTAING1PUB depuis le MULTIPASS fraîchement créé
+    # (nécessaire pour que VISA.new.sh chiffre correctement le share SSSS)
+    local _gm_g1pub
+    _gm_g1pub=$(cat ~/.zen/game/nostr/${GMARKMAIL}/G1PUBNOSTR 2>/dev/null)
+    [[ -n "$_gm_g1pub" ]] && export CAPTAING1PUB="$_gm_g1pub"
+
+    # Récupérer NPUB & HEX depuis .secret.nostr du MULTIPASS fraîchement créé
+    local NPUB="" HEX=""
+    if [[ -f ~/.zen/game/nostr/${GMARKMAIL}/.secret.nostr ]]; then
+        source ~/.zen/game/nostr/${GMARKMAIL}/.secret.nostr
     fi
 
     # 2. ZEN Card — secrets aléatoires (diceware)
@@ -651,19 +668,6 @@ create_gmarkmail_captain() {
     echo -e "   SALT   : ${WHITE}${ZSALT}${NC}"
     echo -e "   PEPPER : ${WHITE}${ZPEPS}${NC}"
     echo ""
-
-    # Récupérer NPUB & HEX depuis .secret.nostr du MULTIPASS fraîchement créé
-    local NPUB="" HEX=""
-    if [[ -f ~/.zen/game/nostr/${GMARKMAIL}/.secret.nostr ]]; then
-        source ~/.zen/game/nostr/${GMARKMAIL}/.secret.nostr
-    fi
-
-    # Bootstrap : VISA.new.sh a besoin de CAPTAINEMAIL pour chiffrer le share
-    # lors d'un premier démarrage on s'auto-définit comme capitaine provisoire
-    export CAPTAINEMAIL="${GMARKMAIL}"
-    local _gm_g1pub
-    _gm_g1pub=$(cat ~/.zen/game/nostr/${GMARKMAIL}/G1PUBNOSTR 2>/dev/null)
-    [[ -n "$_gm_g1pub" ]] && export CAPTAING1PUB="$_gm_g1pub"
 
     print_info "Création de la ZEN Card..."
     if ! "${MY_PATH}/RUNTIME/VISA.new.sh" "$ZSALT" "$ZPEPS" "${GMARKMAIL}" "UPlanet" "${SYSLANG:-fr}" "$GLAT" "$GLON" "$NPUB" "$HEX"; then
