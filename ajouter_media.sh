@@ -748,50 +748,90 @@ fi
     exit 1
 fi
 
-        # Send NIP-42 authentication event before upload
+        # ── Send NIP-42 authentication event before upload ──────────────────
+        # Security hardening: marker is now named  .nip42_auth_<hex_pubkey>
+        # and contains JSON {"pubkey","event_hash","created_at"}.
+        # TTL enforced on the API side: 300 s (5 min).
         echo "🔐 Sending NIP-42 authentication event..."
         SECRET_NOSTR_FILE="$HOME/.zen/game/nostr/${PLAYER}/.secret.nostr"
         NOSTR_SEND_SCRIPT="${MY_PATH}/tools/nostr_send_note.py"
         NOSTR_RELAY="ws://127.0.0.1:7777"
-        
+
+        # Helper: write the secure JSON marker (pubkey-bound filename + JSON body)
+        _write_nip42_marker() {
+            local marker_hex="$1"    # 64-char hex pubkey
+            local event_hash="$2"   # 64-char hex event id (may be empty)
+            local marker_dir="$HOME/.zen/game/nostr/${PLAYER}"
+            local marker_file="${marker_dir}/.nip42_auth_${marker_hex}"
+            local now_ts
+            now_ts=$(date +%s)
+            printf '{"pubkey":"%s","event_hash":"%s","created_at":%d}' \
+                "$marker_hex" "$event_hash" "$now_ts" \
+                > "$marker_file" 2>/dev/null \
+                && echo "🔐 NIP-42 auth marker written: .nip42_auth_${marker_hex:0:16}…" \
+                || echo "⚠️  Warning: Could not write NIP-42 auth marker (upload may fail)"
+            # Remove stale old-format marker if it still exists
+            [[ -f "${marker_dir}/.nip42_auth" ]] && rm -f "${marker_dir}/.nip42_auth" 2>/dev/null || true
+        }
+
         if [[ -f "$SECRET_NOSTR_FILE" ]] && [[ -f "$NOSTR_SEND_SCRIPT" ]]; then
-            # Send NIP-42 event (kind 22242) to authenticate with relay
-            # Content includes IPFSNODEID and UPLANETNAME_G1 for identification
+            # ── Obtain a dynamic challenge from the API before signing ───────
+            NIP42_CHALLENGE=""
+            if [[ -n "$NPUB_HEX" ]]; then
+                NIP42_CHALLENGE=$(curl -sf \
+                    "http://127.0.0.1:54321/api/nip42/challenge?npub=${NPUB_HEX}" \
+                    2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('challenge',''))" \
+                    2>/dev/null || echo "")
+                [[ -n "$NIP42_CHALLENGE" ]] && echo "🔑 Dynamic NIP-42 challenge obtained: ${NIP42_CHALLENGE:0:16}…"
+            fi
+            # Fall back to a local timestamp nonce if the API is unreachable
+            [[ -z "$NIP42_CHALLENGE" ]] && NIP42_CHALLENGE="local-$(date +%s)-${IPFSNODEID:0:8}"
+
+            # Build the kind-22242 event with the dynamic challenge
             NIP42_CONTENT="${IPFSNODEID} ${UPLANETNAME_G1}"
-            NIP42_TAGS='[["relay","'${NOSTR_RELAY}'"],["challenge",""]]'
-            if python3 "$NOSTR_SEND_SCRIPT" \
+            NIP42_TAGS='[["relay","'${NOSTR_RELAY}'"],["challenge","'"${NIP42_CHALLENGE}"'"]]'
+
+            # Send the event; capture output to extract event_id
+            NIP42_OUTPUT=$(python3 "$NOSTR_SEND_SCRIPT" \
                 --keyfile "$SECRET_NOSTR_FILE" \
                 --content "$NIP42_CONTENT" \
                 --kind 22242 \
                 --tags "$NIP42_TAGS" \
-                --relays "$NOSTR_RELAY" \
-                >/dev/null 2>&1; then
-                echo "✅ NIP-42 authentication event sent"
+                --relays "$NOSTR_RELAY" 2>&1)
+            NIP42_EXIT=$?
+
+            NIP42_EVENT_ID=$(echo "$NIP42_OUTPUT" | python3 -c \
+                "import sys,json; d=json.load(sys.stdin); print(d.get('event_id',''))" \
+                2>/dev/null || echo "")
+            # Fallback regex extraction if nostr_send_note.py output isn't pure JSON
+            [[ -z "$NIP42_EVENT_ID" ]] && \
+                NIP42_EVENT_ID=$(echo "$NIP42_OUTPUT" | grep -oE '"event_id"\s*:\s*"[a-f0-9]{64}"' \
+                    | grep -oE '[a-f0-9]{64}' | head -1)
+
+            if [[ $NIP42_EXIT -eq 0 ]] || echo "$NIP42_OUTPUT" | grep -q "Event sent successfully"; then
+                echo "✅ NIP-42 authentication event sent (event: ${NIP42_EVENT_ID:0:16}…)"
                 # NOTE: kind 22242 is ephemeral (20000-29999 per NIP-01) and is NOT
-                # stored by strfry.  The 54321.py API therefore uses a local marker
-                # file instead of querying the relay.  We create/touch it here so
-                # the API's check_nip42_auth_local_marker() fallback can verify
-                # authentication without a relay round-trip.
-                touch "$HOME/.zen/game/nostr/${PLAYER}/.nip42_auth" 2>/dev/null \
-                    && echo "🔐 Local NIP-42 auth marker created: ~/.zen/game/nostr/${PLAYER}/.nip42_auth" \
-                    || echo "⚠️  Warning: Could not create local NIP-42 auth marker (upload may fail)"
-                # Short wait so the API can process the event if strfry stores it
+                # stored by strfry.  filter/22242.sh (relay write-policy plugin) will
+                # also write the marker when the relay forwards the event; this is a
+                # belt-and-suspenders fallback for the direct-upload case.
+                if [[ -n "$NPUB_HEX" ]]; then
+                    _write_nip42_marker "$NPUB_HEX" "$NIP42_EVENT_ID"
+                else
+                    echo "⚠️  Warning: NPUB_HEX not set – cannot write pubkey-bound marker"
+                fi
+                # Short wait so filter/22242.sh can also write the relay-side marker
                 sleep 2
             else
                 echo "⚠️  Warning: Failed to send NIP-42 authentication event (upload may still work if already authenticated)"
-                # Still try to create the marker (the player may already be registered)
-                touch "$HOME/.zen/game/nostr/${PLAYER}/.nip42_auth" 2>/dev/null || true
+                # Write the marker anyway in case local scripts already authenticated
+                [[ -n "$NPUB_HEX" ]] && _write_nip42_marker "$NPUB_HEX" "" || true
             fi
         else
-            if [[ ! -f "$SECRET_NOSTR_FILE" ]]; then
-                echo "⚠️  Warning: Secret key file not found: $SECRET_NOSTR_FILE"
-            fi
-            if [[ ! -f "$NOSTR_SEND_SCRIPT" ]]; then
-                echo "⚠️  Warning: nostr_send_note.py not found: $NOSTR_SEND_SCRIPT"
-            fi
+            [[ ! -f "$SECRET_NOSTR_FILE" ]] && echo "⚠️  Warning: Secret key file not found: $SECRET_NOSTR_FILE"
+            [[ ! -f "$NOSTR_SEND_SCRIPT" ]] && echo "⚠️  Warning: nostr_send_note.py not found: $NOSTR_SEND_SCRIPT"
             echo "⚠️  Warning: Cannot send NIP-42 authentication event (upload may still work if already authenticated)"
-            # Fallback: still try to create the marker
-            touch "$HOME/.zen/game/nostr/${PLAYER}/.nip42_auth" 2>/dev/null || true
+            # Fallback: write marker without event_hash for potential re-use
+            [[ -n "$NPUB_HEX" ]] && _write_nip42_marker "$NPUB_HEX" "" || true
         fi
 
         # Upload with YouTube metadata if available

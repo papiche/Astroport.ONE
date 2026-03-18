@@ -79,34 +79,81 @@ log_error() {
 
 ################################################################################
 # Send NIP-42 authentication event for an email
+# Hardened: writes pubkey-bound JSON marker  .nip42_auth_<hex_pubkey>
 ################################################################################
 send_nip42_auth() {
     local email="$1"
-    
+
     local keyfile="$HOME/.zen/game/nostr/${email}/.secret.nostr"
-    
+
     if [[ ! -f "$keyfile" ]]; then
         log_error "NOSTR keyfile not found for: $email"
         log_error "Path: $keyfile"
         return 1
     fi
-    
+
+    # Extract hex pubkey from keyfile (used for pubkey-bound marker filename)
+    local HEX_PUBKEY
+    HEX_PUBKEY=$(grep -oP 'HEX=\K[^;]+' "$keyfile" 2>/dev/null | tr -d '[:space:]')
+    if [[ -z "$HEX_PUBKEY" ]]; then
+        log_warning "Could not extract HEX pubkey from keyfile for: $email (marker will be skipped)"
+    fi
+
     log_info "Sending NIP-42 authentication for: $email"
-    
-    # Create NIP-42 authentication event (kind 22242)
-    local challenge="auth-$(date +%s)"
-    local tags_json="[[\"relay\",\"${NOSTR_RELAY}\"],[\"challenge\",\"${challenge}\"]]"
-    
-    # Send authentication event
-    local result=$(python3 "$NOSTR_SEND_NOTE" \
+
+    # ── Obtain a dynamic challenge from the API (preferred) ─────────────────
+    local NIP42_CHALLENGE=""
+    if [[ -n "$HEX_PUBKEY" ]]; then
+        NIP42_CHALLENGE=$(curl -sf \
+            "http://127.0.0.1:54321/api/nip42/challenge?npub=${HEX_PUBKEY}" \
+            2>/dev/null \
+            | python3 -c "import sys,json; print(json.load(sys.stdin).get('challenge',''))" \
+            2>/dev/null || echo "")
+        [[ -n "$NIP42_CHALLENGE" ]] && log_info "Dynamic NIP-42 challenge: ${NIP42_CHALLENGE:0:16}…"
+    fi
+    # Fall back to a local timestamp nonce if API is unreachable
+    [[ -z "$NIP42_CHALLENGE" ]] && NIP42_CHALLENGE="local-$(date +%s)"
+
+    # Create NIP-42 authentication event (kind 22242) with dynamic challenge
+    local tags_json="[[\"relay\",\"${NOSTR_RELAY}\"],[\"challenge\",\"${NIP42_CHALLENGE}\"]]"
+
+    # Send authentication event; capture full output to extract event_id
+    local result
+    result=$(python3 "$NOSTR_SEND_NOTE" \
         --keyfile "$keyfile" \
         --content "" \
         --kind 22242 \
         --tags "$tags_json" \
         --relays "$NOSTR_RELAY" 2>&1)
-    
+
     if echo "$result" | grep -q "Event sent successfully"; then
         log_success "NIP-42 authentication sent for: $email"
+
+        # ── Write the secure pubkey-bound JSON marker ────────────────────────
+        if [[ -n "$HEX_PUBKEY" ]]; then
+            local event_id
+            event_id=$(echo "$result" | python3 -c \
+                "import sys,json; d=json.load(sys.stdin); print(d.get('event_id',''))" \
+                2>/dev/null || echo "")
+            [[ -z "$event_id" ]] && \
+                event_id=$(echo "$result" | grep -oE '"event_id"\s*:\s*"[a-f0-9]{64}"' \
+                    | grep -oE '[a-f0-9]{64}' | head -1)
+
+            local marker_dir="$HOME/.zen/game/nostr/${email}"
+            local marker_file="${marker_dir}/.nip42_auth_${HEX_PUBKEY}"
+            local now_ts
+            now_ts=$(date +%s)
+            printf '{"pubkey":"%s","event_hash":"%s","created_at":%d}' \
+                "$HEX_PUBKEY" "$event_id" "$now_ts" \
+                > "$marker_file" 2>/dev/null \
+                && log_success "NIP-42 marker written: .nip42_auth_${HEX_PUBKEY:0:16}…" \
+                || log_warning "Could not write NIP-42 marker for $email"
+
+            # Remove stale old-format generic marker
+            local old_marker="${marker_dir}/.nip42_auth"
+            [[ -f "$old_marker" ]] && rm -f "$old_marker" 2>/dev/null || true
+        fi
+
         return 0
     else
         log_error "Failed to send NIP-42 authentication for: $email"
