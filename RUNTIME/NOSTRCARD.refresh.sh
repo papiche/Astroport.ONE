@@ -608,17 +608,16 @@ for PLAYER in "${NOSTR[@]}"; do
 
                     # Only process payment if current time has passed the refresh time
                     if [[ $current_seconds -ge $refresh_seconds ]]; then
-                        ## Pay NCARD to CAPTAIN with TVA provision
+                        ## Pay NCARD to CAPTAIN (TVA = 0 par défaut)
                         [[ -z $NCARD ]] && NCARD=1
                         Npaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
 
-                        # Calculate TVA provision (20% of rental payment)
-                        [[ -z $TVA_RATE ]] && TVA_RATE=20
-                        TVA_AMOUNT=$(echo "scale=4; $Npaf * $TVA_RATE / 100" | bc -l)
-                        TVA_AMOUNT=$(makecoord $TVA_AMOUNT)
+                        # TVA à 0 par défaut (pas de provision fiscale séparée)
+                        TVA_RATE=0
+                        TVA_AMOUNT="0.00"
                         
-                        # Calculate total payment needed (HT + TVA)
-                        TOTAL_PAYMENT=$(echo "scale=4; $Npaf + $TVA_AMOUNT" | bc -l)
+                        # Calculate total payment needed (= HT uniquement)
+                        TOTAL_PAYMENT="$Npaf"
                         # Minimum balance required: 1 Ğ1 (0 ẐEN threshold) + payment amount
                         MIN_BALANCE=$(echo "scale=4; 1 + $TOTAL_PAYMENT" | bc -l)
                         
@@ -629,7 +628,7 @@ for PLAYER in "${NOSTR[@]}"; do
                             TVA_ZEN=$(makecoord $(echo "scale=2; $TVA_AMOUNT * 10" | bc -l))
                             TOTAL_ZEN=$(makecoord $(echo "scale=2; $TOTAL_PAYMENT * 10" | bc -l))
 
-                            log "INFO" "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS Ğ1 >= $MIN_BALANCE Ğ1 min) - Direct TVA split: $Npaf_ZEN ẐEN ($Npaf Ğ1) to CAPTAIN_DEDICATED + $TVA_ZEN ẐEN ($TVA_AMOUNT Ğ1) to IMPOTS"
+                            log "INFO" "[7 DAYS CYCLE] $TODATE is NOSTR Card $NCARD ẐEN MULTIPASS PAYMENT ($COINS Ğ1 >= $MIN_BALANCE Ğ1 min) → $Npaf_ZEN ẐEN ($Npaf Ğ1) to CAPTAIN_DEDICATED — TVA=0"
 
                             # Ensure CAPTAIN_DEDICATED wallet exists (business wallet for rental collection)
                             if [[ ! -s ~/.zen/game/uplanet.captain.dunikey ]]; then
@@ -672,14 +671,50 @@ for PLAYER in "${NOSTR[@]}"; do
                                 log "ERROR" "❌ IMPOTS wallet not found for TVA provision"
                             fi
 
-                            # Check if both payments succeeded
-                            if [[ $payment_success -eq 0 && ($tva_success -eq 0 || $(echo "$TVA_AMOUNT == 0" | bc -l) -eq 1) ]]; then
+                            # Check if payment succeeded (TVA always 0 now)
+                            if [[ $payment_success -eq 0 ]]; then
                                 # Record successful payment
                                 echo "$TODATE" > "$last_payment_file"
-                                log "INFO" "✅ Weekly payment recorded for ${PLAYER} on $TODATE ($Npaf_ZEN ẐEN HT + $TVA_ZEN ẐEN TVA = $TOTAL_ZEN ẐEN TTC) - Fiscally compliant split"
+                                log "INFO" "✅ Weekly payment recorded for ${PLAYER} on $TODATE ($Npaf_ZEN ẐEN = $Total_ZEN ẐEN)"
                                 log_metric "PAYMENT_SUCCESS" "$Npaf" "${PLAYER}"
                                 PAYMENTS_PROCESSED=$((PAYMENTS_PROCESSED + 1))
-                                
+
+                                ####################################################################
+                                ## PARRAIN 1% — versement si ZEN >= 100 et parrain enregistré
+                                REFERRER_FILE="${HOME}/.zen/game/nostr/${PLAYER}/REFERRER"
+                                REFERRER_PAID_MARKER="${HOME}/.zen/game/nostr/${PLAYER}/.referrer_paid_${TODATE}"
+                                if [[ -s "$REFERRER_FILE" && ! -f "$REFERRER_PAID_MARKER" && $(echo "$ZEN >= 100" | bc -l) -eq 1 ]]; then
+                                    REFERRER=$(cat "$REFERRER_FILE")
+                                    REFERRER_G1PUB=$(cat "${HOME}/.zen/game/nostr/${REFERRER}/G1PUBNOSTR" 2>/dev/null)
+                                    if [[ -n "$REFERRER_G1PUB" ]]; then
+                                        PARRAIN_AMOUNT=$(makecoord $(echo "scale=4; $Npaf * 0.01" | bc -l))
+                                        # Vérifier que le solde restant le permet
+                                        COINS_AFTER=$(echo "scale=4; $COINS - $Npaf" | bc -l)
+                                        if [[ $(echo "$COINS_AFTER > $PARRAIN_AMOUNT" | bc -l) -eq 1 ]]; then
+                                            parrain_result=$(${MY_PATH}/../tools/PAYforSURE.sh \
+                                                "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" \
+                                                "$PARRAIN_AMOUNT" "$REFERRER_G1PUB" \
+                                                "UPLANET:${ORIGIN}:PARRAIN:${REFERRER}:1PCT")
+                                            parrain_success=$?
+                                            if [[ $parrain_success -eq 0 ]]; then
+                                                touch "$REFERRER_PAID_MARKER"
+                                                PARRAIN_ZEN=$(makecoord $(echo "scale=2; $PARRAIN_AMOUNT * 10" | bc -l))
+                                                log "INFO" "🤝 Prime parrain versée : $PARRAIN_ZEN ẐEN ($PARRAIN_AMOUNT Ğ1) → ${REFERRER} pour ${PLAYER}"
+                                                log_metric "PARRAIN_PAYMENT_SUCCESS" "$PARRAIN_AMOUNT" "${PLAYER}"
+                                            else
+                                                log "WARN" "⚠️ Prime parrain échouée pour ${PLAYER} → ${REFERRER}"
+                                                log_metric "PARRAIN_PAYMENT_FAILED" "$PARRAIN_AMOUNT" "${PLAYER}"
+                                            fi
+                                        else
+                                            log "DEBUG" "Prime parrain ignorée : solde insuffisant après paiement CAPTAIN"
+                                        fi
+                                    else
+                                        log "WARN" "Parrain ${REFERRER} introuvable dans le réseau local (pas de G1PUBNOSTR)"
+                                    fi
+                                fi
+                                ## FIN PARRAIN
+                                ####################################################################
+
                                 # Send success email notification
                                 success_message="<html><head><meta charset='UTF-8'>
 <style>
@@ -692,9 +727,7 @@ for PLAYER in "${NOSTR[@]}"; do
 <div class='details'>
 <p><strong>Joueur:</strong> ${PLAYER}</p>
 <p><strong>Date:</strong> $TODATE</p>
-<p><strong>Montant HT:</strong> <span class='amount'>${Npaf_ZEN} ẐEN</span></p>
-<p><strong>Montant TVA:</strong> <span class='amount'>${TVA_ZEN} ẐEN</span></p>
-<p><strong>Total payé:</strong> <span class='amount'>${TOTAL_ZEN} ẐEN</span></p>
+<p><strong>Montant:</strong> <span class='amount'>${Npaf_ZEN} ẐEN</span></p>
 <p><strong>Solde restant:</strong> $ZEN ẐEN</p>
 <p><strong>Prochain paiement:</strong> $NEXT_PAYMENT_DATE</p>
 </div>
@@ -710,14 +743,8 @@ for PLAYER in "${NOSTR[@]}"; do
                                 log "INFO" "Success email sent to ${PLAYER} for payment success"
                             else
                                 # Payment failed - send error email
-                                if [[ $payment_success -ne 0 ]]; then
-                                    log "ERROR" "❌ Main MULTIPASS payment failed for ${PLAYER} on $TODATE ($Npaf_ZEN ẐEN = $Npaf Ğ1)"
-                                    log_metric "PAYMENT_FAILED" "$Npaf" "${PLAYER}"
-                                fi
-                                if [[ $tva_success -ne 0 && $(echo "$TVA_AMOUNT > 0" | bc -l) -eq 1 ]]; then
-                                    log "ERROR" "❌ TVA provision failed for ${PLAYER} on $TODATE ($TVA_ZEN ẐEN = $TVA_AMOUNT Ğ1)"
-                                    log_metric "TVA_PROVISION_FAILED" "$TVA_AMOUNT" "${PLAYER}"
-                                fi
+                                log "ERROR" "❌ MULTIPASS payment failed for ${PLAYER} on $TODATE ($Npaf_ZEN ẐEN = $Npaf Ğ1)"
+                                log_metric "PAYMENT_FAILED" "$Npaf" "${PLAYER}"
 
                                 # Send error email via mailjet
                                 error_message="<html><head><meta charset='UTF-8'>

@@ -192,8 +192,11 @@ def publish_did_to_nostr(sender_nsec: str, did_json_path: str,
         did_obj = json.loads(did_content)
         did_id = did_obj.get("id", "unknown")
         
-        # Extract email from DID metadata for additional context
-        email = did_obj.get("metadata", {}).get("email", "")
+        # Extract fields from DID metadata for tags
+        metadata = did_obj.get("metadata", {})
+        email          = metadata.get("email", "")
+        referrer       = metadata.get("referrer", "")
+        contract_status = metadata.get("contractStatus", "")
         
         # Create tags for the event (DID Nostr spec compliant)
         tags = [
@@ -208,6 +211,20 @@ def publish_did_to_nostr(sender_nsec: str, did_json_path: str,
         if email:
             tags.append(["email", email])
         
+        # Parrain (referrer) — utilisé pour le versement 1% sur MULTIPASS (hors U.SOCIETY)
+        # Le tag est toujours publié dans le DID pour traçabilité, même quand le versement
+        # est suspendu (membre U.SOCIETY).
+        if referrer:
+            tags.append(["referrer", referrer])
+            print(f"   🤝 Parrain enregistré : {referrer}")
+        
+        # Statut contrat — permet le filtrage relay et la logique de paiement
+        # Valeurs connues : active_rental | cooperative_member_satellite |
+        #                   cooperative_member_constellation | infrastructure_contributor
+        if contract_status:
+            tags.append(["contractStatus", contract_status])
+            print(f"   📋 Contract status  : {contract_status}")
+        
         # Create the event (kind 30800 = Parameterized Replaceable Event for DID - NIP-101)
         event = Event(
             kind=DID_EVENT_KIND,
@@ -220,13 +237,17 @@ def publish_did_to_nostr(sender_nsec: str, did_json_path: str,
         event.sign(priv_key_obj.hex())
 
         print(f"\n📝 DID Event details:")
-        print(f"   - Event ID: {event.id}")
-        print(f"   - Kind: {event.kind} (Parameterized Replaceable)")
-        print(f"   - DID ID: {did_id}")
-        print(f"   - Content size: {len(did_content)} bytes")
-        print(f"   - Tags: {len(tags)} tags")
-        print(f"   - Owner pubkey: {pubkey_hex[:16]}...")
+        print(f"   - Event ID     : {event.id}")
+        print(f"   - Kind         : {event.kind} (Parameterized Replaceable)")
+        print(f"   - DID ID       : {did_id}")
+        print(f"   - Content size : {len(did_content)} bytes")
+        print(f"   - Tags         : {len(tags)} tags")
+        print(f"   - Owner pubkey : {pubkey_hex[:16]}...")
         print(f"   - Target relays: {len(relay_urls)}")
+        if referrer:
+            print(f"   - Parrain      : {referrer}  (1% si hors U.SOCIETY)")
+        if contract_status:
+            print(f"   - Contract     : {contract_status}")
 
         # Publish to all relays
         success_count = 0
