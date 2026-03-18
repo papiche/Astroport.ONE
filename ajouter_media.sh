@@ -767,10 +767,20 @@ fi
                 --relays "$NOSTR_RELAY" \
                 >/dev/null 2>&1; then
                 echo "✅ NIP-42 authentication event sent"
-                # Wait a bit for the event to be processed by the relay
-                sleep 5
+                # NOTE: kind 22242 is ephemeral (20000-29999 per NIP-01) and is NOT
+                # stored by strfry.  The 54321.py API therefore uses a local marker
+                # file instead of querying the relay.  We create/touch it here so
+                # the API's check_nip42_auth_local_marker() fallback can verify
+                # authentication without a relay round-trip.
+                touch "$HOME/.zen/game/nostr/${PLAYER}/.nip42_auth" 2>/dev/null \
+                    && echo "🔐 Local NIP-42 auth marker created: ~/.zen/game/nostr/${PLAYER}/.nip42_auth" \
+                    || echo "⚠️  Warning: Could not create local NIP-42 auth marker (upload may fail)"
+                # Short wait so the API can process the event if strfry stores it
+                sleep 2
             else
                 echo "⚠️  Warning: Failed to send NIP-42 authentication event (upload may still work if already authenticated)"
+                # Still try to create the marker (the player may already be registered)
+                touch "$HOME/.zen/game/nostr/${PLAYER}/.nip42_auth" 2>/dev/null || true
             fi
         else
             if [[ ! -f "$SECRET_NOSTR_FILE" ]]; then
@@ -780,6 +790,8 @@ fi
                 echo "⚠️  Warning: nostr_send_note.py not found: $NOSTR_SEND_SCRIPT"
             fi
             echo "⚠️  Warning: Cannot send NIP-42 authentication event (upload may still work if already authenticated)"
+            # Fallback: still try to create the marker
+            touch "$HOME/.zen/game/nostr/${PLAYER}/.nip42_auth" 2>/dev/null || true
         fi
 
         # Upload with YouTube metadata if available

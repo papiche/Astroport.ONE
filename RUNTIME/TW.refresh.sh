@@ -434,7 +434,7 @@ ${MY_PATH}/TW/import_tiddler.sh \
 ##############################################################
 # G1PalPay - 2 G1 mini -> Check for G1 TX incoming comments #
 ##############################################################
-if [[ $(echo "$COINS >= 2" | bc -l) -eq 1 ]]; then
+if [[ $(echo "$COINS >= 1" | bc -l) -eq 1 ]]; then
     ##############################################################
     # G1PalPay.sh # WALLET TX/RX MONITORING
     ##############################################################
@@ -452,7 +452,7 @@ if [[ $(echo "$COINS >= 2" | bc -l) -eq 1 ]]; then
     ${MY_PATH}/VOEUX.refresh.sh "${PLAYER}" "${MOATS}" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html
 
 else
-    echo "> ZenCard not activated ($ZEN ZEN)"
+    echo "> ZenCard non activée ($COINS G1 / $ZEN ẐEN) — COINS < 1"
 fi
 
 ##################################

@@ -1,16 +1,22 @@
 #!/bin/bash
 ############################################################ install_rnostr_semantic.sh
-# Installation de rnostr, embed-worker (Nomic) et Qdrant pour la recherche sémantique.
+# Installation de rnostr et Qdrant pour la recherche sémantique.
+# NOTE: Le container embed-worker n'est PAS installé sur petite configuration.
+#       Les embeddings sont gérés par :
+#         - IA/ollama.me.sh  → connexion Ollama (local, SSH ou IPFS P2P swarm)
+#         - IA/embed.py      → embedding via nomic-embed-text + indexation Qdrant
+#       Ces outils deviennent pleinement opérationnels après activation de l'essaim
+#       IPFS privé (BLOOM.me) qui permet l'exécution de DRAGON_p2p_ssh.sh.
 # Auteur : Fred R
 # Date : 2026-03-14
 ########################################################################
 
 set -e  # Arrête le script en cas d'erreur
 
-echo "=== [1/7] Vérification des dépendances ==="
+echo "=== [1/5] Vérification des dépendances ==="
 
 # Vérification des outils requis
-for cmd in docker curl wget jq; do
+for cmd in docker curl jq; do
     if ! command -v "$cmd" &> /dev/null; then
         echo "Erreur : $cmd n'est pas installé. Veuillez l'installer avant de continuer."
         exit 1
@@ -23,44 +29,21 @@ if ! docker --version &> /dev/null; then
     exit 1
 fi
 
-echo "=== [2/7] Création des répertoires ==="
+echo "=== [2/5] Création des répertoires ==="
 
 # Création des répertoires avec vérification
 mkdir -p ~/.zen/rnostr/extensions
-mkdir -p ~/.zen/embed-worker/models
 mkdir -p ~/.zen/qdrant-data
 
 # Vérification des permissions
-for dir in ~/.zen/rnostr/extensions ~/.zen/embed-worker/models ~/.zen/qdrant-data; do
+for dir in ~/.zen/rnostr/extensions ~/.zen/qdrant-data; do
     if [ ! -w "$dir" ]; then
         echo "Erreur : permissions insuffisantes sur $dir"
         exit 1
     fi
 done
 
-echo "=== [3/7] Téléchargement du modèle Nomic ==="
-
-MODEL_PATH=~/.zen/embed-worker/models/nomic-embed-text-v1.Q4_K_M.gguf
-MODEL_URL="https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.Q4_K_M.gguf"
-MODEL_MIN_SIZE=$((100 * 1024 * 1024))  # 100 Mo minimum pour éviter les téléchargements corrompus
-
-if [ ! -f "$MODEL_PATH" ] || [ $(stat -c%s "$MODEL_PATH") -lt $MODEL_MIN_SIZE ]; then
-    echo "Téléchargement du modèle Nomic depuis $MODEL_URL..."
-    if ! wget "$MODEL_URL" -O "$MODEL_PATH"; then
-        echo "Erreur : échec du téléchargement du modèle."
-        exit 1
-    fi
-    if [ $(stat -c%s "$MODEL_PATH") -lt $MODEL_MIN_SIZE ]; then
-        echo "Erreur : le modèle téléchargé semble corrompu (taille insuffisante)."
-        rm "$MODEL_PATH"
-        exit 1
-    fi
-    echo "Modèle téléchargé avec succès : $(stat -c%s "$MODEL_PATH" | numfmt --to=iec)."
-else
-    echo "Modèle Nomic déjà présent : $(stat -c%s "$MODEL_PATH" | numfmt --to=iec)."
-fi
-
-echo "=== [4/7] Configuration de rnostr ==="
+echo "=== [3/5] Configuration de rnostr ==="
 
 # Configuration de rnostr.toml
 cat << 'EOF' > ~/.zen/rnostr/rnostr.toml
@@ -72,12 +55,14 @@ max_conn = 1000
 max_event_size = 65536
 
 [network]
-addr = "0.0.0.0:7777"
+addr = "0.0.0.0:8888"
 EOF
 
-echo "=== [5/7] Configuration de Docker Compose ==="
+echo "=== [4/5] Configuration de Docker Compose ==="
 
 # Génération du fichier docker-compose.yml
+# NOTE: embed-worker est intentionnellement absent — l'embedding est délégué
+# à IA/ollama.me.sh (connexion Ollama via IPFS P2P swarm) et IA/embed.py.
 cat << 'EOF' > ~/.zen/rnostr/docker-compose.yml
 version: "3.9"
 services:
@@ -98,36 +83,24 @@ services:
       retries: 10
     restart: always
 
-  embed-worker:
-    image: papiche/embed-worker:latest
-    container_name: embed-worker
-    environment:
-      - QDRANT_URL=http://qdrant:6333
-      - MODEL_PATH=/models/nomic-embed-text-v1.Q4_K_M.gguf
-    volumes:
-      - ~/.zen/embed-worker/models:/models:ro
-    depends_on:
-      qdrant:
-        condition: service_healthy
-    restart: always
-
   rnostr:
     image: papiche/rnostr:latest
     container_name: rnostr
     ports:
       # rnostr écoute sur localhost — NPM proxie vers relay.DOMAIN (wss://)
-      - "127.0.0.1:7777:7777"
+      - "127.0.0.1:8888:7777"
     volumes:
       - ~/.zen/game/nostr:/data/nostr:ro
       - ~/.zen/strfry/amisOfAmis.txt:/data/amisOfAmis.txt:ro
       - ~/.zen/rnostr/rnostr.toml:/etc/rnostr/rnostr.toml:ro
       - ~/.zen/rnostr/extensions:/data/extensions:ro
     depends_on:
-      - embed-worker
+      qdrant:
+        condition: service_healthy
     restart: always
 EOF
 
-echo "=== [6/7] Initialisation de Qdrant et création de la collection ==="
+echo "=== [5/5] Initialisation de Qdrant et création de la collection ==="
 
 # Démarrage de la stack
 cd ~/.zen/rnostr
@@ -186,10 +159,8 @@ fi
 
 echo "Collection 'nostr_events' créée avec succès."
 
-echo "=== [7/7] Vérification finale ==="
-
-# Vérification des conteneurs
-if ! $DOCKER_COMPOSE_CMD ps | grep -E "qdrant.*Up|embed-worker.*Up|rnostr.*Up" &> /dev/null; then
+# Vérification des conteneurs (qdrant + rnostr uniquement)
+if ! $DOCKER_COMPOSE_CMD ps | grep -E "qdrant.*Up|rnostr.*Up" &> /dev/null; then
     echo "Erreur : un ou plusieurs conteneurs ne sont pas démarrés."
     $DOCKER_COMPOSE_CMD logs
     exit 1
@@ -198,8 +169,17 @@ fi
 echo "=== Installation terminée avec succès ! ==="
 echo ""
 echo "Accès aux services :"
-echo "- Relais Nostr (rnostr) : ws://localhost:7777"
-echo "- Dashboard Qdrant : http://localhost:6333/dashboard"
+echo "- Relais Nostr (rnostr)  : ws://localhost:8888"
+echo "- Dashboard Qdrant       : http://localhost:6333/dashboard"
 echo "- Logs : '$DOCKER_COMPOSE_CMD logs -f'"
 echo ""
 echo "Pour arrêter la stack : '$DOCKER_COMPOSE_CMD down'"
+echo ""
+echo "╔══════════════════════════════════════════════════════════════════╗"
+echo "║  Embedding sémantique — Utilisation sans embed-worker docker    ║"
+echo "╠══════════════════════════════════════════════════════════════════╣"
+echo "║  1. Activer l'essaim IPFS privé (BLOOM.me → DRAGON_p2p_ssh.sh) ║"
+echo "║  2. Connecter Ollama :  ~/.zen/Astroport.ONE/IA/ollama.me.sh   ║"
+echo "║  3. Indexer dans Qdrant : python3 IA/embed.py --index ...      ║"
+echo "║  4. Rechercher :         python3 IA/embed.py --search ...      ║"
+echo "╚══════════════════════════════════════════════════════════════════╝"

@@ -104,6 +104,9 @@ sudo sed -i 's/^.*ClientAliveCountMax .*/ClientAliveCountMax 3/' /etc/ssh/sshd_c
 # SYMLINKS (Astroport tools in PATH)
 ########################################################################
 mkdir -p ~/.local/bin
+ln -f -s ${ASTRO}/code_assistant ~/.local/bin/code_assistant
+ln -f -s ${ASTRO}/cpcode ~/.local/bin/cpcode
+ln -f -s ${ASTRO}/cpscript ~/.local/bin/cpscript
 ln -f -s ${ASTRO}/tools/natools.py ~/.local/bin/natools
 ln -f -s ${ASTRO}/tools/keygen ~/.local/bin/keygen
 ln -f -s ${ASTRO}/command.sh ~/.local/bin/coeurbox

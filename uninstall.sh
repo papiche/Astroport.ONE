@@ -38,9 +38,10 @@ for service in astroport ipfs g1billet upassport strfry ollama comfyui; do
     fi
 done
 
-# Arrêter la stack Docker rnostr/qdrant/embed-worker (always-on)
+# Arrêter la stack Docker rnostr/qdrant (always-on)
+# NOTE: embed-worker n'est plus dans la stack (remplacé par IA/ollama.me.sh + IA/embed.py)
 if [[ -f ~/.zen/rnostr/docker-compose.yml ]]; then
-    echo "Stopping rnostr/qdrant/embed-worker docker stack..."
+    echo "Stopping rnostr/qdrant docker stack..."
     if docker compose version &>/dev/null 2>&1; then
         docker compose -f ~/.zen/rnostr/docker-compose.yml down 2>/dev/null
     else
@@ -48,6 +49,7 @@ if [[ -f ~/.zen/rnostr/docker-compose.yml ]]; then
     fi
 fi
 # Retirer les containers individuels si encore présents
+# (embed-worker inclus pour nettoyer d'éventuelles anciennes installations)
 for container in qdrant embed-worker rnostr; do
     docker stop  "$container" 2>/dev/null
     docker rm    "$container" 2>/dev/null
@@ -130,6 +132,9 @@ echo "REMOVING LOCAL BINARIES AND SYMLINKS"
 ########################################################################
 
 # Remove symlinks and binaries in ~/.local/bin
+rm -f ~/.local/bin/code_assistant
+rm -f ~/.local/bin/cpcode
+rm -f ~/.local/bin/cpscript
 rm -f ~/.local/bin/natools
 rm -f ~/.local/bin/keygen
 rm -f ~/.local/bin/coeurbox

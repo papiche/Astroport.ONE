@@ -120,6 +120,7 @@ for PLAYER in ${PLAYERONE[@]}; do
     fi
 
     # U.SOCIETY logic for rent payments
+    _USOCIETY_ACTIVE=false
     if [[ -s ~/.zen/game/players/${PLAYER}/U.SOCIETY ]]; then
         ## U SOCIETY MEMBER - Check if U.SOCIETY.end exists and is not reached
         UDATE=$(cat ~/.zen/game/players/${PLAYER}/U.SOCIETY)
@@ -137,6 +138,7 @@ for PLAYER in ${PLAYERONE[@]}; do
             DAYS_LEFT=$(( (END_SECONDS - CURRENT_SECONDS) / 86400 ))
 
             if [[ "$CURRENT_DATE" < "$USOCIETY_END" ]]; then
+                _USOCIETY_ACTIVE=true
                 echo "✅ U.SOCIETY membership active until $USOCIETY_END ($DAYS_LEFT days left)"
 
                 ## RENEWAL REMINDERS (30 days, 7 days before expiration)
@@ -177,11 +179,13 @@ for PLAYER in ${PLAYERONE[@]}; do
                 # Fall through to rent payment logic
             fi
         else
+            _USOCIETY_ACTIVE=true
             echo "✅ U.SOCIETY membership active (no end date) - No rent payment required"
         fi
-    else
-        ## NON-U.SOCIETY MEMBER - EVERY 7 DAYS PAY CAPTAIN
-        echo "🏠 Non-U.SOCIETY member - Weekly rent payment required"
+    fi
+    if [[ "$_USOCIETY_ACTIVE" != "true" ]]; then
+        ## NON-U.SOCIETY OR EXPIRED U.SOCIETY - EVERY 7 DAYS PAY CAPTAIN VIA MULTIPASS
+        echo "🏠 Non-U.SOCIETY or expired U.SOCIETY member - Weekly rent payment required via MULTIPASS"
         TODATE_SECONDS=$(date -d "$TODATE" +%s)
         BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s)
         # Calculate the difference in days
@@ -206,7 +210,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 echo "[7 DAYS CYCLE] $TODATE MULTIPASS is paying ZENCARD access $ZCARD Ẑ to CAPTAIN and $NCARD ẐEN to own MULTIPASS."
 
                 # Calculate TVA provision (20% of ZENCard payment)
-                [[ -z $TVA_RATE ]] && TVA_RATE=20
+                [[ -z $TVA_RATE ]] && TVA_RATE=0
                 TVA_AMOUNT=$(echo "scale=4; $Gpaf * $TVA_RATE / 100" | bc -l)
                 TVA_AMOUNT=$(makecoord $TVA_AMOUNT)
                 

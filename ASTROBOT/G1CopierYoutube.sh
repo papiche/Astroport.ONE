@@ -77,122 +77,115 @@ EOF
 }
 
 # Function to send YouTube copy as public NOSTR message
-send_youtube_nostr_message() {
+# Publish YouTube copy as NIP-71 video event (kind 21 or 22) via MULTIPASS NOSTR key
+# Conforms to UPlanet_FILE_CONTRACT.md — videos appear in UPassport/templates/youtube.html
+publish_nip71_video() {
     local player="$1"
-    local youtube_id="$2"
-    local title="$3"
-    local ipfs_link="$4"
-    local file_size="$5"
-    local duration="$6"
-    local resolution="$7"
-    local channel="$8"
-    local youtube_url="$9"
-    local g1pub="${10}"
-    
-    # Check if player has NOSTR keys
-    if [[ ! -f ~/.zen/game/nostr/${player}/.secret.nostr ]]; then
-        echo "No NOSTR keys found for player ${player}, skipping NOSTR message"
-        return 0
-    fi
-    
-    # Load NOSTR keys
-    source ~/.zen/game/nostr/${player}/.secret.nostr
-    if [[ -z "$NSEC" ]]; then
-        echo "No NSEC found for player ${player}, skipping NOSTR message"
-        return 0
-    fi
-    
-    # Convert NSEC to hex
-    NPRIV_HEX=$($MY_PATH/../tools/nostr2hex.py "$NSEC")
-    if [[ -z "$NPRIV_HEX" ]]; then
-        echo "Failed to convert NSEC to hex for player ${player}, skipping NOSTR message"
-        return 0
-    fi
-    
-    # Build NOSTR message content
-    local nostr_content="🎬 YouTube Copy Added: ${title}"
-    
-    if [[ -n "$channel" ]]; then
-        nostr_content="${nostr_content}
+    local video_file="$2"   # full local path to downloaded file
+    local ilink="$3"        # IPFS CID of video
+    local animh="$4"        # IPFS CID of GIF animation
+    local title="$5"
+    local mime="$6"
+    local duration_sec="$7"  # SEC variable (integer seconds)
+    local resolution="$8"    # WxH string
+    local channel="$9"
+    local youtube_url="${10}"
 
-📺 Channel: ${channel}"
+    # Use MULTIPASS .secret.nostr keyfile directly (UPlanet_FILE_CONTRACT.md §6.1)
+    local keyfile="${HOME}/.zen/game/nostr/${player}/.secret.nostr"
+    if [[ ! -f "$keyfile" ]]; then
+        echo "⚠️  No MULTIPASS NOSTR keyfile for ${player} — skipping NIP-71 publication"
+        return 1
     fi
-    
-    nostr_content="${nostr_content}
 
-🔗 IPFS: ${ipfs_link}
-🌐 YouTube: ${youtube_url}"
-    
-    if [[ -n "$file_size" ]]; then
-        nostr_content="${nostr_content}
-📊 Size: ${file_size}"
-    fi
-    
-    if [[ -n "$duration" ]]; then
-        nostr_content="${nostr_content}
-⏱️ Duration: ${duration}"
-    fi
-    
-    if [[ -n "$resolution" ]]; then
-        nostr_content="${nostr_content}
-📺 Resolution: ${resolution}"
-    fi
-    
-    nostr_content="${nostr_content}
+    local ipfs_url="${myIPFS}/ipfs/${ilink}"
 
-#Astroport #YouTube #CopierYoutube #IPFS"
-    
-    # Send NOSTR message to primary relay
-    echo "Sending NOSTR message for YouTube copy: ${youtube_id}"
-    nostpy-cli send_event \
-        -privkey "$NPRIV_HEX" \
-        -kind 1 \
-        -content "$nostr_content" \
-        -tags "[['t', 'AstroportYouTube'], ['t', 'CopierYoutube'], ['t', 'YouTube'], ['t', 'IPFS'], ['r', '${ipfs_link}'], ['youtubeid', '${youtube_id}'], ['mime', 'video/mp4']]" \
-        --relay "$myRELAY" 2>/dev/null
-    
-    local primary_result=$?
-    if [[ $primary_result -eq 0 ]]; then
-        echo "✅ NOSTR message sent successfully to primary relay for ${youtube_id}"
+    # Calculate SHA256 hash (NIP-71 "x" tag)
+    local file_hash=""
+    [[ -f "$video_file" ]] && file_hash=$(sha256sum "$video_file" | cut -d' ' -f1)
+
+    # Generate static thumbnail via ffmpeg at 10% of duration
+    local thumb_cid=""
+    if [[ -n "$duration_sec" && "$duration_sec" =~ ^[0-9]+$ && "$duration_sec" -gt 0 && -f "$video_file" ]]; then
+        local thumb_time=$(( duration_sec / 10 ))
+        local thumb_file="${video_file%.*}_thumb.jpg"
+        ffmpeg -ss "$thumb_time" -i "$video_file" -vframes 1 -q:v 2 "$thumb_file" 2>/dev/null
+        [[ -s "$thumb_file" ]] && thumb_cid=$(ipfs add -q "$thumb_file" | tail -n 1) && rm -f "$thumb_file"
+    fi
+    # Fallback: use GIF CID as thumbnail if static thumb failed
+    [[ -z "$thumb_cid" && -n "$animh" ]] && thumb_cid="$animh"
+
+    # Determine NIP-71 kind: 21 (long-form >60s) or 22 (short-form ≤60s)
+    local kind=21
+    [[ -n "$duration_sec" && "$duration_sec" =~ ^[0-9]+$ && $duration_sec -le 60 ]] && kind=22
+
+    # Build NIP-71 tags JSON using jq (UPlanet_FILE_CONTRACT.md §3.2, §4.1.3)
+    local tags
+    tags=$(jq -cn \
+        --arg title    "$title" \
+        --arg url      "$ipfs_url" \
+        --arg mime     "$mime" \
+        --arg pubat    "$(date +%s)" \
+        --arg dur      "$duration_sec" \
+        --arg dim      "$resolution" \
+        --arg thumb    "$thumb_cid" \
+        --arg gif      "$animh" \
+        --arg hash     "$file_hash" \
+        --arg chan     "Channel-${channel}" \
+        --arg yturl    "$youtube_url" \
+        '[
+            ["title",        $title],
+            ["url",          $url],
+            ["m",            $mime],
+            ["published_at", $pubat],
+            (if ($dur  | length) > 0 then ["duration",       $dur]   else empty end),
+            (if ($dim  | length) > 0 then ["dim",            $dim]   else empty end),
+            (if ($thumb| length) > 0 then ["thumbnail_ipfs", $thumb] else empty end),
+            (if ($gif  | length) > 0 then ["gifanim_ipfs",   $gif]   else empty end),
+            (if ($hash | length) > 0 then ["x",              $hash]  else empty end),
+            ["t", $chan],
+            ["t", "CopierYoutube"],
+            ["t", "YouTube"],
+            ["t", "Astroport"],
+            ["r", $yturl]
+        ]' 2>/dev/null)
+
+    if [[ -z "$tags" ]]; then
+        echo "❌ Failed to build NIP-71 tags (jq error) for ${youtube_url}"
+        send_nostr_failure_email "$player" "$(basename "$video_file")" "$title" "$ipfs_url"
+        return 1
+    fi
+
+    # Content for the event
+    local content="🎬 ${title}
+
+📺 Channel: ${channel}
+🔗 IPFS: ${ipfs_url}
+🌐 Source: ${youtube_url}
+
+#CopierYoutube #YouTube #Astroport #IPFS"
+
+    # Relays: local + public copylaradio
+    local relays="${myRELAY}"
+    [[ "$myRELAY" != "wss://relay.copylaradio.com" ]] && relays="${relays},wss://relay.copylaradio.com"
+
+    echo "📡 Publishing NIP-71 kind ${kind} video event via MULTIPASS (${player})..."
+    python3 "${MY_PATH}/../tools/nostr_send_note.py" \
+        --keyfile "$keyfile" \
+        --content "$content" \
+        --kind    "$kind" \
+        --tags    "$tags" \
+        --relays  "$relays" \
+        --json 2>/dev/null
+
+    local result=$?
+    if [[ $result -eq 0 ]]; then
+        echo "✅ NIP-71 kind ${kind} event published — will appear in UPassport youtube.html"
     else
-        echo "❌ Failed to send NOSTR message to primary relay for ${youtube_id}"
+        echo "❌ Failed to publish NIP-71 kind ${kind} event for ${title}"
+        send_nostr_failure_email "$player" "$(basename "$video_file")" "$title" "$ipfs_url"
     fi
-    
-    # Send to public relay if different from primary relay and on UPlanet ORIGIN
-    if [[ "$myRELAY" != "wss://relay.copylaradio.com" && "$UPLANETNAME" == "0000000000000000000000000000000000000000000000000000000000000000" ]]; then
-        echo "Sending NOSTR message to public relay: wss://relay.copylaradio.com"
-        nostpy-cli send_event \
-            -privkey "$NPRIV_HEX" \
-            -kind 1 \
-            -content "$nostr_content" \
-            -tags "[['t', 'AstroportYouTube'], ['t', 'CopierYoutube'], ['t', 'YouTube'], ['t', 'IPFS'], ['r', '${ipfs_link}'], ['youtubeid', '${youtube_id}'], ['mime', 'video/mp4']]" \
-            --relay "wss://relay.copylaradio.com" 2>/dev/null
-        
-        local public_result=$?
-        if [[ $public_result -eq 0 ]]; then
-            echo "✅ NOSTR message sent successfully to public relay for ${youtube_id}"
-        else
-            echo "❌ Failed to send NOSTR message to public relay for ${youtube_id}"
-        fi
-        
-        # Overall success if at least one relay worked
-        if [[ $primary_result -eq 0 || $public_result -eq 0 ]]; then
-            echo "✅ NOSTR message sent successfully for ${youtube_id} (at least one relay)"
-        else
-            echo "❌ Failed to send NOSTR message for ${youtube_id} to any relay"
-            # Send email notification on failure
-            send_nostr_failure_email "$player" "$youtube_id" "$title" "$ipfs_link"
-        fi
-    else
-        # Primary relay is already the public relay or not on UPlanet ORIGIN
-        if [[ $primary_result -eq 0 ]]; then
-            echo "✅ NOSTR message sent successfully for ${youtube_id}"
-        else
-            echo "❌ Failed to send NOSTR message for ${youtube_id}"
-            # Send email notification on failure
-            send_nostr_failure_email "$player" "$youtube_id" "$title" "$ipfs_link"
-        fi
-    fi
+    return $result
 }
 
 echo "-----"
@@ -520,19 +513,20 @@ while read LINE;
             && mv ~/.zen/tmp/${IPFSNODEID}/newindex.html ${INDEX} \
             && echo "===> Mise à jour ${INDEX}"
 
-        ## SEND YOUTUBE COPY AS PUBLIC NOSTR MESSAGE
-        echo "Sending YouTube copy as public NOSTR message..."
-        send_youtube_nostr_message \
+        ## PUBLISH NIP-71 VIDEO EVENT VIA MULTIPASS NOSTR KEY
+        ## (UPlanet_FILE_CONTRACT.md §3.2 — kind 21/22 → appears in UPassport youtube.html)
+        echo "Publishing NIP-71 video event via MULTIPASS NOSTR key..."
+        publish_nip71_video \
             "$PLAYER" \
-            "$YID" \
+            "${HOME}/.zen/tmp/yt-dlp/${ZFILE}" \
+            "$ILINK" \
+            "$ANIMH" \
             "$TITLE" \
-            "$myIPFS/ipfs/${ILINK}" \
-            "$FILE_SIZE" \
+            "$MIME" \
             "$SEC" \
             "$RES" \
             "$CHANNEL" \
-            "$ZYURL" \
-            "$G1PUB"
+            "$ZYURL"
 
     else
         echo "Problem with tiddlywiki command. Missing ~/.zen/tmp/${IPFSNODEID}/newindex.html"

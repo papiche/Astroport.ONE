@@ -178,33 +178,60 @@ class NostrWebSocketClient:
             return False
     
     def wait_for_response(self, timeout: int = PUBLISH_TIMEOUT) -> bool:
-        """Wait for OK response from relay"""
+        """Wait for OK/CLOSED response from relay.
+
+        Properly distinguishes ["OK", id, true, ""] (accepted/forwarded) from
+        ["OK", id, false, "reason"] (rejected).
+
+        NOTE: for ephemeral events (kind 20000-29999, e.g. kind 22242) most relay
+        implementations forward the event to connected subscribers but do NOT persist
+        it.  They may still return ["OK", id, true, ""] because the event was
+        successfully *forwarded*, even though it won't appear in future REQ queries.
+        This is expected NIP-01 behaviour and is NOT an error condition.
+        """
         if not self.connected:
             return False
-        
+
         try:
             start_time = time.time()
-            
+
             while time.time() - start_time < timeout:
                 try:
-                    # Set a short timeout for receiving
                     self.ws.settimeout(1.0)
                     response = self.ws.recv()
-                    
+
                     if response:
-                        if '"OK"' in response or '"ok"' in response:
-                            return True
-                        elif '"CLOSED"' in response:
-                            return False
+                        try:
+                            msg = json.loads(response)
+                            if isinstance(msg, list) and len(msg) >= 1:
+                                if msg[0] == "OK":
+                                    # ["OK", event_id, accepted_bool, optional_reason]
+                                    accepted = bool(msg[2]) if len(msg) >= 3 else True
+                                    if not accepted and len(msg) >= 4 and msg[3]:
+                                        print(
+                                            f"   ⚠️  Relay did not accept/store event: {msg[3]}",
+                                            file=sys.stderr
+                                        )
+                                    return accepted
+                                elif msg[0] == "CLOSED":
+                                    return False
+                                # Ignore other message types (NOTICE, AUTH, etc.)
+                        except (json.JSONDecodeError, TypeError, IndexError):
+                            # Fallback: unparsable response – look for "OK" substring
+                            if '"OK"' in response:
+                                return True
+                            elif '"CLOSED"' in response:
+                                return False
+
                 except websocket.WebSocketTimeoutException:
-                    # Timeout on receive, continue waiting
+                    # No data yet, keep waiting
                     continue
-                except Exception as e:
+                except Exception:
                     break
-            
+
             return False
-            
-        except Exception as e:
+
+        except Exception:
             return False
     
     def close(self):

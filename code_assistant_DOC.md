@@ -67,7 +67,7 @@
 | `deepseek-r1:14b` | Recommandé (analyse) | `ollama pull deepseek-r1:14b` |
 | `qwen2.5-coder:14b` | Recommandé (correction) | `ollama pull qwen2.5-coder:14b` |
 | `nomic-embed-text` | Recommandé (mémoire) | `ollama pull nomic-embed-text` |
-| Qdrant | Optionnel | `docker run -p 6333:6333 qdrant/qdrant` |
+| Qdrant | Optionnel | Stack rnostr (`install/install_rnostr_semantic.sh`) ou `docker run -p 6333:6333 -v ~/.zen/qdrant-data:/qdrant/storage qdrant/qdrant` |
 | `curl`, `diff`, `jq` | ✅ | `sudo apt install curl diffutils jq` |
 | `node` | Optionnel (validation JS) | `sudo apt install nodejs` |
 
@@ -91,10 +91,14 @@ IA/ollama.me.sh            # démarre/connecte Ollama si nécessaire
 # Vérifier le modèle d'embedding
 python3 IA/embed.py --check
 
-# Optionnel : démarrer Qdrant
-docker run -d -p 6333:6333 -p 6334:6334 \
-  -v "$(pwd)/qdrant_storage:/qdrant/storage:z" \
+# Optionnel : démarrer Qdrant (volume unifié ~/.zen/qdrant-data)
+mkdir -p ~/.zen/qdrant-data
+docker run -d -p 127.0.0.1:6333:6333 -p 127.0.0.1:6334:6334 \
+  -v "$HOME/.zen/qdrant-data:/qdrant/storage:z" \
+  --name qdrant --restart always \
   qdrant/qdrant
+# ou via la stack rnostr (recommandé) :
+# bash install/install_rnostr_semantic.sh
 ```
 
 ---
@@ -759,10 +763,14 @@ Solutions :
 # Vérifier
 curl -sf http://localhost:6333/health
 
-# Démarrer Qdrant
+# Démarrer Qdrant (volume unifié ~/.zen/qdrant-data)
 docker start qdrant  # si container existant
-# ou
-docker run -d -p 6333:6333 qdrant/qdrant
+# ou, pour une nouvelle instance :
+mkdir -p ~/.zen/qdrant-data
+docker run -d -p 127.0.0.1:6333:6333 \
+  -v "$HOME/.zen/qdrant-data:/qdrant/storage:z" \
+  --name qdrant --restart always \
+  qdrant/qdrant
 
 # Désactiver si non nécessaire
 ./code_assistant script.py --no-qdrant
