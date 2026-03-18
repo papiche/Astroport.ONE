@@ -8,6 +8,9 @@
 MY_PATH=$(dirname "$(realpath "$0")")
 TOTAL_PASS=0; TOTAL_FAIL=0
 
+# Assurer que ~/.astro/bin (Python avec base58/duniterpy) est en tête de PATH
+export PATH="$HOME/.astro/bin:$PATH"
+
 run_suite() {
     local script="$1"
     echo ""

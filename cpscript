@@ -523,9 +523,22 @@ process_script() {
     FILENAME=$(basename "$FILE")
     FILE_EXT="${FILE##*.}"
 
+    # Fix: pour les fichiers sans extension, déduire le type depuis le shebang
+    # (ex: cpscript, code_assistant → #!/bin/bash = "sh" ; #!/usr/bin/env python3 = "py")
+    if [[ "$FILE_EXT" == "$FILENAME" ]]; then
+        local _sline
+        IFS= read -r _sline < "$FILE" 2>/dev/null
+        if [[ "$_sline" == *"python"* ]]; then
+            FILE_EXT="py"
+        elif [[ "$_sline" == "#!"* ]]; then
+            FILE_EXT="sh"
+        fi
+    fi
+
     # Appliquer le filtre --only si défini
     if [ -n "$FILTER_EXT" ] && [ "$FILE_EXT" != "$FILTER_EXT" ]; then
-        echo "  [FILTRÉ .$FILE_EXT] $FILE"
+        # Fix: en mode JSON, les messages de filtre doivent aller sur stderr pour ne pas corrompre le JSON
+        $JSON_MODE && echo "  [FILTRÉ .$FILE_EXT] $FILE" >&2 || echo "  [FILTRÉ .$FILE_EXT] $FILE"
     else
         # En JSON mode → progress sur stderr pour libérer stdout pour le JSON
         if $JSON_MODE; then
@@ -717,16 +730,23 @@ if $DOC_MODE; then
 fi
 
 if [ ! -s "$TEMP_FILE" ]; then
-    echo ""
-    echo "Erreur : Aucun contenu généré depuis '$MAIN_SCRIPT'."
-    echo ""
-    echo "Causes possibles et solutions :"
-    echo "  → Tous les fichiers sont exclus (--exclude trop large ?)"
-    echo "  → Profondeur trop faible : essayez --depth 2 ou sans --depth"
-    echo "  → Filtre --only trop restrictif : retirez --only"
-    echo "  → Le script ne référence pas de fichiers .sh/.py détectables"
-    echo "  → Vérifiez que '${MAIN_SCRIPT##*/}' n'est pas lui-même exclu"
-    echo ""
+    if $JSON_MODE; then
+        # En mode JSON : erreur sur stderr + JSON vide valide sur stdout
+        echo "Erreur : Aucun contenu généré depuis '${MAIN_SCRIPT##*/}' (filtre --only trop restrictif ?)" >&2
+        printf '{"tool":"cpscript","version":"2.0","script":"%s","stats":{"files_count":0,"total_chars":0,"total_tokens":0},"files":[]}\n' \
+            "$(basename "$MAIN_SCRIPT")"
+    else
+        echo ""
+        echo "Erreur : Aucun contenu généré depuis '$MAIN_SCRIPT'."
+        echo ""
+        echo "Causes possibles et solutions :"
+        echo "  → Tous les fichiers sont exclus (--exclude trop large ?)"
+        echo "  → Profondeur trop faible : essayez --depth 2 ou sans --depth"
+        echo "  → Filtre --only trop restrictif : retirez --only"
+        echo "  → Le script ne référence pas de fichiers .sh/.py détectables"
+        echo "  → Vérifiez que '${MAIN_SCRIPT##*/}' n'est pas lui-même exclu"
+        echo ""
+    fi
     rm -f "$TEMP_FILE"
     exit 1
 fi

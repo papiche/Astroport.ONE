@@ -14,6 +14,9 @@
 ################################################################################
 set -u
 
+# Assurer que ~/.astro/bin (Python avec base58/duniterpy) est en tête de PATH
+export PATH="$HOME/.astro/bin:$PATH"
+
 MY_PATH="$(cd "$(dirname "$0")/.." && pwd)"
 TOOLS="${MY_PATH}/tools"
 
@@ -39,6 +42,16 @@ PASS=0; FAIL=0; SKIP=0
 ok()   { ((PASS++)); echo -e "  ${GREEN}✓${RESET} $1"; }
 fail() { ((FAIL++)); echo -e "  ${RED}✗${RESET} $1"; [[ "$VERBOSE" == true ]] && echo "    $2"; }
 skip() { ((SKIP++)); echo -e "  ${YELLOW}⊘${RESET} $1 (skipped)"; }
+
+# ── Détection du bon Python (duniterpy + base58 dans ~/.astro) ────────────────
+PYTHON="python3"
+for _py in "$HOME/.astro/bin/python" "$HOME/.astro/bin/python3" \
+           "/usr/local/bin/python3" "python3"; do
+    if [[ -x "${_py}" ]] && "${_py}" -c "import duniterpy" 2>/dev/null; then
+        PYTHON="${_py}"
+        break
+    fi
+done
 
 # ── Données de test ──────────────────────────────────────────────────────────
 TEST_SALT="coucou"
@@ -70,7 +83,7 @@ else
 fi
 
 # 1.3 python3 + base58
-if python3 -c "import base58" 2>/dev/null; then
+if $PYTHON -c "import base58" 2>/dev/null; then
     ok "python3 + base58 module"
 else
     fail "python3 base58 manquant" "pip3 install base58"
@@ -140,7 +153,7 @@ echo -e "\n${CYAN}── 3. Conversion v1 ↔ SS58 ──${RESET}"
 ########################################
 
 # 3.1 v1 → SS58
-SS58=$(python3 "${TOOLS}/g1pub_to_ss58.py" "$EXPECTED_V1PUB" 2>/dev/null)
+SS58=$($PYTHON "${TOOLS}/g1pub_to_ss58.py" "$EXPECTED_V1PUB" 2>/dev/null)
 if [[ "$SS58" == "$EXPECTED_SS58" ]]; then
     ok "v1→SS58 : ${EXPECTED_V1PUB:0:12}... → ${SS58:0:16}..."
 else
@@ -148,7 +161,7 @@ else
 fi
 
 # 3.2 SS58 → v1 (reverse)
-V1_BACK=$(python3 "${TOOLS}/g1pub_to_ss58.py" --reverse "$EXPECTED_SS58" 2>/dev/null)
+V1_BACK=$($PYTHON "${TOOLS}/g1pub_to_ss58.py" --reverse "$EXPECTED_SS58" 2>/dev/null)
 if [[ "$V1_BACK" == "$EXPECTED_V1PUB" ]]; then
     ok "SS58→v1 : ${EXPECTED_SS58:0:16}... → ${V1_BACK:0:12}..."
 else
@@ -157,8 +170,8 @@ fi
 
 # 3.3 Roundtrip keygen → v1 → SS58 → v1
 ROUNDTRIP_V1=$("${TOOLS}/keygen" -t base58 "${TEST_SALT}" "${TEST_PEPPER}" 2>/dev/null)
-ROUNDTRIP_SS58=$(python3 "${TOOLS}/g1pub_to_ss58.py" "$ROUNDTRIP_V1" 2>/dev/null)
-ROUNDTRIP_BACK=$(python3 "${TOOLS}/g1pub_to_ss58.py" --reverse "$ROUNDTRIP_SS58" 2>/dev/null)
+ROUNDTRIP_SS58=$($PYTHON "${TOOLS}/g1pub_to_ss58.py" "$ROUNDTRIP_V1" 2>/dev/null)
+ROUNDTRIP_BACK=$($PYTHON "${TOOLS}/g1pub_to_ss58.py" --reverse "$ROUNDTRIP_SS58" 2>/dev/null)
 if [[ "$ROUNDTRIP_V1" == "$ROUNDTRIP_BACK" ]]; then
     ok "roundtrip v1→SS58→v1 : identique"
 else
@@ -166,7 +179,7 @@ else
 fi
 
 # 3.4 SS58 passthrough (déjà au bon format)
-PASSTHROUGH=$(python3 "${TOOLS}/g1pub_to_ss58.py" "$EXPECTED_SS58" 2>/dev/null)
+PASSTHROUGH=$($PYTHON "${TOOLS}/g1pub_to_ss58.py" "$EXPECTED_SS58" 2>/dev/null)
 if [[ "$PASSTHROUGH" == "$EXPECTED_SS58" ]]; then
     ok "SS58 passthrough : inchangé"
 else
@@ -174,7 +187,7 @@ else
 fi
 
 # 3.5 Validation format invalide
-INVALID_RESULT=$(python3 "${TOOLS}/g1pub_to_ss58.py" "INVALID_KEY" 2>&1)
+INVALID_RESULT=$($PYTHON "${TOOLS}/g1pub_to_ss58.py" "INVALID_KEY" 2>&1)
 if [[ $? -ne 0 ]]; then
     ok "clé invalide : rejetée correctement"
 else
@@ -558,9 +571,12 @@ elif ! command -v gcli &>/dev/null; then
 else
     # Utiliser le vault coucou directement via PAYforSURE.sh (mode vault_name)
     ALICE_CHECK=$("${TOOLS}/G1check.sh" "$EXPECTED_V1PUB" 2>/dev/null)
-    echo -e "    ${CYAN}Solde coucou avant PAYforSURE : $ALICE_CHECK Ğ1${RESET}"
+    # Fix: vérifier le solde TRANSFÉRABLE (pas le total) — G1check.sh retourne le total
+    ALICE_TRANS=$(gcli -a "$WALLET_A_SS58" account balance 2>&1 | grep -oP '[0-9.]+(?= Ğ1 transferable)' || echo "0")
+    [[ -z "$ALICE_TRANS" ]] && ALICE_TRANS="0"
+    echo -e "    ${CYAN}Solde coucou avant PAYforSURE : $ALICE_CHECK Ğ1 (transférable: $ALICE_TRANS Ğ1)${RESET}"
 
-    if [[ -n "$ALICE_CHECK" ]] && (( $(echo "${ALICE_CHECK:-0} >= 1" | bc -l 2>/dev/null || echo 0) )); then
+    if (( $(echo "${ALICE_TRANS:-0} >= 1" | bc -l 2>/dev/null || echo 0) )); then
         # Envoyer 1 Ğ1 via PAYforSURE.sh (vault name → SS58 dest)
         echo -e "    ${YELLOW}→ PAYforSURE.sh : 1 Ğ1 coucou → totodu56${RESET}"
         PAY_OUT=$("${TOOLS}/PAYforSURE.sh" "$WALLET_A_VAULT" "1" "$WALLET_B_SS58" "CI:TEST:PAYforSURE" 2>&1)
@@ -584,7 +600,7 @@ else
             fail "PAYforSURE.sh virement réel" "$(echo "$PAY_OUT" | tail -3)"
         fi
     else
-        skip "PAYforSURE.sh virement (solde insuffisant: $ALICE_CHECK)"
+        skip "PAYforSURE.sh virement (solde insuffisant: ${ALICE_TRANS} Ğ1 transférable / ${ALICE_CHECK} Ğ1 total)"
     fi
 fi
 

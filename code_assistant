@@ -946,7 +946,7 @@ fi
 
 # A2: Mode setup — déléguer directement au backend Python
 if $SETUP_MODE; then
-    echo "🔧 Installation des modèles recommandés pour code_assistant..."
+    echo "🔧 Téléchargement des modèles recommandés pour code_assistant..."
     python3 "$PY_BACKEND" --setup 2>&1
     exit $?
 fi

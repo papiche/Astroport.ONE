@@ -345,6 +345,11 @@ control_primal_transactions() {
 
     MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 
+    # ── Identification CAPTAIN ────────────────────────────────────────────────
+    if [[ -n "${CAPTAINEMAIL:-}" && "$player_email" == "$CAPTAINEMAIL" ]]; then
+        log "🏴 CAPTAIN WALLET : contrôle primal du capitaine $player_email"
+    fi
+
     # ── Conversion v1 pubkeys → SS58 (le squid indexe par SS58) ────────────
     if [[ -x "${MY_PATH}/g1pub_to_ss58.py" ]]; then
         if ! [[ "$wallet_pubkey" =~ ^g1 ]]; then
