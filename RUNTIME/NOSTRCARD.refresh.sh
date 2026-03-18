@@ -1169,6 +1169,43 @@ for PLAYER in "${NOSTR[@]}"; do
                 fi
             fi
         fi
+
+        ######### RELAY LIST (kind 10002) — re-publish weekly ##############################
+        ## nostr_setup_profile.py publishes kind 10002 at first creation only.
+        ## We reset the sentinel weekly so the profile (+ relay list) gets re-published,
+        ## ensuring Coracle / other clients always find the relay list on the relay.
+        RELAY_SENTINEL="${HOME}/.zen/game/nostr/${PLAYER}/.relay_list_weekly"
+        if [[ ! -f "$RELAY_SENTINEL" ]] || \
+           [[ $(find "$RELAY_SENTINEL" -mtime +7 2>/dev/null | wc -l) -gt 0 ]]; then
+            log "INFO" "⚙️  Weekly relay list (kind 10002) refresh for ${PLAYER}"
+            # Remove nostr_setup_profile sentinel → forces full profile re-publication
+            # (kind 0 + kind 10002) on the next iteration of this player loop
+            rm -f "${HOME}/.zen/game/nostr/${PLAYER}/nostr_setup_profile" 2>/dev/null
+            touch "$RELAY_SENTINEL"
+            log "INFO" "🔄 Profile sentinel reset — kind 10002 will be re-published this iteration"
+        fi
+
+        ######### CAPTAIN FOLLOW (kind 3) — ensure & re-publish weekly ####################
+        ## make_NOSTRCARD.sh publishes the CAPTAIN follow at creation time, but it may be
+        ## lost (relay restart, network issue). Re-publish weekly via a sentinel file.
+        ## Note: the relay write-policy plugin (filter/1.sh) automatically appends the
+        ## geographic GeoKey to any kind 3 event → no explicit geokey follow needed here.
+        FOLLOW_SENTINEL="${HOME}/.zen/game/nostr/${PLAYER}/.captain_follow_weekly"
+        if [[ -n "$CAPTAINEMAIL" && "$CAPTAINEMAIL" != "$PLAYER" ]]; then
+            CAPTAINHEX=$(cat "${HOME}/.zen/game/nostr/${CAPTAINEMAIL}/HEX" 2>/dev/null)
+            if [[ -n "$CAPTAINHEX" ]]; then
+                if [[ ! -f "$FOLLOW_SENTINEL" ]] || \
+                   [[ $(find "$FOLLOW_SENTINEL" -mtime +7 2>/dev/null | wc -l) -gt 0 ]]; then
+                    log "INFO" "👥 Ensuring ${PLAYER} follows CAPTAIN ${CAPTAINEMAIL}"
+                    ${MY_PATH}/../tools/nostr_follow.sh \
+                        "$NSEC" "$CAPTAINHEX" \
+                        "$myRELAY" "wss://relay.copylaradio.com" 2>/dev/null \
+                        && touch "$FOLLOW_SENTINEL" \
+                        && log "INFO" "✅ Captain follow (kind 3) re-published for ${PLAYER}" \
+                        || log "WARN" "⚠️  Failed to re-publish captain follow for ${PLAYER}"
+                fi
+            fi
+        fi
         ########################################################################
         ## Create ZENCARD ONLY FOR UPlanet Zen #################################################
         if [[ "$UPLANETG1PUB" != "4ZqazktD8FpExLLhE58QTqKu9nosLNtwDUPrxu43mXGi" ]]; then
