@@ -12,7 +12,27 @@
     <script src="/ipns/copylaradio.com/common.js"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap');
+        @font-face {
+            font-family: 'JetBrains Mono';
+            src: url('/ipns/copylaradio.com/fonts/JetBrains Mono/JetBrainsMono-VariableFont_wght.ttf') format('truetype');
+            font-weight: 100 800;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'JetBrains Mono';
+            src: url('/ipns/copylaradio.com/fonts/JetBrains Mono/JetBrainsMono-Italic-VariableFont_wght.ttf') format('truetype');
+            font-weight: 100 800;
+            font-style: italic;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'Space Grotesk';
+            src: url('/ipns/copylaradio.com/fonts/Space_Grotesk/SpaceGrotesk-VariableFont_wght.ttf') format('truetype');
+            font-weight: 300 700;
+            font-style: normal;
+            font-display: swap;
+        }
         
         :root {
             --bg-primary: #0a0f1a;
@@ -233,7 +253,7 @@
 <body>
     <!-- Fixed Connection Badge -->
     <div class="connection-badge disconnected" id="connection-badge" onclick="toggleBadgePanel()">
-        <img class="badge-avatar" id="badge-avatar" src="https://robohash.org/anonymous?set=set4&size=36x36" alt="">
+        <img class="badge-avatar" id="badge-avatar" src="" alt="">
         <div class="badge-info">
             <span class="badge-status" id="badge-status">Not connected</span>
             <span class="badge-name" id="badge-name">Click to connect</span>
@@ -497,7 +517,7 @@
                 case 'disconnected':
                     status.textContent = 'Not connected';
                     name.textContent = 'Click to connect';
-                    avatar.src = 'https://robohash.org/anonymous?set=set4&size=36x36';
+                    avatar.src = getRoboHashUrl('anonymous', 36, 4);
                     connectBtn.innerHTML = '🔑';
                     connectBtn.style.display = 'block';
                     break;
@@ -506,7 +526,7 @@
                     const displayName = profile?.display_name || profile?.name || '';
                     status.textContent = '🟡 Connected';
                     name.textContent = displayName || (pubkey ? pubkey.slice(0, 12) + '...' : 'User');
-                    avatar.src = profile?.picture || `https://robohash.org/${pubkey}?set=set4&size=36x36`;
+                    avatar.src = profile?.picture || getRoboHashUrl(pubkey, 36, 4);
                     connectBtn.innerHTML = '🔐';
                     connectBtn.onclick = (e) => { e.stopPropagation(); authenticateNIP42(); };
                     break;
@@ -514,7 +534,7 @@
                 case 'authenticated':
                     status.textContent = '🟢 Authenticated';
                     name.textContent = profile?.display_name || profile?.name || (pubkey ? pubkey.slice(0, 12) + '...' : 'User');
-                    avatar.src = profile?.picture || `https://robohash.org/${pubkey}?set=set4&size=36x36`;
+                    avatar.src = profile?.picture || getRoboHashUrl(pubkey, 36, 4);
                     connectBtn.style.display = 'none';
                     break;
             }
