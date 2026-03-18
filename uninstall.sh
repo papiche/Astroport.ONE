@@ -50,7 +50,8 @@ if [[ -f ~/.zen/rnostr/docker-compose.yml ]]; then
 fi
 # Retirer les containers individuels si encore présents
 # (embed-worker inclus pour nettoyer d'éventuelles anciennes installations)
-for container in qdrant embed-worker rnostr; do
+# bgutil-provider: PO token provider pour yt-dlp (install_yt_dlp_ejs_node.sh)
+for container in qdrant embed-worker rnostr bgutil-provider; do
     docker stop  "$container" 2>/dev/null
     docker rm    "$container" 2>/dev/null
 done

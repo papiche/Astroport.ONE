@@ -112,6 +112,38 @@ done
 MY_PATH="$(dirname "$0")"
 MY_PATH="$( cd "$MY_PATH" && pwd )"
 
+# ---------------------------------------------------------------------------
+# Detect Deno runtime (preferred over Node for yt-dlp EJS YouTube challenge)
+# Deno is installed by install_deno.sh; yt-dlp config set by install_yt_dlp_ejs_node.sh
+# ---------------------------------------------------------------------------
+DENO_BIN=""
+if command -v deno >/dev/null 2>&1; then
+    DENO_BIN="$(command -v deno)"
+elif [[ -x "$HOME/.deno/bin/deno" ]]; then
+    DENO_BIN="$HOME/.deno/bin/deno"
+fi
+
+JS_RUNTIME_ARG=""
+if [[ -n "$DENO_BIN" ]]; then
+    JS_RUNTIME_ARG="--js-runtimes deno:${DENO_BIN}"
+    log_debug "Using Deno as JS runtime: $DENO_BIN"
+else
+    log_debug "Deno not found (run: ~/.zen/Astroport.ONE/install/install_deno.sh). Relying on yt-dlp config."
+fi
+
+# ---------------------------------------------------------------------------
+# Detect bgutil PO token provider (Docker: brainicism/bgutil-ytdlp-pot-provider)
+# Run with: docker run -d -p 4416:4416 --name bgutil-provider brainicism/bgutil-ytdlp-pot-provider
+# The pip plugin (bgutil-ytdlp-pot-provider) connects automatically when container is up.
+# ---------------------------------------------------------------------------
+BGUTIL_ARG=""
+if curl -sf --max-time 2 "http://localhost:4416/" >/dev/null 2>&1; then
+    BGUTIL_ARG="--extractor-args youtube:pot_provider=bgutil"
+    log_debug "bgutil-ytdlp-pot-provider detected on port 4416 — PO tokens enabled"
+else
+    log_debug "bgutil-ytdlp-pot-provider not running on port 4416 (start with: docker run -d -p 4416:4416 brainicism/bgutil-ytdlp-pot-provider)"
+fi
+
 # Vérifie si les arguments sont fournis
 if [ $# -lt 2 ]; then
     log_debug "Usage: $0 [--debug] [--output-dir DIR] <url> <format> [player_email]"
@@ -266,7 +298,12 @@ fi
 
 if [[ -z "$cookie_file" || ! -f "$cookie_file" ]]; then
     browser=$(get_default_browser)
-    COOKIESRC="--cookies-from-browser $browser"
+    if [[ -n "$browser" ]]; then
+        COOKIESRC="--cookies-from-browser $browser"
+    else
+        COOKIESRC=""
+        log_debug "No browser detected, proceeding without cookies"
+    fi
 fi
 
 # Note: Playlist handling is now done by ajouter_media.sh
@@ -274,12 +311,21 @@ fi
 # it will download only the first video (or the video specified by ?v= parameter)
 # ajouter_media.sh will detect playlists and loop through videos if needed
 log_debug "Extracting metadata with yt-dlp..."
-# Run yt-dlp with --quiet to suppress warnings, but keep errors
-# Use --no-warnings to suppress warnings, but keep errors in stderr
+# Use Deno (JS_RUNTIME_ARG) + bgutil PO token provider (BGUTIL_ARG) when available
 # Single video processing only (playlists handled by ajouter_media.sh)
-metadata_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS $COOKIESRC --no-warnings --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
+metadata_output=$(yt-dlp $JS_RUNTIME_ARG $BGUTIL_ARG $COOKIESRC --no-warnings --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
 metadata_exit_code=$?
 log_debug "yt-dlp metadata extraction exit code: $metadata_exit_code"
+
+# If failed, retry with tv_embedded (no PO token needed, bypasses some restrictions)
+if [[ $metadata_exit_code -ne 0 ]]; then
+    log_debug "Retrying metadata extraction with tv_embedded client..."
+    metadata_output=$(yt-dlp $JS_RUNTIME_ARG $BGUTIL_ARG $COOKIESRC --no-warnings \
+        --extractor-args youtube:player_client=tv_embedded,tv \
+        --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
+    metadata_exit_code=$?
+    log_debug "yt-dlp metadata retry exit code: $metadata_exit_code"
+fi
 
 # Log errors to file
 if [[ $metadata_exit_code -ne 0 ]]; then
@@ -364,7 +410,7 @@ TARGET_VIDEO_SIZE_BYTES=$((TARGET_VIDEO_SIZE_MB * 1024 * 1024))
 
 # Determine optimal resolution based on duration
 VIDEO_HEIGHT_LIMIT=720
-VIDEO_FORMAT_FILTER="best[height<=720]/best"
+VIDEO_FORMAT_FILTER="(bv*[ext=mp4][height<=720]+ba/b[height<=720]/bv*[ext=mp4]+ba/b)"
 
 if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ && "$duration" -gt 0 ]]; then
     # Calculate max bitrate in kbps (kilobits per second)
@@ -388,22 +434,22 @@ if [[ -n "$duration" && "$duration" =~ ^[0-9]+$ && "$duration" -gt 0 ]]; then
     if [[ -n "$MAX_VIDEO_BITRATE_KBPS" ]] && [[ "$MAX_VIDEO_BITRATE_KBPS" =~ ^[0-9]+$ ]] && [[ $MAX_VIDEO_BITRATE_KBPS -lt 400 ]]; then
         # Very long video (>2h), use 240p or 360p
         VIDEO_HEIGHT_LIMIT=240
-        VIDEO_FORMAT_FILTER="best[height<=240]/best[height<=360]/best[height<=480]/best"
+        VIDEO_FORMAT_FILTER="(bv*[ext=mp4][height<=240]+ba/b[height<=240]/bv*[ext=mp4][height<=360]+ba/b[height<=360]/bv*[ext=mp4]+ba/b)"
         log_debug "Very long video detected (${duration}s, ${MAX_VIDEO_BITRATE_KBPS} kbps), selecting 240p max to stay under size limit"
     elif [[ -n "$MAX_VIDEO_BITRATE_KBPS" ]] && [[ "$MAX_VIDEO_BITRATE_KBPS" =~ ^[0-9]+$ ]] && [[ $MAX_VIDEO_BITRATE_KBPS -lt 700 ]]; then
         # Long video (1.5-2h), use 360p
         VIDEO_HEIGHT_LIMIT=360
-        VIDEO_FORMAT_FILTER="best[height<=360]/best[height<=480]/best[height<=720]/best"
+        VIDEO_FORMAT_FILTER="(bv*[ext=mp4][height<=360]+ba/b[height<=360]/bv*[ext=mp4][height<=480]+ba/b[height<=480]/bv*[ext=mp4]+ba/b)"
         log_debug "Long video detected (${duration}s, ${MAX_VIDEO_BITRATE_KBPS} kbps), selecting 360p max to stay under size limit"
     elif [[ -n "$MAX_VIDEO_BITRATE_KBPS" ]] && [[ "$MAX_VIDEO_BITRATE_KBPS" =~ ^[0-9]+$ ]] && [[ $MAX_VIDEO_BITRATE_KBPS -lt 1200 ]]; then
         # Medium video (45min-1.5h), use 480p
         VIDEO_HEIGHT_LIMIT=480
-        VIDEO_FORMAT_FILTER="best[height<=480]/best[height<=720]/best"
+        VIDEO_FORMAT_FILTER="(bv*[ext=mp4][height<=480]+ba/b[height<=480]/bv*[ext=mp4][height<=720]+ba/b[height<=720]/bv*[ext=mp4]+ba/b)"
         log_debug "Medium video detected (${duration}s, ${MAX_VIDEO_BITRATE_KBPS} kbps), selecting 480p max to stay under size limit"
     else
         # Short video (<45min), can use 720p (or fallback if calculation failed)
         VIDEO_HEIGHT_LIMIT=720
-        VIDEO_FORMAT_FILTER="best[height<=720]/best"
+        VIDEO_FORMAT_FILTER="(bv*[ext=mp4][height<=720]+ba/b[height<=720]/bv*[ext=mp4]+ba/b)"
         log_debug "Short video detected (${duration}s, ${MAX_VIDEO_BITRATE_KBPS} kbps), using 720p max"
     fi
 fi
@@ -415,7 +461,7 @@ log_debug "Starting download with cookies"
 case "$FORMAT" in
     mp3)
         log_debug "Running yt-dlp for MP3 download..."
-        download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS $COOKIESRC --concurrent-fragments 1 --socket-timeout 120 -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+        download_output=$(yt-dlp $JS_RUNTIME_ARG $BGUTIL_ARG $YT_EXTRACTOR_ARGS $COOKIESRC --concurrent-fragments 1 --socket-timeout 120 -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
             --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
             -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" 2>&1)
         download_exit_code=$?
@@ -428,8 +474,8 @@ case "$FORMAT" in
         # Use format filter to select appropriate resolution based on duration
         # The format filter ensures we download at the right resolution to stay under size limit
         # If recoding is needed, yt-dlp will handle it with default settings
-        download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS $COOKIESRC --concurrent-fragments 1 --socket-timeout 120 -f "$VIDEO_FORMAT_FILTER" \
-            --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
+        download_output=$(yt-dlp $JS_RUNTIME_ARG $BGUTIL_ARG $YT_EXTRACTOR_ARGS $COOKIESRC --concurrent-fragments 1 --socket-timeout 120 -f "$VIDEO_FORMAT_FILTER" \
+            -S "res,ext:mp4:m4a" --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
             --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
             -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)
         download_exit_code=$?
@@ -454,9 +500,9 @@ fi
 if [[ $download_failed_retry -eq 1 ]]; then
     # If "no longer supported": try mweb (PO token provider may help). Else: tv_embedded,tv for 403/empty.
     if echo "$download_output" | grep -q "no longer supported in this application"; then
-        YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=default,mweb'
-        log_debug "Download failed (no longer supported), retrying with mweb client (PO token provider)..."
-        echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] Retrying download with mweb player client (PO token provider)" >> "$LOGFILE"
+        YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=android_vr,mweb'
+        log_debug "Download failed (no longer supported), retrying with android_vr,mweb client..."
+        echo "[process_youtube.sh][$(date '+%Y-%m-%d %H:%M:%S')] Retrying download with android_vr,mweb player client" >> "$LOGFILE"
     else
         YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=tv_embedded,tv'
         log_debug "Download failed or empty, retrying with tv_embedded,tv client..."
@@ -469,14 +515,14 @@ if [[ $download_failed_retry -eq 1 ]]; then
     done
     case "$FORMAT" in
         mp3)
-            download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS $COOKIESRC --concurrent-fragments 1 --socket-timeout 120 -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
+            download_output=$(yt-dlp $JS_RUNTIME_ARG $BGUTIL_ARG $YT_EXTRACTOR_ARGS $COOKIESRC --concurrent-fragments 1 --socket-timeout 120 -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata \
                 --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
                 -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" 2>&1)
             download_exit_code=$?
             ;;
         mp4)
-            download_output=$(yt-dlp --js-runtimes node $YT_EXTRACTOR_ARGS $COOKIESRC --concurrent-fragments 1 --socket-timeout 120 -f "$VIDEO_FORMAT_FILTER" \
-                --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
+            download_output=$(yt-dlp $JS_RUNTIME_ARG $BGUTIL_ARG $YT_EXTRACTOR_ARGS $COOKIESRC --concurrent-fragments 1 --socket-timeout 120 -f "$VIDEO_FORMAT_FILTER" \
+                -S "res,ext:mp4:m4a" --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata \
                 --write-info-json --write-thumbnail --embed-metadata --embed-thumbnail \
                 -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)
             download_exit_code=$?

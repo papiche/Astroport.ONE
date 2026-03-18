@@ -101,6 +101,7 @@ fire_on() {
         "33101:G1BILLET (via NPM)" \
         "81:NPM Admin UI" \
         "1883:MQTT Mosquitto" \
+        "4416:bgutil PO token provider (Docker, localhost)" \
         "6333:Qdrant REST (localhost seulement)" \
         "6334:Qdrant gRPC (localhost seulement)" \
         "8888:rnostr interne (localhost seulement)" \
@@ -154,7 +155,7 @@ fire_status() {
     sudo ufw status verbose
     echo ""
     echo "Ports d'écoute actifs :"
-    ss -tlnup 2>/dev/null | grep -E ":(22|80|443|4001|5001|7777|8080|12345|54321|33101|81|1883) " \
+    ss -tlnup 2>/dev/null | grep -E ":(22|80|443|4001|4416|5001|7777|8080|12345|54321|33101|81|1883) " \
         | awk '{print "  " $1 " " $4 " " $5}' | sort -t: -k2 -n
     echo "########################################################################"
 }

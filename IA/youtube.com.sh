@@ -177,6 +177,8 @@ fi
 LAST_SYNC_FILE="$HOME/.zen/game/nostr/${PLAYER}/.last_youtube_sync"
 # Fichier de suivi des vidéos déjà traitées
 PROCESSED_VIDEOS_FILE="$HOME/.zen/game/nostr/${PLAYER}/.processed_youtube_videos"
+# Fichier de comptage des échecs cookie consécutifs (suppression après 3 échecs)
+COOKIE_FAILURE_FILE="$HOME/.zen/game/nostr/${PLAYER}/.youtube_cookie_failures"
 TODAY=$(date '+%Y-%m-%d')
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Today's date: $TODAY" >&2
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Last sync file: $LAST_SYNC_FILE" >&2
@@ -1085,6 +1087,74 @@ process_liked_video() {
     fi
 }
 
+# ---------------------------------------------------------------------------
+# Gestion des échecs de cookie : suppression automatique après 3 échecs
+# consécutifs + notification à l'utilisateur de ré-uploader via /cookie
+# ---------------------------------------------------------------------------
+
+# Incrémente le compteur d'échecs cookie, retourne le nouveau total
+increment_cookie_failures() {
+    local failure_file="$1"
+    local current=0
+    [[ -f "$failure_file" ]] && current=$(cat "$failure_file" 2>/dev/null | tr -dc '0-9' | head -c 2)
+    [[ -z "$current" ]] && current=0
+    local new_count=$((current + 1))
+    echo "$new_count" > "$failure_file"
+    echo "$new_count"
+}
+
+# Remet le compteur d'échecs à zéro (appelé après un succès)
+reset_cookie_failures() {
+    local failure_file="$1"
+    rm -f "$failure_file" 2>/dev/null || true
+}
+
+# Supprime le cookie expiré et envoie une notification demandant le ré-upload
+delete_expired_cookie() {
+    local player="$1"
+    local cookie_file="$2"
+    local failure_file="$3"
+
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🗑️  3 consecutive cookie failures — deleting expired cookie: $cookie_file" >&2
+    rm -f "$cookie_file" 2>/dev/null || true
+    rm -f "$failure_file" 2>/dev/null || true
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cookie deleted. User must re-upload at: ${uSPOT}/cookie" >&2
+
+    # Email de notification demandant le ré-upload du cookie
+    local cookie_url="${uSPOT}/cookie"
+    local temp_email_file="$HOME/.zen/tmp/youtube_cookie_deleted_$(date +%Y%m%d_%H%M%S).html"
+    cat > "$temp_email_file" << COOKIE_EMAIL
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>⚠️ Cookie YouTube supprimé</title></head>
+<body style="font-family:'Courier New',monospace;background:#f5f5f5;padding:20px;">
+<div style="max-width:600px;margin:0 auto;background:white;padding:20px;border-radius:8px;">
+  <h2 style="color:#e74c3c;">⚠️ Cookie YouTube supprimé après 3 échecs</h2>
+  <p>Votre cookie YouTube a été détecté comme invalide lors de 3 synchronisations consécutives. Il a été supprimé automatiquement pour éviter les erreurs.</p>
+  <div style="background:#fff3cd;border-left:4px solid #ffc107;padding:15px;border-radius:5px;margin:15px 0;">
+    <h3>🔄 Action requise</h3>
+    <p>Veuillez ré-exporter votre cookie YouTube et l'uploader ici :</p>
+    <p style="text-align:center;"><a href="${cookie_url}" target="_blank" style="background:#3498db;color:white;padding:10px 20px;border-radius:5px;text-decoration:none;font-weight:bold;">📤 Uploader un nouveau cookie</a></p>
+    <ol>
+      <li>Ouvrez une fenêtre de navigation <strong>PRIVÉE/INCOGNITO</strong></li>
+      <li>Connectez-vous à YouTube</li>
+      <li>Exportez vos cookies (ex : extension <em>Get cookies.txt LOCALLY</em>)</li>
+      <li>Uploadez le fichier sur <a href="${cookie_url}">${cookie_url}</a></li>
+      <li>Fermez la fenêtre privée</li>
+    </ol>
+    <p><strong>⚠️</strong> Exportez toujours depuis une fenêtre privée pour éviter les conflits de session.</p>
+  </div>
+  <p style="color:#666;font-size:12px;">La synchronisation YouTube reprendra automatiquement après l'upload du nouveau cookie.</p>
+</div>
+</body>
+</html>
+COOKIE_EMAIL
+
+    ${MY_PATH}/../tools/mailjet.sh --expire 48h "${player}" "$temp_email_file" "⚠️ Cookie YouTube supprimé — ré-upload requis" 2>/dev/null
+    rm -f "$temp_email_file" 2>/dev/null || true
+    log_debug "Cookie deleted and notification sent to $player"
+}
+
 # Fonction principale de synchronisation
 sync_youtube_likes() {
     local player="$1"
@@ -1101,19 +1171,37 @@ sync_youtube_likes() {
     local get_videos_exit_code=$?
     
     if [[ $get_videos_exit_code -eq 2 ]]; then
-        # Cookie invalidation detected
-        log_debug "Cookie invalidation detected for $player - cookies need to be re-exported"
-        echo "❌ COOKIE EXPIRED: Please re-export YouTube cookies from a PRIVATE/INCOGNITO window" >&2
-        echo "💡 Instructions: Open private window → Login to YouTube → Export cookies → Close private window" >&2
-        # Envoyer une notification d'erreur pour cookie expiré
-        send_error_notification "$player" "cookie_expired" ""
+        # Cookie invalide confirmé par yt-dlp — incrémenter le compteur
+        local failures
+        failures=$(increment_cookie_failures "$COOKIE_FAILURE_FILE")
+        log_debug "Cookie failure $failures/3 for $player (yt-dlp: cookies are no longer valid)"
+        echo "❌ COOKIE EXPIRED ($failures/3): Please re-export YouTube cookies from a PRIVATE/INCOGNITO window" >&2
+        if [[ $failures -ge 3 ]]; then
+            echo "🗑️  3 consecutive failures — deleting cookie and notifying $player" >&2
+            delete_expired_cookie "$player" "$cookie_file" "$COOKIE_FAILURE_FILE"
+        else
+            echo "💡 Instructions: Open private window → Login to YouTube → Export cookies → Close private window" >&2
+            send_error_notification "$player" "cookie_expired" ""
+        fi
         return 2
     elif [[ $get_videos_exit_code -ne 0 || -z "$liked_videos" ]]; then
-        log_debug "No liked videos found or failed to fetch for $player"
-        # Envoyer une notification d'erreur pour échec de synchronisation
-        send_error_notification "$player" "sync_failed" "Failed to fetch liked videos"
+        # Échec général — peut aussi indiquer un cookie périmé, on incrémente
+        local failures
+        failures=$(increment_cookie_failures "$COOKIE_FAILURE_FILE")
+        log_debug "Sync failure $failures/3 for $player (exit code $get_videos_exit_code)"
+        echo "⚠️  Sync failure $failures/3 for $player" >&2
+        if [[ $failures -ge 3 ]]; then
+            echo "🗑️  3 consecutive failures — deleting cookie and notifying $player" >&2
+            delete_expired_cookie "$player" "$cookie_file" "$COOKIE_FAILURE_FILE"
+        else
+            send_error_notification "$player" "sync_failed" "Failed to fetch liked videos (attempt $failures/3)"
+        fi
         return 1
     fi
+
+    # Succès — remettre le compteur d'échecs à zéro
+    reset_cookie_failures "$COOKIE_FAILURE_FILE"
+    log_debug "Cookie failure counter reset after successful fetch"
     
     local processed_count=0
     local success_count=0

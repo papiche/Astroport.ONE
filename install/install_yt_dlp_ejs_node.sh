@@ -89,8 +89,7 @@ fi
 
 # Optional: install PO Token Provider plugin (recommended for YouTube 403 / GVS)
 # https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide
-# If installed, run provider: docker run -d -p 4416:4416 --name bgutil-provider brainicism/bgutil-ytdlp-pot-provider
-# Or use manual PO token file: ~/.zen/game/nostr/<player>/.youtube.potoken (see IA scripts)
+# Manual PO token file also supported: ~/.zen/game/nostr/<player>/.youtube.potoken
 if command -v pip3 >/dev/null 2>&1 || command -v pip >/dev/null 2>&1; then
     pip_cmd=""
     command -v pip3 >/dev/null 2>&1 && pip_cmd="pip3" || pip_cmd="pip"
@@ -99,11 +98,46 @@ if command -v pip3 >/dev/null 2>&1 || command -v pip >/dev/null 2>&1; then
     else
         echo "[install_yt_dlp_ejs_node][$(timestamp)] Installing PO Token Provider plugin (optional, for YouTube 403)..." >&2
         if "$pip_cmd" install --user bgutil-ytdlp-pot-provider 2>/dev/null || "$pip_cmd" install bgutil-ytdlp-pot-provider 2>/dev/null; then
-            echo "[install_yt_dlp_ejs_node][$(timestamp)] PO Token Provider installed. Run provider: docker run -d -p 4416:4416 brainicism/bgutil-ytdlp-pot-provider" >&2
+            echo "[install_yt_dlp_ejs_node][$(timestamp)] PO Token Provider plugin installed." >&2
         else
             echo "[install_yt_dlp_ejs_node][$(timestamp)] PO Token Provider install skipped (pip install failed). Manual PO token still supported." >&2
         fi
     fi
+fi
+
+# ---------------------------------------------------------------------------
+# Docker: bgutil-ytdlp-pot-provider — démarre le service PO token si Docker est dispo
+# Référence: https://github.com/brainicism/bgutil-ytdlp-pot-provider
+# ---------------------------------------------------------------------------
+BGUTIL_CONTAINER="bgutil-provider"
+BGUTIL_IMAGE="brainicism/bgutil-ytdlp-pot-provider"
+BGUTIL_PORT="4416"
+
+if command -v docker >/dev/null 2>&1; then
+    # Vérifier si le container est déjà en cours d'exécution
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${BGUTIL_CONTAINER}$"; then
+        echo "[install_yt_dlp_ejs_node][$(timestamp)] bgutil-provider container already running on port ${BGUTIL_PORT}." >&2
+    else
+        # Supprimer un éventuel container arrêté du même nom
+        docker rm -f "$BGUTIL_CONTAINER" >/dev/null 2>&1 || true
+
+        echo "[install_yt_dlp_ejs_node][$(timestamp)] Pulling bgutil-ytdlp-pot-provider image..." >&2
+        if docker pull "$BGUTIL_IMAGE" >/dev/null 2>&1; then
+            docker run -d \
+                --name "$BGUTIL_CONTAINER" \
+                --restart always \
+                -p "${BGUTIL_PORT}:${BGUTIL_PORT}" \
+                "$BGUTIL_IMAGE" >/dev/null 2>&1 \
+            && echo "[install_yt_dlp_ejs_node][$(timestamp)] ✅ bgutil-provider started (port ${BGUTIL_PORT}, restart=always)." >&2 \
+            || echo "[install_yt_dlp_ejs_node][$(timestamp)] ⚠️  Failed to start bgutil-provider container." >&2
+        else
+            echo "[install_yt_dlp_ejs_node][$(timestamp)] ⚠️  Could not pull ${BGUTIL_IMAGE} (no network or Docker not authenticated). Skipping." >&2
+        fi
+    fi
+else
+    echo "[install_yt_dlp_ejs_node][$(timestamp)] Docker not found — bgutil PO token provider will not be started." >&2
+    echo "[install_yt_dlp_ejs_node][$(timestamp)] To install Docker: https://docs.docker.com/engine/install/" >&2
+    echo "[install_yt_dlp_ejs_node][$(timestamp)] Then run manually: docker run -d --restart always -p 4416:4416 --name bgutil-provider brainicism/bgutil-ytdlp-pot-provider" >&2
 fi
 
 # Default YouTube player_client: android_vr first (no JS runtime needed, gets full format list), then tv/tv_embedded (no PO token)
