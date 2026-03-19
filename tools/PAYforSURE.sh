@@ -329,15 +329,27 @@ make_payment_gcli() {
     log "Tentative paiement g1cli → nœud: ${ws_node:-défaut} | ${amount} Ğ1 → ${dest:0:12}..."
 
     # Syntaxe g1cli v0.8.0+ :
-    #   gcli --no-password [-u <wss://...>] [-i <squid_url>] -v "<vault_name>" \
-    #        account transfer <AMOUNT> <ADDRESS> [--comment "msg"]
-    # Le --comment crée un batch atomique (transfer + system.remark) on-chain
+    #   gcli --no-password [-u <wss://...>] -v "<vault_name>" \
+    #        account transfer <AMOUNT> <ADDRESS> [--comment "msg"] [--onchain]
+    #
+    # --comment  : crée un batch atomique (transfer + system.remark ou remark_with_event)
+    # --onchain  : utilise system.remark_with_event → émet l'événement Remarked
+    #              → inscrit le commentaire dans Duniter (immuable, audit légal)
+    #              → indexé par le squid Duniter (visible UX Cesium/explorateurs)
+    # Sans --onchain : system.remark → dans la tx blockchain mais pas indexé
+    #
+    # Pour les paiements officiels UPlanet, --onchain est OBLIGATOIRE
+    # afin de garantir la traçabilité légale et la visibilité dans Cesium.
 
     local base_opts=(--no-password)
     [[ -n "$ws_node" ]] && base_opts+=(-u "$ws_node")
 
     local transfer_opts=()
-    [[ -n "$comment" ]] && transfer_opts+=(--comment "$comment")
+    if [[ -n "$comment" ]]; then
+        transfer_opts+=(--comment "$comment")
+        # --onchain : inscription immuable dans Duniter + indexation squid pour UX
+        transfer_opts+=(--onchain)
+    fi
 
     local transfer_rc
     $GCLI "${base_opts[@]}" \
