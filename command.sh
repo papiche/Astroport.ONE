@@ -622,8 +622,13 @@ create_gmarkmail_captain() {
     fi
 
     # Email GMARKMAIL : support+hostname-GPS@qo-op.com
+    # ⚠️  Normaliser en minuscules : identique à make_NOSTRCARD.sh ligne 82 ("${PARAM,,}")
+    # Sans cette normalisation le dossier créé par make_NOSTRCARD.sh (game/nostr/<email_lower>)
+    # ne correspond pas à la variable GMARKMAIL (qui contient p.ex. "GB" en majuscule),
+    # empêchant la lecture de .secret.nostr → NPUB/HEX vides → VISA.new.sh échoue → boucle.
     local GMARKMAIL
     GMARKMAIL="support+$(echo "$(hostname) $GO" | sed "s| |-|g")@qo-op.com"
+    GMARKMAIL="${GMARKMAIL,,}"  # lowercase — même logique que make_NOSTRCARD.sh
     local GLAT GLON
     GLAT=$(echo "$GO" | awk '{print $1}')
     GLON=$(echo "$GO"  | awk '{print $NF}')
@@ -643,8 +648,12 @@ create_gmarkmail_captain() {
 
     # 1. MULTIPASS
     print_info "Création du MULTIPASS ${GMARKMAIL}..."
-    if ! "${MY_PATH}/tools/make_NOSTRCARD.sh" "${GMARKMAIL}" "${SYSLANG:-fr}" "$GLAT" "$GLON"; then
-        print_error "Échec make_NOSTRCARD.sh"
+    "${MY_PATH}/tools/make_NOSTRCARD.sh" "${GMARKMAIL}" "${SYSLANG:-fr}" "$GLAT" "$GLON"
+    local _rc_nostr=$?
+    echo ""
+    read -p "--- Appuyez sur ENTRÉE pour continuer (MULTIPASS terminé, code=$_rc_nostr)... " _dummy
+    if [[ $_rc_nostr -ne 0 ]]; then
+        print_error "Échec make_NOSTRCARD.sh (code=$_rc_nostr)"
         return 1
     fi
 
@@ -670,8 +679,12 @@ create_gmarkmail_captain() {
     echo ""
 
     print_info "Création de la ZEN Card..."
-    if ! "${MY_PATH}/RUNTIME/VISA.new.sh" "$ZSALT" "$ZPEPS" "${GMARKMAIL}" "UPlanet" "${SYSLANG:-fr}" "$GLAT" "$GLON" "$NPUB" "$HEX"; then
-        print_error "Échec VISA.new.sh"
+    "${MY_PATH}/RUNTIME/VISA.new.sh" "$ZSALT" "$ZPEPS" "${GMARKMAIL}" "UPlanet" "${SYSLANG:-fr}" "$GLAT" "$GLON" "$NPUB" "$HEX"
+    local _rc_visa=$?
+    echo ""
+    read -p "--- Appuyez sur ENTRÉE pour continuer (ZEN Card terminée, code=$_rc_visa)... " _dummy
+    if [[ $_rc_visa -ne 0 ]]; then
+        print_error "Échec VISA.new.sh (code=$_rc_visa)"
         return 1
     fi
 
