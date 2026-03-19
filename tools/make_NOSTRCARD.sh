@@ -133,11 +133,11 @@ _alert_captain() {
 <p>→ Vérifiez le daemon IPFS et les logs de la station.</p>
 </body></html>
 EOALERT
-    "$_MAILJET" --expire 172800 \
+    "$_MAILJET" --expire 48h \
         "${CAPTAINEMAIL}" \
-        "$_TMPHTML" \
+        $_TMPHTML \
         "🚨 MULTIPASS ERROR [${IPFSNODEID:0:8}]: ${_SUBJECT}" \
-        >/dev/null 2>&1 &
+        >/dev/null 2>&1
     rm -f "$_TMPHTML"
     echo "📧 Alerte envoyée à ${CAPTAINEMAIL} (48h)"
 }
