@@ -162,6 +162,17 @@ if [[ -d "$GCLI_SRC" && -f "$GCLI_SRC/Cargo.toml" ]]; then
             log "Rust mis à jour: $RUST_VER"
         fi
 
+        # Vérifier si le binaire en cache correspond à la version dans Cargo.toml
+        CARGO_VER=$(grep '^version' "$GCLI_SRC/Cargo.toml" | head -1 | grep -oP '[\d]+\.[\d]+\.[\d]+-\S+' || true)
+        BIN_CACHED="$GCLI_SRC/target/release/g1cli"
+        if [[ -x "$BIN_CACHED" ]]; then
+            BIN_VER=$("$BIN_CACHED" --version 2>/dev/null | grep -oP '[\d]+\.[\d]+\.[\d]+-\S+' || true)
+            if [[ -n "$CARGO_VER" && -n "$BIN_VER" && "$CARGO_VER" != "$BIN_VER" ]]; then
+                log "Cache obsolète: binaire=$BIN_VER, Cargo.toml=$CARGO_VER → cargo clean -p g1cli"
+                cargo clean -p g1cli 2>/dev/null || true
+            fi
+        fi
+
         # Compiler en release avec la feature g1 (réseau Ğ1 mainnet)
         # La feature g1 est déjà la default dans Cargo.toml [features] default=["g1"]
         # mais on la spécifie explicitement pour garantir la robustesse si le défaut change
