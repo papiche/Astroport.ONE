@@ -309,6 +309,9 @@ except Exception:
 show_next_hint() {
     local script="$1" phase="$2" kvbasename="$3" choice="$4"
     local next_phase=""
+    # Propager --model si l'utilisateur a choisi explicitement (évite le menu à la phase suivante)
+    local _mopt=""
+    $MODEL_EXPLICIT && _mopt=" --model \"$MODEL\""
 
     case "$phase" in
         analyse)    next_phase="correction" ;;
@@ -324,8 +327,9 @@ show_next_hint() {
     if [ -n "$next_phase" ]; then
         echo ""
         echo "  💡 Prochaine phase — $next_phase :"
-        echo "     $(basename "$0") $(basename "$script") --kvbasename $kvbasename \\"
-        echo "       --phase $next_phase --choice <valeur>"
+        printf "     %s %s --kvbasename %s \\\\\n" \
+            "$(basename "$0")" "$(basename "$script")" "$kvbasename"
+        printf "       --phase %s --choice <valeur>%s\n" "$next_phase" "$_mopt"
     else
         echo ""
         echo "  ✅ Session '$kvbasename' complète."
@@ -347,7 +351,6 @@ ask_choice() {
             echo "└──────────────────────────────────────────────────────────────────┘"
             read -r -p "> " user_input
             [ "${user_input,,}" = "q" ] && exit 0
-            # Extraire le choix (1er mot) et le supplement (reste)
             local user_choice="${user_input%% *}"
             local user_supplement="${user_input#* }"
             [ "$user_supplement" = "$user_choice" ] && user_supplement=""
@@ -356,14 +359,15 @@ ask_choice() {
             printf "     %s %s --kvbasename %s \\\\\n" \
                 "$(basename "$0")" "$(basename "$script")" "$kvbasename"
             printf "       --phase correction --choice %s" "$user_choice"
+            $MODEL_EXPLICIT && printf " \\\\\n       --model \"%s\"" "$MODEL"
             [ -n "$user_supplement" ] && printf " \\\\\n       --supplement \"%s\"" "$user_supplement"
             echo ""
             ;;
         correction)
             echo "┌──────────────────────────────────────────────────────────────────┐"
             echo "│  Variante ? a/b/c + contexte optionnel  ou q pour quitter       │"
-            echo "│  Ex: \"b Préfère une solution async compatible asyncio\"          │"
-            echo "│  Ajoutez --patch pour modifier le fichier directement            │"
+            echo "│  Ex: \"b Préfère async compatible asyncio\"                       │"
+            echo "│  Enter seul = appliquer directement (--patch)                   │"
             echo "└──────────────────────────────────────────────────────────────────┘"
             read -r -p "> " user_input
             [ "${user_input,,}" = "q" ] && exit 0
@@ -371,12 +375,13 @@ ask_choice() {
             local user_supplement="${user_input#* }"
             [ "$user_supplement" = "$user_choice" ] && user_supplement=""
             echo ""
-            echo "  💡 Lancez ensuite (avec --patch pour appliquer) :"
+            echo "  💡 Lancez ensuite (avec --patch pour appliquer directement) :"
             printf "     %s %s --kvbasename %s \\\\\n" \
                 "$(basename "$0")" "$(basename "$script")" "$kvbasename"
-            printf "       --phase controle --choice %s" "$user_choice"
+            printf "       --phase controle --choice %s --patch" "$user_choice"
+            $MODEL_EXPLICIT && printf " \\\\\n       --model \"%s\"" "$MODEL"
             [ -n "$user_supplement" ] && printf " \\\\\n       --supplement \"%s\"" "$user_supplement"
-            echo " [--patch]"
+            echo ""
             ;;
         controle)
             local _patch_mode="${4:-false}"
@@ -396,12 +401,16 @@ print(d.get('last_variant_choice', 'a'))
                     echo ""
                     echo "  🔧 Application directe de la variante ${last_v} (--patch actif)..."
                     exec "$0" "$script" --kvbasename "$kvbasename" \
-                        --phase correction --choice "$last_v" --patch
+                        --phase correction --choice "$last_v" --patch \
+                        ${MODEL_EXPLICIT:+--model "$MODEL"}
                 else
                     echo ""
                     echo "  💡 Pour appliquer :"
-                    echo "     $(basename "$0") $(basename "$script") --kvbasename $kvbasename \\"
-                    echo "       --phase correction --choice $last_v --patch"
+                    printf "     %s %s --kvbasename %s \\\\\n" \
+                        "$(basename "$0")" "$(basename "$script")" "$kvbasename"
+                    printf "       --phase correction --choice %s --patch" "$last_v"
+                    $MODEL_EXPLICIT && printf " \\\\\n       --model \"%s\"" "$MODEL"
+                    echo ""
                 fi
             fi
             ;;
@@ -474,6 +483,7 @@ MODEL_EXPLICIT=false
 PHASE="analyse"
 DEPTH=1   # défaut : script + dépendances directes seulement (plus rapide)
 MAX_TOKEN=32000
+MAX_TOKEN_EXPLICIT=false   # true si l'utilisateur a passé --maxtoken explicitement
 CHOICE=""
 PATCH_MODE=false
 NO_QDRANT=false
@@ -497,8 +507,8 @@ while [[ $# -gt 0 ]]; do
         --phase=*)        PHASE="${1#--phase=}"; shift ;;
         --depth)          DEPTH="$2"; shift 2 ;;
         --depth=*)        DEPTH="${1#--depth=}"; shift ;;
-        --maxtoken)       MAX_TOKEN="$2"; shift 2 ;;
-        --maxtoken=*)     MAX_TOKEN="${1#--maxtoken=}"; shift ;;
+        --maxtoken)       MAX_TOKEN="$2"; MAX_TOKEN_EXPLICIT=true; shift 2 ;;
+        --maxtoken=*)     MAX_TOKEN="${1#--maxtoken=}"; MAX_TOKEN_EXPLICIT=true; shift ;;
         --exclude)        EXCLUDE_ARGS+=("--exclude" "$2"); shift 2 ;;
         --exclude=*)      EXCLUDE_ARGS+=("--exclude" "${1#--exclude=}"); shift ;;
         --choice)         CHOICE="$2"; shift 2 ;;
@@ -622,13 +632,148 @@ fi
 # En-tête
 # ─────────────────────────────────────────────────────────────────────────────
 
+# ── Résolution automatique du contexte max du modèle Ollama ──────────────
+# get_ollama_model_ctx <model> → affiche le num_ctx du modèle (ou vide si indisponible)
+get_ollama_model_ctx() {
+    local model="$1"
+    [ -z "$model" ] && return
+    curl -sf --max-time 3 http://localhost:11434/api/show \
+        -d "{\"model\":\"$model\"}" 2>/dev/null \
+    | $PYTHON3 -c "
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    for k, v in d.get('model_info', {}).items():
+        if 'context' in k.lower() and isinstance(v, int) and v > 0:
+            print(v); raise SystemExit(0)
+    for line in d.get('parameters', '').splitlines():
+        parts = line.split()
+        if len(parts) == 2 and parts[0] == 'num_ctx':
+            print(int(parts[1])); raise SystemExit(0)
+except SystemExit:
+    pass
+except Exception:
+    pass
+" 2>/dev/null
+}
+
+# get_models_by_context → liste "nom_modele contexte_tokens" triée par contexte décroissant
+# Interroge /api/tags puis /api/show en parallèle (ThreadPoolExecutor)
+OLLAMA_STATION="localhost:11434"
+get_models_by_context() {
+    local tags_json
+    tags_json=$(curl -sf --max-time 3 "http://${OLLAMA_STATION}/api/tags" 2>/dev/null)
+    [ -z "$tags_json" ] && return
+    $PYTHON3 - "$tags_json" 2>/dev/null <<'PYEOF'
+import json, sys, urllib.request
+from concurrent.futures import ThreadPoolExecutor
+
+tags_json = sys.argv[1]
+try:
+    models = [m['name'] for m in json.loads(tags_json).get('models', [])]
+except Exception:
+    sys.exit(0)
+
+def get_ctx(model):
+    try:
+        req = urllib.request.Request(
+            'http://localhost:11434/api/show',
+            data=json.dumps({'model': model}).encode(),
+            headers={'Content-Type': 'application/json'}
+        )
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            d = json.load(resp)
+        for k, v in d.get('model_info', {}).items():
+            if 'context' in k.lower() and isinstance(v, int) and v > 0:
+                return model, v
+        for line in d.get('parameters', '').splitlines():
+            parts = line.split()
+            if len(parts) == 2 and parts[0] == 'num_ctx':
+                return model, int(parts[1])
+    except Exception:
+        pass
+    return model, 0
+
+with ThreadPoolExecutor(max_workers=8) as pool:
+    results = [(m, c) for m, c in pool.map(get_ctx, models) if c > 0]
+results.sort(key=lambda x: x[1], reverse=True)
+for m, c in results:
+    print(f'{m} {c}')
+PYEOF
+}
+
+# ── Sélection du modèle : menu interactif ou auto ─────────────────────────
+if ! $MAX_TOKEN_EXPLICIT; then
+    if ! $MODEL_EXPLICIT; then
+        _ALL_MODELS=$(get_models_by_context)
+        if [ -n "$_ALL_MODELS" ]; then
+            declare -a _MODEL_ARRAY=()
+            declare -a _CTX_ARRAY=()
+            while IFS=' ' read -r _m _c; do
+                _MODEL_ARRAY+=("$_m")
+                _CTX_ARRAY+=("$_c")
+            done <<< "$_ALL_MODELS"
+
+            if [ -t 1 ] && [ -t 0 ]; then
+                # Terminal interactif : afficher le menu et attendre le choix
+                echo ""
+                echo "  🖥️  Station : $OLLAMA_STATION  (${#_MODEL_ARRAY[@]} modèles)"
+                echo "  ─────────────────────────────────────────────────────"
+                _i=1
+                for _m in "${_MODEL_ARRAY[@]}"; do
+                    _c="${_CTX_ARRAY[$(( _i - 1 ))]}"
+                    printf "    [%2d] %-42s %6dk ctx\n" "$_i" "$_m" "$(( _c / 1024 ))"
+                    (( _i++ ))
+                done
+                echo ""
+                _DEFAULT="${_MODEL_ARRAY[0]}"
+                read -r -p "  Modèle ? [1 = $_DEFAULT] > " _CHOICE </dev/tty
+                if [[ "$_CHOICE" =~ ^[0-9]+$ ]] && [ "$_CHOICE" -ge 1 ] && [ "$_CHOICE" -le "${#_MODEL_ARRAY[@]}" ]; then
+                    _IDX=$(( _CHOICE - 1 ))
+                    _BEST_MODEL="${_MODEL_ARRAY[$_IDX]}"
+                    _BEST_CTX="${_CTX_ARRAY[$_IDX]}"
+                elif [ -n "$_CHOICE" ]; then
+                    # Correspondance partielle par nom
+                    _MATCH=$(printf '%s\n' "${_MODEL_ARRAY[@]}" | grep -i "$_CHOICE" | head -1)
+                    _BEST_MODEL="${_MATCH:-${_MODEL_ARRAY[0]}}"
+                    _BEST_CTX="${_CTX_ARRAY[0]}"
+                    for _ix in "${!_MODEL_ARRAY[@]}"; do
+                        [ "${_MODEL_ARRAY[$_ix]}" = "$_BEST_MODEL" ] && _BEST_CTX="${_CTX_ARRAY[$_ix]}" && break
+                    done
+                else
+                    _BEST_MODEL="${_MODEL_ARRAY[0]}"
+                    _BEST_CTX="${_CTX_ARRAY[0]}"
+                fi
+            else
+                # Non-interactif : meilleur modèle automatiquement
+                _BEST_MODEL="${_MODEL_ARRAY[0]}"
+                _BEST_CTX="${_CTX_ARRAY[0]}"
+            fi
+
+            if [[ "$_BEST_CTX" =~ ^[0-9]+$ ]] && [ "$_BEST_CTX" -gt 0 ]; then
+                MAX_TOKEN=$(( _BEST_CTX * 80 / 100 ))
+                MODEL="$_BEST_MODEL"
+                MODEL_EXPLICIT=true
+            fi
+        fi
+    else
+        # Modèle explicite (--model) : utiliser son propre contexte
+        _CTX=$(get_ollama_model_ctx "$MODEL")
+        if [ -n "$_CTX" ] && [[ "$_CTX" =~ ^[0-9]+$ ]] && [ "$_CTX" -gt 0 ]; then
+            MAX_TOKEN=$(( _CTX * 80 / 100 ))
+        fi
+    fi
+fi
+
 echo ""
 echo "╔══════════════════════════════════════════════════════════════╗"
 printf "║  🤖 CODE ASSISTANT — Phase : %-32s ║\n" "${PHASE^^}"
 echo "╠══════════════════════════════════════════════════════════════╣"
 printf "║  Script  : %-50s ║\n" "$SCRIPT_BASENAME"
 printf "║  Session : %-50s ║\n" "$KVBASENAME"
+printf "║  Station : %-50s ║\n" "$OLLAMA_STATION"
 printf "║  Modèle  : %-50s ║\n" "$MODEL"
+printf "║  Context : %-50s ║\n" "~$(( MAX_TOKEN / 1024 ))k tokens (80% de la fenêtre)"
 if [[ "$PROFILE" == "client" ]]; then
     printf "║  Profil  : %-50s ║\n" "🌐 client  (HTML/CSS/JS vanilla·jQuery·CDN)"
 else
@@ -952,10 +1097,11 @@ if $SETUP_MODE; then
 fi
 
 PY_ARGS=(
-    --phase      "$PHASE"
+    --phase       "$PHASE"
     --diff-format "$DIFF_FORMAT"
     --kvbasename  "$KVBASENAME"
-    --script     "$SCRIPT_REALPATH"
+    --script      "$SCRIPT_REALPATH"
+    --max-context "$MAX_TOKEN"
 )
 # --model uniquement si l'utilisateur l'a spécifié explicitement
 # Sinon, code_assistant.py utilise PHASE_MODELS (deepseek-r1 pour analyse, qwen2.5-coder pour correction)

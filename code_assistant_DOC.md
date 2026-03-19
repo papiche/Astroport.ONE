@@ -41,6 +41,8 @@
 │  cpscript                                                       │
 │  → Extraction récursive du contexte code (JSON)                 │
 │  → Détection imports Python (ast), source Bash sans extension   │
+│  → Support HTML : <link href>, <script src> → CSS/JS locaux     │
+│  → Support JS : import from, require() → modules locaux         │
 ├─────────────────────────────────────────────────────────────────┤
 │  IA/code_assistant.py                                           │
 │  → Phases LLM (analyse/correction/contrôle), mémoire KV        │
@@ -64,8 +66,9 @@
 | `ollama` (Python) | ✅ | `pip install ollama` |
 | `requests` (Python) | Recommandé | `pip install requests` |
 | Ollama (serveur) | ✅ | https://ollama.ai ou via `IA/ollama.me.sh` |
-| `deepseek-r1:14b` | Recommandé (analyse) | `ollama pull deepseek-r1:14b` |
-| `qwen2.5-coder:14b` | Recommandé (correction) | `ollama pull qwen2.5-coder:14b` |
+| Modèle grand contexte | Recommandé | sélectionné automatiquement (plus grand `num_ctx`) |
+| `deepseek-r1:14b` | Fallback analyse | `ollama pull deepseek-r1:14b` |
+| `qwen2.5-coder:14b` | Fallback correction | `ollama pull qwen2.5-coder:14b` |
 | `nomic-embed-text` | Recommandé (mémoire) | `ollama pull nomic-embed-text` |
 | Qdrant | Optionnel | Stack rnostr (`install/install_rnostr_semantic.sh`) ou `docker run -p 6333:6333 -v ~/.zen/qdrant-data:/qdrant/storage qdrant/qdrant` |
 | `curl`, `diff`, `jq` | ✅ | `sudo apt install curl diffutils jq` |
@@ -124,16 +127,27 @@ docker run -d -p 127.0.0.1:6333:6333 -p 127.0.0.1:6334:6334 \
 ### Exemple de sortie — Phase ANALYSE
 
 ```
+  🖥️  Station : localhost:11434  (30 modèles)
+  ─────────────────────────────────────────────────────
+    [ 1] qwen3-coder:latest                          256k ctx
+    [ 2] dagbs/deepseek-coder-v2-lite:latest         160k ctx
+    [ 3] deepseek-r1:14b                             128k ctx
+    ...
+
+  Modèle ? [1 = qwen3-coder:latest] >
+
 ╔══════════════════════════════════════════════════════════════╗
 ║  🤖 CODE ASSISTANT — Phase : ANALYSE                         ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  Script  : geo.py                                            ║
 ║  Session : geo-fix                                           ║
-║  Modèle  :                                                   ║
+║  Station : localhost:11434                                   ║
+║  Modèle  : qwen3-coder:latest                                ║
+║  Context : ~209k tokens (80% de la fenêtre)                  ║
 ║  Profil  : 🖥️  server  (Bash/Python/Markdown)                ║
 ╚══════════════════════════════════════════════════════════════╝
 
-📦 Extraction du contexte (depth=1, maxtoken=32000)...
+📦 Extraction du contexte (depth=1, maxtoken=209715)...
   ✓ 5 fichier(s) — ~8200 tokens
 
 === ANALYSE ===
@@ -173,7 +187,9 @@ Options :
                        1 = script + dépendances directes seulement
                        2 = +dépendances des dépendances
 
-  --maxtoken N         Limite tokens du contexte code (défaut: 32000)
+  --maxtoken N         Limite tokens du contexte code
+                       Défaut : auto (80% du contexte max du modèle sélectionné)
+                       Ex: --maxtoken 64000 pour forcer une limite précise
 
   --exclude <f>        Exclure un fichier par basename (répétable)
                        Ex: --exclude my.sh --exclude config.py
@@ -277,7 +293,7 @@ Le contenu est annexé au `--supplement` existant (sans l'écraser).
 **Entrée** : Contexte code extrait par `cpscript --json`  
 **Sortie** : Liste numérotée 1/2/3 avec catégorie, localisation, impact
 
-**Modèle** : `deepseek-r1:14b` (raisonnement Chain-of-Thought)
+**Modèle** : auto-sélectionné (meilleur contexte disponible) ou `deepseek-r1:14b` en fallback
 
 ```bash
 # Analyse simple
@@ -297,7 +313,7 @@ Le contenu est annexé au `--supplement` existant (sans l'écraser).
 
 **Objectif** : Générer 3 variantes de correction pour le problème choisi.
 
-**Modèle** : `qwen2.5-coder:14b` (code spécialisé)
+**Modèle** : même modèle que l'analyse (contexte max conservé) ou `qwen2.5-coder:14b` en fallback
 
 **Format JSON LLM** :
 ```json
@@ -619,9 +635,18 @@ Avec `--patch` en phase `controle`, l'approbation déclenche directement la phas
 
 ### `cpscript` — Extraction récursive
 
+Supporte `.sh`, `.py`, `.html`, `.js`, `.css` — suit récursivement les dépendances.
+
 ```bash
 # Contexte JSON pour code_assistant (défaut: depth=1)
-cpscript --json --depth 1 --maxtoken 32000 mon_script.py
+cpscript --json --depth 1 mon_script.py            # .sh ou .py
+cpscript --json --depth 1 index.html               # HTML → JS/CSS locaux
+cpscript --json --depth 2 app.js                   # JS → imports récursifs
+
+# Filtrer par type de fichier
+cpscript --only html index.html                    # sortie HTML uniquement
+cpscript --only js  index.html                     # sortie JS uniquement (dépendances)
+cpscript --only sh  --depth 2 mon_script.sh        # Bash seulement
 
 # Inclure la documentation associée
 cpscript --json --doc mon_script.py
@@ -630,7 +655,7 @@ cpscript --json --doc mon_script.py
 cpscript --json --human mon_script.py
 
 # Exclure les fichiers bruyants
-cpscript --json --exclude my.sh --exclude config.py mon_script.py
+cpscript --json --exclude jquery.min.js mon_script.html
 ```
 
 ### `embed.py` — Embeddings + Qdrant
@@ -655,7 +680,7 @@ python3 IA/embed.py --search --collection code_assistant \
 Astroport.ONE/
 ├── code_assistant          # Script bash front-end (orchestration)
 ├── code_assistant_DOC.md   # Cette documentation
-├── cpscript                # Extraction récursive .sh/.py → JSON/texte
+├── cpscript                # Extraction récursive .sh/.py/.html/.js/.css → JSON/texte
 ├── .assistant_rules        # Règles projet (optionnel)
 └── IA/
     ├── code_assistant.py   # Backend Python (phases LLM + KV)
@@ -990,4 +1015,14 @@ opencode config set base-url http://localhost:11434
 
 ---
 
-*Mis à jour le 2026-03-18 — Astroport.ONE / UPlanet*
+*Mis à jour le 2026-03-19 — Astroport.ONE / UPlanet*
+
+### Dernières évolutions
+
+| Date | Fonctionnalité |
+|------|---------------|
+| 2026-03-19 | `cpscript` : support HTML/JS/CSS récursif (`<script src>`, `import from`, `require`) |
+| 2026-03-19 | `cpscript` : `--only html\|js\|css` — filtres de type web |
+| 2026-03-19 | `code_assistant` : sélection automatique du modèle avec le plus grand `num_ctx` (parallèle, ~0.5s) |
+| 2026-03-19 | `code_assistant` : menu interactif station/modèle avant chaque lancement |
+| 2026-03-19 | `code_assistant` : `MAX_TOKEN` calculé dynamiquement (80% du contexte réel du modèle) |

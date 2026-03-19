@@ -425,18 +425,18 @@ def extract_option(text: str, option_letter: str) -> str:
 def build_code_summary(code_json: dict, max_tokens: int = 32000) -> str:
     """Construit un résumé texte du contexte code pour le prompt LLM.
 
-    R2: Si le contexte total dépasse 28 000 tokens (estimé), tronque
+    R2: Si le contexte total dépasse max_tokens (estimé), tronque
     les fichiers dépendants à 50 lignes pour éviter de saturer le cache KV.
     Inclut les métadonnées de diagnostic --test et --doc si présentes.
     """
     # Estimation du volume total (R3: ratio 3.2 chars/token pour du code)
     total_chars = sum(len(f.get('content', '')) for f in code_json.get('files', []))
-    trim_threshold_chars = int(28000 * CHARS_PER_TOKEN)  # ~89 600 chars
+    trim_threshold_chars = int(max_tokens * CHARS_PER_TOKEN)
     trim_deps = total_chars > trim_threshold_chars
 
     if trim_deps:
         estimated_tokens = int(total_chars / CHARS_PER_TOKEN)
-        print(f"  [context] {estimated_tokens:,} tokens estimés > 28 000 — "
+        print(f"  [context] {estimated_tokens:,} tokens estimés > {max_tokens:,} — "
               f"troncation des dépendances à 50 lignes", file=sys.stderr)
 
     parts = []
@@ -451,7 +451,7 @@ def build_code_summary(code_json: dict, max_tokens: int = 32000) -> str:
             lines = content.split('\n')
             if len(lines) > 50:
                 content = '\n'.join(lines[:50])
-                content += f'\n# ... [{len(lines) - 50} lignes tronquées — contexte >28k tokens]'
+                content += f'\n# ... [{len(lines) - 50} lignes tronquées — contexte >{max_tokens//1000}k tokens]'
         label = "[TEST] " if is_test_file else ""
         parts.append(f"\n### {label}{f.get('path', '')} ###\n{content[:3000]}")
 
@@ -693,6 +693,9 @@ def main():
                         help="Chemin du fichier source principal (pour le log)")
     parser.add_argument("--no-qdrant",  action="store_true",
                         help="Désactiver Qdrant")
+    parser.add_argument("--max-context", type=int, default=32000,
+                        help="Limite de tokens du contexte code (passée depuis code_assistant bash, "
+                             "reflète 80%% du contexte max du modèle sélectionné)")
     # H2: mode step-by-step complet (voir/modifier chaque prompt avant envoi)
     parser.add_argument("--human-llm",  action="store_true",
                         help="Voir et modifier chaque prompt LLM avant envoi "
@@ -779,7 +782,7 @@ def main():
         print(f"  [mode] DOC ACTIF — incohérences: {len(_doc_issues)} chars", file=sys.stderr)
 
     # ── Construire le résumé du code ─────────────────────────────────────────
-    code_summary = build_code_summary(code_json)
+    code_summary = build_code_summary(code_json, max_tokens=args.max_context)
 
     # ── Qdrant : indexation AVANT analyse + recherche sémantique ────────────
     use_qdrant = not args.no_qdrant and qdrant_available()
