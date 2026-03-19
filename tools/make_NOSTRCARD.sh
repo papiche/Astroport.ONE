@@ -108,17 +108,38 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     ############################################## PREPARE SALT PEPPER
     if [[ -z "$SALT" ]]; then
-        SALT=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w42 | head -n1)
+        SALT=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w28 | head -n1)
     fi
     if [[ -z "$PEPPER" ]]; then
-        PEPPER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w42 | head -n1)
+        PEPPER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w28 | head -n1)
     fi
     # Creating MULTIPASS for ${EMAIL}
     DISCO="/?${EMAIL}=${SALT}&nostr=${PEPPER}"
     #~ echo "DISCO : "$DISCO
 
+    ## ssss-split security level : must be >= len(DISCO)*8 bits, max 1024
+    ## ssss default is 128 bits (16 bytes max) — emails+salt+pepper easily exceed that
+    _DISCO_BITS=$(( ${#DISCO} * 8 ))
+    # Round up to nearest multiple of 8, cap at 1024 (ssss compiled max = MAXDEGREE)
+    _SSSS_LEVEL=$(( ( (_DISCO_BITS + 7) / 8 ) * 8 ))
+    [[ $_SSSS_LEVEL -lt 128  ]] && _SSSS_LEVEL=128
+    [[ $_SSSS_LEVEL -gt 1024 ]] && _SSSS_LEVEL=1024
+    # Safety check: if DISCO exceeds 128 bytes after salt/pepper trimming, truncate to fit
+    if [[ ${#DISCO} -gt 128 ]]; then
+        _MAX_SP=$(( 128 - 2 - ${#EMAIL} - 1 - 7 - 2 ))  # headroom for /?…=…&nostr=…
+        [[ $_MAX_SP -lt 8 ]] && _MAX_SP=8
+        _HALF=$(( _MAX_SP / 2 ))
+        SALT="${SALT:0:$_HALF}"
+        PEPPER="${PEPPER:0:$_HALF}"
+        DISCO="/?${EMAIL}=${SALT}&nostr=${PEPPER}"
+        _DISCO_BITS=$(( ${#DISCO} * 8 ))
+        _SSSS_LEVEL=$(( ( (_DISCO_BITS + 7) / 8 ) * 8 ))
+        [[ $_SSSS_LEVEL -lt 128  ]] && _SSSS_LEVEL=128
+        [[ $_SSSS_LEVEL -gt 1024 ]] && _SSSS_LEVEL=1024
+    fi
+
     ## ssss-split : Keep 2 needed over 3
-    echo "$DISCO" | ssss-split -t 2 -n 3 -q > ~/.zen/tmp/${MOATS}/${EMAIL}.ssss
+    echo "$DISCO" | ssss-split -t 2 -n 3 -s $_SSSS_LEVEL -q > ~/.zen/tmp/${MOATS}/${EMAIL}.ssss
     HEAD=$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss | head -n 1) && echo "$HEAD" > ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head
     MIDDLE=$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss | head -n 2 | tail -n 1) && echo "$MIDDLE" > ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.mid
     TAIL=$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss | tail -n 1) && echo "$TAIL" > ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.tail
