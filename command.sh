@@ -117,7 +117,7 @@ print_warning() {
 check_dependencies() {
     if [[ ! $(which ipfs) ]]; then
         print_error "IPFS CLI n'est pas installé"
-        echo "Installez-le depuis: https://dist.ipfs.io/#go-ipfs"
+        echo "Installez-le depuis: Astroport.ONE/install/install.kubo_v0.40.0_linux.sh"
         exit 1
     fi
     
@@ -146,31 +146,32 @@ check_services_status() {
     
     if [[ "$use_cache" == "true" ]]; then
         # Lire les statuts depuis le cache heartbox_analysis
-        local ipfs_active=$(jq -r '.services.ipfs.active // false' "$heartbox_cache" 2>/dev/null)
-        local astroport_active=$(jq -r '.services.astroport.active // false' "$heartbox_cache" 2>/dev/null)
-        local upassport_active=$(jq -r '.services.upassport.active // false' "$heartbox_cache" 2>/dev/null)
-        local nextcloud_active=$(jq -r '.services.nextcloud.active // false' "$heartbox_cache" 2>/dev/null)
-        local strfry_active=$(jq -r '.services.strfry.active // false' "$heartbox_cache" 2>/dev/null)
-        local g1billet_active=$(jq -r '.services.g1billet.active // false' "$heartbox_cache" 2>/dev/null)
-        
+        # Variables globales (sans local) pour être accessibles dans show_services_status()
+        ipfs_active=$(jq -r '.services.ipfs.active // false' "$heartbox_cache" 2>/dev/null)
+        astroport_active=$(jq -r '.services.astroport.active // false' "$heartbox_cache" 2>/dev/null)
+        upassport_active=$(jq -r '.services.upassport.active // false' "$heartbox_cache" 2>/dev/null)
+        nextcloud_active=$(jq -r '.services.nextcloud.active // false' "$heartbox_cache" 2>/dev/null)
+        strfry_active=$(jq -r '.services.strfry.active // false' "$heartbox_cache" 2>/dev/null)
+        g1billet_active=$(jq -r '.services.g1billet.active // false' "$heartbox_cache" 2>/dev/null)
+
         # Récupérer les détails IPFS depuis le cache
         ipfs_peers=$(jq -r '.services.ipfs.peers_connected // 0' "$heartbox_cache" 2>/dev/null)
-        
-        # Récupérer les détails UPassport et strfry depuis le cache
+
+        # Pas de détail proc disponible depuis le cache
         upassport_proc=""
         strfry_proc=""
 
     else
         # Vérification en temps réel (fallback)
-        local ipfs_active=false
-        local astroport_active=false
-        local upassport_active=false
-        local nextcloud_active=false
-        local strfry_active=false
-        local g1billet_active=false
+        # Variables globales (sans local) pour être accessibles dans show_services_status()
+        ipfs_active=false
+        astroport_active=false
+        upassport_active=false
+        nextcloud_active=false
+        strfry_active=false
+        g1billet_active=false
 
         # IPFS - vérifier le processus
-        ipfs_active=false
         ipfs_peers=0
         if pgrep ipfs >/dev/null; then
             ipfs_active=true
@@ -333,30 +334,13 @@ handle_nostr_payment() {
 # Fonction pour afficher les services avec statut réel
 show_services_status() {
     echo -e "\033[0;36m  🔍 Vérification des services...\033[0m"
+    # check_services_status() expose ses résultats via des variables globales :
+    # ipfs_active, ipfs_peers, upassport_active, upassport_proc,
+    # strfry_active, strfry_proc, astroport_active, nextcloud_active, g1billet_active
     local services_info=$(check_services_status)
     local nextcloud_available=false
-    
-    # Détection en temps réel des services réseau
-    local ipfs_active=false
-    local ipfs_peers=0
-    if pgrep ipfs >/dev/null; then
-        ipfs_active=true
-        ipfs_peers=$(ipfs swarm peers 2>/dev/null | wc -l)
-    fi
-    local upassport_active=false
-    local upassport_proc=""
-    if ss -tlnp 2>/dev/null | grep -q ":54321 "; then
-        upassport_active=true
-        upassport_proc=$(ss -tlnp 2>/dev/null | grep ":54321 " | sed -n 's/.*users:((("\([^"]*\)".*/\1/p' | head -n1)
-    fi
-    local strfry_active=false
-    local strfry_proc=""
-    if ss -tlnp 2>/dev/null | grep -q ":7777 "; then
-        strfry_active=true
-        strfry_proc=$(ss -tlnp 2>/dev/null | grep ":7777 " | sed -n 's/.*users:((("\([^"]*\)".*/\1/p' | head -n1)
-    fi
-    
-    # Extraire la disponibilité de NextCloud
+
+    # Extraire la disponibilité de NextCloud depuis la sortie de la fonction
     for info in $services_info; do
         if [[ "$info" == "NEXTCLOUD_AVAILABLE:"* ]]; then
             nextcloud_available="${info#NEXTCLOUD_AVAILABLE:}"
@@ -422,11 +406,8 @@ show_services_status() {
         else
             case "$service_name" in
                 "IPFS")
-                    if [[ "$ipfs_active" == true ]]; then
-                        print_status "IPFS" "INACTIVE" "(Stockage distribué)"
-                    else
-                        print_status "IPFS" "INACTIVE" "(Stockage distribué)"
-                    fi
+                    # Les deux branches étaient identiques — simplifié
+                    print_status "IPFS" "INACTIVE" "(Stockage distribué)"
                     ;;
                 "Astroport")
                     print_status "Astroport" "INACTIVE" "(Interface web)"
@@ -627,7 +608,7 @@ create_gmarkmail_captain() {
     # ne correspond pas à la variable GMARKMAIL (qui contient p.ex. "GB" en majuscule),
     # empêchant la lecture de .secret.nostr → NPUB/HEX vides → VISA.new.sh échoue → boucle.
     local GMARKMAIL
-    GMARKMAIL="support+$(echo "$(hostname) $GO" | sed "s| |-|g")@qo-op.com"
+    GMARKMAIL="support+$(echo "$(hostname) $GO" | sed "s| |_|g")@qo-op.com"
     GMARKMAIL="${GMARKMAIL,,}"  # lowercase — même logique que make_NOSTRCARD.sh
     local GLAT GLON
     GLAT=$(echo "$GO" | awk '{print $1}')
@@ -951,13 +932,13 @@ show_dashboard() {
 
     echo -e "${YELLOW}Niveaux de capitaine:${NC}"
     if [[ "$current_level" == "Y" ]]; then
-        echo -e "  X: Clé IPFS standard" UPlanet ORIGIN
-        echo -e "  Y: Clé SSH jumelle" UPlanet Ẑen " ${GREEN}← Votre niveau${NC}"
-        echo -e "  Z: Clé PGP/Yubikey" UPlanet PGP
+        echo -e "  X: Clé IPFS standard UPlanet ORIGIN"
+        echo -e "  Y: Clé SSH jumelle UPlanet Ẑen ${GREEN}← Votre niveau${NC}"
+        echo -e "  Z: Clé PGP/Yubikey UPlanet PGP"
     else
-        echo -e "  X: Clé IPFS standard" UPlanet ORIGIN " ${YELLOW}← Votre niveau${NC}"
-        echo -e "  Y: Clé SSH jumelle" UPlanet Ẑen " ${CYAN}← Niveau supérieur${NC}"
-        echo -e "  Z: Clé PGP/Yubikey" UPlanet PGP
+        echo -e "  X: Clé IPFS standard UPlanet ORIGIN ${YELLOW}← Votre niveau${NC}"
+        echo -e "  Y: Clé SSH jumelle UPlanet Ẑen ${CYAN}← Niveau supérieur${NC}"
+        echo -e "  Z: Clé PGP/Yubikey UPlanet PGP"
     fi
     echo ""
 
@@ -1057,7 +1038,7 @@ list_docker_apps() {
 # Fonction de menu principal
 show_main_menu() {
     print_section "MENU PRINCIPAL"
-    
+
     if [[ -z "$PLAYER" ]]; then
         echo "1. 🎫 Créer/Connecter MULTIPASS / ZEN Card"
         echo "2. 📋 Lister les cartes existantes"
@@ -1065,11 +1046,11 @@ show_main_menu() {
         echo "4. 🛠️ EXTRA"
         echo "0. ❌ Quitter"
     else
-    echo "1. 🎫 Gérer MULTIPASS / ZEN Card"
-    echo "2. 🌐 Connexion Swarm"
-    echo "3. 📊 Statut Swarm"
-     echo "4. 🛠️ EXTRA"
-    echo "0. ❌ Quitter"
+        echo "1. 🎫 Gérer MULTIPASS / ZEN Card"
+        echo "2. 🌐 Connexion Swarm"
+        echo "3. 📊 Statut Swarm"
+        echo "4. 🛠️ EXTRA"
+        echo "0. ❌ Quitter"
     fi
     echo ""
 }
@@ -1364,7 +1345,7 @@ connect_existing_card() {
     
     # Mettre à jour .current
     rm -f ~/.zen/game/players/.current
-    ln -s ~/.zen/game/nostr/${PLAYER} ~/.zen/game/players/.current
+    ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
     
     print_success "Connexion réussie! Bienvenue $PLAYER"
     read -p "Appuyez sur ENTRÉE pour continuer..."
@@ -2090,15 +2071,19 @@ check_station_level() {
             current_level="X"
         fi
     fi
-    
 
-    
-    # Vérifier la cohérence SSH/IPFS pour les niveaux Y et Z
+    # Vérifier la cohérence SSH/IPFS selon le niveau
     if [[ "$current_level" == "Y" || "$current_level" == "Z" ]]; then
+        # Niveau Y/Z : détecter une régression (clé SSH changée après la transmutation)
         if [[ -f ~/.zen/game/id_ssh.pub ]] && [[ -f ~/.ssh/id_ed25519.pub ]]; then
             if [[ $(diff ~/.zen/game/id_ssh.pub ~/.ssh/id_ed25519.pub 2>/dev/null) ]]; then
                 ssh_ipfs_mismatch=true
             fi
+        fi
+    elif [[ "$current_level" == "X" ]]; then
+        # Niveau X : une clé SSH existe → upgrade vers Y possible et recommandé
+        if [[ -f ~/.ssh/id_ed25519.pub ]]; then
+            ssh_ipfs_mismatch=true
         fi
     fi
     
@@ -2349,14 +2334,14 @@ main() {
     fi
     
     # Boucle principale
-while true; do
+    while true; do
         show_dashboard
-    show_main_menu
-        
-    read -p "Votre choix: " choice
+        show_main_menu
 
-    case $choice in
-        1)
+        read -p "Votre choix: " choice
+
+        case $choice in
+            1)
                 if [[ -z "$PLAYER" ]]; then
                     handle_card_creation
                 else
@@ -2367,9 +2352,9 @@ while true; do
                 if [[ -z "$PLAYER" ]]; then
                     list_existing_cards
                 else
-            print_section "CONNEXION SWARM"
+                    print_section "CONNEXION SWARM"
                     print_info "Découverte et connexion aux autres ♥️box..."
-            "${MY_PATH}/RUNTIME/SWARM.discover.sh"
+                    "${MY_PATH}/RUNTIME/SWARM.discover.sh"
                     read -p "Appuyez sur ENTRÉE pour continuer..."
                 fi
                 ;;
@@ -2382,9 +2367,9 @@ while true; do
                         "${MY_PATH}/tools/nostr_DESTROY_TW.sh"
                     fi
                 else
-            print_section "STATUT SWARM"
+                    print_section "STATUT SWARM"
                     print_info "Notifications et abonnements reçus..."
-            "${MY_PATH}/tools/SWARM.notifications.sh"
+                    "${MY_PATH}/tools/SWARM.notifications.sh"
                     read -p "Appuyez sur ENTRÉE pour continuer..."
                 fi
                 ;;
@@ -2393,14 +2378,14 @@ while true; do
                 ;;
             0)
                 print_success "Au revoir!"
-            exit 0
-            ;;
-        *)
+                exit 0
+                ;;
+            *)
                 print_error "Choix invalide"
-            sleep 1
-            ;;
-    esac
-done
+                sleep 1
+                ;;
+        esac
+    done
 }
 
 # Point d'entrée
