@@ -618,16 +618,12 @@ create_gmarkmail_captain() {
     GLON=$(echo "$GO"  | awk '{print $NF}')
 
     # Email GMARKMAIL : support+hostname_LAT_LON@qo-op.com (langue exclue pour la cohérence)
-    # ⚠️  Normaliser en minuscules : identique à make_NOSTRCARD.sh ligne 82 ("${PARAM,,}")
-    # Sans cette normalisation le dossier créé par make_NOSTRCARD.sh (game/nostr/<email_lower>)
-    # ne correspond pas à la variable GMARKMAIL (qui contient p.ex. "GB" en majuscule),
-    # empêchant la lecture de .secret.nostr → NPUB/HEX vides → VISA.new.sh échoue → boucle.
     local GMARKMAIL
-    GMARKMAIL="support+$(hostname)_${GLAT}_${GLON}@qo-op.com"
-    GMARKMAIL="${GMARKMAIL,,}"  # lowercase — même logique que make_NOSTRCARD.sh
+    GMARKMAIL="support+$(hostname -s)_${GLAT}_${GLON}@qo-op.com"
+    GMARKMAIL="${GMARKMAIL,,}"  # lowercase
 
     echo -e "${CYAN}  Email généré :${NC} ${WHITE}${GMARKMAIL}${NC}"
-    echo -e "${CYAN}  Hostname     :${NC} ${WHITE}$(hostname)${NC}"
+    echo -e "${CYAN}  Hostname     :${NC} ${WHITE}$(hostname -s)${NC} (FQDN: $(hostname))${NC}"
     echo -e "${CYAN}  Langue       :${NC} ${WHITE}${GLANG}${NC}"
     echo -e "${CYAN}  Position GPS :${NC} ${WHITE}${GLAT} ${GLON}${NC}"
     echo ""
