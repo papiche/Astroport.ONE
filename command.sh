@@ -1150,7 +1150,8 @@ create_multipass() {
     [[ -z "$LON" ]] && LON="0.00"
     
     print_info "Création de la MULTIPASS..."
-    if "${MY_PATH}/tools/make_NOSTRCARD.sh" "$EMAIL" "$SYSLANG" "$LAT" "$LON"; then
+    ## NOMAIL=1 : mailjet already called below with custom subject (avoid double send)
+    if NOMAIL=1 "${MY_PATH}/tools/make_NOSTRCARD.sh" "$EMAIL" "$SYSLANG" "$LAT" "$LON"; then
         ## MAILJET SEND MULTIPASS
         YOUSER=$(${HOME}/.zen/Astroport.ONE/tools/clyuseryomail.sh ${EMAIL})
         ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh --expire 0s "${EMAIL}" "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html" "UPlanet MULTIPASS - $YOUSER"

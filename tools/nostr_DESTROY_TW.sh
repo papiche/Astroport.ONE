@@ -120,11 +120,11 @@ echo "Exported ${COUNT} events to ${OUTPUT_DIR}/nostr_export.json"
 ## PREGENERATE NEXT .disco FOR RESTORATION (before creating instructions)
 echo "🔮 Pre-generating next .disco for restoration on new relay/captain..."
 # Generate new SALT and PEPPER for restoration
-# Use head -c to limit input first, avoiding infinite stream blocking
-# Read enough bytes to ensure we get 42 alphanumeric chars after filtering
-NEW_SALT=$(head -c 200 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 42)
-NEW_PEPPER=$(head -c 200 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 42)
-NEW_DISCO="/?${email}=${NEW_SALT}&nostr=${NEW_PEPPER}"
+# Max 56 chars each: DISCO format "/?salt=<56>&nostr=<56>" = 14+112 = 126 bytes ≤ 127 (ssss default limit)
+# Email excluded from DISCO (known from context) — consistent with make_NOSTRCARD.sh
+NEW_SALT=$(head -c 200 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 56)
+NEW_PEPPER=$(head -c 200 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 56)
+NEW_DISCO="/?salt=${NEW_SALT}&nostr=${NEW_PEPPER}"
 
 # Generate next HEX from new SALT/PEPPER
 NEXT_NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${NEW_SALT}" "${NEW_PEPPER}" 2>/dev/null)

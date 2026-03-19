@@ -107,12 +107,16 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     fi
 
     ############################################## PREPARE SALT PEPPER
-    # DISCO format : /?<EMAIL>=<SALT>&nostr=<PEPPER>
-    # Fixed overhead = len("/?") + len("=") + len("&nostr=") = 10 chars
-    # ssss default security level = 128 bytes max → keep DISCO ≤ 127 bytes (1 byte margin)
-    # → max combined length for SALT+PEPPER = 117 - len(EMAIL), split equally
-    _MAX_SP=$(( (117 - ${#EMAIL}) / 2 ))
-    [[ $_MAX_SP -lt 8 ]] && _MAX_SP=8   # minimum 8 chars of randomness
+    # DISCO format : /?salt=<SALT>&nostr=<PEPPER>  (email excluded — known from context)
+    # Consistent with VISA.new.sh and VOEUX.print.sh formats.
+    # Fixed overhead = len("/?salt=") + len("&nostr=") = 7+7 = 14 chars
+    # ssss default security level ≈ 128 bytes max → keep DISCO ≤ 127 bytes
+    # → max SALT+PEPPER combined = 127 - 14 = 113 → 56 chars each (1-byte margin)
+    #
+    # CRITICAL: SALT and PEPPER MUST be identical for keygen AND DISCO.
+    # ssss-combine restores DISCO → parses SALT+PEPPER → regenerates keys.
+    # If keygen used different (longer) values than DISCO, restoration would give wrong keys.
+    _MAX_SP=56
 
     if [[ -z "$SALT" ]]; then
         SALT=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w${_MAX_SP} | head -n1)
@@ -120,12 +124,14 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     if [[ -z "$PEPPER" ]]; then
         PEPPER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w${_MAX_SP} | head -n1)
     fi
-    # Truncate externally-provided SALT/PEPPER if too long
+    # Truncate to _MAX_SP: applied BEFORE keygen AND DISCO → same values everywhere → recovery works
+    [[ "${#SALT}"   -gt $_MAX_SP ]] && echo "⚠️  SALT tronqué à $_MAX_SP chars (fourni: ${#SALT}) — utilisez ≤ $_MAX_SP chars"
+    [[ "${#PEPPER}" -gt $_MAX_SP ]] && echo "⚠️  PEPPER tronqué à $_MAX_SP chars (fourni: ${#PEPPER}) — utilisez ≤ $_MAX_SP chars"
     SALT="${SALT:0:$_MAX_SP}"
     PEPPER="${PEPPER:0:$_MAX_SP}"
 
     # Creating MULTIPASS for ${EMAIL}
-    DISCO="/?${EMAIL}=${SALT}&nostr=${PEPPER}"
+    DISCO="/?salt=${SALT}&nostr=${PEPPER}"
     #~ echo "DISCO (${#DISCO} bytes) : $DISCO"
 
     ## ssss-split : Keep 2 needed over 3 (default level, DISCO always ≤ 127 bytes)
@@ -677,6 +683,20 @@ EOFNOSTR
     #~ NPUBLIC=${NPUBLIC} NPRIV=${NPRIV} EMAIL=${EMAIL} SSSSQR=${SSSSQR} \
     #~ G1PUBNOSTR=${G1PUBNOSTR} G1PUBNOSTRQR=${G1PUBNOSTRQR} VAULTNSQR=${VAULTNSQR} PROFILEQR=${PROFILEQR} NOSTRNS=${NOSTRNS} \
     #~ CAPTAINEMAIL=${CAPTAINEMAIL} MOAT=$MOATS"
+
+    ## Send MULTIPASS by email (unless caller already handles it — set NOMAIL=1 to skip)
+    if [[ -z "${NOMAIL}" ]]; then
+        MULTIPASS_ZINE="${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html"
+        MAILJET_SCRIPT="${MY_PATH}/../tools/mailjet.sh"
+        if [[ -s "$MULTIPASS_ZINE" ]] && [[ -x "$MAILJET_SCRIPT" ]]; then
+            "$MAILJET_SCRIPT" --expire 0s \
+                "${EMAIL}" \
+                "$MULTIPASS_ZINE" \
+                "MULTIPASS[Ẑ] [UPlanet:${UPLANETG1PUB:0:8}:${ZLAT}:${ZLON}]" \
+                >/dev/null 2>&1 &
+            echo "📧 MULTIPASS envoyé par email à ${EMAIL}"
+        fi
+    fi
 
     echo "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html"
 
