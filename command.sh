@@ -626,6 +626,28 @@ create_gmarkmail_captain() {
     echo -e "${CYAN}  Hostname     :${NC} ${WHITE}$(hostname)${NC}"
     echo -e "${CYAN}  Position GPS :${NC} ${WHITE}${GO}${NC}"
     echo ""
+    echo -e "${YELLOW}Appuyez sur ENTRÉE pour garder la valeur entre crochets, ou saisissez une nouvelle valeur :${NC}"
+    echo ""
+
+    # Édition de l'email GMARKMAIL
+    read -p "📧 Email [$GMARKMAIL]: " input_email
+    [[ -n "$input_email" ]] && GMARKMAIL="$input_email"
+
+    # Édition de la latitude
+    read -p "📍 Latitude [$GLAT]: " input_lat
+    [[ -n "$input_lat" ]] && GLAT="$input_lat"
+
+    # Édition de la longitude
+    read -p "📍 Longitude [$GLON]: " input_lon
+    [[ -n "$input_lon" ]] && GLON="$input_lon"
+
+    echo ""
+    echo -e "${CYAN}Valeurs retenues :${NC}"
+    echo -e "  📧 Email    : ${WHITE}${GMARKMAIL}${NC}"
+    echo -e "  📍 Latitude : ${WHITE}${GLAT}${NC}"
+    echo -e "  📍 Longitude: ${WHITE}${GLON}${NC}"
+    echo ""
+
     read -p "Confirmer la création ? (oui/non) [oui]: " confirm_gm
     confirm_gm="${confirm_gm:-oui}"
     [[ ! "$confirm_gm" =~ ^(oui|o|y|yes)$ ]] && print_info "Annulé." && return 1
