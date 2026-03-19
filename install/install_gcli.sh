@@ -107,8 +107,8 @@ fi
 ## 2a. CLONE si pas de sources locales
 ########################################################################
 if [[ ! -d "$GCLI_SRC" ]]; then
-    log "Clonage de gcli-v2s (branche nostr)..."
-    git clone -b nostr --depth 1 https://git.duniter.org/clients/rust/gcli-v2s.git "$GCLI_SRC" 2>&1 | tail -3
+    log "Clonage de g1cli (branche nostr)..."
+    git clone -b nostr --depth 1 https://git.duniter.org/clients/rust/g1cli.git "$GCLI_SRC" 2>&1 | tail -3
 fi
 
 if [[ -d "$GCLI_SRC" && -f "$GCLI_SRC/Cargo.toml" ]]; then
@@ -116,6 +116,15 @@ if [[ -d "$GCLI_SRC" && -f "$GCLI_SRC/Cargo.toml" ]]; then
 
     # S'assurer qu'on est sur la branche nostr
     cd "$GCLI_SRC"
+
+    # Migration: corriger l'URL remote si elle pointe encore vers l'ancien repo gcli-v2s
+    CURRENT_ORIGIN=$(git remote get-url origin 2>/dev/null || true)
+    G1CLI_URL="https://git.duniter.org/clients/rust/g1cli.git"
+    if [[ "$CURRENT_ORIGIN" == *"gcli-v2s"* ]]; then
+        log "Migration remote origin: gcli-v2s.git → g1cli.git"
+        git remote set-url origin "$G1CLI_URL"
+    fi
+
     CURRENT_BRANCH=$(git branch --show-current 2>/dev/null)
     if [[ "$CURRENT_BRANCH" != "nostr" ]]; then
         log "Checkout branche nostr..."
@@ -163,12 +172,14 @@ if [[ -d "$GCLI_SRC" && -f "$GCLI_SRC/Cargo.toml" ]]; then
         fi
 
         # Vérifier si le binaire en cache correspond à la version dans Cargo.toml
-        CARGO_VER=$(grep '^version' "$GCLI_SRC/Cargo.toml" | head -1 | grep -oP '[\d]+\.[\d]+\.[\d]+-\S+' || true)
+        # grep -oP extrait uniquement la valeur entre guillemets (ex: 0.8.0-g1-RC3)
+        CARGO_VER=$(grep '^version' "$GCLI_SRC/Cargo.toml" | head -1 | grep -oP '(?<=")[^"]+(?=")' || true)
         BIN_CACHED="$GCLI_SRC/target/release/g1cli"
         if [[ -x "$BIN_CACHED" ]]; then
-            BIN_VER=$("$BIN_CACHED" --version 2>/dev/null | grep -oP '[\d]+\.[\d]+\.[\d]+-\S+' || true)
+            BIN_VER=$("$BIN_CACHED" --version 2>/dev/null | grep -oP '[0-9]+\.[0-9]+\.[0-9]+-[a-zA-Z0-9-]+' || true)
+            log "Binaire en cache: $BIN_VER | Cargo.toml: $CARGO_VER"
             if [[ -n "$CARGO_VER" && -n "$BIN_VER" && "$CARGO_VER" != "$BIN_VER" ]]; then
-                log "Cache obsolète: binaire=$BIN_VER, Cargo.toml=$CARGO_VER → cargo clean -p g1cli"
+                log "Version différente → cargo clean -p g1cli pour forcer recompilation"
                 cargo clean -p g1cli 2>/dev/null || true
             fi
         fi
