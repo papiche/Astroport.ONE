@@ -2,20 +2,25 @@
 ########################################################################
 # cpscript — Regroupe un script et toutes ses dépendances dans le presse-papiers
 #
-# Analyse récursivement un script d'entrée (.sh ou .py) et inclut
-# tous les scripts qu'il appelle directement ou indirectement :
+# Analyse récursivement un script d'entrée et inclut
+# tous les scripts/styles/assets qu'il appelle directement ou indirectement :
 #
 #   Scripts SHELL : source, bash, python3, ${MY_PATH}/..., ./..., /abs/...
 #   Scripts PYTHON : from X import Y → X/Y.py
 #                    import X        → X.py
 #                    subprocess.run / os.system → script.sh/.py
 #                    string literals "script.sh", settings.PATH / "script.py"
+#   Fichiers HTML  : <link href="style.css"> → style.css
+#                    <script src="app.js">   → app.js
+#                    <img src="...">         → ignoré (binaire)
+#   Fichiers JS    : import ... from './module.js' → module.js
+#                    require('./util.js')           → util.js
 #
 # Convention : MY_PATH = répertoire du script principal (standard du projet)
 # Fallback   : recherche par basename dans le projet parent (maxdepth 3)
 #
-# Usage : cpscript [options] <script.sh|script.py>
-#   --only sh|py      filtre le type de fichier inclus dans la sortie
+# Usage : cpscript [options] <fichier.sh|.py|.html|.js|.css>
+#   --only sh|py|html|js|css  filtre le type de fichier inclus dans la sortie
 #   --depth N         profondeur max de récursion (0=illimité, défaut)
 #   --maxchars N      limite de caractères totaux (1 token ≈ 4 chars)
 #   --maxtoken N      idem en tokens (= N × 4 chars)
@@ -29,10 +34,10 @@
 
 show_help() {
     echo ""
-    echo "  Usage : $(basename "$0") [options] <script.sh|script.py>"
+    echo "  Usage : $(basename "$0") [options] <fichier.sh|.py|.html|.js|.css>"
     echo ""
-    echo "  Regroupe un script et toutes ses dépendances (.sh/.py) dans"
-    echo "  le presse-papiers, en les suivant récursivement."
+    echo "  Regroupe un fichier et toutes ses dépendances (.sh/.py/.html/.js/.css)"
+    echo "  dans le presse-papiers, en les suivant récursivement."
     echo ""
     echo "  Détection Shell :"
     echo "    source, bash, python3, \${MY_PATH}/..., ./script.sh, /abs/path.sh"
@@ -43,10 +48,20 @@ show_help() {
     echo "    subprocess.run([\"upload2ipfs.sh\"])  →  upload2ipfs.sh"
     echo "    settings.TOOLS_PATH / \"script.sh\"  →  script.sh (trouvé par basename)"
     echo ""
+    echo "  Détection HTML :"
+    echo "    <link rel=\"stylesheet\" href=\"style.css\">  →  style.css"
+    echo "    <script src=\"app.js\">                    →  app.js"
+    echo "    (URLs http:// et // ignorées — fichiers locaux uniquement)"
+    echo ""
+    echo "  Détection JS :"
+    echo "    import X from './module.js'  →  module.js"
+    echo "    require('./util.js')         →  util.js"
+    echo ""
     echo "  Options :"
-    echo "    --only sh|py   N'inclure que les .sh ou les .py dans la sortie"
+    echo "    --only sh|py|html|js|css"
+    echo "                   N'inclure que ce type de fichier dans la sortie"
     echo "    --depth N      Profondeur max de récursion (0 = illimité, défaut)"
-    echo "                   1 = script + dépendances directes, 2 = + leurs deps..."
+    echo "                   1 = fichier + dépendances directes, 2 = + leurs deps..."
     echo "    --maxchars N   Limite de caractères totaux (1 token ≈ 4 chars)"
     echo "    --maxtoken N   Limite en tokens (= N × 4 chars)"
     echo "                   Défaut : 500 000 tokens. Ex: --maxtoken 128000"
@@ -89,13 +104,16 @@ while [[ $# -gt 0 ]]; do
         --only)
             shift
             case "$1" in
-                sh|py) FILTER_EXT="$1" ;;
-                *) echo "Erreur : --only attend 'sh' ou 'py', pas '$1'."; exit 1 ;;
+                sh|py|html|js|css) FILTER_EXT="$1" ;;
+                *) echo "Erreur : --only attend 'sh', 'py', 'html', 'js' ou 'css', pas '$1'."; exit 1 ;;
             esac
             shift
             ;;
-        --only=sh) FILTER_EXT="sh"; shift ;;
-        --only=py) FILTER_EXT="py"; shift ;;
+        --only=sh)   FILTER_EXT="sh";   shift ;;
+        --only=py)   FILTER_EXT="py";   shift ;;
+        --only=html) FILTER_EXT="html"; shift ;;
+        --only=js)   FILTER_EXT="js";   shift ;;
+        --only=css)  FILTER_EXT="css";  shift ;;
         --depth)
             shift
             if [[ "$1" =~ ^[0-9]+$ ]]; then
@@ -291,11 +309,11 @@ mkdir -p "$(dirname "$CPSCRIPT_LOG")"
 _build_index() {
     local f b
     local SKIP_RE='/(dist|build|__pycache__|node_modules|\.git|\.venv|venv|env|_DOCKER|docker)/'
-    # Niveaux 0, 1, 2 dans MAIN_DIR
+    # Niveaux 0, 1, 2 dans MAIN_DIR — .sh .py .html .js .css
     for f in \
-        "$MAIN_DIR"/*.sh   "$MAIN_DIR"/*.py \
-        "$MAIN_DIR"/*/*.sh "$MAIN_DIR"/*/*.py \
-        "$MAIN_DIR"/*/*/*.sh "$MAIN_DIR"/*/*/*.py; do
+        "$MAIN_DIR"/*.sh    "$MAIN_DIR"/*.py    "$MAIN_DIR"/*.html  "$MAIN_DIR"/*.js    "$MAIN_DIR"/*.css \
+        "$MAIN_DIR"/*/*.sh  "$MAIN_DIR"/*/*.py  "$MAIN_DIR"/*/*.html "$MAIN_DIR"/*/*.js  "$MAIN_DIR"/*/*.css \
+        "$MAIN_DIR"/*/*/*.sh "$MAIN_DIR"/*/*/*.py "$MAIN_DIR"/*/*/*.html "$MAIN_DIR"/*/*/*.js "$MAIN_DIR"/*/*/*.css; do
         [ -f "$f" ] || continue
         [[ "$f" =~ $SKIP_RE ]] && continue
         b="${f##*/}"
@@ -311,8 +329,8 @@ _build_index() {
     done
     # Projets frères : niveaux 1 et 2
     for f in \
-        "$MAIN_DIR"/../*/*.sh   "$MAIN_DIR"/../*/*.py \
-        "$MAIN_DIR"/../*/*/*.sh "$MAIN_DIR"/../*/*/*.py; do
+        "$MAIN_DIR"/../*/*.sh    "$MAIN_DIR"/../*/*.py    "$MAIN_DIR"/../*/*.html  "$MAIN_DIR"/../*/*.js    "$MAIN_DIR"/../*/*.css \
+        "$MAIN_DIR"/../*/*/*.sh  "$MAIN_DIR"/../*/*/*.py  "$MAIN_DIR"/../*/*/*.html "$MAIN_DIR"/../*/*/*.js  "$MAIN_DIR"/../*/*/*.css; do
         [ -f "$f" ] || continue
         [[ "$f" =~ $SKIP_RE ]] && continue
         b="${f##*/}"
@@ -415,15 +433,55 @@ PYEOF
     } | sort -u
 }
 
+# Extraction pour les fichiers HTML (.html) — dépendances CSS, JS et HTML locales
+extract_html_deps() {
+    local FILE="$1"
+    {
+        # <link href="style.css"> ou <link rel="stylesheet" href="...">
+        grep -oP '(?<=href=")[^"]*\.css(?=")' "$FILE" 2>/dev/null
+        grep -oP "(?<=href=')[^']*\.css(?=')" "$FILE" 2>/dev/null
+        # <link href="other.html"> — imports HTML
+        grep -oP '(?<=href=")[^"]*\.html(?=")' "$FILE" 2>/dev/null
+        grep -oP "(?<=href=')[^']*\.html(?=')" "$FILE" 2>/dev/null
+        # <script src="app.js">
+        grep -oP '(?<=src=")[^"]*\.js(?=")' "$FILE" 2>/dev/null
+        grep -oP "(?<=src=')[^']*\.js(?=')" "$FILE" 2>/dev/null
+    } 2>/dev/null \
+    | grep -v '^https\?://' \
+    | grep -v '^//' \
+    | grep -v '^data:' \
+    | sort -u | head -200
+}
+
+# Extraction pour les fichiers JavaScript (.js / .mjs) — imports ES6 et require
+extract_js_deps() {
+    local FILE="$1"
+    {
+        # import X from './module.js'  ou  import './side-effect.js'
+        grep -oP "(?<=from ['\"])[^'\"]+\.(?:js|mjs|ts)(?=['\"])" "$FILE" 2>/dev/null
+        grep -oP "(?<=import ['\"])[^'\"]+\.(?:js|mjs|ts)(?=['\"])" "$FILE" 2>/dev/null
+        # require('./util.js')
+        grep -oP "(?<=require\(['\"])[^'\"]+\.(?:js|mjs)(?=['\"])" "$FILE" 2>/dev/null
+        # CSS dans JS (style import : import './style.css')
+        grep -oP "(?<=from ['\"])[^'\"]+\.css(?=['\"])" "$FILE" 2>/dev/null
+        grep -oP "(?<=import ['\"])[^'\"]+\.css(?=['\"])" "$FILE" 2>/dev/null
+    } 2>/dev/null \
+    | grep -v '^https\?://' \
+    | grep -v '^//' \
+    | sort -u | head -200
+}
+
 # Dispatcher selon le type de fichier
 extract_called_scripts() {
     local FILE="$1"
     local EXT="${FILE##*.}"
-    if [ "$EXT" = "py" ]; then
-        extract_python_deps "$FILE"
-    else
-        extract_shell_deps "$FILE"
-    fi
+    case "$EXT" in
+        py)   extract_python_deps "$FILE" ;;
+        html) extract_html_deps   "$FILE" ;;
+        js|mjs) extract_js_deps   "$FILE" ;;
+        css)  : ;;   # CSS : pas de dépendances récursives (on pourrait ajouter @import)
+        *)    extract_shell_deps  "$FILE" ;;
+    esac
 }
 
 # Extraction d'une route FastAPI spécifique depuis un fichier Python
@@ -800,9 +858,9 @@ if [ "$MAX_CHARS" -gt 0 ]; then
         { echo ""
           echo "⚠️  Limite dépassée : ~${TOTAL_TOKENS} tokens > ${MAX_TOKENS} tokens demandés."
           echo "   Relancez avec une combinaison de :"
-          echo "     --depth N      (ex: --depth 1 ou --depth 2)"
-          echo "     --only sh|py   (filtrer par type)"
-          echo "     --route <pat>  (extraire une route spécifique)"
+          echo "     --depth N                   (ex: --depth 1 ou --depth 2)"
+          echo "     --only sh|py|html|js|css    (filtrer par type)"
+          echo "     --route <pat>               (extraire une route spécifique)"
           echo "     --maxtoken ${TOTAL_TOKENS}  (relancer avec la taille découverte)"
         } >&2
     # Pas de message si dans la limite (c'est le comportement normal)

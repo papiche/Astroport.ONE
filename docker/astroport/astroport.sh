@@ -125,7 +125,7 @@ DOTENV
             GMARKMAIL="${CAPTAIN_EMAIL}"
             echo ">>> Captain email from env: ${GMARKMAIL}"
         else
-            GMARKMAIL="support+$(echo "$(hostname) $GO" | sed 's| |-|g')@qo-op.com"
+            GMARKMAIL="support+$(echo "$(hostname) $GO" | sed 's| |_|g')@qo-op.com"
             echo ">>> Captain email auto-generated: ${GMARKMAIL}"
         fi
 

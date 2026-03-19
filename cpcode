@@ -72,7 +72,6 @@ for EXT in "${EXTENSIONS[@]}"; do
         echo "Ajout de : $FILE"
 
         # Lire le contenu (avec limite optionnelle par fichier)
-        local CONTENT
         if [ "$MAX_FILE_SIZE" -gt 0 ]; then
             CONTENT=$(head -c "$MAX_FILE_SIZE" "$FILE")
             local FULL_SIZE

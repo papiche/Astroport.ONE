@@ -145,7 +145,7 @@ echo "MJ activation"
 ipfs --timeout 30s cat /ipfs/QmVy7FKd1MGZqee4b7B5jmBKNgTJBvKKkoDhodnJWy23oN > ~/.zen/MJ_APIKEY
 source ${HOME}/.zen/Astroport.ONE/tools/my.sh
 GO=$(my_LatLon) ## FR 34.46 1.51 # (country lat lon) with 0.01° precision
-GMARKMAIL="support+$(echo $(hostname) $GO | sed "s| |-|g")@qo-op.com" 
+GMARKMAIL="support+$(echo $(hostname) $GO | sed "s| |_|g")@qo-op.com" 
 # ex: support+nexus-55-FR-34.46-1.51@qo-op.com
 
 ##########################################################

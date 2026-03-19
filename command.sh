@@ -139,7 +139,7 @@ check_services_status() {
     
     if [[ -f "$heartbox_cache" ]]; then
         local cache_age=$(( $(date +%s) - $(stat -c %Y "$heartbox_cache" 2>/dev/null || echo 0) ))
-        if [[ $cache_age -lt 300 ]]; then  # 5 minutes = 300 secondes
+        if [[ $cache_age -lt 60 ]]; then  # 60 secondes pour réactivité immédiate
             use_cache=true
         fi
     fi
@@ -183,10 +183,14 @@ check_services_status() {
             astroport_active=true
         fi
 
-        # UPassport API - simple port check
-        if ss -tlnp 2>/dev/null | grep -q ":54321 "; then
+        # UPassport API - vérification port 54321 (sans espace forcé pour compatibilité ss)
+        if ss -tlnp 2>/dev/null | grep -q ":54321"; then
             upassport_active=true
-            upassport_proc=$(ss -tlnp 2>/dev/null | grep ":54321 " | sed -n 's/.*users:((("\([^"]*\)".*/\1/p' | head -n1)
+            upassport_proc=$(ss -tlnp 2>/dev/null | grep ":54321" | sed -n 's/.*users:((("\([^"]*\)".*/\1/p' | head -n1)
+        elif pgrep -f "54321.py" >/dev/null 2>&1; then
+            # Fallback: détection directe du processus Python UPassport
+            upassport_active=true
+            upassport_proc="54321.py"
         else
             upassport_active=false
             upassport_proc=""
@@ -197,10 +201,14 @@ check_services_status() {
             nextcloud_active=true
         fi
 
-        # strfry NOSTR relay - simple port check
-        if ss -tlnp 2>/dev/null | grep -q ":7777 "; then
+        # strfry NOSTR relay - vérification port 7777 (sans espace forcé) + fallback process
+        if ss -tlnp 2>/dev/null | grep -q ":7777"; then
             strfry_active=true
-            strfry_proc=$(ss -tlnp 2>/dev/null | grep ":7777 " | sed -n 's/.*users:((("\([^"]*\)".*/\1/p' | head -n1)
+            strfry_proc=$(ss -tlnp 2>/dev/null | grep ":7777" | sed -n 's/.*users:((("\([^"]*\)".*/\1/p' | head -n1)
+        elif pgrep -f "strfry" >/dev/null 2>&1; then
+            # Fallback: détection directe du processus strfry
+            strfry_active=true
+            strfry_proc="strfry"
         else
             strfry_active=false
             strfry_proc=""

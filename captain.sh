@@ -247,27 +247,17 @@ create_zen_card() {
         echo -e "${CYAN}Nous allons utiliser les informations de votre compte MULTIPASS pour créer votre ZEN Card.${NC}"
         echo ""
         echo -e "${YELLOW}Informations récupérées de votre MULTIPASS:${NC}"
-        
-        if [[ -n "$npub" ]]; then
-            echo -e "  🔑 NPUB: ${GREEN}$npub${NC}"
-        fi
-        if [[ -n "$hex" ]]; then
-            echo -e "  🟩 HEX: ${GREEN}$hex${NC}"
-        fi
-        echo -e "  📍 Latitude: ${GREEN}$lat${NC}"
+        [[ -n "$npub" ]] && echo -e "  🔑 NPUB: ${GREEN}$npub${NC}"
+        [[ -n "$hex"  ]] && echo -e "  🟩 HEX:  ${GREEN}$hex${NC}"
+        echo -e "  📍 Latitude:  ${GREEN}$lat${NC}"
         echo -e "  📍 Longitude: ${GREEN}$lon${NC}"
-        echo -e "  📧 Email: ${GREEN}$email${NC}"
+        echo -e "  📧 Email:     ${GREEN}$email${NC}"
         echo ""
-        echo -e "${CYAN}Vous pouvez maintenant créer votre ZEN Card avec ces informations.${NC}"
-        echo ""
-        
-        if [[ "$AUTO_MODE" == "false" ]]; then
-            read -p "Voulez-vous utiliser ces informations pour créer la ZEN Card ? (oui/non): " use_multipass_info
-            
-            if [[ "$use_multipass_info" != "oui" && "$use_multipass_info" != "o" && "$use_multipass_info" != "y" && "$use_multipass_info" != "yes" ]]; then
-                print_info "Création de la ZEN Card annulée"
-                return 1
-            fi
+        read -p "Voulez-vous utiliser ces informations pour créer la ZEN Card ? (oui/non): " use_multipass_info
+        if [[ "$use_multipass_info" != "oui" && "$use_multipass_info" != "o" && \
+              "$use_multipass_info" != "y"   && "$use_multipass_info" != "yes" ]]; then
+            print_info "Création de la ZEN Card annulée"
+            return 1
         fi
     fi
     
@@ -817,6 +807,11 @@ show_captain_details() {
     
     print_section "DÉTAILS DU CAPITAINE"
     
+    # Initialisation explicite pour éviter les références hors-scope
+    local multipass_g1pub=""
+    local multipass_balance=0
+    local multipass_zen=0
+    
     # Informations ZEN Card du capitaine (historique des parts sociales)
     local captain_g1pub=$(cat ~/.zen/game/players/$captain_email/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
     local captain_balance=$(get_wallet_balance "$captain_g1pub")
@@ -1241,7 +1236,7 @@ show_cooperative_config_menu() {
         
         # Statut des clés API (masquées)
         echo -e "${BLUE}🔐 Clés API (chiffrées):${NC}"
-        local api_keys=("OCAPIKEY" "OCAPIKEY" "PLANTNET_API_KEY")
+        local api_keys=("OCAPIKEY" "MAILJET_APIKEY" "PLANTNET_API_KEY")
         for key in "${api_keys[@]}"; do
             local value=$(coop_config_get "$key" 2>/dev/null)
             if [[ -n "$value" && "$value" != "" ]]; then
@@ -1369,9 +1364,9 @@ configure_api_key() {
     echo -e "${CYAN}Les clés API sont automatiquement chiffrées avec \$UPLANETNAME.${NC}"
     echo ""
     echo -e "${WHITE}Clés API disponibles:${NC}"
-    echo "  1. OCAPIKEY"
-    echo "  2. OCAPIKEY"
-    echo "  3. PLANTNET_API_KEY"
+    echo "  1. OCAPIKEY       (OpenCollective API key)"
+    echo "  2. MAILJET_APIKEY (Service email Mailjet)"
+    echo "  3. PLANTNET_API_KEY (Identification plantes)"
     echo "  4. Autre (personnalisée)"
     echo ""
     
@@ -1380,12 +1375,12 @@ configure_api_key() {
     local key_name=""
     case $api_choice in
         1) key_name="OCAPIKEY" ;;
-        2) key_name="OCAPIKEY" ;;
+        2) key_name="MAILJET_APIKEY" ;;
         3) key_name="PLANTNET_API_KEY" ;;
-        4) 
+        4)
             read -p "Nom de la clé API: " key_name
             ;;
-        *) 
+        *)
             print_error "Choix invalide"
             return 1
             ;;
@@ -2387,35 +2382,32 @@ embark_captain() {
 
 # Fonction principale
 main() {
-    # Parser les arguments
     parse_arguments "$@"
-    
-    # Vérifier si le capitaine est configuré
+
+    # Capitaine configuré → tableau de bord
     if check_captain_configured; then
-        # Capitaine configuré - afficher le tableau de bord
         show_captain_dashboard
-    else
-        # Capitaine non configuré - proposer la création
-        if ! check_first_time_usage; then
-            # Il y a des cartes mais pas de capitaine configuré
-            print_warning "Des comptes existent mais aucun Capitaine n'est configuré"
-            echo ""
-            if [[ "$AUTO_MODE" == "false" ]]; then
-                read -p "Voulez-vous configurer un compte Capitaine maintenant ? (oui/non): " setup_captain
-                if [[ "$setup_captain" == "oui" || "$setup_captain" == "o" || "$setup_captain" == "y" || "$setup_captain" == "yes" ]]; then
-                    embark_captain
-                else
-                    print_info "Configuration reportée. Utilisez './captain.sh' pour configurer votre compte Capitaine."
-                fi
-            else
-                # Mode automatique : lancer l'embarquement
-                print_info "Configuration automatique du compte Capitaine..."
-                embark_captain
-            fi
-        else
-            # Première utilisation - procéder à l'embarquement
+        return
+    fi
+
+    # Pas de capitaine configuré : proposer l'embarquement
+    # (qu'il existe déjà des cartes ou non, le chemin est le même)
+    if ! check_first_time_usage; then
+        print_warning "Des comptes existent mais aucun Capitaine n'est configuré"
+        echo ""
+    fi
+
+    if [[ "$AUTO_MODE" == "false" ]]; then
+        read -p "Voulez-vous configurer un compte Capitaine maintenant ? (oui/non): " setup_captain
+        if [[ "$setup_captain" == "oui" || "$setup_captain" == "o" || \
+              "$setup_captain" == "y"   || "$setup_captain" == "yes" ]]; then
             embark_captain
+        else
+            print_info "Configuration reportée. Relancez './captain.sh' quand vous êtes prêt."
         fi
+    else
+        print_info "Mode automatique : lancement de l'embarquement du Capitaine..."
+        embark_captain
     fi
 }
 
