@@ -110,19 +110,23 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     # DISCO format : /?salt=<SALT>&nostr=<PEPPER>  (email excluded — known from context)
     # Consistent with VISA.new.sh and VOEUX.print.sh formats.
     # Fixed overhead = len("/?salt=") + len("&nostr=") = 7+7 = 14 chars
-    # ssss default security level ≈ 128 bytes max → keep DISCO ≤ 127 bytes
-    # → max SALT+PEPPER combined = 127 - 14 = 113 → 56 chars each (1-byte margin)
     #
     # CRITICAL: SALT and PEPPER MUST be identical for keygen AND DISCO.
     # ssss-combine restores DISCO → parses SALT+PEPPER → regenerates keys.
     # If keygen used different (longer) values than DISCO, restoration would give wrong keys.
-    _MAX_SP=56
+    #
+    # QR CODE WEIGHT optimisation :
+    # ssss share size ∝ ssss level ∝ len(DISCO)
+    # Auto-generated : _MAX_RANDOM=24 chars → DISCO=62 bytes → level≈512 → ~128 hex → light QR
+    # User-provided  : _MAX_SP=56 chars max → DISCO=126 bytes → level≈1024 → heavier QR (user choice)
+    _MAX_RANDOM=24   # for auto-generated SALT/PEPPER → lightweight QR code
+    _MAX_SP=56       # hard limit for user-provided SALT/PEPPER (ssss 127-byte ceiling)
 
     if [[ -z "$SALT" ]]; then
-        SALT=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w${_MAX_SP} | head -n1)
+        SALT=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w${_MAX_RANDOM} | head -n1)
     fi
     if [[ -z "$PEPPER" ]]; then
-        PEPPER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w${_MAX_SP} | head -n1)
+        PEPPER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w${_MAX_RANDOM} | head -n1)
     fi
     # Truncate to _MAX_SP: applied BEFORE keygen AND DISCO → same values everywhere → recovery works
     [[ "${#SALT}"   -gt $_MAX_SP ]] && echo "⚠️  SALT tronqué à $_MAX_SP chars (fourni: ${#SALT}) — utilisez ≤ $_MAX_SP chars"
