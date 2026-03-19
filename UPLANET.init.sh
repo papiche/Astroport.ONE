@@ -456,24 +456,109 @@ check_and_init_cooperative_config() {
         
     else
         echo -e "${YELLOW}⚠️  Aucune configuration coopérative trouvée${NC}"
+        echo ""
+        echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${CYAN}║        🛠️  CONFIGURATION COOPÉRATIVE INTERACTIVE                ║${NC}"
+        echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════╝${NC}"
+        echo ""
+        echo -e "${BLUE}Voulez-vous configurer les paramètres coopératifs maintenant ?${NC}"
+        echo -e "  ${GREEN}[y]${NC} Configurer interactivement (recommandé pour 1er démarrage)"
+        echo -e "  ${YELLOW}[n]${NC} Passer avec les valeurs par défaut"
+        echo ""
+        read -r -t 30 -p "Votre choix (y/N) : " _coop_choice
+        echo ""
+
+        # Initialize default config first (always needed)
         echo -e "${BLUE}   Initialisation de la configuration par défaut...${NC}"
-        
-        # Initialize default config
         coop_config_init 2>/dev/null
-        
-        if [[ $? -eq 0 ]]; then
+        _coop_init_ok=$?
+
+        if [[ $_coop_init_ok -eq 0 ]]; then
             echo -e "${GREEN}✅ Configuration coopérative initialisée${NC}"
+        else
+            echo -e "${RED}❌ Échec de l'initialisation de la configuration${NC}"
+            return 1
+        fi
+
+        if [[ "${_coop_choice,,}" == "y" ]]; then
             echo ""
-            echo -e "${YELLOW}📝 CONFIGURATION OPENCOLLECTIVE (optionnel):${NC}"
-            echo -e "${BLUE}   Pour configurer le token OpenCollective, exécutez:${NC}"
+            echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+            echo -e "${YELLOW}📋 PARAMÈTRES ÉCONOMIQUES${NC}"
+            echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+            # PAF
+            read -r -t 30 -p "$(echo -e "${BLUE}PAF hebdomadaire (défaut: 14 Ẑen) :${NC} ")" _input_paf
+            if [[ -n "$_input_paf" && "$_input_paf" =~ ^[0-9]+$ ]]; then
+                coop_config_set PAF "$_input_paf" 2>/dev/null \
+                    && echo -e "${GREEN}  ✓ PAF = $_input_paf Ẑen${NC}"
+            else
+                echo -e "${YELLOW}  → PAF = 14 Ẑen (défaut)${NC}"
+            fi
+
+            # NCARD
+            read -r -t 30 -p "$(echo -e "${BLUE}Coût hebdo MULTIPASS NCARD (défaut: 1 Ẑen) :${NC} ")" _input_ncard
+            if [[ -n "$_input_ncard" && "$_input_ncard" =~ ^[0-9]+$ ]]; then
+                coop_config_set NCARD "$_input_ncard" 2>/dev/null \
+                    && echo -e "${GREEN}  ✓ NCARD = $_input_ncard Ẑen${NC}"
+            else
+                echo -e "${YELLOW}  → NCARD = 1 Ẑen (défaut)${NC}"
+            fi
+
+            # ZCARD
+            read -r -t 30 -p "$(echo -e "${BLUE}Coût hebdo ZEN Card ZCARD (défaut: 4 Ẑen) :${NC} ")" _input_zcard
+            if [[ -n "$_input_zcard" && "$_input_zcard" =~ ^[0-9]+$ ]]; then
+                coop_config_set ZCARD "$_input_zcard" 2>/dev/null \
+                    && echo -e "${GREEN}  ✓ ZCARD = $_input_zcard Ẑen${NC}"
+            else
+                echo -e "${YELLOW}  → ZCARD = 4 Ẑen (défaut)${NC}"
+            fi
+
+            echo ""
+            echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+            echo -e "${YELLOW}🌐 OPENCOLLECTIVE (optionnel — pour conversion Ẑen → €)${NC}"
+            echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+            echo -e "${BLUE}   Obtenez votre token sur :${NC}"
+            echo -e "   ${CYAN}https://opencollective.com/dashboard/monnaie-libre/admin/for-developers${NC}"
+            echo ""
+
+            # OCSLUG
+            read -r -t 30 -p "$(echo -e "${BLUE}Slug OpenCollective (ex: monnaie-libre) :${NC} ")" _input_ocslug
+            if [[ -n "$_input_ocslug" ]]; then
+                coop_config_set OCSLUG "$_input_ocslug" 2>/dev/null \
+                    && echo -e "${GREEN}  ✓ OCSLUG = $_input_ocslug${NC}"
+            else
+                echo -e "${YELLOW}  → OCSLUG non configuré (PAF burn désactivé)${NC}"
+            fi
+
+            # OCAPIKEY (sensitive — auto-encrypted)
+            read -r -t 60 -s -p "$(echo -e "${BLUE}Token API OpenCollective (laissez vide pour passer) :${NC} ")" _input_ockey
+            echo ""
+            if [[ -n "$_input_ockey" ]]; then
+                coop_config_set OCAPIKEY "$_input_ockey" 2>/dev/null \
+                    && echo -e "${GREEN}  ✓ OCAPIKEY configuré (chiffré)${NC}"
+            else
+                echo -e "${YELLOW}  → OCAPIKEY non configuré (conversion manuelle requise)${NC}"
+            fi
+
+            # PLANTNET_API_KEY (sensitive — auto-encrypted)
+            read -r -t 30 -s -p "$(echo -e "${BLUE}Clé API PlantNet (laissez vide pour passer) :${NC} ")" _input_plantnet
+            echo ""
+            if [[ -n "$_input_plantnet" ]]; then
+                coop_config_set PLANTNET_API_KEY "$_input_plantnet" 2>/dev/null \
+                    && echo -e "${GREEN}  ✓ PLANTNET_API_KEY configuré (chiffré)${NC}"
+            else
+                echo -e "${YELLOW}  → PLANTNET_API_KEY non configuré${NC}"
+            fi
+
+            echo ""
+            echo -e "${GREEN}✅ Configuration coopérative personnalisée enregistrée.${NC}"
+        else
+            echo -e "${YELLOW}ℹ️  Configuration par défaut conservée. Pour modifier plus tard :${NC}"
             echo ""
             echo -e "   ${CYAN}source ${config_helper}${NC}"
+            echo -e "   ${CYAN}coop_config_set PAF 14${NC}"
+            echo -e "   ${CYAN}coop_config_set OCSLUG \"monnaie-libre\"${NC}"
             echo -e "   ${CYAN}coop_config_set OCAPIKEY \"votre_token\"${NC}"
-            echo ""
-            echo -e "${BLUE}   Obtenez votre token sur:${NC}"
-            echo -e "   ${CYAN}https://opencollective.com/dashboard/monnaie-libre/admin/for-developers${NC}"
-        else
-            echo -e "${RED}❌ Échec de l'initialisation${NC}"
         fi
     fi
     
