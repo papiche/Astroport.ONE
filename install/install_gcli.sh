@@ -21,6 +21,8 @@ loge() { echo "$LOG_TAG ERROR: $*" >&2; }
 
 GCLI_SRC="${GCLI_SRC:-$HOME/workspace/AAA/gcli-v2s}"
 GCLI_BIN="$HOME/.local/bin/gcli"
+# Fallback binaire pré-compilé : RC2 (RC3 pas encore uploadé — compilation source préférée)
+# Mettre à jour ces URLs dès que les binaires RC3 seront disponibles sur GitLab.
 GCLI_VERSION="0.8.0-g1-RC2"
 GCLI_URL_AMD64="https://git.duniter.org/-/project/604/uploads/bb4d3ee2030db6d09d954c469870e1ef/g1cli-v0.8.0-g1-RC2-linux-amd64.tar.gz"
 GCLI_URL_ARM64="https://git.duniter.org/-/project/604/uploads/3d2ea125ba58e71cf5919a33c8329f24/g1cli-v0.8.0-g1-RC2-linux-arm64.tar.gz"
@@ -160,9 +162,11 @@ if [[ -d "$GCLI_SRC" && -f "$GCLI_SRC/Cargo.toml" ]]; then
             log "Rust mis à jour: $RUST_VER"
         fi
 
-        # Compiler en release
-        log "Compilation gcli (release) depuis branche nostr..."
-        cargo build --release 2>&1 | tail -5
+        # Compiler en release avec la feature g1 (réseau Ğ1 mainnet)
+        # La feature g1 est déjà la default dans Cargo.toml [features] default=["g1"]
+        # mais on la spécifie explicitement pour garantir la robustesse si le défaut change
+        log "Compilation gcli (release, --features g1) depuis branche nostr..."
+        cargo build --release --features g1 2>&1 | tail -5
         RC=$?
 
         if [[ $RC -eq 0 && -x "$GCLI_SRC/target/release/g1cli" ]]; then
