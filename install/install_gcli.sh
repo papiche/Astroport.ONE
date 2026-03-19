@@ -114,16 +114,18 @@ fi
 if [[ -d "$GCLI_SRC" && -f "$GCLI_SRC/Cargo.toml" ]]; then
     log "Sources gcli trouvées dans $GCLI_SRC"
 
+    # Migration: si le clone vient de gcli-v2s.git (ancien repo), le supprimer et recloner
+    # depuis g1cli.git pour avoir un historique propre (évite les commits RC2 fantômes)
+    G1CLI_URL="https://git.duniter.org/clients/rust/g1cli.git"
+    CURRENT_ORIGIN=$(git -C "$GCLI_SRC" remote get-url origin 2>/dev/null || true)
+    if [[ "$CURRENT_ORIGIN" == *"gcli-v2s"* ]]; then
+        log "Ancien clone gcli-v2s détecté → suppression et reclonage depuis g1cli.git"
+        rm -rf "$GCLI_SRC"
+        git clone -b nostr --depth 1 "$G1CLI_URL" "$GCLI_SRC" 2>&1 | tail -3
+    fi
+
     # S'assurer qu'on est sur la branche nostr
     cd "$GCLI_SRC"
-
-    # Migration: corriger l'URL remote si elle pointe encore vers l'ancien repo gcli-v2s
-    CURRENT_ORIGIN=$(git remote get-url origin 2>/dev/null || true)
-    G1CLI_URL="https://git.duniter.org/clients/rust/g1cli.git"
-    if [[ "$CURRENT_ORIGIN" == *"gcli-v2s"* ]]; then
-        log "Migration remote origin: gcli-v2s.git → g1cli.git"
-        git remote set-url origin "$G1CLI_URL"
-    fi
 
     CURRENT_BRANCH=$(git branch --show-current 2>/dev/null)
     if [[ "$CURRENT_BRANCH" != "nostr" ]]; then
