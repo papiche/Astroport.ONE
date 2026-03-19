@@ -61,10 +61,8 @@ JSON_FILE_COUNT=0
 # ── Traitement des fichiers ───────────────────────────────────────────────
 for EXT in "${EXTENSIONS[@]}"; do
     while IFS= read -r FILE; do
-        # Vérifier que c'est un fichier texte (entête, sans fork file)
-        local_header=""
-        IFS= read -r local_header < "$FILE" 2>/dev/null
-        if [[ "$local_header" == *$'\0'* ]]; then
+        # Vérifier que c'est un fichier texte (grep -I échoue sur les binaires)
+        if ! grep -Iq . "$FILE" 2>/dev/null; then
             echo "  [IGNORÉ - binaire] $FILE"
             continue
         fi
