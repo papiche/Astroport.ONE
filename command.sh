@@ -601,40 +601,49 @@ create_gmarkmail_captain() {
     # Générer la position GPS (my_LatLon ou fallback ipinfo)
     local GO
     GO=$(my_LatLon 2>/dev/null)
-    if [[ -z "$GO" || "$GO" == "0.00 0.00" ]]; then
+    # my_LatLon retourne "LANG LAT LON" (3 champs) — fallback au même format
+    if [[ -z "$GO" || "$GO" == "0.00 0.00" || "$GO" =~ ^[0-9] ]]; then
         local GEO_INFO
         GEO_INFO=$(curl -s --connect-timeout 5 ipinfo.io/json 2>/dev/null)
         local auto_lat auto_lon
         auto_lat=$(echo "$GEO_INFO" | jq -r '.loc // "0.00"' | cut -d',' -f1 2>/dev/null)
         auto_lon=$(echo "$GEO_INFO" | jq -r '.loc // "0.00"' | cut -d',' -f2 2>/dev/null)
-        GO="${auto_lat:-0.00} ${auto_lon:-0.00}"
+        GO="${SYSLANG:-fr} ${auto_lat:-0.00} ${auto_lon:-0.00}"
     fi
 
-    # Email GMARKMAIL : support+hostname-GPS@qo-op.com
+    # GO = "LANG LAT LON" — extraire les 3 champs
+    local GLANG GLAT GLON
+    GLANG=$(echo "$GO" | awk '{print $1}')
+    GLAT=$(echo "$GO"  | awk '{print $2}')
+    GLON=$(echo "$GO"  | awk '{print $NF}')
+
+    # Email GMARKMAIL : support+hostname_LAT_LON@qo-op.com (langue exclue pour la cohérence)
     # ⚠️  Normaliser en minuscules : identique à make_NOSTRCARD.sh ligne 82 ("${PARAM,,}")
     # Sans cette normalisation le dossier créé par make_NOSTRCARD.sh (game/nostr/<email_lower>)
     # ne correspond pas à la variable GMARKMAIL (qui contient p.ex. "GB" en majuscule),
     # empêchant la lecture de .secret.nostr → NPUB/HEX vides → VISA.new.sh échoue → boucle.
     local GMARKMAIL
-    GMARKMAIL="support+$(echo "$(hostname) $GO" | sed "s| |_|g")@qo-op.com"
+    GMARKMAIL="support+$(hostname)_${GLAT}_${GLON}@qo-op.com"
     GMARKMAIL="${GMARKMAIL,,}"  # lowercase — même logique que make_NOSTRCARD.sh
-    local GLAT GLON
-    GLAT=$(echo "$GO" | awk '{print $1}')
-    GLON=$(echo "$GO"  | awk '{print $NF}')
 
     echo -e "${CYAN}  Email généré :${NC} ${WHITE}${GMARKMAIL}${NC}"
     echo -e "${CYAN}  Hostname     :${NC} ${WHITE}$(hostname)${NC}"
-    echo -e "${CYAN}  Position GPS :${NC} ${WHITE}${GO}${NC}"
+    echo -e "${CYAN}  Langue       :${NC} ${WHITE}${GLANG}${NC}"
+    echo -e "${CYAN}  Position GPS :${NC} ${WHITE}${GLAT} ${GLON}${NC}"
     echo ""
     echo -e "${YELLOW}Appuyez sur ENTRÉE pour garder la valeur entre crochets, ou saisissez une nouvelle valeur :${NC}"
     echo ""
 
+    # Édition de la langue
+    read -p "🌐 Langue    [$GLANG]: " input_lang
+    [[ -n "$input_lang" ]] && GLANG="$input_lang"
+
     # Édition de l'email GMARKMAIL
-    read -p "📧 Email [$GMARKMAIL]: " input_email
+    read -p "📧 Email     [$GMARKMAIL]: " input_email
     [[ -n "$input_email" ]] && GMARKMAIL="$input_email"
 
     # Édition de la latitude
-    read -p "📍 Latitude [$GLAT]: " input_lat
+    read -p "📍 Latitude  [$GLAT]: " input_lat
     [[ -n "$input_lat" ]] && GLAT="$input_lat"
 
     # Édition de la longitude
@@ -643,9 +652,10 @@ create_gmarkmail_captain() {
 
     echo ""
     echo -e "${CYAN}Valeurs retenues :${NC}"
-    echo -e "  📧 Email    : ${WHITE}${GMARKMAIL}${NC}"
-    echo -e "  📍 Latitude : ${WHITE}${GLAT}${NC}"
-    echo -e "  📍 Longitude: ${WHITE}${GLON}${NC}"
+    echo -e "  🌐 Langue    : ${WHITE}${GLANG}${NC}"
+    echo -e "  📧 Email     : ${WHITE}${GMARKMAIL}${NC}"
+    echo -e "  📍 Latitude  : ${WHITE}${GLAT}${NC}"
+    echo -e "  📍 Longitude : ${WHITE}${GLON}${NC}"
     echo ""
 
     read -p "Confirmer la création ? (oui/non) [oui]: " confirm_gm
@@ -659,7 +669,7 @@ create_gmarkmail_captain() {
 
     # 1. MULTIPASS
     print_info "Création du MULTIPASS ${GMARKMAIL}..."
-    "${MY_PATH}/tools/make_NOSTRCARD.sh" "${GMARKMAIL}" "${SYSLANG:-fr}" "$GLAT" "$GLON"
+    "${MY_PATH}/tools/make_NOSTRCARD.sh" "${GMARKMAIL}" "${GLANG:-${SYSLANG:-fr}}" "$GLAT" "$GLON"
     local _rc_nostr=$?
     echo ""
     read -p "--- Appuyez sur ENTRÉE pour continuer (MULTIPASS terminé, code=$_rc_nostr)... " _dummy
@@ -690,7 +700,7 @@ create_gmarkmail_captain() {
     echo ""
 
     print_info "Création de la ZEN Card..."
-    "${MY_PATH}/RUNTIME/VISA.new.sh" "$ZSALT" "$ZPEPS" "${GMARKMAIL}" "UPlanet" "${SYSLANG:-fr}" "$GLAT" "$GLON" "$NPUB" "$HEX"
+    "${MY_PATH}/RUNTIME/VISA.new.sh" "$ZSALT" "$ZPEPS" "${GMARKMAIL}" "UPlanet" "${GLANG:-${SYSLANG:-fr}}" "$GLAT" "$GLON" "$NPUB" "$HEX"
     local _rc_visa=$?
     echo ""
     read -p "--- Appuyez sur ENTRÉE pour continuer (ZEN Card terminée, code=$_rc_visa)... " _dummy
