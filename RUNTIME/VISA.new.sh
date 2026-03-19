@@ -578,16 +578,11 @@ echo "--- PLAYER : ${PLAYER} - DATA PROTOCOL LAYER LOADED";
 #################################################################
 
 #################################################
-# !! TODO !! # DEMO MODE. REMOVE FOR PRODUCTION - RECALCULATE AND RENEW AFTER EACH NEW KEY DELEGATION
 echo "$PASS" > ~/.zen/game/players/${PLAYER}/.pass
 chmod 600 ~/.zen/game/players/${PLAYER}/.pass
 # ~/.zen/game/players/${PLAYER}/secret.june SECURITY TODO
 # Astronaut QRCode + PASS = LOGIN (=> DECRYPTING CRYPTO IPFS INDEX)
-# TODO : Allow Astronaut PASS change ;)
 #####################################################
-
-## MANAGE GCHANGE+ & Ŋ1 EXPLORATION
-${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}"
 
 ### IF PRINTER -> PRINT VISA
 LP=$(ls /dev/usb/lp* 2>/dev/null)

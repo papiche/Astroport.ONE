@@ -421,15 +421,7 @@ ${MY_PATH}/TW/import_tiddler.sh \
     ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
     ~/.zen/tmp/${MOATS}/SECTORTW_NEWS.json
 
-#############################################################
-# Connect_PLAYER_To_Gchange.sh : Sync FRIENDS TW - TODO : REWRITE
-######################################### BETTER USE json FILE IN /ipns/$IPFSNODEID/COINS
-#~ echo "##################################################################"
-
-[[ -s ~/.zen/tmp/coucou/${G1PUB}.gchange.json ]]  \
-    && echo "## Connect_PLAYER_To_Gchange.sh  (★★★★★)" \
-    && ${MY_PATH}/../tools/Connect_PLAYER_To_Gchange.sh "${PLAYER}" \
-    || echo "NO Gchange account found"
+## GChange+/Cesium+ bootstrap et amis gérés par make_NOSTRCARD.sh → VISA.new.sh → Nostr WoT
 
 ##############################################################
 # G1PalPay - 2 G1 mini -> Check for G1 TX incoming comments #

@@ -91,6 +91,41 @@ PEPPER="$6"
 YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${EMAIL})
 echo "🎫 MULTIPASS Creation for $EMAIL"
 
+########################################################################
+## _alert_captain : envoie un email d'alerte 48h à CAPTAINEMAIL
+## Usage : _alert_captain "SUJET" "DETAILS"
+########################################################################
+_alert_captain() {
+    local _SUBJECT="${1:-ERREUR INCONNUE}"
+    local _BODY="${2:-}"
+    local _MAILJET="${MY_PATH}/../tools/mailjet.sh"
+    local _MOATS_LOCAL=${MOATS:-$(date -u +"%Y%m%d%H%M%S")}
+    echo "🚨 CAPTAIN ALERT: ${_SUBJECT}"
+    [[ -z "$CAPTAINEMAIL" ]] && echo "⚠️  CAPTAINEMAIL non défini — alerte non envoyée" && return
+    [[ ! -x "$_MAILJET" ]] && echo "⚠️  mailjet.sh introuvable — alerte non envoyée" && return
+    local _TMPHTML=$(mktemp /tmp/alert_${_MOATS_LOCAL}.XXXXXX.html)
+    cat > "$_TMPHTML" <<EOALERT
+<html><body style="font-family:monospace">
+<h2>🚨 MULTIPASS CREATION ERROR</h2>
+<table>
+<tr><td><b>EMAIL</b></td><td>${EMAIL:-???}</td></tr>
+<tr><td><b>Station</b></td><td>${IPFSNODEID:-unknown}</td></tr>
+<tr><td><b>Time</b></td><td>$(date -u)</td></tr>
+<tr><td><b>Error</b></td><td>${_SUBJECT}</td></tr>
+</table>
+<pre style="background:#fee;padding:1em">${_BODY}</pre>
+<p>→ Vérifiez le daemon IPFS et les logs de la station.</p>
+</body></html>
+EOALERT
+    "$_MAILJET" --expire 172800 \
+        "${CAPTAINEMAIL}" \
+        "$_TMPHTML" \
+        "🚨 MULTIPASS ERROR [${IPFSNODEID:0:8}]: ${_SUBJECT}" \
+        >/dev/null 2>&1 &
+    rm -f "$_TMPHTML"
+    echo "📧 Alerte envoyée à ${CAPTAINEMAIL} (48h)"
+}
+
 [[ -z ${MOATS} ]] && MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
 mkdir -p ~/.zen/tmp/${MOATS}/
 
@@ -107,34 +142,33 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     fi
 
     ############################################## PREPARE SALT PEPPER
-    # DISCO format : /?salt=<SALT>&nostr=<PEPPER>  (email excluded — known from context)
-    # Consistent with VISA.new.sh and VOEUX.print.sh formats.
-    # Fixed overhead = len("/?salt=") + len("&nostr=") = 7+7 = 14 chars
+    # ARCHITECTURE MULTIPASS v1→v2 — SÉPARATION DES CLÉS :
     #
-    # CRITICAL: SALT and PEPPER MUST be identical for keygen AND DISCO.
-    # ssss-combine restores DISCO → parses SALT+PEPPER → regenerates keys.
-    # If keygen used different (longer) values than DISCO, restoration would give wrong keys.
+    # • ZEN Card  : SALT/PEPPER fournis par l'utilisateur (mémorisable, déterministe)
+    #               → crée le portefeuille G1 de la ZEN Card via VISA.new.sh
+    #               → PAS de limite SSSS (ne va pas dans le DISCO)
+    #               → transmis par GAFAM.html / keygen-v2.html sans troncature
     #
-    # QR CODE WEIGHT optimisation :
-    # ssss share size ∝ ssss level ∝ len(DISCO)
-    # Auto-generated : _MAX_RANDOM=24 chars → DISCO=62 bytes → level≈512 → ~128 hex → light QR
-    # User-provided  : _MAX_SP=56 chars max → DISCO=126 bytes → level≈1024 → heavier QR (user choice)
-    _MAX_RANDOM=24   # for auto-generated SALT/PEPPER → lightweight QR code
-    _MAX_SP=56       # hard limit for user-provided SALT/PEPPER (ssss 127-byte ceiling)
+    # • MULTIPASS : SALT/PEPPER TOUJOURS ALÉATOIRES (non-devinable, sécurité Nostr)
+    #               → crée identité Nostr + twin G1 + IPNS + BTC + XMR + SSSS
+    #               → DISCO encode CES valeurs aléatoires (≤127 bytes pour SSSS)
+    #               → référence /ipns/${NOSTRNS} inscrite dans le TW ZEN Card ($moa)
+    #
+    # QR CODE WEIGHT : _MAX_RANDOM=24 chars → DISCO=62 bytes → QR léger sur MULTIPASS
+    _MAX_RANDOM=24   # MULTIPASS random SALT/PEPPER → lightweight DISCO QR code
 
-    if [[ -z "$SALT" ]]; then
-        SALT=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w${_MAX_RANDOM} | head -n1)
-    fi
-    if [[ -z "$PEPPER" ]]; then
-        PEPPER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w${_MAX_RANDOM} | head -n1)
-    fi
-    # Truncate to _MAX_SP: applied BEFORE keygen AND DISCO → same values everywhere → recovery works
-    [[ "${#SALT}"   -gt $_MAX_SP ]] && echo "⚠️  SALT tronqué à $_MAX_SP chars (fourni: ${#SALT}) — utilisez ≤ $_MAX_SP chars"
-    [[ "${#PEPPER}" -gt $_MAX_SP ]] && echo "⚠️  PEPPER tronqué à $_MAX_SP chars (fourni: ${#PEPPER}) — utilisez ≤ $_MAX_SP chars"
-    SALT="${SALT:0:$_MAX_SP}"
-    PEPPER="${PEPPER:0:$_MAX_SP}"
+    ## ZEN Card SALT/PEPPER = user-provided (mémorisable, aucune limite de taille)
+    ZENCARD_SALT="${SALT:-}"
+    ZENCARD_PEPPER="${PEPPER:-}"
+    [[ -n "$ZENCARD_SALT" ]]   && echo "🎴 ZEN Card SALT reçu (${#ZENCARD_SALT} chars) → portefeuille G1 déterministe"
+    [[ -n "$ZENCARD_PEPPER" ]] && echo "🎴 ZEN Card PEPPER reçu (${#ZENCARD_PEPPER} chars) → portefeuille G1 déterministe"
 
-    # Creating MULTIPASS for ${EMAIL}
+    ## MULTIPASS DISCO = TOUJOURS ALÉATOIRE (sécurité de l'identité Nostr)
+    SALT=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w${_MAX_RANDOM} | head -n1)
+    PEPPER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w${_MAX_RANDOM} | head -n1)
+    echo "🔐 MULTIPASS DISCO aléatoire : ${_MAX_RANDOM} chars each — non-devinable"
+
+    # Creating MULTIPASS DISCO for ${EMAIL}
     DISCO="/?salt=${SALT}&nostr=${PEPPER}"
     #~ echo "DISCO (${#DISCO} bytes) : $DISCO"
 
@@ -146,7 +180,12 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     # echo "TEST DECODING..."
     (echo "$HEAD
     $TAIL" | ssss-combine -t 2 -q) > /dev/null
-    [ ! $? -eq 0 ] && echo "ERROR! SSSSKEY DECODING FAILED" && echo "${MY_PATH}/../templates/wallet.html" && exit 1
+    if [ ! $? -eq 0 ]; then
+        _alert_captain "SSSS KEY DECODING FAILED" \
+            "ssss-split/ssss-combine a échoué pour ${EMAIL}\nDISCO: [masqué]\nVérifiez l'installation du paquet 'ssss'."
+        echo "${MY_PATH}/../templates/wallet.html"
+        exit 1
+    fi
 
     # 1. Generate a DISCO Nostr key pair
     NPRIV=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}" -s)
@@ -226,6 +265,37 @@ EOFNOSTR
     echo "${G1PUBNOSTR}:NOSTR ${EMAIL} STORAGE: /ipns/$NOSTRNS"
     echo "/ipns/$NOSTRNS" > "${HOME}/.zen/game/nostr/${EMAIL}/NOSTRNS"
 
+    ############################################## CREATE ZEN CARD (VISA)
+    ## MULTIPASS est créé — maintenant on crée la ZEN Card avec les clés user
+    ## La ZEN Card (VISA/astronaute) est dérivée des SALT/PEPPER mémorisables de l'utilisateur.
+    ## Le MULTIPASS NPUBLIC/HEX lui est transmis pour lier les deux identités.
+    ##
+    ## TODO: Support mnemonic DUBP (keygen -t duniter -m "word1 word2 ... word12")
+    ##   Si ZENCARD_SALT contient ≥12 mots (espaces) et ZENCARD_PEPPER vide → mode mnemonic
+    ##   Nécessite adaptation de VISA.new.sh pour accepter un dunikey pré-calculé
+    ##   Référence : keygen flag -m, duniterpy.key.SigningKey.from_dubp_mnemonic()
+    ##   Avantage : ZEN Card compatible avec Silkaj/Cesium wallet mnemonic (BIP39 DUBP)
+    if [[ -n "$ZENCARD_SALT" && -n "$ZENCARD_PEPPER" ]]; then
+        echo "🎴 ## Creating ZEN Card (VISA) with user SALT/PEPPER..."
+        ZENCARDG1_CHECK=$(cat ~/.zen/game/players/${EMAIL}/.g1pub 2>/dev/null)
+        if [[ -z "$ZENCARDG1_CHECK" ]]; then
+            echo "🔑 Calling VISA.new.sh to create ZEN Card (NPUB=${NPUBLIC:0:16}...)"
+            ## Signature VISA.new.sh : PPASS NPASS PLAYER TYPE LANG LAT LON NPUB HEX
+            NOMAIL=1 ${MY_PATH}/../RUNTIME/VISA.new.sh \
+                "${ZENCARD_SALT}" "${ZENCARD_PEPPER}" \
+                "${EMAIL}" "UPlanet" "${LANG:-fr}" "${ZLAT:-0.00}" "${ZLON:-0.00}" \
+                "${NPUBLIC}" "${HEX}"
+            [[ $? -eq 0 ]] \
+                && echo "✅ ZEN Card created for ${EMAIL}" \
+                || { _alert_captain "ZEN Card CREATION FAILED" \
+                    "VISA.new.sh a échoué pour ${EMAIL}\nZENCAR_SALT=${ZENCARD_SALT:0:8}...\nNPUB=${NPUBLIC}"; \
+                    echo "⚠️  ZEN Card creation failed (VISA.new.sh)"; }
+        else
+            echo "♻️  ZEN Card ${ZENCARDG1_CHECK} already exists — skip creation"
+        fi
+    else
+        echo "ℹ️  Pas de ZENCARD_SALT/PEPPER → ZEN Card non créée (MULTIPASS standalone)"
+    fi
 
     ## Create uSPOT/scan QR Code
     ## /ipfs/QmNd3abeAoUH1nGzwnaLNafRgtvwTSBCZyKqT8eBnEPQK9/u.scan.qr.png~/ipfs/$uSPOT_QR_ipfs
@@ -242,12 +312,14 @@ EOFNOSTR
     VAULTNSQR=$(ipfs --timeout 20s add -q ~/.zen/game/nostr/${EMAIL}/IPNS.QR.png)
     ## CHECK IPFS IS WORKING GOOD (sometimes stuck)
     if [[ ! $? -eq 0 ]]; then
+        _alert_captain "IPFS DAEMON ERROR — VAULTNSQR" \
+            "ipfs add a échoué pour IPNS.QR.png (${EMAIL})\nLe daemon IPFS est peut-être bloqué ou surchargé.\nCommande : ipfs --timeout 20s add -q ~/.zen/game/nostr/${EMAIL}/IPNS.QR.png"
         cat ~/.zen/UPassport/templates/wallet.html \
         | sed -e "s~_WALLET_~$(date -u) <br> ${EMAIL}~g" \
              -e "s~_AMOUNT_~IPFS DAEMON ERROR~g" \
             > ${MY_PATH}/tmp/${MOATS}.out.html
         echo "${MY_PATH}/tmp/${MOATS}.out.html"
-        exit 0
+        exit 1
     fi
     #~ ipfs pin rm /ipfs/${VAULTNSQR} 2>/dev/null
 
@@ -333,13 +405,15 @@ EOFNOSTR
         if ${MY_PATH}/did_manager_nostr.sh update "${EMAIL}" "MULTIPASS" "0" "0"; then
             echo "✅ Initial DID document created by did_manager_nostr.sh with full UPlanet template"
         else
+            _alert_captain "DID CREATION FAILED" \
+                "did_manager_nostr.sh update a échoué pour ${EMAIL}\nHEX: ${HEX}\nNPUB: ${NPUBLIC}"
             echo "❌ Failed to create DID document using did_manager_nostr.sh"
-            echo "💡 Check that did_manager_nostr.sh is working correctly"
             exit 1
         fi
     else
+        _alert_captain "did_manager_nostr.sh INTROUVABLE" \
+            "Script manquant: ${MY_PATH}/did_manager_nostr.sh\nInstallation Astroport.ONE incomplète ?"
         echo "❌ did_manager_nostr.sh not found at ${MY_PATH}/did_manager_nostr.sh"
-        echo "💡 Ensure did_manager_nostr.sh is in the same directory as make_NOSTRCARD.sh"
         exit 1
     fi
 
@@ -372,6 +446,8 @@ EOFNOSTR
         
         echo "✅ DID viewer created with IPFS link: ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html"
     else
+        _alert_captain "DID CACHE INTROUVABLE" \
+            "did.json.cache absent après création pour ${EMAIL}\nFichier attendu: ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache\nVérifiez did_manager_nostr.sh"
         echo "❌ DID cache not found after creation, cannot create .well-known endpoint"
         exit 1
     fi
@@ -610,7 +686,11 @@ EOFNOSTR
     )
     [[ -n "$CESIUM_CITY" ]] && SETUP_ARGS+=(--city "$CESIUM_CITY")
 
-    ${MY_PATH}/../tools/nostr_setup_profile.py "${SETUP_ARGS[@]}" &>/dev/null
+    ${MY_PATH}/../tools/nostr_setup_profile.py "${SETUP_ARGS[@]}" &>/dev/null \
+        && echo "✅ Nostr Kind 0 profile published" \
+        || { _alert_captain "nostr_setup_profile.py FAILED" \
+            "Échec publication profil Nostr Kind 0 pour ${EMAIL}\nNPUB: ${NPUBLIC}\nRelay: ${myRELAY}\nVérifiez la connexion relay et pynostr."; \
+            echo "⚠️  Nostr profile publication failed (non-fatal, will retry at next refresh)"; }
 
     ## CHECK DESTINATION WALLET NOT ALREADY CREDITED
     ## Note: ne bloque plus la création — la primo TX est maintenant différée et envoyée
