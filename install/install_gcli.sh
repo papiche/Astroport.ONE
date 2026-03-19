@@ -21,11 +21,10 @@ loge() { echo "$LOG_TAG ERROR: $*" >&2; }
 
 GCLI_SRC="${GCLI_SRC:-$HOME/workspace/AAA/gcli-v2s}"
 GCLI_BIN="$HOME/.local/bin/gcli"
-# Fallback binaire pré-compilé : RC2 (RC3 pas encore uploadé — compilation source préférée)
-# Mettre à jour ces URLs dès que les binaires RC3 seront disponibles sur GitLab.
-GCLI_VERSION="0.8.0-g1-RC2"
-GCLI_URL_AMD64="https://git.duniter.org/-/project/604/uploads/bb4d3ee2030db6d09d954c469870e1ef/g1cli-v0.8.0-g1-RC2-linux-amd64.tar.gz"
-GCLI_URL_ARM64="https://git.duniter.org/-/project/604/uploads/3d2ea125ba58e71cf5919a33c8329f24/g1cli-v0.8.0-g1-RC2-linux-arm64.tar.gz"
+# Fallback binaire pré-compilé RC3 — utilisé si la compilation depuis source échoue
+GCLI_VERSION="0.8.0-g1-RC3"
+GCLI_URL_AMD64="https://git.duniter.org/-/project/604/uploads/62278fb4b3c3b8191f31cd7c79d8bc56/g1cli-v0.8.0-g1-RC3-linux-amd64.tar.gz"
+GCLI_URL_ARM64="https://git.duniter.org/-/project/604/uploads/72c2f4d6d0d8aa07bf019b74db3b64f4/g1cli-v0.8.0-g1-RC3-linux-arm64.tar.gz"
 
 mkdir -p "$HOME/.local/bin"
 
