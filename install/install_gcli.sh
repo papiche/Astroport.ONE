@@ -114,14 +114,21 @@ fi
 if [[ -d "$GCLI_SRC" && -f "$GCLI_SRC/Cargo.toml" ]]; then
     log "Sources gcli trouvées dans $GCLI_SRC"
 
-    # Migration: si le clone vient de gcli-v2s.git (ancien repo), le supprimer et recloner
-    # depuis g1cli.git pour avoir un historique propre (évite les commits RC2 fantômes)
-    G1CLI_URL="https://git.duniter.org/clients/rust/g1cli.git"
+    # Vérifier l'URL du remote et la version dans Cargo.toml
+    # Si le repo vient de gcli-v2s.git OU si Cargo.toml est encore RC2 (version figée),
+    # supprimer et recloner depuis la branche locale nostr de fred (g1cli.git origin SSH)
+    G1CLI_HTTPS="https://git.duniter.org/clients/rust/g1cli.git"
     CURRENT_ORIGIN=$(git -C "$GCLI_SRC" remote get-url origin 2>/dev/null || true)
-    if [[ "$CURRENT_ORIGIN" == *"gcli-v2s"* ]]; then
-        log "Ancien clone gcli-v2s détecté → suppression et reclonage depuis g1cli.git"
+    SRC_VER=$(grep '^version' "$GCLI_SRC/Cargo.toml" 2>/dev/null | head -1 | grep -oP '(?<=")[^"]+(?=")' || true)
+    log "Remote origin: $CURRENT_ORIGIN | Version src: $SRC_VER"
+
+    if [[ "$CURRENT_ORIGIN" == *"gcli-v2s"* || "$SRC_VER" == *"RC2"* ]]; then
+        log "Sources obsolètes (RC2 ou gcli-v2s) → suppression et reclonage depuis g1cli.git"
         rm -rf "$GCLI_SRC"
-        git clone -b nostr --depth 1 "$G1CLI_URL" "$GCLI_SRC" 2>&1 | tail -3
+        git clone -b nostr --depth 1 "$G1CLI_HTTPS" "$GCLI_SRC" 2>&1 | tail -5
+        # Vérifier la version après reclonage
+        SRC_VER=$(grep '^version' "$GCLI_SRC/Cargo.toml" 2>/dev/null | head -1 | grep -oP '(?<=")[^"]+(?=")' || true)
+        log "Version après reclonage: $SRC_VER"
     fi
 
     # S'assurer qu'on est sur la branche nostr
@@ -219,17 +226,6 @@ if [[ -f ~/.local/bin/jaklis ]] || command -v jaklis &>/dev/null; then
     log "Suppression de jaklis (legacy)..."
     rm -f ~/.local/bin/jaklis
     sudo rm -f /usr/local/bin/jaklis
-fi
-
-########################################################################
-## 5. CLEANUP legacy silkaj
-########################################################################
-if [[ -f ~/.local/bin/silkaj ]] || command -v silkaj &>/dev/null; then
-    log "Suppression de silkaj (legacy)..."
-    rm -f ~/.local/bin/silkaj
-    pip3 uninstall -y silkaj 2>/dev/null
-    [[ -d ~/.zen/workspace/silkaj ]] && rm -rf ~/.zen/workspace/silkaj \
-        && log "Supprimé ~/.zen/workspace/silkaj"
 fi
 
 log "Installation terminée: gcli $(gcli --version 2>/dev/null | head -1)"
