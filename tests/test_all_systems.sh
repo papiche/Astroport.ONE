@@ -198,6 +198,7 @@ main() {
     # Run tests based on selection
     if [[ -z "$TEST_SYSTEM" ]]; then
         # Run all tests
+            run_test_script "$MY_PATH/test_multipass_zencard.sh" "MultipasZENCard"
             run_test_script "$MY_PATH/test_did_system.sh" "DID"
             run_test_script "$MY_PATH/test_oracle_system.sh" "Oracle"
             run_test_script "$MY_PATH/test_wotx2_system.sh" "WoTx2"
@@ -219,6 +220,9 @@ main() {
     else
         # Run specific test
         case "$TEST_SYSTEM" in
+            multipass)
+                run_test_script "$MY_PATH/test_multipass_zencard.sh" "MultipasZENCard"
+                ;;
             did)
                 run_test_script "$MY_PATH/test_did_system.sh" "DID"
                 ;;
@@ -248,7 +252,7 @@ main() {
                 ;;
             *)
                 log_error "Unknown system: $TEST_SYSTEM"
-                echo "Available systems: did, oracle, wotx2, ore, badge, g1tools, primal, ss58, captain"
+                echo "Available systems: multipass, did, oracle, wotx2, ore, badge, g1tools, primal, ss58, captain"
                 exit 1
                 ;;
         esac

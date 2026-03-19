@@ -1,4 +1,4 @@
-# UPlanet Systems Test Suite
+g# UPlanet Systems Test Suite
 
 Comprehensive test suite for validating all UPlanet systems according to their specifications.
 
@@ -7,6 +7,7 @@ Comprehensive test suite for validating all UPlanet systems according to their s
 ## Overview
 
 This test suite validates:
+- **MULTIPASS/ZEN Card** *(nouveau)*: Architecture v1→v2, séparation ZENCARD/MULTIPASS, diceware, _alert_captain
 - **DID System**: Decentralized Identifier implementation and W3C compliance
 - **Oracle System**: Official permits and multi-signature validation
 - **WoTx2 System**: Auto-proclaimed masteries with automatic progression
@@ -45,6 +46,9 @@ cd ~/.zen/Astroport.ONE/tests
 ### Run Specific System Tests
 
 ```bash
+# Test MULTIPASS/ZEN Card architecture (migration v1→v2)
+./test_all_systems.sh --system multipass
+
 # Test DID system only
 ./test_all_systems.sh --system did
 
@@ -250,6 +254,19 @@ After running tests, clean up test events:
 ```
 
 ## Test Coverage
+
+### MULTIPASS / ZEN Card (migration v1→v2)
+- ✅ `diceware.sh` : génère des passphrases mémorisables depuis wordlist officielle
+- ✅ `make_NOSTRCARD.sh` : `ZENCARD_SALT/PEPPER` séparés du MULTIPASS random
+- ✅ `make_NOSTRCARD.sh` : `_diceware()` appelle `diceware.sh` (pas `/usr/share/dict/words`)
+- ✅ `make_NOSTRCARD.sh` : `_alert_captain()` couvre SSSS, IPFS daemon, DID, nostr_setup_profile
+- ✅ `make_NOSTRCARD.sh` : `VISA.new.sh` appelé avec 9 arguments (LANG, LAT, LON, NPUB, HEX)
+- ✅ `g1.sh` : `write_multipass_json` retourne `zencard_salt/pepper` (pas `salt/pepper`)
+- ✅ `g1.sh` : NSEC lu depuis `.secret.nostr` (MULTIPASS aléatoire, pas dérivé ZEN Card)
+- ✅ `Connect_PLAYER_To_Gchange.sh` : stub deprecated (`exit 0`, aucun script critique appelé)
+- ✅ `TW.refresh.sh` : appel `Connect_PLAYER_To_Gchange.sh` retiré
+- ✅ `VISA.new.sh` : appel `Connect_PLAYER_To_Gchange.sh` retiré
+- ✅ `identity.py` : limite 56 chars supprimée (plus de `HTTPException 422` pour salt/pepper)
 
 ### SS58 Integration
 - ✅ `g1pub_to_ss58.py` : round-trip v1 ↔ SS58, idempotence `ensure_ss58`

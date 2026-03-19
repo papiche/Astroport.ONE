@@ -312,6 +312,11 @@ for PLAYER in "${NOSTR[@]}"; do
     if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/G1PUBNOSTR ]]; then
         echo "$G1PUBNOSTR" > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/G1PUBNOSTR
     fi
+    ## Publish NOSTRNS in swarm cache so upassport.sh can resolve any MULTIPASS from any swarm station
+    ## upassport.sh::get_NOSTRNS_directory searches ~/.zen/tmp/*/TW/*/NOSTRNS as fallback
+    if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/NOSTRNS ]]; then
+        cp ${HOME}/.zen/game/nostr/${PLAYER}/NOSTRNS ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/NOSTRNS 2>/dev/null
+    fi
 
     COINS=$(cat ~/.zen/tmp/coucou/${G1PUBNOSTR}.COINS 2>/dev/null)
     if [[ -z $COINS || "$COINS" == "null" ]]; then
