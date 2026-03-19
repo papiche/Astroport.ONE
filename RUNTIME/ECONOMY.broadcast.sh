@@ -86,7 +86,9 @@ log_output "✅ Captain HEX: ${CAPTAIN_HEX:0:8}..."
 
 # Event identifier (replaceable event per station)
 EVENT_D="economic-health"
-log_output "📅 Publishing economic health report"
+# Tag week courant (ISO 8601 : YYYY-WXX) — lu par economy.Swarm.html
+CURRENT_WEEK="$(date -u +%Y-W%V)"
+log_output "📅 Publishing economic health report (week $CURRENT_WEEK)"
 
 # Normalize bc output: ensure leading zero for decimals (e.g., .25 -> 0.25)
 # This is required for valid JSON output
@@ -545,6 +547,7 @@ TAGS_JSON=$(cat <<EOF
   ["station", "$IPFSNODEID"],
   ["station:name", "${myDAMAIN:-...${IPFSNODEID: -8}}"],
   ["swarm_id", "$UPLANETG1PUB"],
+  ["week", "$CURRENT_WEEK"],
   ["g1pub", "$UPLANETNAME_G1"],
   ["geo:lat", "$STATION_LAT"],
   ["geo:lon", "$STATION_LON"],

@@ -104,13 +104,7 @@ echo "TODAY UPlanet landings"
 ls ~/.zen/tmp/Ustats*.json 2>/dev/null # API v2
 ########################################################################
 ## REMOVE TMP BUT KEEP swarm, flashmem and coucou
-mv ~/.zen/tmp/swarm ~/.zen/swarm
-mv ~/.zen/tmp/coucou ~/.zen/coucou
-mv ~/.zen/tmp/flashmem ~/.zen/flashmem
-rm -Rf ~/.zen/tmp/*
-mv ~/.zen/swarm ~/.zen/tmp/swarm
-mv ~/.zen/coucou ~/.zen/tmp/coucou
-mv ~/.zen/flashmem ~/.zen/tmp/flashmem
+find "$HOME/.zen/tmp/" -mindepth 1 ! -name "swarm" ! -name "coucou" ! -name "flashmem" -delete
 
 ## STOPPING ASTROPORT
 sudo systemctl stop astroport
@@ -225,16 +219,8 @@ ${MY_PATH}/RUNTIME/UPLANET.refresh.sh
 ############### SOCIAL NETWORK + UPLANET SHARING & CARING #########
 
 ########################################################################
-## REMOVE TMP BUT KEEP swarm, flashmem ${IPFSNODEID} and coucou
-mv ~/.zen/tmp/${IPFSNODEID} ~/.zen/${IPFSNODEID}
-mv ~/.zen/tmp/swarm ~/.zen/swarm
-mv ~/.zen/tmp/coucou ~/.zen/coucou
-mv ~/.zen/tmp/flashmem ~/.zen/flashmem
-rm -Rf ~/.zen/tmp/*
-mv ~/.zen/${IPFSNODEID} ~/.zen/tmp/${IPFSNODEID}
-mv ~/.zen/swarm ~/.zen/tmp/swarm
-mv ~/.zen/coucou ~/.zen/tmp/coucou
-mv ~/.zen/flashmem ~/.zen/tmp/flashmem
+## REMOVE TMP BUT KEEP swarm, flashmem, ${IPFSNODEID} and coucou
+find "$HOME/.zen/tmp/" -mindepth 1 ! -name "swarm" ! -name "coucou" ! -name "flashmem" ! -name "$IPFSNODEID" -delete
 
 ########################################################################
 ################################# updating ipfs bootstrap
