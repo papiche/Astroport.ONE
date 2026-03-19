@@ -98,7 +98,7 @@ done
 cat $HOME/.zen/tmp/youtube.com_* >> /tmp/20h12.log
 cat $HOME/.zen/tmp/nostr*.log >> /tmp/20h12.log
 ########################################################################
-# show ZONE.sh cache of the day
+# show Ustats.sh cache of the day
 echo "TODAY UPlanet landings"
 # ls ~/.zen/tmp/ZONE_* 2>/dev/null # API v1 deprecated
 ls ~/.zen/tmp/Ustats*.json 2>/dev/null # API v2

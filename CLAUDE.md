@@ -75,7 +75,6 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 - **`command.sh`** - Main CLI interface for station management
 - **`12345.sh`** / **`_12345.sh`** - API server (port 1234 launcher / port 12345 station map)
 - **`20h12.process.sh`** - Daily cron maintenance process
-- **`API/`** - HTTP API endpoint handlers (QRCODE.sh, SALT.sh, UPLANET.sh, PLAYER.sh, etc.)
 - **`RUNTIME/`** - Background services and refresh cycles:
   - `G1PalPay.sh` - G1 currency transaction monitoring
   - `NOSTRCARD.refresh.sh` - MULTIPASS account management
