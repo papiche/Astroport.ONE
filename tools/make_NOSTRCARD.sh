@@ -92,6 +92,22 @@ YOUSER=$(${MY_PATH}/../tools/clyuseryomail.sh ${EMAIL})
 echo "🎫 MULTIPASS Creation for $EMAIL"
 
 ########################################################################
+## _diceware : génère une passphrase diceware via diceware.sh (wordlist officielle)
+## Usage : _diceware [N_words]  — default 4 mots
+########################################################################
+_diceware() {
+    local _n="${1:-4}"
+    local _result=""
+    if [[ -x "${MY_PATH}/diceware.sh" ]]; then
+        _result=$(${MY_PATH}/diceware.sh "$_n" | tr -d '\n' | sed 's/ *$//' | tr ' ' '-')
+    fi
+    ## Fallback si diceware.sh absent ou résultat vide
+    [[ -z "$_result" ]] \
+        && _result=$(tr -dc 'a-z0-9' < /dev/urandom | fold -w20 | head -n1)
+    echo "$_result"
+}
+
+########################################################################
 ## _alert_captain : envoie un email d'alerte 48h à CAPTAINEMAIL
 ## Usage : _alert_captain "SUJET" "DETAILS"
 ########################################################################
@@ -275,8 +291,18 @@ EOFNOSTR
     ##   Nécessite adaptation de VISA.new.sh pour accepter un dunikey pré-calculé
     ##   Référence : keygen flag -m, duniterpy.key.SigningKey.from_dubp_mnemonic()
     ##   Avantage : ZEN Card compatible avec Silkaj/Cesium wallet mnemonic (BIP39 DUBP)
+    ## Si pas de ZENCARD_SALT/PEPPER → diceware pour créer ZEN Card quand même
+    if [[ -z "$ZENCARD_SALT" ]]; then
+        ZENCARD_SALT=$(_diceware 4)
+        echo "🎲 ZEN Card SALT diceware auto : ${ZENCARD_SALT}"
+    fi
+    if [[ -z "$ZENCARD_PEPPER" ]]; then
+        ZENCARD_PEPPER=$(_diceware 4)
+        echo "🎲 ZEN Card PEPPER diceware auto : ${ZENCARD_PEPPER}"
+    fi
+
     if [[ -n "$ZENCARD_SALT" && -n "$ZENCARD_PEPPER" ]]; then
-        echo "🎴 ## Creating ZEN Card (VISA) with user SALT/PEPPER..."
+        echo "🎴 ## Creating ZEN Card (VISA) with SALT/PEPPER..."
         ZENCARDG1_CHECK=$(cat ~/.zen/game/players/${EMAIL}/.g1pub 2>/dev/null)
         if [[ -z "$ZENCARDG1_CHECK" ]]; then
             echo "🔑 Calling VISA.new.sh to create ZEN Card (NPUB=${NPUBLIC:0:16}...)"
@@ -293,8 +319,6 @@ EOFNOSTR
         else
             echo "♻️  ZEN Card ${ZENCARDG1_CHECK} already exists — skip creation"
         fi
-    else
-        echo "ℹ️  Pas de ZENCARD_SALT/PEPPER → ZEN Card non créée (MULTIPASS standalone)"
     fi
 
     ## Create uSPOT/scan QR Code
