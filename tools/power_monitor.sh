@@ -240,6 +240,7 @@ generate_report() {
     local log_file="${4:-}"
     local hostname="${5:-$(hostname -f)}"
     local duration="${6:-}"
+    local ipfsnodeid="${7:-}"
     
     # Ensure CSV path is absolute (handle relative paths - use /tmp to avoid cleanup)
     if [[ "$csv_file" != /* ]]; then
@@ -287,7 +288,8 @@ generate_report() {
             "$output_html" \
             "$hostname" \
             "$duration" \
-            "$title" 2>&1 | while IFS= read -r line; do
+            "$title" \
+            "$ipfsnodeid" 2>&1 | while IFS= read -r line; do
                 log_info "$line"
             done
     else
@@ -366,6 +368,7 @@ report_from_24h() {
     local log_file="${3:-}"
     local hostname="${4:-$(hostname -f)}"
     local duration="${5:-24h}"
+    local ipfsnodeid="${6:-}"
     local source_csv="${POWER_24H_CSV}"
     if [[ -z "$output_html" ]]; then
         log_error "Usage: power_monitor.sh report-from-24h <output_html> [title] [log_file] [hostname] [duration]"
@@ -387,7 +390,7 @@ report_from_24h() {
         return 1
     fi
     log_info "Reporting from $line_count samples (last 24h)"
-    generate_report "$last24_csv" "$output_html" "$title" "$log_file" "$hostname" "$duration"
+    generate_report "$last24_csv" "$output_html" "$title" "$log_file" "$hostname" "$duration" "$ipfsnodeid"
 }
 
 # Trim 24/7 PowerJoular CSV to last 24h only (saves disk space). Stops powerjoular.service, overwrites CSV, restarts.

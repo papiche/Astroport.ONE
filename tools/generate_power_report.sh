@@ -2,8 +2,8 @@
 ########################################################################
 # generate_power_report.sh
 # Generate HTML report with power consumption graph (generic version)
-# 
-# Usage: generate_power_report.sh <csv_file> <graph_file> <log_file> <output_html> <hostname> <duration> [title]
+#
+# Usage: generate_power_report.sh <csv_file> <graph_file> <log_file> <output_html> <hostname> <duration> [title] [ipfsnodeid]
 ########################################################################
 
 set -euo pipefail
@@ -15,6 +15,7 @@ OUTPUT_HTML="$4"
 HOSTNAME="${5:-$(hostname -f)}"
 DURATION="${6:-}"
 REPORT_TITLE="${7:-Power Consumption Report}"
+IPFSNODEID="${8:-}"
 
 # Check if graph exists, if not generate it
 if [[ ! -f "$GRAPH_FILE" ]] && [[ -f "$CSV_FILE" ]] && command -v python3 >/dev/null 2>&1; then
@@ -33,11 +34,13 @@ if [[ -f "$GRAPH_FILE" ]]; then
 fi
 
 # Extract power statistics from CSV if available (skip header line: NR>1)
+# CSV format: Date,CPU Utilization,Total Power,CPU Power,GPU Power
+# $1=Date, $2=CPU Utilization (0-1), $3=Total Power (W), $4=CPU Power (W), $5=GPU Power (W)
 POWER_STATS=""
 if [[ -f "$CSV_FILE" ]] && command -v awk >/dev/null 2>&1; then
-    avg_power=$(awk -F',' 'NR>1 {sum+=$2+0; count++} END {if(count>0) printf "%.2f", sum/count; else print "0"}' "$CSV_FILE" 2>/dev/null || echo "0")
-    max_power=$(awk -F',' 'NR>1 {v=$2+0; if(NR==2 || v>max) max=v} END {if(NR>1) printf "%.2f", max+0; else print "0"}' "$CSV_FILE" 2>/dev/null || echo "0")
-    min_power=$(awk -F',' 'NR>1 {v=$2+0; if(NR==2 || v<min) min=v} END {if(NR>1) printf "%.2f", min+0; else print "0"}' "$CSV_FILE" 2>/dev/null || echo "0")
+    avg_power=$(awk -F',' 'NR>1 {sum+=$3+0; count++} END {if(count>0) printf "%.2f", sum/count; else print "0"}' "$CSV_FILE" 2>/dev/null || echo "0")
+    max_power=$(awk -F',' 'NR>1 {v=$3+0; if(NR==2 || v>max) max=v} END {if(NR>1) printf "%.2f", max+0; else print "0"}' "$CSV_FILE" 2>/dev/null || echo "0")
+    min_power=$(awk -F',' 'NR>1 {v=$3+0; if(NR==2 || v<min) min=v} END {if(NR>1) printf "%.2f", min+0; else print "0"}' "$CSV_FILE" 2>/dev/null || echo "0")
     
     if [[ "$avg_power" != "0" ]]; then
         POWER_STATS="<div style='background: #e8f4fd; padding: 15px; border-radius: 5px; margin: 15px 0;'>
@@ -128,7 +131,7 @@ cat > "$OUTPUT_HTML" << EOF
 <div class="container">
     <div class="header">
         <h1>⚡ $REPORT_TITLE</h1>
-        <p>Power Consumption Analysis - $HOSTNAME</p>
+        <p>Power Consumption Analysis - <strong>$HOSTNAME</strong>${IPFSNODEID:+ | IPFS: <strong>${IPFSNODEID}</strong>}</p>
         <p>Generated: $(date '+%Y-%m-%d %H:%M:%S')</p>
     </div>
     <div class="content">

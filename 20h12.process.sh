@@ -414,7 +414,8 @@ if [[ -f "${MY_PATH}/tools/power_monitor.sh" ]] && [[ -f "$POWER_24H_CSV" ]] || 
             "20H12 Power Consumption - Last 24h" \
             "/tmp/20h12.log" \
             "$(hostname -f)" \
-            "24h" 2>&1 | tee -a /tmp/20h12.log; then
+            "24h" \
+            "${IPFSNODEID:-}" 2>&1 | tee -a /tmp/20h12.log; then
         if [[ -f "$POWER_REPORT_HTML" ]]; then
             echo "✅ Power consumption report generated: $POWER_REPORT_HTML" >> /tmp/20h12.log
         fi
