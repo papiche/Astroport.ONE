@@ -191,12 +191,58 @@ echo "ADDING LOCAL GEOGRAPHIC KEYS TO amisOfAmis.txt"
 touch "${HOME}/.zen/strfry/amisOfAmis.txt"
 
 # Add uplanet.G1.nostr HEX (Central Oracle key)
+# IMPORTANT: This key (salt=pepper="${UPLANETNAME}.G1") signs kind:30800 "cooperative-config"
+# events published by coop-config.js in economy.html and economy.Swarm.html.
+# The file may contain either a raw npub1... (keygen default stdout) or a shell keyfile
+# with HEX=... lines. Both formats are handled below.
+UPLANET_G1_HEX=""
+
 if [[ -f "$HOME/.zen/game/uplanet.G1.nostr" ]]; then
-    UPLANET_G1_HEX=$(grep "HEX=" "$HOME/.zen/game/uplanet.G1.nostr" 2>/dev/null | cut -d'=' -f2 | tr -d ';' | tr -d ' ')
-    if [[ -n "$UPLANET_G1_HEX" && ${#UPLANET_G1_HEX} -eq 64 ]]; then
-        if ! grep -qi "^${UPLANET_G1_HEX}$" "${HOME}/.zen/strfry/amisOfAmis.txt" 2>/dev/null; then
-            echo "$UPLANET_G1_HEX" >> "${HOME}/.zen/strfry/amisOfAmis.txt"
-            echo "Added uplanet.G1.nostr HEX: ${UPLANET_G1_HEX:0:16}..."
+    # Format 1: shell keyfile with "HEX=..." line (e.g. from keygen -o)
+    UPLANET_G1_HEX=$(grep "^HEX=" "$HOME/.zen/game/uplanet.G1.nostr" 2>/dev/null | cut -d'=' -f2 | tr -d ';' | tr -d ' ')
+    # Format 2: shell keyfile with "NPUB=npub1..." line
+    if [[ -z "$UPLANET_G1_HEX" ]]; then
+        _G1_NPUB=$(grep "^NPUB=" "$HOME/.zen/game/uplanet.G1.nostr" 2>/dev/null | cut -d'=' -f2 | tr -d ';' | tr -d ' ')
+        [[ -n "$_G1_NPUB" ]] && UPLANET_G1_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$_G1_NPUB" 2>/dev/null)
+    fi
+    # Format 3: raw npub1... (default keygen stdout redirect)
+    if [[ -z "$UPLANET_G1_HEX" ]]; then
+        _G1_NPUB=$(cat "$HOME/.zen/game/uplanet.G1.nostr" 2>/dev/null | tr -d '[:space:]')
+        if [[ "$_G1_NPUB" =~ ^npub1[a-z0-9]{58}$ ]]; then
+            UPLANET_G1_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$_G1_NPUB" 2>/dev/null)
+        fi
+    fi
+fi
+
+# Fallback: derive directly from UPLANETNAME credential
+# (same scrypt derivation as coop-config.js login: saltPepper = UPLANETNAME + ".G1")
+if [[ -z "$UPLANET_G1_HEX" && -n "$UPLANETNAME" ]]; then
+    _G1_NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}.G1" "${UPLANETNAME}.G1" 2>/dev/null)
+    if [[ -n "$_G1_NPUB" ]]; then
+        UPLANET_G1_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$_G1_NPUB" 2>/dev/null)
+        # Cache the result for future runs
+        [[ -n "$UPLANET_G1_HEX" ]] && echo "$_G1_NPUB" > "$HOME/.zen/game/uplanet.G1.nostr"
+    fi
+fi
+
+if [[ -n "$UPLANET_G1_HEX" && ${#UPLANET_G1_HEX} -eq 64 && "$UPLANET_G1_HEX" =~ ^[0-9a-fA-F]{64}$ ]]; then
+    if ! grep -qi "^${UPLANET_G1_HEX}$" "${HOME}/.zen/strfry/amisOfAmis.txt" 2>/dev/null; then
+        echo "$UPLANET_G1_HEX" >> "${HOME}/.zen/strfry/amisOfAmis.txt"
+        echo "Added uplanet.G1.nostr HEX (cooperative-config signer): ${UPLANET_G1_HEX:0:16}..."
+    fi
+else
+    echo "WARNING: Could not determine uplanet.G1.nostr HEX - Cooperative Config (kind:30800) events may not sync"
+fi
+
+# Add CAPTAIN HEX (signs kind:30850 economic-health events broadcast by ECONOMY.broadcast.sh)
+# CAPTAIN_HEX = ~/.zen/game/nostr/$CAPTAINEMAIL/HEX — not reachable via nostr/*/HEX glob
+# from other swarm stations, so we ensure it is in amisOfAmis.txt for constellation backfill.
+if [[ -n "$CAPTAINEMAIL" && -f "$HOME/.zen/game/nostr/$CAPTAINEMAIL/HEX" ]]; then
+    CAPTAIN_HEX_KEY=$(cat "$HOME/.zen/game/nostr/$CAPTAINEMAIL/HEX" 2>/dev/null | tr -d '[:space:]')
+    if [[ -n "$CAPTAIN_HEX_KEY" && ${#CAPTAIN_HEX_KEY} -eq 64 && "$CAPTAIN_HEX_KEY" =~ ^[0-9a-fA-F]{64}$ ]]; then
+        if ! grep -qi "^${CAPTAIN_HEX_KEY}$" "${HOME}/.zen/strfry/amisOfAmis.txt" 2>/dev/null; then
+            echo "$CAPTAIN_HEX_KEY" >> "${HOME}/.zen/strfry/amisOfAmis.txt"
+            echo "Added CAPTAIN HEX (economic-health kind:30850 signer): ${CAPTAIN_HEX_KEY:0:16}..."
         fi
     fi
 fi
