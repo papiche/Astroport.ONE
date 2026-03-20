@@ -51,6 +51,10 @@ mapfile -t SQUIDS < <(printf '%s\n' "${SQUIDS[@]}" | awk '!seen[$0]++')
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'
 
+# --- Mode JSON global (--json dans n'importe quel argument) ------------------
+JSON_OUTPUT=false
+for _arg in "$@"; do [[ "$_arg" == "--json" ]] && JSON_OUTPUT=true && break; done
+
 # --- Helpers -----------------------------------------------------------------
 usage() {
   grep '^#' "$0" | grep -v '#!/' | sed 's/^# \{0,2\}//'
@@ -133,9 +137,9 @@ print_transfer() {
 # =============================================================================
 mode_balance() {
   local wallet="$1"
-  [[ -z "$wallet" ]] && die "Usage: $0 balance <wallet>"
+  [[ -z "$wallet" ]] && die "Usage: $0 balance <wallet> [--json]"
 
-  echo -e "${CYAN}Solde du wallet :${RESET} $wallet"
+  [[ "$JSON_OUTPUT" == "false" ]] && echo -e "${CYAN}Solde du wallet :${RESET} $wallet"
 
   # ── Source 1 : Duniter RPC (on-chain, source de vérité) ──────────────
   local rpc_json rpc_transferable rpc_total rpc_unclaim rpc_ok="false"
@@ -163,7 +167,30 @@ mode_balance() {
     fi
   }
 
-  # ── Affichage ───────────────────────────────────────────────────────
+  # ── Sortie JSON (--json) ──────────────────────────────────────────────
+  if [[ "$JSON_OUTPUT" == "true" ]]; then
+    jq -n \
+      --arg wallet   "$wallet" \
+      --argjson rpc  "${rpc_transferable:-0}" \
+      --argjson total "${rpc_total:-0}" \
+      --argjson unclaim "${rpc_unclaim:-0}" \
+      --argjson squid "${squid_balance:-0}" \
+      --argjson rpc_ok   "$( [[ "$rpc_ok"   == "true" ]] && echo true || echo false )" \
+      --argjson squid_ok "$( [[ "$squid_ok" == "true" ]] && echo true || echo false )" \
+      '{
+        wallet:           $wallet,
+        rpc_transferable: $rpc,
+        rpc_total:        $total,
+        rpc_unclaim:      $unclaim,
+        squid_balance:    $squid,
+        rpc_ok:           $rpc_ok,
+        squid_ok:         $squid_ok,
+        unit:             "centimes_g1"
+      }'
+    return
+  fi
+
+  # ── Affichage texte ───────────────────────────────────────────────────
   if [[ "$rpc_ok" == "true" ]]; then
     echo -e "  ${BOLD}🔗 Duniter RPC${RESET} ($RPC_URL)"
     echo -e "    Transférable  : $(format_amount "$rpc_transferable") (total - 1 Ğ1 primo bloquée)"

@@ -457,7 +457,7 @@ DES=$(cat "$DESTFILE" 2>/dev/null || echo "0")
 echo "$DES + $AMOUNT" | bc > "$DESTFILE"
 
 # ── Conversions ZEN ───────────────────────────────────────────────────────────
-ZENAMOUNT=$(echo "$AMOUNT * 10" | awk '{printf "%.1f", $1}')
+ZENAMOUNT=$(echo "$AMOUNT * 100" | awk '{printf "%.1f", $1}')
 ZENCUR=$(echo "($COINS - $AMOUNT) * 10" | bc | awk '{printf "%.1f", $1}')
 ZENDES=$(echo "($DES + $AMOUNT) * 10" | bc | awk '{printf "%.1f", $1}')
 

@@ -4,8 +4,8 @@
 # Version: 1.1
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
-# UPLANET.central.sh
-# Script de gestion des virements officiels UPlanet (version centralisée)
+# UPLANET.official.sh
+# Script de gestion des virements officiels UPlanet
 # 
 # Utilise PAYforSURE.sh pour effectuer les transactions sans attendre les pending
 # Vérification différée : un script en arrière-plan vérifie les transactions après 1 heure
@@ -35,8 +35,79 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/tools/my.sh"
-# Load cooperative config from DID NOSTR (shared across swarm)
-. "${MY_PATH}/tools/cooperative_config.sh" 2>/dev/null && coop_load_env_vars 2>/dev/null || true
+
+# Initialisation : Chargement des paramètres coopératifs depuis le DID NOSTR (essaim partagé)
+echo -e "\033[0;36m⚙️  Initialisation UPLANET.official.sh...\033[0m"
+echo -e "\033[1;33m🔄 Récupération des paramètres coopératifs depuis le DID NOSTR (kind 30800)...\033[0m"
+echo -e "\033[0;34m   • Lecture de la configuration locale (my.sh + .env)...\033[0m"
+echo -e "\033[0;34m   • Connexion au relais NOSTR pour synchroniser l'essaim...\033[0m"
+. "${MY_PATH}/tools/cooperative_config.sh" 2>/dev/null && {
+    echo -e "\033[0;34m   • Module cooperative_config.sh chargé, application des variables...\033[0m"
+    coop_load_env_vars 2>/dev/null \
+        && echo -e "\033[0;32m✅ Paramètres coopératifs chargés depuis le DID NOSTR (essaim synchronisé)\033[0m" \
+        || echo -e "\033[1;33m⚠️  Config coopérative NOSTR indisponible — valeurs locales utilisées.\033[0m"
+} || echo -e "\033[1;33m⚠️  cooperative_config.sh introuvable — configuration locale uniquement.\033[0m"
+
+# Affichage des paramètres importants récupérés
+echo -e "\033[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+echo -e "\033[1;34m📋 Paramètres de la coopérative UPlanet\033[0m"
+echo -e "\033[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+echo -e "\033[0;33m🌐 Réseau :\033[0m"
+echo -e "   • Capitaine  : \033[0;32m${CAPTAINEMAIL:-❌ NON DÉFINI}\033[0m"
+echo -e "   • IPFS Node  : \033[0;32m...${IPFSNODEID: -8}\033[0m"
+echo -e "\033[0;33m🏛️  Portefeuilles coopératifs (format SS58 / Duniter v2) :\033[0m"
+_CESIUM="${CESIUMIPFS:-https://cesium.copylaradio.com}"
+_G1V2PY="${MY_PATH}/tools/g1pub_to_ss58.py"
+# Fonction locale : affiche SS58 (v2) + lien Cesium v1
+_show_wallet() {
+    local label="$1" pubkey="$2"
+    local ss58=""
+    [[ -n "$pubkey" ]] && ss58=$(python3 "$_G1V2PY" "$pubkey" 2>/dev/null) || ss58="❌"
+    printf "   \033[0;36m%-18s\033[0m : \033[0;35m%s\033[0m\n" "$label" "${ss58:-❌}"
+    printf "   %-18s   🔗 %s/#/wot/%s/\n" "" "$_CESIUM" "${ss58}"
+}
+_show_wallet "BANQUE CENTRALE"   "${UPLANETNAME_G1:-$UPLANETG1PUB}"
+_show_wallet "ẑen USAGE"         "${UPLANETG1PUB}"
+_show_wallet "ẐEN SOCIETY/AMAP"  "${UPLANETNAME_SOCIETY}"
+_show_wallet "TREASURY"          "${UPLANETNAME_TREASURY}"
+_show_wallet "ASSETS"            "${UPLANETNAME_ASSETS}"
+_show_wallet "RnD"               "${UPLANETNAME_RND}"
+_show_wallet "IMPOT (TVA)"       "${UPLANETNAME_IMPOT}"
+_show_wallet "CAPITAL (NODE)"    "${UPLANETNAME_CAPITAL}"
+echo -e "   \033[0;33m💎 Capital machine : ${MACHINE_VALUE_ZEN:-non configuré} Ẑen\033[0m"
+echo -e "\033[0;33m📊 Activité économique coopérative :\033[0m"
+# 1. Banque Centrale Ğ1 (UPLANETNAME_G1) — réserve de valeur, capacité à capter des €
+_bc_pubkey="${UPLANETNAME_G1:-$UPLANETG1PUB}"
+_bc_ss58=$(python3 "${MY_PATH}/tools/g1pub_to_ss58.py" "${_bc_pubkey}" 2>/dev/null)
+_bc_bal_json=""
+if [[ -n "$_bc_ss58" ]]; then
+    # G1wallet_v2.sh balance --json → {"rpc_transferable": <centimes>, "unit":"centimes_g1", ...}
+    _bc_bal_json=$(timeout 8 "${MY_PATH}/tools/G1wallet_v2.sh" balance "$_bc_ss58" --json 2>/dev/null)
+    if echo "$_bc_bal_json" | jq -e '.rpc_transferable' >/dev/null 2>&1; then
+        _bc_centimes=$(echo "$_bc_bal_json" | jq -r '.rpc_transferable // 0')
+        _bc_g1=$(echo "scale=2; ${_bc_centimes:-0} / 100" | bc -l 2>/dev/null)
+    fi
+fi
+if [[ -z "$_bc_g1" ]]; then
+    # Fallback G1balance.sh (API v1, centimes → Ğ1)
+    _bc_bal_v1=$(timeout 8 "${MY_PATH}/tools/G1balance.sh" "${_bc_pubkey}" 2>/dev/null)
+    _bc_centimes=$(echo "$_bc_bal_v1" | jq -r '.balances.blockchain // 0' 2>/dev/null)
+    _bc_g1=$(echo "scale=2; ${_bc_centimes:-0} / 100" | bc -l 2>/dev/null)
+fi
+_bc_zen=$(echo "scale=1; ${_bc_g1:-0} * 10" | bc -l 2>/dev/null)
+echo -e "   🏦 Banque Centrale Ğ1  : \033[0;32m${_bc_g1:-?} Ğ1 (capacité ≈ ${_bc_zen:-?} Ẑen à émettre)\033[0m"
+# 2. ẑen MULTIPASS (jetons d'usage) — total émis via UPLANETG1PUB → MULTIPASS
+_rev_json=$(timeout 15 "${MY_PATH}/tools/G1revenue.sh" 2>/dev/null)
+_rev_zen=$(echo "$_rev_json" | jq -r '.total_revenue_zen // 0' 2>/dev/null)
+_rev_nb=$(echo "$_rev_json"  | jq -r '.total_transactions // 0' 2>/dev/null)
+echo -e "   🎫 ẑen MULTIPASS (usage): \033[0;32m${_rev_zen:-?} Ẑen émis (${_rev_nb:-?} transactions)\033[0m"
+# 3. ẐEN SOCIETY/AMAP (jetons de propriété) — total mis en commun via UPLANETNAME_SOCIETY
+_soc_json=$(timeout 15 "${MY_PATH}/tools/G1society.sh" --json-only 2>/dev/null)
+_soc_zen=$(echo "$_soc_json" | jq -r '.total_outgoing_zen // 0' 2>/dev/null)
+_soc_nb=$(echo "$_soc_json"  | jq -r '.total_transfers // 0' 2>/dev/null)
+echo -e "   🤝 ẐEN AMAP (propriété) : \033[0;35m${_soc_zen:-?} Ẑen mis en commun (${_soc_nb:-?} contributeur(s))\033[0m"
+echo -e "\033[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+echo ""
 
 # Configuration des montants (définis dans my.sh et .env)
 # Les valeurs par défaut sont définies dans my.sh (NCARD, etc.)
@@ -56,7 +127,7 @@ NC='\033[0m' # No Color
 
 # Fonction pour afficher l'aide
 show_help() {
-    echo -e "${BLUE}UPLANET.central.sh - Gestion des virements officiels UPlanet (version centralisée)${NC}"
+    echo -e "${BLUE}UPLANET.official.sh - Gestion des virements officiels UPlanet${NC}"
     echo ""
     echo "Usage:"
     echo "  $0 [OPTIONS]"
@@ -70,11 +141,8 @@ show_help() {
     echo "  -c, --captain EMAIL       Inscription capitaine (accès complet aux services)"
     echo "      --force               Mode force : écrase le capital existant"
     echo "      --add                 Mode ajout : cumule avec le capital existant"
-    echo "  -o, --ore LAT LON         Virement ORE (récompenses environnementales UMAP depuis ASSETS)"
     echo "  -p, --permit EMAIL ID     Virement PERMIT (récompense WoT Dragon/permit holder)"
     echo "  -m, --montant MONTANT     Montant en euros (optionnel, auto-calculé par défaut)"
-    echo "  -r, --recovery            Mode dépannage: récupération complète SOCIETY → 3x1/3"
-    echo "  --recovery-3x13           Mode dépannage: récupération partielle ZEN Card → 3x1/3"
     echo "  -h, --help                Affiche cette aide"
     echo ""
     echo "Exemples:"
@@ -88,8 +156,6 @@ show_help() {
     echo "  $0 -c support@qo-op.com                      # Inscription capitaine Astroport"
     echo "  $0 -o 43.60 1.44 -m 10                       # Récompense ORE UMAP depuis ASSETS (10Ẑen)"
     echo "  $0 -p dragon@example.com PERMIT_WOT_DRAGON  # Récompense WoT Dragon"
-    echo "  $0 -r                                         # Mode dépannage SOCIETY → 3x1/3"
-    echo "  $0 --recovery-3x13                            # Mode dépannage ZEN Card → 3x1/3"
     echo ""
     echo "Types de sociétaires:"
     echo "  satellite     : ${ZENCARD_SATELLITE:-50}€/an (sans IA)"
@@ -300,7 +366,7 @@ send_alert() {
     </div>
     
     <hr>
-    <p><small>Alerte générée automatiquement par UPLANET.central.sh</small></p>
+    <p><small>Alerte générée automatiquement par UPLANET.official.sh</small></p>
 </body>
 </html>
 EOF
@@ -1634,25 +1700,124 @@ process_recovery_3x13() {
 }
 
 ################################################################################
+# Sélection email joueur (local + swarm)
+################################################################################
+# Usage : email=$(select_player_email "role" "multipass|zencard")
+# - multipass : local ~/.zen/game/nostr/*/G1PUBNOSTR  +  swarm ~/.zen/tmp/swarm/*/TW/*/G1PUBNOSTR
+# - zencard   : local ~/.zen/game/players/*/.g1pub  (uniquement)
+select_player_email() {
+    local role="${1:-joueur}"
+    local account_type="${2:-multipass}"  # "multipass" ou "zencard"
+    local _g1v2py="${MY_PATH}/tools/g1pub_to_ss58.py"
+    local -a emails=()
+    local -a g1v2s=()
+    local -a sources=()
+
+    if [[ "$account_type" == "zencard" ]]; then
+        # ── ZEN Card — LOCAL uniquement ──────────────────────────────────────
+        if [[ -d "$HOME/.zen/game/players" ]]; then
+            while IFS= read -r dir; do
+                local em g1pub ss58
+                em=$(basename "$dir")
+                if [[ "$em" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+                    g1pub=$(cat "$dir/.g1pub" 2>/dev/null)
+                    [[ -n "$g1pub" && -f "$_g1v2py" ]] && \
+                        ss58=$(python3 "$_g1v2py" "$g1pub" 2>/dev/null)
+                    emails+=("$em")
+                    g1v2s+=("${ss58:-?}")
+                    sources+=("🏠 local ZENCard")
+                fi
+            done < <(find "$HOME/.zen/game/players" -mindepth 1 -maxdepth 1 -type d | sort)
+        fi
+    else
+        # ── MULTIPASS — comptes locaux  ~/.zen/game/nostr/*/G1PUBNOSTR ────────
+        if [[ -d "$HOME/.zen/game/nostr" ]]; then
+            while IFS= read -r dir; do
+                local em g1pub ss58
+                em=$(basename "$dir")
+                if [[ "$em" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+                    g1pub=$(cat "$dir/G1PUBNOSTR" 2>/dev/null)
+                    [[ -n "$g1pub" && -f "$_g1v2py" ]] && \
+                        ss58=$(python3 "$_g1v2py" "$g1pub" 2>/dev/null)
+                    emails+=("$em")
+                    g1v2s+=("${ss58:-?}")
+                    sources+=("🏠 local")
+                fi
+            done < <(find "$HOME/.zen/game/nostr" -mindepth 1 -maxdepth 1 -type d | sort)
+        fi
+
+        # ── MULTIPASS — swarm  ~/.zen/tmp/swarm/*/TW/*/G1PUBNOSTR ─────────────
+        if [[ -d "$HOME/.zen/tmp/swarm" ]]; then
+            while IFS= read -r g1file; do
+                local em node_dir g1pub ss58 already
+                em=$(basename "$(dirname "$g1file")")
+                node_dir=$(basename "$(dirname "$(dirname "$g1file")")")
+                if [[ "$em" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+                    already=false
+                    for existing in "${emails[@]}"; do
+                        [[ "$existing" == "$em" ]] && already=true && break
+                    done
+                    if [[ "$already" == "false" ]]; then
+                        g1pub=$(cat "$g1file" 2>/dev/null)
+                        [[ -n "$g1pub" && -f "$_g1v2py" ]] && \
+                            ss58=$(python3 "$_g1v2py" "$g1pub" 2>/dev/null)
+                        emails+=("$em")
+                        g1v2s+=("${ss58:-?}")
+                        sources+=("🌐 ${node_dir: -8}")
+                    fi
+                fi
+            done < <(find "$HOME/.zen/tmp/swarm" -mindepth 4 -maxdepth 4 \
+                          -name "G1PUBNOSTR" -path "*/TW/*" 2>/dev/null | sort)
+        fi
+    fi
+
+    if [[ ${#emails[@]} -eq 0 ]]; then
+        read -p "Email du ${role} : " _selected_email
+        echo "$_selected_email"
+        return
+    fi
+
+    # ── Affichage ──────────────────────────────────────────────────────────
+    echo -e "${CYAN}📋 Comptes ${role} disponibles :${NC}" >&2
+    local i=1
+    for idx in "${!emails[@]}"; do
+        printf "  %2d. %-38s  %-52s  %s\n" \
+            "$i" "${emails[$idx]}" "${g1v2s[$idx]:-?}" "${sources[$idx]}" >&2
+        ((i++))
+    done
+    echo -e "   0. ✏️  Saisir un email manuellement" >&2
+    echo "" >&2
+
+    local sel
+    read -p "Choisissez (0-${#emails[@]}) ou tapez un email : " sel >&2
+
+    if [[ "$sel" =~ ^[1-9][0-9]*$ ]] && (( sel >= 1 && sel <= ${#emails[@]} )); then
+        echo "${emails[$((sel-1))]}"
+    elif [[ "$sel" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+        echo "$sel"
+    else
+        read -p "Email du ${role} : " _selected_email >&2
+        echo "$_selected_email"
+    fi
+}
+
+################################################################################
 # Menu interactif
 ################################################################################
 show_menu() {
-    echo -e "${BLUE}🏛️  UPLANET.central.sh - Menu de gestion des virements (version centralisée)${NC}"
+    echo -e "${BLUE}🏛️  UPLANET.official.sh - Menu de gestion des virements officiels${NC}"
     echo ""
     echo "1. Virement MULTIPASS (recharge MULTIPASS)"
     echo "2. Virement SOCIÉTAIRE Satellite (50€/an)"
     echo "3. Virement SOCIÉTAIRE Constellation (540€/3ans)"
     echo "4. Apport CAPITAL INFRASTRUCTURE (CAPTAIN → NODE)"
-    echo "5. 🌱 Virement ORE (récompenses environnementales UMAP depuis ASSETS)"
-    echo "6. 🔧 MODE DÉPANNAGE (récupération complète SOCIETY → 3x1/3)"
-    echo "7. 🔧 MODE DÉPANNAGE (récupération partielle ZEN Card → 3x1/3)"
-    echo "8. Quitter"
+    echo "5. Quitter"
     echo ""
-    read -p "Choisissez une option (1-8): " choice
+    read -p "Choisissez une option (1-5): " choice
     
     case $choice in
         1)
-            read -p "Email du locataire: " email
+            email=$(select_player_email "locataire (MULTIPASS)" "multipass")
             if [[ -n "$email" ]]; then
                 read -p "Montant en Ẑen (défaut: ${NCARD:-50}): " montant
                 montant="${montant:-${NCARD:-50}}"
@@ -1668,7 +1833,7 @@ show_menu() {
             fi
             ;;
         2)
-            read -p "Email du sociétaire: " email
+            email=$(select_player_email "sociétaire Satellite" "zencard")
             if [[ -n "$email" ]]; then
                 read -p "Montant en Ẑen (défaut: ${ZENCARD_SATELLITE:-50}): " montant
                 montant="${montant:-${ZENCARD_SATELLITE:-50}}"
@@ -1684,7 +1849,7 @@ show_menu() {
             fi
             ;;
         3)
-            read -p "Email du sociétaire: " email
+            email=$(select_player_email "sociétaire Constellation" "zencard")
             if [[ -n "$email" ]]; then
                 read -p "Montant en Ẑen (défaut: ${ZENCARD_CONSTELLATION:-540}): " montant
                 montant="${montant:-${ZENCARD_CONSTELLATION:-540}}"
@@ -1735,29 +1900,6 @@ show_menu() {
             fi
             ;;
         5)
-            read -p "Latitude UMAP: " lat
-            read -p "Longitude UMAP: " lon
-            if [[ -n "$lat" && -n "$lon" ]]; then
-                read -p "Montant en Ẑen (défaut: 10): " montant
-                montant="${montant:-10}"
-                
-                # Valider que le montant est un nombre
-                if [[ "$montant" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
-                    process_ore "$lat" "$lon" "$montant"
-                else
-                    echo -e "${RED}❌ Montant invalide (nombre requis)${NC}"
-                fi
-            else
-                echo -e "${RED}❌ Latitude et longitude requises${NC}"
-            fi
-            ;;
-        6)
-            process_recovery
-            ;;
-        7)
-            process_recovery_3x13
-            ;;
-        8)
             echo -e "${GREEN}👋 Au revoir!${NC}"
             exit 0
             ;;
