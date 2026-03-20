@@ -521,7 +521,7 @@ cat > "$HTML_FILE" << HTMLEOF
         <div class="addr">${ISSUERPUB}</div>
         <div class="bal">${ZENCUR} ZEN</div>
         <div class="links">
-          <a href="${CESIUM}/#/wot/${ISSUERPUB}/" target="_blank">📊 Cesium</a>
+          <a href="${CESIUM}/#/wot/tx/${ISSUERPUB}/" target="_blank">📊 Cesium</a>
         </div>
       </div>
       <div class="arrow">➡️</div>
@@ -530,7 +530,7 @@ cat > "$HTML_FILE" << HTMLEOF
         <div class="addr">${G1PUB}</div>
         <div class="bal">${ZENDES} ZEN</div>
         <div class="links">
-          <a href="${CESIUM}/#/wot/${G1PUB}/" target="_blank">📊 Cesium</a>
+          <a href="${CESIUM}/#/wot/tx/${G1PUB}/" target="_blank">📊 Cesium</a>
         </div>
       </div>
     </div>
