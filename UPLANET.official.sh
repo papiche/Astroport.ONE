@@ -23,7 +23,7 @@
 # - TREASURY: "UPLANET:${UPLANETG1PUB:0:8}:TREASURY:${email}:${type}:${IPFSNODEID}"
 # - RnD     : "UPLANET:${UPLANETG1PUB:0:8}:RnD:${email}:${type}:${IPFSNODEID}"
 # - ASSETS  : "UPLANET:${UPLANETG1PUB:0:8}:ASSETS:${email}:${type}:${IPFSNODEID}"
-# - ORE     : "UPLANET:${UPLANETG1PUB:0:8}:ORE:${umap_did}:${lat}:${lon}:${IPFSNODEID}" (depuis ASSETS)
+# - ORE     : "UPLANET:${UPLANETG1PUB:0:8}:ORE:${umap_hex:0:8}:${lat}:${lon}:${IPFSNODEID}" (depuis ASSETS)
 # - PERMIT  : "UPLANET:${UPLANETG1PUB:0:8}:PERMIT:${permit_id}:${email}:${credential_id}:${IPFSNODEID}" (depuis G1)
 #
 # L'IPFSNODEID identifie le nœud/machine à l'origine de la transaction
@@ -191,7 +191,7 @@ show_help() {
 check_no_pending_transactions() {
     local wallet_pubkey="$1"
     
-    echo -e "${YELLOW}🔍 Vérification rapide des transactions en cours: ${wallet_pubkey:0:8}...${NC}"
+    echo -e "${YELLOW}🔍 Vérification rapide des transactions en cours: ${wallet_pubkey}...${NC}"
     
     # Use G1balance.sh wrapper for full JSON balance (includes pending)
     local balance_json=$("${MY_PATH}/tools/G1balance.sh" "$wallet_pubkey" 2>/dev/null)
@@ -227,7 +227,7 @@ check_balance() {
     local wait_time=0
     local interval="${VERIFICATION_INTERVAL:-60}"  # 60 secondes par défaut
     
-    echo -e "${YELLOW}🔍 Vérification du solde du portefeuille: ${wallet_pubkey:0:8}...${NC}"
+    echo -e "${YELLOW}🔍 Vérification du solde du portefeuille: ${wallet_pubkey}...${NC}"
     
     # Récupérer le solde initial via G1balance.sh (includes pending info)
     local initial_balance_json=$("${MY_PATH}/tools/G1balance.sh" "$wallet_pubkey" 2>/dev/null)
@@ -288,7 +288,7 @@ check_balance() {
     echo -e "${RED}❌ Timeout: La transaction n'a pas été confirmée dans les 40 minutes${NC}"
     
     # Envoyer une alerte de timeout
-    send_alert "BLOCKCHAIN_TIMEOUT" "$USER_EMAIL" "$TRANSACTION_TYPE" "$TRANSACTION_AMOUNT" "$CURRENT_STEP" "Transaction timeout after ${max_wait} seconds. Wallet: ${wallet_pubkey:0:8}..."
+    send_alert "BLOCKCHAIN_TIMEOUT" "$USER_EMAIL" "$TRANSACTION_TYPE" "$TRANSACTION_AMOUNT" "$CURRENT_STEP" "Transaction timeout after ${max_wait} seconds. Wallet: ${wallet_pubkey}..."
     
     return 1
 }
@@ -411,7 +411,7 @@ transfer_and_verify() {
     # Convertir Ẑen en Ğ1 (1 Ẑen = 0.1 Ğ1)
     local g1_amount=$(zen_to_g1 "$zen_amount")
     
-    echo -e "${BLUE}💰 Transfert: ${zen_amount} Ẑen (${g1_amount} Ğ1) vers ${to_wallet:0:8}${NC}"
+    echo -e "${BLUE}💰 Transfert: ${zen_amount} Ẑen (${g1_amount} Ğ1) vers ${to_wallet}${NC}"
     echo -e "${CYAN}📝 Description: ${description}${NC}"
     
     # Vérifier que PAYforSURE.sh existe
@@ -507,7 +507,7 @@ virement_permit() {
         return 1
     fi
     
-    echo -e "${GREEN}✅ Portefeuille RnD trouvé: ${rnd_pubkey:0:8}...${NC}"
+    echo -e "${GREEN}✅ Portefeuille RnD trouvé: ${rnd_pubkey}...${NC}"
     
     # Récupérer la clé publique du MULTIPASS du bénéficiaire
     local multipass_pubkey=$(cat "$HOME/.zen/game/nostr/${email}/G1PUBNOSTR" 2>/dev/null)
@@ -589,11 +589,13 @@ process_ore() {
         return 1
     fi
     
-    echo -e "${GREEN}✅ Portefeuille ASSETS trouvé: ${assets_pubkey:0:8}...${NC}"
+    echo -e "${GREEN}✅ Portefeuille ASSETS trouvé: ${assets_pubkey}...${NC}"
     
     # Générer le DID UMAP
     echo -e "${YELLOW}🔑 Génération du DID UMAP...${NC}"
-    local umap_did_result=$(python3 "${MY_PATH}/tools/ore_system.py" "generate_did" "$lat" "$lon" 2>/dev/null)
+    # NOTE: ne pas faire `local var=$(cmd)` — local écrase $? (retour toujours 0)
+    local umap_did_result
+    umap_did_result=$(python3 "${MY_PATH}/tools/ore_system.py" "generate_did" "$lat" "$lon" 2>/dev/null)
     if [[ $? -ne 0 ]]; then
         echo -e "${RED}❌ Échec de génération du DID UMAP${NC}"
         return 1
@@ -610,9 +612,9 @@ process_ore() {
         return 1
     fi
     
-    echo -e "${GREEN}✅ DID UMAP généré: ${umap_did:0:20}...${NC}"
-    echo -e "${GREEN}✅ Clé publique Duniter/Ğ1: ${umap_g1pub:0:8}...${NC}"
-    echo -e "${CYAN}   Clé Nostr (hex): ${umap_hex:0:16}...${NC}"
+    echo -e "${GREEN}✅ DID UMAP généré: ${umap_did}...${NC}"
+    echo -e "${GREEN}✅ Clé publique Duniter/Ğ1: ${umap_g1pub}...${NC}"
+    echo -e "${CYAN}   Clé Nostr (hex): ${umap_hex}...${NC}"
     
     # Vérifier qu'il n'y a pas de transactions en cours avant de commencer
     echo -e "${BLUE}🔍 Vérification préalable des transactions en cours...${NC}"
@@ -669,7 +671,7 @@ ensure_wallet_initialized() {
     fi
 
     # Vérifier le solde blockchain
-    echo -e "${YELLOW}🔍 Vérification initialisation ${label}: ${pubkey:0:8}...${NC}"
+    echo -e "${YELLOW}🔍 Vérification initialisation ${label}: ${pubkey}...${NC}"
     local balance
     balance=$("${MY_PATH}/tools/G1check.sh" "${pubkey}" 2>/dev/null | tail -n 1)
 
@@ -699,7 +701,7 @@ ensure_wallet_initialized() {
         "${primo_comment}" 2>/dev/null
 
     if [[ $? -eq 0 ]]; then
-        echo -e "${GREEN}✅ Primo TX envoyée: 1 Ğ1 → ${label} (${pubkey:0:8}...)${NC}"
+        echo -e "${GREEN}✅ Primo TX envoyée: 1 Ğ1 → ${label} (${pubkey}...)${NC}"
         # Marquer comme initialisé
         echo "${UPLANETNAME_G1}" > "$HOME/.zen/tmp/coucou/${pubkey}.primal"
         [[ -n "$email" ]] && echo "${UPLANETNAME_G1}" > "$HOME/.zen/game/nostr/${email}/G1PRIME" 2>/dev/null
@@ -766,9 +768,9 @@ process_locataire() {
     fi
     
     echo -e "${YELLOW}🔑 Portefeuilles identifiés:${NC}"
-    echo -e "  UPLANETNAME_G1: ${g1_pubkey:0:8}..."
-    echo -e "  UPLANETNAME: ${uplanet_pubkey:0:8}..."
-    echo -e "  MULTIPASS ${email}: ${multipass_pubkey:0:8}..."
+    echo -e "  UPLANETNAME_G1: ${g1_pubkey}..."
+    echo -e "  UPLANETNAME: ${uplanet_pubkey}..."
+    echo -e "  MULTIPASS ${email}: ${multipass_pubkey}..."
 
     # Primo TX différée : uniquement pour les comptes locaux (nécessite G1PRIME local)
     if [[ "$_is_local" == "true" ]]; then
@@ -923,10 +925,10 @@ process_infrastructure() {
     
     if [[ -f "$zencard_dunikey" ]]; then
         zencard_pubkey=$(cat "$zencard_dunikey" | grep "pub:" | cut -d ' ' -f 2)
-        echo -e "${GREEN}✅ ZEN Card trouvée: ${zencard_pubkey:0:8}...${NC}"
+        echo -e "${GREEN}✅ ZEN Card trouvée: ${zencard_pubkey}...${NC}"
     elif [[ -f "$zencard_g1pub" ]]; then
         zencard_pubkey=$(cat "$zencard_g1pub")
-        echo -e "${GREEN}✅ ZEN Card trouvée (g1pub): ${zencard_pubkey:0:8}...${NC}"
+        echo -e "${GREEN}✅ ZEN Card trouvée (g1pub): ${zencard_pubkey}...${NC}"
     else
         echo -e "${RED}❌ ZEN Card non trouvée pour ${email}${NC}"
         echo -e "${CYAN}💡 Vérifiez que le dossier ~/.zen/game/players/${email}/ existe${NC}"
@@ -937,7 +939,7 @@ process_infrastructure() {
     local capital_pubkey=""
     if [[ -f "$HOME/.zen/game/uplanet.CAPITAL.dunikey" ]]; then
         capital_pubkey=$(cat "$HOME/.zen/game/uplanet.CAPITAL.dunikey" | grep "pub:" | cut -d ' ' -f 2)
-        echo -e "${GREEN}✅ UPLANETNAME_CAPITAL trouvé: ${capital_pubkey:0:8}...${NC}"
+        echo -e "${GREEN}✅ UPLANETNAME_CAPITAL trouvé: ${capital_pubkey}...${NC}"
     else
         # Create CAPITAL wallet if it doesn't exist
         echo -e "${YELLOW}📦 Création du portefeuille UPLANETNAME_CAPITAL...${NC}"
@@ -945,13 +947,13 @@ process_infrastructure() {
         chmod 600 "$HOME/.zen/game/uplanet.CAPITAL.dunikey"
         capital_pubkey=$(cat "$HOME/.zen/game/uplanet.CAPITAL.dunikey" | grep "pub:" | cut -d ' ' -f 2)
         echo ${capital_pubkey} > $HOME/.zen/tmp/UPLANETNAME_CAPITAL
-        echo -e "${GREEN}✅ UPLANETNAME_CAPITAL créé: ${capital_pubkey:0:8}...${NC}"
+        echo -e "${GREEN}✅ UPLANETNAME_CAPITAL créé: ${capital_pubkey}...${NC}"
     fi
     
     echo -e "${YELLOW}🔑 Portefeuilles identifiés:${NC}"
-    echo -e "  UPLANETNAME_G1: ${g1_pubkey:0:8}..."
-    echo -e "  ZEN Card ${email}: ${zencard_pubkey:0:8}..."
-    echo -e "  UPLANETNAME_CAPITAL (Immobilisations): ${capital_pubkey:0:8}..."
+    echo -e "  UPLANETNAME_G1: ${g1_pubkey}..."
+    echo -e "  ZEN Card ${email}: ${zencard_pubkey}..."
+    echo -e "  UPLANETNAME_CAPITAL (Immobilisations): ${capital_pubkey}..."
     
     # Vérifier qu'il n'y a pas de transactions en cours avant de commencer
     echo -e "${BLUE}🔍 Vérification préalable des transactions en cours...${NC}"
@@ -1081,10 +1083,10 @@ process_societaire() {
     
     if [[ -f "$zencard_dunikey" ]]; then
         zencard_pubkey=$(cat "$zencard_dunikey" | grep "pub:" | cut -d ' ' -f 2)
-        echo -e "${GREEN}✅ ZEN Card trouvée: ${zencard_pubkey:0:8}...${NC}"
+        echo -e "${GREEN}✅ ZEN Card trouvée: ${zencard_pubkey}...${NC}"
     elif [[ -f "$zencard_g1pub" ]]; then
         zencard_pubkey=$(cat "$zencard_g1pub")
-        echo -e "${GREEN}✅ ZEN Card trouvée (g1pub): ${zencard_pubkey:0:8}...${NC}"
+        echo -e "${GREEN}✅ ZEN Card trouvée (g1pub): ${zencard_pubkey}...${NC}"
     else
         echo -e "${RED}❌ ZEN Card non trouvée pour ${email}${NC}"
         echo -e "${CYAN}💡 Vérifiez que le dossier ~/.zen/game/players/${email}/ existe${NC}"
@@ -1097,16 +1099,16 @@ process_societaire() {
     local multipass_dunikey="$HOME/.zen/game/nostr/${email}/.secret.dunikey"
     if [[ -f "$HOME/.zen/game/nostr/${email}/G1PUBNOSTR" ]]; then
         multipass_pubkey=$(cat "$HOME/.zen/game/nostr/${email}/G1PUBNOSTR" 2>/dev/null)
-        echo -e "${GREEN}✅ MULTIPASS trouvé: ${multipass_pubkey:0:8}...${NC}"
+        echo -e "${GREEN}✅ MULTIPASS trouvé: ${multipass_pubkey}...${NC}"
     else
         echo -e "${YELLOW}⚠️  MULTIPASS non trouvé pour ${email} (compte NOSTR absent — crédit usage 33% ignoré)${NC}"
     fi
 
     echo -e "${YELLOW}🔑 Portefeuilles identifiés:${NC}"
-    echo -e "  UPLANETNAME_G1      : ${g1_pubkey:0:8}..."
-    echo -e "  UPLANETNAME_SOCIETY : ${society_pubkey:0:8}..."
-    echo -e "  ZEN Card ${email}   : ${zencard_pubkey:0:8}..."
-    [[ -n "$multipass_pubkey" ]] && echo -e "  MULTIPASS ${email}  : ${multipass_pubkey:0:8}..."
+    echo -e "  UPLANETNAME_G1      : ${g1_pubkey}..."
+    echo -e "  UPLANETNAME_SOCIETY : ${society_pubkey}..."
+    echo -e "  ZEN Card ${email}   : ${zencard_pubkey}..."
+    [[ -n "$multipass_pubkey" ]] && echo -e "  MULTIPASS ${email}  : ${multipass_pubkey}..."
 
     # Primo TX différée : initialiser ZEN Card et MULTIPASS si nécessaire
     if ! ensure_wallet_initialized "$zencard_pubkey" "ZENCARD" "$email"; then
@@ -1151,7 +1153,7 @@ process_societaire() {
     local part_captain_zen=$(echo "scale=2; $montant_zen - $part_multipass_zen - $part_rnd_zen - $part_assets_zen" | bc)
 
     # Note: 1/3 revient au MULTIPASS du sociétaire (crédit usage, déjà récupéré ci-dessus)
-    echo -e "${GREEN}✅ MULTIPASS sociétaire (1/3 crédit usage): ${multipass_pubkey:0:8}...${NC}"
+    echo -e "${GREEN}✅ MULTIPASS sociétaire (1/3 crédit usage): ${multipass_pubkey}...${NC}"
 
     # Portefeuilles coopératifs R&D et ASSETS
     local rnd_pubkey=""
@@ -1160,7 +1162,7 @@ process_societaire() {
     # R&D
     if [[ -f "$HOME/.zen/game/uplanet.RnD.dunikey" ]]; then
         rnd_pubkey=$(cat "$HOME/.zen/game/uplanet.RnD.dunikey" | grep "pub:" | cut -d ' ' -f 2)
-        echo -e "${GREEN}✅ R&D trouvé: ${rnd_pubkey:0:8}...${NC}"
+        echo -e "${GREEN}✅ R&D trouvé: ${rnd_pubkey}...${NC}"
     else
         echo -e "${RED}❌ Portefeuille R&D non trouvé: ~/.zen/game/uplanet.RnD.dunikey${NC}"
         echo -e "${CYAN}💡 Exécutez ZEN.COOPERATIVE.3x1-3.sh pour créer les portefeuilles coopératifs${NC}"
@@ -1170,7 +1172,7 @@ process_societaire() {
     # Assets
     if [[ -f "$HOME/.zen/game/uplanet.ASSETS.dunikey" ]]; then
         assets_pubkey=$(cat "$HOME/.zen/game/uplanet.ASSETS.dunikey" | grep "pub:" | cut -d ' ' -f 2)
-        echo -e "${GREEN}✅ Assets trouvé: ${assets_pubkey:0:8}...${NC}"
+        echo -e "${GREEN}✅ Assets trouvé: ${assets_pubkey}...${NC}"
     else
         echo -e "${RED}❌ Portefeuille Assets non trouvé: ~/.zen/game/uplanet.ASSETS.dunikey${NC}"
         echo -e "${CYAN}💡 Exécutez ZEN.COOPERATIVE.3x1-3.sh pour créer les portefeuilles coopératifs${NC}"
@@ -1179,8 +1181,10 @@ process_societaire() {
     
     # Transfert (1/3) → MULTIPASS du sociétaire (crédit usage retourné)
     # Conforme ZEN.ECONOMY.v2.md : "33% MULTIPASS contributeur (crédit usage)"
-    if [[ -n "$multipass_pubkey" && -f "$multipass_dunikey" ]]; then
-        echo -e "${CYAN}  📤 MULTIPASS sociétaire (1/3 crédit usage): ${part_multipass_zen} Ẑen → ${multipass_pubkey:0:8}...${NC}"
+    # NOTE: la source du transfert est $zencard_dunikey (pas $multipass_dunikey qui n'est pas utilisée)
+    # La condition ne doit vérifier que la présence de la clé publique destination.
+    if [[ -n "$multipass_pubkey" ]]; then
+        echo -e "${CYAN}  📤 MULTIPASS sociétaire (1/3 crédit usage): ${part_multipass_zen} Ẑen → ${multipass_pubkey}...${NC}"
         if ! transfer_and_verify "$zencard_dunikey" "$multipass_pubkey" "$part_multipass_zen" "UPLANET:${UPLANETG1PUB:0:8}:ZENCOIN:${email}" "$email" "SOCIETAIRE_${type^^}" "Étape 3a: ZENCARD→MULTIPASS"; then
             echo -e "${RED}❌ Échec transfert MULTIPASS sociétaire${NC}"
             return 1
@@ -1189,6 +1193,7 @@ process_societaire() {
         echo -e "${YELLOW}  ⚠️  Étape 3a IGNORÉE — MULTIPASS introuvable pour ${email} (crédit usage non émis)${NC}"
         # Redistribuer le 33% vers ASSETS en cas d'absence de MULTIPASS
         part_assets_zen=$(echo "scale=2; $part_assets_zen + $part_multipass_zen" | bc)
+        part_multipass_zen="0.00"  # Redirigé vers ASSETS — mettre à 0 pour le résumé final
         echo -e "${CYAN}  ↩️  Transfert 33% redirigé vers ASSETS: ${part_assets_zen} Ẑen total${NC}"
     fi
 
@@ -1235,7 +1240,7 @@ process_societaire() {
                 bonus_target_pubkey="$referrer_multipass"
                 bonus_target_label="Parrain ${referrer}"
                 bonus_tx_type="REF1pct"
-                echo -e "${GREEN}  🤝 Parrain trouvé (${referrer_source}): ${referrer} (${referrer_multipass:0:8}...)${NC}"
+                echo -e "${GREEN}  🤝 Parrain trouvé (${referrer_source}): ${referrer} (${referrer_multipass}...)${NC}"
             else
                 echo -e "${YELLOW}  ⚠️  G1PUBNOSTR introuvable pour '${referrer}' — prime reversée au Capitaine${NC}"
             fi
@@ -1313,7 +1318,7 @@ process_recovery() {
         return 1
     fi
     
-    echo -e "${CYAN}🔑 Wallet SOCIETY: ${society_pubkey:0:8}...${NC}"
+    echo -e "${CYAN}🔑 Wallet SOCIETY: ${society_pubkey}...${NC}"
     echo ""
     
     # Afficher le solde du wallet SOCIETY via G1balance.sh
@@ -1370,10 +1375,10 @@ process_recovery() {
     
     if [[ -f "$zencard_dunikey" ]]; then
         zencard_pubkey=$(cat "$zencard_dunikey" | grep "pub:" | cut -d ' ' -f 2)
-        echo -e "${GREEN}✅ ZEN Card trouvée: ${zencard_pubkey:0:8}...${NC}"
+        echo -e "${GREEN}✅ ZEN Card trouvée: ${zencard_pubkey}...${NC}"
     elif [[ -f "$zencard_g1pub" ]]; then
         zencard_pubkey=$(cat "$zencard_g1pub")
-        echo -e "${GREEN}✅ ZEN Card trouvée (g1pub): ${zencard_pubkey:0:8}...${NC}"
+        echo -e "${GREEN}✅ ZEN Card trouvée (g1pub): ${zencard_pubkey}...${NC}"
     else
         echo -e "${RED}❌ ZEN Card non trouvée pour ${email_ref}${NC}"
         echo -e "${CYAN}💡 Vérifiez que le dossier ~/.zen/game/players/${email_ref}/ existe${NC}"
@@ -1387,7 +1392,7 @@ process_recovery() {
         echo -e "${CYAN}💡 Créez un MULTIPASS avec make_NOSTRCARD.sh${NC}"
         return 1
     fi
-    echo -e "${GREEN}✅ MULTIPASS trouvé: ${multipass_pubkey_ref:0:8}...${NC}"
+    echo -e "${GREEN}✅ MULTIPASS trouvé: ${multipass_pubkey_ref}...${NC}"
 
     # Vérifier les portefeuilles coopératifs R&D et ASSETS
     local rnd_pubkey=""
@@ -1395,7 +1400,7 @@ process_recovery() {
 
     if [[ -f "$HOME/.zen/game/uplanet.RnD.dunikey" ]]; then
         rnd_pubkey=$(cat "$HOME/.zen/game/uplanet.RnD.dunikey" | grep "pub:" | cut -d ' ' -f 2)
-        echo -e "${GREEN}✅ R&D trouvé: ${rnd_pubkey:0:8}...${NC}"
+        echo -e "${GREEN}✅ R&D trouvé: ${rnd_pubkey}...${NC}"
     else
         echo -e "${RED}❌ Wallet R&D non trouvé: ~/.zen/game/uplanet.RnD.dunikey${NC}"
         return 1
@@ -1403,7 +1408,7 @@ process_recovery() {
     
     if [[ -f "$HOME/.zen/game/uplanet.ASSETS.dunikey" ]]; then
         assets_pubkey=$(cat "$HOME/.zen/game/uplanet.ASSETS.dunikey" | grep "pub:" | cut -d ' ' -f 2)
-        echo -e "${GREEN}✅ Assets trouvé: ${assets_pubkey:0:8}...${NC}"
+        echo -e "${GREEN}✅ Assets trouvé: ${assets_pubkey}...${NC}"
     else
         echo -e "${RED}❌ Wallet ASSETS non trouvé: ~/.zen/game/uplanet.ASSETS.dunikey${NC}"
         return 1
@@ -1569,10 +1574,10 @@ process_recovery_3x13() {
     
     if [[ -f "$zencard_dunikey" ]]; then
         zencard_pubkey=$(cat "$zencard_dunikey" | grep "pub:" | cut -d ' ' -f 2)
-        echo -e "${GREEN}✅ ZEN Card trouvée: ${zencard_pubkey:0:8}...${NC}"
+        echo -e "${GREEN}✅ ZEN Card trouvée: ${zencard_pubkey}...${NC}"
     elif [[ -f "$zencard_g1pub" ]]; then
         zencard_pubkey=$(cat "$zencard_g1pub")
-        echo -e "${YELLOW}⚠️  ZEN Card trouvée (g1pub uniquement): ${zencard_pubkey:0:8}...${NC}"
+        echo -e "${YELLOW}⚠️  ZEN Card trouvée (g1pub uniquement): ${zencard_pubkey}...${NC}"
         echo -e "${YELLOW}⚠️  Le fichier secret.dunikey est nécessaire pour effectuer le transfert${NC}"
         return 1
     else
@@ -1644,7 +1649,7 @@ process_recovery_3x13() {
                 dest_name="TREASURY"
                 dest_type="TREASURY"
                 did_contribution_type="TREASURY_CONTRIBUTION"
-                echo -e "${GREEN}✅ Treasury: ${dest_wallet:0:8}...${NC}"
+                echo -e "${GREEN}✅ Treasury: ${dest_wallet}...${NC}"
             else
                 echo -e "${RED}❌ Wallet TREASURY non trouvé: ~/.zen/game/uplanet.CASH.dunikey${NC}"
                 return 1
@@ -1656,7 +1661,7 @@ process_recovery_3x13() {
                 dest_name="R&D"
                 dest_type="RnD"
                 did_contribution_type="RND_CONTRIBUTION"
-                echo -e "${GREEN}✅ R&D: ${dest_wallet:0:8}...${NC}"
+                echo -e "${GREEN}✅ R&D: ${dest_wallet}...${NC}"
             else
                 echo -e "${RED}❌ Wallet R&D non trouvé: ~/.zen/game/uplanet.RnD.dunikey${NC}"
                 return 1
@@ -1668,7 +1673,7 @@ process_recovery_3x13() {
                 dest_name="ASSETS"
                 dest_type="ASSETS"
                 did_contribution_type="ASSETS_CONTRIBUTION"
-                echo -e "${GREEN}✅ Assets: ${dest_wallet:0:8}...${NC}"
+                echo -e "${GREEN}✅ Assets: ${dest_wallet}...${NC}"
             else
                 echo -e "${RED}❌ Wallet ASSETS non trouvé: ~/.zen/game/uplanet.ASSETS.dunikey${NC}"
                 return 1
@@ -1712,8 +1717,8 @@ process_recovery_3x13() {
     
     echo ""
     echo -e "${YELLOW}📋 Récapitulatif de l'opération:${NC}"
-    echo -e "  • Source: ZEN Card ${email_ref} (${zencard_pubkey:0:8}...)"
-    echo -e "  • Destination: ${dest_name} (${dest_wallet:0:8}...)"
+    echo -e "  • Source: ZEN Card ${email_ref} (${zencard_pubkey}...)"
+    echo -e "  • Destination: ${dest_name} (${dest_wallet}...)"
     echo -e "  • Montant: ${zen_amount} Ẑen (${g1_amount} Ğ1)"
     echo ""
     read -p "Confirmer le transfert? (oui/non): " confirm
