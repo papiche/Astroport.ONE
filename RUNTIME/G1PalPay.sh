@@ -57,8 +57,9 @@ ${MY_PATH}/../tools/G1history.sh ${G1PUB} 30 \
 [[ ! -s $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json ]] \
 && echo "NO PAYMENT HISTORY.........................."
 ########################################################
-## CONVERT TO INLINE JSON | jq -rc .[]
-cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -rc .[] \
+## CONVERT TO INLINE JSON | jq -rc '.history[] // empty'
+## G1history.sh retourne {"history":[{Date, Amounts Ğ1, Issuers/Recipients, Reference, ...}]}
+cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -rc '.history[] // empty' \
     > $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.history.json
 
 ########################################################################################
@@ -82,16 +83,17 @@ echo "############# CHECK FOR N1COMMANDs IN PAYMENT COMMENT"
 ls ${MY_PATH}/../ASTROBOT/ | grep "N1" | cut -d "." -f 1 > ~/.zen/tmp/${MOATS}/N1PROG
 while read prog; do
     echo "# SCAN FOR N1 COMMAND : $prog"
-    cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -rc .[] | grep "$prog" >> ~/.zen/tmp/${MOATS}/myN1.json
+    cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -rc '.history[] // empty' | grep "$prog" >> ~/.zen/tmp/${MOATS}/myN1.json
 done < ~/.zen/tmp/${MOATS}/N1PROG
 
 # got N1 incoming TX
 while read NLINE; do
     ## COMMENT FORMAT = N1$CMD:$TH:$TRAIL
-    TXIDATE=$(echo ${NLINE} | jq -r .date)
-    TXIPUBKEY=$(echo ${NLINE} | jq -r .pubkey)
-    TXIAMOUNT=$(echo $NLINE | jq -r .amount)
-    COMMENT=$(echo ${NLINE} | jq -r .comment)
+    ## Champs G1history.sh : Date, "Amounts Ğ1", "Issuers/Recipients", Reference, blockNumber, direction
+    TXIDATE=$(echo ${NLINE} | jq -r '.Date // .date // ""')
+    TXIPUBKEY=$(echo ${NLINE} | jq -r '."Issuers/Recipients" // .pubkey // ""')
+    TXIAMOUNT=$(echo $NLINE | jq -r '."Amounts Ğ1" // .amount // "0"')
+    COMMENT=$(echo ${NLINE} | jq -r '.Reference // .comment // ""')
     CMD=$(echo ${COMMENT} | cut -d ':' -f 1 | cut -c -12 ) # Maximum 12 characters CMD
 
     # Verify last recorded acting date (avoid running twice)
@@ -123,7 +125,7 @@ done < ~/.zen/tmp/${MOATS}/myN1.json
 echo "# CHECK FOR EMAILs IN PAYMENT COMMENT"
 ## DEBUG ## cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -r
 #################################################################
-cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -rc .[] | grep '@' \
+cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | jq -rc '.history[] // empty' | grep '@' \
     > ~/.zen/tmp/${MOATS}/myPalPay.json
 
 # IF COMMENT CONTAINS EMAIL ADDRESSES
@@ -134,14 +136,15 @@ cat $HOME/.zen/game/players/${PLAYER}/G1PalPay/${PLAYER}.duniter.history.json | 
 while read LINE; do
 
     JSON=${LINE}
-    TXIDATE=$(echo $JSON | jq -r .date)
-    TXIPUBKEY=$(echo $JSON | jq -r .pubkey)
-    TXIAMOUNT=$(echo $JSON | jq -r .amount)
-    TXIAMOUNTUD=$(echo $JSON | jq -r .amountUD)
-    COMMENT=$(echo $JSON | jq -r .comment)
+    ## Champs G1history.sh : Date, "Amounts Ğ1", "Issuers/Recipients", Reference, blockNumber, direction
+    TXIDATE=$(echo $JSON | jq -r '.Date // .date // ""')
+    TXIPUBKEY=$(echo $JSON | jq -r '."Issuers/Recipients" // .pubkey // ""')
+    TXIAMOUNT=$(echo $JSON | jq -r '."Amounts Ğ1" // .amount // "0"')
+    TXIAMOUNTUD=$(echo $JSON | jq -r '."Amounts Ğ1" // .amountUD // "0"')
+    COMMENT=$(echo $JSON | jq -r '.Reference // .comment // ""')
 
     lastTXdate=$(cat ~/.zen/game/players/${PLAYER}/.atdate 2>/dev/null)
-    [[ -z lastTXdate ]] && lastTXdate=0 && echo "0" > ~/.zen/game/players/${PLAYER}/.atdate
+    [[ -z "$lastTXdate" ]] && lastTXdate=0 && echo "0" > ~/.zen/game/players/${PLAYER}/.atdate
     [[ $(cat ~/.zen/game/players/${PLAYER}/.atdate) -ge $TXIDATE ]]  \
         && echo "PalPay $TXIDATE from ${TXIPUBKEY} ALREADY TREATED - continue" \
         && continue

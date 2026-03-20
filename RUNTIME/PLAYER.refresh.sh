@@ -111,6 +111,43 @@ for PLAYER in ${PLAYERONE[@]}; do
         ZENCARD_COINS=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.ZENCARD.G1check | tail -n 1)
         ZENCARD_ZEN=$(echo "scale=1; ($ZENCARD_COINS - 1) * 10" | bc)
         echo "ZEN Card balance: $ZENCARD_COINS Ğ1 ($ZENCARD_ZEN ẐEN)"
+
+        ## DÉTECTION ET CORRECTION DES ZEN CARDS EXCÉDENTAIRES
+        ## La ZEN Card doit rester à 1 Ğ1 (= 0 ẐEN excédent) après distribution 3x1/3.
+        ## Si UPLANET.official.sh a alimenté la ZEN Card sans que la redistribution 3x1/3
+        ## n'ait abouti, le solde résiduel est envoyé vers CASH (TREASURY) comme correction.
+        if [[ -n "$ZENCARD_COINS" ]] && [[ $(echo "${ZENCARD_COINS:-0} > 1" | bc -l 2>/dev/null) -eq 1 ]]; then
+            ZENCARD_EXCESS_G1=$(echo "scale=2; $ZENCARD_COINS - 1" | bc)
+            ZENCARD_EXCESS_ZEN=$(echo "scale=1; $ZENCARD_EXCESS_G1 * 10" | bc)
+            echo "⚠️  ZEN Card excess detected: ${ZENCARD_EXCESS_ZEN} ẐEN (${ZENCARD_EXCESS_G1} Ğ1) for ${PLAYER}"
+            echo "💸 Sending ZEN Card excess to CASH (TREASURY)..."
+
+            ZENCARD_DUNIKEY="$HOME/.zen/game/players/${PLAYER}/secret.dunikey"
+            CASH_DUNIKEY="$HOME/.zen/game/uplanet.CASH.dunikey"
+
+            if [[ -s "$ZENCARD_DUNIKEY" ]] && [[ -s "$CASH_DUNIKEY" ]]; then
+                CASH_G1PUB=$(grep "pub:" "$CASH_DUNIKEY" | cut -d ' ' -f 2)
+                if [[ -n "$CASH_G1PUB" ]]; then
+                    ${MY_PATH}/../tools/PAYforSURE.sh \
+                        "$ZENCARD_DUNIKEY" \
+                        "$ZENCARD_EXCESS_G1" \
+                        "$CASH_G1PUB" \
+                        "UPLANET:${UPLANETG1PUB:0:8}:TREASURY:${PLAYER}:ZENCARD_EXCESS:${IPFSNODEID}"
+                    _drain_exit=$?
+                    if [[ $_drain_exit -eq 0 ]]; then
+                        echo "✅ ZEN Card excess drained: ${ZENCARD_EXCESS_G1} Ğ1 (${ZENCARD_EXCESS_ZEN} ẐEN) → CASH/TREASURY"
+                    else
+                        echo "❌ Failed to drain ZEN Card excess to CASH/TREASURY (exit: $_drain_exit)"
+                    fi
+                else
+                    echo "⚠️  CASH wallet G1PUB not found — ZEN Card excess NOT drained"
+                fi
+            elif [[ ! -s "$ZENCARD_DUNIKEY" ]]; then
+                echo "⚠️  ZEN Card dunikey not found (${ZENCARD_DUNIKEY}) — excess NOT drained"
+            else
+                echo "⚠️  CASH dunikey not found (${CASH_DUNIKEY}) — ZEN Card excess NOT drained"
+            fi
+        fi
     fi
 
     # U.SOCIETY logic for rent payments
