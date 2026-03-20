@@ -58,22 +58,35 @@ echo -e "   • IPFS Node  : \033[0;32m...${IPFSNODEID: -8}\033[0m"
 echo -e "\033[0;33m🏛️  Portefeuilles coopératifs (format SS58 / Duniter v2) :\033[0m"
 _CESIUM="${CESIUMIPFS:-https://cesium.copylaradio.com}"
 _G1V2PY="${MY_PATH}/tools/g1pub_to_ss58.py"
-# Fonction locale : affiche SS58 (v2) + lien Cesium v1
+_API="${uSPOT:-http://127.0.0.1:54321}"
+
+# Fonction locale : affiche SS58 (v2) + lien Cesium WoT/TX + lien UPassport API d'audit
+# Usage : _show_wallet "LABEL" "G1PUBKEY" "URL_API_AUDIT"
 _show_wallet() {
-    local label="$1" pubkey="$2"
+    local label="$1" pubkey="$2" api_url="${3:-}"
     local ss58=""
     [[ -n "$pubkey" ]] && ss58=$(python3 "$_G1V2PY" "$pubkey" 2>/dev/null) || ss58="❌"
     printf "   \033[0;36m%-18s\033[0m : \033[0;35m%s\033[0m\n" "$label" "${ss58:-❌}"
-    printf "   %-18s   🔗 %s/#/wot/%s/\n" "" "$_CESIUM" "${ss58}"
+    printf "   %-18s   🔗 Cesium : %s/#/wot/tx/%s/\n" "" "$_CESIUM" "${ss58}"
+    [[ -n "$api_url" ]] && \
+    printf "   %-18s   🔍 Audit  : %s\n" "" "${api_url}"
 }
-_show_wallet "BANQUE CENTRALE"   "${UPLANETNAME_G1:-$UPLANETG1PUB}"
-_show_wallet "ẑen USAGE"         "${UPLANETG1PUB}"
-_show_wallet "ẐEN SOCIETY/AMAP"  "${UPLANETNAME_SOCIETY}"
-_show_wallet "TREASURY"          "${UPLANETNAME_TREASURY}"
-_show_wallet "ASSETS"            "${UPLANETNAME_ASSETS}"
-_show_wallet "RnD"               "${UPLANETNAME_RND}"
-_show_wallet "IMPOT (TVA)"       "${UPLANETNAME_IMPOT}"
-_show_wallet "CAPITAL (NODE)"    "${UPLANETNAME_CAPITAL}"
+_show_wallet "BANQUE CENTRALE"   "${UPLANETNAME_G1:-$UPLANETG1PUB}" \
+    "${_API}/check_balance?g1pub=${UPLANETNAME_G1:-$UPLANETG1PUB}&html"
+_show_wallet "ẑen USAGE"         "${UPLANETG1PUB}" \
+    "${_API}/check_revenue?html"
+_show_wallet "ẐEN SOCIETY/AMAP"  "${UPLANETNAME_SOCIETY}" \
+    "${_API}/check_society?html"
+_show_wallet "TREASURY"          "${UPLANETNAME_TREASURY}" \
+    "${_API}/check_balance?g1pub=${UPLANETNAME_TREASURY}&html"
+_show_wallet "ASSETS"            "${UPLANETNAME_ASSETS}" \
+    "${_API}/check_balance?g1pub=${UPLANETNAME_ASSETS}&html"
+_show_wallet "RnD"               "${UPLANETNAME_RND}" \
+    "${_API}/check_balance?g1pub=${UPLANETNAME_RND}&html"
+_show_wallet "IMPOT (TVA)"       "${UPLANETNAME_IMPOT}" \
+    "${_API}/check_impots?html"
+_show_wallet "CAPITAL (NODE)"    "${UPLANETNAME_CAPITAL}" \
+    "${_API}/check_balance?g1pub=${UPLANETNAME_CAPITAL}&html"
 echo -e "   \033[0;33m💎 Capital machine : ${MACHINE_VALUE_ZEN:-non configuré} Ẑen\033[0m"
 echo -e "\033[0;33m📊 Activité économique coopérative :\033[0m"
 # 1. Banque Centrale Ğ1 (UPLANETNAME_G1) — réserve de valeur, capacité à capter des €
@@ -732,7 +745,28 @@ process_locataire() {
     # Récupérer les clés publiques
     local g1_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_G1")
     local uplanet_pubkey=$(cat "$HOME/.zen/tmp/UPLANETG1PUB")
-    local multipass_pubkey=$(cat ~/.zen/game/nostr/${email}/G1PUBNOSTR)
+
+    # Résolution G1PUBNOSTR : local → cache node → swarm
+    local multipass_pubkey=""
+    if [[ -f "$HOME/.zen/game/nostr/${email}/G1PUBNOSTR" ]]; then
+        multipass_pubkey=$(cat "$HOME/.zen/game/nostr/${email}/G1PUBNOSTR" 2>/dev/null)
+    elif [[ -f "$HOME/.zen/tmp/${IPFSNODEID}/TW/${email}/G1PUBNOSTR" ]]; then
+        multipass_pubkey=$(cat "$HOME/.zen/tmp/${IPFSNODEID}/TW/${email}/G1PUBNOSTR" 2>/dev/null)
+        echo -e "${YELLOW}⚠️  G1PUBNOSTR trouvé dans le cache node local${NC}"
+    else
+        local _swarm_g1=$(find "$HOME/.zen/tmp/swarm" -mindepth 4 -maxdepth 4 \
+                          -path "*/TW/${email}/G1PUBNOSTR" 2>/dev/null | head -1)
+        if [[ -n "$_swarm_g1" ]] && [[ -f "$_swarm_g1" ]]; then
+            multipass_pubkey=$(cat "$_swarm_g1" 2>/dev/null)
+            echo -e "${YELLOW}⚠️  G1PUBNOSTR trouvé dans le swarm (${_swarm_g1})${NC}"
+        fi
+    fi
+
+    if [[ -z "$multipass_pubkey" ]]; then
+        echo -e "${RED}❌ G1PUBNOSTR introuvable pour ${email} (local, cache, swarm)${NC}"
+        echo -e "${CYAN}💡 Vérifiez que le MULTIPASS existe : ~/.zen/game/nostr/${email}/G1PUBNOSTR${NC}"
+        return 1
+    fi
     
     echo -e "${YELLOW}🔑 Portefeuilles identifiés:${NC}"
     echo -e "  UPLANETNAME_G1: ${g1_pubkey:0:8}..."
@@ -1051,10 +1085,22 @@ process_societaire() {
         return 1
     fi
     
+    # Récupérer le MULTIPASS (G1PUBNOSTR) du sociétaire pour le crédit usage 33%
+    # Conforme ZEN.ECONOMY.v2.md : ZEN Card → 33% MULTIPASS contributeur (crédit usage)
+    local multipass_pubkey=""
+    local multipass_dunikey="$HOME/.zen/game/nostr/${email}/.secret.dunikey"
+    if [[ -f "$HOME/.zen/game/nostr/${email}/G1PUBNOSTR" ]]; then
+        multipass_pubkey=$(cat "$HOME/.zen/game/nostr/${email}/G1PUBNOSTR" 2>/dev/null)
+        echo -e "${GREEN}✅ MULTIPASS trouvé: ${multipass_pubkey:0:8}...${NC}"
+    else
+        echo -e "${YELLOW}⚠️  MULTIPASS non trouvé pour ${email} (compte NOSTR absent — crédit usage 33% ignoré)${NC}"
+    fi
+
     echo -e "${YELLOW}🔑 Portefeuilles identifiés:${NC}"
-    echo -e "  UPLANETNAME_G1: ${g1_pubkey:0:8}..."
-    echo -e "  UPLANETNAME_SOCIETY: ${society_pubkey:0:8}..."
-    echo -e "  ZEN Card ${email}: ${zencard_pubkey:0:8}..."
+    echo -e "  UPLANETNAME_G1      : ${g1_pubkey:0:8}..."
+    echo -e "  UPLANETNAME_SOCIETY : ${society_pubkey:0:8}..."
+    echo -e "  ZEN Card ${email}   : ${zencard_pubkey:0:8}..."
+    [[ -n "$multipass_pubkey" ]] && echo -e "  MULTIPASS ${email}  : ${multipass_pubkey:0:8}..."
 
     # Primo TX différée : initialiser ZEN Card et MULTIPASS si nécessaire
     if ! ensure_wallet_initialized "$zencard_pubkey" "ZENCARD" "$email"; then
@@ -1126,10 +1172,18 @@ process_societaire() {
     fi
     
     # Transfert (1/3) → MULTIPASS du sociétaire (crédit usage retourné)
-    echo -e "${CYAN}  📤 MULTIPASS sociétaire (1/3 crédit usage): ${part_multipass_zen} Ẑen${NC}"
-    if ! transfer_and_verify "$zencard_dunikey" "$multipass_pubkey" "$part_multipass_zen" "UPLANET:${UPLANETG1PUB:0:8}:ZENCOIN:${email}" "$email" "SOCIETAIRE_${type^^}" "Étape 3a: ZENCARD→MULTIPASS"; then
-        echo -e "${RED}❌ Échec transfert MULTIPASS sociétaire${NC}"
-        return 1
+    # Conforme ZEN.ECONOMY.v2.md : "33% MULTIPASS contributeur (crédit usage)"
+    if [[ -n "$multipass_pubkey" && -f "$multipass_dunikey" ]]; then
+        echo -e "${CYAN}  📤 MULTIPASS sociétaire (1/3 crédit usage): ${part_multipass_zen} Ẑen → ${multipass_pubkey:0:8}...${NC}"
+        if ! transfer_and_verify "$zencard_dunikey" "$multipass_pubkey" "$part_multipass_zen" "UPLANET:${UPLANETG1PUB:0:8}:ZENCOIN:${email}" "$email" "SOCIETAIRE_${type^^}" "Étape 3a: ZENCARD→MULTIPASS"; then
+            echo -e "${RED}❌ Échec transfert MULTIPASS sociétaire${NC}"
+            return 1
+        fi
+    else
+        echo -e "${YELLOW}  ⚠️  Étape 3a IGNORÉE — MULTIPASS introuvable pour ${email} (crédit usage non émis)${NC}"
+        # Redistribuer le 33% vers ASSETS en cas d'absence de MULTIPASS
+        part_assets_zen=$(echo "scale=2; $part_assets_zen + $part_multipass_zen" | bc)
+        echo -e "${CYAN}  ↩️  Transfert 33% redirigé vers ASSETS: ${part_assets_zen} Ẑen total${NC}"
     fi
 
     # Mettre à jour DID pour crédit MULTIPASS
@@ -1701,84 +1755,20 @@ process_recovery_3x13() {
 
 ################################################################################
 # Sélection email joueur (local + swarm)
-################################################################################
-# Usage : email=$(select_player_email "role" "multipass|zencard")
-# - multipass : local ~/.zen/game/nostr/*/G1PUBNOSTR  +  swarm ~/.zen/tmp/swarm/*/TW/*/G1PUBNOSTR
-# - zencard   : local ~/.zen/game/players/*/.g1pub  (uniquement)
-select_player_email() {
-    local role="${1:-joueur}"
-    local account_type="${2:-multipass}"  # "multipass" ou "zencard"
-    local _g1v2py="${MY_PATH}/tools/g1pub_to_ss58.py"
-    local -a emails=()
-    local -a g1v2s=()
-    local -a sources=()
-
-    if [[ "$account_type" == "zencard" ]]; then
-        # ── ZEN Card — LOCAL uniquement ──────────────────────────────────────
-        if [[ -d "$HOME/.zen/game/players" ]]; then
-            while IFS= read -r dir; do
-                local em g1pub ss58
-                em=$(basename "$dir")
-                if [[ "$em" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
-                    g1pub=$(cat "$dir/.g1pub" 2>/dev/null)
-                    [[ -n "$g1pub" && -f "$_g1v2py" ]] && \
-                        ss58=$(python3 "$_g1v2py" "$g1pub" 2>/dev/null)
-                    emails+=("$em")
-                    g1v2s+=("${ss58:-?}")
-                    sources+=("🏠 local ZENCard")
-                fi
-            done < <(find "$HOME/.zen/game/players" -mindepth 1 -maxdepth 1 -type d | sort)
-        fi
-    else
-        # ── MULTIPASS — comptes locaux  ~/.zen/game/nostr/*/G1PUBNOSTR ────────
-        if [[ -d "$HOME/.zen/game/nostr" ]]; then
-            while IFS= read -r dir; do
-                local em g1pub ss58
-                em=$(basename "$dir")
-                if [[ "$em" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
-                    g1pub=$(cat "$dir/G1PUBNOSTR" 2>/dev/null)
-                    [[ -n "$g1pub" && -f "$_g1v2py" ]] && \
-                        ss58=$(python3 "$_g1v2py" "$g1pub" 2>/dev/null)
-                    emails+=("$em")
-                    g1v2s+=("${ss58:-?}")
-                    sources+=("🏠 local")
-                fi
-            done < <(find "$HOME/.zen/game/nostr" -mindepth 1 -maxdepth 1 -type d | sort)
-        fi
-
-        # ── MULTIPASS — swarm  ~/.zen/tmp/swarm/*/TW/*/G1PUBNOSTR ─────────────
-        if [[ -d "$HOME/.zen/tmp/swarm" ]]; then
-            while IFS= read -r g1file; do
-                local em node_dir g1pub ss58 already
-                em=$(basename "$(dirname "$g1file")")
-                node_dir=$(basename "$(dirname "$(dirname "$g1file")")")
-                if [[ "$em" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
-                    already=false
-                    for existing in "${emails[@]}"; do
-                        [[ "$existing" == "$em" ]] && already=true && break
-                    done
-                    if [[ "$already" == "false" ]]; then
-                        g1pub=$(cat "$g1file" 2>/dev/null)
-                        [[ -n "$g1pub" && -f "$_g1v2py" ]] && \
-                            ss58=$(python3 "$_g1v2py" "$g1pub" 2>/dev/null)
-                        emails+=("$em")
-                        g1v2s+=("${ss58:-?}")
-                        sources+=("🌐 ${node_dir: -8}")
-                    fi
-                fi
-            done < <(find "$HOME/.zen/tmp/swarm" -mindepth 4 -maxdepth 4 \
-                          -name "G1PUBNOSTR" -path "*/TW/*" 2>/dev/null | sort)
-        fi
-    fi
+# ── Fonction utilitaire : affichage + saisie de sélection ────────────────
+# Usage interne : _select_from_list "role" emails[] g1v2s[] sources[]
+_select_from_list() {
+    local role="$1"; shift
+    local -a emails=("${!1}"); shift
+    local -a g1v2s=("${!1}"); shift
+    local -a sources=("${!1}"); shift
 
     if [[ ${#emails[@]} -eq 0 ]]; then
-        read -p "Email du ${role} : " _selected_email
+        read -p "Email du ${role} : " _selected_email >&2
         echo "$_selected_email"
         return
     fi
-
-    # ── Affichage ──────────────────────────────────────────────────────────
-    echo -e "${CYAN}📋 Comptes ${role} disponibles :${NC}" >&2
+    echo -e "${CYAN}📋 ${role} disponibles :${NC}" >&2
     local i=1
     for idx in "${!emails[@]}"; do
         printf "  %2d. %-38s  %-52s  %s\n" \
@@ -1787,18 +1777,187 @@ select_player_email() {
     done
     echo -e "   0. ✏️  Saisir un email manuellement" >&2
     echo "" >&2
-
     local sel
     read -p "Choisissez (0-${#emails[@]}) ou tapez un email : " sel >&2
-
     if [[ "$sel" =~ ^[1-9][0-9]*$ ]] && (( sel >= 1 && sel <= ${#emails[@]} )); then
         echo "${emails[$((sel-1))]}"
     elif [[ "$sel" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
         echo "$sel"
     else
-        read -p "Email du ${role} : " _selected_email >&2
-        echo "$_selected_email"
+        read -p "Email du ${role} : " _sel2 >&2; echo "$_sel2"
     fi
+}
+
+################################################################################
+# select_multipass — liste les MULTIPASS locaux + swarm
+# Sources : ~/.zen/game/nostr/*/G1PUBNOSTR  (local 🏠)
+#           ~/.zen/tmp/swarm/*/TW/*/G1PUBNOSTR  (swarm 🌐)
+# Affiche la clé SS58 v2 de chaque MULTIPASS
+# Usage : email=$(select_multipass "Locataire")
+################################################################################
+select_multipass() {
+    local role="${1:-locataire MULTIPASS}"
+    local _g1v2py="${MY_PATH}/tools/g1pub_to_ss58.py"
+    local -a emails=() g1v2s=() sources=()
+
+    # ── Locaux ~/.zen/game/nostr/*/G1PUBNOSTR ────────────────────────────────
+    if [[ -d "$HOME/.zen/game/nostr" ]]; then
+        while IFS= read -r dir; do
+            local em g1pub ss58
+            em=$(basename "$dir")
+            if [[ "$em" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+                g1pub=$(cat "$dir/G1PUBNOSTR" 2>/dev/null)
+                ss58=""; [[ -n "$g1pub" && -f "$_g1v2py" ]] && \
+                    ss58=$(python3 "$_g1v2py" "$g1pub" 2>/dev/null)
+                emails+=("$em"); g1v2s+=("${ss58:-?}"); sources+=("🏠 local")
+            fi
+        done < <(find "$HOME/.zen/game/nostr" -mindepth 1 -maxdepth 1 -type d | sort)
+    fi
+
+    # ── Swarm ~/.zen/tmp/swarm/*/TW/*/G1PUBNOSTR ─────────────────────────────
+    if [[ -d "$HOME/.zen/tmp/swarm" ]]; then
+        while IFS= read -r g1file; do
+            local em node_dir g1pub ss58 already
+            em=$(basename "$(dirname "$g1file")")
+            node_dir=$(basename "$(dirname "$(dirname "$g1file")")")
+            if [[ "$em" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+                already=false
+                for existing in "${emails[@]}"; do
+                    [[ "$existing" == "$em" ]] && already=true && break
+                done
+                if [[ "$already" == "false" ]]; then
+                    g1pub=$(cat "$g1file" 2>/dev/null)
+                    ss58=""; [[ -n "$g1pub" && -f "$_g1v2py" ]] && \
+                        ss58=$(python3 "$_g1v2py" "$g1pub" 2>/dev/null)
+                    emails+=("$em"); g1v2s+=("${ss58:-?}"); sources+=("🌐 ${node_dir: -8}")
+                fi
+            fi
+        done < <(find "$HOME/.zen/tmp/swarm" -mindepth 4 -maxdepth 4 \
+                      -name "G1PUBNOSTR" -path "*/TW/*" 2>/dev/null | sort)
+    fi
+
+    _select_from_list "$role" emails[@] g1v2s[@] sources[@]
+}
+
+################################################################################
+# select_zencard — liste les ZEN Card locales uniquement
+# Source : ~/.zen/game/players/*/.g1pub  (local 🏠)
+# Affiche la clé SS58 v2 de chaque ZEN Card
+# Usage : email=$(select_zencard "Sociétaire")
+################################################################################
+select_zencard() {
+    local role="${1:-sociétaire ZEN Card}"
+    local _g1v2py="${MY_PATH}/tools/g1pub_to_ss58.py"
+    local -a emails=() g1v2s=() sources=()
+
+    # ── Locaux ~/.zen/game/players/*/.g1pub ──────────────────────────────────
+    if [[ -d "$HOME/.zen/game/players" ]]; then
+        while IFS= read -r dir; do
+            local em g1pub ss58
+            em=$(basename "$dir")
+            if [[ "$em" =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+                g1pub=$(cat "$dir/.g1pub" 2>/dev/null)
+                ss58=""; [[ -n "$g1pub" && -f "$_g1v2py" ]] && \
+                    ss58=$(python3 "$_g1v2py" "$g1pub" 2>/dev/null)
+                emails+=("$em"); g1v2s+=("${ss58:-?}"); sources+=("🏠 local ZENCard")
+            fi
+        done < <(find "$HOME/.zen/game/players" -mindepth 1 -maxdepth 1 -type d | sort)
+    fi
+
+    _select_from_list "$role" emails[@] g1v2s[@] sources[@]
+}
+
+################################################################################
+# Contrôle des portefeuilles relais (doivent transiter à 0 Ẑen)
+# Les wallets UPLANETG1PUB (ẑen usage) et UPLANETNAME_SOCIETY (ẑen AMAP) sont
+# des portefeuilles de transit : ils reçoivent et reversent aussitôt.
+# Tout solde résiduel > 1 Ğ1 indique une transaction bloquée à corriger.
+################################################################################
+check_relay_wallets_interactive() {
+    # Seuil = 100 centimes = 1 Ğ1 = réserve nécessaire pour pouvoir envoyer des TX
+    # L'excédent = solde - 1 Ğ1 (= le montant réellement bloqué en transit)
+    local _reserve_centimes=100   # 1 Ğ1 = réserve d'envoi obligatoire
+    local _excess_found=false
+    local _drain_uplanet_zen="" _drain_society_zen=""
+
+    echo -e "${YELLOW}🔍 Contrôle des portefeuilles relais coopératifs...${NC}"
+    echo -e "${CYAN}   La valeur économique = SOMME DES TX (G1revenue / G1society), pas le solde.${NC}"
+    echo -e "${CYAN}   Réserve normale : 1 Ğ1 = 10 Ẑen (nécessaire pour envoyer des TX).${NC}"
+    echo -e "${CYAN}   Excédent (> 1Ğ1) = transit bloqué → drainage proposé.${NC}"
+    echo ""
+
+    # ── UPLANETG1PUB : relais ẑen USAGE (MULTIPASS) ─────────────────────────
+    local _bal_u _excess_u_centimes _excess_u_zen
+    _bal_u=$(timeout 8 "${MY_PATH}/tools/G1balance.sh" "${UPLANETG1PUB}" 2>/dev/null \
+             | jq -r '.balances.blockchain // 0' 2>/dev/null)
+    _excess_u_centimes=$(echo "${_bal_u:-0} - ${_reserve_centimes}" | bc 2>/dev/null)
+    _excess_u_zen=$(echo "scale=1; (${_excess_u_centimes:-0} / 100) * 10" | bc -l 2>/dev/null)
+    if [[ $(echo "${_excess_u_centimes:-0} > 0" | bc -l 2>/dev/null) -eq 1 ]]; then
+        echo -e "${RED}⚠️  ẑen USAGE (UPLANETG1PUB)       : ${_excess_u_zen} Ẑen en excès (+ 1Ğ1 réserve) — TRANSIT BLOQUÉ${NC}"
+        _excess_found=true; _drain_uplanet_zen="$_excess_u_zen"
+    else
+        echo -e "${GREEN}✅ ẑen USAGE (UPLANETG1PUB)       : 1Ğ1 réserve OK — aucun excédent (transit vide)${NC}"
+    fi
+
+    # ── UPLANETNAME_SOCIETY : relais ẑen AMAP (parts sociales) ──────────────
+    local _bal_s _excess_s_centimes _excess_s_zen
+    _bal_s=$(timeout 8 "${MY_PATH}/tools/G1balance.sh" "${UPLANETNAME_SOCIETY}" 2>/dev/null \
+             | jq -r '.balances.blockchain // 0' 2>/dev/null)
+    _excess_s_centimes=$(echo "${_bal_s:-0} - ${_reserve_centimes}" | bc 2>/dev/null)
+    _excess_s_zen=$(echo "scale=1; (${_excess_s_centimes:-0} / 100) * 10" | bc -l 2>/dev/null)
+    if [[ $(echo "${_excess_s_centimes:-0} > 0" | bc -l 2>/dev/null) -eq 1 ]]; then
+        echo -e "${RED}⚠️  ẑen AMAP  (UPLANETNAME_SOCIETY): ${_excess_s_zen} Ẑen en excès (+ 1Ğ1 réserve) — TRANSIT BLOQUÉ${NC}"
+        _excess_found=true; _drain_society_zen="$_excess_s_zen"
+    else
+        echo -e "${GREEN}✅ ẑen AMAP  (UPLANETNAME_SOCIETY): 1Ğ1 réserve OK — aucun excédent (transit vide)${NC}"
+    fi
+
+    [[ "$_excess_found" == "false" ]] && echo "" && return 0
+
+    # ── Proposition de drainage ──────────────────────────────────────────────
+    echo ""
+    echo -e "${YELLOW}💡 Des fonds sont bloqués dans les portefeuilles relais.${NC}"
+    echo -e "${CYAN}Que souhaitez-vous faire ?${NC}"
+    [[ -n "$_drain_uplanet_zen" ]] && \
+        echo -e "  ${GREEN}1.${NC} Drainer ẑen USAGE (${_drain_uplanet_zen} Ẑen) → MULTIPASS d'un locataire"
+    [[ -n "$_drain_society_zen" ]] && \
+        echo -e "  ${GREEN}2.${NC} Drainer ẑen AMAP  (${_drain_society_zen} Ẑen) → 33/33/33/1% d'un sociétaire"
+    echo -e "  ${GREEN}3.${NC} Ignorer et continuer"
+    echo ""
+    read -p "Choisissez (1/2/3) : " _drain_choice
+
+    case "$_drain_choice" in
+        1)
+            if [[ -n "$_drain_uplanet_zen" ]]; then
+                local _em
+                _em=$(select_multipass "locataire MULTIPASS (usage)")
+                if [[ -n "$_em" ]]; then
+                    echo -e "${CYAN}💳 Drainage ẑen USAGE → MULTIPASS ${_em}: ${_drain_uplanet_zen} Ẑen${NC}"
+                    process_locataire "$_em" "$_drain_uplanet_zen"
+                fi
+            else
+                echo -e "${YELLOW}⚠️  Pas d'excédent ẑen USAGE détecté.${NC}"
+            fi
+            ;;
+        2)
+            if [[ -n "$_drain_society_zen" ]]; then
+                local _em _tp
+                _em=$(select_zencard "sociétaire AMAP (parts sociales)")
+                if [[ -n "$_em" ]]; then
+                    read -p "Type de sociétaire (satellite|constellation) [satellite] : " _tp
+                    _tp="${_tp:-satellite}"
+                    echo -e "${CYAN}🏛️  Drainage ẑen AMAP → 3×1/3+1% pour ${_em}: ${_drain_society_zen} Ẑen${NC}"
+                    process_societaire "$_em" "$_tp" "$_drain_society_zen"
+                fi
+            else
+                echo -e "${YELLOW}⚠️  Pas d'excédent ẑen AMAP détecté.${NC}"
+            fi
+            ;;
+        *)
+            echo -e "${YELLOW}⏩ Contrôle ignoré — les fonds restent en attente.${NC}"
+            ;;
+    esac
+    echo ""
 }
 
 ################################################################################
@@ -1817,7 +1976,7 @@ show_menu() {
     
     case $choice in
         1)
-            email=$(select_player_email "locataire (MULTIPASS)" "multipass")
+            email=$(select_multipass "locataire (MULTIPASS)")
             if [[ -n "$email" ]]; then
                 read -p "Montant en Ẑen (défaut: ${NCARD:-50}): " montant
                 montant="${montant:-${NCARD:-50}}"
@@ -1833,7 +1992,7 @@ show_menu() {
             fi
             ;;
         2)
-            email=$(select_player_email "sociétaire Satellite" "zencard")
+            email=$(select_zencard "sociétaire Satellite")
             if [[ -n "$email" ]]; then
                 read -p "Montant en Ẑen (défaut: ${ZENCARD_SATELLITE:-50}): " montant
                 montant="${montant:-${ZENCARD_SATELLITE:-50}}"
@@ -1849,7 +2008,7 @@ show_menu() {
             fi
             ;;
         3)
-            email=$(select_player_email "sociétaire Constellation" "zencard")
+            email=$(select_zencard "sociétaire Constellation")
             if [[ -n "$email" ]]; then
                 read -p "Montant en Ẑen (défaut: ${ZENCARD_CONSTELLATION:-540}): " montant
                 montant="${montant:-${ZENCARD_CONSTELLATION:-540}}"
@@ -2136,7 +2295,8 @@ main() {
                 ;;
         esac
     else
-        # Mode interactif
+        # Mode interactif — contrôle préalable des portefeuilles relais
+        check_relay_wallets_interactive
         show_menu
     fi
 }
