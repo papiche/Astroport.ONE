@@ -747,19 +747,16 @@ process_locataire() {
     local uplanet_pubkey=$(cat "$HOME/.zen/tmp/UPLANETG1PUB")
 
     # Résolution G1PUBNOSTR : local → cache node → swarm
-    local multipass_pubkey=""
+    # _is_local=true  : compte hébergé ici → ensure_wallet + DID update possibles
+    # _is_local=false : compte swarm     → TX blockchain seulement, DID mis à jour par la station d'origine
+    local multipass_pubkey="" _is_local=false
     if [[ -f "$HOME/.zen/game/nostr/${email}/G1PUBNOSTR" ]]; then
         multipass_pubkey=$(cat "$HOME/.zen/game/nostr/${email}/G1PUBNOSTR" 2>/dev/null)
+        _is_local=true
+        echo -e "${GREEN}✅ MULTIPASS local${NC}"
     elif [[ -f "$HOME/.zen/tmp/${IPFSNODEID}/TW/${email}/G1PUBNOSTR" ]]; then
         multipass_pubkey=$(cat "$HOME/.zen/tmp/${IPFSNODEID}/TW/${email}/G1PUBNOSTR" 2>/dev/null)
-        echo -e "${YELLOW}⚠️  G1PUBNOSTR trouvé dans le cache node local${NC}"
-    else
-        local _swarm_g1=$(find "$HOME/.zen/tmp/swarm" -mindepth 4 -maxdepth 4 \
-                          -path "*/TW/${email}/G1PUBNOSTR" 2>/dev/null | head -1)
-        if [[ -n "$_swarm_g1" ]] && [[ -f "$_swarm_g1" ]]; then
-            multipass_pubkey=$(cat "$_swarm_g1" 2>/dev/null)
-            echo -e "${YELLOW}⚠️  G1PUBNOSTR trouvé dans le swarm (${_swarm_g1})${NC}"
-        fi
+        echo -e "${YELLOW}⚠️  MULTIPASS trouvé dans le cache node local (non local)${NC}"
     fi
 
     if [[ -z "$multipass_pubkey" ]]; then
@@ -773,10 +770,14 @@ process_locataire() {
     echo -e "  UPLANETNAME: ${uplanet_pubkey:0:8}..."
     echo -e "  MULTIPASS ${email}: ${multipass_pubkey:0:8}..."
 
-    # Primo TX différée : initialiser le MULTIPASS uniquement si nécessaire
-    if ! ensure_wallet_initialized "$multipass_pubkey" "MULTIPASS" "$email"; then
-        echo -e "${RED}❌ Impossible d'initialiser le MULTIPASS — Duniter v2 indisponible ?${NC}"
-        return 1
+    # Primo TX différée : uniquement pour les comptes locaux (nécessite G1PRIME local)
+    if [[ "$_is_local" == "true" ]]; then
+        if ! ensure_wallet_initialized "$multipass_pubkey" "MULTIPASS" "$email"; then
+            echo -e "${RED}❌ Impossible d'initialiser le MULTIPASS — Duniter v2 indisponible ?${NC}"
+            return 1
+        fi
+    else
+        echo -e "${CYAN}ℹ️  Primo TX ignorée — MULTIPASS swarm, initialisation gérée par la station d'origine${NC}"
     fi
 
     # Vérifier qu'il n'y a pas de transactions en cours avant de commencer
@@ -807,8 +808,13 @@ process_locataire() {
     echo -e "  • Recharge de service hebdomadaire effectuée"
     echo -e "  • Toutes les transactions confirmées sur la blockchain"
     
-    # Mettre à jour le document DID avec les nouvelles capacités
-    "${MY_PATH}/tools/did_manager_nostr.sh" update "$email" "MULTIPASS" "$montant_euros" "$montant_g1"
+    # Mettre à jour le DID uniquement pour les comptes locaux
+    # Pour les comptes swarm : DID mis à jour par la station d'origine via NOSTRCARD.refresh.sh
+    if [[ "$_is_local" == "true" ]]; then
+        "${MY_PATH}/tools/did_manager_nostr.sh" update "$email" "MULTIPASS" "$montant_euros" "$montant_g1"
+    else
+        echo -e "${CYAN}ℹ️  DID non mis à jour localement — MULTIPASS swarm, géré par la station d'origine${NC}"
+    fi
     
     return 0
 }
@@ -1139,10 +1145,10 @@ process_societaire() {
     # Calculer les montants de répartition (en Ẑen pour l'affichage, en Ğ1 pour les transferts)
     # 33% MULTIPASS sociétaire (crédit usage) + 33% RnD + 33% ASSETS + 1% Captain MULTIPASS = 100%
     local montant_zen=$montant_euros
-    local part_captain_zen=$(echo "scale=2; $montant_zen * 1 / 100" | bc)
+    local part_assets_zen=$(echo "scale=2; $montant_zen * 33 / 100" | bc)
     local part_multipass_zen=$(echo "scale=2; $montant_zen * 33 / 100" | bc)
     local part_rnd_zen=$(echo "scale=2; $montant_zen * 33 / 100" | bc)
-    local part_assets_zen=$(echo "scale=2; $montant_zen - $part_multipass_zen - $part_rnd_zen - $part_captain_zen" | bc)
+    local part_captain_zen=$(echo "scale=2; $montant_zen - $part_multipass_zen - $part_rnd_zen - $part_assets_zen" | bc)
 
     # Note: 1/3 revient au MULTIPASS du sociétaire (crédit usage, déjà récupéré ci-dessus)
     echo -e "${GREEN}✅ MULTIPASS sociétaire (1/3 crédit usage): ${multipass_pubkey:0:8}...${NC}"
