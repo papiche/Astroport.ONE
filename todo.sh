@@ -35,6 +35,7 @@ TODO_OUTPUT="$REPO_ROOT/TODO.last.md"
 TODO_MAIN="$REPO_ROOT/TODO.md"
 QUESTION_PY="$REPO_ROOT/IA/question.py"
 GIT_LOG_FILE="$REPO_ROOT/.git_changes.txt"
+ARTICLE_SCRIPT="$REPO_ROOT/IA/generate_article.sh"  # Pipeline article (résumé+tags+image)
 
 # N² Memory System - Shared across all stations via NOSTR
 # Uses uplanet.G1.nostr key for constellation-wide learning
@@ -126,6 +127,8 @@ show_help() {
     echo -e "    ${GREEN}--last, -l${NC}      Analyze since last execution (DEFAULT)"
     echo -e "    ${GREEN}--day, -d${NC}       Analyze last 24 hours"
     echo -e "    ${GREEN}--week, -w${NC}      Analyze last 7 days"
+    echo -e "    ${GREEN}--month, -m${NC}     Analyze last 30 days"
+    echo -e "    ${GREEN}--export FILE${NC}   Export article to file (format detected from extension: .json/.md/.html)"
     echo ""
     echo -e "${YELLOW}MEMORY COMMANDS (N² Learning):${NC}"
     echo -e "    ${GREEN}--add \"text\"${NC}  Add a captain TODO (human-written idea)"
@@ -233,6 +236,7 @@ INTERACTIVE_MODE=true
 SHOW_MEMORY_ONLY=false
 QUICK_MODE=false
 DIRECT_PUBLISH=""  # nostr, n2, global, all, or empty
+EXPORT_FILE=""     # --export: chemin fichier article (extension détecte le format)
 
 # Parse command line arguments
 parse_args() {
@@ -261,6 +265,27 @@ parse_args() {
                 PERIOD_GIT="7 days ago"
                 PERIOD_REF="7.days.ago"
                 TODO_OUTPUT="$REPO_ROOT/TODO.week.md"
+                shift
+                ;;
+            --month|-m)
+                PERIOD="month"
+                PERIOD_LABEL="Derniers 30 jours"
+                PERIOD_GIT="30 days ago"
+                PERIOD_REF="30.days.ago"
+                TODO_OUTPUT="$REPO_ROOT/TODO.month.md"
+                shift
+                ;;
+            --export)
+                if [[ -n "${2:-}" && ! "${2:-}" =~ ^-- ]]; then
+                    EXPORT_FILE="$2"
+                    shift 2
+                else
+                    echo -e "${RED}❌ --export nécessite un chemin de fichier${NC}"
+                    exit 1
+                fi
+                ;;
+            --export=*)
+                EXPORT_FILE="${1#--export=}"
                 shift
                 ;;
             --no-interactive)
@@ -435,26 +460,39 @@ save_run_marker() {
 # Returns JSON array of past recommendations and their outcomes
 fetch_n2_memory() {
     local limit="${1:-20}"
-    
+
     if [[ ! -f "$N2_MEMORY_KEYFILE" ]]; then
         echo "[]"
         return 0
     fi
-    
-    # Get pubkey from keyfile
-    local pubkey=$(grep -E "^npub|^pub:" "$N2_MEMORY_KEYFILE" 2>/dev/null | head -1 | awk '{print $NF}')
-    if [[ -z "$pubkey" ]]; then
+
+    # Récupérer le npub puis convertir en hex (nostr_get_events.sh attend du hex)
+    local npub
+    npub=$(grep -E "^npub" "$N2_MEMORY_KEYFILE" 2>/dev/null | head -1 | awk '{print $NF}')
+
+    local pubkey_hex=""
+    if [[ -n "$npub" ]]; then
+        pubkey_hex=$($HOME/.zen/Astroport.ONE/tools/nostr2hex.py "$npub" 2>/dev/null || true)
+    fi
+
+    # Fallback : chercher directement une clé hex dans le fichier
+    if [[ -z "$pubkey_hex" ]]; then
+        pubkey_hex=$(grep -E "^pub:|^hex:" "$N2_MEMORY_KEYFILE" 2>/dev/null | head -1 | awk '{print $NF}')
+    fi
+
+    if [[ -z "$pubkey_hex" ]]; then
         echo "[]"
         return 0
     fi
-    
-    # Fetch memory events from NOSTR
+
+    # Fetch memory events — nostr_get_events.sh ne supporte pas --relay
     if [[ -f "$NOSTR_GET_SCRIPT" ]]; then
-        local memory_events=$("$NOSTR_GET_SCRIPT" \
-            --kind "$N2_MEMORY_KIND" \
-            --author "$pubkey" \
-            --limit "$limit" \
-            --relay "$N2_MEMORY_RELAY" 2>/dev/null || echo "[]")
+        local memory_events
+        memory_events=$("$NOSTR_GET_SCRIPT" \
+            --kind   "$N2_MEMORY_KIND" \
+            --author "$pubkey_hex" \
+            --limit  "$limit" \
+            2>/dev/null || echo "[]")
         echo "$memory_events"
     else
         echo "[]"
@@ -1603,7 +1641,7 @@ list_global_commons_proposals() {
             --kind 30023 \
             --tag-t "n2-report" \
             --limit 20 \
-            --relay "$N2_MEMORY_RELAY" 2>/dev/null || echo "[]")
+            2>/dev/null || echo "[]")
         
         if [[ -z "$proposals" || "$proposals" == "[]" ]]; then
             echo -e "${YELLOW}⚠️  No Global Commons proposals found${NC}"
@@ -1970,8 +2008,9 @@ main() {
     
     # Générer le fichier TODO avec le résumé et recommandations
     local report_title="TODO - Dernière Session"
-    [[ "$PERIOD" == "day" ]] && report_title="TODO Quotidien"
-    [[ "$PERIOD" == "week" ]] && report_title="TODO Hebdomadaire"
+    [[ "$PERIOD" == "day" ]]   && report_title="TODO Quotidien"
+    [[ "$PERIOD" == "week" ]]  && report_title="TODO Hebdomadaire"
+    [[ "$PERIOD" == "month" ]] && report_title="TODO Mensuel"
     
     cat > "$TODO_OUTPUT" <<EOF
 # $report_title - $(date +"%Y-%m-%d")
@@ -2002,7 +2041,28 @@ EOF
     # Save run marker IMMEDIATELY after report generation (before interactive mode)
     # This ensures next run won't re-analyze same commits even if user exits early
     save_run_marker
-    
+
+    # ── Export article si --export demandé ───────────────────────────────────
+    if [[ -n "$EXPORT_FILE" && -f "$TODO_OUTPUT" && -f "$ARTICLE_SCRIPT" ]]; then
+        local ext="${EXPORT_FILE##*.}"
+        local fmt="json"
+        [[ "$ext" == "md" ]]   && fmt="md"
+        [[ "$ext" == "html" ]] && fmt="html"
+        echo -e "${BLUE}📤 Export article ($fmt) → $EXPORT_FILE...${NC}"
+        "$ARTICLE_SCRIPT" \
+            --format  "$fmt" \
+            --file    "$TODO_OUTPUT" \
+            --lang    "fr" \
+            --no-image \
+            --output  "$EXPORT_FILE" 2>/dev/null \
+        && echo -e "${GREEN}✅ Article exporté: $EXPORT_FILE${NC}" \
+        || echo -e "${YELLOW}⚠️  Export partiel (voir logs)${NC}"
+    elif [[ -n "$EXPORT_FILE" && ! -f "$ARTICLE_SCRIPT" ]]; then
+        # Fallback si generate_article.sh absent : copie simple du rapport
+        cp "$TODO_OUTPUT" "$EXPORT_FILE" 2>/dev/null \
+        && echo -e "${GREEN}✅ Rapport copié: $EXPORT_FILE${NC}"
+    fi
+
     # Afficher un aperçu
     echo -e "${YELLOW}📋 Aperçu (premières 30 lignes):${NC}"
     head -30 "$TODO_OUTPUT"
@@ -2126,62 +2186,67 @@ publish_todo_report() {
     fi
     
     local report_type="quotidien"
-    [[ "$PERIOD" == "week" ]] && report_type="hebdomadaire"
+    [[ "$PERIOD" == "week" ]]  && report_type="hebdomadaire"
+    [[ "$PERIOD" == "month" ]] && report_type="mensuel"
     echo -e "${BLUE}📤 Publication du rapport $report_type sur le mur du CAPTAIN...${NC}"
     
-    # Lire le contenu du rapport (déjà généré avec résumé concis)
+    # Lire le contenu du rapport
     local report_content=$(cat "$TODO_OUTPUT")
     
-    # Extraire le titre (première ligne après le #)
-    local title=$(echo "$report_content" | head -1 | sed 's/^# //' | sed 's/^## //')
-    if [[ -z "$title" ]]; then
-        if [[ "$PERIOD" == "week" ]]; then
-            title="TODO Hebdomadaire - $(date +"%Y-%m-%d")"
-        else
-            title="TODO Quotidien - $(date +"%Y-%m-%d")"
-        fi
-    fi
-    
-    # Extraire le résumé pour les métadonnées (première section après "Résumé Généré par IA")
-    local summary=$(echo "$report_content" | sed -n '/## 📊 Résumé Généré par IA/,/^---/p' | head -20 | tail -n +2 | sed '/^---/d' | head -10)
-    [[ -z "$summary" ]] && summary=$(echo "$report_content" | sed -n '/## 📊 Résumé/,/^---/p' | head -10 | tail -n +2 | sed '/^---/d')
-    [[ -z "$summary" ]] && summary="Rapport quotidien des modifications Git des dernières 24h"
-    
-    # Nettoyer le résumé (limiter à 200 caractères)
-    summary=$(echo "$summary" | tr '\n' ' ' | sed 's/  */ /g' | head -c 200)
-    
-    # Utiliser le contenu complet du rapport (déjà concis grâce à la question unique)
-    local article_content="$report_content"
-    
-    # Calculer la date d'expiration (5 jours pour quotidien, 14 jours pour hebdomadaire)
+    # ── Expiration selon la période ───────────────────────────────────────────
     local expiration_days=5
-    [[ "$PERIOD" == "week" ]] && expiration_days=14
+    [[ "$PERIOD" == "week" ]]  && expiration_days=14
+    [[ "$PERIOD" == "month" ]] && expiration_days=28
     local expiration_seconds=$((expiration_days * 86400))
     local expiration_timestamp=$(date -d "+${expiration_days} days" +%s 2>/dev/null || date -v+${expiration_days}d +%s 2>/dev/null || echo $(($(date +%s) + expiration_seconds)))
-    
-    # Créer les tags pour l'article de blog (kind 30023)
-    # Format: [["d", "unique-id"], ["title", "..."], ["summary", "..."], ["published_at", "timestamp"], ["expiration", "timestamp"], ["t", "todo"], ...]
+
+    # ── Métadonnées via generate_article.sh (résumé narratif + tags intelligents) ──
     local period_tag="daily"
-    [[ "$PERIOD" == "week" ]] && period_tag="weekly"
-    local d_tag="todo_${period_tag}_$(date +%Y%m%d)_$(echo -n "$title" | md5sum | cut -d' ' -f1 | head -c 8)"
-    local published_at=$(date +%s)
-    
-    # Créer un fichier JSON temporaire pour les tags
+    [[ "$PERIOD" == "week" ]]  && period_tag="weekly"
+    [[ "$PERIOD" == "month" ]] && period_tag="monthly"
+
+    local title summary d_tag published_at tags_json_array
+    tags_json_array='[]'
+
+    if [[ -f "$ARTICLE_SCRIPT" ]]; then
+        echo -e "${BLUE}🤖 Génération des métadonnées article (résumé + tags)...${NC}"
+        local article_meta
+        article_meta="$("$ARTICLE_SCRIPT" \
+            --format json \
+            --file   "$TODO_OUTPUT" \
+            --lang   "fr" \
+            --no-image \
+            --tags   "todo rapport $period_tag git UPlanet" \
+            2>/dev/null || echo "")"
+
+        if [[ -n "$article_meta" ]] && echo "$article_meta" | jq . &>/dev/null 2>&1; then
+            title=$(echo "$article_meta" | jq -r '.title // empty')
+            summary=$(echo "$article_meta" | jq -r '.summary // empty')
+            d_tag=$(echo "$article_meta" | jq -r '.d_tag // empty')
+            published_at=$(echo "$article_meta" | jq -r '.published_at // empty')
+            tags_json_array=$(echo "$article_meta" | jq -c '.tags // []')
+        fi
+    fi
+
+    # Fallbacks si generate_article.sh absent ou en erreur
+    [[ -z "$title" ]] && title="$(echo "$report_content" | head -1 | sed 's/^# //;s/^## //')"
+    [[ -z "$title" ]] && title="TODO $report_type - $(date +"%Y-%m-%d")"
+    [[ -z "$summary" ]] && summary="Rapport des modifications Git ($PERIOD_LABEL)"
+    [[ -z "$d_tag" ]] && d_tag="todo_${period_tag}_$(date +%Y%m%d)_$(echo -n "$title" | md5sum | cut -c1-8)"
+    [[ -z "$published_at" ]] && published_at="$(date +%s)"
+
+    # ── Construire le tableau de tags NOSTR kind 30023 ────────────────────────
     local temp_tags_file="$REPO_ROOT/.todo_tags_$$.json"
-    cat > "$temp_tags_file" <<EOF
-[
-  ["d", "$d_tag"],
-  ["title", "$title"],
-  ["summary", "$summary"],
-  ["published_at", "$published_at"],
-  ["expiration", "$expiration_timestamp"],
-  ["t", "todo"],
-  ["t", "rapport"],
-  ["t", "$period_tag"],
-  ["t", "git"],
-  ["t", "UPlanet"]
-]
-EOF
+    jq -n \
+        --arg     d    "$d_tag" \
+        --arg     tit  "$title" \
+        --arg     sum  "$summary" \
+        --arg     pub  "$published_at" \
+        --arg     exp  "$expiration_timestamp" \
+        --argjson ai   "$tags_json_array" \
+        '[ ["d",$d], ["title",$tit], ["summary",$sum],
+           ["published_at",$pub], ["expiration",$exp] ] +
+         ($ai | map(["t", .]))' > "$temp_tags_file"
     
     # Lire les tags depuis le fichier JSON
     local tags_json=$(cat "$temp_tags_file")
@@ -2396,7 +2461,8 @@ generate_basic_summary() {
     local commit_count=$(git log --since="$PERIOD_GIT" --oneline | wc -l)
     
     local report_title="TODO Quotidien"
-    [[ "$PERIOD" == "week" ]] && report_title="TODO Hebdomadaire"
+    [[ "$PERIOD" == "week" ]]  && report_title="TODO Hebdomadaire"
+    [[ "$PERIOD" == "month" ]] && report_title="TODO Mensuel"
     
     cat > "$TODO_OUTPUT" <<EOF
 # $report_title - $(date +"%Y-%m-%d")
