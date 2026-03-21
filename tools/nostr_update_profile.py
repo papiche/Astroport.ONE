@@ -322,7 +322,7 @@ def merge_profile_data(existing_event: Optional[dict], new_args: argparse.Namesp
     metadata = existing_metadata.copy()
     
     # Mettre à jour avec les nouveaux champs fournis
-    fields = ['name', 'about', 'picture', 'banner', 'nip05', 'website', 'city', 'g1pub', 'g1v2', 'zencard_v2']
+    fields = ['name', 'about', 'picture', 'banner', 'nip05', 'website', 'city', 'g1pub', 'g1v2', 'zencard_v2', 'g1member']
     for field in fields:
         val = getattr(new_args, field, None)
         if val is not None:
@@ -343,7 +343,7 @@ def merge_profile_data(existing_event: Optional[dict], new_args: argparse.Namesp
             tag_map[key] = value
     
     # Mettre à jour avec les nouveaux tags
-    tag_fields = ['g1pub', 'g1v2', 'github', 'twitter', 'mastodon', 'telegram',
+    tag_fields = ['g1pub', 'g1v2', 'g1member', 'github', 'twitter', 'mastodon', 'telegram',
                   'ipfs_gw', 'ipns_vault', 'zencard', 'zencard_v2', 'email', 'tw_feed']
     
     for field in tag_fields:
@@ -466,6 +466,7 @@ Examples:
     parser.add_argument("--city", help="City/location")
     parser.add_argument("--g1pub", help="G1 Pubkey")
     parser.add_argument("--g1v2", help="G1 v2 SS58 address (Duniter v2s)")
+    parser.add_argument("--g1member", help="G1 Member Pubkey")
     parser.add_argument("--github", help="GitHub username")
     parser.add_argument("--twitter", help="Twitter handle")
     parser.add_argument("--mastodon", help="Mastodon handle")

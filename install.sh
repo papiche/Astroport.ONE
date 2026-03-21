@@ -19,13 +19,22 @@ start=`date +%s`
     && su - && apt-get install sudo -y \
     && echo "Run Install Again..." && exit 0
 
+#### GIT CLONE ###############################################################
+echo "#############################################"
+echo "=== CODE CLONING TO '~/.zen/Astroport.ONE' ==="
+echo "#############################################"
+mkdir -p ~/.zen/workspace
+cd ~/.zen/workspace
+git clone --depth 1 https://github.com/papiche/UPlanet
+cd ~/.zen
+git clone --depth 1 https://github.com/papiche/Astroport.ONE.git
+# TODO INSTALL FROM IPFS / IPNS
+
 ################################################################### IPFS
 ## installation de ipfs
 ########################################################################
 [[ ! $(which ipfs) ]] \
-&& echo "bash <(wget -qO- https://raw.githubusercontent.com/papiche/Astroport.ONE/master/install.kubo_v0.40.0_linux.sh)" \
-&& architecture=$(uname -m) && [[ $architecture == "x86_64" ||  $architecture == "aarch64" || "$architecture" == "armv7l" ]] \
-&& bash <(wget -qO- https://raw.githubusercontent.com/papiche/Astroport.ONE/master/install.kubo_v0.40.0_linux.sh) \
+&& ~/.zen/Astroport.ONE/install/install.kubo_v0.40.0_linux.sh \
 || echo "=== IPFS FOUND === OK"
 
 [[ ! $(which ipfs) ]] && echo "INSTALL IPFS PLEASE" && exit 1
@@ -38,7 +47,6 @@ echo "#############################################"
 echo "###### ASTROPORT.ONE ZEN STATION ##############"
 echo "############# TW HOSTING & Ŋ1 SERVICES #############"
 echo "##################################################"
-mkdir -p ~/.zen
 
 echo ; echo "UPDATING SYSTEM REPOSITORY"
 #~ [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && sudo add-apt-repository ppa:obsproject/obs-studio
@@ -92,18 +100,6 @@ for i in figlet cmatrix cowsay fonts-hack-ttf; do
     fi
 done
 
-#### GIT CLONE ###############################################################
-echo "#############################################"
-echo "=== CODE CLONING TO '~/.zen/Astroport.ONE' ==="
-echo "#############################################"
-mkdir -p ~/.zen/workspace
-cd ~/.zen/workspace
-git clone --recurse-submodules --depth 1 https://github.com/papiche/UPlanet
-cd ~/.zen
-git clone --recurse-submodules --depth 1 https://github.com/papiche/Astroport.ONE.git
-# TODO INSTALL FROM IPFS / IPNS
-git config --global submodule.recurse true
-
 echo "#############################################"
 echo "######### INSTALL TIDDLYWIKI ############"
 echo "#############################################"
@@ -124,8 +120,7 @@ if [[ $(cat /etc/ImageMagick-6/policy.xml | grep PDF) ]]; then
     sudo cp /tmp/policy.xml /etc/ImageMagick-6/policy.xml
 fi
 
-### PYTHON ENV
-sudo ln -f -s /usr/bin/python3 /usr/bin/python
+### ~/.astro/bin PYTHON ENV
 cd $HOME
 [[ ! -s ~/.astro/bin/activate ]] && python -m venv .astro
 . ~/.astro/bin/activate

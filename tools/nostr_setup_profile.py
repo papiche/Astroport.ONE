@@ -31,6 +31,8 @@ def nostr_setup_profile(args):
         metadata["g1pub"] = args.g1pub
     if args.g1v2:
         metadata["g1v2"] = args.g1v2
+    if args.g1member:
+        metadata["g1member"] = args.g1member
     if args.zencard_v2:
         metadata["zencard_v2"] = args.zencard_v2
     if args.city:
@@ -42,6 +44,8 @@ def nostr_setup_profile(args):
         tags.append(["i", f"g1pub:{args.g1pub}", ""])
     if args.g1v2:
         tags.append(["i", f"g1v2:{args.g1v2}", ""])
+    if args.g1member:
+        tags.append(["i", f"g1member:{args.g1member}", ""])
     if args.github:
         tags.append(["i", f"github:{args.github}", ""])
     if args.twitter:
@@ -118,6 +122,7 @@ if __name__ == "__main__":
     parser.add_argument("telegram", help="Telegram URL")
     parser.add_argument("relays", nargs="+", help="List of relays")
     parser.add_argument("--g1v2", help="G1 v2 SS58 address", default=None)
+    parser.add_argument("--g1member", help="G1 Member Pubkey", default=None)
     parser.add_argument("--city", help="City/location", default=None)
     parser.add_argument("--ipfs_gw", help="IPFS Gateway URL", default=None)
     parser.add_argument("--ipns_vault", help="NOSTR Card IPNS vault key", default=None)

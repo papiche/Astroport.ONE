@@ -78,10 +78,10 @@ if [[ "$#" -lt 1 ]]; then
   usage
 fi
 
-PARAM="$1"
-EMAIL="${PARAM,,}" ## lowercase
+EMAIL="$1"
+EMAIL="${EMAIL,,}" ## lowercase
 EMAIL="${EMAIL// }" # Remove all spaces
-IMAGE="$2"
+IMAGE="$2" ## can contain path to image (or language code, fr)
 ZLAT=$(makecoord "$3")
 ZLON=$(makecoord "$4")
 ### Accept DISCO seed
@@ -158,18 +158,6 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     fi
 
     ############################################## PREPARE SALT PEPPER
-    # ARCHITECTURE MULTIPASS v1→v2 — SÉPARATION DES CLÉS :
-    #
-    # • ZEN Card  : SALT/PEPPER fournis par l'utilisateur (mémorisable, déterministe)
-    #               → crée le portefeuille G1 de la ZEN Card via VISA.new.sh
-    #               → PAS de limite SSSS (ne va pas dans le DISCO)
-    #               → transmis par GAFAM.html / keygen-v2.html sans troncature
-    #
-    # • MULTIPASS : SALT/PEPPER TOUJOURS ALÉATOIRES (non-devinable, sécurité Nostr)
-    #               → crée identité Nostr + twin G1 + IPNS + BTC + XMR + SSSS
-    #               → DISCO encode CES valeurs aléatoires (≤127 bytes pour SSSS)
-    #               → référence /ipns/${NOSTRNS} inscrite dans le TW ZEN Card ($moa)
-    #
     # QR CODE WEIGHT : _MAX_RANDOM=24 chars → DISCO=62 bytes → QR léger sur MULTIPASS
     _MAX_RANDOM=24   # MULTIPASS random SALT/PEPPER → lightweight DISCO QR code
 
@@ -222,27 +210,23 @@ NSEC=$NPRIV; NPUB=$NPUBLIC; HEX=$HEX
 EOFNOSTR
     chmod 600 ${HOME}/.zen/game/nostr/${EMAIL}/.secret.nostr
 
-    # Create an G1CARD : G1Wallet waiting for G1 to make key batch running
-    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/${EMAIL}.multipass.dunikey "${SALT}" "${PEPPER}"
-    G1PUBNOSTR=$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.multipass.dunikey  | grep 'pub:' | cut -d ' ' -f 2)
-    # echo "G1NOSTR _WALLET: $G1PUBNOSTR"
+    # Get G1PUBNOSTR = MULTIPASS wallet G1(v1) address 
+    G1PUBNOSTR=$(${MY_PATH}/../tools/keygen -t duniter "${SALT}" "${PEPPER}")
+    echo "G1NOSTR _WALLET v1: $G1PUBNOSTR"
 
     # Conversion SS58 pour Duniter v2s (stockage persistant, cache, liens, gcli)
-    # G1PUBNOSTR_V1 conservé UNIQUEMENT pour les API Cesium+/GChange+ (indexées en v1)
+    # G1PUBNOSTR_V1 conservé pour les API Cesium+/GChange+ (indexées en v1)
     # natools.py v1.3.2+ accepte nativement SS58 → normalize_pubkey() interne
     G1PUBNOSTR_V1="$G1PUBNOSTR"
     if [[ -x "${MY_PATH}/g1pub_to_ss58.py" ]]; then
         _g1nostr_ss58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$G1PUBNOSTR" 2>/dev/null)
         [[ -n "$_g1nostr_ss58" ]] && G1PUBNOSTR="$_g1nostr_ss58"
     fi
-    echo "MULTIPASS G1PUBNOSTR SS58 : $G1PUBNOSTR"
-    echo "MULTIPASS G1PUBNOSTR  V1  : $G1PUBNOSTR_V1"
+    echo "G1PUBNOSTR SS58 (v2) : $G1PUBNOSTR"
 
-    ## Écriture EARLY de G1PUBNOSTR — VISA.new.sh vérifie ce fichier avant de créer la ZEN Card
-    ## DOIT être avant l'appel à VISA.new.sh (ligne ~310), sinon la condition
-    ## "! -s ~/.zen/game/nostr/$PLAYER/G1PUBNOSTR" est vraie et bloque la création.
+    ## VISA.new.sh vérifie ce fichier avant de créer la ZEN Card
     mkdir -p "${HOME}/.zen/game/nostr/${EMAIL}/"
-    echo "${G1PUBNOSTR}" > "${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR"
+    echo "${G1PUBNOSTR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR
 
     ############ CREATE LOCAL USER SPACE
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/
@@ -255,16 +239,17 @@ EOFNOSTR
     echo "$HEX" > ${HOME}/.zen/game/nostr/${EMAIL}/HEX ## COPY HEX
     echo "$NPUBLIC" > ${HOME}/.zen/game/nostr/${EMAIL}/NPUB ## COPY NPUB
     ##########################################################################
-    ## Create Bitcoin Twin Address
+    ## Create Bitcoin Twin Address - EXEMPLE - UPlanet ẐEN=Bitcoin
     BITCOIN=$(${MY_PATH}/../tools/keygen -t bitcoin "${SALT}" "${PEPPER}" | tail -n 1 | rev | cut -f 1 -d ' '  | rev)
     echo "$BITCOIN" > ${HOME}/.zen/game/nostr/${EMAIL}/BITCOIN
-    ## Create Monero Twin Address
+    ## Create Monero Twin Address - EXEMPLE - UPlanet ẐEN=Monero
     MONERO=$(${MY_PATH}/../tools/keygen -t monero "${SALT}" "${PEPPER}" | tail -n 1 | rev | cut -f 1 -d ' '  | rev)
     echo "$MONERO" > ${HOME}/.zen/game/nostr/${EMAIL}/MONERO
+    ############### etc... Any ED25519 elyptic key can be compatible ...
 
     ### CRYPTO ZONE
-    ## ENCODE HEAD SSSS SECRET WITH G1PUBNOSTR PUBKEY (natools v1.3.2+ accepte SS58)
-    # echo "${MY_PATH}/../tools/natools.py encrypt -p $G1PUBNOSTR -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head -o ${HOME}/.zen/game/nostr/${EMAIL}/.ssss.head.player.enc"
+    ## ENCODE HEAD SSSS SECRET WITH G1PUBNOSTR PUBKEY
+    echo "${MY_PATH}/../tools/natools.py encrypt -p $G1PUBNOSTR -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head -o ${HOME}/.zen/game/nostr/${EMAIL}/.ssss.head.player.enc"
     ${MY_PATH}/../tools/natools.py encrypt -p "$G1PUBNOSTR" -i ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head -o ${HOME}/.zen/game/nostr/${EMAIL}/.ssss.head.player.enc >/dev/null
 
     ## DISCO MIDDLE ENCRYPT WITH CAPTAING1PUB (or UPLANETG1PUB for first captain bootstrap)
@@ -287,53 +272,12 @@ EOFNOSTR
     echo "${G1PUBNOSTR}:NOSTR ${EMAIL} STORAGE: /ipns/$NOSTRNS"
     echo "/ipns/$NOSTRNS" > "${HOME}/.zen/game/nostr/${EMAIL}/NOSTRNS"
 
-    ############################################## CREATE ZEN CARD (VISA)
-    ## MULTIPASS est créé — maintenant on crée la ZEN Card avec les clés user
-    ## La ZEN Card (VISA/astronaute) est dérivée des SALT/PEPPER mémorisables de l'utilisateur.
-    ## Le MULTIPASS NPUBLIC/HEX lui est transmis pour lier les deux identités.
-    ##
-    ## TODO: Support mnemonic DUBP (keygen -t duniter -m "word1 word2 ... word12")
-    ##   Si ZENCARD_SALT contient ≥12 mots (espaces) et ZENCARD_PEPPER vide → mode mnemonic
-    ##   Nécessite adaptation de VISA.new.sh pour accepter un dunikey pré-calculé
-    ##   Référence : keygen flag -m, duniterpy.key.SigningKey.from_dubp_mnemonic()
-    ##   Avantage : ZEN Card compatible avec Silkaj/Cesium wallet mnemonic (BIP39 DUBP)
-    ## Si pas de ZENCARD_SALT/PEPPER → diceware pour créer ZEN Card quand même
-    if [[ -z "$ZENCARD_SALT" ]]; then
-        ZENCARD_SALT=$(_diceware 4)
-        echo "🎲 ZEN Card SALT diceware auto : ${ZENCARD_SALT}"
-    fi
-    if [[ -z "$ZENCARD_PEPPER" ]]; then
-        ZENCARD_PEPPER=$(_diceware 4)
-        echo "🎲 ZEN Card PEPPER diceware auto : ${ZENCARD_PEPPER}"
-    fi
-
-    if [[ -n "$ZENCARD_SALT" && -n "$ZENCARD_PEPPER" ]]; then
-        echo "🎴 ## Creating ZEN Card (VISA) with SALT/PEPPER..."
-        ZENCARDG1_CHECK=$(cat ~/.zen/game/players/${EMAIL}/.g1pub 2>/dev/null)
-        if [[ -z "$ZENCARDG1_CHECK" ]]; then
-            echo "🔑 Calling VISA.new.sh to create ZEN Card (NPUB=${NPUBLIC:0:16}...)"
-            ## Signature VISA.new.sh : PPASS NPASS PLAYER TYPE LANG LAT LON NPUB HEX
-            NOMAIL=1 ${MY_PATH}/../RUNTIME/VISA.new.sh \
-                "${ZENCARD_SALT}" "${ZENCARD_PEPPER}" \
-                "${EMAIL}" "UPlanet" "${LANG:-fr}" "${ZLAT:-0.00}" "${ZLON:-0.00}" \
-                "${NPUBLIC}" "${HEX}"
-            [[ $? -eq 0 ]] \
-                && echo "✅ ZEN Card created for ${EMAIL}" \
-                || { _alert_captain "ZEN Card CREATION FAILED" \
-                    "VISA.new.sh a échoué pour ${EMAIL}\nZENCAR_SALT=${ZENCARD_SALT:0:8}...\nNPUB=${NPUBLIC}"; \
-                    echo "⚠️  ZEN Card creation failed (VISA.new.sh)"; }
-        else
-            echo "♻️  ZEN Card ${ZENCARDG1_CHECK} already exists — skip creation"
-        fi
-    fi
-
     ## Create uSPOT/scan QR Code
     ## /ipfs/QmNd3abeAoUH1nGzwnaLNafRgtvwTSBCZyKqT8eBnEPQK9/u.scan.qr.png~/ipfs/$uSPOT_QR_ipfs
     amzqr "${uSPOT}/scan" -l H -p ${MY_PATH}/../templates/img/cloud_border.png \
         -c -n uSPOT.QR.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
 
     uSPOT_QR_ipfs=$(ipfs --timeout 20s add -q ~/.zen/game/nostr/${EMAIL}/uSPOT.QR.png)
-
 
     ## QR CODE accès NOSTR VAULTNSQR
     amzqr "${myIPFS}/ipns/$NOSTRNS/${EMAIL}/APP/uDRIVE" -l H -p ${MY_PATH}/../templates/img/no_stripfs.png \
@@ -353,6 +297,7 @@ EOFNOSTR
     fi
     #~ ipfs pin rm /ipfs/${VAULTNSQR} 2>/dev/null
 
+	## SSSS QR CODE
     ## Make PLAYER "SSSS.head:NOSTRNS" QR CODE (Terminal Compatible) - "M-$SSSS_HEAD_B58"
     SSSS_HEAD=$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head)
     SSSS_HEAD_B58=$(${MY_PATH}/Mbase58.py encode "${SSSS_HEAD}:${NOSTRNS}")
@@ -369,13 +314,10 @@ EOFNOSTR
         && FDQR=${HOME}/.zen/game/nostr/${EMAIL}/picture.png \
         || FDQR=${MY_PATH}/../templates/img/nature_cloud_face.png
 
-    [[ $UPLANETNAME != "0000000000000000000000000000000000000000000000000000000000000000" ]] && Z=":ZEN" || Z="" ## Add :ZEN only for UPlanet ẐEN
+    Z=":ZEN" ## G1PUBNOSTR:ZEN wallet QRcode display for UPlanet ẐEN 
     amzqr "${G1PUBNOSTR}${Z}" -l H -p "$FDQR" -c -n MULTIPASS.QR.o.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
-
     ## Add white margins around the QR code image (for a flashable coracle profile picture)
     convert ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.o.png -bordercolor white -border 90x90 ~/.zen/game/nostr/${EMAIL}/MULTIPASS.QR.png
-
-    echo "${G1PUBNOSTR}" > ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR  ## SS58 (Duniter v2s)
 
     ## MOVE webcam picture
     mv ${HOME}/.zen/game/nostr/${EMAIL}/picture.png ${HOME}/.zen/game/nostr/${EMAIL}/scan_${MOATS}.png 2>/dev/null
@@ -483,7 +425,7 @@ EOFNOSTR
     fi
 
     ##############################################################
-    [[ "$Z" == ":ZEN" ]] && ZenECO="(1Ẑ = 1€)" || ZenECO="(1Ẑ = 0.1Ğ1)"
+    [[ "$Z" == ":ZEN" ]] && ZenECO="(ẑen/ẐEN)" || ZenECO="(1Ẑ = 0.1Ğ1)"
     ### PREPARE NOSTR ZINE
     if [[ ! -f "${MY_PATH}/../templates/NOSTR/zine/nostr.html" ]]; then
         echo "❌ Error: NOSTR zine template not found at ${MY_PATH}/../templates/NOSTR/zine/nostr.html"
@@ -525,7 +467,6 @@ EOFNOSTR
         # Escape special characters in URLs for sed
         sed -i "s~${myIPFS}/ipfs/QmTnSdXe5nuAyYKWikU9vtRA84EDhwWc3michnevFFpR3g/#/wot/${G1PUBNOSTR}/~${uSPOT}/check_balance?g1pub=${EMAIL}~g" \
             "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html"
-
     fi
 
     ### MULTIPASS FOLLOWS CAPTAIN AUTOMATICALLY
@@ -600,49 +541,39 @@ EOFNOSTR
 
     ###############################################################################################
     ### Add /APP/uDRIVE
-    #~ Réception : Quand un fichier .zip est téléversé via l'API (UPassport/54321.py),
-    #~ il est immédiatement identifié et spécifiquement dirigé vers le répertoire uDRIVE/Apps/
-    #~ Application dans un dossier : Apps/MonApp/index.html avec son icône Apps/MonApp/icon.png.
-    #~ Application "flat" : Apps/index.MonApp.html avec son icône Apps/MonApp.png.
+    ## Cesium.v1
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/Cesium.v1
     echo '<meta http-equiv="refresh" content="0;url='${CESIUMIPFS}/#/wot/${G1PUBNOSTR}/'">' \
         > ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/Cesium.v1/index.html
     cp ${MY_PATH}/../images/cesium.png ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/Cesium.v1/icon.png
+    ###############################################################################################
+    ## CoracleZ
+    mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/CoracleZ
+    echo '<meta http-equiv="refresh" content="0;url='/ipns/coracle.copylaradio.com'">' \
+        > ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/CoracleZ/index.html
+    cp ${MY_PATH}/../images/logojeu.png ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/CoracleZ/icon.png
     ## Add you App !
-
+    
     # README.${YOUSER}.md
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Documents
     cat "${HOME}/.zen/workspace/UPlanet/UPlanet_Enter_Help.md" \
         > "${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Documents/README.${YOUSER}.md"
 
-
     ## Link generate_ipfs_structure.sh to uDRIVE
     cd ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/
-
     ln -s ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh ./generate_ipfs_structure.sh
-    ## RUN App
+    
+    ## RUN App generate_ipfs_structure.sh
     UDRIVE=$(./generate_ipfs_structure.sh . 2>/dev/null)
     echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$UDRIVE\"></head></html>" > index.html
 
     ###############################################################################################
-    #~ ## Link generate_ipfs_RPG.sh to uWORLD --- ANOTHER DEMO APP
-    #~ mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uWORLD/
-    #~ cd -
-    #~ cd ${HOME}/.zen/game/nostr/${EMAIL}/APP/uWORLD
-    #~ ln -s ${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_RPG.sh ./generate_ipfs_RPG.sh
-    #~ ## RUN App
-    #~ UWORLD=$(./generate_ipfs_RPG.sh . 2>/dev/null)
-    #~ echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/ipfs/$UWORLD\"></head></html>" > index.html
-    #~ cd -
     ###############################################################################################
     ## ORIGIN or ẐEN's
     [[ ${UPLANETG1PUB:0:8} == "4ZqazktD" ]] && ORIGIN="ORIGIN" || ORIGIN="${UPLANETG1PUB:0:8}"
     ZENCARDG1=$(cat ~/.zen/game/players/${EMAIL}/.g1pub 2>/dev/null) ## Does ZenCard already existing
 
     ### IMPORT CESIUM+ / GCHANGE+ PROFILE (if exists) for NOSTR profile enrichment
-    ## DEPRECATED: This section imports legacy Ğ1v1 profiles from Cesium+/GChange+ Elasticsearch.
-    ## It will be removed after migration of simple Ğ1v1 wallets to UPlanet ORIGIN.
-    ## When Duniter v2s is fully adopted, profiles will come from NOSTR (kind 0) only.
     CESIUM_NAME=""
     CESIUM_ABOUT=""
     CESIUM_AVATAR_CID=""
@@ -722,35 +653,10 @@ EOFNOSTR
             "Échec publication profil Nostr Kind 0 pour ${EMAIL}\nNPUB: ${NPUBLIC}\nRelay: ${myRELAY}\nVérifiez la connexion relay et pynostr."; \
             echo "⚠️  Nostr profile publication failed (non-fatal, will retry at next refresh)"; }
 
-    ## CHECK DESTINATION WALLET NOT ALREADY CREDITED
-    ## Note: ne bloque plus la création — la primo TX est maintenant différée et envoyée
-    ## par UPLANET.official.sh (ensure_wallet_initialized) lors du premier virement réel.
-    DEST_BALANCE=""
-    if [[ -f "${MY_PATH}/G1check.sh" ]] && [[ -n "$G1PUBNOSTR" ]]; then
-        DEST_BALANCE=$("${MY_PATH}/G1check.sh" "$G1PUBNOSTR" 2>/dev/null | tr -d '[:space:]')
-    fi
-    if [[ -n "$DEST_BALANCE" ]] && [[ "$DEST_BALANCE" =~ ^[0-9]+\.?[0-9]*$ ]]; then
-        if (( $(echo "${DEST_BALANCE} > 0" | bc -l 2>/dev/null || echo 0) )); then
-            echo "ℹ️  Wallet ${G1PUBNOSTR} has existing balance ${DEST_BALANCE} Ğ1 (already initialized)."
-            echo "${UPLANETNAME_G1}" > ~/.zen/game/nostr/${EMAIL}/G1PRIME 2>/dev/null
-            echo "${UPLANETNAME_G1}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal 2>/dev/null
-        fi
-    fi
-
-    ## PRIMO TX DIFFÉRÉE — désactivée à la création
-    ## La primo TX (1 Ğ1) sera envoyée par UPLANET.official.sh via ensure_wallet_initialized()
-    ## uniquement lorsque des ẐEN réels sont reçus (via OC2UPlanet ou virement officiel).
-    ## Cela évite de perdre des Ğ1 pour des MULTIPASS jamais activés (Duniter v2 bloqué ou wallet abandonné).
-    ##
-    ## Pour forcer l'initialisation manuelle :
+    ## PRIMO TX - DECLENCHEE OPEN COLLECTIVE
+    ## initialisation manuelle :
     ##   ~/.zen/Astroport.ONE/UPLANET.official.sh -l ${EMAIL} -m 1
-    echo "ℹ️  PRIMO TX différée — sera envoyée lors du premier virement ẐEN réel (UPLANET.official.sh)"
-
-    ### IPNS PUBLICATION
-    # Note: IPNS publication is handled by generate_ipfs_structure.sh (line 462)
-    # The .well-known directory is created earlier (line 294) and will be included automatically
-    # No need to publish here - generate_ipfs_structure.sh will update the IPNS with the complete structure
-
+    echo "ℹ️  PRIMO TX différée — Manuel : ~/.zen/Astroport.ONE/UPLANET.official.sh -l ${EMAIL} -m 1"
 
     ## Wait for MULTIPASS card to be generated (if still in background)
     if [[ -n "$MULTIPASS_PRINT_PID" ]]; then
@@ -803,8 +709,6 @@ EOFNOSTR
         MULTIPASS_ZINE="${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html"
         MAILJET_SCRIPT="${MY_PATH}/../tools/mailjet.sh"
         if [[ -s "$MULTIPASS_ZINE" ]] && [[ -x "$MAILJET_SCRIPT" ]]; then
-            ## Envoi synchrone (sans &) pour garantir l'envoi avant la fin du script
-            ## Les erreurs sont affichées pour diagnostiquer les problèmes d'envoi
             if "$MAILJET_SCRIPT" --expire 0s \
                 "${EMAIL}" \
                 $MULTIPASS_ZINE \

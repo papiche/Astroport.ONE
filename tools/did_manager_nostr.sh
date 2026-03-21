@@ -166,7 +166,7 @@ create_initial_did() {
     local birthdate=$(cat "${user_dir}/BIRTHDATE" 2>/dev/null)
     [[ -z "$birthdate" ]] && birthdate=$(echo "$current_date" | cut -dT -f1)
 
-    # Calculate Maya Kin badge from birthdate
+    # Calculate Maya Kin badge from birthdate ----------------------------------------------------------
     local badges_json=""
     if [[ -f "${MY_PATH}/kin.sh" ]]; then
         source "${MY_PATH}/kin.sh"
@@ -187,11 +187,12 @@ create_initial_did() {
     # Get UPlanet info from environment or defaults
     local uplanet_g1pub_8="${UPLANETG1PUB:0:8}"
     if [[ -z "$uplanet_g1pub_8" ]]; then
-        uplanet_g1pub_8="4ZqazktD"
+        uplanet_g1pub_8="4ZqazktD" # ORIGIN
     fi
-    local my_relay="${myRELAY:-wss://relay.copylaradio.com}"
+
+    local my_relay="${myRELAY:-ws://127.0.0.1:7777}"
     local my_ipfs="${myIPFS:-http://127.0.0.1:8080}"
-    local uspot="${uSPOT:-https://u.copylaradio.com}"
+    local uspot="${uSPOT:-https://127.0.0.1:54321}"
     local ipfs_node_id="${IPFSNODEID:-}"
     
     # Create a temporary file for the template processing
