@@ -238,6 +238,12 @@ EOFNOSTR
     echo "MULTIPASS G1PUBNOSTR SS58 : $G1PUBNOSTR"
     echo "MULTIPASS G1PUBNOSTR  V1  : $G1PUBNOSTR_V1"
 
+    ## Écriture EARLY de G1PUBNOSTR — VISA.new.sh vérifie ce fichier avant de créer la ZEN Card
+    ## DOIT être avant l'appel à VISA.new.sh (ligne ~310), sinon la condition
+    ## "! -s ~/.zen/game/nostr/$PLAYER/G1PUBNOSTR" est vraie et bloque la création.
+    mkdir -p "${HOME}/.zen/game/nostr/${EMAIL}/"
+    echo "${G1PUBNOSTR}" > "${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR"
+
     ############ CREATE LOCAL USER SPACE
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/
     [[ -s ${IMAGE} ]] && cp ${IMAGE} ${HOME}/.zen/game/nostr/${EMAIL}/picture.png 2>/dev/null
@@ -797,12 +803,19 @@ EOFNOSTR
         MULTIPASS_ZINE="${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html"
         MAILJET_SCRIPT="${MY_PATH}/../tools/mailjet.sh"
         if [[ -s "$MULTIPASS_ZINE" ]] && [[ -x "$MAILJET_SCRIPT" ]]; then
-            "$MAILJET_SCRIPT" --expire 0s \
+            ## Envoi synchrone (sans &) pour garantir l'envoi avant la fin du script
+            ## Les erreurs sont affichées pour diagnostiquer les problèmes d'envoi
+            if "$MAILJET_SCRIPT" --expire 0s \
                 "${EMAIL}" \
-                "$MULTIPASS_ZINE" \
-                "MULTIPASS[Ẑ] [UPlanet:${UPLANETG1PUB:0:8}:${ZLAT}:${ZLON}]" \
-                >/dev/null 2>&1 &
-            echo "📧 MULTIPASS envoyé par email à ${EMAIL}"
+                $MULTIPASS_ZINE \
+                "MULTIPASS[Ẑ] [UPlanet:${UPLANETG1PUB:0:8}:${ZLAT}:${ZLON}]"; then
+                echo "📧 MULTIPASS envoyé par email à ${EMAIL}"
+            else
+                echo "⚠️  Erreur envoi email MULTIPASS à ${EMAIL} (mailjet.sh a échoué)"
+            fi
+        else
+            [[ ! -s "$MULTIPASS_ZINE" ]] && echo "⚠️  ZINE MULTIPASS introuvable ou vide : $MULTIPASS_ZINE"
+            [[ ! -x "$MAILJET_SCRIPT" ]] && echo "⚠️  mailjet.sh introuvable ou non exécutable : $MAILJET_SCRIPT"
         fi
     fi
 

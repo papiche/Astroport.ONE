@@ -48,23 +48,23 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│                          todo.sh                                      │
-│                   (Orchestrateur principal)                           │
+│                          todo.sh                                     │
+│                   (Orchestrateur principal)                          │
 ├──────────────────┬────────────────────────┬──────────────────────────┤
 │   ANALYSE GIT    │    IA LOCALE (Ollama)   │   MÉMOIRE N² (NOSTR)    │
-│                  │                         │                          │
-│ git log          │ question.py             │ kind 31910               │
+│                  │                         │                         │
+│ git log          │ question.py             │ kind 31910              │
 │ git diff         │  → résumé technique     │  uplanet.G1.nostr key   │
 │ git diff --stat  │  → recommandations N²   │  wss://relay.*          │
-│                  │  → apprentissage passé  │                          │
+│                  │  → apprentissage passé  │                         │
 ├──────────────────┴────────────────────────┴──────────────────────────┤
-│                    PIPELINE ARTICLE (nouveau)                         │
-│                  IA/generate_article.sh                               │
+│                    PIPELINE ARTICLE (nouveau)                        │
+│                  IA/generate_article.sh                              │
 │   texte source → résumé narratif → tags intelligents → image IA      │
 ├─────────────────────┬─────────────────────┬────────────────────────  │
-│  NOSTR kind 30023   │  Open Collective     │  Global Commons          │
-│  (blog technique)   │  GraphQL API         │  UMAP 0.00, 0.00        │
-│  nostr_send_note.py │  https://oc.com      │  kind 30023 + vote      │
+│  NOSTR kind 30023   │  Open Collective    │  Global Commons          │
+│  (blog technique)   │  GraphQL API        │  UMAP 0.00, 0.00         │
+│  nostr_send_note.py │                     │  kind 30023 + vote       │
 └─────────────────────┴─────────────────────┴────────────────────────  ┘
 ```
 

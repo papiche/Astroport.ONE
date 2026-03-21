@@ -49,14 +49,14 @@ if [[ -z $NPUB || -z $HEX || ! -d ~/.zen/game/nostr/$PLAYER || ! -s ~/.zen/game/
     # Create restriction email from template
     RESTRICTION_EMAIL=$(mktemp)
     cat "${MY_PATH}/../templates/NOSTR/multipass_required.html" \
-        | sed -e "s/{PLAYER_EMAIL}/$PLAYER/g" \
-               -e "s/{RELAY_URL}/$myRELAY/g" \
-               -e "s/{myIPFS}/$myIPFS/g" \
-               -e "s/{uSPOT}/$uSPOT/g" \
+        | sed -e "s|{PLAYER_EMAIL}|$PLAYER|g" \
+               -e "s|{RELAY_URL}|$myRELAY|g" \
+               -e "s|{myIPFS}|$myIPFS|g" \
+               -e "s|{uSPOT}|$uSPOT|g" \
         > "$RESTRICTION_EMAIL"
     
     # Send restriction notification
-    ${MY_PATH}/../tools/mailjet.sh --expire 48h "$PLAYER" "$RESTRICTION_EMAIL" "🚫 MULTIPASS Requis - Création ZEN Card Bloquée"
+    ${MY_PATH}/../tools/mailjet.sh --expire 48h "$PLAYER" $RESTRICTION_EMAIL "🚫 MULTIPASS Requis - Création ZEN Card Bloquée"
     
     # Log the restriction
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] ZEN Card creation blocked for $PLAYER - MULTIPASS required" >> ~/.zen/tmp/zencard_restrictions.log
