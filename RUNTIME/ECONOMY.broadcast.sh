@@ -631,7 +631,7 @@ fi
 
 log_output "📡 Publishing event to local strfry relay..."
 
-# Get Captain NSEC and convert to HEX for nostpy-cli
+# Get Captain NSEC and convert to HEX for nostr_send_note.py
 # The .secret.nostr file format: "NSEC=nsec1...; NPUB=npub1..."
 CAPTAIN_NSEC_RAW=$(cat "$CAPTAIN_NOSTR_SECRET" 2>/dev/null)
 if [[ -z "$CAPTAIN_NSEC_RAW" ]]; then
@@ -655,18 +655,23 @@ fi
 myRELAY="wss://${myDAMAIN}/relay"
 [[ -z "$myDAMAIN" ]] && myRELAY="ws://127.0.0.1:7777"
 
-# Publish using nostpy-cli send_event
-if command -v nostpy-cli &> /dev/null; then
-    log_output "Using nostpy-cli to publish event..."
+# Publish using nostr_send_note.py
+if [[ -f "${MY_PATH}/../tools/nostr_send_note.py" ]]; then
+    log_output "Using nostr_send_note.py to publish event..."
     
-    nostpy-cli send_event \
-        -privkey "$CAPTAIN_PRIVKEY_HEX" \
-        -kind 30850 \
-        -content "$CONTENT_ESCAPED" \
-        -tags "$TAGS_JSON" \
+    # Create temp keyfile for nostr_send_note.py
+    TMP_KEYFILE=$(mktemp)
+    echo "NSEC=$CAPTAIN_NSEC;" > "$TMP_KEYFILE"
+
+    python3 "${MY_PATH}/../tools/nostr_send_note.py" \
+        --keyfile "$TMP_KEYFILE" \
+        --kind 30850 \
+        --content "$CONTENT_ESCAPED" \
+        --tags "$TAGS_JSON" \
         --relay "$myRELAY" 2>/dev/null
     
     PUBLISH_STATUS=$?
+    rm "$TMP_KEYFILE"
     
     if [[ $PUBLISH_STATUS -eq 0 ]]; then
         log_output "✅ Event published to relay"
@@ -674,7 +679,7 @@ if command -v nostpy-cli &> /dev/null; then
         echo "   Status: $HEALTH_STATUS | Bilan: $BILAN Ẑ | Runway: $WEEKS_RUNWAY weeks"
         echo "   Relay: $myRELAY"
     else
-        echo "⚠️ nostpy-cli failed, trying strfry import..."
+        echo "⚠️ nostr_send_note.py failed, trying strfry import..."
         
         # Fallback: create event JSON and import directly to strfry
         MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
@@ -706,8 +711,7 @@ EOF
         rm -f "$TEMP_EVENT"
     fi
 else
-    echo "❌ nostpy-cli not found - required for NOSTR publishing"
-    echo "   Install with: pip install nostpy-cli"
+    echo "❌ nostr_send_note.py not found - required for NOSTR publishing"
     exit 1
 fi
 

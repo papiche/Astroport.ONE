@@ -402,7 +402,7 @@ This creates a truly decentralized identity system where users can access their 
 - **ssss** - Shamir Secret Sharing implementation
 - **NaCl** - Cryptographic library (Ed25519)
 - **gcli** - Duniter v2s blockchain client (g1cli)
-- **nostpy-cli** - NOSTR protocol client
+- **nostr_send_note.py** - NOSTR protocol client
 
 ## Best Practices
 

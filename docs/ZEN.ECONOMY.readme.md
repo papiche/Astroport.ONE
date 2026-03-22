@@ -882,16 +882,21 @@ Le script `ECONOMY.broadcast.sh` diffuse l'état économique de chaque station v
 
 ```bash
 # ECONOMY.broadcast.sh utilise le relai strfry local
-# via nostpy-cli pour la publication
+# via nostr_send_note.py pour la publication
 
-nostpy-cli send_event \
-    -privkey "$CAPTAIN_PRIVKEY_HEX" \
-    -kind 30850 \
-    -content "$CONTENT_JSON" \
-    -tags "$TAGS_JSON" \
+# Create temp keyfile
+echo "NSEC=$CAPTAIN_NSEC;" > temp_key.nostr
+
+python3 nostr_send_note.py \
+    --keyfile temp_key.nostr \
+    --kind 30850 \
+    --content "$CONTENT_JSON" \
+    --tags "$TAGS_JSON" \
     --relay "wss://${myDAMAIN}/relay"
 
-# Fallback : strfry import direct si nostpy-cli échoue
+rm temp_key.nostr
+
+# Fallback : strfry import direct si nostr_send_note.py échoue
 ./strfry import --no-verify < "$EVENT_FILE"
 ```
 

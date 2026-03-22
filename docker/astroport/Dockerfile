@@ -132,7 +132,7 @@ RUN python3 -m venv ${HOME}/.astro \
     gql base58 pybase64 pynacl python-gnupg pynentry \
     paho-mqtt aiohttp ipfshttpclient \
     bitcoin monero ecdsa \
-    pynostr bech32 nostpy-cli \
+    pynostr bech32 \
     matplotlib readability-lxml duniterpy \
  && rm -rf ${HOME}/.cache/pip
 

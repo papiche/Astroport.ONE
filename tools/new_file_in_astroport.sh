@@ -178,14 +178,20 @@ send_media_nostr_message() {
     
     # Send NOSTR message to primary relay
     echo "Sending NOSTR message for media: ${mediakey}"
-    nostpy-cli send_event \
-        -privkey "$NPRIV_HEX" \
-        -kind 1 \
-        -content "$nostr_content" \
-        -tags "[['t', 'AstroportMedia'], ['t', 'Media'], ['t', 'IPFS'], ['r', '${ipfs_link}'], ['g1pub', '${g1pub}'], ['mediakey', '${mediakey}'], ['mime', '${mime_type}']]" \
+    
+    # Create temp keyfile for nostr_send_note.py
+    TMP_KEYFILE=$(mktemp)
+    echo "NSEC=$NSEC;" > "$TMP_KEYFILE"
+
+    python3 $MY_PATH/nostr_send_note.py \
+        --keyfile "$TMP_KEYFILE" \
+        --kind 1 \
+        --content "$nostr_content" \
+        --tags "[[\"t\", \"AstroportMedia\"], [\"t\", \"Media\"], [\"t\", \"IPFS\"], [\"r\", \"${ipfs_link}\"], [\"g1pub\", \"${g1pub}\"], [\"mediakey\", \"${mediakey}\"], [\"mime\", \"${mime_type}\"]]" \
         --relay "$myRELAY" 2>/dev/null
     
     local primary_result=$?
+    rm "$TMP_KEYFILE"
     if [[ $primary_result -eq 0 ]]; then
         echo "✅ NOSTR message sent successfully to primary relay for ${mediakey}"
     else

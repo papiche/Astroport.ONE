@@ -84,12 +84,18 @@ else
 fi
 
 # Send the updated kind 3 event
-nostpy-cli send_event \
-    -privkey "$NPRIV_HEX" \
-    -kind 3 \
-    -content "" \
-    -tags "$NEW_TAGS" \
-    --relay "$RELAY" 2>/dev/null
+# Create temp keyfile for nostr_send_note.py
+TMP_KEYFILE=$(mktemp)
+echo "NSEC=$SOURCE_NSEC;" > "$TMP_KEYFILE"
+
+python3 $MY_PATH/nostr_send_note.py \
+    --keyfile "$TMP_KEYFILE" \
+    --kind 3 \
+    --content "" \
+    --tags "$NEW_TAGS" \
+    --relays "$RELAY" 2>/dev/null
+
+rm "$TMP_KEYFILE"
 
 echo "Follow list updated with ${#@} new entries ($NEW_TAGS)"
 exit 0

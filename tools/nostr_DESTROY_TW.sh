@@ -547,22 +547,20 @@ fi
 
 ## 1.5. DELETE ALL FOLLOWS (clear contact list)
 echo "👥 Clearing follow list (kind 3)..."
-# Convert NSEC to HEX for nostpy-cli
-NPRIV_HEX=$(${MY_PATH}/nostr2hex.py "$secnostr" 2>/dev/null)
-if [[ -n "$NPRIV_HEX" ]]; then
-    # Publish empty kind 3 event to clear all follows
-    nostpy-cli send_event \
-        -privkey "$NPRIV_HEX" \
-        -kind 3 \
-        -content "" \
-        -tags "[]" \
-        --relay "$myRELAY" 2>/dev/null \
-        && echo "✅ Follow list cleared (empty kind 3 published)" \
-        || echo "⚠️  Failed to clear follow list (will continue with destruction)"
-else
-    echo "⚠️  Failed to convert NSEC to HEX, skipping follow list clear"
-fi
+# Create temp keyfile for nostr_send_note.py
+TMP_KEYFILE=$(mktemp)
+echo "NSEC=$secnostr;" > "$TMP_KEYFILE"
 
+python3 $MY_PATH/nostr_send_note.py \
+    --keyfile "$TMP_KEYFILE" \
+    --kind 3 \
+    --content "" \
+    --tags "[]" \
+    --relays "$myRELAY" 2>/dev/null \
+    && echo "✅ Follow list cleared (empty kind 3 published)" \
+    || echo "⚠️  Failed to clear follow list (will continue with destruction)"
+
+rm "$TMP_KEYFILE"
 
 ## 2. CASH BACK
 ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/nostr.dunikey "${salt}" "${pepper}"

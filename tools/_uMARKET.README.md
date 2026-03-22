@@ -427,7 +427,7 @@ Potential improvements for the uMARKET system:
 ### Dependencies
 - `jq` - JSON processing and validation
 - `ipfs` - Decentralized storage
-- `nostpy-cli` - Nostr communication
+- `nostr_send_note.py` - Nostr communication
 - `wget` - Secure image downloading
 - `file` - File type detection
 
