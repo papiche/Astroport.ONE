@@ -659,9 +659,12 @@ fi
 IMETA_TAG_ARRAY="${IMETA_TAG_ARRAY}, \"service nip96\""
 IMETA_TAG_ARRAY="${IMETA_TAG_ARRAY}]"
 
+# Escape title for JSON
+ESCAPED_TITLE=$(echo "$TITLE" | sed 's/"/\\"/g')
+
 # Build tags array (compatible with NIP-71 and create_video_channel.py)
 TAGS='[
-    ["title", "'"$TITLE"'"],
+    ["title", "'"$ESCAPED_TITLE"'"],
     ["url", "'"$IPFS_URL"'"],
     ["m", "'"$MIME_TYPE"'"],
     '"$IMETA_TAG_ARRAY"'

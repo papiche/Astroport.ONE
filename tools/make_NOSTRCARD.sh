@@ -302,6 +302,21 @@ EOFNOSTR
     SSSS_HEAD=$(cat ~/.zen/tmp/${MOATS}/${EMAIL}.ssss.head)
     SSSS_HEAD_B58=$(${MY_PATH}/Mbase58.py encode "${SSSS_HEAD}:${NOSTRNS}")
     echo "M-$SSSS_HEAD_B58" > ~/.zen/game/nostr/${EMAIL}/.ssss.player.key
+
+    ## Create .multipass.json for API return // UPassport/g1.sh read it
+    # Created early to ensure API availability even if subsequent steps (IPFS/Email) fail or timeout
+    cat > "${HOME}/.zen/game/nostr/${EMAIL}/.multipass.json" <<EOFJSON
+{
+  "g1pub": "${G1PUBNOSTR}",
+  "nsec": "${NPRIV}",
+  "npub": "${NPUBLIC}",
+  "ssss": "M-${SSSS_HEAD_B58}",
+  "nostrns": "${NOSTRNS}",
+  "salt": "${SALT}",
+  "pepper": "${PEPPER}"
+}
+EOFJSON
+
     amzqr "M-$SSSS_HEAD_B58" -l H -p ${MY_PATH}/../templates/img/key.png \
         -c -n ._SSSSQR.png -d ~/.zen/game/nostr/${EMAIL}/ &>/dev/null
 

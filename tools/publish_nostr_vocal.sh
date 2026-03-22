@@ -490,9 +490,12 @@ fi
 
 IMETA_TAG_ARRAY="${IMETA_TAG_ARRAY}]"
 
+# Escape title for JSON
+ESCAPED_TITLE=$(echo "$TITLE" | sed 's/"/\\"/g')
+
 # Build tags array (compatible with NIP-A0)
 TAGS='[
-    ["title", "'"$TITLE"'"],
+    ["title", "'"$ESCAPED_TITLE"'"],
     ["url", "'"$IPFS_URL"'"],
     '"$IMETA_TAG_ARRAY"'
 '
