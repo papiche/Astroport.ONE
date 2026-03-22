@@ -683,73 +683,75 @@ NODE12345="{
 ## PUBLISH ${IPFSNODEID}/12345.json
 echo "${NODE12345}" > ~/.zen/tmp/${IPFSNODEID}/12345.json
 
-############ PREPARE HTTP 12345 JSON DOCUMENT
-    HTTPSEND="HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Access-Control-Allow-Credentials: true
-Access-Control-Allow-Methods: GET
-Server: Astroport.ONE
-Content-Type: application/json; charset=UTF-8
+############ PREPARE HTTP 12345 JSON DOCUMENT (RAM OPTIMIZED)
+    RESPONSE_FILE="/dev/shm/astroport_12345.http"
+    echo -e "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET\r\nServer: Astroport.ONE\r\nContent-Type: application/json; charset=UTF-8\r\nConnection: close\r\n\r\n${NODE12345}" > "$RESPONSE_FILE"
 
-${NODE12345}
-"
     ######################################################################################
-    #  WAIT FOR REQUEST ON PORT12345 (netcat is waiting)
-    [[ ! -s ~/.zen/tmp/random.sleep ]] \
-        && T2WAIT=$((3600-${RANDOM:0:3})) \
-        || T2WAIT=$(cat ~/.zen/tmp/random.sleep)
+    # PREPARE HANDLER SCRIPT FOR UPSYNC (CGI-like)
+    HANDLER_SCRIPT="$HOME/.zen/tmp/12345_handler.sh"
+    ENV_FILE="$HOME/.zen/tmp/12345_env.sh"
+    
+    # Save environment for the handler
+    echo "export MY_PATH=\"$MY_PATH\"" > "$ENV_FILE"
+    
+    # Create the handler script
+    cat << 'EOF' > "$HANDLER_SCRIPT"
+#!/bin/bash
+source "$HOME/.zen/tmp/12345_env.sh"
 
-    if [[ $T2WAIT == 0 || $T2WAIT != $(cat ~/.zen/tmp/random.sleep 2>/dev/null) ]]; then
-        (
-            echo "# AUTO RELAUNCH IN $T2WAIT SECONDS"
-            echo $T2WAIT > ~/.zen/tmp/random.sleep
-            sleep $T2WAIT && rm ~/.zen/tmp/random.sleep
-            curl -s "http://127.0.0.1:12345"
-        ) & ## AUTO RELAUNCH IN ABOUT AN HOUR : DESYNC SWARM REFRESHINGS
-    fi
-    ######################################################################################
-    echo '(◕‿‿◕) http://'$myIP:'12345 READY (◕‿‿◕)'
-    REQ=$(echo "$HTTPSEND" | nc -l -p 12345 -q 1) ## # WAIT FOR 12345 PORT CONTACT
-    ######################################################################################
-    ######################################################################################
-    ######################################################################################
-    ## VISIT RECEIVED
-    URL=$(echo "$REQ" | grep '^GET' | cut -d ' ' -f2  | cut -d '?' -f2)
-    HOSTP=$(echo "$REQ" | grep '^Host:' | cut -d ' ' -f2  | cut -d '?' -f2)
-    HOST=$(echo "$HOSTP" | cut -d ':' -f 1)
-    COOKIE=$(echo "$REQ" | grep '^Cookie:' | cut -d ' ' -f2)
-    echo "RECEPTION : $URL"
-    arr=(${URL//[=&]/ })
+# 1. Read Request (First line is enough for GET parameters)
+read -r request_line
 
-    #####################################################################
-    ### UPSYNC STATION REQUEST :12345/?G1PUB=g1_to_ipfs(G1PUB)&...
-    ## & JOIN 1234
-    #####################################################################
-    if [[ ${arr[0]} != "" ]]; then
+# 2. Send Response Immediately (RAM)
+cat /dev/shm/astroport_12345.http
 
-        ## CHECK URL CONSISTENCY ( do we get G1PUB=IPNSPUB right ? )
+# 3. Process UPSYNC in background
+(
+    # Extract query: GET /?G1PUB=... HTTP...
+    query=$(echo "$request_line" | sed -n 's/^GET \/?[?]\(.*\) HTTP.*/\1/p')
+    
+    if [[ -n "$query" ]]; then
+        # Parse G1PUB=IPNS
+        arr=(${query//[=&]/ })
         GPUB=${arr[0]}
-        ASTROTOIPFS=$(${MY_PATH}/tools/g1_to_ipfs.py ${arr[0]} 2>/dev/null)
-
-        if [[ "${ASTROTOIPFS}" == "${arr[1]}" && ${ASTROTOIPFS} != "" && ${arr[1]} != "" ]]; then
-            ## WE SPEAK THE SAME PROTOCOL
-            echo "WE HAVE A STATION ${GPUB} CONTACT"
-            (
-            timeon=`date +%s`
-            mkdir -p ~/.zen/tmp/swarm/${ASTROTOIPFS}
-            echo "<<< MAJOR TOM TO GROUND CONTROL >>> UPSYNC TO  ~/.zen/tmp/swarm/${ASTROTOIPFS}"
-            ipfs --timeout 240s get --progress="false" -o ~/.zen/tmp/swarm/${ASTROTOIPFS} /ipns/${ASTROTOIPFS}
-            timeoff=`date +%s`
-            echo ">>> GROUND CONTROL FINISH in $(( timeoff - timeon )) sec <<<"
-            ) &
+        IPNS=${arr[1]}
+        
+        if [[ -n "$GPUB" && -n "$IPNS" ]]; then
+            # Check consistency using existing tool
+            ASTROTOIPFS=$(${MY_PATH}/tools/g1_to_ipfs.py ${GPUB} 2>/dev/null)
+            
+            if [[ "${ASTROTOIPFS}" == "${IPNS}" ]]; then
+                # Trigger IPFS GET
+                mkdir -p ~/.zen/tmp/swarm/${IPNS}
+                ipfs --timeout 240s get --progress="false" -o ~/.zen/tmp/swarm/${IPNS} /ipns/${IPNS} >/dev/null 2>&1
+            fi
         fi
-
     fi
+) &
+EOF
+    chmod +x "$HANDLER_SCRIPT"
+
+    ######################################################################################
+    # START NON-BLOCKING SERVER (socat)
+    # Check if socat is running on port 12345
+    if ! pgrep -f "socat.*TCP4-LISTEN:12345" > /dev/null; then
+        echo "Starting optimized socat server on port 12345..."
+        # Kill any old instances just in case
+        pkill -f "socat.*TCP4-LISTEN:12345"
+        # Start socat executing the handler for each connection
+        socat TCP4-LISTEN:12345,reuseaddr,fork EXEC:"$HANDLER_SCRIPT" &
+    fi
+
+    echo '(◕‿‿◕) http://'$myIP:'12345 SERVED VIA SOCAT (CGI) (◕‿‿◕)'
+    
+    # Sleep to prevent busy loop (replacing nc -l wait)
+    # Wait 60 seconds before checking if update is needed
+    sleep 60
 
     #### 12345 NETWORK MAP TOKEN
     end=`date +%s`
-    echo '(#__#) WAITING TIME was '`expr $end - $start`' seconds.'
-    echo '(^‿‿^) 12345 TOKEN '${MOATS}' CONSUMED  (^‿‿^)'
+    echo '(#__#) LOOP TIME was '`expr $end - $start`' seconds.'
 
 done
 
