@@ -23,6 +23,8 @@ start=`date +%s`
 echo "#############################################"
 echo "=== CODE CLONING TO '~/.zen/Astroport.ONE' ==="
 echo "#############################################"
+echo "UPDATING SYSTEM REPOSITORY"
+sudo apt-get update
 sudo apt install -y git
 mkdir -p ~/.zen/workspace
 cd ~/.zen/workspace
@@ -45,14 +47,7 @@ git clone --depth 1 https://github.com/papiche/Astroport.ONE.git
 if [[ ! -d ~/.zen/game/players/ ]];
 then
 echo "#############################################"
-echo "###### ASTROPORT.ONE ZEN STATION ##############"
-echo "############# TW HOSTING & Ŋ1 SERVICES #############"
-echo "##################################################"
-
-echo ; echo "UPDATING SYSTEM REPOSITORY"
-#~ [[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && sudo add-apt-repository ppa:obsproject/obs-studio
-sudo apt-get update
-
+echo "###### ASTROPORT.ONE ZEN STATION ############"
 echo "#############################################"
 echo "######### INSTALL PRECIOUS FREE SOFTWARE ####"
 echo "#############################################"
@@ -66,9 +61,9 @@ for i in zip ssss make cmake docker.io docker-compose hdparm iptables ufw fail2b
 done
 
 echo "#############################################"
-echo "######### INSTALL PYTHON3 SYSTEM LIBRARIES ####"
+echo "####### INSTALL PYTHON3 SYSTEM LIBRARIES ####"
 echo "#############################################"
-for i in pipx python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp python3-prometheus-client python3-tk ssss robohash; do
+for i in pipx python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp python3-prometheus-client python3-tk ssss; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -78,7 +73,7 @@ for i in pipx python3-pip python3-setuptools python3-wheel python3-dotenv python
 done
 
 echo "#############################################"
-echo "######### INSTALL MULTIMEDIA & DATA TOOLS  ######"
+echo "##### INSTALL MULTIMEDIA & DATA TOOLS  ######"
 echo "#############################################"
 for i in qrencode pv gnupg gpa pandoc cargo btop sox prometheus ocrmypdf ca-certificates basez markdown jq bc file gawk ffmpeg geoip-bin dnsutils ntpdate v4l-utils espeak vlc mp3info musl-dev openssl* detox nmap httrack html2text imagemagick; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
@@ -90,7 +85,7 @@ for i in qrencode pv gnupg gpa pandoc cargo btop sox prometheus ocrmypdf ca-cert
 done
 
 echo "#############################################"
-echo "######### INSTALL ASCII ART TOOLS ######"
+echo "######### INSTALL ASCII ART TOOLS ###########"
 echo "#############################################"
 for i in figlet cmatrix cowsay fonts-hack-ttf; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
@@ -121,7 +116,8 @@ if [[ $(cat /etc/ImageMagick-6/policy.xml | grep PDF) ]]; then
     sudo cp /tmp/policy.xml /etc/ImageMagick-6/policy.xml
 fi
 
-### ~/.astro/bin PYTHON ENV
+
+echo "################################## ~/.astro/bin PYTHON ENV"
 cd $HOME
 [[ ! -s ~/.astro/bin/activate ]] && python -m venv .astro
 . ~/.astro/bin/activate
@@ -133,7 +129,7 @@ echo "#####################################"
 export PATH=$HOME/.local/bin:$PATH
 pipx install duniterpy --include-deps ## keeps own dep
 ## add monero & bitcoin compatible keys
-for i in pip python-dotenv setuptools wheel termcolor amzqr ollama requests geohash beautifulsoup4 pyppeteer cryptography jwcrypto secp256k1 gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 nostpy-cli matplotlib readability-lxml duniterpy; do
+for i in pip python-dotenv setuptools wheel termcolor amzqr ollama requests geohash beautifulsoup4 pyppeteer cryptography jwcrypto secp256k1 gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 nostpy-cli matplotlib readability-lxml duniterpy robohash; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         pip install -U $i 2>> ~/.zen/install.errors.log
         # [[ $? != 0 ]] && pipx install $i 2>> ~/.zen/install.errors.log
