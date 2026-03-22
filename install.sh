@@ -23,6 +23,7 @@ start=`date +%s`
 echo "#############################################"
 echo "=== CODE CLONING TO '~/.zen/Astroport.ONE' ==="
 echo "#############################################"
+sudo apt install -y git
 mkdir -p ~/.zen/workspace
 cd ~/.zen/workspace
 git clone --depth 1 https://github.com/papiche/UPlanet
@@ -55,7 +56,7 @@ sudo apt-get update
 echo "#############################################"
 echo "######### INSTALL PRECIOUS FREE SOFTWARE ####"
 echo "#############################################"
-for i in git zip ssss make cmake docker.io docker-compose hdparm iptables ufw fail2ban wireguard openssh-server sshfs parallel npm shellcheck multitail netcat-traditional ncdu chromium miller inotify-tools curl net-tools mosquitto libsodium* libcurl4-openssl-dev libgpgme-dev libffi-dev; do
+for i in zip ssss make cmake docker.io docker-compose hdparm iptables ufw fail2ban wireguard openssh-server sshfs parallel npm shellcheck multitail netcat-traditional ncdu chromium miller inotify-tools curl net-tools mosquitto libsodium* libcurl4-openssl-dev libgpgme-dev libffi-dev; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
