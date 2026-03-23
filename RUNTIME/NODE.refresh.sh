@@ -220,8 +220,6 @@ if [[ -z "$UPLANET_G1_HEX" && -n "$UPLANETNAME" ]]; then
     _G1_NPUB=$(${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}.G1" "${UPLANETNAME}.G1" 2>/dev/null)
     if [[ -n "$_G1_NPUB" ]]; then
         UPLANET_G1_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$_G1_NPUB" 2>/dev/null)
-        # Cache the result for future runs
-        [[ -n "$UPLANET_G1_HEX" ]] && echo "$_G1_NPUB" > "$HOME/.zen/game/uplanet.G1.nostr"
     fi
 fi
 

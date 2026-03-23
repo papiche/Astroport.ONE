@@ -857,7 +857,7 @@ get_coop_keygen_seed() {
         CAPITAL)      echo "${uplanetname}.CAPITAL" ;;
         AMORTISSEMENT) echo "${uplanetname}.AMORTISSEMENT" ;;
         INTRUSION)    echo "${uplanetname}.INTRUSION" ;;
-        CAPTAIN)      echo "${uplanetname}.${CAPTAINEMAIL:-CAPTAIN}" ;;
+        CAPTAIN)      echo "${uplanetname}.${CAPTAINEMAIL:-support@qo-op.com}" ;;
         *)            echo "${uplanetname}.${wallet_type}" ;;
     esac
 }
@@ -950,10 +950,8 @@ create_coop_nostr_root_key() {
     log_info "Creating cooperative NOSTR root key (uplanet.G1.nostr)..."
     
     if [[ -x "${MY_PATH}/keygen" ]] && [[ -x "${MY_PATH}/nostr2hex.py" ]]; then
-        local keygen_out=$("${MY_PATH}/keygen" -t nostr "${uplanetname}.G1" "${uplanetname}.G1" 2>/dev/null)
-        local npub=$(echo "$keygen_out" | grep -oE 'npub1[a-zA-Z0-9]{58}' | head -1)
-        local nsec=$(echo "$keygen_out" | grep -oE 'nsec1[a-zA-Z0-9]{58}' | head -1)
-        [[ -z "$nsec" ]] && nsec=$("${MY_PATH}/keygen" -t nostr "${uplanetname}.G1" "${uplanetname}.G1" -s 2>/dev/null | grep -oE 'nsec1[a-zA-Z0-9]{58}' | head -1)
+        local npub=$("${MY_PATH}/keygen" -t nostr "${uplanetname}.G1" "${uplanetname}.G1" 2>/dev/null)
+        local nsec=$("${MY_PATH}/keygen" -t nostr "${uplanetname}.G1" "${uplanetname}.G1" -s 2>/dev/null | grep -oE 'nsec1[a-zA-Z0-9]{58}' | head -1)
         local hex=""
         [[ -n "$npub" ]] && hex=$("${MY_PATH}/nostr2hex.py" "$npub" 2>/dev/null)
         if [[ -n "$npub" ]] && [[ -n "$nsec" ]] && [[ -n "$hex" ]]; then
