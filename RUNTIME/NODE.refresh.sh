@@ -185,6 +185,23 @@ done
 ## This follows the same filtering as NOSTR.UMAP.refresh.sh
 ########################################################
 echo "############################################"
+echo "REMOVE swarm/*/amisOfAmis HEX from blacklist.txt"
+BLACKLIST="$HOME/.zen/strfry/blacklist.txt"
+TMP_AMIS=$(mktemp)
+# Collecte des clés amisOfAmis du swarm
+find ~/.zen/tmp/swarm/ -name "amisOfAmis.txt" -type f -exec cat {} \; 2>/dev/null | sort -u > "$TMP_AMIS"
+## DEBUG -- TODO remove
+cat "$TMP_AMIS"
+# Supprime les clés de blacklist.txt
+if [[ -f "${BLACKLIST}" ]]; then
+    cp "${BLACKLIST}" "${BLACKLIST}.bak"
+    grep -v -F -f "$TMP_AMIS" "${BLACKLIST}" > "$TMP_AMIS.new"
+    mv "$TMP_AMIS.new" "${BLACKLIST}"
+    echo "OK: $(wc -l < ${BLACKLIST}.bak) -> $(wc -l < ${BLACKLIST})"
+fi
+rm -f "$TMP_AMIS"
+
+echo "############################################"
 echo "ADDING LOCAL GEOGRAPHIC KEYS TO amisOfAmis.txt"
 
 # Initialize amisOfAmis.txt if it doesn't exist
@@ -363,13 +380,13 @@ echo "Added $SWARM_UMAP_COUNT SWARM UMAP HEX keys to amisOfAmis.txt (Collaborati
 sort -u "${HOME}/.zen/strfry/amisOfAmis.txt" -o "${HOME}/.zen/strfry/amisOfAmis.txt"
 echo "Total amisOfAmis.txt entries after geographic sync: $(wc -l < ${HOME}/.zen/strfry/amisOfAmis.txt)"
 
-echo "COPYing blacklist.txt $(cat $HOME/.zen/strfry/blacklist.txt | wc -l) + amisOfAmis.txt $(cat $HOME/.zen/strfry/amisOfAmis.txt | wc -l)"
-cp -f "$HOME/.zen/strfry/blacklist.txt" ~/.zen/tmp/$IPFSNODEID/
+echo "COPYing blacklist.txt $(cat ${BLACKLIST} | wc -l) + amisOfAmis.txt $(cat $HOME/.zen/strfry/amisOfAmis.txt | wc -l)"
+cp -f "${BLACKLIST}" ~/.zen/tmp/$IPFSNODEID/
 cp -f "${HOME}/.zen/strfry/amisOfAmis.txt" ~/.zen/tmp/$IPFSNODEID/
 
 # Merge swarm blacklist and amisOfAmis with local files
 echo "Merging swarm blacklist and amisOfAmis files..."
-cat ~/.zen/tmp/swarm/*/blacklist.txt 2>/dev/null | sort -u >> "$HOME/.zen/strfry/blacklist.txt"
+cat ~/.zen/tmp/swarm/*/blacklist.txt 2>/dev/null | sort -u >> "${BLACKLIST}"
 
 # Clean amisOfAmis.txt: filter out log lines and keep only valid 64-char hex pubkeys
 cat ~/.zen/tmp/swarm/*/amisOfAmis.txt 2>/dev/null | while IFS= read -r line; do
@@ -382,12 +399,12 @@ cat ~/.zen/tmp/swarm/*/amisOfAmis.txt 2>/dev/null | while IFS= read -r line; do
 done | sort -u >> "${HOME}/.zen/strfry/amisOfAmis.txt"
 
 # Remove duplicates from merged files
-sort -u "$HOME/.zen/strfry/blacklist.txt" -o "$HOME/.zen/strfry/blacklist.txt"
+sort -u "${BLACKLIST}" -o "${BLACKLIST}"
 sort -u "${HOME}/.zen/strfry/amisOfAmis.txt" -o "${HOME}/.zen/strfry/amisOfAmis.txt"
 
 echo "Cleaned amisOfAmis.txt: removed invalid entries (logs, non-hex lines)"
 
-echo "Updated blacklist.txt: $(cat $HOME/.zen/strfry/blacklist.txt | wc -l) entries"
+echo "Updated blacklist.txt: $(cat ${BLACKLIST} | wc -l) entries"
 echo "Updated amisOfAmis.txt: $(cat $HOME/.zen/strfry/amisOfAmis.txt | wc -l) entries"
 
 ########################################################
