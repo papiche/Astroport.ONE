@@ -104,7 +104,7 @@ fi
 
 ## NOSTR ##############################################
 ## CREATE ~/.zen/game/secret.nostr (for YLEVEL NODES only)
-if [[ -s ~/.zen/game/secret.june && ! -s ~/.zen/game/secret.nostr ]]; then
+if [[ -s ~/.zen/game/secret.june ]]; then
     source ~/.zen/game/secret.june
     npub=$(${MY_PATH}/tools/keygen -t nostr "$SALT" "$PEPPER")
     hex=$(${MY_PATH}/tools/nostr2hex.py "$npub")
