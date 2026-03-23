@@ -184,6 +184,9 @@ done
 ## IMPORTANT: Only add LOCAL keys (managed by this node), not swarm keys
 ## This follows the same filtering as NOSTR.UMAP.refresh.sh
 ########################################################
+# Initialize amisOfAmis.txt if it doesn't exist
+touch "${HOME}/.zen/strfry/amisOfAmis.txt"
+
 echo "############################################"
 echo "REMOVE swarm/*/amisOfAmis HEX from blacklist.txt"
 BLACKLIST="$HOME/.zen/strfry/blacklist.txt"
@@ -203,9 +206,6 @@ rm -f "$SWARM_AMIS"
 
 echo "############################################"
 echo "ADDING LOCAL GEOGRAPHIC KEYS TO amisOfAmis.txt"
-
-# Initialize amisOfAmis.txt if it doesn't exist
-touch "${HOME}/.zen/strfry/amisOfAmis.txt"
 
 # Add uplanet.G1.nostr HEX (Central Oracle key)
 # IMPORTANT: This key (salt=pepper="${UPLANETNAME}.G1") signs kind:30800 "cooperative-config"
