@@ -651,12 +651,13 @@ CAPTAING1PUB=$(cat $HOME/.zen/game/nostr/${CAPTAINEMAIL}/G1PUBNOSTR 2>/dev/null)
     && echo $UPLANETNAME_G1 > $HOME/.zen/tmp/UPLANETNAME_G1
 
 ## UPLANENAME.G1 NOSTR IDENTITY (used for cooperative signals)
-[[ ! -s $HOME/.zen/game/uplanet.G1.nostr]] \
-	&& npub=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}.G1" "${UPLANETNAME}.G1" 2>/dev/null) \
-	&& nsec=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}.G1" "${UPLANETNAME}.G1" -s 2>/dev/null) \
-	&& hex=$("$HOME/.zen/Astroport.ONE/tools/nostr2hex.py" "$npub" 2>/dev/null) \
-	&& echo "NSEC=$nsec; NPUB=$npub; HEX=$hex" > $HOME/.zen/game/uplanet.G1.nostr \
-	&& chmod 600 $HOME/.zen/game/uplanet.G1.nostr
+if [[ ! -s "$HOME/.zen/game/uplanet.G1.nostr" ]]; then
+    npub=$("$HOME/.zen/Astroport.ONE/tools/keygen" -t nostr "${UPLANETNAME}.G1" "${UPLANETNAME}.G1" 2>/dev/null)
+    nsec=$("$HOME/.zen/Astroport.ONE/tools/keygen" -t nostr "${UPLANETNAME}.G1" "${UPLANETNAME}.G1" -s 2>/dev/null)
+    hex=$("$HOME/.zen/Astroport.ONE/tools/nostr2hex.py" "$npub" 2>/dev/null)
+    echo "NSEC=$nsec; NPUB=$npub; HEX=$hex" > "$HOME/.zen/game/uplanet.G1.nostr"
+    chmod 600 "$HOME/.zen/game/uplanet.G1.nostr"
+fi
 
 # Cache optimization: read from cache first
 if [[ -f "$HOME/.zen/tmp/UPLANETNAME_G1" ]]; then

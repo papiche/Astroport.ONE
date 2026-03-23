@@ -74,9 +74,6 @@ if [[ -s ~/.ssh/id_ed25519 ]]; then
             && echo "SSH/IPFS KEY NOT MATCHING... CONTACT SUPPORT (_8^( l)" && exit 1
         
         echo "SSH + IPFS : OK"
-        
-        # On met quand même à jour les bootstraps avant de quitter
-        $MY_PATH/../tools/update_bootstraps.sh # Ou la boucle bootstrap à la fin du script
         exit 0
     fi
 
