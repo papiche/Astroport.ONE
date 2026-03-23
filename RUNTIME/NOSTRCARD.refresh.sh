@@ -1240,61 +1240,40 @@ for PLAYER in "${NOSTR[@]}"; do
         fi
         ########################################################################
         ## Create ZENCARD ONLY FOR UPlanet Zen #################################################
-        if [[ "$UPLANETG1PUB" != "4ZqazktD8FpExLLhE58QTqKu9nosLNtwDUPrxu43mXGi" ]]; then
-            ## CREATE UPlanet AstroID + ZenCard using EMAIL and GPS ##
-            if [[ ! -d ~/.zen/game/players/${PLAYER} ]]; then
-                echo "## UPlanet ZEN : Zen Card creation "
-                source ~/.zen/game/nostr/${PLAYER}/GPS
-                PPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 2 )) | xargs)
-                NPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 2 )) | xargs)
+        ## CREATE UPlanet AstroID + ZenCard using EMAIL and GPS ##
+        if [[ ! -d ~/.zen/game/players/${PLAYER} && -s ${HOME}/.zen/game/nostr/${PLAYER}/.secret.nostr ]]; then
+            echo "## UPlanet ZEN : Zen Card creation "
+            source ~/.zen/game/nostr/${PLAYER}/GPS
+            PPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 2 )) | xargs)
+            NPASS=$(${MY_PATH}/../tools/diceware.sh $(( $(${MY_PATH}/../tools/getcoins_from_gratitude_box.sh) + 2 )) | xargs)
 
-                ## GET LANG FROM NOSTR CARD
-                LANG=$(cat ${HOME}/.zen/game/nostr/${PLAYER}/LANG 2>/dev/null)
-                source ${HOME}/.zen/game/nostr/${PLAYER}/.secret.nostr 2>/dev/null
-                [[ -z $LANG ]] && LANG="fr"
-                #####################################
-                ## CREATE ASTRONAUTE TW ZEN CARD
-                #####################################
-                echo "MULTIPASS : ZenCard ${PLAYER}" "UPlanet" "${LANG}" "${LAT}" "${LON}" "$NPUB" "$HEX"
-                ${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "${LANG}" "${LAT}" "${LON}" "$NPUB" "$HEX"
+            ## GET LANG FROM NOSTR CARD
+            LANG=$(cat ${HOME}/.zen/game/nostr/${PLAYER}/LANG 2>/dev/null)
+            source ${HOME}/.zen/game/nostr/${PLAYER}/.secret.nostr 2>/dev/null
+            [[ -z $LANG ]] && LANG="fr"
+            #####################################
+            ## CREATE ASTRONAUTE TW ZEN CARD
+            #####################################
+            echo "MULTIPASS : ZenCard ${PLAYER}" "UPlanet" "${LANG}" "${LAT}" "${LON}" "$NPUB" "$HEX"
+            ${MY_PATH}/../RUNTIME/VISA.new.sh "${PPASS}" "${NPASS}" "${PLAYER}" "UPlanet" "${LANG}" "${LAT}" "${LON}" "$NPUB" "$HEX"
 
-            else
-                ################## FINAL STEP REACHED ###################
-                ######## USER STATE = Email
-                ### + NOSTR Card + Message (GPS 0?)
-                ### + UPassport (G1/DU?)
-                ### + Zen Card (Ẑ/€?)
-                ### = PLAYER N1/N2 UPLANET ZEN
-                #########################################################
-                echo "MULTIPASS & ZenCard existing : ~/.zen/game/players/${PLAYER}"
-                ${MY_PATH}/../tools/search_for_this_email_in_players.sh ${PLAYER} | tail -n 1
-
-            fi
-        ############## UPLANET ORIGIN #############################################
         else
-            $(${MY_PATH}/../tools/search_for_this_email_in_nostr.sh ${PLAYER} | tail -n 1)
-            echo "$source ORIGIN ($LAT $LON) : $HEX = $EMAIL"
-
+            ################## FINAL STEP REACHED ###################
+            ######## USER STATE = Email
+            ### + NOSTR Card + Message (GPS 0?)
+            ### + UPassport (G1/DU?)
+            ### + Zen Card (Ẑ/€?)
+            ### = PLAYER N1/N2 UPLANET ZEN
+            #########################################################
+            echo "MULTIPASS & ZenCard existing : ~/.zen/game/players/${PLAYER}"
+            ${MY_PATH}/../tools/search_for_this_email_in_players.sh ${PLAYER} | tail -n 1
         fi
+    ############## UPLANET ORIGIN #############################################
+    $(${MY_PATH}/../tools/search_for_this_email_in_nostr.sh ${PLAYER} | tail -n 1)
+    echo "$source ORIGIN ($LAT $LON) : $HEX = $EMAIL"
 
+        
     ########################################################################################
-    ## PRIMO TX RECOVERY: retry if wallet has 0 balance and G1PRIME is missing
-    if [[ "$COINS" == "0" || -z "$COINS" || "$COINS" == "null" ]] && [[ ! -s ~/.zen/game/nostr/${PLAYER}/G1PRIME ]]; then
-        echo "⚠️  PRIMO TX RECOVERY: wallet $G1PUBNOSTR has 0 G1 and no G1PRIME marker"
-        echo "   Retrying primo transaction from UPLANETNAME_G1..."
-        if [[ -f ~/.zen/game/uplanet.G1.dunikey ]]; then
-            YOUSER_RETRY=$(${MY_PATH}/../tools/clyuseryomail.sh ${PLAYER})
-            ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/game/uplanet.G1.dunikey" \
-                "1" "${G1PUBNOSTR}" \
-                "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER_RETRY}:MULTIPASS:PRIMAL:RETRY" 2>/dev/null \
-            && echo "${UPLANETNAME_G1}" > ~/.zen/game/nostr/${PLAYER}/G1PRIME \
-            && echo "${UPLANETNAME_G1}" > ~/.zen/tmp/coucou/${G1PUBNOSTR}.primal \
-            && echo "✅ PRIMO TX RETRY successful for ${PLAYER}" \
-            || echo "❌ PRIMO TX RETRY failed for ${PLAYER} (check UPLANETNAME_G1 balance)"
-        else
-            echo "❌ Cannot retry PRIMO TX: uplanet.G1.dunikey not found"
-        fi
-    fi
 
     ########################################################################################
     # Use the generic primal wallet control function

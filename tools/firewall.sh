@@ -61,6 +61,11 @@ fire_on() {
 🔥 ASTROPORT FIREWALL — ACTIVATION UFW
 ########################################################################"
 
+    ## Activation IPv6 dans la configuration UFW si nécessaire
+    if [ -f /etc/default/ufw ]; then
+        sudo sed -i 's/^IPV6=no/IPV6=yes/' /etc/default/ufw
+    fi
+
     ## Réinitialisation propre (évite les doublons)
     sudo ufw --force reset > /dev/null 2>&1
 
@@ -116,14 +121,15 @@ fire_on() {
 
     ## LAN : autoriser le réseau local à accéder aux services internes
     ## (utile pour debug depuis un autre PC du LAN)
-    for LAN_RANGE in 192.168.0.0/16 10.0.0.0/8 172.16.0.0/12; do
+    ## Ajout IPv6 : fe80::/10 (Link-Local), fc00::/7 (Unique Local)
+    for LAN_RANGE in 192.168.0.0/16 10.0.0.0/8 172.16.0.0/12 fe80::/10 fc00::/7; do
         sudo ufw allow from "${LAN_RANGE}" to any port 12345 proto tcp comment "LAN→Astroport" > /dev/null 2>&1
         sudo ufw allow from "${LAN_RANGE}" to any port 8080  proto tcp comment "LAN→IPFS GW"  > /dev/null 2>&1
         sudo ufw allow from "${LAN_RANGE}" to any port 54321 proto tcp comment "LAN→UPassport" > /dev/null 2>&1
         sudo ufw allow from "${LAN_RANGE}" to any port 7777  proto tcp comment "LAN→NOSTR"    > /dev/null 2>&1
     done
     echo ""
-    echo "  🏠 LAN (192.168/10./172.16-31.) : accès autorisé aux services internes"
+    echo "  🏠 LAN (IPv4 + IPv6) : accès autorisé aux services internes"
 
     ## Activer UFW
     sudo ufw --force enable
