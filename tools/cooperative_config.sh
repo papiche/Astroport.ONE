@@ -750,34 +750,34 @@ get_oc_api_key() {
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     # Script is being run directly
     case "${1:-}" in
-        get)
+        get|coop_config_get)
             coop_config_get "$2"
             ;;
-        set)
+        set|coop_config_set)
             coop_config_set "$2" "$3" "$4"
             ;;
-        delete)
+        delete|coop_config_delete)
             coop_config_delete "$2"
             ;;
-        list)
+        list|coop_config_list)
             coop_config_list
             ;;
-        show)
+        show|coop_config_show_decrypted)
             coop_config_show_decrypted
             ;;
-        refresh)
+        refresh|coop_config_refresh)
             coop_config_refresh
             ;;
-        export)
+        export|coop_export_env)
             coop_export_env "$2"
             ;;
-        init)
+        init|coop_config_init)
             coop_config_init "$2"
             ;;
-        encrypt)
+        encrypt|coop_encrypt)
             coop_encrypt "$2"
             ;;
-        decrypt)
+        decrypt|coop_decrypt)
             coop_decrypt "$2"
             ;;
         help|--help|-h)
