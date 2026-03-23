@@ -159,44 +159,26 @@ echo 0 > ~/.zen/tmp/random.sleep
 UPLANETCOINS=$($MY_PATH/tools/G1check.sh ${UPLANETG1PUB} | tail -n 1)
 UPLANETZEN=$(echo "scale=1; ($UPLANETCOINS - 1) * 10" | bc)
 
-## CREATE UPLANET ECOSYSTEM WALLETS IF NOT EXISTS AND GET PUBKEYS
+####################################################################################
+## Ces wallet COOP sont gérés par UPLANET.init.sh et UPLANET.official.sh 
+## Quotidiennement réinitialisées par NODE et DRAGON_p2p puis raffraichis par my.sh
+## REFILL TO CHECK CACHE CONFORMITY 
 # UPLANETNAME_TREASURY wallet
-[[ ! -s ~/.zen/game/uplanet.CASH.dunikey ]] \
-    && ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/uplanet.CASH.dunikey "${UPLANETNAME}.TREASURY" "${UPLANETNAME}.TREASURY" \
-    && chmod 600 ~/.zen/game/uplanet.CASH.dunikey
-UPLANETNAME_TREASURY=$(cat ~/.zen/game/uplanet.CASH.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
-
+UPLANETNAME_TREASURY=$(cat $HOME/.zen/tmp/UPLANETNAME_TREASURY)
 # UPLANETNAME_RND wallet
-[[ ! -s ~/.zen/game/uplanet.RnD.dunikey ]] \
-    && ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/uplanet.RnD.dunikey "${UPLANETNAME}.RND" "${UPLANETNAME}.RND" \
-    && chmod 600 ~/.zen/game/uplanet.RnD.dunikey
-UPLANETNAME_RND=$(cat ~/.zen/game/uplanet.RnD.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
-
+UPLANETNAME_RND=$(cat $HOME/.zen/tmp/UPLANETNAME_RND)
 # UPLANETNAME_ASSETS wallet
-[[ ! -s ~/.zen/game/uplanet.ASSETS.dunikey ]] \
-    && ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/uplanet.ASSETS.dunikey "${UPLANETNAME}.ASSETS" "${UPLANETNAME}.ASSETS" \
-    && chmod 600 ~/.zen/game/uplanet.ASSETS.dunikey
-UPLANETNAME_ASSETS=$(cat ~/.zen/game/uplanet.ASSETS.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
-
+UPLANETNAME_ASSETS=$(cat $HOME/.zen/tmp/UPLANETNAME_ASSETS)
 # UPLANETNAME_IMPOT wallet
-[[ ! -s ~/.zen/game/uplanet.IMPOT.dunikey ]] \
-    && ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/uplanet.IMPOT.dunikey "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT" \
-    && chmod 600 ~/.zen/game/uplanet.IMPOT.dunikey
-UPLANETNAME_IMPOT=$(cat ~/.zen/game/uplanet.IMPOT.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
-
+UPLANETNAME_IMPOT=$(cat $HOME/.zen/tmp/UPLANETNAME_IMPOT)
 # UPLANETNAME_CAPITAL wallet (Immobilisations - Compte 21 - Valeur Brute)
-[[ ! -s ~/.zen/game/uplanet.CAPITAL.dunikey ]] \
-    && ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/uplanet.CAPITAL.dunikey "${UPLANETNAME}.CAPITAL" "${UPLANETNAME}.CAPITAL" \
-    && chmod 600 ~/.zen/game/uplanet.CAPITAL.dunikey
-UPLANETNAME_CAPITAL=$(cat ~/.zen/game/uplanet.CAPITAL.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
-
+UPLANETNAME_CAPITAL=$(cat $HOME/.zen/tmp/UPLANETNAME_CAPITAL)
 # UPLANETNAME_AMORTISSEMENT wallet (Amortissements - Compte 28 - Valeur Consommée)
-[[ ! -s ~/.zen/game/uplanet.AMORTISSEMENT.dunikey ]] \
-    && ${MY_PATH}/tools/keygen -t duniter -o ~/.zen/game/uplanet.AMORTISSEMENT.dunikey "${UPLANETNAME}.AMORTISSEMENT" "${UPLANETNAME}.AMORTISSEMENT" \
-    && chmod 600 ~/.zen/game/uplanet.AMORTISSEMENT.dunikey
-UPLANETNAME_AMORTISSEMENT=$(cat ~/.zen/game/uplanet.AMORTISSEMENT.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+UPLANETNAME_AMORTISSEMENT=$(cat $HOME/.zen/tmp/UPLANETNAME_AMORTISSEMENT)
+# UPLANETNAME_INTRUSION wallet (external Ğ1 should always go to UPLANETNAME_G1)
+UPLANETNAME_INTRUSION=$(cat $HOME/.zen/tmp/UPLANETNAME_INTRUSION)
 
-###############################################
+####################################################################################
 #### UPLANET GEOKEYS_refresh - not for UPlanet ORIGIN
 if [[ $UPLANETNAME != "0000000000000000000000000000000000000000000000000000000000000000" ]]; then
     ${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
