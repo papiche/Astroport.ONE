@@ -178,16 +178,18 @@ check_source_wallet() {
     
     echo -e "${BLUE}Solde actuel:${NC} ${YELLOW}$source_balance Ğ1${NC}"
     
-    # Calculate required amount (8 cooperative wallets + potential node/captain)
-    local required_amount=8
+    # Calculate required amount (dynamic based on COOPERATIVE_WALLETS + NODE + CAPTAIN)
+    local coop_count=${#COOPERATIVE_WALLETS[@]}
+    local node_captain_estimate=2 # NODE + CAPTAIN
+    local required_amount=$((coop_count + node_captain_estimate))
     local available_balance=$(echo "$source_balance" | bc -l 2>/dev/null || echo "0")
     
     # Calculate how many wallets can be initialized
     WALLETS_TO_INITIALIZE=$(echo "$available_balance" | bc -l | cut -d. -f1)
     if [[ -z "$WALLETS_TO_INITIALIZE" ]] || [[ "$WALLETS_TO_INITIALIZE" -lt 1 ]]; then
         WALLETS_TO_INITIALIZE=0
-    elif [[ "$WALLETS_TO_INITIALIZE" -gt 10 ]]; then
-        WALLETS_TO_INITIALIZE=10  # Max: 8 cooperative + NODE + CAPTAIN
+    elif [[ "$WALLETS_TO_INITIALIZE" -gt "$required_amount" ]]; then
+        WALLETS_TO_INITIALIZE="$required_amount"
     fi
     
     if (( $(echo "$available_balance < 1" | bc -l) )); then
@@ -261,42 +263,47 @@ create_missing_wallet() {
     [[ ! -d "$wallet_dir" ]] && mkdir -p "$wallet_dir"
     
     # Create wallet using keygen like in ZEN.COOPERATIVE.3x1-3.sh and my.sh
+    local keygen_name=""
+    local keygen_pass=""
+
     case "$wallet_name" in
         "UPLANETNAME_CASH")
-            "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.TREASURY" "${UPLANETNAME}.TREASURY"
+            keygen_name="${UPLANETNAME}.TREASURY"; keygen_pass="${UPLANETNAME}.TREASURY"
             ;;
         "UPLANETNAME_RND")
-            "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.RND" "${UPLANETNAME}.RND"
+            keygen_name="${UPLANETNAME}.RND"; keygen_pass="${UPLANETNAME}.RND"
             ;;
         "UPLANETNAME_ASSETS")
-            "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.ASSETS" "${UPLANETNAME}.ASSETS"
+            keygen_name="${UPLANETNAME}.ASSETS"; keygen_pass="${UPLANETNAME}.ASSETS"
             ;;
         "UPLANETNAME_IMPOT")
-            "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT"
+            keygen_name="${UPLANETNAME}.IMPOT"; keygen_pass="${UPLANETNAME}.IMPOT"
             ;;
         "UPLANETNAME_SOCIETY")
-            "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.SOCIETY" "${UPLANETNAME}.SOCIETY"
+            keygen_name="${UPLANETNAME}.SOCIETY"; keygen_pass="${UPLANETNAME}.SOCIETY"
             ;;
         "UPLANETNAME")
-            "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}" "${UPLANETNAME}"
+            keygen_name="${UPLANETNAME}"; keygen_pass="${UPLANETNAME}"
             ;;
         "UPLANETNAME.CAPTAIN")
-            "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.${CAPTAINEMAIL}" "${UPLANETNAME}.${CAPTAINEMAIL}"
+            keygen_name="${UPLANETNAME}.${CAPTAINEMAIL}"; keygen_pass="${UPLANETNAME}.${CAPTAINEMAIL}"
             ;;
         "UPLANETNAME_INTRUSION")
-            "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.INTRUSION" "${UPLANETNAME}.INTRUSION"
+            keygen_name="${UPLANETNAME}.INTRUSION"; keygen_pass="${UPLANETNAME}.INTRUSION"
             ;;
         "UPLANETNAME_CAPITAL")
-            "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.CAPITAL" "${UPLANETNAME}.CAPITAL"
+            keygen_name="${UPLANETNAME}.CAPITAL"; keygen_pass="${UPLANETNAME}.CAPITAL"
             ;;
         "UPLANETNAME_AMORTISSEMENT")
-            "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "${UPLANETNAME}.AMORTISSEMENT" "${UPLANETNAME}.AMORTISSEMENT"
+            keygen_name="${UPLANETNAME}.AMORTISSEMENT"; keygen_pass="${UPLANETNAME}.AMORTISSEMENT"
             ;;
         *)
             echo -e "${RED}❌ Type de portefeuille non reconnu: $wallet_name${NC}"
             return 1
             ;;
     esac
+
+    "${MY_PATH}/tools/keygen" -t duniter -o "$dunikey_file" "$keygen_name" "$keygen_pass"
     
     # Set proper permissions
     chmod 600 "$dunikey_file"
@@ -337,7 +344,7 @@ check_and_create_nostr_keys() {
                     if [[ -n "$nsec" ]]; then
                         local hex=$("${MY_PATH}/tools/nostr2hex.py" "$npub" 2>/dev/null)
                         if [[ -n "$hex" ]]; then
-                            echo "NSEC=$nsec; NPUB=$npub; HEX=$hex" > "$key_file"
+                            echo "NSEC=$nsec; NPUB=$npub; HEX=$hex;" > "$key_file"
                             chmod 600 "$key_file"
                         fi
                     fi
@@ -366,7 +373,7 @@ check_and_create_nostr_keys() {
                 local hex=""
                 [[ -n "$npub" ]] && hex=$("${MY_PATH}/tools/nostr2hex.py" "$npub" 2>/dev/null)
                 if [[ -n "$npub" ]] && [[ -n "$nsec" ]] && [[ -n "$hex" ]]; then
-                    echo "NSEC=$nsec; NPUB=$npub; HEX=$hex" > "$key_file"
+                    echo "NSEC=$nsec; NPUB=$npub; HEX=$hex;" > "$key_file"
                     chmod 600 "$key_file"
                     echo -e "${GREEN}✅ $key_name créée avec succès${NC}"
                     echo -e "   NPUB: ${CYAN}${npub:0:20}...${NC}"
@@ -828,7 +835,7 @@ initialize_node_captain_wallet() {
     
     # Use PAYforSURE.sh
     local transfer_result
-    transfer_result=$("${MY_PATH}/tools/PAYforSURE.sh" "$SOURCE_WALLET" "$transfer_amount_g1" "$pubkey" "UPLANET:${UPLANETG1PUB:0:8}:INIT:$wallet_type" 2>/dev/null)
+    transfer_result=$("${MY_PATH}/tools/PAYforSURE.sh" "$SOURCE_WALLET" "$transfer_amount_g1" "$pubkey" "UPLANET:${UPLANETG1PUB:0:8}:INIT:$wallet_type" 2>&1)
     
     if [[ $? -eq 0 ]]; then
         echo -e "${GREEN}✅ Transaction réussie pour $wallet_type${NC}"
@@ -880,7 +887,7 @@ initialize_wallet() {
     
     # Use PAYforSURE.sh like in the cooperative script
     local transfer_result
-    transfer_result=$("${MY_PATH}/tools/PAYforSURE.sh" "$SOURCE_WALLET" "$transfer_amount_g1" "$pubkey" "UPLANET:${UPLANETG1PUB:0:8}:INIT:$wallet_name" 2>/dev/null)
+    transfer_result=$("${MY_PATH}/tools/PAYforSURE.sh" "$SOURCE_WALLET" "$transfer_amount_g1" "$pubkey" "UPLANET:${UPLANETG1PUB:0:8}:INIT:$wallet_name" 2>&1)
     
     if [[ $? -eq 0 ]]; then
         echo -e "${GREEN}✅ Transaction réussie pour $wallet_name${NC}"
