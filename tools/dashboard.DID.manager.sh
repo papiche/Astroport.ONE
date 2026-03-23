@@ -391,7 +391,7 @@ cmd_coop_list() {
     # List cooperative wallets
     local count=0
     for wallet_type in "${COOP_WALLETS[@]}"; do
-        local wallet_file="${HOME}/.zen/game/${uplanetname}_${wallet_type}.dunikey"
+        local wallet_file="${HOME}/.zen/game/uplanet.${wallet_type}.dunikey"
         local pubkey_file="${HOME}/.zen/game/${uplanetname}_${wallet_type}.pub"
         
         if [[ -f "$pubkey_file" ]]; then

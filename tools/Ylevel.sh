@@ -43,17 +43,42 @@ mkdir -p ~/.zen/game
 ## Convert SSH key into IPFS key (Node ID) & USER NEW SSH ASTROPORT KEY
 
 if [[ -s ~/.ssh/id_ed25519 ]]; then
-	echo "(/.__.)/  $(cat ~/.ssh/id_ed25519.pub)  \(.__.\)"
-	if [[ -s ~/.zen/game/id_ssh.pub ]]; then
-		echo "****** __̴ı̴̴̡̡̡ ̡͌l̡̡̡ ̡͌l̡*̡̡ ̴̡ı̴̴̡ ̡̡͡|̲̲̲͡͡͡ ̲▫̲͡ ̲̲̲͡͡π̲̲͡͡ ̲̲͡▫̲̲͡͡ ̲|̡̡̡ ̡ ̴̡ı̴̡̡ ̡͌l̡̡̡̡.___ ******* ${IPFSNODEID}"
-		echo "Astroport SSH Key Transmutation Already Done/"
-		cat ~/.ssh/id_ed25519.pub
-		YIPNS=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py "$(cat ~/.ssh/id_ed25519.pub)")
-		[[ $(diff ~/.zen/game/id_ssh.pub ~/.ssh/id_ed25519.pub) || ${YIPNS} != ${IPFSNODEID} ]] \
-			&& echo "SSH/IPFS KEY NOT MATCHING... CONTACT SUPPORT (_8^( l)" && exit 1
-		echo "SSH + IPFS : OK"
-		exit 0
-	fi
+    echo "(/.__.)/  $(cat ~/.ssh/id_ed25519.pub)  \(.__.\)"
+    # --------------------------------------------------------
+    # On recalcule les secrets à partir de la clé SSH actuelle
+    # --------------------------------------------------------
+    SSHASH=$(cat ~/.ssh/id_ed25519 | sha512sum | cut -d ' ' -f 1)
+    SECRET1=$(echo "$SSHASH" | cut -c 1-64)
+    SECRET2=$(echo "$SSHASH" | cut -c 65-128)
+
+    echo "Regenerating secrets from SSH key..."
+    # 1. secret.june
+    echo "SALT=$SECRET1; PEPPER=$SECRET2" > ~/.zen/game/secret.june
+    chmod 600 ~/.zen/game/secret.june
+    # 2. secret.ipns
+    ~/.zen/Astroport.ONE/tools/keygen -t ipfs -o ~/.zen/game/secret.ipns "$SECRET1" "$SECRET2"
+    chmod 600 ~/.zen/game/secret.ipns
+    # 3. secret.NODE.dunikey
+    ~/.zen/Astroport.ONE/tools/keygen -i ~/.zen/game/secret.ipns -t duniter -o ~/.zen/game/secret.NODE.dunikey
+    chmod 600 ~/.zen/game/secret.NODE.dunikey    
+    echo "Secrets refreshed: secret.june, secret.ipns, secret.NODE.dunikey"
+    # --------------------------------------------------------
+
+    if [[ -s ~/.zen/game/id_ssh.pub ]]; then
+        echo "****** __̴ı̴̴̡̡̡ ̡͌l̡̡̡ ̡͌l̡*̡̡ ̴̡ı̴̴̡ ̡̡͡|̲̲̲͡͡͡ ̲▫̲͡ ̲̲̲͡͡π̲̲͡͡ ̲̲͡▫̲̲͡͡ ̲|̡̡̡ ̡ ̴̡ı̴̡̡ ̡͌l̡̡̡̡.___ ******* ${IPFSNODEID}"
+        echo "Astroport SSH Key Transmutation Already Done/"
+        
+        # Vérification de cohérence
+        YIPNS=$(${MY_PATH}/../tools/ssh_to_g1ipfs.py "$(cat ~/.ssh/id_ed25519.pub)")
+        [[ $(diff ~/.zen/game/id_ssh.pub ~/.ssh/id_ed25519.pub) || ${YIPNS} != ${IPFSNODEID} ]] \
+            && echo "SSH/IPFS KEY NOT MATCHING... CONTACT SUPPORT (_8^( l)" && exit 1
+        
+        echo "SSH + IPFS : OK"
+        
+        # On met quand même à jour les bootstraps avant de quitter
+        $MY_PATH/../tools/update_bootstraps.sh # Ou la boucle bootstrap à la fin du script
+        exit 0
+    fi
 
     # Gestion de l'argument AUTOMATIC
     if [ "$1" = "AUTOMATIC" ]; then
