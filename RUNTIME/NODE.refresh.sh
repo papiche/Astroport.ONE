@@ -187,19 +187,19 @@ done
 echo "############################################"
 echo "REMOVE swarm/*/amisOfAmis HEX from blacklist.txt"
 BLACKLIST="$HOME/.zen/strfry/blacklist.txt"
-TMP_AMIS=$(mktemp)
+SWARM_AMIS=$(mktemp)
 # Collecte des clés amisOfAmis du swarm
-find ~/.zen/tmp/swarm/ -name "amisOfAmis.txt" -type f -exec cat {} \; 2>/dev/null | sort -u > "$TMP_AMIS"
+find ~/.zen/tmp/swarm/ -name "amisOfAmis.txt" -type f -exec cat {} \; 2>/dev/null | sort -u > "$SWARM_AMIS"
 ## DEBUG -- TODO remove
-cat "$TMP_AMIS"
+cat "$SWARM_AMIS"
 # Supprime les clés de blacklist.txt
 if [[ -f "${BLACKLIST}" ]]; then
     cp "${BLACKLIST}" "${BLACKLIST}.bak"
-    grep -v -F -f "$TMP_AMIS" "${BLACKLIST}" > "$TMP_AMIS.new"
-    mv "$TMP_AMIS.new" "${BLACKLIST}"
+    grep -v -F -f "$SWARM_AMIS" "${BLACKLIST}" > "$SWARM_AMIS.new"
+    mv "$SWARM_AMIS.new" "${BLACKLIST}"
     echo "OK: $(wc -l < ${BLACKLIST}.bak) -> $(wc -l < ${BLACKLIST})"
 fi
-rm -f "$TMP_AMIS"
+rm -f "$SWARM_AMIS"
 
 echo "############################################"
 echo "ADDING LOCAL GEOGRAPHIC KEYS TO amisOfAmis.txt"
