@@ -10,7 +10,7 @@ D'UNE PART
 
 **ET :**
 
-**Le Collectif G1FabLab** (hébergé fiscalement par Open Collective Europe),
+**Le Collectif G1FabLab**
 Représenté par **[Nom et prénom de l'admin, ex: Frédéric RENAULT ou Yann AUTISSIER]**
 [Adresse de domiciliation du collectif] ............................................................................
 [N° de téléphone / Email] ..............................................................................................
@@ -47,7 +47,7 @@ Le Preneur s’engage à respecter la charte de souveraineté technologique mise
 
 #### Article 4 : Obligations des Parties
 1 - **État des lieux :** Le Preneur prend les Biens prêtés dans leur état actuel et ne pourra déposer aucun recours contre le Prêteur pour cause de mauvais état, vices apparents ou cachés.
-2 - **Aménagements :** Le Preneur est autorisé à procéder aux installations nécessaires à son activité (câblage, pose d'antennes, petits aménagements low-tech) à condition de ne pas altérer la structure pérenne du Bien prêté. Ces installations restent la propriété exclusive du Preneur (G1FabLab / Open Collective Europe).
+2 - **Aménagements :** Le Preneur est autorisé à procéder aux installations nécessaires à son activité (câblage, pose d'antennes, petits aménagements low-tech) à condition de ne pas altérer la structure pérenne du Bien prêté. Ces installations restent la propriété exclusive du Preneur (G1FabLab).
 3 - **Entretien :** Le Preneur conservera et entretiendra les Biens prêtés « en bon père de famille » (raisonnablement).
 4 - **Assurances :** Le Preneur fera son affaire de l'assurance de son propre matériel informatique et électronique stocké sur le lieu.
 
