@@ -124,6 +124,8 @@ coop_decrypt() {
 
 # Get the NPUB/HEX from uplanet.G1.nostr keyfile
 # Accepts keyfile format: HEX=... or npub: npub1... or NPUB=npub1... (from keygen stdout)
+# Get the NPUB/HEX from uplanet.G1.nostr keyfile
+# Accepts keyfile format: HEX=... or npub: npub1... or NPUB=npub1... (from keygen stdout)
 coop_get_pubkey() {
     if [[ ! -f "$COOP_CONFIG_KEYFILE" ]]; then
         echo "[ERROR] Keyfile not found: $COOP_CONFIG_KEYFILE" >&2
@@ -131,26 +133,54 @@ coop_get_pubkey() {
         return 1
     fi
     
-    local hex=$(grep "HEX=" "$COOP_CONFIG_KEYFILE" 2>/dev/null | cut -d'=' -f2 | tr -d ';' | tr -d ' ')
-    if [[ -n "$hex" ]]; then
-        echo "$hex"
+    local val=""
+
+    # Try to extract HEX= directly first (most reliable if present)
+    # Using grep -oP to extract specifically the content after HEX= and before ;
+    val=$(grep -oP 'HEX=\K[a-fA-F0-9]{64}' "$COOP_CONFIG_KEYFILE" 2>/dev/null | head -1)
+    if [[ -n "$val" ]]; then
+        echo "$val"
         return 0
     fi
-    
-    # Keygen writes "npub: npub1..." - extract npub and convert to hex for did:nostr:
-    local npub=$(grep -oE 'npub1[a-zA-Z0-9]{58}' "$COOP_CONFIG_KEYFILE" 2>/dev/null | head -1)
-    if [[ -n "$npub" ]]; then
-        local nostr2hex="${_COOP_DIR}/nostr2hex.py"
-        if [[ -x "$nostr2hex" ]]; then
-            hex=$("$nostr2hex" "$npub" 2>/dev/null)
-            if [[ -n "$hex" ]]; then
-                echo "$hex"
-                return 0
+
+    # If HEX= is empty or not found, try to find nsec or npub
+    # This part remains mostly the same, but only runs if HEX= is not found
+    val=$(grep -oE 'npub1[a-zA-Z0-9]{58}' "$COOP_CONFIG_KEYFILE" 2>/dev/null | head -1)
+    if [[ -z "$val" ]]; then # If npub1 not found, try nsec1
+        val=$(grep -oE 'nsec1[a-zA-Z0-9]{58}' "$COOP_CONFIG_KEYFILE" 2>/dev/null | head -1)
+    fi
+
+    if [[ -n "$val" ]]; then
+        # Case 1: It's a hex string (this shouldn't happen if the first grep -oP worked)
+        if [[ "$val" =~ ^[a-fA-F0-9]{64}$ ]]; then
+            echo "$val"
+            return 0
+        fi
+        
+        # Case 2: It's an nsec (starts with nsec1) - derive pubkey
+        if [[ "$val" == nsec1* ]]; then
+            if [[ -x "${_COOP_DIR}/nostr_nsec2npub2hex.py" ]]; then
+                local pubhex=$(python3 "${_COOP_DIR}/nostr_nsec2npub2hex.py" "$val" 2>/dev/null)
+                if [[ -n "$pubhex" ]] && [[ "$pubhex" =~ ^[a-fA-F0-9]{64}$ ]]; then
+                    echo "$pubhex"
+                    return 0
+                fi
+            fi
+        fi
+        
+        # Case 3: It's an npub (starts with npub1) - convert to hex
+        if [[ "$val" == npub1* ]]; then
+            if [[ -x "${_COOP_DIR}/nostr2hex.py" ]]; then
+                local pubhex=$(python3 "${_COOP_DIR}/nostr2hex.py" "$val" 2>/dev/null)
+                if [[ -n "$pubhex" ]] && [[ "$pubhex" =~ ^[a-fA-F0-9]{64}$ ]]; then
+                    echo "$pubhex"
+                    return 0
+                fi
             fi
         fi
     fi
     
-    echo "[ERROR] Cannot extract HEX or NPUB from keyfile" >&2
+    echo "[ERROR] Cannot extract valid HEX pubkey from keyfile" >&2
     return 1
 }
 

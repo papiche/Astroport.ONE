@@ -602,7 +602,7 @@ while true; do
     fi
 
 NODE12345="{
-    \"version\" : \"3.1\",
+    \"version\" : \"12345.0.1\",
     \"created\" : \"${MOATS}\",
     \"date\" : \"$(cat $HOME/.zen/tmp/${IPFSNODEID}/_MySwarm.staom)\",
     \"hostname\" : \"$(myHostName)\",
