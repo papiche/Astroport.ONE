@@ -158,19 +158,25 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     fi
 
     ############################################## PREPARE SALT PEPPER
-    # QR CODE WEIGHT : _MAX_RANDOM=24 chars → DISCO=62 bytes → QR léger sur MULTIPASS
-    _MAX_RANDOM=24   # MULTIPASS random SALT/PEPPER → lightweight DISCO QR code
+    # DISCO = "/?salt=<SALT>&nostr=<PEPPER>" doit rester ≤ 127 bytes (ssss-split limit)
+    # → SALT ≤ 56 chars + PEPPER ≤ 56 chars + overhead 14 chars = 126 bytes ≤ 127 ✓
+    _DISCO_MAX=56   # limite par valeur pour respecter ssss-split
+    _DISCO_RAND=24  # longueur auto-générée si valeurs trop longues / non fournies
 
-    ## ZEN Card SALT/PEPPER = user-provided (mémorisable, aucune limite de taille)
-    ZENCARD_SALT="${SALT:-}"
-    ZENCARD_PEPPER="${PEPPER:-}"
-    [[ -n "$ZENCARD_SALT" ]]   && echo "🎴 ZEN Card SALT reçu (${#ZENCARD_SALT} chars) → portefeuille G1 déterministe"
-    [[ -n "$ZENCARD_PEPPER" ]] && echo "🎴 ZEN Card PEPPER reçu (${#ZENCARD_PEPPER} chars) → portefeuille G1 déterministe"
-
-    ## MULTIPASS DISCO = TOUJOURS ALÉATOIRE (sécurité de l'identité Nostr)
-    SALT=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w${_MAX_RANDOM} | head -n1)
-    PEPPER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w${_MAX_RANDOM} | head -n1)
-    echo "🔐 MULTIPASS DISCO aléatoire : ${_MAX_RANDOM} chars each — non-devinable"
+    ## DISCO SALT/PEPPER : utiliser les valeurs GAFAM si fournies et ≤ _DISCO_MAX
+    ## Sinon générer des valeurs aléatoires (MULTIPASS non récupérable par mot de passe)
+    if [[ -n "$SALT" && -n "$PEPPER" \
+          && ${#SALT} -le ${_DISCO_MAX} && ${#PEPPER} -le ${_DISCO_MAX} ]]; then
+        echo "🔑 DISCO déterministe (SALT=${#SALT} chars, PEPPER=${#PEPPER} chars) — MULTIPASS récupérable"
+    else
+        [[ -n "$SALT"   && ${#SALT}   -gt ${_DISCO_MAX} ]] \
+            && echo "⚠️  SALT trop long (${#SALT} > ${_DISCO_MAX}) → DISCO aléatoire"
+        [[ -n "$PEPPER" && ${#PEPPER} -gt ${_DISCO_MAX} ]] \
+            && echo "⚠️  PEPPER trop long (${#PEPPER} > ${_DISCO_MAX}) → DISCO aléatoire"
+        SALT=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w${_DISCO_RAND} | head -n1)
+        PEPPER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w${_DISCO_RAND} | head -n1)
+        echo "🔐 DISCO aléatoire : ${_DISCO_RAND} chars each — non-devinable"
+    fi
 
     # Creating MULTIPASS DISCO for ${EMAIL}
     DISCO="/?salt=${SALT}&nostr=${PEPPER}"

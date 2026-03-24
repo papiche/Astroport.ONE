@@ -61,7 +61,7 @@ case "$1" in
             cd "$INSTALL_DIR"
             read -p "Confirmer la suppression ? (y/N) : " confirm
             if [[ $confirm =~ ^[Yy] ]]; then
-                $DOCKER_CMD down -v
+                $DOCKER_CMD -p ai-company-swarm down -v   # <-- add -p ai-company-swarm
                 cd .. && rm -rf "$INSTALL_DIR"
                 echo -e "${GREEN}✅ Tout a été nettoyé.${NC}"
             fi
@@ -199,14 +199,7 @@ volumes:
   qdrant_storage:
 EOF
 
-# Lancement
-echo -e "⏳ Démarrage des conteneurs via $DOCKER_CMD..."
-$DOCKER_CMD -p ai-company-swarm up -d
 
-echo -e "\n${GREEN}${BOLD}✅ STACK AI COMPANY DÉPLOYÉE !${NC}"
-echo -e "🔗 Paperclip   : ${CYAN}http://localhost:3100${NC}"
-echo -e "🔗 OpenClaw    : ${CYAN}http://localhost:8000${NC}"
-echo -e "LiteLLM (Tableau de bord) : http://localhost:8001"
 # Lancement
 echo -e "⏳ Démarrage des conteneurs..."
 $DOCKER_CMD -p ai-company-swarm up -d
@@ -214,14 +207,7 @@ $DOCKER_CMD -p ai-company-swarm up -d
 echo -e "Waiting for services to be ready..."
 sleep 15 # Attente minimale pour Postgres et LiteLLM
 
-# --- SETUP AUTOMATIQUE ---
-echo -e "${YELLOW}⚙️ Configuration initiale de Paperclip...${NC}"
-
-# 1. Bootstrap du CEO (Admin)
-docker exec -it ai-company-swarm-paperclip-1 pnpm paperclipai auth bootstrap-ceo || true
-
-# 2. Onboarding (Initialisation DB et structures)
-docker exec -it ai-company-swarm-paperclip-1 pnpm paperclipai onboard || true
+docker ps
 
 echo -e "### COMMANDE OPTIONNELLE (si agent ne demarre pas dans paperclip)"
 echo -e "docker exec -u root ai-company-swarm-paperclip-1 npm install -g @paperclipai/agent"
@@ -249,4 +235,9 @@ echo -e "\n${BOLD}⚡ COMMANDES UTILES :${NC}"
 echo -e "  🔄 Redémarrer : ${YELLOW}docker compose -p ai-company-swarm restart${NC}"
 echo -e "  🛑 Arrêter    : ${YELLOW}docker compose -p ai-company-swarm stop${NC}"
 echo -e "\n${GREEN}${BOLD}✅ STACK AI COMPANY DÉPLOYÉE !${NC}"
-
+# --- SETUP ---
+echo -e "${YELLOW}⚙️ Configuration initiale de Paperclip :${NC}"
+echo -e "Pour bootstrap l'admin, lance :"
+echo -e "  docker exec -it ai-company-swarm-paperclip-1 pnpm paperclipai auth bootstrap-ceo"
+echo -e "Puis :"
+echo -e "  docker exec -it ai-company-swarm-paperclip-1 pnpm paperclipai onboard"
