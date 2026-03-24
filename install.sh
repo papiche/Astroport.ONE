@@ -177,9 +177,6 @@ echo "######### NIP-101 strfry NOSTR relay ##############"
 echo "INSTALL NOSTR RELAY : wss://localhost:7777"
 bash <(wget -qO- https://github.com/papiche/NIP-101/raw/refs/heads/main/install_strfry.sh)
 
-echo "######### rnostr + nomic + Qdrant ##############"
-~/.zen/Astroport.ONE/install/install_rnostr_semantic.sh
-
 ## g1cli (gcli) — Duniter v2s CLI client (compiled from source, branche nostr)
 echo "######### g1cli Duniter v2 Client ##############"
 ~/.zen/Astroport.ONE/install/install_gcli.sh
@@ -253,6 +250,11 @@ if [[ "${UPLANETNAME}" == "00000000000000000000000000000000000000000000000000000
 else
     NETWORK_DISPLAY="UPlanet ZEN (${DOMAIN_DISPLAY})"
 fi
+
+# echo "######### rnostr + nomic + Qdrant ##############"
+# ~/.zen/Astroport.ONE/install/install_rnostr_semantic.sh ## NEED MORE WORK ---TODO migrate strfry plugin to rnsotr rules 
+echo "######### Enterprise Swarm AI Stack Manager ##############
+TRY IT : ~/.zen/Astroport.ONE/install/install-ai-company.docker.sh"
 
 echo
 echo "#############################################"

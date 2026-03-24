@@ -1097,7 +1097,7 @@ handle_card_creation() {
     echo "1. 🆕 Créer une nouvelle MULTIPASS"
     echo "2. 🎫 Créer une nouvelle ZEN Card"
     echo "3. 📋 Lister les cartes existantes"
-    echo "4. 🔗 Se connecter avec une carte existante"
+    echo "4. 🔗 Changement de Capitaine ()"
     echo "0. ⬅️  Retour"
     echo ""
     
@@ -1210,6 +1210,7 @@ create_multipass() {
                 
                 # Créer la ZEN Card avec les informations du MULTIPASS
                 print_info "Création de la ZEN Card avec les informations du MULTIPASS..."
+                mkdir -p ~/.zen/game/players/${EMAIL}
                 if "${MY_PATH}/RUNTIME/VISA.new.sh" "$ppass" "$npass" "$EMAIL" "UPlanet" "$SYSLANG" "$multipass_lat" "$multipass_lon" "$npub" "$hex"; then
                     local pseudo=$(cat ~/.zen/tmp/PSEUDO 2>/dev/null)
                     rm -f ~/.zen/tmp/PSEUDO
@@ -1636,45 +1637,9 @@ handle_zen_card_management() {
     esac
 }
 
-# Fonction de gestion des applications
-handle_applications() {
-    print_section "APPLICATIONS"
-    echo "1. 🌐 Interface web (http://astroport.localhost:1234)"
-    echo "2. 📊 IPFS Web UI (http://ipfs.localhost:8080)"
-    echo "3. 🎮 Interface de jeu"
-    echo "4. 📱 Applications mobiles"
-    echo "0. ⬅️  Retour"
-    echo ""
-    
-    read -p "Votre choix: " app_choice
-    
-    case $app_choice in
-        1) 
-            print_info "Ouverture de l'interface web..."
-            xdg-open "http://astroport.localhost:1234" 2>/dev/null || print_error "Impossible d'ouvrir le navigateur"
-            ;;
-        2) 
-            print_info "Ouverture de l'interface IPFS..."
-            xdg-open "http://ipfs.localhost:8080" 2>/dev/null || print_error "Impossible d'ouvrir le navigateur"
-            ;;
-        3) 
-            print_info "Interface de jeu à venir..."
-            ;;
-        4) 
-            print_info "Applications mobiles à venir..."
-            ;;
-        0) return ;;
-        *) print_error "Choix invalide" ;;
-    esac
-}
-
 # Fonction de configuration
 handle_configuration() {
     print_section "CONFIGURATION"
-    echo "1. ⚙️  Paramètres IPFS"
-    echo "2. 🌐 Configuration réseau"
-    echo "3. 💰 Paramètres économiques"
-    echo "4. 🔧 Maintenance système"
     echo "5. ☁️  Installer NextCloud"
     echo "6. 🚀 Passer au niveau Y (UPlanet Ẑen)"
     echo "7. 🐛 Debug détection"
@@ -1684,22 +1649,6 @@ handle_configuration() {
     read -p "Votre choix: " config_choice
     
     case $config_choice in
-        1) 
-            print_info "Configuration IPFS..."
-            # TODO: Implémenter la configuration IPFS
-            ;;
-        2) 
-            print_info "Configuration réseau..."
-            # TODO: Implémenter la configuration réseau
-            ;;
-        3) 
-            print_info "Paramètres économiques..."
-            # TODO: Implémenter les paramètres économiques
-            ;;
-        4) 
-            print_info "Maintenance système..."
-            # TODO: Implémenter la maintenance
-            ;;
         5)
             install_nextcloud
             ;;

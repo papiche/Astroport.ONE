@@ -36,6 +36,15 @@ if [ ! -f "$EMBED_PY" ]; then
     exit 1
 fi
 
+# --- AJOUT POUR COMPATIBILITÉ AI-COMPANY ---
+AI_ENV="$HOME/.zen/ai-company/.env"
+if [ -f "$AI_ENV" ]; then
+    echo "🔑 Chargement de la clé API Qdrant depuis la stack AI..."
+    source "$AI_ENV"
+    # On définit l'en-tête pour curl si QDRANT_API_KEY est présente
+    QDRANT_HEADER="-H \"api-key: $QDRANT_API_KEY\""
+fi
+
 # Vérification de l'accessibilité de Qdrant
 QDRANT_URL="${QDRANT_URL:-http://localhost:6333}"
 if ! curl -sf "$QDRANT_URL/health" > /dev/null; then
@@ -121,6 +130,7 @@ FAILED=0
 # Créer la collection Qdrant si elle n'existe pas
 echo "Création/vérification de la collection '$COLLECTION' dans Qdrant..."
 curl -sf -X PUT "$QDRANT_URL/collections/$COLLECTION" \
+    $QDRANT_HEADER \
     -H "Content-Type: application/json" \
     -d '{"vectors":{"size":768,"distance":"Cosine"},"hnsw_config":{"m":16,"ef_construct":64},"optimizers_config":{"indexing_threshold":1000}}' \
     > /dev/null && echo "  ✓ Collection '$COLLECTION' prête."
