@@ -216,19 +216,7 @@ UPLANET_G1_HEX=""
 
 if [[ -f "$HOME/.zen/game/uplanet.G1.nostr" ]]; then
     # Format 1: shell keyfile with "HEX=..." line (e.g. from keygen -o)
-    UPLANET_G1_HEX=$(grep "^HEX=" "$HOME/.zen/game/uplanet.G1.nostr" 2>/dev/null | cut -d'=' -f2 | tr -d ';' | tr -d ' ')
-    # Format 2: shell keyfile with "NPUB=npub1..." line
-    if [[ -z "$UPLANET_G1_HEX" ]]; then
-        _G1_NPUB=$(grep "^NPUB=" "$HOME/.zen/game/uplanet.G1.nostr" 2>/dev/null | cut -d'=' -f2 | tr -d ';' | tr -d ' ')
-        [[ -n "$_G1_NPUB" ]] && UPLANET_G1_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$_G1_NPUB" 2>/dev/null)
-    fi
-    # Format 3: raw npub1... (default keygen stdout redirect)
-    if [[ -z "$UPLANET_G1_HEX" ]]; then
-        _G1_NPUB=$(cat "$HOME/.zen/game/uplanet.G1.nostr" 2>/dev/null | tr -d '[:space:]')
-        if [[ "$_G1_NPUB" =~ ^npub1[a-z0-9]{58}$ ]]; then
-            UPLANET_G1_HEX=$(${MY_PATH}/../tools/nostr2hex.py "$_G1_NPUB" 2>/dev/null)
-        fi
-    fi
+    UPLANET_G1_HEX=$(grep -oP 'HEX=\K[a-fA-F0-9]{64}' "$HOME/.zen/game/uplanet.G1.nostr" 2>/dev/null)
 fi
 
 # Fallback: derive directly from UPLANETNAME credential
@@ -247,6 +235,21 @@ if [[ -n "$UPLANET_G1_HEX" && ${#UPLANET_G1_HEX} -eq 64 && "$UPLANET_G1_HEX" =~ 
     fi
 else
     echo "WARNING: Could not determine uplanet.G1.nostr HEX - Cooperative Config (kind:30800) events may not sync"
+fi
+
+### NODE HEX
+if [[ -f "$HOME/.zen/game/secret.nostr" ]]; then
+    # Format 1: shell keyfile with "HEX=..." line (e.g. from keygen -o)
+    NODE_HEX=$(grep -oP 'HEX=\K[a-fA-F0-9]{64}' "$HOME/.zen/game/secret.nostr" 2>/dev/null)
+fi
+
+if [[ -n "$NODE_HEX" && ${#NODE_HEX} -eq 64 && "$NODE_HEX" =~ ^[0-9a-fA-F]{64}$ ]]; then
+    if ! grep -qi "^${NODE_HEX}$" "${HOME}/.zen/strfry/amisOfAmis.txt" 2>/dev/null; then
+        echo "$NODE_HEX" >> "${HOME}/.zen/strfry/amisOfAmis.txt"
+        echo "Added NODE_HEX (Astroport NODE : Armateur address): ${NODE_HEX:0:16}..."
+    fi
+else
+    echo "WARNING: Could not determine NODE HEX"
 fi
 
 # Add CAPTAIN HEX (signs kind:30850 economic-health events broadcast by ECONOMY.broadcast.sh)

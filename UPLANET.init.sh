@@ -239,13 +239,13 @@ get_wallet_balance() {
     fi
 }
 
-# Function to get wallet public key from dunikey file
+# Function to get wallet public key from dunikey file and convert to v2 (g1+ss58)
 get_wallet_public_key() {
     local dunikey_file="$1"
     
     if [[ -f "$dunikey_file" ]]; then
         local pubkey=$(cat "$dunikey_file" | grep 'pub:' | cut -d ' ' -f 2 2>/dev/null)
-        echo "$pubkey"
+        echo $($HOME/.zen/Astroport.ONE/tools/g1pub_to_ss58.py "$pubkey")
     else
         echo ""
     fi
