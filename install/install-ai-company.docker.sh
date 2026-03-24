@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # =============================================================================
-# install-ai-company.sh - ZEN[0] Swarm AI Stack Manager
+# install-ai-company.sh - UPLANET ZEN[0] Swarm AI Stack Manager
 # Architecture : Multi-arch (x86_64 / aarch64)
 # =============================================================================
 
@@ -126,10 +126,13 @@ services:
     ports: ["8001:4000"]
     environment:
       - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+      - DATABASE_URL=postgresql://paperclip:${POSTGRES_PASSWORD}@postgres:5432/paperclip
     volumes: ["./litellm-config.yaml:/app/config.yaml"]
     extra_hosts: ["host.docker.internal:host-gateway"]
     command: ["--config", "/app/config.yaml", "--port", "4000"]
     restart: unless-stopped
+    depends_on:
+      - postgres
 
   qdrant:
     image: qdrant/qdrant:latest
@@ -204,5 +207,46 @@ echo -e "\n${GREEN}${BOLD}✅ STACK AI COMPANY DÉPLOYÉE !${NC}"
 echo -e "🔗 Paperclip   : ${CYAN}http://localhost:3100${NC}"
 echo -e "🔗 OpenClaw    : ${CYAN}http://localhost:8000${NC}"
 echo -e "LiteLLM (Tableau de bord) : http://localhost:8001"
-echo -e "RUN : docker exec -it ai-company-swarm_paperclip_1 pnpm paperclipai auth bootstrap-ceo
-docker exec -it ai-company-swarm_paperclip_1 pnpm paperclipai onboard"
+# Lancement
+echo -e "⏳ Démarrage des conteneurs..."
+$DOCKER_CMD -p ai-company-swarm up -d
+
+echo -e "Waiting for services to be ready..."
+sleep 15 # Attente minimale pour Postgres et LiteLLM
+
+# --- SETUP AUTOMATIQUE ---
+echo -e "${YELLOW}⚙️ Configuration initiale de Paperclip...${NC}"
+
+# 1. Bootstrap du CEO (Admin)
+docker exec -it ai-company-swarm-paperclip-1 pnpm paperclipai auth bootstrap-ceo || true
+
+# 2. Onboarding (Initialisation DB et structures)
+docker exec -it ai-company-swarm-paperclip-1 pnpm paperclipai onboard || true
+
+echo -e "### COMMANDE OPTIONNELLE (si agent ne demarre pas dans paperclip)"
+echo -e "docker exec -u root ai-company-swarm-paperclip-1 npm install -g @paperclipai/agent"
+
+# --- RÉCAPITULATIF DES SERVICES ---
+echo -e "\n${BOLD}${YELLOW}====================================================${NC}"
+echo -e "      🚀 AI COMPANY SWARM EST OPÉRATIONNELLE"
+echo -e "${BOLD}${YELLOW}====================================================${NC}"
+
+echo -e "\n${BOLD}🌐 INTERFACES UTILISATEUR :${NC}"
+echo -e "  🔗 Paperclip (Gestion Agents) : ${CYAN}http://localhost:3100${NC}"
+echo -e "  🔗 OpenClaw (Gateway & Tools) : ${CYAN}http://localhost:8000${NC}"
+
+echo -e "\n${BOLD}🛠️ INFRASTRUCTURE & BACKEND :${NC}"
+echo -e "  📊 LiteLLM (Modèles & Proxy)  : ${CYAN}http://localhost:8001${NC}"
+echo -e "  🧠 Qdrant (Mémoire Vectorielle): ${CYAN}http://localhost:6333/dashboard${NC}"
+echo -e "  🦙 Ollama (Moteur local)      : ${CYAN}http://localhost:11434${NC}"
+
+echo -e "\n${BOLD}📂 ADMINISTRATION :${NC}"
+echo -e "  📁 Dossier d'installation     : ${YELLOW}$INSTALL_DIR${NC}"
+echo -e "  🔑 Clés et secrets (.env)     : ${RED}cat $INSTALL_DIR/.env${NC}"
+echo -e "  📜 Voir les logs en direct    : ${GREEN}docker compose -p ai-company-swarm logs -f${NC}"
+
+echo -e "\n${BOLD}⚡ COMMANDES UTILES :${NC}"
+echo -e "  🔄 Redémarrer : ${YELLOW}docker compose -p ai-company-swarm restart${NC}"
+echo -e "  🛑 Arrêter    : ${YELLOW}docker compose -p ai-company-swarm stop${NC}"
+echo -e "\n${GREEN}${BOLD}✅ STACK AI COMPANY DÉPLOYÉE !${NC}"
+
