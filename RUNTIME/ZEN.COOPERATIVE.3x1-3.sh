@@ -50,6 +50,16 @@ ALLOCATION_MARKER="$HOME/.zen/game/.cooperative_allocation.done"
 
 # Get current date and captain's birthday
 TODATE=$(date +%Y-%m-%d)
+
+# Marqueurs atomiques d'allocation — un fichier par étape pour éviter les doubles paiements
+# si le script s'interrompt en cours de traitement.
+# IMPORTANT : stockés dans ~/.zen/game/ (persistant) — ~/.zen/tmp/ est vidé à 20h12.
+COOP_TAX_MARKER="$HOME/.zen/game/.coop_tax_${TODATE}"
+COOP_TREASURY_MARKER="$HOME/.zen/game/.coop_treasury_${TODATE}"
+COOP_RND_MARKER="$HOME/.zen/game/.coop_rnd_${TODATE}"
+COOP_ASSETS_MARKER="$HOME/.zen/game/.coop_assets_${TODATE}"
+COOP_CAPTAIN_MARKER="$HOME/.zen/game/.coop_captain_${TODATE}"
+
 CAPTAIN_BIRTHDAY_FILE="$HOME/.zen/game/nostr/$CAPTAINEMAIL/TODATE"
 
 # Check if captain's birthday file exists
@@ -235,13 +245,18 @@ echo "Tax provision (${TAX_RATE_USED}% of surplus): $TAX_PROVISION Ẑen ($TAX_P
 # TX Comment: UP:NetworkID:TAX:Week:Amount:Rate (Corporate tax provision)
 # Automatic IS provision (15% up to €42,500 / 25% above) on cooperative surplus
 # Source: CAPTAIN_DEDICATED (business wallet collecting rentals)
-tax_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$TAX_PROVISION_G1" "${IMPOTSG1PUB}" "UP:${UPLANETG1PUB:0:8}:TAX:${TODATE}:${TAX_PROVISION}Z:IS_${TAX_RATE_USED}pct" 2>/dev/null)
-TAX_SUCCESS=$?
-
-if [[ $TAX_SUCCESS -eq 0 ]]; then
-    echo "✅ Tax provision completed: $TAX_PROVISION Ẑen ($TAX_PROVISION_G1 G1)"
+if [[ -f "$COOP_TAX_MARKER" ]]; then
+    echo "🔒 Provision fiscale déjà effectuée aujourd'hui (marqueur: $COOP_TAX_MARKER) — skip"
+    TAX_SUCCESS=0
 else
-    echo "❌ Tax provision failed: $TAX_PROVISION Ẑen"
+    tax_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$TAX_PROVISION_G1" "${IMPOTSG1PUB}" "UP:${UPLANETG1PUB:0:8}:TAX:${TODATE}:${TAX_PROVISION}Z:IS_${TAX_RATE_USED}pct" 2>/dev/null)
+    TAX_SUCCESS=$?
+    if [[ $TAX_SUCCESS -eq 0 ]]; then
+        echo "✅ Tax provision completed: $TAX_PROVISION Ẑen ($TAX_PROVISION_G1 G1)"
+        echo "$(date +%Y%m%d%H%M%S):TAX:${TAX_PROVISION}Z" > "$COOP_TAX_MARKER"
+    else
+        echo "❌ Tax provision failed: $TAX_PROVISION Ẑen"
+    fi
 fi
 
 # Calcul du surplus net après provision fiscale
@@ -294,13 +309,18 @@ TREASURY_G1=$(echo "scale=2; $TREASURY_AMOUNT / 10" | bc -l)
 # TX Comment: UP:NetworkID:COOP:Date:Amount:Allocation (1/3 Treasury reserves)
 # Cooperative liquidity and financial stability fund
 # Source: CAPTAIN_DEDICATED (business wallet collecting rentals)
-treasury_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$TREASURY_G1" "${TREASURYG1PUB}" "UP:${UPLANETG1PUB:0:8}:COOP:${TODATE}:${TREASURY_AMOUNT}Z:1/3_CASH" 2>/dev/null)
-TREASURY_SUCCESS=$?
-
-if [[ $TREASURY_SUCCESS -eq 0 ]]; then
-    echo "✅ Treasury allocation completed: $TREASURY_AMOUNT Ẑen ($TREASURY_G1 G1)"
+if [[ -f "$COOP_TREASURY_MARKER" ]]; then
+    echo "🔒 Allocation Trésorerie déjà effectuée aujourd'hui (marqueur) — skip"
+    TREASURY_SUCCESS=0
 else
-    echo "❌ Treasury allocation failed: $TREASURY_AMOUNT Ẑen"
+    treasury_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$TREASURY_G1" "${TREASURYG1PUB}" "UP:${UPLANETG1PUB:0:8}:COOP:${TODATE}:${TREASURY_AMOUNT}Z:1/3_CASH" 2>/dev/null)
+    TREASURY_SUCCESS=$?
+    if [[ $TREASURY_SUCCESS -eq 0 ]]; then
+        echo "✅ Treasury allocation completed: $TREASURY_AMOUNT Ẑen ($TREASURY_G1 G1)"
+        echo "$(date +%Y%m%d%H%M%S):TREASURY:${TREASURY_AMOUNT}Z" > "$COOP_TREASURY_MARKER"
+    else
+        echo "❌ Treasury allocation failed: $TREASURY_AMOUNT Ẑen"
+    fi
 fi
 
 #######################################################################
@@ -321,13 +341,18 @@ RND_G1=$(echo "scale=2; $RND_AMOUNT / 10" | bc -l)
 # TX Comment: UP:NetworkID:COOP:Date:Amount:Allocation (1/3 R&D G1FabLab)
 # Research & Development fund for technological innovation
 # Source: CAPTAIN_DEDICATED (business wallet collecting rentals)
-rnd_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$RND_G1" "${RNDG1PUB}" "UP:${UPLANETG1PUB:0:8}:COOP:${TODATE}:${RND_AMOUNT}Z:1/3_RnD" 2>/dev/null)
-RND_SUCCESS=$?
-
-if [[ $RND_SUCCESS -eq 0 ]]; then
-    echo "✅ R&D allocation completed: $RND_AMOUNT Ẑen ($RND_G1 G1)"
+if [[ -f "$COOP_RND_MARKER" ]]; then
+    echo "🔒 Allocation R&D déjà effectuée aujourd'hui (marqueur) — skip"
+    RND_SUCCESS=0
 else
-    echo "❌ R&D allocation failed: $RND_AMOUNT Ẑen"
+    rnd_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$RND_G1" "${RNDG1PUB}" "UP:${UPLANETG1PUB:0:8}:COOP:${TODATE}:${RND_AMOUNT}Z:1/3_RnD" 2>/dev/null)
+    RND_SUCCESS=$?
+    if [[ $RND_SUCCESS -eq 0 ]]; then
+        echo "✅ R&D allocation completed: $RND_AMOUNT Ẑen ($RND_G1 G1)"
+        echo "$(date +%Y%m%d%H%M%S):RND:${RND_AMOUNT}Z" > "$COOP_RND_MARKER"
+    else
+        echo "❌ R&D allocation failed: $RND_AMOUNT Ẑen"
+    fi
 fi
 
 #######################################################################
@@ -348,13 +373,18 @@ ASSETS_G1=$(echo "scale=2; $ASSETS_AMOUNT / 10" | bc -l)
 # TX Comment: UP:NetworkID:COOP:Date:Amount:Allocation (1/3 Real Assets)
 # Regenerative investment fund (Forest Gardens, tangible assets)
 # Source: CAPTAIN_DEDICATED (business wallet collecting rentals)
-assets_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$ASSETS_G1" "${ASSETSG1PUB}" "UP:${UPLANETG1PUB:0:8}:COOP:${TODATE}:${ASSETS_AMOUNT}Z:1/3_ASSETS" 2>/dev/null)
-ASSETS_SUCCESS=$?
-
-if [[ $ASSETS_SUCCESS -eq 0 ]]; then
-    echo "✅ Assets allocation completed: $ASSETS_AMOUNT Ẑen ($ASSETS_G1 G1)"
+if [[ -f "$COOP_ASSETS_MARKER" ]]; then
+    echo "🔒 Allocation ASSETS déjà effectuée aujourd'hui (marqueur) — skip"
+    ASSETS_SUCCESS=0
 else
-    echo "❌ Assets allocation failed: $ASSETS_AMOUNT Ẑen"
+    assets_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$ASSETS_G1" "${ASSETSG1PUB}" "UP:${UPLANETG1PUB:0:8}:COOP:${TODATE}:${ASSETS_AMOUNT}Z:1/3_ASSETS" 2>/dev/null)
+    ASSETS_SUCCESS=$?
+    if [[ $ASSETS_SUCCESS -eq 0 ]]; then
+        echo "✅ Assets allocation completed: $ASSETS_AMOUNT Ẑen ($ASSETS_G1 G1)"
+        echo "$(date +%Y%m%d%H%M%S):ASSETS:${ASSETS_AMOUNT}Z" > "$COOP_ASSETS_MARKER"
+    else
+        echo "❌ Assets allocation failed: $ASSETS_AMOUNT Ẑen"
+    fi
 fi
 
 #######################################################################
@@ -370,18 +400,23 @@ if [[ -n "$CAPTAINEMAIL" && -n "$CAPTAING1PUB" ]]; then
     # TX Comment: UP:NetworkID:COOP:Date:Amount:Allocation (1% Captain management bonus)
     # Management recognition bonus sent to Captain's MULTIPASS
     # Source: CAPTAIN_DEDICATED (business wallet collecting rentals)
-    captain_bonus_result=$(${MY_PATH}/../tools/PAYforSURE.sh \
-        "$HOME/.zen/game/uplanet.captain.dunikey" \
-        "$CAPTAIN_BONUS_G1" \
-        "${CAPTAING1PUB}" \
-        "UP:${UPLANETG1PUB:0:8}:COOP:${TODATE}:${CAPTAIN_BONUS_AMOUNT}Z:1pct_CPT" \
-        2>/dev/null)
-    CAPTAIN_BONUS_SUCCESS=$?
-
-    if [[ $CAPTAIN_BONUS_SUCCESS -eq 0 ]]; then
-        echo "✅ Captain bonus completed: $CAPTAIN_BONUS_AMOUNT Ẑen ($CAPTAIN_BONUS_G1 G1) → $CAPTAINEMAIL"
+    if [[ -f "$COOP_CAPTAIN_MARKER" ]]; then
+        echo "🔒 Prime Capitaine déjà effectuée aujourd'hui (marqueur) — skip"
+        CAPTAIN_BONUS_SUCCESS=0
     else
-        echo "❌ Captain bonus failed: $CAPTAIN_BONUS_AMOUNT Ẑen"
+        captain_bonus_result=$(${MY_PATH}/../tools/PAYforSURE.sh \
+            "$HOME/.zen/game/uplanet.captain.dunikey" \
+            "$CAPTAIN_BONUS_G1" \
+            "${CAPTAING1PUB}" \
+            "UP:${UPLANETG1PUB:0:8}:COOP:${TODATE}:${CAPTAIN_BONUS_AMOUNT}Z:1pct_CPT" \
+            2>/dev/null)
+        CAPTAIN_BONUS_SUCCESS=$?
+        if [[ $CAPTAIN_BONUS_SUCCESS -eq 0 ]]; then
+            echo "✅ Captain bonus completed: $CAPTAIN_BONUS_AMOUNT Ẑen ($CAPTAIN_BONUS_G1 G1) → $CAPTAINEMAIL"
+            echo "$(date +%Y%m%d%H%M%S):CAPTAIN:${CAPTAIN_BONUS_AMOUNT}Z" > "$COOP_CAPTAIN_MARKER"
+        else
+            echo "❌ Captain bonus failed: $CAPTAIN_BONUS_AMOUNT Ẑen"
+        fi
     fi
 else
     echo "⚠️  Captain bonus skipped: CAPTAINEMAIL or CAPTAING1PUB not set"

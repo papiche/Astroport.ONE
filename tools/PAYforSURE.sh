@@ -160,12 +160,58 @@ except Exception as e:
 
         if [[ -n "$id" && -n "$secret" ]]; then
             log "Import dunikey g1v1 (salt/password) sous le nom : $VAULT_NAME"
-            $GCLI vault import -S g1v1 \
-                --g1v1-id "$id" \
-                --g1v1-password "$secret" \
-                --no-password \
-                -n "$VAULT_NAME" \
-                2>/dev/null
+
+            # SÉCURITÉ : dériver le seed ed25519 via Python+scrypt.
+            # Les credentials transitent en variables d'environnement (invisibles dans 'ps aux').
+            # Le seed résultant est passé à gcli via --uri "0x<hex>" (format Substrate),
+            # ce qui évite d'exposer id/password sur la ligne de commande.
+            # Prérequis : pip install scrypt  (ou apt install python3-scrypt)
+            local _g1v1_seed_hex=""
+            local _py_script
+            _py_script=$(mktemp /dev/shm/.gcli_XXXXXX.py 2>/dev/null \
+                || mktemp -t gcli_XXXXXX.py)
+            chmod 600 "$_py_script"
+            cat > "$_py_script" << 'PYSCRIPT'
+import sys, os
+try:
+    import scrypt
+    g_id  = os.environ.get('_GCLI_G1V1_ID',  '')
+    g_pwd = os.environ.get('_GCLI_G1V1_PWD', '')
+    if not g_id or not g_pwd:
+        sys.exit(1)
+    seed = scrypt.hash(g_pwd.encode('utf-8'), g_id.encode('utf-8'),
+                       N=4096, r=16, p=1, buflen=32)
+    print(seed.hex())
+except ImportError:
+    sys.exit(2)
+except Exception:
+    sys.exit(1)
+PYSCRIPT
+            _g1v1_seed_hex=$(
+                _GCLI_G1V1_ID="$id" _GCLI_G1V1_PWD="$secret" \
+                python3 "$_py_script" 2>/dev/null
+            )
+            shred -u "$_py_script" 2>/dev/null || rm -f "$_py_script"
+
+            if [[ -n "$_g1v1_seed_hex" ]]; then
+                log "Import g1v1 via seed scrypt dérivé (mode sécurisé) : $VAULT_NAME"
+                $GCLI vault import -S substrate \
+                    --uri "0x${_g1v1_seed_hex}" \
+                    --no-password \
+                    -n "$VAULT_NAME" \
+                    2>/dev/null
+            else
+                # Fallback : python3-scrypt absent — le password passe en arg CLI.
+                # AVERTISSEMENT : visible dans 'ps aux' le temps de l'import (~ms).
+                # Installez python3-scrypt pour supprimer définitivement cette exposition.
+                logw "⚠️  python3-scrypt absent — fallback --g1v1-password (installez python3-scrypt)"
+                $GCLI vault import -S g1v1 \
+                    --g1v1-id "$id" \
+                    --g1v1-password "$secret" \
+                    --no-password \
+                    -n "$VAULT_NAME" \
+                    2>/dev/null
+            fi
             TEMP_VAULT_IMPORTED=true
             return 0
         fi

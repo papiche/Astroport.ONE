@@ -89,7 +89,6 @@ Nous lions l'identité décentralisée à la clé publique NOSTR, elle-même dé
 
 Les documents DID sont publiés comme **événements Nostr kind 30800** (Parameterized Replaceable Events - DID Documents - NIP-101), garantissant:
 
-> **Note:** Nous utilisons le kind 30800 au lieu du 30311 pour éviter les conflits avec NIP-53 (Live Event) qui utilise officiellement le kind 30311.
 - **Distribution automatique** sur tous les relais Nostr
 - **Mise à jour atomique** (chaque nouvelle version remplace l'ancienne)
 - **Résilience** : réplication sur multiples relais

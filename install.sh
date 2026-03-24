@@ -67,7 +67,7 @@ done
 echo "#############################################"
 echo "####### INSTALL PYTHON3 SYSTEM LIBRARIES ####"
 echo "#############################################"
-for i in pipx python3-pip python3-setuptools python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp python3-prometheus-client python3-tk ssss; do
+for i in pipx python3-pip python3-setuptools python3-base58 python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp python3-prometheus-client python3-tk ssss; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -133,7 +133,7 @@ echo "#####################################"
 export PATH=$HOME/.local/bin:$PATH
 pipx install duniterpy --include-deps ## keeps own dep
 ## add monero & bitcoin compatible keys
-for i in pip python-dotenv setuptools wheel termcolor amzqr ollama requests geohash beautifulsoup4 pyppeteer cryptography jwcrypto secp256k1 gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 matplotlib readability-lxml duniterpy robohash; do
+for i in pip python-dotenv scrypt setuptools wheel termcolor amzqr ollama requests geohash beautifulsoup4 pyppeteer cryptography jwcrypto secp256k1 gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 matplotlib readability-lxml duniterpy robohash; do
         echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         pip install -U $i 2>> ~/.zen/install.errors.log
         # [[ $? != 0 ]] && pipx install $i 2>> ~/.zen/install.errors.log

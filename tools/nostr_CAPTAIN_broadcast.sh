@@ -209,22 +209,14 @@ echo "$USERS_JSON" | jq -r '.[] | .hex' 2>/dev/null | while read -r user_hex; do
             current_success=$(cat "$SUCCESS_FILE")
             echo $((current_success + 1)) > "$SUCCESS_FILE"
         else
-            # Build secure DM command with options
-            SECURE_DM_CMD="python3 \"$MY_PATH/nostr_send_secure_dm.py\" \"$NSEC\" \"$user_hex\" \"$MESSAGE\" \"$myRELAY\""
-            
-            # Add security options
-            if [[ "$GIFT_WRAP" = true ]]; then
-                SECURE_DM_CMD="$SECURE_DM_CMD --gift-wrap"
-            fi
-            if [[ "$METADATA_PROTECTION" = true ]]; then
-                SECURE_DM_CMD="$SECURE_DM_CMD --metadata-protection"
-            fi
-            if [[ "$SECURE_MODE" = true ]]; then
-                SECURE_DM_CMD="$SECURE_DM_CMD --secure-mode"
-            fi
-            
+            # Construire la commande via tableau bash (sûr : pas d'eval, pas d'injection shell)
+            CMD=(python3 "$MY_PATH/nostr_send_secure_dm.py" "$NSEC" "$user_hex" "$MESSAGE" "$myRELAY")
+            [[ "$GIFT_WRAP" = true ]]           && CMD+=("--gift-wrap")
+            [[ "$METADATA_PROTECTION" = true ]] && CMD+=("--metadata-protection")
+            [[ "$SECURE_MODE" = true ]]         && CMD+=("--secure-mode")
+
             # Send secure NOSTR DM
-            if eval "$SECURE_DM_CMD" >/dev/null 2>&1; then
+            if "${CMD[@]}" >/dev/null 2>&1; then
                 echo "✅"
                 current_success=$(cat "$SUCCESS_FILE")
                 echo $((current_success + 1)) > "$SUCCESS_FILE"

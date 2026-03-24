@@ -63,6 +63,12 @@ CURRENT_WEEK=$(date +%V)
 CURRENT_YEAR=$(date +%Y)
 WEEK_KEY="${CURRENT_YEAR}-W${CURRENT_WEEK}"
 
+# Marqueurs atomiques de paiement — un fichier par étape et par semaine.
+# Empêchent les doubles paiements si le script s'interrompt en cours de route.
+# IMPORTANT : stockés dans ~/.zen/game/ (persistant) — ~/.zen/tmp/ est vidé à 20h12.
+NODE_PAID_MARKER="$HOME/.zen/game/.node_paid_W${CURRENT_WEEK}"
+CAPTAIN_PAID_MARKER="$HOME/.zen/game/.captain_paid_W${CURRENT_WEEK}"
+
 # Check if payment was already done this week
 # Marker format: "YEAR-Wxx:PHASEn:NODEn:CPTn" - extract week key for comparison
 if [[ -f "$PAYMENT_MARKER" ]]; then
@@ -197,6 +203,19 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
         PAYMENT_SOURCE="CASH"
         NODE_PAYMENT_SOURCE=""
         CAPTAIN_PAYMENT_SOURCE=""
+
+        # ── Reprise atomique : détecter les étapes déjà payées cette semaine ──────
+        # Si le script a été interrompu après un paiement réussi, on ne repaie pas.
+        if [[ -f "$NODE_PAID_MARKER" ]]; then
+            log_output "🔒 NODE déjà payé cette semaine (W${CURRENT_WEEK}) — skip double-paiement"
+            NODE_PAID=1
+            NODE_PAYMENT_SOURCE=$(cut -d: -f2 "$NODE_PAID_MARKER" 2>/dev/null || echo "PREV")
+        fi
+        if [[ -f "$CAPTAIN_PAID_MARKER" ]]; then
+            log_output "🔒 CAPTAIN déjà payé cette semaine (W${CURRENT_WEEK}) — skip double-paiement"
+            CAPTAIN_PAID=1
+            CAPTAIN_PAYMENT_SOURCE=$(cut -d: -f2 "$CAPTAIN_PAID_MARKER" 2>/dev/null || echo "PREV")
+        fi
         
         # Calculate remuneration amounts
         CAPTAIN_REMUNERATION=$(echo "scale=2; $WEEKLYPAF * 2" | bc -l)
@@ -236,6 +255,7 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                 NODE_PAID=1
                 NODE_PAYMENT_SOURCE="CASH"
                 CASH_ZEN=$(echo "scale=1; $CASH_ZEN - $WEEKLYPAF" | bc)
+                echo "$(date +%Y%m%d%H%M%S):CASH" > "$NODE_PAID_MARKER"
             else
                 log_output "❌ CASH payment to NODE failed - trying ASSETS"
             fi
@@ -252,6 +272,7 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                 NODE_PAID=1
                 NODE_PAYMENT_SOURCE="ASSETS"
                 ASSETS_ZEN=$(echo "scale=1; $ASSETS_ZEN - $WEEKLYPAF" | bc)
+                echo "$(date +%Y%m%d%H%M%S):ASSETS" > "$NODE_PAID_MARKER"
             else
                 log_output "❌ Paiement ASSETS vers NODE échoué - tentative R&D"
             fi
@@ -268,6 +289,7 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                 NODE_PAID=1
                 NODE_PAYMENT_SOURCE="RnD"
                 RND_ZEN=$(echo "scale=1; $RND_ZEN - $WEEKLYPAF" | bc)
+                echo "$(date +%Y%m%d%H%M%S):RnD" > "$NODE_PAID_MARKER"
             else
                 log_output "❌ Paiement R&D vers NODE échoué"
             fi
@@ -298,6 +320,7 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                     CAPTAIN_PAID=1
                     CAPTAIN_PAYMENT_SOURCE="CASH"
                     CASH_ZEN=$(echo "scale=1; $CASH_ZEN - $CAPTAIN_REMUNERATION" | bc)
+                    echo "$(date +%Y%m%d%H%M%S):CASH" > "$CAPTAIN_PAID_MARKER"
                 fi
             fi
             
@@ -311,6 +334,7 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                     CAPTAIN_PAID=1
                     CAPTAIN_PAYMENT_SOURCE="ASSETS"
                     ASSETS_ZEN=$(echo "scale=1; $ASSETS_ZEN - $CAPTAIN_REMUNERATION" | bc)
+                    echo "$(date +%Y%m%d%H%M%S):ASSETS" > "$CAPTAIN_PAID_MARKER"
                 fi
             fi
 
@@ -324,6 +348,7 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                     CAPTAIN_PAID=1
                     CAPTAIN_PAYMENT_SOURCE="RnD"
                     RND_ZEN=$(echo "scale=1; $RND_ZEN - $CAPTAIN_REMUNERATION" | bc)
+                    echo "$(date +%Y%m%d%H%M%S):RnD" > "$CAPTAIN_PAID_MARKER"
                 fi
             fi
 

@@ -94,18 +94,8 @@ gstart=`date +%s`
 
 
 #### AVOID MULTIPLE RUN
-LOCKFILE="/tmp/nostrcard_refresh.lock"
-if [[ -f "$LOCKFILE" ]]; then
-    PID=$(cat "$LOCKFILE" 2>/dev/null)
-    if [[ -n "$PID" && -d "/proc/$PID" ]]; then
-        echo "NOSTRCARD.refresh.sh already running (PID: $PID)"
-        exit 0
-    else
-        # Remove stale lock file
-        rm -f "$LOCKFILE"
-    fi
-fi
-echo $$ > "$LOCKFILE"
+exec 200>"/tmp/nostrcard_refresh.lock"
+flock -n 200 || { echo "Script déjà en cours"; exit 0; }
 
 echo "## RUNNING NOSTRCARD.refresh.sh
                  _

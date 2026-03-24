@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 3.0 — Duniter v2 (gcli RPC — source de vérité on-chain)
+# Version: 3.1 — Duniter v2 (gcli RPC + Squid GraphQL parallèle)
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 #~ G1check.sh
@@ -11,8 +11,14 @@
 #~ Rafraîchissement en arrière-plan si cache périmé.
 #
 # Usage:
-#   G1check.sh <G1PUB>         → solde en Ğ1 (ex: 2.48)
-#   G1check.sh <G1PUB>:ZEN    → solde converti en Ẑen (= (Ğ1-1)*10)
+#   G1check.sh <G1PUB>              → solde en Ğ1 (ex: 2.48)
+#   G1check.sh <G1PUB>:ZEN          → solde converti en Ẑen (= (Ğ1-1)*10)
+#   G1check.sh <PUB1> <PUB2> ...    → mode batch parallèle (une ligne par pub)
+#
+# Parallélisation :
+#   - mode batch   : plusieurs G1PUBs traités simultanément (GNU parallel ou jobs)
+#   - fetch RPC    : tous les nœuds RPC interrogés en parallèle (1er valide gagne)
+#   - fetch Squid  : toutes les URLs Squid GraphQL interrogées en parallèle
 #
 # Compatibilité : retourne le même format que l'ancienne version silkaj.
 # Décimales : 1 Ğ1 = 100 centimes bruts (DECIMALS=2)
@@ -21,6 +27,29 @@
 MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 [[ -f "${MY_PATH}/my.sh" ]] && . "${MY_PATH}/my.sh"
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MODE BATCH : plusieurs G1PUBs en arguments → parallèle
+# (Ex: API dashboard 10 users → G1check.sh pub1 pub2 ... pub10)
+# ══════════════════════════════════════════════════════════════════════════════
+if [[ $# -gt 1 ]]; then
+    SELF="$0"
+    if command -v parallel &>/dev/null; then
+        # GNU parallel : tous les jobs simultanément, résultats dans l'ordre
+        parallel --will-cite -j0 "$SELF" ::: "$@"
+    else
+        # Fallback bash jobs
+        declare -a _BATCH_PIDS=()
+        for _arg in "$@"; do
+            "$SELF" "$_arg" &
+            _BATCH_PIDS+=($!)
+        done
+        for _pid in "${_BATCH_PIDS[@]}"; do
+            wait "$_pid"
+        done
+    fi
+    exit 0
+fi
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 DECIMALS=2                   # 1 Ğ1 = 100 centimes bruts (confirmé sur réseau réel)
@@ -103,6 +132,107 @@ output() {
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
+# FETCH PARALLÈLE RPC : tous les nœuds interrogés simultanément
+# Premier résultat valide gagne (mv -n = rename atomique sans écrasement)
+# Retourne "<solde>|<rpc_url>" sur stdout, exit 0 si succès
+# ══════════════════════════════════════════════════════════════════════════════
+parallel_rpc_fetch() {
+    local addr="$1"; shift
+    local urls=("$@")
+    [[ ${#urls[@]} -eq 0 ]] && return 1
+
+    local tmpdir; tmpdir=$(mktemp -d)
+    local result_file="$tmpdir/result"
+    local PIDS=()
+
+    for rpc in "${urls[@]}"; do
+        (
+            raw=$($GCLI --no-password -a "$addr" -u "$rpc" -o json account balance 2>/dev/null \
+                | jq -r '.total_balance // empty')
+            [[ -z "$raw" || "$raw" == "null" ]] && exit 1
+            val=$(echo "scale=2; ${raw} / 100" | bc)
+            is_valid_balance "$val" || exit 1
+            local tmp_r="$tmpdir/r.$BASHPID"
+            echo "${val}|${rpc}" > "$tmp_r"
+            # mv -n : atomique, ne remplace pas si déjà présent → 1er valide gagne
+            mv -n "$tmp_r" "$result_file" 2>/dev/null || rm -f "$tmp_r"
+        ) &
+        PIDS+=($!)
+    done
+
+    # Polling léger : max 15s, intervalle 100ms
+    local i=0
+    while [[ $i -lt 150 && ! -s "$result_file" ]]; do
+        sleep 0.1
+        (( i++ ))
+    done
+
+    # Arrêter les workers encore actifs
+    for pid in "${PIDS[@]}"; do kill "$pid" 2>/dev/null; done
+    wait "${PIDS[@]}" 2>/dev/null
+
+    if [[ -s "$result_file" ]]; then
+        cat "$result_file"
+        rm -rf "$tmpdir"
+        return 0
+    fi
+    rm -rf "$tmpdir"
+    return 1
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# FETCH PARALLÈLE SQUID GraphQL : toutes les URLs interrogées simultanément
+# Premier résultat valide gagne (mv -n atomique)
+# Retourne "<solde>|<squid_url>" sur stdout, exit 0 si succès
+# ══════════════════════════════════════════════════════════════════════════════
+parallel_squid_fetch() {
+    local addr="$1"; shift
+    local urls=("$@")
+    [[ ${#urls[@]} -eq 0 ]] && return 1
+
+    local tmpdir; tmpdir=$(mktemp -d)
+    local result_file="$tmpdir/result"
+    local PIDS=()
+
+    for squid_url in "${urls[@]}"; do
+        (
+            resp=$(curl -sf --max-time 8 -X POST "$squid_url" \
+                -H "Content-Type: application/json" \
+                --data-binary \
+                "{\"query\":\"query(\$w:String!){accounts(condition:{id:\$w}){nodes{totalBalance}}}\",\"variables\":{\"w\":\"$addr\"}}" \
+                2>/dev/null)
+            raw=$(echo "$resp" | jq -r '.data.accounts.nodes[0].totalBalance // empty' 2>/dev/null)
+            [[ -z "$raw" || "$raw" == "null" ]] && exit 1
+            val=$(echo "scale=2; ${raw} / 100" | bc)
+            is_valid_balance "$val" || exit 1
+            local tmp_r="$tmpdir/r.$BASHPID"
+            echo "${val}|${squid_url}" > "$tmp_r"
+            mv -n "$tmp_r" "$result_file" 2>/dev/null || rm -f "$tmp_r"
+        ) &
+        PIDS+=($!)
+    done
+
+    # Polling léger : max 10s (curl max-time=8), intervalle 100ms
+    local i=0
+    while [[ $i -lt 100 && ! -s "$result_file" ]]; do
+        sleep 0.1
+        (( i++ ))
+    done
+
+    # Arrêter les workers encore actifs (curl bloqués)
+    for pid in "${PIDS[@]}"; do kill "$pid" 2>/dev/null; done
+    wait "${PIDS[@]}" 2>/dev/null
+
+    if [[ -s "$result_file" ]]; then
+        cat "$result_file"
+        rm -rf "$tmpdir"
+        return 0
+    fi
+    rm -rf "$tmpdir"
+    return 1
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
 # PARSE ARGS
 # ══════════════════════════════════════════════════════════════════════════════
 G1PUB_ORIGINAL="${1:-}"
@@ -136,7 +266,7 @@ find "$CACHE_DIR" -mtime +"$CACHE_COINS_LIMIT" -name "*.COINS" -delete 2>/dev/nu
 COINSFILE="$CACHE_DIR/${G1PUB}.COINS"
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 1. Cache frais (< 15 min) → retour immédiat
+# 1. Cache frais (< 12s) → retour immédiat
 # ══════════════════════════════════════════════════════════════════════════════
 age=$(file_age_sec "$COINSFILE") 2>/dev/null || age=99999
 if [[ $age -lt $CACHE_FRESH_SEC ]]; then
@@ -144,23 +274,48 @@ if [[ $age -lt $CACHE_FRESH_SEC ]]; then
 fi
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 2. Cache périmé mais valide (< 24h) → retour immédiat + refresh BG
+# 2. Cache périmé mais valide (< 60s) → retour immédiat + refresh BG
 # ══════════════════════════════════════════════════════════════════════════════
 if [[ $age -lt $CACHE_STALE_SEC ]]; then
     val=$(read_cache "$COINSFILE")
     if [[ -n "$val" ]]; then
         log "Solde en cache (${age}s) — refresh en arrière-plan"
-        # Refresh arrière-plan (stdout/stderr isolés)
+        # Refresh arrière-plan : RPC parallèle puis Squid parallèle
         (
             exec >/dev/null 2>&1
             sleep 1
-            _rpc_bg=""
+
+            # Construire liste noeuds RPC
+            _rpc_nodes=()
             [[ -x "${MY_PATH}/duniter_getnode.sh" ]] && \
                 _rpc_bg=$("${MY_PATH}/duniter_getnode.sh" rpc 2>/dev/null)
-            [[ -z "$_rpc_bg" ]] && _rpc_bg="$RPC_URL"
-            raw=$(gcli_balance_raw "$G1PUB_QUERY" "$_rpc_bg")
-            fresh=$(raw_to_g1 "$raw")
-            is_valid_balance "$fresh" && write_cache "$COINSFILE" "$fresh"
+            [[ -n "$_rpc_bg" ]] && _rpc_nodes+=("$_rpc_bg") || _rpc_nodes+=("$RPC_URL")
+            if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
+                while IFS= read -r node; do
+                    [[ -n "$node" ]] && _rpc_nodes+=("$node")
+                done < <("${MY_PATH}/duniter_getnode.sh" all 2>/dev/null \
+                    | jq -r '.rpc[].url' 2>/dev/null)
+            fi
+            mapfile -t _rpc_nodes < <(printf '%s\n' "${_rpc_nodes[@]}" | awk '!seen[$0]++')
+
+            # Tentative RPC parallèle
+            _rpc_result=$(parallel_rpc_fetch "$G1PUB_QUERY" "${_rpc_nodes[@]}" 2>/dev/null)
+            if [[ -n "$_rpc_result" ]]; then
+                _fresh="${_rpc_result%%|*}"
+                is_valid_balance "$_fresh" && write_cache "$COINSFILE" "$_fresh"
+                exit 0
+            fi
+
+            # Fallback Squid parallèle
+            if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
+                mapfile -t _sq_urls < <("${MY_PATH}/duniter_getnode.sh" all 2>/dev/null \
+                    | jq -r '.squid[].url' 2>/dev/null)
+                _sq_result=$(parallel_squid_fetch "$G1PUB_QUERY" "${_sq_urls[@]}" 2>/dev/null)
+                if [[ -n "$_sq_result" ]]; then
+                    _fresh="${_sq_result%%|*}"
+                    is_valid_balance "$_fresh" && write_cache "$COINSFILE" "$_fresh"
+                fi
+            fi
         ) &>/dev/null &
         disown
         output "$val"
@@ -169,35 +324,32 @@ if [[ $age -lt $CACHE_STALE_SEC ]]; then
 fi
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 3. Pas de cache valide → fetch synchrone via gcli (Duniter RPC)
+# 3. Pas de cache valide → fetch synchrone PARALLÈLE via gcli (Duniter RPC)
 # ══════════════════════════════════════════════════════════════════════════════
-log "Fetch synchrone Duniter RPC pour $G1PUB"
+log "Fetch parallèle Duniter RPC pour $G1PUB"
 
-# Liste de noeuds RPC à essayer
+# Construire liste dédupliquée de noeuds RPC
 RPC_NODES=()
 [[ -n "$RPC_URL" ]] && RPC_NODES+=("$RPC_URL")
 
-# Récupérer tous les noeuds disponibles via duniter_getnode.sh
 if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
     while IFS= read -r node; do
         [[ -n "$node" ]] && RPC_NODES+=("$node")
     done < <("${MY_PATH}/duniter_getnode.sh" all 2>/dev/null | jq -r '.rpc[].url' 2>/dev/null)
 fi
 
-# Dédupliquer
 mapfile -t RPC_NODES < <(printf '%s\n' "${RPC_NODES[@]}" | awk '!seen[$0]++')
 
+# ── Fetch RPC parallèle : 1er nœud valide gagne ──────────────────────────────
 BALANCE=""
-for rpc in "${RPC_NODES[@]}"; do
-    raw=$(gcli_balance_raw "$G1PUB_QUERY" "$rpc")
-    if [[ -n "$raw" ]]; then
-        g1=$(raw_to_g1 "$raw")
-        BALANCE="$g1"
-        log "Solde obtenu depuis $rpc : $BALANCE Ğ1"
-        break
+if [[ ${#RPC_NODES[@]} -gt 0 ]]; then
+    rpc_result=$(parallel_rpc_fetch "$G1PUB_QUERY" "${RPC_NODES[@]}")
+    if [[ -n "$rpc_result" ]]; then
+        BALANCE="${rpc_result%%|*}"
+        _winning_rpc="${rpc_result##*|}"
+        log "Solde obtenu depuis $_winning_rpc : $BALANCE Ğ1 (parallèle)"
     fi
-    log "Échec sur $rpc"
-done
+fi
 
 if is_valid_balance "$BALANCE"; then
     write_cache "$COINSFILE" "$BALANCE"
@@ -205,43 +357,47 @@ if is_valid_balance "$BALANCE"; then
     exit 0
 fi
 
-# ── Retry : forcer une redécouverte des noeuds et réessayer ──────────────────
+# ── Retry : redécouverte forcée des noeuds puis RPC parallèle ─────────────────
 if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
-    log "Tous les noeuds ont échoué — redécouverte forcée..."
+    log "Tous les noeuds RPC ont échoué — redécouverte forcée..."
     "${MY_PATH}/duniter_getnode.sh" refresh >/dev/null 2>&1
-    while IFS= read -r rpc; do
-        [[ -z "$rpc" ]] && continue
-        raw=$(gcli_balance_raw "$G1PUB_QUERY" "$rpc")
-        if [[ -n "$raw" ]]; then
-            BALANCE=$(raw_to_g1 "$raw")
-            log "Solde obtenu après refresh depuis $rpc : $BALANCE Ğ1"
+
+    mapfile -t RPC_RETRY < <("${MY_PATH}/duniter_getnode.sh" all 2>/dev/null \
+        | jq -r '.rpc[].url' 2>/dev/null)
+
+    if [[ ${#RPC_RETRY[@]} -gt 0 ]]; then
+        rpc_result=$(parallel_rpc_fetch "$G1PUB_QUERY" "${RPC_RETRY[@]}")
+        if [[ -n "$rpc_result" ]]; then
+            BALANCE="${rpc_result%%|*}"
+            _winning_rpc="${rpc_result##*|}"
+            log "Solde obtenu après refresh depuis $_winning_rpc : $BALANCE Ğ1"
             write_cache "$COINSFILE" "$BALANCE"
             output "$BALANCE"
             exit 0
         fi
-    done < <("${MY_PATH}/duniter_getnode.sh" all 2>/dev/null | jq -r '.rpc[].url' 2>/dev/null)
+    fi
 fi
 
-# ── Fallback squid : requête GraphQL HTTPS (pas de WSS, contourne les firewalls) ──
+# ── Fallback Squid GraphQL PARALLÈLE (HTTPS, contourne les firewalls) ─────────
 if [[ -x "${MY_PATH}/duniter_getnode.sh" ]]; then
-    log "Tentative fallback via Squid GraphQL (HTTPS)..."
-    while IFS= read -r squid_url; do
-        [[ -z "$squid_url" ]] && continue
-        squid_resp=$(curl -sf --max-time 8 -X POST "$squid_url" \
-            -H "Content-Type: application/json" \
-            --data-binary "{\"query\":\"query(\$w:String!){accounts(condition:{id:\$w}){nodes{totalBalance}}}\",\"variables\":{\"w\":\"$G1PUB_QUERY\"}}" \
-            2>/dev/null)
-        squid_raw=$(echo "$squid_resp" | jq -r '.data.accounts.nodes[0].totalBalance // empty' 2>/dev/null)
-        if [[ -n "$squid_raw" && "$squid_raw" != "null" ]]; then
-            BALANCE=$(raw_to_g1 "$squid_raw")
+    log "Tentative fallback via Squid GraphQL parallèle (HTTPS)..."
+
+    mapfile -t SQUID_URLS < <("${MY_PATH}/duniter_getnode.sh" all 2>/dev/null \
+        | jq -r '.squid[].url' 2>/dev/null)
+
+    if [[ ${#SQUID_URLS[@]} -gt 0 ]]; then
+        sq_result=$(parallel_squid_fetch "$G1PUB_QUERY" "${SQUID_URLS[@]}")
+        if [[ -n "$sq_result" ]]; then
+            BALANCE="${sq_result%%|*}"
+            _winning_sq="${sq_result##*|}"
             if is_valid_balance "$BALANCE"; then
-                log "Solde obtenu via Squid $squid_url : $BALANCE Ğ1"
+                log "Solde obtenu via Squid $_winning_sq : $BALANCE Ğ1 (parallèle)"
                 write_cache "$COINSFILE" "$BALANCE"
                 output "$BALANCE"
                 exit 0
             fi
         fi
-    done < <("${MY_PATH}/duniter_getnode.sh" all 2>/dev/null | jq -r '.squid[].url' 2>/dev/null)
+    fi
 fi
 
 # ── Fallback : dernier backup disponible ─────────────────────────────────────

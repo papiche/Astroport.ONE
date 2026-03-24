@@ -545,6 +545,29 @@ process_script() {
         return
     fi
 
+    # 🔒 Exclusion automatique des fichiers protégés / sensibles (secrets, credentials)
+    local PROTECTED_BASE="${FILE##*/}"
+    local PROTECTED_LOWER="${PROTECTED_BASE,,}"   # minuscules pour comparaison insensible
+    local IS_PROTECTED=false
+    # Patterns de fichiers protégés : .env et variantes, clés, certificats, htpasswd...
+    case "$PROTECTED_LOWER" in
+        .env|.env.*|*.env)          IS_PROTECTED=true ;;
+        *.key|*.pem|*.crt|*.cer|*.p12|*.pfx|*.jks) IS_PROTECTED=true ;;
+        id_rsa|id_ed25519|id_ecdsa|id_dsa)          IS_PROTECTED=true ;;
+        id_rsa.pub|id_ed25519.pub|id_ecdsa.pub)     IS_PROTECTED=true ;;
+        .htpasswd|.netrc|.npmrc|.pypirc)             IS_PROTECTED=true ;;
+        secrets.yml|secrets.yaml|secrets.json|secrets.toml) IS_PROTECTED=true ;;
+        *secret*|*password*|*passwd*|*credential*)  IS_PROTECTED=true ;;
+    esac
+    # Cas .env.* : le basename commence par ".env"
+    [[ "$PROTECTED_LOWER" == .env* ]] && IS_PROTECTED=true
+    if $IS_PROTECTED; then
+        $JSON_MODE \
+            && echo "  [PROTÉGÉ - ignoré] $FILE" >&2 \
+            || echo "  [PROTÉGÉ - ignoré] $FILE"
+        return
+    fi
+
     # Vérifier si déjà visité
     if [ -n "${VISITED[$FILE]}" ]; then
         return
