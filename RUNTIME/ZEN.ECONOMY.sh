@@ -1,6 +1,6 @@
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 0.2
+# Version: 0.3 (Love Ledger & Resilience Update)
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 #~ ZEN.ECONOMY.sh
@@ -32,13 +32,18 @@ start=`date +%s`
 #######################################################################
 LOG_DIR="$HOME/.zen/tmp/coucou"
 LOG_FILE="$LOG_DIR/zen_economy.txt"
+LOVE_LEDGER="$HOME/.zen/game/love_ledger.json"
 mkdir -p "$LOG_DIR"
 
 # Function to log both to console and file
 log_output() {
     echo "$@" | tee -a "$LOG_FILE"
 }
-
+# Initialiser le registre de Gratitude s'il n'existe pas
+# "Ğ1 apporte la Liberté · Ẑen apporte l'Égalité · ❤️ apporte la Fraternité — 1 ❤️ = 1 DU"
+if [[ ! -f "$LOVE_LEDGER" ]]; then
+    echo '{"total_donated_zen": 0, "weeks_on_volunteer": 0, "motto": "G1=Liberte Zen=Egalite Love=Fraternite 1xLove=1DU", "history": []}' > "$LOVE_LEDGER"
+fi
 # Start logging session with timestamp and separator
 {
     echo ""
@@ -173,22 +178,22 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
     if [[ $(echo "$NODECOIN >= 1" | bc -l) -eq 1 ]]; then
         
         #######################################################################
-        # PROGRESSIVE DEGRADATION SYSTEM (Shareholder Agreement)
-        # Instead of transferring funds, pay directly from backup wallets:
-        # 
-        # PHASE 0: Normal operation - Pay from CASH
-        # PHASE 1: Growth slowdown - Pay from ASSETS (forest-gardens depleting)
-        # PHASE 2: Innovation slowdown - Pay from RnD (R&D budget depleting)
-        # PHASE 3: BANKRUPTCY - No funds available, GAME OVER
+        # SYSTÈME DE RÉSILIENCE ET DE DONS (Accord des Acteurs)
+        # Payer directement depuis les portefeuilles de secours :
         #
-        # Each phase sends notifications to all shareholders for transparency.
-        # This allows collective corrective action before total bankruptcy.
+        # NIVEAU 0: Abondance  - Paiement depuis CASH
+        # NIVEAU 1: Solidarité - Paiement depuis ASSETS (forêts-jardins soutiennent)
+        # NIVEAU 2: Résilience - Paiement depuis R&D (innovation soutient l'infra)
+        # NIVEAU 3: BÉNÉVOLAT  - Aucun fonds dispo, le Capitaine offre son infra/temps
+        #
+        # Chaque niveau envoie une notification aux acteurs pour la transparence.
+        # Le bénévolat est comptabilisé dans le Love Ledger et diffusé sur NOSTR.
         #######################################################################
-        
-        BANKRUPTCY_TRIGGERED=0
-        PRE_BANKRUPTCY_PHASE=0
+
+        RESILIENCE_LEVEL=0
         CAPTAIN_PAID=0
         NODE_PAID=0
+        LOVE_DONATION_THIS_WEEK=0
         PAYMENT_SOURCE="CASH"
         NODE_PAYMENT_SOURCE=""
         CAPTAIN_PAYMENT_SOURCE=""
@@ -236,45 +241,46 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
             fi
         fi
         
-        # PHASE 1: Growth slowdown - Try ASSETS if CASH insufficient/failed
+        # NIVEAU 1: Solidarité ASSETS - si CASH insuffisant/échoué
         if [[ $NODE_PAID -eq 0 && $(echo "$ASSETS_ZEN >= $WEEKLYPAF" | bc -l) -eq 1 ]]; then
-            PRE_BANKRUPTCY_PHASE=1
+            RESILIENCE_LEVEL=1
             PAYMENT_SOURCE="ASSETS"
-            log_output "⚠️  PHASE 1: CASH insufficient - Paying NODE from ASSETS (growth slowdown)"
-            ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/game/uplanet.ASSETS.dunikey "$WEEKLYG1" "${NODEG1PUB}" "UP:${UPLANETG1PUB:0:8}:PAF:W${CURRENT_WEEK}:${WEEKLYPAF}Z:ASSETS>NODE:PHASE1" 2>/dev/null
+            log_output "🌿 NIVEAU 1: CASH insuffisant - Paiement NODE depuis ASSETS (solidarité forêts-jardins)"
+            ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/game/uplanet.ASSETS.dunikey "$WEEKLYG1" "${NODEG1PUB}" "UP:${UPLANETG1PUB:0:8}:PAF:W${CURRENT_WEEK}:${WEEKLYPAF}Z:ASSETS>NODE:LVL1" 2>/dev/null
             if [[ $? -eq 0 ]]; then
-                log_output "✅ ASSETS paid NODE PAF: $WEEKLYPAF Ẑen (growth slowing)"
+                log_output "✅ ASSETS a payé l'infrastructure NODE: $WEEKLYPAF Ẑen"
                 NODE_PAID=1
                 NODE_PAYMENT_SOURCE="ASSETS"
                 ASSETS_ZEN=$(echo "scale=1; $ASSETS_ZEN - $WEEKLYPAF" | bc)
             else
-                log_output "❌ ASSETS payment to NODE failed - trying RnD"
+                log_output "❌ Paiement ASSETS vers NODE échoué - tentative R&D"
             fi
         fi
-        
-        # PHASE 2: Innovation slowdown - Try RnD if ASSETS insufficient/failed
+
+        # NIVEAU 2: Solidarité R&D - si ASSETS insuffisants/épuisés
         if [[ $NODE_PAID -eq 0 && $(echo "$RND_ZEN >= $WEEKLYPAF" | bc -l) -eq 1 ]]; then
-            PRE_BANKRUPTCY_PHASE=2
+            RESILIENCE_LEVEL=2
             PAYMENT_SOURCE="RnD"
-            log_output "⚠️  PHASE 2: ASSETS depleted - Paying NODE from RnD (innovation slowdown)"
-            ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/game/uplanet.RnD.dunikey "$WEEKLYG1" "${NODEG1PUB}" "UP:${UPLANETG1PUB:0:8}:PAF:W${CURRENT_WEEK}:${WEEKLYPAF}Z:RND>NODE:PHASE2" 2>/dev/null
+            log_output "🔬 NIVEAU 2: ASSETS épuisés - Paiement NODE depuis R&D (solidarité innovation)"
+            ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/game/uplanet.RnD.dunikey "$WEEKLYG1" "${NODEG1PUB}" "UP:${UPLANETG1PUB:0:8}:PAF:W${CURRENT_WEEK}:${WEEKLYPAF}Z:RND>NODE:LVL2" 2>/dev/null
             if [[ $? -eq 0 ]]; then
-                log_output "✅ RnD paid NODE PAF: $WEEKLYPAF Ẑen (innovation slowing)"
+                log_output "✅ R&D a payé l'infrastructure NODE: $WEEKLYPAF Ẑen"
                 NODE_PAID=1
                 NODE_PAYMENT_SOURCE="RnD"
                 RND_ZEN=$(echo "scale=1; $RND_ZEN - $WEEKLYPAF" | bc)
             else
-                log_output "❌ RnD payment to NODE failed"
+                log_output "❌ Paiement R&D vers NODE échoué"
             fi
         fi
-        
-        # PHASE 3: BANKRUPTCY - No funds available
+
+        # NIVEAU 3: BÉNÉVOLAT - Aucun fonds disponible, le Capitaine offre son infrastructure
         if [[ $NODE_PAID -eq 0 ]]; then
-            PRE_BANKRUPTCY_PHASE=3
-            BANKRUPTCY_TRIGGERED=1
-            log_output "💀 PHASE 3: BANKRUPTCY - Cannot pay NODE PAF!"
+            RESILIENCE_LEVEL=3
+            log_output "❤️  NIVEAU 3 (BÉNÉVOLAT) : Fonds insuffisants dans toutes les poches."
+            log_output "   Le Capitaine héberge gracieusement le nœud cette semaine ! 🙏"
             log_output "   CASH: $CASH_ZEN Ẑen | ASSETS: $ASSETS_ZEN Ẑen | RnD: $RND_ZEN Ẑen"
-            log_output "   Required: $WEEKLYPAF Ẑen - Infrastructure cannot function!"
+            LOVE_DONATION_THIS_WEEK=$(echo "$LOVE_DONATION_THIS_WEEK + $WEEKLYPAF" | bc -l)
+            NODE_PAYMENT_SOURCE="LOVE (Bénévolat)"
         fi
         
         #######################################################################
@@ -295,230 +301,211 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                 fi
             fi
             
-            # PHASE 1: Try ASSETS if CASH insufficient
+            # NIVEAU 1: Solidarité ASSETS pour la rétribution Capitaine
             if [[ $CAPTAIN_PAID -eq 0 && $(echo "$ASSETS_ZEN >= $CAPTAIN_REMUNERATION" | bc -l) -eq 1 ]]; then
-                [[ $PRE_BANKRUPTCY_PHASE -lt 1 ]] && PRE_BANKRUPTCY_PHASE=1
-                log_output "⚠️  PHASE 1: Paying Captain from ASSETS"
-                ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/game/uplanet.ASSETS.dunikey "$CAPTAIN_REMUNERATION_G1" "${CAPTAING1PUB}" "UP:${UPLANETG1PUB:0:8}:SALARY:W${CURRENT_WEEK}:${CAPTAIN_REMUNERATION}Z:ASSETS>CPT:PHASE1" 2>/dev/null
+                [[ $RESILIENCE_LEVEL -lt 1 ]] && RESILIENCE_LEVEL=1
+                log_output "🌿 NIVEAU 1: Rétribution Capitaine depuis ASSETS"
+                ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/game/uplanet.ASSETS.dunikey "$CAPTAIN_REMUNERATION_G1" "${CAPTAING1PUB}" "UP:${UPLANETG1PUB:0:8}:SALARY:W${CURRENT_WEEK}:${CAPTAIN_REMUNERATION}Z:ASSETS>CPT:LVL1" 2>/dev/null
                 if [[ $? -eq 0 ]]; then
-                    log_output "✅ ASSETS paid Captain: $CAPTAIN_REMUNERATION Ẑen"
+                    log_output "✅ ASSETS a rétribué le Capitaine: $CAPTAIN_REMUNERATION Ẑen"
                     CAPTAIN_PAID=1
                     CAPTAIN_PAYMENT_SOURCE="ASSETS"
                     ASSETS_ZEN=$(echo "scale=1; $ASSETS_ZEN - $CAPTAIN_REMUNERATION" | bc)
                 fi
             fi
-            
-            # PHASE 2: Try RnD if ASSETS insufficient
+
+            # NIVEAU 2: Solidarité R&D pour la rétribution Capitaine
             if [[ $CAPTAIN_PAID -eq 0 && $(echo "$RND_ZEN >= $CAPTAIN_REMUNERATION" | bc -l) -eq 1 ]]; then
-                [[ $PRE_BANKRUPTCY_PHASE -lt 2 ]] && PRE_BANKRUPTCY_PHASE=2
-                log_output "⚠️  PHASE 2: Paying Captain from RnD"
-                ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/game/uplanet.RnD.dunikey "$CAPTAIN_REMUNERATION_G1" "${CAPTAING1PUB}" "UP:${UPLANETG1PUB:0:8}:SALARY:W${CURRENT_WEEK}:${CAPTAIN_REMUNERATION}Z:RND>CPT:PHASE2" 2>/dev/null
+                [[ $RESILIENCE_LEVEL -lt 2 ]] && RESILIENCE_LEVEL=2
+                log_output "🔬 NIVEAU 2: Rétribution Capitaine depuis R&D"
+                ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/game/uplanet.RnD.dunikey "$CAPTAIN_REMUNERATION_G1" "${CAPTAING1PUB}" "UP:${UPLANETG1PUB:0:8}:SALARY:W${CURRENT_WEEK}:${CAPTAIN_REMUNERATION}Z:RND>CPT:LVL2" 2>/dev/null
                 if [[ $? -eq 0 ]]; then
-                    log_output "✅ RnD paid Captain: $CAPTAIN_REMUNERATION Ẑen"
+                    log_output "✅ R&D a rétribué le Capitaine: $CAPTAIN_REMUNERATION Ẑen"
                     CAPTAIN_PAID=1
                     CAPTAIN_PAYMENT_SOURCE="RnD"
                     RND_ZEN=$(echo "scale=1; $RND_ZEN - $CAPTAIN_REMUNERATION" | bc)
                 fi
             fi
-            
-            # Captain not paid but NODE was - partial degradation
+
+            # NIVEAU 3: Bénévolat Capitaine - son temps est offert aux Communs
             if [[ $CAPTAIN_PAID -eq 0 ]]; then
-                log_output "⚠️  Captain NOT PAID: Insufficient funds in all wallets"
-                log_output "   Required: $CAPTAIN_REMUNERATION Ẑen"
-                log_output "   CASH: $CASH_ZEN | ASSETS: $ASSETS_ZEN | RnD: $RND_ZEN"
-                [[ $PRE_BANKRUPTCY_PHASE -lt 2 ]] && PRE_BANKRUPTCY_PHASE=2
+                [[ $RESILIENCE_LEVEL -lt 3 ]] && RESILIENCE_LEVEL=3
+                log_output "❤️  Le Capitaine offre gracieusement son temps de gestion cette semaine ! 🙏"
+                log_output "   Fonds insuffisants : CASH=$CASH_ZEN Ẑen | ASSETS=$ASSETS_ZEN Ẑen | RnD=$RND_ZEN Ẑen"
+                LOVE_DONATION_THIS_WEEK=$(echo "$LOVE_DONATION_THIS_WEEK + $CAPTAIN_REMUNERATION" | bc -l)
+                CAPTAIN_PAYMENT_SOURCE="LOVE (Bénévolat)"
             fi
         else
-            log_output "⏭️  Captain payment skipped (NODE not paid - infrastructure priority)"
+            log_output "❤️  Le Capitaine offre son temps cette semaine (infra prioritaire sur sa rémunération) !"
+            LOVE_DONATION_THIS_WEEK=$(echo "$LOVE_DONATION_THIS_WEEK + $CAPTAIN_REMUNERATION" | bc -l)
+            CAPTAIN_PAYMENT_SOURCE="LOVE (Bénévolat - Priorité Infra)"
+            [[ $RESILIENCE_LEVEL -lt 3 ]] && RESILIENCE_LEVEL=3
         fi
         
         log_output "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         
         #######################################################################
-        # SEND PRE-BANKRUPTCY NOTIFICATION (Shareholder Agreement Transparency)
+        # MISE À JOUR DU LOVE LEDGER + NOTIFICATION NOSTR DE GRATITUDE
+        # Comptabilise le bénévolat et le diffuse sur NOSTR pour remercier
+        # publiquement le Capitaine (transparence des Communs)
         #######################################################################
-        if [[ $PRE_BANKRUPTCY_PHASE -gt 0 && $PRE_BANKRUPTCY_PHASE -lt 3 ]]; then
-            log_output "📧 Sending pre-bankruptcy notification (Phase $PRE_BANKRUPTCY_PHASE)..."
-            
-            PRE_BANKRUPTCY_TEMPLATE="${MY_PATH}/../templates/NOSTR/pre_bankruptcy.html"
-            PRE_BANKRUPTCY_REPORT="$HOME/.zen/tmp/pre_bankruptcy_phase${PRE_BANKRUPTCY_PHASE}_$(date +%Y-%m-%d).html"
-            
-            if [[ -s "$PRE_BANKRUPTCY_TEMPLATE" ]]; then
-                REPORT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
-                TODATE=$(date +%Y-%m-%d)
-                UPLANET_ID="${UPLANETG1PUB:0:8}"
-                
-                # Set phase-specific variables
-                case $PRE_BANKRUPTCY_PHASE in
-                    1)
-                        PHASE_CLASS="assets"
-                        PHASE_ICON="🌱"
-                        PHASE_NAME_FR="Ralentissement de Croissance"
-                        PHASE_NAME_EN="Growth Slowdown"
-                        PHASE_NAME_ES="Desaceleración del Crecimiento"
-                        PHASE_DESCRIPTION_FR="Les paiements sont effectués depuis le portefeuille ASSETS. Les investissements en forêts-jardins sont temporairement suspendus."
-                        PHASE_DESCRIPTION_EN="Payments are made from the ASSETS wallet. Forest-garden investments are temporarily suspended."
-                        PHASE_DESCRIPTION_ES="Los pagos se realizan desde la cartera ASSETS. Las inversiones en bosques-jardines están temporalmente suspendidas."
-                        IMPACT_LIST_FR="<li>Investissements forêts-jardins suspendus</li><li>Croissance de l'écosystème ralentie</li><li>Services opérationnels maintenus</li>"
-                        IMPACT_LIST_EN="<li>Forest-garden investments suspended</li><li>Ecosystem growth slowed</li><li>Operational services maintained</li>"
-                        ASSETS_STATUS_TEXT="Source de paiement active"
-                        ASSETS_STATUS_TEXT_EN="Active payment source"
-                        ASSETS_STATUS_TEXT_ES="Fuente de pago activa"
-                        RND_STATUS_TEXT="En réserve"
-                        RND_STATUS_TEXT_EN="In reserve"
-                        RND_STATUS_TEXT_ES="En reserva"
-                        ;;
-                    2)
-                        PHASE_CLASS="rnd"
-                        PHASE_ICON="🔬"
-                        PHASE_NAME_FR="Réduction R&D"
-                        PHASE_NAME_EN="R&D Reduction"
-                        PHASE_NAME_ES="Reducción de I+D"
-                        PHASE_DESCRIPTION_FR="Les paiements sont effectués depuis le portefeuille RnD. L'innovation et le développement sont temporairement suspendus."
-                        PHASE_DESCRIPTION_EN="Payments are made from the RnD wallet. Innovation and development are temporarily suspended."
-                        PHASE_DESCRIPTION_ES="Los pagos se realizan desde la cartera RnD. La innovación y el desarrollo están temporalmente suspendidos."
-                        IMPACT_LIST_FR="<li>Investissements forêts-jardins épuisés</li><li>Budget R&D utilisé pour l'opérationnel</li><li>Innovation temporairement suspendue</li><li>Services opérationnels maintenus</li>"
-                        IMPACT_LIST_EN="<li>Forest-garden investments depleted</li><li>R&D budget used for operations</li><li>Innovation temporarily suspended</li><li>Operational services maintained</li>"
-                        ASSETS_STATUS_TEXT="Épuisé (≤ 1Ğ1)"
-                        ASSETS_STATUS_TEXT_EN="Depleted (≤ 1Ğ1)"
-                        ASSETS_STATUS_TEXT_ES="Agotado (≤ 1Ğ1)"
-                        RND_STATUS_TEXT="Source de paiement active"
-                        RND_STATUS_TEXT_EN="Active payment source"
-                        RND_STATUS_TEXT_ES="Fuente de pago activa"
-                        ;;
-                esac
-                
-                # Determine wallet statuses
-                CASH_STATUS="depleted"
-                [[ $(echo "$ASSETS_ZEN > 0" | bc -l) -eq 1 ]] && ASSETS_STATUS="warning" || ASSETS_STATUS="depleted"
-                [[ $(echo "$RND_ZEN > 0" | bc -l) -eq 1 ]] && RND_STATUS="healthy" || RND_STATUS="warning"
-                [[ $PRE_BANKRUPTCY_PHASE -eq 2 ]] && RND_STATUS="warning"
-                
-                # Payment status texts
-                if [[ $NODE_PAID -eq 1 ]]; then
-                    NODE_PAYMENT_STATUS_FR="✅ Payé depuis $NODE_PAYMENT_SOURCE ($WEEKLYPAF Ẑen)"
-                    NODE_PAYMENT_STATUS_EN="✅ Paid from $NODE_PAYMENT_SOURCE ($WEEKLYPAF Ẑen)"
-                else
-                    NODE_PAYMENT_STATUS_FR="❌ Non payé"
-                    NODE_PAYMENT_STATUS_EN="❌ Not paid"
+        if [[ $(echo "$LOVE_DONATION_THIS_WEEK > 0" | bc -l) -eq 1 ]]; then
+            TODATE=$(date +%Y-%m-%d)
+            log_output "❤️  Mise à jour du Love Ledger : +${LOVE_DONATION_THIS_WEEK} Ẑen offerts aux Communs"
+
+            # Mise à jour du JSON de Gratitude
+            current_total=$(jq -r '.total_donated_zen' "$LOVE_LEDGER" 2>/dev/null || echo "0")
+            new_total=$(echo "scale=2; $current_total + $LOVE_DONATION_THIS_WEEK" | bc -l)
+
+            jq --arg date "$TODATE" \
+               --arg amount "$LOVE_DONATION_THIS_WEEK" \
+               --argjson new_total "$new_total" \
+               '.total_donated_zen = $new_total |
+                .weeks_on_volunteer += 1 |
+                .history += [{"date": $date, "amount_zen": ($amount | tonumber)}]' \
+               "$LOVE_LEDGER" > "${LOVE_LEDGER}.tmp" && mv "${LOVE_LEDGER}.tmp" "$LOVE_LEDGER"
+
+            log_output "📖 Love Ledger mis à jour : total cumulé = ${new_total} Ẑen"
+
+            # Envoi d'un événement NOSTR de Gratitude (Kind 1) pour remercier publiquement
+            NOSTR_KEYFILE="$HOME/.zen/game/uplanet.G1.nostr"
+            if [[ -x "${MY_PATH}/../tools/nostr_send_note.py" && -f "$NOSTR_KEYFILE" ]]; then
+                LOVE_MSG="❤️ L'Astroport ${IPFSNODEID:0:8} fonctionne grâce au bénévolat !
+Cette semaine, le Capitaine a offert l'équivalent de ${LOVE_DONATION_THIS_WEEK} Ẑen (~€) en frais d'infrastructure et de gestion.
+Total offert à la communauté : ${new_total} Ẑen. 🙏
+Ğ1=Liberté Ẑen=Égalité ❤️=Fraternité — 1❤️=1DU
+#UPlanet #CommonsLove #Gratitude #AGPL #MonnaieLibre #TrocZen"
+                "${MY_PATH}/../tools/nostr_send_note.py" \
+                    --keyfile "$NOSTR_KEYFILE" \
+                    --content "$LOVE_MSG" \
+                    --relays "$myRELAY" 2>/dev/null \
+                    && log_output "📡 Message de gratitude diffusé sur NOSTR (Kind 1)" \
+                    || log_output "⚠️  Diffusion NOSTR Kind 1 échouée (non-critique)"
+
+                #######################################################################
+                # BOUCLE AUTONOME Ğ1↔Ẑen↔❤️↔DU : Émission Kind 30305 (Protocole TrocZen)
+                # "1 ❤️ = 1 DU" — le sacrifice du Capitaine génère un DU co-créé
+                # que TrocZen traduit en Bon fondant (28j TTL) sur le marché local
+                #
+                # FORMAT EXACT Kind 30305 (source: nostr_service.dart#publishDuIncrement) :
+                # - kind   : 30305 (NIP-33 replaceable event)
+                # - pubkey : clé HEX NOSTR du Capitaine (bénéficiaire du DU)
+                # - tags   : [["d","du-YYYY-MM-DD"],["amount","XX.XX"]] SEULEMENT
+                # - content: "" (TOUJOURS VIDE — TrocZen lit uniquement les tags)
+                #
+                # TrocZen lit l'amount via computeAvailableDu(npub) :
+                #   DU_disponible = Σamount(Kind30305) - Σvalue(Kind30303 bons émis)
+                # fetchAverageRecentDu() calibre DU(0) des nouveaux membres via ce tag
+                #
+                # La clé doit être celle du Capitaine (CAPTAINEMAIL) pour que TrocZen
+                # l'attribue au bon npub dans sa DB du_increments(npub, date, amount)
+                #######################################################################
+                DU_INCREMENT=$(printf "%.2f" "$LOVE_DONATION_THIS_WEEK")
+                DU_DATE=$(date +%Y-%m-%d)
+                # d-tag unique par jour : "du-YYYY-MM-DD" (NIP-33, clé primaire DB TrocZen)
+                DU_KIND30305_TAGS="[[\"d\",\"du-${DU_DATE}\"],[\"amount\",\"${DU_INCREMENT}\"]]"
+
+                # Clé du Capitaine (bénéficiaire) — si disponible, sinon clé UPlanet
+                CAPTAIN_NOSTR_KEY="$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr"
+                EMITTER_KEY="${CAPTAIN_NOSTR_KEY:-$NOSTR_KEYFILE}"
+                [[ ! -f "$EMITTER_KEY" ]] && EMITTER_KEY="$NOSTR_KEYFILE"
+
+                "${MY_PATH}/../tools/nostr_send_note.py" \
+                    --keyfile "$EMITTER_KEY" \
+                    --kind 30305 \
+                    --content "" \
+                    --tags "$DU_KIND30305_TAGS" \
+                    --relays "$myRELAY" 2>/dev/null \
+                    && log_output "🎫 Kind 30305 conforme TrocZen émis : +${DU_INCREMENT} Ẑen DU pour ${CAPTAINEMAIL:-Capitaine}" \
+                    || log_output "⚠️  Émission Kind 30305 échouée (non-critique — boucle TrocZen indisponible)"
+            fi
+
+            # Notification email "Solidarité Active" au Capitaine (niveau 1 ou 2)
+            if [[ $RESILIENCE_LEVEL -gt 0 && $RESILIENCE_LEVEL -lt 3 && -n "$CAPTAINEMAIL" ]]; then
+                RESILIENCE_TEMPLATE="${MY_PATH}/../templates/NOSTR/pre_bankruptcy.html"
+                RESILIENCE_REPORT="$HOME/.zen/tmp/resilience_level${RESILIENCE_LEVEL}_$(date +%Y-%m-%d).html"
+                if [[ -s "$RESILIENCE_TEMPLATE" ]]; then
+                    REPORT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+                    UPLANET_ID="${UPLANETG1PUB:0:8}"
+                    PAYMENT_SOURCE="${PAYMENT_SOURCE:-LOVE}"
+                    [[ -z $NCARD ]] && NCARD=1
+                    [[ -z $ZCARD ]] && ZCARD=4
+                    IMPACT_10_MULTIPASS=$(echo "scale=0; 10 * $NCARD" | bc)
+                    IMPACT_5_ZENCARDS=$(echo "scale=0; 5 * $ZCARD" | bc)
+                    escape_sed_replacement() { echo "$1" | sed 's/[&/\]/\\&/g'; }
+                    case $RESILIENCE_LEVEL in
+                        1) PHASE_ICON="🌿"; PHASE_NAME_FR_SAFE="Solidarité ASSETS"; PHASE_CLASS="assets" ;;
+                        2) PHASE_ICON="🔬"; PHASE_NAME_FR_SAFE=$(escape_sed_replacement "Solidarité R&D"); PHASE_CLASS="rnd" ;;
+                    esac
+                    NODE_PAYMENT_STATUS_FR="${NODE_PAYMENT_SOURCE} (${WEEKLYPAF} Ẑen)"
+                    CAPTAIN_PAYMENT_STATUS_FR="${CAPTAIN_PAYMENT_SOURCE} (${CAPTAIN_REMUNERATION} Ẑen)"
+                    cat "$RESILIENCE_TEMPLATE" | sed \
+                        -e "s~_DATE_~${REPORT_DATE}~g" \
+                        -e "s~_TODATE_~${TODATE}~g" \
+                        -e "s~_UPLANET_ID_~${UPLANET_ID}~g" \
+                        -e "s~_DEGRADATION_PHASE_~${RESILIENCE_LEVEL}~g" \
+                        -e "s~_PAYMENT_SOURCE_~${PAYMENT_SOURCE}~g" \
+                        -e "s~_PHASE_CLASS_~${PHASE_CLASS}~g" \
+                        -e "s~_PHASE_ICON_~${PHASE_ICON}~g" \
+                        -e "s~_PHASE_NAME_FR_~${PHASE_NAME_FR_SAFE}~g" \
+                        -e "s~_PHASE_NAME_EN_~Resilience Level ${RESILIENCE_LEVEL}~g" \
+                        -e "s~_PHASE_NAME_ES_~Nivel de Resiliencia ${RESILIENCE_LEVEL}~g" \
+                        -e "s~_CASH_BALANCE_~${CASH_ZEN}~g" \
+                        -e "s~_ASSETS_BALANCE_~${ASSETS_ZEN}~g" \
+                        -e "s~_RND_BALANCE_~${RND_ZEN}~g" \
+                        -e "s~_TOTAL_PAF_REQUIRED_~${TOTAL_PAF_REQUIRED}~g" \
+                        -e "s~_NODE_PAYMENT_STATUS_FR_~${NODE_PAYMENT_STATUS_FR}~g" \
+                        -e "s~_NODE_PAYMENT_STATUS_EN_~${NODE_PAYMENT_SOURCE} (${WEEKLYPAF} Zen)~g" \
+                        -e "s~_CAPTAIN_PAYMENT_STATUS_FR_~${CAPTAIN_PAYMENT_STATUS_FR}~g" \
+                        -e "s~_CAPTAIN_PAYMENT_STATUS_EN_~${CAPTAIN_PAYMENT_SOURCE}~g" \
+                        -e "s~_NCARD_~${NCARD}~g" \
+                        -e "s~_ZCARD_~${ZCARD}~g" \
+                        -e "s~_IMPACT_10_MULTIPASS_~${IMPACT_10_MULTIPASS}~g" \
+                        -e "s~_IMPACT_5_ZENCARDS_~${IMPACT_5_ZENCARDS}~g" \
+                        > "$RESILIENCE_REPORT"
+                    ${MY_PATH}/../tools/mailjet.sh --expire 7d "$CAPTAINEMAIL" "$RESILIENCE_REPORT" \
+                        "🌿 UPlanet Résilience Niveau ${RESILIENCE_LEVEL} - ${TODATE}" 2>/dev/null \
+                        && log_output "📧 Rapport de résilience envoyé au Capitaine: $CAPTAINEMAIL" \
+                        || log_output "⚠️  Envoi email résilience échoué"
                 fi
-                
-                if [[ $CAPTAIN_PAID -eq 1 ]]; then
-                    CAPTAIN_PAYMENT_STATUS_FR="✅ Payé depuis $CAPTAIN_PAYMENT_SOURCE ($CAPTAIN_REMUNERATION Ẑen)"
-                    CAPTAIN_PAYMENT_STATUS_EN="✅ Paid from $CAPTAIN_PAYMENT_SOURCE ($CAPTAIN_REMUNERATION Ẑen)"
-                else
-                    CAPTAIN_PAYMENT_STATUS_FR="❌ Non payé - Fonds insuffisants"
-                    CAPTAIN_PAYMENT_STATUS_EN="❌ Not paid - Insufficient funds"
-                fi
-                
-                # Calculate impact examples
-                [[ -z $NCARD ]] && NCARD=1
-                [[ -z $ZCARD ]] && ZCARD=4
-                IMPACT_10_MULTIPASS=$(echo "scale=0; 10 * $NCARD" | bc)
-                IMPACT_5_ZENCARDS=$(echo "scale=0; 5 * $ZCARD" | bc)
-                
-                # Escape special sed characters in replacement strings
-                # The & character is special in sed (represents matched pattern)
-                escape_sed_replacement() {
-                    echo "$1" | sed 's/[&/\]/\\&/g'
-                }
-                
-                # Escape variables that may contain special characters (& in R&D)
-                PHASE_NAME_FR_SAFE=$(escape_sed_replacement "$PHASE_NAME_FR")
-                PHASE_NAME_EN_SAFE=$(escape_sed_replacement "$PHASE_NAME_EN")
-                PHASE_NAME_ES_SAFE=$(escape_sed_replacement "$PHASE_NAME_ES")
-                IMPACT_LIST_FR_SAFE=$(escape_sed_replacement "$IMPACT_LIST_FR")
-                IMPACT_LIST_EN_SAFE=$(escape_sed_replacement "$IMPACT_LIST_EN")
-                
-                # Generate HTML report
-                # IMPORTANT: Process longer variable names FIRST to avoid collision
-                # e.g., _ASSETS_STATUS_TEXT_ES_ before _ASSETS_STATUS_TEXT_ before _ASSETS_STATUS_
-                cat "$PRE_BANKRUPTCY_TEMPLATE" | sed \
-                    -e "s~_DATE_~${REPORT_DATE}~g" \
-                    -e "s~_TODATE_~${TODATE}~g" \
-                    -e "s~_UPLANET_ID_~${UPLANET_ID}~g" \
-                    -e "s~_DEGRADATION_PHASE_~${PRE_BANKRUPTCY_PHASE}~g" \
-                    -e "s~_PAYMENT_SOURCE_~${PAYMENT_SOURCE}~g" \
-                    -e "s~_PHASE_CLASS_~${PHASE_CLASS}~g" \
-                    -e "s~_PHASE_ICON_~${PHASE_ICON}~g" \
-                    -e "s~_PHASE_NAME_FR_~${PHASE_NAME_FR_SAFE}~g" \
-                    -e "s~_PHASE_NAME_EN_~${PHASE_NAME_EN_SAFE}~g" \
-                    -e "s~_PHASE_NAME_ES_~${PHASE_NAME_ES_SAFE}~g" \
-                    -e "s~_PHASE_DESCRIPTION_FR_~${PHASE_DESCRIPTION_FR}~g" \
-                    -e "s~_PHASE_DESCRIPTION_EN_~${PHASE_DESCRIPTION_EN}~g" \
-                    -e "s~_PHASE_DESCRIPTION_ES_~${PHASE_DESCRIPTION_ES}~g" \
-                    -e "s~_CASH_BALANCE_~${CASH_ZEN}~g" \
-                    -e "s~_ASSETS_BALANCE_~${ASSETS_ZEN}~g" \
-                    -e "s~_RND_BALANCE_~${RND_ZEN}~g" \
-                    -e "s~_TOTAL_PAF_REQUIRED_~${TOTAL_PAF_REQUIRED}~g" \
-                    -e "s~_ASSETS_STATUS_TEXT_ES_~${ASSETS_STATUS_TEXT_ES}~g" \
-                    -e "s~_ASSETS_STATUS_TEXT_EN_~${ASSETS_STATUS_TEXT_EN}~g" \
-                    -e "s~_ASSETS_STATUS_TEXT_~${ASSETS_STATUS_TEXT}~g" \
-                    -e "s~_RND_STATUS_TEXT_ES_~${RND_STATUS_TEXT_ES}~g" \
-                    -e "s~_RND_STATUS_TEXT_EN_~${RND_STATUS_TEXT_EN}~g" \
-                    -e "s~_RND_STATUS_TEXT_~${RND_STATUS_TEXT}~g" \
-                    -e "s~_CASH_STATUS_~${CASH_STATUS}~g" \
-                    -e "s~_ASSETS_STATUS_~${ASSETS_STATUS}~g" \
-                    -e "s~_RND_STATUS_~${RND_STATUS}~g" \
-                    -e "s~_IMPACT_LIST_FR_~${IMPACT_LIST_FR_SAFE}~g" \
-                    -e "s~_IMPACT_LIST_EN_~${IMPACT_LIST_EN_SAFE}~g" \
-                    -e "s~_NODE_PAYMENT_STATUS_FR_~${NODE_PAYMENT_STATUS_FR}~g" \
-                    -e "s~_NODE_PAYMENT_STATUS_EN_~${NODE_PAYMENT_STATUS_EN}~g" \
-                    -e "s~_CAPTAIN_PAYMENT_STATUS_FR_~${CAPTAIN_PAYMENT_STATUS_FR}~g" \
-                    -e "s~_CAPTAIN_PAYMENT_STATUS_EN_~${CAPTAIN_PAYMENT_STATUS_EN}~g" \
-                    -e "s~_NCARD_~${NCARD}~g" \
-                    -e "s~_ZCARD_~${ZCARD}~g" \
-                    -e "s~_IMPACT_10_MULTIPASS_~${IMPACT_10_MULTIPASS}~g" \
-                    -e "s~_IMPACT_5_ZENCARDS_~${IMPACT_5_ZENCARDS}~g" \
-                    > "$PRE_BANKRUPTCY_REPORT"
-                
-                # Send to Captain first
-                if [[ -n "$CAPTAINEMAIL" ]]; then
-                    ${MY_PATH}/../tools/mailjet.sh --expire 7d "$CAPTAINEMAIL" "$PRE_BANKRUPTCY_REPORT" "⚠️ UPlanet Pré-Faillite Phase $PRE_BANKRUPTCY_PHASE - $TODATE"
-                    log_output "📧 Pre-bankruptcy alert sent to Captain: $CAPTAINEMAIL"
-                fi
-                
-                # Send to all MULTIPASS users
-                for player_dir in ~/.zen/game/nostr/*/; do
-                    player_email=$(basename "$player_dir")
-                    if [[ "$player_email" =~ @ && "$player_email" != "$CAPTAINEMAIL" ]]; then
-                        ${MY_PATH}/../tools/mailjet.sh --expire 7d "$player_email" "$PRE_BANKRUPTCY_REPORT" "⚠️ UPlanet Pré-Faillite Phase $PRE_BANKRUPTCY_PHASE - $TODATE"
-                        log_output "📧 Pre-bankruptcy alert sent to: $player_email"
-                    fi
-                done
-            else
-                log_output "⚠️ Pre-bankruptcy template not found: $PRE_BANKRUPTCY_TEMPLATE"
             fi
         fi
-        
+
         #######################################################################
-        # PAYMENT SUMMARY - Shareholder Transparency Report
+        # RAPPORT DE RÉSILIENCE HEBDOMADAIRE (remplace l'ancien rapport de faillite)
         #######################################################################
         log_output ""
         log_output "╔══════════════════════════════════════════════════════════════════════╗"
-        log_output "║              📊 WEEKLY PAYMENT SUMMARY - $WEEK_KEY                    "
+        log_output "║           📊 BILAN DE RÉSILIENCE HEBDOMADAIRE - $WEEK_KEY             "
         log_output "╠══════════════════════════════════════════════════════════════════════╣"
-        log_output "║ DEGRADATION PHASE: $PRE_BANKRUPTCY_PHASE                              "
-        case $PRE_BANKRUPTCY_PHASE in
-            0) log_output "║ STATUS: ✅ NORMAL OPERATION                                          " ;;
-            1) log_output "║ STATUS: ⚠️ GROWTH SLOWDOWN (ASSETS depleting)                        " ;;
-            2) log_output "║ STATUS: ⚠️ INNOVATION SLOWDOWN (RnD depleting)                       " ;;
-            3) log_output "║ STATUS: 💀 BANKRUPTCY (No funds available)                           " ;;
+        case $RESILIENCE_LEVEL in
+            0) log_output "║ STATUT: ✅ ABONDANCE  - Revenus couvrent tous les frais               " ;;
+            1) log_output "║ STATUT: 🌿 SOLIDARITÉ - Les forêts-jardins (ASSETS) soutiennent       " ;;
+            2) log_output "║ STATUT: 🔬 RÉSILIENCE - La R&D soutient l'infrastructure              " ;;
+            3) log_output "║ STATUT: ❤️  BÉNÉVOLAT  - Le Capitaine soutient le réseau              " ;;
         esac
         log_output "╠══════════════════════════════════════════════════════════════════════╣"
-        log_output "║ PAYMENTS:                                                             "
         if [[ $NODE_PAID -eq 1 ]]; then
-            log_output "║   NODE:    ✅ $WEEKLYPAF Ẑen from $NODE_PAYMENT_SOURCE                  "
+            log_output "║   🖥️  NODE    : ✅ $WEEKLYPAF Ẑen depuis $NODE_PAYMENT_SOURCE"
         else
-            log_output "║   NODE:    ❌ NOT PAID - Infrastructure at risk!                        "
+            log_output "║   🖥️  NODE    : ❤️  $WEEKLYPAF Ẑen offerts (bénévolat Capitaine)"
         fi
         if [[ $CAPTAIN_PAID -eq 1 ]]; then
-            log_output "║   CAPTAIN: ✅ $CAPTAIN_REMUNERATION Ẑen from $CAPTAIN_PAYMENT_SOURCE    "
+            log_output "║   👨‍✈️ CAPTAIN : ✅ $CAPTAIN_REMUNERATION Ẑen depuis $CAPTAIN_PAYMENT_SOURCE"
         else
-            log_output "║   CAPTAIN: ❌ NOT PAID                                                  "
+            log_output "║   👨‍✈️ CAPTAIN : ❤️  $CAPTAIN_REMUNERATION Ẑen offerts (temps bénévole)"
+        fi
+        if [[ $(echo "$LOVE_DONATION_THIS_WEEK > 0" | bc -l) -eq 1 ]]; then
+            log_output "╠══════════════════════════════════════════════════════════════════════╣"
+            log_output "║   🎁 DON AUX COMMUNS CETTE SEMAINE : ${LOVE_DONATION_THIS_WEEK} Ẑen (~€)"
+            if [[ -f "$LOVE_LEDGER" ]]; then
+                _lt=$(jq -r '.total_donated_zen' "$LOVE_LEDGER" 2>/dev/null || echo "?")
+                _wv=$(jq -r '.weeks_on_volunteer' "$LOVE_LEDGER" 2>/dev/null || echo "?")
+                log_output "║   📖 LOVE LEDGER TOTAL : ${_lt} Ẑen sur ${_wv} semaine(s)"
+            fi
         fi
         log_output "╠══════════════════════════════════════════════════════════════════════╣"
-        log_output "║ WALLET BALANCES (after payments):                                     "
+        log_output "║ SOLDES PORTEFEUILLES (après paiements) :                              "
         log_output "║   💰 CASH:   $CASH_ZEN Ẑen                                            "
         log_output "║   🌱 ASSETS: $ASSETS_ZEN Ẑen                                          "
         log_output "║   🔬 RnD:    $RND_ZEN Ẑen                                             "
@@ -610,21 +597,19 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
         fi
         
         #######################################################################
-        # BANKRUPTCY ALERT - Send email to all users if triggered
+        # NIVEAU 3 BÉNÉVOLAT : Notification de gratitude à la communauté
+        # Envoi d'un email "Merci" aux usagers (pas d'alerte anxiogène)
         #######################################################################
-        if [[ $BANKRUPTCY_TRIGGERED -eq 1 ]]; then
-            log_output "🚨 BANKRUPTCY ALERT TRIGGERED - Sending notifications..."
-            
-            # Generate bankruptcy report
-            BANKRUPTCY_TEMPLATE="${MY_PATH}/../templates/NOSTR/bankrupt.html"
-            BANKRUPTCY_REPORT="$HOME/.zen/tmp/bankruptcy_alert_$(date +%Y-%m-%d).html"
-            
-            if [[ -s "$BANKRUPTCY_TEMPLATE" ]]; then
+        if [[ $RESILIENCE_LEVEL -eq 3 && -n "$CAPTAINEMAIL" ]]; then
+            TODATE=$(date +%Y-%m-%d)
+            log_output "❤️  Niveau Bénévolat : envoi d'une notification de gratitude..."
+
+            BENEVOLAT_TEMPLATE="${MY_PATH}/../templates/NOSTR/bankrupt.html"
+            BENEVOLAT_REPORT="$HOME/.zen/tmp/benevolat_semaine_$(date +%Y-%m-%d).html"
+
+            if [[ -s "$BENEVOLAT_TEMPLATE" ]]; then
                 REPORT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
-                TODATE=$(date +%Y-%m-%d)
                 UPLANET_ID="${UPLANETG1PUB:0:8}"
-                
-                # Get current balances for report
                 CASH_BALANCE=$CASH_ZEN
                 [[ -z $NCARD ]] && NCARD=1
                 [[ -z $ZCARD ]] && ZCARD=4
@@ -632,55 +617,39 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                 [[ -z $IS_THRESHOLD ]] && IS_THRESHOLD=42500
                 [[ -z $IS_RATE_REDUCED ]] && IS_RATE_REDUCED=15
                 [[ -z $IS_RATE_NORMAL ]] && IS_RATE_NORMAL=25
-                
                 MIN_REQUIRED=$(echo "scale=2; $WEEKLYPAF + $CAPTAIN_REMUNERATION" | bc -l)
                 TOTAL_ALLOCATIONS=0
                 TOTAL_NEEDED=$MIN_REQUIRED
                 TAX_RATE_USED=$IS_RATE_REDUCED
                 DEFICIT=$(echo "scale=2; $TOTAL_PAF_REQUIRED - $CASH_ZEN" | bc -l)
                 [[ $(echo "$DEFICIT < 0" | bc -l) -eq 1 ]] && DEFICIT="0.00"
-                
                 IMPACT_10_MULTIPASS=$(echo "scale=2; 10 * $NCARD" | bc -l)
                 IMPACT_5_ZENCARDS=$(echo "scale=2; 5 * $ZCARD" | bc -l)
                 IMPACT_TOTAL_REVENUE=$(echo "scale=2; $IMPACT_10_MULTIPASS + $IMPACT_5_ZENCARDS" | bc -l)
-                
                 SOCIETAIRE_SHARE_PRICE=50
                 SOCIETAIRE_SHARE_PRICE_EUR=50
                 SOCIETAIRE_CAPITAL=$(echo "scale=2; 10 * $SOCIETAIRE_SHARE_PRICE" | bc -l)
-                
-                # Get CAPITAL and AMORTISSEMENT wallet values for report
-                CAPITAL_BALANCE="0"
-                AMORT_BALANCE="0"
-                MACHINE_VALUE_REPORT="0"
-                DEPRECIATION_PERCENT="0"
-                WEEKS_PASSED_REPORT="0"
-                DEPRECIATION_WEEKS_REPORT="156"
-                
+                CAPITAL_BALANCE="0"; AMORT_BALANCE="0"
+                MACHINE_VALUE_REPORT="0"; DEPRECIATION_PERCENT="0"
+                WEEKS_PASSED_REPORT="0"; DEPRECIATION_WEEKS_REPORT="156"
                 if [[ -f "$HOME/.zen/game/uplanet.CAPITAL.dunikey" ]]; then
                     CAPITAL_G1PUB_RPT=$(cat "$HOME/.zen/game/uplanet.CAPITAL.dunikey" | grep "pub:" | cut -d ' ' -f 2)
                     CAPITAL_COIN_RPT=$(${MY_PATH}/../tools/G1check.sh ${CAPITAL_G1PUB_RPT} 2>/dev/null | tail -n 1)
                     CAPITAL_BALANCE=$(echo "scale=1; ($CAPITAL_COIN_RPT - 1) * 10" | bc 2>/dev/null || echo "0")
-                    
-                    # Get AMORTISSEMENT balance (Compte 28)
                     if [[ -f "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" ]]; then
                         AMORT_G1PUB_RPT=$(cat "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" | grep "pub:" | cut -d ' ' -f 2)
                         AMORT_COIN_RPT=$(${MY_PATH}/../tools/G1check.sh ${AMORT_G1PUB_RPT} 2>/dev/null | tail -n 1)
                         AMORT_BALANCE=$(echo "scale=1; ($AMORT_COIN_RPT - 1) * 10" | bc 2>/dev/null || echo "0")
                     fi
-                    
-                    # Read config values from .env (MACHINE_VALUE_ZEN)
                     MACHINE_VALUE_REPORT="${MACHINE_VALUE_ZEN:-0}"
                     DEPRECIATION_WEEKS_REPORT="${DEPRECIATION_WEEKS:-156}"
-                    DEPRECIATION_PERCENT="0"
                 fi
-                
-                # Build failed allocations list
+                # Liste des éléments offerts bénévolement
                 FAILED_ALLOCATIONS=""
-                [[ $NODE_PAID -eq 0 ]] && FAILED_ALLOCATIONS="${FAILED_ALLOCATIONS}<li>NODE PAF: ${WEEKLYPAF} Ẑen</li>"
-                [[ $CAPTAIN_PAID -eq 0 ]] && FAILED_ALLOCATIONS="${FAILED_ALLOCATIONS}<li>Captain Remuneration: ${CAPTAIN_REMUNERATION} Ẑen</li>"
-                
-                # Generate report from template
-                cat "$BANKRUPTCY_TEMPLATE" | sed \
+                [[ $NODE_PAID -eq 0 ]] && FAILED_ALLOCATIONS="${FAILED_ALLOCATIONS}<li>❤️ Hébergement NODE offert : ${WEEKLYPAF} Ẑen</li>"
+                [[ $CAPTAIN_PAID -eq 0 ]] && FAILED_ALLOCATIONS="${FAILED_ALLOCATIONS}<li>❤️ Temps Capitaine offert : ${CAPTAIN_REMUNERATION} Ẑen</li>"
+
+                cat "$BENEVOLAT_TEMPLATE" | sed \
                     -e "s~_DATE_~${REPORT_DATE}~g" \
                     -e "s~_TODATE_~${TODATE}~g" \
                     -e "s~_UPLANET_ID_~${UPLANET_ID}~g" \
@@ -711,24 +680,24 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                     -e "s~_DEPRECIATION_PERCENT_~${DEPRECIATION_PERCENT}~g" \
                     -e "s~_WEEKS_PASSED_~${WEEKS_PASSED_REPORT}~g" \
                     -e "s~_DEPRECIATION_WEEKS_~${DEPRECIATION_WEEKS_REPORT}~g" \
-                    > "$BANKRUPTCY_REPORT"
-                
-                # Send to Captain
-                if [[ -n "$CAPTAINEMAIL" ]]; then
-                    ${MY_PATH}/../tools/mailjet.sh --expire 7d "$CAPTAINEMAIL" "$BANKRUPTCY_REPORT" "⚠️ UPlanet BANKRUPTCY ALERT - $TODATE"
-                    log_output "📧 Bankruptcy alert sent to Captain: $CAPTAINEMAIL"
-                fi
-                
-                # Send to all MULTIPASS users
+                    > "$BENEVOLAT_REPORT"
+
+                # Envoi au Capitaine : merci pour ton sacrifice !
+                ${MY_PATH}/../tools/mailjet.sh --expire 7d "$CAPTAINEMAIL" "$BENEVOLAT_REPORT" \
+                    "❤️ UPlanet Bénévolat Actif - Merci Capitaine ! - $TODATE" 2>/dev/null \
+                    && log_output "📧 Rapport de bénévolat envoyé au Capitaine: $CAPTAINEMAIL" \
+                    || log_output "⚠️  Envoi email bénévolat échoué (non-critique)"
+
+                # Envoi à tous les usagers MULTIPASS (message positif de solidarité)
                 for player_dir in ~/.zen/game/nostr/*/; do
                     player_email=$(basename "$player_dir")
                     if [[ "$player_email" =~ @ && "$player_email" != "$CAPTAINEMAIL" ]]; then
-                        ${MY_PATH}/../tools/mailjet.sh --expire 7d "$player_email" "$BANKRUPTCY_REPORT" "⚠️ UPlanet BANKRUPTCY ALERT - $TODATE"
-                        log_output "📧 Bankruptcy alert sent to: $player_email"
+                        ${MY_PATH}/../tools/mailjet.sh --expire 7d "$player_email" "$BENEVOLAT_REPORT" \
+                            "❤️ UPlanet Bénévolat Actif - Semaine $WEEK_KEY" 2>/dev/null
                     fi
                 done
             else
-                log_output "⚠️  Bankruptcy template not found: $BANKRUPTCY_TEMPLATE"
+                log_output "⚠️  Template de bénévolat non trouvé: $BENEVOLAT_TEMPLATE (non-critique)"
             fi
         fi
         
@@ -1078,17 +1047,18 @@ if [[ -x "${MY_PATH}/ECONOMY.broadcast.sh" ]]; then
 fi
 
 #######################################################################
-# Mark weekly payment as completed
-# Create marker file with current week to prevent duplicate payments
-# Include degradation phase for tracking
+# Marquer le paiement hebdomadaire comme complété
+# Format : YEAR-Wxx:RESILIENCEn:NODEn:CPTn
+# Le bénévolat (LOVE) paie toujours la différence — pas de GAME OVER
 #######################################################################
-echo "$WEEK_KEY:PHASE${PRE_BANKRUPTCY_PHASE:-0}:NODE${NODE_PAID:-0}:CPT${CAPTAIN_PAID:-0}" > "$PAYMENT_MARKER"
-log_output "ZEN ECONOMY: Weekly payment completed and marked for week $WEEK_KEY (Phase ${PRE_BANKRUPTCY_PHASE:-0})"
+echo "$WEEK_KEY:RESILIENCE${RESILIENCE_LEVEL:-0}:NODE${NODE_PAID:-0}:CPT${CAPTAIN_PAID:-0}" > "$PAYMENT_MARKER"
+log_output "ZEN ECONOMY: Semaine $WEEK_KEY complétée — Niveau de Résilience: ${RESILIENCE_LEVEL:-0}"
+if [[ $(echo "${LOVE_DONATION_THIS_WEEK:-0} > 0" | bc -l) -eq 1 ]]; then
+    log_output "❤️  Don aux Communs cette semaine : ${LOVE_DONATION_THIS_WEEK} Ẑen (voir Love Ledger)"
+fi
 log_output "========================================================================"
 
-# Exit code reflects system health:
-# 0 = Normal operation (Phase 0)
-# 1 = Pre-bankruptcy Phase 1 (ASSETS used)
-# 2 = Pre-bankruptcy Phase 2 (RnD used)
-# 3 = Bankruptcy (GAME OVER)
-exit ${PRE_BANKRUPTCY_PHASE:-0}
+# L'économie UPlanet ne connaît pas de faillite :
+# Le bénévolat et la résilience collective assurent la continuité du réseau.
+# 0 = Abondance, 1 = Solidarité ASSETS, 2 = Solidarité R&D, 3 = Bénévolat
+exit 0

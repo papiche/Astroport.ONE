@@ -12,7 +12,7 @@
 # - Stores next HEX in DID document and NOSTR profile
 # - Preserves ZEN Card capital shares (secret.june) - NOT emptied
 # - Maintains minimum 1 G1 in ZEN Card for capital shares management
-# - Exports complete backup with restoration credentials
+# - Exports complete backup encrypted with asymmetric crypto (natools.py)
 #
 # Usage: ./nostr_DESTROY_TW.sh [email]
 # If no email is provided, the script will prompt the user to select one.
@@ -97,16 +97,15 @@ fi
 
 ##################################################### DISCO DECODED
 ## Extract email from s parameter
-# DEBUG: s before removal (quoted): '/?youyou@yopmail.com'
 email=${s:2}  # Remove the first two characters (/, ?)
-echo "$email"
+echo "Target email: $email"
 youser=$($MY_PATH/../tools/clyuseryomail.sh "${email}")
 secnostr=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
 pubnostr=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
 
 OUTPUT_DIR="$HOME/.zen/game/nostr/${email}"
 
-echo ./strfry scan '{"authors": ["'$hex'"]}'
+echo "Exporting NOSTR events..."
 cd ~/.zen/strfry
 # Export NOSTR events and format as proper JSON array
 echo "[" > "${OUTPUT_DIR}/nostr_export.json"
@@ -142,7 +141,6 @@ else
 fi
 
 # Create a simple restore script inside the backup
-# Note: Variables NEXT_HEX, NEW_DISCO are now available
 cat > "${OUTPUT_DIR}/RESTORE_INSTRUCTIONS.sh" <<RESTORE_SCRIPT
 #!/bin/bash
 # NOSTR Account Restore Instructions
@@ -152,7 +150,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "   NOSTR Account Restore Instructions"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "This encrypted backup contains:"
+echo "This cryptographically encrypted backup contains:"
 echo "  • nostr_export.json - All your Nostr events"
 echo "  • uDRIVE_manifest.json - Your uDRIVE file manifest"
 echo "  • .secret.disco - Your OLD secret key (for reference)"
@@ -161,44 +159,28 @@ echo "  • .next.hex - Next HEX address for new relay/captain"
 echo "  • secret.june - ZEN Card transaction history (capital shares)"
 echo "  • .g1pub - ZEN Card G1 wallet access"
 echo ""
-echo "🔐 BACKUP PASSWORD: ${ZEN_PASSWORD}"
+echo "🔐 DECRYPTION REQUIRED"
+echo "Your backup is securely encrypted with your G1 public key."
+echo "To decrypt it, you need your OLD secret.dunikey."
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "IMPORTANT: Account Migration to New Relay/Captain"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-echo "Your account has been deactivated on the previous relay."
-echo "To restore on a NEW relay/captain, you MUST use the NEW .disco:"
-echo ""
-if [[ -n "$NEXT_HEX" ]]; then
-    echo "  🔮 Next HEX (pre-generated): ${NEXT_HEX:0:20}..."
-    echo "  📝 New .disco: .next.disco (in backup)"
-    echo ""
-    echo "The next HEX is also stored in:"
-    echo "  • Your DID document (did:nostr:${hex})"
-    echo "  • Your NOSTR profile (about field)"
-    echo ""
-else
-    echo "  ⚠️  Next HEX not pre-generated - you'll need to create new .disco"
-    echo ""
-fi
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "RESTORATION METHODS:"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "Method 1: Automated restore (RECOMMENDED)"
 echo "  cd ~/.zen/Astroport.ONE"
-echo "  ./tools/nostr_RESTORE_TW.sh <IPFS_CID>"
-echo "  (Script will use .next.disco automatically)"
+echo "  ./tools/nostr_RESTORE_TW.sh <IPFS_CID_OF_BACKUP>"
+echo "  (Script will automatically decrypt and use .next.disco)"
 echo ""
 echo "Method 2: Manual restoration with NEW .disco"
-echo "  1. Extract backup with password: ${ZEN_PASSWORD}"
-echo "  2. Use .next.disco to create MULTIPASS on new relay:"
+echo "  1. Decrypt backup: "
+echo "     ~/.zen/Astroport.ONE/tools/natools.py decrypt -f pubsec -i backup.zip.player.enc -k ~/.zen/game/nostr/${email}/.secret.dunikey -o backup.zip"
+echo "  2. Unzip backup.zip"
+echo "  3. Use .next.disco to create MULTIPASS on new relay:"
 echo "     cat .next.disco"
-echo "     # Use this .disco when creating new MULTIPASS"
-echo "  3. Create MULTIPASS with same email + .next.disco:"
+echo "  4. Create MULTIPASS with same email + .next.disco:"
 echo "     ./tools/make_NOSTRCARD.sh <EMAIL> <LANG> <LAT> <LON> <NEW_SALT> <NEW_PEPPER>"
-echo "  4. Import events to new account:"
+echo "  5. Import events to new account:"
 echo "     jq -c '.[]' nostr_export.json | ./strfry import --no-verify"
 echo ""
 echo "Method 3: uDRIVE restoration"
@@ -213,10 +195,6 @@ echo "Your ZEN Card capital shares are preserved in secret.june"
 echo "This file contains the transaction history of capital shares"
 echo "received from UPLANETNAME_SOCIETY."
 echo ""
-echo "The ZEN Card wallet (.g1pub) is NOT emptied - it maintains"
-echo "minimum 1 G1 for capital shares management."
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 RESTORE_SCRIPT
 chmod +x "${OUTPUT_DIR}/RESTORE_INSTRUCTIONS.sh"
 
@@ -243,10 +221,9 @@ This encrypted backup contains:
   • .g1pub - ZEN Card G1 wallet access
   • RESTORE_INSTRUCTIONS.sh - Quick restore guide
 
-🔐 BACKUP PASSWORD: ${ZEN_PASSWORD}
-
-⚠️  SECURITY: Backup is encrypted with ZEN Card password
-   This protects your private keys and sensitive data
+🔐 ASYMMETRIC ENCRYPTION:
+This backup has been strongly encrypted using your G1 Public Key (Curve25519).
+To decrypt it, you MUST possess your .secret.dunikey.
 
 ═══════════════════════════════════════════════════════════════
 
@@ -270,16 +247,17 @@ RESTORE METHODS:
 Method 1: Using Astroport restore tool (RECOMMENDED)
   $ cd ~/.zen/Astroport.ONE
   $ ./tools/nostr_RESTORE_TW.sh <IPFS_CID>
-  (Script will automatically use .next.disco)
+  (Script will automatically decrypt and use .next.disco)
 
 Method 2: Manual recreation with NEW .disco
   $ cd ~/.zen/Astroport.ONE
-  $ # Extract backup and read .next.disco
-  $ cat .next.disco
+  $ ./tools/natools.py decrypt -f pubsec -i backup.zip.player.enc -k ~/.zen/game/nostr/${email}/.secret.dunikey -o backup.zip
+  $ unzip backup.zip
+  $ cat backup/.next.disco
   $ # Use the SALT and PEPPER from .next.salt and .next.pepper
   $ ./tools/make_NOSTRCARD.sh <EMAIL> <LANG> <LAT> <LON> <NEW_SALT> <NEW_PEPPER>
   $ cd ~/.zen/strfry
-  $ jq -c '.[]' nostr_export.json | ./strfry import --no-verify
+  $ jq -c '.[]' backup/nostr_export.json | ./strfry import --no-verify
 
 Method 3: uDRIVE restoration
   Use uDRIVE_manifest.json to recreate your file structure
@@ -295,21 +273,6 @@ received from UPLANETNAME_SOCIETY.
 
 The ZEN Card wallet (.g1pub) maintains minimum 1 G1 for capital
 shares management. It is NOT emptied during account deactivation.
-
-═══════════════════════════════════════════════════════════════
-
-SECURITY NOTICE:
-This backup contains:
-  • Public data (Nostr events, uDRIVE manifest)
-  • Old .secret.disco (for reference, won't work on new relay)
-  • New .next.disco (for restoration on new relay)
-  • ZEN Card history (secret.june, .g1pub)
-
-To fully restore your account on a NEW relay:
-  1. Extract this backup with password: ${ZEN_PASSWORD}
-  2. Use .next.disco to create new MULTIPASS on new relay
-  3. Import events to new account
-  4. Restore uDRIVE from manifest
 
 For support: ${CAPTAINEMAIL}
 UPlanet ORIGIN: https://qo-op.com
@@ -355,7 +318,6 @@ else
 fi
 
 # Copy ZEN Card secret.june (cooperative shares history)
-# Numbering only happens when changing UPlanet (different UPLANETNAME)
 ZEN_SECRET_JUNE="${HOME}/.zen/game/players/${email}/secret.june"
 if [[ -f "${ZEN_SECRET_JUNE}" ]]; then
     # Copy current secret.june to backup
@@ -370,6 +332,7 @@ if [[ -f "${ZEN_SECRET_JUNE}" ]]; then
 else
     echo "⚠️  ZEN Card secret.june not found (no transaction history to backup)"
 fi
+
 # Save current UPLANETNAME for migration detection on restore
 echo "${UPLANETNAME}" > "${BACKUP_DIR}/.uplanetname"
 
@@ -389,20 +352,6 @@ if [[ -n "$NEXT_HEX" ]] && [[ -d "${BACKUP_DIR}" ]]; then
     echo "$NEW_SALT" > "${BACKUP_DIR}/.next.salt"
     echo "$NEW_PEPPER" > "${BACKUP_DIR}/.next.pepper"
     echo "✅ Next restoration credentials saved to backup"
-fi
-
-# Get ZEN Card password for encryption
-ZEN_PASS_FILE="${HOME}/.zen/game/players/${email}/.pass"
-if [[ -f "${ZEN_PASS_FILE}" ]]; then
-    ZEN_PASSWORD=$(cat "${ZEN_PASS_FILE}")
-    echo "✅ ZEN Card password retrieved for encryption"
-else
-    # Use 0000 password for MULTIPASS-only accounts
-    ZEN_PASSWORD="0000"
-    if [[ -z "${ZEN_PASSWORD}" ]]; then
-        ZEN_PASSWORD=$(date +%s | sha256sum | cut -c1-8)
-    fi
-    echo "🔐 Generated secure password for MULTIPASS-only account: ${ZEN_PASSWORD}"
 fi
 
 # Copy RESTORE_INSTRUCTIONS.sh
@@ -425,61 +374,71 @@ echo "${CASHBACK_AMOUNT}" > "${BACKUP_DIR}/.cashback_amount"
 echo "${g1pubnostr}" > "${BACKUP_DIR}/.cashback_g1pub"
 echo "✅ Cashback amount recorded: ${CASHBACK_AMOUNT} Ğ1"
 
-# Create password-protected ZIP with essential files
+# -----------------------------------------------------------------------------
+# CREATE ARCHIVE AND ENCRYPT ASYMMETRICALLY (natools.py)
+# -----------------------------------------------------------------------------
 ZIP_FILE="${BACKUP_DIR}.zip"
-echo "Creating password-protected ZIP archive: ${ZIP_FILE}"
-echo "🔐 Using ZEN Card password for encryption"
+echo "Creating archive: ${ZIP_FILE}"
 
 cd "$(dirname "${BACKUP_DIR}")"
-if zip -r -P "${ZEN_PASSWORD}" "${ZIP_FILE}" "$(basename "${BACKUP_DIR}")" 2>/dev/null; then
-    echo "✅ Password-protected backup created successfully"
-    echo "🔑 Password: ${ZEN_PASSWORD}"
+if zip -r "${ZIP_FILE}" "$(basename "${BACKUP_DIR}")" 2>/dev/null; then
+    echo "✅ Backup archive created successfully"
     cd - > /dev/null 2>&1
     
-    # Also encrypt ZIP with uplanet key (allows new captain to restore without .pass)
-    echo "🔐 Encrypting backup with uplanet key (captain fallback)..."
+    # 1. Encrypt for Player (using their current G1PUBNOSTR)
+    echo "🔐 Encrypting backup with Player's public key (${g1pubnostr})..."
+    PLAYER_ENC_FILE="${ZIP_FILE}.player.enc"
+    if ${MY_PATH}/../tools/natools.py encrypt -p "${g1pubnostr}" -i "${ZIP_FILE}" -o "${PLAYER_ENC_FILE}" 2>/dev/null; then
+        echo "✅ Backup encrypted for Player"
+    else
+        echo "❌ Failed to encrypt backup for Player"
+        exit 1
+    fi
+
+    # 2. Encrypt for Uplanet/Captain (Fallback)
+    echo "🔐 Encrypting backup with Uplanet key (captain fallback)..."
     if [[ ! -s ~/.zen/game/uplanet.dunikey ]]; then
         ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}"
         chmod 600 ~/.zen/game/uplanet.dunikey
     fi
     UPLANET_PUBKEY=$(${MY_PATH}/../tools/natools.py pubkey -f pubsec -k ~/.zen/game/uplanet.dunikey -O 58 2>/dev/null)
     UPLANET_ENC_FILE="${ZIP_FILE}.uplanet.enc"
+    
     if [[ -n "$UPLANET_PUBKEY" ]] && ${MY_PATH}/../tools/natools.py encrypt \
             -p "$UPLANET_PUBKEY" -i "${ZIP_FILE}" -o "${UPLANET_ENC_FILE}" 2>/dev/null; then
         echo "✅ Backup also encrypted with uplanet key"
     else
-        echo "⚠️  Failed to encrypt with uplanet key (password-protected ZIP still available)"
+        echo "⚠️  Failed to encrypt with uplanet key"
         UPLANET_ENC_FILE=""
     fi
 
-    # Add ZIP to IPFS
-    echo "Adding encrypted backup to IPFS..."
-    NOSTRIFS=$(ipfs add -q "${ZIP_FILE}" | tail -n 1)
+    # Add encrypted ZIPs to IPFS
+    echo "Adding encrypted backups to IPFS..."
+    NOSTRIFS=$(ipfs add -q "${PLAYER_ENC_FILE}" | tail -n 1)
     if [[ -n "${NOSTRIFS}" ]]; then
         ipfs pin rm ${NOSTRIFS} 2>/dev/null
-        echo "✅ Encrypted backup added to IPFS: ${NOSTRIFS}"
-        echo "🔑 Decryption password: ${ZEN_PASSWORD}"
+        echo "✅ Player-encrypted backup added to IPFS: ${NOSTRIFS}"
+        echo "   🔓 Decrypt: natools.py decrypt -f pubsec -i <file> -k <your_old.secret.dunikey> -o backup.zip"
     else
-        echo "❌ Failed to add encrypted backup to IPFS"
+        echo "❌ Failed to add Player-encrypted backup to IPFS"
     fi
 
-    # Add uplanet-encrypted version to IPFS (captain fallback)
     NOSTRIFS_UPLANET=""
     if [[ -n "${UPLANET_ENC_FILE}" ]] && [[ -f "${UPLANET_ENC_FILE}" ]]; then
         NOSTRIFS_UPLANET=$(ipfs add -q "${UPLANET_ENC_FILE}" | tail -n 1)
         if [[ -n "${NOSTRIFS_UPLANET}" ]]; then
             ipfs pin rm ${NOSTRIFS_UPLANET} 2>/dev/null
             echo "✅ Uplanet-encrypted backup on IPFS: ${NOSTRIFS_UPLANET}"
-            echo "   🔓 Decrypt: natools.py decrypt -f pubsec -i backup.zip.uplanet.enc -k uplanet.dunikey -o backup.zip"
+            echo "   🔓 Decrypt: natools.py decrypt -f pubsec -i <file> -k uplanet.dunikey -o backup.zip"
         fi
         rm -f "${UPLANET_ENC_FILE}"
     fi
 
     # Clean up temporary files
-    rm -f "${ZIP_FILE}"
+    rm -f "${ZIP_FILE}" "${PLAYER_ENC_FILE}"
     rm -rf "${BACKUP_DIR}"
 else
-    echo "❌ Failed to create password-protected backup ZIP"
+    echo "❌ Failed to create backup ZIP archive"
     cd - > /dev/null 2>&1
     exit 1
 fi
@@ -632,7 +591,6 @@ ${MY_PATH}/../tools/mailjet.sh --expire 3d \
     "CAPTAIN: ${youser} MULTIPASS Deactivated - Backup: ${NOSTRIFS}"
 
 ## REMOVE NOSTR IPNS VAULT key
-#~ ipfs name publish -k "${g1pubnostr}:NOSTR" $(cat "${HOME}/.zen/game/nostr/${player}/MULTIPASS.QR.png.cid") ## "G1QR" CID
 ipfs key rm "${g1pubnostr}:NOSTR" > /dev/null 2>&1
 
 ## Cleaning local cache
@@ -655,6 +613,4 @@ fi
 
 echo "✅ Account destruction completed successfully"
 
-
 exit 0
-

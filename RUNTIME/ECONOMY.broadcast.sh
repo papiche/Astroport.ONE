@@ -301,61 +301,72 @@ log_output "  Bilan: $BILAN Ẑ | IS: ${IS_PROVISION} Ẑ | Net: ${NET_SURPLUS} 
 log_output "  Allocation: Treasury=${ALLOC_TREASURY} R&D=${ALLOC_RND} Assets=${ALLOC_ASSETS} Captain=${ALLOC_CAPTAIN_BONUS}"
 
 ###############################################################################
-# CALCULATE HEALTH STATUS (Progressive Degradation Model)
-# Phase 0: Normal (CASH sufficient)
-# Phase 1: Growth Slowdown (CASH < costs, ASSETS > 0)
-# Phase 2: Innovation Slowdown (ASSETS depleted, RnD > 0)
-# Phase 3: Bankruptcy (All wallets depleted)
+# CALCUL DU NIVEAU DE RÉSILIENCE (Love Ledger Model)
+# Niveau 0: Abondance   — CASH couvre tous les frais
+# Niveau 1: Solidarité  — CASH insuffisant, ASSETS disponibles
+# Niveau 2: Résilience  — ASSETS épuisés, R&D disponible
+# Niveau 3: Bénévolat   — Tous fonds insuffisants → Captain offre son infra/temps
+#                         (comptabilisé dans le Love Ledger, jamais une "faillite")
 ###############################################################################
 
-log_output "🏥 Determining health status..."
+log_output "🏥 Calcul du niveau de résilience..."
 
-# Calculate weeks runway based on CASH alone
+# Calculer l'autonomie en semaines depuis CASH seul
 if [[ $(echo "$TOTAL_COSTS > 0" | bc -l) -eq 1 ]]; then
     WEEKS_RUNWAY=$(normalize_number "$(echo "scale=0; $CASH_ZEN / $TOTAL_COSTS" | bc -l 2>/dev/null || echo "0")")
 else
     WEEKS_RUNWAY=999
 fi
 
-# Read last payment status from marker file
+# Lire le dernier statut depuis le fichier marqueur
 PAYMENT_MARKER="$HOME/.zen/game/.weekly_payment.done"
-LAST_PHASE=0
+LAST_RESILIENCE_LEVEL=0
 if [[ -f "$PAYMENT_MARKER" ]]; then
     MARKER_CONTENT=$(cat "$PAYMENT_MARKER")
-    # Extract phase from format: WEEK_KEY:PHASE#:NODE#:CPT#
-    LAST_PHASE=$(echo "$MARKER_CONTENT" | grep -oP 'PHASE\K[0-9]+' || echo "0")
+    # Format : YEAR-Wxx:RESILIENCEn:NODEn:CPTn
+    LAST_RESILIENCE_LEVEL=$(echo "$MARKER_CONTENT" | grep -oP 'RESILIENCE\K[0-9]+' || echo "0")
 fi
 
-# Determine health status based on progressive degradation model
-DEGRADATION_PHASE=0
+# Déterminer le niveau de résilience selon les portefeuilles disponibles
+RESILIENCE_LEVEL=0
 
-# Check if CASH can cover operational costs (3x PAF)
+# Vérifier si CASH couvre les frais opérationnels (3x PAF)
 [[ -z $PAF ]] && PAF=14
 TOTAL_PAF_REQUIRED=$(normalize_number "$(echo "scale=2; $PAF * 3" | bc -l)")
 
 if [[ $(echo "$CASH_ZEN >= $TOTAL_PAF_REQUIRED" | bc -l 2>/dev/null) -eq 1 ]]; then
-    # Phase 0: Normal operation
-    DEGRADATION_PHASE=0
+    # Niveau 0: Abondance
+    RESILIENCE_LEVEL=0
     HEALTH_STATUS="healthy"
     RISK_LEVEL="low"
 elif [[ $(echo "$ASSETS_ZEN > 0" | bc -l 2>/dev/null) -eq 1 ]]; then
-    # Phase 1: CASH insufficient but ASSETS available
-    DEGRADATION_PHASE=1
-    HEALTH_STATUS="growth_slowdown"
+    # Niveau 1: Solidarité ASSETS
+    RESILIENCE_LEVEL=1
+    HEALTH_STATUS="assets_solidarity"
     RISK_LEVEL="medium"
 elif [[ $(echo "$RND_ZEN > 0" | bc -l 2>/dev/null) -eq 1 ]]; then
-    # Phase 2: ASSETS depleted, using RnD
-    DEGRADATION_PHASE=2
-    HEALTH_STATUS="innovation_slowdown"
-    RISK_LEVEL="high"
+    # Niveau 2: Solidarité R&D
+    RESILIENCE_LEVEL=2
+    HEALTH_STATUS="rnd_solidarity"
+    RISK_LEVEL="medium"
 else
-    # Phase 3: All wallets depleted - Bankruptcy
-    DEGRADATION_PHASE=3
-    HEALTH_STATUS="bankrupt"
-    RISK_LEVEL="critical"
+    # Niveau 3: Bénévolat Actif — pas de faillite, le Capitaine offre son infra/temps
+    RESILIENCE_LEVEL=3
+    HEALTH_STATUS="volunteer"
+    RISK_LEVEL="supported_by_captain"
 fi
 
-# Calculate total runway including backup wallets
+# Charger les données du Love Ledger
+LOVE_LEDGER="$HOME/.zen/game/love_ledger.json"
+LOVE_TOTAL_ZEN=0
+LOVE_WEEKS_COUNT=0
+if [[ -f "$LOVE_LEDGER" ]]; then
+    LOVE_TOTAL_ZEN=$(jq -r '.total_donated_zen // 0' "$LOVE_LEDGER" 2>/dev/null || echo "0")
+    LOVE_WEEKS_COUNT=$(jq -r '.weeks_on_volunteer // 0' "$LOVE_LEDGER" 2>/dev/null || echo "0")
+    LOVE_TOTAL_ZEN=$(normalize_number "$LOVE_TOTAL_ZEN")
+fi
+
+# Calculer l'autonomie totale (avec tous les portefeuilles de solidarité)
 TOTAL_AVAILABLE=$(normalize_number "$(echo "scale=2; $CASH_ZEN + $ASSETS_ZEN + $RND_ZEN" | bc -l 2>/dev/null || echo "0")")
 if [[ $(echo "$TOTAL_COSTS > 0" | bc -l) -eq 1 ]]; then
     TOTAL_WEEKS_RUNWAY=$(normalize_number "$(echo "scale=0; $TOTAL_AVAILABLE / $TOTAL_COSTS" | bc -l 2>/dev/null || echo "0")")
@@ -363,7 +374,8 @@ else
     TOTAL_WEEKS_RUNWAY=999
 fi
 
-log_output "  Status: $HEALTH_STATUS (Phase $DEGRADATION_PHASE) | CASH Runway: $WEEKS_RUNWAY weeks | Total Runway: $TOTAL_WEEKS_RUNWAY weeks"
+log_output "  Résilience: $HEALTH_STATUS (Niveau $RESILIENCE_LEVEL) | CASH: $WEEKS_RUNWAY sem | Total: $TOTAL_WEEKS_RUNWAY sem"
+log_output "  Love Ledger: ${LOVE_TOTAL_ZEN} Ẑen offerts sur ${LOVE_WEEKS_COUNT} semaine(s)"
 
 ###############################################################################
 # GET DEPRECIATION DATA
@@ -501,9 +513,16 @@ CONTENT_JSON=$(cat <<EOF
   },
   "health": {
     "status": "$HEALTH_STATUS",
+    "resilience_level": $RESILIENCE_LEVEL,
     "bilan": $BILAN,
     "weeks_runway": $WEEKS_RUNWAY,
+    "total_weeks_runway": $TOTAL_WEEKS_RUNWAY,
     "risk_level": "$RISK_LEVEL"
+  },
+  "love_ledger": {
+    "total_donated_zen": $LOVE_TOTAL_ZEN,
+    "weeks_on_volunteer": $LOVE_WEEKS_COUNT,
+    "comment": "Bénévolat Actif = Don aux Communs. Pas de faillite, seulement de la résilience."
   },
   "depreciation": {
     "machine_value": $MACHINE_VALUE,
@@ -582,8 +601,12 @@ TAGS_JSON=$(cat <<EOF
   ["capacity:zencard_owners", "$ZENCARD_OWNERS"],
   ["capacity:zencard_capacity", "$ZENCARD_CAPACITY"],
   ["health:status", "$HEALTH_STATUS"],
+  ["health:resilience_level", "$RESILIENCE_LEVEL"],
   ["health:weeks_runway", "$WEEKS_RUNWAY"],
+  ["health:total_weeks_runway", "$TOTAL_WEEKS_RUNWAY"],
   ["health:bilan", "$BILAN"],
+  ["love_ledger:total_zen", "$LOVE_TOTAL_ZEN"],
+  ["love_ledger:weeks", "$LOVE_WEEKS_COUNT"],
   ["provision:tva", "$TOTAL_TVA"],
   ["provision:is", "$IS_PROVISION"],
   ["depreciation:machine_value", "$MACHINE_VALUE"],
@@ -602,29 +625,41 @@ fi
 ###############################################################################
 
 if [[ "$DRYRUN" == "true" ]]; then
-    echo "🔍 DRYRUN MODE - Event would be published:"
+    echo "🔍 DRYRUN MODE - Événement qui serait publié :"
     echo ""
     echo "Kind: 30850 (Economic Health Report)"
-    echo "Author: ${CAPTAIN_HEX:0:16}..."
-    echo "Status: $HEALTH_STATUS"
+    echo "Auteur: ${CAPTAIN_HEX:0:16}..."
     echo ""
-    echo "Wallets:"
-    echo "  CASH: $CASH_ZEN Ẑ"
-    echo "  RND: $RND_ZEN Ẑ"
+    echo "═══ NIVEAU DE RÉSILIENCE : $RESILIENCE_LEVEL ($HEALTH_STATUS) ═══"
+    case $RESILIENCE_LEVEL in
+        0) echo "✅ Abondance — CASH couvre tous les frais" ;;
+        1) echo "🌿 Solidarité ASSETS — forêts-jardins soutiennent l'infra" ;;
+        2) echo "🔬 Solidarité R&D — innovation soutient l'infra" ;;
+        3) echo "❤️  Bénévolat Actif — le Capitaine soutient le réseau" ;;
+    esac
+    echo ""
+    echo "Portefeuilles :"
+    echo "  CASH:   $CASH_ZEN Ẑ"
+    echo "  RND:    $RND_ZEN Ẑ"
     echo "  ASSETS: $ASSETS_ZEN Ẑ"
-    echo "  IMPOT: $IMPOT_ZEN Ẑ"
+    echo "  IMPOT:  $IMPOT_ZEN Ẑ"
+    if [[ $(echo "$LOVE_TOTAL_ZEN > 0" | bc -l 2>/dev/null) -eq 1 ]]; then
     echo ""
-    echo "Capacity:"
-    echo "  MULTIPASS: $MULTIPASS_COUNT/$MULTIPASS_CAPACITY"
-    echo "  ZENCARD: $ZENCARD_COUNT total ($ZENCARD_RENTERS renters, $ZENCARD_OWNERS owners)"
+    echo "❤️  Love Ledger :"
+    echo "  Total offert aux Communs : ${LOVE_TOTAL_ZEN} Ẑen"
+    echo "  Semaines de bénévolat    : ${LOVE_WEEKS_COUNT}"
+    fi
     echo ""
-    echo "Revenue: $TOTAL_REVENUE Ẑ (MP: $MULTIPASS_COUNT × $NCARD + ZC renters: $ZENCARD_RENTERS × $ZCARD)"
-    echo "  Note: $ZENCARD_OWNERS ZenCard owners (sociétaires) don't pay weekly rent"
-    echo "Costs: $TOTAL_COSTS Ẑ (PAF: $PAF + Captain: $CAPTAIN_REMUNERATION)"
-    echo "Bilan: $BILAN Ẑ"
-    echo "Runway: $WEEKS_RUNWAY weeks"
+    echo "Capacité :"
+    echo "  MULTIPASS : $MULTIPASS_COUNT/$MULTIPASS_CAPACITY"
+    echo "  ZENCARD   : $ZENCARD_COUNT total ($ZENCARD_RENTERS locataires, $ZENCARD_OWNERS sociétaires)"
     echo ""
-    echo "Content JSON:"
+    echo "Revenus : $TOTAL_REVENUE Ẑ HT (MP: $MULTIPASS_COUNT × $NCARD + ZC: $ZENCARD_RENTERS × $ZCARD)"
+    echo "  Note: $ZENCARD_OWNERS ZenCard sociétaires exonérés de redevance hebdo"
+    echo "Frais   : $TOTAL_COSTS Ẑ (PAF: $PAF + Capitaine: $CAPTAIN_REMUNERATION)"
+    echo "Bilan   : $BILAN Ẑ | Autonomie: $WEEKS_RUNWAY semaine(s)"
+    echo ""
+    echo "JSON complet :"
     echo "$CONTENT_JSON" | jq .
     exit 0
 fi
@@ -674,9 +709,12 @@ if [[ -f "${MY_PATH}/../tools/nostr_send_note.py" ]]; then
     rm "$TMP_KEYFILE"
     
     if [[ $PUBLISH_STATUS -eq 0 ]]; then
-        log_output "✅ Event published to relay"
-        echo "✅ Economic health report published"
-        echo "   Status: $HEALTH_STATUS | Bilan: $BILAN Ẑ | Runway: $WEEKS_RUNWAY weeks"
+        log_output "✅ Événement publié sur le relay"
+        echo "✅ Rapport de santé économique publié"
+        echo "   Statut: $HEALTH_STATUS (Niveau de Résilience: $RESILIENCE_LEVEL)"
+        echo "   Bilan: $BILAN Ẑ | Autonomie: $WEEKS_RUNWAY semaine(s)"
+        [[ $(echo "$LOVE_TOTAL_ZEN > 0" | bc -l 2>/dev/null) -eq 1 ]] && \
+            echo "   ❤️  Love Ledger: ${LOVE_TOTAL_ZEN} Ẑen offerts aux Communs (${LOVE_WEEKS_COUNT} sem.)"
         echo "   Relay: $myRELAY"
     else
         echo "⚠️ nostr_send_note.py failed, trying strfry import..."

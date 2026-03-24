@@ -49,9 +49,13 @@ then
 echo "#############################################"
 echo "###### ASTROPORT.ONE ZEN STATION ############"
 echo "#############################################"
+echo "######### INSTALL DOCKER ........ ###########"
+echo "#############################################"
+~/.zen/Astroport.ONE/install/install.docker.sh
+echo "#############################################"
 echo "######### INSTALL PRECIOUS FREE SOFTWARE ####"
 echo "#############################################"
-for i in zip ssss make cmake docker.io docker-compose hdparm iptables ufw fail2ban wireguard openssh-server sshfs parallel npm shellcheck multitail netcat-traditional socat ncdu chromium miller inotify-tools curl net-tools mosquitto libsodium* libcurl4-openssl-dev libgpgme-dev libffi-dev; do
+for i in zip ssss make cmake hdparm iptables ufw fail2ban wireguard openssh-server sshfs parallel npm shellcheck multitail netcat-traditional socat ncdu chromium miller inotify-tools curl net-tools mosquitto libsodium* libcurl4-openssl-dev libgpgme-dev libffi-dev; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i

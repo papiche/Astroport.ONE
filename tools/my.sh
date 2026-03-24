@@ -59,35 +59,6 @@ myDomainName() {
     [ -n "$myDomainName" ] && echo "$myDomainName"
 }
 
-myHttp() {
-    [ -n "$(myHttpHeader)" ] \
-     && local myHttp="$(myHttpHeader)
-
-"    || local myHttp=""
-    [ -n "$(myHttpContent)" ] && myHttp="${myHttp}$(myHttpContent)"
-    [ -n "$myHttp" ] && echo "$myHttp"
-}
-
-myHttpContent() {
-    [ -n "$(myIpfsHash)" ] \
-     && local myHttpContent="<html><head><title>302 Found</title></head><body><h1>Found</h1>
-<p>The document is <a href=\"ipfs/$(myIpfsHash)\">here</a> in IPFS.</p></body></html>" \
-     && echo "$myHttpContent"
-}
-
-myHttpHeader() {
-    [ -n "$(myIpfsHash)" ] \
-     && local myHttpHeader="HTTP/1.0 302 Found
-Content-Type: text/html; charset=UTF-8
-Content-Length: $(myHttpContent |wc -c)
-Date: $(date -R)
-Location: ipfs/$(myIpfsHash)
-Server: and" \
-     && [ -n "$(myIpfsKey)" ] && myHttpHeader="${myHttpHeader}
-set-cookie: AND=$(myIpfsKey); expires=$(date -R -d "+1 month"); path=/; domain=.$(myDomainName); Secure; SameSite=lax"
-    [ -n "$myHttpHeader" ] && echo "$myHttpHeader"
-}
-
 myHome() {
     local myHome=$(cd ~ && pwd -P)
     [ -n "$myHome" ] && echo "$myHome"
@@ -120,12 +91,6 @@ myIp() {
     [ -n "$myZip" ] && echo "$myZip" || {
     [ -n "$myIp" ] && echo "$myIp" || echo "127.0.0.1"
     }
-}
-
-myIpfs() {
-    [ -n "$(myIpfsHash)" ] \
-     && local myIpfs="${myIPFSGW}/ipfs/$(myIpfsHash)" \
-     && echo "$myIpfs"
 }
 
 myIpfsApi() {
@@ -161,15 +126,6 @@ myIpfsGw() {
     [ -f "$(myAstroPath)/../game/MY_boostrap_nodes.txt" ] \
      && local myIpfsGw=$(head -n2 "$(myAstroPath)/../game/MY_boostrap_nodes.txt" | tail -n 1 | xargs | cut -d ' ' -f 2)
     [ -n "$myIpfsGw" ] && echo "$myIpfsGw"
-}
-
-myIpfsHash() {
-    [ -f "$(myPath)"/localhost/latest ] \
-     && local myIpfsHash=$(cat "$(myPath)"/localhost/latest) \
-     || local myIpfsHash=$(myHtml |ipfs add -q)
-    [ ! -f "$(myPath)"/localhost/latest ] \
-     && echo "$myIpfsHash" > "$(myPath)"/localhost/latest
-    [ -n "$myIpfsHash" ] && echo "$myIpfsHash"
 }
 
 myIpfsKey() {
@@ -351,46 +307,6 @@ myReyalpResuPath() {
     [ -n "$myReyalpResuPath" ] && echo "$myReyalpResuPath"
 }
 
-myHtml() {
-    local myHtml=$($RUN sed \
-        -e "s~http://127.0.0.1:8080~${myIPFS}~g" \
-        -e "s~\"http://127.0.0.1:1234\"~\"${myASTROPORT}\"~g" \
-        -e "s~http://127.0.0.1:33101~http://${myHOST}:33101~g" \
-        -e "s~https://ipfs.copylaradio.com~${myIPFSGW}~g" \
-        -e "s~http://g1billet.localhost:33101~${myG1BILLET}~g" \
-        -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
-        -e "s~g1billet.localhost~${myIP}~g" \
-        -e "s~_HOSTNAME_~$(hostname)~g" \
-        -e "s~background.000.~background.$(printf '%03d' "$(seq 0 17 |shuf -n 1)").~g" \
-      $HOME/.zen/Astroport.ONE/templates/register.html)
-    [ -z "$isLAN" ] \
-     || myHtml=$($RUN echo "$myHtml" | sed \
-      -e "s~<input type='"'hidden'"' name='"'salt'"' value='"'0'"'>~<input name='"'salt'"' value='"''"'>~g" \
-      -e "s~<input type='"'hidden'"' name='"'pepper'"' value='"'0'"'>~<input name='"'pepper'"' value='"''"'>~g")
-    [ -n "$myHtml" ] && echo "$myHtml"
-}
-
-mySalt() {
-    local mySalt=$($RUN sed \
-        -e "s~http://127.0.0.1:8080~${myIPFS}~g" \
-        -e "s~\"http://127.0.0.1:1234\"~\"${myASTROPORT}\"~g" \
-        -e "s~http://127.0.1.1:1234~${myASTROPORT}~g" \
-        -e "s~http://127.0.0.1:33101~http://${myHOST}:33101~g" \
-        -e "s~https://ipfs.copylaradio.com~${myIPFSGW}~g" \
-        -e "s~http://g1billet.localhost:33101~${myG1BILLET}~g" \
-        -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
-        -e "s~g1billet.localhost~${myIP}~g" \
-        -e "s~_HOSTNAME_~$(hostname)~g" \
-        -e "s~background.000.~background.$(printf '%03d' "$(seq 0 17 |shuf -n 1)").~g" \
-      $HOME/.zen/Astroport.ONE/templates/saltpepper.http)
-    [ -z "$isLAN" ] \
-     || mySalt=$($RUN echo "$mySalt" | sed \
-      -e "s~<input type='"'hidden'"' name='"'salt'"' value='"'0'"'>~<input name='"'salt'"' value='"''"'>~g" \
-      -e "s~<input type='"'hidden'"' name='"'pepper'"' value='"'0'"'>~<input name='"'pepper'"' value='"''"'>~g")
-    [ -n "$mySalt" ] && echo "$mySalt"
-}
-
-
 myTs() {
     local myTs=$(date +%s)
     [ -n "$myTs" ] && echo "$myTs"
@@ -515,7 +431,7 @@ isLAN=$(echo $myIP | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(
 
 myDOMAIN="$(myDomainName)"
 
-myASTROPORT="http://127.0.0.1:1234" # BE ACCESSIBLE THROUGH LAN
+myASTROPORT="http://127.0.0.1:12345" # BE ACCESSIBLE THROUGH LAN - UPDATED TO 12345
 myAPI="http://127.0.0.1:5001" ## IPFS API
 myDATA="https://data.gchange.fr" ## GCHANGE +
 myGCHANGE="https://www.gchange.fr"
@@ -540,7 +456,7 @@ myASTROTUBE="https://$(myAstroTube)"
 
 ## zIP :: PUT YOUR Internet Box IP IN $HOME/.zen/♥Box  -> Forward PORTS 8080 4001 (5001) 12345 54321 (33101 33102)
 [ -n "$(zIp)" ] \
- && myASTROPORT="http://$(zIp):1234" \
+ && myASTROPORT="http://$(zIp):12345" \
  && myAPI="http://$(zIp):5001" \
  && myIPFS="http://$(zIp):8080" \
  && myHOST="$(zIp)" \
@@ -837,4 +753,3 @@ fi
 TODATE=$(date -d "today 13:00" '+%Y-%m-%d')
 YESTERDATE=$(date -d "yesterday 13:00" '+%Y-%m-%d')
 DEMAINDATE=$(date -d "tomorrow 13:00" '+%Y-%m-%d')
-

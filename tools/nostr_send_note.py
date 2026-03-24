@@ -422,19 +422,25 @@ def main():
     if not args.keyfile:
         print("Error: --keyfile is required", file=sys.stderr)
         sys.exit(1)
-    
-    if not args.content:
+
+    # --content can be None (not passed) but not missing for kind 1
+    if args.content is None:
         print("Error: --content is required", file=sys.stderr)
         sys.exit(1)
-    
+
     # Validate keyfile
     if not os.path.exists(args.keyfile):
         print(f"Error: Keyfile not found: {args.keyfile}", file=sys.stderr)
         sys.exit(1)
-    
-    # Allow empty content for kind 3 (contacts) per NIP-02 and kind 22242 (NIP-42 auth)
-    if not args.content.strip() and args.kind != 3 and args.kind != 22242:
-        print("Error: Content cannot be empty", file=sys.stderr)
+
+    # Kinds that legitimately have empty content (data lives in tags) :
+    # - kind 3   : contacts list (NIP-02)
+    # - kind 22242 : auth (NIP-42)
+    # - NIP-33 replaceable events (30000-39999) : d-tag driven, content optional
+    #   exemples : 30305 DU TrocZen, 30850 Economic Health, 30303 P3 TrocZen
+    _EMPTY_CONTENT_OK = args.kind == 3 or args.kind == 22242 or 30000 <= args.kind <= 39999
+    if not args.content.strip() and not _EMPTY_CONTENT_OK:
+        print("Error: Content cannot be empty for kind {args.kind}", file=sys.stderr)
         sys.exit(1)
     
     # Parse relays

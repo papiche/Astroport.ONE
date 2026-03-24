@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 0.3
+# Version: 0.4 (Atomic Allocation & Gratitude Update)
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 #~ ZEN.COOPERATIVE.3x1-3.sh
@@ -493,191 +493,35 @@ else
 fi
 
 #######################################################################
-# Bankruptcy Detection and Alert System
-# Check if any allocations failed and send alerts to all users
+# Vérification atomique des allocations
+# Si une allocation échoue, le marqueur n'est PAS écrit → réessai au prochain cycle
 #######################################################################
-BANKRUPTCY_DETECTED=0
-FAILED_ALLOCATIONS=""
+ALLOCATION_FAILED=0
+FAILED_LIST=""
 
-# Check for failed allocations
-if [[ $TAX_SUCCESS -ne 0 ]]; then
-    BANKRUPTCY_DETECTED=1
-    FAILED_ALLOCATIONS="${FAILED_ALLOCATIONS}<li>Tax Provision: ${TAX_PROVISION} Ẑen (${TAX_PROVISION_G1} G1)</li>"
-fi
+[[ $TAX_SUCCESS -ne 0 ]]          && { ALLOCATION_FAILED=1; FAILED_LIST="${FAILED_LIST} Impôt(${TAX_PROVISION}Ẑ);"; }
+[[ $TREASURY_SUCCESS -ne 0 ]]     && { ALLOCATION_FAILED=1; FAILED_LIST="${FAILED_LIST} Trésorerie(${TREASURY_AMOUNT}Ẑ);"; }
+[[ $RND_SUCCESS -ne 0 ]]          && { ALLOCATION_FAILED=1; FAILED_LIST="${FAILED_LIST} R&D(${RND_AMOUNT}Ẑ);"; }
+[[ $ASSETS_SUCCESS -ne 0 ]]       && { ALLOCATION_FAILED=1; FAILED_LIST="${FAILED_LIST} ASSETS(${ASSETS_AMOUNT}Ẑ);"; }
+[[ $CAPTAIN_BONUS_SUCCESS -ne 0 && -n "$CAPTAINEMAIL" ]] \
+    && FAILED_LIST="${FAILED_LIST} PrimeCPT(${CAPTAIN_BONUS_AMOUNT}Ẑ, non-bloquant);"
 
-if [[ $TREASURY_SUCCESS -ne 0 ]]; then
-    BANKRUPTCY_DETECTED=1
-    FAILED_ALLOCATIONS="${FAILED_ALLOCATIONS}<li>Treasury: ${TREASURY_AMOUNT} Ẑen (${TREASURY_G1} G1)</li>"
-fi
-
-if [[ $RND_SUCCESS -ne 0 ]]; then
-    BANKRUPTCY_DETECTED=1
-    FAILED_ALLOCATIONS="${FAILED_ALLOCATIONS}<li>R&D: ${RND_AMOUNT} Ẑen (${RND_G1} G1)</li>"
-fi
-
-if [[ $ASSETS_SUCCESS -ne 0 ]]; then
-    BANKRUPTCY_DETECTED=1
-    FAILED_ALLOCATIONS="${FAILED_ALLOCATIONS}<li>Assets: ${ASSETS_AMOUNT} Ẑen (${ASSETS_G1} G1)</li>"
-fi
-
-if [[ $CAPTAIN_BONUS_SUCCESS -ne 0 && -n "$CAPTAINEMAIL" ]]; then
-    # Captain bonus failure is not bankruptcy-triggering but logged for transparency
-    FAILED_ALLOCATIONS="${FAILED_ALLOCATIONS}<li>Captain bonus (1%): ${CAPTAIN_BONUS_AMOUNT} Ẑen (non-critical)</li>"
-fi
-
-if [[ $BANKRUPTCY_DETECTED -eq 1 ]]; then
-    echo "🚨 BANKRUPTCY ALERT: One or more allocations failed!"
-    echo "🔄 Sending bankruptcy alerts to all users..."
-    
-    # Template path
-    BANKRUPTCY_TEMPLATE="${MY_PATH}/../templates/NOSTR/bankrupt.html"
-    BANKRUPTCY_REPORT="$HOME/.zen/tmp/bankruptcy_alert_${TODATE}.html"
-    
-    # Check if template exists
-    if [[ -s "$BANKRUPTCY_TEMPLATE" ]]; then
-        # Calculate values for template substitution
-        REPORT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
-        UPLANET_ID="${UPLANETG1PUB:0:8}"
-        
-        # Calculate dynamic values for template
-        # Load economic variables from .env or use defaults
-        # PAF is already defined (default 14 if not set)
-        [[ -z $PAF ]] && PAF=14
-        [[ -z $NCARD ]] && NCARD=1
-        [[ -z $ZCARD ]] && ZCARD=4
-        [[ -z $TVA_RATE ]] && TVA_RATE=20
-        [[ -z $IS_THRESHOLD ]] && IS_THRESHOLD=42500
-        [[ -z $IS_RATE_REDUCED ]] && IS_RATE_REDUCED=15
-        [[ -z $IS_RATE_NORMAL ]] && IS_RATE_NORMAL=25
-        [[ -z $TREASURY_RATIO ]] && TREASURY_RATIO=33.33
-        [[ -z $RND_RATIO ]] && RND_RATIO=33.33
-        [[ -z $ASSETS_RATIO ]] && ASSETS_RATIO=33.34
-        
-        # Sociétaire share price (default 50 Ẑ/year = 50€)
-        [[ -z $SOCIETAIRE_SHARE_PRICE ]] && SOCIETAIRE_SHARE_PRICE=50
-        SOCIETAIRE_SHARE_PRICE_EUR=$SOCIETAIRE_SHARE_PRICE  # 1 Ẑ = 1€
-        
-        # Captain remuneration (2x PAF)
-        CAPTAIN_REMUNERATION=$(echo "scale=2; $PAF * 2" | bc -l)
-        
-        # Minimum required for operational costs (PAF + Captain remuneration)
-        MIN_REQUIRED=$(echo "scale=2; $PAF + $CAPTAIN_REMUNERATION" | bc -l)
-        
-        # Total allocations (Treasury + R&D + Assets)
-        TOTAL_ALLOCATIONS=$(echo "scale=2; $TREASURY_AMOUNT + $RND_AMOUNT + $ASSETS_AMOUNT" | bc -l)
-        
-        # Total required for all allocations (operational + tax + cooperative)
-        TOTAL_REQUIRED=$(echo "scale=2; $TAX_PROVISION + $TREASURY_AMOUNT + $RND_AMOUNT + $ASSETS_AMOUNT" | bc -l)
-        TOTAL_NEEDED=$(echo "scale=2; $MIN_REQUIRED + $TAX_PROVISION + $TOTAL_ALLOCATIONS" | bc -l)
-        
-        # Calculate deficit
-        DEFICIT=$(echo "scale=2; $TOTAL_REQUIRED - $REMAINING_BALANCE" | bc -l)
-        
-        # If deficit is negative, set to 0 (we have excess)
-        if [[ $(echo "$DEFICIT < 0" | bc -l) -eq 1 ]]; then
-            DEFICIT="0.00"
-        else
-            # Format deficit to 2 decimal places (remove trailing zeros if needed)
-            DEFICIT=$(echo "scale=2; $DEFICIT" | bc -l)
-        fi
-        
-        # Calculate impact examples for recovery plan
-        IMPACT_10_MULTIPASS=$(echo "scale=2; 10 * $NCARD" | bc -l)
-        IMPACT_5_ZENCARDS=$(echo "scale=2; 5 * $ZCARD" | bc -l)
-        IMPACT_TOTAL_REVENUE=$(echo "scale=2; $IMPACT_10_MULTIPASS + $IMPACT_5_ZENCARDS" | bc -l)
-        
-        # Calculate sociétaire capital (10 sociétaires)
-        SOCIETAIRE_CAPITAL=$(echo "scale=2; 10 * $SOCIETAIRE_SHARE_PRICE" | bc -l)
-        
-        # Escape special sed characters in replacement strings
-        # The & character is special in sed (represents matched pattern)
-        escape_sed_replacement() {
-            echo "$1" | sed 's/[&/\]/\\&/g'
-        }
-        
-        # Escape FAILED_ALLOCATIONS which may contain "R&D"
-        FAILED_ALLOCATIONS_SAFE=$(escape_sed_replacement "$FAILED_ALLOCATIONS")
-        
-        # Generate HTML report from template using sed substitutions
-        cat "$BANKRUPTCY_TEMPLATE" | sed \
-            -e "s~_DATE_~${REPORT_DATE}~g" \
-            -e "s~_TODATE_~${TODATE}~g" \
-            -e "s~_UPLANET_ID_~${UPLANET_ID}~g" \
-            -e "s~_CAPTAIN_BALANCE_~${CAPTAINZEN}~g" \
-            -e "s~_PAF_~${PAF}~g" \
-            -e "s~_CAPTAIN_REMUNERATION_~${CAPTAIN_REMUNERATION}~g" \
-            -e "s~_MIN_REQUIRED_~${MIN_REQUIRED}~g" \
-            -e "s~_NCARD_~${NCARD}~g" \
-            -e "s~_ZCARD_~${ZCARD}~g" \
-            -e "s~_TVA_RATE_~${TVA_RATE}~g" \
-            -e "s~_IS_THRESHOLD_~${IS_THRESHOLD}~g" \
-            -e "s~_IS_RATE_REDUCED_~${IS_RATE_REDUCED}~g" \
-            -e "s~_IS_RATE_NORMAL_~${IS_RATE_NORMAL}~g" \
-            -e "s~_TAX_RATE_USED_~${TAX_RATE_USED}~g" \
-            -e "s~_TOTAL_ALLOCATIONS_~${TOTAL_ALLOCATIONS}~g" \
-            -e "s~_TOTAL_NEEDED_~${TOTAL_NEEDED}~g" \
-            -e "s~_DEFICIT_~${DEFICIT}~g" \
-            -e "s~_IMPACT_10_MULTIPASS_~${IMPACT_10_MULTIPASS}~g" \
-            -e "s~_IMPACT_5_ZENCARDS_~${IMPACT_5_ZENCARDS}~g" \
-            -e "s~_IMPACT_TOTAL_REVENUE_~${IMPACT_TOTAL_REVENUE}~g" \
-            -e "s~_SOCIETAIRE_SHARE_PRICE_~${SOCIETAIRE_SHARE_PRICE}~g" \
-            -e "s~_SOCIETAIRE_SHARE_PRICE_EUR_~${SOCIETAIRE_SHARE_PRICE_EUR}~g" \
-            -e "s~_SOCIETAIRE_CAPITAL_~${SOCIETAIRE_CAPITAL}~g" \
-            -e "s~_FAILED_ALLOCATIONS_~${FAILED_ALLOCATIONS_SAFE}~g" \
-            > "$BANKRUPTCY_REPORT"
-        
-        # Collect all user emails from ~/.zen/game/nostr/*/
-        USER_EMAILS=()
-        NOSTR_DIR="$HOME/.zen/game/nostr"
-        
-        if [[ -d "$NOSTR_DIR" ]]; then
-            # Find all directories that contain email addresses (contain @)
-            while IFS= read -r -d '' user_dir; do
-                user_email=$(basename "$user_dir")
-                # Check if it's a valid email format (contains @)
-                if [[ "$user_email" =~ @ ]]; then
-                    USER_EMAILS+=("$user_email")
-                fi
-            done < <(find "$NOSTR_DIR" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
-        fi
-        
-        echo "📧 Found ${#USER_EMAILS[@]} user(s) to notify"
-        
-        # Send bankruptcy alert to all users
-        ALERT_SENT_COUNT=0
-        ALERT_FAILED_COUNT=0
-        
-        for user_email in "${USER_EMAILS[@]}"; do
-            echo "📧 Sending bankruptcy alert to: $user_email"
-            ${MY_PATH}/../tools/mailjet.sh --expire 7d "$user_email" "$BANKRUPTCY_REPORT" "⚠️ UPlanet Bankruptcy Alert - $TODATE"
-            
-            if [[ $? -eq 0 ]]; then
-                echo "✅ Bankruptcy alert sent successfully to $user_email"
-                ALERT_SENT_COUNT=$((ALERT_SENT_COUNT + 1))
-            else
-                echo "❌ Failed to send bankruptcy alert to $user_email"
-                ALERT_FAILED_COUNT=$((ALERT_FAILED_COUNT + 1))
-            fi
-        done
-        
-        echo "============================================ BANKRUPTCY ALERT SUMMARY"
-        echo "📊 Total users notified: ${#USER_EMAILS[@]}"
-        echo "✅ Successfully sent: $ALERT_SENT_COUNT"
-        echo "❌ Failed: $ALERT_FAILED_COUNT"
-        echo "============================================ BANKRUPTCY ALERT DONE."
-    else
-        echo "⚠️  Bankruptcy template file not found: $BANKRUPTCY_TEMPLATE"
-        echo "Skipping bankruptcy alert generation..."
-    fi
+if [[ $ALLOCATION_FAILED -eq 0 ]]; then
+    echo "✅ ZEN COOPERATIVE: Toutes les allocations réussies pour $TODATE"
+    #######################################################################
+    # Marquer l'allocation comme complétée UNIQUEMENT si tout a réussi
+    #######################################################################
+    echo "$TODATE" > "$ALLOCATION_MARKER"
+    echo "ZEN COOPERATIVE: Allocation hebdomadaire marquée pour $TODATE"
 else
-    echo "✅ All allocations completed successfully - no bankruptcy detected"
+    echo "⚠️  ZEN COOPERATIVE: Échec partiel des allocations :${FAILED_LIST}"
+    echo "   Le marqueur n'a PAS été défini → le script retentera au prochain cycle."
+    echo "   Ce n'est pas une faillite : les fonds alloués le seront dès que possible."
+    # Notification au Capitaine (non-bloquante)
+    if [[ -n "$CAPTAINEMAIL" ]]; then
+        ${MY_PATH}/../tools/mailjet.sh --expire 7d "$CAPTAINEMAIL" "" \
+            "🔄 UPlanet Allocation partielle - Retry - $TODATE" 2>/dev/null || true
+    fi
 fi
-
-#######################################################################
-# Mark weekly allocation as completed
-# Create marker file with current date to prevent duplicate allocations
-#######################################################################
-echo "$TODATE" > "$ALLOCATION_MARKER"
-echo "ZEN COOPERATIVE: Weekly allocation completed and marked for $TODATE"
 
 exit 0

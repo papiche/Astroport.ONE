@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com) — réécriture v2 pour g1cli (Duniter v2s)
-# Version: 2.0
+# Version: 2.1 (Security & Float Fix)
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 # PAYforSURE.sh
@@ -21,7 +21,6 @@
 #   CAPTAINEMAIL   : email du capitaine (pour rapport)
 #   CESIUMIPFS     : base URL Cesium (pour liens HTML)
 ################################################################################
-# set -euo pipefail
 
 MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
@@ -83,7 +82,6 @@ MOATS="${5:-}"
     || log "Reprise de paiement échoué — ID: $MOATS"
 
 # ── Conversion v1 pubkey → SS58 pour l'adresse de destination ───────────────
-# gcli exige une adresse SS58 (préfixe g1...), pas une pubkey v1 base58
 if [[ -n "$G1PUB" ]] && ! [[ "$G1PUB" =~ ^g1 ]]; then
     if [[ -x "${MY_PATH}/g1pub_to_ss58.py" ]]; then
         _SS58=$(python3 "${MY_PATH}/g1pub_to_ss58.py" "$G1PUB" 2>/dev/null)
@@ -100,7 +98,6 @@ log "AMOUNT : $AMOUNT"
 log "MOATS  : $MOATS"
 
 # ── Montant nul ───────────────────────────────────────────────────────────────
-# Ne pas évaluer avec bc si AMOUNT est un mot-clé (ALL, DRAIN)
 if [[ "$AMOUNT" != "ALL" && "$AMOUNT" != "DRAIN" ]]; then
     if (( $(echo "${AMOUNT} == 0" | bc -l) )); then
         log "Montant nul, rien à payer."
@@ -108,16 +105,13 @@ if [[ "$AMOUNT" != "ALL" && "$AMOUNT" != "DRAIN" ]]; then
     fi
 fi
 
-# ── Validation montant ────────────────────────────────────────────────────────
-if ! [[ "$AMOUNT" =~ ^[0-9]+([.][0-9]+)?$|^ALL$|^DRAIN$ ]]; then
+# ── Validation montant (Correction Bug Regex .45) ─────────────────────────────
+if ! [[ "$AMOUNT" =~ ^[0-9]*\.?[0-9]+$|^ALL$|^DRAIN$ ]]; then
     loge "Montant invalide : $AMOUNT"
     exit 1
 fi
 
 # ── Résoudre l'identité vault / keyfile ───────────────────────────────────────
-# Si KEY_OR_VAULT est un fichier existant → on l'importe de façon éphémère dans le vault
-# Sinon → c'est un nom vault gcli existant
-
 VAULT_NAME=""
 VAULT_ADDRESS=""
 TEMP_VAULT_IMPORTED=false
@@ -125,26 +119,18 @@ TEMP_VAULT_IMPORTED=false
 resolve_vault() {
     if [[ -f "$KEY_OR_VAULT" ]]; then
         log "Fichier dunikey détecté : $KEY_OR_VAULT"
-
-        # Nom vault temporaire basé sur MOATS
         VAULT_NAME="paytemp_${MOATS}"
 
-        # Nettoyer les entrées paytemp_* résiduelles pour éviter le prompt
-        # interactif "Do you want to: 1. keep 2. overwrite" quand la même
-        # adresse SS58 est déjà dans le vault
         $GCLI --no-password vault list all 2>/dev/null \
             | grep -oP 'paytemp_\S+' \
             | while read -r old_name; do
                 $GCLI --no-password vault remove -v "$old_name" 2>/dev/null || true
             done
 
-        # Déterminer le format du fichier et la méthode d'import
         local sec_key
         sec_key=$(grep -E '^sec:' "$KEY_OR_VAULT" | head -1 | awk '{print $2}')
 
         if [[ -n "$sec_key" ]]; then
-            # Format PubSec (Type: PubSec) — contient clé ed25519 brute en base58
-            # Extraire la seed (32 premiers bytes de la clé secrète)
             local seed_hex
             seed_hex=$(python3 -c "
 import base58, sys
@@ -168,7 +154,6 @@ except Exception as e:
             fi
         fi
 
-        # Fallback : format JSON cesium v1 {"salt":"...","password":"..."} ou {"pub":"...","sec":"..."}
         local id secret
         id=$(jq -r '.salt // .pub // .uid // empty' "$KEY_OR_VAULT" 2>/dev/null)
         secret=$(jq -r '.password // .sec // empty' "$KEY_OR_VAULT" 2>/dev/null)
@@ -188,7 +173,6 @@ except Exception as e:
         loge "Impossible d'extraire les clés depuis $KEY_OR_VAULT"
         return 1
     else
-        # C'est un nom vault ou une adresse directe
         VAULT_NAME="$KEY_OR_VAULT"
         log "Utilisation du vault gcli : $VAULT_NAME"
         return 0
@@ -208,12 +192,10 @@ resolve_vault || exit 1
 # ── Récupérer l'adresse publique depuis le vault ──────────────────────────────
 get_address_from_vault() {
     local name="$1"
-    # gcli --no-password -v "<name>" account balance → affiche l'adresse
     $GCLI --no-password -u "${G1_WS_NODES[0]:-wss://g1.1000i100.fr/ws}" -v "$name" account balance 2>/dev/null \
         | grep -oE 'g1[A-Za-z0-9]{40,}' | head -1
 }
 
-# Méthode directe : extraire la pub du dunikey et convertir en SS58
 get_address_from_dunikey() {
     local keyfile="$1"
     local pub_v1
@@ -225,18 +207,15 @@ get_address_from_dunikey() {
 
 ISSUERPUB=""
 
-# 1. Si dunikey → extraire l'adresse SS58 directement (pas besoin du squid)
 if [[ -f "$KEY_OR_VAULT" ]]; then
     ISSUERPUB=$(get_address_from_dunikey "$KEY_OR_VAULT")
     [[ -n "$ISSUERPUB" ]] && log "Adresse SS58 (depuis dunikey) : $ISSUERPUB"
 fi
 
-# 2. Fallback : interroger le vault gcli
 if [[ -z "$ISSUERPUB" ]]; then
     ISSUERPUB=$(get_address_from_vault "$VAULT_NAME")
 fi
 
-# 3. Dernier recours : si c'est déjà une adresse g1
 if [[ -z "$ISSUERPUB" ]]; then
     if [[ "$VAULT_NAME" =~ ^g1 ]]; then
         ISSUERPUB="$VAULT_NAME"
@@ -247,11 +226,10 @@ if [[ -z "$ISSUERPUB" ]]; then
 fi
 log "Adresse émettrice : $ISSUERPUB"
 
-# ── Récupérer le solde via gcli (Duniter RPC — source de vérité on-chain) ─────
+# ── Récupérer le solde via gcli (Duniter RPC) ─────────────────────────────────
 get_balance_gcli() {
     local addr="$1"
     local raw
-    # Essayer chaque noeud RPC disponible
     for rpc in "${G1_WS_NODES[@]}"; do
         raw=$($GCLI --no-password -a "$addr" -u "$rpc" -o json account balance 2>/dev/null \
             | jq -r '.transferable_balance // empty')
@@ -273,15 +251,11 @@ if [[ -z "$COINS" || "$COINS" == "0" || "$COINS" == ".0000" ]]; then
         loge "Portefeuille vide ou introuvable : $ISSUERPUB"
         exit 1
     fi
-    # Pour DRAIN : transferable_balance peut être 0 (seul l'existential deposit reste)
-    # On continue — total_balance sera récupéré dans le bloc DRAIN ci-dessous
     logw "Solde transférable nul — DRAIN tentera de vider via total_balance (existential deposit)"
     COINS="0"
 fi
 
-# ── ALL = transférable / DRAIN = tout (y compris 1 Ğ1 existential deposit) ────
 if [[ "$AMOUNT" == "DRAIN" ]]; then
-    # Récupérer total_balance pour vider entièrement le wallet
     TOTAL_COINS=""
     for rpc in "${G1_WS_NODES[@]}"; do
         raw=$($GCLI --no-password -a "$ISSUERPUB" -u "$rpc" -o json account balance 2>/dev/null \
@@ -301,23 +275,19 @@ elif [[ "$AMOUNT" == "ALL" ]]; then
     AMOUNT="$COINS"
 fi
 
-# ── Vérifier le solde suffisant ───────────────────────────────────────────────
 if (( $(echo "$COINS < $AMOUNT" | bc -l) )); then
     loge "Solde insuffisant : $COINS Ğ1 < $AMOUNT Ğ1 demandés"
     exit 1
 fi
 
-# ── Commentaire par défaut ────────────────────────────────────────────────────
 [[ -z "$COMMENT" ]] && \
     COMMENT="UPLANET${UPLANETG1PUB:0:8}:ZEN:${ISSUERPUB:0:8}->${G1PUB:0:8}"
 
 log "Commentaire : $COMMENT"
 
-# ── Répertoire de travail ─────────────────────────────────────────────────────
 PENDINGDIR="$HOME/.zen/tmp/${ISSUERPUB}"
 mkdir -p "$PENDINGDIR"
 
-# ── Fonction de paiement via g1cli ────────────────────────────────────────────
 make_payment_gcli() {
     local vault_name="$1"
     local amount="$2"
@@ -328,26 +298,12 @@ make_payment_gcli() {
 
     log "Tentative paiement g1cli → nœud: ${ws_node:-défaut} | ${amount} Ğ1 → ${dest:0:12}..."
 
-    # Syntaxe g1cli v0.8.0+ :
-    #   gcli --no-password [-u <wss://...>] -v "<vault_name>" \
-    #        account transfer <AMOUNT> <ADDRESS> [--comment "msg"] [--onchain]
-    #
-    # --comment  : crée un batch atomique (transfer + system.remark ou remark_with_event)
-    # --onchain  : utilise system.remark_with_event → émet l'événement Remarked
-    #              → inscrit le commentaire dans Duniter (immuable, audit légal)
-    #              → indexé par le squid Duniter (visible UX Cesium/explorateurs)
-    # Sans --onchain : system.remark → dans la tx blockchain mais pas indexé
-    #
-    # Pour les paiements officiels UPlanet, --onchain est OBLIGATOIRE
-    # afin de garantir la traçabilité légale et la visibilité dans Cesium.
-
     local base_opts=(--no-password)
     [[ -n "$ws_node" ]] && base_opts+=(-u "$ws_node")
 
     local transfer_opts=()
     if [[ -n "$comment" ]]; then
         transfer_opts+=(--comment "$comment")
-        # --onchain : inscription immuable dans Duniter + indexation squid pour UX
         transfer_opts+=(--onchain)
     fi
 
@@ -361,8 +317,6 @@ make_payment_gcli() {
     return $transfer_rc
 }
 
-# ── Conversion montant Ğ1 → centimes pour gcli ─────────────────────────────
-# gcli utilise des centimes : 100 = 1.00 Ğ1 (DECIMALS=2)
 AMOUNT_GCLI=$(python3 -c "print(int(round(float('$AMOUNT') * 10**$DECIMALS)))" 2>/dev/null)
 if [[ -z "$AMOUNT_GCLI" || "$AMOUNT_GCLI" == "0" ]]; then
     loge "Conversion montant échouée : $AMOUNT Ğ1 → centimes"
@@ -370,7 +324,6 @@ if [[ -z "$AMOUNT_GCLI" || "$AMOUNT_GCLI" == "0" ]]; then
 fi
 log "Montant gcli : $AMOUNT Ğ1 = $AMOUNT_GCLI centimes"
 
-# ── Boucle retry sur les nœuds ────────────────────────────────────────────────
 RESULT_FILE="${PENDINGDIR}/${MOATS}.result.txt"
 ISOK=1
 
@@ -382,7 +335,6 @@ try_all_nodes() {
             "$ws_node" "$RESULT_FILE"
         ISOK=$?
 
-        # gcli retourne 0 même en cas d'erreur on-chain — vérifier le résultat
         if [[ $ISOK -eq 0 ]] && grep -q "error\|Error\|failed\|cannot exist" "$RESULT_FILE" 2>/dev/null; then
             logw "gcli exit 0 mais erreur détectée dans le résultat"
             ISOK=1
@@ -395,15 +347,12 @@ try_all_nodes() {
     return 1
 }
 
-# Premier essai avec les nœuds du cache
 try_all_nodes "${G1_WS_NODES[@]}"
 
-# Si échec total → forcer un refresh et réessayer avec les nouveaux nœuds
 if [[ $ISOK -ne 0 && -x "${MY_PATH}/duniter_getnode.sh" ]]; then
     logw "Tous les nœuds ont échoué — rafraîchissement forcé de la liste..."
     "${MY_PATH}/duniter_getnode.sh" refresh >/dev/null 2>&1
 
-    # Recharger les nœuds depuis le cache rafraîchi
     G1_WS_NODES_FRESH=()
     while IFS= read -r node; do
         [[ -n "$node" ]] && G1_WS_NODES_FRESH+=("$node")
@@ -423,7 +372,6 @@ fi
 
 logok "=== TRANSACTION ENVOYÉE ==="
 
-# ── Vérification blockchain (Duniter v2 : 1 bloc = 6s) ──────────────────────
 log "Vérification confirmation blockchain..."
 CONFIRMED="false"
 for _try in 1 2 3 4 5; do
@@ -443,7 +391,6 @@ if [[ "$CONFIRMED" != "true" ]]; then
     exit 1
 fi
 
-# ── Mise à jour du cache de solde ─────────────────────────────────────────────
 COUCOU="$HOME/.zen/tmp/coucou"
 mkdir -p "$COUCOU"
 
@@ -456,12 +403,10 @@ DES=$(cat "$DESTFILE" 2>/dev/null || echo "0")
 [[ -z "$DES" || "$DES" == "null" ]] && DES="0"
 echo "$DES + $AMOUNT" | bc > "$DESTFILE"
 
-# ── Conversions ZEN ───────────────────────────────────────────────────────────
 ZENAMOUNT=$(echo "$AMOUNT * 100" | awk '{printf "%.1f", $1}')
 ZENCUR=$(echo "($COINS - $AMOUNT) * 10" | bc | awk '{printf "%.1f", $1}')
 ZENDES=$(echo "($DES + $AMOUNT) * 10" | bc | awk '{printf "%.1f", $1}')
 
-# ── Rapport HTML ──────────────────────────────────────────────────────────────
 HTML_FILE="${PENDINGDIR}/${MOATS}.result.html"
 TIMESTAMP=$(date '+%d/%m/%Y à %H:%M:%S')
 CESIUM="${CESIUMIPFS:-https://cesium.copylaradio.com}"
@@ -546,7 +491,6 @@ HTMLEOF
 
 logok "Rapport HTML : $HTML_FILE"
 
-# ── Notification email ────────────────────────────────────────────────────────
 if [[ -n "${CAPTAINEMAIL:-}" ]] && [[ -x "${MY_PATH}/mailjet.sh" ]]; then
     "${MY_PATH}/mailjet.sh" --expire 48h "$CAPTAINEMAIL" \
         "$HTML_FILE" "${ZENAMOUNT} ZEN : ${COMMENT}" 2>/dev/null || true

@@ -1,4 +1,7 @@
-# Modèle Économique G1FabLab — Règle des 3 Tiers (v2)
+# Modèle Économique G1FabLab — Règle des 3 Tiers (v2 + Love Ledger)
+
+> **Ğ1 apporte la Liberté · Ẑen apporte l'Égalité · ❤️ apporte la Fraternité**
+> *car 1 ❤️ = 1 DU — le don bénévole est la valeur co-créée par la communauté*
 
 **Version enrichie et optimisée.** Ce document décrit ce que nous sommes, nos règles de redistribution et les références techniques. Aucun tiers n’est partie aux engagements contractuels du collectif ; le collectif signe et paie en son nom propre.
 
@@ -90,8 +93,8 @@ Pour chaque **contribution d'un Parrain/Contributeur** (ZEN Card Satellite ou Co
 | Script | Fonction | Fréquence |
 |--------|----------|-----------|
 | `UPLANET.init.sh` | Initialisation portefeuilles (NODE, CAPTAIN, Collectifs) | Une fois |
-| `ZEN.ECONOMY.sh` | PAF + dégradation progressive + Burn 4 semaines | Hebdomadaire |
-| `ZEN.COOPERATIVE.3x1-3.sh` | Provision IS + allocation 3×1/3 depuis CAPTAIN_DEDICATED | Hebdomadaire (anniversaire Capitaine) |
+| `ZEN.ECONOMY.sh` | PAF + Niveaux de Résilience + Love Ledger + Burn 4 semaines | Hebdomadaire |
+| `ZEN.COOPERATIVE.3x1-3.sh` | Provision IS + allocation 3×1/3 depuis CAPTAIN_DEDICATED (atomique) | Hebdomadaire (anniversaire Capitaine) |
 | `NOSTRCARD.refresh.sh` | Collecte redevances MULTIPASS (1Ẑ HT + 0,2Ẑ TVA) | Hebdomadaire |
 | `PLAYER.refresh.sh` | Collecte redevances ZEN Cards (4Ẑ HT + 0,8Ẑ TVA) | Hebdomadaire |
 | `uplanet_onboarding.sh` / `captain.sh` | Embarquement et dashboard | À la demande |
@@ -126,7 +129,53 @@ ZEN Card émise  →  UPLANETNAME_G1 → UPLANETNAME_SOCIETY → ZENCARD
 
 ---
 
-## Partie IV — Guide contributeur (condensé)
+## Partie IV — Love Ledger & Niveaux de Résilience
+
+### Philosophie : pas de faillite, seulement du bénévolat
+
+Le G1FabLab fait tourner des logiciels **AGPL** sur une infrastructure **bénévole**. Lorsque les revenus ne couvrent pas les frais opérationnels, ce n'est pas une « faillite » : c'est le **Capitaine/Armateur qui fait le choix conscient d'offrir son infrastructure et son temps à la communauté** (bénévolat, mécénat).
+
+Utiliser un vocabulaire capitaliste comme *faillite* ou *bankruptcy* induirait un stress inutile et masquerait la réalité. À la place, le système comptabilise ce don dans un **Love Ledger** (Registre de Gratitude) et le diffuse sur NOSTR pour remercier publiquement le Capitaine.
+
+### Les 4 Niveaux de Résilience (`ZEN.ECONOMY.sh`)
+
+| Niveau | Icône | Condition | Source de paiement |
+|--------|-------|-----------|-------------------|
+| **0 — Abondance** | ✅ | CASH couvre tous les frais | CASH |
+| **1 — Solidarité ASSETS** | 🌿 | CASH insuffisant | Forêts-Jardins (ASSETS) |
+| **2 — Solidarité R&D** | 🔬 | ASSETS épuisés | Budget R&D (RnD) |
+| **3 — Bénévolat Actif** | ❤️ | Tous fonds insuffisants | Don du Capitaine aux Communs |
+
+À chaque niveau, le Node continue de fonctionner. Seule la **source de financement** change.
+
+### Le Love Ledger (`love_ledger.json`)
+
+Stocké dans `~/.zen/game/love_ledger.json`, ce fichier JSON cumule les dons hebdomadaires du Capitaine :
+
+```json
+{
+  "total_donated_zen": 42.0,
+  "weeks_on_volunteer": 3,
+  "history": [
+    {"date": "2026-03-17", "amount_zen": 14.0},
+    {"date": "2026-03-24", "amount_zen": 28.0}
+  ]
+}
+```
+
+- **`total_donated_zen`** : Total cumulé offert aux Communs (en Ẑen ≈ €).
+- **`weeks_on_volunteer`** : Nombre de semaines de bénévolat.
+- **`history`** : Historique hebdomadaire pour la transparence.
+
+Chaque semaine où un don est comptabilisé, un **événement NOSTR (Kind 1)** est émis pour remercier publiquement le Capitaine sur le réseau.
+
+### Allocation Coopérative atomique (`ZEN.COOPERATIVE.3x1-3.sh`)
+
+L'allocation 3×1/3 ne génère plus d'alerte « faillite » en cas d'échec partiel. Si un virement Ğ1 échoue (réseau, solde momentanément insuffisant), **le marqueur de semaine n'est pas écrit** et le script retentera automatiquement au prochain cycle. C'est la philosophie de la **résilience par l'essai** plutôt que de la panique.
+
+---
+
+## Partie V — Guide contributeur (condensé)
 
 ### Rôles et contreparties
 
@@ -150,19 +199,24 @@ ZEN Card émise  →  UPLANETNAME_G1 → UPLANETNAME_SOCIETY → ZENCARD
 
 ## Dictionnaire de remplacement (sémantique conforme)
 
-À utiliser systématiquement : présenter le projet comme une **AMAP Numérique Citoyenne** / **Coopérative d’infrastructure numérique**, jamais comme une structure d’investissement.
+À utiliser systématiquement : présenter le projet comme une **AMAP Numérique Citoyenne** / **Coopérative d'infrastructure numérique**, jamais comme une structure d'investissement ou de crise.
 
-| À éviter (financier) | À utiliser (service / commun) |
-|----------------------|------------------------------|
+| À éviter (financier / anxiogène) | À utiliser (service / commun / résilient) |
+|----------------------------------|------------------------------------------|
 | Investisseur / Actionnaire | Parrain / Armateur / Co-Bâtisseur |
-| Dividende / Rente | Redevance d’hébergement / Indemnité |
+| Dividende / Rente | Redevance d'hébergement / Indemnité |
 | Capital (social) | Patrimoine commun / Infrastructure |
-| Achat de token | Crédit d’usage / Droit d’accès |
+| Achat de token | Crédit d'usage / Droit d'accès |
 | ROI | Économie circulaire / Compensation |
-| Cours du ẐEN | Valeur d’échange interne |
+| Cours du ẐEN | Valeur d'échange interne |
 | Bénéfice / Profit | Excédent de gestion / de fonctionnement |
-| Parts sociales | Crédits service / Droits d’usage |
+| Parts sociales | Crédits service / Droits d'usage |
 | Sociétaire | Parrain / Contributeur |
+| **Faillite / Bankruptcy** | **Bénévolat Actif / Don aux Communs** |
+| **Phase de dégradation** | **Niveau de Résilience** |
+| **Alerte faillite** | **Notification de Gratitude (NOSTR)** |
+| **Déficit** | **Sacrifice offert / Love Ledger** |
+| **Système en danger** | **Entretenu par l'engagement des membres** |
 
 ---
 

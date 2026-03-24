@@ -18,9 +18,9 @@
 # Usage: ./nostr_RESTORE_TW.sh <IPFS_CID> [target_relay_url]
 #
 # The IPFS_CID can point to either:
-#   - A password-protected ZIP (requires user's .pass)
-#   - A uplanet-encrypted file (.zip.uplanet.enc) — captain can decrypt
-#     without user password using uplanet.dunikey
+#   - A legacy password-protected ZIP (requires user's .pass)
+#   - An asymmetrically encrypted backup (.enc) using natools.py
+#     (Requires either the player's old .secret.dunikey or Captain's uplanet key)
 #
 # Numbered secret.june files (secret.june.000.IPFSNODEID, etc.) preserve
 # the cumulative cooperative capital shares history across migrations.
@@ -50,7 +50,7 @@ usage() {
     echo -e "  $ME <IPFS_CID> [target_relay_url]"
     echo ""
     echo -e "${YELLOW}Arguments:${NC}"
-    echo -e "  ${GREEN}IPFS_CID${NC}           CID of the backup ZIP file on IPFS"
+    echo -e "  ${GREEN}IPFS_CID${NC}           CID of the backup file on IPFS"
     echo -e "  ${GREEN}target_relay_url${NC}   (Optional) WebSocket URL of target relay"
     echo -e "                      Default: ws://127.0.0.1:7777"
     echo ""
@@ -86,9 +86,9 @@ mkdir -p "${RESTORE_DIR}"
 
 # Step 1: Download backup from IPFS
 echo -e "${YELLOW}Step 1/4:${NC} ${CYAN}Downloading backup from IPFS...${NC}"
-BACKUP_ZIP="${RESTORE_DIR}/backup.zip"
+BACKUP_FILE="${RESTORE_DIR}/backup.data"
 
-if ipfs get "${IPFS_CID}" -o "${BACKUP_ZIP}" 2>/dev/null; then
+if ipfs get "${IPFS_CID}" -o "${BACKUP_FILE}" 2>/dev/null; then
     echo -e "${GREEN}✅ Backup downloaded successfully${NC}"
 else
     echo -e "${RED}❌ Failed to download backup from IPFS${NC}"
@@ -96,45 +96,84 @@ else
     exit 1
 fi
 
-# Step 2: Extract backup (ZIP or uplanet-encrypted)
-echo -e "${YELLOW}Step 2/4:${NC} ${CYAN}Extracting backup archive...${NC}"
+# Step 2: Extract backup (ZIP or Asymmetrically Encrypted)
+echo -e "${YELLOW}Step 2/4:${NC} ${CYAN}Decrypting and Extracting backup archive...${NC}"
 cd "${RESTORE_DIR}"
 
-# Check if this is a natools uplanet-encrypted file (captain fallback without .pass)
-IS_UPLANET_ENC=false
-if ! file "${BACKUP_ZIP}" 2>/dev/null | grep -q "Zip archive"; then
-    echo -e "${YELLOW}⚠️  Not a ZIP file - trying uplanet key decryption (captain fallback)...${NC}"
-    # Ensure uplanet.dunikey exists
-    if [[ ! -s ~/.zen/game/uplanet.dunikey ]]; then
-        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}"
-        chmod 600 ~/.zen/game/uplanet.dunikey
-    fi
-    DECRYPTED_ZIP="${RESTORE_DIR}/backup_decrypted.zip"
-    if ${MY_PATH}/../tools/natools.py decrypt -f pubsec \
-            -i "${BACKUP_ZIP}" -k ~/.zen/game/uplanet.dunikey -o "${DECRYPTED_ZIP}" 2>/dev/null; then
-        echo -e "${GREEN}✅ Decrypted with uplanet key (captain fallback)${NC}"
-        BACKUP_ZIP="${DECRYPTED_ZIP}"
-        IS_UPLANET_ENC=true
+# Check if this is a standard ZIP file (Legacy) or an Encrypted Binary
+if file "${BACKUP_FILE}" 2>/dev/null | grep -q "Zip archive"; then
+    echo -e "${CYAN}   Archive is a standard ZIP (Legacy format)${NC}"
+    
+    # Try to extract without password first
+    if unzip -q "${BACKUP_FILE}" 2>/dev/null; then
+        echo -e "${GREEN}✅ Backup extracted successfully${NC}"
     else
-        echo -e "${RED}❌ Failed to decrypt with uplanet key${NC}"
+        # If that fails, try with password prompt
+        echo -e "${YELLOW}⚠️  Backup appears to be password-protected${NC}"
+        echo -e "${CYAN}Please enter the ZEN Card password (from the user's .pass file):${NC}"
+        if unzip "${BACKUP_FILE}" 2>/dev/null; then
+            echo -e "${GREEN}✅ Encrypted backup extracted successfully${NC}"
+        else
+            echo -e "${RED}❌ Failed to extract backup (wrong password or corrupted file)${NC}"
+            rm -rf "${RESTORE_DIR}"
+            exit 1
+        fi
+    fi
+else
+    echo -e "${YELLOW}⚠️  File is not a ZIP. Attempting asymmetric decryption (natools.py)...${NC}"
+    DECRYPTED_ZIP="${RESTORE_DIR}/backup_decrypted.zip"
+    DECRYPTED=false
+
+    # 1. Try Player's Key first
+    echo -e "${CYAN}Do you have the Player's old .secret.dunikey to decrypt this backup? (y/N)${NC}"
+    read -p "> " has_key
+    if [[ "$has_key" =~ ^[Yy] ]]; then
+        read -p "Absolute path to Player's .secret.dunikey: " player_key
+        if [[ -f "$player_key" ]]; then
+            echo "Decrypting with Player's key..."
+            if ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "${BACKUP_FILE}" -k "${player_key}" -o "${DECRYPTED_ZIP}" 2>/dev/null; then
+                echo -e "${GREEN}✅ Decrypted successfully with Player's key${NC}"
+                BACKUP_FILE="${DECRYPTED_ZIP}"
+                DECRYPTED=true
+            else
+                echo -e "${RED}❌ Failed to decrypt with Player's key${NC}"
+            fi
+        else
+            echo -e "${RED}❌ File not found: $player_key${NC}"
+        fi
+    fi
+
+    # 2. Try Captain's Fallback key
+    if [[ "$DECRYPTED" == "false" ]]; then
+        echo -e "${YELLOW}⚠️  Trying UPlanet fallback key (Captain)...${NC}"
+        # Ensure uplanet.dunikey exists
+        if [[ ! -s ~/.zen/game/uplanet.dunikey ]]; then
+            ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.dunikey "${UPLANETNAME}" "${UPLANETNAME}"
+            chmod 600 ~/.zen/game/uplanet.dunikey
+        fi
+        
+        if ${MY_PATH}/../tools/natools.py decrypt -f pubsec -i "${BACKUP_FILE}" -k ~/.zen/game/uplanet.dunikey -o "${DECRYPTED_ZIP}" 2>/dev/null; then
+            echo -e "${GREEN}✅ Decrypted with uplanet key (Captain fallback)${NC}"
+            BACKUP_FILE="${DECRYPTED_ZIP}"
+            DECRYPTED=true
+        else
+            echo -e "${RED}❌ Failed to decrypt with uplanet key${NC}"
+        fi
+    fi
+
+    # Check decryption state
+    if [[ "$DECRYPTED" == "false" ]]; then
+        echo -e "${RED}❌ Could not decrypt the backup. Restoration aborted.${NC}"
         rm -rf "${RESTORE_DIR}"
         exit 1
     fi
-fi
 
-# Try to extract without password first
-if unzip -q "${BACKUP_ZIP}" 2>/dev/null; then
-    echo -e "${GREEN}✅ Backup extracted successfully${NC}"
-else
-    # If that fails, try with password prompt
-    echo -e "${YELLOW}⚠️  Backup appears to be password-protected${NC}"
-    echo -e "${CYAN}Please enter the ZEN Card password (from the user's .pass file):${NC}"
-    echo -e "${YELLOW}💡 If password unknown, use the uplanet-encrypted CID instead${NC}"
-    if unzip "${BACKUP_ZIP}" 2>/dev/null; then
-        echo -e "${GREEN}✅ Encrypted backup extracted successfully${NC}"
+    # Now extract the decrypted ZIP
+    echo -e "${CYAN}   Extracting decrypted ZIP...${NC}"
+    if unzip -q "${BACKUP_FILE}" 2>/dev/null; then
+        echo -e "${GREEN}✅ Backup extracted successfully${NC}"
     else
-        echo -e "${RED}❌ Failed to extract backup (wrong password or corrupted file)${NC}"
-        echo -e "${YELLOW}💡 Ask the captain for the uplanet-encrypted backup CID (no password needed)${NC}"
+        echo -e "${RED}❌ Failed to extract decrypted backup. File may be corrupted.${NC}"
         rm -rf "${RESTORE_DIR}"
         exit 1
     fi
@@ -299,7 +338,7 @@ else
     echo -e "${CYAN}   ℹ️  No UPlanet info in backup (legacy format, assuming same UPlanet)${NC}"
 fi
 
-# Step 3: Process and import events (using same logic as backfill_constellation.sh)
+# Step 3: Process and import events
 echo -e "${YELLOW}Step 3/4:${NC} ${CYAN}Processing events for import...${NC}"
 
 # Count events
@@ -373,7 +412,7 @@ if [[ -n "$RESTORE_EMAIL" && -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
             echo -e "${YELLOW}   ⚠️  Using old .secret.disco (may not work on new relay)${NC}"
         fi
         
-        # Recreate MULTIPASS with salt/pepper (new or old depending on what was found)
+        # Recreate MULTIPASS with salt/pepper
         if "${MY_PATH}/make_NOSTRCARD.sh" "${RESTORE_EMAIL}" "fr" "0.00" "0.00" "${RESTORE_SALT}" "${RESTORE_PEPPER}" 2>/dev/null; then
             echo -e "${GREEN}✅ MULTIPASS recreated successfully${NC}"
             
@@ -389,168 +428,131 @@ if [[ -n "$RESTORE_EMAIL" && -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
                 cd - > /dev/null 2>&1
             fi
             
-                    # Restore uDRIVE files if manifest exists
-                    if [[ -f "${MANIFEST_FILE}" ]]; then
-                        echo -e "${CYAN}   📁 Restoring uDRIVE files from manifest...${NC}"
-                        UDRIVE_DIR="${HOME}/.zen/game/nostr/${RESTORE_EMAIL}/APP/uDRIVE"
-                        mkdir -p "${UDRIVE_DIR}"
+            # Restore uDRIVE files if manifest exists
+            if [[ -f "${MANIFEST_FILE}" ]]; then
+                echo -e "${CYAN}   📁 Restoring uDRIVE files from manifest...${NC}"
+                UDRIVE_DIR="${HOME}/.zen/game/nostr/${RESTORE_EMAIL}/APP/uDRIVE"
+                mkdir -p "${UDRIVE_DIR}"
+                
+                # Extract final_cid from manifest
+                if command -v jq >/dev/null 2>&1; then
+                    FINAL_CID=$(jq -r '.final_cid' "${MANIFEST_FILE}" 2>/dev/null)
+                    if [[ -n "$FINAL_CID" && "$FINAL_CID" != "null" ]]; then
+                        echo -e "${CYAN}   📥 Downloading complete uDRIVE structure from IPFS...${NC}"
+                        echo -e "${CYAN}   🔗 Final CID: ${FINAL_CID}${NC}"
                         
-                        # Extract final_cid from manifest
-                        if command -v jq >/dev/null 2>&1; then
-                            FINAL_CID=$(jq -r '.final_cid' "${MANIFEST_FILE}" 2>/dev/null)
-                            if [[ -n "$FINAL_CID" && "$FINAL_CID" != "null" ]]; then
-                                echo -e "${CYAN}   📥 Downloading complete uDRIVE structure from IPFS...${NC}"
-                                echo -e "${CYAN}   🔗 Final CID: ${FINAL_CID}${NC}"
-                                
-                                # Download the complete uDRIVE structure
-                                if ipfs get "${FINAL_CID}" -o "${UDRIVE_DIR}" 2>/dev/null; then
-                                    echo -e "${GREEN}✅ Complete uDRIVE structure restored from IPFS${NC}"
-                                    
-                                    # Verify generate_ipfs_structure.sh link is valid
-                                    if [[ -f "${UDRIVE_DIR}/generate_ipfs_structure.sh" ]]; then
-                                        echo -e "${GREEN}✅ generate_ipfs_structure.sh link verified${NC}"
-                                    else
-                                        echo -e "${YELLOW}⚠️  generate_ipfs_structure.sh not found in restored structure${NC}"
-                                    fi
-                                    
-                                    # Show structure summary
-                                    echo -e "${CYAN}   📊 uDRIVE structure:${NC}"
-                                    if command -v ipfs >/dev/null 2>&1; then
-                                        ipfs ls "${FINAL_CID}" 2>/dev/null | head -10 | while read -r line; do
-                                            echo -e "${CYAN}     ${line}${NC}"
-                                        done
-                                    fi
-                                else
-                                    echo -e "${RED}❌ Failed to download uDRIVE structure from IPFS${NC}"
-                                fi
+                        if ipfs get "${FINAL_CID}" -o "${UDRIVE_DIR}" 2>/dev/null; then
+                            echo -e "${GREEN}✅ Complete uDRIVE structure restored from IPFS${NC}"
+                            
+                            if [[ -f "${UDRIVE_DIR}/generate_ipfs_structure.sh" ]]; then
+                                echo -e "${GREEN}✅ generate_ipfs_structure.sh link verified${NC}"
                             else
-                                echo -e "${YELLOW}⚠️  No final_cid found in manifest, skipping uDRIVE restoration${NC}"
+                                echo -e "${YELLOW}⚠️  generate_ipfs_structure.sh not found in restored structure${NC}"
                             fi
                         else
-                            echo -e "${YELLOW}⚠️  jq not found, skipping uDRIVE file restoration${NC}"
+                            echo -e "${RED}❌ Failed to download uDRIVE structure from IPFS${NC}"
                         fi
+                    else
+                        echo -e "${YELLOW}⚠️  No final_cid found in manifest, skipping uDRIVE restoration${NC}"
+                    fi
+                else
+                    echo -e "${YELLOW}⚠️  jq not found, skipping uDRIVE file restoration${NC}"
+                fi
+            fi
+            
+            # Restore ZEN Card using VISA.new.sh with SALT/PEPPER from secret.june
+            if [[ -f "${ZEN_SECRET_JUNE}" ]]; then
+                echo -e "${CYAN}   🎮 Recreating ZEN Card with original credentials...${NC}"
+                
+                # Extract SALT and PEPPER from secret.june
+                ZEN_SALT=$(grep '^SALT=' "${ZEN_SECRET_JUNE}" | cut -d'"' -f2)
+                ZEN_PEPPER=$(grep '^PEPPER=' "${ZEN_SECRET_JUNE}" | cut -d'"' -f2)
+                
+                if [[ -n "$ZEN_SALT" && -n "$ZEN_PEPPER" ]]; then
+                    echo -e "${CYAN}   🔑 SALT: ${ZEN_SALT:0:20}...${NC}"
+                    echo -e "${CYAN}   🔑 PEPPER: ${ZEN_PEPPER:0:20}...${NC}"
+                    
+                    # Get GPS coordinates from MULTIPASS if available
+                    MULTIPASS_GPS="${HOME}/.zen/game/nostr/${RESTORE_EMAIL}/GPS"
+                    if [[ -f "${MULTIPASS_GPS}" ]]; then
+                        source "${MULTIPASS_GPS}"
+                    else
+                        LAT="0.00"
+                        LON="0.00"
                     fi
                     
-                    # Restore ZEN Card using VISA.new.sh with SALT/PEPPER from secret.june
-                    if [[ -f "${ZEN_SECRET_JUNE}" ]]; then
-                        echo -e "${CYAN}   🎮 Recreating ZEN Card with original credentials...${NC}"
+                    # Get NPUB and HEX from MULTIPASS if available
+                    MULTIPASS_NPUB="${HOME}/.zen/game/nostr/${RESTORE_EMAIL}/NPUB"
+                    MULTIPASS_HEX="${HOME}/.zen/game/nostr/${RESTORE_EMAIL}/HEX"
+                    
+                    RESTORE_NPUB=""
+                    RESTORE_HEX=""
+                    if [[ -f "${MULTIPASS_NPUB}" ]]; then
+                        RESTORE_NPUB=$(cat "${MULTIPASS_NPUB}")
+                    fi
+                    if [[ -f "${MULTIPASS_HEX}" ]]; then
+                        RESTORE_HEX=$(cat "${MULTIPASS_HEX}")
+                    fi
+                    
+                    # Recreate ZEN Card using VISA.new.sh
+                    echo -e "${CYAN}   🔄 Creating ZEN Card with VISA.new.sh...${NC}"
+                    if "${MY_PATH}/../RUNTIME/VISA.new.sh" \
+                        "${ZEN_SALT}" \
+                        "${ZEN_PEPPER}" \
+                        "${RESTORE_EMAIL}" \
+                        "UPlanet" \
+                        "fr" \
+                        "${LAT}" \
+                        "${LON}" \
+                        "${RESTORE_NPUB}" \
+                        "${RESTORE_HEX}" 2>/dev/null; then
                         
-                        # Extract SALT and PEPPER from secret.june
-                        ZEN_SALT=$(grep '^SALT=' "${ZEN_SECRET_JUNE}" | cut -d'"' -f2)
-                        ZEN_PEPPER=$(grep '^PEPPER=' "${ZEN_SECRET_JUNE}" | cut -d'"' -f2)
-                        
-                        if [[ -n "$ZEN_SALT" && -n "$ZEN_PEPPER" ]]; then
-                            echo -e "${CYAN}   🔑 SALT: ${ZEN_SALT:0:20}...${NC}"
-                            echo -e "${CYAN}   🔑 PEPPER: ${ZEN_PEPPER:0:20}...${NC}"
-                            
-                            # Get GPS coordinates from MULTIPASS if available
-                            MULTIPASS_GPS="${HOME}/.zen/game/nostr/${RESTORE_EMAIL}/GPS"
-                            if [[ -f "${MULTIPASS_GPS}" ]]; then
-                                source "${MULTIPASS_GPS}"
-                                echo -e "${CYAN}   📍 GPS: ${LAT}, ${LON}${NC}"
-                            else
-                                LAT="0.00"
-                                LON="0.00"
-                                echo -e "${YELLOW}   📍 GPS: Using default coordinates (0.00, 0.00)${NC}"
-                            fi
-                            
-                            # Get NPUB and HEX from MULTIPASS if available
-                            MULTIPASS_NPUB="${HOME}/.zen/game/nostr/${RESTORE_EMAIL}/NPUB"
-                            MULTIPASS_HEX="${HOME}/.zen/game/nostr/${RESTORE_EMAIL}/HEX"
-                            
-                            RESTORE_NPUB=""
-                            RESTORE_HEX=""
-                            if [[ -f "${MULTIPASS_NPUB}" ]]; then
-                                RESTORE_NPUB=$(cat "${MULTIPASS_NPUB}")
-                                echo -e "${CYAN}   🔗 NPUB: ${RESTORE_NPUB:0:20}...${NC}"
-                            fi
-                            if [[ -f "${MULTIPASS_HEX}" ]]; then
-                                RESTORE_HEX=$(cat "${MULTIPASS_HEX}")
-                                echo -e "${CYAN}   🔗 HEX: ${RESTORE_HEX:0:20}...${NC}"
-                            fi
-                            
-                            # Recreate ZEN Card using VISA.new.sh
-                            echo -e "${CYAN}   🔄 Creating ZEN Card with VISA.new.sh...${NC}"
-                            if "${MY_PATH}/../RUNTIME/VISA.new.sh" \
-                                "${ZEN_SALT}" \
-                                "${ZEN_PEPPER}" \
-                                "${RESTORE_EMAIL}" \
-                                "UPlanet" \
-                                "fr" \
-                                "${LAT}" \
-                                "${LON}" \
-                                "${RESTORE_NPUB}" \
-                                "${RESTORE_HEX}" 2>/dev/null; then
-                                
-                                echo -e "${GREEN}✅ ZEN Card recreated successfully with original credentials${NC}"
+                        echo -e "${GREEN}✅ ZEN Card recreated successfully with original credentials${NC}"
 
-                                # Restore secret.june history
-                                ZEN_CARD_DIR="${HOME}/.zen/game/players/${RESTORE_EMAIL}"
-                                if [[ "$SAME_UPLANET" == "false" ]]; then
-                                    # UPlanet changed: archive current secret.june with number
-                                    MIGRATION_NUM=0
-                                    for f in "${ZEN_CARD_DIR}"/secret.june.[0-9]*; do
-                                        [[ -f "$f" ]] || continue
-                                        num_part=$(basename "$f" | sed -n 's/^secret\.june\.\([0-9]\{3\}\)\..*/\1/p')
-                                        [[ -n "$num_part" ]] && (( 10#$num_part >= MIGRATION_NUM )) && MIGRATION_NUM=$((10#$num_part + 1))
-                                    done
-                                    MIGRATION_TAG=$(printf "%03d" "${MIGRATION_NUM}")
-                                    if [[ -f "${ZEN_SECRET_JUNE}" ]]; then
-                                        cp "${ZEN_SECRET_JUNE}" "${ZEN_CARD_DIR}/secret.june.${MIGRATION_TAG}.${BACKUP_UPLANETNAME:-unknown}"
-                                        echo -e "${YELLOW}   📜 Previous secret.june archived as secret.june.${MIGRATION_TAG} (UPlanet change)${NC}"
-                                    fi
-                                fi
-                                # Copy all existing numbered versions from backup
-                                if [[ ${#ZEN_JUNE_HISTORY[@]} -gt 0 ]]; then
-                                    for f in "${ZEN_JUNE_HISTORY[@]}"; do
-                                        cp "$f" "${ZEN_CARD_DIR}/$(basename "$f")"
-                                    done
-                                    echo -e "${GREEN}   📜 Restored ${#ZEN_JUNE_HISTORY[@]} historical secret.june version(s)${NC}"
-                                fi
-
-                                # Verify the recreated ZEN Card
-                                if [[ -f "${HOME}/.zen/game/players/${RESTORE_EMAIL}/.g1pub" ]]; then
-                                    NEW_G1PUB=$(cat "${HOME}/.zen/game/players/${RESTORE_EMAIL}/.g1pub")
-                                    echo -e "${GREEN}   🏦 New G1PUB: ${NEW_G1PUB:0:20}...${NC}"
-                                    
-                                    # Compare with original if available
-                                    if [[ -f "${ZEN_G1PUB}" ]]; then
-                                        ORIGINAL_G1PUB=$(cat "${ZEN_G1PUB}")
-                                        if [[ "$NEW_G1PUB" == "$ORIGINAL_G1PUB" ]]; then
-                                            echo -e "${GREEN}   ✅ G1PUB matches original (perfect restoration)${NC}"
-                                        else
-                                            echo -e "${YELLOW}   ⚠️  G1PUB differs from original (new wallet created)${NC}"
-                                            echo -e "${CYAN}   📝 Original: ${ORIGINAL_G1PUB:0:20}...${NC}"
-                                            echo -e "${CYAN}   📝 New:      ${NEW_G1PUB:0:20}...${NC}"
-                                        fi
-                                    fi
-                                else
-                                    echo -e "${RED}   ❌ ZEN Card creation failed - .g1pub not found${NC}"
-                                fi
-                            else
-                                echo -e "${RED}❌ Failed to recreate ZEN Card with VISA.new.sh${NC}"
-                            fi
-                        else
-                            echo -e "${RED}❌ Invalid SALT/PEPPER in secret.june${NC}"
-                        fi
-                    elif [[ -f "${ZEN_G1PUB}" ]]; then
-                        echo -e "${YELLOW}⚠️  Only .g1pub found, copying to players directory${NC}"
+                        # Restore secret.june history
                         ZEN_CARD_DIR="${HOME}/.zen/game/players/${RESTORE_EMAIL}"
-                        mkdir -p "${ZEN_CARD_DIR}"
-                        cp "${ZEN_G1PUB}" "${ZEN_CARD_DIR}/.g1pub"
-                        echo -e "${GREEN}✅ ZEN Card .g1pub restored (G1 wallet access)${NC}"
-                        # Restore numbered secret.june history if available
+                        if [[ "$SAME_UPLANET" == "false" ]]; then
+                            MIGRATION_NUM=0
+                            for f in "${ZEN_CARD_DIR}"/secret.june.[0-9]*; do
+                                [[ -f "$f" ]] || continue
+                                num_part=$(basename "$f" | sed -n 's/^secret\.june\.\([0-9]\{3\}\)\..*/\1/p')
+                                [[ -n "$num_part" ]] && (( 10#$num_part >= MIGRATION_NUM )) && MIGRATION_NUM=$((10#$num_part + 1))
+                            done
+                            MIGRATION_TAG=$(printf "%03d" "${MIGRATION_NUM}")
+                            if [[ -f "${ZEN_SECRET_JUNE}" ]]; then
+                                cp "${ZEN_SECRET_JUNE}" "${ZEN_CARD_DIR}/secret.june.${MIGRATION_TAG}.${BACKUP_UPLANETNAME:-unknown}"
+                                echo -e "${YELLOW}   📜 Previous secret.june archived as secret.june.${MIGRATION_TAG} (UPlanet change)${NC}"
+                            fi
+                        fi
+                        # Copy all existing numbered versions from backup
                         if [[ ${#ZEN_JUNE_HISTORY[@]} -gt 0 ]]; then
                             for f in "${ZEN_JUNE_HISTORY[@]}"; do
                                 cp "$f" "${ZEN_CARD_DIR}/$(basename "$f")"
                             done
                             echo -e "${GREEN}   📜 Restored ${#ZEN_JUNE_HISTORY[@]} historical secret.june version(s)${NC}"
                         fi
+                    else
+                        echo -e "${RED}❌ Failed to recreate ZEN Card with VISA.new.sh${NC}"
                     fi
+                else
+                    echo -e "${RED}❌ Invalid SALT/PEPPER in secret.june${NC}"
+                fi
+            elif [[ -f "${ZEN_G1PUB}" ]]; then
+                echo -e "${YELLOW}⚠️  Only .g1pub found, copying to players directory${NC}"
+                ZEN_CARD_DIR="${HOME}/.zen/game/players/${RESTORE_EMAIL}"
+                mkdir -p "${ZEN_CARD_DIR}"
+                cp "${ZEN_G1PUB}" "${ZEN_CARD_DIR}/.g1pub"
+                echo -e "${GREEN}✅ ZEN Card .g1pub restored (G1 wallet access)${NC}"
+                # Restore numbered secret.june history if available
+                if [[ ${#ZEN_JUNE_HISTORY[@]} -gt 0 ]]; then
+                    for f in "${ZEN_JUNE_HISTORY[@]}"; do
+                        cp "$f" "${ZEN_CARD_DIR}/$(basename "$f")"
+                    done
+                    echo -e "${GREEN}   📜 Restored ${#ZEN_JUNE_HISTORY[@]} historical secret.june version(s)${NC}"
+                fi
+            fi
             
             ## CASHBACK RESTORATION: send back ẐEN from UPLANETNAME_G1
-            ## Only on same UPlanet (different UPlanet = different cooperative, no cashback)
-            ## Primo TX already sent 1 G1 to new wallet, subtract it from cashback
             CASHBACK_FILE=$(find "${RESTORE_DIR}" -name ".cashback_amount" | head -1)
             RESTORE_G1PUB=""
             if [[ -f "${HOME}/.zen/game/nostr/${RESTORE_EMAIL}/G1PUBNOSTR" ]]; then
@@ -561,13 +563,11 @@ if [[ -n "$RESTORE_EMAIL" && -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
                 echo -e "${YELLOW}   ℹ️  No cashback restoration (UPlanet changed: ${BACKUP_UPLANETNAME:-?} → ${UPLANETNAME})${NC}"
             elif [[ -f "${CASHBACK_FILE}" ]] && [[ -n "${RESTORE_G1PUB}" ]]; then
                 CASHBACK_RAW=$(cat "${CASHBACK_FILE}" | sed 's/[^0-9.]//g')
-                # Subtract 1 G1 (primo TX already credited to new wallet)
                 if command -v bc >/dev/null 2>&1; then
                     CASHBACK_AMT=$(echo "scale=2; ${CASHBACK_RAW} - 1" | bc -l 2>/dev/null)
                     CASHBACK_HAS_VALUE=false
                     echo "${CASHBACK_AMT} > 0" | bc -l 2>/dev/null | grep -q "1" && CASHBACK_HAS_VALUE=true
                 else
-                    # Rough fallback without bc
                     CASHBACK_AMT="${CASHBACK_RAW}"
                     CASHBACK_HAS_VALUE=false
                     [[ -n "${CASHBACK_AMT}" ]] && [[ "${CASHBACK_AMT}" != "0" ]] && [[ "${CASHBACK_AMT}" != "0.00" ]] && [[ "${CASHBACK_AMT}" != "1" ]] && [[ "${CASHBACK_AMT}" != "1.00" ]] && CASHBACK_HAS_VALUE=true
@@ -575,7 +575,6 @@ if [[ -n "$RESTORE_EMAIL" && -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
 
                 if [[ "$CASHBACK_HAS_VALUE" == "true" ]]; then
                     echo -e "${CYAN}   💸 Restoring cashback: ${CASHBACK_AMT} Ğ1 (original ${CASHBACK_RAW} - 1 primo) → ${RESTORE_G1PUB:0:16}...${NC}"
-                    # Use UPLANETNAME_G1 dunikey for payment (source primale)
                     if [[ ! -s ~/.zen/game/uplanet.G1.dunikey ]]; then
                         ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.G1.dunikey "${UPLANETNAME}.G1" "${UPLANETNAME}.G1"
                         chmod 600 ~/.zen/game/uplanet.G1.dunikey
@@ -619,13 +618,11 @@ echo -e "${BLUE}║${NC}  ${CYAN}Total events in backup:${NC}     ${GREEN}${TOTA
 echo -e "${BLUE}║${NC}  ${CYAN}Events imported:${NC}            ${GREEN}${FILTERED_COUNT}${NC}                                  ${BLUE}║${NC}"
 echo -e "${BLUE}║${NC}  ${CYAN}Filtered out:${NC}               ${YELLOW}${REMOVED_COUNT}${NC}                                  ${BLUE}║${NC}"
 
-# Show uDRIVE info if manifest exists
 if [[ -f "${MANIFEST_FILE}" ]]; then
     echo -e "${BLUE}║${NC}  ${CYAN}uDRIVE files:${NC}              ${GREEN}${TOTAL_FILES}${NC} (${GREEN}${TOTAL_SIZE}${NC})                    ${BLUE}║${NC}"
     echo -e "${BLUE}║${NC}  ${CYAN}uDRIVE status:${NC}            ${YELLOW}Manifest available for recreation${NC}        ${BLUE}║${NC}"
 fi
 
-# Show secret key info if exists
 if [[ -f "${NEXT_DISCO_FILE}" ]]; then
     echo -e "${BLUE}║${NC}  ${CYAN}Next .disco:${NC}             ${GREEN}Available (NEW relay/captain ready)${NC}      ${BLUE}║${NC}"
 elif [[ -f "${OLD_DISCO_FILE}" ]]; then
@@ -634,71 +631,44 @@ fi
 
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
-        if [[ -n "$RESTORE_EMAIL" && -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
-            echo -e "${GREEN}💡 Complete Restoration Achieved:${NC}"
-            if [[ "$IS_NEW_RELAY_RESTORE" == "true" ]]; then
-                echo -e "   ${GREEN}✅ MULTIPASS recreated with NEW credentials (migration to new relay/captain)${NC}"
-                echo -e "   ${CYAN}✅ Using pre-generated .next.disco for restoration on this new relay${NC}"
-            else
-                echo -e "   ${CYAN}✅ MULTIPASS recreated with original credentials${NC}"
-                echo -e "   ${YELLOW}⚠️  Using old .secret.disco (may not work on new relay)${NC}"
-            fi
-            echo -e "   ${CYAN}✅ NOSTR events imported successfully${NC}"
-            if [[ -f "${MANIFEST_FILE}" ]]; then
-                echo -e "   ${CYAN}✅ uDRIVE files restored from IPFS${NC}"
-            fi
-            if [[ -f "${ZEN_SECRET_JUNE}" || -f "${ZEN_G1PUB}" ]]; then
-                echo -e "   ${CYAN}✅ ZEN Card recreated with original credentials (capital owner history)${NC}"
-            fi
-            echo -e "   ${CYAN}✅ Account location:${NC} ~/.zen/game/nostr/${RESTORE_EMAIL}/"
-            echo ""
-            echo -e "${YELLOW}📋 For the User:${NC}"
-            if [[ "$IS_NEW_RELAY_RESTORE" == "true" ]]; then
-                echo -e "   ${GREEN}• Your MULTIPASS has been successfully migrated to this NEW relay/captain${NC}"
-                echo -e "   ${CYAN}• All your NOSTR events, profile, and uDRIVE files are now available${NC}"
-            else
-                echo -e "   ${CYAN}• Your complete MULTIPASS has been restored on this Astroport.ONE station${NC}"
-                echo -e "   ${CYAN}• All your NOSTR events, profile, and uDRIVE files are now available${NC}"
-            fi
-            if [[ -f "${ZEN_SECRET_JUNE}" || -f "${ZEN_G1PUB}" ]]; then
-                echo -e "   ${CYAN}• Your ZEN Card has been recreated with original credentials (capital owner history)${NC}"
-            fi
-            echo -e "   ${CYAN}• You can access your account at: ${myIPFS}/ipns/<NOSTRNS>/${RESTORE_EMAIL}/APP/uDRIVE/${NC}"
+
+if [[ -n "$RESTORE_EMAIL" && -n "$RESTORE_SALT" && -n "$RESTORE_PEPPER" ]]; then
+    echo -e "${GREEN}💡 Complete Restoration Achieved:${NC}"
+    if [[ "$IS_NEW_RELAY_RESTORE" == "true" ]]; then
+        echo -e "   ${GREEN}✅ MULTIPASS recreated with NEW credentials (migration to new relay/captain)${NC}"
+        echo -e "   ${CYAN}✅ Using pre-generated .next.disco for restoration on this new relay${NC}"
+    else
+        echo -e "   ${CYAN}✅ MULTIPASS recreated with original credentials${NC}"
+        echo -e "   ${YELLOW}⚠️  Using old .secret.disco (may not work on new relay)${NC}"
+    fi
+    echo -e "   ${CYAN}✅ NOSTR events imported successfully${NC}"
+    if [[ -f "${MANIFEST_FILE}" ]]; then
+        echo -e "   ${CYAN}✅ uDRIVE files restored from IPFS${NC}"
+    fi
+    if [[ -f "${ZEN_SECRET_JUNE}" || -f "${ZEN_G1PUB}" ]]; then
+        echo -e "   ${CYAN}✅ ZEN Card recreated with original credentials (capital owner history)${NC}"
+    fi
+    echo -e "   ${CYAN}✅ Account location:${NC} ~/.zen/game/nostr/${RESTORE_EMAIL}/"
+    echo ""
+    echo -e "${YELLOW}📋 For the User:${NC}"
+    if [[ "$IS_NEW_RELAY_RESTORE" == "true" ]]; then
+        echo -e "   ${GREEN}• Your MULTIPASS has been successfully migrated to this NEW relay/captain${NC}"
+    else
+        echo -e "   ${CYAN}• Your complete MULTIPASS has been restored on this Astroport.ONE station${NC}"
+    fi
+    echo -e "   ${CYAN}• All your NOSTR events, profile, and uDRIVE files are now available${NC}"
 else
     echo -e "${GREEN}💡 Next steps for the Captain:${NC}"
     echo -e "   ${CYAN}1. Verify events:${NC} cd ~/.zen/strfry && ./strfry scan '{\"authors\": [\"<HEX>\"]}'"
     if [[ -f "${MANIFEST_FILE}" ]]; then
         echo -e "   ${CYAN}2. Recreate uDRIVE:${NC} Use uDRIVE_manifest.json to restore user's files"
-        echo -e "   ${CYAN}3. uDRIVE location:${NC} ~/.zen/game/nostr/<EMAIL>/APP/uDRIVE/"
     fi
-            if [[ -f "${NEXT_DISCO_FILE}" ]]; then
-                echo -e "   ${CYAN}4. Full restoration:${NC} Use .next.disco for complete account recreation on NEW relay"
-                echo -e "   ${CYAN}5. Next .disco location:${NC} ${NEXT_DISCO_FILE}"
-                echo -e "   ${GREEN}   ✅ This backup is ready for migration to a new relay/captain${NC}"
-            elif [[ -f "${OLD_DISCO_FILE}" ]]; then
-                echo -e "   ${CYAN}4. Full restoration:${NC} Use .secret.disco for complete account recreation"
-                echo -e "   ${CYAN}5. Old .disco location:${NC} ${OLD_DISCO_FILE}"
-                echo -e "   ${YELLOW}   ⚠️  This is the OLD .disco - may not work on a new relay${NC}"
-            fi
-            if [[ -f "${ZEN_SECRET_JUNE}" ]]; then
-                echo -e "   ${CYAN}6. ZEN Card recreation:${NC} Use secret.june with VISA.new.sh for ZEN Card restoration"
-                echo -e "   ${CYAN}7. ZEN Card secrets:${NC} ${ZEN_SECRET_JUNE}"
-            elif [[ -f "${ZEN_G1PUB}" ]]; then
-                echo -e "   ${CYAN}6. ZEN Card restoration:${NC} Use .g1pub for G1 wallet access"
-                echo -e "   ${CYAN}7. ZEN Card file:${NC} ${ZEN_G1PUB}"
-            fi
-            echo ""
-            echo -e "${YELLOW}📋 For the User:${NC}"
-            echo -e "   ${CYAN}• Your NOSTR events have been imported to this Astroport.ONE station${NC}"
-            echo -e "   ${CYAN}• Contact the captain for complete account recreation${NC}"
-            if [[ -f "${MANIFEST_FILE}" ]]; then
-                echo -e "   ${CYAN}• Your uDRIVE files can be recreated using the manifest${NC}"
-            fi
-            if [[ -f "${ZEN_SECRET_JUNE}" || -f "${ZEN_G1PUB}" ]]; then
-                echo -e "   ${CYAN}• Your ZEN Card transaction history and G1 wallet access are preserved${NC}"
-            fi
+    if [[ -f "${NEXT_DISCO_FILE}" ]]; then
+        echo -e "   ${CYAN}4. Full restoration:${NC} Use .next.disco for complete account recreation on NEW relay"
+    elif [[ -f "${OLD_DISCO_FILE}" ]]; then
+        echo -e "   ${CYAN}4. Full restoration:${NC} Use .secret.disco for complete account recreation"
+    fi
 fi
 echo ""
 
 exit 0
-
