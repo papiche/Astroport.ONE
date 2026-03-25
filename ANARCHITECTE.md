@@ -82,12 +82,13 @@ Le système surveille les wallets via le contrôle **Primal**. Tout Ğ1 entrant 
 ## 🔗 6. Ressources Utiles
 
 *   **Inscriptions :** [Portail Géo-Localisé Qo-op](https://qo-op.com)
-*   **Soutien & Parts :** [OpenCollective UPlanet](https://opencollective.com/monnaie-libre)
+*   **Soutien & Parts :** [OpenCollective G1FabLab#monnaie-libre](https://opencollective.com/monnaie-libre)
 *   **Code Source :** [GitHub Astroport.ONE](https://github.com/papiche/Astroport.ONE)
 *   **Apprendre :** [Le blog de CopyLaRadio](https://www.copylaradio.com)
 
 > **Note philosophique :** Dans UPlanet, un "Like" n'est pas une simple donnée pour un algorithme, c'est une micro-transaction (**+1 Ẑen**) qui nourrit directement le créateur et la terre. **Reprenez le contrôle.**
 
+---
 
 Cette analyse détaille la structure de signalisation de **UPlanet ẐEN**. Le système utilise Nostr non pas seulement comme un réseau social, mais comme un **bus de données décentralisé** et un **registre d'identité (DID)**.
 
@@ -104,8 +105,8 @@ UPlanet repose sur une hiérarchie de clés cryptographiques (Secp256k1) génér
 3.  **Clé MULTIPASS (Usage) :** La clé quotidienne de l'utilisateur. Elle signe ses messages, ses fichiers et ses interactions sociales.
 4.  **Clé ZEN CARD (Capital) :** Clé "froide" ou de coffre-fort. Représente la part sociétaire dans la coopérative.
 5.  **Clés UMAP / GEO (Robots Locatifs) :** Clés générées à partir des coordonnées GPS (ex: `UPlanet43.601.44`). Elles servent de "bornes fontaines" ou de journaux locaux automatiques.
-6.  **Clé ORACLE (.G1) :** Clé centrale du réseau UPlanet qui définit les règles globales (prix, taxes, adresses des banques).
-7.  **Clé BIEN (Objet de Financement) :** Clé dédiée à un projet de crowdfunding (ex: un jardin, une forêt).
+6.  **Clé ORACLE (.G1) :** Clé centrale du réseau UPlanet qui définit les règles globales (PAF, taxes, adresses des Astroport).
+7.  **Clé BIEN (Objet de Financement) :** Clé dédiée à un projet de crowdfunding (ex: un logement, un serveur, un jardin, une forêt).
 
 ---
 
@@ -180,4 +181,4 @@ Voici la représentation visuelle du réseau de signalisation. Chaque bloc repr�
 5.  **La transaction :** Le filtre `7.sh` détecte le "Like", vérifie l'autorisation via les fichiers `HEX` locaux, et lance `PAYforSURE.sh`.
 6.  **La gouvernance :** Le **MEMBRE** utilise son surplus de Ẑen pour voter ou financer un **BIEN** (`30904`) via une réaction `target:VOTE`.
 
-Cette architecture permet à UPlanet d'être **résilient** : même si le serveur web (FastAPI) est coupé, la signalisation continue de circuler sur les relais Nostr, et les fichiers restent accessibles via les CIDs contenus dans les événements `1063`.
+Cette architecture permet à UPlanet d'être **résilient** : même si le serveur web (FastAPI) est coupé, la signalisation continue de circuler sur les relais Nostr, et les fichiers restent accessibles via les CIDs IPFS contenus dans les événements.
