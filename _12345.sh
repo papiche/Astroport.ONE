@@ -55,9 +55,8 @@ mkdir -p ~/.zen/tmp/${IPFSNODEID}
 rm -Rf ~/.zen/tmp/${IPFSNODEID}/swarm
 
 ## TIMESTAMPING
-MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
-echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
-echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
+MOATS=$(date +%s) # Secondes depuis 1970
+lastrun_file=~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
 
 ############################################################
 ##  MySwarm KEY INIT & SET
@@ -184,7 +183,7 @@ fi
 while true; do
 
     start=`date +%s`
-    MOATS=$(date -u +"%Y%m%d%H%M%S%4N")
+    MOATS=$(date +%s)
     [[ -z ${myIP} ]] && source "${MY_PATH}/tools/my.sh" ## correct 1st run DHCP latency
     [[ ${CHAN} == "" ]] && CHAN=$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1)
 
@@ -200,7 +199,14 @@ while true; do
         && echo "/dnsaddr/${myDNSADDR}/udp/4001/p2p/${IPFSNODEID}" > ~/.zen/tmp/${IPFSNODEID}/myIPFS.txt
 
     lastrun=$(cat ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats)
-    duree=$(expr ${MOATS} - $lastrun)
+
+    if [ -f "$lastrun_file" ]; then
+        lastrun=$(cat "$lastrun_file")
+    else
+        lastrun=0
+    fi
+
+    duree=$(( MOATS - lastrun ))
 
     ## CHECK IF 12345.json WAS RECENTLY UPDATED (force publication after restart)
     FORCE_PUBLISH=0
@@ -215,7 +221,7 @@ while true; do
 
     ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H in ms )
     if [[ ${duree} -gt 3600000 || ${duree} == "" || ${FORCE_PUBLISH} -eq 1 ]]; then
-
+        echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
         PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
         YIPNS=$(${MY_PATH}/tools/ssh_to_g1ipfs.py "$(cat ~/.ssh/id_ed25519.pub)")
         ## NOT Y LEVEL STATIONS
@@ -345,7 +351,7 @@ while true; do
             ## ASK BOOSTRAP NODE TO GET MY MAP UPSYNC
             ## - MAKES MY BALISE PRESENT IN BOOSTRAP SWARM KEY  -
             if [[ $iptype == "ip4" || $iptype == "ip6" || $iptype == "dnsaddr" ]]; then
-                ############ UPSYNC CALL
+                ############ UPSYNC CALL // ip:12345 AND ipfs.domain/12345
                 if [[ $iptype == "dnsaddr" ]]; then
                     echo "STATION MAP UPSYNC : curl -s https://${nodeip}/12345/?${NODEG1PUB}=${IPFSNODEID}"
                     curl -s -m 10 https://${nodeip}/12345/?${NODEG1PUB}=${IPFSNODEID} \
