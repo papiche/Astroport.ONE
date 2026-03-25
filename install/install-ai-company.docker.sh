@@ -7,6 +7,9 @@
 
 set -e
 
+MY_PATH="`dirname \"$0\"`"
+MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
+
 # --- CONFIGURATION ---
 INSTALL_DIR="$HOME/.zen/ai-company"
 OLLAMA_PORT=11434
@@ -270,8 +273,11 @@ echo -e "  🔄 Redémarrer : ${YELLOW}docker compose -p ai-company-swarm restar
 echo -e "  🛑 Arrêter    : ${YELLOW}docker compose -p ai-company-swarm stop${NC}"
 echo -e "\n${GREEN}${BOLD}✅ STACK AI COMPANY DÉPLOYÉE !${NC}"
 # --- SETUP ---
+cp -f $MY_PATH/install-ai-company.md ~/.zen/ai-company/
 echo -e "${YELLOW}⚙️ Configuration initiale de Paperclip :${NC}"
-echo -e "Pour bootstrap l'admin, lance :"
-echo -e "  docker exec -it ai-company-swarm-paperclip-1 pnpm paperclipai auth bootstrap-ceo"
+echo -e "Pour bootstrap l'admin, lance : cd ~/.zen/ai-company/"
+echo -e "DOC : install-ai-company.md"
+echo -e "MIGRATE DB : docker exec -it ai-company-swarm-paperclip-1 npx prisma migrate deploy --schema packages/db/prisma/schema.prisma"
+echo -e "PAPERCLIP INIT : docker exec -it ai-company-swarm-paperclip-1 pnpm paperclipai auth bootstrap-ceo"
 echo -e "Puis :"
-echo -e "  docker exec -it ai-company-swarm-paperclip-1 pnpm paperclipai onboard"
+echo -e "docker exec -it ai-company-swarm-paperclip-1 pnpm paperclipai onboard"
