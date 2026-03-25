@@ -113,26 +113,32 @@ case $ARCH in
     *) PLATFORM="linux/amd64" ;;
 esac
 
-# Secrets
+# --- GESTION DES SECRETS ---
 if [ -f .env ]; then
-    echo "♻️  Réutilisation des secrets existants."
-    source .env
+    echo "♻️  Chargement des secrets existants..."
+    # Cette ligne est CRUCIALE pour que Bash puisse lire les variables
+    export $(grep -v '^#' .env | xargs)
 else
+    echo "🔑 Génération des nouveaux secrets..."
     PG_PASS=$(openssl rand -hex 12)
     QDRANT_KEY=$(openssl rand -hex 16)
     AUTH_SECRET=$(openssl rand -base64 32)
     PROXY_KEY="sk-swarm-$(openssl rand -hex 8)"
     GATEWAY_TOKEN=$(openssl rand -hex 16)
+
     cat > .env << EOF
 POSTGRES_PASSWORD=${PG_PASS}
+POSTGRES_USER=paperclip
+POSTGRES_DB=paperclip
 QDRANT_API_KEY=${QDRANT_KEY}
 PAPERCLIP_AUTH_SECRET=${AUTH_SECRET}
 LITELLM_MASTER_KEY=${PROXY_KEY}
 OPENCLAW_GATEWAY_TOKEN=${GATEWAY_TOKEN}
 EOF
+    export $(grep -v '^#' .env | xargs)
 fi
 
-# 1. Config LiteLLM
+# --- CONFIG LITELLM ---
 cat > litellm-config.yaml << EOF
 model_list:
   - model_name: "$OLLAMA_MODEL"
@@ -145,84 +151,82 @@ model_list:
       api_base: "http://host.docker.internal:$OLLAMA_PORT"
 EOF
 
-# 2. Docker Compose
+# --- DOCKER COMPOSE ---
+# Note : On utilise les variables directement ici car elles sont maintenant 'exportées'
 cat > docker-compose.yml << EOF
 version: '3.8'
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_PASSWORD=\${POSTGRES_PASSWORD}
+      - POSTGRES_USER=\${POSTGRES_USER}
+      - POSTGRES_DB=\${POSTGRES_DB}
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+    restart: unless-stopped
+
   llm-proxy:
     image: ghcr.io/berriai/litellm:main-latest
     platform: ${PLATFORM}
     ports: ["${PORT_LITELLM}:4000"]
     environment:
-      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
-      - DATABASE_URL=postgresql://paperclip:${POSTGRES_PASSWORD}@postgres:5432/paperclip
+      - LITELLM_MASTER_KEY=\${LITELLM_MASTER_KEY}
+      - DATABASE_URL=postgresql://\${POSTGRES_USER}:\${POSTGRES_PASSWORD}@postgres:5432/\${POSTGRES_DB}
+      - PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x
     volumes: ["./litellm-config.yaml:/app/config.yaml"]
     extra_hosts: ["host.docker.internal:host-gateway"]
     command: ["--config", "/app/config.yaml", "--port", "4000"]
+    depends_on: [postgres]
     restart: unless-stopped
-    depends_on:
-      - postgres
 
   qdrant:
     image: qdrant/qdrant:latest
     platform: ${PLATFORM}
     ports: ["${PORT_QDRANT}:6333"]
     environment:
-      - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
+      - QDRANT__SERVICE__API_KEY=\${QDRANT_API_KEY}
     volumes: ["qdrant_storage:/qdrant/storage"]
     restart: unless-stopped
 
   browser:
     image: browserless/chrome:latest
     platform: ${PLATFORM}
-    restart: unless-stopped
     environment:
       - MAX_CONCURRENT_SESSIONS=10
-
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=paperclip
-      - POSTGRES_USER=paperclip
-    volumes: ["postgres_data:/var/lib/postgresql/data"]
     restart: unless-stopped
 
   paperclip:
-    # build: 
-    #   context: https://github.com/paperclipai/paperclip.git#master
     image: reeoss/paperclipai-paperclip:latest
     platform: ${PLATFORM}
     ports: ["${PORT_PAPERCLIP}:3100"]
     environment:
-      - DATABASE_URL=postgres://paperclip:${POSTGRES_PASSWORD}@postgres:5432/paperclip
+      - DATABASE_URL=postgres://\${POSTGRES_USER}:\${POSTGRES_PASSWORD}@postgres:5432/\${POSTGRES_DB}
       - OPENAI_API_BASE=http://llm-proxy:4000/v1
-      - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
+      - OPENAI_API_KEY=\${LITELLM_MASTER_KEY}
       - QDRANT_URL=http://qdrant:6333
-      - QDRANT_API_KEY=${QDRANT_API_KEY}
-      - BETTER_AUTH_SECRET=${PAPERCLIP_AUTH_SECRET}
+      - QDRANT_API_KEY=\${QDRANT_API_KEY}
+      - BETTER_AUTH_SECRET=\${PAPERCLIP_AUTH_SECRET}
       - PAPERCLIP_PUBLIC_URL=http://localhost:3100
       - EMBEDDING_MODEL=${EMBEDDING_MODEL}
-      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+      - OPENCLAW_GATEWAY_TOKEN=\${OPENCLAW_GATEWAY_TOKEN}
     depends_on: [postgres, llm-proxy, qdrant]
     restart: unless-stopped
 
   openclaw:
     image: coollabsio/openclaw:latest
     platform: ${PLATFORM}
-    ports: ["8000:8000"]
+    ports: ["${PORT_OPENCLAW}:8000"]
     environment:
       - OPENAI_API_BASE=http://llm-proxy:4000/v1
-      - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
+      - OPENAI_API_KEY=\${LITELLM_MASTER_KEY}
       - OPENCLAW_VECTOR_DB_URL=http://qdrant:6333
-      - OPENCLAW_VECTOR_DB_API_KEY=${QDRANT_API_KEY}
+      - OPENCLAW_VECTOR_DB_API_KEY=\${QDRANT_API_KEY}
       - OPENCLAW_PRIMARY_MODEL=openai/${OLLAMA_MODEL}
       - OPENCLAW_EMBEDDING_MODEL=openai/${EMBEDDING_MODEL}
-      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+      - OPENCLAW_GATEWAY_TOKEN=\${OPENCLAW_GATEWAY_TOKEN}
       - OPENCLAW_BROWSER_URL=http://browser:3000
     depends_on: [llm-proxy, qdrant, browser]
     restart: unless-stopped
-  
 
 volumes:
   postgres_data:
