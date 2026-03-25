@@ -21,6 +21,35 @@ RED='\033[0;31m'
 BOLD='\033[1m'
 NC='\033[0m'
 
+# --- CONFIGURATION DES PORTS ---
+# Vous pouvez changer ces variables ici si conflit
+PORT_PAPERCLIP=${PORT_PAPERCLIP:-3100}
+PORT_OPENCLAW=${PORT_OPENCLAW:-8000}
+PORT_LITELLM=${PORT_LITELLM:-8001}
+PORT_QDRANT=${PORT_QDRANT:-6333}
+PORT_OLLAMA=11434 # Généralement sur l'hôte
+
+# --- FONCTION DE VÉRIFICATION DE PORT ---
+check_ports() {
+    local ports=("$PORT_PAPERCLIP" "$PORT_OPENCLAW" "$PORT_LITELLM" "$PORT_QDRANT")
+    local conflict=0
+    echo -e "${CYAN}🔍 Vérification de la disponibilité des ports...${NC}"
+    for port in "${ports[@]}"; do
+        if ss -tuln | grep -q ":$port "; then
+            echo -e "${RED}❌ Le port $port est déjà utilisé par un autre service !${NC}"
+            conflict=1
+        fi
+    done
+
+    if [ $conflict -eq 1 ]; then
+        echo -e "${YELLOW}Conseil : Modifiez les variables PORT_XXX au début du script ou arrêtez les services gênants.${NC}"
+        read -p "Voulez-vous quand même tenter l'installation ? (y/N) : " confirm
+        [[ $confirm == [yY] ]] || exit 1
+    else
+        echo -e "${GREEN}✅ Tous les ports sont libres.${NC}"
+    fi
+}
+
 # --- DETECTION DOCKER COMPOSE ---
 if docker compose version >/dev/null 2>&1; then
     DOCKER_CMD="docker compose"
@@ -123,7 +152,7 @@ services:
   llm-proxy:
     image: ghcr.io/berriai/litellm:main-latest
     platform: ${PLATFORM}
-    ports: ["8001:4000"]
+    ports: ["${PORT_LITELLM}:4000"]
     environment:
       - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
       - DATABASE_URL=postgresql://paperclip:${POSTGRES_PASSWORD}@postgres:5432/paperclip
@@ -137,7 +166,7 @@ services:
   qdrant:
     image: qdrant/qdrant:latest
     platform: ${PLATFORM}
-    ports: ["6333:6333"]
+    ports: ["${PORT_QDRANT}:6333"]
     environment:
       - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
     volumes: ["qdrant_storage:/qdrant/storage"]
@@ -164,7 +193,7 @@ services:
     #   context: https://github.com/paperclipai/paperclip.git#master
     image: reeoss/paperclipai-paperclip:latest
     platform: ${PLATFORM}
-    ports: ["3100:3100"]
+    ports: ["${PORT_PAPERCLIP}:3100"]
     environment:
       - DATABASE_URL=postgres://paperclip:${POSTGRES_PASSWORD}@postgres:5432/paperclip
       - OPENAI_API_BASE=http://llm-proxy:4000/v1
