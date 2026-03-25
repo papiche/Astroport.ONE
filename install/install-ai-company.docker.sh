@@ -236,18 +236,25 @@ volumes:
   qdrant_storage:
 EOF
 
+# --- LANCEMENT SÉQUENTIEL POUR ÉVITER LES CONFLITS DB ---
 
-# Lancement
-echo -e "⏳ Démarrage des conteneurs..."
+echo -e "⏳ Démarrage de la base de données PostgreSQL..."
+$DOCKER_CMD -p ai-company-swarm up -d postgres
+echo -e "Attente de l'initialisation de PostgreSQL (10s)..."
+sleep 10
+
+echo -e "⏳ Démarrage de Paperclip (Création de ses tables)..."
+$DOCKER_CMD -p ai-company-swarm up -d paperclip
+echo -e "Attente des migrations automatiques de Paperclip (20s)..."
+sleep 20
+
+echo -e "⏳ Démarrage du reste de la stack (LiteLLM, OpenClaw, Qdrant, Browser)..."
 $DOCKER_CMD -p ai-company-swarm up -d
 
-echo -e "Waiting for services to be ready..."
-sleep 15 # Attente minimale pour Postgres et LiteLLM
+echo -e "Attente de la stabilisation finale (15s)..."
+sleep 15
 
 docker ps
-
-echo -e "### COMMANDE OPTIONNELLE (si agent ne demarre pas dans paperclip)"
-echo -e "docker exec -u root ai-company-swarm-paperclip-1 npm install -g @paperclipai/agent"
 
 # --- RÉCAPITULATIF DES SERVICES ---
 echo -e "\n${BOLD}${YELLOW}====================================================${NC}"
@@ -273,11 +280,19 @@ echo -e "  🔄 Redémarrer : ${YELLOW}docker compose -p ai-company-swarm restar
 echo -e "  🛑 Arrêter    : ${YELLOW}docker compose -p ai-company-swarm stop${NC}"
 echo -e "\n${GREEN}${BOLD}✅ STACK AI COMPANY DÉPLOYÉE !${NC}"
 # --- SETUP ---
+
+echo -e "### (si agent ne demarre pas dans paperclip)"
+echo -e "docker exec -u root ai-company-swarm-paperclip-1 npm install -g @paperclipai/agent"
+
 cp -f $MY_PATH/install-ai-company.md ~/.zen/ai-company/
 echo -e "${YELLOW}⚙️ Configuration initiale de Paperclip :${NC}"
 echo -e "Pour bootstrap l'admin, lance : cd ~/.zen/ai-company/"
 echo -e "DOC : install-ai-company.md"
-echo -e "MIGRATE DB : docker exec -it ai-company-swarm-paperclip-1 npx prisma migrate deploy --schema packages/db/prisma/schema.prisma"
-echo -e "PAPERCLIP INIT : docker exec -it ai-company-swarm-paperclip-1 pnpm paperclipai auth bootstrap-ceo"
-echo -e "Puis :"
-echo -e "docker exec -it ai-company-swarm-paperclip-1 pnpm paperclipai onboard"
+echo -e "# 1. Appliquer les migrations de Paperclip (si ce n'est pas déjà fait automatiquement)
+docker exec -it ai-company-swarm-paperclip-1 npx prisma migrate deploy --schema packages/db/prisma/schema.prisma
+
+# 2. Créer le compte CEO/Admin
+docker exec -it ai-company-swarm-paperclip-1 pnpm paperclipai auth bootstrap-ceo
+
+# 3. Onboard (génère les clés JWT pour les agents)
+docker exec -it ai-company-swarm-paperclip-1 pnpm paperclipai onboard"
