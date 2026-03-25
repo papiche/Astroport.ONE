@@ -323,230 +323,116 @@ echo "##########################################################################
 cp ~/.zen/install.errors.log ~/.zen/tmp/${IPFSNODEID}/ 2>/dev/null
 
 ##################################################################################
-############################################
-### FORWARD SSH PORT over /x/ssh-${IPFSNODEID}
-############################################
-## Detect local SSH port (default 22)
-## 1. Read from sshd_config (most reliable)
-SSHPORT=$(grep -E "^Port " /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -1)
-## 2. If not found, check if port 22 is listening
-[[ -z "$SSHPORT" ]] && ss -tln 2>/dev/null | grep -qE ":22\s" && SSHPORT=22
-## 3. Default to 22
-[[ -z "$SSHPORT" ]] && SSHPORT=22
-echo "SSH tunnel: /x/ssh-${IPFSNODEID} (local SSH port: ${SSHPORT})"
-[[ ! $(ipfs p2p ls | grep "/x/ssh-${IPFSNODEID}") ]] \
-    && ipfs p2p listen /x/ssh-${IPFSNODEID} /ip4/127.0.0.1/tcp/${SSHPORT}
-############################################
-## PREPARE x_ssh.sh
-## REMOTE ACCESS COMMAND FROM DRAGONS
-############################################
-PORT=22000
-PORT=$((PORT+${RANDOM:0:3}))
-echo '#!/bin/bash
-if [[ ! $(ipfs p2p ls | grep x/ssh-'${IPFSNODEID}') ]]; then
-    ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
-    [[ $? == 0 ]] \
-        && ipfs p2p forward /x/ssh-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
-        && echo "ssh '${USER}'@127.0.0.1 -p '${PORT}'" \
-        || echo "CONTACT IPFSNODEID FAILED - ERROR -"
-else
-    echo "Tunnel /x/ssh '${PORT}' already active..."
-    echo "ssh '${USER}'@127.0.0.1 -p '${PORT}'"
-    echo "ipfs p2p close -p /x/ssh-'${IPFSNODEID}'"
-fi
-' > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
+##################################################################################
+# FONCTION GÉNÉRATRICE DE TUNNEL (Double Bind)
+##################################################################################
+# $1: Port, $2: Nom court (ex: paperclip), $3: Description
+generate_p2p_service() {
+    local PORT=$1
+    local SLUG=$2
+    local NAME=$3
+    local CHANNEL="/x/${SLUG}-${IPFSNODEID}"
 
-echo "ipfs cat /ipns/${IPFSNODEID}/x_ssh.sh | bash"
-chmod +x ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
-
-
-############################################
-## PREPARE x_ollama.sh (Double Bind version)
-############################################
-rm -f ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh 2>/dev/null
-if [[ ! -z $(pgrep ollama) ]]; then
-    PORT=11434
-    CHANNEL="/x/ollama-${IPFSNODEID}"
-    
-    # On publie l'écouteur sur le serveur (une seule fois)
-    [[ ! $(ipfs p2p ls | grep "$CHANNEL") ]] \
-        && ipfs p2p listen "$CHANNEL" /ip4/127.0.0.1/tcp/${PORT}
-
-    echo '#!/bin/bash
-    # Détection dynamique de l IP Docker chez le CLIENT
-    DOCKER_IP=$(ip addr show docker0 2>/dev/null | grep -oP "(?<=inet\s)\d+(\.\d+){3}" || echo "172.17.0.1")
-    NODE_ID="'${IPFSNODEID}'"
-    LPORT="'${PORT}'"
-    PROTO="'$CHANNEL'"
-
-    # Fonction pour vérifier si un bind spécifique existe déjà
-    check_bind() {
-        ipfs p2p ls | grep "$PROTO" | grep "$1" > /dev/null
-    }
-
-    if [[ "${1,,}" == "off" || "${1,,}" == "stop" ]]; then
-        echo "Closing all Ollama tunnels for $NODE_ID..."
-        # On ferme par protocole (ferme tous les binds d un coup)
-        ipfs p2p close -p "$PROTO"
-        exit 0
-    fi
-
-    # Test de connectivité
-    ipfs --timeout=10s ping -n 2 "/p2p/$NODE_ID" > /dev/null
-    if [[ $? == 0 ]]; then
-        echo "Establishing Double Tunnel for Ollama ($NODE_ID)..."
+    # Vérification si le port écoute sur la machine Libra (serveur)
+    if ss -tln | grep -q ":${PORT} "; then
+        echo "Publie le service $NAME sur $CHANNEL"
         
-        # Tunnel 1 : Localhost (pour RooCode, Python local)
-        if ! check_bind "127.0.0.1"; then
-            ipfs p2p forward "$PROTO" "/ip4/127.0.0.1/tcp/$LPORT" "/p2p/$NODE_ID"
-            echo "  [OK] Host Access: http://127.0.0.1:$LPORT"
-        else
-            echo "  [SKIP] Host Access already active."
+        # Le serveur écoute
+        [[ ! $(ipfs p2p ls | grep "$CHANNEL") ]] \
+            && ipfs p2p listen "$CHANNEL" /ip4/127.0.0.1/tcp/${PORT}
+
+        # Génération du script client x_service.sh
+        echo '#!/bin/bash
+        # Détection dynamique de l IP Docker chez le CLIENT
+        DOCKER_IP=$(ip addr show docker0 2>/dev/null | grep -oP "(?<=inet\s)\d+(\.\d+){3}" || echo "172.17.0.1")
+        NODE_ID="'${IPFSNODEID}'"
+        LPORT="'${PORT}'"
+        PROTO="'$CHANNEL'"
+        NAME="'$NAME'"
+
+        check_bind() { ipfs p2p ls | grep "$PROTO" | grep "$1" > /dev/null; }
+
+        if [[ "${1,,}" == "off" || "${1,,}" == "stop" ]]; then
+            echo "Closing $NAME tunnel..."
+            ipfs p2p close -p "$PROTO"
+            exit 0
         fi
 
-        # Tunnel 2 : Docker Bridge (pour LiteLLM, Paperclip)
-        if ! check_bind "$DOCKER_IP"; then
-            ipfs p2p forward "$PROTO" "/ip4/$DOCKER_IP/tcp/$LPORT" "/p2p/$NODE_ID"
-            echo "  [OK] Docker Access: http://$DOCKER_IP:$LPORT"
+        ipfs --timeout=10s ping -n 2 "/p2p/$NODE_ID" > /dev/null
+        if [[ $? == 0 ]]; then
+            echo "Establishing Double Tunnel for $NAME ($NODE_ID)..."
+            if ! check_bind "127.0.0.1"; then
+                ipfs p2p forward "$PROTO" "/ip4/127.0.0.1/tcp/$LPORT" "/p2p/$NODE_ID"
+                echo "  [OK] Host Access: http://localhost:$LPORT"
+            fi
+            if ! check_bind "$DOCKER_IP"; then
+                ipfs p2p forward "$PROTO" "/ip4/$DOCKER_IP/tcp/$LPORT" "/p2p/$NODE_ID"
+                echo "  [OK] Docker Access: http://$DOCKER_IP:$LPORT"
+            fi
         else
-            echo "  [SKIP] Docker Access already active."
+            echo "ERROR: Node $NODE_ID unreachable."
+            exit 1
         fi
-
-        export OLLAMA_API_BASE="http://127.0.0.1:$LPORT"
-    else
-        echo "ERROR: Cannot reach node $NODE_ID. Is it online?"
-        exit 1
+        ' > ~/.zen/tmp/${IPFSNODEID}/x_${SLUG}.sh
+        
+        chmod +x ~/.zen/tmp/${IPFSNODEID}/x_${SLUG}.sh
+        echo "  -> x_${SLUG}.sh généré"
     fi
-    ' > ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh
+}
 
-    echo "ipfs cat /ipns/${IPFSNODEID}/x_ollama.sh | bash"
-    chmod +x ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh
+##################################################################################
+# DÉTECTION ET PUBLICATION DES SERVICES AI COMPANY
+##################################################################################
+
+# Paperclip (3100)
+generate_p2p_service 3100 "paperclip" "Paperclip (Agents)"
+
+# OpenClaw (8000)
+generate_p2p_service 8000 "openclaw" "OpenClaw (Tools)"
+
+# LiteLLM (8001)
+generate_p2p_service 8001 "litellm" "LiteLLM (Proxy)"
+
+# Qdrant (6333)
+generate_p2p_service 6333 "qdrant" "Qdrant (VectorDB)"
+
+# Nginx Proxy Manager (8100)
+generate_p2p_service 8100 "npm" "Nginx Proxy Manager"
+
+# Ollama (11434) - Cas spécial car on check souvent pgrep
+if [[ ! -z $(pgrep ollama) ]]; then
+    generate_p2p_service 11434 "ollama" "Ollama API"
 fi
 
-############################################
-## PREPARE x_comfyui.sh
-## REMOTE ACCESS COMMAND FROM DRAGONS
-############################################
-rm -f ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh 2>/dev/null
+##################################################################################
+# SERVICES ADDITIONNELS (ComfyUI, Orpheus, Perplexica, etc.)
+##################################################################################
+
+# SSH (Toujours prioritaire)
+SSHPORT=$(grep -E "^Port " /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -1)
+[[ -z "$SSHPORT" ]] && SSHPORT=22
+generate_p2p_service $SSHPORT "ssh" "SSH Remote Access"
+
+# ComfyUI (8188)
 if [[ ! -z $(systemctl status comfyui.service 2>/dev/null | grep "active (running)") ]]; then
-    PORT=8188
-    echo "ComfyUI tunnel: /x/comfyui-${IPFSNODEID}"
-    [[ ! $(ipfs p2p ls | grep "/x/comfyui-${IPFSNODEID}") ]] \
-        && ipfs p2p listen /x/comfyui-${IPFSNODEID} /ip4/127.0.0.1/tcp/${PORT}
-
-    echo '#!/bin/bash
-    if [[ ! $(ipfs p2p ls | grep x/comfyui-'${IPFSNODEID}') ]]; then
-        ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
-        [[ $? == 0 ]] \
-            && ipfs p2p forward /x/comfyui-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
-            && echo "xdg-open http://127.0.0.1:'${PORT}'" \
-            || echo "CONTACT IPFSNODEID FAILED - ERROR -"
-    else
-            echo "Tunnel /x/comfyui '${PORT}' already active..."
-            echo "ipfs p2p close -p /x/comfyui-'${IPFSNODEID}'"
-    fi
-    ' > ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh
-
-    echo "ipfs cat /ipns/${IPFSNODEID}/x_comfyui.sh | bash"
-    chmod +x ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh
-
+    generate_p2p_service 8188 "comfyui" "ComfyUI"
 fi
 
-############################################
-## PREPARE x_orpheus.sh
-## https://chaton.g1sms.fr/fr/blog/orpheus-fastapi-tts
-## REMOTE ACCESS COMMAND FROM DRAGONS
-############################################
-rm -f ~/.zen/tmp/${IPFSNODEID}/x_orpheus.sh 2>/dev/null
+# Orpheus (5005)
 if [[ ! -z $(docker ps | grep orpheus) ]]; then
-    PORT=5005
-
-    echo "Orpheus tunnel: /x/orpheus-${IPFSNODEID}"
-    [[ ! $(ipfs p2p ls | grep "/x/orpheus-${IPFSNODEID}") ]] \
-        && ipfs p2p listen /x/orpheus-${IPFSNODEID} /ip4/127.0.0.1/tcp/${PORT}
-
-    echo '#!/bin/bash
-    if [[ ! $(ipfs p2p ls | grep x/orpheus-'${IPFSNODEID}') ]]; then
-        ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
-        [[ $? == 0 ]] \
-            && ipfs p2p forward /x/orpheus-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
-            && echo "xdg-open http://127.0.0.1:'${PORT}'" \
-            || echo "CONTACT IPFSNODEID FAILED - ERROR -"
-    else
-            echo "Tunnel /x/orpheus '${PORT}' already active..."
-            echo "ipfs p2p close -p /x/orpheus-'${IPFSNODEID}'"
-    fi
-    ' > ~/.zen/tmp/${IPFSNODEID}/x_orpheus.sh
-
-    echo "ipfs cat /ipns/${IPFSNODEID}/x_orpheus.sh | bash"
-    chmod +x ~/.zen/tmp/${IPFSNODEID}/x_orpheus.sh
-
+    generate_p2p_service 5005 "orpheus" "Orpheus TTS"
 fi
 
-
-############################################
-## PREPARE x_perplexica.sh
-## REMOTE ACCESS COMMAND FROM DRAGONS
-############################################
-rm -f ~/.zen/tmp/${IPFSNODEID}/x_perplexica.sh 2>/dev/null
+# Perplexica (3001)
 if [[ ! -z $(docker ps | grep perplexica) ]]; then
-    PORT=3001
-
-    echo "Perplexica tunnel: /x/perplexica-${IPFSNODEID}"
-    [[ ! $(ipfs p2p ls | grep "/x/perplexica-${IPFSNODEID}") ]] \
-        && ipfs p2p listen /x/perplexica-${IPFSNODEID} /ip4/127.0.0.1/tcp/${PORT}
-
-    echo '#!/bin/bash
-    if [[ ! $(ipfs p2p ls | grep x/perplexica-'${IPFSNODEID}') ]]; then
-        ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
-        [[ $? == 0 ]] \
-            && ipfs p2p forward /x/perplexica-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
-            && echo "xdg-open http://127.0.0.1:'${PORT}'" \
-            || echo "CONTACT IPFSNODEID FAILED - ERROR -"
-    else
-            echo "Tunnel /x/perplexica '${PORT}' already active..."
-            echo "ipfs p2p close -p /x/perplexica-'${IPFSNODEID}'"
-    fi
-    ' > ~/.zen/tmp/${IPFSNODEID}/x_perplexica.sh
-
-    echo "ipfs cat /ipns/${IPFSNODEID}/x_perplexica.sh | bash"
-    chmod +x ~/.zen/tmp/${IPFSNODEID}/x_perplexica.sh
-
+    generate_p2p_service 3001 "perplexica" "Perplexica Search"
 fi
 
-############################################
-## PREPARE x_strfry.sh
-## REMOTE ACCESS COMMAND FROM DRAGONS FOR STRFRY RELAY
-############################################
-rm -f ~/.zen/tmp/${IPFSNODEID}/x_strfry.sh 2>/dev/null
-if [[ ! -z $(ps auxf | grep "strfry relay" | grep -v grep) ]]; then
-    PORT=7777
-
-    echo "STRFRY relay tunnel: /x/strfry-${IPFSNODEID}"
-    [[ ! $(ipfs p2p ls | grep "/x/strfry-${IPFSNODEID}") ]] \
-        && ipfs p2p listen /x/strfry-${IPFSNODEID} /ip4/127.0.0.1/tcp/${PORT}
-
-    echo '#!/bin/bash
-    if [[ ! $(ipfs p2p ls | grep x/strfry-'${IPFSNODEID}') ]]; then
-        ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
-        [[ $? == 0 ]] \
-            && ipfs p2p forward /x/strfry-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/9999 /p2p/'${IPFSNODEID}' \
-            && echo "STRFRY RELAY PORT FOR '${IPFSNODEID}'" \
-            && echo "WebSocket URL: ws://127.0.0.1:9999" \
-            && echo "NOSTR Relay accessible via IPFS P2P tunnel on local port 9999" \
-            && echo "Local relay: ws://127.0.0.1:9999" \
-            || echo "CONTACT IPFSNODEID FAILED - ERROR -"
-    else
-            echo "Tunnel /x/strfry already active..."
-            echo "ipfs p2p close -p /x/strfry-'${IPFSNODEID}'"
-    fi
-    ' > ~/.zen/tmp/${IPFSNODEID}/x_strfry.sh
-
-    echo "ipfs cat /ipns/${IPFSNODEID}/x_strfry.sh | bash"
-    chmod +x ~/.zen/tmp/${IPFSNODEID}/x_strfry.sh
-
-fi
-
+##################################################################################
+echo "Active Swarm Tunnels:"
+ipfs p2p ls
+echo "DRAGON WOKE UP - AI Swarm is Ready"
+##################################################################################
 
 ############################################
 ## PREPARE x_cups.sh
@@ -554,6 +440,7 @@ fi
 ## Detects USB printer (/dev/usb/lp*) or active CUPS service
 ############################################
 rm -f ~/.zen/tmp/${IPFSNODEID}/x_cups.sh 2>/dev/null
+exit 0
 # LP=$(ls /dev/usb/lp* 2>/dev/null)
 # CUPS_ACTIVE=$(systemctl is-active cups 2>/dev/null)
 # if [[ ! -z "$LP" || "$CUPS_ACTIVE" == "active" ]]; then
@@ -741,11 +628,4 @@ rm -f ~/.zen/tmp/${IPFSNODEID}/x_cups.sh 2>/dev/null
 
 # fi
 
-echo "Active P2P tunnels:"
-ipfs p2p ls
 
-############################################
-echo "DRAGON WOKE UP"
-############################################
-
-exit 0
