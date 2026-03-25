@@ -551,7 +551,7 @@ find  ~/.zen/game/players/${PLAYER}/ipfs/moa/ -mtime +30 -type f -exec rm -f '{}
 ##########################################
 if [[ ! -f ~/.zen/tmp/${MOATS}/AstroID.json ]]; then
     TW=$(ipfs add -Hq ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html | tail -n 1)
-    ipfs --timeout 720s name publish --key=${PLAYER} /ipfs/${TW}
+    ipfs --timeout 30s name publish --key=${PLAYER} /ipfs/${TW}
 
     ## LOCAL PLAYER CACHING
     echo ${TW} > ~/.zen/game/players/${PLAYER}/ipfs/moa/.chain
