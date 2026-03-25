@@ -133,6 +133,7 @@ else
 POSTGRES_PASSWORD=${PG_PASS}
 POSTGRES_USER=paperclip
 POSTGRES_DB=paperclip
+POSTGRES_LITELLM_DB=litellm
 QDRANT_API_KEY=${QDRANT_KEY}
 PAPERCLIP_AUTH_SECRET=${AUTH_SECRET}
 LITELLM_MASTER_KEY=${PROXY_KEY}
@@ -162,10 +163,15 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      - POSTGRES_PASSWORD=\${POSTGRES_PASSWORD}
-      - POSTGRES_USER=\${POSTGRES_USER}
-      - POSTGRES_DB=\${POSTGRES_DB}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_DB=${POSTGRES_DB}
     volumes: ["postgres_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   llm-proxy:
@@ -174,7 +180,7 @@ services:
     ports: ["${PORT_LITELLM}:4000"]
     environment:
       - LITELLM_MASTER_KEY=\${LITELLM_MASTER_KEY}
-      - DATABASE_URL=postgresql://\${POSTGRES_USER}:\${POSTGRES_PASSWORD}@postgres:5432/\${POSTGRES_DB}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/litellm
       - PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x
     volumes: ["./litellm-config.yaml:/app/config.yaml"]
     extra_hosts: ["host.docker.internal:host-gateway"]
@@ -242,8 +248,10 @@ echo -e "⏳ Démarrage de la base de données PostgreSQL..."
 $DOCKER_CMD -p ai-company-swarm up -d postgres
 echo -e "Attente de l'initialisation de PostgreSQL (10s)..."
 sleep 10
-
-echo -e "⏳ Démarrage de Paperclip (Création de ses tables)..."
+echo -e "⏳ Création de la base de données LiteLLM..."
+docker exec -it ai-company-swarm-postgres-1 psql -U paperclip -d paperclip -c "CREATE DATABASE litellm;" || true
+sleep 5
+echo -e "⏳ Démarrage de Paperclip (Création de sa base)..."
 $DOCKER_CMD -p ai-company-swarm up -d paperclip
 echo -e "Attente des migrations automatiques de Paperclip (20s)..."
 sleep 20
@@ -288,11 +296,11 @@ cp -f $MY_PATH/install-ai-company.md ~/.zen/ai-company/
 echo -e "${YELLOW}⚙️ Configuration initiale de Paperclip :${NC}"
 echo -e "Pour bootstrap l'admin, lance : cd ~/.zen/ai-company/"
 echo -e "DOC : install-ai-company.md"
-echo -e "# 1. Appliquer les migrations de Paperclip (si ce n'est pas déjà fait automatiquement)
+echo -e "# A. Appliquer les tables SQL
 docker exec -it ai-company-swarm-paperclip-1 npx prisma migrate deploy --schema packages/db/prisma/schema.prisma
 
-# 2. Créer le compte CEO/Admin
-docker exec -it ai-company-swarm-paperclip-1 pnpm paperclipai auth bootstrap-ceo
+# B. Lancer l'onboarding (Réponds "Quickstart")
+docker exec -it ai-company-swarm-paperclip-1 pnpm paperclipai onboard
 
-# 3. Onboard (génère les clés JWT pour les agents)
-docker exec -it ai-company-swarm-paperclip-1 pnpm paperclipai onboard"
+# C. Créer l'admin (Maintenant que le config.json existe)
+docker exec -it ai-company-swarm-paperclip-1 pnpm paperclipai auth bootstrap-ceo"
