@@ -361,36 +361,66 @@ chmod +x ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
 
 
 ############################################
-## PREPARE x_ollama.sh
-## REMOTE ACCESS COMMAND FROM DRAGONS
+## PREPARE x_ollama.sh (Double Bind version)
 ############################################
 rm -f ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh 2>/dev/null
 if [[ ! -z $(pgrep ollama) ]]; then
     PORT=11434
-    echo "Ollama tunnel: /x/ollama-${IPFSNODEID}"
-    [[ ! $(ipfs p2p ls | grep "/x/ollama-${IPFSNODEID}") ]] \
-        && ipfs p2p listen /x/ollama-${IPFSNODEID} /ip4/127.0.0.1/tcp/${PORT}
+    CHANNEL="/x/ollama-${IPFSNODEID}"
+    
+    # On publie l'écouteur sur le serveur (une seule fois)
+    [[ ! $(ipfs p2p ls | grep "$CHANNEL") ]] \
+        && ipfs p2p listen "$CHANNEL" /ip4/127.0.0.1/tcp/${PORT}
 
     echo '#!/bin/bash
-    if [[ ! $(ipfs p2p ls | grep x/ollama-'${IPFSNODEID}') ]]; then
-        ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
-        [[ $? == 0 ]] \
-            && DOCKER_BRIDGE_IP=$(ip addr show docker0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}' || echo "172.17.0.1") \
-            && ipfs p2p forward /x/ollama-'${IPFSNODEID}' /ip4/$DOCKER_BRIDGE_IP/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
-            && echo "OLLAMA PORT FOR '${IPFSNODEID}'" \
-            && export OLLAMA_API_BASE="http://127.0.0.1:'${PORT}'" \
-            && echo "OLLAMA_API_BASE=$OLLAMA_API_BASE" \
-            || echo "CONTACT IPFSNODEID FAILED - ERROR -"
+    # Détection dynamique de l IP Docker chez le CLIENT
+    DOCKER_IP=$(ip addr show docker0 2>/dev/null | grep -oP "(?<=inet\s)\d+(\.\d+){3}" || echo "172.17.0.1")
+    NODE_ID="'${IPFSNODEID}'"
+    LPORT="'${PORT}'"
+    PROTO="'$CHANNEL'"
+
+    # Fonction pour vérifier si un bind spécifique existe déjà
+    check_bind() {
+        ipfs p2p ls | grep "$PROTO" | grep "$1" > /dev/null
+    }
+
+    if [[ "${1,,}" == "off" || "${1,,}" == "stop" ]]; then
+        echo "Closing all Ollama tunnels for $NODE_ID..."
+        # On ferme par protocole (ferme tous les binds d un coup)
+        ipfs p2p close -p "$PROTO"
+        exit 0
+    fi
+
+    # Test de connectivité
+    ipfs --timeout=10s ping -n 2 "/p2p/$NODE_ID" > /dev/null
+    if [[ $? == 0 ]]; then
+        echo "Establishing Double Tunnel for Ollama ($NODE_ID)..."
+        
+        # Tunnel 1 : Localhost (pour RooCode, Python local)
+        if ! check_bind "127.0.0.1"; then
+            ipfs p2p forward "$PROTO" "/ip4/127.0.0.1/tcp/$LPORT" "/p2p/$NODE_ID"
+            echo "  [OK] Host Access: http://127.0.0.1:$LPORT"
+        else
+            echo "  [SKIP] Host Access already active."
+        fi
+
+        # Tunnel 2 : Docker Bridge (pour LiteLLM, Paperclip)
+        if ! check_bind "$DOCKER_IP"; then
+            ipfs p2p forward "$PROTO" "/ip4/$DOCKER_IP/tcp/$LPORT" "/p2p/$NODE_ID"
+            echo "  [OK] Docker Access: http://$DOCKER_IP:$LPORT"
+        else
+            echo "  [SKIP] Docker Access already active."
+        fi
+
+        export OLLAMA_API_BASE="http://127.0.0.1:$LPORT"
     else
-            echo "Tunnel /x/ollama '${PORT}' already active..."
-            echo "ipfs p2p close -p /x/ollama-'${IPFSNODEID}'"
+        echo "ERROR: Cannot reach node $NODE_ID. Is it online?"
+        exit 1
     fi
     ' > ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh
-    #~ cat ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh
 
     echo "ipfs cat /ipns/${IPFSNODEID}/x_ollama.sh | bash"
     chmod +x ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh
-
 fi
 
 ############################################
