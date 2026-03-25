@@ -18,7 +18,10 @@ REMOTE_USER="frd"
 REMOTE_HOST="scorpio.copylaradio.com"
 REMOTE_PORT_IPV4=2122  # Port for IPv4 NAT access
 REMOTE_PORT_IPV6=22    # Port for direct IPv6 access
-SSH_OPTIONS="-fN -L 127.0.0.1:$OLLAMA_PORT:127.0.0.1:$OLLAMA_PORT"
+# On détecte l'IP du bridge docker (généralement 172.17.0.1)
+DOCKER_BRIDGE_IP=$(ip addr show docker0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}' || echo "172.17.0.1")
+# On bind le port LOCAL du tunnel sur l'IP du bridge Docker
+SSH_OPTIONS="-fN -L $DOCKER_BRIDGE_IP:$OLLAMA_PORT:127.0.0.1:$OLLAMA_PORT"
 
 # Colors for output
 RED='\033[0;31m'

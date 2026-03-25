@@ -142,17 +142,20 @@ EOF
     export $(grep -v '^#' .env | xargs)
 fi
 
+DOCKER_BRIDGE_IP=$(ip addr show docker0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}' || echo "172.17.0.1")
+HOST_IP=$(ip route get 1.1.1.1 | grep -oP 'src \K[^ ]+' || hostname -I | awk '{print $1}')
+echo -e "${CYAN}📡 IP détectée pour Ollama : ${HOST_IP} // Docker Brdge $DOCKER_BRIDGE_IP ${NC}"
 # --- CONFIG LITELLM ---
 cat > litellm-config.yaml << EOF
 model_list:
   - model_name: "$OLLAMA_MODEL"
     litellm_params:
-      model: "ollama_chat/$OLLAMA_MODEL"
-      api_base: "http://host.docker.internal:$OLLAMA_PORT"
+      model: "openai/$OLLAMA_MODEL"
+      api_base: "http://$DOCKER_BRIDGE_IP:$OLLAMA_PORT"
   - model_name: "$EMBEDDING_MODEL"
     litellm_params:
-      model: "ollama/$EMBEDDING_MODEL"
-      api_base: "http://host.docker.internal:$OLLAMA_PORT"
+      model: "openai/$EMBEDDING_MODEL"
+      api_base: "http://$DOCKER_BRIDGE_IP:$OLLAMA_PORT"
 EOF
 
 # --- DOCKER COMPOSE ---

@@ -375,7 +375,8 @@ if [[ ! -z $(pgrep ollama) ]]; then
     if [[ ! $(ipfs p2p ls | grep x/ollama-'${IPFSNODEID}') ]]; then
         ipfs --timeout=10s ping -n 4 /p2p/'${IPFSNODEID}'
         [[ $? == 0 ]] \
-            && ipfs p2p forward /x/ollama-'${IPFSNODEID}' /ip4/127.0.0.1/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
+            && DOCKER_BRIDGE_IP=$(ip addr show docker0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}' || echo "172.17.0.1") \
+            && ipfs p2p forward /x/ollama-'${IPFSNODEID}' /ip4/$DOCKER_BRIDGE_IP/tcp/'${PORT}' /p2p/'${IPFSNODEID}' \
             && echo "OLLAMA PORT FOR '${IPFSNODEID}'" \
             && export OLLAMA_API_BASE="http://127.0.0.1:'${PORT}'" \
             && echo "OLLAMA_API_BASE=$OLLAMA_API_BASE" \
