@@ -39,8 +39,8 @@ export PATH=$HOME/.local/bin:$PATH
 
 PORT=12345
 ## Balise stale threshold (seconds): remove station from swarm if IPNS not updated longer than this.
-## Must be above this script's refresh cycle (duree > 3600000 ms = ~1h) to avoid false OFFLINE.
-BALISE_STALE_SECONDS=$(( 4 * 60 * 60 ))   # 4 hours
+## Must be above this script's refresh cycle (duree > 3600 s = ~1h) to avoid false OFFLINE.
+BALISE_STALE_SECONDS=$(( 5 * 60 * 60 ))   # 5 hours
 
 ## WHAT IS NODEG1PUB
 NODEG1PUB=$($MY_PATH/tools/ipfs_to_g1.py ${IPFSNODEID})
@@ -213,14 +213,14 @@ while true; do
     if [[ -f ~/.zen/tmp/${IPFSNODEID}/12345.json ]]; then
         JSON_AGE=$(( $(date +%s) - $(stat -c %Y ~/.zen/tmp/${IPFSNODEID}/12345.json) ))
         # If 12345.json was updated in last 5 minutes, force publish
-        if [[ $JSON_AGE -lt 300 && $duree -lt 3600000 ]]; then
+        if [[ $JSON_AGE -lt 300 && $duree -lt 3600 ]]; then
             echo "12345.json recently updated ($JSON_AGE seconds ago), forcing publication"
             FORCE_PUBLISH=1
         fi
     fi
 
-    ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H in ms )
-    if [[ ${duree} -gt 3600000 || ${duree} == "" || ${FORCE_PUBLISH} -eq 1 ]]; then
+    ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H in s )
+    if [[ ${duree} -gt 3600 || ${duree} == "" || ${FORCE_PUBLISH} -eq 1 ]]; then
         echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
         PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
         YIPNS=$(${MY_PATH}/tools/ssh_to_g1ipfs.py "$(cat ~/.ssh/id_ed25519.pub)")
@@ -239,7 +239,23 @@ while true; do
         fi
 
         ${MY_PATH}/ping_bootstrap.sh
-
+        ## TRAITEMENT DE LA QUEUE UPSYNC (Requêtes accumulées)
+        if [[ -s "$UPSYNC_QUEUE" ]]; then
+            echo "--- PROCESSING UPSYNC QUEUE ---"
+            # On crée une copie de travail et on vide l'originale pour accepter de nouveaux spams
+            cp "$UPSYNC_QUEUE" "${UPSYNC_QUEUE}.work"
+            > "$UPSYNC_QUEUE"
+            
+            # On limite à 20 synchros max par cycle pour éviter le gavage
+            for q_znod in $(head -n 20 "${UPSYNC_QUEUE}.work"); do
+                [[ -z "$q_znod" ]] && continue
+                echo "Queued Syncing: $q_znod"
+                mkdir -p ~/.zen/tmp/swarm/${q_znod}
+                # On utilise un timeout plus court pour ne pas bloquer le script trop longtemps
+                ipfs --timeout 120s get --progress="false" -o ~/.zen/tmp/swarm/${q_znod} /ipns/${q_znod} >/dev/null 2>&1
+            done
+            rm -f "${UPSYNC_QUEUE}.work"
+        fi
         # IPNS flashmem desactivated - reactivate as needed - _UPLANET.refresh.sh TW system
         #~ #### UPLANET FLASHMEM UPDATES 
         ## - keep Zen Card & Geo Key ipns & ipfs copied to automaticaly propogate
@@ -660,55 +676,46 @@ NODE12345="{
 }
 "
 
-## PUBLISH ${IPFSNODEID}/12345.json
-echo "${NODE12345}" > ~/.zen/tmp/${IPFSNODEID}/12345.json
+    ## PUBLISH ${IPFSNODEID}/12345.json
+    echo "${NODE12345}" > ~/.zen/tmp/${IPFSNODEID}/12345.json
 
-############ PREPARE HTTP 12345 JSON DOCUMENT (RAM OPTIMIZED)
+    ############ PREPARE HTTP 12345 JSON DOCUMENT (RAM OPTIMIZED)
     RESPONSE_FILE="/dev/shm/astroport_12345.http"
     echo -e "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET\r\nServer: Astroport.ONE\r\nContent-Type: application/json; charset=UTF-8\r\nConnection: close\r\n\r\n${NODE12345}" > "$RESPONSE_FILE"
 
     ######################################################################################
-    # PREPARE HANDLER SCRIPT FOR UPSYNC (CGI-like)
+    # PREPARE HANDLER SCRIPT FOR UPSYNC (Léger - Mise en file d'attente)
     HANDLER_SCRIPT="$HOME/.zen/tmp/12345_handler.sh"
-    ENV_FILE="$HOME/.zen/tmp/12345_env.sh"
-    
-    # Save environment for the handler
-    echo "export MY_PATH=\"$MY_PATH\"" > "$ENV_FILE"
-    
-    # Create the handler script
-    cat << 'EOF' > "$HANDLER_SCRIPT"
+    UPSYNC_QUEUE="$HOME/.zen/tmp/upsync_queue.txt"
+    touch "$UPSYNC_QUEUE"
+
+    cat << EOF > "$HANDLER_SCRIPT"
 #!/bin/bash
 source "$HOME/.zen/tmp/12345_env.sh"
+UPSYNC_QUEUE="$UPSYNC_QUEUE"
 
-# 1. Read Request (First line is enough for GET parameters)
+# 1. Lire la requête
 read -r request_line
 
-# 2. Send Response Immediately (RAM)
+# 2. Répondre immédiatement (RAM)
 cat /dev/shm/astroport_12345.http
 
-# 3. Process UPSYNC in background
-(
-    # Extract query: GET /?G1PUB=... HTTP...
-    query=$(echo "$request_line" | sed -n 's/^GET \/?[?]\(.*\) HTTP.*/\1/p')
+# 3. Validation et mise en file d'attente
+query=\$(echo "\$request_line" | sed -n 's/^GET \/\?[?]\(.*\) HTTP.*/\1/p')
+if [[ -n "\$query" ]]; then
+    arr=(\${query//[=&]/ })
+    GPUB=\${arr[0]}
+    IPNS=\${arr[1]}
     
-    if [[ -n "$query" ]]; then
-        # Parse G1PUB=IPNS
-        arr=(${query//[=&]/ })
-        GPUB=${arr[0]}
-        IPNS=${arr[1]}
-        
-        if [[ -n "$GPUB" && -n "$IPNS" ]]; then
-            # Check consistency using existing tool
-            ASTROTOIPFS=$(${MY_PATH}/tools/g1_to_ipfs.py ${GPUB} 2>/dev/null)
-            
-            if [[ "${ASTROTOIPFS}" == "${IPNS}" ]]; then
-                # Trigger IPFS GET
-                mkdir -p ~/.zen/tmp/swarm/${IPNS}
-                ipfs --timeout 240s get --progress="false" -o ~/.zen/tmp/swarm/${IPNS} /ipns/${IPNS} >/dev/null 2>&1
-            fi
+    if [[ -n "\$GPUB" && -n "\$IPNS" ]]; then
+        # Vérification de conformité
+        ASTROTOIPFS=\$(\${MY_PATH}/tools/g1_to_ipfs.py \${GPUB} 2>/dev/null)
+        if [[ "\${ASTROTOIPFS}" == "\${IPNS}" ]]; then
+            # AJOUT À LA QUEUE (si pas déjà présent)
+            grep -qxF "\$IPNS" "\$UPSYNC_QUEUE" || echo "\$IPNS" >> "\$UPSYNC_QUEUE"
         fi
     fi
-) &
+fi
 EOF
     chmod +x "$HANDLER_SCRIPT"
 
