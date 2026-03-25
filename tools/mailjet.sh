@@ -344,7 +344,7 @@ elif [[ -n "$CAPTAINEMAIL" && -s "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.no
     source "$NOSTR_KEYFILE"
     SENDER_NSEC="$NSEC"
     SENDER_IDENTITY="${CAPTAINEMAIL} (Captain)"
-    echo "👨‍✈️ Using captain's NOSTR key"
+    TEXTPART="${TEXTPART} \n👨‍✈️ Bad Routing for ${DEST_EMAIL}"
 fi
 
 if [[ -n "$SENDER_NSEC" && -n "$NOSTR_KEYFILE" ]]; then
@@ -357,7 +357,6 @@ ${TEXTPART}
 
 ---
 ${HEX:+📱 NOSTR: ${NPUB}}
-${RELAY:+🌐 Relay: ${myRELAY}}
 ${ephemeral_duration:+⏰ $(convert_seconds_to_human ${ephemeral_duration})}
 "
 
