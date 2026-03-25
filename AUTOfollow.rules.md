@@ -1,242 +1,58 @@
-# AUTOfollow.rules.md - Système de Gestion Automatique des Follow NOSTR
+# 📋 AUTOfollow.rules.md - Système de Follow Automatique NOSTR : Liaisons et Suivi
 
-## 📋 Vue d'ensemble
+## 1. 🔗 Liaisons entre les Clefs (Web of Trust)
 
-Le système UPlanet implémente un réseau NOSTR auto-organisé où les follow sont gérés automatiquement selon des règles précises. Ce document détaille les mécanismes de follow automatique et leurs implémentations.
+Le système UPlanet ne repose pas sur une clef unique, mais sur un **faisceau de clefs interdépendantes** qui lient l'identité physique, sociale et économique.
 
-## 🎯 Principes Fondamentaux
+### A. Le Triptyque de l'Utilisateur (MULTIPASS)
+*   **Clef Nostr (NSEC/NPUB) ↔ Email :** La clef sociale est dérivée de façon déterministe par le couple Salt/Pepper lié à l'email.
+*   **Clef Nostr ↔ Wallet Ğ1 (MULTIPASS) :** Le wallet de "revenu" (usage quotidien) est lié à l'identité Nostr pour permettre les paiements par "Like" (Kind 7).
+*   **Clef Nostr ↔ ZEN Card (G1PUB) :** La clef sociale porte dans ses métadonnées (Tags `i`) la preuve de possession de la ZEN Card (Capital).
+*   **Clef Nostr ↔ Localisation (UMAP) :** Chaque message est ancré géographiquement via un tag `g` (lat, lon), liant l'identité à un bot de zone.
 
-### 1. **Follow Bidirectionnel**
-- Chaque nouvelle identité suit automatiquement le capitaine
-- Le capitaine suit automatiquement chaque nouvelle identité
-- **Référence** : [`tools/make_NOSTRCARD.sh:422-448`](tools/make_NOSTRCARD.sh#L422-L448)
+### B. Les Clefs de la Station (Le Capitaine)
+*   **IPFSNODEID ↔ Clef SSH :** Grâce au script `Ylevel.sh`, l'identité réseau (IPFS) est la même que l'identité d'accès machine (SSH).
+*   **IPFSNODEID ↔ Capitaine :** Le premier MULTIPASS créé sur la station devient le "Capitaine" et signe les rapports de santé économique (Kind 30850).
 
-### 2. **Renouvellement Automatique**
-- Le capitaine renouvelle ses follow lors de l'activation du mode DRAGON
-- Suit toutes les identités existantes et les nœuds UMAP actifs
-- **Référence** : [`RUNTIME/DRAGON_p2p_ssh.sh:110-121`](RUNTIME/DRAGON_p2p_ssh.sh#L110-L121)
-
-### 3. **Gestion Géographique**
-- Les nœuds UMAP suivent automatiquement les utilisateurs de leur zone
-- Mise à jour nocturne des relations géographiques
-- **Référence** : [`RUNTIME/NOSTR.UMAP.refresh.sh:1907-1924`](RUNTIME/NOSTR.UMAP.refresh.sh#L1907-L1924)
-
-## 🔧 Scripts de Gestion des Follow
-
-### Core Scripts
-
-#### `nostr_follow.sh`
-**Rôle** : Script central pour gérer les follow NOSTR
-```bash
-# Usage: nostr_follow.sh <SOURCE_NSEC> <DESTINATION_HEX1> [DESTINATION_HEX2...] [RELAY]
-```
-**Fonctionnalités** :
-- Ajoute des utilisateurs à une liste de follow (kind 3)
-- Gère les follow existants (évite les doublons)
-- Support multi-relais
-- **Référence** : [`tools/nostr_follow.sh:1-96`](tools/nostr_follow.sh#L1-L96)
-
-#### `nostr_followers.sh`
-**Rôle** : Trouve qui suit un utilisateur donné
-```bash
-# Usage: ./nostr_followers.sh <npub_hex>
-```
-**Référence** : [`tools/nostr_followers.sh:1-8`](tools/nostr_followers.sh#L1-L8)
-
-### Scripts d'Application
-
-#### 1. Création d'Identité - `make_NOSTRCARD.sh`
-
-**Follow Bidirectionnel lors de la création d'une nouvelle identité** :
-
-```bash
-### MULTIPASS FOLLOWS CAPTAIN AUTOMATICALLY
-# New MULTIPASS should follow the CAPTAIN to receive updates and guidance
-if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/HEX ]]; then
-    CAPTAINHEX=$(cat ~/.zen/game/nostr/${CAPTAINEMAIL}/HEX)
-    echo "👥 MULTIPASS ${EMAIL} following CAPTAIN ${CAPTAINEMAIL} (${CAPTAINHEX})"
-    ${MY_PATH}/../tools/nostr_follow.sh "$NPRIV" "$CAPTAINHEX" "$myRELAY" 2>/dev/null \
-        && echo "✅ MULTIPASS now follows CAPTAIN" \
-        || echo "⚠️  Failed to follow CAPTAIN (will retry later)"
-fi
-
-### CAPTAIN FOLLOWS NEW MULTIPASS AUTOMATICALLY
-# CAPTAIN should follow the new MULTIPASS to monitor and provide support
-if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
-    CAPTAINNSEC=$(grep "NSEC=" ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr | cut -d '=' -f 2)
-    if [[ -n "$CAPTAINNSEC" ]]; then
-        echo "👥 CAPTAIN ${CAPTAINEMAIL} following new MULTIPASS ${EMAIL} (${HEX})"
-        ${MY_PATH}/../tools/nostr_follow.sh "$CAPTAINNSEC" "$HEX" "$myRELAY" 2>/dev/null \
-            && echo "✅ CAPTAIN now follows new MULTIPASS" \
-            || echo "⚠️  Failed to follow new MULTIPASS (will retry later)"
-    fi
-fi
-```
-
-**Référence** : [`tools/make_NOSTRCARD.sh:422-448`](tools/make_NOSTRCARD.sh#L422-L448)
-
-#### 2. Support Technique - `DRAGON_p2p_ssh.sh`
-
-**Renouvellement complet des follow du capitaine** :
-
-```bash
-## FOLLOW EVERY NOSTR CARD
-nostrhex=($(cat ~/.zen/game/nostr/*@*.*/HEX))
-${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "${nostrhex[@]}" 2>/dev/null
-
-## FOLLOW EVERY ACTIVE UMAP NODE
-if [[ -d ~/.zen/tmp/${IPFSNODEID}/UPLANET ]]; then
-    umaphex=($(cat ~/.zen/tmp/${IPFSNODEID}/UPLANET/__/_*/*/*/HEX 2>/dev/null))
-    if [[ ${#umaphex[@]} -gt 0 ]]; then
-        echo "Following ${#umaphex[@]} active UMAP nodes"
-        ${MY_PATH}/../tools/nostr_follow.sh "$NSEC" "${umaphex[@]}" 2>/dev/null
-    fi
-fi
-```
-
-**Référence** : [`RUNTIME/DRAGON_p2p_ssh.sh:110-121`](RUNTIME/DRAGON_p2p_ssh.sh#L110-L121)
-
-#### 3. Gestion Géographique - `NOSTR.UMAP.refresh.sh`
-
-**Mise à jour des follow basés sur la géolocalisation** :
-
-```bash
-update_friends_list() {
-    local friends=("$@")
-    
-    # Get UPlanet UMAP NSEC with LAT and LON
-    local UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
-    
-    # Update friends list using nostr_follow.sh
-    if [[ ${#friends[@]} -gt 0 ]]; then
-        if [[ "$VERBOSE" == "true" ]]; then
-            $MY_PATH/../tools/nostr_follow.sh "$UMAPNSEC" "${friends[@]}" "$myRELAY"
-        else
-            $MY_PATH/../tools/nostr_follow.sh "$UMAPNSEC" "${friends[@]}" "$myRELAY" 2>&1 | grep -v "Already following" | grep -v "Verification successful" | grep -v "Sending event" | grep -v "Response from" | grep -v "EVENT" | grep -v "Follow list updated" | sed 's/\x1b\[[0-9;]*m//g'
-        fi
-        log_always "(${LAT} ${LON}) Updated friends list with ${#friends[@]} active friends"
-    else
-        log_always "(${LAT} ${LON}) No active friends to update"
-    fi
-}
-```
-
-**Référence** : [`RUNTIME/NOSTR.UMAP.refresh.sh:1907-1924`](RUNTIME/NOSTR.UMAP.refresh.sh#L1907-L1924)
-
-#### 4. Hiérarchie UPlanet - `UPLANET.refresh.sh`
-
-**Follow de l'UPlanet Origin** :
-
-```bash
-originpub=$(${MY_PATH}/../tools/keygen -t nostr "0000000000000000000000000000000000000000000000000000000000000000" "0000000000000000000000000000000000000000000000000000000000000000")
-originhex=$(${MY_PATH}/../tools/nostr2hex.py $originpub)
-if [[ ${UPLANETNAME} == "0000000000000000000000000000000000000000000000000000000000000000" ]]; then
-    echo "UPLANET ORIGIN : Seek for ${originhex} followers"
-    ${MY_PATH}/../tools/nostr_followers.sh "${originhex}"
-else
-    ## UPLANET Ẑen ---- > follow UPlanet ORIGIN
-    originhex=$(${MY_PATH}/../tools/nostr2hex.py $originpub)
-    echo "UPLANET ZEN - follow -> UPlanet ORIGIN : ${originhex}"
-    ${MY_PATH}/../tools/nostr_follow.sh "$UPLANETNSEC" "${originhex}"
-fi
-```
-
-**Référence** : [`RUNTIME/UPLANET.refresh.sh:300-310`](RUNTIME/UPLANET.refresh.sh#L300-L310)
-
-#### 5. Communication IA - `UPlanet_IA_Responder.sh`
-
-**Follow automatique des interlocuteurs** :
-
-```bash
-## UMAP FOLLOW NOSTR CARD
-if [[ $KNAME =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
-    UMAPNSEC=$($HOME/.zen/Astroport.ONE/tools/keygen -t nostr "${UPLANETNAME}${LAT}" "${UPLANETNAME}${LON}" -s)
-    #######################################################################
-    # UMAP FOLLOW PUBKEY -> Used nightly to create Journal "NOSTR.UMAP.refresh.sh"
-    ${MY_PATH}/../tools/nostr_follow.sh "$UMAPNSEC" "$PUBKEY" 2>/dev/null
-    #######################################################################
-fi
-```
-
-**Référence** : [`IA/UPlanet_IA_Responder.sh:457-463`](IA/UPlanet_IA_Responder.sh#L457-L463)
-
-## 📊 Matrice des Follow
-
-| **Script** | **Qui Suit** | **Qui Est Suivi** | **Objectif** | **Moment** |
-|------------|--------------|-------------------|---------------|------------|
-| `make_NOSTRCARD.sh` | MULTIPASS | CAPTAIN | Guidance | Création identité |
-| `make_NOSTRCARD.sh` | CAPTAIN | MULTIPASS | Surveillance | Création identité |
-| `DRAGON_p2p_ssh.sh` | CAPTAIN | TOUTES identités | Support technique | Activation DRAGON |
-| `NOSTR.UMAP.refresh.sh` | UMAP | Amis géographiques | Réseau local | Refresh nocturne |
-| `UPLANET.refresh.sh` | UPLANET | ORIGIN | Hiérarchie | Refresh UPlanet |
-| `UPlanet_IA_Responder.sh` | UMAP/IA | Interlocuteurs | Communication | Réponse IA |
-
-## 🔄 Cycle de Vie des Follow
-
-### Phase 1 : Création d'Identité
-1. **MULTIPASS suit CAPTAIN** → Guidance et mises à jour
-2. **CAPTAIN suit MULTIPASS** → Surveillance et support
-
-### Phase 2 : Support Technique
-1. **CAPTAIN suit TOUTES les identités** → Renouvellement complet
-2. **CAPTAIN suit TOUS les nœuds UMAP** → Géolocalisation
-
-### Phase 3 : Gestion Géographique
-1. **UMAP suit les amis actifs** → Réseau local
-2. **Mise à jour nocturne** → Relations géographiques
-
-### Phase 4 : Communication IA
-1. **UMAP suit les interlocuteurs** → Communication géolocalisée
-2. **CAPTAIN suit en fallback** → Sécurité
-
-## 🛠️ Outils de Support
-
-### Scripts Utilitaires
-- **`nostr_follow.sh`** : Gestion des follow (ajout/suppression)
-- **`nostr_followers.sh`** : Analyse des followers
-- **`nostr_setup_profile.py`** : Configuration des profils NOSTR
-
-### Variables d'Environnement
-- **`CAPTAINEMAIL`** : Email du capitaine
-- **`CAPTAINHEX`** : Clé publique hex du capitaine
-- **`CAPTAINNSEC`** : Clé privée NSEC du capitaine
-- **`myRELAY`** : Relais NOSTR principal
-
-## 📈 Avantages du Système
-
-1. **Réseau Dense** : Chaque identité est connectée au réseau
-2. **Support Automatique** : Le capitaine peut aider tous les utilisateurs
-3. **Géolocalisation** : Follow basé sur la proximité géographique
-4. **IA Réactive** : L'IA suit automatiquement ses interlocuteurs
-5. **Hiérarchie** : Structure claire UPlanet → Origin
-6. **Auto-Réparation** : Renouvellement automatique des follow
-
-## 🔍 Dépannage
-
-### Vérification des Follow
-```bash
-# Vérifier qui suit une identité
-./tools/nostr_followers.sh <hex_pubkey>
-
-# Vérifier les follow d'une identité
-./tools/nostr_follow.sh <nsec> <hex_pubkey>
-```
-
-### Logs de Debug
-- Les scripts affichent des messages de succès/échec
-- Utiliser `VERBOSE=true` pour plus de détails
-- Vérifier les fichiers `.secret.nostr` pour les clés
-
-## 📝 Notes d'Implémentation
-
-- Tous les follow utilisent le protocole NOSTR standard (kind 3)
-- Les clés sont stockées de manière sécurisée dans `.secret.nostr`
-- Le système gère automatiquement les doublons
-- Les follow sont publiés sur les relais configurés
-- Le système est résilient aux échecs (retry automatique)
+### C. Les Clefs Système (L'infrastructure)
+*   **UPLANETNAME_G1 (L'Oracle) :** Cette clef est le "Cœur de la Constellation". Elle signe la configuration partagée (Kind 30800) et sert de source primale pour tous les wallets.
+*   **Bots Géographiques (UMAP/SECTOR/REGION) :** Des clefs Nostr générées pour chaque coordonnée GPS (ex: `UPlanet + Lat + Lon`). Ils servent de journaux de bord locaux.
 
 ---
 
-**Dernière mise à jour** : $(date -u +"%Y-%m-%dT%H:%M:%SZ")  
-**Version** : 1.0  
-**Auteur** : Système UPlanet
+## 🛰️ AUTOfollow.rules.md : Système de Suivi Automatique
+
+Le système de **follow automatique** assure la propagation de l'information dans l'essaim (Swarm) sans intervention manuelle, créant une "Mémoire N²" (Nostr + Nœuds).
+
+### Règle 1 : Le Capitaine suit ses Passagers
+*   **Action :** Le script `DRAGON_p2p_ssh.sh` force le compte du Capitaine à suivre tous les **HEX** (pubkeys) présents localement sur la station.
+*   **But :** Permettre au Capitaine de voir l'activité de sa station et de relayer leurs messages.
+
+### Règle 2 : Les Passagers suivent le Capitaine
+*   **Action :** Lors de la création (`make_NOSTRCARD.sh`) ou du rafraîchissement hebdomadaire (`NOSTRCARD.refresh.sh`), chaque MULTIPASS suit automatiquement la clef **CAPTAINHEX**.
+*   **But :** Recevoir les annonces de maintenance, les alertes et les informations de la station de rattachement.
+
+### Règle 3 : Alignement vers UPlanet ORIGIN
+*   **Action :** Si la station est en mode ẐEN (privée), le compte de l'infrastructure UPlanet suit automatiquement l'identité **UPlanet ORIGIN**.
+*   **But :** Maintenir un lien avec la constellation mère pour les mises à jour et la gouvernance globale.
+
+### Règle 4 : Le "Follow" Géographique (Ancrage UMAP)
+*   **Action :** Lorsqu'un utilisateur publie un média ou un message avec des coordonnées GPS, le filtre `1.sh` ou `21.sh` peut déclencher un suivi automatique du **Bot UMAP** correspondant.
+*   **But :** Créer des communautés locales automatiques. Si vous postez à Toulouse (43.60, 1.44), vous commencez à suivre le journal de Toulouse.
+
+### Règle 5 : La Solidarité entre Capitaines (Swarm Awareness)
+*   **Action :** Le script `DRAGON_p2p_ssh.sh` scanne les événements Nostr de type **Kind 30850** (Rapports économiques). Le Capitaine suit tous les autres Capitaines du même Swarm (`swarm_id`).
+*   **But :** Permettre l'accès SSH P2P entre machines de confiance pour le support technique mutuel.
+
+---
+
+## 🛡️ Rôle du Relai (`strfry`) dans la Validation
+
+Les scripts `process.sh` et `all_but_blacklist.sh` agissent comme des douaniers utilisant ces liaisons :
+
+1.  **Whitelist Dynamique :** Seules les clefs ayant un compte local, appartenant au Swarm, ou présentes dans `amisOfAmis.txt` peuvent écrire sur le relai.
+2.  **Gestion des Intrus :** Le filtre `1.sh` détecte les "Visitors" (clefs inconnues). Il les autorise pour 3 messages tout en envoyant un bot (UMAP 0.00,0.00) leur demander de s'enregistrer, avant de les blacklister.
+3.  **Liaison Like-to-Pay :** Le filtre `7.sh` intercepte les réactions. S'il voit un `+` ou un emoji coeur entre deux clefs liées à UPlanet, il déclenche un virement Ğ1 réel via `PAYforSURE.sh`.
+
+### Résumé du Flux de Confiance
+`Email` ➔ `MULTIPASS (Nostr)` ➔ `ZEN Card (Ğ1)` ➔ `Station (Capitaine)` ➔ `UMAP (Géo-Local)` ➔ `Swarm (Constellation)`

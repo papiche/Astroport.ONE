@@ -160,8 +160,9 @@ services:
     restart: unless-stopped
 
   paperclip:
-    build: 
-      context: https://github.com/paperclipai/paperclip.git#master
+    # build: 
+    #   context: https://github.com/paperclipai/paperclip.git#master
+    image: reeoss/paperclipai-paperclip:latest
     platform: ${PLATFORM}
     ports: ["3100:3100"]
     environment:

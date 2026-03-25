@@ -1,468 +1,101 @@
+Cette analyse approfondie décortique l'architecture logicielle d'Astroport.ONE et du réseau UPlanet ẐEN. Le système repose sur une symbiose entre la **Monnaie Libre (Ğ1)**, le protocole social **Nostr** et le stockage décentralisé **IPFS**.
+
 # 📋 RÔLES DES SCRIPTS UPLANET ẐEN
 
 ## 🎯 **ARCHITECTURE COMPLÈTE ET SPÉCIALISÉE**
 
-L'écosystème UPlanet ẐEN dispose d'une architecture modulaire avec des scripts spécialisés pour chaque fonction. Cette documentation présente les rôles de chaque composant dans le système coopératif.
+L'écosystème est divisé en quatre couches fonctionnelles : l'Identité, l'Économie, la Maintenance (20h12) et le Swarm (l'Essaim).
 
 ---
 
-## 🚀 **SCRIPTS D'EMBARQUEMENT ET CONFIGURATION**
+### 👤 1. GESTION DE L'IDENTITÉ : MULTIPASS vs ZEN CARD
 
-### **🏴‍☠️ uplanet_onboarding.sh** - Assistant d'Embarquement Principal
+Le système distingue l'usage (le locataire) de la propriété (le sociétaire).
 
-#### **🎯 Rôle Principal**
-Script **PRINCIPAL** pour l'embarquement des nouveaux capitaines dans l'écosystème UPlanet ẐEN.
-
-#### **✅ Fonctionnalités**
-- **Choix du mode** : ORIGIN (niveau X) vs ẐEN (niveau Y)
-- **Configuration économique** : PAF, tarifs, valorisation machine
-- **Détection automatique** des ressources via `heartbox_analysis.sh`
-- **Configuration réseau** : Swarm IPFS selon le mode choisi
-- **Initialisation complète** : Portefeuilles et infrastructure
-- **Embarquement capitaine** : Création identité et formation
-- **⚡ Configuration RAPIDE** : Setup automatique pour nouveaux capitaines (option `q`)
-- **🔄 Sync coopérative** : Synchronisation avec configuration DID NOSTR (option `s`)
-- **📊 Affichage config** : Vue complète config locale + DID (option `c`)
-- **👨‍✈️ Dashboard direct** : Accès captain.sh (option `d`)
-
-#### **🎮 Menu Principal**
-```
-1. Présentation et introduction
-2. Configuration économique (.env)
-3. Valorisation de votre machine
-4. Choix du mode UPlanet (ORIGIN/ẐEN)
-5. Configuration réseau
-6. Initialisation UPLANET
-7. Passage au niveau Y (ẐEN seulement)
-8. Embarquement capitaine
-9. Résumé et finalisation
-
-a. Embarquement complet automatique
-q. ⚡ Configuration RAPIDE (nouveaux capitaines) ← NOUVEAU
-s. 🔄 Sync configuration coopérative (DID) ← NOUVEAU
-c. 📊 Vérifier la configuration actuelle ← AMÉLIORÉ
-d. 👨‍✈️ Dashboard Capitaine (captain.sh) ← NOUVEAU
-0. Quitter
-```
-
-#### **🎮 Usage**
-```bash
-# Lancement complet
-./uplanet_onboarding.sh
-
-# Pour nouveaux capitaines : option 'q' (RAPIDE)
-# Configure tout automatiquement en 5 minutes :
-# - Paramètres économiques recommandés
-# - Valorisation machine automatique
-# - Initialisation UPLANET
-# - Création compte capitaine
-```
-
-#### **⚡ Mode Configuration Rapide**
-L'option `q` offre une configuration simplifiée :
-1. **PAF=14, NCARD=1, ZCARD=4** (valeurs recommandées)
-2. **Détection automatique** CPU/RAM/Disque → valorisation
-3. **Mode auto** selon présence `swarm.key`
-4. **UPLANET.init.sh** automatique
-5. **captain.sh** pour création MULTIPASS + ZEN Card
-
-### **🔧 update_config.sh** - Gestionnaire de Configuration
-
-#### **🎯 Rôle Principal**
-Script **INTELLIGENT** pour la gestion des configurations existantes et les migrations.
-
-#### **✅ Fonctionnalités**
-- **Détection automatique** du mode UPlanet actuel (ORIGIN/ẐEN/Fraîche)
-- **Migration sécurisée** ORIGIN → ẐEN avec désinscription automatique
-- **Mise à jour configuration** avec fusion intelligente
-- **Interdiction migrations** dangereuses (ẐEN → ORIGIN, ẐEN → ẐEN)
-- **Interface ligne de commande** avec options directes
-
-#### **🎮 Usage**
-```bash
-# Mode interactif
-./update_config.sh
-
-# Options directes
-./update_config.sh --update    # Mise à jour
-./update_config.sh --show      # Affichage config
-./update_config.sh --onboard   # Embarquement
-```
+*   **`VISA.new.sh` (La Forge d'Identité) :** 
+    *   **Rôle :** Génère de manière déterministe (via Salt/Pepper) un trousseau triple : **Duniter** (Wallet Ğ1), **Nostr** (Clés sociales) et **IPFS** (ID de stockage).
+    *   **Lien :** Il crée le lien entre l'email de l'utilisateur et sa position géographique (UMAP).
+*   **`NOSTRCARD.refresh.sh` (Gestionnaire MULTIPASS) :**
+    *   **MULTIPASS :** C'est l'identité "Usage/Social". Elle permet d'accéder au uDRIVE et aux services.
+    *   **Rôle Économique :** Gère le prélèvement hebdomadaire du loyer (**NCARD**, ex: 1 Ẑen) reversé au Capitaine.
+    *   **Automatisation :** Met à jour le profil Nostr et republie le coffre-fort IPNS.
+*   **`PLAYER.refresh.sh` (Gestionnaire ZEN CARD) :**
+    *   **ZEN Card :** C'est l'identité "Capital/Coopérative". Elle représente les parts sociales du noeud.
+    *   **U.SOCIETY :** Gère les abonnements longue durée (SATELLITE/CONSTELLATION). Si un membre est `U.SOCIETY`, il est exempté des prélèvements hebdomadaires car il a déjà contribué au capital.
+    *   **Protection :** Empêche la suppression (UNPLUG) du capitaine même en cas de solde nul.
+*   **`Ylevel.sh` (Synchronisation de sécurité) :**
+    *   Élève le niveau de sécurité en liant la clé SSH de la machine physique à l'identité IPFS et Duniter. C'est ce qui transforme un simple utilisateur en **Armateur** (propriétaire du matériel).
 
 ---
 
-## 🏛️ **SCRIPTS ÉCONOMIQUES PRINCIPAUX**
+### 💰 2. LE MOTEUR ÉCONOMIQUE (ẐEN ECONOMY)
 
-### **🏛️ UPLANET.official.sh** - Virements Officiels Automatisés
+L'économie est basée sur le ratio **1 Ẑen = 0.1 Ğ1**. Le système automatise la fiscalité et la redistribution.
 
-#### **🎯 Rôle Principal**
-Script **PRINCIPAL** pour tous les virements officiels conformes à la Constitution ẐEN.
-
-#### **✅ Fonctionnalités**
-- **Virement MULTIPASS** : `UPLANETNAME_G1 → UPLANETNAME → MULTIPASS`
-- **Virement SOCIÉTAIRE** : `UPLANETNAME_G1 → UPLANETNAME_SOCIETY → ZEN Card → 3x1/3`
-- **Apport CAPITAL INFRASTRUCTURE** : `UPLANETNAME_G1 → ZEN Card CAPTAIN → NODE` (direct, pas de 3x1/3)
-- **Vérification automatique** des transactions blockchain
-- **Gestion des timeouts** et confirmations
-- **Menu interactif** et ligne de commande
-- **Conformité totale** aux flux économiques officiels
-
-#### **🎮 Usage**
-```bash
-# Mode interactif
-./UPLANET.official.sh
-
-# Ligne de commande
-./UPLANET.official.sh -l user@example.com          # Locataire
-./UPLANET.official.sh -s user@example.com -t satellite    # Sociétaire
-./UPLANET.official.sh -i                           # Apport capital (CAPTAIN automatique)
-```
-
-### **🏛️ UPLANET.init.sh** - Initialisation Infrastructure
-
-#### **🎯 Rôle Principal**
-Script **FONDAMENTAL** pour l'initialisation de tous les portefeuilles coopératifs.
-
-#### **✅ Fonctionnalités**
-- **Initialisation complète** : Tous les portefeuilles depuis `UPLANETNAME_G1`
-- **Portefeuilles NODE et CAPTAIN** : Infrastructure opérationnelle
-- **Portefeuilles coopératifs** : CASH, RND, ASSETS, IMPOT, SOCIETY
-- **Vérification automatique** des soldes et prérequis
-- **Mode simulation** : `--dry-run` pour tests sans risque
-
-#### **🎮 Usage**
-```bash
-# Initialisation complète
-./UPLANET.init.sh
-
-# Mode simulation
-./UPLANET.init.sh --dry-run
-
-# Mode forcé (sans confirmation)
-./UPLANET.init.sh --force
-```
+*   **`PAYforSURE.sh` (Le Moteur de Transaction) :**
+    *   Le script le plus critique pour les échanges. Il utilise `g1cli` pour envoyer des Ğ1 sur Duniter v2s.
+    *   **Intelligence :** Il gère les "retries" sur plusieurs nœuds du réseau en cas de panne et génère un rapport HTML envoyé par email.
+*   **`primal_wallet_control.sh` (Le Radar Anti-Intrusion) :**
+    *   **Concept de Source Primale :** Vérifie que chaque Ğ1 entrant dans un wallet MULTIPASS provient bien d'une source autorisée (le noeud ou la banque centrale UPlanet).
+    *   **Sécurité :** Si un Ğ1 "inconnu" entre (tentative d'intrusion ou don non tracé), le script redirige automatiquement les fonds vers le wallet `UPLANETNAME_INTRUSION`.
+*   **`ZEN.ECONOMY.sh` (Le Distributeur de Bénéfices) :**
+    *   Applique la règle constitutionnelle des **3x1/3 + 1%** :
+        1.  **33% Trésorerie (CASH) :** Pour le fonctionnement.
+        2.  **33% R&D :** Pour le développement du code.
+        3.  **33% Assets (Patrimoine) :** Pour racheter du matériel.
+        4.  **1% Parrain :** Prime pour celui qui a fait entrer le membre.
+*   **`oc2uplanet.sh` (Le Pont Financier) :**
+    *   Scanne les dons sur OpenCollective (Euros) et les convertit en Ẑen sur les ZEN Cards locales. C'est l'interface entre l'économie traditionnelle et l'économie circulaire Ẑen.
 
 ---
 
-## 🔍 **zen.sh** - Analyse Économique et Diagnostic
+### 👨‍✈️ 3. GESTION DU CAPITAINE ET DU SYSTÈME
 
-### **🎯 Rôle Principal**
-Script **SPÉCIALISÉ** pour l'analyse, le diagnostic et les transactions manuelles exceptionnelles.
+Le Capitaine est l'opérateur humain de la station.
 
-### **✅ Fonctionnalités**
-- **Analyse détaillée** des portefeuilles utilisateurs
-- **Diagnostic** des chaînes primales et sources
-- **Historique** des transactions avec exports
-- **Reporting OpenCollective** automatisé
-- **Retranscription** des versements par source
-- **Transactions manuelles** pour cas exceptionnels
-- **Maintenance** et configuration avancée
-
-### **🎮 Usage**
-```bash
-./tools/zen.sh                    # Interface complète
-./tools/zen.sh --detailed         # Affichage détaillé
-```
-
-### **⚠️ Important**
-- **Focus** sur l'analyse et le diagnostic
+*   **`dashboard.sh` (La Console de Commandement) :**
+    *   Interface interactive qui résume la santé économique (soldes des wallets système) et technique (services actifs).
+    *   Permet au capitaine d'effectuer des actions rapides : redémarrer les services, imprimer des identités ou gérer les sociétaires.
+*   **`heartbox_analysis.sh` (Le Diagnostic Rapide) :**
+    *   Analyse en quelques secondes l'espace disque, la charge CPU et la disponibilité des ports.
+    *   **Slots :** Calcule combien de nouveaux MULTIPASS (10Go) ou ZEN Cards (128Go) la station peut encore accueillir.
+*   **`20h12.process.sh` (Le Majordome de Maintenance) :**
+    *   Tâche Cron quotidienne qui exécute la "Solar Calibration" (calcul de l'heure selon la position du soleil).
+    *   Met à jour tous les dépôts Git (Astroport, UPassport, G1Billet).
+    *   Relance les tunnels de support P2P (Dragons).
 
 ---
 
-## 📊 **dashboard.sh** - Interface Capitaine Simplifiée
+### 🌐 4. LE SWARM (L'ESSAIM) ET RÉSEAU
 
-### **🎯 Rôle Principal**
-Interface **PRINCIPALE** pour le monitoring quotidien et les actions rapides.
+Astroport n'est pas un serveur isolé, c'est un noeud d'une constellation.
 
-### **✅ Fonctionnalités**
-- **Vue d'ensemble** économique temps réel
-- **Statut des services** critiques (IPFS, API, VPN, etc.)
-- **Actions rapides** : redémarrage, découverte essaim
-- **Navigation** vers les autres scripts spécialisés
-- **Alertes** système et économiques
-
-### **🎮 Usage**
-```bash
-./tools/dashboard.sh
-```
-
-### **🔗 Navigation**
-- `o` → `UPLANET.official.sh` (virements officiels)
-- `z` → `zen.sh` (analyse économique)
-- `n` → `captain.sh` (embarquement)
+*   **`_12345.sh` (Le Cœur du Noeud) :**
+    *   Maintient la "Balise IPNS" de la station. Il publie toutes les heures un fichier `12345.json` contenant les coordonnées du noeud.
+    *   **Synchronisation :** C'est lui qui va chercher les cartes des autres stations chez les "Bootstraps" pour construire la carte mondiale du réseau.
+*   **`backfill_constellation.sh` (Le Synchroniseur d'Histoire) :**
+    *   Parcourt les autres relais Nostr de la constellation pour récupérer les messages manqués.
+    *   Assure que si une station tombe, les autres conservent les données sociales (N² Memory).
+*   **`did_manager_nostr.sh` (Le Registre d'Identité Décentralisé) :**
+    *   Utilise Nostr (Kind 30800) comme source de vérité pour les métadonnées d'identité.
+    *   Gère la conformité "France Connect" pour les identités vérifiées.
+*   **`DRAGON_p2p_ssh.sh` (Le Bouclier des Dragons) :**
+    *   Ouvre des accès sécurisés à travers IPFS. Cela permet au support technique ("Les Dragons") d'intervenir sur une machine même derrière un pare-feu ou une box 4G sans IP publique.
 
 ---
 
-## 🏴‍☠️ **captain.sh** - Dashboard Capitaine et Gestion
+### 🛠 5. OUTILS DATA ET MULTIMÉDIA
 
-### **🎯 Rôle Principal**
-Script **CENTRAL** pour le tableau de bord économique et la gestion quotidienne de la station.
-
-### **✅ Fonctionnalités**
-- **Tableau de bord économique** : Soldes de tous les portefeuilles (CASH, ASSETS, RnD, IMPOT, NODE, CAPTAIN)
-- **Statistiques utilisateurs** : MULTIPASS, ZEN Cards, Sociétaires
-- **Économie de l'essaim** : État de toutes les stations du réseau
-- **Configuration coopérative DID** : Gestion des paramètres partagés via NOSTR (kind 30800)
-- **Clés API chiffrées** : Configuration OpenCollective, PlantNet (AES-256-CBC)
-- **Embarquement** : Création MULTIPASS et ZEN Cards
-- **Broadcast NOSTR** : Communication réseau vers les utilisateurs
-- **Navigation** vers tous les scripts économiques
-
-### **🎮 Menu Principal**
-```
-1. Gestion Économique (zen.sh)
-2. Infrastructure UPLANET (UPLANET.init.sh)
-3. Scripts Économiques Automatisés
-4. Interface Principale (command.sh)
-5. Tableau de Bord Détaillé
-6. Économie de l'Essaim
-7. Actualiser les Données
-8. Nouvel Embarquement
-9. Broadcast NOSTR
-c. Configuration Coopérative (DID) ← NOUVEAU
-u. Assistant UPlanet (onboarding) ← NOUVEAU
-0. Quitter
-```
-
-### **🎮 Usage**
-```bash
-# Lancement standard
-./captain.sh
-
-# Mode automatique (pour scripts)
-./captain.sh --auto
-./captain.sh --auto --email user@example.com
-```
+*   **`ajouter_media.sh` :** L'outil principal pour l'utilisateur. Il permet d'importer des vidéos YouTube (via `yt-dlp`), des PDF ou des MP3, de les ajouter à IPFS, et de publier automatiquement la métadonnée sur Nostr (NIP-94).
+*   **`generate_ipfs_structure.sh` :** Génère dynamiquement une interface web (uDRIVE) pour chaque utilisateur, permettant de naviguer dans ses fichiers IPFS comme dans un explorateur de fichiers classique.
+*   **`power_monitor.sh` :** Surveille la consommation électrique (Watts) de la station pour permettre, à terme, la facturation au coût énergétique réel.
 
 ---
 
-## ⚙️ **cooperative_config.sh** - Configuration Coopérative DID
+## 💡 **RÉSUMÉ DES FLUX ÉCONOMIQUES**
 
-### **🎯 Rôle Principal**
-Script **UTILITAIRE** pour la gestion de la configuration coopérative partagée via DID NOSTR (kind 30800).
-
-### **✅ Fonctionnalités**
-- **Stockage DID NOSTR** : Configuration dans kind 30800, d-tag "cooperative-config"
-- **Chiffrement automatique** : Valeurs sensibles (TOKEN, SECRET, KEY, PASSWORD, API) chiffrées AES-256-CBC
-- **Cache local** : `~/.zen/tmp/cooperative_config.cache.json` (TTL 1h)
-- **Synchronisation essaim** : Toutes les stations partagent la même configuration
-- **Fonctions shell** : `coop_config_get`, `coop_config_set`, `coop_config_list`, `coop_config_refresh`
-
-### **📋 Variables Supportées**
-
-| Variable | Description | Chiffrée |
-| :--- | :--- | :--- |
-| `NCARD` | Tarif MULTIPASS (Ẑen/semaine) | Non |
-| `ZCARD` | Tarif ZEN Card (Ẑen/semaine) | Non |
-| `TVA_RATE` | Taux de TVA (%) | Non |
-| `IS_RATE_REDUCED` | Taux IS réduit (%) | Non |
-| `IS_RATE_NORMAL` | Taux IS normal (%) | Non |
-| `ZENCARD_SATELLITE` | Prix part sociale Satellite (€) | Non |
-| `ZENCARD_CONSTELLATION` | Prix part sociale Constellation (€) | Non |
-| `TREASURY_PERCENT`, `RND_PERCENT`, `ASSETS_PERCENT` | Règle 3x1/3 (%) | Non |
-| `OCAPIKEY` | Token API OpenCollective | **Oui** |
-| `OCAPIKEY` | Clé API OpenCollective | **Oui** |
-| `PLANTNET_API_KEY` | Clé API PlantNet | **Oui** |
-
-### **🎮 Usage**
-```bash
-# En tant que bibliothèque (dans un script)
-source ~/.zen/Astroport.ONE/tools/cooperative_config.sh
-
-# Récupérer une valeur (auto-déchiffrement)
-TVA=$(coop_config_get "TVA_RATE")
-TOKEN=$(coop_config_get "OCAPIKEY")
-
-# Définir une valeur (auto-chiffrement si sensible)
-coop_config_set "NCARD" "1"
-coop_config_set "OCAPIKEY" "mon_token_secret"
-
-# Lister toutes les clés
-coop_config_list
-
-# Actualiser depuis le DID
-coop_config_refresh
-
-# En ligne de commande
-./tools/cooperative_config.sh list
-./tools/cooperative_config.sh get TVA_RATE
-./tools/cooperative_config.sh set NCARD 1
-```
-
-### **🔐 Sécurité**
-- Les valeurs contenant `TOKEN`, `SECRET`, `KEY`, `PASSWORD`, `API` sont **automatiquement chiffrées**
-- Clé de chiffrement : `$UPLANETNAME` (dérivée de `swarm.key`)
-- Algorithme : AES-256-CBC avec IV aléatoire
-- Les valeurs sont stockées en base64 sur NOSTR
-
----
-
----
-
-## 🌐 **SCRIPTS DE RÉSEAU ET SWARM**
-
-### **🌍 BLOOM.Me.sh** - Formation Automatique de Swarm
-
-#### **🎯 Rôle Principal**
-Script **AUTOMATIQUE** pour la formation de swarms IPFS privés via consensus distribué.
-
-#### **✅ Fonctionnalités**
-- **Détection stations** : Scan des Astroports niveau Y dans la région GPS
-- **Consensus distribué** : Génération collective de `swarm.key`
-- **Vérification concordance** : SSH ↔ IPFS NodeID
-- **Bootstrap automatique** : Configuration nœuds de démarrage
-- **Filtrage géographique** : Même région GPS (~100km)
-
-#### **🎮 Usage**
-```bash
-# Exécution automatique (via cron ou événement)
-./RUNTIME/BLOOM.Me.sh
-
-# Reset complet du swarm
-./RUNTIME/BLOOM.Me.sh reset
-```
-
-### **🔍 heartbox_analysis.sh** - Analyse Système Temps Réel
-
-#### **🎯 Rôle Principal**
-Script **ANALYTIQUE** pour l'analyse complète du système et des capacités.
-
-#### **✅ Fonctionnalités**
-- **Ressources système** : CPU, RAM, disque en temps réel
-- **Capacités d'hébergement** : Calcul slots ZEN Cards et MULTIPASS
-- **État des services** : IPFS, Astroport, uSPOT, NOSTR
-- **Export JSON** : Données structurées pour autres scripts
-- **Cache intelligent** : TTL 5 minutes pour performance
-
-#### **🎮 Usage**
-```bash
-# Analyse complète
-./tools/heartbox_analysis.sh
-
-# Export JSON pour intégration
-./tools/heartbox_analysis.sh export --json
-```
-
----
-
-## 🔄 **FLUX DE TRAVAIL RECOMMANDÉ**
-
-### **🆕 Nouveau Capitaine (Installation Fraîche)**
-1. **`install.sh`** → Installation Astroport.ONE
-2. **`uplanet_onboarding.sh`** → Embarquement complet UPlanet ẐEN
-3. **`UPLANET.init.sh`** → Initialisation infrastructure (automatique)
-4. **`captain.sh`** → Création identité et premiers utilisateurs
-
-### **🔄 Utilisateur Existant (Migration ou Mise à Jour)**
-1. **`update_config.sh`** → Détection mode et migration si nécessaire
-2. **`uplanet_onboarding.sh`** → Configuration économique mise à jour
-3. **`UPLANET.official.sh`** → Virements officiels
-
-### **👨‍✈️ Capitaine Quotidien (Opérations)**
-1. **`dashboard.sh`** → Vue d'ensemble et monitoring
-2. **`UPLANET.official.sh`** → Virements locataires/sociétaires
-3. **`zen.sh`** → Analyse et diagnostic si nécessaire
-
-### **🔍 Diagnostic et Maintenance**
-1. **`heartbox_analysis.sh`** → Analyse système complète
-2. **`zen.sh`** → Diagnostic économique détaillé
-3. **`UPLANET.init.sh --dry-run`** → Vérification portefeuilles
-4. **`zen.sh`** → Transactions manuelles exceptionnelles
-
----
-
-## ⚠️ **RÈGLES IMPORTANTES**
-
-### **✅ EMBARQUEMENT ET CONFIGURATION**
-- **Nouveaux utilisateurs** : Toujours commencer par `uplanet_onboarding.sh`
-- **Utilisateurs existants** : Utiliser `update_config.sh` pour les migrations
-- **Mode ORIGIN vs ẐEN** : Choisir selon vos besoins (simplicité vs coopérative complète)
-- **Migration ORIGIN → ẐEN** : Possible mais destructive, bien comprendre les conséquences
-
-### **✅ OPÉRATIONS QUOTIDIENNES**
-- **Interface principale** : `dashboard.sh` pour le monitoring quotidien
-- **Virements officiels** : `UPLANET.official.sh` pour TOUS les virements conformes
-- **Analyse économique** : `zen.sh` pour le diagnostic et l'analyse détaillée
-- **Initialisation** : `UPLANET.init.sh` pour créer/vérifier les portefeuilles
-
-### **❌ INTERDICTIONS STRICTES**
-- **Jamais de migration ẐEN → ORIGIN** : Techniquement impossible
-- **Jamais de changement d'UPlanet ẐEN** : Nécessite réinstallation OS complète
-- **Pas de transactions manuelles** sans comprendre les flux primaux
-- **Pas de modification directe** des fichiers `.dunikey` sans sauvegarde
-
----
-
-## 🎯 **MODES UPLANET : ORIGIN VS ẐEN**
-
-### **🌍 Mode ORIGIN (Niveau X) - Simplicité**
-- **Scripts principaux** : `uplanet_onboarding.sh`, `UPLANET.official.sh`, `dashboard.sh`
-- **Réseau** : IPFS public, pas de `swarm.key`
-- **Économie** : Simplifiée, idéale pour débuter
-- **Source primale** : `0000000000000000000000000000000000000000000000000000000000000000` (fixe)
-
-### **🏴‍☠️ Mode ẐEN (Niveau Y) - Coopérative Complète**
-- **Scripts principaux** : Tous les scripts + `BLOOM.Me.sh` + `heartbox_analysis.sh`
-- **Réseau** : IPFS privé avec `swarm.key`
-- **Économie** : Coopérative complète avec gouvernance
-- **Source primale** : `$(cat ~/.ipfs/swarm.key)` (dynamique)
-
----
-
-## 📚 **DOCUMENTATION TECHNIQUE COMPLÈTE**
-
-### **📖 Guides d'Embarquement**
-- **`EMBARQUEMENT.md`** - Guide complet d'embarquement UPlanet ẐEN
-- **`SCRIPTS.ROLES.md`** - Ce document (rôles des scripts)
-- **`UPLANET.init.README.md`** - Documentation détaillée de l'initialisation
-
-### **🏛️ Constitution et Économie ẐEN**
-- **`RUNTIME/ZEN.ECONOMY.readme.md`** - Constitution économique complète
-- **`RUNTIME/ZEN.INTRUSION.POLICY.md`** - Politique anti-intrusion et sécurité
-- **`RUNTIME/ZEN.ECONOMY.full.ml`** - Diagramme Mermaid architecture complète
-
-### **🔧 Configuration et Templates**
-- **`.env.template`** - Template de configuration avec toutes les variables
-- **`templates/NOSTR/`** - Templates d'emails pour notifications
-- **Configuration dynamique** via `heartbox_analysis.sh`
-
-### **🤖 Scripts d'Automatisation Économique**
-- **`ZEN.ECONOMY.sh`** - Paiement PAF + Burn 4-semaines + Apport capital
-- **`ZEN.COOPERATIVE.3x1-3.sh`** - Allocation coopérative 3x1/3
-- **`NOSTRCARD.refresh.sh`** - Collecte loyers MULTIPASS (1Ẑ + TVA)
-- **`PLAYER.refresh.sh`** - Collecte loyers ZEN Cards (4Ẑ + TVA)
-- **`primal_wallet_control.sh`** - Contrôle anti-intrusion des portefeuilles
-
-### **🌐 Scripts de Réseau et Swarm**
-- **`BLOOM.Me.sh`** - Formation automatique de swarms IPFS privés
-- **`ssh_to_g1ipfs.py`** - Vérification concordance SSH ↔ IPFS NodeID
-- **Scripts de désinscription** : `nostr_DESTROY_TW.sh`, `PLAYER.unplug.sh`
-
----
-
-## 🔗 **LIENS ENTRE LES COMPOSANTS**
-
-### **🔄 Flux d'Embarquement**
-```
-install.sh → uplanet_onboarding.sh → UPLANET.init.sh → captain.sh
-     ↓              ↓                      ↓              ↓
-Configuration → Choix Mode → Portefeuilles → Identité Capitaine
-```
-
-### **🏛️ Flux Économique Quotidien**
-```
-dashboard.sh → UPLANET.official.sh → ZEN.ECONOMY.sh → ZEN.COOPERATIVE.3x1-3.sh
-     ↓               ↓                     ↓                    ↓
-Monitoring → Virements Officiels → Paiements Auto → Allocation 3x1/3
-```
-
-### **🔍 Flux de Diagnostic**
-```
-heartbox_analysis.sh → zen.sh → primal_wallet_control.sh
-        ↓               ↓              ↓
-Analyse Système → Diagnostic → Sécurité Primale
-```
-
-Cette architecture modulaire garantit la **séparation des responsabilités**, la **sécurité des flux économiques**, et la **facilité de maintenance** de l'écosystème UPlanet ẐEN.
-
-
+1.  **Le Locataire (MULTIPASS)** paie 1 Ẑen/semaine via `NOSTRCARD.refresh.sh`.
+2.  **Le Capitaine** reçoit ce Ẑen sur son wallet business (`uplanet.captain.dunikey`).
+3.  **La SCIC (UPlanet)** prélève une part via `ZEN.ECONOMY.sh` pour l'infrastructure et la R&D.
+4.  **L'Armateur (Propriétaire)** voit la valeur de son matériel protégée par le fonds de roulement accumulé sur les wallets de capital.
+5.  **L'Intrus** qui tente d'injecter de l'argent non tracé est neutralisé par `primal_wallet_control.sh`.
