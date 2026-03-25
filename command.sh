@@ -665,7 +665,8 @@ create_gmarkmail_captain() {
 
     # 1. MULTIPASS
     print_info "Création du MULTIPASS ${GMARKMAIL}..."
-    "${MY_PATH}/tools/make_NOSTRCARD.sh" "${GMARKMAIL}" "${GLANG:-${SYSLANG:-fr}}" "$GLAT" "$GLON"
+    ## NOMAIL=1 : mailjet appelé ci-dessous avec sujet personnalisé (évite le double envoi)
+    NOMAIL=1 "${MY_PATH}/tools/make_NOSTRCARD.sh" "${GMARKMAIL}" "${GLANG:-${SYSLANG:-fr}}" "$GLAT" "$GLON"
     local _rc_nostr=$?
     echo ""
     read -p "--- Appuyez sur ENTRÉE pour continuer (MULTIPASS terminé, code=$_rc_nostr)... " _dummy
@@ -673,6 +674,12 @@ create_gmarkmail_captain() {
         print_error "Échec make_NOSTRCARD.sh (code=$_rc_nostr)"
         return 1
     fi
+    ## MAILJET SEND MULTIPASS — envoie la zine HTML avec sujet personnalisé
+    local _gm_youser
+    _gm_youser=$(${MY_PATH}/tools/clyuseryomail.sh "${GMARKMAIL}" 2>/dev/null)
+    "${MY_PATH}/tools/mailjet.sh" --expire 0s "${GMARKMAIL}" \
+        "${HOME}/.zen/game/nostr/${GMARKMAIL}/.nostr.zine.html" \
+        "UPlanet MULTIPASS - ${_gm_youser}"
 
     # Récupérer CAPTAING1PUB depuis le MULTIPASS fraîchement créé
     # (nécessaire pour que VISA.new.sh chiffre correctement le share SSSS)

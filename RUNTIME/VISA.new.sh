@@ -396,7 +396,7 @@ OLD16=$(cat ~/.zen/tmp/${MOATS}/MIZ.json | jq -r ".[].secret")
 echo "${OLD16}"
 
 # TODO : MAKE NODE FORGET PASS THEN DECODE .current/secret.june FROM CAPTAIN TW # PROD #
-MACHINEPUB=$(cat $HOME/.zen/game/myswarm_secret.dunikey | grep pub | cut -d ' ' -f 2)
+MACHINEPUB=$(cat $HOME/.zen/game/uplanet.G1.dunikey | grep pub | cut -d ' ' -f 2)
 
 if [[ "${MACHINEPUB}" != "" ]]; then
     #~ echo "# CRYPTO ENCODING PLAYER KEY WITH MACHINEPUB
@@ -422,7 +422,7 @@ if [[ "${MACHINEPUB}" != "" ]]; then
 
     ${MY_PATH}/../tools/natools.py decrypt \
         -f pubsec \
-        -k $HOME/.zen/game/myswarm_secret.dunikey \
+        -k $HOME/.zen/game/uplanet.G1.dunikey \
         -i $HOME/.zen/tmp/${MOATS}/crypto.$G1PUB.enc.2 \
         -o $HOME/.zen/tmp/${MOATS}/crypto.2
     #~ echo "DEBUG : $(cat $HOME/.zen/tmp/${MOATS}/crypto.2)"
@@ -433,7 +433,7 @@ if [[ "${MACHINEPUB}" != "" ]]; then
         || echo "NATOOLS ERRORS - CHECK STATION" # MACHINEPUB CRYPTO ERROR
 
 else
-    echo " - WARNING - MISSING ~/.zen/game/myswarm_secret.dunikey - WARNING -"
+    echo " - WARNING - MISSING ~/.zen/game/uplanet.G1.dunikey - WARNING -"
 fi
 ########### SECTOR = 0.1° UPLANET SLICE
 OSECTOR=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].sector)
