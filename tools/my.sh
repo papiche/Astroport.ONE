@@ -388,7 +388,7 @@ my_IPCity() {
     fi
 
     local url="http://ip-api.com/json/$ip"
-    local geolocalisation=$(curl -s "$url")
+    local geolocalisation=$(curl -m 5 -s "$url")
 
     local ville=$(echo "$geolocalisation" | jq -r '.city')
     local pays=$(echo "$geolocalisation" | jq -r '.country')

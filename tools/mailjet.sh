@@ -215,9 +215,8 @@ rm -f ~/.zen/tmp/email.txt
     && cat $messfile >> ~/.zen/tmp/email.txt \
     || echo "$messfile" >> ~/.zen/tmp/email.txt
 
-EMAILZ=$(ipfs add -q ~/.zen/tmp/email.txt)
+EMAILZ=$(timeout 15s ipfs add -q --pin=false ~/.zen/tmp/email.txt)
 echo "/ipfs/${EMAILZ}"
-ipfs pin rm ${EMAILZ}
 
 ################### IMPORT MAILJET INTO IF $4=TW
 INDEX="$4"
@@ -308,7 +307,7 @@ echo "$json_payload"
 echo "$json_payload" | jq .
 # Run:
 # POSSIBLE ! "HTMLPart": "<h3>You have a message <br><a href=\"https://qo-op.com/\">UPlanet</a>!</h3><br />May the good vibes be with you!"
-curl -s \
+curl -s -m 15\
     -X POST \
     --user "${MJ_APIKEY_PUBLIC}:${MJ_APIKEY_PRIVATE}" \
     https://api.mailjet.com/v3.1/send \

@@ -46,7 +46,8 @@ fi
 }
 
 # Find index file
-INDEX=$(ls ${HOME}/.zen/game/players/${EMAIL}/ipfs/moa/index.html 2>/dev/null) && source="LOCAL"
+FILE="${HOME}/.zen/game/players/${EMAIL}/ipfs/moa/index.html"
+[[ -f "$FILE" ]] && INDEX="$FILE" && source="LOCAL"
 [[ ! $INDEX ]] && INDEX=$(ls ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${EMAIL}/index.html 2>/dev/null) && source="CACHE"
 [[ ! $INDEX ]] && INDEX=$(ls ${HOME}/.zen/tmp/swarm/*/TW/${EMAIL}/index.html 2>/dev/null) && source="SWARM"
 [[ ! $INDEX ]] && exit 1
@@ -58,7 +59,10 @@ if [[ ${source} != "LOCAL" ]]; then
     
     if [[ ! -s ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html ]]; then
         mkdir -p ${HOME}/.zen/tmp/flashmem/tw/${ICID}
-        ipfs --timeout=30s cat --progress=false ${ETWLINK} > ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html
+        if ! timeout 30s ipfs cat "${ETWLINK}" > "${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html" 2>/dev/null; then
+            echo "Timeout IPFS lors de la récupération du TW"
+            rm -f "${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html" # Nettoyer le fichier vide
+        fi
     fi
     INDEX="${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html"
 fi
@@ -90,7 +94,8 @@ ASTRONAUTENS=$(jq -r '.[].astronautens' ${TMP_DIR}/Astroport.json)
 [[ ${ASTRONAUTENS} == "/ipns/" ]] && ASTRONAUTENS="/ipfs/${TWCHAIN}"
 
 # Calculate ZEN
-COINS=$(cat ~/.zen/tmp/coucou/$ASTROG1.COINS)
+COINS=$(cat ~/.zen/tmp/coucou/$ASTROG1.COINS 2>/dev/null || echo "0")
+[[ -z "$COINS" ]] && COINS=0
 ZEN=$(echo "scale=1; ($COINS - 1) * 10" | bc)
 
 # Get NHEX from NOSTR Card

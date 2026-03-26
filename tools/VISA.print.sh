@@ -17,6 +17,7 @@ SALT="$2"
 PEPPER="$3"
 
 PASS="$4"
+[[ -z ${PASS} ]] && PASS=0000
 
 MOATS="$5"
 
