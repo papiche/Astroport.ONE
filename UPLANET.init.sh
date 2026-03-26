@@ -872,7 +872,7 @@ initialize_wallet() {
     echo -e "${BLUE}Portefeuille:${NC} $wallet_name"
     echo -e "${BLUE}Clé publique:${NC} ${CYAN}${pubkey:0:8}...${NC}"
     echo -e "${BLUE}Montant:${NC} ${YELLOW}$INIT_AMOUNT Ğ1${NC}"
-    echo -e "${BLUE}Source:${NC} ${CYAN}secret.G1.dunikey${NC}"
+    echo -e "${BLUE}Source:${NC} ${CYAN}uplanet.G1.dunikey${NC}"
     
     if [[ "$DRY_RUN" == true ]]; then
         echo -e "${YELLOW}🔍 SIMULATION: Transaction de $INIT_AMOUNT Ğ1 vers $wallet_name${NC}"
