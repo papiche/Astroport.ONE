@@ -701,6 +701,7 @@ EOFJSON
 
     ## IPNS PUBLICATION - Publish entire ~/.zen/game/nostr/${EMAIL}/ directory to IPNS
     if [[ -n "$G1PUBNOSTR" ]] && [[ -d "${HOME}/.zen/game/nostr/${EMAIL}" ]]; then
+        (
         echo "📡 Publishing MULTIPASS directory to IPNS (${G1PUBNOSTR}:NOSTR)..."
         NOSTRIPFS=$(ipfs add -rwq ${HOME}/.zen/game/nostr/${EMAIL}/ | tail -n 1)
         if [[ -n "$NOSTRIPFS" ]]; then
@@ -710,6 +711,7 @@ EOFJSON
         else
             echo "⚠️  Failed to add MULTIPASS directory to IPFS"
         fi
+        )&
     else
         echo "⚠️  Cannot publish to IPNS: G1PUBNOSTR not set or MULTIPASS directory missing"
     fi
