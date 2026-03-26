@@ -193,7 +193,12 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     if [ ! $? -eq 0 ]; then
         _alert_captain "SSSS KEY DECODING FAILED" \
             "ssss-split/ssss-combine a échoué pour ${EMAIL}\nDISCO: [masqué]\nVérifiez l'installation du paquet 'ssss'."
-        echo "${MY_PATH}/../templates/wallet.html"
+        mkdir -p ${MY_PATH}/tmp/
+        cat ~/.zen/UPassport/templates/message.html \
+        | sed -e "s~_WALLET_~$(date -u) <br> ${EMAIL}~g" \
+             -e "s~_AMOUNT_~SSSS KEY DECODING FAILED~g" \
+            > ${MY_PATH}/tmp/${MOATS}.out.html
+        echo "${MY_PATH}/tmp/${MOATS}.out.html"
         exit 1
     fi
 
@@ -294,7 +299,7 @@ EOFNOSTR
     if [[ ! $? -eq 0 ]]; then
         _alert_captain "IPFS DAEMON ERROR — VAULTNSQR" \
             "ipfs add a échoué pour IPNS.QR.png (${EMAIL})\nLe daemon IPFS est peut-être bloqué ou surchargé.\nCommande : ipfs --timeout 20s add -q ~/.zen/game/nostr/${EMAIL}/IPNS.QR.png"
-        cat ~/.zen/UPassport/templates/wallet.html \
+        cat ~/.zen/UPassport/templates/message.html \
         | sed -e "s~_WALLET_~$(date -u) <br> ${EMAIL}~g" \
              -e "s~_AMOUNT_~IPFS DAEMON ERROR~g" \
             > ${MY_PATH}/tmp/${MOATS}.out.html
