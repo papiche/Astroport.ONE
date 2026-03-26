@@ -34,6 +34,14 @@ echo "20H12 (♥‿‿♥) 🌐 /ipns/$IPFSNODEID 🤓 $CAPTAINEMAIL $(hostname 
 # espeak "Ding" > /dev/null 2>&1
 
 ########################################################################
+########################################################################
+#####################  UPGRADING ZONE ::: CAN BE REMOVED AFTER 24 HOUR
+pip install cachetools pydantic-settings robohash substrate-interface ## used by UPassport/
+########################################################################
+########################################################################
+########################################################################
+
+########################################################################
 ## POWER CONSUMPTION - 24/7 PowerJoular (systemd powerjoular.service)
 ########################################################################
 # Report uses last 24h from /var/lib/powerjoular/power_24h.csv (no start/stop in this script)
