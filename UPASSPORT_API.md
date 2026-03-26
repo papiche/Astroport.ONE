@@ -313,7 +313,7 @@ GET /check_revenue?html={0|1}&year={YYYY}
 **Réponse JSON** :
 ```json
 {
-  "g1pub": "4ZqazktD8FpExLLhE58QTqKu9nosLNtwDUPrxu43mXGi",
+  "g1pub": "g1LBF94vApBWxJExucfEQyTRkAN1eFEnD5EFA2ZN8J1PpcdZ5",
   "filter_year": "all",
   "total_revenue_g1": 120.5,
   "total_revenue_zen": 1195.0,

@@ -57,7 +57,7 @@ select_player_email() {
     player="${player_emails[$selection]}"
 }
 
-################### PLAYER G1 PUB ###########################
+################### MULTIPASS G1 PUB ###########################
 [[ -n "$1" ]] && player="$1"
 [[ -z $player ]] && select_player_email
 g1pubnostr=$(cat ~/.zen/game/nostr/${player}/G1PUBNOSTR)

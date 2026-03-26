@@ -2,11 +2,13 @@ version: '3.8'
 services:
   app:
     image: 'jc21/nginx-proxy-manager:latest'
-    restart: unless-stopped
+    restart: always
     ports:
       - '80:80'
       - '81:81'
       - '443:443'
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ~/.zen/nginx-proxy-manager/data:/data
       - ~/.zen/nginx-proxy-manager/letsencrypt:/etc/letsencrypt

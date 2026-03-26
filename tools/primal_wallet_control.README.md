@@ -274,7 +274,7 @@ source ./primal_wallet_control.sh
 control_primal_transactions \
     "/path/to/wallet.dunikey" \
     "5fTwfbYUtCeoaFLbyzaBYUcq46nBS26rciWJAkBugqpo" \
-    "4ZqazktD8FpExLLhE58QTqKu9nosLNtwDUPrxu43mXGi" \
+    "g1LBF94vApBWxJExucfEQyTRkAN1eFEnD5EFA2ZN8J1PpcdZ5" \
     "player@example.com"
 ```
 

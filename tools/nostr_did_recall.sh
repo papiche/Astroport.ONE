@@ -177,7 +177,7 @@ create_did_from_filesystem() {
     local YOUSER=$(echo "$email" | cut -d'@' -f1)
     
     # Get UPLANETG1PUB from environment or default
-    local UPLANETG1PUB="${UPLANETG1PUB:-4ZqazktD8FpExLLhE58QTqKu9nosLNtwDUPrxu43mXGi}"
+    local UPLANETG1PUB="${UPLANETG1PUB:-g1LBF94vApBWxJExucfEQyTRkAN1eFEnD5EFA2ZN8J1PpcdZ5}"
     
     # Create DID document
     local did_file="$user_dir/did.json.cache"
@@ -282,7 +282,7 @@ EOF
     "created": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
     "updated": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
     "email": "${email}",
-    "uplanet": "${UPLANETG1PUB:0:8}",
+    "uplanet": "${UPLANETG1PUB}",
     "coordinates": {
       "latitude": "${ZLAT}",
       "longitude": "${ZLON}"
