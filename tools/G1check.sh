@@ -147,8 +147,9 @@ parallel_rpc_fetch() {
 
     for rpc in "${urls[@]}"; do
         (
+            exec 2>/dev/null  # Silence les erreurs "broken pipe" quand le worker est tué
             raw=$($GCLI --no-password -a "$addr" -u "$rpc" -o json account balance 2>/dev/null \
-                | jq -r '.total_balance // empty')
+                | jq -r '.total_balance // empty' 2>/dev/null)
             [[ -z "$raw" || "$raw" == "null" ]] && exit 1
             val=$(echo "scale=2; ${raw} / 100" | bc)
             is_valid_balance "$val" || exit 1
@@ -196,6 +197,7 @@ parallel_squid_fetch() {
 
     for squid_url in "${urls[@]}"; do
         (
+            exec 2>/dev/null  # Silence les erreurs "broken pipe" quand le worker est tué
             resp=$(curl -sf --max-time 8 -X POST "$squid_url" \
                 -H "Content-Type: application/json" \
                 --data-binary \
