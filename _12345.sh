@@ -53,6 +53,20 @@ rm -Rf ~/.zen/tmp/${IPFSNODEID}/swarm # Anti-boucle
 
 lastrun_file=~/.zen/tmp/12345.lastrun
 
+# Fonction pour vérifier si un peer est Astroport-Compatible
+is_astroport_node() {
+    local peer_id=$1
+    # On tente de lire uniquement les 100 premiers octets du fichier moats via IPNS
+    # Si IPNS ne répond pas ou si le fichier est absent, ce n'est pas un Astroport actif
+    local check=$(ipfs --timeout 15s cat /ipns/${peer_id}/_MySwarm.moats 2>/dev/null | head -c 20)
+    
+    if [[ -n "$check" && "$check" =~ ^[0-9]+$ ]]; then
+        return 0 # Compatible
+    else
+        return 1 # Incompatible
+    fi
+}
+
 ############################################################
 ##  MySwarm KEY INIT
 ############################################################
@@ -307,15 +321,28 @@ while true; do
             for peer in ${SWARM_PEERS}; do
                 # Extraire l'ID du peer (format: /ip4/x.x.x.x/tcp/4001/p2p/Qm...)
                 peer_id=$(echo "$peer" | grep -oP 'p2p/\K[^/]+' | head -1)
+                peer_ip=$(echo "$peer" | awk -F'/' '{print $3}')
+
                 [[ -z "$peer_id" ]] && continue
                 [[ "$peer_id" == "${IPFSNODEID}" ]] && continue
                 
                 echo "Scanning peer: $peer_id"
-                
+                if ! is_astroport_node "$peer_id"; then
+                    echo "[$(date)] REJECTED: $peer_id (IP: $peer_ip) - Reason: No Astroport Metadata" >> ~/.zen/tmp/swarm_intruders.log
+                    
+                    # Action immédiate : Déconnexion forcée du swarm IPFS
+                    ipfs swarm disconnect "/p2p/$peer_id" 2>/dev/null
+                    
+                    # Ajout à la liste des candidats au bannissement Firewall
+                    echo "$peer_ip" >> ~/.zen/game/firewall_candidates.txt
+                    continue
+                fi
+
+
                 TMP_PEER="/tmp/get_peer_${peer_id}"
                 rm -Rf "$TMP_PEER"
                 
-                # Essayer de récupérer les données du peer via IPNS
+                # Récupérer les données du peer via IPNS
                 if ipfs --timeout 60s get --progress="false" -o "$TMP_PEER" /ipns/${peer_id}/ 2>/dev/null; then
                     if [[ -s "$TMP_PEER/_MySwarm.moats" ]]; then
                         # Mettre à jour le cache local
