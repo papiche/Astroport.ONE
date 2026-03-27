@@ -45,6 +45,7 @@ BALISE_STALE_SECONDS=$(( 12 * 60 * 60 ))
 ## IDENTITÉ DU NŒUD
 NODEG1PUB=$($MY_PATH/tools/ipfs_to_g1.py ${IPFSNODEID})
 NODECOINS=$($MY_PATH/tools/G1check.sh ${NODEG1PUB} | tail -n 1)
+[[ -z "$NODECOINS" || ! "$NODECOINS" =~ ^[0-9] ]] && NODECOINS=0
 NODEZEN=$(echo "scale=1; ($NODECOINS - 1) * 10" | bc)
 
 mkdir -p ~/.zen/tmp/swarm
@@ -119,6 +120,7 @@ if [[ ! -s ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr ]]; then
     if [[ -n $salt && -n $pepper ]]; then
         CAPTAING1PUB=$(${MY_PATH}/tools/keygen -t duniter "$salt" "$pepper")
         CAPTAINCOINS=$($MY_PATH/tools/G1check.sh ${CAPTAING1PUB} | tail -n 1)
+        [[ -z "$CAPTAINCOINS" || ! "$CAPTAINCOINS" =~ ^[0-9] ]] && CAPTAINCOINS=0
         CAPTAINZEN=$(echo "scale=1; ($CAPTAINCOINS - 1) * 10" | bc)
         captainNPUB=$(${MY_PATH}/tools/keygen -t nostr "$salt" "$pepper")
         captainHEX=$(${MY_PATH}/tools/nostr2hex.py "$captainNPUB")
@@ -131,7 +133,8 @@ if [[ ! -s ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr ]]; then
     fi
 else
     ## Get data from cache
-    CAPTAING1=$(cat ~/.zen/tmp/coucou/$CAPTAING1PUB.COINS)
+    CAPTAING1=$(cat ~/.zen/tmp/coucou/$CAPTAING1PUB.COINS 2>/dev/null)
+    [[ -z "$CAPTAING1" || ! "$CAPTAING1" =~ ^[0-9] ]] && CAPTAING1=0
     CAPTAINZEN=$(echo "scale=1; ($CAPTAING1 - 1) * 10" | bc)
     captainHEX=$(cat ~/.zen/game/nostr/$CAPTAINEMAIL/HEX)
     ## Add CAPTAIN HEX to nostr WhiteList
@@ -152,10 +155,12 @@ echo 0 > ~/.zen/tmp/random.sleep
 ###################################################################
 ############################################### ẑen/ẐEN TOKEN SOURCE
 SOURCE_G1COIN=$($MY_PATH/tools/G1check.sh ${UPLANETNAME_G1} | tail -n 1)
+[[ -z "$SOURCE_G1COIN" || ! "$SOURCE_G1COIN" =~ ^[0-9] ]] && SOURCE_G1COIN=0
 SOURCE_ZEN=$(echo "scale=1; ($SOURCE_G1COIN - 1) * 10" | bc)
 
 ##################################### USAGE TOKEN ẑen = 0 relay wallet
 UPLANETCOINS=$($MY_PATH/tools/G1check.sh ${UPLANETG1PUB} | tail -n 1)
+[[ -z "$UPLANETCOINS" || ! "$UPLANETCOINS" =~ ^[0-9] ]] && UPLANETCOINS=0
 UPLANETZEN=$(echo "scale=1; ($UPLANETCOINS - 1) * 10" | bc)
 
 ####################################################################################
@@ -402,7 +407,7 @@ while true; do
             if [[ "$SWARMSIZE" != "$local_swarm_size" ]]; then
                 echo ${SWARMSIZE} > ~/.zen/tmp/swarm/.bsize
                 # CORRECTED: On ajoute le dossier swarm lui-même (/* - pour avoir le bon CID !!
-                SWARMH=$(ipfs --timeout 30s add -rwq ~/.zen/tmp/swarm/* | tail -n 1 | awk '{print $2}')
+                SWARMH=$(ipfs --timeout 30s add -rwq ~/.zen/tmp/swarm/* | tail -n 1)
                 if [[ -n "$SWARMH" ]]; then
                     echo "=== PUBLISHING UPDATED SWARM MAP: /ipfs/${SWARMH} ==="
                     ipfs --timeout=60s name publish --lifetime=4h --ttl=15m --key "MySwarm_${IPFSNODEID}" /ipfs/${SWARMH}
@@ -412,8 +417,13 @@ while true; do
             ## 4. RE-PUBLICATION DE NOTRE BALISE PERSONNELLE
             # On s'assure que notre 12345.json est à jour
             echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
-            MYCACHE=$(ipfs --timeout 180s add -rwq ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | awk '{print $2}')
-            ipfs --timeout=60s name publish --lifetime=4h --ttl=15m /ipfs/${MYCACHE}
+            MYCACHE=$(ipfs --timeout 180s add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1)
+            if [[ -n "$MYCACHE" ]]; then
+                echo "=== PUBLISHING NODE BALISE: /ipfs/${MYCACHE} ==="
+                ipfs --timeout=60s name publish --lifetime=4h --ttl=15m /ipfs/${MYCACHE}
+            else
+                echo "⚠️  MYCACHE is empty, skipping ipfs name publish"
+            fi
 
         ) & 
 
@@ -445,6 +455,7 @@ while true; do
         CAPTAIN_DEDICATED_PUB=$(cat "$HOME/.zen/game/uplanet.captain.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
         if [[ -n "$CAPTAIN_DEDICATED_PUB" ]]; then
             CAPTAIN_DEDICATED_COINS=$($MY_PATH/tools/G1check.sh ${CAPTAIN_DEDICATED_PUB} | tail -n 1)
+            [[ -z "$CAPTAIN_DEDICATED_COINS" || ! "$CAPTAIN_DEDICATED_COINS" =~ ^[0-9] ]] && CAPTAIN_DEDICATED_COINS=0
             CAPTAIN_DEDICATED_ZEN=$(echo "scale=1; ($CAPTAIN_DEDICATED_COINS - 1) * 10" | bc)
         fi
     fi
@@ -453,6 +464,7 @@ while true; do
     TREASURY_ZEN=0
     if [[ -n "$UPLANETNAME_TREASURY" ]]; then
         TREASURY_COINS=$($MY_PATH/tools/G1check.sh ${UPLANETNAME_TREASURY} | tail -n 1)
+        [[ -z "$TREASURY_COINS" || ! "$TREASURY_COINS" =~ ^[0-9] ]] && TREASURY_COINS=0
         TREASURY_ZEN=$(echo "scale=1; ($TREASURY_COINS - 1) * 10" | bc)
     fi
     
@@ -464,6 +476,9 @@ while true; do
     
     # Determine economic risk level
     ECONOMIC_RISK="GREEN"
+    [[ -z "$CAPTAINZEN" || ! "$CAPTAINZEN" =~ ^[0-9] ]] && CAPTAINZEN=0
+    [[ -z "$TREASURY_ZEN" || ! "$TREASURY_ZEN" =~ ^[0-9] ]] && TREASURY_ZEN=0
+    [[ -z "$WEEKLY_BALANCE" || ! "$WEEKLY_BALANCE" =~ ^[-0-9] ]] && WEEKLY_BALANCE=0
     if [[ $(echo "$CAPTAINZEN < $MIN_WEEKLY_COSTS" | bc -l) -eq 1 ]]; then
         if [[ $(echo "$TREASURY_ZEN < $MIN_WEEKLY_COSTS" | bc -l) -eq 1 ]]; then
             ECONOMIC_RISK="RED"
