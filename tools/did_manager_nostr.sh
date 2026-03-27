@@ -187,7 +187,7 @@ create_initial_did() {
     # Get UPlanet info from environment or defaults
     local uplanet_g1pub_8="${UPLANETG1PUB:0:8}"
     if [[ -z "$uplanet_g1pub_8" ]]; then
-        uplanet_g1pub_8="4ZqazktD" # ORIGIN
+        uplanet_g1pub_8="g1LBF94v" # ORIGIN
     fi
 
     local my_relay="${myRELAY:-ws://127.0.0.1:7777}"

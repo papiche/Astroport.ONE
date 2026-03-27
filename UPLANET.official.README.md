@@ -522,7 +522,7 @@ Toutes les transactions de parts de capital incluent l'identifiant IPFS du nœud
 
 **Exemple de référence :**
 ```
-UPLANET:4ZqazktD:SOCIETY:support@qo-op.com:constellation:12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u
+UPLANET:g1LBF94v:SOCIETY:support@qo-op.com:constellation:12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u
 ```
 
 **Avantages de la traçabilité :**

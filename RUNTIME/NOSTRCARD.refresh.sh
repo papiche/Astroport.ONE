@@ -261,20 +261,20 @@ for PLAYER in "${NOSTR[@]}"; do
 
     ## SWARM CACHE PUBLISHING
     if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/HEX ]]; then
-        mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}
-        echo "$HEX" > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/HEX
+        mkdir -p "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}"
+        echo "$HEX" > "~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/HEX"
     fi
     if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS ]]; then
-        mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}
-        cp ${HOME}/.zen/game/nostr/${PLAYER}/GPS ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS 2>/dev/null
+        mkdir -p "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}"
+        cp "${HOME}/.zen/game/nostr/${PLAYER}/GPS" "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS" 2>/dev/null
     fi
 
     ## LAT & LON
-    source ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS
+    source "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS"
 
     if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/NPUB ]]; then
-        mkdir -p ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}
-        cp ${HOME}/.zen/game/nostr/${PLAYER}/NPUB ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/NPUB 2>/dev/null
+        mkdir -p "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}"
+        cp "${HOME}/.zen/game/nostr/${PLAYER}/NPUB" "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/NPUB" 2>/dev/null
     fi
 
     G1PUBNOSTR=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)

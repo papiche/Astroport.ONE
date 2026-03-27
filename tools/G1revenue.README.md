@@ -89,7 +89,7 @@
       "amount_g1": 2.0,
       "amount_zen": 20.0,
       "transaction_type": "ZENCOIN",
-      "comment": "Service ZENCOIN - UPLANET:4ZqazktD:ZENCOIN:frenault@linkeo.com"
+      "comment": "Service ZENCOIN - UPLANET:g1LBF94v:ZENCOIN:frenault@linkeo.com"
     }
   ],
   "timestamp": "2025-10-09T16:30:42"
@@ -127,7 +127,7 @@ UPLANET:${UPLANETG1PUB:0:8}:ZENCOIN:${email}
 
 **Exemple** :
 ```
-UPLANET:4ZqazktD:ZENCOIN:bidule@machintruc.com
+UPLANET:g1LBF94v:ZENCOIN:bidule@machintruc.com
 ```
 
 ### Formule de Conversion

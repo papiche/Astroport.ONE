@@ -596,7 +596,7 @@ EOFJSON
     ###############################################################################################
     ###############################################################################################
     ## ORIGIN or ẐEN's
-    [[ ${UPLANETG1PUB:0:8} == "4ZqazktD" ]] && ORIGIN="ORIGIN" || ORIGIN="${UPLANETG1PUB:0:8}"
+    [[ ${UPLANETG1PUB:0:8} == "g1LBF94v" ]] && ORIGIN="ORIGIN" || ORIGIN="${UPLANETG1PUB:0:8}"
     ZENCARDG1=$(cat ~/.zen/game/players/${EMAIL}/.g1pub 2>/dev/null) ## Does ZenCard already existing
 
     ### IMPORT CESIUM+ / GCHANGE+ PROFILE (if exists) for NOSTR profile enrichment

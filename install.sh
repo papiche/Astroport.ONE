@@ -1,6 +1,6 @@
 #!/bin/bash
 ############################################################ install.sh
-# Version: 0.4
+# Version: 0.5 (Modifié pour forcer MAJ apt/pip)
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
 {
@@ -42,16 +42,19 @@ git clone --depth 1 https://github.com/papiche/Astroport.ONE.git
 
 [[ ! $(which ipfs) ]] && echo "INSTALL IPFS PLEASE" && exit 1
 
+
 ####################################################################
-# MAIN # AUCUNE CLEF PLAYER...
-if [[ ! -d ~/.zen/game/players/ ]];
-then
+# MISES À JOUR GLOBALES (APT & PIP) 
+# -> S'exécute TOUJOURS, même si une installation est déjà présente
+####################################################################
 echo "#############################################"
-echo "###### ASTROPORT.ONE ZEN STATION ############"
+echo "###### MISE A JOUR DU SYSTEME (APT/PIP) #####"
 echo "#############################################"
-echo "######### INSTALL DOCKER ........ ###########"
-echo "#############################################"
-~/.zen/Astroport.ONE/install/install.docker.sh
+
+# Mise à jour générale des paquets existants
+sudo apt-get update -y
+sudo apt-get upgrade -y
+
 echo "#############################################"
 echo "######### INSTALL PRECIOUS FREE SOFTWARE ####"
 echo "#############################################"
@@ -60,19 +63,17 @@ for i in zip ssss make cmake hdparm iptables ufw fail2ban wireguard openssh-serv
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> ~/.zen/install.errors.log && continue
-
     fi
 done
 
 echo "#############################################"
 echo "####### INSTALL PYTHON3 SYSTEM LIBRARIES ####"
 echo "#############################################"
-for i in pipx python3-pip python3-setuptools python3-base58 python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp python3-prometheus-client python3-tk ssss; do
+for i in pipx python3-pip python3-setuptools python3-base58 python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp python3-prometheus-client python3-tk ssss miniupnpc; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> ~/.zen/install.errors.log && continue
-
     fi
 done
 
@@ -84,7 +85,6 @@ for i in qrencode pv gnupg gpa pandoc cargo btop sox prometheus ocrmypdf ca-cert
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> ~/.zen/install.errors.log && continue
-
     fi
 done
 
@@ -96,9 +96,52 @@ for i in figlet cmatrix cowsay fonts-hack-ttf; do
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> ~/.zen/install.errors.log && continue
-
     fi
 done
+
+if [[ $(which X 2>/dev/null) ]]; then
+    echo "#############################################"
+    echo "######### INSTALL DESKTOP TOOLS  ######"
+    echo "#############################################"
+    for i in x11-utils xclip zenity; do
+        if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+            echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+            sudo apt install -y $i;
+            [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> ~/.zen/install.errors.log && continue
+        fi
+    done
+fi
+
+echo "################################## ~/.astro/bin PYTHON ENV"
+cd $HOME
+[[ ! -s ~/.astro/bin/activate ]] && python -m venv .astro
+. ~/.astro/bin/activate
+cd -
+
+echo "#####################################"
+echo "## PYTHON TOOLS & CRYPTO LIB ##"
+echo "#####################################"
+export PATH=$HOME/.local/bin:$PATH
+pipx install duniterpy --include-deps ## keeps old v1 dep (soon deprecated)
+## add monero & bitcoin compatible keys
+for i in pip python-dotenv scrypt setuptools wheel termcolor amzqr ollama requests geohash beautifulsoup4 pyppeteer cryptography jwcrypto secp256k1 gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 matplotlib readability-lxml duniterpy cachetools pydantic-settings robohash substrate-interface; do
+        echo ">>> Installation/Mise à jour $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+        pip install -U $i 2>> ~/.zen/install.errors.log
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python -m pip install -U $i FAILED." >> ~/.zen/install.errors.log && continue
+done
+
+
+####################################################################
+# MAIN # VÉRIFICATION CLÉ PLAYER POUR SUITE INSTALLATION LOURDE
+if [[ ! -d ~/.zen/game/players/ ]];
+then
+
+echo "#############################################"
+echo "###### ASTROPORT.ONE ZEN STATION ############"
+echo "#############################################"
+echo "######### INSTALL DOCKER ........ ###########"
+echo "#############################################"
+~/.zen/Astroport.ONE/install/install.docker.sh
 
 echo "#############################################"
 echo "######### INSTALL TIDDLYWIKI ############"
@@ -118,39 +161,6 @@ if [[ $(cat /etc/ImageMagick-6/policy.xml | grep PDF) ]]; then
         && echo "Backup ImageMagick policy.xml → policy.xml.backup"
     cat /etc/ImageMagick-6/policy.xml | grep -Ev PDF > /tmp/policy.xml
     sudo cp /tmp/policy.xml /etc/ImageMagick-6/policy.xml
-fi
-
-
-echo "################################## ~/.astro/bin PYTHON ENV"
-cd $HOME
-[[ ! -s ~/.astro/bin/activate ]] && python -m venv .astro
-. ~/.astro/bin/activate
-cd -
-
-echo "#####################################"
-echo "## PYTHON TOOLS & CRYPTO LIB ##"
-echo "#####################################"
-export PATH=$HOME/.local/bin:$PATH
-pipx install duniterpy --include-deps ## keeps own dep
-## add monero & bitcoin compatible keys
-for i in pip python-dotenv scrypt setuptools wheel termcolor amzqr ollama requests geohash beautifulsoup4 pyppeteer cryptography jwcrypto secp256k1 gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 matplotlib readability-lxml duniterpy cachetools pydantic-settings robohash substrate-interface; do
-        echo ">>> Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        pip install -U $i 2>> ~/.zen/install.errors.log
-        # [[ $? != 0 ]] && pipx install $i 2>> ~/.zen/install.errors.log
-        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python -m pip install -U $i FAILED." >> ~/.zen/install.errors.log && continue
-done
-
-if [[ $(which X 2>/dev/null) ]]; then
-    echo "#############################################"
-    echo "######### INSTALL DESKTOP TOOLS  ######"
-    echo "#############################################"
-    for i in x11-utils xclip zenity; do
-        if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
-            echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-            sudo apt install -y $i;
-            [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> ~/.zen/install.errors.log && continue
-        fi
-    done
 fi
 
 echo "#############################################"
@@ -185,12 +195,12 @@ bash <(wget -qO- https://github.com/papiche/NIP-101/raw/refs/heads/main/install_
 echo "######### g1cli Duniter v2 Client ##############"
 ~/.zen/Astroport.ONE/install/install_gcli.sh
 
-## G1BILLET
+## G1BILLET -- needs reviewing --- code used for .print.sh scipt
 echo "######### G1BILLET ##############"
 echo "INSTALL G1BILLET : http://g1billet.localhost:33101"
 cd ~/.zen
 git clone https://github.com/papiche/G1BILLET.git
-cd G1BILLET && ./setup_systemd.sh
+# cd G1BILLET && ./setup_systemd.sh ## NETWORK SERVICE NOT USED
 cd -
 
 echo
@@ -258,7 +268,7 @@ fi
 # echo "######### rnostr + nomic + Qdrant ##############"
 # ~/.zen/Astroport.ONE/install/install_rnostr_semantic.sh ## NEED MORE WORK ---TODO migrate strfry plugin to rnsotr rules 
 echo "######### Enterprise Swarm AI Stack Manager ##############
-TRY IT : ~/.zen/Astroport.ONE/install/install-ai-company.docker.sh"
+TRY IT UPGRADE IT : ~/.zen/Astroport.ONE/install/install-ai-company.docker.sh"
 
 echo
 echo "#############################################"
@@ -322,12 +332,14 @@ echo
 
 else
 
-echo "ABORTING INSTALL
-===============================
-PLAYER already onboard...
-===============================
+echo "============================================="
+echo " MISES À JOUR (APT/PIP) EFFECTUÉES AVEC SUCCÈS"
+echo "============================================="
+echo " INSTALLATION COMPLÈTE IGNORÉE :"
+echo " PLAYER already onboard..."
+echo "============================================="
 $(cat ~/.zen/game/players/.current/secret.june)
-==============================="
+echo "============================================="
 # MAIN #
 
 fi
