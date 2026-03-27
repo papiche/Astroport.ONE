@@ -56,7 +56,8 @@ rm -Rf ~/.zen/tmp/${IPFSNODEID}/swarm
 
 ## TIMESTAMPING
 MOATS=$(date +%s) # Secondes depuis 1970
-lastrun_file=~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
+## Fichier de timing séparé du cache IPNS (évite la condition de course)
+lastrun_file=~/.zen/tmp/12345.lastrun
 
 ############################################################
 ##  MySwarm KEY INIT & SET
@@ -178,6 +179,11 @@ fi
 ###################################################################
 ## WILL SCAN ALL BOOSTRAP - REFRESH "SELF IPNS BALISE" - RECEIVE UPLINK ORDERS
 ###################################################################
+## Variables globales persistantes de la boucle (définies avant le while)
+UPSYNC_QUEUE="$HOME/.zen/tmp/upsync_queue.txt"
+HANDLER_SCRIPT="$HOME/.zen/tmp/12345_handler.sh"
+RESPONSE_FILE="/dev/shm/astroport_12345.http"
+touch "$UPSYNC_QUEUE"
 ###################
 # NEVER ENDING LOOP
 while true; do
@@ -198,8 +204,6 @@ while true; do
     [[ ! -z ${myDNSADDR} ]] \
         && echo "/dnsaddr/${myDNSADDR}/udp/4001/p2p/${IPFSNODEID}" > ~/.zen/tmp/${IPFSNODEID}/myIPFS.txt
 
-    lastrun=$(cat ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats)
-
     if [ -f "$lastrun_file" ]; then
         lastrun=$(cat "$lastrun_file")
     else
@@ -208,19 +212,8 @@ while true; do
 
     duree=$(( MOATS - lastrun ))
 
-    ## CHECK IF 12345.json WAS RECENTLY UPDATED (force publication after restart)
-    FORCE_PUBLISH=0
-    if [[ -f ~/.zen/tmp/${IPFSNODEID}/12345.json ]]; then
-        JSON_AGE=$(( $(date +%s) - $(stat -c %Y ~/.zen/tmp/${IPFSNODEID}/12345.json) ))
-        # If 12345.json was updated in last 5 minutes, force publish
-        if [[ $JSON_AGE -lt 300 && $duree -lt 3600 ]]; then
-            echo "12345.json recently updated ($JSON_AGE seconds ago), forcing publication"
-            FORCE_PUBLISH=1
-        fi
-    fi
-
     ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H in s )
-    if [[ ${duree} -gt 3600 || ${duree} == "" || ${FORCE_PUBLISH} -eq 1 ]]; then
+    if [[ ${duree} -gt 3600 || ${lastrun} -eq 0 ]]; then
         echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
         PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
         YIPNS=$(${MY_PATH}/tools/ssh_to_g1ipfs.py "$(cat ~/.ssh/id_ed25519.pub)")
@@ -386,7 +379,7 @@ while true; do
                 fi
 
                 ### CHECK FOR SAME UPLANET
-                uplanetpub=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json | jq -r '.UPLANETG1PUB')
+                uplanetpub=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json 2>/dev/null | jq -r '.UPLANETG1PUB' 2>/dev/null)
                 [[ "$UPLANETG1PUB" != "$uplanetpub" && "$uplanetpub" != "" ]] \
                     && echo "!!! ALERT. UPlanet $uplanetpub IS DIFFERENT OF MINE ${UPLANETG1PUB} !!! REMOVE FROM SWARM MAP" \
                     && rm -Rf ~/.zen/tmp/swarm/${ipfsnodeid-none}/ \
@@ -394,8 +387,8 @@ while true; do
 
                 ## LOOKING IF ITS SWARM MAP COULD COMPLETE MINE
                 echo "ANALYSING BOOSTRAP SWARM MAP"
-                itipnswarmap=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json | jq -r '.g1swarm' | rev | cut -d '/' -f 1 | rev )
-                ipfs ls /ipns/${itipnswarmap} | rev | cut -d ' ' -f 1 | rev | cut -d '/' -f 1 > ~/.zen/tmp/_swarm.${ipfsnodeid}
+                itipnswarmap=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json 2>/dev/null | jq -r '.g1swarm' 2>/dev/null | rev | cut -d '/' -f 1 | rev )
+                ipfs --timeout 30s ls /ipns/${itipnswarmap} 2>/dev/null | rev | cut -d ' ' -f 1 | rev | cut -d '/' -f 1 > ~/.zen/tmp/_swarm.${ipfsnodeid}
 
                 echo "================ ${nodeip} 12345 ZNODS LIST"
                 cat ~/.zen/tmp/_swarm.${ipfsnodeid}
@@ -545,9 +538,8 @@ while true; do
 
         ) & ##### SUB-PROCESS
 
-        # last run recording
-        echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
-        echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
+        ## Enregistrer le timestamp AVANT le prochain cycle (fichier de timing séparé)
+        echo "${MOATS}" > "$lastrun_file"
 
     else
 
@@ -702,17 +694,22 @@ NODE12345="{
 
     ## PUBLISH ${IPFSNODEID}/12345.json
     echo "${NODE12345}" > ~/.zen/tmp/${IPFSNODEID}/12345.json
+    ## Mise à jour des timestamps de la balise IPNS locale
+    echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
+    echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
 
-    ############ PREPARE HTTP 12345 JSON DOCUMENT (RAM OPTIMIZED)
-    RESPONSE_FILE="/dev/shm/astroport_12345.http"
+    ############ MISE À JOUR HTTP 12345 (RAM - /dev/shm)
     echo -e "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET\r\nServer: Astroport.ONE\r\nContent-Type: application/json; charset=UTF-8\r\nConnection: close\r\n\r\n${NODE12345}" > "$RESPONSE_FILE"
 
     ######################################################################################
-    # PREPARE HANDLER SCRIPT FOR UPSYNC (Léger - Mise en file d'attente)
-    HANDLER_SCRIPT="$HOME/.zen/tmp/12345_handler.sh"
-    UPSYNC_QUEUE="$HOME/.zen/tmp/upsync_queue.txt"
-    touch "$UPSYNC_QUEUE"
+    # PRÉPARER LE FICHIER D'ENVIRONNEMENT POUR LE HANDLER SOCAT (mis à jour à chaque cycle)
+    cat > "$HOME/.zen/tmp/12345_env.sh" << ENVEOF
+export MY_PATH="${MY_PATH}"
+export IPFSNODEID="${IPFSNODEID}"
+ENVEOF
+    chmod 644 "$HOME/.zen/tmp/12345_env.sh"
 
+    # REGÉNÉRER LE HANDLER SCRIPT (contient le chemin UPSYNC_QUEUE en dur)
     cat << EOF > "$HANDLER_SCRIPT"
 #!/bin/bash
 source "$HOME/.zen/tmp/12345_env.sh"
