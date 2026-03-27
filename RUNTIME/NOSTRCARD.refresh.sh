@@ -167,11 +167,9 @@ should_refresh() {
     local refresh_time_file="${player_dir}/.refresh_time"
     local last_refresh_file="${player_dir}/.todate"
     local last_udrive_file="${player_dir}/.udrive"
-    local last_uworld_file="${player_dir}/.uworld"
     local last_ipns_update_file="${player_dir}/.last_ipns_update"
 
     UDRIVE=""
-    UWORLD=""
     REFRESH_REASON=""
 
     # Si le compte n'est pas initialisé, l'initialiser
@@ -183,38 +181,49 @@ should_refresh() {
     local refresh_time=$(cat "$refresh_time_file")
     local last_refresh=$(cat "$last_refresh_file")
     local last_udrive=$(cat "$last_udrive_file" 2>/dev/null)
-    local last_uworld=$(cat "$last_uworld_file" 2>/dev/null)
-    local last_ipns_update=$(cat "$last_ipns_update_file" 2>/dev/null)
 
-    # Vérification 1: Mise à jour quotidienne (une fois par jour à l'heure aléatoire)
+    # Vérification 1 : Mise à jour quotidienne — une fois par jour APRÈS l'heure programmée.
+    # Fenêtre : toute la journée après refresh_time (pas de limite de 1h).
+    # Le fichier .todate empêche les doubles refreshes le même jour.
     if [[ "$last_refresh" != "$TODATE" ]]; then
-        # Convert current_time and refresh_time (HH:MM) to seconds since midnight
         current_seconds=$((10#${current_time%%:*} * 3600 + 10#${current_time##*:} * 60))
         refresh_seconds=$((10#${refresh_time%%:*} * 3600 + 10#${refresh_time##*:} * 60))
-        # Check if we're in the hour following the refresh time (within 1 hour window)
-        if [[ $current_seconds -gt $refresh_seconds && $current_seconds -le $((refresh_seconds + 3600)) ]]; then
+        if [[ $current_seconds -ge $refresh_seconds ]]; then
             REFRESH_REASON="daily_update"
-            echo "Daily refresh needed for ${PLAYER} (scheduled time: ${refresh_time})"
+            echo "Daily refresh needed for ${PLAYER} (scheduled time: ${refresh_time}, current: ${current_time})"
             return 0
         fi
+        # Pas encore l'heure → pas de refresh quotidien, mais on vérifie uDRIVE
     fi
 
     ##############################################
-    ## uDRIVE APP UPDATE
+    ## uDRIVE APP UPDATE — seulement si le dossier a été modifié depuis le dernier CID connu
     [[ ! -d ${player_dir}/APP/uDRIVE ]] \
         && rm -Rf ${player_dir}/APP \
         && mkdir -p ${player_dir}/APP/uDRIVE/
 
-    ## Verify Link
+    ## Verify symlink
     [[ ! -e "${player_dir}/APP/uDRIVE/generate_ipfs_structure.sh" ]] && \
         cd "${player_dir}/APP/uDRIVE" && \
-        ln -sf "${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh" "generate_ipfs_structure.sh"
+        ln -sf "${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh" "generate_ipfs_structure.sh" && \
+        cd - 2>&1 >/dev/null
 
-    ## update uDRIVE APP
+    ## Vérification rapide : le dossier uDRIVE a-t-il été modifié depuis le dernier CID ?
+    ## On compare l'heure de modification du dossier avec celle du fichier .udrive
+    udrive_dir_mtime=$(stat -c %Y "${player_dir}/APP/uDRIVE/" 2>/dev/null || echo 0)
+    udrive_cid_mtime=$(stat -c %Y "${last_udrive_file}" 2>/dev/null || echo 0)
+
+    if [[ -n "$last_udrive" && $udrive_dir_mtime -le $udrive_cid_mtime ]]; then
+        ## Pas de changement → skip génération coûteuse
+        echo "UDRIVE CID: $last_udrive (no changes)"
+        return 1
+    fi
+
+    ## update uDRIVE APP (seulement si modification détectée ou premier run)
     cd ${player_dir}/APP/uDRIVE/
     log "DEBUG" "Starting uDRIVE generation for ${PLAYER}"
     udrive_start=$(date +%s)
-    UDRIVE=$(./generate_ipfs_structure.sh .)
+    UDRIVE=$(./generate_ipfs_structure.sh . 2>/dev/null)
     udrive_end=$(date +%s)
     udrive_duration=$((udrive_end - udrive_start))
     log "DEBUG" "uDRIVE generation completed in ${udrive_duration}s for ${PLAYER}"
@@ -222,47 +231,18 @@ should_refresh() {
 
     if [[ -n "$UDRIVE" ]]; then
         if [[ "$UDRIVE" != "$last_udrive" ]]; then
-            if [[ -n "$last_udrive" ]]; then
-                ipfs --timeout 20s pin rm "$last_udrive" 2>/dev/null
-            fi
+            [[ -n "$last_udrive" ]] && ipfs --timeout 20s pin rm "$last_udrive" 2>/dev/null
             echo "$UDRIVE" > "${last_udrive_file}"
             REFRESH_REASON="udrive_update"
             return 0
         else
             echo "$UDRIVE" > "${last_udrive_file}"
-            echo "UDRIVE CID: $last_udrive"
+            echo "UDRIVE CID: $last_udrive (unchanged)"
         fi
     else
         echo "UDRIVE CID: $last_udrive"
     fi
 
-    # ########################################################### NEED EXTRA DEV
-    # ## uWORLD Link
-    # [[ ! -e "${player_dir}/APP/uWORLD/generate_ipfs_RPG.sh" ]] && \
-    #     mkdir -p "${player_dir}/APP/uWORLD" && \
-    #     cd ${player_dir}/APP/uWORLD/ && \
-    #     ln -sf "${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_RPG.sh" "generate_ipfs_RPG.sh"
-
-    # ## update uWORLD APP
-    # cd ${player_dir}/APP/uWORLD/
-    # UWORLD=$(./generate_ipfs_RPG.sh .)
-    # cd - 2>&1 >/dev/null
-
-    # if [[ -n "$UWORLD" ]]; then
-    #     if [[ "$UWORLD" != "$last_uworld"  ]]; then
-    #        if [[ -n "$last_uworld" ]]; then
-    #             ipfs --timeout 20s pin rm "$last_uworld" 2>/dev/null
-    #         fi
-    #         echo $UWORLD > "${last_uworld_file}"
-    #         REFRESH_REASON="uworld_update"
-    #         return 0
-    #     else
-    #         echo $UWORLD > "${last_uworld_file}"
-    #         echo "UWORLD CID: $last_uworld"
-    #     fi
-    # else
-    #     echo "UWORLD CID: $last_uworld"
-    # fi
     return 1
 }
 
