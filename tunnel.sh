@@ -60,38 +60,54 @@ cursor=0; running=true; last_msg="Prêt."; active_p2p=""; last_ipfs_check=0; bus
 
 update_list() {
     map_nodes=(); map_scripts=(); map_names=(); map_ports=(); map_protos=()
+    # On trie par nom de machine pour plus de clarté
     for node_path in $(ls -d "$SWARM_DIR"/*/ 2>/dev/null); do
         node_id=$(basename "$node_path")
+        
+        # Identification du nom de la machine
         swarm_file=$(ls "$node_path" | grep -E "^_MySwarm\..*\.html$" | head -n 1)
         machine_name=$( [[ -n "$swarm_file" ]] && echo "$swarm_file" | cut -d'.' -f2 || cat "$node_path/myIPFS.txt" 2>/dev/null | head -n 1 )
         [[ -z "$machine_name" ]] && machine_name="${node_id:0:8}"
+
         for s in "$node_path"/x_*.sh; do
             [ ! -f "$s" ] && continue
-            svc_slug=$(basename "$s" | sed 's/x_//;s/\.sh//' | tr '[:lower:]' '[:upper:]')
+            
+            # Slug du service (ex: OLLAMA)
+            svc_slug=$(basename "$s" | sed 's/x_//;s/\.sh//')
+            
+            # Extraction du port
             port=$(grep -oP '(PORT|LPORT)="\K\d+' "$s" | head -n 1)
             [[ -z "$port" ]] && port=$(grep -oP 'tcp/\K\d+' "$s" | head -n 1)
             [[ -z "$port" ]] && port="????"
-            proto=$(grep -oP 'PROTO="\K[^"]+' "$s" | head -n 1)
-            [[ -z "$proto" ]] && proto=$(grep -oP '/x/[^ ]+-'${node_id} "$s" | head -n 1)
-            [[ -z "$proto" ]] && proto=$(grep -oP '/x/[^ )]+' "$s" | head -n 1)
-            map_nodes+=("$node_id"); map_scripts+=("$s"); map_names+=("${machine_name^^} - $svc_slug")
-            map_ports+=("$port"); map_protos+=("$proto")
+
+            # Construction déterministe du PROTOCOLE
+            # Format standard Astroport : /x/[service_minuscule]-[NODEID]
+            proto="/x/${svc_slug,,}-${node_id}"
+            
+            map_nodes+=("$node_id")
+            map_scripts+=("$s")
+            map_names+=("${machine_name^^} - ${svc_slug^^}")
+            map_ports+=("$port")
+            map_protos+=("$proto")
         done
     done
 }
 
 fetch_ipfs_status() {
     [[ "$busy" == "true" ]] && return
+    # On récupère la liste complète des tunnels actifs
     active_p2p=$(ipfs p2p ls 2>/dev/null)
     last_ipfs_check=$(date +%s)
 }
 
 kill_service() {
     local port=$1; local proto=$2
-    if [[ -n "$proto" && "$proto" != "????" ]]; then
-        echo "[$(date +%T)] IPFS Close Proto: $proto (:$port)" >> $LOG_FILE
+    # Fermeture par protocole (le plus propre)
+    if [[ -n "$proto" ]]; then
+        echo "[$(date +%T)] IPFS Close Proto: $proto" >> $LOG_FILE
         ipfs p2p close -p "$proto" >/dev/null 2>&1
     fi
+    # Sécurité par Port
     if [[ "$port" != "????" ]]; then
         pid=$(lsof -ti :$port 2>/dev/null)
         [[ -n "$pid" ]] && kill -9 $pid 2>/dev/null
@@ -107,8 +123,12 @@ draw_ui() {
     for i in "${!map_names[@]}"; do
         if [ $i -eq $cursor ]; then line_start="${BOLD}${YELLOW}> "; line_end="${NC}"; else line_start="  "; line_end=""; fi
         
+        # La détection d'activité combine PROTOCOLE et PORT
+        # On cherche la ligne qui contient EXACTEMENT le protocole ET le port
+        is_p2p_active=$(echo "$active_p2p" | grep -F "${map_protos[$i]}" | grep -F "${map_ports[$i]}")
         is_lsof=$(lsof -Pi :${map_ports[$i]} -sTCP:LISTEN -t 2>/dev/null)
-        if ( [[ -n "${map_protos[$i]}" ]] && echo "$active_p2p" | grep -q "${map_protos[$i]}" ) || [[ -n "$is_lsof" ]]; then
+
+        if [[ -n "$is_p2p_active" ]] || [[ -n "$is_lsof" ]]; then
             status="${GREEN}[ ACTIF ]${NC}"
         else
             status="${RED}[  OFF  ]${NC}"
@@ -116,11 +136,13 @@ draw_ui() {
 
         name_part=$(printf "%-25s" "${map_names[$i]:0:24}")
         port_part=$(printf "%-10s" "P:${map_ports[$i]}")
-        echo -e "${line_start}${name_part} ${status}  ${port_part}  ... ${map_nodes[$i]: -10} ... ${line_end}"
+        # Affichage des 10 derniers caractères du NodeID pour vérification visuelle
+        node_short="${map_nodes[$i]: -10}"
+        
+        echo -e "${line_start}${name_part} ${status}  ${port_part}  ... ${node_short} ... ${line_end}"
     done
     echo -e "\n${BOLD}LOG:${NC} ${CYAN}${last_msg}${NC}"
 }
-
 # --- INITIALISATION ---
 update_list
 fetch_ipfs_status
@@ -131,26 +153,26 @@ while $running; do
     read -rsn1 -t $REFRESH_RATE key
     
     case "$key" in
-        $'\x1b') # Navigation Flèches
+        $'\x1b') # Navigation
             read -rsn2 -t 0.1 key
             case "$key" in "[A") ((cursor--)) ;; "[B") ((cursor++)) ;; esac
             ;;
-        $'\x0a'|$'\x0d') # Touche Entrée
+        $'\x0a'|$'\x0d') # CONNECT
             busy=true
             port="${map_ports[$cursor]}"
             if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
-                last_msg="Le service est déjà ACTIF sur le port $port."
+                last_msg="Port $port déjà occupé localement."
             else
-                last_msg="Lancement de ${map_names[$cursor]}..."
+                last_msg="Lancement ${map_names[$cursor]}..."
                 draw_ui
                 bash "${map_scripts[$cursor]}" >> $LOG_FILE 2>&1 &
                 sleep 2
             fi
             fetch_ipfs_status; busy=false
             ;;
-        "r"|"R") # Reset
+        "r"|"R") # RESET
             busy=true
-            last_msg="RESET : Relance de ${map_names[$cursor]}..."
+            last_msg="Reboot de ${map_names[$cursor]}..."
             draw_ui
             kill_service "${map_ports[$cursor]}" "${map_protos[$cursor]}"
             sleep 1
@@ -158,27 +180,26 @@ while $running; do
             sleep 2
             fetch_ipfs_status; busy=false
             ;;
-        "x"|"X") # Stop
+        "x"|"X") # STOP
             busy=true
-            last_msg="Arrêt du service..."
+            last_msg="Arrêt de ${map_names[$cursor]}..."
             draw_ui
+            # On essaie de passer l'argument stop au script s'il est géré
             bash "${map_scripts[$cursor]}" stop >> $LOG_FILE 2>&1
             kill_service "${map_ports[$cursor]}" "${map_protos[$cursor]}"
-            last_msg="Service arrêté et port libéré."; 
-            active_p2p=$(ipfs p2p ls 2>/dev/null)
-            busy=false
+            sleep 1
+            fetch_ipfs_status; busy=false
+            last_msg="Service arrêté."
             ;;
-        "w"|"W") # Web
+        "w"|"W") # WEB
             port="${map_ports[$cursor]}"
             if [[ "$port" != "????" ]]; then
-                last_msg="Ouverture navigateur..."
+                last_msg="Ouverture http://localhost:$port"
                 [[ "$port" == "6333" ]] && suffix="/dashboard" || suffix=""
                 xdg-open "http://localhost:$port$suffix" >/dev/null 2>&1 || open "http://localhost:$port$suffix" &
             fi
             ;;
-        "q"|"Q")
-            running=false
-            ;;
+        "q"|"Q") running=false ;;
     esac
 
     [[ $cursor -lt 0 ]] && cursor=$((${#map_names[@]} - 1))

@@ -52,8 +52,10 @@ ipfs config --json DNS.Resolvers '{}'
 ipfs config --json Routing.DelegatedRouters '[]'
 ipfs config --json Ipns.DelegatedPublishers '[]'
 ipfs config --json AutoTLS.Enabled false
-ipfs config --json Routing.Type '"dht"'
+# ipfs config --json Routing.Type '"dht"'
+ipfs config --json Routing.Type '"dhtserver"'
 ipfs config --json Plugins.Plugins.telemetry.Config '{"Mode": "off"}'
+ipfs config --json Ipns.UsePubsub true
 
 if [[ "$USER" == "xbian" ]]
 then
