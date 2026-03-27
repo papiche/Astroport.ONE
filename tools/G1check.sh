@@ -328,7 +328,7 @@ fi
 # ══════════════════════════════════════════════════════════════════════════════
 # 3. Pas de cache valide → fetch synchrone PARALLÈLE via gcli (Duniter RPC)
 # ══════════════════════════════════════════════════════════════════════════════
-log "Fetch parallèle Duniter RPC pour $G1PUB"
+log "Fetch parallèle Duniter RPC pour $G1PUB avec $G1PUB_QUERY"
 
 # Construire liste dédupliquée de noeuds RPC
 RPC_NODES=()

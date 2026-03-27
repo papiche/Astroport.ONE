@@ -24,9 +24,6 @@
 # - Outils supplémentaires dans ./tools/ (keygen, ipfs_to_g1.py, etc.).
 # - Packages : jq, socat, curl.
 #################################
-# CHECK NODE ipfs & swarm
-# ipfs swarm peers; echo; ipfs ls /ipns/$IPFSNODEID; echo; ipfs ls /ipns/$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1); echo 'cache'; ls ~/.zen/tmp/swarm/
-#
 # Auteur: Fred (support@qo-op.com)
 # Notes :
 # Ce script maintien la couche SWARM de l'essaim IPFS reliant les Astroport,
@@ -40,8 +37,8 @@ fi
 export PATH=$HOME/.local/bin:$PATH
 
 PORT=12345
-## Seuil de péremption (24 heures) : évite de supprimer trop vite les stations si IPNS est lent
-BALISE_STALE_SECONDS=$(( 24 * 60 * 60 ))
+## Seuil de péremption (12 heures) : évite de supprimer trop vite les stations si IPNS est lent
+BALISE_STALE_SECONDS=$(( 12 * 60 * 60 ))
 
 [[ -z "${IPFSNODEID}" || "${IPFSNODEID}" == "null" ]] && echo "IPFSNODEID is empty" && exit 1
 
@@ -188,6 +185,7 @@ RESPONSE_FILE="/dev/shm/astroport_12345.http"
 touch "$UPSYNC_QUEUE"
 
 while true; do
+    start=$(date +%s)
     MOATS=$(date +%s)
     [[ -z ${myIP} ]] && source "${MY_PATH}/tools/my.sh"
     if [ -f "$lastrun_file" ]; then lastrun=$(cat "$lastrun_file"); else lastrun=0; fi
@@ -212,6 +210,35 @@ while true; do
     fi
 
     duree=$(( MOATS - lastrun ))
+        ## TRAITEMENT DE LA QUEUE UPSYNC (Requêtes accumulées)
+        if [[ -s "$UPSYNC_QUEUE" ]]; then
+            echo "--- PROCESSING UPSYNC QUEUE ---"
+            # On crée une copie de travail et on vide l'originale pour accepter de nouveaux spams
+            mv "$UPSYNC_QUEUE" "${UPSYNC_QUEUE}.work"
+            touch "$UPSYNC_QUEUE"
+            
+            # Sous-processus asynchrone pour ne pas bloquer la boucle principale des 5 minutes
+            (
+                # On mélange les nœuds et on en extrait jusqu'à 20
+                TO_PROCESS=$(shuf -n 20 "${UPSYNC_QUEUE}.work" 2>/dev/null)
+                
+                for q_znod in $TO_PROCESS; do
+                    [[ -z "$q_znod" ]] && continue
+                    echo "Queued Syncing: $q_znod"
+                    mkdir -p ~/.zen/tmp/swarm/${q_znod}
+                    # Le timeout de 60s laisse le temps à IPFS de résoudre le nom IPNS
+                    ipfs --timeout 60s get --progress="false" -o ~/.zen/tmp/swarm/${q_znod} /ipns/${q_znod} >/dev/null 2>&1
+                done
+                
+                # On réinjecte les nœuds NON TRAITÉS dans la file d'attente principale
+                # Commande grep magique : affiche les lignes de .work qui NE SONT PAS dans la variable TO_PROCESS
+                if [[ -n "$TO_PROCESS" ]]; then
+                    grep -vxF -f <(echo "$TO_PROCESS") "${UPSYNC_QUEUE}.work" >> "$UPSYNC_QUEUE" 2>/dev/null
+                fi
+                
+                rm -f "${UPSYNC_QUEUE}.work"
+            ) &
+        fi
 
 
     # Rafraîchissement toutes les 1H (3600s)
@@ -219,23 +246,6 @@ while true; do
 
         ### PING & CONNECT 
         ${MY_PATH}/ping_bootstrap.sh
-        ## TRAITEMENT DE LA QUEUE UPSYNC (Requêtes accumulées)
-        if [[ -s "$UPSYNC_QUEUE" ]]; then
-            echo "--- PROCESSING UPSYNC QUEUE ---"
-            # On crée une copie de travail et on vide l'originale pour accepter de nouveaux spams
-            cp "$UPSYNC_QUEUE" "${UPSYNC_QUEUE}.work"
-            > "$UPSYNC_QUEUE"
-            
-            # On limite à 20 synchros max par cycle pour éviter le gavage
-            for q_znod in $(head -n 20 "${UPSYNC_QUEUE}.work"); do
-                [[ -z "$q_znod" ]] && continue
-                echo "Queued Syncing: $q_znod"
-                mkdir -p ~/.zen/tmp/swarm/${q_znod}
-                # On utilise un timeout plus court pour ne pas bloquer le script trop longtemps
-                ipfs --timeout 20s get --progress="false" -o ~/.zen/tmp/swarm/${q_znod} /ipns/${q_znod} >/dev/null 2>&1
-            done
-            rm -f "${UPSYNC_QUEUE}.work"
-        fi
 
         ### NOSTR RELAY SYNCHRO for LAST 24 H (direct call with lock protection)
         if [[ -s ~/.zen/workspace/NIP-101/backfill_constellation.sh ]]; then
@@ -306,7 +316,7 @@ while true; do
                 rm -Rf "$TMP_PEER"
                 
                 # Essayer de récupérer les données du peer via IPNS
-                if ipfs --timeout 20s get --progress="false" -o "$TMP_PEER" /ipns/${peer_id}/ 2>/dev/null; then
+                if ipfs --timeout 60s get --progress="false" -o "$TMP_PEER" /ipns/${peer_id}/ 2>/dev/null; then
                     if [[ -s "$TMP_PEER/_MySwarm.moats" ]]; then
                         # Mettre à jour le cache local
                         rm -Rf ~/.zen/tmp/swarm/${peer_id}
@@ -322,7 +332,7 @@ while true; do
                                 [[ "${znod}" == "${IPFSNODEID}" ]] && continue
                                 # Téléchargement des balises des stations découvertes
                                 TMP_ZNOD="/tmp/get_znod_${znod}"
-                                if ipfs --timeout 20s get --progress="false" -o "$TMP_ZNOD" /ipns/${znod} 2>/dev/null; then
+                                if ipfs --timeout 60s get --progress="false" -o "$TMP_ZNOD" /ipns/${znod} 2>/dev/null; then
                                     ZMOATS=$(cat "$TMP_ZNOD/_MySwarm.moats" 2>/dev/null)
                                     if [[ -n "$ZMOATS" ]]; then
                                         CUR_SEC=$(date +%s)
@@ -368,7 +378,7 @@ while true; do
                 SWARMH=$(ipfs --timeout 30s add -rwq ~/.zen/tmp/swarm/* | tail -n 1 | awk '{print $2}')
                 if [[ -n "$SWARMH" ]]; then
                     echo "=== PUBLISHING UPDATED SWARM MAP: /ipfs/${SWARMH} ==="
-                    ipfs --timeout=60s name publish --key "MySwarm_${IPFSNODEID}" /ipfs/${SWARMH}
+                    ipfs --timeout=60s name publish --lifetime=4h --ttl=15m --key "MySwarm_${IPFSNODEID}" /ipfs/${SWARMH}
                 fi
             fi
 
@@ -376,7 +386,7 @@ while true; do
             # On s'assure que notre 12345.json est à jour
             echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
             MYCACHE=$(ipfs --timeout 180s add -rwq ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | awk '{print $2}')
-            ipfs --timeout=60s name publish /ipfs/${MYCACHE}
+            ipfs --timeout=60s name publish --lifetime=4h --ttl=15m /ipfs/${MYCACHE}
 
         ) & 
 
@@ -631,8 +641,8 @@ EOF
     echo '(◕‿‿◕) http://'$myIP:'12345 SERVED VIA SOCAT (CGI) (◕‿‿◕)'
     
     # Sleep to prevent busy loop (replacing nc -l wait)
-    # Wait 60 seconds before checking if update is needed
-    sleep 60
+    # Wait 300 seconds before checking if update is needed
+    sleep 300
 
     #### 12345 NETWORK MAP TOKEN
     end=`date +%s`
