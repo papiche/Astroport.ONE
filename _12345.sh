@@ -73,11 +73,11 @@ is_astroport_node() {
 ############################################################
 CHAN=$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1)
 
-if [[ -z "${CHAN}" || ! -s ~/.zen/game/myswarm_secret.june ]]; then
+if [[ ! -s ~/.zen/game/myswarm_secret.june ]]; then
     echo "## INITIALIZING MySwarm KEYS ##"
     FULL_HASH=$(cat /proc/cpuinfo | grep -Ev MHz | sha512sum | cut -d ' ' -f 1)
-    SECRET1=${FULL_HASH:0:64}   # Première moitié (64 caractères)
-    SECRET2=${FULL_HASH:64:128} # Deuxième moitié (64 caractères)
+    SECRET1=${FULL_HASH:0:32}   # Première moitié (32 caractères)
+    SECRET2=${FULL_HASH:32:64} # Deuxième moitié (32 caractères)
     ipfs key rm "MySwarm_${IPFSNODEID}" 2>/dev/null
     echo "SALT=$SECRET1 && PEPPER=$SECRET2" > ~/.zen/game/myswarm_secret.june
     chmod 600 ~/.zen/game/myswarm_secret.june
@@ -91,8 +91,8 @@ fi
 #### Clef NODE myswarm_secret.nostr (ORACLE_SYSTEM)
 if [[ ! -s ~/.zen/game/myswarm_secret.nostr ]]; then
     FULL_HASH=$(cat /proc/cpuinfo | grep -Ev MHz | sha512sum | cut -d ' ' -f 1)
-    SECRET1=${FULL_HASH:0:64}   # Première moitié (64 caractères)
-    SECRET2=${FULL_HASH:64:128} # 
+    SECRET1=${FULL_HASH:0:32}   # Première moitié (32 caractères)
+    SECRET2=${FULL_HASH:32:64} # Deuxième moitié (32 caractères)
     npub=$(${MY_PATH}/tools/keygen -t nostr "$SECRET1${UPLANETNAME}" "$SECRET2${UPLANETNAME}")
     hex=$(${MY_PATH}/tools/nostr2hex.py "$npub")
     nsec=$(${MY_PATH}/tools/keygen -t nostr "$SECRET1${UPLANETNAME}" "$SECRET2${UPLANETNAME}" -s)
