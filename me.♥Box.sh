@@ -76,6 +76,7 @@ ls ~/.zen/tmp/swarm/
 echo
 # 8. RÉSULTAT
 echo "--- CONFIGURATION $HOME/.zen/♥Box ??? $FINAL_IP"
+cat $HOME/.zen/♥Box
 echo "INTERFACE : $DEFAULT_IFACE"
 echo "LAN       : ${LAN_IP:-Inconnu}"
 echo "WAN       : ${WAN_IP:-Non détecté}"
