@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
 # Script: Astroport Swarm Node Manager
-# Version: 0.2
+# Version: 0.3.1
 # License: AGPL-3.0
 #
 # Description:
@@ -22,15 +22,17 @@
 # Dépendances :
 # - IPFS (nœud local configuré et en cours d'exécution).
 # - Outils supplémentaires dans ./tools/ (keygen, ipfs_to_g1.py, etc.).
-# - Packages : jq, netcat, curl.
+# - Packages : jq, socat, curl.
+#################################
+# CHECK NODE ipfs & swarm
+# ipfs swarm peers; echo; ipfs ls /ipns/$IPFSNODEID; echo; ipfs ls /ipns/$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1); echo 'cache'; ls ~/.zen/tmp/swarm/
 #
 # Auteur: Fred (support@qo-op.com)
 # Notes :
 # Ce script maintien la couche SWARM de l'essaim IPFS reliant les Astroport,
 # This script scan Swarm API layer from official bootstraps
 #################################################################################
-MY_PATH="`dirname \"$0\"`"              # relative
-MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+MY_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 . "${MY_PATH}/tools/my.sh"
 if [ -s "$HOME/.astro/bin/activate" ]; then
     source $HOME/.astro/bin/activate
@@ -38,41 +40,33 @@ fi
 export PATH=$HOME/.local/bin:$PATH
 
 PORT=12345
-## Balise stale threshold (seconds): remove station from swarm if IPNS not updated longer than this.
-## Must be above this script's refresh cycle (duree > 3600 s = ~1h) to avoid false OFFLINE.
-BALISE_STALE_SECONDS=$(( 5 * 60 * 60 ))   # 5 hours
+## Seuil de péremption (24 heures) : évite de supprimer trop vite les stations si IPNS est lent
+BALISE_STALE_SECONDS=$(( 24 * 60 * 60 ))
 
-## WHAT IS NODEG1PUB
+[[ -z "${IPFSNODEID}" || "${IPFSNODEID}" == "null" ]] && echo "IPFSNODEID is empty" && exit 1
+
+## IDENTITÉ DU NŒUD
 NODEG1PUB=$($MY_PATH/tools/ipfs_to_g1.py ${IPFSNODEID})
 NODECOINS=$($MY_PATH/tools/G1check.sh ${NODEG1PUB} | tail -n 1)
 NODEZEN=$(echo "scale=1; ($NODECOINS - 1) * 10" | bc)
-##############################################
-[[ ${IPFSNODEID} == "" || ${IPFSNODEID} == "null" ]] && echo "IPFSNODEID is empty" && exit 1
+
 mkdir -p ~/.zen/tmp/swarm
 mkdir -p ~/.zen/tmp/${IPFSNODEID}
+rm -Rf ~/.zen/tmp/${IPFSNODEID}/swarm # Anti-boucle
 
-## AVOID A swarm IN swarm LOOP !!!
-rm -Rf ~/.zen/tmp/${IPFSNODEID}/swarm
-
-## TIMESTAMPING
-MOATS=$(date +%s) # Secondes depuis 1970
-## Fichier de timing séparé du cache IPNS (évite la condition de course)
 lastrun_file=~/.zen/tmp/12345.lastrun
 
 ############################################################
-##  MySwarm KEY INIT & SET
+##  MySwarm KEY INIT
 ############################################################
-## CREATE CHAN = MySwarm_${IPFSNODEID}
 CHAN=$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1)
 
-#######################################################
-## CREATE MySwarm KEYS ?
-if [[ ${CHAN} == "" || ${CHAN} == "null" || ! -s ~/.zen/game/myswarm_secret.june ]]; then
-######################################################## MAKE IPFS NODE CHAN ID CPU RELATED
-    echo "## MAKE /proc/cpuinfo IPFSNODEID DERIVATED KEY ##"
-    SECRET1=$(cat /proc/cpuinfo | grep -Ev MHz | sha512sum | cut -d ' ' -f 1)
-    SECRET2=${IPFSNODEID}
-    ipfs key rm "MySwarm_${IPFSNODEID}"
+if [[ -z "${CHAN}" || ! -s ~/.zen/game/myswarm_secret.june ]]; then
+    echo "## INITIALIZING MySwarm KEYS ##"
+    FULL_HASH=$(cat /proc/cpuinfo | grep -Ev MHz | sha512sum | cut -d ' ' -f 1)
+    SECRET1=${FULL_HASH:0:64}   # Première moitié (64 caractères)
+    SECRET2=${FULL_HASH:64:128} # Deuxième moitié (64 caractères)
+    ipfs key rm "MySwarm_${IPFSNODEID}" 2>/dev/null
     echo "SALT=$SECRET1 && PEPPER=$SECRET2" > ~/.zen/game/myswarm_secret.june
     chmod 600 ~/.zen/game/myswarm_secret.june
     ${MY_PATH}/tools/keygen -t ipfs -o ~/.zen/game/myswarm_secret.ipns "$SECRET1${UPLANETNAME}" "$SECRET2${UPLANETNAME}"
@@ -82,11 +76,11 @@ if [[ ${CHAN} == "" || ${CHAN} == "null" || ! -s ~/.zen/game/myswarm_secret.june
     ipfs key import "MySwarm_${IPFSNODEID}" -f pem-pkcs8-cleartext ~/.zen/game/myswarm_secret.ipns
     CHAN=$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1 )
 fi
-
 #### Clef NODE myswarm_secret.nostr (ORACLE_SYSTEM)
 if [[ ! -s ~/.zen/game/myswarm_secret.nostr ]]; then
-    SECRET1=$(cat /proc/cpuinfo | grep -Ev MHz | sha512sum | cut -d ' ' -f 1)
-    SECRET2=${IPFSNODEID}
+    FULL_HASH=$(cat /proc/cpuinfo | grep -Ev MHz | sha512sum | cut -d ' ' -f 1)
+    SECRET1=${FULL_HASH:0:64}   # Première moitié (64 caractères)
+    SECRET2=${FULL_HASH:64:128} # 
     npub=$(${MY_PATH}/tools/keygen -t nostr "$SECRET1${UPLANETNAME}" "$SECRET2${UPLANETNAME}")
     hex=$(${MY_PATH}/tools/nostr2hex.py "$npub")
     nsec=$(${MY_PATH}/tools/keygen -t nostr "$SECRET1${UPLANETNAME}" "$SECRET2${UPLANETNAME}" -s)
@@ -95,7 +89,7 @@ if [[ ! -s ~/.zen/game/myswarm_secret.nostr ]]; then
 fi 
 
 ## NOSTR ##############################################
-## CREATE ~/.zen/game/secret.nostr (for YLEVEL NODES only)
+## CREATE ~/.zen/game/secret.nostr - YLEVEL NODE
 if [[ -s ~/.zen/game/secret.june ]]; then
     source ~/.zen/game/secret.june
     npub=$(${MY_PATH}/tools/keygen -t nostr "$SALT" "$PEPPER")
@@ -107,7 +101,7 @@ if [[ -s ~/.zen/game/secret.june ]]; then
 fi
 
 ######################################### CAPTAIN RELATED
-## CREATE ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
+## RE-CREATE ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
 if [[ ! -s ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr ]]; then
     DISCO=$(cat ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.disco)
     IFS='=&' read -r s salt p pepper <<< "$DISCO"
@@ -121,33 +115,35 @@ if [[ ! -s ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr ]]; then
         echo "NSEC=$captainNSEC; NPUB=$captainNPUB; HEX=$captainHEX" \
             > ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
         chmod 600 ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
-
-        ## Add CAPTAIN HEX to nostr WhiteList
-        mkdir -p ~/.zen/game/nostr/CAPTAIN
-        echo $captainHEX > ~/.zen/game/nostr/CAPTAIN/HEX
-        echo $captainHEX > ~/.zen/tmp/${IPFSNODEID}/HEX_CAPTAIN
-
     else
         echo "ERROR : CAPTAIN BAD DISCO DECODING" >> ~/.zen/game/nostr/$CAPTAINEMAIL/ERROR
     fi
-
 else
     ## Get data from cache
     CAPTAING1=$(cat ~/.zen/tmp/coucou/$CAPTAING1PUB.COINS)
     CAPTAINZEN=$(echo "scale=1; ($CAPTAING1 - 1) * 10" | bc)
     captainHEX=$(cat ~/.zen/game/nostr/$CAPTAINEMAIL/HEX)
+    ## Add CAPTAIN HEX to nostr WhiteList
+    mkdir -p ~/.zen/game/nostr/CAPTAIN
+    echo $captainHEX > ~/.zen/game/nostr/CAPTAIN/HEX
+    echo $captainHEX > ~/.zen/tmp/${IPFSNODEID}/HEX_CAPTAIN
 fi
 ##################################################
 
-###########################################################""
+#############################################################
 ## PUBLISH CHANNEL IPNS LINK
-echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${CHAN}'\" />" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.$(myHostName).html
-
+echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${CHAN}'\" />" \
+    > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.$(myHostName).html
 ############################################################
+## MAIN LOOP
 ############################################################
 echo 0 > ~/.zen/tmp/random.sleep
 ###################################################################
-###############################################
+############################################### ẑen/ẐEN TOKEN SOURCE
+SOURCE_G1COIN=$($MY_PATH/tools/G1check.sh ${UPLANETNAME_G1} | tail -n 1)
+SOURCE_ZEN=$(echo "scale=1; ($SOURCE_G1COIN - 1) * 10" | bc)
+
+##################################### USAGE TOKEN ẑen = 0 relay wallet
 UPLANETCOINS=$($MY_PATH/tools/G1check.sh ${UPLANETG1PUB} | tail -n 1)
 UPLANETZEN=$(echo "scale=1; ($UPLANETCOINS - 1) * 10" | bc)
 
@@ -155,26 +151,32 @@ UPLANETZEN=$(echo "scale=1; ($UPLANETCOINS - 1) * 10" | bc)
 ## Ces wallet COOP sont gérés par UPLANET.init.sh et UPLANET.official.sh 
 ## Quotidiennement réinitialisées par NODE et DRAGON_p2p puis raffraichis par my.sh
 ## REFILL TO CHECK CACHE CONFORMITY 
-# UPLANETNAME_TREASURY wallet
-UPLANETNAME_TREASURY=$(cat $HOME/.zen/tmp/UPLANETNAME_TREASURY)
-# UPLANETNAME_RND wallet
-UPLANETNAME_RND=$(cat $HOME/.zen/tmp/UPLANETNAME_RND)
-# UPLANETNAME_ASSETS wallet
-UPLANETNAME_ASSETS=$(cat $HOME/.zen/tmp/UPLANETNAME_ASSETS)
-# UPLANETNAME_IMPOT wallet
-UPLANETNAME_IMPOT=$(cat $HOME/.zen/tmp/UPLANETNAME_IMPOT)
-# UPLANETNAME_CAPITAL wallet (Immobilisations - Compte 21 - Valeur Brute)
-UPLANETNAME_CAPITAL=$(cat $HOME/.zen/tmp/UPLANETNAME_CAPITAL)
 # UPLANETNAME_AMORTISSEMENT wallet (Amortissements - Compte 28 - Valeur Consommée)
 UPLANETNAME_AMORTISSEMENT=$(cat $HOME/.zen/tmp/UPLANETNAME_AMORTISSEMENT)
+# UPLANETNAME_ASSETS wallet
+UPLANETNAME_ASSETS=$(cat $HOME/.zen/tmp/UPLANETNAME_ASSETS)
+# UPLANETNAME_CAPITAL wallet (Immobilisations - Compte 21 - Valeur Brute)
+UPLANETNAME_CAPITAL=$(cat $HOME/.zen/tmp/UPLANETNAME_CAPITAL)
+# UPLANETNAME_CAPTAIN wallet (CAPTAIN_DEDICATED -- 3x1/3 collect MULTIPASS ẑen payments)
+UPLANETNAME_CAPTAIN=$(cat $HOME/.zen/tmp/UPLANETNAME_CAPTAIN)
+# UPLANETNAME_IMPOT wallet
+UPLANETNAME_IMPOT=$(cat $HOME/.zen/tmp/UPLANETNAME_IMPOT)
 # UPLANETNAME_INTRUSION wallet (external Ğ1 should always go to UPLANETNAME_G1)
 UPLANETNAME_INTRUSION=$(cat $HOME/.zen/tmp/UPLANETNAME_INTRUSION)
+# UPLANETNAME_RND wallet
+UPLANETNAME_RND=$(cat $HOME/.zen/tmp/UPLANETNAME_RND)
+# UPLANETNAME_SOCIETY wallet
+UPLANETNAME_SOCIETY=$(cat $HOME/.zen/tmp/UPLANETNAME_SOCIETY)
+# UPLANETNAME_TREASURY wallet
+UPLANETNAME_TREASURY=$(cat $HOME/.zen/tmp/UPLANETNAME_TREASURY)
+
+### If 12345.json is missing those values ---> meaning cache refresh is altered
 
 ####################################################################################
-#### UPLANET GEOKEYS_refresh - not for UPlanet ORIGIN
-if [[ $UPLANETNAME != "0000000000000000000000000000000000000000000000000000000000000000" ]]; then
-    ${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
-fi
+#### UPLANET GEOKEYS_refresh - desactivated - need more investigations (TW coding period)
+# if [[ $UPLANETNAME != "0000000000000000000000000000000000000000000000000000000000000000" ]]; then
+#     ${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
+# fi
 
 ###################################################################
 ## WILL SCAN ALL BOOSTRAP - REFRESH "SELF IPNS BALISE" - RECEIVE UPLINK ORDERS
@@ -184,17 +186,16 @@ UPSYNC_QUEUE="$HOME/.zen/tmp/upsync_queue.txt"
 HANDLER_SCRIPT="$HOME/.zen/tmp/12345_handler.sh"
 RESPONSE_FILE="/dev/shm/astroport_12345.http"
 touch "$UPSYNC_QUEUE"
-###################
-# NEVER ENDING LOOP
-while true; do
 
-    start=`date +%s`
+while true; do
     MOATS=$(date +%s)
-    [[ -z ${myIP} ]] && source "${MY_PATH}/tools/my.sh" ## correct 1st run DHCP latency
+    [[ -z ${myIP} ]] && source "${MY_PATH}/tools/my.sh"
+    if [ -f "$lastrun_file" ]; then lastrun=$(cat "$lastrun_file"); else lastrun=0; fi
     [[ ${CHAN} == "" ]] && CHAN=$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1)
 
     echo "/ip4/${myIP}/udp/4001/p2p/${IPFSNODEID}" > ~/.zen/tmp/${IPFSNODEID}/myIPFS.txt
 
+    ## Get IP from ~/.zen/♥Box
     [[ ! -z ${zipit} ]] \
         && myIP=${zipit} \
         && echo "/ip4/${zipit}/udp/4001/p2p/${IPFSNODEID}" > ~/.zen/tmp/${IPFSNODEID}/myIPFS.txt
@@ -212,25 +213,11 @@ while true; do
 
     duree=$(( MOATS - lastrun ))
 
-    ## FIXING TIC TAC FOR NODE & SWARM REFRESH ( 1H in s )
+
+    # Rafraîchissement toutes les 1H (3600s)
     if [[ ${duree} -gt 3600 || ${lastrun} -eq 0 ]]; then
-        echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
-        PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
-        YIPNS=$(${MY_PATH}/tools/ssh_to_g1ipfs.py "$(cat ~/.ssh/id_ed25519.pub)")
-        ## NOT Y LEVEL STATIONS
-        if [[ ${IPFSNODEID} != ${YIPNS} ]]; then
-            ## NO CAPTAIN ON BOARD
-            [[ ${PLAYERONE[@]} == "" ]] \
-                && duree=0 && lastrun=${MOATS} && break
-        fi
 
-        ## CHECK IF IPFS NODE IS RESPONDING
-        ipfs --timeout=30s swarm peers 2>/dev/null > ~/.zen/tmp/ipfs.swarm.peers
-        if [[ ! -s ~/.zen/tmp/ipfs.swarm.peers || $? != 0 ]]; then
-            echo "---- SWARM COMMUNICATION BROKEN / RESTARTING IPFS DAEMON ----"
-            [[ $(sudo systemctl status ipfs | grep disabled) == "" ]] && sudo systemctl restart ipfs
-        fi
-
+        ### PING & CONNECT 
         ${MY_PATH}/ping_bootstrap.sh
         ## TRAITEMENT DE LA QUEUE UPSYNC (Requêtes accumulées)
         if [[ -s "$UPSYNC_QUEUE" ]]; then
@@ -245,19 +232,11 @@ while true; do
                 echo "Queued Syncing: $q_znod"
                 mkdir -p ~/.zen/tmp/swarm/${q_znod}
                 # On utilise un timeout plus court pour ne pas bloquer le script trop longtemps
-                ipfs --timeout 120s get --progress="false" -o ~/.zen/tmp/swarm/${q_znod} /ipns/${q_znod} >/dev/null 2>&1
+                ipfs --timeout 20s get --progress="false" -o ~/.zen/tmp/swarm/${q_znod} /ipns/${q_znod} >/dev/null 2>&1
             done
             rm -f "${UPSYNC_QUEUE}.work"
         fi
-        # IPNS flashmem desactivated - reactivate as needed - _UPLANET.refresh.sh TW system
-        #~ #### UPLANET FLASHMEM UPDATES 
-        ## - keep Zen Card & Geo Key ipns & ipfs copied to automaticaly propogate
-        #~ GEOKEYSrunning=$(pgrep -au $USER -f 'GEOKEYS_refresh.sh' | tail -n 1 | xargs | cut -d " " -f 1)
-        #~ [[ -z $GEOKEYSrunning ]] && ${MY_PATH}/RUNTIME/GEOKEYS_refresh.sh &
-        
-        ##################################################################################
-        ### MULTIPASS refresh
-        ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh &
+
         ### NOSTR RELAY SYNCHRO for LAST 24 H (direct call with lock protection)
         if [[ -s ~/.zen/workspace/NIP-101/backfill_constellation.sh ]]; then
             # Check if backfill is already running (prevent double execution)
@@ -301,244 +280,106 @@ while true; do
         # Check for IPFS P2P tunnels
         [[ -z $(ipfs p2p ls) ]] && ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh ON
 
-        #####################################
-        ( ##### SUB-PROCESS £
-        start=`date +%s`
-        ############# GET BOOSTRAP SWARM DATA
-        for bootnode in $(cat ${STRAPFILE} | grep -Ev "#" | grep -v '^[[:space:]]*$') # remove comments and empty lines
-        do
+        echo "$(date -u) - Starting Swarm Refresh Cycle"
+        
+        # Sous-processus pour ne pas bloquer le serveur HTTP
+        (
+            ## 1. SCAN DES SWARM PEERS (auto-découverte)
+            # Récupérer tous les pairs connectés
+            SWARM_PEERS=$(ipfs swarm peers | grep -v "${IPFSNODEID}")
 
-            ## ex: /ip4/149.102.158.67/tcp/4001/p2p/12D3KooWL2FcDJ41U9SyLuvDmA5qGzyoaj2RoEHiJPpCvY8jvx9u)
-            echo "############# RUN LOOP ######### $(date)"
-            ipfsnodeid=${bootnode##*/}
-
-            [[ ${ipfsnodeid} == ${IPFSNODEID} ]] && echo "MYSELF : ${IPFSNODEID} - CONTINUE" && continue
-
-            [[ ${ipfsnodeid} == "null" || ${ipfsnodeid} == "" ]] && echo "BAD ${IPFSNODEID} - CONTINUE" && continue
-
-            ## SWARM CONNECT
-            ipfs --timeout 20s swarm connect ${bootnode}
-
-            ## PREPARE TO REFRESH SWARM LOCAL CACHE
-            mkdir -p ~/.zen/tmp/swarm/${ipfsnodeid}
-            mkdir -p ~/.zen/tmp/-${ipfsnodeid}
-
-            ## GET bootnode IP
-            iptype=$(echo ${bootnode} | cut -d '/' -f 2)
-            nodeip=$(echo ${bootnode} | cut -d '/' -f 3)
-
-            ## IPFS GET TO /swarm/${ipfsnodeid}
-            echo "GETTING ${nodeip} : /ipns/${ipfsnodeid}"
-            
-            # 1. On télécharge dans un dossier temporaire propre
-            TMP_BOOT="/tmp/get_boot_${ipfsnodeid}"
-            rm -Rf "$TMP_BOOT"
-            
-            if ipfs --timeout 45s get --progress="false" -o "$TMP_BOOT" /ipns/${ipfsnodeid}/ 2>/dev/null; then
-                # 2. On vérifie si le fichier critique existe et n'est pas vide
-                if [[ -s "$TMP_BOOT/_MySwarm.moats" ]]; then
-                    echo "__________________________________________________"
-                    ls "$TMP_BOOT"
-                    echo "__________________________________________________"
-                    
-                    # 3. On compare les MOATS avant de remplacer
-                    local_moat=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats 2>/dev/null)
-                    remote_moat=$(cat "$TMP_BOOT/_MySwarm.moats")
-
-                    if [[ "$local_moat" != "$remote_moat" || -z "$local_moat" ]]; then
-                        rm -Rf ~/.zen/tmp/swarm/${ipfsnodeid}
-                        mv "$TMP_BOOT" ~/.zen/tmp/swarm/${ipfsnodeid}
-                        echo "UPDATED : ~/.zen/tmp/swarm/${ipfsnodeid}"
-                    else
-                        echo "TimeStamp unchanged : ${local_moat}"
-                        rm -Rf "$TMP_BOOT"
-                    fi
-                else
-                    echo "INVALID DATA from /ipns/${ipfsnodeid}/"
-                    rm -Rf "$TMP_BOOT"
-                    continue
-                fi
-            else
-                echo "UNREACHABLE /ipns/${ipfsnodeid}/"
-                rm -Rf "$TMP_BOOT"
-                continue
+            # Si pas de pairs, fallback sur les bootstraps
+            if [[ -z "$SWARM_PEERS" ]]; then
+                echo "No peers found, falling back to bootstraps"
+                SWARM_PEERS=$(cat ${STRAPFILE} | grep -Ev "#" | grep -v '^[[:space:]]*$')
             fi
 
-            ## ASK BOOSTRAP NODE TO GET MY MAP UPSYNC
-            ## - MAKES MY BALISE PRESENT IN BOOSTRAP SWARM KEY  -
-            if [[ $iptype == "ip4" || $iptype == "ip6" || $iptype == "dnsaddr" ]]; then
-                ############ UPSYNC CALL // ip:12345 AND ipfs.domain/12345
-                if [[ $iptype == "dnsaddr" ]]; then
-                    echo "STATION MAP UPSYNC : curl -s https://${nodeip}/12345/?${NODEG1PUB}=${IPFSNODEID}"
-                    curl -s -m 10 https://${nodeip}/12345/?${NODEG1PUB}=${IPFSNODEID} \
-                        -o ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json
-                else
-                    echo "STATION MAP UPSYNC : curl -s http://${nodeip}:12345/?${NODEG1PUB}=${IPFSNODEID}"
-                    curl -s -m 10 http://${nodeip}:12345/?${NODEG1PUB}=${IPFSNODEID} \
-                        -o ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json
+            for peer in ${SWARM_PEERS}; do
+                # Extraire l'ID du peer (format: /ip4/x.x.x.x/tcp/4001/p2p/Qm...)
+                peer_id=$(echo "$peer" | grep -oP 'p2p/\K[^/]+' | head -1)
+                [[ -z "$peer_id" ]] && continue
+                [[ "$peer_id" == "${IPFSNODEID}" ]] && continue
+                
+                echo "Scanning peer: $peer_id"
+                
+                TMP_PEER="/tmp/get_peer_${peer_id}"
+                rm -Rf "$TMP_PEER"
+                
+                # Essayer de récupérer les données du peer via IPNS
+                if ipfs --timeout 20s get --progress="false" -o "$TMP_PEER" /ipns/${peer_id}/ 2>/dev/null; then
+                    if [[ -s "$TMP_PEER/_MySwarm.moats" ]]; then
+                        # Mettre à jour le cache local
+                        rm -Rf ~/.zen/tmp/swarm/${peer_id}
+                        mv "$TMP_PEER" ~/.zen/tmp/swarm/${peer_id}
+                        
+                        # Récupérer la liste des autres stations via ce peer
+                        it_map=$(cat ~/.zen/tmp/swarm/${peer_id}/12345.json 2>/dev/null | jq -r '.g1swarm' 2>/dev/null | rev | cut -d '/' -f 1 | rev)
+                        if [[ -n "$it_map" && "$it_map" != "null" ]]; then
+                            echo "---> Swarm extension with /ipns/${it_map}"
+                            ipfs --timeout 20s ls /ipns/${it_map} 2>/dev/null | awk '{print $NF}' | sed 's/\///g' > ~/.zen/tmp/_swarm_list.${peer_id}
+                            
+                            for znod in $(cat ~/.zen/tmp/_swarm_list.${peer_id}); do
+                                [[ "${znod}" == "${IPFSNODEID}" ]] && continue
+                                # Téléchargement des balises des stations découvertes
+                                TMP_ZNOD="/tmp/get_znod_${znod}"
+                                if ipfs --timeout 20s get --progress="false" -o "$TMP_ZNOD" /ipns/${znod} 2>/dev/null; then
+                                    ZMOATS=$(cat "$TMP_ZNOD/_MySwarm.moats" 2>/dev/null)
+                                    if [[ -n "$ZMOATS" ]]; then
+                                        CUR_SEC=$(date +%s)
+                                        if [[ $(( CUR_SEC - ZMOATS )) -le ${BALISE_STALE_SECONDS} ]]; then
+                                            rm -Rf ~/.zen/tmp/swarm/${znod}
+                                            mv "$TMP_ZNOD" ~/.zen/tmp/swarm/${znod}
+                                        fi
+                                    fi
+                                fi
+                                rm -Rf "$TMP_ZNOD"
+                            done
+                        fi
+                    fi
                 fi
+                rm -Rf "$TMP_PEER"
+            done
 
-                ### CHECK FOR SAME UPLANET
-                uplanetpub=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json 2>/dev/null | jq -r '.UPLANETG1PUB' 2>/dev/null)
-                [[ "$UPLANETG1PUB" != "$uplanetpub" && "$uplanetpub" != "" ]] \
-                    && echo "!!! ALERT. UPlanet $uplanetpub IS DIFFERENT OF MINE ${UPLANETG1PUB} !!! REMOVE FROM SWARM MAP" \
-                    && rm -Rf ~/.zen/tmp/swarm/${ipfsnodeid-none}/ \
-                    && continue
-
-                ## LOOKING IF ITS SWARM MAP COULD COMPLETE MINE
-                echo "ANALYSING BOOSTRAP SWARM MAP"
-                itipnswarmap=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/12345.${nodeip}.json 2>/dev/null | jq -r '.g1swarm' 2>/dev/null | rev | cut -d '/' -f 1 | rev )
-                ipfs --timeout 30s ls /ipns/${itipnswarmap} 2>/dev/null | rev | cut -d ' ' -f 1 | rev | cut -d '/' -f 1 > ~/.zen/tmp/_swarm.${ipfsnodeid}
-
-                echo "================ ${nodeip} 12345 ZNODS LIST"
-                cat ~/.zen/tmp/_swarm.${ipfsnodeid}
-                # Supprime les stations qui n'ont pas de fichier .moats valide 
-                # (évite de garder des dossiers de stations disparues du réseau)
-                find ~/.zen/tmp/swarm -maxdepth 2 -name "_MySwarm.moats" -mmin +720 -exec dirname {} \; | xargs rm -rf
-                echo "============================================"
-                for znod in $(cat ~/.zen/tmp/_swarm.${ipfsnodeid}); do
-                    # Do not trigger for ourselves
-                    [[ "${znod}" == "${IPFSNODEID}" ]] \
-                        && echo "IPFSNODEID (ourselves) - skip" \
-                        && continue
-                    # CHECK znod validity
-                    cznod=$(${MY_PATH}/tools/ipfs_to_g1.py ${znod} 2>/dev/null)
-                    [[ ${cznod} == "" || ${cznod} == "null" ]] \
-                        && echo "xxxxxxxxxxxx BAD ${znod} xxxx ON xxxxxx ${ipfsnodeid} - ERROR - CONTINUE" \
-                        && continue
-                    [[ ${cznod} == ${IPFSNODEID} ]] \
-                        && echo "IPFSNODEID MIRROR ME" \
-                        && continue
-
-                    echo "REFRESHING MY SWARM DATA WITH ZNOD=${znod}"
-                    ## Check if this is a new station (not seen before)
-                    IS_NEW_STATION=0
-                    [[ ! -d ~/.zen/tmp/swarm/${znod} ]] && IS_NEW_STATION=1
-                    
-                    # 1. On télécharge ailleurs d'abord
-                    TMP_DL="/tmp/ipfs_get_${znod}"
-                    rm -Rf "$TMP_DL"
-                    
-                    if ipfs --timeout 60s get --progress="false" -o "$TMP_DL" /ipns/${znod} 2>/dev/null; then
-                        if [[ -s "$TMP_DL/_MySwarm.moats" ]]; then
-                            # 2. On ne déplace dans swarm/ que si le moats est là
-                            rm -Rf ~/.zen/tmp/swarm/${znod}
-                            mv "$TMP_DL" ~/.zen/tmp/swarm/${znod}
-                        else
-                            rm -Rf "$TMP_DL"
-                            continue
-                        fi
-                    else
-                        rm -Rf "$TMP_DL"
-                        continue
+            ls ~/.zen/tmp/swarm/*
+            ## 2. NETTOYAGE DES STATIONS MORTES (STALE)
+            echo "Cleaning stale stations..."
+            for station_dir in ~/.zen/tmp/swarm/*/; do
+                [ -d "$station_dir" ] || continue
+                s_moats=$(cat "${station_dir}_MySwarm.moats" 2>/dev/null)
+                if [[ -n "$s_moats" ]]; then
+                    if [[ $(( $(date +%s) - s_moats )) -gt ${BALISE_STALE_SECONDS} ]]; then
+                        rm -Rf "$station_dir"
                     fi
-                    ZMOATS=$(cat ~/.zen/tmp/swarm/${znod}/_MySwarm.moats 2>/dev/null)
-                    MOATS_SECONDS=$(${MY_PATH}/tools/MOATS2seconds.sh ${MOATS})
-                    ZMOATS_SECONDS=$(${MY_PATH}/tools/MOATS2seconds.sh ${ZMOATS})
-                    DIFF_SECONDS=$((MOATS_SECONDS - ZMOATS_SECONDS))
+                else
+                    # Si pas de fichier moats, dossier invalide
+                    rm -Rf "$station_dir"
+                fi
+            done
+            # Supprimer les dossiers restés vides
+            find ~/.zen/tmp/swarm -mindepth 1 -maxdepth 1 -type d -empty -delete
 
-                    ## Notify captain about new station only if data is fresh (avoid stale IPNS cache)
-                    ## Otherwise we would send "New Station Online!" then immediately "Station Offline" for cached old data
-                    if [[ ${IS_NEW_STATION} -eq 1 && -s ~/.zen/tmp/swarm/${znod}/_MySwarm.moats && ${DIFF_SECONDS} -le ${BALISE_STALE_SECONDS} && -n "${CAPTAINEMAIL}" ]]; then
-                        ZNOD_HOSTNAME=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.hostname // "unknown"')
-                        ZNOD_IP=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.myIP // "unknown"')
-                        ZNOD_CAPTAIN=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.captain // "unknown"')
-                        echo "<html><body><h2>New Station Online!</h2><p>A new station <b>${ZNOD_HOSTNAME}</b> (...${znod: -8}...) has joined the swarm.</p><p>IP: ${ZNOD_IP}<br>Captain: ${ZNOD_CAPTAIN}</p><p>Detected: $(date -u)</p></body></html>" > ~/.zen/tmp/station_online_${znod:0:8}.html
-                        ${MY_PATH}/tools/mailjet.sh --expire 24h "${CAPTAINEMAIL}" ~/.zen/tmp/station_online_${znod:0:8}.html "Station ONLINE: ${ZNOD_HOSTNAME}"
-                        rm -f ~/.zen/tmp/station_online_${znod:0:8}.html
-                    fi
-                    ## Clear offline-sent marker when station is back online (fresh data) so future OFFLINE can be alerted
-                    if [[ ${DIFF_SECONDS} -le ${BALISE_STALE_SECONDS} && -f ~/.zen/tmp/station_offline_sent/${znod} ]]; then
-                        rm -f ~/.zen/tmp/station_offline_sent/${znod}
-                    fi
+            ## 3. PUBLICATION DE NOTRE PROPRE SWARM (CHAN)
+            SWARMSIZE=$(du -sb ~/.zen/tmp/swarm | awk '{print $1}')
+            local_swarm_size=$(cat ~/.zen/tmp/swarm/.bsize 2>/dev/null)
 
-                    if [ ${DIFF_SECONDS} -gt ${BALISE_STALE_SECONDS} ]; then
-                        echo "STATION IS STUCK... BALISE IPNS NOT UPDATED FOR MORE THAN $(( BALISE_STALE_SECONDS / 3600 )) HOUR(S)... REMOVING ${znod} FROM SWARM"
-                        ## Notify captain only once per offline event (avoid repeating OFFLINE alert every cycle)
-                        mkdir -p ~/.zen/tmp/station_offline_sent
-                        if [[ -n "${CAPTAINEMAIL}" && ! -f ~/.zen/tmp/station_offline_sent/${znod} ]]; then
-                            ZNOD_HOSTNAME=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.hostname // "unknown"')
-                            ZNOD_IP=$(cat ~/.zen/tmp/swarm/${znod}/12345.json 2>/dev/null | jq -r '.myIP // "unknown"')
-                            echo "<html><body><h2>Station OFFLINE Alert</h2><p>Station <b>${ZNOD_HOSTNAME}</b> (...${znod: -8}) at IP ${ZNOD_IP} has not updated its IPNS balise for more than $(( BALISE_STALE_SECONDS / 3600 )) hour(s) and has been removed from swarm. Services (DRAGON_p2p, /IA/*.me.sh) are no longer shared.</p><p>Last seen: $(cat ~/.zen/tmp/swarm/${znod}/_MySwarm.staom 2>/dev/null)</p></body></html>" > ~/.zen/tmp/station_offline_${znod:0:8}.html
-                            ${MY_PATH}/tools/mailjet.sh --expire 24h "${CAPTAINEMAIL}" ~/.zen/tmp/station_offline_${znod:0:8}.html "Station OFFLINE: ${ZNOD_HOSTNAME}"
-                            rm -f ~/.zen/tmp/station_offline_${znod:0:8}.html
-                            touch ~/.zen/tmp/station_offline_sent/${znod}
-                        fi
-                        rm -Rf ~/.zen/tmp/swarm/${znod}/
-                    else
-                        echo "${DIFF_SECONDS} seconds old"
-                    fi
-
-                done
-                echo "============================================"
-
-            fi ## IP4 WAN BOOTSRAP UPSYNC FINISHED
-
-        done
-
-        ## REFRESH ZSWARM collect HEX & HEX_CAPTAIN
-        mkdir -p ~/.zen/game/nostr/ZSWARM
-        cat ~/.zen/tmp/swarm/*/UPLANET/__/_*_*/_*.?_*.?/*/HEX > ~/.zen/game/nostr/ZSWARM/HEX
-        cat ~/.zen/tmp/swarm/*/HEX* >> ~/.zen/game/nostr/ZSWARM/HEX
-
-    #############################################
-        # ERASE EMPTY DIRECTORIES
-        find ~/.zen/tmp/swarm -maxdepth 1 -type d -empty -delete
-        ############### UPDATE MySwarm CHAN
-        ls ~/.zen/tmp/swarm
-        SWARMSIZE=$(du -b ~/.zen/tmp/swarm | tail -n 1 | xargs | cut -f 1)
-
-        ## SIZE MODIFIED => PUBLISH MySwarm_${IPFSNODEID}
-        local_swarm_size=$(cat ~/.zen/tmp/swarm/.bsize 2>/dev/null)
-        if [[ "$SWARMSIZE" != "$local_swarm_size"  || "$local_swarm_size" == "" ]] ; then
-            echo ${SWARMSIZE} > ~/.zen/tmp/swarm/.bsize
-            SWARMH=$(ipfs --timeout 180s add -rwq ~/.zen/tmp/swarm/* | tail -n 1 )
-            echo "=== ~/.zen/tmp/swarm EVOLVED : PUBLISHING NEW STATE ==="
-            ipfs --timeout=180s name publish --key "MySwarm_${IPFSNODEID}" /ipfs/${SWARMH}
-        fi
-    #############################################
-
-        ######################################
-        ############# RE PUBLISH SELF BALISE
-
-        # Clean Empty Directory
-        du -b ~/.zen/tmp/${IPFSNODEID} > /tmp/du
-        while read branch; do [[ $branch =~ "4096" ]] && echo "empty $branch" && rm -Rf $(echo $branch | cut -f 2 -d ' '); done < /tmp/du
-
-        # Scan IPFSNODEID cache
-        ls ~/.zen/tmp/${IPFSNODEID}/
-        BSIZE=$(du -b ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | xargs | awk '{print $1}')
-
-        ## IPFS GET LAST ONLINE IPFSNODEID MAP
-        rm -Rf ~/.zen/tmp/_${IPFSNODEID} 2>/dev/null
-        mkdir -p ~/.zen/tmp/_${IPFSNODEID}
-        ipfs get --progress="false" -o ~/.zen/tmp/_${IPFSNODEID}/ /ipns/${IPFSNODEID}/
-        NSIZE=$(du -b ~/.zen/tmp/_${IPFSNODEID} | tail -n 1 | xargs | awk '{print $1}')
-
-        ### CHECK IF SIZE DIFFERENCE ?
-        ## Local / IPNS size differ => FUSION LOCAL OVER ONLINE & PUBLISH
-
-       local_moat_self=$(cat ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats 2>/dev/null)
-       remote_moat_self=$(cat ~/.zen/tmp/_${IPFSNODEID}/_MySwarm.moats 2>/dev/null)
-
-       if [[ "$BSIZE" != "$NSIZE"  || "$local_moat_self" != "$remote_moat_self" || "$local_moat_self" == "" ]]; then
-            if [[ -s ~/.zen/tmp/${IPFSNODEID}/12345.json ]]; then
-                echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
-                MYCACHE=$(ipfs --timeout 180s add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1 )
-                echo "PUBLISHING NEW BALISE STATE FOR STATION /ipns/${IPFSNODEID} INDEXES = $BSIZE octets"
-                ipfs --timeout=180s name publish /ipfs/${MYCACHE}
-            else
-                echo "IPFSNODEID BALISE NOT COMPLETLY FORMED YET..."
+            if [[ "$SWARMSIZE" != "$local_swarm_size" ]]; then
+                echo ${SWARMSIZE} > ~/.zen/tmp/swarm/.bsize
+                # CORRECTED: On ajoute le dossier swarm lui-même (/* - pour avoir le bon CID !!
+                SWARMH=$(ipfs --timeout 30s add -rwq ~/.zen/tmp/swarm/* | tail -n 1 | awk '{print $2}')
+                if [[ -n "$SWARMH" ]]; then
+                    echo "=== PUBLISHING UPDATED SWARM MAP: /ipfs/${SWARMH} ==="
+                    ipfs --timeout=60s name publish --key "MySwarm_${IPFSNODEID}" /ipfs/${SWARMH}
+                fi
             fi
-       fi
-       # remove cache
-        rm -Rf ~/.zen/tmp/_${IPFSNODEID} 2>/dev/null
-        end=`date +%s`
-        echo "(*__*) MySwam Update ($BSIZE B) duration was "`expr $end - $start`' seconds. '$(date)
 
-        ) & ##### SUB-PROCESS
+            ## 4. RE-PUBLICATION DE NOTRE BALISE PERSONNELLE
+            # On s'assure que notre 12345.json est à jour
+            echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
+            MYCACHE=$(ipfs --timeout 180s add -rwq ~/.zen/tmp/${IPFSNODEID} | tail -n 1 | awk '{print $2}')
+            ipfs --timeout=60s name publish /ipfs/${MYCACHE}
 
-        ## Enregistrer le timestamp AVANT le prochain cycle (fichier de timing séparé)
+        ) & 
+
         echo "${MOATS}" > "$lastrun_file"
 
     else
@@ -632,7 +473,7 @@ while true; do
     fi
 
 NODE12345="{
-    \"version\" : \"12345.0.1\",
+    \"version\" : \"12345.0.2\",
     \"created\" : \"${MOATS}\",
     \"date\" : \"$(cat $HOME/.zen/tmp/${IPFSNODEID}/_MySwarm.staom)\",
     \"hostname\" : \"$(myHostName)\",
@@ -659,6 +500,7 @@ NODE12345="{
     \"NODEG1PUB\" : \"${NODEG1PUB}\",
     \"STATION_LAT\" : \"${STATION_LAT}\",
     \"STATION_LON\" : \"${STATION_LON}\",
+    \"SOURCE_ZEN\" : \"${SOURCE_ZEN}\",
     \"UPLANETNAME_G1\" : \"${UPLANETNAME_G1}\",
     \"UPLANETNAME_SOCIETY\" : \"${UPLANETNAME_SOCIETY}\",
     \"UPLANETNAME_TREASURY\" : \"${UPLANETNAME_TREASURY}\",
