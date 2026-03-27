@@ -36,7 +36,7 @@ echo "20H12 (♥‿‿♥) 🌐 /ipns/$IPFSNODEID 🤓 $CAPTAINEMAIL $(hostname 
 ########################################################################
 ########################################################################
 #####################  UPGRADING ZONE ::: CAN BE REMOVED AFTER 24 HOUR
-pip install cachetools pydantic-settings robohash substrate-interface ## used by UPassport/
+## DONE pip install cachetools pydantic-settings robohash substrate-interface ## used by UPassport/
 ########################################################################
 ########################################################################
 ########################################################################
