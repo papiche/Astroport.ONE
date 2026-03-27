@@ -336,31 +336,38 @@ while true; do
 
             ## IPFS GET TO /swarm/${ipfsnodeid}
             echo "GETTING ${nodeip} : /ipns/${ipfsnodeid}"
-            ipfs --timeout 30s get --progress="false" -o ~/.zen/tmp/-${ipfsnodeid}/ /ipns/${ipfsnodeid}/
+            
+            # 1. On télécharge dans un dossier temporaire propre
+            TMP_BOOT="/tmp/get_boot_${ipfsnodeid}"
+            rm -Rf "$TMP_BOOT"
+            
+            if ipfs --timeout 45s get --progress="false" -o "$TMP_BOOT" /ipns/${ipfsnodeid}/ 2>/dev/null; then
+                # 2. On vérifie si le fichier critique existe et n'est pas vide
+                if [[ -s "$TMP_BOOT/_MySwarm.moats" ]]; then
+                    echo "__________________________________________________"
+                    ls "$TMP_BOOT"
+                    echo "__________________________________________________"
+                    
+                    # 3. On compare les MOATS avant de remplacer
+                    local_moat=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats 2>/dev/null)
+                    remote_moat=$(cat "$TMP_BOOT/_MySwarm.moats")
 
-            ## SHOW WHAT WE GET
-            echo "__________________________________________________"
-            ls ~/.zen/tmp/-${ipfsnodeid}/
-            echo "__________________________________________________"
-
-            ## LOCAL CACHE SWITCH WITH LATEST
-            if [[ -s ~/.zen/tmp/-${ipfsnodeid}/_MySwarm.moats  ]]; then
-                 # Compare MOATs here
-                local_moat=$(cat ~/.zen/tmp/swarm/${ipfsnodeid}/_MySwarm.moats 2>/dev/null)
-                remote_moat=$(cat ~/.zen/tmp/-${ipfsnodeid}/_MySwarm.moats)
-
-                if [[ "$local_moat" != "$remote_moat"  || "$local_moat" == "" ]]; then
-
-                    rm -Rf ~/.zen/tmp/swarm/${ipfsnodeid}
-                    mv ~/.zen/tmp/-${ipfsnodeid} ~/.zen/tmp/swarm/${ipfsnodeid}
-                    echo "UPDATED : ~/.zen/tmp/swarm/${ipfsnodeid}"
+                    if [[ "$local_moat" != "$remote_moat" || -z "$local_moat" ]]; then
+                        rm -Rf ~/.zen/tmp/swarm/${ipfsnodeid}
+                        mv "$TMP_BOOT" ~/.zen/tmp/swarm/${ipfsnodeid}
+                        echo "UPDATED : ~/.zen/tmp/swarm/${ipfsnodeid}"
+                    else
+                        echo "TimeStamp unchanged : ${local_moat}"
+                        rm -Rf "$TMP_BOOT"
+                    fi
                 else
-                    echo "TimeStamp unchanged : ${local_moat}"
-                    rm -Rf ~/.zen/tmp/-${ipfsnodeid}/
+                    echo "INVALID DATA from /ipns/${ipfsnodeid}/"
+                    rm -Rf "$TMP_BOOT"
                     continue
                 fi
             else
                 echo "UNREACHABLE /ipns/${ipfsnodeid}/"
+                rm -Rf "$TMP_BOOT"
                 continue
             fi
 
@@ -392,6 +399,9 @@ while true; do
 
                 echo "================ ${nodeip} 12345 ZNODS LIST"
                 cat ~/.zen/tmp/_swarm.${ipfsnodeid}
+                # Supprime les stations qui n'ont pas de fichier .moats valide 
+                # (évite de garder des dossiers de stations disparues du réseau)
+                find ~/.zen/tmp/swarm -maxdepth 2 -name "_MySwarm.moats" -mmin +720 -exec dirname {} \; | xargs rm -rf
                 echo "============================================"
                 for znod in $(cat ~/.zen/tmp/_swarm.${ipfsnodeid}); do
                     # Do not trigger for ourselves
@@ -410,10 +420,25 @@ while true; do
                     echo "REFRESHING MY SWARM DATA WITH ZNOD=${znod}"
                     ## Check if this is a new station (not seen before)
                     IS_NEW_STATION=0
-                    [[ ! -d ~/.zen/tmp/swarm/${znod} || ! -s ~/.zen/tmp/swarm/${znod}/_MySwarm.moats ]] && IS_NEW_STATION=1
-                    mkdir -p ~/.zen/tmp/swarm/${znod}
-                    ipfs --timeout 180s get --progress="false" -o ~/.zen/tmp/swarm/${znod} /ipns/${znod}
-
+                    [[ ! -d ~/.zen/tmp/swarm/${znod} ]] && IS_NEW_STATION=1
+                    
+                    # 1. On télécharge ailleurs d'abord
+                    TMP_DL="/tmp/ipfs_get_${znod}"
+                    rm -Rf "$TMP_DL"
+                    
+                    if ipfs --timeout 60s get --progress="false" -o "$TMP_DL" /ipns/${znod} 2>/dev/null; then
+                        if [[ -s "$TMP_DL/_MySwarm.moats" ]]; then
+                            # 2. On ne déplace dans swarm/ que si le moats est là
+                            rm -Rf ~/.zen/tmp/swarm/${znod}
+                            mv "$TMP_DL" ~/.zen/tmp/swarm/${znod}
+                        else
+                            rm -Rf "$TMP_DL"
+                            continue
+                        fi
+                    else
+                        rm -Rf "$TMP_DL"
+                        continue
+                    fi
                     ZMOATS=$(cat ~/.zen/tmp/swarm/${znod}/_MySwarm.moats 2>/dev/null)
                     MOATS_SECONDS=$(${MY_PATH}/tools/MOATS2seconds.sh ${MOATS})
                     ZMOATS_SECONDS=$(${MY_PATH}/tools/MOATS2seconds.sh ${ZMOATS})
@@ -465,8 +490,7 @@ while true; do
 
     #############################################
         # ERASE EMPTY DIRECTORIES
-        du -b ~/.zen/tmp/swarm > /tmp/du
-        while read branch; do [[ $branch =~ "4096" ]] && echo "empty $branch" && rm -Rf $(echo $branch | cut -f 2 -d ' '); done < /tmp/du
+        find ~/.zen/tmp/swarm -maxdepth 1 -type d -empty -delete
         ############### UPDATE MySwarm CHAN
         ls ~/.zen/tmp/swarm
         SWARMSIZE=$(du -b ~/.zen/tmp/swarm | tail -n 1 | xargs | cut -f 1)
