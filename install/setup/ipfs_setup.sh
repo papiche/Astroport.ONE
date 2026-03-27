@@ -46,6 +46,13 @@ else
 fi
 
 echo -e "Astroport activate IPFS Layer installation..."
+### IPFS config cleaning
+ipfs config --json DNS.Resolvers '{}'
+ipfs config --json Routing.DelegatedRouters '[]'
+ipfs config --json Ipns.DelegatedPublishers '[]'
+ipfs config --json AutoTLS.Enabled false
+ipfs config --json Routing.Type '"dht"'
+ipfs config --json Plugins.Plugins.telemetry.Config '{"Mode": "off"}'
 
 if [[ "$USER" == "xbian" ]]
 then
