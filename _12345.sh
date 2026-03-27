@@ -714,14 +714,39 @@ ENVEOF
 #!/bin/bash
 source "$HOME/.zen/tmp/12345_env.sh"
 UPSYNC_QUEUE="$UPSYNC_QUEUE"
+ACCESS_LOG="$HOME/.zen/tmp/12345_access.log"
 
-# 1. Lire la requête
+## Variables socat : IP et port du client (définies automatiquement par socat EXEC:)
+CLIENT_IP="\${SOCAT_PEERADDR:-unknown}"
+CLIENT_PORT="\${SOCAT_PEERPORT:-?}"
+
+# 1. Lire la requête HTTP + en-têtes pour logger User-Agent et Host
 read -r request_line
+request_line="\${request_line%\$'\r'}"
+USER_AGENT=""
+HOST_HEADER=""
+while IFS= read -r header; do
+    header="\${header%\$'\r'}"
+    [[ -z "\$header" ]] && break
+    case "\$header" in
+        User-Agent:*) USER_AGENT="\${header#User-Agent: }" ;;
+        Host:*)       HOST_HEADER="\${header#Host: }" ;;
+    esac
+done
 
 # 2. Répondre immédiatement (RAM)
 cat /dev/shm/astroport_12345.http
 
-# 3. Validation et mise en file d'attente
+# 3. Logger la connexion cliente
+TIMESTAMP=\$(date '+%Y-%m-%d %H:%M:%S')
+echo "[\$TIMESTAMP] \${CLIENT_IP}:\${CLIENT_PORT} | \${request_line} | UA: \${USER_AGENT}" >> "\$ACCESS_LOG"
+## Rotation du log (garder max 2000 lignes)
+log_lines=\$(wc -l < "\$ACCESS_LOG" 2>/dev/null || echo 0)
+if [[ \$log_lines -gt 2000 ]]; then
+    tail -n 1600 "\$ACCESS_LOG" > "\${ACCESS_LOG}.tmp" && mv "\${ACCESS_LOG}.tmp" "\$ACCESS_LOG"
+fi
+
+# 4. Validation et mise en file d'attente UPSYNC
 query=\$(echo "\$request_line" | sed -n 's/^GET \/\?[?]\(.*\) HTTP.*/\1/p')
 if [[ -n "\$query" ]]; then
     arr=(\${query//[=&]/ })
@@ -729,11 +754,13 @@ if [[ -n "\$query" ]]; then
     IPNS=\${arr[1]}
     
     if [[ -n "\$GPUB" && -n "\$IPNS" ]]; then
-        # Vérification de conformité
+        # Vérification de conformité G1PUB → IPFSNODEID
         ASTROTOIPFS=\$(\${MY_PATH}/tools/g1_to_ipfs.py \${GPUB} 2>/dev/null)
         if [[ "\${ASTROTOIPFS}" == "\${IPNS}" ]]; then
-            # AJOUT À LA QUEUE (si pas déjà présent)
+            echo "[\$TIMESTAMP] UPSYNC QUEUED: \${CLIENT_IP} G1=\${GPUB:0:8}... IPNS=\${IPNS: -8}" >> "\$ACCESS_LOG"
             grep -qxF "\$IPNS" "\$UPSYNC_QUEUE" || echo "\$IPNS" >> "\$UPSYNC_QUEUE"
+        else
+            echo "[\$TIMESTAMP] UPSYNC REJECTED: \${CLIENT_IP} G1/IPNS mismatch" >> "\$ACCESS_LOG"
         fi
     fi
 fi
