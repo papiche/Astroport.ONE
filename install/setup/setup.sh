@@ -87,6 +87,24 @@ echo "#############################################"
 [[ "$USER" == "xbian" ]] && sudo sed -i "s/auth.log/faillog/g" /etc/fail2ban/paths-common.conf
 
 mkdir -p ~/.zen/tmp
+echo "################# FAIL2BAN _12345.sh -> JAIL unrecognized nodes"
+echo "SETUP /etc/fail2ban/filter.d/astroport-intruder.conf"
+echo '[Definition]
+failregex = REJECTED: .* \(IP: <HOST>\) - Reason: No Astroport Metadata
+ignoreregex =' > ~/.zen/tmp/fail2ban.rule 
+sudo mv ~/.zen/tmp/fail2ban.rule /etc/fail2ban/filter.d/astroport-intruder.conf
+
+echo "SETUP /etc/fail2ban/jail.d/astroport.conf"
+echo '[astroport-intruder]
+enabled = true
+port = 4001,12345
+filter = astroport-intruder
+logpath = /home/*/.zen/tmp/swarm_intruders.log
+maxretry = 3
+bantime = 86400' > ~/.zen/tmp/fail2ban.jail
+sudo mv ~/.zen/tmp/fail2ban.jail /etc/fail2ban/jail.d/astroport.conf
+
+echo "#############################################"
 
 ########################################################################
 # NETWORK CONFIGURATION (instance-specific)
@@ -145,7 +163,7 @@ echo "MJ activation"
 ipfs --timeout 30s cat /ipfs/QmVy7FKd1MGZqee4b7B5jmBKNgTJBvKKkoDhodnJWy23oN > ~/.zen/MJ_APIKEY
 source ${HOME}/.zen/Astroport.ONE/tools/my.sh
 GO=$(my_LatLon) ## FR 34.46 1.51 # (country lat lon) with 0.01° precision
-GMARKMAIL="support+$(echo $(hostname) $GO | sed "s| |_|g")@qo-op.com" 
+GMARKMAIL="support+$(echo $(hostname -s) $GO | sed "s| |_|g")@qo-op.com" 
 # ex: support+nexus-55-FR-34.46-1.51@qo-op.com
 
 ##########################################################
@@ -159,20 +177,19 @@ if [[ ! -s "${ENVFILE}" ]]; then
     
     ## Detect public IP (try multiple methods)
     PUBLIC_IP=""
-    PUBLIC_IP=$(curl -s --connect-timeout 5 https://api.ipify.org 2>/dev/null) \
+    PUBLIC_IP=$(${HOME}/.zen/Astroport.ONE/me.♥Box.sh 2>/dev/null | tail -n 1) \
         || PUBLIC_IP=$(curl -s --connect-timeout 5 https://ifconfig.me 2>/dev/null) \
         || PUBLIC_IP=$(curl -s --connect-timeout 5 https://icanhazip.com 2>/dev/null) \
         || PUBLIC_IP=$(curl -s --connect-timeout 5 ipecho.net/plain 2>/dev/null)
     
-    ## Check if this is an automatic captain installation (support+NODEoo-geo@qo-op.com)
+    ## Check if this is an automatic captain installation (support+NODE-geo@qo-op.com)
     ## Pattern: hostname is WORD-NN (e.g., nexus-55)
     HOSTNAME_SHORT=$(hostname -s)
     if [[ "${GMARKMAIL}" == "support+${HOSTNAME_SHORT}"*"@qo-op.com" ]]; then
         echo ">>> Automatic installation detected: ${GMARKMAIL}"
         
-        ## Use NODEoo.copylaradio.com domain (oo = first 2 chars of UPLANETG1PUB)
-        UPLANET_SUFFIX="${UPLANETG1PUB:0:2}"
-        SETUP_DOMAIN="${HOSTNAME_SHORT}${UPLANET_SUFFIX}.copylaradio.com"
+        ## Use NODE.copylaradio.com domain
+        SETUP_DOMAIN="${HOSTNAME_SHORT}.copylaradio.com"
         
         ## Store public IP in ♥Box file for zIp() function
         if [[ -n "$PUBLIC_IP" ]]; then
@@ -197,10 +214,10 @@ if [[ ! -s "${ENVFILE}" ]]; then
 # Public IP: ${PUBLIC_IP:-unknown}
 # Customize and restart: sudo systemctl restart astroport
 #########################################
-myASTROPORT=https://astroport.${SETUP_DOMAIN}
-myIPFS=https://ipfs.${SETUP_DOMAIN}
-myRELAY=wss://relay.${SETUP_DOMAIN}
-uSPOT=https://u.${SETUP_DOMAIN}
+myASTROPORT=https://astroport.${SETUP_DOMAIN} # TCP:12345
+myIPFS=https://ipfs.${SETUP_DOMAIN} # TCP:8080 UDP:4001 /12345:12345
+myRELAY=wss://relay.${SETUP_DOMAIN} # TCP/WS:7777
+uSPOT=https://u.${SETUP_DOMAIN} # TCP:54321
 
 ###################################
 ## COPYLARADIO UPLANET ZEN ECONOMY

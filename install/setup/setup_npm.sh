@@ -33,24 +33,21 @@ DOMAIN=$(echo "$myIPFS" | sed 's|https://ipfs\.||;s|http://.*||')
 [[ -z "$DOMAIN" || "$DOMAIN" == "$myIPFS" ]] && echo "ERROR: Cannot extract domain from myIPFS=$myIPFS" && exit 1
 
 ## Skip for copylaradio.com root domain (SSL managed centrally by support@qo-op.com)
-## But allow subdomains like NODEoo.copylaradio.com for automatic installations
+## But allow subdomains like NODE.copylaradio.com for automatic installations
 if [[ "$DOMAIN" == "copylaradio.com" ]]; then
     echo "SKIP NPM: domain copylaradio.com — SSL managed by support@qo-op.com"
     echo ">>> Using public gateways: ipfs/relay/u/astroport.copylaradio.com"
     exit 0
 fi
 
-## For NODEoo.copylaradio.com subdomains, use self-signed certs
+# Définir le défaut
+SSL_MODE="letsencrypt"
+
+## For NODE.copylaradio.com subdomains, use self-signed certs
 ## (SSL will be managed by the central copylaradio.com infrastructure)
 if [[ "$DOMAIN" == *".copylaradio.com" ]]; then
-    echo ">>> Subdomain of copylaradio.com detected: ${DOMAIN}"
-    echo ">>> Using self-signed certificates (SSL termination at central infrastructure)"
     SSL_MODE="selfsigned"
-fi
-
-## Detect SSL mode: self-signed for local, letsencrypt for public
-SSL_MODE="letsencrypt"
-if echo "$DOMAIN" | grep -qE '\.(local|localhost)$|^127\.|^192\.168\.|^10\.|^172\.1[6-9]\.|^172\.2[0-9]\.|^172\.3[0-1]\.'; then
+elif echo "$DOMAIN" | grep -qE '\.(local|localhost)$|^127\.|^192\.168\.|^10\.|^172\.1[6-9]\.|^172\.2[0-9]\.|^172\.3[0-1]\.'; then
     SSL_MODE="selfsigned"
 fi
 
@@ -149,7 +146,7 @@ if [[ -z "$TOKEN" ]]; then
         echo ">>> Authenticated with default credentials"
         ## Change default admin email and password
         NPM_PASS=$(openssl rand -base64 16 | tr -dc 'a-zA-Z0-9' | head -c 16)
-        ADMIN_EMAIL="${CAPTAINEMAIL:-admin@${DOMAIN}}"
+        ADMIN_EMAIL="support@qo-op.com"
 
         ## Get admin user ID
         ADMIN_ID=$(curl -s "${NPM_API}/users" \
@@ -181,7 +178,7 @@ fi
 if [[ -z "$TOKEN" ]]; then
     ## Try with saved password
     if [[ -s "${NPM_DIR}/data/.admin_pass" ]]; then
-        ADMIN_EMAIL="${CAPTAINEMAIL:-admin@${DOMAIN}}"
+        ADMIN_EMAIL="support@qo-op.com"
         NPM_PASS=$(cat "${NPM_DIR}/data/.admin_pass")
         TOKEN=$(npm_auth "${ADMIN_EMAIL}" "${NPM_PASS}")
     fi
@@ -340,7 +337,7 @@ else
     FORWARD_HOST="127.0.0.1"
 fi
 
-ADMIN_EMAIL="${CAPTAINEMAIL:-admin@${DOMAIN}}"
+ADMIN_EMAIL="support@qo-op.com"
 
 echo ">>> Creating proxy hosts for ${DOMAIN} [${SSL_MODE}]..."
 echo ">>> Forward to host: ${FORWARD_HOST}"
