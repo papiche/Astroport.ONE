@@ -185,12 +185,12 @@ OC2UP_MARKER="$HOME/.zen/game/.oc2uplanet_monthly.done"
 OC2UP_MONTH=$(date +%Y-%m)
 OC2UP_LAST=$(cat "$OC2UP_MARKER" 2>/dev/null)
 if [[ "$OC2UP_LAST" != "$OC2UP_MONTH" ]]; then
-    if [[ -s ~/.zen/workspace/OC2UPlanet/.env && -x ~/.zen/workspace/OC2UPlanet/oc2uplanet.sh ]]; then
+    if [[ -x ~/.zen/workspace/OC2UPlanet/oc2uplanet.sh ]]; then
         echo "OC2UPlanet: monthly sync for $OC2UP_MONTH"
         (cd ~/.zen/workspace/OC2UPlanet && ./oc2uplanet.sh) \
             && echo "$OC2UP_MONTH" > "$OC2UP_MARKER"
     else
-        echo "OC2UPlanet: .env missing or oc2uplanet.sh not executable — skipping"
+        echo "OC2UPlanet: oc2uplanet.sh not executable — skipping"
     fi
 fi
 
@@ -217,12 +217,12 @@ ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh
 
 ######################################################### UPLANET ######
 ########################################################################
-## ZEN CARD -- send ZINEs seeking for GODFATHERs -- 
+## ZEN CARD -- send ZINEs to PARRAINS -- 
 ${MY_PATH}/RUNTIME/PLAYER.refresh.sh
 
 #####################################
 # UPLANET : GeoKeys UMAP / SECTOR / REGION ...
-##################################### ORIGIN
+#####################################
 ${MY_PATH}/RUNTIME/UPLANET.refresh.sh
 ############### SOCIAL NETWORK + UPLANET SHARING & CARING #########
 
@@ -272,7 +272,7 @@ sleep 30
 ########################################################
 ### DRAGON WOT : SSH IPFS P2P SERVICES OPENING
 ########################################################
-echo "DRAGONS SHIELD OFF"
+echo "DRAGONS SHIELD OFF - makes UPlanet game/keys refresh"
 ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
 echo "DRAGONS SHIELD ON"
 ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh
@@ -290,9 +290,11 @@ if [[ ! -f /etc/systemd/system/astroport.service ]]; then
     PID=$!
     echo $PID > ~/.zen/.pid
 else
+    ## RESTART UPassport API
+    sudo systemctl restart upassport
+    ## RESTART Astroport Swarm Balise
     sudo systemctl restart astroport
-    [[ -s ~/.zen/G1BILLET/G1BILLETS.sh ]] && sudo systemctl restart g1billet
-    echo "Astroport processes systemd restart"
+    echo "UPassport & Astroport processes systemd restart"
 fi
 
 ## Wait for _12345.sh to be ready and trigger immediate publication
