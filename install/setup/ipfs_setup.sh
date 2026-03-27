@@ -47,6 +47,7 @@ fi
 
 echo -e "Astroport activate IPFS Layer installation..."
 ### IPFS config cleaning
+ipfs config --json AutoConf.Enabled false
 ipfs config --json DNS.Resolvers '{}'
 ipfs config --json Routing.DelegatedRouters '[]'
 ipfs config --json Ipns.DelegatedPublishers '[]'
