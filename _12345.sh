@@ -712,6 +712,8 @@ ENVEOF
     # REGÉNÉRER LE HANDLER SCRIPT (contient le chemin UPSYNC_QUEUE en dur)
     cat << EOF > "$HANDLER_SCRIPT"
 #!/bin/bash
+## Ignorer SIGPIPE : le client peut fermer la connexion avant la fin du handler
+trap '' PIPE
 source "$HOME/.zen/tmp/12345_env.sh"
 UPSYNC_QUEUE="$UPSYNC_QUEUE"
 ACCESS_LOG="$HOME/.zen/tmp/12345_access.log"
@@ -735,11 +737,16 @@ while IFS= read -r header; do
 done
 
 # 2. Répondre immédiatement (RAM)
-cat /dev/shm/astroport_12345.http
+cat /dev/shm/astroport_12345.http 2>/dev/null
+SEND_RC=\$?
 
-# 3. Logger la connexion cliente
+# 3. Logger la connexion cliente (avec détection des connexions coupées)
 TIMESTAMP=\$(date '+%Y-%m-%d %H:%M:%S')
-echo "[\$TIMESTAMP] \${CLIENT_IP}:\${CLIENT_PORT} | \${request_line} | UA: \${USER_AGENT}" >> "\$ACCESS_LOG"
+if [[ \$SEND_RC -ne 0 ]]; then
+    echo "[\$TIMESTAMP] ABORTED \${CLIENT_IP}:\${CLIENT_PORT} | \${request_line} | UA: \${USER_AGENT}" >> "\$ACCESS_LOG"
+else
+    echo "[\$TIMESTAMP] \${CLIENT_IP}:\${CLIENT_PORT} | \${request_line} | UA: \${USER_AGENT}" >> "\$ACCESS_LOG"
+fi
 ## Rotation du log (garder max 2000 lignes)
 log_lines=\$(wc -l < "\$ACCESS_LOG" 2>/dev/null || echo 0)
 if [[ \$log_lines -gt 2000 ]]; then
@@ -775,7 +782,8 @@ EOF
         # Kill any old instances just in case
         pkill -f "socat.*TCP4-LISTEN:12345"
         # Start socat executing the handler for each connection
-        socat TCP4-LISTEN:12345,reuseaddr,fork EXEC:"$HANDLER_SCRIPT" &
+        # 2>/dev/null : silence les "Broken pipe" inévitables des clients qui ferment la connexion
+        socat TCP4-LISTEN:12345,reuseaddr,fork EXEC:"$HANDLER_SCRIPT" 2>/dev/null &
     fi
 
     echo '(◕‿‿◕) http://'$myIP:'12345 SERVED VIA SOCAT (CGI) (◕‿‿◕)'
