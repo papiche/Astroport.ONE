@@ -131,7 +131,17 @@ curl http://127.0.0.1:11434/api/generate -d '{"model":"llama3","prompt":"Hola BR
 
 ## 🛠️ Instalación
 
-### Inicio rápido (Linux — Debian/Ubuntu/Mint)
+### Opción A — Docker Webtop (recomendado para probar sin modificar tu sistema)
+
+```bash
+cd docker/
+docker compose -f docker-compose.webtop.yml up -d
+# → http://localhost:3000  (escritorio en el navegador, Ubuntu XFCE + KasmVNC)
+```
+
+El contenedor webtop ejecuta `install.sh` automáticamente en el primer arranque (10–30 min). Todos los perfiles funcionan (`nextcloud`, `bleeding-edge`) porque el socket Docker se comparte con el host (arquitectura "sibling containers").
+
+### Opción B — Instalación directa (bare-metal Linux — Debian/Ubuntu/Mint)
 
 ```bash
 bash <(curl -sL https://install.astroport.com)

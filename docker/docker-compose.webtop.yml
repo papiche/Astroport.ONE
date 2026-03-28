@@ -1,0 +1,141 @@
+########################################################################
+# Astroport.ONE — Desktop VDI via linuxserver.io Webtop (KasmVNC)
+#
+# AVANTAGES vs docker-compose.desktop.yml (noVNC) :
+#   - KasmVNC : bien meilleur que TigerVNC+noVNC (WebRTC, clipboard, touch)
+#   - Docker socket RW monté : profils nextcloud et bleeding-edge fonctionnent
+#   - Multiarch : amd64, arm64, arm/v7
+#   - Image maintenue par linuxserver.io (sécurité, mises à jour régulières)
+#   - Conteneurs Docker lancés = "sibling containers" sur l'hôte (pas de DinD)
+#
+# LIMITATION : systemd non disponible dans Docker
+#   → Les services Astroport tournent via supervisor/entryscript, pas systemctl
+#
+# Usage :
+#   docker compose -f docker-compose.webtop.yml up -d
+#   → http://localhost:3000  (KasmVNC HTTP)
+#   → https://localhost:3001 (KasmVNC HTTPS — recommandé, auto-signé)
+#
+# Avec swarm.key (UPlanet ẐEN) :
+#   ASTRO_DOMAIN=moi.example.com \
+#   CAPTAIN_EMAIL=moi@example.com \
+#   IPFS_SWARM_KEY=<hex64> \
+#   docker compose -f docker-compose.webtop.yml up -d
+#
+# Environnements bureau disponibles (changer l'image) :
+#   ghcr.io/linuxserver/webtop:ubuntu-xfce     (défaut — recommandé)
+#   ghcr.io/linuxserver/webtop:ubuntu-kde
+#   ghcr.io/linuxserver/webtop:ubuntu-mate
+#   ghcr.io/linuxserver/webtop:ubuntu-openbox
+#   ghcr.io/linuxserver/webtop:debian-xfce
+########################################################################
+
+services:
+
+  ##############################################################
+  ## WEBTOP — Bureau Linux accessible par navigateur (KasmVNC)
+  ## Remplace Dockerfile.desktop + TigerVNC + noVNC
+  ##############################################################
+  webtop:
+    image: ghcr.io/linuxserver/webtop:ubuntu-xfce
+    container_name: ${COMPOSE_PROJECT_NAME:-astroport}-webtop
+    hostname: ${HOSTNAME:-astroport-webtop}
+    restart: unless-stopped
+    tty: true
+    shm_size: "2gb"
+
+    environment:
+      ## Linuxserver standard
+      - PUID=${HOST_UID:-1000}
+      - PGID=${HOST_GID:-1000}
+      - TZ=${TZ:-Europe/Paris}
+      - TITLE=Astroport.ONE
+      ## LC/language
+      - LC_ALL=${LC_ALL:-fr_FR.UTF-8}
+      - LANG=${LANG:-fr_FR.UTF-8}
+
+      ## UPlanet network selection
+      ## Sans IPFS_SWARM_KEY → UPlanet ORIGIN (sandbox, 1 Ẑ = 0.1 Ğ1)
+      ## Avec IPFS_SWARM_KEY → UPlanet ẐEN  (coopérative, 1 Ẑ = 1 €)
+      - ASTRO_DOMAIN=${ASTRO_DOMAIN:-copylaradio.com}
+      - CAPTAIN_EMAIL=${CAPTAIN_EMAIL:-}
+      - IPFS_SWARM_KEY=${IPFS_SWARM_KEY:-}
+      - INSTALL_PROFILE=${INSTALL_PROFILE:-}
+
+      ## Economy parameters
+      - MACHINE_VALUE_ZEN=${MACHINE_VALUE_ZEN:-500}
+      - PAF=${PAF:-14}
+      - NCARD=${NCARD:-1}
+      - ZCARD=${ZCARD:-4}
+
+    ports:
+      - "${KASMVNC_HTTP_PORT:-3000}:3000"    # KasmVNC HTTP (navigateur)
+      - "${KASMVNC_HTTPS_PORT:-3001}:3001"   # KasmVNC HTTPS (recommandé)
+      - "4001:4001"                           # IPFS Swarm P2P
+      - "12345:12345"                         # Station Map / swarm discovery
+      - "127.0.0.1:54321:54321"              # UPassport API
+      - "127.0.0.1:7777:7777"               # NOSTR Relay (strfry)
+      - "127.0.0.1:8080:8080"               # IPFS Gateway
+      - "127.0.0.1:5001:5001"               # IPFS API (admin)
+      - "127.0.0.1:33101:33101"             # G1Billet
+      - "127.0.0.1:11434:11434"             # Ollama IA (bleeding-edge)
+      - "127.0.0.1:3100:3100"               # Paperclip (bleeding-edge)
+
+    volumes:
+      ## Home persistant (contient .zen, .ipfs, .flutter, etc.)
+      - webtop_home:/config
+
+      ## ⚡ Docker socket RW — REQUIS pour profils nextcloud et bleeding-edge
+      ## Les conteneurs lancés depuis webtop sont des "sibling containers"
+      ## sur l'hôte Docker (PAS de Docker-in-Docker). Parfaitement sûr.
+      - /var/run/docker.sock:/var/run/docker.sock
+
+      ## Script d'initialisation Astroport.ONE (premier démarrage)
+      ## Copier webtop-init.sh ici avant de lancer
+      - ./webtop-init.sh:/custom-cont-init.d/99-astroport-init.sh:ro
+
+      ## Optionnel : disque BTRFS dédié pour NextCloud + IPFS (recommandé)
+      # - /nextcloud-data:/nextcloud-data
+
+    security_opt:
+      ## Nécessaire pour certaines opérations Docker et IPFS
+      - seccomp:unconfined
+
+    ## GPU acceleration (optionnel — décommenter si GPU disponible)
+    # devices:
+    #   - /dev/dri:/dev/dri
+
+    networks:
+      - astronet
+
+  ##############################################################
+  ## NPM — Nginx Proxy Manager (SSL + sous-domaines) — optionnel
+  ## Décommenter si vous avez un domaine public pointé sur cet hôte
+  ##############################################################
+  # npm:
+  #   image: jc21/nginx-proxy-manager:latest
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #     - "127.0.0.1:81:81"
+  #   volumes:
+  #     - npm_data:/data
+  #     - npm_certs:/etc/letsencrypt
+  #   networks:
+  #     - astronet
+
+networks:
+  astronet:
+    driver: bridge
+
+volumes:
+  webtop_home:
+    ## Optionnel : utiliser un chemin hôte pour accès facile
+    # driver: local
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: /nextcloud-data/webtop-home
+  # npm_data:
+  # npm_certs:

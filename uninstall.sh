@@ -38,19 +38,45 @@ for service in astroport ipfs g1billet upassport strfry ollama comfyui; do
     fi
 done
 
-# Arrêter la stack Docker rnostr/qdrant (always-on)
-# NOTE: embed-worker n'est plus dans la stack (remplacé par IA/ollama.me.sh + IA/embed.py)
-if [[ -f ~/.zen/rnostr/docker-compose.yml ]]; then
-    echo "Stopping rnostr/qdrant docker stack..."
-    if docker compose version &>/dev/null 2>&1; then
-        docker compose -f ~/.zen/rnostr/docker-compose.yml down 2>/dev/null
-    else
-        docker-compose -f ~/.zen/rnostr/docker-compose.yml down 2>/dev/null
+# ── NextCloud AIO ────────────────────────────────────────────────────
+_NC_COMPOSE="$HOME/.zen/Astroport.ONE/_DOCKER/nextcloud/docker-compose.yml"
+if [[ -f "$_NC_COMPOSE" ]]; then
+    echo "Stopping NextCloud AIO..."
+    docker compose -f "$_NC_COMPOSE" down 2>/dev/null || true
+fi
+# Supprimer le volume NextCloud AIO (données utilisateurs)
+read -p "Supprimer les volumes NextCloud AIO (données utilisateurs !) ? (y/n): " remove_nc_vols
+if [[ $remove_nc_vols == "y" ]]; then
+    docker compose -f "$_NC_COMPOSE" down -v 2>/dev/null || true
+    docker volume rm nextcloud_aio_mastercontainer 2>/dev/null || true
+    echo "✅ Volumes NextCloud supprimés"
+fi
+
+# ── AI Stack bleeding-edge (Paperclip, OpenClaw, LiteLLM, Qdrant) ────
+if [[ -d "$HOME/.zen/ai-company" ]]; then
+    echo "Stopping AI Company Stack (bleeding-edge)..."
+    docker compose -p ai-company-swarm down 2>/dev/null || true
+    read -p "Supprimer les volumes AI Stack (données Qdrant, PostgreSQL) ? (y/n): " remove_ai_vols
+    if [[ $remove_ai_vols == "y" ]]; then
+        docker compose -p ai-company-swarm down -v 2>/dev/null || true
+        docker volume rm ai-company-swarm_postgres_data ai-company-swarm_qdrant_storage 2>/dev/null || true
+        echo "✅ Volumes AI Stack supprimés"
     fi
 fi
-# Retirer les containers individuels si encore présents
-# (embed-worker inclus pour nettoyer d'éventuelles anciennes installations)
-# bgutil-provider: PO token provider pour yt-dlp (install_yt_dlp_ejs_node.sh)
+
+# ── Webtop VDI (KasmVNC) ─────────────────────────────────────────────
+_WEBTOP_COMPOSE="$HOME/.zen/Astroport.ONE/docker/docker-compose.webtop.yml"
+if docker ps --format '{{.Image}}' | grep -q 'linuxserver/webtop' 2>/dev/null; then
+    echo "Stopping linuxserver Webtop container..."
+    docker compose -f "$_WEBTOP_COMPOSE" down 2>/dev/null || true
+fi
+
+# ── Stacks Docker historiques (rnostr, qdrant, embed-worker) ─────────
+if [[ -f ~/.zen/rnostr/docker-compose.yml ]]; then
+    echo "Stopping rnostr/qdrant docker stack..."
+    docker compose -f ~/.zen/rnostr/docker-compose.yml down 2>/dev/null || true
+fi
+# Retirer les containers individuels résiduels
 for container in qdrant embed-worker rnostr bgutil-provider; do
     docker stop  "$container" 2>/dev/null
     docker rm    "$container" 2>/dev/null
@@ -398,8 +424,32 @@ fi
 echo "FINAL CLEANUP"
 ########################################################################
 
-# Mark directories for deletion
-mv ~/.zen ~/.zen.todelete 2>/dev/null
+# ── Symlinks BTRFS (/nextcloud-data) ────────────────────────────────
+# Si ~/.zen et/ou ~/.ipfs sont des liens symboliques vers /nextcloud-data
+# créés lors de la migration BTRFS, les supprimer proprement
+if [[ -L "$HOME/.zen" ]]; then
+    echo "Lien symbolique ~/.zen → $(readlink $HOME/.zen) détecté"
+    read -p "Supprimer le symlink ~/.zen (les données restent dans /nextcloud-data) ? (y/n): " rm_zen_lnk
+    if [[ $rm_zen_lnk == "y" ]]; then
+        rm -f "$HOME/.zen"
+        echo "✅ Symlink ~/.zen supprimé (données conservées dans $(readlink -f $HOME/.zen 2>/dev/null || echo '/nextcloud-data/zen'))"
+    fi
+else
+    mv ~/.zen ~/.zen.todelete 2>/dev/null
+fi
+
+if [[ -L "$HOME/.ipfs" ]]; then
+    echo "Lien symbolique ~/.ipfs → $(readlink $HOME/.ipfs) détecté"
+    read -p "Supprimer aussi le symlink ~/.ipfs ? (y/n): " rm_ipfs_lnk
+    [[ $rm_ipfs_lnk == "y" ]] && rm -f "$HOME/.ipfs" && echo "✅ Symlink ~/.ipfs supprimé"
+fi
+
+read -p "Supprimer /nextcloud-data (volumes NextCloud + données BTRFS) ? (⚠️ IRRÉCUPÉRABLE) (y/n): " rm_nc_data
+if [[ $rm_nc_data == "y" ]]; then
+    echo "❌ Suppression de /nextcloud-data... (sudo requis)"
+    sudo rm -rf /nextcloud-data
+    echo "✅ /nextcloud-data supprimé"
+fi
 
 # Clean temporary files
 rm -rf /tmp/20h12.log /tmp/20h12_power_report.html \

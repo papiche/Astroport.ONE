@@ -131,7 +131,17 @@ curl http://127.0.0.1:11434/api/generate -d '{"model":"llama3","prompt":"Bonjour
 
 ## 🛠️ Installation
 
-### Quick Start (Linux — Debian/Ubuntu/Mint)
+### Option A — Docker Webtop (recommended to try without modifying your system)
+
+```bash
+cd docker/
+docker compose -f docker-compose.webtop.yml up -d
+# → http://localhost:3000  (desktop in browser, Ubuntu XFCE + KasmVNC)
+```
+
+The webtop container runs `install.sh` automatically at first start (10–30 min). All profiles work (`nextcloud`, `bleeding-edge`) because the Docker socket is shared with the host via sibling-container architecture.
+
+### Option B — Direct install (bare-metal Linux — Debian/Ubuntu/Mint)
 
 ```bash
 bash <(curl -sL https://install.astroport.com)
@@ -319,15 +329,44 @@ Each plugin receives Nostr events via stdin/stdout JSON, classifies users (`nobo
 
 ## 🖥️ Docker Desktop Mode (VDI)
 
-Try Astroport without modifying your system — full desktop in your browser:
+### ✅ Recommended: linuxserver Webtop (KasmVNC)
+
+```bash
+cd docker/
+docker compose -f docker-compose.webtop.yml up -d
+# → http://localhost:3000  (KasmVNC HTTP)
+# → https://localhost:3001 (KasmVNC HTTPS — recommended)
+```
+
+Full **Ubuntu XFCE desktop** via **KasmVNC** (far superior to noVNC). Works on **amd64, arm64, arm/v7**. Maintained by [linuxserver.io](https://docs.linuxserver.io/images/docker-webtop/).
+
+| Feature | Webtop (KasmVNC) ✅ | Desktop (noVNC) ⚠️ |
+|---|---|---|
+| Video performance | ⭐⭐⭐⭐⭐ WebRTC | ⭐⭐⭐ JPEG proxy |
+| Clipboard | ✅ Bidirectional | ❌ Limited |
+| Docker socket | ✅ Mounted (RW) | ❌ Not mounted |
+| `nextcloud` profile | ✅ Works | ❌ Impossible |
+| `bleeding-edge` profile | ✅ Works | ❌ Impossible |
+| Image maintained | ✅ linuxserver.io | ⚠️ Custom build |
+
+```bash
+# With swarm.key (UPlanet ẐEN mode):
+ASTRO_DOMAIN=mydomain.com \
+CAPTAIN_EMAIL=me@example.com \
+INSTALL_PROFILE=nextcloud \
+IPFS_SWARM_KEY=<64-char-hex> \
+docker compose -f docker-compose.webtop.yml up -d
+```
+
+### Legacy noVNC Desktop (limited, no Docker)
 
 ```bash
 cd docker/
 docker compose -f docker-compose.desktop.yml up -d
-# Then: http://localhost:6080 (password: astroport)
+# http://localhost:6080 (password: astroport)
 ```
 
-Full **XFCE desktop** with Astroport.ONE pre-installed via noVNC. Works on **x86_64 and ARM64** (Raspberry Pi, Mac M-series).
+> ⚠️ **Known limitation**: no Docker socket mounted → `nextcloud` and `bleeding-edge` profiles do not work. Use the Webtop mode above for a complete installation with all features.
 
 ---
 

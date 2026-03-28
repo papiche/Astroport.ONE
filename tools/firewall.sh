@@ -20,22 +20,40 @@
 #  │         │          │   → u.DOMAIN        :54321            │
 #  │         │          │   → ipfs.DOMAIN     :8080             │
 #  │         │          │   → relay.DOMAIN    :7777 (WSS)       │
+#  │         │          │   → cloud.DOMAIN    :8001 (NextCloud) │
 #  │ 4001    │ tcp+udp  │ IPFS Swarm P2P (pairs directs)        │
 #  └─────────┴──────────┴────────────────────────────────────────┘
 #
 #  PORTS LOCALHOST UNIQUEMENT (bloqués depuis l'extérieur)
 #  ┌─────────┬──────────┬────────────────────────────────────────┐
 #  │ 5001    │ tcp      │ IPFS API (⚠️ dangereux si exposé)      │
-#  │ 7777    │ tcp      │ NOSTR strfry (via NPM uniquement)     │
-#  │ 8080    │ tcp      │ IPFS Gateway (via NPM uniquement)     │
-#  │ 12345   │ tcp      │ Astroport API (via NPM uniquement)    │
-#  │ 54321   │ tcp      │ UPassport API (via NPM uniquement)    │
-#  │ 33101   │ tcp      │ G1BILLET (via NPM uniquement)         │
-#  │ 81      │ tcp      │ NPM Admin UI (localhost uniquement)   │
-#  │ 1883    │ tcp      │ MQTT Mosquitto (localhost uniquement)  │
+#  │ 7777    │ tcp      │ NOSTR strfry/rnostr (via NPM)         │
+#  │ 8080    │ tcp      │ IPFS Gateway (via NPM)                │
+#  │ 12345   │ tcp      │ Astroport API (via NPM)               │
+#  │ 54321   │ tcp      │ UPassport API (via NPM)               │
+#  │ 33101   │ tcp      │ G1BILLET (via NPM)                    │
+#  │ 81      │ tcp      │ NPM Admin UI (localhost)              │
+#  │ 1883    │ tcp      │ MQTT Mosquitto (localhost)            │
+#  │── NextCloud AIO ──────────────────────────────────────────── │
+#  │ 8001    │ tcp      │ Apache NextCloud (via NPM → cloud.D)  │
+#  │ 8002    │ tcp      │ NextCloud AIO Dashboard (localhost)   │
+#  │ 8443    │ tcp      │ NextCloud AIO Admin Setup (localhost) │
+#  │── bleeding-edge IA Stack ──────────────────────────────────── │
+#  │ 3100    │ tcp      │ Paperclip AI agents (localhost)       │
+#  │ 4000    │ tcp      │ LiteLLM proxy API (localhost)         │
+#  │ 8000    │ tcp      │ OpenClaw gateway (localhost)          │
+#  │ 11434   │ tcp      │ Ollama LLM API (localhost)            │
+#  │── Webtop VDI (KasmVNC) ───────────────────────────────────── │
+#  │ 3000    │ tcp      │ KasmVNC HTTP (localhost — SSH tunnel) │
+#  │ 3001    │ tcp      │ KasmVNC HTTPS (localhost — SSH tunnel)│
+#  │── Monitoring ─────────────────────────────────────────────── │
 #  │ 9090    │ tcp      │ Prometheus scrape (localhost)         │
 #  │ 9615    │ tcp      │ IPFS exporter (localhost)             │
 #  └─────────┴──────────┴────────────────────────────────────────┘
+#
+#  ACCÈS WEBTOP À DISTANCE : utiliser SSH tunnel
+#    ssh -L 3000:localhost:3000 user@VOTRE_IP
+#    puis ouvrir http://localhost:3000
 #
 ########################################################################
 
@@ -96,20 +114,29 @@ fire_on() {
 ── PORTS LOCALHOST UNIQUEMENT (bloqués depuis Internet) ───────────"
 
     ## Bloquer explicitement les ports de service depuis l'extérieur
-    ## (ils sont accessibles via le proxy NPM uniquement)
+    ## (accessibles uniquement via proxy NPM ou tunnel SSH)
     for port_comment in \
         "5001:IPFS API (dangereux si exposé)" \
-        "7777:NOSTR rnostr/strfry (via NPM)" \
+        "7777:NOSTR strfry/rnostr (via NPM)" \
         "8080:IPFS Gateway (via NPM)" \
         "12345:Astroport API (via NPM)" \
         "54321:UPassport API (via NPM)" \
         "33101:G1BILLET (via NPM)" \
         "81:NPM Admin UI" \
         "1883:MQTT Mosquitto" \
-        "4416:bgutil PO token provider (Docker, localhost)" \
-        "6333:Qdrant REST (localhost seulement)" \
-        "6334:Qdrant gRPC (localhost seulement)" \
-        "8888:rnostr interne (localhost seulement)" \
+        "4416:bgutil PO token provider (Docker)" \
+        "6333:Qdrant REST (IA Stack)" \
+        "6334:Qdrant gRPC (IA Stack)" \
+        "8888:rnostr interne" \
+        "8001:NextCloud Apache (via NPM cloud.DOMAIN)" \
+        "8002:NextCloud AIO Dashboard" \
+        "8443:NextCloud AIO Admin Setup" \
+        "3100:Paperclip AI agents (bleeding-edge)" \
+        "4000:LiteLLM proxy (bleeding-edge)" \
+        "8000:OpenClaw gateway (bleeding-edge)" \
+        "11434:Ollama LLM API (bleeding-edge)" \
+        "3000:KasmVNC HTTP (webtop — SSH tunnel requis)" \
+        "3001:KasmVNC HTTPS (webtop — SSH tunnel requis)" \
         "9090:Prometheus" \
         "9615:IPFS exporter"
     do
@@ -166,7 +193,7 @@ fire_status() {
     sudo ufw status verbose
     echo ""
     echo "Ports d'écoute actifs :"
-    ss -tlnup 2>/dev/null | grep -E ":(22|80|443|4001|4416|5001|7777|8080|12345|54321|33101|81|1883) " \
+    ss -tlnup 2>/dev/null | grep -E ":(22|80|443|4001|4416|5001|7777|8080|8001|8002|8443|8000|11434|3000|3001|3100|4000|12345|54321|33101|81|1883|9090) " \
         | awk '{print "  " $1 " " $4 " " $5}' | sort -t: -k2 -n
     echo "########################################################################"
 }
