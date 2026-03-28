@@ -1,18 +1,21 @@
 ########################################################################
-# Astroport.ONE — Desktop VDI (noVNC / TigerVNC)
+# ⛔ DÉPRÉCIÉ — NE PLUS UTILISER
 #
-# ⚠️  LIMITATIONS CONNUES :
-#   - Pas de Docker socket → profils 'nextcloud' et 'bleeding-edge' NON FONCTIONNELS
-#   - systemd indisponible → certains services démarrent différemment
-#   - Dockerfile.desktop à rebuilder à chaque mise à jour
+# Ce fichier est conservé à titre d'archive uniquement.
+# Il sera supprimé dans une prochaine version.
 #
-# 💡 RECOMMANDÉ : utiliser docker-compose.webtop.yml à la place
-#   → KasmVNC (bien meilleur que noVNC)
+# UTILISEZ À LA PLACE : docker-compose.webtop.yml
+#   → Bureau Ubuntu XFCE + KasmVNC (http://localhost:3000)
 #   → Docker socket monté (tous les profils fonctionnent)
-#   → Image maintenue par linuxserver.io
-#   → http://localhost:3000 (pas de build requis)
+#   → Pas de build custom — image maintenue par linuxserver.io
+#   → Multi-arch : amd64/arm64/arm7
 #
-# Ce fichier est conservé pour compatibilité avec les déploiements existants.
+# docker compose -f docker-compose.webtop.yml up -d
+#
+# ─────────────────────────────────────────────────────────────────────
+# [ARCHIVE] Astroport.ONE — Desktop VDI (noVNC / TigerVNC)
+# Limitations : pas de Docker socket, noVNC lent, build custom requis.
+########################################################################
 # Install.sh tourne au premier démarrage (10-30 min).
 #
 # === UPlanet ORIGIN (bac à sable, par défaut) ===

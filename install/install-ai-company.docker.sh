@@ -9,6 +9,8 @@ set -e
 
 MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
+## Charger UPLANETNAME depuis my.sh pour l'utiliser comme clé Qdrant/Constellation
+. "$MY_PATH/../tools/my.sh" 2>/dev/null || true
 
 # --- CONFIGURATION ---
 INSTALL_DIR="$HOME/.zen/ai-company"
@@ -126,7 +128,19 @@ if [ -f .env ]; then
 else
     echo "🔑 Génération des nouveaux secrets..."
     PG_PASS=$(openssl rand -hex 12)
-    QDRANT_KEY=$(openssl rand -hex 16)
+    ## QDRANT_KEY = UPLANETNAME si disponible (cohérence constellation)
+    ## → toutes les stations UPlanet ẐEN du même essaim partagent la même clé Qdrant
+    ## → ORIGIN (000...000) = clé Qdrant commune aux stations de test (non critique)
+    if [[ -n "$UPLANETNAME" && "$UPLANETNAME" != "0000000000000000000000000000000000000000000000000000000000000000" ]]; then
+        QDRANT_KEY="${UPLANETNAME}"
+        echo "🔑 Qdrant API Key = UPLANETNAME (${QDRANT_KEY:0:8}... — clé de constellation)"
+    elif [[ -n "$UPLANETNAME" ]]; then
+        QDRANT_KEY="${UPLANETNAME}"
+        echo "ℹ️  Qdrant API Key = UPLANETNAME ORIGIN (000...000 — sandbox, partagé constellation)"
+    else
+        QDRANT_KEY=$(openssl rand -hex 16)
+        echo "⚠️  UPLANETNAME absent — Qdrant API Key aléatoire (configurez UPLANETNAME pour la cohérence)"
+    fi
     AUTH_SECRET=$(openssl rand -base64 32)
     PROXY_KEY="sk-swarm-$(openssl rand -hex 8)"
     GATEWAY_TOKEN=$(openssl rand -hex 16)
@@ -136,6 +150,7 @@ POSTGRES_PASSWORD=${PG_PASS}
 POSTGRES_USER=paperclip
 POSTGRES_DB=paperclip
 POSTGRES_LITELLM_DB=litellm
+## QDRANT_API_KEY = UPLANETNAME : cohérence constellation (toutes stations même essaim)
 QDRANT_API_KEY=${QDRANT_KEY}
 PAPERCLIP_AUTH_SECRET=${AUTH_SECRET}
 LITELLM_MASTER_KEY=${PROXY_KEY}

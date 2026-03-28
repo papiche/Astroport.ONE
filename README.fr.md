@@ -124,7 +124,7 @@ Contrairement à ChatGPT, #BRO est un **essaim d'intelligences** — chaque stat
 #BRO rapport hebdomadaire
 
 # API locale (Ollama) :
-curl http://127.0.0.1:11434/api/generate -d '{"model":"llama3","prompt":"Bonjour BRO"}'
+curl http://127.0.0.1:11434/api/generate -d '{"model":"gemma3","prompt":"Bonjour BRO"}'
 ```
 
 ---
@@ -307,17 +307,36 @@ Chaque plugin reçoit des événements Nostr via stdin/stdout JSON, classe les u
 
 ---
 
-## 🖥️ Mode Bureau Docker (VDI)
+## 🖥️ Webtop Docker (VDI — Bureau dans le Navigateur)
 
-Essayez Astroport sans modifier votre système — bureau complet dans votre navigateur :
+Testez Astroport.ONE sans modifier votre système — bureau Ubuntu XFCE complet via **KasmVNC** :
 
 ```bash
 cd docker/
-docker compose -f docker-compose.desktop.yml up -d
-# Puis : http://localhost:6080 (mot de passe : astroport)
+docker compose -f docker-compose.webtop.yml up -d
+# → http://localhost:3000  (HTTP)
+# → https://localhost:3001 (HTTPS — recommandé)
 ```
 
-Bureau **XFCE complet** avec Astroport.ONE pré-installé via noVNC. Fonctionne sur **x86_64 et ARM64** (Raspberry Pi, Mac M-series).
+**Caractéristiques :**
+- 🖥️ Bureau Ubuntu XFCE complet accessible depuis n'importe quel navigateur
+- 🐳 Socket Docker partagé avec l'hôte → tous les profils fonctionnent (`nextcloud`, `bleeding-edge`)
+- 📋 Presse-papier bidirectionnel, vidéo WebRTC, support écran tactile
+- 🏗️ Multi-arch : amd64, arm64, arm/v7 (Raspberry Pi, Mac M-series)
+- 🔄 Maintenu par [linuxserver.io](https://docs.linuxserver.io/images/docker-webtop/) — pas de build custom
+- 🔒 Conteneurs lancés depuis webtop = **sibling containers** sur l'hôte (pas de Docker imbriqué)
+
+```bash
+# Mode UPlanet ẐEN (avec swarm.key) + NextCloud :
+ASTRO_DOMAIN=mondomaine.com \
+CAPTAIN_EMAIL=moi@example.com \
+INSTALL_PROFILE=nextcloud \
+IPFS_SWARM_KEY=<hex64> \
+docker compose -f docker-compose.webtop.yml up -d
+```
+
+> 🔒 **Accès distant** : utilisez un tunnel SSH pour la sécurité :
+> `ssh -L 3000:localhost:3000 user@VOTRE_IP` → puis ouvrez `http://localhost:3000`
 
 ---
 

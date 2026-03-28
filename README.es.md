@@ -124,7 +124,7 @@ A diferencia de ChatGPT, #BRO es un **enjambre de inteligencias** — cada estac
 #BRO informe semanal
 
 # API local (Ollama):
-curl http://127.0.0.1:11434/api/generate -d '{"model":"llama3","prompt":"Hola BRO"}'
+curl http://127.0.0.1:11434/api/generate -d '{"model":"gemma3","prompt":"Hola BRO"}'
 ```
 
 ---
@@ -305,6 +305,41 @@ El perfil `dev` es un **proyecto de fondo**: migrar los plugins de política de 
 4. **🐉 Únete a U.SOCIETY** — patrocinio anual, derechos de gobernanza, acceso DRAGÓN
 5. **💻 Programa** — Rust (rnostr), Python (IA), Bash — todos los perfiles son bienvenidos
 6. **🌍 Difunde** — da una estrella al repositorio, comparte los ZINEs
+
+---
+
+## 🖥️ Webtop Docker (VDI — Escritorio en el Navegador)
+
+Prueba Astroport.ONE sin modificar tu sistema — escritorio Ubuntu XFCE completo vía **KasmVNC**:
+
+```bash
+cd docker/
+docker compose -f docker-compose.webtop.yml up -d
+# → http://localhost:3000  (HTTP)
+# → https://localhost:3001 (HTTPS — recomendado)
+```
+
+**Características:**
+- 🖥️ Escritorio Ubuntu XFCE completo accesible desde cualquier navegador
+- 🐳 Socket Docker compartido con el host → todos los perfiles funcionan (`nextcloud`, `bleeding-edge`)
+- 📋 Portapapeles bidireccional, vídeo WebRTC, soporte pantalla táctil
+- 🏗️ Multi-arch: amd64, arm64, arm/v7 (Raspberry Pi, Mac M-series)
+- 🔄 Mantenido por [linuxserver.io](https://docs.linuxserver.io/images/docker-webtop/) — sin build personalizado
+- 🔒 Contenedores lanzados desde webtop = **sibling containers** en el host Docker (no DinD)
+
+```bash
+# Modo UPlanet ẐEN (con swarm.key) + NextCloud:
+ASTRO_DOMAIN=mi-dominio.com \
+CAPTAIN_EMAIL=yo@example.com \
+INSTALL_PROFILE=nextcloud \
+IPFS_SWARM_KEY=<hex64> \
+docker compose -f docker-compose.webtop.yml up -d
+```
+
+> 🔒 **Acceso remoto**: usa un túnel SSH por seguridad:
+> `ssh -L 3000:localhost:3000 user@TU_IP` → luego abre `http://localhost:3000`
+
+---
 
 **Cooperativa CopyLaRadio SCIC:**
 - [OpenCollective](https://opencollective.com/monnaie-libre) — transparencia financiera

@@ -23,7 +23,7 @@ PREFERRED_CHAT_MODELS=(
     "qwen3:14b"
     "qwen3:8b"
     "mistral-nemo:latest"
-    "llama3.2:latest"
+    "gemma3.2:latest"
     "gpt-4o-mini"
     "gpt-4o"
 )

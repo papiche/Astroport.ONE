@@ -124,7 +124,7 @@ Unlike ChatGPT, #BRO is a **swarm of intelligences** — each station contribute
 #BRO weekly report
 
 # Local API (Ollama):
-curl http://127.0.0.1:11434/api/generate -d '{"model":"llama3","prompt":"Bonjour BRO"}'
+curl http://127.0.0.1:11434/api/generate -d '{"model":"gemma3","prompt":"Bonjour BRO"}'
 ```
 
 ---
@@ -327,30 +327,27 @@ Each plugin receives Nostr events via stdin/stdout JSON, classifies users (`nobo
 
 ---
 
-## 🖥️ Docker Desktop Mode (VDI)
+## 🖥️ Docker Webtop (VDI — Browser Desktop)
 
-### ✅ Recommended: linuxserver Webtop (KasmVNC)
+Try Astroport.ONE without modifying your system — full Ubuntu XFCE desktop in your browser via **KasmVNC**:
 
 ```bash
 cd docker/
 docker compose -f docker-compose.webtop.yml up -d
-# → http://localhost:3000  (KasmVNC HTTP)
-# → https://localhost:3001 (KasmVNC HTTPS — recommended)
+# → http://localhost:3000   (HTTP)
+# → https://localhost:3001  (HTTPS — recommended)
 ```
 
-Full **Ubuntu XFCE desktop** via **KasmVNC** (far superior to noVNC). Works on **amd64, arm64, arm/v7**. Maintained by [linuxserver.io](https://docs.linuxserver.io/images/docker-webtop/).
-
-| Feature | Webtop (KasmVNC) ✅ | Desktop (noVNC) ⚠️ |
-|---|---|---|
-| Video performance | ⭐⭐⭐⭐⭐ WebRTC | ⭐⭐⭐ JPEG proxy |
-| Clipboard | ✅ Bidirectional | ❌ Limited |
-| Docker socket | ✅ Mounted (RW) | ❌ Not mounted |
-| `nextcloud` profile | ✅ Works | ❌ Impossible |
-| `bleeding-edge` profile | ✅ Works | ❌ Impossible |
-| Image maintained | ✅ linuxserver.io | ⚠️ Custom build |
+**Features:**
+- 🖥️ Full Ubuntu XFCE desktop accessible from any browser
+- 🐳 Docker socket shared with host — all profiles work (`nextcloud`, `bleeding-edge`)
+- 📋 Bidirectional clipboard, WebRTC video, touch screen support
+- 🏗️ Multi-arch: amd64, arm64, arm/v7 (Raspberry Pi, Mac M-series)
+- 🔄 Maintained by [linuxserver.io](https://docs.linuxserver.io/images/docker-webtop/) — no custom build needed
+- 🔒 Containers launched from webtop = **sibling containers** on host Docker (not DinD)
 
 ```bash
-# With swarm.key (UPlanet ẐEN mode):
+# UPlanet ẐEN mode (with swarm.key) + NextCloud:
 ASTRO_DOMAIN=mydomain.com \
 CAPTAIN_EMAIL=me@example.com \
 INSTALL_PROFILE=nextcloud \
@@ -358,15 +355,8 @@ IPFS_SWARM_KEY=<64-char-hex> \
 docker compose -f docker-compose.webtop.yml up -d
 ```
 
-### Legacy noVNC Desktop (limited, no Docker)
-
-```bash
-cd docker/
-docker compose -f docker-compose.desktop.yml up -d
-# http://localhost:6080 (password: astroport)
-```
-
-> ⚠️ **Known limitation**: no Docker socket mounted → `nextcloud` and `bleeding-edge` profiles do not work. Use the Webtop mode above for a complete installation with all features.
+> 🔒 **Remote access**: use an SSH tunnel for security:
+> `ssh -L 3000:localhost:3000 user@YOUR_SERVER_IP` → then open `http://localhost:3000`
 
 ---
 

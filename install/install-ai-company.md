@@ -45,7 +45,7 @@ cat ~/.zen/ai-company/.env
 Si vous modifiez ce fichier, vous devez recréer les conteneurs : `docker compose -p ai-company-swarm up -d`.
 
 #### D. Administration de LiteLLM (Gestion des modèles)
-LiteLLM est le cerveau de la communication. Si vous voulez ajouter un nouveau modèle (ex: `mistral` ou `llama3`) :
+LiteLLM est le cerveau de la communication. Si vous voulez ajouter un nouveau modèle (ex: `mistral` ou `gemma3`) :
 1.  Téléchargez le modèle sur votre hôte : `ollama pull mistral`
 2.  Éditez `litellm-config.yaml` dans `~/.zen/ai-company/`.
 3.  Ajoutez le modèle dans la liste `model_list`.
