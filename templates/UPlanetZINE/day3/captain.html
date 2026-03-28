@@ -60,49 +60,73 @@ docker compose restart npm</code></pre>
   </section>
 
   <section class="zine-page page-5">
-    <h2>Activer NextCloud (128 Go)</h2>
-    <p>NextCloud offre le stockage synchronise aux cooperateurs ZEN Card :</p>
-    <pre><code class="language-text"># Activer NextCloud
-docker compose --profile full up -d
+    <h2>Activer NextCloud AIO (128 Go)</h2>
+    <p>NextCloud utilise son propre docker-compose. <strong>Ports</strong> : 8443 (admin setup) | 8001 (app Apache) | 8002 (dashboard)</p>
+    <pre><code class="language-text"># Démarrer NextCloud AIO
+docker compose \
+  -f ~/.zen/Astroport.ONE/_DOCKER/nextcloud/docker-compose.yml \
+  up -d
 
-# Admin NextCloud AIO
+# Setup initial (première fois) — entrez votre domaine
 https://127.0.0.1:8443
 
-# Verifier
-docker compose logs -f nextcloud</code></pre>
+# NPM proxy cloud.DOMAIN → :8001 (auto si relancé)
+~/.zen/Astroport.ONE/install/setup/setup_npm.sh
+
+# Vérifier
+docker logs nextcloud-aio-mastercontainer -f</code></pre>
     <ul>
-      <li class="zine-li">Premiere connexion : configurez le domaine <code>cloud.VOTREDOMAINE</code></li>
-      <li class="zine-li">NPM cree automatiquement le proxy cloud.DOMAIN → port 8001</li>
+      <li class="zine-li">Setup AIO : → <code>https://127.0.0.1:8443</code> → entrez <code>cloud.VOTREDOMAINE</code></li>
+      <li class="zine-li">NPM crée automatiquement <code>cloud.DOMAIN → :8001</code> (relancez setup_npm.sh si besoin)</li>
+      <li class="zine-li">Mot de passe NPM : <code>~/.zen/nginx-proxy-manager/data/.admin_pass</code></li>
       <li class="zine-li">Chaque ZEN Card = 1 compte NextCloud 128 Go</li>
     </ul>
   </section>
 
   <section class="zine-page page-6">
-    <h2>SSL et certificats</h2>
-    <ul>
-      <li class="zine-li"><strong>Domaine public</strong> : Let's Encrypt automatique via NPM</li>
-      <li class="zine-li"><strong>Domaine local</strong> (.local, 192.168.x) : auto-signe openssl (10 ans)</li>
-      <li class="zine-li"><strong>copylaradio.com</strong> : gere centralement (ne pas modifier)</li>
-    </ul>
-    <p>Le setup NPM est automatique au premier demarrage (<code>setup_npm.sh</code>). Les certificats se renouvellent seuls.</p>
-    <p style="font-size:85%">Token NPM : <code>~/.zen/nginx-proxy-manager/data/.api_token</code></p>
+    <h2>💾 Stockage BTRFS — Architecture recommandée</h2>
+    <p><strong>Montez un disque dédié en BTRFS sur <code>/nextcloud-data</code></strong> pour héberger tous vos volumes :</p>
+    <pre><code class="language-text"># Formater en BTRFS (remplacer /dev/sdX)
+sudo mkfs.btrfs -L astrodata /dev/sdX
+sudo mount -o compress=zstd,noatime /dev/sdX /nextcloud-data
+
+# /etc/fstab (persistance au redémarrage)
+UUID=$(blkid -s UUID -o value /dev/sdX)
+echo "UUID=$UUID /nextcloud-data btrfs \
+  compress=zstd,noatime 0 0" | sudo tee -a /etc/fstab</code></pre>
+    <p style="font-size:85%">BTRFS = CoW (IPFS efficient) + snapshots + compression zstd ~25%</p>
+    <p style="font-size:85%">SSL NPM : Let's Encrypt (public) | auto-signé (local) — automatique via <code>setup_npm.sh</code></p>
   </section>
 
   <section class="zine-page page-7">
-    <h2>Smartphone → NextCloud</h2>
-    <p>Pour les cooperateurs ZEN Card, configurez la synchro smartphone :</p>
-    <ul>
-      <li class="zine-li"><strong>Android</strong> : installer NextCloud (F-Droid ou Play Store)</li>
-      <li class="zine-li"><strong>Serveur</strong> : <code>https://cloud.VOTREDOMAINE</code></li>
-      <li class="zine-li"><strong>Synchro auto</strong> : photos, contacts, calendrier</li>
-    </ul>
-    <p style="font-size:85%">Guides : pad.p2p.legal/NextCloud et pad.p2p.legal/Smartphone2NextCloud</p>
-    <p>Demain : la constellation N2 et comment interconnecter vos stations.</p>
+    <h2>🔀 Migrer ~/.zen et ~/.ipfs vers BTRFS</h2>
+    <p>Une fois le disque BTRFS monté sur <code>/nextcloud-data</code> :</p>
+    <pre><code class="language-text"># 1. Arrêter Astroport
+~/.zen/Astroport.ONE/stop.sh
+
+# 2. Déplacer les données volumineuses
+sudo mv ~/.zen /nextcloud-data/zen
+sudo mv ~/.ipfs /nextcloud-data/ipfs
+
+# 3. Créer les liens symboliques
+ln -s /nextcloud-data/zen ~/.zen
+ln -s /nextcloud-data/ipfs ~/.ipfs
+
+# 4. Redémarrer
+~/.zen/Astroport.ONE/start.sh</code></pre>
+    <p style="font-size:85%"><strong>Vérifier :</strong> <code>df -h /nextcloud-data</code> | <code>btrfs fi df /nextcloud-data</code></p>
+    <p style="font-size:85%">Synchro smartphone : <code>https://cloud.VOTREDOMAINE</code> — AppStore : Nextcloud (F-Droid)</p>
+    <p style="font-size:85%">Guide : pad.p2p.legal/Smartphone2NextCloud</p>
   </section>
 
   <footer class="zine-page page-8">
-    <h2>L'infrastructure vous appartient</h2>
-    <p><strong>Pas de cloud Amazon. Pas de serveur Google. Votre machine, chez votre Armateur, avec votre domaine.</strong></p>
+    <h2>💾 Votre infrastructure vous appartient</h2>
+    <p><strong>Pas de cloud Amazon. Pas de serveur Google. Votre machine, votre disque BTRFS, votre domaine.</strong></p>
+    <p style="font-size:85%">Structure sur le disque :</p>
+    <pre><code class="language-text">/nextcloud-data/
+  zen/          → ~/.zen (symlink)
+  ipfs/         → ~/.ipfs (symlink)
+  nextcloud/    → données NextCloud AIO</code></pre>
     <p style="font-size:85%">G1FabLab / CopyLaRadio SCIC</p>
   </footer>
 </main>

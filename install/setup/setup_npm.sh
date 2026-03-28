@@ -358,14 +358,18 @@ npm_create_proxy "relay" "${FORWARD_HOST}" 7777 "http" "true"
 ## u.DOMAIN -> :54321 (UPassport FastAPI)
 npm_create_proxy "u" "${FORWARD_HOST}" 54321 "http" "true"
 
-## cloud.DOMAIN -> nextcloud:8001 (NextCloud AIO, if running)
+## cloud.DOMAIN -> nextcloud-aio-mastercontainer:8001 (NextCloud AIO Apache port)
+## NextCloud AIO se lance depuis ~/.zen/Astroport.ONE/_DOCKER/nextcloud/docker-compose.yml
+## Ports : 8443=AIO admin setup | 8002=AIO dashboard | 8001=Apache NextCloud (proxied ici)
 if getent hosts nextcloud-aio-mastercontainer >/dev/null 2>&1; then
     npm_create_proxy "cloud" "nextcloud-aio-mastercontainer" 8001 "http" "false"
 elif docker ps --format '{{.Names}}' | grep -q 'nextcloud-aio'; then
     npm_create_proxy "cloud" "${FORWARD_HOST}" 8001 "http" "false"
 else
-    echo "  SKIP cloud.${DOMAIN} (NextCloud not running)"
-    echo "  >>> Start with: docker compose --profile full up -d"
+    echo "  SKIP cloud.${DOMAIN} (NextCloud AIO non démarré)"
+    echo "  >>> Pour activer NextCloud :"
+    echo "  >>> docker compose -f ~/.zen/Astroport.ONE/_DOCKER/nextcloud/docker-compose.yml up -d"
+    echo "  >>> Puis relancez : ~/.zen/Astroport.ONE/install/setup/setup_npm.sh"
 fi
 
 echo "#############################################"

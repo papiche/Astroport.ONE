@@ -1,188 +1,356 @@
-# Astroport.ONE : Construire un Internet Coopératif
+# 🚀 Astroport.ONE — L'Internet de Confiance
 
-[EN](README.md) - [ES](README.es.md)
+[EN](README.md) · [ES](README.es.md) · [GitBook](https://astroport-1.gitbook.io/astroport.one/)
 
-**Internet était censé être un outil de libération. Au lieu de cela, nous sommes devenus son produit.** Nos données sont monétisées, nos communautés sont fragmentées, et nos vies numériques appartiennent à une poignée de géants corporatifs.
+> **Internet était censé nous libérer. Au lieu de cela, nous sommes devenus son produit.**
+> Astroport.ONE est une déclaration d'indépendance numérique — une suite open-source qui transforme les utilisateurs de locataires numériques en copropriétaires souverains de leur infrastructure.
 
-**Astroport.ONE est une déclaration d'indépendance numérique.** Ce n'est pas juste une autre plateforme ; c'est une suite d'outils open-source et un contrat social conçu pour aider les individus et les communautés à construire un écosystème Web3 qu'ils possèdent vraiment.
-
-Propulsé par le **[G1FabLab](https://g1sms.fr)**, notre mission est de transformer les utilisateurs de locataires numériques en co-propriétaires souverains de leur infrastructure.
-
-## 🌍 Qu'est-ce qu'Astroport.ONE ?
-
-Astroport.ONE est le logiciel open-source qui vous permet de faire fonctionner votre propre serveur personnel—une **Station**. Pensez-y comme votre ambassade numérique sur une nouvelle frontière décentralisée.
-
-Avec votre Station, vous pouvez :
-*   ✊ **Posséder Vos Données :** Stockez vos fichiers sur le Système de Fichiers InterPlanétaire (IPFS), les rendant résistants à la censure et au contrôle corporatif.
-*   💬 **Communiquer Librement :** Connectez-vous au réseau social décentralisé NOSTR, à l'abri des algorithmes et des bannissements arbitraires.
-*   💰 **Construire une Vraie Économie :** Utilisez la monnaie libre Ğ1 (June) et notre système de comptabilité interne Ẑen pour créer de la valeur et l'échanger équitablement.
-
-## 🌱 Le Modèle Économique Coopératif : D'Utilisateurs à Propriétaires
-
-Il ne s'agit pas seulement de technologie. Il s'agit de construire une économie coopérative et durable. L'épine dorsale légale et sociale de notre projet est la **[SCIC CopyLaRadio](https://www.copylaradio.com)**, une société coopérative française.
-
-![UPlanet SolarPunk Society](images/UPlanet_SolarPunk.society.jpg)
-*Une vision de notre futur coopératif : la technologie en harmonie avec la nature, créant des biens communs dans le monde réel*
-
-Notre modèle est simple : **nous transformons le coût de l'infrastructure en capital partagé.**
-*   **Le Ẑen (Ẑ) :** Pour gérer nos projets, nous utilisons une unité de comptabilité interne et stable appelée le Ẑen. Au sein de notre coopérative, **1 Ẑen = 1€**. Cela nous permet de gérer de manière transparente nos actifs (serveurs, domaines, etc.) et nos dépenses.
-*   **Propriété Partagée :** Quand vous contribuez à la coopérative, vous ne "payez pas pour un service". Vous achetez des parts de l'infrastructure partagée, devenant co-propriétaire des serveurs, et investissant dans notre futur collectif—y compris des actifs du monde réel comme les forêts.
-
-> **📜 Pour une compréhension complète de notre cadre légal coopératif, consultez notre [Constitution de l'Écosystème UPlanet](LEGAL.md)**
-
-## 🚀 Votre Parcours dans Notre Écosystème : 3 Chemins vers la Souveraineté
-
-Nous offrons trois façons claires de rejoindre, chacune avec son propre Zine (flyer) pour vous guider.
-
-### 1. 🌐 [MULTIPASS](https://ipfs.copylaradio.com/ipfs/QmcjpCAfSCn3pucSSWKP5i7HqQCkXnfesVo5z7m6btT5Mv/multipass.html) - Votre Premier Pas
-**Le Chemin de l'Utilisateur (1 Ẑen/semaine)**
-
-C'est votre passeport numérique. C'est la façon la plus facile d'explorer l'écosystème, sécuriser votre identité, et commencer à utiliser nos services.
-
-![UPlanet IPFS uDRIVE Network](images/UPlanet_IPFS_uDRIVE.jpg)
-*Votre espace de stockage décentralisé personnel sur le Système de Fichiers InterPlanétaire*
-
-*   **Ce que vous obtenez :**
-    *   ✅ Une **Identité NOSTR** souveraine.
-    *   ✅ Un **Assistant IA Personnel** (#BRO).
-    *   ✅ Un **Portefeuille Ẑen** pour participer à l'économie (gagnez des Ẑen quand votre contenu est liké !).
-    *   ✅ **uDRIVE**, votre espace de stockage IPFS personnel.
-
-### 2. ☁️ [ZENCARD](https://ipfs.copylaradio.com/ipfs/QmQRreMYDHhAnkg7rwgYYdS5QDhvjjeBdozE16L3h5A8ED/zencard.html) - Votre Cloud Souverain
-**Le Chemin du Co-propriétaire (5 Ẑen/semaine ou achat de parts)**
-
-Prêt à dé-googliser votre vie ? La ZenCard vous donne un cloud privé complet et fait de vous un membre de la coopérative.
-
-*   **Ce que vous obtenez :**
-    *   ✅ **Tout du MULTIPASS.**
-    *   ✅ **128 Go de NextCloud Privé** pour synchroniser vos fichiers, contacts, et calendriers.
-    *   ✅ Un chemin pour devenir **co-propriétaire de l'infrastructure** en achetant des parts coopératives.
-    *   **Niveaux d'Investissement :**
-        *   **[UPlanet SATELLITE (50€/an)](https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-extension-128-go-98386) :** Possédez une part d'un nœud Raspberry Pi 5.
-        *   **[Constellation Sagittarius](https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-module-gpu-1-24-98385) :** Investissez dans un nœud PC Gamer haute performance et partagez ses revenus.
-
-### 3. ⚡ [CAPTAIN](https://ipfs.copylaradio.com/ipfs/QmPuTCooApPu3wFiUFdmxRNyFpf8KxdBv4sQ6i4qrdEb1e/captain.html) - Le Constructeur
-**Le Chemin du Contributeur**
-
-Pour ceux qui veulent être au cœur du réseau. Un Captain fait fonctionner une Station, fournit des services aux autres utilisateurs, et gagne des Ẑen pour sa contribution.
-
-*   **Ce que vous faites :**
-    *   ✅ Transformez votre PC ou Raspberry Pi en nœud générateur de valeur.
-    *   ✅ Rejoignez la **coopérative CopyLaRadio** en tant que fournisseur technique.
-    *   ✅ Gagnez des Ẑen en hébergeant des utilisateurs MULTIPASS et ZenCard.
-    *   ✅ Recevez une formation complète et le soutien de la communauté.
-
-> 📄 Cliquez sur chaque lien pour voir ou imprimer le flyer Zine pour ce chemin !
+[![Stargazers](https://starchart.cc/papiche/Astroport.ONE.svg)](https://starchart.cc/papiche/Astroport.ONE)
 
 ---
 
-## L'Histoire de Deux Mondes : UPlanet ORIGIN vs. UPlanet Ẑen
+## 🎮 Le Parcours Initiatique : Du Curieux au Capitaine
 
-L'écosystème UPlanet a deux "royaumes" interconnectés conçus pour différents objectifs.
+Astroport.ONE n'est pas qu'un logiciel — c'est un **chemin d'initiation gamifié** du consommateur numérique au copropriétaire coopératif.
 
-| Fonctionnalité | **UPlanet ORIGIN (La Passerelle Publique)** | ✅ **UPlanet Ẑen (Le Réseau Coopératif)** |
-| :--- | :--- | :--- |
-| **Objectif** | **Découverte & Intégration.** Un "bac à sable" pour tester la tech. | **Construction & Économie.** L'espace coopératif réel, axé sur la valeur. |
-| **Accès** | Ouvert à tous avec un email ou compte Ğ1. | Réservé aux **membres coopératifs** (ZENCARD & Captains). |
-| **Valeur du Ẑen**| 1 Ẑen = 0.1 Ğ1 (une monnaie de jeu interne). | **1 Ẑen = 1€** (une unité stable pour notre vraie économie). |
-| **Confiance**| Vérification d'identité basique. | Basée sur le **Web of Trust** Ğ1 et le pacte coopératif légal. |
-| **Identité** | MULTIPASS basique. | **uPASSPORT Validé**, votre certificat de co-propriété. |
+```
+Jour 0 : Vous découvrez UPlanet ORIGIN (bac à sable)
+         ↓ Installation en une commande — zéro configuration
+Jours 1–7 : Vous recevez des ZINEs quotidiens (tutoriels numériques)
+         ↓ Apprenez yt-dlp, #BRO IA, Nostr, l'économie Ẑen
+Jour 7 : L'Appel du DRAGON — rejoignez le réseau certifié
+         ↓ Validez votre formation → recevez votre swarm.key
+         ↓ UPlanet ORIGIN  →  UPlanet ẐEN
+```
+
+Le système **vous envoie automatiquement des emails de coaching quotidiens** — chaque ZINE adapté à votre rôle (Explorateur, abonné ZENCard, Capitaine, membre U.SOCIETY).
 
 ---
 
-## 🛠️ Commencer : Devenir un Constructeur
+## 🌍 Deux Mondes : ORIGIN vs ẐEN
 
-Prêt à héberger votre propre Station et rejoindre le réseau coopératif ?
+| | **UPlanet ORIGIN** | **UPlanet ẐEN** |
+|:---|:---|:---|
+| **Vocation** | Académie · Bac à sable · Découverte | Production · Économie Réelle |
+| **Accès** | Ouvert à tous (swarm.key = zéros) | Membres certifiés uniquement (swarm.key privé) |
+| **Valeur du Ẑen** | 1 Ẑ = 0,1 Ğ1 (économie d'entraînement) | **1 Ẑ = 1 €** (unité coopérative réelle) |
+| **Essaim IPFS** | Public, ouvert | Privé, constellation chiffrée |
+| **Identité** | MULTIPASS basique | uPASSPORT validé + DID W3C |
+| **Qui l'opère** | Le collectif G1FabLab | **Vous** — en tant que Capitaine |
 
-**Installation (Linux - Debian/Ubuntu/Mint) :**
+La transition d'ORIGIN vers ẐEN est la **Certification DRAGON** — une formation cybersécurité + cryptographie qui vous donne le `swarm.key` pour rejoindre la constellation privée.
+
+---
+
+## 👥 Les 4 Rôles de la Constellation
+
+### 🧱 Armateur (Hébergeur) — 14 Ẑen/semaine
+Vous fournissez la **machine** (le navire). Le collectif l'opère en mode ORIGIN le temps de votre formation.
+
+- Installez Astroport.ONE sur n'importe quel PC Linux ou Raspberry Pi
+- Votre station apparaît sur la carte de l'essaim UPlanet
+- **Percevez 14 Ẑen/semaine** en tant qu'hébergeur d'infrastructure
+- Souscrivez : [OpenCollective — Parrainage Satellite](https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-extension-128-go-98386)
+
+### 🎓 Apprenti (Explorateur)
+Vous créez votre **MULTIPASS** sur une station ORIGIN et découvrez les outils pendant 7 jours.
+
+- **Jour 1** : Archivez YouTube → votre uDRIVE privé (yt-dlp + Open-With Firefox)
+- **Jour 2** : #BRO Essaim IA — Ollama local, génération d'images, rédaction d'articles
+- **Jour 7** : L'Appel du DRAGON — votre invitation au réseau ẐEN
+
+### ⚓ Capitaine — 28 Ẑen/semaine
+Vous **opérez la station**, maîtrisez les outils et accueillez de nouveaux utilisateurs.
+
+- Passez la **Formation DRAGON** (cybersécurité + cryptographie) → recevez votre `swarm.key`
+- Connectez votre station à la constellation privée ẐEN
+- Hébergez des utilisateurs MULTIPASS (1 Ẑ/semaine chacun) et des abonnés ZENCard (4 Ẑ/semaine)
+- **Percevez 2× PAF** = 28 Ẑen/semaine par défaut
+
+> Contact : support@qo-op.com — Objet : "Candidature Capitaine DRAGON"
+
+### 🐉 U.SOCIETY / DRAGON (Membre Coopératif)
+Vous êtes l'**épine dorsale de la constellation** — un Dragon certifié, participant à la gouvernance, membre permanent.
+
+- **Pas de loyer hebdomadaire** — votre parrainage annuel couvre votre accès
+- `swarm.key` pour l'essaim IPFS privé ẐEN
+- **NextCloud 128 Go** inclus
+- Droits de vote dans les décisions de la coopérative CopyLaRadio SCIC
+- Accès prioritaire à l'IA #BRO (GPU partagé sur toute la constellation)
+- Parrainage : [OpenCollective — Constellation GPU](https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-module-gpu-1-24-98385)
+
+---
+
+## ☁️ La ZENCard : Libérez-vous des GAFAM
+
+La **ZENCard** (5 Ẑen/semaine) est votre abonnement cloud souverain, guidé par un **programme d'onboarding de 7 jours** :
+
+| Jour | Tutoriel |
+|---|---|
+| 0 | NextCloud AIO activé — connexion https://cloud.VOTRE_DOMAINE |
+| 1 | Synchro photo automatique (Android + iPhone → votre capsule privée) |
+| 2 | Migration Contacts & Agenda depuis Google via DAVx⁵ |
+| 4 | F-Droid + Aurora Store — applications sans traçage |
+| 5 | Organic Maps (GPS hors-ligne) + Scrambled Exif (confidentialité photos) |
+| 7 | 🎉 Libération complète → invitation à U.SOCIETY |
+
+**Services inclus :**
+- ✅ **NextCloud 128 Go** (cloud privé, sans GAFAM)
+- ✅ **Identité NOSTR** (réseau social décentralisé sans algorithme)
+- ✅ **uDRIVE IPFS** (stockage personnel distribué)
+- ✅ **Wallet Ẑen** (chaque like reçu = 1 Ẑen)
+- ✅ **IA #BRO** (intelligence artificielle locale en essaim)
+
+Guides : [pad.p2p.legal/Smartphone2NextCloud](https://pad.p2p.legal/Smartphone2NextCloud#) · [Blog CopyLaRadio](https://www.copylaradio.com/blog/blog-1/post/le-pas-a-pas-qui-libere-du-grand-mechant-cloud-36)
+
+---
+
+## 🤖 #BRO : L'Intelligence de l'Essaim
+
+**#BRO** (Brain Robot Online) est l'**IA collective** de la constellation Astroport :
+
+- 🧠 **Local et privé** : tourne sur chaque station via Ollama (aucune donnée envoyée à OpenAI)
+- 🎨 **Génération d'images** pour vos publications Nostr
+- 📝 **Rédaction d'articles** sur votre blog décentralisé
+- 🔍 **Recherche sémantique** dans votre constellation
+- 🌙 **Travail nocturne** : #BRO collecte et analyse pendant que vous dormez
+
+Contrairement à ChatGPT, #BRO est un **essaim d'intelligences** — chaque station contribue, le collectif grandit. Plus il y a de Capitaines, plus l'IA est puissante.
+
+```bash
+# Depuis Nostr, n'importe quel message tagué :
+#BRO résume mes messages de la constellation
+#BRO crée une image de : [description]
+#BRO rapport hebdomadaire
+
+# API locale (Ollama) :
+curl http://127.0.0.1:11434/api/generate -d '{"model":"llama3","prompt":"Bonjour BRO"}'
+```
+
+---
+
+## 🛠️ Installation
+
+### Démarrage rapide (Linux — Debian/Ubuntu/Mint)
 
 ```bash
 bash <(curl -sL https://install.astroport.com)
 ```
-Ce script configurera votre Station Astroport.ONE. En l'installant, vous apparaîtrez automatiquement sur la carte swarm [UPlanet ORIGIN](https://ipfs.copylaradio.com/ipns/copylaradio). Pour rejoindre les réseaux coopératifs `UPlanet Ẑen`, vous devrez activer les fonctionnalités avancées et devenir membre.
 
-### 🖥️ Mode Bureau Docker (VDI)
+### Profils d'installation
 
-Envie de tester Astroport sans modifier votre système ? Lancez un bureau complet dans votre navigateur via Docker :
+```bash
+# Standard — IPFS + Nostr + UPassport + Astroport
+bash install.sh
+
+# + NextCloud AIO (cloud privé 128 Go, prêt pour ZENCard)
+bash install.sh "" "" "" nextcloud
+
+# + Stack IA Essaim (Ollama + Paperclip + OpenClaw + Qdrant)
+bash install.sh "" "" "" bleeding-edge
+
+# + rnostr dev (relai Rust, remplace strfry — expérimental)
+bash install.sh "" "" "" dev
+```
+
+| Profil | Description | Statut |
+|---|---|---|
+| `standard` | IPFS · Nostr strfry · UPassport · GPG · gcli | ✅ Production |
+| `nextcloud` | Standard + NextCloud AIO (128 Go, stockage BTRFS) | ✅ Stable |
+| `bleeding-edge` | Standard + Paperclip + OpenClaw + LiteLLM + Qdrant IA | ⚠️ Expérimental |
+| `dev` | Standard + rnostr Rust (migration des plugins writePolicy bash) | 🔧 En développement |
+
+### Après installation : Ce qui tourne
+
+```
+http://localhost:12345   Carte de la station Astroport
+http://localhost:54321   UPassport (création MULTIPASS, ZENCard)
+http://localhost:8080    Passerelle IPFS
+ws://localhost:7777      Relai NOSTR strfry (NIP-101)
+http://localhost:33101   G1Billet (impression crypto)
+http://localhost:81      Nginx Proxy Manager admin (NPM)
+http://localhost:8443    Setup initial NextCloud AIO (profil nextcloud)
+http://localhost:11434   API Ollama (profil bleeding-edge)
+http://localhost:3100    Agents IA Paperclip (profil bleeding-edge)
+```
+
+---
+
+## 💾 Architecture de Stockage : BTRFS Recommandé
+
+Pour les stations en production, montez un **disque dédié BTRFS** sur `/nextcloud-data` :
+
+```bash
+# Formater et monter
+sudo mkfs.btrfs -L astrodata /dev/sdX
+sudo mount -o compress=zstd,noatime /dev/sdX /nextcloud-data
+
+# /etc/fstab (persistant)
+UUID=$(blkid -s UUID -o value /dev/sdX)
+echo "UUID=$UUID /nextcloud-data btrfs compress=zstd,noatime 0 0" | sudo tee -a /etc/fstab
+
+# Migrer vos données
+~/.zen/Astroport.ONE/stop.sh
+sudo mv ~/.zen /nextcloud-data/zen   && ln -s /nextcloud-data/zen ~/.zen
+sudo mv ~/.ipfs /nextcloud-data/ipfs && ln -s /nextcloud-data/ipfs ~/.ipfs
+~/.zen/Astroport.ONE/start.sh
+```
+
+Pourquoi BTRFS ? **Copy-on-Write** = IPFS ne réécrit jamais les blocs → correspondance parfaite. **Snapshots** pour des sauvegardes instantanées de NextCloud. **Compression zstd** ~25% d'économie d'espace.
+
+```
+/nextcloud-data/
+  zen/          ← lien symbolique ~/.zen (données Astroport, TW, game, players)
+  ipfs/         ← lien symbolique ~/.ipfs (blocs IPFS, 50-500 Go)
+  nextcloud/    ← volumes NextCloud AIO (données utilisateurs 128 Go chacun)
+```
+
+---
+
+## 💰 L'Économie Coopérative : Le Modèle 3×1/3
+
+Chaque Ẑen collecté par la station est distribué **automatiquement et de manière transparente** par le code :
+
+```
+Ẑen collecté       →  1/3 Trésorerie (réserve coopérative)
+(sans décision          1/3 R&D (développement open-source)
+humaine)                1/3 Actifs Communs (terres, forêts, infrastructure)
+```
+
+**Paiements hebdomadaires** (automatisés par `PLAYER.refresh.sh` et `NOSTRCARD.refresh.sh`) :
+
+| Source | Montant | Destinataire |
+|---|---|---|
+| Location MULTIPASS | 1 Ẑen/semaine | Station du Capitaine |
+| Location ZENCard | 4 Ẑen/semaine | Station du Capitaine |
+| PAF Armateur | 14 Ẑen/semaine | Hébergeur (depuis la coopérative) |
+| PAF Capitaine | 28 Ẑen/semaine | Capitaine certifié |
+| Like reçu | 1 Ẑen/like | Créateur de contenu |
+
+Toutes les transactions sont visibles sur la **blockchain Ğ1** (Duniter v1/v2s). Transparence totale, pas de business model caché.
+
+> 📜 Cadre juridique : [LEGAL.md](LEGAL.md) — Constitution de l'Écosystème UPlanet
+
+---
+
+## 🌐 Architecture Technique
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                  Station UPlanet ẐEN                     │
+│                                                          │
+│  IPFS (Kubo)    ←→  Astroport.ONE  ←→  Nostr (strfry)  │
+│     ↕                    ↕                   ↕          │
+│  uDRIVE          TiddlyWiki (TW5)         NIP-101       │
+│  (IPNS)         Wiki/blog personnel     Politique écriture
+│                                         Plugins bash    │
+│  NextCloud AIO  ←→  Nginx Proxy Mgr  ←→  UPassport     │
+│  (128 Go/user)      (SSL automatique)    (FastAPI)      │
+│                                                          │
+│  Stack #BRO IA (bleeding-edge) :                        │
+│  Ollama → LiteLLM → Paperclip → OpenClaw → Qdrant       │
+│                                                          │
+│  Crypto : Ğ1 (Duniter v2s) · NOSTR (Ed25519) · IPFS    │
+│  Identité : MULTIPASS = SSSS 2/3 + DID W3C              │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Scripts clés** (le "battement de cœur" de la station) :
+
+| Script | Rôle | Fréquence |
+|---|---|---|
+| `20h12.process.sh` | Cycle économique quotidien (ZINEs, paiements, IPNS) | Quotidien 20h12 |
+| `NOSTRCARD.refresh.sh` | Mise à jour MULTIPASS, publication IPNS, scrapers cookie | Quotidien |
+| `PLAYER.refresh.sh` | Paiements ZENCard, envoi ZINEs, rafraîchissement TW | Quotidien |
+| `TW.refresh.sh` | Synchro wiki personnel, constellation N2 | Quotidien |
+| `NOSTR.UMAP.refresh.sh` | Posts géo UMap, graphe social N2 | Quotidien |
+| `DRAGON_p2p_ssh.sh` | Tunnel SSH P2P (swarm.key requis) | Au démarrage |
+
+---
+
+## 🔧 Pour les Développeurs : Profil `dev` et Migration rnostr
+
+Le profil `dev` est un **projet de fond** : migrer les plugins de politique d'écriture Nostr du Bash vers Rust.
+
+**État actuel (plugins Bash strfry) :**
+```
+NIP-101/relay.writePolicy.plugin/all_but_blacklist.sh  ← filtre principal
+NIP-101/relay.writePolicy.plugin/filter/1.sh           ← événements texte
+NIP-101/relay.writePolicy.plugin/filter/9735.sh        ← paiements Ẑen (zaps)
+NIP-101/relay.writePolicy.plugin/filter/30023.sh       ← articles longue forme
+...
+```
+Chaque plugin reçoit des événements Nostr via stdin/stdout JSON, classe les utilisateurs (`nobody` / `player` / `uplanet`), gère la liste noire et `amisOfAmis.txt`.
+
+**Cible (rnostr Rust) :**
+- Réécrire comme règles `config.toml` rnostr + plugins WASM
+- Performance ×10-100 vs bash
+- Intégration Qdrant sémantique native
+- Classification LLM (Ollama local)
+
+🐉 **Appel aux développeurs Rust/DRAGON** — contact : support@qo-op.com — Objet : `DRAGON rnostr migration`
+
+**Outil : `code_assistant`** (revue de code IA locale) :
+```bash
+~/.zen/Astroport.ONE/code_assistant NOSTRCARD.refresh.sh --kvbasename refactor1
+```
+
+---
+
+## 🖥️ Mode Bureau Docker (VDI)
+
+Essayez Astroport sans modifier votre système — bureau complet dans votre navigateur :
 
 ```bash
 cd docker/
 docker compose -f docker-compose.desktop.yml up -d
+# Puis : http://localhost:6080 (mot de passe : astroport)
 ```
 
-Puis ouvrez **http://localhost:6080** dans votre navigateur (mot de passe : `astroport`).
-
-Vous obtenez un **bureau XFCE complet** avec Astroport.ONE pré-installé, accessible depuis n'importe quel appareil via noVNC. Fonctionne sur **x86_64 et ARM64** (Raspberry Pi, Mac M-series).
-
-| Variable | Défaut | Description |
-|----------|--------|-------------|
-| `VNC_PASSWORD` | `astroport` | Mot de passe d'accès au bureau |
-| `VNC_RESOLUTION` | `1280x720` | Résolution de l'écran |
-| `ASTRO_DOMAIN` | `copylaradio.com` | Domaine de votre station |
-| `CAPTAIN_EMAIL` | *(auto)* | Email du capitaine pour l'embarquement |
-
-Au premier lancement, `install.sh` s'exécute automatiquement pour installer tous les services (IPFS, relai NOSTR, UPassport, Flutter, gcli...). Cela prend 10-30 minutes. Les démarrages suivants sont instantanés.
-
-### 🐳 Docker Headless (Serveur)
-
-Pour les stations de production sans bureau :
-
-```bash
-cd docker/
-docker compose up -d
-```
-
-Voir [`docker/docker-compose.yml`](docker/docker-compose.yml) pour la stack complète (Astroport + Nginx Proxy Manager + NextCloud).
-
-## 📚 Documentation & Détails Techniques
-
-Pour ceux qui veulent plonger plus profondément dans les rouages de notre système.
-
-*   **[🏗️ ARCHITECTURE.md](ARCHITECTURE.md)** : Un aperçu technique complet du système, des flux de données, et des modèles économiques.
-*   **[📖 DOCUMENTATION.md](DOCUMENTATION.md)** : Notre hub de documentation central pour tous les composants.
-*   **[🌍 ANARCHITECTE.md](ANARCHITECTE.md)** : **L'aperçu philosophique et architectural** de l'écosystème UPlanet - vision, concepts, et le pont entre souveraineté numérique et régénération écologique.
-*   **[📜 LEGAL.md](LEGAL.md)** : **La Constitution de l'Écosystème UPlanet** - notre cadre légal coopératif, principes de gouvernance, et contrat social.
-*   **[💰 ZEN.ECONOMY.readme.md](RUNTIME/ZEN.ECONOMY.readme.md)** : **L'implémentation technique de notre modèle économique coopératif** - paiements automatisés, provisions fiscales, et système d'allocation 3x1/3 (100% conforme au droit coopératif français).
-*   **[🏛️ UPLANET.official.README.md](UPLANET.official.README.md)** : **Système de gestion des virements officiels** - gestion automatisée des virements locataire, sociétaire, et apports capital infrastructure avec vérification des niveaux de station X/Y/Z et conformité WoT DRAGON.
-*   **[Guide GitBook](https://astroport-1.gitbook.io/astroport.one/)** : Documentation conviviale et tutoriels.
-*   **[📋 Le Livre Blanc Astroport.ONE](BOOKS/Le%20Livre%20Blanc%20Astroport.ONE%20_%20De%20la%20Souveraineté%20Numérique%20à%20la%20Régénération%20Écologique.md)** : Le livre blanc complet détaillant notre vision de la souveraineté numérique à la régénération écologique (Français).
-*   **[🌍 UPlanet: Votre Guide pour Entrer dans le Nouveau Monde](BOOKS/UPlanet%20_%20Votre%20Guide%20pour%20Entrer%20dans%20le%20Nouveau%20Monde.md)** : Votre guide complet pour entrer dans l'écosystème UPlanet (Français).
+Bureau **XFCE complet** avec Astroport.ONE pré-installé via noVNC. Fonctionne sur **x86_64 et ARM64** (Raspberry Pi, Mac M-series).
 
 ---
 
-## 🤝 S'Impliquer & Contribuer
+## 📚 Index de Documentation
 
-Astroport.ONE est alimenté par le FOSS et dirigé par la communauté.
-
-*   **Devenir Membre :** La meilleure façon de contribuer est de rejoindre la **[Coopérative CopyLaRadio sur OpenCollective](https://opencollective.com/monnaie-libre)**.
-*   **Étoiler notre Repo :** Montrez votre soutien pour notre travail.
-*   **Découvrir Ğ1 :** Apprenez-en plus sur [la meilleure cryptomonnaie dont vous pourriez rêver](https://monnaie-libre.fr).
-
-[![Stargazers over time](https://starchart.cc/papiche/Astroport.ONE.svg)](https://starchart.cc/papiche/Astroport.ONE)
-
-## 🎮 Essaims GPU : Transformez Votre PC Gamer en Mine d'Or
-
-**Vous avez un PC Gamer ou Mac Studio qui prend la poussière entre les sessions de jeu ?** Transformez-le en nœud générateur de revenus dans la constellation GPU UPlanet !
-
-### 🌌 Le Réseau d'Essaim UPlanet
-
-UPlanet fonctionne comme une **intelligence d'essaim distribuée** où chaque Station contribue sa puissance de calcul à un cerveau IA collectif. Quand vous rejoignez avec votre matériel gaming :
-
-*   🧠 **Inférence Distribuée Massive :** Votre GPU rejoint des milliers d'autres dans un réseau "exo", créant une puissance de traitement IA qui rivalise avec les datacenters des Big Tech
-*   📊 **Raffinement de Données Supérieur :** Notre approche décentralisée traite l'information de manière plus éthique et précise que les géants du Web2
-*   💎 **Croissance de Valeur Exponentielle :** Plus de GPU puissants rejoignent l'essaim, plus chaque nœud devient précieux - créant un **effet de réseau qui enrichit tous les participants**
-
-### 💰 Pourquoi les Gamers S'Enrichissent avec UPlanet
-
-**Votre GPU inactif = Flux de revenus passifs**
-
-*   **🎯 Partage de Ressources Intelligent :** Votre PC gamer travaille pour vous quand vous ne jouez pas
-*   **📈 Rendements Composés :** Alors que l'essaim devient plus fort, votre part de l'intelligence collective devient plus précieuse
-*   **🏆 Avantage du Matériel Premium :** Les GPU gaming haut de gamme (RTX 4090, Mac Studio M2 Ultra) gagnent proportionnellement plus de Ẑen
-*   **🔄 Boucle de Réinvestissement :** Les gains peuvent être réinvestis pour étendre votre capacité de nœud, multipliant vos retours
-
-> **💡 La Vision :** Imaginez des milliers de PC gamers dans le monde, inactifs 70% du temps, devenant soudainement un superordinateur IA décentralisé qui surpasse l'infrastructure de Google - et **vous en possédez une partie**.
-
-**Prêt à monétiser votre GPU ?** [Installez Astroport.ONE](https://install.astroport.com) et rejoignez l'essaim qui redéfinit la propriété de l'IA.
+| Document | Contenu |
+|---|---|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Vue technique complète, flux de données, modèles économiques |
+| [LEGAL.md](LEGAL.md) | Constitution de l'Écosystème UPlanet · Gouvernance coopérative |
+| [ANARCHITECTE.md](ANARCHITECTE.md) | Philosophie · Vision · Souveraineté numérique ↔ régénération écologique |
+| [RUNTIME/ZEN.ECONOMY.readme.md](RUNTIME/ZEN.ECONOMY.readme.md) | Paiements automatisés 3×1/3 · Provisions TVA · Droit coopératif français |
+| [UPLANET.official.README.md](UPLANET.official.README.md) | Gestion des transferts de capital · Locataire/Sociétaire/Infrastructure |
+| [DID_IMPLEMENTATION.md](DID_IMPLEMENTATION.md) | DID W3C · Gestion des clés SSSS 3/2 · Twin keys multi-blockchain |
+| [docs/ORE_SYSTEM.md](docs/ORE_SYSTEM.md) | Obligations environnementales · DIDs géographiques · Smart contracts écologiques |
+| [docs/ORACLE_SYSTEM.md](docs/ORACLE_SYSTEM.md) | Certifications de compétences WoT · Credentials vérifiables · Événements Nostr |
+| [docs/README.NostrTube.md](docs/README.NostrTube.md) | Plateforme vidéo décentralisée · NOSTR + IPFS · Mode cinéma |
+| [IA/README.md](IA/README.md) | Assistant IA #BRO · Mémoire 12 slots · Capacités de génération |
+| [docs/COOKIE_SYSTEM.md](docs/COOKIE_SYSTEM.md) | Gestion universelle des cookies · Scraping web authentifié |
+| [BOOKS/Le Livre Blanc](BOOKS/) | Livre blanc : de la souveraineté numérique à la régénération écologique |
 
 ---
+
+## 🤝 Rejoignez la Constellation
+
+**Comment contribuer :**
+
+1. **🌱 Essayez** — installez le mode ORIGIN en une commande, sans engagement
+2. **☁️ Souscrivez ZENCard** — libérez-vous des GAFAM, soutenez la coopérative
+3. **⚓ Devenez Capitaine** — opérez une station, gagnez des Ẑen, formez de nouveaux membres
+4. **🐉 Rejoignez U.SOCIETY** — parrainage annuel, droits de gouvernance, accès DRAGON
+5. **💻 Codez** — Rust (rnostr), Python (IA), Bash — tous les profils bienvenus
+6. **🌍 Propagez** — étoilez le dépôt, partagez les ZINEs
+
+**Coopérative CopyLaRadio SCIC :**
+- [OpenCollective](https://opencollective.com/monnaie-libre) — transparence financière
+- [support@qo-op.com](mailto:support@qo-op.com) — formation Capitaine, U.SOCIETY
+- [forum.monnaie-libre.fr](https://forum.monnaie-libre.fr) — communauté
+- [copylaradio.com](https://www.copylaradio.com) — site coopératif
+- [Ğ1 — Monnaie Libre](https://monnaie-libre.fr) — la monnaie libre qui propulse UPlanet
+
+> **AGPL-3.0** — Logiciel libre, code auditable, pas de business model caché.
+> Le code est la loi. La coopérative est la structure. Vous êtes le réseau.
+
+---
+
+*Astroport.ONE — G1FabLab / CopyLaRadio SCIC — [github.com/papiche/Astroport.ONE](https://github.com/papiche/Astroport.ONE)*
