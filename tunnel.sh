@@ -125,12 +125,12 @@ draw_ui() {
         
         # La détection d'activité combine PROTOCOLE et PORT
         # On cherche la ligne qui contient EXACTEMENT le protocole ET le port
-        is_p2p_active=$(echo "$active_p2p" | grep -F "${map_protos[$i]}" | grep -F "${map_ports[$i]}")
-        is_lsof=$(lsof -Pi :${map_ports[$i]} -sTCP:LISTEN -t 2>/dev/null)
-        lsofsrc=$(lsof -Pi :${map_ports[$i]} -sTCP:LISTEN | awk 'NR==2 {print $1}')
+        local is_p2p_active=$(echo "$active_p2p" | grep -F "${map_protos[$i]}" | grep -F "${map_ports[$i]}" | head -n 1 | cut -d '/' -f 2)
+        local is_lsof=$(lsof -Pi :${map_ports[$i]} -sTCP:LISTEN -t 2>/dev/null)
+        local lsofsrc=$(lsof -Pi :${map_ports[$i]} -sTCP:LISTEN | awk 'NR==2 {print $1}')
 
-        if [[ -n "$is_p2p_active" ]]; then
-            status="${GREEN}[ ACTIF $lsofsrc ]${NC}"
+        if [[ -n "$is_p2p_active" || -n "$is_lsof" ]]; then
+            status="${GREEN}[ $is_p2p_active ACTIF $lsofsrc ]${NC}"
         else
             status="${RED}[  OFF  ]${NC}"
         fi
