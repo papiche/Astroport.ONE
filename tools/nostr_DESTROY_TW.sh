@@ -538,7 +538,7 @@ prime=${UPLANETNAME_G1}
 
 # Convert amount to numeric for precise comparison using bc
 AMOUNT_NUM=$(echo "${AMOUNT}" | sed 's/[^0-9.]//g')
-if [[ -n "${AMOUNT_NUM}" ]] && command -v bc >/dev/null 2>&1; then
+if [[ -n "${AMOUNT_NUM}" ]]; then
     # Use bc for precise numeric comparison
     if echo "${AMOUNT_NUM} > 0" | bc -l 2>/dev/null | grep -q "1"; then
         echo "💸 Transferring ${AMOUNT} Ğ1 to primal account: ${prime}"
