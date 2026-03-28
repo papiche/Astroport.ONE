@@ -550,14 +550,6 @@ if [[ -n "${AMOUNT_NUM}" ]] && command -v bc >/dev/null 2>&1; then
     else
         echo "ℹ️  No G1 balance to transfer (${AMOUNT} Ğ1 - amount is zero or negative)"
     fi
-elif [[ -n "${AMOUNT_NUM}" ]] && [[ "${AMOUNT_NUM}" != "0" ]] && [[ "${AMOUNT_NUM}" != "0.00" ]]; then
-    # Fallback to string comparison if bc is not available
-    echo "💸 Transferring ${AMOUNT} Ğ1 to primal account: ${prime}"
-    if ${MY_PATH}/../tools/PAYforSURE.sh "${HOME}/.zen/tmp/nostr.dunikey" "${AMOUNT}" "${prime}" "MULTIPASS:${youser}:PRIMAL:CASH-BACK" 2>/dev/null; then
-        echo "✅ G1 balance transferred successfully"
-    else
-        echo "⚠️  Failed to transfer G1 balance (will continue with destruction)"
-    fi
 else
     echo "ℹ️  No G1 balance to transfer (${AMOUNT} Ğ1)"
 fi
