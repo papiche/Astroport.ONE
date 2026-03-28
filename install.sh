@@ -15,7 +15,7 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     echo "                 🚀 ASTROPORT.ONE INSTALLER 🚀                 "
     echo "================================================================="
     echo "Usage :"
-    echo "  bash <(curl -sL https://install.astroport.com/) [EMAIL] [NODE_DOMAIN] [EMAIL_DOMAIN]"
+    echo "  bash install.sh [EMAIL] [NODE_DOMAIN] [EMAIL_DOMAIN] [PROFILE]"
     echo ""
     echo "Options :"
     echo "  --help, -h       Affiche cette aide et quitte."
@@ -27,14 +27,24 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     echo "                   Laissez vide (\"\") pour copylaradio.com."
     echo "  3. EMAIL_DOMAIN  Domaine pour l'email captainerie (ex: mon-asso.org)."
     echo "                   Laissez vide (\"\") pour qo-op.com."
+    echo "  4. PROFILE       Profil d'installation (voir ci-dessous)."
+    echo "                   Laissez vide pour l'installation standard."
+    echo ""
+    echo "Profils disponibles :"
+    echo "  (vide)         Standard : IPFS + Nostr strfry + UPassport + Astroport"
+    echo "  nextcloud      Standard + NextCloud AIO (cloud privé 128Go pour ZEN Card)"
+    echo "  bleeding-edge  Standard + Stack IA (Ollama + Paperclip + OpenClaw + Qdrant)"
+    echo "                 → install-ai-company.docker.sh + code_assistant"
+    echo "  dev            Standard + rnostr (remplace strfry, sémantique Qdrant)"
     echo ""
     echo "Variables d'environnement supportées :"
-    echo "  CAPTAIN_EMAIL, NODE_DOMAIN, CAPTAIN_EMAIL_DOMAIN"
+    echo "  CAPTAIN_EMAIL, NODE_DOMAIN, CAPTAIN_EMAIL_DOMAIN, INSTALL_PROFILE"
     echo ""
     echo "Exemples d'installation silencieuse :"
-    echo "  bash install.sh \"\" \"ma-base.org\"           -> Nœud: ma-base.org | Email auto: ...@qo-op.com"
-    echo "  bash install.sh \"\" \"asso.org\" \"asso.org\" -> Nœud: asso.org | Email auto: ...@asso.org"
-    echo "  bash install.sh \"contact@me.com\"          -> Nœud: auto     | Email perso: contact@me.com"
+    echo "  bash install.sh \"\" \"ma-base.org\"                    -> Standard sur ma-base.org"
+    echo "  bash install.sh \"\" \"\" \"\" nextcloud               -> Standard + NextCloud"
+    echo "  bash install.sh \"\" \"\" \"\" bleeding-edge           -> Standard + Stack IA"
+    echo "  bash install.sh \"contact@me.com\" \"\" \"\" dev       -> Dev (rnostr)"
     echo "================================================================="
     exit 0
 fi
@@ -57,6 +67,7 @@ fi
 export CUSTOM_CAPTAIN_EMAIL="${1:-${CAPTAIN_EMAIL:-}}"
 export CUSTOM_NODE_DOMAIN="${2:-${NODE_DOMAIN:-}}"
 export CUSTOM_EMAIL_DOMAIN="${3:-${CAPTAIN_EMAIL_DOMAIN:-}}"
+export INSTALL_PROFILE="${4:-${INSTALL_PROFILE:-}}"
 
 if [[ -z "$CUSTOM_CAPTAIN_EMAIL" && -z "$CUSTOM_NODE_DOMAIN" ]]; then
     echo "========================================================="
@@ -65,6 +76,13 @@ if [[ -z "$CUSTOM_CAPTAIN_EMAIL" && -z "$CUSTOM_NODE_DOMAIN" ]]; then
     echo "Appuyez sur Entrée pour utiliser les valeurs automatiques."
     read -p "Email Capitaine [auto: support+node...@qo-op.com] : " CUSTOM_CAPTAIN_EMAIL
     read -p "Domaine Noeud   [auto: copylaradio.com]           : " CUSTOM_NODE_DOMAIN
+    echo ""
+    echo "Profil d'installation :"
+    echo "  (vide)         Standard (recommandé)"
+    echo "  nextcloud      + NextCloud AIO cloud privé 128Go"
+    echo "  bleeding-edge  + Stack IA Swarm (Ollama, Paperclip, OpenClaw)"
+    echo "  dev            + rnostr (remplace strfry — expérimental)"
+    read -p "Profil         [standard]                         : " INSTALL_PROFILE
 fi
 
 [[ -n "$CUSTOM_CAPTAIN_EMAIL" ]] && echo ">>> Email Capitaine : $CUSTOM_CAPTAIN_EMAIL" || echo ">>> Email Capitaine : Automatique"
@@ -204,6 +222,27 @@ sudo npm install -g tiddlywiki@5.2.3
     && echo "INSTALL tiddlywiki FAILED." \
     && echo "INSTALL tiddlywiki FAILED." >> ~/.zen/install.errors.log
 
+## ── Vérification Docker, Node.js, NPM, TiddlyWiki ───────────────────────────
+echo "#############################################"
+echo "######### VERIFICATION DOCKER & NODE   ######"
+echo "#############################################"
+DOCKER_OK=false; NPM_OK=false; TW_OK=false; DOCKER_COMPOSE_OK=false; DENO_OK=false
+docker --version 2>/dev/null && DOCKER_OK=true || echo "⚠️  Docker non disponible"
+docker compose version 2>/dev/null && DOCKER_COMPOSE_OK=true || echo "⚠️  Docker Compose non disponible"
+node --version 2>/dev/null && NPM_OK=true || echo "⚠️  Node.js non disponible"
+npm --version 2>/dev/null || echo "⚠️  NPM non disponible"
+tiddlywiki --version 2>/dev/null && TW_OK=true || echo "⚠️  TiddlyWiki non accessible (PATH?)"
+## Deno : moteur JS alternatif pour yt-dlp EJS quand Node < v20
+## Permet aussi d'exécuter des scripts navigateur dans un conteneur Docker (youtube-dl via EJS)
+deno --version 2>/dev/null | head -1 && DENO_OK=true || echo "⚠️  Deno non disponible (yt-dlp EJS peut être affecté)"
+echo ""
+echo "  Docker    : $($DOCKER_OK && echo '✅' || echo '❌')  | Compose : $($DOCKER_COMPOSE_OK && echo '✅' || echo '❌')"
+echo "  Node.js   : $($NPM_OK && echo '✅' || echo '❌')  | TW      : $($TW_OK && echo '✅' || echo '❌')  | Deno : $($DENO_OK && echo '✅' || echo '❌')"
+echo ""
+echo "  DOCKER STATUS:"
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null | head -10 || echo "  (aucun conteneur)"
+echo "#############################################"
+
 ## Correct PDF restrictions for imagemagick
 echo "######### IMAGEMAGICK PDF ############"
 if [[ $(cat /etc/ImageMagick-6/policy.xml | grep PDF) ]]; then
@@ -298,6 +337,147 @@ echo "=== SETUP ASTROPORT (runtime config)"
 echo "## ACTIVER LE PARE-FEU UFW ################################"
 ~/.zen/Astroport.ONE/tools/firewall.sh ON
 
+###############################################################
+echo "## INSTALLATIONS CONDITIONNELLES SELON PROFIL ###########"
+###############################################################
+NEXTCLOUD_ACTIVE=false
+AISTACK_ACTIVE=false
+RNOSTR_ACTIVE=false
+
+case "${INSTALL_PROFILE}" in
+    nextcloud)
+        echo "╔══════════════════════════════════════════════════════════════╗"
+        echo "║  ☁️  PROFIL nextcloud — NextCloud AIO (cloud privé 128Go)    ║"
+        echo "╚══════════════════════════════════════════════════════════════╝"
+        ## Étape 1 : démarrer NextCloud via docker compose --profile full
+        cd ~/.zen/Astroport.ONE
+        echo "⏳ Démarrage du conteneur NextCloud AIO (peut prendre 2-3 minutes)..."
+        docker compose --profile full up -d nextcloud 2>&1
+        _nc_exit=$?
+        if [[ $_nc_exit -eq 0 ]]; then
+            NEXTCLOUD_ACTIVE=true
+            echo "✅ Conteneur NextCloud démarré"
+        else
+            echo "⚠️  Erreur démarrage NextCloud (code: $_nc_exit)"
+            echo "   → Vérifiez : docker compose --profile full logs nextcloud"
+        fi
+        cd - >/dev/null
+        echo ""
+        echo "╔══════════════════════════════════════════════════════════════╗"
+        echo "║  📋 CONFIGURATION NEXTCLOUD AIO — 3 étapes                  ║"
+        echo "╠══════════════════════════════════════════════════════════════╣"
+        echo "║                                                               ║"
+        echo "║  1. ADMIN INITIAL (première fois uniquement) :               ║"
+        echo "║     https://127.0.0.1:8443                                   ║"
+        echo "║     → Acceptez le certificat auto-signé                      ║"
+        echo "║     → Entrez votre domaine : cloud.VOTRE_DOMAINE             ║"
+        echo "║     → Activez les apps : Calendar, Contacts, Talk            ║"
+        echo "║                                                               ║"
+        echo "║  2. PROXY NPM — créer l'entrée cloud.DOMAINE :              ║"
+        echo "║     http://127.0.0.1:81  (NPM admin)                        ║"
+        echo "║     → Proxy Host : cloud.VOTRE_DOMAINE → 127.0.0.1:8001    ║"
+        echo "║     → SSL : Let's Encrypt (Force SSL + HSTS)                ║"
+        echo "║                                                               ║"
+        echo "║  3. CRÉER COMPTES ZEN CARD (1 compte = 1 abonné 128Go) :   ║"
+        echo "║     docker exec -it \$(docker ps | grep nextcloud | awk '{print \$1}') \\"
+        echo "║       su -s /bin/bash www-data -c                           ║"
+        echo "║       'php occ user:add --display-name USER EMAIL'          ║"
+        echo "║     Ou via l'interface web → Utilisateurs → Nouveau          ║"
+        echo "║                                                               ║"
+        echo "║  📖 Guide : pad.p2p.legal/Smartphone2NextCloud               ║"
+        echo "╚══════════════════════════════════════════════════════════════╝"
+        ;;
+    bleeding-edge)
+        echo "╔══════════════════════════════════════════════════════════════╗"
+        echo "║  🧠 PROFIL bleeding-edge — Stack IA Swarm (EXPÉRIMENTAL)     ║"
+        echo "╚══════════════════════════════════════════════════════════════╝"
+        ~/.zen/Astroport.ONE/install/install-ai-company.docker.sh \
+            && AISTACK_ACTIVE=true \
+            && echo "✅ AI Company Stack démarrée" \
+            || echo "⚠️  AI Stack — erreur (voir ~/.zen/ai-company/)"
+        echo ""
+        echo "╔══════════════════════════════════════════════════════════════╗"
+        echo "║  ⚠️  AVERTISSEMENT — Stack en cours d'intégration            ║"
+        echo "╠══════════════════════════════════════════════════════════════╣"
+        echo "║                                                               ║"
+        echo "║  Les services IA démarrés (Paperclip, OpenClaw, LiteLLM)   ║"
+        echo "║  ne sont PAS encore intégrés nativement à Astroport.ONE.   ║"
+        echo "║  Ils fonctionnent en parallèle mais nécessitent :           ║"
+        echo "║                                                               ║"
+        echo "║  • Configuration manuelle Paperclip (bootstrap CEO)          ║"
+        echo "║  • Connexion Ollama ↔ LiteLLM à valider                    ║"
+        echo "║  • Intégration #BRO (NOSTR → OpenClaw) à développer         ║"
+        echo "║                                                               ║"
+        echo "║  🐉 APPEL AUX DRAGONS U.SOCIETY :                           ║"
+        echo "║  Cette stack est votre terrain d'expérimentation.            ║"
+        echo "║  Participez à son intégration dans la constellation :        ║"
+        echo "║  → support@qo-op.com — Objet : 'DRAGON bleeding-edge'       ║"
+        echo "║  → Salon Nostr U.SOCIETY : #BRO develop                     ║"
+        echo "║                                                               ║"
+        echo "║  Services (si démarrés) :                                    ║"
+        echo "║    Paperclip : http://localhost:3100                         ║"
+        echo "║    OpenClaw  : http://localhost:8000                         ║"
+        echo "║    LiteLLM   : http://localhost:8001                         ║"
+        echo "║    Qdrant    : http://localhost:6333/dashboard               ║"
+        echo "║    Ollama    : http://localhost:11434                        ║"
+        echo "║    code_assistant : ~/.zen/Astroport.ONE/code_assistant      ║"
+        echo "║                                                               ║"
+        echo "║  DOC : ~/.zen/ai-company/install-ai-company.md              ║"
+        echo "╚══════════════════════════════════════════════════════════════╝"
+        ;;
+    dev)
+        echo "╔══════════════════════════════════════════════════════════════╗"
+        echo "║  ⚙️  PROFIL dev — Migration strfry → rnostr (Rust)           ║"
+        echo "╚══════════════════════════════════════════════════════════════╝"
+        ## rnostr = relai Nostr en Rust, plus performant, support Qdrant sémantique
+        if [[ -f ~/.zen/Astroport.ONE/install/install_rnostr_semantic.sh ]]; then
+            ~/.zen/Astroport.ONE/install/install_rnostr_semantic.sh \
+                && RNOSTR_ACTIVE=true \
+                && echo "✅ rnostr installé (remplace strfry)" \
+                || echo "⚠️  rnostr — erreur d'installation"
+        else
+            echo "⚠️  install_rnostr_semantic.sh introuvable — rnostr non installé"
+            echo "   → compilez depuis : https://github.com/rnostr/rnostr"
+        fi
+        echo ""
+        echo "╔══════════════════════════════════════════════════════════════╗"
+        echo "║  📋 CHANTIER DEV — Migration des plugins writePolicy         ║"
+        echo "╠══════════════════════════════════════════════════════════════╣"
+        echo "║                                                               ║"
+        echo "║  SITUATION ACTUELLE (strfry bash) :                         ║"
+        echo "║  Les plugins de filtrage Nostr sont des scripts bash :       ║"
+        echo "║  • all_but_blacklist.sh  (filtre principal)                 ║"
+        echo "║  • filter/1.sh  7.sh  9735.sh  30023.sh ...                 ║"
+        echo "║  Ils reçoivent les événements Nostr via stdin/stdout JSON,   ║"
+        echo "║  filtrent par kind, classifient (nobody/player/uplanet),    ║"
+        echo "║  gèrent la blacklist et la liste amisOfAmis.txt.            ║"
+        echo "║                                                               ║"
+        echo "║  OBJECTIF (rnostr Rust) :                                   ║"
+        echo "║  Réécrire ces filtres comme des règles rnostr en Rust ou    ║"
+        echo "║  comme plugins WASM compatibles rnostr. Avantages :         ║"
+        echo "║  • Performance × 10-100 vs bash                             ║"
+        echo "║  • Intégration Qdrant sémantique native                     ║"
+        echo "║  • Classification IA des messages (LLM local Ollama)        ║"
+        echo "║                                                               ║"
+        echo "║  FICHIERS À MIGRER :                                        ║"
+        echo "║  NIP-101/relay.writePolicy.plugin/all_but_blacklist.sh      ║"
+        echo "║  NIP-101/relay.writePolicy.plugin/filter/*.sh               ║"
+        echo "║  → Logique cible : rnostr/config.toml rules + Rust plugin   ║"
+        echo "║                                                               ║"
+        echo "║  🐉 APPEL AUX DRAGONS dev/Rust :                            ║"
+        echo "║  → support@qo-op.com — Objet : 'DRAGON rnostr migration'    ║"
+        echo "║  → Repo rnostr : https://github.com/rnostr/rnostr           ║"
+        echo "║  → Repo NIP-101 : https://github.com/papiche/NIP-101        ║"
+        echo "╚══════════════════════════════════════════════════════════════╝"
+        ;;
+    ""|standard)
+        echo "   Profil standard — pas d'installation supplémentaire."
+        ;;
+    *)
+        echo "⚠️  Profil inconnu '${INSTALL_PROFILE}' — installation standard uniquement."
+        ;;
+esac
+
 end=`date +%s`
 DURATION=$((end - start))
 MINUTES=$((DURATION / 60))
@@ -331,12 +511,43 @@ echo "  Station:  ${HOSTNAME_DISPLAY}"
 echo "  Reseau:   ${NETWORK_DISPLAY}"
 echo "  Capitaine: $(cat ~/.zen/game/players/.current/.player 2>/dev/null || echo 'embarquement en cours...')"
 echo
-echo "  SERVICES:"
+echo "  PROFIL INSTALLÉ: ${INSTALL_PROFILE:-standard}"
+echo
+echo "  INFRASTRUCTURE (Docker) :"
+docker ps --format "    {{.Names}}: {{.Status}}" 2>/dev/null | head -12 || echo "    (aucun conteneur actif)"
+echo
+echo "  NODE.JS / NPM / DENO :"
+echo "    Node.js    $(node --version 2>/dev/null || echo '⚠️ non disponible')"
+echo "    NPM        v$(npm --version 2>/dev/null || echo '⚠️ non disponible')"
+echo "    TiddlyWiki $(tiddlywiki --version 2>/dev/null || echo '⚠️ — relancez: sudo npm install -g tiddlywiki@5.2.3')"
+echo "    Deno       $(deno --version 2>/dev/null | head -1 || echo '⚠️ non disponible (yt-dlp EJS)')"
+echo "    (Deno sert de runtime JS pour yt-dlp EJS : extraction YouTube via navigateur)"
+echo
+echo "  SERVICES ASTROPORT :"
 echo "    Astroport  http://localhost:12345"
 echo "    UPassport  http://localhost:54321"
 echo "    IPFS       http://localhost:8080"
 echo "    NOSTR      ws://localhost:7777"
 echo "    G1Billet   http://localhost:33101"
+if [[ "${NEXTCLOUD_ACTIVE}" == "true" ]]; then
+echo "    NextCloud  http://127.0.0.1:8443  (admin initial)"
+echo "               https://cloud.${DOMAIN_DISPLAY}  (via NPM)"
+fi
+if [[ "${AISTACK_ACTIVE}" == "true" ]]; then
+echo "    Paperclip  http://localhost:3100"
+echo "    OpenClaw   http://localhost:8000"
+echo "    LiteLLM    http://localhost:8001"
+echo "    Qdrant     http://localhost:6333"
+echo "    Ollama     http://localhost:11434"
+fi
+if [[ "${RNOSTR_ACTIVE}" == "true" ]]; then
+echo "    rnostr     ws://localhost:7777  (remplace strfry)"
+fi
+echo
+echo "  VÉRIFICATION DOCKER :"
+echo "    docker ps                              # conteneurs actifs"
+echo "    docker compose -f ~/.zen/Astroport.ONE/docker-compose.yml ps  # stack principale"
+echo "    docker compose logs -f                 # logs en direct"
 echo
 echo "  ESSAIM (ipfs.domain = round-robin DNS vers toutes les stations):"
 echo "    IPFS       ${IPFS_DISPLAY}"
@@ -344,11 +555,15 @@ echo "  STATION D'ATTACHE (celle ou votre MULTIPASS est enregistre):"
 echo "    Relay      ${RELAY_DISPLAY}"
 echo "    UPassport  ${USPOT_DISPLAY}"
 echo
-echo "  COMMANDES:"
+echo "  COMMANDES :"
 echo "    dashboard    ~/.zen/Astroport.ONE/tools/dashboard.sh"
 echo "    media        ~/.zen/Astroport.ONE/ajouter_media.sh"
 echo "    test         ~/.zen/Astroport.ONE/test.sh"
 echo "    start/stop   ~/.zen/Astroport.ONE/start.sh | stop.sh"
+if [[ "${AISTACK_ACTIVE}" == "true" ]]; then
+echo "    code IA      ~/.zen/Astroport.ONE/code_assistant <fichier>"
+echo "    ai stack     docker compose -p ai-company-swarm ps"
+fi
 echo
 echo "  ERREURS: ~/.zen/install.errors.log"
 echo "#############################################"
