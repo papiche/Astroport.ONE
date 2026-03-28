@@ -127,9 +127,10 @@ draw_ui() {
         # On cherche la ligne qui contient EXACTEMENT le protocole ET le port
         is_p2p_active=$(echo "$active_p2p" | grep -F "${map_protos[$i]}" | grep -F "${map_ports[$i]}")
         is_lsof=$(lsof -Pi :${map_ports[$i]} -sTCP:LISTEN -t 2>/dev/null)
+        lsofsrc=$(lsof -Pi :${map_ports[$i]} -sTCP:LISTEN | awk 'NR==2 {print $1}')
 
-        if [[ -n "$is_p2p_active" ]] || [[ -n "$is_lsof" ]]; then
-            status="${GREEN}[ ACTIF ]${NC}"
+        if [[ -n "$is_p2p_active" ]]; then
+            status="${GREEN}[ ACTIF $lsofsrc ]${NC}"
         else
             status="${RED}[  OFF  ]${NC}"
         fi
