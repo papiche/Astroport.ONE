@@ -587,10 +587,11 @@ for PLAYER in "${NOSTR[@]}"; do
                         [[ -z $NCARD ]] && NCARD=1
                         Npaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
 
-                        # TVA à 0 par défaut (pas de provision fiscale séparée)
+                        # TODO unpatch ? : TVA à 0 par défaut
                         TVA_RATE=0
                         TVA_AMOUNT="0.00"
-                        
+                        TVA_AMOUNT_G1=$(echo "scale=2; $TVA_AMOUNT / 10" | bc -l)
+
                         # Calculate total payment needed (= HT uniquement)
                         TOTAL_PAYMENT="$Npaf"
                         # Minimum balance required: 1 Ğ1 (0 ẐEN threshold) + payment amount
@@ -656,6 +657,7 @@ for PLAYER in "${NOSTR[@]}"; do
 
                                 ####################################################################
                                 ## PARRAIN 1% — versement si ZEN >= 100 et parrain enregistré
+                                ZEN=${ZEN:-0}
                                 REFERRER_FILE="${HOME}/.zen/game/nostr/${PLAYER}/REFERRER"
                                 REFERRER_PAID_MARKER="${HOME}/.zen/game/nostr/${PLAYER}/.referrer_paid_${TODATE}"
                                 if [[ -s "$REFERRER_FILE" && ! -f "$REFERRER_PAID_MARKER" && $(echo "$ZEN >= 100" | bc -l) -eq 1 ]]; then

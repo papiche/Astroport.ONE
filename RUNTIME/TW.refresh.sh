@@ -465,66 +465,6 @@ tiddlywiki --load ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html \
     || echo "ERROR - CANNOT CREATE TW NEWINDEX - ERROR"
 ###########################
 
-########################
-## SEND TODAY ZINE
-#### Captain gets captain-specific ZINE, others get regular day ZINE
-IS_CAPTAIN=false
-[[ "${PLAYER}" == "${CAPTAINEMAIL}" ]] && IS_CAPTAIN=true
-[[ "${CURRENT}" == "${PLAYER}" && -z "${CAPTAINEMAIL}" ]] && IS_CAPTAIN=true
-
-## Detect ORIGIN mode
-ORIGIN_KEY="0000000000000000000000000000000000000000000000000000000000000000"
-IS_ORIGIN=false
-[[ "${UPLANETNAME}" == "${ORIGIN_KEY}" || -z "${UPLANETNAME}" ]] && IS_ORIGIN=true
-
-if [[ "$IS_CAPTAIN" == "true" ]]; then
-    ## ORIGIN captain: try origin-specific variant first
-    if [[ "$IS_ORIGIN" == "true" ]]; then
-        TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/captain.origin.${lang}.html"
-        [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/captain.origin.html"
-    fi
-    ## Captain ZINE: try captain-specific, then day_/captain.html, then regular
-    [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/captain.${lang}.html"
-    [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/captain.html"
-    [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day_/captain.html"
-    echo "CAPTAIN ZINE ($([[ $IS_ORIGIN == true ]] && echo 'ORIGIN' || echo 'ZEN')): ${TODAYZINE}"
-else
-    TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.${lang}.html"
-    [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.html"
-    ## Fallback for day5+ (no specific template): use day_/multipass.html
-    [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day_/multipass.html"
-fi
-## Only send ZINEs for day 1-7 (avoid infinite daily fallback spam)
-if [[ -s ${TODAYZINE} && ${days} -gt 0 && ${days} -le 7 ]]; then
-    echo "SENDING TODAYZINE DAY ${days} + mailjet TW import "
-
-    ## Derive variables available in TW.refresh context
-    [[ -z "$UPLANETG1PUB" ]] && UPLANETG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}" 2>/dev/null)
-    [[ -z "$PAF" ]] && PAF=$(grep "^PAF=" ~/.zen/.env 2>/dev/null | cut -d'=' -f2 || echo "14")
-
-    cat ${TODAYZINE} \
-        | sed -e "s~_MOATS_~${MOATS}~g" \
-            -e "s~_PLAYER_~${PLAYER}~g" \
-            -e "s~_G1PUB_~${G1PUB}~g" \
-            -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
-            -e "s~_UPLANET8_~UPlanet:${UPLANETG1PUB:0:8}~g" \
-            -e "s~_PAF_~${PAF}~g" \
-            -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
-            -e "s~_EARTHCID_~/ipns/copylaradio.com~g" \
-            -e "s~_SECTOR_~${SECTOR}~g" \
-            -e "s~_SLAT_~${SLAT}~g" \
-            -e "s~_SLON_~${SLON}~g" \
-            -e "s~qo-op.com~${myHOST}~g" \
-            -e "s~_SALT_~[PROTECTED]~g" \
-            -e "s~_PEPPER_~[PROTECTED]~g" \
-            > ~/.zen/tmp/${MOATS}/UPlanetZine.html
-
-    ${MY_PATH}/../tools/mailjet.sh --expire 48h "${PLAYER}" $HOME/.zen/tmp/${MOATS}/UPlanetZine.html \
-                                    "ZINE #${days}" "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html"
-
-else
-    echo "NO ZINE FOR DAY ${days}"
-fi
 ####################
 ## TW NEWINDEX .... #####
 ##############################################################

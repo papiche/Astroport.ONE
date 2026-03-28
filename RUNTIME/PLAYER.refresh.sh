@@ -68,10 +68,10 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo ">>>>> PLAYER : ${PLAYER} >>>>>>>>>>>>> REFRESHING TW ?! "
     echo "################################################ $(date)"
     PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
-    G1PUBNOSTR=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR 2>/dev/null)
     ASTRONS=$(cat ~/.zen/game/players/${PLAYER}/.playerns 2>/dev/null)
     # Get PLAYER MULTIPASS wallet amount
-    $MY_PATH/../tools/G1check.sh ${G1PUBNOSTR} > ~/.zen/tmp/${MOATS}/${PLAYER}.G1check
+    G1PUBNOSTR=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR 2>/dev/null)
+    $MY_PATH/../tools/G1check.sh ${G1PUBNOSTR} > ~/.zen/tmp/${MOATS}/${PLAYER}.G1check 2>&1
     cat ~/.zen/tmp/${MOATS}/${PLAYER}.G1check ###DEBUG MODE
     COINS=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.G1check | tail -n 1)
     ZEN=$(echo "scale=1; ($COINS - 1) * 10" | bc)
@@ -179,14 +179,14 @@ for PLAYER in ${PLAYERONE[@]}; do
                 if [[ $DAYS_LEFT -le 30 && $DAYS_LEFT -gt 7 && "$LAST_REMINDER" != "30" ]]; then
                     echo "📬 Sending 30-day renewal reminder to ${PLAYER}"
                     _tpl=$(_prepare_email_template "${MY_PATH}/../templates/NOSTR/usociety_renewal.html")
-                    ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$_tpl" \
+                    ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" $_tpl \
                         "Votre parrainage expire dans ${DAYS_LEFT} jours"
                     rm -f "$_tpl"
                     echo "30" > "$REMINDER_FILE"
                 elif [[ $DAYS_LEFT -le 7 && $DAYS_LEFT -gt 0 && "$LAST_REMINDER" != "7" ]]; then
                     echo "📬 Sending 7-day URGENT renewal reminder to ${PLAYER}"
                     _tpl=$(_prepare_email_template "${MY_PATH}/../templates/NOSTR/usociety_renewal_urgent.html")
-                    ${MY_PATH}/../tools/mailjet.sh --expire 3d "${PLAYER}" "$_tpl" \
+                    ${MY_PATH}/../tools/mailjet.sh --expire 3d "${PLAYER}" $_tpl \
                         "URGENT : Parrainage expire dans ${DAYS_LEFT} jours !"
                     rm -f "$_tpl"
                     echo "7" > "$REMINDER_FILE"
@@ -200,7 +200,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 if [[ $NOTICE_AGE -gt 604800 ]]; then  # 7 days in seconds
                     echo "📬 Sending expiration notice to ${PLAYER} (balance: $ZEN ẐEN)"
                     _tpl=$(_prepare_email_template "${MY_PATH}/../templates/NOSTR/usociety_expired.html")
-                    ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$_tpl" \
+                    ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" $_tpl \
                         "Parrainage expire ! Solde : ${ZEN} ẐEN"
                     rm -f "$_tpl"
                     echo "$CURRENT_SECONDS" > "$EXPIRED_NOTICE"
@@ -243,21 +243,17 @@ for PLAYER in ${PLAYERONE[@]}; do
                 # Calculate TVA provision (20% of ZENCard payment)
                 [[ -z $TVA_RATE ]] && TVA_RATE=0
                 TVA_AMOUNT=$(echo "scale=4; $Gpaf * $TVA_RATE / 100" | bc -l)
-                TVA_AMOUNT=$(makecoord $TVA_AMOUNT)
+                TVA_AMOUNT=$(makecoord $TVA_AMOUNT)                
                 
-                # Convert Ğ1 to ẐEN for display (1 Ğ1 = 10 ẐEN)
-                Gpaf_ZEN=$(echo "scale=1; $Gpaf * 10" | bc -l)
-                TVA_ZEN=$(echo "scale=1; $TVA_AMOUNT * 10" | bc -l)
-
-                echo "[7 DAYS CYCLE] ZENCard payment - Direct TVA split: $Gpaf_ZEN ẐEN ($Gpaf Ğ1) to CAPTAIN + $TVA_ZEN ẐEN ($TVA_AMOUNT Ğ1) to IMPOTS"
+                echo "[7 DAYS CYCLE] ZENCard payment - Direct TVA split: $Gpaf ẐEN to CAPTAIN + $TVA_AMOUNT ẐEN to IMPOTS"
 
                 # Ensure IMPOTS wallet exists before any payment
-                    if [[ ! -s ~/.zen/game/uplanet.IMPOT.dunikey ]]; then
-                        ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.IMPOT.dunikey "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT"
-                        chmod 600 ~/.zen/game/uplanet.IMPOT.dunikey
-                    fi
+                if [[ ! -s ~/.zen/game/uplanet.IMPOT.dunikey ]]; then
+                    ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.IMPOT.dunikey "${UPLANETNAME}.IMPOT" "${UPLANETNAME}.IMPOT"
+                    chmod 600 ~/.zen/game/uplanet.IMPOT.dunikey
+                fi
 
-                    # Get IMPOTS wallet G1PUB
+                # Get IMPOTS wallet G1PUB
                 IMPOTS_G1PUB=$(cat $HOME/.zen/game/uplanet.IMPOT.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
 
                 # Ensure CAPTAIN_DEDICATED wallet exists (business wallet for rental collection)
@@ -277,9 +273,9 @@ for PLAYER in ${PLAYERONE[@]}; do
                     tva_result=$(${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/nostr/${PLAYER}/.secret.dunikey" "$TVA_AMOUNT" "${IMPOTS_G1PUB}" "UPLANET:${UPLANETG1PUB:0:8}:${YOUSER}:TVA" 2>/dev/null)
                     tva_success=$?
                     if [[ $tva_success -eq 0 ]]; then
-                        echo "✅ TVA provision recorded directly from ZENCard for ${PLAYER} on $TODATE ($TVA_ZEN ẐEN = $TVA_AMOUNT Ğ1)"
+                        echo "✅ TVA provision recorded directly from ZENCard for ${PLAYER} on $TODATE ($TVA_AMOUNT ẐEN)"
                     else
-                        echo "❌ TVA provision failed for ${PLAYER} on $TODATE ($TVA_ZEN ẐEN = $TVA_AMOUNT Ğ1)"
+                        echo "❌ TVA provision failed for ${PLAYER} on $TODATE ($TVA_AMOUNT ẐEN)"
                     fi
                     else
                         echo "❌ IMPOTS wallet not found for TVA provision"
@@ -288,7 +284,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 # Check if both payments succeeded
                 if [[ $payment_success -eq 0 && ($tva_success -eq 0 || $(echo "$TVA_AMOUNT == 0" | bc -l) -eq 1) ]]; then
                     TOTAL_ZEN=$(echo "scale=1; ($Gpaf + $TVA_AMOUNT) * 10" | bc -l)
-                    echo "✅ Weekly ZENCard payment recorded for ${PLAYER} on $TODATE ($Gpaf_ZEN ẐEN HT + $TVA_ZEN ẐEN TVA = $TOTAL_ZEN ẐEN TTC) - Fiscally compliant split"
+                    echo "✅ Weekly ZENCard payment recorded for ${PLAYER} on $TODATE ($Gpaf_ZEN ẐEN HT + $TVA_AMOUNT ẐEN TVA = $TOTAL_ZEN ẐEN TTC) - Fiscally compliant split"
                 else
                     # Payment failed - send error email
                     if [[ $payment_success -ne 0 ]]; then
@@ -334,7 +330,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 elif [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]]; then
                     echo "[7 DAYS CYCLE] ZENCARD ($COINS G1 / $ZEN ZEN) UNPLUG !!"
                     _tpl=$(_prepare_email_template "${MY_PATH}/../templates/NOSTR/zencard_insufficient.html")
-                    $MY_PATH/../tools/mailjet.sh --expire 7d "${PLAYER}" "$_tpl" \
+                    $MY_PATH/../tools/mailjet.sh --expire 7d "${PLAYER}" $_tpl \
                         "Solde insuffisant (${ZEN} ZEN) - ZEN Card desactivee"
                     rm -f "$_tpl"
                     ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL"
@@ -344,15 +340,77 @@ for PLAYER in ${PLAYERONE[@]}; do
     fi
 
 
-    #~ ## ZENCARD ARE ACTIVATED WITH 1 G1
-    echo "## >>>>>>>>>>>>>>>> DELEGATING TW REFRESH TO TW.refresh.sh"
-    
-    # Delegate TiddlyWiki management to TW.refresh.sh
-    if ! ${MY_PATH}/TW.refresh.sh "${PLAYER}" "${MOATS}" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html; then
-        echo "❌ TW.refresh.sh failed for ${PLAYER} - continuing with next player"
-        continue
+
+    ########################
+    ## SEND TODAY ZINE
+    #### Captain gets captain-specific ZINE, others get regular day ZINE
+    IS_CAPTAIN=false
+    [[ "${PLAYER}" == "${CAPTAINEMAIL}" ]] && IS_CAPTAIN=true
+    [[ "${CURRENT}" == "${PLAYER}" && -z "${CAPTAINEMAIL}" ]] && IS_CAPTAIN=true
+
+    ## Detect ORIGIN mode
+    ORIGIN_KEY="0000000000000000000000000000000000000000000000000000000000000000"
+    IS_ORIGIN=false
+    [[ "${UPLANETNAME}" == "${ORIGIN_KEY}" || -z "${UPLANETNAME}" ]] && IS_ORIGIN=true
+
+    if [[ "$IS_CAPTAIN" == "true" ]]; then
+        ## ORIGIN captain: try origin-specific variant first
+        if [[ "$IS_ORIGIN" == "true" ]]; then
+            TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/captain.origin.${lang}.html"
+            [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/captain.origin.html"
+        fi
+        ## Captain ZINE: try captain-specific, then day_/captain.html, then regular
+        [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/captain.${lang}.html"
+        [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/captain.html"
+        [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day_/captain.html"
+        echo "CAPTAIN ZINE ($([[ $IS_ORIGIN == true ]] && echo 'ORIGIN' || echo 'ZEN')): ${TODAYZINE}"
+    else
+        TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.${lang}.html"
+        [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.html"
+        ## Fallback for day5+ (no specific template): use day_/multipass.html
+        [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day_/multipass.html"
+    fi
+    ## Only send ZINEs for day 1-7 (avoid infinite daily fallback spam)
+    if [[ -s ${TODAYZINE} && ${days} -gt 0 && ${days} -le 7 ]]; then
+        echo "SENDING TODAYZINE DAY ${days} + mailjet TW import "
+
+        ## Derive variables available in TW.refresh context
+        [[ -z "$UPLANETG1PUB" ]] && UPLANETG1PUB=$(${MY_PATH}/../tools/keygen -t duniter "${UPLANETNAME}" "${UPLANETNAME}" 2>/dev/null)
+        [[ -z "$PAF" ]] && PAF=$(grep "^PAF=" ~/.zen/.env 2>/dev/null | cut -d'=' -f2 || echo "14")
+
+        cat ${TODAYZINE} \
+            | sed -e "s~_MOATS_~${MOATS}~g" \
+                -e "s~_PLAYER_~${PLAYER}~g" \
+                -e "s~_G1PUB_~${G1PUB}~g" \
+                -e "s~_ASTRONAUTENS_~${ASTRONAUTENS}~g" \
+                -e "s~_UPLANET8_~UPlanet:${UPLANETG1PUB:0:8}~g" \
+                -e "s~_PAF_~${PAF}~g" \
+                -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
+                -e "s~_EARTHCID_~/ipns/copylaradio.com~g" \
+                -e "s~_SECTOR_~${SECTOR}~g" \
+                -e "s~_SLAT_~${SLAT}~g" \
+                -e "s~_SLON_~${SLON}~g" \
+                -e "s~_SALT_~[PROTECTED]~g" \
+                -e "s~_PEPPER_~[PROTECTED]~g" \
+                > ~/.zen/tmp/${MOATS}/UPlanetZine.html
+
+        ${MY_PATH}/../tools/mailjet.sh --expire 48h "${PLAYER}" $HOME/.zen/tmp/${MOATS}/UPlanetZine.html \
+                                        "ZINE #${days}" "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html"
+
+    else
+        echo "NO ZINE FOR DAY ${days}"
     fi
 
+    echo "## >>>>>>>>>>>>>>>> ACTIVATING TW REFRESH (only for CAPTAIN & USOCIETY members)"
+    if [[ "$_USOCIETY_ACTIVE" == "true" || "$IS_CAPTAIN" == "true" ]]; then
+        # Delegate TiddlyWiki management to TW.refresh.sh
+        if ! ${MY_PATH}/TW.refresh.sh "${PLAYER}" "${MOATS}" ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html; then
+            echo "❌ TW.refresh.sh failed for ${PLAYER} - continuing with next player"
+            continue
+        fi
+    else
+        echo "TW is not refreshed for 128GB rental (NCARD+ZCARD)"
+    fi
     #####################################################################
     ## PLAYER REFRESH COMPLETED
     echo "✅ Player refresh completed for ${PLAYER}"

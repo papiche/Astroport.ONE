@@ -106,6 +106,8 @@ esac
 
 echo -e "${BOLD}${CYAN}🚀 Initialisation AI Company dans $INSTALL_DIR${NC}"
 mkdir -p "$INSTALL_DIR"
+mkdir "$INSTALL_DIR/paperclip_data"
+mkdir "$INSTALL_DIR/openclaw_data"
 cd "$INSTALL_DIR"
 
 # Détection Architecture
@@ -152,11 +154,23 @@ model_list:
     litellm_params:
       model: "ollama_chat/$OLLAMA_MODEL"
       api_base: "http://$DOCKER_BRIDGE_IP:$OLLAMA_PORT"
+
+  - model_name: "$OLLAMA_MODEL"
+    litellm_params:
+      model: "ollama_chat/$OLLAMA_MODEL"
+      api_base: "http://$DOCKER_BRIDGE_IP:$OLLAMA_PORT"
+
   - model_name: "openai/$EMBEDDING_MODEL"
     litellm_params:
       model: "ollama/$EMBEDDING_MODEL"
       api_base: "http://$DOCKER_BRIDGE_IP:$OLLAMA_PORT"
+
+  - model_name: "$EMBEDDING_MODEL"
+    litellm_params:
+      model: "ollama/$EMBEDDING_MODEL"
+      api_base: "http://$DOCKER_BRIDGE_IP:$OLLAMA_PORT"
 EOF
+
 
 # --- DOCKER COMPOSE ---
 # Note : On utilise les variables directement ici car elles sont maintenant 'exportées'
@@ -166,7 +180,7 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_PASSWORD=\${POSTGRES_PASSWORD}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_DB=${POSTGRES_DB}
     volumes: ["postgres_data:/var/lib/postgresql/data"]
@@ -183,7 +197,7 @@ services:
     ports: ["${PORT_LITELLM}:4000"]
     environment:
       - LITELLM_MASTER_KEY=\${LITELLM_MASTER_KEY}
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/litellm
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:\${POSTGRES_PASSWORD}@postgres:5432/litellm
       - PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x
     volumes: ["./litellm-config.yaml:/app/config.yaml"]
     extra_hosts: ["host.docker.internal:host-gateway"]
@@ -209,8 +223,13 @@ services:
 
   paperclip:
     image: reeoss/paperclipai-paperclip:latest
+    user: "1000:1000"
     platform: ${PLATFORM}
     ports: ["${PORT_PAPERCLIP}:3100"]
+    extra_hosts:
+      - "api.openai.com:host-gateway"
+    volumes:
+      - ./paperclip_data:/paperclip/instances
     environment:
       - DATABASE_URL=postgres://\${POSTGRES_USER}:\${POSTGRES_PASSWORD}@postgres:5432/\${POSTGRES_DB}
       - OPENAI_API_BASE=http://llm-proxy:4000/v1
@@ -227,16 +246,30 @@ services:
   openclaw:
     image: coollabsio/openclaw:latest
     platform: ${PLATFORM}
-    ports: ["${PORT_OPENCLAW}:8080"]
+    extra_hosts:
+      - "api.openai.com:host-gateway"
+    ports:
+      - "${PORT_OPENCLAW}:8080"
+      - "18789:18789"    
+    volumes:
+      - ./openclaw_data:/data
     environment:
+      - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
       - OPENAI_API_BASE=http://llm-proxy:4000/v1
-      - OPENAI_API_KEY=\${LITELLM_MASTER_KEY}
+      - OPENCLAW_PROVIDERS_OPENAI_ENABLED=true
+      - OPENCLAW_PROVIDERS_OPENAI_APIBASE=http://llm-proxy:4000/v1
+      - OPENCLAW_PROVIDERS_OPENAI_APIKEY=\${LITELLM_MASTER_KEY}
       - OPENCLAW_VECTOR_DB_URL=http://qdrant:6333
       - OPENCLAW_VECTOR_DB_API_KEY=\${QDRANT_API_KEY}
-      - OPENCLAW_PRIMARY_MODEL=${OLLAMA_MODEL}
-      - OPENCLAW_EMBEDDING_MODEL=${EMBEDDING_MODEL}
-      - OPENCLAW_GATEWAY_TOKEN=\${OPENCLAW_GATEWAY_TOKEN}
+      - OPENCLAW_PRIMARY_MODEL=openai/${OLLAMA_MODEL}
+      - OPENCLAW_EMBEDDING_MODEL=openai/${EMBEDDING_MODEL}
       - OPENCLAW_BROWSER_URL=http://browser:3000
+      - OPENCLAW_GATEWAY_TOKEN=\${OPENCLAW_GATEWAY_TOKEN}
+      - OPENCLAW_GATEWAY_BIND=lan
+      - OPENCLAW_GATEWAY_CONTROLUI_ALLOWEDORIGINS=*
+      - OPENCLAW_GATEWAY_CONTROLUI_ALLOWINSECUREAUTH=true
+      - OPENCLAW_GATEWAY_TRUSTEDPROXIES=0.0.0.0/0
+      - OPENCLAW_GATEWAY_PUBLIC_URL=http://127.0.0.1:8000
     depends_on: [llm-proxy, qdrant, browser]
     restart: unless-stopped
 
@@ -254,12 +287,16 @@ sleep 10
 echo -e "⏳ Création de la base de données LiteLLM..."
 docker exec -it ai-company-swarm-postgres-1 psql -U paperclip -d paperclip -c "CREATE DATABASE litellm;" || true
 sleep 5
+echo -e "⏳ Démarrage de la base de données LiteLLM..."
+$DOCKER_CMD -p ai-company-swarm up -d llm-proxy
+echo -e "Attente de l'initialisation de LiteLLM (30s)..."
+sleep 30
 echo -e "⏳ Démarrage de Paperclip (Création de sa base)..."
 $DOCKER_CMD -p ai-company-swarm up -d paperclip
 echo -e "Attente des migrations automatiques de Paperclip (20s)..."
 sleep 20
 
-echo -e "⏳ Démarrage du reste de la stack (LiteLLM, OpenClaw, Qdrant, Browser)..."
+echo -e "⏳ Démarrage du reste de la stack (OpenClaw, Qdrant, Browser)..."
 $DOCKER_CMD -p ai-company-swarm up -d
 
 echo -e "Attente de la stabilisation finale (15s)..."
@@ -307,3 +344,39 @@ docker exec -it ai-company-swarm-paperclip-1 pnpm paperclipai onboard
 
 # C. Créer l'admin (Maintenant que le config.json existe)
 docker exec -it ai-company-swarm-paperclip-1 pnpm paperclipai auth bootstrap-ceo"
+
+# ssh -L 8000:127.0.0.1:8000 -L 18789:127.0.0.1:18789 user@ia.mydomain
+# sudo tee openclaw_data/.openclaw/openclaw.json <<EOF
+# {
+#   "gateway": {
+#     "port": 18789,
+#     "mode": "local",
+#     "bind": "lan",
+#     "auth": {
+#       "mode": "token",
+#       "token": "8b1e75e911134a7098df6f6b908d2e80"
+#     },
+#     "controlUi": {
+#       "allowInsecureAuth": true,
+#       "enabled": true,
+#       "allowedOrigins": ["*"]
+#     },
+#     "trustedProxies": ["0.0.0.0/0"]
+#   },
+#   "providers": {
+#     "openai": {
+#       "enabled": true,
+#       "apiBase": "http://llm-proxy:4000/v1",
+#       "apiKey": "sk-swarm-votre-cle-ici"
+#     }
+#   },
+#   "agents": {
+#     "defaults": {
+#       "workspace": "/data/workspace",
+#       "model": {
+#         "primary": "openai/gemma3"
+#       }
+#     }
+#   }
+# }
+# EOF

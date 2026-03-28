@@ -47,6 +47,8 @@ fi
 
 echo -e "Astroport activate IPFS Layer installation..."
 ### IPFS config cleaning
+# private swarm
+ipfs config --json Plugins.Plugins.telemetry.Config '{"Mode": "off"}'
 ipfs config --json AutoConf.Enabled false
 ipfs config --json DNS.Resolvers '{}'
 ipfs config --json Routing.DelegatedRouters '[]'
@@ -54,8 +56,10 @@ ipfs config --json Ipns.DelegatedPublishers '[]'
 ipfs config --json AutoTLS.Enabled false
 # ipfs config --json Routing.Type '"dht"'
 ipfs config --json Routing.Type '"dhtserver"'
-ipfs config --json Plugins.Plugins.telemetry.Config '{"Mode": "off"}'
 ipfs config --json Ipns.UsePubsub true
+# for ipfs p2p relaying
+ipfs config --json Swarm.RelayClient.Enabled true
+ipfs config --json Swarm.RelayService.Enabled true
 
 if [[ "$USER" == "xbian" ]]
 then
