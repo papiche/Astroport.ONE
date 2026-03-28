@@ -13,8 +13,8 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 # --- CONFIGURATION ---
 INSTALL_DIR="$HOME/.zen/ai-company"
 OLLAMA_PORT=11434
-OLLAMA_MODEL="gemma3:latest"
-EMBEDDING_MODEL="nomic-embed-text:latest"
+OLLAMA_MODEL="gemma3"
+EMBEDDING_MODEL="nomic-embed-text"
 
 # Couleurs
 GREEN='\033[0;32m'
@@ -150,11 +150,11 @@ cat > litellm-config.yaml << EOF
 model_list:
   - model_name: "$OLLAMA_MODEL"
     litellm_params:
-      model: "openai/$OLLAMA_MODEL"
+      model: "ollama_chat/$OLLAMA_MODEL"
       api_base: "http://$DOCKER_BRIDGE_IP:$OLLAMA_PORT"
   - model_name: "$EMBEDDING_MODEL"
     litellm_params:
-      model: "openai/$EMBEDDING_MODEL"
+      model: "ollama/$EMBEDDING_MODEL"
       api_base: "http://$DOCKER_BRIDGE_IP:$OLLAMA_PORT"
 EOF
 
@@ -227,14 +227,14 @@ services:
   openclaw:
     image: coollabsio/openclaw:latest
     platform: ${PLATFORM}
-    ports: ["${PORT_OPENCLAW}:8000"]
+    ports: ["${PORT_OPENCLAW}:8080"]
     environment:
       - OPENAI_API_BASE=http://llm-proxy:4000/v1
       - OPENAI_API_KEY=\${LITELLM_MASTER_KEY}
       - OPENCLAW_VECTOR_DB_URL=http://qdrant:6333
       - OPENCLAW_VECTOR_DB_API_KEY=\${QDRANT_API_KEY}
-      - OPENCLAW_PRIMARY_MODEL=openai/${OLLAMA_MODEL}
-      - OPENCLAW_EMBEDDING_MODEL=openai/${EMBEDDING_MODEL}
+      - OPENCLAW_PRIMARY_MODEL=${OLLAMA_MODEL}
+      - OPENCLAW_EMBEDDING_MODEL=${EMBEDDING_MODEL}
       - OPENCLAW_GATEWAY_TOKEN=\${OPENCLAW_GATEWAY_TOKEN}
       - OPENCLAW_BROWSER_URL=http://browser:3000
     depends_on: [llm-proxy, qdrant, browser]

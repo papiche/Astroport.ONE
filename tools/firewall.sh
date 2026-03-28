@@ -129,6 +129,11 @@ fire_on() {
         sudo ufw allow from "${LAN_RANGE}" to any port 7777  proto tcp comment "LAN→NOSTR"    > /dev/null 2>&1
     done
     echo ""
+    
+    echo "Allow IP docker localhost 172.17.0.0/16"
+    sudo ufw allow from 172.17.0.0/16
+
+    echo ""
     echo "  🏠 LAN (IPv4 + IPv6) : accès autorisé aux services internes"
 
     ## Activer UFW
