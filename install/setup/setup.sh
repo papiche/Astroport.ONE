@@ -134,7 +134,6 @@ EOF
     sudo mv /tmp/resolv.conf /etc/resolv.conf
     sudo chattr +i /etc/resolv.conf
 fi
-
 if [[ ! $(cat /etc/hosts | grep -w "astroport.local" | head -n 1) ]]; then
     cat /etc/hosts > /tmp/hosts
     echo "127.0.1.1    $(hostname) $(hostname).local astroport.$(hostname).local ipfs.$(hostname).local astroport.local duniter.localhost" >> /tmp/hosts
@@ -153,8 +152,7 @@ echo "#### UPlanet ẐEN Activation needs Y LEVEL (SSH=IPFS)"
 ~/.zen/Astroport.ONE/tools/Ylevel.sh
 
 # ACTIVATING ASTROPORT CRON
-echo ">>> SWITCHING ASTROPORT ON <<<
-~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON"
+echo ">>> SWITCHING ASTROPORT ON <<<"
 ~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
 
 ##########################################################
@@ -162,51 +160,60 @@ echo ">>> SWITCHING ASTROPORT ON <<<
 echo "MJ activation"
 ipfs --timeout 30s cat /ipfs/QmVy7FKd1MGZqee4b7B5jmBKNgTJBvKKkoDhodnJWy23oN > ~/.zen/MJ_APIKEY
 source ${HOME}/.zen/Astroport.ONE/tools/my.sh
+
 GO=$(my_LatLon) ## FR 34.46 1.51 # (country lat lon) with 0.01° precision
-GMARKMAIL="support+$(echo $(hostname -s) $GO | sed "s| |_|g")@qo-op.com" 
-# ex: support+nexus-55-FR-34.46-1.51@qo-op.com
+HOSTNAME_SHORT=$(hostname -s)
 
-##########################################################
-## AUTO-GENERATE .env FROM HOSTNAME (if not already present)
-##########################################################
-ENVFILE="${HOME}/.zen/Astroport.ONE/.env"
-if [[ ! -s "${ENVFILE}" ]]; then
-    echo "#############################################"
-    echo "######### AUTO-GENERATING .env  #############"
-    echo "#############################################"
-    
-    ## Detect public IP (try multiple methods)
-    PUBLIC_IP=""
-    PUBLIC_IP=$(${HOME}/.zen/Astroport.ONE/me.♥Box.sh 2>/dev/null | tail -n 1) \
-        || PUBLIC_IP=$(curl -s --connect-timeout 5 https://ifconfig.me 2>/dev/null) \
-        || PUBLIC_IP=$(curl -s --connect-timeout 5 https://icanhazip.com 2>/dev/null) \
-        || PUBLIC_IP=$(curl -s --connect-timeout 5 ipecho.net/plain 2>/dev/null)
-    
-    ## Check if this is an automatic captain installation (support+NODE-geo@qo-op.com)
-    ## Pattern: hostname is WORD-NN (e.g., nexus-55)
-    HOSTNAME_SHORT=$(hostname -s)
-    if [[ "${GMARKMAIL}" == "support+${HOSTNAME_SHORT}"*"@qo-op.com" ]]; then
-        echo ">>> Automatic installation detected: ${GMARKMAIL}"
-        
-        ## Use NODE.copylaradio.com domain
-        SETUP_DOMAIN="${HOSTNAME_SHORT}.copylaradio.com"
-        
-        ## Store public IP in ♥Box file for zIp() function
-        if [[ -n "$PUBLIC_IP" ]]; then
-            echo "$PUBLIC_IP" > $HOME/.zen/♥Box
-            echo ">>> Public IP stored in ~/.zen/♥Box: $PUBLIC_IP"
-        else
-            echo ">>> WARNING: Could not detect public IP"
-            echo ">>> Please manually set your public IP in ~/.zen/♥Box"
-        fi
-    else
-        ## Detect domain: domainname > hostname -d > copylaradio.com
-        SETUP_DOMAIN=$(domainname 2>/dev/null)
-        [[ "$SETUP_DOMAIN" == "(none)" || -z "$SETUP_DOMAIN" ]] && SETUP_DOMAIN=$(hostname -d 2>/dev/null)
-        [[ -z "$SETUP_DOMAIN" || "$SETUP_DOMAIN" == "(none)" || "$SETUP_DOMAIN" == "localhost" ]] && SETUP_DOMAIN="copylaradio.com"
-    fi
+# =========================================================================
+# 1. CONFIGURATION DU DOMAINE DE LA STATION (Armateur) -> SETUP_DOMAIN
+# =========================================================================
+CLEAN_NODE_DOMAIN="${CUSTOM_NODE_DOMAIN:-}"
+if [[ -n "${CLEAN_NODE_DOMAIN}" && "${CLEAN_NODE_DOMAIN}" == "${HOSTNAME_SHORT}."* ]]; then
+    CLEAN_NODE_DOMAIN="${CLEAN_NODE_DOMAIN#*.}"
+fi
 
-    cat > "${ENVFILE}" <<DOTENV
+if [[ -n "${CLEAN_NODE_DOMAIN}" ]]; then
+    SETUP_DOMAIN="${HOSTNAME_SHORT}.${CLEAN_NODE_DOMAIN}"
+    echo ">>> Domaine Noeud configuré sur : ${SETUP_DOMAIN}"
+else
+    SETUP_DOMAIN=$(domainname 2>/dev/null)
+    [[ "$SETUP_DOMAIN" == "(none)" || -z "$SETUP_DOMAIN" ]] && SETUP_DOMAIN=$(hostname -d 2>/dev/null)
+    [[ -z "$SETUP_DOMAIN" || "$SETUP_DOMAIN" == "(none)" || "$SETUP_DOMAIN" == "localhost" ]] && SETUP_DOMAIN="${HOSTNAME_SHORT}.copylaradio.com"
+    echo ">>> Domaine Noeud automatique : ${SETUP_DOMAIN}"
+fi
+
+# =========================================================================
+# 2. CONFIGURATION DE L'EMAIL CAPITAINE -> GMARKMAIL
+# =========================================================================
+if [[ -n "${CUSTOM_CAPTAIN_EMAIL:-}" ]]; then
+    GMARKMAIL="${CUSTOM_CAPTAIN_EMAIL}"
+    echo ">>> Utilisation de l'email Capitaine personnalisé : ${GMARKMAIL}"
+else
+    BASE_EMAIL_DOMAIN="${CUSTOM_EMAIL_DOMAIN:-${CLEAN_NODE_DOMAIN:-qo-op.com}}"
+    GMARKMAIL="support+$(echo ${HOSTNAME_SHORT} $GO | sed "s| |_|g")@${BASE_EMAIL_DOMAIN}" 
+    echo ">>> Génération de l'email Capitaine automatique : ${GMARKMAIL}"
+fi
+
+# =========================================================================
+# 3. SAUVEGARDE DE L'IP PUBLIQUE
+# =========================================================================
+PUBLIC_IP=""
+PUBLIC_IP=$(${HOME}/.zen/Astroport.ONE/me.♥Box.sh 2>/dev/null | tail -n 1) \
+    || PUBLIC_IP=$(curl -s --connect-timeout 5 https://ifconfig.me 2>/dev/null) \
+    || PUBLIC_IP=$(curl -s --connect-timeout 5 https://icanhazip.com 2>/dev/null) \
+    || PUBLIC_IP=$(curl -s --connect-timeout 5 ipecho.net/plain 2>/dev/null)
+
+if [[ -n "$PUBLIC_IP" ]]; then
+    echo "$PUBLIC_IP" > $HOME/.zen/♥Box
+    echo ">>> Public IP stored in ~/.zen/♥Box: $PUBLIC_IP"
+else
+    echo ">>> WARNING: Could not detect public IP"
+fi
+
+# =========================================================================
+# 4. GÉNÉRATION DU FICHIER .env
+# =========================================================================
+cat > "${ENVFILE}" <<DOTENV
 #########################################
 # ASTROPORT box - Auto-generated by setup.sh
 # Domain: ${SETUP_DOMAIN}
@@ -230,13 +237,10 @@ LOG_LEVEL=INFO
 ENABLE_AUDIO_NOTIFICATIONS=yes
 DOTENV
 
-    echo ">>> .env created for domain: ${SETUP_DOMAIN}"
-    echo ">>> ${ENVFILE}"
-    ## Re-source my.sh to pick up new .env values
-    source ${HOME}/.zen/Astroport.ONE/tools/my.sh
-else
-    echo ">>> .env already exists: ${ENVFILE}"
-fi
+echo ">>> .env created for domain: ${SETUP_DOMAIN}"
+echo ">>> ${ENVFILE}"
+## Re-source my.sh to pick up new .env values
+source ${HOME}/.zen/Astroport.ONE/tools/my.sh
 
 ##########################################################
 ## NGINX PROXY MANAGER: deploy + auto-configure SSL proxies

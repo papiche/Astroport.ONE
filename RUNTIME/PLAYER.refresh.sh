@@ -92,11 +92,24 @@ for PLAYER in ${PLAYERONE[@]}; do
             "$tpl" > "$tmp_email"
         echo "$tmp_email"
     }
-    [[ -z ${BIRTHDATE} ]] && BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/TODATE 2>/dev/null)
+    ## ── RESET BIRTHDATE à chaque itération (évite la contamination inter-joueurs) ──
+    unset BIRTHDATE
+    BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/TODATE 2>/dev/null)
     [[ -z ${BIRTHDATE} ]] \
         && BIRTHDATE="$TODATE" \
         && echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/TODATE \
         && echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.birthdate ## INIT BIRTHDATE
+
+    ## ── Calcul de l'âge du compte en jours (variable days) ─────────────────────
+    ## Utilisé pour le dispatch des ZINEs gamifiés (Jour 0 à Jour 7)
+    if [[ -n "${BIRTHDATE}" && -n "${TODATE}" ]]; then
+        _BIRTH_SEC=$(date -d "${BIRTHDATE}" +%s 2>/dev/null || date +%s)
+        _TODAY_SEC=$(date -d "${TODATE}" +%s 2>/dev/null || date +%s)
+        days=$(( (_TODAY_SEC - _BIRTH_SEC) / 86400 ))
+    else
+        days=0
+    fi
+    echo "🗓️  Compte ${PLAYER} : ${days} jours (BIRTHDATE=${BIRTHDATE})"
     ####################################################################
 
     # Check ZEN Card balance (should be 1Ğ1 = 0 ẐEN for cooperative members)
@@ -364,14 +377,52 @@ for PLAYER in ${PLAYERONE[@]}; do
         [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/captain.html"
         [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day_/captain.html"
         echo "CAPTAIN ZINE ($([[ $IS_ORIGIN == true ]] && echo 'ORIGIN' || echo 'ZEN')): ${TODAYZINE}"
-    else
-        TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.${lang}.html"
+    elif [[ "$_USOCIETY_ACTIVE" == "true" ]]; then
+        ## ── U.SOCIETY / Membres DRAGON ─────────────────────────────────────────
+        ## Pas de loyer hebdomadaire. ZINE coopératif avec missions et gouvernance.
+        TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/usociety.html"
+        [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.${lang}.html"
         [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.html"
-        ## Fallback for day5+ (no specific template): use day_/multipass.html
+        [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day_/usociety.html"
+        [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day_/multipass.html"
+        echo "U.SOCIETY/DRAGON ZINE: ${TODAYZINE}"
+    elif [[ "$IS_ORIGIN" == "true" ]]; then
+        ## ── ORIGIN / Parcours Initiatique MULTIPASS ────────────────────────────
+        ## Académie : gamification jour 0 → jour 7 → invitation DRAGON
+        TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/multipass.html"
+        [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.${lang}.html"
+        [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.html"
+        [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day_/multipass.html"
+        echo "ORIGIN MULTIPASS ZINE: ${TODAYZINE}"
+    else
+        ## ── ZENCard abonné (réseau ẐEN, sans U.SOCIETY) ─────────────────────────
+        ## Service 128Go + NextCloud + Désenvoutement smartphone. Loyer 4+1 Zen/sem.
+        TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/zencard.html"
+        [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.${lang}.html"
+        [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day${days}/index.html"
+        [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day_/zencard.html"
+        [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day_/multipass.html"
+        echo "ZENCARD ZINE: ${TODAYZINE}"
+    fi
+
+    ## ── Logique d'envoi ────────────────────────────────────────────────────────
+    ## • Jours 0-7    : ZINE d'onboarding quotidien pour TOUS les joueurs
+    ## • Jours 7+     : bulletin hebdomadaire UNIQUEMENT Capitaine et U.SOCIETY
+    ##                  (multiples de 7 : jours 14, 21, 28...)
+    _SEND_ZINE=false
+    if [[ ${days} -ge 0 && ${days} -le 7 ]]; then
+        _SEND_ZINE=true   ## Onboarding : tous les joueurs, jours 0-7
+    elif [[ "$IS_CAPTAIN" == "true" && $(( days % 7 )) -eq 0 ]]; then
+        _SEND_ZINE=true   ## Bulletin hebdo Capitaine (jours 14, 21, 28...)
+        ## En bulletin hebdo, utiliser day_/captain.html en priorité
+        TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day_/captain.html"
+    elif [[ "$_USOCIETY_ACTIVE" == "true" && $(( days % 7 )) -eq 0 ]]; then
+        _SEND_ZINE=true   ## Bulletin hebdo U.SOCIETY/DRAGON
+        TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day_/usociety.html"
         [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day_/multipass.html"
     fi
-    ## Only send ZINEs for day 1-7 (avoid infinite daily fallback spam)
-    if [[ -s ${TODAYZINE} && ${days} -gt 0 && ${days} -le 7 ]]; then
+
+    if [[ -s ${TODAYZINE} && "$_SEND_ZINE" == "true" ]]; then
         echo "SENDING TODAYZINE DAY ${days} + mailjet TW import "
 
         ## Derive variables available in TW.refresh context

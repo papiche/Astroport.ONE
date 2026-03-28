@@ -9,7 +9,36 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
 start=`date +%s`
-
+################################################################## HELP
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+    echo "================================================================="
+    echo "                 🚀 ASTROPORT.ONE INSTALLER 🚀                 "
+    echo "================================================================="
+    echo "Usage :"
+    echo "  bash <(curl -sL https://install.astroport.com/) [EMAIL] [NODE_DOMAIN] [EMAIL_DOMAIN]"
+    echo ""
+    echo "Options :"
+    echo "  --help, -h       Affiche cette aide et quitte."
+    echo ""
+    echo "Paramètres positionnels (optionnels) :"
+    echo "  1. EMAIL         Email du Capitaine (ex: alice@mail.com)."
+    echo "                   Laissez vide (\"\") pour un email automatique."
+    echo "  2. NODE_DOMAIN   Domaine du Nœud/Armateur (ex: ma-base.org)."
+    echo "                   Laissez vide (\"\") pour copylaradio.com."
+    echo "  3. EMAIL_DOMAIN  Domaine pour l'email captainerie (ex: mon-asso.org)."
+    echo "                   Laissez vide (\"\") pour qo-op.com."
+    echo ""
+    echo "Variables d'environnement supportées :"
+    echo "  CAPTAIN_EMAIL, NODE_DOMAIN, CAPTAIN_EMAIL_DOMAIN"
+    echo ""
+    echo "Exemples d'installation silencieuse :"
+    echo "  bash install.sh \"\" \"ma-base.org\"           -> Nœud: ma-base.org | Email auto: ...@qo-op.com"
+    echo "  bash install.sh \"\" \"asso.org\" \"asso.org\" -> Nœud: asso.org | Email auto: ...@asso.org"
+    echo "  bash install.sh \"contact@me.com\"          -> Nœud: auto     | Email perso: contact@me.com"
+    echo "================================================================="
+    exit 0
+fi
+########################################################################
 ##################################################################  SUDO
 ##  Lancement "root" interdit...
 ########################################################################
@@ -18,6 +47,29 @@ start=`date +%s`
     && echo "AUCUN GROUPE \"sudo\" : su -; usermod -aG sudo $USER" \
     && su - && apt-get install sudo -y \
     && echo "Run Install Again..." && exit 0
+
+################################################################## EMAIL & DOMAINE CAPITAINE
+## Paramètres :
+## $1 = Email personnalisé (ou "" pour auto)
+## $2 = Domaine Armateur/Noeud (ou "" pour copylaradio.com)
+## $3 = Domaine Email Capitaine (ou "" pour qo-op.com, si email auto)
+########################################################################
+export CUSTOM_CAPTAIN_EMAIL="${1:-${CAPTAIN_EMAIL:-}}"
+export CUSTOM_NODE_DOMAIN="${2:-${NODE_DOMAIN:-}}"
+export CUSTOM_EMAIL_DOMAIN="${3:-${CAPTAIN_EMAIL_DOMAIN:-}}"
+
+if [[ -z "$CUSTOM_CAPTAIN_EMAIL" && -z "$CUSTOM_NODE_DOMAIN" ]]; then
+    echo "========================================================="
+    echo "  EMBARQUEMENT CAPITAINE & ARMATEUR"
+    echo "========================================================="
+    echo "Appuyez sur Entrée pour utiliser les valeurs automatiques."
+    read -p "Email Capitaine [auto: support+node...@qo-op.com] : " CUSTOM_CAPTAIN_EMAIL
+    read -p "Domaine Noeud   [auto: copylaradio.com]           : " CUSTOM_NODE_DOMAIN
+fi
+
+[[ -n "$CUSTOM_CAPTAIN_EMAIL" ]] && echo ">>> Email Capitaine : $CUSTOM_CAPTAIN_EMAIL" || echo ">>> Email Capitaine : Automatique"
+[[ -n "$CUSTOM_NODE_DOMAIN" ]]   && echo ">>> Domaine Noeud   : $CUSTOM_NODE_DOMAIN"   || echo ">>> Domaine Noeud   : Automatique (copylaradio.com)"
+[[ -n "$CUSTOM_EMAIL_DOMAIN" ]]  && echo ">>> Domaine Email   : $CUSTOM_EMAIL_DOMAIN"  || echo ">>> Domaine Email   : Automatique (qo-op.com)"
 
 #### GIT CLONE ###############################################################
 echo "#############################################"
@@ -301,6 +353,32 @@ echo
 echo "  ERREURS: ~/.zen/install.errors.log"
 echo "#############################################"
 echo
+## ─── Message final conditionné par le mode réseau ───────────────────────────
+if [[ "${UPLANETNAME}" == "0000000000000000000000000000000000000000000000000000000000000000" || -z "${UPLANETNAME}" ]]; then
+## ══════════════════════  MODE ACADÉMIE / UPLANET ORIGIN  ══════════════════════
+echo "╔══════════════════════════════════════════════════════════════════════════════╗"
+echo "║             🎮 ACADÉMIE UPLANET ORIGIN — ÉTAPE 1 / 4                       ║"
+echo "╠══════════════════════════════════════════════════════════════════════════════╣"
+echo "║                                                                              ║"
+echo "║  Cette station fonctionne en mode BACS À SABLE (swarm.key = zéro).          ║"
+echo "║  Elle est hébergée par vous (ARMATEUR) mais opérée par le collectif         ║"
+echo "║  G1FabLab en attendant votre certification comme CAPITAINE.                 ║"
+echo "║                                                                              ║"
+echo "║  💰 En tant qu'Armateur, vous pouvez percevoir : 14 Ẑen / semaine          ║"
+echo "║     → Souscrivez sur : https://opencollective.com/monnaie-libre             ║"
+echo "║                                                                              ║"
+echo "║  👉 VOTRE MISSION POUR DEVENIR CAPITAINE :                                  ║"
+echo "║                                                                              ║"
+echo "║  1. Ouvrez votre navigateur :  http://127.0.0.1:54321/g1                   ║"
+echo "║  2. Créez votre MULTIPASS avec votre VÉRITABLE adresse email.               ║"
+echo "║  3. Lisez les ZINEs quotidiens que le système va vous envoyer.              ║"
+echo "║  4. Contactez support@qo-op.com pour valider votre formation DRAGON.        ║"
+echo "║                                                                              ║"
+echo "║  🐉 Formation DRAGON → swarm.key privé → UPlanet ẐEN → 28 Ẑen/semaine     ║"
+echo "║                                                                              ║"
+echo "╚══════════════════════════════════════════════════════════════════════════════╝"
+else
+## ══════════════════════  MODE PRODUCTION / UPLANET ẐEN  ══════════════════════
 echo "╔══════════════════════════════════════════════════════════════════════════════╗"
 echo "║                    🚀 PROCHAINE ÉTAPE — ACTIVATION CAPITAINE               ║"
 echo "╠══════════════════════════════════════════════════════════════════════════════╣"
@@ -322,9 +400,10 @@ echo "║    • Votre email GMARKMAIL : $(cat ~/.zen/game/players/.current/.pla
 echo "║    • Votre hostname : $(hostname)                                           ║"
 echo "║    • Votre position GPS : $(cat ~/.zen/GPS 2>/dev/null || echo 'non détectée')         ║"
 echo "║                                                                              ║"
-echo "║  🌐 Notre Sytème d'Information Décentralisé : https://qo-op.com                                        ║"
-echo "║  📚 Documentation : https://astroport.com                              ║"
+echo "║  🌐 Notre Système d'Information Décentralisé : https://qo-op.com            ║"
+echo "║  📚 Documentation : https://astroport.com                                   ║"
 echo "╚══════════════════════════════════════════════════════════════════════════════╝"
+fi
 echo
 . ~/.bashrc
 ##########################################################

@@ -1,648 +1,116 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <title>ZENCARD - Libérez-vous du Cloud Centralisé</title>
+  <title>[ZEN Card — Votre Service Numérique Souverain]</title>
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" type="image/png" href="http://127.0.0.1:8080/ipfs/Qma5LvAd8HqiR2GadhRxWs6tF8XvtpFHfskh2sB9a15tyL" />
-<style>
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: sans-serif;
-}
-
-h1 {
-  color: #1c4587;
-  text-align: center;
-  font-style: italic;
-  font-size: 180%;
-}
-
-h2 {
-  background: #ead1dc;
-  color: #741b47;
-  font-family: monospace;
-  text-align: center;
-  font-size: 140%;
-  font-weight: normal;
-  margin: 0.2rem 0 0 0;
-  padding: 0.2rem 0 0.2rem;
-}
-
-h3 {
-  color: #1c4587;
-  font-size: 120%;
-  margin: 0.3rem 0;
-}
-
-th {
-  text-align: left;
-  background: #c9daf8;
-  color: #073763;
-}
-
-p {
-  padding: 0.2rem;
-  padding-top: 0.5rem;
-  font-size: 105%;
-}
-
-ul {
-  padding-left: 2rem;
-  list-style: none;
-}
-
-.zine-li:before {
-  content: '\21D2';
-  margin-left: -20px;
-  margin-right: 10px;
-}
-
-.zine-link {
-  font-family: monospace;
-  background: #c9daf8;
-  color: #073763;
-}
-
-.captioned-img {
-  object-fit: contain;
-  max-height: 100%;
-  max-width: 100%;
-  padding: 0 2rem 0 2rem;
-}
-
-figcaption {
-  font-family: monospace;
-  font-size: 80%;
-  font-style: italic;
-  background: #c9daf8;
-  color: #073763;
-  margin: 0 1rem 0 1rem;
-}
-
-.full-img {
-  object-fit: contain;
-  max-height: 100%;
-  max-width: 100%;
-  padding: 1rem;
-}
-
-.mini-img {
-  max-width: 10rem;
-}
-
-.glitchButton {
-  float: left;
-  padding: 1rem 0.5rem 0 0.5rem;
-}
-
-.cc-licence {
-  float: right;
-  margin: 1rem 0.5rem 0 0.5rem;
-}
-
-/* Mode écran */
-@media screen {
-  body {
-    max-width: 30rem;
-    background: #ead1dc;
-    margin: auto;
-  }
-
-  .zine {
-    background: white;
-    padding: 10px;
-    border-left: 4px solid #741b47;
-    border-bottom: 4px solid #741b47;
-  }
-
-  .zine-page {
-    margin-top: 10px;
-  }
-}
-
-/* Mode impression A4 */
-@media print {
-  body {
-    font-size: 45%;
-  }
-
-  a {
-    color: inherit;
-    text-decoration: none;
-  }
-
-  .mini-img {
-    max-width: 4.4rem;
-  }
-
-  @page {
-    size: landscape;
-    margin: 0.7cm;
-    bleed: 0;
-  }
-
-  .zine {
-    width: 100vw;
-    height: 100vh;
-    display: grid;
-    gap: 1.5px;
-    background: lightgrey;
-    grid-template-areas:
-      "page-5 page-4 page-3 page-2"
-      "page-6 page-7 page-8 page-1";
-    grid-template-columns: repeat(4, 25%);
-    grid-template-rows: repeat(2, 50%);
-  }
-
-  .zine-page {
-    background: white;
-    padding: 0.5cm;
-    overflow: hidden;
-  }
-
-  .page-5, .page-4, .page-3, .page-2 {
-    transform: rotate(180deg) translateX(-0.1px);
-  }
-
-  .page-1 { grid-area: page-1; }
-  .page-2 { grid-area: page-2; }
-  .page-3 { grid-area: page-3; }
-  .page-4 { grid-area: page-4; }
-  .page-5 { grid-area: page-5; }
-  .page-6 { grid-area: page-6; }
-  .page-7 { grid-area: page-7; }
-  .page-8 { grid-area: page-8; }
-
-  table {
-    width: 100%;
-    table-layout: fixed;
-    word-wrap: break-word;
-    font-size: 85%;
-  }
-
-  table td {
-    word-break: break-all;
-    overflow-wrap: break-word;
-    hyphens: auto;
-    padding: 0.1rem;
-  }
-
-  h2 {
-    font-size: 120%;
-    margin: 0.1rem 0;
-    padding: 0.1rem 0;
-  }
-
-  p {
-    padding: 0.1rem;
-    font-size: 95%;
-  }
-
-  ul {
-    padding-left: 1.5rem;
-  }
-
-  .zine-li:before {
-    margin-left: -15px;
-    margin-right: 8px;
-  }
-
-  .full-img {
-    max-height: 40vh;
-    width: 100%;
-    object-fit: contain;
-  }
-
-  .half-img {
-    max-height: 35vh;
-    max-width: 48%;
-    object-fit: contain;
-  }
-
-  .captioned-img {
-    max-height: 35vh;
-    max-width: 100%;
-    object-fit: contain;
-    padding: 0.1rem;
-  }
-
-  .long-key {
-    font-family: monospace !important;
-    font-size: 45% !important;
-    word-break: break-all !important;
-    line-height: 1.1 !important;
-    padding: 0.05rem !important;
-  }
-}
-
-/* Styles spécifiques ZENCARD */
-.zencard-header {
-  background: linear-gradient(135deg, #741b47, #1c4587);
-  color: white;
-  padding: 0.5rem;
-  text-align: center;
-  border-radius: 4px;
-}
-
-.feature-block {
-  background: #f8f0f3;
-  border: 1px solid #d1b8c5;
-  border-radius: 4px;
-  padding: 0.3rem;
-  margin: 0.2rem 0;
-}
-
-.feature-title {
-  color: #1c4587;
-  font-weight: bold;
-  font-size: 110%;
-}
-
-.feature-desc {
-  font-size: 95%;
-  color: #741b47;
-}
-
-.app-list {
-  background: #e8f4fd;
-  border-left: 3px solid #1c4587;
-  padding: 0.3rem;
-  margin: 0.2rem 0;
-  font-family: monospace;
-  font-size: 90%;
-}
-
-.price-tag {
-  background: #741b47;
-  color: white;
-  padding: 0.2rem 0.5rem;
-  border-radius: 15px;
-  font-weight: bold;
-  text-align: center;
-  display: inline-block;
-  margin: 0.2rem;
-}
-
-.storage-badge {
-  background: #1c4587;
-  color: white;
-  padding: 0.2rem 0.5rem;
-  border-radius: 15px;
-  font-weight: bold;
-  text-align: center;
-  display: inline-block;
-  margin: 0.2rem;
-}
-
-.zine-page img {
-  max-width: 100%;
-  height: auto;
-  margin: 0.5rem 0;
-}
-
-@media screen {
-  .full-img {
-    max-height: 60vh;
-  }
-  .half-img {
-    max-height: 25vh;
-  }
-}
-
-@media print {
-  .full-img {
-    max-height: 45vh;
-    width: 100%;
-  }
-  .half-img {
-    max-height: 40vh;
-    max-width: 50%;
-  }
-}
-</style>
-
-  <meta name="Description" content="ZENCARD - Libérez-vous du cloud centralisé avec NextCloud 128 Go et désenvoutement smartphone" />
+  <link rel="icon" type="image/png" href="/ipfs/QmU8XZpK2rGGJC8ZCFrKRo5cdDWr78vCgx68mCXDcXUpiv" />
+  <link rel="stylesheet" href="/ipfs/QmXU3GJkfhKW5mkPMTFDG9NtzAiiR7uErSxckYsiC4v5xk/style.css" />
+  <meta name="Description" content="ZEN Card — Votre abonnement 128Go NextCloud et désenvoutement smartphone" />
   <meta name="theme-color" content="#741b47" />
 </head>
 
 <main class="zine">
-
-<header class="zine-page page-1">
-    <div class="zencard-header">
-        <h1>🔓 ZENCARD</h1>
-        <h2>Libérez-vous du Cloud Centralisé</h2>
-    </div>
-    
-    <div class="price-tag">4 Ẑ par semaine</div>
-    <div class="storage-badge">128 Go NextCloud</div>
-    
-    <p><strong>Stockage cloud privé + Désenvoutement smartphone complet</strong></p>
-    
-    <img class="full-img" src='http://127.0.0.1:8080/ipfs/QmPV9NfaeYfZzYPaQGs9BZvMBY2t3n2SC8jodSH4zsWZak' alt="ZENCARD Liberation">
-    
-    <p>☁️ NextCloud personnel 128 Go<br>
-    📱 Désenvoutement smartphone<br>
-    🛡️ Sécurité renforcée</p>
-</header>
-
-<section class="zine-page page-2">
-    <h2>☁️ NEXTCLOUD 128 GO</h2>
-    
-    <div class="feature-block">
-        <div class="feature-title">Stockage cloud privé</div>
-        <div class="feature-desc">Vos données restent sous votre contrôle</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Synchronisation automatique</div>
-        <div class="feature-desc">Tous vos appareils synchronisés</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Partage de fichiers chiffrés</div>
-        <div class="feature-desc">Sécurité de bout en bout</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Applications collaboratives</div>
-        <div class="feature-desc">Documents, calendrier, contacts</div>
-    </div>
-    
-    <h3>🔧 Applications incluses</h3>
-    <ul>
-        <li class="zine-li">Fichiers et synchronisation</li>
-        <li class="zine-li">Documents collaboratifs</li>
-        <li class="zine-li">Calendrier et contacts</li>
-        <li class="zine-li">Notes et tâches</li>
-        <li class="zine-li">Galerie photos</li>
-        <li class="zine-li">Musique et vidéos</li>
-    </ul>
-</section>
-
-<section class="zine-page page-3">
-    <h2>📱 DÉSENVOUTEMENT SMARTPHONE</h2>
-    
-    <p><strong>Remplacez les apps Google/Apple par des alternatives libres</strong></p>
-    
-    <div class="feature-block">
-        <div class="feature-title">F-Droid</div>
-        <div class="feature-desc">Store d'applications libres</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Aurora Store</div>
-        <div class="feature-desc">Alternative au Play Store</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Organic Maps</div>
-        <div class="feature-desc">GPS hors-ligne et privé</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Scrambled Exif</div>
-        <div class="feature-desc">Suppression des métadonnées GPS</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Plantnet</div>
-        <div class="feature-desc">Reconnaissance de plantes</div>
-    </div>
-    
-    <h3>🔬 Outils scientifiques</h3>
-    <ul>
-        <li class="zine-li">Sky Map (observation étoiles)</li>
-        <li class="zine-li">Phyphox (capteurs smartphone)</li>
-        <li class="zine-li">ElectroSmart (mesure électrosmog)</li>
-    </ul>
-</section>
-
-<section class="zine-page page-4">
-    <h2>💻 APPLICATIONS ORDINATEUR</h2>
-    
-    <div class="feature-block">
-        <div class="feature-title">VLC</div>
-        <div class="feature-desc">Lecteur multimédia universel</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Kodi</div>
-        <div class="feature-desc">Centre multimédia complet</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Vstream</div>
-        <div class="feature-desc">Streaming libre et éthique</div>
-    </div>
-    
-    <h3>🔄 Processus de libération</h3>
-    
-    <div class="app-list">
-        1. Audit de vos dépendances numériques
-    </div>
-    
-    <div class="app-list">
-        2. Transfert progressif vers les alternatives libres
-    </div>
-    
-    <div class="app-list">
-        3. Apprentissage des nouveaux outils
-    </div>
-    
-    <div class="app-list">
-        4. Contrôle total de votre écosystème numérique
-    </div>
-    
-    <h3>💡 Avantages</h3>
-    <ul>
-        <li class="zine-li">Économique : Plus de frais d'abonnement</li>
-        <li class="zine-li">Sécurisé : Vos données restent chez vous</li>
-        <li class="zine-li">Éthique : Pas de surveillance commerciale</li>
-        <li class="zine-li">Durable : Logiciels maintenus par la communauté</li>
-    </ul>
-</section>
-
-<section class="zine-page page-5">
-    <h2>🛡️ SÉCURITÉ RENFORCÉE</h2>
-    
-    <div class="feature-block">
-        <div class="feature-title">Chiffrement de bout en bout</div>
-        <div class="feature-desc">Vos données sont illisibles pour les tiers</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Contrôle total</div>
-        <div class="feature-desc">Vous décidez où sont stockées vos données</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Pas de surveillance</div>
-        <div class="feature-desc">Aucun tracking commercial</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Conformité RGPD</div>
-        <div class="feature-desc">Respect total de vos droits</div>
-    </div>
-    
-    <h3>🔒 Protection des données</h3>
-    <ul>
-        <li class="zine-li">Chiffrement AES-256</li>
-        <li class="zine-li">Authentification à deux facteurs</li>
-        <li class="zine-li">Sauvegardes automatiques</li>
-        <li class="zine-li">Historique des versions</li>
-    </ul>
-    
-    <h3>🌐 Accès sécurisé</h3>
-    <ul>
-        <li class="zine-li">HTTPS obligatoire</li>
-        <li class="zine-li">Certificats SSL valides</li>
-        <li class="zine-li">Connexions chiffrées</li>
-        <li class="zine-li">Protection contre les attaques</li>
-    </ul>
-</section>
-
-<section class="zine-page page-6">
-    <h2>💰 ÉCONOMIE & LIBERTÉ</h2>
-    
-    <div class="price-tag">4 Ẑ par semaine</div>
-    
-    <p><strong>vs abonnements cloud traditionnels</strong></p>
-    
-    <div class="feature-block">
-        <div class="feature-title">Google One 100 Go</div>
-        <div class="feature-desc">~20€/mois (240€/an)</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">iCloud 200 Go</div>
-        <div class="feature-desc">~36€/mois (432€/an)</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Dropbox 2 To</div>
-        <div class="feature-desc">~120€/mois (1440€/an)</div>
-    </div>
-    
-    <h3>🌱 ZENCARD : 4 Ẑ/semaine</h3>
-    <ul>
-        <li class="zine-li">128 Go de stockage</li>
-        <li class="zine-li">Formation complète</li>
-        <li class="zine-li">Support technique</li>
-        <li class="zine-li">Applications libres</li>
-        <li class="zine-li">Sécurité renforcée</li>
-    </ul>
-    
-    <h3>💡 Économies réalisées</h3>
-    <ul>
-        <li class="zine-li">Pas de frais cachés</li>
-        <li class="zine-li">Pas de publicité</li>
-        <li class="zine-li">Pas de vente de données</li>
-        <li class="zine-li">Modèle coopératif</li>
-    </ul>
-</section>
-
-<section class="zine-page page-7">
-    <h2>🎓 FORMATION & SUPPORT</h2>
-    
-    <div class="feature-block">
-        <div class="feature-title">Formation personnalisée</div>
-        <div class="feature-desc">Accompagnement individuel</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Support technique</div>
-        <div class="feature-desc">Aide en cas de problème</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Documentation complète</div>
-        <div class="feature-desc">Guides et tutoriels</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Communauté d'entraide</div>
-        <div class="feature-desc">Échange entre utilisateurs</div>
-    </div>
-    
-    <h3>📚 Contenu de formation</h3>
-    <ul>
-        <li class="zine-li">Installation NextCloud</li>
-        <li class="zine-li">Configuration smartphone</li>
-        <li class="zine-li">Migration des données</li>
-        <li class="zine-li">Sécurisation des comptes</li>
-        <li class="zine-li">Utilisation des apps libres</li>
-        <li class="zine-li">Maintenance et sauvegardes</li>
-    </ul>
-    
-    <h3>🔄 Suivi post-formation</h3>
-    <ul>
-        <li class="zine-li">Support par email</li>
-        <li class="zine-li">Forum communautaire</li>
-        <li class="zine-li">Mises à jour régulières</li>
-        <li class="zine-li">Nouvelles fonctionnalités</li>
-    </ul>
-</section>
-
-<footer class="zine-page page-8">
-    <h2>🌱 REPRENEZ LE CONTRÔLE</h2>
-    
-    <p><strong>De votre vie numérique</strong></p>
-    
-    <div class="feature-block">
-        <div class="feature-title">100% Logiciel Libre</div>
-        <div class="feature-desc">Code source ouvert et auditable</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Éthique et transparent</div>
-        <div class="feature-desc">Pas de business model caché</div>
-    </div>
-    
-    <div class="feature-block">
-        <div class="feature-title">Communauté active</div>
-        <div class="feature-desc">Développement collaboratif</div>
-    </div>
-    
-    <h3>📞 Contact</h3>
-    <ul>
-        <li class="zine-li">support@qo-op.com</li>
-        <li class="zine-li">forum.monnaie-libre.fr</li>
-        <li class="zine-li">copylaradio.com</li>
-    </ul>
-    
-    <h3>🔗 Ressources</h3>
-    <ul>
-        <li class="zine-li">Guide de libération numérique</li>
-        <li class="zine-li">Liste d'applications libres</li>
-        <li class="zine-li">Tutoriels vidéo</li>
-        <li class="zine-li">Forum d'entraide</li>
-    </ul>
-    
-    <p style="text-align: center; margin-top: 1rem;">
-        <strong>Libérez votre vie numérique !</strong>
+  <header class="zine-page page-1">
+    <h2><button class="print-button">Print</button> ☁️ Votre ZEN Card est active</h2>
+    <img class="full-img" src="/ipfs/QmdrA3CToFjkwW3qkKPJVYWWnirGjhAgvvomCZqpHyUV7A" alt="ZEN Card Service">
+    <p style="font-size:90%">
+      <strong>Abonné :</strong> _PLAYER_<br>
+      <strong>Service :</strong> NextCloud 128Go + Réseau Nostr + MULTIPASS<br>
+      <strong>Redevance :</strong> 4 Ẑen ZENCard + 1 Ẑen MULTIPASS / semaine
     </p>
-</footer>
+  </header>
 
+  <section class="zine-page page-2">
+    <h2>☁️ Votre NextCloud se connecte</h2>
+    <p>Synchronisez tous vos appareils avec votre cloud privé :</p>
+    <ul>
+      <li class="zine-li"><strong>Web</strong> : <code>https://cloud._EARTHCID_</code></li>
+      <li class="zine-li"><strong>Android</strong> : App NextCloud sur F-Droid ou Play Store</li>
+      <li class="zine-li"><strong>iPhone</strong> : App NextCloud sur l'App Store</li>
+      <li class="zine-li"><strong>Linux/Mac/Win</strong> : Client desktop NextCloud</li>
+    </ul>
+    <p style="font-size:85%">Vos identifiants vous ont été envoyés par votre Capitaine. Problème de connexion ? <em>support@qo-op.com</em></p>
+  </section>
+
+  <section class="zine-page page-3">
+    <h2>📱 Désenvoutement Smartphone</h2>
+    <p>Remplacez progressivement les apps espionnes :</p>
+    <ul>
+      <li class="zine-li">📦 <strong>F-Droid</strong> : store 100% libre (pas de tracking)</li>
+      <li class="zine-li">🗺️ <strong>Organic Maps</strong> : GPS hors-ligne, zéro Google</li>
+      <li class="zine-li">📷 <strong>Scrambled Exif</strong> : supprime les données GPS de vos photos</li>
+      <li class="zine-li">🌿 <strong>Plantnet</strong> : identifie les plantes scientifiquement</li>
+      <li class="zine-li">📡 <strong>ElectroSmart</strong> : mesure l'électrosmog</li>
+    </ul>
+    <p style="font-size:85%">Guide complet : <code>pad.p2p.legal/Smartphone2NextCloud</code></p>
+  </section>
+
+  <section class="zine-page page-4">
+    <h2>🌟 Gagnez des Ẑen avec votre activité</h2>
+    <p>Votre ZEN Card vous coûte <strong>5 Ẑen/semaine</strong>. Voici comment les récupérer :</p>
+    <ul>
+      <li class="zine-li">💬 <strong>Publiez sur Nostr</strong> : chaque like reçu = 1 Ẑen</li>
+      <li class="zine-li">🌍 <strong>Géolocalisation</strong> : vos posts remontent dans votre UMAP (1km)</li>
+      <li class="zine-li">📸 <strong>Inventaire local</strong> : photographiez votre quartier, gagnez des Ẑen</li>
+      <li class="zine-li">🤝 <strong>Invitez un ami</strong> : parrainage = bonus Ẑen</li>
+    </ul>
+    <p style="font-size:85%">5 messages bien reçus = votre redevance couverte. Publiez utile, publiez local !</p>
+  </section>
+
+  <section class="zine-page page-5">
+    <h2>🔒 Vos données vous appartiennent</h2>
+    <ul>
+      <li class="zine-li"><strong>Zero tracking</strong> : aucune publicité, aucun algorithme</li>
+      <li class="zine-li"><strong>Chiffrement</strong> : vos clés, vos données</li>
+      <li class="zine-li"><strong>Portable</strong> : migrez vers une autre station avec votre MULTIPASS</li>
+      <li class="zine-li"><strong>Sauvegardes auto</strong> : votre uDRIVE est répliqué sur IPFS</li>
+    </ul>
+    <p>vs. alternatives centralisées :</p>
+    <ul>
+      <li class="zine-li">Google One 100Go → ~3€/mois + surveillance</li>
+      <li class="zine-li">iCloud 200Go → ~3€/mois + Apple tracking</li>
+      <li class="zine-li"><strong>ZEN Card 128Go → 5 Ẑen/sem + liberté totale</strong></li>
+    </ul>
+  </section>
+
+  <section class="zine-page page-6">
+    <h2>🤖 #BRO : votre IA locale</h2>
+    <p>Votre abonnement ZEN Card inclut l'accès à l'IA collective de la constellation :</p>
+    <ul>
+      <li class="zine-li">🎨 Génération d'images pour vos posts Nostr</li>
+      <li class="zine-li">📝 Rédaction d'articles sur votre TiddlyWiki</li>
+      <li class="zine-li">🔍 Recherche dans votre constellation</li>
+    </ul>
+    <p>Depuis Nostr, envoyez : <code>#BRO [votre demande]</code></p>
+    <p style="font-size:85%">L'IA tourne localement sur les machines de la coopérative — pas chez OpenAI.</p>
+  </section>
+
+  <section class="zine-page page-7">
+    <h2>🐉 Prochain niveau : U.SOCIETY</h2>
+    <p>Votre ZEN Card est un excellent début. Pour aller plus loin :</p>
+    <ul>
+      <li class="zine-li"><strong>U.SOCIETY</strong> : parrainage annuel → supprime le loyer hebdomadaire</li>
+      <li class="zine-li"><strong>Formation DRAGON</strong> : devenez Capitaine → 28 Ẑen/semaine</li>
+      <li class="zine-li"><strong>Gouvernance coopérative</strong> : participez aux décisions via G1 + Nostr</li>
+    </ul>
+    <p>Renseignez-vous :</p>
+    <p style="background:#c9daf8; padding:0.4rem; font-family:monospace; font-size:90%">
+      📧 support@qo-op.com<br>
+      🌐 <a href="https://opencollective.com/monnaie-libre">opencollective.com/monnaie-libre</a>
+    </p>
+  </section>
+
+  <footer class="zine-page page-8">
+    <h2>☁️ Votre cloud, vos règles</h2>
+    <p><strong>Pas de GAFAM. Pas de surveillance. Votre numérique vous appartient.</strong></p>
+    <p style="font-size:85%">Constellation : _UPLANET8_ | Secteur : _SECTOR_</p>
+    <p style="font-size:85%">Support : support@qo-op.com</p>
+    <p style="font-size:85%">G1FabLab / CopyLaRadio SCIC — github.com/papiche/Astroport.ONE</p>
+  </footer>
 </main>
 
-<script>
-// Script pour l'impression
-document.addEventListener('DOMContentLoaded', function() {
-    const printButton = document.createElement('button');
-    printButton.textContent = '🖨️ Imprimer';
-    printButton.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 1000; padding: 10px; background: #741b47; color: white; border: none; border-radius: 5px; cursor: pointer;';
-    printButton.onclick = () => window.print();
-    document.body.appendChild(printButton);
-});
-</script>
-
+<script src="/ipfs/QmdVAm49eURSGa4ipHFXkCrN8BVX5qWGAjNov7gPVFpuu4/script.js" async defer></script>
 </body>
-</html> 
+</html>
