@@ -148,11 +148,11 @@ echo -e "${CYAN}📡 IP détectée pour Ollama : ${HOST_IP} // Docker Brdge $DOC
 # --- CONFIG LITELLM ---
 cat > litellm-config.yaml << EOF
 model_list:
-  - model_name: "$OLLAMA_MODEL"
+  - model_name: "openai/$OLLAMA_MODEL"
     litellm_params:
       model: "ollama_chat/$OLLAMA_MODEL"
       api_base: "http://$DOCKER_BRIDGE_IP:$OLLAMA_PORT"
-  - model_name: "$EMBEDDING_MODEL"
+  - model_name: "openai/$EMBEDDING_MODEL"
     litellm_params:
       model: "ollama/$EMBEDDING_MODEL"
       api_base: "http://$DOCKER_BRIDGE_IP:$OLLAMA_PORT"
