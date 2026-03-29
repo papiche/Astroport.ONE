@@ -197,7 +197,7 @@ step_introduction() {
     read -p "Êtes-vous prêt à rejoindre la coopérative UPlanet ẐEN ? (o/N): " ready
     if [[ "$ready" != "o" && "$ready" != "O" ]]; then
         echo -e "${YELLOW}Vous pouvez relancer cet assistant plus tard avec:${NC}"
-        echo -e "${CYAN}~/.zen/Astroport.ONE/uplanet_onboarding.sh${NC}"
+        echo -e "${CYAN}~/.zen/Astroport.ONE/_uplanet_onboarding.sh${NC}"
         exit 0
     fi
 }
@@ -476,7 +476,7 @@ UPLANET_MODE=""
 step_uplanet_mode_choice() {
     print_section "CHOIX DU MODE UPLANET"
     
-    # Si FORCE_ZEN_MODE est défini (migration depuis update_config.sh)
+    # Si FORCE_ZEN_MODE est défini
     if [[ "$FORCE_ZEN_MODE" == "true" ]]; then
         print_info "Migration ORIGIN → ẐEN en cours..."
         UPLANET_MODE="zen"

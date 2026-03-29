@@ -104,9 +104,14 @@ fi
 ## CREATE ~/.zen/game/secret.nostr - YLEVEL NODE
 if [[ -s ~/.zen/game/secret.june ]]; then
     source ~/.zen/game/secret.june
-    npub=$(${MY_PATH}/tools/keygen -t nostr "$SALT" "$PEPPER")
+    # Sécurité : masquer SALT/PEPPER de ps aux via fichier credentials temporaire en RAM
+    _CRED_NODE=$(mktemp -p /dev/shm 2>/dev/null || mktemp)
+    chmod 600 "$_CRED_NODE"
+    trap "rm -f '$_CRED_NODE'" EXIT INT TERM
+    printf '%s\n%s\n' "$SALT" "$PEPPER" > "$_CRED_NODE"
+    npub=$(${MY_PATH}/tools/keygen -t nostr -i "$_CRED_NODE")
     hex=$(${MY_PATH}/tools/nostr2hex.py "$npub")
-    nsec=$(${MY_PATH}/tools/keygen -t nostr "$SALT" "$PEPPER" -s)
+    nsec=$(${MY_PATH}/tools/keygen -t nostr -s -i "$_CRED_NODE")
     echo "NSEC=$nsec; NPUB=$npub; HEX=$hex" > ~/.zen/game/secret.nostr
     chmod 600 ~/.zen/game/secret.nostr
     echo $hex > ~/.zen/tmp/${IPFSNODEID}/HEX

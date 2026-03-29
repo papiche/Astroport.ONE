@@ -247,6 +247,10 @@ for PLAYER in ${PLAYERONE[@]}; do
         Npaf=$(makecoord $(echo "$NCARD / 10" | bc -l))
         [[ -z $ZCARD ]] && ZCARD=4
         Gpaf=$(makecoord $(echo "$ZCARD / 10" | bc -l))
+        # Valeur par défaut pour éviter un crash bc si COINS est vide
+        COINS=${COINS:-0}
+        Gpaf=${Gpaf:-0}
+        Npaf=${Npaf:-0}
         # Check if the difference is a multiple of 7
         if [ $((DIFF_DAYS % 7)) -eq 0 ]; then
             if [[ $(echo "$COINS > $Gpaf + $Npaf" | bc -l) -eq 1 && ${PLAYER} != ${CAPTAINEMAIL} ]]; then

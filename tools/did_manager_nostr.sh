@@ -1072,6 +1072,12 @@ republish_did_ipns() {
             local nostripfs=$(ipfs add -rwq "$HOME/.zen/game/nostr/${email}/" | tail -n 1)
             
             if [[ -n "$nostripfs" ]]; then
+                # Rate-limiting : éviter un OOM sur Raspberry Pi lors du traitement batch
+                # Attendre si MAX_IPFS_PUBLISH (défaut: 3) publications sont déjà en cours
+                local _max_pub=${MAX_IPFS_PUBLISH:-3}
+                while [[ $(pgrep -c -f "ipfs name publish" 2>/dev/null || echo 0) -ge $_max_pub ]]; do
+                    sleep 2
+                done
                 # Verify .well-known is accessible in the IPFS directory
                 if ipfs ls "/ipfs/${nostripfs}/APP/uDRIVE/Apps/.well-known" >/dev/null 2>&1; then
                     ipfs name publish --key "${g1pubnostr}:NOSTR" "/ipfs/${nostripfs}" 2>&1 >/dev/null &

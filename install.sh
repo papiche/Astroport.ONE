@@ -103,6 +103,12 @@ cd ~/.zen
 git clone --depth 1 https://github.com/papiche/Astroport.ONE.git
 # TODO INSTALL FROM IPFS / IPNS
 
+## S'assurer que tous les scripts principaux sont exécutables après le clone
+chmod +x ~/.zen/Astroport.ONE/*.sh \
+         ~/.zen/Astroport.ONE/tools/*.sh \
+         ~/.zen/Astroport.ONE/RUNTIME/*.sh 2>/dev/null || true
+echo "✅ Scripts rendus exécutables"
+
 ## Créer .env depuis template si absent (évite "Aucun fichier" au démarrage des services)
 [[ ! -f ~/.zen/Astroport.ONE/.env ]] \
     && cp ~/.zen/Astroport.ONE/.env.template ~/.zen/Astroport.ONE/.env \

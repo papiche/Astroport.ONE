@@ -203,8 +203,13 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
     fi
 
     # 1. Generate a DISCO Nostr key pair
-    NPRIV=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}" -s)
-    NPUBLIC=$(${MY_PATH}/../tools/keygen -t nostr "${SALT}" "${PEPPER}")
+    # Sécurité : masquer SALT/PEPPER de ps aux via fichier credentials temporaire en RAM
+    _CRED_NOSTR=$(mktemp -p /dev/shm 2>/dev/null || mktemp)
+    chmod 600 "$_CRED_NOSTR"
+    trap "rm -f '$_CRED_NOSTR'" EXIT INT TERM
+    printf '%s\n%s\n' "${SALT}" "${PEPPER}" > "$_CRED_NOSTR"
+    NPRIV=$(${MY_PATH}/../tools/keygen -t nostr -s -i "$_CRED_NOSTR")
+    NPUBLIC=$(${MY_PATH}/../tools/keygen -t nostr -i "$_CRED_NOSTR")
     HEX=$(${MY_PATH}/../tools/nostr2hex.py "$NPUBLIC")
 
     #~ echo "Nostr Private Key: $NPRIV"

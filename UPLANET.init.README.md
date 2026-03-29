@@ -223,7 +223,6 @@ Installation → Configuration → Initialisation → Identité Capitaine
 | **`uplanet_onboarding.sh`** | Embarquement complet | Lance UPLANET.init.sh automatiquement, option `q` pour config rapide |
 | **`captain.sh`** | Dashboard Capitaine | Gestion config coopérative, embarquement, monitoring |
 | **`cooperative_config.sh`** | Configuration DID NOSTR | Paramètres partagés essaim (kind 30800, chiffrés) |
-| **`update_config.sh`** | Migration et mise à jour | Peut relancer UPLANET.init.sh si nécessaire |
 | **`heartbox_analysis.sh`** | Analyse système | Fournit les capacités pour la valorisation |
 
 ### **📋 Configuration Coopérative DID (Nouveauté)**
@@ -267,12 +266,6 @@ coop_config_set "OCAPIKEY" "mon_token"
 2. **`uplanet_onboarding.sh`** : Configuration et choix du mode
 3. **`UPLANET.init.sh`** : **Initialisation automatique** de l'infrastructure
 4. **`captain.sh`** : Création identité capitaine
-
-### **🔄 Migration ORIGIN → ẐEN**
-1. **`update_config.sh`** : Détection mode et migration
-2. **Désinscription automatique** : `nostr_DESTROY_TW.sh` + `PLAYER.unplug.sh`
-3. **`UPLANET.init.sh`** : **Réinitialisation** avec nouvelle source primale ẐEN
-4. **`uplanet_onboarding.sh`** : Configuration ẐEN complète
 
 ### **🔍 Maintenance et Vérification**
 1. **`UPLANET.init.sh --dry-run`** : Vérification état des portefeuilles

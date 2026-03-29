@@ -98,6 +98,7 @@ INTRUSION_DUNIKEY="$HOME/.zen/game/uplanet.INTRUSION.dunikey"
 if [[ -s "$INTRUSION_DUNIKEY" ]]; then
     INTRUSION_G1PUB=$(grep "pub:" "$INTRUSION_DUNIKEY" | awk '{print $2}')
     INTRUSION_COIN=$(${MY_PATH}/../tools/G1check.sh "${INTRUSION_G1PUB}" | tail -n 1)
+    INTRUSION_COIN=${INTRUSION_COIN:-0}
     INTRUSION_ZEN=$(echo "scale=1; ($INTRUSION_COIN - 1) * 10" | bc)
     echo "INTRUSION wallet: ${INTRUSION_ZEN} Ẑen (${INTRUSION_COIN} Ğ1)"
 
@@ -143,6 +144,7 @@ fi
 CAPTAIN_DEDICATED_G1PUB=$(cat $HOME/.zen/game/uplanet.captain.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
 echo "CAPTAIN_DEDICATED G1PUB : ${CAPTAIN_DEDICATED_G1PUB}"
 CAPTAIN_DEDICATED_COIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAIN_DEDICATED_G1PUB} | tail -n 1)
+CAPTAIN_DEDICATED_COIN=${CAPTAIN_DEDICATED_COIN:-0}
 CAPTAIN_DEDICATED_ZEN=$(echo "scale=1; ($CAPTAIN_DEDICATED_COIN - 1) * 10" | bc)
 echo "Captain DEDICATED balance: $CAPTAIN_DEDICATED_ZEN Ẑen (recettes d'exploitation pour répartition)"
 

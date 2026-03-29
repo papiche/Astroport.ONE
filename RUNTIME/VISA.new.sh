@@ -17,6 +17,12 @@ mkdir -p ~/.zen/tmp/${MOATS}
 
 SALT="$1"
 PEPPER="$2"
+# Sécurité : masquer SALT/PEPPER de ps aux via fichier credentials temporaire en RAM
+# Ce fichier est utilisé pour tous les appels keygen -t {nostr,ipfs,duniter,ssh} dans ce script
+_CRED_VISA=$(mktemp -p /dev/shm 2>/dev/null || mktemp)
+chmod 600 "$_CRED_VISA"
+trap "rm -f '$_CRED_VISA'" EXIT INT TERM
+printf '%s\n%s\n' "$SALT" "$PEPPER" > "$_CRED_VISA"
 PLAYER="$3"
 PSEUDO="$4"
 echo $PSEUDO > ~/.zen/tmp/PSEUDO
@@ -84,12 +90,12 @@ mkdir -p ~/.zen/tmp/${MOATS}/TW
 if [[ $SALT != "" && PEPPER != "" ]]; then
 
     ## Creating SALT/PEPPER IPNS KEY
-    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/player.key "$SALT" "$PEPPER" 2>/dev/null
+    ${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/player.key -i "$_CRED_VISA" 2>/dev/null
     ASTRONAUTENS=$(ipfs key import ${MOATS} -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/player.key 2>/dev/null)
     # echo "/ipns/${ASTRONAUTENS}"
 
     ## CREATING SALT/PEPPER SSH KEY
-    ${MY_PATH}/../tools/keygen -t ssh -o ~/.zen/tmp/${MOATS}/ssh "$SALT" "$PEPPER" &>/dev/null
+    ${MY_PATH}/../tools/keygen -t ssh -o ~/.zen/tmp/${MOATS}/ssh -i "$_CRED_VISA" &>/dev/null
     SSHPUB="$(cat ~/.zen/tmp/${MOATS}/ssh.pub)"
 
     echo "SCANNING /ipns/${ASTRONAUTENS} for 180s"
@@ -198,7 +204,7 @@ PLAYER=${PLAYER,,}
 PASS=$(echo "${RANDOM}${RANDOM}${RANDOM}${RANDOM}" | tail -c-5)
 
 ############################################################
-${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/secret.dunikey "$SALT" "$PEPPER"
+${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/tmp/${MOATS}/secret.dunikey -i "$_CRED_VISA"
 
 G1PUB=$(cat ~/.zen/tmp/${MOATS}/secret.dunikey | grep 'pub:' | cut -d ' ' -f 2)
 
@@ -233,7 +239,7 @@ WID="${myAPI}" ## https://ipfs.libra.copylaradio.com
 # Create ${PLAYER} "IPNS Key"
 ipfs key rm ${PLAYER} >/dev/null 2>&1
 ipfs key rm ${G1PUB} >/dev/null 2>&1
-${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/game/players/${PLAYER}/secret.player "$SALT" "$PEPPER"
+${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/game/players/${PLAYER}/secret.player -i "$_CRED_VISA"
 TWNS=$(ipfs key import ${PLAYER} -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/secret.player)
 ASTRONAUTENS=$(ipfs key import ${G1PUB} -f pem-pkcs8-cleartext ~/.zen/game/players/${PLAYER}/secret.player)
 
@@ -443,9 +449,13 @@ OSECTOR=$(cat ~/.zen/tmp/${MOATS}/MadeInZion.json | jq -r .[].sector)
 cat ${MY_PATH}/../templates/data/local.api.json | sed "s~_NID_~${WID}~g" > ~/.zen/tmp/${MOATS}/local.api.json
 cat ${MY_PATH}/../templates/data/local.gw.json | sed "s~_NID_~${NID}~g" > ~/.zen/tmp/${MOATS}/local.gw.json
 
-# Create"${PLAYER}_feed" Key ! DERIVATED !  "$SALT" "$PEPPER $G1PUB"
+# Create"${PLAYER}_feed" Key ! DERIVATED ! Utilise SALT + "PEPPER IPFSNODEID" (mot de passe composite)
 ipfs key rm "${PLAYER}_feed" 2>/dev/null
-${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey "$SALT" "$PEPPER $IPFSNODEID"
+_CRED_FEED=$(mktemp -p /dev/shm 2>/dev/null || mktemp)
+chmod 600 "$_CRED_FEED"
+printf '%s\n%s\n' "$SALT" "$PEPPER $IPFSNODEID" > "$_CRED_FEED"
+${MY_PATH}/../tools/keygen -t ipfs -o ~/.zen/tmp/${MOATS}/feed.ipfskey -i "$_CRED_FEED"
+rm -f "$_CRED_FEED"
 FEEDNS=$(ipfs key import "${PLAYER}_feed" -f pem-pkcs8-cleartext ~/.zen/tmp/${MOATS}/feed.ipfskey)
 
 ## MAKE LightBeam Plugin Tiddler ${PLAYER}_feed

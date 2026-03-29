@@ -305,6 +305,10 @@ for PLAYER in "${NOSTR[@]}"; do
     else
         ZEN="-10.00"
     fi
+    # Valeurs par défaut pour éviter un crash bc si COINS/ZEN est vide ou "null"
+    COINS=${COINS:-0}
+    [[ "$COINS" == "null" ]] && COINS=0
+    ZEN=${ZEN:--10.00}
 
     log "INFO" "${G1PUBNOSTR} AMOUNT (${COINS} G1) = ${ZEN} ZEN"
     log_metric "WALLET_BALANCE" "${COINS}" "${PLAYER}"

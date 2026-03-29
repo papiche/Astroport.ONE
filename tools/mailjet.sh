@@ -78,12 +78,18 @@ source=$source"
 
 ############################################## SEARCH in NOSTR
 echo "🔍 Searching for NOSTR profile for ${mail}..."
-NOSTR_DATA=$($MY_PATH/search_for_this_email_in_nostr.sh ${mail} 2>/dev/null | tail -n 1)
-if [[ -n "$NOSTR_DATA" ]]; then
-    echo "✅ NOSTR profile found:"
-    echo "$NOSTR_DATA"
-    # Source the NOSTR data
-    eval "$NOSTR_DATA"
+NOSTR_LINE=$($MY_PATH/search_for_this_email_in_nostr.sh "${mail}" 2>/dev/null | tail -n 1)
+if [[ -n "$NOSTR_LINE" && "$NOSTR_LINE" == export\ * ]]; then
+    echo "✅ NOSTR profile found"
+    echo "$NOSTR_LINE"
+    # Extraction sécurisée : aucun eval — chaque variable extraite individuellement par grep -oP
+    # Cela protège contre toute injection de code depuis un profil NOSTR malveillant
+    HEX=$(echo "$NOSTR_LINE"       | grep -oP '(?<=\bHEX=)[^ ]+')
+    NPUB=$(echo "$NOSTR_LINE"      | grep -oP '(?<=\bNPUB=)[^ ]+')
+    RELAY=$(echo "$NOSTR_LINE"     | grep -oP '(?<=\bRELAY=)[^ ]+')
+    G1PUBNOSTR=$(echo "$NOSTR_LINE"| grep -oP '(?<=\bG1PUBNOSTR=)[^ ]+')
+    LAT=$(echo "$NOSTR_LINE"       | grep -oP '(?<=\bLAT=)[^ ]+')
+    LON=$(echo "$NOSTR_LINE"       | grep -oP '(?<=\bLON=)[^ ]+')
     echo "NOSTR_HEX=$HEX"
     echo "NOSTR_NPUB=$NPUB"
     echo "NOSTR_RELAY=$RELAY"
@@ -92,6 +98,9 @@ else
     HEX=""
     NPUB=""
     RELAY=""
+    G1PUBNOSTR=""
+    LAT=""
+    LON=""
 fi
 
 ## Is it UPlanet ORIGIN or Ẑen ?
