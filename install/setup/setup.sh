@@ -158,11 +158,13 @@ echo ">>> SWITCHING ASTROPORT ON <<<"
 
 ##########################################################
 ## ON BOARDING PLAYER
-echo "MJ activation"
-ipfs --timeout 30s cat /ipfs/QmVy7FKd1MGZqee4b7B5jmBKNgTJBvKKkoDhodnJWy23oN > ~/.zen/MJ_APIKEY
 source ${HOME}/.zen/Astroport.ONE/tools/my.sh
 
-GO=$(my_LatLon) ## FR 34.46 1.51 # (country lat lon) with 0.01° precision
+GO=$(my_LatLon) ## fr 43.60 1.45 # (lang lat lon) with 0.01° precision
+## Force lowercase sur le code langue (my_LatLon peut retourner "FR" en majuscule)
+## → cohérence des chemins : game/nostr/support+hostname_fr_... (jamais FR)
+GO="$(echo $GO | awk '{print tolower($1), $2, $3}')"
+echo ">>> GPS + Langue : $GO"
 HOSTNAME_SHORT=$(hostname -s)
 
 # =========================================================================
@@ -267,6 +269,21 @@ if [[ ! -d ~/.zen/game/players/.current ]]; then
 
     ## ZEN CARD --->
     echo ">>> Create CAPTAIN ZENCARD <<<"
+
+    ## Attendre que le daemon IPFS soit prêt (VISA.new.sh line 12 : ! ipfs swarm peers && exit 1)
+    ## repo.lock peut bloquer ipfs swarm peers si un autre processus IPFS est en cours
+    _ipfs_ready=false
+    for _i in $(seq 1 30); do
+        if ipfs swarm peers >/dev/null 2>&1; then
+            _ipfs_ready=true; break
+        fi
+        sleep 1; echo -n "."
+    done
+    echo ""
+    [[ "$_ipfs_ready" == "true" ]] \
+        && echo "✅ IPFS daemon prêt pour VISA.new.sh" \
+        || echo "⚠️  IPFS swarm peers toujours indisponible après 30s — VISA.new.sh peut échouer"
+
     ZSALT=$(${HOME}/.zen/Astroport.ONE/tools/diceware.sh $(( $(${HOME}/.zen/Astroport.ONE/tools/getcoins_from_gratitude_box.sh) + 3 )))
     ZPEPS=$(${HOME}/.zen/Astroport.ONE/tools/diceware.sh $(( $(${HOME}/.zen/Astroport.ONE/tools/getcoins_from_gratitude_box.sh) + 3 )))
 

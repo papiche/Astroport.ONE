@@ -164,7 +164,7 @@ case "$MODE" in
         sudo systemctl enable g1billet 2>/dev/null
         sudo systemctl start ipfs 2>/dev/null
         sudo systemctl start astroport 2>/dev/null
-        sudo systemctl start g1billet 2>/dev/null
+        ## G1Billet fonctionne en mode CLI uniquement (plus de service systemd)
         
         echo "✅ ASTROPORT is ON"
         echo "   - 20h12 cron: ENABLED (solar time: $SOLAR20H12)"
@@ -184,7 +184,6 @@ case "$MODE" in
         
         # Stop and disable all services
         sudo systemctl stop astroport 2>/dev/null
-        sudo systemctl stop g1billet 2>/dev/null
         sudo systemctl stop ipfs 2>/dev/null
         sudo systemctl disable astroport 2>/dev/null
         sudo systemctl disable g1billet 2>/dev/null
@@ -213,7 +212,6 @@ case "$MODE" in
         # Keep astroport and g1billet disabled in LOW mode
         # (they won't be restarted by 20h12.process.sh in LOW mode)
         sudo systemctl stop astroport 2>/dev/null
-        sudo systemctl stop g1billet 2>/dev/null
         
         echo "⚡ ASTROPORT is in LOW mode"
         echo "   - 20h12 cron: ENABLED (solar time: $SOLAR20H12)"

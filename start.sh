@@ -22,8 +22,6 @@ sudo systemctl start ipfs
 sleep 5
 echo "astroport start"
 sudo systemctl start astroport
-echo "g1billet start"
-sudo systemctl start g1billet
 echo "upassport start"
 sudo systemctl start upassport
 

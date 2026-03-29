@@ -117,9 +117,11 @@ sudo systemctl enable ipfs
 ###########################################
 # ACTIVATE IPFS OPTIONS: #swarm0 INIT
 ###########################################
-$MY_PATH/tools/ipfs_config.sh
+## Note: ipfs_config.sh optionnel — configuration supplémentaire si présent
+[[ -x "$MY_PATH/ipfs_config.sh" ]] && "$MY_PATH/ipfs_config.sh" || true
 
-sudo systemctl restart ipfs
+echo "MJ activation"
+ipfs --timeout 30s cat /ipfs/QmVy7FKd1MGZqee4b7B5jmBKNgTJBvKKkoDhodnJWy23oN > ~/.zen/MJ_APIKEY
 
 ## Add ulimit "open files" (avoid ipfs hang)
 sudo sed -i "/$USER.*nofile/d" /etc/security/limits.conf

@@ -15,8 +15,6 @@ $USER@$HOSTNAME
 echo
 echo "astroport stop"
 sudo systemctl stop astroport
-echo "g1billet stop"
-sudo systemctl stop g1billet
 echo "ipfs stop"
 sudo systemctl stop ipfs
 
