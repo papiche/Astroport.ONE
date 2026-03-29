@@ -65,3 +65,4 @@ do
 done
 
 sudo systemctl start ipfs
+sleep 5
