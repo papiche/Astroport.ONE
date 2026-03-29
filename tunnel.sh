@@ -32,6 +32,7 @@ Commandes de l'interface :
   R                : RESET (Force la fermeture et la réouverture du tunnel)
   X                : STOP (Ferme le tunnel et libère le port local)
   W                : WEB/SSH (Ouvre l'interface Web ou un Terminal SSH)
+  I                : IPNS (Ouvre http://localhost:8080/ipns/IPFSNODEID de la station)
   Q                : Quitter le moniteur
 
 Options :
@@ -104,7 +105,7 @@ kill_service() {
 draw_ui() {
     clear
     tput civis
-    echo -e "${BG_BLUE}${FG_BLACK}  tunnel v2.0 -[Q]->Quit [Entrée]->CONNECT [R]->RESET [X]->STOP [W]->Web/SSH  ${NC}"
+    echo -e "${BG_BLUE}${FG_BLACK}  tunnel v2.0 -[Q]->Quit [↵]->CONNECT [R]->RESET [X]->STOP [W]->Web/SSH [I]->IPNS  ${NC}"
     echo -e "ID LOCAL: ${CYAN}${LOCAL_ID}${NC} | Port: ${YELLOW}${map_ports[$cursor]}${NC} | Auto-refresh ON${NC}\n"
 
     for i in "${!map_names[@]}"; do
@@ -221,6 +222,14 @@ while $running; do
                         || open "${proto}://127.0.0.1:${port}${suffix}" >/dev/null 2>&1 &
                 fi
             fi
+            ;;
+        "i"|"I") # IPNS — Ouvrir la page /ipns/IPFSNODEID de la station sélectionnée
+            node_id="${map_nodes[$cursor]}"
+            ipns_url="http://localhost:8080/ipns/${node_id}"
+            last_msg="IPNS → ${ipns_url}"
+            draw_ui
+            xdg-open "${ipns_url}" >/dev/null 2>&1 \
+                || open "${ipns_url}" >/dev/null 2>&1 &
             ;;
         "q"|"Q") running=false ;;
     esac
