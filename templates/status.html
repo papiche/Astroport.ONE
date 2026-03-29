@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚙️ Astroport Node Status</title>
+    <style>
+        :root {
+            --bg: #181c24;
+            --bg2: #232733;
+            --bg3: #1e2533;
+            --border: #2c3345;
+            --accent: #3498db;
+            --accent2: #2ecc71;
+            --accent3: #f39c12;
+            --accent4: #e74c3c;
+            --accent5: #9b59b6;
+            --text: #eaf6ff;
+            --text2: #b8c6e0;
+            --text3: #7f8c8d;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            min-height: 100vh;
+        }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { color: #5dade2; text-decoration: underline; }
+
+        /* ── Loading ── */
+        #loading {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            min-height: 80vh; gap: 16px;
+        }
+        .spinner {
+            width: 48px; height: 48px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Layout ── */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 1.2rem;
+        }
+        .header {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 8px;
+            padding: 14px 20px;
+            background: var(--bg2);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            margin-bottom: 1.2rem;
+        }
+        .header-left h1 { font-size: 1.3rem; color: var(--accent); }
+        .header-left .sub { font-size: 0.8rem; color: var(--text3); margin-top: 2px; }
+        .header-right { display: flex; gap: 8px; flex-wrap: wrap; }
+        .badge {
+            display: inline-block; padding: 5px 12px; border-radius: 5px;
+            font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em;
+        }
+        .badge-green  { background: rgba(46,204,113,.18); color: #2ecc71; border: 1px solid rgba(46,204,113,.35); }
+        .badge-yellow { background: rgba(243,156,18,.18);  color: #f39c12; border: 1px solid rgba(243,156,18,.35); }
+        .badge-orange { background: rgba(230,126,34,.18);  color: #e67e22; border: 1px solid rgba(230,126,34,.35); }
+        .badge-red    { background: rgba(231,76,60,.18);   color: #e74c3c; border: 1px solid rgba(231,76,60,.35); }
+        .badge-grey   { background: rgba(127,140,141,.18); color: #95a5a6; border: 1px solid rgba(127,140,141,.35); }
+        .badge-blue   { background: rgba(52,152,219,.18);  color: #3498db; border: 1px solid rgba(52,152,219,.35); }
+        .badge-purple { background: rgba(155,89,182,.18);  color: #9b59b6; border: 1px solid rgba(155,89,182,.35); }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+        .card {
+            background: var(--bg2); border: 1px solid var(--border);
+            border-radius: 10px; padding: 1rem;
+        }
+        .card-title {
+            font-size: 0.78rem; text-transform: uppercase; letter-spacing: .07em;
+            color: var(--text3); margin-bottom: 0.8rem; display: flex; align-items: center; gap: 6px;
+        }
+        .card-title .dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--accent); display: inline-block;
+        }
+        .kv { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 0.87rem; }
+        .kv:last-child { border-bottom: none; }
+        .kv .key { color: var(--text3); flex: 0 0 auto; padding-right: 8px; }
+        .kv .val { color: var(--text); text-align: right; word-break: break-all; }
+        .kv .val.mono { font-family: monospace; font-size: 0.78rem; }
+        .kv .val.big { font-size: 1.1rem; font-weight: 700; }
+
+        /* Service chips */
+        .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+        .chip {
+            padding: 4px 10px; border-radius: 4px; font-size: 0.78rem;
+            background: var(--bg3); border: 1px solid var(--border);
+            color: var(--text2); display: flex; align-items: center; gap: 5px;
+        }
+        .chip.ok  { border-color: rgba(46,204,113,.4); color: #2ecc71; }
+        .chip.off { border-color: rgba(127,140,141,.3); color: var(--text3); }
+
+        /* Big stat boxes */
+        .stat-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-bottom: 1rem; }
+        .stat-box {
+            background: var(--bg3); border: 1px solid var(--border);
+            border-radius: 8px; padding: 10px; text-align: center;
+        }
+        .stat-box .sv { font-size: 1.4rem; font-weight: 700; color: var(--accent); }
+        .stat-box .sk { font-size: 0.68rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text3); margin-top: 3px; }
+
+        /* Progress bar */
+        .pbar-wrap { margin: 4px 0; }
+        .pbar-label { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text3); margin-bottom: 3px; }
+        .pbar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+        .pbar-fill { height: 100%; border-radius: 3px; transition: width .5s; }
+        .pbar-fill.blue   { background: linear-gradient(90deg, #3498db, #2980b9); }
+        .pbar-fill.green  { background: linear-gradient(90deg, #2ecc71, #27ae60); }
+        .pbar-fill.yellow { background: linear-gradient(90deg, #f1c40f, #f39c12); }
+        .pbar-fill.red    { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+
+        /* Footer */
+        .footer { text-align: center; padding: 1.5rem 0; font-size: 0.75rem; color: var(--text3); }
+        .footer a { color: var(--accent); }
+
+        /* Error alert */
+        .alert { padding: 12px 16px; border-radius: 8px; font-size: 0.88rem; margin-bottom: 1rem; }
+        .alert-warn { background: rgba(243,156,18,.12); border: 1px solid rgba(243,156,18,.4); color: #f39c12; }
+        .alert-err  { background: rgba(231,76,60,.12);  border: 1px solid rgba(231,76,60,.4);  color: #e74c3c; }
+
+        @media (max-width: 520px) {
+            .header { flex-direction: column; }
+            .stat-row { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="loading">
+    <div class="spinner"></div>
+    <div style="color:var(--text3);font-size:.9rem;">Connexion au nœud…</div>
+</div>
+
+<div id="app" style="display:none;" class="container">
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <h1 id="h-hostname">⚙️ Astroport Node</h1>
+            <div class="sub" id="h-sub">chargement…</div>
+        </div>
+        <div class="header-right">
+            <span id="h-risk" class="badge badge-grey">—</span>
+            <span id="h-updated" class="badge badge-grey" title="Dernière publication IPNS">—</span>
+        </div>
+    </header>
+
+    <!-- Stat boxes -->
+    <div class="stat-row">
+        <div class="stat-box"><div class="sv" id="s-swarm">—</div><div class="sk">stations swarm</div></div>
+        <div class="stat-box"><div class="sv" id="s-mp">—</div><div class="sk">multipass</div></div>
+        <div class="stat-box"><div class="sv" id="s-zc">—</div><div class="sk">zencard</div></div>
+        <div class="stat-box"><div class="sv" id="s-peers">—</div><div class="sk">pairs IPFS</div></div>
+        <div class="stat-box"><div class="sv" id="s-rev">—</div><div class="sk">Ẑ/semaine</div></div>
+        <div class="stat-box"><div class="sv" id="s-bilan">—</div><div class="sk">bilan Ẑ</div></div>
+    </div>
+
+    <!-- Main grid -->
+    <div class="grid">
+
+        <!-- Identité -->
+        <div class="card">
+            <div class="card-title"><span class="dot"></span>🪪 Identité</div>
+            <div class="kv"><span class="key">Captain</span><span class="val" id="d-captain">—</span></div>
+            <div class="kv"><span class="key">UPlanet</span><span class="val mono" id="d-uplanet">—</span></div>
+            <div class="kv"><span class="key">IP</span><span class="val mono" id="d-ip">—</span></div>
+            <div class="kv"><span class="key">Ville</span><span class="val" id="d-city">—</span></div>
+            <div class="kv"><span class="key">GPS</span><span class="val mono" id="d-gps">—</span></div>
+            <div class="kv" style="margin-top:6px">
+                <span class="key">IPFS ID</span>
+                <span class="val mono" id="d-nodeid" style="font-size:.7rem;word-break:break-all;">—</span>
+            </div>
+        </div>
+
+        <!-- Services DRAGON -->
+        <div class="card">
+            <div class="card-title"><span class="dot" style="background:#2ecc71"></span>🐉 Services DRAGON</div>
+            <div id="d-services"><span style="color:var(--text3);font-size:.85rem;">Aucun service publié</span></div>
+            <div style="margin-top:12px">
+                <div class="card-title" style="margin-bottom:6px"><span class="dot" style="background:#9b59b6"></span>🖥️ Système</div>
+                <div id="d-sys-services"><span style="color:var(--text3);font-size:.85rem;">—</span></div>
+            </div>
+        </div>
+
+        <!-- Économie -->
+        <div class="card">
+            <div class="card-title"><span class="dot" style="background:#f39c12"></span>💰 Économie hebdo</div>
+            <div class="kv"><span class="key">PAF node</span><span class="val big" id="e-paf">—</span></div>
+            <div class="kv"><span class="key">Revenus</span><span class="val big" id="e-rev">—</span></div>
+            <div class="kv"><span class="key">Balance</span><span class="val big" id="e-bal">—</span></div>
+            <div class="kv"><span class="key">Remun. Captain</span><span class="val" id="e-cap">—</span></div>
+            <div style="margin-top:10px">
+                <div class="pbar-wrap">
+                    <div class="pbar-label"><span>Multipass</span><span id="e-mp-lbl">—</span></div>
+                    <div class="pbar"><div class="pbar-fill blue" id="e-mp-bar" style="width:0%"></div></div>
+                </div>
+                <div class="pbar-wrap" style="margin-top:6px">
+                    <div class="pbar-label"><span>ZenCard</span><span id="e-zc-lbl">—</span></div>
+                    <div class="pbar"><div class="pbar-fill green" id="e-zc-bar" style="width:0%"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wallets coopératifs -->
+        <div class="card">
+            <div class="card-title"><span class="dot" style="background:#9b59b6"></span>⚖️ Wallets coopératifs</div>
+            <div id="d-wallets">
+                <div style="color:var(--text3);font-size:.85rem;">Chargement des soldes…</div>
+            </div>
+        </div>
+
+        <!-- Liens rapides -->
+        <div class="card">
+            <div class="card-title"><span class="dot" style="background:#3498db"></span>🔗 Liens rapides</div>
+            <div id="d-links" class="chips"></div>
+        </div>
+
+        <!-- Capacités -->
+        <div class="card">
+            <div class="card-title"><span class="dot" style="background:#27ae60"></span>📊 Capacités</div>
+            <div class="kv"><span class="key">Slots ZenCard</span><span class="val big" id="cap-zc">—</span></div>
+            <div class="kv"><span class="key">Slots NOSTR</span><span class="val big" id="cap-nostr">—</span></div>
+            <div class="kv"><span class="key">Disque libre</span><span class="val big" id="cap-disk">—</span></div>
+        </div>
+
+    </div><!-- /grid -->
+
+    <div class="footer">
+        <p>
+            Balise IPNS : <span id="f-ipns">—</span> ·
+            <a href="./12345.json" target="_blank">12345.json</a> ·
+            <a href="https://github.com/papiche/Astroport.ONE" target="_blank">Astroport.ONE</a>
+        </p>
+    </div>
+
+</div><!-- /app -->
+
+<script>
+// ─── URL helpers (même logique que economy.html) ──────────────────────────────
+
+/**
+ * Depuis n'importe quelle URL d'accès, dérive l'URL de base de l'API uSPOT (port 54321).
+ * Exemples :
+ *  https://ipfs.domain.tld/ipns/NODEID/status.html  →  https://u.domain.tld
+ *  http://localhost:8080/ipns/NODEID/status.html      →  http://localhost:54321
+ *  http://127.0.0.1:8080/ipns/NODEID/status.html     →  http://127.0.0.1:54321
+ */
+function getAPIUrl() {
+    const loc = new URL(window.location.href);
+    let apiUrl = new URL(loc.origin);
+
+    if (loc.hostname.startsWith('ipfs.')) {
+        // Transformation ipfs.domain.tld → u.domain.tld
+        apiUrl.hostname = apiUrl.hostname.replace('ipfs.', 'u.');
+        apiUrl.port = '';
+    } else if (loc.port === '8080' || loc.hostname === 'localhost' || loc.hostname === '127.0.0.1') {
+        apiUrl.port = '54321';
+    }
+
+    return apiUrl.toString().replace(/\/+$/, '');
+}
+
+/** URL de base du répertoire IPNS courant (pour les ressources relatives) */
+function getNodeBaseUrl() {
+    const href = window.location.href;
+    return href.substring(0, href.lastIndexOf('/'));
+}
+
+// ─── Fetch helpers ────────────────────────────────────────────────────────────
+
+async function fetch12345() {
+    const url = getNodeBaseUrl() + '/12345.json';
+    const r = await fetch(url, { cache: 'no-cache' });
+    if (!r.ok) throw new Error(`12345.json: HTTP ${r.status}`);
+    return r.json();
+}
+
+async function fetchBalance(g1pub, apiBase) {
+    if (!g1pub || g1pub === 'N/A') return null;
+    try {
+        const r = await fetch(`${apiBase}/check_balance?g1pub=${encodeURIComponent(g1pub)}`,
+                              { signal: AbortSignal.timeout(8000) });
+        if (!r.ok) return null;
+        const d = await r.json();
+        if (!d || !d.balance) return null;
+        const g1 = parseFloat(d.balance);
+        const zen = Math.max(0, (g1 - 1) * 10);
+        return { g1: g1.toFixed(2), zen: zen.toFixed(1) };
+    } catch { return null; }
+}
+
+// ─── Render helpers ───────────────────────────────────────────────────────────
+
+function setText(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val ?? '—';
+}
+
+function riskBadge(risk) {
+    const map = {
+        GREEN:  ['badge-green',  '🟢 GREEN'],
+        YELLOW: ['badge-yellow', '🟡 YELLOW'],
+        ORANGE: ['badge-orange', '🟠 ORANGE'],
+        RED:    ['badge-red',    '🔴 RED'],
+    };
+    return map[risk] || ['badge-grey', '⚪ N/A'];
+}
+
+function renderServices(dragonStr) {
+    const el = document.getElementById('d-services');
+    if (!dragonStr) return;
+    const svcs = dragonStr.split(',').map(s => s.trim()).filter(Boolean);
+    if (!svcs.length) return;
+    const portMap = { ollama: 11434, comfyui: 8188, 'open-webui': 8000, paperclip: 3100,
+                      qdrant: 6333, orpheus: 5005, perplexica: 3002, ssh: 22,
+                      npm: 81, 'nextcloud-aio': 8443, 'nextcloud-app': 8001,
+                      'webtop-http': 3000, 'webtop-https': 3001 };
+    el.innerHTML = '<div class="chips">' +
+        svcs.map(s => {
+            const p = portMap[s] ? `:${portMap[s]}` : '';
+            return `<span class="chip ok">⬡ ${s}${p}</span>`;
+        }).join('') + '</div>';
+}
+
+function renderSysServices(services) {
+    const el = document.getElementById('d-sys-services');
+    if (!services) return;
+    const chips = Object.entries(services).map(([k, v]) => {
+        const on = v && v.active;
+        return `<span class="chip ${on ? 'ok' : 'off'}">${on ? '✓' : '○'} ${k}</span>`;
+    });
+    el.innerHTML = '<div class="chips">' + chips.join('') + '</div>';
+}
+
+function renderLinks(d, apiBase) {
+    const el = document.getElementById('d-links');
+    const links = [
+        d.myASTROPORT && { href: d.myASTROPORT, label: '🌍 Astroport' },
+        d.myIPFS      && { href: d.myIPFS + '/ipns/' + d.ipfsnodeid, label: '📡 IPNS' },
+        d.uSPOT       && { href: d.uSPOT, label: '🔑 uSPOT' },
+        d.myRELAY     && { href: d.myRELAY.replace('ws://', 'http://').replace('wss://', 'https://'), label: '📨 NOSTR relay' },
+        apiBase       && { href: apiBase + '/check_balance', label: '💳 API balance' },
+    ].filter(Boolean);
+    el.innerHTML = links.map(l =>
+        `<a href="${l.href}" target="_blank" class="chip ok">${l.label}</a>`
+    ).join('');
+}
+
+async function renderWallets(d, apiBase) {
+    const walletEl = document.getElementById('d-wallets');
+    const walletKeys = [
+        { key: 'UPLANETNAME_TREASURY', label: '💰 Trésorerie',  color: '#3498db' },
+        { key: 'UPLANETNAME_RND',      label: '🔬 R&D',         color: '#f1c40f' },
+        { key: 'UPLANETNAME_ASSETS',   label: '🌳 Actifs',      color: '#2ecc71' },
+        { key: 'UPLANETG1PUB',         label: '📡 CA (UPlanet)', color: '#16a085' },
+    ];
+
+    // Display structure immediately
+    walletEl.innerHTML = walletKeys.map(w => {
+        const pub = d[w.key];
+        const short = pub ? pub.substring(0, 8) + '…' : 'N/A';
+        return `<div class="kv" id="wi-${w.key}">
+            <span class="key" style="color:${w.color}">${w.label}</span>
+            <span class="val" id="wb-${w.key}" style="font-size:.85rem;color:var(--text3);">⏳ ${short}</span>
+        </div>`;
+    }).join('');
+
+    // Fetch balances in background
+    for (const w of walletKeys) {
+        const pub = d[w.key];
+        const el = document.getElementById(`wb-${w.key}`);
+        if (!pub || !el) continue;
+        const bal = await fetchBalance(pub, apiBase);
+        if (bal) {
+            el.innerHTML = `<span style="color:${w.color};font-weight:700;">${bal.zen} Ẑ</span>
+                            <span style="color:var(--text3);font-size:.75rem;"> (${bal.g1} Ğ1)</span>`;
+        } else {
+            el.textContent = 'N/A';
+        }
+    }
+}
+
+// ─── Main render ──────────────────────────────────────────────────────────────
+
+function render(d, apiBase) {
+    // Header
+    setText('h-hostname', '⚙️ ' + (d.hostname || 'Astroport Node'));
+    setText('h-sub', (d.captain || '') + ' · ' + (d.IPCity || '') + ' · ' + new Date(parseInt(d.created) * 1000).toLocaleString('fr-FR'));
+
+    const risk = d.economy?.risk_level || 'N/A';
+    const [badgeClass, badgeLabel] = riskBadge(risk);
+    const riskEl = document.getElementById('h-risk');
+    if (riskEl) { riskEl.className = 'badge ' + badgeClass; riskEl.textContent = badgeLabel; }
+
+    const updEl = document.getElementById('h-updated');
+    if (d.date && updEl) { updEl.className = 'badge badge-grey'; updEl.textContent = '🕐 ' + d.date; }
+
+    // Stat boxes
+    const swarmCount = Object.keys(d.swarm_nodes || {}).length || '?';
+    setText('s-swarm', swarmCount);
+    setText('s-mp', d.economy?.multipass_count ?? '?');
+    setText('s-zc', d.economy?.zencard_count ?? '?');
+    setText('s-peers', d.services?.ipfs?.peers_connected ?? '?');
+    setText('s-rev', (d.economy?.weekly_revenue ?? 0).toFixed(1) + ' Ẑ');
+    const bilan = (d.economy?.weekly_balance ?? 0).toFixed(1);
+    const bilEl = document.getElementById('s-bilan');
+    if (bilEl) {
+        bilEl.textContent = bilan + ' Ẑ';
+        bilEl.style.color = parseFloat(bilan) >= 0 ? '#2ecc71' : '#e74c3c';
+    }
+
+    // Identity
+    setText('d-captain',  d.captain  || '—');
+    setText('d-uplanet',  (d.UPLANETG1PUB || '').substring(0, 20) + '…');
+    setText('d-ip',       d.myIP     || '—');
+    setText('d-city',     d.IPCity   || '—');
+    const lat = parseFloat(d.STATION_LAT || 0), lon = parseFloat(d.STATION_LON || 0);
+    setText('d-gps', (lat !== 0 || lon !== 0) ? `${lat.toFixed(4)}, ${lon.toFixed(4)}` : '—');
+    setText('d-nodeid', d.ipfsnodeid || '—');
+
+    // DRAGON services
+    renderServices(d.dragon_services || '');
+    renderSysServices(d.services);
+
+    // Economy
+    const eco = d.economy || {};
+    setText('e-paf',  (eco.weekly_costs    || 0).toFixed(1) + ' Ẑ');
+    setText('e-rev',  (eco.weekly_revenue  || 0).toFixed(1) + ' Ẑ');
+    const bal = (eco.weekly_balance || 0).toFixed(1);
+    const balEl = document.getElementById('e-bal');
+    if (balEl) { balEl.textContent = bal + ' Ẑ'; balEl.style.color = parseFloat(bal) >= 0 ? '#2ecc71' : '#e74c3c'; }
+    setText('e-cap',  (eco.captain_remuneration || 0).toFixed(1) + ' Ẑ/sem');
+
+    // Progress bars (capacity)
+    const cap = d.capacities || {};
+    const maxNostr = cap.nostr_slots || 250;
+    const maxZc    = cap.zencard_slots || 24;
+    const usedMp   = eco.multipass_count || 0;
+    const usedZc   = eco.zencard_count   || 0;
+    const pctMp    = Math.min(100, Math.round(usedMp / maxNostr * 100));
+    const pctZc    = Math.min(100, Math.round(usedZc / maxZc  * 100));
+    setText('e-mp-lbl', `${usedMp} / ${maxNostr}`);
+    setText('e-zc-lbl', `${usedZc} / ${maxZc}`);
+    const mpBar = document.getElementById('e-mp-bar');
+    const zcBar = document.getElementById('e-zc-bar');
+    if (mpBar) mpBar.style.width = pctMp + '%';
+    if (zcBar) zcBar.style.width = pctZc + '%';
+
+    // Capacities card
+    setText('cap-zc',   cap.zencard_slots    ?? '—');
+    setText('cap-nostr',cap.nostr_slots      ?? '—');
+    setText('cap-disk', cap.available_space_gb != null ? cap.available_space_gb + ' Go' : '—');
+
+    // Links
+    renderLinks(d, apiBase);
+
+    // Footer IPNS
+    const fIpns = document.getElementById('f-ipns');
+    if (fIpns && d.ipfsnodeid) {
+        fIpns.innerHTML = `<a href="/ipns/${d.ipfsnodeid}/" target="_blank">/ipns/${d.ipfsnodeid.substring(0, 20)}…</a>`;
+    }
+
+    // Wallets (async, non-blocking)
+    renderWallets(d, apiBase);
+}
+
+// ─── Initialisation ───────────────────────────────────────────────────────────
+
+(async function init() {
+    const errEl = document.getElementById('d-error');
+    try {
+        const [d] = await Promise.all([fetch12345()]);
+        const apiBase = getAPIUrl();
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+
+        render(d, apiBase);
+
+        // Auto-refresh toutes les 5 minutes (12345.json mis à jour ~toutes les heures)
+        setInterval(async () => {
+            try {
+                const fresh = await fetch12345();
+                render(fresh, apiBase);
+            } catch { /* silencieux */ }
+        }, 5 * 60 * 1000);
+
+    } catch (err) {
+        document.getElementById('loading').innerHTML =
+            `<div class="alert alert-err" style="max-width:500px;margin:auto;">
+                ❌ Impossible de charger les données du nœud.<br>
+                <small style="opacity:.7">${err.message}</small><br><br>
+                <small>Accédez à cette page via
+                <code>https://ipfs.DOMAIN/ipns/NODEID/status.html</code></small>
+            </div>`;
+    }
+})();
+</script>
+</body>
+</html>
