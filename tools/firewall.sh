@@ -40,8 +40,8 @@
 #  │ 8443    │ tcp      │ NextCloud AIO Admin Setup (localhost) │
 #  │── bleeding-edge IA Stack ──────────────────────────────────── │
 #  │ 3100    │ tcp      │ Paperclip AI agents (localhost)       │
-#  │ 4000    │ tcp      │ LiteLLM proxy API (localhost)         │
-#  │ 8000    │ tcp      │ OpenClaw gateway (localhost)          │
+#  │ 8010    │ tcp      │ LiteLLM proxy hôte (localhost)        │
+#  │ 8000    │ tcp      │ Open WebUI interface IA (localhost)   │
 #  │ 11434   │ tcp      │ Ollama LLM API (localhost)            │
 #  │── Webtop VDI (KasmVNC) ───────────────────────────────────── │
 #  │ 3000    │ tcp      │ KasmVNC HTTP (localhost — SSH tunnel) │
@@ -155,9 +155,9 @@ fire_on() {
         "8002:NextCloud AIO Dashboard" \
         "8443:NextCloud AIO Admin Setup" \
         "3100:Paperclip AI agents (bleeding-edge)" \
-        "4000:LiteLLM proxy interne (bleeding-edge)" \
-        "8000:OpenClaw gateway (bleeding-edge)" \
-        "18789:OpenClaw WebSocket gateway (bleeding-edge)" \
+        "4000:LiteLLM API interne Docker (conteneur)" \
+        "8000:Open WebUI interface IA (bleeding-edge)" \
+        "8010:LiteLLM proxy (bleeding-edge, port dedie sans conflit)" \
         "11434:Ollama LLM API (bleeding-edge)" \
         "3000:KasmVNC HTTP (webtop — SSH tunnel requis)" \
         "3001:KasmVNC HTTPS (webtop — SSH tunnel requis)" \
@@ -200,7 +200,7 @@ fire_status() {
     sudo ufw status verbose
     echo ""
     echo "Ports d'écoute actifs :"
-    ss -tlnup 2>/dev/null | grep -E ":(22|80|443|4001|4416|5001|7777|8080|8001|8002|8443|8000|11434|3000|3001|3100|4000|12345|54321|33101|81|1883|9090) " \
+    ss -tlnup 2>/dev/null | grep -E ":(22|80|443|4001|5001|7777|8080|8001|8002|8443|8010|8000|11434|3000|3001|3100|12345|54321|33101|81|1883|9090) " \
         | awk '{print "  " $1 " " $4 " " $5}' | sort -t: -k2 -n
     echo "########################################################################"
 }

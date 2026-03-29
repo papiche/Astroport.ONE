@@ -137,12 +137,16 @@ get_fast_service_status() {
     local ollama_active="false"
     local qdrant_active="false"
     local paperclip_active="false"
-    local openclaw_active="false"
+    local open_webui_active="false"
     local litellm_active="false"
-    ss -tln 2>/dev/null | grep -q ":11434 " && ollama_active="true"  # Ollama LLM
-    ss -tln 2>/dev/null | grep -q ":6333  " && qdrant_active="true"  # Qdrant vectors
+    ss -tln 2>/dev/null | grep -q ":11434 " && ollama_active="true"    # Ollama LLM
+    ss -tln 2>/dev/null | grep -q ":6333  " && qdrant_active="true"    # Qdrant vectors
     ss -tln 2>/dev/null | grep -q ":3100  " && paperclip_active="true" # Paperclip agents
-    ss -tln 2>/dev/null | grep -q ":8000  " && openclaw_active="true"  # OpenClaw gateway
+    ## Open WebUI : port 8000 → container 8080 (nom conteneur = ai-company-webui)
+    ss -tln 2>/dev/null | grep -q ":8000  " && open_webui_active="true"
+    command -v docker >/dev/null 2>&1 && \
+        docker ps --format '{{.Names}}' 2>/dev/null | grep -qE 'ai-company-webui|open-webui' \
+        && open_webui_active="true"
     ## LiteLLM 8001 = même port que NextCloud Apache → vérif par nom conteneur
     command -v docker >/dev/null 2>&1 && \
         docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'litellm' && litellm_active="true"
@@ -218,7 +222,7 @@ get_fast_service_status() {
         "qdrant":     { "active": $qdrant_active,     "port": 6333  },
         "paperclip":  { "active": $paperclip_active,  "port": 3100  },
         "openclaw":   { "active": $openclaw_active,   "port": 8000  },
-        "litellm":    { "active": $litellm_active,    "port": 4000  }
+        "litellm":    { "active": $litellm_active,    "port": 8010 }
     },
     "webtop": {
         "active": $webtop_active,

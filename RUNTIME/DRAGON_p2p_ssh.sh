@@ -392,22 +392,17 @@ generate_p2p_service() {
 # Paperclip (3100)
 generate_p2p_service 3100 "paperclip" "Paperclip AI Agents"
 
-# OpenClaw gateway (8000)
-generate_p2p_service 8000 "openclaw" "OpenClaw Gateway"
+# Open WebUI interface IA (8000) — remplace OpenClaw (plus actif, supporte Ollama natif)
+generate_p2p_service 8000 "open-webui" "Open WebUI Interface IA"
 
-## Port 8001 : LiteLLM OR NextCloud Apache (mutuellement exclusifs selon profil actif)
-## - profil bleeding-edge : LiteLLM proxy (-p 8001:4000 dans docker-compose)
-## - profil nextcloud     : Apache NextCloud (proxied NPM → cloud.DOMAIN)
+## Port 8001 : NextCloud Apache uniquement (proxied NPM → cloud.DOMAIN)
+## LiteLLM est maintenant sur port 8010 (plus de conflit)
 if ss -tln 2>/dev/null | grep -q ":8001 "; then
-    ## Déterminer lequel est actif
-    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'litellm'; then
-        generate_p2p_service 8001 "litellm" "LiteLLM Proxy (bleeding-edge)"
-    elif docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'nextcloud'; then
-        generate_p2p_service 8001 "nextcloud-app" "NextCloud Apache App"
-    else
-        generate_p2p_service 8001 "port8001" "Service :8001"
-    fi
+    generate_p2p_service 8001 "nextcloud-app" "NextCloud Apache App (via NPM cloud.DOMAIN)"
 fi
+
+# LiteLLM proxy (8010) — port dédié bleeding-edge
+generate_p2p_service 8010 "litellm" "LiteLLM Proxy"
 
 # Qdrant vector database (6333)
 generate_p2p_service 6333 "qdrant" "Qdrant VectorDB"
