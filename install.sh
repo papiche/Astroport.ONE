@@ -103,6 +103,12 @@ cd ~/.zen
 git clone --depth 1 https://github.com/papiche/Astroport.ONE.git
 # TODO INSTALL FROM IPFS / IPNS
 
+## Créer .env depuis template si absent (évite "Aucun fichier" au démarrage des services)
+[[ ! -f ~/.zen/Astroport.ONE/.env ]] \
+    && cp ~/.zen/Astroport.ONE/.env.template ~/.zen/Astroport.ONE/.env \
+    && echo "✅ ~/.zen/Astroport.ONE/.env créé depuis .env.template" \
+    || echo "ℹ️  ~/.zen/Astroport.ONE/.env déjà présent"
+
 ################################################################### IPFS
 ## installation de ipfs
 ########################################################################
@@ -199,11 +205,20 @@ echo "#####################################"
 export PATH=$HOME/.local/bin:$PATH
 pipx install duniterpy --include-deps ## keeps old v1 dep (soon deprecated)
 ## add monero & bitcoin compatible keys
-for i in pip python-dotenv scrypt setuptools wheel termcolor amzqr ollama requests geohash beautifulsoup4 pyppeteer cryptography jwcrypto secp256k1 gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 matplotlib readability-lxml duniterpy cachetools pydantic-settings robohash substrate-interface; do
+for i in pip python-dotenv scrypt setuptools wheel termcolor amzqr ollama requests geohash beautifulsoup4 cryptography jwcrypto secp256k1 gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 matplotlib readability-lxml duniterpy cachetools pydantic-settings robohash substrate-interface; do
         echo ">>> Installation/Mise à jour $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         pip install -U $i 2>> ~/.zen/install.errors.log
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python -m pip install -U $i FAILED." >> ~/.zen/install.errors.log && continue
 done
+## playwright remplace pyppeteer (abandonné 2022) pour tools/page_screenshot.py
+echo ">>> playwright (remplaçant pyppeteer — tools/page_screenshot.py) <<<"
+pip install -U playwright 2>> ~/.zen/install.errors.log \
+    && echo "✅ playwright installé" \
+    || echo "⚠️  playwright install FAILED — voir ~/.zen/install.errors.log"
+## Installe le binaire Chromium de playwright (utilise le Chromium système si présent)
+python -m playwright install chromium 2>> ~/.zen/install.errors.log \
+    && echo "✅ playwright chromium prêt" \
+    || echo "⚠️  playwright chromium install FAILED (page_screenshot.py utilisera /usr/bin/chromium)"
 
 
 ####################################################################

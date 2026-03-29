@@ -562,7 +562,7 @@ echo "✅ Created _g1pub SS58 for IPFS publication: ~/.zen/tmp/${IPFSNODEID}/TW/
 echo "--- PLAYER : ${PLAYER} - DATA PROTOCOL LAYER LOADED";
 # ls ~/.zen/game/players/${PLAYER}
 
-[[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open "${myIPFS}/ipns/${ASTRONAUTENS}" && espeak "YOUR PASS IS $PASS"
+[[ $XDG_SESSION_TYPE == 'x11' || $XDG_SESSION_TYPE == 'wayland' ]] && xdg-open "http://127.0.0.1:8080/ipns/${ASTRONAUTENS}" && espeak "YOUR PASS IS $PASS"
 
 ####### CORRECT NO CURRENT ? PLAYER = .current
 [[ ! -e ~/.zen/game/players/.current ]] \
