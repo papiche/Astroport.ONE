@@ -12,7 +12,7 @@
 #         ↓
 #   Qdrant nextcloud_kb       → base vectorielle de la constellation
 #         ↓ (requêtes #BRO)
-#   code_assistant / OpenClaw → réponses contextuelles IA locale
+#   code_assistant / OpenWebUI → réponses contextuelles IA locale
 #
 # Prérequis :
 #   - NextCloud AIO démarré (profil 'nextcloud')
@@ -245,7 +245,7 @@ echo "║              php occ leann:index                             ║"
 echo "║                                                              ║"
 echo "║  🧠 Requêtes depuis #BRO :                                  ║"
 echo "║     ~/.zen/Astroport.ONE/IA/nextcloud_bro_sync.sh query     ║"
-echo "║     Ou via OpenClaw : http://localhost:8000                  ║"
+echo "║     Ou via OpenWebUI : http://localhost:8000                  ║"
 echo "║                                                              ║"
 echo "║  🔍 Interface chat NextCloud :                               ║"
 echo "║     cloud.VOTRE_DOMAINE → Applications → LeAnn              ║"

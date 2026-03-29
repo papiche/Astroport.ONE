@@ -156,7 +156,7 @@ bash install.sh
 # + NextCloud AIO (nube privada 128 Go, lista para ZENCard)
 bash install.sh "" "" "" nextcloud
 
-# + Pila IA Enjambre (Ollama + Paperclip + OpenClaw + Qdrant)
+# + Pila IA Enjambre (Ollama + Paperclip + OpenWebUI + Qdrant)
 bash install.sh "" "" "" ai-company
 
 # + rnostr dev (relay Rust, reemplaza strfry — experimental)
@@ -167,7 +167,7 @@ bash install.sh "" "" "" dev
 |---|---|---|
 | `standard` | IPFS · Nostr strfry · UPassport · GPG · gcli | ✅ Producción |
 | `nextcloud` | Estándar + NextCloud AIO (128 Go, almacenamiento BTRFS) | ✅ Estable |
-| `ai-company` | Estándar + Paperclip + OpenClaw + LiteLLM + Qdrant IA | ⚠️ Experimental |
+| `ai-company` | Estándar + Paperclip + OpenWebUI + LiteLLM + Qdrant IA | ⚠️ Experimental |
 | `dev` | Estándar + relay Rust rnostr (migración de plugins bash writePolicy) | 🔧 En desarrollo |
 
 ### Después de la instalación: Lo que está en ejecución
@@ -258,7 +258,7 @@ Todas las transacciones son visibles en la **blockchain Ğ1** (Duniter v1/v2s). 
 │  (128 Go/user)      (SSL automático)     (FastAPI)      │
 │                                                          │
 │  Pila IA #BRO (ai-company) :                         │
-│  Ollama → LiteLLM → Paperclip → OpenClaw → Qdrant       │
+│  Ollama → LiteLLM → Paperclip → OpenWebUI → Qdrant       │
 │                                                          │
 │  Cripto: Ğ1 (Duniter v2s) · NOSTR (Ed25519) · IPFS     │
 │  Identidad: MULTIPASS = SSSS 2/3 + DID W3C              │

@@ -176,7 +176,7 @@ bash install.sh
 # + NextCloud AIO (private cloud 128 Go, ZENCard ready)
 bash install.sh "" "" "" nextcloud
 
-# + AI Swarm Stack (Ollama + Paperclip + OpenClaw + Qdrant)
+# + AI Swarm Stack (Ollama + Paperclip + OpenWebUI + Qdrant)
 bash install.sh "" "" "" ai-company
 
 # + rnostr dev (Rust relay, replace strfry — experimental)
@@ -187,7 +187,7 @@ bash install.sh "" "" "" dev
 |---|---|---|
 | `standard` | IPFS · Nostr strfry · UPassport · GPG · gcli | ✅ Production |
 | `nextcloud` | Standard + NextCloud AIO (128 Go cloud, BTRFS storage) | ✅ Stable |
-| `ai-company` | Standard + Paperclip + OpenClaw + LiteLLM + Qdrant AI stack | ⚠️ Experimental |
+| `ai-company` | Standard + Paperclip + OpenWebUI + LiteLLM + Qdrant AI stack | ⚠️ Experimental |
 | `dev` | Standard + rnostr Rust relay (migration from strfry writePolicy plugins) | 🔧 In development |
 
 ### After Installation: What's Running
@@ -294,7 +294,7 @@ All transactions are visible on the **Ğ1 blockchain** (Duniter v1/v2s). Full tr
 │  (128 Go/user)      (SSL auto)           (FastAPI)      │
 │                                                          │
 │  #BRO AI Stack (ai-company) :                        │
-│  Ollama → LiteLLM → Paperclip → OpenClaw → Qdrant       │
+│  Ollama → LiteLLM → Paperclip → OpenWebUI → Qdrant       │
 │                                                          │
 │  Crypto: Ğ1 (Duniter v2s) · NOSTR (Ed25519) · IPFS     │
 │  Identity: MULTIPASS = SSSS 2/3 + DID W3C               │
@@ -337,7 +337,7 @@ Each plugin receives Nostr events via stdin/stdout JSON, classifies users (`nobo
 🐉 **Calling Rust/DRAGON developers** — contact: support@qo-op.com — Subject: `DRAGON rnostr migration`
 
 **Also wanted:** Integration of the ai-company AI stack into the Astroport ecosystem:
-- Automatic #BRO responses via OpenClaw/Paperclip triggered by Nostr events
+- Automatic #BRO responses via OpenWebUI/Paperclip triggered by Nostr events
 - Subject: `DRAGON ai-company` on Nostr or support@qo-op.com
 
 **Tool: `code_assistant`** (local AI code review):

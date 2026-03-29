@@ -11,7 +11,7 @@
 #         ↓ (modifications)
 #   Ollama nomic-embed-text ──────────→  Vecteurs 768d
 #         ↓
-#   Qdrant "nextcloud_kb"  ──[query]─→  #BRO / OpenClaw / code_assistant
+#   Qdrant "nextcloud_kb"  ──[query]─→  #BRO / OpenWebUI / code_assistant
 #
 # Usage :
 #   nextcloud_bro_sync.sh               # sync incrémentale

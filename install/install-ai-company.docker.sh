@@ -6,7 +6,7 @@
 #
 # Stack :
 #   Paperclip  (3100) — Gestion d'agents IA
-#   Open WebUI (8000) — Interface web IA (remplace OpenClaw)
+#   Open WebUI (8000) — Interface web IA (remplace OpenWebUI)
 #   LiteLLM    (8001) — Proxy multi-modèles (OpenAI-compatible)
 #   Qdrant     (6333) — Base vectorielle (api-key = UPLANETNAME)
 #   Ollama     (11434, sur hôte) — Moteur LLM local
@@ -256,7 +256,7 @@ services:
     restart: unless-stopped
 
   ## Open WebUI — interface IA complète (RAG, multi-modèles, documents)
-  ## Remplace OpenClaw — plus actif, supporte Ollama nativement
+  ## Remplace OpenWebUI — plus actif, supporte Ollama nativement
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: ai-company-webui

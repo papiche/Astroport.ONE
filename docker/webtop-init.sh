@@ -137,7 +137,7 @@ EOF
     if [[ "${INSTALL_PROFILE}" == "ai-company" ]]; then
         _create_shortcut "Paperclip AI" \
             "xdg-open http://localhost:3100" "applications-science"
-        _create_shortcut "OpenClaw AI" \
+        _create_shortcut "OpenWebUI AI" \
             "xdg-open http://localhost:8000" "applications-science"
     fi
 
