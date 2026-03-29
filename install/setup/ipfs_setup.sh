@@ -124,9 +124,6 @@ else
     ipfs config --json Experimental.P2pHttpProxy true
 fi
 
-echo "MJ activation"
-ipfs --timeout 30s cat /ipfs/QmVy7FKd1MGZqee4b7B5jmBKNgTJBvKKkoDhodnJWy23oN > ~/.zen/MJ_APIKEY
-
 ## Add ulimit "open files" (avoid ipfs hang)
 sudo sed -i "/$USER.*nofile/d" /etc/security/limits.conf
 echo "$USER soft nofile 100000" | sudo tee -a /etc/security/limits.conf
