@@ -199,17 +199,37 @@ else
 fi
 
 # =========================================================================
-# 3. SAUVEGARDE DE L'IP PUBLIQUE
+# 3. SAUVEGARDE DE L'IP PUBLIQUE (seulement si nœud directement sur le WAN)
 # =========================================================================
+# Détection de l'IP LAN (interface de sortie par défaut)
+_DEFAULT_IFACE=$(ip route show default | awk '/default/ {print $5}' | head -n1)
+LAN_IP=$(ip -4 addr show dev "$_DEFAULT_IFACE" 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -n1)
+
 PUBLIC_IP=""
 PUBLIC_IP=$(${HOME}/.zen/Astroport.ONE/me.♥Box.sh 2>/dev/null | tail -n 1) \
     || PUBLIC_IP=$(curl -s --connect-timeout 5 https://ifconfig.me 2>/dev/null) \
     || PUBLIC_IP=$(curl -s --connect-timeout 5 https://icanhazip.com 2>/dev/null) \
     || PUBLIC_IP=$(curl -s --connect-timeout 5 ipecho.net/plain 2>/dev/null)
 
-if [[ -n "$PUBLIC_IP" ]]; then
+# Vérifier si l'IP LAN est une adresse RFC1918 privée (NAT détecté)
+_IS_PRIVATE_LAN=false
+if [[ "$LAN_IP" =~ ^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|127\.) ]]; then
+    _IS_PRIVATE_LAN=true
+fi
+
+if [[ -n "$PUBLIC_IP" && "$_IS_PRIVATE_LAN" == "false" ]]; then
+    # LAN = WAN : le nœud est directement exposé sur internet (pas de NAT)
+    # ♥Box est renseigné → my.sh construira les URLs avec l'IP directe
     echo "$PUBLIC_IP" > $HOME/.zen/♥Box
-    echo ">>> Public IP stored in ~/.zen/♥Box: $PUBLIC_IP"
+    echo ">>> Nœud directement sur le WAN (LAN=$LAN_IP = WAN=$PUBLIC_IP)"
+    echo ">>> IP stockée dans ~/.zen/♥Box: $PUBLIC_IP"
+elif [[ -n "$PUBLIC_IP" && "$_IS_PRIVATE_LAN" == "true" ]]; then
+    # NAT détecté : LAN (privé) ≠ WAN — ♥Box non peuplé
+    # my.sh utilisera les URL basées sur le domaine DNS (HTTPS via NPM)
+    echo ">>> Nœud derrière NAT (LAN=$LAN_IP ≠ WAN=$PUBLIC_IP)"
+    echo ">>> ♥Box non renseigné — URLs via domaine DNS (HTTPS proxy)"
+    echo "    Configurez le port-forwarding sur votre routeur si accès IP direct requis."
+    [[ -f $HOME/.zen/♥Box ]] && rm -f $HOME/.zen/♥Box || true
 else
     echo ">>> WARNING: Could not detect public IP"
 fi
