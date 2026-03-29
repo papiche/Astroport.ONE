@@ -5,6 +5,7 @@ tiddlywiki.html
 tools/jaklis/.env
 .aider*
 A_boostrap_ssh.txt
+.vagrant
 
 # todo.sh generated files
 TODO.md

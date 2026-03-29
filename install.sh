@@ -123,7 +123,7 @@ echo "#############################################"
 
 # Mise à jour générale des paquets existants
 sudo apt-get update -y
-sudo apt-get upgrade -y
+# sudo apt-get upgrade -y ## run at the beginning could need reboot !!
 
 echo "#############################################"
 echo "######### INSTALL PRECIOUS FREE SOFTWARE ####"
