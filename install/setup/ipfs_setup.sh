@@ -57,9 +57,6 @@ ipfs config --json AutoTLS.Enabled false
 # ipfs config --json Routing.Type '"dht"'
 ipfs config --json Routing.Type '"dhtserver"'
 ipfs config --json Ipns.UsePubsub true
-# IPFS P2P stream mounting — requis pour DRAGON_p2p_ssh.sh (x_*.sh tunnels)
-# Sans ce flag : "Error: libp2p stream mounting not enabled"
-ipfs config --json Experimental.Libp2pStreamMounting true
 # for ipfs p2p relaying
 ipfs config --json Swarm.RelayClient.Enabled true
 ipfs config --json Swarm.RelayService.Enabled true
@@ -117,8 +114,15 @@ sudo systemctl enable ipfs
 ###########################################
 # ACTIVATE IPFS OPTIONS: #swarm0 INIT
 ###########################################
-## Note: ipfs_config.sh optionnel — configuration supplémentaire si présent
-[[ -x "$MY_PATH/ipfs_config.sh" ]] && "$MY_PATH/ipfs_config.sh" || true
+## ipfs_config.sh — configuration complète IPFS (Libp2pStreamMounting, CORS, bootstrap, swarm.key)
+## Fichier unique dans install/setup/ ; erreur si absent → fallback minimal
+if [[ -x "$MY_PATH/ipfs_config.sh" ]]; then
+    bash "$MY_PATH/ipfs_config.sh"
+else
+    echo "⚠️  ipfs_config.sh absent — activation Libp2pStreamMounting minimale"
+    ipfs config --json Experimental.Libp2pStreamMounting true
+    ipfs config --json Experimental.P2pHttpProxy true
+fi
 
 echo "MJ activation"
 ipfs --timeout 30s cat /ipfs/QmVy7FKd1MGZqee4b7B5jmBKNgTJBvKKkoDhodnJWy23oN > ~/.zen/MJ_APIKEY
