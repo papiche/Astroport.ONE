@@ -9,7 +9,7 @@
 #   LinkedIn   — API officielle (optionnel, phase 2)
 #   Nostr      — Astroport.ONE local
 # DOC : Astroport.ONE/docs/paperclip_setup_guide_multicanal.html
-# Usage : ./paperclip-configure-channels.sh [--check] [--telegram] [--gmail] [--mastodon]
+# Usage : ./paperclip-configure-channels.sh [--check|--deps|--telegram|--gmail|--mastodon|--all|--health]
 # =============================================================================
 
 set -e
@@ -74,6 +74,62 @@ check_stack() {
 }
 
 # =============================================================================
+# DÉPENDANCES DANS LE CONTENEUR PAPERCLIP
+# =============================================================================
+
+ensure_paperclip_deps() {
+    echo -e "\n${BOLD}${CYAN}=== Dépendances runtime du conteneur Paperclip ===${NC}"
+
+    # Trouver le conteneur paperclip (nom contenant "paperclip", hors autres services)
+    local container
+    container=$(docker ps --filter "name=ai-company" --filter "status=running" \
+        --format "{{.Names}}" \
+        | grep -i "paperclip" \
+        | grep -v "open-webui\|llm-proxy\|qdrant\|litellm" \
+        | head -1)
+
+    if [ -z "$container" ]; then
+        warn "Conteneur Paperclip introuvable — impossible de vérifier les dépendances runtime"
+        warn "Assurez-vous que la stack tourne : cd $INSTALL_DIR && docker compose -p ai-company-swarm up -d"
+        return 1
+    fi
+
+    ok "Conteneur Paperclip détecté : $container"
+
+    # --- Node.js (runtime principal des skills Paperclip — doit être présent) ---
+    if docker exec "$container" node --version >/dev/null 2>&1; then
+        local node_ver
+        node_ver=$(docker exec "$container" node --version 2>/dev/null)
+        ok "Node.js présent dans le conteneur : $node_ver"
+        # Vérifier fetch natif (Node 18+)
+        local node_major
+        node_major=$(echo "$node_ver" | sed 's/v//' | cut -d. -f1)
+        if [ "$node_major" -ge 18 ]; then
+            ok "fetch natif disponible (Node ≥ 18) — aucune dépendance npm requise pour les skills"
+        else
+            warn "Node.js < 18 — fetch natif absent. Mise à jour recommandée (node-fetch peut être nécessaire)"
+        fi
+    else
+        err "Node.js absent du conteneur — les skills Paperclip ne pourront pas s'exécuter"
+        err "Vérifiez l'image : docker exec -it $container node --version"
+        return 1
+    fi
+
+    # --- curl (utilisé par les scripts de setup hôte, présent par défaut dans le conteneur) ---
+    if docker exec "$container" which curl >/dev/null 2>&1; then
+        ok "curl présent dans le conteneur"
+    else
+        info "curl absent — installation via apt-get..."
+        docker exec "$container" apt-get update -qq >/dev/null 2>&1 \
+        && docker exec "$container" apt-get install -y -qq curl >/dev/null 2>&1 \
+        && ok "curl installé" \
+        || err "Échec installation curl — docker exec -it $container apt-get install -y curl"
+    fi
+
+    ok "Vérification des dépendances terminée pour : $container (skills JS natifs — aucune lib Python requise)"
+}
+
+# =============================================================================
 # TELEGRAM
 # =============================================================================
 
@@ -94,7 +150,10 @@ setup_telegram() {
     info "Test du token Telegram..."
     resp=$(curl -sf "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe" || echo '{"ok":false}')
     if echo "$resp" | grep -q '"ok":true'; then
-        botname=$(echo "$resp" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['result']['username'])" 2>/dev/null || echo "inconnu")
+        botname=$(echo "$resp" | node -e "
+let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{
+  try{console.log(JSON.parse(d).result.username);}catch(e){console.log('inconnu');}
+})" 2>/dev/null || echo "inconnu")
         ok "Bot actif : @$botname"
     else
         err "Token invalide ou réseau inaccessible"
@@ -106,15 +165,17 @@ setup_telegram() {
         info "Envoyez un message à votre bot ou dans le groupe, puis appuyez sur Entrée..."
         read -p "  (Appuyez sur Entrée après avoir envoyé un message) " _
         updates=$(curl -sf "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates")
-        chat_id=$(echo "$updates" | python3 -c "
-import sys,json
-d=json.load(sys.stdin)
-msgs=d.get('result',[])
-if msgs:
-    m=msgs[-1]
-    cid=m.get('message',m.get('channel_post',{})).get('chat',{}).get('id','')
-    print(cid)
-" 2>/dev/null || echo "")
+        chat_id=$(echo "$updates" | node -e "
+let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{
+  try{
+    const msgs=(JSON.parse(d).result||[]);
+    if(msgs.length){
+      const m=msgs[msgs.length-1];
+      const chat=(m.message||m.channel_post||{}).chat||{};
+      console.log(chat.id||'');
+    }
+  }catch(e){}
+})" 2>/dev/null || echo "")
         if [ -n "$chat_id" ]; then
             ok "Chat ID détecté : $chat_id"
             add_env "TELEGRAM_CHAT_ID" "$chat_id"
@@ -184,8 +245,15 @@ SKILL_EOF
 setup_gmail() {
     echo -e "\n${BOLD}${CYAN}=== Configuration Gmail OAuth2 ===${NC}"
 
+    # Vérifier les dépendances Node.js dans le conteneur Paperclip
+    ensure_paperclip_deps || warn "Dépendances conteneur non vérifiées — le skill gmail_sender.js pourrait ne pas fonctionner"
+
+    # Le flux OAuth2 initial (obtention du refresh_token) tourne sur l'HÔTE
+    # et nécessite python3 + google-auth pour ouvrir le navigateur
     if ! command -v python3 >/dev/null 2>&1; then
-        err "Python3 requis pour Gmail OAuth2"
+        err "Python3 requis sur l'HÔTE uniquement pour le flux OAuth2 initial (ouverture navigateur)"
+        err "Installation : sudo apt-get install -y python3 python3-pip"
+        err "Le skill gmail_sender.js dans le conteneur n'a pas besoin de Python."
         return 1
     fi
 
@@ -247,52 +315,74 @@ PYEOF
 }
 
 generate_skill_gmail() {
-    cat > "$SKILLS_DIR/gmail_sender.py" << 'SKILL_EOF'
-#!/usr/bin/env python3
-"""
-Skill Paperclip : Envoi email Gmail pour UPlanet
-Variables : GMAIL_REFRESH_TOKEN, GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET
-Usage : python3 gmail_sender.py --to "email" --subject "Sujet" --body "Corps HTML"
-"""
-import os, sys, json, argparse, base64
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
+    cat > "$SKILLS_DIR/gmail_sender.js" << 'SKILL_EOF'
+/**
+ * Skill Paperclip : Envoi email Gmail pour UPlanet
+ * Variables requises dans l'environnement Paperclip :
+ *   GMAIL_REFRESH_TOKEN, GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET
+ * Runtime : Node.js 18+ (fetch natif — aucune dépendance npm)
+ */
+export default {
+  name: "gmail_sender",
+  description: "Envoie un email via Gmail OAuth2 pour UPlanet",
+  parameters: {
+    to:      { type: "string",  description: "Adresse email du destinataire" },
+    subject: { type: "string",  description: "Sujet de l'email" },
+    body:    { type: "string",  description: "Corps de l'email (HTML accepté)" },
+    sender:  { type: "string",  description: "Nom de l'expéditeur", default: "UPlanet" }
+  },
+  async run({ to, subject, body, sender = "UPlanet" }) {
+    const refreshToken = process.env.GMAIL_REFRESH_TOKEN;
+    const clientId     = process.env.GMAIL_CLIENT_ID;
+    const clientSecret = process.env.GMAIL_CLIENT_SECRET;
+    if (!refreshToken || !clientId || !clientSecret)
+      throw new Error("GMAIL_REFRESH_TOKEN, GMAIL_CLIENT_ID ou GMAIL_CLIENT_SECRET manquant");
 
-def get_service():
-    creds = Credentials(
-        token=None,
-        refresh_token=os.environ["GMAIL_REFRESH_TOKEN"],
-        client_id=os.environ.get("GMAIL_CLIENT_ID", ""),
-        client_secret=os.environ.get("GMAIL_CLIENT_SECRET", ""),
-        token_uri="https://oauth2.googleapis.com/token"
-    )
-    return build("gmail", "v1", credentials=creds)
+    // 1. Obtenir un access_token via le refresh_token
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type:    "refresh_token",
+        refresh_token: refreshToken,
+        client_id:     clientId,
+        client_secret: clientSecret
+      })
+    });
+    const { access_token, error: tokenErr } = await tokenRes.json();
+    if (!access_token) throw new Error(`OAuth2 Gmail : ${tokenErr || "access_token non obtenu"}`);
 
-def send_email(to, subject, body_html, sender_name="UPlanet"):
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = f"{sender_name} <me>"
-    msg["To"] = to
-    msg.attach(MIMEText(body_html, "html"))
-    raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
-    service = get_service()
-    result = service.users().messages().send(userId="me", body={"raw": raw}).execute()
-    return result
+    // 2. Construire le message MIME encodé en base64url (RFC 2822)
+    const mime = [
+      `From: ${sender} <me>`,
+      `To: ${to}`,
+      `Subject: ${subject}`,
+      "MIME-Version: 1.0",
+      'Content-Type: text/html; charset="UTF-8"',
+      "",
+      body
+    ].join("\r\n");
+    const raw = Buffer.from(mime).toString("base64url");
 
-if __name__ == "__main__":
-    p = argparse.ArgumentParser()
-    p.add_argument("--to", required=True)
-    p.add_argument("--subject", required=True)
-    p.add_argument("--body", required=True)
-    p.add_argument("--sender", default="UPlanet")
-    args = p.parse_args()
-    result = send_email(args.to, args.subject, args.body, args.sender)
-    print(json.dumps({"success": True, "id": result["id"]}))
+    // 3. Envoyer via l'API REST Gmail (pas d'import npm nécessaire)
+    const sendRes = await fetch(
+      "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+      {
+        method: "POST",
+        headers: {
+          Authorization:  `Bearer ${access_token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ raw })
+      }
+    );
+    const result = await sendRes.json();
+    if (result.error) throw new Error(`Gmail API : ${result.error.message}`);
+    return { success: true, id: result.id };
+  }
+};
 SKILL_EOF
-    chmod +x "$SKILLS_DIR/gmail_sender.py"
-    ok "Skill généré : $SKILLS_DIR/gmail_sender.py"
+    ok "Skill généré : $SKILLS_DIR/gmail_sender.js"
 }
 
 # =============================================================================
@@ -301,6 +391,9 @@ SKILL_EOF
 
 setup_mastodon() {
     echo -e "\n${BOLD}${CYAN}=== Configuration Mastodon ===${NC}"
+
+    # Vérifier les dépendances Node.js dans le conteneur Paperclip
+    ensure_paperclip_deps || warn "Dépendances conteneur non vérifiées — le skill mastodon_poster.js pourrait ne pas fonctionner"
 
     if [ -z "$MASTODON_INSTANCE" ]; then
         read -p "  Instance Mastodon (ex: https://mamot.fr) : " instance
@@ -324,7 +417,9 @@ setup_mastodon() {
     info "Vérification du compte Mastodon..."
     acct=$(curl -sf -H "Authorization: Bearer $MASTODON_TOKEN" \
         "$MASTODON_INSTANCE/api/v1/accounts/verify_credentials" \
-        | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('acct','?'))" 2>/dev/null || echo "erreur")
+        | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{
+  try{console.log(JSON.parse(d).acct||'?');}catch(e){console.log('erreur');}
+})" 2>/dev/null || echo "erreur")
 
     if [ "$acct" != "erreur" ]; then
         ok "Compte vérifié : @$acct"
@@ -345,21 +440,41 @@ setup_mastodon() {
 }
 
 generate_skill_mastodon() {
-    cat > "$SKILLS_DIR/mastodon_poster.sh" << 'SKILL_EOF'
-#!/bin/bash
-# Skill Mastodon pour Paperclip — poster un statut
-# Usage : ./mastodon_poster.sh "Mon toot #UPlanet"
-INSTANCE="${MASTODON_INSTANCE:?Variable manquante}"
-TOKEN="${MASTODON_TOKEN:?Variable manquante}"
-STATUS="${1:?Message requis}"
-curl -s -X POST \
-  -H "Authorization: Bearer $TOKEN" \
-  -F "status=$STATUS" \
-  -F "visibility=public" \
-  "$INSTANCE/api/v1/statuses" | python3 -c "import sys,json;d=json.load(sys.stdin);print(json.dumps({'id':d.get('id'),'url':d.get('url')}))"
+    cat > "$SKILLS_DIR/mastodon_poster.js" << 'SKILL_EOF'
+/**
+ * Skill Paperclip : Poster un statut Mastodon pour UPlanet
+ * Variables requises dans l'environnement Paperclip :
+ *   MASTODON_INSTANCE, MASTODON_TOKEN
+ * Runtime : Node.js 18+ (fetch natif — aucune dépendance npm)
+ */
+export default {
+  name: "mastodon_poster",
+  description: "Publie un statut sur Mastodon depuis le compte UPlanet",
+  parameters: {
+    status:     { type: "string", description: "Texte du toot (500 caractères max)" },
+    visibility: { type: "string", description: "public | unlisted | private | direct", default: "public" }
+  },
+  async run({ status, visibility = "public" }) {
+    const instance = process.env.MASTODON_INSTANCE;
+    const token    = process.env.MASTODON_TOKEN;
+    if (!instance || !token)
+      throw new Error("MASTODON_INSTANCE ou MASTODON_TOKEN manquant");
+
+    const res = await fetch(`${instance}/api/v1/statuses`, {
+      method: "POST",
+      headers: {
+        Authorization:  `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ status, visibility })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(`Mastodon API : ${data.error}`);
+    return { success: true, id: data.id, url: data.url };
+  }
+};
 SKILL_EOF
-    chmod +x "$SKILLS_DIR/mastodon_poster.sh"
-    ok "Skill généré : $SKILLS_DIR/mastodon_poster.sh"
+    ok "Skill généré : $SKILLS_DIR/mastodon_poster.js"
 }
 
 # =============================================================================
@@ -417,8 +532,8 @@ health_check() {
     [ -n "$NOSTR_NSEC" ] && ok "Nostr / Astroport" || warn "Nostr (non configuré)"
 
     # Skills générés
-    echo -e "\n${BOLD}Skills Paperclip :${NC}"
-    for skill in telegram_poster.js gmail_sender.py mastodon_poster.sh; do
+    echo -e "\n${BOLD}Skills Paperclip (Node.js natif) :${NC}"
+    for skill in telegram_poster.js gmail_sender.js mastodon_poster.js; do
         if [ -f "$SKILLS_DIR/$skill" ]; then
             ok "$skill"
         else
@@ -449,23 +564,26 @@ show_menu() {
     echo -e "\n${BOLD}${CYAN}UPlanet AI Company — Configuration des canaux${NC}"
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo -e "  [1] Vérifier la stack Docker"
+    echo -e "  [d] Vérifier dépendances conteneur (Node.js ≥ 18, curl)"
     echo -e "  [2] Configurer Telegram"
     echo -e "  [3] Configurer Gmail"
     echo -e "  [4] Configurer Mastodon"
     echo -e "  [5] Configurer Nostr / Astroport"
-    echo -e "  [6] Tout configurer (2→3→4→5)"
+    echo -e "  [6] Tout configurer (d→2→3→4→5)"
     echo -e "  [7] Rapport de santé"
     echo -e "  [q] Quitter"
     echo ""
 }
 
 # Traitement des arguments
+# Usage : ./paperclip-configure-channels.sh [--check|--deps|--telegram|--gmail|--mastodon|--all|--health]
 case "$1" in
     --check)    check_stack; health_check; exit 0 ;;
+    --deps)     check_stack; ensure_paperclip_deps; exit 0 ;;
     --telegram) check_stack; setup_telegram; health_check; exit 0 ;;
     --gmail)    check_stack; setup_gmail; health_check; exit 0 ;;
     --mastodon) check_stack; setup_mastodon; health_check; exit 0 ;;
-    --all)      check_stack; setup_telegram; setup_gmail; setup_mastodon; setup_nostr; health_check; exit 0 ;;
+    --all)      check_stack; ensure_paperclip_deps; setup_telegram; setup_gmail; setup_mastodon; setup_nostr; health_check; exit 0 ;;
     --health)   health_check; exit 0 ;;
 esac
 
@@ -475,11 +593,12 @@ while true; do
     read -p "Choix : " choice
     case "$choice" in
         1) check_stack ;;
+        d|D) ensure_paperclip_deps ;;
         2) setup_telegram ;;
         3) setup_gmail ;;
         4) setup_mastodon ;;
         5) setup_nostr ;;
-        6) check_stack; setup_telegram; setup_gmail; setup_mastodon; setup_nostr ;;
+        6) check_stack; ensure_paperclip_deps; setup_telegram; setup_gmail; setup_mastodon; setup_nostr ;;
         7) health_check ;;
         q|Q) echo -e "${GREEN}Au revoir !${NC}"; exit 0 ;;
         *) warn "Choix invalide" ;;

@@ -167,7 +167,7 @@ const sections = [
       mode:'cli',
       label:'Vérifier les skills générés par configure-channels.sh',
       desc:'Normalement déjà présents si le script a été lancé',
-      cli:'ls -la ~/.zen/ai-company/paperclip_data/skills/\n# Attendu :\n# telegram_poster.js\n# gmail_sender.py\n# mastodon_poster.sh'
+      cli:'ls -la ~/.zen/ai-company/paperclip_data/skills/\n# Attendu (skills Node.js natifs) :\n# telegram_poster.js\n# gmail_sender.js\n# mastodon_poster.js'
     },
     {
       mode:'both',
@@ -187,7 +187,7 @@ const sections = [
       mode:'cli',
       label:'Tester un skill manuellement',
       desc:'Valider que Telegram répond avant de l\'exposer aux agents',
-      cli:'TELEGRAM_BOT_TOKEN=$(grep TELEGRAM_BOT_TOKEN ~/.zen/ai-company/.env | cut -d= -f2)\nTELEGRAM_CHAT_ID=$(grep TELEGRAM_CHAT_ID ~/.zen/ai-company/.env | cut -d= -f2)\ncurl -s -X POST \\\n  "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \\\n  -d "chat_id=$TELEGRAM_CHAT_ID&text=Skill+OK+depuis+Paperclip" | python3 -m json.tool'
+      cli:'TELEGRAM_BOT_TOKEN=$(grep TELEGRAM_BOT_TOKEN ~/.zen/ai-company/.env | cut -d= -f2)\nTELEGRAM_CHAT_ID=$(grep TELEGRAM_CHAT_ID ~/.zen/ai-company/.env | cut -d= -f2)\ncurl -s -X POST \\\n  "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \\\n  -d "chat_id=$TELEGRAM_CHAT_ID&text=Skill+OK+depuis+Paperclip" \\\n  | node -e "let d=\'\';process.stdin.on(\'data\',c=>d+=c).on(\'end\',()=>console.log(JSON.stringify(JSON.parse(d),null,2)))"'
     }
   ]
 },

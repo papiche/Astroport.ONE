@@ -24,6 +24,7 @@ INSTALL_DIR="$HOME/.zen/ai-company"
 OLLAMA_PORT=11434
 OLLAMA_MODEL="gemma3"
 EMBEDDING_MODEL="nomic-embed-text"
+LLM_CEO_MODEL="claude-sonnet-4.6"
 
 # Couleurs
 GREEN='\033[0;32m'
@@ -113,7 +114,9 @@ esac
 # --- GESTION DES SECRETS ---
 if [ -f .env ]; then
     echo "♻️  Chargement des secrets existants..."
-    export $(grep -v '^#' .env | xargs)
+    set -a
+    source .env
+    set +a
 else
     echo "🔑 Génération des nouveaux secrets..."
     PG_PASS=$(openssl rand -hex 12)
@@ -135,15 +138,20 @@ else
         echo "⚠️  UPLANETNAME absent — Qdrant API Key aléatoire"
     fi
 
+# (Extrait à ajouter lors de la création du .env)
+    echo "🔑 Configuration OpenRouter (pour le modèle CEO)"
+    read -p "Entrez votre clé API OpenRouter (laissez vide pour ignorer) : " OR_KEY
+
     cat > .env << EOF
 POSTGRES_PASSWORD=${PG_PASS}
 POSTGRES_USER=paperclip
 POSTGRES_DB=paperclip
-## QDRANT_API_KEY = UPLANETNAME : cohérence constellation (toutes stations même essaim)
 QDRANT_API_KEY=${QDRANT_KEY}
 PAPERCLIP_AUTH_SECRET=${AUTH_SECRET}
 LITELLM_MASTER_KEY=${PROXY_KEY}
 WEBUI_SECRET_KEY=${WEBUI_SECRET}
+OPENROUTER_API_KEY=${OR_KEY}
+LLM_CEO_MODEL=${LLM_CEO_MODEL}
 EOF
     export $(grep -v '^#' .env | xargs)
 fi
@@ -170,6 +178,13 @@ model_list:
     litellm_params:
       model: "ollama/$EMBEDDING_MODEL"
       api_base: "http://$DOCKER_BRIDGE_IP:$OLLAMA_PORT"
+
+  # --- Modèles Distants (OpenRouter) ---
+  - model_name: "$LLM_CEO_MODEL"
+    litellm_params:
+      model: "openrouter/anthropic/$LLM_CEO_MODEL"
+      api_key: "os.environ/OPENROUTER_API_KEY"
+
 EOF
 
 # --- DOCKER COMPOSE ---
@@ -201,6 +216,7 @@ services:
     environment:
       - LITELLM_MASTER_KEY=\${LITELLM_MASTER_KEY}
       - DATABASE_URL=postgresql://paperclip:\${POSTGRES_PASSWORD}@postgres:5432/litellm
+      - OPENROUTER_API_KEY=\${OPENROUTER_API_KEY}
       - PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x
     volumes: ["./litellm-config.yaml:/app/config.yaml"]
     extra_hosts: ["host.docker.internal:host-gateway"]
@@ -225,6 +241,8 @@ services:
     platform: ${PLATFORM}
     ports: ["${PORT_PAPERCLIP}:3100"]
     volumes: ["./paperclip_data:/paperclip/instances"]
+    env_file:
+      - .env 
     environment:
       - DATABASE_URL=postgres://paperclip:\${POSTGRES_PASSWORD}@postgres:5432/paperclip
       - OPENAI_API_BASE=http://llm-proxy:4000/v1
@@ -310,4 +328,41 @@ echo -e "  4. Ou utilisez le proxy LiteLLM déjà configuré"
 
 echo -e "\n${GREEN}${BOLD}✅ STACK AI COMPANY (Open WebUI) DÉPLOYÉE !${NC}"
 
-cp -f $MY_PATH/install-ai-company.md ~/.zen/ai-company/ 2>/dev/null || true
+# =============================================================================
+# ÉTAPES SUIVANTES — Initialisation Paperclip
+# =============================================================================
+
+echo -e "\n${BOLD}${CYAN}╔══════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BOLD}${CYAN}║         PROCHAINES ÉTAPES — À FAIRE MAINTENANT           ║${NC}"
+echo -e "${BOLD}${CYAN}╚══════════════════════════════════════════════════════════╝${NC}"
+
+echo -e "\n${BOLD}① Initialiser le compte CEO dans Paperclip :${NC}"
+echo -e "   ${YELLOW}docker exec -it ai-company-swarm-paperclip-1 \\"
+echo -e "     pnpm paperclipai auth bootstrap-ceo${NC}"
+echo -e "   ${CYAN}→ Crée le premier utilisateur admin (email + mot de passe)${NC}"
+
+echo -e "\n${BOLD}② Lancer l'assistant d'intégration (onboarding) :${NC}"
+echo -e "   ${YELLOW}docker exec -it ai-company-swarm-paperclip-1 \\"
+echo -e "     pnpm paperclipai onboard${NC}"
+echo -e "   ${CYAN}→ Crée la company, les agents et les premiers tickets guidés${NC}"
+
+echo -e "\n${BOLD}③ Configurer les canaux de diffusion (Telegram · Gmail · Mastodon · Nostr) :${NC}"
+echo -e "   ${YELLOW}$MY_PATH/setup/paperclip-configure-channels.sh${NC}"
+echo -e "   ${CYAN}→ Génère les skills Node.js natifs dans :${NC}"
+echo -e "   ${CYAN}   $INSTALL_DIR/paperclip_data/skills/${NC}"
+echo -e ""
+echo -e "   ${CYAN}Options disponibles :${NC}"
+echo -e "   ${YELLOW}  --deps     ${NC}Vérifier Node.js ≥ 18 dans le conteneur Paperclip"
+echo -e "   ${YELLOW}  --telegram ${NC}Configurer le bot Telegram"
+echo -e "   ${YELLOW}  --gmail    ${NC}Configurer Gmail OAuth2"
+echo -e "   ${YELLOW}  --mastodon ${NC}Configurer Mastodon"
+echo -e "   ${YELLOW}  --all      ${NC}Tout configurer en une seule passe"
+echo -e "   ${YELLOW}  --health   ${NC}Rapport de santé complet"
+
+echo -e "\n${BOLD}④ Accéder à l'interface Paperclip :${NC}"
+echo -e "   ${CYAN}http://localhost:3100${NC}"
+echo -e "   ${CYAN}→ Créez vos agents, goals, tickets et routines via l'UI${NC}"
+
+echo -e "\n${BOLD}${GREEN}────────────────────────────────────────────────────────────${NC}"
+echo -e "${BOLD}Ordre recommandé :${NC}  ${YELLOW}bootstrap-ceo${NC} → ${YELLOW}onboard${NC} → ${YELLOW}configure-channels --all${NC} → ${CYAN}http://localhost:3100${NC}"
+echo -e "${BOLD}${GREEN}────────────────────────────────────────────────────────────${NC}\n"
