@@ -32,7 +32,7 @@ Commandes de l'interface :
   R                : RESET (Force la fermeture et la réouverture du tunnel)
   X                : STOP (Ferme le tunnel et libère le port local)
   W                : WEB/SSH (Ouvre l'interface Web ou un Terminal SSH)
-  I                : IPNS (Ouvre http://localhost:8080/ipns/IPFSNODEID de la station)
+  I                : IPNS (Ouvre http://127.0.0.1:8080/ipns/IPFSNODEID de la station)
   Q                : Quitter le moniteur
 
 Options :
@@ -225,7 +225,7 @@ while $running; do
             ;;
         "i"|"I") # IPNS — Ouvrir la page /ipns/IPFSNODEID de la station sélectionnée
             node_id="${map_nodes[$cursor]}"
-            ipns_url="http://localhost:8080/ipns/${node_id}"
+            ipns_url="http://127.0.0.1:8080/ipns/${node_id}"
             last_msg="IPNS → ${ipns_url}"
             draw_ui
             xdg-open "${ipns_url}" >/dev/null 2>&1 \
