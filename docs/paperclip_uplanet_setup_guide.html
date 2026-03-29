@@ -1,0 +1,357 @@
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.root{padding:1rem 0;font-size:14px;color:var(--color-text-primary)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem}
+.tab{padding:6px 14px;border-radius:20px;border:0.5px solid var(--color-border-secondary);font-size:12px;cursor:pointer;background:var(--color-background-secondary);color:var(--color-text-secondary);transition:all .15s;white-space:nowrap}
+.tab.on{background:#534AB7;color:#EEEDFE;border-color:#534AB7}
+.panel{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:12px;padding:1.25rem}
+.ptitle{font-size:15px;font-weight:500;margin-bottom:3px}
+.psub{font-size:12px;color:var(--color-text-secondary);margin-bottom:1rem}
+.steps{display:flex;flex-direction:column;gap:10px}
+.step{display:flex;gap:12px;align-items:flex-start}
+.num{min-width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0}
+.num-ui{background:#EEEDFE;color:#3C3489}
+.num-cli{background:#E1F5EE;color:#085041}
+.stext{flex:1;padding-top:4px}
+.slabel{font-weight:500;font-size:13px;margin-bottom:2px}
+.sdesc{font-size:12px;color:var(--color-text-secondary);line-height:1.5}
+code{font-family:var(--font-mono);font-size:11px;background:var(--color-background-secondary);padding:1px 5px;border-radius:3px;color:var(--color-text-primary)}
+.cmd{font-family:var(--font-mono);font-size:11px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:6px;padding:10px 12px;margin:6px 0;line-height:1.7;white-space:pre;overflow-x:auto;color:var(--color-text-primary)}
+.badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500;margin-left:6px;vertical-align:middle}
+.b-ui{background:#EEEDFE;color:#3C3489}
+.b-cli{background:#E1F5EE;color:#085041}
+.b-warn{background:#FAEEDA;color:#633806}
+.b-ok{background:#EAF3DE;color:#27500A}
+.tip{border-left:2px solid #534AB7;padding:8px 10px;font-size:12px;color:var(--color-text-secondary);margin-top:10px;border-radius:0 6px 6px 0;background:var(--color-background-secondary)}
+.divider{border:none;border-top:0.5px solid var(--color-border-tertiary);margin:12px 0}
+.ask-btn{cursor:pointer;background:transparent;border:0.5px solid var(--color-border-secondary);border-radius:6px;padding:5px 11px;font-size:11px;color:var(--color-text-secondary);margin-top:10px;display:inline-block}
+.ask-btn:hover{background:var(--color-background-secondary)}
+.prompt-box{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:8px;padding:10px 12px;font-size:12px;font-style:italic;color:var(--color-text-secondary);margin:6px 0;line-height:1.5}
+.mode-toggle{display:flex;gap:6px;margin-bottom:12px}
+.mtab{padding:4px 12px;border-radius:6px;border:0.5px solid var(--color-border-secondary);font-size:11px;cursor:pointer;background:transparent;color:var(--color-text-secondary)}
+.mtab.on{background:var(--color-background-secondary);color:var(--color-text-primary);border-color:var(--color-border-primary)}
+</style>
+
+<div class="root">
+<div class="tabs" id="tabs"></div>
+<div class="panel" id="panel"></div>
+</div>
+
+<script>
+const sections = [
+{
+  id:'A', label:'1 · Premier accès',
+  title:'Accéder à Paperclip et créer son compte',
+  sub:'Interface :3100 — première connexion depuis l\'Astroport',
+  steps:[
+    {
+      mode:'both',
+      label:'Ouvrir l\'interface web',
+      desc:'Depuis la machine hôte ou via SSH tunnel',
+      ui:'Ouvrir un navigateur → <code>http://localhost:3100</code>',
+      cli:'ssh -L 3100:127.0.0.1:3100 user@IP_ASTROPORT\npuis ouvrir http://localhost:3100'
+    },
+    {
+      mode:'ui',
+      label:'Créer son compte admin',
+      desc:'Écran d\'inscription (Sign up) — une seule fois à la première visite',
+      ui:'Remplir : Email · Mot de passe · Confirmer\nCliquer → Create account\n→ Tu arrives sur l\'écran "Create a company"'
+    },
+    {
+      mode:'cli',
+      label:'Récupérer l\'URL d\'invitation',
+      desc:'Alternative : générer le lien d\'inscription en CLI',
+      cli:'docker exec ai-company-swarm-paperclip-1 \\\n  node -e "console.log(process.env.PAPERCLIP_PUBLIC_URL)"'
+    },
+    {
+      mode:'both',
+      label:'Désactiver les inscriptions après création',
+      desc:'Sécurité — empêche d\'autres comptes non autorisés',
+      ui:'Dans le .env : ajouter PAPERCLIP_AUTH_DISABLE_SIGN_UP=true\npuis redémarrer le conteneur',
+      cli:'echo "PAPERCLIP_AUTH_DISABLE_SIGN_UP=true" >> ~/.zen/ai-company/.env\ndocker compose -p ai-company-swarm restart paperclip'
+    }
+  ]
+},
+{
+  id:'B', label:'2 · Créer UPlanet Co.',
+  title:'Créer la "company" UPlanet Marketing',
+  sub:'L\'entité de base — tout agent y sera rattaché',
+  steps:[
+    {
+      mode:'ui',
+      label:'Nommer la company',
+      desc:'Écran "What do we want to name our app?"',
+      ui:'Saisir : <code>UPlanet Marketing</code>\nCliquer → Next'
+    },
+    {
+      mode:'ui',
+      label:'Décrire la mission',
+      desc:'Écran "What is this company trying to achieve?" — sois précis, le CEO agent s\'en sert comme boussole',
+      prompt:'Développer la communauté UPlanet — Internet souverain coopératif (SCIC Ğ1FabLab). Recruter des co-bâtisseurs via Nostr, Telegram, email et Mastodon. Objectif : +50 membres actifs par mois via du contenu éducatif sur la souveraineté numérique, le MULTIPASS et l\'économie ẐEN.'
+    },
+    {
+      mode:'ui',
+      label:'Choisir le modèle CEO',
+      desc:'Utiliser un modèle frontier pour le CEO — il prend les décisions stratégiques',
+      ui:'Sélectionner : <code>claude-sonnet-4-6</code> (via LiteLLM proxy)\nL\'endpoint est déjà configuré : http://llm-proxy:4000/v1\nLa clé est la LITELLM_MASTER_KEY du .env'
+    },
+    {
+      mode:'ui',
+      label:'Première instruction CEO',
+      desc:'Message d\'amorçage — le CEO va planifier et recruter les agents',
+      prompt:'Tu es le CEO de UPlanet Marketing, une initiative coopérative pour diffuser l\'Internet souverain. Commence par créer un plan marketing à 30 jours, puis recrute : 1 agent contenu, 1 agent community, 1 agent outreach. Chaque agent aura un budget mensuel de 5$ en tokens.'
+    },
+    {
+      mode:'ui',
+      label:'Valider et lancer',
+      desc:'L\'Inbox va recevoir la première demande du CEO dans quelques secondes',
+      ui:'Cliquer → Launch company\n→ Dashboard s\'ouvre avec la company "UPlanet Marketing"\n→ Surveiller l\'onglet Inbox (notification rouge)'
+    }
+  ]
+},
+{
+  id:'C', label:'3 · Agents',
+  title:'Configurer les 3 agents marketing',
+  sub:'Contenu · Community · Outreach — chacun avec son rôle et son budget',
+  steps:[
+    {
+      mode:'ui',
+      label:'Approuver la demande CEO dans l\'Inbox',
+      desc:'Le CEO demande à recruter — toujours valider manuellement au début',
+      ui:'Inbox → Cliquer sur la demande "Hire Agent"\n→ Vérifier les rôles proposés\n→ Bouton Approve (ou modifier si nécessaire)'
+    },
+    {
+      mode:'ui',
+      label:'Agent Contenu — configuration',
+      desc:'Persona + modèle + budget',
+      ui:'Agents → New Agent\nNom : Rédacteur UPlanet\nModèle : gemma3 (via LiteLLM — économique)\nBudget mensuel : 5$\nReporting line : CEO'
+    },
+    {
+      mode:'ui',
+      label:'Persona de l\'agent Contenu',
+      desc:'Système prompt — coller dans le champ Persona',
+      prompt:'Tu es le rédacteur de UPlanet, une coopérative Internet souverain. Tu maîtrises le vocabulaire : MULTIPASS, co-bâtisseur, protocole N², ẐEN (0.1 Ğ1), Astroport.ONE, Nostr, IPFS. Tu rédiges : posts Nostr (<280 chars), articles longs (kind:30023), emails newsletter (HTML). Ton ton : pédagogique, engagé, anti-GAFAM sans être agressif. URL projet : https://ipfs.copylaradio.com/ipns/copylaradio.com/entrance.html'
+    },
+    {
+      mode:'ui',
+      label:'Agent Community — configuration',
+      desc:'Gère les interactions Telegram et Nostr',
+      ui:'Agents → New Agent\nNom : Community UPlanet\nModèle : gemma3\nBudget : 4$\nSkill : telegram_poster (du dossier skills/)'
+    },
+    {
+      mode:'ui',
+      label:'Agent Outreach — configuration',
+      desc:'Séquences email et prospection',
+      ui:'Agents → New Agent\nNom : Outreach UPlanet\nModèle : gemma3\nBudget : 6$\nSkill : gmail_sender (du dossier skills/)'
+    },
+    {
+      mode:'cli',
+      label:'Vérifier les agents en base',
+      desc:'Inspecter les agents créés via psql',
+      cli:'docker exec ai-company-swarm-postgres-1 \\\n  psql -U paperclip -d paperclip \\\n  -c "SELECT name, model, monthly_budget FROM agents;"'
+    }
+  ]
+},
+{
+  id:'D', label:'4 · Skills',
+  title:'Installer les skills (capacités des agents)',
+  sub:'Les skills sont des scripts que l\'agent peut appeler — Telegram, Gmail, Mastodon',
+  steps:[
+    {
+      mode:'ui',
+      label:'Accéder aux Skills dans l\'interface',
+      desc:'Menu latéral → Skills (ou Settings → Skills selon version)',
+      ui:'Dashboard → Company Settings → Skills\n→ Bouton "Add Skill" ou "Import"'
+    },
+    {
+      mode:'cli',
+      label:'Vérifier les skills générés par configure-channels.sh',
+      desc:'Normalement déjà présents si le script a été lancé',
+      cli:'ls -la ~/.zen/ai-company/paperclip_data/skills/\n# Attendu :\n# telegram_poster.js\n# gmail_sender.py\n# mastodon_poster.sh'
+    },
+    {
+      mode:'both',
+      label:'Installer le skill Telegram dans l\'agent',
+      desc:'Associer le skill à l\'agent Community',
+      ui:'Agent Community → Skills → Add → sélectionner telegram_poster',
+      cli:'# Le skill est déjà dans le volume monté\n# ~/.zen/ai-company/paperclip_data/skills/\n# Paperclip les détecte automatiquement au redémarrage\ndocker compose -p ai-company-swarm restart paperclip'
+    },
+    {
+      mode:'both',
+      label:'Variables d\'environnement pour les skills',
+      desc:'Injecter TELEGRAM_BOT_TOKEN etc. dans le conteneur Paperclip',
+      ui:'Company Settings → Environment Variables\n→ Ajouter : TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID\nGMAIL_REFRESH_TOKEN, MASTODON_TOKEN, MASTODON_INSTANCE',
+      cli:'# Déjà dans .env → relancer pour propager\ndocker compose -p ai-company-swarm up -d --force-recreate paperclip'
+    },
+    {
+      mode:'cli',
+      label:'Tester un skill manuellement',
+      desc:'Valider que Telegram répond avant de l\'exposer aux agents',
+      cli:'TELEGRAM_BOT_TOKEN=$(grep TELEGRAM_BOT_TOKEN ~/.zen/ai-company/.env | cut -d= -f2)\nTELEGRAM_CHAT_ID=$(grep TELEGRAM_CHAT_ID ~/.zen/ai-company/.env | cut -d= -f2)\ncurl -s -X POST \\\n  "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \\\n  -d "chat_id=$TELEGRAM_CHAT_ID&text=Skill+OK+depuis+Paperclip" | python3 -m json.tool'
+    }
+  ]
+},
+{
+  id:'E', label:'5 · Goals & Tickets',
+  title:'Définir les objectifs et créer les tickets',
+  sub:'Goals = mission long terme · Tickets = tâches exécutables par les agents',
+  steps:[
+    {
+      mode:'ui',
+      label:'Créer un Goal principal',
+      desc:'Goals → New Goal — la boussole de tous les agents',
+      ui:'Goals → New Goal\nTitre : Croissance communauté UPlanet Q2 2026\nDescription : +50 co-bâtisseurs/mois via contenu multicanal\nPriorité : High\nOwner : CEO'
+    },
+    {
+      mode:'ui',
+      label:'Créer un sous-goal Contenu',
+      desc:'Objectif spécifique assigné à l\'agent rédacteur',
+      ui:'Goals → New Goal (child du précédent)\nTitre : Publication quotidienne Nostr + newsletter hebdo\nOwner : Rédacteur UPlanet'
+    },
+    {
+      mode:'ui',
+      label:'Créer le premier ticket récurrent',
+      desc:'Tickets → New Ticket — la tâche concrète quotidienne',
+      ui:'Tickets → New Ticket\nTitre : Post Nostr quotidien UPlanet\nAssigné à : Rédacteur UPlanet\nGoal : Publication quotidienne\nHeartbeat : Daily 9:00'
+    },
+    {
+      mode:'ui',
+      label:'Prompt du ticket Post Nostr',
+      desc:'Instructions précises pour l\'agent dans le corps du ticket',
+      prompt:'Rédige 1 post Nostr court (<280 chars) sur UPlanet aujourd\'hui. Thème du jour : alterner entre [MULTIPASS, protocole N², ẐEN économie, souveraineté données, co-bâtisseur]. Inclure le lien https://ipfs.copylaradio.com/ipns/copylaradio.com/entrance.html et les hashtags #UPlanet #Nostr #LibreCommun. Sauvegarder le résultat dans posts/nostr/AAAA-MM-JJ.txt'
+    },
+    {
+      mode:'ui',
+      label:'Activer le heartbeat (planification)',
+      desc:'Routines → associer le ticket à un schedule automatique',
+      ui:'Routines → New Routine\nNom : Routine quotidienne marketing\nHeartbeat : Daily 09:00\nTickets associés : Post Nostr, Scan communauté\nActiver → le toggle passe en vert'
+    },
+    {
+      mode:'cli',
+      label:'Surveiller l\'exécution des heartbeats',
+      desc:'Logs en temps réel du conteneur Paperclip',
+      cli:'docker compose -p ai-company-swarm logs -f paperclip \\\n  | grep -E "(heartbeat|ticket|agent|error)"'
+    }
+  ]
+},
+{
+  id:'F', label:'6 · Budget & Monitoring',
+  title:'Contrôler les coûts et suivre l\'activité',
+  sub:'Chaque token est tracé — aucun runaway spend possible',
+  steps:[
+    {
+      mode:'ui',
+      label:'Dashboard principal — Monthly Spend',
+      desc:'Vue d\'ensemble de tous les agents et leurs consommations',
+      ui:'Dashboard → Monthly Spend\n→ Barre par agent : Rédacteur / Community / Outreach\n→ Dépasse le budget → agent s\'arrête automatiquement'
+    },
+    {
+      mode:'ui',
+      label:'Ajuster le budget d\'un agent',
+      desc:'Augmenter ou diminuer sans redémarrage',
+      ui:'Agents → sélectionner l\'agent\n→ Edit → Monthly Budget : modifier la valeur en $\n→ Save → effectif immédiatement'
+    },
+    {
+      mode:'ui',
+      label:'Lire l\'audit log d\'un ticket',
+      desc:'Chaque action de chaque agent est loggée et immuable',
+      ui:'Tickets → cliquer sur un ticket\n→ Tab "Trace" ou "History"\n→ Voir : tool calls, API calls, décisions, outputs'
+    },
+    {
+      mode:'ui',
+      label:'Inbox — validation manuelle',
+      desc:'Garder l\'Inbox active au début — valider chaque action importante',
+      ui:'Settings → Governance\nApproval gate : ON (recommandé semaine 1)\n→ Passer en AUTO une fois les agents calibrés'
+    },
+    {
+      mode:'cli',
+      label:'Rapport de coût sur 30 jours',
+      desc:'Requête directe sur la base PostgreSQL',
+      cli:'docker exec ai-company-swarm-postgres-1 psql -U paperclip -d paperclip -c "\nSELECT a.name, \n  ROUND(SUM(t.token_cost)::numeric, 4) AS total_cost_usd,\n  COUNT(t.id) AS nb_tasks\nFROM tasks t\nJOIN agents a ON t.agent_id = a.id\nWHERE t.created_at > NOW() - INTERVAL \'30 days\'\nGROUP BY a.name\nORDER BY total_cost_usd DESC;"'
+    },
+    {
+      mode:'cli',
+      label:'Exporter la company (backup + partage)',
+      desc:'Template portable — secret scrubbing automatique',
+      cli:'# Via l\'interface : Company Settings → Export\n# Le JSON exporté ne contient pas les secrets\n# Peut être partagé comme template UPlanet'
+    }
+  ]
+}
+];
+
+let cur = 0;
+let mode = 'both';
+
+const tabs = document.getElementById('tabs');
+const panel = document.getElementById('panel');
+
+function renderPanel() {
+  const s = sections[cur];
+  let html = `<div class="ptitle">${s.title}</div><div class="psub">${s.sub}</div>`;
+
+  // mode toggle
+  html += `<div class="mode-toggle">
+    <button class="mtab ${mode==='both'?'on':''}" onclick="setMode('both')">Interface + CLI</button>
+    <button class="mtab ${mode==='ui'?'on':''}" onclick="setMode('ui')">Interface seulement</button>
+    <button class="mtab ${mode==='cli'?'on':''}" onclick="setMode('cli')">CLI seulement</button>
+  </div>`;
+
+  html += `<div class="steps">`;
+  s.steps.forEach((st, i) => {
+    const showUI = (mode === 'both' || mode === 'ui') && (st.mode === 'ui' || st.mode === 'both');
+    const showCLI = (mode === 'both' || mode === 'cli') && (st.mode === 'cli' || st.mode === 'both');
+    if (!showUI && !showCLI) return;
+
+    html += `<div class="step">
+      <span class="num ${showUI && !showCLI ? 'num-ui' : showCLI && !showUI ? 'num-cli' : 'num-ui'}">${i+1}</span>
+      <div class="stext">
+        <div class="slabel">${st.label}`;
+
+    if (st.mode === 'ui') html += `<span class="badge b-ui">Interface</span>`;
+    else if (st.mode === 'cli') html += `<span class="badge b-cli">CLI</span>`;
+    else html += `<span class="badge b-ui">Interface</span><span class="badge b-cli">CLI</span>`;
+
+    html += `</div><div class="sdesc">${st.desc}</div>`;
+
+    if (showUI && st.ui) html += `<div class="cmd">${escHtml(st.ui)}</div>`;
+    if (st.prompt) {
+      html += `<div class="sdesc" style="margin-top:4px;font-weight:500">Prompt à coller :</div>`;
+      html += `<div class="prompt-box">${escHtml(st.prompt)}</div>`;
+    }
+    if (showCLI && st.cli) {
+      if (showUI && st.ui) html += `<div class="sdesc" style="margin-top:6px;font-weight:500">Équivalent CLI :</div>`;
+      html += `<div class="cmd">${escHtml(st.cli)}</div>`;
+    }
+
+    html += `</div></div>`;
+    if (i < s.steps.length - 1) html += `<hr class="divider">`;
+  });
+  html += `</div>`;
+
+  // ask button
+  const asks = {
+    'A': 'Comment sécuriser l\'accès Paperclip :3100 sur Astroport avec un mot de passe fort ?',
+    'B': 'Génère le prompt complet de mission CEO pour UPlanet Marketing en français',
+    'C': 'Quels sont les meilleurs paramètres de persona pour l\'agent community Telegram UPlanet ?',
+    'D': 'Comment créer un skill Paperclip pour poster sur Nostr via l\'API Astroport.ONE ?',
+    'E': 'Génère une liste de 30 topics de tickets pour la routine quotidienne UPlanet',
+    'F': 'Comment configurer une alerte si un agent dépasse 80% de son budget mensuel ?'
+  };
+  html += `<button class="ask-btn" onclick="sendPrompt('${asks[s.id]}')">${asks[s.id].substring(0,60)}... ↗</button>`;
+
+  panel.innerHTML = html;
+}
+
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function setMode(m){ mode=m; renderPanel(); }
+
+sections.forEach((s,i) => {
+  const t = document.createElement('div');
+  t.className = 'tab' + (i===0?' on':'');
+  t.textContent = s.label;
+  t.onclick = () => { cur=i; tabs.querySelectorAll('.tab').forEach((x,j)=>x.classList.toggle('on',j===i)); renderPanel(); };
+  tabs.appendChild(t);
+});
+
+renderPanel();
+</script>
