@@ -195,9 +195,17 @@ while $running; do
         "w"|"W") # WEB
             port="${map_ports[$cursor]}"
             if [[ "$port" != "????" ]]; then
-                last_msg="Ouverture http://localhost:$port"
-                [[ "$port" == "6333" ]] && suffix="/dashboard" || suffix=""
-                xdg-open "http://localhost:$port$suffix" >/dev/null 2>&1 || open "http://localhost:$port$suffix" &
+                ## Protocole et suffix selon le service détecté
+                case "$port" in
+                    6333)   proto="http";  suffix="/dashboard" ;;  # Qdrant
+                    3001)   proto="https"; suffix="" ;;             # Webtop KasmVNC HTTPS
+                    8443)   proto="https"; suffix="" ;;             # NextCloud AIO admin
+                    443)    proto="https"; suffix="" ;;             # HTTPS générique
+                    *)      proto="http";  suffix="" ;;
+                esac
+                last_msg="Ouverture ${proto}://localhost:${port}${suffix}"
+                xdg-open "${proto}://localhost:${port}${suffix}" >/dev/null 2>&1 \
+                    || open "${proto}://localhost:${port}${suffix}" 2>/dev/null &
             fi
             ;;
         "q"|"Q") running=false ;;

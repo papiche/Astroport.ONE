@@ -111,18 +111,41 @@ fire_on() {
     echo "  ✅ 4001/udp IPFS Swarm QUIC"
 
     echo "
-── PORTS LOCALHOST UNIQUEMENT (bloqués depuis Internet) ───────────"
+── PRIORITÉ 1 : ALLOWS (avant les DENY pour éviter le masquage) ───"
 
-    ## Bloquer explicitement les ports de service depuis l'extérieur
-    ## (accessibles uniquement via proxy NPM ou tunnel SSH)
+    ## ⚠️  ORDRE CRITIQUE : les règles ALLOW doivent être ajoutées AVANT les DENY.
+    ## Dans UFW/iptables, la première règle correspondante gagne.
+    ## Si DENY port X est ajouté avant ALLOW from LAN port X → trafic LAN bloqué.
+
+    ## Docker : accès complet depuis le réseau bridge Docker
+    ## (LiteLLM→Ollama, Paperclip→Qdrant, etc.)
+    echo "  🐳 Docker bridge 172.17.0.0/16 → tous ports autorisés"
+    sudo ufw allow from 172.17.0.0/16 comment "Docker bridge interne" > /dev/null 2>&1
+
+    ## LAN (IPv4 + IPv6) : accès aux services internes depuis le réseau local
+    ## Ajout IPv6 : fe80::/10 (Link-Local), fc00::/7 (Unique Local)
+    for LAN_RANGE in 192.168.0.0/16 10.0.0.0/8 172.16.0.0/12 fe80::/10 fc00::/7; do
+        sudo ufw allow from "${LAN_RANGE}" to any port 12345 proto tcp comment "LAN→Astroport" > /dev/null 2>&1
+        sudo ufw allow from "${LAN_RANGE}" to any port 8080  proto tcp comment "LAN→IPFS GW"   > /dev/null 2>&1
+        sudo ufw allow from "${LAN_RANGE}" to any port 54321 proto tcp comment "LAN→UPassport"  > /dev/null 2>&1
+        sudo ufw allow from "${LAN_RANGE}" to any port 7777  proto tcp comment "LAN→NOSTR"     > /dev/null 2>&1
+        sudo ufw allow from "${LAN_RANGE}" to any port 81    proto tcp comment "LAN→NPM Admin" > /dev/null 2>&1
+    done
+    echo "  🏠 LAN (IPv4 + IPv6) : accès autorisé aux services internes"
+    echo ""
+
+    echo "
+── PRIORITÉ 2 : DENY explicites (bloqués depuis Internet) ─────────"
+    ## Les deny explicites confirment le blocage (REJECT vs DROP par défaut).
+    ## Ils s'appliquent uniquement au trafic non matché par les ALLOW ci-dessus.
     for port_comment in \
         "5001:IPFS API (dangereux si exposé)" \
-        "7777:NOSTR strfry/rnostr (via NPM)" \
-        "8080:IPFS Gateway (via NPM)" \
-        "12345:Astroport API (via NPM)" \
-        "54321:UPassport API (via NPM)" \
-        "33101:G1BILLET (via NPM)" \
-        "81:NPM Admin UI" \
+        "7777:NOSTR strfry/rnostr (via NPM uniquement)" \
+        "8080:IPFS Gateway (via NPM uniquement)" \
+        "12345:Astroport API (via NPM uniquement)" \
+        "54321:UPassport API (via NPM uniquement)" \
+        "33101:G1BILLET (via NPM uniquement)" \
+        "81:NPM Admin UI (LAN autorisé, Internet bloqué)" \
         "1883:MQTT Mosquitto" \
         "4416:bgutil PO token provider (Docker)" \
         "6333:Qdrant REST (IA Stack)" \
@@ -132,8 +155,9 @@ fire_on() {
         "8002:NextCloud AIO Dashboard" \
         "8443:NextCloud AIO Admin Setup" \
         "3100:Paperclip AI agents (bleeding-edge)" \
-        "4000:LiteLLM proxy (bleeding-edge)" \
+        "4000:LiteLLM proxy interne (bleeding-edge)" \
         "8000:OpenClaw gateway (bleeding-edge)" \
+        "18789:OpenClaw WebSocket gateway (bleeding-edge)" \
         "11434:Ollama LLM API (bleeding-edge)" \
         "3000:KasmVNC HTTP (webtop — SSH tunnel requis)" \
         "3001:KasmVNC HTTPS (webtop — SSH tunnel requis)" \
@@ -145,23 +169,6 @@ fire_on() {
         sudo ufw deny in "${port}/tcp" comment "${comment}" > /dev/null 2>&1
         printf "  🔒 %5s/tcp  %s\n" "$port" "$comment"
     done
-
-    ## LAN : autoriser le réseau local à accéder aux services internes
-    ## (utile pour debug depuis un autre PC du LAN)
-    ## Ajout IPv6 : fe80::/10 (Link-Local), fc00::/7 (Unique Local)
-    for LAN_RANGE in 192.168.0.0/16 10.0.0.0/8 172.16.0.0/12 fe80::/10 fc00::/7; do
-        sudo ufw allow from "${LAN_RANGE}" to any port 12345 proto tcp comment "LAN→Astroport" > /dev/null 2>&1
-        sudo ufw allow from "${LAN_RANGE}" to any port 8080  proto tcp comment "LAN→IPFS GW"  > /dev/null 2>&1
-        sudo ufw allow from "${LAN_RANGE}" to any port 54321 proto tcp comment "LAN→UPassport" > /dev/null 2>&1
-        sudo ufw allow from "${LAN_RANGE}" to any port 7777  proto tcp comment "LAN→NOSTR"    > /dev/null 2>&1
-    done
-    echo ""
-    
-    echo "Allow IP docker localhost 172.17.0.0/16"
-    sudo ufw allow from 172.17.0.0/16
-
-    echo ""
-    echo "  🏠 LAN (IPv4 + IPv6) : accès autorisé aux services internes"
 
     ## Activer UFW
     sudo ufw --force enable

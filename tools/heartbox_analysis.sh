@@ -91,16 +91,19 @@ get_fast_service_status() {
         fi
     fi
     
-    # strfry NOSTR relay - fast port check + DB size
+    # NOSTR relay — strfry ou rnostr (même port 7777)
     local strfry_active="false"
+    local strfry_engine="strfry"
     local strfry_db_size="0"
     if ss -tln 2>/dev/null | grep -q ":7777 "; then
         strfry_active="true"
+        ## Détecter si c'est rnostr (profil dev) ou strfry
+        pgrep rnostr >/dev/null 2>&1 && strfry_engine="rnostr"
     fi
     if [[ -f "$HOME/.zen/strfry/strfry-db/data.mdb" ]]; then
         strfry_db_size=$(stat -c%s "$HOME/.zen/strfry/strfry-db/data.mdb" 2>/dev/null || echo "0")
     fi
-    
+
     # G1Billet - fast process check
     local g1billet_active="false"
     if pgrep -f "G1BILLETS" >/dev/null 2>&1; then
@@ -119,15 +122,35 @@ get_fast_service_status() {
         npm_ssl="true"
     fi
 
-    # NextCloud ports
-    local nextcloud_aio_active="false"
-    local nextcloud_cloud_active="false"
-    if ss -tln 2>/dev/null | grep -q ":8002 "; then
-        nextcloud_aio_active="true"
-    fi
-    if ss -tln 2>/dev/null | grep -q ":8001 "; then
-        nextcloud_cloud_active="true"
-        fi
+    ## NextCloud AIO ports :
+    ## 8443 = AIO admin setup (HTTPS, première config) ← PORT CORRECT
+    ## 8002 = AIO dashboard (HTTP, post-setup)
+    ## 8001 = Apache NextCloud app (proxied par NPM → cloud.DOMAIN)
+    local nextcloud_aio_admin="false"   # port 8443 (setup initial)
+    local nextcloud_aio_dash="false"    # port 8002 (dashboard)
+    local nextcloud_cloud_active="false" # port 8001 (app Apache)
+    ss -tln 2>/dev/null | grep -q ":8443 " && nextcloud_aio_admin="true"
+    ss -tln 2>/dev/null | grep -q ":8002 " && nextcloud_aio_dash="true"
+    ss -tln 2>/dev/null | grep -q ":8001 " && nextcloud_cloud_active="true"
+
+    ## ── Profil bleeding-edge : Stack IA Swarm ─────────────────────────
+    local ollama_active="false"
+    local qdrant_active="false"
+    local paperclip_active="false"
+    local openclaw_active="false"
+    local litellm_active="false"
+    ss -tln 2>/dev/null | grep -q ":11434 " && ollama_active="true"  # Ollama LLM
+    ss -tln 2>/dev/null | grep -q ":6333  " && qdrant_active="true"  # Qdrant vectors
+    ss -tln 2>/dev/null | grep -q ":3100  " && paperclip_active="true" # Paperclip agents
+    ss -tln 2>/dev/null | grep -q ":8000  " && openclaw_active="true"  # OpenClaw gateway
+    ## LiteLLM 8001 = même port que NextCloud Apache → vérif par nom conteneur
+    command -v docker >/dev/null 2>&1 && \
+        docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'litellm' && litellm_active="true"
+
+    ## ── Webtop KasmVNC (VDI) ──────────────────────────────────────────
+    local webtop_active="false"
+    command -v docker >/dev/null 2>&1 && \
+        docker ps --format '{{.Image}}' 2>/dev/null | grep -q 'linuxserver/webtop' && webtop_active="true"
         
         # IPFS P2P Services
         local p2p_services="[]"
@@ -160,17 +183,25 @@ get_fast_service_status() {
     "nextcloud": {
         "active": $nextcloud_active,
         "container": "$nextcloud_container",
-        "aio_https": {
-            "active": $nextcloud_aio_active,
-            "port": 8002
+        "aio_admin": {
+            "active": $nextcloud_aio_admin,
+            "port": 8443,
+            "note": "AIO admin setup (HTTPS, premiere config)"
         },
-        "cloud_http": {
+        "aio_dashboard": {
+            "active": $nextcloud_aio_dash,
+            "port": 8002,
+            "note": "AIO dashboard (HTTP, post-setup)"
+        },
+        "cloud_apache": {
             "active": $nextcloud_cloud_active,
-            "port": 8001
+            "port": 8001,
+            "note": "Apache NextCloud app (proxied par NPM cloud.DOMAIN)"
         }
     },
-    "strfry": {
+    "nostr_relay": {
         "active": $strfry_active,
+        "engine": "$strfry_engine",
         "port": 7777,
         "db_size_bytes": $strfry_db_size
     },
@@ -179,10 +210,22 @@ get_fast_service_status() {
         "ssl": $npm_ssl,
         "admin_port": 81
     },
-    "ipfs_p2p_services": $p2p_services,
     "g1billet": {
         "active": $g1billet_active
-    }
+    },
+    "bleeding_edge": {
+        "ollama":     { "active": $ollama_active,     "port": 11434 },
+        "qdrant":     { "active": $qdrant_active,     "port": 6333  },
+        "paperclip":  { "active": $paperclip_active,  "port": 3100  },
+        "openclaw":   { "active": $openclaw_active,   "port": 8000  },
+        "litellm":    { "active": $litellm_active,    "port": 4000  }
+    },
+    "webtop": {
+        "active": $webtop_active,
+        "port_http": 3000,
+        "port_https": 3001
+    },
+    "ipfs_p2p_services": $p2p_services
 EOF
 }
 
@@ -207,10 +250,13 @@ get_fast_capacities() {
         ipfs_available_gb=$(echo "$ipfs_available" | sed 's/G//' | sed 's/T/*1024/' | sed 's/,/\./' | bc 2>/dev/null || echo "0")
     fi
     
-    # NextCloud disk space
+    # NextCloud / BTRFS disk space
+    local nextcloud_fs="unknown"
     if [[ -d "/nextcloud-data" ]] && df -h /nextcloud-data | tail -1 | grep -q .; then
         local nextcloud_available=$(df -h /nextcloud-data | tail -1 | awk '{print $4}')
         nextcloud_available_gb=$(echo "$nextcloud_available" | sed 's/G//' | sed 's/T/*1024/' | sed 's/,/\./' | bc 2>/dev/null || echo "0")
+        ## Détecter le filesystem BTRFS (recommandé pour NextCloud + IPFS)
+        nextcloud_fs=$(findmnt -no FSTYPE /nextcloud-data 2>/dev/null || stat -f -c %T /nextcloud-data 2>/dev/null || echo "unknown")
     fi
     
     # Calculate total available space
@@ -239,6 +285,8 @@ get_fast_capacities() {
         "nextcloud": {
             "available_gb": $nextcloud_available_gb,
             "mount_point": "/nextcloud-data",
+            "filesystem": "$nextcloud_fs",
+            "btrfs_recommended": $([ "$nextcloud_fs" = "btrfs" ] && echo "true" || echo "false"),
             "status": "$(if [[ -d "/nextcloud-data" ]]; then echo "mounted"; else echo "not_mounted"; fi)"
         },
         "ipfs": {
