@@ -190,7 +190,8 @@ if [[ -n "${CUSTOM_CAPTAIN_EMAIL:-}" ]]; then
     echo ">>> Utilisation de l'email Capitaine personnalisé : ${GMARKMAIL}"
 else
     BASE_EMAIL_DOMAIN="${CUSTOM_EMAIL_DOMAIN:-${CLEAN_NODE_DOMAIN:-qo-op.com}}"
-    GMARKMAIL="support+$(echo ${HOSTNAME_SHORT} $GO | sed "s| |_|g")@${BASE_EMAIL_DOMAIN}" 
+    GMARKMAIL="support+$(echo ${HOSTNAME_SHORT} $GO | sed "s| |_|g")@${BASE_EMAIL_DOMAIN}"
+    GMARKMAIL="${GMARKMAIL,,}"  ## Force minuscule — cohérence avec make_NOSTRCARD.sh
     echo ">>> Génération de l'email Capitaine automatique : ${GMARKMAIL}"
 fi
 

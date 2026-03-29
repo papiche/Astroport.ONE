@@ -57,6 +57,9 @@ ipfs config --json AutoTLS.Enabled false
 # ipfs config --json Routing.Type '"dht"'
 ipfs config --json Routing.Type '"dhtserver"'
 ipfs config --json Ipns.UsePubsub true
+# IPFS P2P stream mounting — requis pour DRAGON_p2p_ssh.sh (x_*.sh tunnels)
+# Sans ce flag : "Error: libp2p stream mounting not enabled"
+ipfs config --json Experimental.Libp2pStreamMounting true
 # for ipfs p2p relaying
 ipfs config --json Swarm.RelayClient.Enabled true
 ipfs config --json Swarm.RelayService.Enabled true
