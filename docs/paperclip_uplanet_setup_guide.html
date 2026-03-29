@@ -1,357 +1,1578 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paperclip · Guide Interface UPlanet</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-.root{padding:1rem 0;font-size:14px;color:var(--color-text-primary)}
-.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem}
-.tab{padding:6px 14px;border-radius:20px;border:0.5px solid var(--color-border-secondary);font-size:12px;cursor:pointer;background:var(--color-background-secondary);color:var(--color-text-secondary);transition:all .15s;white-space:nowrap}
-.tab.on{background:#534AB7;color:#EEEDFE;border-color:#534AB7}
-.panel{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:12px;padding:1.25rem}
-.ptitle{font-size:15px;font-weight:500;margin-bottom:3px}
-.psub{font-size:12px;color:var(--color-text-secondary);margin-bottom:1rem}
-.steps{display:flex;flex-direction:column;gap:10px}
-.step{display:flex;gap:12px;align-items:flex-start}
-.num{min-width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0}
-.num-ui{background:#EEEDFE;color:#3C3489}
-.num-cli{background:#E1F5EE;color:#085041}
-.stext{flex:1;padding-top:4px}
-.slabel{font-weight:500;font-size:13px;margin-bottom:2px}
-.sdesc{font-size:12px;color:var(--color-text-secondary);line-height:1.5}
-code{font-family:var(--font-mono);font-size:11px;background:var(--color-background-secondary);padding:1px 5px;border-radius:3px;color:var(--color-text-primary)}
-.cmd{font-family:var(--font-mono);font-size:11px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:6px;padding:10px 12px;margin:6px 0;line-height:1.7;white-space:pre;overflow-x:auto;color:var(--color-text-primary)}
-.badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500;margin-left:6px;vertical-align:middle}
-.b-ui{background:#EEEDFE;color:#3C3489}
-.b-cli{background:#E1F5EE;color:#085041}
-.b-warn{background:#FAEEDA;color:#633806}
-.b-ok{background:#EAF3DE;color:#27500A}
-.tip{border-left:2px solid #534AB7;padding:8px 10px;font-size:12px;color:var(--color-text-secondary);margin-top:10px;border-radius:0 6px 6px 0;background:var(--color-background-secondary)}
-.divider{border:none;border-top:0.5px solid var(--color-border-tertiary);margin:12px 0}
-.ask-btn{cursor:pointer;background:transparent;border:0.5px solid var(--color-border-secondary);border-radius:6px;padding:5px 11px;font-size:11px;color:var(--color-text-secondary);margin-top:10px;display:inline-block}
-.ask-btn:hover{background:var(--color-background-secondary)}
-.prompt-box{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:8px;padding:10px 12px;font-size:12px;font-style:italic;color:var(--color-text-secondary);margin:6px 0;line-height:1.5}
-.mode-toggle{display:flex;gap:6px;margin-bottom:12px}
-.mtab{padding:4px 12px;border-radius:6px;border:0.5px solid var(--color-border-secondary);font-size:11px;cursor:pointer;background:transparent;color:var(--color-text-secondary)}
-.mtab.on{background:var(--color-background-secondary);color:var(--color-text-primary);border-color:var(--color-border-primary)}
-</style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap');
 
-<div class="root">
-<div class="tabs" id="tabs"></div>
-<div class="panel" id="panel"></div>
+:root {
+  --bg: #0e0f11;
+  --surface: #16181c;
+  --border: #2a2d35;
+  --border-light: #1e2128;
+  --text: #e8eaf0;
+  --text-muted: #7a7f8e;
+  --text-dim: #454954;
+  --purple: #8b7ff0;
+  --purple-dim: #2d2a4a;
+  --purple-mid: #534AB7;
+  --teal: #3ecf8e;
+  --teal-dim: #0d2a1e;
+  --amber: #f5a623;
+  --amber-dim: #2a1f08;
+  --blue: #4a9eff;
+  --blue-dim: #0d1f35;
+  --coral: #f07060;
+  --coral-dim: #2a1510;
+  --green: #5ecb7a;
+  --green-dim: #0d2018;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Syne', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  min-height: 100vh;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 2rem 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.logo {
+  padding: 0 1.5rem 1.75rem;
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: 1.5rem;
+}
+.logo-mark {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--purple);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.logo-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+.logo-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.nav-group { padding: 0 1rem; margin-bottom: 1.25rem; }
+.nav-group-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  padding: 0 .5rem;
+  margin-bottom: 5px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background .15s;
+  margin-bottom: 2px;
+  border: 1px solid transparent;
+  user-select: none;
+}
+.nav-item:hover { background: var(--border-light); }
+.nav-item.active {
+  background: var(--purple-dim);
+  border-color: var(--purple-mid);
+}
+.nav-num {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  min-width: 20px;
+}
+.nav-item.active .nav-num { color: var(--purple); }
+.nav-text { font-size: 12px; color: var(--text-muted); font-weight: 400; }
+.nav-item.active .nav-text { color: var(--text); font-weight: 600; }
+.nav-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  margin-left: auto; flex-shrink: 0;
+}
+.dot-ui { background: var(--purple); opacity: .6; }
+.dot-cli { background: var(--teal); opacity: .6; }
+.dot-both { background: var(--amber); opacity: .6; }
+
+.sidebar-footer {
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--border-light);
+  margin-top: auto;
+}
+.footer-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+.leg-dot { width: 6px; height: 6px; border-radius: 50%; }
+.version-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  padding-top: 8px;
+  border-top: 1px solid var(--border-light);
+}
+.health-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--teal);
+  margin-right: 6px;
+  vertical-align: middle;
+  box-shadow: 0 0 5px var(--teal);
+}
+
+/* ── MAIN ── */
+.main {
+  padding: 2.5rem 3rem;
+  max-width: 880px;
+}
+
+.section { display: none; }
+.section.active { display: block; }
+
+.section-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.section-eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--purple);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.section-title {
+  font-size: 27px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+.section-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  max-width: 600px;
+}
+
+/* MODE TOGGLE */
+.mode-toggle {
+  display: inline-flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.mtab {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 6px 16px;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all .15s;
+  letter-spacing: .05em;
+}
+.mtab:last-child { border-right: none; }
+.mtab:hover { background: var(--border-light); color: var(--text); }
+.mtab.on { background: var(--purple-dim); color: var(--purple); }
+
+/* STEP CARDS */
+.step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: .75rem;
+  transition: border-color .2s;
+}
+.step-card:hover { border-color: #3a3d48; }
+
+.step-card.hidden { display: none; }
+
+.step-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+.step-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  min-width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: .04em;
+}
+.num-ui   { background: var(--purple-dim); color: var(--purple); }
+.num-cli  { background: var(--teal-dim);   color: var(--teal);   }
+.num-both { background: var(--amber-dim);  color: var(--amber);  }
+
+.step-meta { flex: 1; }
+.step-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  line-height: 1.3;
+}
+.badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .08em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+.b-ui   { background: var(--purple-dim); color: var(--purple); }
+.b-cli  { background: var(--teal-dim);   color: var(--teal);   }
+.b-both { background: var(--amber-dim);  color: var(--amber);  }
+
+.step-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  line-height: 1.5;
+}
+
+.block-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin: 12px 0 5px;
+}
+
+/* BLOCKS */
+.cmd {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: #09090b;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  white-space: pre;
+  overflow-x: auto;
+  color: #b0bac8;
+  line-height: 1.8;
+}
+.cm  { color: var(--text-dim); font-style: italic; }
+.kw  { color: var(--purple); }
+.str { color: var(--teal); }
+.hl  { color: var(--amber); }
+
+.ui-block {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: #09090b;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--purple-mid);
+  border-radius: 0 8px 8px 0;
+  padding: 12px 16px;
+  white-space: pre;
+  overflow-x: auto;
+  color: #a0a8c0;
+  line-height: 1.8;
+}
+
+.prompt-box {
+  background: #09090b;
+  border: 1px solid var(--amber-dim);
+  border-left: 3px solid var(--amber);
+  border-radius: 0 8px 8px 0;
+  padding: 12px 16px;
+  font-size: 12px;
+  color: #c0a878;
+  font-style: italic;
+  line-height: 1.7;
+  font-family: var(--mono);
+  white-space: pre-wrap;
+}
+
+.tip {
+  background: var(--blue-dim);
+  border: 1px solid #18304d;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #7aabdd;
+  margin-top: 8px;
+  line-height: 1.6;
+}
+.tip strong { color: var(--blue); font-weight: 600; }
+.tip code {
+  background: #0d1a2a;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.warn {
+  background: var(--amber-dim);
+  border: 1px solid #3a2808;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #c8902a;
+  margin-top: 8px;
+  line-height: 1.6;
+}
+.warn strong { color: var(--amber); font-weight: 600; }
+
+/* STATUS ROWS */
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  margin-bottom: 6px;
+  background: #11131a;
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dok  { background: var(--teal);   box-shadow: 0 0 6px var(--teal); }
+.dwarn{ background: var(--amber); }
+.derr { background: var(--coral); }
+.svc-name { font-weight: 600; font-size: 13px; color: var(--text); min-width: 160px; }
+.svc-url  { font-family: var(--mono); font-size: 11px; color: var(--blue); }
+.svc-desc { font-size: 12px; color: var(--text-dim); margin-left: auto; text-align: right; }
+
+/* PERSONA CARD */
+.persona-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .75rem;
+  margin-top: .75rem;
+}
+.agent-card {
+  background: #09090b;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+}
+.agent-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.agent-card-role {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  letter-spacing: .06em;
+}
+.agent-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.agent-row:last-child { border-bottom: none; }
+.agent-row-key   { color: var(--text-muted); }
+.agent-row-val   { font-family: var(--mono); color: var(--teal); font-size: 11px; }
+.agent-row-val.purple { color: var(--purple); }
+.agent-row-val.amber  { color: var(--amber);  }
+
+/* ENV BLOCK */
+.env-block {
+  background: #09090b;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 2;
+  overflow-x: auto;
+  white-space: pre;
+}
+.env-comment { color: var(--text-dim); font-style: italic; }
+.env-key  { color: var(--blue); }
+.env-eq   { color: var(--text-dim); }
+.env-val  { color: var(--teal); }
+
+/* TIMELINE */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+  padding-left: 2rem;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 16px;
+  bottom: 16px;
+  width: 1px;
+  background: var(--border);
+}
+.tl-item {
+  position: relative;
+  padding: 0 0 1.25rem 1rem;
+}
+.tl-item:last-child { padding-bottom: 0; }
+.tl-dot {
+  position: absolute;
+  left: -1.55rem;
+  top: 4px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+  flex-shrink: 0;
+}
+.tl-time {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--purple);
+  letter-spacing: .1em;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+}
+.tl-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.tl-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* COST TABLE */
+.cost-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.cost-table th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 8px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.cost-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-muted);
+}
+.cost-table tr:last-child td { border-bottom: none; }
+.cost-table td:first-child { color: var(--text); font-weight: 600; }
+.cost-total td {
+  color: var(--text) !important;
+  font-weight: 600;
+  border-top: 1px solid var(--border);
+}
+.budget-bar-wrap {
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.budget-bar { height: 100%; border-radius: 3px; }
+
+@media (max-width: 720px) {
+  .shell { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; }
+  .main { padding: 1.5rem; }
+  .persona-card { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ══════════════ SIDEBAR ══════════════ -->
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">UPlanet · ẐEN[0]</div>
+    <div class="logo-title">Paperclip<br>Interface Guide</div>
+    <div class="logo-sub">Configuration pas à pas · :3100</div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Mise en route</div>
+    <div class="nav-item active" data-sec="acces">
+      <span class="nav-num">01</span>
+      <span class="nav-text">Premier accès</span>
+      <span class="nav-dot dot-both"></span>
+    </div>
+    <div class="nav-item" data-sec="company">
+      <span class="nav-num">02</span>
+      <span class="nav-text">Company UPlanet</span>
+      <span class="nav-dot dot-ui"></span>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Agents</div>
+    <div class="nav-item" data-sec="agents">
+      <span class="nav-num">03</span>
+      <span class="nav-text">3 agents marketing</span>
+      <span class="nav-dot dot-both"></span>
+    </div>
+    <div class="nav-item" data-sec="skills">
+      <span class="nav-num">04</span>
+      <span class="nav-text">Skills &amp; variables</span>
+      <span class="nav-dot dot-both"></span>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Planification</div>
+    <div class="nav-item" data-sec="goals">
+      <span class="nav-num">05</span>
+      <span class="nav-text">Goals</span>
+      <span class="nav-dot dot-ui"></span>
+    </div>
+    <div class="nav-item" data-sec="tickets">
+      <span class="nav-num">06</span>
+      <span class="nav-text">Tickets &amp; Heartbeats</span>
+      <span class="nav-dot dot-ui"></span>
+    </div>
+    <div class="nav-item" data-sec="routines">
+      <span class="nav-num">07</span>
+      <span class="nav-text">Routines quotidiennes</span>
+      <span class="nav-dot dot-ui"></span>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Gouvernance</div>
+    <div class="nav-item" data-sec="inbox">
+      <span class="nav-num">08</span>
+      <span class="nav-text">Inbox &amp; Validation</span>
+      <span class="nav-dot dot-ui"></span>
+    </div>
+    <div class="nav-item" data-sec="budget">
+      <span class="nav-num">09</span>
+      <span class="nav-text">Budget &amp; Monitoring</span>
+      <span class="nav-dot dot-both"></span>
+    </div>
+    <div class="nav-item" data-sec="concurrency">
+      <span class="nav-num">10</span>
+      <span class="nav-text">Concurrence &amp; Scale</span>
+      <span class="nav-dot dot-both"></span>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="footer-legend">
+      <div class="legend-row"><span class="leg-dot" style="background:var(--purple)"></span>Interface :3100</div>
+      <div class="legend-row"><span class="leg-dot" style="background:var(--teal)"></span>CLI / bash</div>
+      <div class="legend-row"><span class="leg-dot" style="background:var(--amber)"></span>Les deux</div>
+    </div>
+    <div class="version-badge">
+      <span class="health-dot"></span>Astroport.ONE · docs
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════ MAIN ══════════════ -->
+<main class="main">
+
+<!-- ══ 01 ACCÈS ══ -->
+<section class="section active" id="sec-acces">
+  <div class="section-header">
+    <div class="section-eyebrow">Étape 01 · Interface &amp; CLI</div>
+    <div class="section-title">Premier accès à Paperclip</div>
+    <div class="section-desc">Ouvrir l'interface, créer le compte admin, sécuriser l'accès — depuis la machine locale ou via SSH tunnel.</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-both">NET</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-both">INTERFACE + CLI</span> Accéder à l'interface</div>
+        <div class="step-desc">Depuis la machine hôte directement, ou via tunnel SSH depuis un poste distant</div>
+      </div>
+    </div>
+    <div class="block-label">Accès direct (machine hôte)</div>
+    <div class="ui-block">Navigateur → http://localhost:3100</div>
+    <div class="block-label">Accès distant (SSH tunnel)</div>
+    <div class="cmd">ssh -L 3100:127.0.0.1:3100 \
+    -L 8000:127.0.0.1:8000 \
+    user@IP_ASTROPORT
+<span class="cm"># puis ouvrir http://localhost:3100 sur le poste local</span></div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">UI</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Créer le compte admin</div>
+        <div class="step-desc">Écran Sign up — une seule fois lors de la toute première visite</div>
+      </div>
+    </div>
+    <div class="ui-block">→ Sign up
+   Email    : admin@uplanet.local  (ou ton email réel)
+   Password : [mot de passe fort]
+   Confirm  : [idem]
+→ Create account
+→ Écran "Create a company" s'affiche</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-cli">CLI</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-cli">CLI</span> Bloquer les inscriptions après création</div>
+        <div class="step-desc">Sécurité — empêche tout autre compte non autorisé sur le serveur</div>
+      </div>
+    </div>
+    <div class="cmd">echo 'PAPERCLIP_AUTH_DISABLE_SIGN_UP=true' \
+  >> ~/.zen/ai-company/.env
+
+docker compose -p ai-company-swarm restart paperclip</div>
+    <div class="tip"><strong>Vérification :</strong> ouvrir http://localhost:3100 en navigation privée — le bouton Sign up doit avoir disparu.</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-cli">CLI</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-cli">CLI</span> Vérifier la stack avant de continuer</div>
+        <div class="step-desc">Tous les services doivent être running — sinon les agents ne pourront pas tourner</div>
+      </div>
+    </div>
+    <div class="cmd">docker compose -p ai-company-swarm ps</div>
+    <div style="margin-top:10px">
+      <div class="status-row"><span class="dot dok"></span><span class="svc-name">paperclip</span><span class="svc-url">:3100</span><span class="svc-desc">Agents IA</span></div>
+      <div class="status-row"><span class="dot dok"></span><span class="svc-name">open-webui</span><span class="svc-url">:8000</span><span class="svc-desc">Interface chat</span></div>
+      <div class="status-row"><span class="dot dok"></span><span class="svc-name">llm-proxy</span><span class="svc-url">:8010</span><span class="svc-desc">LiteLLM — proxy modèles</span></div>
+      <div class="status-row"><span class="dot dok"></span><span class="svc-name">qdrant</span><span class="svc-url">:6333</span><span class="svc-desc">Mémoire vectorielle</span></div>
+      <div class="status-row"><span class="dot dwarn"></span><span class="svc-name">ollama</span><span class="svc-url">:11434 (hôte)</span><span class="svc-desc">LLM local — hors Docker</span></div>
+    </div>
+    <div class="tip"><strong>Service DOWN ?</strong><br>
+<code>docker compose -p ai-company-swarm up -d [nom-service]</code><br>
+Ollama sur l'hôte : <code>curl http://localhost:11434/api/tags</code></div>
+  </div>
+</section>
+
+<!-- ══ 02 COMPANY ══ -->
+<section class="section" id="sec-company">
+  <div class="section-header">
+    <div class="section-eyebrow">Étape 02 · Interface</div>
+    <div class="section-title">Créer la company UPlanet</div>
+    <div class="section-desc">L'entité racine dans Paperclip — tous les agents, goals et tickets y seront rattachés.</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">1</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Nommer la company</div>
+        <div class="step-desc">Écran "What do we want to name our app?"</div>
+      </div>
+    </div>
+    <div class="ui-block">Champ nom : UPlanet Marketing
+→ Next</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">2</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Décrire la mission</div>
+        <div class="step-desc">Champ "What is this company trying to achieve?" — le CEO s'en sert comme boussole permanente</div>
+      </div>
+    </div>
+    <div class="block-label">Coller dans le champ description</div>
+    <div class="prompt-box">Developper la communaute UPlanet, Internet souverain cooperatif (SCIC G1FabLab).
+Recruter des co-batisseurs via Nostr, Telegram, email et Mastodon.
+Objectif : +50 membres actifs par mois via contenu educatif sur
+la souverainete numerique, le MULTIPASS et l'economie ZEN.
+URL projet : https://ipfs.copylaradio.com/ipns/copylaradio.com/entrance.html</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">3</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Choisir le modèle CEO</div>
+        <div class="step-desc">Utiliser un modèle frontier pour le CEO — il prend les décisions stratégiques</div>
+      </div>
+    </div>
+    <div class="ui-block">Endpoint  : http://llm-proxy:4000/v1
+Clé API   : [valeur de LITELLM_MASTER_KEY dans .env]
+Modèle    : gemma3   ← local via Ollama + LiteLLM</div>
+    <div class="tip"><strong>Pourquoi LiteLLM ?</strong> Le proxy fait le pont entre Paperclip (format OpenAI) et Ollama (Gemma, Llama...) ou Claude API. Ajouter un modèle dans <code>litellm-config.yaml</code> le rend disponible immédiatement sans redémarrer Paperclip.</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">4</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Première instruction au CEO</div>
+        <div class="step-desc">Message d'amorçage — le CEO va planifier puis recruter les agents</div>
+      </div>
+    </div>
+    <div class="block-label">Coller dans le champ "First task for your CEO"</div>
+    <div class="prompt-box">Tu es le CEO de UPlanet Marketing, initiative cooperative pour
+diffuser l'Internet souverain (SCIC G1FabLab, Nostr, IPFS, Gi1).
+Cree un plan marketing sur 30 jours, puis recrute :
+- 1 agent contenu  : redaction Nostr, newsletter email
+- 1 agent community: animation Telegram, reponses Nostr
+- 1 agent outreach : sequences email, prospection co-batisseurs
+Budget par agent : 5 dollars max / mois en tokens.
+Garder l'Inbox en approbation manuelle la premiere semaine.</div>
+    <div class="block-label">Lancer</div>
+    <div class="ui-block">→ Next / Launch company
+→ Dashboard s'ouvre — company "UPlanet Marketing" visible dans la sidebar
+→ Surveiller l'onglet Inbox (point rouge = demande CEO en attente)</div>
+  </div>
+</section>
+
+<!-- ══ 03 AGENTS ══ -->
+<section class="section" id="sec-agents">
+  <div class="section-header">
+    <div class="section-eyebrow">Étape 03 · Interface &amp; CLI</div>
+    <div class="section-title">Configurer les 3 agents marketing</div>
+    <div class="section-desc">Contenu · Community · Outreach — chacun avec son modèle, son persona et son budget.</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">INB</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INBOX</span> Approuver la demande de recrutement CEO</div>
+        <div class="step-desc">Le CEO soumet une demande "Hire Agent" dans l'Inbox — valider manuellement la première semaine</div>
+      </div>
+    </div>
+    <div class="ui-block">Inbox → cliquer sur la demande "Hire Agent"
+→ Lire le rôle et le plan du CEO
+→ Bouton Approve  (ou modifier si nécessaire)
+→ Répéter pour les 3 agents</div>
+    <div class="tip"><strong>Conseil :</strong> le CEO recrute souvent dans un ordre logique — contenu d'abord, puis community, puis outreach. Valider au fur et à mesure, pas tout d'un coup.</div>
+  </div>
+
+  <div style="margin-bottom:.75rem">
+    <div class="persona-card">
+      <div class="agent-card">
+        <div class="agent-card-title">Redacteur UPlanet</div>
+        <div class="agent-card-role">AGENT CONTENU</div>
+        <div class="agent-row"><span class="agent-row-key">Modèle</span><span class="agent-row-val">gemma3</span></div>
+        <div class="agent-row"><span class="agent-row-key">Budget</span><span class="agent-row-val amber">5 $ / mois</span></div>
+        <div class="agent-row"><span class="agent-row-key">Skills</span><span class="agent-row-val purple">—</span></div>
+        <div class="agent-row"><span class="agent-row-key">Output</span><span class="agent-row-val">Nostr · newsletter</span></div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-card-title">Community UPlanet</div>
+        <div class="agent-card-role">AGENT COMMUNITY</div>
+        <div class="agent-row"><span class="agent-row-key">Modèle</span><span class="agent-row-val">gemma3</span></div>
+        <div class="agent-row"><span class="agent-row-key">Budget</span><span class="agent-row-val amber">4 $ / mois</span></div>
+        <div class="agent-row"><span class="agent-row-key">Skills</span><span class="agent-row-val purple">telegram_poster</span></div>
+        <div class="agent-row"><span class="agent-row-key">Output</span><span class="agent-row-val">Telegram · réponses</span></div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-card-title">Outreach UPlanet</div>
+        <div class="agent-card-role">AGENT OUTREACH</div>
+        <div class="agent-row"><span class="agent-row-key">Modèle</span><span class="agent-row-val">gemma3</span></div>
+        <div class="agent-row"><span class="agent-row-key">Budget</span><span class="agent-row-val amber">6 $ / mois</span></div>
+        <div class="agent-row"><span class="agent-row-key">Skills</span><span class="agent-row-val purple">gmail_sender</span></div>
+        <div class="agent-row"><span class="agent-row-key">Output</span><span class="agent-row-val">Email · séquences</span></div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-card-title">CEO</div>
+        <div class="agent-card-role">PILOTAGE STRATÉGIQUE</div>
+        <div class="agent-row"><span class="agent-row-key">Modèle</span><span class="agent-row-val">gemma3</span></div>
+        <div class="agent-row"><span class="agent-row-key">Budget</span><span class="agent-row-val amber">8 $ / mois</span></div>
+        <div class="agent-row"><span class="agent-row-key">Skills</span><span class="agent-row-val purple">tous</span></div>
+        <div class="agent-row"><span class="agent-row-key">Output</span><span class="agent-row-val">Rapports · decisions</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">P1</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">PERSONA</span> Redacteur UPlanet</div>
+        <div class="step-desc">Agents → sélectionner → Edit → champ Persona / System Prompt</div>
+      </div>
+    </div>
+    <div class="prompt-box">Tu es le redacteur de UPlanet, cooperative Internet souverain.
+Vocabulaire maitrise : MULTIPASS, co-batisseur, protocole N2,
+ZEN (0.1 G1), Astroport.ONE, Nostr (kind:1 kind:30023), IPFS.
+Tu produis :
+- 1 post Nostr court par jour (moins de 280 chars)
+- 1 article long par semaine (kind:30023)
+- 1 email newsletter HTML par semaine
+Ton : pedagogique, engage, anti-GAFAM sans agressivite.
+Toujours inclure le lien du projet dans les posts.
+Sauvegarder les productions dans posts/ avec la date.</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">P2</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">PERSONA</span> Community UPlanet</div>
+        <div class="step-desc">Agents → sélectionner → Edit → champ Persona / System Prompt</div>
+      </div>
+    </div>
+    <div class="prompt-box">Tu es le community manager de UPlanet.
+Tu surveilles le groupe Telegram UPlanet et les relais Nostr.
+Quand un nouveau membre rejoint : message de bienvenue chaleureux,
+expliquer le MULTIPASS et le lien d'inscription.
+Quand une question technique arrive : repondre clairement,
+renvoyer vers https://ipfs.copylaradio.com/ipns/copylaradio.com/entrance.html
+Tu celebres les milestones : nouveaux co-batisseurs, nouvelles stations.
+Tu utilises le skill telegram_poster pour envoyer les messages.</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">P3</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">PERSONA</span> Outreach UPlanet</div>
+        <div class="step-desc">Agents → sélectionner → Edit → champ Persona / System Prompt</div>
+      </div>
+    </div>
+    <div class="prompt-box">Tu es le responsable outreach de UPlanet.
+Cibles : makers, libristes, utilisateurs Gi1, techniciens Raspberry Pi,
+militants numerique, cooperatives locales.
+Tu rediges des sequences email en 3 temps :
+1. Email de decouverte (J0) : pourquoi UPlanet ?
+2. Email de valeur (J+3)    : comparaison GAFAM vs UPlanet
+3. Email CTA (J+7)          : rejoindre comme co-batisseur
+Toujours personnaliser avec le contexte de la cible.
+Tu utilises le skill gmail_sender pour envoyer.
+Ne jamais envoyer plus de 50 emails par jour.</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-cli">CLI</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-cli">CLI</span> Vérifier les agents en base PostgreSQL</div>
+        <div class="step-desc">Inspecter directement dans le conteneur postgres</div>
+      </div>
+    </div>
+    <div class="cmd">docker exec ai-company-swarm-postgres-1 \
+  psql -U paperclip -d paperclip \
+  -c "SELECT name, model, monthly_budget, created_at FROM agents ORDER BY created_at;"</div>
+  </div>
+</section>
+
+<!-- ══ 04 SKILLS ══ -->
+<section class="section" id="sec-skills">
+  <div class="section-header">
+    <div class="section-eyebrow">Étape 04 · CLI &amp; Interface</div>
+    <div class="section-title">Skills &amp; variables d'environnement</div>
+    <div class="section-desc">Les skills sont des scripts Node.js 18+ que les agents appellent pour interagir avec les canaux externes.</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-cli">CLI</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-cli">CLI</span> Générer les skills via le script de configuration</div>
+        <div class="step-desc">paperclip-configure-channels.sh dépose les .js dans le volume monté</div>
+      </div>
+    </div>
+    <div class="cmd"><span class="cm"># Vérifier Node.js dans le conteneur (doit être v18+)</span>
+docker exec ai-company-swarm-paperclip-1 node --version
+
+<span class="cm"># Générer tous les skills et configurer les tokens</span>
+./paperclip-configure-channels.sh --all
+
+<span class="cm"># Ou canal par canal :</span>
+./paperclip-configure-channels.sh --telegram
+./paperclip-configure-channels.sh --gmail
+./paperclip-configure-channels.sh --mastodon</div>
+    <div class="tip"><strong>Volume monté :</strong> les fichiers générés dans <code>~/.zen/ai-company/paperclip_data/skills/</code> sont directement visibles par le conteneur Paperclip sans redémarrage.</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-cli">CLI</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-cli">CLI</span> Vérifier les skills générés</div>
+        <div class="step-desc">Trois fichiers .js — fetch natif Node.js, zéro dépendance npm</div>
+      </div>
+    </div>
+    <div class="cmd">ls -la ~/.zen/ai-company/paperclip_data/skills/
+<span class="cm"># telegram_poster.js  → fetch vers api.telegram.org</span>
+<span class="cm"># gmail_sender.js     → OAuth2 refresh + MIME encode en JS pur</span>
+<span class="cm"># mastodon_poster.js  → fetch vers instance Mastodon</span></div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">UI</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Vérifier et assigner les skills dans Paperclip</div>
+        <div class="step-desc">Les skills du volume apparaissent automatiquement — les assigner aux bons agents</div>
+      </div>
+    </div>
+    <div class="ui-block">Company Settings → Skills
+→ telegram_poster  : assigner à "Community UPlanet"
+→ gmail_sender     : assigner à "Outreach UPlanet"
+→ mastodon_poster  : assigner à "Redacteur UPlanet"
+
+Si absent : Import → coller le contenu du fichier .js</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">UI</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Injecter les variables dans Paperclip</div>
+        <div class="step-desc">Company Settings → Environment Variables — les tokens doivent être visibles des skills</div>
+      </div>
+    </div>
+    <div class="ui-block">TELEGRAM_BOT_TOKEN   = [token BotFather]
+TELEGRAM_CHAT_ID     = [id du groupe, ex -1001234567890]
+GMAIL_CLIENT_ID      = [xxxx.apps.googleusercontent.com]
+GMAIL_CLIENT_SECRET  = [GOCSPX-xxxx]
+GMAIL_REFRESH_TOKEN  = [1//xxxx]
+MASTODON_INSTANCE    = [https://mamot.fr]
+MASTODON_TOKEN       = [token Mastodon]</div>
+    <div class="block-label">Alternative CLI — propager depuis le .env</div>
+    <div class="cmd">docker compose -p ai-company-swarm \
+  up -d --force-recreate paperclip</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-cli">CLI</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-cli">CLI</span> Tester les skills manuellement avant déploiement</div>
+        <div class="step-desc">Valider chaque canal avant de l'exposer aux agents</div>
+      </div>
+    </div>
+    <div class="cmd">source ~/.zen/ai-company/.env
+
+<span class="cm"># Test Telegram</span>
+curl -s -X POST \
+  "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+  -d "chat_id=${TELEGRAM_CHAT_ID}&text=Skill+OK+%E2%9C%93" \
+  | python3 -m json.tool
+
+<span class="cm"># Test Mastodon</span>
+curl -s -H "Authorization: Bearer ${MASTODON_TOKEN}" \
+  "${MASTODON_INSTANCE}/api/v1/accounts/verify_credentials" \
+  | python3 -c "import sys,json;d=json.load(sys.stdin);print('@'+d['acct'])"</div>
+  </div>
+</section>
+
+<!-- ══ 05 GOALS ══ -->
+<section class="section" id="sec-goals">
+  <div class="section-header">
+    <div class="section-eyebrow">Étape 05 · Interface</div>
+    <div class="section-title">Définir les Goals</div>
+    <div class="section-desc">Les Goals sont la mission long terme — chaque ticket y est rattaché, chaque agent s'en inspire.</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">G1</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Goal racine — croissance UPlanet</div>
+        <div class="step-desc">Goals → New Goal — la boussole de tous les agents</div>
+      </div>
+    </div>
+    <div class="ui-block">Titre    : Croissance communaute UPlanet Q2 2026
+Description :
+  +50 co-batisseurs actifs par mois via contenu multicanal
+  Nostr + Telegram + Email + Mastodon
+Priorite : High
+Owner    : CEO
+Due date : 30 juin 2026</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">G2</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Sous-goal — production de contenu</div>
+        <div class="step-desc">Goals → New Goal (enfant du goal racine)</div>
+      </div>
+    </div>
+    <div class="ui-block">Titre    : Publication quotidienne Nostr + newsletter hebdo
+Parent   : Croissance communaute UPlanet Q2 2026
+Owner    : Redacteur UPlanet
+Metrique : 30 posts Nostr + 4 newsletters / mois</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">G3</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Sous-goal — engagement communauté</div>
+        <div class="step-desc">Goals → New Goal (enfant du goal racine)</div>
+      </div>
+    </div>
+    <div class="ui-block">Titre    : Engagement actif Telegram et Nostr
+Parent   : Croissance communaute UPlanet Q2 2026
+Owner    : Community UPlanet
+Metrique : taux de réponse > 80% dans les 2h</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">G4</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Sous-goal — acquisition co-bâtisseurs</div>
+        <div class="step-desc">Goals → New Goal (enfant du goal racine)</div>
+      </div>
+    </div>
+    <div class="ui-block">Titre    : Conversion prospects en co-batisseurs
+Parent   : Croissance communaute UPlanet Q2 2026
+Owner    : Outreach UPlanet
+Metrique : 50 co-batisseurs / mois via email</div>
+  </div>
+</section>
+
+<!-- ══ 06 TICKETS ══ -->
+<section class="section" id="sec-tickets">
+  <div class="section-header">
+    <div class="section-eyebrow">Étape 06 · Interface</div>
+    <div class="section-title">Tickets &amp; Heartbeats</div>
+    <div class="section-desc">Les tickets sont les tâches exécutables. Un heartbeat les déclenche automatiquement à heure fixe.</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">T1</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">TICKET</span> Post Nostr quotidien</div>
+        <div class="step-desc">Tickets → New Ticket — tâche récurrente principale du Rédacteur</div>
+      </div>
+    </div>
+    <div class="ui-block">Titre     : Post Nostr quotidien UPlanet
+Assigne a : Redacteur UPlanet
+Goal      : Publication quotidienne Nostr + newsletter hebdo
+Heartbeat : Daily 09:00</div>
+    <div class="block-label">Corps du ticket (prompt complet)</div>
+    <div class="prompt-box">Redige 1 post Nostr court (strictement moins de 280 chars) sur UPlanet.
+Rotation des themes :
+  Lundi    : MULTIPASS - comment ca marche
+  Mardi    : protocole N2 - vie privee
+  Mercredi : ZEN economie - transparence cooperative
+  Jeudi    : Astroport.ONE - ton propre serveur
+  Vendredi : co-batisseur - rejoindre la SCIC
+  Samedi   : comparaison GAFAM vs UPlanet
+  Dimanche : temoignage ou cas d'usage reel
+Inclure URL : https://ipfs.copylaradio.com/ipns/copylaradio.com/entrance.html
+Hashtags : #UPlanet #Nostr #LibreCommun #Souverainete
+Sauvegarder dans posts/nostr/AAAA-MM-JJ.txt</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">T2</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">TICKET</span> Newsletter hebdomadaire</div>
+        <div class="step-desc">Tickets → New Ticket — envoi le lundi matin</div>
+      </div>
+    </div>
+    <div class="ui-block">Titre     : Newsletter hebdo UPlanet
+Assigne a : Redacteur UPlanet
+Goal      : Publication quotidienne Nostr + newsletter hebdo
+Heartbeat : Weekly Monday 08:00</div>
+    <div class="block-label">Corps du ticket</div>
+    <div class="prompt-box">Redige la newsletter hebdomadaire UPlanet en HTML.
+Structure :
+  1. Titre accrocheur (1 ligne)
+  2. Editorial court (3 phrases) - actualite UPlanet
+  3. Focus technique (1 sujet : MULTIPASS ou ZEN ou N2)
+  4. Chiffre de la semaine (co-batisseurs, stations, transactions ZEN)
+  5. CTA : lien d'inscription co-batisseur
+Utiliser le skill gmail_sender pour envoyer a la liste.
+Sauvegarder dans newsletters/AAAA-MM-JJ.html</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">T3</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">TICKET</span> Scan communauté Telegram</div>
+        <div class="step-desc">Tickets → New Ticket — surveillance et réponses quotidiennes</div>
+      </div>
+    </div>
+    <div class="ui-block">Titre     : Scan et reponses Telegram
+Assigne a : Community UPlanet
+Goal      : Engagement actif Telegram et Nostr
+Heartbeat : Daily 14:00</div>
+    <div class="block-label">Corps du ticket</div>
+    <div class="prompt-box">Verifier les messages non repondus dans le groupe Telegram UPlanet.
+Pour chaque question sans reponse depuis plus de 2h :
+  - Repondre de facon claire et bienveillante
+  - Inclure le lien pertinent (entrance.html, economy.html, etc.)
+  - Taguer la personne avec @username
+Pour les nouveaux membres (moins de 24h) : envoyer un message
+  de bienvenue expliquant le MULTIPASS et comment demarrer.
+Utiliser le skill telegram_poster.
+Log des actions dans community/telegram/AAAA-MM-JJ.log</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">T4</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">TICKET</span> Rapport CEO quotidien</div>
+        <div class="step-desc">Tickets → New Ticket — synthèse en fin de journée</div>
+      </div>
+    </div>
+    <div class="ui-block">Titre     : Rapport quotidien CEO UPlanet
+Assigne a : CEO
+Goal      : Croissance communaute UPlanet Q2 2026
+Heartbeat : Daily 22:00</div>
+    <div class="block-label">Corps du ticket</div>
+    <div class="prompt-box">Compile le rapport quotidien UPlanet :
+- Posts Nostr publies aujourd'hui : [lister]
+- Messages Telegram traites : [nombre, sujets]
+- Emails envoyes / taux ouverture estime : [stats]
+- Nouveaux co-batisseurs detectes : [noms si disponibles]
+- Incidents ou problemes : [liste ou "aucun"]
+- Tokens consommes aujourd'hui par agent : [recap budget]
+- Recommandations pour demain : [3 actions prioritaires]
+Sauvegarder dans reports/AAAA-MM-JJ.md</div>
+  </div>
+</section>
+
+<!-- ══ 07 ROUTINES ══ -->
+<section class="section" id="sec-routines">
+  <div class="section-header">
+    <div class="section-eyebrow">Étape 07 · Interface</div>
+    <div class="section-title">Routines quotidiennes</div>
+    <div class="section-desc">Les routines regroupent plusieurs tickets dans un même heartbeat — le système tourne en autonomie.</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">R1</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Routine matinale — contenu</div>
+        <div class="step-desc">Routines → New Routine</div>
+      </div>
+    </div>
+    <div class="ui-block">Nom       : Routine matinale UPlanet
+Heartbeat : Daily 09:00
+Tickets   : Post Nostr quotidien UPlanet
+Activer   → toggle vert</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">R2</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Routine hebdo — newsletter lundi</div>
+        <div class="step-desc">Routines → New Routine</div>
+      </div>
+    </div>
+    <div class="ui-block">Nom       : Newsletter hebdo UPlanet
+Heartbeat : Weekly Monday 08:00
+Tickets   : Newsletter hebdomadaire UPlanet
+Activer   → toggle vert</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">R3</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Routine après-midi — community</div>
+        <div class="step-desc">Routines → New Routine</div>
+      </div>
+    </div>
+    <div class="ui-block">Nom       : Scan communaute Telegram
+Heartbeat : Daily 14:00
+Tickets   : Scan et reponses Telegram
+Activer   → toggle vert</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">R4</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Routine soirée — rapport CEO</div>
+        <div class="step-desc">Routines → New Routine</div>
+      </div>
+    </div>
+    <div class="ui-block">Nom       : Rapport soir CEO
+Heartbeat : Daily 22:00
+Tickets   : Rapport quotidien CEO UPlanet
+Activer   → toggle vert</div>
+    <div class="tip"><strong>Planning type d'une journée :</strong><br>
+09:00 → Post Nostr (Rédacteur)<br>
+08:00 lun → Newsletter (Rédacteur)<br>
+14:00 → Scan Telegram (Community)<br>
+22:00 → Rapport CEO</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-cli">CLI</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-cli">CLI</span> Surveiller l'exécution des heartbeats</div>
+        <div class="step-desc">Logs en temps réel filtrés du conteneur Paperclip</div>
+      </div>
+    </div>
+    <div class="cmd">docker compose -p ai-company-swarm logs -f paperclip \
+  | grep --line-buffered -iE \
+    "heartbeat|routine|ticket|agent|error|warn"</div>
+  </div>
+</section>
+
+<!-- ══ 08 INBOX ══ -->
+<section class="section" id="sec-inbox">
+  <div class="section-header">
+    <div class="section-eyebrow">Étape 08 · Interface</div>
+    <div class="section-title">Inbox &amp; Validation</div>
+    <div class="section-desc">L'Inbox est le mécanisme de gouvernance humaine — chaque action critique passe par toi avant d'être exécutée.</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">MODE</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Configurer le mode d'approbation</div>
+        <div class="step-desc">Settings → Governance — garder MANUAL la première semaine</div>
+      </div>
+    </div>
+    <div class="ui-block">Settings → Governance → Approval gate
+
+  MANUAL  : tu valides chaque action avant exécution      ← semaine 1
+  AUTO    : les agents agissent sans attendre ton accord  ← semaine 2+</div>
+    <div class="tip"><strong>Stratégie recommandée :</strong><br>
+Semaine 1 : MANUAL — observer les décisions du CEO, corriger les personas si besoin.<br>
+Semaine 2 : passer en AUTO pour les actions de routine (posts, réponses Telegram).<br>
+Garder MANUAL pour les actions à fort impact (email blast, publication externe).</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">UI</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Types de demandes dans l'Inbox</div>
+        <div class="step-desc">Ce que le CEO peut soumettre — et comment réagir</div>
+      </div>
+    </div>
+    <div class="ui-block">Hire Agent     → vérifier le rôle et le budget proposés → Approve / Reject
+Use Tool       → vérifier l'action (ex: envoyer un email) → Approve / Edit
+Create Ticket  → vérifier le prompt et le heartbeat → Approve / Modify
+Spend Budget   → vérifier si le montant est justifié → Approve / Reduce</div>
+    <div class="tip"><strong>Astuce :</strong> cliquer sur une demande pour voir l'intégralité du raisonnement du CEO — le "trace" montre exactement pourquoi il a pris cette décision.</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">UI</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Lire l'audit log (Trace)</div>
+        <div class="step-desc">Chaque action est loggée et immuable — traçabilité complète</div>
+      </div>
+    </div>
+    <div class="ui-block">Tickets → cliquer sur un ticket exécuté
+→ Tab "Trace" ou "History"
+→ Voir dans l'ordre :
+   1. Prompt envoyé à l'agent
+   2. Tool calls effectués (skill appelé, paramètres)
+   3. Réponse du modèle
+   4. Output final sauvegardé</div>
+  </div>
+</section>
+
+<!-- ══ 09 BUDGET ══ -->
+<section class="section" id="sec-budget">
+  <div class="section-header">
+    <div class="section-eyebrow">Étape 09 · Interface &amp; CLI</div>
+    <div class="section-title">Budget &amp; Monitoring</div>
+    <div class="section-desc">Chaque token est tracé — les agents s'arrêtent automatiquement au plafond. Aucun runaway spend possible.</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">UI</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Dashboard Monthly Spend</div>
+        <div class="step-desc">Vue d'ensemble de la consommation de tous les agents</div>
+      </div>
+    </div>
+    <div style="background:#09090b;border:1px solid var(--border);border-radius:10px;padding:1rem;margin-top:.5rem">
+      <table class="cost-table" style="width:100%">
+        <thead>
+          <tr>
+            <th>Agent</th>
+            <th>Budget</th>
+            <th>Utilisé</th>
+            <th>Restant</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CEO</td>
+            <td style="font-family:var(--mono);color:var(--amber)">8 $</td>
+            <td style="font-family:var(--mono);color:var(--teal)">2.40 $</td>
+            <td>
+              <div class="budget-bar-wrap"><div class="budget-bar" style="width:30%;background:var(--teal)"></div></div>
+            </td>
+          </tr>
+          <tr>
+            <td>Redacteur UPlanet</td>
+            <td style="font-family:var(--mono);color:var(--amber)">5 $</td>
+            <td style="font-family:var(--mono);color:var(--teal)">1.20 $</td>
+            <td>
+              <div class="budget-bar-wrap"><div class="budget-bar" style="width:24%;background:var(--teal)"></div></div>
+            </td>
+          </tr>
+          <tr>
+            <td>Community UPlanet</td>
+            <td style="font-family:var(--mono);color:var(--amber)">4 $</td>
+            <td style="font-family:var(--mono);color:var(--amber)">3.60 $</td>
+            <td>
+              <div class="budget-bar-wrap"><div class="budget-bar" style="width:90%;background:var(--amber)"></div></div>
+            </td>
+          </tr>
+          <tr>
+            <td>Outreach UPlanet</td>
+            <td style="font-family:var(--mono);color:var(--amber)">6 $</td>
+            <td style="font-family:var(--mono);color:var(--teal)">0.80 $</td>
+            <td>
+              <div class="budget-bar-wrap"><div class="budget-bar" style="width:13%;background:var(--teal)"></div></div>
+            </td>
+          </tr>
+          <tr class="cost-total">
+            <td>Total</td>
+            <td style="font-family:var(--mono);color:var(--amber)">23 $</td>
+            <td style="font-family:var(--mono);color:var(--teal)">8.00 $</td>
+            <td style="font-size:11px;color:var(--text-muted)">34% utilisé</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tip"><strong>Community à 90% ?</strong> Agents → Community UPlanet → Edit → Monthly Budget : augmenter à 6 $. Effectif immédiatement, sans redémarrage.</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-cli">CLI</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-cli">CLI</span> Rapport de coût détaillé sur 30 jours</div>
+        <div class="step-desc">Requête directe PostgreSQL dans le conteneur</div>
+      </div>
+    </div>
+    <div class="cmd">docker exec ai-company-swarm-postgres-1 \
+  psql -U paperclip -d paperclip -c "
+SELECT
+  a.name                                          AS agent,
+  ROUND(SUM(t.token_cost)::numeric, 4)            AS cout_usd,
+  COUNT(t.id)                                     AS nb_taches,
+  ROUND(AVG(t.token_cost)::numeric, 5)            AS cout_moyen
+FROM tasks t
+JOIN agents a ON t.agent_id = a.id
+WHERE t.created_at > NOW() - INTERVAL '30 days'
+GROUP BY a.name
+ORDER BY cout_usd DESC;"</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-cli">CLI</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-cli">CLI</span> Rapport de santé complet</div>
+        <div class="step-desc">Stack + canaux + skills en un seul appel</div>
+      </div>
+    </div>
+    <div class="cmd">./paperclip-configure-channels.sh --health</div>
+  </div>
+</section>
+
+<!-- ══ 10 CONCURRENCE ══ -->
+<section class="section" id="sec-concurrency">
+  <div class="section-header">
+    <div class="section-eyebrow">Étape 10 · Interface &amp; CLI</div>
+    <div class="section-title">Concurrence &amp; Scale</div>
+    <div class="section-desc">Augmenter la cadence une fois les agents calibrés — plusieurs agents en parallèle, modèles plus puissants si besoin.</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">UI</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Augmenter la concurrence</div>
+        <div class="step-desc">Advanced Settings → Concurrency — permet plusieurs agents en parallèle</div>
+      </div>
+    </div>
+    <div class="ui-block">Company Settings → Advanced → Concurrency
+
+  1  → un agent à la fois (défaut, semaine 1)
+  2  → deux agents simultanés (semaine 2+)
+  4  → quatre agents (phase production)</div>
+    <div class="tip"><strong>Quand augmenter ?</strong> Quand les tickets s'accumulent en attente et que les agents sont calibrés (personas OK, budget validé, Inbox en AUTO). Augmenter progressivement : 1 → 2 → 4.</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">UI</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Passer en automation complète</div>
+        <div class="step-desc">Semaine 3+ — une fois les personas stables et l'Inbox validée en AUTO</div>
+      </div>
+    </div>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--purple)"></div>
+        <div class="tl-time">Semaine 1</div>
+        <div class="tl-title">Mode observation</div>
+        <div class="tl-desc">Inbox MANUAL · Concurrency 1 · Valider chaque action CEO · Affiner les personas</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--amber)"></div>
+        <div class="tl-time">Semaine 2</div>
+        <div class="tl-title">Mode semi-auto</div>
+        <div class="tl-desc">Inbox AUTO pour routines · MANUAL pour actions email · Concurrency 2</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--teal)"></div>
+        <div class="tl-time">Semaine 3+</div>
+        <div class="tl-title">Mode production</div>
+        <div class="tl-desc">Inbox AUTO complet · Concurrency 4 · Vérification du rapport CEO quotidien seulement</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-ui">UI</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-ui">INTERFACE</span> Exporter la company (backup + template)</div>
+        <div class="step-desc">Company Settings → Export — JSON sans secrets, partageable comme template UPlanet</div>
+      </div>
+    </div>
+    <div class="ui-block">Company Settings → Export
+→ Télécharger le JSON
+→ Partager dans Astroport.ONE/tools/paperclip/
+→ Autres stations UPlanet peuvent l'importer directement</div>
+    <div class="warn"><strong>Attention :</strong> l'export ne contient pas les secrets (.env). Chaque station doit configurer ses propres tokens via <code>paperclip-configure-channels.sh --all</code>.</div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-header">
+      <span class="step-num num-cli">CLI</span>
+      <div class="step-meta">
+        <div class="step-label"><span class="badge b-cli">CLI</span> Backup complet de la stack</div>
+        <div class="step-desc">Volume PostgreSQL + données Paperclip + .env (sans secrets dans git)</div>
+      </div>
+    </div>
+    <div class="cmd">BACKUP_DIR="$HOME/.zen/backups/ai-company-$(date +%Y%m%d)"
+mkdir -p "$BACKUP_DIR"
+
+<span class="cm"># Dump PostgreSQL</span>
+docker exec ai-company-swarm-postgres-1 \
+  pg_dump -U paperclip paperclip \
+  > "$BACKUP_DIR/paperclip.sql"
+
+<span class="cm"># Skills et données Paperclip</span>
+cp -r ~/.zen/ai-company/paperclip_data "$BACKUP_DIR/"
+
+<span class="cm"># .env sans les secrets sensibles (a chiffrer)</span>
+grep -v 'TOKEN\|SECRET\|PASSWORD\|KEY' \
+  ~/.zen/ai-company/.env \
+  > "$BACKUP_DIR/env.template"
+
+echo "Backup dans $BACKUP_DIR"</div>
+  </div>
+</section>
+
+</main>
 </div>
 
 <script>
-const sections = [
-{
-  id:'A', label:'1 · Premier accès',
-  title:'Accéder à Paperclip et créer son compte',
-  sub:'Interface :3100 — première connexion depuis l\'Astroport',
-  steps:[
-    {
-      mode:'both',
-      label:'Ouvrir l\'interface web',
-      desc:'Depuis la machine hôte ou via SSH tunnel',
-      ui:'Ouvrir un navigateur → <code>http://localhost:3100</code>',
-      cli:'ssh -L 3100:127.0.0.1:3100 user@IP_ASTROPORT\npuis ouvrir http://localhost:3100'
-    },
-    {
-      mode:'ui',
-      label:'Créer son compte admin',
-      desc:'Écran d\'inscription (Sign up) — une seule fois à la première visite',
-      ui:'Remplir : Email · Mot de passe · Confirmer\nCliquer → Create account\n→ Tu arrives sur l\'écran "Create a company"'
-    },
-    {
-      mode:'cli',
-      label:'Récupérer l\'URL d\'invitation',
-      desc:'Alternative : générer le lien d\'inscription en CLI',
-      cli:'docker exec ai-company-swarm-paperclip-1 \\\n  node -e "console.log(process.env.PAPERCLIP_PUBLIC_URL)"'
-    },
-    {
-      mode:'both',
-      label:'Désactiver les inscriptions après création',
-      desc:'Sécurité — empêche d\'autres comptes non autorisés',
-      ui:'Dans le .env : ajouter PAPERCLIP_AUTH_DISABLE_SIGN_UP=true\npuis redémarrer le conteneur',
-      cli:'echo "PAPERCLIP_AUTH_DISABLE_SIGN_UP=true" >> ~/.zen/ai-company/.env\ndocker compose -p ai-company-swarm restart paperclip'
-    }
-  ]
-},
-{
-  id:'B', label:'2 · Créer UPlanet Co.',
-  title:'Créer la "company" UPlanet Marketing',
-  sub:'L\'entité de base — tout agent y sera rattaché',
-  steps:[
-    {
-      mode:'ui',
-      label:'Nommer la company',
-      desc:'Écran "What do we want to name our app?"',
-      ui:'Saisir : <code>UPlanet Marketing</code>\nCliquer → Next'
-    },
-    {
-      mode:'ui',
-      label:'Décrire la mission',
-      desc:'Écran "What is this company trying to achieve?" — sois précis, le CEO agent s\'en sert comme boussole',
-      prompt:'Développer la communauté UPlanet — Internet souverain coopératif (SCIC Ğ1FabLab). Recruter des co-bâtisseurs via Nostr, Telegram, email et Mastodon. Objectif : +50 membres actifs par mois via du contenu éducatif sur la souveraineté numérique, le MULTIPASS et l\'économie ẐEN.'
-    },
-    {
-      mode:'ui',
-      label:'Choisir le modèle CEO',
-      desc:'Utiliser un modèle frontier pour le CEO — il prend les décisions stratégiques',
-      ui:'Sélectionner : <code>claude-sonnet-4-6</code> (via LiteLLM proxy)\nL\'endpoint est déjà configuré : http://llm-proxy:4000/v1\nLa clé est la LITELLM_MASTER_KEY du .env'
-    },
-    {
-      mode:'ui',
-      label:'Première instruction CEO',
-      desc:'Message d\'amorçage — le CEO va planifier et recruter les agents',
-      prompt:'Tu es le CEO de UPlanet Marketing, une initiative coopérative pour diffuser l\'Internet souverain. Commence par créer un plan marketing à 30 jours, puis recrute : 1 agent contenu, 1 agent community, 1 agent outreach. Chaque agent aura un budget mensuel de 5$ en tokens.'
-    },
-    {
-      mode:'ui',
-      label:'Valider et lancer',
-      desc:'L\'Inbox va recevoir la première demande du CEO dans quelques secondes',
-      ui:'Cliquer → Launch company\n→ Dashboard s\'ouvre avec la company "UPlanet Marketing"\n→ Surveiller l\'onglet Inbox (notification rouge)'
-    }
-  ]
-},
-{
-  id:'C', label:'3 · Agents',
-  title:'Configurer les 3 agents marketing',
-  sub:'Contenu · Community · Outreach — chacun avec son rôle et son budget',
-  steps:[
-    {
-      mode:'ui',
-      label:'Approuver la demande CEO dans l\'Inbox',
-      desc:'Le CEO demande à recruter — toujours valider manuellement au début',
-      ui:'Inbox → Cliquer sur la demande "Hire Agent"\n→ Vérifier les rôles proposés\n→ Bouton Approve (ou modifier si nécessaire)'
-    },
-    {
-      mode:'ui',
-      label:'Agent Contenu — configuration',
-      desc:'Persona + modèle + budget',
-      ui:'Agents → New Agent\nNom : Rédacteur UPlanet\nModèle : gemma3 (via LiteLLM — économique)\nBudget mensuel : 5$\nReporting line : CEO'
-    },
-    {
-      mode:'ui',
-      label:'Persona de l\'agent Contenu',
-      desc:'Système prompt — coller dans le champ Persona',
-      prompt:'Tu es le rédacteur de UPlanet, une coopérative Internet souverain. Tu maîtrises le vocabulaire : MULTIPASS, co-bâtisseur, protocole N², ẐEN (0.1 Ğ1), Astroport.ONE, Nostr, IPFS. Tu rédiges : posts Nostr (<280 chars), articles longs (kind:30023), emails newsletter (HTML). Ton ton : pédagogique, engagé, anti-GAFAM sans être agressif. URL projet : https://ipfs.copylaradio.com/ipns/copylaradio.com/entrance.html'
-    },
-    {
-      mode:'ui',
-      label:'Agent Community — configuration',
-      desc:'Gère les interactions Telegram et Nostr',
-      ui:'Agents → New Agent\nNom : Community UPlanet\nModèle : gemma3\nBudget : 4$\nSkill : telegram_poster (du dossier skills/)'
-    },
-    {
-      mode:'ui',
-      label:'Agent Outreach — configuration',
-      desc:'Séquences email et prospection',
-      ui:'Agents → New Agent\nNom : Outreach UPlanet\nModèle : gemma3\nBudget : 6$\nSkill : gmail_sender (du dossier skills/)'
-    },
-    {
-      mode:'cli',
-      label:'Vérifier les agents en base',
-      desc:'Inspecter les agents créés via psql',
-      cli:'docker exec ai-company-swarm-postgres-1 \\\n  psql -U paperclip -d paperclip \\\n  -c "SELECT name, model, monthly_budget FROM agents;"'
-    }
-  ]
-},
-{
-  id:'D', label:'4 · Skills',
-  title:'Installer les skills (capacités des agents)',
-  sub:'Les skills sont des scripts que l\'agent peut appeler — Telegram, Gmail, Mastodon',
-  steps:[
-    {
-      mode:'ui',
-      label:'Accéder aux Skills dans l\'interface',
-      desc:'Menu latéral → Skills (ou Settings → Skills selon version)',
-      ui:'Dashboard → Company Settings → Skills\n→ Bouton "Add Skill" ou "Import"'
-    },
-    {
-      mode:'cli',
-      label:'Vérifier les skills générés par configure-channels.sh',
-      desc:'Normalement déjà présents si le script a été lancé',
-      cli:'ls -la ~/.zen/ai-company/paperclip_data/skills/\n# Attendu (skills Node.js natifs) :\n# telegram_poster.js\n# gmail_sender.js\n# mastodon_poster.js'
-    },
-    {
-      mode:'both',
-      label:'Installer le skill Telegram dans l\'agent',
-      desc:'Associer le skill à l\'agent Community',
-      ui:'Agent Community → Skills → Add → sélectionner telegram_poster',
-      cli:'# Le skill est déjà dans le volume monté\n# ~/.zen/ai-company/paperclip_data/skills/\n# Paperclip les détecte automatiquement au redémarrage\ndocker compose -p ai-company-swarm restart paperclip'
-    },
-    {
-      mode:'both',
-      label:'Variables d\'environnement pour les skills',
-      desc:'Injecter TELEGRAM_BOT_TOKEN etc. dans le conteneur Paperclip',
-      ui:'Company Settings → Environment Variables\n→ Ajouter : TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID\nGMAIL_REFRESH_TOKEN, MASTODON_TOKEN, MASTODON_INSTANCE',
-      cli:'# Déjà dans .env → relancer pour propager\ndocker compose -p ai-company-swarm up -d --force-recreate paperclip'
-    },
-    {
-      mode:'cli',
-      label:'Tester un skill manuellement',
-      desc:'Valider que Telegram répond avant de l\'exposer aux agents',
-      cli:'TELEGRAM_BOT_TOKEN=$(grep TELEGRAM_BOT_TOKEN ~/.zen/ai-company/.env | cut -d= -f2)\nTELEGRAM_CHAT_ID=$(grep TELEGRAM_CHAT_ID ~/.zen/ai-company/.env | cut -d= -f2)\ncurl -s -X POST \\\n  "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \\\n  -d "chat_id=$TELEGRAM_CHAT_ID&text=Skill+OK+depuis+Paperclip" \\\n  | node -e "let d=\'\';process.stdin.on(\'data\',c=>d+=c).on(\'end\',()=>console.log(JSON.stringify(JSON.parse(d),null,2)))"'
-    }
-  ]
-},
-{
-  id:'E', label:'5 · Goals & Tickets',
-  title:'Définir les objectifs et créer les tickets',
-  sub:'Goals = mission long terme · Tickets = tâches exécutables par les agents',
-  steps:[
-    {
-      mode:'ui',
-      label:'Créer un Goal principal',
-      desc:'Goals → New Goal — la boussole de tous les agents',
-      ui:'Goals → New Goal\nTitre : Croissance communauté UPlanet Q2 2026\nDescription : +50 co-bâtisseurs/mois via contenu multicanal\nPriorité : High\nOwner : CEO'
-    },
-    {
-      mode:'ui',
-      label:'Créer un sous-goal Contenu',
-      desc:'Objectif spécifique assigné à l\'agent rédacteur',
-      ui:'Goals → New Goal (child du précédent)\nTitre : Publication quotidienne Nostr + newsletter hebdo\nOwner : Rédacteur UPlanet'
-    },
-    {
-      mode:'ui',
-      label:'Créer le premier ticket récurrent',
-      desc:'Tickets → New Ticket — la tâche concrète quotidienne',
-      ui:'Tickets → New Ticket\nTitre : Post Nostr quotidien UPlanet\nAssigné à : Rédacteur UPlanet\nGoal : Publication quotidienne\nHeartbeat : Daily 9:00'
-    },
-    {
-      mode:'ui',
-      label:'Prompt du ticket Post Nostr',
-      desc:'Instructions précises pour l\'agent dans le corps du ticket',
-      prompt:'Rédige 1 post Nostr court (<280 chars) sur UPlanet aujourd\'hui. Thème du jour : alterner entre [MULTIPASS, protocole N², ẐEN économie, souveraineté données, co-bâtisseur]. Inclure le lien https://ipfs.copylaradio.com/ipns/copylaradio.com/entrance.html et les hashtags #UPlanet #Nostr #LibreCommun. Sauvegarder le résultat dans posts/nostr/AAAA-MM-JJ.txt'
-    },
-    {
-      mode:'ui',
-      label:'Activer le heartbeat (planification)',
-      desc:'Routines → associer le ticket à un schedule automatique',
-      ui:'Routines → New Routine\nNom : Routine quotidienne marketing\nHeartbeat : Daily 09:00\nTickets associés : Post Nostr, Scan communauté\nActiver → le toggle passe en vert'
-    },
-    {
-      mode:'cli',
-      label:'Surveiller l\'exécution des heartbeats',
-      desc:'Logs en temps réel du conteneur Paperclip',
-      cli:'docker compose -p ai-company-swarm logs -f paperclip \\\n  | grep -E "(heartbeat|ticket|agent|error)"'
-    }
-  ]
-},
-{
-  id:'F', label:'6 · Budget & Monitoring',
-  title:'Contrôler les coûts et suivre l\'activité',
-  sub:'Chaque token est tracé — aucun runaway spend possible',
-  steps:[
-    {
-      mode:'ui',
-      label:'Dashboard principal — Monthly Spend',
-      desc:'Vue d\'ensemble de tous les agents et leurs consommations',
-      ui:'Dashboard → Monthly Spend\n→ Barre par agent : Rédacteur / Community / Outreach\n→ Dépasse le budget → agent s\'arrête automatiquement'
-    },
-    {
-      mode:'ui',
-      label:'Ajuster le budget d\'un agent',
-      desc:'Augmenter ou diminuer sans redémarrage',
-      ui:'Agents → sélectionner l\'agent\n→ Edit → Monthly Budget : modifier la valeur en $\n→ Save → effectif immédiatement'
-    },
-    {
-      mode:'ui',
-      label:'Lire l\'audit log d\'un ticket',
-      desc:'Chaque action de chaque agent est loggée et immuable',
-      ui:'Tickets → cliquer sur un ticket\n→ Tab "Trace" ou "History"\n→ Voir : tool calls, API calls, décisions, outputs'
-    },
-    {
-      mode:'ui',
-      label:'Inbox — validation manuelle',
-      desc:'Garder l\'Inbox active au début — valider chaque action importante',
-      ui:'Settings → Governance\nApproval gate : ON (recommandé semaine 1)\n→ Passer en AUTO une fois les agents calibrés'
-    },
-    {
-      mode:'cli',
-      label:'Rapport de coût sur 30 jours',
-      desc:'Requête directe sur la base PostgreSQL',
-      cli:'docker exec ai-company-swarm-postgres-1 psql -U paperclip -d paperclip -c "\nSELECT a.name, \n  ROUND(SUM(t.token_cost)::numeric, 4) AS total_cost_usd,\n  COUNT(t.id) AS nb_tasks\nFROM tasks t\nJOIN agents a ON t.agent_id = a.id\nWHERE t.created_at > NOW() - INTERVAL \'30 days\'\nGROUP BY a.name\nORDER BY total_cost_usd DESC;"'
-    },
-    {
-      mode:'cli',
-      label:'Exporter la company (backup + partage)',
-      desc:'Template portable — secret scrubbing automatique',
-      cli:'# Via l\'interface : Company Settings → Export\n# Le JSON exporté ne contient pas les secrets\n# Peut être partagé comme template UPlanet'
-    }
-  ]
-}
-];
+(function(){
+  var items = document.querySelectorAll('.nav-item');
+  var sections = document.querySelectorAll('.section');
 
-let cur = 0;
-let mode = 'both';
-
-const tabs = document.getElementById('tabs');
-const panel = document.getElementById('panel');
-
-function renderPanel() {
-  const s = sections[cur];
-  let html = `<div class="ptitle">${s.title}</div><div class="psub">${s.sub}</div>`;
-
-  // mode toggle
-  html += `<div class="mode-toggle">
-    <button class="mtab ${mode==='both'?'on':''}" onclick="setMode('both')">Interface + CLI</button>
-    <button class="mtab ${mode==='ui'?'on':''}" onclick="setMode('ui')">Interface seulement</button>
-    <button class="mtab ${mode==='cli'?'on':''}" onclick="setMode('cli')">CLI seulement</button>
-  </div>`;
-
-  html += `<div class="steps">`;
-  s.steps.forEach((st, i) => {
-    const showUI = (mode === 'both' || mode === 'ui') && (st.mode === 'ui' || st.mode === 'both');
-    const showCLI = (mode === 'both' || mode === 'cli') && (st.mode === 'cli' || st.mode === 'both');
-    if (!showUI && !showCLI) return;
-
-    html += `<div class="step">
-      <span class="num ${showUI && !showCLI ? 'num-ui' : showCLI && !showUI ? 'num-cli' : 'num-ui'}">${i+1}</span>
-      <div class="stext">
-        <div class="slabel">${st.label}`;
-
-    if (st.mode === 'ui') html += `<span class="badge b-ui">Interface</span>`;
-    else if (st.mode === 'cli') html += `<span class="badge b-cli">CLI</span>`;
-    else html += `<span class="badge b-ui">Interface</span><span class="badge b-cli">CLI</span>`;
-
-    html += `</div><div class="sdesc">${st.desc}</div>`;
-
-    if (showUI && st.ui) html += `<div class="cmd">${escHtml(st.ui)}</div>`;
-    if (st.prompt) {
-      html += `<div class="sdesc" style="margin-top:4px;font-weight:500">Prompt à coller :</div>`;
-      html += `<div class="prompt-box">${escHtml(st.prompt)}</div>`;
-    }
-    if (showCLI && st.cli) {
-      if (showUI && st.ui) html += `<div class="sdesc" style="margin-top:6px;font-weight:500">Équivalent CLI :</div>`;
-      html += `<div class="cmd">${escHtml(st.cli)}</div>`;
-    }
-
-    html += `</div></div>`;
-    if (i < s.steps.length - 1) html += `<hr class="divider">`;
+  items.forEach(function(item){
+    item.addEventListener('click', function(){
+      var id = 'sec-' + item.getAttribute('data-sec');
+      items.forEach(function(n){ n.classList.remove('active'); });
+      sections.forEach(function(s){ s.classList.remove('active'); });
+      item.classList.add('active');
+      var target = document.getElementById(id);
+      if(target){
+        target.classList.add('active');
+        window.scrollTo(0, 0);
+      }
+    });
   });
-  html += `</div>`;
-
-  // ask button
-  const asks = {
-    'A': 'Comment sécuriser l\'accès Paperclip :3100 sur Astroport avec un mot de passe fort ?',
-    'B': 'Génère le prompt complet de mission CEO pour UPlanet Marketing en français',
-    'C': 'Quels sont les meilleurs paramètres de persona pour l\'agent community Telegram UPlanet ?',
-    'D': 'Comment créer un skill Paperclip pour poster sur Nostr via l\'API Astroport.ONE ?',
-    'E': 'Génère une liste de 30 topics de tickets pour la routine quotidienne UPlanet',
-    'F': 'Comment configurer une alerte si un agent dépasse 80% de son budget mensuel ?'
-  };
-  html += `<button class="ask-btn" onclick="sendPrompt('${asks[s.id]}')">${asks[s.id].substring(0,60)}... ↗</button>`;
-
-  panel.innerHTML = html;
-}
-
-function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function setMode(m){ mode=m; renderPanel(); }
-
-sections.forEach((s,i) => {
-  const t = document.createElement('div');
-  t.className = 'tab' + (i===0?' on':'');
-  t.textContent = s.label;
-  t.onclick = () => { cur=i; tabs.querySelectorAll('.tab').forEach((x,j)=>x.classList.toggle('on',j===i)); renderPanel(); };
-  tabs.appendChild(t);
-});
-
-renderPanel();
+})();
 </script>
+</body>
+</html>

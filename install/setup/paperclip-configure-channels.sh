@@ -8,7 +8,7 @@
 #   Mastodon   — API REST statuts
 #   LinkedIn   — API officielle (optionnel, phase 2)
 #   Nostr      — Astroport.ONE local
-# DOC : Astroport.ONE/docs/paperclip_setup_guide_multicanal.html
+# DOC : Astroport.ONE/docs/paperclip_uplanet_setup_guide.html
 # Usage : ./paperclip-configure-channels.sh [--check|--deps|--telegram|--gmail|--mastodon|--all|--health]
 # =============================================================================
 
