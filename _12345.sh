@@ -545,7 +545,7 @@ NODE12345="{
     \"myRELAY\" : \"${myRELAY}\",
     \"uSPOT\" : \"${uSPOT}\",
     \"ipfsnodeid\" : \"${IPFSNODEID}\",
-    \"astroport\" : \"http://${myIP}:1234\",
+    \"astroport\" : \"http://${myIP}:12345\",
     \"g1station\" : \"${myIPFS}/ipns/${IPFSNODEID}\",
     \"g1swarm\" : \"${myIPFS}/ipns/${CHAN}\",
     \"captain\" : \"${CAPTAINEMAIL}\",
