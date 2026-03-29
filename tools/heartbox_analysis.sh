@@ -133,7 +133,7 @@ get_fast_service_status() {
     ss -tln 2>/dev/null | grep -q ":8002 " && nextcloud_aio_dash="true"
     ss -tln 2>/dev/null | grep -q ":8001 " && nextcloud_cloud_active="true"
 
-    ## ── Profil bleeding-edge : Stack IA Swarm ─────────────────────────
+    ## ── Profil ai-company : Stack IA Swarm ─────────────────────────
     local ollama_active="false"
     local qdrant_active="false"
     local paperclip_active="false"

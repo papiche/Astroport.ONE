@@ -52,9 +52,9 @@ if [[ $remove_nc_vols == "y" ]]; then
     echo "✅ Volumes NextCloud supprimés"
 fi
 
-# ── AI Stack bleeding-edge (Paperclip, OpenClaw, LiteLLM, Qdrant) ────
+# ── AI Stack ai-company (Paperclip, OpenClaw, LiteLLM, Qdrant) ────
 if [[ -d "$HOME/.zen/ai-company" ]]; then
-    echo "Stopping AI Company Stack (bleeding-edge)..."
+    echo "Stopping AI Company Stack (ai-company)..."
     docker compose -p ai-company-swarm down 2>/dev/null || true
     read -p "Supprimer les volumes AI Stack (données Qdrant, PostgreSQL) ? (y/n): " remove_ai_vols
     if [[ $remove_ai_vols == "y" ]]; then

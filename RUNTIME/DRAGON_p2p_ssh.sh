@@ -381,14 +381,14 @@ generate_p2p_service() {
 }
 
 ##################################################################################
-# DÉTECTION ET PUBLICATION DES SERVICES (bleeding-edge + standard)
+# DÉTECTION ET PUBLICATION DES SERVICES (ai-company + standard)
 # Architecture des ports (voir firewall.sh pour la politique UFW) :
 #   NPM admin : 81  (pas 8100 !)
 #   LiteLLM   : 8001 (même port que NextCloud Apache — mutuellement exclusifs)
 #   Webtop    : 3000 HTTP | 3001 HTTPS — accès SSH tunnel recommandé
 ##################################################################################
 
-## ── Profil bleeding-edge : Stack IA Swarm ──────────────────────────
+## ── Profil ai-company : Stack IA Swarm ──────────────────────────
 # Paperclip (3100)
 generate_p2p_service 3100 "paperclip" "Paperclip AI Agents"
 
@@ -401,7 +401,7 @@ if ss -tln 2>/dev/null | grep -q ":8001 "; then
     generate_p2p_service 8001 "nextcloud-app" "NextCloud Apache App (via NPM cloud.DOMAIN)"
 fi
 
-# LiteLLM proxy (8010) — port dédié bleeding-edge
+# LiteLLM proxy (8010) — port dédié ai-company
 generate_p2p_service 8010 "litellm" "LiteLLM Proxy"
 
 # Qdrant vector database (6333)

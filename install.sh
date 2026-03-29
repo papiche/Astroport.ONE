@@ -33,7 +33,7 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     echo "Profils disponibles :"
     echo "  (vide)         Standard : IPFS + Nostr strfry + UPassport + Astroport"
     echo "  nextcloud      Standard + NextCloud AIO (cloud privé 128Go pour ZEN Card)"
-    echo "  bleeding-edge  Standard + Stack IA (Ollama + Paperclip + Open WebUI + Qdrant)"
+    echo "  ai-company  Standard + Stack IA (Ollama + Paperclip + Open WebUI + Qdrant)"
     echo "                 → install-ai-company.docker.sh + code_assistant"
     echo "  dev            Standard + rnostr (remplace strfry, sémantique Qdrant)"
     echo ""
@@ -43,7 +43,7 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     echo "Exemples d'installation silencieuse :"
     echo "  bash install.sh \"\" \"ma-base.org\"                    -> Standard sur ma-base.org"
     echo "  bash install.sh \"\" \"\" \"\" nextcloud               -> Standard + NextCloud"
-    echo "  bash install.sh \"\" \"\" \"\" bleeding-edge           -> Standard + Stack IA"
+    echo "  bash install.sh \"\" \"\" \"\" ai-company           -> Standard + Stack IA"
     echo "  bash install.sh \"contact@me.com\" \"\" \"\" dev       -> Dev (rnostr)"
     echo "================================================================="
     exit 0
@@ -80,7 +80,7 @@ if [[ -z "$CUSTOM_CAPTAIN_EMAIL" && -z "$CUSTOM_NODE_DOMAIN" ]]; then
     echo "Profil d'installation :"
     echo "  (vide)         Standard (recommandé)"
     echo "  nextcloud      + NextCloud AIO cloud privé 128Go"
-    echo "  bleeding-edge  + Stack IA Swarm (Ollama, Paperclip, Open WebUI)"
+    echo "  ai-company  + Stack IA Swarm (Ollama, Paperclip, Open WebUI)"
     echo "  dev            + rnostr (remplace strfry — expérimental)"
     read -p "Profil         [standard]                         : " INSTALL_PROFILE
 fi
@@ -128,7 +128,7 @@ sudo apt-get upgrade -y
 echo "#############################################"
 echo "######### INSTALL PRECIOUS FREE SOFTWARE ####"
 echo "#############################################"
-for i in zip ssss make cmake hdparm iptables ufw fail2ban wireguard openssh-server sshfs parallel npm shellcheck multitail netcat-traditional socat ncdu chromium miller inotify-tools curl net-tools mosquitto libsodium* libcurl4-openssl-dev libgpgme-dev libffi-dev; do
+for i in zip ssss make cmake hdparm iptables ufw fail2ban wireguard openssh-server sshfs parallel npm shellcheck multitail netcat-traditional socat ncdu chromium miller inotify-tools curl net-tools libsodium* miniupnpc libcurl4-openssl-dev libgpgme-dev libffi-dev; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -139,7 +139,7 @@ done
 echo "#############################################"
 echo "####### INSTALL PYTHON3 SYSTEM LIBRARIES ####"
 echo "#############################################"
-for i in pipx python3-pip python3-setuptools python3-base58 python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp python3-prometheus-client python3-tk ssss miniupnpc; do
+for i in pipx python3-pip python3-setuptools python3-base58 python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp python3-prometheus-client python3-tk; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -202,7 +202,7 @@ done
 
 
 ####################################################################
-# MAIN # VÉRIFICATION CLÉ PLAYER POUR SUITE INSTALLATION LOURDE
+# MAIN # VÉRIFICATION CLÉ PLAYER POUR SUITE INSTALLATION COMPLETE
 if [[ ! -d ~/.zen/game/players/ ]];
 then
 
@@ -321,11 +321,13 @@ echo "## INSTALL PowerJoular (Power consumption monitoring) ##########"
 echo "## INSTALL Prometheus exporters (heartbox monitoring) ##########"
 ~/.zen/Astroport.ONE/install/install_prometheus.sh
 
-###############################################################
-echo "## INSTALL Flutter SDK (web builds for Ginkgo app) ##########"
-~/.zen/Astroport.ONE/install/install_flutter.sh
-## Add Flutter to PATH for the rest of install
-export PATH="$HOME/.flutter/bin:$PATH"
+if [[ $INSTALL_PROFILE == "dev" ]]; then
+    ###############################################################
+    echo "## INSTALL Flutter SDK (web builds for Ginkgo app) ##########"
+    ~/.zen/Astroport.ONE/install/install_flutter.sh
+    ## Add Flutter to PATH for the rest of install
+    export PATH="$HOME/.flutter/bin:$PATH"
+fi 
 
 echo "=== INSTALL SYSTEM (sudoers, systemd, SSH, symlinks)"
 ~/.zen/Astroport.ONE/install/install_system.sh
@@ -456,9 +458,9 @@ case "${INSTALL_PROFILE}" in
         echo "║  📖 Blog  : copylaradio.com — Le pas-à-pas du grand cloud   ║"
         echo "╚══════════════════════════════════════════════════════════════╝"
         ;;
-    bleeding-edge)
+    ai-company)
         echo "╔══════════════════════════════════════════════════════════════╗"
-        echo "║  🧠 PROFIL bleeding-edge — Stack IA Swarm (EXPÉRIMENTAL)     ║"
+        echo "║  🧠 PROFIL ai-company — Stack IA Swarm (EXPÉRIMENTAL)     ║"
         echo "╚══════════════════════════════════════════════════════════════╝"
         ~/.zen/Astroport.ONE/install/install-ai-company.docker.sh \
             && AISTACK_ACTIVE=true \
@@ -480,7 +482,7 @@ case "${INSTALL_PROFILE}" in
         echo "║  🐉 APPEL AUX DRAGONS U.SOCIETY :                           ║"
         echo "║  Cette stack est votre terrain d'expérimentation.            ║"
         echo "║  Participez à son intégration dans la constellation :        ║"
-        echo "║  → support@qo-op.com — Objet : 'DRAGON bleeding-edge'       ║"
+        echo "║  → support@qo-op.com — Objet : 'DRAGON ai-company'       ║"
         echo "║  → Salon Nostr U.SOCIETY : #BRO develop                     ║"
         echo "║                                                               ║"
         echo "║  Services (si démarrés) :                                    ║"

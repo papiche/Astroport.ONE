@@ -3,7 +3,7 @@
 #
 # AVANTAGES vs docker-compose.desktop.yml (noVNC) :
 #   - KasmVNC : bien meilleur que TigerVNC+noVNC (WebRTC, clipboard, touch)
-#   - Docker socket RW monté : profils nextcloud et bleeding-edge fonctionnent
+#   - Docker socket RW monté : profils nextcloud et ai-company fonctionnent
 #   - Multiarch : amd64, arm64, arm/v7
 #   - Image maintenue par linuxserver.io (sécurité, mises à jour régulières)
 #   - Conteneurs Docker lancés = "sibling containers" sur l'hôte (pas de DinD)
@@ -78,14 +78,14 @@ services:
       - "127.0.0.1:8080:8080"               # IPFS Gateway
       - "127.0.0.1:5001:5001"               # IPFS API (admin)
       - "127.0.0.1:33101:33101"             # G1Billet
-      - "127.0.0.1:11434:11434"             # Ollama IA (bleeding-edge)
-      - "127.0.0.1:3100:3100"               # Paperclip (bleeding-edge)
+      - "127.0.0.1:11434:11434"             # Ollama IA (ai-company)
+      - "127.0.0.1:3100:3100"               # Paperclip (ai-company)
 
     volumes:
       ## Home persistant (contient .zen, .ipfs, .flutter, etc.)
       - webtop_home:/config
 
-      ## ⚡ Docker socket RW — REQUIS pour profils nextcloud et bleeding-edge
+      ## ⚡ Docker socket RW — REQUIS pour profils nextcloud et ai-company
       ## Les conteneurs lancés depuis webtop sont des "sibling containers"
       ## sur l'hôte Docker (PAS de Docker-in-Docker). Parfaitement sûr.
       - /var/run/docker.sock:/var/run/docker.sock

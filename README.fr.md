@@ -139,7 +139,7 @@ docker compose -f docker-compose.webtop.yml up -d
 # → http://localhost:3000  (bureau dans le navigateur, Ubuntu XFCE + KasmVNC)
 ```
 
-Le conteneur webtop exécute `install.sh` automatiquement au premier démarrage (10–30 min). Tous les profils fonctionnent (`nextcloud`, `bleeding-edge`) car le socket Docker est partagé avec l'hôte (architecture "sibling containers").
+Le conteneur webtop exécute `install.sh` automatiquement au premier démarrage (10–30 min). Tous les profils fonctionnent (`nextcloud`, `ai-company`) car le socket Docker est partagé avec l'hôte (architecture "sibling containers").
 
 ### Option B — Installation directe (bare-metal Linux — Debian/Ubuntu/Mint)
 
@@ -157,7 +157,7 @@ bash install.sh
 bash install.sh "" "" "" nextcloud
 
 # + Stack IA Essaim (Ollama + Paperclip + OpenClaw + Qdrant)
-bash install.sh "" "" "" bleeding-edge
+bash install.sh "" "" "" ai-company
 
 # + rnostr dev (relai Rust, remplace strfry — expérimental)
 bash install.sh "" "" "" dev
@@ -167,7 +167,7 @@ bash install.sh "" "" "" dev
 |---|---|---|
 | `standard` | IPFS · Nostr strfry · UPassport · GPG · gcli | ✅ Production |
 | `nextcloud` | Standard + NextCloud AIO (128 Go, stockage BTRFS) | ✅ Stable |
-| `bleeding-edge` | Standard + Paperclip + OpenClaw + LiteLLM + Qdrant IA | ⚠️ Expérimental |
+| `ai-company` | Standard + Paperclip + OpenClaw + LiteLLM + Qdrant IA | ⚠️ Expérimental |
 | `dev` | Standard + rnostr Rust (migration des plugins writePolicy bash) | 🔧 En développement |
 
 ### Après installation : Ce qui tourne
@@ -180,8 +180,8 @@ ws://localhost:7777      Relai NOSTR strfry (NIP-101)
 http://localhost:33101   G1Billet (impression crypto)
 http://localhost:81      Nginx Proxy Manager admin (NPM)
 http://localhost:8443    Setup initial NextCloud AIO (profil nextcloud)
-http://localhost:11434   API Ollama (profil bleeding-edge)
-http://localhost:3100    Agents IA Paperclip (profil bleeding-edge)
+http://localhost:11434   API Ollama (profil ai-company)
+http://localhost:3100    Agents IA Paperclip (profil ai-company)
 ```
 
 ---
@@ -257,7 +257,7 @@ Toutes les transactions sont visibles sur la **blockchain Ğ1** (Duniter v1/v2s)
 │  NextCloud AIO  ←→  Nginx Proxy Mgr  ←→  UPassport     │
 │  (128 Go/user)      (SSL automatique)    (FastAPI)      │
 │                                                          │
-│  Stack #BRO IA (bleeding-edge) :                        │
+│  Stack #BRO IA (ai-company) :                        │
 │  Ollama → LiteLLM → Paperclip → OpenClaw → Qdrant       │
 │                                                          │
 │  Crypto : Ğ1 (Duniter v2s) · NOSTR (Ed25519) · IPFS    │
@@ -320,7 +320,7 @@ docker compose -f docker-compose.webtop.yml up -d
 
 **Caractéristiques :**
 - 🖥️ Bureau Ubuntu XFCE complet accessible depuis n'importe quel navigateur
-- 🐳 Socket Docker partagé avec l'hôte → tous les profils fonctionnent (`nextcloud`, `bleeding-edge`)
+- 🐳 Socket Docker partagé avec l'hôte → tous les profils fonctionnent (`nextcloud`, `ai-company`)
 - 📋 Presse-papier bidirectionnel, vidéo WebRTC, support écran tactile
 - 🏗️ Multi-arch : amd64, arm64, arm/v7 (Raspberry Pi, Mac M-series)
 - 🔄 Maintenu par [linuxserver.io](https://docs.linuxserver.io/images/docker-webtop/) — pas de build custom

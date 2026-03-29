@@ -139,7 +139,7 @@ docker compose -f docker-compose.webtop.yml up -d
 # → http://localhost:3000  (desktop in browser, Ubuntu XFCE + KasmVNC)
 ```
 
-The webtop container runs `install.sh` automatically at first start (10–30 min). All profiles work (`nextcloud`, `bleeding-edge`) because the Docker socket is shared with the host via sibling-container architecture.
+The webtop container runs `install.sh` automatically at first start (10–30 min). All profiles work (`nextcloud`, `ai-company`) because the Docker socket is shared with the host via sibling-container architecture.
 
 ### Option A2 — VirtualBox / Vagrant (isolated VM, all features)
 
@@ -148,7 +148,7 @@ The webtop container runs `install.sh` automatically at first start (10–30 min
 cd docker/
 vagrant up                            # Standard install (ORIGIN mode)
 PROFILE=nextcloud vagrant up          # + NextCloud AIO
-PROFILE=bleeding-edge vagrant up      # + AI Stack (Open WebUI)
+PROFILE=ai-company vagrant up      # + AI Stack (Open WebUI)
 
 vagrant ssh                           # Connect to the VM
 vagrant halt                          # Stop the VM
@@ -177,7 +177,7 @@ bash install.sh
 bash install.sh "" "" "" nextcloud
 
 # + AI Swarm Stack (Ollama + Paperclip + OpenClaw + Qdrant)
-bash install.sh "" "" "" bleeding-edge
+bash install.sh "" "" "" ai-company
 
 # + rnostr dev (Rust relay, replace strfry — experimental)
 bash install.sh "" "" "" dev
@@ -187,7 +187,7 @@ bash install.sh "" "" "" dev
 |---|---|---|
 | `standard` | IPFS · Nostr strfry · UPassport · GPG · gcli | ✅ Production |
 | `nextcloud` | Standard + NextCloud AIO (128 Go cloud, BTRFS storage) | ✅ Stable |
-| `bleeding-edge` | Standard + Paperclip + OpenClaw + LiteLLM + Qdrant AI stack | ⚠️ Experimental |
+| `ai-company` | Standard + Paperclip + OpenClaw + LiteLLM + Qdrant AI stack | ⚠️ Experimental |
 | `dev` | Standard + rnostr Rust relay (migration from strfry writePolicy plugins) | 🔧 In development |
 
 ### After Installation: What's Running
@@ -200,8 +200,8 @@ ws://localhost:7777      NOSTR strfry relay (NIP-101)
 http://localhost:33101   G1Billet (service shut down TrocZen is the next G1BILLET)
 http://localhost:81      Nginx Proxy Manager admin (NPM)
 http://localhost:8443    NextCloud AIO setup (nextcloud profile)
-http://localhost:11434   Ollama API (bleeding-edge profile)
-http://localhost:3100    Paperclip AI agents (bleeding-edge)
+http://localhost:11434   Ollama API (ai-company profile)
+http://localhost:3100    Paperclip AI agents (ai-company)
 ```
 
 ### Verified Technologies
@@ -293,7 +293,7 @@ All transactions are visible on the **Ğ1 blockchain** (Duniter v1/v2s). Full tr
 │  NextCloud AIO  ←→  Nginx Proxy Mgr  ←→  UPassport     │
 │  (128 Go/user)      (SSL auto)           (FastAPI)      │
 │                                                          │
-│  #BRO AI Stack (bleeding-edge) :                        │
+│  #BRO AI Stack (ai-company) :                        │
 │  Ollama → LiteLLM → Paperclip → OpenClaw → Qdrant       │
 │                                                          │
 │  Crypto: Ğ1 (Duniter v2s) · NOSTR (Ed25519) · IPFS     │
@@ -336,9 +336,9 @@ Each plugin receives Nostr events via stdin/stdout JSON, classifies users (`nobo
 
 🐉 **Calling Rust/DRAGON developers** — contact: support@qo-op.com — Subject: `DRAGON rnostr migration`
 
-**Also wanted:** Integration of the bleeding-edge AI stack into the Astroport ecosystem:
+**Also wanted:** Integration of the ai-company AI stack into the Astroport ecosystem:
 - Automatic #BRO responses via OpenClaw/Paperclip triggered by Nostr events
-- Subject: `DRAGON bleeding-edge` on Nostr or support@qo-op.com
+- Subject: `DRAGON ai-company` on Nostr or support@qo-op.com
 
 **Tool: `code_assistant`** (local AI code review):
 ```bash
@@ -360,7 +360,7 @@ docker compose -f docker-compose.webtop.yml up -d
 
 **Features:**
 - 🖥️ Full Ubuntu XFCE desktop accessible from any browser
-- 🐳 Docker socket shared with host — all profiles work (`nextcloud`, `bleeding-edge`)
+- 🐳 Docker socket shared with host — all profiles work (`nextcloud`, `ai-company`)
 - 📋 Bidirectional clipboard, WebRTC video, touch screen support
 - 🏗️ Multi-arch: amd64, arm64, arm/v7 (Raspberry Pi, Mac M-series)
 - 🔄 Maintained by [linuxserver.io](https://docs.linuxserver.io/images/docker-webtop/) — no custom build needed

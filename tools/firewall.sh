@@ -38,7 +38,7 @@
 #  │ 8001    │ tcp      │ Apache NextCloud (via NPM → cloud.D)  │
 #  │ 8002    │ tcp      │ NextCloud AIO Dashboard (localhost)   │
 #  │ 8443    │ tcp      │ NextCloud AIO Admin Setup (localhost) │
-#  │── bleeding-edge IA Stack ──────────────────────────────────── │
+#  │── ai-company IA Stack ──────────────────────────────────── │
 #  │ 3100    │ tcp      │ Paperclip AI agents (localhost)       │
 #  │ 8010    │ tcp      │ LiteLLM proxy hôte (localhost)        │
 #  │ 8000    │ tcp      │ Open WebUI interface IA (localhost)   │
@@ -154,11 +154,11 @@ fire_on() {
         "8001:NextCloud Apache (via NPM cloud.DOMAIN)" \
         "8002:NextCloud AIO Dashboard" \
         "8443:NextCloud AIO Admin Setup" \
-        "3100:Paperclip AI agents (bleeding-edge)" \
+        "3100:Paperclip AI agents (ai-company)" \
         "4000:LiteLLM API interne Docker (conteneur)" \
-        "8000:Open WebUI interface IA (bleeding-edge)" \
-        "8010:LiteLLM proxy (bleeding-edge, port dedie sans conflit)" \
-        "11434:Ollama LLM API (bleeding-edge)" \
+        "8000:Open WebUI interface IA (ai-company)" \
+        "8010:LiteLLM proxy (ai-company, port dedie sans conflit)" \
+        "11434:Ollama LLM API (ai-company)" \
         "3000:KasmVNC HTTP (webtop — SSH tunnel requis)" \
         "3001:KasmVNC HTTPS (webtop — SSH tunnel requis)" \
         "9090:Prometheus" \

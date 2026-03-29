@@ -17,7 +17,7 @@
 # Prérequis :
 #   - NextCloud AIO démarré (profil 'nextcloud')
 #   - Ollama disponible (port 11434)
-#   - Qdrant disponible (port 6333, profil 'bleeding-edge' ou standalone)
+#   - Qdrant disponible (port 6333, profil 'ai-company' ou standalone)
 #
 # Usage :
 #   bash install_leann.sh
@@ -144,7 +144,7 @@ _qdrant_check_opts=()
 if curl -sf "${_qdrant_check_opts[@]}" http://127.0.0.1:6333/collections &>/dev/null; then
     ok "Qdrant accessible (authentification OK)"
 else
-    warn "Qdrant non accessible sur :6333 — installez d'abord le profil bleeding-edge"
+    warn "Qdrant non accessible sur :6333 — installez d'abord le profil ai-company"
     warn "Ou: docker run -d -p 6333:6333 -e QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY:-secret} qdrant/qdrant"
 fi
 

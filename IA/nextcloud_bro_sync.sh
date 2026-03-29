@@ -433,7 +433,7 @@ print(f'  Status : {d.get(\"status\",\"?\")}')
         ## Sync incrémentale par défaut
         if ! _check_services; then
             err "Services requis non disponibles. Vérifiez Ollama et Qdrant."
-            info "Démarrez le profil bleeding-edge: bash install.sh \"\" \"\" \"\" bleeding-edge"
+            info "Démarrez le profil ai-company: bash install.sh \"\" \"\" \"\" ai-company"
             exit 1
         fi
         _ensure_qdrant_collection

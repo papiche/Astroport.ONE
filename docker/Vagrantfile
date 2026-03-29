@@ -6,7 +6,7 @@
 # Usage :
 #   vagrant up                          # VM standard (ORIGIN)
 #   PROFILE=nextcloud vagrant up        # + NextCloud AIO
-#   PROFILE=bleeding-edge vagrant up    # + Stack IA (Open WebUI)
+#   PROFILE=ai-company vagrant up    # + Stack IA (Open WebUI)
 #   vagrant ssh                         # Se connecter à la VM
 #   vagrant halt                        # Arrêter
 #   vagrant destroy                     # Supprimer la VM
@@ -17,13 +17,13 @@
 #   http://localhost:8080    IPFS Gateway
 #   ws://localhost:7777      NOSTR relay
 #   http://localhost:3000    Webtop KasmVNC (si réseau hôte)
-#   http://localhost:8000    Open WebUI (profil bleeding-edge)
+#   http://localhost:8000    Open WebUI (profil ai-company)
 #   http://localhost:8443    NextCloud AIO setup (profil nextcloud)
 #
 # Variables d'environnement supportées :
 #   CAPTAIN_EMAIL  Email du Capitaine (défaut: auto GMARKMAIL)
 #   NODE_DOMAIN    Domaine du nœud (défaut: copylaradio.com)
-#   PROFILE        Profil d'install : standard|nextcloud|bleeding-edge|dev
+#   PROFILE        Profil d'install : standard|nextcloud|ai-company|dev
 #   VM_MEMORY      RAM de la VM en Mo (défaut: 4096)
 #   VM_CPUS        Nombre de CPUs (défaut: 2)
 #   VM_NETWORK     Mode réseau : bridge|hostonly (défaut: hostonly)
@@ -136,7 +136,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     if [[ "${INSTALL_PROFILE}" == "nextcloud" ]]; then
     echo "  NextCloud  : https://localhost:8443  (setup initial)"
     fi
-    if [[ "${INSTALL_PROFILE}" == "bleeding-edge" ]]; then
+    if [[ "${INSTALL_PROFILE}" == "ai-company" ]]; then
     echo "  Open WebUI : http://localhost:8000"
     echo "  LiteLLM    : http://localhost:8010"
     fi

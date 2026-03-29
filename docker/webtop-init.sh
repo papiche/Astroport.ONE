@@ -134,7 +134,7 @@ EOF
         _create_shortcut "NextCloud Setup" \
             "xdg-open https://localhost:8443" "folder-cloud"
     fi
-    if [[ "${INSTALL_PROFILE}" == "bleeding-edge" ]]; then
+    if [[ "${INSTALL_PROFILE}" == "ai-company" ]]; then
         _create_shortcut "Paperclip AI" \
             "xdg-open http://localhost:3100" "applications-science"
         _create_shortcut "OpenClaw AI" \

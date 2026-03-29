@@ -80,7 +80,7 @@ services:
       - desktop_home:/home/zen               # Home complet (desktop + .zen)
       - desktop_ipfs:/home/zen/.ipfs         # IPFS datastore
       ## ⚠️  Docker socket NON monté ici → commandes docker échouent dans le conteneur
-      ## → Pour les profils nextcloud/bleeding-edge, utiliser docker-compose.webtop.yml
+      ## → Pour les profils nextcloud/ai-company, utiliser docker-compose.webtop.yml
       ## → Si vous avez besoin du socket ici, décommentez :
       # - /var/run/docker.sock:/var/run/docker.sock   # ATTENTION : accès complet au Docker hôte
 
