@@ -141,6 +141,26 @@ docker compose -f docker-compose.webtop.yml up -d
 
 The webtop container runs `install.sh` automatically at first start (10–30 min). All profiles work (`nextcloud`, `bleeding-edge`) because the Docker socket is shared with the host via sibling-container architecture.
 
+### Option A2 — VirtualBox / Vagrant (isolated VM, all features)
+
+```bash
+# Prerequisites: VirtualBox + Vagrant installed on your machine
+cd docker/
+vagrant up                            # Standard install (ORIGIN mode)
+PROFILE=nextcloud vagrant up          # + NextCloud AIO
+PROFILE=bleeding-edge vagrant up      # + AI Stack (Open WebUI)
+
+vagrant ssh                           # Connect to the VM
+vagrant halt                          # Stop the VM
+```
+
+A full **Ubuntu 22.04 VM** with Astroport.ONE pre-installed. All port forwarding is configured automatically. Recommended for:
+- Testing before bare-metal install
+- Development and debugging
+- Running Astroport alongside your main OS
+
+> 💡 **Networking tip**: Use `VM_NETWORK=bridge vagrant up` for full IPFS P2P discovery.
+
 ### Option B — Direct install (bare-metal Linux — Debian/Ubuntu/Mint)
 
 ```bash

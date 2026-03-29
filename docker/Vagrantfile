@@ -1,0 +1,154 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+########################################################################
+# Vagrantfile — Astroport.ONE sur VirtualBox
+#
+# Usage :
+#   vagrant up                          # VM standard (ORIGIN)
+#   PROFILE=nextcloud vagrant up        # + NextCloud AIO
+#   PROFILE=bleeding-edge vagrant up    # + Stack IA (Open WebUI)
+#   vagrant ssh                         # Se connecter à la VM
+#   vagrant halt                        # Arrêter
+#   vagrant destroy                     # Supprimer la VM
+#
+# Accès aux services depuis la machine hôte :
+#   http://localhost:12345   Astroport station map
+#   http://localhost:54321   UPassport (créer MULTIPASS)
+#   http://localhost:8080    IPFS Gateway
+#   ws://localhost:7777      NOSTR relay
+#   http://localhost:3000    Webtop KasmVNC (si réseau hôte)
+#   http://localhost:8000    Open WebUI (profil bleeding-edge)
+#   http://localhost:8443    NextCloud AIO setup (profil nextcloud)
+#
+# Variables d'environnement supportées :
+#   CAPTAIN_EMAIL  Email du Capitaine (défaut: auto GMARKMAIL)
+#   NODE_DOMAIN    Domaine du nœud (défaut: copylaradio.com)
+#   PROFILE        Profil d'install : standard|nextcloud|bleeding-edge|dev
+#   VM_MEMORY      RAM de la VM en Mo (défaut: 4096)
+#   VM_CPUS        Nombre de CPUs (défaut: 2)
+#   VM_NETWORK     Mode réseau : bridge|hostonly (défaut: hostonly)
+########################################################################
+
+VAGRANTFILE_API_VERSION = "2"
+
+## Configuration via variables d'environnement
+CAPTAIN_EMAIL = ENV.fetch("CAPTAIN_EMAIL", "")
+NODE_DOMAIN   = ENV.fetch("NODE_DOMAIN",   "")
+INSTALL_PROFILE = ENV.fetch("PROFILE",     "")
+VM_MEMORY     = ENV.fetch("VM_MEMORY",     "4096").to_i
+VM_CPUS       = ENV.fetch("VM_CPUS",       "2").to_i
+VM_NETWORK    = ENV.fetch("VM_NETWORK",    "hostonly")
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  ## Image de base : Ubuntu 22.04 LTS (Jammy) — recommandée pour Docker
+  config.vm.box = "ubuntu/jammy64"
+  config.vm.box_check_update = false
+
+  ## Nom de la VM
+  config.vm.define "astroport", primary: true do |astro|
+    astro.vm.hostname = "astroport"
+  end
+
+  ## ── Réseau ────────────────────────────────────────────────────────
+  ## Option 1 : Host-Only (défaut) — services accessibles depuis l'hôte
+  ##            Simple, pas de config routeur requise
+  if VM_NETWORK == "hostonly"
+    config.vm.network "private_network", ip: "192.168.56.100"
+    puts "🌐 Réseau Host-Only → IP VM : 192.168.56.100"
+  end
+
+  ## Option 2 : Bridged — VM sur le même réseau que l'hôte (recommandé pour IPFS P2P)
+  ##   VM_NETWORK=bridge vagrant up
+  if VM_NETWORK == "bridge"
+    config.vm.network "public_network"
+    puts "🌐 Réseau Bridged → IP attribuée par votre box (DHCP)"
+  end
+
+  ## Port forwarding — NAT (accessible depuis localhost de l'hôte)
+  config.vm.network "forwarded_port", guest: 22,    host: 2222,  auto_correct: true, id: "ssh"
+  config.vm.network "forwarded_port", guest: 80,    host: 8888,  auto_correct: true  # NPM HTTP
+  config.vm.network "forwarded_port", guest: 443,   host: 8889,  auto_correct: true  # NPM HTTPS
+  config.vm.network "forwarded_port", guest: 4001,  host: 4001,  auto_correct: true  # IPFS Swarm
+  config.vm.network "forwarded_port", guest: 12345, host: 12345, auto_correct: true  # Astroport map
+  config.vm.network "forwarded_port", guest: 54321, host: 54321, auto_correct: true  # UPassport
+  config.vm.network "forwarded_port", guest: 7777,  host: 7777,  auto_correct: true  # NOSTR
+  config.vm.network "forwarded_port", guest: 8080,  host: 8180,  auto_correct: true  # IPFS GW
+  config.vm.network "forwarded_port", guest: 8000,  host: 8000,  auto_correct: true  # Open WebUI
+  config.vm.network "forwarded_port", guest: 8010,  host: 8010,  auto_correct: true  # LiteLLM
+  config.vm.network "forwarded_port", guest: 8443,  host: 8443,  auto_correct: true  # NextCloud AIO
+  config.vm.network "forwarded_port", guest: 3000,  host: 3000,  auto_correct: true  # Webtop HTTP
+  config.vm.network "forwarded_port", guest: 3001,  host: 3001,  auto_correct: true  # Webtop HTTPS
+
+  ## ── Ressources VirtualBox ─────────────────────────────────────────
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "Astroport.ONE"
+    vb.memory = VM_MEMORY
+    vb.cpus   = VM_CPUS
+    vb.gui    = false
+
+    ## Activer la virtualisation imbriquée (nécessaire pour Docker-in-Docker)
+    vb.customize ["modifyvm", :id, "--nested-hw-virt", "on"]
+
+    ## Augmenter le stockage virtuel (disque par défaut = 20Go, insuffisant)
+    ## Astroport + IPFS peut consommer 50-200Go
+    ## Pour augmenter : vagrant plugin install vagrant-disksize
+    ## Puis : config.disksize.size = '100GB'
+  end
+
+  ## ── Provisioning — Installation Astroport.ONE ─────────────────────
+  config.vm.provision "shell", privileged: false, env: {
+    "CAPTAIN_EMAIL"    => CAPTAIN_EMAIL,
+    "NODE_DOMAIN"      => NODE_DOMAIN,
+    "INSTALL_PROFILE"  => INSTALL_PROFILE
+  }, inline: <<-SHELL
+
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║  🚀 Astroport.ONE — Installation dans VirtualBox             ║"
+    echo "╠══════════════════════════════════════════════════════════════╣"
+    echo "║  Email     : ${CAPTAIN_EMAIL:-auto GMARKMAIL}                ║"
+    echo "║  Domaine   : ${NODE_DOMAIN:-copylaradio.com}                 ║"
+    echo "║  Profil    : ${INSTALL_PROFILE:-standard}                    ║"
+    echo "╚══════════════════════════════════════════════════════════════╝"
+
+    ## Prérequis : s'assurer que l'utilisateur est dans le groupe sudo
+    sudo usermod -aG sudo vagrant 2>/dev/null || true
+
+    ## Variables d'export pour install.sh
+    export HOME=/home/vagrant
+
+    ## Lancer install.sh de manière non-interactive
+    bash <(curl -sL https://raw.githubusercontent.com/papiche/Astroport.ONE/master/install.sh) \
+      "${CAPTAIN_EMAIL}" \
+      "${NODE_DOMAIN}" \
+      "" \
+      "${INSTALL_PROFILE}" \
+      < /dev/null 2>&1
+
+    echo ""
+    echo "✅ Installation terminée !"
+    echo ""
+    echo "Accès depuis la machine HÔTE :"
+    echo "  Astroport  : http://localhost:12345"
+    echo "  UPassport  : http://localhost:54321"
+    echo "  IPFS GW    : http://localhost:8180"
+    echo "  NOSTR      : ws://localhost:7777"
+    if [[ "${INSTALL_PROFILE}" == "nextcloud" ]]; then
+    echo "  NextCloud  : https://localhost:8443  (setup initial)"
+    fi
+    if [[ "${INSTALL_PROFILE}" == "bleeding-edge" ]]; then
+    echo "  Open WebUI : http://localhost:8000"
+    echo "  LiteLLM    : http://localhost:8010"
+    fi
+    echo ""
+    echo "Se connecter : vagrant ssh"
+    echo "Stopper la VM : vagrant halt"
+
+  SHELL
+
+  ## ── Sync des fichiers (désactivé par défaut — Astroport se clone lui-même) ──
+  ## Pour développement local : décommenter pour syncer Astroport.ONE depuis l'hôte
+  # config.vm.synced_folder "../", "/home/vagrant/.zen/Astroport.ONE",
+  #   owner: "vagrant", group: "vagrant"
+
+end
