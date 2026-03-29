@@ -324,6 +324,30 @@ cp ~/.zen/install.errors.log ~/.zen/tmp/${IPFSNODEID}/ 2>/dev/null
 
 ##################################################################################
 ##################################################################################
+# HELPER : vrai si un processus NATIF (pas ipfs) écoute sur le port
+# Évite de republier dans le swarm un tunnel IPFS P2P déjà établi (tunnel→tunnel)
+_is_native_process() {
+    local _PORT=$1
+    # 1. Le port doit être en écoute
+    ss -tln 2>/dev/null | grep -qw ":${_PORT}" || return 1
+    # 2. Récupérer le PID du process en écoute sur ce port
+    local _PID
+    _PID=$(ss -tlnp 2>/dev/null | awk -v p=":${_PORT} " '$0~p {match($0,/pid=([0-9]+)/,a); if(a[1]) {print a[1]; exit}}')
+    # Si ss ne donne pas le PID (pas de sudo), essayer lsof
+    [[ -z "$_PID" ]] && _PID=$(lsof -t -i ":${_PORT}" -sTCP:LISTEN 2>/dev/null | head -1)
+    # Pas de PID détectable → supposer service natif (meilleure hypothèse)
+    [[ -z "$_PID" ]] && return 0
+    # 3. Lire le nom du processus
+    local _PROC; _PROC=$(cat "/proc/${_PID}/comm" 2>/dev/null)
+    # Si c'est `ipfs` → c'est un ipfs p2p forward (tunnel client) → PAS un service natif
+    [[ "$_PROC" == "ipfs" ]] && {
+        echo "  [SKIP] Port ${_PORT}: occupé par 'ipfs' (tunnel forward entrant) — tunnel→tunnel évité"
+        return 1
+    }
+    return 0
+}
+
+##################################################################################
 # FONCTION GÉNÉRATRICE DE TUNNEL (Double Bind)
 ##################################################################################
 # $1: Port, $2: Nom court (ex: paperclip), $3: Description
@@ -333,8 +357,8 @@ generate_p2p_service() {
     local NAME=$3
     local CHANNEL="/x/${SLUG}-${IPFSNODEID}"
 
-    # Vérification si le port écoute sur la machine Libra (serveur)
-    if ss -tln | grep -q ":${PORT} "; then
+    # Vérification : port en écoute ET processus NATIF (pas un tunnel ipfs forward)
+    if _is_native_process "${PORT}"; then
         echo "Publie le service $NAME sur $CHANNEL"
         
         # Le serveur écoute
@@ -355,6 +379,13 @@ generate_p2p_service() {
         if [[ "${1,,}" == "off" || "${1,,}" == "stop" ]]; then
             echo "Closing $NAME tunnel..."
             ipfs p2p close -p "$PROTO"
+            exit 0
+        fi
+
+        # Priorité au service local : si le port est occupé par un process local
+        # (et qu'aucun tunnel IPFS n'est déjà établi), le service natif prend la main.
+        if ! check_bind "127.0.0.1" && ss -tln 2>/dev/null | grep -qw ":$LPORT"; then
+            echo "$NAME : port $LPORT occupé localement — service natif prioritaire, tunnel non requis."
             exit 0
         fi
 
@@ -381,35 +412,50 @@ generate_p2p_service() {
 }
 
 ##################################################################################
+# WRAPPER publish_service : respecte DRAGON_PRIVATE_SERVICES depuis ~/.zen/Astroport.ONE/.env
+# (my.sh source déjà .env, donc DRAGON_PRIVATE_SERVICES est disponible ici)
+publish_service() {
+    local _slug="$2"
+    if [[ -n "${DRAGON_PRIVATE_SERVICES:-}" ]] && \
+       echo " ${DRAGON_PRIVATE_SERVICES} " | grep -qw " ${_slug} "; then
+        echo "SKIP ${_slug} (privé — DRAGON_PRIVATE_SERVICES)"
+        return 0
+    fi
+    publish_service "$@"
+}
+##################################################################################
 # DÉTECTION ET PUBLICATION DES SERVICES (ai-company + standard)
 # Architecture des ports (voir firewall.sh pour la politique UFW) :
-#   NPM admin : 81  (pas 8100 !)
-#   LiteLLM   : 8001 (même port que NextCloud Apache — mutuellement exclusifs)
-#   Webtop    : 3000 HTTP | 3001 HTTPS — accès SSH tunnel recommandé
+#   NPM admin        : 81   (pas 8100 !)
+#   NextCloud Apache : 8001 (proxied NPM → cloud.DOMAIN — LiteLLM déplacé en 8010)
+#   Open WebUI       : 8000 (remplace openclaw)
+#   Perplexica       : 3002 (déplacé depuis 3001 pour éviter conflit Webtop)
+#   Webtop           : 3000 HTTP | 3001 HTTPS — accès SSH tunnel recommandé
 ##################################################################################
 
 ## ── Profil ai-company : Stack IA Swarm ──────────────────────────
 # Paperclip (3100)
-generate_p2p_service 3100 "paperclip" "Paperclip AI Agents"
+publish_service 3100 "paperclip" "Paperclip AI Agents"
 
 # Open WebUI interface IA (8000) — remplace OpenClaw (plus actif, supporte Ollama natif)
-generate_p2p_service 8000 "open-webui" "Open WebUI Interface IA"
+publish_service 8000 "open-webui" "Open WebUI Interface IA"
 
 ## Port 8001 : NextCloud Apache uniquement (proxied NPM → cloud.DOMAIN)
 ## LiteLLM est maintenant sur port 8010 (plus de conflit)
 if ss -tln 2>/dev/null | grep -q ":8001 "; then
-    generate_p2p_service 8001 "nextcloud-app" "NextCloud Apache App (via NPM cloud.DOMAIN)"
+    publish_service 8001 "nextcloud-app" "NextCloud Apache App (via NPM cloud.DOMAIN)"
 fi
 
-# LiteLLM proxy (8010) — port dédié ai-company
-generate_p2p_service 8010 "litellm" "LiteLLM Proxy"
+# --- NOT TO BE SHARED --- ollama proxy job for paperclip
+# LiteLLM proxy (8010) — port dédié ai-company 
+# generate_p2p_service 8010 "litellm" "LiteLLM Proxy"
 
-# Qdrant vector database (6333)
-generate_p2p_service 6333 "qdrant" "Qdrant VectorDB"
+# Qdrant vector database (6333) -- could be hidden too
+publish_service 6333 "qdrant" "Qdrant VectorDB"
 
 # Ollama LLM API (11434)
 if pgrep ollama >/dev/null 2>&1 || ss -tln 2>/dev/null | grep -q ":11434 "; then
-    generate_p2p_service 11434 "ollama" "Ollama LLM API"
+    publish_service 11434 "ollama" "Ollama LLM API"
 fi
 
 ## ── Services standard ───────────────────────────────────────────────
@@ -417,38 +463,38 @@ fi
 # SSH (toujours prioritaire)
 SSHPORT=$(grep -E "^Port " /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -1)
 [[ -z "$SSHPORT" ]] && SSHPORT=22
-generate_p2p_service "$SSHPORT" "ssh" "SSH Remote Access"
+publish_service "$SSHPORT" "ssh" "SSH Remote Access"
 
 # Nginx Proxy Manager admin (port 81, pas 8100)
-generate_p2p_service 81 "npm" "Nginx Proxy Manager Admin"
+publish_service 81 "npm" "Nginx Proxy Manager Admin"
 
 # NextCloud AIO admin setup (port 8443 — HTTPS auto-signé)
-generate_p2p_service 8443 "nextcloud-aio" "NextCloud AIO Admin Setup"
+publish_service 8443 "nextcloud-aio" "NextCloud AIO Admin Setup"
 
 ## ── Webtop KasmVNC (VDI) ────────────────────────────────────────────
 ## ⚠️  Port 3001 = Webtop HTTPS (PAS Perplexica)
 ## Accès recommandé via SSH tunnel :
 ##   ssh -L 3000:localhost:3000 user@HOST
 if docker ps --format '{{.Image}}' 2>/dev/null | grep -q 'linuxserver/webtop'; then
-    generate_p2p_service 3000 "webtop-http"  "Webtop KasmVNC HTTP"
-    generate_p2p_service 3001 "webtop-https" "Webtop KasmVNC HTTPS"
+    publish_service 3000 "webtop-http"  "Webtop KasmVNC HTTP"
+    publish_service 3001 "webtop-https" "Webtop KasmVNC HTTPS"
 fi
 
 ## ── Services complémentaires ────────────────────────────────────────
 
 # ComfyUI (8188)
 if systemctl is-active comfyui.service >/dev/null 2>&1; then
-    generate_p2p_service 8188 "comfyui" "ComfyUI"
+    publish_service 8188 "comfyui" "ComfyUI"
 fi
 
 # Orpheus TTS (5005)
 if docker ps 2>/dev/null | grep -q orpheus; then
-    generate_p2p_service 5005 "orpheus" "Orpheus TTS"
+    publish_service 5005 "orpheus" "Orpheus TTS"
 fi
 
 # Perplexica Search (3002 — déplacé depuis 3001 pour éviter conflit Webtop)
 if docker ps 2>/dev/null | grep -q perplexica; then
-    generate_p2p_service 3002 "perplexica" "Perplexica Search"
+    publish_service 3002 "perplexica" "Perplexica Search"
 fi
 
 ##################################################################################

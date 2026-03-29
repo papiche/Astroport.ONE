@@ -417,6 +417,91 @@ while true; do
             ## 4. RE-PUBLICATION DE NOTRE BALISE PERSONNELLE
             # On s'assure que notre 12345.json est à jour
             echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
+
+            ## ── GÉNÉRATION DE LA PAGE DE STATUT HTML ──────────────────────────────
+            ## Publiée dans la balise IPNS → accessible via https://ipfs.DOMAIN/ipns/NODEID/status.html
+            _HOSTNAME=$(myHostName 2>/dev/null || hostname -s)
+            _DATE_HR=$(date -u '+%Y-%m-%d %H:%M UTC')
+            _SWARM_SIZE=$(ls ~/.zen/tmp/swarm/ 2>/dev/null | wc -l)
+            _TUNNELS=$(ipfs p2p ls 2>/dev/null | grep "^/x/" | \
+                awk '{sub(/\/x\//,"",$1); split($1,a,"-"); print a[1]}' | sort -u | \
+                sed 's/.*/<li>& ✓<\/li>/')
+            _SERVICES=$(ls ~/.zen/tmp/${IPFSNODEID}/x_*.sh 2>/dev/null | \
+                xargs -I{} basename {} | sed 's/^x_//;s/\.sh$//' | \
+                sed 's/.*/<li class="svc">& 🟢<\/li>/')
+            [[ -z "$_SERVICES" ]] && _SERVICES="<li><em>Aucun service publié</em></li>"
+            _CAPTAIN=$(grep -o '"captain":"[^"]*"' ~/.zen/tmp/${IPFSNODEID}/12345.json 2>/dev/null | cut -d'"' -f4)
+            _UPLANET=$(grep -o '"UPLANETG1PUB":"[^"]*"' ~/.zen/tmp/${IPFSNODEID}/12345.json 2>/dev/null | cut -d'"' -f4 | head -c 16)
+            _RISK=$(grep -o '"risk_level":"[^"]*"' ~/.zen/tmp/${IPFSNODEID}/12345.json 2>/dev/null | cut -d'"' -f4)
+            case "$_RISK" in GREEN) _RISK_COLOR="#27ae60";; YELLOW) _RISK_COLOR="#f39c12";; ORANGE) _RISK_COLOR="#e67e22";; RED) _RISK_COLOR="#e74c3c";; *) _RISK_COLOR="#95a5a6";; esac
+
+            cat > ~/.zen/tmp/${IPFSNODEID}/status.html << STATUSEOF
+<!DOCTYPE html><html lang="fr"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>⚙️ ${_HOSTNAME} — Astroport Status</title>
+<style>
+:root{--bg:#0d1117;--fg:#c9d1d9;--card:#161b22;--border:#30363d;--accent:#58a6ff;--green:#3fb950;--yellow:#d29922;--red:#f85149}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:'Segoe UI',system-ui,sans-serif;padding:1.5rem;min-height:100vh}
+h1{color:var(--accent);font-size:1.6rem;margin-bottom:.3rem}
+.sub{opacity:.6;font-size:.85rem;margin-bottom:1.5rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1.2rem}
+.card h2{font-size:.95rem;text-transform:uppercase;letter-spacing:.05em;opacity:.7;margin-bottom:.8rem}
+.badge{display:inline-block;padding:.2rem .6rem;border-radius:4px;font-size:.8rem;font-weight:600;background:${_RISK_COLOR};color:#fff}
+.pill{display:inline-block;padding:.15rem .5rem;border-radius:3px;font-size:.78rem;background:var(--border);margin:.15rem .1rem}
+ul{list-style:none;padding:0}
+li{padding:.25rem 0;border-bottom:1px solid var(--border);font-size:.88rem}
+li:last-child{border-bottom:none}
+li.svc::before{content:"⬡ "}
+.id{font-family:monospace;font-size:.78rem;word-break:break-all;opacity:.8}
+.footer{margin-top:2rem;text-align:center;font-size:.75rem;opacity:.4}
+a{color:var(--accent);text-decoration:none}
+</style></head>
+<body>
+<h1>⚙️ ${_HOSTNAME}</h1>
+<div class="sub">Astroport.ONE · IPFS Node · Mis à jour le ${_DATE_HR}</div>
+<div class="grid">
+
+<div class="card">
+<h2>🪪 Identité</h2>
+<ul>
+<li>Captain : <strong>${_CAPTAIN}</strong></li>
+<li>UPlanet : <span class="pill">${_UPLANET}…</span></li>
+<li>Santé éco : <span class="badge">${_RISK:-N/A}</span></li>
+<li class="id">IPFS ID : ${IPFSNODEID}</li>
+</ul>
+</div>
+
+<div class="card">
+<h2>🌐 Réseau</h2>
+<ul>
+<li>Stations swarm connues : <strong>${_SWARM_SIZE}</strong></li>
+<li>Tunnels IPFS actifs : <strong>$(ipfs p2p ls 2>/dev/null | grep -c "^/x/" || echo 0)</strong></li>
+<li>Pairs IPFS : <strong>$(ipfs swarm peers 2>/dev/null | wc -l)</strong></li>
+</ul>
+</div>
+
+<div class="card">
+<h2>🐉 Services publiés (DRAGON)</h2>
+<ul>${_SERVICES}</ul>
+</div>
+
+<div class="card">
+<h2>🔌 Tunnels IPFS actifs</h2>
+<ul>$([ -n "$_TUNNELS" ] && echo "$_TUNNELS" || echo '<li><em>Aucun tunnel actif</em></li>')</ul>
+</div>
+
+</div>
+<div class="footer">
+<p>Balise IPNS : <a href="/ipns/${IPFSNODEID}/">/ipns/${IPFSNODEID}/</a> ·
+<a href="./12345.json">12345.json</a> ·
+<a href="https://github.com/papiche/Astroport.ONE">Astroport.ONE</a></p>
+</div>
+</body></html>
+STATUSEOF
+            ## ──────────────────────────────────────────────────────────────────────
+
             MYCACHE=$(ipfs --timeout 180s add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1)
             if [[ -n "$MYCACHE" ]]; then
                 echo "=== PUBLISHING NODE BALISE: /ipfs/${MYCACHE} ==="

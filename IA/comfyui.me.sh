@@ -16,10 +16,12 @@ ME="${0##*/}"
 # Configuration
 COMFYUI_PORT=8188
 SERVICE_NAME="comfyui"
-REMOTE_USER="frd"
-REMOTE_HOST="scorpio.copylaradio.com"
-REMOTE_PORT_IPV4=2122  # Port for IPv4 NAT access
-REMOTE_PORT_IPV6=22    # Port for direct IPv6 access
+## Passerelle SSH — configurable dans ~/.zen/Astroport.ONE/.env
+## (my.sh source déjà .env donc SWARM_REMOTE_* est disponible ici)
+REMOTE_HOST="${SWARM_REMOTE_HOST:-scorpio.copylaradio.com}"
+REMOTE_USER="${SWARM_REMOTE_USER:-frd}"
+REMOTE_PORT_IPV4="${SWARM_REMOTE_PORT_IPV4:-2122}"   # Port NAT IPv4
+REMOTE_PORT_IPV6="${SWARM_REMOTE_PORT_IPV6:-22}"    # Port SSH direct IPv6
 SSH_OPTIONS="-fN -L 127.0.0.1:$COMFYUI_PORT:127.0.0.1:$COMFYUI_PORT"
 
 # Colors for output

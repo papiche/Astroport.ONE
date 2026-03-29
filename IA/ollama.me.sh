@@ -14,10 +14,12 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 # Configuration
 OLLAMA_PORT=11434
 SERVICE_NAME="ollama"
-REMOTE_USER="frd"
-REMOTE_HOST="scorpio.copylaradio.com"
-REMOTE_PORT_IPV4=2122  # Port for IPv4 NAT access
-REMOTE_PORT_IPV6=22    # Port for direct IPv6 access
+## Passerelle SSH — configurable dans ~/.zen/Astroport.ONE/.env
+## (my.sh source déjà .env donc SWARM_REMOTE_* est disponible ici)
+REMOTE_HOST="${SWARM_REMOTE_HOST:-scorpio.copylaradio.com}"
+REMOTE_USER="${SWARM_REMOTE_USER:-frd}"
+REMOTE_PORT_IPV4="${SWARM_REMOTE_PORT_IPV4:-2122}"   # Port NAT IPv4
+REMOTE_PORT_IPV6="${SWARM_REMOTE_PORT_IPV6:-22}"    # Port SSH direct IPv6
 # On détecte l'IP du bridge docker (généralement 172.17.0.1)
 DOCKER_BRIDGE_IP=$(ip addr show docker0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}' || echo "172.17.0.1")
 # Double tunnel : 

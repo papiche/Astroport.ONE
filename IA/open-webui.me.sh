@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
-## Perplexica Swarm Connector
-## Checks for local Perplexica API on port 3002
+## Open WebUI Swarm Connector
+## Checks for local Open WebUI on port 8000
 ## Else try SSH tunnel to scorpio (IPv6/IPv4)
 ## Finally fallback to IPFS P2P swarm discovery
 ################################################################################
@@ -12,15 +12,15 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/../tools/my.sh" 2>/dev/null || true
 
 # Configuration
-PERPLEXICA_PORT=3002
-SERVICE_NAME="perplexica"
+OPENWEBUI_PORT=8000
+SERVICE_NAME="open-webui"
 ## Passerelle SSH — configurable dans ~/.zen/Astroport.ONE/.env
 ## (my.sh source déjà .env donc SWARM_REMOTE_* est disponible ici)
 REMOTE_HOST="${SWARM_REMOTE_HOST:-scorpio.copylaradio.com}"
 REMOTE_USER="${SWARM_REMOTE_USER:-frd}"
 REMOTE_PORT_IPV4="${SWARM_REMOTE_PORT_IPV4:-2122}"   # Port NAT IPv4
 REMOTE_PORT_IPV6="${SWARM_REMOTE_PORT_IPV6:-22}"    # Port SSH direct IPv6
-SSH_OPTIONS="-fN -L 127.0.0.1:$PERPLEXICA_PORT:127.0.0.1:$PERPLEXICA_PORT"
+SSH_OPTIONS="-fN -L 127.0.0.1:$OPENWEBUI_PORT:127.0.0.1:$OPENWEBUI_PORT"
 
 # Colors for output
 RED='\033[0;31m'
@@ -40,7 +40,7 @@ STATUS_FILE="$HOME/.zen/tmp/${SERVICE_NAME}_connection.status"
 
 print_header() {
     echo -e "${BOLD}${CYAN}╔══════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BOLD}${CYAN}║${NC}  ${BOLD}${SERVICE_NAME^^} Connection Manager${NC}  (port $PERPLEXICA_PORT)     ${BOLD}${CYAN}║${NC}"
+    echo -e "${BOLD}${CYAN}║${NC}  ${BOLD}Open WebUI Connection Manager${NC}  (port $OPENWEBUI_PORT)      ${BOLD}${CYAN}║${NC}"
     echo -e "${BOLD}${CYAN}╚══════════════════════════════════════════════════════╝${NC}"
 }
 
@@ -64,62 +64,48 @@ save_connection_status() {
     echo "CONNECTION_TYPE=$conn_type" > "$STATUS_FILE"
     echo "CONNECTION_DETAILS=$details" >> "$STATUS_FILE"
     echo "CONNECTION_TIME=$(date -Iseconds)" >> "$STATUS_FILE"
-    echo "CONNECTION_PORT=$PERPLEXICA_PORT" >> "$STATUS_FILE"
-}
-
-get_connection_status() {
-    if [[ -f "$STATUS_FILE" ]]; then
-        source "$STATUS_FILE"
-        echo "$CONNECTION_TYPE"
-    else
-        echo "UNKNOWN"
-    fi
+    echo "CONNECTION_PORT=$OPENWEBUI_PORT" >> "$STATUS_FILE"
 }
 
 ########################################################
 ## Detection Functions
 ########################################################
 
-# Check if port is open (silent mode available)
 check_port() {
     local silent="${1:-false}"
-    if netstat -tulnp 2>/dev/null | grep ":$PERPLEXICA_PORT " >/dev/null; then
-        [[ "$silent" != "true" ]] && echo "Port $PERPLEXICA_PORT is open."
+    if netstat -tulnp 2>/dev/null | grep ":$OPENWEBUI_PORT " >/dev/null || \
+       ss -tln 2>/dev/null | grep -qw ":$OPENWEBUI_PORT"; then
+        [[ "$silent" != "true" ]] && echo "Port $OPENWEBUI_PORT is open."
         return 0
     else
-        [[ "$silent" != "true" ]] && echo "Port $PERPLEXICA_PORT is not available."
+        [[ "$silent" != "true" ]] && echo "Port $OPENWEBUI_PORT is not available."
         return 1
     fi
 }
 
-# Test Perplexica API connection (silent mode available)
 test_api() {
     local silent="${1:-false}"
-    [[ "$silent" != "true" ]] && echo "Testing Perplexica API on port $PERPLEXICA_PORT..."
-    RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$PERPLEXICA_PORT/api/providers" --connect-timeout 5)
+    [[ "$silent" != "true" ]] && echo "Testing Open WebUI API on port $OPENWEBUI_PORT..."
+    RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$OPENWEBUI_PORT/api/config" --connect-timeout 5)
     if [ "$RESPONSE" == "200" ]; then
-        [[ "$silent" != "true" ]] && echo "Perplexica API responding correctly."
+        [[ "$silent" != "true" ]] && echo "Open WebUI responding correctly."
         return 0
     else
-        [[ "$silent" != "true" ]] && echo "Perplexica API not responding (HTTP $RESPONSE)."
+        [[ "$silent" != "true" ]] && echo "Open WebUI not responding (HTTP $RESPONSE)."
         return 1
     fi
 }
 
-# Check if LOCAL service is running
 check_local_service() {
     local silent="${1:-false}"
-    # Check if perplexica is running locally (not via tunnel)
-    if pgrep -f "perplexica" >/dev/null 2>&1 || \
-       docker ps 2>/dev/null | grep -q "perplexica" || \
-       systemctl is-active --quiet perplexica 2>/dev/null; then
-        [[ "$silent" != "true" ]] && print_status "OK" "Local Perplexica service detected"
+    if docker ps 2>/dev/null | grep -q "open-webui" || \
+       pgrep -f "open.webui" >/dev/null 2>&1; then
+        [[ "$silent" != "true" ]] && print_status "OK" "Local Open WebUI service detected"
         return 0
     fi
     return 1
 }
 
-# Check IPv6 connectivity
 check_ipv6_available() {
     local silent="${1:-false}"
     local ipv6_addr
@@ -134,7 +120,6 @@ check_ipv6_available() {
     return 1
 }
 
-# Check IPv4 connectivity
 check_ipv4_available() {
     local silent="${1:-false}"
     local ipv4_addr
@@ -149,10 +134,9 @@ check_ipv4_available() {
     return 1
 }
 
-# Check if SSH tunnel is active
 check_ssh_tunnel_active() {
     local silent="${1:-false}"
-    local pid=$(lsof -t -i :$PERPLEXICA_PORT 2>/dev/null)
+    local pid=$(lsof -t -i :$OPENWEBUI_PORT 2>/dev/null)
     if [[ -n "$pid" ]]; then
         local proc_info=$(ps -p $pid -o comm= 2>/dev/null)
         if [[ "$proc_info" == "ssh" ]]; then
@@ -163,7 +147,6 @@ check_ssh_tunnel_active() {
     return 1
 }
 
-# Check IPFS P2P connections
 check_p2p_connections() {
     local silent="${1:-false}"
     local p2p_conns=$(ipfs p2p ls 2>/dev/null | grep "/x/${SERVICE_NAME}" | wc -l)
@@ -174,7 +157,6 @@ check_p2p_connections() {
     return 1
 }
 
-# Count available P2P nodes
 count_p2p_nodes() {
     local count=0
     for script in ~/.zen/tmp/swarm/*/x_${SERVICE_NAME}.sh; do
@@ -188,12 +170,10 @@ count_p2p_nodes() {
 ## Connection Functions
 ########################################################
 
-# Establish SSH tunnel
 establish_ssh_tunnel() {
-    local protocol="${1:-auto}"  # auto, ipv6, ipv4
-    
+    local protocol="${1:-auto}"
     echo -e "\n${BOLD}Establishing SSH tunnel...${NC}"
-    
+
     if [[ "$protocol" == "auto" || "$protocol" == "ipv6" ]]; then
         if check_ipv6_available "true"; then
             echo "Trying IPv6 connection..."
@@ -209,7 +189,7 @@ establish_ssh_tunnel() {
         fi
         [[ "$protocol" == "ipv6" ]] && return 1
     fi
-    
+
     if [[ "$protocol" == "auto" || "$protocol" == "ipv4" ]]; then
         if check_ipv4_available "true"; then
             echo "Trying IPv4 connection..."
@@ -224,15 +204,14 @@ establish_ssh_tunnel() {
             fi
         fi
     fi
-    
+
     print_status "FAIL" "Failed to establish SSH tunnel"
     return 1
 }
 
-# Close SSH tunnel
 close_ssh_tunnel() {
     local silent="${1:-false}"
-    local pid=$(lsof -t -i :$PERPLEXICA_PORT 2>/dev/null)
+    local pid=$(lsof -t -i :$OPENWEBUI_PORT 2>/dev/null)
     if [[ -n "$pid" ]]; then
         local proc_info=$(ps -p $pid -o comm= 2>/dev/null)
         if [[ "$proc_info" == "ssh" ]]; then
@@ -246,85 +225,35 @@ close_ssh_tunnel() {
     return 1
 }
 
-# List available P2P nodes with selection numbers
-list_p2p_nodes() {
-    local nodes=()
-    local node_ids=()
-    
-    # Collect available nodes
-    for script in ~/.zen/tmp/swarm/*/x_${SERVICE_NAME}.sh; do
-        if [[ -f "$script" ]]; then
-            nodes+=("$script")
-            node_ids+=($(basename $(dirname "$script")))
-        fi
-    done
-    
-    # Add local node if available
-    if [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh ]]; then
-        nodes+=("$HOME/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh")
-        node_ids+=("$IPFSNODEID")
-    fi
-    
-    if [[ ${#nodes[@]} -eq 0 ]]; then
-        return 1
-    fi
-    
-    echo -e "\n${BOLD}Available P2P nodes:${NC}\n"
-    for i in "${!node_ids[@]}"; do
-        local idx=$((i + 1))
-        local node_id="${node_ids[$i]}"
-        local script="${nodes[$i]}"
-        local myipfs_file=$(dirname "$script")/myIPFS.txt
-        local gateway=""
-        [[ -f "$myipfs_file" ]] && gateway=$(cat "$myipfs_file")
-        
-        # Mark local node
-        local local_marker=""
-        [[ "$node_id" == "$IPFSNODEID" ]] && local_marker=" ${GREEN}(local)${NC}"
-        
-        echo -e "  ${CYAN}[$idx]${NC} ${node_id:0:20}...${local_marker}"
-        [[ -n "$gateway" ]] && echo -e "      └─ $gateway"
-    done
-    
-    # Return node count
-    echo "${#nodes[@]}"
-}
-
-# Connect via IPFS P2P swarm with node selection
 connect_via_swarm() {
     local target="${1:-}"
-    
     echo -e "\n${BOLD}Connecting via IPFS P2P swarm...${NC}"
-    
+
     local nodes=()
     local node_ids=()
-    
-    # Collect available nodes
+
     for script in ~/.zen/tmp/swarm/*/x_${SERVICE_NAME}.sh; do
         if [[ -f "$script" ]]; then
             nodes+=("$script")
             node_ids+=($(basename $(dirname "$script")))
         fi
     done
-    
-    # Add local node if available
+
     if [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh ]]; then
         nodes+=("$HOME/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh")
         node_ids+=("$IPFSNODEID")
     fi
-    
+
     if [[ ${#nodes[@]} -eq 0 ]]; then
         print_status "FAIL" "No ${SERVICE_NAME} nodes found in swarm"
         return 1
     fi
-    
+
     local selected_script=""
     local selected_node=""
-    
-    # Handle different target specifications
+
     if [[ -n "$target" ]]; then
         case "$target" in
-            # Auto/random selection
             "auto"|"random"|"AUTO"|"RANDOM")
                 local shuffled=($(printf '%s\n' "${!nodes[@]}" | sort -R))
                 for idx in "${shuffled[@]}"; do
@@ -344,7 +273,6 @@ connect_via_swarm() {
                 print_status "FAIL" "No working nodes available"
                 return 1
                 ;;
-            # Numeric selection (1, 2, 3...)
             [0-9]|[0-9][0-9])
                 local idx=$((target - 1))
                 if [[ $idx -ge 0 && $idx -lt ${#nodes[@]} ]]; then
@@ -355,7 +283,6 @@ connect_via_swarm() {
                     return 1
                 fi
                 ;;
-            # Node ID match (partial or full)
             *)
                 for i in "${!node_ids[@]}"; do
                     if [[ "${node_ids[$i]}" == "$target" || "${node_ids[$i]}" == *"$target"* ]]; then
@@ -366,7 +293,6 @@ connect_via_swarm() {
                 done
                 if [[ -z "$selected_script" ]]; then
                     print_status "FAIL" "Node not found: $target"
-                    echo -e "\nAvailable nodes:"
                     for i in "${!node_ids[@]}"; do
                         echo -e "  [$((i+1))] ${node_ids[$i]:0:30}..."
                     done
@@ -375,41 +301,27 @@ connect_via_swarm() {
                 ;;
         esac
     else
-        # No target specified - show selection if multiple nodes
         if [[ ${#nodes[@]} -gt 1 ]]; then
             echo -e "\n${BOLD}Available P2P nodes:${NC}\n"
             for i in "${!node_ids[@]}"; do
-                local idx=$((i + 1))
                 local node_id="${node_ids[$i]}"
-                local script="${nodes[$i]}"
-                local myipfs_file=$(dirname "$script")/myIPFS.txt
+                local myipfs_file=$(dirname "${nodes[$i]}")/myIPFS.txt
                 local gateway=""
                 [[ -f "$myipfs_file" ]] && gateway=$(cat "$myipfs_file")
-                
                 local local_marker=""
                 [[ "$node_id" == "$IPFSNODEID" ]] && local_marker=" ${GREEN}(local)${NC}"
-                
-                echo -e "  ${CYAN}[$idx]${NC} ${node_id:0:20}...${local_marker}"
+                echo -e "  ${CYAN}[$((i+1))]${NC} ${node_id:0:20}...${local_marker}"
                 [[ -n "$gateway" ]] && echo -e "      └─ $gateway"
             done
-            
             echo ""
             echo -e "${YELLOW}Tip:${NC} Use 'P2P <number>' or 'P2P <node_id>' to select"
-            echo -e "     Use 'P2P auto' for random selection"
             echo ""
-            
-            # Default to first node
             echo -e "Connecting to first available node..."
-            selected_script="${nodes[0]}"
-            selected_node="${node_ids[0]}"
-        else
-            # Only one node available
-            selected_script="${nodes[0]}"
-            selected_node="${node_ids[0]}"
         fi
+        selected_script="${nodes[0]}"
+        selected_node="${node_ids[0]}"
     fi
-    
-    # Connect to selected node
+
     if [[ -n "$selected_script" ]]; then
         echo "Connecting to: $selected_node"
         if bash "$selected_script" 2>/dev/null; then
@@ -428,19 +340,15 @@ connect_via_swarm() {
             return 1
         fi
     fi
-    
     return 1
 }
 
-# Close IPFS P2P connections
 close_ipfs_p2p() {
     local silent="${1:-false}"
     local closed=0
-    
     for conn in $(ipfs p2p ls 2>/dev/null | grep "/x/${SERVICE_NAME}" | awk '{print $1}'); do
         ipfs p2p close -p "$conn" 2>/dev/null && ((closed++))
     done
-    
     if [[ $closed -gt 0 ]]; then
         [[ "$silent" != "true" ]] && print_status "OK" "Closed $closed P2P connection(s)"
         rm -f "$STATUS_FILE"
@@ -454,176 +362,84 @@ close_ipfs_p2p() {
 ## Command Handlers
 ########################################################
 
-# STATUS - Show current connection status
 cmd_status() {
     print_header
     echo -e "\n${BOLD}Current Connection Status:${NC}"
-    
-    local active_type="NONE"
-    local active_details=""
-    local connection_time=""
-    
-    # Check what's currently active - ORDER MATTERS!
-    # Priority: SSH tunnel > P2P > Local (most specific first)
+
     if check_port "true"; then
-        # 1. Check SSH tunnel first (process on port is 'ssh')
+        local active_type="UNKNOWN"
+        local active_details=""
+        local connection_time=""
+
         if check_ssh_tunnel_active "true"; then
             active_type="SSH"
-            if [[ -f "$STATUS_FILE" ]]; then
-                source "$STATUS_FILE"
-                active_details="$CONNECTION_DETAILS"
-                connection_time="$CONNECTION_TIME"
-            fi
-        # 2. Check P2P connections (ipfs p2p ls shows active connections)
+            [[ -f "$STATUS_FILE" ]] && source "$STATUS_FILE" && active_details="$CONNECTION_DETAILS" && connection_time="$CONNECTION_TIME"
         elif check_p2p_connections "true"; then
             active_type="P2P"
             if [[ -f "$STATUS_FILE" ]]; then
-                source "$STATUS_FILE"
-                active_details="$CONNECTION_DETAILS"
-                connection_time="$CONNECTION_TIME"
+                source "$STATUS_FILE"; active_details="$CONNECTION_DETAILS"; connection_time="$CONNECTION_TIME"
             else
-                # Get node from active P2P connection
                 active_details=$(ipfs p2p ls 2>/dev/null | grep "/x/${SERVICE_NAME}" | awk '{print $3}' | head -1)
             fi
-        # 3. Local service (fallback - only if no tunnel or P2P)
         elif check_local_service "true"; then
             active_type="LOCAL"
-            active_details="Local service (Docker/systemd)"
-        else
-            # Port is open but we don't know what's using it
-            active_type="UNKNOWN"
-            active_details="Port open but source unknown"
+            active_details="Local service (open-webui)"
         fi
-        
+
         if test_api "true"; then
             echo -e "\n  ${GREEN}●${NC} ${BOLD}CONNECTED${NC} via ${CYAN}$active_type${NC}"
             [[ -n "$active_details" ]] && echo -e "    └─ $active_details"
-            echo -e "    └─ API: ${GREEN}http://localhost:$PERPLEXICA_PORT${NC}"
+            echo -e "    └─ UI: ${GREEN}http://localhost:$OPENWEBUI_PORT${NC}"
             [[ -n "$connection_time" ]] && echo -e "    └─ Since: $connection_time"
             return 0
         fi
     fi
-    
+
     echo -e "\n  ${RED}●${NC} ${BOLD}DISCONNECTED${NC}"
-    echo -e "    └─ No active ${SERVICE_NAME} connection"
+    echo -e "    └─ No active Open WebUI connection"
     return 1
 }
 
-# SCAN - Detect all available connections
 cmd_scan() {
     print_header
     echo -e "\n${BOLD}Scanning Available Connections:${NC}\n"
-    
-    # 1. LOCAL
+
     echo -e "${BOLD}[LOCAL]${NC}"
-    if check_local_service "true"; then
-        print_status "OK" "Local ${SERVICE_NAME} service available"
-    else
-        print_status "FAIL" "No local ${SERVICE_NAME} service"
-    fi
-    
-    # 2. SSH
-    echo -e "\n${BOLD}[SSH] ${NC}→ $REMOTE_HOST"
-    local ssh_available=false
-    
-    echo -n "  IPv6: "
-    if check_ipv6_available "true"; then
-        echo -e "${GREEN}Available${NC} (port $REMOTE_PORT_IPV6)"
-        ssh_available=true
-    else
-        echo -e "${RED}Not available${NC}"
-    fi
-    
-    echo -n "  IPv4: "
-    if check_ipv4_available "true"; then
-        echo -e "${GREEN}Available${NC} (port $REMOTE_PORT_IPV4)"
-        ssh_available=true
-    else
-        echo -e "${RED}Not available${NC}"
-    fi
-    
-    local ssh_tunnel_active=false
-    if check_ssh_tunnel_active "true"; then
-        echo -e "  ${GREEN}●${NC} Tunnel currently ACTIVE"
-        ssh_tunnel_active=true
-        ssh_available=true  # If tunnel is active, SSH is available
-    fi
-    
-    # 3. IPFS P2P
+    check_local_service "true" && print_status "OK" "Local Open WebUI service available" || print_status "FAIL" "No local Open WebUI service"
+
+    echo -e "\n${BOLD}[SSH]${NC} → $REMOTE_HOST"
+    check_ipv6_available "true" && echo -e "  IPv6: ${GREEN}Available${NC}" || echo -e "  IPv6: ${RED}Not available${NC}"
+    check_ipv4_available "true" && echo -e "  IPv4: ${GREEN}Available${NC} (port $REMOTE_PORT_IPV4)" || echo -e "  IPv4: ${RED}Not available${NC}"
+    check_ssh_tunnel_active "true" && echo -e "  ${GREEN}●${NC} Tunnel currently ACTIVE"
+
     echo -e "\n${BOLD}[P2P]${NC} IPFS Swarm Nodes"
     local p2p_count=$(count_p2p_nodes)
-    local p2p_active=false
-    
     if [[ $p2p_count -gt 0 ]]; then
-        print_status "OK" "$p2p_count node(s) available:"
-        
-        # List nodes
+        print_status "OK" "$p2p_count node(s) available"
         for script in ~/.zen/tmp/swarm/*/x_${SERVICE_NAME}.sh; do
-            if [[ -f "$script" ]]; then
-                local node_id=$(basename $(dirname "$script"))
-                local myipfs_file=$(dirname "$script")/myIPFS.txt
-                local gateway=""
-                [[ -f "$myipfs_file" ]] && gateway=$(cat "$myipfs_file")
-                echo -e "    ├─ ${CYAN}$node_id${NC}"
-                [[ -n "$gateway" ]] && echo -e "    │  └─ $gateway"
-            fi
+            [[ -f "$script" ]] && echo -e "    ├─ ${CYAN}$(basename $(dirname "$script"))${NC}"
         done
-        
-        if [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh ]]; then
-            echo -e "    └─ ${CYAN}$IPFSNODEID${NC} ${GREEN}(local)${NC}"
-        fi
     else
         print_status "FAIL" "No P2P nodes found"
     fi
-    
-    if check_p2p_connections "true"; then
-        local active_p2p=$(ipfs p2p ls 2>/dev/null | grep "/x/${SERVICE_NAME}" | awk '{print $3}' | head -1)
-        echo -e "  ${GREEN}●${NC} P2P currently ACTIVE: $active_p2p"
-        p2p_active=true
-    fi
-    
-    # Summary - consider active connections as available
-    local local_avail=$(check_local_service true && echo Y || echo N)
-    local ssh_avail=$([[ "$ssh_available" == "true" ]] && echo Y || echo N)
-    local p2p_avail=$([[ $p2p_count -gt 0 || "$p2p_active" == "true" ]] && echo Y || echo N)
-    
-    echo -e "\n${BOLD}Summary:${NC}"
-    echo -e "  Available methods: LOCAL=$local_avail SSH=$ssh_avail P2P=$p2p_avail"
+    check_p2p_connections "true" && echo -e "  ${GREEN}●${NC} P2P currently ACTIVE"
 }
 
-# HELP - Show usage
 cmd_help() {
     print_header
     echo -e "\n${BOLD}Usage:${NC} $(basename $0) [COMMAND] [OPTIONS]\n"
-    
     echo -e "${BOLD}Commands:${NC}"
     echo -e "  ${CYAN}(none)${NC}       Auto-connect (LOCAL → SSH → P2P)"
     echo -e "  ${CYAN}STATUS${NC}       Show current connection status"
     echo -e "  ${CYAN}SCAN${NC}         Detect all available connections"
     echo -e "  ${CYAN}LOCAL${NC}        Connect via local service"
     echo -e "  ${CYAN}SSH${NC}          Connect via SSH tunnel (auto IPv6/IPv4)"
-    echo -e "  ${CYAN}SSH6${NC}         Connect via SSH tunnel (IPv6 only)"
-    echo -e "  ${CYAN}SSH4${NC}         Connect via SSH tunnel (IPv4 only)"
-    echo -e "  ${CYAN}P2P${NC}          Connect via IPFS P2P (show nodes if multiple)"
-    echo -e "  ${CYAN}P2P <n>${NC}      Connect to node by number (1, 2, 3...)"
-    echo -e "  ${CYAN}P2P <id>${NC}     Connect to node by ID (partial match)"
+    echo -e "  ${CYAN}P2P${NC}          Connect via IPFS P2P swarm"
+    echo -e "  ${CYAN}P2P <n>${NC}      Connect to node by number"
     echo -e "  ${CYAN}P2P auto${NC}     Random node selection"
     echo -e "  ${CYAN}OFF${NC}          Disconnect all connections"
     echo -e "  ${CYAN}TEST${NC}         Test current API connection"
-    echo -e "  ${CYAN}HELP${NC}         Show this help message"
-    
-    echo -e "\n${BOLD}P2P Examples:${NC}"
-    echo -e "  $(basename $0) P2P               # List nodes, connect to first"
-    echo -e "  $(basename $0) P2P 1             # Connect to node #1"
-    echo -e "  $(basename $0) P2P 2             # Connect to node #2"
-    echo -e "  $(basename $0) P2P 12D3KooW      # Connect by partial ID"
-    echo -e "  $(basename $0) P2P auto          # Random selection"
-    
-    echo -e "\n${BOLD}General Examples:${NC}"
-    echo -e "  $(basename $0)                   # Auto-connect"
-    echo -e "  $(basename $0) SCAN              # See all available options"
-    echo -e "  $(basename $0) SSH               # Force SSH connection"
-    echo -e "  $(basename $0) OFF               # Disconnect"
+    echo -e "  ${CYAN}HELP${NC}         Show this help"
 }
 
 ########################################################
@@ -631,100 +447,46 @@ cmd_help() {
 ########################################################
 
 case "${1^^}" in
-    "STATUS"|"ST")
-        cmd_status
-        exit $?
-        ;;
-    "SCAN"|"DETECT"|"LIST")
-        cmd_scan
-        exit 0
-        ;;
-    "HELP"|"-H"|"--HELP")
-        cmd_help
-        exit 0
-        ;;
+    "STATUS"|"ST")   cmd_status; exit $? ;;
+    "SCAN"|"DETECT"|"LIST") cmd_scan; exit 0 ;;
+    "HELP"|"-H"|"--HELP")   cmd_help; exit 0 ;;
     "OFF"|"DISCONNECT"|"CLOSE")
-        print_header
-        echo -e "\n${BOLD}Disconnecting...${NC}"
-        close_ssh_tunnel
-        close_ipfs_p2p
-        exit 0
-        ;;
-    "TEST")
-        test_api
-        exit $?
-        ;;
+        print_header; echo -e "\n${BOLD}Disconnecting...${NC}"
+        close_ssh_tunnel; close_ipfs_p2p; exit 0 ;;
+    "TEST")   test_api; exit $? ;;
     "LOCAL")
-        print_header
-        echo -e "\n${BOLD}Connecting via LOCAL...${NC}"
+        print_header; echo -e "\n${BOLD}Connecting via LOCAL...${NC}"
         if check_local_service && check_port "true" && test_api "true"; then
             save_connection_status "LOCAL" "Local service"
-            print_status "OK" "Connected to local ${SERVICE_NAME}"
-            echo -e "API ready at ${GREEN}http://localhost:$PERPLEXICA_PORT${NC}"
+            print_status "OK" "Connected to local Open WebUI"
+            echo -e "UI ready at ${GREEN}http://localhost:$OPENWEBUI_PORT${NC}"
             exit 0
         fi
-        print_status "FAIL" "Local ${SERVICE_NAME} not available"
-        exit 1
-        ;;
+        print_status "FAIL" "Local Open WebUI not available"; exit 1 ;;
     "SSH")
         print_header
-        if establish_ssh_tunnel "auto"; then
-            echo -e "API ready at ${GREEN}http://localhost:$PERPLEXICA_PORT${NC}"
-            exit 0
-        fi
-        exit 1
-        ;;
+        establish_ssh_tunnel "auto" && echo -e "UI ready at ${GREEN}http://localhost:$OPENWEBUI_PORT${NC}" && exit 0; exit 1 ;;
     "SSH6"|"IPV6")
         print_header
-        if establish_ssh_tunnel "ipv6"; then
-            echo -e "API ready at ${GREEN}http://localhost:$PERPLEXICA_PORT${NC}"
-            exit 0
-        fi
-        exit 1
-        ;;
+        establish_ssh_tunnel "ipv6" && echo -e "UI ready at ${GREEN}http://localhost:$OPENWEBUI_PORT${NC}" && exit 0; exit 1 ;;
     "SSH4"|"IPV4")
         print_header
-        if establish_ssh_tunnel "ipv4"; then
-            echo -e "API ready at ${GREEN}http://localhost:$PERPLEXICA_PORT${NC}"
-            exit 0
-        fi
-        exit 1
-        ;;
+        establish_ssh_tunnel "ipv4" && echo -e "UI ready at ${GREEN}http://localhost:$OPENWEBUI_PORT${NC}" && exit 0; exit 1 ;;
     "P2P"|"SWARM"|"IPFS")
         print_header
-        if connect_via_swarm "$2"; then
-            echo -e "API ready at ${GREEN}http://localhost:$PERPLEXICA_PORT${NC}"
-            exit 0
-        fi
-        exit 1
-        ;;
+        connect_via_swarm "$2" && echo -e "UI ready at ${GREEN}http://localhost:$OPENWEBUI_PORT${NC}" && exit 0; exit 1 ;;
     "")
-        # Auto-connect mode (default behavior)
-        # Check if already available
         if check_port "true" && test_api "true"; then
-            echo "${SERVICE_NAME^} API ready at http://localhost:$PERPLEXICA_PORT"
-            exit 0
+            echo "Open WebUI ready at http://localhost:$OPENWEBUI_PORT"; exit 0
         fi
-        
-        # Try SSH tunnel first
         if establish_ssh_tunnel "auto"; then
-            echo "${SERVICE_NAME^} API ready via SSH at http://localhost:$PERPLEXICA_PORT"
-            exit 0
+            echo "Open WebUI ready via SSH at http://localhost:$OPENWEBUI_PORT"; exit 0
         fi
-        
-        # Fallback to IPFS P2P swarm
         echo "SSH unavailable, trying IPFS P2P swarm..."
         if connect_via_swarm; then
-            echo "${SERVICE_NAME^} API ready via P2P at http://localhost:$PERPLEXICA_PORT"
-            exit 0
+            echo "Open WebUI ready via P2P at http://localhost:$OPENWEBUI_PORT"; exit 0
         fi
-        
-        echo "Could not establish connection to any ${SERVICE_NAME^} API."
-        exit 1
-        ;;
+        echo "Could not establish connection to any Open WebUI instance."; exit 1 ;;
     *)
-        echo "Unknown command: $1"
-        echo "Use '$(basename $0) HELP' for usage information."
-        exit 1
-        ;;
+        echo "Unknown command: $1"; echo "Use '$(basename $0) HELP' for usage."; exit 1 ;;
 esac

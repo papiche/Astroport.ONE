@@ -123,14 +123,19 @@ draw_ui() {
     for i in "${!map_names[@]}"; do
         if [ $i -eq $cursor ]; then line_start="${BOLD}${YELLOW}> "; line_end="${NC}"; else line_start="  "; line_end=""; fi
         
-        # La détection d'activité combine PROTOCOLE et PORT
-        # On cherche la ligne qui contient EXACTEMENT le protocole ET le port
-        local is_p2p_active=$(echo "$active_p2p" | grep -F "${map_protos[$i]}" | grep -F "${map_ports[$i]}" | head -n 1 | cut -d '/' -f 2)
+        # Détection IPFS : basée sur le protocole unique (inclut le NodeID)
+        # On vérifie que la ligne contient EXACTEMENT ce protocole ET ce port
+        local is_p2p_active=$(echo "$active_p2p" | grep -F "${map_protos[$i]}" | grep -F "tcp/${map_ports[$i]}" | head -n 1)
+        # Détection locale : port en écoute (service non-P2P ou tunnel déjà établi)
         local is_lsof=$(lsof -Pi :${map_ports[$i]} -sTCP:LISTEN -t 2>/dev/null)
-        local lsofsrc=$(lsof -Pi :${map_ports[$i]} -sTCP:LISTEN | awk 'NR==2 {print $1}')
+        local lsofsrc=$(lsof -Pi :${map_ports[$i]} -sTCP:LISTEN 2>/dev/null | awk 'NR==2 {print $1}')
 
-        if [[ -n "$is_p2p_active" || -n "$is_lsof" ]]; then
-            status="${GREEN}[ $is_p2p_active ACTIF $lsofsrc ]${NC}"
+        if [[ -n "$is_p2p_active" ]]; then
+            # Tunnel IPFS actif pour CE node spécifique (NodeID vérifié via protocole)
+            status="${GREEN}[  ACTIF ipfs  ]${NC}"
+        elif [[ -n "$is_lsof" ]]; then
+            # Port occupé localement mais PAS par un tunnel IPFS de ce node
+            status="${YELLOW}[ ACTIF $lsofsrc ]${NC}"
         else
             status="${RED}[  OFF  ]${NC}"
         fi
@@ -197,8 +202,9 @@ while $running; do
             if [[ "$port" != "????" ]]; then
                 ## Protocole et suffix selon le service détecté
                 case "$port" in
-                    6333)   proto="http";  suffix="/dashboard" ;;  # Qdrant
+                    6333)   proto="http";  suffix="/dashboard" ;;  # Qdrant dashboard
                     3001)   proto="https"; suffix="" ;;             # Webtop KasmVNC HTTPS
+                    3002)   proto="http";  suffix="" ;;             # Perplexica Search
                     8443)   proto="https"; suffix="" ;;             # NextCloud AIO admin
                     443)    proto="https"; suffix="" ;;             # HTTPS générique
                     *)      proto="http";  suffix="" ;;
