@@ -426,10 +426,10 @@ publish_service() {
 ##################################################################################
 # DÉTECTION ET PUBLICATION DES SERVICES (ai-company + standard)
 # Architecture des ports (voir firewall.sh pour la politique UFW) :
-#   NPM admin        : 81   (pas 8100 !)
-#   NextCloud Apache : 8001 (proxied NPM → cloud.DOMAIN — LiteLLM déplacé en 8010)
-#   Open WebUI       : 8000 (remplace openclaw)
-#   Perplexica       : 3002 (déplacé depuis 3001 pour éviter conflit Webtop)
+#   NPM admin        : 81
+#   NextCloud Apache : 8001 (proxied NPM → cloud.DOMAIN)
+#   Open WebUI       : 8000 (Interface web IA)
+#   Perplexica       : 3002
 #   Webtop           : 3000 HTTP | 3001 HTTPS — accès SSH tunnel recommandé
 ##################################################################################
 
@@ -437,17 +437,16 @@ publish_service() {
 # Paperclip (3100)
 publish_service 3100 "paperclip" "Paperclip AI Agents"
 
-# Open WebUI interface IA (8000) — remplace OpenClaw (plus actif, supporte Ollama natif)
+# Open WebUI interface IA (8000) — (supporte Ollama natif)
 publish_service 8000 "open-webui" "Open WebUI Interface IA"
 
 ## Port 8001 : NextCloud Apache uniquement (proxied NPM → cloud.DOMAIN)
-## LiteLLM est maintenant sur port 8010 (plus de conflit)
 if ss -tln 2>/dev/null | grep -q ":8001 "; then
     publish_service 8001 "nextcloud-app" "NextCloud Apache App (via NPM cloud.DOMAIN)"
 fi
 
-# --- NOT TO BE SHARED --- ollama proxy job for paperclip
-# LiteLLM proxy (8010) — port dédié ai-company 
+# --- NOT SHARED --- used locally as ollama proxy for paperclip
+# LiteLLM proxy (8010)
 # generate_p2p_service 8010 "litellm" "LiteLLM Proxy"
 
 # Qdrant vector database (6333) -- could be hidden too
@@ -465,14 +464,14 @@ SSHPORT=$(grep -E "^Port " /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' |
 [[ -z "$SSHPORT" ]] && SSHPORT=22
 publish_service "$SSHPORT" "ssh" "SSH Remote Access"
 
-# Nginx Proxy Manager admin (port 81, pas 8100)
+# Nginx Proxy Manager admin (port 81)
 publish_service 81 "npm" "Nginx Proxy Manager Admin"
 
 # NextCloud AIO admin setup (port 8443 — HTTPS auto-signé)
 publish_service 8443 "nextcloud-aio" "NextCloud AIO Admin Setup"
 
 ## ── Webtop KasmVNC (VDI) ────────────────────────────────────────────
-## ⚠️  Port 3001 = Webtop HTTPS (PAS Perplexica)
+## ⚠️  Port 3001 = Webtop HTTPS
 ## Accès recommandé via SSH tunnel :
 ##   ssh -L 3000:localhost:3000 user@HOST
 if docker ps --format '{{.Image}}' 2>/dev/null | grep -q 'linuxserver/webtop'; then
@@ -492,7 +491,7 @@ if docker ps 2>/dev/null | grep -q orpheus; then
     publish_service 5005 "orpheus" "Orpheus TTS"
 fi
 
-# Perplexica Search (3002 — déplacé depuis 3001 pour éviter conflit Webtop)
+# Perplexica Search (3002)
 if docker ps 2>/dev/null | grep -q perplexica; then
     publish_service 3002 "perplexica" "Perplexica Search"
 fi

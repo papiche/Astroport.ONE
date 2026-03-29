@@ -232,8 +232,9 @@ echo "#############################################"
 echo "######### VERIFICATION DOCKER & NODE   ######"
 echo "#############################################"
 DOCKER_OK=false; NPM_OK=false; TW_OK=false; DOCKER_COMPOSE_OK=false; DENO_OK=false
-docker --version 2>/dev/null && DOCKER_OK=true || echo "⚠️  Docker non disponible"
-docker compose version 2>/dev/null && DOCKER_COMPOSE_OK=true || echo "⚠️  Docker Compose non disponible"
+## Utiliser sg docker pour éviter de nécessiter newgrp (groupe activé sans nouveau shell interactif)
+sg docker -c "docker --version" 2>/dev/null && DOCKER_OK=true || echo "⚠️  Docker non disponible"
+sg docker -c "docker compose version" 2>/dev/null && DOCKER_COMPOSE_OK=true || echo "⚠️  Docker Compose non disponible"
 node --version 2>/dev/null && NPM_OK=true || echo "⚠️  Node.js non disponible"
 npm --version 2>/dev/null || echo "⚠️  NPM non disponible"
 tiddlywiki --version 2>/dev/null && TW_OK=true || echo "⚠️  TiddlyWiki non accessible (PATH?)"
@@ -245,7 +246,7 @@ echo "  Docker    : $($DOCKER_OK && echo '✅' || echo '❌')  | Compose : $($DO
 echo "  Node.js   : $($NPM_OK && echo '✅' || echo '❌')  | TW      : $($TW_OK && echo '✅' || echo '❌')  | Deno : $($DENO_OK && echo '✅' || echo '❌')"
 echo ""
 echo "  DOCKER STATUS:"
-docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null | head -10 || echo "  (aucun conteneur)"
+sg docker -c "docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'" 2>/dev/null | head -10 || echo "  (aucun conteneur)"
 echo "#############################################"
 
 ## Correct PDF restrictions for imagemagick
@@ -405,7 +406,7 @@ case "${INSTALL_PROFILE}" in
             echo "   → Vérifiez que Astroport.ONE est bien cloné"
         else
             echo "⏳ Démarrage NextCloud AIO (peut prendre 2-3 minutes)..."
-            docker compose -f "$_NC_COMPOSE" up -d 2>&1
+            sg docker -c "docker compose -f '$_NC_COMPOSE' up -d" 2>&1
             _nc_exit=$?
             if [[ $_nc_exit -eq 0 ]]; then
                 NEXTCLOUD_ACTIVE=true
@@ -590,7 +591,7 @@ echo
 echo "  PROFIL INSTALLÉ: ${INSTALL_PROFILE:-standard}"
 echo
 echo "  INFRASTRUCTURE (Docker) :"
-docker ps --format "    {{.Names}}: {{.Status}}" 2>/dev/null | head -12 || echo "    (aucun conteneur actif)"
+sg docker -c "docker ps --format '    {{.Names}}: {{.Status}}'" 2>/dev/null | head -12 || echo "    (aucun conteneur actif)"
 echo
 echo "  NODE.JS / NPM / DENO :"
 echo "    Node.js    $(node --version 2>/dev/null || echo '⚠️ non disponible')"
