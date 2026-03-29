@@ -49,8 +49,9 @@ done < ~/.zen/Astroport.ONE/ASCI_ASTROPORT.txt
 echo '#############################################################
 export PATH=$HOME/.local/bin:/usr/games:$PATH
 
-## Activate python env
-. $HOME/.astro/bin/activate
+## Activer le venv Python si disponible (créé par install.sh avec python3)
+[[ -s "$HOME/.astro/bin/activate" ]] && . "$HOME/.astro/bin/activate" \
+    || { echo "⚠️  ~/.astro/bin/activate absent — venv non créé"; }
 source $HOME/.zen/Astroport.ONE/tools/my.sh 2>/dev/null
 
 ## Affichage des clefs de la cooperative

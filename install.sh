@@ -184,8 +184,13 @@ fi
 
 echo "################################## ~/.astro/bin PYTHON ENV"
 cd $HOME
-[[ ! -s ~/.astro/bin/activate ]] && python -m venv .astro
-. ~/.astro/bin/activate
+## Ubuntu 22.04 : 'python' n'existe pas → utiliser python3
+if [[ ! -s ~/.astro/bin/activate ]]; then
+    python3 -m venv .astro \
+        && echo "✅ Python venv créé : ~/.astro" \
+        || echo "⚠️  Création venv échouée (python3 absent ?)"
+fi
+[[ -s ~/.astro/bin/activate ]] && . ~/.astro/bin/activate || echo "⚠️  ~/.astro/bin/activate absent — pip install sans venv"
 cd -
 
 echo "#####################################"
