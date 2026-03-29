@@ -362,7 +362,7 @@ echo -e "   ${YELLOW}  --health   ${NC}Rapport de santé complet"
 echo -e "\n${BOLD}④ Accéder à l'interface Paperclip :${NC}"
 echo -e "   ${CYAN}http://localhost:3100${NC}"
 echo -e "   ${CYAN}→ Créez vos agents, goals, tickets et routines via l'UI${NC}"
-
 echo -e "\n${BOLD}${GREEN}────────────────────────────────────────────────────────────${NC}"
 echo -e "${BOLD}Ordre recommandé :${NC}  ${YELLOW}bootstrap-ceo${NC} → ${YELLOW}onboard${NC} → ${YELLOW}configure-channels --all${NC} → ${CYAN}http://localhost:3100${NC}"
 echo -e "${BOLD}${GREEN}────────────────────────────────────────────────────────────${NC}\n"
+echo -e "AIDE : xdg-open ~/.zen/Astroport.ONE/docs/paperclip_uplanet_setup_guide.html"
