@@ -140,10 +140,10 @@ get_fast_service_status() {
     local open_webui_active="false"
     local litellm_active="false"
     ss -tln 2>/dev/null | grep -q ":11434 " && ollama_active="true"    # Ollama LLM
-    ss -tln 2>/dev/null | grep -q ":6333  " && qdrant_active="true"    # Qdrant vectors
-    ss -tln 2>/dev/null | grep -q ":3100  " && paperclip_active="true" # Paperclip agents
+    ss -tln 2>/dev/null | grep -q ":6333 " && qdrant_active="true"    # Qdrant vectors
+    ss -tln 2>/dev/null | grep -q ":3100 " && paperclip_active="true" # Paperclip agents
     ## Open WebUI : port 8000 → container 8080 (nom conteneur = ai-company-webui)
-    ss -tln 2>/dev/null | grep -q ":8000  " && open_webui_active="true"
+    ss -tln 2>/dev/null | grep -q ":8000 " && open_webui_active="true"
     command -v docker >/dev/null 2>&1 && \
         docker ps --format '{{.Names}}' 2>/dev/null | grep -qE 'ai-company-webui|open-webui' \
         && open_webui_active="true"
@@ -217,11 +217,11 @@ get_fast_service_status() {
     "g1billet": {
         "active": $g1billet_active
     },
-    "bleeding_edge": {
+    "ai_company": {
         "ollama":     { "active": $ollama_active,     "port": 11434 },
         "qdrant":     { "active": $qdrant_active,     "port": 6333  },
         "paperclip":  { "active": $paperclip_active,  "port": 3100  },
-        "openclaw":   { "active": $openclaw_active,   "port": 8000  },
+        "open_webui": { "active": $open_webui_active, "port": 8000  },
         "litellm":    { "active": $litellm_active,    "port": 8010 }
     },
     "webtop": {
