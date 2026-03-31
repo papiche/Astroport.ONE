@@ -12,15 +12,23 @@ MY_PATH="$(cd "$(dirname "$0")" && pwd)"
 # On s'assure d'avoir les outils de config coopérative
 source "${MY_PATH}/tools/cooperative_config.sh" 2>/dev/null
 
-echo "🚀 AMORÇAGE DE LA STATION DANS LA CONSTELLATION..."
+log() { echo -e "\033[1;36m[BOOTSTRAP]\033[0m $1"; }
+
+header() {
+    echo -e "\n\033[1;34m╔══════════════════════════════════════════════════════════════╗\033[0m"
+    echo -e "\033[1;34m║\033[0m \033[1;37m $1 \033[0m"
+    echo -e "\033[1;34m╚══════════════════════════════════════════════════════════════╝\033[0m\n"
+}
+
+header "AMORÇAGE DE LA CONSTELLATION"
 
 # --- ÉTAPE 1 : Récupérer la CONFIGURATION COOPÉRATIVE (30800) ---
-# C'est ici qu'on récupère la PAF, les Ratios, etc.
-echo "📥 Récupération des paramètres globaux (Kind 30800)..."
-coop_config_refresh  # Cette fonction de ton script va chercher le 30800 de la Coop
+log "📥 Récupération des paramètres globaux (Kind 30800)..."
+# Cette fonction cherche le 30800 de la Coop et met à jour le cache local
+coop_config_refresh 
 
 # --- ÉTAPE 2 : Découvrir les pairs via les rapports de santé (30850) ---
-echo "🔍 Recherche des stations actives (swarm_id: ${UPLANETG1PUB:0:8})..."
+log "🔍 Recherche des stations actives (swarm_id: ${UPLANETG1PUB:0:8})..."
 # On cherche les 30850 de cet essaim sur le relai central
 STATIONS_JSON=$(python3 "${MY_PATH}/tools/nostr_did_client.py" query \
     --kind 30850 \
@@ -28,27 +36,28 @@ STATIONS_JSON=$(python3 "${MY_PATH}/tools/nostr_did_client.py" query \
     --relay "wss://relay.copylaradio.com" 2>/dev/null)
 
 # --- ÉTAPE 3 : Agrégation des membres et Autorisations ---
-echo "👥 Identification des membres de l'essaim..."
+log "👥 Identification des membres de l'essaim..."
 TEMP_HEX=$(mktemp)
 
-# Ajouter la clé de la Coopérative elle-même
-coop_get_pubkey >> "$TEMP_HEX"
+# A. Ajouter la clé de la Coopérative elle-même
+coop_get_pubkey >> "$TEMP_HEX" 2>/dev/null
 
-# Ajouter tous les Capitaines trouvés dans les 30850
-echo "$STATIONS_JSON" | jq -r '.[].pubkey' >> "$TEMP_HEX"
-
-# Pour chaque Capitaine, on récupère sa liste de contacts (Kind 3)
-CAPTAINS=$(echo "$STATIONS_DATA" | jq -r '.[].pubkey' | sort -u)
-for cap in $CAPTAINS; do
-    log "  → Listing contacts from Captain ${cap:0:8}..."
-    python3 -c "
+# B. Ajouter tous les Capitaines trouvés dans les 30850
+if [[ -n "$STATIONS_JSON" && "$STATIONS_JSON" != "[]" ]]; then
+    echo "$STATIONS_JSON" | jq -r '.[].pubkey' >> "$TEMP_HEX"
+    
+    # C. Pour chaque Capitaine, on récupère sa liste de contacts (Kind 3)
+    CAPTAINS=$(echo "$STATIONS_JSON" | jq -r '.[].pubkey' | sort -u)
+    for cap in $CAPTAINS; do
+        log "  → Listing contacts from Captain ${cap:0:8}..."
+        python3 -c "
 import asyncio, websockets, json, sys
 async def get_follows():
     try:
-        async with websockets.connect('wss://relay.copylaradio.com') as ws:
+        async with websockets.connect('${myRELAY:-wss://relay.copylaradio.com}') as ws:
             await ws.send(json.dumps(['REQ', 'f', {'kinds': [3], 'authors': ['$cap'], 'limit': 1}]))
             while True:
-                resp = await asyncio.wait_for(ws.recv(), timeout=2)
+                resp = await asyncio.wait_for(ws.recv(), timeout=3)
                 data = json.loads(resp)
                 if data[0] == 'EVENT':
                     for tag in data[2].get('tags', []):
@@ -57,24 +66,28 @@ async def get_follows():
     except: pass
 asyncio.run(get_follows())
 " >> "$TEMP_HEX" 2>/dev/null
-done
+    done
+else
+    log "⚠️  Aucun autre Capitaine trouvé via 30850."
+fi
 
 # --- ÉTAPE 4 : Mise à jour de la sécurité et Synchronisation ---
 if [[ -s "$TEMP_HEX" ]]; then
     sort -u "$TEMP_HEX" -o "$TEMP_HEX"
     M_COUNT=$(wc -l < "$TEMP_HEX")
-    echo "✅ $M_COUNT membres identifiés."
+    log "✅ $M_COUNT membres identifiés."
     
     # Autoriser ces clés dans le relai local (indispensable pour que le backfill soit accepté)
+    mkdir -p ~/.zen/strfry
     cat "$TEMP_HEX" >> ~/.zen/strfry/amisOfAmis.txt
     sort -u ~/.zen/strfry/amisOfAmis.txt -o ~/.zen/strfry/amisOfAmis.txt
     
     # Lancer le backfill ciblé pour ramener les contenus (Profils, DIDs, Notes)
-    echo "🔄 Lancement de la synchronisation des données (Backfill)..."
-    bash "${MY_PATH}/backfill_constellation.sh" --days 30 --verbose
+    log "🔄 Lancement de la synchronisation des données (Backfill)..."
+    bash "$HOME/.zen/workspace/NIP-101/backfill_constellation.sh" --days 30 --verbose
 else
-    echo "❌ Aucune donnée trouvée sur le relai central."
+    log "❌ Aucune clé trouvée. Vérifiez votre connexion internet ou l'ID de l'essaim."
 fi
 
 rm -f "$TEMP_HEX"
-echo "✨ Bootstrap terminé. Station synchronisée."
+header "BOOTSTRAP TERMINÉ"

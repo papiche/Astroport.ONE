@@ -445,13 +445,12 @@ log_output "📍 Station GPS: $STATION_LAT, $STATION_LON | Solar sync: $SOLAR_OF
 ###############################################################################
 # BUILD NOSTR EVENT
 ###############################################################################
-
 log_output "📝 Building NOSTR event..."
 
 GENERATED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 CREATED_AT=$(date +%s)
 
-# Build content JSON
+# Build content JSON avec protection contre les valeurs vides (:-0)
 CONTENT_JSON=$(cat <<EOF
 {
   "report_version": "1.1",
@@ -459,83 +458,64 @@ CONTENT_JSON=$(cat <<EOF
   "generated_at": "$GENERATED_AT",
   "station": {
     "ipfsnodeid": "$IPFSNODEID",
-    "name": "${myDAMAIN:-...${IPFSNODEID: -8}}",
+    "name": "${myHOSTNAME:-...${IPFSNODEID: -8}}",
     "swarm_id": "$UPLANETG1PUB",
-    "relay_url": "wss://${myDAMAIN}/relay",
+    "relay_url": "wss://relay.${myDOMAIN}",
     "captain_hex": "$CAPTAIN_HEX",
     "geo": {
-      "lat": $STATION_LAT,
-      "lon": $STATION_LON
+      "lat": ${STATION_LAT:-0},
+      "lon": ${STATION_LON:-0}
     },
     "sync": {
       "solar_offset": "$SOLAR_OFFSET",
-      "solar_comment": "Station runs 20h12 cycle at this local time (spread across swarm by longitude)"
+      "solar_comment": "Station runs 20h12 cycle at this local time"
     }
   },
   "wallets": {
-    "g1_reserve": { "g1pub": "$UPLANETNAME_G1", "balance_g1": $G1_RESERVE_G1, "balance_zen": $G1_RESERVE_ZEN },
-    "cash": { "g1pub": "$CASH_PUBKEY", "balance_g1": $CASH_G1, "balance_zen": $CASH_ZEN },
-    "rnd": { "g1pub": "$RND_PUBKEY", "balance_g1": $RND_G1, "balance_zen": $RND_ZEN },
-    "assets": { "g1pub": "$ASSETS_PUBKEY", "balance_g1": $ASSETS_G1, "balance_zen": $ASSETS_ZEN },
-    "impot": { "g1pub": "$IMPOT_PUBKEY", "balance_g1": $IMPOT_G1, "balance_zen": $IMPOT_ZEN },
-    "capital": { "g1pub": "$CAPITAL_PUBKEY", "balance_g1": $CAPITAL_G1, "balance_zen": $CAPITAL_ZEN },
-    "amortissement": { "g1pub": "$AMORT_PUBKEY", "balance_g1": $AMORT_G1, "balance_zen": $AMORT_ZEN },
-    "node": { "g1pub": "$NODE_PUBKEY", "balance_g1": $NODE_G1, "balance_zen": $NODE_ZEN },
-    "captain_dedicated": { "g1pub": "$CAPTAIN_DED_PUBKEY", "balance_g1": $CAPTAIN_DED_G1, "balance_zen": $CAPTAIN_DED_ZEN }
+    "g1_reserve": { "g1pub": "${UPLANETNAME_G1:-}", "balance_g1": ${G1_RESERVE_G1:-0}, "balance_zen": ${G1_RESERVE_ZEN:-0} },
+    "cash": { "g1pub": "${CASH_PUBKEY:-}", "balance_g1": ${CASH_G1:-0}, "balance_zen": ${CASH_ZEN:-0} },
+    "rnd": { "g1pub": "${RND_PUBKEY:-}", "balance_g1": ${RND_G1:-0}, "balance_zen": ${RND_ZEN:-0} },
+    "assets": { "g1pub": "${ASSETS_PUBKEY:-}", "balance_g1": ${ASSETS_G1:-0}, "balance_zen": ${ASSETS_ZEN:-0} },
+    "impot": { "g1pub": "${IMPOT_PUBKEY:-}", "balance_g1": ${IMPOT_G1:-0}, "balance_zen": ${IMPOT_ZEN:-0} },
+    "capital": { "g1pub": "${CAPITAL_PUBKEY:-}", "balance_g1": ${CAPITAL_G1:-0}, "balance_zen": ${CAPITAL_ZEN:-0} },
+    "amortissement": { "g1pub": "${AMORT_PUBKEY:-}", "balance_g1": ${AMORT_G1:-0}, "balance_zen": ${AMORT_ZEN:-0} },
+    "node": { "g1pub": "${NODE_PUBKEY:-}", "balance_g1": ${NODE_G1:-0}, "balance_zen": ${NODE_ZEN:-0} },
+    "captain_dedicated": { "g1pub": "${CAPTAIN_D_PUBKEY:-}", "balance_g1": ${CAPTAIN_DED_G1:-0}, "balance_zen": ${CAPTAIN_DED_ZEN:-0} }
   },
   "revenue": {
-    "multipass": { "count": $MULTIPASS_COUNT, "rate": $NCARD, "total": $MULTIPASS_REVENUE },
-    "zencard": { "renters": $ZENCARD_RENTERS, "rate": $ZCARD, "total": $ZENCARD_REVENUE },
-    "total_ht": $TOTAL_REVENUE,
-    "total_tva": $TOTAL_TVA
+    "multipass": { "count": ${MULTIPASS_COUNT:-0}, "rate": ${NCARD:-0}, "total": ${MULTIPASS_REVENUE:-0} },
+    "zencard": { "renters": ${ZENCARD_RENTERS:-0}, "rate": ${ZCARD:-0}, "total": ${ZENCARD_REVENUE:-0} },
+    "total_ht": ${TOTAL_REVENUE:-0},
+    "total_tva": ${TOTAL_TVA:-0}
   },
   "costs": {
-    "paf_node": $PAF,
-    "captain_salary": $CAPTAIN_REMUNERATION,
-    "total": $TOTAL_COSTS
+    "paf_node": ${PAF:-0},
+    "captain_salary": ${CAPTAIN_REMUNERATION:-0},
+    "total": ${TOTAL_COSTS:-0}
   },
   "allocation": {
-    "surplus": $BILAN,
-    "is_provision": $IS_PROVISION,
-    "net_surplus": $NET_SURPLUS,
-    "treasury": $ALLOC_TREASURY,
-    "rnd": $ALLOC_RND,
-    "assets": $ALLOC_ASSETS,
-    "captain_bonus": $ALLOC_CAPTAIN_BONUS,
-    "treasury_pct": ${TREASURY_PERCENT:-33},
-    "rnd_pct": ${RND_PERCENT:-33},
-    "assets_pct": ${ASSETS_PERCENT:-33},
-    "captain_bonus_pct": ${CAPTAIN_BONUS_PERCENT:-1}
+    "surplus": ${BILAN:-0},
+    "is_provision": ${IS_PROVISION:-0},
+    "net_surplus": ${NET_SURPLUS:-0},
+    "treasury": ${ALLOC_TREASURY:-0},
+    "rnd": ${ALLOC_RND:-0},
+    "assets": ${ALLOC_ASSETS:-0},
+    "captain_bonus": ${ALLOC_CAPTAIN_BONUS:-0}
   },
   "capacity": {
-    "multipass": { "used": $MULTIPASS_COUNT, "total": $MULTIPASS_CAPACITY },
-    "zencard": { "total": $ZENCARD_COUNT, "renters": $ZENCARD_RENTERS, "owners": $ZENCARD_OWNERS, "capacity": $ZENCARD_CAPACITY }
+    "multipass": { "used": ${MULTIPASS_COUNT:-0}, "total": ${MULTIPASS_CAPACITY:-0} },
+    "zencard": { "total": ${ZENCARD_COUNT:-0}, "renters": ${ZENCARD_RENTERS:-0}, "owners": ${ZENCARD_OWNERS:-0} }
   },
   "health": {
     "status": "$HEALTH_STATUS",
-    "resilience_level": $RESILIENCE_LEVEL,
-    "bilan": $BILAN,
-    "weeks_runway": $WEEKS_RUNWAY,
-    "total_weeks_runway": $TOTAL_WEEKS_RUNWAY,
+    "resilience_level": ${RESILIENCE_LEVEL:-0},
+    "weeks_runway": ${WEEKS_RUNWAY:-0},
     "risk_level": "$RISK_LEVEL"
   },
-  "love_ledger": {
-    "total_donated_zen": $LOVE_TOTAL_ZEN,
-    "weeks_on_volunteer": $LOVE_WEEKS_COUNT,
-    "comment": "Bénévolat Actif = Don aux Communs. Pas de faillite, seulement de la résilience."
-  },
   "depreciation": {
-    "machine_value": $MACHINE_VALUE,
-    "weeks_elapsed": $WEEKS_ELAPSED,
-    "depreciation_weeks": $DEPRECIATION_WEEKS,
-    "weekly_depreciation": $WEEKLY_DEPRECIATION,
-    "total_depreciated": $TOTAL_DEPRECIATED,
-    "residual_value": $RESIDUAL_VALUE,
-    "percent": $DEPRECIATION_PERCENT
-  },
-  "compliance": {
-    "tva_provisioned": $IMPOT_ZEN,
-    "audit_ready": true
+    "machine_value": ${MACHINE_VALUE:-0},
+    "residual_value": ${RESIDUAL_VALUE:-0},
+    "percent": ${DEPRECIATION_PERCENT:-0}
   }
 }
 EOF
@@ -564,7 +544,7 @@ TAGS_JSON=$(cat <<EOF
   ["t", "$IPFSNODEID"],
   ["constellation", "$UPLANETG1PUB"],
   ["station", "$IPFSNODEID"],
-  ["station:name", "${myDAMAIN:-...${IPFSNODEID: -8}}"],
+  ["station:name", "${myHOSTNAME:-...${IPFSNODEID: -8}}"],
   ["swarm_id", "$UPLANETG1PUB"],
   ["week", "$CURRENT_WEEK"],
   ["g1pub", "$UPLANETNAME_G1"],
@@ -687,8 +667,7 @@ if [[ -z "$CAPTAIN_PRIVKEY_HEX" ]]; then
 fi
 
 # Get local relay URL
-myRELAY="wss://${myDAMAIN}/relay"
-[[ -z "$myDAMAIN" ]] && myRELAY="ws://127.0.0.1:7777"
+myRELAY="ws://127.0.0.1:7777"
 
 # Publish using nostr_send_note.py
 if [[ -f "${MY_PATH}/../tools/nostr_send_note.py" ]]; then

@@ -758,7 +758,7 @@ PORTEFEUILLES LOCAUX (Propres à chaque station)
 | Identifiant | Source | Usage |
 | :--- | :--- | :--- |
 | `swarm_id` | `UPLANETG1PUB` (clé publique G1) | Identification unique de l'essaim |
-| `station:name` | `myDAMAIN` ou `IPFSNODEID:0:12` | Nom lisible de la station |
+| `station:name` | `myDOMAIN` ou `IPFSNODEID:0:12` | Nom lisible de la station |
 | `station` | `IPFSNODEID` | Identifiant technique IPFS |
 
 #### **Dashboard Essaim : `economy.Swarm.html`**
@@ -892,7 +892,7 @@ python3 nostr_send_note.py \
     --kind 30850 \
     --content "$CONTENT_JSON" \
     --tags "$TAGS_JSON" \
-    --relay "wss://${myDAMAIN}/relay"
+    --relay "wss://${myDOMAIN}/relay"
 
 rm temp_key.nostr
 

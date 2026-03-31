@@ -205,7 +205,7 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
         CAPTAIN_PAID=0
         NODE_PAID=0
         LOVE_DONATION_THIS_WEEK=0
-        PAYMENT_SOURCE="CASH"
+        PAYMENT_SOURCE="CAPTAIN_DEDICATED"
         NODE_PAYMENT_SOURCE=""
         CAPTAIN_PAYMENT_SOURCE=""
 
@@ -226,152 +226,64 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
         CAPTAIN_REMUNERATION=$(echo "scale=2; $WEEKLYPAF * 2" | bc -l)
         CAPTAIN_REMUNERATION_G1=$(makecoord $(echo "$CAPTAIN_REMUNERATION / 10" | bc -l))
         
-        # Get ASSETS wallet balance
-        ASSETS_ZEN=0
-        ASSETS_G1PUB=""
-        if [[ -s ~/.zen/game/uplanet.ASSETS.dunikey ]]; then
-            ASSETS_G1PUB=$(cat ~/.zen/game/uplanet.ASSETS.dunikey | grep "pub:" | cut -d ' ' -f 2)
-            ASSETS_COIN=$(${MY_PATH}/../tools/G1check.sh ${ASSETS_G1PUB} | tail -n 1)
-            ASSETS_ZEN=$(echo "scale=1; ($ASSETS_COIN - 1) * 10" | bc)
-        fi
-        log_output "ASSETS (Forest-Gardens) balance: $ASSETS_ZEN Ẑen"
-        
-        # Get RnD wallet balance
-        RND_ZEN=0
-        RND_G1PUB=""
-        if [[ -s ~/.zen/game/uplanet.RnD.dunikey ]]; then
-            RND_G1PUB=$(cat ~/.zen/game/uplanet.RnD.dunikey | grep "pub:" | cut -d ' ' -f 2)
-            RND_COIN=$(${MY_PATH}/../tools/G1check.sh ${RND_G1PUB} | tail -n 1)
-            RND_ZEN=$(echo "scale=1; ($RND_COIN - 1) * 10" | bc)
-        fi
-        log_output "RnD (Innovation) balance: $RND_ZEN Ẑen"
-        
         #######################################################################
-        # PRIORITY 1: Pay NODE (1x PAF) - Infrastructure is critical
+        # PRIORITY 1: Pay NODE (1x PAF) - Infrastructure
         #######################################################################
         log_output "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         log_output "📦 NODE PAYMENT (1x PAF = $WEEKLYPAF Ẑen)"
         
-        if [[ $(echo "$CASH_ZEN >= $WEEKLYPAF" | bc -l) -eq 1 ]]; then
-            # PHASE 0: Normal - Pay from CASH
-            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.CASH.dunikey" "$WEEKLYG1" "${NODEG1PUB}" "UP:${UPLANETG1PUB:0:8}:PAF:W${CURRENT_WEEK}:${WEEKLYPAF}Z:CASH>NODE" 2>/dev/null
+        # On vérifie si le compte de COLLECTE (CAPTAIN_DED_ZEN) peut payer
+        if [[ $(echo "$CAPTAIN_DED_ZEN >= $WEEKLYPAF" | bc -l) -eq 1 ]]; then
+            ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$WEEKLYG1" "${NODEG1PUB}" "UP:${UPLANETG1PUB:0:8}:PAF:W${CURRENT_WEEK}:${WEEKLYPAF}Z:INCOME>NODE" 2>/dev/null
             if [[ $? -eq 0 ]]; then
-                log_output "✅ CASH paid NODE PAF: $WEEKLYPAF Ẑen ($WEEKLYG1 G1)"
+                log_output "✅ REVENUS payent NODE PAF: $WEEKLYPAF Ẑen"
                 NODE_PAID=1
-                NODE_PAYMENT_SOURCE="CASH"
-                CASH_ZEN=$(echo "scale=1; $CASH_ZEN - $WEEKLYPAF" | bc)
-                echo "$(date +%Y%m%d%H%M%S):CASH" > "$NODE_PAID_MARKER"
-            else
-                log_output "❌ CASH payment to NODE failed - trying ASSETS"
-            fi
-        fi
-        
-        # NIVEAU 1: Solidarité ASSETS - si CASH insuffisant/échoué
-        if [[ $NODE_PAID -eq 0 && $(echo "$ASSETS_ZEN >= $WEEKLYPAF" | bc -l) -eq 1 ]]; then
-            RESILIENCE_LEVEL=1
-            PAYMENT_SOURCE="ASSETS"
-            log_output "🌿 NIVEAU 1: CASH insuffisant - Paiement NODE depuis ASSETS (solidarité forêts-jardins)"
-            ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/game/uplanet.ASSETS.dunikey "$WEEKLYG1" "${NODEG1PUB}" "UP:${UPLANETG1PUB:0:8}:PAF:W${CURRENT_WEEK}:${WEEKLYPAF}Z:ASSETS>NODE:LVL1" 2>/dev/null
-            if [[ $? -eq 0 ]]; then
-                log_output "✅ ASSETS a payé l'infrastructure NODE: $WEEKLYPAF Ẑen"
-                NODE_PAID=1
-                NODE_PAYMENT_SOURCE="ASSETS"
-                ASSETS_ZEN=$(echo "scale=1; $ASSETS_ZEN - $WEEKLYPAF" | bc)
-                echo "$(date +%Y%m%d%H%M%S):ASSETS" > "$NODE_PAID_MARKER"
-            else
-                log_output "❌ Paiement ASSETS vers NODE échoué - tentative R&D"
+                NODE_PAYMENT_SOURCE="REVENUS"
+                CAPTAIN_DED_ZEN=$(echo "scale=1; $CAPTAIN_DED_ZEN - $WEEKLYPAF" | bc)
+                echo "$(date +%Y%m%d%H%M%S):INCOME" > "$NODE_PAID_MARKER"
             fi
         fi
 
-        # NIVEAU 2: Solidarité R&D - si ASSETS insuffisants/épuisés
-        if [[ $NODE_PAID -eq 0 && $(echo "$RND_ZEN >= $WEEKLYPAF" | bc -l) -eq 1 ]]; then
-            RESILIENCE_LEVEL=2
-            PAYMENT_SOURCE="RnD"
-            log_output "🔬 NIVEAU 2: ASSETS épuisés - Paiement NODE depuis R&D (solidarité innovation)"
-            ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/game/uplanet.RnD.dunikey "$WEEKLYG1" "${NODEG1PUB}" "UP:${UPLANETG1PUB:0:8}:PAF:W${CURRENT_WEEK}:${WEEKLYPAF}Z:RND>NODE:LVL2" 2>/dev/null
-            if [[ $? -eq 0 ]]; then
-                log_output "✅ R&D a payé l'infrastructure NODE: $WEEKLYPAF Ẑen"
-                NODE_PAID=1
-                NODE_PAYMENT_SOURCE="RnD"
-                RND_ZEN=$(echo "scale=1; $RND_ZEN - $WEEKLYPAF" | bc)
-                echo "$(date +%Y%m%d%H%M%S):RnD" > "$NODE_PAID_MARKER"
-            else
-                log_output "❌ Paiement R&D vers NODE échoué"
-            fi
-        fi
-
-        # NIVEAU 3: BÉNÉVOLAT - Aucun fonds disponible, le Capitaine offre son infrastructure
+        # BÉNÉVOLAT - Aucun fonds disponible, l'Armateur offre son infrastructure
         if [[ $NODE_PAID -eq 0 ]]; then
-            RESILIENCE_LEVEL=3
-            log_output "❤️  NIVEAU 3 (BÉNÉVOLAT) : Fonds insuffisants dans toutes les poches."
-            log_output "   Le Capitaine héberge gracieusement le nœud cette semaine ! 🙏"
-            log_output "   CASH: $CASH_ZEN Ẑen | ASSETS: $ASSETS_ZEN Ẑen | RnD: $RND_ZEN Ẑen"
-            LOVE_DONATION_THIS_WEEK=$(echo "$LOVE_DONATION_THIS_WEEK + $WEEKLYPAF" | bc -l)
+            log_output "⚠️  REVENUS insuffisants pour payer le matériel (NODE)."
             NODE_PAYMENT_SOURCE="LOVE (Bénévolat)"
         fi
         
         #######################################################################
-        # PRIORITY 2: Pay Captain (2x PAF) - Only if NODE was paid
+        # PRIORITY 2: Pay Captain (2x PAF) - Rétribution
         #######################################################################
         log_output "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         log_output "👨‍✈️ CAPTAIN PAYMENT (2x PAF = $CAPTAIN_REMUNERATION Ẑen)"
         
         if [[ $NODE_PAID -eq 1 ]]; then
-            # Try CASH first
-            if [[ $(echo "$CASH_ZEN >= $CAPTAIN_REMUNERATION" | bc -l) -eq 1 ]]; then
-                ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.CASH.dunikey" "$CAPTAIN_REMUNERATION_G1" "${CAPTAING1PUB}" "UP:${UPLANETG1PUB:0:8}:SALARY:W${CURRENT_WEEK}:${CAPTAIN_REMUNERATION}Z:CASH>CPT" 2>/dev/null
+            # Tenter de payer le Capitaine depuis le RESTE des revenus
+            if [[ $(echo "$CAPTAIN_DED_ZEN >= $CAPTAIN_REMUNERATION" | bc -l) -eq 1 ]]; then
+                ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$CAPTAIN_REMUNERATION_G1" "${CAPTAING1PUB}" "UP:${UPLANETG1PUB:0:8}:SALARY:W${CURRENT_WEEK}:${CAPTAIN_REMUNERATION}Z:INCOME>CPT" 2>/dev/null
                 if [[ $? -eq 0 ]]; then
-                    log_output "✅ CASH paid Captain: $CAPTAIN_REMUNERATION Ẑen"
+                    log_output "✅ REVENUS payent Capitaine: $CAPTAIN_REMUNERATION Ẑen"
                     CAPTAIN_PAID=1
-                    CAPTAIN_PAYMENT_SOURCE="CASH"
-                    CASH_ZEN=$(echo "scale=1; $CASH_ZEN - $CAPTAIN_REMUNERATION" | bc)
-                    echo "$(date +%Y%m%d%H%M%S):CASH" > "$CAPTAIN_PAID_MARKER"
+                    CAPTAIN_PAYMENT_SOURCE="REVENUS"
+                    CAPTAIN_DED_ZEN=$(echo "scale=1; $CAPTAIN_DED_ZEN - $CAPTAIN_REMUNERATION" | bc)
+                    echo "$(date +%Y%m%d%H%M%S):INCOME" > "$CAPTAIN_PAID_MARKER"
                 fi
             fi
-            
-            # NIVEAU 1: Solidarité ASSETS pour la rétribution Capitaine
-            if [[ $CAPTAIN_PAID -eq 0 && $(echo "$ASSETS_ZEN >= $CAPTAIN_REMUNERATION" | bc -l) -eq 1 ]]; then
-                [[ $RESILIENCE_LEVEL -lt 1 ]] && RESILIENCE_LEVEL=1
-                log_output "🌿 NIVEAU 1: Rétribution Capitaine depuis ASSETS"
-                ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/game/uplanet.ASSETS.dunikey "$CAPTAIN_REMUNERATION_G1" "${CAPTAING1PUB}" "UP:${UPLANETG1PUB:0:8}:SALARY:W${CURRENT_WEEK}:${CAPTAIN_REMUNERATION}Z:ASSETS>CPT:LVL1" 2>/dev/null
-                if [[ $? -eq 0 ]]; then
-                    log_output "✅ ASSETS a rétribué le Capitaine: $CAPTAIN_REMUNERATION Ẑen"
-                    CAPTAIN_PAID=1
-                    CAPTAIN_PAYMENT_SOURCE="ASSETS"
-                    ASSETS_ZEN=$(echo "scale=1; $ASSETS_ZEN - $CAPTAIN_REMUNERATION" | bc)
-                    echo "$(date +%Y%m%d%H%M%S):ASSETS" > "$CAPTAIN_PAID_MARKER"
-                fi
-            fi
-
-            # NIVEAU 2: Solidarité R&D pour la rétribution Capitaine
-            if [[ $CAPTAIN_PAID -eq 0 && $(echo "$RND_ZEN >= $CAPTAIN_REMUNERATION" | bc -l) -eq 1 ]]; then
-                [[ $RESILIENCE_LEVEL -lt 2 ]] && RESILIENCE_LEVEL=2
-                log_output "🔬 NIVEAU 2: Rétribution Capitaine depuis R&D"
-                ${MY_PATH}/../tools/PAYforSURE.sh ~/.zen/game/uplanet.RnD.dunikey "$CAPTAIN_REMUNERATION_G1" "${CAPTAING1PUB}" "UP:${UPLANETG1PUB:0:8}:SALARY:W${CURRENT_WEEK}:${CAPTAIN_REMUNERATION}Z:RND>CPT:LVL2" 2>/dev/null
-                if [[ $? -eq 0 ]]; then
-                    log_output "✅ R&D a rétribué le Capitaine: $CAPTAIN_REMUNERATION Ẑen"
-                    CAPTAIN_PAID=1
-                    CAPTAIN_PAYMENT_SOURCE="RnD"
-                    RND_ZEN=$(echo "scale=1; $RND_ZEN - $CAPTAIN_REMUNERATION" | bc)
-                    echo "$(date +%Y%m%d%H%M%S):RnD" > "$CAPTAIN_PAID_MARKER"
-                fi
-            fi
-
-            # NIVEAU 3: Bénévolat Capitaine - son temps est offert aux Communs
-            if [[ $CAPTAIN_PAID -eq 0 ]]; then
-                [[ $RESILIENCE_LEVEL -lt 3 ]] && RESILIENCE_LEVEL=3
-                log_output "❤️  Le Capitaine offre gracieusement son temps de gestion cette semaine ! 🙏"
-                log_output "   Fonds insuffisants : CASH=$CASH_ZEN Ẑen | ASSETS=$ASSETS_ZEN Ẑen | RnD=$RND_ZEN Ẑen"
-                LOVE_DONATION_THIS_WEEK=$(echo "$LOVE_DONATION_THIS_WEEK + $CAPTAIN_REMUNERATION" | bc -l)
-                CAPTAIN_PAYMENT_SOURCE="LOVE (Bénévolat)"
-            fi
-        else
-            log_output "❤️  Le Capitaine offre son temps cette semaine (infra prioritaire sur sa rémunération) !"
-            LOVE_DONATION_THIS_WEEK=$(echo "$LOVE_DONATION_THIS_WEEK + $CAPTAIN_REMUNERATION" | bc -l)
-            CAPTAIN_PAYMENT_SOURCE="LOVE (Bénévolat - Priorité Infra)"
-            [[ $RESILIENCE_LEVEL -lt 3 ]] && RESILIENCE_LEVEL=3
         fi
-        
+
+        if [[ $CAPTAIN_PAID -eq 0 ]]; then
+             CAPTAIN_PAYMENT_SOURCE="LOVE (Bénévolat)"
+        fi
+
+        # 3. CONCLUSION : Si l'un des deux n'est pas payé, on active la Résilience Level 3
+        if [[ $NODE_PAID -eq 0 || $CAPTAIN_PAID -eq 0 ]]; then
+            RESILIENCE_LEVEL=3
+            log_output "❤️  NIVEAU 3 (BÉNÉVOLAT) : Recettes insuffisantes pour couvrir les coûts."
+            
+            # Calcul du don au Love Ledger (ce qui n'a pas pu être payé)
+            [[ $NODE_PAID -eq 0 ]] && LOVE_DONATION_THIS_WEEK=$(echo "$LOVE_DONATION_THIS_WEEK + $WEEKLYPAF" | bc -l)
+            [[ $CAPTAIN_PAID -eq 0 ]] && LOVE_DONATION_THIS_WEEK=$(echo "$LOVE_DONATION_THIS_WEEK + $CAPTAIN_REMUNERATION" | bc -l)
+        fi
+
         log_output "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         
         #######################################################################
