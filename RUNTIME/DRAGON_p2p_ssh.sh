@@ -221,7 +221,7 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     ## Note: List is built from existing ~/.zen/game/nostr/*/HEX only. When an account
     ## is destroyed (nostr_DESTROY_TW.sh), its directory is removed, so that HEX is
     ## automatically excluded on next DRAGON run; captain's kind3 is republished without it.
-    [[ -z "${NSEC:-}" ]] && NSEC=$(grep -oP 'NSEC=\K[^;]+' ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr 2>/dev/null)
+    [[ -z "${CAPTAIN_NSEC:-}" ]] && CAPTAIN_NSEC=$(grep -oP 'NSEC=\K[^;]+' ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr 2>/dev/null)
     nostrhex=($(cat ~/.zen/game/nostr/*@*.*/HEX 2>/dev/null))
     umaphex=()
     sectorhex=()
@@ -249,9 +249,9 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     # Combine all lists (NOSTR cards, UMAP, SECTOR, REGION nodes, same-uplanet captains)
     allhex=("${nostrhex[@]}" "${umaphex[@]}" "${sectorhex[@]}" "${regionhex[@]}" "${captainhex[@]}")
     
-    if [[ ${#allhex[@]} -gt 0 ]] && [[ -n "${NSEC:-}" ]]; then
+    if [[ ${#allhex[@]} -gt 0 ]] && [[ -n "${CAPTAIN_NSEC:-}" ]]; then
         echo "Following ${#nostrhex[@]} NOSTR cards, ${#umaphex[@]} UMAP, ${#sectorhex[@]} SECTOR, ${#regionhex[@]} REGION, ${#captainhex[@]} same-uplanet captains (single kind3)"
-        $HOME/.zen/Astroport.ONE/tools/nostr_follow.sh "$NSEC" "${allhex[@]}" >/dev/null 2>&1
+        $HOME/.zen/Astroport.ONE/tools/nostr_follow.sh "$CAPTAIN_NSEC" "${allhex[@]}" >/dev/null 2>&1
     fi
 fi
 ##################################################################################

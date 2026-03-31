@@ -316,6 +316,12 @@ else
     echo ">>> Captain already onboard: $(cat ~/.zen/game/players/.current/.player 2>/dev/null)"
 fi
 
+echo "#############################################"
+echo "📡 SYNCHRONISATION AVEC L'ESSAIM"
+echo "#############################################"
+chmod +x ~/.zen/Astroport.ONE/bootstrap_constellation.sh
+bash ~/.zen/Astroport.ONE/bootstrap_constellation.sh
+
 ##########################################################
 ## ONBOARDING SUMMARY — UX GUIDE FOR NEW ARMATEUR
 ##########################################################
