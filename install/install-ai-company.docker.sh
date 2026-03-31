@@ -126,13 +126,9 @@ else
 
     ## QDRANT_API_KEY = UPLANETNAME pour cohérence constellation
     ## → toutes les stations du même essaim UPlanet ẐEN partagent la même clé Qdrant
-    ## → ORIGIN (000...000) = clé commune sandbox (non critique)
-    if [[ -n "$UPLANETNAME" && "$UPLANETNAME" != "0000000000000000000000000000000000000000000000000000000000000000" ]]; then
+    if [[ -n "$UPLANETNAME" ]]; then
         QDRANT_KEY="${UPLANETNAME}"
         echo "🔑 Qdrant API Key = UPLANETNAME (${QDRANT_KEY:0:8}... — clé de constellation)"
-    elif [[ -n "$UPLANETNAME" ]]; then
-        QDRANT_KEY="${UPLANETNAME}"
-        echo "ℹ️  Qdrant API Key = UPLANETNAME ORIGIN (sandbox partagé)"
     else
         QDRANT_KEY=$(openssl rand -hex 16)
         echo "⚠️  UPLANETNAME absent — Qdrant API Key aléatoire"
@@ -242,11 +238,12 @@ services:
     ports: ["${PORT_PAPERCLIP}:3100"]
     volumes: ["./paperclip_data:/paperclip/instances"]
     env_file:
-      - .env 
+      - .env  
     environment:
-      - DATABASE_URL=postgres://paperclip:\${POSTGRES_PASSWORD}@postgres:5432/paperclip
+      - OPENAI_BASE_URL=http://llm-proxy:4000/v1
       - OPENAI_API_BASE=http://llm-proxy:4000/v1
       - OPENAI_API_KEY=\${LITELLM_MASTER_KEY}
+      - DATABASE_URL=postgres://paperclip:\${POSTGRES_PASSWORD}@postgres:5432/paperclip
       - QDRANT_URL=http://qdrant:6333
       - QDRANT_API_KEY=\${QDRANT_API_KEY}
       - BETTER_AUTH_SECRET=\${PAPERCLIP_AUTH_SECRET}
