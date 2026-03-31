@@ -8,23 +8,44 @@
 ################################################################################
 # Ce script gère l'économie de l'écosystème UPlanet :
 # 1. Vérifie les soldes des différents acteurs (UPlanet, Node, Captain)
-# 2. Gère le paiement hebdomadaire des coûts opérationnels depuis CASH :
-#    - 1x PAF → NODE (loyer matériel Armateur)
-#    - 2x PAF → CAPTAIN MULTIPASS (rétribution travail personnelle)
+# 2. Gère le paiement hebdomadaire des coûts opérationnels :
+#    - SOURCE UNIQUE : CAPTAIN_DEDICATED (collecte des loyers usagers)
+#    - Si REVENUS < COÛTS -> Le solde est basculé en BÉNÉVOLAT (Love Ledger)
+#    - AUCUN prélèvement sur CASH / ASSETS / R&D pour le fonctionnement.
 # 3. Implémente le burn 4-semaines et conversion OpenCollective
 #
-# FLUX ÉCONOMIQUE :
-# - CASH (Réserve de Fonctionnement) paie les coûts opérationnels
-# - CAPTAIN MULTIPASS = revenus personnels du capitaine (salaire)
-# - CAPTAIN_DEDICATED (uplanet.captain.dunikey) = collecte des loyers usagers
-#   → Utilisé par ZEN.COOPERATIVE.3x1-3.sh pour allocation coopérative
+# DÉPENDANCES REQUISES :
+# - jq (pour JSON parsing)
+# - bc (pour les calculs)
+# - curl (pour les appels API)
+# - python3 (pour les scripts d'outils)
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "${MY_PATH}/../tools/my.sh"
 # Source cooperative config for DID-based configuration (encrypted in NOSTR)
 . "${MY_PATH}/../tools/cooperative_config.sh" 2>/dev/null || true
+
 ################################################################################
+# Vérification des dépendances
+################################################################################
+check_dependency() {
+    local cmd="$1"
+    if ! command -v "$cmd" &> /dev/null; then
+        log_output "❌ ERREUR: Commande '$cmd' non trouvée. Veuillez l'installer."
+        return 1
+    fi
+    return 0
+}
+
+check_dependency "jq" || exit 1
+check_dependency "bc" || exit 1
+check_dependency "curl" || exit 1
+check_dependency "python3" || exit 1
+
+log_output "✅ Toutes les dépendances sont disponibles"
+################################################################################
+
 start=`date +%s`
 
 #######################################################################
@@ -40,9 +61,9 @@ log_output() {
     echo "$@" | tee -a "$LOG_FILE"
 }
 # Initialiser le registre de Gratitude s'il n'existe pas
-# "Ğ1 apporte la Liberté · Ẑen apporte l'Égalité · ❤️ apporte la Fraternité — 1 ❤️ = 1 DU"
+# "Ğ1 apporte la Liberté · Ẑen apporte l'Égalité · ❤️ apporte la Fraternité"
 if [[ ! -f "$LOVE_LEDGER" ]]; then
-    echo '{"total_donated_zen": 0, "weeks_on_volunteer": 0, "motto": "G1=Liberte Zen=Egalite Love=Fraternite 1xLove=1DU", "history": []}' > "$LOVE_LEDGER"
+    echo '{"total_donated_zen": 0, "weeks_on_volunteer": 0, "motto": "G1=Liberte Zen=Egalite Love=Fraternite 1xLove=1DU TrocZen", "history": []}' > "$LOVE_LEDGER"
 fi
 # Start logging session with timestamp and separator
 {
@@ -85,29 +106,44 @@ log_output "ZEN ECONOMY: Starting weekly payment process for week $WEEK_KEY"
 
 #######################################################################
 # Vérification des soldes des différents acteurs du système
-# UPlanet : La "banque centrale" coopérative
+# UPLANETNAME_G1 : La "banque centrale" coopérative
 # Node : Le serveur physique (PC Gamer ou RPi5)
 # Captain : Le gestionnaire du Node
 #######################################################################
-log_output "UPlanet G1PUB : ${UPLANETG1PUB}"
-UCOIN=$(${MY_PATH}/../tools/G1check.sh ${UPLANETG1PUB} | tail -n 1)
-UCOIN=${UCOIN:-0}
-UZEN=$(echo "scale=1; ($UCOIN - 1) * 10" | bc)
-log_output "$UZEN Ẑen"
+log_output "UPlanet RESERVE UPLANETNAME_G1 : ${UPLANETNAME_G1}"
+UPLANETNAME_G1COIN=$(${MY_PATH}/../tools/G1check.sh ${UPLANETNAME_G1} | tail -n 1)
+UPLANETNAME_G1COIN=${UPLANETNAME_G1COIN:-0}
+# S'assurer que UPLANETNAME_G1COIN est un nombre valide pour bc
+if ! [[ "$UPLANETNAME_G1COIN" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+    log_output "⚠️  UPLANETNAME_G1COIN invalide, utilisation de 0"
+    UPLANETNAME_G1COIN=0
+fi
+UPLANETNAME_ZEN=$(echo "scale=1; ($UPLANETNAME_G1COIN - 1) * 10" | bc 2>/dev/null || echo "0")
+log_output "$UPLANETNAME_ZEN Ẑen"
 
 # Vérification du Node (Astroport)
 NODEG1PUB=$($MY_PATH/../tools/ipfs_to_g1.py ${IPFSNODEID})
 log_output "NODE G1PUB : ${NODEG1PUB}"
 NODECOIN=$(${MY_PATH}/../tools/G1check.sh ${NODEG1PUB} | tail -n 1)
 NODECOIN=${NODECOIN:-0}
-NODEZEN=$(echo "scale=1; ($NODECOIN - 1) * 10" | bc)
+# S'assurer que NODECOIN est un nombre valide pour bc
+if ! [[ "$NODECOIN" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+    log_output "⚠️  NODECOIN invalide, utilisation de 0"
+    NODECOIN=0
+fi
+NODEZEN=$(echo "scale=1; ($NODECOIN - 1) * 10" | bc 2>/dev/null || echo "0")
 log_output "$NODEZEN Ẑen"
 
 # Vérification du Captain (gestionnaire) - MULTIPASS (NOSTR)
 log_output "CAPTAIN G1PUB : ${CAPTAING1PUB}"
 CAPTAINCOIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAING1PUB} | tail -n 1)
 CAPTAINCOIN=${CAPTAINCOIN:-0}
-CAPTAINZEN=$(echo "scale=1; ($CAPTAINCOIN - 1) * 10" | bc)
+# S'assurer que CAPTAINCOIN est un nombre valide pour bc
+if ! [[ "$CAPTAINCOIN" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+    log_output "⚠️  CAPTAINCOIN invalide, utilisation de 0"
+    CAPTAINCOIN=0
+fi
+CAPTAINZEN=$(echo "scale=1; ($CAPTAINCOIN - 1) * 10" | bc 2>/dev/null || echo "0")
 log_output "Captain MULTIPASS balance: $CAPTAINZEN Ẑen"
 
 # Vérification de la ZEN Card du Captain (PLAYERS)
@@ -178,8 +214,39 @@ fi
 CASH_G1PUB=$(cat "$HOME/.zen/game/uplanet.CASH.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
 CASH_COIN=$(${MY_PATH}/../tools/G1check.sh ${CASH_G1PUB} | tail -n 1)
 CASH_COIN=${CASH_COIN:-0}
-CASH_ZEN=$(echo "scale=1; ($CASH_COIN - 1) * 10" | bc)
+# S'assurer que CASH_COIN est un nombre valide pour bc
+if ! [[ "$CASH_COIN" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+    log_output "⚠️  CASH_COIN invalide, utilisation de 0"
+    CASH_COIN=0
+fi
+CASH_ZEN=$(echo "scale=1; ($CASH_COIN - 1) * 10" | bc 2>/dev/null || echo "0")
 log_output "CASH (Treasury) balance: $CASH_ZEN Ẑen"
+# Balance ASSETS (Forêts-jardins / Immobilier)
+ASSETS_G1PUB=$(cat "$HOME/.zen/game/uplanet.ASSETS.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+ASSETS_COIN=$(${MY_PATH}/../tools/G1check.sh ${ASSETS_G1PUB} | tail -n 1)
+ASSETS_ZEN=$(echo "scale=1; (${ASSETS_COIN:-1} - 1) * 10" | bc 2>/dev/null || echo "0")
+
+# Balance R&D (Recherche et Développement)
+RND_G1PUB=$(cat "$HOME/.zen/game/uplanet.RnD.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+RND_COIN=$(${MY_PATH}/../tools/G1check.sh ${RND_G1PUB} | tail -n 1)
+RND_ZEN=$(echo "scale=1; (${RND_COIN:-1} - 1) * 10" | bc 2>/dev/null || echo "0")
+
+# Balance du Captain Dedicated (Collecte des loyers usagers)
+if [[ -s "$HOME/.zen/game/uplanet.captain.dunikey" ]]; then
+    CAPTAIN_DED_PUB=$(cat "$HOME/.zen/game/uplanet.captain.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+    if [[ -n "$CAPTAIN_DED_PUB" ]]; then
+        CAPTAIN_DED_COIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAIN_DED_PUB} | tail -n 1)
+        CAPTAIN_DED_COIN=${CAPTAIN_DED_COIN:-0}
+        CAPTAIN_DED_ZEN=$(echo "scale=1; (${CAPTAIN_DED_COIN} - 1) * 10" | bc)
+        log_output "Captain DEDICATED balance: $CAPTAIN_DED_ZEN Ẑen"
+    else
+        CAPTAIN_DED_ZEN=0
+        log_output "Captain DEDICATED wallet invalid"
+    fi
+else
+    CAPTAIN_DED_ZEN=0
+    log_output "Captain DEDICATED wallet not found"
+fi
 
 # Calculate total required: 3x PAF (1x NODE + 2x CAPTAIN)
 TOTAL_PAF_REQUIRED=$(echo "scale=2; $WEEKLYPAF * 3" | bc -l)
@@ -277,9 +344,9 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
         # 3. CONCLUSION : Si l'un des deux n'est pas payé, on active la Résilience Level 3
         if [[ $NODE_PAID -eq 0 || $CAPTAIN_PAID -eq 0 ]]; then
             RESILIENCE_LEVEL=3
-            log_output "❤️  NIVEAU 3 (BÉNÉVOLAT) : Recettes insuffisantes pour couvrir les coûts."
+            log_output "❤️  MODE BÉNÉVOLAT ACTIVÉ : Les revenus usagers sont insuffisants."
             
-            # Calcul du don au Love Ledger (ce qui n'a pas pu être payé)
+            # On calcule précisément ce qui manque (le don du Capitaine)
             [[ $NODE_PAID -eq 0 ]] && LOVE_DONATION_THIS_WEEK=$(echo "$LOVE_DONATION_THIS_WEEK + $WEEKLYPAF" | bc -l)
             [[ $CAPTAIN_PAID -eq 0 ]] && LOVE_DONATION_THIS_WEEK=$(echo "$LOVE_DONATION_THIS_WEEK + $CAPTAIN_REMUNERATION" | bc -l)
         fi
@@ -315,7 +382,6 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
                 LOVE_MSG="❤️ L'Astroport ${IPFSNODEID:0:8} fonctionne grâce au bénévolat !
 Cette semaine, le Capitaine a offert l'équivalent de ${LOVE_DONATION_THIS_WEEK} Ẑen (~€) en frais d'infrastructure et de gestion.
 Total offert à la communauté : ${new_total} Ẑen. 🙏
-Ğ1=Liberté Ẑen=Égalité ❤️=Fraternité — 1❤️=1DU
 #UPlanet #CommonsLove #Gratitude #AGPL #MonnaieLibre #TrocZen"
                 "${MY_PATH}/../tools/nostr_send_note.py" \
                     --keyfile "$NOSTR_KEYFILE" \
@@ -325,17 +391,17 @@ Total offert à la communauté : ${new_total} Ẑen. 🙏
                     || log_output "⚠️  Diffusion NOSTR Kind 1 échouée (non-critique)"
 
                 #######################################################################
-                # BOUCLE AUTONOME Ğ1↔Ẑen↔❤️↔DU : Émission Kind 30305 (Protocole TrocZen)
-                # "1 ❤️ = 1 DU" — le sacrifice du Capitaine génère un DU co-créé
+                # BOUCLE AUTONOME Ğ1↔Ẑen↔❤️ : Émission Kind 30305 (Protocole TrocZen)
+                # "1 ❤️" — le sacrifice du Capitaine génère un DU co-créé
                 # que TrocZen traduit en Bon fondant (28j TTL) sur le marché local
                 #
                 # FORMAT EXACT Kind 30305 (source: nostr_service.dart#publishDuIncrement) :
                 # - kind   : 30305 (NIP-33 replaceable event)
-                # - pubkey : clé HEX NOSTR du Capitaine (bénéficiaire du DU)
+                # - pubkey : clé HEX NOSTR du Capitaine
                 # - tags   : [["d","du-YYYY-MM-DD"],["amount","XX.XX"]] SEULEMENT
                 # - content: "" (TOUJOURS VIDE — TrocZen lit uniquement les tags)
                 #
-                # TrocZen lit l'amount via computeAvailableDu(npub) :
+                # NB : TrocZen lit l'amount via computeAvailableDu(npub) :
                 #   DU_disponible = Σamount(Kind30305) - Σvalue(Kind30303 bons émis)
                 # fetchAverageRecentDu() calibre DU(0) des nouveaux membres via ce tag
                 #
@@ -362,7 +428,7 @@ Total offert à la communauté : ${new_total} Ẑen. 🙏
                     || log_output "⚠️  Émission Kind 30305 échouée (non-critique — boucle TrocZen indisponible)"
             fi
 
-            # Notification email "Solidarité Active" au Capitaine (niveau 1 ou 2)
+            # Notification email "Solidarité Active" au Capitaine
             if [[ $RESILIENCE_LEVEL -gt 0 && $RESILIENCE_LEVEL -lt 3 && -n "$CAPTAINEMAIL" ]]; then
                 RESILIENCE_TEMPLATE="${MY_PATH}/../templates/NOSTR/pre_bankruptcy.html"
                 RESILIENCE_REPORT="$HOME/.zen/tmp/resilience_level${RESILIENCE_LEVEL}_$(date +%Y-%m-%d).html"
@@ -376,8 +442,9 @@ Total offert à la communauté : ${new_total} Ẑen. 🙏
                     IMPACT_5_ZENCARDS=$(echo "scale=0; 5 * $ZCARD" | bc)
                     escape_sed_replacement() { echo "$1" | sed 's/[&/\]/\\&/g'; }
                     case $RESILIENCE_LEVEL in
-                        1) PHASE_ICON="🌿"; PHASE_NAME_FR_SAFE="Solidarité ASSETS"; PHASE_CLASS="assets" ;;
-                        2) PHASE_ICON="🔬"; PHASE_NAME_FR_SAFE=$(escape_sed_replacement "Solidarité R&D"); PHASE_CLASS="rnd" ;;
+                        1) PAYMENT_SOURCE="ASSETS" ;;
+                        2) PAYMENT_SOURCE="RnD" ;;
+                        3) PAYMENT_SOURCE="BÉNÉVOLAT" ;;
                     esac
                     NODE_PAYMENT_STATUS_FR="${NODE_PAYMENT_SOURCE} (${WEEKLYPAF} Ẑen)"
                     CAPTAIN_PAYMENT_STATUS_FR="${CAPTAIN_PAYMENT_SOURCE} (${CAPTAIN_REMUNERATION} Ẑen)"
@@ -502,7 +569,7 @@ Total offert à la communauté : ${new_total} Ẑen. 🙏
                     # Check CAPITAL wallet balance
                     CAPITAL_G1PUB=$(cat "$HOME/.zen/game/uplanet.CAPITAL.dunikey" | grep "pub:" | cut -d ' ' -f 2)
                     CAPITAL_COIN=$(${MY_PATH}/../tools/G1check.sh ${CAPITAL_G1PUB} | tail -n 1)
-                    CAPITAL_ZEN=$(echo "scale=1; ($CAPITAL_COIN - 1) * 10" | bc)
+                    CAPITAL_ZEN=$(echo "scale=1; (${CAPITAL_COIN:-1} - 1) * 10" | bc 2>/dev/null || echo "0")
                     
                     # Calculate values for logging
                     TOTAL_DEPRECIATED=$(echo "scale=2; $WEEKLY_DEPRECIATION * $WEEKS_ELAPSED" | bc -l)
@@ -572,8 +639,13 @@ Total offert à la communauté : ${new_total} Ẑen. 🙏
                 SOCIETAIRE_SHARE_PRICE_EUR=50
                 SOCIETAIRE_CAPITAL=$(echo "scale=2; 10 * $SOCIETAIRE_SHARE_PRICE" | bc -l)
                 CAPITAL_BALANCE="0"; AMORT_BALANCE="0"
-                MACHINE_VALUE_REPORT="0"; DEPRECIATION_PERCENT="0"
-                WEEKS_PASSED_REPORT="0"; DEPRECIATION_WEEKS_REPORT="156"
+                MACHINE_VALUE_REPORT="${MACHINE_VALUE:-0}"
+                # Calcul du pourcentage d'amortissement pour le template
+                if [[ "$MACHINE_VALUE_REPORT" != "0" ]]; then
+                    DEPRECIATION_PERCENT=$(echo "scale=0; ($AMORT_BALANCE * 100) / $MACHINE_VALUE_REPORT" | bc 2>/dev/null || echo "0")
+                fi
+                WEEKS_PASSED_REPORT="$WEEKS_ELAPSED"
+                DEPRECIATION_WEEKS_REPORT="${DEPRECIATION_WEEKS:-156}"
                 if [[ -f "$HOME/.zen/game/uplanet.CAPITAL.dunikey" ]]; then
                     CAPITAL_G1PUB_RPT=$(cat "$HOME/.zen/game/uplanet.CAPITAL.dunikey" | grep "pub:" | cut -d ' ' -f 2)
                     CAPITAL_COIN_RPT=$(${MY_PATH}/../tools/G1check.sh ${CAPITAL_G1PUB_RPT} 2>/dev/null | tail -n 1)
@@ -583,7 +655,7 @@ Total offert à la communauté : ${new_total} Ẑen. 🙏
                         AMORT_COIN_RPT=$(${MY_PATH}/../tools/G1check.sh ${AMORT_G1PUB_RPT} 2>/dev/null | tail -n 1)
                         AMORT_BALANCE=$(echo "scale=1; ($AMORT_COIN_RPT - 1) * 10" | bc 2>/dev/null || echo "0")
                     fi
-                    MACHINE_VALUE_REPORT="${MACHINE_VALUE_ZEN:-0}"
+                    MACHINE_VALUE_REPORT="${MACHINE_VALUE:-0}"
                     DEPRECIATION_WEEKS_REPORT="${DEPRECIATION_WEEKS:-156}"
                 fi
                 # Liste des éléments offerts bénévolement
@@ -708,7 +780,7 @@ fourweeks_paf_burn_and_convert() {
                 ${MY_PATH}/../tools/PAYforSURE.sh \
                     "$HOME/.zen/game/secret.NODE.dunikey" \
                     "$FOURWEEKS_PAF_G1" \
-                    "${UPLANETG1PUB}" \
+                    "${UPLANETNAME_G1}" \
                     "UP:${UPLANETG1PUB:0:8}:BURN:${period_key}:${FOURWEEKS_PAF}Z:NODE>DEFLATE" \
                     2>/dev/null
                 burn_result=$?
@@ -719,7 +791,7 @@ fourweeks_paf_burn_and_convert() {
                     ${MY_PATH}/../tools/PAYforSURE.sh \
                         "$HOME/.zen/game/nostr/$CAPTAINEMAIL/.secret.dunikey" \
                         "$FOURWEEKS_PAF_G1" \
-                        "${UPLANETG1PUB}" \
+                        "${UPLANETNAME_G1}" \
                         "UP:${UPLANETG1PUB:0:8}:BURN:${period_key}:${FOURWEEKS_PAF}Z:CPT>DEFLATE_LvX" \
                         2>/dev/null
                     burn_result=$?
