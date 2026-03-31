@@ -1,0 +1,1 @@
+docker run -d   --name qdrant   -p 6333:6333   -e QDRANT__SERVICE__API_KEY=0000000000000000000000000000000000000000000000000000000000000000   -v qdrant_storage:/qdrant/storage   --restart unless-stopped   qdrant/qdrant:latest
