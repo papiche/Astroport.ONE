@@ -439,24 +439,15 @@ show_detailed_monitoring() {
 }
 
 #######################################################################
-# Gestion WireGuard (AMÉLIORÉE)
+# Gestion WireGuard (Intégration HUB / Satellite)
 #######################################################################
-
-# Import des fonctions WireGuard si disponibles
-if [[ -f "${MY_PATH}/wireguard_control.sh" ]]; then
-    # Sourcer uniquement les fonctions utilitaires
-    source <(grep -A20 "^ssh_to_wg\|^convert_ssh_keys\|^setup_server\|^add_client" "${MY_PATH}/wireguard_control.sh" | grep -v "^show_menu\|^check_deps")
-    WG_FUNCTIONS_AVAILABLE=true
-else
-    WG_FUNCTIONS_AVAILABLE=false
-fi
 
 # Fonction pour vérifier l'état WireGuard
 check_wireguard_status() {
     if systemctl is-active --quiet wg-quick@wg0; then
         local peers=$(sudo wg show wg0 2>/dev/null | grep -c "peer:" || echo "0")
         local endpoint=$(sudo wg show wg0 2>/dev/null | grep "endpoint:" | head -1 | awk '{print $2}' || echo "Non configuré")
-        echo -e "${GREEN}✅ WireGuard actif${NC} - $peers clients connectés"
+        echo -e "${GREEN}✅ WireGuard actif${NC} - $peers connexions"
         echo -e "${WHITE}Endpoint:${NC} $endpoint"
         return 0
     else
@@ -465,156 +456,76 @@ check_wireguard_status() {
     fi
 }
 
-# Fonction pour lister les clients configurés
-list_wireguard_clients() {
-    if [[ -f /etc/wireguard/wg0.conf ]]; then
-        echo -e "${CYAN}📋 Clients configurés:${NC}"
-        sudo grep -A2 "^# " /etc/wireguard/wg0.conf | while read -r line; do
-            if [[ "$line" =~ ^#[[:space:]]+(.+) ]]; then
-                local client_name="${BASH_REMATCH[1]}"
-                echo "  🔐 $client_name"
-            fi
-        done
-    else
-        echo -e "${YELLOW}⚠️ Aucune configuration WireGuard trouvée${NC}"
-    fi
-}
-
-# Interface WireGuard améliorée
+# Interface WireGuard déléguée aux nouveaux scripts
 manage_wireguard() {
     clear
-    print_header "🌐 GESTION WIREGUARD"
+    print_header "🌐 GESTION WIREGUARD (HUB & SATELLITE)"
     
     # Affichage du statut actuel
     check_wireguard_status
     echo ""
-    list_wireguard_clients
-    echo ""
     
-    if [[ "$WG_FUNCTIONS_AVAILABLE" == "true" ]]; then
-        echo "1. 🚀 Initialiser serveur WireGuard (depuis clés SSH)"
-        echo "2. 👥 Ajouter un client avec restrictions"
-        echo "3. 🔓 Ajouter un client (accès complet)"
-        echo "4. 📋 Afficher configuration détaillée"
-        echo "5. 🔄 Redémarrer service"
-        echo "6. 🛠️  Configuration client (ce node)"
-        echo "7. 📤 Générer QR Code client"
-        echo "0. ⬅️  Retour"
-    else
-        echo -e "${RED}❌ Scripts WireGuard non disponibles${NC}"
-        echo "3. 📋 Afficher configuration"
-        echo "4. 🔄 Redémarrer service"
-        echo "0. ⬅️  Retour"
-    fi
+    echo -e "${CYAN}=== MODE ADMINISTRATEUR ===${NC}"
+    echo "1. 👑 Gérer le HUB UPlanet (Lancer le menu Serveur)"
+    echo ""
+    echo -e "${CYAN}=== MODE SATELLITE ===${NC}"
+    echo "2. 🚀 Configurer ce nœud comme Satellite (Rejoindre un HUB)"
+    echo "3. 📱 Afficher le QR Code de ce Satellite"
+    echo ""
+    echo -e "${CYAN}=== SYSTÈME ===${NC}"
+    echo "4. 📋 Afficher la configuration brute (wg0.conf)"
+    echo "5. 🔄 Redémarrer le service local"
+    echo "0. ⬅️  Retour"
     echo ""
     read -p "Choix: " wg_choice
     
     case $wg_choice in
         1) 
-            if [[ "$WG_FUNCTIONS_AVAILABLE" == "true" ]]; then
-                echo "🚀 Initialisation du serveur WireGuard..."
-                if [[ -f ~/.ssh/id_ed25519 ]]; then
-                    echo "🔑 Conversion des clés SSH existantes..."
-                    setup_server
-                    echo -e "${GREEN}✅ Serveur initialisé avec succès${NC}"
-                else
-                    echo -e "${RED}❌ Aucune clé SSH ED25519 trouvée${NC}"
-                    echo "Générez d'abord vos clés SSH avec : ssh-keygen -t ed25519"
-                fi
+            if [[ -x "${MY_PATH}/wireguard_control.sh" ]]; then
+                # On lance le sous-menu complet du serveur
+                "${MY_PATH}/wireguard_control.sh"
+            else
+                echo -e "${RED}❌ Script serveur (${MY_PATH}/wireguard_control.sh) introuvable ou non exécutable${NC}"
+                echo "Faites : chmod +x ${MY_PATH}/wireguard_control.sh"
             fi
             ;;
         2)
-            if [[ "$WG_FUNCTIONS_AVAILABLE" == "true" ]]; then
-                echo "👥 Ajout d'un client avec restrictions de ports"
-                read -p "Nom du client: " client_name
-                echo ""
-                echo "Collez la clé SSH publique du client:"
-                echo -e "${CYAN}Format attendu: ssh-ed25519 AAAAC3Nz... user@host${NC}"
-                read -p "> " client_ssh_key
-                
-                if [[ "$client_ssh_key" =~ ssh-ed25519[[:space:]]+([A-Za-z0-9+/=]+) ]]; then
-                    local ssh_pubkey="${BASH_REMATCH[1]}"
-                    echo ""
-                    add_client "$client_name" "$ssh_pubkey"
-                else
-                    echo -e "${RED}❌ Format de clé SSH invalide${NC}"
-                fi
+            if [[ -x "${MY_PATH}/wg-client-setup.sh" ]]; then
+                # On lance le script de configuration interactif client
+                "${MY_PATH}/wg-client-setup.sh"
+            else
+                echo -e "${RED}❌ Script client (${MY_PATH}/wg-client-setup.sh) introuvable ou non exécutable${NC}"
+                echo "Faites : chmod +x ${MY_PATH}/wg-client-setup.sh"
             fi
             ;;
         3)
-            if [[ "$WG_FUNCTIONS_AVAILABLE" == "true" ]]; then
-                echo "🔓 Ajout d'un client (accès complet)"
-                read -p "Nom du client: " client_name
-                echo "Collez la clé SSH publique du client:"
-                read -p "> " client_ssh_key
-                
-                if [[ "$client_ssh_key" =~ ssh-ed25519[[:space:]]+([A-Za-z0-9+/=]+) ]]; then
-                    local ssh_pubkey="${BASH_REMATCH[1]}"
-                    # Simulation d'input "all" pour accès complet
-                    echo "all" | add_client "$client_name" "$ssh_pubkey"
-                else
-                    echo -e "${RED}❌ Format de clé SSH invalide${NC}"
-                fi
+            if [[ -x "${MY_PATH}/wg-client-setup.sh" ]]; then
+                # On lance la génération de QR Code du nouveau script
+                "${MY_PATH}/wg-client-setup.sh" qr
             else
-                echo "📋 Configuration WireGuard:"
-                sudo wg show wg0 2>/dev/null || echo "❌ WireGuard non configuré"
+                echo -e "${RED}❌ Script client introuvable${NC}"
             fi
             ;;
         4)
-            echo "📋 Configuration WireGuard détaillée:"
+            echo -e "${CYAN}=== Interface Active ===${NC}"
+            sudo wg show wg0 2>/dev/null || echo "❌ WireGuard non actif"
             echo ""
-            echo -e "${CYAN}=== Interface ===${NC}"
-            sudo wg show wg0 2>/dev/null || echo "❌ WireGuard non configuré"
-            echo ""
-            echo -e "${CYAN}=== Configuration complète ===${NC}"
+            echo -e "${CYAN}=== Fichier /etc/wireguard/wg0.conf ===${NC}"
             if [[ -f /etc/wireguard/wg0.conf ]]; then
                 sudo cat /etc/wireguard/wg0.conf | grep -v "PrivateKey"
             else
                 echo "❌ Fichier de configuration non trouvé"
             fi
-            echo ""
-            echo -e "${CYAN}=== Règles iptables ===${NC}"
-            sudo iptables -L FORWARD | grep -E "wg0|10\.99\.99" || echo "Aucune règle spécifique"
             ;;
         5)
             echo "🔄 Redémarrage WireGuard..."
             sudo systemctl restart wg-quick@wg0 2>/dev/null
             if systemctl is-active --quiet wg-quick@wg0; then
                 echo -e "${GREEN}✅ Service redémarré avec succès${NC}"
+                # Relancer l'annonce IPFS au cas où on est un Satellite
+                echo -e "${YELLOW}⚠️ N'oubliez pas de redémarrer IPFS si vous êtes un Satellite !${NC}"
             else
                 echo -e "${RED}❌ Erreur lors du redémarrage${NC}"
-            fi
-            ;;
-        6)
-            if [[ "$WG_FUNCTIONS_AVAILABLE" == "true" && -x "${MY_PATH}/wg-client-setup.sh" ]]; then
-                echo "🛠️  Configuration client (ce node)..."
-                "${MY_PATH}/wg-client-setup.sh"
-            else
-                echo -e "${RED}❌ Script wg-client-setup.sh non disponible${NC}"
-            fi
-            ;;
-        7)
-            if [[ "$WG_FUNCTIONS_AVAILABLE" == "true" ]]; then
-                echo "📤 Génération QR Code pour client"
-                read -p "Nom du client: " client_name
-                local client_conf="$HOME/.zen/wireguard/${client_name}.conf"
-                if [[ -f "$client_conf" ]]; then
-                    if command -v qrencode >/dev/null; then
-                        qrencode -t ansiutf8 < "$client_conf"
-                        echo ""
-                        echo -e "${GREEN}✅ QR Code généré pour $client_name${NC}"
-                        echo "Configuration également disponible dans: $client_conf"
-                    else
-                        echo -e "${YELLOW}⚠️ qrencode non installé. Installation recommandée:${NC}"
-                        echo "sudo apt install qrencode"
-                        echo ""
-                        echo "Configuration manuelle disponible dans: $client_conf"
-                    fi
-                else
-                    echo -e "${RED}❌ Configuration client '$client_name' non trouvée${NC}"
-                    echo "Clients disponibles:"
-                    ls "$HOME/.zen/wireguard/"*.conf 2>/dev/null | xargs -n1 basename | sed 's/.conf$//' | sed 's/^/  - /' || echo "  Aucun"
-                fi
             fi
             ;;
     esac

@@ -1,311 +1,132 @@
-# WireGuard - Guide de Configuration
+# 🌌 WireGuard & IPFS - Guide de Configuration (Astroport.ONE)
 
-## 🚀 **Démarrage Rapide (5 minutes)**
+Ce guide détaille la mise en place d'un réseau VPN WireGuard conçu spécifiquement pour **contourner les restrictions de type CGNAT** et permettre à de multiples nœuds IPFS (Satellites) d'être accessibles publiquement via l'adresse IP d'un serveur central (HUB).
 
-### **Pour l'Administrateur :**
+## 🌐 **Architecture Constellation Astroport.ONE**
+
+### **🏗️ Topologie (HUB & Satellites)**
+- **Un seul VPN HUB** par essaim IPFS de chaque UPlanet.
+- **Le HUB (Serveur)** dispose d'une adresse IP publique exposée sur Internet.
+- **Les Satellites (Clients)** sont derrière des routeurs/CGNAT. Ils se connectent au HUB (Réseau `10.99.99.0/24`).
+- **Tout le trafic internet** des Satellites passe par le tunnel WireGuard (`0.0.0.0/0`).
+
+### **🎯 La Magie IPFS : Le Routage Dynamique des Ports**
+Puisqu'il n'y a qu'une seule IP publique (celle du HUB) pour tout l'essaim, le système attribue automatiquement un port public unique à chaque Satellite basé sur son IP VPN locale :
+- **HUB (10.99.99.1)** ➔ Port Public **4001**
+- **Satellite A (10.99.99.2)** ➔ Port Public **4002** (Redirigé automatiquement vers le port 4001 du Satellite A)
+- **Satellite B (10.99.99.3)** ➔ Port Public **4003** (Redirigé automatiquement vers le port 4001 du Satellite B)
+
+---
+
+## 🚀 **Démarrage Rapide (Liaison HUB ↔ Satellite)**
+
+### **Étape 1 : Le HUB (Administrateur)**
 ```bash
 # 1. Installer les dépendances
 sudo apt install wireguard qrencode curl
 
-# 2. Initialiser le serveur
-./wireguard_control.sh → Option 1
+# 2. Initialiser le serveur HUB
+./wireguard_control.sh
+# -> Choisir Option 1 (Initialiser serveur LAN)
 
-# 3. Noter la clé publique serveur affichée
+# 3. Transmettre l'IP publique et la clé publique du HUB au Satellite.
 ```
 
-### **Pour le Client :**
+### **Étape 2 : Le Satellite (Client)**
 ```bash
-# 1. Installer WireGuard
-sudo apt install wireguard
+# 1. Installer les dépendances
+sudo apt install wireguard qrencode curl
 
-# 2. Générer les clés
+# 2. Générer ses clés uniques
 ./wg-client-setup.sh
-
-# 3. Envoyer la clé publique à l'admin
+# -> Copier la "Clé publique client" affichée et l'envoyer à l'Administrateur du HUB.
 ```
 
-### **Retour Administrateur :**
+### **Étape 3 : L'Appairage (Administrateur HUB)**
 ```bash
-# 4. Ajouter le client
-./wireguard_control.sh → Option 2
-# Entrer : nom_client + clé_publique_client
+# 1. Ajouter le Satellite au réseau
+./wireguard_control.sh
+# -> Choisir Option 2 (Ajouter un client)
+# -> Saisir le nom du Satellite et coller sa clé publique.
 
-# 5. Générer QR code pour mobile (optionnel)
-./wireguard_control.sh → Option 6
+# 2. Le script génère une ligne de commande complète commençant par :
+# ./wg-client-setup.sh auto ...
+# -> Copier cette ligne et la transmettre au Satellite.
+```
+
+### **Étape 4 : Connexion & IPFS (Satellite)**
+```bash
+# 1. Exécuter la commande fournie par l'Administrateur
+./wg-client-setup.sh auto [IP_HUB] 51820 [CLÉ_HUB] [IP_VPN_ATTRIBUÉE]
+
+# 2. Le script affichera la commande exacte pour configurer IPFS. Exécutez-la :
+ipfs config --json Addresses.Announce '["/ip4/IP_DU_HUB/tcp/400X"]'
+
+# 3. Redémarrer le démon IPFS !
 ```
 
 ---
 
-## 🎯 **Workflow Détaillé en 3 Étapes**
+## 📋 **Administration Quotidienne (Commandes utiles)**
 
-### **1. Serveur : Initialiser**
-```bash
-./wireguard_control.sh
-# Option 1 : "Initialiser serveur LAN"
-# Noter la clé publique serveur
-```
+### **Sur le HUB (`wireguard_control.sh`) :**
+Le script propose un menu interactif gérant automatiquement les règles pare-feu :
+- **Option 3 : Supprimer un client** (Met à jour le pare-feu IPFS à chaud, sans couper les autres).
+- **Option 4 : Liste des clients** (Affiche les IP et signale l'IPFS cible).
+- **Option 6 : Générer QR Code** (Utile pour connecter un smartphone au réseau).
 
-### **2. Client : Générer Clés**
-```bash
-./wg-client-setup.sh
-# Noter la clé publique client
-# La fournir à l'administrateur
-# Optionnel : Générer QR code pour mobile
-```
+### **Sur le Satellite (`wg-client-setup.sh`) :**
+- **Afficher le QR Code de la configuration active :**
+  ```bash
+  ./wg-client-setup.sh qr
+  ```
+- **Vérifier que le tunnel est actif :**
+  ```bash
+  sudo wg show
+  ping 10.99.99.1
+  curl ifconfig.me # Doit retourner l'IP publique du HUB !
+  ```
 
-### **3. Serveur : Ajouter Client**
-```bash
-./wireguard_control.sh
-# Option 2 : "Ajouter un client LAN"
-# Nom client + clé publique
-# Optionnel : Générer QR code pour le client
-```
+---
 
-## 📋 **Instructions Rapides**
-
-### **Administrateur :**
-```bash
-# Initialiser serveur
-./wireguard_control.sh → Option 1
-
-# Ajouter client
-./wireguard_control.sh → Option 2
-# Entrer : nom_client + clé_publique_client
-
-# Générer QR code pour client mobile
-./wireguard_control.sh → Option 6
-
-# Vérifier
-./wireguard_control.sh → Option 4
-```
-
-### **Client :**
-```bash
-# Générer clés
-./wg-client-setup.sh
-# Copier clé publique → envoyer à admin
-# Optionnel : Générer QR code pour mobile
-
-# Après ajout par admin
-sudo cp /etc/wireguard/[nom]_lan.conf /etc/wireguard/wg0.conf
-sudo systemctl enable --now wg-quick@wg0
-ping 10.99.99.1
-```
-
-## 🔧 **Configuration Client**
-
-### **Automatique (Recommandé) :**
-```bash
-./wg-client-setup.sh auto [IP_SERVEUR] 51820 [CLÉ_SERVEUR] [IP_CLIENT]
-```
-
-### **Interactive :**
-```bash
-./wg-client-setup.sh
-# Entrer : IP serveur, port 51820, clé serveur, IP client
-```
-
-## 📱 **QR Codes pour Mobile**
+## 📱 **QR Codes & Mobiles**
 
 ### **🎯 Cas d'Usage :**
-- **Transfert vers smartphone** - Client existant → Mobile
-- **Configuration rapide** - Éviter la saisie manuelle
-- **Partage sécurisé** - Donner accès temporaire
-- **Backup mobile** - Avoir le tunnel sur plusieurs appareils
-
-### **Générer QR code :**
-```bash
-# Pour configuration existante
-./wg-client-setup.sh qr
-
-# Script dédié
-./generate_qr.sh [config_file]
-
-# Depuis le serveur
-./wireguard_control.sh → Option 6
-```
+Bien qu'un smartphone ne fasse généralement pas tourner de nœud IPFS complet, il peut rejoindre l'UPlanet en tant que simple client VPN pour accéder aux ressources locales de l'essaim (ex: un site hébergé sur `10.99.99.2`).
 
 ### **📱 Utilisation mobile :**
-1. **Installer** l'app WireGuard (Android/iOS)
-2. **Scanner** le QR code affiché
-3. **Activer** le tunnel dans l'app
-4. **Tester** : `ping 10.99.99.1` (depuis l'app)
+1. L'administrateur crée un client via l'Option 2 de `wireguard_control.sh`.
+2. Il génère le QR Code (Option 6).
+3. Installer l'app **WireGuard** (Android/iOS).
+4. Scanner le QR code affiché à l'écran.
+5. Activer le tunnel dans l'app. Vous êtes dans l'UPlanet !
 
-## 🎬 **Scénarios Pratiques**
+---
 
-### **📱 Scénario 1 : Client → Mobile**
+## ⚠️ **Contraintes et Règles d'Or**
+
+- 🚨 **Tout le trafic passe par le HUB :** La route `0.0.0.0/0` implique que la navigation internet du Satellite utilise la bande passante du HUB.
+- 🚨 **Un HUB par UPlanet :** Pas de duplication. Un seul VPN centralise les connexions IPFS d'un essaim.
+- 🚨 **IPFS Announce :** Si un Satellite oublie d'exécuter la commande `ipfs config --json Addresses.Announce...` générée par le script, son nœud IPFS ne sera pas joignable de l'extérieur (Statut Relayed).
+
+---
+
+## ❓ **FAQ & Dépannage**
+
+### **Q : Mon IPFS reste isolé ou très lent (Statut Relayed) ?**
+**R :** Vérifiez que vous avez bien configuré l'annonce de port.
+1. Regardez votre IP VPN (`ip addr show wg0`). Si c'est `.3`, votre port public est `4003`.
+2. Tapez `ipfs config Addresses.Announce`. S'il est vide, exécutez la commande donnée à la fin de l'installation du client.
+3. Vérifiez que le port `4003` n'est pas bloqué par le pare-feu du fournisseur cloud hébergeant le HUB.
+
+### **Q : Comment vérifier si les redirections de port fonctionnent sur le HUB ?**
+**R :** Exécutez cette commande sur le HUB pour voir la table de routage dynamique :
 ```bash
-# Client déjà configuré
-./wg-client-setup.sh qr
-# Scanner avec l'app Android/iOS
-# Tunnel transféré vers mobile
+sudo iptables -t nat -L WG_IPFS -n -v
 ```
 
-### **🔄 Scénario 2 : Basculement d'Appareil**
-```bash
-# Désactiver sur ordinateur
-sudo systemctl stop wg-quick@wg0
+### **Q : J'ai supprimé un client, l'IP sera-t-elle réutilisée ?**
+**R :** Non, pour éviter les conflits et les erreurs de ports IPFS, le script attribue toujours `Dernière_IP_Connue + 1`.
 
-# Activer sur mobile (via l'app)
-# Tunnel maintenant sur mobile
-```
-
-### **👥 Scénario 3 : Ajout d'un Nouveau Client**
-```bash
-# Admin : Ajouter client
-./wireguard_control.sh → Option 2
-# Client : ./wg-client-setup.sh
-# Admin : Générer QR code
-./wireguard_control.sh → Option 6
-```
-
-## ⚠️ **Points Clés**
-
-- **Clés privées** : Jamais partagées
-- **Port** : 51820 ouvert sur serveur
-- **Réseau** : 10.99.99.0/24
-- **Test** : `ping 10.99.99.1`
-- **Un seul actif** : Un appareil connecté à la fois
-
-## 🌐 **Architecture Constellation Astroport.ONE**
-
-### **🏗️ Contraintes Architecturales :**
-- **Un seul VPN HUB** par essaim IPFS de chaque UPlanet
-- **Hub central** : Point d'entrée unique pour tous les satellites
-- **Satellites** : Se connectent au HUB de leur UPlanet
-- **Isolation** : Chaque UPlanet a son propre réseau VPN (10.99.99.0/24)
-
-### **🎯 Rôle du HUB :**
-- **Point d'entrée** pour tous les satellites de l'UPlanet
-- **Gestion centralisée** des connexions
-- **Routage** vers les services IPFS P2P locaux
-- **Sécurité** : Contrôle d'accès unique
-
-### **🔄 Gestion Multi-UPlanet :**
-```bash
-# UPlanet A (10.99.99.0/24)
-./wireguard_control.sh → Option 1
-# HUB A configuré
-
-# UPlanet B (10.99.98.0/24) - Réseau différent
-./wireguard_control.sh → Option 1
-# HUB B configuré
-
-# Chaque UPlanet = Un HUB unique
-# Chaque satellite = Un seul HUB à la fois
-```
-
-### **⚠️ Contraintes Importantes :**
-- **Un HUB par UPlanet** - Pas de duplication
-- **Réseaux isolés** - Chaque UPlanet a son sous-réseau
-- **Satellites dédiés** - Un satellite = Un UPlanet
-- **Pas de croisement** - Les satellites ne peuvent pas changer d'UPlanet
-
-### **✅ Validation Architecture :**
-```bash
-# Vérifier qu'il n'y a qu'un seul HUB actif
-sudo wg show
-
-# Vérifier le réseau assigné
-ip addr show wg0
-
-# Vérifier les clients connectés
-sudo wg show wg0
-```
-
-### **🚨 Erreurs à Éviter :**
-- ❌ **Plusieurs HUBs** sur le même UPlanet
-- ❌ **Réseaux identiques** entre UPlanets
-- ❌ **Satellites croisés** entre UPlanets
-- ❌ **Conflits d'IP** dans le même essaim
-
-## 📦 **Dépendances**
-
-### **Serveur :**
-```bash
-sudo apt install wireguard qrencode curl
-```
-
-### **Client :**
-```bash
-sudo apt install wireguard qrencode
-# Optionnel pour QR codes
-```
-
-## 🎛️ **Menu Principal (wireguard_control.sh)**
-
-1. 🚀 **Initialiser serveur LAN** - Configuration initiale
-2. 👥 **Ajouter un client LAN** - Ajouter un nouveau client
-3. 🗑️ **Supprimer un client** - Retirer un client
-4. 📋 **Liste des clients** - Voir tous les clients
-5. 📖 **Expliquer configuration client** - Instructions détaillées
-6. 📱 **Générer QR code client** - QR code pour mobile
-7. 🔄 **Redémarrer service** - Redémarrer WireGuard
-8. ❌ **Quitter**
-
-## ❓ **FAQ - Questions Fréquentes**
-
-### **Q : Comment transférer mon tunnel vers mon smartphone ?**
-```bash
-./wg-client-setup.sh qr
-# Scanner le QR code avec l'app WireGuard
-```
-
-### **Q : Puis-je avoir le tunnel sur plusieurs appareils ?**
-**R :** Oui, mais un seul actif à la fois. Basculez avec :
-```bash
-# Ordinateur → Mobile
-sudo systemctl stop wg-quick@wg0
-# Puis activer dans l'app mobile
-```
-
-### **Q : Comment vérifier que ça fonctionne ?**
-```bash
-# Vérifier le service
-sudo systemctl status wg-quick@wg0
-
-# Tester la connectivité
-ping 10.99.99.1
-
-# Voir les connexions
-sudo wg show
-```
-
-### **Q : Le QR code ne fonctionne pas ?**
-```bash
-# Vérifier qrencode
-sudo apt install qrencode
-
-# Tester la génération
-./generate_qr.sh
-```
-
-### **Q : Puis-je avoir plusieurs HUBs sur le même UPlanet ?**
-**R :** Non ! Un seul VPN HUB par essaim IPFS de chaque UPlanet. C'est une contrainte architecturale.
-
-### **Q : Comment gérer plusieurs UPlanets ?**
-**R :** Chaque UPlanet a son propre HUB avec un réseau différent :
-```bash
-# UPlanet A : 10.99.99.0/24
-# UPlanet B : 10.99.98.0/24
-# UPlanet C : 10.99.97.0/24
-```
-
-### **Q : Un satellite peut-il changer d'UPlanet ?**
-**R :** Non, un satellite est dédié à un UPlanet. Pas de croisement possible.
-
-## 🛠️ **Dépannage**
-
-```bash
-# Vérifier service
-sudo systemctl status wg-quick@wg0
-
-# Vérifier connexion
-sudo wg show
-
-# Logs
-sudo journalctl -u wg-quick@wg0
-
-# Test QR code
-./generate_qr.sh
-```
+### **Q : Puis-je avoir le même tunnel sur deux appareils ?**
+**R :** Une clé privée = Une adresse IP = Un appareil actif à la fois. Si vous l'activez sur votre PC et votre mobile en même temps avec la même configuration, la connexion va sauter. Créez un profil client différent pour chaque appareil.
