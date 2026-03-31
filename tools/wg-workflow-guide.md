@@ -130,3 +130,19 @@ sudo iptables -t nat -L WG_IPFS -n -v
 
 ### **Q : Puis-je avoir le même tunnel sur deux appareils ?**
 **R :** Une clé privée = Une adresse IP = Un appareil actif à la fois. Si vous l'activez sur votre PC et votre mobile en même temps avec la même configuration, la connexion va sauter. Créez un profil client différent pour chaque appareil.
+
+## 🎮 **Bonus : Cloud Gaming avec Steam Link**
+
+Le HUB VPN étant très performant, il peut être utilisé pour streamer vos jeux depuis le HUB vers un Satellite via Steam Link ou Moonlight, où que vous soyez dans le monde.
+
+### **Configuration de Steam Link (Sur le Satellite) :**
+La découverte automatique (Broadcast) n'étant pas transmise à travers le VPN, le couplage doit se faire manuellement :
+1. Connectez votre appareil (Satellite) au VPN WireGuard.
+2. Lancez l'application Steam Link.
+3. Allez dans **Paramètres** > **Ordinateur** > **Autre ordinateur**.
+4. Entrez manuellement l'adresse IP du HUB : `10.99.99.1`.
+5. Entrez le code PIN affiché sur l'écran du HUB.
+
+### **Astuces pour une latence optimale :**
+- **Désactiver la route par défaut :** Si l'appareil Satellite ne sert qu'à jouer, modifiez sa configuration WireGuard : remplacez `AllowedIPs = 0.0.0.0/0` par `AllowedIPs = 10.99.99.0/24`. Cela évite que vos téléchargements annexes ne saturent la connexion du HUB.
+- **Bande passante :** Le HUB doit disposer d'une connexion Fibre optique (minimum 30 Mbps d'Upload recommandé pour du 1080p/60fps fluide).

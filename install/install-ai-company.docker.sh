@@ -8,7 +8,7 @@
 #   Paperclip  (3100) — Gestion d'agents IA
 #   Open WebUI (8000) — Interface web IA (remplace OpenWebUI)
 #   LiteLLM    (8001) — Proxy multi-modèles (OpenAI-compatible)
-#   Qdrant     (6333) — Base vectorielle (api-key = UPLANETNAME)
+#   Qdrant     (6333) — Base vectorielle (api-key = sha256 UPLANETNAME)
 #   Ollama     (11434, sur hôte) — Moteur LLM local
 # =============================================================================
 
@@ -16,7 +16,7 @@ set -e
 
 MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
-## Charger UPLANETNAME depuis my.sh (QDRANT_API_KEY = UPLANETNAME pour cohérence constellation)
+## Charger UPLANETNAME depuis my.sh
 . "$MY_PATH/../tools/my.sh" 2>/dev/null || true
 
 # --- CONFIGURATION ---
@@ -124,14 +124,15 @@ else
     PROXY_KEY="sk-swarm-$(openssl rand -hex 8)"
     WEBUI_SECRET=$(openssl rand -hex 32)
 
-    ## QDRANT_API_KEY = UPLANETNAME pour cohérence constellation
-    ## → toutes les stations du même essaim UPlanet ẐEN partagent la même clé Qdrant
+    ## QDRANT_API_KEY : Hash de UPLANETNAME pour cohérence constellation
+    ## On utilise SHA256 pour transformer le nom en une clé robuste de 64 caractères
     if [[ -n "$UPLANETNAME" ]]; then
-        QDRANT_KEY="${UPLANETNAME}"
-        echo "🔑 Qdrant API Key = UPLANETNAME (${QDRANT_KEY:0:8}... — clé de constellation)"
+        # Génère un hash stable (le même sur toutes les machines ayant le même UPLANETNAME)
+        QDRANT_KEY=$(echo -n "$UPLANETNAME" | openssl dgst -sha256 | sed 's/^.* //')
+        echo "🔑 Qdrant API Key générée (Hash de $UPLANETNAME : ${QDRANT_KEY:0:8}...)"
     else
-        QDRANT_KEY=$(openssl rand -hex 16)
-        echo "⚠️  UPLANETNAME absent — Qdrant API Key aléatoire"
+        QDRANT_KEY=$(openssl rand -hex 32)
+        echo "⚠️  UPLANETNAME absent — Qdrant API Key aléatoire générée"
     fi
 
 # (Extrait à ajouter lors de la création du .env)
