@@ -1165,7 +1165,8 @@ process_societaire() {
         assets_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_ASSETS")
         echo -e "${GREEN}✅ Assets trouvé: ${assets_pubkey}...${NC}"
     else
-        echo -e "${RED}❌ Portefeuille Assets non trouvé: ~/.zen/tmp/UPLANETNAME_ASSETS{NC}"        return 1
+        echo -e "${RED}❌ Portefeuille Assets non trouvé: ~/.zen/tmp/UPLANETNAME_ASSETS${NC}"
+        return 1
     fi
     
     # Transfert (1/3) → MULTIPASS du sociétaire (crédit usage retourné)
