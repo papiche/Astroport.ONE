@@ -76,13 +76,18 @@ for DESK in "${DESKTOPS[@]}"; do
         # 2. Raccourci TOGGLE ON/OFF
         sed "s|_ASTRO_PATH_|$ASTRO|g" "${ASTRO}/astroport_toggle.desktop" > "$DESK/astroport_toggle.desktop"
 
+        # 2. Raccourci UPLANET
+        sed "s|_ASTRO_PATH_|$ASTRO|g" "${ASTRO}/uplanet.desktop" > "$DESK/uplanet.desktop"
+
         # Permissions
         chmod +x "$DESK/rec.desktop"
         chmod +x "$DESK/astroport_toggle.desktop"
+        chmod +x "$DESK/uplanet.desktop"
 
         # Confiance GNOME/Cinnamon (évite le message "Lanceur non fiable")
         gio set "$DESK/rec.desktop" metadata::trusted true 2>/dev/null || true
         gio set "$DESK/astroport_toggle.desktop" metadata::trusted true 2>/dev/null || true
+        gio set "$DESK/uplanet.desktop" metadata::trusted true 2>/dev/null || true
     fi
 done
 
