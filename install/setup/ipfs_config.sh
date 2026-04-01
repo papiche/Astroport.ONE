@@ -15,22 +15,22 @@ echo ">>> Configuration IPFS pour $(hostname)..."
 
 if [[ -n "$MY_WAN_IP" ]]; then
     echo "    [♥Box] IP Publique détectée : $MY_WAN_IP"
-    echo "    Mode : DHT SERVER (Nœud accessible de l'extérieur)"
+    echo "    Mode : DHT SERVER"
     ipfs config Routing.Type dhtserver
-    
-    # On force IPFS à annoncer l'IP publique de la ♥Box
-    # Cela permet aux autres de te trouver sans passer par un relais
     ipfs config --json Addresses.Announce "[\"/ip4/$MY_WAN_IP/tcp/4001\", \"/ip4/$MY_WAN_IP/udp/4001/quic-v1\"]"
-    echo "    Annonce WAN configurée sur le port 4001"
+    # On autorise tout le trafic sur un serveur public
+    ipfs config Swarm.AddrFilters --json "[]"
 else
-    if [[ -n "$isLAN" ]]; then
-        echo "    Mode : DHT CLIENT (Nœud caché / LAN)"
+    if [[ -n "$isLAN" || $(hostname) == "nexus" ]]; then
+        echo "    Mode : DHT CLIENT (4G/Restreint)"
         ipfs config Routing.Type dhtclient
-        ipfs config --json Swarm.AddrFilters '["/ip6/::/0"]'
+        # SYNTAXE CORRIGÉE : /ip6/::/ipcidr/0 pour bloquer l'IPv6 proprement
+        ipfs config Swarm.AddrFilters --json '["/ip6/::/ipcidr/0"]'
         ipfs config --json Addresses.Announce "[]"
     else
-        echo "    Mode : DHT SERVER (Serveur Fixe)"
+        echo "    Mode : DHT SERVER (Fixe)"
         ipfs config Routing.Type dhtserver
+        ipfs config Swarm.AddrFilters --json "[]"
         ipfs config --json Addresses.Announce "[]"
     fi
 fi
