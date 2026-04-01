@@ -23,8 +23,8 @@ if [[ -n "$MY_WAN_IP" ]]; then
     ipfs config --json Addresses.Announce "[\"/ip4/$MY_WAN_IP/tcp/4001\", \"/ip4/$MY_WAN_IP/udp/4001/quic-v1\"]"
     echo "    Annonce WAN configurée sur le port 4001"
 else
-    if [[ -n "$isLAN" || $(hostname) == "nexus" ]]; then
-        echo "    Mode : DHT CLIENT (Nœud caché / 4G)"
+    if [[ -n "$isLAN" ]]; then
+        echo "    Mode : DHT CLIENT (Nœud caché / LAN)"
         ipfs config Routing.Type dhtclient
         ipfs config --json Swarm.AddrFilters '["/ip6/::/0"]'
         ipfs config --json Addresses.Announce "[]"
