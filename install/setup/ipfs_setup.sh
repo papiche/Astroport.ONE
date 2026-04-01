@@ -1,140 +1,106 @@
 #!/bin/bash
 ################################################################### ipfs_setup.sh
-{ # this ensures the entire script is downloaded #
+# Version: 1.1
+# License: AGPL-3.0
+################################################################################
+{ 
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-ME="${0##*/}"
 
-# CHECK not root user !!
-if [ "$EUID" -eq 0 ]
-  then echo -e "DO NOT EXECUTE AS root. Choose a user for your Astroport Station (we like pi)"
-  exit 1
-else echo -e "OK $USER, let's go!";
-fi
+ASTRO="${HOME}/.zen/Astroport.ONE"
 
-# Ask user password on start
-sudo true
-
-## Error funciton
-err() {
-    echo -e "ERREUR: $1"
-    exit 1
-}
-
-# CHECK node IP isLAN?
-myIP=$(hostname -I | awk '{print $1}')
-isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
-YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER");
-
-MACHINE_TYPE=`uname -m`
-
-# CHECK if daemon is already running
-if [[ $YOU ]]; then
-    echo "ipfs daemon already running...! Run by $YOU $MACHINE_TYPE"
-    [[ $YOU == $USER ]] && echo "Stopping ipfs daemon" && killall ipfs \
-                                        || (echo "ERROR $YOU is running ipfs, must be $USER" && exit 1)
+# 1. CHARGEMENT DES VARIABLES SYSTEME
+# On active le venv pour que keygen/python soient dispos
+[[ -s "$HOME/.astro/bin/activate" ]] && . "$HOME/.astro/bin/activate"
+# Source my.sh pour avoir $isLAN, $UPLANETNAME, $IPFSNODEID, etc.
+if [[ -f "$ASTRO/tools/my.sh" ]]; then
+    source "$ASTRO/tools/my.sh"
 else
-    # REINIT ipfs
-    [[ -s ~/.ipfs/config ]] && echo ">>> WARNING BACKUP OLD IPFS CONFIG ~/.ipfs/config.old"
-    rm -f ~/.ipfs/config.old 2>/dev/null
-    mv ~/.ipfs/config ~/.ipfs/config.old 2>/dev/null
-
-    [[ $isLAN ]] && ipfs init -p lowpower \
-    || ipfs init -p server
-    # RESET NODE SECRET
-    rm -f ~/.zen/game/secret.* 2>/dev/null
+    echo "ERREUR: my.sh introuvable" && exit 1
 fi
 
-echo -e "Astroport activate IPFS Layer installation..."
-### IPFS config cleaning
-# private swarm
+# Sécurité root
+if [ "$EUID" -eq 0 ]; then 
+    echo -e "NE PAS EXECUTER EN root. Utilisez l'utilisateur de la station (ex: pi ou fred)"
+    exit 1
+fi
+
+# 2. GESTION DU DAEMON
+YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER")
+if [[ $YOU ]]; then
+    echo "IPFS est déjà lancé par $YOU. Arrêt pour configuration..."
+    sudo systemctl stop ipfs 2>/dev/null || killall ipfs
+fi
+
+# 3. INITIALISATION (si nécessaire)
+if [[ ! -s ~/.ipfs/config ]]; then
+    echo ">>> Initialisation de IPFS..."
+    # On utilise $isLAN détecté par my.sh
+    if [[ -n "$isLAN" ]]; then
+        echo "Mode : LOWPOWER (LAN détecté)"
+        ipfs init -p lowpower
+    else
+        echo "Mode : SERVER (WAN détecté)"
+        ipfs init -p server
+    fi
+    # Reset des secrets pour forcer la régénération propre au premier boot
+    rm -f ~/.zen/game/secret.* 2>/dev/null
+else
+    echo ">>> IPFS déjà initialisé. Sauvegarde config existante."
+    cp ~/.ipfs/config ~/.ipfs/config.bak
+fi
+
+# 4. CONFIGURATION DE BASE (Utilisant les outils IPFS)
+echo ">>> Optimisation de la couche IPFS..."
 ipfs config --json Plugins.Plugins.telemetry.Config '{"Mode": "off"}'
 ipfs config --json AutoConf.Enabled false
 ipfs config --json DNS.Resolvers '{}'
-ipfs config --json Routing.DelegatedRouters '[]'
-ipfs config --json Ipns.DelegatedPublishers '[]'
-ipfs config --json AutoTLS.Enabled false
-# ipfs config --json Routing.Type '"dht"'
-ipfs config --json Routing.Type '"dhtserver"'
+ipfs config --json Routing.AcceleratedDHTClient true
 ipfs config --json Ipns.UsePubsub true
-# for ipfs p2p relaying
 ipfs config --json Swarm.RelayClient.Enabled true
 ipfs config --json Swarm.RelayService.Enabled true
 
-if [[ "$USER" == "xbian" ]]
-then
-    echo "enabling ipfs initV service autostart"
-    cd /etc/rc2.d && sudo ln -s ../init.d/ipfs S02ipfs
-    cd /etc/rc3.d && sudo ln -s ../init.d/ipfs S02ipfs
-    cd /etc/rc4.d && sudo ln -s ../init.d/ipfs S02ipfs
-    cd /etc/rc5.d && sudo ln -s ../init.d/ipfs S02ipfs
-
-    cd /etc/rc0.d && sudo ln -s ../init.d/ipfs K01ipfs
-    cd /etc/rc1.d && sudo ln -s ../init.d/ipfs K01ipfs
-    cd /etc/rc6.d && sudo ln -s ../init.d/ipfs K01ipfs
-
-    # Disable xbian-config auto launch
-    echo 0 > ~/.xbian-config-start
-
-fi
-
-    ## DEBIAN
-    echo "CREATE SYSTEMD ipfs SERVICE >>>>>>>>>>>>>>>>>>"
-cat > /tmp/ipfs.service <<EOF
+# 5. GENERATION DU SERVICE SYSTEMD
+echo ">>> Installation du service systemd..."
+cat <<EOF | sudo tee /etc/systemd/system/ipfs.service > /dev/null
 [Unit]
-Description=IPFS daemon
+Description=IPFS daemon (Astroport.ONE)
 After=network.target
 Requires=network.target
 
 [Service]
 Type=simple
-User=_USER_
-RestartSec=1
+User=$USER
+RestartSec=3
 Restart=always
-Environment=IPFS_FD_MAX=8192
-ExecStart=/usr/local/bin/ipfs daemon --migrate --enable-pubsub-experiment --enable-namesys-pubsub --routing=dhtclient
+Environment=IPFS_FD_MAX=100000
+# Utilisation de PubSub pour la constellation
+ExecStart=$(which ipfs) daemon --migrate --enable-pubsub-experiment --enable-namesys-pubsub
 CPUAccounting=true
 CPUQuota=60%
-CPUAffinity=0-1
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-## LAN is dhtclient only
-[[ ! $isLAN ]] \
-    && sed -i "s/--routing=dhtclient//g" /tmp/ipfs.service
-
-sudo cp -f /tmp/ipfs.service /etc/systemd/system/
-sudo sed -i "s/_USER_/$USER/g" /etc/systemd/system/ipfs.service
-
 sudo systemctl daemon-reload
 sudo systemctl enable ipfs
 
-###########################################
-# ACTIVATE IPFS OPTIONS: #swarm0 INIT
-###########################################
-## ipfs_config.sh — configuration complète IPFS (Libp2pStreamMounting, CORS, bootstrap, swarm.key)
-## Fichier unique dans install/setup/ ; erreur si absent → fallback minimal
+# 6. CONFIGURATION AVANCÉE (via ipfs_config.sh)
+# On délègue le peering dynamique et le réglage DHT à ipfs_config.sh
 if [[ -x "$MY_PATH/ipfs_config.sh" ]]; then
     bash "$MY_PATH/ipfs_config.sh"
 else
-    echo "⚠️  ipfs_config.sh absent — activation Libp2pStreamMounting minimale"
-    ipfs config --json Experimental.Libp2pStreamMounting true
-    ipfs config --json Experimental.P2pHttpProxy true
+    echo "⚠️  ATTENTION: ipfs_config.sh absent. La constellation ne sera pas raccordée."
 fi
 
-## Add ulimit "open files" (avoid ipfs hang)
-sudo sed -i "/$USER.*nofile/d" /etc/security/limits.conf
-echo "$USER soft nofile 100000" | sudo tee -a /etc/security/limits.conf
-echo "$USER hard nofile 100000" | sudo tee -a /etc/security/limits.conf
+# 7. OPTIMISATION DES LIMITES SYSTEME
+if ! grep -q "$USER.*nofile.*100000" /etc/security/limits.conf; then
+    echo ">>> Augmentation des limites de fichiers ouverts..."
+    echo "$USER soft nofile 100000" | sudo tee -a /etc/security/limits.conf
+    echo "$USER hard nofile 100000" | sudo tee -a /etc/security/limits.conf
+fi
 
-} # this ensures the entire script is downloaded #
-# IPFS CONFIG documentation: https://github.com/ipfs/go-ipfs/blob/master/docs/config.md#addressesswarm
-# https://github.com/ipfs/kubo/blob/master/docs/config.md
+echo "✅ IPFS Setup terminé."
 
-# VISUALISER DHT
-# ipfs stats dht wan
-
-# CONSUMING RESSOURCES
-# export DPID=26024; watch -n0 'printf "sockets: %s\nleveldb: %s\nflatfs: %s\n" $(ls /proc/${DPID}/fd/ -l | grep "socket:" | wc -l) $(ls /proc/${DPID}/fd/ -l | grep "\\/datastore\\/" | wc -l) $(ls /proc/${DPID}/fd/ -l | grep "\\/blocks\\/" | wc -l)'
+}

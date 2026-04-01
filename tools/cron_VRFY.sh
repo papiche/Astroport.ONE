@@ -14,19 +14,25 @@
 #   ON (default) - Full Astroport mode
 #       - 20h12 cron job: ENABLED
 #       - IPFS daemon: ENABLED (24/7)
-#       - Astroport API: ENABLED
+#       - Astroport SWARM: ENABLED
+#       - UPassport API: ENABLED
+#       - strfry RELAY: ENABLED
 #       - Constellation sync: Every hour via _12345.sh
 #
 #   OFF - Complete shutdown
 #       - 20h12 cron job: DISABLED
 #       - IPFS daemon: DISABLED
 #       - Astroport API: DISABLED
+#       - UPassport API: DISABLED
+#       - strfry RELAY: DISABLED
 #       - Constellation sync: NONE
 #
 #   LOW - Resource-saving mode (for low disk/bandwidth stations)
 #       - 20h12 cron job: ENABLED (runs at solar 20h12)
 #       - IPFS daemon: DISABLED (starts only at 20h12, runs 1h, then stops)
 #       - Astroport API: DISABLED (not restarted in LOW mode)
+#       - UPassport API: DISABLED
+#       - strfry RELAY: ENABLED
 #       - Constellation sync: Once per day during 20h12 window
 #
 # SOLAR TIME CALIBRATION:
@@ -48,11 +54,11 @@
 # -----------------
 #   Current → Target | Action
 #   -----------------+--------------------------------------------------
-#   OFF → ON         | Add cron, enable+start IPFS/astroport/g1billet
+#   OFF → ON         | Add cron, enable+start IPFS/astroport/upassport/strfry
 #   OFF → LOW        | Add cron, IPFS disabled (starts only at 20h12)
 #   ON → OFF         | Remove cron, stop+disable all services
 #   ON → LOW         | Keep cron, stop+disable IPFS (20h12 will restart it)
-#   LOW → ON         | Keep cron, enable+start IPFS (24/7 mode)
+#   LOW → ON         | Keep cron, enable+start IPFS IPFS/astroport/upassport/strfry (24/7 mode)
 #   LOW → OFF        | Remove cron, ensure all services stopped
 #
 # 20H12.PROCESS.SH BEHAVIOR BY MODE:
@@ -149,7 +155,7 @@ add_20h12_cron() {
 ########################################################################
 
 case "$MODE" in
-    "ON")
+"ON")
         echo ""
         echo ">>> ACTIVATING ASTROPORT (ON mode - Full 24/7)"
         echo ""
@@ -160,12 +166,22 @@ case "$MODE" in
         
         # Enable and start all services
         sudo systemctl enable ipfs 2>/dev/null
+        sudo systemctl restart ipfs 2>/dev/null
+        sudo systemctl enable strfry 2>/dev/null
+        sudo systemctl restart strfry 2>/dev/null
         sudo systemctl enable astroport 2>/dev/null
-        sudo systemctl enable g1billet 2>/dev/null
-        sudo systemctl start ipfs 2>/dev/null
-        sudo systemctl start astroport 2>/dev/null
-        ## G1Billet fonctionne en mode CLI uniquement (plus de service systemd)
-        
+        sudo systemctl restart astroport 2>/dev/null
+        sudo systemctl enable upassport 2>/dev/null
+        sudo systemctl restart upassport 2>/dev/null
+
+        # --- AJOUT ICI : Synchronisation Constellation ---
+        echo "📡 Déclenchement de la synchronisation constellation..."
+        (
+            sleep 15 # Attente que IPFS et le relai Nostr soient opérationnels
+            bash "$MY_PATH/../bootstrap_constellation.sh" > ~/.zen/tmp/coucou/bootstrap_on_start.log 2>&1
+        ) &
+        # --------------------------------------------------
+
         echo "✅ ASTROPORT is ON"
         echo "   - 20h12 cron: ENABLED (solar time: $SOLAR20H12)"
         echo "   - IPFS: ENABLED (24/7)"
@@ -183,16 +199,21 @@ case "$MODE" in
         crontab /tmp/newcron
         
         # Stop and disable all services
+        sudo systemctl stop strfry 2>/dev/null
+        sudo systemctl disable strfry 2>/dev/null
+        sudo systemctl stop upassport 2>/dev/null
+        sudo systemctl disable upassport 2>/dev/null
         sudo systemctl stop astroport 2>/dev/null
-        sudo systemctl stop ipfs 2>/dev/null
         sudo systemctl disable astroport 2>/dev/null
-        sudo systemctl disable g1billet 2>/dev/null
+        sudo systemctl stop ipfs 2>/dev/null
         sudo systemctl disable ipfs 2>/dev/null
         
         echo "🛑 ASTROPORT is OFF"
         echo "   - 20h12 cron: DISABLED"
+        echo "   - strfy RELAY: DISABLED"
+        echo "   - UPassport API: DISABLED"
         echo "   - IPFS: DISABLED"
-        echo "   - Astroport API: DISABLED"
+        echo "   - Astroport SWARM: DISABLED"
         echo "   - Constellation sync: NONE"
         ;;
         
@@ -205,12 +226,18 @@ case "$MODE" in
         add_20h12_cron
         crontab /tmp/newcron
         
-        # Disable IPFS from starting automatically (20h12 will start it)
+        # Disable IPFS (20h12 will start it), only keep strfry NOSTR relay on
+        sudo systemctl enable strfry 2>/dev/null
+        sudo systemctl start strfry 2>/dev/null
+        sudo systemctl stop upassport 2>/dev/null
+        sudo systemctl disable upassport 2>/dev/null
+        sudo systemctl stop astroport 2>/dev/null
+        sudo systemctl disable astroport 2>/dev/null
         sudo systemctl stop ipfs 2>/dev/null
         sudo systemctl disable ipfs 2>/dev/null
-        
-        # Keep astroport and g1billet disabled in LOW mode
-        # (they won't be restarted by 20h12.process.sh in LOW mode)
+    
+        # Keep astroport disabled in LOW mode
+        # (they will be restarted for an hour by 20h12.process.sh in LOW mode)
         sudo systemctl stop astroport 2>/dev/null
         
         echo "⚡ ASTROPORT is in LOW mode"
@@ -261,6 +288,7 @@ get_service_status() {
 }
 echo "  IPFS:      $(get_service_status ipfs)"
 echo "  Astroport: $(get_service_status astroport)"
-echo "  G1Billet:  $(get_service_status g1billet)"
+echo "  strfry:  $(get_service_status strfry)"
+echo "  Upassport:  $(get_service_status upassport)"
 
 exit 0

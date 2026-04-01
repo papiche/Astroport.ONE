@@ -54,7 +54,7 @@ if [[ -n "$STATIONS_JSON" && "$STATIONS_JSON" != "[]" ]]; then
 import asyncio, websockets, json, sys
 async def get_follows():
     try:
-        async with websockets.connect('${myRELAY:-wss://relay.copylaradio.com}') as ws:
+        async with websockets.connect('wss://relay.copylaradio.com') as ws:
             await ws.send(json.dumps(['REQ', 'f', {'kinds': [3], 'authors': ['$cap'], 'limit': 1}]))
             while True:
                 resp = await asyncio.wait_for(ws.recv(), timeout=3)

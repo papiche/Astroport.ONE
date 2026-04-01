@@ -1,68 +1,75 @@
 #!/bin/bash
 ################################################################## ipfs_config.sh
-# Version: 0.1
-# License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
+# Version: 0.3 (Gestion intelligente ♥Box / WAN accessible)
 ################################################################################
-myIP=$(hostname -I | awk '{print $1}')
-isLAN=$(route -n |awk '$1 == "0.0.0.0" {print $2}' | grep -E "/(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])/")
+MY_PATH="`dirname \"$0\"`"
+source "$MY_PATH/../../tools/my.sh"
 
 sudo systemctl stop ipfs
 
-###########################################
-### IMPORTANT !!!!!!! IMPORTANT !!!!!!
-###########################################
-# DHT PUBSUB mode
-# ipfs config Pubsub.Router gossipsub ## DEPRECATED
+# 1. DÉTECTION DE L'ACCESSIBILITÉ
+# Si ♥Box est présent, on récupère l'IP publique
+MY_WAN_IP=$(zIp) 
+
+echo ">>> Configuration IPFS pour $(hostname)..."
+
+if [[ -n "$MY_WAN_IP" ]]; then
+    echo "    [♥Box] IP Publique détectée : $MY_WAN_IP"
+    echo "    Mode : DHT SERVER (Nœud accessible de l'extérieur)"
+    ipfs config Routing.Type dhtserver
+    
+    # On force IPFS à annoncer l'IP publique de la ♥Box
+    # Cela permet aux autres de te trouver sans passer par un relais
+    ipfs config --json Addresses.Announce "[\"/ip4/$MY_WAN_IP/tcp/4001\", \"/ip4/$MY_WAN_IP/udp/4001/quic-v1\"]"
+    echo "    Annonce WAN configurée sur le port 4001"
+else
+    if [[ -n "$isLAN" || $(hostname) == "nexus" ]]; then
+        echo "    Mode : DHT CLIENT (Nœud caché / 4G)"
+        ipfs config Routing.Type dhtclient
+        ipfs config --json Swarm.AddrFilters '["/ip6/::/0"]'
+        ipfs config --json Addresses.Announce "[]"
+    else
+        echo "    Mode : DHT SERVER (Serveur Fixe)"
+        ipfs config Routing.Type dhtserver
+        ipfs config --json Addresses.Announce "[]"
+    fi
+fi
+
+# 2. PEERING PERMANENT (Inchangé, reste le ciment du réseau)
+BOOTSTRAP_FILE="$HOME/.zen/Astroport.ONE/A_boostrap_nodes.txt"
+if [[ -s "$BOOTSTRAP_FILE" ]]; then
+    PEER_JSON="["
+    FIRST=true
+    while read -r line; do
+        [[ "$line" =~ ^# ]] || [[ -z "$line" ]] && continue
+        PEER_ID="${line##*/}"
+        ADDR="${line%/p2p/*}"
+        if [ "$FIRST" = false ]; then PEER_JSON+=","; fi
+        PEER_JSON+="{\"ID\": \"$PEER_ID\", \"Addrs\": [\"$ADDR\"]}"
+        FIRST=false
+    done < <(grep -Ev "^#" "$BOOTSTRAP_FILE")
+    PEER_JSON+="]"
+    ipfs config Peering.Peers --json "$PEER_JSON"
+fi
+
+# 3. OPTIONS D'ACCÉLÉRATION & RÉSEAU
 ipfs config --json Ipns.UsePubsub true
-
-# MAXSTORAGE = 1/2 full
-availableDiskSize=$(df -P ~/ | awk 'NR>1{sum+=$4}END{print sum}')
-fullDiskSize=$(df -P ~/ | awk 'NR>1{sum+=$2}END{print sum}')
-diskSize="$((fullDiskSize / 2))"
-ipfs config Datastore.StorageMax $diskSize
-
-## Activate Rapid "ipfs p2p"
 ipfs config --json Experimental.Libp2pStreamMounting true
 ipfs config --json Experimental.P2pHttpProxy true
-
-#~ ## Activate AcceleratedDHTClient
-ipfs config --json Routing.AcceleratedDHTClient true
-
-
 ipfs config --json Swarm.ConnMgr.LowWater 20
-ipfs config --json Swarm.ConnMgr.HighWater 40
+ipfs config --json Swarm.ConnMgr.HighWater 60
 
-[[ ! $isLAN ]] && ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://'$(hostname)'.localhost:8080", "http://ipfs.localhost:8080", "http://127.0.0.1:8080", "http://127.0.1.1:8080", "https://ipfs.'$(hostname)'", "https://ipfs.copylaradio.com" ]' \
-			   || ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://'$myIP':8080", "http://'$(hostname)'.local:8080","http://'$(hostname)':8080", "http://'$(hostname)'.localhost:8080", "http://127.0.0.1:8080", "http://ipfs.localhost:8080", "http://127.0.1.1:8080" ]'
-
+# 4. CORS & API
+ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["*"]'
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "GET", "POST"]'
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Credentials '["true"]'
 
-## For ipfs.js = https://github.com/ipfs/js-ipfs/blob/master/docs/DELEGATE_ROUTERS.md
-#~ ipfs config --json Addresses.Swarm | jq '. += ["/ip4/0.0.0.0/tcp/30215/ws"]' > /tmp/30215.ws
-#~ ipfs config --json Addresses.Swarm "$(cat /tmp/30215.ws)"
-
-ipfs config Addresses.API "/ip4/0.0.0.0/tcp/5001"
-ipfs config Addresses.Gateway "/ip4/0.0.0.0/tcp/8080"
-
-################################################################
-# Créer le fichier swarm.key UPlanet ZERO
-cat > ~/.ipfs/swarm.key <<EOF
-/key/swarm/psk/1.0.0/
-/base16/
-0000000000000000000000000000000000000000000000000000000000000000
-EOF
-################################################################
-chmod 600 ~/.ipfs/swarm.key
-
-######### CLEAN DEFAULT BOOSTRAP ADD Astroport.ONE Officials ###########
+# 5. RE-BOOTSTRAP & START
 ipfs bootstrap rm --all
-
-for bootnode in $(cat ~/.zen/Astroport.ONE/A_boostrap_nodes.txt | grep -Ev "#") # remove comments
-do
-	ipfsnodeid=${bootnode##*/}
-	ipfs bootstrap add $bootnode
-done
+while read -r bootnode; do
+    [[ "$bootnode" =~ ^# ]] || [[ -z "$bootnode" ]] && continue
+    ipfs bootstrap add "$bootnode"
+done < <(grep -Ev "^#" "$BOOTSTRAP_FILE")
 
 sudo systemctl start ipfs
-sleep 5
+echo "✅ Configuration IPFS (v0.3) terminée."

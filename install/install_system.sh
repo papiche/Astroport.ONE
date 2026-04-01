@@ -57,6 +57,38 @@ echo "# ADDING <<<Astroport & REC >>>  DESKTOP SHORTCUT"
 [[ -d ~/Bureau ]] && sed "s/_USER_/$USER/g" ${ASTRO}/rec.desktop > ~/Bureau/rec.desktop && chmod +x ~/Bureau/rec.desktop
 [[ -d ~/Desktop ]] && sed "s/_USER_/$USER/g" ${ASTRO}/rec.desktop > ~/Desktop/rec.desktop && chmod +x ~/Desktop/rec.desktop
 
+########################################################################
+# DESKTOP SHORTCUTS (Mint, Ubuntu, Debian)
+########################################################################
+echo "######### INSTALLATION DES RACCOURCIS BUREAU #######"
+
+ASTRO="${HOME}/.zen/Astroport.ONE"
+DESKTOPS=("$HOME/Bureau" "$HOME/Desktop")
+
+for DESK in "${DESKTOPS[@]}"; do
+    if [[ -d "$DESK" ]]; then
+        echo "Configuration du bureau dans : $DESK"
+
+        # 1. Raccourci REC (Ajouter Média)
+        # On utilise le fichier existant en s'assurant que le chemin est correct
+        sed "s|/home/fred|$HOME|g" "${ASTRO}/rec.desktop" > "$DESK/rec.desktop"
+
+        # 2. Raccourci TOGGLE ON/OFF
+        sed "s|_ASTRO_PATH_|$ASTRO|g" "${ASTRO}/astroport_toggle.desktop" > "$DESK/astroport_toggle.desktop"
+
+        # Permissions
+        chmod +x "$DESK/rec.desktop"
+        chmod +x "$DESK/astroport_toggle.desktop"
+
+        # Confiance GNOME/Cinnamon (évite le message "Lanceur non fiable")
+        gio set "$DESK/rec.desktop" metadata::trusted true 2>/dev/null || true
+        gio set "$DESK/astroport_toggle.desktop" metadata::trusted true 2>/dev/null || true
+    fi
+done
+
+# Initialisation de l'icône de toggle selon l'état actuel
+bash "${ASTRO}/tools/astroport_toggle.sh" status_only 2>/dev/null || true
+
 ######### SUPER PRATIQUE :: DOES NOT WORK WITH SPACE IN FILENAME
 echo "# ADD NEMO 'Add To IPFS' ACTION"
 ${ASTRO}/install/install.nemo.add2ipfs.sh

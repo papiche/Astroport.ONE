@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Astroport [CHECK]
+Comment=Bascule ON/OFF Astroport.ONE
+Exec=_ASTRO_PATH_/tools/astroport_toggle.sh
+Icon=_ASTRO_PATH_/astroport_off.png
+Terminal=false
+Categories=Utility;Network;

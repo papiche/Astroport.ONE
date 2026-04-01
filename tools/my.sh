@@ -512,6 +512,19 @@ HACKGIPFS="/ipfs/Qmemnmd9V4WQEQF1wjKomeBJSuvAoqFBS7Hoq4sBDxvV2F"
 if [ -s "$HOME/.astro/bin/activate" ]; then
     source $HOME/.astro/bin/activate
 fi
+## DETECT WIREGUARD VPN (Special Cases & Fallback Optimization)
+myWG_IP=$(ip -4 addr show wg0 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -n 1)
+
+if [ -n "$myWG_IP" ]; then
+    export WG_IP="$myWG_IP"
+    export WG_HUB="10.99.99.1"
+    
+    # 🚀 OPTIMISATION MAJEURE :
+    # Si WireGuard est monté, le fallback SSH ne passe plus par l'internet public (lent/NATé)
+    # mais emprunte l'autoroute du VPN vers l'Armateur (le HUB).
+    export SWARM_REMOTE_HOST="$WG_HUB"
+    export SWARM_REMOTE_PORT_IPV4=22 # Le port SSH local natif du HUB
+fi
 
 [[ $myDOMAIN == "localhost" && -s ~/.zen/♥Box ]] \
     && myDOMAIN=$(echo $myIPFS | rev | cut -d '.' -f -2 | rev)
