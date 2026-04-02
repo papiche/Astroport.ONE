@@ -128,102 +128,45 @@ check_dependencies() {
     fi
 }
 
-# Fonction pour vérifier le statut réel des services - Optimisée avec cache
+# Fonction pour vérifier le statut réel des services - Source unique : heartbox_analysis.sh
 check_services_status() {
     local services_status=()
     local nextcloud_available=false
-    
-    # Utiliser le cache heartbox_analysis.sh pour une détection rapide et cohérente
+
+    # Fichier de cache produit par heartbox_analysis.sh
     local heartbox_cache="$HOME/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json"
-    local use_cache=false
-    
+    local cache_age=99999
+
     if [[ -f "$heartbox_cache" ]]; then
-        local cache_age=$(( $(date +%s) - $(stat -c %Y "$heartbox_cache" 2>/dev/null || echo 0) ))
-        if [[ $cache_age -lt 60 ]]; then  # 60 secondes pour réactivité immédiate
-            use_cache=true
+        cache_age=$(( $(date +%s) - $(stat -c %Y "$heartbox_cache" 2>/dev/null || echo 0) ))
+    fi
+
+    # Si le cache est absent ou périmé (> 300 s = TTL heartbox_analysis.sh), le régénérer
+    if [[ $cache_age -ge 300 ]]; then
+        echo -e "\033[0;36m  🔄 Actualisation du cache heartbox...\033[0m"
+        "${MY_PATH}/tools/heartbox_analysis.sh" update >/dev/null 2>&1
+        # Recalculer l'âge après mise à jour
+        if [[ -f "$heartbox_cache" ]]; then
+            cache_age=$(( $(date +%s) - $(stat -c %Y "$heartbox_cache" 2>/dev/null || echo 0) ))
         fi
     fi
-    
-    if [[ "$use_cache" == "true" ]]; then
-        # Lire les statuts depuis le cache heartbox_analysis
-        # Variables globales (sans local) pour être accessibles dans show_services_status()
-        ipfs_active=$(jq -r '.services.ipfs.active // false' "$heartbox_cache" 2>/dev/null)
-        astroport_active=$(jq -r '.services.astroport.active // false' "$heartbox_cache" 2>/dev/null)
-        upassport_active=$(jq -r '.services.upassport.active // false' "$heartbox_cache" 2>/dev/null)
-        nextcloud_active=$(jq -r '.services.nextcloud.active // false' "$heartbox_cache" 2>/dev/null)
-        strfry_active=$(jq -r '.services.strfry.active // false' "$heartbox_cache" 2>/dev/null)
-        g1billet_active=$(jq -r '.services.g1billet.active // false' "$heartbox_cache" 2>/dev/null)
 
-        # Récupérer les détails IPFS depuis le cache
-        ipfs_peers=$(jq -r '.services.ipfs.peers_connected // 0' "$heartbox_cache" 2>/dev/null)
+    # Lire les statuts depuis le cache heartbox_analysis (source unique de vérité)
+    # La clé nostr_relay correspond au champ produit par heartbox_analysis.sh
+    # Variables globales (sans local) pour être accessibles dans show_services_status()
+    ipfs_active=$(jq -r '.services.ipfs.active // false'          "$heartbox_cache" 2>/dev/null || echo false)
+    astroport_active=$(jq -r '.services.astroport.active // false' "$heartbox_cache" 2>/dev/null || echo false)
+    upassport_active=$(jq -r '.services.upassport.active // false' "$heartbox_cache" 2>/dev/null || echo false)
+    nextcloud_active=$(jq -r '.services.nextcloud.active // false' "$heartbox_cache" 2>/dev/null || echo false)
+    strfry_active=$(jq -r '.services.nostr_relay.active // false'  "$heartbox_cache" 2>/dev/null || echo false)
+    g1billet_active=$(jq -r '.services.g1billet.active // false'   "$heartbox_cache" 2>/dev/null || echo false)
 
-        # Pas de détail proc disponible depuis le cache
-        upassport_proc=""
-        strfry_proc=""
+    # Détails supplémentaires depuis le cache
+    ipfs_peers=$(jq -r '.services.ipfs.peers_connected // 0'      "$heartbox_cache" 2>/dev/null || echo 0)
+    strfry_proc=$(jq -r '.services.nostr_relay.engine // ""'       "$heartbox_cache" 2>/dev/null || echo "")
 
-    else
-        # Vérification en temps réel (fallback)
-        # Variables globales (sans local) pour être accessibles dans show_services_status()
-        ipfs_active=false
-        astroport_active=false
-        upassport_active=false
-        nextcloud_active=false
-        strfry_active=false
-        g1billet_active=false
-
-        # IPFS - vérifier le processus
-        ipfs_peers=0
-        if pgrep ipfs >/dev/null; then
-            ipfs_active=true
-            ipfs_peers=$(ipfs swarm peers 2>/dev/null | wc -l)
-        fi
-
-        # Astroport - vérifier le processus principal
-        if pgrep -f "12345" >/dev/null; then
-            astroport_active=true
-        fi
-
-        # UPassport API - vérification port 54321 (sans espace forcé pour compatibilité ss)
-        if ss -tlnp 2>/dev/null | grep -q ":54321"; then
-            upassport_active=true
-            upassport_proc=$(ss -tlnp 2>/dev/null | grep ":54321" | sed -n 's/.*users:((("\([^"]*\)".*/\1/p' | head -n1)
-        elif pgrep -f "54321.py" >/dev/null 2>&1; then
-            # Fallback: détection directe du processus Python UPassport
-            upassport_active=true
-            upassport_proc="54321.py"
-        else
-            upassport_active=false
-            upassport_proc=""
-        fi
-
-        # NextCloud - vérifier les conteneurs Docker
-        if command -v docker >/dev/null 2>&1 && docker ps --filter "name=nextcloud" --format "{{.Names}}" 2>/dev/null | grep -q nextcloud; then
-            nextcloud_active=true
-        fi
-
-        # strfry NOSTR relay - vérification port 7777 (sans espace forcé) + fallback process
-        if ss -tlnp 2>/dev/null | grep -q ":7777"; then
-            strfry_active=true
-            strfry_proc=$(ss -tlnp 2>/dev/null | grep ":7777" | sed -n 's/.*users:((("\([^"]*\)".*/\1/p' | head -n1)
-        elif pgrep -f "strfry" >/dev/null 2>&1; then
-            # Fallback: détection directe du processus strfry
-            strfry_active=true
-            strfry_proc="strfry"
-        else
-            strfry_active=false
-            strfry_proc=""
-        fi
-
-        # G1Billet - vérifier le processus
-        if pgrep -f "G1BILLETS" >/dev/null; then
-            g1billet_active=true
-        fi
-        
-        # Mettre à jour le cache en arrière-plan si nécessaire
-        if [[ ! -f "$heartbox_cache" ]] || [[ $cache_age -ge 300 ]]; then
-            (${MY_PATH}/tools/heartbox_analysis.sh update >/dev/null 2>&1) &
-        fi
-    fi
+    # Pas de détail proc pour upassport dans le cache
+    upassport_proc=""
     
     # Vérifier si NextCloud est disponible (fichiers de configuration présents)
     if [[ -f "$HOME/.zen/Astroport.ONE/_DOCKER/nextcloud/docker-compose.yml" ]]; then
