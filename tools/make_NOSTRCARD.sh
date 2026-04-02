@@ -197,8 +197,8 @@ if [[ $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         cat ~/.zen/UPassport/templates/message.html \
         | sed -e "s~_WALLET_~$(date -u) <br> ${EMAIL}~g" \
              -e "s~_AMOUNT_~SSSS KEY DECODING FAILED~g" \
-            > ${MY_PATH}/tmp/${MOATS}.out.html
-        echo "${MY_PATH}/tmp/${MOATS}.out.html"
+            > $HOME/.zen/tmp/${MOATS}.out.html
+        echo "$HOME/.zen/tmp/${MOATS}.out.html"
         exit 1
     fi
 
@@ -307,8 +307,8 @@ EOFNOSTR
         cat ~/.zen/UPassport/templates/message.html \
         | sed -e "s~_WALLET_~$(date -u) <br> ${EMAIL}~g" \
              -e "s~_AMOUNT_~IPFS DAEMON ERROR~g" \
-            > ${MY_PATH}/tmp/${MOATS}.out.html
-        echo "${MY_PATH}/tmp/${MOATS}.out.html"
+            > $HOME/.zen/tmp/${MOATS}.out.html
+        echo "$HOME/.zen/tmp/${MOATS}.out.html"
         exit 1
     fi
     #~ ipfs pin rm /ipfs/${VAULTNSQR} 2>/dev/null
