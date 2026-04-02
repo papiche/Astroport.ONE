@@ -321,7 +321,12 @@ sed -i "s~${SRCPASS}~${HPASS}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.ht
 
 # INSERT PLAYER DATA
 CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev)
-[[ -z ${CURRENT} ]] && CURRENT=${PLAYER}
+# Aucun capitaine !?
+if [[ -z ${CURRENT} ]]; then
+    ## PLAYER devient Capitaine
+    CURRENT=${PLAYER}
+    ln -s ~/.zen/game/players/${PLAYER} ~/.zen/game/players/.current
+fi
 sed -i "s~_PLAYER_~${PLAYER}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 sed -i "s~_CURRENT_~${CURRENT}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html
 sed -i "s~_PSEUDO_~${PSEUDO}~g" ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html

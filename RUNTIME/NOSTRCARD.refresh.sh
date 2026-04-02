@@ -513,9 +513,6 @@ for PLAYER in "${NOSTR[@]}"; do
     fi
     ##################################################### DISCO DECODED
     ## NOW salt & pepper are valid, we can generate NSEC & NPUB
-    ## s=/?email
-    echo $s
-
     ## CACHING SECRET & DISCO to nostr/${PLAYER}/.secret.nostr
     if [[ ! -s ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]]; then
         NSEC=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
