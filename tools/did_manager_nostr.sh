@@ -1075,18 +1075,16 @@ republish_did_ipns() {
                 # Rate-limiting : éviter un OOM sur Raspberry Pi lors du traitement batch
                 # Attendre si MAX_IPFS_PUBLISH (défaut: 3) publications sont déjà en cours
                 local _max_pub=${MAX_IPFS_PUBLISH:-3}
-                while [[ $(pgrep -c -f "ipfs name publish" 2>/dev/null || echo 0) -ge $_max_pub ]]; do
+                while true; do
+                    local count
+                    count=$(pgrep -c -f "ipfs name publish" 2>/dev/null || echo 0)
+                    if [[ $count -lt $_max_pub ]]; then
+                        break  # Sort de la boucle si le nombre de processus est inférieur à _max_pub
+                    fi
                     sleep 2
                 done
-                # Verify .well-known is accessible in the IPFS directory
-                if ipfs ls "/ipfs/${nostripfs}/APP/uDRIVE/Apps/.well-known" >/dev/null 2>&1; then
-                    ipfs name publish --key "${g1pubnostr}:NOSTR" "/ipfs/${nostripfs}" 2>&1 >/dev/null &
-                    echo -e "${GREEN}✅ IPNS publication launched in background (includes .well-known)${NC}"
-                else
-                    echo -e "${YELLOW}⚠️  .well-known directory not found in IPFS, republishing anyway...${NC}"
-                    ipfs name publish --key "${g1pubnostr}:NOSTR" "/ipfs/${nostripfs}" 2>&1 >/dev/null &
-                    echo -e "${GREEN}✅ IPNS publication launched in background${NC}"
-                fi
+                ipfs name publish --key "${g1pubnostr}:NOSTR" "/ipfs/${nostripfs}" 2>&1 >/dev/null &
+                echo -e "${GREEN}✅ IPNS publication launched in background${NC}"
             else
                 echo -e "${RED}❌ Failed to add directory to IPFS${NC}"
             fi
