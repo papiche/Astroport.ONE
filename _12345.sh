@@ -39,17 +39,145 @@ export PATH=$HOME/.local/bin:$PATH
 PORT=12345
 ## Seuil de péremption (12 heures) : évite de supprimer trop vite les stations si IPNS est lent
 BALISE_STALE_SECONDS=$(( 12 * 60 * 60 ))
+COUCHOU_CACHE="$HOME/.zen/tmp/coucou"
+RESPONSE_FILE="/dev/shm/astroport_12345.http"
+HANDLER_SCRIPT="$HOME/.zen/tmp/12345_handler.sh"
+UPSYNC_QUEUE="$HOME/.zen/tmp/upsync_queue.txt"
+HTTP_ENV_FILE="$HOME/.zen/tmp/12345_env.sh"
+LAST_NODE_PUBLISH_FILE="$HOME/.zen/tmp/12345.last_publish"
+LAST_SWARM_PUBLISH_FILE="$HOME/.zen/tmp/swarm/.last_publish"
+LAST_NODE_STATE_FILE="$HOME/.zen/tmp/12345.state"
+LAST_NODE_JSON_FILE="$HOME/.zen/tmp/12345.last.json"
+SCAN_LOCK_DIR="/dev/shm/astroport_swarm_scan.lock.d"
+
+mkdir -p "$COUCHOU_CACHE" ~/.zen/tmp/swarm ~/.zen/tmp/${IPFSNODEID}
+touch "$UPSYNC_QUEUE"
+
+read_cached_coin() {
+    local pubkey="$1"
+    local value
+    value=$(cat "$COUCHOU_CACHE/${pubkey}.COINS" 2>/dev/null)
+    [[ -z "$value" || ! "$value" =~ ^[0-9]+$ ]] && value=0
+    echo "$value"
+}
+
+collect_g1check_jobs() {
+    local pubs=("$@")
+    if [[ ${#pubs[@]} -gt 0 ]]; then
+        ("$MY_PATH/tools/G1check.sh" "${pubs[@]}" >/dev/null 2>&1 &)
+    fi
+}
+
+queue_g1check_batch() {
+    local pubs=()
+    local seen=""
+    local pub
+    for pub in "$@"; do
+        [[ -z "$pub" ]] && continue
+        [[ " $seen " == *" $pub "* ]] && continue
+        seen+=" $pub"
+        pubs+=("$pub")
+    done
+    if [[ ${#pubs[@]} -gt 0 ]]; then
+        ("$MY_PATH/tools/G1check.sh" "${pubs[@]}" >/dev/null 2>&1 &)
+    fi
+}
+
+start_http_server() {
+    cat > "$HTTP_ENV_FILE" << ENVEOF
+export MY_PATH="$MY_PATH"
+export IPFSNODEID="$IPFSNODEID"
+export UPSYNC_QUEUE="$UPSYNC_QUEUE"
+ENVEOF
+    chmod 644 "$HTTP_ENV_FILE"
+
+    if [[ ! -s "$HANDLER_SCRIPT" ]]; then
+        cat > "$HANDLER_SCRIPT" << 'EOF'
+#!/bin/bash
+trap '' PIPE
+source "$HOME/.zen/tmp/12345_env.sh"
+ACCESS_LOG="$HOME/.zen/tmp/12345_access.log"
+
+CLIENT_IP="${SOCAT_PEERADDR:-unknown}"
+CLIENT_PORT="${SOCAT_PEERPORT:-?}"
+
+read -r request_line
+request_line="${request_line%$'\r'}"
+USER_AGENT=""
+HOST_HEADER=""
+while IFS= read -r header; do
+    header="${header%$'\r'}"
+    [[ -z "$header" ]] && break
+    case "$header" in
+        User-Agent:*) USER_AGENT="${header#User-Agent: }" ;;
+        Host:*) HOST_HEADER="${header#Host: }" ;;
+    esac
+done
+
+cat /dev/shm/astroport_12345.http 2>/dev/null
+SEND_RC=$?
+
+TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+if [[ $SEND_RC -ne 0 ]]; then
+    echo "[$TIMESTAMP] ABORTED ${CLIENT_IP}:${CLIENT_PORT} | ${request_line} | UA: ${USER_AGENT}" >> "$ACCESS_LOG"
+else
+    echo "[$TIMESTAMP] ${CLIENT_IP}:${CLIENT_PORT} | ${request_line} | UA: ${USER_AGENT}" >> "$ACCESS_LOG"
+fi
+
+log_lines=$(wc -l < "$ACCESS_LOG" 2>/dev/null || echo 0)
+if [[ $log_lines -gt 2000 ]]; then
+    tail -n 1600 "$ACCESS_LOG" > "${ACCESS_LOG}.tmp" && mv "${ACCESS_LOG}.tmp" "$ACCESS_LOG"
+fi
+
+query=$(echo "$request_line" | sed -n 's/^GET \/\?[?]\(.*\) HTTP.*/\1/p')
+if [[ -n "$query" ]]; then
+    arr=(${query//[=&]/ })
+    GPUB=${arr[0]}
+    IPNS=${arr[1]}
+    if [[ -n "$GPUB" && -n "$IPNS" ]]; then
+        ASTROTOIPFS=$(${MY_PATH}/tools/g1_to_ipfs.py ${GPUB} 2>/dev/null)
+        if [[ "${ASTROTOIPFS}" == "${IPNS}" ]]; then
+            echo "[$TIMESTAMP] UPSYNC QUEUED: ${CLIENT_IP} G1=${GPUB:0:8}... IPNS=${IPNS: -8}" >> "$ACCESS_LOG"
+            grep -qxF "$IPNS" "$UPSYNC_QUEUE" || echo "$IPNS" >> "$UPSYNC_QUEUE"
+        else
+            echo "[$TIMESTAMP] UPSYNC REJECTED: ${CLIENT_IP} G1/IPNS mismatch" >> "$ACCESS_LOG"
+        fi
+    fi
+fi
+EOF
+        chmod +x "$HANDLER_SCRIPT"
+    fi
+
+    if [[ ! -s "$RESPONSE_FILE" ]]; then
+        cat > "$RESPONSE_FILE" << EOF
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Methods: GET
+Server: Astroport.ONE
+Content-Type: application/json; charset=UTF-8
+Connection: close
+
+{"version":"12345.0.2","hostname":"$(myHostName)","ipfsnodeid":"${IPFSNODEID}","status":"booting","created":"$(date +%s)"}
+EOF
+    fi
+
+    if ! pgrep -f "socat.*TCP4-LISTEN:${PORT}" >/dev/null 2>&1; then
+        pkill -f "socat.*TCP4-LISTEN:${PORT}" 2>/dev/null
+        socat TCP4-LISTEN:${PORT},reuseaddr,fork EXEC:"$HANDLER_SCRIPT" 2>/dev/null &
+    fi
+}
 
 [[ -z "${IPFSNODEID}" || "${IPFSNODEID}" == "null" ]] && echo "IPFSNODEID is empty" && exit 1
 
+start_http_server
+
 ## IDENTITÉ DU NŒUD
 NODEG1PUB=$($MY_PATH/tools/ipfs_to_g1.py ${IPFSNODEID})
-NODECOINS=$($MY_PATH/tools/G1check.sh ${NODEG1PUB} | tail -n 1)
-[[ -z "$NODECOINS" || ! "$NODECOINS" =~ ^[0-9] ]] && NODECOINS=0
+queue_g1check_batch "$NODEG1PUB"
+NODECOINS=$(read_cached_coin "$NODEG1PUB")
 NODEZEN=$(echo "scale=1; ($NODECOINS - 1) * 10" | bc)
 
-mkdir -p ~/.zen/tmp/swarm
-mkdir -p ~/.zen/tmp/${IPFSNODEID}
 rm -Rf ~/.zen/tmp/${IPFSNODEID}/swarm # Anti-boucle
 
 lastrun_file=~/.zen/tmp/12345.lastrun
@@ -124,8 +252,7 @@ if [[ ! -s ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr ]]; then
     IFS='=&' read -r s salt p pepper <<< "$DISCO"
     if [[ -n $salt && -n $pepper ]]; then
         CAPTAING1PUB=$(${MY_PATH}/tools/keygen -t duniter "$salt" "$pepper")
-        CAPTAINCOINS=$($MY_PATH/tools/G1check.sh ${CAPTAING1PUB} | tail -n 1)
-        [[ -z "$CAPTAINCOINS" || ! "$CAPTAINCOINS" =~ ^[0-9] ]] && CAPTAINCOINS=0
+        CAPTAINCOINS=$(read_cached_coin "$CAPTAING1PUB")
         CAPTAINZEN=$(echo "scale=1; ($CAPTAINCOINS - 1) * 10" | bc)
         captainNPUB=$(${MY_PATH}/tools/keygen -t nostr "$salt" "$pepper")
         captainHEX=$(${MY_PATH}/tools/nostr2hex.py "$captainNPUB")
@@ -133,14 +260,18 @@ if [[ ! -s ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr ]]; then
         echo "NSEC=$captainNSEC; NPUB=$captainNPUB; HEX=$captainHEX" \
             > ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
         chmod 600 ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
+        mkdir -p ~/.zen/game/nostr/CAPTAIN
+        echo $captainHEX > ~/.zen/game/nostr/CAPTAIN/HEX
+        echo $captainHEX > ~/.zen/tmp/${IPFSNODEID}/HEX_CAPTAIN
     else
         echo "ERROR : CAPTAIN BAD DISCO DECODING" >> ~/.zen/game/nostr/$CAPTAINEMAIL/ERROR
     fi
 else
     ## Get data from cache
-    CAPTAING1=$(cat ~/.zen/tmp/coucou/$CAPTAING1PUB.COINS 2>/dev/null)
-    [[ -z "$CAPTAING1" || ! "$CAPTAING1" =~ ^[0-9] ]] && CAPTAING1=0
-    CAPTAINZEN=$(echo "scale=1; ($CAPTAING1 - 1) * 10" | bc)
+    if [[ -n "$CAPTAING1PUB" ]]; then
+        CAPTAING1=$(read_cached_coin "$CAPTAING1PUB")
+        CAPTAINZEN=$(echo "scale=1; ($CAPTAING1 - 1) * 10" | bc)
+    fi
     captainHEX=$(cat ~/.zen/game/nostr/$CAPTAINEMAIL/HEX)
     ## Add CAPTAIN HEX to nostr WhiteList
     mkdir -p ~/.zen/game/nostr/CAPTAIN
@@ -148,6 +279,18 @@ else
     echo $captainHEX > ~/.zen/tmp/${IPFSNODEID}/HEX_CAPTAIN
 fi
 ##################################################
+
+#############################################################
+## G1CHECK BATCH WARMUP
+#############################################################
+G1CHECK_PUBS=()
+[[ -n "$NODEG1PUB" ]] && G1CHECK_PUBS+=("$NODEG1PUB")
+[[ -n "$UPLANETG1PUB" ]] && G1CHECK_PUBS+=("$UPLANETG1PUB")
+[[ -n "$UPLANETNAME_G1" ]] && G1CHECK_PUBS+=("$UPLANETNAME_G1")
+[[ -n "$UPLANETNAME_TREASURY" ]] && G1CHECK_PUBS+=("$UPLANETNAME_TREASURY")
+[[ -n "$CAPTAING1PUB" ]] && G1CHECK_PUBS+=("$CAPTAING1PUB")
+[[ -n "$CAPTAIN_DEDICATED_PUB" ]] && G1CHECK_PUBS+=("$CAPTAIN_DEDICATED_PUB")
+collect_g1check_jobs "${G1CHECK_PUBS[@]}"
 
 #############################################################
 ## PUBLISH CHANNEL IPNS LINK
@@ -159,13 +302,12 @@ echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${CHAN}'\" />" \
 echo 0 > ~/.zen/tmp/random.sleep
 ###################################################################
 ############################################### ẑen/ẐEN TOKEN SOURCE
-SOURCE_G1COIN=$($MY_PATH/tools/G1check.sh ${UPLANETNAME_G1} | tail -n 1)
-[[ -z "$SOURCE_G1COIN" || ! "$SOURCE_G1COIN" =~ ^[0-9] ]] && SOURCE_G1COIN=0
+queue_g1check_batch "$UPLANETNAME_G1" "$UPLANETG1PUB" "$UPLANETNAME_TREASURY" "$CAPTAING1PUB"
+SOURCE_G1COIN=$(read_cached_coin "$UPLANETNAME_G1")
 SOURCE_ZEN=$(echo "scale=1; ($SOURCE_G1COIN - 1) * 10" | bc)
 
 ##################################### USAGE TOKEN ẑen = 0 relay wallet
-UPLANETCOINS=$($MY_PATH/tools/G1check.sh ${UPLANETG1PUB} | tail -n 1)
-[[ -z "$UPLANETCOINS" || ! "$UPLANETCOINS" =~ ^[0-9] ]] && UPLANETCOINS=0
+UPLANETCOINS=$(read_cached_coin "$UPLANETG1PUB")
 UPLANETZEN=$(echo "scale=1; ($UPLANETCOINS - 1) * 10" | bc)
 
 ####################################################################################
@@ -274,7 +416,7 @@ while true; do
             fi
 
         ### PING & CONNECT 
-        ${MY_PATH}/ping_bootstrap.sh
+        (${MY_PATH}/ping_bootstrap.sh >/dev/null 2>&1 &) 
 
         ### NOSTR RELAY SYNCHRO for LAST 24 H (direct call with lock protection)
         if [[ -s ~/.zen/workspace/NIP-101/backfill_constellation.sh ]]; then
@@ -317,12 +459,19 @@ while true; do
         fi
         ##################################################################################
         # Check for IPFS P2P tunnels
-        [[ -z $(ipfs p2p ls) ]] && ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh ON
+        ( [[ -z $(ipfs p2p ls) ]] && ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh ON ) &
 
         echo "$(date -u) - Starting Swarm Refresh Cycle"
         
         # Sous-processus pour ne pas bloquer le serveur HTTP
         (
+            ## 0. Lock anti-scan concurrent
+            if ! mkdir "$SCAN_LOCK_DIR" 2>/dev/null; then
+                echo "Swarm scan already running, skipping this cycle"
+                exit 0
+            fi
+            trap 'rmdir "$SCAN_LOCK_DIR" 2>/dev/null' EXIT INT TERM
+
             ## 1. SCAN DES SWARM PEERS (auto-découverte)
             # Récupérer tous les pairs connectés
             SWARM_PEERS=$(ipfs swarm peers | grep -v "${IPFSNODEID}")
@@ -426,7 +575,10 @@ while true; do
                 SWARMH=$(ipfs --timeout 30s add -rwq ~/.zen/tmp/swarm/* | tail -n 1)
                 if [[ -n "$SWARMH" ]]; then
                     echo "=== PUBLISHING UPDATED SWARM MAP: /ipfs/${SWARMH} ==="
-                    ipfs --timeout=60s name publish --lifetime=4h --ttl=15m --key "MySwarm_${IPFSNODEID}" /ipfs/${SWARMH}
+                    if [[ "$SWARMH" != "$(cat "$LAST_SWARM_PUBLISH_FILE" 2>/dev/null)" ]]; then
+                        echo "$SWARMH" > "$LAST_SWARM_PUBLISH_FILE"
+                        (ipfs name publish --lifetime=24h --ttl=30m --key "MySwarm_${IPFSNODEID}" /ipfs/${SWARMH} >/dev/null 2>&1 &)
+                    fi
                 fi
             fi
 
@@ -443,7 +595,10 @@ while true; do
             MYCACHE=$(ipfs --timeout 180s add -rwq ~/.zen/tmp/${IPFSNODEID}/* | tail -n 1)
             if [[ -n "$MYCACHE" ]]; then
                 echo "=== PUBLISHING NODE BALISE: /ipfs/${MYCACHE} ==="
-                ipfs --timeout=60s name publish --lifetime=4h --ttl=15m /ipfs/${MYCACHE}
+                if [[ "$MYCACHE" != "$(cat "$LAST_NODE_PUBLISH_FILE" 2>/dev/null)" ]]; then
+                    echo "$MYCACHE" > "$LAST_NODE_PUBLISH_FILE"
+                    (ipfs name publish --lifetime=24h --ttl=30m /ipfs/${MYCACHE} >/dev/null 2>&1 &)
+                fi
             else
                 echo "⚠️  MYCACHE is empty, skipping ipfs name publish"
             fi
@@ -477,8 +632,7 @@ while true; do
     if [[ -f "$HOME/.zen/game/uplanet.captain.dunikey" ]]; then
         CAPTAIN_DEDICATED_PUB=$(cat "$HOME/.zen/game/uplanet.captain.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
         if [[ -n "$CAPTAIN_DEDICATED_PUB" ]]; then
-            CAPTAIN_DEDICATED_COINS=$($MY_PATH/tools/G1check.sh ${CAPTAIN_DEDICATED_PUB} | tail -n 1)
-            [[ -z "$CAPTAIN_DEDICATED_COINS" || ! "$CAPTAIN_DEDICATED_COINS" =~ ^[0-9] ]] && CAPTAIN_DEDICATED_COINS=0
+            CAPTAIN_DEDICATED_COINS=$(read_cached_coin "$CAPTAIN_DEDICATED_PUB")
             CAPTAIN_DEDICATED_ZEN=$(echo "scale=1; ($CAPTAIN_DEDICATED_COINS - 1) * 10" | bc)
         fi
     fi
@@ -486,8 +640,7 @@ while true; do
     # Treasury (CASH) balance for solidarity mechanism
     TREASURY_ZEN=0
     if [[ -n "$UPLANETNAME_TREASURY" ]]; then
-        TREASURY_COINS=$($MY_PATH/tools/G1check.sh ${UPLANETNAME_TREASURY} | tail -n 1)
-        [[ -z "$TREASURY_COINS" || ! "$TREASURY_COINS" =~ ^[0-9] ]] && TREASURY_COINS=0
+        TREASURY_COINS=$(read_cached_coin "$UPLANETNAME_TREASURY")
         TREASURY_ZEN=$(echo "scale=1; ($TREASURY_COINS - 1) * 10" | bc)
     fi
     
@@ -523,6 +676,11 @@ while true; do
 
     ## READ HEARTBOX ANALYSIS - Fast cache-based approach
     ANALYSIS_FILE=~/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json
+    NODE_STATE="${myIP}|${myIPFS}|${SOURCE_G1COIN}|${UPLANETCOINS}|${CAPTAINZEN}|${TREASURY_ZEN}|${NODEZEN}|${CAPTAINHEX}|${HEX}|${STATION_LAT}|${STATION_LON}|${ECONOMIC_RISK}|${MULTIPASS_COUNT}|${ZENCARD_COUNT}|${SWARM_COUNT}"
+    LAST_NODE_STATE=$(cat "$LAST_NODE_STATE_FILE" 2>/dev/null)
+    if [[ "$NODE_STATE" == "$LAST_NODE_STATE" && -s "$LAST_NODE_JSON_FILE" ]]; then
+        NODE12345=$(cat "$LAST_NODE_JSON_FILE")
+    fi
     
     # Check if cache is fresh (< 12h)
     if [[ -s ${ANALYSIS_FILE} ]]; then
@@ -611,98 +769,17 @@ NODE12345="{
 "
 
     ## PUBLISH ${IPFSNODEID}/12345.json
-    echo "${NODE12345}" > ~/.zen/tmp/${IPFSNODEID}/12345.json
-    ## Mise à jour des timestamps de la balise IPNS locale
-    echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
-    echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
+    if [[ "$NODE_STATE" != "$LAST_NODE_STATE" || ! -s "$LAST_NODE_JSON_FILE" ]]; then
+        echo "${NODE12345}" > ~/.zen/tmp/${IPFSNODEID}/12345.json
+        echo "${NODE12345}" > "$LAST_NODE_JSON_FILE"
+        echo "$NODE_STATE" > "$LAST_NODE_STATE_FILE"
+        ## Mise à jour des timestamps de la balise IPNS locale
+        echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
+        echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
+    fi
 
     ############ MISE À JOUR HTTP 12345 (RAM - /dev/shm)
     echo -e "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET\r\nServer: Astroport.ONE\r\nContent-Type: application/json; charset=UTF-8\r\nConnection: close\r\n\r\n${NODE12345}" > "$RESPONSE_FILE"
-
-    ######################################################################################
-    # PRÉPARER LE FICHIER D'ENVIRONNEMENT POUR LE HANDLER SOCAT (mis à jour à chaque cycle)
-    cat > "$HOME/.zen/tmp/12345_env.sh" << ENVEOF
-export MY_PATH="${MY_PATH}"
-export IPFSNODEID="${IPFSNODEID}"
-ENVEOF
-    chmod 644 "$HOME/.zen/tmp/12345_env.sh"
-
-    # REGÉNÉRER LE HANDLER SCRIPT (contient le chemin UPSYNC_QUEUE en dur)
-    cat << EOF > "$HANDLER_SCRIPT"
-#!/bin/bash
-## Ignorer SIGPIPE : le client peut fermer la connexion avant la fin du handler
-trap '' PIPE
-source "$HOME/.zen/tmp/12345_env.sh"
-UPSYNC_QUEUE="$UPSYNC_QUEUE"
-ACCESS_LOG="$HOME/.zen/tmp/12345_access.log"
-
-## Variables socat : IP et port du client (définies automatiquement par socat EXEC:)
-CLIENT_IP="\${SOCAT_PEERADDR:-unknown}"
-CLIENT_PORT="\${SOCAT_PEERPORT:-?}"
-
-# 1. Lire la requête HTTP + en-têtes pour logger User-Agent et Host
-read -r request_line
-request_line="\${request_line%\$'\r'}"
-USER_AGENT=""
-HOST_HEADER=""
-while IFS= read -r header; do
-    header="\${header%\$'\r'}"
-    [[ -z "\$header" ]] && break
-    case "\$header" in
-        User-Agent:*) USER_AGENT="\${header#User-Agent: }" ;;
-        Host:*)       HOST_HEADER="\${header#Host: }" ;;
-    esac
-done
-
-# 2. Répondre immédiatement (RAM)
-cat /dev/shm/astroport_12345.http 2>/dev/null
-SEND_RC=\$?
-
-# 3. Logger la connexion cliente (avec détection des connexions coupées)
-TIMESTAMP=\$(date '+%Y-%m-%d %H:%M:%S')
-if [[ \$SEND_RC -ne 0 ]]; then
-    echo "[\$TIMESTAMP] ABORTED \${CLIENT_IP}:\${CLIENT_PORT} | \${request_line} | UA: \${USER_AGENT}" >> "\$ACCESS_LOG"
-else
-    echo "[\$TIMESTAMP] \${CLIENT_IP}:\${CLIENT_PORT} | \${request_line} | UA: \${USER_AGENT}" >> "\$ACCESS_LOG"
-fi
-## Rotation du log (garder max 2000 lignes)
-log_lines=\$(wc -l < "\$ACCESS_LOG" 2>/dev/null || echo 0)
-if [[ \$log_lines -gt 2000 ]]; then
-    tail -n 1600 "\$ACCESS_LOG" > "\${ACCESS_LOG}.tmp" && mv "\${ACCESS_LOG}.tmp" "\$ACCESS_LOG"
-fi
-
-# 4. Validation et mise en file d'attente UPSYNC
-query=\$(echo "\$request_line" | sed -n 's/^GET \/\?[?]\(.*\) HTTP.*/\1/p')
-if [[ -n "\$query" ]]; then
-    arr=(\${query//[=&]/ })
-    GPUB=\${arr[0]}
-    IPNS=\${arr[1]}
-    
-    if [[ -n "\$GPUB" && -n "\$IPNS" ]]; then
-        # Vérification de conformité G1PUB → IPFSNODEID
-        ASTROTOIPFS=\$(\${MY_PATH}/tools/g1_to_ipfs.py \${GPUB} 2>/dev/null)
-        if [[ "\${ASTROTOIPFS}" == "\${IPNS}" ]]; then
-            echo "[\$TIMESTAMP] UPSYNC QUEUED: \${CLIENT_IP} G1=\${GPUB:0:8}... IPNS=\${IPNS: -8}" >> "\$ACCESS_LOG"
-            grep -qxF "\$IPNS" "\$UPSYNC_QUEUE" || echo "\$IPNS" >> "\$UPSYNC_QUEUE"
-        else
-            echo "[\$TIMESTAMP] UPSYNC REJECTED: \${CLIENT_IP} G1/IPNS mismatch" >> "\$ACCESS_LOG"
-        fi
-    fi
-fi
-EOF
-    chmod +x "$HANDLER_SCRIPT"
-
-    ######################################################################################
-    # START NON-BLOCKING SERVER (socat)
-    # Check if socat is running on port 12345
-    if ! pgrep -f "socat.*TCP4-LISTEN:12345" > /dev/null; then
-        echo "Starting optimized socat server on port 12345..."
-        # Kill any old instances just in case
-        pkill -f "socat.*TCP4-LISTEN:12345"
-        # Start socat executing the handler for each connection
-        # 2>/dev/null : silence les "Broken pipe" inévitables des clients qui ferment la connexion
-        socat TCP4-LISTEN:12345,reuseaddr,fork EXEC:"$HANDLER_SCRIPT" 2>/dev/null &
-    fi
 
     echo '(◕‿‿◕) http://'$myIP:'12345 SERVED VIA SOCAT (CGI) (◕‿‿◕)'
     
