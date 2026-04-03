@@ -28,6 +28,11 @@ CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m'
 
+if [[ $EUID -ne 0 ]]; then
+   echo -e "${RED}❌ Ce script doit être exécuté avec sudo ou en tant que root.${NC}" 
+   exit 1
+fi
+
 sudo mkdir -p "$KEYS_DIR"
 sudo chmod 700 "$KEYS_DIR"
 
@@ -99,17 +104,57 @@ EOF"
     sudo chmod +x $FW_SCRIPT
 }
 
+# Rafraîchir la configuration et le pare-feu
+refresh_status() {
+    print_section "SYNCHRONISATION ET ÉTAT DU RÉSEAU"
+    
+    local WAN_INTERFACE=$(get_wan_interface)
+    
+    echo -e "${CYAN}🔄 1. Synchronisation de la configuration WireGuard...${NC}"
+    # Applique les changements du fichier vers le kernel sans couper les tunnels
+    if sudo wg syncconf $WG_IFACE <(sudo wg-quick strip /etc/wireguard/$WG_IFACE.conf); then
+        echo -e "${GREEN}✅ Configuration synchronisée.${NC}"
+    else
+        echo -e "${RED}❌ Erreur lors de la synchronisation.${NC}"
+    fi
+
+    echo -e "\n${CYAN}🔥 2. Mise à jour des règles de redirection IPFS...${NC}"
+    if sudo $FW_SCRIPT reload $WAN_INTERFACE; then
+        echo -e "${GREEN}✅ Pare-feu mis à jour.${NC}"
+    else
+        echo -e "${RED}❌ Erreur pare-feu.${NC}"
+    fi
+
+    echo -e "\n${CYAN}📊 3. État des connexions (wg show) :${NC}"
+    sudo wg show $WG_IFACE
+    
+    echo -e "\n${CYAN}🌐 4. Redirections de ports actives :${NC}"
+    sudo iptables -t nat -L WG_IPFS -n --line-numbers 2>/dev/null || echo "Aucune règle IPFS active."
+}
+
 # Configuration serveur
 setup_server() {
     print_section "CONFIGURATION DU SERVEUR LAN"
-    generate_wg_keys
 
-    local WAN_INTERFACE=$(get_wan_interface)
-    if [[ -z "$WAN_INTERFACE" ]]; then
-        echo -e "${RED}❌ Impossible de détecter l'interface réseau${NC}"; return 1
+    # 1. Vérifier si les clés existent déjà pour ne pas les changer
+    if [[ -f "$KEYS_DIR/server.priv" ]]; then
+        echo -e "${YELLOW}⚠️ Des clés serveur existent déjà. Conservation des clés actuelles.${NC}"
+    else
+        generate_wg_keys
     fi
 
-    if [[ -f "$SERVER_CONF" ]]; then sudo cp "$SERVER_CONF" "${SERVER_CONF}.backup.$(date +%s)"; fi
+    local WAN_INTERFACE=$(get_wan_interface)
+    
+    # 2. Vérifier si le fichier de conf existe déjà
+    if [[ -f "$SERVER_CONF" ]]; then
+        echo -e "${YELLOW}⚠️ Le fichier $SERVER_CONF existe déjà.${NC}"
+        read -p "Voulez-vous REINITIALISER la config (écrase les clients !) ? (y/N) : " confirm
+        if [[ "$confirm" != "y" ]]; then
+            echo "Annulation. Utilisez 'Ajouter un client' pour modifier la config existante."
+            return 0
+        fi
+        sudo cp "$SERVER_CONF" "${SERVER_CONF}.backup.$(date +%s)"
+    fi
 
     # Activer l'IP forwarding
     echo "net.ipv4.ip_forward=1" | sudo tee /etc/sysctl.d/99-wireguard.conf > /dev/null
@@ -176,7 +221,7 @@ PersistentKeepalive = 25
 EOF"
 
     # Appliquer config WG et recharger Firewall IPFS
-    sudo wg syncconf $WG_IFACE <(wg-quick strip $WG_IFACE)
+    sudo wg syncconf $WG_IFACE <(sudo wg-quick strip /etc/wireguard/$WG_IFACE.conf)
     sudo $FW_SCRIPT reload $(get_wan_interface)
 
     echo -e "\n${GREEN}✅ Configuration LAN générée${NC}"
@@ -191,27 +236,47 @@ remove_client() {
     print_section "SUPPRESSION D'UN CLIENT"
     
     local clients=()
+    # Utilisation de sudo pour lire le fichier protégé
     while IFS= read -r line; do
-        if [[ $line =~ ^#\ (.+)$ ]]; then clients+=("${BASH_REMATCH[1]}"); fi
-    done < <(sudo grep "^#" "$SERVER_CONF" 2>/dev/null || echo "")
+        if [[ $line =~ ^#\ (.+)$ ]]; then 
+            clients+=("${BASH_REMATCH[1]}")
+        fi
+    done < <(sudo grep "^#" "$SERVER_CONF" 2>/dev/null)
     
-    if [[ ${#clients[@]} -eq 0 ]]; then echo "Aucun client"; return 0; fi
-    for i in "${!clients[@]}"; do echo "  $((i+1)). ${clients[$i]}"; done
+    if [[ ${#clients[@]} -eq 0 ]]; then 
+        echo -e "${YELLOW}ℹ️ Aucun client trouvé.${NC}"
+        return 0 
+    fi
+
+    for i in "${!clients[@]}"; do 
+        echo "  $((i+1)). ${clients[$i]}"
+    done
     
     read -p "Numéro du client : " choice
-    if [[ "$choice" =~ ^[0-9]+$ ]] && [[ $choice -le ${#clients[@]} ]]; then
+    if [[ "$choice" =~ ^[0-9]+$ ]] && [[ $choice -ge 1 ]] && [[ $choice -le ${#clients[@]} ]]; then
         local CLIENT_NAME="${clients[$((choice-1))]}"
-        local start_line=$(grep -n "# $CLIENT_NAME" "$SERVER_CONF" | cut -d: -f1)
+        
+        # AJOUT DU SUDO ICI (L'erreur venait d'ici)
+        local start_line=$(sudo grep -n "# $CLIENT_NAME" "$SERVER_CONF" | cut -d: -f1)
+        
         if [[ -n "$start_line" ]]; then
+            # On calcule la fin du bloc (Peer + 3 lignes de config)
             local end_line=$((start_line + 3))
+            
+            # Suppression sécurisée avec sed
             sudo sed -i "${start_line},${end_line}d" "$SERVER_CONF"
             
+            # Nettoyage des lignes vides potentiellement laissées
+            sudo sed -i '/^$/N;/^\n$/D' "$SERVER_CONF"
+            
             # Appliquer config WG et recharger Firewall IPFS
-            sudo wg syncconf $WG_IFACE <(wg-quick strip $WG_IFACE)
+            sudo wg syncconf $WG_IFACE <(sudo wg-quick strip $WG_IFACE)
             sudo $FW_SCRIPT reload $(get_wan_interface)
             
-            echo -e "${GREEN}✅ Client supprimé et pare-feu mis à jour${NC}"
+            echo -e "${GREEN}✅ Client '$CLIENT_NAME' supprimé et pare-feu mis à jour${NC}"
         fi
+    else
+        echo -e "${RED}❌ Choix invalide${NC}"
     fi
 }
 
@@ -222,17 +287,21 @@ show_menu() {
         print_header "WIREGUARD LAN MANAGER - MULTI IPFS"
         
         if systemctl is-active --quiet wg-quick@$WG_IFACE; then
-            echo -e "  ✅ WireGuard ${GREEN}ACTIVE${NC}"
+            echo -e "  ✅ Service: ${GREEN}ACTIF${NC}"
+            # Petite info sur le nombre de clients
+            local count=$(sudo grep -c "^\[Peer\]" "$SERVER_CONF" 2>/dev/null)
+            echo -e "  👥 Clients configurés: ${WHITE}$count${NC}"
         else
-            echo -e "  ❌ WireGuard ${RED}INACTIVE${NC}"
+            echo -e "  ❌ Service: ${RED}INACTIF${NC}"
         fi
         
         echo -e "\n${CYAN}MENU PRINCIPAL${NC}"
         echo "1. 🚀 Initialiser serveur LAN"
         echo "2. 👥 Ajouter un client LAN"
         echo "3. 🗑️  Supprimer un client"
-        echo "4. 🔄 Redémarrer service"
-        echo "5. ❌ Quitter"
+        echo "4. 🔃 Synchroniser & Rafraîchir (Config + Firewall)"
+        echo "5. 🔄 Redémarrer complètement le service"
+        echo "6. ❌ Quitter"
         echo ""
         read -p "Choix : " choice
 
@@ -244,10 +313,12 @@ show_menu() {
                 add_lan_client "$name" "$pubkey"
                 ;;
             3) remove_client ;;
-            4) sudo systemctl restart wg-quick@$WG_IFACE; echo "✅ Fait" ;;
-            5) exit 0 ;;
+            4) refresh_status ;;
+            5) sudo systemctl restart wg-quick@$WG_IFACE; echo "✅ Service redémarré" ;;
+            6) exit 0 ;;
+            *) echo -e "${RED}Option invalide${NC}" ;;
         esac
-        [[ $choice != "5" ]] && { echo ""; read -p "Appuyez sur ENTRÉE pour continuer..."; }
+        [[ $choice != "6" ]] && { echo ""; read -p "Appuyez sur ENTRÉE pour continuer..."; }
     done
 }
 

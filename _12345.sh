@@ -264,9 +264,14 @@ while true; do
             ) &
         fi
 
+        SWARM_COUNT=$(find ~/.zen/tmp/swarm -mindepth 1 -maxdepth 1 -type d | wc -l)
 
-    # Rafraîchissement toutes les 1H (3600s)
-    if [[ ${duree} -gt 3600 || ${lastrun} -eq 0 ]]; then
+            # Condition de rafraîchissement : 1h écoulée OU premier run OU cache vide
+        if [[ ${duree} -gt 3600 || ${lastrun} -eq 0 || ${SWARM_COUNT} -eq 0 ]]; then
+
+            if [[ ${SWARM_COUNT} -eq 0 && ${lastrun} -ne 0 ]]; then
+                echo "⚠️  Cache Swarm vide détecté ! Tentative de réactivation immédiate..."
+            fi
 
         ### PING & CONNECT 
         ${MY_PATH}/ping_bootstrap.sh
@@ -348,7 +353,6 @@ while true; do
                     continue
                 fi
 
-
                 TMP_PEER="/tmp/get_peer_${peer_id}"
                 rm -Rf "$TMP_PEER"
                 
@@ -393,15 +397,22 @@ while true; do
             for station_dir in ~/.zen/tmp/swarm/*/; do
                 [ -d "$station_dir" ] || continue
                 s_moats=$(cat "${station_dir}_MySwarm.moats" 2>/dev/null)
+                
                 if [[ -n "$s_moats" ]]; then
+                    # Si la balise a plus de 12h (BALISE_STALE_SECONDS), on nettoie
                     if [[ $(( $(date +%s) - s_moats )) -gt ${BALISE_STALE_SECONDS} ]]; then
                         rm -Rf "$station_dir"
                     fi
                 else
-                    # Si pas de fichier moats, dossier invalide
-                    rm -Rf "$station_dir"
+                    # Si pas de fichier moats, on vérifie l'âge du DOSSIER lui-même
+                    # pour éviter de supprimer un dossier qui vient d'être créé/en cours de téléchargement
+                    d_age=$(stat -c %Y "$station_dir")
+                    if [[ $(( $(date +%s) - d_age )) -gt ${BALISE_STALE_SECONDS} ]]; then
+                        rm -Rf "$station_dir"
+                    fi
                 fi
             done
+
             # Supprimer les dossiers restés vides
             find ~/.zen/tmp/swarm -mindepth 1 -maxdepth 1 -type d -empty -delete
 

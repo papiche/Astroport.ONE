@@ -23,6 +23,11 @@ CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m'
 
+if [[ $EUID -ne 0 ]]; then
+   echo -e "${RED}❌ Ce script doit être exécuté avec sudo ou en tant que root.${NC}" 
+   exit 1
+fi
+
 sudo mkdir -p "$KEYS_DIR"
 sudo chmod 700 "$KEYS_DIR"
 

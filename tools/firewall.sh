@@ -22,6 +22,8 @@
 #  │         │          │   → relay.DOMAIN    :7777 (WSS)       │
 #  │         │          │   → cloud.DOMAIN    :8001 (NextCloud) │
 #  │ 4001    │ tcp+udp  │ IPFS Swarm P2P (pairs directs)        │
+#  │ 51820   │ udp      │ WireGuard HUB (VPN Constellation)    │
+#  │ 4002-4100│ tcp+udp │ IPFS Satellites (Redirection VPN)    │
 #  └─────────┴──────────┴────────────────────────────────────────┘
 #
 #  PORTS LOCALHOST UNIQUEMENT (bloqués depuis l'extérieur)
@@ -82,6 +84,8 @@ fire_on() {
     ## Activation IPv6 dans la configuration UFW si nécessaire
     if [ -f /etc/default/ufw ]; then
         sudo sed -i 's/^IPV6=no/IPV6=yes/' /etc/default/ufw
+        ## Autoriser le Forwarding (Routage) pour le rôle HUB VPN WireGuard
+        sudo sed -i 's/^DEFAULT_FORWARD_POLICY="DROP"/DEFAULT_FORWARD_POLICY="ACCEPT"/' /etc/default/ufw
     fi
 
     ## Réinitialisation propre (évite les doublons)
@@ -110,6 +114,16 @@ fire_on() {
     echo "  ✅ 4001/tcp IPFS Swarm P2P"
     echo "  ✅ 4001/udp IPFS Swarm QUIC"
 
+    ## WireGuard HUB (Le tunnel pour la constellation)
+    sudo ufw allow 51820/udp comment 'WireGuard HUB'
+    echo "  ✅ 51820/udp WireGuard HUB"
+
+    ## Plage IPFS pour Satellites (Redirection dynamique 4000 + octet)
+    # On autorise de 4002 à 4100 pour couvrir une centaine de satellites
+    sudo ufw allow 4002:4100/tcp comment 'IPFS Satellites TCP'
+    sudo ufw allow 4002:4100/udp comment 'IPFS Satellites UDP'
+    echo "  ✅ 4002-4100 IPFS Satellites (TCP/UDP)"
+
     echo "
 ── PRIORITÉ 1 : ALLOWS (avant les DENY pour éviter le masquage) ───"
 
@@ -122,16 +136,17 @@ fire_on() {
     echo "  🐳 Docker bridge 172.17.0.0/16 → tous ports autorisés"
     sudo ufw allow from 172.17.0.0/16 comment "Docker bridge interne" > /dev/null 2>&1
 
-    ## LAN (IPv4 + IPv6) : accès aux services internes depuis le réseau local
+    ## LAN & VPN : accès aux services internes depuis le réseau local et le VPN WireGuard
     ## Ajout IPv6 : fe80::/10 (Link-Local), fc00::/7 (Unique Local)
-    for LAN_RANGE in 192.168.0.0/16 10.0.0.0/8 172.16.0.0/12 fe80::/10 fc00::/7; do
+    ## Ajout VPN : 10.99.99.0/24 (réseau WireGuard Constellation)
+    for LAN_RANGE in 192.168.0.0/16 10.0.0.0/8 172.16.0.0/12 10.99.99.0/24 fe80::/10 fc00::/7; do
         sudo ufw allow from "${LAN_RANGE}" to any port 12345 proto tcp comment "LAN→Astroport" > /dev/null 2>&1
         sudo ufw allow from "${LAN_RANGE}" to any port 8080  proto tcp comment "LAN→IPFS GW"   > /dev/null 2>&1
         sudo ufw allow from "${LAN_RANGE}" to any port 54321 proto tcp comment "LAN→UPassport"  > /dev/null 2>&1
         sudo ufw allow from "${LAN_RANGE}" to any port 7777  proto tcp comment "LAN→NOSTR"     > /dev/null 2>&1
         sudo ufw allow from "${LAN_RANGE}" to any port 81    proto tcp comment "LAN→NPM Admin" > /dev/null 2>&1
     done
-    echo "  🏠 LAN (IPv4 + IPv6) : accès autorisé aux services internes"
+    echo "  🏠 LAN & 🔐 VPN (10.99.99.0/24) : accès autorisé aux services internes"
     echo ""
 
     echo "
@@ -200,7 +215,7 @@ fire_status() {
     sudo ufw status verbose
     echo ""
     echo "Ports d'écoute actifs :"
-    ss -tlnup 2>/dev/null | grep -E ":(22|80|443|4001|5001|7777|8080|8001|8002|8443|8010|8000|11434|3000|3001|3100|12345|54321|33101|81|1883|9090) " \
+    ss -tlnup 2>/dev/null | grep -E ":(22|80|443|4001|4002|4003|5001|51820|7777|8080|8001|8002|8443|8010|8000|11434|3000|3001|3100|12345|54321|33101|81|1883|9090) " \
         | awk '{print "  " $1 " " $4 " " $5}' | sort -t: -k2 -n
     echo "########################################################################"
 }

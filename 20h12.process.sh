@@ -111,8 +111,9 @@ echo "TODAY UPlanet landings"
 # ls ~/.zen/tmp/ZONE_* 2>/dev/null # API v1 deprecated
 ls ~/.zen/tmp/Ustats*.json 2>/dev/null # API v2
 ########################################################################
-## REMOVE TMP BUT KEEP swarm, flashmem and coucou
-find "$HOME/.zen/tmp/" -mindepth 1 ! -name "swarm" ! -name "coucou" ! -name "flashmem" -delete
+## NETTOYAGE TMP : On garde les dossiers de cache vitaux
+# On ne supprime que les fichiers/dossiers qui ne sont pas dans l'exclusion
+find "$HOME/.zen/tmp/" -mindepth 1 -maxdepth 1 ! -name "swarm" ! -name "coucou" ! -name "flashmem" ! -name "$IPFSNODEID" -exec rm -rf {} +
 
 ## STOPPING ASTROPORT
 sudo systemctl stop astroport

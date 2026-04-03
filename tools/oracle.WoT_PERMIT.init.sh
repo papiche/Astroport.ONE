@@ -48,7 +48,7 @@ UPLANETG1PUB="${UPLANETG1PUB}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-}"
 
 # NOSTR relay for NIP-42
-NOSTR_RELAY="${myNODErelay:-ws://127.0.0.1:7777}"
+NOSTR_RELAY="${myRELAY:-ws://127.0.0.1:7777}"
 
 # Colors for output
 RED='\033[0;31m'
