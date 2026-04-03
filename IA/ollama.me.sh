@@ -10,16 +10,28 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/../tools/my.sh" 2>/dev/null || true
+resolve_swarm_remote_target "scorpio.copylaradio.com" 2122 22
 
 # Configuration
 OLLAMA_PORT=11434
 SERVICE_NAME="ollama"
 ## Passerelle SSH — configurable dans ~/.zen/Astroport.ONE/.env
 ## (my.sh source déjà .env donc SWARM_REMOTE_* est disponible ici)
-REMOTE_HOST="${SWARM_REMOTE_HOST:-scorpio.copylaradio.com}"
+if [[ -n "${SWARM_REMOTE_TARGET:-}" ]]; then
+    IFS='|' read -r REMOTE_HOST REMOTE_PORT_IPV4 REMOTE_PORT_IPV6 <<<"$SWARM_REMOTE_TARGET"
+else
+    REMOTE_HOST="${SWARM_REMOTE_HOST:-scorpio.copylaradio.com}"
+    REMOTE_PORT_IPV4="${SWARM_REMOTE_PORT_IPV4:-2122}"   # Port NAT IPv4
+    REMOTE_PORT_IPV6="${SWARM_REMOTE_PORT_IPV6:-22}"    # Port SSH direct IPv6
+fi
 REMOTE_USER="${SWARM_REMOTE_USER:-frd}"
-REMOTE_PORT_IPV4="${SWARM_REMOTE_PORT_IPV4:-2122}"   # Port NAT IPv4
-REMOTE_PORT_IPV6="${SWARM_REMOTE_PORT_IPV6:-22}"    # Port SSH direct IPv6
+if [[ -n "${SWARM_REMOTE_TARGET_VPN:-}" && "${SWARM_REMOTE_USE_VPN:-false}" =~ ^(1|true|TRUE|yes|YES|on|ON)$ ]]; then
+    IFS='|' read -r REMOTE_HOST_VPN REMOTE_PORT_IPV4_VPN REMOTE_PORT_IPV6_VPN <<<"$SWARM_REMOTE_TARGET_VPN"
+else
+    REMOTE_HOST_VPN="${SWARM_REMOTE_HOST_VPN:-${WG_HUB:-10.99.99.1}}"
+    REMOTE_PORT_IPV4_VPN="${SWARM_REMOTE_PORT_IPV4_VPN:-22}"
+    REMOTE_PORT_IPV6_VPN="${SWARM_REMOTE_PORT_IPV6_VPN:-22}"
+fi
 # On détecte l'IP du bridge docker (généralement 172.17.0.1)
 DOCKER_BRIDGE_IP=$(ip addr show docker0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}' || echo "172.17.0.1")
 # Double tunnel : 
@@ -583,6 +595,17 @@ cmd_scan() {
         echo -e "  ${GREEN}●${NC} Tunnel currently ACTIVE"
         ssh_tunnel_active=true
         ssh_available=true  # If tunnel is active, SSH is available
+    fi
+
+    # 2b. VPN / WireGuard fallback
+    echo -e "\n${BOLD}[VPN]${NC} WireGuard tunnel"
+    local vpn_available=false
+    if resolve_vpn_remote_target >/dev/null 2>&1; then
+        print_status "OK" "VPN SSH available: $(swarm_remote_target_report)"
+        vpn_available=true
+        ssh_available=true
+    else
+        print_status "FAIL" "No usable WireGuard tunnel"
     fi
     
     # 3. IPFS P2P

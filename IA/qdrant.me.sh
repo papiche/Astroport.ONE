@@ -9,16 +9,28 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/../tools/my.sh" 2>/dev/null || true
+resolve_swarm_remote_target "scorpio.copylaradio.com" 2122 22
 
 # Configuration
 QDRANT_PORT=6333
 SERVICE_NAME="qdrant"
 ## Passerelle SSH — configurable dans ~/.zen/Astroport.ONE/.env
 ## (my.sh source déjà .env donc SWARM_REMOTE_* est disponible ici)
-REMOTE_HOST="${SWARM_REMOTE_HOST:-scorpio.copylaradio.com}"
+if [[ -n "${SWARM_REMOTE_TARGET:-}" ]]; then
+    IFS='|' read -r REMOTE_HOST REMOTE_PORT_IPV4 REMOTE_PORT_IPV6 <<<"$SWARM_REMOTE_TARGET"
+else
+    REMOTE_HOST="${SWARM_REMOTE_HOST:-scorpio.copylaradio.com}"
+    REMOTE_PORT_IPV4="${SWARM_REMOTE_PORT_IPV4:-2122}"   # Port NAT IPv4
+    REMOTE_PORT_IPV6="${SWARM_REMOTE_PORT_IPV6:-22}"    # Port SSH direct IPv6
+fi
 REMOTE_USER="${SWARM_REMOTE_USER:-frd}"
-REMOTE_PORT_IPV4="${SWARM_REMOTE_PORT_IPV4:-2122}"   # Port NAT IPv4
-REMOTE_PORT_IPV6="${SWARM_REMOTE_PORT_IPV6:-22}"    # Port SSH direct IPv6
+if [[ -n "${SWARM_REMOTE_TARGET_VPN:-}" && "${SWARM_REMOTE_USE_VPN:-false}" =~ ^(1|true|TRUE|yes|YES|on|ON)$ ]]; then
+    IFS='|' read -r REMOTE_HOST_VPN REMOTE_PORT_IPV4_VPN REMOTE_PORT_IPV6_VPN <<<"$SWARM_REMOTE_TARGET_VPN"
+else
+    REMOTE_HOST_VPN="${SWARM_REMOTE_HOST_VPN:-${WG_HUB:-10.99.99.1}}"
+    REMOTE_PORT_IPV4_VPN="${SWARM_REMOTE_PORT_IPV4_VPN:-22}"
+    REMOTE_PORT_IPV6_VPN="${SWARM_REMOTE_PORT_IPV6_VPN:-22}"
+fi
 SSH_OPTIONS="-fN -L 127.0.0.1:$QDRANT_PORT:127.0.0.1:$QDRANT_PORT"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'

@@ -518,13 +518,106 @@ myWG_IP=$(ip -4 addr show wg0 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' 
 if [ -n "$myWG_IP" ]; then
     export WG_IP="$myWG_IP"
     export WG_HUB="10.99.99.1"
-    
-    # 🚀 OPTIMISATION MAJEURE :
-    # Si WireGuard est monté, le fallback SSH ne passe plus par l'internet public (lent/NATé)
-    # mais emprunte l'autoroute du VPN vers l'Armateur (le HUB).
-    export SWARM_REMOTE_HOST="$WG_HUB"
-    export SWARM_REMOTE_PORT_IPV4=22 # Le port SSH local natif du HUB
+    # Conserver le HUB WireGuard comme cible de secours explicite,
+    # sans écraser la cible normale définie dans .env.
+    export SWARM_REMOTE_HOST_VPN="${SWARM_REMOTE_HOST_VPN:-$WG_HUB}"
+    export SWARM_REMOTE_PORT_IPV4_VPN="${SWARM_REMOTE_PORT_IPV4_VPN:-22}"
+    export SWARM_REMOTE_PORT_IPV6_VPN="${SWARM_REMOTE_PORT_IPV6_VPN:-22}"
 fi
+
+_swarm_tcp_probe() {
+    local host="$1"
+    local port="$2"
+    local target="$host"
+
+    [[ -z "$host" || -z "$port" ]] && return 1
+    if [[ "$host" == *:* && "$host" != \[*\] ]]; then
+        target="[$host]"
+    fi
+
+    timeout 2 bash -c ": >/dev/tcp/$target/$port" >/dev/null 2>&1
+}
+
+check_wireguard_tunnel() {
+    ip link show wg0 >/dev/null 2>&1 || return 1
+    ip -4 addr show wg0 >/dev/null 2>&1 || return 1
+    return 0
+}
+
+resolve_vpn_remote_target() {
+    local vpn_host="${SWARM_REMOTE_HOST_VPN:-${WG_HUB:-10.99.99.1}}"
+    local vpn_port_ipv4="${SWARM_REMOTE_PORT_IPV4_VPN:-22}"
+    local vpn_port_ipv6="${SWARM_REMOTE_PORT_IPV6_VPN:-22}"
+
+    if ! check_wireguard_tunnel; then
+        return 1
+    fi
+
+    if _swarm_tcp_probe "$vpn_host" "$vpn_port_ipv4" || _swarm_tcp_probe "$vpn_host" "$vpn_port_ipv6"; then
+        export SWARM_REMOTE_HOST_VPN="$vpn_host"
+        export SWARM_REMOTE_PORT_IPV4_VPN="$vpn_port_ipv4"
+        export SWARM_REMOTE_PORT_IPV6_VPN="$vpn_port_ipv6"
+        export SWARM_REMOTE_TARGET_VPN="${vpn_host}|${vpn_port_ipv4}|${vpn_port_ipv6}"
+        return 0
+    fi
+
+    return 1
+}
+
+resolve_swarm_remote_target() {
+    local default_host="${1:-scorpio.copylaradio.com}"
+    local default_port_ipv4="${2:-2122}"
+    local default_port_ipv6="${3:-22}"
+    local use_vpn_fallback="${SWARM_REMOTE_USE_VPN:-false}"
+    local legacy_vpn_host="${WG_HUB:-10.99.99.1}"
+
+    local -a candidates=()
+    local candidate host port_ipv4 port_ipv6
+
+    if [[ -n "${SWARM_REMOTE_HOST:-}" && "${SWARM_REMOTE_HOST}" != "$legacy_vpn_host" ]]; then
+        candidates+=("${SWARM_REMOTE_HOST}|${SWARM_REMOTE_PORT_IPV4:-$default_port_ipv4}|${SWARM_REMOTE_PORT_IPV6:-$default_port_ipv6}")
+    fi
+
+    candidates+=("${default_host}|${default_port_ipv4}|${default_port_ipv6}")
+
+    case "$use_vpn_fallback" in
+        1|true|TRUE|yes|YES|on|ON)
+            [[ -n "${SWARM_REMOTE_HOST_VPN:-}" ]] && \
+                candidates+=("${SWARM_REMOTE_HOST_VPN}|${SWARM_REMOTE_PORT_IPV4_VPN:-22}|${SWARM_REMOTE_PORT_IPV6_VPN:-22}")
+            ;;
+    esac
+
+    for candidate in "${candidates[@]}"; do
+        IFS='|' read -r host port_ipv4 port_ipv6 <<<"$candidate"
+        [[ -z "$host" ]] && continue
+
+        if _swarm_tcp_probe "$host" "$port_ipv4" || _swarm_tcp_probe "$host" "$port_ipv6"; then
+            export SWARM_REMOTE_HOST="$host"
+            export SWARM_REMOTE_PORT_IPV4="$port_ipv4"
+            export SWARM_REMOTE_PORT_IPV6="$port_ipv6"
+            export SWARM_REMOTE_TARGET="${host}|${port_ipv4}|${port_ipv6}"
+            return 0
+        fi
+    done
+
+    export SWARM_REMOTE_HOST="$default_host"
+    export SWARM_REMOTE_PORT_IPV4="$default_port_ipv4"
+    export SWARM_REMOTE_PORT_IPV6="$default_port_ipv6"
+    export SWARM_REMOTE_TARGET="${SWARM_REMOTE_HOST}|${SWARM_REMOTE_PORT_IPV4}|${SWARM_REMOTE_PORT_IPV6}"
+    return 1
+}
+
+swarm_remote_target_report() {
+    if [[ -n "${SWARM_REMOTE_TARGET:-}" ]]; then
+        IFS='|' read -r host port_ipv4 port_ipv6 <<<"$SWARM_REMOTE_TARGET"
+        echo "host=$host ipv4=$port_ipv4 ipv6=$port_ipv6"
+    else
+        echo "host=${SWARM_REMOTE_HOST:-unset} ipv4=${SWARM_REMOTE_PORT_IPV4:-unset} ipv6=${SWARM_REMOTE_PORT_IPV6:-unset}"
+    fi
+}
+
+# Déterminer la meilleure cible de connexion sans forcer le tunnel VPN.
+resolve_swarm_remote_target
 
 [[ $myDOMAIN == "localhost" && -s ~/.zen/♥Box ]] \
     && myDOMAIN=$(echo $myIPFS | rev | cut -d '.' -f -2 | rev)
