@@ -723,7 +723,7 @@ Total offert à la communauté : ${new_total} Ẑen. 🙏
     fi
 fi
 
-#######################################################################
+################################################################### TODO : tests
 # PAF BURN & CONVERSION - 4-week operational cost management
 # Burn 4-week accumulated PAF from NODE back to UPLANETNAME_G1 and request € conversion
 # This creates a deflationary mechanism and enables real € payment for costs
@@ -826,7 +826,7 @@ fourweeks_paf_burn_and_convert() {
     fi
 }
 
-# Function to request OpenCollective conversion using GraphQL API
+# TODO : TESTS. Function to request OpenCollective conversion using GraphQL API
 # Creates an Expense (INVOICE) on the collective so the PAF burn can be converted to €
 # Conforms to https://graphql-docs-v2.opencollective.com
 request_opencollective_conversion() {
@@ -969,14 +969,16 @@ EOGQL
 }
 
 # Execute 4-week PAF burn (runs once per 4-week period)
-fourweeks_paf_burn_and_convert
+## TODO : procedure needs more test -- 
+## For now, trusting manual Armateur & Captain expense/bill submition + Ẑen burning (when OC have paid)
+## fourweeks_paf_burn_and_convert
 
 #######################################################################
 
-## AFTER PAF PAYMENT: CHECK SWARM SUBSCRIPTIONS
+## TODO AFTER PAF PAYMENT: CHECK SWARM SUBSCRIPTIONS (Satellite to IA HUB)
 # ${MY_PATH}/ZEN.SWARM.payments.sh
 ## Ouverture d'un compte sur un autre noeud de l'essaim pour activer des services...
-## Il suffit d'alimenter le MULTIPASS pour payer sur place.
+## Alimenter le MULTIPASS pour payer sur place.
 
 
 #######################################################################
