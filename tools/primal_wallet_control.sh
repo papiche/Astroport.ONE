@@ -548,15 +548,21 @@ control_primal_transactions() {
                 loge "Échec du vidage wallet vers INTRUSION"
             fi
 
-            # Désactiver le MULTIPASS (migration relay/capitaine)
-            logw "🔥 Déclenchement nostr_DESTROY_TW.sh pour $player_email"
-            if [[ -x "${MY_PATH}/nostr_DESTROY_TW.sh" ]]; then
-                "${MY_PATH}/nostr_DESTROY_TW.sh" "$player_email" 2>&1 || \
-                    loge "Échec nostr_DESTROY_TW.sh pour $player_email"
+            # Sécurité : On n'éjecte jamais le Capitaine
+            if [[ -n "${CAPTAINEMAIL:-}" && "$player_email" == "$CAPTAINEMAIL" ]]; then
+                logw "🛡️ PROTECTION CAPITAINE : Annulation de la destruction pour $player_email."
+                logw "🛡️ L'intrusion a eu lieu sur un portefeuille coopératif. Destruction ignorée."
             else
-                loge "nostr_DESTROY_TW.sh introuvable dans ${MY_PATH}/"
+                # Désactiver le MULTIPASS (migration relay/capitaine)
+                logw "🔥 Déclenchement nostr_DESTROY_TW.sh pour $player_email"
+                if [[ -x "${MY_PATH}/nostr_DESTROY_TW.sh" ]]; then
+                    "${MY_PATH}/nostr_DESTROY_TW.sh" "$player_email" 2>&1 || \
+                        loge "Échec nostr_DESTROY_TW.sh pour $player_email"
+                else
+                    loge "nostr_DESTROY_TW.sh introuvable dans ${MY_PATH}/"
+                fi
             fi
-            break  # Wallet vidé et détruit — inutile de continuer
+            break  # Wallet vidé (ou tentative) — inutile de continuer pour cette TX
         fi
 
         # ── Redirection vers INTRUSION ────────────────────────────────────

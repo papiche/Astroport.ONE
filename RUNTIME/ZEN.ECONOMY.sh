@@ -622,7 +622,7 @@ Total offert à la communauté : ${new_total} Ẑen. 🙏
                 CASH_BALANCE=$CASH_ZEN
                 [[ -z $NCARD ]] && NCARD=1
                 [[ -z $ZCARD ]] && ZCARD=4
-                [[ -z $TVA_RATE ]] && TVA_RATE=20
+                [[ -z $TVA_RATE ]] && TVA_RATE=0
                 [[ -z $IS_THRESHOLD ]] && IS_THRESHOLD=42500
                 [[ -z $IS_RATE_REDUCED ]] && IS_RATE_REDUCED=15
                 [[ -z $IS_RATE_NORMAL ]] && IS_RATE_NORMAL=25
