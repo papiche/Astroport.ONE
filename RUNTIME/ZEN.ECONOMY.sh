@@ -26,6 +26,10 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 # Source cooperative config for DID-based configuration (encrypted in NOSTR)
 . "${MY_PATH}/../tools/cooperative_config.sh" 2>/dev/null || true
 
+# Function to log both to console and file
+log_output() {
+    echo "$@" | tee -a "$LOG_FILE"
+}
 ################################################################################
 # Vérification des dépendances
 ################################################################################
@@ -56,10 +60,6 @@ LOG_FILE="$LOG_DIR/zen_economy.txt"
 LOVE_LEDGER="$HOME/.zen/game/love_ledger.json"
 mkdir -p "$LOG_DIR"
 
-# Function to log both to console and file
-log_output() {
-    echo "$@" | tee -a "$LOG_FILE"
-}
 # Initialiser le registre de Gratitude s'il n'existe pas
 # "Ğ1 apporte la Liberté · Ẑen apporte l'Égalité · ❤️ apporte la Fraternité"
 if [[ ! -f "$LOVE_LEDGER" ]]; then
