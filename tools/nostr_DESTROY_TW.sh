@@ -91,19 +91,20 @@ else
         rm "$tmp_mid" "$tmp_tail"
     else
         cat "$tmp_mid" "$tmp_tail"
+        echo "[ERROR] BAD DISCO RECONSTRUCTION... MULTIPASS salt pepper are lost..."
+        echo "DELETE MANUALY : rm -rf $HOME/.zen/game/nostr/${player}"
+        echo "${MY_PATH}/../RUNTIME/PLAYER.unplug.sh \"${HOME}/.zen/game/players/${player}/ipfs/moa/index.html\" \"${player}\" \"ALL\""
         exit 1
     fi
 fi
 
 ##################################################### DISCO DECODED
-## Extract email from s parameter
-email=${s:2}  # Remove the first two characters (/, ?)
-echo "Target email: $email"
-youser=$($MY_PATH/../tools/clyuseryomail.sh "${email}")
+echo "Target email: $player"
+youser=$($MY_PATH/../tools/clyuseryomail.sh "${player}")
 secnostr=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}" -s)
 pubnostr=$(${MY_PATH}/../tools/keygen -t nostr "${salt}" "${pepper}")
 
-OUTPUT_DIR="$HOME/.zen/game/nostr/${email}"
+OUTPUT_DIR="$HOME/.zen/game/nostr/${player}"
 
 echo "Exporting NOSTR events..."
 cd ~/.zen/strfry
@@ -174,7 +175,7 @@ echo "  (Script will automatically decrypt and use .next.disco)"
 echo ""
 echo "Method 2: Manual restoration with NEW .disco"
 echo "  1. Decrypt backup: "
-echo "     ~/.zen/Astroport.ONE/tools/natools.py decrypt -f pubsec -i backup.zip.player.enc -k ~/.zen/game/nostr/${email}/.secret.dunikey -o backup.zip"
+echo "     ~/.zen/Astroport.ONE/tools/natools.py decrypt -f pubsec -i backup.zip.player.enc -k ~/.zen/game/nostr/${player}/.secret.dunikey -o backup.zip"
 echo "  2. Unzip backup.zip"
 echo "  3. Use .next.disco to create MULTIPASS on new relay:"
 echo "     cat .next.disco"
@@ -205,7 +206,7 @@ cat > "${OUTPUT_DIR}/README_BACKUP.txt" <<EOF
 ╚════════════════════════════════════════════════════════════════╝
 
 Backup Date: $(date '+%Y-%m-%d %H:%M:%S')
-Account: ${email}
+Account: ${player}
 Public Key (HEX): ${hex}
 G1 Wallet: ${g1pubnostr}
 $(if [[ -n "$NEXT_HEX" ]]; then echo "Next HEX (for restoration): ${NEXT_HEX:0:20}..."; fi)
@@ -251,7 +252,7 @@ Method 1: Using Astroport restore tool (RECOMMENDED)
 
 Method 2: Manual recreation with NEW .disco
   $ cd ~/.zen/Astroport.ONE
-  $ ./tools/natools.py decrypt -f pubsec -i backup.zip.player.enc -k ~/.zen/game/nostr/${email}/.secret.dunikey -o backup.zip
+  $ ./tools/natools.py decrypt -f pubsec -i backup.zip.player.enc -k ~/.zen/game/nostr/${player}/.secret.dunikey -o backup.zip
   $ unzip backup.zip
   $ cat backup/.next.disco
   $ # Use the SALT and PEPPER from .next.salt and .next.pepper
@@ -281,7 +282,7 @@ UPlanet ORIGIN: https://qo-op.com
 EOF
 
 # Create minimal backup with only essential files
-BACKUP_DIR="$HOME/.zen/tmp/${email}_nostr_backup_$(date +%Y%m%d_%H%M%S)"
+BACKUP_DIR="$HOME/.zen/tmp/${player}_nostr_backup_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "${BACKUP_DIR}"
 
 echo "Creating minimal backup with essential files only..."
@@ -295,7 +296,7 @@ else
 fi
 
 # Copy uDRIVE manifest.json if it exists
-MANIFEST_FILE="${HOME}/.zen/game/nostr/${email}/APP/uDRIVE/manifest.json"
+MANIFEST_FILE="${HOME}/.zen/game/nostr/${player}/APP/uDRIVE/manifest.json"
 if [[ -f "${MANIFEST_FILE}" ]]; then
     cp "${MANIFEST_FILE}" "${BACKUP_DIR}/uDRIVE_manifest.json"
     echo "✅ uDRIVE manifest exported"
@@ -309,7 +310,7 @@ else
 fi
 
 # Copy .disco secret key if it exists
-DISCO_FILE="${HOME}/.zen/game/nostr/${email}/.secret.disco"
+DISCO_FILE="${HOME}/.zen/game/nostr/${player}/.secret.disco"
 if [[ -f "${DISCO_FILE}" ]]; then
     cp "${DISCO_FILE}" "${BACKUP_DIR}/.secret.disco"
     echo "✅ Secret .disco key exported"
@@ -318,16 +319,16 @@ else
 fi
 
 # Copy ZEN Card secret.june (cooperative shares history)
-ZEN_SECRET_JUNE="${HOME}/.zen/game/players/${email}/secret.june"
+ZEN_SECRET_JUNE="${HOME}/.zen/game/players/${player}/secret.june"
 if [[ -f "${ZEN_SECRET_JUNE}" ]]; then
     # Copy current secret.june to backup
     cp "${ZEN_SECRET_JUNE}" "${BACKUP_DIR}/secret.june"
     # Copy all existing numbered versions into backup
-    for f in "${HOME}/.zen/game/players/${email}"/secret.june.[0-9]*; do
+    for f in "${HOME}/.zen/game/players/${player}"/secret.june.[0-9]*; do
         [[ -f "$f" ]] && cp "$f" "${BACKUP_DIR}/"
     done
     # Count existing history
-    HISTORY_COUNT=$(ls "${HOME}/.zen/game/players/${email}"/secret.june.[0-9]* 2>/dev/null | wc -l)
+    HISTORY_COUNT=$(ls "${HOME}/.zen/game/players/${player}"/secret.june.[0-9]* 2>/dev/null | wc -l)
     echo "✅ ZEN Card secret.june exported (${HISTORY_COUNT} historical version(s))"
 else
     echo "⚠️  ZEN Card secret.june not found (no transaction history to backup)"
@@ -337,7 +338,7 @@ fi
 echo "${UPLANETNAME}" > "${BACKUP_DIR}/.uplanetname"
 
 # Copy ZEN Card .g1pub if it exists (for G1 wallet access)
-ZEN_G1PUB="${HOME}/.zen/game/players/${email}/.g1pub"
+ZEN_G1PUB="${HOME}/.zen/game/players/${player}/.g1pub"
 if [[ -f "${ZEN_G1PUB}" ]]; then
     cp "${ZEN_G1PUB}" "${BACKUP_DIR}/.g1pub"
     echo "✅ ZEN Card .g1pub exported (G1 wallet access preserved)"
@@ -494,7 +495,7 @@ if [[ -f "${MY_PATH}/nostr_update_profile.py" ]]; then
     fi
     
     # Update profile with deactivation message, backup link, and next HEX
-    "${MY_PATH}/nostr_update_profile.py" "${email}" "$myRELAY" "wss://relay.copylaradio.com" \
+    "${MY_PATH}/nostr_update_profile.py" "${player}" "$myRELAY" "wss://relay.copylaradio.com" \
         --about "${ABOUT_MSG}" \
         --name "[DEACTIVATED] ${youser}" \
         --website "${myIPFS}/ipfs/${NOSTRIFS}" 2>/dev/null \

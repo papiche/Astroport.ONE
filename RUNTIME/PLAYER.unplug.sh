@@ -138,7 +138,7 @@ cat > "$UNPLUG_EMAIL" << EOF
     <div class="container">
         <div class="header">
             <h1>🚀 Player Unplugged from Astroport.ONE</h1>
-            <p>Station: <strong>${IPFSNODEID:0:8}...</strong> | Date: $(date '+%Y-%m-%d %H:%M:%S UTC')</p>
+            <p>Station: <strong>${IPFSNODEID: -8}...</strong> | Date: $(date '+%Y-%m-%d %H:%M:%S UTC')</p>
         </div>
         
         <div class="content">
