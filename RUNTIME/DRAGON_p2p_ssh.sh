@@ -360,7 +360,7 @@ _is_native_process() {
 ##################################################################################
 # FONCTION GÉNÉRATRICE DE TUNNEL (Double Bind)
 ##################################################################################
-# $1: Port, $2: Nom court (ex: paperclip), $3: Description
+# $1: Port, $2: Nom court (ex: qdrant), $3: Description
 generate_p2p_service() {
     local PORT=$1
     local SLUG=$2
@@ -602,7 +602,4 @@ echo "Active Swarm Tunnels:"
 ipfs p2p ls
 echo "DRAGON WOKE UP - AI Swarm is Ready"
 ##################################################################################
-rm -f ~/.zen/tmp/${IPFSNODEID}/x_cups.sh 2>/dev/null
 exit 0
-## ── CUPS (désactivé — décommentez si imprimante USB) ─────────────────────────
-## Pour activer, créez x_cups.sh manuellement ou décommentez tools/x_cups.sh.template
