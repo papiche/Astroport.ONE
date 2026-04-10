@@ -115,10 +115,11 @@ fi
 cd dify/docker
 if [ ! -f .env ]; then
     cp .env.example .env
-    # On modifie le port Nginx par défaut de Dify (80) vers 8010
-    sed -i "s/EXPOSE_NGINX_PORT=80/EXPOSE_NGINX_PORT=${PORT_DIFY}/g" .env
-    sed -i "s/EXPOSE_NGINX_SSL_PORT=443/EXPOSE_NGINX_SSL_PORT=8444/g" .env
 fi
+
+# Always ensure the ports are set to our variables
+sed -i "s/^EXPOSE_NGINX_PORT=.*/EXPOSE_NGINX_PORT=${PORT_DIFY}/" .env
+sed -i "s/^EXPOSE_NGINX_SSL_PORT=.*/EXPOSE_NGINX_SSL_PORT=8444/" .env
 
 # --- LANCEMENT DE LA STACK ---
 echo -e "⏳ Démarrage de Open WebUI et Qdrant..."
