@@ -84,13 +84,13 @@ services:
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: ai-company-webui
-    ports:["${PORT_WEBUI}:8080"]
+    ports: ["${PORT_WEBUI}:8080"]
     volumes: ["./webui_data:/app/backend/data"]
     environment:
       - 'WEBUI_SECRET_KEY=\${WEBUI_SECRET_KEY}'
       - 'ENABLE_RAG_LOCAL_WEB_FETCH=True'
       - 'OLLAMA_BASE_URL=http://host.docker.internal:${OLLAMA_PORT}'
-    extra_hosts:["host.docker.internal:host-gateway"]
+    extra_hosts: ["host.docker.internal:host-gateway"]
     restart: unless-stopped
 
   qdrant:
@@ -99,7 +99,7 @@ services:
     ports: ["${PORT_QDRANT}:6333"]
     environment:
       - QDRANT__SERVICE__API_KEY=\${QDRANT_API_KEY}
-    volumes:["qdrant_storage:/qdrant/storage"]
+    volumes: ["qdrant_storage:/qdrant/storage"]
     restart: unless-stopped
 
 volumes:
