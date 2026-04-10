@@ -1077,7 +1077,7 @@ republish_did_ipns() {
                 local _max_pub=${MAX_IPFS_PUBLISH:-3}
                 while true; do
                     local count
-                    count=$(pgrep -c -f "ipfs name publish" 2>/dev/null || echo 0)
+                    count=$(pgrep -c -f "ipfs name publish" 2>/dev/null)
                     if [ $count -lt $_max_pub ]; then
                         break  # Sort de la boucle si le nombre de processus est inférieur à _max_pub
                     fi
