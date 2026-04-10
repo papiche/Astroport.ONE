@@ -2,7 +2,7 @@
 """Convert Duniter v1/v2 public key to IPNS key.
 
 Usage:
-    duniter_to_ipns.py <pubkey_or_ss58>  → IPNS key
+    g1_to_ipfs.py <pubkey_or_ss58>  → IPNS key
 """
 import sys
 import base58
