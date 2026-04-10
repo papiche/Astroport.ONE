@@ -262,7 +262,7 @@ for PLAYER in "${NOSTR[@]}"; do
     ## SWARM CACHE PUBLISHING
     if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/HEX ]]; then
         mkdir -p "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}"
-        echo "$HEX" > "~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/HEX"
+        echo "$HEX" > "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/HEX"
     fi
     if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/GPS ]]; then
         mkdir -p "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}"
