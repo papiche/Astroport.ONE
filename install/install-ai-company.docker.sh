@@ -113,7 +113,7 @@ if [ ! -d "dify" ]; then
 fi
 
 cd dify/docker
-if[ ! -f .env ]; then
+if [ ! -f .env ]; then
     cp .env.example .env
     # On modifie le port Nginx par défaut de Dify (80) vers 8010
     sed -i "s/EXPOSE_NGINX_PORT=80/EXPOSE_NGINX_PORT=${PORT_DIFY}/g" .env
