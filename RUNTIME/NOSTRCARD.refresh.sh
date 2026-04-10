@@ -162,7 +162,7 @@ initialize_account() {
 # Fonction pour vérifier si le rafraîchissement est nécessaire
 should_refresh() {
     local player="$1"
-    local player_dir="${HOME}/.zen/game/nostr/${PLAYER}"
+    local player_dir="${HOME}/.zen/game/nostr/${player}"
     local current_time=$(date '+%H:%M')
     local refresh_time_file="${player_dir}/.refresh_time"
     local last_refresh_file="${player_dir}/.todate"
@@ -174,7 +174,7 @@ should_refresh() {
 
     # Si le compte n'est pas initialisé, l'initialiser
     if [[ ! -d "$player_dir" ]] || [[ ! -s "$refresh_time_file" ]]; then
-        initialize_account "${PLAYER}"
+        initialize_account "${player}"
         return 1
     fi
 
@@ -182,51 +182,77 @@ should_refresh() {
     local last_refresh=$(cat "$last_refresh_file")
     local last_udrive=$(cat "$last_udrive_file" 2>/dev/null)
 
+    ##############################################
+    ## 🌍 GESTION DE L'ITINÉRANCE (ROAMING SYNC)
+    ## Vérifie si l'IPNS a été mis à jour par une AUTRE station de l'essaim
+    local nostrns=$(cat "${player_dir}/NOSTRNS" 2>/dev/null)
+    if [[ -n "$nostrns" ]]; then
+        # CORRECTION : On inclut /$player/ dans le chemin de résolution
+        local network_udrive=$(ipfs resolve -r --timeout=15s "$nostrns/$player/APP/uDRIVE" 2>/dev/null | sed 's|/ipfs/||')
+        
+        # Si le réseau a un CID différent de notre cache local
+        if [[ -n "$network_udrive" && "$network_udrive" != "$last_udrive" ]]; then
+            log "INFO" "🌍 ITINÉRANCE DÉTECTÉE : Le uDRIVE distant est différent. Synchronisation depuis le réseau..."
+            
+            # Télécharger la nouvelle version depuis IPFS dans un dossier temporaire
+            rm -rf "${player_dir}/APP/uDRIVE.tmp"
+            if ipfs get "/ipfs/$network_udrive" -o "${player_dir}/APP/uDRIVE.tmp" 2>/dev/null; then
+                rm -rf "${player_dir}/APP/uDRIVE"
+                mv "${player_dir}/APP/uDRIVE.tmp" "${player_dir}/APP/uDRIVE"
+                
+                # Mettre à jour le fichier cache avec le CID du réseau
+                echo "$network_udrive" > "$last_udrive_file"
+                last_udrive="$network_udrive"
+                log "INFO" "✅ Synchronisation Itinérance terminée (CID: $network_udrive)"
+            else
+                log "WARN" "⚠️ Échec de la synchronisation IPFS pour $network_udrive"
+                rm -rf "${player_dir}/APP/uDRIVE.tmp"
+            fi
+        fi
+    fi
+    ##############################################
+
     # Vérification 1 : Mise à jour quotidienne — une fois par jour APRÈS l'heure programmée.
-    # Fenêtre : toute la journée après refresh_time (pas de limite de 1h).
-    # Le fichier .todate empêche les doubles refreshes le même jour.
     if [[ "$last_refresh" != "$TODATE" ]]; then
-        current_seconds=$((10#${current_time%%:*} * 3600 + 10#${current_time##*:} * 60))
-        refresh_seconds=$((10#${refresh_time%%:*} * 3600 + 10#${refresh_time##*:} * 60))
+        local current_seconds=$((10#${current_time%%:*} * 3600 + 10#${current_time##*:} * 60))
+        local refresh_seconds=$((10#${refresh_time%%:*} * 3600 + 10#${refresh_time##*:} * 60))
         if [[ $current_seconds -ge $refresh_seconds ]]; then
             REFRESH_REASON="daily_update"
-            echo "Daily refresh needed for ${PLAYER} (scheduled time: ${refresh_time}, current: ${current_time})"
+            echo "Daily refresh needed for ${player} (scheduled time: ${refresh_time}, current: ${current_time})"
             return 0
         fi
-        # Pas encore l'heure → pas de refresh quotidien, mais on vérifie uDRIVE
     fi
 
     ##############################################
-    ## uDRIVE APP UPDATE — seulement si le dossier a été modifié depuis le dernier CID connu
-    [[ ! -d ${player_dir}/APP/uDRIVE ]] \
-        && rm -Rf ${player_dir}/APP \
-        && mkdir -p ${player_dir}/APP/uDRIVE/
+    ## uDRIVE APP UPDATE
+    [[ ! -d "${player_dir}/APP/uDRIVE" ]] \
+        && rm -Rf "${player_dir}/APP" \
+        && mkdir -p "${player_dir}/APP/uDRIVE/"
 
-    ## Verify symlink
-    [[ ! -e "${player_dir}/APP/uDRIVE/generate_ipfs_structure.sh" ]] && \
-        cd "${player_dir}/APP/uDRIVE" && \
-        ln -sf "${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh" "generate_ipfs_structure.sh" && \
-        cd - 2>&1 >/dev/null
+    ## S'assurer que le script de génération est bien un lien symbolique local
+    ## (ipfs get télécharge un fichier "dur", il faut le re-transformer en lien)
+    rm -f "${player_dir}/APP/uDRIVE/generate_ipfs_structure.sh" 2>/dev/null
+    cd "${player_dir}/APP/uDRIVE" && \
+    ln -sf "${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh" "generate_ipfs_structure.sh" && \
+    cd - 2>&1 >/dev/null
 
-    ## Vérification rapide : le dossier uDRIVE a-t-il été modifié depuis le dernier CID ?
-    ## On compare l'heure de modification du dossier avec celle du fichier .udrive
-    udrive_dir_mtime=$(stat -c %Y "${player_dir}/APP/uDRIVE/" 2>/dev/null || echo 0)
-    udrive_cid_mtime=$(stat -c %Y "${last_udrive_file}" 2>/dev/null || echo 0)
+    ## Vérification rapide : le dossier uDRIVE a-t-il été modifié LOCALEMENT ?
+    local udrive_dir_mtime=$(stat -c %Y "${player_dir}/APP/uDRIVE/" 2>/dev/null || echo 0)
+    local udrive_cid_mtime=$(stat -c %Y "${last_udrive_file}" 2>/dev/null || echo 0)
 
     if [[ -n "$last_udrive" && $udrive_dir_mtime -le $udrive_cid_mtime ]]; then
-        ## Pas de changement → skip génération coûteuse
-        echo "UDRIVE CID: $last_udrive (no changes)"
+        echo "UDRIVE CID: $last_udrive (no local changes)"
         return 1
     fi
 
-    ## update uDRIVE APP (seulement si modification détectée ou premier run)
-    cd ${player_dir}/APP/uDRIVE/
-    log "DEBUG" "Starting uDRIVE generation for ${PLAYER}"
-    udrive_start=$(date +%s)
+    ## update uDRIVE APP (seulement si modification locale détectée)
+    cd "${player_dir}/APP/uDRIVE/"
+    log "DEBUG" "Starting uDRIVE generation for ${player}"
+    local udrive_start=$(date +%s)
     UDRIVE=$(./generate_ipfs_structure.sh . 2>/dev/null)
-    udrive_end=$(date +%s)
-    udrive_duration=$((udrive_end - udrive_start))
-    log "DEBUG" "uDRIVE generation completed in ${udrive_duration}s for ${PLAYER}"
+    local udrive_end=$(date +%s)
+    local udrive_duration=$((udrive_end - udrive_start))
+    log "DEBUG" "uDRIVE generation completed in ${udrive_duration}s for ${player}"
     cd - 2>&1 >/dev/null
 
     if [[ -n "$UDRIVE" ]]; then
@@ -254,6 +280,13 @@ NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 
 ## RUNING FOR ALL LOCAL MULTIPASS (NOSTR Card)
 for PLAYER in "${NOSTR[@]}"; do
+    # ---------------------------------------------------------
+    # IGNORER LES COMPTES ITINÉRANTS (ROAMING)
+    if [[ -f ~/.zen/game/nostr/${PLAYER}/.roaming ]]; then
+        log "INFO" "✈️ MULTIPASS visiteur ignoré (Roaming) : $PLAYER"
+        continue
+    fi
+    # ---------------------------------------------------------
     log "INFO" ">>>>>>>>>>>>>>>>>>============================================ Processing MULTIPASS : $PLAYER "
     start=$(date +%s)
     HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX 2>/dev/null)

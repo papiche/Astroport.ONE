@@ -37,6 +37,9 @@ rm -Rf ~/.zen/tmp/swarm/${IPFSNODEID-null}
 echo "## CLEANING DEACTIVATED PROFILES & OLD UMAP MESSAGES (NIP-40)"
 ${MY_PATH}/../tools/nostr_cleanup_deactivated.sh --force 2>/dev/null || true
 ########################################################
+echo "## CLEANING ROAMING PROFILES (> 24h)"
+# Supprime les dossiers MULTIPASS marqués comme .roaming qui ont plus de 24h (1 jour)
+find ~/.zen/game/nostr/ -mindepth 2 -maxdepth 2 -name ".roaming" -mtime +1 -exec dirname {} \; | xargs -r rm -Rf
 #################################################################
 ## IPFSNODEID ASTRONAUTES SIGNALING ## 12345 port
 ############################

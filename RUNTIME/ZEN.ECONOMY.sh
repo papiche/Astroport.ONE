@@ -174,8 +174,17 @@ fi
 # NOSTR : Utilisateurs avec carte NOSTR (1 Ẑen/semaine)
 # PLAYERS : Utilisateurs avec carte ZEN (4 Ẑen/semaine)
 #######################################################################
-NOSTRS=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
-PLAYERS=($(ls -t ~/.zen/game/players/ 2>/dev/null | grep "@" ))
+#######################################################################
+# Comptage des utilisateurs actifs (Exclut les visiteurs .roaming)
+#######################################################################
+NOSTRS=()
+for d in ~/.zen/game/nostr/*@*/; do
+    [[ -d "$d" && ! -f "${d}.roaming" ]] && NOSTRS+=("$(basename "$d")")
+done
+PLAYERS=()
+for d in ~/.zen/game/players/*@*/; do
+    [[ -d "$d" && ! -f "${d}.roaming" ]] && PLAYERS+=("$(basename "$d")")
+done
 log_output "NODE hosts MULTIPASS : ${#NOSTRS[@]} / ZENCARD : ${#PLAYERS[@]}"
 
 #######################################################################

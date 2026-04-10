@@ -762,7 +762,7 @@ if [[ -s ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]]; then
         # Update NOSTR profile using nostr_update_profile.py
         ${MY_PATH}/../tools/nostr_update_profile.py \
             "${UPDATE_ARGS[@]}" \
-            > ~/.zen/game/nostr/${PLAYER}/nostr_update_zencard.log 2>&1
+            > ~/.zen/game/nostr/${PLAYER}/.nostr_update_zencard.log 2>&1
         
         if [[ $? -eq 0 ]]; then
             echo "✅ NOSTR profile updated with ZENCARD parameter"
