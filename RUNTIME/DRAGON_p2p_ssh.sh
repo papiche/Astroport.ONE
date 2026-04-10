@@ -8,6 +8,16 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/../tools/my.sh"
+
+# --- LOCK MECHANISM ---
+LOCKFILE="/tmp/dragon_swarm.lock"
+if [ -e ${LOCKFILE} ] && kill -0 $(cat ${LOCKFILE}) 2>/dev/null; then
+    echo "DRAGON is already running."
+    exit 1
+fi
+echo $$ > ${LOCKFILE}
+trap "rm -f ${LOCKFILE}" EXIT
+
 ########################################################################
 YOU=$(pgrep -au $USER -f "ipfs daemon" > /dev/null && echo "$USER") || er+=" ipfs daemon not running"
 [[ "$YOU" == "" || "${IPFSNODEID}" == "" ]] && echo "ERROR : $er " && exit 1
@@ -391,7 +401,7 @@ generate_p2p_service() {
             exit 0
         fi
 
-        ipfs --timeout=10s ping -n 2 "/p2p/$NODE_ID" > /dev/null
+        ipfs --timeout=3s ping -n 2 "/p2p/$NODE_ID" > /dev/null
         if [[ $? == 0 ]]; then
             echo "Establishing Double Tunnel for $NAME ($NODE_ID)..."
             if ! check_bind "127.0.0.1"; then
