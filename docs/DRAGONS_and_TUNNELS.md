@@ -208,7 +208,6 @@ ipfs p2p forward "$PROTO" "/ip4/172.17.0.1/tcp/$LPORT"  "/p2p/$NODE_ID"
 | `ollama` | 11434 | Ollama LLM API | `pgrep ollama` + processus natif |
 | `comfyui` | 8188 | ComfyUI | `systemctl is-active comfyui` |
 | `open-webui` | 8000 | Open WebUI IA | processus natif sur port |
-| `paperclip` | 3100 | Paperclip AI Agents | processus natif sur port |
 | `qdrant` | 6333 | Qdrant VectorDB | processus natif sur port |
 | `orpheus` | 5005 | Orpheus TTS | `docker ps \| grep orpheus` |
 | `perplexica` | 3002 | Perplexica Search | `docker ps \| grep perplexica` |
@@ -359,7 +358,6 @@ ID LOCAL: 12D3KooWAJxX... | Port: 11434 | Auto-refresh ON
   SAGITTARIUS - OLLAMA      [  ACTIF ipfs  ]  P:11434     ... wyFntbpxPX ...
 > ALIENWARE - OLLAMA        [  OFF  ]  P:11434     ... AFLSPRKPXt ...
   ALIENWARE - ORPHEUS       [  OFF  ]  P:5005      ... AFLSPRKPXt ...
-  LIBRA - PAPERCLIP         [  OFF  ]  P:3100      ... ikSHoDD581 ...
   LIBRA - QDRANT            [  OFF  ]  P:6333      ... ikSHoDD581 ...
 ```
 
@@ -460,7 +458,6 @@ IA/ollama.me.sh
 | [`IA/orpheus.me.sh`](../IA/orpheus.me.sh) | Orpheus TTS | 5005 | P2P only (pas de SSH) |
 | [`IA/open-webui.me.sh`](../IA/open-webui.me.sh) | Open WebUI | 8000 | Interface IA centrale |
 | [`IA/qdrant.me.sh`](../IA/qdrant.me.sh) | Qdrant | 6333 | Liste collections |
-| [`IA/paperclip.me.sh`](../IA/paperclip.me.sh) | Paperclip | 3100 | AI Agents |
 
 ### Commandes communes à tous les ME
 

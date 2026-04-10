@@ -176,7 +176,7 @@ bash install.sh
 # + NextCloud AIO (private cloud 128 Go, ZENCard ready)
 bash install.sh "" "" "" nextcloud
 
-# + AI Swarm Stack (Ollama + Paperclip + OpenWebUI + Qdrant)
+# + AI Swarm Stack (Ollama + Dify AI + OpenWebUI + Qdrant)
 bash install.sh "" "" "" ai-company
 
 # + rnostr dev (Rust relay, replace strfry — experimental)
@@ -187,7 +187,7 @@ bash install.sh "" "" "" dev
 |---|---|---|
 | `standard` | IPFS · Nostr strfry · UPassport · GPG · gcli | ✅ Production |
 | `nextcloud` | Standard + NextCloud AIO (128 Go cloud, BTRFS storage) | ✅ Stable |
-| `ai-company` | Standard + Paperclip + OpenWebUI + LiteLLM + Qdrant AI stack | ⚠️ Experimental |
+| `ai-company` | Standard + Dify AI + OpenWebUI + +Qdrant AI stack | ⚠️ Experimental |
 | `dev` | Standard + rnostr Rust relay (migration from strfry writePolicy plugins) | 🔧 In development |
 
 ### After Installation: What's Running
@@ -201,7 +201,7 @@ http://localhost:33101   G1Billet (service shut down TrocZen is the next G1BILLE
 http://localhost:81      Nginx Proxy Manager admin (NPM)
 http://localhost:8443    NextCloud AIO setup (nextcloud profile)
 http://localhost:11434   Ollama API (ai-company profile)
-http://localhost:3100    Paperclip AI agents (ai-company)
+http://localhost:8010    Dify AI AI agents (ai-company)
 ```
 
 ### Verified Technologies
@@ -294,7 +294,7 @@ All transactions are visible on the **Ğ1 blockchain** (Duniter v1/v2s). Full tr
 │  (128 Go/user)      (SSL auto)           (FastAPI)      │
 │                                                          │
 │  #BRO AI Stack (ai-company) :                        │
-│  Ollama → LiteLLM → Paperclip → OpenWebUI → Qdrant       │
+│  Ollama → LiteLLM → Dify AI → OpenWebUI → Qdrant       │
 │                                                          │
 │  Crypto: Ğ1 (Duniter v2s) · NOSTR (Ed25519) · IPFS     │
 │  Identity: MULTIPASS = SSSS 2/3 + DID W3C               │
@@ -337,7 +337,7 @@ Each plugin receives Nostr events via stdin/stdout JSON, classifies users (`nobo
 🐉 **Calling Rust/DRAGON developers** — contact: support@qo-op.com — Subject: `DRAGON rnostr migration`
 
 **Also wanted:** Integration of the ai-company AI stack into the Astroport ecosystem:
-- Automatic #BRO responses via OpenWebUI/Paperclip triggered by Nostr events
+- Automatic #BRO responses via OpenWebUI/Dify AI triggered by Nostr events
 - Subject: `DRAGON ai-company` on Nostr or support@qo-op.com
 
 **Tool: `code_assistant`** (local AI code review):

@@ -529,20 +529,16 @@ publish_service() {
 ##################################################################################
 
 ## ── Profil ai-company : Stack IA Swarm ──────────────────────────
-# Paperclip (3100)
-publish_service 3100 "paperclip" "Paperclip AI Agents"
+# Dify AI Workflow (8010)
+publish_service 8010 "dify" "Dify AI Workflow"
 
-# Open WebUI interface IA (8000) — (supporte Ollama natif)
+# Open WebUI interface IA (8000)
 publish_service 8000 "open-webui" "Open WebUI Interface IA"
 
 ## Port 8001 : NextCloud Apache uniquement (proxied NPM → cloud.DOMAIN)
 if ss -tln 2>/dev/null | grep -q ":8001 "; then
     publish_service 8001 "nextcloud-app" "NextCloud Apache App (via NPM cloud.DOMAIN)"
 fi
-
-# --- NOT SHARED --- used locally as ollama proxy for paperclip
-# LiteLLM proxy (8010)
-# generate_p2p_service 8010 "litellm" "LiteLLM Proxy"
 
 # Qdrant vector database (6333) -- could be hidden too
 publish_service 6333 "qdrant" "Qdrant VectorDB"

@@ -33,7 +33,7 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     echo "Profils disponibles :"
     echo "  (vide)         Standard : IPFS + Nostr strfry + UPassport + Astroport"
     echo "  nextcloud      Standard + NextCloud AIO (cloud privé 128Go pour ZEN Card)"
-    echo "  ai-company  Standard + Stack IA (Ollama + Paperclip + Open WebUI + Qdrant)"
+    echo "  ai-company  Standard + Stack IA (Ollama + Dify.ai + Open WebUI + Qdrant)"
     echo "                 → install-ai-company.docker.sh + code_assistant"
     echo "  dev            Standard + rnostr (remplace strfry, sémantique Qdrant)"
     echo ""
@@ -80,7 +80,7 @@ if [[ -z "$CUSTOM_CAPTAIN_EMAIL" && -z "$CUSTOM_NODE_DOMAIN" ]]; then
     echo "Profil d'installation :"
     echo "  (vide)         Standard (recommandé)"
     echo "  nextcloud      + NextCloud AIO cloud privé 128Go"
-    echo "  ai-company  + Stack IA Swarm (Ollama, Paperclip, Open WebUI)"
+    echo "  ai-company  + Stack IA Swarm (Ollama, Dify.ai, Open WebUI)"
     echo "  dev            + rnostr (remplace strfry — expérimental)"
     read -p "Profil         [standard]                         : " INSTALL_PROFILE
 fi
@@ -498,7 +498,7 @@ case "${INSTALL_PROFILE}" in
         echo "║  ⚠️  AVERTISSEMENT — Stack en cours d'intégration            ║"
         echo "╠══════════════════════════════════════════════════════════════╣"
         echo "║                                                               ║"
-        echo "║  Les services IA démarrés (Paperclip, Open WebUI, LiteLLM) ║"
+        echo "║  Les services IA démarrés (Dify.ai, Open WebUI, LiteLLM) ║"
         echo "║  ne sont PAS encore intégrés nativement à Astroport.ONE.   ║"
         echo "║  Ils fonctionnent en parallèle mais nécessitent :           ║"
         echo "║                                                               ║"
@@ -514,8 +514,7 @@ case "${INSTALL_PROFILE}" in
         echo "║                                                               ║"
         echo "║  Services (si démarrés) :                                    ║"
         echo "║    Open WebUI : http://localhost:8000  ← interface IA        ║"
-        echo "║    Paperclip  : http://localhost:3100  (agents)              ║"
-        echo "║    LiteLLM    : http://localhost:8010  (proxy modèles)       ║"
+        echo "║    Dify.ai  :   http://localhost:8010  (agents)              ║"
         echo "║    Qdrant     : http://localhost:6333/dashboard              ║"
         echo "║    Ollama     : http://localhost:11434                       ║"
         echo "║    code_assistant : ~/.zen/Astroport.ONE/code_assistant      ║"
@@ -632,9 +631,8 @@ echo "    NextCloud  http://127.0.0.1:8443  (admin initial)"
 echo "               https://cloud.${DOMAIN_DISPLAY}  (via NPM)"
 fi
 if [[ "${AISTACK_ACTIVE}" == "true" ]]; then
-echo "    Open WebUI http://localhost:8000  ← interface IA principale"
-echo "    Paperclip  http://localhost:3100"
-echo "    LiteLLM    http://localhost:8010"
+echo "    Open WebUI http://localhost:8000  ← portail IA pour les membres"
+echo "    Dify.ai    http://localhost:8010  ← création d'agents/workflows"
 echo "    Qdrant     http://localhost:6333"
 echo "    Ollama     http://localhost:11434"
 fi

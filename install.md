@@ -105,14 +105,14 @@ L'installateur propose 4 profils selon vos besoins :
 |--------|----------|-------------|
 | **Standard** (défaut) | `bash install.sh` | IPFS + Nostr strfry + UPassport + Astroport complet |
 | **nextcloud** | `bash install.sh "" "" "" nextcloud` | Standard + NextCloud AIO (cloud privé 128 Go, port 8443) |
-| **ai-company** | `bash install.sh "" "" "" ai-company` | Standard + Stack IA Swarm (Ollama, Paperclip, Open WebUI, LiteLLM, Qdrant) |
+| **ai-company** | `bash install.sh "" "" "" ai-company` | Standard + Stack IA Swarm (Ollama, Dify AI, Open WebUI, LiteLLM, Qdrant) |
 | **dev** | `bash install.sh "" "" "" dev` | Standard + rnostr (remplace strfry, implémentation Rust) + Flutter SDK |
 
 ### Profil `ai-company` — services IA
 | Service | URL | Rôle |
 |---------|-----|------|
 | Open WebUI | `http://localhost:8000` | Interface chat IA principale |
-| Paperclip | `http://localhost:3100` | Agents IA automatisés |
+| Dify AI | `http://localhost:8010` | Agents IA automatisés |
 | LiteLLM | `http://localhost:8010` | Proxy unifié vers les modèles |
 | Qdrant | `http://localhost:6333` | Base vectorielle (recherche sémantique) |
 | Ollama | `http://localhost:11434` | Moteur LLM local |

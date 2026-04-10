@@ -79,7 +79,7 @@ services:
       - "127.0.0.1:5001:5001"               # IPFS API (admin)
       - "127.0.0.1:33101:33101"             # G1Billet
       - "127.0.0.1:11434:11434"             # Ollama IA (ai-company)
-      - "127.0.0.1:3100:3100"               # Paperclip (ai-company)
+      - "127.0.0.1:8010:8010"               # Dify AI (ai-company)
 
     volumes:
       ## Home persistant (contient .zen, .ipfs, .flutter, etc.)

@@ -36,7 +36,7 @@ fi
 DOCKER_BRIDGE_IP=$(ip addr show docker0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}' || echo "172.17.0.1")
 # Double tunnel : 
 # 1. Pour l'hôte (RooCode, Python local) sur 127.0.0.1
-# 2. Pour Docker (LiteLLM, Paperclip) sur l'IP du bridge
+# 2. Pour Docker (LiteLLM, Dify AI) sur l'IP du bridge
 SSH_OPTIONS="-fN -L 127.0.0.1:$OLLAMA_PORT:127.0.0.1:$OLLAMA_PORT -L $DOCKER_BRIDGE_IP:$OLLAMA_PORT:127.0.0.1:$OLLAMA_PORT"
 
 # Colors for output

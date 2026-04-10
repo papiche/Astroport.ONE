@@ -41,8 +41,7 @@
 #  │ 8002    │ tcp      │ NextCloud AIO Dashboard (localhost)   │
 #  │ 8443    │ tcp      │ NextCloud AIO Admin Setup (localhost) │
 #  │── ai-company IA Stack ──────────────────────────────────── │
-#  │ 3100    │ tcp      │ Paperclip AI agents (localhost)       │
-#  │ 8010    │ tcp      │ LiteLLM proxy hôte (localhost)        │
+#  │ 8010    │ tcp      │ Dify AI Web (localhost)        │
 #  │ 8000    │ tcp      │ Open WebUI interface IA (localhost)   │
 #  │ 11434   │ tcp      │ Ollama LLM API (localhost)            │
 #  │── Webtop VDI (KasmVNC) ───────────────────────────────────── │
@@ -132,7 +131,6 @@ fire_on() {
     ## Si DENY port X est ajouté avant ALLOW from LAN port X → trafic LAN bloqué.
 
     ## Docker : accès complet depuis le réseau bridge Docker
-    ## (LiteLLM→Ollama, Paperclip→Qdrant, etc.)
     echo "  🐳 Docker bridge 172.17.0.0/16 → tous ports autorisés"
     sudo ufw allow from 172.17.0.0/16 comment "Docker bridge interne" > /dev/null 2>&1
 
@@ -169,10 +167,8 @@ fire_on() {
         "8001:NextCloud Apache (via NPM cloud.DOMAIN)" \
         "8002:NextCloud AIO Dashboard" \
         "8443:NextCloud AIO Admin Setup" \
-        "3100:Paperclip AI agents (ai-company)" \
-        "4000:LiteLLM API interne Docker (conteneur)" \
         "8000:Open WebUI interface IA (ai-company)" \
-        "8010:LiteLLM proxy (ai-company, port dedie sans conflit)" \
+        "8010:Dify AI (ai-company)" \
         "11434:Ollama LLM API (ai-company)" \
         "3000:KasmVNC HTTP (webtop — SSH tunnel requis)" \
         "3001:KasmVNC HTTPS (webtop — SSH tunnel requis)" \

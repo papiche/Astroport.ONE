@@ -372,6 +372,13 @@ else
     echo "  >>> Puis relancez : ~/.zen/Astroport.ONE/install/setup/setup_npm.sh"
 fi
 
+## ai.DOMAIN -> :8010 (Dify Workflow)
+if docker ps --format '{{.Names}}' | grep -q 'docker-nginx-1\|dify-nginx'; then
+    npm_create_proxy "dify" "${FORWARD_HOST}" 8010 "http" "false"
+else
+    echo "  SKIP dify.${DOMAIN} (Dify.ai non démarré)"
+fi
+
 echo "#############################################"
 echo "## NPM SETUP COMPLETE"
 echo "## Admin UI: ${NPM_URL}"

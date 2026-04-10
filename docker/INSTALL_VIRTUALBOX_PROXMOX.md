@@ -50,7 +50,7 @@ vagrant status      # Voir l'état de la VM
 
 # Démarrer avec un profil spécifique :
 PROFILE=nextcloud vagrant up        # + NextCloud 128Go
-PROFILE=ai-company vagrant up    # + Open WebUI + LiteLLM + Qdrant
+PROFILE=ai-company vagrant up    # + Open WebUI + Dify AI + Qdrant
 
 # Réseau bridged (VM sur votre réseau local — meilleur pour IPFS P2P) :
 VM_NETWORK=bridge vagrant up

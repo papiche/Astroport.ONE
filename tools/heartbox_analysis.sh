@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 2.0 - Optimized for speed and Prometheus integration
+# Version: 2.1 - Optimized for speed, Prometheus & Dify.ai integration
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ################################################################################
 # HEARTBOX ANALYSIS - Optimized analysis of the ♥️box UPlanet
@@ -133,23 +133,25 @@ get_fast_service_status() {
     ss -tln 2>/dev/null | grep -q ":8002 " && nextcloud_aio_dash="true"
     ss -tln 2>/dev/null | grep -q ":8001 " && nextcloud_cloud_active="true"
 
-    ## ── Profil ai-company : Stack IA Swarm ─────────────────────────
+    ## ── Profil ai-company : Stack IA Swarm (Dify Edition) ─────────
     local ollama_active="false"
     local qdrant_active="false"
-    local paperclip_active="false"
+    local dify_active="false"
     local open_webui_active="false"
-    local litellm_active="false"
+    
     ss -tln 2>/dev/null | grep -q ":11434 " && ollama_active="true"    # Ollama LLM
-    ss -tln 2>/dev/null | grep -q ":6333 " && qdrant_active="true"    # Qdrant vectors
-    ss -tln 2>/dev/null | grep -q ":3100 " && paperclip_active="true" # Paperclip agents
+    ss -tln 2>/dev/null | grep -q ":6333 " && qdrant_active="true"     # Qdrant vectors
+    ss -tln 2>/dev/null | grep -q ":8010 " && dify_active="true"       # Dify AI Workflow
+
     ## Open WebUI : port 8000 → container 8080 (nom conteneur = ai-company-webui)
     ss -tln 2>/dev/null | grep -q ":8000 " && open_webui_active="true"
     command -v docker >/dev/null 2>&1 && \
         docker ps --format '{{.Names}}' 2>/dev/null | grep -qE 'ai-company-webui|open-webui' \
         && open_webui_active="true"
-    ## LiteLLM 8001 = même port que NextCloud Apache → vérif par nom conteneur
+        
+    ## Dify.ai : vérif par nom conteneur (dify-api, dify-web, etc.)
     command -v docker >/dev/null 2>&1 && \
-        docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'litellm' && litellm_active="true"
+        docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'dify' && dify_active="true"
 
     ## ── Webtop KasmVNC (VDI) ──────────────────────────────────────────
     local webtop_active="false"
@@ -220,9 +222,8 @@ get_fast_service_status() {
     "ai_company": {
         "ollama":     { "active": $ollama_active,     "port": 11434 },
         "qdrant":     { "active": $qdrant_active,     "port": 6333  },
-        "paperclip":  { "active": $paperclip_active,  "port": 3100  },
-        "open_webui": { "active": $open_webui_active, "port": 8000  },
-        "litellm":    { "active": $litellm_active,    "port": 8010 }
+        "dify":       { "active": $dify_active,       "port": 8010  },
+        "open_webui": { "active": $open_webui_active, "port": 8000  }
     },
     "webtop": {
         "active": $webtop_active,
@@ -459,7 +460,7 @@ case "${1:-export}" in
         fi
         ;;
     *)
-        echo "Usage: $0 [export|update|cache] [--json]"
+        echo "Usage: $0[export|update|cache] [--json]"
         echo ""
         echo "Commands:"
         echo "  export --json    - Export JSON analysis (uses cache if fresh)"
@@ -469,4 +470,4 @@ case "${1:-export}" in
         echo "Cache TTL: ${CACHE_TTL}s"
         exit 1
         ;;
-esac 
+esac
