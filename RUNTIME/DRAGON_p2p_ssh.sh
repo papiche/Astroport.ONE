@@ -9,6 +9,11 @@ MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 . "$MY_PATH/../tools/my.sh"
 
+# Calcule un offset unique (0-499) pour cette station
+NODE_OFFSET=$(( $(echo -n "$IPFSNODEID" | cksum | awk '{print $1}') % 500 ))
+# Port de base pour le range d'évitement (21220)
+ALT_BASE=21220
+
 # --- LOCK MECHANISM ---
 LOCKFILE="/tmp/dragon_swarm.lock"
 if [ -e ${LOCKFILE} ] && kill -0 $(cat ${LOCKFILE}) 2>/dev/null; then
@@ -358,157 +363,81 @@ _is_native_process() {
 }
 
 ##################################################################################
-# FONCTION GÉNÉRATRICE DE TUNNEL (Double Bind)
+# FONCTION GÉNÉRATRICE DE TUNNEL (Double Bind & Intelligent Port selection)
 ##################################################################################
-# $1: Port, $2: Nom court (ex: qdrant), $3: Description
+# $1: Port distant, $2: Slug, $3: Nom, $4: Port local préféré (optionnel)
 generate_p2p_service() {
-    local PORT=$1
-    local SLUG=$2
-    local NAME=$3
+    local RPORT=$1      # Port distant (ex: 8010)
+    local SLUG=$2       # Nom court (ex: dify)
+    local NAME=$3       # Nom long
+    local LPORT_PREF=${4:-$RPORT} # Port local préféré (défaut: RPORT)
     local CHANNEL="/x/${SLUG}-${IPFSNODEID}"
+    
+    # Calcul du port alternatif unique pour ce service sur cette station
+    local SLUG_ID=$(echo -n "$SLUG" | cksum | awk '{print $1}')
+    local SERVICE_ALT=$(( ALT_BASE + NODE_OFFSET + (SLUG_ID % 100) ))
 
-    # Vérification : port en écoute ET processus NATIF (pas un tunnel ipfs forward)
-    if _is_native_process "${PORT}"; then
-        echo "Publie le service $NAME sur $CHANNEL"
-        
-        # Le serveur écoute
+    if _is_native_process "${RPORT}"; then
+        echo "Publie $NAME sur $CHANNEL"
         [[ ! $(ipfs p2p ls | grep "$CHANNEL") ]] \
-            && ipfs p2p listen "$CHANNEL" /ip4/127.0.0.1/tcp/${PORT}
+            && ipfs p2p listen "$CHANNEL" /ip4/127.0.0.1/tcp/${RPORT}
 
-        # Génération du script client x_service.sh
-        echo '#!/bin/bash
-        # Détection dynamique de l IP Docker chez le CLIENT
-        DOCKER_IP=$(ip addr show docker0 2>/dev/null | grep -oP "(?<=inet\s)\d+(\.\d+){3}" || echo "172.17.0.1")
-        NODE_ID="'${IPFSNODEID}'"
-        LPORT="'${PORT}'"
-        PROTO="'$CHANNEL'"
-        NAME="'$NAME'"
-        # Utilisateur Linux propriétaire de la station distante (baked at DRAGON generation time)
-        REMOTE_USER="'${USER}'"
+        # Génération du script client intelligent
+        cat > ~/.zen/tmp/${IPFSNODEID}/x_${SLUG}.sh << EOF
+#!/bin/bash
+NODE_ID="${IPFSNODEID}"
+PROTO="${CHANNEL}"
+NATIVE_PORT="${LPORT_PREF}"
+ALT_PORT="${SERVICE_ALT}"
+DOCKER_IP=\$(ip addr show docker0 2>/dev/null | grep -oP "(?<=inet\s)\d+(\.\d+){3}" || echo "172.17.0.1")
 
-        check_bind() { ipfs p2p ls | grep "$PROTO" | grep "$1" > /dev/null; }
+# --- Logique de choix du port ---
+# Si le port natif est libre, on le prend. Sinon on prend l'alternatif.
+if ss -tln 2>/dev/null | grep -qw ":\${NATIVE_PORT}"; then
+    # Si le port natif est occupé par un tunnel IPFS deja actif pour CE protocole
+    if ipfs p2p ls | grep -q "\${PROTO}" | grep -q "tcp/\${NATIVE_PORT}"; then
+        LPORT="\${NATIVE_PORT}"
+    else
+        LPORT="\${ALT_PORT}"
+    fi
+else
+    LPORT="\${NATIVE_PORT}"
+fi
 
-        if [[ "${1,,}" == "off" || "${1,,}" == "stop" ]]; then
-            echo "Closing $NAME tunnel..."
-            ipfs p2p close -p "$PROTO"
-            exit 0
-        fi
+# Pour tunnel.sh : on exporte LPORT pour qu'il soit détecté
+export LPORT=\$LPORT
 
-        # Priorité au service local : si le port est occupé par un process local
-        # (et qu'aucun tunnel IPFS n'est déjà établi), le service natif prend la main.
-        if ! check_bind "127.0.0.1" && ss -tln 2>/dev/null | grep -qw ":$LPORT"; then
-            echo "$NAME : port $LPORT occupé localement — service natif prioritaire, tunnel non requis."
-            exit 0
-        fi
+if [[ "\${1,,}" == "off" || "\${1,,}" == "stop" ]]; then
+    ipfs p2p close -p "\${PROTO}"
+    exit 0
+fi
 
-        ipfs --timeout=3s ping -n 2 "/p2p/$NODE_ID" > /dev/null
-        if [[ $? == 0 ]]; then
-            echo "Establishing Double Tunnel for $NAME ($NODE_ID)..."
-            if ! check_bind "127.0.0.1"; then
-                ipfs p2p forward "$PROTO" "/ip4/127.0.0.1/tcp/$LPORT" "/p2p/$NODE_ID"
-                # Affichage adapté selon le type de service
-                if echo "$PROTO" | grep -q "/x/ssh-"; then
-                    echo "  [OK] Connexion SSH  : ssh ${REMOTE_USER}@localhost -p $LPORT"
-                else
-                    echo "  [OK] Host Access    : http://localhost:$LPORT"
-                fi
-            fi
-            if ! check_bind "$DOCKER_IP"; then
-                ipfs p2p forward "$PROTO" "/ip4/$DOCKER_IP/tcp/$LPORT" "/p2p/$NODE_ID"
-                if echo "$PROTO" | grep -q "/x/ssh-"; then
-                    echo "  [OK] SSH (Docker)   : ssh ${REMOTE_USER}@$DOCKER_IP -p $LPORT"
-                else
-                    echo "  [OK] Docker Access  : http://$DOCKER_IP:$LPORT"
-                fi
-            fi
-        else
-            echo "ERROR: Node $NODE_ID unreachable."
-            exit 1
-        fi
-        ' > ~/.zen/tmp/${IPFSNODEID}/x_${SLUG}.sh
-        
+ipfs --timeout=5s ping -n 2 "/p2p/\${NODE_ID}" > /dev/null
+if [[ \$? == 0 ]]; then
+    echo "Établissement du tunnel $NAME..."
+    echo "Port local : \$LPORT (Natif: \${NATIVE_PORT} | Alt: \${ALT_PORT})"
+    
+    # On bind sur localhost et Docker
+    ipfs p2p forward "\${PROTO}" "/ip4/127.0.0.1/tcp/\$LPORT" "/p2p/\${NODE_ID}"
+    ipfs p2p forward "\${PROTO}" "/ip4/\${DOCKER_IP}/tcp/\$LPORT" "/p2p/\${NODE_ID}"
+    
+    [[ "\${LPORT}" == "22" || "\$SLUG" == "ssh" ]] && echo "SSH : ssh ${USER}@localhost -p \$LPORT"
+else
+    echo "ERREUR : Station injoignable."
+    exit 1
+fi
+EOF
         chmod +x ~/.zen/tmp/${IPFSNODEID}/x_${SLUG}.sh
         echo "  -> x_${SLUG}.sh généré"
     fi
 }
 
 ##################################################################################
-# FONCTION DÉDIÉE SSH — Ports déterministes pour multi-tunnels simultanés
+# FONCTION DÉDIÉE SSH (Wrapper intelligent)
 ##################################################################################
 generate_ssh_service() {
-    local SERVER_SSH_PORT=$1    # Port réel de la station (ex: 22)
-    local SLUG="ssh"
-    local NAME="SSH Remote Access"
-    local CHANNEL="/x/${SLUG}-${IPFSNODEID}"
-    local DRAGON_USER="${USER}" 
-
-    # --- CALCUL DU PORT CLIENT DÉTERMINISTE (Range 21220 - 21720) ---
-    # On utilise le checksum de l'ID IPFS pour générer un décalage entre 0 et 500
-    local ID_HASH=$(echo -n "$IPFSNODEID" | cksum | awk '{print $1}')
-    local OFFSET=$(( ID_HASH % 500 ))
-    local CLIENT_PORT=$(( 21220 + OFFSET ))
-    # ----------------------------------------------------------------
-
-    # Vérification : port SSH en écoute ET processus natif sur le SERVEUR
-    if ! _is_native_process "${SERVER_SSH_PORT}"; then
-        echo "SKIP SSH : port ${SERVER_SSH_PORT} non disponible ou occupé par un tunnel IPFS"
-        return 0
-    fi
-
-    echo "Publie le service $NAME sur $CHANNEL (user=${DRAGON_USER}, client_port=${CLIENT_PORT})"
-
-    # Côté serveur : écoute IPFS P2P sur son port SSH local
-    [[ ! $(ipfs p2p ls | grep "$CHANNEL") ]] \
-        && ipfs p2p listen "$CHANNEL" /ip4/127.0.0.1/tcp/${SERVER_SSH_PORT}
-
-    # Génération du script client x_ssh.sh
-    cat > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh << SSHSCRIPT
-#!/bin/bash
-# Tunnel SSH P2P IPFS vers la station ${IPFSNODEID}
-# Port local réservé pour cette station : ${CLIENT_PORT}
-# ─────────────────────────────────────────────────────────────────────
-DOCKER_IP=\$(ip addr show docker0 2>/dev/null | grep -oP "(?<=inet\s)\d+(\.\d+){3}" || echo "172.17.0.1")
-NODE_ID="${IPFSNODEID}"
-LPORT="${CLIENT_PORT}"
-PROTO="${CHANNEL}"
-REMOTE_USER="${DRAGON_USER}"
-
-check_bind() { ipfs p2p ls | grep "\$PROTO" | grep "\$1" > /dev/null; }
-
-if [[ "\${1,,}" == "off" || "\${1,,}" == "stop" ]]; then
-    echo "Fermeture du tunnel SSH..."
-    ipfs p2p close -p "\$PROTO"
-    exit 0
-fi
-
-# Vérification si le port est déjà pris par un AUTRE tunnel ou service
-if ! check_bind "127.0.0.1" && ss -tln 2>/dev/null | grep -qw ":\$LPORT"; then
-    echo "ERREUR : Le port local \$LPORT est déjà utilisé par un autre service."
-    exit 1
-fi
-
-echo "Ping de la station \$NODE_ID..."
-ipfs --timeout=10s ping -n 2 "/p2p/\$NODE_ID" > /dev/null
-if [[ \$? == 0 ]]; then
-    echo "=== Établissement du tunnel SSH (ID: \${NODE_ID: -8}) ==="
-    
-    if ! check_bind "127.0.0.1"; then
-        ipfs p2p forward "\$PROTO" "/ip4/127.0.0.1/tcp/\$LPORT" "/p2p/\$NODE_ID"
-        echo "  ✓ Tunnel LOCAL actif : ssh \${REMOTE_USER}@localhost -p \$LPORT"
-    fi
-
-    if ! check_bind "\$DOCKER_IP"; then
-        ipfs p2p forward "\$PROTO" "/ip4/\$DOCKER_IP/tcp/\$LPORT" "/p2p/\$NODE_ID"
-        echo "  ✓ Tunnel DOCKER actif : ssh \${REMOTE_USER}@\$DOCKER_IP -p \$LPORT"
-    fi
-else
-    echo "ERREUR : Station \$NODE_ID inaccessible."
-    exit 1
-fi
-SSHSCRIPT
-
-    chmod +x ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
-    echo "  -> x_ssh.sh généré (LPORT=$CLIENT_PORT)"
+    # On utilise simplement la fonction universelle avec le port SSH détecté
+    generate_p2p_service "$1" "ssh" "SSH Remote Access"
 }
 
 ##################################################################################
@@ -555,60 +484,9 @@ fi
 
 
 ## ── Synchronisation Constellation (Strfry P2P) ──────────────────────
-## Ce tunnel permet à backfill_constellation.sh de se connecter au relais 
-## distant via le port 9999 (mappage P2P -> local 7777)
+## On utilise 9999 comme port local préféré pour backfill_constellation.sh
 if ss -tln 2>/dev/null | grep -q ":7777 "; then
-    STRFRY_PORT=7777
-    STRFRY_SLUG="strfry"
-    STRFRY_CHANNEL="/x/${STRFRY_SLUG}-${IPFSNODEID}"
-    SYNC_PORT=9999 # Port attendu par backfill_constellation.sh
-
-    echo "Publie le relais Nostr pour synchro Constellation sur $STRFRY_CHANNEL"
-
-    # Serveur écoute sur son port 7777 local
-    [[ ! $(ipfs p2p ls | grep "$STRFRY_CHANNEL") ]] \
-        && ipfs p2p listen "$STRFRY_CHANNEL" /ip4/127.0.0.1/tcp/${STRFRY_PORT}
-
-    # Génération du script client x_strfry.sh spécifique au port 9999
-    cat > ~/.zen/tmp/${IPFSNODEID}/x_strfry.sh << STRFRYSCRIPT
-#!/bin/bash
-# Tunnel Synchro Constellation vers ${IPFSNODEID}
-NODE_ID="${IPFSNODEID}"
-LPORT="${SYNC_PORT}"
-PROTO="${STRFRY_CHANNEL}"
-
-check_bind() { ipfs p2p ls | grep "\$PROTO" | grep "127.0.0.1" > /dev/null; }
-
-if [[ "\${1,,}" == "off" || "\${1,,}" == "stop" ]]; then
-    echo "Fermeture du tunnel de synchro..."
-    ipfs p2p close -p "\$PROTO"
-    exit 0
-fi
-
-# Vérification du port local 9999
-if ! check_bind && ss -tln 2>/dev/null | grep -qw ":\$LPORT"; then
-    echo "Port \$LPORT déjà occupé localement."
-    exit 0
-fi
-
-echo "Ping station \$NODE_ID..."
-ipfs --timeout=10s ping -n 2 "/p2p/\$NODE_ID" > /dev/null
-if [[ \$? == 0 ]]; then
-    if ! check_bind; then
-        echo "Établissement du tunnel de synchro P2P (Port \$LPORT)..."
-        ipfs p2p forward "\$PROTO" "/ip4/127.0.0.1/tcp/\$LPORT" "/p2p/\$NODE_ID"
-        [[ \$? == 0 ]] && echo "✅ Tunnel actif sur ws://127.0.0.1:\$LPORT"
-    else
-        echo "✅ Tunnel déjà actif."
-    fi
-else
-    echo "❌ Erreur : Station \$NODE_ID injoignable."
-    exit 1
-fi
-STRFRYSCRIPT
-
-    chmod +x ~/.zen/tmp/${IPFSNODEID}/x_strfry.sh
-    echo "  -> x_strfry.sh généré (port client=${SYNC_PORT} -> port serveur=${STRFRY_PORT})"
+    generate_p2p_service 7777 "strfry" "Nostr Relay" 9999
 fi
 
 ## ── Services standard ───────────────────────────────────────────────

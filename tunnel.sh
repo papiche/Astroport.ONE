@@ -61,7 +61,7 @@ LOCAL_ID=$(ipfs id -f "<id>" 2>/dev/null || echo "Inconnu")
 # --- FONCTIONS ---
 
 update_list() {
-    map_nodes=(); map_scripts=(); map_names=(); map_ports=(); map_protos=(); map_slugs=()
+    map_nodes=(); map_scripts=(); map_names=(); map_ports=(); map_alt_ports=(); map_protos=(); map_slugs=()
     for node_path in $(ls -d "$SWARM_DIR"/*/ 2>/dev/null); do
         node_id=$(basename "$node_path")
         
@@ -72,7 +72,13 @@ update_list() {
         for s in "$node_path"/x_*.sh; do [ ! -f "$s" ] && continue
             
             svc_slug=$(basename "$s" | sed 's/x_//;s/\.sh//')
-            port=$(grep -oP '(PORT|LPORT)="\K\d+' "$s" | head -n 1)
+            
+            # Détection intelligente des ports (Natif vs Alt)
+            port=$(grep -oP 'NATIVE_PORT="\K\d+' "$s" | head -n 1)
+            alt_port=$(grep -oP 'ALT_PORT="\K\d+' "$s" | head -n 1)
+            
+            # Fallback sur l'ancien format LPORT/PORT ou tcp/
+            [[ -z "$port" ]] && port=$(grep -oP '(PORT|LPORT)="\K\d+' "$s" | head -n 1)
             [[ -z "$port" ]] && port=$(grep -oP 'tcp/\K\d+' "$s" | head -n 1)
             [[ -z "$port" ]] && port="????"
 
@@ -82,6 +88,7 @@ update_list() {
             map_scripts+=("$s")
             map_names+=("${machine_name^^} - ${svc_slug^^}")
             map_ports+=("$port")
+            map_alt_ports+=("${alt_port:-$port}")
             map_protos+=("$proto")
             map_slugs+=("${svc_slug^^}")
         done
@@ -106,27 +113,53 @@ draw_ui() {
     clear
     tput civis
     echo -e "${BG_BLUE}${FG_BLACK}  tunnel v2.0 -[Q]->Quit [↵]->CONNECT [R]->RESET [X]->STOP [W]->Web/SSH [I]->IPNS  ${NC}"
-    echo -e "ID LOCAL: ${CYAN}${LOCAL_ID}${NC} | Port: ${YELLOW}${map_ports[$cursor]}${NC} | Auto-refresh ON${NC}\n"
+    
+    # Affichage du port sélectionné (avec indicateur si alt)
+    local cur_port="${map_ports[$cursor]}"
+    local cur_alt="${map_alt_ports[$cursor]}"
+    echo -e "ID LOCAL: ${CYAN}${LOCAL_ID}${NC} | Port: ${YELLOW}${cur_port}${NC} (Alt: ${cur_alt}) | Auto-refresh ON${NC}\n"
 
     for i in "${!map_names[@]}"; do
         if [ $i -eq $cursor ]; then line_start="${BOLD}${YELLOW}> "; line_end="${NC}"; else line_start="  "; line_end=""; fi
         
-        local is_p2p_active=$(echo "$active_p2p" | grep -F "${map_protos[$i]}" | grep -F "tcp/${map_ports[$i]}" | head -n 1)
+        # Vérification si le tunnel est actif sur le port natif OU le port alt
+        local p_natif="${map_ports[$i]}"
+        local p_alt="${map_alt_ports[$i]}"
+        local proto="${map_protos[$i]}"
+        
+        local active_line=$(echo "$active_p2p" | grep -F "$proto" | head -n 1)
+        local is_p2p_active=""
+        local active_port="$p_natif"
+        
+        if [[ -n "$active_line" ]]; then
+            if echo "$active_line" | grep -q "tcp/$p_natif"; then
+                is_p2p_active="true"
+                active_port="$p_natif"
+            elif echo "$active_line" | grep -q "tcp/$p_alt"; then
+                is_p2p_active="true"
+                active_port="$p_alt"
+            fi
+        fi
         
         if [[ -n "$is_p2p_active" ]]; then
             status="${GREEN}[  ACTIF ipfs  ]${NC}"
+            disp_port="$active_port"
         else
-            local lsof_line=$(echo "$all_listening" | grep ":${map_ports[$i]} " | head -n 1)
+            # Si pas de tunnel IPFS, on regarde si un process local occupe un des ports
+            local lsof_line=$(echo "$all_listening" | grep -E ":($p_natif|$p_alt) " | head -n 1)
             if [[ -n "$lsof_line" ]]; then
                 local lsofsrc=$(echo "$lsof_line" | awk '{print $1}')
+                local occupied_port=$(echo "$lsof_line" | grep -oP ':\d+' | head -n 1 | cut -d':' -f2)
                 status="${YELLOW}[ ACTIF $lsofsrc ]${NC}"
+                disp_port="$occupied_port"
             else
                 status="${RED}[  OFF  ]${NC}"
+                disp_port="$p_natif"
             fi
         fi
 
         name_part=$(printf "%-25s" "${map_names[$i]:0:24}")
-        port_part=$(printf "%-10s" "P:${map_ports[$i]}")
+        port_part=$(printf "%-10s" "P:$disp_port")
         node_short="${map_nodes[$i]: -10}"
         
         echo -e "${line_start}${name_part} ${status}  ${port_part}  ... ${node_short} ... ${line_end}"
