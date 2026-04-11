@@ -433,87 +433,82 @@ generate_p2p_service() {
 }
 
 ##################################################################################
-# FONCTION DÉDIÉE SSH — génère x_ssh.sh avec la commande de connexion complète
-# Le USER qui exécute DRAGON est baked dans le script client pour que le remote
-# user connaisse exactement la commande à taper.
+# FONCTION DÉDIÉE SSH — Ports déterministes pour multi-tunnels simultanés
 ##################################################################################
 generate_ssh_service() {
-    local PORT=$1
+    local SERVER_SSH_PORT=$1    # Port réel de la station (ex: 22)
     local SLUG="ssh"
     local NAME="SSH Remote Access"
     local CHANNEL="/x/${SLUG}-${IPFSNODEID}"
-    local DRAGON_USER="${USER}"   # propriétaire de la station distante
+    local DRAGON_USER="${USER}" 
 
-    # Vérification : port SSH en écoute ET processus natif (pas tunnel ipfs)
-    if ! _is_native_process "${PORT}"; then
-        echo "SKIP SSH : port ${PORT} non disponible ou occupé par un tunnel IPFS"
+    # --- CALCUL DU PORT CLIENT DÉTERMINISTE (Range 21220 - 21720) ---
+    # On utilise le checksum de l'ID IPFS pour générer un décalage entre 0 et 500
+    local ID_HASH=$(echo -n "$IPFSNODEID" | cksum | awk '{print $1}')
+    local OFFSET=$(( ID_HASH % 500 ))
+    local CLIENT_PORT=$(( 21220 + OFFSET ))
+    # ----------------------------------------------------------------
+
+    # Vérification : port SSH en écoute ET processus natif sur le SERVEUR
+    if ! _is_native_process "${SERVER_SSH_PORT}"; then
+        echo "SKIP SSH : port ${SERVER_SSH_PORT} non disponible ou occupé par un tunnel IPFS"
         return 0
     fi
 
-    echo "Publie le service $NAME sur $CHANNEL (user=${DRAGON_USER})"
+    echo "Publie le service $NAME sur $CHANNEL (user=${DRAGON_USER}, client_port=${CLIENT_PORT})"
 
-    # Côté serveur : écoute IPFS P2P sur le channel SSH
+    # Côté serveur : écoute IPFS P2P sur son port SSH local
     [[ ! $(ipfs p2p ls | grep "$CHANNEL") ]] \
-        && ipfs p2p listen "$CHANNEL" /ip4/127.0.0.1/tcp/${PORT}
+        && ipfs p2p listen "$CHANNEL" /ip4/127.0.0.1/tcp/${SERVER_SSH_PORT}
 
     # Génération du script client x_ssh.sh
-    cat > ~/.zen/tmp/${IPFSNODEID}/x_${SLUG}.sh << SSHSCRIPT
+    cat > ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh << SSHSCRIPT
 #!/bin/bash
 # Tunnel SSH P2P IPFS vers la station ${IPFSNODEID}
-# Utilisateur distant : ${DRAGON_USER}  (propriétaire de la station)
+# Port local réservé pour cette station : ${CLIENT_PORT}
 # ─────────────────────────────────────────────────────────────────────
 DOCKER_IP=\$(ip addr show docker0 2>/dev/null | grep -oP "(?<=inet\s)\d+(\.\d+){3}" || echo "172.17.0.1")
 NODE_ID="${IPFSNODEID}"
-LPORT="${PORT}"
+LPORT="${CLIENT_PORT}"
 PROTO="${CHANNEL}"
-NAME="${NAME}"
 REMOTE_USER="${DRAGON_USER}"
 
 check_bind() { ipfs p2p ls | grep "\$PROTO" | grep "\$1" > /dev/null; }
 
 if [[ "\${1,,}" == "off" || "\${1,,}" == "stop" ]]; then
-    echo "Fermeture du tunnel \$NAME..."
+    echo "Fermeture du tunnel SSH..."
     ipfs p2p close -p "\$PROTO"
     exit 0
 fi
 
-# Si le port SSH est occupé localement (service natif), on ne crée pas de tunnel
+# Vérification si le port est déjà pris par un AUTRE tunnel ou service
 if ! check_bind "127.0.0.1" && ss -tln 2>/dev/null | grep -qw ":\$LPORT"; then
-    echo "\$NAME : port \$LPORT occupé localement — service natif prioritaire, tunnel non requis."
-    exit 0
+    echo "ERREUR : Le port local \$LPORT est déjà utilisé par un autre service."
+    exit 1
 fi
 
 echo "Ping de la station \$NODE_ID..."
 ipfs --timeout=10s ping -n 2 "/p2p/\$NODE_ID" > /dev/null
 if [[ \$? == 0 ]]; then
-    echo "=== Établissement du tunnel SSH P2P ==="
-    echo "    Station  : \$NODE_ID"
-    echo "    User     : \$REMOTE_USER"
-
+    echo "=== Établissement du tunnel SSH (ID: \${NODE_ID: -8}) ==="
+    
     if ! check_bind "127.0.0.1"; then
         ipfs p2p forward "\$PROTO" "/ip4/127.0.0.1/tcp/\$LPORT" "/p2p/\$NODE_ID"
-        echo ""
-        echo "  ✓ Tunnel LOCAL actif"
-        echo "  → Commande de connexion :"
-        echo "    ssh \${REMOTE_USER}@localhost -p \$LPORT"
-        echo ""
+        echo "  ✓ Tunnel LOCAL actif : ssh \${REMOTE_USER}@localhost -p \$LPORT"
     fi
 
     if ! check_bind "\$DOCKER_IP"; then
         ipfs p2p forward "\$PROTO" "/ip4/\$DOCKER_IP/tcp/\$LPORT" "/p2p/\$NODE_ID"
-        echo "  ✓ Tunnel DOCKER actif"
-        echo "  → Depuis un conteneur :"
-        echo "    ssh \${REMOTE_USER}@\$DOCKER_IP -p \$LPORT"
-        echo ""
+        echo "  ✓ Tunnel DOCKER actif : ssh \${REMOTE_USER}@\$DOCKER_IP -p \$LPORT"
     fi
 else
-    echo "ERREUR : Station \$NODE_ID inaccessible via IPFS."
+    echo "ERREUR : Station \$NODE_ID inaccessible."
     exit 1
 fi
 SSHSCRIPT
 
-    chmod +x ~/.zen/tmp/${IPFSNODEID}/x_${SLUG}.sh
-    echo "  -> x_${SLUG}.sh généré (user=${DRAGON_USER}, port=${PORT})"
+    chmod +x ~/.zen/tmp/${IPFSNODEID}/x_ssh.sh
+    echo "  -> x_ssh.sh généré (LPORT=$CLIENT_PORT)"
 }
 
 ##################################################################################
