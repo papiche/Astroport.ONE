@@ -9,6 +9,11 @@ ME="${0##*/}"
 
 . "${MY_PATH}/tools/my.sh"
 
+# Ensure IPFSNODEID is set and exported for subshells/API
+[[ -z "$IPFSNODEID" ]] && export IPFSNODEID=$(jq -r .Identity.PeerID ~/.ipfs/config 2>/dev/null)
+[[ -z "$IPFSNODEID" ]] && export IPFSNODEID=$(ipfs id -f='<id>\n' 2>/dev/null)
+export IPFSNODEID
+
 MLAT=$1
 MLON=$2
 MDEG=$3
@@ -147,9 +152,16 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
             ULON_FLOAT=$(echo "$ULON" | bc -l)
             DEG_FLOAT=$(echo "$DEG" | bc -l)
 
+            # SEARCH CENTERED : User is at center of the box
+            HALF_DEG=$(echo "scale=6; $DEG_FLOAT / 2" | bc -l)
+            MIN_LAT=$(echo "scale=6; $ULAT_FLOAT - $HALF_DEG" | bc -l)
+            MAX_LAT=$(echo "scale=6; $ULAT_FLOAT + $HALF_DEG" | bc -l)
+            MIN_LON=$(echo "scale=6; $ULON_FLOAT - $HALF_DEG" | bc -l)
+            MAX_LON=$(echo "scale=6; $ULON_FLOAT + $HALF_DEG" | bc -l)
+
             # Check if coordinates are within the area
-            LAT_IN_RANGE=$(echo "$LAT_FLOAT >= $ULAT_FLOAT && $LAT_FLOAT <= ($ULAT_FLOAT + $DEG_FLOAT)" | bc -l)
-            LON_IN_RANGE=$(echo "$LON_FLOAT >= $ULON_FLOAT && $LON_FLOAT <= ($ULON_FLOAT + $DEG_FLOAT)" | bc -l)
+            LAT_IN_RANGE=$(echo "$LAT_FLOAT >= $MIN_LAT && $LAT_FLOAT <= $MAX_LAT" | bc -l)
+            LON_IN_RANGE=$(echo "$LON_FLOAT >= $MIN_LON && $LON_FLOAT <= $MAX_LON" | bc -l)
 
             if [[ $LAT_IN_RANGE -eq 0 || $LON_IN_RANGE -eq 0 ]]; then
                 continue
@@ -197,8 +209,15 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
                 ULAT_FLOAT=$(echo "$ULAT" | bc -l)
                 ULON_FLOAT=$(echo "$ULON" | bc -l)
                 DEG_FLOAT=$(echo "$DEG" | bc -l)
-                LAT_IN_RANGE=$(echo "$LAT_FLOAT >= $ULAT_FLOAT && $LAT_FLOAT <= ($ULAT_FLOAT + $DEG_FLOAT)" | bc -l)
-                LON_IN_RANGE=$(echo "$LON_FLOAT >= $ULON_FLOAT && $LON_FLOAT <= ($ULON_FLOAT + $DEG_FLOAT)" | bc -l)
+                
+                HALF_DEG=$(echo "scale=6; $DEG_FLOAT / 2" | bc -l)
+                MIN_LAT=$(echo "scale=6; $ULAT_FLOAT - $HALF_DEG" | bc -l)
+                MAX_LAT=$(echo "scale=6; $ULAT_FLOAT + $HALF_DEG" | bc -l)
+                MIN_LON=$(echo "scale=6; $ULON_FLOAT - $HALF_DEG" | bc -l)
+                MAX_LON=$(echo "scale=6; $ULON_FLOAT + $HALF_DEG" | bc -l)
+
+                LAT_IN_RANGE=$(echo "$LAT_FLOAT >= $MIN_LAT && $LAT_FLOAT <= $MAX_LAT" | bc -l)
+                LON_IN_RANGE=$(echo "$LON_FLOAT >= $MIN_LON && $LON_FLOAT <= $MAX_LON" | bc -l)
                 if [[ $LAT_IN_RANGE -eq 0 || $LON_IN_RANGE -eq 0 ]]; then
                     continue
                 fi
@@ -265,9 +284,15 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
             ULON_FLOAT=$(echo "$ULON" | bc -l)
             DEG_FLOAT=$(echo "$DEG" | bc -l)
 
+            HALF_DEG=$(echo "scale=6; $DEG_FLOAT / 2" | bc -l)
+            MIN_LAT=$(echo "scale=6; $ULAT_FLOAT - $HALF_DEG" | bc -l)
+            MAX_LAT=$(echo "scale=6; $ULAT_FLOAT + $HALF_DEG" | bc -l)
+            MIN_LON=$(echo "scale=6; $ULON_FLOAT - $HALF_DEG" | bc -l)
+            MAX_LON=$(echo "scale=6; $ULON_FLOAT + $HALF_DEG" | bc -l)
+
             # Check if coordinates are within the area
-            LAT_IN_RANGE=$(echo "$LAT_FLOAT >= $ULAT_FLOAT && $LAT_FLOAT <= ($ULAT_FLOAT + $DEG_FLOAT)" | bc -l)
-            LON_IN_RANGE=$(echo "$LON_FLOAT >= $ULON_FLOAT && $LON_FLOAT <= ($ULON_FLOAT + $DEG_FLOAT)" | bc -l)
+            LAT_IN_RANGE=$(echo "$LAT_FLOAT >= $MIN_LAT && $LAT_FLOAT <= $MAX_LAT" | bc -l)
+            LON_IN_RANGE=$(echo "$LON_FLOAT >= $MIN_LON && $LON_FLOAT <= $MAX_LON" | bc -l)
 
             if [[ $LAT_IN_RANGE -eq 0 || $LON_IN_RANGE -eq 0 ]]; then
                 continue
@@ -288,29 +313,25 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     # search for other active ASTROPORTs in UPlanet swarm
     #########################################################
     echo " ## SEARCH ASTROPORTs in ~/.zen/tmp/swarm/*/12345.json" >&2
-    MASTROPORT=($(ls ~/.zen/tmp/swarm/*/12345.json 2>/dev/null | rev | cut -d '/' -f 2 | rev | sort | uniq))
+    # Utiliser find pour être plus exhaustif dans le scan du swarm
+    MASTROPORT_FILES=($(find ~/.zen/tmp/swarm -name "12345.json" -type f 2>/dev/null))
 
-    echo "${#MASTROPORT[@]} ASTROPORT(S) : ${MASTROPORT[@]}" >&2
+    echo "${#MASTROPORT_FILES[@]} ASTROPORT FILES FOUND" >&2
     echo "===========================================================" >&2
 
     # Array to store SWARM data
     swarm_array=()
-    for astroport in "${MASTROPORT[@]}"; do
-        # Get the directory containing the 12345.json file
-        astroport_dir=$(ls -d ~/.zen/tmp/swarm/*/12345.json | grep "$astroport" | xargs dirname)
-        # echo "astroport_dir=$astroport_dir"
-        # Read and validate the 12345.json file
-        if [[ -s "$astroport_dir/12345.json" ]]; then
-            if swarm_data=$(cat "$astroport_dir/12345.json" | jq -c '.'); then
-                # Only include if it's not our own node
-                if [[ $(echo "$swarm_data" | jq -r '.ipfsnodeid') != "$IPFSNODEID" ]]; then
-                    echo "adding $astroport_dir/12345.json" >&2
+    for astro_file in "${MASTROPORT_FILES[@]}"; do
+        if [[ -s "$astro_file" ]]; then
+            if swarm_data=$(cat "$astro_file" | jq -c '.'); then
+                node_id=$(echo "$swarm_data" | jq -r '.ipfsnodeid // empty')
+                # Only include if it's not our own node and has an ID
+                if [[ -n "$node_id" && "$node_id" != "$IPFSNODEID" ]]; then
+                    echo "adding $node_id from $astro_file" >&2
                     swarm_array+=("$swarm_data")
                 else
-                    echo "skipping $astroport_dir/12345.json" >&2
+                    echo "skipping $astro_file (our own node or empty ID)" >&2
                 fi
-            else
-                echo "Skipping malformed or empty JSON file: $astroport_dir/12345.json" >&2
             fi
         fi
     done
@@ -325,7 +346,6 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     #######################################
     ## BILAN ZEN ECONOMY
     # Utiliser G1revenue.sh pour cohérence avec les dashboards et frontends
-    # Cela garantit que l'API retourne les mêmes valeurs que economy.html
     REVENUE_JSON=$($MY_PATH/tools/G1revenue.sh 2>/dev/null)
     if [[ -n "$REVENUE_JSON" ]] && echo "$REVENUE_JSON" | jq empty 2>/dev/null; then
         ZEN=$(echo "$REVENUE_JSON" | jq -r '.total_revenue_zen // 0')

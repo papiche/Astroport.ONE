@@ -558,6 +558,64 @@ if pgrep ollama >/dev/null 2>&1 || ss -tln 2>/dev/null | grep -q ":11434 "; then
     publish_service 11434 "ollama" "Ollama LLM API"
 fi
 
+
+## ── Synchronisation Constellation (Strfry P2P) ──────────────────────
+## Ce tunnel permet à backfill_constellation.sh de se connecter au relais 
+## distant via le port 9999 (mappage P2P -> local 7777)
+if ss -tln 2>/dev/null | grep -q ":7777 "; then
+    STRFRY_PORT=7777
+    STRFRY_SLUG="strfry"
+    STRFRY_CHANNEL="/x/${STRFRY_SLUG}-${IPFSNODEID}"
+    SYNC_PORT=9999 # Port attendu par backfill_constellation.sh
+
+    echo "Publie le relais Nostr pour synchro Constellation sur $STRFRY_CHANNEL"
+
+    # Serveur écoute sur son port 7777 local
+    [[ ! $(ipfs p2p ls | grep "$STRFRY_CHANNEL") ]] \
+        && ipfs p2p listen "$STRFRY_CHANNEL" /ip4/127.0.0.1/tcp/${STRFRY_PORT}
+
+    # Génération du script client x_strfry.sh spécifique au port 9999
+    cat > ~/.zen/tmp/${IPFSNODEID}/x_strfry.sh << STRFRYSCRIPT
+#!/bin/bash
+# Tunnel Synchro Constellation vers ${IPFSNODEID}
+NODE_ID="${IPFSNODEID}"
+LPORT="${SYNC_PORT}"
+PROTO="${STRFRY_CHANNEL}"
+
+check_bind() { ipfs p2p ls | grep "\$PROTO" | grep "127.0.0.1" > /dev/null; }
+
+if [[ "\${1,,}" == "off" || "\${1,,}" == "stop" ]]; then
+    echo "Fermeture du tunnel de synchro..."
+    ipfs p2p close -p "\$PROTO"
+    exit 0
+fi
+
+# Vérification du port local 9999
+if ! check_bind && ss -tln 2>/dev/null | grep -qw ":\$LPORT"; then
+    echo "Port \$LPORT déjà occupé localement."
+    exit 0
+fi
+
+echo "Ping station \$NODE_ID..."
+ipfs --timeout=10s ping -n 2 "/p2p/\$NODE_ID" > /dev/null
+if [[ \$? == 0 ]]; then
+    if ! check_bind; then
+        echo "Établissement du tunnel de synchro P2P (Port \$LPORT)..."
+        ipfs p2p forward "\$PROTO" "/ip4/127.0.0.1/tcp/\$LPORT" "/p2p/\$NODE_ID"
+        [[ \$? == 0 ]] && echo "✅ Tunnel actif sur ws://127.0.0.1:\$LPORT"
+    else
+        echo "✅ Tunnel déjà actif."
+    fi
+else
+    echo "❌ Erreur : Station \$NODE_ID injoignable."
+    exit 1
+fi
+STRFRYSCRIPT
+
+    chmod +x ~/.zen/tmp/${IPFSNODEID}/x_strfry.sh
+    echo "  -> x_strfry.sh généré (port client=${SYNC_PORT} -> port serveur=${STRFRY_PORT})"
+fi
+
 ## ── Services standard ───────────────────────────────────────────────
 
 # SSH (toujours prioritaire) — fonction dédiée avec commande de connexion complète
