@@ -291,26 +291,27 @@ The bot uses different NOSTR keys depending on context:
 
 The UPlanet IA system uses a sophisticated connection management architecture that ensures all AI services are available before processing requests. This system is crucial for the bot's functionality and will evolve significantly in production.
 
-#### **Current Architecture (Development)**
+#### **Current Architecture (Operational Swarm)**
 - **Ollama** (Port 11434) - Core AI conversations
-- **ComfyUI** (Port 8188) - Image/video/music generation  
-- **Perplexica** (Port 3001) - Web search
+- **ComfyUI** (Port 8188) - Image/video/music generation
+- **Perplexica** (Port 3002) - Web search
 - **Orpheus TTS** (Port 5005) - Text-to-speech
 
 #### **Connection Verification Process**
 1. **Ollama verification** (mandatory) - Bot stops if unavailable
 2. **Specialized service verification** (on-demand based on tags)
-3. **SSH tunnel fallback** to `scorpio.copylaradio.com` if local services unavailable
-4. **Error handling** with specific messages per service
+3. **Intelligent IPFS P2P Swarm** via `DRAGON_p2p_ssh.sh` (Priority)
+4. **SSH tunnel fallback** to `scorpio.copylaradio.com` if P2P unavailable
+5. **Error handling** with specific messages per service
 
-#### **Future Architecture (Production UPlanet ẐEN[0])**
-All services will migrate to **IPFS P2P connections** via the `DRAGON_p2p_ssh.sh` system:
+#### **Swarm Architecture (DRAGON P2P)**
+All services use **IPFS P2P connections** via the `DRAGON_p2p_ssh.sh` system:
 
+- **Intelligent Port Selection** - Automatic detection of native vs. alternative ports
 - **Decentralized discovery** - Each node publishes available services
 - **Load balancing** - Automatic selection of best available node
 - **Resilience** - No single point of failure
 - **Security** - End-to-end encrypted P2P connections
-
 ### **SECTOR G1 opportunities (ASTROBOT)**
 
 The **g1_opportunities.py** script (triggered by the SECTOR key in `NOSTR.UMAP.refresh.sh`) fetches Ğchange offers around a sector’s center and uses **question.py** (Ollama) to identify value-creation opportunities. The result is:

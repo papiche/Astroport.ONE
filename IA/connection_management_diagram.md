@@ -22,10 +22,10 @@ Le système UPlanet IA utilise une architecture de gestion des connexions en plu
 - **Fallback**: IPFS P2P swarm discovery
 - **Usage**: Génération d'images, vidéos, musique
 
-#### **Perplexica (Port 3001)**
+#### **Perplexica (Port 3002)**
 - **Script**: `perplexica.me.sh`
-- **Vérification**: `netstat -tulnp | grep 3001`
-- **Test API**: `curl http://localhost:3001/api/providers`
+- **Vérification**: `netstat -tulnp | grep 3002`
+- **Test API**: `curl http://localhost:3002/api/providers`
 - **Tunnel SSH**: `scorpio.copylaradio.com` (IPv4:2122, IPv6:22)
 - **Fallback**: IPFS P2P swarm discovery
 - **Usage**: Recherche web intelligente
@@ -50,7 +50,7 @@ UPlanet_IA_Responder.sh
 │
 ├── 2. Vérifications Spécialisées (selon tags)
 │   ├── #search → perplexica.me.sh
-│   │   ├── Check port 3001 + test API /api/providers
+│   │   ├── Check port 3002 + test API /api/providers
 │   │   ├── Si OK → Connexion active
 │   │   ├── Sinon → Tentative SSH (IPv6 puis IPv4)
 │   │   └── Si SSH échoue → Fallback IPFS P2P swarm
@@ -232,7 +232,7 @@ REMOTE_PORT_IPV4=2122
 REMOTE_PORT_IPV6=22
 
 # Perplexica
-PERPLEXICA_PORT=3001
+PERPLEXICA_PORT=3002
 REMOTE_HOST="scorpio.copylaradio.com"
 REMOTE_PORT_IPV4=2122
 REMOTE_PORT_IPV6=22
@@ -287,7 +287,7 @@ Chaque script sauvegarde le statut de connexion dans :
 CONNECTION_TYPE=SSH_IPv6|SSH_IPv4|P2P|LOCAL
 CONNECTION_DETAILS=scorpio.copylaradio.com:22|node_id|Local service
 CONNECTION_TIME=2026-01-24T10:30:45+00:00
-CONNECTION_PORT=11434|8188|3001|5005
+CONNECTION_PORT=11434|8188|3002|5005
 ```
 
 Ces fichiers permettent de :
@@ -363,7 +363,7 @@ establish_ipfs_p2p() {
 }
 ```
 
-##### **Perplexica P2P (Port 3001)**
+##### **Perplexica P2P (Port 3002)**
 ```bash
 # perplexica.me.sh - Version future
 establish_ipfs_p2p() {
@@ -376,7 +376,7 @@ establish_ipfs_p2p() {
     fi
     
     # Établir connexion P2P
-    bash "$perplexica_script"  # Port 3001 via IPFS
+    bash "$perplexica_script"  # Port 3002 via IPFS
 }
 ```
 
@@ -406,7 +406,7 @@ fi
 
 if [[ ! -z $(docker ps | grep perplexica) ]]; then
     # Node offre Perplexica - crée x_perplexica.sh
-    ipfs p2p listen /x/perplexica-${IPFSNODEID} /ip4/127.0.0.1/tcp/3001
+    ipfs p2p listen /x/perplexica-${IPFSNODEID} /ip4/127.0.0.1/tcp/3002
 fi
 ```
 
@@ -539,7 +539,7 @@ LOAD_BALANCING_ENABLED=true
 # Ports P2P (même ports locaux, mais via IPFS)
 OLLAMA_P2P_PORT=11434
 COMFYUI_P2P_PORT=8188
-PERPLEXICA_P2P_PORT=3001
+PERPLEXICA_P2P_PORT=3002
 ORPHEUS_P2P_PORT=5005
 ```
 
@@ -555,15 +555,15 @@ Cette migration vers IPFS P2P transformera UPlanet en une plateforme IA véritab
 
 ### 9. Rôle Central de DRAGON_p2p_ssh.sh
 
-**Note**: Le script existe dans `RUNTIME/DRAGON_p2p_ssh.sh`. La version actuelle gère principalement le **SSH over IPFS P2P** (canal `/x/ssh-*`, clés `y_ssh.pub`/`z_ssh.pub`). La détection automatique de tous les services (Ollama, ComfyUI, Orpheus, Perplexica) et la génération des `x_ollama.sh`, `x_comfyui.sh`, etc. correspondent à l’**architecture cible** décrite ci‑dessous.
+**Note**: Le script existe dans `RUNTIME/DRAGON_p2p_ssh.sh`. La version actuelle gère la **détection automatique** de tous les services (Ollama, ComfyUI, Orpheus, Perplexica, etc.) et la **génération intelligente** des scripts clients `x_*.sh` (incluant l'évitement de ports locaux via ALT_PORT).
 
-#### **Système de Découverte Automatique (cible)**
+#### **Système de Découverte Automatique (opérationnel)**
 
 `DRAGON_p2p_ssh.sh` est conçu comme le **système nerveux central** du swarm UPlanet. Il fonctionne comme un **service registry distribué** qui :
 
 1. **Détecte automatiquement** les services disponibles sur chaque node
 2. **Publie les services** via IPFS P2P sur des canaux dédiés
-3. **Génère les scripts de connexion** pour les autres nodes
+3. **Génère les scripts de connexion** pour les autres nodes (avec gestion intelligente des ports)
 4. **Maintient la découverte** en temps réel du swarm
 
 #### **Détection des Services par Node**
@@ -573,50 +573,47 @@ Cette migration vers IPFS P2P transformera UPlanet en une plateforme IA véritab
 
 # OLLAMA (Port 11434)
 if [[ ! -z $(pgrep ollama) ]]; then
-    echo "Node ${IPFSNODEID} offre Ollama"
-    ipfs p2p listen /x/ollama-${IPFSNODEID} /ip4/127.0.0.1/tcp/11434
-    # Crée ~/.zen/tmp/${IPFSNODEID}/x_ollama.sh
+    # Node offre Ollama - crée x_ollama.sh (NATIVE: 11434 | ALT: 21XXX)
+    generate_p2p_service 11434 "ollama" "Ollama LLM API"
 fi
 
 # COMFYUI (Port 8188)
 if [[ ! -z $(systemctl status comfyui.service | grep "active (running)") ]]; then
-    echo "Node ${IPFSNODEID} offre ComfyUI"
-    ipfs p2p listen /x/comfyui-${IPFSNODEID} /ip4/127.0.0.1/tcp/8188
-    # Crée ~/.zen/tmp/${IPFSNODEID}/x_comfyui.sh
+    # Node offre ComfyUI - crée x_comfyui.sh (NATIVE: 8188 | ALT: 21XXX)
+    generate_p2p_service 8188 "comfyui" "ComfyUI"
 fi
 
 # ORPHEUS (Port 5005)
 if [[ ! -z $(docker ps | grep orpheus) ]]; then
-    echo "Node ${IPFSNODEID} offre Orpheus TTS"
-    ipfs p2p listen /x/orpheus-${IPFSNODEID} /ip4/127.0.0.1/tcp/5005
-    # Crée ~/.zen/tmp/${IPFSNODEID}/x_orpheus.sh
+    # Node offre Orpheus - crée x_orpheus.sh (NATIVE: 5005 | ALT: 21XXX)
+    generate_p2p_service 5005 "orpheus" "Orpheus TTS"
 fi
 
-# PERPLEXICA (Port 3001)
+# PERPLEXICA (Port 3002)
 if [[ ! -z $(docker ps | grep perplexica) ]]; then
-    echo "Node ${IPFSNODEID} offre Perplexica"
-    ipfs p2p listen /x/perplexica-${IPFSNODEID} /ip4/127.0.0.1/tcp/3001
-    # Crée ~/.zen/tmp/${IPFSNODEID}/x_perplexica.sh
+    # Node offre Perplexica - crée x_perplexica.sh (NATIVE: 3002 | ALT: 21XXX)
+    generate_p2p_service 3002 "perplexica" "Perplexica Search"
 fi
 ```
 
-#### **Génération des Scripts de Connexion**
+#### **Génération Intelligente des Scripts de Connexion**
 
-Chaque service détecté génère un script de connexion P2P :
+Chaque service détecté génère un script `x_*.sh` qui gère dynamiquement le port local chez le client :
 
 ```bash
-# Exemple : x_ollama.sh généré automatiquement
-#!/bin/bash
-if [[ ! $(ipfs p2p ls | grep x/ollama-${IPFSNODEID}) ]]; then
-    ipfs --timeout=10s ping -n 4 /p2p/${IPFSNODEID}
-    [[ $? == 0 ]] \
-        && ipfs p2p forward /x/ollama-${IPFSNODEID} /ip4/127.0.0.1/tcp/11434 /p2p/${IPFSNODEID} \
-        && echo "OLLAMA PORT FOR ${IPFSNODEID}" \
-        && export OLLAMA_API_BASE="http://127.0.0.1:11434" \
-        || echo "CONTACT IPFSNODEID FAILED - ERROR -"
+# Exemple : Logique x_ollama.sh
+if ss -tln | grep -qw ":$NATIVE_PORT"; then
+    # Si le port natif est déjà pris par un tunnel IPFS pour ce même protocole
+    if ipfs p2p ls | grep -q "$PROTO" | grep -q "tcp/$NATIVE_PORT"; then
+        LPORT="$NATIVE_PORT"
+    else
+        # Sinon on utilise le port alternatif unique à la station
+        LPORT="$ALT_PORT" 
+    fi
 else
-    echo "Tunnel /x/ollama 11434 already active..."
+    LPORT="$NATIVE_PORT"
 fi
+ipfs p2p forward /x/ollama-ID /ip4/127.0.0.1/tcp/$LPORT /p2p/ID
 ```
 
 #### **Architecture de Découverte Distribuée**

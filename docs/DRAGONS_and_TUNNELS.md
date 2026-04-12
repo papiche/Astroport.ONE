@@ -164,39 +164,39 @@ CRON (cron_VRFY.sh)
 ### La fonction `generate_p2p_service`
 
 ```bash
-generate_p2p_service PORT SLUG NOM
+generate_p2p_service PORT_DISTANT SLUG NOM [PORT_LOCAL_PREFERE]
 ```
 
 **Côté serveur (DRAGON local)** :
-```
-ss -tln | grep ":PORT "  →  service détecté
-    │
-    ▼
-ipfs p2p listen /x/SLUG-NODEID  /ip4/127.0.0.1/tcp/PORT
-    │
-    │  Crée le canal IPFS qui redirige les connexions P2P
-    │  entrantes vers le service local
-    ▼
-~/.zen/tmp/NODEID/x_SLUG.sh  ← script généré pour les clients
-```
+1. Calcule un `NODE_OFFSET` unique (0-499) basé sur son `IPFSNODEID`.
+2. Détecte le service local (ex: port 11434).
+3. Ouvre le canal `/x/SLUG-NODEID`.
+4. Génère le script client `x_SLUG.sh` incluant l'évitement intelligent.
 
-**Structure du script `x_SLUG.sh` généré** :
+**Structure du script `x_SLUG.sh` généré (Intelligent)** :
 ```bash
 #!/bin/bash
 NODE_ID="12D3KooW..."        # NODEID de la station serveur
-LPORT="11434"               # Port local (côté client)
 PROTO="/x/ollama-12D3KooW..." # Canal IPFS P2P
+NATIVE_PORT="11434"          # Port standard (ou préféré)
+ALT_PORT="21345"            # Port alternatif (21220 + offset + slug_id)
 
-# Évite conflit si service local tourne déjà sur ce port
-if ss -tln | grep -qw ":$LPORT"; then
-    echo "Port $LPORT occupé localement — service natif prioritaire"
-    exit 0
+# LOGIQUE D'ÉVITEMENT :
+# Si NATIVE_PORT est occupé localement, on bascule sur ALT_PORT.
+if ss -tln | grep -qw ":$NATIVE_PORT"; then
+    # Sauf si c'est déjà un tunnel IPFS pour ce même protocole
+    if ipfs p2p ls | grep -q "$PROTO" | grep -q "tcp/$NATIVE_PORT"; then
+        LPORT="$NATIVE_PORT"
+    else
+        LPORT="$ALT_PORT"
+    fi
+else
+    LPORT="$NATIVE_PORT"
 fi
 
-# Ping le nœud distant (timeout 10s)
-ipfs --timeout=10s ping -n 2 "/p2p/$NODE_ID"
+export LPORT=$LPORT
 
-# Double tunnel : hôte + docker bridge
+# Double tunnel : localhost + docker0 bridge
 ipfs p2p forward "$PROTO" "/ip4/127.0.0.1/tcp/$LPORT"   "/p2p/$NODE_ID"
 ipfs p2p forward "$PROTO" "/ip4/172.17.0.1/tcp/$LPORT"  "/p2p/$NODE_ID"
 ```
@@ -352,7 +352,7 @@ Station X
 
 ```
   tunnel v2.0 - [Q]->Quit [Entrée]->CONNECT [R]->RESET [X]->STOP [W]->WebOpen
-ID LOCAL: 12D3KooWAJxX... | Port: 11434 | Auto-refresh ON
+ID LOCAL: 12D3KooWAJxX... | Port: 11434 (Alt: 21345) | Auto-refresh ON
 
   SAGITTARIUS - COMFYUI     [  ACTIF ipfs  ]  P:8188      ... wyFntbpxPX ...
   SAGITTARIUS - OLLAMA      [  ACTIF ipfs  ]  P:11434     ... wyFntbpxPX ...
@@ -365,18 +365,18 @@ ID LOCAL: 12D3KooWAJxX... | Port: 11434 | Auto-refresh ON
 
 | Statut | Couleur | Signification |
 |--------|---------|---------------|
-| `[  ACTIF ipfs  ]` | 🟢 Vert | Tunnel IPFS actif — canal `/x/SERVICE-NODEID` vérifié |
+| `[  ACTIF ipfs  ]` | 🟢 Vert | Tunnel IPFS actif — canal `/x/SERVICE-NODEID` vérifié sur port Natif ou Alt |
 | `[ ACTIF process ]` | 🟡 Jaune | Port occupé localement (service natif ou autre tunnel) |
 | `[  OFF  ]` | 🔴 Rouge | Aucune connexion active |
 
-**Logique de détection** :
+**Logique de détection intelligente** :
 ```bash
-# 1. Recherche dans ipfs p2p ls par protocole ET port
-is_p2p_active=$(ipfs p2p ls | grep "/x/SERVICE-NODEID" | grep "tcp/PORT")
+# 1. Recherche dans ipfs p2p ls par protocole
+active_line=$(ipfs p2p ls | grep "$proto")
 
-# Si trouvé → ACTIF ipfs (NodeID vérifié → pas de faux positif)
-# Si non mais lsof détecte le port → ACTIF local
-# Sinon → OFF
+# 2. Si tunnel actif sur NATIVE_PORT ou ALT_PORT → VERT
+# Sinon si NATIVE_PORT ou ALT_PORT est occupé par un process natif → JAUNE
+# Sinon → ROUGE (OFF)
 ```
 
 ### Commandes clavier
