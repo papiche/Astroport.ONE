@@ -343,15 +343,27 @@ cp ~/.zen/install.errors.log ~/.zen/tmp/${IPFSNODEID}/ 2>/dev/null
 # Évite de republier dans le swarm un tunnel IPFS P2P déjà établi (tunnel→tunnel)
 _is_native_process() {
     local _PORT=$1
-    # 1. Le port doit être en écoute
-    ss -tln 2>/dev/null | grep -qw ":${_PORT}" || return 1
+    local is_listening=false
+    
+    # 1. Le port doit être en écoute (Robuste pour *:PORT, :::PORT, 127.0.0.1:PORT)
+    if ss -tln 2>/dev/null | awk '{print $4}' | grep -qE ":${_PORT}$"; then
+        is_listening=true
+    elif netstat -tln 2>/dev/null | awk '{print $4}' | grep -qE ":${_PORT}$"; then
+        is_listening=true
+    fi
+    
+    [[ "$is_listening" == "true" ]] || return 1
+    
     # 2. Récupérer le PID du process en écoute sur ce port
     local _PID
-    _PID=$(ss -tlnp 2>/dev/null | awk -v p=":${_PORT} " '$0~p {match($0,/pid=([0-9]+)/,a); if(a[1]) {print a[1]; exit}}')
+    _PID=$(ss -tlnp 2>/dev/null | awk -v port=":${_PORT}" '$4 ~ port"$" {match($0,/pid=([0-9]+)/,a); if(a[1]) {print a[1]; exit}}')
+    
     # Si ss ne donne pas le PID (pas de sudo), essayer lsof
     [[ -z "$_PID" ]] && _PID=$(lsof -t -i ":${_PORT}" -sTCP:LISTEN 2>/dev/null | head -1)
+    
     # Pas de PID détectable → supposer service natif (meilleure hypothèse)
     [[ -z "$_PID" ]] && return 0
+    
     # 3. Lire le nom du processus
     local _PROC; _PROC=$(cat "/proc/${_PID}/comm" 2>/dev/null)
     # Si c'est `ipfs` → c'est un ipfs p2p forward (tunnel client) → PAS un service natif
@@ -452,6 +464,19 @@ publish_service() {
     fi
     generate_p2p_service "$@"
 }
+
+##################################################################################
+# SSH (toujours prioritaire) — fonction dédiée avec commande de connexion complète
+SSHPORT=$(grep -E "^Port " /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -1)
+[[ -z "$SSHPORT" ]] && SSHPORT=22
+generate_ssh_service "$SSHPORT"
+
+## ── Synchronisation Constellation (Strfry P2P) ──────────────────────
+## On utilise 9999 comme port local préféré pour backfill_constellation.sh
+if ss -tln 2>/dev/null | grep -q ":7777 "; then
+    generate_p2p_service 7777 "strfry" "Nostr Relay" 9999
+fi
+
 ##################################################################################
 # DÉTECTION ET PUBLICATION DES SERVICES (ai-company + standard)
 # Architecture des ports (voir firewall.sh pour la politique UFW) :
@@ -477,24 +502,12 @@ fi
 # Qdrant vector database (6333) -- could be hidden too
 publish_service 6333 "qdrant" "Qdrant VectorDB"
 
-# Ollama LLM API (11434)
-if pgrep ollama >/dev/null 2>&1 || ss -tln 2>/dev/null | grep -q ":11434 "; then
+# Ollama LLM API (11434) -- check process name
+if pgrep ollama >/dev/null 2>&1; then
     publish_service 11434 "ollama" "Ollama LLM API"
 fi
 
-
-## ── Synchronisation Constellation (Strfry P2P) ──────────────────────
-## On utilise 9999 comme port local préféré pour backfill_constellation.sh
-if ss -tln 2>/dev/null | grep -q ":7777 "; then
-    generate_p2p_service 7777 "strfry" "Nostr Relay" 9999
-fi
-
 ## ── Services standard ───────────────────────────────────────────────
-
-# SSH (toujours prioritaire) — fonction dédiée avec commande de connexion complète
-SSHPORT=$(grep -E "^Port " /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -1)
-[[ -z "$SSHPORT" ]] && SSHPORT=22
-generate_ssh_service "$SSHPORT"
 
 # Nginx Proxy Manager admin (port 81)
 publish_service 81 "npm" "Nginx Proxy Manager Admin"
