@@ -405,7 +405,7 @@ DOCKER_IP=\$(ip addr show docker0 2>/dev/null | grep -oP "(?<=inet\s)\d+(\.\d+){
 
 # --- Logique de choix du port ---
 # Si le port natif est libre, on le prend. Sinon on prend l'alternatif.
-if ss -tln 2>/dev/null | grep -qw ":\${NATIVE_PORT}"; then
+if ss -tln 2>/dev/null | awk '{print \$4}' | grep -qE ":\${NATIVE_PORT}$" || netstat -tln 2>/dev/null | awk '{print \$4}' | grep -qE ":\${NATIVE_PORT}$"; then
     # Si le port natif est occupé par un tunnel IPFS deja actif pour CE protocole
     if ipfs p2p ls | grep -q "\${PROTO}" | grep -q "tcp/\${NATIVE_PORT}"; then
         LPORT="\${NATIVE_PORT}"
@@ -433,7 +433,7 @@ if [[ \$? == 0 ]]; then
     ipfs p2p forward "\${PROTO}" "/ip4/127.0.0.1/tcp/\$LPORT" "/p2p/\${NODE_ID}"
     ipfs p2p forward "\${PROTO}" "/ip4/\${DOCKER_IP}/tcp/\$LPORT" "/p2p/\${NODE_ID}"
     
-    [[ "\${LPORT}" == "22" || "\$SLUG" == "ssh" ]] && echo "SSH : ssh ${USER}@localhost -p \$LPORT"
+    [[ "\${LPORT}" == "22" || "\$SLUG" == "ssh" ]] && echo "SSH : ssh -X ${USER}@localhost -p \$LPORT"
 else
     echo "ERREUR : Station injoignable."
     exit 1
@@ -473,9 +473,8 @@ generate_ssh_service "$SSHPORT"
 
 ## ── Synchronisation Constellation (Strfry P2P) ──────────────────────
 ## On utilise 9999 comme port local préféré pour backfill_constellation.sh
-if ss -tln 2>/dev/null | grep -q ":7777 "; then
-    generate_p2p_service 7777 "strfry" "Nostr Relay" 9999
-fi
+generate_p2p_service 7777 "strfry" "Nostr Relay" 9999
+
 
 ##################################################################################
 # DÉTECTION ET PUBLICATION DES SERVICES (ai-company + standard)
@@ -495,9 +494,7 @@ publish_service 8010 "dify" "Dify AI Workflow"
 publish_service 8000 "open-webui" "Open WebUI Interface IA"
 
 ## Port 8001 : NextCloud Apache uniquement (proxied NPM → cloud.DOMAIN)
-if ss -tln 2>/dev/null | grep -q ":8001 "; then
-    publish_service 8001 "nextcloud-app" "NextCloud Apache App (via NPM cloud.DOMAIN)"
-fi
+publish_service 8001 "nextcloud-app" "NextCloud Apache App (via NPM cloud.DOMAIN)"
 
 # Qdrant vector database (6333) -- could be hidden too
 publish_service 6333 "qdrant" "Qdrant VectorDB"
