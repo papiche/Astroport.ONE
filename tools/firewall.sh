@@ -1,7 +1,7 @@
 #!/bin/bash
 ########################################################################
 # firewall.sh — Gestion UFW pour Astroport.ONE
-# Version: 1.0
+# Version: 1.1
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
 #
@@ -41,7 +41,7 @@
 #  │ 8002    │ tcp      │ NextCloud AIO Dashboard (localhost)   │
 #  │ 8443    │ tcp      │ NextCloud AIO Admin Setup (localhost) │
 #  │── ai-company IA Stack ──────────────────────────────────── │
-#  │ 8010    │ tcp      │ Dify AI Web (localhost)        │
+#  │ 8010    │ tcp      │ Dify AI Web (localhost)               │
 #  │ 8000    │ tcp      │ Open WebUI interface IA (localhost)   │
 #  │ 11434   │ tcp      │ Ollama LLM API (localhost)            │
 #  │── Webtop VDI (KasmVNC) ───────────────────────────────────── │
@@ -128,11 +128,11 @@ fire_on() {
 
     ## ⚠️  ORDRE CRITIQUE : les règles ALLOW doivent être ajoutées AVANT les DENY.
     ## Dans UFW/iptables, la première règle correspondante gagne.
-    ## Si DENY port X est ajouté avant ALLOW from LAN port X → trafic LAN bloqué.
 
-    ## Docker : accès complet depuis le réseau bridge Docker
-    echo "  🐳 Docker bridge 172.17.0.0/16 → tous ports autorisés"
-    sudo ufw allow from 172.17.0.0/16 comment "Docker bridge interne" > /dev/null 2>&1
+    ## Docker : accès complet depuis TOUS les réseaux bridge Docker (172.16.x.x à 172.31.x.x)
+    ## Cela permet à Dify de communiquer correctement avec Ollama et Qdrant.
+    echo "  🐳 Docker networks 172.16.0.0/12 → tous ports autorisés"
+    sudo ufw allow from 172.16.0.0/12 comment "Docker networks internes" > /dev/null 2>&1
 
     ## LAN & VPN : accès aux services internes depuis le réseau local et le VPN WireGuard
     ## Ajout IPv6 : fe80::/10 (Link-Local), fc00::/7 (Unique Local)
@@ -143,8 +143,9 @@ fire_on() {
         sudo ufw allow from "${LAN_RANGE}" to any port 54321 proto tcp comment "LAN→UPassport"  > /dev/null 2>&1
         sudo ufw allow from "${LAN_RANGE}" to any port 7777  proto tcp comment "LAN→NOSTR"     > /dev/null 2>&1
         sudo ufw allow from "${LAN_RANGE}" to any port 81    proto tcp comment "LAN→NPM Admin" > /dev/null 2>&1
+        sudo ufw allow from "${LAN_RANGE}" to any port 11434 proto tcp comment "LAN/Docker→Ollama" > /dev/null 2>&1
     done
-    echo "  🏠 LAN & 🔐 VPN (10.99.99.0/24) : accès autorisé aux services internes"
+    echo "  🏠 LAN & 🔐 VPN (10.99.99.0/24) : accès autorisé aux services internes (dont Ollama)"
     echo ""
 
     echo "
