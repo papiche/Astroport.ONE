@@ -353,6 +353,10 @@ touch "$UPSYNC_QUEUE"
 while true; do
     start=$(date +%s)
     MOATS=$(date +%s)
+
+    ## Refresh Duniter node list (respects 1h TTL, copies to ~/.zen/tmp/$IPFSNODEID/duniter_nodes.json)
+    ("${MY_PATH}/tools/duniter_getnode.sh" >/dev/null 2>&1 &)
+
     [[ -z ${myIP} ]] && source "${MY_PATH}/tools/my.sh"
     if [ -f "$lastrun_file" ]; then lastrun=$(cat "$lastrun_file"); else lastrun=0; fi
     [[ ${CHAN} == "" ]] && CHAN=$(ipfs key list -l | grep -w "MySwarm_${IPFSNODEID}" | cut -d ' ' -f 1)
