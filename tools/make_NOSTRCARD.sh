@@ -326,10 +326,15 @@ EOFNOSTR
   "g1pub": "${G1PUBNOSTR}",
   "nsec": "${NPRIV}",
   "npub": "${NPUBLIC}",
+  "hex": "${HEX}",
   "ssss": "M-${SSSS_HEAD_B58}",
   "nostrns": "${NOSTRNS}",
   "salt": "${SALT}",
-  "pepper": "${PEPPER}"
+  "pepper": "${PEPPER}",
+  "email": "${EMAIL}",
+  "lat": "${ZLAT}",
+  "lon": "${ZLON}",
+  "uplanetname_g1": "${UPLANETNAME_G1}"
 }
 EOFJSON
 
