@@ -1466,8 +1466,9 @@ process_recovery() {
         if [[ $(echo "$total_g1 > 1.05" | bc -l) -eq 1 ]]; then
             found_surplus=true
             local surplus_g1=$(echo "scale=2; $total_g1 - 1.00" | bc -l)
+            local surplus_zen=$(echo "scale=1; $surplus_g1 * 10" | bc -l)
             local email_suggested=$( "${MY_PATH}/tools/G1history.sh" "$society_pubkey" 5 2>/dev/null | jq -r '.history[] | select(.direction == "received") | .Reference' | grep "SOCIETY" | head -n 1 | cut -d: -f4 )
-            echo -e "${YELLOW}⚠️  SURPLUS DÉTECTÉ sur SOCIETY: ${surplus_g1} Ğ1${NC}"
+            echo -e "${YELLOW}⚠️  SURPLUS DÉTECTÉ sur SOCIETY: ${surplus_zen} Ẑen (${surplus_g1} Ğ1)${NC}"
             read -p "Réparer ce flux pour ${email_suggested:-[email inconnu]}? (oui/non): " answer
             [[ "$answer" == "oui" ]] && { [[ -z "$email_suggested" ]] && read -p "Email: " email_suggested; [[ -n "$email_suggested" ]] && _repair_society_flow "$society_pubkey" "$surplus_g1" "$email_suggested"; }
         fi
@@ -1482,8 +1483,9 @@ process_recovery() {
         if [[ $(echo "$total_g1 > 1.05" | bc -l) -eq 1 ]]; then
             found_surplus=true
             local surplus_g1=$(echo "scale=2; $total_g1 - 1.00" | bc -l)
+            local surplus_zen=$(echo "scale=1; $surplus_g1 * 10" | bc -l)
             local email_suggested=$( "${MY_PATH}/tools/G1history.sh" "$usage_pubkey" 5 2>/dev/null | jq -r '.history[] | select(.direction == "received") | .Reference' | grep "MULTIPASS\|ZENCOIN" | head -n 1 | cut -d: -f4 )
-            echo -e "${YELLOW}⚠️  SURPLUS DÉTECTÉ sur USAGE: ${surplus_g1} Ğ1${NC}"
+            echo -e "${YELLOW}⚠️  SURPLUS DÉTECTÉ sur USAGE: ${surplus_zen} Ẑen (${surplus_g1} Ğ1)${NC}"
             read -p "Réparer ce flux pour ${email_suggested:-[email inconnu]}? (oui/non): " answer
             [[ "$answer" == "oui" ]] && { [[ -z "$email_suggested" ]] && read -p "Email: " email_suggested; [[ -n "$email_suggested" ]] && _repair_usage_flow "$usage_pubkey" "$surplus_g1" "$email_suggested"; }
         fi
@@ -1500,7 +1502,8 @@ process_recovery() {
         if [[ $(echo "$total_g1 > 2.00" | bc -l) -eq 1 ]]; then
             found_surplus=true
             local surplus_g1=$(echo "scale=2; $total_g1 - 1.00" | bc -l)
-            echo -e "${YELLOW}⚠️  SURPLUS DÉTECTÉ sur ZEN CARD: ${email} (${surplus_g1} Ğ1)${NC}"
+            local surplus_zen=$(echo "scale=1; $surplus_g1 * 10" | bc -l)
+            echo -e "${YELLOW}⚠️  SURPLUS DÉTECTÉ sur ZEN CARD: ${email} (${surplus_zen} Ẑen / ${surplus_g1} Ğ1)${NC}"
             read -p "Ventiler ce surplus? (oui/non): " answer
             [[ "$answer" == "oui" ]] && _repair_zencard_ventilation "$email" "$surplus_g1"
         fi

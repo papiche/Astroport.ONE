@@ -290,7 +290,11 @@ get_balance_gcli() {
 
 log "Récupération du solde via Duniter RPC..."
 COINS=$(get_balance_gcli "$ISSUERPUB")
-log "Solde de $ISSUERPUB : ${COINS} Ğ1"
+# Affichage du solde émetteur avec équivalent Zen (Ẑ = (Ğ1 - 1) * 10)
+ZEN_BALANCE=$(echo "scale=1; ($COINS - 1) * 10" | bc -l)
+[[ $(echo "$ZEN_BALANCE < 0" | bc -l) -eq 1 ]] && ZEN_BALANCE="0.0"
+log "Solde de ${ISSUERPUB:0:12}... : ${COINS} Ğ1 (≈ ${ZEN_BALANCE} Ẑen utilisables)"
+
 
 if [[ -z "$COINS" || "$COINS" == "0" || "$COINS" == ".0000" ]]; then
     if [[ "$AMOUNT" != "DRAIN" ]]; then
@@ -342,7 +346,10 @@ make_payment_gcli() {
     local ws_node="$5"
     local result_file="$6"
 
-    log "Tentative paiement g1cli → nœud: ${ws_node:-défaut} | ${amount} Ğ1 → ${dest:0:12}..."
+    # Calcul du montant en Zen pour le log (1 Zen = 10 centimes G1)
+    local zen_log=$(echo "scale=1; $amount / 10" | bc -l)
+    local g1_log=$(echo "scale=2; $amount / 100" | bc -l)
+    log "Tentative paiement g1cli → nœud: ${ws_node:-défaut} | ${amount} centimes (${g1_log} Ğ1 ≈ ${zen_log} Ẑen) → ${dest:0:12}..."
 
     local base_opts=(--no-password)
     [[ -n "$ws_node" ]] && base_opts+=(-u "$ws_node")
