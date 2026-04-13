@@ -102,9 +102,20 @@ while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
 done
 
 #### COPY LOGS - before erase
-# cat $HOME/.zen/tmp/MULTIPASS.refresh.log >> /tmp/20h12.log
-cat $HOME/.zen/tmp/youtube.com_* >> /tmp/20h12.log
-cat $HOME/.zen/tmp/nostr*.log >> /tmp/20h12.log
+echo "=== YOUTUBE / IA SCRAPERS ===" >> /tmp/20h12.log
+cat $HOME/.zen/tmp/*_sync_*.log 2>/dev/null >> /tmp/20h12.log
+cat $HOME/.zen/tmp/youtube.com_* 2>/dev/null >> /tmp/20h12.log
+
+echo "=== NOSTR / CONSTELLATION ERRORS ===" >> /tmp/20h12.log
+cat $HOME/.zen/tmp/nostr*.log 2>/dev/null >> /tmp/20h12.log
+cat $HOME/.zen/strfry/constellation-backfill.error.log 2>/dev/null >> /tmp/20h12.log
+
+echo "=== SWARM INTRUDERS ===" >> /tmp/20h12.log
+cat $HOME/.zen/tmp/swarm_intruders.log 2>/dev/null >> /tmp/20h12.log
+cat "$HOME/.zen/game/firewall_candidates.txt"
+
+echo "=== SYSTEM/INSTALL ERRORS ===" >> /tmp/20h12.log
+cat $HOME/.zen/install.errors.log 2>/dev/null >> /tmp/20h12.log
 ########################################################################
 # show Ustats.sh cache of the day
 echo "TODAY UPlanet landings"
