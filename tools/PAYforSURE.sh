@@ -420,17 +420,21 @@ logok "=== TRANSACTION ENVOYÉE ==="
 
 log "Vérification confirmation blockchain..."
 CONFIRMED="false"
+# Récupérer le solde initial de la destination pour vérifier l'augmentation
+INITIAL_DEST_RAW=$($GCLI --no-password -a "$G1PUB" -u "${G1_WS_NODES[0]}" -o json account balance 2>/dev/null | jq -r '.total_balance // 0')
+[[ -z "$INITIAL_DEST_RAW" || "$INITIAL_DEST_RAW" == "null" ]] && INITIAL_DEST_RAW=0
+
 for _try in 1 2 3 4 5; do
     sleep 6
     _dest_raw=$($GCLI --no-password -a "$G1PUB" -u "${G1_WS_NODES[0]}" -o json account balance 2>/dev/null \
         | jq -r '.total_balance // empty')
-    if [[ -n "$_dest_raw" && "$_dest_raw" != "null" && "$_dest_raw" != "0" ]]; then
+    if [[ -n "$_dest_raw" && "$_dest_raw" != "null" && "$_dest_raw" -gt "$INITIAL_DEST_RAW" ]]; then
         _dest_g1=$(echo "scale=2; ${_dest_raw} / 100" | bc)
         logok "Confirmation blockchain: ${_dest_g1} Ğ1 sur ${G1PUB:0:12}..."
         CONFIRMED="true"
         break
     fi
-    log "Attente bloc ${_try}/5..."
+    log "Attente bloc ${_try}/5 (Solde actuel: ${_dest_raw:-0} centimes)..."
 done
 if [[ "$CONFIRMED" != "true" ]]; then
     loge "Pas de confirmation après 30s — la transaction n'a pas été confirmée sur la blockchain"

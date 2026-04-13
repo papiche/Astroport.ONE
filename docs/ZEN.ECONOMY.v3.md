@@ -60,7 +60,31 @@ Le G1FabLab **ne génère pas de profits spéculatifs**. Il collecte des contrib
 
 Sur chaque Astroport, la **règle des 3xPAF** répartit le versement des ẐEN d'usage entre l'Armateur et le Capitaine : **1× PAF** → NODE (Armateur), **2× PAF** → MULTIPASS Capitaine (soit 3× PAF au total par station et par semaine, ex. 14 + 28 = 42 Ẑen).
 
+### 🌡️ Le Thermostat Social : Pilotage par la PAF
+
+La **PAF** est le levier de pilotage principal de la station. Ajuster son montant déplace le "point d'équilibre" (Break-even) de l'économie locale.
+
+#### 📈 Augmentation de la PAF
+*   **Motivations :** Couvrir une hausse des coûts réels (électricité, maintenance), valoriser davantage le temps du Capitaine (2× PAF), ou accélérer le rachat de matériel via le *Burn & Convert* (4× PAF brûlés mensuellement).
+*   **Effets :** Rend l'autonomie financière plus difficile à atteindre. La station bascule plus facilement en **Mode Bénévolat (Niveau 3)** si le nombre d'usagers (MULTIPASS/ZEN Cards) n'est pas suffisant.
+
+#### 📉 Réduction de la PAF
+*   **Motivations :** Utilisation d'un matériel très sobre (RPi5 vs PC Gamer), stratégie de croissance pour atteindre l'autonomie avec peu d'usagers, ou geste de solidarité du Capitaine pour maintenir le service en temps de crise.
+*   **Effets :** Facilite la sortie du mode bénévolat. Cependant, cela ralentit la capitalisation sur OpenCollective, réduisant la capacité de la SCIC à remplacer le matériel en cas de panne.
+
+**Équation de Viabilité :** La station est en "Abondance" (Niveau 0) si :
+`Revenus (User) >= 3 × PAF`
+*(Ex: 10 MULTIPASS @ 1Ẑ + 8 ZEN Cards @ 4Ẑ = 42Ẑ. Si PAF=14, l'équilibre est parfait).*
+
+---
+
 Pour chaque **contribution d'un Parrain/Contributeur** (ZEN Card Satellite ou Constellation) :
+
+**Règle du Reliquat au Capitaine (Ẑen Atomique) :**
+La répartition 33/33/33/1 s'effectue en unités entières de Ẑen (pièce de 10 cts Euro).
+- Les trois parts (MultiPass, R&D, Assets) sont calculées par division entière **floor**.
+- Le **Capitaine** encaisse le 1% théorique **augmenté de tout le reliquat** restant après le retrait des 3 parts de 33%.
+*Exemple : Sur 50 Ẑ, les parts sont de 16 Ẑ (32%), et le Capitaine reçoit 2 Ẑ (4%).*
 
 | Part | Bénéficiaire | Objet |
 |------|--------------|--------|

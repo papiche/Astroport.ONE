@@ -1126,6 +1126,10 @@ process_societaire() {
         return 1
     fi
     
+    # PAUSE de synchronisation entre étapes (Duniter v2 propagation)
+    echo -e "${YELLOW}⏳ Pause de 10s pour synchronisation des nœuds RPC...${NC}"
+    sleep 10
+
     # Étape 2: UPLANETNAME_SOCIETY -> ZEN Card
     echo -e "${BLUE}📤 Étape 2: Transfert UPLANETNAME_SOCIETY → ZEN Card ${email}${NC}"
     if ! transfer_and_verify "$HOME/.zen/game/uplanet.SOCIETY.dunikey" "$zencard_pubkey" "$montant_euros" "UPLANET:${UPLANETG1PUB:0:8}:SOCIETY:${email}:${type}:${IPFSNODEID}" "$email" "SOCIETAIRE_${type^^}" "Étape 2: SOCIETY→ZENCARD"; then
@@ -1133,16 +1137,21 @@ process_societaire() {
         return 1
     fi
     
+    # PAUSE de synchronisation entre étapes
+    echo -e "${YELLOW}⏳ Pause de 10s pour synchronisation des nœuds RPC...${NC}"
+    sleep 10
+
     # Étape 3: Répartition 33/33/33/1 depuis ZEN Card
     echo -e "${BLUE}📤 Étape 3: Répartition 33%+33%+33%+1% depuis ZEN Card${NC}"
 
     # Calculer les montants de répartition (en Ẑen pour l'affichage, en Ğ1 pour les transferts)
     # 33% MULTIPASS sociétaire (crédit usage) + 33% RnD + 33% ASSETS + 1% Captain MULTIPASS = 100%
+    # Note: On utilise scale=0 pour arrondir à l'entier inférieur, le reliquat va au Capitaine
     local montant_zen=$montant_euros
-    local part_assets_zen=$(echo "scale=0; ($montant_zen * 33) / 100" | bc)
-    local part_multipass_zen=$(echo "scale=0; ($montant_zen * 33) / 100" | bc)
-    local part_rnd_zen=$(echo "scale=0; ($montant_zen * 33) / 100" | bc)
-    local part_captain_zen=$(echo "scale=0; $montant_zen - $part_multipass_zen - $part_rnd_zen - $part_assets_zen" | bc)
+    local part_assets_zen=$(echo "($montant_zen * 33) / 100" | bc)
+    local part_multipass_zen=$(echo "($montant_zen * 33) / 100" | bc)
+    local part_rnd_zen=$(echo "($montant_zen * 33) / 100" | bc)
+    local part_captain_zen=$(echo "$montant_zen - $part_multipass_zen - $part_rnd_zen - $part_assets_zen" | bc)
 
     # Note: 1/3 revient au MULTIPASS du sociétaire (crédit usage, déjà récupéré ci-dessus)
     echo -e "${GREEN}✅ MULTIPASS sociétaire (1/3 crédit usage): ${multipass_pubkey}...${NC}"

@@ -51,7 +51,13 @@ Le G1FabLab **ne génère pas de profits spéculatifs**. Il collecte des contrib
 
 Sur chaque Astroport, la **règle des 3xPAF** répartit le versement des ẐEN d'usage entre l'Armateur et le Capitaine : **1× PAF** → NODE (Armateur), **2× PAF** → MULTIPASS Capitaine (soit 3× PAF au total par station et par semaine, ex. 14 + 28 = 42 Ẑen).
 
-Pour chaque **contribution d'un Parrain/Contributeur** (ZEN Card Satellite ou Constellation), le montant est divisé en **trois parts égales + 1% prime** (allocation 33/33/33/1) depuis la ZEN Card du contributeur :
+Pour chaque **contribution d'un Parrain/Contributeur** (ZEN Card Satellite ou Constellation), le montant est divisé en **trois parts égales + 1% prime** (allocation 33/33/33/1) depuis la ZEN Card du contributeur.
+
+**Particularité du calcul (Règle du Reliquat au Capitaine) :**
+Le Ẑen est l'unité atomique (pas de centimes de Ẑen). La répartition suit une logique de division entière pour favoriser l'activité humaine :
+1. Les trois parts de 33% sont calculées en arrondissant à l'entier **inférieur** (floor).
+2. Le **Capitaine** (ou parrain) reçoit le 1% théorique **PLUS tout le reliquat** de la division.
+*C'est ce qui rend le rôle de Capitaine gratifiant sur les petits montants (ex: sur 50 Ẑ, le Capitaine reçoit 2 Ẑ soit 4% au lieu de 1%).*
 
 | Part | Bénéficiaire | Objet |
 |------|--------------|--------|
