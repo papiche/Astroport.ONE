@@ -692,9 +692,12 @@ fi
 init_and_cache_wallet() {
     local file_prefix="$1"
     local seed="$2"
+    local legacy_name="$3"
     local dunikey_file="$HOME/.zen/game/${file_prefix}.dunikey"
     local cache_file="$HOME/.zen/game/${file_prefix}.ss58"
     
+    mkdir -p "$HOME/.zen/tmp" 2>/dev/null
+
     # 1. Génère le fichier clé s'il n'existe pas (physiquement sur le disque)
     if [[ ! -s "$dunikey_file" ]]; then
         "$HOME/.zen/Astroport.ONE/tools/keygen" -t duniter -o "$dunikey_file" "$seed" "$seed" >/dev/null 2>&1
@@ -702,28 +705,36 @@ init_and_cache_wallet() {
     fi
     
     # 2. Utilise le cache persistant SS58 s'il existe pour éviter de lancer Python
+    local ss58=""
     if [[ -f "$cache_file" ]]; then
-        cat "$cache_file"
+        ss58=$(cat "$cache_file")
     else
         local pub=$(grep "pub" "$dunikey_file" | cut -d " " -f 2)
-        local ss58=$("$HOME/.zen/Astroport.ONE/tools/g1pub_to_ss58.py" "$pub")
+        ss58=$("$HOME/.zen/Astroport.ONE/tools/g1pub_to_ss58.py" "$pub")
         echo "$ss58" > "$cache_file"
-        echo "$ss58"
     fi
+
+    # 3. Synchronisation avec (~/.zen/tmp/) pour compatibilité descendante
+    if [[ -n "$legacy_name" ]]; then
+        echo "$ss58" > "$HOME/.zen/tmp/${legacy_name}"
+        ln -sf "$dunikey_file" "$HOME/.zen/tmp/${legacy_name}.dunikey" 2>/dev/null
+    fi
+
+    echo "$ss58"
 }
 
 ## Application immédiate sur tous les portefeuilles de l'écosystème UPLANET :
 ## Cela garantit que tous les .dunikey existent physiquement sur le disque pour PAYforSURE.sh etc.
-UPLANETNAME_G1=$(init_and_cache_wallet "uplanet.G1" "${UPLANETNAME}.G1")
-UPLANETG1PUB=$(init_and_cache_wallet "uplanet" "${UPLANETNAME}")
-UPLANETNAME_SOCIETY=$(init_and_cache_wallet "uplanet.SOCIETY" "${UPLANETNAME}.SOCIETY")
-UPLANETNAME_INTRUSION=$(init_and_cache_wallet "uplanet.INTRUSION" "${UPLANETNAME}.INTRUSION")
-UPLANETNAME_CAPITAL=$(init_and_cache_wallet "uplanet.CAPITAL" "${UPLANETNAME}.CAPITAL")
-UPLANETNAME_AMORTISSEMENT=$(init_and_cache_wallet "uplanet.AMORTISSEMENT" "${UPLANETNAME}.AMORTISSEMENT")
-UPLANETNAME_IMPOT=$(init_and_cache_wallet "uplanet.IMPOT" "${UPLANETNAME}.IMPOT")
-UPLANETNAME_TREASURY=$(init_and_cache_wallet "uplanet.CASH" "${UPLANETNAME}.TREASURY")
-UPLANETNAME_ASSETS=$(init_and_cache_wallet "uplanet.ASSETS" "${UPLANETNAME}.ASSETS")
-UPLANETNAME_RND=$(init_and_cache_wallet "uplanet.RnD" "${UPLANETNAME}.RND")
+UPLANETNAME_G1=$(init_and_cache_wallet "uplanet.G1" "${UPLANETNAME}.G1" "UPLANETNAME_G1")
+UPLANETG1PUB=$(init_and_cache_wallet "uplanet" "${UPLANETNAME}" "UPLANETG1PUB")
+UPLANETNAME_SOCIETY=$(init_and_cache_wallet "uplanet.SOCIETY" "${UPLANETNAME}.SOCIETY" "UPLANETNAME_SOCIETY")
+UPLANETNAME_INTRUSION=$(init_and_cache_wallet "uplanet.INTRUSION" "${UPLANETNAME}.INTRUSION" "UPLANETNAME_INTRUSION")
+UPLANETNAME_CAPITAL=$(init_and_cache_wallet "uplanet.CAPITAL" "${UPLANETNAME}.CAPITAL" "UPLANETNAME_CAPITAL")
+UPLANETNAME_AMORTISSEMENT=$(init_and_cache_wallet "uplanet.AMORTISSEMENT" "${UPLANETNAME}.AMORTISSEMENT" "UPLANETNAME_AMORTISSEMENT")
+UPLANETNAME_IMPOT=$(init_and_cache_wallet "uplanet.IMPOT" "${UPLANETNAME}.IMPOT" "UPLANETNAME_IMPOT")
+UPLANETNAME_TREASURY=$(init_and_cache_wallet "uplanet.CASH" "${UPLANETNAME}.TREASURY" "UPLANETNAME_TREASURY")
+UPLANETNAME_ASSETS=$(init_and_cache_wallet "uplanet.ASSETS" "${UPLANETNAME}.ASSETS" "UPLANETNAME_ASSETS")
+UPLANETNAME_RND=$(init_and_cache_wallet "uplanet.RnD" "${UPLANETNAME}.RND" "UPLANETNAME_RND")
 
 # Portefeuille CAPTAIN
 if [[ -n "${CAPTAINEMAIL}" ]]; then
