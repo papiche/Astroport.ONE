@@ -91,8 +91,15 @@ echo -e "   \033[0;33m💎 Capital machine : ${MACHINE_VALUE_ZEN:-non configuré
 echo -e "\033[0;33m📊 Activité économique coopérative :\033[0m"
 # 1. Banque Centrale Ğ1 (UPLANETNAME_G1) — réserve de valeur, capacité à capter des €
 _bc_pubkey="${UPLANETNAME_G1}"
-_bc_ss58=$(python3 "${MY_PATH}/tools/g1pub_to_ss58.py" "${_bc_pubkey}" 2>/dev/null)
+_bc_ss58=""
+if [[ "$_bc_pubkey" =~ ^g1 ]]; then
+    _bc_ss58="$_bc_pubkey"
+else
+    _bc_ss58=$(python3 "${MY_PATH}/tools/g1pub_to_ss58.py" "${_bc_pubkey}" 2>/dev/null)
+fi
+
 _bc_bal_json=""
+_bc_g1="0"
 if [[ -n "$_bc_ss58" ]]; then
     # G1wallet_v2.sh balance --json → {"rpc_transferable": <centimes>, "unit":"centimes_g1", ...}
     _bc_bal_json=$(timeout 8 "${MY_PATH}/tools/G1wallet_v2.sh" balance "$_bc_ss58" --json 2>/dev/null)
@@ -101,14 +108,14 @@ if [[ -n "$_bc_ss58" ]]; then
         _bc_g1=$(echo "scale=2; ${_bc_centimes:-0} / 100" | bc -l 2>/dev/null)
     fi
 fi
-if [[ -z "$_bc_g1" ]]; then
+if [[ -z "$_bc_g1" || "$_bc_g1" == "0" ]]; then
     # Fallback G1balance.sh (API v1, centimes → Ğ1)
     _bc_bal_v1=$(timeout 8 "${MY_PATH}/tools/G1balance.sh" "${_bc_pubkey}" 2>/dev/null)
     _bc_centimes=$(echo "$_bc_bal_v1" | jq -r '.balances.blockchain // 0' 2>/dev/null)
     _bc_g1=$(echo "scale=2; ${_bc_centimes:-0} / 100" | bc -l 2>/dev/null)
 fi
 _bc_zen=$(echo "scale=1; ${_bc_g1:-0} * 10" | bc -l 2>/dev/null)
-echo -e "   🏦 Banque Centrale Ğ1  : \033[0;32m${_bc_g1:-?} Ğ1 (capacité ≈ ${_bc_zen:-?} Ẑen à émettre)\033[0m"
+echo -e "   🏦 Banque Centrale Ğ1  : \033[0;32m${_bc_g1:-0} Ğ1 (capacité ≈ ${_bc_zen:-0} Ẑen à émettre)\033[0m"
 # 2. ẑen MULTIPASS (jetons d'usage) — total émis via UPLANETNAME_G1 → UPLANETG1PUB → MULTIPASS
 _rev_json=$(timeout 15 "${MY_PATH}/tools/G1revenue.sh" 2>/dev/null)
 _rev_zen=$(echo "$_rev_json" | jq -r '.total_revenue_zen // 0' 2>/dev/null)
@@ -1295,239 +1302,182 @@ process_societaire() {
 }
 
 ################################################################################
-# Fonction de dépannage pour récupération manuelle depuis SOCIETY
-# Flux correct: SOCIETY → ZEN Card → 3x1/3 (TREASURY, RnD, ASSETS)
+# Fonction de dépannage OMNISCIENTE (Scanner de Flux)
+# Détecte et répare automatiquement les blocages sur :
+# 1. SOCIETY (Virements sociétaires bloqués)
+# 2. USAGE (Recharges MULTIPASS bloquées)
+# 3. ZEN CARDS (Ventilation 33/33/33/1 bloquée)
 ################################################################################
 process_recovery() {
-    echo -e "${YELLOW}🔧 MODE DÉPANNAGE - Récupération manuelle depuis SOCIETY${NC}"
-    echo -e "${CYAN}📋 Flux: SOCIETY → ZEN Card → 3x1/3 (TREASURY, RnD, ASSETS)${NC}"
+    echo -e "${YELLOW}🔧 MODE DÉPANNAGE OMNISCIENT - Scanner de Flux Coopératifs${NC}"
+    echo -e "${CYAN}📋 Recherche automatique de surplus sur les relais...${NC}"
     echo ""
-    
-    # Vérifier que le portefeuille SOCIETY existe
-    if [[ ! -f "$HOME/.zen/game/uplanet.SOCIETY.dunikey" ]]; then
-        echo -e "${RED}❌ Portefeuille UPLANETNAME_SOCIETY non trouvé${NC}"
-        echo -e "${CYAN}💡 Fichier attendu: ~/.zen/game/uplanet.SOCIETY.dunikey${NC}"
-        return 1
-    fi
-    
-    # Récupérer la clé publique SOCIETY
-    local society_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_SOCIETY")
-    if [[ -z "$society_pubkey" ]]; then
-        echo -e "${RED}❌ Impossible de lire la clé publique SOCIETY${NC}"
-        return 1
-    fi
-    
-    echo -e "${CYAN}🔑 Wallet SOCIETY: ${society_pubkey}...${NC}"
-    echo ""
-    
-    # Afficher le solde du wallet SOCIETY via G1balance.sh
-    echo -e "${YELLOW}📊 Récupération du solde SOCIETY...${NC}"
-    local balance_json=$("${MY_PATH}/tools/G1balance.sh" "$society_pubkey" 2>/dev/null)
-    
-    if [[ -z "$balance_json" ]] || ! echo "$balance_json" | jq -e '.balances' >/dev/null 2>&1; then
-        echo -e "${RED}❌ Impossible de récupérer le solde du wallet SOCIETY${NC}"
-        return 1
-    fi
-    
-    # Extraire les montants (en centimes, convertir en Ğ1)
-    local blockchain_centimes=$(echo "$balance_json" | jq -r '.balances.blockchain // 0' 2>/dev/null)
-    local pending_centimes=$(echo "$balance_json" | jq -r '.balances.pending // 0' 2>/dev/null)
-    local total_centimes=$(echo "$balance_json" | jq -r '.balances.total // 0' 2>/dev/null)
-    
-    # Valider les valeurs
-    [[ -z "$blockchain_centimes" || "$blockchain_centimes" == "null" ]] && blockchain_centimes="0"
-    [[ -z "$pending_centimes" || "$pending_centimes" == "null" ]] && pending_centimes="0"
-    [[ -z "$total_centimes" || "$total_centimes" == "null" ]] && total_centimes="0"
-    
-    local blockchain_g1=$(echo "scale=2; $blockchain_centimes / 100" | bc -l)
-    local pending_g1=$(echo "scale=2; $pending_centimes / 100" | bc -l)
-    local total_g1=$(echo "scale=2; $total_centimes / 100" | bc -l)
-    
-    # Convertir en Ẑen (1 Ğ1 = 10 Ẑen)
-    local blockchain_zen=$(echo "scale=2; $blockchain_g1 * 10" | bc -l)
-    local pending_zen=$(echo "scale=2; $pending_g1 * 10" | bc -l)
-    local total_zen=$(echo "scale=2; $total_g1 * 10" | bc -l)
-    
-    echo -e "${GREEN}✅ Solde du wallet SOCIETY:${NC}"
-    echo -e "  • Blockchain: ${blockchain_g1} Ğ1 (${blockchain_zen} Ẑen)"
-    echo -e "  • Pending: ${pending_g1} Ğ1 (${pending_zen} Ẑen)"
-    echo -e "  • Total: ${total_g1} Ğ1 (${total_zen} Ẑen)"
-    echo ""
-    
-    # Vérifier qu'il y a des fonds disponibles
-    if [[ $(echo "$blockchain_g1 <= 0" | bc -l) -eq 1 ]]; then
-        echo -e "${YELLOW}⚠️  Aucun fonds disponible dans le wallet SOCIETY${NC}"
-        return 0
-    fi
-    
-    # Demander l'email du sociétaire
-    read -p "Email du sociétaire: " email_ref
-    if [[ -z "$email_ref" ]]; then
-        echo -e "${RED}❌ Email requis${NC}"
-        return 1
-    fi
-    
-    # Récupérer la ZEN Card du sociétaire
-    local zencard_pubkey=""
-    local zencard_dunikey="$HOME/.zen/game/players/${email_ref}/secret.dunikey"
-    local zencard_g1pub="$HOME/.zen/game/players/${email_ref}/.g1pub"
-    
-    if [[ -f "$zencard_g1pub" ]]; then
-        zencard_pubkey=$(cat "$zencard_g1pub")
-        echo -e "${GREEN}✅ ZEN Card trouvée (g1pub): ${zencard_pubkey}...${NC}"
-    elif [[ -f "$zencard_dunikey" ]]; then
-        zencard_pubkey=$(cat "$zencard_dunikey" | grep "pub:" | cut -d ' ' -f 2)
-        echo -e "${GREEN}✅ ZEN Card v1 trouvée: ${zencard_pubkey}...${NC}"
-    else
-        echo -e "${RED}❌ ZEN Card non trouvée pour ${email_ref}${NC}"
-        echo -e "${CYAN}💡 Vérifiez que le dossier ~/.zen/game/players/${email_ref}/ existe${NC}"
-        return 1
-    fi
-    
-    # Récupérer le MULTIPASS du sociétaire (crédit usage, 1/3)
-    local multipass_pubkey_ref=$(cat "$HOME/.zen/game/nostr/${email_ref}/G1PUBNOSTR" 2>/dev/null)
-    if [[ -z "$multipass_pubkey_ref" ]]; then
-        echo -e "${RED}❌ MULTIPASS non trouvé pour ${email_ref}${NC}"
-        echo -e "${CYAN}💡 Créez un MULTIPASS avec make_NOSTRCARD.sh${NC}"
-        return 1
-    fi
-    echo -e "${GREEN}✅ MULTIPASS trouvé: ${multipass_pubkey_ref}...${NC}"
 
-    # Vérifier les portefeuilles coopératifs R&D et ASSETS
-    local rnd_pubkey=""
-    local assets_pubkey=""
+    local found_surplus=false
 
-    if [[ -f "$HOME/.zen/tmp/UPLANETNAME_RND" ]]; then
-        rnd_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_RND")
-        echo -e "${GREEN}✅ R&D trouvé: ${rnd_pubkey}...${NC}"
-    else
-        echo -e "${RED}❌ Wallet R&D non trouvé: ~/.zen//tmp/UPLANETNAME_RND${NC}"
-        return 1
-    fi
-    
-    if [[ -f "$HOME/.zen/tmp/UPLANETNAME_ASSETS" ]]; then
-        assets_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_ASSETS")
-        echo -e "${GREEN}✅ Assets trouvé: ${assets_pubkey}...${NC}"
-    else
-        echo -e "${RED}❌ Wallet ASSETS non trouvé: ~/.zen/tmp/UPLANETNAME_ASSETS${NC}"
-        return 1
-    fi
-    
-    echo ""
-    
-    # Demander le montant à transférer
-    echo -e "${YELLOW}💰 Montant disponible dans SOCIETY: ${blockchain_g1} Ğ1 (${blockchain_zen} Ẑen)${NC}"
-    read -p "Montant à transférer en Ẑen (ou 'max' pour tout transférer): " amount_input
-    
-    local zen_amount=""
-    if [[ "$amount_input" == "max" ]]; then
-        zen_amount="$blockchain_zen"
-        echo -e "${CYAN}💸 Transfert de tout le solde disponible: ${zen_amount} Ẑen${NC}"
-    else
-        # Valider que c'est un nombre
-        if [[ ! "$amount_input" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
-            echo -e "${RED}❌ Montant invalide (nombre ou 'max' requis)${NC}"
-            return 1
-        fi
-        zen_amount="$amount_input"
+    # --------------------------------------------------------------------------
+    # CAS 1 : Surplus sur SOCIETY (Blocage Étape 1 ou 2)
+    # --------------------------------------------------------------------------
+    local society_pubkey=$(cat "$HOME/.zen/tmp/UPLANETNAME_SOCIETY" 2>/dev/null)
+    if [[ -n "$society_pubkey" ]]; then
+        local bal_json=$("${MY_PATH}/tools/G1balance.sh" "$society_pubkey" 2>/dev/null)
+        local total_g1=$(echo "$bal_json" | jq -r '.balances.total // 0' 2>/dev/null)
+        total_g1=$(echo "scale=2; $total_g1 / 100" | bc -l)
         
-        # Vérifier que le montant ne dépasse pas le solde
-        if [[ $(echo "$zen_amount > $blockchain_zen" | bc -l) -eq 1 ]]; then
-            echo -e "${RED}❌ Montant demandé (${zen_amount} Ẑen) supérieur au solde (${blockchain_zen} Ẑen)${NC}"
-            return 1
-        fi
-    fi
-    
-    local g1_amount=$(zen_to_g1 "$zen_amount")
-    
-    # Demander le type pour la référence
-    read -p "Type de sociétaire (satellite/constellation): " type_ref
-    type_ref="${type_ref:-satellite}"
-    
-    # Calculer les montants 33/33/33/1
-    local part_assets_zen=$(echo "scale=0; $zen_amount * 33 / 100" | bc)
-    local part_multipass_zen=$(echo "scale=0; $zen_amount * 33 / 100" | bc)
-    local part_rnd_zen=$(echo "scale=0; $zen_amount * 33 / 100" | bc)
-    local part_captain_zen=$(echo "scale=2; $zen_amount - $part_multipass_zen - $part_rnd_zen - $part_assets_zen" | bc)
-
-    echo ""
-    echo -e "${YELLOW}📋 Récapitulatif de l'opération:${NC}"
-    echo -e "  • Étape 1: SOCIETY → ZEN Card ${email_ref}: ${zen_amount} Ẑen (${g1_amount} Ğ1)"
-    echo -e "  • Étape 2: ZEN Card → 33/33/33/1:"
-    echo -e "    - MULTIPASS (crédit usage): ${part_multipass_zen} Ẑen"
-    echo -e "    - R&D: ${part_rnd_zen} Ẑen"
-    echo -e "    - Assets: ${part_assets_zen} Ẑen"
-    echo -e "    - Captain (reste de la division): ${part_captain_zen} Ẑen"
-    echo ""
-    read -p "Confirmer le transfert? (oui/non): " confirm
-    
-    if [[ "$confirm" != "oui" ]]; then
-        echo -e "${YELLOW}🚫 Transfert annulé${NC}"
-        return 0
-    fi
-    
-    # ÉTAPE 1: SOCIETY → ZEN Card
-    echo ""
-    echo -e "${BLUE}📤 Étape 1: Transfert SOCIETY → ZEN Card ${email_ref}${NC}"
-    local reference_society="UPLANET:${UPLANETG1PUB:0:8}:SOCIETY:${email_ref}:${type_ref}:${IPFSNODEID}"
-    
-    if ! transfer_and_verify "$HOME/.zen/game/uplanet.SOCIETY.dunikey" "$zencard_pubkey" "$zen_amount" "$reference_society" "$email_ref" "RECOVERY_SOCIETY" "Recovery: SOCIETY→ZENCARD"; then
-        echo -e "${RED}❌ Échec de l'étape 1 (SOCIETY → ZEN Card)${NC}"
-        return 1
-    fi
-    
-    # ÉTAPE 2: ZEN Card → 3x1/3
-    echo -e "${BLUE}📤 Étape 2: Répartition 3x1/3 depuis ZEN Card${NC}"
-    
-    # Transfert (1/3) → MULTIPASS du sociétaire (crédit usage retourné)
-    echo -e "${CYAN}  📤 MULTIPASS sociétaire (1/3 crédit usage): ${part_multipass_zen} Ẑen${NC}"
-    if ! transfer_and_verify "$zencard_dunikey" "$multipass_pubkey_ref" "$part_multipass_zen" "UPLANET:${UPLANETG1PUB:0:8}:ZENCOIN:${email_ref}" "$email_ref" "RECOVERY_MULTIPASS" "Recovery: ZENCARD→MULTIPASS"; then
-        echo -e "${RED}❌ Échec transfert MULTIPASS sociétaire${NC}"
-        return 1
-    fi
-
-    # Mettre à jour DID pour crédit MULTIPASS
-    "${MY_PATH}/tools/did_manager_nostr.sh" update "$email_ref" "MULTIPASS_CREDIT" "$part_multipass_zen" "$(zen_to_g1 "$part_multipass_zen")"
-    
-    # Transfert vers R&D (1/3)
-    echo -e "${CYAN}  📤 R&D (1/3): ${part_rnd_zen} Ẑen${NC}"
-    if ! transfer_and_verify "$zencard_dunikey" "$rnd_pubkey" "$part_rnd_zen" "UPLANET:${UPLANETG1PUB:0:8}:RnD:${email_ref}:${type_ref}:${IPFSNODEID}" "$email_ref" "RECOVERY_RND" "Recovery: ZENCARD→RND"; then
-        echo -e "${RED}❌ Échec transfert R&D${NC}"
-        return 1
-    fi
-    
-    # Mettre à jour DID pour contribution R&D
-    "${MY_PATH}/tools/did_manager_nostr.sh" update "$email_ref" "RND_CONTRIBUTION" "$part_rnd_zen" "$(zen_to_g1 "$part_rnd_zen")"
-    
-    # Transfert vers Assets (1/3)
-    echo -e "${CYAN}  📤 Assets (1/3): ${part_assets_zen} Ẑen${NC}"
-    if ! transfer_and_verify "$zencard_dunikey" "$assets_pubkey" "$part_assets_zen" "UPLANET:${UPLANETG1PUB:0:8}:ASSETS:${email_ref}:${type_ref}:${IPFSNODEID}" "$email_ref" "RECOVERY_ASSETS" "Recovery: ZENCARD→ASSETS"; then
-        echo -e "${RED}❌ Échec transfert Assets${NC}"
-        return 1
-    fi
-    
-    # Mettre à jour DID pour contribution Assets
-    "${MY_PATH}/tools/did_manager_nostr.sh" update "$email_ref" "ASSETS_CONTRIBUTION" "$part_assets_zen" "$(zen_to_g1 "$part_assets_zen")"
-    
-    # Transfert vers Captain MULTIPASS (reste prime de gestion)
-    if [[ -n "$CAPTAING1PUB" ]]; then
-        echo -e "${CYAN}  📤 Captain bonus (reste %): ${part_captain_zen} Ẑen${NC}"
-        part_captain_zen=${part_captain_zen/#./0.}
-        if transfer_and_verify "$zencard_dunikey" "$CAPTAING1PUB" "$part_captain_zen" "UPLANET:${UPLANETG1PUB:0:8}:CPT1pct:${email_ref}:${type_ref}:${IPFSNODEID}" "$email_ref" "RECOVERY_CPT" "Recovery: ZENCARD→CAPTAIN"; then
-            echo -e "${GREEN}  ✅ Captain bonus: ${part_captain_zen} Ẑen → MULTIPASS${NC}"
-        else
-            echo -e "${YELLOW}  ⚠️  Captain bonus failed (non-critical)${NC}"
+        if [[ $(echo "$total_g1 > 1.05" | bc -l) -eq 1 ]]; then
+            found_surplus=true
+            local surplus_g1=$(echo "scale=2; $total_g1 - 1.00" | bc -l)
+            echo -e "${YELLOW}⚠️  SURPLUS DÉTECTÉ sur SOCIETY: ${surplus_g1} Ğ1${NC}"
+            echo -e "${CYAN}👉 Action suggérée: Relancer la ventilation SOCIÉTAIRE complète${NC}"
+            
+            # Tenter d'extraire l'email
+            local email_suggested=$( "${MY_PATH}/tools/G1history.sh" "$society_pubkey" 5 2>/dev/null | jq -r '.history[] | select(.direction == "received") | .Reference' | grep "SOCIETY" | head -n 1 | cut -d: -f4 )
+            
+            read -p "Réparer ce flux pour ${email_suggested:-[email inconnu]}? (oui/non): " answer
+            if [[ "$answer" == "oui" ]]; then
+                [[ -z "$email_suggested" ]] && read -p "Email du sociétaire: " email_suggested
+                [[ -n "$email_suggested" ]] && _repair_society_flow "$society_pubkey" "$surplus_g1" "$email_suggested"
+            fi
         fi
     fi
 
+    # --------------------------------------------------------------------------
+    # CAS 2 : Surplus sur USAGE/RELAY (Blocage Recharge MULTIPASS)
+    # --------------------------------------------------------------------------
+    local usage_pubkey="${UPLANETG1PUB}"
+    if [[ -n "$usage_pubkey" ]]; then
+        local bal_json=$("${MY_PATH}/tools/G1balance.sh" "$usage_pubkey" 2>/dev/null)
+        local total_g1=$(echo "$bal_json" | jq -r '.balances.total // 0' 2>/dev/null)
+        total_g1=$(echo "scale=2; $total_g1 / 100" | bc -l)
+        
+        if [[ $(echo "$total_g1 > 1.05" | bc -l) -eq 1 ]]; then
+            found_surplus=true
+            local surplus_g1=$(echo "scale=2; $total_g1 - 1.00" | bc -l)
+            echo -e "${YELLOW}⚠️  SURPLUS DÉTECTÉ sur USAGE: ${surplus_g1} Ğ1${NC}"
+            echo -e "${CYAN}👉 Action suggérée: Finaliser le virement vers le MULTIPASS${NC}"
+            
+            # Tenter d'extraire l'email
+            local email_suggested=$( "${MY_PATH}/tools/G1history.sh" "$usage_pubkey" 5 2>/dev/null | jq -r '.history[] | select(.direction == "received") | .Reference' | grep "MULTIPASS\|ZENCOIN" | head -n 1 | cut -d: -f4 )
+            
+            read -p "Réparer ce flux pour ${email_suggested:-[email inconnu]}? (oui/non): " answer
+            if [[ "$answer" == "oui" ]]; then
+                [[ -z "$email_suggested" ]] && read -p "Email de l'usager: " email_suggested
+                [[ -n "$email_suggested" ]] && _repair_usage_flow "$usage_pubkey" "$surplus_g1" "$email_suggested"
+            fi
+        fi
+    fi
+
+    # --------------------------------------------------------------------------
+    # CAS 3 : Surplus sur une ZEN CARD locale (Blocage Étape 3)
+    # --------------------------------------------------------------------------
+    echo -e "${CYAN}🔍 Scan des ZEN Cards locales pour surplus de ventilation...${NC}"
+    for player_dir in "$HOME/.zen/game/players"/*/; do
+        local email=$(basename "$player_dir")
+        local zencard_g1pub="$player_dir/.g1pub"
+        [[ ! -f "$zencard_g1pub" ]] && continue
+        
+        local card_pub=$(cat "$zencard_g1pub")
+        local bal_json=$("${MY_PATH}/tools/G1balance.sh" "$card_pub" 2>/dev/null)
+        local total_g1=$(echo "$bal_json" | jq -r '.balances.total // 0' 2>/dev/null)
+        total_g1=$(echo "scale=2; $total_g1 / 100" | bc -l)
+        
+        # Une ZEN Card ne devrait avoir que 0.01 ou 1.00 Ğ1 en réserve. 
+        # Si > 2 Ğ1, il y a probablement une ventilation 33/33/33/1 non faite.
+        if [[ $(echo "$total_g1 > 2.00" | bc -l) -eq 1 ]]; then
+            found_surplus=true
+            local surplus_g1=$(echo "scale=2; $total_g1 - 1.00" | bc -l)
+            echo -e "${YELLOW}⚠️  SURPLUS DÉTECTÉ sur ZEN CARD: ${email} (${surplus_g1} Ğ1)${NC}"
+            echo -e "${CYAN}👉 Action suggérée: Lancer la ventilation 33/33/33/1 (Étape 3)${NC}"
+            
+            read -p "Ventiler ce surplus pour ${email}? (oui/non): " answer
+            if [[ "$answer" == "oui" ]]; then
+                _repair_zencard_ventilation "$email" "$surplus_g1"
+            fi
+        fi
+    done
+
+    if [[ "$found_surplus" == "false" ]]; then
+        echo -e "${GREEN}✅ Aucun surplus anormal détecté sur les relais locaux.${NC}"
+    fi
+
     echo ""
-    echo -e "${GREEN}🎉 Transfert de récupération terminé avec succès!${NC}"
-    echo -e "${CYAN}📊 Résumé:${NC}"
-    echo -e "  • ${zen_amount} Ẑen (${g1_amount} Ğ1) transférés de SOCIETY vers ZEN Card ${email_ref}"
-    echo -e "  • Répartition 33/33/33/1 effectuée:"
-    echo -e "    - MULTIPASS (crédit usage): ${part_multipass_zen} Ẑen"
-    echo -e "    - R&D: ${part_rnd_zen} Ẑen"
-    echo -e "    - Assets: ${part_assets_zen} Ẑen"
+    echo -e "${GREEN}🏁 Fin du scan omniscient.${NC}"
+    return 0
+}
+
+# --- Fonctions de réparation internes ---
+
+_repair_society_flow() {
+    local society_pubkey="$1"
+    local g1_amount="$2"
+    local email="$3"
+    local zen_amount=$(echo "scale=0; $g1_amount * 10" | bc)
+    
+    echo -e "${BLUE}🚀 Réparation flux SOCIÉTÉ pour ${email} (${zen_amount} Ẑen)...${NC}"
+    
+    # Récupérer la ZEN Card
+    local zencard_pubkey=$(cat "$HOME/.zen/game/players/${email}/.g1pub" 2>/dev/null)
+    [[ -z "$zencard_pubkey" ]] && { echo "❌ ZEN Card non trouvée"; return 1; }
+    
+    # SOCIETY -> ZEN CARD
+    if transfer_and_verify "$HOME/.zen/game/uplanet.SOCIETY.dunikey" "$zencard_pubkey" "$zen_amount" "UPLANET:REPAIR:SOCIETY:${email}" "$email" "RECOVERY" "Recovery Step 2"; then
+        _repair_zencard_ventilation "$email" "$g1_amount"
+    fi
+}
+
+_repair_usage_flow() {
+    local usage_pubkey="$1"
+    local g1_amount="$2"
+    local email="$3"
+    local zen_amount=$(echo "scale=0; $g1_amount * 10" | bc)
+    
+    echo -e "${BLUE}🚀 Réparation flux USAGE pour ${email} (${zen_amount} Ẑen)...${NC}"
+    
+    # Récupérer le MULTIPASS
+    local multipass_pubkey=$(cat "$HOME/.zen/game/nostr/${email}/G1PUBNOSTR" 2>/dev/null)
+    [[ -z "$multipass_pubkey" ]] && { echo "❌ MULTIPASS non trouvé"; return 1; }
+    
+    # USAGE -> MULTIPASS
+    transfer_and_verify "$HOME/.zen/game/uplanet.dunikey" "$multipass_pubkey" "$zen_amount" "UPLANET:REPAIR:USAGE:${email}" "$email" "RECOVERY" "Recovery Usage"
+}
+
+_repair_zencard_ventilation() {
+    local email="$1"
+    local g1_amount="$2"
+    local zen_amount=$(echo "scale=0; $g1_amount * 10" | bc)
+    local zencard_dunikey="$HOME/.zen/game/players/${email}/secret.dunikey"
+    
+    echo -e "${BLUE}🚀 Ventilation 33/33/33/1 pour ${email} (${zen_amount} Ẑen)...${NC}"
+    
+    # Calculs Floor
+    local p_assets=$(echo "($zen_amount * 33) / 100" | bc)
+    local p_multi=$(echo "($zen_amount * 33) / 100" | bc)
+    local p_rnd=$(echo "($zen_amount * 33) / 100" | bc)
+    local p_cpt=$(echo "$zen_amount - $p_assets - $p_multi - $p_rnd" | bc)
+    
+    # Récupérer les cibles
+    local multipass_pub=$(cat "$HOME/.zen/game/nostr/${email}/G1PUBNOSTR" 2>/dev/null)
+    local rnd_pub=$(cat "$HOME/.zen/game/uplanet.RnD.ss58" 2>/dev/null)
+    local assets_pub=$(cat "$HOME/.zen/game/uplanet.ASSETS.ss58" 2>/dev/null)
+    
+    # 1. MultiPass
+    [[ -n "$multipass_pub" ]] && transfer_and_verify "$zencard_dunikey" "$multipass_pub" "$p_multi" "UPLANET:ZENCOIN:${email}" "$email" "RECOVERY" "Recovery 33% Multi"
+    
+    # 2. R&D
+    [[ -n "$rnd_pub" ]] && transfer_and_verify "$zencard_dunikey" "$rnd_pub" "$p_rnd" "UPLANET:RnD:${email}" "$email" "RECOVERY" "Recovery 33% RnD"
+    
+    # 3. Assets
+    [[ -n "$assets_pub" ]] && transfer_and_verify "$zencard_dunikey" "$assets_pub" "$p_assets" "UPLANET:ASSETS:${email}" "$email" "RECOVERY" "Recovery 33% Assets"
+    
+    # 4. Captain
+    [[ -n "$CAPTAING1PUB" ]] && {
+        p_cpt=${p_cpt/#./0.}
+        transfer_and_verify "$zencard_dunikey" "$CAPTAING1PUB" "$p_cpt" "UPLANET:CPT1pct:${email}" "$email" "RECOVERY" "Recovery Bonus Cpt"
+    }
+    
+    echo -e "${GREEN}✅ Ventilation terminée pour ${email}${NC}"
+}
+
     echo -e "    - Captain (1%): ${part_captain_zen} Ẑen"
     echo -e "  • Toutes les transactions confirmées sur la blockchain"
     echo ""
