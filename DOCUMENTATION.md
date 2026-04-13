@@ -1,7 +1,3 @@
-Voici une version actualisée et enrichie de la documentation hub de **Astroport.ONE**. Cette mise à jour intègre les concepts récents de l'économie circulaire **Ẑen**, la sécurité **Primale**, et l'architecture sociale **N² (Nostr + Nœuds)**.
-
----
-
 # 🌍 L'Écosystème UPlanet ẐEN : Documentation Hub
 
 ## 🎯 Vision et Fondamentaux
