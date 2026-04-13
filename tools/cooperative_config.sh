@@ -598,6 +598,8 @@ coop_config_init() {
     "_comment_oc": "=== OPENCOLLECTIVE ===",
     "OCSLUG": "monnaie-libre",
     "OCAPIKEY": "",
+    "OC_URL_CLOUD": "https://opencollective.com/monnaie-libre/projects/coeurbox/contribute/cotisation-services-cloud-usage-98388",
+    "OC_URL_MEMBRE": "https://opencollective.com/monnaie-libre/projects/coeurbox/contribute/membre-resident-soutien-mensuel-98389",
     "OC_URL_SATELLITE": "https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-extension-128-go-98386",
     "OC_URL_CONSTELLATION": "https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-module-gpu-1-24-98385",
 

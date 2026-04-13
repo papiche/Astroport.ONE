@@ -515,7 +515,14 @@ ${MY_PATH}/../tools/nostr_setup_profile.py \
 | tail -n 1 | rev | cut -d ' ' -f 1 | rev > /dev/null
 
 mkdir -p ~/.zen/tmp/${IPFSNODEID}/UPLANET
-${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}" "${UPLANETNAME}" | xargs ${MY_PATH}/../tools/nostr2hex.py > ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX
+if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX ]]; then
+## UPLANET/HEX  — secp256k1 hex of keygen(UPLANETNAME, UPLANETNAME) — kind-0 profile publisher
+    ${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}" "${UPLANETNAME}" | xargs ${MY_PATH}/../tools/nostr2hex.py > ~/.zen/tmp/${IPFSNODEID}/UPLANET/HEX
+fi
+## UPLANET/G1HEX — secp256k1 hex of keygen(UPLANETNAME.G1, UPLANETNAME.G1) — kind 30800 cooperative-config publisher
+if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/UPLANET/G1HEX ]]; then
+    ${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}.G1" "${UPLANETNAME}.G1" | xargs ${MY_PATH}/../tools/nostr2hex.py > ~/.zen/tmp/${IPFSNODEID}/UPLANET/G1HEX
+fi 
 ####################################################################################
 
 ######################################################
