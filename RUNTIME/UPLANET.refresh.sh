@@ -522,7 +522,17 @@ fi
 ## UPLANET/G1HEX — secp256k1 hex of keygen(UPLANETNAME.G1, UPLANETNAME.G1) — kind 30800 cooperative-config publisher
 if [[ ! -s ~/.zen/tmp/${IPFSNODEID}/UPLANET/G1HEX ]]; then
     ${MY_PATH}/../tools/keygen -t nostr "${UPLANETNAME}.G1" "${UPLANETNAME}.G1" | xargs ${MY_PATH}/../tools/nostr2hex.py > ~/.zen/tmp/${IPFSNODEID}/UPLANET/G1HEX
-fi 
+fi
+## Authorize the G1HEX key in strfry amisOfAmis.txt so cooperative-config events are accepted by process.sh
+_UPLANET_G1HEX=$(tr -d '[:space:]' < ~/.zen/tmp/${IPFSNODEID}/UPLANET/G1HEX 2>/dev/null)
+if [[ -n "$_UPLANET_G1HEX" ]]; then
+    mkdir -p ~/.zen/strfry
+    if ! grep -q "^${_UPLANET_G1HEX}$" ~/.zen/strfry/amisOfAmis.txt 2>/dev/null; then
+        echo "# uplanet.G1.nostr — kind 30800 cooperative-config publisher" >> ~/.zen/strfry/amisOfAmis.txt
+        echo "${_UPLANET_G1HEX}" >> ~/.zen/strfry/amisOfAmis.txt
+        echo "G1HEX authorized in strfry amisOfAmis.txt"
+    fi
+fi
 ####################################################################################
 
 ######################################################

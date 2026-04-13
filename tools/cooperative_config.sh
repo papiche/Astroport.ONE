@@ -284,8 +284,8 @@ coop_publish_config_to_nostr() {
             # Get value
             local val=$(echo "$config_json" | jq -r --arg k "$key" '.[$k] // empty' 2>/dev/null)
             
-            # Check if value is encrypted (must contain ":")
-            if [[ "$val" != *":"* ]]; then
+            # Check if value is encrypted (AES-256-CBC: 32 hex chars + ':' + base64)
+            if ! [[ "$val" =~ ^[0-9a-f]{32}: ]]; then
                 echo "[CRITICAL] Security violation: Key '$key' contains sensitive data but is NOT encrypted!" >&2
                 validation_failed=1
             fi
@@ -300,15 +300,18 @@ coop_publish_config_to_nostr() {
     # Use nostr_send_note.py if available
     if [[ -x "${_COOP_DIR}/nostr_send_note.py" ]] || command -v python3 >/dev/null 2>&1; then
         local tags_json="[[\"d\", \"$COOP_CONFIG_D_TAG\"], [\"t\", \"cooperative-config\"], [\"t\", \"uplanet\"]]"
-        
-        local result=$(python3 "${_COOP_DIR}/nostr_send_note.py" \
+        # Publish to local relay only — backfill_constellation.sh propagates
+        # the event to all other stations in the constellation automatically.
+        # Also: declare 'result' separately to avoid bash 'local' masking the exit code.
+        local result
+        result=$(python3 "${_COOP_DIR}/nostr_send_note.py" \
             --keyfile "$COOP_CONFIG_KEYFILE" \
             --content "$config_json" \
             --tags "$tags_json" \
             --kind "$COOP_CONFIG_KIND" \
-            --relays "$COOP_CONFIG_LOCAL_RELAY" "$COOP_CONFIG_RELAY" \
+            --relays "${COOP_CONFIG_LOCAL_RELAY}" \
             --json 2>&1)
-        
+
         if [[ $? -eq 0 ]]; then
             echo "[OK] Config published to NOSTR" >&2
             # Update local cache
@@ -408,12 +411,10 @@ coop_config_get() {
         return 1
     fi
     
-    # Check if value is encrypted (contains ":")
-    if [[ "$encrypted_value" == *":"* ]]; then
-        # Decrypt
+    # Encrypted values match AES-256-CBC format: 32 hex chars + ':' + base64
+    if [[ "$encrypted_value" =~ ^[0-9a-f]{32}:[A-Za-z0-9+/]+=*$ ]]; then
         coop_decrypt "$encrypted_value"
     else
-        # Return as-is (non-sensitive value)
         echo "$encrypted_value"
     fi
 }
@@ -483,60 +484,201 @@ coop_config_delete() {
     coop_save_config "$new_config"
 }
 
-# List all config keys (shows encrypted keys with [ENCRYPTED] marker)
+# List all config keys with sections and aligned columns.
 # Usage: coop_config_list
 coop_config_list() {
-    local config=$(coop_load_config)
-    
+    local config
+    config=$(coop_load_config)
+
     if [[ -z "$config" ]] || [[ "$config" == "{}" ]]; then
         echo "No cooperative config found."
         echo "Run: coop_config_set KEY VALUE to add configuration."
         return 0
     fi
-    
-    echo "=== Cooperative Configuration (UPLANETNAME_G1 DID) ==="
-    echo ""
-    
-    # SECURITY: Keys that should ALWAYS be masked (even if stored unencrypted)
-    # COOPERATIVE_NAME reveals $UPLANETNAME which is the encryption key!
-    local sensitive_keys="COOPERATIVE_NAME"
-    
-    # List all keys with encryption status
-    echo "$config" | jq -r --arg sensitive "$sensitive_keys" 'to_entries[] | 
-        if (.key | inside($sensitive)) then
-            "\(.key) = [SENSITIVE - HIDDEN]"
-        elif (.value | test(":")) then
-            "\(.key) = [ENCRYPTED]"
+
+    # Canonical display order — groups OC_URL_* together regardless of insertion order
+    local -a key_order=(
+        "COOPERATIVE_VERSION" "CREATED_AT"
+        "_comment_fiscal"
+            "TVA_RATE" "IS_RATE_REDUCED" "IS_RATE_NORMAL" "IS_THRESHOLD"
+        "_comment_shares"
+            "ZENCARD_SATELLITE" "ZENCARD_CONSTELLATION" "PAF" "NCARD" "ZCARD"
+        "_comment_3x13"
+            "TREASURY_PERCENT" "RND_PERCENT" "ASSETS_PERCENT" "CAPTAIN_BONUS_PERCENT"
+        "_comment_oc"
+            "OCSLUG" "OCAPIKEY"
+            "OC_URL_CLOUD" "OC_URL_MEMBRE"
+            "OC_URL_SATELLITE" "OC_URL_CONSTELLATION"
+        "_comment_api"
+            "PLANTNET_API_KEY"
+        "_comment_mj"
+            "MJ_APIKEY_PUBLIC" "MJ_APIKEY_PRIVATE" "MJ_SENDER_EMAIL"
+    )
+
+    _coop_display_val() {
+        local key="$1" val="$2"
+        if [[ "$key" == "COOPERATIVE_NAME" ]]; then
+            printf "  %-28s = [SENSITIVE - HIDDEN]\n" "$key"
+        elif [[ "$val" =~ ^[0-9a-f]{32}:[A-Za-z0-9+/]+=*$ ]]; then
+            printf "  %-28s = [ENCRYPTED]\n" "$key"
         else
-            "\(.key) = \(.value)"
-        end
-    ' 2>/dev/null
-    
+            printf "  %-28s = %s\n" "$key" "$val"
+        fi
+    }
+
     echo ""
-    echo "DID: did:nostr:$(coop_get_pubkey 2>/dev/null || echo "unknown")"
-    echo "D-tag: $COOP_CONFIG_D_TAG"
-    echo "Cache: $COOP_CONFIG_CACHE"
+    echo "╔══════════════════════════════════════════════════════╗"
+    echo "║   Cooperative Configuration (UPLANETNAME_G1 DID)    ║"
+    echo "╚══════════════════════════════════════════════════════╝"
+
+    local -a shown=()
+
+    for key in "${key_order[@]}"; do
+        local val
+        val=$(echo "$config" | jq -r --arg k "$key" '.[$k] // empty' 2>/dev/null)
+        [[ -z "$val" ]] && continue
+        shown+=("$key")
+
+        if [[ "$key" == _comment_* ]]; then
+            # If the comment value is itself encrypted (e.g. stored with wrong key
+            # in an older version), try to decrypt it first.
+            local raw_title="$val"
+            if [[ "$val" =~ ^[0-9a-f]{32}:[A-Za-z0-9+/]+=*$ ]]; then
+                raw_title=$(coop_decrypt "$val" 2>/dev/null) || raw_title=""
+            fi
+            # Strip surrounding === markers, use as section header
+            local title="${raw_title//=== /}"
+            title="${title// ===/}"
+            title="${title//===/}"
+            title="${title# }"; title="${title% }"
+            [[ -z "$title" ]] && title="[encrypted section label]"
+            echo ""
+            printf "  ┌─ %s\n" "$title"
+        else
+            _coop_display_val "$key" "$val"
+        fi
+    done
+
+    # Extra keys not in canonical order
+    local -a all_keys
+    mapfile -t all_keys < <(echo "$config" | jq -r 'keys_unsorted[]' 2>/dev/null)
+    local extra=0
+    for key in "${all_keys[@]}"; do
+        local already=0
+        for k in "${shown[@]}"; do [[ "$k" == "$key" ]] && already=1 && break; done
+        [[ $already -eq 1 ]] && continue
+        if [[ $extra -eq 0 ]]; then
+            echo ""
+            printf "  ┌─ Additional\n"
+            extra=1
+        fi
+        local val
+        val=$(echo "$config" | jq -r --arg k "$key" '.[$k] // empty' 2>/dev/null)
+        _coop_display_val "$key" "$val"
+    done
+
+    echo ""
+    echo "  DID   : did:nostr:$(coop_get_pubkey 2>/dev/null || echo "unknown")"
+    echo "  D-tag : $COOP_CONFIG_D_TAG"
+    echo "  Cache : $COOP_CONFIG_CACHE"
+    echo ""
+
+    unset -f _coop_display_val
 }
 
-# Show config in clear text (for debugging - be careful!)
+# Show config in clear text with full decryption.
+# Uses the same canonical section layout as coop_config_list.
 # Usage: coop_config_show_decrypted
 coop_config_show_decrypted() {
-    local config=$(coop_load_config)
-    
+    local config
+    config=$(coop_load_config)
+
     if [[ -z "$config" ]] || [[ "$config" == "{}" ]]; then
         echo "No cooperative config found."
         return 0
     fi
-    
-    echo "=== Cooperative Configuration (DECRYPTED - SENSITIVE!) ==="
+
+    local -a key_order=(
+        "COOPERATIVE_VERSION" "CREATED_AT"
+        "_comment_fiscal"
+            "TVA_RATE" "IS_RATE_REDUCED" "IS_RATE_NORMAL" "IS_THRESHOLD"
+        "_comment_shares"
+            "ZENCARD_SATELLITE" "ZENCARD_CONSTELLATION" "PAF" "NCARD" "ZCARD"
+        "_comment_3x13"
+            "TREASURY_PERCENT" "RND_PERCENT" "ASSETS_PERCENT" "CAPTAIN_BONUS_PERCENT"
+        "_comment_oc"
+            "OCSLUG" "OCAPIKEY"
+            "OC_URL_CLOUD" "OC_URL_MEMBRE"
+            "OC_URL_SATELLITE" "OC_URL_CONSTELLATION"
+        "_comment_api"
+            "PLANTNET_API_KEY"
+        "_comment_mj"
+            "MJ_APIKEY_PUBLIC" "MJ_APIKEY_PRIVATE" "MJ_SENDER_EMAIL"
+    )
+
     echo ""
-    
-    # Decrypt and show all values
-    for key in $(echo "$config" | jq -r 'keys[]' 2>/dev/null); do
-        local value=$(coop_config_get "$key")
-        echo "$key = $value"
+    echo "╔══════════════════════════════════════════════════════╗"
+    echo "║   Cooperative Configuration — DECRYPTED (SENSITIVE) ║"
+    echo "╚══════════════════════════════════════════════════════╝"
+    echo "  ⚠  Values shown in clear text. Keep this output private."
+    echo ""
+
+    local -a shown=()
+
+    for key in "${key_order[@]}"; do
+        local raw_val
+        raw_val=$(echo "$config" | jq -r --arg k "$key" '.[$k] // empty' 2>/dev/null)
+        [[ -z "$raw_val" ]] && continue
+        shown+=("$key")
+
+        if [[ "$key" == _comment_* ]]; then
+            local raw_title="$raw_val"
+            if [[ "$raw_val" =~ ^[0-9a-f]{32}:[A-Za-z0-9+/]+=*$ ]]; then
+                raw_title=$(coop_decrypt "$raw_val" 2>/dev/null) || raw_title=""
+            fi
+            local title="${raw_title//=== /}"; title="${title// ===/}"
+            title="${title//===/}"; title="${title# }"; title="${title% }"
+            [[ -z "$title" ]] && title="[encrypted section label]"
+            echo ""; printf "  ┌─ %s\n" "$title"
+        elif [[ "$key" == "COOPERATIVE_NAME" ]]; then
+            printf "  %-28s = [SENSITIVE - HIDDEN]\n" "$key"
+        else
+            # Decrypt if encrypted, otherwise show raw value
+            local display_val
+            if [[ "$raw_val" =~ ^[0-9a-f]{32}:[A-Za-z0-9+/]+=*$ ]]; then
+                display_val=$(coop_decrypt "$raw_val" 2>/dev/null) || display_val="[DECRYPT FAILED]"
+            else
+                display_val="$raw_val"
+            fi
+            printf "  %-28s = %s\n" "$key" "$display_val"
+        fi
     done
-    
+
+    # Extra keys not in canonical order
+    local -a all_keys
+    mapfile -t all_keys < <(echo "$config" | jq -r 'keys_unsorted[]' 2>/dev/null)
+    local extra=0
+    for key in "${all_keys[@]}"; do
+        local already=0
+        for k in "${shown[@]}"; do [[ "$k" == "$key" ]] && already=1 && break; done
+        [[ $already -eq 1 ]] && continue
+        [[ "$key" == "COOPERATIVE_NAME" ]] && continue
+        if [[ $extra -eq 0 ]]; then
+            echo ""; printf "  ┌─ Additional\n"; extra=1
+        fi
+        local raw_val display_val
+        raw_val=$(echo "$config" | jq -r --arg k "$key" '.[$k] // empty' 2>/dev/null)
+        if [[ "$raw_val" =~ ^[0-9a-f]{32}:[A-Za-z0-9+/]+=*$ ]]; then
+            display_val=$(coop_decrypt "$raw_val" 2>/dev/null) || display_val="[DECRYPT FAILED]"
+        else
+            display_val="$raw_val"
+        fi
+        printf "  %-28s = %s\n" "$key" "$display_val"
+    done
+
+    echo ""
+    echo "  DID   : did:nostr:$(coop_get_pubkey 2>/dev/null || echo "unknown")"
+    echo "  D-tag : $COOP_CONFIG_D_TAG"
     echo ""
 }
 
@@ -734,6 +876,12 @@ coop_load_env_vars() {
 
     val=$(coop_config_get "OCAPIKEY" 2>/dev/null)
     [[ -n "$val" ]] && export OCAPIKEY="$val" && export OPENCOLLECTIVE_PERSONAL_TOKEN="$val"
+
+    val=$(echo "$config" | jq -r '.OC_URL_CLOUD // empty' 2>/dev/null)
+    [[ -n "$val" ]] && export OC_URL_CLOUD="$val"
+
+    val=$(echo "$config" | jq -r '.OC_URL_MEMBRE // empty' 2>/dev/null)
+    [[ -n "$val" ]] && export OC_URL_MEMBRE="$val"
 
     val=$(echo "$config" | jq -r '.OC_URL_SATELLITE // empty' 2>/dev/null)
     [[ -n "$val" ]] && export OC_URL_SATELLITE="$val"
