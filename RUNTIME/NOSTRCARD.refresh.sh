@@ -352,24 +352,29 @@ for PLAYER in "${NOSTR[@]}"; do
         if [[ $(echo "$ZEN >= 100" | bc -l) -eq 1 && ! -s ~/.zen/game/nostr/${PLAYER}/.balance_10_notified ]]; then
             balance_celebration="<html><head><meta charset='UTF-8'>
 <style>
-    body { font-family: 'Courier New', monospace; }
-    .celebration { color: #ff6f00; font-weight: bold; }
+    body { font-family: 'Courier New', monospace; background: #fffdf5; }
+    .celebration { color: #e65c00; font-weight: bold; }
     .details { background-color: #fff3e0; padding: 15px; margin: 10px 0; border-left: 4px solid #ff6f00; }
     .amount { font-size: 1.5em; color: #e65100; }
+    .cta { background: #e8f5e9; padding: 12px; border-left: 4px solid #43a047; margin: 12px 0; }
 </style></head><body>
-<h2 class='celebration'>🎉 Félicitations ! Seuil de $ZEN ẐEN Atteint</h2>
+<h2 class='celebration'>🎉 $ZEN Ẑen — votre contenu fait bouger l'essaim !</h2>
 <div class='details'>
-<p><strong>Joueur:</strong> ${PLAYER}</p>
-<p><strong>Date:</strong> $TODATE</p>
+<p><strong>Astronaute :</strong> ${PLAYER}</p>
+<p><strong>Date :</strong> $TODATE</p>
 </div>
-<p>Excellent travail ! Votre MULTIPASS a atteint un solde significatif. Cela signifie que votre contenu génère de la valeur !</p>
-<p><strong>🚀 Prochaines étapes :</strong></p>
+<p>Votre MULTIPASS a franchi le cap des <strong>100 Ẑen</strong>. Chaque like reçu est une contribution réelle à la constellation — merci !</p>
+<p><strong>🚀 La suite naturelle :</strong></p>
 <ul>
-<li>Continuez à créer du contenu de qualité</li>
-<li>Demandez à vos amis de créer leur MULTIPASS</li>
-<li>Devenez sociétaire (50€/an) pour des services illimités</li>
+<li>📢 Publiez du contenu géolocalisé : vos posts remontent sur l'UMAP de votre secteur</li>
+<li>🤝 Parrainez un ami — chaque MULTIPASS supplémentaire renforce votre station</li>
+<li>🐉 Candidatez au grade de <strong>Capitaine</strong> pour héberger votre propre constellation</li>
 </ul>
-<p><strong>💡 Rappel :</strong> Chaque like = 1 ẐEN automatique. Plus votre réseau grandit, plus vous gagnez !</p>
+<div class='cta'>
+<p><strong>💡 1 like = 1 Ẑen.</strong> Votre réseau local est votre capital coopératif.<br>
+Plus vous publiez utile, plus l'essaim vous récompense.</p>
+</div>
+<p style='font-size:0.85em; color:#888'>Astroport · Réseau UPlanet · <a href='${uSPOT}/nostr'>Accéder à votre Nostr</a></p>
 </body></html>"
 
             # Create temporary file for email content
@@ -385,37 +390,37 @@ for PLAYER in "${NOSTR[@]}"; do
         if [[ $(echo "$COINS < 2" | bc -l) -eq 1 && ! -s ~/.zen/game/nostr/${PLAYER}/.balance_low_warned ]]; then
             low_balance_warning="<html><head><meta charset='UTF-8'>
 <style>
-    body { font-family: 'Courier New', monospace; }
-    .warning { color: #d32f2f; font-weight: bold; }
+    body { font-family: 'Courier New', monospace; background: #fffdf5; }
+    .warning { color: #c62828; font-weight: bold; }
     .details { background-color: #ffebee; padding: 15px; margin: 10px 0; border-left: 4px solid #d32f2f; }
     .amount { font-size: 1.2em; color: #c62828; }
-    .recharge { background-color: #e8f5e8; padding: 15px; margin: 10px 0; border-left: 4px solid #4caf50; }
+    .solutions { background-color: #e8f5e9; padding: 15px; margin: 10px 0; border-left: 4px solid #43a047; }
+    .parrain { background: #fff3e0; padding: 12px; border-left: 4px solid #ff8f00; margin: 10px 0; }
 </style></head><body>
-<h2 class='warning'>⚠️ Solde Faible - Action Recommandée</h2>
+<h2 class='warning'>⚠️ Solde faible — l'essaim a besoin de vous</h2>
 <div class='details'>
-<p><strong>Joueur:</strong> ${PLAYER}</p>
-<p><strong>Solde actuel:</strong> <span class='amount'>$ZEN ẐEN</span></p>
-<p><strong>Date:</strong> $TODATE</p>
-<p><strong>Prochain paiement:</strong> $NEXT_PAYMENT_DATE</p>
+<p><strong>Astronaute :</strong> ${PLAYER}</p>
+<p><strong>Solde actuel :</strong> <span class='amount'>$ZEN Ẑen</span></p>
+<p><strong>Date :</strong> $TODATE</p>
+<p><strong>Prochaine redevance :</strong> $NEXT_PAYMENT_DATE</p>
 </div>
-<p>Votre solde est faible. Pour éviter l'interruption de service, voici quelques solutions :</p>
-<p><strong>💡 Solutions :</strong></p>
+<p>Votre MULTIPASS coûte <strong>1 Ẑen/semaine</strong>. Votre solde approche de zéro. Voici comment le reconstituer naturellement :</p>
+<div class='solutions'>
+<h3>💡 Solutions coopératives</h3>
 <ul>
-<li><strong>Créez plus de contenu</strong> - Chaque like = 1 ẐEN</li>
-<li><strong>Invitez vos amis</strong> - Plus de réseau = plus de likes</li>
-<li><strong>Rechargez votre MULTIPASS</strong> - Recharge ponctuelle ou automatique</li>
+<li>📢 <strong>Publiez du contenu utile sur Nostr</strong> — chaque like reçu = 1 Ẑen automatique</li>
+<li>🌍 <strong>Géolocalisez vos posts</strong> — ils remontent dans l'UMAP de votre secteur</li>
+<li>🤝 <strong>Parrainez un ami</strong> — invitez-le à créer son MULTIPASS sur votre station</li>
+<li>📥 <strong>Apportez des G1 (Ğ1)</strong> — convertibles en Ẑen via votre Capitaine</li>
 </ul>
-<div class='recharge'>
-<h3>🔄 Rechargez Maintenant</h3>
-<p><strong>Options de recharge disponibles :</strong></p>
-<ul>
-<li>💰 <strong>Recharge ponctuelle :</strong> À partir de 5€</li>
-<li>🔄 <strong>Recharge automatique :</strong> À partir de 20€/mois</li>
-<li>🏛️ <strong>Devenez Sociétaire :</strong> 50€/an (plus de paiements hebdomadaires)</li>
-</ul>
-<p><strong>👉 Rechargez sur :</strong> <a href='https://opencollective.com/monnaie-libre/contribute/' target='_blank'>https://opencollective.com/monnaie-libre/contribute/</a></p>
 </div>
-<p><strong>🚨 Important :</strong> Si votre solde tombe à 0, votre MULTIPASS sera suspendu.</p>
+<div class='parrain'>
+<h3>🤝 Devenez Co-Bâtisseur (Parrain annuel)</h3>
+<p>Engagez-vous dans la constellation : un parrainage annuel libère votre MULTIPASS de la redevance hebdomadaire et vous donne accès à la gouvernance coopérative.</p>
+<p><strong>👉 Renseignez-vous :</strong> <a href='${uSPOT}/g1' target='_blank'>${uSPOT}/g1</a></p>
+</div>
+<p><strong>🚨 Note :</strong> Si votre solde tombe à 0, votre MULTIPASS sera suspendu. Votre Capitaine peut vous aider à régulariser.</p>
+<p style='font-size:0.85em; color:#888'>Astroport · Réseau UPlanet · <a href='${uSPOT}/nostr'>Accéder à votre Nostr</a></p>
 </body></html>"
 
             # Create temporary file for email content
@@ -779,7 +784,7 @@ for PLAYER in "${NOSTR[@]}"; do
                                 # Create temporary file for email content
                                 temp_email_file=$(mktemp)
                                 echo "$error_message" > "$temp_email_file"
-                                ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$temp_email_file" "MULTIPASS Payment Error - $TODATE"
+                                ${MY_PATH}/../tools/mailjet.sh --expire 7d "${CAPTAINEMAIL}" "$temp_email_file" "MULTIPASS Payment Error - $TODATE"
                                 rm -f "$temp_email_file"
                                 log "INFO" "Error email sent to ${CAPTAINEMAIL} for payment failure of ${PLAYER}"
                             fi
@@ -983,20 +988,6 @@ for PLAYER in "${NOSTR[@]}"; do
                         fi
                     fi
                     fi
-                fi
-            else
-                # Fallback: calculer la date d'expiration (1 an par défaut)
-                echo "### U SOCIETY.end FILE MISSING - USING FALLBACK CALCULATION"
-                TODATE_SECONDS=$(date --date="$TODATE" +%s)
-                UDATE_SECONDS=$(date --date="$UDATE" +%s)
-                DIFF_SECONDS=$((TODATE_SECONDS - UDATE_SECONDS))
-                DIFF_DAYS=$((DIFF_SECONDS / 86400))
-                
-                if [[ $DIFF_DAYS == 365 ]]; then
-                    echo "### ENDING U SOCIETY FREE MODE (FALLBACK)"
-                    rm ~/.zen/game/players/${PLAYER}/U.SOCIETY
-                    rm ~/.zen/game/nostr/${PLAYER}/U.SOCIETY
-                    ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh --expire 7d "${CAPTAINEMAIL}" "$HOME/.zen/game/passport/${PUBKEY}/.passport.html" "U.SOCIETY Fallback Expiration - ${PLAYER}"
                 fi
             fi
         fi

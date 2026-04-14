@@ -411,7 +411,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 
     ## ── Logique d'envoi ────────────────────────────────────────────────────────
     ## • Jours 0-7    : ZINE d'onboarding quotidien pour TOUS les joueurs
-    ## • Jours 7+     : bulletin hebdomadaire UNIQUEMENT Capitaine et U.SOCIETY
+    ## • Jours 7+     : bulletin hebdomadaire Capitaine, U.SOCIETY et MULTIPASS
     ##                  (multiples de 7 : jours 14, 21, 28...)
     _SEND_ZINE=false
     if [[ ${days} -ge 0 && ${days} -le 7 ]]; then
@@ -424,6 +424,11 @@ for PLAYER in ${PLAYERONE[@]}; do
         _SEND_ZINE=true   ## Bulletin hebdo U.SOCIETY/DRAGON
         TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day_/usociety.html"
         [[ ! -s ${TODAYZINE} ]] && TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day_/multipass.html"
+    elif [[ $(( days % 14 )) -eq 0 ]]; then
+        ## Bulletin bimensuel MULTIPASS (jours 14, 28, 42...)
+        ## Rappel de l'Appel du DRAGON et de l'état du wallet — maintient l'engagement
+        _SEND_ZINE=true
+        TODAYZINE="${MY_PATH}/../templates/UPlanetZINE/day_/multipass.html"
     fi
 
     if [[ -s ${TODAYZINE} && "$_SEND_ZINE" == "true" ]]; then
@@ -442,6 +447,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 -e "s~_PAF_~${PAF}~g" \
                 -e "s~_IPFSNODEID_~${IPFSNODEID}~g" \
                 -e "s~_EARTHCID_~/ipns/copylaradio.com~g" \
+                -e "s~_USPOT_~${uSPOT}~g" \
                 -e "s~_SECTOR_~${SECTOR}~g" \
                 -e "s~_SLAT_~${SLAT}~g" \
                 -e "s~_SLON_~${SLON}~g" \

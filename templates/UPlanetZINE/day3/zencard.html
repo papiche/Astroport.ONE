@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <title>[ZEN Card Jour 3 — Contacts &amp; Agenda : migration depuis Google/Apple]</title>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="/ipfs/QmU8XZpK2rGGJC8ZCFrKRo5cdDWr78vCgx68mCXDcXUpiv" />
+  <link rel="stylesheet" href="/ipfs/QmXU3GJkfhKW5mkPMTFDG9NtzAiiR7uErSxckYsiC4v5xk/style.css" />
+  <meta name="Description" content="ZEN Card Jour 3 — Migrez vos contacts et agenda depuis Google/Apple vers votre capsule NextCloud via DAVx⁵" />
+  <meta name="theme-color" content="#741b47" />
+</head>
+
+<main class="zine">
+  <header class="zine-page page-1">
+    <h2><button class="print-button">Print</button> 📒 Jour 3 — Contacts &amp; Agenda libérés</h2>
+    <img class="full-img" src="/ipfs/QmdrA3CToFjkwW3qkKPJVYWWnirGjhAgvvomCZqpHyUV7A" alt="Contacts NextCloud">
+    <p style="font-size:90%">
+      Vos contacts et votre agenda sont chez Google ou Apple.<br>
+      <strong>Aujourd'hui, vous les rapatriez dans votre capsule.</strong> Une seule installation : DAVx⁵.
+    </p>
+  </header>
+
+  <section class="zine-page page-2">
+    <h2>📲 Installer DAVx⁵ sur Android</h2>
+    <p><strong>DAVx⁵</strong> est l'app qui synchronise contacts (CardDAV) et agenda (CalDAV) avec NextCloud :</p>
+    <ol style="padding-left:1.5rem; font-size:95%">
+      <li style="margin:0.3rem 0">Ouvrez <strong>F-Droid</strong> (recommandé) ou le Play Store</li>
+      <li style="margin:0.3rem 0">Recherchez : <code>DAVx⁵</code></li>
+      <li style="margin:0.3rem 0">Installez et ouvrez l'app</li>
+      <li style="margin:0.3rem 0">Appuyez sur <strong>"+"</strong> → <em>"Connexion avec une URL et identifiant"</em></li>
+    </ol>
+    <p style="font-size:85%; background:#c9daf8; padding:0.4rem">
+      📖 Guide détaillé : <a href="https://pad.p2p.legal/Smartphone2NextCloud#" target="_blank">pad.p2p.legal/Smartphone2NextCloud</a>
+    </p>
+  </section>
+
+  <section class="zine-page page-3">
+    <h2>🔗 Connecter DAVx⁵ à votre capsule</h2>
+    <p>Dans DAVx⁵, entrez :</p>
+    <p style="background:#c9daf8; padding:0.5rem; font-family:monospace; font-size:90%; text-align:center">
+      <strong>https://cloud._EARTHCID_</strong>
+    </p>
+    <ul>
+      <li class="zine-li"><strong>Identifiant</strong> : celui fourni par votre Capitaine</li>
+      <li class="zine-li"><strong>Mot de passe</strong> : votre mot de passe NextCloud</li>
+    </ul>
+    <p>DAVx⁵ détecte automatiquement CardDAV (contacts) et CalDAV (agenda). Cochez les deux, puis <strong>"Créer le compte"</strong>.</p>
+    <p style="font-size:85%; color:#741b47">⚠️ Si vous avez changé votre mot de passe NextCloud hier, utilisez le nouveau.</p>
+  </section>
+
+  <section class="zine-page page-4">
+    <h2>📤 Exporter vos contacts Google</h2>
+    <p>Avant de couper Google, exportez :</p>
+    <ol style="padding-left:1.5rem; font-size:95%">
+      <li style="margin:0.3rem 0">Sur ordinateur : <strong>contacts.google.com</strong></li>
+      <li style="margin:0.3rem 0">Menu ≡ → <strong>Exporter</strong> → format <strong>vCard (.vcf)</strong></li>
+      <li style="margin:0.3rem 0">Importez ce fichier .vcf dans votre NextCloud :<br>
+        <code style="font-size:85%">cloud._EARTHCID_ → Contacts → ⋮ → Importer</code>
+      </li>
+      <li style="margin:0.3rem 0">DAVx⁵ les synchronise automatiquement sur votre téléphone</li>
+    </ol>
+    <p style="font-size:85%">Même procédure pour <strong>iCloud</strong> : Réglages → [votre nom] → iCloud → Contacts → Exporter vCard.</p>
+  </section>
+
+  <section class="zine-page page-5">
+    <h2>📅 Migrer votre agenda</h2>
+    <p>Pour l'agenda Google :</p>
+    <ol style="padding-left:1.5rem; font-size:95%">
+      <li style="margin:0.3rem 0">Sur ordinateur : <strong>calendar.google.com</strong></li>
+      <li style="margin:0.3rem 0">Paramètres ⚙️ → votre agenda → <strong>Exporter</strong> → .ics</li>
+      <li style="margin:0.3rem 0">Dans NextCloud : app <strong>Agenda</strong> → <strong>Importer</strong> le fichier .ics</li>
+      <li style="margin:0.3rem 0">DAVx⁵ synchronise votre agenda NextCloud sur le téléphone</li>
+    </ol>
+    <p style="font-size:85%; background:#ead1dc; padding:0.4rem">
+      💡 Vous pouvez garder Google en lecture seule le temps de la transition. Coupez-le quand vous êtes prêt.
+    </p>
+  </section>
+
+  <section class="zine-page page-6">
+    <h2>🔒 Ce que vous gagnez</h2>
+    <ul>
+      <li class="zine-li">❌ <strong>Google Contacts</strong> analyse vos relations pour cibler des publicités</li>
+      <li class="zine-li">❌ <strong>iCloud</strong> : vos données sous juridiction américaine (CLOUD Act)</li>
+      <li class="zine-li">✅ <strong>Votre capsule</strong> : contacts et agenda chez votre Capitaine, chiffrés, sous votre contrôle</li>
+      <li class="zine-li">✅ <strong>Sync universelle</strong> : Android, iPhone, Linux, Mac, Windows — via DAVx⁵ + Thunderbird</li>
+    </ul>
+    <p style="font-size:85%">Sur Linux/Mac/Win : <strong>Thunderbird</strong> + extension <em>TbSync</em> pour sync CardDAV/CalDAV.</p>
+  </section>
+
+  <section class="zine-page page-7">
+    <h2>📅 Demain — Jour 4 : Apps libres</h2>
+    <p>Voici la suite du programme de désenvoutement :</p>
+    <ul>
+      <li class="zine-li">✅ <strong>J0</strong> : Connexion NextCloud ✓</li>
+      <li class="zine-li">✅ <strong>J1</strong> : Synchro photos automatique ✓</li>
+      <li class="zine-li">✅ <strong>J2</strong> : Vidéos synchronisées ✓</li>
+      <li class="zine-li">✅ <strong>J3</strong> : Contacts &amp; Agenda migrés ← vous êtes ici</li>
+      <li class="zine-li">⏳ <strong>J4</strong> : F-Droid + Aurora Store (apps sans tracking)</li>
+      <li class="zine-li">⏳ <strong>J5</strong> : GPS privé + protection photos</li>
+      <li class="zine-li">⏳ <strong>J7</strong> : 🎉 Libération complète → invitation U.SOCIETY</li>
+    </ul>
+  </section>
+
+  <footer class="zine-page page-8">
+    <h2>📒 Vos relations vous appartiennent !</h2>
+    <p><strong>Google ne connaît plus votre carnet d'adresses. 🌟</strong></p>
+    <p style="font-size:85%">Capsule : <code>https://cloud._EARTHCID_</code></p>
+    <p style="font-size:85%">Guide DAVx⁵ : <a href="https://pad.p2p.legal/Smartphone2NextCloud#">pad.p2p.legal/Smartphone2NextCloud</a></p>
+    <p style="font-size:85%">Constellation : _UPLANET8_ | support@qo-op.com</p>
+  </footer>
+</main>
+
+<script src="/ipfs/QmdVAm49eURSGa4ipHFXkCrN8BVX5qWGAjNov7gPVFpuu4/script.js" async defer></script>
+</body>
+</html>

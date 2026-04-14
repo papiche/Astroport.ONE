@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <title>[Jour 3 - #BRO : l'IA collective de l'essaim]</title>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="/ipfs/QmU8XZpK2rGGJC8ZCFrKRo5cdDWr78vCgx68mCXDcXUpiv" />
+  <link rel="stylesheet" href="/ipfs/QmXU3GJkfhKW5mkPMTFDG9NtzAiiR7uErSxckYsiC4v5xk/style.css" />
+  <meta name="Description" content="Jour 3 : #BRO, l'IA collective décentralisée — posez vos premières questions à l'essaim" />
+  <meta name="theme-color" content="#741b47" />
+</head>
+
+<main class="zine">
+  <header class="zine-page page-1">
+    <h2><button class="print-button">Print</button> 🤖 Jour 3 — #BRO, l'IA de l'essaim</h2>
+    <img class="full-img" src="/ipfs/QmeZZpoy8w56eD4qBTWFu3ZzWwvwPsujpQuFuyL8ajySXu" alt="#BRO IA Collective">
+    <p style="font-size:90%; color:#741b47">
+      <strong>Contrairement à ChatGPT, #BRO tourne sur votre machine.</strong><br>
+      Aucune donnée envoyée à une entreprise. L'intelligence est dans l'essaim.
+    </p>
+  </header>
+
+  <section class="zine-page page-2">
+    <h2>🧠 Qu'est-ce que #BRO ?</h2>
+    <p><strong>#BRO</strong> (Brain Robot Online) est l'IA collective de la constellation Astroport :</p>
+    <ul>
+      <li class="zine-li">🏠 <strong>Local</strong> : tourne sur chaque station via <em>Ollama</em> — zéro cloud externe</li>
+      <li class="zine-li">🌐 <strong>Essaim</strong> : les stations partagent leur puissance de calcul la nuit</li>
+      <li class="zine-li">🔒 <strong>Privé</strong> : vos questions ne quittent pas la constellation</li>
+      <li class="zine-li">📈 <strong>Évolutif</strong> : plus il y a de Capitaines, plus l'essaim est puissant</li>
+    </ul>
+    <p style="font-size:85%">API locale Ollama : <code>http://127.0.0.1:11434</code></p>
+  </section>
+
+  <section class="zine-page page-3">
+    <h2>💬 Commander #BRO depuis Nostr</h2>
+    <p>La façon la plus simple d'interagir : publiez sur Nostr avec le tag <code>#BRO</code></p>
+    <pre><code class="language-text">#BRO résume mes derniers posts Nostr
+
+#BRO crée une image de : un jardin
+coopératif avec des panneaux solaires
+
+#BRO article : les bienfaits de la
+Monnaie Libre Ğ1
+
+#BRO rapport hebdomadaire de ma station</code></pre>
+    <p style="font-size:85%">Accédez à votre client Nostr : <a href="_USPOT_/nostr" target="_blank">_USPOT_/nostr</a></p>
+  </section>
+
+  <section class="zine-page page-4">
+    <h2>⚙️ Accès direct à l'API Ollama</h2>
+    <p>Pour les plus curieux, l'API est accessible directement :</p>
+    <pre><code class="language-bash"># Lister les modèles disponibles
+curl http://127.0.0.1:11434/api/tags
+
+# Poser une question
+curl http://127.0.0.1:11434/api/generate \
+  -d '{
+    "model": "gemma3",
+    "prompt": "Bonjour BRO, comment fonctionne IPFS ?",
+    "stream": false
+  }'</code></pre>
+    <p style="font-size:85%">Si Ollama n'est pas installé sur cette station, le modèle sera celui de la constellation la plus proche.</p>
+  </section>
+
+  <section class="zine-page page-5">
+    <h2>🎨 Génération d'images</h2>
+    <p>#BRO peut générer des images pour illustrer vos posts Nostr :</p>
+    <pre><code class="language-text">Sur Nostr, publiez :
+
+#BRO crée une image de :
+[votre description en français]
+
+Exemples :
+- "un village numérique coopératif"
+- "une forêt avec des antennes IPFS"
+- "portrait d'un Capitaine Astroport"</code></pre>
+    <p style="font-size:85%; background:#ead1dc; padding:0.4rem">
+      💡 Les images générées sont stockées dans votre <strong>uDRIVE IPFS</strong> et publiables directement sur Nostr.
+    </p>
+  </section>
+
+  <section class="zine-page page-6">
+    <h2>🌙 Le travail de nuit de l'essaim</h2>
+    <p>Chaque nuit, #BRO travaille pendant que vous dormez :</p>
+    <ul>
+      <li class="zine-li">📊 <strong>Analyse</strong> des messages Nostr de la constellation</li>
+      <li class="zine-li">📝 <strong>Rédaction</strong> des rapports hebdomadaires de station</li>
+      <li class="zine-li">🔍 <strong>Indexation</strong> sémantique via Qdrant (si profil <em>ai-company</em>)</li>
+      <li class="zine-li">🤝 <strong>Échange</strong> de connaissances entre les nœuds N1/N2</li>
+    </ul>
+    <p style="font-size:85%">Plus la constellation grandit, plus l'essaim devient intelligent. Chaque Capitaine certifié renforce le réseau.</p>
+  </section>
+
+  <section class="zine-page page-7">
+    <h2>📅 La Suite du Parcours</h2>
+    <ul>
+      <li class="zine-li">✅ <strong>J0</strong> : Bienvenue — MULTIPASS forgé</li>
+      <li class="zine-li">✅ <strong>J1</strong> : yt-dlp — votre navigateur comme arme</li>
+      <li class="zine-li">✅ <strong>J2</strong> : Nostr — votre réseau décentralisé</li>
+      <li class="zine-li">✅ <strong>J3</strong> : #BRO — l'IA de l'essaim ← vous êtes ici</li>
+      <li class="zine-li">⏳ <strong>J4</strong> : TiddlyWiki — votre journal personnel</li>
+      <li class="zine-li">⏳ <strong>J5</strong> : Publier, géolocaliser, gagner des Ẑen</li>
+      <li class="zine-li">⏳ <strong>J7</strong> : 🐉 L'Appel du DRAGON</li>
+    </ul>
+    <p style="font-size:85%; background:#ead1dc; padding:0.4rem">
+      🐉 Dans 4 jours, vous recevrez votre invitation à rejoindre le réseau ẐEN.
+    </p>
+  </section>
+
+  <footer class="zine-page page-8">
+    <h2>🤖 L'IA qui vous appartient.</h2>
+    <p><strong>Ğ1=Liberté · Ẑen=Égalité · ❤️=Fraternité — l'essaim grandit avec vous. 🌟</strong></p>
+    <p style="font-size:85%">Nostr : <a href="_USPOT_/nostr" target="_blank">_USPOT_/nostr</a></p>
+    <p style="font-size:85%">Secteur : _SECTOR_ | Constellation : _UPLANET8_</p>
+    <p style="font-size:85%">Contact : support@qo-op.com | Code : github.com/papiche/Astroport.ONE</p>
+  </footer>
+</main>
+
+<script src="/ipfs/QmdVAm49eURSGa4ipHFXkCrN8BVX5qWGAjNov7gPVFpuu4/script.js" async defer></script>
+</body>
+</html>
