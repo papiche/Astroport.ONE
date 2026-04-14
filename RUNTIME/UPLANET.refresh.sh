@@ -528,9 +528,8 @@ _UPLANET_G1HEX=$(tr -d '[:space:]' < ~/.zen/tmp/${IPFSNODEID}/UPLANET/G1HEX 2>/d
 if [[ -n "$_UPLANET_G1HEX" ]]; then
     mkdir -p ~/.zen/strfry
     if ! grep -q "^${_UPLANET_G1HEX}$" ~/.zen/strfry/amisOfAmis.txt 2>/dev/null; then
-        echo "# uplanet.G1.nostr — kind 30800 cooperative-config publisher" >> ~/.zen/strfry/amisOfAmis.txt
         echo "${_UPLANET_G1HEX}" >> ~/.zen/strfry/amisOfAmis.txt
-        echo "G1HEX authorized in strfry amisOfAmis.txt"
+        echo "G1HEX ${_UPLANET_G1HEX} authorized in strfry amisOfAmis.txt"
     fi
 fi
 ####################################################################################
