@@ -288,7 +288,8 @@ if [[ -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRIVATE" && -n "$SENDER_EMAIL" ]]
 
     # 3. Préparation du corps de l'email
     # On intègre RAW_CONTENT directement dans le HTML
-    FULL_HTML="<h3>${title}</h3><br><br>${RAW_CONTENT}<br><br><hr><p><a href=\"${uSPOT}/nostr\">${UPLANET}</a> [ /ipns/${pseudo} ]<br />${MESSAGESIGN}</p>"
+    IPFS_ONLINE_LINK="<p style=\"text-align:center; font-size:0.85em; color:#888;\"><a href=\"${myIPFS}/ipfs/${EMAILZ}\">🌐 Lire ce message en ligne (IPFS)</a></p><hr style=\"border:none; border-top:1px solid #eee;\">"
+    FULL_HTML="${IPFS_ONLINE_LINK}<h3>${title}</h3><br><br>${RAW_CONTENT}<br><br><hr><p><a href=\"${uSPOT}/nostr\">${UPLANET}</a> [ /ipns/${pseudo} ]<br />${MESSAGESIGN}</p>"
     
     # Fallback en texte brut contenant le lien IPFS
     PLAIN_TEXT="Voir le message sur le réseau IPFS : ${myIPFS}/ipfs/${EMAILZ}\n\nMessage de ${UPLANET}"
