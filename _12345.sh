@@ -185,10 +185,11 @@ lastrun_file=~/.zen/tmp/12345.lastrun
 # Fonction pour vérifier si un peer est Astroport-Compatible
 is_astroport_node() {
     local peer_id=$1
-    # On tente de lire uniquement les 100 premiers octets du fichier moats via IPNS
-    # Si IPNS ne répond pas ou si le fichier est absent, ce n'est pas un Astroport actif
-    local check=$(ipfs --timeout 15s cat /ipns/${peer_id}/_MySwarm.moats 2>/dev/null | head -c 20)
-    
+    # Timeout adaptatif : plus patient au démarrage ou si le swarm est vide
+    local timeout="20s"
+    [[ ${SWARM_COUNT:-0} -eq 0 ]] && timeout="60s"
+    local check=$(ipfs --timeout $timeout cat /ipns/${peer_id}/_MySwarm.moats 2>/dev/null | head -c 20)
+
     if [[ -n "$check" && "$check" =~ ^[0-9]+$ ]]; then
         return 0 # Compatible
     else
@@ -314,24 +315,36 @@ UPLANETZEN=$(echo "scale=1; ($UPLANETCOINS - 1) * 10" | bc)
 ## Ces wallet COOP sont gérés par UPLANET.init.sh et UPLANET.official.sh 
 ## Quotidiennement réinitialisées par NODE et DRAGON_p2p puis raffraichis par my.sh
 ## REFILL TO CHECK CACHE CONFORMITY 
+# Auto-réparation : si les wallets coopératifs sont absents, recharger my.sh pour les régénérer
+_missing_vars=0
+for _vname in UPLANETNAME_AMORTISSEMENT UPLANETNAME_ASSETS UPLANETNAME_CAPITAL \
+              UPLANETNAME_CAPTAIN UPLANETNAME_IMPOT UPLANETNAME_INTRUSION \
+              UPLANETNAME_RND UPLANETNAME_SOCIETY UPLANETNAME_TREASURY; do
+    [[ ! -s "$HOME/.zen/tmp/$_vname" ]] && _missing_vars=$(( _missing_vars + 1 ))
+done
+if [[ $_missing_vars -gt 0 ]]; then
+    echo "⚠️  $_missing_vars variables UPLANETNAME manquantes — rechargement my.sh..."
+    source "${MY_PATH}/tools/my.sh"
+fi
+
 # UPLANETNAME_AMORTISSEMENT wallet (Amortissements - Compte 28 - Valeur Consommée)
-UPLANETNAME_AMORTISSEMENT=$(cat $HOME/.zen/tmp/UPLANETNAME_AMORTISSEMENT)
+UPLANETNAME_AMORTISSEMENT=$(cat $HOME/.zen/tmp/UPLANETNAME_AMORTISSEMENT 2>/dev/null || echo "")
 # UPLANETNAME_ASSETS wallet
-UPLANETNAME_ASSETS=$(cat $HOME/.zen/tmp/UPLANETNAME_ASSETS)
+UPLANETNAME_ASSETS=$(cat $HOME/.zen/tmp/UPLANETNAME_ASSETS 2>/dev/null || echo "")
 # UPLANETNAME_CAPITAL wallet (Immobilisations - Compte 21 - Valeur Brute)
-UPLANETNAME_CAPITAL=$(cat $HOME/.zen/tmp/UPLANETNAME_CAPITAL)
+UPLANETNAME_CAPITAL=$(cat $HOME/.zen/tmp/UPLANETNAME_CAPITAL 2>/dev/null || echo "")
 # UPLANETNAME_CAPTAIN wallet (CAPTAIN_DEDICATED -- 3x1/3 collect MULTIPASS ẑen payments)
-UPLANETNAME_CAPTAIN=$(cat $HOME/.zen/tmp/UPLANETNAME_CAPTAIN)
+UPLANETNAME_CAPTAIN=$(cat $HOME/.zen/tmp/UPLANETNAME_CAPTAIN 2>/dev/null || echo "")
 # UPLANETNAME_IMPOT wallet
-UPLANETNAME_IMPOT=$(cat $HOME/.zen/tmp/UPLANETNAME_IMPOT)
+UPLANETNAME_IMPOT=$(cat $HOME/.zen/tmp/UPLANETNAME_IMPOT 2>/dev/null || echo "")
 # UPLANETNAME_INTRUSION wallet (external Ğ1 should always go to UPLANETNAME_G1)
-UPLANETNAME_INTRUSION=$(cat $HOME/.zen/tmp/UPLANETNAME_INTRUSION)
+UPLANETNAME_INTRUSION=$(cat $HOME/.zen/tmp/UPLANETNAME_INTRUSION 2>/dev/null || echo "")
 # UPLANETNAME_RND wallet
-UPLANETNAME_RND=$(cat $HOME/.zen/tmp/UPLANETNAME_RND)
+UPLANETNAME_RND=$(cat $HOME/.zen/tmp/UPLANETNAME_RND 2>/dev/null || echo "")
 # UPLANETNAME_SOCIETY wallet
-UPLANETNAME_SOCIETY=$(cat $HOME/.zen/tmp/UPLANETNAME_SOCIETY)
+UPLANETNAME_SOCIETY=$(cat $HOME/.zen/tmp/UPLANETNAME_SOCIETY 2>/dev/null || echo "")
 # UPLANETNAME_TREASURY wallet
-UPLANETNAME_TREASURY=$(cat $HOME/.zen/tmp/UPLANETNAME_TREASURY)
+UPLANETNAME_TREASURY=$(cat $HOME/.zen/tmp/UPLANETNAME_TREASURY 2>/dev/null || echo "")
 
 ### If 12345.json is missing those values ---> meaning cache refresh is altered
 
@@ -469,7 +482,17 @@ while true; do
         
         # Sous-processus pour ne pas bloquer le serveur HTTP
         (
-            ## 0. Lock anti-scan concurrent
+            ## 0. Lock anti-scan concurrent (avec détection verrou fantôme)
+            if [[ -d "$SCAN_LOCK_DIR" ]]; then
+                lock_age=$(( $(date +%s) - $(stat -c %Y "$SCAN_LOCK_DIR" 2>/dev/null || echo 0) ))
+                if [[ $lock_age -gt 1800 ]]; then
+                    echo "⚠️  Verrou fantôme détecté (${lock_age}s > 30min). Nettoyage automatique..."
+                    rmdir "$SCAN_LOCK_DIR" 2>/dev/null
+                else
+                    echo "Swarm scan already running, skipping this cycle"
+                    exit 0
+                fi
+            fi
             if ! mkdir "$SCAN_LOCK_DIR" 2>/dev/null; then
                 echo "Swarm scan already running, skipping this cycle"
                 exit 0
@@ -480,9 +503,13 @@ while true; do
             # Récupérer tous les pairs connectés
             SWARM_PEERS=$(ipfs swarm peers | grep -v "${IPFSNODEID}")
 
-            # Si pas de pairs, fallback sur les bootstraps
+            # Si pas de pairs, fallback sur les bootstraps + forçage de connexion
             if [[ -z "$SWARM_PEERS" ]]; then
-                echo "No peers found, falling back to bootstraps"
+                echo "🚨 Swarm vide. Forçage de connexion aux bootstraps majeurs..."
+                grep -v '^#' "${STRAPFILE}" | grep -v '^[[:space:]]*$' | head -n 3 | while read -r bootstrap_addr; do
+                    ipfs swarm connect "$bootstrap_addr" 2>/dev/null &
+                done
+                sleep 5
                 SWARM_PEERS=$(cat ${STRAPFILE} | grep -Ev "#" | grep -v '^[[:space:]]*$')
             fi
 
