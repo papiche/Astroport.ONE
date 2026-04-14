@@ -404,8 +404,10 @@ ALT_PORT="${SERVICE_ALT}"
 DOCKER_IP=\$(ip addr show docker0 2>/dev/null | grep -oP "(?<=inet\s)\d+(\.\d+){3}" || echo "172.17.0.1")
 
 # --- Logique de choix du port ---
-# Si le port natif est libre, on le prend. Sinon on prend l'alternatif.
-if ss -tln 2>/dev/null | awk '{print \$4}' | grep -qE ":\${NATIVE_PORT}$" || netstat -tln 2>/dev/null | awk '{print \$4}' | grep -qE ":\${NATIVE_PORT}$"; then
+# Ports < 1024 nécessitent root pour bind : forcer ALT_PORT systématiquement
+if [[ "\${NATIVE_PORT}" -lt 1024 ]]; then
+    LPORT="\${ALT_PORT}"
+elif ss -tln 2>/dev/null | awk '{print \$4}' | grep -qE ":\${NATIVE_PORT}$" || netstat -tln 2>/dev/null | awk '{print \$4}' | grep -qE ":\${NATIVE_PORT}$"; then
     # Si le port natif est occupé par un tunnel IPFS deja actif pour CE protocole
     if ipfs p2p ls | grep -q "\${PROTO}" | grep -q "tcp/\${NATIVE_PORT}"; then
         LPORT="\${NATIVE_PORT}"
