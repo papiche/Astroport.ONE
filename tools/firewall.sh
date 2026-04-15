@@ -36,6 +36,7 @@
 #  │ 33101   │ tcp      │ G1BILLET (via NPM)                    │
 #  │ 81      │ tcp      │ NPM Admin UI (localhost)              │
 #  │ 1883    │ tcp      │ MQTT Mosquitto (localhost)            │
+#  │ 8111    │ tcp      │ Icecast2 Live Broadcasting (SoundSpot) │
 #  │── NextCloud AIO ──────────────────────────────────────────── │
 #  │ 8001    │ tcp      │ Apache NextCloud (via NPM → cloud.D)  │
 #  │ 8002    │ tcp      │ NextCloud AIO Dashboard (localhost)   │
@@ -144,6 +145,7 @@ fire_on() {
         sudo ufw allow from "${LAN_RANGE}" to any port 7777  proto tcp comment "LAN→NOSTR"     > /dev/null 2>&1
         sudo ufw allow from "${LAN_RANGE}" to any port 81    proto tcp comment "LAN→NPM Admin" > /dev/null 2>&1
         sudo ufw allow from "${LAN_RANGE}" to any port 11434 proto tcp comment "LAN/Docker→Ollama" > /dev/null 2>&1
+        sudo ufw allow from "${LAN_RANGE}" to any port 8111  proto tcp comment "LAN→Icecast"   > /dev/null 2>&1
     done
     echo "  🏠 LAN & 🔐 VPN (10.99.99.0/24) : accès autorisé aux services internes (dont Ollama)"
     echo ""
@@ -174,7 +176,8 @@ fire_on() {
         "3000:KasmVNC HTTP (webtop — SSH tunnel requis)" \
         "3001:KasmVNC HTTPS (webtop — SSH tunnel requis)" \
         "9090:Prometheus" \
-        "9615:IPFS exporter"
+        "9615:IPFS exporter" \
+        "8111:Icecast Live Broadcasting (SoundSpot)"
     do
         port="${port_comment%%:*}"
         comment="${port_comment#*:}"
@@ -212,7 +215,7 @@ fire_status() {
     sudo ufw status verbose
     echo ""
     echo "Ports d'écoute actifs :"
-    ss -tlnup 2>/dev/null | grep -E ":(22|80|443|4001|4002|4003|5001|51820|7777|8080|8001|8002|8443|8010|8000|11434|3000|3001|3100|12345|54321|33101|81|1883|9090) " \
+    ss -tlnup 2>/dev/null | grep -E ":(22|80|443|4001|4002|4003|5001|51820|7777|8080|8001|8002|8443|8010|8000|11434|3000|3001|3100|12345|54321|33101|81|1883|9090|8111) " \
         | awk '{print "  " $1 " " $4 " " $5}' | sort -t: -k2 -n
     echo "########################################################################"
 }

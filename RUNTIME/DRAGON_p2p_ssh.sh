@@ -487,6 +487,8 @@ generate_p2p_service 7777 "strfry" "Nostr Relay" 9999
 #   Perplexica       : 3002
 #   Webtop           : 3000 HTTP | 3001 HTTPS — accès SSH tunnel recommandé
 ##################################################################################
+# Relais Icecast pour Live Broadcasting distant (Port 8111)
+publish_service 8111 "icecast" "Icecast Live Broadcasting"
 
 ## ── Profil ai-company : Stack IA Swarm ──────────────────────────
 # Dify AI Workflow (8010)
