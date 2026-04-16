@@ -162,7 +162,7 @@ done
 echo "#############################################"
 echo "##### INSTALL MULTIMEDIA & DATA TOOLS  ######"
 echo "#############################################"
-for i in qrencode pv gnupg gpa pandoc cargo btop sox prometheus ocrmypdf ca-certificates basez markdown jq bc file gawk ffmpeg geoip-bin dnsutils ntpdate v4l-utils espeak vlc mp3info musl-dev openssl* detox nmap httrack html2text imagemagick; do
+for i in qrencode pv gnupg pandoc cargo btop sox prometheus ocrmypdf ca-certificates basez markdown jq bc file gawk ffmpeg geoip-bin bind9-dnsutils ntpsec-ntpdate v4l-utils espeak vlc mp3info musl-dev openssl detox nmap httrack html2text imagemagick; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
