@@ -281,7 +281,7 @@ Les opérations suivantes sont protégées pour les emplacements 1-12 :
 
 ### Structure des Fichiers
 ```
-~/.zen/tmp/flashmem/
+~/.zen/flashmem/
 ├── {email_utilisateur}/
 │   ├── slot0.json      # Conversations générales
 │   ├── slot1.json      # Discussions de travail
@@ -428,7 +428,7 @@ Le bot s'intègre au système de géolocalisation d'UPlanet :
 
 **La réinitialisation ne fonctionne pas**
 - Confirmez que vous utilisez le bon numéro d'emplacement
-- Vérifiez les permissions de fichier dans `~/.zen/tmp/flashmem/`
+- Vérifiez les permissions de fichier dans `~/.zen/flashmem/`
 - Vérifiez que le répertoire utilisateur existe
 
 ### Obtenir de l'Aide

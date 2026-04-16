@@ -21,7 +21,7 @@ $HOME/.zen/Astroport.ONE/IA/short_memory.py "$TEST_EVENT_JSON" "0.00" "0.00" "$T
 
 echo ""
 echo "2. Checking if memory file was created..."
-MEMORY_FILE="$HOME/.zen/tmp/flashmem/$TEST_USER/slot$TEST_SLOT.json"
+MEMORY_FILE="$HOME/.zen/flashmem/$TEST_USER/slot$TEST_SLOT.json"
 if [[ -f "$MEMORY_FILE" ]]; then
     echo "✅ Memory file created: $MEMORY_FILE"
     echo "Content:"
@@ -46,6 +46,6 @@ echo "$MEMORY_DISPLAY"
 
 echo ""
 echo "5. Cleaning up test data..."
-rm -rf "$HOME/.zen/tmp/flashmem/$TEST_USER"
+rm -rf "$HOME/.zen/flashmem/$TEST_USER"
 
 echo "Test completed!" 

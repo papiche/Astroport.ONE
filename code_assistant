@@ -329,7 +329,7 @@ show_next_hint() {
     else
         echo ""
         echo "  ✅ Session '$kvbasename' complète."
-        echo "     Mémoire : ~/.zen/tmp/flashmem/code_assistant/${kvbasename}.json"
+        echo "     Mémoire : ~/.zen/flashmem/code_assistant/${kvbasename}.json"
     fi
     echo "────────────────────────────────────────────────────────────────"
 }
@@ -388,7 +388,7 @@ ask_choice() {
                 local last_v
                 last_v=$($PYTHON3 -c "
 import json, os
-p = os.path.expanduser('~/.zen/tmp/flashmem/code_assistant/$kvbasename.json')
+p = os.path.expanduser('~/.zen/flashmem/code_assistant/$kvbasename.json')
 d = json.load(open(p)) if os.path.isfile(p) else {}
 print(d.get('last_variant_choice', 'a'))
 " 2>/dev/null)

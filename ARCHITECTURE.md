@@ -510,8 +510,8 @@ Voir **[docs/README.NostrTube.md](docs/README.NostrTube.md)** pour la documentat
 
 ### 4. Système de Mémoire
 
-- **Mémoire Utilisateur** : `~/.zen/tmp/flashmem/uplanet_memory/pubkey/{pubkey}.json`
-- **Mémoire UMAP** : `~/.zen/tmp/flashmem/uplanet_memory/{latitude}_{longitude}.json`
+- **Mémoire Utilisateur** : `~/.zen/flashmem/uplanet_memory/pubkey/{pubkey}.json`
+- **Mémoire UMAP** : `~/.zen/flashmem/uplanet_memory/{latitude}_{longitude}.json`
 - **Contrôle Privé** : Tag #rec requis pour stockage
 
 ---

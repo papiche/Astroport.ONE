@@ -138,7 +138,7 @@ ls ~/.zen/tmp/Ustats*.json 2>/dev/null # API v2
 ########################################################################
 ## NETTOYAGE TMP : On garde les dossiers de cache vitaux
 # On ne supprime que les fichiers/dossiers qui ne sont pas dans l'exclusion
-find "$HOME/.zen/tmp/" -mindepth 1 -maxdepth 1 ! -name "swarm" ! -name "coucou" ! -name "flashmem" ! -name "$IPFSNODEID" -exec rm -rf {} +
+find "$HOME/.zen/tmp/" -mindepth 1 -maxdepth 1 ! -name "swarm" ! -name "coucou" ! -name "$IPFSNODEID" -exec rm -rf {} +
 ## NETTOYAGE tmp.media (disque) : fichiers médias lourds de plus de 24h
 [[ -d "$HOME/.zen/tmp.media" ]] && find "$HOME/.zen/tmp.media" -mindepth 1 -maxdepth 1 -mtime +1 -exec rm -rf {} + 2>/dev/null || true
 
@@ -255,8 +255,8 @@ ${MY_PATH}/RUNTIME/UPLANET.refresh.sh
 ############### SOCIAL NETWORK + UPLANET SHARING & CARING #########
 
 ########################################################################
-## REMOVE TMP BUT KEEP swarm, flashmem, ${IPFSNODEID} and coucou
-find "$HOME/.zen/tmp/" -mindepth 1 ! -name "swarm" ! -name "coucou" ! -name "flashmem" ! -name "$IPFSNODEID" -delete
+## REMOVE TMP BUT KEEP swarm, ${IPFSNODEID} and coucou
+find "$HOME/.zen/tmp/" -mindepth 1 ! -name "swarm" ! -name "coucou" ! -name "$IPFSNODEID" -delete
 ## NETTOYAGE tmp.media (disque) : purge finale des médias orphelins de plus de 24h
 [[ -d "$HOME/.zen/tmp.media" ]] && find "$HOME/.zen/tmp.media" -mindepth 1 -maxdepth 1 -mtime +1 -exec rm -rf {} + 2>/dev/null || true
 

@@ -21,7 +21,7 @@ def load_context(latitude=None, longitude=None, pubkey=None, user_id=None, slot=
     """
     # Try slot-based memory first if user_id is provided
     if user_id and slot is not None:
-        slot_file = os.path.expanduser(f"~/.zen/tmp/flashmem/{user_id}/slot{slot}.json")
+        slot_file = os.path.expanduser(f"~/.zen/flashmem/{user_id}/slot{slot}.json")
         if os.path.isfile(slot_file):
             try:
                 with open(slot_file, 'r') as f:
@@ -33,7 +33,7 @@ def load_context(latitude=None, longitude=None, pubkey=None, user_id=None, slot=
                 print(f"Failed to load slot context from {slot_file}: {e}")
 
     # Fallback to legacy memory system
-    base_memory_dir = os.path.expanduser("~/.zen/tmp/flashmem/uplanet_memory")
+    base_memory_dir = os.path.expanduser("~/.zen/flashmem/uplanet_memory")
     ## make dir if not exists
     if not os.path.exists(base_memory_dir):
         os.makedirs(base_memory_dir)

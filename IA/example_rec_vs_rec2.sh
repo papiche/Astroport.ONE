@@ -13,7 +13,7 @@ TEST_LAT="48.8566"
 TEST_LON="2.3522"
 
 # Clean up any existing test data
-rm -rf "$HOME/.zen/tmp/flashmem/$TEST_USER"
+rm -rf "$HOME/.zen/flashmem/$TEST_USER"
 
 echo "Scenario: Planning a weekend trip"
 echo "User: $TEST_USER"
@@ -73,7 +73,7 @@ echo ""
 
 # Step 3: Show final memory state
 echo "=== Step 3: Final Memory State ==="
-MEMORY_FILE="$HOME/.zen/tmp/flashmem/$TEST_USER/slot$slot.json"
+MEMORY_FILE="$HOME/.zen/flashmem/$TEST_USER/slot$slot.json"
 
 if [[ -f "$MEMORY_FILE" ]]; then
     echo "📝 Memory contents for slot $slot:"

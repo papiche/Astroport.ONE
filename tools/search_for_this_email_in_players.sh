@@ -57,14 +57,14 @@ if [[ ${source} != "LOCAL" ]]; then
     ETWLINK=$(grep -o "url='/[^']*'" "${INDEX}" | sed "s|url='||;s|'||")
     ICID=$(echo "${ETWLINK}" | rev | cut -d '/' -f 1 | rev)
     
-    if [[ ! -s ${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html ]]; then
-        mkdir -p ${HOME}/.zen/tmp/flashmem/tw/${ICID}
-        if ! timeout 30s ipfs cat "${ETWLINK}" > "${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html" 2>/dev/null; then
+    if [[ ! -s ${HOME}/.zen/flashmem/tw/${ICID}/index.html ]]; then
+        mkdir -p ${HOME}/.zen/flashmem/tw/${ICID}
+        if ! timeout 30s ipfs cat "${ETWLINK}" > "${HOME}/.zen/flashmem/tw/${ICID}/index.html" 2>/dev/null; then
             echo "Timeout IPFS lors de la récupération du TW"
-            rm -f "${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html" # Nettoyer le fichier vide
+            rm -f "${HOME}/.zen/flashmem/tw/${ICID}/index.html" # Nettoyer le fichier vide
         fi
     fi
-    INDEX="${HOME}/.zen/tmp/flashmem/tw/${ICID}/index.html"
+    INDEX="${HOME}/.zen/flashmem/tw/${ICID}/index.html"
 fi
 
 # Create temp directory for processing

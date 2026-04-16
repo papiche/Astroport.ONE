@@ -45,25 +45,25 @@ UKEYS=($(echo "${combined[@]}" | tr ' ' '\n' | sort -u | shuf ))
 echo "SYNC ${#UKEYS[@]} GEOKEYS..."
 
 ## STORAGE FOR IPFS GET UplanetKeyS
-mkdir -p ~/.zen/tmp/flashmem
+mkdir -p ~/.zen/flashmem
 
 floop=0
 medo=0
 for key in ${UKEYS[@]}; do
 
-    [[ -d ~/.zen/tmp/flashmem/$key ]] \
+    [[ -d ~/.zen/flashmem/$key ]] \
         && echo "$key already copied" && medo=$((medo +1)) && continue
 
     echo "SYNC $key"
 
     floop=$((floop +1))
-    mkdir -p ~/.zen/tmp/flashmem/$key
+    mkdir -p ~/.zen/flashmem/$key
 
-    echo "ipfs --timeout 180s get -o ~/.zen/tmp/flashmem/$key /ipns/$key"
-    ipfs --timeout 180s get --progress=false -o ~/.zen/tmp/flashmem/$key /ipns/$key
+    echo "ipfs --timeout 180s get -o ~/.zen/flashmem/$key /ipns/$key"
+    ipfs --timeout 180s get --progress=false -o ~/.zen/flashmem/$key /ipns/$key
     [[ $? == 0 ]] \
         && medo=$((medo +1)) && floop=$((floop -1)) \
-        || rm -Rf ~/.zen/tmp/flashmem/$key # GOT IT or NOT ?
+        || rm -Rf ~/.zen/flashmem/$key # GOT IT or NOT ?
 
     [ $floop -gt 33 ] && break
 
@@ -73,24 +73,24 @@ echo "(◕‿◕ ) ${ME} :: $medo SUCCESS missing $floop KEYS from ${#UKEYS[@]} 
 echo "=========================="
 
 ## Search for TW /ipfs/ and refresh
-TWS=($(cat ~/.zen/tmp/flashmem/*/TWz/*/_index.html | grep -o "url='/[^']*'"| sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}' | shuf))
+TWS=($(cat ~/.zen/flashmem/*/TWz/*/_index.html | grep -o "url='/[^']*'"| sed "s/url='\(.*\)'/\1/" | awk -F"/" '{print $3}' | shuf))
 echo "SYNC ${#TWS[@]} TWs..."
 floop=0
 medo=0
 for tw in ${TWS[@]}; do
 
-    [[ -d ~/.zen/tmp/flashmem/tw/$tw ]] \
+    [[ -d ~/.zen/flashmem/tw/$tw ]] \
         && echo "$key already copied" && medo=$((medo +1)) && continue
 
     echo "SYNC $key"
 
     floop=$((floop +1))
-    mkdir -p ~/.zen/tmp/flashmem/tw/$tw
+    mkdir -p ~/.zen/flashmem/tw/$tw
 
-    ipfs --timeout 180s get --progress=false -o ~/.zen/tmp/flashmem/tw/$tw/index.html /ipns/$tw
+    ipfs --timeout 180s get --progress=false -o ~/.zen/flashmem/tw/$tw/index.html /ipns/$tw
     [[ $? == 0 ]] \
         && medo=$((medo +1)) && floop=$((floop -1)) \
-        || rm -Rf ~/.zen/tmp/flashmem/tw/$tw
+        || rm -Rf ~/.zen/flashmem/tw/$tw
 
     [ $floop -gt 33 ] && break
 

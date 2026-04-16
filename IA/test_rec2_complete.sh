@@ -13,7 +13,7 @@ TEST_LAT="48.85"
 TEST_LON="2.35"
 
 # Create test directory
-TEST_DIR="$HOME/.zen/tmp/flashmem/$TEST_USER"
+TEST_DIR="$HOME/.zen/flashmem/$TEST_USER"
 mkdir -p "$TEST_DIR"
 
 echo "Test setup:"

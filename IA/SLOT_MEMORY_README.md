@@ -52,14 +52,14 @@ To reset a specific memory slot:
 #reset #all : Clear all slots (0-12)
 ```
 
-**Important**: The reset functionality only affects memory files stored in `$HOME/.zen/tmp/flashmem/{user_id}/slot{N}.json`. It does not affect legacy memory files in `~/.zen/tmp/flashmem/uplanet_memory/`.
+**Important**: The reset functionality only affects memory files stored in `$HOME/.zen/flashmem/{user_id}/slot{N}.json`. It does not affect legacy memory files in `~/.zen/flashmem/uplanet_memory/`.
 
 ## File Structure
 
 Memory files are stored in the following structure:
 
 ```
-~/.zen/tmp/flashmem/
+~/.zen/flashmem/
 ├── {user_email}/
 │   ├── slot0.json
 │   ├── slot1.json
@@ -166,4 +166,4 @@ Existing users will continue to work with the legacy memory system. New slot-bas
 - **Memory not found**: Check if the user ID and slot number are correct
 - **Legacy memory**: Old memory files are still accessible via pubkey-based queries
 - **Slot limits**: Only slots 0-12 are supported
-- **File permissions**: Ensure write permissions to `~/.zen/tmp/flashmem/` 
+- **File permissions**: Ensure write permissions to `~/.zen/flashmem/` 

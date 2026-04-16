@@ -1092,7 +1092,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
         
         if [[ "${TAGS[all]}" == true ]]; then
             # Reset all slots (0-12)
-            user_dir="$HOME/.zen/tmp/flashmem/${user_id}"
+            user_dir="$HOME/.zen/flashmem/${user_id}"
             if [[ -d "$user_dir" ]]; then
                 rm -f "$user_dir"/slot*.json
                 echo "All memory slots reset for USER: $user_id"
@@ -1104,7 +1104,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
         elif [[ $reset_slot -gt 0 ]]; then
             # Check memory slot access for reset
             if check_memory_slot_access "$user_id" "$reset_slot"; then
-                slot_file="$HOME/.zen/tmp/flashmem/${user_id}/slot${reset_slot}.json"
+                slot_file="$HOME/.zen/flashmem/${user_id}/slot${reset_slot}.json"
                 if [[ -f "$slot_file" ]]; then
                     rm -f "$slot_file"
                     echo "Memory reset for USER: $user_id, SLOT: $reset_slot"
@@ -1120,7 +1120,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
             fi
         else
             # Reset only slot 0 (default behavior)
-            slot_file="$HOME/.zen/tmp/flashmem/${user_id}/slot0.json"
+            slot_file="$HOME/.zen/flashmem/${user_id}/slot0.json"
             if [[ -f "$slot_file" ]]; then
                 rm -f "$slot_file"
                 echo "Memory reset for USER: $user_id, SLOT: 0"
@@ -1138,7 +1138,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
         if [[ $mem_slot -gt 0 ]]; then
             # Check memory slot access for display
             if check_memory_slot_access "$user_id" "$mem_slot"; then
-                slot_file="$HOME/.zen/tmp/flashmem/${user_id}/slot${mem_slot}.json"
+                slot_file="$HOME/.zen/flashmem/${user_id}/slot${mem_slot}.json"
                 if [[ -f "$slot_file" ]]; then
                     echo "Returning memory content for USER: $user_id, SLOT: $mem_slot"
                     temp_mem_file="$HOME/.zen/tmp/memory_${user_id}_slot${mem_slot}.txt"
@@ -1158,7 +1158,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
             fi
         else
             # Show default slot (0) memory
-            slot_file="$HOME/.zen/tmp/flashmem/${user_id}/slot0.json"
+            slot_file="$HOME/.zen/flashmem/${user_id}/slot0.json"
             if [[ -f "$slot_file" ]]; then
                 echo "Returning memory content for USER: $user_id, SLOT: 0"
                 temp_mem_file="$HOME/.zen/tmp/memory_${user_id}_slot0.txt"

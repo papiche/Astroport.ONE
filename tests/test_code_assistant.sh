@@ -64,7 +64,7 @@ else
             _fail "Pipeline: réponse LLM vide ou invalide (timeout Ollama?)"
         fi
         # Nettoyer la session de test
-        rm -f ~/.zen/tmp/flashmem/code_assistant/test_$$.json
+        rm -f ~/.zen/flashmem/code_assistant/test_$$.json
     else
         _fail "Le JSON de cpscript est vide — le pipeline ne peut pas fonctionner"
     fi
@@ -82,7 +82,7 @@ fi
 
 # T6: Vérifier l'intégrité de la mémoire KV
 echo "T6: Mémoire KV"
-KV_DIR="$HOME/.zen/tmp/flashmem/code_assistant"
+KV_DIR="$HOME/.zen/flashmem/code_assistant"
 mkdir -p "$KV_DIR"
 TEST_KV="$KV_DIR/test_integrity_$$.json"
 python3 -c "

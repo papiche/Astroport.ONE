@@ -198,7 +198,7 @@ def main():
     pubkey = event_json.get('event', {}).get('pubkey', '')
 
     # Directory for contextual memory
-    MEMORY_DIR = os.path.expanduser("~/.zen/tmp/flashmem/uplanet_memory")
+    MEMORY_DIR = os.path.expanduser("~/.zen/flashmem/uplanet_memory")
     os.makedirs(MEMORY_DIR, exist_ok=True)
 
     # Coordinate-based memory (legacy)
@@ -225,7 +225,7 @@ def main():
 
     # --- Multi-user, multi-slot memory ---
     if user_id:
-        USER_DIR = os.path.expanduser(f"~/.zen/tmp/flashmem/{user_id}")
+        USER_DIR = os.path.expanduser(f"~/.zen/flashmem/{user_id}")
         os.makedirs(USER_DIR, exist_ok=True)
         slot_file = os.path.join(USER_DIR, f"slot{slot}.json")
         if os.path.isfile(slot_file):

@@ -493,7 +493,7 @@ En mode `--doc`, l'IA est guidée vers la conformité code ↔ documentation.
 
 ## Mémoire KV (`--kvbasename`)
 
-La session est stockée dans `~/.zen/tmp/flashmem/code_assistant/<kvbasename>.json`.
+La session est stockée dans `~/.zen/flashmem/code_assistant/<kvbasename>.json`.
 
 ### Structure KV
 
@@ -523,7 +523,7 @@ La session est stockée dans `~/.zen/tmp/flashmem/code_assistant/<kvbasename>.js
 
 ```bash
 # Voir l'état d'une session
-cat ~/.zen/tmp/flashmem/code_assistant/geo-fix.json | python3 -m json.tool
+cat ~/.zen/flashmem/code_assistant/geo-fix.json | python3 -m json.tool
 
 # Continuer depuis n'importe quelle phase
 ./code_assistant geo.py --kvbasename geo-fix --phase controle
@@ -712,7 +712,7 @@ code_assistant.py
        ├── _build_controle_prompt(test_mode)
        ├── Qdrant search (embed.py) → contexte sémantique
        ├── Ollama LLM (phase: analyse/correction/controle)
-       ├── Mémoire KV (save/load ~/.zen/tmp/flashmem/)
+       ├── Mémoire KV (save/load ~/.zen/flashmem/)
        └── Qdrant index (embed.py) → mémorisation session
        │
        ▼ stdout

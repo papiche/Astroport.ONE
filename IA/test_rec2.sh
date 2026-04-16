@@ -64,7 +64,7 @@ echo "Recording to slot: $slot for user: $TEST_USER"
 # Test 4: Verify the memory file was created
 echo ""
 echo "=== Test 4: Memory file verification ==="
-MEMORY_FILE="$HOME/.zen/tmp/flashmem/$TEST_USER/slot$slot.json"
+MEMORY_FILE="$HOME/.zen/flashmem/$TEST_USER/slot$slot.json"
 if [[ -f "$MEMORY_FILE" ]]; then
     echo "✅ Memory file created: $MEMORY_FILE"
     echo "Memory file contents:"

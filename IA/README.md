@@ -324,7 +324,7 @@ Diffusion (mailjet + kind 30023) runs only when this station is the **closest** 
 
 ### **File Structure**
 ```
-~/.zen/tmp/flashmem/
+~/.zen/flashmem/
 ├── {user_email}/
 │   ├── slot0.json      # General conversations
 │   ├── slot1.json      # Work discussions
@@ -624,7 +624,7 @@ The `#secret` tag enables completely private communication between you and the U
 
 **Reset not working**
 - Confirm you're using the correct slot number
-- Check file permissions in `~/.zen/tmp/flashmem/`
+- Check file permissions in `~/.zen/flashmem/`
 - Verify the user directory exists
 
 **Secret messages not received**
