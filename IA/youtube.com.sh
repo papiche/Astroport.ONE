@@ -648,7 +648,7 @@ process_liked_video() {
     
     # Créer un fichier temporaire pour capturer la sortie et éviter les problèmes de pipe
     local temp_output_file="$HOME/.zen/tmp/process_youtube_output_$(date +%s)_$$.txt"
-    local temp_output_dir="$HOME/.zen/tmp/youtube_sync_${player}_$$"
+    local temp_output_dir="$HOME/.zen/tmp.media/youtube_sync_${player}_$$"
     mkdir -p "$temp_output_dir"
     
     # Create temporary JSON file for clean JSON output (separate from logs)
@@ -1523,7 +1523,7 @@ cleanup_old_sync_processes() {
     
     # Nettoyer les fichiers temporaires
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cleaning temporary files..." >&2
-    rm -f "$HOME/.zen/tmp/youtube_sync_${player}_*" 2>/dev/null || true
+    rm -f "$HOME/.zen/tmp.media/youtube_sync_${player}_*" 2>/dev/null || true
     rm -f "$HOME/.zen/tmp/process_youtube_output_*" 2>/dev/null || true
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] cleanup_old_sync_processes: Completed" >&2
 }

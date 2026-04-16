@@ -29,7 +29,7 @@ VOICE="$2"
 . "${MY_PATH}/../tools/my.sh"
 
 # Create temporary directory
-TMP_DIR="$HOME/.zen/tmp/tts_$(date +%s)"
+TMP_DIR="$HOME/.zen/tmp.media/tts_$(date +%s)"
 mkdir -p "$TMP_DIR"
 
 # Cleanup function

@@ -70,7 +70,7 @@ generate_random_seed() {
 }
 
 # Créer le répertoire temporaire s'il n'existe pas
-TMP_DIR="$HOME/.zen/tmp"
+TMP_DIR="$HOME/.zen/tmp.media"
 mkdir -p "$TMP_DIR"
 
 # Determine output directory for generated images

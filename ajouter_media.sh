@@ -270,7 +270,7 @@ echo "📥 Downloading YouTube video using process_youtube.sh..."
 echo "ℹ️  Resolution will be automatically selected based on video duration to stay under 650MB limit"
 
 # Create temporary download directory
-TEMP_YOUTUBE_DIR="$HOME/.zen/tmp/youtube_$(date -u +%s%N | cut -b1-13)"
+TEMP_YOUTUBE_DIR="$HOME/.zen/tmp.media/youtube_$(date -u +%s%N | cut -b1-13)"
 mkdir -p "$TEMP_YOUTUBE_DIR"
 
 # Function to monitor download progress and announce with espeak every 30 seconds

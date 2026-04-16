@@ -22,7 +22,7 @@ fi
 
 # Création du dossier temporaire
 UNIQUE_ID=$(date +%s)_$RANDOM
-TMP_DIR="$HOME/.zen/tmp/lipsync_${UNIQUE_ID}"
+TMP_DIR="$HOME/.zen/tmp.media/lipsync_${UNIQUE_ID}"
 mkdir -p "$TMP_DIR"
 
 # 1. Préparation des fichiers (Téléchargement si nécessaire)

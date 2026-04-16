@@ -163,7 +163,7 @@ if [[ -n "$CUSTOM_OUTPUT_DIR" ]]; then
     mkdir -p "$OUTPUT_DIR"
     log_debug "Using custom output directory: $OUTPUT_DIR"
 else
-    TMP_DIR="$HOME/.zen/tmp/youtube_$(date +%s)"
+    TMP_DIR="$HOME/.zen/tmp.media/youtube_$(date +%s)"
     mkdir -p "$TMP_DIR"
     OUTPUT_DIR="$TMP_DIR"
 fi
