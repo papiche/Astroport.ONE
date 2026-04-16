@@ -182,7 +182,7 @@ RUN echo "$USER:support@g1sms.fr:mail.asycn.io:587" >> /etc/ssmtp/revaliases
 # config crontab
 RUN echo "SHELL=/bin/bash" > "/var/spool/cron/crontabs/$USER" \
  && echo "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> "/var/spool/cron/crontabs/$USER" \
- && echo "12  20  *  *  *   /bin/bash /home/zen/.zen/Astroport.ONE/20h12.process.sh > /tmp/20h12.log 2>&1" >> "/var/spool/cron/crontabs/$USER" \
+ && echo "12  20  *  *  *   /bin/bash /home/zen/.zen/Astroport.ONE/20h12.process.sh >> /home/zen/.zen/log/20h12.log 2>&1" >> "/var/spool/cron/crontabs/$USER" \
  && chown "$USER" "/var/spool/cron/crontabs/$USER"
 
 VOLUME "/home/$USER/.zen/game/players"

@@ -454,7 +454,8 @@ fi
 # Clean temporary files
 rm -rf /tmp/20h12.log /tmp/20h12_power_report.html \
     /tmp/astroport.* /tmp/ipfs.* /tmp/strfry.* \
-    /tmp/g1billet.* /tmp/upassport.* 2>/dev/null
+    /tmp/g1billet.* /tmp/upassport.* \
+    "$HOME/.zen/log/20h12"*.log 2>/dev/null
 
 echo ""
 echo "========================================"

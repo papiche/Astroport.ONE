@@ -30,6 +30,20 @@ fi
 
 . "${MY_PATH}/tools/my.sh"
 start=`date +%s`
+
+########################################################################
+## LOGS PERMANENTS - Rotation 7 jours dans ~/.zen/log/
+########################################################################
+LOG_DIR="$HOME/.zen/log"
+mkdir -p "$LOG_DIR"
+find "$LOG_DIR" -name "20h12_*.log" -mtime +7 -delete 2>/dev/null || true
+LOG_FILE="$LOG_DIR/20h12_$(date +%Y%m%d).log"
+touch "$LOG_FILE"
+# Rediriger TOUT l'output (stdout + stderr) vers le log permanent daté
+# Le redirect cron (> /tmp/20h12.log) est court-circuité à partir d'ici
+exec >> "$LOG_FILE" 2>&1
+########################################################################
+
 echo "20H12 (♥‿‿♥) 🌐 /ipns/$IPFSNODEID 🤓 $CAPTAINEMAIL $(hostname -f) $(date)"
 # espeak "Ding" > /dev/null 2>&1
 
@@ -53,7 +67,7 @@ POWER_24H_CSV="${POWER_24H_CSV:-/var/lib/powerjoular/power_24h.csv}"
 # Check if we need to recalibrate (DST transition detection)
 # Compare current UTC offset with last recorded offset
 CURRENT_UTC_OFFSET=$(date +%z)
-LAST_UTC_OFFSET_FILE="$HOME/.zen/tmp/.last_utc_offset"
+LAST_UTC_OFFSET_FILE="$HOME/.zen/.last_utc_offset"
 
 if [[ -f "$LAST_UTC_OFFSET_FILE" ]]; then
     LAST_UTC_OFFSET=$(cat "$LAST_UTC_OFFSET_FILE")
@@ -97,25 +111,25 @@ while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
     sleep 10
     ((floop++)) && [ $floop -gt 36 ] \
         && echo "ERROR. IPFS daemon not restarting" \
-        && ${MY_PATH}/tools/mailjet.sh --expire 48h "support@qo-op.com" "/tmp/20h12.log" "IPFS RESTART ERROR 20H12" \
+        && ${MY_PATH}/tools/mailjet.sh --expire 48h "support@qo-op.com" "$LOG_FILE" "IPFS RESTART ERROR 20H12" \
         && exit 1
 done
 
 #### COPY LOGS - before erase
-echo "=== YOUTUBE / IA SCRAPERS ===" >> /tmp/20h12.log
-cat $HOME/.zen/tmp/*_sync_*.log 2>/dev/null >> /tmp/20h12.log
-cat $HOME/.zen/tmp/youtube.com_* 2>/dev/null >> /tmp/20h12.log
+echo "=== YOUTUBE / IA SCRAPERS ===" >> $LOG_FILE
+cat $HOME/.zen/tmp/*_sync_*.log 2>/dev/null >> $LOG_FILE
+cat $HOME/.zen/tmp/youtube.com_* 2>/dev/null >> $LOG_FILE
 
-echo "=== NOSTR / CONSTELLATION ERRORS ===" >> /tmp/20h12.log
-cat $HOME/.zen/tmp/nostr*.log 2>/dev/null >> /tmp/20h12.log
-cat $HOME/.zen/strfry/constellation-backfill.error.log 2>/dev/null >> /tmp/20h12.log
+echo "=== NOSTR / CONSTELLATION ERRORS ===" >> $LOG_FILE
+cat $HOME/.zen/tmp/nostr*.log 2>/dev/null >> $LOG_FILE
+cat $HOME/.zen/strfry/constellation-backfill.error.log 2>/dev/null >> $LOG_FILE
 
-echo "=== SWARM INTRUDERS ===" >> /tmp/20h12.log
-cat $HOME/.zen/tmp/swarm_intruders.log 2>/dev/null >> /tmp/20h12.log
+echo "=== SWARM INTRUDERS ===" >> $LOG_FILE
+cat $HOME/.zen/tmp/swarm_intruders.log 2>/dev/null >> $LOG_FILE
 cat "$HOME/.zen/game/firewall_candidates.txt"
 
-echo "=== SYSTEM/INSTALL ERRORS ===" >> /tmp/20h12.log
-cat $HOME/.zen/install.errors.log 2>/dev/null >> /tmp/20h12.log
+echo "=== SYSTEM/INSTALL ERRORS ===" >> $LOG_FILE
+cat $HOME/.zen/install.errors.log 2>/dev/null >> $LOG_FILE
 ########################################################################
 # show Ustats.sh cache of the day
 echo "TODAY UPlanet landings"
@@ -125,6 +139,8 @@ ls ~/.zen/tmp/Ustats*.json 2>/dev/null # API v2
 ## NETTOYAGE TMP : On garde les dossiers de cache vitaux
 # On ne supprime que les fichiers/dossiers qui ne sont pas dans l'exclusion
 find "$HOME/.zen/tmp/" -mindepth 1 -maxdepth 1 ! -name "swarm" ! -name "coucou" ! -name "flashmem" ! -name "$IPFSNODEID" -exec rm -rf {} +
+## NETTOYAGE tmp.media (disque) : fichiers médias lourds de plus de 24h
+[[ -d "$HOME/.zen/tmp.media" ]] && find "$HOME/.zen/tmp.media" -mindepth 1 -maxdepth 1 -mtime +1 -exec rm -rf {} + 2>/dev/null || true
 
 ## STOPPING ASTROPORT
 sudo systemctl stop astroport
@@ -241,6 +257,8 @@ ${MY_PATH}/RUNTIME/UPLANET.refresh.sh
 ########################################################################
 ## REMOVE TMP BUT KEEP swarm, flashmem, ${IPFSNODEID} and coucou
 find "$HOME/.zen/tmp/" -mindepth 1 ! -name "swarm" ! -name "coucou" ! -name "flashmem" ! -name "$IPFSNODEID" -delete
+## NETTOYAGE tmp.media (disque) : purge finale des médias orphelins de plus de 24h
+[[ -d "$HOME/.zen/tmp.media" ]] && find "$HOME/.zen/tmp.media" -mindepth 1 -maxdepth 1 -mtime +1 -exec rm -rf {} + 2>/dev/null || true
 
 ########################################################################
 ################################# updating ipfs bootstrap
@@ -353,7 +371,7 @@ HOSTNAME: $(hostname -f)
 IPFS NODE: ${IPFSNODEID}
 UPLANET: ${UPLANETG1PUB}
 STATUS: SUCCESS
-#######################################################################" >> /tmp/20h12.log
+#######################################################################" >> $LOG_FILE
 
 echo "📊 Mise à jour de l'analyse de la ♥️BOX - Captain ${CAPTAINEMAIL}..."
 
@@ -434,21 +452,21 @@ if [[ -f "${MY_PATH}/tools/power_monitor.sh" ]] && [[ -f "$POWER_24H_CSV" ]] || 
     if "${MY_PATH}/tools/power_monitor.sh" report-from-24h \
             "$POWER_REPORT_HTML" \
             "20H12 Power Consumption - Last 24h" \
-            "/tmp/20h12.log" \
+            "$LOG_FILE" \
             "$(hostname -f)" \
             "24h" \
-            "${IPFSNODEID:-}" 2>&1 | tee -a /tmp/20h12.log; then
+            "${IPFSNODEID:-}" 2>&1 | tee -a $LOG_FILE; then
         if [[ -f "$POWER_REPORT_HTML" ]]; then
-            echo "✅ Power consumption report generated: $POWER_REPORT_HTML" >> /tmp/20h12.log
+            echo "✅ Power consumption report generated: $POWER_REPORT_HTML" >> $LOG_FILE
         fi
         # Trim 24/7 CSV to last 24h only to avoid filling disk
-        echo "🗜️ Trimming 24/7 power CSV to last 24h..." >> /tmp/20h12.log
-        "${MY_PATH}/tools/power_monitor.sh" trim-24h-csv "$POWER_24H_CSV" 2>&1 | tee -a /tmp/20h12.log || true
+        echo "🗜️ Trimming 24/7 power CSV to last 24h..." >> $LOG_FILE
+        "${MY_PATH}/tools/power_monitor.sh" trim-24h-csv "$POWER_24H_CSV" 2>&1 | tee -a $LOG_FILE || true
     else
-        echo "⚠️ Power report from 24/7 CSV failed or insufficient data" >> /tmp/20h12.log
+        echo "⚠️ Power report from 24/7 CSV failed or insufficient data" >> $LOG_FILE
     fi
 else
-    echo "⚠️ 24/7 PowerJoular CSV not found ($POWER_24H_CSV); is powerjoular.service running?" >> /tmp/20h12.log
+    echo "⚠️ 24/7 PowerJoular CSV not found ($POWER_24H_CSV); is powerjoular.service running?" >> $LOG_FILE
 fi
 
 ## MAIL LOG : support@qo-op.com ##
@@ -459,7 +477,7 @@ if [[ -f "$POWER_REPORT_HTML" ]]; then
     ${MY_PATH}/tools/mailjet.sh --expire 48h "$CAPTAINEMAIL" "$POWER_REPORT_HTML" \
         "20H12 : $(cat ~/.zen/game/players/.current/.player 2>/dev/null) ($(cat ~/.zen/GPS 2>/dev/null)) - Power Consumption Report"
 else
-    ${MY_PATH}/tools/mailjet.sh --expire 48h "$CAPTAINEMAIL" "/tmp/20h12.log" \
+    ${MY_PATH}/tools/mailjet.sh --expire 48h "$CAPTAINEMAIL" "$LOG_FILE" \
         "20H12 : $(cat ~/.zen/game/players/.current/.player 2>/dev/null) ($(cat ~/.zen/GPS 2>/dev/null))"
 fi
 

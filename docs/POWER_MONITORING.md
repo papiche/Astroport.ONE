@@ -357,7 +357,7 @@ POWER_24H_CSV="${POWER_24H_CSV:-/var/lib/powerjoular/power_24h.csv}"
 "${MY_PATH}/tools/power_monitor.sh" report-from-24h \
     "/tmp/20h12_power_report.html" \
     "20H12 Power Consumption - Last 24h" \
-    "/tmp/20h12.log" \
+    "$HOME/.zen/log/20h12_$(date +%Y%m%d).log" \
     "$(hostname -f)" \
     "24h"
 

@@ -55,8 +55,11 @@ if [[ -d ~/.zen/tmp/${IPFSNODEID} ]]; then
     mkdir -p ~/.zen/tmp/${IPFSNODEID}/COINS/
     cp -f ~/.zen/tmp/coucou/*.COINS ~/.zen/tmp/${IPFSNODEID}/COINS/
 
-    ## COPY 20h12.log
-    cp -f /tmp/20h12.log ~/.zen/tmp/${IPFSNODEID}/20h12.txt
+    ## COPY 20h12.log (log permanent daté, fallback sur catch cron)
+    _log_today="$HOME/.zen/log/20h12_$(date +%Y%m%d).log"
+    cp -f "$_log_today" ~/.zen/tmp/${IPFSNODEID}/20h12.txt 2>/dev/null \
+        || cp -f "$HOME/.zen/log/20h12.log" ~/.zen/tmp/${IPFSNODEID}/20h12.txt 2>/dev/null \
+        || true
 
     ## INFORM NODE GPS LOCATION from CAPTAIN (TW)
     [[ -s ~/.zen/game/players/.current/GPS.json ]] \

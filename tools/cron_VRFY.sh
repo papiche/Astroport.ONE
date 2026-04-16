@@ -147,7 +147,7 @@ build_cron_header() {
 }
 
 add_20h12_cron() {
-    echo "${SOLAR20H12}  *  *  *   /bin/bash $MY_PATH/../20h12.process.sh > /tmp/20h12.log 2>&1" >> /tmp/newcron
+    echo "${SOLAR20H12}  *  *  *   /bin/bash $MY_PATH/../20h12.process.sh >> \$HOME/.zen/log/20h12.log 2>&1" >> /tmp/newcron
 }
 
 ########################################################################
