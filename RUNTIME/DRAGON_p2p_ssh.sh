@@ -409,7 +409,7 @@ if [[ "\${NATIVE_PORT}" -lt 1024 ]]; then
     LPORT="\${ALT_PORT}"
 elif ss -tln 2>/dev/null | awk '{print \$4}' | grep -qE ":\${NATIVE_PORT}$" || netstat -tln 2>/dev/null | awk '{print \$4}' | grep -qE ":\${NATIVE_PORT}$"; then
     # Si le port natif est occupé par un tunnel IPFS deja actif pour CE protocole
-    if ipfs p2p ls | grep -q "\${PROTO}" | grep -q "tcp/\${NATIVE_PORT}"; then
+    if ipfs p2p ls | grep "\${PROTO}" | grep -q "tcp/\${NATIVE_PORT}"; then
         LPORT="\${NATIVE_PORT}"
     else
         LPORT="\${ALT_PORT}"
@@ -473,8 +473,10 @@ SSHPORT=$(grep -E "^Port " /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' |
 [[ -z "$SSHPORT" ]] && SSHPORT=22
 generate_ssh_service "$SSHPORT"
 
-## ── Synchronisation Constellation (Strfry P2P) ──────────────────────
+## ── Synchronisation Constellation (NOSTR Relay P2P) ─────────────────
 ## On utilise 9999 comme port local préféré pour backfill_constellation.sh
+## IMPORTANT: le slug "strfry" est figé — backfill_constellation.sh cherche x_strfry.sh
+## Quand rnostr remplacera strfry sur port 7777, ce slug restera "strfry" pour compatibilité
 generate_p2p_service 7777 "strfry" "Nostr Relay" 9999
 
 
@@ -493,6 +495,9 @@ publish_service 8111 "icecast" "Icecast Live Broadcasting"
 ## ── Profil ai-company : Stack IA Swarm ──────────────────────────
 # Dify AI Workflow (8010)
 publish_service 8010 "dify" "Dify AI Workflow"
+
+# MiroFish Multi-Agent Simulation Engine (5050)
+publish_service 5050 "mirofish" "MiroFish Simulation Engine"
 
 # Open WebUI interface IA (8000)
 publish_service 8000 "open-webui" "Open WebUI Interface IA"

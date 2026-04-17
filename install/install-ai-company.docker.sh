@@ -22,6 +22,7 @@ INSTALL_DIR="$HOME/.zen/ai-company"
 PORT_WEBUI=${PORT_WEBUI:-8000}
 PORT_DIFY=${PORT_DIFY:-8010}
 PORT_QDRANT=${PORT_QDRANT:-6333}
+PORT_MIROFISH=${PORT_MIROFISH:-5050}
 OLLAMA_PORT=11434
 
 # Couleurs
@@ -91,6 +92,21 @@ services:
       - 'ENABLE_RAG_LOCAL_WEB_FETCH=True'
       - 'OLLAMA_BASE_URL=http://host.docker.internal:${OLLAMA_PORT}'
     extra_hosts: ["host.docker.internal:host-gateway"]
+    restart: unless-stopped
+  
+  mirofish:
+    image: ghcr.io/666ghj/mirofish:latest # (ou build local selon leur repo)
+    container_name: ai-company-mirofish
+    ports:["${PORT_MIROFISH}:5000"] # On expose sur 5050
+    environment:
+      - LLM_BASE_URL=http://host.docker.internal:${OLLAMA_PORT}/v1
+      - LLM_MODEL=llama3 # Modèle par défaut à utiliser dans Ollama
+      - QDRANT_URL=http://qdrant:6333
+      - QDRANT_API_KEY=${QDRANT_API_KEY}
+      - NOSTR_RELAY=ws://host.docker.internal:7777 # Branchement direct sur le relai local N²
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes:
+      - "./mirofish_data:/app/data"
     restart: unless-stopped
 
   qdrant:

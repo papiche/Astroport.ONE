@@ -379,6 +379,13 @@ else
     echo "  SKIP dify.${DOMAIN} (Dify.ai non démarré)"
 fi
 
+## mirofish.DOMAIN -> :5050 (MiroFish)
+if docker ps --format '{{.Names}}' | grep -q 'ai-company-mirofish'; then
+    npm_create_proxy "mirofish" "${FORWARD_HOST}" 5050 "http" "false"
+else
+    echo "  SKIP mirofish.${DOMAIN} (MiroFish non démarré)"
+fi
+
 echo "#############################################"
 echo "## NPM SETUP COMPLETE"
 echo "## Admin UI: ${NPM_URL}"

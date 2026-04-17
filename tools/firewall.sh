@@ -173,6 +173,7 @@ fire_on() {
         "8000:Open WebUI interface IA (ai-company)" \
         "8010:Dify AI (ai-company)" \
         "11434:Ollama LLM API (ai-company)" \
+        "5050:MiroFish Multi-Agent Simulation (ai-company)" \
         "3000:KasmVNC HTTP (webtop — SSH tunnel requis)" \
         "3001:KasmVNC HTTPS (webtop — SSH tunnel requis)" \
         "9090:Prometheus" \
