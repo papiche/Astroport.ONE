@@ -147,7 +147,9 @@ build_cron_header() {
 }
 
 add_20h12_cron() {
-    echo "${SOLAR20H12}  *  *  *   /bin/bash $MY_PATH/../20h12.process.sh >> \$HOME/.zen/log/20h12.log 2>&1" >> /tmp/newcron
+    # Note: ${HOME} est expansé ICI par bash pour écrire le chemin réel dans la crontab
+    # (évite que cron reçoive "$HOME" littéral, non résolu par certaines implémentations)
+    echo "${SOLAR20H12}  *  *  *   /bin/bash $MY_PATH/../20h12.process.sh >> ${HOME}/.zen/log/20h12.log 2>&1" >> /tmp/newcron
 }
 
 ########################################################################
@@ -254,6 +256,73 @@ case "$MODE" in
         echo "   5. Stop IPFS daemon"
         ;;
         
+    "HELP"|"-H"|"--HELP")
+        cat <<EOF
+
+USAGE: $ME [ON|OFF|LOW|RESTART|TOGGLE|HELP]
+
+MODES:
+  ON       - Mode complet 24/7  : cron 20h12 + IPFS + strfry + astroport + upassport
+  OFF      - Arrêt complet      : tous services stoppés + cron supprimée
+  LOW      - Mode économique    : cron + strfry uniquement, IPFS démarré ~1h/jour à 20h12
+  RESTART  - Redémarre les services selon le mode courant auto-détecté (ON/LOW/OFF)
+  TOGGLE   - Bascule ON↔OFF selon l'état de la cron (comportement par défaut)
+  HELP     - Affiche ce message
+
+HEURE SOLAIRE 20H12:
+  Si ~/.zen/GPS contient LAT et LON, solar_time.sh calcule l'heure légale
+  correspondant à 20h12 SOLAIRE locale. Exemple Paris été : 22:12 légale.
+  Sans ~/.zen/GPS : 20:12 légale par défaut.
+
+  Cron 20h12 actuelle :
+EOF
+        crontab -l 2>/dev/null | grep '20h12' | sed 's/^/    /' || echo "    (aucune entrée 20h12)"
+        echo ""
+        echo "  Services :"
+        for svc in ipfs astroport strfry upassport; do
+            printf "    %-12s %s (enabled: %s)\n" "$svc" \
+                "$(systemctl is-active "$svc" 2>/dev/null || echo 'n/a')" \
+                "$(systemctl is-enabled "$svc" 2>/dev/null || echo 'n/a')"
+        done
+        echo ""
+        exit 0
+        ;;
+
+    "RECALIBRATE")
+        # Mise à jour de l'heure solaire dans la crontab SANS toucher aux services
+        # Appelé quotidiennement par 20h12.process.sh (équation du temps varie ±15 min/an)
+        if [[ -n "$CRON_EXISTS" ]]; then
+            build_cron_header
+            add_20h12_cron
+            crontab /tmp/newcron
+            echo "🔄 Heure solaire recalibrée : $SOLAR20H12"
+            echo "   ($(printf "%02d:%02d" $(echo $SOLAR20H12 | awk '{print $2}') $(echo $SOLAR20H12 | awk '{print $1}')) heure légale)"
+        else
+            echo "⚠️  Aucune cron 20h12 active — recalibration ignorée (utiliser ON ou LOW)"
+        fi
+        ;;
+
+    "RESTART")
+        echo ""
+        echo ">>> RESTART ASTROPORT (mode auto-détecté)"
+        echo ""
+
+        # Détection du mode courant
+        if [[ -n "$CRON_EXISTS" ]]; then
+            IPFS_ENABLED=$(systemctl is-enabled ipfs 2>/dev/null)
+            if [[ "$IPFS_ENABLED" == "enabled" ]]; then
+                DETECTED="ON"
+            else
+                DETECTED="LOW"
+            fi
+        else
+            DETECTED="OFF"
+        fi
+
+        echo "Mode détecté : $DETECTED  -> relance avec cron_VRFY.sh $DETECTED"
+        exec "$0" "$DETECTED"
+        ;;
+
     "TOGGLE"|*)
         # Toggle based on current state
         if [[ -n "$CRON_EXISTS" ]]; then

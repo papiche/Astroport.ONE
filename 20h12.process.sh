@@ -62,32 +62,22 @@ echo "20H12 (♥‿‿♥) 🌐 /ipns/$IPFSNODEID 🤓 $CAPTAINEMAIL $(hostname 
 POWER_24H_CSV="${POWER_24H_CSV:-/var/lib/powerjoular/power_24h.csv}"
 
 ########################################################################
-## SOLAR TIME CALIBRATION - Recalibrate cron for DST changes
+## SOLAR TIME CALIBRATION - Recalcul quotidien de l'heure solaire 20H12
 ########################################################################
-# Check if we need to recalibrate (DST transition detection)
-# Compare current UTC offset with last recorded offset
+# L'équation du temps varie de ±15 min sur l'année → recalibration chaque jour
+# RECALIBRATE met à jour la crontab uniquement, sans redémarrer les services
 CURRENT_UTC_OFFSET=$(date +%z)
 LAST_UTC_OFFSET_FILE="$HOME/.zen/.last_utc_offset"
 
 if [[ -f "$LAST_UTC_OFFSET_FILE" ]]; then
     LAST_UTC_OFFSET=$(cat "$LAST_UTC_OFFSET_FILE")
-    if [[ "$CURRENT_UTC_OFFSET" != "$LAST_UTC_OFFSET" ]]; then
-        echo "⏰ DST change detected: $LAST_UTC_OFFSET → $CURRENT_UTC_OFFSET"
-        echo "🔄 Recalibrating solar time cron job..."
-        
-        # Detect current mode (LOW or ON) based on IPFS service status
-        if systemctl is-enabled ipfs 2>/dev/null | grep -q "disabled"; then
-            echo "   Mode: LOW (IPFS disabled)"
-            ${MY_PATH}/tools/cron_VRFY.sh LOW
-        else
-            echo "   Mode: ON (IPFS enabled)"
-            ${MY_PATH}/tools/cron_VRFY.sh ON
-        fi
-        echo "✅ Solar 20H12 cron recalibrated"
-    fi
+    [[ "$CURRENT_UTC_OFFSET" != "$LAST_UTC_OFFSET" ]] \
+        && echo "⏰ Changement DST détecté : $LAST_UTC_OFFSET → $CURRENT_UTC_OFFSET"
 fi
-# Save current UTC offset for next run comparison
 echo "$CURRENT_UTC_OFFSET" > "$LAST_UTC_OFFSET_FILE"
+
+echo "🔄 Recalibration heure solaire 20H12..."
+${MY_PATH}/tools/cron_VRFY.sh RECALIBRATE
 
 echo "PATH=$PATH"
 
@@ -293,18 +283,22 @@ if [[ $LOWMODE != "" ]]; then
     exit 0
 fi
 
-echo "HIGH. RESTART IPFS"
-sleep 60
+########################################################
+### DRAGON WOT : fermeture tunnels AVANT restart IPFS
+########################################################
+echo "DRAGONS SHIELD OFF - fermeture tunnels P2P avant restart IPFS"
+${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
+
+echo "RESTARTING IPFS"
 sudo systemctl restart ipfs
 
-################################ wait for bootstraping....
+################################ attente reconnexion bootstrap (30s suffisent)
 sleep 30
+
 ########################################################
-### DRAGON WOT : SSH IPFS P2P SERVICES OPENING
+### DRAGON WOT : réouverture tunnels P2P après bootstrap
 ########################################################
-echo "DRAGONS SHIELD OFF - makes UPlanet game/keys refresh"
-${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh off
-echo "DRAGONS SHIELD ON"
+echo "DRAGONS SHIELD ON - réouverture tunnels P2P"
 ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh
 ########################################################
 
@@ -520,13 +514,17 @@ fi
 ## MAIL LOG : support@qo-op.com ##
 # Send email with power consumption report if available (report is written to /tmp/)
 POWER_REPORT_HTML="/tmp/20h12_power_report.html"
+_STATION="$(hostname -f)"
+_PLAYER="$(cat ~/.zen/game/players/.current/.player 2>/dev/null)"
+_GPS="$(cat ~/.zen/GPS 2>/dev/null)"
+
 if [[ -f "$POWER_REPORT_HTML" ]]; then
     echo "📧 Sending 20H12 report with power consumption analysis..."
     ${MY_PATH}/tools/mailjet.sh --expire 48h "$CAPTAINEMAIL" "$POWER_REPORT_HTML" \
-        "20H12 : $(cat ~/.zen/game/players/.current/.player 2>/dev/null) ($(cat ~/.zen/GPS 2>/dev/null)) - Power Consumption Report"
+        "20H12 ${_STATION} <${CAPTAINEMAIL}> : ${_PLAYER} (${_GPS}) - Power Consumption Report"
 else
     ${MY_PATH}/tools/mailjet.sh --expire 48h "$CAPTAINEMAIL" "$LOG_FILE" \
-        "20H12 : $(cat ~/.zen/game/players/.current/.player 2>/dev/null) ($(cat ~/.zen/GPS 2>/dev/null))"
+        "20H12 ${_STATION} <${CAPTAINEMAIL}> : ${_PLAYER} (${_GPS})"
 fi
 
 # espeak "TOTAL DURATION ${hours} hours ${minutes} minutes ${seconds} seconds" > /dev/null 2>&1 &
