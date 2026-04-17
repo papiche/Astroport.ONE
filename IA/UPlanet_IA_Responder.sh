@@ -13,7 +13,7 @@
 # - Publication des réponses sur la clé NOSTR du Capitaine
 # Tags spéciaux:
 # - #BRO #BOT : Active la réponse IA (par défaut)
-# - #search : Perplexica Search
+# - #search : Vane Search (ex-Perplexica)
 # - #image : Générer une image avec ComfyUI
 # - #video : Générer une vidéo avec ComfyUI
 # - #music : Générer une musique avec ComfyUI (#parole pour les paroles)
@@ -27,7 +27,7 @@
 # - #plantnet : Reconnaissance de plantes avec PlantNet (image requise)
 # - #help : Show short help (BRO tags summary)
 # - #url : Fetch URL(s) from message, extract main content, then answer with Ollama (link understanding)
-# - #status : Show system status (Ollama, ComfyUI, Perplexica, Orpheus ports)
+# - #status : Show system status (Ollama, ComfyUI, Vane, Orpheus ports)
 # - #whoami : Show sender identity (PUBKEY / KNAME)
 ###################################################################
 PUBKEY="$1"
@@ -103,7 +103,7 @@ $(date)</div>
     <div class="section">
         <h2>🔧 Troubleshooting</h2>
         <ul>
-            <li>Check if all required services are running (Ollama, ComfyUI, Perplexica)</li>
+            <li>Check if all required services are running (Ollama, ComfyUI, Vane)</li>
             <li>Verify NOSTR keys and relay connectivity</li>
             <li>Check disk space and permissions</li>
             <li>Review recent changes to the system</li>
@@ -214,7 +214,7 @@ Voice (TTS)
   #pierre  |  #amelie
 
 Tools
-  #plantnet [image]  |  #cookie <workflow>  |  #inventory [image]
+  #plantnet [image]  |  #cookie (uDRIVE)  |  #inventory [image]
 
 Meta
   #url [URLs in message]  |  #status  |  #whoami
@@ -227,9 +227,9 @@ build_bro_status_message() {
   local o=""; local c=""; local p=""; local t=""
   curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 "http://localhost:11434/api/tags" 2>/dev/null | grep -q 200 && o="11434 ✓" || o="11434 ✗"
   curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 "http://localhost:8188/system_stats" 2>/dev/null | grep -q 200 && c="8188 ✓" || c="8188 ✗"
-  curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 "http://localhost:3001/api/providers" 2>/dev/null | grep -q 200 && p="3001 ✓" || p="3001 ✗"
+  curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 "http://localhost:3002/api/providers" 2>/dev/null | grep -q 200 && p="3002 ✓" || p="3002 ✗"
   curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 "http://localhost:5005/docs" 2>/dev/null | grep -q 200 && t="5005 ✓" || t="5005 ✗"
-  echo "BRO status — Ollama: $o | ComfyUI: $c | Perplexica: $p | Orpheus: $t"
+  echo "BRO status — Ollama: $o | ComfyUI: $c | Vane: $p | Orpheus: $t"
 }
 
 # Build whoami message - no LLM
@@ -1240,7 +1240,7 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 fi
             ######################################################### #search
             elif [[ "${TAGS[search]}" == true ]]; then
-                $MY_PATH/perplexica.me.sh
+                $MY_PATH/vane.me.sh
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g; s/"//g' <<< "$message_text")
                 USER_LANG=$(get_user_language "$KNAME")
                 echo "User language for search: $USER_LANG" >&2
@@ -1251,17 +1251,17 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 SEARCH_DEBUG=$(cat "$SEARCH_STDERR" 2>/dev/null)
                 rm -f "$SEARCH_STDERR"
                 
-                # Check if Perplexica search failed
+                # Check if Vane search failed
                 # Only check for actual errors (exit code non-zero, empty response, or error in first line)
                 if [[ $SEARCH_EXIT_CODE -ne 0 ]] || [[ -z "$KeyANSWER" ]]; then
-                    echo "ERROR: Perplexica search failed (exit: $SEARCH_EXIT_CODE)" >&2
+                    echo "ERROR: Vane search failed (exit: $SEARCH_EXIT_CODE)" >&2
                     echo "Search debug: $SEARCH_DEBUG" >&2
                     # Set a user-friendly error message
-                    ERROR_DETAIL="${SEARCH_DEBUG:-Aucune réponse du serveur Perplexica}"
+                    ERROR_DETAIL="${SEARCH_DEBUG:-Aucune réponse du serveur Vane}"
                     # Extract only the last error line for user display
                     ERROR_LINE=$(echo "$ERROR_DETAIL" | grep -i "error" | tail -1)
                     [[ -z "$ERROR_LINE" ]] && ERROR_LINE="$ERROR_DETAIL"
-                    KeyANSWER="❌ La recherche Perplexica a échoué.
+                    KeyANSWER="❌ La recherche Vane a échoué.
 
 🔍 Requête: ${cleaned_text}
 
@@ -1351,7 +1351,7 @@ Détails: ${ERROR_LINE}"
                 fi
                 
                 # Add standard tags
-                STANDARD_TAGS='["t", "search"], ["t", "perplexica"]'
+                STANDARD_TAGS='["t", "search"], ["t", "vane"]'
                 if [[ -n "$TAG_ARRAY" ]]; then
                     ALL_TAGS="${STANDARD_TAGS}, ${TAG_ARRAY}"
                 else
@@ -1383,7 +1383,7 @@ Détails: ${ERROR_LINE}"
                         echo "Saved search result to uDRIVE/Documents: $MD_FILE" >&2
                     fi
                 fi
-                fi  # End of successful Perplexica search processing
+                fi  # End of successful Vane search processing
             ######################################################### #image
             elif [[ "${TAGS[image]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#image//g; s/"//g' <<< "$message_text")
@@ -2018,33 +2018,18 @@ Veuillez inclure une image avec votre message pour l'inventaire UPlanet.
                 fi
             ######################################################### #cookie
             elif [[ "${TAGS[cookie]}" == true ]]; then
-                # Cookie workflow execution
-                echo "Processing cookie workflow execution request..." >&2
-                
-                # Extract workflow name/ID from message
+                # Cookie → délégation uDRIVE
+                # Les recettes/workflows sont gérés par MiroFish et Dify via uDRIVE
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#cookie//g; s/"//g' <<< "$message_text")
-                workflow_identifier=$(echo "$cleaned_text" | awk '{print $1}' | tr -d '[:space:]')
-                
-                if [[ -z "$workflow_identifier" ]]; then
-                    KeyANSWER="❌ No workflow specified. Usage: #BRO #cookie <workflow_name_or_id>"
+                USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
+                if [[ -n "$USER_UDRIVE_PATH" ]]; then
+                    COOKIE_DIR="$USER_UDRIVE_PATH/Cookies"
+                    mkdir -p "$COOKIE_DIR"
+                    KeyANSWER="🍪 Vos recettes Cookie sont dans votre uDRIVE/Cookies.
+Utilisez MiroFish (#BRO) ou Dify pour créer et exécuter des workflows.
+📁 $COOKIE_DIR"
                 else
-                    echo "Executing cookie workflow: $workflow_identifier" >&2
-                    
-                    # Call workflow engine script
-                    if [[ -x "$MY_PATH/cookie_workflow_engine.sh" ]]; then
-                        WORKFLOW_RESULT=$("$MY_PATH/cookie_workflow_engine.sh" "$workflow_identifier" "$KNAME" "$PUBKEY" "$EVENT" 2>&1)
-                        if [[ $? -eq 0 ]]; then
-                            KeyANSWER="✅ Cookie workflow executed successfully: $workflow_identifier
-
-$WORKFLOW_RESULT"
-                        else
-                            KeyANSWER="❌ Cookie workflow execution failed: $workflow_identifier
-
-Error: $WORKFLOW_RESULT"
-                        fi
-                    else
-                        KeyANSWER="⚠️ Cookie workflow engine not available. Please ensure cookie_workflow_engine.sh is installed and executable."
-                    fi
+                    KeyANSWER="🍪 Pour utiliser des workflows, créez votre MULTIPASS et déposez vos recettes dans uDRIVE/Cookies."
                 fi
             ######################################################### #pierre / #amelie
             elif [[ "${TAGS[pierre]}" == true || "${TAGS[amelie]}" == true ]]; then

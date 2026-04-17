@@ -23,6 +23,7 @@ PORT_WEBUI=${PORT_WEBUI:-8000}
 PORT_DIFY=${PORT_DIFY:-8010}
 PORT_QDRANT=${PORT_QDRANT:-6333}
 PORT_MIROFISH=${PORT_MIROFISH:-5050}
+PORT_VANE=${PORT_VANE:-3002}
 OLLAMA_PORT=11434
 
 # Couleurs
@@ -118,6 +119,17 @@ services:
     volumes: ["qdrant_storage:/qdrant/storage"]
     restart: unless-stopped
 
+  vane:
+    image: ghcr.io/itzcrazzykns/vane:main
+    container_name: ai-company-vane
+    ports: ["${PORT_VANE}:3001"]
+    environment:
+      - OLLAMA_API_URL=http://host.docker.internal:${OLLAMA_PORT}/api
+      - SIMILARITY_MEASURE=cosine
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes: ["./vane_data:/home/perplexica/data"]
+    restart: unless-stopped
+
 volumes:
   qdrant_storage:
 EOF
@@ -154,6 +166,7 @@ echo -e "\n${BOLD}🌐 INTERFACES UTILISATEUR :${NC}"
 echo -e "  🧑‍💻 Open WebUI (Pour les membres) : ${CYAN}http://localhost:8000${NC}"
 echo -e "  🤖 Dify.ai (Création d'agents)   : ${CYAN}http://localhost:8010${NC}"
 echo -e "  🧠 Qdrant (Base vectorielle)     : ${CYAN}http://localhost:6333/dashboard${NC}"
+echo -e "  🔍 Vane Search (Recherche IA)    : ${CYAN}http://localhost:3002${NC}"
 echo -e "\n${BOLD}💡 PREMIÈRE ÉTAPE :${NC}"
 echo -e "  1. Ouvrez Dify.ai sur http://localhost:8010 et créez le compte administrateur."
 echo -e "  2. Dans Dify : Nom d'utilisateur → Paramètres → Fournisseurs de Modèles → Ollama."

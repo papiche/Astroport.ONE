@@ -498,6 +498,25 @@ else
     echo "ℹ️  Aucun tunnel persistant configuré (astrosystemctl enable <service>)"
 fi
 
+########################################################################
+## MIROFISH FEEDER — Alimente le RAG MiroFish si le service est local
+## Exécuté seulement si mirofish tourne en local (pas via tunnel P2P/SSH)
+########################################################################
+HEARTBOX_CACHE="$HOME/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json"
+if [[ -s "$HEARTBOX_CACHE" ]]; then
+    MIROFISH_SOURCE=$(jq -r '.services.ai_company.mirofish.source // "none"' \
+        "$HEARTBOX_CACHE" 2>/dev/null || echo "none")
+    if [[ "$MIROFISH_SOURCE" == "local" ]]; then
+        echo "🐟 MiroFish local détecté — alimentation du RAG..." >> $LOG_FILE
+        bash "${MY_PATH}/IA/feed_mirofish.sh" >> $LOG_FILE 2>&1 || \
+            echo "⚠️  feed_mirofish.sh échoué (non bloquant)" >> $LOG_FILE
+    else
+        echo "ℹ️  MiroFish absent ou distant (source=$MIROFISH_SOURCE) — skip feeder" >> $LOG_FILE
+    fi
+else
+    echo "ℹ️  heartbox_analysis.json absent — skip MiroFish feeder" >> $LOG_FILE
+fi
+
 ## MAIL LOG : support@qo-op.com ##
 # Send email with power consumption report if available (report is written to /tmp/)
 POWER_REPORT_HTML="/tmp/20h12_power_report.html"

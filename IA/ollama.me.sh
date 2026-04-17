@@ -656,7 +656,7 @@ cmd_help() {
     echo -e "\n${BOLD}Usage:${NC} $(basename $0) [COMMAND] [OPTIONS]\n"
     
     echo -e "${BOLD}Commands:${NC}"
-    echo -e "  ${CYAN}(none)${NC}       Auto-connect (LOCAL → SSH → P2P)"
+    echo -e "  ${CYAN}(none)${NC}       Auto-connect (LOCAL → P2P → SSH)"
     echo -e "  ${CYAN}STATUS${NC}       Show current connection status"
     echo -e "  ${CYAN}SCAN${NC}         Detect all available connections"
     echo -e "  ${CYAN}LOCAL${NC}        Connect via local service"
@@ -781,16 +781,16 @@ case "${1^^}" in
             exit 0
         fi
         
-        # Try SSH tunnel first
-        if establish_ssh_tunnel "auto"; then
-            echo "${SERVICE_NAME^} API ready via SSH at http://localhost:$OLLAMA_PORT"
-            exit 0
-        fi
-        
-        # Fallback to IPFS P2P swarm
-        echo "SSH unavailable, trying IPFS P2P swarm..."
+        # Essaim P2P en priorité (réseau décentralisé)
         if connect_via_swarm; then
             echo "${SERVICE_NAME^} API ready via P2P at http://localhost:$OLLAMA_PORT"
+            exit 0
+        fi
+
+        # Fallback SSH (tunnel centralisé — dernier recours)
+        echo "P2P unavailable, trying SSH tunnel as fallback..."
+        if establish_ssh_tunnel "auto"; then
+            echo "${SERVICE_NAME^} API ready via SSH at http://localhost:$OLLAMA_PORT"
             exit 0
         fi
         

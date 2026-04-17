@@ -71,7 +71,7 @@ test_api() {
     local silent="${1:-false}"
     # On teste l'accès à MiroFish (racine ou ping API)
     RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$MIROFISH_PORT/" --connect-timeout 5)
-    if[ "$RESPONSE" == "200" ] || [ "$RESPONSE" == "302" ]; then
+    if [ "$RESPONSE" == "200" ] || [ "$RESPONSE" == "302" ]; then
         [[ "$silent" != "true" ]] && echo "MiroFish responding correctly."
         return 0
     fi

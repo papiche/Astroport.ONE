@@ -441,7 +441,7 @@ cmd_help() {
     print_header
     echo -e "\n${BOLD}Usage:${NC} $(basename $0) [COMMAND] [OPTIONS]\n"
     echo -e "${BOLD}Commands:${NC}"
-    echo -e "  ${CYAN}(none)${NC}       Auto-connect (LOCAL → SSH → P2P)"
+    echo -e "  ${CYAN}(none)${NC}       Auto-connect (LOCAL → P2P → SSH)"
     echo -e "  ${CYAN}STATUS${NC}       Show current connection status"
     echo -e "  ${CYAN}SCAN${NC}         Detect all available connections"
     echo -e "  ${CYAN}LOCAL${NC}        Connect via local service"
@@ -491,12 +491,12 @@ case "${1^^}" in
         if check_port "true" && test_api "true"; then
             echo "Open WebUI ready at http://localhost:$OPENWEBUI_PORT"; exit 0
         fi
-        if establish_ssh_tunnel "auto"; then
-            echo "Open WebUI ready via SSH at http://localhost:$OPENWEBUI_PORT"; exit 0
-        fi
-        echo "SSH unavailable, trying IPFS P2P swarm..."
         if connect_via_swarm; then
             echo "Open WebUI ready via P2P at http://localhost:$OPENWEBUI_PORT"; exit 0
+        fi
+        echo "P2P unavailable, trying SSH tunnel as fallback..."
+        if establish_ssh_tunnel "auto"; then
+            echo "Open WebUI ready via SSH at http://localhost:$OPENWEBUI_PORT"; exit 0
         fi
         echo "Could not establish connection to any Open WebUI instance."; exit 1 ;;
     *)

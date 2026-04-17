@@ -571,24 +571,24 @@ fi
 echo ""
 echo "🆕 New trend detected! Processing..."
 
-# Ensure Perplexica is available
-echo "🔌 Checking Perplexica availability..."
-if ! $MY_PATH/perplexica.me.sh >/dev/null 2>&1; then
-    echo "❌ Failed to connect to Perplexica API" >&2
+# Ensure Vane is available
+echo "🔌 Checking Vane availability..."
+if ! $MY_PATH/vane.me.sh >/dev/null 2>&1; then
+    echo "❌ Failed to connect to Vane API" >&2
     exit 1
 fi
-echo "✅ Perplexica API ready"
+echo "✅ Vane API ready"
 
-# Perform search using perplexica_search.sh
+# Perform search using perplexica_search.sh (now backed by Vane)
 echo ""
-echo "🔎 Performing Perplexica search for: $CURRENT_TREND"
+echo "🔎 Performing Vane search for: $CURRENT_TREND"
 echo "   Language: $LANG"
 echo ""
 
 SEARCH_RESULT=$($MY_PATH/perplexica_search.sh "$CURRENT_TREND" "$LANG" 2>/dev/null)
 
 if [[ -z "$SEARCH_RESULT" ]]; then
-    echo "❌ Perplexica search returned empty result" >&2
+    echo "❌ Vane search returned empty result" >&2
     exit 1
 fi
 

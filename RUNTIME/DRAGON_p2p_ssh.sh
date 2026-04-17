@@ -542,9 +542,9 @@ if docker ps 2>/dev/null | grep -q orpheus; then
     publish_service 5005 "orpheus" "Orpheus TTS"
 fi
 
-# Perplexica Search (3002)
-if docker ps 2>/dev/null | grep -q perplexica; then
-    publish_service 3002 "perplexica" "Perplexica Search"
+# Vane Search (3002) — anciennement Perplexica
+if docker ps 2>/dev/null | grep -qE "vane|perplexica"; then
+    publish_service 3002 "vane" "Vane Search"
 fi
 
 ##################################################################################

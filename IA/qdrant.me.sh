@@ -321,12 +321,12 @@ case "${1^^}" in
         if check_port "true" && test_api "true"; then
             echo "Qdrant ready at http://localhost:$QDRANT_PORT/dashboard"; exit 0
         fi
-        if establish_ssh_tunnel "auto"; then
-            echo "Qdrant ready via SSH at http://localhost:$QDRANT_PORT/dashboard"; exit 0
-        fi
-        echo "SSH unavailable, trying IPFS P2P swarm..."
         if connect_via_swarm; then
             echo "Qdrant ready via P2P at http://localhost:$QDRANT_PORT/dashboard"; exit 0
+        fi
+        echo "P2P unavailable, trying SSH tunnel as fallback..."
+        if establish_ssh_tunnel "auto"; then
+            echo "Qdrant ready via SSH at http://localhost:$QDRANT_PORT/dashboard"; exit 0
         fi
         echo "Could not connect to any Qdrant instance."; exit 1 ;;
     *)

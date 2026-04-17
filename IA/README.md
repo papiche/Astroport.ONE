@@ -81,7 +81,7 @@ The **#BRO** (or **#BOT**) tag triggers the `UPlanet_IA_Responder.sh` script. On
 | 7 | `#youtube` | Download (yt-dlp), `#mp3` for audio. |
 | 8 | `#plantnet` | Plant recognition (PlantNet) if image provided; ORE integration, UMAP DID update. |
 | 9 | `#inventory` / `#plant` / `#insect` / `#animal` / `#person` / `#object` / `#place` | Multi-type (or forced-type) recognition, ORE contract (kind 30312), blog (kind 30023), diversity tracking. |
-| 10 | `#cookie` | Run a named workflow via `cookie_workflow_engine.sh`. |
+| 10 | `#cookie` | Delegate to uDRIVE/Cookies — workflows managed via MiroFish/Dify. |
 | 11 | `#pierre` / `#amelie` | Text-to-speech (Orpheus TTS), return audio URL. |
 | 12 | (no special tag) | Conversational IA: `question.py` (Ollama) with the built question (thread context + memory slot context if `#N`). |
 
@@ -263,7 +263,7 @@ The **memory slot** `#N` (1–12) is detected in the message; when present and t
 | `#reset #N` | Clear slot N memory | - | Confirmation | Sociétaire (1-12) |
 | `#reset #all` | Clear all slots (0-12) | - | Confirmation | Sociétaire |
 | `#rec2` | Auto-save bot response | `short_memory.py` | - | - |
-| `#cookie` | Workflow automation | `cookie_workflow_engine.sh` | Variable | - |
+| `#cookie` | uDRIVE/Cookies delegation | MiroFish / Dify | Message uDRIVE path | - |
 | `#secret` | Private DM response | NOSTR kind 4 | Encrypted DM | - |
 | `#N` (1-12) | Use memory slot N | - | Context | Sociétaire |
 | (default) | AI conversation | `question.py` | Text response | Ollama |

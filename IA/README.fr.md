@@ -73,7 +73,7 @@ Le tag **#BRO** (ou **#BOT**) déclenche le script `UPlanet_IA_Responder.sh`. Se
 | 7 | `#youtube` | Téléchargement (yt-dlp), option `#mp3` pour l’audio. |
 | 8 | `#plantnet` | Reconnaissance de plante (PlantNet) si une image est fournie ; intégration ORE, mise à jour UMAP DID. |
 | 9 | `#inventory` / `#plant` / `#insect` / `#animal` / `#person` / `#object` / `#place` | Reconnaissance multi-type (ou type forcé), contrat ORE (kind 30312), blog (kind 30023), suivi diversité. |
-| 10 | `#cookie` | Exécution d’un workflow nommé via `cookie_workflow_engine.sh`. |
+| 10 | `#cookie` | Délégation vers uDRIVE/Cookies — les workflows sont gérés via MiroFish/Dify. |
 | 11 | `#pierre` / `#amelie` | Synthèse vocale (Orpheus TTS), renvoi de l’URL audio. |
 | 12 | (aucun tag spécial) | Réponse IA conversationnelle : `question.py` (Ollama) avec la question construite (contexte de fil + slot mémoire si `#N`). |
 

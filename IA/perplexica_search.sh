@@ -12,7 +12,9 @@ MY_PATH="$(dirname "$0")"
 MY_PATH="$( cd "$MY_PATH" && pwd )"
 
 # Configuration
-API_BASE="http://localhost:3001"
+# PORT_VANE / PERPLEXICA_PORT : port de l'API Vane (ex-Perplexica), défaut 3002
+_VANE_PORT="${VANE_PORT:-${PERPLEXICA_PORT:-3002}}"
+API_BASE="http://localhost:${_VANE_PORT}"
 API_SEARCH="${API_BASE}/api/search"
 API_PROVIDERS="${API_BASE}/api/providers"
 
