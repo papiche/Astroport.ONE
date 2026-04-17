@@ -122,7 +122,8 @@ All runtime data lives under `~/.zen/` (not in the repo):
 |------|---------|-----------|
 | 12345 | Station Map / UPlanet cartography | `astroport.DOMAIN` |
 | 8080/4001/5001 | IPFS Gateway/Swarm/API | `ipfs.DOMAIN` |
-| 7777 | NOSTR Relay (strfry) | `relay.DOMAIN` |
+| 7777 | NOSTR Relay (strfry — actuel, rnostr prévu) | `relay.DOMAIN` |
+| 8888 | rnostr internal (metrics/admin, prévu) | localhost only |
 | 54321 | UPassport FastAPI | `u.DOMAIN` |
 | 33101 | G1Billet | `libra.DOMAIN` |
 | 80/443/81 | Nginx Proxy Manager (SSL) | — |
@@ -132,7 +133,8 @@ All runtime data lives under `~/.zen/` (not in the repo):
 ### Systemd Services (bare metal)
 - `astroport` - Main API server (`12345.sh`)
 - `upassport` - UPassport API
-- `strfry` - NOSTR relay
+- `strfry` - NOSTR relay (port 7777 — binaire aussi utilisé pour DB locale : scan/import/delete)
+- `rnostr` - Futur relay NOSTR Rust (remplacera strfry sur port 7777, migration planifiée)
 - `ipfs` - IPFS daemon
 - `g1billet` - G1Billet service
 
