@@ -133,31 +133,101 @@ get_fast_service_status() {
     ss -tln 2>/dev/null | grep -q ":8002 " && nextcloud_aio_dash="true"
     ss -tln 2>/dev/null | grep -q ":8001 " && nextcloud_cloud_active="true"
 
-    ## ── Profil ai-company : Stack IA Swarm (Dify Edition) ─────────
+    ## ── Helpers source-detection ─────────────────────────────────────────────
+    ## Distingue un service LOCAL d'un port ouvert par tunnel SSH ou IPFS P2P.
+    ## Protocole IPFS P2P : /x/${svc,,}-${node_id}  (cf. tunnel.sh:85)
+    ## SSH tunnel          : processus 'ssh' écoute sur le port  (cf. ollama.me.sh:238)
+
+    _port_via_ssh() {
+        local port="$1"
+        local _pid
+        _pid=$(lsof -t -i TCP:${port} -sTCP:LISTEN 2>/dev/null | head -1)
+        [[ -n "$_pid" ]] && [[ "$(ps -p "$_pid" -o comm= 2>/dev/null)" == "ssh" ]]
+    }
+
+    _port_via_p2p() {
+        local svc_pattern="$1"   # nom service (ex: "ollama", "qdrant")
+        ipfs p2p ls 2>/dev/null | grep -qi "/x/${svc_pattern}"
+    }
+
+    ## Snapshot unique ipfs p2p ls (évite N appels ipfs successifs)
+    local _p2p_ls
+    _p2p_ls=$(ipfs p2p ls 2>/dev/null || true)
+
+    ## ── Profil ai-company : Stack IA Swarm ───────────────────────────────────
+    ## Pour chaque service IA : déterminer la SOURCE (local / p2p_tunnel / ssh_tunnel / none)
+    ## IMPORTANT : power_score et provider_ready n'utilisent que les services LOCAUX.
+
+    ## ── Ollama (port 11434) ───────────────────────────────────────────────────
     local ollama_active="false"
-    local qdrant_active="false"
-    local dify_active="false"
-    local open_webui_active="false"
+    local ollama_source="none"
 
-    ss -tln 2>/dev/null | grep -q ":11434 " && ollama_active="true"    # Ollama LLM
-    ss -tln 2>/dev/null | grep -q ":6333 " && qdrant_active="true"     # Qdrant vectors
-    ss -tln 2>/dev/null | grep -q ":8010 " && dify_active="true"       # Dify AI Workflow
+    if pgrep -x "ollama" >/dev/null 2>&1 || \
+       pgrep -f "ollama serve" >/dev/null 2>&1 || \
+       systemctl is-active --quiet ollama 2>/dev/null || \
+       { command -v docker >/dev/null 2>&1 && \
+         docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'ollama'; }; then
+        ollama_active="true"; ollama_source="local"
+    elif echo "$_p2p_ls" | grep -qi "/x/ollama"; then
+        ollama_active="true"; ollama_source="p2p_tunnel"
+    elif _port_via_ssh 11434; then
+        ollama_active="true"; ollama_source="ssh_tunnel"
+    elif ss -tln 2>/dev/null | grep -q ":11434 "; then
+        ollama_active="true"; ollama_source="unknown"
+    fi
 
-    ## Open WebUI : port 8000 → container 8080 (nom conteneur = ai-company-webui)
-    ss -tln 2>/dev/null | grep -q ":8000 " && open_webui_active="true"
-    command -v docker >/dev/null 2>&1 && \
-        docker ps --format '{{.Names}}' 2>/dev/null | grep -qE 'ai-company-webui|open-webui' \
-        && open_webui_active="true"
-
-    ## Dify.ai : vérif par nom conteneur (dify-api, dify-web, etc.)
-    command -v docker >/dev/null 2>&1 && \
-        docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'dify' && dify_active="true"
-
-    ## Ollama models list (quand actif — pour diffusion dans 12345.json du swarm)
+    ## Modèles Ollama : seulement si service LOCAL (ce sont NOS modèles à offrir au swarm)
     local ollama_models="[]"
-    if [[ "$ollama_active" == "true" ]] && command -v ollama >/dev/null 2>&1; then
+    if [[ "$ollama_source" == "local" ]] && command -v ollama >/dev/null 2>&1; then
         ollama_models=$(ollama list 2>/dev/null | awk 'NR>1 {print $1}' | \
             jq -R . | jq -s . 2>/dev/null || echo "[]")
+    fi
+
+    ## ── Qdrant (port 6333) ────────────────────────────────────────────────────
+    local qdrant_active="false"
+    local qdrant_source="none"
+
+    if { command -v docker >/dev/null 2>&1 && \
+         docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'qdrant'; } || \
+       pgrep -f "qdrant" >/dev/null 2>&1; then
+        qdrant_active="true"; qdrant_source="local"
+    elif echo "$_p2p_ls" | grep -qi "/x/qdrant"; then
+        qdrant_active="true"; qdrant_source="p2p_tunnel"
+    elif _port_via_ssh 6333; then
+        qdrant_active="true"; qdrant_source="ssh_tunnel"
+    elif ss -tln 2>/dev/null | grep -q ":6333 "; then
+        qdrant_active="true"; qdrant_source="unknown"
+    fi
+
+    ## ── Dify.ai (port 8010) ───────────────────────────────────────────────────
+    local dify_active="false"
+    local dify_source="none"
+
+    if command -v docker >/dev/null 2>&1 && \
+       docker ps --format '{{.Names}}' 2>/dev/null | grep -qE 'dify|docker-nginx-1'; then
+        dify_active="true"; dify_source="local"
+    elif echo "$_p2p_ls" | grep -qi "/x/dify"; then
+        dify_active="true"; dify_source="p2p_tunnel"
+    elif _port_via_ssh 8010; then
+        dify_active="true"; dify_source="ssh_tunnel"
+    elif ss -tln 2>/dev/null | grep -q ":8010 "; then
+        dify_active="true"; dify_source="unknown"
+    fi
+
+    ## ── Open WebUI (port 8000) ────────────────────────────────────────────────
+    local open_webui_active="false"
+    local open_webui_source="none"
+
+    if { command -v docker >/dev/null 2>&1 && \
+         docker ps --format '{{.Names}}' 2>/dev/null | grep -qE 'ai-company-webui|open-webui'; } || \
+       pgrep -f "open.webui\|open_webui" >/dev/null 2>&1; then
+        open_webui_active="true"; open_webui_source="local"
+    elif echo "$_p2p_ls" | grep -qi "/x/open.webui\|/x/webui"; then
+        open_webui_active="true"; open_webui_source="p2p_tunnel"
+    elif _port_via_ssh 8000; then
+        open_webui_active="true"; open_webui_source="ssh_tunnel"
+    elif ss -tln 2>/dev/null | grep -q ":8000 "; then
+        open_webui_active="true"; open_webui_source="unknown"
     fi
 
     ## ── Webtop KasmVNC (VDI) ──────────────────────────────────────────
@@ -227,10 +297,10 @@ get_fast_service_status() {
         "active": $g1billet_active
     },
     "ai_company": {
-        "ollama":     { "active": $ollama_active,     "port": 11434, "models": $ollama_models },
-        "qdrant":     { "active": $qdrant_active,     "port": 6333  },
-        "dify":       { "active": $dify_active,       "port": 8010  },
-        "open_webui": { "active": $open_webui_active, "port": 8000  }
+        "ollama":     { "active": $ollama_active,     "source": "$ollama_source",     "port": 11434, "models": $ollama_models },
+        "qdrant":     { "active": $qdrant_active,     "source": "$qdrant_source",     "port": 6333  },
+        "dify":       { "active": $dify_active,       "source": "$dify_source",       "port": 8010  },
+        "open_webui": { "active": $open_webui_active, "source": "$open_webui_source", "port": 8000  }
     },
     "webtop": {
         "active": $webtop_active,
@@ -290,8 +360,11 @@ get_fast_capacities() {
 
     ## ── Power-Score : GPS de calcul (GPU×4 + CPU×2 + RAM×0.5) ──────────────
     ## Tiers : 0-10 = Light (RPi) | 11-40 = Standard (PC) | 41+ = Brain-Node (GPU)
-    local cpu_cores=$(grep -c "processor" /proc/cpuinfo 2>/dev/null || echo 1)
-    local ram_total_gb=$(awk '/MemTotal/ {printf "%.0f", $2/1048576}' /proc/meminfo 2>/dev/null || echo 0)
+    ## IMPORTANT : calcul basé sur les ressources PHYSIQUES locales uniquement.
+    local cpu_cores
+    cpu_cores=$(grep -c "processor" /proc/cpuinfo 2>/dev/null || echo 1)
+    local ram_total_gb
+    ram_total_gb=$(awk '/MemTotal/ {printf "%.0f", $2/1048576}' /proc/meminfo 2>/dev/null || echo 0)
     local vram_gb=0
     local gpu_detected="false"
     if command -v nvidia-smi >/dev/null 2>&1; then
@@ -307,8 +380,23 @@ get_fast_capacities() {
     power_score=$(echo "($vram_gb * 4) + ($cpu_cores * 2) + ($ram_total_gb / 2)" | bc 2>/dev/null) \
         || power_score=$(( vram_gb * 4 + cpu_cores * 2 + ram_total_gb / 2 ))
     [[ -z "$power_score" ]] && power_score=0
+
+    ## provider_ready = vrai uniquement si des services IA LOCAUX tournent (pas des tunnels)
+    ## Un nœud qui se contente de relayer un GPU distant ne doit PAS s'annoncer comme provider.
+    local has_local_ai="false"
+    if pgrep -x "ollama" >/dev/null 2>&1 || \
+       pgrep -f "ollama serve" >/dev/null 2>&1 || \
+       systemctl is-active --quiet ollama 2>/dev/null || \
+       { command -v docker >/dev/null 2>&1 && \
+         docker ps --format '{{.Names}}' 2>/dev/null | \
+         grep -qE 'ollama|qdrant|dify|open-webui|ai-company'; }; then
+        has_local_ai="true"
+    fi
     local provider_ready="false"
+    ## Score élevé (GPU dédié) : toujours provider, même sans service IA actif
     [[ ${power_score} -gt 40 ]] && provider_ready="true"
+    ## Score standard + service IA local : peut aussi offrir ses ressources
+    [[ ${power_score} -gt 10 && "$has_local_ai" == "true" ]] && provider_ready="true"
 
     cat << EOF
     "zencard_slots": $zencard_slots,

@@ -85,18 +85,24 @@ cmd_list() {
             ] | "\(.[0])\(" " * (16 - (.[0]|length)))  \(.[1])\(" " * (6 - (.[1]|length)))  \(.[2])"
         ' "$cache" 2>/dev/null)
 
-        # Stack IA
+        # Stack IA — avec indication de la source (local / p2p_tunnel / ssh_tunnel)
         echo ""
-        printf "  ${BOLD}%-18s %-8s %-12s %-22s${NC}\n" "SERVICE IA" "PORT" "ÉTAT" "MODÈLES"
-        printf "  %s\n" "$(printf '─%.0s' {1..62})"
+        printf "  ${BOLD}%-18s %-8s %-14s %-10s %-20s${NC}\n" "SERVICE IA" "PORT" "ÉTAT" "SOURCE" "MODÈLES"
+        printf "  %s\n" "$(printf '─%.0s' {1..74})"
         jq -r '
             .services.ai_company | to_entries[] |
             [
                 .key[0:16],
                 ((.value.port // "") | tostring | .[0:6]),
-                (if .value.active == true then "✅" else "❌" end),
+                (if .value.active == true then
+                    if .value.source == "local" then "✅ LOCAL"
+                    elif .value.source == "p2p_tunnel" then "🔗 P2P"
+                    elif .value.source == "ssh_tunnel" then "🔒 SSH"
+                    else "⚠️  ?" end
+                 else "❌ OFF" end),
+                (.value.source // "none"),
                 ((.value.models // []) | join(",") | .[0:20])
-            ] | "\(.[0])\(" " * (16 - (.[0]|length)))  \(.[1])\(" " * (6 - (.[1]|length)))  \(.[2])  \(.[3])"
+            ] | "\(.[0])\(" " * (16 - (.[0]|length)))  \(.[1])\(" " * (6 - (.[1]|length)))  \(.[2])\(" " * (10 - (.[2]|length)))  \(.[4])"
         ' "$cache" 2>/dev/null | while read -r l; do printf "  %s\n" "$l"; done
     fi
 
@@ -148,6 +154,8 @@ cmd_list_remote() {
         captain=$(jq -r '.captain // "?"'                         "$json" 2>/dev/null | cut -d'@' -f1)
 
         [[ -z "$dragon_services" ]] && continue
+        # Ne lister que les nœuds qui se déclarent providers (services IA locaux)
+        [[ "$provider_ready" != "true" ]] && continue
 
         # Mesure latence (timeout 2s pour ne pas bloquer)
         local latency="N/A"
@@ -163,7 +171,14 @@ cmd_list_remote() {
             [[ -z "$svc" ]] && continue
             [[ -n "$filter_service" && "$svc" != "$filter_service" ]] && continue
 
-            # Modèles Ollama si disponible
+            # Vérifier que le service est bien LOCAL sur ce nœud (pas un tunnel)
+            local svc_source
+            svc_source=$(jq -r ".services.ai_company.${svc}.source // \"unknown\"" \
+                "$json" 2>/dev/null)
+            # Ignorer si c'est un tunnel (ce nœud ne fait que relayer)
+            [[ "$svc_source" == "p2p_tunnel" || "$svc_source" == "ssh_tunnel" ]] && continue
+
+            # Modèles Ollama (seulement si locaux)
             local specs=""
             if [[ "$svc" == "ollama" ]]; then
                 specs=$(jq -r '.services.ai_company.ollama.models // [] | join(",")' \
