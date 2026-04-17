@@ -138,16 +138,12 @@ get_fast_service_status() {
     ## Protocole IPFS P2P : /x/${svc,,}-${node_id}  (cf. tunnel.sh:85)
     ## SSH tunnel          : processus 'ssh' écoute sur le port  (cf. ollama.me.sh:238)
 
+    ## Retourne vrai si le port est écouté par un processus 'ssh' (tunnel SSH local).
+    ## Utilise ss -tlnp (pas de dépendance lsof) — visible pour les processus de l'utilisateur courant.
+    ## Format ss : ... users:(("ssh",pid=N,fd=M))
     _port_via_ssh() {
         local port="$1"
-        local _pid
-        _pid=$(lsof -t -i TCP:${port} -sTCP:LISTEN 2>/dev/null | head -1)
-        [[ -n "$_pid" ]] && [[ "$(ps -p "$_pid" -o comm= 2>/dev/null)" == "ssh" ]]
-    }
-
-    _port_via_p2p() {
-        local svc_pattern="$1"   # nom service (ex: "ollama", "qdrant")
-        ipfs p2p ls 2>/dev/null | grep -qi "/x/${svc_pattern}"
+        ss -tlnp 2>/dev/null | grep ":${port} " | grep -q '"ssh"'
     }
 
     ## Snapshot unique ipfs p2p ls (évite N appels ipfs successifs)
@@ -203,8 +199,10 @@ get_fast_service_status() {
     local dify_active="false"
     local dify_source="none"
 
+    ## Dify utilise son propre docker-compose (dify/docker/) → containers : docker-api-1, docker-nginx-1
+    ## Détection fiable : image langgenius/dify ou nom contenant "dify"
     if command -v docker >/dev/null 2>&1 && \
-       docker ps --format '{{.Names}}' 2>/dev/null | grep -qE 'dify|docker-nginx-1'; then
+       docker ps --format '{{.Names}}\t{{.Image}}' 2>/dev/null | grep -qi 'dify'; then
         dify_active="true"; dify_source="local"
     elif echo "$_p2p_ls" | grep -qi "/x/dify"; then
         dify_active="true"; dify_source="p2p_tunnel"
@@ -220,14 +218,81 @@ get_fast_service_status() {
 
     if { command -v docker >/dev/null 2>&1 && \
          docker ps --format '{{.Names}}' 2>/dev/null | grep -qE 'ai-company-webui|open-webui'; } || \
-       pgrep -f "open.webui\|open_webui" >/dev/null 2>&1; then
+       pgrep -f "open.webui" >/dev/null 2>&1 || \
+       pgrep -f "open_webui" >/dev/null 2>&1; then
         open_webui_active="true"; open_webui_source="local"
-    elif echo "$_p2p_ls" | grep -qi "/x/open.webui\|/x/webui"; then
+    elif echo "$_p2p_ls" | grep -qiE "/x/open.webui|/x/webui"; then
         open_webui_active="true"; open_webui_source="p2p_tunnel"
     elif _port_via_ssh 8000; then
         open_webui_active="true"; open_webui_source="ssh_tunnel"
     elif ss -tln 2>/dev/null | grep -q ":8000 "; then
         open_webui_active="true"; open_webui_source="unknown"
+    fi
+
+    ## ── MiroFish (port 5050) — Agent IA communautaire, nourri par feed_mirofish.sh ──
+    local mirofish_active="false"
+    local mirofish_source="none"
+
+    if command -v docker >/dev/null 2>&1 && \
+       docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'mirofish'; then
+        mirofish_active="true"; mirofish_source="local"
+    elif echo "$_p2p_ls" | grep -qi "/x/mirofish"; then
+        mirofish_active="true"; mirofish_source="p2p_tunnel"
+    elif _port_via_ssh 5050; then
+        mirofish_active="true"; mirofish_source="ssh_tunnel"
+    elif ss -tln 2>/dev/null | grep -q ":5050 "; then
+        mirofish_active="true"; mirofish_source="unknown"
+    fi
+
+    ## ── ComfyUI (port 8188) — Génération d'images ─────────────────────────────
+    local comfyui_active="false"
+    local comfyui_source="none"
+
+    if pgrep -f "comfyui" >/dev/null 2>&1 || \
+       pgrep -f "main\.py.*--listen" >/dev/null 2>&1 || \
+       systemctl is-active --quiet comfyui 2>/dev/null || \
+       { command -v docker >/dev/null 2>&1 && \
+         docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'comfyui'; }; then
+        comfyui_active="true"; comfyui_source="local"
+    elif echo "$_p2p_ls" | grep -qi "/x/comfyui"; then
+        comfyui_active="true"; comfyui_source="p2p_tunnel"
+    elif _port_via_ssh 8188; then
+        comfyui_active="true"; comfyui_source="ssh_tunnel"
+    elif ss -tln 2>/dev/null | grep -q ":8188 "; then
+        comfyui_active="true"; comfyui_source="unknown"
+    fi
+
+    ## ── Orpheus TTS (port 5005) — Synthèse vocale ─────────────────────────────
+    local orpheus_active="false"
+    local orpheus_source="none"
+
+    if command -v docker >/dev/null 2>&1 && \
+       docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'orpheus'; then
+        orpheus_active="true"; orpheus_source="local"
+    elif echo "$_p2p_ls" | grep -qi "/x/orpheus"; then
+        orpheus_active="true"; orpheus_source="p2p_tunnel"
+    elif _port_via_ssh 5005; then
+        orpheus_active="true"; orpheus_source="ssh_tunnel"
+    elif ss -tln 2>/dev/null | grep -q ":5005 "; then
+        orpheus_active="true"; orpheus_source="unknown"
+    fi
+
+    ## ── Vane (port 3002) — Moteur de recherche IA (ex-Perplexica) ───────────
+    local vane_active="false"
+    local vane_source="none"
+
+    if pgrep -f "vane" >/dev/null 2>&1 || \
+       pgrep -f "perplexica" >/dev/null 2>&1 || \
+       systemctl is-active --quiet vane 2>/dev/null || \
+       { command -v docker >/dev/null 2>&1 && \
+         docker ps --format '{{.Names}}' 2>/dev/null | grep -qE 'vane|perplexica'; }; then
+        vane_active="true"; vane_source="local"
+    elif echo "$_p2p_ls" | grep -qiE "/x/vane|/x/perplexica"; then
+        vane_active="true"; vane_source="p2p_tunnel"
+    elif _port_via_ssh 3002; then
+        vane_active="true"; vane_source="ssh_tunnel"
+    elif ss -tln 2>/dev/null | grep -q ":3002 "; then
+        vane_active="true"; vane_source="unknown"
     fi
 
     ## ── Webtop KasmVNC (VDI) ──────────────────────────────────────────
@@ -300,7 +365,11 @@ get_fast_service_status() {
         "ollama":     { "active": $ollama_active,     "source": "$ollama_source",     "port": 11434, "models": $ollama_models },
         "qdrant":     { "active": $qdrant_active,     "source": "$qdrant_source",     "port": 6333  },
         "dify":       { "active": $dify_active,       "source": "$dify_source",       "port": 8010  },
-        "open_webui": { "active": $open_webui_active, "source": "$open_webui_source", "port": 8000  }
+        "open_webui": { "active": $open_webui_active, "source": "$open_webui_source", "port": 8000  },
+        "mirofish":   { "active": $mirofish_active,   "source": "$mirofish_source",   "port": 5050  },
+        "comfyui":    { "active": $comfyui_active,    "source": "$comfyui_source",    "port": 8188  },
+        "orpheus":    { "active": $orpheus_active,    "source": "$orpheus_source",    "port": 5005  },
+        "vane":       { "active": $vane_active,       "source": "$vane_source",       "port": 3002  }
     },
     "webtop": {
         "active": $webtop_active,
@@ -381,22 +450,28 @@ get_fast_capacities() {
         || power_score=$(( vram_gb * 4 + cpu_cores * 2 + ram_total_gb / 2 ))
     [[ -z "$power_score" ]] && power_score=0
 
-    ## provider_ready = vrai uniquement si des services IA LOCAUX tournent (pas des tunnels)
+    ## provider_ready = vrai uniquement si des services IA LOCAUX tournent (pas des tunnels).
+    ## Dérivé des variables *_source déjà calculées ci-dessus — pas de double détection.
     ## Un nœud qui se contente de relayer un GPU distant ne doit PAS s'annoncer comme provider.
     local has_local_ai="false"
-    if pgrep -x "ollama" >/dev/null 2>&1 || \
-       pgrep -f "ollama serve" >/dev/null 2>&1 || \
-       systemctl is-active --quiet ollama 2>/dev/null || \
-       { command -v docker >/dev/null 2>&1 && \
-         docker ps --format '{{.Names}}' 2>/dev/null | \
-         grep -qE 'ollama|qdrant|dify|open-webui|ai-company'; }; then
-        has_local_ai="true"
-    fi
+    [[ "$ollama_source"    == "local" || \
+       "$qdrant_source"    == "local" || \
+       "$dify_source"      == "local" || \
+       "$open_webui_source" == "local" || \
+       "$mirofish_source"  == "local" || \
+       "$comfyui_source"   == "local" || \
+       "$orpheus_source"   == "local" || \
+       "$vane_source"      == "local" ]] && has_local_ai="true"
     local provider_ready="false"
     ## Score élevé (GPU dédié) : toujours provider, même sans service IA actif
     [[ ${power_score} -gt 40 ]] && provider_ready="true"
     ## Score standard + service IA local : peut aussi offrir ses ressources
     [[ ${power_score} -gt 10 && "$has_local_ai" == "true" ]] && provider_ready="true"
+
+    ## storage_ready = vrai si le nœud peut héberger des données pour la constellation
+    ## Seuil : ≥1 slot ZenCard (≥128 Go NextCloud) OU ≥10 slots NOSTR (≥100 Go IPFS)
+    local storage_ready="false"
+    [[ ${zencard_slots} -ge 1 || ${nostr_slots} -ge 10 ]] && storage_ready="true"
 
     cat << EOF
     "zencard_slots": $zencard_slots,
@@ -405,6 +480,7 @@ get_fast_capacities() {
     "available_space_gb": $total_available_gb,
     "power_score": $power_score,
     "provider_ready": $provider_ready,
+    "storage_ready": $storage_ready,
     "gpu": {
         "detected": $gpu_detected,
         "vram_gb": $vram_gb
@@ -451,9 +527,6 @@ export_json() {
     fi
 
     local hostname=$(hostname -f)
-    
-    # Get Prometheus metrics if available
-    local prometheus_metrics=$(get_prometheus_metrics)
     
     # Get CPU info with safe fallbacks for empty values
     local cpu_model=$(grep "model name" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null)

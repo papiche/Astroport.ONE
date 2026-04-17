@@ -378,6 +378,41 @@ log_output "  Résilience: $HEALTH_STATUS (Niveau $RESILIENCE_LEVEL) | CASH: $WE
 log_output "  Love Ledger: ${LOVE_TOTAL_ZEN} Ẑen offerts sur ${LOVE_WEEKS_COUNT} semaine(s)"
 
 ###############################################################################
+# COLLECT HARDWARE DATA (depuis heartbox_analysis.json — cache 5 min)
+###############################################################################
+
+log_output "🖥️  Collecting hardware data (heartbox)..."
+
+HEARTBOX_CACHE="$HOME/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json"
+HW_POWER_SCORE=0; HW_TIER="light"; HW_RANK="light"
+HW_PROVIDER_READY="false"; HW_STORAGE_READY="false"
+HW_CPU_CORES=1; HW_RAM_GB=0; HW_GPU_VRAM=0; HW_GPU_DETECTED="false"
+
+if [[ -s "$HEARTBOX_CACHE" ]]; then
+    HW_POWER_SCORE=$(jq -r '.capacities.power_score    // 0'     "$HEARTBOX_CACHE" 2>/dev/null || echo 0)
+    HW_PROVIDER_READY=$(jq -r '.capacities.provider_ready // false' "$HEARTBOX_CACHE" 2>/dev/null)
+    HW_STORAGE_READY=$(jq -r '.capacities.storage_ready  // false'  "$HEARTBOX_CACHE" 2>/dev/null)
+    HW_CPU_CORES=$(jq -r '.system.cpu.cores           // 1'     "$HEARTBOX_CACHE" 2>/dev/null || echo 1)
+    HW_RAM_GB=$(jq -r '.system.memory.total_gb        // 0'     "$HEARTBOX_CACHE" 2>/dev/null || echo 0)
+    HW_GPU_VRAM=$(jq -r '.capacities.gpu.vram_gb      // 0'     "$HEARTBOX_CACHE" 2>/dev/null || echo 0)
+    HW_GPU_DETECTED=$(jq -r '.capacities.gpu.detected // false' "$HEARTBOX_CACHE" 2>/dev/null)
+fi
+
+## Tier et rang DRAGON (miroir de la logique install.sh)
+if   [[ ${HW_POWER_SCORE:-0} -gt 40 ]]; then HW_TIER="brain";    HW_RANK="dragon_compute"
+elif [[ ${HW_POWER_SCORE:-0} -gt 10 ]]; then HW_TIER="standard"; HW_RANK="dragon_origin"
+else                                          HW_TIER="light";    HW_RANK="light"
+fi
+## provider_ready élève le rang
+[[ "$HW_PROVIDER_READY" == "true" && "$HW_RANK" == "dragon_origin" ]] && HW_RANK="dragon_compute"
+## Capitaine certifié (a reçu la primo-transaction) → éligible DRAGON ZEN
+[[ -s "$HOME/.zen/game/players/.current/.player" ]] && \
+    [[ $(echo "${CASH_ZEN:-0} > 0" | bc -l 2>/dev/null || echo 0) -eq 1 ]] && \
+    HW_RANK="dragon_zen"
+
+log_output "  Hardware: CPU=${HW_CPU_CORES} RAM=${HW_RAM_GB}Go VRAM=${HW_GPU_VRAM}Go score=${HW_POWER_SCORE} tier=${HW_TIER} rank=${HW_RANK}"
+
+###############################################################################
 # GET DEPRECIATION DATA
 ###############################################################################
 
@@ -516,6 +551,18 @@ CONTENT_JSON=$(cat <<EOF
     "machine_value": ${MACHINE_VALUE:-0},
     "residual_value": ${RESIDUAL_VALUE:-0},
     "percent": ${DEPRECIATION_PERCENT:-0}
+  },
+  "hardware": {
+    "power_score":    ${HW_POWER_SCORE:-0},
+    "tier":           "$HW_TIER",
+    "dragon_rank":    "$HW_RANK",
+    "provider_ready": $HW_PROVIDER_READY,
+    "storage_ready":  $HW_STORAGE_READY,
+    "cpu_cores":      ${HW_CPU_CORES:-1},
+    "ram_gb":         ${HW_RAM_GB:-0},
+    "gpu_vram_gb":    ${HW_GPU_VRAM:-0},
+    "gpu_detected":   $HW_GPU_DETECTED,
+    "machine_value_zen": ${MACHINE_VALUE:-0}
   }
 }
 EOF
@@ -591,7 +638,15 @@ TAGS_JSON=$(cat <<EOF
   ["provision:is", "$IS_PROVISION"],
   ["depreciation:machine_value", "$MACHINE_VALUE"],
   ["depreciation:residual", "$RESIDUAL_VALUE"],
-  ["depreciation:percent", "$DEPRECIATION_PERCENT"]
+  ["depreciation:percent", "$DEPRECIATION_PERCENT"],
+  ["hw:power_score", "$HW_POWER_SCORE"],
+  ["hw:tier", "$HW_TIER"],
+  ["hw:dragon_rank", "$HW_RANK"],
+  ["hw:provider_ready", "$HW_PROVIDER_READY"],
+  ["hw:storage_ready", "$HW_STORAGE_READY"],
+  ["hw:cpu_cores", "$HW_CPU_CORES"],
+  ["hw:ram_gb", "$HW_RAM_GB"],
+  ["hw:gpu_vram_gb", "$HW_GPU_VRAM"]
 ]
 EOF
 )
@@ -609,6 +664,15 @@ if [[ "$DRYRUN" == "true" ]]; then
     echo ""
     echo "Kind: 30850 (Economic Health Report)"
     echo "Auteur: ${CAPTAIN_HEX:0:16}..."
+    echo ""
+    echo "═══ RANG DRAGON : $HW_RANK (score: $HW_POWER_SCORE | tier: $HW_TIER) ═══"
+    case $HW_RANK in
+        dragon_zen)     echo "🐉 DRAGON ẐEN      — capitaine certifié + bilan positif" ;;
+        dragon_compute) echo "🔥 DRAGON COMPUTE  — GPU/IA local, provider du swarm"   ;;
+        dragon_origin)  echo "⚡ DRAGON ORIGIN   — nœud standard, démarrage"          ;;
+        light)          echo "🌿 Nœud Léger      — RPi/faible puissance"              ;;
+    esac
+    echo "   CPU: ${HW_CPU_CORES} cœurs | RAM: ${HW_RAM_GB} Go | VRAM: ${HW_GPU_VRAM} Go"
     echo ""
     echo "═══ NIVEAU DE RÉSILIENCE : $RESILIENCE_LEVEL ($HEALTH_STATUS) ═══"
     case $RESILIENCE_LEVEL in

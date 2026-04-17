@@ -39,6 +39,8 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     echo ""
     echo "Variables d'environnement supportées :"
     echo "  CAPTAIN_EMAIL, NODE_DOMAIN, CAPTAIN_EMAIL_DOMAIN, INSTALL_PROFILE"
+    echo "  INSTALL_OLLAMA=yes|no    → Ollama (si GPU détecté)"
+    echo "  INSTALL_COMFYUI=yes|no   → ComfyUI Docker (si GPU détecté)"
     echo ""
     echo "Exemples d'installation silencieuse :"
     echo "  bash install.sh \"\" \"ma-base.org\"                    -> Standard sur ma-base.org"
@@ -162,7 +164,7 @@ done
 echo "#############################################"
 echo "##### INSTALL MULTIMEDIA & DATA TOOLS  ######"
 echo "#############################################"
-for i in qrencode pv gnupg pandoc cargo btop sox prometheus ocrmypdf ca-certificates basez markdown jq bc file gawk ffmpeg geoip-bin bind9-dnsutils ntpsec-ntpdate v4l-utils espeak vlc mp3info musl-dev openssl detox nmap httrack html2text imagemagick; do
+for i in qrencode pv gnupg pandoc cargo btop sox ocrmypdf ca-certificates basez markdown jq bc file gawk ffmpeg geoip-bin bind9-dnsutils ntpsec-ntpdate v4l-utils espeak vlc mp3info musl-dev openssl detox nmap httrack html2text imagemagick; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -345,8 +347,12 @@ echo "## INSTALL PowerJoular (Power consumption monitoring) ##########"
 ~/.zen/Astroport.ONE/install/install_powerjoular.sh
 
 ###############################################################
-echo "## INSTALL Prometheus exporters (heartbox monitoring) ##########"
-~/.zen/Astroport.ONE/install/install_prometheus.sh
+## prometheus-node-exporter seul : léger, expose /metrics sur :9100
+## Prometheus serveur complet : installé uniquement avec le profil ai-company
+echo "## INSTALL prometheus-node-exporter (heartbox metrics export) ##########"
+sudo apt-get install -y prometheus-node-exporter 2>/dev/null \
+    && echo "✅ prometheus-node-exporter actif sur :9100" \
+    || echo "⚠️  prometheus-node-exporter non disponible"
 
 if [[ $INSTALL_PROFILE == "dev" ]]; then
     ###############################################################
@@ -489,6 +495,12 @@ case "${INSTALL_PROFILE}" in
         echo "╔══════════════════════════════════════════════════════════════╗"
         echo "║  🧠 PROFIL ai-company — Stack IA Swarm (EXPÉRIMENTAL)     ║"
         echo "╚══════════════════════════════════════════════════════════════╝"
+        ## Prometheus serveur complet : collecte les métriques heartbox + node_exporter
+        ## Utile pour les Brain-Nodes (GPU) qui veulent monitorer leur charge IA
+        echo "⏳ Installation Prometheus + exporters heartbox..."
+        ~/.zen/Astroport.ONE/install/install_prometheus.sh \
+            && echo "✅ Prometheus heartbox monitoring actif (:9090)" \
+            || echo "⚠️  Prometheus — erreur (non bloquant)"
         ~/.zen/Astroport.ONE/install/install-ai-company.docker.sh \
             && AISTACK_ACTIVE=true \
             && echo "✅ AI Company Stack démarrée" \
@@ -575,6 +587,61 @@ case "${INSTALL_PROFILE}" in
         ;;
 esac
 
+###############################################################
+echo "## DÉTECTION GPU — Installation IA optionnelle ###########"
+###############################################################
+## Variables optionnelles pour mode silencieux :
+##   INSTALL_OLLAMA=yes    → Ollama installé sans confirmation
+##   INSTALL_COMFYUI=yes   → ComfyUI installé sans confirmation
+##   INSTALL_OLLAMA=no     → Ignoré même si GPU présent
+~/.zen/Astroport.ONE/install/install_gpu_ai.sh
+
+###############################################################
+echo "## SCORE CARD DU NŒUD ################################"
+###############################################################
+## Calcul inline — pas de dépendance à IPFS au moment de l'install
+_CPU=$(grep -c "processor" /proc/cpuinfo 2>/dev/null || echo 1)
+_RAM=$(awk '/MemTotal/ {printf "%.0f", $2/1048576}' /proc/meminfo 2>/dev/null || echo 0)
+_VRAM=0
+command -v nvidia-smi >/dev/null 2>&1 && \
+    _VRAM=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null \
+        | awk '{sum+=$1} END {printf "%.0f", sum/1024}')
+[[ -z "$_VRAM" || "$_VRAM" == "0" ]] && _VRAM=0
+_SCORE=$(( _VRAM * 4 + _CPU * 2 + _RAM / 2 ))
+
+if   [[ $_SCORE -gt 40 ]]; then _TIER="🔥 Brain-Node (GPU)"; _RANK="DRAGON COMPUTE"; _MVAL=$(( _SCORE * 12 )); _PAF_DEFAULT=28
+elif [[ $_SCORE -gt 10 ]]; then _TIER="⚡ Standard";         _RANK="DRAGON ORIGIN";  _MVAL=$(( _SCORE * 6  )); _PAF_DEFAULT=14
+else                             _TIER="🌿 Léger";            _RANK="Nœud Léger";     _MVAL=100;               _PAF_DEFAULT=7
+fi
+
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║  🏆 SCORE CARD — Rang dans la constellation                  ║"
+echo "╠══════════════════════════════════════════════════════════════╣"
+printf "║  %-58s ║\n" "CPU : ${_CPU} cœurs  RAM : ${_RAM} Go  VRAM : ${_VRAM} Go"
+printf "║  %-58s ║\n" "Power-Score : ${_SCORE}  →  ${_TIER}"
+printf "║  %-58s ║\n" "Rang DRAGON : ${_RANK}"
+echo "╠══════════════════════════════════════════════════════════════╣"
+printf "║  %-58s ║\n" "Valeur matériel estimée  : ${_MVAL} ẐEN"
+printf "║  %-58s ║\n" "PAF hebdomadaire suggérée : ${_PAF_DEFAULT} ẐEN"
+echo "╠══════════════════════════════════════════════════════════════╣"
+echo "║  Participez au concours DRAGON UPlanet :                    ║"
+echo "║  Publiez votre score → kind:30850 (ECONOMY.broadcast.sh)    ║"
+echo "║  Faites évaluer votre nœud → support@qo-op.com              ║"
+echo "║  → Devenez DRAGON ORIGIN, DRAGON COMPUTE ou DRAGON ẐEN      ║"
+echo "╚══════════════════════════════════════════════════════════════╝"
+
+## Initialiser MACHINE_VALUE, PAF, CAPITAL_DATE dans game/.env si absents
+_GAME_ENV="$HOME/.zen/game/.env"
+mkdir -p "$HOME/.zen/game"
+if ! grep -q "^MACHINE_VALUE=" "$_GAME_ENV" 2>/dev/null; then
+    echo "MACHINE_VALUE=${_MVAL}"                        >> "$_GAME_ENV"
+    echo "PAF=${_PAF_DEFAULT}"                           >> "$_GAME_ENV"
+    echo "CAPITAL_DATE=$(date +%Y%m%d)000000000"        >> "$_GAME_ENV"
+    echo "DEPRECIATION_WEEKS=156"                        >> "$_GAME_ENV"
+    echo "  ✅ Valeurs initiales sauvegardées → ${_GAME_ENV}"
+    echo "     MACHINE_VALUE=${_MVAL} ẐEN | PAF=${_PAF_DEFAULT} ẐEN/sem"
+fi
+
 end=`date +%s`
 DURATION=$((end - start))
 MINUTES=$((DURATION / 60))
@@ -629,6 +696,12 @@ echo "    G1Billet   http://localhost:33101"
 if [[ "${NEXTCLOUD_ACTIVE}" == "true" ]]; then
 echo "    NextCloud  http://127.0.0.1:8443  (admin initial)"
 echo "               https://cloud.${DOMAIN_DISPLAY}  (via NPM)"
+fi
+if command -v ollama >/dev/null 2>&1; then
+echo "    Ollama     http://localhost:11434  ← LLM GPU local"
+fi
+if systemctl is-active --quiet comfyui 2>/dev/null; then
+echo "    ComfyUI    http://localhost:8188   ← Génération d'images GPU"
 fi
 if [[ "${AISTACK_ACTIVE}" == "true" ]]; then
 echo "    Open WebUI http://localhost:8000  ← portail IA pour les membres"

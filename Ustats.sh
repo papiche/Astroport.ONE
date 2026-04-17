@@ -319,19 +319,38 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     echo "${#MASTROPORT_FILES[@]} ASTROPORT FILES FOUND" >&2
     echo "===========================================================" >&2
 
-    # Array to store SWARM data
+    # Array to store SWARM data (carte synthétique — liens + scores essentiels)
     swarm_array=()
     for astro_file in "${MASTROPORT_FILES[@]}"; do
         if [[ -s "$astro_file" ]]; then
-            if swarm_data=$(cat "$astro_file" | jq -c '.'); then
-                node_id=$(echo "$swarm_data" | jq -r '.ipfsnodeid // empty')
-                # Only include if it's not our own node and has an ID
-                if [[ -n "$node_id" && "$node_id" != "$IPFSNODEID" ]]; then
-                    echo "adding $node_id from $astro_file" >&2
-                    swarm_array+=("$swarm_data")
-                else
-                    echo "skipping $astro_file (our own node or empty ID)" >&2
-                fi
+            node_id=$(jq -r '.ipfsnodeid // empty' "$astro_file" 2>/dev/null)
+            # Only include if it's not our own node and has an ID
+            if [[ -z "$node_id" || "$node_id" == "$IPFSNODEID" ]]; then
+                echo "skipping $astro_file (our own node or empty ID)" >&2
+                continue
+            fi
+            ## Carte minimale : identité + liens d'inspection + scores de capacité
+            swarm_data=$(jq -c '{
+                ipfsnodeid,
+                hostname,
+                captain,
+                captainHEX,
+                STATION_LAT,
+                STATION_LON,
+                g1station,
+                myIPFS,
+                myAPI,
+                myRELAY,
+                uSPOT,
+                NODEZEN,
+                PAF,
+                power_score:    (.capacities.power_score    // 0),
+                provider_ready: (.capacities.provider_ready // false),
+                storage_ready:  (.capacities.storage_ready  // false)
+            }' "$astro_file" 2>/dev/null)
+            if [[ -n "$swarm_data" ]]; then
+                echo "adding $node_id from $astro_file" >&2
+                swarm_array+=("$swarm_data")
             fi
         fi
     done
