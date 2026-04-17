@@ -138,7 +138,7 @@ get_fast_service_status() {
     local qdrant_active="false"
     local dify_active="false"
     local open_webui_active="false"
-    
+
     ss -tln 2>/dev/null | grep -q ":11434 " && ollama_active="true"    # Ollama LLM
     ss -tln 2>/dev/null | grep -q ":6333 " && qdrant_active="true"     # Qdrant vectors
     ss -tln 2>/dev/null | grep -q ":8010 " && dify_active="true"       # Dify AI Workflow
@@ -148,10 +148,17 @@ get_fast_service_status() {
     command -v docker >/dev/null 2>&1 && \
         docker ps --format '{{.Names}}' 2>/dev/null | grep -qE 'ai-company-webui|open-webui' \
         && open_webui_active="true"
-        
+
     ## Dify.ai : vérif par nom conteneur (dify-api, dify-web, etc.)
     command -v docker >/dev/null 2>&1 && \
         docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'dify' && dify_active="true"
+
+    ## Ollama models list (quand actif — pour diffusion dans 12345.json du swarm)
+    local ollama_models="[]"
+    if [[ "$ollama_active" == "true" ]] && command -v ollama >/dev/null 2>&1; then
+        ollama_models=$(ollama list 2>/dev/null | awk 'NR>1 {print $1}' | \
+            jq -R . | jq -s . 2>/dev/null || echo "[]")
+    fi
 
     ## ── Webtop KasmVNC (VDI) ──────────────────────────────────────────
     local webtop_active="false"
@@ -220,7 +227,7 @@ get_fast_service_status() {
         "active": $g1billet_active
     },
     "ai_company": {
-        "ollama":     { "active": $ollama_active,     "port": 11434 },
+        "ollama":     { "active": $ollama_active,     "port": 11434, "models": $ollama_models },
         "qdrant":     { "active": $qdrant_active,     "port": 6333  },
         "dify":       { "active": $dify_active,       "port": 8010  },
         "open_webui": { "active": $open_webui_active, "port": 8000  }
@@ -270,22 +277,50 @@ get_fast_capacities() {
     # Calculate slots (simplified calculation)
     local zencard_slots=0
     local nostr_slots=0
-    
+
     if [[ $(echo "$nextcloud_available_gb > 0" | bc 2>/dev/null) -eq 1 ]]; then
         zencard_slots=$(echo "($nextcloud_available_gb) / 128" | bc 2>/dev/null || echo "0")
         [[ $(echo "$zencard_slots < 0" | bc 2>/dev/null) -eq 1 ]] && zencard_slots=0
     fi
-    
+
     if [[ $(echo "$ipfs_available_gb > 0" | bc 2>/dev/null) -eq 1 ]]; then
         nostr_slots=$(echo "($ipfs_available_gb) / 10" | bc 2>/dev/null || echo "0")
         [[ $(echo "$nostr_slots < 0" | bc 2>/dev/null) -eq 1 ]] && nostr_slots=0
     fi
-    
+
+    ## ── Power-Score : GPS de calcul (GPU×4 + CPU×2 + RAM×0.5) ──────────────
+    ## Tiers : 0-10 = Light (RPi) | 11-40 = Standard (PC) | 41+ = Brain-Node (GPU)
+    local cpu_cores=$(grep -c "processor" /proc/cpuinfo 2>/dev/null || echo 1)
+    local ram_total_gb=$(awk '/MemTotal/ {printf "%.0f", $2/1048576}' /proc/meminfo 2>/dev/null || echo 0)
+    local vram_gb=0
+    local gpu_detected="false"
+    if command -v nvidia-smi >/dev/null 2>&1; then
+        local raw_vram
+        raw_vram=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null \
+            | awk '{sum+=$1} END {printf "%.0f", sum/1024}')
+        if [[ -n "$raw_vram" && "$raw_vram" -gt 0 ]]; then
+            vram_gb=$raw_vram
+            gpu_detected="true"
+        fi
+    fi
+    local power_score
+    power_score=$(echo "($vram_gb * 4) + ($cpu_cores * 2) + ($ram_total_gb / 2)" | bc 2>/dev/null) \
+        || power_score=$(( vram_gb * 4 + cpu_cores * 2 + ram_total_gb / 2 ))
+    [[ -z "$power_score" ]] && power_score=0
+    local provider_ready="false"
+    [[ ${power_score} -gt 40 ]] && provider_ready="true"
+
     cat << EOF
     "zencard_slots": $zencard_slots,
     "nostr_slots": $nostr_slots,
     "reserved_captain_slots": 8,
     "available_space_gb": $total_available_gb,
+    "power_score": $power_score,
+    "provider_ready": $provider_ready,
+    "gpu": {
+        "detected": $gpu_detected,
+        "vram_gb": $vram_gb
+    },
     "storage_details": {
         "nextcloud": {
             "available_gb": $nextcloud_available_gb,

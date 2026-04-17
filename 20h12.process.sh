@@ -469,6 +469,35 @@ else
     echo "⚠️ 24/7 PowerJoular CSV not found ($POWER_24H_CSV); is powerjoular.service running?" >> $LOG_FILE
 fi
 
+########################################################################
+## TUNNEL WATCHDOG — Relance les tunnels P2P persistants tombés
+## Les tunnels activés via `astrosystemctl enable` sont dans ~/.zen/tunnels/enabled/
+########################################################################
+TUNNELS_ENABLED_DIR="$HOME/.zen/tunnels/enabled"
+if [[ -d "$TUNNELS_ENABLED_DIR" ]] && [[ -n "$(ls -A "$TUNNELS_ENABLED_DIR" 2>/dev/null)" ]]; then
+    echo "🔍 WATCHDOG TUNNELS : vérification des tunnels persistants..."
+    for tunnel_wrapper in "$TUNNELS_ENABLED_DIR"/x_*.sh; do
+        [[ -f "$tunnel_wrapper" ]] || continue
+        # Extraire le nom du service depuis le nom de fichier (x_SERVICE_NODEID.sh)
+        svc=$(basename "$tunnel_wrapper" | sed 's/x_//;s/_[^_]*\.sh$//')
+        # Vérifier si un tunnel IPFS P2P est actif pour ce service
+        if ipfs p2p ls 2>/dev/null | grep -qi "${svc}"; then
+            echo "  ✅ Tunnel ${svc} : actif"
+        else
+            echo "  ⚡ Tunnel ${svc} : tombé — relance..."
+            bash "$tunnel_wrapper" >> "$HOME/.zen/tmp/tunnel.log" 2>&1 &
+            sleep 2
+            if ipfs p2p ls 2>/dev/null | grep -qi "${svc}"; then
+                echo "  ✅ Tunnel ${svc} : relancé avec succès"
+            else
+                echo "  ⚠️  Tunnel ${svc} : relance échouée (vérifiez le nœud distant)"
+            fi
+        fi
+    done
+else
+    echo "ℹ️  Aucun tunnel persistant configuré (astrosystemctl enable <service>)"
+fi
+
 ## MAIL LOG : support@qo-op.com ##
 # Send email with power consumption report if available (report is written to /tmp/)
 POWER_REPORT_HTML="/tmp/20h12_power_report.html"

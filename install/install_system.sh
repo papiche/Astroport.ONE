@@ -147,7 +147,10 @@ ln -f -s ${ASTRO}/cpscript ~/.local/bin/cpscript
 ln -f -s ${ASTRO}/tools/natools.py ~/.local/bin/natools
 ln -f -s ${ASTRO}/tools/keygen ~/.local/bin/keygen
 ln -f -s ${ASTRO}/captain.sh ~/.local/bin/captain
+ln -f -s ${ASTRO}/tools/astrosystemctl.sh ~/.local/bin/astrosystemctl
 ## gcli symlink (g1cli Duniter v2s client)
 [[ $(which gcli 2>/dev/null) ]] && ln -f -s $(which gcli) ~/.local/bin/gcli
+## Créer le répertoire pour les tunnels persistants
+mkdir -p "$HOME/.zen/tunnels/enabled"
 
 echo "######### SYSTEM INSTALL COMPLETE #############"

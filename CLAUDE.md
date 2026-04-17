@@ -93,10 +93,13 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
   - `duniter_getnode.sh` - Dynamic Duniter v2 RPC/squid node discovery
   - `cron_VRFY.sh` - Cron job management
   - `make_NOSTRCARD.sh` - NOSTR Card creation
+  - `heartbox_analysis.sh` - Hardware analysis: CPU/RAM/GPU, Power-Score, services status, Ollama models. Cached in `~/.zen/tmp/$IPFSNODEID/heartbox_analysis.json`
+  - `astrosystemctl.sh` - **CLI Cloud P2P de Puissance** : compare Power-Score local vs swarm, connecte/active des services distants via tunnels IPFS P2P (`list`, `list-remote`, `connect`, `enable`, `disable`, `status`). Symlink : `~/.local/bin/astrosystemctl`
+  - `setup_npm_dynamic.sh` - Crée dynamiquement un proxy host NPM pour un tunnel P2P (`SERVICE_NAME PORT` → `service.DOMAIN`)
 - **`RUNTIME/TW/`** - TiddlyWiki templates and management
 - **`templates/`** - HTML templates
 - **`install/`** - Secondary install scripts (build-time):
-  - `install_system.sh` - Sudoers, systemd, SSH, symlinks
+  - `install_system.sh` - Sudoers, systemd, SSH, symlinks (dont `astrosystemctl`)
   - `install_upassport.sh`, `install_gcli.sh`, `install_deno.sh`, etc.
   - `setup/` - Runtime configuration scripts:
     - `setup.sh` - Hostname, IPFS init, .env, cron, captain onboarding
@@ -115,7 +118,21 @@ All runtime data lives under `~/.zen/` (not in the repo):
 - `~/.zen/game/players/` - Player data and keys
 - `~/.zen/game/nostr/` - NOSTR identity data
 - `~/.zen/tmp/` - Temp cache, logs, swarm data
+- `~/.zen/tmp/$IPFSNODEID/heartbox_analysis.json` - Hardware analysis cache (5 min TTL), inclut `power_score`, `provider_ready`, `gpu`
+- `~/.zen/tunnels/enabled/` - Tunnels P2P persistants (watchdog 20h12). Créés par `astrosystemctl enable`
 - `~/.zen/.pid` - Service PID file
+
+### Power-Score (GPS de Calcul)
+Chaque station calcule son Power-Score = `GPU_VRAM_GB × 4 + CPU_cores × 2 + RAM_GB × 0.5`
+
+| Score | Tier | Profil | Rôle |
+|-------|------|--------|------|
+| 0–10  | 🌿 Light   | Raspberry Pi Zero/3 | Consommateur uniquement |
+| 11–40 | ⚡ Standard | PC bureautique | Petits modèles locaux |
+| 41+   | 🔥 Brain    | GPU dédié | Fournisseur swarm |
+
+Le score est publié dans `12345.json` via `capacities.power_score` et `capacities.provider_ready`.
+`astrosystemctl list-remote` parcourt `~/.zen/tmp/swarm/*/12345.json` pour afficher les Brain-Nodes disponibles.
 
 ### Service Ports
 | Port | Service | Subdomain |
@@ -128,6 +145,8 @@ All runtime data lives under `~/.zen/` (not in the repo):
 | 33101 | G1Billet | `libra.DOMAIN` |
 | 80/443/81 | Nginx Proxy Manager (SSL) | — |
 | 8002/8443 | NextCloud AIO admin | `cloud.DOMAIN` |
+| 11434 | Ollama LLM (via tunnel ou local) | `ollama.DOMAIN` (dynamique) |
+| 8188 | ComfyUI (via tunnel ou local) | `comfyui.DOMAIN` (dynamique) |
 | 1234 | Twist BASH API (deprecated) | — |
 
 ### Systemd Services (bare metal)
