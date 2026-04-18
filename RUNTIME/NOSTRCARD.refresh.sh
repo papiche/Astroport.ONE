@@ -288,17 +288,22 @@ for PLAYER in "${NOSTR[@]}"; do
         continue
     fi
 
-    # Vérification d'intégrité minimale
+    # ---------------------------------------------------------
+    # 1. Détection de corruption "Fantôme" (Fichiers de base absents)
+    # ---------------------------------------------------------
     if [[ ! -f ~/.zen/game/nostr/${PLAYER}/HEX || ! -f ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR ]]; then
         BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/.birthdate 2>/dev/null)
         if [[ -n "$BIRTHDATE" ]]; then
             DIFF=$(( ($(date +%s) - $(date -d "$BIRTHDATE" +%s)) / 86400 ))
             if [ $DIFF -gt 7 ]; then
-                log "WARN" "Ghost account (missing HEX/G1PUB) detected. Purging: $PLAYER"
+                log "CRITICAL" "TECHNICAL CORRUPTION: Ghost account detected. Purging: $PLAYER (Even if Captain)"
                 rm -rf "${HOME}/.zen/game/nostr/${PLAYER}"
-                continue
+                rm -rf "${HOME}/.zen/game/players/${PLAYER}"
+                continue 
             fi
         fi
+        log "INFO" "Ghost account $PLAYER detected but period of grace active (< 7 days)."
+        continue
     fi
 
     # ---------------------------------------------------------
@@ -561,6 +566,17 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
         rm "$tmp_mid" "$tmp_tail" 2>/dev/null
         rm ~/.zen/game/nostr/${PLAYER}/ERROR 2>/dev/null
     else
+        log "ERROR" "BAD DISCO DECODING for ${PLAYER}"
+        BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/.birthdate 2>/dev/null)
+        if [[ -n "$BIRTHDATE" ]]; then
+            DIFF=$(( ($(date +%s) - $(date -d "$BIRTHDATE" +%s)) / 86400 ))
+            if [ $DIFF -gt 7 ]; then
+                log "CRITICAL" "TECHNICAL CORRUPTION: Keys unusable for $PLAYER. Forcing Hard Reset (rm -rf)."
+                rm -rf "${HOME}/.zen/game/nostr/${PLAYER}"
+                rm -rf "${HOME}/.zen/game/players/${PLAYER}"
+                continue
+            fi
+        fi
         echo "ERROR : BAD DISCO DECODING" >> ~/.zen/game/nostr/${PLAYER}/ERROR
         continue
     fi
@@ -822,13 +838,14 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
                                 continue
                             fi
 
-                            log "WARN" "[7 DAYS CYCLE] NOSTR Card ($COINS G1) - insufficient funds! Need at least $MIN_BALANCE Ğ1 (1 Ğ1 minimum + $TOTAL_PAYMENT Ğ1 payment). Destroying if not captain"
-                            # Capitaine : jamais DESTROY
+                            log "WARN" "[7 DAYS CYCLE] NOSTR Card ($COINS G1) - insufficient funds! Need at least $MIN_BALANCE Ğ1. Destroying if not captain"
+                            # Capitaine : immunisé contre l'insolvabilité, mais les autres sont supprimés
                             if [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]]; then
-                                # Tentative de destruction propre (backup + cash back)
+                                log "INFO" "Triggering destruction for insolvent player: ${PLAYER}"
+                                # Tentative de destruction propre (avec backup et cash back)
                                 if ! ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}"; then
-                                    log "ERROR" "Graceful destruction failed for ${PLAYER}. Forcing rm -rf."
-                                    # Suppression brutale si la procédure standard échoue
+                                    log "ERROR" "Graceful destruction failed for ${PLAYER}. Forcing brutal removal."
+                                    # Fallback : suppression physique si le script de destruction a planté
                                     rm -rf "${HOME}/.zen/game/nostr/${PLAYER}"
                                     rm -rf "${HOME}/.zen/game/players/${PLAYER}"
                                     ipfs key rm "${PLAYER}" 2>/dev/null
