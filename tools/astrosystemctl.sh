@@ -143,9 +143,9 @@ cmd_list_remote() {
         return 1
     fi
 
-    printf "  ${BOLD}%-18s %-24s %-12s %-22s %-8s${NC}\n" \
-        "SERVICE" "NODE (fin)" "POWER" "MODÈLES/CAPITAINE" "LATENCE"
-    printf "  %s\n" "$(printf '─%.0s' {1..90})"
+    printf "  ${BOLD}%-18s %-24s %-14s %-14s %-20s %-8s${NC}\n" \
+        "SERVICE" "NODE (fin)" "POWER" "CAPITAINE" "MODÈLES" "LATENCE"
+    printf "  %s\n" "$(printf '─%.0s' {1..102})"
 
     local found=0
     for node_path in "$SWARM_DIR"/*/; do
@@ -194,19 +194,18 @@ cmd_list_remote() {
             # Ignorer si c'est un tunnel (ce nœud ne fait que relayer)
             [[ "$svc_source" == "p2p_tunnel" || "$svc_source" == "ssh_tunnel" ]] && continue
 
-            # Modèles Ollama (seulement si locaux)
+            # Modèles Ollama uniquement (colonne séparée du capitaine)
             local specs=""
             if [[ "$svc" == "ollama" ]]; then
                 specs=$(jq -r '.services.ai_company.ollama.models // [] | join(",")' \
                     "$json" 2>/dev/null | cut -c1-20)
             fi
-            [[ -z "$specs" ]] && specs="${captain}"
 
             local node_short="...${node_id: -14}"
-            printf "  %-18s %-24s %-12s %-22s %-8s\n" \
+            printf "  %-18s %-24s %-14s %-14s %-20s %-8s\n" \
                 "${svc}" "${node_short}" \
                 "${power_score} $(power_label ${power_score})" \
-                "${specs}" "${latency}"
+                "${captain}" "${specs}" "${latency}"
             ((found++))
         done
     done
@@ -743,6 +742,129 @@ _local_list() {
 }
 
 ##############################################################################
+# _check_requirements — vérifie que la station peut faire tourner un service
+# Retourne 1 si bloquant, 0 sinon. Passer "force" en $2 pour ignorer warnings.
+##############################################################################
+_check_requirements() {
+    local svc="$1" force="${2:-}"
+    local cache="$HOME/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json"
+
+    local score=0 avail_gb=0
+    if [[ -s "$cache" ]]; then
+        score=$(jq -r    '.capacities.power_score        // 0' "$cache" 2>/dev/null || echo 0)
+        avail_gb=$(jq -r '.capacities.available_space_gb // 0' "$cache" 2>/dev/null || echo 0)
+    fi
+
+    local has_docker=false
+    command -v docker >/dev/null 2>&1 && has_docker=true
+
+    case "$svc" in
+        dify|open-webui|open_webui|mirofish|qdrant|vane|orpheus)
+            if [[ "$has_docker" == "false" ]]; then
+                echo -e "${RED}❌  Docker non installé — requis pour ${svc}${NC}"
+                echo    "    https://docs.docker.com/engine/install/"
+                return 1
+            fi ;;
+    esac
+
+    case "$svc" in
+        ollama)
+            if [[ ${score:-0} -lt 11 ]]; then
+                echo -e "${YELLOW}⚠️  Power-Score ${score} 🌿 Light — Ollama sera très lent (CPU uniquement)${NC}"
+                echo    "   Alternative recommandée : astrosystemctl connect ollama"
+                [[ "$force" != "force" ]] && return 1
+            elif [[ ${score:-0} -lt 41 ]]; then
+                echo -e "${YELLOW}ℹ️  Power-Score ${score} ⚡ Standard — mode CPU, petits modèles uniquement${NC}"
+                echo    "   Recommandé : phi3, tinyllama, gemma:2b  (éviter >7B)"
+            fi
+            if ! command -v ollama >/dev/null 2>&1; then
+                echo -e "${YELLOW}ℹ️  ollama non installé :${NC}"
+                echo    "   curl -fsSL https://ollama.com/install.sh | sh && ollama pull phi3"
+            fi ;;
+        comfyui)
+            if [[ ${score:-0} -lt 41 ]]; then
+                echo -e "${RED}❌  Power-Score ${score} — ComfyUI nécessite un GPU dédié (🔥 Brain ≥41)${NC}"
+                echo    "   Alternative : astrosystemctl connect comfyui"
+                [[ "$force" != "force" ]] && return 1
+            fi ;;
+        dify)
+            if command -v bc >/dev/null 2>&1 && [[ $(echo "$avail_gb < 20" | bc 2>/dev/null) -eq 1 ]]; then
+                echo -e "${RED}❌  Espace insuffisant : ${avail_gb} Go disponibles (20 Go requis pour Dify)${NC}"
+                return 1
+            fi
+            ss -tln 2>/dev/null | grep -q ':11434 ' || \
+                echo -e "${YELLOW}⚠️  Ollama inactif — démarrer d'abord : astrosystemctl local start ollama${NC}" ;;
+        open-webui|open_webui|mirofish)
+            if command -v bc >/dev/null 2>&1 && [[ $(echo "$avail_gb < 5" | bc 2>/dev/null) -eq 1 ]]; then
+                echo -e "${RED}❌  Espace insuffisant : ${avail_gb} Go disponibles (5 Go requis)${NC}"
+                return 1
+            fi
+            ss -tln 2>/dev/null | grep -q ':11434 ' || \
+                echo -e "${YELLOW}⚠️  Ollama inactif (port 11434) — ${svc} en dépend${NC}" ;;
+        orpheus)
+            [[ ${score:-0} -lt 41 ]] && \
+                echo -e "${YELLOW}⚠️  Power-Score ${score} — Orpheus TTS est lent sans GPU${NC}" ;;
+    esac
+    return 0
+}
+
+##############################################################################
+# _local_uninstall_service — désinstalle un service IA local
+# --purge : supprime aussi les volumes/données persistantes
+##############################################################################
+_local_uninstall_service() {
+    local ia_dir="$1" svc="$2" purge="${3:-}"
+    local AI_COMPANY_DIR="$HOME/.zen/ai-company"
+
+    echo "🗑️  Désinstallation ${svc}..."
+    [[ "$purge" == "--purge" ]] && \
+        echo -e "${YELLOW}  ⚠️  Mode --purge : volumes et données supprimés${NC}"
+
+    if command -v docker >/dev/null 2>&1; then
+        local container_id
+        container_id=$(docker ps -a --filter "name=${svc}" --format '{{.ID}}' 2>/dev/null | head -1)
+        if [[ -n "$container_id" ]]; then
+            local container_name
+            container_name=$(docker inspect --format '{{.Name}}' "$container_id" 2>/dev/null | tr -d '/')
+            docker stop "$container_id" 2>/dev/null
+            docker rm   "$container_id" 2>/dev/null
+            echo "✅ Container ${container_name} supprimé"
+            if [[ "$purge" == "--purge" ]]; then
+                docker volume ls -q --filter "name=${svc}" 2>/dev/null \
+                    | xargs -r docker volume rm 2>/dev/null && echo "  Volumes supprimés"
+                local data_dir="${AI_COMPANY_DIR}/${svc}_data"
+                [[ -d "$data_dir" ]] && rm -rf "$data_dir" && echo "  Données supprimées : $data_dir"
+            fi
+            return 0
+        fi
+
+        local compose_dirs=("${AI_COMPANY_DIR}" "${AI_COMPANY_DIR}/dify/docker")
+        for cdir in "${compose_dirs[@]}"; do
+            for cf in "${cdir}/docker-compose.yml" "${cdir}/docker-compose.yaml" "${cdir}/compose.yml"; do
+                [[ -f "$cf" ]] || continue
+                grep -q "${svc}" "$cf" 2>/dev/null || continue
+                docker compose -f "$cf" stop  "${svc}" 2>/dev/null
+                docker compose -f "$cf" rm -f "${svc}" 2>/dev/null
+                [[ "$purge" == "--purge" ]] && docker volume ls -q --filter "name=${svc}" 2>/dev/null \
+                    | xargs -r docker volume rm 2>/dev/null
+                echo "✅ ${svc} désinstallé (compose : ${cf})"
+                return 0
+            done
+        done
+    fi
+
+    if systemctl list-unit-files 2>/dev/null | grep -qE "^${svc}\.service"; then
+        sudo systemctl stop    "${svc}" 2>/dev/null
+        sudo systemctl disable "${svc}" 2>/dev/null
+        echo "✅ ${svc} arrêté et désactivé (systemctl)"
+        return 0
+    fi
+
+    echo "ℹ️  ${svc} : aucune installation locale trouvée"
+    return 0
+}
+
+##############################################################################
 # _local_start_service — démarre un service IA localement (docker / systemctl)
 # NOTE : .me.sh = gestionnaire de connexion (local ou P2P), pas de cycle de vie.
 #        Cette fonction gère le démarrage réel du processus local.
@@ -873,7 +995,17 @@ cmd_local() {
                 echo "Services disponibles : astrosystemctl local list"
                 return 1
             }
+            _check_requirements "$service" "${2:-}" || return 1
             _local_start_service "$ia_dir" "$service"
+            ;;
+
+        uninstall)
+            [[ -z "$service" ]] && {
+                echo "Usage: astrosystemctl local uninstall <service> [--purge]"
+                echo "  --purge  supprime aussi les volumes et données"
+                return 1
+            }
+            _local_uninstall_service "$ia_dir" "$service" "${2:-}"
             ;;
 
         stop|off)
@@ -960,7 +1092,7 @@ cmd_local() {
             ;;
 
         *)
-            echo "Usage: astrosystemctl local [list|start|stop|install|feed|share|hide|priv] [service]"
+            echo "Usage: astrosystemctl local [list|start|stop|install|uninstall|feed|share|hide|priv] [service]"
             return 1
             ;;
     esac
@@ -993,7 +1125,7 @@ Commandes :
   enable   <svc[@node]>     Tunnel persistant (watchdog 20h12)
   disable  <service>        Retire de la surveillance automatique
   status                    Tunnels actifs + persistants + Power-Score
-  local [list|start|stop|install|feed] [service]
+  local [list|start|stop|install|uninstall|feed] [service]
                             Panneau de contrôle des services IA locaux
 
 Power-Score = GPU×4 + CPU×2 + RAM×0.5
@@ -1014,6 +1146,8 @@ Exemples local (services IA + partage constellation) :
   astrosystemctl local stop  ollama         # Arrêter Ollama
   astrosystemctl local install              # Installer la stack IA (docker)
   astrosystemctl local install ollama       # Installer Ollama seul
+  astrosystemctl local uninstall ollama     # Désinstaller (arrêt + suppression container)
+  astrosystemctl local uninstall dify --purge  # Désinstaller + supprimer volumes/données
   astrosystemctl local feed                 # Alimenter MiroFish (RAG NOSTR)
   astrosystemctl local hide  ollama         # Rendre Ollama privé (non partagé)
   astrosystemctl local share ollama         # Repartager Ollama avec la constellation
