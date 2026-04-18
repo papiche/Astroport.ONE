@@ -296,6 +296,12 @@ for PLAYER in "${NOSTR[@]}"; do
         if [[ -n "$BIRTHDATE" ]]; then
             DIFF=$(( ($(date +%s) - $(date -d "$BIRTHDATE" +%s)) / 86400 ))
             if [ $DIFF -gt 7 ]; then
+                if [[ -f ~/.zen/game/nostr/${PLAYER}/HEX ]]; then
+                    HEX_TO_PURGE=$(cat ~/.zen/game/nostr/${PLAYER}/HEX)
+                    log "INFO" "Purging local relay events for $PLAYER..."
+                    cd ~/.zen/strfry && ./strfry scan '{"authors": ["'$HEX_TO_PURGE'"]}' | ./strfry delete 2>/dev/null
+                    cd - > /dev/null
+                fi
                 log "CRITICAL" "TECHNICAL CORRUPTION: Ghost account detected. Purging: $PLAYER (Even if Captain)"
                 rm -rf "${HOME}/.zen/game/nostr/${PLAYER}"
                 rm -rf "${HOME}/.zen/game/players/${PLAYER}"
@@ -572,6 +578,13 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
             DIFF=$(( ($(date +%s) - $(date -d "$BIRTHDATE" +%s)) / 86400 ))
             if [ $DIFF -gt 7 ]; then
                 log "CRITICAL" "TECHNICAL CORRUPTION: Keys unusable for $PLAYER. Forcing Hard Reset (rm -rf)."
+                # --- PURGE RELAIS STRFRY ---
+                if [[ -n "$HEX" ]]; then
+                    cd ~/.zen/strfry
+                    ./strfry scan '{"authors": ["'$HEX'"]}' | ./strfry delete 2>/dev/null
+                    cd - > /dev/null
+                fi
+                # ---------------------------
                 rm -rf "${HOME}/.zen/game/nostr/${PLAYER}"
                 rm -rf "${HOME}/.zen/game/players/${PLAYER}"
                 continue
