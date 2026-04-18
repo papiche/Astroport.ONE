@@ -98,7 +98,7 @@ services:
   mirofish:
     image: ghcr.io/666ghj/mirofish:latest # (ou build local selon leur repo)
     container_name: ai-company-mirofish
-    ports:["${PORT_MIROFISH}:5000"] # On expose sur 5050
+    ports: ["${PORT_MIROFISH}:5000"] # On expose sur 5050
     environment:
       - LLM_BASE_URL=http://host.docker.internal:${OLLAMA_PORT}/v1
       - LLM_MODEL=llama3 # Modèle par défaut à utiliser dans Ollama
