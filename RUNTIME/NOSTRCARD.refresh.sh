@@ -280,12 +280,27 @@ NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 
 ## RUNING FOR ALL LOCAL MULTIPASS (NOSTR Card)
 for PLAYER in "${NOSTR[@]}"; do
+
     # ---------------------------------------------------------
     # IGNORER LES COMPTES ITINÉRANTS (ROAMING)
     if [[ -f ~/.zen/game/nostr/${PLAYER}/.roaming ]]; then
         log "INFO" "✈️ MULTIPASS visiteur ignoré (Roaming) : $PLAYER"
         continue
     fi
+
+    # Vérification d'intégrité minimale
+    if [[ ! -f ~/.zen/game/nostr/${PLAYER}/HEX || ! -f ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR ]]; then
+        BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/.birthdate 2>/dev/null)
+        if [[ -n "$BIRTHDATE" ]]; then
+            DIFF=$(( ($(date +%s) - $(date -d "$BIRTHDATE" +%s)) / 86400 ))
+            if [ $DIFF -gt 7 ]; then
+                log "WARN" "Ghost account (missing HEX/G1PUB) detected. Purging: $PLAYER"
+                rm -rf "${HOME}/.zen/game/nostr/${PLAYER}"
+                continue
+            fi
+        fi
+    fi
+
     # ---------------------------------------------------------
     log "INFO" ">>>>>>>>>>>>>>>>>>============================================ Processing MULTIPASS : $PLAYER "
     start=$(date +%s)
@@ -810,7 +825,14 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
                             log "WARN" "[7 DAYS CYCLE] NOSTR Card ($COINS G1) - insufficient funds! Need at least $MIN_BALANCE Ğ1 (1 Ğ1 minimum + $TOTAL_PAYMENT Ğ1 payment). Destroying if not captain"
                             # Capitaine : jamais DESTROY
                             if [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]]; then
-                                ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}"
+                                # Tentative de destruction propre (backup + cash back)
+                                if ! ${MY_PATH}/../tools/nostr_DESTROY_TW.sh "${PLAYER}"; then
+                                    log "ERROR" "Graceful destruction failed for ${PLAYER}. Forcing rm -rf."
+                                    # Suppression brutale si la procédure standard échoue
+                                    rm -rf "${HOME}/.zen/game/nostr/${PLAYER}"
+                                    rm -rf "${HOME}/.zen/game/players/${PLAYER}"
+                                    ipfs key rm "${PLAYER}" 2>/dev/null
+                                fi
                             fi
                             continue
                         fi

@@ -98,6 +98,24 @@ else
     fi
 fi
 
+if [[ -n ${salt} && -n ${pepper} ]]; then
+    rm "$tmp_mid" "$tmp_tail" 2>/dev/null
+    rm ~/.zen/game/nostr/${PLAYER}/ERROR 2>/dev/null
+else
+    log "ERROR" "BAD DISCO DECODING for ${PLAYER}"
+    # Si le compte est vieux de plus de 7 jours et corrompu -> Nettoyage RADICAL
+    BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/.birthdate 2>/dev/null)
+    if [[ -n "$BIRTHDATE" ]]; then
+        DIFF=$(( ($(date +%s) - $(date -d "$BIRTHDATE" +%s)) / 86400 ))
+        if [ $DIFF -gt 7 ]; then
+            log "WARN" "Broken account older than 7 days. Forcing hard removal: $PLAYER"
+            rm -rf "${HOME}/.zen/game/nostr/${PLAYER}"
+            rm -rf "${HOME}/.zen/game/players/${PLAYER}" # Nettoie aussi la ZenCard associée
+        fi
+    fi
+    continue
+fi
+
 ##################################################### DISCO DECODED
 echo "Target email: $player"
 youser=$($MY_PATH/../tools/clyuseryomail.sh "${player}")

@@ -541,6 +541,8 @@ export_json() {
     local load_avg=$(uptime | awk -F'load average:' '{ print $2 }' | xargs | cut -d',' -f1)
     [[ -z "$load_avg" ]] && load_avg="0.00"
 
+    local cpu_temp=$(vcgencmd measure_temp | cut -d'=' -f2 | cut -d"'" -f1 || echo "0")
+
     # Generate JSON
     cat << EOF
 {
@@ -569,6 +571,7 @@ export_json() {
             "available": "$(df -h / | tail -1 | awk '{print $4}')",
             "usage_percent": "$(df -h / | tail -1 | awk '{print $5}')"
         },
+        "cpu_temp": $cpu_temp,
         "gpu": $(if command -v nvidia-smi >/dev/null 2>&1; then nvidia-smi --query-gpu=name,memory.total,memory.used,utilization.gpu --format=csv,noheader,nounits 2>/dev/null | head -1 | tr -d '\n' | sed 's/"/\\"/g' | sed 's/^/"/; s/$/"/'; else echo "null"; fi)
     },
     "caches": {

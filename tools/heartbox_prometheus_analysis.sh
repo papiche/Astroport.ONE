@@ -148,6 +148,21 @@ analyze_services() {
     echo "  Peers: $ipfs_peers"
     echo "  Taille repo: $(echo "scale=2; $ipfs_repo_size/1024/1024/1024" | bc) GB"
 
+    # Picoport Specifics
+    local snapclient_up=$(pgrep -x snapclient >/dev/null && echo "1" || echo "0")
+    local icecast_up=$(ss -tln | grep -q ":8111 " && echo "1" || echo "0")
+
+    echo "
+    SoundSpot Services:"
+    echo "  Snapclient: $(if [ "$snapclient_up" = "1" ]; then echo "✅ Actif"; else echo "❌ Inactif"; fi)"
+    echo "  Icecast Receiver: $(if [ "$icecast_up" = "1" ]; then echo "✅ Actif"; else echo "❌ Inactif"; fi)"
+
+    # Batterie (si le fichier .prom existe)
+    local battery_pct=$(get_instant_metric 'picoport_battery_percent')
+    if [ "$battery_pct" != "0" ]; then
+        echo "  Batterie Solaire: ${battery_pct}%"
+    fi
+
     # NextCloud
     local nextcloud_up=$(get_instant_metric 'nextcloud_up')
     local nextcloud_users=$(get_instant_metric 'nextcloud_users_total')
