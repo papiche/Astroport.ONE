@@ -402,7 +402,7 @@ NODE_ID="${IPFSNODEID}"
 PROTO="${CHANNEL}"
 NATIVE_PORT="${LPORT_PREF}"
 ALT_PORT="${SERVICE_ALT}"
-DOCKER_IP=\$(ip addr show docker0 2>/dev/null | grep -oP "(?<=inet\s)\d+(\.\d+){3}" || echo "172.17.0.1")
+DOCKER_IP=\$(ip addr show docker0 2>/dev/null | grep -oP "(?<=inet\s)\d+(\.\d+){3}" || true)
 
 # --- Logique de choix du port ---
 # Ports < 1024 nécessitent root pour bind : forcer ALT_PORT systématiquement
@@ -435,7 +435,9 @@ if [[ \$? == 0 ]]; then
     # On bind sur localhost
     ipfs p2p forward "\${PROTO}" "/ip4/127.0.0.1/tcp/\$LPORT" "/p2p/\${NODE_ID}"
     # Bind Docker LAN
-    ipfs p2p forward "\${PROTO}" "/ip4/\${DOCKER_IP}/tcp/\$LPORT" "/p2p/\${NODE_ID}"
+    if [ -n "\${DOCKER_IP}" ]; then 
+        ipfs p2p forward "\${PROTO}" "/ip4/\${DOCKER_IP}/tcp/\$LPORT" "/p2p/\${NODE_ID}"
+    fi
     # + Bind sur toutes les adresses IP locales pour l'accès public (direct SoundSpot)
     # et via proxy ssl Astroport.ONE/tools/firewall.sh et Nginx Proxy Manager 
     for IP in \$(hostname -I); do
