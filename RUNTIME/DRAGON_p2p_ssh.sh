@@ -432,11 +432,16 @@ if [[ \$? == 0 ]]; then
     echo "Établissement du tunnel $NAME..."
     echo "Port local : \$LPORT (Natif: \${NATIVE_PORT} | Alt: \${ALT_PORT})"
     
-    # On bind sur localhost et Docker
+    # On bind sur localhost
     ipfs p2p forward "\${PROTO}" "/ip4/127.0.0.1/tcp/\$LPORT" "/p2p/\${NODE_ID}"
+    # Bind Docker LAN
     ipfs p2p forward "\${PROTO}" "/ip4/\${DOCKER_IP}/tcp/\$LPORT" "/p2p/\${NODE_ID}"
-    
-    [[ "\${LPORT}" == "22" || "\$SLUG" == "ssh" ]] && echo "SSH : ssh -X ${USER}@localhost -p \$LPORT"
+    # + Bind sur toutes les adresses IP locales pour l'accès public (direct SoundSpot)
+    # et via proxy ssl Astroport.ONE/tools/firewall.sh et Nginx Proxy Manager 
+    for IP in \$(hostname -I); do
+        ipfs p2p forward "\${PROTO}" "/ip4/\${IP}/tcp/\$LPORT" "/p2p/\${NODE_ID}" 2>/dev/null || true
+    done
+    [[ "\${LPORT}" == "22" || "\$SLUG" == "ssh" ]] && echo "ssh -X ${USER}@localhost -p \$LPORT"
 else
     echo "ERREUR : Station injoignable."
     exit 1
