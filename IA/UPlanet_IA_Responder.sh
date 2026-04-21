@@ -1503,13 +1503,27 @@ Détails: ${ERROR_LINE}"
                 fi
             ######################################################### #youtube
             elif [[ "${TAGS[youtube]}" == true ]]; then
-                # Extract any video URL that yt-dlp can handle (YouTube, Rumble, Vimeo, etc.)
+                # 1. Tentative d'extraction d'une URL
                 video_url=$(echo "$message_text" | awk 'match($0, /https?:\/\/[^ ]+/) { print substr($0, RSTART, RLENGTH) }' | head -n1)
+                
+                # 2. Si pas d'URL, on récupère le texte restant (nettoyé des tags)
                 if [ -z "$video_url" ]; then
-                    KeyANSWER="Désolé, Aucune URL vidéo valide trouvée dans votre message."
+                    search_query=$(echo "$message_text" | sed 's/#BOT//g; s/#BRO//g; s/#youtube//g; s/#mp3//g; s/#mp4//g; s/"//g' | xargs)
+                    if [ -n "$search_query" ]; then
+                        video_url="$search_query"
+                    fi
+                fi
+
+                if [ -z "$video_url" ]; then
+                    KeyANSWER="❌ J'ai besoin d'une URL ou d'une recherche (ex: #BRO #youtube #mp3 Daft Punk)."
                 else
-                    echo "Processing YouTube video: $video_url" >&2
+                    # Déterminer l'extension selon le tag
+                    EXT="mp4"
+                    [[ "$message_text" =~ \#mp3 ]] && EXT="mp3"
                     
+                    echo "Demande YouTube : $video_url (Format: $EXT)" >&2
+                    
+                    # Logique de sortie uDRIVE
                     YOUTUBE_OUTPUT_DIR=""
                     if [[ "$KNAME" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
                         echo "Using player email for video download: $KNAME" >&2
@@ -1528,28 +1542,18 @@ Détails: ${ERROR_LINE}"
                     else
                         echo "Warning: Using default location for video download" >&2
                     fi
+
                     
+                    # APPEL DU SCRIPT DE TRAVAIL
+                    # On passe $video_url qui peut être du texte ou une URL
                     if [[ -n "$YOUTUBE_OUTPUT_DIR" ]]; then
-                        if [[ "$message_text" =~ \#mp3 ]]; then
-                            $MY_PATH/process_youtube.sh --debug --output-dir "$YOUTUBE_OUTPUT_DIR" "$video_url" "mp3" "$KNAME" >/dev/null 2>&1
-                        else
-                            $MY_PATH/process_youtube.sh --debug --output-dir "$YOUTUBE_OUTPUT_DIR" "$video_url" "mp4" "$KNAME" >/dev/null 2>&1
-                        fi
+                        $MY_PATH/process_youtube.sh --debug --output-dir "$YOUTUBE_OUTPUT_DIR" "$video_url" "$EXT" "$KNAME" >/dev/null 2>&1
                     else
-                        if [[ "$KNAME" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
-                            if [[ "$message_text" =~ \#mp3 ]]; then
-                                $MY_PATH/process_youtube.sh --debug "$video_url" "mp3" "$KNAME" >/dev/null 2>&1
-                            else
-                                $MY_PATH/process_youtube.sh --debug "$video_url" "mp4" "$KNAME" >/dev/null 2>&1
-                            fi
-                        else
-                            if [[ "$message_text" =~ \#mp3 ]]; then
-                                $MY_PATH/process_youtube.sh --debug "$video_url" "mp3" >/dev/null 2>&1
-                            else
-                                $MY_PATH/process_youtube.sh --debug "$video_url" "mp4" >/dev/null 2>&1
-                            fi
-                        fi
+                        $MY_PATH/process_youtube.sh --debug "$video_url" "$EXT" "$KNAME" >/dev/null 2>&1
                     fi
+                    
+                    KeyANSWER="✅ Reçu ! Je cherche \"${search_query:-$video_url}\" pour vous au format $EXT. Ce sera bientôt dans votre uDRIVE et à l'antenne."
+                fi
                     
                     echo "Video processing completed. NOSTR notification sent by process_youtube.sh" >&2
                     # Set reply content so Nostr event is valid (process_youtube.sh already sent the real result)
