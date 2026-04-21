@@ -321,6 +321,7 @@ extract_last_24h() {
             log_error "Cannot read 24/7 CSV (use sudo to copy): $source_csv"
             return 1
         fi
+        sudo chown "$USER:$USER" "$readable_csv" 2>/dev/null || sudo chmod 644 "$readable_csv"
         trap "rm -f '$readable_csv'" RETURN
     fi
     if [[ ! -s "$readable_csv" ]]; then
