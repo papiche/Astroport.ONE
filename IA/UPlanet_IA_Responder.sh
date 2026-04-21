@@ -199,7 +199,7 @@ get_user_udrive_from_kname() {
     fi
 }
 
-# Build short help message (inspired by openclaw buildHelpMessage)
+# Build short help message
 build_bro_help_message() {
   cat << 'HELPEOF'
 ℹ️ BRO Help
@@ -208,7 +208,7 @@ Session / memory
   #mem [#1..#12]  |  #rec  |  #rec2  |  #reset
 
 Search & media
-  #search  |  #image  |  #video  |  #music  |  #youtube [#mp3]
+  #search  |  #image  |  #video  |  #music  |  #youtube [#mp3|#mp4] [URL|Texte]
 
 Voice (TTS)
   #pierre  |  #amelie
@@ -274,7 +274,7 @@ print_help() {
   echo "  Ollama response, and publish it using KNAME NOSTR key."
   echo ""
   echo "Example:"
-  echo "  $(basename "$0") <pubkey_hex> <event_id> 0.00 0.00 \"What is it\" https://ipfs.copylaradio.com/ipfs/QmeUMJvPdyPiteR7iQXCnZy4mvKBnghNkYpMTbrpZfMGPq/pipe.jpeg"
+  echo "  $(basename "$0") <pubkey_hex> <event_id> 0.00 0.00 \"What is it\" https://ipfs.copylaradio.com/ipfs/QmPFTy2GTpngZaa7caYdsfPbLfaEa6S6avH2LxMBQoZAH1/Magritte_treachery.jpg"
 }
 
 # --- Handle --help option ---

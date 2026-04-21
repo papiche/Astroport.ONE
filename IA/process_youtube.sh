@@ -156,7 +156,11 @@ fi
 URL="$1"
 FORMAT="$2"
 PLAYER_EMAIL="$3"
-
+# ─── CONFORMITÉ RECHERCHE vs URL ───
+if [[ ! "$URL" =~ ^https?:// ]]; then
+    log_debug "Ceci n'est pas une URL, transformation en recherche YouTube..."
+    URL="ytsearch1:$URL"
+fi
 # Create temporary directory or use custom output dir
 if [[ -n "$CUSTOM_OUTPUT_DIR" ]]; then
     OUTPUT_DIR="$CUSTOM_OUTPUT_DIR"

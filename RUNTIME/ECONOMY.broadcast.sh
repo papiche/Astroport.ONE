@@ -389,13 +389,14 @@ HW_PROVIDER_READY="false"; HW_STORAGE_READY="false"
 HW_CPU_CORES=1; HW_RAM_GB=0; HW_GPU_VRAM=0; HW_GPU_DETECTED="false"
 
 if [[ -s "$HEARTBOX_CACHE" ]]; then
+    # Sécurisation avec || echo default pour garantir un affichage JSON valide même si jq échoue
     HW_POWER_SCORE=$(jq -r '.capacities.power_score    // 0'     "$HEARTBOX_CACHE" 2>/dev/null || echo 0)
-    HW_PROVIDER_READY=$(jq -r '.capacities.provider_ready // false' "$HEARTBOX_CACHE" 2>/dev/null)
-    HW_STORAGE_READY=$(jq -r '.capacities.storage_ready  // false'  "$HEARTBOX_CACHE" 2>/dev/null)
+    HW_PROVIDER_READY=$(jq -r '.capacities.provider_ready // false' "$HEARTBOX_CACHE" 2>/dev/null || echo false)
+    HW_STORAGE_READY=$(jq -r '.capacities.storage_ready  // false'  "$HEARTBOX_CACHE" 2>/dev/null || echo false)
     HW_CPU_CORES=$(jq -r '.system.cpu.cores           // 1'     "$HEARTBOX_CACHE" 2>/dev/null || echo 1)
     HW_RAM_GB=$(jq -r '.system.memory.total_gb        // 0'     "$HEARTBOX_CACHE" 2>/dev/null || echo 0)
     HW_GPU_VRAM=$(jq -r '.capacities.gpu.vram_gb      // 0'     "$HEARTBOX_CACHE" 2>/dev/null || echo 0)
-    HW_GPU_DETECTED=$(jq -r '.capacities.gpu.detected // false' "$HEARTBOX_CACHE" 2>/dev/null)
+    HW_GPU_DETECTED=$(jq -r '.capacities.gpu.detected // false' "$HEARTBOX_CACHE" 2>/dev/null || echo false)
 fi
 
 ## Tier et rang DRAGON (miroir de la logique install.sh)
@@ -485,7 +486,7 @@ log_output "📝 Building NOSTR event..."
 GENERATED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 CREATED_AT=$(date +%s)
 
-# Build content JSON avec protection contre les valeurs vides (:-0)
+# Build content JSON avec protection systématique :-0 ou :-false
 CONTENT_JSON=$(cat <<EOF
 {
   "report_version": "1.1",
@@ -556,12 +557,12 @@ CONTENT_JSON=$(cat <<EOF
     "power_score":    ${HW_POWER_SCORE:-0},
     "tier":           "$HW_TIER",
     "dragon_rank":    "$HW_RANK",
-    "provider_ready": $HW_PROVIDER_READY,
-    "storage_ready":  $HW_STORAGE_READY,
+    "provider_ready": ${HW_PROVIDER_READY:-false},
+    "storage_ready":  ${HW_STORAGE_READY:-false},
     "cpu_cores":      ${HW_CPU_CORES:-1},
     "ram_gb":         ${HW_RAM_GB:-0},
     "gpu_vram_gb":    ${HW_GPU_VRAM:-0},
-    "gpu_detected":   $HW_GPU_DETECTED,
+    "gpu_detected":   ${HW_GPU_DETECTED:-false},
     "machine_value_zen": ${MACHINE_VALUE:-0}
   }
 }
@@ -583,70 +584,39 @@ STATION_SSH_PUB=$(head -1 "$HOME/.zen/tmp/${IPFSNODEID}/z_ssh.pub" 2>/dev/null |
 
 # Build tags array
 TAGS_JSON=$(cat <<EOF
-[
-  ["d", "$EVENT_D"],
+[["d", "$EVENT_D"],
   ["t", "uplanet"],
   ["t", "economic-health"],
   ["t", "$UPLANETG1PUB"],
   ["t", "$IPFSNODEID"],
   ["constellation", "$UPLANETG1PUB"],
-  ["station", "$IPFSNODEID"],
-  ["station:name", "${myHOSTNAME:-...${IPFSNODEID: -8}}"],
-  ["swarm_id", "$UPLANETG1PUB"],
+  ["station", "$IPFSNODEID"],["station:name", "${myHOSTNAME:-...${IPFSNODEID: -8}}"],["swarm_id", "$UPLANETG1PUB"],
   ["week", "$CURRENT_WEEK"],
   ["g1pub", "$UPLANETNAME_G1"],
-  ["geo:lat", "$STATION_LAT"],
-  ["geo:lon", "$STATION_LON"],
-  ["sync:solar_offset", "$SOLAR_OFFSET"],
-  ["balance:cash", "$CASH_ZEN"],
-  ["balance:rnd", "$RND_ZEN"],
-  ["balance:assets", "$ASSETS_ZEN"],
-  ["balance:impot", "$IMPOT_ZEN"],
-  ["balance:capital", "$CAPITAL_ZEN"],
-  ["balance:amortissement", "$AMORT_ZEN"],
-  ["balance:node", "$NODE_ZEN"],
+  ["geo:lat", "${STATION_LAT:-0}"],["geo:lon", "${STATION_LON:-0}"],
+  ["sync:solar_offset", "$SOLAR_OFFSET"],["balance:cash", "$CASH_ZEN"],
+  ["balance:rnd", "$RND_ZEN"],["balance:assets", "$ASSETS_ZEN"],
+  ["balance:impot", "$IMPOT_ZEN"],["balance:capital", "$CAPITAL_ZEN"],
+  ["balance:amortissement", "$AMORT_ZEN"],["balance:node", "$NODE_ZEN"],
   ["revenue:multipass", "$MULTIPASS_REVENUE"],
   ["revenue:zencard", "$ZENCARD_REVENUE"],
-  ["revenue:total", "$TOTAL_REVENUE"],
-  ["cost:paf", "$PAF"],
+  ["revenue:total", "$TOTAL_REVENUE"],["cost:paf", "$PAF"],
   ["cost:captain", "$CAPTAIN_REMUNERATION"],
-  ["cost:total", "$TOTAL_COSTS"],
-  ["price:multipass", "$NCARD"],
-  ["price:zencard", "$ZCARD"],
-  ["allocation:treasury", "$ALLOC_TREASURY"],
-  ["allocation:rnd", "$ALLOC_RND"],
-  ["allocation:assets", "$ALLOC_ASSETS"],
-  ["allocation:captain_bonus", "$ALLOC_CAPTAIN_BONUS"],
-  ["allocation:treasury_pct", "${TREASURY_PERCENT:-33}"],
-  ["allocation:rnd_pct", "${RND_PERCENT:-33}"],
-  ["allocation:assets_pct", "${ASSETS_PERCENT:-33}"],
-  ["allocation:captain_bonus_pct", "${CAPTAIN_BONUS_PERCENT:-1}"],
+  ["cost:total", "$TOTAL_COSTS"],["price:multipass", "$NCARD"],
+  ["price:zencard", "$ZCARD"],["allocation:treasury", "$ALLOC_TREASURY"],
+  ["allocation:rnd", "$ALLOC_RND"],["allocation:assets", "$ALLOC_ASSETS"],
+  ["allocation:captain_bonus", "$ALLOC_CAPTAIN_BONUS"],["allocation:treasury_pct", "${TREASURY_PERCENT:-33}"],["allocation:rnd_pct", "${RND_PERCENT:-33}"],["allocation:assets_pct", "${ASSETS_PERCENT:-33}"],["allocation:captain_bonus_pct", "${CAPTAIN_BONUS_PERCENT:-1}"],
   ["capacity:multipass_used", "$MULTIPASS_COUNT"],
-  ["capacity:multipass_total", "$MULTIPASS_CAPACITY"],
-  ["capacity:zencard_total", "$ZENCARD_COUNT"],
-  ["capacity:zencard_renters", "$ZENCARD_RENTERS"],
-  ["capacity:zencard_owners", "$ZENCARD_OWNERS"],
-  ["capacity:zencard_capacity", "$ZENCARD_CAPACITY"],
-  ["health:status", "$HEALTH_STATUS"],
-  ["health:resilience_level", "$RESILIENCE_LEVEL"],
-  ["health:weeks_runway", "$WEEKS_RUNWAY"],
-  ["health:total_weeks_runway", "$TOTAL_WEEKS_RUNWAY"],
-  ["health:bilan", "$BILAN"],
-  ["love_ledger:total_zen", "$LOVE_TOTAL_ZEN"],
-  ["love_ledger:weeks", "$LOVE_WEEKS_COUNT"],
-  ["provision:tva", "$TOTAL_TVA"],
-  ["provision:is", "$IS_PROVISION"],
-  ["depreciation:machine_value", "$MACHINE_VALUE"],
-  ["depreciation:residual", "$RESIDUAL_VALUE"],
-  ["depreciation:percent", "$DEPRECIATION_PERCENT"],
-  ["hw:power_score", "$HW_POWER_SCORE"],
-  ["hw:tier", "$HW_TIER"],
-  ["hw:dragon_rank", "$HW_RANK"],
-  ["hw:provider_ready", "$HW_PROVIDER_READY"],
-  ["hw:storage_ready", "$HW_STORAGE_READY"],
+  ["capacity:multipass_total", "$MULTIPASS_CAPACITY"],["capacity:zencard_total", "$ZENCARD_COUNT"],["capacity:zencard_renters", "$ZENCARD_RENTERS"],
+  ["capacity:zencard_owners", "$ZENCARD_OWNERS"],["capacity:zencard_capacity", "$ZENCARD_CAPACITY"],["health:status", "$HEALTH_STATUS"],
+  ["health:resilience_level", "$RESILIENCE_LEVEL"],["health:weeks_runway", "$WEEKS_RUNWAY"],["health:total_weeks_runway", "$TOTAL_WEEKS_RUNWAY"],
+  ["health:bilan", "$BILAN"],["love_ledger:total_zen", "$LOVE_TOTAL_ZEN"],["love_ledger:weeks", "$LOVE_WEEKS_COUNT"],
+  ["provision:tva", "$TOTAL_TVA"],["provision:is", "$IS_PROVISION"],
+  ["depreciation:machine_value", "$MACHINE_VALUE"],["depreciation:residual", "$RESIDUAL_VALUE"],
+  ["depreciation:percent", "$DEPRECIATION_PERCENT"],["hw:power_score", "$HW_POWER_SCORE"],["hw:tier", "$HW_TIER"],
+  ["hw:dragon_rank", "$HW_RANK"],["hw:provider_ready", "${HW_PROVIDER_READY:-false}"],["hw:storage_ready", "${HW_STORAGE_READY:-false}"],
   ["hw:cpu_cores", "$HW_CPU_CORES"],
-  ["hw:ram_gb", "$HW_RAM_GB"],
-  ["hw:gpu_vram_gb", "$HW_GPU_VRAM"]
+  ["hw:ram_gb", "$HW_RAM_GB"],["hw:gpu_vram_gb", "$HW_GPU_VRAM"]
 ]
 EOF
 )
