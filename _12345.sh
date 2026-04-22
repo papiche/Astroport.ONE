@@ -469,7 +469,7 @@ while true; do
             # Launch backfill only if not running and enough time has passed
             if [[ "$BACKFILL_RUNNING" == "false" ]]; then
                 echo "🚀 Launching constellation backfill..."
-                ~/.zen/workspace/NIP-101/backfill_constellation.sh --days 1 --verbose &
+                ~/.zen/workspace/NIP-101/backfill_constellation.sh --days 1 &
                 # Record execution time
                 date +%s > "$BACKFILL_LAST_RUN"
             fi

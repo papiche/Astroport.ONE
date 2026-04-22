@@ -105,20 +105,20 @@ while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
         && exit 1
 done
 
+echo "=== SWARM INTRUDERS ==========================================" >> $LOG_FILE
+cat $HOME/.zen/tmp/swarm_intruders.log 2>/dev/null >> $LOG_FILE
+cat "$HOME/.zen/game/firewall_candidates.txt" >> $LOG_FILE
+
 #### COPY LOGS - before erase
-echo "=== YOUTUBE / IA SCRAPERS ===" >> $LOG_FILE
+echo "=== YOUTUBE / IA SCRAPERS ====================================" >> $LOG_FILE
 cat $HOME/.zen/tmp/*_sync_*.log 2>/dev/null >> $LOG_FILE
 cat $HOME/.zen/tmp/youtube.com_* 2>/dev/null >> $LOG_FILE
 
-echo "=== NOSTR / CONSTELLATION ERRORS ===" >> $LOG_FILE
+echo "=== NOSTR / CONSTELLATION ERRORS =============================" >> $LOG_FILE
 cat $HOME/.zen/tmp/nostr*.log 2>/dev/null >> $LOG_FILE
 cat $HOME/.zen/strfry/constellation-backfill.error.log 2>/dev/null >> $LOG_FILE
 
-echo "=== SWARM INTRUDERS ===" >> $LOG_FILE
-cat $HOME/.zen/tmp/swarm_intruders.log 2>/dev/null >> $LOG_FILE
-cat "$HOME/.zen/game/firewall_candidates.txt"
-
-echo "=== SYSTEM/INSTALL ERRORS ===" >> $LOG_FILE
+echo "=== SYSTEM/INSTALL ERRORS ====================================" >> $LOG_FILE
 cat $HOME/.zen/install.errors.log 2>/dev/null >> $LOG_FILE
 ########################################################################
 # show Ustats.sh cache of the day
