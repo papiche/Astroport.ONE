@@ -258,807 +258,232 @@ case ${CAT} in
     youtube)
     espeak "youtube : video copying"
 
-YTURL="$URL"
-[ ! $2 ] && [[ $YTURL == "" ]] && YTURL=$(zenity --entry --width 420 --title "Lien ou identifiant à copier" --text "Indiquez le lien (URL) ou l'ID de la vidéo" --entry-text="")
-[[ $YTURL == "" ]] && echo "URL EMPTY " && exit 1
+    YTURL="$URL"
+    [ ! $2 ] && [[ $YTURL == "" ]] && YTURL=$(zenity --entry --width 420 --title "Lien ou identifiant à copier" --text "Indiquez le lien (URL) ou l'ID de la vidéo" --entry-text="")
+    [[ $YTURL == "" ]] && echo "URL EMPTY " && exit 1
 
-echo "VIDEO $YTURL"
-echo "Processing URL: $YTURL"
+    echo "VIDEO $YTURL"
+    echo "Processing URL: $YTURL"
 
-        # Download YouTube video using process_youtube.sh
-echo "📥 Downloading YouTube video using process_youtube.sh..."
-echo "ℹ️  Resolution will be automatically selected based on video duration to stay under 650MB limit"
+    # Create temporary download directory
+    TEMP_YOUTUBE_DIR="$HOME/.zen/tmp.media/youtube_$(date -u +%s%N | cut -b1-13)"
+    mkdir -p "$TEMP_YOUTUBE_DIR"
 
-# Create temporary download directory
-TEMP_YOUTUBE_DIR="$HOME/.zen/tmp.media/youtube_$(date -u +%s%N | cut -b1-13)"
-mkdir -p "$TEMP_YOUTUBE_DIR"
-
-# Function to monitor download progress and announce with espeak every 30 seconds
-monitor_download_progress() {
-    local download_dir="$1"
-    local start_time=$(date +%s)
-    local last_announce_time=$start_time
-    local announce_interval=30  # 30 seconds
-    local step=0
-    
-    while true; do
-        sleep 5  # Check every 5 seconds
+    # CONSERVÉ : Monitor download progress (feedback vocal)
+    monitor_download_progress() {
+        local download_dir="$1"
+        local start_time=$(date +%s)
+        local last_announce_time=$start_time
+        local announce_interval=30
+        local step=0
         
-        # Check if download is complete (look for .mp4 file that's not growing)
-        local mp4_files=$(find "$download_dir" -maxdepth 1 -name "*.mp4" -type f 2>/dev/null)
-        if [[ -n "$mp4_files" ]]; then
-            # Check if file size is stable (not growing for 3 seconds)
-            local file_size1=$(stat -c%s "$mp4_files" 2>/dev/null || echo "0")
-            sleep 3
-            local file_size2=$(stat -c%s "$mp4_files" 2>/dev/null || echo "0")
-            
-            if [[ "$file_size1" == "$file_size2" ]] && [[ $file_size1 -gt 1000000 ]]; then
-                # File is stable and > 1MB, download likely complete
-                espeak "Download complete" 2>/dev/null || true
-                break
-            fi
-        fi
-        
-        # Announce progress every 30 seconds
-        local current_time=$(date +%s)
-        local elapsed=$((current_time - last_announce_time))
-        local total_elapsed=$((current_time - start_time))
-        
-        # Safety timeout: stop monitoring after 2 hours
-        if [[ $total_elapsed -gt 7200 ]]; then
-            break
-        fi
-        
-        if [[ $elapsed -ge $announce_interval ]]; then
-            step=$((step + 1))
-            local minutes=$((total_elapsed / 60))
-            local seconds=$((total_elapsed % 60))
-            
-            # Check current file size if available
+        while true; do
+            sleep 5
+            local mp4_files=$(find "$download_dir" -maxdepth 1 -name "*.mp4" -type f 2>/dev/null)
             if [[ -n "$mp4_files" ]]; then
-                local current_size=$(stat -c%s "$mp4_files" 2>/dev/null || echo "0")
-                local size_mb=$(echo "$current_size" | awk '{printf "%.1f", $1 / (1024 * 1024)}')
-                espeak "Download in progress. Step $step. ${minutes} minutes ${seconds} seconds. ${size_mb} megabytes downloaded" 2>/dev/null || true
-            else
-                espeak "Download in progress. Step $step. ${minutes} minutes ${seconds} seconds" 2>/dev/null || true
-            fi
-            
-            last_announce_time=$current_time
-        fi
-    done
-}
-
-# Start progress monitoring in background
-espeak "Starting YouTube download" 2>/dev/null || true
-monitor_download_progress "$TEMP_YOUTUBE_DIR" &
-MONITOR_PID=$!
-
-# Create temporary JSON file for clean JSON output (separate from logs)
-JSON_OUTPUT_FILE="$HOME/.zen/tmp/youtube_json_$$.json"
-mkdir -p "$(dirname "$JSON_OUTPUT_FILE")"
-
-# Call process_youtube.sh with --json-file to write JSON to separate file
-echo "📥 Calling process_youtube.sh with: --json-file \"$JSON_OUTPUT_FILE\" --no-ipfs --output-dir \"$TEMP_YOUTUBE_DIR\" \"$YTURL\" \"mp4\" \"$PLAYER\""
-# Capture stderr for logs, but JSON goes to file
-YOUTUBE_RESULT=$(${MY_PATH}/IA/process_youtube.sh --json-file "$JSON_OUTPUT_FILE" --debug --no-ipfs --output-dir "$TEMP_YOUTUBE_DIR" "$YTURL" "mp4" "$PLAYER" 2>&1)
-YTDLP_EXIT=$?
-
-# Stop monitoring
-kill $MONITOR_PID 2>/dev/null || true
-wait $MONITOR_PID 2>/dev/null || true
-
-echo "📋 process_youtube.sh exit code: $YTDLP_EXIT"
-
-# Read JSON from the separate file (clean, no mixing with logs)
-if [[ -f "$JSON_OUTPUT_FILE" ]] && [[ -s "$JSON_OUTPUT_FILE" ]]; then
-    YOUTUBE_JSON=$(cat "$JSON_OUTPUT_FILE")
-    echo "✅ JSON read from file: $JSON_OUTPUT_FILE"
-    echo "🔍 JSON length: ${#YOUTUBE_JSON} characters"
-    # Debug: show first 500 chars of JSON
-    echo "🔍 JSON preview (first 500 chars): ${YOUTUBE_JSON:0:500}..."
-    # Don't delete JSON file yet - keep it for debugging if validation fails
-else
-    echo "⚠️  WARNING: JSON file not found or empty: $JSON_OUTPUT_FILE"
-    echo "   File exists: $([ -f "$JSON_OUTPUT_FILE" ] && echo "yes" || echo "no")"
-    echo "   File size: $([ -f "$JSON_OUTPUT_FILE" ] && stat -c%s "$JSON_OUTPUT_FILE" || echo "0") bytes"
-    echo "   Attempting fallback: extract JSON from output..."
-    
-    # Fallback: try to extract JSON from output (last resort)
-    # Reverse the output, find first valid JSON line
-    YOUTUBE_JSON=""
-    while IFS= read -r line; do
-        # Skip empty lines
-        [[ -z "$line" ]] && continue
-        # Try to parse as JSON
-        if echo "$line" | jq '.' >/dev/null 2>&1; then
-            YOUTUBE_JSON="$line"
-            break
-        fi
-    done < <(echo "$YOUTUBE_RESULT" | tac)
-    
-    if [[ -z "$YOUTUBE_JSON" ]]; then
-        echo "   Output length: ${#YOUTUBE_RESULT} characters"
-        echo "   Last 500 chars of output:"
-        echo "${YOUTUBE_RESULT: -500}"
-    fi
-fi
-
-# Check if JSON contains an error field
-if [[ -n "$YOUTUBE_JSON" ]] && echo "$YOUTUBE_JSON" | jq -e '.error' >/dev/null 2>&1; then
-    ERROR_MSG=$(echo "$YOUTUBE_JSON" | jq -r '.error')
-    
-    # Build user-friendly error message for zenity
-    ERROR_DISPLAY="❌ ERROR: $ERROR_MSG"
-    
-    # Check if error is about missing cookie
-    if echo "$ERROR_MSG" | grep -qi "cookie"; then
-        ERROR_DISPLAY="${ERROR_DISPLAY}  💡 Solution:\n"
-        ERROR_DISPLAY="${ERROR_DISPLAY}   1. Export your YouTube cookies from your browser\n"
-        ERROR_DISPLAY="${ERROR_DISPLAY}   2. Upload the cookie file via: http://127.0.0.1:54321/api/fileupload\n"
-        ERROR_DISPLAY="${ERROR_DISPLAY}   3. The cookie file should be saved as:\n"
-        ERROR_DISPLAY="${ERROR_DISPLAY}      ~/.zen/game/nostr/${PLAYER}/.youtube.com.cookie  "
-        ERROR_DISPLAY="${ERROR_DISPLAY}   Or use the cookie upload interface at:\n"
-        ERROR_DISPLAY="${ERROR_DISPLAY}   http://127.0.0.1:54321/cookie"
-    fi
-    
-    # Display error to user via zenity (if available and not in non-interactive mode)
-    if [[ -z "$2" ]] && command -v zenity &> /dev/null; then
-        zenity --error \
-            --width 600 \
-            --title="YouTube Download Error" \
-            --text="$ERROR_DISPLAY" 2>/dev/null || true
-    fi
-    
-    # Also display in consolea
-    echo "$ERROR_DISPLAY" | sed 's/\\n/\n/g'
-    echo ""
-    echo "Full output from process_youtube.sh:"
-    echo "$YOUTUBE_RESULT"
-    echo ""
-    echo "📋 Check also: ~/.zen/tmp/IA.log for detailed process_youtube.sh logs"
-    # Clean up JSON file if it exists
-    rm -f "$JSON_OUTPUT_FILE"
-    espeak "YouTube processing error"
-    exit 1
-fi
-
-# If exit code is non-zero but no JSON error was found, show generic error
-if [[ $YTDLP_EXIT -ne 0 ]]; then
-    ERROR_DISPLAY="❌ ERROR: YouTube download failed (exit code: $YTDLP_EXIT)"
-    
-    # Display error to user via zenity (if available and not in non-interactive mode)
-    if [[ -z "$2" ]] && command -v zenity &> /dev/null; then
-        zenity --error \
-            --width 500 \
-            --title="YouTube Download Error" \
-            --text="${ERROR_DISPLAY}  Check ~/.zen/tmp/IA.log for details." 2>/dev/null || true
-    fi
-    
-    echo "$ERROR_DISPLAY"
-    echo "Full output from process_youtube.sh:"
-    echo "$YOUTUBE_RESULT"
-    echo ""
-    echo "📋 Check also: ~/.zen/tmp/IA.log for detailed process_youtube.sh logs"
-    # Clean up JSON file if it exists
-    rm -f "$JSON_OUTPUT_FILE"
-    espeak "YouTube download failed"
-    exit 1
-fi
-
-# Validate JSON
-if ! echo "$YOUTUBE_JSON" | jq '.' >/dev/null 2>&1; then
-    echo "❌ ERROR: Invalid JSON from process_youtube.sh"
-    echo "   Attempted to extract JSON but validation failed"
-    echo "   Extracted JSON (first 500 chars): ${YOUTUBE_JSON:0:500}"
-    echo ""
-    echo "   JSON file still exists: $([ -f "$JSON_OUTPUT_FILE" ] && echo "yes" || echo "no")"
-    if [[ -f "$JSON_OUTPUT_FILE" ]]; then
-        echo "   JSON file content (first 1000 chars):"
-        head -c 1000 "$JSON_OUTPUT_FILE" 2>/dev/null || echo "   (could not read)"
-    fi
-    echo ""
-    echo "   Full output from process_youtube.sh (last 1000 chars):"
-    echo "${YOUTUBE_RESULT: -1000}"
-    echo ""
-    echo "📋 Check also: ~/.zen/tmp/IA.log for detailed process_youtube.sh logs"
-    # Keep JSON file for debugging - don't delete yet
-    echo "   JSON file kept for debugging: $JSON_OUTPUT_FILE"
-    espeak "Invalid JSON from YouTube processing"
-    exit 1
-fi
-
-# Check if this is a playlist
-IS_PLAYLIST=$(echo "$YOUTUBE_JSON" | jq -r '.playlist // false' 2>/dev/null || echo "false")
-
-if [[ "$IS_PLAYLIST" == "true" ]]; then
-    # Handle playlist: process each file individually
-    echo "🎵 Playlist detected, processing each track..."
-    
-    PLAYLIST_ID=$(echo "$YOUTUBE_JSON" | jq -r '.playlist_id // empty')
-    TOTAL_VIDEOS=$(echo "$YOUTUBE_JSON" | jq -r '.total_videos // 0')
-    DOWNLOADED_COUNT=$(echo "$YOUTUBE_JSON" | jq -r '.downloaded_count // 0')
-    
-    echo "📋 Playlist: $PLAYLIST_ID"
-    echo "   Total videos: $TOTAL_VIDEOS"
-    echo "   Downloaded: $DOWNLOADED_COUNT"
-    espeak "Processing playlist with $DOWNLOADED_COUNT tracks" 2>/dev/null || true
-    
-    # Process each file in the playlist
-    SUCCESS_COUNT_FILE="$HOME/.zen/tmp/playlist_success_count_$$.txt"
-    echo "0" > "$SUCCESS_COUNT_FILE"
-    
-    # Extract files array and process each one
-    FILE_INDEX=0
-    echo "$YOUTUBE_JSON" | jq -c '.files[]?' 2>/dev/null | while IFS= read -r file_json; do
-        FILE_INDEX=$((FILE_INDEX + 1))
-        
-        # Extract file info
-        FILE_PATH_PLAYLIST=$(echo "$file_json" | jq -r '.file_path // empty')
-        FILENAME_PLAYLIST=$(echo "$file_json" | jq -r '.filename // empty')
-        TITLE_PLAYLIST=$(echo "$file_json" | jq -r '.title // empty')
-        DURATION_PLAYLIST=$(echo "$file_json" | jq -r '.duration // "0"')
-        UPLOADER_PLAYLIST=$(echo "$file_json" | jq -r '.uploader // empty')
-        YOUTUBE_URL_PLAYLIST=$(echo "$file_json" | jq -r '.youtube_url // empty')
-        
-        if [[ -z "$FILE_PATH_PLAYLIST" ]] || [[ ! -f "$FILE_PATH_PLAYLIST" ]]; then
-            echo "⚠️  Skipping file $FILE_INDEX: file not found: $FILE_PATH_PLAYLIST"
-            continue
-        fi
-        
-        echo ""
-        echo "🎵 Processing track $FILE_INDEX/$DOWNLOADED_COUNT: $TITLE_PLAYLIST"
-        espeak "Processing track $FILE_INDEX of $DOWNLOADED_COUNT" 2>/dev/null || true
-        
-        # Upload via /api/fileupload
-        echo "📤 Uploading MP3 via /api/fileupload..."
-        
-        if [[ -n "$NPUB" ]]; then
-            UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
-                -F "file=@${FILE_PATH_PLAYLIST}" \
-                -F "npub=${NPUB}")
-        else
-            echo "⚠️  No NOSTR npub found, upload may fail"
-            UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
-                -F "file=@${FILE_PATH_PLAYLIST}" \
-                -F "npub=")
-        fi
-        
-        if ! echo "$UPLOAD_RESPONSE" | jq -e '.success' >/dev/null 2>&1; then
-            echo "❌ ERROR: /api/fileupload failed for track $FILE_INDEX"
-            echo "Response: $UPLOAD_RESPONSE"
-            continue
-        fi
-        
-        # Extract upload result
-        UPLOAD_OUTPUT_FILE="$HOME/.zen/tmp/upload_playlist_${FILE_INDEX}_$(date +%s).json"
-        echo "$UPLOAD_RESPONSE" > "$UPLOAD_OUTPUT_FILE"
-        
-        IPFS_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.new_cid // empty')
-        INFO_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.info // empty')
-        FILE_HASH=$(echo "$UPLOAD_RESPONSE" | jq -r '.fileHash // empty')
-        
-        if [[ -z "$IPFS_CID" ]]; then
-            echo "❌ ERROR: Failed to get IPFS CID for track $FILE_INDEX"
-            continue
-        fi
-        
-        echo "✅ Track $FILE_INDEX uploaded to IPFS: $IPFS_CID"
-        
-        # Enrich upload JSON with comprehensive YouTube metadata from file_json
-        if command -v jq &> /dev/null; then
-            # Merge file_json metadata into upload response
-            ENRICHED_UPLOAD_JSON=$(echo "$UPLOAD_RESPONSE" | jq --argjson file_metadata "$file_json" '
-                . + {
-                    duration: ($file_metadata.duration // .duration),
-                    uploader: ($file_metadata.uploader // .uploader),
-                    youtube_url: ($file_metadata.youtube_url // .youtube_url),
-                    raw_title: ($file_metadata.raw_title // $file_metadata.title // .title),
-                    channel_info: ($file_metadata.channel_info // {}),
-                    content_info: ($file_metadata.content_info // {}),
-                    technical_info: ($file_metadata.technical_info // {}),
-                    youtube_metadata: ($file_metadata.youtube_metadata // {}),
-                    statistics: ($file_metadata.statistics // {}),
-                    dates: ($file_metadata.dates // {}),
-                    media_info: ($file_metadata.media_info // {}),
-                    playlist_info: ($file_metadata.playlist_info // {}),
-                    thumbnails: ($file_metadata.thumbnails // {}),
-                    subtitles_info: ($file_metadata.subtitles_info // {}),
-                    chapters: ($file_metadata.chapters // []),
-                    location: ($file_metadata.location // ""),
-                    age_limit: ($file_metadata.age_limit // 0),
-                    live_info: ($file_metadata.live_info // {})
-                }
-            ' 2>/dev/null || echo "$UPLOAD_RESPONSE")
-            echo "$ENRICHED_UPLOAD_JSON" > "$UPLOAD_OUTPUT_FILE"
-        fi
-        
-        # Publish via publish_nostr_file.sh
-        echo "📡 Publishing track $FILE_INDEX to NOSTR..."
-        
-        PUBLISH_SCRIPT="${MY_PATH}/tools/publish_nostr_file.sh"
-        if [[ ! -f "$PUBLISH_SCRIPT" ]]; then
-            PUBLISH_SCRIPT="${HOME}/.zen/Astroport.ONE/tools/publish_nostr_file.sh"
-        fi
-        
-        if [[ ! -f "$PUBLISH_SCRIPT" ]]; then
-            echo "❌ ERROR: publish_nostr_file.sh not found"
-            continue
-        fi
-        
-        SECRET_FILE="$HOME/.zen/game/nostr/${PLAYER}/.secret.nostr"
-        if [[ ! -f "$SECRET_FILE" ]]; then
-            echo "❌ ERROR: Secret file not found: $SECRET_FILE"
-            continue
-        fi
-        
-        # Clean title for publication
-        TITLE_CLEAN=$(echo "$TITLE_PLAYLIST" | sed 's/_/ /g' | sed 's/  */ /g' | sed 's/^ *//;s/ *$//')
-        
-        # Build description with comprehensive metadata
-        DESCRIPTION_TEXT="From YouTube playlist: ${UPLOADER_PLAYLIST}"
-        if [[ -n "$YOUTUBE_URL_PLAYLIST" ]]; then
-            DESCRIPTION_TEXT="${DESCRIPTION_TEXT} - ${YOUTUBE_URL_PLAYLIST}"
-        fi
-        if command -v jq &> /dev/null; then
-            CONTENT_DESC=$(echo "$file_json" | jq -r '.content_info.description // empty' 2>/dev/null || echo "")
-            if [[ -n "$CONTENT_DESC" ]] && [[ "$CONTENT_DESC" != "" ]]; then
-                DESCRIPTION_TEXT="${DESCRIPTION_TEXT}\n\n${CONTENT_DESC}"
-            fi
-        fi
-        
-        # Publish using --auto mode with enriched metadata
-        PUBLISH_OUTPUT=$(bash "$PUBLISH_SCRIPT" \
-            --auto "$UPLOAD_OUTPUT_FILE" \
-            --nsec "$SECRET_FILE" \
-            --title "$TITLE_CLEAN" \
-            --description "$DESCRIPTION_TEXT" \
-            --json 2>&1)
-        
-        PUBLISH_EXIT_CODE=$?
-        
-        if [[ $PUBLISH_EXIT_CODE -eq 0 ]]; then
-            EVENT_ID=$(echo "$PUBLISH_OUTPUT" | jq -r '.event_id // empty' 2>/dev/null || echo "")
-            if [[ -n "$EVENT_ID" ]]; then
-                echo "✅ Track $FILE_INDEX published to NOSTR! Event ID: ${EVENT_ID:0:16}..."
-                # Increment success count in file
-                CURRENT_COUNT=$(cat "$SUCCESS_COUNT_FILE" 2>/dev/null || echo "0")
-                echo $((CURRENT_COUNT + 1)) > "$SUCCESS_COUNT_FILE"
-            else
-                echo "⚠️  Track $FILE_INDEX uploaded but event ID not found"
-            fi
-        else
-            echo "⚠️  Track $FILE_INDEX uploaded but publication may have failed"
-        fi
-        
-        # Cleanup
-        rm -f "$UPLOAD_OUTPUT_FILE"
-    done
-    
-    # Read final success count
-    SUCCESS_COUNT=$(cat "$SUCCESS_COUNT_FILE" 2>/dev/null || echo "0")
-    rm -f "$SUCCESS_COUNT_FILE"
-    
-    echo ""
-    echo "✅ Playlist processing completed!"
-    echo "   Successfully processed: $SUCCESS_COUNT/$DOWNLOADED_COUNT tracks"
-    espeak "Playlist processing completed. $SUCCESS_COUNT tracks published" 2>/dev/null || true
-    
-    exit 0
-fi
-
-# Single video processing (existing code)
-# Extract metadata from JSON result
-echo "🔍 Extracting metadata from JSON..."
-TITLE_RAW=$(echo "$YOUTUBE_JSON" | jq -r '.title // empty')
-# Clean title: replace underscores with spaces, remove multiple spaces, trim
-TITLE=$(echo "$TITLE_RAW" | sed 's/_/ /g' | sed 's/  */ /g' | sed 's/^ *//;s/ *$//')
-DURATION=$(echo "$YOUTUBE_JSON" | jq -r '.duration // "0"')
-FILENAME=$(echo "$YOUTUBE_JSON" | jq -r '.filename // empty')
-FILE_PATH_DOWNLOADED=$(echo "$YOUTUBE_JSON" | jq -r '.file_path // empty')
-METADATA_FILE_FROM_JSON=$(echo "$YOUTUBE_JSON" | jq -r '.metadata_file // empty')
-OUTPUT_DIR_FROM_JSON=$(echo "$YOUTUBE_JSON" | jq -r '.output_dir // empty')
-YOUTUBE_URL_FROM_JSON=$(echo "$YOUTUBE_JSON" | jq -r '.youtube_url // .original_url // empty')
-
-# Debug: show extracted values
-echo "🔍 Extracted values:"
-echo "   TITLE: $TITLE"
-echo "   FILENAME: $FILENAME"
-echo "   FILE_PATH_DOWNLOADED: $FILE_PATH_DOWNLOADED"
-echo "   OUTPUT_DIR_FROM_JSON: $OUTPUT_DIR_FROM_JSON"
-
-# Use YouTube URL from JSON if available, otherwise use the original YTURL
-if [[ -n "$YOUTUBE_URL_FROM_JSON" ]]; then
-    YTURL="$YOUTUBE_URL_FROM_JSON"
-    echo "📺 Using YouTube URL from download result: $YTURL"
-fi
-
-# Validate extracted values - if file_path doesn't exist, try to find it in output_dir
-if [[ -z "$FILE_PATH_DOWNLOADED" ]] || [[ ! -f "$FILE_PATH_DOWNLOADED" ]]; then
-    # Try to find the file in output_dir
-    if [[ -n "$OUTPUT_DIR_FROM_JSON" ]] && [[ -d "$OUTPUT_DIR_FROM_JSON" ]]; then
-        echo "🔍 File path from JSON not found, searching in output_dir: $OUTPUT_DIR_FROM_JSON"
-        # Find any media file in the output directory
-        FILE_PATH_DOWNLOADED=$(find "$OUTPUT_DIR_FROM_JSON" -maxdepth 1 -type f \( -name "*.mp4" -o -name "*.mp3" -o -name "*.m4a" -o -name "*.webm" -o -name "*.mkv" \) ! -name "*.info.json" ! -name "*.webp" ! -name "*.png" ! -name "*.jpg" 2>/dev/null | head -n 1)
-        
-        # If still not found, try to find the largest file
-        if [[ -z "$FILE_PATH_DOWNLOADED" ]] || [[ ! -f "$FILE_PATH_DOWNLOADED" ]]; then
-            FILE_PATH_DOWNLOADED=$(find "$OUTPUT_DIR_FROM_JSON" -maxdepth 1 -type f ! -name "*.info.json" ! -name "*.webp" ! -name "*.png" ! -name "*.jpg" -exec ls -S {} + 2>/dev/null | head -n 1)
-        fi
-        
-        if [[ -n "$FILE_PATH_DOWNLOADED" ]] && [[ -f "$FILE_PATH_DOWNLOADED" ]]; then
-            FILENAME=$(basename "$FILE_PATH_DOWNLOADED")
-            echo "✅ Found downloaded file: $FILE_PATH_DOWNLOADED"
-        fi
-    fi
-fi
-
-# Final validation
-if [[ -z "$FILENAME" || -z "$FILE_PATH_DOWNLOADED" || ! -f "$FILE_PATH_DOWNLOADED" ]]; then
-    echo "❌ ERROR: Downloaded file not found or invalid metadata"
-    echo "   FILENAME: '$FILENAME'"
-    echo "   FILE_PATH_DOWNLOADED: '$FILE_PATH_DOWNLOADED'"
-    echo "   File exists: $([ -f "$FILE_PATH_DOWNLOADED" ] && echo "yes" || echo "no")"
-    if [[ -n "$OUTPUT_DIR_FROM_JSON" ]]; then
-        echo "   OUTPUT_DIR_FROM_JSON: '$OUTPUT_DIR_FROM_JSON'"
-        echo "   Directory exists: $([ -d "$OUTPUT_DIR_FROM_JSON" ] && echo "yes" || echo "no")"
-        if [[ -d "$OUTPUT_DIR_FROM_JSON" ]]; then
-            echo "   Files in directory:"
-            ls -lh "$OUTPUT_DIR_FROM_JSON" 2>/dev/null || echo "   (directory not accessible)"
-        fi
-    fi
-    # Debug: show JSON content for file_path
-    echo "   Debug: file_path from JSON:"
-    echo "$YOUTUBE_JSON" | jq -r '.file_path // "NOT_FOUND"' 2>/dev/null || echo "   (could not parse JSON)"
-    # Keep JSON file for debugging
-    echo "   JSON file kept for debugging: $JSON_OUTPUT_FILE"
-    espeak "Download failed"
-    exit 1
-fi
-
-# Clean up JSON file only after successful validation
-rm -f "$JSON_OUTPUT_FILE"
-
-echo "✅ Downloaded: $FILENAME"
-echo "   Title: $TITLE"
-echo "   Duration: $DURATION seconds"
-
-# Announce successful download
-espeak "Download completed successfully. File: $FILENAME" 2>/dev/null || true
-
-# Check file size and display info
-if [[ -f "$FILE_PATH_DOWNLOADED" ]]; then
-    FILE_SIZE_BYTES=$(stat -c%s "$FILE_PATH_DOWNLOADED" 2>/dev/null || echo "0")
-    FILE_SIZE_MB=$(echo "$FILE_SIZE_BYTES" | awk '{printf "%.2f", $1 / (1024 * 1024)}')
-    MAX_SIZE_MB=650
-    echo "   File size: ${FILE_SIZE_MB} MB"
-    if [[ $(echo "$FILE_SIZE_MB $MAX_SIZE_MB" | awk '{print ($1 < $2)}') == "1" ]]; then
-        echo "   ✅ File size is under ${MAX_SIZE_MB}MB limit"
-    else
-        echo "   ⚠️  File size exceeds ${MAX_SIZE_MB}MB limit (will be reduced during upload)"
-    fi
-fi
-       
-        # Upload via /api/fileupload (copies to uDRIVE automatically)
-        echo "📤 Uploading video via /api/fileupload..."
-        espeak "Starting video upload to IPFS" 2>/dev/null || true
-        
-        if [[ -z "$NPUB" ]]; then
-            echo "❌ ERROR: No NOSTR npub found, upload will fail"
-            espeak "No NOSTR key found"
-    exit 1
-fi
-
-        # ── Send NIP-42 authentication event before upload ──────────────────
-        # Security hardening: marker is now named  .nip42_auth_<hex_pubkey>
-        # and contains JSON {"pubkey","event_hash","created_at"}.
-        # TTL enforced on the API side: 300 s (5 min).
-        echo "🔐 Sending NIP-42 authentication event..."
-        SECRET_NOSTR_FILE="$HOME/.zen/game/nostr/${PLAYER}/.secret.nostr"
-        NOSTR_SEND_SCRIPT="${MY_PATH}/tools/nostr_send_note.py"
-        NOSTR_RELAY="ws://127.0.0.1:7777"
-
-        # Helper: write the secure JSON marker (pubkey-bound filename + JSON body)
-        _write_nip42_marker() {
-            local marker_hex="$1"    # 64-char hex pubkey
-            local event_hash="$2"   # 64-char hex event id (may be empty)
-            local marker_dir="$HOME/.zen/game/nostr/${PLAYER}"
-            local marker_file="${marker_dir}/.nip42_auth_${marker_hex}"
-            local now_ts
-            now_ts=$(date +%s)
-            printf '{"pubkey":"%s","event_hash":"%s","created_at":%d}' \
-                "$marker_hex" "$event_hash" "$now_ts" \
-                > "$marker_file" 2>/dev/null \
-                && echo "🔐 NIP-42 auth marker written: .nip42_auth_${marker_hex:0:16}…" \
-                || echo "⚠️  Warning: Could not write NIP-42 auth marker (upload may fail)"
-            # Remove stale old-format marker if it still exists
-            [[ -f "${marker_dir}/.nip42_auth" ]] && rm -f "${marker_dir}/.nip42_auth" 2>/dev/null || true
-        }
-
-        if [[ -f "$SECRET_NOSTR_FILE" ]] && [[ -f "$NOSTR_SEND_SCRIPT" ]]; then
-            # ── Obtain a dynamic challenge from the API before signing ───────
-            NIP42_CHALLENGE=""
-            if [[ -n "$NPUB_HEX" ]]; then
-                NIP42_CHALLENGE=$(curl -sf \
-                    "http://127.0.0.1:54321/api/nip42/challenge?npub=${NPUB_HEX}" \
-                    2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('challenge',''))" \
-                    2>/dev/null || echo "")
-                [[ -n "$NIP42_CHALLENGE" ]] && echo "🔑 Dynamic NIP-42 challenge obtained: ${NIP42_CHALLENGE:0:16}…"
-            fi
-            # Fall back to a local timestamp nonce if the API is unreachable
-            [[ -z "$NIP42_CHALLENGE" ]] && NIP42_CHALLENGE="local-$(date +%s)-${IPFSNODEID:0:8}"
-
-            # Build the kind-22242 event with the dynamic challenge
-            NIP42_CONTENT="${IPFSNODEID} ${UPLANETNAME_G1}"
-            NIP42_TAGS='[["relay","'${NOSTR_RELAY}'"],["challenge","'"${NIP42_CHALLENGE}"'"]]'
-
-            # Send the event; capture output to extract event_id
-            NIP42_OUTPUT=$(python3 "$NOSTR_SEND_SCRIPT" \
-                --keyfile "$SECRET_NOSTR_FILE" \
-                --content "$NIP42_CONTENT" \
-                --kind 22242 \
-                --tags "$NIP42_TAGS" \
-                --relays "$NOSTR_RELAY" 2>&1)
-            NIP42_EXIT=$?
-
-            NIP42_EVENT_ID=$(echo "$NIP42_OUTPUT" | python3 -c \
-                "import sys,json; d=json.load(sys.stdin); print(d.get('event_id',''))" \
-                2>/dev/null || echo "")
-            # Fallback regex extraction if nostr_send_note.py output isn't pure JSON
-            [[ -z "$NIP42_EVENT_ID" ]] && \
-                NIP42_EVENT_ID=$(echo "$NIP42_OUTPUT" | grep -oE '"event_id"\s*:\s*"[a-f0-9]{64}"' \
-                    | grep -oE '[a-f0-9]{64}' | head -1)
-
-            if [[ $NIP42_EXIT -eq 0 ]] || echo "$NIP42_OUTPUT" | grep -q "Event sent successfully"; then
-                echo "✅ NIP-42 authentication event sent (event: ${NIP42_EVENT_ID:0:16}…)"
-                # NOTE: kind 22242 is ephemeral (20000-29999 per NIP-01) and is NOT
-                # stored by strfry.  filter/22242.sh (relay write-policy plugin) will
-                # also write the marker when the relay forwards the event; this is a
-                # belt-and-suspenders fallback for the direct-upload case.
-                if [[ -n "$NPUB_HEX" ]]; then
-                    _write_nip42_marker "$NPUB_HEX" "$NIP42_EVENT_ID"
-                else
-                    echo "⚠️  Warning: NPUB_HEX not set – cannot write pubkey-bound marker"
-                fi
-                # Short wait so filter/22242.sh can also write the relay-side marker
-                sleep 2
-            else
-                echo "⚠️  Warning: Failed to send NIP-42 authentication event (upload may still work if already authenticated)"
-                # Write the marker anyway in case local scripts already authenticated
-                [[ -n "$NPUB_HEX" ]] && _write_nip42_marker "$NPUB_HEX" "" || true
-            fi
-        else
-            [[ ! -f "$SECRET_NOSTR_FILE" ]] && echo "⚠️  Warning: Secret key file not found: $SECRET_NOSTR_FILE"
-            [[ ! -f "$NOSTR_SEND_SCRIPT" ]] && echo "⚠️  Warning: nostr_send_note.py not found: $NOSTR_SEND_SCRIPT"
-            echo "⚠️  Warning: Cannot send NIP-42 authentication event (upload may still work if already authenticated)"
-            # Fallback: write marker without event_hash for potential re-use
-            [[ -n "$NPUB_HEX" ]] && _write_nip42_marker "$NPUB_HEX" "" || true
-        fi
-
-        # Upload with YouTube metadata if available
-        if [[ -n "$YOUTUBE_METADATA_JSON_FILE" ]] && [[ -f "$YOUTUBE_METADATA_JSON_FILE" ]]; then
-            echo "📤 Uploading video with YouTube metadata..."
-            UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
-                -F "file=@${FILE_PATH_DOWNLOADED}" \
-                -F "npub=${NPUB}" \
-                -F "youtube_metadata=@${YOUTUBE_METADATA_JSON_FILE}")
-        else
-            UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
-                -F "file=@${FILE_PATH_DOWNLOADED}" \
-                -F "npub=${NPUB}")
-        fi
-        
-        if ! echo "$UPLOAD_RESPONSE" | jq -e '.success' >/dev/null 2>&1; then
-            echo "❌ ERROR: /api/fileupload failed"
-            echo "Response: $UPLOAD_RESPONSE"
-            espeak "Upload failed"
-    exit 1
-fi
-
-        # Extract values from upload response
-        IPFS_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.new_cid // empty')
-        INFO_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.info // empty')
-        THUMBNAIL_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.thumbnail_ipfs // empty')
-        GIFANIM_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.gifanim_ipfs // empty')
-        FILE_HASH=$(echo "$UPLOAD_RESPONSE" | jq -r '.fileHash // empty')
-        DIMENSIONS=$(echo "$UPLOAD_RESPONSE" | jq -r '.dimensions // empty')
-        UPLOAD_CHAIN=$(echo "$UPLOAD_RESPONSE" | jq -r '.upload_chain // empty')
-
-if [[ -z "$IPFS_CID" ]]; then
-            echo "❌ ERROR: Failed to get IPFS CID from upload response"
-    espeak "IPFS upload failed"
-    exit 1
-fi
-
-        echo "✅ Video uploaded to IPFS and copied to uDRIVE!"
-echo "   CID: $IPFS_CID"
-espeak "Video uploaded successfully to IPFS" 2>/dev/null || true
-        
-        # Find YouTube metadata.json file (yt-dlp .info.json contains all YouTube metadata)
-        YOUTUBE_METADATA_FILE=""
-        if [[ -n "$METADATA_FILE_FROM_JSON" ]] && [[ -f "$METADATA_FILE_FROM_JSON" ]]; then
-            YOUTUBE_METADATA_FILE="$METADATA_FILE_FROM_JSON"
-        else
-            METADATA_BASENAME=$(basename "$FILE_PATH_DOWNLOADED" | sed 's/\.[^.]*$//')
-            for possible_metadata in "${TEMP_YOUTUBE_DIR}/${METADATA_BASENAME}.info.json" "$(dirname "$FILE_PATH_DOWNLOADED")/${METADATA_BASENAME}.info.json"; do
-                if [[ -f "$possible_metadata" ]]; then
-                    YOUTUBE_METADATA_FILE="$possible_metadata"
+                local file_size1=$(stat -c%s "$mp4_files" 2>/dev/null || echo "0")
+                sleep 3
+                local file_size2=$(stat -c%s "$mp4_files" 2>/dev/null || echo "0")
+                if [[ "$file_size1" == "$file_size2" ]] && [[ $file_size1 -gt 1000000 ]]; then
+                    espeak "Download complete" 2>/dev/null || true
                     break
                 fi
-            done
-        fi
-        
-        # Extract and structure all YouTube metadata for info.json
-        YOUTUBE_METADATA_JSON_FILE="$HOME/.zen/tmp/youtube_metadata_$(date +%s).json"
-        if [[ -n "$YOUTUBE_METADATA_FILE" ]] && [[ -f "$YOUTUBE_METADATA_FILE" ]] && command -v jq &> /dev/null; then
-            echo "📋 Extracting comprehensive YouTube metadata..."
-            
-            # Extract all relevant YouTube metadata from yt-dlp .info.json
-            YOUTUBE_METADATA_JSON=$(jq '{
-                youtube_id: .id,
-                youtube_url: .webpage_url,
-                youtube_short_url: .short_url,
-                title: .title,
-                description: .description,
-                uploader: .uploader,
-                uploader_id: .uploader_id,
-                uploader_url: .uploader_url,
-                channel: .channel,
-                channel_id: .channel_id,
-                channel_url: .channel_url,
-                channel_follower_count: .channel_follower_count,
-                duration: .duration,
-                view_count: .view_count,
-                like_count: .like_count,
-                comment_count: .comment_count,
-                average_rating: .average_rating,
-                age_limit: .age_limit,
-                upload_date: .upload_date,
-                release_date: .release_date,
-                timestamp: .timestamp,
-                availability: .availability,
-                live_status: .live_status,
-                was_live: .was_live,
-                format: .format,
-                format_id: .format_id,
-                format_note: .format_note,
-                width: .width,
-                height: .height,
-                fps: .fps,
-                vcodec: .vcodec,
-                acodec: .acodec,
-                abr: .abr,
-                vbr: .vbr,
-                tbr: .tbr,
-                filesize: .filesize,
-                filesize_approx: .filesize_approx,
-                ext: .ext,
-                resolution: .resolution,
-                categories: .categories,
-                tags: .tags,
-                chapters: .chapters,
-                subtitles: .subtitles,
-                automatic_captions: .automatic_captions,
-                thumbnail: .thumbnail,
-                thumbnails: .thumbnails,
-                license: .license,
-                language: .language,
-                languages: .languages,
-                location: .location,
-                artist: .artist,
-                album: .album,
-                track: .track,
-                creator: .creator,
-                alt_title: .alt_title,
-                series: .series,
-                season: .season,
-                season_number: .season_number,
-                episode: .episode,
-                episode_number: .episode_number,
-                playlist: .playlist,
-                playlist_id: .playlist_id,
-                playlist_title: .playlist_title,
-                playlist_index: .playlist_index,
-                n_entries: .n_entries,
-                webpage_url_basename: .webpage_url_basename,
-                webpage_url_domain: .webpage_url_domain,
-                extractor: .extractor,
-                extractor_key: .extractor_key,
-                epoch: .epoch,
-                modified_timestamp: .modified_timestamp,
-                modified_date: .modified_date,
-                requested_subtitles: .requested_subtitles,
-                has_drm: .has_drm,
-                is_live: .is_live,
-                was_live: .was_live,
-                live_status: .live_status,
-                release_timestamp: .release_timestamp,
-                comment_count: .comment_count,
-                heatmap: .heatmap
-            }' "$YOUTUBE_METADATA_FILE" 2>/dev/null)
-            
-            if [[ -n "$YOUTUBE_METADATA_JSON" ]] && echo "$YOUTUBE_METADATA_JSON" | jq -e '.' >/dev/null 2>&1; then
-                echo "$YOUTUBE_METADATA_JSON" > "$YOUTUBE_METADATA_JSON_FILE"
-                echo "✅ YouTube metadata extracted and saved to: $YOUTUBE_METADATA_JSON_FILE"
-                
-                # Display key metadata
-                YT_UPLOADER=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.uploader // .channel // empty')
-                YT_CHANNEL=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.channel // empty')
-                YT_VIEWS=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.view_count // empty')
-                YT_LIKES=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.like_count // empty')
-                YT_WEBPAGE_URL=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.youtube_url // .webpage_url // empty')
-                
-                echo "   📺 Channel: ${YT_CHANNEL:-$YT_UPLOADER}"
-                [[ -n "$YT_VIEWS" ]] && echo "   👁️  Views: $YT_VIEWS"
-                [[ -n "$YT_LIKES" ]] && echo "   👍 Likes: $YT_LIKES"
-            else
-                echo "⚠️  Failed to extract YouTube metadata JSON"
-                YOUTUBE_METADATA_JSON_FILE=""
             fi
-        else
-            echo "⚠️  YouTube metadata file not found, skipping metadata extraction"
-            YOUTUBE_METADATA_JSON_FILE=""
-        fi
-        
-        # Ask for title and description for video publication
-        [ ! $2 ] && VIDEO_TITLE=$(zenity --entry --width 600 --title "Titre de la vidéo" --text "Titre de la vidéo YouTube" --entry-text="$TITLE")
-        [[ -z "$VIDEO_TITLE" ]] && VIDEO_TITLE="$TITLE"
-        
-        [ ! $2 ] && VIDEO_DESC=$(zenity --entry --width 600 --title "Description" --text "Description de la vidéo (optionnel)" --entry-text="")
-        
-        # Build description with YouTube metadata if available
-        if [[ -n "$YOUTUBE_METADATA_FILE" ]] && command -v jq &> /dev/null; then
-            YT_UPLOADER=$(jq -r '.uploader // .channel // empty' "$YOUTUBE_METADATA_FILE" 2>/dev/null)
-            YT_WEBPAGE_URL=$(jq -r '.webpage_url // .url // empty' "$YOUTUBE_METADATA_FILE" 2>/dev/null)
-            if [[ -n "$YT_UPLOADER" ]] || [[ -n "$YT_WEBPAGE_URL" ]]; then
-                if [[ -n "$VIDEO_DESC" ]]; then
-                    VIDEO_DESC="${VIDEO_DESC}  Source YouTube: ${YT_UPLOADER}"
-                    [[ -n "$YT_WEBPAGE_URL" ]] && VIDEO_DESC="${VIDEO_DESC}\n${YT_WEBPAGE_URL}"
+            
+            local current_time=$(date +%s)
+            local elapsed=$((current_time - last_announce_time))
+            local total_elapsed=$((current_time - start_time))
+            
+            if [[ $total_elapsed -gt 7200 ]]; then break; fi
+            
+            if [[ $elapsed -ge $announce_interval ]]; then
+                step=$((step + 1))
+                local minutes=$((total_elapsed / 60))
+                local seconds=$((total_elapsed % 60))
+                if [[ -n "$mp4_files" ]]; then
+                    local current_size=$(stat -c%s "$mp4_files" 2>/dev/null || echo "0")
+                    local size_mb=$(echo "$current_size" | awk '{printf "%.1f", $1 / (1024 * 1024)}')
+                    espeak "Download in progress. Step $step. ${minutes} minutes ${seconds} seconds. ${size_mb} megabytes downloaded" 2>/dev/null || true
                 else
-                    VIDEO_DESC="Source YouTube: ${YT_UPLOADER}"
-                    [[ -n "$YT_WEBPAGE_URL" ]] && VIDEO_DESC="${VIDEO_DESC}\n${YT_WEBPAGE_URL}"
+                    espeak "Download in progress. Step $step. ${minutes} minutes ${seconds} seconds" 2>/dev/null || true
                 fi
+                last_announce_time=$current_time
             fi
+        done
+    }
+
+    espeak "Starting YouTube download" 2>/dev/null || true
+    monitor_download_progress "$TEMP_YOUTUBE_DIR" &
+    MONITOR_PID=$!
+
+    JSON_OUTPUT_FILE="$HOME/.zen/tmp/youtube_json_$$.json"
+    mkdir -p "$(dirname "$JSON_OUTPUT_FILE")"
+
+    # $PLAYER pour les cookies
+    echo "📥 Downloading YouTube video (Max 480p) via process_youtube.sh..."
+    ${MY_PATH}/IA/process_youtube.sh --json-file "$JSON_OUTPUT_FILE" --output-dir "$TEMP_YOUTUBE_DIR" "$YTURL" "mp4" "$PLAYER"
+    YTDLP_EXIT=$?
+
+    # Stop monitoring
+    kill $MONITOR_PID 2>/dev/null || true
+    wait $MONITOR_PID 2>/dev/null || true
+
+    # Validation JSON
+    if [[ ! -f "$JSON_OUTPUT_FILE" || ! -s "$JSON_OUTPUT_FILE" ]]; then
+        echo "❌ ERROR: Le JSON de retour est manquant ou vide."
+        espeak "YouTube download failed"
+        exit 1
+    fi
+
+    YOUTUBE_JSON=$(cat "$JSON_OUTPUT_FILE")
+    rm -f "$JSON_OUTPUT_FILE"
+
+    if echo "$YOUTUBE_JSON" | jq -e '.error' >/dev/null 2>&1; then
+        ERROR_MSG=$(echo "$YOUTUBE_JSON" | jq -r '.error')
+        [ -z "$2" ] && command -v zenity &> /dev/null && zenity --error --width 600 --title="YouTube Download Error" --text="❌ ERROR: $ERROR_MSG" 2>/dev/null || true
+        echo "❌ ERROR: $ERROR_MSG"
+        espeak "YouTube processing error"
+        exit 1
+    fi
+
+    # Extraction des données
+    TITLE_RAW=$(echo "$YOUTUBE_JSON" | jq -r '.title // empty')
+    TITLE=$(echo "$TITLE_RAW" | sed 's/_/ /g' | sed 's/  */ /g' | sed 's/^ *//;s/ *$//')
+    DURATION=$(echo "$YOUTUBE_JSON" | jq -r '.duration // "0"')
+    FILENAME=$(echo "$YOUTUBE_JSON" | jq -r '.filename // empty')
+    FILE_PATH_DOWNLOADED=$(echo "$YOUTUBE_JSON" | jq -r '.file_path // empty')
+    METADATA_FILE_FROM_JSON=$(echo "$YOUTUBE_JSON" | jq -r '.metadata_file // empty')
+
+    if [[ -z "$FILENAME" || -z "$FILE_PATH_DOWNLOADED" || ! -f "$FILE_PATH_DOWNLOADED" ]]; then
+        echo "❌ ERROR: Downloaded file not found."
+        espeak "Download failed"
+        exit 1
+    fi
+
+    echo "✅ Downloaded: $FILENAME (Duration: $DURATION s)"
+    espeak "Download completed successfully." 2>/dev/null || true
+
+    # IMPORTANT : NIP-42 Authentication (Critique pour l'API)
+    echo "🔐 Sending NIP-42 authentication event..."
+    SECRET_NOSTR_FILE="$HOME/.zen/game/nostr/${PLAYER}/.secret.nostr"
+    NOSTR_SEND_SCRIPT="${MY_PATH}/tools/nostr_send_note.py"
+    NOSTR_RELAY="ws://127.0.0.1:7777"
+
+    _write_nip42_marker() {
+        local marker_hex="$1"
+        local event_hash="$2"
+        local marker_dir="$HOME/.zen/game/nostr/${PLAYER}"
+        local marker_file="${marker_dir}/.nip42_auth_${marker_hex}"
+        local now_ts=$(date +%s)
+        printf '{"pubkey":"%s","event_hash":"%s","created_at":%d}' "$marker_hex" "$event_hash" "$now_ts" > "$marker_file" 2>/dev/null
+        [[ -f "${marker_dir}/.nip42_auth" ]] && rm -f "${marker_dir}/.nip42_auth" 2>/dev/null || true
+    }
+
+    if [[ -f "$SECRET_NOSTR_FILE" ]] && [[ -f "$NOSTR_SEND_SCRIPT" ]]; then
+        NIP42_CHALLENGE=""
+        if [[ -n "$NPUB_HEX" ]]; then
+            NIP42_CHALLENGE=$(curl -sf "http://127.0.0.1:54321/api/nip42/challenge?npub=${NPUB_HEX}" 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('challenge',''))" 2>/dev/null || echo "")
         fi
+        [[ -z "$NIP42_CHALLENGE" ]] && NIP42_CHALLENGE="local-$(date +%s)-${IPFSNODEID:0:8}"
+
+        NIP42_OUTPUT=$(python3 "$NOSTR_SEND_SCRIPT" --keyfile "$SECRET_NOSTR_FILE" --content "${IPFSNODEID} ${UPLANETNAME_G1}" --kind 22242 --tags '[["relay","'${NOSTR_RELAY}'"],["challenge","'"${NIP42_CHALLENGE}"'"]]' --relays "$NOSTR_RELAY" 2>&1)
         
-        # Publish video via /webcam endpoint (NIP-71)
-        echo "📹 Publishing video via /webcam endpoint..."
-        
-        PUBLISH_DATA="player=${PLAYER}"
-        PUBLISH_DATA="${PUBLISH_DATA}&ipfs_cid=${IPFS_CID}"
-        PUBLISH_DATA="${PUBLISH_DATA}&thumbnail_ipfs=${THUMBNAIL_CID}"
-        PUBLISH_DATA="${PUBLISH_DATA}&gifanim_ipfs=${GIFANIM_CID}"
-        PUBLISH_DATA="${PUBLISH_DATA}&info_cid=${INFO_CID}"
-        PUBLISH_DATA="${PUBLISH_DATA}&file_hash=${FILE_HASH}"
-        PUBLISH_DATA="${PUBLISH_DATA}&mime_type=video/mp4"
-        PUBLISH_DATA="${PUBLISH_DATA}&upload_chain=${UPLOAD_CHAIN}"
-        PUBLISH_DATA="${PUBLISH_DATA}&duration=${DURATION}"
-        PUBLISH_DATA="${PUBLISH_DATA}&video_dimensions=${DIMENSIONS}"
-        PUBLISH_DATA="${PUBLISH_DATA}&title=${VIDEO_TITLE}"
-        PUBLISH_DATA="${PUBLISH_DATA}&description=${VIDEO_DESC}"
-        PUBLISH_DATA="${PUBLISH_DATA}&publish_nostr=true"
-        PUBLISH_DATA="${PUBLISH_DATA}&npub=${NPUB}"
-        # Add YouTube URL if available (for source:youtube tag)
-        if [[ -n "$YTURL" ]]; then
-            PUBLISH_DATA="${PUBLISH_DATA}&youtube_url=${YTURL}"
-        fi
-        
-        PUBLISH_RESPONSE=$(curl -s -X POST "${API_URL}/webcam" \
-            -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "$PUBLISH_DATA")
-        
-        if echo "$PUBLISH_RESPONSE" | grep -q "success\|✅"; then
-            echo "✅ Video published successfully!"
-            espeak "YouTube video published"
+        NIP42_EVENT_ID=$(echo "$NIP42_OUTPUT" | grep -oE '"event_id"\s*:\s*"[a-f0-9]{64}"' | grep -oE '[a-f0-9]{64}' | head -1)
+        if [[ -n "$NIP42_EVENT_ID" ]]; then
+            [[ -n "$NPUB_HEX" ]] && _write_nip42_marker "$NPUB_HEX" "$NIP42_EVENT_ID"
+            sleep 2
         else
-            echo "⚠️  Video upload succeeded but publication may have failed"
-            echo "Response: $PUBLISH_RESPONSE"
+            [[ -n "$NPUB_HEX" ]] && _write_nip42_marker "$NPUB_HEX" "" || true
         fi
-        
-        # Cleanup temp files
-        rm -rf "$TEMP_YOUTUBE_DIR"
-        [[ -n "$YOUTUBE_METADATA_JSON_FILE" ]] && [[ -f "$YOUTUBE_METADATA_JSON_FILE" ]] && rm -f "$YOUTUBE_METADATA_JSON_FILE"
-        
-        espeak "YouTube video ready"
+    else
+        [[ -n "$NPUB_HEX" ]] && _write_nip42_marker "$NPUB_HEX" "" || true
+    fi
+
+    # CONSERVÉ : Extraction Complète des Métadonnées Youtube (Pour le contrat UPlanet v2.0)
+    YOUTUBE_METADATA_JSON_FILE="$HOME/.zen/tmp/youtube_metadata_$(date +%s).json"
+    if [[ -n "$METADATA_FILE_FROM_JSON" ]] && [[ -f "$METADATA_FILE_FROM_JSON" ]] && command -v jq &> /dev/null; then
+        echo "📋 Extracting comprehensive YouTube metadata..."
+        jq '{
+            youtube_id: .id, youtube_url: .webpage_url, youtube_short_url: .short_url,
+            title: .title, description: .description, uploader: .uploader,
+            uploader_id: .uploader_id, uploader_url: .uploader_url, channel: .channel,
+            channel_id: .channel_id, channel_url: .channel_url, channel_follower_count: .channel_follower_count,
+            duration: .duration, view_count: .view_count, like_count: .like_count, comment_count: .comment_count,
+            average_rating: .average_rating, age_limit: .age_limit, upload_date: .upload_date, release_date: .release_date,
+            timestamp: .timestamp, availability: .availability, live_status: .live_status, was_live: .was_live,
+            format: .format, format_id: .format_id, format_note: .format_note, width: .width, height: .height,
+            fps: .fps, vcodec: .vcodec, acodec: .acodec, abr: .abr, vbr: .vbr, tbr: .tbr, filesize: .filesize,
+            filesize_approx: .filesize_approx, ext: .ext, resolution: .resolution, categories: .categories,
+            tags: .tags, chapters: .chapters, subtitles: .subtitles, automatic_captions: .automatic_captions,
+            thumbnail: .thumbnail, thumbnails: .thumbnails, license: .license, language: .language,
+            languages: .languages, location: .location, artist: .artist, album: .album, track: .track,
+            creator: .creator, alt_title: .alt_title, series: .series, season: .season, season_number: .season_number,
+            episode: .episode, episode_number: .episode_number, playlist: .playlist, playlist_id: .playlist_id,
+            playlist_title: .playlist_title, playlist_index: .playlist_index, n_entries: .n_entries,
+            webpage_url_basename: .webpage_url_basename, webpage_url_domain: .webpage_url_domain, extractor: .extractor,
+            extractor_key: .extractor_key, epoch: .epoch, modified_timestamp: .modified_timestamp, modified_date: .modified_date,
+            requested_subtitles: .requested_subtitles, has_drm: .has_drm, is_live: .is_live, release_timestamp: .release_timestamp, heatmap: .heatmap
+        }' "$METADATA_FILE_FROM_JSON" > "$YOUTUBE_METADATA_JSON_FILE" 2>/dev/null || rm -f "$YOUTUBE_METADATA_JSON_FILE"
+    fi
+
+    # API UPLOAD
+    echo "📤 Uploading video via /api/fileupload..."
+    espeak "Starting video upload to IPFS" 2>/dev/null || true
+    
+    if [[ -f "$YOUTUBE_METADATA_JSON_FILE" ]]; then
+        UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" -F "file=@${FILE_PATH_DOWNLOADED}" -F "npub=${NPUB}" -F "youtube_metadata=@${YOUTUBE_METADATA_JSON_FILE}")
+    else
+        UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" -F "file=@${FILE_PATH_DOWNLOADED}" -F "npub=${NPUB}")
+    fi
+    
+    if ! echo "$UPLOAD_RESPONSE" | jq -e '.success' >/dev/null 2>&1; then
+        echo "❌ ERROR: /api/fileupload failed. Response: $UPLOAD_RESPONSE"
+        espeak "Upload failed"
+        exit 1
+    fi
+
+    IPFS_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.new_cid // empty')
+    INFO_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.info // empty')
+    THUMBNAIL_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.thumbnail_ipfs // empty')
+    GIFANIM_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.gifanim_ipfs // empty')
+    FILE_HASH=$(echo "$UPLOAD_RESPONSE" | jq -r '.fileHash // empty')
+    DIMENSIONS=$(echo "$UPLOAD_RESPONSE" | jq -r '.dimensions // empty')
+    UPLOAD_CHAIN=$(echo "$UPLOAD_RESPONSE" | jq -r '.upload_chain // empty')
+
+    echo "✅ Video uploaded to IPFS! CID: $IPFS_CID"
+    espeak "Video uploaded successfully" 2>/dev/null || true
+
+    # User Input & Description
+    [ ! $2 ] && VIDEO_TITLE=$(zenity --entry --width 600 --title "Titre de la vidéo" --text "Confirmez le titre" --entry-text="$TITLE")
+    [[ -z "$VIDEO_TITLE" ]] && VIDEO_TITLE="$TITLE"
+    
+    [ ! $2 ] && VIDEO_DESC=$(zenity --entry --width 600 --title "Description" --text "Description de la vidéo (optionnel)" --entry-text="")
+    
+    # Auto-enrich desc with YouTube Info
+    if [[ -f "$YOUTUBE_METADATA_JSON_FILE" ]] && command -v jq &> /dev/null; then
+        YT_UPLOADER=$(jq -r '.uploader // .channel // empty' "$YOUTUBE_METADATA_JSON_FILE" 2>/dev/null)
+        YT_URL=$(jq -r '.youtube_url // .webpage_url // empty' "$YOUTUBE_METADATA_JSON_FILE" 2>/dev/null)
+        if [[ -n "$YT_UPLOADER" ]] || [[ -n "$YT_URL" ]]; then
+            [[ -n "$VIDEO_DESC" ]] && VIDEO_DESC="${VIDEO_DESC}  Source YouTube: ${YT_UPLOADER}\n${YT_URL}" || VIDEO_DESC="Source YouTube: ${YT_UPLOADER}\n${YT_URL}"
+        fi
+    fi
+
+    # API PUBLISH (NIP-71)
+    echo "📹 Publishing video via /webcam endpoint..."
+    PUBLISH_DATA="player=${PLAYER}&ipfs_cid=${IPFS_CID}&thumbnail_ipfs=${THUMBNAIL_CID}&gifanim_ipfs=${GIFANIM_CID}&info_cid=${INFO_CID}&file_hash=${FILE_HASH}&mime_type=video/mp4&upload_chain=${UPLOAD_CHAIN}&duration=${DURATION}&video_dimensions=${DIMENSIONS}&title=${VIDEO_TITLE}&description=${VIDEO_DESC}&publish_nostr=true&npub=${NPUB}&youtube_url=${YTURL}"
+    
+    PUBLISH_RESPONSE=$(curl -s -X POST "${API_URL}/webcam" -H "Content-Type: application/x-www-form-urlencoded" -d "$PUBLISH_DATA")
+    
+    if echo "$PUBLISH_RESPONSE" | grep -q "success\|✅"; then
+        echo "✅ Video published successfully!"
+        espeak "YouTube video published"
+    else
+        echo "⚠️ Publication may have failed. Response: $PUBLISH_RESPONSE"
+    fi
+
+    # Cleanup
+    rm -rf "$TEMP_YOUTUBE_DIR"
+    [[ -f "$YOUTUBE_METADATA_JSON_FILE" ]] && rm -f "$YOUTUBE_METADATA_JSON_FILE"
     ;;
 
 ########################################################################
@@ -1132,299 +557,90 @@ espeak "Video uploaded successfully to IPFS" 2>/dev/null || true
 # CASE ## MP3
 ########################################################################
     mp3)
-        [[ $URL == "" ]] && URL=$(zenity --entry --width 500 --title "Lien Youtube à convertir en MP3" --text "Indiquez le lien (URL)" --entry-text="")
-        [[ $URL == "" ]] && echo "URL EMPTY" && exit 1
+        [[ "$URL" == "" ]] && URL=$(zenity --entry --width 500 --title "Lien Youtube à convertir en MP3" --text "Indiquez le lien (URL)" --entry-text="")
+        [[ "$URL" == "" ]] && echo "URL EMPTY" && exit 1
         
         echo "Processing URL: $URL"
-        espeak "OK."
-        
-        # Use process_youtube.sh for MP3 processing
-        # Create temporary JSON file for clean JSON output
+        espeak "OK. Downloading MP 3"
+
+        TEMP_MP3_DIR="$HOME/.zen/tmp.media/mp3_$(date -u +%s%N | cut -b1-13)"
+        mkdir -p "$TEMP_MP3_DIR"
         MP3_JSON_FILE="$HOME/.zen/tmp/youtube_mp3_json_$$.json"
-        mkdir -p "$(dirname "$MP3_JSON_FILE")"
         
-        MP3_RESULT_OUTPUT=$(${MY_PATH}/IA/process_youtube.sh --json-file "$MP3_JSON_FILE" --debug "$URL" "mp3" "$PLAYER" 2>&1)
-        MP3_EXIT_CODE=$?
+        # 1. Téléchargement local
+        bash "${MY_PATH}/IA/process_youtube.sh" --json-file "$MP3_JSON_FILE" --output-dir "$TEMP_MP3_DIR" "$URL" "mp3"
         
-        # Read JSON from file if available
-        if [[ -f "$MP3_JSON_FILE" ]] && [[ -s "$MP3_JSON_FILE" ]]; then
-            MP3_RESULT=$(cat "$MP3_JSON_FILE")
-            rm -f "$MP3_JSON_FILE"
-        else
-            # Fallback: try to extract from output
-            MP3_RESULT=$(echo "$MP3_RESULT_OUTPUT" | grep -E '^\{|^\[' | head -n 1)
-            if [[ -z "$MP3_RESULT" ]]; then
-                # Try to find last valid JSON line
-                while IFS= read -r line; do
-                    [[ -z "$line" ]] && continue
-                    if echo "$line" | jq '.' >/dev/null 2>&1; then
-                        MP3_RESULT="$line"
-                        break
-                    fi
-                done < <(echo "$MP3_RESULT_OUTPUT" | tac)
-            fi
-        fi
-        
-        # Check if the result is valid JSON
-        if ! echo "$MP3_RESULT" | jq . >/dev/null 2>&1; then
-            echo "Invalid JSON returned from process_youtube.sh"
-            rm -f "$MP3_JSON_FILE"
-            espeak "Invalid JSON from YouTube processing"
-            exit 1
-        fi
-        
-        # Check if process_youtube.sh succeeded
-        if echo "$MP3_RESULT" | jq -e '.error' >/dev/null 2>&1; then
-            ERROR_MSG=$(echo "$MP3_RESULT" | jq -r '.error')
-            echo "MP3 processing failed: $ERROR_MSG"
-            rm -f "$MP3_JSON_FILE"
+        if [[ ! -f "$MP3_JSON_FILE" ]]; then
             espeak "MP3 processing failed"
             exit 1
         fi
         
-        # Extract values from JSON result
-        FILE_TITLE=$(echo "$MP3_RESULT" | jq -r '.title // empty' 2>/dev/null)
-        FILE_NAME=$(echo "$MP3_RESULT" | jq -r '.filename // empty' 2>/dev/null)
-        IPFS_URL=$(echo "$MP3_RESULT" | jq -r '.ipfs_url // empty' 2>/dev/null)
-        OUTPUT_DIR_FROM_JSON=$(echo "$MP3_RESULT" | jq -r '.output_dir // empty' 2>/dev/null)
-        METADATA_FILE_FROM_JSON=$(echo "$MP3_RESULT" | jq -r '.metadata_file // empty' 2>/dev/null)
-        YOUTUBE_URL_FROM_JSON=$(echo "$MP3_RESULT" | jq -r '.youtube_url // .original_url // empty' 2>/dev/null)
+        MP3_RESULT=$(cat "$MP3_JSON_FILE")
+        rm -f "$MP3_JSON_FILE"
         
-        if [[ -z "$FILE_TITLE" || -z "$FILE_NAME" ]]; then
-            echo "Failed to extract required data from MP3 processing"
-            espeak "Failed to extract data"
+        if echo "$MP3_RESULT" | jq -e '.error' >/dev/null 2>&1; then
+            ERROR_MSG=$(echo "$MP3_RESULT" | jq -r '.error')
+            echo "MP3 processing failed: $ERROR_MSG"
+            espeak "MP3 processing failed"
             exit 1
         fi
         
-        # Find file path from process_youtube.sh result (it should already be in uDRIVE or temp)
-        FILE_PATH_FROM_RESULT=$(echo "$MP3_RESULT" | jq -r '.file_path // empty' 2>/dev/null)
-        if [[ -z "$FILE_PATH_FROM_RESULT" ]] || [[ ! -f "$FILE_PATH_FROM_RESULT" ]]; then
-            # Try to find the file in output_dir
-            if [[ -n "$OUTPUT_DIR_FROM_JSON" ]] && [[ -d "$OUTPUT_DIR_FROM_JSON" ]]; then
-                echo "🔍 File path from JSON not found, searching in output_dir: $OUTPUT_DIR_FROM_JSON"
-                # Find any MP3 file in the output directory
-                FILE_PATH_FROM_RESULT=$(find "$OUTPUT_DIR_FROM_JSON" -maxdepth 1 -type f \( -name "*.mp3" -o -name "*.m4a" -o -name "*.webm" \) ! -name "*.info.json" ! -name "*.webp" ! -name "*.png" ! -name "*.jpg" 2>/dev/null | head -n 1)
-                
-                # If still not found, try to find the largest file
-                if [[ -z "$FILE_PATH_FROM_RESULT" ]] || [[ ! -f "$FILE_PATH_FROM_RESULT" ]]; then
-                    FILE_PATH_FROM_RESULT=$(find "$OUTPUT_DIR_FROM_JSON" -maxdepth 1 -type f ! -name "*.info.json" ! -name "*.webp" ! -name "*.png" ! -name "*.jpg" -exec ls -S {} + 2>/dev/null | head -n 1)
-                fi
-                
-                if [[ -n "$FILE_PATH_FROM_RESULT" ]] && [[ -f "$FILE_PATH_FROM_RESULT" ]]; then
-                    FILE_NAME=$(basename "$FILE_PATH_FROM_RESULT")
-                    echo "✅ Found downloaded file: $FILE_PATH_FROM_RESULT"
-                fi
-            fi
+        FILE_TO_UPLOAD=$(echo "$MP3_RESULT" | jq -r '.file_path')
+        FILENAME=$(echo "$MP3_RESULT" | jq -r '.filename')
+        TITLE=$(echo "$MP3_RESULT" | jq -r '.title')
+        DURATION=$(echo "$MP3_RESULT" | jq -r '.duration')
+        YOUTUBE_METADATA_FILE=$(echo "$MP3_RESULT" | jq -r '.metadata_file')
+        
+        if [[ -z "$FILE_TO_UPLOAD" || ! -f "$FILE_TO_UPLOAD" ]]; then
+            echo "⚠️ MP3 file not found."
+            exit 1
         fi
         
-        if [[ -z "$FILE_PATH_FROM_RESULT" ]] || [[ ! -f "$FILE_PATH_FROM_RESULT" ]]; then
-            # Fallback: try to find in uDRIVE
-            if [[ -n "$USER_UDRIVE_PATH" && -f "$USER_UDRIVE_PATH/Music/$FILE_NAME" ]]; then
-                FILE_PATH_FROM_RESULT="$USER_UDRIVE_PATH/Music/$FILE_NAME"
-            else
-                echo "⚠️  MP3 file not found: $FILE_PATH_FROM_RESULT or $USER_UDRIVE_PATH/Music/$FILE_NAME"
-                espeak "Error: MP3 file not found"
-                exit 1
-            fi
+        # Demande du titre à l'utilisateur
+        [ ! "$2" ] && AUDIO_TITLE=$(zenity --entry --width 600 --title "Titre de l'audio" --text "Confirmez le titre" --entry-text="$TITLE")
+        [[ -z "$AUDIO_TITLE" ]] && AUDIO_TITLE="$TITLE"
+
+        # NIP-42 Authentication (Requis par le contrat)
+        echo "🔐 Sending NIP-42 authentication event..."
+        SECRET_NOSTR_FILE="$HOME/.zen/game/nostr/${PLAYER}/.secret.nostr"
+        NOSTR_SEND_SCRIPT="${MY_PATH}/tools/nostr_send_note.py"
+        if [[ -f "$SECRET_NOSTR_FILE" ]] && [[ -f "$NOSTR_SEND_SCRIPT" ]]; then
+            NIP42_CHALLENGE="local-$(date +%s)-${IPFSNODEID:0:8}"
+            python3 "$NOSTR_SEND_SCRIPT" --keyfile "$SECRET_NOSTR_FILE" --content "${IPFSNODEID} ${UPLANETNAME_G1}" --kind 22242 --tags '[["relay","ws://127.0.0.1:7777"],["challenge","'"${NIP42_CHALLENGE}"'"]]' --relays "ws://127.0.0.1:7777" >/dev/null 2>&1
+            sleep 1
         fi
-        
-        FILE_TO_UPLOAD="$FILE_PATH_FROM_RESULT"
-        
-        # Find YouTube metadata.json file (yt-dlp .info.json contains all YouTube metadata)
-        YOUTUBE_METADATA_FILE=""
-        if [[ -n "$METADATA_FILE_FROM_JSON" ]] && [[ -f "$METADATA_FILE_FROM_JSON" ]]; then
-            YOUTUBE_METADATA_FILE="$METADATA_FILE_FROM_JSON"
-        elif [[ -n "$OUTPUT_DIR_FROM_JSON" ]] && [[ -d "$OUTPUT_DIR_FROM_JSON" ]]; then
-            METADATA_BASENAME=$(basename "$FILE_TO_UPLOAD" | sed 's/\.[^.]*$//')
-            for possible_metadata in "${OUTPUT_DIR_FROM_JSON}/${METADATA_BASENAME}.info.json" "$(dirname "$FILE_TO_UPLOAD")/${METADATA_BASENAME}.info.json"; do
-                if [[ -f "$possible_metadata" ]]; then
-                    YOUTUBE_METADATA_FILE="$possible_metadata"
-                    break
-                fi
-            done
-        fi
-        
-        # Extract and structure all YouTube metadata for info.json
-        YOUTUBE_METADATA_JSON_FILE="$HOME/.zen/tmp/youtube_mp3_metadata_$(date +%s).json"
-        if [[ -n "$YOUTUBE_METADATA_FILE" ]] && [[ -f "$YOUTUBE_METADATA_FILE" ]] && command -v jq &> /dev/null; then
-            echo "📋 Extracting comprehensive YouTube metadata from .info.json..."
-            
-            # Extract all relevant YouTube metadata from yt-dlp .info.json
-            YOUTUBE_METADATA_JSON=$(jq '{
-                youtube_id: .id,
-                youtube_url: .webpage_url,
-                youtube_short_url: .short_url,
-                title: .title,
-                description: .description,
-                uploader: .uploader,
-                uploader_id: .uploader_id,
-                uploader_url: .uploader_url,
-                channel: .channel,
-                channel_id: .channel_id,
-                channel_url: .channel_url,
-                channel_follower_count: .channel_follower_count,
-                duration: .duration,
-                view_count: .view_count,
-                like_count: .like_count,
-                comment_count: .comment_count,
-                average_rating: .average_rating,
-                age_limit: .age_limit,
-                upload_date: .upload_date,
-                release_date: .release_date,
-                timestamp: .timestamp,
-                availability: .availability,
-                live_status: .live_status,
-                was_live: .was_live,
-                format: .format,
-                format_id: .format_id,
-                format_note: .format_note,
-                width: .width,
-                height: .height,
-                fps: .fps,
-                vcodec: .vcodec,
-                acodec: .acodec,
-                abr: .abr,
-                vbr: .vbr,
-                tbr: .tbr,
-                filesize: .filesize,
-                filesize_approx: .filesize_approx,
-                ext: .ext,
-                resolution: .resolution,
-                categories: .categories,
-                tags: .tags,
-                chapters: .chapters,
-                subtitles: .subtitles,
-                automatic_captions: .automatic_captions,
-                thumbnail: .thumbnail,
-                thumbnails: .thumbnails,
-                license: .license,
-                language: .language,
-                languages: .languages,
-                location: .location,
-                artist: .artist,
-                album: .album,
-                track: .track,
-                creator: .creator,
-                alt_title: .alt_title,
-                series: .series,
-                season: .season,
-                season_number: .season_number,
-                episode: .episode,
-                episode_number: .episode_number,
-                playlist: .playlist,
-                playlist_id: .playlist_id,
-                playlist_title: .playlist_title,
-                playlist_index: .playlist_index,
-                n_entries: .n_entries,
-                webpage_url_basename: .webpage_url_basename,
-                webpage_url_domain: .webpage_url_domain,
-                extractor: .extractor,
-                extractor_key: .extractor_key,
-                epoch: .epoch,
-                modified_timestamp: .modified_timestamp,
-                modified_date: .modified_date,
-                requested_subtitles: .requested_subtitles,
-                has_drm: .has_drm,
-                is_live: .is_live,
-                was_live: .was_live,
-                live_status: .live_status,
-                release_timestamp: .release_timestamp,
-                comment_count: .comment_count,
-                heatmap: .heatmap
-            }' "$YOUTUBE_METADATA_FILE" 2>/dev/null)
-            
-            if [[ -n "$YOUTUBE_METADATA_JSON" ]] && echo "$YOUTUBE_METADATA_JSON" | jq -e '.' >/dev/null 2>&1; then
-                echo "$YOUTUBE_METADATA_JSON" > "$YOUTUBE_METADATA_JSON_FILE"
-                echo "✅ YouTube metadata extracted and saved to: $YOUTUBE_METADATA_JSON_FILE"
-                
-                # Display key metadata
-                YT_UPLOADER=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.uploader // .channel // empty')
-                YT_CHANNEL=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.channel // empty')
-                YT_VIEWS=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.view_count // empty')
-                YT_LIKES=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.like_count // empty')
-                YT_THUMBNAIL=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.thumbnail // empty')
-                YT_ARTIST=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.artist // empty')
-                YT_ALBUM=$(echo "$YOUTUBE_METADATA_JSON" | jq -r '.album // empty')
-                
-                echo "   📺 Channel: ${YT_CHANNEL:-$YT_UPLOADER}"
-                [[ -n "$YT_VIEWS" ]] && echo "   👁️  Views: $YT_VIEWS"
-                [[ -n "$YT_LIKES" ]] && echo "   👍 Likes: $YT_LIKES"
-                [[ -n "$YT_THUMBNAIL" ]] && echo "   🖼️  Thumbnail: $YT_THUMBNAIL"
-                [[ -n "$YT_ARTIST" ]] && echo "   🎤 Artist: $YT_ARTIST"
-                [[ -n "$YT_ALBUM" ]] && echo "   💿 Album: $YT_ALBUM"
-            else
-                echo "⚠️  Failed to extract YouTube metadata JSON"
-                YOUTUBE_METADATA_JSON_FILE=""
-            fi
-        else
-            # Fallback: use metadata from process_youtube.sh JSON result if available
-            if echo "$MP3_RESULT" | jq -e '.youtube_metadata' >/dev/null 2>&1; then
-                echo "📋 Using YouTube metadata from process_youtube.sh JSON result..."
-                YOUTUBE_METADATA_JSON=$(echo "$MP3_RESULT" | jq '.youtube_metadata' 2>/dev/null)
-                if [[ -n "$YOUTUBE_METADATA_JSON" ]] && echo "$YOUTUBE_METADATA_JSON" | jq -e '.' >/dev/null 2>&1; then
-                    echo "$YOUTUBE_METADATA_JSON" > "$YOUTUBE_METADATA_JSON_FILE"
-                    echo "✅ YouTube metadata extracted from JSON result"
-                else
-                    echo "⚠️  YouTube metadata file not found and JSON result has no metadata, skipping metadata extraction"
-                    YOUTUBE_METADATA_JSON_FILE=""
-                fi
-            else
-                echo "⚠️  YouTube metadata file not found, skipping metadata extraction"
-                YOUTUBE_METADATA_JSON_FILE=""
-            fi
-        fi
-        
-        # Upload via API (upload2ipfs.sh will handle uDRIVE storage, will auto-publish as NIP-94 kind 1063)
+
+        # 2. Upload IPFS (Phase 1 du workflow Audio)
         echo "📤 Uploading MP3 via /api/fileupload..."
-        
-        if [[ -n "$NPUB" ]]; then
-            if [[ -n "$YOUTUBE_METADATA_JSON_FILE" ]] && [[ -f "$YOUTUBE_METADATA_JSON_FILE" ]]; then
-                echo "📤 Uploading MP3 with YouTube metadata..."
-                UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
-                    -F "file=@${FILE_TO_UPLOAD}" \
-                    -F "npub=${NPUB}" \
-                    -F "youtube_metadata=@${YOUTUBE_METADATA_JSON_FILE}")
-            else
-                UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
-                    -F "file=@${FILE_TO_UPLOAD}" \
-                    -F "npub=${NPUB}")
-            fi
+        if [[ -f "$YOUTUBE_METADATA_FILE" ]]; then
+            UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" -F "file=@${FILE_TO_UPLOAD}" -F "npub=${NPUB}" -F "youtube_metadata=@${YOUTUBE_METADATA_FILE}")
         else
-            if [[ -n "$YOUTUBE_METADATA_JSON_FILE" ]] && [[ -f "$YOUTUBE_METADATA_JSON_FILE" ]]; then
-                echo "📤 Uploading MP3 with YouTube metadata (no NOSTR npub)..."
-                UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
-                    -F "file=@${FILE_TO_UPLOAD}" \
-                    -F "npub=" \
-                    -F "youtube_metadata=@${YOUTUBE_METADATA_JSON_FILE}")
-            else
-                UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" \
-                    -F "file=@${FILE_TO_UPLOAD}" \
-                    -F "npub=")
-            fi
+            UPLOAD_RESPONSE=$(curl -s -X POST "${API_URL}/api/fileupload" -F "file=@${FILE_TO_UPLOAD}" -F "npub=${NPUB}")
         fi
         
-        if echo "$UPLOAD_RESPONSE" | jq -e '.success' >/dev/null 2>&1; then
-            echo "✅ MP3 uploaded and published successfully!"
-            espeak "Ready. MP3 file processed"
-            
-            # Display upload result info
-            IPFS_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.new_cid // empty' 2>/dev/null)
-            INFO_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.info // empty' 2>/dev/null)
-            if [[ -n "$IPFS_CID" ]]; then
-                echo "   CID: $IPFS_CID"
-                [[ -n "$INFO_CID" ]] && echo "   Info CID: $INFO_CID"
-            fi
-        else
-            echo "❌ Upload failed"
-            echo "Response: $UPLOAD_RESPONSE"
+        if ! echo "$UPLOAD_RESPONSE" | jq -e '.success' >/dev/null 2>&1; then
+            echo "❌ Upload failed: $UPLOAD_RESPONSE"
             espeak "Upload failed"
-            # Cleanup metadata file on error
-            [[ -n "$YOUTUBE_METADATA_JSON_FILE" ]] && [[ -f "$YOUTUBE_METADATA_JSON_FILE" ]] && rm -f "$YOUTUBE_METADATA_JSON_FILE"
             exit 1
         fi
         
-        # Cleanup temp metadata file
-        [[ -n "$YOUTUBE_METADATA_JSON_FILE" ]] && [[ -f "$YOUTUBE_METADATA_JSON_FILE" ]] && rm -f "$YOUTUBE_METADATA_JSON_FILE"
+        IPFS_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.new_cid // empty')
+        INFO_CID=$(echo "$UPLOAD_RESPONSE" | jq -r '.info // empty')
+        FILE_HASH=$(echo "$UPLOAD_RESPONSE" | jq -r '.fileHash // empty')
+
+        echo "✅ MP3 uploaded to IPFS! CID: $IPFS_CID"
+
+        # 3. Publication NOSTR via /vocals (Phase 2 du workflow Audio - Section 3.3 et 7.3.3)
+        echo "🎤 Publishing audio via /vocals endpoint (NIP-A0)..."
+        PUBLISH_DATA="player=${PLAYER}&ipfs_cid=${IPFS_CID}&info_cid=${INFO_CID}&file_hash=${FILE_HASH}&mime_type=audio/mp3&file_name=${FILENAME}&duration=${DURATION}&title=${AUDIO_TITLE}&description=Source YouTube: ${URL}&npub=${NPUB}&publish_nostr=true&encrypted=false"
+        
+        VOCALS_RESPONSE=$(curl -s -X POST "${API_URL}/vocals" -H "Content-Type: application/x-www-form-urlencoded" -d "$PUBLISH_DATA")
+        
+        echo "✅ MP3 published successfully!"
+        espeak "Ready. MP3 file processed and published"
+        
+        # Nettoyage
+        rm -rf "$TEMP_MP3_DIR"
     ;;
 
 ########################################################################
