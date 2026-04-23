@@ -7,8 +7,104 @@
 ########################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-. "$MY_PATH/my.sh"
 ME="${0##*/}"
+
+## --help traité AVANT exec/log pour rester visible dans le terminal
+for _arg in "$@"; do
+    if [[ "$_arg" == "--help" || "$_arg" == "-h" ]]; then
+        cat <<EOF
+USAGE
+    $ME [OPTIONS] EMAIL MESSAGE_FILE SUBJECT [TW_INDEX]
+
+DESCRIPTION
+    Envoie un email HTML via l'API Mailjet v3.1 au nom de la station UPlanet.
+    Le contenu est publié sur IPFS, un lien "lire en ligne" est injecté dans
+    le corps. Si un profil NOSTR existe pour EMAIL, les coordonnées sont
+    récupérées. En mode UPlanet ORIGIN (UPLANETNAME=0000…), le chemin du
+    template source est affiché en pied de message (avec --template).
+
+ARGUMENTS POSITIONNELS
+    EMAIL           Adresse email du destinataire.
+    MESSAGE_FILE    Fichier HTML (ou texte brut) constituant le corps du
+                    message. Si le fichier n'existe pas, la valeur est
+                    utilisée directement comme contenu inline.
+    SUBJECT         Objet du message. Préfixé automatiquement par "[UPlanet]".
+    TW_INDEX        (optionnel) Chemin vers un TiddlyWiki local : le message
+                    est importé comme tiddler IFRAME dans ce fichier.
+
+OPTIONS
+    --expire DURATION
+        Durée avant expiration du lien IPFS du message. Formats :
+          0s   →  pas d'expiration (envoi immédiat permanent)
+          30m  →  30 minutes
+          2h   →  2 heures
+          48h  →  48 heures
+          7d   →  7 jours   (défaut recommandé pour les notifications)
+          2w   →  2 semaines
+        Sans cette option, le message n'expire pas.
+
+    --template PATH
+        Chemin du fichier template HTML source ayant servi à générer
+        MESSAGE_FILE. Affiché en pied de message sur UPlanet ORIGIN pour
+        identifier facilement quel template modifier.
+        Utiliser \$0 quand le HTML est généré inline dans le script appelant.
+
+    --help, -h
+        Affiche cette aide et quitte (sans écrire dans mailjet.log).
+
+CREDENTIALS
+    Cherchés dans cet ordre de priorité :
+      1. cooperative-config (NOSTR DID, chiffré avec UPLANETNAME) via
+         tools/cooperative_config.sh → MJ_APIKEY_PUBLIC, MJ_APIKEY_PRIVATE,
+         MJ_SENDER_EMAIL
+      2. ~/.zen/MJ_APIKEY  (fichier local, format legacy)
+    Sans credentials valides, l'email n'est pas envoyé (sortie silencieuse).
+
+COMPORTEMENT INTERNE
+    1. Recherche le destinataire dans ~/.zen/game/players/ (ASTROPORT,
+       ASTRONAUTENS, ASTROG1, EMAIL, FEEDNS, TW, source).
+    2. Recherche le profil NOSTR associé à EMAIL (HEX, NPUB, RELAY, LAT, LON).
+    3. Détecte le mode station :
+         UPlanet ORIGIN  si UPLANETNAME = 0000…000
+         UPlanet Ẑen     si UPLANETNAME ≠ 0000…000 (affiche UPLANETG1PUB:0:8)
+    4. Publie le contenu sur IPFS (ipfs add --pin=false, timeout 15 s).
+    5. Si TW_INDEX fourni : importe le message comme tiddler IFRAME.
+    6. Construit le payload JSON via jq et appelle l'API Mailjet v3.1.
+    7. Envoie une copie BCC à SENDER_EMAIL (compte SUPPORT).
+
+EXEMPLES
+    # Envoi simple
+    $ME user@example.com message.html 'Bienvenue'
+
+    # Avec import TiddlyWiki
+    $ME user@example.com zine.html 'Zine #7' ~/.zen/game/players/user@example.com/TW/index.html
+
+    # Welcome depuis template (trace du fichier source)
+    $ME --template "\${MY_PATH}/../templates/NOSTR/welcome.html" \\
+        --expire 7d \\
+        user@example.com ~/.zen/game/nostr/user@example.com/.welcome.html \\
+        'Welcome on UPlanet'
+
+    # Alerte générée inline (template = script lui-même)
+    $ME --template "\$0" --expire 48h captain@node.net /tmp/alert.html '🚨 Alerte'
+
+    # Envoi immédiat sans expiration
+    $ME --expire 0s user@example.com multipass.html 'MULTIPASS[Ẑ]'
+
+FICHIERS
+    ~/.zen/MJ_APIKEY          Credentials Mailjet legacy
+                              (MJ_APIKEY_PUBLIC, MJ_APIKEY_PRIVATE, SENDER_EMAIL)
+    ~/.zen/tmp/mailjet.log    Log complet de toutes les exécutions
+    tools/my.sh               Bibliothèque centrale (myIPFS, myDOMAIN, uSPOT,
+                              UPLANETNAME, UPLANETG1PUB, IPFSNODEID, CAPTAINEMAIL…)
+    templates/NOSTR/          Templates HTML des notifications UPlanet
+    templates/UPlanetZINE/    Templates HTML des ZINEs d'onboarding
+EOF
+        exit 0
+    fi
+done
+
+. "$MY_PATH/my.sh"
 
 ## LOG OUTPUT
 exec 2>&1 >> ~/.zen/tmp/mailjet.log
@@ -34,27 +130,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --help|-h)
-            echo "Usage: $0 [--expire DURATION] [--template PATH] EMAIL MESSAGE_FILE SUBJECT [TW_INDEX]"
-            echo ""
-            echo "Options:"
-            echo "  --expire DURATION    Make message ephemeral with duration (e.g., 1h, 1d, 1w, 3d)"
-            echo "  --template PATH      Source template file path (shown in email footer on ORIGIN)"
-            echo "  --help, -h          Show this help message"
-            echo ""
-            echo "Examples:"
-            echo "  $0 user@example.com message.html 'Subject'"
-            echo "  $0 user@example.com message.html 'Subject' tw_index.html"
-            echo "  $0 --expire 1h user@example.com message.html 'Ephemeral Subject'"
-            echo "  $0 --expire 3d user@example.com message.html '3-day message' tw_index.html"
-            echo "  $0 --template /path/to/template.html user@example.com result.html 'Subject'"
-            echo ""
-            echo "Duration formats:"
-            echo "  s = seconds (e.g., 60s)"
-            echo "  m = minutes (e.g., 30m)"
-            echo "  h = hours (e.g., 2h)"
-            echo "  d = days (e.g., 7d)"
-            echo "  w = weeks (e.g., 2w)"
-            exit 0
+            exec "$0" --help
             ;;
         -*)
             echo "Unknown option: $1"
