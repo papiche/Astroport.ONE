@@ -196,6 +196,17 @@ else
     git clone --depth 1 https://github.com/papiche/OC2UPlanet.git
 fi
 
+## UPDATE sound-spot (Picoport streaming audio + IA swarm)
+## Fournit tools/heartbox_analysis.sh aux nœuds Picoport (RPi Zero 2W)
+## via ~/.zen/workspace/sound-spot/src/picoport/picoport.sh
+if [[ -d ~/.zen/workspace/sound-spot ]]; then
+    cd ~/.zen/workspace/sound-spot && git pull
+else
+    mkdir -p ~/.zen/workspace
+    cd ~/.zen/workspace
+    git clone --depth 1 https://github.com/papiche/sound-spot.git
+fi
+
 ## RUN OC2UPlanet monthly — recharge MULTIPASS des membres résidents
 ## Traite les transactions CREDIT du mois en cours via oc2uplanet.sh
 ## (cotisation cloud-usage + membre-resident → process_locataire)

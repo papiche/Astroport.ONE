@@ -450,6 +450,49 @@ get_fast_capacities() {
         || power_score=$(( vram_gb * 4 + cpu_cores * 2 + ram_total_gb / 2 ))
     [[ -z "$power_score" ]] && power_score=0
 
+    ## ── crypto_score : vitesse scrypt via keygen -t duniter (RAM-hard) ──────────
+    ## Cohérent avec test/BENCH_REFERENCE.md et picoport_bench.json de sound-spot.
+    ## Priorité : picoport_bench.json (bench complet) > crypto_score.cache (bench rapide)
+    ## TTL 24h — le keygen duniter prend 150 ms … 6 s selon l'architecture.
+    local crypto_score=0
+    local crypto_ms=0
+    local _PICO_BENCH="$HOME/.zen/tmp/${IPFSNODEID}/picoport_bench.json"
+    local _CRYPTO_CACHE="$HOME/.zen/tmp/${IPFSNODEID}/crypto_score.cache"
+    local _cache_age_limit=86400  # 24 h
+
+    if [[ -s "$_PICO_BENCH" ]] && \
+       [[ $(( $(date +%s) - $(stat -c %Y "$_PICO_BENCH" 2>/dev/null || echo 0) )) -lt $_cache_age_limit ]]; then
+        crypto_score=$(jq -r '.crypto_score // 0' "$_PICO_BENCH" 2>/dev/null || echo 0)
+        crypto_ms=$(jq -r '.timings_ms.keygen_duniter // 0' "$_PICO_BENCH" 2>/dev/null || echo 0)
+    elif [[ -s "$_CRYPTO_CACHE" ]] && \
+         [[ $(( $(date +%s) - $(stat -c %Y "$_CRYPTO_CACHE" 2>/dev/null || echo 0) )) -lt $_cache_age_limit ]]; then
+        read crypto_score crypto_ms < "$_CRYPTO_CACHE" 2>/dev/null
+        crypto_score="${crypto_score:-0}"; crypto_ms="${crypto_ms:-0}"
+    else
+        local _keygen=""
+        for _k in "$MY_PATH/keygen" "$HOME/.zen/Astroport.ONE/tools/keygen" \
+                  "$HOME/.local/bin/keygen" "$(command -v keygen 2>/dev/null)"; do
+            [[ -x "$_k" ]] && _keygen="$_k" && break
+        done
+        if [[ -n "$_keygen" ]]; then
+            local _t0 _t1
+            _t0=$(python3 -c "import time; print(int(time.time()*1000))" 2>/dev/null \
+                  || echo $(( $(date +%s) * 1000 )))
+            "$_keygen" -t duniter "heartbox.bench" "heartbox.bench" >/dev/null 2>&1
+            _t1=$(python3 -c "import time; print(int(time.time()*1000))" 2>/dev/null \
+                  || echo $(( $(date +%s) * 1000 )))
+            crypto_ms=$(( _t1 - _t0 ))
+            if   (( crypto_ms < 150  )); then crypto_score=10
+            elif (( crypto_ms < 300  )); then crypto_score=8
+            elif (( crypto_ms < 600  )); then crypto_score=6
+            elif (( crypto_ms < 1200 )); then crypto_score=4
+            elif (( crypto_ms < 2500 )); then crypto_score=2
+            else                              crypto_score=1
+            fi
+            echo "$crypto_score $crypto_ms" > "$_CRYPTO_CACHE"
+        fi
+    fi
+
     ## provider_ready = vrai uniquement si des services IA LOCAUX tournent (pas des tunnels).
     ## Re-détection indépendante : get_fast_capacities() tourne dans un subshell séparé,
     ## les variables *_source de get_fast_service_status() ne sont pas accessibles ici.
@@ -478,6 +521,8 @@ get_fast_capacities() {
     "reserved_captain_slots": 8,
     "available_space_gb": $total_available_gb,
     "power_score": $power_score,
+    "crypto_score": $crypto_score,
+    "crypto_ms": $crypto_ms,
     "provider_ready": $provider_ready,
     "storage_ready": $storage_ready,
     "gpu": {
