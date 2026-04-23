@@ -1,73 +1,12 @@
 #!/bin/bash
 ########################################################################
 # Author: Fred (support@qo-op.com)
-# Version: 2025.12.04
+# Version: 2025.12.04 (Updated with Picoport/SoundSpot autodetection)
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
 ########################################################################
 # ASTROPORT MODE CONTROLLER - cron_VRFY.sh
 ########################################################################
-#
-# USAGE: cron_VRFY.sh [ON|OFF|LOW]
-#
-# MODES:
-# ------
-#   ON (default) - Full Astroport mode
-#       - 20h12 cron job: ENABLED
-#       - IPFS daemon: ENABLED (24/7)
-#       - Astroport SWARM: ENABLED
-#       - UPassport API: ENABLED
-#       - strfry RELAY: ENABLED
-#       - Constellation sync: Every hour via _12345.sh
-#
-#   OFF - Complete shutdown
-#       - 20h12 cron job: DISABLED
-#       - IPFS daemon: DISABLED
-#       - Astroport API: DISABLED
-#       - UPassport API: DISABLED
-#       - strfry RELAY: DISABLED
-#       - Constellation sync: NONE
-#
-#   LOW - Resource-saving mode (for low disk/bandwidth stations)
-#       - 20h12 cron job: ENABLED (runs at solar 20h12)
-#       - IPFS daemon: DISABLED (starts only at 20h12, runs 1h, then stops)
-#       - Astroport API: DISABLED (not restarted in LOW mode)
-#       - UPassport API: DISABLED
-#       - strfry RELAY: ENABLED
-#       - Constellation sync: Once per day during 20h12 window
-#
-# SOLAR TIME CALIBRATION:
-# -----------------------
-# If ~/.zen/GPS exists with LAT and LON variables, the script calculates
-# the legal time corresponding to 20h12 SOLAR time at that location.
-#
-# Example: For Paris (LAT=48.8566, LON=2.3522), solar 20h12 might be
-# legal time 21:04 in summer (UTC+2) or 20:04 in winter (UTC+1).
-#
-# The solar_time.sh script accounts for:
-#   - Longitude offset (4 min per degree from timezone meridian)
-#   - Equation of time (±15 min seasonal variation)
-#   - Local timezone offset (DST aware)
-#
-# OUTPUT FORMAT: "MINUTE HOUR" for cron (e.g., "4 21" = 21:04)
-#
-# MODE TRANSITIONS:
-# -----------------
-#   Current → Target | Action
-#   -----------------+--------------------------------------------------
-#   OFF → ON         | Add cron, enable+start IPFS/astroport/upassport/strfry
-#   OFF → LOW        | Add cron, IPFS disabled (starts only at 20h12)
-#   ON → OFF         | Remove cron, stop+disable all services
-#   ON → LOW         | Keep cron, stop+disable IPFS (20h12 will restart it)
-#   LOW → ON         | Keep cron, enable+start IPFS IPFS/astroport/upassport/strfry (24/7 mode)
-#   LOW → OFF        | Remove cron, ensure all services stopped
-#
-# 20H12.PROCESS.SH BEHAVIOR BY MODE:
-# ----------------------------------
-#   ON mode:  Full sync, restarts astroport/_12345.sh, IPFS stays on
-#   LOW mode: Full sync + constellation backfill, waits 1h, stops IPFS
-#   OFF mode: Script not scheduled (no cron entry)
-#
-########################################################################
+
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
@@ -86,26 +25,45 @@ MODE=$(echo "$1" | tr '[:lower:]' '[:upper:]')
 [[ -z "$MODE" ]] && MODE="TOGGLE"  # Default: toggle current state
 
 ########################################################################
+# AUTODETECTION ASTROPORT CLASSIQUE vs PICOPORT (SoundSpot)
+########################################################################
+if [[ -f "/opt/soundspot/picoport/picoport_20h12.sh" ]]; then
+    IS_PICOPORT=1
+    CRON_JOB_NAME="picoport_20h12.sh"
+    CRON_JOB_CMD="/bin/bash /opt/soundspot/picoport/picoport_20h12.sh"
+    CRON_LOG_FILE="${HOME}/.zen/log/picoport_20h12.log"
+    
+    SVC_MAIN="picoport"
+    SVC_SYNC="soundspot-swarm-sync"
+    SVC_RELAY="" # strfry est déporté sur l'essaim pour les Pi Zero
+    echo ".... 🌿 PICOPORT (SoundSpot) installation detected"
+else
+    IS_PICOPORT=0
+    CRON_JOB_NAME="20h12.process.sh"
+    CRON_JOB_CMD="/bin/bash $MY_PATH/../20h12.process.sh"
+    CRON_LOG_FILE="${HOME}/.zen/log/20h12.log"
+    
+    SVC_MAIN="astroport"
+    SVC_SYNC=""
+    SVC_RELAY="strfry"
+fi
+
+########################################################################
 # SOLAR TIME CALCULATION
 ########################################################################
-# Default: 20:12 legal time (no GPS calibration)
 SOLAR20H12="12 20"
 
-# Calibrate to local solar time if GPS coordinates available
 if [[ -s ~/.zen/GPS ]]; then
     source ~/.zen/GPS
     echo ".... Calibrating to ~/.zen/GPS SOLAR 20H12"
     echo "     LAT=$LAT LON=$LON"
     
-    # solar_time.sh outputs: "MINUTE HOUR" on the last line
-    # Example: "4 21" means cron should run at 21:04
     SOLAR20H12=$(${MY_PATH}/solar_time.sh "$LAT" "$LON" 2>/dev/null | tail -n 1)
     
     if [[ -z "$SOLAR20H12" || ! "$SOLAR20H12" =~ ^[0-9]+\ [0-9]+$ ]]; then
         echo "WARNING: solar_time.sh returned invalid format, using default 20:12"
         SOLAR20H12="12 20"
     else
-        # Parse for display
         CRON_MIN=$(echo "$SOLAR20H12" | awk '{print $1}')
         CRON_HOUR=$(echo "$SOLAR20H12" | awk '{print $2}')
         echo "     Solar 20h12 = Legal time $(printf "%02d:%02d" "$CRON_HOUR" "$CRON_MIN")"
@@ -117,39 +75,41 @@ fi
 ########################################################################
 # CRONTAB MANAGEMENT
 ########################################################################
-# Clean temporary files
 rm -f /tmp/mycron /tmp/newcron
-
-# Get current crontab
 crontab -l > /tmp/mycron 2>/dev/null || touch /tmp/mycron
 
-# Check if 20h12 cron job exists
-CRON_EXISTS=$(grep -F '20h12.process.sh' /tmp/mycron)
+CRON_EXISTS=$(grep -F "$CRON_JOB_NAME" /tmp/mycron)
 
-# Remove environment lines (will be re-added cleanly)
 awk -i inplace -v rmv="SHELL=" '!index($0,rmv)' /tmp/mycron
 awk -i inplace -v rmv="USER=" '!index($0,rmv)' /tmp/mycron
 awk -i inplace -v rmv="PATH=" '!index($0,rmv)' /tmp/mycron
 
-# Remove any existing 20h12 entry (will be re-added if needed)
-grep -v '20h12.process.sh' /tmp/mycron > /tmp/mycron.clean
+grep -v "$CRON_JOB_NAME" /tmp/mycron > /tmp/mycron.clean
 mv /tmp/mycron.clean /tmp/mycron
 
-########################################################################
-# BUILD NEW CRONTAB
-########################################################################
 build_cron_header() {
     echo "SHELL=/bin/bash" > /tmp/newcron
     echo "USER=$USER" >> /tmp/newcron
     echo "PATH=$HOME/.astro/bin:$HOME/.local/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> /tmp/newcron
-    # Add remaining entries (without 20h12)
     cat /tmp/mycron >> /tmp/newcron
 }
 
 add_20h12_cron() {
-    # Note: ${HOME} est expansé ICI par bash pour écrire le chemin réel dans la crontab
-    # (évite que cron reçoive "$HOME" littéral, non résolu par certaines implémentations)
-    echo "${SOLAR20H12}  *  *  *   /bin/bash $MY_PATH/../20h12.process.sh >> ${HOME}/.zen/log/20h12.log 2>&1" >> /tmp/newcron
+    echo "${SOLAR20H12}  *  *  *   $CRON_JOB_CMD >> ${CRON_LOG_FILE} 2>&1" >> /tmp/newcron
+}
+
+manage_service() {
+    local action="$1"
+    local svc="$2"
+    if [[ -n "$svc" ]]; then
+        if [[ "$action" == "start" ]]; then
+            sudo systemctl enable "$svc" 2>/dev/null
+            sudo systemctl restart "$svc" 2>/dev/null
+        elif [[ "$action" == "stop" ]]; then
+            sudo systemctl stop "$svc" 2>/dev/null
+            sudo systemctl disable "$svc" 2>/dev/null
+        fi
+    fi
 }
 
 ########################################################################
@@ -157,103 +117,70 @@ add_20h12_cron() {
 ########################################################################
 
 case "$MODE" in
-"ON")
+    "ON")
         echo ""
-        echo ">>> ACTIVATING ASTROPORT (ON mode - Full 24/7)"
+        echo ">>> ACTIVATING SYSTEM (ON mode - Full 24/7)"
         echo ""
         
         build_cron_header
         add_20h12_cron
         crontab /tmp/newcron
         
-        # Enable and start all services
-        sudo systemctl enable ipfs 2>/dev/null
-        sudo systemctl restart ipfs 2>/dev/null
-        sudo systemctl enable strfry 2>/dev/null
-        sudo systemctl restart strfry 2>/dev/null
-        sudo systemctl enable astroport 2>/dev/null
-        sudo systemctl restart astroport 2>/dev/null
-        sudo systemctl enable upassport 2>/dev/null
-        sudo systemctl restart upassport 2>/dev/null
+        manage_service start ipfs
+        manage_service start "$SVC_RELAY"
+        manage_service start "$SVC_MAIN"
+        manage_service start "$SVC_SYNC"
+        manage_service start upassport
 
-        # --- AJOUT ICI : Synchronisation Constellation ---
-        echo "📡 Déclenchement de la synchronisation constellation..."
-        (
-            sleep 15 # Attente que IPFS et le relai Nostr soient opérationnels
-            bash "$MY_PATH/../bootstrap_constellation.sh" > ~/.zen/tmp/coucou/bootstrap_on_start.log 2>&1
-        ) &
-        # --------------------------------------------------
+        if [[ "$IS_PICOPORT" == 0 ]]; then
+            echo "📡 Déclenchement de la synchronisation constellation..."
+            (
+                sleep 15
+                bash "$MY_PATH/../bootstrap_constellation.sh" > ~/.zen/tmp/coucou/bootstrap_on_start.log 2>&1
+            ) &
+        fi
 
-        echo "✅ ASTROPORT is ON"
+        echo "✅ SYSTEM is ON"
         echo "   - 20h12 cron: ENABLED (solar time: $SOLAR20H12)"
         echo "   - IPFS: ENABLED (24/7)"
-        echo "   - Astroport API: ENABLED"
-        echo "   - Constellation sync: Every hour via _12345.sh"
+        echo "   - Core API ($SVC_MAIN): ENABLED"
         ;;
         
     "OFF")
         echo ""
-        echo ">>> DEACTIVATING ASTROPORT (OFF mode - Complete shutdown)"
+        echo ">>> DEACTIVATING SYSTEM (OFF mode - Complete shutdown)"
         echo ""
         
         build_cron_header
-        # Do NOT add 20h12 cron
         crontab /tmp/newcron
         
-        # Stop and disable all services
-        sudo systemctl stop strfry 2>/dev/null
-        sudo systemctl disable strfry 2>/dev/null
-        sudo systemctl stop upassport 2>/dev/null
-        sudo systemctl disable upassport 2>/dev/null
-        sudo systemctl stop astroport 2>/dev/null
-        sudo systemctl disable astroport 2>/dev/null
-        sudo systemctl stop ipfs 2>/dev/null
-        sudo systemctl disable ipfs 2>/dev/null
+        manage_service stop "$SVC_RELAY"
+        manage_service stop upassport
+        manage_service stop "$SVC_MAIN"
+        manage_service stop "$SVC_SYNC"
+        manage_service stop ipfs
         
-        echo "🛑 ASTROPORT is OFF"
-        echo "   - 20h12 cron: DISABLED"
-        echo "   - strfy RELAY: DISABLED"
-        echo "   - UPassport API: DISABLED"
-        echo "   - IPFS: DISABLED"
-        echo "   - Astroport SWARM: DISABLED"
-        echo "   - Constellation sync: NONE"
+        echo "🛑 SYSTEM is OFF"
         ;;
         
     "LOW")
         echo ""
-        echo ">>> ACTIVATING ASTROPORT (LOW mode - Resource saving)"
+        echo ">>> ACTIVATING SYSTEM (LOW mode - Resource saving)"
         echo ""
         
         build_cron_header
         add_20h12_cron
         crontab /tmp/newcron
         
-        # Disable IPFS (20h12 will start it), only keep strfry NOSTR relay on
-        sudo systemctl enable strfry 2>/dev/null
-        sudo systemctl start strfry 2>/dev/null
-        sudo systemctl stop upassport 2>/dev/null
-        sudo systemctl disable upassport 2>/dev/null
-        sudo systemctl stop astroport 2>/dev/null
-        sudo systemctl disable astroport 2>/dev/null
-        sudo systemctl stop ipfs 2>/dev/null
-        sudo systemctl disable ipfs 2>/dev/null
-    
-        # Keep astroport disabled in LOW mode
-        # (they will be restarted for an hour by 20h12.process.sh in LOW mode)
-        sudo systemctl stop astroport 2>/dev/null
+        manage_service start "$SVC_RELAY"
+        manage_service stop upassport
+        manage_service stop "$SVC_MAIN"
+        manage_service stop "$SVC_SYNC"
+        manage_service stop ipfs
         
-        echo "⚡ ASTROPORT is in LOW mode"
+        echo "⚡ SYSTEM is in LOW mode"
         echo "   - 20h12 cron: ENABLED (solar time: $SOLAR20H12)"
-        echo "   - IPFS: DISABLED (starts only at 20h12, runs ~1h)"
-        echo "   - Astroport API: DISABLED"
-        echo "   - Constellation sync: Once per day during 20h12 window"
-        echo ""
-        echo "   In LOW mode, 20h12.process.sh will:"
-        echo "   1. Start IPFS daemon"
-        echo "   2. Run PLAYER/UPLANET sync"
-        echo "   3. Run backfill_constellation.sh (NOSTR sync)"
-        echo "   4. Wait 1 hour"
-        echo "   5. Stop IPFS daemon"
+        echo "   - IPFS & Core ($SVC_MAIN): DISABLED (starts only at 20h12, runs ~1h)"
         ;;
         
     "HELP"|"-H"|"--HELP")
@@ -262,25 +189,22 @@ case "$MODE" in
 USAGE: $ME [ON|OFF|LOW|RESTART|TOGGLE|HELP]
 
 MODES:
-  ON       - Mode complet 24/7  : cron 20h12 + IPFS + strfry + astroport + upassport
-  OFF      - Arrêt complet      : tous services stoppés + cron supprimée
-  LOW      - Mode économique    : cron + strfry uniquement, IPFS démarré ~1h/jour à 20h12
-  RESTART  - Redémarre les services selon le mode courant auto-détecté (ON/LOW/OFF)
-  TOGGLE   - Bascule ON↔OFF selon l'état de la cron (comportement par défaut)
+  ON       - Mode complet 24/7
+  OFF      - Arrêt complet
+  LOW      - Mode économique (IPFS et Core coupés en dehors de 20h12)
+  RESTART  - Redémarre selon le mode courant (auto-détecté)
+  TOGGLE   - Bascule ON↔OFF
   HELP     - Affiche ce message
 
-HEURE SOLAIRE 20H12:
-  Si ~/.zen/GPS contient LAT et LON, solar_time.sh calcule l'heure légale
-  correspondant à 20h12 SOLAIRE locale. Exemple Paris été : 22:12 légale.
-  Sans ~/.zen/GPS : 20:12 légale par défaut.
-
+  Environnement détecté : $([[ $IS_PICOPORT == 1 ]] && echo "🌿 Picoport/SoundSpot" || echo "🚀 Astroport Classique")
   Cron 20h12 actuelle :
 EOF
-        crontab -l 2>/dev/null | grep '20h12' | sed 's/^/    /' || echo "    (aucune entrée 20h12)"
+        crontab -l 2>/dev/null | grep "$CRON_JOB_NAME" | sed 's/^/    /' || echo "    (aucune entrée 20h12)"
         echo ""
         echo "  Services :"
-        for svc in ipfs astroport strfry upassport; do
-            printf "    %-12s %s (enabled: %s)\n" "$svc" \
+        for svc in ipfs "$SVC_MAIN" "$SVC_SYNC" "$SVC_RELAY" upassport; do
+            [[ -z "$svc" ]] && continue
+            printf "    %-20s %s (enabled: %s)\n" "$svc" \
                 "$(systemctl is-active "$svc" 2>/dev/null || echo 'n/a')" \
                 "$(systemctl is-enabled "$svc" 2>/dev/null || echo 'n/a')"
         done
@@ -289,8 +213,6 @@ EOF
         ;;
 
     "RECALIBRATE")
-        # Mise à jour de l'heure solaire dans la crontab SANS toucher aux services
-        # Appelé quotidiennement par 20h12.process.sh (équation du temps varie ±15 min/an)
         if [[ -n "$CRON_EXISTS" ]]; then
             build_cron_header
             add_20h12_cron
@@ -303,34 +225,21 @@ EOF
         ;;
 
     "RESTART")
-        echo ""
-        echo ">>> RESTART ASTROPORT (mode auto-détecté)"
-        echo ""
-
-        # Détection du mode courant
         if [[ -n "$CRON_EXISTS" ]]; then
             IPFS_ENABLED=$(systemctl is-enabled ipfs 2>/dev/null)
-            if [[ "$IPFS_ENABLED" == "enabled" ]]; then
-                DETECTED="ON"
-            else
-                DETECTED="LOW"
-            fi
+            [[ "$IPFS_ENABLED" == "enabled" ]] && DETECTED="ON" || DETECTED="LOW"
         else
             DETECTED="OFF"
         fi
-
         echo "Mode détecté : $DETECTED  -> relance avec cron_VRFY.sh $DETECTED"
         exec "$0" "$DETECTED"
         ;;
 
     "TOGGLE"|*)
-        # Toggle based on current state
         if [[ -n "$CRON_EXISTS" ]]; then
-            # Cron exists -> turn OFF
             echo "Detected: 20h12 cron is ACTIVE -> Switching to OFF"
             exec "$0" OFF
         else
-            # Cron doesn't exist -> turn ON
             echo "Detected: 20h12 cron is INACTIVE -> Switching to ON"
             exec "$0" ON
         fi
@@ -342,11 +251,12 @@ esac
 ########################################################################
 echo ""
 echo "Current crontab 20h12 entry:"
-crontab -l 2>/dev/null | grep '20h12' || echo "  (none)"
+crontab -l 2>/dev/null | grep "$CRON_JOB_NAME" || echo "  (none)"
 echo ""
 echo "Service status:"
 get_service_status() {
     local svc="$1"
+    [[ -z "$svc" ]] && return
     local status
     status=$(systemctl is-active "$svc" 2>/dev/null)
     if [[ -z "$status" ]]; then
@@ -355,9 +265,11 @@ get_service_status() {
         echo "$status"
     fi
 }
-echo "  IPFS:      $(get_service_status ipfs)"
-echo "  Astroport: $(get_service_status astroport)"
-echo "  strfry:  $(get_service_status strfry)"
-echo "  Upassport:  $(get_service_status upassport)"
+
+echo "  IPFS:       $(get_service_status ipfs)"
+echo "  Core ($SVC_MAIN): $(get_service_status "$SVC_MAIN")"
+[[ -n "$SVC_SYNC" ]]  && echo "  Swarm Sync: $(get_service_status "$SVC_SYNC")"
+[[ -n "$SVC_RELAY" ]] && echo "  Relay ($SVC_RELAY): $(get_service_status "$SVC_RELAY")"
+echo "  UPassport:  $(get_service_status upassport)"
 
 exit 0

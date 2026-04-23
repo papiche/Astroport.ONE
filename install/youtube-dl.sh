@@ -10,8 +10,9 @@ MY_PATH="$(cd "$MY_PATH" && pwd)"
 ME="${0##*/}"
 
 # Installation de yt-dlp
-if [[ ! -f "$HOME/.local/bin/yt-dlp" ]]; then
+if [[ ! -e "$HOME/.local/bin/yt-dlp" ]]; then
     mkdir -p "$HOME/.local/bin"
+    rm -f "$HOME/.local/bin/yt-dlp"
     curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o "$HOME/.local/bin/yt-dlp"
     chmod +x "$HOME/.local/bin/yt-dlp"
 
@@ -36,5 +37,4 @@ hash -r
 
 echo "yt-dlp est maintenant installé et accessible via :"
 which yt-dlp
-echo "youtube-dl pointe vers yt-dlp :"
-ls -l $(which youtube-dl)
+yt-dlp --version
