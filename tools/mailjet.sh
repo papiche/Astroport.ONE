@@ -22,17 +22,23 @@ echo '
 
 # Parse command line arguments
 EPHEMERAL_DURATION=""
+TEMPLATE_SRC=""
 while [[ $# -gt 0 ]]; do
     case $1 in
         --expire)
             EPHEMERAL_DURATION="$2"
             shift 2
             ;;
+        --template)
+            TEMPLATE_SRC="$2"
+            shift 2
+            ;;
         --help|-h)
-            echo "Usage: $0 [--expire DURATION] EMAIL MESSAGE_FILE SUBJECT [TW_INDEX]"
+            echo "Usage: $0 [--expire DURATION] [--template PATH] EMAIL MESSAGE_FILE SUBJECT [TW_INDEX]"
             echo ""
             echo "Options:"
             echo "  --expire DURATION    Make message ephemeral with duration (e.g., 1h, 1d, 1w, 3d)"
+            echo "  --template PATH      Source template file path (shown in email footer on ORIGIN)"
             echo "  --help, -h          Show this help message"
             echo ""
             echo "Examples:"
@@ -40,6 +46,7 @@ while [[ $# -gt 0 ]]; do
             echo "  $0 user@example.com message.html 'Subject' tw_index.html"
             echo "  $0 --expire 1h user@example.com message.html 'Ephemeral Subject'"
             echo "  $0 --expire 3d user@example.com message.html '3-day message' tw_index.html"
+            echo "  $0 --template /path/to/template.html user@example.com result.html 'Subject'"
             echo ""
             echo "Duration formats:"
             echo "  s = seconds (e.g., 60s)"
@@ -289,7 +296,13 @@ if [[ -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRIVATE" && -n "$SENDER_EMAIL" ]]
     # 3. Préparation du corps de l'email
     # On intègre RAW_CONTENT directement dans le HTML
     IPFS_ONLINE_LINK="<p style=\"text-align:center; font-size:0.85em; color:#888;\"><a href=\"${myIPFS}/ipfs/${EMAILZ}\">🌐 Lire ce message en ligne (IPFS)</a></p><hr style=\"border:none; border-top:1px solid #eee;\">"
-    FULL_HTML="${IPFS_ONLINE_LINK}<h3>${title}</h3><br><br>${RAW_CONTENT}<br><br><hr><p><a href=\"${uSPOT}/nostr\">${UPLANET}</a> [ /ipns/${pseudo} ]<br />${MESSAGESIGN}</p>"
+
+    TEMPLATE_INFO=""
+    if [[ "$UPLANET" == "UPlanet ORIGIN" && -n "$TEMPLATE_SRC" ]]; then
+        TEMPLATE_INFO="<p style=\"font-size:0.75em; color:#aaa; font-family:monospace;\">📄 Template: <code>${TEMPLATE_SRC}</code></p>"
+    fi
+
+    FULL_HTML="${IPFS_ONLINE_LINK}<h3>${title}</h3><br><br>${RAW_CONTENT}<br><br><hr><p><a href=\"${uSPOT}/nostr\">${UPLANET}</a> [ /ipns/${pseudo} ]<br />${MESSAGESIGN}</p>${TEMPLATE_INFO}"
     
     # Fallback en texte brut contenant le lien IPFS
     PLAIN_TEXT="Voir le message sur le réseau IPFS : ${myIPFS}/ipfs/${EMAILZ}\n\nMessage de ${UPLANET}"

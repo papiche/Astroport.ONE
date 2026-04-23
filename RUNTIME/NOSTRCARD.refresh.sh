@@ -406,7 +406,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
             # Create temporary file for email content
             temp_email_file=$(mktemp)
             echo "$balance_celebration" > "$temp_email_file"
-            ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$temp_email_file" "Seuil de 100 Ẑen Atteint - $TODATE"
+            ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "Seuil de 100 Ẑen Atteint - $TODATE"
             rm -f "$temp_email_file"
             echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.balance_10_notified
             log "INFO" "Balance celebration email sent to ${PLAYER} for reaching 10 G1"
@@ -452,7 +452,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
             # Create temporary file for email content
             temp_email_file=$(mktemp)
             echo "$low_balance_warning" > "$temp_email_file"
-            ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$temp_email_file" "Solde Faible - $TODATE"
+            ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "Solde Faible - $TODATE"
             rm -f "$temp_email_file"
             echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.balance_low_warned
             log "INFO" "Low balance warning email sent to ${PLAYER}"
@@ -508,7 +508,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
             # Create temporary file for email content
             temp_email_file=$(mktemp)
             echo "$anniversary_1year" > "$temp_email_file"
-            ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$temp_email_file" "🎉 1 An avec UPlanet - $TODATE"
+            ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "🎉 1 An avec UPlanet - $TODATE"
             rm -f "$temp_email_file"
             echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.anniversary_1year_notified
             log "INFO" "1-year anniversary email sent to ${PLAYER}"
@@ -537,7 +537,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
             # Create temporary file for email content
             temp_email_file=$(mktemp)
             echo "$milestone_6months" > "$temp_email_file"
-            ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$temp_email_file" "🎯 6 Mois avec UPlanet - $TODATE"
+            ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "🎯 6 Mois avec UPlanet - $TODATE"
             rm -f "$temp_email_file"
             echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.milestone_6months_notified
             log "INFO" "6-month milestone email sent to ${PLAYER}"
@@ -619,7 +619,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
         && sed -i "s~http://127.0.0.1:8080~${myIPFS}~g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
         && sed -i "s~_USPOT_~${uSPOT}~g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
         && sed -i "s~_CORACLEURL_~${myCORACLE:-https://ipfs.copylaradio.com/ipns/coracle.copylaradio.com}~g" ~/.zen/game/nostr/${PLAYER}/.welcome.html \
-        && ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "${HOME}/.zen/game/nostr/${PLAYER}/.welcome.html" "Welcome on UPlanet"
+        && ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/welcome.html" --expire 7d "${PLAYER}" "${HOME}/.zen/game/nostr/${PLAYER}/.welcome.html" "Welcome on UPlanet"
         log "INFO" "Welcome email sent to new MULTIPASS: ${PLAYER}"
         log_metric "WELCOME_EMAIL_SENT" "1" "${PLAYER}"
     fi
@@ -798,7 +798,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
                                 # Create temporary file for email content
                                 temp_email_file=$(mktemp)
                                 echo "$success_message" > "$temp_email_file"
-                                ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$temp_email_file" "Paiement Réussi - $TODATE"
+                                ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "Paiement Réussi - $TODATE"
                                 rm -f "$temp_email_file"
                                 log "INFO" "Success email sent to ${PLAYER} for payment success"
                             else
@@ -828,7 +828,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
                                 # Create temporary file for email content
                                 temp_email_file=$(mktemp)
                                 echo "$error_message" > "$temp_email_file"
-                                ${MY_PATH}/../tools/mailjet.sh --expire 7d "${CAPTAINEMAIL}" "$temp_email_file" "MULTIPASS Payment Error - $TODATE"
+                                ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${CAPTAINEMAIL}" "$temp_email_file" "MULTIPASS Payment Error - $TODATE"
                                 rm -f "$temp_email_file"
                                 log "INFO" "Error email sent to ${CAPTAINEMAIL} for payment failure of ${PLAYER}"
                             fi
@@ -944,7 +944,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
                     # Create temporary file for email content
                     temp_email_file=$(mktemp)
                     echo "$usociety_expired" > "$temp_email_file"
-                    ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$temp_email_file" "U.SOCIETY Expiré - Renouvellement Requis"
+                    ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "U.SOCIETY Expiré - Renouvellement Requis"
                     rm -f "$temp_email_file"
                     log "INFO" "U.SOCIETY expiration email sent to ${CAPTAINEMAIL} for ${PLAYER}"
                 else
@@ -993,7 +993,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
                             # Create temporary file for email content
                             temp_email_file=$(mktemp)
                             echo "$usociety_warning_30" > "$temp_email_file"
-                            ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$temp_email_file" "U.SOCIETY Expire dans $DIFF_DAYS jours"
+                            ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "U.SOCIETY Expire dans $DIFF_DAYS jours"
                             rm -f "$temp_email_file"
                             echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.usociety_30day_warned
                             log "INFO" "U.SOCIETY 30-day warning email sent to ${PLAYER}"
@@ -1033,7 +1033,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
                             # Create temporary file for email content
                             temp_email_file=$(mktemp)
                             echo "$usociety_warning_7" > "$temp_email_file"
-                            ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$temp_email_file" "URGENT: U.SOCIETY Expire dans $DIFF_DAYS jours"
+                            ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "URGENT: U.SOCIETY Expire dans $DIFF_DAYS jours"
                             rm -f "$temp_email_file"
                             echo "$TODATE" > ~/.zen/game/nostr/${PLAYER}/.usociety_7day_warned
                             log "INFO" "U.SOCIETY 7-day urgent warning email sent to ${PLAYER}"
@@ -1529,7 +1529,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
                         # Create temporary file for email content
                         temp_email_file=$(mktemp)
                         echo "$notification_email" > "$temp_email_file"
-                        ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" "$temp_email_file" "🍪 Cookie: ${DOMAIN} - MISSING ASTROBOT PROGRAM"
+                        ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "${PLAYER}" "$temp_email_file" "🍪 Cookie: ${DOMAIN} - MISSING ASTROBOT PROGRAM"
                         rm -f "$temp_email_file"
                         
                         # Mark notification as sent

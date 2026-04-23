@@ -223,7 +223,7 @@ create_multipass() {
     if "${MY_PATH}/tools/make_NOSTRCARD.sh" "$email" "$lang" "$lat" "$lon"; then
         ## MAILJET SEND MULTIPASS
         YOUSER=$(${HOME}/.zen/Astroport.ONE/tools/clyuseryomail.sh ${email})
-        ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh --expire 0s "${email}" "${HOME}/.zen/game/nostr/${email}/.nostr.zine.html" "$YOUSER MULTIPASS"
+        ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh --template "${HOME}/.zen/game/nostr/${email}/.nostr.zine.html" --expire 0s "${email}" "${HOME}/.zen/game/nostr/${email}/.nostr.zine.html" "$YOUSER MULTIPASS"
         
         print_success "MULTIPASS créée avec succès pour $email !"
         return 0

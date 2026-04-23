@@ -60,7 +60,7 @@ EOF
     
     # Send email using mailjet.sh
     echo "📧 Sending NOSTR failure notification email to ${player}"
-    $MY_PATH/../tools/mailjet.sh --expire 48h "$player" "$temp_message_file" "NOSTR Message Failure - ${title}" 2>/dev/null
+    $MY_PATH/../tools/mailjet.sh --template "$0" --expire 48h "$player" "$temp_message_file" "NOSTR Message Failure - ${title}" 2>/dev/null
     
     local email_result=$?
     

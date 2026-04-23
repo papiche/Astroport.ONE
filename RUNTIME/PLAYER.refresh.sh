@@ -192,14 +192,14 @@ for PLAYER in ${PLAYERONE[@]}; do
                 if [[ $DAYS_LEFT -le 30 && $DAYS_LEFT -gt 7 && "$LAST_REMINDER" != "30" ]]; then
                     echo "📬 Sending 30-day renewal reminder to ${PLAYER}"
                     _tpl=$(_prepare_email_template "${MY_PATH}/../templates/NOSTR/usociety_renewal.html")
-                    ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" $_tpl \
+                    ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/usociety_renewal.html" --expire 7d "${PLAYER}" $_tpl \
                         "Votre parrainage expire dans ${DAYS_LEFT} jours"
                     rm -f "$_tpl"
                     echo "30" > "$REMINDER_FILE"
                 elif [[ $DAYS_LEFT -le 7 && $DAYS_LEFT -gt 0 && "$LAST_REMINDER" != "7" ]]; then
                     echo "📬 Sending 7-day URGENT renewal reminder to ${PLAYER}"
                     _tpl=$(_prepare_email_template "${MY_PATH}/../templates/NOSTR/usociety_renewal_urgent.html")
-                    ${MY_PATH}/../tools/mailjet.sh --expire 3d "${PLAYER}" $_tpl \
+                    ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/usociety_renewal_urgent.html" --expire 3d "${PLAYER}" $_tpl \
                         "URGENT : Parrainage expire dans ${DAYS_LEFT} jours !"
                     rm -f "$_tpl"
                     echo "7" > "$REMINDER_FILE"
@@ -213,7 +213,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 if [[ $NOTICE_AGE -gt 604800 ]]; then  # 7 days in seconds
                     echo "📬 Sending expiration notice to ${PLAYER} (balance: $ZEN ẐEN)"
                     _tpl=$(_prepare_email_template "${MY_PATH}/../templates/NOSTR/usociety_expired.html")
-                    ${MY_PATH}/../tools/mailjet.sh --expire 7d "${PLAYER}" $_tpl \
+                    ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/usociety_expired.html" --expire 7d "${PLAYER}" $_tpl \
                         "Parrainage expire ! Solde : ${ZEN} ẐEN"
                     rm -f "$_tpl"
                     echo "$CURRENT_SECONDS" > "$EXPIRED_NOTICE"
@@ -330,7 +330,7 @@ for PLAYER in ${PLAYERONE[@]}; do
 <p>Both payments must succeed for fiscal compliance.</p>
 </body></html>"
 
-                    ${MY_PATH}/../tools/mailjet.sh --expire 48h "${PLAYER}" <(echo "$error_message") "ZENCard Payment Error - $TODATE"
+                    ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 48h "${PLAYER}" <(echo "$error_message") "ZENCard Payment Error - $TODATE"
                     echo "Error email sent to ${PLAYER} for payment failure"
                 fi
             else
@@ -347,7 +347,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 elif [[ "${PLAYER}" != "${CAPTAINEMAIL}" ]]; then
                     echo "[7 DAYS CYCLE] ZENCARD ($COINS G1 / $ZEN ZEN) UNPLUG !!"
                     _tpl=$(_prepare_email_template "${MY_PATH}/../templates/NOSTR/zencard_insufficient.html")
-                    $MY_PATH/../tools/mailjet.sh --expire 7d "${PLAYER}" $_tpl \
+                    $MY_PATH/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/zencard_insufficient.html" --expire 7d "${PLAYER}" $_tpl \
                         "Solde insuffisant (${ZEN} ZEN) - ZEN Card desactivee"
                     rm -f "$_tpl"
                     ${MY_PATH}/PLAYER.unplug.sh ~/.zen/game/players/${PLAYER}/ipfs/moa/index.html ${PLAYER} "ALL"
@@ -455,7 +455,7 @@ for PLAYER in ${PLAYERONE[@]}; do
                 -e "s~_PEPPER_~[PROTECTED]~g" \
                 > ~/.zen/tmp/${MOATS}/UPlanetZine.html
 
-        ${MY_PATH}/../tools/mailjet.sh --expire 48h "${PLAYER}" $HOME/.zen/tmp/${MOATS}/UPlanetZine.html \
+        ${MY_PATH}/../tools/mailjet.sh --template "${TODAYZINE}" --expire 48h "${PLAYER}" $HOME/.zen/tmp/${MOATS}/UPlanetZine.html \
                                         "ZINE #${days}" "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/index.html"
 
     else

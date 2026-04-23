@@ -181,7 +181,7 @@ _create_multipass() {
     echo "Création MULTIPASS pour ${email}..."
     ## NOMAIL=1 → mailjet appelé après avec sujet personnalisé
     NOMAIL=1 "${MY_PATH}/tools/make_NOSTRCARD.sh" "$email" "$lang" "$lat" "$lon" \
-        && "${MY_PATH}/tools/mailjet.sh" --expire 0s "$email" \
+        && "${MY_PATH}/tools/mailjet.sh" --template "${HOME}/.zen/game/nostr/${email}/.nostr.zine.html" --expire 0s "$email" \
                "${HOME}/.zen/game/nostr/${email}/.nostr.zine.html" \
                "UPlanet MULTIPASS - $(${MY_PATH}/tools/clyuseryomail.sh "$email" 2>/dev/null)" \
         && echo -e "${G}✅ MULTIPASS créé pour $email${N}" \

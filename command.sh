@@ -620,7 +620,7 @@ create_gmarkmail_captain() {
     ## MAILJET SEND MULTIPASS — envoie la zine HTML avec sujet personnalisé
     local _gm_youser
     _gm_youser=$(${MY_PATH}/tools/clyuseryomail.sh "${GMARKMAIL}" 2>/dev/null)
-    "${MY_PATH}/tools/mailjet.sh" --expire 0s "${GMARKMAIL}" \
+    "${MY_PATH}/tools/mailjet.sh" --template "${HOME}/.zen/game/nostr/${GMARKMAIL}/.nostr.zine.html" --expire 0s "${GMARKMAIL}" \
         "${HOME}/.zen/game/nostr/${GMARKMAIL}/.nostr.zine.html" \
         "UPlanet MULTIPASS - ${_gm_youser}"
 
@@ -1104,7 +1104,7 @@ create_multipass() {
     if NOMAIL=1 "${MY_PATH}/tools/make_NOSTRCARD.sh" "$EMAIL" "$SYSLANG" "$LAT" "$LON"; then
         ## MAILJET SEND MULTIPASS
         YOUSER=$(${HOME}/.zen/Astroport.ONE/tools/clyuseryomail.sh ${EMAIL})
-        ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh --expire 0s "${EMAIL}" "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html" "UPlanet MULTIPASS - $YOUSER"
+        ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh --template "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html" --expire 0s "${EMAIL}" "${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html" "UPlanet MULTIPASS - $YOUSER"
         print_success "MULTIPASS créée avec succès pour $EMAIL"
         
         # Vérifier si c'est le premier utilisateur (pas de ZEN Card existante)

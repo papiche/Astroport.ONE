@@ -627,7 +627,7 @@ else
                                     sed "s|_REQUIRED_ATTESTATIONS_|${required_attestations}|g" | \
                                     sed "s|_ORACLE_URL_|${oracle_url}|g" > "$temp_email_file"
                                 
-                                ${MY_PATH}/../tools/mailjet.sh --expire 7d "${CAPTAINEMAIL}" "$temp_email_file" "🔐 Oracle: Credential Issued - ${permit_id}" 2>/dev/null && \
+                                ${MY_PATH}/../tools/mailjet.sh --template "${template_file}" --expire 7d "${CAPTAINEMAIL}" "$temp_email_file" "🔐 Oracle: Credential Issued - ${permit_id}" 2>/dev/null && \
                                     echo "  [INFO] Email notification sent to captain" || \
                                     echo "  [WARNING] Failed to send email notification"
                                 rm -f "$temp_email_file"
@@ -768,7 +768,7 @@ else
                                             sed "s|_MIN_ATTESTATIONS_|${min_attestations}|g" | \
                                             sed "s|_WOTX2_URL_|${wotx2_url}|g" > "$temp_email_file"
                                         
-                                        ${MY_PATH}/../tools/mailjet.sh --expire 7d "${CAPTAINEMAIL}" "$temp_email_file" "🔄 WoTx2: Progression X${current_level} → X${next_level} - ${permit_name}" 2>/dev/null && \
+                                        ${MY_PATH}/../tools/mailjet.sh --template "${template_file}" --expire 7d "${CAPTAINEMAIL}" "$temp_email_file" "🔄 WoTx2: Progression X${current_level} → X${next_level} - ${permit_name}" 2>/dev/null && \
                                             echo "  [INFO] Email notification sent to captain about progression" || \
                                             echo "  [WARNING] Failed to send email notification"
                                         rm -f "$temp_email_file"
@@ -794,7 +794,7 @@ else
                                             sed "s|_NEXT_PERMIT_ID_|${next_permit_id}|g" | \
                                             sed "s|_ERROR_MESSAGE_|${error_msg}|g" > "$temp_email_file"
                                         
-                                        ${MY_PATH}/../tools/mailjet.sh --expire 7d "${CAPTAINEMAIL}" "$temp_email_file" "⚠️ Oracle Error: Failed to Create WoTx2 X${next_level}" 2>/dev/null && \
+                                        ${MY_PATH}/../tools/mailjet.sh --template "${template_file}" --expire 7d "${CAPTAINEMAIL}" "$temp_email_file" "⚠️ Oracle Error: Failed to Create WoTx2 X${next_level}" 2>/dev/null && \
                                             echo "  [INFO] Error notification sent to captain" || \
                                             echo "  [WARNING] Failed to send error notification"
                                         rm -f "$temp_email_file"

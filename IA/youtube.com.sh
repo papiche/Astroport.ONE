@@ -1150,7 +1150,7 @@ delete_expired_cookie() {
 </html>
 COOKIE_EMAIL
 
-    ${MY_PATH}/../tools/mailjet.sh --expire 48h "${player}" "$temp_email_file" "⚠️ Cookie YouTube supprimé — ré-upload requis" 2>/dev/null
+    ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 48h "${player}" "$temp_email_file" "⚠️ Cookie YouTube supprimé — ré-upload requis" 2>/dev/null
     rm -f "$temp_email_file" 2>/dev/null || true
     log_debug "Cookie deleted and notification sent to $player"
 }
@@ -1356,7 +1356,7 @@ send_sync_notification() {
     echo "$email_content" > "$temp_email_file"
     
     # Envoyer l'email via mailjet avec durée éphémère de 24h
-    ${MY_PATH}/../tools/mailjet.sh --expire 24h "${player}" "$temp_email_file" "🎵 YouTube Sync - $success_count nouvelles vidéos" 2>/dev/null
+    ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 24h "${player}" "$temp_email_file" "🎵 YouTube Sync - $success_count nouvelles vidéos" 2>/dev/null
     
     # Nettoyer le fichier temporaire
     rm -f "$temp_email_file"
@@ -1506,7 +1506,7 @@ EOF
     log_debug "Email file created: $temp_email_file (size: $(stat -c%s "$temp_email_file" 2>/dev/null || echo 0) bytes)"
     
     # Envoyer l'email via mailjet avec durée éphémère de 24h
-    ${MY_PATH}/../tools/mailjet.sh --expire 24h "${player}" "$temp_email_file" "$error_title" 2>/dev/null
+    ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/cookie.youtube.alert.html" --expire 24h "${player}" "$temp_email_file" "$error_title" 2>/dev/null
     
     if [[ $? -eq 0 ]]; then
         log_debug "Error notification sent successfully to $player"

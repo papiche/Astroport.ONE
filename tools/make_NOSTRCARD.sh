@@ -133,7 +133,7 @@ _alert_captain() {
 <p>→ Vérifiez le daemon IPFS et les logs de la station.</p>
 </body></html>
 EOALERT
-    "$_MAILJET" --expire 48h \
+    "$_MAILJET" --template "$0" --expire 48h \
         "${CAPTAINEMAIL}" \
         $_TMPHTML \
         "🚨 MULTIPASS ERROR [${IPFSNODEID:0:8}]: ${_SUBJECT}" \
@@ -747,7 +747,7 @@ EOFJSON
         MULTIPASS_ZINE="${HOME}/.zen/game/nostr/${EMAIL}/.nostr.zine.html"
         MAILJET_SCRIPT="${MY_PATH}/../tools/mailjet.sh"
         if [[ -s "$MULTIPASS_ZINE" ]] && [[ -x "$MAILJET_SCRIPT" ]]; then
-            if "$MAILJET_SCRIPT" --expire 0s \
+            if "$MAILJET_SCRIPT" --template "${MULTIPASS_ZINE}" --expire 0s \
                 "${EMAIL}" \
                 $MULTIPASS_ZINE \
                 "MULTIPASS[Ẑ] [UPlanet:${UPLANETG1PUB:0:8}:${ZLAT}:${ZLON}]"; then

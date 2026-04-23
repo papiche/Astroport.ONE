@@ -596,7 +596,7 @@ EMAIL_TEMPLATE=$(cat "${MY_PATH}/../templates/NOSTR/wallet_deactivation.html" \
           -e "s~_DEACTIVATION_DATE_~$(date '+%Y-%m-%d %H:%M:%S')~g")
 
 # Send email to CAPTAIN (not to the user)
-${MY_PATH}/../tools/mailjet.sh --expire 3d \
+${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/wallet_deactivation.html" --expire 3d \
     "${CAPTAINEMAIL}" \
     "${EMAIL_TEMPLATE}" \
     "CAPTAIN: ${youser} MULTIPASS Deactivated - Backup: ${NOSTRIFS}"

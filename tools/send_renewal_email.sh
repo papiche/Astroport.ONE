@@ -172,7 +172,7 @@ MAILJET_SCRIPT="${MY_PATH}/mailjet.sh"
 
 if [[ -f "$MAILJET_SCRIPT" ]]; then
     echo "[INFO] Sending email via mailjet.sh..."
-    "$MAILJET_SCRIPT" "$EMAIL" "$EMAIL_HTML" "$SUBJECT"
+    "$MAILJET_SCRIPT" --template "${TEMPLATE_PATH}" "$EMAIL" "$EMAIL_HTML" "$SUBJECT"
     EXIT_CODE=$?
     
     if [[ $EXIT_CODE -eq 0 ]]; then

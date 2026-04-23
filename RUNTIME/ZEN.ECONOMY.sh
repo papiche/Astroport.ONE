@@ -481,7 +481,7 @@ Total offert à la communauté : ${new_total} Ẑen. 🙏
                         -e "s~_IMPACT_10_MULTIPASS_~${IMPACT_10_MULTIPASS}~g" \
                         -e "s~_IMPACT_5_ZENCARDS_~${IMPACT_5_ZENCARDS}~g" \
                         > "$RESILIENCE_REPORT"
-                    ${MY_PATH}/../tools/mailjet.sh --expire 7d "$CAPTAINEMAIL" "$RESILIENCE_REPORT" \
+                    ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/pre_bankruptcy.html" --expire 7d "$CAPTAINEMAIL" "$RESILIENCE_REPORT" \
                         "🌿 UPlanet Résilience Niveau ${RESILIENCE_LEVEL} - ${TODATE}" 2>/dev/null \
                         && log_output "📧 Rapport de résilience envoyé au Capitaine: $CAPTAINEMAIL" \
                         || log_output "⚠️  Envoi email résilience échoué"
@@ -706,7 +706,7 @@ Total offert à la communauté : ${new_total} Ẑen. 🙏
                     > "$BENEVOLAT_REPORT"
 
                 # Envoi au Capitaine : merci pour ton sacrifice !
-                ${MY_PATH}/../tools/mailjet.sh --expire 7d "$CAPTAINEMAIL" "$BENEVOLAT_REPORT" \
+                ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/bankrupt.html" --expire 7d "$CAPTAINEMAIL" "$BENEVOLAT_REPORT" \
                     "❤️ UPlanet Bénévolat Actif - Merci Capitaine ! - $TODATE" 2>/dev/null \
                     && log_output "📧 Rapport de bénévolat envoyé au Capitaine: $CAPTAINEMAIL" \
                     || log_output "⚠️  Envoi email bénévolat échoué (non-critique)"
@@ -715,7 +715,7 @@ Total offert à la communauté : ${new_total} Ẑen. 🙏
                 for player_dir in ~/.zen/game/nostr/*/; do
                     player_email=$(basename "$player_dir")
                     if [[ "$player_email" =~ @ && "$player_email" != "$CAPTAINEMAIL" ]]; then
-                        ${MY_PATH}/../tools/mailjet.sh --expire 7d "$player_email" "$BENEVOLAT_REPORT" \
+                        ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/bankrupt.html" --expire 7d "$player_email" "$BENEVOLAT_REPORT" \
                             "❤️ UPlanet Bénévolat Actif - Semaine $WEEK_KEY" 2>/dev/null
                     fi
                 done

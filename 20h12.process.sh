@@ -101,7 +101,7 @@ while [[ ! $(netstat -tan | grep 5001 | grep LISTEN) ]]; do
     sleep 10
     ((floop++)) && [ $floop -gt 36 ] \
         && echo "ERROR. IPFS daemon not restarting" \
-        && ${MY_PATH}/tools/mailjet.sh --expire 48h "support@qo-op.com" "$LOG_FILE" "IPFS RESTART ERROR 20H12" \
+        && ${MY_PATH}/tools/mailjet.sh --template "$0" --expire 48h "support@qo-op.com" "$LOG_FILE" "IPFS RESTART ERROR 20H12" \
         && exit 1
 done
 
@@ -520,10 +520,10 @@ _GPS="$(cat ~/.zen/GPS 2>/dev/null)"
 
 if [[ -f "$POWER_REPORT_HTML" ]]; then
     echo "📧 Sending 20H12 report with power consumption analysis..."
-    ${MY_PATH}/tools/mailjet.sh --expire 48h "$CAPTAINEMAIL" "$POWER_REPORT_HTML" \
+    ${MY_PATH}/tools/mailjet.sh --template "$0" --expire 48h "$CAPTAINEMAIL" "$POWER_REPORT_HTML" \
         "20H12 ${_STATION} <${CAPTAINEMAIL}> : ${_PLAYER} (${_GPS}) - Power Consumption Report"
 else
-    ${MY_PATH}/tools/mailjet.sh --expire 48h "$CAPTAINEMAIL" "$LOG_FILE" \
+    ${MY_PATH}/tools/mailjet.sh --template "$0" --expire 48h "$CAPTAINEMAIL" "$LOG_FILE" \
         "20H12 ${_STATION} <${CAPTAINEMAIL}> : ${_PLAYER} (${_GPS})"
 fi
 

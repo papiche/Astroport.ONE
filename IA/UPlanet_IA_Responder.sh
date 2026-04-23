@@ -116,7 +116,7 @@ EOF
     # Send email using mailjet.sh
     if [[ -n "$CAPTAINEMAIL" ]]; then
         echo "📧 Sending error email to $CAPTAINEMAIL..." >&2
-        $MY_PATH/../tools/mailjet.sh --expire 24h  "$CAPTAINEMAIL" "$error_report" "UPlanet IA Error - $timestamp" 2>/dev/null
+        $MY_PATH/../tools/mailjet.sh --template "$0" --expire 24h  "$CAPTAINEMAIL" "$error_report" "UPlanet IA Error - $timestamp" 2>/dev/null
         if [[ $? -eq 0 ]]; then
             echo "✅ Error email sent successfully to $CAPTAINEMAIL" >&2
         else
@@ -2345,7 +2345,7 @@ if [[ $? -ne 0 || -z "$KeyANSWER" ]]; then
     # Send error report via mailjet if CAPTAINEMAIL is available
     if [[ -n "$CAPTAINEMAIL" && -s "$MY_PATH/../tools/mailjet.sh" ]]; then
         echo "📧 Sending error report to CAPTAIN: $CAPTAINEMAIL" >&2
-        $MY_PATH/../tools/mailjet.sh --expire 24h "$CAPTAINEMAIL" "$ERROR_LOG_FILE" "UPlanet IA Error Report" 2>/dev/null
+        $MY_PATH/../tools/mailjet.sh --template "$0" --expire 24h "$CAPTAINEMAIL" "$ERROR_LOG_FILE" "UPlanet IA Error Report" 2>/dev/null
         echo "✅ Error report sent to $CAPTAINEMAIL" >&2
     else
         echo "⚠️ Cannot send error report - CAPTAINEMAIL or mailjet.sh not available" >&2

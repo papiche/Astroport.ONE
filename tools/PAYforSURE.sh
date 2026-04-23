@@ -549,7 +549,7 @@ HTMLEOF
 logok "Rapport HTML : $HTML_FILE"
 
 if [[ -n "${CAPTAINEMAIL:-}" ]] && [[ -x "${MY_PATH}/mailjet.sh" ]]; then
-    "${MY_PATH}/mailjet.sh" --expire 48h "$CAPTAINEMAIL" \
+    "${MY_PATH}/mailjet.sh" --template "$0" --expire 48h "$CAPTAINEMAIL" \
         "$HTML_FILE" "${ZENAMOUNT} ZEN : ${COMMENT}" 2>/dev/null || true
 fi
 

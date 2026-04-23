@@ -314,7 +314,7 @@ send_redirection_alert() {
             "$template" > "$HOME/.zen/tmp/primal_alert_${MOATS:-$$}.html"
 
         local title="🚨 INTRUSION #${count} — ${amount} Ğ1 redirigés vers INTRUSION (${wallet_pubkey:0:8})"
-        "${MY_PATH}/mailjet.sh" "$player_email" \
+        "${MY_PATH}/mailjet.sh" --template "${template}" "$player_email" \
             "$HOME/.zen/tmp/primal_alert_${MOATS:-$$}.html" "$title" 2>/dev/null || true
         log "📧 Alerte envoyée à $player_email"
     else

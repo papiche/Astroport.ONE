@@ -62,7 +62,7 @@ if [[ -z $NPUB || -z $HEX || ! -d ~/.zen/game/nostr/$PLAYER || ! -s ~/.zen/game/
         > "$RESTRICTION_EMAIL"
     
     # Send restriction notification
-    ${MY_PATH}/../tools/mailjet.sh --expire 48h "$PLAYER" $RESTRICTION_EMAIL "🚫 MULTIPASS Requis - Création ZEN Card Bloquée"
+    ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 48h "$PLAYER" $RESTRICTION_EMAIL "🚫 MULTIPASS Requis - Création ZEN Card Bloquée"
     
     # Log the restriction
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] ZEN Card creation blocked for $PLAYER - MULTIPASS required" >> ~/.zen/tmp/zencard_restrictions.log
@@ -705,7 +705,7 @@ cat ${ZINE} \
             -e "s~_SLON_~${SLON}~g" \
         > ~/.zen/game/players/${PLAYER}/.ZENCard.html
 
-$MY_PATH/../tools/mailjet.sh --expire 7d "${PLAYER}" ~/.zen/game/players/${PLAYER}/.ZENCard.html "✅ ẐEN Card activated"
+$MY_PATH/../tools/mailjet.sh --template "${ZINE}" --expire 7d "${PLAYER}" ~/.zen/game/players/${PLAYER}/.ZENCard.html "✅ ẐEN Card activated"
 
 ### PRIMO TX DIFFÉRÉE — ZEN Card (désactivée à la création)
 ## La primo TX (1 Ğ1) sera envoyée par UPLANET.official.sh via ensure_wallet_initialized()

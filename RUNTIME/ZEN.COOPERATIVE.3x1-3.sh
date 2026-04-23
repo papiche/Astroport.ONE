@@ -517,7 +517,7 @@ else
     # Envoyer le rapport par email au Capitaine
     if [[ -n "$CAPTAINEMAIL" && -s "$REPORT_FILE" ]]; then
         echo "📧 Sending HTML report to Captain: $CAPTAINEMAIL"
-        ${MY_PATH}/../tools/mailjet.sh --expire 7d "$CAPTAINEMAIL" "$REPORT_FILE" "Cooperative Allocation Report - $TODATE"
+        ${MY_PATH}/../tools/mailjet.sh --template "${TEMPLATE_FILE}" --expire 7d "$CAPTAINEMAIL" "$REPORT_FILE" "Cooperative Allocation Report - $TODATE"
 
         if [[ $? -eq 0 ]]; then
             echo "✅ HTML report sent successfully to Captain"
@@ -556,7 +556,7 @@ else
     echo "   Ce n'est pas une faillite : les fonds alloués le seront dès que possible."
     # Notification au Capitaine (non-bloquante)
     if [[ -n "$CAPTAINEMAIL" ]]; then
-        ${MY_PATH}/../tools/mailjet.sh --expire 7d "$CAPTAINEMAIL" "" \
+        ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 7d "$CAPTAINEMAIL" "" \
             "🔄 UPlanet Allocation partielle - Retry - $TODATE" 2>/dev/null || true
     fi
 fi

@@ -393,7 +393,7 @@ EOF
     
     # Envoyer l'alerte via mailjet.sh
     echo -e "${YELLOW}📧 Envoi d'alerte à ${CAPTAINEMAIL}...${NC}"
-    if "${MY_PATH}/tools/mailjet.sh" --expire 3d "$CAPTAINEMAIL" $alert_file "🚨 UPLANET Transaction Failed - ${alert_type}"; then
+    if "${MY_PATH}/tools/mailjet.sh" --template "$0" --expire 3d "$CAPTAINEMAIL" $alert_file "🚨 UPLANET Transaction Failed - ${alert_type}"; then
         echo -e "${GREEN}✅ Alerte envoyée avec succès à ${CAPTAINEMAIL}${NC}"
         # Garder le fichier d'alerte pour les logs
         mkdir -p "$HOME/.zen/tmp/alerts/"
