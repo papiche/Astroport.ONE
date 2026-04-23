@@ -129,13 +129,22 @@ cmd_list() {
     echo ""
 }
 
+get_service_category() {
+    case "${1,,}" in
+        ollama|dify|webui|open-webui|mirofish|comfyui|vane|qdrant|orpheus|perplexica) echo "🧠 IA" ;;
+        icecast|snapcast|audio|spotify|jukebox|mpd) echo "🎵 Audio" ;;
+        ssh|npm|nextcloud|upassport|node|proxy|vpn) echo "⚙️  Sys" ;;
+        *) echo "📦 App" ;;
+    esac
+}
+
 ##############################################################################
-# list-remote — catalogue des services GPU dans le swarm
+# list-remote — catalogue exhaustif des services de la constellation
 ##############################################################################
 cmd_list_remote() {
     local filter_service="${1:-}"
 
-    echo -e "${BOLD}=== SERVICES SWARM (P2P) ===${NC}"
+    echo -e "${BOLD}=== SERVICES DISPONIBLES DANS L'ESSAIM (SWARM) ===${NC}"
     echo ""
 
     if [[ ! -d "$SWARM_DIR" ]] || [[ -z "$(ls -A "$SWARM_DIR" 2>/dev/null)" ]]; then
@@ -143,91 +152,78 @@ cmd_list_remote() {
         return 1
     fi
 
-    printf "  ${BOLD}%-18s %-24s %-14s %-14s %-20s %-8s${NC}\n" \
-        "SERVICE" "NODE (fin)" "POWER" "CAPITAINE" "MODÈLES" "LATENCE"
-    printf "  %s\n" "$(printf '─%.0s' {1..102})"
+    # Header mis à jour avec la colonne TYPE
+    printf "  ${BOLD}%-10s %-16s %-20s %-12s %-14s %-8s${NC}\n" \
+        "TYPE" "SERVICE" "NODE (fin)" "POWER" "CAPITAINE" "LATENCE"
+    printf "  %s\n" "$(printf '─%.0s' {1..85})"
 
     local found=0
     for node_path in "$SWARM_DIR"/*/; do
-        local node_id json power_score provider_ready dragon_services node_ip captain
+        local node_id json power_score dragon_services node_ip captain
         node_id=$(basename "$node_path")
         json="$node_path/12345.json"
         [[ -s "$json" ]] || continue
 
+        # Lecture des métadonnées
         power_score=$(jq -r '.capacities.power_score // 0'    "$json" 2>/dev/null || echo 0)
-        provider_ready=$(jq -r '.capacities.provider_ready // false' "$json" 2>/dev/null)
-        dragon_services=$(jq -r '.dragon_services // ""'           "$json" 2>/dev/null)
-        node_ip=$(jq -r '.myIP // ""'                              "$json" 2>/dev/null)
-        captain=$(jq -r '.captain // "?"'                         "$json" 2>/dev/null | cut -d'@' -f1)
+        dragon_services=$(jq -r '.dragon_services // ""'     "$json" 2>/dev/null)
+        node_ip=$(jq -r '.myIP // .myip // ""'               "$json" 2>/dev/null)
+        captain=$(jq -r '.captain // "?"'                    "$json" 2>/dev/null | cut -d'@' -f1)
 
         [[ -z "$dragon_services" ]] && continue
-        # Ne lister que les nœuds qui se déclarent providers (services IA locaux)
-        [[ "$provider_ready" != "true" ]] && continue
 
-        # Mesure latence (timeout 2s pour ne pas bloquer)
+        # Mesure latence rapide (1 seconde max)
         local latency="N/A"
         if [[ -n "$node_ip" && "$node_ip" != "null" ]]; then
-            latency=$(ping -c 1 -W 2 "$node_ip" 2>/dev/null \
+            latency=$(ping -c 1 -W 1 "$node_ip" 2>/dev/null \
                 | grep -oP 'time=\K[\d.]+' | head -1)
-            [[ -n "$latency" ]] && latency="${latency}ms" || latency="timeout"
+            [[ -n "$latency" ]] && latency="${latency%.*}ms" || latency="timeout"
         fi
 
-        IFS=',' read -ra services <<< "$dragon_services"
-        for svc in "${services[@]}"; do
-            svc="${svc// /}"
-            svc="${svc%.sh}"   # certains 12345.json stockent "ollama.sh" au lieu de "ollama"
+        # Découpage de la liste dragon_services (ex: "ssh, icecast, ollama")
+        IFS=',' read -ra ADDR <<< "$dragon_services"
+        for svc in "${ADDR[@]}"; do
+            svc="${svc// /}" # Suppression des espaces
+            svc="${svc%.sh}" # Nettoyage du suffixe .sh si présent
             [[ -z "$svc" ]] && continue
             [[ -n "$filter_service" && "$svc" != "$filter_service" ]] && continue
 
-            # Garder uniquement les services IA (présents dans ai_company)
-            # Exclut automatiquement npm, ssh, strfry, nextcloud*, webtop*, icecast...
-            local svc_in_ai
-            svc_in_ai=$(jq -r "if .services.ai_company then \
-                (.services.ai_company | has(\"${svc}\")) else \"false\" end" \
-                "$json" 2>/dev/null || echo "false")
-            [[ "$svc_in_ai" != "true" ]] && continue
-
-            # Vérifier que le service est bien LOCAL sur ce nœud (pas un tunnel)
-            local svc_source
-            svc_source=$(jq -r ".services.ai_company.${svc}.source // \"unknown\"" \
-                "$json" 2>/dev/null)
-            # Ignorer si c'est un tunnel (ce nœud ne fait que relayer)
-            [[ "$svc_source" == "p2p_tunnel" || "$svc_source" == "ssh_tunnel" ]] && continue
-
-            # Modèles Ollama uniquement (colonne séparée du capitaine)
+            # --- Conservation de la fonctionnalité de détection de modèles IA ---
             local specs=""
             if [[ "$svc" == "ollama" ]]; then
-                specs=$(jq -r '.services.ai_company.ollama.models // [] | join(",")' \
-                    "$json" 2>/dev/null | cut -c1-20)
+                # On ne l'affiche que si les données existent dans le JSON
+                specs=$(jq -r '.services.ai_company.ollama.models // [] | join(",")' "$json" 2>/dev/null | cut -c1-15)
+                [[ -n "$specs" ]] && specs=" ($specs)"
             fi
 
+            local category=$(get_service_category "$svc")
             local node_short="...${node_id: -14}"
-            printf "  %-18s %-24s %-14s %-14s %-20s %-8s\n" \
-                "${svc}" "${node_short}" \
-                "${power_score} $(power_label ${power_score})" \
-                "${captain}" "${specs}" "${latency}"
+            
+            # Affichage de la ligne
+            printf "  %-10s %-16s %-20s %-12s %-14s %-8s\n" \
+                "$category" \
+                "${svc}${specs}" \
+                "${node_short}" \
+                "$(power_label $power_score)" \
+                "${captain:0:13}" \
+                "$latency"
+            
             ((found++))
         done
     done
 
-    if [[ $found -eq 0 ]]; then
-        echo "  Aucun nœud fournisseur de services trouvé dans le swarm."
-        echo "  Les stations avec dragon_services et power_score apparaîtront ici."
-    fi
+    [[ $found -eq 0 ]] && echo "  Aucun service trouvé."
     echo ""
 
-    ## ── Nœuds Vault (riches en stockage) ─────────────────────────────────────
-    ## Séparés des fournisseurs IA : un RPi avec 2 To peut héberger des données
-    ## sans avoir de GPU. Affiché même si provider_ready=false.
+    ## ── Nœuds Vault (riches en stockage) — FONCTIONNALITÉ CONSERVÉE ──────────
     echo -e "${BOLD}=== VAULT NODES (STOCKAGE) ===${NC}"
-    echo ""
-    printf "  ${BOLD}%-24s %-12s %-10s %-10s %-10s %-10s${NC}\n" \
-        "NODE (fin)" "CAPITAINE" "ZenCards" "NOSTR" "ESPACE Go" "POWER"
-    printf "  %s\n" "$(printf '─%.0s' {1..80})"
+    printf "  ${BOLD}%-24s %-12s %-10s %-10s %-10s${NC}\n" \
+        "NODE (fin)" "CAPITAINE" "ZenCards" "NOSTR" "ESPACE"
+    printf "  %s\n" "$(printf '─%.0s' {1..70})"
 
     local vault_found=0
     for node_path in "$SWARM_DIR"/*/; do
-        local node_id json storage_ready zencard_slots nostr_slots avail_gb v_score v_captain
+        local node_id json storage_ready zencard_slots nostr_slots avail_gb v_captain
         node_id=$(basename "$node_path")
         json="$node_path/12345.json"
         [[ -s "$json" ]] || continue
@@ -235,24 +231,17 @@ cmd_list_remote() {
         storage_ready=$(jq -r '.capacities.storage_ready // false' "$json" 2>/dev/null)
         [[ "$storage_ready" != "true" ]] && continue
 
-        zencard_slots=$(jq -r '.capacities.zencard_slots  // 0'              "$json" 2>/dev/null || echo 0)
-        nostr_slots=$(jq -r  '.capacities.nostr_slots     // 0'              "$json" 2>/dev/null || echo 0)
-        avail_gb=$(jq -r     '.capacities.available_space_gb // 0'           "$json" 2>/dev/null || echo 0)
-        v_score=$(jq -r      '.capacities.power_score        // 0'           "$json" 2>/dev/null || echo 0)
-        v_captain=$(jq -r    '.captain // "?"'                               "$json" 2>/dev/null | cut -d'@' -f1)
+        zencard_slots=$(jq -r '.capacities.zencard_slots  // 0'    "$json" 2>/dev/null)
+        nostr_slots=$(jq -r  '.capacities.nostr_slots     // 0'    "$json" 2>/dev/null)
+        avail_gb=$(jq -r     '.capacities.available_space_gb // 0' "$json" 2>/dev/null)
+        v_captain=$(jq -r    '.captain // "?"'                     "$json" 2>/dev/null | cut -d'@' -f1)
 
-        local node_short="...${node_id: -14}"
-        printf "  %-24s %-12s %-10s %-10s %-10s %-10s\n" \
-            "${node_short}" "${v_captain}" \
-            "${zencard_slots} 🏠" "${nostr_slots} 📡" \
-            "${avail_gb} Go" \
-            "${v_score} $(power_label ${v_score})"
+        printf "  %-24s %-12s %-10s %-10s %-10s\n" \
+            "...${node_id: -14}" "${v_captain:0:11}" \
+            "${zencard_slots} 🏠" "${nostr_slots} 📡" "${avail_gb} Go"
         ((vault_found++))
     done
-
-    if [[ $vault_found -eq 0 ]]; then
-        echo "  Aucun nœud Vault dans le swarm (seuil : ≥128 Go NextCloud ou ≥100 Go IPFS)."
-    fi
+    [[ $vault_found -eq 0 ]] && echo "  Aucun nœud Vault détecté."
     echo ""
 }
 
