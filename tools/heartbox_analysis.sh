@@ -451,17 +451,16 @@ get_fast_capacities() {
     [[ -z "$power_score" ]] && power_score=0
 
     ## provider_ready = vrai uniquement si des services IA LOCAUX tournent (pas des tunnels).
-    ## Dérivé des variables *_source déjà calculées ci-dessus — pas de double détection.
-    ## Un nœud qui se contente de relayer un GPU distant ne doit PAS s'annoncer comme provider.
+    ## Re-détection indépendante : get_fast_capacities() tourne dans un subshell séparé,
+    ## les variables *_source de get_fast_service_status() ne sont pas accessibles ici.
     local has_local_ai="false"
-    [[ "$ollama_source"    == "local" || \
-       "$qdrant_source"    == "local" || \
-       "$dify_source"      == "local" || \
-       "$open_webui_source" == "local" || \
-       "$mirofish_source"  == "local" || \
-       "$comfyui_source"   == "local" || \
-       "$orpheus_source"   == "local" || \
-       "$vane_source"      == "local" ]] && has_local_ai="true"
+    { pgrep -x "ollama" >/dev/null 2>&1 || \
+      pgrep -f "ollama serve" >/dev/null 2>&1 || \
+      systemctl is-active --quiet ollama 2>/dev/null || \
+      { command -v docker >/dev/null 2>&1 && \
+        docker ps --format '{{.Names}}\t{{.Image}}' 2>/dev/null | grep -qiE 'ollama|qdrant|dify|open-webui|mirofish|comfyui|orpheus|vane|perplexica'; } || \
+      pgrep -f "comfyui\|open.webui\|open_webui\|perplexica\|vane" >/dev/null 2>&1; \
+    } && has_local_ai="true"
     local provider_ready="false"
     ## Score élevé (GPU dédié) : toujours provider, même sans service IA actif
     [[ ${power_score} -gt 40 ]] && provider_ready="true"
@@ -541,7 +540,9 @@ export_json() {
     local load_avg=$(uptime | awk -F'load average:' '{ print $2 }' | xargs | cut -d',' -f1)
     [[ -z "$load_avg" ]] && load_avg="0.00"
 
-    local cpu_temp=$(vcgencmd measure_temp | cut -d'=' -f2 | cut -d"'" -f1 || echo "0")
+    local cpu_temp
+    cpu_temp=$(vcgencmd measure_temp 2>/dev/null | cut -d'=' -f2 | cut -d"'" -f1)
+    [[ -z "$cpu_temp" ]] && cpu_temp=0
 
     # Generate JSON
     cat << EOF

@@ -157,6 +157,12 @@ cmd_list_remote() {
         "TYPE" "SERVICE" "NODE (fin)" "POWER" "CAPITAINE" "LATENCE"
     printf "  %s\n" "$(printf '─%.0s' {1..85})"
 
+    # Snapshot des pairs IPFS actuellement connectés (peer IDs).
+    # On utilise ipfs ping (pas ICMP) : le réseau est IPFS P2P, et ICMP est souvent bloqué.
+    # Si le peer est dans le swarm, ipfs ping -n 1 est rapide (connexion déjà ouverte).
+    local _swarm_peers
+    _swarm_peers=$(ipfs swarm peers 2>/dev/null)
+
     local found=0
     for node_path in "$SWARM_DIR"/*/; do
         local node_id json power_score dragon_services node_ip captain
@@ -172,12 +178,14 @@ cmd_list_remote() {
 
         [[ -z "$dragon_services" ]] && continue
 
-        # Mesure latence rapide (1 seconde max)
-        local latency="N/A"
-        if [[ -n "$node_ip" && "$node_ip" != "null" ]]; then
-            latency=$(ping -c 1 -W 1 "$node_ip" 2>/dev/null \
+        # Latence via ipfs ping (réseau IPFS P2P — ICMP souvent bloqué par NAT/firewall).
+        # Si le peer est déjà dans le swarm, ipfs ping -n 1 est quasi-instantané.
+        local latency="offline"
+        if echo "$_swarm_peers" | grep -q "$node_id"; then
+            local _ms
+            _ms=$(ipfs ping -n 1 "$node_id" 2>/dev/null \
                 | grep -oP 'time=\K[\d.]+' | head -1)
-            [[ -n "$latency" ]] && latency="${latency%.*}ms" || latency="timeout"
+            [[ -n "$_ms" ]] && latency="${_ms%.*}ms" || latency="no pong"
         fi
 
         # Découpage de la liste dragon_services (ex: "ssh, icecast, ollama")
