@@ -692,7 +692,7 @@ fi
 init_and_cache_wallet() {
     local file_prefix="$1"
     local seed="$2"
-    local legacy_name="$3"
+    local legacy_name="${3:-}"
     local dunikey_file="$HOME/.zen/game/${file_prefix}.dunikey"
     local cache_file="$HOME/.zen/game/${file_prefix}.ss58"
     
@@ -771,7 +771,7 @@ elif [[ -n "$IPFSNODEID" ]]; then
         echo "$UPLANETNAME_NODE" > "$cache_node"
     fi
 else
-    echo "⚠️  NODE wallet not found and IPFSNODEID not available"
+    echo "⚠️  NODE wallet not found and IPFSNODEID not available" >&2
 fi
 
 # =========================================================================

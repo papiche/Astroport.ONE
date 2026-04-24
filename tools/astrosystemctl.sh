@@ -17,7 +17,8 @@
 
 ## Résolution du lien symbolique pour trouver my.sh même si appelé via ~/.local/bin/
 _SCRIPT="$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")"
-MY_PATH="$(dirname "$_SCRIPT")"
+# MY_PATH peut être pré-positionné par les tests (ASTROSYSTEMCTL_TEST=1)
+MY_PATH="${MY_PATH:-$(dirname "$_SCRIPT")}"
 MY_PATH="$(cd "$MY_PATH" && pwd)"
 . "${MY_PATH}/my.sh"
 
@@ -223,15 +224,16 @@ cmd_list_remote() {
     [[ $found -eq 0 ]] && echo "  Aucun service trouvé."
     echo ""
 
-    ## ── Nœuds Vault (riches en stockage) — FONCTIONNALITÉ CONSERVÉE ──────────
+    ## ── Nœuds Vault (riches en stockage) — tarifs + espace détaillé ──────────
     echo -e "${BOLD}=== VAULT NODES (STOCKAGE) ===${NC}"
-    printf "  ${BOLD}%-24s %-12s %-10s %-10s %-10s${NC}\n" \
-        "NODE (fin)" "CAPITAINE" "ZenCards" "NOSTR" "ESPACE"
-    printf "  %s\n" "$(printf '─%.0s' {1..70})"
+    printf "  ${BOLD}%-20s %-12s %-8s %-8s %-24s %-5s %-6s %-6s${NC}\n" \
+        "NODE (fin)" "CAPITAINE" "ZenCards" "NOSTR" "ESPACE DISPO" "PAF" "NCARD" "ZCARD"
+    printf "  %s\n" "$(printf '─%.0s' {1..95})"
 
     local vault_found=0
     for node_path in "$SWARM_DIR"/*/; do
-        local node_id json storage_ready zencard_slots nostr_slots avail_gb v_captain
+        local node_id json storage_ready zencard_slots nostr_slots v_captain
+        local nc_avail ipfs_avail root_avail paf ncard zcard disk_str
         node_id=$(basename "$node_path")
         json="$node_path/12345.json"
         [[ -s "$json" ]] || continue
@@ -241,12 +243,26 @@ cmd_list_remote() {
 
         zencard_slots=$(jq -r '.capacities.zencard_slots  // 0'    "$json" 2>/dev/null)
         nostr_slots=$(jq -r  '.capacities.nostr_slots     // 0'    "$json" 2>/dev/null)
-        avail_gb=$(jq -r     '.capacities.available_space_gb // 0' "$json" 2>/dev/null)
         v_captain=$(jq -r    '.captain // "?"'                     "$json" 2>/dev/null | cut -d'@' -f1)
+        paf=$(jq -r          '.PAF   // "?"'                       "$json" 2>/dev/null)
+        ncard=$(jq -r        '.NCARD // "?"'                       "$json" 2>/dev/null)
+        zcard=$(jq -r        '.ZCARD // "?"'                       "$json" 2>/dev/null)
 
-        printf "  %-24s %-12s %-10s %-10s %-10s\n" \
+        # Espace détaillé : NextCloud + IPFS (root souvent identique à IPFS)
+        nc_avail=$(jq -r   '.capacities.storage_details.nextcloud.available_gb // 0' "$json" 2>/dev/null)
+        ipfs_avail=$(jq -r '.capacities.storage_details.ipfs.available_gb      // 0' "$json" 2>/dev/null)
+        if [[ "${nc_avail:-0}" != "0" ]]; then
+            disk_str="NC:${nc_avail}Go IPFS:${ipfs_avail}Go"
+        else
+            local avail_gb
+            avail_gb=$(jq -r '.capacities.available_space_gb // 0' "$json" 2>/dev/null)
+            disk_str="${avail_gb} Go dispo"
+        fi
+
+        printf "  %-20s %-12s %-8s %-8s %-24s %-5s %-6s %-6s\n" \
             "...${node_id: -14}" "${v_captain:0:11}" \
-            "${zencard_slots} 🏠" "${nostr_slots} 📡" "${avail_gb} Go"
+            "${zencard_slots} 🏠" "${nostr_slots} 📡" \
+            "${disk_str}" "${paf}ẑ" "${ncard}ẑ" "${zcard}ẑ"
         ((vault_found++))
     done
     [[ $vault_found -eq 0 ]] && echo "  Aucun nœud Vault détecté."
@@ -299,6 +315,20 @@ cmd_connect() {
     local service="${target%%@*}"
     local node_id="${target##*@}"
     [[ "$node_id" == "$service" ]] && node_id=""
+
+    # ── Résolution partielle du node_id (ex: "FntbpxPX" → full 12D3KooW...) ──
+    if [[ -n "$node_id" && ! -d "$SWARM_DIR/$node_id" ]]; then
+        local _matched
+        _matched=$(ls -d "$SWARM_DIR/"*"${node_id}"* 2>/dev/null | head -1)
+        if [[ -n "$_matched" && -d "$_matched" ]]; then
+            node_id=$(basename "$_matched")
+            echo "🔗 Résolution : ${target##*@} → ...${node_id: -14}"
+        else
+            echo "❌ Nœud '${target##*@}' introuvable dans le swarm (ni exact ni partiel)."
+            echo "   Nœuds disponibles : astrosystemctl list-remote"
+            return 1
+        fi
+    fi
 
     # ── Vérification locale d'abord ───────────────────────────────────────────
     local local_port=""
@@ -548,8 +578,8 @@ cmd_status() {
     echo -e "${BOLD}=== SERVICES DISTANTS CONSOMMÉS ===${NC}"
     echo -e "  Connexions vers d'autres stations (tunnels entrants)."
     echo ""
-    printf "  ${BOLD}%-22s %-12s %-38s${NC}\n" "SERVICE" "PORT LOCAL" "NŒUD DISTANT"
-    printf "  %s\n" "$(printf '─%.0s' {1..74})"
+    printf "  ${BOLD}%-22s %-10s %-10s %-36s${NC}\n" "SERVICE" "PORT" "ÉTAT" "NŒUD DISTANT"
+    printf "  %s\n" "$(printf '─%.0s' {1..80})"
 
     local has_client=0
     while IFS= read -r line; do
@@ -559,7 +589,7 @@ cmd_status() {
         # Côté client : col2 = /ip4/... ou /ip6/...
         [[ "$col2" != /ip4/* && "$col2" != /ip6/* ]] && continue
 
-        local proto lport remote_id slug
+        local proto lport remote_id slug svc_status
         proto=$(echo "$line" | awk '{print $1}')
         lport=$(echo "$col2" | grep -oP 'tcp/\K[0-9]+')
         remote_id=$(echo "$line" | awk '{print $3}')
@@ -567,7 +597,21 @@ cmd_status() {
         slug="${proto#/x/}"
         slug="${slug%-${remote_id}}"
 
-        printf "  %-22s %-12s ...%s\n" "$slug" "${lport:-?}" "${remote_id: -22}"
+        # Vérifier si le service distant répond réellement via le tunnel
+        svc_status="⏳ tunnel ouvert"
+        if [[ -n "$lport" ]]; then
+            if curl -s --max-time 3 "http://127.0.0.1:${lport}/" >/dev/null 2>&1; then
+                svc_status="${GREEN}✅ service OK${NC}"
+            elif curl -s --max-time 3 "http://127.0.0.1:${lport}" >/dev/null 2>&1; then
+                svc_status="${GREEN}✅ service OK${NC}"
+            else
+                svc_status="${YELLOW}⚠️  no response${NC}"
+            fi
+        fi
+
+        printf "  %-22s %-10s " "$slug" "${lport:-?}"
+        printf "${svc_status}"
+        printf "  ...%s\n" "${remote_id: -22}"
         ((has_client++))
     done <<< "$active_p2p"
     [[ $has_client -eq 0 ]] && echo "  (aucun service distant connecté)"
@@ -622,6 +666,36 @@ _ia_dir() {
         [[ -d "$d" ]] && { echo "$(cd "$d" && pwd)"; return; }
     done
     echo ""
+}
+
+##############################################################################
+# _modules_list_path — chemin vers IA/modules.list
+##############################################################################
+_modules_list_path() {
+    local candidates=("${MY_PATH}/../IA/modules.list" "$HOME/.zen/Astroport.ONE/IA/modules.list")
+    for f in "${candidates[@]}"; do
+        [[ -f "$f" ]] && { echo "$f"; return; }
+    done
+    echo ""
+}
+
+##############################################################################
+# _group_to_install_script — mappe un install_group vers son script
+##############################################################################
+_group_to_install_script() {
+    local group="$1" astro_dir="$2"
+    case "$group" in
+        gpu-ai)          echo "${astro_dir}/install/install_gpu_ai.sh" ;;
+        ai-company)      echo "${astro_dir}/install/install-ai-company.docker.sh" ;;
+        youtube-antibot) echo "${astro_dir}/install/install_youtube_antibot.sh" ;;
+        powerjoular)     echo "${astro_dir}/install/install_powerjoular.sh" ;;
+        prometheus)      echo "${astro_dir}/install/install_prometheus.sh" ;;
+        leann)           echo "${astro_dir}/install/install_leann.sh" ;;
+        zelkova)         echo "${astro_dir}/install/install_zelkova.sh" ;;
+        nextcloud)       echo "${astro_dir}/install/install_nextcloud.sh" ;;
+        core|-)          echo "" ;;
+        *)               echo "${astro_dir}/install/install_${group}.sh" ;;
+    esac
 }
 
 # Normalise le nom de fichier .me.sh en clé heartbox_analysis.json
@@ -726,10 +800,42 @@ _local_list() {
     echo ""
     [[ $count -eq 0 ]] && echo "  (aucun connecteur IA trouvé dans $ia_dir)"
 
+    # ── Outils système (port="-", sans tunnel P2P) ────────────────────────────
+    local mlist
+    mlist=$(_modules_list_path)
+    if [[ -n "$mlist" ]]; then
+        local sys_count=0
+        while IFS='|' read -r mod_name mod_port mod_check mod_group mod_label; do
+            [[ "$mod_name" =~ ^[[:space:]]*# || -z "${mod_name// }" ]] && continue
+            [[ "$mod_port" != "-" ]] && continue
+            if [[ $sys_count -eq 0 ]]; then
+                echo -e "  ${BOLD}=== OUTILS SYSTÈME ===${NC}"
+                printf "  ${BOLD}%-22s %-14s %-18s${NC}\n" "MODULE" "GROUPE" "INSTALLATION"
+                printf "  %s\n" "$(printf '─%.0s' {1..56})"
+            fi
+            local astro_dir
+            astro_dir="$(cd "$ia_dir/.." && pwd)"
+            local install_s
+            install_s=$(_group_to_install_script "$mod_group" "$astro_dir")
+            local install_hint
+            if [[ -n "$install_s" && -f "$install_s" ]]; then
+                install_hint="✅ $(basename "$install_s")"
+            elif [[ -n "$install_s" ]]; then
+                install_hint="❌ $(basename "$install_s")"
+            else
+                install_hint="(inclus dans install.sh)"
+            fi
+            printf "  %-22s %-14s %s\n" "$mod_name" "$mod_group" "$install_hint"
+            ((sys_count++))
+        done < "$mlist"
+        [[ $sys_count -gt 0 ]] && echo ""
+    fi
+
     echo -e "  ${BOLD}Commandes :${NC}"
     echo "  astrosystemctl local start   <service>   # Démarrer via connecteur .me.sh"
     echo "  astrosystemctl local stop    <service>   # Arrêter"
     echo "  astrosystemctl local install [service]   # Installer stack IA (docker)"
+    echo "  astrosystemctl local install <module>    # Installer un outil système"
     echo "  astrosystemctl local feed                # Alimenter MiroFish RAG"
     echo ""
 }
@@ -966,6 +1072,177 @@ _local_stop_service() {
 }
 
 ##############################################################################
+# _local_check — conseiller : recommandations selon Power-Score + ressources
+##############################################################################
+_local_check() {
+    local filter_svc="${1:-}"
+    local cache="$HOME/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json"
+    local mlist
+    mlist=$(_modules_list_path)
+
+    # ── Lecture du contexte matériel ─────────────────────────────────────────
+    local score=0 avail_gb=0 ram_gb=0 cpu=0 gpu_detected=false gpu_vram=0 has_docker=false
+    if [[ -s "$cache" ]]; then
+        score=$(jq -r       '.capacities.power_score           // 0'     "$cache" 2>/dev/null || echo 0)
+        avail_gb=$(jq -r    '.capacities.available_space_gb    // 0'     "$cache" 2>/dev/null || echo 0)
+        gpu_detected=$(jq -r '.capacities.gpu.detected         // false' "$cache" 2>/dev/null || echo false)
+        gpu_vram=$(jq -r    '.capacities.gpu.vram_gb           // 0'     "$cache" 2>/dev/null || echo 0)
+        ram_gb=$(jq -r      '.system.memory.total_gb           // 0'     "$cache" 2>/dev/null || echo 0)
+        cpu=$(jq -r         '.system.cpu.cores                 // 0'     "$cache" 2>/dev/null || echo 0)
+    else
+        echo -e "${YELLOW}ℹ️  heartbox_analysis.json absent — lancement de l'analyse...${NC}"
+        local astro_dir; [[ -n "$(_ia_dir)" ]] && astro_dir="$(cd "$(_ia_dir)/.." && pwd)" || astro_dir="${MY_PATH}/.."
+        bash "${astro_dir}/tools/heartbox_analysis.sh" update 2>/dev/null
+        [[ -s "$cache" ]] && {
+            score=$(jq -r       '.capacities.power_score        // 0'     "$cache" 2>/dev/null || echo 0)
+            gpu_detected=$(jq -r '.capacities.gpu.detected      // false' "$cache" 2>/dev/null || echo false)
+            gpu_vram=$(jq -r    '.capacities.gpu.vram_gb        // 0'     "$cache" 2>/dev/null || echo 0)
+            ram_gb=$(jq -r      '.system.memory.total_gb        // 0'     "$cache" 2>/dev/null || echo 0)
+            cpu=$(jq -r         '.system.cpu.cores              // 0'     "$cache" 2>/dev/null || echo 0)
+        }
+    fi
+    command -v docker >/dev/null 2>&1 && has_docker=true
+
+    local tier
+    if   [[ ${score:-0} -gt 40 ]]; then tier="brain"
+    elif [[ ${score:-0} -gt 10 ]]; then tier="standard"
+    else                                  tier="light"
+    fi
+
+    echo -e "${BOLD}=== RECOMMANDATIONS POUR CETTE STATION ===${NC}"
+    echo ""
+    local gpu_str
+    if [[ "$gpu_detected" == "true" && ${gpu_vram:-0} -gt 0 ]]; then
+        gpu_str="🎮 GPU ${gpu_vram}Go VRAM"
+    else
+        gpu_str="(pas de GPU)"
+    fi
+    printf "  Power-Score : ${BOLD}%s${NC} %s\n" "$score" "$(power_label ${score})"
+    printf "  Ressources  : CPU %s cœurs · RAM %s Go · Disque libre %s Go · Docker %s · %s\n" \
+        "$cpu" "$ram_gb" "$avail_gb" "$([[ "$has_docker" == true ]] && echo '✅' || echo '❌')" "$gpu_str"
+    echo ""
+
+    if [[ -z "$mlist" ]]; then
+        echo "  ⚠️  IA/modules.list introuvable — impossible de générer des recommandations."
+        return 1
+    fi
+
+    # Vérifier que le filtre correspond à un module connu
+    if [[ -n "$filter_svc" ]]; then
+        if ! grep -v '^[[:space:]]*#' "$mlist" | awk -F'|' '{print $1}' | grep -qx "$filter_svc"; then
+            echo -e "${YELLOW}  ⚠️  Module '$filter_svc' introuvable dans IA/modules.list${NC}"
+            echo ""
+            echo "  Modules disponibles :"
+            awk -F'|' '!/^[[:space:]]*#/ && NF>=4 && $1!="" {printf "    %s\n", $1}' "$mlist"
+            return 1
+        fi
+    fi
+
+    printf "  ${BOLD}%-22s %-8s %-14s %-22s %s${NC}\n" "MODULE" "PORT" "STATUT" "CONSEIL" "COMMANDE"
+    printf "  %s\n" "$(printf '─%.0s' {1..90})"
+
+    while IFS='|' read -r mod_name mod_port mod_check mod_group mod_label; do
+        [[ "$mod_name" =~ ^[[:space:]]*# || -z "${mod_name// }" ]] && continue
+        [[ -n "$filter_svc" && "$mod_name" != "$filter_svc" ]] && continue
+
+        # ── Statut actuel ──────────────────────────────────────────────────
+        local running=false
+        case "$mod_check" in
+            auto)
+                # Port ouvert = service probablement actif
+                [[ -n "$mod_port" && "$mod_port" != "-" ]] && \
+                    ss -tln 2>/dev/null | grep -q ":${mod_port} " && running=true ;;
+            pgrep:*)     pgrep "${mod_check#pgrep:}" >/dev/null 2>&1 && running=true ;;
+            docker:*)    docker ps 2>/dev/null | grep -q "${mod_check#docker:}" && running=true ;;
+            dockerimg:*) docker ps --format '{{.Image}}' 2>/dev/null | grep -q "${mod_check#dockerimg:}" && running=true ;;
+            systemctl:*) systemctl is-active --quiet "${mod_check#systemctl:}" 2>/dev/null && running=true ;;
+        esac
+
+        # ── Évaluation de la recommandation ───────────────────────────────
+        local rec="✅ OK" cmd_hint=""
+        local astro_dir; astro_dir="$(cd "$(dirname "$mlist")/.." && pwd)"
+        local install_s
+        install_s=$(_group_to_install_script "$mod_group" "$astro_dir")
+
+        case "$mod_group" in
+            gpu-ai)
+                case "$mod_name" in
+                    ollama)
+                        if [[ "$gpu_detected" == "true" && ${gpu_vram:-0} -ge 6 ]]; then
+                            rec="✅ Optimal (GPU ${gpu_vram}Go)"
+                        elif [[ ${score:-0} -gt 10 ]]; then
+                            rec="⚡ OK (CPU, petits modèles)"
+                        else
+                            rec="⚠️  Lent (Light — utiliser swarm)"
+                        fi
+                        ;;
+                    comfyui)
+                        if [[ "$gpu_detected" == "true" && ${gpu_vram:-0} -ge 6 ]]; then
+                            rec="✅ Recommandé (GPU)"
+                        else
+                            rec="❌ GPU ≥6Go VRAM requis"
+                        fi
+                        ;;
+                esac ;;
+            ai-company)
+                if [[ "$has_docker" == "false" ]]; then
+                    rec="❌ Docker requis"
+                elif command -v bc >/dev/null 2>&1 && [[ $(echo "${avail_gb:-0} < 5" | bc 2>/dev/null) -eq 1 ]]; then
+                    rec="⚠️  Espace faible (<5Go)"
+                fi ;;
+            webtop)
+                [[ "$has_docker" == "false" ]] && rec="❌ Docker requis" ;;
+            nextcloud)
+                if [[ "$has_docker" == "false" ]]; then
+                    rec="❌ Docker requis"
+                elif command -v bc >/dev/null 2>&1 && [[ $(echo "${avail_gb:-0} < 20" | bc 2>/dev/null) -eq 1 ]]; then
+                    rec="⚠️  Espace faible (<20Go)"
+                fi ;;
+        esac
+
+        # ── Action suggérée ────────────────────────────────────────────────
+        local status_str
+        if [[ "$running" == "true" ]]; then
+            status_str="🟢 actif"
+            cmd_hint="(actif)"
+        elif [[ -n "$install_s" && -f "$install_s" ]]; then
+            status_str="⬜ non démarré"
+            cmd_hint="local install $mod_name"
+        else
+            status_str="⬜ non installé"
+            cmd_hint="local install $mod_name"
+        fi
+
+        # Swarm disponible si pas actif localement
+        local swarm_hint=""
+        if [[ "$running" == "false" && -n "$mod_port" && "$mod_port" != "-" ]]; then
+            for sp in "$SWARM_DIR"/*/x_${mod_name}.sh; do
+                [[ -f "$sp" ]] && swarm_hint=" (ou: connect $mod_name)" && break
+            done
+        fi
+
+        printf "  %-22s %-8s %-14s %-22s %s\n" \
+            "$mod_name" "${mod_port:--}" "$status_str" "$rec" "${cmd_hint}${swarm_hint}"
+    done < "$mlist"
+
+    echo ""
+    echo -e "${BOLD}Démarrage rapide :${NC}"
+    echo "  astrosystemctl local install webtop       # Bureau distant (laptop/PC)"
+    echo "  astrosystemctl local install ollama        # LLM local"
+    echo "  astrosystemctl local install               # Stack IA complète"
+    echo "  astrosystemctl connect <service>           # Utiliser via le swarm"
+    echo ""
+    if [[ "$tier" == "light" ]]; then
+        echo -e "${YELLOW}  🌿 Light — ton swarm peut te fournir les services lourds :${NC}"
+        echo "  astrosystemctl list-remote               # Voir les Brain-Nodes disponibles"
+    fi
+    if [[ "$gpu_detected" != "true" ]]; then
+        echo -e "${YELLOW}  ℹ️  Sans GPU : comfyui → swarm uniquement · ollama → petits modèles CPU${NC}"
+        echo "  astrosystemctl connect comfyui           # Générer images via Brain-Node swarm"
+    fi
+}
+
+##############################################################################
 # local — panneau de contrôle des services IA locaux
 # Usage : astrosystemctl local [list|start|stop|install|feed] [service]
 ##############################################################################
@@ -980,6 +1257,10 @@ cmd_local() {
     case "$subcmd" in
         list|"")
             _local_list "$ia_dir"
+            ;;
+
+        check|conseil|recommend)
+            _local_check "${service:-}"
             ;;
 
         start)
@@ -1013,13 +1294,47 @@ cmd_local() {
             local astro_dir
             [[ -n "$ia_dir" ]] && astro_dir="$(cd "$ia_dir/.." && pwd)" \
                                || astro_dir="${MY_PATH}/.."
-            # Script dédié si service spécifié
-            local install_script="${astro_dir}/install/install-ai-company.docker.sh"
-            if [[ -n "$service" && -f "${astro_dir}/install/install_${service}.sh" ]]; then
-                install_script="${astro_dir}/install/install_${service}.sh"
+
+            local install_script=""
+
+            if [[ -n "$service" ]]; then
+                # 1. Script dédié direct (nom exact)
+                if [[ -f "${astro_dir}/install/install_${service}.sh" ]]; then
+                    install_script="${astro_dir}/install/install_${service}.sh"
+                else
+                    # 2. Chercher le groupe dans modules.list
+                    local mlist
+                    mlist=$(_modules_list_path)
+                    if [[ -n "$mlist" ]]; then
+                        local mod_group_found=""
+                        while IFS='|' read -r mod_name mod_port mod_check mod_group mod_label; do
+                            [[ "$mod_name" =~ ^[[:space:]]*# || -z "${mod_name// }" ]] && continue
+                            if [[ "$mod_name" == "$service" ]]; then
+                                mod_group_found="$mod_group"
+                                break
+                            fi
+                        done < "$mlist"
+                        if [[ -n "$mod_group_found" ]]; then
+                            install_script=$(_group_to_install_script "$mod_group_found" "$astro_dir")
+                        fi
+                    fi
+                fi
+                # 3. Fallback : script générique install_<service>.sh
+                [[ -z "$install_script" ]] && \
+                    install_script="${astro_dir}/install/install_${service}.sh"
+            else
+                # Sans service : installe la stack IA complète
+                install_script="${astro_dir}/install/install-ai-company.docker.sh"
             fi
-            if [[ ! -f "$install_script" ]]; then
-                echo "❌ Script d'installation introuvable : $install_script"
+
+            if [[ -z "$install_script" || ! -f "$install_script" ]]; then
+                echo "❌ Script d'installation introuvable pour : ${service:-stack IA}"
+                echo "   Attendu : $install_script"
+                echo "   Modules disponibles dans IA/modules.list :"
+                local mlist2
+                mlist2=$(_modules_list_path)
+                [[ -n "$mlist2" ]] && awk -F'|' '!/^[[:space:]]*#/ && NF>=4 && $1!="" \
+                    {printf "     %-20s → groupe: %s\n", $1, $4}' "$mlist2" 2>/dev/null
                 return 1
             fi
             echo "📦 Installation ${service:-stack IA complète}..."
@@ -1085,15 +1400,17 @@ cmd_local() {
             ;;
 
         *)
-            echo "Usage: astrosystemctl local [list|start|stop|install|uninstall|feed|share|hide|priv] [service]"
+            echo "Usage: astrosystemctl local [check|list|start|stop|install|uninstall|feed|share|hide|priv] [service]"
             return 1
             ;;
     esac
 }
 
 ##############################################################################
-# Main
+# Main — ignoré si sourcé en mode test (ASTROSYSTEMCTL_TEST=1)
 ##############################################################################
+[[ "${ASTROSYSTEMCTL_TEST:-0}" == "1" ]] && return 0
+
 COMMAND="${1:-help}"
 shift 2>/dev/null || true
 
@@ -1133,18 +1450,28 @@ Exemples P2P (swarm) :
   astrosystemctl enable ollama              # Watchdog: tunnel toujours actif
   astrosystemctl disable ollama             # Arrêt du watchdog
 
-Exemples local (services IA + partage constellation) :
-  astrosystemctl local                      # Tableau de bord services IA
-  astrosystemctl local start ollama         # Démarrer Ollama
-  astrosystemctl local stop  ollama         # Arrêter Ollama
-  astrosystemctl local install              # Installer la stack IA (docker)
-  astrosystemctl local install ollama       # Installer Ollama seul
-  astrosystemctl local uninstall ollama     # Désinstaller (arrêt + suppression container)
+Exemples local (services IA + outils système + partage constellation) :
+  astrosystemctl local check                   # ← COMMENCER ICI : recommandations selon ton matériel
+  astrosystemctl local check webtop            # Vérifier webtop spécifiquement
+  astrosystemctl local                         # Tableau de bord services IA + outils
+  astrosystemctl local start ollama            # Démarrer Ollama
+  astrosystemctl local stop  ollama            # Arrêter Ollama
+  astrosystemctl local install                 # Installer la stack IA complète (docker)
+  astrosystemctl local install ollama          # Installer Ollama (gpu-ai)
+  astrosystemctl local install dify            # Installer Dify (ai-company)
+  astrosystemctl local install youtube-antibot # Installer Deno+EJS+bgutil
+  astrosystemctl local install powerjoular     # Installer PowerJoular
+  astrosystemctl local install qdrant          # Installer Qdrant VectorDB
+  astrosystemctl local uninstall ollama        # Désinstaller (arrêt + suppression container)
   astrosystemctl local uninstall dify --purge  # Désinstaller + supprimer volumes/données
-  astrosystemctl local feed                 # Alimenter MiroFish (RAG NOSTR)
-  astrosystemctl local hide  ollama         # Rendre Ollama privé (non partagé)
-  astrosystemctl local share ollama         # Repartager Ollama avec la constellation
-  astrosystemctl local priv                 # Voir les services privés actuels
+  astrosystemctl local feed                    # Alimenter MiroFish (RAG NOSTR)
+  astrosystemctl local hide  ollama            # Rendre Ollama privé (non partagé)
+  astrosystemctl local share ollama            # Repartager Ollama avec la constellation
+  astrosystemctl local priv                    # Voir les services privés actuels
+
+Modules (IA/modules.list) :
+  Ajouter un service = 1 ligne dans IA/modules.list
+  DRAGON_p2p_ssh.sh et astrosystemctl la lisent automatiquement
 
 Partage constellation (DRAGON_PRIVATE_SERVICES dans .env) :
   Par défaut, tout service actif est proposé via DRAGON_p2p_ssh.sh.
