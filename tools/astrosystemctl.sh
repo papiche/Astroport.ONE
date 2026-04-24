@@ -402,18 +402,14 @@ cmd_enable() {
     mkdir -p "$TUNNELS_ENABLED"
     local link="$TUNNELS_ENABLED/x_${service}_${node_id: -8}.sh"
 
-    # Wrapper qui appelle le script original (chemin absolu)
-    cat > "$link" << WRAPPER_EOF
-#!/bin/bash
-## astrosystemctl enabled tunnel: ${service}@${node_id}
-## Géré par le watchdog de 20h12.process.sh
-## NE PAS MODIFIER MANUELLEMENT — utiliser astrosystemctl disable ${service}
-SERVICE="${service}"
-NODE_ID="${node_id}"
-TUNNEL_SCRIPT="${tunnel_script}"
-[[ -f "\${TUNNEL_SCRIPT}" ]] && bash "\${TUNNEL_SCRIPT}" "\$@" || \
-    echo "WARN: script tunnel introuvable: \${TUNNEL_SCRIPT}" >&2
-WRAPPER_EOF
+    # Copie le contenu du script (pas un wrapper) pour survivre au nettoyage du cache swarm
+    {
+        echo "#!/bin/bash"
+        echo "## astrosystemctl enabled tunnel: ${service}@${node_id}"
+        echo "## Géré par le watchdog de 20h12.process.sh"
+        echo "## NE PAS MODIFIER MANUELLEMENT — utiliser astrosystemctl disable ${service}"
+        cat "$tunnel_script"
+    } > "$link"
     chmod +x "$link"
 
     echo "✅ Tunnel ${service}@...${node_id: -14} persistant (watchdog ON)"
