@@ -460,9 +460,9 @@ DES=$(cat "$DESTFILE" 2>/dev/null || echo "0")
 [[ -z "$DES" || "$DES" == "null" ]] && DES="0"
 echo "$DES + $AMOUNT" | bc > "$DESTFILE"
 
-ZENAMOUNT=$(echo "$AMOUNT * 100" | awk '{printf "%.1f", $1}')
-ZENCUR=$(echo "($COINS - $AMOUNT) * 10" | bc | awk '{printf "%.1f", $1}')
-ZENDES=$(echo "($DES + $AMOUNT) * 10" | bc | awk '{printf "%.1f", $1}')
+ZENAMOUNT=$(echo "$AMOUNT * 10" | bc -l | awk '{printf "%.1f", $1}')
+ZENCUR=$(echo "($COINS - $AMOUNT) * 10" | bc -l | awk '{printf "%.1f", $1}')
+ZENDES=$(echo "($DES + $AMOUNT) * 10" | bc -l | awk '{printf "%.1f", $1}')
 
 HTML_FILE="${PENDINGDIR}/${MOATS}.result.html"
 TIMESTAMP=$(date '+%d/%m/%Y à %H:%M:%S')

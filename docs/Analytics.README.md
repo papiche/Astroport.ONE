@@ -2,6 +2,10 @@
 
 ## Overview
 
+> DEPRECATED !!! kind 10000 is for "MUTE"
+
+# TODO: choose a new kind for that specific service. UPlanet gives PLAYER full control over he's surfing and sharing experiences)
+
 The UPlanet Analytics System (`astro.js`) provides a standardized way to collect and send analytics data in the UPlanet ecosystem. It supports multiple modes of operation depending on which libraries are loaded, from simple HTTP-based analytics to decentralized NOSTR events with optional encryption.
 
 **Related NIPs:**

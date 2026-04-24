@@ -327,20 +327,12 @@ echo
 
 ###############################################################
 echo "##  ADDING lazydocker ================"
-# INSTALL lazydocker GUI
 ~/.zen/Astroport.ONE/install/install.lazydocker.sh
 
 ###############################################################
-echo "##INSTALL yt-dlp & SYMLINK youtube-dl ##########################"
+echo "## INSTALL yt-dlp (youtube copier, sans anti-bot) ##############"
+# Anti-bot optionnel : astrosystemctl local install youtube-antibot
 ~/.zen/Astroport.ONE/install/youtube-dl.sh
-
-###############################################################
-echo "## INSTALL Deno (for yt-dlp EJS when Node < 20) ##################"
-~/.zen/Astroport.ONE/install/install_deno.sh
-
-###############################################################
-echo "## CONFIGURE yt-dlp JavaScript runtime (Deno or Node + EJS) ######"
-~/.zen/Astroport.ONE/install/install_yt_dlp_ejs_node.sh
 
 ###############################################################
 echo "## INSTALL PowerJoular (Power consumption monitoring) ##########"

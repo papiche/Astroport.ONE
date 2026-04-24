@@ -489,70 +489,57 @@ generate_p2p_service 7777 "strfry" "Nostr Relay" 9999
 
 
 ##################################################################################
-# DÉTECTION ET PUBLICATION DES SERVICES (ai-company + standard)
-# Architecture des ports (voir firewall.sh pour la politique UFW) :
-#   NPM admin        : 81
-#   NextCloud Apache : 8001 (proxied NPM → cloud.DOMAIN)
-#   Open WebUI       : 8000 (Interface web IA)
-#   Perplexica       : 3002
-#   Webtop           : 3000 HTTP | 3001 HTTPS — accès SSH tunnel recommandé
+# DÉTECTION ET PUBLICATION DES SERVICES
+# Piloté par IA/modules.list (registre unique) — fallback hardcodé si absent.
 ##################################################################################
-# Relais Icecast pour Live Broadcasting distant (Port 8111)
-publish_service 8111 "icecast" "Icecast Live Broadcasting"
+MODULES_LIST="${MY_PATH}/../IA/modules.list"
 
-## ── Profil ai-company : Stack IA Swarm ──────────────────────────
-# Dify AI Workflow (8010)
-publish_service 8010 "dify" "Dify AI Workflow"
+if [[ -f "$MODULES_LIST" ]]; then
+    while IFS='|' read -r mod_name mod_port mod_check mod_group mod_label; do
+        # Ignorer commentaires et lignes vides
+        [[ "$mod_name" =~ ^[[:space:]]*# || -z "${mod_name// }" ]] && continue
+        # Ignorer les entrées sans port (outils système)
+        [[ -z "$mod_port" || "$mod_port" == "-" ]] && continue
 
-# MiroFish Multi-Agent Simulation Engine (5050)
-publish_service 5050 "mirofish" "MiroFish Simulation Engine"
+        _ok=false
+        case "$mod_check" in
+            auto)
+                _ok=true ;;
+            pgrep:*)
+                pgrep "${mod_check#pgrep:}" >/dev/null 2>&1 && _ok=true ;;
+            docker:*)
+                docker ps 2>/dev/null | grep -q "${mod_check#docker:}" && _ok=true ;;
+            dockerimg:*)
+                docker ps --format '{{.Image}}' 2>/dev/null \
+                    | grep -q "${mod_check#dockerimg:}" && _ok=true ;;
+            systemctl:*)
+                systemctl is-active --quiet "${mod_check#systemctl:}" 2>/dev/null \
+                    && _ok=true ;;
+        esac
 
-# Open WebUI interface IA (8000)
-publish_service 8000 "open-webui" "Open WebUI Interface IA"
-
-## Port 8001 : NextCloud Apache uniquement (proxied NPM → cloud.DOMAIN)
-publish_service 8001 "nextcloud-app" "NextCloud Apache App (via NPM cloud.DOMAIN)"
-
-# Qdrant vector database (6333) -- could be hidden too
-publish_service 6333 "qdrant" "Qdrant VectorDB"
-
-# Ollama LLM API (11434) -- check process name
-if pgrep ollama >/dev/null 2>&1; then
-    publish_service 11434 "ollama" "Ollama LLM API"
-fi
-
-## ── Services standard ───────────────────────────────────────────────
-
-# Nginx Proxy Manager admin (port 81)
-publish_service 81 "npm" "Nginx Proxy Manager Admin"
-
-# NextCloud AIO admin setup (port 8443 — HTTPS auto-signé)
-publish_service 8443 "nextcloud-aio" "NextCloud AIO Admin Setup"
-
-## ── Webtop KasmVNC (VDI) ────────────────────────────────────────────
-## ⚠️  Port 3001 = Webtop HTTPS
-## Accès recommandé via SSH tunnel :
-##   ssh -L 3000:localhost:3000 user@HOST
-if docker ps --format '{{.Image}}' 2>/dev/null | grep -q 'linuxserver/webtop'; then
-    publish_service 3000 "webtop-http"  "Webtop KasmVNC HTTP"
-    publish_service 3001 "webtop-https" "Webtop KasmVNC HTTPS"
-fi
-
-## ── Services complémentaires ────────────────────────────────────────
-
-# ComfyUI (8188)
-if systemctl is-active comfyui.service >/dev/null 2>&1; then
-    publish_service 8188 "comfyui" "ComfyUI"
-fi
-
-# Orpheus TTS (5005)
-if docker ps 2>/dev/null | grep -q orpheus; then
-    publish_service 5005 "orpheus" "Orpheus TTS"
-fi
-
-# Vane Search (3002) — anciennement Perplexica
-if docker ps 2>/dev/null | grep -qE "vane|perplexica"; then
-    publish_service 3002 "vane" "Vane Search"
+        [[ "$_ok" == "true" ]] && publish_service "$mod_port" "$mod_name" "$mod_label"
+    done < "$MODULES_LIST"
+else
+    # Fallback : services de base toujours publiés si modules.list absent
+    publish_service 8111 "icecast"       "Icecast Live Broadcasting"
+    publish_service 8010 "dify"          "Dify AI Workflow"
+    publish_service 5050 "mirofish"      "MiroFish Simulation Engine"
+    publish_service 8000 "open-webui"    "Open WebUI Interface IA"
+    publish_service 8001 "nextcloud-app" "NextCloud Apache App"
+    publish_service 6333 "qdrant"        "Qdrant VectorDB"
+    publish_service 81   "npm"           "Nginx Proxy Manager Admin"
+    publish_service 8443 "nextcloud-aio" "NextCloud AIO Admin Setup"
+    pgrep ollama >/dev/null 2>&1 && publish_service 11434 "ollama" "Ollama LLM API"
+    if docker ps --format '{{.Image}}' 2>/dev/null | grep -q 'linuxserver/webtop'; then
+        publish_service 3000 "webtop-http"  "Webtop KasmVNC HTTP"
+        publish_service 3001 "webtop-https" "Webtop KasmVNC HTTPS"
+    fi
+    systemctl is-active comfyui.service >/dev/null 2>&1 && \
+        publish_service 8188 "comfyui" "ComfyUI Image Generation"
+    docker ps 2>/dev/null | grep -q orpheus && \
+        publish_service 5005 "orpheus" "Orpheus TTS"
+    docker ps 2>/dev/null | grep -qE "vane|perplexica" && \
+        publish_service 3002 "vane" "Vane Search Engine"
 fi
 
 ##################################################################################

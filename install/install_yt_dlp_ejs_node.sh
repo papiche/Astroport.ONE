@@ -63,17 +63,14 @@ YT_DLP_CONFIG_FILE="$YT_DLP_CONFIG_DIR/config"
 
 mkdir -p "$YT_DLP_CONFIG_DIR"
 
-# Write or update --js-runtimes with explicit path (Deno or Node)
-if [[ -f "$YT_DLP_CONFIG_FILE" ]] && grep -q -- '--js-runtimes' "$YT_DLP_CONFIG_FILE"; then
-    sed -i "s|^--js-runtimes .*|--js-runtimes $JS_RUNTIME|" "$YT_DLP_CONFIG_FILE"
-    echo "[install_yt_dlp_ejs_node][$(timestamp)] Updated --js-runtimes to: $JS_RUNTIME" >&2
-else
-    {
-        echo ""
-        echo "# JavaScript runtime for yt-dlp EJS (Deno preferred, or Node >= 20)"
-        echo "--js-runtimes $JS_RUNTIME"
-    } >> "$YT_DLP_CONFIG_FILE"
+# Ne PAS écrire --js-runtimes dans le config global :
+# process_youtube.sh l'active uniquement en dernier recours pour éviter les blocages.
+# Si une ligne --js-runtimes existe déjà (ancienne install), on la commente.
+if [[ -f "$YT_DLP_CONFIG_FILE" ]] && grep -q -- '^--js-runtimes' "$YT_DLP_CONFIG_FILE"; then
+    sed -i "s|^--js-runtimes |# --js-runtimes |" "$YT_DLP_CONFIG_FILE"
+    echo "[install_yt_dlp_ejs_node][$(timestamp)] Commenté --js-runtimes dans config (géré dynamiquement par process_youtube.sh)" >&2
 fi
+echo "[install_yt_dlp_ejs_node][$(timestamp)] JS runtime disponible : $JS_RUNTIME (utilisé en last resort par process_youtube.sh)" >&2
 
 # EJS challenge solver scripts: allow yt-dlp to fetch from GitHub (fixes "Signature solving failed")
 if [[ -f "$YT_DLP_CONFIG_FILE" ]] && grep -q -- '--remote-components' "$YT_DLP_CONFIG_FILE"; then

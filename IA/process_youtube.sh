@@ -1,8 +1,9 @@
 #!/bin/bash
 ########################################################################
-# process_youtube.sh (Version Optimisée & Complète)
-# Conserve l'anti-blocage (Deno, PO tokens, retry), la limite des 650Mo, 
-# et la priorité aux cookies du MULTIPASS. Désactive les playlists.
+# process_youtube.sh
+# Télécharge une vidéo/audio YouTube via yt-dlp.
+# Priorité cookies : fichier MULTIPASS → navigateur par défaut → sans cookie
+# Deno uniquement en dernier recours (si premier essai échoue).
 # Usage: $0 [--json-file FILE] [--debug] [--output-dir DIR] <url> <format> [player_email]
 ########################################################################
 
@@ -33,7 +34,7 @@ output_json() {
 while [[ $# -gt 0 ]]; do
     case $1 in
         --debug) DEBUG=1; shift ;;
-        --json|--no-ipfs) shift ;; # Ignorés
+        --json|--no-ipfs) shift ;;
         --json-file) JSON_FILE="$2"; shift 2 ;;
         --output-dir) CUSTOM_OUTPUT_DIR="$2"; shift 2 ;;
         *) break ;;
@@ -58,77 +59,99 @@ else
 fi
 mkdir -p "$OUTPUT_DIR"
 
-# --- 2. ANTI-BLOCAGE : DENO & PO TOKENS ---
+# --- 2. DENO (DERNIER RECOURS) ---
 DENO_BIN=""
 if command -v deno >/dev/null 2>&1; then DENO_BIN="$(command -v deno)"
 elif [[ -x "$HOME/.deno/bin/deno" ]]; then DENO_BIN="$HOME/.deno/bin/deno"
 fi
+log_debug "Deno: ${DENO_BIN:-not found}"
 
-JS_RUNTIME_ARG=""
-if [[ -n "$DENO_BIN" ]]; then
-    JS_RUNTIME_ARG="--js-runtimes deno:${DENO_BIN}"
-    log_debug "Using Deno: $DENO_BIN"
-fi
-
+# --- 3. PO TOKENS (bgutil si dispo) ---
 BGUTIL_ARG=""
 if curl -sf --max-time 2 "http://localhost:4416/" >/dev/null 2>&1; then
     BGUTIL_ARG="--extractor-args youtube:pot_provider=bgutil"
     log_debug "PO tokens enabled via bgutil"
 fi
 
-# --- 3. GESTION DES COOKIES (PRIORITÉ JOUEUR) ---
-extract_browser_cookies() {
-    local temp_cookie_file="$HOME/.zen/tmp/youtube_browser_cookies_$$.txt"
-    # (La même fonction SQLite robuste que votre script original pour Chrome/Firefox)
-    for chrome_dir in "$HOME/.config/google-chrome" "$HOME/.config/chromium" "$HOME/.config/BraveSoftware/Brave-Browser"; do
-        if [[ -d "$chrome_dir" ]]; then
-            for profile in "$chrome_dir"/*/Cookies; do
-                if [[ -f "$profile" ]] && command -v sqlite3 &> /dev/null; then
-                    sqlite3 "$profile" "SELECT host_key, path, is_secure, expires_utc, name, value FROM cookies WHERE host_key LIKE '%youtube.com%'" | while IFS='|' read -r host path secure exp name val; do
-                        [[ -n "$name" && -n "$val" ]] && echo -e "${host}\tTRUE\t${path}\tFALSE\t0\t${name}\t${val}" >> "$temp_cookie_file"
-                    done 2>/dev/null
-                fi
-            done
-        fi
-    done
-    if [[ -f "$temp_cookie_file" ]]; then echo "$temp_cookie_file"; else return 1; fi
+# --- 4. GESTION DES COOKIES ---
+detect_default_browser() {
+    if command -v xdg-settings &>/dev/null; then
+        local app
+        app=$(xdg-settings get default-web-browser 2>/dev/null | tr '[:upper:]' '[:lower:]')
+        case "$app" in
+            *firefox*) echo "firefox"; return ;;
+            *chrom*) echo "chrome"; return ;;
+            *brave*) echo "brave"; return ;;
+            *opera*) echo "opera"; return ;;
+            *vivaldi*) echo "vivaldi"; return ;;
+        esac
+    fi
+    # Fallback : premier navigateur trouvé
+    command -v firefox &>/dev/null && echo "firefox" && return
+    command -v google-chrome &>/dev/null && echo "chrome" && return
+    command -v chromium &>/dev/null && echo "chromium" && return
+    command -v chromium-browser &>/dev/null && echo "chromium" && return
+    echo ""
 }
 
 cookie_file=""
 if [[ -n "$PLAYER_EMAIL" ]]; then
-    if [[ -f "$HOME/.zen/game/nostr/$PLAYER_EMAIL/.youtube.com.cookie" ]]; then
-        cookie_file="$HOME/.zen/game/nostr/$PLAYER_EMAIL/.youtube.com.cookie"
-    elif [[ -f "$HOME/.zen/game/nostr/$PLAYER_EMAIL/.cookie.txt" ]]; then
-        cookie_file="$HOME/.zen/game/nostr/$PLAYER_EMAIL/.cookie.txt"
-    fi
+    for f in \
+        "$HOME/.zen/game/nostr/$PLAYER_EMAIL/.youtube.com.cookie" \
+        "$HOME/.zen/game/nostr/$PLAYER_EMAIL/.cookie.txt" \
+        "$HOME/.zen/game/nostr/$PLAYER_EMAIL/cookies.txt"; do
+        if [[ -f "$f" ]]; then
+            cookie_file="$f"
+            log_debug "Using MULTIPASS cookie: $cookie_file"
+            break
+        fi
+    done
 fi
 
-if [[ -n "$cookie_file" && -f "$cookie_file" ]]; then
+if [[ -n "$cookie_file" ]]; then
     COOKIESRC="--cookies $cookie_file"
-    log_debug "Using MULTIPASS cookie: $cookie_file"
 else
-    BROWSER_COOKIE_FILE=$(extract_browser_cookies)
-    if [[ -n "$BROWSER_COOKIE_FILE" && -f "$BROWSER_COOKIE_FILE" ]]; then
-        COOKIESRC="--cookies $BROWSER_COOKIE_FILE"
-        log_debug "Using extracted browser cookies"
+    DEFAULT_BROWSER=$(detect_default_browser)
+    if [[ -n "$DEFAULT_BROWSER" ]]; then
+        COOKIESRC="--cookies-from-browser $DEFAULT_BROWSER"
+        log_debug "Using browser cookies: $DEFAULT_BROWSER"
     else
-        COOKIESRC="--cookies-from-browser firefox" # Fallback yt-dlp native
+        COOKIESRC=""
+        log_debug "No browser found, downloading without cookies"
     fi
 fi
 
-# --- 4. METADATA & RESOLUTION INTELLIGENTE ---
+# --- 5. METADATA & RESOLUTION INTELLIGENTE ---
+BASE_ARGS="$COOKIESRC $BGUTIL_ARG"
+
 log_debug "Extracting metadata for: $URL"
-metadata_output=$(yt-dlp $JS_RUNTIME_ARG $BGUTIL_ARG $COOKIESRC --no-warnings --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>> "$LOGFILE")
+metadata_output=$(timeout 30 yt-dlp $BASE_ARGS --no-warnings \
+    --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>>"$LOGFILE")
 
 metadata_line=$(echo "$metadata_output" | grep -E "^[a-zA-Z0-9_-]{11}&" | head -n 1)
+
+# Retry avec Deno (EJS) si le premier essai échoue
+if [[ -z "$metadata_line" && -n "$DENO_BIN" ]]; then
+    log_debug "First attempt failed. Retrying with Deno (EJS last resort)..."
+    DENO_ARG="--js-runtimes deno:${DENO_BIN} --remote-components ejs:github"
+    metadata_output=$(timeout 60 yt-dlp $DENO_ARG $BASE_ARGS --no-warnings \
+        --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>>"$LOGFILE")
+    metadata_line=$(echo "$metadata_output" | grep -E "^[a-zA-Z0-9_-]{11}&" | head -n 1)
+    if [[ -n "$metadata_line" ]]; then
+        BASE_ARGS="$DENO_ARG $BASE_ARGS"
+        log_debug "Deno (EJS) succeeded, using it for download too"
+    fi
+fi
+
 if [[ -z "$metadata_line" ]]; then
-    output_json '{"error":"Failed to extract metadata. Check URL or Cookies."}'
+    output_json '{"error":"Failed to extract metadata. Check URL or cookies."}'
     exit 1
 fi
 
 raw_title=$(echo "$metadata_line" | cut -d '&' -f 2 | tr -d '\n')
 duration=$(echo "$metadata_line" | cut -d '&' -f 3 | tr -d '\n')
-media_title=$(echo "$raw_title" | detox --inline | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 100)
+media_title=$(echo "$raw_title" | detox --inline 2>/dev/null | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 100)
+[[ -z "$media_title" ]] && media_title="video_$(date +%s)"
 
 # Calcul dynamique pour rester sous 650Mo
 VIDEO_FORMAT_FILTER="(bv*[ext=mp4][height<=480]+ba/b[height<=480]/bv*[ext=mp4]+ba/b)"
@@ -136,36 +159,48 @@ if [[ -n "$duration" && "$duration" -gt 0 ]]; then
     MAX_TOTAL_BITRATE_KBPS=$(( (600 * 1024 * 8) / duration ))
     if [[ $MAX_TOTAL_BITRATE_KBPS -lt 400 ]]; then
         VIDEO_FORMAT_FILTER="(bv*[ext=mp4][height<=240]+ba/b[height<=240]/bv*[ext=mp4]+ba/b)"
-        log_debug "Very long video (${duration}s), capping at 240p to fit 650MB"
+        log_debug "Very long video (${duration}s), capping at 240p"
     elif [[ $MAX_TOTAL_BITRATE_KBPS -lt 700 ]]; then
         VIDEO_FORMAT_FILTER="(bv*[ext=mp4][height<=360]+ba/b[height<=360]/bv*[ext=mp4]+ba/b)"
-        log_debug "Long video (${duration}s), capping at 360p to fit 650MB"
+        log_debug "Long video (${duration}s), capping at 360p"
     fi
 fi
 
-# --- 5. TÉLÉCHARGEMENT ---
-# SIMPLIFICATION ICI : --playlist-items 1 garantit qu'on ne pompe pas une playlist entière
+# --- 6. TÉLÉCHARGEMENT ---
 log_debug "Starting download"
+COMMON_ARGS="$BASE_ARGS --playlist-items 1 --concurrent-fragments 1 --socket-timeout 120"
 case "$FORMAT" in
     mp3)
-        download_output=$(yt-dlp $JS_RUNTIME_ARG $BGUTIL_ARG $COOKIESRC --playlist-items 1 --concurrent-fragments 1 --socket-timeout 120 -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --no-mtime --embed-thumbnail --add-metadata --write-info-json -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" 2>&1)
+        download_output=$(timeout 3600 yt-dlp $COMMON_ARGS \
+            -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 \
+            --no-mtime --embed-thumbnail --add-metadata --write-info-json \
+            -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" 2>&1)
         ;;
     mp4)
-        download_output=$(yt-dlp $JS_RUNTIME_ARG $BGUTIL_ARG $COOKIESRC --playlist-items 1 --concurrent-fragments 1 --socket-timeout 120 -f "$VIDEO_FORMAT_FILTER" -S "res,ext:mp4:m4a" --recode-video mp4 --no-mtime --embed-thumbnail --add-metadata --write-info-json -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)
+        download_output=$(timeout 3600 yt-dlp $COMMON_ARGS \
+            -f "$VIDEO_FORMAT_FILTER" -S "res,ext:mp4:m4a" --recode-video mp4 \
+            --no-mtime --embed-thumbnail --add-metadata --write-info-json \
+            -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)
         ;;
 esac
 download_exit_code=$?
 
-# RETRY SI ERREUR 403
+# Retry sur erreur 403 avec tv_embedded
 if [[ $download_exit_code -ne 0 ]] && echo "$download_output" | grep -qE "403|Forbidden"; then
     log_debug "403 Forbidden. Retrying with tv_embedded client..."
     YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=tv_embedded,tv'
-    
-    if [[ "$FORMAT" == "mp4" ]]; then
-        download_output=$(yt-dlp $JS_RUNTIME_ARG $BGUTIL_ARG $YT_EXTRACTOR_ARGS $COOKIESRC --playlist-items 1 -f "$VIDEO_FORMAT_FILTER" --recode-video mp4 --write-info-json -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)
-    else
-        download_output=$(yt-dlp $JS_RUNTIME_ARG $BGUTIL_ARG $YT_EXTRACTOR_ARGS $COOKIESRC --playlist-items 1 -f "bestaudio/best" -x --audio-format mp3 --write-info-json -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" 2>&1)
-    fi
+    case "$FORMAT" in
+        mp4)
+            download_output=$(timeout 3600 yt-dlp $COMMON_ARGS $YT_EXTRACTOR_ARGS \
+                -f "$VIDEO_FORMAT_FILTER" --recode-video mp4 --write-info-json \
+                -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)
+            ;;
+        mp3)
+            download_output=$(timeout 3600 yt-dlp $COMMON_ARGS $YT_EXTRACTOR_ARGS \
+                -f "bestaudio/best" -x --audio-format mp3 --write-info-json \
+                -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" 2>&1)
+            ;;
+    esac
     download_exit_code=$?
 fi
 
@@ -174,8 +209,10 @@ if [[ $download_exit_code -ne 0 ]]; then
     exit 1
 fi
 
-# --- 6. IDENTIFICATION DU FICHIER ET CREATION DU JSON COMPLET ---
-media_file=$(find "$OUTPUT_DIR" -maxdepth 1 -type f \( -name "*.mp4" -o -name "*.mp3" -o -name "*.m4a" \) ! -name "*.info.json" 2>/dev/null | head -n 1)
+# --- 7. IDENTIFICATION DU FICHIER ET JSON ---
+media_file=$(find "$OUTPUT_DIR" -maxdepth 1 -type f \
+    \( -name "*.mp4" -o -name "*.mp3" -o -name "*.m4a" \) ! -name "*.info.json" \
+    2>/dev/null | head -n 1)
 
 if [[ -z "$media_file" ]]; then
     output_json '{"error":"Media file not found after download"}'
@@ -185,13 +222,12 @@ fi
 filename=$(basename "$media_file")
 metadata_file=$(find "$OUTPUT_DIR" -maxdepth 1 -name "*.info.json" 2>/dev/null | head -n 1)
 
-# LE GROS BLOC JQ (Vital pour l'info.json v2.0 du contrat)
 YOUTUBE_METADATA_JSON="{}"
-if [[ -n "$metadata_file" && -f "$metadata_file" ]] && command -v jq &> /dev/null; then
+if [[ -n "$metadata_file" && -f "$metadata_file" ]] && command -v jq &>/dev/null; then
     YOUTUBE_METADATA_JSON=$(jq -c '{
         youtube_id: .id, youtube_url: .webpage_url, title: .title, duration: .duration,
-        uploader: .uploader, channel: .channel, view_count: .view_count, 
-        like_count: .like_count, upload_date: .upload_date, tags: .tags, 
+        uploader: .uploader, channel: .channel, view_count: .view_count,
+        like_count: .like_count, upload_date: .upload_date, tags: .tags,
         categories: .categories, thumbnail: .thumbnail, format_id: .format_id
     }' "$metadata_file" 2>/dev/null || echo "{}")
 fi

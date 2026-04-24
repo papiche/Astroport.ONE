@@ -37,14 +37,14 @@ test_log_info() {
 
 test_log_success() {
     echo -e "${GREEN}✅ $1${NC}" >&2
-    ((TEST_COUNT++))
-    ((PASS_COUNT++))
+    TEST_COUNT=$((TEST_COUNT + 1))
+    PASS_COUNT=$((PASS_COUNT + 1))
 }
 
 test_log_error() {
     echo -e "${RED}❌ $1${NC}" >&2
-    ((TEST_COUNT++))
-    ((FAIL_COUNT++))
+    TEST_COUNT=$((TEST_COUNT + 1))
+    FAIL_COUNT=$((FAIL_COUNT + 1))
 }
 
 test_log_warning() {

@@ -1,0 +1,33 @@
+# modules.list — Registre des modules Astroport.ONE
+# Source unique de vérité pour DRAGON_p2p_ssh.sh, astrosystemctl et install/
+#
+# Format : name|port|check|install_group|label
+#   port          : numéro de port TCP, ou "-" si pas de port P2P
+#   check         : auto | pgrep:CMD | docker:CONTAINER | dockerimg:IMAGE | systemctl:SVC | -
+#                   "auto" = publier sans vérification (le port sera ouvert si le service tourne)
+#   install_group : groupe d'installation (→ install/install_<group>.sh)
+#                   "-" = pas de script d'installation dédié
+#   label         : description lisible (utilisée dans tunnel/swarm)
+#
+# ── Services P2P (port défini) ─────────────────────────────────────────────────
+icecast|8111|auto|icecast|Icecast Live Broadcasting
+dify|8010|docker:dify-api|ai-company|Dify AI Workflow
+mirofish|5050|docker:mirofish|ai-company|MiroFish Multi-Agent Simulation Engine
+open-webui|8000|docker:open-webui|ai-company|Open WebUI Interface IA
+nextcloud-app|8001|dockerimg:nextcloud-aio|nextcloud|NextCloud Apache App
+qdrant|6333|docker:qdrant|ai-company|Qdrant VectorDB
+ollama|11434|pgrep:ollama|gpu-ai|Ollama LLM API
+npm|81|auto|core|Nginx Proxy Manager Admin
+nextcloud-aio|8443|dockerimg:nextcloud-aio|nextcloud|NextCloud AIO Admin Setup
+webtop-http|3000|dockerimg:linuxserver/webtop|webtop|Webtop KasmVNC HTTP
+webtop-https|3001|dockerimg:linuxserver/webtop|webtop|Webtop KasmVNC HTTPS
+comfyui|8188|systemctl:comfyui|gpu-ai|ComfyUI Image Generation
+orpheus|5005|docker:orpheus|ai-company|Orpheus TTS
+vane|3002|docker:vane|ai-company|Vane Search Engine
+#
+# ── Outils système (port "-", gestion locale uniquement) ──────────────────────
+leann|-|-|leann|LeAnn NextCloud RAG
+youtube-antibot|-|-|youtube-antibot|YouTube Anti-Bot Deno+EJS+bgutil
+powerjoular|-|-|powerjoular|Power Consumption Monitor
+prometheus|-|-|prometheus|Prometheus Metrics Server
+zelkova|-|-|zelkova|Zelkova ẐEN Wallet PWA
