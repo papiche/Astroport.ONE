@@ -222,6 +222,7 @@ fi
 filename=$(basename "$media_file")
 metadata_file=$(find "$OUTPUT_DIR" -maxdepth 1 -name "*.info.json" 2>/dev/null | head -n 1)
 
+# LE GROS BLOC JQ (Vital pour l'info.json v2.0 du contrat)
 YOUTUBE_METADATA_JSON="{}"
 if [[ -n "$metadata_file" && -f "$metadata_file" ]] && command -v jq &>/dev/null; then
     YOUTUBE_METADATA_JSON=$(jq -c '{

@@ -118,15 +118,54 @@ mkdir -p ~/.zen/tmp/${MOATS}
     PAYMENTS_FAILED=0
     PAYMENTS_ALREADY_DONE=0
 
-# Fonction pour générer une heure aléatoire de rafraîchissement
+# Génère une heure aléatoire de rafraîchissement (fallback pour nouveau compte isolé)
 get_random_refresh_time() {
-    # Générer un nombre aléatoire de minutes entre 1 et 1212 (avant 20h12 - Astroport Refresh Time)
     local random_minutes=$(( (RANDOM % 1212) - 1 ))
-    # Calculer l'heure et les minutes
-    local random_hour=$(( random_minutes / 60 ))
-    local random_minute=$(( random_minutes % 60 ))
-    # Formater l'heure avec des zéros si nécessaire
-    printf "%02d:%02d" $random_hour $random_minute
+    printf "%02d:%02d" $(( random_minutes / 60 )) $(( random_minutes % 60 ))
+}
+
+# Redistribue les .refresh_time pour répartir équitablement N joueurs sur la fenêtre 00:00-20:12.
+# Tri alphabétique → slot stable même si l'ordre ls -t change entre deux runs.
+rebalance_refresh_times() {
+    local -a all_players=("$@")
+    local n=${#all_players[@]}
+    [[ $n -lt 2 ]] && return
+
+    local window=1212  # minutes de 00:00 à 20:12
+    local step=$(( window / n ))
+    [[ $step -lt 1 ]] && step=1
+    local half_step=$(( step / 2 ))
+    [[ $half_step -lt 1 ]] && half_step=1
+
+    # Tri alphabétique pour un index stable
+    local -a sorted
+    IFS=$'\n' sorted=($(printf '%s\n' "${all_players[@]}" | sort)); unset IFS
+
+    local rebalanced=0
+    for i in "${!sorted[@]}"; do
+        local p="${sorted[$i]}"
+        local pdir="$HOME/.zen/game/nostr/${p}"
+        [[ ! -d "$pdir" ]] && continue
+
+        local ideal=$(( i * step ))
+        local new_time
+        new_time=$(printf "%02d:%02d" $(( ideal / 60 )) $(( ideal % 60 )))
+
+        local cur_time
+        cur_time=$(cat "${pdir}/.refresh_time" 2>/dev/null || echo "")
+        local cur_min=0
+        if [[ "$cur_time" =~ ^([0-9]{2}):([0-9]{2})$ ]]; then
+            cur_min=$(( 10#${BASH_REMATCH[1]} * 60 + 10#${BASH_REMATCH[2]} ))
+        fi
+        local diff=$(( ideal - cur_min ))
+        [[ $diff -lt 0 ]] && diff=$(( -diff ))
+
+        if [[ $diff -gt $half_step ]]; then
+            echo "$new_time" > "${pdir}/.refresh_time"
+            (( rebalanced++ ))
+        fi
+    done
+    [[ $rebalanced -gt 0 ]] && log "INFO" "Refresh slots rebalanced: $rebalanced/$n players (step=${step}min)"
 }
 
 # Fonction pour initialiser un compte
@@ -277,6 +316,9 @@ should_refresh() {
 ########################################################################
 # Get all emails from ~/.zen/game/nostr/
 NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
+
+# Répartition équitable des slots horaires dès le démarrage
+rebalance_refresh_times "${NOSTR[@]}"
 
 ## RUNING FOR ALL LOCAL MULTIPASS (NOSTR Card)
 for PLAYER in "${NOSTR[@]}"; do
@@ -1555,13 +1597,113 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
 
 done
 
+########################################################################
+## BOUCLE ROAMING — Sync uDRIVE pour comptes itinérants (✈️)
+##
+## Principe :
+##   PULL  — si le réseau (home station) a un uDRIVE plus récent et qu'il
+##            n'y a pas de modifs locales → télécharger pour initialiser
+##            le contexte du visiteur.
+##   PUSH  — si des fichiers ont été uploadés localement via UPassport →
+##            régénérer, ipfs add, ipfs name publish avec la clé importée
+##            par check_ssss.sh.
+##
+## La home station détecte le PUSH via should_refresh() → ipfs resolve
+## (déjà implémenté pour les comptes non-roaming).
+########################################################################
+ROAMING_SYNCED=0
+for PLAYER in "${NOSTR[@]}"; do
+    [[ ! -f ~/.zen/game/nostr/${PLAYER}/.roaming ]] && continue
+
+    RDIR="$HOME/.zen/game/nostr/${PLAYER}"
+    UDRIVE_DIR="${RDIR}/APP/uDRIVE"
+    UDRIVE_FILE="${RDIR}/.udrive"
+
+    G1PUBNOSTR=$(cat "${RDIR}/G1PUBNOSTR" 2>/dev/null)
+    [[ -z "$G1PUBNOSTR" ]] \
+        && log "WARN" "✈️ ROAMING $PLAYER — G1PUBNOSTR manquant, skip" \
+        && continue
+
+    NOSTRNS=$(cat "${RDIR}/NOSTRNS" 2>/dev/null)
+    LOCAL_CID=$(cat "${UDRIVE_FILE}" 2>/dev/null)
+
+    # ── Résolution IPNS du uDRIVE distant (home station) ──
+    NETWORK_CID=""
+    if [[ -n "$NOSTRNS" ]]; then
+        NETWORK_CID=$(ipfs resolve -r --timeout=15s "${NOSTRNS}/${PLAYER}/APP/uDRIVE" 2>/dev/null | sed 's|/ipfs/||')
+    fi
+
+    # ── Assurer l'existence du dossier + symlink generate_ipfs_structure.sh ──
+    mkdir -p "${UDRIVE_DIR}"
+    rm -f "${UDRIVE_DIR}/generate_ipfs_structure.sh"
+    ln -sf "${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh" \
+           "${UDRIVE_DIR}/generate_ipfs_structure.sh"
+
+    udrive_mtime=$(stat -c %Y "${UDRIVE_DIR}/" 2>/dev/null || echo 0)
+    cache_mtime=$(stat -c %Y "${UDRIVE_FILE}"  2>/dev/null || echo 0)
+    [[ $udrive_mtime -gt $cache_mtime ]] && has_local_changes="yes" || has_local_changes="no"
+
+    # ── PULL : réseau plus récent ET pas de modifs locales ──
+    if [[ -n "$NETWORK_CID" && "$NETWORK_CID" != "$LOCAL_CID" && "$has_local_changes" == "no" ]]; then
+        log "INFO" "✈️ ROAMING $PLAYER — pull uDRIVE réseau (${NETWORK_CID:0:12}...)"
+        if timeout 60 ipfs get "/ipfs/$NETWORK_CID" -o "${RDIR}/APP/uDRIVE.tmp" 2>/dev/null; then
+            rm -rf "${UDRIVE_DIR}"
+            mv "${RDIR}/APP/uDRIVE.tmp" "${UDRIVE_DIR}"
+            echo "$NETWORK_CID" > "${UDRIVE_FILE}"
+            touch "${UDRIVE_FILE}"   # .udrive mtime > uDRIVE/ mtime → évite push spurieux
+            # Rétablir le symlink après remplacement du dossier
+            rm -f "${UDRIVE_DIR}/generate_ipfs_structure.sh"
+            ln -sf "${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh" \
+                   "${UDRIVE_DIR}/generate_ipfs_structure.sh"
+            log "INFO" "✈️ ROAMING $PLAYER — uDRIVE synchronisé depuis la home station"
+        else
+            log "WARN" "✈️ ROAMING $PLAYER — échec pull IPFS (${NETWORK_CID:0:12}...)"
+        fi
+        continue
+    fi
+
+    # ── PUSH : modifs locales détectées ──
+    if [[ "$has_local_changes" == "no" ]]; then
+        log "DEBUG" "✈️ ROAMING $PLAYER — aucune modif locale, skip"
+        continue
+    fi
+
+    log "INFO" "✈️ ROAMING $PLAYER — modifs locales → régénération uDRIVE..."
+    cd "${UDRIVE_DIR}"
+    NEW_CID=$(./generate_ipfs_structure.sh . 2>/dev/null)
+    cd - >/dev/null
+
+    if [[ -z "$NEW_CID" ]]; then
+        log "WARN" "✈️ ROAMING $PLAYER — generate_ipfs_structure.sh a échoué"
+        continue
+    fi
+
+    echo "$NEW_CID" > "${UDRIVE_FILE}"
+    touch "${UDRIVE_FILE}"
+
+    NOSTRIPFS=$(ipfs add -rwq "${RDIR}/" 2>/dev/null | tail -n 1)
+    if [[ -z "$NOSTRIPFS" ]]; then
+        log "WARN" "✈️ ROAMING $PLAYER — ipfs add a échoué"
+        continue
+    fi
+
+    if timeout 60 ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>/dev/null; then
+        log "INFO" "✈️ ROAMING $PLAYER — IPNS publié (/ipfs/${NOSTRIPFS:0:12}...)"
+        date +%s > "${RDIR}/.last_ipns_update"
+        (( ROAMING_SYNCED++ ))
+    else
+        log "WARN" "✈️ ROAMING $PLAYER — ipfs name publish a échoué"
+    fi
+done
+[[ $ROAMING_SYNCED -gt 0 ]] && log "INFO" "✈️ Roaming: $ROAMING_SYNCED publication(s) IPNS effectuée(s)"
+
 end=`date +%s`
 dur=`expr $end - $gstart`
 hours=$((dur / 3600)); minutes=$(( (dur % 3600) / 60 )); seconds=$((dur % 60))
 
 # Log comprehensive summary
 log "INFO" "============================================ NOSTR REFRESH SUMMARY"
-log "INFO" "📊 Players: ${#NOSTR[@]} total | $DAILY_UPDATES daily | $FILE_UPDATES files | $SKIPPED_PLAYERS skipped"
+log "INFO" "📊 Players: ${#NOSTR[@]} total | $DAILY_UPDATES daily | $FILE_UPDATES files | $SKIPPED_PLAYERS skipped | $ROAMING_SYNCED roaming-push"
 log "INFO" "💰 Payments: $PAYMENTS_PROCESSED processed | $PAYMENTS_FAILED failed | $PAYMENTS_ALREADY_DONE already done"
 log "INFO" "⏱️  Duration: ${hours}h ${minutes}m ${seconds}s"
 log "INFO" "============================================ NOSTR.refresh DONE."

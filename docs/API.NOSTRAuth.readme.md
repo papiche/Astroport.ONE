@@ -5,9 +5,9 @@
 **ATTENTION : Les identités NOSTR dans l'écosystème UPlanet/Astroport.ONE ne peuvent PAS être générées arbitrairement !**
 
 - ✅ **Création autorisée** : Uniquement via `make_NOSTRCARD.sh` avec système SSSS
-- ❌ **Génération libre interdite** : Les clés NOSTR aléatoirement générées ne sont pas acceptées
+- ✅ **Génération libre régulée par PRIMO transastion** : cf. tools/primal_wallet_control.sh
 - 🔒 **Sécurité MULTIPASS** : Chaque identité est protégée par un partage de secret 2-sur-3
-- 🌐 **Validation réseau** : Seules les identités validées par un Capitaine de constellation sont reconnues
+- 🌐 **Validation réseau** : Selon le niveau vous serons partagé les swarm.key des différentes constellations  UPlanet ẐEN connues.
 
 **Pourquoi cette restriction ?**
 - Empêche les attaques Sybil et les identités malveillantes
