@@ -70,9 +70,9 @@ get_fast_service_status() {
         ipfs_peers=$(ipfs swarm peers 2>/dev/null | wc -l || echo "0")
     fi
     
-    # Astroport - check 12345 process
+    # Astroport - check _12345.sh process
     local astroport_active="false"
-    if pgrep -f "12345" >/dev/null 2>&1; then
+    if pgrep -f "_12345.sh" >/dev/null 2>&1; then
         astroport_active="true"
     fi
     
