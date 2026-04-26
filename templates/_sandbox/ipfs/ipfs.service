@@ -3,13 +3,16 @@ Description=IPFS daemon
 After=network.target
 
 [Service]
+Type=notify
 User=_USER
-ExecStart=/usr/local/bin/ipfs daemon --enable-pubsub-experiment --enable-namesys-pubsub --enable-gc
+ExecStart=/usr/local/bin/ipfs daemon --migrate --enable-pubsub-experiment --enable-namesys-pubsub --enable-gc
 Restart=on-failure
 RestartSec=10s
 CPUAccounting=true
 CPUQuota=60%
 CPUAffinity=0-1
+MemoryMax=250M
+LimitNOFILE=65536
 
 [Install]
 WantedBy=multi-user.target
