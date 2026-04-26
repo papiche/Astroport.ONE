@@ -110,6 +110,15 @@ get_fast_service_status() {
         g1billet_active="true"
     fi
 
+    # Prometheus node_exporter - metrics endpoint :9100
+    local node_exporter_active="false"
+    if ss -tln 2>/dev/null | grep -q ":9100 "; then
+        node_exporter_active="true"
+    elif systemctl is-active --quiet prometheus-node-exporter 2>/dev/null || \
+         systemctl is-active --quiet node_exporter 2>/dev/null; then
+        node_exporter_active="true"
+    fi
+
     # Nginx Proxy Manager - Docker or port check
     local npm_active="false"
     local npm_ssl="false"
@@ -361,6 +370,10 @@ get_fast_service_status() {
     "g1billet": {
         "active": $g1billet_active
     },
+    "node_exporter": {
+        "active": $node_exporter_active,
+        "port": 9100
+    },
     "ai_company": {
         "ollama":     { "active": $ollama_active,     "source": "$ollama_source",     "port": 11434, "models": $ollama_models },
         "qdrant":     { "active": $qdrant_active,     "source": "$qdrant_source",     "port": 6333  },
@@ -410,8 +423,16 @@ get_fast_capacities() {
         nextcloud_fs=$(findmnt -no FSTYPE /nextcloud-data 2>/dev/null || stat -f -c %T /nextcloud-data 2>/dev/null || echo "unknown")
     fi
     
-    # Calculate total available space
-    local total_available_gb=$(echo "$root_available_gb + $ipfs_available_gb + $nextcloud_available_gb" | bc 2>/dev/null || echo "0")
+    # Calculate total available space — déduplique root et ipfs s'ils partagent le même device
+    local _root_dev _ipfs_dev
+    _root_dev=$(df / 2>/dev/null | tail -1 | awk '{print $1}')
+    _ipfs_dev=$(df ~/.ipfs 2>/dev/null | tail -1 | awk '{print $1}')
+    local total_available_gb
+    if [[ "$_root_dev" == "$_ipfs_dev" ]]; then
+        total_available_gb=$(echo "$root_available_gb + $nextcloud_available_gb" | bc 2>/dev/null || echo "$root_available_gb")
+    else
+        total_available_gb=$(echo "$root_available_gb + $ipfs_available_gb + $nextcloud_available_gb" | bc 2>/dev/null || echo "0")
+    fi
     
     # Calculate slots (simplified calculation)
     local zencard_slots=0
@@ -572,15 +593,41 @@ export_json() {
 
     local hostname=$(hostname -f)
     
-    # Get CPU info with safe fallbacks for empty values
-    local cpu_model=$(grep "model name" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null)
+    # Get CPU info — RPi/ARM : "model name" absent, fallback device-tree → Model → lscpu
+    local cpu_model=""
+    if [[ -r /proc/device-tree/model ]]; then
+        cpu_model=$(tr -d '\0' < /proc/device-tree/model 2>/dev/null)
+    fi
+    if [[ -z "$cpu_model" ]]; then
+        cpu_model=$(grep "model name" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null)
+    fi
+    if [[ -z "$cpu_model" ]]; then
+        cpu_model=$(grep -m1 "^Model" /proc/cpuinfo | cut -d':' -f2 | xargs 2>/dev/null)
+    fi
+    if [[ -z "$cpu_model" ]]; then
+        cpu_model=$(lscpu 2>/dev/null | awk -F': +' '/Model name/{print $2; exit}')
+    fi
     [[ -z "$cpu_model" ]] && cpu_model="Unknown"
     
     local cpu_cores=$(grep -c "processor" /proc/cpuinfo 2>/dev/null)
     [[ -z "$cpu_cores" || "$cpu_cores" -eq 0 ]] && cpu_cores=1
     
-    local cpu_freq=$(grep "cpu MHz" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null)
-    [[ -z "$cpu_freq" ]] && cpu_freq=0
+    # CPU frequency — /sys/cpufreq fiable sur ARM et x86, fallbacks : /proc puis vcgencmd
+    local cpu_freq=0
+    local _khz
+    _khz=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq 2>/dev/null)
+    if [[ -n "$_khz" && "$_khz" -gt 0 ]]; then
+        cpu_freq=$(( _khz / 1000 ))
+    else
+        local _mhz
+        _mhz=$(grep "cpu MHz" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs 2>/dev/null | cut -d'.' -f1)
+        [[ -n "$_mhz" && "$_mhz" -gt 0 ]] && cpu_freq=$_mhz
+    fi
+    if [[ "$cpu_freq" -eq 0 ]] && command -v vcgencmd >/dev/null 2>&1; then
+        local _hz
+        _hz=$(vcgencmd measure_clock arm 2>/dev/null | cut -d'=' -f2)
+        [[ -n "$_hz" && "$_hz" -gt 0 ]] && cpu_freq=$(( _hz / 1000000 ))
+    fi
     
     local load_avg=$(uptime | awk -F'load average:' '{ print $2 }' | xargs | cut -d',' -f1)
     [[ -z "$load_avg" ]] && load_avg="0.00"
@@ -607,9 +654,9 @@ export_json() {
             "load_average": "$load_avg"
         },
         "memory": {
-            "total_gb": $(( $(grep "MemTotal" /proc/meminfo | awk '{print $2}' 2>/dev/null || echo "0") / 1024 / 1024 )),
-            "used_gb": $(( ($(grep "MemTotal" /proc/meminfo | awk '{print $2}' 2>/dev/null || echo "0") - $(grep "MemAvailable" /proc/meminfo | awk '{print $2}' 2>/dev/null || echo "0")) / 1024 / 1024 )),
-            "usage_percent": $(( ($(grep "MemTotal" /proc/meminfo | awk '{print $2}' 2>/dev/null || echo "0") - $(grep "MemAvailable" /proc/meminfo | awk '{print $2}' 2>/dev/null || echo "0")) * 100 / $(grep "MemTotal" /proc/meminfo | awk '{print $2}' 2>/dev/null || echo "1") ))
+            "total_gb": $(awk '/MemTotal/{printf "%.1f", $2/1048576}' /proc/meminfo 2>/dev/null || echo 0),
+            "used_gb": $(awk '/MemTotal/{t=$2} /MemAvailable/{a=$2} END{printf "%.1f", (t-a)/1048576}' /proc/meminfo 2>/dev/null || echo 0),
+            "usage_percent": $(awk '/MemTotal/{t=$2} /MemAvailable/{a=$2} END{printf "%.0f", (t-a)*100/t}' /proc/meminfo 2>/dev/null || echo 0)
         },
         "storage": {
             "total": "$(df -h / | tail -1 | awk '{print $2}')",
