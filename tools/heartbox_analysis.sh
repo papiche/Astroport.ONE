@@ -17,7 +17,8 @@ CACHE_FILE="$HOME/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json"
 CACHE_TTL=300  # 5 minutes cache
 
 #######################################################################
-# Fast Prometheus metrics retrieval
+# Fast Prometheus metrics retrieval --- for now just node exporter --
+# TODO: Prometheus / GRAFANA integration + 12345.json info
 #######################################################################
 get_prometheus_metrics() {
     local prometheus_url="http://localhost:9090"
