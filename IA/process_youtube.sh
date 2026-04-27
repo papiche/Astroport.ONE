@@ -125,18 +125,19 @@ fi
 BASE_ARGS="$COOKIESRC $BGUTIL_ARG"
 
 log_debug "Extracting metadata for: $URL"
+# Attention : l'ordre ici DOIT être id | duration | uploader | title
 metadata_output=$(timeout 30 yt-dlp $BASE_ARGS --no-warnings \
-    --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>>"$LOGFILE")
+    --print '%(id)s|%(duration)s|%(uploader)s|%(title)s' "$URL" 2>>"$LOGFILE")
 
-metadata_line=$(echo "$metadata_output" | grep -E "^[a-zA-Z0-9_-]{11}&" | head -n 1)
+metadata_line=$(echo "$metadata_output" | grep -E "^[a-zA-Z0-9_-]{11}\|" | head -n 1)
 
 # Retry avec Deno (EJS) si le premier essai échoue
 if [[ -z "$metadata_line" && -n "$DENO_BIN" ]]; then
     log_debug "First attempt failed. Retrying with Deno (EJS last resort)..."
     DENO_ARG="--js-runtimes deno:${DENO_BIN} --remote-components ejs:github"
     metadata_output=$(timeout 60 yt-dlp $DENO_ARG $BASE_ARGS --no-warnings \
-        --print '%(id)s&%(title)s&%(duration)s&%(uploader)s' "$URL" 2>>"$LOGFILE")
-    metadata_line=$(echo "$metadata_output" | grep -E "^[a-zA-Z0-9_-]{11}&" | head -n 1)
+        --print '%(id)s|%(duration)s|%(uploader)s|%(title)s' "$URL" 2>>"$LOGFILE")
+    metadata_line=$(echo "$metadata_output" | grep -E "^[a-zA-Z0-9_-]{11}\|" | head -n 1)
     if [[ -n "$metadata_line" ]]; then
         BASE_ARGS="$DENO_ARG $BASE_ARGS"
         log_debug "Deno (EJS) succeeded, using it for download too"
@@ -148,14 +149,22 @@ if [[ -z "$metadata_line" ]]; then
     exit 1
 fi
 
-raw_title=$(echo "$metadata_line" | cut -d '&' -f 2 | tr -d '\n')
-duration=$(echo "$metadata_line" | cut -d '&' -f 3 | tr -d '\n')
+# Découpage aligné avec la commande --print
+duration=$(echo "$metadata_line" | cut -d '|' -f 2 | tr -d '\n')
+uploader=$(echo "$metadata_line" | cut -d '|' -f 3 | tr -d '\n')
+raw_title=$(echo "$metadata_line" | cut -d '|' -f 4- | tr -d '\n')
+
+# Protection : Si yt-dlp renvoie "NA" (ex: vidéo en direct), on force à 0 pour éviter le crash de Bash
+if ! [[ "$duration" =~ ^[0-9]+$ ]]; then
+    duration=0
+fi
+
 media_title=$(echo "$raw_title" | detox --inline 2>/dev/null | sed 's/[^a-zA-Z0-9._-]/_/g' | head -c 100)
 [[ -z "$media_title" ]] && media_title="video_$(date +%s)"
 
 # Calcul dynamique pour rester sous 650Mo
 VIDEO_FORMAT_FILTER="(bv*[ext=mp4][height<=480]+ba/b[height<=480]/bv*[ext=mp4]+ba/b)"
-if [[ -n "$duration" && "$duration" -gt 0 ]]; then
+if [[ "$duration" -gt 0 ]]; then
     MAX_TOTAL_BITRATE_KBPS=$(( (600 * 1024 * 8) / duration ))
     if [[ $MAX_TOTAL_BITRATE_KBPS -lt 400 ]]; then
         VIDEO_FORMAT_FILTER="(bv*[ext=mp4][height<=240]+ba/b[height<=240]/bv*[ext=mp4]+ba/b)"

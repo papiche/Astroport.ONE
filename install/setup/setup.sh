@@ -164,7 +164,7 @@ sudo mv ~/.zen/tmp/fail2ban.rule /etc/fail2ban/filter.d/astroport-intruder.conf
 echo "SETUP /etc/fail2ban/jail.d/astroport.conf"
 echo '[astroport-intruder]
 enabled = true
-port = 4001,12345
+port = 4001,12345,54321
 filter = astroport-intruder
 logpath = /home/*/.zen/tmp/swarm_intruders.log
 maxretry = 3
