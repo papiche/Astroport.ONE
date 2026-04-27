@@ -443,7 +443,7 @@ if [[ \$? == 0 ]]; then
     for IP in \$(hostname -I); do
         ipfs p2p forward "\${PROTO}" "/ip4/\${IP}/tcp/\$LPORT" "/p2p/\${NODE_ID}" 2>/dev/null || true
     done
-    [[ "\${LPORT}" == "22" || "\$SLUG" == "ssh" ]] && echo "ssh -X ${USER}@localhost -p \$LPORT"
+    [[ "\$SLUG" == "ssh" ]] && echo "ssh -X ${USER}@localhost -p \$LPORT"
 else
     echo "ERREUR : Station injoignable."
     exit 1
