@@ -782,7 +782,7 @@ NODE12345="{
     \"ZCARD\" : \"${ZCARD}\",
     \"MACHINE_VALUE_ZEN\" : \"${MACHINE_VALUE_ZEN:-500}\",
     \"BILAN\" : \"${BILAN}\",
-    \"dragon_services\" : \"$(ls ~/.zen/tmp/${IPFSNODEID}/x_*.sh 2>/dev/null | xargs -I{} basename {} 2>/dev/null | sed 's/^x_//;s/\\.sh$//' | paste -sd',' - 2>/dev/null || echo '')\",
+    \"dragon_services\" : \"$(find "$HOME/.zen/tmp/${IPFSNODEID}" -name "x_*.sh" -printf "%f\n" 2>/dev/null | sed 's/^x_//;s/\.sh//' | paste -sd',' -)\"
     \"capacities\" : ${CAPACITIES},
     \"services\" : ${SERVICES},
     \"economy\" : {

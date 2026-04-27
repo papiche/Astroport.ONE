@@ -173,7 +173,11 @@ cmd_list_remote() {
 
         # Lecture des métadonnées
         power_score=$(jq -r '.capacities.power_score // 0'    "$json" 2>/dev/null || echo 0)
-        dragon_services=$(jq -r '.dragon_services // ""'     "$json" 2>/dev/null)
+        dragon_services=$(jq -r '.dragon_services // ""' "$json" 2>/dev/null)
+        if [[ -z "$dragon_services" ]]; then
+            # Fallback : si le JSON est muet, on demande au disque (comme tunnel.sh)
+            dragon_services=$(find "$node_path" -name "x_*.sh" -printf "%f\n" 2>/dev/null | sed 's/^x_//;s/\.sh//' | paste -sd',' -)
+        fi
         node_ip=$(jq -r '.myIP // .myip // ""'               "$json" 2>/dev/null)
         captain=$(jq -r '.captain // "?"'                    "$json" 2>/dev/null | cut -d'@' -f1)
 
