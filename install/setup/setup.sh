@@ -37,18 +37,22 @@ echo "/ip4/127.0.0.1/tcp/5001" > ~/.ipfs/api
 #####################
 #### ~/.bashrc
 echo "########################### Updating ♥BOX ~/.bashrc"
-while IFS= read -r line
-do
-    echo "$line" >> ~/.bashrc
-done < ~/.zen/Astroport.ONE/ASCI_ASTROPORT.txt
+BASHRC="$HOME/.bashrc"
+START_MARK="# >>> ASTROPORT BLOCK >>>"
+END_MARK="# <<< ASTROPORT BLOCK <<<"
+TMP_FILE=$(mktemp)
 
-## EXTEND PATH
-echo '#############################################################
+# Contenu du bloc
+cat > "$TMP_FILE" <<'EOF'
+# >>> ASTROPORT BLOCK >>>
+
+#############################################################
 export PATH=$HOME/.local/bin:/usr/games:$PATH
 
-## Activer le venv Python si disponible (créé par install.sh avec python3)
+## Activer le venv Python si disponible
 [[ -s "$HOME/.astro/bin/activate" ]] && . "$HOME/.astro/bin/activate" \
     || { echo "⚠️  ~/.astro/bin/activate absent — venv non créé"; }
+
 source $HOME/.zen/Astroport.ONE/tools/my.sh 2>/dev/null
 
 ## Affichage des clefs de la cooperative
@@ -70,10 +74,27 @@ echo "UPLANETNAME_NODE=$UPLANETNAME_NODE"
 echo ""
 echo ""
 echo "IPFSNODEID=$IPFSNODEID"
-cowsay $(hostname) on UPLANET ${UPLANETG1PUB:0:8}
-echo "CAPTAIN: $CAPTAINEMAIL"' >> ~/.bashrc
 
-source ~/.bashrc
+cowsay $(hostname) on UPLANET ${UPLANETG1PUB:0:8}
+echo "CAPTAIN: $CAPTAINEMAIL"
+
+# <<< ASTROPORT BLOCK <<<
+EOF
+
+# Si bloc existe → remplacer
+if grep -q "$START_MARK" "$BASHRC"; then
+    echo ">>> Existing ASTROPORT block found → updating"
+    sed -i "/$START_MARK/,/$END_MARK/d" "$BASHRC"
+else
+    echo ">>> No existing block → adding"
+fi
+
+# Ajouter à la fin
+cat "$TMP_FILE" >> "$BASHRC"
+rm "$TMP_FILE"
+
+# Reload
+source "$BASHRC"
 
 echo "<<< UPDATED>>> PATH=$PATH"
 
