@@ -19,7 +19,7 @@ if [[ "$CURRENT_ARCH" == "amd64" ]] && [[ "$FOREIGN_ARCHS" == *"arm64"* ]]; then
 fi
 
 # Suppression des anciennes versions de Docker
-sudo apt-get remove -y docker docker-engine docker.io containerd runc docker-compose || true
+sudo apt-get remove -y docker docker-engine docker.io docker-ce containerd runc docker-compose || true
 
 # --- 2. DÉTECTION DU SYSTÈME ---
 echo -e "\033[0;36m--- Détection de l'OS ---\033[0m"

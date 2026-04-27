@@ -686,7 +686,7 @@ echo "============================================="
 echo " INSTALLATION COMPLÈTE IGNORÉE :"
 echo " PLAYER already onboard..."
 echo "============================================="
-$(cat ~/.zen/game/players/.current/secret.june)
+# cat ~/.zen/game/players/.current/secret.june
 echo "============================================="
 # MAIN #
 
