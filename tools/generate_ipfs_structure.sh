@@ -3129,14 +3129,29 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                 // Try publishing via NostrTools first
                 try {
                     console.log('Publishing NIP42 event via NostrTools...');
-                    const publishPromise = nostrRelay.publish(signedAuthEvent);
+                    const publishPromise = new Promise((resolve, reject) => {
+                        try {
+                            const pub = nostrRelay.publish(signedAuthEvent);
+                            let isResolved = false;
+                            pub.on('ok', () => { if (!isResolved) { isResolved = true; resolve(true); } });
+                            pub.on('failed', (reason) => { if (!isResolved) { isResolved = true; reject(new Error(reason)); } });
+                            // Fallback timeout in case relay doesn't send OK
+                            setTimeout(() => { if (!isResolved) { isResolved = true; resolve(true); } }, 2500);
+                        } catch(e) {
+                            reject(e);
+                        }
+                    });
 
                     // Don't wait too long for the publish response
                     const timeoutPromise = new Promise((_, reject) => {
-                        setTimeout(() => reject(new Error('Publish timeout')), 3000);
+                        setTimeout(() => reject(new Error('Publish timeout')), 10000);
                     });
 
                     const publishResult = await Promise.race([publishPromise, timeoutPromise]);
+                    
+                    // CRITICAL: Give strfry's filter/22242.sh time to write the marker file to disk
+                    await new Promise(r => setTimeout(r, 1500));
+                    
                     console.log('✅ NIP42 authentication event published successfully');
                     console.log('Publish result:', publishResult);
 
@@ -4113,7 +4128,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             }
         }
 
-        function uploadMarkdownFile(files, saveStatus) {
+        async function uploadMarkdownFile(files, saveStatus) {
             const apiBaseUrl = getAPIBaseUrl();
 
             const file = files[0];
@@ -4137,9 +4152,30 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             }
 
             console.log('Uploading markdown file:', file.name);
+            
+            const headers = {};
+            try {
+                if (window.nostr && window.nostr.signEvent) {
+                    const authEvent = {
+                        kind: 27235,
+                        created_at: Math.floor(Date.now() / 1000),
+                        tags: [
+                            ['u', `${apiBaseUrl}/api/upload`],
+                            ['method', 'POST']
+                        ],
+                        content: ''
+                    };
+                    const signedEvent = await window.nostr.signEvent(authEvent);
+                    headers['Authorization'] = 'Nostr ' + btoa(unescape(encodeURIComponent(JSON.stringify(signedEvent))));
+                }
+            } catch(e) {
+                console.warn('⚠️ Could not generate NIP-98 auth header:', e);
+            }
+
             $.ajax({
                 url: `${apiBaseUrl}/api/upload`,
                 type: 'POST',
+                headers: headers,
                 data: formData,
                 processData: false,
                 contentType: false,
@@ -4250,7 +4286,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             });
         }
 
-        function syncFile(index) {
+        async function syncFile(index) {
             const item = filteredItems[index];
             if (!item) return;
 
@@ -4310,9 +4346,29 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             // Fournir un feedback visuel
             button.html('<i class="fas fa-spinner fa-spin"></i> Syncing...').prop('disabled', true);
 
+            const headers = {};
+            try {
+                if (window.nostr && window.nostr.signEvent) {
+                    const authEvent = {
+                        kind: 27235,
+                        created_at: Math.floor(Date.now() / 1000),
+                        tags: [
+                            ['u', `${apiBaseUrl}/api/upload_from_drive`],
+                            ['method', 'POST']
+                        ],
+                        content: ''
+                    };
+                    const signedEvent = await window.nostr.signEvent(authEvent);
+                    headers['Authorization'] = 'Nostr ' + btoa(unescape(encodeURIComponent(JSON.stringify(signedEvent))));
+                }
+            } catch(e) {
+                console.warn('⚠️ Could not generate NIP-98 auth header:', e);
+            }
+
             $.ajax({
                 url: `${apiBaseUrl}/api/upload_from_drive`,
                 type: 'POST',
+                headers: headers,
                 data: JSON.stringify(syncData),
                 contentType: 'application/json',
                 success: function(response) {
@@ -4391,7 +4447,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             // Upload files one by one to show individual progress
             uploadNextFile(0);
 
-            function uploadNextFile(index) {
+            async function uploadNextFile(index) {
                 if (index >= files.length) {
                     // All files processed
                     completeUpload();
@@ -4426,9 +4482,29 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
 
                 console.log(`Uploading file ${index + 1}/${files.length}: ${file.name}`);
 
+                const headers = {};
+                try {
+                    if (window.nostr && window.nostr.signEvent) {
+                        const authEvent = {
+                            kind: 27235,
+                            created_at: Math.floor(Date.now() / 1000),
+                            tags: [
+                                ['u', `${apiBaseUrl}/api/upload`],
+                                ['method', 'POST']
+                            ],
+                            content: ''
+                        };
+                        const signedEvent = await window.nostr.signEvent(authEvent);
+                        headers['Authorization'] = 'Nostr ' + btoa(unescape(encodeURIComponent(JSON.stringify(signedEvent))));
+                    }
+                } catch(e) {
+                    console.warn('⚠️ Could not generate NIP-98 auth header:', e);
+                }
+
                 $.ajax({
                     url: `${apiBaseUrl}/api/upload`,
                     type: 'POST',
+                    headers: headers,
                     data: formData,
                     processData: false,
                     contentType: false,
