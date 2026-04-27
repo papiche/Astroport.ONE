@@ -16,8 +16,8 @@ NPM_COMPOSE_STANDALONE="${MY_PATH}/../../_DOCKER/nginx-proxy-manager/docker-comp
 SELF_SIGNED_DIR="${NPM_DIR}/self-signed"
 
 ## Detect NPM URL: inside docker-compose (container name "npm") or localhost
-if getent hosts npm >/dev/null 2>&1; then
-    NPM_URL="http://npm:81"       # Docker network (astronet)
+if [[ -f /.dockerenv ]]; then
+    NPM_URL="http://npm:81"       # Si exécuté à l'intérieur de Docker
 elif curl -sf http://127.0.0.1:81 >/dev/null 2>&1; then
     NPM_URL="http://127.0.0.1:81" # Already running on host
 else
