@@ -11,22 +11,19 @@ ME="${0##*/}"
 echo "#############################################"
 echo "######### HOSTNAME SETUP  ###################"
 echo "#############################################"
-# Générer un mot aléatoire avec diceware.sh
 WORD=$($HOME/.zen/Astroport.ONE/tools/diceware.sh 1)
-# Générer un nombre aléatoire entre 01 et 99
 NUMBER=$(printf "%02d" $((RANDOM % 99 + 1)))
-# Construire le nouveau hostname
 NEW_HOSTNAME="${WORD}-${NUMBER}"
-# Mettre à jour le fichier /etc/hostname
-echo "$NEW_HOSTNAME" | sudo tee /etc/hostname > /dev/null
-# Mettre à jour le fichier /etc/hosts
-sudo sed -i "/127.0.1.1/c\127.0.1.1\t$NEW_HOSTNAME" /etc/hosts
-# Changer le hostname avec hostnamectl
+echo "NOUVEAU Hostname : $NEW_HOSTNAME"
+# Appliquer hostname
 sudo hostnamectl set-hostname "$NEW_HOSTNAME"
-# Forcer la mise à jour du hostname actuel
-sudo hostname -F /etc/hostname
-# Afficher le nouveau hostname
-echo "NOUVEAU Hostname :"
+# Assurer cohérence /etc/hosts
+if grep -q "127.0.1.1" /etc/hosts; then
+    sudo sed -i "s/^127.0.1.1.*/127.0.1.1\t$NEW_HOSTNAME/" /etc/hosts
+else
+    echo -e "127.0.1.1\t$NEW_HOSTNAME" | sudo tee -a /etc/hosts
+fi
+# Vérification
 hostname
 
 echo "#############################################"
