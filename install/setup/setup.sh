@@ -55,25 +55,73 @@ export PATH=$HOME/.local/bin:/usr/games:$PATH
 
 source $HOME/.zen/Astroport.ONE/tools/my.sh 2>/dev/null
 
-## Affichage des clefs de la cooperative
+echo "══════════════════════════════════════════════════════════════════════"
+echo "🏦 PORTEFEUILLES COOPÉRATIFS – ZEN.ECONOMY UPlanet ẐEN"
+echo "══════════════════════════════════════════════════════════════════════"
+
+echo "🌍 Banque Centrale Ğ1 (UPLANETNAME_G1)"
+echo "   → Réserve de valeur en Ğ1 permettant d'émettre des Ẑen (1Ẑ = 0.1Ğ1)."
+echo "   → Alimente tous les flux économiques (MULTIPASS, SOCIETY, etc.)"
+echo "   UPLANETNAME_G1=$UPLANETNAME_G1"
 echo ""
-echo "UPLANETNAME_G1=$UPLANETNAME_G1"
+
+echo "💸 Portefeuille ẑen (UPLANETG1PUB)"
+echo "   → Point d'entrée des jetons d'usage (MULTIPASS)."
+echo "   → Reçoit les Ğ1 depuis la Banque Centrale et les redistribue vers"
+echo "     les MULTIPASS des utilisateurs après recharge de service."
+echo "   UPLANETG1PUB=$UPLANETG1PUB"
 echo ""
-echo "UPLANETG1PUB=$UPLANETG1PUB"
-echo "UPLANETNAME_SOCIETY=$UPLANETNAME_SOCIETY"
+
+echo "🤝 Portefeuille SOCIETY ẐEN / AMAP (UPLANETNAME_SOCIETY)"
+echo "   → Reçoit les cotisations des sociétaires (parts sociales)."
+echo "   → Redistribue 33% R&D, 33% ASSETS, 33% MULTIPASS (reste division CAPITAINE)."
+echo "   UPLANETNAME_SOCIETY=$UPLANETNAME_SOCIETY"
 echo ""
-echo "UPLANETNAME_CAPITAL=$UPLANETNAME_CAPITAL"
-echo "UPLANETNAME_IMPOT=$UPLANETNAME_IMPOT"
+
+echo "🏭 Immobilisations corporelles – CAPITAL (UPLANETNAME_CAPITAL)"
+echo "   → Capital machine (infrastructure)."
+echo "   → Amortissement linéaire sur 3 ans (156 semaines)."
+echo "   → Comptablement distinct des revenus locatifs (NODE)."
+echo "   UPLANETNAME_CAPITAL=$UPLANETNAME_CAPITAL"
 echo ""
-echo "UPLANETNAME_TREASURY=$UPLANETNAME_TREASURY"
-echo "UPLANETNAME_RND=$UPLANETNAME_RND"
-echo "UPLANETNAME_ASSETS=$UPLANETNAME_ASSETS"
+
+echo "📊 Taxe / TVA – IMPOT (UPLANETNAME_IMPOT)"
+echo "   → Collecte les prélèvements fiscaux : x% sur chaque transaction MULTIPASS."
+echo "   UPLANETNAME_IMPOT=$UPLANETNAME_IMPOT"
 echo ""
-echo "UPLANETNAME_CAPTAIN=$UPLANETNAME_CAPTAIN"
-echo "UPLANETNAME_NODE=$UPLANETNAME_NODE"
+
+echo "💰 Trésorerie – TREASURY (UPLANETNAME_TREASURY)"
+echo "   → Fonds de roulement, réserve de liquidités pour les dépenses courantes."
+echo "   UPLANETNAME_TREASURY=$UPLANETNAME_TREASURY"
 echo ""
+
+echo "🔬 Recherche & Développement – RnD (UPLANETNAME_RND)"
+echo "   → Financement de l'innovation, des outils et de la maintenance"
+echo "     du logiciel coopératif. Reçoit 33% des cotisations sociétaires."
+echo "   UPLANETNAME_RND=$UPLANETNAME_RND"
 echo ""
-echo "IPFSNODEID=$IPFSNODEID"
+
+echo "🌱 Actifs environnementaux – ASSETS (UPLANETNAME_ASSETS)"
+echo "   → Récompenses ORE (terrains, UMAP)."
+echo "   → Réserves pour la régénération écologique et les actions climatiques."
+echo "   UPLANETNAME_ASSETS=$UPLANETNAME_ASSETS"
+echo ""
+
+echo "🚢 Portefeuille Collecte (UPLANETNAME_CAPTAIN)"
+echo "   → Reçoit les revenus de gestion."
+echo "   UPLANETNAME_CAPTAIN=$UPLANETNAME_CAPTAIN"
+echo ""
+
+echo "🖥️ Armateur Astroport – NODE (UPLANETNAME_NODE)"
+echo "   → Revenus locatifs (PAF) et burn vers les monnaies locales (€)."
+echo "   → Distinct du capital machine (UPLANETNAME_CAPITAL)."
+echo "   UPLANETNAME_NODE=$UPLANETNAME_NODE"
+echo ""
+
+echo "🆔 Identifiant du nœud IPFS (IPFSNODEID)"
+echo "   → Trace la machine Y Level (SSH=IPFS)."
+echo "   IPFSNODEID=$IPFSNODEID"
+echo ""
 
 cowsay $(hostname) on UPLANET ${UPLANETG1PUB:0:8}
 echo "CAPTAIN: $CAPTAINEMAIL"
