@@ -210,10 +210,10 @@ cmd_list_remote() {
             fi
 
             local category=$(get_service_category "$svc")
-            local node_short="...${node_id: -14}"
+            local node_short="${node_id}"
             
             # Affichage de la ligne
-            printf "  %-10s %-16s %-20s %-12s %-14s %-8s\n" \
+           printf "  %-10s %-16s %-54s %-12s %-14s %-8s\n" \
                 "$category" \
                 "${svc}${specs}" \
                 "${node_short}" \
@@ -263,8 +263,8 @@ cmd_list_remote() {
             disk_str="${avail_gb} Go dispo"
         fi
 
-        printf "  %-20s %-12s %-8s %-8s %-24s %-5s %-6s %-6s\n" \
-            "...${node_id: -14}" "${v_captain:0:11}" \
+        printf "  %-54s %-12s %-8s %-8s %-24s %-5s %-6s %-6s\n" \
+            "...${node_id}" "${v_captain:0:11}" \
             "${zencard_slots} 🏠" "${nostr_slots} 📡" \
             "${disk_str}" "${paf}ẑ" "${ncard}ẑ" "${zcard}ẑ"
         ((vault_found++))
@@ -434,7 +434,7 @@ cmd_enable() {
         echo "❌ Script introuvable : $tunnel_script" && return 1
 
     mkdir -p "$TUNNELS_ENABLED"
-    local link="$TUNNELS_ENABLED/x_${service}_${node_id: -8}.sh"
+    local link="$TUNNELS_ENABLED/x_${service}_${node_id}.sh"
 
     # Copie le contenu du script (pas un wrapper) pour survivre au nettoyage du cache swarm
     {
@@ -615,7 +615,7 @@ cmd_status() {
 
         printf "  %-22s %-10s " "$slug" "${lport:-?}"
         printf "${svc_status}"
-        printf "  ...%s\n" "${remote_id: -22}"
+        printf "  ...%s\n" "${remote_id}"
         ((has_client++))
     done <<< "$active_p2p"
     [[ $has_client -eq 0 ]] && echo "  (aucun service distant connecté)"

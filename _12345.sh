@@ -137,7 +137,7 @@ if [[ -n "$query" ]]; then
     if [[ -n "$GPUB" && -n "$IPNS" ]]; then
         ASTROTOIPFS=$(${MY_PATH}/tools/g1_to_ipfs.py ${GPUB} 2>/dev/null)
         if [[ "${ASTROTOIPFS}" == "${IPNS}" ]]; then
-            echo "[$TIMESTAMP] UPSYNC QUEUED: ${CLIENT_IP} G1=${GPUB:0:8}... IPNS=${IPNS: -8}" >> "$ACCESS_LOG"
+            echo "[$TIMESTAMP] UPSYNC QUEUED: ${CLIENT_IP} G1=${GPUB} IPNS=${IPNS}"
             grep -qxF "$IPNS" "$UPSYNC_QUEUE" || echo "$IPNS" >> "$UPSYNC_QUEUE"
         else
             echo "[$TIMESTAMP] UPSYNC REJECTED: ${CLIENT_IP} G1/IPNS mismatch" >> "$ACCESS_LOG"

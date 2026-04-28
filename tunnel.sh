@@ -67,7 +67,7 @@ update_list() {
         
         swarm_file=$(ls "$node_path" | grep -E "^_MySwarm\..*\.html$" | head -n 1)
         machine_name=$( [[ -n "$swarm_file" ]] && echo "$swarm_file" | cut -d'.' -f2 || cat "$node_path/myIPFS.txt" 2>/dev/null | head -n 1 )
-        [[ -z "$machine_name" ]] && machine_name="${node_id:0:8}"
+        [[ -z "$machine_name" ]] && machine_name="${node_id}"
 
         for s in "$node_path"/x_*.sh; do [ ! -f "$s" ] && continue
             
