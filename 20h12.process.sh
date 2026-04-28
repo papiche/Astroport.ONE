@@ -319,18 +319,12 @@ ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh
 ## KILL ALL REMAINING nc
 killall nc 12345.sh > /dev/null 2>&1
 
-## SYSTEMD OR NOT SYSTEMD
-if [[ ! -f /etc/systemd/system/astroport.service ]]; then
-    ${MY_PATH}/12345.sh > ~/.zen/tmp/12345.log &
-    PID=$!
-    echo $PID > ~/.zen/.pid
-else
-    ## RESTART UPassport API
-    sudo systemctl restart upassport
-    ## RESTART Astroport Swarm Balise
-    sudo systemctl restart astroport
-    echo "UPassport & Astroport processes systemd restart"
-fi
+## RESTART UPassport API
+sudo systemctl restart upassport
+## RESTART Astroport Swarm Balise
+sudo systemctl restart astroport
+echo "UPassport & Astroport processes systemd restart"
+
 
 ## Wait for _12345.sh to be ready and trigger immediate publication
 echo "Waiting for _12345.sh to start..."

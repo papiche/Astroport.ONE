@@ -306,7 +306,8 @@ echo "
 # + HTML in FILE
 # 1. Récupération du contenu (fichier ou texte direct)
 if [[ -s "$messfile" ]]; then
-    RAW_CONTENT=$(cat "$messfile")
+    # On force la conversion en UTF-8 et on supprime les caractères non-imprimables
+    RAW_CONTENT=$(iconv -f utf-8 -t utf-8 -c "$messfile" | tr -d '\000-\010\013\014\016-\037')
 else
     RAW_CONTENT="$messfile"
 fi
@@ -382,6 +383,12 @@ if [[ -n "$MJ_APIKEY_PUBLIC" && -n "$MJ_APIKEY_PRIVATE" && -n "$SENDER_EMAIL" ]]
     
     # Fallback en texte brut contenant le lien IPFS
     PLAIN_TEXT="Voir le message sur le réseau IPFS : ${myIPFS}/ipfs/${EMAILZ}\n\nMessage de ${UPLANET}"
+
+    CONTENT_SIZE=${#RAW_CONTENT}
+    if [[ $CONTENT_SIZE -gt 1000000 ]]; then # Limite à 1 Mo pour l'inline
+        echo "⚠️ Message trop volumineux ($CONTENT_SIZE octets). Envoi du lien IPFS uniquement."
+        FULL_HTML="${IPFS_ONLINE_LINK}<p>Consultez le message ici.</p><h3><a href='${myIPFS}/ipfs/${EMAILZ}'>👉 Cliquer ici pour voir le rapport complet</a></h3><br>${MESSAGESIGN}"
+    fi
 
     # 4. Construction du JSON sécurisé via jq (Gère automatiquement l'échappement des guillemets et retours à la ligne du HTML)
     json_payload=$(jq -n \

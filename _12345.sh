@@ -363,6 +363,12 @@ HANDLER_SCRIPT="$HOME/.zen/tmp/12345_handler.sh"
 RESPONSE_FILE="/dev/shm/astroport_12345.http"
 touch "$UPSYNC_QUEUE"
 
+## INIT
+echo "$(date +%s)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
+echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
+# RESET LOCK
+rmdir "$SCAN_LOCK_DIR" 2>/dev/null || rm -rf "$SCAN_LOCK_DIR" 2>/dev/null
+
 while true; do
     start=$(date +%s)
     MOATS=$(date +%s)
