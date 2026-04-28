@@ -800,7 +800,7 @@ NODE12345="{
 "
 
     ## PUBLISH ${IPFSNODEID}/12345.json
-    if [[ "$NODE_STATE" != "$LAST_NODE_STATE" || ! -s "$LAST_NODE_JSON_FILE" ]]; then
+    if [[ "$NODE_STATE" != "$LAST_NODE_STATE" || ! -s "$LAST_NODE_JSON_FILE" || ! -s "$HOME/.zen/tmp/${IPFSNODEID}/12345.json" ]]; then
         echo "${NODE12345}" > ~/.zen/tmp/${IPFSNODEID}/12345.json
         echo "${NODE12345}" > "$LAST_NODE_JSON_FILE"
         echo "$NODE_STATE" > "$LAST_NODE_STATE_FILE"
