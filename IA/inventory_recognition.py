@@ -165,7 +165,7 @@ IMPORTANT: Return ONLY valid JSON, no other text."""
     try:
         log_message("Classifying image type with AI...")
         response = ollama.chat(
-            model="minicpm-v",
+            model="llama3.2-vision:11b",
             messages=[{
                 'role': 'user',
                 'content': classification_prompt,
@@ -265,7 +265,7 @@ IMPORTANT: Return ONLY valid JSON."""
     try:
         log_message(f"Identifying {item_type} with AI...")
         response = ollama.chat(
-            model="minicpm-v",
+            model="llama3.2-vision:11b",
             messages=[{
                 'role': 'user',
                 'content': identify_prompt,

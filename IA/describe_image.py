@@ -71,7 +71,7 @@ def ensure_ollama_connection(output_json=False):
             print(f"Error while calling ollama.me.sh: {e}")
         return False
 
-def describe_image_from_ipfs(image_source, ollama_model="minicpm-v", output_json=False, custom_prompt=None):
+def describe_image_from_ipfs(image_source, ollama_model="llama3.2-vision:11b", output_json=False, custom_prompt=None):
     """
     Describes an image using Ollama. Sends image bytes directly to avoid 
     remote filesystem path resolution issues.
@@ -150,8 +150,7 @@ def describe_image_from_ipfs(image_source, ollama_model="minicpm-v", output_json
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Describe an image from an IPFS URL or local file using Ollama.")
     parser.add_argument("image_source", help="Either an IPFS URL (http://...) or a local file path.")
-    # Tu peux changer ici par défaut par llama3.2-vision:11b si minicpm-v continue de bugger !
-    parser.add_argument("-m", "--model", dest="ollama_model_name", default="minicpm-v", help="The name of the Ollama model to use (default: minicpm-v).")
+    parser.add_argument("-m", "--model", dest="ollama_model_name", default="llama3.2-vision:11b", help="The name of the Ollama model to use (default: llama3.2-vision:11b).")
     parser.add_argument("--json", action="store_true", help="Output description in JSON format.")
     parser.add_argument("-p", "--prompt", dest="custom_prompt", default=None, help="Custom prompt to send to the AI (default: 'Décris précisément cette image...').")
 
