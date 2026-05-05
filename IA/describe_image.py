@@ -140,7 +140,7 @@ def describe_image_from_ipfs(image_source, ollama_model="minicpm-v", output_json
                 print(f"Using local image file: {temp_image_path}")
 
         # Use custom prompt if provided, otherwise use default
-        prompt = custom_prompt if custom_prompt else 'Décrire cette image.'
+        prompt = custom_prompt if custom_prompt else 'Décris précisément cette image comme si tu écrivais pour quelqu’un qui ne peut pas la voir.'
         
         if not output_json:
             print(f"Sending image to Ollama model '{ollama_model}' with prompt: '{prompt[:50]}...'")
@@ -190,7 +190,7 @@ if __name__ == "__main__":
     parser.add_argument("image_source", help="Either an IPFS URL (http://...) or a local file path.")
     parser.add_argument("-m", "--model", dest="ollama_model_name", default="minicpm-v", help="The name of the Ollama model to use (default: minicpm-v).")
     parser.add_argument("--json", action="store_true", help="Output description in JSON format.")
-    parser.add_argument("-p", "--prompt", dest="custom_prompt", default=None, help="Custom prompt to send to the AI (default: 'Décrire cette image.').")
+    parser.add_argument("-p", "--prompt", dest="custom_prompt", default=None, help="Custom prompt to send to the AI (default: 'Décris précisément cette image comme si tu écrivais pour quelqu’un qui ne peut pas la voir.').")
 
     args = parser.parse_args()
 
