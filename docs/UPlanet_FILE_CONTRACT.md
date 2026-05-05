@@ -1398,7 +1398,7 @@ RELAYS="ws://127.0.0.1:7777,wss://relay.copylaradio.com"
 
 ## 8. Administrative Tools
 
-### 8.1 NostrTube Manager (nostr_tube_manager.sh)
+### 8.1 NostrTube Manager (dashboard.TUBE.manager.sh)
 
 The NostrTube Manager is a comprehensive command-line tool for monitoring, administering, and upgrading video channels published via the UPlanet File Management Contract.
 
@@ -1419,7 +1419,7 @@ The NostrTube Manager is a comprehensive command-line tool for monitoring, admin
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                   nostr_tube_manager.sh                      │
+│                   dashboard.TUBE.manager.sh                      │
 │                  (Bash CLI Application)                       │
 └───────┬─────────────────────────────────────┬───────────────┘
         │                                     │
@@ -1460,22 +1460,22 @@ The NostrTube Manager is a comprehensive command-line tool for monitoring, admin
 
 ```bash
 # Browse all channels interactively (no auth required)
-nostr_tube_manager.sh browse
+dashboard.TUBE.manager.sh browse
 
 # List all videos globally
-nostr_tube_manager.sh list-all
+dashboard.TUBE.manager.sh list-all
 
 # Manage specific user's channel
-nostr_tube_manager.sh channel --email user@example.com
+dashboard.TUBE.manager.sh channel --email user@example.com
 
 # Check metadata completeness
-nostr_tube_manager.sh check --npub npub1abc...
+dashboard.TUBE.manager.sh check --npub npub1abc...
 
 # Upgrade specific video (regenerate metadata)
-nostr_tube_manager.sh upgrade --event-id evt123... --hex abc123...
+dashboard.TUBE.manager.sh upgrade --event-id evt123... --hex abc123...
 
 # Upgrade all videos missing metadata
-nostr_tube_manager.sh upgrade-all --hex abc123... --force
+dashboard.TUBE.manager.sh upgrade-all --hex abc123... --force
 ```
 
 #### 8.1.4 Video Upgrade Mechanism
@@ -1670,7 +1670,7 @@ Choose action:
 The `stats` command provides comprehensive channel metrics:
 
 ```bash
-$ nostr_tube_manager.sh stats --hex abc123...
+$ dashboard.TUBE.manager.sh stats --hex abc123...
 
 ╔════════════════════════════════════════════════════════════╗
 ║                    NostrTube Statistics                     ║
@@ -1691,7 +1691,7 @@ $ nostr_tube_manager.sh stats --hex abc123...
 
 💡 Recommendations
   5 videos are missing metadata
-  Run: nostr_tube_manager.sh upgrade-all --hex abc123...
+  Run: dashboard.TUBE.manager.sh upgrade-all --hex abc123...
 ```
 
 #### 8.1.7 Integration with Core Pipeline
@@ -1710,7 +1710,7 @@ publish_nostr_video.sh ─────> NOSTR relay (event publication)
 
 nostr_get_events.sh ────────> NOSTR relay (event retrieval)
 
-nostr_tube_manager.sh ──┬───> All above scripts (orchestration)
+dashboard.TUBE.manager.sh ──┬───> All above scripts (orchestration)
                         │
                         └───> strfry (direct deletion)
 ```
@@ -1718,8 +1718,8 @@ nostr_tube_manager.sh ──┬───> All above scripts (orchestration)
 **Workflow Harmony**:
 1. **Upload Phase** (`/api/fileupload` → `upload2ipfs.sh`): Generates metadata
 2. **Publish Phase** (`/webcam` → `publish_nostr_video.sh`): Creates event
-3. **Admin Phase** (`nostr_tube_manager.sh`): Monitors, upgrades, manages
-4. **Upgrade Phase** (`nostr_tube_manager.sh upgrade`): Full re-processing loop
+3. **Admin Phase** (`dashboard.TUBE.manager.sh`): Monitors, upgrades, manages
+4. **Upgrade Phase** (`dashboard.TUBE.manager.sh upgrade`): Full re-processing loop
 
 #### 8.1.8 Security Considerations
 
@@ -1746,13 +1746,13 @@ nostr_tube_manager.sh ──┬───> All above scripts (orchestration)
 
 ```bash
 # Step 1: Identify videos with missing metadata
-nostr_tube_manager.sh check --email admin@channel.com
+dashboard.TUBE.manager.sh check --email admin@channel.com
 
 # Output shows:
 # ❌ Missing animated GIF: 3 videos
 
 # Step 2: Upgrade all videos automatically
-nostr_tube_manager.sh upgrade-all --email admin@channel.com --force
+dashboard.TUBE.manager.sh upgrade-all --email admin@channel.com --force
 
 # Process:
 # - Downloads each video from IPFS

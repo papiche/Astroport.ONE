@@ -1155,16 +1155,20 @@ fi
         fi
         echo ""
         
-        # CONVERT INPUT TO MP4 if needed
-        if [[ $FILE_EXT != "mp4" ]]; then
-            espeak "Converting to M P 4. Please wait"
-            FINAL_FILE="$HOME/.zen/tmp/${TITLE}.mp4"
-            ffmpeg -loglevel quiet -i "${FILE}" -c:v libx264 -c:a aac "$FINAL_FILE"
+        # CONVERT TO H264/AAC MP4 — vérifie le codec réel, pas seulement l'extension
+        # Les conteneurs .mp4 peuvent contenir du MPEG-4 Part 2 (Xvid/DivX) non supporté par les navigateurs
+        VIDEO_CODEC_SRC=$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "${FILE}" 2>/dev/null | tr -d '[:space:]')
+        AUDIO_CODEC_SRC=$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "${FILE}" 2>/dev/null | tr -d '[:space:]')
+        FINAL_FILE="$HOME/.zen/tmp/${TITLE}.mp4"
+        echo "🔍 Source codec: video=$VIDEO_CODEC_SRC audio=$AUDIO_CODEC_SRC"
+
+        if [[ $FILE_EXT != "mp4" ]] || [[ "$VIDEO_CODEC_SRC" != "h264" ]] || [[ "$AUDIO_CODEC_SRC" != "aac" ]]; then
+            espeak "Converting to H264 M P 4. Please wait"
+            ffmpeg -loglevel quiet -i "${FILE}" -c:v libx264 -profile:v main -level 4.1 -c:a aac -b:a 128k -movflags +faststart "$FINAL_FILE"
             FILE_EXT="mp4"
             FILE_NAME="${TITLE}.mp4"
             espeak "M P 4 ready"
         else
-            FINAL_FILE="$HOME/.zen/tmp/${TITLE}.${FILE_EXT}"
             cp "${FILE}" "$FINAL_FILE"
         fi
         
@@ -1702,11 +1706,22 @@ EOF
         [ ! $2 ] && VIDEO_DESC=$(zenity --entry --width 600 --title "Description" --text "Description de la vidéo (optionnel)" --entry-text="")
     fi
     
-    # Copy to temp (use sanitized title for filename)
+    # Convertir en H264/AAC MP4 — vérifie le codec réel, pas seulement l'extension
     TITLE_FOR_FILENAME="${TITLE_FOR_FILENAME:-$TITLE}"
-    FINAL_FILE="$HOME/.zen/tmp/${TITLE_FOR_FILENAME}.${FILE_EXT}"
-    cp "${FILE}" "$FINAL_FILE"
-        
+    VIDEO_CODEC_SRC=$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "${FILE}" 2>/dev/null | tr -d '[:space:]')
+    AUDIO_CODEC_SRC=$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "${FILE}" 2>/dev/null | tr -d '[:space:]')
+    FINAL_FILE="$HOME/.zen/tmp/${TITLE_FOR_FILENAME}.mp4"
+    echo "🔍 Source codec: video=$VIDEO_CODEC_SRC audio=$AUDIO_CODEC_SRC"
+
+    if [[ $FILE_EXT != "mp4" ]] || [[ "$VIDEO_CODEC_SRC" != "h264" ]] || [[ "$AUDIO_CODEC_SRC" != "aac" ]]; then
+        espeak "Converting to H264 M P 4. Please wait"
+        ffmpeg -loglevel quiet -i "${FILE}" -c:v libx264 -profile:v main -level 4.1 -c:a aac -b:a 128k -movflags +faststart "$FINAL_FILE"
+        FILE_EXT="mp4"
+        espeak "M P 4 ready"
+    else
+        cp "${FILE}" "$FINAL_FILE"
+    fi
+
         # Upload via upload2ipfs.sh directly (no API, no NIP-42 required)
         echo "📤 Uploading video via upload2ipfs.sh..."
         

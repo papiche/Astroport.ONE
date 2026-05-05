@@ -1,8 +1,8 @@
 #!/bin/bash
 ################################################################################
-# Script: nostr_tube_manager.sh
+# Script: dashboard.TUBE.manager.sh
 # Description: Monitor and manage NostrTube video chain for MULTIPASS users
-# Usage: nostr_tube_manager.sh [COMMAND] [OPTIONS]
+# Usage: dashboard.TUBE.manager.sh [COMMAND] [OPTIONS]
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -40,7 +40,7 @@ usage() {
 ${CYAN}NostrTube Manager - Monitor and upgrade MULTIPASS video chains${NC}
 
 ${YELLOW}USAGE:${NC}
-    nostr_tube_manager.sh COMMAND [OPTIONS]
+    dashboard.TUBE.manager.sh COMMAND [OPTIONS]
 
 ${YELLOW}COMMANDS:${NC}
     list              List all NostrTube videos for a user
@@ -70,31 +70,31 @@ ${YELLOW}OPTIONS:${NC}
 
 ${YELLOW}EXAMPLES:${NC}
     # List ALL videos from all users
-    nostr_tube_manager.sh list-all
+    dashboard.TUBE.manager.sh list-all
 
     # Browse channels and videos interactively
-    nostr_tube_manager.sh browse
+    dashboard.TUBE.manager.sh browse
 
     # Interactive channel administration
-    nostr_tube_manager.sh channel --email user@example.com
+    dashboard.TUBE.manager.sh channel --email user@example.com
 
     # List all videos for a user
-    nostr_tube_manager.sh list --npub npub1abc...
+    dashboard.TUBE.manager.sh list --npub npub1abc...
 
     # Check metadata completeness
-    nostr_tube_manager.sh check --email user@example.com
+    dashboard.TUBE.manager.sh check --email user@example.com
 
     # Upgrade all videos (add missing gifanim_ipfs, etc.)
-    nostr_tube_manager.sh upgrade-all --hex abc123...
+    dashboard.TUBE.manager.sh upgrade-all --hex abc123...
 
     # Upgrade specific video
-    nostr_tube_manager.sh upgrade --event-id evt123... --force
+    dashboard.TUBE.manager.sh upgrade --event-id evt123... --force
 
     # Show statistics
-    nostr_tube_manager.sh stats --npub npub1abc...
+    dashboard.TUBE.manager.sh stats --npub npub1abc...
 
     # Clean up non-compliant events (no metadata or no channel tag)
-    nostr_tube_manager.sh cleanup --force
+    dashboard.TUBE.manager.sh cleanup --force
 
 ${YELLOW}UPGRADE PROCESS:${NC}
     1. Download original video from IPFS
@@ -770,7 +770,7 @@ cmd_stats() {
     if [[ $missing_any -gt 0 ]]; then
         echo -e "${YELLOW}💡 Recommendations${NC}"
         echo -e "  $missing_any videos are missing metadata"
-        echo -e "  Run: ${CYAN}nostr_tube_manager.sh upgrade-all --hex $user_hex${NC}"
+        echo -e "  Run: ${CYAN}dashboard.TUBE.manager.sh upgrade-all --hex $user_hex${NC}"
     else
         echo -e "${GREEN}✅ All videos have complete metadata!${NC}"
     fi

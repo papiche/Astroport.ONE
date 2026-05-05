@@ -56,7 +56,7 @@
 #                          --title "My Video" \
 #                          --json
 #
-#   # Example 2: From bash (nostr_tube_manager.sh)
+#   # Example 2: From bash (dashboard.TUBE.manager.sh)
 #   ./publish_nostr_video.sh --nsec ~/.zen/game/players/user@example.com/.secret.nostr \
 #                            --ipfs-cid QmXXX \
 #                            --filename video.webm \

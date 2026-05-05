@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 import os
 import sys
+
+# Activer l'environnement virtuel ~/.astro pour accéder au module ollama
+venv_path = os.path.expanduser("~/.astro")
+if os.path.exists(venv_path):
+    python_version = f"python{sys.version_info.major}.{sys.version_info.minor}"
+    site_packages = os.path.join(venv_path, "lib", python_version, "site-packages")
+    if os.path.exists(site_packages):
+        sys.path.insert(0, site_packages)
+
 import json
 import re
 from datetime import datetime
