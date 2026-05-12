@@ -510,7 +510,7 @@ coop_config_list() {
             "OC_URL_CLOUD" "OC_URL_MEMBRE"
             "OC_URL_SATELLITE" "OC_URL_CONSTELLATION"
         "_comment_api"
-            "PLANTNET_API_KEY"
+            "PLANTNET_API_KEY" "GIT_HOST" "GIT_TOKEN" "GIT_OWNER"
         "_comment_mj"
             "MJ_APIKEY_PUBLIC" "MJ_APIKEY_PRIVATE" "MJ_SENDER_EMAIL"
     )
@@ -611,7 +611,7 @@ coop_config_show_decrypted() {
             "OC_URL_CLOUD" "OC_URL_MEMBRE"
             "OC_URL_SATELLITE" "OC_URL_CONSTELLATION"
         "_comment_api"
-            "PLANTNET_API_KEY"
+            "PLANTNET_API_KEY" "GIT_HOST" "GIT_TOKEN" "GIT_OWNER"
         "_comment_mj"
             "MJ_APIKEY_PUBLIC" "MJ_APIKEY_PRIVATE" "MJ_SENDER_EMAIL"
     )
@@ -747,6 +747,9 @@ coop_config_init() {
 
     "_comment_api": "=== API KEYS (auto-encrypted) ===",
     "PLANTNET_API_KEY": "",
+    "GIT_HOST": "https://github.com",
+    "GIT_TOKEN": "",
+    "GIT_OWNER": "papiche",
 
     "_comment_mj": "=== MAILJET (auto-encrypted) ===",
     "MJ_APIKEY_PUBLIC": "",
