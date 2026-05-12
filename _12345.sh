@@ -35,6 +35,7 @@ if [ -s "$HOME/.astro/bin/activate" ]; then
     source $HOME/.astro/bin/activate
 fi
 export PATH=$HOME/.local/bin:$PATH
+export LC_NUMERIC=C
 
 PORT=12345
 ## Seuil de péremption (12 heures) : évite de supprimer trop vite les stations si IPNS est lent
@@ -295,6 +296,7 @@ collect_g1check_jobs "${G1CHECK_PUBS[@]}"
 
 #############################################################
 ## PUBLISH CHANNEL IPNS LINK
+rm -f ~/.zen/tmp/${IPFSNODEID}/_MySwarm.*.html # RESET node name
 echo "<meta http-equiv=\"refresh\" content=\"0; url='/ipns/${CHAN}'\" />" \
     > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.$(myHostName).html
 ############################################################
@@ -689,16 +691,16 @@ while true; do
     
     # Determine economic risk level
     ECONOMIC_RISK="GREEN"
-    [[ -z "$CAPTAINZEN" || ! "$CAPTAINZEN" =~ ^[0-9] ]] && CAPTAINZEN=0
-    [[ -z "$TREASURY_ZEN" || ! "$TREASURY_ZEN" =~ ^[0-9] ]] && TREASURY_ZEN=0
-    [[ -z "$WEEKLY_BALANCE" || ! "$WEEKLY_BALANCE" =~ ^[-0-9] ]] && WEEKLY_BALANCE=0
-    if [[ $(echo "$CAPTAINZEN < $MIN_WEEKLY_COSTS" | bc -l) -eq 1 ]]; then
-        if [[ $(echo "$TREASURY_ZEN < $MIN_WEEKLY_COSTS" | bc -l) -eq 1 ]]; then
+    _czen="${CAPTAINZEN:-0}"
+    _tzen="${TREASURY_ZEN:-0}"
+    _wbal="${WEEKLY_BALANCE:-0}"
+    if [[ $(echo "${_czen} < ${MIN_WEEKLY_COSTS:-0}" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
+        if [[ $(echo "${_tzen} < ${MIN_WEEKLY_COSTS:-0}" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
             ECONOMIC_RISK="RED"
         else
             ECONOMIC_RISK="ORANGE"
         fi
-    elif [[ $(echo "$WEEKLY_BALANCE < 0" | bc -l) -eq 1 ]]; then
+    elif [[ $(echo "${_wbal} < 0" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
         ECONOMIC_RISK="YELLOW"
     fi
 
@@ -720,26 +722,27 @@ while true; do
     fi
     
     # Check if cache is fresh (< 12h)
+    _svc_fallback="{\"ipfs\":{\"active\":true,\"peers_connected\":$(timeout 5 ipfs swarm peers 2>/dev/null | wc -l)},\"astroport\":{\"active\":true},\"g1billet\":{\"active\":true}}"
     if [[ -s ${ANALYSIS_FILE} ]]; then
         cache_age=$(( $(date +%s) - $(stat -c %Y "${ANALYSIS_FILE}" 2>/dev/null || echo 0) ))
         if [[ $cache_age -lt 43200 ]]; then  # 12h = 43200 seconds
-            TEMP_CAPACITIES=$(cat ${ANALYSIS_FILE} | jq -r '.capacities' 2>/dev/null)
-            TEMP_SERVICES=$(cat ${ANALYSIS_FILE} | jq -r '.services' 2>/dev/null)
-            CAPACITIES=${TEMP_CAPACITIES:-"{\"reserved_captain_slots\":8}"}
-            SERVICES=${TEMP_SERVICES:-"{\"ipfs\":{\"active\":true,\"peers_connected\":$(ipfs swarm peers | wc -l)},\"astroport\":{\"active\":true},\"g1billet\":{\"active\":true}}"}
+            TEMP_CAPACITIES=$(jq -r '.capacities // empty' ${ANALYSIS_FILE} 2>/dev/null)
+            TEMP_SERVICES=$(jq -r '.services // empty' ${ANALYSIS_FILE} 2>/dev/null)
+            CAPACITIES="${TEMP_CAPACITIES:-{\"reserved_captain_slots\":8}}"
+            SERVICES="${TEMP_SERVICES:-${_svc_fallback}}"
         else
             # Cache expired, update it in background
             (${MY_PATH}/tools/heartbox_analysis.sh update >/dev/null 2>&1) &
             # Use fallback data for immediate response
             CAPACITIES="{\"reserved_captain_slots\":8}"
-            SERVICES="{\"ipfs\":{\"active\":true,\"peers_connected\":$(ipfs swarm peers | wc -l)},\"astroport\":{\"active\":true},\"g1billet\":{\"active\":true}}"
+            SERVICES="${_svc_fallback}"
         fi
     else
         # No cache file, create it in background
         (${MY_PATH}/tools/heartbox_analysis.sh update >/dev/null 2>&1) &
         # Use fallback data for immediate response
         CAPACITIES="{\"reserved_captain_slots\":8}"
-        SERVICES="{\"ipfs\":{\"active\":true,\"peers_connected\":$(ipfs swarm peers | wc -l)},\"astroport\":{\"active\":true},\"g1billet\":{\"active\":true}}"
+        SERVICES="${_svc_fallback}"
     fi
 
 NODE12345="{

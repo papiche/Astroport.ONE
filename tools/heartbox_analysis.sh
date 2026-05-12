@@ -11,6 +11,7 @@
 MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 . "${MY_PATH}/my.sh"
+export LC_NUMERIC=C
 
 # Cache file for fast access
 CACHE_FILE="$HOME/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json"
