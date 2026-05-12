@@ -186,6 +186,8 @@ establish_ssh_tunnel() {
     local protocol="${1:-auto}"
     echo -e "\n${BOLD}Establishing SSH tunnel...${NC}"
 
+    close_ssh_tunnel "true"
+
     if [[ "$protocol" == "auto" || "$protocol" == "ipv6" ]]; then
         if check_ipv6_available "true"; then
             echo "Trying IPv6 connection..."
@@ -223,15 +225,22 @@ establish_ssh_tunnel() {
 
 close_ssh_tunnel() {
     local silent="${1:-false}"
-    local pid=$(lsof -t -i :$OPENWEBUI_PORT 2>/dev/null)
-    if [[ -n "$pid" ]]; then
-        local proc_info=$(ps -p $pid -o comm= 2>/dev/null)
+    local pids
+    pids=$(lsof -t -i :"$OPENWEBUI_PORT" 2>/dev/null)
+    local closed=0
+
+    for pid in $pids; do
+        local proc_info
+        proc_info=$(ps -p "$pid" -o comm= 2>/dev/null)
         if [[ "$proc_info" == "ssh" ]]; then
-            kill $pid 2>/dev/null
-            [[ "$silent" != "true" ]] && print_status "OK" "SSH tunnel closed (PID: $pid)"
-            rm -f "$STATUS_FILE"
-            return 0
+            kill "$pid" 2>/dev/null && ((closed++))
         fi
+    done
+
+    if [[ $closed -gt 0 ]]; then
+        [[ "$silent" != "true" ]] && print_status "OK" "SSH tunnel(s) closed ($closed PID(s))"
+        rm -f "$STATUS_FILE"
+        return 0
     fi
     [[ "$silent" != "true" ]] && print_status "INFO" "No SSH tunnel to close"
     return 1
