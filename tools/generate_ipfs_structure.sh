@@ -4100,7 +4100,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
 
         function saveMarkdownFile() {
             const content = $('#markdown-textarea').val();
-            const filename = filteredItems[currentFileIndex].name;
+            const filename = $('#modal-filename').text() || (filteredItems[currentFileIndex] && filteredItems[currentFileIndex].name) || 'untitled.md';
             const saveStatus = $('#save-status');
 
             saveStatus.removeClass('error').addClass('saving').text('Saving...');
