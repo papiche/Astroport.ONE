@@ -445,6 +445,31 @@ echo "20H12 (♥‿‿♥) Execution time was $dur seconds."
 ## POWER CONSUMPTION REPORT - Last 24h from 24/7 PowerJoular (powerjoular.service)
 ########################################################################
 POWER_REPORT_HTML="/tmp/20h12_power_report.html"
+rm -f "$POWER_REPORT_HTML"
+
+## WATCHDOG powerjoular.service — relance si inactif, réinitialise le CSV si stale
+if systemctl is-enabled powerjoular.service &>/dev/null; then
+    if ! systemctl is-active --quiet powerjoular.service; then
+        echo "⚡ powerjoular.service inactif — réinitialisation CSV + relance..." >> $LOG_FILE
+        # Vider le CSV stale avant redémarrage (powerjoular append, pas écrase)
+        if sudo test -f "$POWER_24H_CSV" 2>/dev/null; then
+            sudo systemctl stop powerjoular.service 2>/dev/null || true
+            sudo truncate -s 0 "$POWER_24H_CSV" 2>/dev/null \
+                || sudo bash -c "> '$POWER_24H_CSV'" 2>/dev/null || true
+            echo "🗑️ CSV réinitialisé : $POWER_24H_CSV" >> $LOG_FILE
+        fi
+        if sudo systemctl start powerjoular.service 2>&1 | tee -a $LOG_FILE; then
+            sleep 5
+            if systemctl is-active --quiet powerjoular.service; then
+                echo "✅ powerjoular.service relancé avec succès" >> $LOG_FILE
+            else
+                echo "⚠️ powerjoular.service n'a pas démarré — vérifiez : sudo systemctl status powerjoular" >> $LOG_FILE
+            fi
+        fi
+    else
+        echo "✅ powerjoular.service actif" >> $LOG_FILE
+    fi
+fi
 
 if [[ -f "${MY_PATH}/tools/power_monitor.sh" ]] && [[ -f "$POWER_24H_CSV" ]] || sudo test -f "$POWER_24H_CSV" 2>/dev/null; then
     echo "📊 Generating power consumption report (last 24h from 24/7 CSV)..."
@@ -461,6 +486,13 @@ if [[ -f "${MY_PATH}/tools/power_monitor.sh" ]] && [[ -f "$POWER_24H_CSV" ]] || 
         # Trim 24/7 CSV to last 24h only to avoid filling disk
         echo "🗜️ Trimming 24/7 power CSV to last 24h..." >> $LOG_FILE
         "${MY_PATH}/tools/power_monitor.sh" trim-24h-csv "$POWER_24H_CSV" 2>&1 | tee -a $LOG_FILE || true
+        # Vérification post-trim : le trim stoppe/relance powerjoular — s'assurer qu'il tourne toujours
+        sleep 3
+        if systemctl is-enabled powerjoular.service &>/dev/null && ! systemctl is-active --quiet powerjoular.service; then
+            echo "⚠️ powerjoular.service est tombé après le trim — relance de secours..." >> $LOG_FILE
+            sudo systemctl start powerjoular.service 2>&1 | tee -a $LOG_FILE || \
+                echo "❌ Impossible de relancer powerjoular.service après trim" >> $LOG_FILE
+        fi
     else
         echo "⚠️ Power report from 24/7 CSV failed or insufficient data" >> $LOG_FILE
     fi
