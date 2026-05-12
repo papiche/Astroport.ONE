@@ -26,9 +26,8 @@ get_email_json() {
     if [ -n "$hexgate" ]; then
         source="LOCAL"
         if [ -f "${HOME}/.zen/game/nostr/${email}/GPS" ]; then
-            source ${HOME}/.zen/game/nostr/${email}/GPS 2>/dev/null
-            lat="$LAT"
-            lon="$LON"
+            lat=$(grep -oP '(?<=LAT=)-?[0-9]+\.?[0-9]*' "${HOME}/.zen/game/nostr/${email}/GPS" 2>/dev/null | head -1)
+            lon=$(grep -oP '(?<=LON=)-?[0-9]+\.?[0-9]*' "${HOME}/.zen/game/nostr/${email}/GPS" 2>/dev/null | head -1)
         fi
         g1pubnostr=$(cat ${HOME}/.zen/game/nostr/${email}/G1PUBNOSTR 2>/dev/null)
         npub=$(cat ${HOME}/.zen/game/nostr/${email}/NPUB 2>/dev/null)
@@ -41,9 +40,8 @@ get_email_json() {
         if [ -n "$hexgate" ]; then
             source="CACHE"
             if [ -f "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${email}/GPS" ]; then
-                source ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${email}/GPS 2>/dev/null
-                lat="$LAT"
-                lon="$LON"
+                lat=$(grep -oP '(?<=LAT=)-?[0-9]+\.?[0-9]*' "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${email}/GPS" 2>/dev/null | head -1)
+                lon=$(grep -oP '(?<=LON=)-?[0-9]+\.?[0-9]*' "${HOME}/.zen/tmp/${IPFSNODEID}/TW/${email}/GPS" 2>/dev/null | head -1)
             fi
             g1pubnostr=$(cat ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${email}/G1PUBNOSTR 2>/dev/null)
             npub=$(cat ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${email}/NPUB 2>/dev/null)
@@ -60,11 +58,10 @@ get_email_json() {
                 source="SWARM"
                 # Find the correct 12345.json file in swarm directory first
                 local swarm_node_dir=$(echo "$swarm_dir" | sed 's|/TW/.*||')
-                # Get GPS coordinates
+                # Get GPS coordinates (safe extraction — no source to prevent RCE via swarm GPS)
                 if [ -f "${swarm_dir}/GPS" ]; then
-                    source ${swarm_dir}/GPS 2>/dev/null
-                    lat="$LAT"
-                    lon="$LON"
+                    lat=$(grep -oP '(?<=LAT=)-?[0-9]+\.?[0-9]*' "${swarm_dir}/GPS" 2>/dev/null | head -1)
+                    lon=$(grep -oP '(?<=LON=)-?[0-9]+\.?[0-9]*' "${swarm_dir}/GPS" 2>/dev/null | head -1)
                 fi
                 # Get other data
                 g1pubnostr=$(cat ${swarm_dir}/G1PUBNOSTR 2>/dev/null)
@@ -192,30 +189,39 @@ if [[ "${EMAIL}" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
 
     # LOCAL
     HEXGATE=$(cat ${HOME}/.zen/game/nostr/${EMAIL}/HEX 2>/dev/null) \
-                        && source="LOCAL" && source ${HOME}/.zen/game/nostr/${EMAIL}/GPS 2>/dev/null \
+                        && source="LOCAL" \
                         && G1PUBNOSTR=$(cat ${HOME}/.zen/game/nostr/${EMAIL}/G1PUBNOSTR 2>/dev/null) \
                         && NPUB=$(cat ${HOME}/.zen/game/nostr/${EMAIL}/NPUB 2>/dev/null) \
                         && RELAY=$myRELAY
- 
+
     # CACHE
     [[ -z $HEXGATE ]] && HEXGATE=$(cat ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${EMAIL}/HEX 2>/dev/null) \
-                        && source="CACHE" && source ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${EMAIL}/GPS 2>/dev/null \
+                        && source="CACHE" \
                         && G1PUBNOSTR=$(cat ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${EMAIL}/G1PUBNOSTR 2>/dev/null) \
                         && NPUB=$(cat ${HOME}/.zen/tmp/${IPFSNODEID}/TW/${EMAIL}/NPUB 2>/dev/null) \
                         && RELAY=$(cat ${HOME}/.zen/tmp/${IPFSNODEID}/12345.json 2>/dev/null | jq -r '.myRELAY' 2>/dev/null)
- 
+
     # SWARM
     [[ -z $HEXGATE ]] && SWARM_DIR=$(find ${HOME}/.zen/tmp/swarm -path "*/TW/${EMAIL}/HEX" -printf "%h" 2>/dev/null | head -1) \
                         && HEXGATE=$(cat ${SWARM_DIR}/HEX 2>/dev/null) \
                         && source="SWARM" \
                         && SWARM_NODE_DIR=$(echo "$SWARM_DIR" | sed 's|/TW/.*||') \
-                        && source ${SWARM_DIR}/GPS 2>/dev/null \
                         && G1PUBNOSTR=$(cat ${SWARM_DIR}/G1PUBNOSTR 2>/dev/null) \
                         && NPUB=$(cat ${SWARM_DIR}/NPUB 2>/dev/null) \
                         && RELAY=$(cat ${SWARM_NODE_DIR}/12345.json 2>/dev/null | jq -r '.myRELAY' 2>/dev/null)
- 
+
     [[ -z $HEXGATE ]] && exit 1
- 
+
+    ## Safe GPS extraction (prevents RCE via injected GPS files from swarm peers)
+    _GPS_FILE=""
+    case "$source" in
+        LOCAL) _GPS_FILE="${HOME}/.zen/game/nostr/${EMAIL}/GPS" ;;
+        CACHE) _GPS_FILE="${HOME}/.zen/tmp/${IPFSNODEID}/TW/${EMAIL}/GPS" ;;
+        SWARM) _GPS_FILE="${SWARM_DIR}/GPS" ;;
+    esac
+    LAT=$(grep -oP '(?<=LAT=)-?[0-9]+\.?[0-9]*' "$_GPS_FILE" 2>/dev/null | head -1)
+    LON=$(grep -oP '(?<=LON=)-?[0-9]+\.?[0-9]*' "$_GPS_FILE" 2>/dev/null | head -1)
+
     ## OUTPUT
     echo "export source=${source} HEX=${HEXGATE} LAT=${LAT} LON=${LON} EMAIL=${EMAIL} G1PUBNOSTR=${G1PUBNOSTR} NPUB=${NPUB} RELAY=${RELAY}"
     exit 0

@@ -338,6 +338,11 @@ for PLAYER in "${NOSTR[@]}"; do
         if [[ -n "$BIRTHDATE" ]]; then
             DIFF=$(( ($(date +%s) - $(date -d "$BIRTHDATE" +%s)) / 86400 ))
             if [ $DIFF -gt 7 ]; then
+                # Guard against RPi without RTC booting in 1970 before NTP sync
+                if [[ $(date +%Y) -lt 2024 ]]; then
+                    log "ERROR" "System clock unreliable (year=$(date +%Y)) — skipping deletion for $PLAYER"
+                    continue
+                fi
                 if [[ -f ~/.zen/game/nostr/${PLAYER}/HEX ]]; then
                     HEX_TO_PURGE=$(cat ~/.zen/game/nostr/${PLAYER}/HEX)
                     log "INFO" "Purging local relay events for $PLAYER..."
@@ -347,7 +352,7 @@ for PLAYER in "${NOSTR[@]}"; do
                 log "CRITICAL" "TECHNICAL CORRUPTION: Ghost account detected. Purging: $PLAYER (Even if Captain)"
                 rm -rf "${HOME}/.zen/game/nostr/${PLAYER}"
                 rm -rf "${HOME}/.zen/game/players/${PLAYER}"
-                continue 
+                continue
             fi
         fi
         log "INFO" "Ghost account $PLAYER detected but period of grace active (< 7 days)."
@@ -619,6 +624,11 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
         if [[ -n "$BIRTHDATE" ]]; then
             DIFF=$(( ($(date +%s) - $(date -d "$BIRTHDATE" +%s)) / 86400 ))
             if [ $DIFF -gt 7 ]; then
+                # Guard against RPi without RTC booting in 1970 before NTP sync
+                if [[ $(date +%Y) -lt 2024 ]]; then
+                    log "ERROR" "System clock unreliable (year=$(date +%Y)) — skipping deletion for $PLAYER"
+                    continue
+                fi
                 log "CRITICAL" "TECHNICAL CORRUPTION: Keys unusable for $PLAYER. Forcing Hard Reset (rm -rf)."
                 # --- PURGE RELAIS STRFRY ---
                 if [[ -n "$HEX" ]]; then

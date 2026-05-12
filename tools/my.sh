@@ -1,4 +1,5 @@
 #shellcheck shell=sh disable=SC2034
+export LC_ALL=C
 function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
 Base32Normalize() {

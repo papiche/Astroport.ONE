@@ -3071,17 +3071,13 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                 isNostrConnected = true;
 
                 // Simple status check
-                if (nostrRelay.status === 1) { // OPEN
-                    console.log('✅ Relay status: CONNECTED');
-
-                    // Wait a bit for the connection to be fully established
-                    setTimeout(() => {
-                        console.log('Sending NIP42 authentication after connection delay...');
-                        sendNIP42Auth();
-                    }, 500);
-                } else {
-                    console.log('⚠️ Relay status:', nostrRelay.status);
-                }
+                // Always send NIP-42 auth after a successful connect — do NOT gate on
+                // nostrRelay.status because different nostr-tools versions expose the
+                // WebSocket state differently (or not at all), causing silent failures.
+                setTimeout(() => {
+                    console.log('Sending NIP42 authentication after connection delay...');
+                    sendNIP42Auth();
+                }, 500);
 
             } catch (error) {
                 console.error('Failed to connect to relay:', error);
@@ -4203,7 +4199,16 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
 
                     let errorMessage = 'Save failed';
                     if (xhr.responseJSON && xhr.responseJSON.detail) {
-                        errorMessage = xhr.responseJSON.detail;
+                        const d = xhr.responseJSON.detail;
+                        if (typeof d === 'string') {
+                            errorMessage = d;
+                        } else if (Array.isArray(d)) {
+                            errorMessage = d.map(e => e.msg || JSON.stringify(e)).join(' | ');
+                        }
+                    } else if (xhr.status === 403) {
+                        errorMessage = 'Auth failed — connect NOSTR first';
+                    } else if (xhr.status === 422) {
+                        errorMessage = 'Missing auth — connect NOSTR first';
                     }
 
                     saveStatus.removeClass('saving').addClass('error').text(errorMessage);
@@ -4214,20 +4219,32 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             });
         }
         function getAPIBaseUrl() {
-            // Extract the hostname (e.g., "https://ipfs.domain.tld" or "http://127.0.0.1:8080" or "http://ipfs.localhost:8080")
+            // ROAMING FIX: when the user browses their uDRIVE via a foreign station's
+            // IPFS gateway, we must POST uploads to their HOME station's UPassport,
+            // not the current gateway's.  The manifest stores the home gateway URL.
+            if (typeof currentManifest !== 'undefined' && currentManifest && currentManifest.my_ipfs_gateway) {
+                try {
+                    const gw = new URL(currentManifest.my_ipfs_gateway);
+                    // ipfs.DOMAIN → u.DOMAIN  (handles http://127.0.0.1:8080 unchanged)
+                    const uHost = gw.hostname.replace(/^ipfs\./, 'u.');
+                    let uPort = gw.port;
+                    if (uPort === "8080") { uPort = "54321"; }
+                    const url = gw.protocol + "//" + uHost + (uPort ? ":" + uPort : "");
+                    console.log('API Base URL (manifest home gateway):', url);
+                    return url;
+                } catch (e) {
+                    console.warn('Could not parse my_ipfs_gateway from manifest:', e);
+                }
+            }
+            // Fallback: derive from current URL (local / same-station access)
             const currentURL = new URL(window.location.href);
             const hostname = currentURL.hostname;
             const protocol = currentURL.protocol;
-
-            // Second bloc (UPlanetAPI_URL)
-            let uPort = currentURL.port;  // Nouvelle variable pour ce bloc
-            if (uPort === "8080") {
-                uPort = "54321";
-            }
+            let uPort = currentURL.port;
+            if (uPort === "8080") { uPort = "54321"; }
             let uHost = hostname.replace("ipfs", "u");
-            let UPlanetStation = protocol + "//" + uHost + (uPort ? ":" + uPort : "");
-
-            console.log('API Base URL detected:', UPlanetStation);
+            const UPlanetStation = protocol + "//" + uHost + (uPort ? ":" + uPort : "");
+            console.log('API Base URL (current URL fallback):', UPlanetStation);
             return UPlanetStation;
         }
 
@@ -4536,7 +4553,16 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
 
                         let errorMessage = 'Upload failed';
                         if (xhr.responseJSON && xhr.responseJSON.detail) {
-                            errorMessage = xhr.responseJSON.detail;
+                            const d = xhr.responseJSON.detail;
+                            if (typeof d === 'string') {
+                                errorMessage = d;
+                            } else if (Array.isArray(d)) {
+                                errorMessage = d.map(e => e.msg || JSON.stringify(e)).join(' | ');
+                            }
+                        } else if (xhr.status === 403) {
+                            errorMessage = 'Auth failed — connect NOSTR first';
+                        } else if (xhr.status === 422) {
+                            errorMessage = 'Missing auth — connect NOSTR first';
                         }
 
                         // Add error result
