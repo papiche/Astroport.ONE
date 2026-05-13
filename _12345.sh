@@ -728,8 +728,10 @@ while true; do
         if [[ $cache_age -lt 43200 ]]; then  # 12h = 43200 seconds
             TEMP_CAPACITIES=$(jq -r '.capacities // empty' ${ANALYSIS_FILE} 2>/dev/null)
             TEMP_SERVICES=$(jq -r '.services // empty' ${ANALYSIS_FILE} 2>/dev/null)
-            CAPACITIES="${TEMP_CAPACITIES:-{\"reserved_captain_slots\":8}}"
-            SERVICES="${TEMP_SERVICES:-${_svc_fallback}}"
+            CAPACITIES="${TEMP_CAPACITIES}"
+            [[ -z "${CAPACITIES}" ]] && CAPACITIES='{"reserved_captain_slots":8}'
+            SERVICES="${TEMP_SERVICES}"
+            [[ -z "${SERVICES}" ]] && SERVICES="${_svc_fallback}"
         else
             # Cache expired, update it in background
             (${MY_PATH}/tools/heartbox_analysis.sh update >/dev/null 2>&1) &
