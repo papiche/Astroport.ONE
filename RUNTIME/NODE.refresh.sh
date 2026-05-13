@@ -107,6 +107,7 @@ fi
 ##########################################################
 echo "############################################"
 echo "REFRESH UNODEs HEX"
+rm -Rf ~/.zen/game/nostr/UNODE_* ## REMOVE STALE NODES (same pattern as UMAP/SECTOR/REGION)
 ## Get swarm NODES HEX
 NODEHEXLIST=($(ls -t ~/.zen/tmp/swarm/*/HEX 2>/dev/null))
 # Ajouter le HEX de $IPFSNODEID
@@ -115,7 +116,6 @@ NODEHEXLIST+=($(ls -t ~/.zen/tmp/$IPFSNODEID/HEX 2>/dev/null))
 for nhex in ${NODEHEXLIST[@]}; do
     hex=$(cat $nhex)
     hexnode=$(echo $nhex | rev | cut -d '/' -f 2 | rev)
-    [[ -s  ~/.zen/game/nostr/UNODE_$hexnode/HEX ]] && continue
     echo "NOSTR UNODE $hexnode : HEX = $hex"
     mkdir -p ~/.zen/game/nostr/UNODE_$hexnode
     echo "$hex" > ~/.zen/game/nostr/UNODE_$hexnode/HEX
