@@ -1434,6 +1434,21 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
             chmod 600 ~/.zen/game/nostr/${PLAYER}/.secret.ipns
         fi
 
+        ## Chiffrement des secrets avec UPLANETG1PUB pour le roaming NIP-42 parfait
+        ## UPLANETG1PUB est déjà calculé par my.sh (keygen -t duniter UPLANETNAME UPLANETNAME).
+        ## Ces fichiers .uplanet.enc sont publiés dans l'arbre IPFS et récupérables
+        ## par 22242.sh sur n'importe quelle station du même swarm lors d'une auth NIP-42.
+        if [[ -n "$UPLANETG1PUB" ]]; then
+            for _s in .secret.nostr .secret.dunikey .secret.ipns; do
+                if [[ -s "${HOME}/.zen/game/nostr/${PLAYER}/${_s}" ]]; then
+                    ${MY_PATH}/../tools/natools.py encrypt -p "$UPLANETG1PUB" \
+                        -i "${HOME}/.zen/game/nostr/${PLAYER}/${_s}" \
+                        -o "${HOME}/.zen/game/nostr/${PLAYER}/${_s}.uplanet.enc" 2>/dev/null \
+                    && log "DEBUG" "🔐 Roaming secret chiffré: ${_s}.uplanet.enc"
+                fi
+            done
+        fi
+
         ## UPDATE IPNS RESOLVE
         log "DEBUG" "Starting IPFS add for ${PLAYER}"
         ipfs_start=$(date +%s)

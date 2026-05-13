@@ -216,7 +216,7 @@ if [ $URL ]; then
     CHOICE="$IMPORT"
 fi
 
-[ ! $2 ] && [[ $CHOICE == "" ]] && CHOICE=$(zenity --list --width 320 --height 300 --title="Catégorie" --text="Quelle catégorie pour ce media ?" --column="Catégorie" "Vlog" "Video" "Film" "Serie" "PDF" "Youtube" "MP3" 2>/dev/null)
+[ ! $2 ] && [[ $CHOICE == "" ]] && CHOICE=$(zenity --list --width 320 --height 340 --title="Catégorie" --text="Quelle catégorie pour ce media ?" --column="Catégorie" "uDRIVE" "Youtube" "MP3" "Film" "Serie" "Video" "PDF" "Vlog" 2>/dev/null)
 [[ $CHOICE == "" ]] && echo "NO CHOICE MADE" && exit 1
 
 # LOWER CARACTERS
@@ -1057,6 +1057,22 @@ ${URL:+Source: $URL
         fi
 
         convert_and_publish_video "$FILE"
+    ;;
+
+########################################################################
+# CASE ## uDRIVE - Ouvrir l'espace de stockage IPNS personnel
+########################################################################
+    udrive)
+        NOSTRNS=$(cat "$HOME/.zen/game/nostr/${PLAYER}/NOSTRNS" 2>/dev/null)
+        if [[ -z "$NOSTRNS" ]]; then
+            echo "❌ NOSTRNS introuvable pour $PLAYER"
+            espeak "uDRIVE not found"
+            exit 1
+        fi
+        UDRIVE_URL="${myIPFS}${NOSTRNS}/${PLAYER}/APP/uDRIVE"
+        echo "🗄️  Ouverture uDRIVE : $UDRIVE_URL"
+        xdg-open "$UDRIVE_URL" 2>/dev/null || echo "Ouvrez ce lien dans votre navigateur : $UDRIVE_URL"
+        espeak "Opening uDRIVE"
     ;;
 
     ########################################################################

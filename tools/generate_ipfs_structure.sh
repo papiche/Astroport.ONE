@@ -3064,8 +3064,37 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                 // Initialize relay without event listeners (compatibility fix)
                 nostrRelay = NostrTools.relayInit(NOSTRws);
 
+                // Capturer le challenge AUTH du relay (NIP-42 proper flow)
+                // strfry peut envoyer ["AUTH","<challenge>"] juste après la connexion.
+                let nip42RelayChallenge = '';
+                const _origOnMsg = nostrRelay.socket?.onmessage || null;
+                nostrRelay.on('notice', () => {}); // force l'ouverture du socket interne
+                // Patch WebSocket onmessage après connect() via hook sur _ws/_socket
+                nostrRelay._onAuthChallenge = (challenge) => {
+                    if (challenge) {
+                        nip42RelayChallenge = challenge;
+                        console.log('🔑 NIP-42 challenge AUTH reçu du relay:', challenge.substring(0, 16) + '...');
+                    }
+                };
+
                 console.log('Attempting relay connection...');
                 await nostrRelay.connect();
+
+                // Intercepter les messages AUTH du relay après connexion
+                const _ws = nostrRelay.ws || nostrRelay._ws || nostrRelay.socket;
+                if (_ws) {
+                    const _prev = _ws.onmessage;
+                    _ws.onmessage = function(e) {
+                        try {
+                            const msg = JSON.parse(e.data);
+                            if (Array.isArray(msg) && msg[0] === 'AUTH' && msg[1]) {
+                                nip42RelayChallenge = msg[1];
+                                console.log('🔑 NIP-42 challenge AUTH relay:', nip42RelayChallenge.substring(0,16) + '...');
+                            }
+                        } catch(_) {}
+                        if (_prev) _prev.call(this, e);
+                    };
+                }
 
                 console.log('✅ Connected to NOSTR relay:', NOSTRws);
                 isNostrConnected = true;
@@ -3095,13 +3124,38 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
             try {
                 console.log('Sending NIP42 authentication...');
 
+                // Récupérer un challenge dynamique depuis l'API UPassport
+                // (même mécanisme que UPlanet/earth/common.js → /api/nip42/challenge)
+                let nip42Challenge = nip42RelayChallenge || ('auth-' + Date.now());
+                try {
+                    const _apiBase = (typeof getAPIBaseUrl === 'function') ? getAPIBaseUrl() : '';
+                    if (_apiBase) {
+                        const _npub = (typeof NostrTools !== 'undefined' && NostrTools.nip19)
+                            ? NostrTools.nip19.npubEncode(userPublicKey)
+                            : userPublicKey;
+                        const _cRes = await fetch(
+                            `${_apiBase}/api/nip42/challenge?npub=${encodeURIComponent(_npub)}`,
+                            { method: 'GET', signal: AbortSignal.timeout(3000) }
+                        );
+                        if (_cRes.ok) {
+                            const _cData = await _cRes.json();
+                            if (_cData.challenge && typeof _cData.challenge === 'string' && _cData.challenge.length === 64) {
+                                nip42Challenge = _cData.challenge;
+                                console.log('🔑 NIP-42 challenge API:', nip42Challenge.substring(0, 16) + '…');
+                            }
+                        }
+                    }
+                } catch(_ce) {
+                    console.warn('⚠️ Challenge API non disponible, fallback relay/local:', _ce.message);
+                }
+
                 // Create auth event (NIP42)
                 const authEvent = {
                     kind: 22242,
                     created_at: Math.floor(Date.now() / 1000),
                     tags: [
                         ['relay', NOSTRws],
-                        ['challenge', '']  // Empty challenge for now
+                        ['challenge', nip42Challenge]
                     ],
                     content: '',
                     pubkey: userPublicKey
@@ -3145,8 +3199,10 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
 
                     const publishResult = await Promise.race([publishPromise, timeoutPromise]);
                     
-                    // CRITICAL: Give strfry's filter/22242.sh time to write the marker file to disk
-                    await new Promise(r => setTimeout(r, 1500));
+                    // Laisser le temps à 22242.sh d'écrire le marker ET de récupérer
+                    // les secrets IPFS pour le roaming (opération réseau jusqu'à 20s).
+                    // 3s suffit pour les players locaux ; le retry sur 403 gère le reste.
+                    await new Promise(r => setTimeout(r, 3000));
                     
                     console.log('✅ NIP42 authentication event published successfully');
                     console.log('Publish result:', publishResult);
@@ -4549,8 +4605,35 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                     },
                     error: function(xhr, status, error) {
                         console.error('Upload error:', error, xhr.responseJSON);
-                        failedCount++;
 
+                        const detail = xhr.responseJSON?.detail || '';
+                        const isRoamingNotReady = xhr.status === 403 &&
+                            typeof detail === 'string' &&
+                            detail.includes('not registered') &&
+                            !file._roamingRetried;
+
+                        // Roaming : 22242.sh récupère les secrets IPFS (peut prendre ~15s).
+                        // On réessaie une fois après 12s pour laisser le temps au roaming.
+                        if (isRoamingNotReady) {
+                            file._roamingRetried = true;
+                            console.log('⏳ Roaming en cours — retry dans 12s pour', file.name);
+                            $('#upload-results').append(`
+                                <div class="upload-result-item" id="roaming-retry-${index}">
+                                    <div class="upload-result-file">
+                                        <strong>${file.name}</strong><br>
+                                        <small>⏳ Roaming en cours, retry dans 12s…</small>
+                                    </div>
+                                    <div class="upload-result-status">⏳</div>
+                                </div>
+                            `);
+                            setTimeout(() => {
+                                $(`#roaming-retry-${index}`).remove();
+                                uploadNextFile(index);
+                            }, 12000);
+                            return;
+                        }
+
+                        failedCount++;
                         let errorMessage = 'Upload failed';
                         if (xhr.responseJSON && xhr.responseJSON.detail) {
                             const d = xhr.responseJSON.detail;
