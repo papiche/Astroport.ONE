@@ -468,6 +468,8 @@ connect_via_swarm() {
     # Connect to selected node
     if [[ -n "$selected_script" ]]; then
         echo "Connecting to: $selected_node"
+        # Fermer les listeners P2P existants avant d'en créer de nouveaux
+        ipfs p2p close -p "/x/${SERVICE_NAME}-${selected_node}" 2>/dev/null || true
         if bash "$selected_script" 2>/dev/null; then
             sleep 2
             if test_api "true"; then
@@ -481,6 +483,8 @@ connect_via_swarm() {
                 return 1
             fi
         else
+            # x_xxx.sh a pu créer des listeners avant d'échouer — nettoyer
+            ipfs p2p close -p "/x/${SERVICE_NAME}-${selected_node}" 2>/dev/null || true
             print_status "FAIL" "Failed to establish P2P connection to $selected_node"
             return 1
         fi

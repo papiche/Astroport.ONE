@@ -254,6 +254,7 @@ connect_via_swarm() {
     fi
 
     echo "Connecting to: $selected_node"
+    ipfs p2p close -p "/x/${SERVICE_NAME}-${selected_node}" 2>/dev/null || true
     if bash "$selected_script" 2>/dev/null; then
         sleep 2
         if test_api "true"; then
@@ -262,6 +263,8 @@ connect_via_swarm() {
             return 0
         fi
         ipfs p2p close -p "/x/${SERVICE_NAME}-$selected_node" 2>/dev/null
+    else
+        ipfs p2p close -p "/x/${SERVICE_NAME}-${selected_node}" 2>/dev/null || true
     fi
     print_status "FAIL" "P2P connection to $selected_node failed"
     return 1
