@@ -744,6 +744,9 @@ while true; do
         CAPACITIES="{\"reserved_captain_slots\":8}"
         SERVICES="${_svc_fallback}"
     fi
+    ## Defensive guards: ensure neither is ever empty (would produce "key": , in JSON)
+    [[ -z "${SERVICES}" ]]   && SERVICES="${_svc_fallback}"
+    [[ -z "${CAPACITIES}" ]] && CAPACITIES="{\"reserved_captain_slots\":8}"
 
 NODE12345="{
     \"version\" : \"12345.0.2\",
@@ -808,8 +811,16 @@ NODE12345="{
 }
 "
 
+    ## Validate JSON before writing (guard against empty SERVICES/CAPACITIES causing "key": , syntax errors)
+    if ! printf '%s' "${NODE12345}" | jq . >/dev/null 2>&1; then
+        echo "⚠️  NODE12345 JSON invalide — fallback minimal"
+        NODE12345="{\"version\":\"12345.0.2\",\"hostname\":\"$(myHostName)\",\"ipfsnodeid\":\"${IPFSNODEID}\",\"status\":\"json_build_error\",\"created\":\"${MOATS}\"}"
+    fi
+
     ## PUBLISH ${IPFSNODEID}/12345.json
-    if [[ "$NODE_STATE" != "$LAST_NODE_STATE" || ! -s "$LAST_NODE_JSON_FILE" || ! -s "$HOME/.zen/tmp/${IPFSNODEID}/12345.json" ]]; then
+    ## Also force rewrite if existing file is currently invalid JSON
+    if [[ "$NODE_STATE" != "$LAST_NODE_STATE" || ! -s "$LAST_NODE_JSON_FILE" || ! -s "$HOME/.zen/tmp/${IPFSNODEID}/12345.json" ]] \
+       || ! jq . "$HOME/.zen/tmp/${IPFSNODEID}/12345.json" >/dev/null 2>&1; then
         echo "${NODE12345}" > ~/.zen/tmp/${IPFSNODEID}/12345.json
         echo "${NODE12345}" > "$LAST_NODE_JSON_FILE"
         echo "$NODE_STATE" > "$LAST_NODE_STATE_FILE"
