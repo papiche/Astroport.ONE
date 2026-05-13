@@ -1,11 +1,11 @@
 # 🔐 UPlanet Oracle System - Documentation Complète
 
-**Version**: 3.0 - Système 100% Dynamique  
-**Date**: Décembre 2025  
-**Status**: Production - WoTx2 avec Progression Automatique Illimitée  
+**Version**: 3.1 - Oracle Officiel + WoTx2 P2P  
+**Date**: Mai 2026  
+**Status**: Production — Permits Officiels (Oracle) + Maîtrises Folksonomiques (Client Flutter P2P)  
 **License**: AGPL-3.0
 
-> **Système Oracle 100% Dynamique** : Ce document décrit la dernière version du système Oracle qui permet la création et la progression automatique illimitée de maîtrises auto-proclamées (WoTx2).
+> **Séparation des rôles (v3.1)** : L'Oracle (`ORACLE.refresh.sh`) gère désormais **uniquement les Permits Officiels Statiques** (ex : Permis de l'Astroport, droits d'administration). La progression des **Maîtrises Auto-Proclamées (WoTx2)** est entièrement déportée vers le client Flutter lourd, qui calcule le consensus P2P localement et auto-émet les Skill Achievements (Kind 30503) avec preuves cryptographiques intégrées. Voir [TrocZen/docs/WOTX2_SYSTEM.md](../../TrocZen/docs/WOTX2_SYSTEM.md) pour le protocole WoTx2 complet.
 
 ---
 
@@ -75,93 +75,95 @@ Le système Oracle v3.0 est **100% dynamique** :
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    SYSTÈME ORACLE V3.0                      │
+│                    SYSTÈME ORACLE V3.1                      │
 └─────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────┐         ┌──────────────────────┐
-│  Permits Officiels   │         │  WoTx2 Auto-Proclamés │
-│  (Statiques)         │         │  (Dynamiques)         │
+│  Permits Officiels   │         │  WoTx2 Folksonomique  │
+│  (Oracle — Statiques)│         │  (Client Flutter P2P) │
 ├──────────────────────┤         ├──────────────────────┤
-│ • PERMIT_ORE_V1      │         │ • PERMIT_ │
-│ • PERMIT_DRIVER      │         │   MAITRE_NAGEUR_X1    │
-│ • PERMIT_MEDICAL...  │         │ • PERMIT_  │
-│                      │         │   CUISINIER_X1        │
-│ Bootstrap: N+1       │         │                      │
-│ Compétences: Fixes   │         │ Bootstrap: 1          │
-│                      │         │ Compétences: Révélées │
-│                      │         │ Progression: Auto     │
-└──────────────────────┘         └──────────────────────┘
-         │                                │
-         └────────────┬───────────────────┘
-                      │
-         ┌────────────▼────────────┐
-         │   NOSTR Relay Network   │
-         │  (Kind 30500-30503)     │
-         └────────────┬────────────┘
-                      │
-         ┌────────────▼────────────┐
-         │   ORACLE.refresh.sh     │
-         │  (Maintenance quotidienne)│
-         └────────────┬────────────┘
-                      │
-         ┌────────────▼────────────┐
-         │   API /api/permit/*    │
-         │   (Authentification NIP-42)│
-         └────────────────────────┘
+│ • PERMIT_ORE_V1      │         │ • PERMIT_             │
+│ • PERMIT_DRIVER      │         │   BOULANGER_X1        │
+│ • PERMIT_MEDICAL...  │         │ • PERMIT_             │
+│                      │         │   SANS-GLUTEN_X1      │
+│ Bootstrap: N+1       │         │                       │
+│ Compétences: Fixes   │         │ Bootstrap: 1           │
+│ Validation: Oracle   │         │ Tags: Libres (folksono)│
+│                      │         │ Progression: Client    │
+└──────────┬───────────┘         └──────────┬────────────┘
+           │                                │
+           ▼                                ▼
+┌──────────────────────┐        ┌───────────────────────┐
+│   NOSTR Relay        │        │   NOSTR Relay         │
+│  (Kind 30500-30503)  │        │  (Kind 30500-30503,7) │
+└──────────┬───────────┘        └───────────────────────┘
+           │
+┌──────────▼───────────┐
+│   ORACLE.refresh.sh  │  ← Uniquement pour Permits Officiels
+│  (Cron quotidien)    │     WoTx2 : délégué au client Flutter
+└──────────┬───────────┘
+           │
+┌──────────▼───────────┐
+│   API /api/permit/*  │
+│   (Auth NIP-42)      │
+└──────────────────────┘
+
+Client Flutter (TrocZen) — WoTx2 uniquement :
+  checkLevelUpgrade() → Règle A (3 Kind 7+) ou Règle B (1 Kind 30502)
+    → publishSkillAchievement() → Kind 30503 auto-signé avec justifications
 ```
 
 ---
 
 ## 3. Système WoTx2 - Maîtrises Auto-Proclamées
 
-### 3.1. Principe de Progression Automatique
+### 3.1. Principe de Progression P2P
 
-Le système **WoTx2** permet la création de **maîtrises auto-proclamées** qui évoluent automatiquement de niveau en niveau selon les validations.
+Le système **WoTx2** permet la création de **maîtrises auto-proclamées** qui évoluent de niveau en niveau par consensus décentralisé. La progression est calculée **côté client Flutter** (TrocZen), non par l'Oracle.
 
-### 3.2. Workflow de Progression Illimitée
+Voir le protocole complet dans [TrocZen/docs/WOTX2_SYSTEM.md](../../TrocZen/docs/WOTX2_SYSTEM.md) (Règle A : consensus, Règle B : adoubement).
+
+### 3.2. Workflow de Progression (Client Flutter)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  MAÎTRISE AUTO-PROCLAMÉE - PROGRESSION AUTOMATIQUE           │
 └─────────────────────────────────────────────────────────────────┘
 
-┌─────────────┐
-│  Niveau X1  │  Création initiale par l'utilisateur
-│             │  • ID: PERMIT_[NOM]_X1
-│ 1 signature │  • 1 attestation requise
-│             │  • Compétence réclamée dans la demande 30501
-└──────┬──────┘
+┌─────────────────────────────────────────────────────────────────┐
+│  CÔTÉ CLIENT FLUTTER (TrocZen) — Sans Oracle                  │
+└─────────────────────────────────────────────────────────────────┘
+
+┌──────────────┐
+│   Niveau X1  │  Auto-déclaration par l'utilisateur
+│              │  • Kind 30500 signé par l'utilisateur
+│              │  • Kind 30501 : demande d'attestation
+└──────┬───────┘
        │
-       │ ✅ 1 attestation (30502) reçue
-       │ ✅ ORACLE.refresh.sh émet 30503
-       │ ✅ Authentifie avec NIP-42 (kind 22242)
-       │ ✅ Crée automatiquement X2
+       │  ✅ Règle B : 1 Kind 30502 (adoubement) reçu
+       │  OU
+       │  ✅ Règle A : 3 Kind 7 positifs distincts reçus
        ▼
-┌─────────────┐
-│  Niveau X2 │  Créé automatiquement par ORACLE.refresh.sh
-│           │  • ID: PERMIT_[NOM]_X2
-│ 2 signatures│  • 2 compétences + 2 attestations requises
-│ 2 compétences│  • Enrichi des compétences révélées en X1
-└──────┬──────┘
+┌──────────────┐
+│   Niveau X2  │  Client publie Kind 30503 auto-signé
+│              │  • Tags e[] = IDs justificatifs
+└──────┬───────┘
        │
-       │ ✅ 2 attestations (30502) reçues
-       │ ✅ ORACLE.refresh.sh émet 30503
-       │ ✅ Authentifie avec NIP-42
-       │ ✅ Crée automatiquement X3
+       │  ✅ Même règles appliquées au niveau suivant
        ▼
-┌─────────────┐
-│  Niveau X3  │  Créé automatiquement
-│             │  • 3 compétences + 3 attestations requises
-└──────┬──────┘
-       │
-       │ ✅ Progression continue...
-       ▼
-┌─────────────┐
-│  Niveau Xn  │  Progression automatique infinie
-│             │  • Chaque niveau nécessite N compétences et N signatures
-│ N signatures│  • Labels: Expert (X5-X10), Maître (X11-X50), 
-│ N compétences│    Grand Maître (X51-X100), Maître Absolu (X101+)
-└─────────────┘
+┌──────────────┐
+│  Niveau Xn   │  Progression continue côté client
+│              │  • Labels : Expert (X5-X10), Maître (X11-X50),
+│              │    Grand Maître (X51-X100), Maître Absolu (X101+)
+└──────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  CÔTÉ ORACLE (Astroport) — Permits Officiels uniquement       │
+└─────────────────────────────────────────────────────────────────┘
+
+  ORACLE.refresh.sh vérifie uniquement les Permits Officiels :
+  Kind 30501 reçu → N attestations 30502 atteintes → émet Kind 30503
+  signé par UPLANETNAME_G1.
 ```
 
 ### 3.3. Labels Dynamiques
@@ -447,9 +449,11 @@ Le système **WoTx2** permet la création de **maîtrises auto-proclamées** qui
 }
 ```
 
-### 5.4. Kind 30503 - Verifiable Credential
+### 5.4. Kind 30503 - Skill Achievement / Verifiable Credential
 
-**Publié par** : `UPLANETNAME_G1` (après validation par ORACLE.refresh.sh)
+**Publié par** :
+- **Permits Officiels** : `UPLANETNAME_G1` (après validation par ORACLE.refresh.sh)
+- **WoTx2 / Folksonomie** : L'utilisateur lui-même (auto-signé, avec preuves dans les tags `e`)
 
 ```json
 {
@@ -645,10 +649,7 @@ Liste les demandes, credentials, ou attestations
    - Compte les attestations 30502 pour chaque demande
    - Émet 30503 si seuil atteint
 
-3. **Progression automatique WoTx2** :
-   - Détecte les maîtrises auto-proclamées validées
-   - Authentifie avec NIP-42
-   - Crée automatiquement le niveau suivant (X(n+1))
+3. **Progression automatique WoTx2** : ~~Déprécié — désormais géré côté client Flutter (TrocZen).~~ `ORACLE.refresh.sh` ne crée plus les niveaux suivants (Xn+1) pour les maîtrises auto-proclamées. Cette charge a été déportée vers le client mobile lourd.
 
 4. **Vérification des credentials expirés** :
    - Liste tous les credentials
@@ -788,17 +789,19 @@ X3 → X4 → X5 → ... → X10 (Expert)
               └─> Progression illimitée jusqu'à X144 et au-delà
 ```
 
-### 10.2. Comparaison : Permits Officiels vs WoTx2
+### 10.2. Comparaison : Permits Officiels vs WoTx2 (Folksonomie P2P)
 
-| Aspect | Permits Officiels | WoTx2 Auto-Proclamés |
-|--------|----------------|---------------------|
-| **Création** | Par UPLANETNAME_G1 (admin) | Par utilisateur (auto-proclamé) |
-| **ID** | Fixe (ex: PERMIT_ORE_V1) | Dynamique (PERMIT_*_X1) |
-| **Progression** | Statique | Automatique illimitée X1→X2→...→X144→... |
-| **Compétences** | Définies à la création | Révélées progressivement |
-| **Bootstrap** | Requis (N+1 membres) | Non requis (démarre avec 1) |
-| **Utilisation** | Permis officiels | Maîtrises libres |
-| **Authentification API** | NIP-42 pour création | NIP-42 pour progression automatique |
+| Aspect | Permits Officiels (Oracle) | WoTx2 (Folksonomie P2P) |
+|--------|---------------------------|------------------------|
+| **Création** | Par administrateur (`UPLANETNAME_G1`) | Auto-déclaration par l'utilisateur (Kind 30500 auto-signé) |
+| **Tags** | Définis à la création | Libres (folksonomie — émergence par usage) |
+| **Validation** | Script centralisé `ORACLE.refresh.sh` | Client Flutter lourd (`checkLevelUpgrade()`) |
+| **Émission Kind 30503** | Signé par la clé Oracle | Auto-signé par l'utilisateur (preuves dans tags `e`) |
+| **Philosophie** | Top-Down (Autorité) | Bottom-Up (Consensus des pairs) |
+| **Progression** | Statique (1 niveau) | Dynamique : Règle A (3 pairs) ou Règle B (Adoubement) |
+| **Bootstrap requis** | Oui (N+1 membres) | Non (démarre avec 1 auto-déclaration) |
+| **Auth NIP-42** | Oui (pour `/api/permit/define`) | Non (pas d'appel API Oracle) |
+| **Dislikes (bifurcations)** | N/A | Collectés (Kind 7 `-`), traitement algorithmique planifié |
 
 ---
 
@@ -925,15 +928,15 @@ curl -s http://127.0.0.1:54321/api/permit/stats | jq
 
 ## 14. Conclusion
 
-Le Système Oracle v3.0 est un système **100% dynamique** qui permet :
+Le Système Oracle v3.1 assure une **séparation claire des responsabilités** :
 
-- ✅ La création libre de maîtrises auto-proclamées
-- ✅ La progression automatique illimitée (X1 → X2 → ... → X144 → ...)
-- ✅ La découverte progressive des compétences
-- ✅ L'authentification sécurisée via NIP-42
-- ✅ La validation décentralisée par les pairs
+- ✅ **Oracle (Astroport)** : Gestion des Permits Officiels Statiques (top-down, NIP-42, `UPLANETNAME_G1`)
+- ✅ **Client Flutter (TrocZen)** : Gestion des Maîtrises WoTx2 (bottom-up, P2P, folksonomie)
+- ✅ La progression WoTx2 est calculée localement par le client (Règle A / Règle B)
+- ✅ Les Kind 30503 WoTx2 sont auto-signés avec preuves cryptographiques intégrées
+- ✅ L'authentification NIP-42 reste requise pour les seuls Permits Officiels
 
-**Le système évolue continuellement et s'adapte aux besoins de la communauté.**
+**Roadmap WoTx2** : traitement algorithmique des dislikes (Kind 7 `-`) pour la bifurcation des toiles de confiance. Voir [TrocZen/docs/WOTX2_SYSTEM.md §3.4](../../TrocZen/docs/WOTX2_SYSTEM.md).
 
 ---
 
