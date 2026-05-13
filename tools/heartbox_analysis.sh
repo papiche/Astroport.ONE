@@ -541,7 +541,7 @@ get_fast_capacities() {
     cat << EOF
     "zencard_slots": $zencard_slots,
     "nostr_slots": $nostr_slots,
-    "reserved_captain_slots": 8,
+    "reserved_captain_slots": 2,
     "available_space_gb": $total_available_gb,
     "power_score": $power_score,
     "crypto_score": $crypto_score,

@@ -729,26 +729,26 @@ while true; do
             TEMP_CAPACITIES=$(jq -r '.capacities // empty' ${ANALYSIS_FILE} 2>/dev/null)
             TEMP_SERVICES=$(jq -r '.services // empty' ${ANALYSIS_FILE} 2>/dev/null)
             CAPACITIES="${TEMP_CAPACITIES}"
-            [[ -z "${CAPACITIES}" ]] && CAPACITIES='{"reserved_captain_slots":8}'
+            [[ -z "${CAPACITIES}" ]] && CAPACITIES='{"reserved_captain_slots":2}'
             SERVICES="${TEMP_SERVICES}"
             [[ -z "${SERVICES}" ]] && SERVICES="${_svc_fallback}"
         else
             # Cache expired, update it in background
             (${MY_PATH}/tools/heartbox_analysis.sh update >/dev/null 2>&1) &
             # Use fallback data for immediate response
-            CAPACITIES="{\"reserved_captain_slots\":8}"
+            CAPACITIES="{\"reserved_captain_slots\":2}"
             SERVICES="${_svc_fallback}"
         fi
     else
         # No cache file, create it in background
         (${MY_PATH}/tools/heartbox_analysis.sh update >/dev/null 2>&1) &
         # Use fallback data for immediate response
-        CAPACITIES="{\"reserved_captain_slots\":8}"
+        CAPACITIES="{\"reserved_captain_slots\":2}"
         SERVICES="${_svc_fallback}"
     fi
     ## Defensive guards: ensure neither is ever empty (would produce "key": , in JSON)
     [[ -z "${SERVICES}" ]]   && SERVICES="${_svc_fallback}"
-    [[ -z "${CAPACITIES}" ]] && CAPACITIES="{\"reserved_captain_slots\":8}"
+    [[ -z "${CAPACITIES}" ]] && CAPACITIES="{\"reserved_captain_slots\":2}"
 
 NODE12345="{
     \"version\" : \"12345.0.2\",
