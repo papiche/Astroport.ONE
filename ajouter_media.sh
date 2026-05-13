@@ -216,13 +216,11 @@ if [ $URL ]; then
     CHOICE="$IMPORT"
 fi
 
-[ ! $2 ] && [[ $CHOICE == "" ]] && CHOICE=$(zenity --list --width 320 --height 300 --title="Catégorie" --text="Quelle catégorie pour ce media ?" --column="Catégorie" "Vlog" "Video" "Film" "Serie" "PDF" "Site" "Youtube" "MP3" 2>/dev/null)
+[ ! $2 ] && [[ $CHOICE == "" ]] && CHOICE=$(zenity --list --width 320 --height 300 --title="Catégorie" --text="Quelle catégorie pour ce media ?" --column="Catégorie" "Vlog" "Video" "Film" "Serie" "PDF" "Youtube" "MP3" 2>/dev/null)
 [[ $CHOICE == "" ]] && echo "NO CHOICE MADE" && exit 1
 
 # LOWER CARACTERS
 CAT=$(echo "${CHOICE}" | awk '{print tolower($0)}')
-# "site" = alias pour "pdf" avec URL web obligatoire
-[[ "$CAT" == "site" ]] && CAT="pdf"
 # UPPER CARACTERS
 CHOICE=$(echo "${CAT}" | awk '{print toupper($0)}')
 
