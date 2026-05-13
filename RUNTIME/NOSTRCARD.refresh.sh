@@ -1440,11 +1440,12 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
         ## par 22242.sh sur n'importe quelle station du même swarm lors d'une auth NIP-42.
         if [[ -n "$UPLANETG1PUB" ]]; then
             for _s in .secret.nostr .secret.dunikey .secret.ipns; do
-                if [[ -s "${HOME}/.zen/game/nostr/${PLAYER}/${_s}" ]]; then
+                if [[ -s "${HOME}/.zen/game/nostr/${PLAYER}/${_s}" && \
+                      ! -s "${HOME}/.zen/game/nostr/${PLAYER}/${_s}.uplanet.enc" ]]; then
                     ${MY_PATH}/../tools/natools.py encrypt -p "$UPLANETG1PUB" \
                         -i "${HOME}/.zen/game/nostr/${PLAYER}/${_s}" \
                         -o "${HOME}/.zen/game/nostr/${PLAYER}/${_s}.uplanet.enc" 2>/dev/null \
-                    && log "DEBUG" "🔐 Roaming secret chiffré: ${_s}.uplanet.enc"
+                    && log "DEBUG" "🔐 Roaming secret chiffré (1ère fois): ${_s}.uplanet.enc"
                 fi
             done
         fi
