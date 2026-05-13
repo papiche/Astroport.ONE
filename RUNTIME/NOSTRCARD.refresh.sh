@@ -1436,16 +1436,24 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
 
         ## Chiffrement des secrets avec UPLANETG1PUB pour le roaming NIP-42 parfait
         ## UPLANETG1PUB est déjà calculé par my.sh (keygen -t duniter UPLANETNAME UPLANETNAME).
-        ## Ces fichiers .uplanet.enc sont publiés dans l'arbre IPFS et récupérables
-        ## par 22242.sh sur n'importe quelle station du même swarm lors d'une auth NIP-42.
+        ## Les fichiers chiffrés sont nommés _secret.TYPE.uplanet.enc (préfixe _ = visible
+        ## pour ipfs add sans flag --hidden, contrairement à .secret.TYPE.uplanet.enc).
+        ## Récupérés par 22242.sh via IPNS sur n'importe quelle station du même swarm.
         if [[ -n "$UPLANETG1PUB" ]]; then
             for _s in .secret.nostr .secret.dunikey .secret.ipns; do
+                _enc="_${_s:1}.uplanet.enc"  # .secret.nostr → _secret.nostr.uplanet.enc
+                # Migration des anciens fichiers cachés vers le nom visible
+                [[ -f "${HOME}/.zen/game/nostr/${PLAYER}/${_s}.uplanet.enc" && \
+                   ! -f "${HOME}/.zen/game/nostr/${PLAYER}/${_enc}" ]] && \
+                    mv "${HOME}/.zen/game/nostr/${PLAYER}/${_s}.uplanet.enc" \
+                       "${HOME}/.zen/game/nostr/${PLAYER}/${_enc}" && \
+                    log "DEBUG" "🔄 Migration roaming secret: ${_s}.uplanet.enc → ${_enc}"
                 if [[ -s "${HOME}/.zen/game/nostr/${PLAYER}/${_s}" && \
-                      ! -s "${HOME}/.zen/game/nostr/${PLAYER}/${_s}.uplanet.enc" ]]; then
+                      ! -s "${HOME}/.zen/game/nostr/${PLAYER}/${_enc}" ]]; then
                     ${MY_PATH}/../tools/natools.py encrypt -p "$UPLANETG1PUB" \
                         -i "${HOME}/.zen/game/nostr/${PLAYER}/${_s}" \
-                        -o "${HOME}/.zen/game/nostr/${PLAYER}/${_s}.uplanet.enc" 2>/dev/null \
-                    && log "DEBUG" "🔐 Roaming secret chiffré (1ère fois): ${_s}.uplanet.enc"
+                        -o "${HOME}/.zen/game/nostr/${PLAYER}/${_enc}" 2>/dev/null \
+                    && log "DEBUG" "🔐 Roaming secret chiffré: ${_enc}"
                 fi
             done
         fi

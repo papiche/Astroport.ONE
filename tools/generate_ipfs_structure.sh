@@ -2911,6 +2911,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
         let userPublicKey = null;
         let userPrivateKey = null;
         let isOwner = false;
+        let nip42RelayChallenge = '';  // challenge AUTH reçu du relay, partagé entre connectToRelay() et sendNIP42Auth()
 
         const typeIcons = {
             image: 'fas fa-image',
@@ -3066,7 +3067,7 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
 
                 // Capturer le challenge AUTH du relay (NIP-42 proper flow)
                 // strfry peut envoyer ["AUTH","<challenge>"] juste après la connexion.
-                let nip42RelayChallenge = '';
+                nip42RelayChallenge = '';  // reset (variable de scope module)
                 const _origOnMsg = nostrRelay.socket?.onmessage || null;
                 nostrRelay.on('notice', () => {}); // force l'ouverture du socket interne
                 // Patch WebSocket onmessage après connect() via hook sur _ws/_socket
@@ -3183,9 +3184,16 @@ cat > "$SOURCE_DIR/index.html" << 'HTML_EOF'
                         try {
                             const pub = nostrRelay.publish(signedAuthEvent);
                             let isResolved = false;
-                            pub.on('ok', () => { if (!isResolved) { isResolved = true; resolve(true); } });
-                            pub.on('failed', (reason) => { if (!isResolved) { isResolved = true; reject(new Error(reason)); } });
-                            // Fallback timeout in case relay doesn't send OK
+                            if (pub && typeof pub.then === 'function') {
+                                // nostr-tools v2+: retourne une Promise
+                                pub.then(() => { if (!isResolved) { isResolved = true; resolve(true); } })
+                                   .catch((r) => { if (!isResolved) { isResolved = true; reject(new Error(r)); } });
+                            } else if (pub && typeof pub.on === 'function') {
+                                // nostr-tools v1: retourne un objet avec .on()
+                                pub.on('ok', () => { if (!isResolved) { isResolved = true; resolve(true); } });
+                                pub.on('failed', (r) => { if (!isResolved) { isResolved = true; reject(new Error(r)); } });
+                            }
+                            // Fallback timeout (relay sans réponse OK, ou publish() retourne undefined)
                             setTimeout(() => { if (!isResolved) { isResolved = true; resolve(true); } }, 2500);
                         } catch(e) {
                             reject(e);

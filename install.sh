@@ -41,6 +41,7 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     echo "  CAPTAIN_EMAIL, NODE_DOMAIN, CAPTAIN_EMAIL_DOMAIN, INSTALL_PROFILE"
     echo "  INSTALL_OLLAMA=yes|no    → Ollama (si GPU détecté)"
     echo "  INSTALL_COMFYUI=yes|no   → ComfyUI Docker (si GPU détecté)"
+    echo "  INSTALL_AI_SERVICES      → Liste des services IA à installer (ex: open-webui,qdrant) (si profil ai-company)"
     echo ""
     echo "Exemples d'installation silencieuse :"
     echo "  bash install.sh \"\" \"ma-base.org\"                    -> Standard sur ma-base.org"
@@ -385,7 +386,13 @@ case "${INSTALL_PROFILE}" in
         ~/.zen/Astroport.ONE/install/install_prometheus.sh \
             && echo "✅ Prometheus heartbox monitoring actif (:9090)" \
             || echo "⚠️  Prometheus — erreur (non bloquant)"
-        ~/.zen/Astroport.ONE/install/install-ai-company.docker.sh \
+        
+        AI_SVC_ARGS=""
+        if [[ -n "${INSTALL_AI_SERVICES:-}" ]]; then
+            AI_SVC_ARGS="${INSTALL_AI_SERVICES}"
+        fi
+        
+        ~/.zen/Astroport.ONE/install/install-ai-company.docker.sh $AI_SVC_ARGS \
             && AISTACK_ACTIVE=true \
             && echo "✅ AI Company Stack démarrée" \
             || echo "⚠️  AI Stack — erreur (voir ~/.zen/ai-company/)"

@@ -47,14 +47,19 @@ else
     exit 1
 fi
 
-case "$1" in
+TARGET_SVC="${1:-all}"
+ALL_TARGETS=("$@")
+[[ ${#ALL_TARGETS[@]} -eq 0 ]] && ALL_TARGETS=("all")
+
+case "$TARGET_SVC" in
     --help|-h)
         cat << HELP
 ${BOLD}${CYAN}AI Company Stack Manager — UPlanet ZEN[0] (Mem0 + Qdrant)${NC}
 
-Usage: install-ai-company.docker.sh [--uninstall [--purge]] [--check]
+Usage: install-ai-company.docker.sh [service] [--uninstall [--purge]] [--check]
 
-  (sans argument)   Installer / mettre à jour la stack
+  (sans argument)   Installer / mettre à jour toute la stack
+  [service]         Installer / mettre à jour un service spécifique (open-webui, mirofish, qdrant, vane, dify)
   --check           Vérifier la compatibilité matérielle sans installer
   --uninstall       Arrêter et supprimer les containers
   --uninstall --purge  + supprimer les volumes/données
@@ -235,28 +240,46 @@ networks:
 EOF
 
 # --- 2. INSTALLATION DE DIFY.AI ---
-echo -e "⏳ Téléchargement de Dify.ai..."
-if [ ! -d "dify" ]; then
-    git clone --depth 1 https://github.com/langgenius/dify.git dify
-fi
+if [[ " ${ALL_TARGETS[*]} " == *" all "* || " ${ALL_TARGETS[*]} " == *" dify "* ]]; then
+    echo -e "⏳ Téléchargement de Dify.ai..."
+    if [ ! -d "dify" ]; then
+        git clone --depth 1 https://github.com/langgenius/dify.git dify
+    fi
 
-cd dify/docker
-if [ ! -f .env ]; then
-    cp .env.example .env
-fi
+    cd dify/docker
+    if [ ! -f .env ]; then
+        cp .env.example .env
+    fi
 
-# Always ensure the ports are set to our variables
-sed -i "s/^EXPOSE_NGINX_PORT=.*/EXPOSE_NGINX_PORT=${PORT_DIFY}/" .env
-sed -i "s/^EXPOSE_NGINX_SSL_PORT=.*/EXPOSE_NGINX_SSL_PORT=8444/" .env
+    # Always ensure the ports are set to our variables
+    sed -i "s/^EXPOSE_NGINX_PORT=.*/EXPOSE_NGINX_PORT=${PORT_DIFY}/" .env
+    sed -i "s/^EXPOSE_NGINX_SSL_PORT=.*/EXPOSE_NGINX_SSL_PORT=8444/" .env
+    cd "$INSTALL_DIR"
+fi
 
 # --- LANCEMENT DE LA STACK ---
-echo -e "⏳ Démarrage de Open WebUI et Qdrant..."
-cd "$INSTALL_DIR"
-$DOCKER_CMD up -d
+echo -e "⏳ Démarrage de la stack..."
 
-echo -e "⏳ Démarrage de l'orchestrateur Dify.ai (peut prendre quelques minutes)..."
-cd "$INSTALL_DIR/dify/docker"
-$DOCKER_CMD up -d
+cd "$INSTALL_DIR"
+if [[ " ${ALL_TARGETS[*]} " == *" all "* ]]; then
+    echo -e "⏳ Démarrage de Open WebUI, Mirofish, Qdrant et Vane..."
+    $DOCKER_CMD up -d
+else
+    for SVC in "${ALL_TARGETS[@]}"; do
+        if [[ "$SVC" == "open-webui" || "$SVC" == "open_webui" || "$SVC" == "mirofish" || "$SVC" == "qdrant" || "$SVC" == "vane" ]]; then
+            SVC_NAME="$SVC"
+            [[ "$SVC_NAME" == "open_webui" ]] && SVC_NAME="open-webui"
+            echo -e "⏳ Démarrage de $SVC_NAME..."
+            $DOCKER_CMD up -d "$SVC_NAME"
+        fi
+    done
+fi
+
+if [[ " ${ALL_TARGETS[*]} " == *" all "* || " ${ALL_TARGETS[*]} " == *" dify "* ]]; then
+    echo -e "⏳ Démarrage de l'orchestrateur Dify.ai (peut prendre quelques minutes)..."
+    cd "$INSTALL_DIR/dify/docker"
+    $DOCKER_CMD up -d
+fi
 
 # --- RÉCAPITULATIF ---
 echo -e "\n${BOLD}${YELLOW}====================================================${NC}"
