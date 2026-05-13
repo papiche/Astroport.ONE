@@ -388,12 +388,26 @@ ask_tmdb_metadata() {
     # Saison/Épisode (série uniquement)
     SEASON_NUMBER="" EPISODE_NUMBER=""
     if [[ "$tmdb_cat" == "serie" ]]; then
+        # Auto-détection depuis le nom de fichier (format SxxExx)
         if echo "$FILE_NAME" | grep -qiE 's[0-9]+e[0-9]+'; then
             SEASON_NUMBER=$(echo "$FILE_NAME" | grep -oiE 's([0-9]+)' | grep -oiE '[0-9]+' | head -1)
             EPISODE_NUMBER=$(echo "$FILE_NAME" | grep -oiE 'e([0-9]+)' | grep -oiE '[0-9]+' | head -1)
         fi
-        [[ -z "$PLAYER" ]] && SEASON_NUMBER=$(zenity --entry --width 300 --title "Saison" --text "Numéro de saison (ex: 1)" --entry-text="$SEASON_NUMBER")
-        [[ -z "$PLAYER" ]] && EPISODE_NUMBER=$(zenity --entry --width 300 --title "Épisode" --text "Numéro d'épisode (ex: 1)" --entry-text="$EPISODE_NUMBER")
+        # Récupération depuis les métadonnées TMDB scrapées
+        if [[ "$SCRAPE_TMDB" == "yes" && -n "$SCRAPED_METADATA" ]]; then
+            local scraped_season scraped_episode
+            scraped_season=$(echo "$SCRAPED_METADATA" | jq -r '.season_number // empty' 2>/dev/null)
+            scraped_episode=$(echo "$SCRAPED_METADATA" | jq -r '.episode_number // empty' 2>/dev/null)
+            [[ -n "$scraped_season" ]] && SEASON_NUMBER="$scraped_season"
+            [[ -n "$scraped_episode" ]] && EPISODE_NUMBER="$scraped_episode"
+        fi
+        # Extraction du numéro d'épisode seul depuis le nom de fichier (ex: E002)
+        if [[ -z "$EPISODE_NUMBER" ]]; then
+            EPISODE_NUMBER=$(echo "$FILE_NAME" | grep -oiE 'E([0-9]+)' | grep -oiE '[0-9]+' | head -1)
+        fi
+        # Saisie interactive (toujours affichée pour les séries, comme le champ Année)
+        SEASON_NUMBER=$(zenity --entry --width 300 --title "Saison" --text "Numéro de saison (ex: 1)" --entry-text="${SEASON_NUMBER:-1}")
+        EPISODE_NUMBER=$(zenity --entry --width 300 --title "Épisode" --text "Numéro d'épisode (ex: 1)" --entry-text="${EPISODE_NUMBER}")
         [[ -n "$SEASON_NUMBER" ]] && ! [[ "$SEASON_NUMBER" =~ ^[0-9]+$ ]] && SEASON_NUMBER=""
         [[ -n "$EPISODE_NUMBER" ]] && ! [[ "$EPISODE_NUMBER" =~ ^[0-9]+$ ]] && EPISODE_NUMBER=""
         if [[ -n "$SEASON_NUMBER" && -n "$EPISODE_NUMBER" ]]; then
