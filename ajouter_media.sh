@@ -432,6 +432,8 @@ ask_tmdb_metadata() {
         SCRAPED_VOTE_COUNT=$(echo "$SCRAPED_METADATA" | jq -r '.vote_count // empty' 2>/dev/null)
     fi
     [[ -z "$PLAYER" ]] && VIDEO_DESC=$(zenity --entry --width 600 --title "Description" --text "Description (optionnel)" --entry-text="$VIDEO_DESC")
+    # Sanitiser les sauts de ligne (TMDB overview peut être multi-lignes)
+    VIDEO_DESC=$(echo "${VIDEO_DESC}" | tr '\n\r' ' ')
 
     # Construire JSON métadonnées TMDB
     TMDB_METADATA_FILE="$HOME/.zen/tmp/tmdb_${MEDIAID}_$(date +%s).json"
@@ -611,9 +613,17 @@ convert_and_publish_video() {
         echo "✅ Vidéo publiée sur NOSTR! Event: ${EVENT_ID:0:16}..."
         espeak "Video published"
     elif [[ $PUBLISH_EXIT -eq 0 ]]; then
-        echo "⚠️  Upload OK mais event ID absent: $PUBLISH_OUTPUT"
+        echo "⚠️  Upload OK mais event ID absent"
+        echo "$PUBLISH_OUTPUT"
+        espeak "Upload done but event ID missing"
     else
-        echo "⚠️  Publication échouée (code: $PUBLISH_EXIT): $PUBLISH_OUTPUT"
+        echo "❌ Publication NOSTR échouée (code: $PUBLISH_EXIT):"
+        echo "$PUBLISH_OUTPUT"
+        espeak "Publication failed"
+        command -v zenity &>/dev/null && \
+            zenity --error --width 640 --title="Erreur publication NOSTR" \
+            --text="❌ Publication échouée (code $PUBLISH_EXIT)\n\n$(echo "$PUBLISH_OUTPUT" | tail -5)" \
+            2>/dev/null || true
     fi
 
     rm -f "$UPLOAD_OUTPUT_FILE"
@@ -804,8 +814,10 @@ case ${CAT} in
     # User Input & Description
     [ ! $2 ] && VIDEO_TITLE=$(zenity --entry --width 600 --title "Titre de la vidéo" --text "Confirmez le titre" --entry-text="$TITLE")
     [[ -z "$VIDEO_TITLE" ]] && VIDEO_TITLE="$TITLE"
-    
+    VIDEO_TITLE=$(echo "${VIDEO_TITLE}" | tr '\n\r' ' ')
+
     [ ! $2 ] && VIDEO_DESC=$(zenity --entry --width 600 --title "Description" --text "Description de la vidéo (optionnel)" --entry-text="")
+    VIDEO_DESC=$(echo "${VIDEO_DESC}" | tr '\n\r' ' ')
     
     # Auto-enrich desc with YouTube Info
     if [[ -f "$YOUTUBE_METADATA_JSON_FILE" ]] && command -v jq &> /dev/null; then
@@ -826,7 +838,12 @@ case ${CAT} in
         echo "✅ Video published successfully!"
         espeak "YouTube video published"
     else
-        echo "⚠️ Publication may have failed. Response: $PUBLISH_RESPONSE"
+        echo "❌ Publication échouée. Réponse: $PUBLISH_RESPONSE"
+        espeak "YouTube video publication failed"
+        command -v zenity &>/dev/null && \
+            zenity --error --width 640 --title="Erreur publication YouTube" \
+            --text="❌ Publication échouée\n\n$(echo "$PUBLISH_RESPONSE" | head -5)" \
+            2>/dev/null || true
     fi
 
     # Cleanup
@@ -1054,6 +1071,7 @@ ${URL:+Source: $URL
             TITLE_FOR_FILENAME="$TITLE"
             [ ! $2 ] && VIDEO_DESC=$(zenity --entry --width 600 \
                 --title "Description" --text "Description (optionnel)" --entry-text="")
+            VIDEO_DESC=$(echo "${VIDEO_DESC}" | tr '\n\r' ' ')
         fi
 
         convert_and_publish_video "$FILE"

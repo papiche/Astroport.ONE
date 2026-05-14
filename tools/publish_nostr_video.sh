@@ -659,8 +659,28 @@ fi
 IMETA_TAG_ARRAY="${IMETA_TAG_ARRAY}, \"service nip96\""
 IMETA_TAG_ARRAY="${IMETA_TAG_ARRAY}]"
 
-# Escape title for JSON
-ESCAPED_TITLE=$(echo "$TITLE" | sed 's/"/\\"/g')
+# Python-based sanitisation for JSON embedding.
+# tr -d '\xHH' is broken on GNU coreutils: hex escapes are not supported,
+# causing '\x00-\x08' to be interpreted as the range [0x30-0x78] ('0'-'x'),
+# which silently deletes all ASCII letters and digits.
+sanitize_for_json() {
+    # Usage: sanitize_for_json "text" [max_chars]
+    local _sfj_max="${2:-0}"
+    printf '%s' "$1" | MAX_CHARS="$_sfj_max" python3 -c "
+import sys, re, os
+s = sys.stdin.read()
+s = s.replace('\n', ' ').replace('\r', ' ').replace('\t', ' ')
+s = re.sub(r'[\x00-\x1f\x7f]', '', s)
+s = re.sub(r'  +', ' ', s).strip()
+mc = int(os.environ.get('MAX_CHARS', 0))
+if mc > 0:
+    s = s[:mc]
+s = s.replace('\"', '\\\\\"')
+print(s, end='')
+"
+}
+
+ESCAPED_TITLE=$(sanitize_for_json "$TITLE")
 
 # Build tags array (compatible with NIP-71 and create_video_channel.py)
 TAGS='[
@@ -803,14 +823,12 @@ fi
 
 # Add alt tag for accessibility (NIP-71 recommended)
 if [ -n "$DESCRIPTION" ]; then
-    # Limit alt text to 200 characters for accessibility
-    ALT_TEXT=$(echo "$DESCRIPTION" | head -c 200 | sed 's/"/\\"/g')
+    ALT_TEXT=$(sanitize_for_json "$DESCRIPTION" 200)
     TAGS="${TAGS},
     [\"alt\", \"${ALT_TEXT}\"]"
     log_info "Added alt tag for accessibility"
 elif [ -n "$TITLE" ]; then
-    # Use title as fallback alt text
-    ALT_TEXT=$(echo "$TITLE" | head -c 200 | sed 's/"/\\"/g')
+    ALT_TEXT=$(sanitize_for_json "$TITLE" 200)
     TAGS="${TAGS},
     [\"alt\", \"${ALT_TEXT}\"]"
     log_info "Added alt tag (using title)"
@@ -832,14 +850,16 @@ fi
 
 # Add series metadata tags (for series/episodes)
 if [ -n "$SERIES_NAME" ]; then
+    ESCAPED_SERIES=$(sanitize_for_json "$SERIES_NAME")
     TAGS="${TAGS},
-    [\"series_name\", \"${SERIES_NAME}\"]"
+    [\"series_name\", \"${ESCAPED_SERIES}\"]"
     log_info "Added series name: ${SERIES_NAME}"
 fi
 
 if [ -n "$EPISODE_NAME" ]; then
+    ESCAPED_EPISODE=$(sanitize_for_json "$EPISODE_NAME")
     TAGS="${TAGS},
-    [\"episode_name\", \"${EPISODE_NAME}\"]"
+    [\"episode_name\", \"${ESCAPED_EPISODE}\"]"
     log_info "Added episode name: ${EPISODE_NAME}"
 fi
 
