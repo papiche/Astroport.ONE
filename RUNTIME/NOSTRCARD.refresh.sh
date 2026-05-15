@@ -358,7 +358,8 @@ if [[ -s ~/.zen/game/secret.nostr ]]; then
             echo "$_SYNC_REQUESTS" | python3 -c "
 import json, sys
 for r in json.load(sys.stdin):
-    print(r.get('email',''), r.get('cid',''), r.get('filename',''), r.get('filetype','file'))
+    p = r.get('payload', {})
+    print(p.get('email',''), p.get('cid',''), p.get('filename',''), p.get('filetype','file'))
 " 2>/dev/null | while read -r _S_EMAIL _S_CID _S_FILE _S_TYPE; do
                 [[ -z "$_S_EMAIL" || -z "$_S_CID" || -z "$_S_FILE" ]] && continue
 
@@ -553,7 +554,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
 <p><strong>Date :</strong> $TODATE</p>
 <p><strong>Prochaine redevance :</strong> $NEXT_PAYMENT_DATE</p>
 </div>
-<p>Votre MULTIPASS coûte <strong>1 Ẑen/semaine</strong>. Votre solde approche de zéro. Voici comment le reconstituer naturellement :</p>
+<p>Le solde de votre MULTIPASS approche de zéro. Voici comment le recharger :</p>
 <div class='solutions'>
 <h3>💡 Solutions coopératives</h3>
 <ul>
@@ -569,7 +570,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
 <p><strong>👉 Renseignez-vous :</strong> <a href='${uSPOT}/g1' target='_blank'>${uSPOT}/g1</a></p>
 </div>
 <p><strong>🚨 Note :</strong> Si votre solde tombe à 0, votre MULTIPASS sera suspendu. Votre Capitaine peut vous aider à régulariser.</p>
-<p style='font-size:0.85em; color:#888'>Astroport · Réseau UPlanet · <a href='${uSPOT}/nostr'>Accéder à votre Nostr</a></p>
+<p style='font-size:0.85em; color:#888'>Astroport · Réseau UPlanet · <a href='${uSPOT}/nostr'>Découvrez le protocole Nostr</a></p>
 </body></html>"
 
             # Create temporary file for email content
@@ -622,7 +623,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
 <p><strong>🚀 Prochaines étapes :</strong></p>
 <ul>
 <li>Partagez votre expérience avec vos amis</li>
-<li>Devenez Co-Bâtisseur (50€/an)</li>
+<li>Devenez Co-Bâtisseur</li>
 <li>Participez à la gouvernance de la coopérative</li>
 </ul>
 <p><strong>💡 Merci</strong> de faire partie de cette révolution numérique !</p>
@@ -1241,7 +1242,6 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
         NPUB=$(cat ~/.zen/game/nostr/${PLAYER}/NPUB)
 
         # Update email in NOSTR profile during refresh (ensure email is always present)
-        # This ensures the email is always available in the profile for frontend retrieval
         if [[ -s ~/.zen/game/nostr/${PLAYER}/.secret.nostr ]]; then
             # Update email only during daily refresh to avoid excessive updates
             # But ensure it's done at least once per day
@@ -1684,147 +1684,23 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
 done
 
 ########################################################################
-## BOUCLE ROAMING — Sync uDRIVE pour comptes itinérants (✈️)
-##
-## Principe :
-##   PULL  — si le réseau (home station) a un uDRIVE plus récent et qu'il
-##            n'y a pas de modifs locales → télécharger pour initialiser
-##            le contexte du visiteur.
-##   PUSH  — si des fichiers ont été uploadés localement via UPassport →
-##            régénérer, ipfs add, ipfs name publish avec la clé importée
-##            par check_ssss.sh.
-##
-## La home station détecte le PUSH via should_refresh() → ipfs resolve
-## (déjà implémenté pour les comptes non-roaming).
+## NETTOYAGE DES COMPTES ROAMING EXPIRÉS (✈️)
+## Les répertoires créés par 22242.sh pour les visiteurs sont éphémères.
+## On supprime ceux dont aucun marker NIP-42 n'a été rafraîchi depuis 24h.
 ########################################################################
-ROAMING_SYNCED=0
+_ROAMING_TTL_MIN=1440  # 24h
 for PLAYER in "${NOSTR[@]}"; do
-    [[ ! -f ~/.zen/game/nostr/${PLAYER}/.roaming ]] && continue
-
     RDIR="$HOME/.zen/game/nostr/${PLAYER}"
-    UDRIVE_DIR="${RDIR}/APP/uDRIVE"
-    UDRIVE_FILE="${RDIR}/.udrive"
+    [[ ! -f "${RDIR}/.roaming" ]] && continue
 
-    G1PUBNOSTR=$(cat "${RDIR}/G1PUBNOSTR" 2>/dev/null)
-    [[ -z "$G1PUBNOSTR" ]] \
-        && log "WARN" "✈️ ROAMING $PLAYER — G1PUBNOSTR manquant, skip" \
-        && continue
+    # Garder si un marker NIP-42 récent (auth < 24h)
+    _RECENT=$(find "${RDIR}" -name ".nip42_auth_*" -mmin -${_ROAMING_TTL_MIN} 2>/dev/null | head -1)
+    [[ -n "$_RECENT" ]] && continue
 
-    NOSTRNS=$(cat "${RDIR}/NOSTRNS" 2>/dev/null)
-    LOCAL_CID=$(cat "${UDRIVE_FILE}" 2>/dev/null)
-
-    # ── Résolution IPNS du uDRIVE distant (home station) ──
-    NETWORK_CID=""
-    if [[ -n "$NOSTRNS" ]]; then
-        NETWORK_CID=$(ipfs resolve -r --timeout=15s "${NOSTRNS}/${PLAYER}/APP/uDRIVE" 2>/dev/null | sed 's|/ipfs/||')
-    fi
-
-    # ── Assurer l'existence du dossier + symlink generate_ipfs_structure.sh ──
-    mkdir -p "${UDRIVE_DIR}"
-    rm -f "${UDRIVE_DIR}/generate_ipfs_structure.sh"
-    ln -sf "${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh" \
-           "${UDRIVE_DIR}/generate_ipfs_structure.sh"
-
-    udrive_mtime=$(stat -c %Y "${UDRIVE_DIR}/" 2>/dev/null || echo 0)
-    cache_mtime=$(stat -c %Y "${UDRIVE_FILE}"  2>/dev/null || echo 0)
-    [[ $udrive_mtime -gt $cache_mtime ]] && has_local_changes="yes" || has_local_changes="no"
-
-    # ── PULL : réseau plus récent ET pas de modifs locales ──
-    if [[ -n "$NETWORK_CID" && "$NETWORK_CID" != "$LOCAL_CID" && "$has_local_changes" == "no" ]]; then
-        log "INFO" "✈️ ROAMING $PLAYER — pull uDRIVE réseau (${NETWORK_CID:0:12}...)"
-        if timeout 60 ipfs get "/ipfs/$NETWORK_CID" -o "${RDIR}/APP/uDRIVE.tmp" 2>/dev/null; then
-            rm -rf "${UDRIVE_DIR}"
-            mv "${RDIR}/APP/uDRIVE.tmp" "${UDRIVE_DIR}"
-            echo "$NETWORK_CID" > "${UDRIVE_FILE}"
-            touch "${UDRIVE_FILE}"   # .udrive mtime > uDRIVE/ mtime → évite push spurieux
-            # Rétablir le symlink après remplacement du dossier
-            rm -f "${UDRIVE_DIR}/generate_ipfs_structure.sh"
-            ln -sf "${HOME}/.zen/Astroport.ONE/tools/generate_ipfs_structure.sh" \
-                   "${UDRIVE_DIR}/generate_ipfs_structure.sh"
-            log "INFO" "✈️ ROAMING $PLAYER — uDRIVE synchronisé depuis la home station"
-        else
-            log "WARN" "✈️ ROAMING $PLAYER — échec pull IPFS (${NETWORK_CID:0:12}...)"
-        fi
-        continue
-    fi
-
-    # ── PUSH : modifs locales → DM vers la home station ──
-    if [[ "$has_local_changes" == "no" ]]; then
-        log "DEBUG" "✈️ ROAMING $PLAYER — aucune modif locale, skip"
-        continue
-    fi
-
-    log "INFO" "✈️ ROAMING $PLAYER — modifs locales → envoi DM sync à la home station..."
-
-    # Trouver le HEX du NODE de la home station (via home.station publié sur IPNS)
-    HOME_NODE_HEX=""
-    _HOME_STATION_INFO=$(cat "${RDIR}/home.station" 2>/dev/null)
-    if [[ -z "$_HOME_STATION_INFO" && -n "$NOSTRNS" ]]; then
-        # Fallback: lire depuis IPFS si le fichier local est absent (ex. après PULL partiel)
-        _HOME_STATION_INFO=$(ipfs --timeout 15s cat "${NOSTRNS}/${PLAYER}/home.station" 2>/dev/null)
-    fi
-    [[ -n "$_HOME_STATION_INFO" ]] && HOME_NODE_HEX="${_HOME_STATION_INFO##*:}"
-
-    if [[ -z "$HOME_NODE_HEX" || ${#HOME_NODE_HEX} -ne 64 ]]; then
-        log "WARN" "✈️ ROAMING $PLAYER — home_station HEX introuvable, skip push"
-        continue
-    fi
-
-    # Clé NSEC de cette station pour signer les DMs sortants
-    _NODE_NSEC_B=""
-    if [[ -s ~/.zen/game/secret.nostr ]]; then
-        source ~/.zen/game/secret.nostr
-        _NODE_NSEC_B="${NSEC:-}"
-        unset NSEC NPUB HEX
-    fi
-    if [[ -z "$_NODE_NSEC_B" ]]; then
-        log "WARN" "✈️ ROAMING $PLAYER — secret.nostr manquant, skip push"
-        continue
-    fi
-
-    _DM_SENT=0
-    # Parcourir les fichiers plus récents que le cache .udrive
-    while IFS= read -r -d '' _F; do
-        _FNAME=$(basename "$_F")
-        _FTYPE="file"
-        case "${_FNAME##*.}" in
-            jpg|jpeg|png|gif|webp|svg) _FTYPE="image" ;;
-            mp4|webm|mkv|avi|mov)      _FTYPE="video" ;;
-            mp3|wav|ogg|m4a|flac)      _FTYPE="audio" ;;
-            pdf|md|txt|rst|doc|docx)   _FTYPE="document" ;;
-        esac
-
-        _F_CID=$(ipfs --timeout 20s add -q "$_F" 2>/dev/null)
-        if [[ -z "$_F_CID" ]]; then
-            log "WARN" "✈️ ROAMING $PLAYER — ipfs add échoué pour $_FNAME"
-            continue
-        fi
-
-        python3 "${MY_PATH}/../tools/nostr_node_intercom.py" send-udrive \
-            --nsec "$_NODE_NSEC_B" \
-            --to   "$HOME_NODE_HEX" \
-            --email "$PLAYER" \
-            --cid   "$_F_CID" \
-            --filename "$_FNAME" \
-            --filetype "$_FTYPE" \
-            --relays "wss://relay.copylaradio.com" ${myRELAY:+"$myRELAY"} \
-            2>/dev/null \
-            && rm -f "$_F" \
-            && log "INFO" "✈️ ROAMING $PLAYER — DM envoyé: $_FNAME ($_F_CID:0:12}...)" \
-            && (( _DM_SENT++ )) \
-            || log "WARN" "✈️ ROAMING $PLAYER — DM échoué pour $_FNAME"
-
-    done < <(find "${UDRIVE_DIR}" -type f -newer "${UDRIVE_FILE}" \
-              ! -name "generate_ipfs_structure.sh" ! -name "manifest.json" \
-              ! -name "manifest-1.json" ! -name "index.html" -print0 2>/dev/null)
-
-    if [[ $_DM_SENT -gt 0 ]]; then
-        touch "${UDRIVE_FILE}"   # réinitialise la détection de modifs
-        (( ROAMING_SYNCED += _DM_SENT ))
-        log "INFO" "✈️ ROAMING $PLAYER — $_DM_SENT fichier(s) délégué(s) à la home station"
-    fi
+    _ROAMING_AGE_H=$(( ($(date +%s) - $(stat -c %Y "${RDIR}/.roaming" 2>/dev/null || echo 0)) / 3600 ))
+    log "INFO" "✈️ ROAMING CLEANUP: ${PLAYER} — inactif depuis ${_ROAMING_AGE_H}h → suppression"
+    rm -rf "${RDIR}"
 done
-[[ $ROAMING_SYNCED -gt 0 ]] && log "INFO" "✈️ Roaming: $ROAMING_SYNCED DM(s) de sync envoyé(s)"
 
 end=`date +%s`
 dur=`expr $end - $gstart`
@@ -1832,7 +1708,7 @@ hours=$((dur / 3600)); minutes=$(( (dur % 3600) / 60 )); seconds=$((dur % 60))
 
 # Log comprehensive summary
 log "INFO" "============================================ NOSTR REFRESH SUMMARY"
-log "INFO" "📊 Players: ${#NOSTR[@]} total | $DAILY_UPDATES daily | $FILE_UPDATES files | $SKIPPED_PLAYERS skipped | $ROAMING_SYNCED roaming-push"
+log "INFO" "📊 Players: ${#NOSTR[@]} total | $DAILY_UPDATES daily | $FILE_UPDATES files | $SKIPPED_PLAYERS skipped"
 log "INFO" "💰 Payments: $PAYMENTS_PROCESSED processed | $PAYMENTS_FAILED failed | $PAYMENTS_ALREADY_DONE already done"
 log "INFO" "⏱️  Duration: ${hours}h ${minutes}m ${seconds}s"
 log "INFO" "============================================ NOSTR.refresh DONE."
