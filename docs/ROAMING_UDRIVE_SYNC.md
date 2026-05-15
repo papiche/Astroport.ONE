@@ -101,7 +101,8 @@ python3 tools/nostr_node_intercom.py send \
 ## Intégration UPassport (`/api/fileupload`)
 
 La fonction `_maybe_send_roaming_dm()` dans [media_upload.py](../UPassport/routers/media_upload.py)
-est appelée automatiquement si `user_dir/.roaming` existe :
+est appelée automatiquement si **`user_dir/.roaming` existe OU si `APP/uDRIVE/` n'existe pas**
+(pas de uDRIVE local → impossible de régénérer le manifest localement) :
 
 1. Lit `home.station` (fichier local ou IPFS fallback via NOSTRNS)
 2. Extrait le NODE_HEX de la home station (`IPFSNODEID:HEX`)
