@@ -40,20 +40,58 @@ if [[ -z "$GPU_NAME" ]]; then
     exit 0
 fi
 
+## ── VRAM pour AMD discrete / Intel Arc via sysfs ──────────────────────────────
+if [[ ${GPU_VRAM:-0} -eq 0 ]]; then
+    for _sysf in /sys/class/drm/card*/device/mem_info_vram_total; do
+        [[ -f "$_sysf" ]] || continue
+        _v=$(( $(cat "$_sysf" 2>/dev/null || echo 0) / 1073741824 ))
+        [[ "$_v" -gt 0 ]] || continue
+        GPU_VRAM=$(( GPU_VRAM + _v ))
+        case "$(cat "${_sysf%mem_info_vram_total}vendor" 2>/dev/null)" in
+            "0x1002") GPU_VENDOR="amd" ;;
+            "0x8086") GPU_VENDOR="intel" ;;
+        esac
+    done
+fi
+
+## GPU intégré (Intel UHD/Iris, AMD Vega iGPU) : VRAM partagée, non supporté
+if [[ ${GPU_VRAM:-0} -eq 0 && "$GPU_VENDOR" =~ ^(intel|amd)$ ]]; then
+    GPU_VENDOR="${GPU_VENDOR}_integrated"
+fi
+
+## ── Compatibilité Ollama/ComfyUI selon vendeur ────────────────────────────────
+case "$GPU_VENDOR" in
+    nvidia)           _GPU_COMPAT="✅ CUDA — Ollama + ComfyUI supportés" ;;
+    amd)              _GPU_COMPAT="⚠️  ROCm (expérimental) — GPU RX 5000+ requis" ;;
+    intel)            _GPU_COMPAT="⚠️  SYCL/XPU (expérimental) — Intel Arc requis" ;;
+    intel_integrated) _GPU_COMPAT="❌ GPU intégré — Ollama/ComfyUI non supportés (CPU only)" ;;
+    amd_integrated)   _GPU_COMPAT="❌ GPU intégré — Ollama/ComfyUI non supportés (CPU only)" ;;
+    *)                _GPU_COMPAT="❓ Compatibilité inconnue" ;;
+esac
+
 ## ── Affichage GPU ─────────────────────────────────────────────────────────────
 echo "╔══════════════════════════════════════════════════════════════╗"
 echo "║  🔥 GPU DÉTECTÉ                                             ║"
 echo "╠══════════════════════════════════════════════════════════════╣"
 printf  "║  %-58s ║\n" "GPU    : ${GPU_NAME}"
+printf  "║  %-58s ║\n" "Vendor : ${GPU_VENDOR}"
 [[ $GPU_VRAM -gt 0 ]] && \
 printf  "║  %-58s ║\n" "VRAM   : ${GPU_VRAM} Go"
-printf  "║  %-58s ║\n" "Vendor : ${GPU_VENDOR}"
+printf  "║  %-58s ║\n" "Compat : ${_GPU_COMPAT}"
 echo "╠══════════════════════════════════════════════════════════════╣"
 echo "║  Services recommandés :                                     ║"
 echo "║    • Ollama    — LLM local (systemd, port 11434)            ║"
 echo "║    • ComfyUI   — Génération d'images (venv+systemd, :8188)  ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
+
+## ── GPU intégré : aucun service GPU possible, on sort proprement ──────────────
+if [[ "$GPU_VENDOR" == *_integrated* ]]; then
+    echo "ℹ️  GPU intégré ${GPU_NAME} — pas d'accélération matérielle pour les LLM."
+    echo "   Ollama et ComfyUI peuvent tourner en mode CPU mais seront très lents."
+    echo "   Conseil : utilisez le profil 'standard' pour cette machine."
+    exit 0
+fi
 
 ## ── Helper interactif ─────────────────────────────────────────────────────────
 _ask_yes() {

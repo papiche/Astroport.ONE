@@ -153,4 +153,11 @@ ln -f -s ${ASTRO}/tools/astrosystemctl.sh ~/.local/bin/astrosystemctl
 ## Créer le répertoire pour les tunnels persistants
 mkdir -p "$HOME/.zen/tunnels/enabled"
 
+########################################################################
+# SÉCURITÉ — Permissions restrictives sur les secrets
+########################################################################
+chmod 700 "$HOME/.zen" 2>/dev/null || true
+find "$HOME/.zen/game" -name "*.dunikey" -exec chmod 600 {} \; 2>/dev/null || true
+[[ -f "$HOME/.zen/Astroport.ONE/.env" ]] && chmod 600 "$HOME/.zen/Astroport.ONE/.env"
+
 echo "######### SYSTEM INSTALL COMPLETE #############"

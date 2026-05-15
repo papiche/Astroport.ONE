@@ -459,6 +459,8 @@ get_fast_capacities() {
     ram_total_gb=$(awk '/MemTotal/ {printf "%.0f", $2/1048576}' /proc/meminfo 2>/dev/null || echo 0)
     local vram_gb=0
     local gpu_detected="false"
+    local gpu_vendor="none"
+    local gpu_name=""
     if command -v nvidia-smi >/dev/null 2>&1; then
         local raw_vram
         raw_vram=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null \
@@ -466,6 +468,33 @@ get_fast_capacities() {
         if [[ -n "$raw_vram" && "$raw_vram" -gt 0 ]]; then
             vram_gb=$raw_vram
             gpu_detected="true"
+            gpu_vendor="nvidia"
+            gpu_name=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 | xargs)
+        fi
+    fi
+    ## AMD discrete / Intel Arc : sysfs mem_info_vram_total (fonctionne sans driver propriétaire)
+    if [[ "$gpu_detected" == "false" ]]; then
+        local _sysf _v _vid
+        for _sysf in /sys/class/drm/card*/device/mem_info_vram_total; do
+            [[ -f "$_sysf" ]] || continue
+            _v=$(( $(cat "$_sysf" 2>/dev/null || echo 0) / 1073741824 ))
+            [[ "$_v" -gt 0 ]] || continue
+            vram_gb=$(( vram_gb + _v ))
+            gpu_detected="true"
+            _vid=$(cat "${_sysf%mem_info_vram_total}vendor" 2>/dev/null)
+            case "$_vid" in
+                "0x1002") gpu_vendor="amd" ;;
+                "0x8086") gpu_vendor="intel" ;;
+                *)        gpu_vendor="unknown" ;;
+            esac
+        done
+    fi
+    ## GPU intégré détecté via lspci (VRAM partagée, non mesurable)
+    if [[ "$gpu_detected" == "false" ]] && command -v lspci >/dev/null 2>&1; then
+        gpu_name=$(lspci 2>/dev/null | grep -iE 'VGA|3D|Display' | head -1 | sed 's/^.*: //' | xargs)
+        if [[ -n "$gpu_name" ]]; then
+            echo "$gpu_name" | grep -qi 'intel'       && gpu_vendor="intel_integrated"
+            echo "$gpu_name" | grep -qi 'amd\|radeon' && gpu_vendor="amd_integrated"
         fi
     fi
     local power_score
@@ -516,6 +545,25 @@ get_fast_capacities() {
         fi
     fi
 
+    ## ── Vitesse disque (cache ~/.zen/game/disk_bench.cache) ─────────────────────
+    local disk_write_mbps=0
+    local disk_read_mbps=0
+    local _DISK_CACHE="$HOME/.zen/game/disk_bench.cache"
+    if [[ ! -s "$_DISK_CACHE" ]]; then
+        mkdir -p "$HOME/.zen/game"
+        local _tmp_bench _out
+        _tmp_bench=$(mktemp)
+        _out=$(LANG=C dd if=/dev/zero of="$_tmp_bench" bs=1M count=256 conv=fdatasync 2>&1)
+        disk_write_mbps=$(echo "$_out" | grep -oE '[0-9.]+ MB/s' | tail -1 | grep -oE '^[0-9]+')
+        _out=$(LANG=C dd if="$_tmp_bench" of=/dev/null bs=1M 2>&1)
+        disk_read_mbps=$(echo "$_out"  | grep -oE '[0-9.]+ MB/s' | tail -1 | grep -oE '^[0-9]+')
+        rm -f "$_tmp_bench"
+        echo "${disk_write_mbps:-0} ${disk_read_mbps:-0}" > "$_DISK_CACHE"
+    fi
+    read disk_write_mbps disk_read_mbps < "$_DISK_CACHE" 2>/dev/null
+    disk_write_mbps="${disk_write_mbps:-0}"
+    disk_read_mbps="${disk_read_mbps:-0}"
+
     ## provider_ready = vrai uniquement si des services IA LOCAUX tournent (pas des tunnels).
     ## Re-détection indépendante : get_fast_capacities() tourne dans un subshell séparé,
     ## les variables *_source de get_fast_service_status() ne sont pas accessibles ici.
@@ -528,10 +576,20 @@ get_fast_capacities() {
       pgrep -f "comfyui\|open.webui\|open_webui\|perplexica\|vane" >/dev/null 2>&1; \
     } && has_local_ai="true"
     local provider_ready="false"
-    ## Score élevé (GPU dédié) : toujours provider, même sans service IA actif
-    [[ ${power_score} -gt 40 ]] && provider_ready="true"
-    ## Score standard + service IA local : peut aussi offrir ses ressources
-    [[ ${power_score} -gt 10 && "$has_local_ai" == "true" ]] && provider_ready="true"
+    local provider_tier="light"
+    ## Score > 40 : Brain-Node (GPU dédié OU CPU-serveur costaud)
+    if [[ ${power_score} -gt 40 ]]; then
+        provider_ready="true"
+        if [[ $vram_gb -gt 0 && "$gpu_vendor" != *_integrated* ]]; then
+            provider_tier="brain-gpu"   ## inférence rapide, ComfyUI, batch
+        else
+            provider_tier="brain-cpu"   ## LLM lent mais embedding/Qdrant/multi-7B ok
+        fi
+    ## Score > 10 + service IA local actif : Standard provider
+    elif [[ ${power_score} -gt 10 && "$has_local_ai" == "true" ]]; then
+        provider_ready="true"
+        provider_tier="standard"
+    fi
 
     ## storage_ready = vrai si le nœud peut héberger des données pour la constellation
     ## Seuil : ≥1 slot ZenCard (≥128 Go NextCloud) OU ≥10 slots NOSTR (≥100 Go IPFS)
@@ -546,7 +604,9 @@ get_fast_capacities() {
     "power_score": $power_score,
     "crypto_score": $crypto_score,
     "crypto_ms": $crypto_ms,
+    "disk_io": {"write_mbps": $disk_write_mbps, "read_mbps": $disk_read_mbps},
     "provider_ready": $provider_ready,
+    "provider_tier": "$provider_tier",
     "storage_ready": $storage_ready,
     "gpu": {
         "detected": $gpu_detected,
@@ -667,7 +727,7 @@ export_json() {
             "usage_percent": "$(df -h / | tail -1 | awk '{print $5}')"
         },
         "cpu_temp": $cpu_temp,
-        "gpu": $(if command -v nvidia-smi >/dev/null 2>&1; then nvidia-smi --query-gpu=name,memory.total,memory.used,utilization.gpu --format=csv,noheader,nounits 2>/dev/null | head -1 | tr -d '\n' | sed 's/"/\\"/g' | sed 's/^/"/; s/$/"/'; else echo "null"; fi)
+        "gpu": {"name": "$(echo "$gpu_name" | sed 's/"/\\"/g')", "vendor": "$gpu_vendor", "vram_gb": $vram_gb, "detected": $gpu_detected}
     },
     "caches": {
         "swarm": $(if [[ -d ~/.zen/tmp/swarm ]]; then echo "{\"size\": \"$(du -sh ~/.zen/tmp/swarm 2>/dev/null | cut -f1)\", \"nodes_count\": $(find ~/.zen/tmp/swarm -maxdepth 1 -type d -name "12D*" | wc -l), \"files_count\": $(find ~/.zen/tmp/swarm -type f | wc -l), \"status\": \"active\"}"; else echo "{\"status\": \"not_found\"}"; fi),

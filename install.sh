@@ -366,6 +366,42 @@ echo "## ACTIVER LE PARE-FEU UFW ################################"
 ~/.zen/Astroport.ONE/tools/firewall.sh ON
 
 ###############################################################
+echo "## SCORE MATÉRIEL — VALIDATION DES PROFILS ##############"
+###############################################################
+_CPU=$(grep -c "processor" /proc/cpuinfo 2>/dev/null || echo 1)
+_RAM=$(awk '/MemTotal/ {printf "%.0f", $2/1048576}' /proc/meminfo 2>/dev/null || echo 0)
+_VRAM=0; _GPU_VENDOR="none"; _GPU_NAME=""
+if command -v nvidia-smi >/dev/null 2>&1; then
+    _v=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null \
+        | awk '{sum+=$1} END {printf "%.0f", sum/1024}')
+    if [[ -n "$_v" && "$_v" -gt 0 ]]; then
+        _VRAM=$_v; _GPU_VENDOR="nvidia"
+        _GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 | xargs)
+    fi
+fi
+if [[ $_VRAM -eq 0 ]]; then
+    for _sysf in /sys/class/drm/card*/device/mem_info_vram_total; do
+        [[ -f "$_sysf" ]] || continue
+        _v=$(( $(cat "$_sysf" 2>/dev/null || echo 0) / 1073741824 ))
+        [[ "$_v" -gt 0 ]] || continue
+        _VRAM=$(( _VRAM + _v ))
+        case "$(cat "${_sysf%mem_info_vram_total}vendor" 2>/dev/null)" in
+            "0x1002") _GPU_VENDOR="amd" ;;
+            "0x8086") _GPU_VENDOR="intel" ;;
+            *)        _GPU_VENDOR="unknown" ;;
+        esac
+    done
+fi
+if [[ -z "$_GPU_NAME" ]] && command -v lspci >/dev/null 2>&1; then
+    _GPU_NAME=$(lspci 2>/dev/null | grep -iE 'VGA|3D|Display' | head -1 | sed 's/^.*: //' | xargs)
+    if [[ "$_GPU_VENDOR" == "none" ]]; then
+        echo "$_GPU_NAME" | grep -qi 'intel'       && _GPU_VENDOR="intel_integrated"
+        echo "$_GPU_NAME" | grep -qi 'amd\|radeon' && _GPU_VENDOR="amd_integrated"
+    fi
+fi
+_SCORE=$(( _VRAM * 4 + _CPU * 2 + _RAM / 2 ))
+
+###############################################################
 echo "## INSTALLATIONS CONDITIONNELLES SELON PROFIL ###########"
 ###############################################################
 NEXTCLOUD_ACTIVE=false
@@ -377,9 +413,33 @@ case "${INSTALL_PROFILE}" in
         bash "$HOME/.zen/Astroport.ONE/install/install_nextcloud.sh"
         ;;
     ai-company)
+        ## Classification VRAM et compatibilité Ollama/ComfyUI
+        if   [[ $_VRAM -ge 24 ]]; then _AI_TIER="🔥 Excellent (≥24 Go) — grands modèles 70B+"
+        elif [[ $_VRAM -ge 8  ]]; then _AI_TIER="⚡ Bon (8-23 Go) — modèles 7B-13B"
+        elif [[ $_VRAM -ge 4  ]]; then _AI_TIER="🟡 Limité (4-7 Go) — petits modèles 3B-7B"
+        elif [[ $_VRAM -ge 1  ]]; then _AI_TIER="⚠️  Très limité (1-3 Go) — ≤ 3B seulement"
+        else                            _AI_TIER="❌ Pas de VRAM dédiée"
+        fi
+        case "$_GPU_VENDOR" in
+            nvidia)           _AI_COMPAT="✅ CUDA — Ollama + ComfyUI supportés" ;;
+            amd)              _AI_COMPAT="⚠️  ROCm (expérimental) — GPU RX 5000+ requis" ;;
+            intel)            _AI_COMPAT="⚠️  SYCL/XPU (expérimental) — Intel Arc requis" ;;
+            intel_integrated) _AI_COMPAT="❌ GPU intégré — Ollama/ComfyUI non supportés" ;;
+            amd_integrated)   _AI_COMPAT="❌ GPU intégré — Ollama/ComfyUI non supportés" ;;
+            *)                _AI_COMPAT="❓ Compatibilité inconnue — comportement imprévisible" ;;
+        esac
         echo "╔══════════════════════════════════════════════════════════════╗"
         echo "║  🧠 PROFIL ai-company — Stack IA Swarm (EXPÉRIMENTAL)     ║"
+        echo "╠══════════════════════════════════════════════════════════════╣"
+        printf "║  %-58s ║\n" "GPU    : ${_GPU_NAME:-inconnu}"
+        printf "║  %-58s ║\n" "VRAM   : ${_VRAM} Go  →  ${_AI_TIER}"
+        printf "║  %-58s ║\n" "Compat : ${_AI_COMPAT}"
         echo "╚══════════════════════════════════════════════════════════════╝"
+        if [[ $_VRAM -lt 4 || "$_GPU_VENDOR" == *_integrated* ]]; then
+            echo ""
+            read -r -p "⚠️  Ce profil n'est pas recommandé sur cette machine. Continuer ? [y/N] " _cont
+            [[ "${_cont}" != "y" && "${_cont}" != "Y" ]] && exit 1
+        fi
         ## Prometheus serveur complet : collecte les métriques heartbox + node_exporter
         ## Utile pour les Brain-Nodes (GPU) qui veulent monitorer leur charge IA
         echo "⏳ Installation Prometheus + exporters heartbox..."
@@ -493,11 +553,7 @@ echo "## SCORE CARD DU NŒUD ################################"
 ## Calcul inline — pas de dépendance à IPFS au moment de l'install
 _CPU=$(grep -c "processor" /proc/cpuinfo 2>/dev/null || echo 1)
 _RAM=$(awk '/MemTotal/ {printf "%.0f", $2/1048576}' /proc/meminfo 2>/dev/null || echo 0)
-_VRAM=0
-command -v nvidia-smi >/dev/null 2>&1 && \
-    _VRAM=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null \
-        | awk '{sum+=$1} END {printf "%.0f", sum/1024}')
-[[ -z "$_VRAM" || "$_VRAM" == "0" ]] && _VRAM=0
+## _VRAM/_GPU_VENDOR déjà calculés en tête de section — on ne re-détecte pas
 _SCORE=$(( _VRAM * 4 + _CPU * 2 + _RAM / 2 ))
 
 if   [[ $_SCORE -gt 40 ]]; then _TIER="🔥 Brain-Node (GPU)"; _RANK="DRAGON COMPUTE"; _MVAL=$(( _SCORE * 12 )); _PAF_DEFAULT=28
@@ -505,10 +561,29 @@ elif [[ $_SCORE -gt 10 ]]; then _TIER="⚡ Standard";         _RANK="DRAGON ORIG
 else                             _TIER="🌿 Léger";            _RANK="Nœud Léger";     _MVAL=100;               _PAF_DEFAULT=7
 fi
 
+## ── Benchmark disque (une seule fois à l'install) ───────────────────────────
+_DISK_CACHE="$HOME/.zen/game/disk_bench.cache"
+mkdir -p "$HOME/.zen/game"
+if [[ ! -s "$_DISK_CACHE" ]]; then
+    echo "⏱️  Benchmark disque (256 Mo écriture + lecture)..."
+    _tmp_bench="/tmp/astro_dd_$$"
+    _disk_write=0; _disk_read=0
+    _out=$(LANG=C dd if=/dev/zero of="$_tmp_bench" bs=1M count=256 conv=fdatasync 2>&1)
+    _disk_write=$(echo "$_out" | grep -oE '[0-9.]+ MB/s' | tail -1 | grep -oE '^[0-9]+')
+    _out=$(LANG=C dd if="$_tmp_bench" of=/dev/null bs=1M 2>&1)
+    _disk_read=$(echo "$_out"  | grep -oE '[0-9.]+ MB/s' | tail -1 | grep -oE '^[0-9]+')
+    rm -f "$_tmp_bench"
+    echo "${_disk_write:-0} ${_disk_read:-0}" > "$_DISK_CACHE"
+fi
+read _disk_write _disk_read < "$_DISK_CACHE" 2>/dev/null
+_disk_write="${_disk_write:-0}"; _disk_read="${_disk_read:-0}"
+
 echo "╔══════════════════════════════════════════════════════════════╗"
 echo "║  🏆 SCORE CARD — Rang dans la constellation                  ║"
 echo "╠══════════════════════════════════════════════════════════════╣"
 printf "║  %-58s ║\n" "CPU : ${_CPU} cœurs  RAM : ${_RAM} Go  VRAM : ${_VRAM} Go"
+printf "║  %-58s ║\n" "GPU : ${_GPU_NAME:-aucun}  (${_GPU_VENDOR})"
+printf "║  %-58s ║\n" "Disque écriture : ${_disk_write} Mo/s  lecture : ${_disk_read} Mo/s"
 printf "║  %-58s ║\n" "Power-Score : ${_SCORE}  →  ${_TIER}"
 printf "║  %-58s ║\n" "Rang DRAGON : ${_RANK}"
 echo "╠══════════════════════════════════════════════════════════════╣"
@@ -523,7 +598,6 @@ echo "╚═══════════════════════�
 
 ## Initialiser MACHINE_VALUE, PAF, CAPITAL_DATE dans game/.env si absents
 _GAME_ENV="$HOME/.zen/game/.env"
-mkdir -p "$HOME/.zen/game"
 if ! grep -q "^MACHINE_VALUE=" "$_GAME_ENV" 2>/dev/null; then
     echo "MACHINE_VALUE=${_MVAL}"                        >> "$_GAME_ENV"
     echo "PAF=${_PAF_DEFAULT}"                           >> "$_GAME_ENV"
