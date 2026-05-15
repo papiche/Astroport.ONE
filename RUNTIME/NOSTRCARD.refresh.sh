@@ -1693,10 +1693,6 @@ for PLAYER in "${NOSTR[@]}"; do
     RDIR="$HOME/.zen/game/nostr/${PLAYER}"
     [[ ! -f "${RDIR}/.roaming" ]] && continue
 
-    # Garder si un marker NIP-42 récent (auth < 24h)
-    _RECENT=$(find "${RDIR}" -name ".nip42_auth_*" -mmin -${_ROAMING_TTL_MIN} 2>/dev/null | head -1)
-    [[ -n "$_RECENT" ]] && continue
-
     _ROAMING_AGE_H=$(( ($(date +%s) - $(stat -c %Y "${RDIR}/.roaming" 2>/dev/null || echo 0)) / 3600 ))
     log "INFO" "✈️ ROAMING CLEANUP: ${PLAYER} — inactif depuis ${_ROAMING_AGE_H}h → suppression"
     rm -rf "${RDIR}"
