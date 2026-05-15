@@ -828,6 +828,10 @@ case ${CAT} in
         fi
     fi
 
+    # Renouveler l'auth NIP-42 (TTL 5 min, download peut dépasser ça)
+    echo "🔐 Refreshing NIP-42 authentication..."
+    send_nip42_auth
+
     # API PUBLISH (NIP-71)
     echo "📹 Publishing video via /webcam endpoint..."
     PUBLISH_DATA="player=${PLAYER}&ipfs_cid=${IPFS_CID}&thumbnail_ipfs=${THUMBNAIL_CID}&gifanim_ipfs=${GIFANIM_CID}&info_cid=${INFO_CID}&file_hash=${FILE_HASH}&mime_type=video/mp4&upload_chain=${UPLOAD_CHAIN}&duration=${DURATION}&video_dimensions=${DIMENSIONS}&title=${VIDEO_TITLE}&description=${VIDEO_DESC}&publish_nostr=true&npub=${NPUB}&youtube_url=${YTURL}"

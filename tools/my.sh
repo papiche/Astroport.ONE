@@ -420,19 +420,16 @@ my_LatLon() {
 
 IPFSNODEID="$(myIpfsPeerId)"
 
-isLAN="$(isLan)"
-myIP="$(myIp)" # "127.0.0.1"
-
 ## SEE https://pad.p2p.legal/s/keygen
-NODEG1PUB=$(cat $HOME/.zen/game/secret.NODE.dunikey 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
+NODEG1PUB=$(awk '/^pub:/{print $2}' "$HOME/.zen/game/secret.NODE.dunikey" 2>/dev/null)
 
-## my_ip_cache
+## my_ip_cache — isLAN et myIP calculés une seule fois, puis mis en cache
 IP_CACHE="$HOME/.zen/tmp/my_ip_cache"
 if [[ -f "$IP_CACHE" ]]; then
     read myIP isLAN < "$IP_CACHE"
 else
     myIP=$(hostname -I | awk '{print $1}' | head -n 1)
-    isLAN=$(echo $myIP | grep -E "(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])")
+    isLAN=$(echo "$myIP" | grep -E "(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^::1$)|(^[fF][cCdD])")
     mkdir -p "$HOME/.zen/tmp"
     echo "$myIP $isLAN" > "$IP_CACHE"
 fi
@@ -448,9 +445,17 @@ myG1BILLET="http://127.0.0.1:33101"
 myHOST="$(myHostName)"
 
 myIPFS="http://ipfs.copylaradio.com" ## Used to create IPFS URL
-myIPFSGW="$(myIpfsGw)"
-myTUBE="$(myTube)"
-myASTROTUBE="https://$(myAstroTube)"
+
+## Lecture unique du fichier bootstrap pour myIPFSGW, myTUBE, myASTROTUBE
+_STRAPFILE="${HOME}/.zen/game/MY_boostrap_nodes.txt"
+[[ ! -f "$_STRAPFILE" ]] && _STRAPFILE="${HOME}/.zen/Astroport.ONE/A_boostrap_nodes.txt"
+if [[ -f "$_STRAPFILE" ]]; then
+    _STRAP_LINE2=$(head -n2 "$_STRAPFILE" | tail -n1 | xargs)
+    myIPFSGW=$(echo "$_STRAP_LINE2" | cut -d ' ' -f 2)
+    myTUBE=$(echo   "$_STRAP_LINE2" | cut -d ' ' -f 3)
+    myASTROTUBE="https://$(echo "$myTUBE" | sed 's~ipfs~astroport~g')"
+    unset _STRAPFILE _STRAP_LINE2
+fi
 
 ## WAN STATION
 [ -z "$isLAN" ] \

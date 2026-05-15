@@ -181,6 +181,108 @@ async def fetch_nostr_events(relay_url: str = "ws://127.0.0.1:7777", limit: int 
     
     return events
 
+def normalize_video_metadata(event: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalise un événement NOSTR (kind 21/22) en champs canoniques
+    conformes à UPlanet_FILE_CONTRACT.md v2.0.
+
+    Règles d'extraction (par priorité décroissante) :
+      - ipfs_url     : tag url /ipfs/… ou imeta url
+      - thumbnail    : tag thumbnail_ipfs (CID nu) > tag image > imeta image
+      - gifanim      : tag gifanim_ipfs (CID nu) > imeta gifanim
+      - source_type  : tag ["i","source:X"] > tags "t" (youtube/film/serie) > "webcam"
+      - channel      : premier tag ["t","Channel-…"] converti en email@domain
+      - duration     : tag duration > imeta duration (en secondes, int)
+      - file_hash    : tag x > imeta x
+    """
+    tags = event.get('tags', [])
+
+    # Index des premiers tags par clé, plus props imeta
+    tag_map: Dict[str, str] = {}
+    imeta: Dict[str, str] = {}
+    for tag in tags:
+        if len(tag) < 2:
+            continue
+        k, v = tag[0], tag[1]
+        if k == 'imeta':
+            for prop in tag[1:]:
+                if ' ' in prop:
+                    pk, pv = prop.split(' ', 1)
+                    imeta.setdefault(pk, pv)
+        else:
+            tag_map.setdefault(k, v)
+
+    # IPFS URL canonique (/ipfs/CID/filename)
+    raw_url = tag_map.get('url', imeta.get('url', ''))
+    if raw_url.startswith('ipfs://'):
+        raw_url = '/ipfs/' + raw_url[7:]
+    ipfs_url = raw_url if '/ipfs/' in raw_url else ''
+
+    # Thumbnail : CID nu préféré (sans préfixe /ipfs/)
+    def _strip_ipfs(v: str) -> str:
+        return v.split('/ipfs/')[-1] if '/ipfs/' in v else v
+
+    thumbnail_ipfs = _strip_ipfs(
+        tag_map.get('thumbnail_ipfs') or tag_map.get('image') or imeta.get('image', '')
+    )
+    gifanim_ipfs = _strip_ipfs(
+        tag_map.get('gifanim_ipfs') or imeta.get('gifanim', '')
+    )
+
+    # Source type : ["i","source:X"] prioritaire
+    i_tag = tag_map.get('i', '')
+    if i_tag.startswith('source:'):
+        source_type = i_tag[7:]
+    else:
+        t_values = [t[1] for t in tags if len(t) >= 2 and t[0] == 't']
+        if 'youtube' in t_values or 'YouTubeDownload' in t_values:
+            source_type = 'youtube'
+        elif 'film' in t_values:
+            source_type = 'film'
+        elif 'serie' in t_values:
+            source_type = 'serie'
+        else:
+            source_type = 'webcam'
+
+    # Channel : tag ["t","Channel-X"] → email@domain
+    channel_raw = next(
+        (t[1] for t in tags if len(t) >= 2 and t[0] == 't' and t[1].startswith('Channel-')),
+        ''
+    )
+    if channel_raw:
+        ch = channel_raw[8:]  # retire "Channel-"
+        parts = ch.split('_', 1)
+        channel = f"{parts[0]}@{parts[1].replace('_', '.')}" if len(parts) == 2 else ch
+    else:
+        channel = ''
+
+    # Duration (secondes, entier)
+    try:
+        duration = int(float(tag_map.get('duration') or imeta.get('duration') or 0))
+    except (ValueError, TypeError):
+        duration = 0
+
+    return {
+        'kind':         event.get('kind', 21),
+        'id':           event.get('id', ''),
+        'author':       event.get('pubkey', ''),
+        'created_at':   event.get('created_at', 0),
+        'title':        tag_map.get('title', ''),
+        'content':      event.get('content', ''),
+        'ipfs_url':     ipfs_url,
+        'thumbnail_ipfs': thumbnail_ipfs,
+        'gifanim_ipfs': gifanim_ipfs,
+        'info_cid':     tag_map.get('info', ''),
+        'file_hash':    tag_map.get('x') or imeta.get('x', ''),
+        'upload_chain': tag_map.get('upload_chain', ''),
+        'duration':     duration,
+        'dimensions':   tag_map.get('dim') or imeta.get('dim', ''),
+        'mime_type':    tag_map.get('m') or imeta.get('m', 'video/mp4'),
+        'source_type':  source_type,
+        'channel':      channel,
+    }
+
+
 def is_youtube_video_event(event: Dict[str, Any]) -> bool:
     """
     Vérifie si un événement NOSTR est une vidéo NIP-71 (kind 21 ou 22)
@@ -199,142 +301,42 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
     Extrait les informations vidéo d'un événement NOSTR NIP-71
     Supporte uniquement les événements kind: 21 et 22 (NIP-71)
     """
-    content = event.get('content', '')
+    # Extraction des champs canoniques via le normalisateur (source unique de vérité)
+    _meta = normalize_video_metadata(event)
     tags = event.get('tags', [])
-    kind = event.get('kind', 21)  # Default to NIP-71
+    kind = _meta['kind']
+    content = _meta['content']
+
+    ipfs_url       = _meta['ipfs_url']
+    thumbnail_ipfs = _meta['thumbnail_ipfs']
+    gifanim_ipfs   = _meta['gifanim_ipfs']
+    info_cid       = _meta['info_cid']
+    file_hash      = _meta['file_hash']
+    upload_chain   = _meta['upload_chain']
+    source_type    = _meta['source_type']
+    dimensions     = _meta['dimensions']
+    duration       = _meta['duration']
+    source_type_explicit = any(
+        len(t) >= 2 and t[0] == 'i' and t[1].startswith('source:') for t in tags
+    )
     
-    # Extraire les liens IPFS et YouTube depuis les tags NIP-71
-    ipfs_url = ""
-    youtube_url = ""
-    metadata_ipfs = ""
-    thumbnail_ipfs = ""
-    gifanim_ipfs = ""  # NEW: Animated GIF for video preview on hover
-    info_cid = ""      # NEW: info.json CID for metadata reuse
-    file_hash = ""     # NEW: File hash for provenance tracking
-    upload_chain = ""  # NEW: Upload chain for provenance tracking (comma-separated pubkeys)
-    source_type = "webcam"   # NEW: Source type (film, serie, youtube, webcam) - default: webcam
-    source_type_explicit = False  # Track if source_type was explicitly set from ["i", "source:*"] tag
-    dimensions = ""    # Initialize dimensions early to avoid NameError
-    duration = 0      # Initialize duration early to avoid NameError
-    
-    # Parse tags for standard NIP-71 fields first
-    for tag in tags:
-        if len(tag) >= 2:
-            tag_type = tag[0]
-            tag_value = tag[1]
-            
-            if tag_type == 'url':
-                if 'youtube.com' in tag_value or 'youtu.be' in tag_value:
-                    youtube_url = tag_value
-                elif '/ipfs/' in tag_value or 'ipfs://' in tag_value:
-                    # Normalize IPFS URL format to /ipfs/{CID}/{filename} (UPlanet_FILE_CONTRACT.md)
-                    if tag_value.startswith('ipfs://'):
-                        tag_value = tag_value.replace('ipfs://', '/ipfs/')
-                    ipfs_url = tag_value
-            elif tag_type == 'image' and not thumbnail_ipfs:
-                # Standard NIP-71 image tag for thumbnails
-                thumbnail_ipfs = tag_value
-            elif tag_type == 'thumbnail_ipfs' and not thumbnail_ipfs:
-                # Direct CID for thumbnail (NEW: from webcam endpoint)
-                thumbnail_ipfs = tag_value if not tag_value.startswith('/ipfs/') else tag_value.split('/ipfs/')[-1]
-            elif tag_type == 'gifanim_ipfs':
-                # NEW: Animated GIF CID for video preview
-                gifanim_ipfs = tag_value if not tag_value.startswith('/ipfs/') else tag_value.split('/ipfs/')[-1]
-            elif tag_type == 'info':
-                # NEW: info.json CID for complete metadata
-                info_cid = tag_value
-            elif tag_type == 'x':
-                # NEW: File hash for provenance/deduplication
-                file_hash = tag_value
-            elif tag_type == 'upload_chain':
-                # NEW: Upload chain for provenance tracking
-                upload_chain = tag_value
-            elif tag_type == 'i' and tag_value.startswith('source:'):
-                # Source type tag (source:film, source:serie, source:youtube, source:webcam)
-                # This has PRIORITY - don't override with topic tags
-                source_type = tag_value.replace('source:', '')
-                source_type_explicit = True  # Mark as explicitly set
-            elif tag_type == 'm' and 'video' in tag_value:
-                # Media type confirmed as video
-                pass
-            elif tag_type == 'size' and tag_value.isdigit():
-                # File size from NIP-71
-                pass
-            elif tag_type == 'duration' and tag_value.isdigit():
-                # Duration from NIP-71 (will be extracted later from imeta or separate tag)
-                pass
-            elif tag_type == 'dim':
-                if not dimensions:  # Only set if not already set from imeta
-                    dimensions = tag_value
-    
-    # Parse imeta tags (NIP-71 format) as fallback
-    for tag in tags:
-        if len(tag) >= 2:
-            tag_type = tag[0]
-            tag_value = tag[1]
-            
-            if tag_type == 'imeta':
-                # Parse imeta properties
-                for prop in tag[1:]:
-                    if prop.startswith('dim '):
-                        dimensions = prop[4:]
-                    elif prop.startswith('duration '):
-                        # Extract duration from imeta tag (NIP-71 format: "duration 123.456")
-                        try:
-                            duration_str = prop[9:].strip()  # Remove "duration " prefix
-                            duration = int(float(duration_str))  # Convert float to int
-                        except (ValueError, IndexError):
-                            duration = 0
-                    elif prop.startswith('url ') and not ipfs_url:
-                        ipfs_url = prop[4:]
-                    elif prop.startswith('x '):
-                        file_hash = prop[2:]
-                    elif prop.startswith('m '):
-                        media_type = prop[2:]
-                    elif prop.startswith('image ') and not thumbnail_ipfs:
-                        thumbnail_ipfs = prop[6:]
-                    elif prop.startswith('gifanim ') and not gifanim_ipfs:
-                        # NEW: Extract gifanim from imeta tag
-                        gifanim_ipfs = prop[8:]
-                    elif prop.startswith('fallback '):
-                        fallback_url = prop[9:]
-                    elif prop.startswith('service '):
-                        service_type = prop[8:]
-            elif tag_type == 'r':
-                # Reference tag - check if it's a thumbnail
-                if len(tag) >= 3 and tag[2] == 'Thumbnail' and not thumbnail_ipfs:
-                    thumbnail_ipfs = tag_value
-    
-    # Fallback: Parser le contenu si les tags ne contiennent pas les infos
-    if not ipfs_url:
-        ipfs_match = re.search(r'🔗 IPFS: (https?://[^\s]+)', content)
-        if ipfs_match:
-            ipfs_url = ipfs_match.group(1)
-    
+    # YouTube URL : pas dans le normalizer (url tag sert aussi pour IPFS)
+    youtube_url = next(
+        (t[1] for t in tags if len(t) >= 2 and t[0] == 'url'
+         and ('youtube.com' in t[1] or 'youtu.be' in t[1])),
+        ''
+    )
     if not youtube_url:
-        # Try to extract from content with emoji prefix
-        youtube_match = re.search(r'📺 YouTube: (https?://[^\s]+)', content)
-        if youtube_match:
-            youtube_url = youtube_match.group(1)
-        else:
-            # Try to extract any YouTube URL from content
-            youtube_match = re.search(r'(https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)[\w-]+)', content)
-            if youtube_match:
-                youtube_url = youtube_match.group(1)
-    
+        yt_match = re.search(r'(https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)[\w-]+)', content)
+        if yt_match:
+            youtube_url = yt_match.group(1)
+
+    # metadata_ipfs : alias info_cid (fallback contenu)
+    metadata_ipfs = info_cid
     if not metadata_ipfs:
-        metadata_match = re.search(r'📋 Métadonnées: (https?://[^\s]+)', content)
-        if metadata_match:
-            metadata_ipfs = metadata_match.group(1)
-    
-    # Set metadata_ipfs from info_cid if available and metadata_ipfs is empty
-    if not metadata_ipfs and info_cid:
-        metadata_ipfs = info_cid
-    
-    if not thumbnail_ipfs:
-        thumbnail_match = re.search(r'🖼️ Miniature: (https?://[^\s]+)', content)
-        if thumbnail_match:
-            thumbnail_ipfs = thumbnail_match.group(1)
+        m_match = re.search(r'📋 Métadonnées: (https?://[^\s]+)', content)
+        if m_match:
+            metadata_ipfs = m_match.group(1)
     
     # Extraire le titre et l'uploader depuis les tags NIP-71 d'abord
     title = ""
@@ -466,71 +468,37 @@ def extract_video_info_from_nostr_event(event: Dict[str, Any], relay_url: str = 
     topic_tags = [t[1] for t in tags if len(t) > 1 and t[1].startswith('Topic-')]
     topic_keywords = [tag.replace('Topic-', '') for tag in topic_tags]
     
-    # Extraire la durée et la taille de fichier depuis les tags NIP-71
-    duration = 0
+    # Champs non couverts par le normalisateur : file_size et géo
     file_size = 0
-    dimensions = ""
-    
-    # Extraire les coordonnées géographiques depuis les tags NOSTR
     latitude = None
     longitude = None
-    
-    # Extraire les métadonnées NIP-71 uniquement
     for tag in tags:
-        if len(tag) >= 2:
-            tag_type = tag[0]
-            tag_value = tag[1]
-            
-            if tag_type == 'duration':
-                # Only set if not already set from imeta
-                if duration == 0:
-                    try:
-                        duration = int(float(tag_value))  # Handle both int and float strings
-                    except ValueError:
-                        duration = 0
-            elif tag_type == 'size':
-                try:
-                    file_size = int(tag_value)
-                except ValueError:
-                    file_size = 0
-            elif tag_type == 'dim':
-                if not dimensions:  # Only set if not already set from imeta
-                    dimensions = tag_value
-            elif tag_type == 'g':
-                # Geohash tag format: "lat,lon"
-                try:
-                    coords = tag_value.split(',')
-                    if len(coords) == 2:
-                        latitude = float(coords[0].strip())
-                        longitude = float(coords[1].strip())
-                except (ValueError, IndexError):
-                    pass
-            elif tag_type == 'latitude':
-                # Separate latitude tag
-                try:
-                    latitude = float(tag_value)
-                except ValueError:
-                    pass
-            elif tag_type == 'longitude':
-                # Separate longitude tag
-                try:
-                    longitude = float(tag_value)
-                except ValueError:
-                    pass
-            elif tag_type == 'location':
-                # Human-readable location tag format: "lat,lon"
-                if latitude is None or longitude is None:  # Only use if not already set
-                    try:
-                        coords = tag_value.split(',')
-                        if len(coords) == 2:
-                            latitude = float(coords[0].strip())
-                            longitude = float(coords[1].strip())
-                    except (ValueError, IndexError):
-                        pass
-    
-    # Extract content (comment/description from event)
-    # According to NIP-71, the content field contains a summary or description of the video
-    content = event.get('content', '').strip()
+        if len(tag) < 2:
+            continue
+        k, v = tag[0], tag[1]
+        if k == 'size':
+            try:
+                file_size = int(v)
+            except ValueError:
+                pass
+        elif k == 'latitude':
+            try:
+                latitude = float(v)
+            except ValueError:
+                pass
+        elif k == 'longitude':
+            try:
+                longitude = float(v)
+            except ValueError:
+                pass
+        elif k in ('g', 'location') and (latitude is None or longitude is None):
+            try:
+                parts = v.split(',')
+                if len(parts) == 2:
+                    latitude = float(parts[0].strip())
+                    longitude = float(parts[1].strip())
+            except (ValueError, IndexError):
+                pass
     
     # Determine source type from tags (source:film, source:serie, source:youtube, source:webcam)
     # The tag ["i", "source:*"] has PRIORITY - if present, use it and don't override
