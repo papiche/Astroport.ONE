@@ -127,60 +127,59 @@ coop_decrypt() {
 # Get the NPUB/HEX from uplanet.G1.nostr keyfile
 # Accepts keyfile format: HEX=... or npub: npub1... or NPUB=npub1... (from keygen stdout)
 coop_get_pubkey() {
-    if [[ ! -f "$COOP_CONFIG_KEYFILE" ]]; then
-        echo "[ERROR] Keyfile not found: $COOP_CONFIG_KEYFILE" >&2
-        echo "[INFO] Run UPLANET.init.sh to create it" >&2
-        return 1
-    fi
-    
     local val=""
 
-    # Try to extract HEX= directly first (most reliable if present)
-    # Using grep -oP to extract specifically the content after HEX= and before ;
-    val=$(grep -oP 'HEX=\K[a-fA-F0-9]{64}' "$COOP_CONFIG_KEYFILE" 2>/dev/null | head -1)
-    if [[ -n "$val" ]]; then
-        echo "$val"
-        return 0
-    fi
-
-    # If HEX= is empty or not found, try to find nsec or npub
-    # This part remains mostly the same, but only runs if HEX= is not found
-    val=$(grep -oE 'npub1[a-zA-Z0-9]{58}' "$COOP_CONFIG_KEYFILE" 2>/dev/null | head -1)
-    if [[ -z "$val" ]]; then # If npub1 not found, try nsec1
-        val=$(grep -oE 'nsec1[a-zA-Z0-9]{58}' "$COOP_CONFIG_KEYFILE" 2>/dev/null | head -1)
-    fi
-
-    if [[ -n "$val" ]]; then
-        # Case 1: It's a hex string (this shouldn't happen if the first grep -oP worked)
-        if [[ "$val" =~ ^[a-fA-F0-9]{64}$ ]]; then
+    if [[ -f "$COOP_CONFIG_KEYFILE" ]]; then
+        # Try to extract HEX= directly first (most reliable if present)
+        val=$(grep -oP 'HEX=\K[a-fA-F0-9]{64}' "$COOP_CONFIG_KEYFILE" 2>/dev/null | head -1)
+        if [[ -n "$val" ]]; then
             echo "$val"
             return 0
         fi
-        
-        # Case 2: It's an nsec (starts with nsec1) - derive pubkey
-        if [[ "$val" == nsec1* ]]; then
-            if [[ -x "${_COOP_DIR}/nostr_nsec2npub2hex.py" ]]; then
-                local pubhex=$(python3 "${_COOP_DIR}/nostr_nsec2npub2hex.py" "$val" 2>/dev/null)
+
+        # Try npub then nsec from keyfile
+        val=$(grep -oE 'npub1[a-zA-Z0-9]{58}' "$COOP_CONFIG_KEYFILE" 2>/dev/null | head -1)
+        [[ -z "$val" ]] && val=$(grep -oE 'nsec1[a-zA-Z0-9]{58}' "$COOP_CONFIG_KEYFILE" 2>/dev/null | head -1)
+
+        if [[ -n "$val" ]]; then
+            if [[ "$val" =~ ^[a-fA-F0-9]{64}$ ]]; then
+                echo "$val"; return 0
+            fi
+            if [[ "$val" == nsec1* ]] && [[ -x "${_COOP_DIR}/nostr_nsec2npub2hex.py" ]]; then
+                local pubhex
+                pubhex=$(python3 "${_COOP_DIR}/nostr_nsec2npub2hex.py" "$val" 2>/dev/null)
                 if [[ -n "$pubhex" ]] && [[ "$pubhex" =~ ^[a-fA-F0-9]{64}$ ]]; then
-                    echo "$pubhex"
-                    return 0
+                    echo "$pubhex"; return 0
                 fi
             fi
-        fi
-        
-        # Case 3: It's an npub (starts with npub1) - convert to hex
-        if [[ "$val" == npub1* ]]; then
-            if [[ -x "${_COOP_DIR}/nostr2hex.py" ]]; then
-                local pubhex=$(python3 "${_COOP_DIR}/nostr2hex.py" "$val" 2>/dev/null)
+            if [[ "$val" == npub1* ]] && [[ -x "${_COOP_DIR}/nostr2hex.py" ]]; then
+                local pubhex
+                pubhex=$(python3 "${_COOP_DIR}/nostr2hex.py" "$val" 2>/dev/null)
                 if [[ -n "$pubhex" ]] && [[ "$pubhex" =~ ^[a-fA-F0-9]{64}$ ]]; then
-                    echo "$pubhex"
-                    return 0
+                    echo "$pubhex"; return 0
                 fi
             fi
         fi
     fi
-    
-    echo "[ERROR] Cannot extract valid HEX pubkey from keyfile" >&2
+
+    # Cold-start fallback: keyfile absent or unreadable — derive on the fly from UPLANETNAME
+    if [[ -n "$UPLANETNAME" ]] && \
+       [[ -x "${_COOP_DIR}/keygen" ]] && \
+       [[ -x "${_COOP_DIR}/nostr2hex.py" ]]; then
+        echo "[INFO] Keyfile absent — computing pubkey from UPLANETNAME" >&2
+        local npub
+        npub=$("${_COOP_DIR}/keygen" -t nostr "${UPLANETNAME}.G1" "${UPLANETNAME}.G1" 2>/dev/null)
+        if [[ -n "$npub" ]]; then
+            local pubhex
+            pubhex=$(python3 "${_COOP_DIR}/nostr2hex.py" "$npub" 2>/dev/null)
+            if [[ -n "$pubhex" ]] && [[ "$pubhex" =~ ^[a-fA-F0-9]{64}$ ]]; then
+                echo "$pubhex"; return 0
+            fi
+        fi
+    fi
+
+    echo "[ERROR] Cannot extract valid HEX pubkey (keyfile: $COOP_CONFIG_KEYFILE)" >&2
+    echo "[INFO] Run UPLANET.init.sh or ensure UPLANETNAME is set" >&2
     return 1
 }
 
@@ -203,43 +202,60 @@ coop_get_nsec() {
 # Fetch cooperative config DID from NOSTR
 # Returns: JSON config object or empty
 coop_fetch_config_from_nostr() {
-    local pubkey=$(coop_get_pubkey) || return 1
-    
-    # Try local relay first, then remote
-    local relays=("$COOP_CONFIG_LOCAL_RELAY" "$COOP_CONFIG_RELAY")
-    
+    local pubkey
+    pubkey=$(coop_get_pubkey) || return 1
+
+    # Build relay list: skip local relay if port 7777 is not reachable
+    local relays=()
+    if nc -z 127.0.0.1 7777 2>/dev/null; then
+        relays+=("$COOP_CONFIG_LOCAL_RELAY")
+    else
+        echo "[INFO] Local relay not reachable — skipping to remote" >&2
+    fi
+    relays+=("$COOP_CONFIG_RELAY")
+
     for relay in "${relays[@]}"; do
+        local _did_found=false
+
         # Use nostr_get_events.sh if available
         if [[ -x "${_COOP_DIR}/nostr_get_events.sh" ]]; then
-            local result=$("${_COOP_DIR}/nostr_get_events.sh" \
+            local result
+            result=$("${_COOP_DIR}/nostr_get_events.sh" \
                 --kind "$COOP_CONFIG_KIND" \
                 --author "$pubkey" \
                 --tag-d "$COOP_CONFIG_D_TAG" \
                 --relay "$relay" \
                 --limit 1 \
                 --json 2>/dev/null)
-            
+
             if [[ -n "$result" ]] && [[ "$result" != "[]" ]]; then
-                # Extract content from the event
-                local content=$(echo "$result" | jq -r '.[0].content // empty' 2>/dev/null)
+                local content
+                content=$(echo "$result" | jq -r '.[0].content // empty' 2>/dev/null)
                 if [[ -n "$content" ]]; then
                     echo "$content"
                     return 0
                 fi
             fi
+            _did_found=false
         fi
-        
+
         # Fallback: direct websocket query with Python
-        if [[ -x "${_COOP_DIR}/nostr_cooperative_did.py" ]]; then
-            local result=$(python3 "${_COOP_DIR}/nostr_cooperative_did.py" fetch \
+        if [[ "$_did_found" == "false" ]] && [[ -x "${_COOP_DIR}/nostr_cooperative_did.py" ]]; then
+            local result
+            result=$(python3 "${_COOP_DIR}/nostr_cooperative_did.py" fetch \
                 --relay "$relay" \
                 --pubkey "$pubkey" \
                 --d-tag "$COOP_CONFIG_D_TAG" 2>/dev/null)
-            
+
             if [[ -n "$result" ]] && [[ "$result" != "null" ]]; then
                 echo "$result"
                 return 0
             fi
+        fi
+
+        # DID absent on this relay — if local, fall through to remote immediately
+        if [[ "$relay" == "$COOP_CONFIG_LOCAL_RELAY" ]]; then
+            echo "[INFO] DID not found on local relay — trying remote ($COOP_CONFIG_RELAY)" >&2
         fi
     done
     

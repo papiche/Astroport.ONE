@@ -333,6 +333,18 @@ echo ">>> ${ENVFILE}"
 ## Re-source my.sh to pick up new .env values
 source ${HOME}/.zen/Astroport.ONE/tools/my.sh
 
+# --- SYNCHRONISATION CONFIG COOPÉRATIVE ---
+echo "📡 Tentative de récupération de la configuration Swarm..."
+if [[ -f "${HOME}/.zen/Astroport.ONE/tools/cooperative_config.sh" ]]; then
+    source "${HOME}/.zen/Astroport.ONE/tools/cooperative_config.sh"
+    coop_config_refresh >/dev/null 2>&1
+    if [[ -n "$(coop_config_get "MJ_APIKEY_PUBLIC" 2>/dev/null)" ]]; then
+        echo "✅ Configuration Mailjet récupérée depuis l'essaim."
+    else
+        echo "⚠️  Configuration Mailjet introuvable sur le réseau. Mode manuel requis pour les emails."
+    fi
+fi
+
 ##########################################################
 ## NGINX PROXY MANAGER: deploy + auto-configure SSL proxies
 ##########################################################
