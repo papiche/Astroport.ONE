@@ -57,6 +57,7 @@ if [[ -s ~/.zen/tmp/${CACHE_FILE} ]]; then
         fi
     else
         echo "Cache expired (age: ${CACHE_AGE}s), regenerating..." >&2
+        rm -f ~/.zen/tmp/${CACHE_FILE}
     fi
 fi
 
@@ -180,7 +181,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
     # search for active NOSTR MULTIPASS
     ####################################
     echo " ## SEARCH HEX in ~/.zen/tmp/{12D3KooW*,swarm/*}/TW/*/HEX" >&2
-    MENOSTR=($(ls ~/.zen/tmp/$IPFSNODEID/TW/*/HEX ~/.zen/tmp/swarm/*/TW/*/HEX 2>/dev/null | rev | cut -d '/' -f 2 | rev | sort -u))
+    MENOSTR=($(ls ~/.zen/tmp/{12D3KooW*,swarm/*}/TW/*/HEX 2>/dev/null | rev | cut -d '/' -f 2 | rev | sort -u))
 
     echo "${#MENOSTR[@]} NOSTR MULTIPASS(S) : ${MENOSTR[@]}" >&2
     echo "===========================================================" >&2
