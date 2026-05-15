@@ -111,62 +111,18 @@ log_output "ZEN ECONOMY: Starting weekly payment process for week $WEEK_KEY"
 # Captain : Le gestionnaire du Node
 #######################################################################
 log_output "UPlanet RESERVE UPLANETNAME_G1 : ${UPLANETNAME_G1}"
-UPLANETNAME_G1COIN=$(${MY_PATH}/../tools/G1check.sh ${UPLANETNAME_G1} | tail -n 1)
-UPLANETNAME_G1COIN=${UPLANETNAME_G1COIN:-0}
-# S'assurer que UPLANETNAME_G1COIN est un nombre valide pour bc
-if ! [[ "$UPLANETNAME_G1COIN" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
-    log_output "⚠️  UPLANETNAME_G1COIN invalide, utilisation de 0"
-    UPLANETNAME_G1COIN=0
-fi
-UPLANETNAME_ZEN=$(echo "scale=1; ($UPLANETNAME_G1COIN - 1) * 10" | bc 2>/dev/null || echo "0")
-log_output "$UPLANETNAME_ZEN Ẑen"
 
-# Vérification du Node (Astroport)
+# ── Étape 1 : Dériver toutes les pubkeys (opérations locales, sans réseau) ──
 NODEG1PUB=$($MY_PATH/../tools/ipfs_to_g1.py ${IPFSNODEID})
 log_output "NODE G1PUB : ${NODEG1PUB}"
-NODECOIN=$(${MY_PATH}/../tools/G1check.sh ${NODEG1PUB} | tail -n 1)
-NODECOIN=${NODECOIN:-0}
-# S'assurer que NODECOIN est un nombre valide pour bc
-if ! [[ "$NODECOIN" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
-    log_output "⚠️  NODECOIN invalide, utilisation de 0"
-    NODECOIN=0
-fi
-NODEZEN=$(echo "scale=1; ($NODECOIN - 1) * 10" | bc 2>/dev/null || echo "0")
-log_output "$NODEZEN Ẑen"
-
-# Vérification du Captain (gestionnaire) - MULTIPASS (NOSTR)
 log_output "CAPTAIN G1PUB : ${CAPTAING1PUB}"
-CAPTAINCOIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAING1PUB} | tail -n 1)
-CAPTAINCOIN=${CAPTAINCOIN:-0}
-# S'assurer que CAPTAINCOIN est un nombre valide pour bc
-if ! [[ "$CAPTAINCOIN" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
-    log_output "⚠️  CAPTAINCOIN invalide, utilisation de 0"
-    CAPTAINCOIN=0
-fi
-CAPTAINZEN=$(echo "scale=1; ($CAPTAINCOIN - 1) * 10" | bc 2>/dev/null || echo "0")
-log_output "Captain MULTIPASS balance: $CAPTAINZEN Ẑen"
 
-# Vérification de la ZEN Card du Captain (PLAYERS)
+CAPTAIN_ZENCARD_PUB=""
 if [[ -n "$CAPTAINEMAIL" ]]; then
     CAPTAIN_ZENCARD_PATH="$HOME/.zen/game/players/$CAPTAINEMAIL"
     if [[ -d "$CAPTAIN_ZENCARD_PATH" && -s "$CAPTAIN_ZENCARD_PATH/secret.dunikey" ]]; then
         CAPTAIN_ZENCARD_PUB=$(cat "$CAPTAIN_ZENCARD_PATH/secret.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
-        if [[ -n "$CAPTAIN_ZENCARD_PUB" ]]; then
-            CAPTAIN_ZENCARD_COIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAIN_ZENCARD_PUB} | tail -n 1)
-                CAPTAIN_ZENCARD_COIN=${CAPTAIN_ZENCARD_COIN:-0}
-                CAPTAIN_ZENCARD_ZEN=$(echo "scale=1; ($CAPTAIN_ZENCARD_COIN - 1) * 10" | bc)
-            log_output "Captain ZEN Card balance: $CAPTAIN_ZENCARD_ZEN Ẑen"
-        else
-            CAPTAIN_ZENCARD_ZEN=0
-            log_output "Captain ZEN Card not found or invalid"
-        fi
-    else
-        CAPTAIN_ZENCARD_ZEN=0
-        log_output "Captain ZEN Card not found"
     fi
-else
-    CAPTAIN_ZENCARD_ZEN=0
-    log_output "Captain email not configured"
 fi
 
 #######################################################################
@@ -213,49 +169,81 @@ WEEKLYG1=$(makecoord $(echo "$WEEKLYPAF / 10" | bc -l))
 #        et servent de source pour l'allocation coopérative 3x1/3.
 #######################################################################
 
-# Ensure CASH wallet exists and get its balance
+# Ensure CASH wallet exists
 if [[ ! -s "$HOME/.zen/game/uplanet.CASH.dunikey" ]]; then
     log_output "⚠️  CASH wallet not found - creating it..."
     ${MY_PATH}/../tools/keygen -t duniter -o ~/.zen/game/uplanet.CASH.dunikey "${UPLANETNAME}.TREASURY" "${UPLANETNAME}.TREASURY"
     chmod 600 ~/.zen/game/uplanet.CASH.dunikey
 fi
 
+# Lire toutes les pubkeys depuis les fichiers (sans réseau)
 CASH_G1PUB=$(cat "$HOME/.zen/game/uplanet.CASH.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
-CASH_COIN=$(${MY_PATH}/../tools/G1check.sh ${CASH_G1PUB} | tail -n 1)
-CASH_COIN=${CASH_COIN:-0}
-# S'assurer que CASH_COIN est un nombre valide pour bc
-if ! [[ "$CASH_COIN" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
-    log_output "⚠️  CASH_COIN invalide, utilisation de 0"
-    CASH_COIN=0
-fi
-CASH_ZEN=$(echo "scale=1; ($CASH_COIN - 1) * 10" | bc 2>/dev/null || echo "0")
-log_output "CASH (Treasury) balance: $CASH_ZEN Ẑen"
-# Balance ASSETS (Forêts-jardins / Immobilier)
 ASSETS_G1PUB=$(cat "$HOME/.zen/game/uplanet.ASSETS.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
-ASSETS_COIN=$(${MY_PATH}/../tools/G1check.sh ${ASSETS_G1PUB} | tail -n 1)
-ASSETS_ZEN=$(echo "scale=1; (${ASSETS_COIN:-1} - 1) * 10" | bc 2>/dev/null || echo "0")
-
-# Balance R&D (Recherche et Développement)
 RND_G1PUB=$(cat "$HOME/.zen/game/uplanet.RnD.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
-RND_COIN=$(${MY_PATH}/../tools/G1check.sh ${RND_G1PUB} | tail -n 1)
-RND_ZEN=$(echo "scale=1; (${RND_COIN:-1} - 1) * 10" | bc 2>/dev/null || echo "0")
 
-# Balance du Captain Dedicated (Collecte des loyers usagers)
+CAPTAIN_DED_PUB=""
 if [[ -s "$HOME/.zen/game/uplanet.captain.dunikey" ]]; then
     CAPTAIN_DED_PUB=$(cat "$HOME/.zen/game/uplanet.captain.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
-    if [[ -n "$CAPTAIN_DED_PUB" ]]; then
-        CAPTAIN_DED_COIN=$(${MY_PATH}/../tools/G1check.sh ${CAPTAIN_DED_PUB} | tail -n 1)
-        CAPTAIN_DED_COIN=${CAPTAIN_DED_COIN:-0}
-        CAPTAIN_DED_ZEN=$(echo "scale=1; (${CAPTAIN_DED_COIN} - 1) * 10" | bc)
-        log_output "Captain DEDICATED balance: $CAPTAIN_DED_ZEN Ẑen"
-    else
-        CAPTAIN_DED_ZEN=0
-        log_output "Captain DEDICATED wallet invalid"
-    fi
+fi
+
+# ── Étape 2 : Toutes les requêtes G1check.sh en parallèle (Squid GraphQL + cache) ──
+_G1TMP=$(mktemp -d)
+[[ -n "$UPLANETNAME_G1" ]]    && ${MY_PATH}/../tools/G1check.sh ${UPLANETNAME_G1}    > "${_G1TMP}/uplanet.coin"       2>/dev/null &
+[[ -n "$NODEG1PUB" ]]         && ${MY_PATH}/../tools/G1check.sh ${NODEG1PUB}         > "${_G1TMP}/node.coin"          2>/dev/null &
+[[ -n "$CAPTAING1PUB" ]]      && ${MY_PATH}/../tools/G1check.sh ${CAPTAING1PUB}      > "${_G1TMP}/captain.coin"       2>/dev/null &
+[[ -n "$CAPTAIN_ZENCARD_PUB" ]] && ${MY_PATH}/../tools/G1check.sh ${CAPTAIN_ZENCARD_PUB} > "${_G1TMP}/captain_zencard.coin" 2>/dev/null &
+[[ -n "$CASH_G1PUB" ]]        && ${MY_PATH}/../tools/G1check.sh ${CASH_G1PUB}        > "${_G1TMP}/cash.coin"          2>/dev/null &
+[[ -n "$ASSETS_G1PUB" ]]      && ${MY_PATH}/../tools/G1check.sh ${ASSETS_G1PUB}      > "${_G1TMP}/assets.coin"        2>/dev/null &
+[[ -n "$RND_G1PUB" ]]         && ${MY_PATH}/../tools/G1check.sh ${RND_G1PUB}         > "${_G1TMP}/rnd.coin"           2>/dev/null &
+[[ -n "$CAPTAIN_DED_PUB" ]]   && ${MY_PATH}/../tools/G1check.sh ${CAPTAIN_DED_PUB}   > "${_G1TMP}/captain_ded.coin"   2>/dev/null &
+wait
+log_output "Balances G1 récupérées en parallèle"
+
+# Fonction locale : lire un résultat de coin (valide ou 0)
+_g1coin() { local v; v=$(tail -n 1 "${_G1TMP}/$1.coin" 2>/dev/null); [[ "$v" =~ ^[0-9]+(\.[0-9]+)?$ ]] && echo "$v" || echo "0"; }
+
+# ── Étape 3 : Collecter les résultats ─────────────────────────────────────────
+UPLANETNAME_G1COIN=$(_g1coin uplanet)
+UPLANETNAME_ZEN=$(echo "scale=1; ($UPLANETNAME_G1COIN - 1) * 10" | bc 2>/dev/null || echo "0")
+log_output "$UPLANETNAME_ZEN Ẑen"
+
+NODECOIN=$(_g1coin node)
+NODEZEN=$(echo "scale=1; ($NODECOIN - 1) * 10" | bc 2>/dev/null || echo "0")
+log_output "$NODEZEN Ẑen"
+
+CAPTAINCOIN=$(_g1coin captain)
+CAPTAINZEN=$(echo "scale=1; ($CAPTAINCOIN - 1) * 10" | bc 2>/dev/null || echo "0")
+log_output "Captain MULTIPASS balance: $CAPTAINZEN Ẑen"
+
+if [[ -n "$CAPTAIN_ZENCARD_PUB" ]]; then
+    CAPTAIN_ZENCARD_COIN=$(_g1coin captain_zencard)
+    CAPTAIN_ZENCARD_ZEN=$(echo "scale=1; ($CAPTAIN_ZENCARD_COIN - 1) * 10" | bc 2>/dev/null || echo "0")
+    log_output "Captain ZEN Card balance: $CAPTAIN_ZENCARD_ZEN Ẑen"
+else
+    CAPTAIN_ZENCARD_ZEN=0
+    [[ -n "$CAPTAINEMAIL" ]] && log_output "Captain ZEN Card not found or invalid" || log_output "Captain email not configured"
+fi
+
+CASH_COIN=$(_g1coin cash)
+CASH_ZEN=$(echo "scale=1; ($CASH_COIN - 1) * 10" | bc 2>/dev/null || echo "0")
+log_output "CASH (Treasury) balance: $CASH_ZEN Ẑen"
+
+ASSETS_COIN=$(_g1coin assets)
+ASSETS_ZEN=$(echo "scale=1; (${ASSETS_COIN:-1} - 1) * 10" | bc 2>/dev/null || echo "0")
+
+RND_COIN=$(_g1coin rnd)
+RND_ZEN=$(echo "scale=1; (${RND_COIN:-1} - 1) * 10" | bc 2>/dev/null || echo "0")
+
+if [[ -n "$CAPTAIN_DED_PUB" ]]; then
+    CAPTAIN_DED_COIN=$(_g1coin captain_ded)
+    CAPTAIN_DED_ZEN=$(echo "scale=1; ($CAPTAIN_DED_COIN - 1) * 10" | bc 2>/dev/null || echo "0")
+    log_output "Captain DEDICATED balance: $CAPTAIN_DED_ZEN Ẑen"
 else
     CAPTAIN_DED_ZEN=0
-    log_output "Captain DEDICATED wallet not found"
+    [[ -s "$HOME/.zen/game/uplanet.captain.dunikey" ]] && log_output "Captain DEDICATED wallet invalid" || log_output "Captain DEDICATED wallet not found"
 fi
+
+rm -rf "${_G1TMP}"
 
 # Calculate total required: 3x PAF (1x NODE + 2x CAPTAIN)
 TOTAL_PAF_REQUIRED=$(echo "scale=2; $WEEKLYPAF * 3" | bc -l)
@@ -575,17 +563,23 @@ Total offert à la communauté : ${new_total} Ẑen. 🙏
                     WEEKLY_DEPRECIATION=$(echo "scale=2; $MACHINE_VALUE / $DEPRECIATION_WEEKS" | bc -l)
                     WEEKLY_DEPRECIATION_G1=$(makecoord $(echo "$WEEKLY_DEPRECIATION / 10" | bc -l))
                     
-                    # Check CAPITAL wallet balance
+                    # Check CAPITAL + AMORTISSEMENT balances en parallèle
                     CAPITAL_G1PUB=$(cat "$HOME/.zen/game/uplanet.CAPITAL.dunikey" | grep "pub:" | cut -d ' ' -f 2)
-                    CAPITAL_COIN=$(${MY_PATH}/../tools/G1check.sh ${CAPITAL_G1PUB} | tail -n 1)
-                    CAPITAL_ZEN=$(echo "scale=1; (${CAPITAL_COIN:-1} - 1) * 10" | bc 2>/dev/null || echo "0")
-                    
+                    _AMORT_TMP=$(mktemp -d)
+                    ${MY_PATH}/../tools/G1check.sh ${CAPITAL_G1PUB} > "${_AMORT_TMP}/capital.coin" 2>/dev/null &
+                    ${MY_PATH}/../tools/G1check.sh ${AMORT_G1PUB}   > "${_AMORT_TMP}/amort.coin"   2>/dev/null &
+                    wait
+                    _cap=$(tail -n 1 "${_AMORT_TMP}/capital.coin" 2>/dev/null); [[ "$_cap" =~ ^[0-9]+(\.[0-9]+)?$ ]] || _cap=1
+                    _amr=$(tail -n 1 "${_AMORT_TMP}/amort.coin"   2>/dev/null); [[ "$_amr" =~ ^[0-9]+(\.[0-9]+)?$ ]] || _amr=1
+                    rm -rf "${_AMORT_TMP}"
+                    CAPITAL_COIN="$_cap"
+                    CAPITAL_ZEN=$(echo "scale=1; (${CAPITAL_COIN} - 1) * 10" | bc 2>/dev/null || echo "0")
+
                     # Calculate values for logging
                     TOTAL_DEPRECIATED=$(echo "scale=2; $WEEKLY_DEPRECIATION * $WEEKS_ELAPSED" | bc -l)
                     RESIDUAL_VALUE=$(echo "scale=2; $MACHINE_VALUE - $TOTAL_DEPRECIATED" | bc -l)
-                    
-                    # Get current AMORTISSEMENT balance
-                    AMORT_COIN=$(${MY_PATH}/../tools/G1check.sh ${AMORT_G1PUB} | tail -n 1)
+
+                    AMORT_COIN="$_amr"
                     AMORT_ZEN=$(echo "scale=1; ($AMORT_COIN - 1) * 10" | bc)
                     
                     if [[ $(echo "$CAPITAL_ZEN >= $WEEKLY_DEPRECIATION" | bc -l) -eq 1 ]]; then
@@ -657,13 +651,20 @@ Total offert à la communauté : ${new_total} Ẑen. 🙏
                 DEPRECIATION_WEEKS_REPORT="${DEPRECIATION_WEEKS:-156}"
                 if [[ -f "$HOME/.zen/game/uplanet.CAPITAL.dunikey" ]]; then
                     CAPITAL_G1PUB_RPT=$(cat "$HOME/.zen/game/uplanet.CAPITAL.dunikey" | grep "pub:" | cut -d ' ' -f 2)
-                    CAPITAL_COIN_RPT=$(${MY_PATH}/../tools/G1check.sh ${CAPITAL_G1PUB_RPT} 2>/dev/null | tail -n 1)
-                    CAPITAL_BALANCE=$(echo "scale=1; ($CAPITAL_COIN_RPT - 1) * 10" | bc 2>/dev/null || echo "0")
+                    _RPT_TMP=$(mktemp -d)
+                    ${MY_PATH}/../tools/G1check.sh ${CAPITAL_G1PUB_RPT} > "${_RPT_TMP}/cap.coin" 2>/dev/null &
                     if [[ -f "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" ]]; then
                         AMORT_G1PUB_RPT=$(cat "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" | grep "pub:" | cut -d ' ' -f 2)
-                        AMORT_COIN_RPT=$(${MY_PATH}/../tools/G1check.sh ${AMORT_G1PUB_RPT} 2>/dev/null | tail -n 1)
-                        AMORT_BALANCE=$(echo "scale=1; ($AMORT_COIN_RPT - 1) * 10" | bc 2>/dev/null || echo "0")
+                        ${MY_PATH}/../tools/G1check.sh ${AMORT_G1PUB_RPT} > "${_RPT_TMP}/amort.coin" 2>/dev/null &
                     fi
+                    wait
+                    CAPITAL_COIN_RPT=$(tail -n 1 "${_RPT_TMP}/cap.coin" 2>/dev/null)
+                    CAPITAL_BALANCE=$(echo "scale=1; (${CAPITAL_COIN_RPT:-1} - 1) * 10" | bc 2>/dev/null || echo "0")
+                    if [[ -f "$HOME/.zen/game/uplanet.AMORTISSEMENT.dunikey" ]]; then
+                        AMORT_COIN_RPT=$(tail -n 1 "${_RPT_TMP}/amort.coin" 2>/dev/null)
+                        AMORT_BALANCE=$(echo "scale=1; (${AMORT_COIN_RPT:-1} - 1) * 10" | bc 2>/dev/null || echo "0")
+                    fi
+                    rm -rf "${_RPT_TMP}"
                     MACHINE_VALUE_REPORT="${MACHINE_VALUE:-0}"
                     DEPRECIATION_WEEKS_REPORT="${DEPRECIATION_WEEKS:-156}"
                 fi

@@ -322,7 +322,7 @@ def merge_profile_data(existing_event: Optional[dict], new_args: argparse.Namesp
     metadata = existing_metadata.copy()
     
     # Mettre à jour avec les nouveaux champs fournis
-    fields = ['name', 'about', 'picture', 'banner', 'nip05', 'website', 'city', 'g1pub', 'g1v2', 'zencard_v2', 'g1member']
+    fields = ['name', 'about', 'picture', 'banner', 'nip05', 'website', 'city', 'g1pub', 'g1v2', 'zencard_v2', 'g1member', 'home_station']
     for field in fields:
         val = getattr(new_args, field, None)
         if val is not None:
@@ -344,7 +344,8 @@ def merge_profile_data(existing_event: Optional[dict], new_args: argparse.Namesp
     
     # Mettre à jour avec les nouveaux tags
     tag_fields = ['g1pub', 'g1v2', 'g1member', 'github', 'twitter', 'mastodon', 'telegram',
-                  'ipfs_gw', 'ipns_vault', 'zencard', 'zencard_v2', 'email', 'tw_feed']
+                  'ipfs_gw', 'ipns_vault', 'zencard', 'zencard_v2', 'email', 'tw_feed',
+                  'home_station']
     
     for field in tag_fields:
         val = getattr(new_args, field, None)
@@ -477,6 +478,7 @@ Examples:
     parser.add_argument("--zencard_v2", help="ZenCard SS58 address (Duniter v2s)")
     parser.add_argument("--email", help="Email address")
     parser.add_argument("--tw_feed", help="TW Feed IPNS key")
+    parser.add_argument("--home_station", help="Home station IPFSNODEID:NODE_HEX (pour roaming sync)", default=None)
 
     args, unknown_args = parser.parse_known_args()
     

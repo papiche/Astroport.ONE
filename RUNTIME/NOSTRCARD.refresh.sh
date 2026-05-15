@@ -320,6 +320,82 @@ NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 # Répartition équitable des slots horaires dès le démarrage
 rebalance_refresh_times "${NOSTR[@]}"
 
+########################################################################
+## LISTENER DM — Sync uDRIVE reçu depuis les stations visiteurs (✈️ → 🏠)
+##
+## Les stations B (visiteur) envoient un DM NIP-04 kind 4 chiffré au HEX
+## du NODE de cette station (home). On récupère les CIDs IPFS des fichiers
+## uploadés en roaming et on les place dans APP/uDRIVE du joueur concerné.
+## La publication IPNS reste EXCLUSIVEMENT sur la home station.
+########################################################################
+if [[ -s ~/.zen/game/secret.nostr ]]; then
+    source ~/.zen/game/secret.nostr
+    NODE_NSEC="${NSEC:-}"
+    NODE_HEX="${HEX:-}"
+    unset NSEC NPUB HEX
+
+    if [[ -n "$NODE_NSEC" ]]; then
+        _SYNC_TS_FILE="${HOME}/.zen/tmp/last_sync_dm_ts"
+        _SYNC_TS=$(cat "$_SYNC_TS_FILE" 2>/dev/null)
+        _SYNC_RELAYS=("wss://relay.copylaradio.com")
+        [[ -n "$myRELAY" ]] && _SYNC_RELAYS+=("$myRELAY")
+
+        log "INFO" "✈️ DM listener: vérification sync uDRIVE entrant (NODE HEX ${NODE_HEX:0:12}...)"
+
+        _SYNC_REQUESTS=$(python3 "${MY_PATH}/../tools/nostr_node_intercom.py" receive \
+            --nsec "$NODE_NSEC" \
+            --channel udrive \
+            ${_SYNC_TS:+--since "$_SYNC_TS"} \
+            --relays "${_SYNC_RELAYS[@]}" 2>/dev/null)
+
+        # Mettre à jour le timestamp AVANT traitement pour ne pas re-traiter si erreur IPFS
+        date +%s > "$_SYNC_TS_FILE"
+
+        if [[ -n "$_SYNC_REQUESTS" && "$_SYNC_REQUESTS" != "[]" ]]; then
+            _SYNC_COUNT=$(echo "$_SYNC_REQUESTS" | python3 -c "import json,sys; print(len(json.load(sys.stdin)))" 2>/dev/null || echo 0)
+            log "INFO" "✈️ DM listener: $_SYNC_COUNT demande(s) de sync reçue(s)"
+
+            echo "$_SYNC_REQUESTS" | python3 -c "
+import json, sys
+for r in json.load(sys.stdin):
+    print(r.get('email',''), r.get('cid',''), r.get('filename',''), r.get('filetype','file'))
+" 2>/dev/null | while read -r _S_EMAIL _S_CID _S_FILE _S_TYPE; do
+                [[ -z "$_S_EMAIL" || -z "$_S_CID" || -z "$_S_FILE" ]] && continue
+
+                # Vérifier que le PLAYER est bien hébergé ici (pas roaming)
+                [[ ! -d "${HOME}/.zen/game/nostr/${_S_EMAIL}" ]] && \
+                    log "WARN" "✈️ sync ignoré: ${_S_EMAIL} non hébergé ici" && continue
+                [[ -f "${HOME}/.zen/game/nostr/${_S_EMAIL}/.roaming" ]] && \
+                    log "WARN" "✈️ sync ignoré: ${_S_EMAIL} est lui-même en roaming ici" && continue
+
+                # Déterminer le répertoire de destination selon le type
+                case "$_S_TYPE" in
+                    image)  _DEST_DIR="Images" ;;
+                    video)  _DEST_DIR="Videos" ;;
+                    audio)  _DEST_DIR="Music"  ;;
+                    *)      _DEST_DIR="Documents" ;;
+                esac
+
+                _UDRIVE="${HOME}/.zen/game/nostr/${_S_EMAIL}/APP/uDRIVE"
+                mkdir -p "${_UDRIVE}/${_DEST_DIR}"
+
+                _TMP_FILE=$(mktemp -p "${HOME}/.zen/tmp/${MOATS}" "sync_XXXXXX")
+                if timeout 30 ipfs get "/ipfs/${_S_CID}" -o "$_TMP_FILE" 2>/dev/null; then
+                    mv "$_TMP_FILE" "${_UDRIVE}/${_DEST_DIR}/${_S_FILE}"
+                    # Toucher le répertoire uDRIVE → devrait_rafraîchir() détectera le changement
+                    touch "${_UDRIVE}/"
+                    log "INFO" "✈️ sync OK: ${_S_EMAIL} ← ${_S_FILE} (${_S_CID:0:12}...) dans ${_DEST_DIR}/"
+                else
+                    rm -f "$_TMP_FILE"
+                    log "WARN" "✈️ sync ÉCHEC ipfs get pour ${_S_FILE} (${_S_CID:0:12}...)"
+                fi
+            done
+        else
+            log "DEBUG" "✈️ DM listener: aucun sync en attente"
+        fi
+    fi
+fi
+
 ## RUNING FOR ALL LOCAL MULTIPASS (NOSTR Card)
 for PLAYER in "${NOSTR[@]}"; do
 
@@ -1434,30 +1510,6 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
             chmod 600 ~/.zen/game/nostr/${PLAYER}/.secret.ipns
         fi
 
-        ## Chiffrement des secrets avec UPLANETG1PUB pour le roaming NIP-42 parfait
-        ## UPLANETG1PUB est déjà calculé par my.sh (keygen -t duniter UPLANETNAME UPLANETNAME).
-        ## Les fichiers chiffrés sont nommés _secret.TYPE.uplanet.enc (préfixe _ = visible
-        ## pour ipfs add sans flag --hidden, contrairement à .secret.TYPE.uplanet.enc).
-        ## Récupérés par 22242.sh via IPNS sur n'importe quelle station du même swarm.
-        if [[ -n "$UPLANETG1PUB" ]]; then
-            for _s in .secret.nostr .secret.dunikey .secret.ipns; do
-                _enc="_${_s:1}.uplanet.enc"  # .secret.nostr → _secret.nostr.uplanet.enc
-                # Migration des anciens fichiers cachés vers le nom visible
-                [[ -f "${HOME}/.zen/game/nostr/${PLAYER}/${_s}.uplanet.enc" && \
-                   ! -f "${HOME}/.zen/game/nostr/${PLAYER}/${_enc}" ]] && \
-                    mv "${HOME}/.zen/game/nostr/${PLAYER}/${_s}.uplanet.enc" \
-                       "${HOME}/.zen/game/nostr/${PLAYER}/${_enc}" && \
-                    log "DEBUG" "🔄 Migration roaming secret: ${_s}.uplanet.enc → ${_enc}"
-                if [[ -s "${HOME}/.zen/game/nostr/${PLAYER}/${_s}" && \
-                      ! -s "${HOME}/.zen/game/nostr/${PLAYER}/${_enc}" ]]; then
-                    ${MY_PATH}/../tools/natools.py encrypt -p "$UPLANETG1PUB" \
-                        -i "${HOME}/.zen/game/nostr/${PLAYER}/${_s}" \
-                        -o "${HOME}/.zen/game/nostr/${PLAYER}/${_enc}" 2>/dev/null \
-                    && log "DEBUG" "🔐 Roaming secret chiffré: ${_enc}"
-                fi
-            done
-        fi
-
         ## UPDATE IPNS RESOLVE
         log "DEBUG" "Starting IPFS add for ${PLAYER}"
         ipfs_start=$(date +%s)
@@ -1696,40 +1748,83 @@ for PLAYER in "${NOSTR[@]}"; do
         continue
     fi
 
-    # ── PUSH : modifs locales détectées ──
+    # ── PUSH : modifs locales → DM vers la home station ──
     if [[ "$has_local_changes" == "no" ]]; then
         log "DEBUG" "✈️ ROAMING $PLAYER — aucune modif locale, skip"
         continue
     fi
 
-    log "INFO" "✈️ ROAMING $PLAYER — modifs locales → régénération uDRIVE..."
-    cd "${UDRIVE_DIR}"
-    NEW_CID=$(./generate_ipfs_structure.sh . 2>/dev/null)
-    cd - >/dev/null
+    log "INFO" "✈️ ROAMING $PLAYER — modifs locales → envoi DM sync à la home station..."
 
-    if [[ -z "$NEW_CID" ]]; then
-        log "WARN" "✈️ ROAMING $PLAYER — generate_ipfs_structure.sh a échoué"
+    # Trouver le HEX du NODE de la home station (via home.station publié sur IPNS)
+    HOME_NODE_HEX=""
+    _HOME_STATION_INFO=$(cat "${RDIR}/home.station" 2>/dev/null)
+    if [[ -z "$_HOME_STATION_INFO" && -n "$NOSTRNS" ]]; then
+        # Fallback: lire depuis IPFS si le fichier local est absent (ex. après PULL partiel)
+        _HOME_STATION_INFO=$(ipfs --timeout 15s cat "${NOSTRNS}/${PLAYER}/home.station" 2>/dev/null)
+    fi
+    [[ -n "$_HOME_STATION_INFO" ]] && HOME_NODE_HEX="${_HOME_STATION_INFO##*:}"
+
+    if [[ -z "$HOME_NODE_HEX" || ${#HOME_NODE_HEX} -ne 64 ]]; then
+        log "WARN" "✈️ ROAMING $PLAYER — home_station HEX introuvable, skip push"
         continue
     fi
 
-    echo "$NEW_CID" > "${UDRIVE_FILE}"
-    touch "${UDRIVE_FILE}"
-
-    NOSTRIPFS=$(ipfs add -rwq "${RDIR}/" 2>/dev/null | tail -n 1)
-    if [[ -z "$NOSTRIPFS" ]]; then
-        log "WARN" "✈️ ROAMING $PLAYER — ipfs add a échoué"
+    # Clé NSEC de cette station pour signer les DMs sortants
+    _NODE_NSEC_B=""
+    if [[ -s ~/.zen/game/secret.nostr ]]; then
+        source ~/.zen/game/secret.nostr
+        _NODE_NSEC_B="${NSEC:-}"
+        unset NSEC NPUB HEX
+    fi
+    if [[ -z "$_NODE_NSEC_B" ]]; then
+        log "WARN" "✈️ ROAMING $PLAYER — secret.nostr manquant, skip push"
         continue
     fi
 
-    if timeout 60 ipfs name publish --key "${G1PUBNOSTR}:NOSTR" /ipfs/${NOSTRIPFS} 2>/dev/null; then
-        log "INFO" "✈️ ROAMING $PLAYER — IPNS publié (/ipfs/${NOSTRIPFS:0:12}...)"
-        date +%s > "${RDIR}/.last_ipns_update"
-        (( ROAMING_SYNCED++ ))
-    else
-        log "WARN" "✈️ ROAMING $PLAYER — ipfs name publish a échoué"
+    _DM_SENT=0
+    # Parcourir les fichiers plus récents que le cache .udrive
+    while IFS= read -r -d '' _F; do
+        _FNAME=$(basename "$_F")
+        _FTYPE="file"
+        case "${_FNAME##*.}" in
+            jpg|jpeg|png|gif|webp|svg) _FTYPE="image" ;;
+            mp4|webm|mkv|avi|mov)      _FTYPE="video" ;;
+            mp3|wav|ogg|m4a|flac)      _FTYPE="audio" ;;
+            pdf|md|txt|rst|doc|docx)   _FTYPE="document" ;;
+        esac
+
+        _F_CID=$(ipfs --timeout 20s add -q "$_F" 2>/dev/null)
+        if [[ -z "$_F_CID" ]]; then
+            log "WARN" "✈️ ROAMING $PLAYER — ipfs add échoué pour $_FNAME"
+            continue
+        fi
+
+        python3 "${MY_PATH}/../tools/nostr_node_intercom.py" send-udrive \
+            --nsec "$_NODE_NSEC_B" \
+            --to   "$HOME_NODE_HEX" \
+            --email "$PLAYER" \
+            --cid   "$_F_CID" \
+            --filename "$_FNAME" \
+            --filetype "$_FTYPE" \
+            --relays "wss://relay.copylaradio.com" ${myRELAY:+"$myRELAY"} \
+            2>/dev/null \
+            && rm -f "$_F" \
+            && log "INFO" "✈️ ROAMING $PLAYER — DM envoyé: $_FNAME ($_F_CID:0:12}...)" \
+            && (( _DM_SENT++ )) \
+            || log "WARN" "✈️ ROAMING $PLAYER — DM échoué pour $_FNAME"
+
+    done < <(find "${UDRIVE_DIR}" -type f -newer "${UDRIVE_FILE}" \
+              ! -name "generate_ipfs_structure.sh" ! -name "manifest.json" \
+              ! -name "manifest-1.json" ! -name "index.html" -print0 2>/dev/null)
+
+    if [[ $_DM_SENT -gt 0 ]]; then
+        touch "${UDRIVE_FILE}"   # réinitialise la détection de modifs
+        (( ROAMING_SYNCED += _DM_SENT ))
+        log "INFO" "✈️ ROAMING $PLAYER — $_DM_SENT fichier(s) délégué(s) à la home station"
     fi
 done
-[[ $ROAMING_SYNCED -gt 0 ]] && log "INFO" "✈️ Roaming: $ROAMING_SYNCED publication(s) IPNS effectuée(s)"
+[[ $ROAMING_SYNCED -gt 0 ]] && log "INFO" "✈️ Roaming: $ROAMING_SYNCED DM(s) de sync envoyé(s)"
 
 end=`date +%s`
 dur=`expr $end - $gstart`

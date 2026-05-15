@@ -69,9 +69,12 @@ for PLAYER in ${PLAYERONE[@]}; do
     echo "################################################ $(date)"
     PSEUDO=$(cat ~/.zen/game/players/${PLAYER}/.pseudo 2>/dev/null)
     ASTRONS=$(cat ~/.zen/game/players/${PLAYER}/.playerns 2>/dev/null)
-    # Get PLAYER MULTIPASS wallet amount
+    # Get PLAYER MULTIPASS + ZenCard wallets in parallel
     G1PUBNOSTR=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR 2>/dev/null)
-    $MY_PATH/../tools/G1check.sh ${G1PUBNOSTR} > ~/.zen/tmp/${MOATS}/${PLAYER}.G1check 2>&1
+    ZENCARD_G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
+    $MY_PATH/../tools/G1check.sh ${G1PUBNOSTR} > ~/.zen/tmp/${MOATS}/${PLAYER}.G1check 2>&1 &
+    [[ -n "$ZENCARD_G1PUB" ]] && $MY_PATH/../tools/G1check.sh ${ZENCARD_G1PUB} > ~/.zen/tmp/${MOATS}/${PLAYER}.ZENCARD.G1check 2>&1 &
+    wait
     cat ~/.zen/tmp/${MOATS}/${PLAYER}.G1check ###DEBUG MODE
     COINS=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.G1check | tail -n 1)
     ZEN=$(echo "scale=1; ($COINS - 1) * 10" | bc)
@@ -113,14 +116,12 @@ for PLAYER in ${PLAYERONE[@]}; do
     ####################################################################
 
     # Check ZEN Card balance (should be 1Ğ1 = 0 ẐEN for cooperative members)
-    ZENCARD_G1PUB=$(cat ~/.zen/game/players/${PLAYER}/.g1pub 2>/dev/null)
     if [[ -n "$ZENCARD_G1PUB" ]]; then
         # Publish ZENCard _g1pub (used by tools/G1zencard_history.sh)
         [[ ! -s ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/_g1pub ]] \
             && echo "$ZENCARD_G1PUB" > ~/.zen/tmp/${IPFSNODEID}/TW/${PLAYER}/_g1pub
 
         echo "🔍 Checking ZEN Card balance for cooperative member..."
-        $MY_PATH/../tools/G1check.sh ${ZENCARD_G1PUB} > ~/.zen/tmp/${MOATS}/${PLAYER}.ZENCARD.G1check
         ZENCARD_COINS=$(cat ~/.zen/tmp/${MOATS}/${PLAYER}.ZENCARD.G1check | tail -n 1)
         ZENCARD_ZEN=$(echo "scale=1; ($ZENCARD_COINS - 1) * 10" | bc)
         echo "ZEN Card balance: $ZENCARD_COINS Ğ1 ($ZENCARD_ZEN ẐEN)"

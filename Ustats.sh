@@ -200,7 +200,13 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
         done
     else
         for player in ${MENOSTR[@]}; do
-            eval "$(${MY_PATH}/tools/search_for_this_email_in_nostr.sh "$player" | tail -n 1)"
+            _nostr_line=$("${MY_PATH}/tools/search_for_this_email_in_nostr.sh" "$player" | tail -n 1)
+            LAT=$(echo "$_nostr_line"        | grep -oP '(?<=LAT=)-?[0-9]+\.?[0-9]*')
+            LON=$(echo "$_nostr_line"        | grep -oP '(?<=LON=)-?[0-9]+\.?[0-9]*')
+            HEX=$(echo "$_nostr_line"        | grep -oP '(?<=HEX=)\S+')
+            EMAIL=$(echo "$_nostr_line"      | grep -oP '(?<=EMAIL=)\S+')
+            G1PUBNOSTR=$(echo "$_nostr_line" | grep -oP '(?<=G1PUBNOSTR=)\S+')
+            source=$(echo "$_nostr_line"     | grep -oP '(?<=source=)\S+')
             [[ -z $LAT ]] && LAT="0.00"
             [[ -z $LON ]] && LON="0.00"
             if [[ -n "$ULAT" && -n "$ULON" && -n "$DEG" ]]; then

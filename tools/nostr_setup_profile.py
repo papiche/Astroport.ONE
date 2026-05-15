@@ -37,6 +37,8 @@ def nostr_setup_profile(args):
         metadata["zencard_v2"] = args.zencard_v2
     if args.city:
         metadata["city"] = args.city
+    if args.home_station:
+        metadata["home_station"] = args.home_station
 
     # Prepare tags for external identities
     tags = []
@@ -82,6 +84,8 @@ def nostr_setup_profile(args):
         tags.append(["i", f"umaproot:{args.umaproot}", ""])  # IPFS root CID of UMAP directory
     if args.umap_updated:
         tags.append(["i", f"umap_updated:{args.umap_updated}", ""])  # Last map refresh date (YYYYMMDD)
+    if args.home_station:
+        tags.append(["i", f"home_station:{args.home_station}", ""])
 
     # Create and publish PROFILE + metadata event
     metadata_event = Event(kind=0, content=json.dumps(metadata), tags=tags)
@@ -137,6 +141,7 @@ if __name__ == "__main__":
     parser.add_argument("--usat_full_cid", help="IPFS CID of full satellite view", default=None)
     parser.add_argument("--umaproot", help="IPFS root CID of UMAP directory", default=None)
     parser.add_argument("--umap_updated", help="Last map refresh date (YYYYMMDD format)", default=None)
+    parser.add_argument("--home_station", help="Home station IPFSNODEID:NODE_HEX (for roaming sync)", default=None)
 
     args = parser.parse_args()
     nostr_setup_profile(args)

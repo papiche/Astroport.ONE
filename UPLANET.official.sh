@@ -98,34 +98,45 @@ else
     _bc_ss58=$(python3 "${MY_PATH}/tools/g1pub_to_ss58.py" "${_bc_pubkey}" 2>/dev/null)
 fi
 
-_bc_bal_json=""
-_bc_g1="0"
-if [[ -n "$_bc_ss58" ]]; then
-    # G1wallet_v2.sh balance --json → {"rpc_transferable": <centimes>, "unit":"centimes_g1", ...}
-    _bc_bal_json=$(timeout 8 "${MY_PATH}/tools/G1wallet_v2.sh" balance "$_bc_ss58" --json 2>/dev/null)
-    if echo "$_bc_bal_json" | jq -e '.rpc_transferable' >/dev/null 2>&1; then
-        _bc_centimes=$(echo "$_bc_bal_json" | jq -r '.rpc_transferable // 0')
-        _bc_g1=$(echo "scale=2; ${_bc_centimes:-0} / 100" | bc -l 2>/dev/null)
+# ── Requêtes réseau en parallèle (Banque Centrale + Revenue + Society) ──
+_INIT_TMP=$(mktemp -d)
+
+(
+    if [[ -n "$_bc_ss58" ]]; then
+        _j=$(timeout 8 "${MY_PATH}/tools/G1wallet_v2.sh" balance "$_bc_ss58" --json 2>/dev/null)
+        if echo "$_j" | jq -e '.rpc_transferable' >/dev/null 2>&1; then
+            echo "$_j" > "${_INIT_TMP}/bc_v2.json"
+            exit 0
+        fi
     fi
-fi
-if [[ -z "$_bc_g1" || "$_bc_g1" == "0" ]]; then
-    # Fallback G1balance.sh (API v1, centimes → Ğ1)
-    _bc_bal_v1=$(timeout 8 "${MY_PATH}/tools/G1balance.sh" "${_bc_pubkey}" 2>/dev/null)
-    _bc_centimes=$(echo "$_bc_bal_v1" | jq -r '.balances.blockchain // 0' 2>/dev/null)
+    timeout 8 "${MY_PATH}/tools/G1balance.sh" "${_bc_pubkey}" 2>/dev/null > "${_INIT_TMP}/bc_v1.json"
+) &
+timeout 15 "${MY_PATH}/tools/G1revenue.sh" 2>/dev/null > "${_INIT_TMP}/rev.json" &
+timeout 15 "${MY_PATH}/tools/G1society.sh" --json-only 2>/dev/null > "${_INIT_TMP}/soc.json" &
+wait
+
+# 1. Banque Centrale
+_bc_g1="0"
+if [[ -s "${_INIT_TMP}/bc_v2.json" ]]; then
+    _bc_centimes=$(jq -r '.rpc_transferable // 0' "${_INIT_TMP}/bc_v2.json" 2>/dev/null)
+    _bc_g1=$(echo "scale=2; ${_bc_centimes:-0} / 100" | bc -l 2>/dev/null)
+elif [[ -s "${_INIT_TMP}/bc_v1.json" ]]; then
+    _bc_centimes=$(jq -r '.balances.blockchain // 0' "${_INIT_TMP}/bc_v1.json" 2>/dev/null)
     _bc_g1=$(echo "scale=2; ${_bc_centimes:-0} / 100" | bc -l 2>/dev/null)
 fi
 _bc_zen=$(echo "scale=1; ${_bc_g1:-0} * 10" | bc -l 2>/dev/null)
 echo -e "   🏦 Banque Centrale Ğ1  : \033[0;32m${_bc_g1:-0} Ğ1 (capacité ≈ ${_bc_zen:-0} Ẑen à émettre)\033[0m"
-# 2. ẑen MULTIPASS (jetons d'usage) — total émis via UPLANETNAME_G1 → UPLANETG1PUB → MULTIPASS
-_rev_json=$(timeout 15 "${MY_PATH}/tools/G1revenue.sh" 2>/dev/null)
+# 2. ẑen MULTIPASS (jetons d'usage)
+_rev_json=$(cat "${_INIT_TMP}/rev.json" 2>/dev/null)
 _rev_zen=$(echo "$_rev_json" | jq -r '.total_revenue_zen // 0' 2>/dev/null)
 _rev_nb=$(echo "$_rev_json"  | jq -r '.total_transactions // 0' 2>/dev/null)
 echo -e "   🎫 ẑen MULTIPASS (usage): \033[0;32m${_rev_zen:-?} Ẑen émis (${_rev_nb:-?} transactions)\033[0m"
-# 3. ẐEN SOCIETY/AMAP (jetons de propriété) — total mis en commun via UPLANETNAME_G1 → UPLANETNAME_SOCIETY
-_soc_json=$(timeout 15 "${MY_PATH}/tools/G1society.sh" --json-only 2>/dev/null)
+# 3. ẐEN SOCIETY/AMAP (jetons de propriété)
+_soc_json=$(cat "${_INIT_TMP}/soc.json" 2>/dev/null)
 _soc_zen=$(echo "$_soc_json" | jq -r '.total_outgoing_zen // 0' 2>/dev/null)
 _soc_nb=$(echo "$_soc_json"  | jq -r '.total_transfers // 0' 2>/dev/null)
 echo -e "   🤝 ẐEN AMAP (propriété) : \033[0;35m${_soc_zen:-?} Ẑen mis en commun (${_soc_nb:-?} contributeur(s))\033[0m"
+rm -rf "${_INIT_TMP}"
 echo -e "\033[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
 echo ""
 

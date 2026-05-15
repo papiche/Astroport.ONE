@@ -389,6 +389,16 @@ EOFJSON
     echo "$DISCO" > "${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco"
     chmod 600 ${HOME}/.zen/game/nostr/${EMAIL}/.secret.disco
 
+    ## Identité NOSTR du NODE (home station) pour le roaming DM sync
+    NODE_NOSTR_HEX=""
+    if [[ -s ~/.zen/game/secret.nostr ]]; then
+        source ~/.zen/game/secret.nostr
+        NODE_NOSTR_HEX="${HEX:-}"
+        unset NSEC NPUB HEX  # éviter pollution des variables du joueur
+    fi
+    echo "${IPFSNODEID}:${NODE_NOSTR_HEX}" > "${HOME}/.zen/game/nostr/${EMAIL}/home.station"
+    chmod 644 "${HOME}/.zen/game/nostr/${EMAIL}/home.station"
+
     ## Create initial DID document using did_manager_nostr.sh
     echo "📝 Creating initial DID document using did_manager_nostr.sh..."
     
@@ -682,6 +692,7 @@ EOFJSON
         --ipns_vault "/ipns/${NOSTRNS}"
     )
     [[ -n "$CESIUM_CITY" ]] && SETUP_ARGS+=(--city "$CESIUM_CITY")
+    [[ -n "$NODE_NOSTR_HEX" ]] && SETUP_ARGS+=(--home_station "${IPFSNODEID}:${NODE_NOSTR_HEX}")
 
     ${MY_PATH}/../tools/nostr_setup_profile.py "${SETUP_ARGS[@]}" &>/dev/null \
         && echo "✅ Nostr Kind 0 profile published" \
