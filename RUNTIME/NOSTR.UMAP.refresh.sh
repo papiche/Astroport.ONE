@@ -423,6 +423,8 @@ process_umap_friends() {
         setup_ipfs_structure "$UMAPPATH" "$NPRIV_HEX"
         # UMAP-level G1+Leboncoin opportunities (published as kind 30023 blog article)
         process_umap_opportunities "$UMAPPATH" "$NPRIV_HEX"
+        # WoTx2 / MineLife activity report for this UMAP zone
+        process_wotx2_activity "$UMAPPATH" "${friends[@]}"
     fi
 }
 
@@ -551,6 +553,83 @@ process_umap_opportunities() {
         --kind 30023 \
         --json 2>/dev/null && log "✅ Published G1+LBC opportunities article for UMAP (${LAT},${LON})" || true
     rm -f "$temp_keyfile"
+}
+
+# Scan Kind 30501/30502/30503 from UMAP friends and append a WoTx2 activity
+# section to NOSTR_messages. Runs once per day per UMAP (marker file guard).
+process_wotx2_activity() {
+    local UMAPPATH=$1
+    shift
+    local friends=("$@")
+
+    [[ ${#friends[@]} -eq 0 ]] && return 0
+
+    local wotx2_marker="${UMAPPATH}/.wotx2_${TODATE}"
+    [[ -f "$wotx2_marker" ]] && return 0
+
+    cd ~/.zen/strfry 2>/dev/null || return 0
+
+    local META_T="permit auto_proclaimed composite formation training"
+
+    # Build JSON authors array from friends list
+    local authors_json
+    authors_json=$(printf '"%s",' "${friends[@]}" | sed 's/,$//')
+    authors_json="[${authors_json}]"
+
+    # Kind 30503 — certified skills
+    local certs
+    certs=$(./strfry scan "{\"kinds\":[30503],\"authors\":${authors_json},\"limit\":500}" 2>/dev/null \
+        | jq -r 'select(.kind==30503) | .tags[]? | select(.[0]=="t") | .[1]' 2>/dev/null)
+
+    # Kind 30501 — aspirations (X1)
+    local aspirant_count
+    aspirant_count=$(./strfry scan "{\"kinds\":[30501],\"authors\":${authors_json},\"limit\":200}" 2>/dev/null \
+        | jq -s 'length' 2>/dev/null || echo 0)
+
+    # Kind 30502 — endorsements
+    local endorse_count
+    endorse_count=$(./strfry scan "{\"kinds\":[30502],\"authors\":${authors_json},\"limit\":200}" 2>/dev/null \
+        | jq -s 'length' 2>/dev/null || echo 0)
+
+    # Count certs per skill (exclude META_T)
+    declare -A skill_counts
+    while IFS= read -r tag; do
+        [[ -z "$tag" ]] && continue
+        local skip=0
+        for m in $META_T; do [[ "$tag" == "$m" ]] && skip=1 && break; done
+        [[ $skip -eq 1 ]] && continue
+        skill_counts["$tag"]=$(( ${skill_counts["$tag"]:-0} + 1 ))
+    done <<< "$certs"
+
+    local total_certs=0
+    for k in "${!skill_counts[@]}"; do total_certs=$(( total_certs + skill_counts[$k] )); done
+
+    [[ $total_certs -eq 0 && $aspirant_count -eq 0 && $endorse_count -eq 0 ]] && return 0
+
+    # Build markdown section
+    {
+        echo ""
+        echo "## ⚗️ Activité MineLife / WoTx2 — UMAP ${LAT},${LON}"
+        echo ""
+        echo "| Indicateur | Valeur |"
+        echo "|---|---|"
+        echo "| 🎓 Certifications | ${total_certs} |"
+        echo "| 🌱 Aspirations (X1) | ${aspirant_count} |"
+        echo "| 🤝 Attestations | ${endorse_count} |"
+        echo ""
+        if [[ ${#skill_counts[@]} -gt 0 ]]; then
+            echo "**Skills certifiés :**"
+            echo ""
+            for skill in $(for k in "${!skill_counts[@]}"; do echo "${skill_counts[$k]} $k"; done | sort -rn | awk '{print $2}' | head -10); do
+                echo "- \`${skill}\` — ${skill_counts[$skill]} porteur$( [[ ${skill_counts[$skill]} -gt 1 ]] && echo 's' )"
+            done
+            echo ""
+        fi
+        echo "#WoTx2 #MineLife #UPlanet"
+    } >> "${UMAPPATH}/NOSTR_messages"
+
+    touch "$wotx2_marker"
+    log "⚗️ WoTx2 activity appended for UMAP (${LAT},${LON}): ${total_certs} certs, ${aspirant_count} aspirants, ${endorse_count} endorsements"
 }
 
 process_friend_messages() {
