@@ -7,7 +7,7 @@ set -euo pipefail
 MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 ME="${0##*/}"
-[[ ! -s ~/.local/bin/${ME} ]] && cp "${MY_PATH}/${ME}" ~/.local/bin/ && echo "Auto Install into ~/.local/bin/${ME}"
+[[ ! -L ~/.local/bin/${ME} ]] && ln -sf "${MY_PATH}/${ME}" ~/.local/bin/${ME} && echo "Auto Install into ~/.local/bin/${ME}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
