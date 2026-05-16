@@ -22,6 +22,11 @@
 #   - Ollama (port 11434) avec nomic-embed-text
 #   - Qdrant (port 6333)
 #   - curl, python3 (pour les requêtes WebDAV et embeddings)
+#
+# Stdout / Stderr :
+#   --query  → stdout = réponse IA uniquement (pour capture dans les scripts)
+#              stderr = logs de diagnostic
+#   autres   → stdout = logs interactifs (tee → fichier)
 ########################################################################
 
 MY_PATH="$(dirname "$(realpath "$0")")"
@@ -54,9 +59,6 @@ fi
 _QDRANT_AUTH=()
 if [[ -n "$QDRANT_API_KEY" ]]; then
     _QDRANT_AUTH=(-H "api-key: $QDRANT_API_KEY")
-    log "INFO" "Qdrant API Key: UPLANETNAME (${QDRANT_API_KEY:0:8}...)"
-else
-    log "INFO" "Qdrant sans authentification (UPLANETNAME absent)"
 fi
 EMBED_MODEL="nomic-embed-text"
 CACHE_DIR="$HOME/.zen/tmp/nextcloud_sync"
@@ -64,19 +66,21 @@ SYNC_LOG="$HOME/.zen/tmp/nextcloud_sync.log"
 
 mkdir -p "$CACHE_DIR"
 
-## ── Couleurs ──────────────────────────────────────────────────────────
+## ── Fonctions de log ─────────────────────────────────────────────────
+## Toutes les sorties de diagnostic vont sur stderr + fichier log.
+## Seule _query_knowledge émet la réponse finale sur stdout.
 GREEN='\033[0;32m'; CYAN='\033[0;36m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC_C='\033[0m'
-log()  { echo "[$(date '+%H:%M:%S')] $*" | tee -a "$SYNC_LOG"; }
-ok()   { echo -e "${GREEN}✅ $*${NC_C}"; log "OK: $*"; }
-warn() { echo -e "${YELLOW}⚠️  $*${NC_C}"; log "WARN: $*"; }
-err()  { echo -e "${RED}❌ $*${NC_C}"; log "ERR: $*"; }
-info() { echo -e "${CYAN}ℹ️  $*${NC_C}"; log "INFO: $*"; }
+_log_file() { echo "[$(date '+%H:%M:%S')] $*" >> "$SYNC_LOG"; }
+ok()   { echo -e "${GREEN}✅ $*${NC_C}" >&2; _log_file "OK: $*"; }
+warn() { echo -e "${YELLOW}⚠️  $*${NC_C}" >&2; _log_file "WARN: $*"; }
+err()  { echo -e "${RED}❌ $*${NC_C}" >&2; _log_file "ERR: $*"; }
+info() { echo -e "${CYAN}ℹ️  $*${NC_C}" >&2; _log_file "INFO: $*"; }
 
 ## ── Lecture du mot de passe NextCloud ────────────────────────────────
 NC_PASSWORD=""
 if [[ -s "$NC_PASS_FILE" ]]; then
     NC_PASSWORD=$(cat "$NC_PASS_FILE")
-elif [[ -n "$NC_PASSWORD_ENV" ]]; then
+elif [[ -n "${NC_PASSWORD_ENV:-}" ]]; then
     NC_PASSWORD="$NC_PASSWORD_ENV"
 else
     warn "Mot de passe NextCloud non trouvé dans $NC_PASS_FILE"
@@ -88,9 +92,8 @@ fi
 ##   - 127.0.0.1:11434        (accès depuis l'hôte)
 ##   - ${DOCKER_BRIDGE_IP}:11434  (accès depuis les conteneurs Docker)
 _ensure_ollama() {
-    ## Vérifier si Ollama est déjà accessible
+    ## Vérifier si Ollama est déjà accessible via l'API HTTP
     if curl -sf --max-time 2 "$OLLAMA_URL/api/tags" &>/dev/null; then
-        ## Lire le type de connexion depuis le fichier de status
         _CONN_STATUS_FILE="$HOME/.zen/tmp/ollama_connection.status"
         if [[ -s "$_CONN_STATUS_FILE" ]]; then
             _CONN_TYPE=$(grep '^CONNECTION_TYPE=' "$_CONN_STATUS_FILE" | cut -d'=' -f2)
@@ -107,32 +110,44 @@ _ensure_ollama() {
     if [[ -x "$OLLAMA_STARTER" ]]; then
         bash "$OLLAMA_STARTER" &>/dev/null &
         ## Attendre jusqu'à 20 secondes
-        echo -n "  Attente Ollama"
+        echo -n "  Attente Ollama" >&2
         for _i in $(seq 1 20); do
-            sleep 1; echo -n "."
-            curl -sf --max-time 1 "$OLLAMA_URL/api/tags" &>/dev/null && { echo " ✅"; return 0; }
+            sleep 1; echo -n "." >&2
+            curl -sf --max-time 1 "$OLLAMA_URL/api/tags" &>/dev/null && { echo " ✅" >&2; return 0; }
         done
-        echo ""
-        warn "Ollama non accessible après 20s (local + P2P) — embeddings désactivés"
-        return 1
+        echo "" >&2
+        warn "Ollama non accessible après 20s (local + P2P)"
     else
         err "ollama.me.sh introuvable ($OLLAMA_STARTER)"
-        err "Installez Ollama: https://ollama.ai  puis: ollama serve"
-        return 1
     fi
+
+    ## Dernier recours : astrosystemctl connect ollama (Brain node constellation 🔥)
+    ## Connecte dynamiquement un nœud GPU distant via tunnel IPFS P2P
+    if command -v astrosystemctl &>/dev/null; then
+        info "Tentative via astrosystemctl (Brain node constellation)..."
+        astrosystemctl connect ollama 2>/dev/null &
+        for _i in $(seq 1 10); do
+            sleep 2
+            curl -sf --max-time 1 "$OLLAMA_URL/api/tags" &>/dev/null && { ok "Ollama via Brain node ✅" >&2; return 0; }
+        done
+        warn "Aucun Brain node disponible dans la constellation"
+    fi
+
+    err "Ollama non accessible (local + P2P + constellation) — embeddings désactivés"
+    return 1
 }
 
 ## ── Vérifications préalables ─────────────────────────────────────────
 _check_services() {
-    local ok=true
+    local _ok=true
     if ! _ensure_ollama; then
-        ok=false
+        _ok=false
     fi
     if ! curl -sf --max-time 3 "${_QDRANT_AUTH[@]}" "$QDRANT_URL/collections" &>/dev/null; then
         err "Qdrant non accessible ($QDRANT_URL)"
-        ok=false
+        _ok=false
     fi
-    [[ "$ok" == "true" ]]
+    [[ "$_ok" == "true" ]]
 }
 
 ## ── Création de la collection Qdrant ─────────────────────────────────
@@ -147,44 +162,62 @@ _ensure_qdrant_collection() {
             "${_QDRANT_AUTH[@]}" \
             -H "Content-Type: application/json" \
             -d '{"vectors":{"size":768,"distance":"Cosine"}}' \
-            | python3 -c "import sys,json; r=json.load(sys.stdin); print('✅ Collection créée' if r.get('result') else '❌ Erreur: '+str(r))" 2>/dev/null
+            | python3 -c "import sys,json; r=json.load(sys.stdin); print('✅ Collection créée' if r.get('result') else '❌ Erreur: '+str(r), file=sys.stderr)" 2>/dev/null
     fi
 }
 
 ## ── Génération d'un embedding via Ollama ────────────────────────────
 _embed_text() {
     local text="$1"
+    local prompt_json
+    prompt_json=$(python3 -c "import json,sys; print(json.dumps(sys.stdin.read()))" <<< "$text")
     curl -sf -X POST "$OLLAMA_URL/api/embeddings" \
         -H "Content-Type: application/json" \
-        -d "{\"model\":\"$EMBED_MODEL\",\"prompt\":$(python3 -c "import json,sys; print(json.dumps(sys.stdin.read()))" <<< "$text")}" \
+        -d "{\"model\":\"$EMBED_MODEL\",\"prompt\":$prompt_json}" \
         | python3 -c "import sys,json; d=json.load(sys.stdin); print(' '.join(map(str,d.get('embedding',[]))))" 2>/dev/null
 }
 
 ## ── Indexation d'un fichier dans Qdrant ─────────────────────────────
 _index_document() {
     local filepath="$1"
-    local filename=$(basename "$filepath")
+    local filename
+    filename=$(basename "$filepath")
     local extension="${filename##*.}"
     local content=""
 
     ## Extraction du texte selon le type de fichier
+    ## Les chemins sont passés via variable d'env pour éviter l'injection dans python3 -c
     case "${extension,,}" in
         pdf)
-            command -v pdftotext &>/dev/null && content=$(pdftotext "$filepath" - 2>/dev/null | head -c 8000) \
-                || content=$(python3 -c "import subprocess; print(subprocess.run(['pdftotext','-','$filepath'], capture_output=True, text=True).stdout[:8000])" 2>/dev/null)
+            command -v pdftotext &>/dev/null \
+                && content=$(pdftotext "$filepath" - 2>/dev/null | head -c 8000) \
+                || content=$(FPATH="$filepath" python3 -c "
+import subprocess, os
+r = subprocess.run(['pdftotext', os.environ['FPATH'], '-'], capture_output=True, text=True)
+print(r.stdout[:8000])" 2>/dev/null)
             ;;
         md|txt|rst)
             content=$(head -c 8000 "$filepath")
             ;;
         docx|odt)
-            command -v pandoc &>/dev/null && content=$(pandoc -t plain "$filepath" 2>/dev/null | head -c 8000) \
-                || content=$(python3 -c "import zipfile; z=zipfile.ZipFile('$filepath'); print(z.read('word/document.xml').decode('utf-8','ignore')[:8000])" 2>/dev/null)
+            command -v pandoc &>/dev/null \
+                && content=$(pandoc -t plain "$filepath" 2>/dev/null | head -c 8000) \
+                || content=$(FPATH="$filepath" python3 -c "
+import zipfile, os
+z = zipfile.ZipFile(os.environ['FPATH'])
+print(z.read('word/document.xml').decode('utf-8','ignore')[:8000])" 2>/dev/null)
             ;;
         html|htm)
-            content=$(cat "$filepath" | python3 -c "import sys,re; t=sys.stdin.read(); print(re.sub(r'<[^>]+>','',t)[:8000])" 2>/dev/null)
+            content=$(FPATH="$filepath" python3 -c "
+import sys, re, os
+t = open(os.environ['FPATH']).read()
+print(re.sub(r'<[^>]+>', '', t)[:8000])" 2>/dev/null)
             ;;
         json)
-            content=$(python3 -c "import json,sys; d=json.load(open('$filepath')); print(json.dumps(d,ensure_ascii=False)[:8000])" 2>/dev/null)
+            content=$(FPATH="$filepath" python3 -c "
+import json, os
+d = json.load(open(os.environ['FPATH']))
+print(json.dumps(d, ensure_ascii=False)[:8000])" 2>/dev/null)
             ;;
         *)
             info "Format '$extension' non supporté pour $filename — ignoré"
@@ -203,38 +236,47 @@ _index_document() {
     local doc_id
     doc_id=$(echo "$filepath" | python3 -c "import sys,hashlib; print(int(hashlib.md5(sys.stdin.read().strip().encode()).hexdigest()[:15],16))")
 
+    ## Sérialiser le payload via python3 pour un JSON propre (pas de sed)
+    local payload_json
+    payload_json=$(python3 -c "
+import json, sys, os
+payload = {
+    'filename':        sys.argv[1],
+    'filepath':        sys.argv[2],
+    'extension':       sys.argv[3],
+    'content_preview': sys.argv[4][:300],
+    'indexed_at':      os.popen('date -u +%Y-%m-%dT%H:%M:%SZ').read().strip(),
+    'source':          'nextcloud/' + sys.argv[5],
+}
+print(json.dumps(payload))
+" "$filename" "$filepath" "$extension" "${content:0:300}" "$NC_COLLECTION_PATH")
+
     ## Upsert dans Qdrant
     local vector_json="[$(echo "$vector" | tr ' ' ',')]"
     curl -sf -X PUT "$QDRANT_URL/collections/$QDRANT_COLLECTION/points" \
+        "${_QDRANT_AUTH[@]}" \
         -H "Content-Type: application/json" \
-        -d "{
-            \"points\": [{
-                \"id\": $doc_id,
-                \"vector\": $vector_json,
-                \"payload\": {
-                    \"filename\": \"$filename\",
-                    \"filepath\": \"$filepath\",
-                    \"extension\": \"$extension\",
-                    \"content_preview\": \"$(echo "${content:0:300}" | sed 's/"/\\"/g; s/\n/\\n/g')\",
-                    \"indexed_at\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
-                    \"source\": \"nextcloud/${NC_COLLECTION_PATH}\"
-                }
-            }]
-        }" \
+        -d "{\"points\":[{\"id\":$doc_id,\"vector\":$vector_json,\"payload\":$payload_json}]}" \
         | python3 -c "import sys,json; r=json.load(sys.stdin); exit(0 if r.get('result',{}).get('status')=='acknowledged' else 1)" 2>/dev/null \
         && ok "Indexé : $filename (id=$doc_id)" \
         || err "Échec indexation : $filename"
 }
 
 ## ── Requête sémantique vers Qdrant ──────────────────────────────────
+## stdout = réponse IA uniquement (capturée par le listener DM)
+## stderr = logs de diagnostic (terminal/log fichier)
+## $1 = question, $2 = user_hex (optionnel), $3 = top_k (défaut 5)
 _query_knowledge() {
-    local question="$1"
-    local top_k="${2:-5}"
+    local question="$1" user_hex="${2:-}" slots="${3:-0}" top_k="${4:-5}"
 
     info "Recherche sémantique : '$question'"
     local q_vector
     q_vector=$(_embed_text "$question")
-    [[ -z "$q_vector" ]] && err "Impossible de générer l'embedding de la question" && return 1
+    if [[ -z "$q_vector" ]]; then
+        err "Impossible de générer l'embedding de la question"
+        echo "Désolé, le service d'embeddings est temporairement indisponible."
+        return 1
+    fi
 
     local vector_json="[$(echo "$q_vector" | tr ' ' ',')]"
     local results
@@ -243,9 +285,10 @@ _query_knowledge() {
         -H "Content-Type: application/json" \
         -d "{\"vector\":$vector_json,\"limit\":$top_k,\"with_payload\":true}" 2>/dev/null)
 
-    echo ""
-    echo "═══ Résultats de la base de connaissance (top $top_k) ═══"
-    echo "$results" | python3 -c "
+    ## Diagnostics sur stderr uniquement
+    {
+        echo "═══ Résultats de la base de connaissance (top $top_k) ═══"
+        echo "$results" | python3 -c "
 import sys, json
 data = json.load(sys.stdin)
 results = data.get('result', [])
@@ -254,43 +297,164 @@ if not results:
     sys.exit(0)
 for i, r in enumerate(results, 1):
     p = r.get('payload', {})
-    score = r.get('score', 0)
-    print(f'''
-  [{i}] {p.get('filename', '?')} (score: {score:.3f})
-       Source: {p.get('filepath', '?')}
-       Extrait: {p.get('content_preview', '')[:150]}...
-''')
+    print(f'  [{i}] {p.get(\"filename\",\"?\")} (score: {r.get(\"score\",0):.3f})')
+    print(f'       {p.get(\"content_preview\",\"\")[:120]}...')
 " 2>/dev/null
+    } >&2
 
-    ## Optionnel : envoyer le contexte à Ollama pour une réponse synthétisée
-    if command -v ollama &>/dev/null; then
-        local context
-        context=$(echo "$results" | python3 -c "
-import sys,json
+    ## Extraire le contexte global (top 3 nextcloud_kb)
+    local context_global
+    context_global=$(echo "$results" | python3 -c "
+import sys, json
 data = json.load(sys.stdin)
 results = data.get('result', [])
 ctx = '\n\n'.join([r.get('payload',{}).get('content_preview','') for r in results[:3]])
 print(ctx[:4000])
 " 2>/dev/null)
-        echo ""
-        echo "═══ Synthèse #BRO (Ollama) ═══"
-        ollama run "${OLLAMA_MODEL:-llama3}" "Contexte: $context
+
+    ## Fallback : si KB vide, chercher dans docs/ locaux via grep
+    if [[ -z "$context_global" ]]; then
+        local _docs_dir="$MY_PATH/../docs"
+        if [[ -d "$_docs_dir" ]]; then
+            warn "KB Qdrant vide — recherche textuelle dans les docs locaux (fallback)"
+            context_global=$(grep -ril "$question" "$_docs_dir" 2>/dev/null \
+                | head -3 \
+                | while IFS= read -r f; do
+                    echo "### $(basename "$f") ###"
+                    grep -i -A 3 -B 1 "$question" "$f" 2>/dev/null | head -20
+                    echo ""
+                done | head -c 3000)
+        fi
+    fi
+
+    ## Recherche dans la mémoire personnelle si user_hex fourni
+    local context_personal=""
+    if [[ -n "$user_hex" ]]; then
+        local _mem_collection="memory_${user_hex:0:16}"
+        ## Vérifier que la collection existe avant de l'interroger
+        local _col_check
+        _col_check=$(curl -sf "${_QDRANT_AUTH[@]}" \
+            "$QDRANT_URL/collections/$_mem_collection" 2>/dev/null)
+        if echo "$_col_check" | python3 -c "import sys,json; d=json.load(sys.stdin); exit(0 if d.get('result') else 1)" 2>/dev/null; then
+            ## Construire le filtre Qdrant par slot(s)
+            ## slots="0" ou "" → pas de filtre (tous les slots)
+            ## slots="1,5"     → filter: slot IN [1, 5]
+            local _slot_filter=""
+            if [[ -n "$slots" && "$slots" != "0" ]]; then
+                _slot_filter=$(python3 -c "
+import sys, json
+raw = sys.argv[1]
+nums = [int(x) for x in raw.split(',') if x.strip().isdigit() and x.strip() != '0']
+if nums:
+    f = {'must': [{'key': 'slot', 'match': {'any': nums}}]}
+    print(json.dumps(f))
+" "$slots" 2>/dev/null)
+            fi
+            local _search_body
+            if [[ -n "$_slot_filter" ]]; then
+                _search_body="{\"vector\":$vector_json,\"limit\":5,\"with_payload\":true,\"filter\":${_slot_filter}}"
+                info "Filtre mémoire slots: $slots"
+            else
+                _search_body="{\"vector\":$vector_json,\"limit\":3,\"with_payload\":true}"
+            fi
+            local personal_results
+            personal_results=$(curl -sf -X POST \
+                "$QDRANT_URL/collections/$_mem_collection/points/search" \
+                "${_QDRANT_AUTH[@]}" \
+                -H "Content-Type: application/json" \
+                -d "$_search_body" 2>/dev/null)
+            context_personal=$(echo "$personal_results" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+results = data.get('result', [])
+ctx = '\n\n'.join([r.get('payload',{}).get('content','') for r in results[:3]])
+print(ctx[:2000])
+" 2>/dev/null)
+            {
+                echo "═══ Mémoire personnelle (${_mem_collection}) ═══"
+                echo "$personal_results" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+results = data.get('result', [])
+if not results:
+    print('  Aucun souvenir personnel pertinent')
+    sys.exit(0)
+for i, r in enumerate(results, 1):
+    p = r.get('payload', {})
+    print(f'  [{i}] slot={p.get(\"slot\",\"?\")} (score: {r.get(\"score\",0):.3f})')
+    print(f'       {p.get(\"content\",\"\")[:120]}...')
+" 2>/dev/null
+            } >&2
+        fi
+    fi
+
+    ## Construire le prompt selon la disponibilité des contextes
+    local prompt_text
+    if [[ -z "$context_global" && -z "$context_personal" ]]; then
+        warn "Aucun document pertinent trouvé dans la base de connaissance"
+        echo "Aucun document pertinent n'a été trouvé dans la base de connaissance pour répondre à cette question."
+        return 0
+    fi
+
+    if [[ -n "$context_personal" ]]; then
+        prompt_text="Base de connaissance de la station :
+${context_global:-Aucun document pertinent dans la base globale.}
+
+Contexte personnel de l'utilisateur (ses souvenirs partagés) :
+$context_personal
+
+Question : $question
+
+Réponds en français en tenant compte du contexte personnel si pertinent."
+    else
+        prompt_text="Contexte:
+$context_global
 
 Question: $question
 
-Réponds en français en te basant sur le contexte ci-dessus." 2>/dev/null \
-            || info "(Ollama non disponible pour la synthèse — résultats Qdrant ci-dessus)"
+Réponds en français en te basant sur le contexte ci-dessus. Sois concis et précis."
+    fi
+
+    ## Synthèse via API Ollama (test HTTP, pas command -v — fonctionne aussi en Docker)
+    if curl -sf --max-time 2 "$OLLAMA_URL/api/tags" &>/dev/null; then
+        info "Synthèse Ollama en cours..."
+        ## stdout = réponse IA
+        ollama run "${OLLAMA_MODEL:-gemma3:latest}" "$prompt_text" 2>/dev/null \
+            || {
+                warn "Ollama disponible mais run a échoué — fallback extrait Qdrant"
+                ## Fallback : meilleur extrait Qdrant brut sur stdout
+                echo "$results" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+r = data.get('result', [])
+print(r[0].get('payload',{}).get('content_preview','Aucune réponse disponible.') if r else 'Aucune réponse disponible.')
+" 2>/dev/null
+            }
+    else
+        info "Ollama non disponible — retour du meilleur extrait Qdrant"
+        ## Fallback : meilleur extrait Qdrant sur stdout
+        echo "$results" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+r = data.get('result', [])
+print(r[0].get('payload',{}).get('content_preview','Aucune réponse disponible.') if r else 'Aucune réponse disponible.')
+" 2>/dev/null
     fi
 }
 
 ## ── Synchronisation WebDAV (si NextCloud disponible) ─────────────────
 _sync_webdav() {
     local mode="${1:-incremental}"
-    info "Synchronisation WebDAV depuis NextCloud/${NC_COLLECTION_PATH}..."
+    info "Synchronisation WebDAV depuis NextCloud/${NC_COLLECTION_PATH} (mode: $mode)..."
 
     if [[ -z "$NC_PASSWORD" ]]; then
-        warn "Mot de passe NextCloud absent — sync WebDAV ignorée"
-        info "Déposez des fichiers manuellement dans $CACHE_DIR et relancez avec --index-local"
+        warn "Mot de passe NextCloud absent — indexation des docs locaux en fallback"
+        local _docs_dir="$MY_PATH/../docs"
+        if [[ -d "$_docs_dir" ]]; then
+            _index_local "$_docs_dir"
+        else
+            info "Déposez des fichiers manuellement dans $CACHE_DIR et relancez avec --index-local"
+        fi
         return 0
     fi
 
@@ -308,10 +472,8 @@ _sync_webdav() {
         | python3 -c "
 import sys, re
 content = sys.stdin.read()
-# Extraire les hrefs des fichiers (pas les dossiers)
 hrefs = re.findall(r'<D:href>([^<]+)</D:href>', content)
 for h in hrefs:
-    # Garder seulement les fichiers (extensions connues)
     if any(h.endswith(ext) for ext in ['.pdf','.txt','.md','.docx','.odt','.html','.json','.rst']):
         print(h.strip())
 " 2>/dev/null)
@@ -322,33 +484,36 @@ for h in hrefs:
     fi
 
     local file_count=0
+    local skip_count=0
     while IFS= read -r href; do
         [[ -z "$href" ]] && continue
-        local filename=$(basename "$href")
+        local filename
+        filename=$(basename "$href")
         local local_file="$sync_dir/$filename"
         local nc_url="http://127.0.0.1:8001${href}"
 
-        ## Vérifier si le fichier a changé (mode incrémental)
+        ## Mode incrémental : skip les fichiers locaux récents (< 24h)
         if [[ "$mode" != "--full" && -f "$local_file" ]]; then
-            local remote_mtime
-            remote_mtime=$(curl -sf --user "${NC_USER}:${NC_PASSWORD}" -I "$nc_url" 2>/dev/null \
-                | grep -i 'Last-Modified' | cut -d' ' -f2-)
-            local local_mtime=$(stat -c %Y "$local_file" 2>/dev/null || echo 0)
-            # Pour simplifier : toujours re-télécharger si le fichier est dans Qdrant
-            # (comparison de dates plus complexe — à améliorer)
+            local local_age=$(( $(date +%s) - $(stat -c %Y "$local_file" 2>/dev/null || echo 0) ))
+            if [[ $local_age -lt 86400 ]]; then
+                info "Skip (< 24h) : $filename"
+                ((skip_count++))
+                continue
+            fi
         fi
 
         ## Télécharger le fichier
-        curl -sf --user "${NC_USER}:${NC_PASSWORD}" -o "$local_file" "$nc_url" 2>/dev/null \
-            && info "Téléchargé : $filename" \
-            || warn "Échec téléchargement : $filename"
-
-        _index_document "$local_file"
-        ((file_count++))
+        if curl -sf --user "${NC_USER}:${NC_PASSWORD}" -o "$local_file" "$nc_url" 2>/dev/null; then
+            info "Téléchargé : $filename"
+            _index_document "$local_file"
+            ((file_count++))
+        else
+            warn "Échec téléchargement : $filename"
+        fi
 
     done <<< "$file_list"
 
-    ok "Synchronisation terminée : $file_count fichier(s) traité(s)"
+    ok "Synchronisation terminée : $file_count indexé(s), $skip_count ignoré(s) (récents)"
 }
 
 ## ── Indexation des fichiers locaux (sans WebDAV) ─────────────────────
@@ -375,16 +540,29 @@ _index_local() {
 }
 
 ## ── Point d'entrée principal ──────────────────────────────────────────
-echo ""
-echo "🧠 nextcloud_bro_sync.sh — Constellation Knowledge Base"
-echo "   NextCloud/${NC_COLLECTION_PATH} → Ollama[${EMBED_MODEL}] → Qdrant[${QDRANT_COLLECTION}]"
-echo ""
+## Bannière sur stderr uniquement (ne pollue pas les captures $(...))
+{
+    echo ""
+    echo "🧠 nextcloud_bro_sync.sh — Constellation Knowledge Base"
+    echo "   NextCloud/${NC_COLLECTION_PATH} (ou docs/ local) → Ollama[${EMBED_MODEL}] → Qdrant[${QDRANT_COLLECTION}]"
+    echo ""
+} >&2
 
 case "${1:-}" in
     --query|-q)
         shift
-        if ! _check_services; then exit 1; fi
-        _query_knowledge "$*"
+        _USER_HEX=""
+        _QUESTION=""
+        _SLOTS="0"
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --user)  _USER_HEX="$2";  shift 2 ;;
+                --slots) _SLOTS="$2";     shift 2 ;;
+                *) _QUESTION="${_QUESTION:+$_QUESTION }$1"; shift ;;
+            esac
+        done
+        if ! _check_services; then echo "Service indisponible (Ollama ou Qdrant). Réessayez plus tard."; exit 1; fi
+        _query_knowledge "$_QUESTION" "$_USER_HEX" "$_SLOTS"
         ;;
     --index-local|-l)
         if ! _check_services; then exit 1; fi
@@ -397,29 +575,29 @@ case "${1:-}" in
         _sync_webdav "--full"
         ;;
     --status|-s)
-        echo "=== Services ==="
+        echo "=== Services ===" >&2
         curl -sf "$OLLAMA_URL/api/tags" &>/dev/null && ok "Ollama ✅" || err "Ollama ❌ ($OLLAMA_URL)"
-        curl -sf "$QDRANT_URL/collections" &>/dev/null && ok "Qdrant ✅" || err "Qdrant ❌ ($QDRANT_URL)"
+        curl -sf "${_QDRANT_AUTH[@]}" "$QDRANT_URL/collections" &>/dev/null && ok "Qdrant ✅" || err "Qdrant ❌ ($QDRANT_URL)"
         echo ""
         echo "=== Collection Qdrant : $QDRANT_COLLECTION ==="
-        curl -sf "$QDRANT_URL/collections/$QDRANT_COLLECTION" \
+        curl -sf "${_QDRANT_AUTH[@]}" "$QDRANT_URL/collections/$QDRANT_COLLECTION" \
             | python3 -c "
 import sys,json
 d = json.load(sys.stdin).get('result',{})
-print(f'  Points indexés : {d.get(\"points_count\",\"?\")}'  )
+print(f'  Points indexés : {d.get(\"points_count\",\"?\")}')
 print(f'  Vecteurs : {d.get(\"vectors_count\",\"?\")}')
 print(f'  Status : {d.get(\"status\",\"?\")}')
 " 2>/dev/null || echo "  Collection non trouvée"
         echo ""
         echo "=== Cache local ==="
-        echo "  $CACHE_DIR : $(find $CACHE_DIR -type f 2>/dev/null | wc -l) fichier(s)"
+        echo "  $CACHE_DIR : $(find "$CACHE_DIR" -type f 2>/dev/null | wc -l) fichier(s)"
         ;;
     --help|-h)
         echo "Usage:"
         echo "  $0                           Sync incrémentale WebDAV → Qdrant"
         echo "  $0 --full                    Réindexation complète"
         echo "  $0 --index-local [DIR]       Indexer des fichiers locaux"
-        echo "  $0 --query 'ma question'     Requête sémantique #BRO"
+        echo "  $0 --query 'ma question'     Requête sémantique #BRO (stdout = réponse IA)"
         echo "  $0 --status                  Statut des services"
         echo ""
         echo "Variables d'environnement:"

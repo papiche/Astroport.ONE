@@ -345,64 +345,14 @@ if [[ -s ~/.zen/game/secret.nostr ]]; then
     unset NSEC NPUB HEX
 
     if [[ -n "$NODE_NSEC" ]]; then
-        _SYNC_TS_FILE="${HOME}/.zen/tmp/last_sync_dm_ts"
-        _SYNC_TS=$(cat "$_SYNC_TS_FILE" 2>/dev/null)
-        _SYNC_RELAYS=("wss://relay.copylaradio.com")
-        [[ -n "$myRELAY" ]] && _SYNC_RELAYS+=("$myRELAY")
+        ## Publier NODE_HEX pour filter/4.sh (strfry writePolicy — enqueue DMs entrants)
+        echo "$NODE_HEX" > "${HOME}/.zen/tmp/node.hex"
 
-        log "INFO" "✈️ DM listener: vérification sync uDRIVE entrant (NODE HEX ${NODE_HEX:0:12}...)"
-
-        _SYNC_REQUESTS=$(python3 "${MY_PATH}/../tools/nostr_node_intercom.py" receive \
-            --nsec "$NODE_NSEC" \
-            --channel udrive \
-            ${_SYNC_TS:+--since "$_SYNC_TS"} \
-            --relays "${_SYNC_RELAYS[@]}" 2>/dev/null)
-
-        # Mettre à jour le timestamp AVANT traitement pour ne pas re-traiter si erreur IPFS
-        date +%s > "$_SYNC_TS_FILE"
-
-        if [[ -n "$_SYNC_REQUESTS" && "$_SYNC_REQUESTS" != "[]" ]]; then
-            _SYNC_COUNT=$(echo "$_SYNC_REQUESTS" | python3 -c "import json,sys; print(len(json.load(sys.stdin)))" 2>/dev/null || echo 0)
-            log "INFO" "✈️ DM listener: $_SYNC_COUNT demande(s) de sync reçue(s)"
-
-            echo "$_SYNC_REQUESTS" | python3 -c "
-import json, sys
-for r in json.load(sys.stdin):
-    p = r.get('payload', {})
-    print(p.get('email',''), p.get('cid',''), p.get('filename',''), p.get('filetype','file'))
-" 2>/dev/null | while read -r _S_EMAIL _S_CID _S_FILE _S_TYPE; do
-                [[ -z "$_S_EMAIL" || -z "$_S_CID" || -z "$_S_FILE" ]] && continue
-
-                # Vérifier que le PLAYER est bien hébergé ici (pas roaming)
-                [[ ! -d "${HOME}/.zen/game/nostr/${_S_EMAIL}" ]] && \
-                    log "WARN" "✈️ sync ignoré: ${_S_EMAIL} non hébergé ici" && continue
-                [[ -f "${HOME}/.zen/game/nostr/${_S_EMAIL}/.roaming" ]] && \
-                    log "WARN" "✈️ sync ignoré: ${_S_EMAIL} est lui-même en roaming ici" && continue
-
-                # Déterminer le répertoire de destination selon le type
-                case "$_S_TYPE" in
-                    image)  _DEST_DIR="Images" ;;
-                    video)  _DEST_DIR="Videos" ;;
-                    audio)  _DEST_DIR="Music"  ;;
-                    *)      _DEST_DIR="Documents" ;;
-                esac
-
-                _UDRIVE="${HOME}/.zen/game/nostr/${_S_EMAIL}/APP/uDRIVE"
-                mkdir -p "${_UDRIVE}/${_DEST_DIR}"
-
-                _TMP_FILE=$(mktemp -p "${HOME}/.zen/tmp/${MOATS}" "sync_XXXXXX")
-                if timeout 30 ipfs get "/ipfs/${_S_CID}" -o "$_TMP_FILE" 2>/dev/null; then
-                    mv "$_TMP_FILE" "${_UDRIVE}/${_DEST_DIR}/${_S_FILE}"
-                    # Toucher le répertoire uDRIVE → devrait_rafraîchir() détectera le changement
-                    touch "${_UDRIVE}/"
-                    log "INFO" "✈️ sync OK: ${_S_EMAIL} ← ${_S_FILE} (${_S_CID:0:12}...) dans ${_DEST_DIR}/"
-                else
-                    rm -f "$_TMP_FILE"
-                    log "WARN" "✈️ sync ÉCHEC ipfs get pour ${_S_FILE} (${_S_CID:0:12}...)"
-                fi
-            done
-        else
-            log "DEBUG" "✈️ DM listener: aucun sync en attente"
+        ## Lancer le daemon DM si absent (traite BRO + uDRIVE en temps réel via inotifywait)
+        _DM_PID="${HOME}/.zen/tmp/bro_dm_daemon.pid"
+        if [[ ! -f "$_DM_PID" ]] || ! kill -0 "$(cat "$_DM_PID")" 2>/dev/null; then
+            bash "${MY_PATH}/../IA/bro_dm_daemon.sh" >> "${HOME}/.zen/tmp/bro_dm_daemon.log" 2>&1 &
+            log "INFO" "🚀 Daemon DM NODE démarré (PID $!)"
         fi
     fi
 fi

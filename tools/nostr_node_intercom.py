@@ -174,7 +174,11 @@ def cmd_receive(args):
         sender_hex = ev.get("pubkey", "")
         try:
             decrypted = private_key.decrypt_message(ev["content"], sender_hex)
-            envelope = json.loads(decrypted)
+            try:
+                envelope = json.loads(decrypted)
+            except (json.JSONDecodeError, ValueError):
+                # DM texte brut (client Nostr standard) → canal "plain"
+                envelope = {"channel": "plain", "payload": {"text": decrypted}}
         except Exception:
             continue
 
@@ -209,6 +213,33 @@ def cmd_send_udrive(args):
     args.channel = "udrive"
     args.payload = json.dumps(payload)
     cmd_send(args)
+
+
+# ── decrypt ──────────────────────────────────────────────────────────────────
+
+def cmd_decrypt(args):
+    """Déchiffre un event kind 4 passé en JSON sur stdin.
+    Retourne {"channel", "payload", "sender", "event_id"} ou exit 1."""
+    private_key = PrivateKey.from_nsec(args.nsec)
+    try:
+        ev = json.load(sys.stdin)
+        # Supporte les deux formats : event brut ET envelope strfry {event:{...}}
+        if "event" in ev:
+            ev = ev["event"]
+        sender_hex = ev.get("pubkey", "")
+        decrypted = private_key.decrypt_message(ev["content"], sender_hex)
+        try:
+            envelope = json.loads(decrypted)
+        except (json.JSONDecodeError, ValueError):
+            envelope = {"channel": "plain", "payload": {"text": decrypted}}
+        print(json.dumps({
+            "channel":  envelope.get("channel", "plain"),
+            "payload":  envelope.get("payload", {}),
+            "sender":   sender_hex,
+            "event_id": ev.get("id", ""),
+        }))
+    except Exception:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
@@ -248,10 +279,17 @@ if __name__ == "__main__":
     p_recv.add_argument("--since",   default=None, help="Timestamp Unix minimum")
     p_recv.add_argument("--relays",  nargs="+", required=True)
 
+    # ── decrypt (event kind 4 depuis stdin) ──────────────────────────────────
+    p_dec = sub.add_parser("decrypt",
+                           help="Déchiffrer un event kind 4 passé en JSON sur stdin")
+    p_dec.add_argument("--nsec", required=True, help="NSEC du destinataire")
+
     args = parser.parse_args()
     if args.cmd == "send":
         cmd_send(args)
     elif args.cmd == "send-udrive":
         cmd_send_udrive(args)
+    elif args.cmd == "decrypt":
+        cmd_decrypt(args)
     else:
         cmd_receive(args)

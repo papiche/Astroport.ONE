@@ -10,8 +10,10 @@ if os.path.exists(venv_path):
     if os.path.exists(site_packages):
         sys.path.insert(0, site_packages)
 
+import hashlib
 import json
 import re
+import subprocess
 from datetime import datetime
 
 # Check if debug mode is enabled
@@ -174,6 +176,83 @@ def parse_event_json(json_input):
         else:
             raise Exception(f"Input is neither valid JSON nor a file path: {json_input}")
 
+def _upsert_to_qdrant(user_id, content, timestamp, slot):
+    """Génère un embedding via Ollama et l'upserte dans Qdrant (collection memory_{user_hex}).
+    Toutes les erreurs sont silencieuses — la fonctionnalité est optionnelle."""
+    try:
+        OLLAMA_URL = os.environ.get('OLLAMA_URL', 'http://127.0.0.1:11434')
+        QDRANT_URL = os.environ.get('QDRANT_URL', 'http://127.0.0.1:6333')
+        QDRANT_API_KEY = os.environ.get('QDRANT_API_KEY', '')
+
+        # Dériver user_hex : lire ~/.zen/game/nostr/{user_id}/HEX (16 premiers chars)
+        hex_file = os.path.expanduser(f"~/.zen/game/nostr/{user_id}/HEX")
+        if os.path.isfile(hex_file):
+            with open(hex_file, 'r') as f:
+                user_hex = f.read().strip()[:16]
+        else:
+            user_hex = hashlib.md5(user_id.encode()).hexdigest()[:16]
+
+        collection = f"memory_{user_hex}"
+
+        # Préparer les headers d'auth Qdrant
+        auth_headers = []
+        if QDRANT_API_KEY:
+            auth_headers = ["-H", f"api-key: {QDRANT_API_KEY}"]
+
+        # Générer l'embedding via Ollama
+        embed_payload = json.dumps({"model": "nomic-embed-text", "prompt": content})
+        embed_result = subprocess.run(
+            ["curl", "-sf", "-X", "POST",
+             f"{OLLAMA_URL}/api/embeddings",
+             "-H", "Content-Type: application/json",
+             "-d", embed_payload],
+            capture_output=True, text=True, timeout=15
+        )
+        if embed_result.returncode != 0 or not embed_result.stdout.strip():
+            return  # Ollama non disponible — skip silencieux
+
+        embed_data = json.loads(embed_result.stdout)
+        vector = embed_data.get('embedding', [])
+        if not vector:
+            return  # Embedding vide — skip silencieux
+
+        # Créer la collection si elle n'existe pas
+        create_payload = json.dumps({"vectors": {"size": 768, "distance": "Cosine"}})
+        create_cmd = ["curl", "-sf", "-X", "PUT",
+                      f"{QDRANT_URL}/collections/{collection}",
+                      "-H", "Content-Type: application/json",
+                      "-d", create_payload]
+        create_cmd.extend(auth_headers)
+        subprocess.run(create_cmd, capture_output=True, timeout=15)
+
+        # doc_id stable basé sur user_id + timestamp
+        doc_id = int(hashlib.md5(f"{user_id}:{timestamp}".encode()).hexdigest()[:15], 16)
+
+        # Upsert dans Qdrant
+        upsert_payload = json.dumps({
+            "points": [{
+                "id": doc_id,
+                "vector": vector,
+                "payload": {
+                    "user_id": user_id,
+                    "slot": slot,
+                    "content": content,
+                    "timestamp": timestamp,
+                    "source": "nostr_rec"
+                }
+            }]
+        })
+        upsert_cmd = ["curl", "-sf", "-X", "PUT",
+                      f"{QDRANT_URL}/collections/{collection}/points",
+                      "-H", "Content-Type: application/json",
+                      "-d", upsert_payload]
+        upsert_cmd.extend(auth_headers)
+        subprocess.run(upsert_cmd, capture_output=True, timeout=15)
+
+    except Exception:
+        pass  # Skip silencieux — Qdrant/Ollama optionnel
+
+
 # Paramètres attendus : event_json, latitude, longitude, slot, user_id
 def main():
     if len(sys.argv) < 4:
@@ -257,6 +336,7 @@ def main():
         with open(slot_file, 'w') as f:
             json.dump(slot_mem, f, indent=2)
         print(f"Memory updated for user: {user_id}, slot: {slot}")
+        _upsert_to_qdrant(user_id, content, slot_mem['messages'][-1]['timestamp'], slot)
     else:
         print("No user_id provided, slot memory not updated.")
 
