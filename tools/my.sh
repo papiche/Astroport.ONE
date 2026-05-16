@@ -418,7 +418,18 @@ my_LatLon() {
     echo "$countrycode $lat_formatted $lon_formatted"
 }
 
-IPFSNODEID="$(myIpfsPeerId)"
+## IPFSNODEID cache 1h (myIpfsPeerId lit ~/.ipfs/config via jq — subshell évité)
+_IPFSID_CACHE="$HOME/.zen/tmp/ipfsnodeid.cache"
+if [[ -s "$_IPFSID_CACHE" ]] && \
+   [[ $(( $(date +%s) - $(stat -c %Y "$_IPFSID_CACHE" 2>/dev/null || echo 0) )) -lt 3600 ]]; then
+    IPFSNODEID=$(cat "$_IPFSID_CACHE")
+else
+    IPFSNODEID="$(myIpfsPeerId)"
+    if [[ -n "$IPFSNODEID" ]]; then
+        mkdir -p "$HOME/.zen/tmp"
+        echo "$IPFSNODEID" > "$_IPFSID_CACHE"
+    fi
+fi
 
 ## SEE https://pad.p2p.legal/s/keygen
 NODEG1PUB=$(awk '/^pub:/{print $2}' "$HOME/.zen/game/secret.NODE.dunikey" 2>/dev/null)
@@ -789,3 +800,9 @@ fi
 TODATE=$(date -d "today 13:00" '+%Y-%m-%d')
 YESTERDATE=$(date -d "yesterday 13:00" '+%Y-%m-%d')
 DEMAINDATE=$(date -d "tomorrow 13:00" '+%Y-%m-%d')
+
+## Charger les clés coopératives (MJ_APIKEY etc.) depuis le cache NOSTR local
+if [[ -f "${HOME}/.zen/Astroport.ONE/tools/cooperative_config.sh" ]]; then
+    source "${HOME}/.zen/Astroport.ONE/tools/cooperative_config.sh" 2>/dev/null
+    coop_load_env_vars 2>/dev/null
+fi

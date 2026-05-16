@@ -61,36 +61,129 @@ fi
     && su - && apt-get install sudo -y \
     && echo "Run Install Again..." && exit 0
 
-################################################################## EMAIL & DOMAINE CAPITAINE
-## Paramètres :
-## $1 = Email personnalisé (ou "" pour auto)
-## $2 = Domaine Armateur/Noeud (ou "" pour copylaradio.com)
-## $3 = Domaine Email Capitaine (ou "" pour qo-op.com, si email auto)
+################################################################## PARAMÈTRES
+## $1 = Email Capitaine (ou "" pour auto)
+## $2 = Domaine Armateur/Nœud (ou "" pour copylaradio.com)
+## $3 = Domaine Email Capitaine (ou "" pour qo-op.com)
+## $4 = Profil d'installation  (ou "" pour standard)
 ########################################################################
 export CUSTOM_CAPTAIN_EMAIL="${1:-${CAPTAIN_EMAIL:-}}"
 export CUSTOM_NODE_DOMAIN="${2:-${NODE_DOMAIN:-}}"
 export CUSTOM_EMAIL_DOMAIN="${3:-${CAPTAIN_EMAIL_DOMAIN:-}}"
 export INSTALL_PROFILE="${4:-${INSTALL_PROFILE:-}}"
 
+########################################################################
+echo "## HARDWARE CHECK (détection avant toute question) ##"
+########################################################################
+_CPU=$(grep -c "processor" /proc/cpuinfo 2>/dev/null || echo 1)
+_RAM=$(awk '/MemTotal/ {printf "%.0f", $2/1048576}' /proc/meminfo 2>/dev/null || echo 0)
+_VRAM=0; _GPU_VENDOR="none"; _GPU_NAME=""
+if command -v nvidia-smi >/dev/null 2>&1; then
+    _v=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null \
+        | awk '{sum+=$1} END {printf "%.0f", sum/1024}')
+    if [[ -n "$_v" && "$_v" -gt 0 ]]; then
+        _VRAM=$_v; _GPU_VENDOR="nvidia"
+        _GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 | xargs)
+    fi
+fi
+if [[ $_VRAM -eq 0 ]]; then
+    for _sysf in /sys/class/drm/card*/device/mem_info_vram_total; do
+        [[ -f "$_sysf" ]] || continue
+        _v=$(( $(cat "$_sysf" 2>/dev/null || echo 0) / 1073741824 ))
+        [[ "$_v" -gt 0 ]] || continue
+        _VRAM=$(( _VRAM + _v ))
+        case "$(cat "${_sysf%mem_info_vram_total}vendor" 2>/dev/null)" in
+            "0x1002") _GPU_VENDOR="amd" ;;
+            "0x8086") _GPU_VENDOR="intel" ;;
+            *)        _GPU_VENDOR="unknown" ;;
+        esac
+    done
+fi
+if [[ -z "$_GPU_NAME" ]] && command -v lspci >/dev/null 2>&1; then
+    _GPU_NAME=$(lspci 2>/dev/null | grep -iE 'VGA|3D|Display' | head -1 | sed 's/^.*: //' | xargs)
+    if [[ "$_GPU_VENDOR" == "none" ]]; then
+        echo "$_GPU_NAME" | grep -qi 'intel'       && _GPU_VENDOR="intel_integrated"
+        echo "$_GPU_NAME" | grep -qi 'amd\|radeon' && _GPU_VENDOR="amd_integrated"
+    fi
+fi
+_SCORE=$(( _VRAM * 4 + _CPU * 2 + _RAM / 2 ))
+if   [[ $_SCORE -gt 40 ]]; then _TIER="🔥 Brain-Node"; _RANK="DRAGON COMPUTE"; _MVAL=$(( _SCORE * 12 )); _PAF_DEFAULT=28
+elif [[ $_SCORE -gt 10 ]]; then _TIER="⚡ Standard";   _RANK="DRAGON ORIGIN";  _MVAL=$(( _SCORE * 6  )); _PAF_DEFAULT=14
+else                             _TIER="🌿 Léger";      _RANK="Nœud Léger";     _MVAL=100;               _PAF_DEFAULT=7
+fi
+
+########################################################################
+## EMBARQUEMENT INTERACTIF — affiché si aucun argument CLI fourni
+########################################################################
 if [[ -z "$CUSTOM_CAPTAIN_EMAIL" && -z "$CUSTOM_NODE_DOMAIN" ]]; then
-    echo "========================================================="
-    echo "  EMBARQUEMENT CAPITAINE & ARMATEUR"
-    echo "========================================================="
-    echo "Appuyez sur Entrée pour utiliser les valeurs automatiques."
-    read -p "Email Capitaine [auto: support+node...@qo-op.com] : " CUSTOM_CAPTAIN_EMAIL
-    read -p "Domaine Noeud   [auto: copylaradio.com]           : " CUSTOM_NODE_DOMAIN
     echo ""
-    echo "Profil d'installation :"
-    echo "  (vide)         Standard (recommandé)"
-    echo "  nextcloud      + NextCloud AIO cloud privé 128Go"
-    echo "  ai-company  + Stack IA Swarm (Ollama, Dify.ai, Open WebUI)"
-    echo "  dev            + rnostr (remplace strfry — expérimental)"
-    read -p "Profil         [standard]                         : " INSTALL_PROFILE
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║            🚀 EMBARQUEMENT ASTROPORT.ONE                    ║"
+    echo "╠══════════════════════════════════════════════════════════════╣"
+    printf "║  Matériel  : CPU=%sc  RAM=%sGo  VRAM=%sGo  Score=%s        \n" \
+        "$_CPU" "$_RAM" "$_VRAM" "$_SCORE"
+    printf "║  Tier      : %-48s ║\n" "$_TIER"
+    [[ -n "$_GPU_NAME" ]] && printf "║  GPU       : %-48s ║\n" "${_GPU_NAME} (${_GPU_VENDOR})"
+    echo "╠══════════════════════════════════════════════════════════════╣"
+    echo "║  Appuyez sur Entrée pour utiliser les valeurs automatiques. ║"
+    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo ""
+    read -r -p "Email Capitaine [auto: support+node...@qo-op.com] : " CUSTOM_CAPTAIN_EMAIL
+    read -r -p "Domaine Nœud   [auto: copylaradio.com]            : " CUSTOM_NODE_DOMAIN
 fi
 
 [[ -n "$CUSTOM_CAPTAIN_EMAIL" ]] && echo ">>> Email Capitaine : $CUSTOM_CAPTAIN_EMAIL" || echo ">>> Email Capitaine : Automatique"
-[[ -n "$CUSTOM_NODE_DOMAIN" ]]   && echo ">>> Domaine Noeud   : $CUSTOM_NODE_DOMAIN"   || echo ">>> Domaine Noeud   : Automatique (copylaradio.com)"
+[[ -n "$CUSTOM_NODE_DOMAIN" ]]   && echo ">>> Domaine Nœud    : $CUSTOM_NODE_DOMAIN"   || echo ">>> Domaine Nœud    : Automatique (copylaradio.com)"
 [[ -n "$CUSTOM_EMAIL_DOMAIN" ]]  && echo ">>> Domaine Email   : $CUSTOM_EMAIL_DOMAIN"  || echo ">>> Domaine Email   : Automatique (qo-op.com)"
+
+## Sélection du profil si non fourni en argument ($4)
+if [[ -z "$INSTALL_PROFILE" ]]; then
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║  PROFIL D'INSTALLATION    (Tier : ${_TIER})                 "
+    echo "╠══════════════════════════════════════════════════════════════╣"
+    echo "║  (vide)     Standard — IPFS + NOSTR + G1  (recommandé)     ║"
+    echo "║  nextcloud  Standard + NextCloud AIO  (cloud privé 128Go)  ║"
+    if [[ $_SCORE -gt 10 ]]; then
+    echo "║  ai-company Standard + Stack IA  (Ollama, Open WebUI, Qdrant)║"
+    else
+    echo "║  ai-company ⚠️  Score faible — stack IA déconseillée         ║"
+    fi
+    echo "║  dev        Standard + rnostr  (relay NOSTR Rust — devs)   ║"
+    echo "╚══════════════════════════════════════════════════════════════╝"
+    read -r -p "Profil [standard] : " INSTALL_PROFILE
+fi
+echo ">>> Profil : ${INSTALL_PROFILE:-standard}"
+
+########################################################################
+## FAIL-FAST ai-company — vérification GPU AVANT tout téléchargement
+########################################################################
+if [[ "${INSTALL_PROFILE}" == "ai-company" ]]; then
+    if   [[ $_VRAM -ge 24 ]]; then _AI_TIER="🔥 Excellent (≥24 Go) — grands modèles 70B+"
+    elif [[ $_VRAM -ge 8  ]]; then _AI_TIER="⚡ Bon (8-23 Go) — modèles 7B-13B"
+    elif [[ $_VRAM -ge 4  ]]; then _AI_TIER="🟡 Limité (4-7 Go) — petits modèles 3B-7B"
+    elif [[ $_VRAM -ge 1  ]]; then _AI_TIER="⚠️  Très limité (1-3 Go) — ≤ 3B seulement"
+    else                            _AI_TIER="❌ Pas de VRAM dédiée"
+    fi
+    case "$_GPU_VENDOR" in
+        nvidia)           _AI_COMPAT="✅ CUDA — Ollama + ComfyUI supportés" ;;
+        amd)              _AI_COMPAT="⚠️  ROCm (expérimental) — GPU RX 5000+ requis" ;;
+        intel)            _AI_COMPAT="⚠️  SYCL/XPU (expérimental) — Intel Arc requis" ;;
+        intel_integrated) _AI_COMPAT="❌ GPU intégré — Ollama/ComfyUI non supportés" ;;
+        amd_integrated)   _AI_COMPAT="❌ GPU intégré — Ollama/ComfyUI non supportés" ;;
+        *)                _AI_COMPAT="❓ Compatibilité inconnue" ;;
+    esac
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║  🧠 PROFIL ai-company — vérification matériel               ║"
+    printf "║  %-58s ║\n" "GPU    : ${_GPU_NAME:-inconnu}  (${_GPU_VENDOR})"
+    printf "║  %-58s ║\n" "VRAM   : ${_VRAM} Go  →  ${_AI_TIER}"
+    printf "║  %-58s ║\n" "Compat : ${_AI_COMPAT}"
+    echo "╚══════════════════════════════════════════════════════════════╝"
+    if [[ $_VRAM -lt 4 || "$_GPU_VENDOR" == *_integrated* ]]; then
+        read -r -p "⚠️  Ce profil n'est pas recommandé sur cette machine. Continuer ? [y/N] " _cont
+        [[ "${_cont}" != "y" && "${_cont}" != "Y" ]] && exit 1
+    fi
+fi
 
 #### GIT CLONE ###############################################################
 echo "#############################################"
@@ -216,16 +309,16 @@ pipx install duniterpy --include-deps ## keeps old v1 dep (soon deprecated)
 ## add monero & bitcoin compatible keys
 for i in pip python-dotenv scrypt setuptools wheel termcolor amzqr ollama requests geohash beautifulsoup4 cryptography jwcrypto secp256k1 gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 matplotlib readability-lxml duniterpy cachetools pydantic-settings robohash substrate-interface websocket; do
         echo ">>> Installation/Mise à jour $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        pip install -U $i 2>> ~/.zen/install.errors.log
+        ~/.astro/bin/pip install -U $i 2>> ~/.zen/install.errors.log
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python -m pip install -U $i FAILED." >> ~/.zen/install.errors.log && continue
 done
 ## playwright remplace pyppeteer (abandonné 2022) pour tools/page_screenshot.py
 echo ">>> playwright (remplaçant pyppeteer — tools/page_screenshot.py) <<<"
-pip install -U playwright 2>> ~/.zen/install.errors.log \
+~/.astro/bin/pip install -U playwright 2>> ~/.zen/install.errors.log \
     && echo "✅ playwright installé" \
     || echo "⚠️  playwright install FAILED — voir ~/.zen/install.errors.log"
 ## Installe le binaire Chromium de playwright (utilise le Chromium système si présent)
-python -m playwright install chromium 2>> ~/.zen/install.errors.log \
+~/.astro/bin/python -m playwright install chromium 2>> ~/.zen/install.errors.log \
     && echo "✅ playwright chromium prêt" \
     || echo "⚠️  playwright chromium install FAILED (page_screenshot.py utilisera /usr/bin/chromium)"
 
@@ -292,7 +385,7 @@ echo "######### $LP PRINTER ##############"
 ########### QRCODE : ZENCARD / G1BILLET : PRINTER ##############
     ## PRINT & FONTS
     sudo apt install ttf-mscorefonts-installer printer-driver-all cups -y
-    pip install brother_ql
+    ~/.astro/bin/pip install brother_ql
     # pipx install brother_ql
     sudo cupsctl --remote-admin
     sudo usermod -aG lpadmin $USER
@@ -365,41 +458,19 @@ echo "=== SETUP ASTROPORT (runtime config)"
 echo "## ACTIVER LE PARE-FEU UFW ################################"
 ~/.zen/Astroport.ONE/tools/firewall.sh ON
 
-###############################################################
-echo "## SCORE MATÉRIEL — VALIDATION DES PROFILS ##############"
-###############################################################
-_CPU=$(grep -c "processor" /proc/cpuinfo 2>/dev/null || echo 1)
-_RAM=$(awk '/MemTotal/ {printf "%.0f", $2/1048576}' /proc/meminfo 2>/dev/null || echo 0)
-_VRAM=0; _GPU_VENDOR="none"; _GPU_NAME=""
-if command -v nvidia-smi >/dev/null 2>&1; then
-    _v=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null \
-        | awk '{sum+=$1} END {printf "%.0f", sum/1024}')
-    if [[ -n "$_v" && "$_v" -gt 0 ]]; then
-        _VRAM=$_v; _GPU_VENDOR="nvidia"
-        _GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 | xargs)
-    fi
-fi
-if [[ $_VRAM -eq 0 ]]; then
-    for _sysf in /sys/class/drm/card*/device/mem_info_vram_total; do
-        [[ -f "$_sysf" ]] || continue
-        _v=$(( $(cat "$_sysf" 2>/dev/null || echo 0) / 1073741824 ))
-        [[ "$_v" -gt 0 ]] || continue
-        _VRAM=$(( _VRAM + _v ))
-        case "$(cat "${_sysf%mem_info_vram_total}vendor" 2>/dev/null)" in
-            "0x1002") _GPU_VENDOR="amd" ;;
-            "0x8086") _GPU_VENDOR="intel" ;;
-            *)        _GPU_VENDOR="unknown" ;;
-        esac
-    done
-fi
-if [[ -z "$_GPU_NAME" ]] && command -v lspci >/dev/null 2>&1; then
-    _GPU_NAME=$(lspci 2>/dev/null | grep -iE 'VGA|3D|Display' | head -1 | sed 's/^.*: //' | xargs)
-    if [[ "$_GPU_VENDOR" == "none" ]]; then
-        echo "$_GPU_NAME" | grep -qi 'intel'       && _GPU_VENDOR="intel_integrated"
-        echo "$_GPU_NAME" | grep -qi 'amd\|radeon' && _GPU_VENDOR="amd_integrated"
-    fi
-fi
-_SCORE=$(( _VRAM * 4 + _CPU * 2 + _RAM / 2 ))
+## _CPU/_RAM/_VRAM/_SCORE/_TIER/_MVAL/_PAF_DEFAULT déjà calculés en tête d'install
+
+## Helper : lance le compose unifié avec le bon profil (+ overlay GPU si NVIDIA)
+_dc_up() {
+    local _profile="${1:-}"
+    local _compose="$HOME/.zen/Astroport.ONE/docker/docker-compose.yml"
+    local _gpu_overlay="$HOME/.zen/Astroport.ONE/docker/docker-compose.gpu.yml"
+    local _cmd="sg docker -c 'docker compose -f \"$_compose\""
+    [[ -n "$_profile" ]] && _cmd+=" --profile $_profile"
+    [[ "${_GPU_VENDOR:-none}" == "nvidia" ]] && _cmd+=" -f \"$_gpu_overlay\""
+    _cmd+=" up -d'"
+    eval "$_cmd"
+}
 
 ###############################################################
 echo "## INSTALLATIONS CONDITIONNELLES SELON PROFIL ###########"
@@ -413,33 +484,7 @@ case "${INSTALL_PROFILE}" in
         bash "$HOME/.zen/Astroport.ONE/install/install_nextcloud.sh"
         ;;
     ai-company)
-        ## Classification VRAM et compatibilité Ollama/ComfyUI
-        if   [[ $_VRAM -ge 24 ]]; then _AI_TIER="🔥 Excellent (≥24 Go) — grands modèles 70B+"
-        elif [[ $_VRAM -ge 8  ]]; then _AI_TIER="⚡ Bon (8-23 Go) — modèles 7B-13B"
-        elif [[ $_VRAM -ge 4  ]]; then _AI_TIER="🟡 Limité (4-7 Go) — petits modèles 3B-7B"
-        elif [[ $_VRAM -ge 1  ]]; then _AI_TIER="⚠️  Très limité (1-3 Go) — ≤ 3B seulement"
-        else                            _AI_TIER="❌ Pas de VRAM dédiée"
-        fi
-        case "$_GPU_VENDOR" in
-            nvidia)           _AI_COMPAT="✅ CUDA — Ollama + ComfyUI supportés" ;;
-            amd)              _AI_COMPAT="⚠️  ROCm (expérimental) — GPU RX 5000+ requis" ;;
-            intel)            _AI_COMPAT="⚠️  SYCL/XPU (expérimental) — Intel Arc requis" ;;
-            intel_integrated) _AI_COMPAT="❌ GPU intégré — Ollama/ComfyUI non supportés" ;;
-            amd_integrated)   _AI_COMPAT="❌ GPU intégré — Ollama/ComfyUI non supportés" ;;
-            *)                _AI_COMPAT="❓ Compatibilité inconnue — comportement imprévisible" ;;
-        esac
-        echo "╔══════════════════════════════════════════════════════════════╗"
-        echo "║  🧠 PROFIL ai-company — Stack IA Swarm (EXPÉRIMENTAL)     ║"
-        echo "╠══════════════════════════════════════════════════════════════╣"
-        printf "║  %-58s ║\n" "GPU    : ${_GPU_NAME:-inconnu}"
-        printf "║  %-58s ║\n" "VRAM   : ${_VRAM} Go  →  ${_AI_TIER}"
-        printf "║  %-58s ║\n" "Compat : ${_AI_COMPAT}"
-        echo "╚══════════════════════════════════════════════════════════════╝"
-        if [[ $_VRAM -lt 4 || "$_GPU_VENDOR" == *_integrated* ]]; then
-            echo ""
-            read -r -p "⚠️  Ce profil n'est pas recommandé sur cette machine. Continuer ? [y/N] " _cont
-            [[ "${_cont}" != "y" && "${_cont}" != "Y" ]] && exit 1
-        fi
+        echo "🧠 PROFIL ai-company — démarrage installation Stack IA..."
         ## Prometheus serveur complet : collecte les métriques heartbox + node_exporter
         ## Utile pour les Brain-Nodes (GPU) qui veulent monitorer leur charge IA
         echo "⏳ Installation Prometheus + exporters heartbox..."
@@ -489,6 +534,10 @@ case "${INSTALL_PROFILE}" in
         echo "╔══════════════════════════════════════════════════════════════╗"
         echo "║  ⚙️  PROFIL dev — Migration strfry → rnostr (Rust)           ║"
         echo "╚══════════════════════════════════════════════════════════════╝"
+        ## strfry doit être arrêté avant rnostr (port 7777 partagé via NPM)
+        echo "⏹️  Arrêt et désactivation de strfry..."
+        sudo systemctl stop strfry 2>/dev/null || true
+        sudo systemctl disable strfry 2>/dev/null || true
         ## rnostr = relai Nostr en Rust, plus performant, support Qdrant sémantique
         if [[ -f ~/.zen/Astroport.ONE/install/install_rnostr_semantic.sh ]]; then
             ~/.zen/Astroport.ONE/install/install_rnostr_semantic.sh \
@@ -675,29 +724,31 @@ echo "    Qdrant     http://localhost:6333"
 echo "    Ollama     http://localhost:11434"
 fi
 if [[ "${RNOSTR_ACTIVE}" == "true" ]]; then
-echo "    rnostr     ws://localhost:7777  (remplace strfry)"
+echo "    rnostr     ws://localhost:8888  (relay NOSTR Rust — dev)"
 fi
 echo
-echo "  VÉRIFICATION DOCKER :"
-echo "    docker ps                              # conteneurs actifs"
-echo "    docker compose -f ~/.zen/Astroport.ONE/docker-compose.yml ps  # stack principale"
-echo "    docker compose logs -f                 # logs en direct"
+echo "  DOCKER :"
+echo "    docker ps"
+echo "    docker compose -f ~/.zen/Astroport.ONE/docker/docker-compose.yml ps"
+echo "    docker compose -f ~/.zen/Astroport.ONE/docker/docker-compose.yml logs -f"
 echo
-echo "  ESSAIM (ipfs.domain = round-robin DNS vers toutes les stations):"
+echo "  ESSAIM :"
 echo "    IPFS       ${IPFS_DISPLAY}"
-echo "  STATION D'ATTACHE (celle ou votre MULTIPASS est enregistre):"
 echo "    Relay      ${RELAY_DISPLAY}"
 echo "    UPassport  ${USPOT_DISPLAY}"
 echo
 echo "  COMMANDES :"
-echo "    station      ~/.zen/Astroport.ONE/station.sh          ← INTERFACE PRINCIPALE"
-echo "    captain      ~/.zen/Astroport.ONE/captain.sh           (dashboard économique)"
-echo "    media        ~/.zen/Astroport.ONE/ajouter_media.sh"
-echo "    test         ~/.zen/Astroport.ONE/test.sh"
-echo "    start/stop   ~/.zen/Astroport.ONE/start.sh | stop.sh"
+echo "    astrosystemctl list          ← score local vs swarm"
+echo "    astrosystemctl list-remote   ← Brain-Nodes disponibles"
+echo "    station-info                 ← état station (terminal)"
+echo "    station                      ~/.zen/Astroport.ONE/station.sh"
+echo "    captain                      ~/.zen/Astroport.ONE/captain.sh"
+echo "    start / stop                 ~/.zen/Astroport.ONE/start.sh | stop.sh"
 if [[ "${AISTACK_ACTIVE}" == "true" ]]; then
-echo "    code IA      ~/.zen/Astroport.ONE/code_assistant <fichier>"
-echo "    ai stack     docker compose -p ai-company-swarm ps"
+echo ""
+echo "  STACK IA :"
+echo "    docker compose -f ~/.zen/Astroport.ONE/docker/docker-compose.yml --profile ai ps"
+echo "    install/install-ai-company.docker.sh --check   ← compatibilité GPU"
 fi
 echo
 echo "  ERREURS: ~/.zen/install.errors.log"

@@ -273,9 +273,10 @@ echo "REMOVING DESKTOP SHORTCUTS"
 ########################################################################
 
 # Remove desktop shortcuts
-rm -f ~/Bureau/astroport.desktop ~/Desktop/astroport.desktop
-rm -f ~/Bureau/rec.desktop ~/Desktop/rec.desktop  
-rm -f ~/Bureau/g1billet.desktop ~/Desktop/g1billet.desktop
+rm -f ~/Bureau/rec.desktop           ~/Desktop/rec.desktop
+rm -f ~/Bureau/g1billet.desktop      ~/Desktop/g1billet.desktop
+rm -f ~/Bureau/astroport_toggle.desktop ~/Desktop/astroport_toggle.desktop
+rm -f ~/Bureau/uplanet.desktop       ~/Desktop/uplanet.desktop
 
 ########################################################################
 echo "REMOVING USER GROUP MEMBERSHIPS"

@@ -20,12 +20,23 @@ Licensed under AGPL-3.0. Author: Fred (support@qo-op.com).
 ### Docker Installation
 ```bash
 cd docker/
-docker compose up -d                    # Astroport + Nginx Proxy Manager
-docker compose --profile full up -d     # + NextCloud AIO
-docker compose logs -f astroport        # Follow logs
+docker compose up -d                            # core : Astroport + NPM
+docker compose --profile cloud up -d           # + NextCloud AIO
+docker compose --profile ai up -d              # + Open WebUI + Mirofish + Qdrant + Vane
+docker compose --profile dev up -d             # + rnostr (relay NOSTR Rust, port 8888)
+docker compose --profile updates up -d         # + Watchtower (auto-update)
+docker compose --profile full up -d            # cloud + ai + updates
+docker compose logs -f astroport               # Follow logs
 
-# Custom domain:
+# GPU NVIDIA (overlay) :
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml --profile ai up -d
+
+# Domaine personnalisé :
 ASTRO_DOMAIN=mydomain.tld docker compose up -d
+
+# Secrets IA (générer avant --profile ai) :
+install/install-ai-company.docker.sh --check   # Vérifier compatibilité
+install/install-ai-company.docker.sh           # Générer secrets + démarrer stack IA
 ```
 
 ### Testing
@@ -158,9 +169,25 @@ Le score est publié dans `12345.json` via `capacities.power_score` et `capaciti
 - `g1billet` - G1Billet service
 
 ### Docker Services (docker-compose)
-- `astroport` - All-in-one station container
-- `npm` - Nginx Proxy Manager (SSL termination)
-- `nextcloud` - NextCloud AIO (optional, `--profile full`)
+Réseau unique **`dragon-net`** — tous les services se joignent par nom de conteneur.
+
+| Service | Profil | Port hôte | Rôle |
+|---------|--------|-----------|------|
+| `astroport` | core | 4001, 12345, 7777, 54321, 8080… | Station Web3 (IPFS+NOSTR+G1) |
+| `npm` | core | 80, 443, 127.0.0.1:81 | Nginx Proxy Manager (SSL) |
+| `nextcloud` | cloud, full | 127.0.0.1:8002, 8443 | NextCloud AIO (128Go/ZenCard) |
+| `open-webui` | ai, full | 127.0.0.1:8000 | Chat IA membres (Ollama backend) |
+| `mirofish` | ai, full | 127.0.0.1:5050 | Simulation opinion (Mem0+NOSTR) |
+| `qdrant` | ai, full | 127.0.0.1:6333 | Base vectorielle souveraine |
+| `vane` | ai, full | 127.0.0.1:3002 | Recherche IA augmentée |
+| `rnostr` | dev | 127.0.0.1:8888, 9999 | Relay NOSTR Rust (migration strfry) |
+| `watchtower` | updates, full | — | Auto-update conteneurs labelisés |
+
+Labels utilisés :
+- `astroport.monitor=true` → diffuse la santé au swarm (astrosystemctl)
+- `com.centurylinklabs.watchtower.enable=true` → mis à jour par Watchtower
+
+GPU overlay : `docker/docker-compose.gpu.yml` — ajoute `deploy.resources.reservations` NVIDIA sur `open-webui`.
 
 ## Deployment Modes
 
@@ -170,10 +197,9 @@ Le score est publié dans `12345.json` via `capacities.power_score` et `capaciti
 2. `install/setup/setup.sh` — runtime ops (hostname, IPFS init, .env, NPM, captain)
 
 ### Docker
-`docker/docker-compose.yml` orchestrates 3 sibling containers on `astronet` bridge:
-- **astroport** — station services (IPFS, API, NOSTR, UPassport)
-- **npm** — Nginx Proxy Manager (SSL termination for all subdomains)
-- **nextcloud** — NextCloud AIO (optional, `--profile full`)
+`docker/docker-compose.yml` orchestre jusqu'à 9 services sur le réseau **`dragon-net`** (pont unique). Deux fichiers compose :
+- `docker/docker-compose.yml` — compose principal (profiles: core/cloud/ai/dev/updates/full)
+- `docker/docker-compose.gpu.yml` — overlay GPU NVIDIA (à superposer avec `-f` pour le profil `ai`)
 
 The entrypoint (`docker/astroport/astroport.sh`) runs idempotent setup on each start:
 - IPFS init (if no repo), .env generation, captain onboarding (once only)

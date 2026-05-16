@@ -45,13 +45,13 @@ fi
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 
-_NC_COMPOSE="$HOME/.zen/Astroport.ONE/_DOCKER/nextcloud/docker-compose.yml"
-if [[ ! -f "$_NC_COMPOSE" ]]; then
-    echo "⚠️  Fichier introuvable : $_NC_COMPOSE"
+_ASTRO_COMPOSE="$HOME/.zen/Astroport.ONE/docker/docker-compose.yml"
+if [[ ! -f "$_ASTRO_COMPOSE" ]]; then
+    echo "⚠️  Fichier introuvable : $_ASTRO_COMPOSE"
     echo "   → Vérifiez que Astroport.ONE est bien cloné"
 else
     echo "⏳ Démarrage NextCloud AIO (peut prendre 2-3 minutes)..."
-    sg docker -c "docker compose -f '$_NC_COMPOSE' up -d" 2>&1
+    sg docker -c "docker compose -f '$_ASTRO_COMPOSE' --profile cloud up -d" 2>&1
     _nc_exit=$?
     if [[ $_nc_exit -eq 0 ]]; then
         NEXTCLOUD_ACTIVE=true

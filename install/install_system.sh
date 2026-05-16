@@ -22,12 +22,13 @@ sudo usermod -aG docker $USER
 ########################################################################
 echo "# OPEN WITH LINUX (Firefox extension helper)"
 ${ASTRO}/open_with_linux.py install
-cat ${ASTRO}/open_with_yt-dlp.txt | sed "s|_HOME_|$HOME|g" > ~/.zen/open_with_yt-dlp.txt
+bash "${ASTRO}/open_with_yt-dlp.show.conf.sh" > ~/.zen/open_with_yt-dlp.txt 2>/dev/null || true
 echo "#############################################
 # INSTALLEZ L'EXTENSTION FIREFOX
 # https://addons.mozilla.org/firefox/addon/open-with
 #############################################
-recopier le contenu de xed ~/.zen/open_with_yt-dlp.txt
+# Copiez le contenu de : ~/.zen/open_with_yt-dlp.txt
+# Commande : xed ~/.zen/open_with_yt-dlp.txt
 #############################################"
 
 ########################################################################
@@ -49,16 +50,10 @@ for bin in fail2ban-client mount umount apt-get apt systemctl ufw docker hdparm 
 done
 
 ########################################################################
-# DESKTOP SHORTCUTS
-########################################################################
-echo "# ADDING <<<Astroport & REC >>>  DESKTOP SHORTCUT"
-[[ -d ~/Bureau ]] && sed "s/_USER_/$USER/g" ${ASTRO}/astroport.desktop > ~/Bureau/astroport.desktop && chmod +x ~/Bureau/astroport.desktop
-[[ -d ~/Desktop ]] && sed "s/_USER_/$USER/g" ${ASTRO}/astroport.desktop > ~/Desktop/astroport.desktop && chmod +x ~/Desktop/astroport.desktop
-[[ -d ~/Bureau ]] && sed "s/_USER_/$USER/g" ${ASTRO}/rec.desktop > ~/Bureau/rec.desktop && chmod +x ~/Bureau/rec.desktop
-[[ -d ~/Desktop ]] && sed "s/_USER_/$USER/g" ${ASTRO}/rec.desktop > ~/Desktop/rec.desktop && chmod +x ~/Desktop/rec.desktop
-
-########################################################################
-# DESKTOP SHORTCUTS (Mint, Ubuntu, Debian)
+# DESKTOP SHORTCUTS (Mint, Ubuntu, Debian — Bureau / Desktop)
+# Placeholders dans les templates :
+#   _USER_       → $USER      (nom de l'utilisateur courant)
+#   _ASTRO_PATH_ → $ASTRO     (chemin absolu vers Astroport.ONE)
 ########################################################################
 echo "######### INSTALLATION DES RACCOURCIS BUREAU #######"
 
@@ -66,32 +61,31 @@ ASTRO="${HOME}/.zen/Astroport.ONE"
 DESKTOPS=("$HOME/Bureau" "$HOME/Desktop")
 
 for DESK in "${DESKTOPS[@]}"; do
-    if [[ -d "$DESK" ]]; then
-        echo "Configuration du bureau dans : $DESK"
+    [[ -d "$DESK" ]] || continue
+    echo "  → $DESK"
 
-        # 1. Raccourci REC (Ajouter Média)
-        # On utilise le fichier existant en s'assurant que le chemin est correct
-        sed "s|/home/fred|$HOME|g" "${ASTRO}/rec.desktop" > "$DESK/rec.desktop"
+    # rec.desktop — Ajouter un média IPFS (_USER_)
+    sed "s/_USER_/$USER/g" "${ASTRO}/rec.desktop" > "$DESK/rec.desktop"
+    chmod +x "$DESK/rec.desktop"
+    gio set "$DESK/rec.desktop" metadata::trusted true 2>/dev/null || true
 
-        # 2. Raccourci TOGGLE ON/OFF
-        sed "s|_ASTRO_PATH_|$ASTRO|g" "${ASTRO}/astroport_toggle.desktop" > "$DESK/astroport_toggle.desktop"
+    # g1billet.desktop — Interface G1Billet (_USER_)
+    sed "s/_USER_/$USER/g" "${ASTRO}/g1billet.desktop" > "$DESK/g1billet.desktop"
+    chmod +x "$DESK/g1billet.desktop"
+    gio set "$DESK/g1billet.desktop" metadata::trusted true 2>/dev/null || true
 
-        # 2. Raccourci UPLANET
-        sed "s|_ASTRO_PATH_|$ASTRO|g" "${ASTRO}/uplanet.desktop" > "$DESK/uplanet.desktop"
+    # astroport_toggle.desktop — Bascule ON/OFF (_ASTRO_PATH_)
+    sed "s|_ASTRO_PATH_|$ASTRO|g" "${ASTRO}/astroport_toggle.desktop" > "$DESK/astroport_toggle.desktop"
+    chmod +x "$DESK/astroport_toggle.desktop"
+    gio set "$DESK/astroport_toggle.desktop" metadata::trusted true 2>/dev/null || true
 
-        # Permissions
-        chmod +x "$DESK/rec.desktop"
-        chmod +x "$DESK/astroport_toggle.desktop"
-        chmod +x "$DESK/uplanet.desktop"
-
-        # Confiance GNOME/Cinnamon (évite le message "Lanceur non fiable")
-        gio set "$DESK/rec.desktop" metadata::trusted true 2>/dev/null || true
-        gio set "$DESK/astroport_toggle.desktop" metadata::trusted true 2>/dev/null || true
-        gio set "$DESK/uplanet.desktop" metadata::trusted true 2>/dev/null || true
-    fi
+    # uplanet.desktop — Ouvre le portail UPlanet (_ASTRO_PATH_)
+    sed "s|_ASTRO_PATH_|$ASTRO|g" "${ASTRO}/uplanet.desktop" > "$DESK/uplanet.desktop"
+    chmod +x "$DESK/uplanet.desktop"
+    gio set "$DESK/uplanet.desktop" metadata::trusted true 2>/dev/null || true
 done
 
-# Initialisation de l'icône de toggle selon l'état actuel
+# Initialisation de l'icône de toggle selon l'état actuel (ON/OFF)
 bash "${ASTRO}/tools/astroport_toggle.sh" status_only 2>/dev/null || true
 
 ######### SUPER PRATIQUE :: DOES NOT WORK WITH SPACE IN FILENAME

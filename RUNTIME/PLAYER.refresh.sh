@@ -42,6 +42,14 @@ PLAYERONE="$1"
 [[ ! ${PLAYERONE} ]] && PLAYERONE=($(ls -t ~/.zen/game/players/  | grep "@" 2>/dev/null))
 
 echo "FOUND ${#PLAYERONE[@]} ASTRONAUTS : ${PLAYERONE[@]}"
+
+## Dispatch parallèle quand ASTRO_PARALLEL_REFRESH > 1 (appel complet, sans $1)
+_PARALLEL="${ASTRO_PARALLEL_REFRESH:-1}"
+if [[ -z "$1" && "$_PARALLEL" -gt 1 && "${#PLAYERONE[@]}" -gt 1 ]]; then
+    printf '%s\n' "${PLAYERONE[@]}" | xargs -P "$_PARALLEL" -I{} bash "$0" {}
+    exit $?
+fi
+
 CURRENT=$(readlink ~/.zen/game/players/.current | rev | cut -d '/' -f 1 | rev) ## ALSO in CAPTAINEMAIL
 
 echo "RENEWING LOCAL UPLANET REPOSITORY (CAPTAIN=${CURRENT})
@@ -231,8 +239,8 @@ for PLAYER in ${PLAYERONE[@]}; do
     if [[ "$_USOCIETY_ACTIVE" != "true" ]]; then
         ## NON-U.SOCIETY OR EXPIRED U.SOCIETY - EVERY 7 DAYS PAY CAPTAIN VIA MULTIPASS
         echo "🏠 Non-U.SOCIETY or expired U.SOCIETY member - Weekly rent payment required via MULTIPASS"
-        TODATE_SECONDS=$(date -d "$TODATE" +%s)
-        BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s)
+        TODATE_SECONDS=$(date -d "$TODATE" +%s 2>/dev/null || date +%s)
+        BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s 2>/dev/null || echo "$TODATE_SECONDS")
         # Calculate the difference in days
         DIFF_DAYS=$(( (TODATE_SECONDS - BIRTHDATE_SECONDS) / 86400 ))
         DAYS_UNTIL_NEXT_PAYMENT=$(( 7 - (DIFF_DAYS % 7) ))

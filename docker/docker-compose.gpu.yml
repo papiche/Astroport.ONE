@@ -1,0 +1,42 @@
+########################################################################
+# Astroport.ONE — GPU overlay (NVIDIA CUDA)
+#
+# Superpose ce fichier au compose principal pour activer l'accélération
+# GPU sur open-webui. Nécessite nvidia-container-toolkit installé.
+#
+# USAGE
+# ──────────────────────────────────────────────────────────────────────
+#  # Profil AI avec GPU :
+#  docker compose \
+#    -f docker-compose.yml \
+#    -f docker-compose.gpu.yml \
+#    --profile ai up -d
+#
+#  # Profil full avec GPU :
+#  docker compose \
+#    -f docker-compose.yml \
+#    -f docker-compose.gpu.yml \
+#    --profile full up -d
+#
+# PRÉREQUIS
+# ──────────────────────────────────────────────────────────────────────
+#  1. nvidia-container-toolkit installé (install/install_gpu_ai.sh)
+#  2. Docker daemon configuré pour NVIDIA runtime :
+#       sudo nvidia-ctk runtime configure --runtime=docker
+#       sudo systemctl restart docker
+#  3. Vérification : docker run --rm --gpus all nvidia/cuda:12-base nvidia-smi
+########################################################################
+
+services:
+
+  open-webui:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - CUDA_VISIBLE_DEVICES=all

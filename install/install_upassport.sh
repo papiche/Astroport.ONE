@@ -19,7 +19,7 @@ if [[ ! -d ~/.zen/UPassport ]]; then
     cd UPassport
 
     # INstall python packages
-    pip install -U -r requirements.txt
+    ~/.astro/bin/pip install -U -r requirements.txt
 
     # Setup systemd startup script
     ./setup_systemd.sh

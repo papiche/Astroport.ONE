@@ -317,8 +317,18 @@ should_refresh() {
 # Get all emails from ~/.zen/game/nostr/
 NOSTR=($(ls -t ~/.zen/game/nostr/ 2>/dev/null | grep "@" ))
 
-# Répartition équitable des slots horaires dès le démarrage
-rebalance_refresh_times "${NOSTR[@]}"
+# Filtre joueur unique : accepte $1 pour ne traiter qu'un seul joueur (utilisé par le dispatch parallèle)
+[[ -n "$1" ]] && NOSTR=("$1")
+
+# Répartition équitable des slots horaires dès le démarrage (uniquement en mode complet)
+[[ -z "$1" ]] && rebalance_refresh_times "${NOSTR[@]}"
+
+## Dispatch parallèle quand ASTRO_PARALLEL_REFRESH > 1 (appel complet, sans $1)
+_PARALLEL="${ASTRO_PARALLEL_REFRESH:-1}"
+if [[ -z "$1" && "$_PARALLEL" -gt 1 && "${#NOSTR[@]}" -gt 1 ]]; then
+    printf '%s\n' "${NOSTR[@]}" | xargs -P "$_PARALLEL" -I{} bash "$0" {}
+    exit $?
+fi
 
 ########################################################################
 ## LISTENER DM — Sync uDRIVE reçu depuis les stations visiteurs (✈️ → 🏠)
@@ -413,7 +423,7 @@ for PLAYER in "${NOSTR[@]}"; do
     if [[ ! -f ~/.zen/game/nostr/${PLAYER}/HEX || ! -f ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR ]]; then
         BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/.birthdate 2>/dev/null)
         if [[ -n "$BIRTHDATE" ]]; then
-            DIFF=$(( ($(date +%s) - $(date -d "$BIRTHDATE" +%s)) / 86400 ))
+            DIFF=$(( ($(date +%s) - $(date -d "$BIRTHDATE" +%s 2>/dev/null || date +%s)) / 86400 ))
             if [ $DIFF -gt 7 ]; then
                 # Guard against RPi without RTC booting in 1970 before NTP sync
                 if [[ $(date +%Y) -lt 2024 ]]; then
@@ -589,8 +599,8 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
 
     # Check for MULTIPASS anniversaries
     if [[ -n "$BIRTHDATE" ]]; then
-        BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s)
-        TODATE_SECONDS=$(date -d "$TODATE" +%s)
+        BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s 2>/dev/null || date +%s)
+        TODATE_SECONDS=$(date -d "$TODATE" +%s 2>/dev/null || date +%s)
         DAYS_OLD=$(( (TODATE_SECONDS - BIRTHDATE_SECONDS) / 86400 ))
         
         # 1 year anniversary
@@ -699,7 +709,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
         log "ERROR" "BAD DISCO DECODING for ${PLAYER}"
         BIRTHDATE=$(cat ~/.zen/game/nostr/${PLAYER}/.birthdate 2>/dev/null)
         if [[ -n "$BIRTHDATE" ]]; then
-            DIFF=$(( ($(date +%s) - $(date -d "$BIRTHDATE" +%s)) / 86400 ))
+            DIFF=$(( ($(date +%s) - $(date -d "$BIRTHDATE" +%s 2>/dev/null || date +%s)) / 86400 ))
             if [ $DIFF -gt 7 ]; then
                 # Guard against RPi without RTC booting in 1970 before NTP sync
                 if [[ $(date +%Y) -lt 2024 ]]; then
@@ -761,8 +771,8 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
         # Skip all payment logic for CAPTAIN
     elif [[ ! -s ~/.zen/game/players/${PLAYER}/U.SOCIETY ]]; then
         # Regular MULTIPASS payment logic (not CAPTAIN, not U.SOCIETY member)
-        TODATE_SECONDS=$(date -d "$TODATE" +%s)
-        BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s)
+        TODATE_SECONDS=$(date -d "$TODATE" +%s 2>/dev/null || date +%s)
+        BIRTHDATE_SECONDS=$(date -d "$BIRTHDATE" +%s 2>/dev/null || echo "$TODATE_SECONDS")
         # Calculate the difference in days
         DIFF_DAYS=$(( (TODATE_SECONDS - BIRTHDATE_SECONDS) / 86400 ))
 

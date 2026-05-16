@@ -78,21 +78,19 @@ HELP
     --uninstall)
         echo -e "${RED}${BOLD}🗑️ DÉSINSTALLATION AI COMPANY${NC}"
         [[ "$2" == "--purge" ]] && echo -e "${YELLOW}  Mode --purge : volumes et données supprimés${NC}"
-        if [[ -d "$INSTALL_DIR" ]]; then
-            cd "$INSTALL_DIR"
-            if [[ "$2" == "--purge" ]]; then
-                $DOCKER_CMD down -v 2>/dev/null || true
-                [[ -d "dify/docker" ]] && { cd dify/docker && $DOCKER_CMD down -v 2>/dev/null || true; cd "$INSTALL_DIR"; }
-                cd "$HOME/.zen" && rm -rf "$INSTALL_DIR"
-                echo -e "${GREEN}✅ Stack et données supprimées.${NC}"
-            else
-                $DOCKER_CMD down 2>/dev/null || true
-                [[ -d "dify/docker" ]] && { cd dify/docker && $DOCKER_CMD down 2>/dev/null || true; }
-                echo -e "${GREEN}✅ Containers arrêtés (données préservées dans $INSTALL_DIR).${NC}"
-                echo    "   Pour tout supprimer : $0 --uninstall --purge"
-            fi
+        _ASTRO_COMPOSE="$HOME/.zen/Astroport.ONE/docker/docker-compose.yml"
+        if [[ "$2" == "--purge" ]]; then
+            $DOCKER_CMD -f "$_ASTRO_COMPOSE" --profile ai down -v 2>/dev/null || true
+            [[ -d "$INSTALL_DIR/dify/docker" ]] && \
+                { $DOCKER_CMD -f "$INSTALL_DIR/dify/docker/docker-compose.yml" down -v 2>/dev/null || true; }
+            rm -rf "$INSTALL_DIR"
+            echo -e "${GREEN}✅ Stack et volumes supprimés.${NC}"
         else
-            echo "ℹ️  $INSTALL_DIR inexistant, rien à faire."
+            $DOCKER_CMD -f "$_ASTRO_COMPOSE" --profile ai down 2>/dev/null || true
+            [[ -d "$INSTALL_DIR/dify/docker" ]] && \
+                { $DOCKER_CMD -f "$INSTALL_DIR/dify/docker/docker-compose.yml" down 2>/dev/null || true; }
+            echo -e "${GREEN}✅ Containers arrêtés (volumes préservés).${NC}"
+            echo    "   Pour tout supprimer : $0 --uninstall --purge"
         fi
         exit 0 ;;
 
@@ -116,37 +114,49 @@ HELP
         exit 0 ;;
 esac
 
-echo -e "${BOLD}${CYAN}🚀 Initialisation AI Company (Dify + Open WebUI) dans $INSTALL_DIR${NC}"
-mkdir -p "$INSTALL_DIR/webui_data"
-cd "$INSTALL_DIR"
+_ASTRO_COMPOSE="$HOME/.zen/Astroport.ONE/docker/docker-compose.yml"
 
-if [ -f .env ]; then
-    source .env
+echo -e "${BOLD}${CYAN}🚀 Initialisation AI Company dans $INSTALL_DIR${NC}"
+mkdir -p "$INSTALL_DIR"
+
+# --- SECRETS : générés une fois, stockés dans $INSTALL_DIR/.env ---
+if [[ -f "$INSTALL_DIR/.env" ]]; then
+    source "$INSTALL_DIR/.env"
 else
-    WEBUI_SECRET=$(openssl rand -hex 32)
+    WEBUI_SECRET_KEY=$(openssl rand -hex 32)
     if [[ -n "$UPLANETNAME" ]]; then
-        QDRANT_KEY=$(echo -n "$UPLANETNAME" | openssl dgst -sha256 | sed 's/^.* //')
+        QDRANT_API_KEY=$(echo -n "$UPLANETNAME" | openssl dgst -sha256 | sed 's/^.* //')
     else
-        QDRANT_KEY=$(openssl rand -hex 32)
+        QDRANT_API_KEY=$(openssl rand -hex 32)
     fi
-
-    cat > .env << EOF
-WEBUI_SECRET_KEY=${WEBUI_SECRET}
-QDRANT_API_KEY=${QDRANT_KEY}
+    cat > "$INSTALL_DIR/.env" << EOF
+WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
+QDRANT_API_KEY=${QDRANT_API_KEY}
 MIROFISH_MODEL=${MIROFISH_MODEL:-gemma3:12b}
 EOF
-    source .env
+    source "$INSTALL_DIR/.env"
 fi
 
-# --- 0. VÉRIFICATION MATÉRIELLE (non bloquante) ---
+# Injecte les secrets dans le .env du compose principal (créé si absent)
+_DOCKER_ENV="$(dirname "$_ASTRO_COMPOSE")/.env"
+touch "$_DOCKER_ENV"
+for _var in WEBUI_SECRET_KEY QDRANT_API_KEY MIROFISH_MODEL; do
+    _val="${!_var}"
+    if grep -q "^${_var}=" "$_DOCKER_ENV" 2>/dev/null; then
+        sed -i "s|^${_var}=.*|${_var}=${_val}|" "$_DOCKER_ENV"
+    else
+        echo "${_var}=${_val}" >> "$_DOCKER_ENV"
+    fi
+done
+
+# --- VÉRIFICATION MATÉRIELLE (non bloquante) ---
 _CACHE="$HOME/.zen/tmp/$(ipfs id -f '<id>' 2>/dev/null)/heartbox_analysis.json"
 _SCORE=0
 [[ -s "$_CACHE" ]] && _SCORE=$(jq -r '.capacities.power_score // 0' "$_CACHE" 2>/dev/null || echo 0)
 if [[ ${_SCORE:-0} -lt 11 ]]; then
     echo -e "${YELLOW}⚠️  Power-Score faible (${_SCORE}/10) — stack IA lourde pour cette machine.${NC}"
     echo -e "   Utilisez ${BOLD}$0 --check${NC} pour le détail."
-    echo -e "   Continuer quand même ? [y/N] "
-    read -r _CONFIRM
+    read -r -p "   Continuer quand même ? [y/N] " _CONFIRM
     [[ "$_CONFIRM" != "y" && "$_CONFIRM" != "Y" ]] && exit 1
 fi
 if ! ss -tln 2>/dev/null | grep -q ':11434 '; then
@@ -154,131 +164,39 @@ if ! ss -tln 2>/dev/null | grep -q ':11434 '; then
     echo -e "   Démarrez Ollama : ${BOLD}ollama serve &${NC}   ou   ${BOLD}systemctl start ollama${NC}"
 fi
 
-# --- 1. DOCKER COMPOSE : OPEN WEBUI + MIROFISH (Mem0) + QDRANT + VANE ---
-cat > docker-compose.yml << EOF
-services:
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    container_name: ai-company-webui
-    ports:
-      - "${PORT_WEBUI}:8080"
-    volumes:
-      - ./webui_data:/app/backend/data
-    environment:
-      - WEBUI_SECRET_KEY=\${WEBUI_SECRET_KEY}
-      - ENABLE_RAG_LOCAL_WEB_FETCH=True
-      - ENABLE_RAG_WEB_SEARCH=True
-      - OLLAMA_BASE_URL=http://host.docker.internal:${OLLAMA_PORT}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - ai-net
-    restart: unless-stopped
-
-  mirofish:
-    image: ghcr.io/666ghj/mirofish:latest
-    container_name: ai-company-mirofish
-    ports:
-      - "${PORT_MIROFISH}:5000"
-    environment:
-      - LLM_BASE_URL=http://host.docker.internal:${OLLAMA_PORT}/v1
-      - LLM_API_KEY=ollama
-      - LLM_MODEL_NAME=\${MIROFISH_MODEL}
-      - MEM0_VECTOR_STORE=qdrant
-      - MEM0_QDRANT_URL=http://qdrant:6333
-      - MEM0_QDRANT_API_KEY=\${QDRANT_API_KEY}
-      - MEM0_COLLECTION=mirofish-agents
-      - MEM0_EMBEDDING_MODEL=nomic-embed-text
-      - MEM0_EMBEDDING_BASE_URL=http://host.docker.internal:${OLLAMA_PORT}
-      - NOSTR_RELAY=ws://host.docker.internal:7777
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      - qdrant
-    volumes:
-      - ./mirofish_data:/app/data
-    networks:
-      - ai-net
-    restart: unless-stopped
-
-  qdrant:
-    image: qdrant/qdrant:latest
-    container_name: ai-company-qdrant
-    ports:
-      - "${PORT_QDRANT}:6333"
-    environment:
-      - QDRANT__SERVICE__API_KEY=\${QDRANT_API_KEY}
-      - QDRANT__SERVICE__ENABLE_CORS=true
-    volumes:
-      - qdrant_storage:/qdrant/storage
-    networks:
-      - ai-net
-    restart: unless-stopped
-
-  vane:
-    image: ghcr.io/itzcrazzykns/vane:main
-    container_name: ai-company-vane
-    ports:
-      - "${PORT_VANE}:3001"
-    environment:
-      - OLLAMA_API_URL=http://host.docker.internal:${OLLAMA_PORT}/api
-      - SIMILARITY_MEASURE=cosine
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    volumes:
-      - ./vane_data:/home/perplexica/data
-    networks:
-      - ai-net
-    restart: unless-stopped
-
-volumes:
-  qdrant_storage:
-
-networks:
-  ai-net:
-    driver: bridge
-EOF
-
-# --- 2. INSTALLATION DE DIFY.AI ---
+# --- DIFY.AI (optionnel, stack séparée) ---
 if [[ " ${ALL_TARGETS[*]} " == *" all "* || " ${ALL_TARGETS[*]} " == *" dify "* ]]; then
     echo -e "⏳ Téléchargement de Dify.ai..."
-    if [ ! -d "dify" ]; then
-        git clone --depth 1 https://github.com/langgenius/dify.git dify
+    if [[ ! -d "$INSTALL_DIR/dify" ]]; then
+        git clone --depth 1 https://github.com/langgenius/dify.git "$INSTALL_DIR/dify"
     fi
-
-    cd dify/docker
-    if [ ! -f .env ]; then
-        cp .env.example .env
+    if [[ ! -f "$INSTALL_DIR/dify/docker/.env" ]]; then
+        cp "$INSTALL_DIR/dify/docker/.env.example" "$INSTALL_DIR/dify/docker/.env"
     fi
-
-    # Always ensure the ports are set to our variables
-    sed -i "s/^EXPOSE_NGINX_PORT=.*/EXPOSE_NGINX_PORT=${PORT_DIFY}/" .env
-    sed -i "s/^EXPOSE_NGINX_SSL_PORT=.*/EXPOSE_NGINX_SSL_PORT=8444/" .env
-    cd "$INSTALL_DIR"
+    sed -i "s/^EXPOSE_NGINX_PORT=.*/EXPOSE_NGINX_PORT=${PORT_DIFY}/" "$INSTALL_DIR/dify/docker/.env"
+    sed -i "s/^EXPOSE_NGINX_SSL_PORT=.*/EXPOSE_NGINX_SSL_PORT=8444/" "$INSTALL_DIR/dify/docker/.env"
 fi
 
-# --- LANCEMENT DE LA STACK ---
-echo -e "⏳ Démarrage de la stack..."
+# --- LANCEMENT (compose unifié dragon-net) ---
+echo -e "⏳ Démarrage de la stack IA..."
 
-cd "$INSTALL_DIR"
 if [[ " ${ALL_TARGETS[*]} " == *" all "* ]]; then
     echo -e "⏳ Démarrage de Open WebUI, Mirofish, Qdrant et Vane..."
-    $DOCKER_CMD up -d
+    $DOCKER_CMD -f "$_ASTRO_COMPOSE" --profile ai up -d
 else
     for SVC in "${ALL_TARGETS[@]}"; do
-        if [[ "$SVC" == "open-webui" || "$SVC" == "open_webui" || "$SVC" == "mirofish" || "$SVC" == "qdrant" || "$SVC" == "vane" ]]; then
-            SVC_NAME="$SVC"
-            [[ "$SVC_NAME" == "open_webui" ]] && SVC_NAME="open-webui"
-            echo -e "⏳ Démarrage de $SVC_NAME..."
-            $DOCKER_CMD up -d "$SVC_NAME"
+        [[ "$SVC" == "dify" ]] && continue
+        [[ "$SVC" == "open_webui" ]] && SVC="open-webui"
+        if [[ "$SVC" =~ ^(open-webui|mirofish|qdrant|vane)$ ]]; then
+            echo -e "⏳ Démarrage de $SVC..."
+            $DOCKER_CMD -f "$_ASTRO_COMPOSE" --profile ai up -d "$SVC"
         fi
     done
 fi
 
 if [[ " ${ALL_TARGETS[*]} " == *" all "* || " ${ALL_TARGETS[*]} " == *" dify "* ]]; then
     echo -e "⏳ Démarrage de l'orchestrateur Dify.ai (peut prendre quelques minutes)..."
-    cd "$INSTALL_DIR/dify/docker"
-    $DOCKER_CMD up -d
+    $DOCKER_CMD -f "$INSTALL_DIR/dify/docker/docker-compose.yml" up -d
 fi
 
 # --- RÉCAPITULATIF ---
@@ -303,4 +221,5 @@ echo -e "\n${BOLD}🔧 GESTION :${NC}"
 echo -e "  Arrêter   : ${BOLD}$0 --uninstall${NC}"
 echo -e "  Supprimer : ${BOLD}$0 --uninstall --purge${NC}"
 echo -e "  Vérifier  : ${BOLD}$0 --check${NC}"
-echo -e "\n${GREEN}${BOLD}✅ STACK AI COMPANY (Mem0 + Qdrant) DÉPLOYÉE !${NC}"
+echo -e "  Logs      : ${BOLD}docker compose -f $HOME/.zen/Astroport.ONE/docker/docker-compose.yml --profile ai logs -f${NC}"
+echo -e "\n${GREEN}${BOLD}✅ STACK AI COMPANY (dragon-net) DÉPLOYÉE !${NC}"

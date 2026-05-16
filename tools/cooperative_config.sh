@@ -702,14 +702,22 @@ coop_config_show_decrypted() {
 # Usage: coop_config_refresh
 coop_config_refresh() {
     echo "Refreshing cooperative config from NOSTR..."
+    ## Sauvegarder le cache existant avant de le supprimer
+    local _backup=""
+    [[ -s "$COOP_CONFIG_CACHE" ]] && _backup=$(cat "$COOP_CONFIG_CACHE")
     rm -f "$COOP_CONFIG_CACHE"
-    local config=$(coop_load_config "true")
-    
+    local config
+    config=$(coop_load_config "true" 2>/dev/null)
     if [[ -n "$config" ]] && [[ "$config" != "{}" ]]; then
         echo "[OK] Config refreshed"
         coop_config_list
     else
         echo "[WARN] No config found on NOSTR"
+        ## Réseau coupé ou relay indisponible — restaurer le cache local
+        if [[ -n "$_backup" ]]; then
+            echo "$_backup" > "$COOP_CONFIG_CACHE"
+            echo "[INFO] Cache local restauré ($(echo "$_backup" | jq -r '.CREATED_AT // "date inconnue"' 2>/dev/null))"
+        fi
     fi
 }
 

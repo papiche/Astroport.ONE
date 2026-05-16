@@ -1,42 +1,56 @@
 ########################################################################
-# Astroport.ONE — Full Stack Docker Compose
-# Orchestrates: Astroport + Nginx Proxy Manager + NextCloud AIO
+# Astroport.ONE — Full Stack Docker Compose (UNIFIED)
+# Network : dragon-net  (pont unique — tous les services se joignent par nom)
 #
-# Usage:
-#   docker compose up -d                    # Astroport + NPM (UPlanet ORIGIN)
-#   CAPTAIN_EMAIL=me@d.tld IPFS_SWARM_KEY=<hex64> docker compose up -d  # UPlanet ẐEN
-#   docker compose --profile full up -d     # + NextCloud AIO
-#   docker compose logs -f astroport        # Follow logs
+# PROFILS
+# ──────────────────────────────────────────────────────────────────────
+#  (aucun)   → core  : astroport + npm                    (toujours actif)
+#  cloud     → core  + nextcloud AIO  (128Go cloud privé ZenCard)
+#  ai        → core  + open-webui + mirofish + qdrant + vane  (IA swarm)
+#  dev       → core  + rnostr          (relay NOSTR Rust, port 8888 hôte)
+#  updates   → core  + watchtower      (auto-pull nouvelles images)
+#  full      → core  + cloud + ai + updates  (tout sauf dev)
 #
-# Environment variables (set in .env or shell):
-#   ASTRO_DOMAIN=copylaradio.com           # Your domain (default: copylaradio.com)
-#   CAPTAIN_EMAIL=captain@example.com      # Captain email (default: auto-generated)
-#   IPFS_SWARM_KEY=<64-char hex>           # IPFS private network key (default: ORIGIN 000...0)
-#   MACHINE_VALUE_ZEN=500                  # Machine value in ZEN (default: 500)
-#   PAF=14                                 # Weekly node cost in ZEN (default: 14)
-#   NCARD=1                                # MULTIPASS weekly fee in ZEN (default: 1)
-#   ZCARD=4                                # ZEN Card weekly fee in ZEN (default: 4)
-#   HOST_UID=1000                           # Host user UID
-#   HOST_GID=1000                           # Host user GID
+# UTILISATION
+# ──────────────────────────────────────────────────────────────────────
+#  docker compose up -d                                    # core
+#  docker compose --profile cloud up -d                   # + nextcloud
+#  docker compose --profile ai up -d                      # + stack IA
+#  docker compose --profile full up -d                    # tout
+#  docker compose --profile dev up -d                     # + rnostr (devs)
+#  # GPU NVIDIA :
+#  docker compose -f docker-compose.yml -f docker-compose.gpu.yml \
+#    --profile ai up -d
 #
-# Subdomains (configured via NPM):
-#   astroport.${ASTRO_DOMAIN}       -> astroport:12345  (Station Map)
-#   ipfs.${ASTRO_DOMAIN}            -> astroport:8080   (IPFS Gateway)
-#   ipfs.${ASTRO_DOMAIN}/12345/     -> astroport:12345  (swarm UPSYNC discovery)
-#   relay.${ASTRO_DOMAIN}           -> astroport:7777   (WebSocket)
-#   u.${ASTRO_DOMAIN}               -> astroport:54321  (UPassport API, /health)
-#   cloud.${ASTRO_DOMAIN}           -> nextcloud:8001   (NextCloud AIO)
+# VARIABLES D'ENVIRONNEMENT (docker/.env ou shell)
+# ──────────────────────────────────────────────────────────────────────
+#  ASTRO_DOMAIN=copylaradio.com       Domaine de la station
+#  CAPTAIN_EMAIL=captain@example.com  Email du capitaine
+#  IPFS_SWARM_KEY=<64 hex chars>      Clé réseau IPFS privé (ORIGIN=vide)
+#  HOST_UID=1000 / HOST_GID=1000      UID/GID hôte pour les volumes
+#  WEBUI_SECRET_KEY=<hex32>           Généré par install-ai-company.docker.sh
+#  QDRANT_API_KEY=<hex32>             Généré par install-ai-company.docker.sh
+#  MIROFISH_MODEL=gemma3:12b          Modèle LLM pour Mirofish
 #
-# NextCloud documentation:
-#   https://pad.p2p.legal/NextCloud#
-#   https://pad.p2p.legal/Smartphone2NextCloud#
+# LABELS (astrosystemctl + watchtower)
+#  astroport.monitor=true             Diffuse la santé au swarm
+#  com.centurylinklabs.watchtower.enable=true  Mis à jour par Watchtower
+#
+# Sous-domaines (configurés via NPM) :
+#  astroport.${ASTRO_DOMAIN}  → astroport:12345   (carte station)
+#  ipfs.${ASTRO_DOMAIN}       → astroport:8080    (gateway IPFS)
+#  relay.${ASTRO_DOMAIN}      → astroport:7777    (WebSocket NOSTR)
+#  u.${ASTRO_DOMAIN}          → astroport:54321   (UPassport API)
+#  cloud.${ASTRO_DOMAIN}      → nextcloud:8001    (NextCloud AIO)
+#  ai.${ASTRO_DOMAIN}         → open-webui:8080   (Chat IA membres)
 ########################################################################
 
 services:
 
-  ##############################################################
-  ## ASTROPORT — Web3 Station (IPFS + NOSTR + G1)
-  ##############################################################
+  ####################################################################
+  ## CORE — Démarré dans tous les profils
+  ####################################################################
+
   astroport:
     build:
       context: ./astroport
@@ -49,6 +63,9 @@ services:
     image: ${DOCKER_REPOSITORY:-localhost}/astroport:${DOCKER_IMAGE_TAG:-latest}
     restart: unless-stopped
     tty: true
+    labels:
+      astroport.monitor: "true"
+      com.centurylinklabs.watchtower.enable: "true"
     environment:
       - ASTRO_DOMAIN=${ASTRO_DOMAIN:-copylaradio.com}
       - CAPTAIN_EMAIL=${CAPTAIN_EMAIL:-}
@@ -58,26 +75,26 @@ services:
       - NCARD=${NCARD:-1}
       - ZCARD=${ZCARD:-4}
     ports:
-      ## Network-accessible (P2P)
-      - "4001:4001"                 # IPFS Swarm (P2P)
-      ## Local only — proxied by NPM (astroport/ipfs/relay/u .DOMAIN)
-      - "12345:12345"               # Station Map (swarm UPSYNC discovery)
-      - "127.0.0.1:1234:1234"      # Twist API (deprecated)
-      - "127.0.0.1:33101:33101"    # G1Billet
-      - "127.0.0.1:54321:54321"    # UPassport
-      - "127.0.0.1:7777:7777"      # NOSTR Relay
-      - "127.0.0.1:8080:8080"      # IPFS Gateway
-      - "127.0.0.1:5001:5001"      # IPFS API (admin, never expose)
-      - "127.0.0.1:45780:45780"    # Dynamic API port
-      - "127.0.0.1:45781:45781"    # Dynamic API port
-      - "127.0.0.1:45782:45782"    # Dynamic API port
+      ## P2P — accessible réseau
+      - "4001:4001"                  # IPFS Swarm (P2P)
+      ## Local uniquement — proxié par NPM
+      - "12345:12345"                # Station Map (swarm UPSYNC discovery)
+      - "127.0.0.1:1234:1234"       # Twist API (deprecated)
+      - "127.0.0.1:33101:33101"     # G1Billet
+      - "127.0.0.1:54321:54321"     # UPassport FastAPI
+      - "127.0.0.1:7777:7777"       # NOSTR Relay (strfry)
+      - "127.0.0.1:8080:8080"       # IPFS Gateway
+      - "127.0.0.1:5001:5001"       # IPFS API  (admin — ne jamais exposer)
+      - "127.0.0.1:45780:45780"     # Port API dynamique
+      - "127.0.0.1:45781:45781"     # Port API dynamique
+      - "127.0.0.1:45782:45782"     # Port API dynamique
     volumes:
       - astro_game:/home/zen/.zen/game
       - astro_tmp:/home/zen/.zen/tmp
       - astro_ipfs:/home/zen/.ipfs
       - astro_workspace:/home/zen/.zen/workspace
     networks:
-      - astronet
+      - dragon-net
     security_opt:
       - no-new-privileges:true
     tmpfs:
@@ -88,22 +105,22 @@ services:
       timeout: 10s
       retries: 3
 
-  ##############################################################
-  ## NGINX PROXY MANAGER — SSL reverse proxy
-  ##############################################################
   npm:
     image: jc21/nginx-proxy-manager:latest
     container_name: ${COMPOSE_PROJECT_NAME:-astroport}-npm
     restart: unless-stopped
+    labels:
+      astroport.monitor: "true"
+      com.centurylinklabs.watchtower.enable: "true"
     ports:
-      - "80:80"                     # HTTP (public)
-      - "443:443"                   # HTTPS (public)
-      - "127.0.0.1:81:81"          # Admin UI (local only)
+      - "80:80"                      # HTTP  (public — Let's Encrypt challenge)
+      - "443:443"                    # HTTPS (public)
+      - "127.0.0.1:81:81"           # Interface admin NPM (local uniquement)
     volumes:
       - npm_data:/data
       - npm_letsencrypt:/etc/letsencrypt
     networks:
-      - astronet
+      - dragon-net
     depends_on:
       - astroport
     security_opt:
@@ -114,23 +131,25 @@ services:
       timeout: 5s
       retries: 3
 
-  ##############################################################
-  ## NEXTCLOUD AIO — Cloud storage for ZenCard holders
-  ## Activate with: docker compose --profile full up -d
-  ## Setup: https://pad.p2p.legal/NextCloud#
-  ## Mobile: https://pad.p2p.legal/Smartphone2NextCloud#
-  ##############################################################
+  ####################################################################
+  ## CLOUD — NextCloud AIO (cloud privé 128Go pour ZenCard holders)
+  ## docker compose --profile cloud up -d
+  ## Setup : https://pad.p2p.legal/NextCloud#
+  ####################################################################
+
   nextcloud:
     image: nextcloud/all-in-one:latest
     container_name: nextcloud-aio-mastercontainer
     restart: always
     init: true
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
     ports:
-      - "127.0.0.1:8002:8080"      # AIO admin interface (local only)
-      - "127.0.0.1:8443:8443"      # AIO HTTPS admin (local only)
+      - "127.0.0.1:8002:8080"       # Interface admin AIO      (local)
+      - "127.0.0.1:8443:8443"       # Interface admin AIO HTTPS (local)
     environment:
       - SKIP_DOMAIN_VALIDATION=true
-      - APACHE_PORT=8001
+      - APACHE_PORT=8001             # Port Apache interne (exposé via NPM → cloud.DOMAIN)
       - APACHE_IP_BINDING=0.0.0.0
       - NEXTCLOUD_DATADIR=/nextcloud-data
     volumes:
@@ -140,30 +159,177 @@ services:
       - 1.1.1.1
       - 8.8.8.8
     networks:
-      - astronet
-    profiles:
-      - full              # Optional: only with --profile full
+      - dragon-net
+    profiles: [cloud, full]
 
-##############################################################
-## NETWORKS
-##############################################################
+  ####################################################################
+  ## AI — Stack IA Swarm (Open WebUI + Mirofish + Qdrant + Vane)
+  ## docker compose --profile ai up -d
+  ## Prérequis : Ollama sur l'hôte (:11434)
+  ## Secrets   : générés par install/install-ai-company.docker.sh
+  ####################################################################
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: astroport-webui
+    restart: unless-stopped
+    labels:
+      astroport.monitor: "true"
+      com.centurylinklabs.watchtower.enable: "true"
+    ports:
+      - "127.0.0.1:8000:8080"       # Chat UI membres (proxié → ai.DOMAIN)
+    environment:
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-changeme-run-install-ai-company}
+      - ENABLE_RAG_LOCAL_WEB_FETCH=True
+      - ENABLE_RAG_WEB_SEARCH=True
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - webui_data:/app/backend/data
+    networks:
+      - dragon-net
+    profiles: [ai, full]
+
+  mirofish:
+    image: ghcr.io/666ghj/mirofish:latest
+    container_name: astroport-mirofish
+    restart: unless-stopped
+    labels:
+      astroport.monitor: "true"
+    ports:
+      - "127.0.0.1:5050:5000"       # Simulation d'opinion (Mem0 + NOSTR)
+    environment:
+      - LLM_BASE_URL=http://host.docker.internal:11434/v1
+      - LLM_API_KEY=ollama
+      - LLM_MODEL_NAME=${MIROFISH_MODEL:-gemma3:12b}
+      - MEM0_VECTOR_STORE=qdrant
+      - MEM0_QDRANT_URL=http://qdrant:6333
+      - MEM0_QDRANT_API_KEY=${QDRANT_API_KEY:-changeme-run-install-ai-company}
+      - MEM0_COLLECTION=mirofish-agents
+      - MEM0_EMBEDDING_MODEL=nomic-embed-text
+      - MEM0_EMBEDDING_BASE_URL=http://host.docker.internal:11434
+      - NOSTR_RELAY=ws://astroport:7777  # dragon-net : résolution par nom de conteneur
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - qdrant
+    volumes:
+      - mirofish_data:/app/data
+    networks:
+      - dragon-net
+    profiles: [ai, full]
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: astroport-qdrant
+    restart: unless-stopped
+    labels:
+      astroport.monitor: "true"
+      com.centurylinklabs.watchtower.enable: "true"
+    ports:
+      - "127.0.0.1:6333:6333"       # API base vectorielle
+    environment:
+      - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY:-changeme-run-install-ai-company}
+      - QDRANT__SERVICE__ENABLE_CORS=true
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    networks:
+      - dragon-net
+    profiles: [ai, full]
+
+  vane:
+    image: ghcr.io/itzcrazzykns/vane:main
+    container_name: astroport-vane
+    restart: unless-stopped
+    labels:
+      astroport.monitor: "true"
+    ports:
+      - "127.0.0.1:3002:3001"       # Recherche IA augmentée (ex-Perplexica)
+    environment:
+      - OLLAMA_API_URL=http://host.docker.internal:11434/api
+      - SIMILARITY_MEASURE=cosine
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - vane_data:/home/perplexica/data
+    networks:
+      - dragon-net
+    profiles: [ai, full]
+
+  ####################################################################
+  ## DEV — rnostr  (relay NOSTR Rust — migration depuis strfry)
+  ## docker compose --profile dev up -d
+  ## Port hôte 8888 (interne 7777) pour co-exister avec strfry:7777
+  ## Metrics Prometheus : 127.0.0.1:9999
+  ####################################################################
+
+  rnostr:
+    image: ghcr.io/rnostr/rnostr:latest
+    container_name: astroport-rnostr
+    restart: unless-stopped
+    labels:
+      astroport.monitor: "true"
+    ports:
+      - "127.0.0.1:8888:7777"       # Relay NOSTR dev (hôte:8888 → conteneur:7777)
+      - "127.0.0.1:9999:9090"       # Métriques Prometheus (dev)
+    volumes:
+      - rnostr_data:/app/data
+    networks:
+      - dragon-net
+    profiles: [dev]
+
+  ####################################################################
+  ## UPDATES — Watchtower (auto-update conteneurs labelisés)
+  ## docker compose --profile updates up -d
+  ## Ne met à jour que les conteneurs avec :
+  ##   com.centurylinklabs.watchtower.enable=true
+  ####################################################################
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: astroport-watchtower
+    restart: unless-stopped
+    environment:
+      - WATCHTOWER_CLEANUP=true              # Supprime les anciennes images
+      - WATCHTOWER_INCLUDE_STOPPED=false     # Ignore les conteneurs arrêtés
+      - WATCHTOWER_SCHEDULE=0 0 4 * * *      # Tous les jours à 04h00
+      - WATCHTOWER_LABEL_ENABLE=true         # Filtre par label watchtower.enable
+      - WATCHTOWER_NOTIFICATIONS_LEVEL=warn
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - dragon-net
+    profiles: [updates, full]
+
+####################################################################
+## RÉSEAU — dragon-net  (pont unique, tous services accessibles par nom)
+####################################################################
 networks:
-  astronet:
+  dragon-net:
+    name: dragon-net
     driver: bridge
-    internal: false             # NPM needs external access (Let's Encrypt, HTTP)
+    internal: false                  # NPM doit accéder à Internet (Let's Encrypt)
 
-##############################################################
-## VOLUMES (persistent data)
-##############################################################
+####################################################################
+## VOLUMES (données persistantes)
+####################################################################
 volumes:
-  # Astroport
-  astro_game:           # Captain account, player keys, NOSTR identities
-  astro_tmp:            # Cache, swarm, logs
-  astro_ipfs:           # IPFS node identity + datastore
-  astro_workspace:      # UPlanet workspace
+  # Astroport core
+  astro_game:                        # Compte capitaine, clés joueurs, identités NOSTR
+  astro_tmp:                         # Cache, swarm, logs
+  astro_ipfs:                        # Identité nœud IPFS + datastore
+  astro_workspace:                   # Workspace UPlanet
   # Nginx Proxy Manager
-  npm_data:             # NPM configuration
-  npm_letsencrypt:      # SSL certificates
+  npm_data:                          # Configuration NPM
+  npm_letsencrypt:                   # Certificats SSL
   # NextCloud
   nextcloud_aio_config:
     name: nextcloud_aio_mastercontainer
+  # AI Company
+  webui_data:                        # Open WebUI — sessions, modèles RAG
+  mirofish_data:                     # Mirofish — données agents Mem0
+  qdrant_storage:                    # Qdrant — vecteurs souverains
+  vane_data:                         # Vane — cache recherche
+  # Dev
+  rnostr_data:                       # rnostr — LMDB events store
