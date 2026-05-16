@@ -127,6 +127,49 @@ trap 'wait; rm -f "$PID_FILE"; _log "Daemon DM arrêté"; [[ "$_BRO_CLEAN_STOP" 
 
 _log "🚀 Daemon DM NODE démarré (PID $$, max ${_BRO_MAX_JOBS} jobs) — queue: $QUEUE_DIR"
 
+## ── Canal "#badge" : génération d'image de badge skill via ComfyUI ────────
+## Syntaxe DM : "#badge <skill>"  ex: "#badge docker"
+## Appelle generate_image.sh avec un prompt adapté, retourne l'URL IPFS.
+_handle_badge() {
+    local sender="$1" skill="$2"
+    [[ -z "$skill" ]] && {
+        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+            "⚠️ Usage : #badge <compétence>  ex: #badge docker" \
+            "${_RELAYS[0]}" 2>/dev/null
+        return
+    }
+    _log "🎨 #badge demande de ${sender:0:12}... pour skill: $skill"
+
+    local GENERATE_IMG="$MY_PATH/generate_image.sh"
+    if [[ ! -x "$GENERATE_IMG" ]]; then
+        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+            "⚠️ Le générateur d'images (ComfyUI) n'est pas disponible sur cette station." \
+            "${_RELAYS[0]}" 2>/dev/null
+        return
+    fi
+
+    # Informer l'utilisateur que la génération est en cours
+    python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+        "🎨 Génération du badge '${skill}'… Cela peut prendre 30-60 secondes (ComfyUI)." \
+        "${_RELAYS[0]}" 2>/dev/null
+
+    local prompt="A pixel art badge icon for the '${skill}' skill, hexagonal shape, vibrant colors, dark background, technology emblem, professional logo, 8-bit style, clean design, WoTx2 skill badge"
+    local ipfs_url
+    ipfs_url=$(bash "$GENERATE_IMG" "$prompt" 2>/dev/null)
+
+    if [[ -n "$ipfs_url" ]] && echo "$ipfs_url" | grep -q "ipfs"; then
+        _log "🎨 #badge OK pour $skill : $ipfs_url"
+        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+            "✅ Badge '${skill}' généré !\n🖼️ ${ipfs_url}\n\nCopiez ce lien pour l'ajouter comme ressource dans l'onglet Formation de my_wotx2.html" \
+            "${_RELAYS[0]}" 2>/dev/null
+    else
+        _log "WARN: #badge échec génération pour $skill"
+        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+            "❌ Échec de la génération pour '${skill}'. Vérifiez que ComfyUI est démarré (port 8188)." \
+            "${_RELAYS[0]}" 2>/dev/null
+    fi
+}
+
 ## ── Canal "plain" : question BRO → réponse IA ────────────────────────
 ## slots : liste CSV de slots mémoire à inclure ("0" = tous, "1,5" = slots 1 et 5)
 _handle_bro() {
@@ -392,6 +435,9 @@ Envoyez-moi vos questions en DM — je rechercherai dans la base de connaissance
 📖 #mem                   → voir toutes vos mémoires
    #mem #2                → voir le contenu du slot 2
 
+🎨 #badge <skill>          → générer une image de badge skill (ComfyUI)
+   ex: #badge docker      → badge IA pour la compétence docker
+
 🗑️ #reset                  → effacer toutes vos mémoires
    #reset #2              → effacer uniquement le slot 2
 
@@ -488,6 +534,12 @@ _process_event() {
             ## Router selon la commande DM
             if echo "$question" | grep -qi '#reset'; then
                 _handle_reset "$sender" "$slot"
+
+            elif echo "$question" | grep -qi '#badge'; then
+                ## #badge <skill> → génère un badge image via ComfyUI
+                local badge_skill
+                badge_skill=$(echo "$question" | sed 's/.*#badge[[:space:]]*//' | tr -cd 'a-z0-9_-' | head -c 40)
+                _handle_badge "$sender" "$badge_skill"
 
             elif echo "$question" | grep -qi '#mem'; then
                 _handle_mem "$sender" "$slot"

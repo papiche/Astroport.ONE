@@ -808,6 +808,11 @@ fi
 echo
 . ~/.bashrc
 ##########################################################
+# Bootstrap WoTx2 — Compétences Capitaine Astroport
+# Propose au capitaine de déclarer ses compétences techniques initiales
+[[ -f ~/.zen/Astroport.ONE/tools/oracle_init_captain_wotx2.sh ]] && \
+    ~/.zen/Astroport.ONE/tools/oracle_init_captain_wotx2.sh
+##########################################################
 ~/.zen/Astroport.ONE/RUNTIME/DRAGON_p2p_ssh.sh ON
 
 else

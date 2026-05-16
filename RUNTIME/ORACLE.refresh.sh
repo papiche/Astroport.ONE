@@ -515,53 +515,85 @@ else
                         
                         # Check if this is a WoTx2 auto-proclaimed maîtrise (PERMIT_*_XN)
                         if [[ "$permit_id" =~ ^PERMIT_.*_X([0-9]+)$ ]]; then
-                            # WoTx2: Attester must have credential for this permit OR a higher level
                             current_level="${BASH_REMATCH[1]}"
-                            
-                            # Check if attester has a credential for this permit or higher level
+                            # Base skill name (ex: PERMIT_LINUX_X1 → LINUX), skill tag (ex: linux)
+                            permit_base=$(echo "$permit_id" | sed 's/^PERMIT_//' | sed 's/_X[0-9]*$//')
+                            skill_tag=$(echo "$permit_base" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
+
+                            # WoTx2: vérification agnostique sur la clé signataire
+                            # Accepte : Oracle VC (l tag), TrocZen P2P auto-signé (d tag), folksonomie (t tag)
                             if [[ -n "$all_credentials_json" ]] && [[ "$all_credentials_json" != "[]" ]]; then
-                                # Check credentials for this permit (same or higher level)
-                                for level in $(seq "$current_level" 200); do
-                                    check_permit_id=$(echo "$permit_id" | sed "s/_X${current_level}$/_X${level}/")
-                                    
-                                    # Check if attester has credential for this permit_id
-                                    # Check tags (permit_id, l with permit_type) and content JSON (credentialSubject.license)
-                                    has_cred=$(echo "$all_credentials_json" | jq -r --arg permit "$check_permit_id" --arg attester "$attester_hex" '[.[] | select((.tags[]?[0]=="permit_id" and .tags[]?[1]==$permit) or (.tags[]?[0]=="l" and .tags[]?[1]==$permit and .tags[]?[2]=="permit_type") or (try (.content | fromjson | .credentialSubject.license) == $permit)) | select(.pubkey==$attester or (.tags[]?[0]=="p" and .tags[]?[1]==$attester))] | length' 2>/dev/null || echo "0")
-                                    
-                                    if [[ "$has_cred" -gt 0 ]]; then
-                                        attester_has_valid_credential=true
-                                        echo "  [VALID] Attester ${attester_hex:0:16}... has credential for ${check_permit_id} (level X${level})"
-                                        break
-                                    fi
-                                done
+                                has_cred=$(echo "$all_credentials_json" | jq -r \
+                                    --arg permit_base "$permit_base" \
+                                    --arg min_level "$current_level" \
+                                    --arg attester "$attester_hex" \
+                                    --arg skill_tag "$skill_tag" '
+                                    [.[] |
+                                      # Format 1 — Oracle VC : tag ["l", "PERMIT_BASE_Xn", "permit_type"]
+                                      # Le titulaire peut être dans le tag ["p"] ou dans le pubkey (oracle signe pour l holder)
+                                      (
+                                        (.tags[]? | select(.[0]=="l" and .[2]=="permit_type" and
+                                          (.[1] | startswith("PERMIT_\($permit_base)_X")) and
+                                          (.[1] | gsub(".*_X";"") | tonumber) >= ($min_level | tonumber)
+                                        )) |
+                                        (.pubkey == $attester or (.tags[]? | select(.[0]=="p" and .[1]==$attester)))
+                                      ) // empty
+                                      ,
+                                      # Format 2 — TrocZen P2P auto-signé : pubkey=attester, d tag = "PERMIT_BASE_Xn"
+                                      (
+                                        select(.pubkey == $attester) |
+                                        .tags[]? | select(.[0]=="d" and
+                                          (.[1] | startswith("PERMIT_\($permit_base)_X")) and
+                                          (.[1] | gsub(".*_X";"") | tonumber) >= ($min_level | tonumber)
+                                        )
+                                      ) // empty
+                                      ,
+                                      # Format 3 — Folksonomie libre : pubkey=attester, t=skill_tag, level>=min
+                                      (
+                                        select(.pubkey == $attester) |
+                                        select(any(.tags[]?; .[0]=="t" and .[1]==$skill_tag)) |
+                                        select(any(.tags[]?; .[0]=="level" and (.[1] | tonumber) >= ($min_level | tonumber)))
+                                      ) // empty
+                                    ] | length' 2>/dev/null || echo "0")
+
+                                if [[ "$has_cred" -gt 0 ]]; then
+                                    attester_has_valid_credential=true
+                                    echo "  [VALID] Attester ${attester_hex:0:16}... has credential for ${permit_base} (X${current_level}+, any format)"
+                                fi
                             fi
-                            
-                            # Special case for X1: If no credentials exist yet, allow the creator to attest (bootstrap)
+
+                            # Bootstrap X1 : le créateur du permit peut attester sans credential préalable
                             if [[ "$current_level" == "1" ]] && [[ "$attester_has_valid_credential" == "false" ]]; then
-                                # Check if attester is the creator of the permit (from 30500 event)
                                 permit_30500_json=$("$NOSTR_SCRIPT" --kind 30500 2>/dev/null)
-                                # Filter by IPFSNODEID only if NOT primary station
                                 if [[ "$IS_PRIMARY_STATION" == "false" ]] && [[ -n "$IPFSNODEID" ]] && [[ -n "$permit_30500_json" ]]; then
                                     permit_30500_json=$(echo "$permit_30500_json" | jq -r --arg nodeid "$IPFSNODEID" '[.[] | select(.tags[]?[0]=="ipfs_node" and .tags[]?[1]==$nodeid)]' 2>/dev/null)
                                 fi
-                                permit_30500=$(echo "$permit_30500_json" | jq -r --arg permit "$permit_id" '[.[] | select(.tags[]?[0]=="d" and .tags[]?[1]==$permit)] | .[0]' 2>/dev/null)
-                                creator_hex=$(echo "$permit_30500" | jq -r '.pubkey // empty' 2>/dev/null)
-                                
+                                creator_hex=$(echo "$permit_30500_json" | jq -r --arg permit "$permit_id" '[.[] | select(.tags[]?[0]=="d" and .tags[]?[1]==$permit)] | .[0].pubkey // empty' 2>/dev/null)
                                 if [[ "$attester_hex" == "$creator_hex" ]]; then
                                     attester_has_valid_credential=true
                                     echo "  [VALID] Attester ${attester_hex:0:16}... is the creator of ${permit_id} (bootstrap X1)"
                                 fi
                             fi
-                            
+
                             if [[ "$attester_has_valid_credential" == "false" ]]; then
-                                echo "  [INVALID] Attester ${attester_hex:0:16}... does NOT have valid credential for ${permit_id} (needs X${current_level} or higher)"
+                                echo "  [INVALID] Attester ${attester_hex:0:16}... does NOT have credential for ${permit_id} (X${current_level}+)"
                             fi
                         else
-                            # Standard permit (not WoTx2): Attester must have credential for this exact permit
+                            # Permit standard (non WoTx2) — vérification agnostique sur la clé
                             if [[ -n "$all_credentials_json" ]] && [[ "$all_credentials_json" != "[]" ]]; then
-                                # Check tags (permit_id, l with permit_type) and content JSON (credentialSubject.license)
-                                has_cred=$(echo "$all_credentials_json" | jq -r --arg permit "$permit_id" --arg attester "$attester_hex" '[.[] | select((.tags[]?[0]=="permit_id" and .tags[]?[1]==$permit) or (.tags[]?[0]=="l" and .tags[]?[1]==$permit and .tags[]?[2]=="permit_type") or (try (.content | fromjson | .credentialSubject.license) == $permit)) | select(.pubkey==$attester or (.tags[]?[0]=="p" and .tags[]?[1]==$attester))] | length' 2>/dev/null || echo "0")
-                                
+                                has_cred=$(echo "$all_credentials_json" | jq -r \
+                                    --arg permit "$permit_id" \
+                                    --arg attester "$attester_hex" '
+                                    [.[] |
+                                      # Oracle VC (l tag)
+                                      (select(any(.tags[]?; .[0]=="l" and .[1]==$permit and .[2]=="permit_type")) |
+                                        select(.pubkey==$attester or any(.tags[]?; .[0]=="p" and .[1]==$attester))) // empty
+                                      ,
+                                      # TrocZen P2P (d tag = permit_id, self-signed)
+                                      (select(.pubkey==$attester) |
+                                        select(any(.tags[]?; .[0]=="d" and .[1]==$permit))) // empty
+                                    ] | length' 2>/dev/null || echo "0")
+
                                 if [[ "$has_cred" -gt 0 ]]; then
                                     attester_has_valid_credential=true
                                     echo "  [VALID] Attester ${attester_hex:0:16}... has credential for ${permit_id}"
