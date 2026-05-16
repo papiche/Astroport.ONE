@@ -32,7 +32,7 @@ done
 MODE="commit"         # commit | staged | day | week | month
 SINCE_COMMIT="HEAD"   # référence git de base pour le diff
 SINCE_LABEL="dernier commit"
-AI_MODEL="gemma3:latest"
+AI_MODEL="gemma3:12b"
 VERBOSE=false
 
 dbg() { [[ "$VERBOSE" == "true" ]] && echo -e "\033[2m[verbose] $*\033[0m" >&2 || true; }
