@@ -490,75 +490,140 @@ calculate_societaire_amount() {
 }
 
 # Fonction pour sélectionner un MULTIPASS (depuis ~/.zen/game/nostr)
+# Tout l'affichage va sur stderr ; seul l'email choisi va sur stdout (pour email=$(select_multipass ...))
 select_multipass() {
     local label="$1"
     local nostr_dir="$HOME/.zen/game/nostr"
-    local emails=()
-    local i=1
+    local -a local_emails=()
+    local -a roaming_emails=()
 
-    echo -e "${BLUE}📋 $label disponibles :${NC}"
     for d in "$nostr_dir"/*/; do
         [[ ! -d "$d" ]] && continue
-        local email=$(basename "$d")
-        if [[ "$email" =~ @ ]]; then
-            local g1pub=$(cat "$d/G1PUBNOSTR" 2>/dev/null)
-            printf "   %2d. %-40s %s\n" "$i" "$email" "${g1pub:0:16}..."
-            emails+=("$email")
-            ((i++))
+        local em
+        em=$(basename "$d")
+        [[ ! "$em" =~ @ ]] && continue
+        if [[ -f "$d/.roaming" ]]; then
+            roaming_emails+=("$em")
+        else
+            local_emails+=("$em")
         fi
     done
-    echo "   0. ✏️  Saisir un email manuellement"
-    echo ""
-    read -p "Choisissez (0-$((${#emails[@]}))) ou tapez un email : " choice
 
-    if [[ "$choice" =~ ^[0-9]+$ ]]; then
-        if [[ "$choice" -eq 0 ]]; then
-            read -p "Email : " manual_email
-            echo "$manual_email"
-        elif [[ "$choice" -le ${#emails[@]} ]]; then
-            echo "${emails[$((choice-1))]}"
-        else
-            echo ""
-        fi
-    else
-        echo "$choice"
-    fi
+    local -a all_emails=("${local_emails[@]}" "${roaming_emails[@]}")
+    local total=${#all_emails[@]}
+    local per_page=8
+    local current_page=0
+    local total_pages=$(( (total + per_page - 1) / per_page ))
+    [[ $total_pages -eq 0 ]] && total_pages=1
+    local n_local=${#local_emails[@]}
+
+    while true; do
+        local start_idx=$((current_page * per_page))
+        local end_idx=$((start_idx + per_page))
+        [[ $end_idx -gt $total ]] && end_idx=$total
+
+        echo -e "${BLUE}📋 $label — Page $((current_page + 1))/$total_pages (${#local_emails[@]} locaux ✅, ${#roaming_emails[@]} roaming ✈️) :${NC}" >&2
+        echo "" >&2
+        for ((i=start_idx; i<end_idx; i++)); do
+            local em="${all_emails[$i]}"
+            local g1pub
+            g1pub=$(cat "$nostr_dir/$em/G1PUBNOSTR" 2>/dev/null)
+            if [[ $i -lt $n_local ]]; then
+                printf "   %2d. ✅ %-38s %s\n" "$((i+1))" "$em" "${g1pub:0:16}..." >&2
+            else
+                printf "   %2d. ✈️  %-38s %s\n" "$((i+1))" "$em" "${g1pub:0:16}..." >&2
+            fi
+        done
+        echo "" >&2
+        echo "   0. ✏️  Saisir un email manuellement" >&2
+        [[ $current_page -gt 0 ]] && echo "   p. ⬅️  Page précédente" >&2
+        [[ $current_page -lt $((total_pages - 1)) ]] && echo "   n. ➡️  Page suivante" >&2
+        echo "" >&2
+
+        read -p "Choisissez (1-$total), p/n pour naviguer, 0 pour saisir : " choice
+
+        case "$choice" in
+            p) [[ $current_page -gt 0 ]] && current_page=$((current_page - 1)) ;;
+            n) [[ $current_page -lt $((total_pages - 1)) ]] && current_page=$((current_page + 1)) ;;
+            0)
+                read -p "Email : " manual_email
+                echo "$manual_email"
+                return ;;
+            *@*)
+                echo "$choice"
+                return ;;
+            *)
+                if [[ "$choice" =~ ^[0-9]+$ ]] && [[ "$choice" -ge 1 ]] && [[ "$choice" -le $total ]]; then
+                    echo "${all_emails[$((choice-1))]}"
+                    return
+                else
+                    echo -e "${RED}❌ Choix invalide${NC}" >&2
+                fi ;;
+        esac
+    done
 }
 
 # Fonction pour sélectionner une ZEN Card (depuis ~/.zen/game/players)
+# Tout l'affichage va sur stderr ; seul l'email choisi va sur stdout
 select_zencard() {
     local label="$1"
     local players_dir="$HOME/.zen/game/players"
-    local emails=()
-    local i=1
+    local -a emails=()
 
-    echo -e "${BLUE}📋 $label disponibles :${NC}"
     for d in "$players_dir"/*/; do
         [[ ! -d "$d" ]] && continue
-        local email=$(basename "$d")
-        if [[ "$email" =~ @ ]]; then
-            local g1pub=$(cat "$d/.g1pub" 2>/dev/null || cat "$d/secret.dunikey" 2>/dev/null | grep "pub:" | cut -d ' ' -f 2)
-            printf "   %2d. %-40s %s\n" "$i" "$email" "${g1pub:0:16}..."
-            emails+=("$email")
-            ((i++))
-        fi
+        local em
+        em=$(basename "$d")
+        [[ ! "$em" =~ @ ]] && continue
+        emails+=("$em")
     done
-    echo "   0. ✏️  Saisir un email manuellement"
-    echo ""
-    read -p "Choisissez (0-$((${#emails[@]}))) ou tapez un email : " choice
 
-    if [[ "$choice" =~ ^[0-9]+$ ]]; then
-        if [[ "$choice" -eq 0 ]]; then
-            read -p "Email : " manual_email
-            echo "$manual_email"
-        elif [[ "$choice" -le ${#emails[@]} ]]; then
-            echo "${emails[$((choice-1))]}"
-        else
-            echo ""
-        fi
-    else
-        echo "$choice"
-    fi
+    local total=${#emails[@]}
+    local per_page=8
+    local current_page=0
+    local total_pages=$(( (total + per_page - 1) / per_page ))
+    [[ $total_pages -eq 0 ]] && total_pages=1
+
+    while true; do
+        local start_idx=$((current_page * per_page))
+        local end_idx=$((start_idx + per_page))
+        [[ $end_idx -gt $total ]] && end_idx=$total
+
+        echo -e "${BLUE}📋 $label — Page $((current_page + 1))/$total_pages ($total ZEN Cards) :${NC}" >&2
+        echo "" >&2
+        for ((i=start_idx; i<end_idx; i++)); do
+            local em="${emails[$i]}"
+            local g1pub
+            g1pub=$(cat "$players_dir/$em/.g1pub" 2>/dev/null)
+            printf "   %2d. ✅ %-38s %s\n" "$((i+1))" "$em" "${g1pub:0:16}..." >&2
+        done
+        echo "" >&2
+        echo "   0. ✏️  Saisir un email manuellement" >&2
+        [[ $current_page -gt 0 ]] && echo "   p. ⬅️  Page précédente" >&2
+        [[ $current_page -lt $((total_pages - 1)) ]] && echo "   n. ➡️  Page suivante" >&2
+        echo "" >&2
+
+        read -p "Choisissez (1-$total), p/n pour naviguer, 0 pour saisir : " choice
+
+        case "$choice" in
+            p) [[ $current_page -gt 0 ]] && current_page=$((current_page - 1)) ;;
+            n) [[ $current_page -lt $((total_pages - 1)) ]] && current_page=$((current_page + 1)) ;;
+            0)
+                read -p "Email : " manual_email
+                echo "$manual_email"
+                return ;;
+            *@*)
+                echo "$choice"
+                return ;;
+            *)
+                if [[ "$choice" =~ ^[0-9]+$ ]] && [[ "$choice" -ge 1 ]] && [[ "$choice" -le $total ]]; then
+                    echo "${emails[$((choice-1))]}"
+                    return
+                else
+                    echo -e "${RED}❌ Choix invalide${NC}" >&2
+                fi ;;
+        esac
+    done
 }
 
 ################################################################################
@@ -1522,6 +1587,29 @@ process_recovery() {
 
     [[ "$found_surplus" == "false" ]] && echo -e "${GREEN}✅ Aucun surplus anormal détecté.${NC}"
     return 0
+}
+
+check_relay_wallets_interactive() {
+    local missing=0
+    local -a required=(
+        "$HOME/.zen/tmp/UPLANETNAME_G1"
+        "$HOME/.zen/tmp/UPLANETG1PUB"
+        "$HOME/.zen/game/uplanet.G1.dunikey"
+        "$HOME/.zen/game/uplanet.dunikey"
+    )
+    echo -e "${BLUE}🔍 Vérification des portefeuilles relais essentiels...${NC}"
+    for f in "${required[@]}"; do
+        if [[ ! -f "$f" ]]; then
+            echo -e "${RED}❌ Manquant : $(basename "$f")${NC}"
+            ((missing++))
+        fi
+    done
+    if [[ $missing -gt 0 ]]; then
+        echo -e "${YELLOW}⚠️  $missing portefeuille(s) manquant(s) — certaines opérations échoueront.${NC}"
+        echo -e "${CYAN}💡 Lancez ZEN.COOPERATIVE.3x1-3.sh pour initialiser les portefeuilles.${NC}"
+    else
+        echo -e "${GREEN}✅ Tous les portefeuilles relais sont configurés.${NC}"
+    fi
 }
 
 show_menu() {
