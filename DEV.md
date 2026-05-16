@@ -252,6 +252,174 @@ Les nœuds UPlanet peuvent exécuter des bots programmables (ASTROBOT) pour auto
 
 ---
 
+## MineLife WoTx2 — Crafting Décentralisé de Compétences
+
+MineLife est le protocole de certification décentralisée de compétences d’UPlanet. Inspiré de Minecraft, il permet à toute communauté de créer ses propres "recettes" de compétences et de les valider collectivement, sans autorité centrale.
+
+### Kinds NOSTR utilisés
+
+| Kind | Rôle | Signataire |
+|------|------|------------|
+| `30500` | Définition de permit (recette de craft) | Tout utilisateur |
+| `30501` | Demande d’apprentissage (aspiration X1) | Apprenti |
+| `30502` | Adoubement par un pair X1+ (Règle B) | Pair certifié |
+| `30503` | Certificat de compétence | Oracle / joueur / auto |
+| `30504` | Ressource de formation (vidéo, PDF, article) | Tout contributeur |
+| `7` | Réaction de validation (3× = Règle A) | Pair certifié |
+| `4` | DM chiffré BRO (NIP-04) — assistance IA | Joueur → NODE |
+
+### Modes de validation
+
+```
+Mode Oracle   → ORACLE.refresh.sh émet Kind 30503 (signé UPLANETNAME_G1)
+Mode P2P      → Règle A : 3× Kind 7  OU  Règle B : 1× Kind 30502 (pair X1+)
+Mode Folkso   → Auto-proclamation + tag t + level (TrocZen offline)
+```
+
+### Profil MULTIPASS (Kind 0) — champ home_station
+
+```json
+{
+  "content": "{ \"home_station\": \"IPFSNODEID:NODE_HEX_64\", \"g1pub\": \"...\" }",
+  "tags": [["i", "home_station:IPFSNODEID:NODE_HEX_64", ""]]
+}
+```
+
+Le champ `home_station` est la source authoritative pour l’adresse BRO (Kind 4 DM).
+
+### Exemple : Permit composite
+
+```json
+{
+  "kind": 30500,
+  "tags": [
+    ["d", "PERMIT_DEVOPS_X1"],
+    ["t", "permit"], ["t", "composite"],
+    ["requires", "linux", "1"],
+    ["requires", "docker", "1"],
+    ["r", "/ipfs/Qm.../formation-devops.pdf", "document"]
+  ],
+  "content": "{\"name\":\"DevOps Station\",\"icon\":\"⚙️\"}"
+}
+```
+
+### BRO — Assistant IA via Kind 4
+
+```js
+// Envoyer une commande BRO
+const bro = { kind: 4, tags: [["p", NODE_HEX_64]], content: NIP04.encrypt("Aide BRO #badge linux") };
+```
+
+Commandes : question libre (RAG Ollama), `#badge <skill>` (ComfyUI → IPFS), `#rec <skill>`, `#mem <note>`.
+
+Fichiers clés : `UPlanet/earth/minelife.html`, `Astroport.ONE/IA/bro_dm_daemon.sh`, `Astroport.ONE/RUNTIME/ORACLE.refresh.sh`.
+
+---
+
+## NIP-42 Roaming — Authentification Inter-Stations
+
+Le protocole NIP-42 Roaming permet à un utilisateur MULTIPASS de s’authentifier sur n’importe quelle station de la constellation, même si son compte est hébergé sur une autre.
+
+### Flux en 9 étapes (roaming.html)
+
+1. **Détection de l’extension** : window.nostr.getPublicKey() (NIP-07)
+2. **Challenge NIP-42** : GET `/api/nip42/challenge` → challenge unique
+3. **Signature kind 22242** : `{ tags: [["relay", relayUrl], ["challenge", ch]] }`
+4. **Vérification locale** : check_authorization via relay strfry local (kind 0)
+5. **Vérification swarm** : lookup dans les stations voisines (`~/.zen/tmp/swarm/`)
+6. **Vérification amisOfAmis** : N² — amis des amis de la station courante
+7. **Récupération profil** : Kind 0 MULTIPASS avec `home_station`
+8. **Connexion uDrive** : accès au stockage IPFS personnel (upload `/api/upload`)
+9. **Réponse finale** : autorisation accordée / refusée avec raison
+
+### Script côté serveur
+
+```bash
+# NIP-101/relay.writePolicy.plugin/filter/22242.sh
+# check_authorization $NPUB $RELAY_URL
+# Retourne 0 (autorisé) ou 1 (refusé)
+# Sources de vérification : local → swarm → amisOfAmis
+```
+
+### Filtre NIP-101 par kind
+
+Le plugin `writePolicy` de strfry filtre les événements NOSTR par kind :
+
+| Script | Kind(s) | Règle |
+|--------|---------|-------|
+| `0.sh` | 0 (profil) | Seuls les MULTIPASS de la station autorisés |
+| `1.sh` | 1 (note) | Membres N² uniquement |
+| `7.sh` | 7 (réaction) | Membres N² uniquement |
+| `21.sh` / `22.sh` | 21/22 (NIP-71 vidéo) | Porteurs MULTIPASS |
+| `1984.sh` | 1984 (signalement) | Filtrage anti-spam |
+| `9735.sh` | 9735 (zap) | Vérification ZenCard |
+| `30023.sh` | 30023 (article NIP-23) | Membres N² |
+| `30500.sh` | 30500–30504 (WoTx2) | MULTIPASS station |
+
+```bash
+# Installation
+cd NIP-101
+./install.sh           # strfry + write-policy plugin
+./setup.sh             # génère strfry.conf adapté au hardware
+./start_strfry-relay.sh
+```
+
+---
+
+## Système de Feedback — AGPL-3.0 & feedback.js
+
+Toutes les applications UPlanet sont publiées sous **AGPL-3.0**. En choisissant cette licence, les développeurs s'engagent envers leurs utilisateurs : chacun peut les contacter et obtenir le code source. `feedback.js` concrétise cet engagement.
+
+`UPlanet/earth/feedback.js` fournit un système de retour utilisateur intégré à toutes les pages :
+
+- **Capture console** : intercepte `console.log/warn/error` → `sessionStorage`
+- **Badge AGPL** : auto-injecte le lien de licence + bouton "Signaler un bug"
+- **Rapport NOSTR-signé** : soumet le rapport via `POST /api/feedback` (signature NIP-07)
+- **Relay déduit** : l’URL du relay est dérivée de l’URL de la page (`u.domain` → `relay.domain`)
+- **Persistance NOSTR** : réutilise la session NOSTR existante (window.nostr / NostrState)
+
+```js
+// Intégration minimale
+<script src="/earth/feedback.js"></script>
+// → badge AGPL + bouton feedback injectés automatiquement
+
+// Ouverture manuelle
+window.openFeedbackPage();  // snapshot logs → feedback.html dans nouvel onglet
+```
+
+La page `feedback.html` affiche les logs capturés depuis la page source, propose un formulaire de description, et signe le rapport NOSTR avant envoi.
+
+---
+
+## astrosystemctl — CLI P2P Cloud
+
+`tools/astrosystemctl.sh` est le CLI de gestion des services P2P de la constellation :
+
+```bash
+astrosystemctl list             # Services locaux disponibles
+astrosystemctl list-remote      # Brain-Nodes distants (power_score ≥ 41)
+astrosystemctl connect <svc>    # Crée un tunnel IPFS P2P vers un service distant
+astrosystemctl enable <svc>     # Rend le tunnel persistant (watchdog 20h12)
+astrosystemctl disable <svc>    # Supprime le tunnel persistant
+astrosystemctl status           # État des tunnels actifs
+```
+
+### Power-Score — GPS de Calcul
+
+```
+Power-Score = GPU_VRAM_GB × 4 + CPU_cores × 2 + RAM_GB × 0.5
+```
+
+| Score | Tier | Profil | Rôle |
+|-------|------|--------|------|
+| 0–10 | 🌿 Light | Raspberry Pi Zero/3 | Consommateur uniquement |
+| 11–40 | ⚡ Standard | PC bureautique | Petits modèles locaux |
+| 41+ | 🔥 Brain | GPU dédié | Fournisseur swarm |
+
+Le Power-Score est publié dans `12345.json` (`capacities.power_score`) et utilisé par `astrosystemctl list-remote` pour identifier les Brain-Nodes disponibles dans `~/.zen/tmp/swarm/*/12345.json`.
+
+---
+
 ## Monétisation et Zen Card
 
 - **Ẑen Card :** Chaque utilisateur dispose d’un portefeuille pour le stablecoin Ẑen, émis par la « banque centrale » UPlanet.
