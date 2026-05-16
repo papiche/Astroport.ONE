@@ -4,7 +4,7 @@
 #
 # Surveille ~/.zen/tmp/bro_dm_queue/ via inotifywait.
 # Chaque nouveau fichier JSON déposé par filter/4.sh (strfry writePolicy)
-# est déchiffré (NIP-04) puis routé selon le canal :
+# est déchiffré (NIP-44 avec fallback NIP-04) puis routé selon le canal :
 #
 #   channel "plain"  → question BRO : interroge la KB Nextcloud
 #                       (RAG Qdrant + Ollama via nextcloud_bro_sync.sh)
@@ -13,6 +13,9 @@
 #   channel "udrive" → sync uDRIVE : récupère le CID IPFS et place
 #                       le fichier dans APP/uDRIVE du joueur concerné
 #                       (même logique que le listener poll de NOSTRCARD.refresh.sh).
+#
+# Les events sont traités en parallèle (max _BRO_MAX_JOBS jobs simultanés)
+# via un sémaphore à slots PID — évite la saturation Ollama/GPU.
 #
 # Lancé automatiquement par NOSTRCARD.refresh.sh si absent.
 # Usage : bro_dm_daemon.sh [--stop]
@@ -31,6 +34,11 @@ MAILJET="$MY_PATH/../tools/mailjet.sh"
 
 mkdir -p "$QUEUE_DIR"
 mkdir -p "$HOME/.zen/flashmem"
+
+## ── Sémaphore : limiter les jobs parallèles (évite la saturation Ollama/GPU) ─
+_BRO_MAX_JOBS=3
+_BRO_SLOTS_DIR="$HOME/.zen/tmp/bro_dm_slots"
+mkdir -p "$_BRO_SLOTS_DIR"
 
 _log() { echo "[$(date '+%H:%M:%S')] $*" | tee -a "$LOG_FILE"; }
 
@@ -111,11 +119,13 @@ _RELAYS=("wss://relay.copylaradio.com")
 
 ## ── PID guard ────────────────────────────────────────────────────────
 echo $$ > "$PID_FILE"
+## Nettoyer les slots de l'instance précédente (PID mort)
+rm -f "$_BRO_SLOTS_DIR"/slot*.pid 2>/dev/null
 _BRO_CLEAN_STOP=false
 trap '_BRO_CLEAN_STOP=true' INT TERM
-trap 'rm -f "$PID_FILE"; _log "Daemon DM arrêté"; [[ "$_BRO_CLEAN_STOP" == false ]] && _alert_captain "Le daemon bro_dm_daemon.sh sest arrêté de façon inattendue (PID $$)."' EXIT
+trap 'wait; rm -f "$PID_FILE"; _log "Daemon DM arrêté"; [[ "$_BRO_CLEAN_STOP" == false ]] && _alert_captain "Le daemon bro_dm_daemon.sh sest arrêté de façon inattendue (PID $$)."' EXIT
 
-_log "🚀 Daemon DM NODE démarré (PID $$) — queue: $QUEUE_DIR"
+_log "🚀 Daemon DM NODE démarré (PID $$, max ${_BRO_MAX_JOBS} jobs) — queue: $QUEUE_DIR"
 
 ## ── Canal "plain" : question BRO → réponse IA ────────────────────────
 ## slots : liste CSV de slots mémoire à inclure ("0" = tous, "1,5" = slots 1 et 5)
@@ -411,6 +421,31 @@ Ma clé de contact : ${NODE_NPUB:-NODE}
     done
 }
 
+## ── Traitement asynchrone avec sémaphore à slots ────────────────────
+## Acquiert un slot libre (bloquant), traite l'event, libère le slot.
+## Usage : _process_event_async <fichier> &
+_process_event_async() {
+    local fname="$1"
+    local _my_pid=$BASHPID _slot _sfile _pid
+    while true; do
+        for _slot in $(seq 1 "$_BRO_MAX_JOBS"); do
+            _sfile="$_BRO_SLOTS_DIR/slot${_slot}.pid"
+            ## Création atomique via noclobber
+            if (set -C; echo "$_my_pid" > "$_sfile") 2>/dev/null; then
+                _process_event "$fname"
+                rm -f "$_sfile"
+                return
+            fi
+            ## Récupérer le slot si le process propriétaire est mort
+            _pid=$(cat "$_sfile" 2>/dev/null)
+            if [[ -n "$_pid" ]] && ! kill -0 "$_pid" 2>/dev/null; then
+                rm -f "$_sfile"
+            fi
+        done
+        sleep 0.5
+    done
+}
+
 ## ── Traitement d'un event JSON ───────────────────────────────────────
 _process_event() {
     local event_file="$1"
@@ -484,17 +519,21 @@ _process_event() {
     esac
 }
 
-## ── Traiter les fichiers déjà présents dans la queue ─────────────────
+## ── Traiter les fichiers déjà présents dans la queue (parallèle) ─────
 for _f in "$QUEUE_DIR"/*.json; do
-    [[ -f "$_f" ]] && _process_event "$_f"
+    [[ -f "$_f" ]] && _process_event_async "$_f" &
 done
 
 ## ── Présentation du NODE aux MULTIPASS locaux (une seule fois chacun) ─
 _send_welcome_messages
 
+## Attendre la fin des traitements initiaux avant la boucle inotifywait
+wait
+
 ## ── Boucle inotifywait ───────────────────────────────────────────────
 inotifywait -m -e close_write -e moved_to --format '%f' "$QUEUE_DIR" 2>/dev/null | \
 while IFS= read -r _fname; do
     [[ "$_fname" == *.json ]] || continue
-    _process_event "$QUEUE_DIR/$_fname"
+    _process_event_async "$QUEUE_DIR/$_fname" &
 done
+wait

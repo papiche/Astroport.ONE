@@ -1,11 +1,14 @@
 #!/bin/env python
-"""Canal de communication inter-NODE via DMs NIP-04 (kind 4).
+"""Canal de communication inter-NODE via DMs NIP-44 (kind 4).
 
 Chaque message porte un champ `channel` qui identifie le sous-protocole,
 permettant à un NODE de router les messages sans ambiguïté :
 
   udrive   — sync de fichier uDRIVE depuis une station visiteur
   (extensible : "did_update", "zen_payment", "alert", …)
+
+Chiffrement : NIP-44 (ChaCha20-Poly1305 + HKDF-SHA256) pour l'envoi.
+Déchiffrement : NIP-44 avec fallback NIP-04 pour la rétrocompatibilité.
 
 Usage:
   # Envoyer (station B → station A) :
@@ -35,8 +38,82 @@ import argparse
 import ssl
 import threading
 import time
+import base64
+import os
 
 from pynostr.key import PrivateKey
+
+
+# ── NIP-44 crypto (ChaCha20-Poly1305 + HKDF) ─────────────────────────────────
+
+def _hex_to_uncompressed_pubkey(pubkey_hex: str) -> bytes:
+    """Convertit une pubkey hex 32 octets en SEC1 non compressé (0x04 + X + Y)."""
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.hazmat.backends import default_backend
+    if len(pubkey_hex) != 64:
+        raise ValueError("Longueur pubkey invalide")
+    x = int(pubkey_hex, 16)
+    p = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
+    y_sq = (pow(x, 3, p) + 7) % p
+    y = pow(y_sq, (p + 1) // 4, p)
+    if y % 2 != 0:
+        y = p - y
+    return b'\x04' + x.to_bytes(32, 'big') + y.to_bytes(32, 'big')
+
+
+def _derive_shared_secret(priv_hex: str, pub_hex: str) -> bytes:
+    """ECDH secp256k1 → secret partagé brut."""
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.hazmat.backends import default_backend
+    priv_obj = ec.derive_private_key(int(priv_hex, 16), ec.SECP256K1(), default_backend())
+    pub_bytes = _hex_to_uncompressed_pubkey(pub_hex)
+    pub_obj = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256K1(), pub_bytes)
+    return priv_obj.exchange(ec.ECDH(), pub_obj)
+
+
+def _nip44_key(shared_secret: bytes) -> bytes:
+    """Dérive la clé de chiffrement NIP-44 via HKDF-SHA256."""
+    from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.backends import default_backend
+    return HKDF(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=b"nostr-nip44-v1",
+        info=b"nostr-encryption",
+        backend=default_backend(),
+    ).derive(shared_secret)
+
+
+def _nip44_encrypt(plaintext: str, sender_priv_hex: str, recipient_pub_hex: str) -> str:
+    """Chiffre plaintext avec NIP-44. Retourne base64(nonce[12] || ciphertext)."""
+    from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
+    key = _nip44_key(_derive_shared_secret(sender_priv_hex, recipient_pub_hex))
+    nonce = os.urandom(12)
+    cipher = ChaCha20Poly1305(key)
+    ct = cipher.encrypt(nonce, plaintext.encode('utf-8'), None)
+    return base64.b64encode(nonce + ct).decode('utf-8')
+
+
+def _nip44_decrypt(ciphertext_b64: str, recipient_priv_hex: str, sender_pub_hex: str) -> str:
+    """Déchiffre un message NIP-44. Lève une exception si le format est invalide."""
+    from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
+    key = _nip44_key(_derive_shared_secret(recipient_priv_hex, sender_pub_hex))
+    data = base64.b64decode(ciphertext_b64)
+    if len(data) < 13:
+        raise ValueError("Contenu NIP-44 trop court")
+    nonce, ct = data[:12], data[12:]
+    cipher = ChaCha20Poly1305(key)
+    return cipher.decrypt(nonce, ct, None).decode('utf-8')
+
+
+def _decrypt_content(content: str, recipient_priv_key: PrivateKey, sender_pub_hex: str) -> str:
+    """Tente NIP-44 puis retombe sur NIP-04 si nécessaire."""
+    try:
+        return _nip44_decrypt(content, recipient_priv_key.hex(), sender_pub_hex)
+    except Exception:
+        pass
+    return recipient_priv_key.decrypt_message(content, sender_pub_hex)
 
 
 # ── WebSocket helper ──────────────────────────────────────────────────────────
@@ -95,7 +172,10 @@ def cmd_send(args):
         "channel": args.channel,
         "payload": payload_data,
     }
-    encrypted = private_key.encrypt_message(json.dumps(envelope), args.to)
+    try:
+        encrypted = _nip44_encrypt(json.dumps(envelope), private_key.hex(), args.to)
+    except Exception:
+        encrypted = private_key.encrypt_message(json.dumps(envelope), args.to)
 
     from pynostr.event import Event
     ev = Event(
@@ -173,7 +253,7 @@ def cmd_receive(args):
         seen_ids.add(eid)
         sender_hex = ev.get("pubkey", "")
         try:
-            decrypted = private_key.decrypt_message(ev["content"], sender_hex)
+            decrypted = _decrypt_content(ev["content"], private_key, sender_hex)
             try:
                 envelope = json.loads(decrypted)
             except (json.JSONDecodeError, ValueError):
@@ -227,7 +307,7 @@ def cmd_decrypt(args):
         if "event" in ev:
             ev = ev["event"]
         sender_hex = ev.get("pubkey", "")
-        decrypted = private_key.decrypt_message(ev["content"], sender_hex)
+        decrypted = _decrypt_content(ev["content"], private_key, sender_hex)
         try:
             envelope = json.loads(decrypted)
         except (json.JSONDecodeError, ValueError):
@@ -244,7 +324,7 @@ def cmd_decrypt(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Canal de communication inter-NODE via DMs NOSTR NIP-04",
+        description="Canal de communication inter-NODE via DMs NOSTR NIP-44 (fallback NIP-04)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
