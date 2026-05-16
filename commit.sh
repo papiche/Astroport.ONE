@@ -4,6 +4,11 @@
 
 set -euo pipefail
 
+MY_PATH="`dirname \"$0\"`"
+MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
+ME="${0##*/}"
+[[ ! -s ~/.local/bin/${ME} ]] && cp "${MY_PATH}/${ME}" ~/.local/bin/ && echo "Auto Install into ~/.local/bin/${ME}"
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -11,8 +16,17 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-QUESTION_PY="$SCRIPT_DIR/IA/question.py"
+# Recherche question.py : repo courant, install standard ~/.zen, répertoire du script
+QUESTION_PY=""
+for _candidate in \
+    "$HOME/.zen/Astroport.ONE/IA/question.py" \
+    "${MY_PATH}/IA/question.py" \
+    "$(dirname "${MY_PATH}")/IA/question.py"; do
+    if [[ -f "$_candidate" ]]; then
+        QUESTION_PY="$_candidate"
+        break
+    fi
+done
 
 # ── Paramètres par défaut ─────────────────────────────────────────────────────
 MODE="commit"         # commit | staged | day | week | month
