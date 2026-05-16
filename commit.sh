@@ -242,7 +242,7 @@ $DIFF_CONTENT
 
 **Format de réponse attendu (respecte exactement ce format) :**
 
-## Message de commit
+# \`<titre du commit>\`
 \`<message court>\`
 
 ## Tâches réalisées
