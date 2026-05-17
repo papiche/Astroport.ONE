@@ -68,10 +68,12 @@ _alert_captain() {
 <hr><p style="color:#888;font-size:0.85em;">Alerte valide 24h — une seule par fenêtre.</p>
 EOF
     touch "$_ALERT_LOCK"
-    bash "$MAILJET" --template $0 --expire 48h \
-        "$CAPTAINEMAIL" "$_tmp" "🚨 BRO Daemon erreur — $(hostname)" \
-        2>/dev/null &
-    rm -f "$_tmp"
+    (
+        bash "$MAILJET" --template "$0" --expire 48h \
+            "$CAPTAINEMAIL" "$_tmp" "🚨 BRO Daemon erreur — $(hostname)" \
+            2>/dev/null
+        rm -f "$_tmp"
+    ) &
     _log "📧 Alerte Mailjet envoyée à $CAPTAINEMAIL"
 }
 

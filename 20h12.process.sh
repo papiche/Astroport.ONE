@@ -476,7 +476,7 @@ if [[ -f "${MY_PATH}/tools/power_monitor.sh" ]] && [[ -f "$POWER_24H_CSV" ]] || 
     echo "📊 Generating power consumption report (last 24h from 24/7 CSV)..."
     if "${MY_PATH}/tools/power_monitor.sh" report-from-24h \
             "$POWER_REPORT_HTML" \
-            "20H12 Power Consumption - Last 24h" \
+            "20H12 - $(hostname -f) - Last 24h /ipns/${IPFSNODEID:-} " \
             "$LOG_FILE" \
             "$(hostname -f)" \
             "24h" \
