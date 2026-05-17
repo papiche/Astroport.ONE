@@ -387,7 +387,7 @@ PYEOF
 _handle_vocals() {
     local payload="$1"
     _payload_get "$payload" email cid filename mime_type duration title \
-                             description waveform kind \
+                             description waveform kind file_hash info_cid \
                              reply_to_event_id reply_to_pubkey
 
     [[ -z "$_EMAIL" || -z "$_CID" || -z "$_FILENAME" ]] && \
@@ -424,6 +424,8 @@ _handle_vocals() {
     )
     [[ -n "$_DESCRIPTION" ]] && _CMD+=(--description "$_DESCRIPTION")
     [[ -n "$_WAVEFORM"    ]] && _CMD+=(--waveform    "$_WAVEFORM")
+    [[ -n "$_FILE_HASH"   ]] && _CMD+=(--file-hash   "$_FILE_HASH")
+    [[ -n "$_INFO_CID"    ]] && _CMD+=(--info-cid    "$_INFO_CID")
     if [[ "$_KIND" == "1244" && -n "$_REPLY_TO_EVENT_ID" && -n "$_REPLY_TO_PUBKEY" ]]; then
         _CMD+=(--reply-to-event-id "$_REPLY_TO_EVENT_ID" --reply-to-pubkey "$_REPLY_TO_PUBKEY")
     fi
