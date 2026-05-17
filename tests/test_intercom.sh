@@ -4,10 +4,13 @@
 #
 # Vérifie :
 #   1. Présence et imports Python de nostr_node_intercom.py
-#   2. Loopback send→decrypt (zen_like + bro_ia) avec les clés NODE locales
-#   3. Construction du payload zen_like (bc, python3, format JSON)
-#   4. Daemon bro_dm_daemon.sh : présence PID, queue directory
+#   2. Imports Python (coincurve, cryptography, websockets)
+#   3. Construction payload zen_like (bc, python3, format JSON)
+#   4. Daemon bro_dm_daemon.sh : PID, queue directory
 #   5. Cohérence filter/7.sh : _relay_zen_payment_to_home (shellcheck)
+#   6. Loopback coucou→toto + toto→coucou (comptes test déterministes, TTL=300)
+#   7. Service Ollama : accessibilité + envoi bro_ia #IA depuis coucou
+#   8. Service ComfyUI : accessibilité + envoi comfyui_job image depuis coucou
 #
 # Usage: ./tests/test_intercom.sh [--quick]
 #   --quick  : skip loopback tests requiring a live NOSTR relay
@@ -115,7 +118,12 @@ if [[ -f "$PID_FILE" ]]; then
         fail "PID file présent mais processus mort (PID $_PID)"
     fi
 else
-    skip "daemon non démarré (PID file absent)"
+    _PID=$(pgrep -f "bro_dm_daemon.sh" | head -1)
+    if [[ -n "$_PID" ]]; then
+        ok "daemon actif via pgrep (PID $_PID, PID file en cours d'écriture)"
+    else
+        fail "daemon non démarré (PID file absent, processus introuvable)"
+    fi
 fi
 
 ## Vérifier les canaux dans le case statement
@@ -157,14 +165,32 @@ else
 fi
 
 ## ─────────────────────────────────────────────────────────────────────────────
-section "6. Loopback send→decrypt (nécessite relay + secret.nostr)"
+section "6. Loopback coucou→toto (comptes test déterministes, TTL=300)"
 ## ─────────────────────────────────────────────────────────────────────────────
 
 _RELAY_URL="${myRELAY:-wss://relay.copylaradio.com}"
 _RELAY_HOST=$(echo "$_RELAY_URL" | sed 's|wss\?://||;s|/.*||;s|:.*||')
 _RELAY_PORT=$(echo "$_RELAY_URL" | grep -oP ':\K[0-9]+' || echo "443")
 
-## Vérifier accessibilité relay (timeout 3s)
+_KEYGEN="${ASTROPORT_PATH}/tools/keygen"
+_HEX_TOOL="python3 ${ASTROPORT_PATH}/tools/nostr2hex.py"
+
+## Dériver les clés test déterministes
+_COUCOU_NPUB=$("$_KEYGEN" -t nostr "coucou" "coucou" 2>/dev/null)
+_COUCOU_NSEC=$("$_KEYGEN" -t nostr -s "coucou" "coucou" 2>/dev/null)
+_COUCOU_HEX=$(python3 "${ASTROPORT_PATH}/tools/nostr2hex.py" "$_COUCOU_NPUB" 2>/dev/null)
+
+_TOTO_NPUB=$("$_KEYGEN" -t nostr "toto" "toto" 2>/dev/null)
+_TOTO_NSEC=$("$_KEYGEN" -t nostr -s "toto" "toto" 2>/dev/null)
+_TOTO_HEX=$(python3 "${ASTROPORT_PATH}/tools/nostr2hex.py" "$_TOTO_NPUB" 2>/dev/null)
+
+if [[ ${#_COUCOU_HEX} -eq 64 && ${#_TOTO_HEX} -eq 64 ]]; then
+    ok "clés test coucou (${_COUCOU_HEX:0:12}...) et toto (${_TOTO_HEX:0:12}...) dérivées"
+else
+    fail "dérivation clés test échouée (keygen/nostr2hex.py)"
+fi
+
+## Vérifier accessibilité relay
 _relay_ok=false
 if command -v nc &>/dev/null; then
     nc -z -w3 "$_RELAY_HOST" "$_RELAY_PORT" 2>/dev/null && _relay_ok=true
@@ -173,74 +199,203 @@ elif command -v curl &>/dev/null; then
 fi
 
 if $QUICK; then
-    skip "loopback (--quick)"
-elif [[ ! -s "$HOME/.zen/game/secret.nostr" ]]; then
-    skip "loopback : secret.nostr absent"
+    skip "loopback réseau (--quick)"
+elif [[ ${#_COUCOU_HEX} -ne 64 || ${#_TOTO_HEX} -ne 64 ]]; then
+    skip "loopback : clés test invalides"
 elif ! $_relay_ok; then
-    skip "loopback : relay $_RELAY_HOST inaccessible depuis cette machine"
+    skip "loopback : relay $_RELAY_HOST inaccessible"
 else
-    source "$HOME/.zen/game/secret.nostr"
-    _NODE_NSEC="${NSEC:-}"; _NODE_HEX="${HEX:-}"
-    unset NSEC NPUB HEX
+    _TMPFILE=$(mktemp /tmp/intercom_test_XXXXXX.json)
+    _SINCE=$(date +%s)
 
-    if [[ -z "$_NODE_NSEC" || -z "$_NODE_HEX" ]]; then
-        skip "loopback : NSEC/HEX absent dans secret.nostr"
-    else
-        _TMPFILE=$(mktemp /tmp/intercom_test_XXXXXX.json)
-
-        ## ── Test bro_ia loopback ─────────────────────────────────────────────
-        _PAYLOAD_BRO=$(python3 -c "
+    ## ── coucou → toto : bro_ia avec TTL=300 ─────────────────────────────────
+    _PAYLOAD_BRO=$(python3 -c "
 import json
-print(json.dumps({'pubkey':'${_NODE_HEX}','event_id':'test','lat':'0.00',
-    'lon':'0.00','message':'#BRO test intercom','url':'','kname':'test@intercom'}))
+print(json.dumps({'pubkey':'${_TOTO_HEX}','event_id':'test','lat':'0.00',
+    'lon':'0.00','message':'#BRO test intercom coucou→toto','url':'','kname':'coucou@test'}))
 " 2>/dev/null)
 
-        if python3 "$INTERCOM" send \
-                --nsec    "$_NODE_NSEC" \
-                --to      "$_NODE_HEX" \
-                --channel "bro_ia" \
-                --payload "$_PAYLOAD_BRO" \
-                --relays  "$_RELAY_URL" \
-                > "$_TMPFILE" 2>/dev/null; then
-            ok "bro_ia : send loopback OK"
-        else
-            fail "bro_ia : send loopback FAILED"
-        fi
+    if python3 "$INTERCOM" send \
+            --nsec    "$_COUCOU_NSEC" \
+            --to      "$_TOTO_HEX" \
+            --channel "bro_ia" \
+            --payload "$_PAYLOAD_BRO" \
+            --ttl     300 \
+            --relays  "$_RELAY_URL" \
+            > "$_TMPFILE" 2>/dev/null; then
+        ok "bro_ia coucou→toto : send OK (TTL=300s)"
+    else
+        fail "bro_ia coucou→toto : send FAILED"
+    fi
 
-        ## ── Test zen_like loopback ───────────────────────────────────────────
-        _PAYLOAD_ZEN=$(python3 -c "
+    ## ── toto → coucou : zen_like avec TTL=300 ────────────────────────────────
+    _PAYLOAD_ZEN=$(python3 -c "
 import json
-print(json.dumps({'email':'captain@intercom.test','sender_pubkey':'${_NODE_HEX}',
+print(json.dumps({'email':'captain@intercom.test','sender_pubkey':'${_TOTO_HEX}',
     'event_id':'test_evt','reacted_event_id':'test_reacted',
-    'reacted_author_pubkey':'${_NODE_HEX}','zen_amount':1.0,
-    'comment':'INTERCOM:TEST:LIKE:1Z:test','g1pub_dest':'FakeG1Pub',
+    'reacted_author_pubkey':'${_COUCOU_HEX}','zen_amount':1.0,
+    'comment':'INTERCOM:TEST:LIKE:1Z:coucou','g1pub_dest':'FakeG1Pub',
     'is_crowdfunding':False,'project_id':'','bien_g1pub':''}))
 " 2>/dev/null)
 
+    if python3 "$INTERCOM" send \
+            --nsec    "$_TOTO_NSEC" \
+            --to      "$_COUCOU_HEX" \
+            --channel "zen_like" \
+            --payload "$_PAYLOAD_ZEN" \
+            --ttl     300 \
+            --relays  "$_RELAY_URL" \
+            >> "$_TMPFILE" 2>/dev/null; then
+        ok "zen_like toto→coucou : send OK (TTL=300s)"
+    else
+        fail "zen_like toto→coucou : send FAILED"
+    fi
+
+    ## ── toto reçoit depuis coucou (receive + decrypt) ────────────────────────
+    _RECV=$(python3 "$INTERCOM" receive \
+            --nsec    "$_TOTO_NSEC" \
+            --channel "bro_ia" \
+            --since   "$_SINCE" \
+            --relays  "$_RELAY_URL" \
+            2>/dev/null || echo "[]")
+    _COUNT=$(echo "$_RECV" | python3 -c "import json,sys; print(len(json.load(sys.stdin)))" 2>/dev/null || echo 0)
+    if [[ "$_COUNT" -gt 0 ]]; then
+        ok "toto reçoit $_COUNT message(s) bro_ia de coucou"
+    else
+        skip "receive : aucun message (latence relay ou TTL expiré)"
+    fi
+
+    ## ── déchiffrement module ─────────────────────────────────────────────────
+    if python3 -c "
+from coincurve import PrivateKey
+from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
+import sys; sys.exit(0)
+" 2>/dev/null; then
+        ok "decrypt : modules crypto opérationnels"
+    else
+        fail "decrypt : modules crypto manquants"
+    fi
+
+    rm -f "$_TMPFILE"
+fi
+
+## ─────────────────────────────────────────────────────────────────────────────
+section "7. Service Ollama (IA) — envoi bro_ia #IA depuis coucou"
+## ─────────────────────────────────────────────────────────────────────────────
+
+_OLLAMA_OK=false
+curl -s --max-time 3 "http://localhost:11434/api/tags" -o /dev/null 2>/dev/null \
+    && _OLLAMA_OK=true
+
+if ! $_OLLAMA_OK; then
+    skip "Ollama inaccessible (localhost:11434)"
+else
+    _OLLAMA_MODELS=$(curl -s --max-time 5 "http://localhost:11434/api/tags" 2>/dev/null \
+        | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('models',[])))" 2>/dev/null || echo 0)
+    ok "Ollama accessible — $_OLLAMA_MODELS modèle(s) disponible(s)"
+
+    ## Charger NODE_HEX depuis secret.nostr
+    _NODE_HEX_OLLAMA=""
+    if [[ -s "$HOME/.zen/game/secret.nostr" ]]; then
+        source "$HOME/.zen/game/secret.nostr"
+        _NODE_HEX_OLLAMA="${HEX:-}"
+        _NODE_NSEC_OLLAMA="${NSEC:-}"
+        unset NSEC NPUB HEX
+    fi
+
+    if [[ -z "$_NODE_HEX_OLLAMA" || ${#_COUCOU_NSEC} -lt 10 ]]; then
+        skip "envoi bro_ia→NODE : secret.nostr absent ou clés coucou invalides"
+    elif ! $_relay_ok; then
+        skip "envoi bro_ia→NODE : relay inaccessible"
+    else
+        _PAYLOAD_IA=$(python3 -c "
+import json
+print(json.dumps({'pubkey':'${_COUCOU_HEX}','event_id':'test_ollama','lat':'0.00',
+    'lon':'0.00','message':'#IA ping test intercom coucou','url':'','kname':'coucou@test'}))
+" 2>/dev/null)
         if python3 "$INTERCOM" send \
-                --nsec    "$_NODE_NSEC" \
-                --to      "$_NODE_HEX" \
-                --channel "zen_like" \
-                --payload "$_PAYLOAD_ZEN" \
+                --nsec    "$_COUCOU_NSEC" \
+                --to      "$_NODE_HEX_OLLAMA" \
+                --channel "bro_ia" \
+                --payload "$_PAYLOAD_IA" \
+                --ttl     300 \
                 --relays  "$_RELAY_URL" \
-                >> "$_TMPFILE" 2>/dev/null; then
-            ok "zen_like : send loopback OK"
+                2>/dev/null; then
+            ok "bro_ia #IA coucou→NODE envoyé (TTL=300s) — daemon traitera en async"
         else
-            fail "zen_like : send loopback FAILED"
+            fail "bro_ia #IA coucou→NODE : send FAILED"
         fi
+    fi
+fi
 
-        ## ── Test decrypt loopback (le daemon peut-il déchiffrer ?) ──────────
-        ## Construire un event factice chiffré en loopback via nostr_node_intercom
-        _LOOPBACK_DECODED=$(echo '{"event":{"id":"test","pubkey":"'"$_NODE_HEX"'","content":"","kind":4,"tags":[],"created_at":0}}'  \
-            | python3 "$INTERCOM" decrypt --nsec "$_NODE_NSEC" 2>/dev/null || true)
-        ## On s'attend à un échec de déchiffrement (contenu vide), mais pas à un crash
-        if python3 -c "import sys; sys.exit(0)" 2>/dev/null; then
-            ok "decrypt : module python3 opérationnel"
+## ─────────────────────────────────────────────────────────────────────────────
+section "8. Service ComfyUI (image) — envoi comfyui_job depuis coucou"
+## ─────────────────────────────────────────────────────────────────────────────
+
+_COMFY_OK=false
+curl -s --max-time 3 "http://localhost:8188/system_stats" -o /dev/null 2>/dev/null \
+    && _COMFY_OK=true
+
+if ! $_COMFY_OK; then
+    skip "ComfyUI inaccessible (localhost:8188)"
+else
+    _COMFY_VRAM=$(curl -s --max-time 5 "http://localhost:8188/system_stats" 2>/dev/null \
+        | python3 -c "
+import json,sys
+d=json.load(sys.stdin)
+vram=d.get('system',{}).get('vram_total',0)
+print(f'{vram//1024//1024} MB')
+" 2>/dev/null || echo "?")
+    ok "ComfyUI accessible — VRAM total : $_COMFY_VRAM"
+
+    _COMFY_QUEUE=$(curl -s --max-time 3 "http://localhost:8188/queue" 2>/dev/null \
+        | python3 -c "
+import json,sys
+d=json.load(sys.stdin)
+print(len(d.get('queue_running',[])) + len(d.get('queue_pending',[])))
+" 2>/dev/null || echo "?")
+    ok "ComfyUI queue depth : $_COMFY_QUEUE job(s) en attente"
+
+    ## Charger NODE_HEX
+    _NODE_HEX_COMFY=""
+    _NODE_NSEC_COMFY=""
+    if [[ -s "$HOME/.zen/game/secret.nostr" ]]; then
+        source "$HOME/.zen/game/secret.nostr"
+        _NODE_HEX_COMFY="${HEX:-}"
+        _NODE_NSEC_COMFY="${NSEC:-}"
+        unset NSEC NPUB HEX
+    fi
+
+    if [[ -z "$_NODE_HEX_COMFY" || ${#_COUCOU_NSEC} -lt 10 ]]; then
+        skip "envoi comfyui_job→NODE : secret.nostr absent"
+    elif ! $_relay_ok; then
+        skip "envoi comfyui_job→NODE : relay inaccessible"
+    else
+        _JOB_ID="test_$(date +%s)"
+        _PAYLOAD_COMFY=$(python3 -c "
+import json, sys
+print(json.dumps({
+    'kname': 'coucou@test',
+    'prompt': 'a cute cartoon robot testing NOSTR intercom',
+    'mode': 'image',
+    'source_url': '',
+    'reply_node_hex': '${_COUCOU_HEX}',
+    'reply_pubkey': '${_COUCOU_HEX}',
+    'job_id': '${_JOB_ID}',
+}))
+" 2>/dev/null)
+        if python3 "$INTERCOM" send \
+                --nsec    "$_COUCOU_NSEC" \
+                --to      "$_NODE_HEX_COMFY" \
+                --channel "comfyui_job" \
+                --payload "$_PAYLOAD_COMFY" \
+                --ttl     7200 \
+                --relays  "$_RELAY_URL" \
+                2>/dev/null; then
+            ok "comfyui_job image coucou→NODE envoyé (TTL=2h) — résultat comfyui_result async"
         else
-            fail "decrypt : python3 non fonctionnel"
+            fail "comfyui_job image : send FAILED"
         fi
-
-        rm -f "$_TMPFILE"
     fi
 fi
 

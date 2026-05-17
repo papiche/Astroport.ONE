@@ -1,83 +1,74 @@
-#!/bin/env python
+#!/usr/bin/env python3
 """Canal de communication inter-NODE via DMs NIP-44 (kind 4).
 
 Chaque message porte un champ `channel` qui identifie le sous-protocole,
 permettant à un NODE de router les messages sans ambiguïté :
 
-  udrive   — sync de fichier uDRIVE depuis une station visiteur
-  (extensible : "did_update", "zen_payment", "alert", …)
+  udrive      — sync de fichier uDRIVE depuis une station visiteur
+  vocals      — publication kind 1222/1244 (vocal) via home station
+  webcam      — publication kind 21/22 (vidéo) via home station
+  bro_ia      — commande BRO relayée depuis station visiteur
+  zen_like    — paiement ZEN/G1 relayé depuis station visiteur
+  comfyui_job    — job vidéo délégué à un Brain GPU
+  comfyui_result — résultat renvoyé par le Brain au satellite
 
 Chiffrement : NIP-44 (ChaCha20-Poly1305 + HKDF-SHA256) pour l'envoi.
-Déchiffrement : NIP-44 avec fallback NIP-04 pour la rétrocompatibilité.
+Déchiffrement : NIP-44 avec fallback NIP-04 (AES-256-CBC) pour la rétrocompatibilité.
 
-Usage:
-  # Envoyer (station B → station A) :
-  nostr_node_intercom.py send \\
-      --nsec    <NODE_NSEC_B> \\
-      --to      <NODE_HEX_A> \\
-      --channel udrive \\
-      --payload '{"email":"x@y.z","cid":"Qm…","filename":"f.jpg","filetype":"image"}' \\
-      --relays  wss://relay.copylaradio.com
-
-  # Recevoir (station A — polling) :
-  nostr_node_intercom.py receive \\
-      --nsec    <NODE_NSEC_A> \\
-      --channel udrive \\
-      --since   <UNIX_TIMESTAMP> \\
-      --relays  wss://relay.copylaradio.com
-  # → JSON array vers stdout ; chaque entrée inclut channel, payload,
-  #   event_id, sender, created_at
-
-Canaux actuels
---------------
-  udrive  payload requis : email, cid, filename, filetype
-  vocals  payload requis : email, cid, filename, filetype, mime_type, duration, title, kind
-          optionnel : description, waveform, reply_to_event_id, reply_to_pubkey
-  webcam  payload requis : email, cid, filename, filetype, mime_type, duration, title
-          optionnel : description, dimensions, file_size, thumbnail_ipfs, gifanim_ipfs,
-                      info_cid, file_hash, latitude, longitude, channel
+Dépendances : coincurve, cryptography, bech32, websocket-client
 """
 import sys
 import json
 import argparse
+import hashlib
+import hmac
 import ssl
 import threading
 import time
 import base64
 import os
 
-from pynostr.key import PrivateKey
+
+# ── Clés NOSTR ────────────────────────────────────────────────────────────────
+
+def _nsec_to_hex(nsec: str) -> str:
+    """Convertit un nsec bech32 en hex brut de la clé privée."""
+    import bech32 as b32m
+    hrp, data = b32m.bech32_decode(nsec)
+    if hrp != "nsec" or data is None:
+        raise ValueError(f"NSEC invalide : {nsec[:12]}…")
+    raw = bytes(b32m.convertbits(data, 5, 8, False))
+    return raw.hex()
 
 
-# ── NIP-44 crypto (ChaCha20-Poly1305 + HKDF) ─────────────────────────────────
+def _priv_to_pub_hex(priv_hex: str) -> str:
+    """Retourne la pubkey NOSTR (x-only, 32 octets en hex) depuis priv_hex."""
+    import coincurve
+    priv = coincurve.PrivateKey(bytes.fromhex(priv_hex))
+    return priv.public_key.format(compressed=True)[1:].hex()
 
-def _hex_to_uncompressed_pubkey(pubkey_hex: str) -> bytes:
-    """Convertit une pubkey hex 32 octets en SEC1 non compressé (0x04 + X + Y)."""
+
+# ── Crypto ECDH ───────────────────────────────────────────────────────────────
+
+def _derive_shared_secret(priv_hex: str, pub_hex: str) -> bytes:
+    """Retourne la coordonnée X du point ECDH secp256k1 (32 octets)."""
     from cryptography.hazmat.primitives.asymmetric import ec
     from cryptography.hazmat.backends import default_backend
-    if len(pubkey_hex) != 64:
-        raise ValueError("Longueur pubkey invalide")
-    x = int(pubkey_hex, 16)
     p = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
+    x = int(pub_hex, 16)
     y_sq = (pow(x, 3, p) + 7) % p
     y = pow(y_sq, (p + 1) // 4, p)
     if y % 2 != 0:
         y = p - y
-    return b'\x04' + x.to_bytes(32, 'big') + y.to_bytes(32, 'big')
-
-
-def _derive_shared_secret(priv_hex: str, pub_hex: str) -> bytes:
-    """ECDH secp256k1 → secret partagé brut."""
-    from cryptography.hazmat.primitives.asymmetric import ec
-    from cryptography.hazmat.backends import default_backend
+    pub_bytes = b'\x04' + x.to_bytes(32, 'big') + y.to_bytes(32, 'big')
     priv_obj = ec.derive_private_key(int(priv_hex, 16), ec.SECP256K1(), default_backend())
-    pub_bytes = _hex_to_uncompressed_pubkey(pub_hex)
     pub_obj = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256K1(), pub_bytes)
     return priv_obj.exchange(ec.ECDH(), pub_obj)
 
 
+# ── NIP-44 ────────────────────────────────────────────────────────────────────
+
 def _nip44_key(shared_secret: bytes) -> bytes:
-    """Dérive la clé de chiffrement NIP-44 via HKDF-SHA256."""
     from cryptography.hazmat.primitives.kdf.hkdf import HKDF
     from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.backends import default_backend
@@ -91,67 +82,98 @@ def _nip44_key(shared_secret: bytes) -> bytes:
 
 
 def _nip44_encrypt(plaintext: str, sender_priv_hex: str, recipient_pub_hex: str) -> str:
-    """Chiffre plaintext avec NIP-44. Retourne base64(nonce[12] || ciphertext)."""
     from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
     key = _nip44_key(_derive_shared_secret(sender_priv_hex, recipient_pub_hex))
     nonce = os.urandom(12)
-    cipher = ChaCha20Poly1305(key)
-    ct = cipher.encrypt(nonce, plaintext.encode('utf-8'), None)
+    ct = ChaCha20Poly1305(key).encrypt(nonce, plaintext.encode('utf-8'), None)
     return base64.b64encode(nonce + ct).decode('utf-8')
 
 
 def _nip44_decrypt(ciphertext_b64: str, recipient_priv_hex: str, sender_pub_hex: str) -> str:
-    """Déchiffre un message NIP-44. Lève une exception si le format est invalide."""
     from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
     key = _nip44_key(_derive_shared_secret(recipient_priv_hex, sender_pub_hex))
     data = base64.b64decode(ciphertext_b64)
     if len(data) < 13:
-        raise ValueError("Contenu NIP-44 trop court")
-    nonce, ct = data[:12], data[12:]
-    cipher = ChaCha20Poly1305(key)
-    return cipher.decrypt(nonce, ct, None).decode('utf-8')
+        raise ValueError("NIP-44 trop court")
+    return ChaCha20Poly1305(key).decrypt(data[:12], data[12:], None).decode('utf-8')
 
 
-def _decrypt_content(content: str, recipient_priv_key: PrivateKey, sender_pub_hex: str) -> str:
-    """Tente NIP-44 puis retombe sur NIP-04 si nécessaire."""
+# ── NIP-04 (fallback déchiffrement) ──────────────────────────────────────────
+
+def _nip04_decrypt(ciphertext: str, recipient_priv_hex: str, sender_pub_hex: str) -> str:
+    """AES-256-CBC déchiffrement NIP-04 : base64(ct)?iv=base64(iv)."""
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    if '?iv=' not in ciphertext:
+        raise ValueError("Format NIP-04 invalide")
+    ct_b64, iv_b64 = ciphertext.split('?iv=', 1)
+    ct = base64.b64decode(ct_b64)
+    iv = base64.b64decode(iv_b64)
+    key = _derive_shared_secret(recipient_priv_hex, sender_pub_hex)
+    cipher = Cipher(algorithms.AES(key[:32]), modes.CBC(iv))
+    dec = cipher.decryptor()
+    padded = dec.update(ct) + dec.finalize()
+    pad_len = padded[-1]
+    return padded[:-pad_len].decode('utf-8')
+
+
+def _decrypt_content(content: str, recipient_priv_hex: str, sender_pub_hex: str) -> str:
+    """Tente NIP-44 puis retombe sur NIP-04."""
     try:
-        return _nip44_decrypt(content, recipient_priv_key.hex(), sender_pub_hex)
+        return _nip44_decrypt(content, recipient_priv_hex, sender_pub_hex)
     except Exception:
         pass
-    return recipient_priv_key.decrypt_message(content, sender_pub_hex)
+    return _nip04_decrypt(content, recipient_priv_hex, sender_pub_hex)
+
+
+# ── Événement NOSTR (kind 4, Schnorr BIP-340) ────────────────────────────────
+
+def _make_event(priv_hex: str, pub_hex: str, content: str, tags: list,
+                kind: int = 4, ttl: int = 0) -> dict:
+    import coincurve
+    created_at = int(time.time())
+    all_tags = list(tags)
+    if ttl > 0:
+        all_tags.append(["expiration", str(created_at + ttl)])
+    serialized = json.dumps(
+        [0, pub_hex, created_at, kind, all_tags, content],
+        separators=(',', ':'), ensure_ascii=False,
+    )
+    event_id = hashlib.sha256(serialized.encode('utf-8')).hexdigest()
+    priv = coincurve.PrivateKey(bytes.fromhex(priv_hex))
+    sig = priv.sign_schnorr(bytes.fromhex(event_id)).hex()
+    return {
+        "id":         event_id,
+        "pubkey":     pub_hex,
+        "created_at": created_at,
+        "kind":       kind,
+        "tags":       all_tags,
+        "content":    content,
+        "sig":        sig,
+    }
 
 
 # ── WebSocket helper ──────────────────────────────────────────────────────────
 
-def _ws_module():
+def _connect(url: str, on_open, on_message, timeout: int = 12):
+    """Ouvre un WebSocket sync (websocket-client), appelle les callbacks."""
     try:
-        import websocket
-        return websocket
+        import websocket as ws_mod
     except ImportError:
-        print("ERROR: websocket-client not installed (pip install websocket-client)",
+        print("ERROR: websocket-client non installé (pip install websocket-client)",
               file=sys.stderr)
         sys.exit(1)
 
-
-def _connect(url: str, on_open, on_message, timeout: int = 12):
-    """Ouvre un WebSocket, appelle on_open puis on_message pour chaque message.
-    Bloque jusqu'à fermeture du socket ou expiration du timeout."""
-    ws_mod = _ws_module()
     done = threading.Event()
 
-    def _on_open(ws):   on_open(ws)
-    def _on_message(ws, msg): on_message(ws, msg)
-    def _on_close(ws, *_):    done.set()
-    def _on_error(ws, _err):  done.set()
+    def _on_open(ws):    on_open(ws)
+    def _on_msg(ws, m):  on_message(ws, m)
+    def _on_close(ws, *_): done.set()
+    def _on_err(ws, _):  done.set()
 
     sslopt = {"cert_reqs": ssl.CERT_NONE} if url.startswith("wss://") else {}
-    ws = ws_mod.WebSocketApp(
-        url,
-        on_open=_on_open,
-        on_message=_on_message,
-        on_close=_on_close,
-        on_error=_on_error,
-    )
+    ws = ws_mod.WebSocketApp(url,
+                             on_open=_on_open, on_message=_on_msg,
+                             on_close=_on_close, on_error=_on_err)
     t = threading.Thread(target=ws.run_forever, kwargs={"sslopt": sslopt}, daemon=True)
     t.start()
     done.wait(timeout=timeout)
@@ -161,36 +183,27 @@ def _connect(url: str, on_open, on_message, timeout: int = 12):
         pass
 
 
-# ── send ─────────────────────────────────────────────────────────────────────
+# ── send ──────────────────────────────────────────────────────────────────────
 
 def cmd_send(args):
-    private_key = PrivateKey.from_nsec(args.nsec)
+    priv_hex = _nsec_to_hex(args.nsec)
+    pub_hex = _priv_to_pub_hex(priv_hex)
 
-    # Valider le JSON payload fourni par l'appelant
     try:
         payload_data = json.loads(args.payload)
     except json.JSONDecodeError as exc:
         print(f"ERROR: --payload n'est pas du JSON valide : {exc}", file=sys.stderr)
         sys.exit(1)
 
-    envelope = {
-        "channel": args.channel,
-        "payload": payload_data,
-    }
+    envelope = {"channel": args.channel, "payload": payload_data}
     try:
-        encrypted = _nip44_encrypt(json.dumps(envelope), private_key.hex(), args.to)
-    except Exception:
-        encrypted = private_key.encrypt_message(json.dumps(envelope), args.to)
+        encrypted = _nip44_encrypt(json.dumps(envelope), priv_hex, args.to)
+    except Exception as exc:
+        print(f"ERROR: chiffrement NIP-44 échoué : {exc}", file=sys.stderr)
+        sys.exit(1)
 
-    from pynostr.event import Event
-    ev = Event(
-        kind=4,
-        content=encrypted,
-        tags=[["p", args.to]],
-        public_key=private_key.public_key.hex(),
-    )
-    ev.sign(private_key.hex())
-    event_dict = ev.to_dict()
+    event_dict = _make_event(priv_hex, pub_hex, encrypted, [["p", args.to]],
+                            ttl=getattr(args, 'ttl', 86400))
 
     errors = []
     for relay_url in args.relays:
@@ -213,24 +226,26 @@ def cmd_send(args):
             errors.append(relay_url)
 
     if errors:
-        print(f"WARN: aucun OK de {errors}", file=sys.stderr)
+        print(f"WARN: aucun OK reçu de {errors}", file=sys.stderr)
+        if len(errors) == len(args.relays):
+            sys.exit(1)
     print(f"Sent [{args.channel}] to={args.to[:12]}... payload={list(payload_data.keys())}")
 
 
-# ── receive ──────────────────────────────────────────────────────────────────
+# ── receive ───────────────────────────────────────────────────────────────────
 
 def cmd_receive(args):
-    private_key = PrivateKey.from_nsec(args.nsec)
-    pub_hex = private_key.public_key.hex()
+    priv_hex = _nsec_to_hex(args.nsec)
+    pub_hex = _priv_to_pub_hex(priv_hex)
 
     sub_filter: dict = {"kinds": [4], "#p": [pub_hex]}
     if args.since:
         sub_filter["since"] = int(args.since)
 
-    all_events: list[dict] = []
+    all_events: list = []
 
     for relay_url in args.relays:
-        collected: list[dict] = []
+        collected: list = []
 
         def on_open(ws, _f=sub_filter):
             ws.send(json.dumps(["REQ", "intercom_recv", _f]))
@@ -248,9 +263,8 @@ def cmd_receive(args):
         _connect(relay_url, on_open, on_message, timeout=12)
         all_events.extend(collected)
 
-    # Déchiffrer, décoder l'enveloppe, filtrer par canal
     results = []
-    seen_ids: set[str] = set()
+    seen_ids: set = set()
     for ev in all_events:
         eid = ev.get("id", "")
         if eid in seen_ids:
@@ -258,17 +272,15 @@ def cmd_receive(args):
         seen_ids.add(eid)
         sender_hex = ev.get("pubkey", "")
         try:
-            decrypted = _decrypt_content(ev["content"], private_key, sender_hex)
+            decrypted = _decrypt_content(ev["content"], priv_hex, sender_hex)
             try:
                 envelope = json.loads(decrypted)
             except (json.JSONDecodeError, ValueError):
-                # DM texte brut (client Nostr standard) → canal "plain"
                 envelope = {"channel": "plain", "payload": {"text": decrypted}}
         except Exception:
             continue
 
         channel = envelope.get("channel", "")
-        # Filtrer par canal si --channel est précisé
         if args.channel and channel != args.channel:
             continue
 
@@ -283,36 +295,100 @@ def cmd_receive(args):
     print(json.dumps(results))
 
 
-# ── main ─────────────────────────────────────────────────────────────────────
-
-# ── Helpers pour le canal "udrive" (appelés depuis les scripts bash) ──────────
+# ── send-udrive (raccourci bash) ──────────────────────────────────────────────
 
 def cmd_send_udrive(args):
-    """Raccourci : construit le payload udrive et appelle cmd_send."""
-    payload = {
+    args.channel = "udrive"
+    args.payload = json.dumps({
         "email":    args.email,
         "cid":      args.cid,
         "filename": args.filename,
         "filetype": args.filetype,
-    }
-    args.channel = "udrive"
-    args.payload = json.dumps(payload)
+    })
     cmd_send(args)
 
 
-# ── decrypt ──────────────────────────────────────────────────────────────────
+# ── publish (event non chiffré, any kind) ────────────────────────────────────
+
+def cmd_publish(args):
+    """Signe et publie un event NOSTR non chiffré (any kind). Retourne l'event ID."""
+    priv_hex = _nsec_to_hex(args.nsec)
+    pub_hex = _priv_to_pub_hex(priv_hex)
+    try:
+        tags = json.loads(args.tags)
+    except json.JSONDecodeError as exc:
+        print(f"ERROR: --tags n'est pas du JSON valide : {exc}", file=sys.stderr)
+        sys.exit(1)
+    event_dict = _make_event(priv_hex, pub_hex, args.content or "",
+                             tags, kind=args.kind, ttl=args.ttl)
+    errors = []
+    for relay_url in args.relays:
+        sent = threading.Event()
+        def on_open(ws, _d=event_dict):
+            ws.send(json.dumps(["EVENT", _d]))
+        def on_message(ws, msg, _done=sent):
+            try:
+                data = json.loads(msg)
+                if data[0] in ("OK", "NOTICE"):
+                    _done.set()
+                    ws.close()
+            except Exception:
+                pass
+        _connect(relay_url, on_open, on_message, timeout=10)
+        if not sent.is_set():
+            errors.append(relay_url)
+    if errors:
+        print(f"WARN: aucun OK reçu de {errors}", file=sys.stderr)
+        if len(errors) == len(args.relays):
+            sys.exit(1)
+    print(event_dict["id"])
+
+
+# ── query (REQ filtre arbitraire) ────────────────────────────────────────────
+
+def cmd_query(args):
+    """Interroge le relay avec un filtre REQ arbitraire. Retourne les events JSON."""
+    try:
+        filt = json.loads(args.filter)
+    except json.JSONDecodeError as exc:
+        print(f"ERROR: --filter invalide : {exc}", file=sys.stderr)
+        sys.exit(1)
+    all_events: list = []
+    for relay_url in args.relays:
+        collected: list = []
+        def on_open(ws, _f=filt):
+            ws.send(json.dumps(["REQ", "wotx2_query", _f]))
+        def on_message(ws, msg, _col=collected):
+            try:
+                data = json.loads(msg)
+                if data[0] == "EVENT" and len(data) >= 3:
+                    _col.append(data[2])
+                elif data[0] == "EOSE":
+                    ws.close()
+            except Exception:
+                pass
+        _connect(relay_url, on_open, on_message, timeout=12)
+        all_events.extend(collected)
+    seen: set = set()
+    results: list = []
+    for ev in all_events:
+        eid = ev.get("id", "")
+        if eid not in seen:
+            seen.add(eid)
+            results.append(ev)
+    print(json.dumps(results))
+
+
+# ── decrypt (event kind 4 depuis stdin) ───────────────────────────────────────
 
 def cmd_decrypt(args):
-    """Déchiffre un event kind 4 passé en JSON sur stdin.
-    Retourne {"channel", "payload", "sender", "event_id"} ou exit 1."""
-    private_key = PrivateKey.from_nsec(args.nsec)
+    priv_hex = _nsec_to_hex(args.nsec)
     try:
         ev = json.load(sys.stdin)
-        # Supporte les deux formats : event brut ET envelope strfry {event:{...}}
         if "event" in ev:
             ev = ev["event"]
         sender_hex = ev.get("pubkey", "")
-        decrypted = _decrypt_content(ev["content"], private_key, sender_hex)
+        decrypted = _decrypt_content(ev["content"], priv_hex, sender_hex)
         try:
             envelope = json.loads(decrypted)
         except (json.JSONDecodeError, ValueError):
@@ -327,6 +403,8 @@ def cmd_decrypt(args):
         sys.exit(1)
 
 
+# ── main ──────────────────────────────────────────────────────────────────────
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Canal de communication inter-NODE via DMs NOSTR NIP-44 (fallback NIP-04)",
@@ -335,46 +413,56 @@ if __name__ == "__main__":
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    # ── send générique ────────────────────────────────────────────────────────
     p_send = sub.add_parser("send", help="Envoyer un message à un NODE distant")
-    p_send.add_argument("--nsec",    required=True, help="NSEC du NODE émetteur")
+    p_send.add_argument("--nsec",    required=True)
     p_send.add_argument("--to",      required=True, help="HEX pubkey du NODE destinataire")
-    p_send.add_argument("--channel", required=True, help="Canal : udrive, …")
+    p_send.add_argument("--channel", required=True)
     p_send.add_argument("--payload", required=True, help="Contenu JSON du message")
     p_send.add_argument("--relays",  nargs="+", required=True)
+    p_send.add_argument("--ttl",     type=int, default=86400,
+                        help="Durée de vie en secondes (NIP-40, 0=permanent, défaut 86400=24h)")
 
-    # ── send udrive (raccourci bash-friendly) ─────────────────────────────────
-    p_udrive = sub.add_parser("send-udrive",
-                              help="Envoyer une demande de sync uDRIVE (canal udrive)")
+    p_udrive = sub.add_parser("send-udrive", help="Envoyer une demande de sync uDRIVE")
     p_udrive.add_argument("--nsec",     required=True)
-    p_udrive.add_argument("--to",       required=True, help="HEX pubkey de la home station")
+    p_udrive.add_argument("--to",       required=True)
     p_udrive.add_argument("--email",    required=True)
     p_udrive.add_argument("--cid",      required=True)
     p_udrive.add_argument("--filename", required=True)
     p_udrive.add_argument("--filetype", default="file",
                           choices=["image", "video", "audio", "document", "file"])
     p_udrive.add_argument("--relays",   nargs="+", required=True)
+    p_udrive.add_argument("--ttl",      type=int, default=86400,
+                          help="Durée de vie en secondes (NIP-40, 0=permanent, défaut 86400=24h)")
 
-    # ── receive ───────────────────────────────────────────────────────────────
-    p_recv = sub.add_parser("receive",
-                            help="Recevoir les messages en attente (tous canaux ou filtré)")
+    p_recv = sub.add_parser("receive", help="Recevoir les messages en attente")
     p_recv.add_argument("--nsec",    required=True)
-    p_recv.add_argument("--channel", default=None,
-                        help="Filtrer par canal (omis = tous les canaux)")
-    p_recv.add_argument("--since",   default=None, help="Timestamp Unix minimum")
+    p_recv.add_argument("--channel", default=None)
+    p_recv.add_argument("--since",   default=None)
     p_recv.add_argument("--relays",  nargs="+", required=True)
 
-    # ── decrypt (event kind 4 depuis stdin) ──────────────────────────────────
-    p_dec = sub.add_parser("decrypt",
-                           help="Déchiffrer un event kind 4 passé en JSON sur stdin")
-    p_dec.add_argument("--nsec", required=True, help="NSEC du destinataire")
+    p_dec = sub.add_parser("decrypt", help="Déchiffrer un event kind 4 depuis stdin")
+    p_dec.add_argument("--nsec", required=True)
+
+    p_pub = sub.add_parser("publish", help="Publier un event NOSTR non chiffré (any kind)")
+    p_pub.add_argument("--nsec",    required=True)
+    p_pub.add_argument("--kind",    type=int, required=True, help="NOSTR kind (ex: 30500, 30503)")
+    p_pub.add_argument("--tags",    required=True, help='JSON array de tags ex: [["d","ID"],["t","skill"]]')
+    p_pub.add_argument("--content", default="", help="Contenu de l'event (JSON string)")
+    p_pub.add_argument("--ttl",     type=int, default=0,
+                        help="Durée de vie en secondes (NIP-40, 0=permanent)")
+    p_pub.add_argument("--relays",  nargs="+", required=True)
+
+    p_qry = sub.add_parser("query", help="Interroger le relay (filtre REQ arbitraire)")
+    p_qry.add_argument("--filter",  required=True,
+                        help='Filtre REQ JSON ex: {"kinds":[30500],"authors":["hex..."]}')
+    p_qry.add_argument("--relays",  nargs="+", required=True)
 
     args = parser.parse_args()
-    if args.cmd == "send":
-        cmd_send(args)
-    elif args.cmd == "send-udrive":
-        cmd_send_udrive(args)
-    elif args.cmd == "decrypt":
-        cmd_decrypt(args)
-    else:
-        cmd_receive(args)
+    {
+        "send":        cmd_send,
+        "send-udrive": cmd_send_udrive,
+        "decrypt":     cmd_decrypt,
+        "receive":     cmd_receive,
+        "publish":     cmd_publish,
+        "query":       cmd_query,
+    }[args.cmd](args)

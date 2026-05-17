@@ -110,7 +110,7 @@ cat $HOME/.zen/tmp/swarm_intruders.log 2>/dev/null >> $LOG_FILE
 cat "$HOME/.zen/game/firewall_candidates.txt" >> $LOG_FILE
 
 #### COPY LOGS - before erase
-echo "=== YOUTUBE / IA SCRAPERS ====================================" >> $LOG_FILE
+echo "=== YOUTUBE / IA SCRAPERS ===============bro_dm_daemon.log==============" >> $LOG_FILE
 cat $HOME/.zen/tmp/IA.log 2>/dev/null >> $LOG_FILE
 cat $HOME/.zen/tmp/*_sync_*.log 2>/dev/null >> $LOG_FILE
 cat $HOME/.zen/tmp/youtube.com_* 2>/dev/null >> $LOG_FILE

@@ -510,6 +510,7 @@ print(json.dumps({
             --to      "$_brain_hex" \
             --channel "comfyui_job" \
             --payload "$_payload" \
+            --ttl     7200 \
             --relays  "${myRELAY:-wss://relay.copylaradio.com}" \
             2>/dev/null; then
         echo "__DISPATCHED__"
@@ -551,6 +552,7 @@ print(json.dumps({
                     --to      "$_HOME_NODE_HEX" \
                     --channel "bro_ia" \
                     --payload "$_BRO_PAYLOAD" \
+                    --ttl     3600 \
                     --relays  "${myRELAY:-wss://relay.copylaradio.com}" \
                     2>/dev/null \
                     && echo "✈️ BRO IA forward OK → ${_HOME_NODE_HEX:0:12}..." >&2 \

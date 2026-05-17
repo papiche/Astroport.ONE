@@ -1,8 +1,19 @@
 #!/usr/bin/env python3
+"""
+question.py — Orchestrateur IA Ollama avec mémoire multi-source
+
+Sources de contexte (priorité décroissante, toutes cumulables) :
+  1. Flashmem skill  --skill devops   → ~/.zen/tmp/flashmem/skills/devops.md
+  2. Qdrant RAG      --skill devops   → collection wotx2_resources (sémantique)
+  3. Slot user       --user-id email --slot N  → ~/.zen/flashmem/<email>/slotN.json
+  4. UMAP memory     --lat --lon      → ~/.zen/flashmem/uplanet_memory/<coord>.json
+  5. Pubkey memory   --pubkey <hex>   → ~/.zen/flashmem/uplanet_memory/pubkey/<hex>.json
+"""
+
 import os
 import sys
 
-# Activer l'environnement virtuel ~/.astro pour accéder au module ollama
+# Activer l'environnement virtuel ~/.astro
 venv_path = os.path.expanduser("~/.astro")
 if os.path.exists(venv_path):
     python_version = f"python{sys.version_info.major}.{sys.version_info.minor}"
@@ -14,21 +25,43 @@ import ollama
 import argparse
 import json
 
+MY_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def load_skill_context(skill: str, question: str = "") -> str:
+    """
+    Charge le contexte skill depuis :
+    1. Flashmem partagé (~/.zen/tmp/flashmem/skills/<skill>.md)
+    2. Qdrant RAG (collection wotx2_resources)
+    """
+    parts = []
+
+    # 1. Flashmem skill (notes partagées)
+    try:
+        sys.path.insert(0, MY_DIR)
+        from skill_flashmem import format_context as fm_context
+        ctx = fm_context(skill)
+        if ctx:
+            parts.append(ctx)
+    except Exception as e:
+        pass
+
+    # 2. Qdrant RAG
+    try:
+        from skill_qdrant import build_qdrant_context
+        qdrant_ctx = build_qdrant_context(skill, question)
+        if qdrant_ctx:
+            parts.append(qdrant_ctx)
+    except Exception:
+        pass  # Qdrant optionnel
+
+    return "\n\n".join(parts)
+
+
 def load_context(latitude=None, longitude=None, pubkey=None, user_id=None, slot=0):
     """
-    Loads memory context from UMAP (latitude/longitude), from PUBKEY memory, or from user slot memory.
-
-    Args:
-        latitude (str, optional): Latitude coordinate.
-        longitude (str, optional): Longitude coordinate.
-        pubkey (str, optional): Public key.
-        user_id (str, optional): User ID (nostr email or pubkey).
-        slot (int, optional): Memory slot number (0-12).
-
-    Returns:
-        str: A formatted context string, or empty string if not found.
+    Charge la mémoire contextuelle depuis les slots utilisateur ou les mémoires UMAP/pubkey.
     """
-    # Try slot-based memory first if user_id is provided
     if user_id and slot is not None:
         slot_file = os.path.expanduser(f"~/.zen/flashmem/{user_id}/slot{slot}.json")
         if os.path.isfile(slot_file):
@@ -36,16 +69,12 @@ def load_context(latitude=None, longitude=None, pubkey=None, user_id=None, slot=
                 with open(slot_file, 'r') as f:
                     memory = json.load(f)
                     messages = memory.get('messages', [])
-                    context = "\n".join(f"- {m.get('content', '')}" for m in messages[-20:])  # Last 20 messages
-                    return context
-            except Exception as e:
-                print(f"Failed to load slot context from {slot_file}: {e}")
+                    return "\n".join(f"- {m.get('content', '')}" for m in messages[-20:])
+            except Exception:
+                pass
 
-    # Fallback to legacy memory system
     base_memory_dir = os.path.expanduser("~/.zen/flashmem/uplanet_memory")
-    ## make dir if not exists
-    if not os.path.exists(base_memory_dir):
-        os.makedirs(base_memory_dir)
+    os.makedirs(base_memory_dir, exist_ok=True)
 
     if latitude and longitude:
         coord_key = f"{latitude}_{longitude}".replace(".", "_").replace("-", "m")
@@ -57,73 +86,71 @@ def load_context(latitude=None, longitude=None, pubkey=None, user_id=None, slot=
 
     if not os.path.isfile(memory_file):
         return ""
-
     try:
         with open(memory_file, 'r') as f:
             memory = json.load(f)
             messages = memory.get('messages', [])
-            context = "\n".join(f"- {m.get('content', '')}" for m in messages)
-            return context
-    except Exception as e:
-        print(f"Failed to load context from {memory_file}: {e}")
+            return "\n".join(f"- {m.get('content', '')}" for m in messages)
+    except Exception:
         return ""
 
+
 def filter_think_tags(text):
-    """
-    Remove content between <think> and </think> tags (inclusive) from the text.
-    """
+    """Supprime les balises <think>...</think> (modèles reasoning)."""
     while "<think>" in text and "</think>" in text:
         start = text.find("<think>")
         end = text.find("</think>") + len("</think>")
         text = text[:start] + text[end:]
     return text.strip()
 
-def get_ollama_answer(prompt, model_name="gemma3:latest"):
-    """
-    Generates an answer from Ollama based on the given prompt.
-    """
+
+def get_ollama_answer(prompt: str, model_name: str = "gemma3:latest",
+                      system_prompt: str = None) -> str | None:
+    """Génère une réponse Ollama avec le prompt final."""
+    _system = system_prompt or (
+        "RÉPONDS EN FRANÇAIS UNIQUEMENT.\n\n"
+        "RÈGLES:\n"
+        "1. Réponds en FRANÇAIS (ou dans la langue de la question)\n"
+        "2. Commence DIRECTEMENT par le contenu (sans introduction)\n"
+        "3. Pas de markdown\n"
+        "4. Utilise des emojis\n"
+        "5. Sois concis"
+    )
     try:
         ai_response = ollama.chat(
             model=model_name,
             messages=[
-                {
-                    'role': 'system',
-                    'content': '''RÉPONDS EN FRANÇAIS UNIQUEMENT.
-
-RÈGLES:
-1. rédige en FRANÇAIS (or in the same language as previous message.)
-2. Commence DIRECTEMENT par le contenu de la réponse (sans l'introduire ni la commenter)
-3. Pas de markdown
-4. Utilise des emojis
-5. Sois concis''',
-                },
-                {
-                    'role': 'user',
-                    'content': prompt,
-                },
+                {'role': 'system', 'content': _system},
+                {'role': 'user',   'content': prompt},
             ]
         )
-        answer = ai_response['message']['content']
-        # Filter out <think> tags before returning
-        return filter_think_tags(answer)
+        return filter_think_tags(ai_response['message']['content'])
     except Exception as e:
-        print(f"Error during Ollama processing: {e}")
+        print(f"[question.py] Erreur Ollama: {e}", file=sys.stderr)
         return None
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Answer a question using Ollama, with optional UMAP, PUBKEY, or slot-based context.")
-    parser.add_argument("question", nargs="?", default=None, help="The question to ask Ollama (or use --prompt-file).")
-    parser.add_argument("--prompt-file", type=str, help="Read prompt from file (overrides question argument).")
-    parser.add_argument("-m", "--model", dest="ollama_model_name", default="gemma3:latest", help="The name of the Ollama model to use (default: gemma3:latest).")
-    parser.add_argument("--lat", type=str, help="Latitude to load UMAP memory context.")
-    parser.add_argument("--lon", type=str, help="Longitude to load UMAP memory context.")
-    parser.add_argument("--pubkey", type=str, help="Pubkey to load PUBKEY memory context.")
-    parser.add_argument("--user-id", type=str, help="User ID (nostr email or pubkey) to load slot-based memory context.")
-    parser.add_argument("--slot", type=int, default=0, help="Memory slot number (0-12, default: 0).")
-    parser.add_argument("--json", action="store_true", help="Output answer in JSON format.")
+    parser = argparse.ArgumentParser(
+        description="Répond à une question via Ollama, avec contexte multi-source."
+    )
+    parser.add_argument("question",      nargs="?", default=None)
+    parser.add_argument("--prompt-file", type=str)
+    parser.add_argument("-m", "--model", dest="ollama_model_name", default="gemma3:latest")
+    parser.add_argument("--skill",       type=str, default="",
+                        help="Skill actif — charge flashmem+Qdrant pour ce skill")
+    parser.add_argument("--npub",        type=str, default="",
+                        help="Hex pubkey de l'utilisateur (pour logging)")
+    parser.add_argument("--lat",         type=str)
+    parser.add_argument("--lon",         type=str)
+    parser.add_argument("--pubkey",      type=str)
+    parser.add_argument("--user-id",     type=str)
+    parser.add_argument("--slot",        type=int, default=0)
+    parser.add_argument("--json",        action="store_true")
 
     args = parser.parse_args()
 
+    # ── Charger le texte de la question ──────────────────────────────────────
     question_text = ""
     if args.prompt_file and os.path.isfile(args.prompt_file):
         with open(args.prompt_file, "r", encoding="utf-8", errors="replace") as f:
@@ -131,47 +158,71 @@ if __name__ == "__main__":
     if not question_text and args.question:
         question_text = args.question
     if not question_text:
-        print("Error: provide question as argument or --prompt-file with an existing file.")
+        print("Erreur : fournir la question en argument ou via --prompt-file.")
         sys.exit(1)
 
-    # Load context based on available parameters
-    context_text = ""
+    # ── Construire le contexte ────────────────────────────────────────────────
+    context_parts = []
+    system_extra  = ""
+
+    # 1. Contexte skill (flashmem + Qdrant)
+    if args.skill:
+        skill_ctx = load_skill_context(args.skill, question_text)
+        if skill_ctx:
+            context_parts.append(skill_ctx)
+        system_extra = (
+            f"Tu es un formateur expert en '{args.skill}'. "
+            f"Tu guides l'utilisateur dans son apprentissage de façon pédagogique et pratique. "
+        )
+
+    # 2. Contexte utilisateur (slot / UMAP / pubkey)
     if args.user_id is not None:
-        # Use slot-based memory
-        context_text = load_context(user_id=args.user_id, slot=args.slot)
+        user_ctx = load_context(user_id=args.user_id, slot=args.slot)
+        if user_ctx:
+            context_parts.append(f"Historique personnel :\n{user_ctx}")
     elif args.lat and args.lon:
-        # Use UMAP memory
-        context_text = load_context(latitude=args.lat, longitude=args.lon)
+        geo_ctx = load_context(latitude=args.lat, longitude=args.lon)
+        if geo_ctx:
+            context_parts.append(f"Contexte géographique :\n{geo_ctx}")
     elif args.pubkey:
-        # Use PUBKEY memory
-        context_text = load_context(pubkey=args.pubkey)
+        pub_ctx = load_context(pubkey=args.pubkey)
+        if pub_ctx:
+            context_parts.append(f"Contexte utilisateur :\n{pub_ctx}")
 
-    # Construire le prompt final
+    # ── Prompt final ──────────────────────────────────────────────────────────
     final_prompt = ""
-    if context_text:
-        final_prompt += f"Contexte :\n{context_text}\n\n"
+    if context_parts:
+        final_prompt = "\n\n".join(context_parts) + "\n\n"
     final_prompt += f"Question: {question_text}"
-    
-    # Log the final prompt to IA.log
+
+    # System prompt enrichi si skill actif
+    system_prompt = None
+    if system_extra:
+        system_prompt = (
+            system_extra +
+            "RÈGLES: réponds en FRANÇAIS, commence directement par le contenu, "
+            "utilise des emojis, sois concis et pratique."
+        )
+
+    # ── Log ──────────────────────────────────────────────────────────────────
     log_file_path = os.path.expanduser("~/.zen/tmp/IA.log")
-    # Ensure the directory exists
     os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
-    with open(log_file_path, "a") as log_file:
-        log_file.write(f"{final_prompt}\n")
+    with open(log_file_path, "a") as lf:
+        npub_tag = f"[{args.npub[:12]}] " if args.npub else ""
+        skill_tag = f"[skill:{args.skill}] " if args.skill else ""
+        lf.write(f"{npub_tag}{skill_tag}{final_prompt}\n")
 
-    # Get the answer from Ollama
-    answer_output = get_ollama_answer(final_prompt, args.ollama_model_name)
-    
-    #Log the answer
-    with open(log_file_path, "a") as log_file:
-        log_file.write(f"{answer_output}\n")
+    # ── Réponse Ollama ────────────────────────────────────────────────────────
+    answer = get_ollama_answer(final_prompt, args.ollama_model_name, system_prompt)
 
-    if answer_output:
+    if answer:
+        with open(log_file_path, "a") as lf:
+            lf.write(f"{answer}\n")
         if args.json:
-            result = {"answer": answer_output}
-            print(json.dumps(result))
+            print(json.dumps({"answer": answer}))
         else:
-            print(answer_output)
+            print(answer)
     else:
         if not args.json:
-            print("Failed to get answer from Ollama.")
+            print("Échec de la réponse Ollama.")
+        sys.exit(1)

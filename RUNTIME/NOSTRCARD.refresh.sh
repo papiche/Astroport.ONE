@@ -344,17 +344,7 @@ if [[ -s ~/.zen/game/secret.nostr ]]; then
     NODE_HEX="${HEX:-}"
     unset NSEC NPUB HEX
 
-    if [[ -n "$NODE_NSEC" ]]; then
-        ## Publier NODE_HEX pour filter/4.sh (strfry writePolicy — enqueue DMs entrants)
-        echo "$NODE_HEX" > "${HOME}/.zen/tmp/node.hex"
-
-        ## Lancer le daemon DM si absent (traite BRO + uDRIVE en temps réel via inotifywait)
-        _DM_PID="${HOME}/.zen/tmp/bro_dm_daemon.pid"
-        if [[ ! -f "$_DM_PID" ]] || ! kill -0 "$(cat "$_DM_PID")" 2>/dev/null; then
-            bash "${MY_PATH}/../IA/bro_dm_daemon.sh" >> "${HOME}/.zen/tmp/bro_dm_daemon.log" 2>&1 &
-            log "INFO" "🚀 Daemon DM NODE démarré (PID $!)"
-        fi
-    fi
+    ## NODE_HEX disponible via ~/.zen/game/secret.nostr (lu directement par filter/4.sh et bro_dm_daemon.sh)
 fi
 
 ## RUNING FOR ALL LOCAL MULTIPASS (NOSTR Card)

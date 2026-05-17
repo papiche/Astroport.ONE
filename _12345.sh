@@ -247,6 +247,15 @@ if [[ -s ~/.zen/game/secret.june ]]; then
     echo $hex > ~/.zen/tmp/${IPFSNODEID}/HEX
 fi
 
+## Lancer le daemon DM NODE (bro_ia, udrive, comfyui_job/result) au démarrage
+_DM_PID_FILE="${HOME}/.zen/tmp/bro_dm_daemon.pid"
+if [[ -s ~/.zen/game/secret.nostr ]]; then
+    if [[ ! -f "$_DM_PID_FILE" ]] || ! kill -0 "$(cat "$_DM_PID_FILE")" 2>/dev/null; then
+        bash "${MY_PATH}/IA/bro_dm_daemon.sh" >> "${HOME}/.zen/tmp/bro_dm_daemon.log" 2>&1 &
+        echo "🚀 Daemon DM NODE démarré (PID $!)"
+    fi
+fi
+
 ######################################### CAPTAIN RELATED
 ## RE-CREATE ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr
 if [[ ! -s ~/.zen/game/nostr/$CAPTAINEMAIL/.secret.nostr ]]; then
@@ -835,7 +844,15 @@ NODE12345="{
     echo -e "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET\r\nServer: Astroport.ONE\r\nContent-Type: application/json; charset=UTF-8\r\nConnection: close\r\n\r\n${NODE12345}" > "$RESPONSE_FILE"
 
     echo '(◕‿‿◕) http://'$myIP:'12345 SERVED VIA SOCAT (CGI) (◕‿‿◕)'
-    
+
+    ## Watchdog daemon DM NODE — relance si mort entre deux cycles
+    if [[ -s ~/.zen/game/secret.nostr ]]; then
+        if [[ ! -f "$_DM_PID_FILE" ]] || ! kill -0 "$(cat "$_DM_PID_FILE")" 2>/dev/null; then
+            bash "${MY_PATH}/IA/bro_dm_daemon.sh" >> "${HOME}/.zen/tmp/bro_dm_daemon.log" 2>&1 &
+            echo "🔄 Daemon DM NODE relancé (PID $!)"
+        fi
+    fi
+
     # Sleep to prevent busy loop (replacing nc -l wait)
     # Wait 300 seconds before checking if update is needed
     sleep 300

@@ -86,9 +86,14 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 - **`command.sh`** - Main CLI interface for station management
 - **`12345.sh`** / **`_12345.sh`** - API server (port 1234 launcher / port 12345 station map)
 - **`20h12.process.sh`** - Daily cron maintenance process
+- **`IA/`** - Modules IA et communication inter-NODE :
+  - `bro_dm_daemon.sh` - Daemon DM NOSTR (NIP-44) — traite bro_ia, udrive, comfyui_job/result en temps réel via inotifywait. **Lancé et surveillé par `_12345.sh`** (watchdog toutes les 300s)
+  - `UPlanet_IA_Responder.sh` - Responder IA pour les stations UPlanet (BRO, image, vidéo, musique)
+  - `comfyui.me.sh` - Swarm Connector ComfyUI : local → P2P → SSH, avec load-balancing par power_score et queue depth
+  - `nostr_node_intercom.py` - Canal inter-NODE NIP-44 : send/receive/decrypt de DMs chiffrés entre stations
 - **`RUNTIME/`** - Background services and refresh cycles:
   - `G1PalPay.sh` - G1 currency transaction monitoring
-  - `NOSTRCARD.refresh.sh` - MULTIPASS account management
+  - `NOSTRCARD.refresh.sh` - MULTIPASS account management (ne lance plus le daemon DM — géré par `_12345.sh`)
   - `PLAYER.refresh.sh` - ZenCard account management
   - `ZEN.ECONOMY.sh` - Cooperative economy engine
   - `VISA.new.sh` - New player/wallet creation

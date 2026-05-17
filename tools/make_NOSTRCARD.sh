@@ -435,41 +435,6 @@ EOFJSON
         exit 1
     fi
 
-    ## Create .well-known/index.hmlt filled with did.json for standard DID resolution (W3C compliant)
-    echo "📁 Creating .well-known endpoint for DID resolution..."
-    mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known
-    
-    # Create .well-known directory and inject IPFS URL into HTML viewer
-    if [[ -f ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache ]]; then
-        # Copy DID viewer template
-        cp "${HOME}/.zen/Astroport.ONE/templates/NOSTR/did_viewer.html" ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html
-        
-        # Use IPFS direct link instead of embedding JSON
-        # Add did.json.cache to IPFS to get its specific CID
-        echo "📡 Adding did.json.cache to IPFS..."
-        did_ipfs_cid=$(ipfs --timeout 30s add -q ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache)
-        
-        if [[ -n "$did_ipfs_cid" ]]; then
-            # Replace the placeholder with IPFS direct link
-            ipfs_url="/ipfs/${did_ipfs_cid}"
-            sed -i "s|const _DID_JSON_URL_ = null;|const _DID_JSON_URL_ = '${ipfs_url}';|g" ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html
-            echo -e "${GREEN}✅ Using IPFS CID for did.json.cache: ${did_ipfs_cid}${NC}"
-        else
-            echo -e "${YELLOW}⚠️  Failed to add did.json.cache to IPFS, using fallback method${NC}" >&2
-            # Keep the original null value
-        fi
-        
-        # Ensure did.json.cache is available in the IPFS directory
-        echo -e "${GREEN}✅ DID cache file is ready for IPFS access${NC}"
-        
-        echo "✅ DID viewer created with IPFS link: ${myIPFS}/ipns/${NOSTRNS}/${EMAIL}/APP/uDRIVE/Apps/.well-known/index.html"
-    else
-        _alert_captain "DID CACHE INTROUVABLE" \
-            "did.json.cache absent après création pour ${EMAIL}\nFichier attendu: ${HOME}/.zen/game/nostr/${EMAIL}/did.json.cache\nVérifiez did_manager_nostr.sh"
-        echo "❌ DID cache not found after creation, cannot create .well-known endpoint"
-        exit 1
-    fi
-
     ##############################################################
     [[ "$Z" == ":ZEN" ]] && ZenECO="(ẑen/ẐEN)" || ZenECO="(1Ẑ = 0.1Ğ1)"
     ### PREPARE NOSTR ZINE
@@ -586,20 +551,6 @@ EOFJSON
 
 
     ###############################################################################################
-    ### Add /APP/uDRIVE
-    ## Cesium.v1
-    mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/Cesium.v1
-    echo '<meta http-equiv="refresh" content="0;url='${CESIUMIPFS}/#/wot/${G1PUBNOSTR}/'">' \
-        > ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/Cesium.v1/index.html
-    cp ${MY_PATH}/../images/cesium.png ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/Cesium.v1/icon.png
-    ###############################################################################################
-    ## CoracleZ
-    mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/CoracleZ
-    echo '<meta http-equiv="refresh" content="0;url='/ipns/coracle.copylaradio.com'">' \
-        > ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/CoracleZ/index.html
-    cp ${MY_PATH}/../images/logojeu.png ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Apps/CoracleZ/icon.png
-    ## Add you App !
-    
     # README.${YOUSER}.md
     mkdir -p ${HOME}/.zen/game/nostr/${EMAIL}/APP/uDRIVE/Documents
     cat "${HOME}/.zen/workspace/UPlanet/UPlanet_Enter_Help.md" \

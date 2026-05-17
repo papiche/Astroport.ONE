@@ -105,10 +105,14 @@ Requires=network.target
 [Service]
 Type=idle
 User=_USER_
-RestartSec=1
+RestartSec=5
 Restart=always
 ExecStart=/home/_USER_/.zen/Astroport.ONE/12345.sh
-StandardOutput=file:/home/_USER_/.zen/tmp/12345.log
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=astroport
+KillMode=mixed
+TimeoutStopSec=15
 
 [Install]
 WantedBy=multi-user.target

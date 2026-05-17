@@ -32,7 +32,7 @@ done
 MODE="commit"         # commit | staged | day | week | month
 SINCE_COMMIT="HEAD"   # référence git de base pour le diff
 SINCE_LABEL="dernier commit"
-AI_MODEL="gemma3:12b"
+AI_MODEL="deepseek-coder-v2:dagbs"
 VERBOSE=false
 
 dbg() { [[ "$VERBOSE" == "true" ]] && echo -e "\033[2m[verbose] $*\033[0m" >&2 || true; }
@@ -57,7 +57,7 @@ show_help() {
     echo "  $0                          # diff depuis le dernier commit"
     echo "  $0 --staged                 # diff des fichiers en attente de commit"
     echo "  $0 --day                    # tout ce qui a changé aujourd'hui"
-    echo "  $0 --week --model gemma3:12b # analyse hebdo avec gemma3:12b"
+    echo "  $0 --week --model deepseek-coder-v2:dagbs # analyse hebdo avec deepseek-coder-v2:dagbs"
     echo "  $0 --staged --verbose        # mode verbeux pour diagnostiquer"
     echo ""
     echo -e "${YELLOW}SORTIE:${NC}  Le message généré est affiché et copié dans le presse-papier."

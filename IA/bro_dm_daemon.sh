@@ -210,6 +210,89 @@ _check_slot_access() {
     return 1
 }
 
+## ── Canal "plain" #rec:<skill> : contribution à la mémoire partagée ───────
+## Syntaxe : "#rec:devops Je maîtrise nginx" → ~/.zen/tmp/flashmem/skills/devops.md
+_handle_rec_skill() {
+    local sender="$1" skill="$2" content="$3"
+    [[ -z "$skill" || -z "$content" ]] && return
+    _log "💾 #rec:$skill de ${sender:0:12}...: ${content:0:60}"
+
+    if python3 "$MY_PATH/skill_flashmem.py" write \
+            --skill "$skill" --text "$content" --npub "$sender" 2>/dev/null; then
+        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+            "💾 Mémorisé dans la base partagée 'skills/${skill}'. Merci pour la contribution ! 🧠" \
+            "${_RELAYS[0]}" 2>/dev/null
+    else
+        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+            "❌ Échec mémorisation skill $skill." \
+            "${_RELAYS[0]}" 2>/dev/null
+    fi
+}
+
+## ── Canal "plain" #mem:<skill> : lecture mémoire partagée ─────────────────
+## Syntaxe : "#mem:devops" → affiche flashmem skills/devops.md
+## Syntaxe : "#mem:"       → liste tous les skills mémorisés
+_handle_mem_skill() {
+    local sender="$1" skill="${2:-}"
+    _log "📖 #mem:${skill:-all} de ${sender:0:12}..."
+
+    local reply
+    if [[ -z "$skill" ]]; then
+        local skills_list
+        skills_list=$(python3 "$MY_PATH/skill_flashmem.py" list 2>/dev/null)
+        if [[ -z "$skills_list" || "$skills_list" == "(aucun)" ]]; then
+            reply="📚 Aucune mémoire skill enregistrée sur ce node.
+Contribuez avec : #rec:<skill> <votre note>
+Exemple : #rec:devops Je maîtrise nginx"
+        else
+            reply="📚 Skills mémorisés sur ce node :
+${skills_list}
+
+Consultez un skill : #mem:<skill>
+Contribuez : #rec:<skill> <note>"
+        fi
+    else
+        local content
+        content=$(python3 "$MY_PATH/skill_flashmem.py" read --skill "$skill" 2>/dev/null)
+        if [[ -z "$content" ]]; then
+            reply="📚 Aucune note pour '${skill}'. Contribuez avec :
+#rec:${skill} <votre expérience ou ressource>"
+        else
+            local lines
+            lines=$(echo "$content" | wc -l)
+            reply="📚 Mémoire partagée '${skill}' (${lines} entrées) :
+${content}"
+        fi
+    fi
+
+    python3 "$SECURE_DM" "$NODE_NSEC" "$sender" "${reply}" "${_RELAYS[0]}" 2>/dev/null
+}
+
+## ── Canal "plain" avec skill context : question liée à un skill ────────────
+## Appelé quand le message contient [ctx:<skill>:<level>] (depuis minelife.html)
+## ou directement avec skill extrait.
+_handle_bro_skill() {
+    local sender="$1" question="$2" skill="$3"
+    [[ -z "$question" ]] && return
+    _log "🎓 BRO skill:$skill de ${sender:0:12}...: ${question:0:80}"
+
+    local answer
+    answer=$(python3 "$MY_PATH/question.py" "$question" \
+        --skill "$skill" \
+        --npub  "$sender" \
+        2>/dev/null)
+
+    if [[ -z "$answer" ]]; then
+        _log "WARN: question.py skill vide — fallback BRO sync"
+        answer=$(bash "$BRO_SYNC" --query "$question" --user "$sender" --slots "0" 2>/dev/null)
+    fi
+    [[ -z "$answer" ]] && answer="⚠️ Service IA temporairement indisponible."
+
+    python3 "$SECURE_DM" "$NODE_NSEC" "$sender" "$answer" "${_RELAYS[0]}" 2>/dev/null \
+        && _log "🎓 BRO skill:$skill réponse envoyée à ${sender:0:12}..." \
+        || _log "WARN: BRO skill:$skill échec envoi DM"
+}
+
 ## ── Canal "plain" avec #rec : sauvegarde mémoire personnelle depuis DM ─
 ## Syntaxe DM : "#rec <texte>"               → slot 0
 ##              "#rec #2 <texte>"             → slot 2 (sociétaires)
@@ -563,19 +646,33 @@ print(f'0{v:.2f}' if v < 1 else f'{v:.2f}')
 ## UPlanet_IA_Responder.sh avec les paramètres reconstruits depuis le payload.
 _handle_bro_ia() {
     local payload="$1"
-    _payload_get "$payload" pubkey event_id lat lon message url kname
+    _payload_get "$payload" pubkey event_id lat lon message url kname skill
     [[ -z "$_PUBKEY" || -z "$_MESSAGE" ]] && \
         _log "WARN: ✈️ bro_ia: payload incomplet (pubkey ou message manquant)" && return
-    _log "✈️ bro_ia: commande BRO roaming de ${_PUBKEY:0:12}... (${_KNAME:-?}): ${_MESSAGE:0:60}"
-    bash "$MY_PATH/UPlanet_IA_Responder.sh" \
-        "$_PUBKEY" \
-        "${_EVENT_ID:-}" \
-        "${_LAT:-0.00}" \
-        "${_LON:-0.00}" \
-        "$_MESSAGE" \
-        "${_URL:-}" \
-        "${_KNAME:-}" \
-        2>/dev/null
+
+    ## Extraire [ctx:<skill>] du message si non fourni explicitement dans le payload
+    local _skill="${_SKILL:-}"
+    if [[ -z "$_skill" && "$_MESSAGE" =~ ^\[ctx:([a-z0-9_-]+)(:[0-9]+)?\][[:space:]]*(.*) ]]; then
+        _skill="${BASH_REMATCH[1]}"
+        _MESSAGE="${BASH_REMATCH[3]}"
+    fi
+
+    _log "✈️ bro_ia: BRO roaming de ${_PUBKEY:0:12}... (${_KNAME:-?}) skill=${_skill:-none}: ${_MESSAGE:0:60}"
+
+    if [[ -n "$_skill" ]]; then
+        ## Réponse pédagogique directe via question.py (avec flashmem+Qdrant)
+        _handle_bro_skill "$_PUBKEY" "$_MESSAGE" "$_skill"
+    else
+        bash "$MY_PATH/UPlanet_IA_Responder.sh" \
+            "$_PUBKEY" \
+            "${_EVENT_ID:-}" \
+            "${_LAT:-0.00}" \
+            "${_LON:-0.00}" \
+            "$_MESSAGE" \
+            "${_URL:-}" \
+            "${_KNAME:-}" \
+            2>/dev/null
+    fi
 }
 
 ## ── GPU lock global : sérialise les générations vidéo sur ce Brain ─────────
@@ -758,6 +855,13 @@ Envoyez-moi vos questions en DM — je rechercherai dans la base de connaissance
 📖 #mem                   → voir toutes vos mémoires
    #mem #2                → voir le contenu du slot 2
 
+🎯 Contexte skill (base de connaissance partagée du node) :
+   #rec:<skill> <note>    → contribuer à la mémoire partagée du skill
+   #mem:<skill>           → lire la mémoire partagée du skill
+   #mem:                  → lister tous les skills mémorisés
+   ex: #rec:devops Je maîtrise nginx et TLS
+   ex: #mem:devops
+
 🎨 #badge <skill>          → générer une image de badge skill (ComfyUI)
    ex: #badge docker      → badge IA pour la compétence docker
 
@@ -854,6 +958,13 @@ _process_event() {
             local slot_str
             slot_str=$(IFS=,; echo "${_slots[*]:-0}")
 
+            ## ── Extraire [ctx:<skill>:<level>] si présent (préfixe minelife.html) ──
+            local _ctx_skill=""
+            if [[ "$question" =~ ^\[ctx:([a-z0-9_-]+)(:[0-9]+)?\][[:space:]]*(.*) ]]; then
+                _ctx_skill="${BASH_REMATCH[1]}"
+                question="${BASH_REMATCH[3]}"
+            fi
+
             ## Router selon la commande DM
             if echo "$question" | grep -qi '#reset'; then
                 _handle_reset "$sender" "$slot"
@@ -864,8 +975,16 @@ _process_event() {
                 badge_skill=$(echo "$question" | sed 's/.*#badge[[:space:]]*//' | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-' | head -c 40)
                 _handle_badge "$sender" "$badge_skill"
 
+            elif [[ "$question" =~ ^#mem:([a-z0-9_-]*)([[:space:]]|$) ]]; then
+                ## #mem:<skill> → lecture mémoire skill partagée
+                _handle_mem_skill "$sender" "${BASH_REMATCH[1]}"
+
             elif echo "$question" | grep -qi '#mem'; then
                 _handle_mem "$sender" "$slot"
+
+            elif [[ "$question" =~ ^#rec:([a-z0-9_-]+)[[:space:]]+(.*) ]]; then
+                ## #rec:<skill> <texte> → contribution mémoire partagée skill
+                _handle_rec_skill "$sender" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
 
             elif echo "$question" | grep -qi '#rec'; then
                 ## Extraire le texte à mémoriser (sans #rec, sans tous les #N, sans #bro...)
@@ -881,6 +1000,11 @@ _process_event() {
                 fi
                 [[ -n "$mem_text" ]] && _handle_rec "$sender" "$mem_text" "$slot"
                 [[ -n "$bro_question" ]] && _handle_bro "$sender" "$bro_question" "$slot_str"
+
+            elif [[ -n "$_ctx_skill" ]]; then
+                ## Question avec contexte skill [ctx:<skill>] → réponse pédagogique
+                _handle_bro_skill "$sender" "$question" "$_ctx_skill"
+
             else
                 _handle_bro "$sender" "$question" "$slot_str"
             fi

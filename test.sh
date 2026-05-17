@@ -8,6 +8,11 @@
 #   ./test.sh g1           → Tests couche G1/Duniter v2
 #   ./test.sh primal       → Tests contrôle primal wallets
 #   ./test.sh systems      → Tests systèmes UPlanet (DID, Oracle, ORE...)
+#   ./test.sh intercom     → Canal inter-NODE DM (NIP-44, bro_ia, Ollama, ComfyUI)
+#   ./test.sh wotx2        → Demo WoTx2 Skills+Craft (coucou/toto/jean)
+#   ./test.sh multipass    → Chaîne MULTIPASS (keygen → NOSTR → ẐEN ORIGIN)
+#   ./test.sh ollama       → Pipeline Ollama (texte + vision llama3.2-vision)
+#   ./test.sh comfyui      → Pipeline ComfyUI (génération image FluxImage)
 #   ./test.sh all          → Tout lancer
 ################################################################################
 MY_PATH="$(cd "$(dirname "$0")" && pwd)"
@@ -84,11 +89,15 @@ show_menu() {
     echo "  2) g1        Couche G1/Duniter v2 (keygen, squid, gcli, PAYforSURE)"
     echo "  3) primal    Controle primal wallets (v1->SS58, squid, intrusion)"
     echo "  4) systems   Systemes UPlanet (DID, Oracle, WoTx2, ORE, Badge)"
-    echo "  6) intercom  Canal inter-NODE DM (zen_like, bro_ia, loopback)"
+    echo "  6) intercom  Canal inter-NODE DM (zen_like, bro_ia, loopback, Ollama, ComfyUI)"
+    echo "  7) wotx2     Demo WoTx2 Skills+Craft (coucou/toto/jean, backfill N² sync)"
+    echo "  8) multipass Chaîne MULTIPASS (keygen → NOSTR → ẐEN ORIGIN)"
+    echo "  9) ollama    Pipeline Ollama (texte + vision llama3.2-vision:11b)"
+    echo " 10) comfyui   Pipeline ComfyUI (génération image FluxImage)"
     echo "  5) all       Tout lancer"
     echo "  0) quit      Quitter"
     echo ""
-    echo -n "  Choix [1-5, 0] : "
+    echo -n "  Choix [1-10, 0] : "
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -135,12 +144,28 @@ case "$CHOICE" in
     6|intercom)
         run_test_script "${MY_PATH}/tests/test_intercom.sh" "Inter-NODE DM (intercom)" "${@:2}" || RC=1
         ;;
+    7|wotx2)
+        run_test_script "${MY_PATH}/tests/test_wotx2_demo.sh" "WoTx2 Demo (coucou/toto/jean)" "${@:2}" || RC=1
+        ;;
+    8|multipass)
+        run_test_script "${MY_PATH}/tests/test_multipass_create.sh" "MULTIPASS Chain (keygen→NOSTR→ẐEN)" "${@:2}" || RC=1
+        ;;
+    9|ollama)
+        run_test_script "${MY_PATH}/tests/test_ollama.sh" "Ollama (texte + vision)" "${@:2}" || RC=1
+        ;;
+    10|comfyui)
+        run_test_script "${MY_PATH}/tests/test_comfyui.sh" "ComfyUI (génération image FluxImage)" "${@:2}" || RC=1
+        ;;
     5|all)
         run_quick
         run_test_script "${MY_PATH}/tests/test_g1_tools.sh" "G1 Tools (Duniter v2)" --quick || RC=1
         run_test_script "${MY_PATH}/tests/test_primal_control.sh" "Primal Wallet Control" || RC=1
         run_test_script "${MY_PATH}/tests/test_all_systems.sh" "UPlanet Systems" || RC=1
         run_test_script "${MY_PATH}/tests/test_intercom.sh" "Inter-NODE DM (intercom)" --quick || RC=1
+        run_test_script "${MY_PATH}/tests/test_wotx2_demo.sh" "WoTx2 Demo (coucou/toto/jean)" --quick || RC=1
+        run_test_script "${MY_PATH}/tests/test_multipass_create.sh" "MULTIPASS Chain" --quick || RC=1
+        run_test_script "${MY_PATH}/tests/test_ollama.sh" "Ollama (texte + vision)" --quick || RC=1
+        run_test_script "${MY_PATH}/tests/test_comfyui.sh" "ComfyUI (FluxImage)" --quick || RC=1
         ;;
     0|quit|q)
         echo "Bye."
@@ -148,7 +173,7 @@ case "$CHOICE" in
         ;;
     *)
         echo "Choix invalide : $CHOICE"
-        echo "Usage: $0 [quick|g1|primal|systems|all]"
+        echo "Usage: $0 [quick|g1|primal|systems|intercom|wotx2|multipass|ollama|comfyui|all]"
         exit 1
         ;;
 esac

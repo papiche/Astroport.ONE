@@ -564,3 +564,47 @@ Les points suivants sont tous implémentés dans `minelife.html` :
 | [NIP-23](23.md) / Kind 30023 | Articles markdown comme ressources |
 | [NIP-42 ext.](42-oracle-permits-extension.md) | WoTx2 Permits (30500–30504) |
 | [NIP-58 ext.](58-oracle-badges-extension.md) | Badges visuels NIP-58 |
+| [NIP-40](40.md) | Expiration des events (TTL inter-NODE DM) |
+
+---
+
+## Durée de Vie des Messages Inter-NODE (NIP-40 TTL)
+
+Tous les messages Kind 4 (DM chiffrés NIP-44) envoyés entre stations via `nostr_node_intercom.py` portent un tag d'expiration NIP-40 (`["expiration", "<timestamp>"]`) pour garantir que les relays ne stockent pas indéfiniment des ordres opérationnels.
+
+### TTL par canal
+
+| Canal | TTL | Justification |
+|-------|-----|---------------|
+| `bro_ia` (roaming forward) | 3 600 s (1 h) | La commande BRO est traitée immédiatement ou abandonnée |
+| `comfyui_job` | 7 200 s (2 h) | Fenêtre max pour qu'un Brain GPU démarre le job |
+| `comfyui_result` | 3 600 s (1 h) | Le résultat doit être récupéré avant expiration |
+| `udrive` | 86 400 s (24 h) | Sync fichier moins urgent |
+| `zen_like` | 86 400 s (24 h) | Paiement relayé, retenter dans la journée si absent |
+| Défaut `send` | 86 400 s (24 h) | Tous les canaux non listés ci-dessus |
+
+### Utilisation
+
+```bash
+# Envoi avec TTL explicite (en secondes)
+python3 tools/nostr_node_intercom.py send \
+    --nsec    "$NODE_NSEC" \
+    --to      "$DEST_HEX" \
+    --channel "bro_ia" \
+    --payload "$JSON" \
+    --ttl     3600 \
+    --relays  "wss://relay.copylaradio.com"
+
+# TTL=0 → message permanent (déconseillé pour les canaux opérationnels)
+```
+
+### Comptes test déterministes
+
+Pour valider le protocole sans utiliser les clés de production :
+
+| Compte | Salt | Pepper | Usage |
+|--------|------|--------|-------|
+| `coucou` | `coucou` | `coucou` | Émetteur test |
+| `toto` | `toto` | `toto` | Récepteur test |
+
+Les tests `tests/test_intercom.sh` (section 6-8) utilisent ces comptes pour vérifier le cycle complet send→receive→decrypt avec TTL=300s, ainsi que les services Ollama et ComfyUI.
