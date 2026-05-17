@@ -160,8 +160,10 @@ _handle_badge() {
 
     if [[ -n "$ipfs_url" ]] && echo "$ipfs_url" | grep -q "ipfs"; then
         _log "🎨 #badge OK pour $skill : $ipfs_url"
+        local _badge_reply
+        _badge_reply=$(printf "✅ Badge '%s' généré !\n🖼️ %s\n\nCopiez ce lien pour l'ajouter comme ressource dans l'onglet Formation de my_wotx2.html" "$skill" "$ipfs_url")
         python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
-            "✅ Badge '${skill}' généré !\n🖼️ ${ipfs_url}\n\nCopiez ce lien pour l'ajouter comme ressource dans l'onglet Formation de my_wotx2.html" \
+            "$_badge_reply" \
             "${_RELAYS[0]}" 2>/dev/null
     else
         _log "WARN: #badge échec génération pour $skill"
@@ -503,6 +505,27 @@ _handle_webcam() {
     _handle_udrive "$payload"
 }
 
+## ── Canal "bro_ia" : commande BRO relayée depuis station visiteur (roaming) ─
+## La station visiteur (B) a reçu un kind 1 #BRO pour un utilisateur .roaming
+## et le relaie ici (home station A) via DM NIP-44. On appelle directement
+## UPlanet_IA_Responder.sh avec les paramètres reconstruits depuis le payload.
+_handle_bro_ia() {
+    local payload="$1"
+    _payload_get "$payload" pubkey event_id lat lon message url kname
+    [[ -z "$_PUBKEY" || -z "$_MESSAGE" ]] && \
+        _log "WARN: ✈️ bro_ia: payload incomplet (pubkey ou message manquant)" && return
+    _log "✈️ bro_ia: commande BRO roaming de ${_PUBKEY:0:12}... (${_KNAME:-?}): ${_MESSAGE:0:60}"
+    bash "$MY_PATH/UPlanet_IA_Responder.sh" \
+        "$_PUBKEY" \
+        "${_EVENT_ID:-}" \
+        "${_LAT:-0.00}" \
+        "${_LON:-0.00}" \
+        "$_MESSAGE" \
+        "${_URL:-}" \
+        "${_KNAME:-}" \
+        2>/dev/null
+}
+
 ## ── Canal "udrive" : sync fichier depuis IPFS → APP/uDRIVE ───────────
 _handle_udrive() {
     local payload="$1"
@@ -674,7 +697,7 @@ _process_event() {
             elif echo "$question" | grep -qi '#badge'; then
                 ## #badge <skill> → génère un badge image via ComfyUI
                 local badge_skill
-                badge_skill=$(echo "$question" | sed 's/.*#badge[[:space:]]*//' | tr -cd 'a-z0-9_-' | head -c 40)
+                badge_skill=$(echo "$question" | sed 's/.*#badge[[:space:]]*//' | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-' | head -c 40)
                 _handle_badge "$sender" "$badge_skill"
 
             elif echo "$question" | grep -qi '#mem'; then
@@ -706,6 +729,9 @@ _process_event() {
             ;;
         webcam)
             _handle_webcam "$payload"
+            ;;
+        bro_ia)
+            _handle_bro_ia "$payload"
             ;;
         *)
             _log "Canal inconnu '$channel' de ${sender:0:12}... — ignoré"

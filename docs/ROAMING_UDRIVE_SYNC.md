@@ -92,13 +92,44 @@ python3 tools/nostr_node_intercom.py send \
 
 ## Canaux définis
 
-| Canal    | Payload requis                                                   | Usage                                        |
-|----------|------------------------------------------------------------------|----------------------------------------------|
-| `udrive` | `email`, `cid`, `filename`, `filetype`                          | Sync fichier uDRIVE visiteur → home          |
-| `vocals` | `email`, `cid`, `filename`, `filetype`, `mime_type`, `duration`, `title`, `kind` | Publication kind 1222/1244 (vocal) via home  |
-| `webcam` | `email`, `cid`, `filename`, `filetype`, `mime_type`, `duration`, `title`         | Publication kind 21/22 (vidéo) via home      |
+| Canal     | Payload requis                                                                    | Usage                                               |
+|-----------|-----------------------------------------------------------------------------------|-----------------------------------------------------|
+| `udrive`  | `email`, `cid`, `filename`, `filetype`                                            | Sync fichier uDRIVE visiteur → home                 |
+| `vocals`  | `email`, `cid`, `filename`, `filetype`, `mime_type`, `duration`, `title`, `kind` | Publication kind 1222/1244 (vocal) via home         |
+| `webcam`  | `email`, `cid`, `filename`, `filetype`, `mime_type`, `duration`, `title`         | Publication kind 21/22 (vidéo) via home             |
+| `bro_ia`  | `pubkey`, `event_id`, `lat`, `lon`, `message`, `url`, `kname`                    | Commande BRO (#BRO kind 1) relayée depuis visiteur  |
 
 *(Extensible : `did_update`, `zen_payment`, `alert`, …)*
+
+### Canal `bro_ia` — Relay des commandes BRO pour utilisateurs en roaming
+
+Quand un MULTIPASS en roaming envoie un message kind 1 `#BRO` sur le relay de la station visiteur,
+`UPlanet_IA_Responder.sh` (station B) détecte le marker `.roaming`, lit `home.station` pour obtenir
+le NODE_HEX de la home station, puis envoie un DM NIP-44 canal `bro_ia` plutôt que de traiter la
+commande localement.
+
+```
+Station B (visiteur) — UPlanet_IA_Responder.sh :
+  1. Reçoit kind 1 #BRO de fred@example.com
+  2. Détecte ~/.zen/game/nostr/fred@example.com/.roaming
+  3. Lit home.station → HOME_NODE_HEX (64 hex)
+  4. Construit payload bro_ia : {pubkey, event_id, lat, lon, message, url, kname}
+  5. nostr_node_intercom.py send --channel bro_ia → DM NIP-44 → relay
+  6. exit 0 (pas de traitement local)
+
+Station A (home) — bro_dm_daemon.sh :
+  1. inotifywait reçoit le fichier JSON dans bro_dm_queue/
+  2. déchiffre via nostr_node_intercom.py decrypt
+  3. channel == "bro_ia" → _handle_bro_ia()
+  4. Appelle UPlanet_IA_Responder.sh avec les paramètres reconstruits
+  5. Traitement complet avec les vraies clés joueur et le vrai uDRIVE
+```
+
+**Avantages** :
+- La home station a les clés du joueur et accès à son uDRIVE/APP
+- L'IPNS n'est publié que par la home station (source de vérité)
+- Les ressources IA (Ollama, ComfyUI) de la home station sont utilisées
+- La station visiteur reste légère (pas de traitement IA lourd)
 
 ### Résolution `home_node_hex` pour AMIS_ROAMING
 
@@ -115,18 +146,6 @@ peer ID libp2p de la home station. La résolution suit donc cet ordre de priorit
 **Prérequis** : la home station doit avoir publié le champ `home_station` dans le
 profil kind 0 du joueur via `nostr_setup_profile.py` (fait lors de la création MULTIPASS).
 
-## Intégration UPassport (`/api/fileupload`)
-
-La fonction `_maybe_send_roaming_dm()` dans [media_upload.py](../UPassport/routers/media_upload.py)
-est appelée automatiquement si **`user_dir/.roaming` existe OU si `APP/uDRIVE/` n'existe pas**
-(pas de uDRIVE local → impossible de régénérer le manifest localement) :
-
-1. Lit `home.station` (fichier local ou IPFS fallback via NOSTRNS)
-2. Extrait le NODE_HEX de la home station (`IPFSNODEID:HEX`)
-3. Lit `~/.zen/game/secret.nostr` → NSEC du NODE local (station B)
-4. Appelle `nostr_node_intercom.py send-udrive` en subprocess async
-5. Si succès → supprime le fichier local, retourne `file_cid` au client
-6. Si échec → laisse le fichier, NOSTRCARD.refresh.sh fera le relais
 
 ## Identités NODE
 
@@ -145,13 +164,15 @@ du joueur pour connaître le HEX de la home station et lui envoyer les DMs.
 | Qui                                 | Quand             | Rôle                                      |
 |-------------------------------------|-------------------|-------------------------------------------|
 | `/api/fileupload` (Station B)       | À chaque upload   | DM NIP-04 immédiat → home station         |
+| `UPlanet_IA_Responder.sh` (Station B) | Kind 1 #BRO reçu | Détecte .roaming → DM bro_ia → home station |
+| `bro_dm_daemon.sh` (Station A)      | Queue DM inotify  | Canal bro_ia → UPlanet_IA_Responder.sh local |
 | `NOSTRCARD.refresh.sh` DM listener (Station A) | Chaque cycle | Réception CIDs + dépôt APP/uDRIVE |
 | `NOSTRCARD.refresh.sh` CLEANUP (Station B) | Chaque cycle | Supprime comptes roaming > 24h inactifs |
 | `backfill_constellation.sh`         | Toutes les heures | Propagation kind 4 inter-relays           |
 
 ## Sécurité
 
-- DMs chiffrés NIP-04 (ECDH + AES-CBC) : seule la home station peut déchiffrer
+- DMs chiffrés NIP-44 (ChaCha20-Poly1305 + HKDF-SHA256) : seule la home station peut déchiffrer
 - Le CID IPFS garantit l'intégrité du fichier par contenu adressable
 - La home station vérifie que l'email du payload correspond à un MULTIPASS local (non-roaming)
 - Après envoi réussi, le fichier local est supprimé sur la station visiteur
@@ -163,3 +184,5 @@ du joueur pour connaître le HEX de la home station et lui envoyer les DMs.
 - `NOSTRCARD.refresh.sh` — DM listener (ligne ~325), PULL roaming (ligne ~1686)
 - `NIP-101/relay.writePolicy.plugin/filter/22242.sh` — Création répertoire roaming éphémère
 - `tools/make_NOSTRCARD.sh` — Écriture de `home.station` lors de la création MULTIPASS
+- `IA/UPlanet_IA_Responder.sh` — Détection `.roaming` → DM channel `bro_ia` vers home station
+- `IA/bro_dm_daemon.sh` — Canal `bro_ia` : `_handle_bro_ia()` appelle UPlanet_IA_Responder localement

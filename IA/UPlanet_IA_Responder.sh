@@ -427,6 +427,51 @@ if [[ "${TAGS[BRO]}" != true && "${TAGS[BOT]}" != true ]]; then
     exit 0
 fi
 
+## ── Détection roaming : rediriger les commandes BRO vers la home station ──
+## Si le KNAME est marqué .roaming sur cette station visiteur (B), on envoie
+## la commande via DM NIP-44 channel "bro_ia" à la home station (A) pour que
+## bro_dm_daemon.sh la traite avec les vraies clés et le vrai uDRIVE.
+if [[ "$KNAME" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+    _KNAME_NOSTR_DIR="$HOME/.zen/game/nostr/$KNAME"
+    if [[ -f "$_KNAME_NOSTR_DIR/.roaming" ]]; then
+        _HOME_NODE_HEX=""
+        [[ -f "$_KNAME_NOSTR_DIR/home.station" ]] && \
+            _HOME_NODE_HEX=$(cut -d: -f2 < "$_KNAME_NOSTR_DIR/home.station" | tr -d '[:space:]')
+        if [[ ${#_HOME_NODE_HEX} -eq 64 ]]; then
+            echo "✈️ BRO roaming: $KNAME → forwarding to home station ${_HOME_NODE_HEX:0:12}..." >&2
+            _BRO_PAYLOAD=$(python3 -c "
+import json, sys
+print(json.dumps({
+    'pubkey':   sys.argv[1],
+    'event_id': sys.argv[2],
+    'lat':      sys.argv[3],
+    'lon':      sys.argv[4],
+    'message':  sys.argv[5],
+    'url':      sys.argv[6],
+    'kname':    sys.argv[7],
+}))
+" "$PUBKEY" "$EVENT" "$LAT" "$LON" "$MESSAGE" "${URL:-}" "$KNAME" 2>/dev/null)
+            if [[ -n "$_BRO_PAYLOAD" && -s "$HOME/.zen/game/secret.nostr" ]]; then
+                source "$HOME/.zen/game/secret.nostr"
+                _NODE_NSEC="${NSEC:-}"
+                unset NSEC NPUB HEX
+                python3 "$HOME/.zen/Astroport.ONE/tools/nostr_node_intercom.py" send \
+                    --nsec    "$_NODE_NSEC" \
+                    --to      "$_HOME_NODE_HEX" \
+                    --channel "bro_ia" \
+                    --payload "$_BRO_PAYLOAD" \
+                    --relays  "${myRELAY:-wss://relay.copylaradio.com}" \
+                    2>/dev/null \
+                    && echo "✈️ BRO IA forward OK → ${_HOME_NODE_HEX:0:12}..." >&2 \
+                    || echo "WARN: BRO IA forward FAILED pour $KNAME" >&2
+            fi
+            exit 0
+        else
+            echo "WARN: home station HEX introuvable pour $KNAME (roaming) — traitement local" >&2
+        fi
+    fi
+fi
+
 # Detect memory slot once
 memory_slot=0
 for i in {1..12}; do
