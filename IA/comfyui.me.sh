@@ -82,6 +82,41 @@ save_connection_status() {
 }
 
 ########################################################
+## Load-Balancing Helpers
+########################################################
+
+# Queue depth of the currently connected ComfyUI (running + pending jobs)
+_query_queue_depth() {
+    curl -s --max-time 3 "http://localhost:$COMFYUI_PORT/queue" 2>/dev/null | \
+        python3 -c "
+import json,sys
+try:
+    d=json.load(sys.stdin)
+    print(len(d.get('queue_running',[])) + len(d.get('queue_pending',[])))
+except:
+    print(99)
+" 2>/dev/null || echo 99
+}
+
+# Power-score of a swarm node from its cached 12345.json (0 if absent)
+_node_power_score() {
+    local node_id="$1"
+    local j="$HOME/.zen/tmp/swarm/$node_id/12345.json"
+    [[ ! -f "$j" ]] && j="$HOME/.zen/tmp/$node_id/12345.json"
+    [[ -f "$j" ]] && jq -r '.capacities.power_score // 0' "$j" 2>/dev/null && return
+    echo 0
+}
+
+# NOSTR HEX of a swarm node from its cached 12345.json
+_node_nostr_hex() {
+    local node_id="$1"
+    local j="$HOME/.zen/tmp/swarm/$node_id/12345.json"
+    [[ ! -f "$j" ]] && j="$HOME/.zen/tmp/$node_id/12345.json"
+    [[ -f "$j" ]] && jq -r '.NODEHEX // ""' "$j" 2>/dev/null && return
+    echo ""
+}
+
+########################################################
 ## Detection Functions
 ########################################################
 
@@ -280,57 +315,90 @@ close_ssh_tunnel() {
     return 1
 }
 
-# Connect via IPFS P2P swarm with node selection
+# Connect via IPFS P2P swarm with node selection and load-aware routing
+# $1 : target  — "" | "auto" | number | partial-node-id
+# $2 : max_queue — max accepted queue depth (default 2); set to 1 for heavy jobs
 connect_via_swarm() {
     local target="${1:-}"
-    
+    local max_queue="${2:-2}"
+
     echo -e "\n${BOLD}Connecting via IPFS P2P swarm...${NC}"
-    
+
     local nodes=()
     local node_ids=()
-    
+
     # Collect available nodes
     for script in ~/.zen/tmp/swarm/*/x_${SERVICE_NAME}.sh; do
         if [[ -f "$script" ]]; then
             nodes+=("$script")
-            node_ids+=($(basename $(dirname "$script")))
+            node_ids+=("$(basename "$(dirname "$script")")")
         fi
     done
-    
+
     # Add local node if available
     if [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh ]]; then
         nodes+=("$HOME/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh")
         node_ids+=("$IPFSNODEID")
     fi
-    
+
     if [[ ${#nodes[@]} -eq 0 ]]; then
         print_status "FAIL" "No ${SERVICE_NAME} nodes found in swarm"
         return 1
     fi
-    
+
+    # Helper: try connecting to one node; checks queue depth; returns 0 on success
+    _try_connect_node() {
+        local script="$1" node="$2"
+        ipfs p2p close -p "/x/${SERVICE_NAME}-${node}" 2>/dev/null || true
+        if ! bash "$script" 2>/dev/null; then return 1; fi
+        sleep 1
+        if ! test_api "true"; then
+            ipfs p2p close -p "/x/${SERVICE_NAME}-${node}" 2>/dev/null
+            return 1
+        fi
+        local depth
+        depth=$(_query_queue_depth)
+        if [[ "$depth" -gt "$max_queue" ]]; then
+            print_status "WARN" "Node ${node:0:20}... queue full ($depth > $max_queue), skipping"
+            ipfs p2p close -p "/x/${SERVICE_NAME}-${node}" 2>/dev/null
+            return 1
+        fi
+        local node_hex
+        node_hex=$(_node_nostr_hex "$node")
+        save_connection_status "P2P" "$node"
+        echo "CONNECTION_NODE_HEX=$node_hex" >> "$STATUS_FILE"
+        print_status "OK" "Connected to ${node:0:20}... (queue: $depth)"
+        return 0
+    }
+
+    # Build power-score sorted index list (descending)
+    _sorted_indices() {
+        local -a pairs=()
+        for i in "${!node_ids[@]}"; do
+            local score
+            score=$(_node_power_score "${node_ids[$i]}")
+            pairs+=("${score}|${i}")
+        done
+        printf '%s\n' "${pairs[@]}" | sort -t'|' -k1 -rn | cut -d'|' -f2
+    }
+
     local selected_script=""
     local selected_node=""
-    
+
     # Handle different target specifications
     if [[ -n "$target" ]]; then
         case "$target" in
             "auto"|"random"|"AUTO"|"RANDOM")
-                local shuffled=($(printf '%s\n' "${!nodes[@]}" | sort -R))
-                for idx in "${shuffled[@]}"; do
+                # Use power-score ordering instead of pure random
+                while IFS= read -r idx; do
                     selected_script="${nodes[$idx]}"
                     selected_node="${node_ids[$idx]}"
-                    echo "Trying node: $selected_node"
-                    if bash "$selected_script" 2>/dev/null; then
-                        sleep 2
-                        if test_api "true"; then
-                            save_connection_status "P2P" "$selected_node"
-                            print_status "OK" "Connected to $selected_node via IPFS P2P"
-                            return 0
-                        fi
-                        ipfs p2p close -p "/x/${SERVICE_NAME}-$selected_node" 2>/dev/null
+                    echo "Trying node: ${selected_node:0:20}... (score: $(_node_power_score "$selected_node"))"
+                    if _try_connect_node "$selected_script" "$selected_node"; then
+                        return 0
                     fi
-                done
-                print_status "FAIL" "No working nodes available"
+                done < <(_sorted_indices)
+                print_status "FAIL" "No available node with queue ≤ $max_queue"
                 return 1
                 ;;
             [0-9]|[0-9][0-9])
@@ -362,55 +430,52 @@ connect_via_swarm() {
                 ;;
         esac
     else
-        # No target specified - show selection if multiple nodes
+        # No target: display list then try nodes in power-score order
         if [[ ${#nodes[@]} -gt 1 ]]; then
-            echo -e "\n${BOLD}Available P2P nodes:${NC}\n"
-            for i in "${!node_ids[@]}"; do
-                local idx=$((i + 1))
-                local node_id="${node_ids[$i]}"
-                local script="${nodes[$i]}"
-                local myipfs_file=$(dirname "$script")/myIPFS.txt
+            echo -e "\n${BOLD}Available P2P nodes (sorted by power-score):${NC}\n"
+            local rank=1
+            while IFS= read -r idx; do
+                local node_id="${node_ids[$idx]}"
+                local script="${nodes[$idx]}"
+                local myipfs_file
+                myipfs_file="$(dirname "$script")/myIPFS.txt"
                 local gateway=""
                 [[ -f "$myipfs_file" ]] && gateway=$(cat "$myipfs_file")
-                
                 local local_marker=""
                 [[ "$node_id" == "$IPFSNODEID" ]] && local_marker=" ${GREEN}(local)${NC}"
-                
-                echo -e "  ${CYAN}[$idx]${NC} ${node_id:0:20}...${local_marker}"
+                local score
+                score=$(_node_power_score "$node_id")
+                echo -e "  ${CYAN}[$rank]${NC} ${node_id:0:20}...${local_marker} (score: $score)"
                 [[ -n "$gateway" ]] && echo -e "      └─ $gateway"
-            done
-            
+                ((rank++))
+            done < <(_sorted_indices)
             echo ""
             echo -e "${YELLOW}Tip:${NC} Use 'P2P <number>' or 'P2P <node_id>' to select"
             echo ""
-            echo -e "Connecting to first available node..."
+            echo -e "Connecting to best available node..."
         fi
-        selected_script="${nodes[0]}"
-        selected_node="${node_ids[0]}"
-    fi
-    
-    # Connect to selected node
-    if [[ -n "$selected_script" ]]; then
-        echo "Connecting to: $selected_node"
-        ipfs p2p close -p "/x/${SERVICE_NAME}-${selected_node}" 2>/dev/null || true
-        if bash "$selected_script" 2>/dev/null; then
-            sleep 2
-            if test_api "true"; then
-                save_connection_status "P2P" "$selected_node"
-                print_status "OK" "Connected to $selected_node via IPFS P2P"
+        # Try nodes in power-score order with queue check
+        while IFS= read -r idx; do
+            selected_script="${nodes[$idx]}"
+            selected_node="${node_ids[$idx]}"
+            if _try_connect_node "$selected_script" "$selected_node"; then
                 return 0
-            else
-                ipfs p2p close -p "/x/${SERVICE_NAME}-$selected_node" 2>/dev/null
-                print_status "FAIL" "Connected but API not responding"
-                return 1
             fi
-        else
-            ipfs p2p close -p "/x/${SERVICE_NAME}-${selected_node}" 2>/dev/null || true
-            print_status "FAIL" "Failed to establish P2P connection to $selected_node"
-            return 1
-        fi
+        done < <(_sorted_indices)
+        print_status "FAIL" "No available node with queue ≤ $max_queue"
+        return 1
     fi
-    
+
+    # Connect to explicitly selected node (by number or ID) — no queue check override
+    if [[ -n "$selected_script" ]]; then
+        echo "Connecting to: ${selected_node:0:20}..."
+        if _try_connect_node "$selected_script" "$selected_node"; then
+            return 0
+        fi
+        print_status "FAIL" "Failed to connect to $selected_node"
+        return 1
+    fi
+
     return 1
 }
 
@@ -679,11 +744,32 @@ case "${1^^}" in
         ;;
     "P2P"|"SWARM"|"IPFS")
         print_header
-        if connect_via_swarm "$2"; then
+        if connect_via_swarm "$2" "2"; then
             echo -e "API ready at ${GREEN}http://localhost:$COMFYUI_PORT${NC}"
             get_system_stats
             exit 0
         fi
+        exit 1
+        ;;
+    "IMAGE"|"MUSIC")
+        # Load-aware auto-connect for specific job types
+        # IMAGE: max 2 queued jobs; MUSIC: max 1 (longer GPU time)
+        local _mq=2
+        [[ "${1^^}" == "MUSIC" ]] && _mq=1
+        if check_port "true" && test_api "true"; then
+            echo "${SERVICE_NAME^} API ready (local) at http://localhost:$COMFYUI_PORT"
+            exit 0
+        fi
+        if connect_via_swarm "" "$_mq"; then
+            echo "${SERVICE_NAME^} API ready via P2P at http://localhost:$COMFYUI_PORT"
+            exit 0
+        fi
+        echo "P2P unavailable, trying SSH tunnel as fallback..."
+        if establish_ssh_tunnel "auto"; then
+            echo "${SERVICE_NAME^} API ready via SSH at http://localhost:$COMFYUI_PORT"
+            exit 0
+        fi
+        print_status "FAIL" "No ${SERVICE_NAME} available for ${1^^} job"
         exit 1
         ;;
     "")
@@ -693,9 +779,9 @@ case "${1^^}" in
             echo "${SERVICE_NAME^} API ready at http://localhost:$COMFYUI_PORT"
             exit 0
         fi
-        
+
         # Essaim P2P en priorité (réseau décentralisé)
-        if connect_via_swarm; then
+        if connect_via_swarm "" "2"; then
             echo "${SERVICE_NAME^} API ready via P2P at http://localhost:$COMFYUI_PORT"
             exit 0
         fi

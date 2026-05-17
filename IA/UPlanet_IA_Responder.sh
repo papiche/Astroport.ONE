@@ -427,6 +427,97 @@ if [[ "${TAGS[BRO]}" != true && "${TAGS[BOT]}" != true ]]; then
     exit 0
 fi
 
+## ── Helpers génération GPU ───────────────────────────────────────────────────
+## Vrai si ComfyUI est disponible localement (sans ouvrir de tunnel)
+_comfyui_local_available() {
+    curl -s --max-time 3 "http://localhost:8188/system_stats" -o /dev/null 2>/dev/null
+}
+
+## Retourne le NODE_HEX du meilleur Brain disponible dans le swarm (comfyui exposé,
+## power_score le plus élevé). Retourne chaîne vide si aucun.
+_find_brain_node_hex() {
+    local best_hex="" best_score=-1
+    for _script in "$HOME/.zen/tmp/swarm/"*/x_comfyui.sh; do
+        [[ ! -f "$_script" ]] && continue
+        local _node_id _j _score _hex
+        _node_id=$(basename "$(dirname "$_script")")
+        _j="$HOME/.zen/tmp/swarm/$_node_id/12345.json"
+        [[ ! -f "$_j" ]] && continue
+        _score=$(jq -r '.capacities.power_score // 0' "$_j" 2>/dev/null || echo 0)
+        _hex=$(jq -r '.NODEHEX // ""' "$_j" 2>/dev/null || echo "")
+        [[ ${#_hex} -ne 64 ]] && continue
+        if python3 -c "import sys; sys.exit(0 if float('$_score') > float('$best_score') else 1)" 2>/dev/null; then
+            best_score="$_score"
+            best_hex="$_hex"
+        fi
+    done
+    echo "$best_hex"
+}
+
+## Dispatch un job vidéo : local si ComfyUI dispo, sinon DM "comfyui_job" vers Brain.
+## $1=mode (t2v|i2v), $2=prompt, $3=source_url, $4=udrive_videos_path
+## Outputs :
+##   URL IPFS si génération locale réussie
+##   "__DISPATCHED__" si envoyé au Brain (résultat viendra par DM)
+##   "" en cas d'échec
+_dispatch_comfyui_video_job() {
+    local _mode="$1" _prompt="$2" _src_url="${3:-}" _udrive_videos="${4:-}"
+
+    ## Cas local : ComfyUI disponible directement
+    if _comfyui_local_available; then
+        if [[ "$_mode" == "i2v" ]]; then
+            bash "$MY_PATH/image_to_video.sh" "$_prompt" "$_src_url" "$_udrive_videos" 2>/dev/null
+        else
+            bash "$MY_PATH/generate_video.sh" "$_prompt" \
+                "$MY_PATH/workflow/video_wan2_2_5B_ti2v.json" "$_udrive_videos" 2>/dev/null
+        fi
+        return
+    fi
+
+    ## Cas distant : chercher un Brain dans le swarm
+    local _brain_hex
+    _brain_hex=$(_find_brain_node_hex)
+    if [[ -z "$_brain_hex" ]]; then
+        echo "" ; return 1
+    fi
+
+    ## Charger les clés NODE
+    local _node_nsec _node_hex
+    if [[ -s "$HOME/.zen/game/secret.nostr" ]]; then
+        source "$HOME/.zen/game/secret.nostr"
+        _node_nsec="${NSEC:-}"; _node_hex="${HEX:-}"
+        unset NSEC NPUB HEX
+    fi
+    [[ -z "$_node_nsec" || -z "$_node_hex" ]] && echo "" && return 1
+
+    local _job_id="${CURRENT_TIMESTAMP}_${PUBKEY:0:8}"
+    local _payload
+    _payload=$(python3 -c "
+import json, sys
+print(json.dumps({
+    'email':          sys.argv[1],
+    'prompt':         sys.argv[2],
+    'mode':           sys.argv[3],
+    'source_url':     sys.argv[4],
+    'reply_node_hex': sys.argv[5],
+    'reply_pubkey':   sys.argv[6],
+    'job_id':         sys.argv[7],
+}))
+" "$KNAME" "$_prompt" "$_mode" "$_src_url" "$_node_hex" "$PUBKEY" "$_job_id" 2>/dev/null)
+
+    if python3 "$HOME/.zen/Astroport.ONE/tools/nostr_node_intercom.py" send \
+            --nsec    "$_node_nsec" \
+            --to      "$_brain_hex" \
+            --channel "comfyui_job" \
+            --payload "$_payload" \
+            --relays  "${myRELAY:-wss://relay.copylaradio.com}" \
+            2>/dev/null; then
+        echo "__DISPATCHED__"
+    else
+        echo ""
+    fi
+}
+
 ## ── Détection roaming : rediriger les commandes BRO vers la home station ──
 ## Si le KNAME est marqué .roaming sur cette station visiteur (B), on envoie
 ## la commande via DM NIP-44 channel "bro_ia" à la home station (A) pour que
@@ -1337,8 +1428,8 @@ Détails: ${ERROR_LINE}"
                 
                 # Generate illustration image for the article
                 echo "Generating illustration image for search result..." >&2
-                $MY_PATH/comfyui.me.sh
-                
+                $MY_PATH/comfyui.me.sh image
+
                 # Use AI to create an optimized Stable Diffusion prompt based on the summary
                 echo "Creating AI-generated prompt for illustration based on article summary..." >&2
                 SD_PROMPT="$($MY_PATH/question.py --json "Stable Diffusion prompt for: ${ARTICLE_SUMMARY} --- OUTPUT ONLY: visual descriptors in English. NO text/words/emojis/brands. Focus: composition, colors, style, objects." --pubkey ${PUBKEY})"
@@ -1432,7 +1523,7 @@ Détails: ${ERROR_LINE}"
             ######################################################### #image
             elif [[ "${TAGS[image]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#image//g; s/"//g' <<< "$message_text")
-                $MY_PATH/comfyui.me.sh
+                $MY_PATH/comfyui.me.sh image
                 start_time=$(date +%s.%N)
                 
                 # Get user uDRIVE path and generate image
@@ -1455,35 +1546,25 @@ Détails: ${ERROR_LINE}"
                 fi
             elif [[ "${TAGS[video]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#video//g; s/#i2v//g; s/"//g' <<< "$message_text")
-                
+
                 # Check if an image is attached - determines T2V vs I2V mode
                 if [[ -n "$URL" ]]; then
                     # IMAGE-TO-VIDEO (I2V) - Requires CONSTELLATION tier
                     if ! is_constellation_from_did "$user_id"; then
                         echo "VIDEO I2V: Access denied - user $user_id is not CONSTELLATION tier" >&2
                         KeyANSWER=$(get_constellation_required_message "#BRO #video I2V (Image-to-Video)")
-                        # Add 1-hour TTL for access denied messages (NIP-40)
                         EXPIRATION_TS=$(($(date +%s) + 3600))
                         ExtraTags="[['t', 'I2VAccessDenied'], ['expiration', '$EXPIRATION_TS']]"
                     else
-                        echo "Image detected: Using Image-to-Video (Wan2.2 14B i2v) workflow" >&2
-                        echo "Source image: $URL" >&2
-                        echo "Prompt: $cleaned_text" >&2
-                        
-                        $MY_PATH/comfyui.me.sh
+                        echo "Image detected: I2V — dispatching via comfyui queue" >&2
                         USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
-                        
-                        if [ $? -eq 0 ] && [ -n "$USER_UDRIVE_PATH" ]; then
-                            # Ensure Videos directory exists
-                            mkdir -p "$USER_UDRIVE_PATH/Videos"
-                            echo "Using user uDRIVE/Videos for i2v video output: $USER_UDRIVE_PATH/Videos" >&2
-                            VIDEO_AI_RETURN="$($MY_PATH/image_to_video.sh "${cleaned_text}" "$URL" "$USER_UDRIVE_PATH/Videos")"
-                        else
-                            echo "Warning: Using default location for i2v video generation" >&2
-                            VIDEO_AI_RETURN="$($MY_PATH/image_to_video.sh "${cleaned_text}" "$URL")"
-                        fi
-                        
-                        if [ -n "$VIDEO_AI_RETURN" ]; then
+                        local _udv="${USER_UDRIVE_PATH:+$USER_UDRIVE_PATH/Videos}"
+                        [[ -n "$_udv" ]] && mkdir -p "$_udv"
+                        VIDEO_AI_RETURN=$(_dispatch_comfyui_video_job "i2v" "$cleaned_text" "$URL" "$_udv")
+                        if [[ "$VIDEO_AI_RETURN" == "__DISPATCHED__" ]]; then
+                            KeyANSWER="⏳ Génération I2V lancée sur un Brain de la constellation... Vous recevrez le résultat par DM dès qu'il sera prêt. 🎬"
+                            ExtraTags="[['t', 'video'], ['t', 'i2v'], ['t', 'comfyui'], ['t', 'queued']]"
+                        elif [[ -n "$VIDEO_AI_RETURN" ]]; then
                             KeyANSWER="$VIDEO_AI_RETURN"
                             ExtraTags="[['t', 'video'], ['t', 'i2v'], ['t', 'comfyui'], ['t', 'ai-generated'], ['imeta', 'url $URL']]"
                         else
@@ -1495,26 +1576,18 @@ Détails: ${ERROR_LINE}"
                     if ! is_societaire_from_did "$user_id"; then
                         echo "VIDEO T2V: Access denied - user $user_id is not a sociétaire" >&2
                         KeyANSWER=$(get_societaire_required_message "#BRO #video T2V (Text-to-Video)")
-                        # Add 1-hour TTL for access denied messages (NIP-40)
                         EXPIRATION_TS=$(($(date +%s) + 3600))
                         ExtraTags="[['t', 'T2VAccessDenied'], ['expiration', '$EXPIRATION_TS']]"
                     else
-                        echo "No image attached: Using Text-to-Video workflow (Satellite+)" >&2
-                        
-                        $MY_PATH/comfyui.me.sh
+                        echo "No image: T2V — dispatching via comfyui queue" >&2
                         USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
-                        
-                        if [ $? -eq 0 ] && [ -n "$USER_UDRIVE_PATH" ]; then
-                            # Ensure Videos directory exists
-                            mkdir -p "$USER_UDRIVE_PATH/Videos"
-                            echo "Using user uDRIVE/Videos for T2V video output: $USER_UDRIVE_PATH/Videos" >&2
-                            VIDEO_AI_RETURN="$($MY_PATH/generate_video.sh "${cleaned_text}" "$MY_PATH/workflow/video_wan2_2_5B_ti2v.json" "$USER_UDRIVE_PATH/Videos")"
-                        else
-                            echo "Warning: Using default location for video generation" >&2
-                            VIDEO_AI_RETURN="$($MY_PATH/generate_video.sh "${cleaned_text}" "$MY_PATH/workflow/video_wan2_2_5B_ti2v.json")"
-                        fi
-                        
-                        if [ -n "$VIDEO_AI_RETURN" ]; then
+                        local _udv="${USER_UDRIVE_PATH:+$USER_UDRIVE_PATH/Videos}"
+                        [[ -n "$_udv" ]] && mkdir -p "$_udv"
+                        VIDEO_AI_RETURN=$(_dispatch_comfyui_video_job "t2v" "$cleaned_text" "" "$_udv")
+                        if [[ "$VIDEO_AI_RETURN" == "__DISPATCHED__" ]]; then
+                            KeyANSWER="⏳ Génération T2V lancée sur un Brain de la constellation... Vous recevrez le résultat par DM dès qu'il sera prêt. 🎬"
+                            ExtraTags="[['t', 'video'], ['t', 't2v'], ['t', 'comfyui'], ['t', 'queued']]"
+                        elif [[ -n "$VIDEO_AI_RETURN" ]]; then
                             KeyANSWER="$VIDEO_AI_RETURN"
                             ExtraTags="[['t', 'video'], ['t', 't2v'], ['t', 'comfyui'], ['t', 'ai-generated']]"
                         else
@@ -1525,7 +1598,7 @@ Détails: ${ERROR_LINE}"
             ######################################################### #music
             elif [[ "${TAGS[music]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#music//g; s/"//g' <<< "$message_text")
-                $MY_PATH/comfyui.me.sh
+                $MY_PATH/comfyui.me.sh music
                 
                 # Get user uDRIVE path and generate music
                 USER_UDRIVE_PATH=$(get_user_udrive_from_kname)

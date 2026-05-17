@@ -98,6 +98,7 @@ python3 tools/nostr_node_intercom.py send \
 | `vocals`  | `email`, `cid`, `filename`, `filetype`, `mime_type`, `duration`, `title`, `kind` | Publication kind 1222/1244 (vocal) via home         |
 | `webcam`  | `email`, `cid`, `filename`, `filetype`, `mime_type`, `duration`, `title`         | Publication kind 21/22 (vidéo) via home             |
 | `bro_ia`  | `pubkey`, `event_id`, `lat`, `lon`, `message`, `url`, `kname`                    | Commande BRO (#BRO kind 1) relayée depuis visiteur  |
+| `zen_like`| `email`, `sender_pubkey`, `event_id`, `reacted_event_id`, `reacted_author_pubkey`, `zen_amount`, `comment`, `g1pub_dest`, `is_crowdfunding`, `project_id`, `bien_g1pub` | Paiement ZEN/G1 (kind 7) relayé depuis visiteur — **seulement si zen_amount > 0** |
 
 *(Extensible : `did_update`, `zen_payment`, `alert`, …)*
 

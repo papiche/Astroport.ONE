@@ -505,6 +505,58 @@ _handle_webcam() {
     _handle_udrive "$payload"
 }
 
+## ── Canal "zen_like" : paiement ZEN relayé depuis station visiteur (roaming) ─
+## filter/7.sh (kind 7) n'a pas le .secret.dunikey d'un utilisateur en roaming.
+## Si ZEN_AMOUNT > 0 il relaie ici via DM NIP-44. La home station exécute le
+## vrai paiement G1 avec les clés locales puis enregistre la contribution CF.
+_handle_zen_like() {
+    local payload="$1"
+    _payload_get "$payload" email sender_pubkey event_id reacted_event_id \
+                             reacted_author_pubkey zen_amount comment \
+                             g1pub_dest is_crowdfunding project_id bien_g1pub
+
+    [[ -z "$_EMAIL" || -z "$_G1PUB_DEST" || -z "$_ZEN_AMOUNT" ]] && \
+        _log "WARN: ✈️ zen_like: payload incomplet" && return
+
+    ## Garde: ne traiter que les montants > 0 (redondant mais défensif)
+    local _zen_num
+    _zen_num=$(python3 -c "print(1 if float('${_ZEN_AMOUNT}') > 0 else 0)" 2>/dev/null)
+    [[ "$_zen_num" != "1" ]] && \
+        _log "WARN: ✈️ zen_like: ZEN_AMOUNT=0 ignoré" && return
+
+    local _USER_DIR="${HOME}/.zen/game/nostr/${_EMAIL}"
+    [[ ! -d "$_USER_DIR" ]] && \
+        _log "WARN: ✈️ zen_like: $_EMAIL non hébergé ici" && return
+    [[ -f "${_USER_DIR}/.roaming" ]] && \
+        _log "WARN: ✈️ zen_like: $_EMAIL encore en roaming sur home station — paiement ignoré" && return
+
+    local _DUNIKEY="${_USER_DIR}/.secret.dunikey"
+    [[ ! -s "$_DUNIKEY" ]] && \
+        _log "WARN: ✈️ zen_like: .secret.dunikey absent pour $_EMAIL" && return
+
+    local _AMOUNT
+    _AMOUNT=$(python3 -c "
+v = float('${_ZEN_AMOUNT}') * 0.1
+print(f'0{v:.2f}' if v < 1 else f'{v:.2f}')
+" 2>/dev/null)
+    [[ -z "$_AMOUNT" ]] && _log "WARN: ✈️ zen_like: calcul G1 échoué" && return
+
+    _log "✈️ zen_like: ${_ZEN_AMOUNT}Ẑ → ${_AMOUNT}G1 pour $_EMAIL → ${_G1PUB_DEST:0:12}..."
+    bash "$HOME/.zen/Astroport.ONE/tools/PAYforSURE.sh" \
+        "$_DUNIKEY" "$_AMOUNT" "$_G1PUB_DEST" "${_COMMENT:-UPLANET:ROAMING:LIKE}" \
+        >> "$LOG_FILE" 2>&1
+    local _RC=$?
+    if [[ $_RC -eq 0 ]]; then
+        _log "✈️ zen_like OK: ${_ZEN_AMOUNT}Ẑ envoyés pour $_EMAIL"
+        [[ "$_IS_CROWDFUNDING" == "True" && -n "$_PROJECT_ID" ]] && \
+            _log "✈️ zen_like CF: contribution $_PROJECT_ID enregistrée (via prochain cycle relay)"
+    else
+        _log "WARN: ✈️ zen_like FAILED (rc=$_RC) pour $_EMAIL"
+        _alert_captain "$(printf "zen_like paiement échoué pour %s\n%sẑ (%sG1) → %s...\nCode: %s" \
+            "$_EMAIL" "$_ZEN_AMOUNT" "$_AMOUNT" "${_G1PUB_DEST:0:12}" "$_RC")"
+    fi
+}
+
 ## ── Canal "bro_ia" : commande BRO relayée depuis station visiteur (roaming) ─
 ## La station visiteur (B) a reçu un kind 1 #BRO pour un utilisateur .roaming
 ## et le relaie ici (home station A) via DM NIP-44. On appelle directement
@@ -524,6 +576,118 @@ _handle_bro_ia() {
         "${_URL:-}" \
         "${_KNAME:-}" \
         2>/dev/null
+}
+
+## ── GPU lock global : sérialise les générations vidéo sur ce Brain ─────────
+_GPU_LOCK="$HOME/.zen/tmp/comfyui_brain.lock"
+
+## ── Canal "comfyui_job" : génération vidéo déléguée par un satellite ───────
+## Payload : email, prompt, mode (t2v|i2v), source_url,
+##           reply_node_hex, reply_pubkey, job_id
+_handle_comfyui_job() {
+    local payload="$1" sender="$2"
+    _payload_get "$payload" email prompt mode source_url reply_node_hex reply_pubkey job_id
+    [[ -z "$_PROMPT" ]] && \
+        _log "WARN: ✈️ comfyui_job: payload incomplet (prompt manquant)" && return
+    _log "🎬 comfyui_job: mode=${_MODE:-t2v} job=${_JOB_ID:-?} de ${sender:0:12}... (${_EMAIL:-?})"
+
+    ## Acquérir le verrou GPU exclusif (bloque jusqu'à 5 min max)
+    (
+        flock -x -w 300 9 || {
+            _log "WARN: 🎬 comfyui_job: timeout GPU lock — abandon job ${_JOB_ID:-?}"
+            exit 1
+        }
+
+        ## Connecter ComfyUI local (local > P2P > SSH)
+        if ! bash "$MY_PATH/comfyui.me.sh" 2>/dev/null; then
+            _log "WARN: 🎬 comfyui_job: ComfyUI indisponible sur ce Brain"
+            exit 1
+        fi
+
+        local _tmp_dir _result_url _status="failed"
+        _tmp_dir=$(mktemp -d /tmp/comfyui_job_XXXXXX)
+
+        if [[ "${_MODE:-t2v}" == "i2v" && -n "$_SOURCE_URL" ]]; then
+            _result_url=$(bash "$MY_PATH/image_to_video.sh" \
+                "$_PROMPT" "$_SOURCE_URL" "$_tmp_dir" 2>/dev/null | tail -1)
+        else
+            _result_url=$(bash "$MY_PATH/generate_video.sh" \
+                "$_PROMPT" "$MY_PATH/workflow/video_wan2_2_5B_ti2v.json" \
+                "$_tmp_dir" 2>/dev/null | tail -1)
+        fi
+        rm -rf "$_tmp_dir"
+
+        [[ -n "$_result_url" ]] && _status="ok"
+        _log "🎬 comfyui_job: job=${_JOB_ID:-?} status=$_status url=${_result_url:0:60}"
+
+        ## Renvoyer le résultat au satellite demandeur via DM
+        if [[ -n "$_REPLY_NODE_HEX" && ${#_REPLY_NODE_HEX} -eq 64 ]]; then
+            local _res_payload
+            _res_payload=$(python3 -c "
+import json, sys
+print(json.dumps({
+    'job_id':       sys.argv[1],
+    'email':        sys.argv[2],
+    'result_url':   sys.argv[3],
+    'status':       sys.argv[4],
+    'reply_pubkey': sys.argv[5],
+    'mode':         sys.argv[6],
+}))
+" "${_JOB_ID:-}" "${_EMAIL:-}" "$_result_url" "$_status" \
+  "${_REPLY_PUBKEY:-}" "${_MODE:-t2v}" 2>/dev/null)
+            python3 "$INTERCOM" send \
+                --nsec    "$NODE_NSEC" \
+                --to      "$_REPLY_NODE_HEX" \
+                --channel "comfyui_result" \
+                --payload "$_res_payload" \
+                --relays  "${_RELAYS[0]}" \
+                2>/dev/null \
+                && _log "🎬 comfyui_job: résultat → ${_REPLY_NODE_HEX:0:12}..." \
+                || _log "WARN: 🎬 comfyui_job: DM résultat FAILED"
+        fi
+    ) 9>"$_GPU_LOCK"
+}
+
+## ── Canal "comfyui_result" : résultat reçu depuis un Brain ─────────────────
+## Payload : job_id, email, result_url, status, reply_pubkey, mode
+_handle_comfyui_result() {
+    local payload="$1"
+    _payload_get "$payload" job_id email result_url status reply_pubkey mode
+    _log "🎬 comfyui_result: job=${_JOB_ID:-?} status=${_STATUS:-?} email=${_EMAIL:-?}"
+
+    if [[ "${_STATUS:-}" != "ok" || -z "$_RESULT_URL" ]]; then
+        [[ -n "$_REPLY_PUBKEY" ]] && python3 "$SECURE_DM" \
+            "$NODE_NSEC" "$_REPLY_PUBKEY" \
+            "❌ Génération vidéo échouée (job ${_JOB_ID:-?}). Réessayez ultérieurement." \
+            "${_RELAYS[0]}" 2>/dev/null
+        return
+    fi
+
+    ## Stocker dans uDRIVE/Videos si l'utilisateur est hébergé localement
+    if [[ -n "$_EMAIL" && -d "$HOME/.zen/game/nostr/$_EMAIL" && \
+          ! -f "$HOME/.zen/game/nostr/$_EMAIL/.roaming" ]]; then
+        local _cid _fname _udrive_videos
+        _udrive_videos="$HOME/.zen/game/nostr/$_EMAIL/APP/uDRIVE/Videos"
+        mkdir -p "$_udrive_videos"
+        _cid=$(echo "$_RESULT_URL" | grep -oP 'Qm[A-Za-z0-9]+' | head -1)
+        _fname="video_${_JOB_ID:-$(date +%s)}.mp4"
+        if [[ -n "$_cid" ]]; then
+            timeout 120 ipfs get "/ipfs/$_cid" -o "$_udrive_videos/$_fname" 2>/dev/null \
+                && touch "$HOME/.zen/game/nostr/$_EMAIL/APP/uDRIVE/" \
+                && _log "🎬 comfyui_result: vidéo stockée uDRIVE/$_EMAIL ← $_fname"
+        fi
+    fi
+
+    ## Notifier l'utilisateur par DM NIP-44
+    if [[ -n "$_REPLY_PUBKEY" ]]; then
+        local _notif
+        _notif=$(printf "🎬 Votre vidéo est prête !\n🔗 %s" "$_RESULT_URL")
+        python3 "$SECURE_DM" \
+            "$NODE_NSEC" "$_REPLY_PUBKEY" "$_notif" \
+            "${_RELAYS[0]}" 2>/dev/null \
+            && _log "🎬 comfyui_result: DM envoyé à ${_REPLY_PUBKEY:0:12}..." \
+            || _log "WARN: 🎬 comfyui_result: DM FAILED pour ${_REPLY_PUBKEY:0:12}..."
+    fi
 }
 
 ## ── Canal "udrive" : sync fichier depuis IPFS → APP/uDRIVE ───────────
@@ -730,8 +894,17 @@ _process_event() {
         webcam)
             _handle_webcam "$payload"
             ;;
+        zen_like)
+            _handle_zen_like "$payload"
+            ;;
         bro_ia)
             _handle_bro_ia "$payload"
+            ;;
+        comfyui_job)
+            _handle_comfyui_job "$payload" "$sender"
+            ;;
+        comfyui_result)
+            _handle_comfyui_result "$payload"
             ;;
         *)
             _log "Canal inconnu '$channel' de ${sender:0:12}... — ignoré"

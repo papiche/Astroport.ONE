@@ -84,6 +84,7 @@ show_menu() {
     echo "  2) g1        Couche G1/Duniter v2 (keygen, squid, gcli, PAYforSURE)"
     echo "  3) primal    Controle primal wallets (v1->SS58, squid, intrusion)"
     echo "  4) systems   Systemes UPlanet (DID, Oracle, WoTx2, ORE, Badge)"
+    echo "  6) intercom  Canal inter-NODE DM (zen_like, bro_ia, loopback)"
     echo "  5) all       Tout lancer"
     echo "  0) quit      Quitter"
     echo ""
@@ -131,11 +132,15 @@ case "$CHOICE" in
     4|systems)
         run_test_script "${MY_PATH}/tests/test_all_systems.sh" "UPlanet Systems" "${@:2}" || RC=1
         ;;
+    6|intercom)
+        run_test_script "${MY_PATH}/tests/test_intercom.sh" "Inter-NODE DM (intercom)" "${@:2}" || RC=1
+        ;;
     5|all)
         run_quick
         run_test_script "${MY_PATH}/tests/test_g1_tools.sh" "G1 Tools (Duniter v2)" --quick || RC=1
         run_test_script "${MY_PATH}/tests/test_primal_control.sh" "Primal Wallet Control" || RC=1
         run_test_script "${MY_PATH}/tests/test_all_systems.sh" "UPlanet Systems" || RC=1
+        run_test_script "${MY_PATH}/tests/test_intercom.sh" "Inter-NODE DM (intercom)" --quick || RC=1
         ;;
     0|quit|q)
         echo "Bye."
