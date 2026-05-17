@@ -2,9 +2,7 @@
 
 ## Overview
 
-> DEPRECATED !!! kind 10000 is for "MUTE"
-
-# TODO: choose a new kind for that specific service. UPlanet gives PLAYER full control over he's surfing and sharing experiences)
+> Analytics events use **kind 10600**. Kind 10000 is reserved by NIP-51 for mute lists.
 
 The UPlanet Analytics System (`astro.js`) provides a standardized way to collect and send analytics data in the UPlanet ecosystem. It supports multiple modes of operation depending on which libraries are loaded, from simple HTTP-based analytics to decentralized NOSTR events with optional encryption.
 
@@ -131,7 +129,7 @@ When `astro.js` is loaded **after** `common.js`, it gains NOSTR integration capa
   - Returns `boolean`
 
 - **`uPlanetAnalytics.sendAsNostrEvent(data, includeContext)`**
-  - Sends analytics as NOSTR event (kind 10000)
+  - Sends analytics as NOSTR event (kind 10600)
   - Requires: `common.js` loaded + NOSTR connected
   - Falls back to HTTP `/ping` if NOSTR unavailable
   - Returns `Promise<boolean>`
@@ -192,7 +190,7 @@ NO → Fallback to HTTP POST /ping
 
 ```json
 {
-  "kind": 10000,
+  "kind": 10600,
   "content": "{\"type\":\"page_view\",\"source\":\"email\",...}",
   "tags": [
     ["t", "analytics"],
@@ -275,7 +273,7 @@ Separate public and sensitive data
     ↓
 Encrypt sensitive data with NIP-44 (user's own pubkey)
     ↓
-Send as NOSTR event (kind 10000 with encrypted content)
+Send as NOSTR event (kind 10600 with encrypted content)
     ↓
 NOSTR Relay stores encrypted event
     ↓
@@ -442,8 +440,8 @@ All analytics data follows this structure:
 | Feature | Standalone | + common.js | + nostr.bundle.js |
 |---------|-----------|-------------|-------------------|
 | HTTP `/ping` | ✅ | ✅ | ✅ |
-| NOSTR events (kind 10000) | ❌ | ✅ | ✅ |
-| Encrypted events (kind 10000, encrypted content) | ❌ | ❌ | ✅ |
+| NOSTR events (kind 10600) | ❌ | ✅ | ✅ |
+| Encrypted events (kind 10600, encrypted content) | ❌ | ❌ | ✅ |
 | Decentralized storage | ❌ | ✅ | ✅ |
 | User control | ❌ | ✅ | ✅ |
 | Privacy (encryption) | ❌ | ❌ | ✅ |

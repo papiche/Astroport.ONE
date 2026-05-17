@@ -493,7 +493,7 @@ Astroport.ONE intègre **Nostr Tube**, une alternative décentralisée à YouTub
 - Route `/playlist` : Gestionnaire de playlists
 - Scripts IA : Synchronisation YouTube (`youtube.com.sh`), traitement vidéo (`process_youtube.sh`)
 
-Voir **[docs/README.NostrTube.md](docs/README.NostrTube.md)** pour la documentation complète.
+Voir **[docs/explanation/README.NostrTube.md](docs/explanation/README.NostrTube.md)** pour la documentation complète.
 
 ### 3. Filtres Personnalisés
 
@@ -549,7 +549,7 @@ curl -F "file=@photo.jpg" \
 - **[WELCOME.md](WELCOME.md)** - Guide écosystème UPlanet
 - **[UPASSPORT_API.md](UPASSPORT_API.md)** - Documentation API UPassport
 - **[API.NOSTRAuth.readme.md](API.NOSTRAuth.readme.md)** - Documentation NOSTR
-- **[docs/README.NostrTube.md](docs/README.NostrTube.md)** - Documentation Nostr Tube (plateforme vidéo décentralisée)
+- **[docs/explanation/README.NostrTube.md](docs/explanation/README.NostrTube.md)** - Documentation Nostr Tube (plateforme vidéo décentralisée)
 
 ### Ressources Externes
 - **[GitHub Repository](https://github.com/papiche/Astroport.ONE)** - Code source

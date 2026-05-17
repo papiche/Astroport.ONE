@@ -132,7 +132,7 @@ cmd_list() {
 
 get_service_category() {
     case "${1,,}" in
-        ollama|dify|webui|open-webui|mirofish|comfyui|vane|qdrant|orpheus|perplexica) echo "🧠 IA" ;;
+        ollama|dify|webui|open-webui|mirofish|comfyui|vane|qdrant|orpheus) echo "🧠 IA" ;;
         icecast|snapcast|audio|spotify|jukebox|mpd) echo "🎵 Audio" ;;
         ssh|npm|nextcloud|upassport|node|proxy|vpn) echo "⚙️  Sys" ;;
         *) echo "📦 App" ;;
@@ -345,7 +345,7 @@ cmd_connect() {
         nextcloud)                   local_port="8001"  ;;
         mirofish)                    local_port="5050"  ;;
         orpheus)                     local_port="5005"  ;;
-        perplexica|vane)             local_port="3002"  ;;
+        vane)                        local_port="3002"  ;;
     esac
     if [[ -n "$local_port" ]] && ss -tln 2>/dev/null | grep -q ":${local_port} "; then
         echo "✅ ${service} disponible localement → http://127.0.0.1:${local_port}"

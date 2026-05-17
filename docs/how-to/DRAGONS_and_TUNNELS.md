@@ -209,24 +209,34 @@ ipfs p2p forward "$PROTO" "/ip4/$DOCKER_IP/tcp/$LPORT"   "/p2p/$NODE_ID"
 
 ### Services publiés par DRAGON
 
-| Slug | Port | Service | Condition de publication |
-|------|------|---------|--------------------------|
-| `ssh` | 22 | SSH Remote | `sshd` natif (port depuis `sshd_config`) |
-| `strfry` | 7777 | Nostr Relay | processus natif sur port (pref. local 9999) |
-| `icecast` | 8111 | Icecast Live Broadcasting | processus natif sur port |
-| `dify` | 8010 | Dify AI Workflow | processus natif sur port |
-| `mirofish` | 5050 | MiroFish Simulation Engine | processus natif sur port |
-| `open-webui` | 8000 | Open WebUI IA | processus natif sur port |
-| `nextcloud-app` | 8001 | NextCloud Apache (via NPM) | processus natif sur port |
-| `qdrant` | 6333 | Qdrant VectorDB | processus natif sur port |
-| `ollama` | 11434 | Ollama LLM API | `pgrep ollama` + processus natif |
-| `npm` | 81 | Nginx Proxy Manager | processus natif sur port |
-| `nextcloud-aio` | 8443 | NextCloud AIO Admin | processus natif sur port |
-| `comfyui` | 8188 | ComfyUI | `systemctl is-active comfyui` |
-| `orpheus` | 5005 | Orpheus TTS | `docker ps \| grep orpheus` |
-| `vane` | 3002 | Vane Search (ex-Perplexica) | `docker ps \| grep -E "vane\|perplexica"` |
-| `webtop-http` | 3000 | KasmVNC HTTP | docker linuxserver/webtop |
-| `webtop-https` | 3001 | KasmVNC HTTPS | docker linuxserver/webtop |
+> **Source de vérité unique : [`IA/modules.list`](../../IA/modules.list)**
+> La constellation opère sur cette liste fixe de slugs. Chaque développeur peut y ajouter ses propres services en respectant le format `name|port|check|install_group|label`.
+
+Les slugs **réservés constellation** (hardcodés dans DRAGON, hors `modules.list`) :
+
+| Slug | Port | Particularité |
+|------|------|---------------|
+| `ssh` | dynamique (`sshd_config`) | Clé SSH Y-level, connexion sécurisée |
+| `strfry` | 7777 (local: 9999) | Slug figé — `backfill_constellation.sh` cherche `x_strfry.sh` |
+
+Les slugs **modules.list** (lus dynamiquement, dans l'ordre du fichier) :
+
+| Slug | Port | Check | Label |
+|------|------|-------|-------|
+| `icecast` | 8111 | auto | Icecast Live Broadcasting |
+| `dify` | 8010 | docker:dify-api | Dify AI Workflow |
+| `mirofish` | 5050 | docker:mirofish | MiroFish Multi-Agent |
+| `open-webui` | 8000 | docker:open-webui | Open WebUI Interface IA |
+| `nextcloud-app` | 8001 | dockerimg:nextcloud-aio | NextCloud Apache App |
+| `qdrant` | 6333 | docker:qdrant | Qdrant VectorDB |
+| `ollama` | 11434 | pgrep:ollama | Ollama LLM API |
+| `npm` | 81 | auto | Nginx Proxy Manager Admin |
+| `nextcloud-aio` | 8443 | dockerimg:nextcloud-aio | NextCloud AIO Admin |
+| `webtop-http` | 3000 | dockerimg:linuxserver/webtop | Webtop KasmVNC HTTP |
+| `webtop-https` | 3001 | dockerimg:linuxserver/webtop | Webtop KasmVNC HTTPS |
+| `comfyui` | 8188 | systemctl:comfyui | ComfyUI Image Generation |
+| `orpheus` | 5005 | docker:orpheus | Orpheus TTS |
+| `vane` | 3002 | docker:vane | Vane Search Engine |
 
 > ⚠️ **Protection anti-tunnel→tunnel** : DRAGON utilise `_is_native_process(PORT)` qui vérifie non seulement que le port est en écoute, mais aussi que le **processus propriétaire n'est pas `ipfs`**. Si `ipfs p2p forward` tient déjà le port (tunnel client entrant d'une autre station), DRAGON refuse de le republier — évitant des cascades inefficaces de tunnels imbriqués qui dégraderaient les performances du réseau.
 
@@ -464,10 +474,12 @@ IA/ollama.me.sh
 |--------|---------|------|---------------|
 | [`IA/ollama.me.sh`](../IA/ollama.me.sh) | Ollama LLM | 11434 | Test latence + modèles requis |
 | [`IA/comfyui.me.sh`](../IA/comfyui.me.sh) | ComfyUI | 8188 | Stats GPU (VRAM) |
-| [`IA/perplexica.me.sh`](../IA/perplexica.me.sh) | Perplexica | 3002 | Recherche web IA |
+| [`IA/vane.me.sh`](../IA/vane.me.sh) | Vane Search | 3002 | Recherche web IA |
 | [`IA/orpheus.me.sh`](../IA/orpheus.me.sh) | Orpheus TTS | 5005 | P2P only (pas de SSH) |
 | [`IA/open-webui.me.sh`](../IA/open-webui.me.sh) | Open WebUI | 8000 | Interface IA centrale |
 | [`IA/qdrant.me.sh`](../IA/qdrant.me.sh) | Qdrant | 6333 | Liste collections |
+| [`IA/mirofish.me.sh`](../IA/mirofish.me.sh) | MiroFish | 5050 | Multi-agent simulation |
+| [`IA/dify.ai.me.sh`](../IA/dify.ai.me.sh) | Dify | 8010 | AI Workflow |
 
 ### Commandes communes à tous les ME
 
