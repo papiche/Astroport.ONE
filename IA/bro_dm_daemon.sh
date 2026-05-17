@@ -40,7 +40,8 @@ _BRO_MAX_JOBS=3
 _BRO_SLOTS_DIR="$HOME/.zen/tmp/bro_dm_slots"
 mkdir -p "$_BRO_SLOTS_DIR"
 
-_log() { echo "[$(date '+%H:%M:%S')] $*" | tee -a "$LOG_FILE"; }
+IA_LOG="$HOME/.zen/tmp/IA.log"
+_log() { echo "[$(date '+%H:%M:%S')] [bro_dm] $*" | tee -a "$LOG_FILE" -a "$IA_LOG"; }
 
 ## ── Alerte email capitaine (rate-limitée à 1/48h) ────────────────────
 _ALERT_LOCK="$HOME/.zen/flashmem/bro_dm_alert.lock"

@@ -1169,6 +1169,12 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
             G1V2ADDRESS=$(python3 "${MY_PATH}/../tools/g1pub_to_ss58.py" "$G1PUBNOSTR" 2>/dev/null)
             [[ -n "$ZENCARDG1" ]] && ZENCARDG1_V2=$(python3 "${MY_PATH}/../tools/g1pub_to_ss58.py" "$ZENCARDG1" 2>/dev/null)
         fi
+        NODE_NOSTR_HEX=""
+        if [[ -s ~/.zen/game/secret.nostr ]]; then
+            source ~/.zen/game/secret.nostr
+            NODE_NOSTR_HEX="${HEX:-}"
+            unset NSEC NPUB HEX  # éviter pollution des variables du joueur
+        fi
         ### SEND PROFILE TO NOSTR RELAYS
         SETUP_ARGS=(
             "$NSEC"
@@ -1183,6 +1189,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
             --zencard "$ZENCARDG1"
             --email "$PLAYER"
             --ipns_vault "${NOSTRNS}"
+            --home_station "${IPFSNODEID}:${NODE_NOSTR_HEX}"
         )
         [[ -n "$G1V2ADDRESS" ]] && SETUP_ARGS+=(--g1v2 "$G1V2ADDRESS")
         [[ -n "$ZENCARDG1_V2" ]] && SETUP_ARGS+=(--zencard_v2 "$ZENCARDG1_V2")
