@@ -322,7 +322,7 @@ This comprehensive test will:
 - `-h, --help`: Show help information
 
 #### _uMARKET.aggregate.sh
-- `--output`: Set output directory (default: /tmp/flashmem/umarket_global)
+- `--output`: Set output directory (default: /home/fred/.zen/tmp/flashmem/umarket_global)
 - `--max-age`: Set maximum advertisement age in hours (default: 168)
 - `--local-only`: Process only local data
 - `--swarm-only`: Process only swarm data
