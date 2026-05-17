@@ -31,6 +31,11 @@ Usage:
 Canaux actuels
 --------------
   udrive  payload requis : email, cid, filename, filetype
+  vocals  payload requis : email, cid, filename, filetype, mime_type, duration, title, kind
+          optionnel : description, waveform, reply_to_event_id, reply_to_pubkey
+  webcam  payload requis : email, cid, filename, filetype, mime_type, duration, title
+          optionnel : description, dimensions, file_size, thumbnail_ipfs, gifanim_ipfs,
+                      info_cid, file_hash, latitude, longitude, channel
 """
 import sys
 import json

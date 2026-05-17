@@ -92,11 +92,28 @@ python3 tools/nostr_node_intercom.py send \
 
 ## Canaux définis
 
-| Canal    | Payload requis                          | Usage                               |
-|----------|-----------------------------------------|-------------------------------------|
-| `udrive` | `email`, `cid`, `filename`, `filetype` | Sync fichier uDRIVE visiteur → home |
+| Canal    | Payload requis                                                   | Usage                                        |
+|----------|------------------------------------------------------------------|----------------------------------------------|
+| `udrive` | `email`, `cid`, `filename`, `filetype`                          | Sync fichier uDRIVE visiteur → home          |
+| `vocals` | `email`, `cid`, `filename`, `filetype`, `mime_type`, `duration`, `title`, `kind` | Publication kind 1222/1244 (vocal) via home  |
+| `webcam` | `email`, `cid`, `filename`, `filetype`, `mime_type`, `duration`, `title`         | Publication kind 21/22 (vidéo) via home      |
 
 *(Extensible : `did_update`, `zen_payment`, `alert`, …)*
+
+### Résolution `home_node_hex` pour AMIS_ROAMING
+
+`HOME_IPFSNODEID` et `NOSTRNS` sauvegardés par `22242.sh` pour les utilisateurs
+`amisOfAmis_roaming` contiennent la **clé IPNS CIDv1** du joueur (`k51…`), pas le
+peer ID libp2p de la home station. La résolution suit donc cet ordre de priorité :
+
+1. `user_dir/home.station` (cache local — mis à jour à chaque résolution réussie)
+2. **strfry scan kind 0** du joueur → champ `home_station` (`IPFSNODEID:NODE_HEX_64`)
+3. Scan `~/.zen/tmp/swarm/*/TW/{email}/` → `12345.json` → `NODEHEX` (SWARM_ROAMING)
+4. IPFS via `NOSTRNS/{email}/home.station` (lent, peut échouer)
+5. IPFS via `/ipns/HOME_IPFSNODEID/{email}/home.station` (dernier recours)
+
+**Prérequis** : la home station doit avoir publié le champ `home_station` dans le
+profil kind 0 du joueur via `nostr_setup_profile.py` (fait lors de la création MULTIPASS).
 
 ## Intégration UPassport (`/api/fileupload`)
 

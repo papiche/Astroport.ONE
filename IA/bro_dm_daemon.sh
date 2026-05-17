@@ -367,6 +367,139 @@ _handle_reset() {
         "${_RELAYS[0]}" 2>/dev/null
 }
 
+## ── Helper : parser un payload JSON en plusieurs variables shell ─────
+## Usage : _payload_get "$payload" field1 field2 … → variables _FIELD1 _FIELD2 …
+_payload_get() {
+    local _p="$1"; shift
+    eval "$(echo "$_p" | python3 - "$@" <<'PYEOF'
+import json, sys, shlex
+d = json.load(sys.stdin)
+for field in sys.argv[1:]:
+    val = d.get(field, "")
+    print(f"_{field.upper()}={shlex.quote(str(val))}")
+PYEOF
+    )"
+}
+
+## ── Canal "vocals" : publication kind 1222/1244 depuis la home station ─
+## La station visiteur a uploadé le fichier sur IPFS et envoie le CID +
+## métadonnées via DM.  Ici on publie l'event NOSTR avec le secret du joueur.
+_handle_vocals() {
+    local payload="$1"
+    _payload_get "$payload" email cid filename mime_type duration title \
+                             description waveform kind \
+                             reply_to_event_id reply_to_pubkey
+
+    [[ -z "$_EMAIL" || -z "$_CID" || -z "$_FILENAME" ]] && \
+        _log "WARN: ✈️ vocals: payload incomplet" && return
+
+    local _USER_DIR="${HOME}/.zen/game/nostr/${_EMAIL}"
+    [[ ! -d "$_USER_DIR" ]] && \
+        _log "WARN: ✈️ vocals: $_EMAIL non hébergé ici" && return
+    [[ -f "${_USER_DIR}/.roaming" ]] && \
+        _log "WARN: ✈️ vocals: $_EMAIL en roaming sur cette station" && return
+
+    local _SECRET="${_USER_DIR}/.secret.nostr"
+    [[ ! -f "$_SECRET" ]] && \
+        _log "WARN: ✈️ vocals: .secret.nostr absent pour $_EMAIL" && return
+
+    local _PUBLISH_SCRIPT="${MY_PATH}/../tools/publish_nostr_vocal.sh"
+    [[ ! -x "$_PUBLISH_SCRIPT" ]] && \
+        _log "WARN: ✈️ vocals: publish_nostr_vocal.sh introuvable" && return
+
+    local _KIND="${_KIND:-1222}"
+    [[ "$_KIND" != "1244" ]] && _KIND="1222"
+
+    local -a _CMD=(
+        bash "$_PUBLISH_SCRIPT"
+        --nsec      "$_SECRET"
+        --ipfs-cid  "$_CID"
+        --filename  "$_FILENAME"
+        --title     "${_TITLE:-vocal}"
+        --mime-type "${_MIME_TYPE:-audio/webm}"
+        --duration  "${_DURATION:-0}"
+        --kind      "$_KIND"
+        --channel   "$_EMAIL"
+        --json
+    )
+    [[ -n "$_DESCRIPTION" ]] && _CMD+=(--description "$_DESCRIPTION")
+    [[ -n "$_WAVEFORM"    ]] && _CMD+=(--waveform    "$_WAVEFORM")
+    if [[ "$_KIND" == "1244" && -n "$_REPLY_TO_EVENT_ID" && -n "$_REPLY_TO_PUBKEY" ]]; then
+        _CMD+=(--reply-to-event-id "$_REPLY_TO_EVENT_ID" --reply-to-pubkey "$_REPLY_TO_PUBKEY")
+    fi
+
+    local _RC
+    timeout 30 "${_CMD[@]}" >> "${HOME}/.zen/tmp/bro_dm_daemon.log" 2>&1
+    _RC=$?
+    if [[ $_RC -eq 0 ]]; then
+        _log "✈️ vocals OK: $_EMAIL kind $_KIND CID=${_CID:0:12}..."
+    else
+        _log "WARN: ✈️ vocals NOSTR ÉCHEC (rc=$_RC) pour $_EMAIL — fichier sync uDRIVE quand même"
+    fi
+    # Toujours sync le fichier dans uDRIVE (source de vérité, indépendant de NOSTR)
+    _handle_udrive "$payload"
+}
+
+## ── Canal "webcam" : publication kind 21/22 depuis la home station ────
+## Même principe que vocals mais pour les vidéos (NIP-71, kind 21/22).
+_handle_webcam() {
+    local payload="$1"
+    _payload_get "$payload" email cid filename mime_type duration title \
+                             description dimensions file_size \
+                             thumbnail_ipfs gifanim_ipfs info_cid file_hash \
+                             latitude longitude channel
+
+    [[ -z "$_EMAIL" || -z "$_CID" || -z "$_FILENAME" ]] && \
+        _log "WARN: ✈️ webcam: payload incomplet" && return
+
+    local _USER_DIR="${HOME}/.zen/game/nostr/${_EMAIL}"
+    [[ ! -d "$_USER_DIR" ]] && \
+        _log "WARN: ✈️ webcam: $_EMAIL non hébergé ici" && return
+    [[ -f "${_USER_DIR}/.roaming" ]] && \
+        _log "WARN: ✈️ webcam: $_EMAIL en roaming sur cette station" && return
+
+    local _SECRET="${_USER_DIR}/.secret.nostr"
+    [[ ! -f "$_SECRET" ]] && \
+        _log "WARN: ✈️ webcam: .secret.nostr absent pour $_EMAIL" && return
+
+    local _PUBLISH_SCRIPT="${MY_PATH}/../tools/publish_nostr_video.sh"
+    [[ ! -x "$_PUBLISH_SCRIPT" ]] && \
+        _log "WARN: ✈️ webcam: publish_nostr_video.sh introuvable" && return
+
+    local -a _CMD=(
+        bash "$_PUBLISH_SCRIPT"
+        --nsec       "$_SECRET"
+        --ipfs-cid   "$_CID"
+        --filename   "$_FILENAME"
+        --title      "${_TITLE:-video}"
+        --mime-type  "${_MIME_TYPE:-video/webm}"
+        --duration   "${_DURATION:-0}"
+        --dimensions "${_DIMENSIONS:-640x480}"
+        --file-size  "${_FILE_SIZE:-0}"
+        --latitude   "${_LATITUDE:-0}"
+        --longitude  "${_LONGITUDE:-0}"
+        --source-type webcam
+        --json
+    )
+    [[ -n "$_CHANNEL"       ]] && _CMD+=(--channel       "$_CHANNEL")
+    [[ -n "$_DESCRIPTION"   ]] && _CMD+=(--description   "$_DESCRIPTION")
+    [[ -n "$_THUMBNAIL_IPFS"]] && _CMD+=(--thumbnail-cid "$_THUMBNAIL_IPFS")
+    [[ -n "$_GIFANIM_IPFS"  ]] && _CMD+=(--gifanim-cid   "$_GIFANIM_IPFS")
+    [[ -n "$_INFO_CID"      ]] && _CMD+=(--info-cid      "$_INFO_CID")
+    [[ -n "$_FILE_HASH"     ]] && _CMD+=(--file-hash     "$_FILE_HASH")
+
+    local _RC
+    timeout 60 "${_CMD[@]}" >> "${HOME}/.zen/tmp/bro_dm_daemon.log" 2>&1
+    _RC=$?
+    if [[ $_RC -eq 0 ]]; then
+        _log "✈️ webcam OK: $_EMAIL CID=${_CID:0:12}..."
+    else
+        _log "WARN: ✈️ webcam NOSTR ÉCHEC (rc=$_RC) pour $_EMAIL — fichier sync uDRIVE quand même"
+    fi
+    # Toujours sync le fichier dans uDRIVE (source de vérité, indépendant de NOSTR)
+    _handle_udrive "$payload"
+}
+
 ## ── Canal "udrive" : sync fichier depuis IPFS → APP/uDRIVE ───────────
 _handle_udrive() {
     local payload="$1"
@@ -564,6 +697,12 @@ _process_event() {
             ;;
         udrive)
             _handle_udrive "$payload"
+            ;;
+        vocals)
+            _handle_vocals "$payload"
+            ;;
+        webcam)
+            _handle_webcam "$payload"
             ;;
         *)
             _log "Canal inconnu '$channel' de ${sender:0:12}... — ignoré"
