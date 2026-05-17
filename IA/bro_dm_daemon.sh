@@ -17,7 +17,7 @@
 # Les events sont traités en parallèle (max _BRO_MAX_JOBS jobs simultanés)
 # via un sémaphore à slots PID — évite la saturation Ollama/GPU.
 #
-# Lancé automatiquement par NOSTRCARD.refresh.sh si absent.
+# Lancé automatiquement par _12345.sh si absent.
 # Usage : bro_dm_daemon.sh [--stop]
 ########################################################################
 
@@ -43,17 +43,17 @@ mkdir -p "$_BRO_SLOTS_DIR"
 IA_LOG="$HOME/.zen/tmp/IA.log"
 _log() { echo "[$(date '+%H:%M:%S')] [bro_dm] $*" | tee -a "$LOG_FILE" -a "$IA_LOG"; }
 
-## ── Alerte email capitaine (rate-limitée à 1/48h) ────────────────────
+## ── Alerte email capitaine (rate-limitée à 1/24h) ────────────────────
 _ALERT_LOCK="$HOME/.zen/flashmem/bro_dm_alert.lock"
 _alert_captain() {
     local msg="$1"
     [[ -z "${CAPTAINEMAIL:-}" ]] && return
     [[ ! -x "$MAILJET" ]] && return
 
-    ## Rate-limit : 1 alerte max toutes les 48h
+    ## Rate-limit : 1 alerte max toutes les 24h
     if [[ -f "$_ALERT_LOCK" ]]; then
         local _age=$(( $(date +%s) - $(stat -c %Y "$_ALERT_LOCK") ))
-        [[ $_age -lt 172800 ]] && return
+        [[ $_age -lt 86400 ]] && return
     fi
 
     local _tmp
@@ -65,10 +65,10 @@ _alert_captain() {
 <p><strong>Détail :</strong></p>
 <pre style="background:#fff3cd;padding:1em;border-radius:4px;white-space:pre-wrap;">${msg}</pre>
 <p>Logs complets : <code>${LOG_FILE}</code></p>
-<hr><p style="color:#888;font-size:0.85em;">Alerte valide 48h — une seule par fenêtre.</p>
+<hr><p style="color:#888;font-size:0.85em;">Alerte valide 24h — une seule par fenêtre.</p>
 EOF
     touch "$_ALERT_LOCK"
-    bash "$MAILJET" --template "$0" --expire 48h \
+    bash "$MAILJET" --template $0 --expire 48h \
         "$CAPTAINEMAIL" "$_tmp" "🚨 BRO Daemon erreur — $(hostname)" \
         2>/dev/null &
     rm -f "$_tmp"
