@@ -347,15 +347,14 @@ docker compose -f docker-compose.webtop.yml up -d
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Vue technique complète, flux de données, modèles économiques |
 | [LEGAL.md](LEGAL.md) | Constitution de l'Écosystème UPlanet · Gouvernance coopérative |
 | [ANARCHITECTE.md](ANARCHITECTE.md) | Philosophie · Vision · Souveraineté numérique ↔ régénération écologique |
-| [RUNTIME/ZEN.ECONOMY.readme.md](RUNTIME/ZEN.ECONOMY.readme.md) | Paiements automatisés 3×1/3 · Provisions TVA · Droit coopératif français |
+| [docs/explanation/ZEN.ECONOMY.v3.md](docs/explanation/ZEN.ECONOMY.v3.md) | Paiements automatisés 3×1/3 · Provisions TVA · Droit coopératif français |
 | [UPLANET.official.README.md](UPLANET.official.README.md) | Gestion des transferts de capital · Locataire/Sociétaire/Infrastructure |
-| [DID_IMPLEMENTATION.md](DID_IMPLEMENTATION.md) | DID W3C · Gestion des clés SSSS 3/2 · Twin keys multi-blockchain |
-| [docs/ORE_SYSTEM.md](docs/ORE_SYSTEM.md) | Obligations environnementales · DIDs géographiques · Smart contracts écologiques |
-| [docs/ORACLE_SYSTEM.md](docs/ORACLE_SYSTEM.md) | Certifications de compétences WoT · Credentials vérifiables · Événements Nostr |
-| [docs/README.NostrTube.md](docs/README.NostrTube.md) | Plateforme vidéo décentralisée · NOSTR + IPFS · Mode cinéma |
+| [docs/explanation/DID_IMPLEMENTATION.md](docs/explanation/DID_IMPLEMENTATION.md) | DID W3C · Gestion des clés SSSS 3/2 · Twin keys multi-blockchain |
+| [docs/explanation/ORE_SYSTEM.md](docs/explanation/ORE_SYSTEM.md) | Obligations environnementales · DIDs géographiques · Smart contracts écologiques |
+| [docs/explanation/ORACLE_SYSTEM.md](docs/explanation/ORACLE_SYSTEM.md) | Certifications de compétences WoT · Credentials vérifiables · Événements Nostr |
+| [docs/explanation/README.NostrTube.md](docs/explanation/README.NostrTube.md) | Plateforme vidéo décentralisée · NOSTR + IPFS · Mode cinéma |
 | [IA/README.md](IA/README.md) | Assistant IA #BRO · Mémoire 12 slots · Capacités de génération |
-| [docs/COOKIE_SYSTEM.md](docs/COOKIE_SYSTEM.md) | Gestion universelle des cookies · Scraping web authentifié |
-| [BOOKS/Le Livre Blanc](BOOKS/) | Livre blanc : de la souveraineté numérique à la régénération écologique |
+| [docs/reference/COOKIE_SYSTEM.md](docs/reference/COOKIE_SYSTEM.md) | Gestion universelle des cookies · Scraping web authentifié |
 
 ---
 

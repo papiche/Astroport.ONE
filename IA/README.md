@@ -28,7 +28,7 @@ Welcome to the UPlanet IA Bot System! This is a powerful, multi-functional AI as
 - **Web search** with Perplexica (+ AI summary, tags, illustration)
 - **YouTube download** with format conversion (supports all yt-dlp platforms)
 - **Image analysis** with LLaVA/MiniCPM-V vision model
-- **Cookie-based scraping** - Upload cookies for authenticated web scraping (see [COOKIE_SYSTEM.md](./COOKIE_SYSTEM.md))
+- **Cookie-based scraping** - Upload cookies for authenticated web scraping (see [COOKIE_SYSTEM.md](../docs/reference/COOKIE_SYSTEM.md))
 
 ## 🚀 Quick Start
 
@@ -670,8 +670,8 @@ For detailed information about how the IA system manages service connections, se
 - **[Astroport.ONE Main README](../README.md)** - Overview of the entire UPlanet ecosystem
 - **[Architecture Documentation](../ARCHITECTURE.md)** - Technical system architecture
 - **[Legal Framework](../LEGAL.md)** - Cooperative legal structure
-- **[🍪 Cookie Management System](./COOKIE_SYSTEM.md)** - Universal cookie upload and storage system for authenticated web scraping
-- **[🔧 Domain Scrapers](./DOMAIN_SCRAPERS.md)** - Guide to creating custom domain-specific scrapers
+- **[🍪 Cookie Management System](../docs/reference/COOKIE_SYSTEM.md)** - Universal cookie upload and storage system for authenticated web scraping
+- **[🔧 Domain Scrapers](../docs/reference/DOMAIN_SCRAPERS.md)** - Guide to creating custom domain-specific scrapers
 
 ---
 

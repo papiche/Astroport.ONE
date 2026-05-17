@@ -387,15 +387,14 @@ docker compose -f docker-compose.webtop.yml up -d
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Complete technical overview, data flows, economic models |
 | [LEGAL.md](LEGAL.md) | Constitution of the UPlanet Ecosystem · Cooperative governance |
 | [ANARCHITECTE.md](ANARCHITECTE.md) | Philosophy · Vision · Digital sovereignty ↔ ecological regeneration |
-| [RUNTIME/ZEN.ECONOMY.readme.md](RUNTIME/ZEN.ECONOMY.readme.md) | 3×1/3 automated payments · TVA provisions · French cooperative law |
+| [docs/explanation/ZEN.ECONOMY.v3.md](docs/explanation/ZEN.ECONOMY.v3.md) | 3×1/3 automated payments · TVA provisions · French cooperative law |
 | [UPLANET.official.README.md](UPLANET.official.README.md) | Capital transfers management · Locataire/Sociétaire/Infrastructure |
-| [DID_IMPLEMENTATION.md](DID_IMPLEMENTATION.md) | W3C DID · SSSS 3/2 key management · twin keys multi-blockchain |
+| [docs/explanation/DID_IMPLEMENTATION.md](docs/explanation/DID_IMPLEMENTATION.md) | W3C DID · SSSS 3/2 key management · twin keys multi-blockchain |
 | [docs/explanation/ORE_SYSTEM.md](docs/explanation/ORE_SYSTEM.md) | Ecological obligations · Geographic DIDs · Environmental smart contracts |
 | [docs/explanation/ORACLE_SYSTEM.md](docs/explanation/ORACLE_SYSTEM.md) | WoT competency certifications · Verifiable Credentials · Nostr events |
 | [docs/explanation/README.NostrTube.md](docs/explanation/README.NostrTube.md) | Decentralized video platform · NOSTR + IPFS · Theater mode |
 | [IA/README.md](IA/README.md) | #BRO AI Assistant · 12-slot memory · Generation capabilities |
 | [docs/reference/COOKIE_SYSTEM.md](docs/reference/COOKIE_SYSTEM.md) | Universal cookie management · Authenticated web scraping |
-| [BOOKS/Le Livre Blanc](BOOKS/) | White paper: from digital sovereignty to ecological regeneration |
 
 ---
 

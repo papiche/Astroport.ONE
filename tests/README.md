@@ -1,4 +1,4 @@
-g# UPlanet Systems Test Suite
+# UPlanet Systems Test Suite
 
 Comprehensive test suite for validating all UPlanet systems according to their specifications.
 
