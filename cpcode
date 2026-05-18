@@ -21,6 +21,11 @@ show_help() {
     exit 0
 }
 
+_ME="${BASH_SOURCE[0]##*/}"
+_MY_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[[ ! -L ~/.local/bin/${_ME} ]] && ln -sf "${_MY_PATH}/${_ME}" ~/.local/bin/${_ME} \
+    && echo "[cpcode] Auto Install into ~/.local/bin/${_ME}"
+
 # ── Parsing des options ───────────────────────────────────────────────────
 JSON_MODE=false
 MAX_FILE_SIZE=0

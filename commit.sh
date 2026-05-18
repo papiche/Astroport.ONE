@@ -49,16 +49,18 @@ show_help() {
     echo -e "  ${GREEN}--day,         -d${NC}   Dernières 24 heures"
     echo -e "  ${GREEN}--week,        -w${NC}   Derniers 7 jours"
     echo -e "  ${GREEN}--month,       -m${NC}   Derniers 30 jours"
-    echo -e "  ${GREEN}--model MODEL, -M${NC}   Modèle Ollama (défaut: gemma3:latest)"
+    echo -e "  ${GREEN}--branch,      -b${NC}   Basculer sur cette branche avant d'analyser"
+    echo -e "  ${GREEN}--model MODEL, -M${NC}   Modèle Ollama (défaut: deepseek-coder-v2:dagbs)"
     echo -e "  ${GREEN}--verbose,     -v${NC}   Mode verbeux : affiche diff, prompt et réponse brute"
     echo -e "  ${GREEN}--help,        -h${NC}   Afficher cette aide"
     echo ""
     echo -e "${YELLOW}EXEMPLES:${NC}"
-    echo "  $0                          # diff depuis le dernier commit"
-    echo "  $0 --staged                 # diff des fichiers en attente de commit"
-    echo "  $0 --day                    # tout ce qui a changé aujourd'hui"
-    echo "  $0 --week --model deepseek-coder-v2:dagbs # analyse hebdo avec deepseek-coder-v2:dagbs"
-    echo "  $0 --staged --verbose        # mode verbeux pour diagnostiquer"
+    echo "  $0                              # diff depuis le dernier commit (avec sélection branche)"
+    echo "  $0 --branch fix/issue-7 --staged  # analyser la branche fix/issue-7"
+    echo "  $0 --staged                     # diff des fichiers en attente de commit"
+    echo "  $0 --day                        # tout ce qui a changé aujourd'hui"
+    echo "  $0 --week --model deepseek-coder-v2:dagbs"
+    echo "  $0 --staged --verbose           # mode verbeux pour diagnostiquer"
     echo ""
     echo -e "${YELLOW}SORTIE:${NC}  Le message généré est affiché et copié dans le presse-papier."
     exit 0
@@ -77,6 +79,10 @@ while [[ $# -gt 0 ]]; do
             shift
             AI_MODEL="${1:?'--model requiert un nom de modèle'}"
             shift ;;
+        --branch|-b)
+            shift
+            TARGET_BRANCH="${1:?'--branch requiert un nom de branche'}"
+            shift ;;
         --verbose|-v) VERBOSE=true ; shift ;;
         *)
             echo -e "${RED}Option inconnue: $1${NC}"
@@ -91,7 +97,83 @@ if ! git rev-parse --git-dir > /dev/null 2>&1; then
     exit 1
 fi
 
+# ── Sélection de branche ──────────────────────────────────────────────────────
+_cur_branch=$(git branch --show-current 2>/dev/null || echo "?")
+
+# Si --branch est passé en argument, basculer directement
+if [[ -n "${TARGET_BRANCH:-}" ]] && [[ "$TARGET_BRANCH" != "$_cur_branch" ]]; then
+    git checkout "$TARGET_BRANCH" 2>/dev/null \
+        && echo -e "${GREEN}✓ Basculé sur '${TARGET_BRANCH}'${NC}" \
+        || echo -e "${RED}[ERREUR]${NC} Impossible de basculer sur '${TARGET_BRANCH}'" >&2
+    _cur_branch=$(git branch --show-current 2>/dev/null || echo "?")
+fi
+
+echo -e "${BLUE}🌿 Branche courante :${NC} ${GREEN}${_cur_branch}${NC}"
+
+# Lister les branches fix/issue-* (workflow issue.sh) + toutes les branches locales
+mapfile -t _fix_branches < <(git branch --list "fix/issue-*" 2>/dev/null | sed 's/^[* ]*//' | grep -v "^$")
+mapfile -t _all_branches < <(git branch 2>/dev/null | sed 's/^[* ]*//' | grep -v "^$")
+
+if [[ ${#_all_branches[@]} -gt 1 ]]; then
+    echo ""
+    if [[ ${#_fix_branches[@]} -gt 0 ]]; then
+        echo -e "${YELLOW}🔧 Branches de correctif (fix/issue-*) :${NC}"
+        _i=1
+        for _b in "${_fix_branches[@]}"; do
+            local _star=""; [[ "$_b" == "$_cur_branch" ]] && _star=" ${GREEN}← courante${NC}"
+            printf "  [%d] %b%s%b\n" "$_i" "${GREEN}" "$_b" "${NC}${_star}"
+            (( _i++ ))
+        done
+        echo ""
+        echo -e "${YELLOW}📋 Autres branches :${NC}"
+    else
+        echo -e "${YELLOW}📋 Branches disponibles :${NC}"
+    fi
+    _j=1
+    for _b in "${_all_branches[@]}"; do
+        # Ne pas relister les fix branches déjà affichées si elles existent
+        [[ ${#_fix_branches[@]} -gt 0 ]] && printf '%s\n' "${_fix_branches[@]}" | grep -qx "$_b" && continue
+        local _star=""; [[ "$_b" == "$_cur_branch" ]] && _star=" ${GREEN}← courante${NC}"
+        printf "  [%s] %s%b\n" "$(( ${#_fix_branches[@]} + _j ))" "$_b" "${NC}${_star}"
+        (( _j++ ))
+    done
+
+    echo ""
+    echo -ne "${CYAN}Basculer sur une branche ? (numéro ou nom, Entrée pour garder '${_cur_branch}') : ${NC}"
+    read -r _branch_choice
+
+    if [[ -n "$_branch_choice" ]]; then
+        # Sélection par numéro
+        if [[ "$_branch_choice" =~ ^[0-9]+$ ]]; then
+            _all_combined=("${_fix_branches[@]}" "${_all_branches[@]}")
+            # Reconstruire la liste combinée unique en excluant doublons fix dans all
+            mapfile -t _combined_unique < <(printf '%s\n' "${_fix_branches[@]}" \
+                $(printf '%s\n' "${_all_branches[@]}" | grep -vxF -f <(printf '%s\n' "${_fix_branches[@]}")) \
+                | grep -v "^$")
+            _idx=$(( _branch_choice - 1 ))
+            if (( _idx >= 0 && _idx < ${#_combined_unique[@]} )); then
+                _target="${_combined_unique[$_idx]}"
+                if [[ "$_target" != "$_cur_branch" ]]; then
+                    git checkout "$_target" 2>/dev/null \
+                        && echo -e "${GREEN}✓ Basculé sur '${_target}'${NC}" \
+                        || echo -e "${RED}[ERREUR]${NC} Impossible de basculer sur '${_target}'" >&2
+                    _cur_branch=$(git branch --show-current 2>/dev/null || echo "?")
+                fi
+            fi
+        else
+            # Sélection par nom
+            if [[ "$_branch_choice" != "$_cur_branch" ]]; then
+                git checkout "$_branch_choice" 2>/dev/null \
+                    && echo -e "${GREEN}✓ Basculé sur '${_branch_choice}'${NC}" \
+                    || echo -e "${RED}[ERREUR]${NC} Branche '${_branch_choice}' introuvable" >&2
+                _cur_branch=$(git branch --show-current 2>/dev/null || echo "?")
+            fi
+        fi
+    fi
+fi
+
 dbg "Dépôt Git : $(git rev-parse --show-toplevel)"
+dbg "Branche   : $_cur_branch"
 dbg "Mode      : $MODE"
 dbg "Modèle IA : $AI_MODEL"
 dbg "question.py : $QUESTION_PY ($([ -f "$QUESTION_PY" ] && echo 'trouvé' || echo 'ABSENT'))"
