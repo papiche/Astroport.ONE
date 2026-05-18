@@ -438,6 +438,7 @@ case "$COMMAND" in
         AI_MODEL=""
         PROMPT_TEMPLATE="issue_analyze"
         LOCAL_VERBOSE=false
+        MINIFY=false
         declare -a EXTRA_FILES=()
 
         while [[ $# -gt 0 ]]; do
@@ -448,6 +449,7 @@ case "$COMMAND" in
                 --verbose|-v)  LOCAL_VERBOSE=true; VERBOSE=true; shift ;;
                 --depth)       shift; CPSCRIPT_DEPTH="${1:-1}"; shift ;;
                 --maxtoken)    shift; CPSCRIPT_MAXTOKEN="${1:-12000}"; shift ;;
+                --minify)      MINIFY=true; shift ;;
                 --*)           echo -e "${YELLOW}[AVERTISSEMENT]${NC} Option inconnue ignorée : $1" >&2; shift ;;
                 *)             EXTRA_FILES+=("$1"); shift ;;
             esac
@@ -473,6 +475,48 @@ case "$COMMAND" in
         comments_json=$(_api GET "/repos/${REPO}/issues/${NUM}/comments")
         ISSUE_COMMENTS=$(echo "$comments_json" | jq -r '.[].body // ""' | head -c 2000)
 
+        # ── Auto-détection des chemins de fichiers mentionnés dans l'issue ───
+        _auto_detected=()
+        while IFS= read -r _raw_path; do
+            [[ -z "$_raw_path" ]] && continue
+            _found=""
+            # 1. Résolution directe (chemin relatif ou absolu)
+            for _candidate in \
+                "$_raw_path" \
+                "${MY_PATH}/../../${_raw_path#/}" \
+                "${MY_PATH}/../${_raw_path#/}" \
+                "${MY_PATH}/${_raw_path#/}"; do
+                if [[ -f "$_candidate" ]]; then
+                    _found=$(realpath "$_candidate" 2>/dev/null || echo "$_candidate")
+                    break
+                fi
+            done
+            # 2. Fallback : find par nom de fichier (max 4 niveaux)
+            if [[ -z "$_found" ]]; then
+                _basename=$(basename "$_raw_path")
+                _found=$(find . -maxdepth 4 -name "$_basename" -type f 2>/dev/null \
+                    | grep -v node_modules | head -1)
+                [[ -n "$_found" ]] && _found=$(realpath "$_found" 2>/dev/null || echo "$_found")
+            fi
+            [[ -n "$_found" ]] && _auto_detected+=("$_found")
+        done < <(printf '%s\n%s\n%s' "$ISSUE_TITLE" "$ISSUE_BODY" "$ISSUE_COMMENTS" \
+            | grep -oE '[A-Za-z0-9_./-]+\.(sh|py|html|js|ts|md)' \
+            | grep -v '^[.-]' | sort -u)
+
+        if [[ ${#_auto_detected[@]} -gt 0 ]]; then
+            echo ""
+            echo -e "${CYAN}[AUTO-DÉTECTION]${NC} Fichiers mentionnés dans l'issue :"
+            for _f in "${_auto_detected[@]}"; do
+                echo "  ✓ $_f"
+            done
+            read -r -p "Ajouter ces fichiers à l'analyse ? [O/n] : " _do_auto
+            if [[ "${_do_auto,,}" != "n" ]]; then
+                for _f in "${_auto_detected[@]}"; do
+                    EXTRA_FILES+=("$_f")
+                done
+            fi
+        fi
+
         # ── Création de branche de travail ───────────────────────────────────
         _branch_name="fix/issue-${NUM}"
         _current_branch=$(__git branch --show-current 2>/dev/null || echo "")
@@ -494,7 +538,7 @@ case "$COMMAND" in
         # ── ÉTAPE 1 : Découverte intelligente des fichiers ────────────────────
         CPSCRIPT_BIN=$(command -v cpscript 2>/dev/null || echo "${MY_PATH}/cpscript")
         CPCODE_BIN=$(command   -v cpcode   2>/dev/null || echo "${MY_PATH}/cpcode")
-        CPSCRIPT_MAXTOKEN="${CPSCRIPT_MAXTOKEN:-10000}"  # limite par fichier (budget deepseek 16k)
+        CPSCRIPT_MAXTOKEN="${CPSCRIPT_MAXTOKEN:-10000}"  # limite par fichier (qwen2.5-coder 32k ctx)
 
         if [[ ${#EXTRA_FILES[@]} -eq 0 ]]; then
             _INDEXER_PY="${MY_PATH}/tools/codebase_index.py"
@@ -666,6 +710,52 @@ case "$COMMAND" in
 
         [[ -z "$code_context" ]] && code_context="(aucun code fourni — analyse basée sur la description)"
 
+        # ── Détection des fichiers log mentionnés dans le code ou l'issue ─────
+        _log_found=()
+        while IFS= read -r _lraw; do
+            [[ -z "$_lraw" ]] && continue
+            _lexp="${_lraw//\$HOME/$HOME}"
+            [[ -f "$_lexp" ]] && _log_found+=("$_lexp")
+        done < <(printf '%s\n%s\n%s' "$ISSUE_BODY" "$ISSUE_COMMENTS" "$code_context" \
+            | grep -oE '[A-Za-z0-9_~/.$-]+\.log' | sort -u | head -5)
+
+        if [[ ${#_log_found[@]} -gt 0 ]]; then
+            echo ""
+            echo -e "${YELLOW}[LOGS]${NC} Fichiers log détectés dans le code :"
+            for _lp in "${_log_found[@]}"; do echo "  - $_lp"; done
+            read -r -p "Ajouter les 50 dernières lignes de ces logs au contexte IA ? [O/n] : " _do_logs
+            if [[ "${_do_logs,,}" != "n" ]]; then
+                for _lp in "${_log_found[@]}"; do
+                    code_context+=$'\n\n'"### EXTRAIT LOGS RÉELS — $(basename "$_lp") (tail -50)"$'\n''```'$'\n'
+                    code_context+=$(tail -50 "$_lp" 2>/dev/null || echo "(fichier introuvable ou vide)")
+                    code_context+=$'\n''```'
+                done
+            fi
+        fi
+
+        # ── Minification du contexte code ────────────────────────────────────
+        _minify_code() {
+            local _input="$1"
+            # Supprime les commentaires, les lignes vides, et réduit les espaces
+            echo "$_input" | sed -E '/^[[:space:]]*(\/\/|#|\/\*|\*)/d; /^[[:space:]]*$/d; s/[[:space:]]+/ /g'
+        }
+
+        # ── Budget de tokens ──────────────────────────────────────────────────
+        _ctx_chars=${#code_context}
+        if (( _ctx_chars > 60000 )); then
+            echo ""
+            echo -e "${YELLOW}[AVERTISSEMENT]${NC} Volume de code élevé : ~$((_ctx_chars / 4)) tokens (limite recommandée : 15 000)" >&2
+            if [[ "$MINIFY" == "true" ]]; then
+                code_context=$(_minify_code "$code_context")
+                echo -e "  ${CYAN}[--minify]${NC} Après minification : ~$(( ${#code_context} / 4)) tokens" >&2
+            else
+                echo -e "  ${CYAN}Conseil :${NC} Utilisez --minify pour réduire, ou --maxtoken pour limiter par fichier." >&2
+            fi
+        elif [[ "$MINIFY" == "true" ]]; then
+            code_context=$(_minify_code "$code_context")
+            echo -e "  ${CYAN}[--minify]${NC} Après minification : ~$(( ${#code_context} / 4)) tokens" >&2
+        fi
+
         # ── Charger le template de prompt ─────────────────────────────────────
         PROMPTS_DIR="${MY_PATH}/IA/prompts"
         template_file="${PROMPTS_DIR}/${PROMPT_TEMPLATE}.md"
@@ -685,12 +775,29 @@ Code concerné :
 Propose un plan de correction concis en français (fichiers à modifier, changements à apporter)."
         fi
 
-        # Substitution des placeholders
-        prompt="${prompt_template}"
-        prompt="${prompt//\{\{ISSUE_NUMBER\}\}/$NUM}"
-        prompt="${prompt//\{\{ISSUE_TITLE\}\}/$ISSUE_TITLE}"
-        prompt="${prompt//\{\{ISSUE_BODY\}\}/$ISSUE_BODY}"
-        prompt="${prompt//\{\{CODE_CONTEXT\}\}/$code_context}"
+        # Substitution des placeholders — via Python pour éviter l'interprétation
+        # shell des caractères spéciaux (accolades, backslashes, antislashs dans code_context)
+        _tpl_f=$(mktemp /tmp/issue_tpl_XXXXXX.txt)
+        _num_f=$(mktemp /tmp/issue_num_XXXXXX.txt)
+        _ttl_f=$(mktemp /tmp/issue_ttl_XXXXXX.txt)
+        _bdy_f=$(mktemp /tmp/issue_bdy_XXXXXX.txt)
+        _ctx_f=$(mktemp /tmp/issue_ctx_XXXXXX.txt)
+        printf '%s' "$prompt_template" > "$_tpl_f"
+        printf '%s' "$NUM"             > "$_num_f"
+        printf '%s' "$ISSUE_TITLE"    > "$_ttl_f"
+        printf '%s' "$ISSUE_BODY"     > "$_bdy_f"
+        printf '%s' "$code_context"   > "$_ctx_f"
+        prompt=$(python3 - "$_tpl_f" "$_num_f" "$_ttl_f" "$_bdy_f" "$_ctx_f" <<'PYEOF'
+import sys
+tpl = open(sys.argv[1]).read()
+out = tpl.replace("{{ISSUE_NUMBER}}", open(sys.argv[2]).read())
+out = out.replace("{{ISSUE_TITLE}}",  open(sys.argv[3]).read())
+out = out.replace("{{ISSUE_BODY}}",   open(sys.argv[4]).read())
+out = out.replace("{{CODE_CONTEXT}}", open(sys.argv[5]).read())
+sys.stdout.write(out)
+PYEOF
+        )
+        rm -f "$_tpl_f" "$_num_f" "$_ttl_f" "$_bdy_f" "$_ctx_f"
         [[ -n "$ISSUE_COMMENTS" ]] && prompt+=$'\n\n## Commentaires existants\n\n'"$ISSUE_COMMENTS"
 
         # Injecter CLAUDE.md du projet comme contexte système si présent
@@ -718,6 +825,21 @@ Propose un plan de correction concis en français (fichiers à modifier, changem
             esac
         fi
 
+        # ── Presse-papier portable (X11 / Wayland / fallback) ────────────────
+        _copy_to_clipboard() {
+            local _content="$1"
+            if command -v wl-copy &>/dev/null; then
+                echo "$_content" | wl-copy 2>/dev/null && return 0
+            fi
+            if command -v xclip &>/dev/null; then
+                echo "$_content" | xclip -selection clipboard 2>/dev/null && return 0
+            fi
+            if command -v xsel &>/dev/null; then
+                echo "$_content" | xsel --clipboard --input 2>/dev/null && return 0
+            fi
+            return 1
+        }
+
         # ── Fonction IA réutilisable (analyse + fix mode) ─────────────────────
         _call_ai() {
             local _pfile="$1"
@@ -736,15 +858,41 @@ Propose un plan de correction concis en français (fichiers à modifier, changem
             case "$_backend" in
                 ollama)
                     local _q="${MY_PATH}/IA/question.py"
-                    local _m="${_model_override:-${AI_MODEL:-deepseek-coder-v2:dagbs}}"
+                    local _m="${_model_override:-${AI_MODEL:-qwen2.5-coder:14b}}"
                     if [[ -f "$_q" ]]; then
-                        python3 "$_q" --model "$_m" --prompt-file "$_pfile" 2>/dev/null
+                        local _augmented_pfile
+                        _augmented_pfile=$(mktemp /tmp/issue_aug_XXXXXX.txt)
+                        cat > "$_augmented_pfile" <<'SYSPROMPT'
+Tu es un développeur senior expert en débogage, spécialisé dans le projet UPlanet/Astroport.ONE.
+RÈGLES ABSOLUES :
+1. FACTUEL : Ne suppose rien qui ne soit pas explicitement dans le code ou les logs fournis.
+2. TRIGGER "unknown" : Si la sortie ou les logs contiennent "unknown", cherche dans le code toutes les lignes où cette chaîne est assignée ou retournée. Cite le fichier et le numéro de ligne.
+3. CONTEXTE STATION : Les chemins ~/.zen/game/ sont des bases de données filesystem critiques. Les fichiers manquants dans ces chemins expliquent souvent les erreurs "unknown" ou "non autorisé".
+4. POINT DE RUPTURE : Identifie la dernière étape [✅ OK] et la première [❌]/[⚠️]. Analyse UNIQUEMENT cette transition.
+5. INTERDIT : Répondre "le code est correct" si un échec est documenté.
+6. PENSÉE ADVERSAIRE : Si une étape est [❌], il y a FORCÉMENT une erreur de logique, de chemin ou de format. Si tu ne trouves pas d'erreur évidente, ta mission est d'insérer des instructions de LOGGING (echo en bash, console.log en JS) à l'endroit précis de la rupture pour capturer l'état des variables.
+RAPPEL DES LOIS UPLANET :
+- NIP-42 : L'auth exige que le tag 'relay' soit IDENTIQUE à l'URL de connexion (attention aux slashs finaux).
+- ROAMING : Si SOURCE=unknown, c'est que le dossier ~/.zen/game/nostr/PUBKEY n'existe pas sur cette station.
+- MARKER : Le marker .nip42_auth_... doit être écrit dans un dossier validé par 'check_authorization'.
+RÉPONDS EN FRANÇAIS. PAS D'INTRODUCTION.
+
+---
+
+SYSPROMPT
+                        cat "$_pfile" >> "$_augmented_pfile"
+                        python3 "$_q" --model "$_m" \
+                            --prompt-file "$_augmented_pfile" \
+                            --temperature 0.1 \
+                            --ctx 32768 \
+                            2>/dev/null
+                        rm -f "$_augmented_pfile"
                     else
                         echo -e "${RED}[ERREUR]${NC} question.py introuvable : $_q" >&2
                     fi
                     ;;
                 claude)
-                    local _m="${_model_override:-${AI_MODEL:-claude-opus-4-5}}"
+                    local _m="${_model_override:-${AI_MODEL:-claude-sonnet-4-6}}"
                     local _pj; _pj=$(python3 -c "import json; print(json.dumps(open('$_pfile').read()))")
                     curl -s https://api.anthropic.com/v1/messages \
                         -H "x-api-key: $ANTHROPIC_API_KEY" \
@@ -854,62 +1002,98 @@ Code :
 Retourne UNIQUEMENT les blocs AVANT/APRÈS à modifier. Pas d'explication globale."
                     fi
 
-                    _fix_p="${_fix_tmpl}"
-                    _fix_p="${_fix_p//\{\{ISSUE_NUMBER\}\}/$NUM}"
-                    _fix_p="${_fix_p//\{\{ISSUE_TITLE\}\}/$ISSUE_TITLE}"
-                    _fix_p="${_fix_p//\{\{ISSUE_BODY\}\}/$ISSUE_BODY}"
-                    _fix_p="${_fix_p//\{\{CODE_CONTEXT\}\}/$code_context}"
-                    [[ -n "$_claudemd" ]] && _fix_p="## Contexte projet\n${_claudemd}\n\n---\n\n${_fix_p}"
+                    # Substitution robuste via Python (évite l'interprétation des char spéciaux)
+                    _ftpl_f=$(mktemp /tmp/issue_ftpl_XXXXXX.txt)
+                    _fnum_f=$(mktemp /tmp/issue_fnum_XXXXXX.txt)
+                    _fttl_f=$(mktemp /tmp/issue_fttl_XXXXXX.txt)
+                    _fbdy_f=$(mktemp /tmp/issue_fbdy_XXXXXX.txt)
+                    _fctx_f=$(mktemp /tmp/issue_fctx_XXXXXX.txt)
+                    printf '%s' "$_fix_tmpl"   > "$_ftpl_f"
+                    printf '%s' "$NUM"          > "$_fnum_f"
+                    printf '%s' "$ISSUE_TITLE" > "$_fttl_f"
+                    printf '%s' "$ISSUE_BODY"  > "$_fbdy_f"
+                    printf '%s' "$code_context"> "$_fctx_f"
+                    _fix_p=$(python3 - "$_ftpl_f" "$_fnum_f" "$_fttl_f" "$_fbdy_f" "$_fctx_f" <<'PYEOF'
+import sys
+tpl = open(sys.argv[1]).read()
+out = tpl.replace("{{ISSUE_NUMBER}}", open(sys.argv[2]).read())
+out = out.replace("{{ISSUE_TITLE}}",  open(sys.argv[3]).read())
+out = out.replace("{{ISSUE_BODY}}",   open(sys.argv[4]).read())
+out = out.replace("{{CODE_CONTEXT}}", open(sys.argv[5]).read())
+sys.stdout.write(out)
+PYEOF
+                    )
+                    rm -f "$_ftpl_f" "$_fnum_f" "$_fttl_f" "$_fbdy_f" "$_fctx_f"
+                    [[ -n "$_claudemd" ]] && _fix_p="$(printf '## Contexte projet\n\n%s\n\n---\n\n%s' "$_claudemd" "$_fix_p")"
 
-                    _fix_file=$(mktemp /tmp/issue_fix_XXXXXX.txt)
-                    printf '%s' "$_fix_p" > "$_fix_file"
+                    read -r -p "💡 Un indice pour guider l'IA ? (Entrée pour vide) : " USER_HINT
+                    [[ -n "$USER_HINT" ]] && _fix_p="$(printf '### PISTE DE RÉSOLUTION : %s\n\n%s' "$USER_HINT" "$_fix_p")"
 
-                    echo ""
-                    echo -e "${GREEN}[IA: ${AI_BACKEND}]${NC} Mode FIX — code à modifier..."
-                    echo -e "══════════════════════════════════════════════════════"
-                    _fix_result=$(_call_ai "$_fix_file")
-                    rm -f "$_fix_file"
+                    # ── Boucle retry avec pression croissante ──────────────────
+                    _fix_result=""
+                    _retry_pressure=""
+                    _fix_loop=true
+                    while $_fix_loop; do
+                        _fix_file=$(mktemp /tmp/issue_fix_XXXXXX.txt)
+                        _full_fix_p="$_fix_p"
+                        [[ -n "$_retry_pressure" ]] && _full_fix_p="$(printf '### CONSIGNE SUPPLÉMENTAIRE : %s\n\n%s' "$_retry_pressure" "$_full_fix_p")"
+                        printf '%s' "$_full_fix_p" > "$_fix_file"
 
-                    if [[ -n "$_fix_result" ]]; then
-                        echo -e "\n${_fix_result}\n"
-                    else
-                        echo -e "${RED}Aucune réponse IA.${NC}" >&2
-                    fi
+                        echo ""
+                        echo -e "${GREEN}[IA: ${AI_BACKEND}]${NC} Mode FIX — code à modifier..."
+                        echo -e "══════════════════════════════════════════════════════"
+                        _fix_result=$(_call_ai "$_fix_file")
+                        rm -f "$_fix_file"
 
-                    echo ""
-                    echo -e "${YELLOW}Appliquer le correctif manuellement, puis :${NC}"
-                    echo "  [t] Lancer les tests"
-                    echo "  [c] Poster le correctif comme commentaire"
-                    echo "  [k] Copier le correctif"
-                    echo "  [suite] Continuer (revenir au menu principal)"
-                    read -r -p "Choix [t/c/k/suite] : " _fx_act
-                    case "${_fx_act:-suite}" in
-                        t)
-                            echo ""
-                            if [[ -f "Makefile" ]] && grep -q "tests" Makefile 2>/dev/null; then
-                                echo -e "${CYAN}[test]${NC} make tests..."
-                                make tests 2>&1 | tail -30
-                            elif [[ -f "test.sh" ]]; then
-                                echo -e "${CYAN}[test]${NC} ./test.sh..."
-                                bash test.sh 2>&1 | tail -30
-                            else
-                                echo -e "${YELLOW}[INFO]${NC} Aucun runner détecté. Lancer vos tests manuellement." >&2
-                            fi
-                            ;;
-                        c)
-                            if [[ -n "$GIT_TOKEN" ]] && [[ -n "$_fix_result" ]]; then
-                                _fcp=$(jq -n --arg b "**Correctif IA (${AI_BACKEND}/issue_fix) — #${NUM}**"$'\n\n'"${_fix_result}" '{body:$b}')
-                                _fcr=$(_api POST "/repos/${REPO}/issues/${NUM}/comments" "$_fcp")
-                                echo -e "${GREEN}✓ Correctif posté${NC} : ${CYAN}$(echo "$_fcr" | jq -r '.html_url // .url')${NC}"
-                            fi
-                            ;;
-                        k)
-                            if command -v xclip &>/dev/null; then
-                                echo "$_fix_result" | xclip -selection clipboard
-                                echo -e "${GREEN}✓ Copié${NC}"
-                            fi
-                            ;;
-                    esac
+                        if [[ -n "$_fix_result" ]]; then
+                            echo -e "\n${_fix_result}\n"
+                        else
+                            echo -e "${RED}Aucune réponse IA.${NC}" >&2
+                        fi
+
+                        echo ""
+                        echo -e "${YELLOW}Appliquer le correctif manuellement, puis :${NC}"
+                        echo "  [r] Insister / reformuler (retry avec pression supplémentaire)"
+                        echo "  [t] Lancer les tests"
+                        echo "  [c] Poster le correctif comme commentaire"
+                        echo "  [k] Copier le correctif"
+                        echo "  [suite] Continuer (revenir au menu principal)"
+                        read -r -p "Choix [r/t/c/k/suite] : " _fx_act
+                        case "${_fx_act:-suite}" in
+                            r)
+                                read -r -p "🔥 Consigne supplémentaire (ex: 'le code DOIT être modifié') : " _retry_pressure
+                                ;;
+                            t)
+                                echo ""
+                                if [[ -f "Makefile" ]] && grep -q "tests" Makefile 2>/dev/null; then
+                                    echo -e "${CYAN}[test]${NC} make tests..."
+                                    make tests 2>&1 | tail -30
+                                elif [[ -f "test.sh" ]]; then
+                                    echo -e "${CYAN}[test]${NC} ./test.sh..."
+                                    bash test.sh 2>&1 | tail -30
+                                else
+                                    echo -e "${YELLOW}[INFO]${NC} Aucun runner détecté. Lancer vos tests manuellement." >&2
+                                fi
+                                ;;
+                            c)
+                                if [[ -n "$GIT_TOKEN" ]] && [[ -n "$_fix_result" ]]; then
+                                    _fcp=$(jq -n --arg b "**Correctif IA (${AI_BACKEND}/issue_fix) — #${NUM}**"$'\n\n'"${_fix_result}" '{body:$b}')
+                                    _fcr=$(_api POST "/repos/${REPO}/issues/${NUM}/comments" "$_fcp")
+                                    echo -e "${GREEN}✓ Correctif posté${NC} : ${CYAN}$(echo "$_fcr" | jq -r '.html_url // .url')${NC}"
+                                fi
+                                ;;
+                            k)
+                                if _copy_to_clipboard "$_fix_result"; then
+                                    echo -e "${GREEN}✓ Copié dans le presse-papier${NC}"
+                                else
+                                    echo -e "${YELLOW}[INFO]${NC} wl-copy/xclip/xsel non disponibles." >&2
+                                fi
+                                ;;
+                            *)
+                                _fix_loop=false
+                                ;;
+                        esac
+                    done
                     ;;
 
                 t)
@@ -945,14 +1129,10 @@ Retourne UNIQUEMENT les blocs AVANT/APRÈS à modifier. Pas d'explication global
                     ;;
 
                 k)
-                    if command -v xclip &>/dev/null; then
-                        echo "$ai_result" | xclip -selection clipboard
-                        echo -e "${GREEN}✓ Copié dans le presse-papier${NC}"
-                    elif command -v xsel &>/dev/null; then
-                        echo "$ai_result" | xsel --clipboard --input
+                    if _copy_to_clipboard "$ai_result"; then
                         echo -e "${GREEN}✓ Copié dans le presse-papier${NC}"
                     else
-                        echo -e "${YELLOW}[INFO]${NC} xclip/xsel non disponibles." >&2
+                        echo -e "${YELLOW}[INFO]${NC} wl-copy/xclip/xsel non disponibles." >&2
                     fi
                     ;;
 

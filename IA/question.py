@@ -105,7 +105,12 @@ def filter_think_tags(text):
 
 
 def get_ollama_answer(prompt: str, model_name: str = "gemma3:latest",
-                      system_prompt: str = None) -> str | None:
+                      system_prompt: str = None,
+                      temperature: float = None,
+                      num_ctx: int = None,
+                      num_predict: int = None,
+                      top_p: float = None,
+                      repeat_penalty: float = None) -> str | None:
     """Génère une réponse Ollama avec le prompt final."""
     _system = system_prompt or (
         "RÉPONDS EN FRANÇAIS UNIQUEMENT.\n\n"
@@ -116,14 +121,28 @@ def get_ollama_answer(prompt: str, model_name: str = "gemma3:latest",
         "4. Utilise des emojis\n"
         "5. Sois concis"
     )
+    options = {}
+    if temperature is not None:
+        options['temperature'] = temperature
+    if num_ctx is not None:
+        options['num_ctx'] = num_ctx
+    if num_predict is not None:
+        options['num_predict'] = num_predict
+    if top_p is not None:
+        options['top_p'] = top_p
+    if repeat_penalty is not None:
+        options['repeat_penalty'] = repeat_penalty
+    kwargs = dict(
+        model=model_name,
+        messages=[
+            {'role': 'system', 'content': _system},
+            {'role': 'user',   'content': prompt},
+        ]
+    )
+    if options:
+        kwargs['options'] = options
     try:
-        ai_response = ollama.chat(
-            model=model_name,
-            messages=[
-                {'role': 'system', 'content': _system},
-                {'role': 'user',   'content': prompt},
-            ]
-        )
+        ai_response = ollama.chat(**kwargs)
         return filter_think_tags(ai_response['message']['content'])
     except Exception as e:
         print(f"[question.py] Erreur Ollama: {e}", file=sys.stderr)
@@ -147,6 +166,16 @@ if __name__ == "__main__":
     parser.add_argument("--user-id",     type=str)
     parser.add_argument("--slot",        type=int, default=0)
     parser.add_argument("--json",        action="store_true")
+    parser.add_argument("--temperature",     type=float, default=None,
+                        help="Température Ollama (0.0=factuel, 1.0=créatif). Défaut: modèle Ollama.")
+    parser.add_argument("--ctx",             type=int,   default=None,
+                        help="Fenêtre de contexte num_ctx (ex: 32768). Défaut: Ollama interne (~2048).")
+    parser.add_argument("--max-tokens",      type=int,   default=None, dest="max_tokens",
+                        help="Tokens max à générer num_predict (ex: 1024). Défaut: illimité.")
+    parser.add_argument("--top-p",           type=float, default=None, dest="top_p",
+                        help="Nucleus sampling top_p (ex: 0.9). Défaut: modèle Ollama.")
+    parser.add_argument("--repeat-penalty",  type=float, default=None, dest="repeat_penalty",
+                        help="Pénalité répétition repeat_penalty (ex: 1.1). Défaut: modèle Ollama.")
 
     args = parser.parse_args()
 
@@ -213,7 +242,12 @@ if __name__ == "__main__":
         lf.write(f"{npub_tag}{skill_tag}{final_prompt}\n")
 
     # ── Réponse Ollama ────────────────────────────────────────────────────────
-    answer = get_ollama_answer(final_prompt, args.ollama_model_name, system_prompt)
+    answer = get_ollama_answer(final_prompt, args.ollama_model_name, system_prompt,
+                               temperature=args.temperature,
+                               num_ctx=args.ctx,
+                               num_predict=args.max_tokens,
+                               top_p=args.top_p,
+                               repeat_penalty=args.repeat_penalty)
 
     if answer:
         with open(log_file_path, "a") as lf:

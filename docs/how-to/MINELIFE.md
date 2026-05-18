@@ -663,7 +663,57 @@ Voir [KNOWLEDGE_EMBEDDINGS.md](KNOWLEDGE_EMBEDDINGS.md) pour :
 
 ---
 
-## 8. NIPs de référence
+## 8. Configuration IA — Modèles Ollama et Fenêtre de Contexte
+
+Le daemon BRO (`bro_dm_daemon.sh`) et le responder (`UPlanet_IA_Responder.sh`) appellent
+`question.py` pour générer les réponses conversationnelles. Les paramètres ci-dessous sont
+fixés selon le cas d'usage et le profil matériel de la station.
+
+### Paramètres question.py
+
+| Flag | Paramètre Ollama | Rôle |
+|------|-----------------|------|
+| `--model` | `model` | Modèle LLM à utiliser |
+| `--ctx` | `num_ctx` | Fenêtre de contexte (tokens en entrée) |
+| `--max-tokens` | `num_predict` | Tokens max à générer |
+| `--temperature` | `temperature` | Créativité (0.0=factuel, 1.0=libre) |
+| `--top-p` | `top_p` | Nucleus sampling (0.9 = valeur courante) |
+| `--repeat-penalty` | `repeat_penalty` | Anti-répétition (1.1 = légère pénalité) |
+
+### Valeurs par cas d'usage
+
+| Cas | Script | Modèle | `--ctx` | `--max-tokens` |
+|-----|--------|--------|---------|---------------|
+| BRO skill (pédagogique) | `bro_dm_daemon.sh` | `gemma3:latest` | 8192 | 2048 |
+| BRO résumé URL | `UPlanet_IA_Responder.sh` | `gemma3:latest` | 8192 | 2048 |
+| BRO conversation libre | `UPlanet_IA_Responder.sh` | `gemma3:latest` | 8192 | 1024 |
+| Analyse code (commit/issue) | `commit.sh`, `issue.sh` | `qwen2.5-coder:14b` | 32768 | 4096 |
+
+### VRAM et sélection du modèle
+
+| Machine | GPU | VRAM | Modèle BRO conseillé | Contrainte |
+|---------|-----|------|---------------------|------------|
+| alienware | GTX 1070 | 8 Go | `gemma3:latest` (3.3 Go) | orpheus TTS occupe ~5 Go |
+| sagittarius | RTX 3090 | 24 Go | `gemma3:latest` ou `llama3.1:8b` | comfyui occupe ~256 Mo |
+
+> Sur alienware avec orpheus actif, `llama3.2:latest` (2 Go) peut remplacer
+> `gemma3:latest` si la VRAM est saturée.
+
+### Recommandation `recommended_ctx` (heartbox_analysis.json)
+
+Le champ `.services.ai_company.ollama.recommended_ctx` dans `heartbox_analysis.json`
+est calculé automatiquement par `heartbox_analysis.sh` selon la VRAM détectée :
+
+| VRAM | `recommended_ctx` |
+|------|------------------|
+| ≥ 16 Go | 32768 |
+| ≥ 8 Go | 16384 |
+| ≥ 4 Go | 8192 |
+| < 4 Go | 4096 |
+
+---
+
+## 9. NIPs de référence
 
 | NIP | Utilisation |
 |---|---|

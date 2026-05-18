@@ -280,8 +280,11 @@ _handle_bro_skill() {
 
     local answer
     answer=$(python3 "$MY_PATH/question.py" "$question" \
-        --skill "$skill" \
-        --npub  "$sender" \
+        --model       "gemma3:latest" \
+        --ctx         8192 \
+        --max-tokens  2048 \
+        --skill       "$skill" \
+        --npub        "$sender" \
         2>/dev/null)
 
     if [[ -z "$answer" ]]; then

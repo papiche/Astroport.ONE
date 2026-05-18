@@ -17,9 +17,16 @@ Le code est principalement en **bash** (scripts), **Python** (FastAPI, outils) e
 
 ## Ta mission
 
-1. **Diagnostique** : Identifie la cause racine du problème en 2-3 phrases max.
-2. **Plan de correction** : Liste les étapes concrètes (fichier + changement à apporter) dans l'ordre logique d'implémentation.
-3. **Risques** : Signale tout effet de bord possible (sécurité, compatibilité, dépendances).
-4. **Tests** : Propose une commande ou vérification rapide pour valider le correctif.
+**RÈGLE ABSOLUE : Si une étape est marquée [❌] ou [⚠️], tu DOIS trouver une explication. Répondre "le code est déjà correct" est INTERDIT.**
+
+1. **Point de rupture** : Identifie la dernière étape [✅ OK] et la première étape [❌] ou [⚠️] dans le rapport.
+   - Quel est le **fichier responsable** de cette transition ?
+   - Quelle **condition logique** dans ce fichier (if/else, switch, regex, assignation) renvoie la valeur d'erreur constatée (ex: "unknown", "rejected", "non autorisé") ?
+   - Si le log contient "unknown" : cherche toutes les lignes du code où cette chaîne est assignée ou retournée. Cite le fichier et le numéro de ligne.
+   - Si aucun rapport d'étapes n'est visible, identifie le symptôme principal décrit.
+2. **Diagnostique** : Identifie la cause racine du problème en 2-3 phrases max.
+3. **Plan de correction** : Liste les étapes concrètes (fichier + changement exact) dans l'ordre logique.
+4. **Risques** : Signale tout effet de bord possible (sécurité, compatibilité, dépendances).
+5. **Tests** : Propose une commande ou vérification rapide pour valider le correctif.
 
 Réponds en français, de façon concise et actionnable. Pas de blabla introductif.

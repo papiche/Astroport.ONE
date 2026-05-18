@@ -32,7 +32,7 @@ done
 MODE="commit"         # commit | staged | day | week | month
 SINCE_COMMIT="HEAD"   # référence git de base pour le diff
 SINCE_LABEL="dernier commit"
-AI_MODEL="deepseek-coder-v2:dagbs"
+AI_MODEL="qwen2.5-coder:14b"
 VERBOSE=false
 
 dbg() { [[ "$VERBOSE" == "true" ]] && echo -e "\033[2m[verbose] $*\033[0m" >&2 || true; }
@@ -50,7 +50,7 @@ show_help() {
     echo -e "  ${GREEN}--week,        -w${NC}   Derniers 7 jours"
     echo -e "  ${GREEN}--month,       -m${NC}   Derniers 30 jours"
     echo -e "  ${GREEN}--branch,      -b${NC}   Basculer sur cette branche avant d'analyser"
-    echo -e "  ${GREEN}--model MODEL, -M${NC}   Modèle Ollama (défaut: deepseek-coder-v2:dagbs)"
+    echo -e "  ${GREEN}--model MODEL, -M${NC}   Modèle Ollama (défaut: qwen2.5-coder:14b)"
     echo -e "  ${GREEN}--verbose,     -v${NC}   Mode verbeux : affiche diff, prompt et réponse brute"
     echo -e "  ${GREEN}--help,        -h${NC}   Afficher cette aide"
     echo ""
@@ -59,7 +59,7 @@ show_help() {
     echo "  $0 --branch fix/issue-7 --staged  # analyser la branche fix/issue-7"
     echo "  $0 --staged                     # diff des fichiers en attente de commit"
     echo "  $0 --day                        # tout ce qui a changé aujourd'hui"
-    echo "  $0 --week --model deepseek-coder-v2:dagbs"
+    echo "  $0 --week --model qwen2.5-coder:7b  # fallback alienware (orpheus actif)"
     echo "  $0 --staged --verbose           # mode verbeux pour diagnostiquer"
     echo ""
     echo -e "${YELLOW}SORTIE:${NC}  Le message généré est affiché et copié dans le presse-papier."
@@ -182,25 +182,29 @@ dbg "question.py : $QUESTION_PY ($([ -f "$QUESTION_PY" ] && echo 'trouvé' || ec
 echo -e "${BLUE}📊 Collecte des modifications ($SINCE_LABEL)...${NC}"
 
 DIFF_CONTENT=""
+DIFF_RAW=""
 FILES_CHANGED=""
 COMMITS_INFO=""
+DIFF_STAT=""
 
 case "$MODE" in
     staged)
-        DIFF_CONTENT=$(git diff --cached 2>/dev/null || true)
-        FILES_CHANGED=$(git diff --cached --name-status 2>/dev/null || true)
-        if [[ -z "$DIFF_CONTENT" ]]; then
+        DIFF_RAW=$(git diff --cached -U0 -- . ':(exclude)*.lock' ':(exclude)*.min.js' ':(exclude)dist/*' ':(exclude)node_modules/*' ':(exclude)*-core.js' ':(exclude)*.wasm' ':(exclude)earth/ffmpeg/*' 2>/dev/null | tr -d '\0' | iconv -c -f UTF-8 -t UTF-8 || true)
+        FILES_CHANGED=$(git diff --cached -- . ':(exclude)*.lock' ':(exclude)*.min.js' ':(exclude)dist/*' ':(exclude)node_modules/*' ':(exclude)*-core.js' ':(exclude)*.wasm' ':(exclude)earth/ffmpeg/*' --name-status 2>/dev/null || true)
+        DIFF_STAT=$(git diff --cached --stat 2>/dev/null || true)
+        if [[ -z "$DIFF_RAW" ]]; then
             echo -e "${YELLOW}⚠️  Aucun fichier stagé (git add).${NC}"
             exit 0
         fi
         ;;
     commit)
-        DIFF_CONTENT=$(git diff HEAD 2>/dev/null || true)
-        DIFF_CONTENT+=$'\n'$(git diff --cached 2>/dev/null || true)
-        FILES_CHANGED=$(git diff HEAD --name-status 2>/dev/null || true)
-        FILES_CHANGED+=$'\n'$(git diff --cached --name-status 2>/dev/null || true)
+        DIFF_RAW=$(git diff HEAD -U0 -- . ':(exclude)*.lock' ':(exclude)*.min.js' ':(exclude)dist/*' ':(exclude)node_modules/*' ':(exclude)*-core.js' ':(exclude)*.wasm' ':(exclude)earth/ffmpeg/*' 2>/dev/null | tr -d '\0' | iconv -c -f UTF-8 -t UTF-8 || true)
+        DIFF_RAW+=$'\n'$(git diff --cached -U0 -- . ':(exclude)*.lock' ':(exclude)*.min.js' ':(exclude)dist/*' ':(exclude)node_modules/*' ':(exclude)*-core.js' ':(exclude)*.wasm' ':(exclude)earth/ffmpeg/*' 2>/dev/null | tr -d '\0' | iconv -c -f UTF-8 -t UTF-8 || true)
+        FILES_CHANGED=$(git diff HEAD -- . ':(exclude)*.lock' ':(exclude)*.min.js' ':(exclude)dist/*' ':(exclude)node_modules/*' ':(exclude)*-core.js' ':(exclude)*.wasm' ':(exclude)earth/ffmpeg/*' --name-status 2>/dev/null || true)
+        FILES_CHANGED+=$'\n'$(git diff --cached -- . ':(exclude)*.lock' ':(exclude)*.min.js' ':(exclude)dist/*' ':(exclude)node_modules/*' ':(exclude)*-core.js' ':(exclude)*.wasm' ':(exclude)earth/ffmpeg/*' --name-status 2>/dev/null || true)
+        DIFF_STAT=$(git diff HEAD --stat 2>/dev/null || true)
         COMMITS_INFO=$(git log -1 --pretty=format:"[%h] %s (%an, %ar)" 2>/dev/null || true)
-        if [[ -z "$DIFF_CONTENT" || "$DIFF_CONTENT" =~ ^[[:space:]]*$ ]]; then
+        if [[ -z "$DIFF_RAW" || "$DIFF_RAW" =~ ^[[:space:]]*$ ]]; then
             echo -e "${YELLOW}⚠️  Aucune modification non commitée détectée.${NC}"
             echo -e "${BLUE}💡 Le dernier commit:${NC} $COMMITS_INFO"
             echo -e "${BLUE}   Utilisez --staged pour les fichiers en attente, ou --day pour les commits récents.${NC}"
@@ -245,14 +249,26 @@ dbg "---"
 dbg "Fichiers modifiés :"
 dbg "$FILES_CHANGED"
 
-# Tronquer le diff si trop long (évite de saturer le contexte de l'IA)
-MAX_DIFF_CHARS=8000
-DIFF_ORIGINAL_LEN=${#DIFF_CONTENT}
-if [[ $DIFF_ORIGINAL_LEN -gt $MAX_DIFF_CHARS ]]; then
-    DIFF_CONTENT="${DIFF_CONTENT:0:$MAX_DIFF_CHARS}"$'\n...[tronqué]'
-    dbg "Diff tronqué : $DIFF_ORIGINAL_LEN → $MAX_DIFF_CHARS caractères"
+# ── Troncature head+tail (staged/commit) ou simple (day/week/month) ──────────
+if [[ -n "$DIFF_RAW" ]]; then
+    DIFF_ORIGINAL_LEN=${#DIFF_RAW}
+    if [[ $DIFF_ORIGINAL_LEN -gt 25000 ]]; then
+        DIFF_CONTENT="${DIFF_RAW:0:15000}"
+        DIFF_CONTENT+=$'\n... [TRONCATURE CENTRALE] ...\n'
+        DIFF_CONTENT+="${DIFF_RAW: -10000}"
+        dbg "Diff tronqué head+tail : $DIFF_ORIGINAL_LEN → ~25000 caractères"
+    else
+        DIFF_CONTENT="$DIFF_RAW"
+        dbg "Diff complet : $DIFF_ORIGINAL_LEN caractères"
+    fi
 else
-    dbg "Diff complet : $DIFF_ORIGINAL_LEN caractères"
+    DIFF_ORIGINAL_LEN=${#DIFF_CONTENT}
+    if [[ $DIFF_ORIGINAL_LEN -gt 24000 ]]; then
+        DIFF_CONTENT="${DIFF_CONTENT:0:24000}"$'\n...[tronqué]'
+        dbg "Diff tronqué : $DIFF_ORIGINAL_LEN → 24000 caractères"
+    else
+        dbg "Diff complet : $DIFF_ORIGINAL_LEN caractères"
+    fi
 fi
 
 if [[ "$VERBOSE" == "true" ]]; then
@@ -295,45 +311,46 @@ basic_summary() {
 generate_ai_summary() {
     local prompt
     prompt=$(cat <<PROMPT
-Tu es un expert Git et développeur dans le projet UPlanet (IPFS, NOSTR, Duniter G1, Bash/Python).
+Tu es un automate d'analyse Git pour UPlanet.
+INTERDICTION de faire une introduction ou des commentaires.
+NE FAIS AUCUNE INTRODUCTION NI CONCLUSION. Commence directement par # COMMIT.
+RÉPONSE STRICTEMENT AU FORMAT DEMANDÉ. Si tu ne respectes pas le format, un développeur sera triste.
+RÉPONDS UNIQUEMENT EN FRANÇAIS.
 
-**RÈGLE ABSOLUE : réponds UNIQUEMENT en français.**
+**ANALYSE :**
+1. **MESSAGE DE COMMIT :** Format <type>(<scope>): <description>
+   - Scope : nom du module ou dossier principal (ex: grimoire, wotx2, live).
+   - Description : impératif, pas de majuscule au début, pas de point à la fin.
+   - Types autorisés : feat, fix, refactor, docs, chore
+2. **SCAN DE PROTOCOLES :** Cherche dans le diff :
+   - "kind.*30311" ou "NIP-53" → mentionne "Live Streaming NIP-53"
+   - "kind.*22" → mentionne "publication vidéo (Kind 22)"
+   - "kind.*30504" ou "uDRIVE" → mentionne "formation WoTx2 (Kind 30504)"
+3. **VÉRIFICATION :** Ne cite QUE les fichiers présents dans les "Stats globales". Ne devine pas.
+4. **STYLE :** Sois technique (ex: "Intègre FFmpeg WASM" plutôt que "Ajoute des vidéos").
 
-Analyse les modifications Git ci-dessous et génère :
+**CONTEXTE :**
+- Branche : $_cur_branch
+- Période : $SINCE_LABEL
+- Commits : $COMMITS_INFO
 
-1. **Un message de commit** (ligne unique, ≤72 caractères, verbe à l'impératif : "Ajoute", "Corrige", "Refactorise"…)
-2. **Un bref résumé** des tâches accomplies (3-6 lignes max, bullet points)
-3. **Les fichiers clés** modifiés (max 5)
+**Stats globales (seuls ces fichiers existent) :**
+$DIFF_STAT
 
----
-
-**Période analysée :** $SINCE_LABEL
-
-**Commits :**
-$COMMITS_INFO
-
-**Fichiers modifiés :**
-$FILES_CHANGED
-
-**Diff (extrait) :**
+**DIFF (Extrait compact -U0, head+tail si tronqué) :**
 \`\`\`
 $DIFF_CONTENT
 \`\`\`
 
----
-
-**Format de réponse attendu (respecte exactement ce format) :**
-
-# \`<titre du commit>\`
-\`<message court>\`
+**FORMAT DE RÉPONSE OBLIGATOIRE :**
+# COMMIT
+<type>(<scope>): <description>
 
 ## Tâches réalisées
 - …
-- …
 
 ## Fichiers clés
-- \`fichier1\`
-- \`fichier2\`
+- …
 PROMPT
 )
 
@@ -347,10 +364,10 @@ PROMPT
         echo -e "\033[2m[VERBOSE] ────────────────────────────────────────────────────────\033[0m" >&2
     fi
 
-    dbg "Appel : python3 $QUESTION_PY --model $AI_MODEL <prompt_file>"
+    dbg "Appel : python3 $QUESTION_PY --model $AI_MODEL --prompt-file $prompt_file"
     local result
     if [[ "$VERBOSE" == "true" ]]; then
-        result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" "$(cat "$prompt_file")" 2>&1) || {
+        result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 32768 --prompt-file "$prompt_file" --temperature 0.1 2>&1) || {
             rm -f "$prompt_file"
             return 1
         }
@@ -358,7 +375,7 @@ PROMPT
         echo -e "\033[2m$result\033[0m" >&2
         echo -e "\033[2m[VERBOSE] ────────────────────────────────────────────────────────\033[0m" >&2
     else
-        result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" "$(cat "$prompt_file")" 2>/dev/null) || {
+        result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 32768 --prompt-file "$prompt_file" --temperature 0.1 2>/dev/null) || {
             rm -f "$prompt_file"
             return 1
         }
@@ -411,9 +428,11 @@ echo ""
 CLIPBOARD_OK=false
 
 # Extraire uniquement le message de commit (ligne après "## Message de commit")
-COMMIT_MSG=$(echo "$SUMMARY" | awk '/^## Message de commit/{found=1; next} found && /^`/{gsub(/`/,""); print; exit}' | xargs)
-
-# Si pas de format structuré (résumé basique), utiliser le résumé complet
+# Ligne sous "# COMMIT", sinon première ligne conventional commit, sinon résumé complet
+COMMIT_MSG=$(echo "$SUMMARY" | grep -A1 '^# COMMIT' | tail -n1 | sed 's/^`//;s/`$//' | xargs)
+if [[ -z "$COMMIT_MSG" ]]; then
+    COMMIT_MSG=$(echo "$SUMMARY" | grep -Ei '^(feat|fix|refactor|docs|chore)\(' | head -n1 | sed 's/^`//;s/`$//' | xargs)
+fi
 if [[ -z "$COMMIT_MSG" ]]; then
     COMMIT_MSG="$SUMMARY"
 fi

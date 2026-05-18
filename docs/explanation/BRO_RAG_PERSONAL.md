@@ -288,6 +288,22 @@ memory_a1b2c3d4e5f6a7b8  ← mémoire de alice@example.com
 memory_9f8e7d6c5b4a3210  ← mémoire de bob@example.com
 ```
 
+### Modèle LLM et paramètres question.py
+
+Les réponses BRO passent par `IA/question.py`. Les paramètres fixés par défaut :
+
+| Cas d'usage | `--model` | `--ctx` | `--max-tokens` |
+|-------------|-----------|---------|---------------|
+| Conversation libre (question `#bro`) | `gemma3:latest` | 8192 | 1024 |
+| Résumé URL (`#url`) | `gemma3:latest` | 8192 | 2048 |
+| Skill pédagogique (`[ctx:<skill>]`) | `gemma3:latest` | 8192 | 2048 |
+
+Paramètres supplémentaires disponibles : `--temperature`, `--top-p`, `--repeat-penalty`.
+
+Sur **alienware** (GTX 1070, 8 Go VRAM) avec orpheus TTS actif (~5 Go), préférer
+`llama3.2:latest` (2 Go) si la VRAM est saturée. Sur **sagittarius** (RTX 3090, 24 Go),
+`gemma3:latest` tient confortablement à côté de comfyui.
+
 ### Cascade Ollama
 
 Si Ollama local est absent, le daemon tente :

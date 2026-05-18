@@ -1172,8 +1172,13 @@ _local_check() {
             gpu-ai)
                 case "$mod_name" in
                     ollama)
+                        local _ctx_hint=""
+                        if   [[ ${gpu_vram:-0} -ge 16 ]]; then _ctx_hint=" · num_ctx 32768"
+                        elif [[ ${gpu_vram:-0} -ge 8  ]]; then _ctx_hint=" · num_ctx 16384"
+                        elif [[ ${gpu_vram:-0} -ge 4  ]]; then _ctx_hint=" · num_ctx 8192"
+                        fi
                         if [[ "$gpu_detected" == "true" && ${gpu_vram:-0} -ge 6 ]]; then
-                            rec="✅ Optimal (GPU ${gpu_vram}Go)"
+                            rec="✅ Optimal (GPU ${gpu_vram}Go${_ctx_hint})"
                         elif [[ ${score:-0} -gt 10 ]]; then
                             rec="⚡ OK (CPU, petits modèles)"
                         else

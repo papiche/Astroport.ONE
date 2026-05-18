@@ -185,9 +185,25 @@ get_fast_service_status() {
 
     ## Modèles Ollama : seulement si service LOCAL (ce sont NOS modèles à offrir au swarm)
     local ollama_models="[]"
+    local ollama_recommended_ctx=4096
     if [[ "$ollama_source" == "local" ]] && command -v ollama >/dev/null 2>&1; then
         ollama_models=$(ollama list 2>/dev/null | awk 'NR>1 {print $1}' | \
             jq -R . | jq -s . 2>/dev/null || echo "[]")
+        ## Contexte recommandé selon la VRAM totale disponible (heuristique : 1Go ≈ 3200 tokens KV)
+        local _vram_total=0
+        if command -v nvidia-smi >/dev/null 2>&1; then
+            _vram_total=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits \
+                2>/dev/null | awk '{sum+=$1} END {printf "%.0f", sum/1024}')
+        else
+            for _sysf in /sys/class/drm/card*/device/mem_info_vram_total; do
+                [[ -f "$_sysf" ]] && \
+                    _vram_total=$(( _vram_total + $(cat "$_sysf" 2>/dev/null || echo 0) / 1073741824 ))
+            done
+        fi
+        if   [[ ${_vram_total:-0} -ge 16 ]]; then ollama_recommended_ctx=32768
+        elif [[ ${_vram_total:-0} -ge 8  ]]; then ollama_recommended_ctx=16384
+        elif [[ ${_vram_total:-0} -ge 4  ]]; then ollama_recommended_ctx=8192
+        fi
     fi
 
     ## ── Qdrant (port 6333) ────────────────────────────────────────────────────
@@ -377,7 +393,7 @@ get_fast_service_status() {
         "port": 9100
     },
     "ai_company": {
-        "ollama":     { "active": $ollama_active,     "source": "$ollama_source",     "port": 11434, "models": $ollama_models },
+        "ollama":     { "active": $ollama_active,     "source": "$ollama_source",     "port": 11434, "models": $ollama_models, "recommended_ctx": $ollama_recommended_ctx },
         "qdrant":     { "active": $qdrant_active,     "source": "$qdrant_source",     "port": 6333  },
         "dify":       { "active": $dify_active,       "source": "$dify_source",       "port": 8010  },
         "open_webui": { "active": $open_webui_active, "source": "$open_webui_source", "port": 8000  },

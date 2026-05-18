@@ -1367,9 +1367,13 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 if [[ -s "$URL_CONTENT_FILE" ]]; then
                     printf 'Context from URL(s) (main content extracted):\n\n%s\n\n---\nUser message: %s\n\nAnswer based on the URL content above. If the user asks a question, answer it concisely.' "$(cat "$URL_CONTENT_FILE")" "$cleaned_text" > "$URL_PROMPT_FILE"
                     if [[ -n "$user_id" ]] && check_memory_slot_access "$user_id" "$memory_slot"; then
-                        KeyANSWER="$($MY_PATH/question.py --prompt-file "$URL_PROMPT_FILE" --user-id "${user_id}" --slot ${memory_slot} 2>/dev/null)"
+                        KeyANSWER="$($MY_PATH/question.py --prompt-file "$URL_PROMPT_FILE" \
+                            --model gemma3:latest --ctx 8192 --max-tokens 2048 \
+                            --user-id "${user_id}" --slot ${memory_slot} 2>/dev/null)"
                     else
-                        KeyANSWER="$($MY_PATH/question.py --prompt-file "$URL_PROMPT_FILE" --pubkey "${PUBKEY}" 2>/dev/null)"
+                        KeyANSWER="$($MY_PATH/question.py --prompt-file "$URL_PROMPT_FILE" \
+                            --model gemma3:latest --ctx 8192 --max-tokens 2048 \
+                            --pubkey "${PUBKEY}" 2>/dev/null)"
                     fi
                 fi
                 rm -f "$URL_CONTENT_FILE" "$URL_PROMPT_FILE"
@@ -2178,14 +2182,18 @@ Utilisez MiroFish (#BRO) ou Dify pour créer et exécuter des workflows.
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g; s/"//g' <<< "$QUESTION")
                 if [[ -n "$user_id" ]]; then
                     if check_memory_slot_access "$user_id" "$memory_slot"; then
-                        KeyANSWER="$($MY_PATH/question.py "${cleaned_text}" --user-id "${user_id}" --slot ${memory_slot})"
+                        KeyANSWER="$($MY_PATH/question.py "${cleaned_text}" \
+                            --model gemma3:latest --ctx 8192 --max-tokens 1024 \
+                            --user-id "${user_id}" --slot ${memory_slot})"
                     else
                         echo "Memory access denied for AI question - USER: $user_id, SLOT: $memory_slot"
                         send_memory_access_denied "$PUBKEY" "$EVENT" "$memory_slot"
                         KeyANSWER="Accès refusé au slot $memory_slot pour l'IA. Seuls les sociétaires CopyLaRadio peuvent utiliser les slots 1-12. Utilisez le slot 0 ou devenez sociétaire."
                     fi
                 else
-                KeyANSWER="$($MY_PATH/question.py "${cleaned_text}" --pubkey ${PUBKEY})"
+                KeyANSWER="$($MY_PATH/question.py "${cleaned_text}" \
+                    --model gemma3:latest --ctx 8192 --max-tokens 1024 \
+                    --pubkey ${PUBKEY})"
                 fi
             fi
         fi

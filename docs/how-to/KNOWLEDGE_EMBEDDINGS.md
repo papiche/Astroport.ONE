@@ -358,6 +358,22 @@ une prochaine version.
 
 ---
 
+## Modèles Ollama — Embedding vs Génération
+
+Deux rôles distincts, deux modèles distincts :
+
+| Rôle | Modèle | Taille | Paramètres question.py |
+|------|--------|--------|------------------------|
+| **Embedding** (indexation) | `nomic-embed-text` | ~274 Mo | — (via `knowledge_index.py`) |
+| **Génération** BRO skill | `gemma3:latest` | ~3.3 Go | `--ctx 8192 --max-tokens 2048` |
+| **Génération** code (commit/issue) | `qwen2.5-coder:14b` | ~9 Go | `--ctx 32768 --max-tokens 4096` |
+
+`nomic-embed-text` doit rester chargé en permanence pour l'indexation incrémentale.
+Il cohabite avec `gemma3:latest` sur alienware (8 Go VRAM) car le modèle d'embedding
+est très léger (~274 Mo).
+
+---
+
 ## Extension — skills non-techniques
 
 Le système est **domain-agnostic** : tout document lié à un skill via Kind 30504
