@@ -178,6 +178,13 @@ dbg "Mode      : $MODE"
 dbg "Modèle IA : $AI_MODEL"
 dbg "question.py : $QUESTION_PY ($([ -f "$QUESTION_PY" ] && echo 'trouvé' || echo 'ABSENT'))"
 
+# ── Pull avant analyse ────────────────────────────────────────────────────────
+if git remote get-url origin &>/dev/null; then
+    echo -e "${BLUE}⬇️  git pull...${NC}"
+    git pull --ff-only 2>&1 | grep -v '^$' || \
+        echo -e "${YELLOW}⚠️  pull non fast-forward — continuez manuellement si nécessaire.${NC}"
+fi
+
 # ── Collecte du diff ──────────────────────────────────────────────────────────
 echo -e "${BLUE}📊 Collecte des modifications ($SINCE_LABEL)...${NC}"
 
@@ -429,9 +436,9 @@ CLIPBOARD_OK=false
 
 # Extraire uniquement le message de commit (ligne après "## Message de commit")
 # Ligne sous "# COMMIT", sinon première ligne conventional commit, sinon résumé complet
-COMMIT_MSG=$(echo "$SUMMARY" | grep -A1 '^# COMMIT' | tail -n1 | sed 's/^`//;s/`$//' | xargs)
+COMMIT_MSG=$(echo "$SUMMARY" | grep -A1 '^# COMMIT' | tail -n1 | sed 's/^`//;s/`$//;s/^[[:space:]]*//;s/[[:space:]]*$//')
 if [[ -z "$COMMIT_MSG" ]]; then
-    COMMIT_MSG=$(echo "$SUMMARY" | grep -Ei '^(feat|fix|refactor|docs|chore)\(' | head -n1 | sed 's/^`//;s/`$//' | xargs)
+    COMMIT_MSG=$(echo "$SUMMARY" | grep -Ei '^(feat|fix|refactor|docs|chore)\(' | head -n1 | sed 's/^`//;s/`$//;s/^[[:space:]]*//;s/[[:space:]]*$//')
 fi
 if [[ -z "$COMMIT_MSG" ]]; then
     COMMIT_MSG="$SUMMARY"
@@ -459,11 +466,27 @@ if [[ "$MODE" == "staged" && -n "$COMMIT_MSG" ]]; then
     echo -e "${YELLOW}Message de commit suggéré :${NC}"
     echo -e "${GREEN}  $COMMIT_MSG${NC}"
     echo ""
+    echo -ne "${CYAN}Conclusion / note à ajouter ? (Entrée pour garder tel quel) : ${NC}"
+    read -r _extra
+    if [[ -n "$_extra" ]]; then
+        COMMIT_MSG="${COMMIT_MSG}
+
+${_extra}"
+        echo -e "${GREEN}  → Message final :${NC}"
+        echo -e "${GREEN}  $COMMIT_MSG${NC}"
+        echo ""
+    fi
     echo -ne "${YELLOW}Valider ce commit ? [o/N] : ${NC}"
     read -r confirm
     if [[ "$confirm" =~ ^[oOyY]$ ]]; then
         git commit -m "$COMMIT_MSG"
         echo -e "${GREEN}✅ Commit créé.${NC}"
+        if git remote get-url origin &>/dev/null; then
+            echo -e "${BLUE}⬆️  git push...${NC}"
+            git push 2>&1 | grep -v '^$' \
+                && echo -e "${GREEN}✅ Push réussi.${NC}" \
+                || echo -e "${YELLOW}⚠️  Push échoué — vérifiez la connexion ou les droits.${NC}"
+        fi
     else
         echo -e "${BLUE}→ Commit annulé (vous pouvez le faire manuellement).${NC}"
     fi
