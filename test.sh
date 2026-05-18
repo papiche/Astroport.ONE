@@ -171,9 +171,39 @@ case "$CHOICE" in
         echo "Bye."
         exit 0
         ;;
+    help|--help|-h)
+        echo ""
+        echo -e "${BOLD}Astroport.ONE — Test Suite${RESET}"
+        echo ""
+        echo -e "${CYAN}Usage:${RESET}  $0 [suite] [options]"
+        echo ""
+        echo -e "${BOLD}Suites disponibles :${RESET}"
+        echo "  quick      Tests rapides : prérequis station (outils, services, crypto, blockchain)"
+        echo "  g1         Couche G1/Duniter v2 (keygen, squid GraphQL, gcli, PAYforSURE)"
+        echo "  primal     Contrôle primal wallets (v1→SS58, squid, intrusion)"
+        echo "  systems    Systèmes UPlanet (DID, Oracle, WoTx2, ORE, Badge)"
+        echo "  intercom   Canal inter-NODE DM NIP-44 (zen_like, bro_ia, loopback, Ollama, ComfyUI)"
+        echo "  wotx2      Démo WoTx2 Skills+Craft (coucou/toto/jean, backfill N² sync)"
+        echo "  multipass  Chaîne MULTIPASS complète (keygen → NOSTR → ẐEN ORIGIN)"
+        echo "  ollama     Pipeline Ollama (texte + vision llama3.2-vision:11b)"
+        echo "  comfyui    Pipeline ComfyUI (génération image FluxImage)"
+        echo "  all        Tout lancer (quick + toutes les suites, mode --quick)"
+        echo ""
+        echo -e "${BOLD}Options passées aux sous-scripts :${RESET}"
+        echo "  --quick    Mode rapide (tests essentiels uniquement, sans délais)"
+        echo "  --verbose  Sortie détaillée"
+        echo ""
+        echo -e "${BOLD}Exemples :${RESET}"
+        echo "  $0                   → menu interactif"
+        echo "  $0 quick             → vérification rapide de la station"
+        echo "  $0 wotx2 --verbose   → démo WoTx2 en mode verbeux"
+        echo "  $0 all               → suite complète CI"
+        echo ""
+        exit 0
+        ;;
     *)
-        echo "Choix invalide : $CHOICE"
-        echo "Usage: $0 [quick|g1|primal|systems|intercom|wotx2|multipass|ollama|comfyui|all]"
+        echo -e "${RED}Choix invalide : $CHOICE${RESET}"
+        echo "Usage: $0 [quick|g1|primal|systems|intercom|wotx2|multipass|ollama|comfyui|all|help]"
         exit 1
         ;;
 esac

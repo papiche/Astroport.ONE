@@ -33,6 +33,7 @@ Les événements NOSTR sont la **source de vérité** pour tout le système UPla
 | **0** | Profile | Identité | Profil utilisateur (metadata) | NIP-01 |
 | **1** | Short Text Note | Interaction | Messages, notifications | NIP-01 |
 | **3** | Contacts | Réseau | Liste d'amis (N1) | NIP-02 |
+| **4** | Encrypted DM | **Inter-NODE** | Bus de tâches async NIP-44 entre stations (comfyui_job, udrive, bro_ia…) | NIP-04/44 |
 | **5** | Event Deletion | Gestion | Suppression d'événements | NIP-09 |
 | **6** | Repost | Interaction | Partage de contenu | NIP-18 |
 | **7** | Reaction | **Économie** | +ZEN, votes, likes | NIP-25 |
@@ -50,6 +51,7 @@ Les événements NOSTR sont la **source de vérité** pour tout le système UPla
 | **30501** | Permit Request | **Oracle** | Demande de permis | NIP-101 |
 | **30502** | Permit Attestation | **Oracle** | Attestation multi-signature | NIP-101 |
 | **30503** | Permit Credential | **Oracle** | Credential W3C | NIP-101 |
+| **30504** | Training Resource | **WoTx2** | Ressource de formation liée à un skill | NIP-101 |
 | **30800** | DID Document | **Identité** | Document d'identité W3C | NIP-101 |
 | **30850** | Economic Health | **Économie** | Rapport santé économique | NIP-101 |
 | **30900** | Crowdfunding | **Crowdfunding** | Métadonnées crowdfunding | NIP-101 |
@@ -160,6 +162,56 @@ Liste des amis directs (Network Level 1).
 **Usage :** Définit le réseau N1 pour les journaux, vidéos recommandées, et sync constellation.
 
 **Scripts :** `nostr_follow.sh`, `nostr_get_N1.sh`
+
+---
+
+## 🔀 BUS DE TÂCHES ASYNC (INTER-NODE)
+
+### Kind 4 — Encrypted DM / Canal inter-NODE
+
+Kind 4 est utilisé comme **bus de messages chiffré** entre stations Astroport. Le payload est un objet JSON chiffré NIP-44. Le `channel` indique le type de tâche.
+
+**Channels gérés par `bro_dm_daemon.sh` :**
+
+| Channel | Direction | Rôle |
+|---------|-----------|------|
+| `plain` | Client → BRO | Question langage naturel (RAG Qdrant + Ollama) |
+| `comfyui_job` | Client → Brain-Node | Génération vidéo/image ComfyUI déléguée |
+| `comfyui_result` | Brain-Node → Client | CID IPFS du résultat vidéo |
+| `udrive` | Nœud → Nœud | Sync fichier IPFS vers uDRIVE distant |
+| `bro_ia` | Station visitée → Home | Requête BRO en roaming |
+| `zen_like` | Station → Station | Paiement ẐEN relayé (roaming) |
+| `vocals` | Client → Station | Publication kind 1222/1244 (message vocal) |
+| `webcam` | Client → Station | Publication kind 21/22 (vidéo live) |
+
+**Structure du payload chiffré (NIP-44) :**
+```json
+{
+  "channel": "comfyui_job",
+  "job_id": "abc123",
+  "email": "user@example.com",
+  "prompt": "A forest at dawn, cinematic",
+  "mode": "t2v",
+  "reply_pubkey": "<hex_pubkey_du_client>"
+}
+```
+
+**Réponse (channel `comfyui_result`) :**
+```json
+{
+  "job_id": "abc123",
+  "email": "user@example.com",
+  "result_url": "ipfs://QmXxx...",
+  "status": "done",
+  "mode": "t2v"
+}
+```
+
+**Chiffrement :** NIP-44 `getConversationKey(nodeNsec, recipientPubkey)`. Fallback NIP-04 pour compatibilité clients anciens.
+
+**Files d'attente :** les DMs entrants sont posés comme fichiers JSON dans `~/.zen/tmp/bro_dm_queue/` par le plugin strfry Kind 4, et détectés instantanément par `inotifywait`.
+
+> 📖 [Architecture complète](../explanation/ASYNC_TASKS_NOSTR.md)
 
 ---
 
@@ -474,6 +526,87 @@ Credential W3C émis après atteinte du seuil d'attestations.
 ```
 
 **Script :** `ORACLE.refresh.sh` - Validation automatique (20h12)
+
+---
+
+### Kind 30504 - Ressource de Formation (WoTx2)
+
+Ressource multimédia liée à un skill WoTx2. Publiée par tout utilisateur MULTIPASS
+pour enrichir collectivement la base de connaissance de la constellation.
+
+**Tags obligatoires :**
+
+| Tag | Format | Description |
+|-----|--------|-------------|
+| `d` | `training_<skill>_<timestamp>` | Identifiant unique (NIP-33 replaceable) |
+| `t` | `<skill>` | Skill associé (lowercase, sans espace) |
+| `r` | `["/ipfs/<CID>", "<type>"]` | URL de la ressource + type |
+
+**Tags optionnels :**
+
+| Tag | Format | Description |
+|-----|--------|-------------|
+| `t` | `formation` | Marqueur de catégorie |
+| `title` | `<string>` | Titre affiché dans MineLife |
+
+**Types de ressource (`r` tag) :**
+
+| Valeur | Kind source | Produit par |
+|--------|-------------|-------------|
+| `video` | Kind 21/22 (NIP-71) | `webcam.html`, `ajouter_media.sh` |
+| `audio` | Kind 1222 (NIP-A0) | VOCALS system |
+| `document` | Kind 1063 (NIP-94) | `ajouter_media.sh` (pdf) |
+| `image` | Kind 1063 (NIP-94) | Upload IPFS |
+| `cours` | Kind 30023 (NIP-23) | Articles markdown |
+| `lien` | — | URL libre (non-IPFS) |
+
+**Exemple minimal :**
+
+```json
+{
+  "kind": 30504,
+  "pubkey": "<contributeur_hex>",
+  "tags": [
+    ["d", "training_docker_1748000000"],
+    ["t", "docker"],
+    ["t", "formation"],
+    ["r", "/ipfs/QmXxx.../intro-docker.pdf", "document"],
+    ["title", "Introduction à Docker"]
+  ],
+  "content": "{\"skill\":\"docker\",\"resource_type\":\"document\"}"
+}
+```
+
+**Payload Qdrant (collection `knowledge`) :**
+
+```json
+{
+  "cid":        "QmXxx...",
+  "title":      "Introduction à Docker",
+  "type":       "document",
+  "skill":      "docker",
+  "skills":     ["docker", "formation"],
+  "author_hex": "<pubkey_hex_64>",
+  "event_id":   "<nostr_event_id_hex_64>",
+  "kind":       30504,
+  "relay":      "wss://relay.copylaradio.com",
+  "created_at": 1748000000
+}
+```
+
+**Architecture Nextcloud attendue (indexation via `--index-dir`) :**
+
+```
+~/nextcloud/Astroport/
+├── <skill>/          ← nom du dossier = valeur du tag "t"
+│   ├── fichier.md
+│   └── guide.pdf
+└── ...
+```
+
+**Scripts :** `tools/knowledge_index.sh`, `tools/knowledge_index.py`
+**Interface :** MineLife onglet Formation — bouton "Mes médias" (mode édition)
+**BRO :** commande `#rec <skill>` via DM Kind 4
 
 ---
 

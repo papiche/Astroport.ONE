@@ -751,6 +751,13 @@ echo "    docker compose -f ~/.zen/Astroport.ONE/docker/docker-compose.yml --pro
 echo "    install/install-ai-company.docker.sh --check   ← compatibilité GPU"
 fi
 echo
+echo "  EXTENSIONS NAVIGATEUR :"
+echo "    Pour archiver YouTube directement dans votre uDRIVE :"
+echo "    1. Installez l'extension 'Open With' sur Firefox :"
+echo "       https://addons.mozilla.org/firefox/addon/open-with"
+echo "    2. Importez la configuration dans l'extension :"
+echo "       bash ~/.zen/open_with_yt-dlp.txt"
+echo
 echo "  ERREURS: ~/.zen/install.errors.log"
 echo "#############################################"
 echo

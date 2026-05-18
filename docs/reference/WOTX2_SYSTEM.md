@@ -78,9 +78,71 @@ Attester valide pour PERMIT_SKILL_Xn ?
 
 ---
 
+## Kind 30504 — Ressource de formation
+
+Spec complète dans [NOSTR_EVENTS_REFERENCE.md](NOSTR_EVENTS_REFERENCE.md).
+
+**Tags obligatoires :** `d` (identifiant), `t` (skill), `r` (CID IPFS + type).
+
+**Payload Qdrant (collection `knowledge`) :**
+
+```json
+{
+  "cid":        "QmXxx...",
+  "title":      "Guide Docker",
+  "skill":      "docker",
+  "author_hex": "<pubkey_hex_64>",
+  "event_id":   "<event_hex_64>",
+  "kind":       30504,
+  "created_at": 1748000000
+}
+```
+
+**Structure Nextcloud pour l'indexation (`--index-dir`) :**
+
+```
+~/nextcloud/Astroport/
+├── linux/          ← skill = "linux"
+│   ├── guide.md
+│   └── debian.pdf
+├── docker/         ← skill = "docker"
+│   └── compose.md
+└── ipfs/           ← skill = "ipfs"
+    └── kubo.pdf
+```
+
+Le nom du sous-dossier est la valeur du tag `t` dans le Kind 30504 généré.
+
+---
+
+## Modèles Ollama — Embedding vs Génération
+
+| Rôle | Modèle | Taille |
+|------|--------|--------|
+| **Embedding** (indexation Qdrant) | `nomic-embed-text` | ~274 Mo |
+| **Génération BRO skill** | `gemma3:latest` | ~3.3 Go |
+| **Génération code** | `qwen2.5-coder:14b` | ~9 Go |
+
+---
+
+## TTL inter-NODE (NIP-40) — canaux `nostr_node_intercom.py`
+
+| Canal | TTL | Raison |
+|-------|-----|--------|
+| `bro_ia` | 3 600 s | Commande traitée immédiatement ou abandonnée |
+| `comfyui_job` | 7 200 s | Fenêtre GPU max |
+| `comfyui_result` | 3 600 s | Récupération avant expiration |
+| `udrive` | 86 400 s | Sync fichier moins urgent |
+| `zen_like` | 86 400 s | Paiement relayé dans la journée |
+
+---
+
 ## Références
 
-- **[MINELIFE.md](MINELIFE.md)** — Schémas complets, kinds, clés, flows
+- **[NOSTR_EVENTS_REFERENCE.md](NOSTR_EVENTS_REFERENCE.md)** — Spec complète Kind 30500–30504
+- **[how-to/MINELIFE.md](../how-to/MINELIFE.md)** — Utiliser l'interface
+- **[how-to/KNOWLEDGE_EMBEDDINGS.md](../how-to/KNOWLEDGE_EMBEDDINGS.md)** — Indexer les ressources
+- **[explanation/minelife_wikipedia_wot.md](../explanation/minelife_wikipedia_wot.md)** — Philosophie WoT
 - `Astroport.ONE/tools/oracle_init_captain_wotx2.sh` — Bootstrap capitaines
 - `Astroport.ONE/RUNTIME/ORACLE.refresh.sh` — Oracle quotidien
 - `TrocZen/docs/WOTX2_SYSTEM.md` — Architecture P2P TrocZen v3.6

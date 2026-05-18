@@ -175,6 +175,80 @@ _handle_badge() {
     fi
 }
 
+## ── Canal "#craft" : décomposer une URL en recette WoTx2 via IA ────────
+## Syntaxe DM : "#craft https://instructables.com/..."
+## Récupère le contenu HTML, demande à question.py un JSON {name,icon,description,
+## ingredients:[{skill,level}],resource_type} adapté à l'éditeur MineLife.
+_handle_craft() {
+    local sender="$1" url="$2"
+    [[ -z "$url" ]] && {
+        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+            "⚠️ Usage : #craft <url>  ex: #craft https://instructables.com/Arduino-TV-B-Gone/" \
+            "${_RELAYS[0]}" 2>/dev/null
+        return
+    }
+    _log "🔨 #craft analyse URL de ${sender:0:12}...: ${url:0:80}"
+
+    python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+        "⏳ Analyse IA en cours pour : $url" "${_RELAYS[0]}" 2>/dev/null
+
+    local content
+    content=$(python3 "$MY_PATH/bro_url_content.py" "$url" 2>/dev/null | head -c 6000)
+
+    if [[ ${#content} -lt 80 ]]; then
+        _log "WARN: #craft contenu trop court pour $url — tentative describe_image"
+        if command -v python3 &>/dev/null && [[ -f "$MY_PATH/describe_image.py" ]]; then
+            content=$(python3 "$MY_PATH/describe_image.py" "$url" \
+                --model "llama3.2-vision:11b" \
+                --prompt "Décris ce tutoriel : titre, matériaux, étapes, compétences requises." \
+                2>/dev/null | head -c 4000)
+        fi
+    fi
+
+    if [[ ${#content} -lt 40 ]]; then
+        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+            "❌ Impossible de récupérer le contenu de : $url" "${_RELAYS[0]}" 2>/dev/null
+        return
+    fi
+
+    local tmp_prompt
+    tmp_prompt=$(mktemp)
+    cat > "$tmp_prompt" <<CRAFTPROMPT
+Tu es un assistant pédagogique WoTx2 UPlanet. Analyse ce tutoriel et identifie les compétences requises.
+Réponds UNIQUEMENT en JSON valide sur une seule ligne (aucun texte autour, aucun markdown) :
+{"name":"Nom en français","icon":"emoji","description":"1 phrase","ingredients":[{"skill":"nom_skill","level":1}],"resource_type":"lien"}
+Règles strictes :
+- skills : minuscules, pas d'espaces (underscores), 1-3 mots (ex: arduino, soudure, electronique_base)
+- level : 1=débutant 2=intermédiaire 3=avancé
+- 2 à 6 ingrédients
+- resource_type : "document", "video" ou "lien"
+
+Tutoriel :
+$content
+CRAFTPROMPT
+
+    local answer
+    answer=$(python3 "$MY_PATH/question.py" \
+        --prompt-file  "$tmp_prompt" \
+        --model        "gemma3:latest" \
+        --ctx          8192 \
+        --max-tokens   256 \
+        --temperature  0.2 \
+        2>/dev/null)
+    rm -f "$tmp_prompt"
+
+    # Extraire uniquement le bloc JSON si la réponse contient du texte parasite
+    local json_answer
+    json_answer=$(echo "$answer" | grep -o '{.*}' | head -1)
+    [[ -z "$json_answer" ]] && json_answer="$answer"
+    [[ -z "$json_answer" ]] && json_answer='{"error":"IA indisponible — réessayez plus tard"}'
+
+    _log "🔨 #craft réponse JSON pour ${sender:0:12}...: ${json_answer:0:100}"
+    python3 "$SECURE_DM" "$NODE_NSEC" "$sender" "$json_answer" "${_RELAYS[0]}" 2>/dev/null \
+        && _log "🔨 #craft réponse envoyée" \
+        || _log "WARN: #craft échec envoi DM"
+}
+
 ## ── Canal "plain" : question BRO → réponse IA ────────────────────────
 ## slots : liste CSV de slots mémoire à inclure ("0" = tous, "1,5" = slots 1 et 5)
 _handle_bro() {
@@ -870,6 +944,10 @@ Envoyez-moi vos questions en DM — je rechercherai dans la base de connaissance
 🎨 #badge <skill>          → générer une image de badge skill (ComfyUI)
    ex: #badge docker      → badge IA pour la compétence docker
 
+🔨 #craft <url>            → décomposer un tutoriel en recette MineLife (WoTx2)
+   ex: #craft https://instructables.com/...
+   → retourne un JSON {name, icon, ingredients, ...} pour l'éditeur de craft
+
 🗑️ #reset                  → effacer toutes vos mémoires
    #reset #2              → effacer uniquement le slot 2
 
@@ -973,6 +1051,13 @@ _process_event() {
             ## Router selon la commande DM
             if echo "$question" | grep -qi '#reset'; then
                 _handle_reset "$sender" "$slot"
+
+            elif echo "$question" | grep -qi '#craft'; then
+                ## #craft <url> → décomposer une URL en recette WoTx2
+                local craft_url
+                craft_url=$(echo "$question" | grep -oiE 'https?://[^[:space:]]+' | head -1)
+                [[ -z "$craft_url" ]] && craft_url=$(echo "$question" | sed 's/#craft[[:space:]]*//' | xargs)
+                _handle_craft "$sender" "$craft_url"
 
             elif echo "$question" | grep -qi '#badge'; then
                 ## #badge <skill> → génère un badge image via ComfyUI

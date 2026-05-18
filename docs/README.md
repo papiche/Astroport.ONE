@@ -7,9 +7,13 @@ Organisée selon le standard [Diátaxis](https://diataxis.fr/) — quatre types 
 ## Tutorials — Apprentissage
 
 > Guides pas-à-pas pour apprendre en faisant. Destinés aux débutants.
+> → [Voir le README complet du quadrant](tutorials/README.md)
 
 | Fichier | Sujet |
 |---------|-------|
+| [install_baremetal.md](tutorials/install_baremetal.md) | Installer sur Linux (Debian/Ubuntu/Mint) — métal nu |
+| [install_docker.md](tutorials/install_docker.md) | Installer avec Docker — profils standard, cloud, ai |
+| [setup_learning_hub.md](tutorials/setup_learning_hub.md) | Transformer sa station en hub d'apprentissage IA (Nextcloud + Qdrant + BRO) |
 | [PC_GAMER_HUB_GUIDE.md](tutorials/PC_GAMER_HUB_GUIDE.md) | Convertir un PC gamer en station Astroport rentable (Linux Mint + IA) |
 | [README.NostrTube.DEV.md](tutorials/README.NostrTube.DEV.md) | Développer des applications sur la plateforme vidéo NostrTube |
 | [BASH_BEST_PRACTICES.md](tutorials/BASH_BEST_PRACTICES.md) | Bonnes pratiques de sécurité et robustesse pour les scripts Bash |
@@ -19,6 +23,7 @@ Organisée selon le standard [Diátaxis](https://diataxis.fr/) — quatre types 
 ## How-To — Recettes
 
 > Guides orientés tâche pour résoudre un problème précis. Supposent des connaissances de base.
+> → [Voir le README complet du quadrant](how-to/README.md)
 
 | Fichier | Sujet |
 |---------|-------|
@@ -34,12 +39,18 @@ Organisée selon le standard [Diátaxis](https://diataxis.fr/) — quatre types 
 | [MINELIFE.md](how-to/MINELIFE.md) | Crafting décentralisé des compétences WoTx2 (interface Minecraft) |
 | [CODEBASE_EMBEDDINGS.md](how-to/CODEBASE_EMBEDDINGS.md) | Mémoire vectorielle du code (Qdrant + nomic-embed-text + snapshot IPFS) |
 | [KNOWLEDGE_EMBEDDINGS.md](how-to/KNOWLEDGE_EMBEDDINGS.md) | Mémoire vectorielle des connaissances WoTx2 (.md/.pdf depuis Kind 30504, uDRIVE, Nextcloud) |
+| [GRIMOIRE_LIVE.md](how-to/GRIMOIRE_LIVE.md) | Vidéo WoTx2 : génération automatique + live streaming (vdo.ninja, NIP-53) |
+| [config_wireguard_vpn.md](how-to/config_wireguard_vpn.md) | Configurer WireGuard pour la communication inter-stations |
+| [print_multipass_cards.md](how-to/print_multipass_cards.md) | Générer et imprimer les QR codes MULTIPASS et ZenCards |
+| [publish_nostrtube_video.md](how-to/publish_nostrtube_video.md) | Publier une vidéo sur NostrTube (IPFS + kind 21) |
+| [youtube_archive_open_with.md](how-to/youtube_archive_open_with.md) | Archiver YouTube dans son uDRIVE via l'extension Firefox "Open With" |
 
 ---
 
 ## Reference — Information brute
 
 > Données techniques sèches : formats, specs, listes, endpoints. Source de vérité.
+> → [Voir le README complet du quadrant](reference/README.md)
 
 | Fichier | Sujet |
 |---------|-------|
@@ -56,14 +67,16 @@ Organisée selon le standard [Diátaxis](https://diataxis.fr/) — quatre types 
 | [WOTX2_SYSTEM.md](reference/WOTX2_SYSTEM.md) | Toiles de confiance duales Oracle + P2P |
 | [UPlanet_FILE_CONTRACT.md](reference/UPlanet_FILE_CONTRACT.md) | Protocole de gestion décentralisée des fichiers IPFS+NOSTR |
 | [UPlanet_CROWDFUNDING_CONTRACT.md](reference/UPlanet_CROWDFUNDING_CONTRACT.md) | Protocole de financement participatif décentralisé |
-| [TODO_SYSTEM.md](reference/TODO_SYSTEM.md) | Système TODO N² — "L'IA propose, l'Humain dispose" |
-| [TODO_MIGRATION_RNOSTR_SEMANTIC.md](reference/TODO_MIGRATION_RNOSTR_SEMANTIC.md) | Plan de migration strfry → rnostr + Qdrant sémantique |
+| [upassport_api_endpoints.md](reference/upassport_api_endpoints.md) | Endpoints UPassport (port 54321) — routers FastAPI, route /qr |
+| [bash_scripts_roles.md](reference/bash_scripts_roles.md) | Rôle fonctionnel de chaque script Bash du projet |
+| [cli_keygen_commands.md](reference/cli_keygen_commands.md) | Référence CLI `keygen` — dérivation déterministe G1/IPFS/NOSTR |
 
 ---
 
 ## Explanation — Philosophie et contexte
 
 > Discussions de fond : pourquoi, comment on en est arrivé là, les choix d'architecture.
+> → [Voir le README complet du quadrant](explanation/README.md)
 
 | Fichier | Sujet |
 |---------|-------|
@@ -76,6 +89,10 @@ Organisée selon le standard [Diátaxis](https://diataxis.fr/) — quatre types 
 | [CROWDFUNDING_COMMUNS.md](explanation/CROWDFUNDING_COMMUNS.md) | Financement participatif des biens communs (terrains, équipements) |
 | [BRO_RAG_PERSONAL.md](explanation/BRO_RAG_PERSONAL.md) | Architecture de l'assistant IA souverain #BRO (RAG personnel) |
 | [README.NostrTube.md](explanation/README.NostrTube.md) | NostrTube — vision de la plateforme vidéo décentralisée |
+| [architecture_overview.md](explanation/architecture_overview.md) | Vue synthétique : IPFS+NOSTR+Ğ1, flux de données, couches fondamentales |
+| [minelife_wikipedia_wot.md](explanation/minelife_wikipedia_wot.md) | MineLife comme Wikipédia décentralisé — WoT relativiste, Capitaine bibliothécaire, effet constellation |
+| [ANALYTICS.md](explanation/ANALYTICS.md) | Analytics décentralisé — Kind 10600 + NIP-44, zéro fuite vers les GAFAM |
+| [ASYNC_TASKS_NOSTR.md](explanation/ASYNC_TASKS_NOSTR.md) | Tâches asynchrones inter-NODE via DMs NOSTR — le "RabbitMQ Web3" |
 
 ---
 
@@ -98,3 +115,15 @@ Organisée selon le standard [Diátaxis](https://diataxis.fr/) — quatre types 
 | Fichier | Sujet |
 |---------|-------|
 | [contrats/COMMODAT_ASTROPORT.md](contrats/COMMODAT_ASTROPORT.md) | Contrat de commodat pour les stations Astroport |
+
+---
+
+## Dev Logs
+
+> Notes de travail internes, plans de migration, systèmes en cours de refonte. Ne pas utiliser comme référence publique.
+
+| Fichier | Sujet |
+|---------|-------|
+| [TODO.md](dev_logs/TODO.md) | TODO principal Astroport.ONE (système à refondre) |
+| [TODO_SYSTEM.md](dev_logs/TODO_SYSTEM.md) | Documentation du système TODO N² (déprécié — todo.sh en refonte) |
+| [TODO_MIGRATION_RNOSTR_SEMANTIC.md](dev_logs/TODO_MIGRATION_RNOSTR_SEMANTIC.md) | Plan de migration strfry → rnostr + Qdrant sémantique |

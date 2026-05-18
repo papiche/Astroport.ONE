@@ -52,12 +52,28 @@ You provide the **machine** (the ship). The collective manages it in ORIGIN mode
 - **Earn 14 Ẑen/week** as infrastructure host
 - Subscribe: [OpenCollective — Parrainage Satellite](https://opencollective.com/monnaie-libre/contribute/parrainage-infrastructure-extension-128-go-98386)
 
+**Power-Score** — each station broadcasts its compute capacity to the constellation:
+
+| Score | Tier | Profile |
+|-------|------|---------|
+| ≤10 | 🌿 Light | Raspberry Pi / mini PC |
+| 11–40 | ⚡ Standard | Desktop PC, no GPU |
+| 41+ | 🔥 Brain | Dedicated GPU — powers the #BRO swarm |
+
+Formula: `GPU_VRAM_GB × 4 + CPU_cores × 2 + RAM_GB × 0.5`
+
+Brain-Nodes share compute with the constellation. Per-process energy consumption is monitored by **PowerJoular** and published in `capacities.power_score` of the station JSON.
+
+> 📖 [Power Monitoring How-To](docs/how-to/POWER_MONITORING.md)
+
 ### 🎓 Apprenti (Explorer)
 You create your **MULTIPASS** on an ORIGIN station and discover the tools over 7 days.
 
-- **Day 1**: Archive YouTube → your private uDRIVE (yt-dlp + Open-With Firefox)
+- **Day 1**: Archive YouTube → your private uDRIVE (yt-dlp + [Open-With Firefox](docs/how-to/youtube_archive_open_with.md))
 - **Day 2**: #BRO Swarm AI — local Ollama, image generation, article writing
 - **Day 7**: The DRAGON Call — your invitation to the ẐEN network
+
+> ⚠️ **Account lifecycle**: A MULTIPASS inactive at 0 Ẑen with no incoming transaction will be automatically deleted after a **7-day grace period** (J-30 and J-7 warning emails are sent automatically). Captains are exempt — their account is never purged.
 
 ### ⚓ Capitaine (Captain) — 28 Ẑen/week
 You **operate the station**, master the tools, and welcome new users.
@@ -105,6 +121,57 @@ Guide: [pad.p2p.legal/Smartphone2NextCloud](https://pad.p2p.legal/Smartphone2Nex
 
 ---
 
+## 🎯 MineLife & WoTx2: Decentralized Skills
+
+**MineLife** is a Minecraft-inspired interface where skills are **crafted by peers**, not awarded by institutions.
+
+```
+Step 1 — Explore the Atelier → browse available skill recipes (Kind 30500)
+Step 2 — Aspire X1          → publish a learning request (Kind 30501)
+Step 3 — Contact holders    → DM your peers via NOSTR (Kind 4)
+Step 4 — Get validated      → 3× peer reactions (Rule A) or 1× senior endorsement (Rule B)
+Step 5 — Self-sign your cert → publish Kind 30503 → unlocks composite crafts
+```
+
+**Composite crafting**: `linux X1 + docker X1 + bash X1` → craft `DevOps Station X1`.
+No committee. No fees. Verified on the NOSTR relay. Recognized across the constellation.
+
+> 📖 [MineLife How-To](docs/how-to/MINELIFE.md) · [WoTx2 Philosophy](docs/explanation/minelife_wikipedia_wot.md)
+
+**Roaming**: A MULTIPASS created on station A authenticates on station B via NIP-42, and its uDRIVE files sync back home automatically — so your identity and storage follow you across the constellation.
+
+> 📖 [Roaming uDRIVE Sync](docs/reference/ROAMING_UDRIVE_SYNC.md)
+
+---
+
+## 🌱 ReFi & UMAP: The Ecological Land Registry
+
+The world map in Astroport.ONE is not just a display — it is a **decentralized land registry** that rewards biodiversity.
+
+The planet surface is divided into **UMAP tiles** of 0.01° × 0.01° (≈ 1.1 km²). Each tile has its own:
+- NOSTR identity (`did:nostr:<hex>`) — a sovereign DID anchored to its GPS coordinates
+- Ğ1 wallet — can receive and send ẐEN
+- ORE contract — an ecological commitment (e.g. "maintain 80% forest cover")
+
+**How it works:**
+1. Citizens photograph plants, insects, and local resources with `plantnet.html`
+2. PlantNet AI identifies the species — each observation feeds the tile's `biodiversity_score`
+3. Score ≥ 0.7 → the ORE contract activates → ẐEN rewards are issued automatically
+
+```
+Species observed  × 2 pts  (max 70)
+Total observations × 0.5 pts (max 20)
+Unique observers   × 2 pts  (max 10)
+─────────────────────────────────────
+Score [0–1]  →  ≥ 0.7 → ORE active → ẐEN rewards
+```
+
+This is **Regenerative Finance (ReFi)** made tangible: proof of biodiversity = proof of payment. No committee, no grant application — just verified observations on the NOSTR relay.
+
+> 📖 [ORE System — Philosophy](docs/explanation/ORE_SYSTEM.md) · [PlantNet How-To](docs/how-to/PLANTNET_SYSTEM.md)
+
+---
+
 ## 🤖 #BRO: The Swarm Intelligence
 
 **#BRO** (Brain Robot Online) is the **collective AI** of the Astroport constellation:
@@ -126,6 +193,46 @@ Unlike ChatGPT, #BRO is a **swarm of intelligences** — each station contribute
 # Local API (Ollama):
 curl http://127.0.0.1:11434/api/generate -d '{"model":"gemma3","prompt":"Bonjour BRO"}'
 ```
+
+---
+
+## ⚡ Astrosystemctl: The P2P Service Mesh
+
+No VPN. No reverse proxy. No central server. Captains share GPU power directly between stations using **IPFS P2P tunnels**.
+
+```bash
+# Discover available Brain-Nodes in the constellation
+astrosystemctl list-remote
+
+# Connect to a remote Ollama (GPU) — instant tunnel to port 11434
+astrosystemctl connect ollama
+
+# Make the tunnel persistent across reboots (watchdog managed)
+astrosystemctl enable ollama
+
+# Full dashboard: local services, active tunnels, Power-Score
+astrosystemctl status
+```
+
+A 🌿 Light node (Raspberry Pi, no GPU) can tunnel into a 🔥 Brain node's ComfyUI, Ollama, or Qdrant — transparent to the application. `DRAGON_p2p_ssh.sh` discovers and announces services nightly; `astrosystemctl` is the remote control.
+
+> 📖 [Full how-to guide](docs/how-to/ASTROSYSTEMCTL.md) — connect, enable, disable, local panel
+
+---
+
+## 🍪 Personal Scraping: Your Archives, Your Rules
+
+Astroport.ONE automatically harvests content from platforms you authorize via a **cookie-based scraper system** — no third-party service, no subscription, just your own data:
+
+- Drop a `.domain.cookie` file (Netscape format) in `~/.zen/game/nostr/$PLAYER/`
+- The matching `IA/domain.sh` scraper runs daily — zero interaction needed
+- **YouTube**: archives video + metadata directly to your uDRIVE IPFS
+- **Leboncoin, and others**: watch listings, extract structured data, store locally
+- Missing scrapers for a domain? The system **notifies the developer automatically** — community contributions welcome
+
+**Quick start (YouTube):** install the [Open-With Firefox](docs/how-to/youtube_archive_open_with.md) extension to archive any YouTube video in one click to your personal IPFS uDRIVE.
+
+> 📖 [YouTube & Video Management](docs/how-to/README_YOUTUBE.md) · [Cookie Scraper Architecture](docs/reference/DOMAIN_SCRAPERS.md)
 
 ---
 
@@ -275,6 +382,33 @@ Every Ẑen collected by the station is distributed **automatically and transpar
 
 All transactions are visible on the **Ğ1 blockchain** (Duniter v1/v2s). Full transparency, no hidden business model.
 
+### ⚖️ Automated Tax Compliance
+
+Each weekly ZENCard rental is split automatically at payment time — no human intervention, no accountant:
+
+```
+ZENCard rent (4 Ẑ)
+  ├── HT portion  → Captain's cooperative wallet  (PAYforSURE.sh)
+  └── TVA portion → UPLANET.IMPOT wallet          (PAYforSURE.sh)
+```
+
+The `TVA_RATE` is configurable per station (default 0%). The `UPLANET.IMPOT` wallet is deterministically derived from the station's name — it is a real Ğ1 address, auditable on-chain. If TVA collection is active, the split is atomic: both transfers are executed in the same script cycle or neither is.
+
+This makes Astroport.ONE the first cooperative software with **on-chain tax collection built into the payment loop**.
+
+### 🎲 CoinFlip: The Saint Petersburg Game
+
+Want to earn Ẑen in a single click? Try the **CoinFlip** — a gamified implementation of the [Saint Petersburg Paradox](https://en.wikipedia.org/wiki/St._Petersburg_paradox):
+
+- Stake **1 Ẑen** per game
+- **PILE** (heads) → your pot doubles: 2, 4, 8, 16 Ẑen…
+- **FACE** (tails) → game over; your stake goes to the **Captain's wallet** as a ludic retribution
+- **Cash out anytime** to collect your winnings
+
+The Captain benefits from every lost game — a transparent, gamified micro-contribution that funds the infrastructure hosting your station.
+
+> 🎮 Play at `http://localhost:12345/coinflip` — Practice mode (no real Ẑen) available without login.
+
 > 📜 Legal framework: [LEGAL.md](LEGAL.md) — Constitution of the UPlanet Ecosystem
 
 ---
@@ -300,6 +434,15 @@ All transactions are visible on the **Ğ1 blockchain** (Duniter v1/v2s). Full tr
 │  Identity: MULTIPASS = SSSS 2/3 + DID W3C               │
 └─────────────────────────────────────────────────────────┘
 ```
+
+**Sovereign feedback & analytics — zero GAFAM:**
+
+| Feature | Mechanism | Storage |
+|---------|-----------|---------|
+| **Bug reports** (`feedback.js`) | Captures console errors, scrubs private keys/tokens, signs via NIP-07 (NOSTR), POSTs to `/api/feedback` → GitHub issue created automatically | `/api/feedback` endpoint (UPassport) |
+| **Web analytics** (`astro.js`) | Page views + interactions encrypted with NIP-44, published as NOSTR **Kind 10600** on your local relay | Local relay, never leaves your constellation |
+
+> 📖 [Analytics Architecture](docs/explanation/ANALYTICS.md)
 
 **Key scripts** (the "heartbeat" of the station):
 
