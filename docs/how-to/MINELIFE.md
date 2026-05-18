@@ -546,6 +546,120 @@ Les points suivants sont tous implémentés dans `minelife.html` :
 | `Astroport.ONE/RUNTIME/ORACLE.refresh.sh` | Émet Kind 30503 Oracle (cron) |
 | `Astroport.ONE/IA/bro_dm_daemon.sh` | Daemon Kind 4 BRO + ComfyUI |
 | `Astroport.ONE/IA/generate_image.sh` | Génération badge via ComfyUI |
+| `Astroport.ONE/tools/knowledge_index.sh` | Index vectoriel connaissances WoTx2 |
+| `Astroport.ONE/tools/knowledge_index.py` | Moteur d'embedding (Qdrant + IPFS + NOSTR) |
+
+---
+
+## 9. Mémoire vectorielle des connaissances — RAG Formation
+
+### Principe
+
+Chaque ressource Kind 30504 (tag `["r", "/ipfs/CID", "document"]`) peut être
+**indexée dans Qdrant** (collection `knowledge`) pour une recherche sémantique
+par BRO et par MineLife. L'auteur du Kind 30504 est conservé dans le payload
+(`author_hex`) — chaque résultat de recherche retourne la référence IPFS ET
+l'attribution à son contributeur.
+
+```
+Kind 30504 (auteur: toto npub1...)
+  └── tag ["r", "/ipfs/QmXxx...", "document"]
+           │
+           ▼ knowledge_index.sh --index-nostr
+  ┌─────────────────────────────────────┐
+  │  Qdrant "knowledge"                 │
+  │  { cid: "QmXxx...",                 │
+  │    author_hex: "3c0c298b...",        │
+  │    skill: "docker",                  │
+  │    title: "Intro Docker",            │
+  │    event_id: "abcdef..."  }          │
+  └────────────────┬────────────────────┘
+                   │
+         ┌─────────┴──────────┐
+         │                    │
+   BRO #rec docker     MineLife Formation
+   → /ipfs/QmXxx...    → Résultats triés
+     (auteur: toto)      par pertinence
+```
+
+### Flux complet — Contribuer une ressource
+
+```
+Contributeur (MULTIPASS)          NOSTR relay           Constellation
+      │                               │                      │
+      │── [Mode Édition MineLife] ────►│                      │
+      │   glisse un PDF depuis        │                      │
+      │   "Mes médias" → Formation    │                      │
+      │                               │                      │
+      │── Kind 30504 ────────────────►│                      │
+      │   r=/ipfs/QmXxx..., t=docker  │                      │
+      │                               │── backfill ─────────►│
+      │                               │◄── sync N² ──────────│
+      │                               │                      │
+      │                    knowledge_index.sh --index-nostr
+      │                    ┌──────────────────────────────┐
+      │                    │ 1. fetch Kind 30504 du relay  │
+      │                    │ 2. download /ipfs/QmXxx...    │
+      │                    │ 3. embed nomic-embed-text     │
+      │                    │ 4. store → Qdrant "knowledge" │
+      │                    └──────────────────────────────┘
+      │                               │
+      │── DM Kind 4 BRO ─────────────►│ (home_station)
+      │   "#rec docker"               │
+      │                               │── knowledge_index.sh --search "docker"
+      │                               │   → /ipfs/QmXxx... (auteur: toto)
+      │◄── Kind 4 (réponse BRO) ──────│
+      │   📚 Intro Docker             │
+      │   /ipfs/QmXxx...              │
+      │   *(auteur: toto)*            │
+```
+
+### Initialisation
+
+```bash
+# 1. S'assurer que Qdrant et Ollama tournent
+docker compose --profile ai up -d
+
+# 2. Indexer les ressources NOSTR existantes
+./tools/knowledge_index.sh --index-nostr
+
+# 3. Optionnel : indexer le dossier Nextcloud de l'admin
+./tools/knowledge_index.sh --index-dir ~/nextcloud/Astroport --skill astroport
+
+# 4. Vérifier
+./tools/knowledge_index.sh --stats
+# → { "collection": "knowledge", "points_count": N, ... }
+
+# 5. Tester la recherche
+./tools/knowledge_index.sh --search "introduction Docker conteneurs" --skill docker
+```
+
+### Test avec le dataset WoTx2 demo
+
+Le script `tests/test_wotx2_demo.sh` publie un Kind 30504 de formation devops
+(section 10). Après l'avoir exécuté, lancer l'indexation pour valider le
+pipeline complet :
+
+```bash
+# 1. Publier le dataset demo
+./tests/test_wotx2_demo.sh
+
+# 2. Indexer
+./tools/knowledge_index.sh --index-nostr
+
+# 3. Vérifier que la ressource formation est trouvable
+./tools/knowledge_index.sh --search "devops station astroport formation" --skill devops
+# → doit retourner le Kind 30504 publié par toto dans le dataset demo
+```
+
+### Référence complète
+
+Voir [KNOWLEDGE_EMBEDDINGS.md](KNOWLEDGE_EMBEDDINGS.md) pour :
+- Architecture détaillée et payload Qdrant
+- Indexation uDRIVE et Nextcloud
+- Format de sortie et attribution auteur
+- Intégration BRO `#rec` et MineLife Formation
+- Mise à jour incrémentale post-backfill
 
 ---
 

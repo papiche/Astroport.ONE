@@ -211,6 +211,18 @@ fi
 MAIN_SCRIPT=$(realpath "$MAIN_SCRIPT")
 MAIN_DIR=$(dirname "$MAIN_SCRIPT")
 
+# Support multi-sources : toutes les POSITIONAL sont analysées ;
+# les dépendances communes sont dédupliquées via VISITED.
+declare -a SOURCE_FILES=()
+for _src_raw in "${POSITIONAL[@]}"; do
+    if [ -f "$_src_raw" ]; then
+        SOURCE_FILES+=("$(realpath "$_src_raw")")
+    else
+        echo "Avertissement : source '$_src_raw' introuvable, ignorée." >&2
+    fi
+done
+[ "${#SOURCE_FILES[@]}" -eq 0 ] && { echo "Erreur : aucune source valide."; exit 1; }
+
 # ── Mode --clean : nettoyer les commentaires du script principal ──────────
 if $CLEAN_MODE; then
     do_clean "$MAIN_SCRIPT"
@@ -304,6 +316,9 @@ JSON_FILE_COUNT=0
 
 # Tableau associatif pour éviter les doublons (protection contre les cycles)
 declare -A VISITED
+# Fichiers découverts dans l'ordre de traversée → triés par taille avant écriture
+declare -a DISCOVERED_FILES=()
+WRITTEN_COUNT=0   # fichiers effectivement écrits dans TEMP_FILE
 # Index des scripts du projet + projets frères (basename → chemin absolu)
 # Construit UNE SEULE FOIS au démarrage via globs ls bornés, lookup O(1)
 declare -A FILE_INDEX
@@ -522,6 +537,71 @@ extract_route_from_python() {
     done <<< "$MATCH_LINES"
 }
 
+# ─────────────────────────────────────────────────────────────────────────────
+# _write_file_to_temp : Écriture d'un fichier dans TEMP_FILE (JSON ou texte).
+# Appelé depuis la phase de tri-par-taille, après la découverte complète.
+# Incrémente JSON_FILE_COUNT (JSON) et WRITTEN_COUNT (les deux modes).
+# ─────────────────────────────────────────────────────────────────────────────
+_write_file_to_temp() {
+    local FILE="$1"
+    local RELATIVE_PATH FILENAME FILE_EXT
+    RELATIVE_PATH=$(realpath --relative-to="$MAIN_DIR" "$FILE" 2>/dev/null || echo "$FILE")
+    FILENAME=$(basename "$FILE")
+    FILE_EXT="${FILE##*.}"
+    if [[ "$FILE_EXT" == "$FILENAME" ]]; then
+        local _sline; IFS= read -r _sline < "$FILE" 2>/dev/null
+        [[ "$_sline" == *"python"* ]] && FILE_EXT="py" || FILE_EXT="sh"
+    fi
+
+    if $JSON_MODE; then
+        echo "Ajout de : $FILE" >&2
+        local CONTENT
+        if [ -n "$ROUTE_FILTER" ] && [ "$FILE_EXT" = "py" ] && [ "$FILE" = "$MAIN_SCRIPT" ]; then
+            CONTENT=$(extract_route_from_python "$FILE" "$ROUTE_FILTER")
+        elif [ "$MAX_FILE_SIZE" -gt 0 ]; then
+            local FILE_BYTES; FILE_BYTES=$(wc -c < "$FILE" 2>/dev/null || echo 0)
+            CONTENT=$(head -c "$MAX_FILE_SIZE" "$FILE")
+            [ "$FILE_BYTES" -gt "$MAX_FILE_SIZE" ] && \
+                CONTENT+=$'\n'"[... TRONQUÉ : ${FILE_BYTES} octets → ${MAX_FILE_SIZE} max (--maxfilesize) ...]"
+        else
+            CONTENT=$(cat "$FILE")
+        fi
+        local CONTENT_JSON; CONTENT_JSON=$(_json_encode "$CONTENT")
+        local COMMA=""; [ "$JSON_FILE_COUNT" -gt 0 ] && COMMA=","
+        {
+            echo "${COMMA}{"
+            printf '  "path": %s,\n' "$(printf '%s' "$RELATIVE_PATH" | $PYTHON3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')"
+            printf '  "filename": %s,\n' "$(printf '%s' "$FILENAME" | $PYTHON3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')"
+            printf '  "extension": "%s",\n' "$FILE_EXT"
+            printf '  "content": %s\n' "$CONTENT_JSON"
+            echo "}"
+        } >> "$TEMP_FILE"
+        (( JSON_FILE_COUNT++ )) || true
+    else
+        echo "Ajout de : $FILE"
+        {
+            echo "### Chemin : $RELATIVE_PATH"
+            echo "### Fichier : $FILENAME"
+            echo ""
+            echo '```'
+            if [ -n "$ROUTE_FILTER" ] && [ "$FILE_EXT" = "py" ] && [ "$FILE" = "$MAIN_SCRIPT" ]; then
+                extract_route_from_python "$FILE" "$ROUTE_FILTER"
+            elif [ "$MAX_FILE_SIZE" -gt 0 ]; then
+                local _FB; _FB=$(wc -c < "$FILE" 2>/dev/null || echo 0)
+                head -c "$MAX_FILE_SIZE" "$FILE"
+                [ "$_FB" -gt "$MAX_FILE_SIZE" ] && \
+                    echo $'\n'"[... TRONQUÉ : ${_FB} octets → ${MAX_FILE_SIZE} max ...]"
+            else
+                cat "$FILE"
+            fi
+            echo ""
+            echo '```'
+            echo ""
+        } >> "$TEMP_FILE"
+    fi
+    (( WRITTEN_COUNT++ )) || true
+}
+
 # Fonction récursive pour traiter un script
 # $1 = fichier, $2 = profondeur courante (défaut 0)
 process_script() {
@@ -605,85 +685,8 @@ process_script() {
     fi
     # .sh et .py sont toujours du texte → pas de check
 
-    RELATIVE_PATH=$(realpath --relative-to="$MAIN_DIR" "$FILE" 2>/dev/null || echo "$FILE")
-    FILENAME=$(basename "$FILE")
-    FILE_EXT="${FILE##*.}"
-
-    # Fix: pour les fichiers sans extension, déduire le type depuis le shebang
-    # (ex: cpscript, code_assistant → #!/bin/bash = "sh" ; #!/usr/bin/env python3 = "py")
-    if [[ "$FILE_EXT" == "$FILENAME" ]]; then
-        local _sline
-        IFS= read -r _sline < "$FILE" 2>/dev/null
-        if [[ "$_sline" == *"python"* ]]; then
-            FILE_EXT="py"
-        elif [[ "$_sline" == "#!"* ]]; then
-            FILE_EXT="sh"
-        fi
-    fi
-
-    # Appliquer le filtre --only si défini
-    if [ -n "$FILTER_EXT" ] && [ "$FILE_EXT" != "$FILTER_EXT" ]; then
-        # Fix: en mode JSON, les messages de filtre doivent aller sur stderr pour ne pas corrompre le JSON
-        $JSON_MODE && echo "  [FILTRÉ .$FILE_EXT] $FILE" >&2 || echo "  [FILTRÉ .$FILE_EXT] $FILE"
-    else
-        # En JSON mode → progress sur stderr pour libérer stdout pour le JSON
-        if $JSON_MODE; then
-            echo "Ajout de : $FILE" >&2
-        else
-            echo "Ajout de : $FILE"
-        fi
-        if $JSON_MODE; then
-            # Mode JSON : chaque fichier est un objet { path, filename, extension, content }
-            local CONTENT
-            if [ -n "$ROUTE_FILTER" ] && [ "$FILE_EXT" = "py" ] && [ "$FILE" = "$MAIN_SCRIPT" ]; then
-                CONTENT=$(extract_route_from_python "$FILE" "$ROUTE_FILTER")
-            elif [ "$MAX_FILE_SIZE" -gt 0 ]; then
-                # P3 : tronquer si le fichier dépasse la limite
-                local FILE_BYTES
-                FILE_BYTES=$(wc -c < "$FILE" 2>/dev/null || echo 0)
-                CONTENT=$(head -c "$MAX_FILE_SIZE" "$FILE")
-                if [ "$FILE_BYTES" -gt "$MAX_FILE_SIZE" ]; then
-                    CONTENT+=$'\n'"[... TRONQUÉ : ${FILE_BYTES} octets → ${MAX_FILE_SIZE} max (--maxfilesize) ...]"
-                fi
-            else
-                CONTENT=$(cat "$FILE")
-            fi
-            local CONTENT_JSON
-            CONTENT_JSON=$(_json_encode "$CONTENT")
-            local COMMA=""
-            [ "$JSON_FILE_COUNT" -gt 0 ] && COMMA=","
-            {
-                echo "${COMMA}{"
-                printf '  "path": %s,\n' "$(printf '%s' "$RELATIVE_PATH" | $PYTHON3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')"
-                printf '  "filename": %s,\n' "$(printf '%s' "$FILENAME" | $PYTHON3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')"
-                printf '  "extension": "%s",\n' "$FILE_EXT"
-                printf '  "content": %s\n' "$CONTENT_JSON"
-                echo "}"
-            } >> "$TEMP_FILE"
-            (( JSON_FILE_COUNT++ )) || true
-        else
-            {
-                echo "### Chemin : $RELATIVE_PATH"
-                echo "### Fichier : $FILENAME"
-                echo ""
-                echo '```'
-                # Fix#3 : --route sur main script seulement ; P3 : limite taille
-                if [ -n "$ROUTE_FILTER" ] && [ "$FILE_EXT" = "py" ] && [ "$FILE" = "$MAIN_SCRIPT" ]; then
-                    extract_route_from_python "$FILE" "$ROUTE_FILTER"
-                elif [ "$MAX_FILE_SIZE" -gt 0 ]; then
-                    local _FB; _FB=$(wc -c < "$FILE" 2>/dev/null || echo 0)
-                    head -c "$MAX_FILE_SIZE" "$FILE"
-                    [ "$_FB" -gt "$MAX_FILE_SIZE" ] && \
-                        echo $'\n'"[... TRONQUÉ : ${_FB} octets → ${MAX_FILE_SIZE} max ...]"
-                else
-                    cat "$FILE"
-                fi
-                echo ""
-                echo '```'
-                echo ""
-            } >> "$TEMP_FILE"
-        fi
-    fi
+    # Collecter pour tri par taille (écriture différée après découverte complète)
+    DISCOVERED_FILES+=("$FILE")
 
     # Optimisation : si la prochaine profondeur dépasse la limite, inutile de résoudre
     if [ "$MAX_DEPTH" -gt 0 ] && [ $(( DEPTH + 1 )) -gt "$MAX_DEPTH" ]; then
@@ -751,16 +754,65 @@ process_script() {
 
 if $JSON_MODE; then
     [ -n "$FILTER_EXT" ] && echo "  [filtre actif : --only $FILTER_EXT]" >&2
-    echo "=== Analyse de : $MAIN_SCRIPT ===" >&2
+    printf '=== Analyse de : %s ===\n' "${SOURCE_FILES[*]}" >&2
     echo "" >&2
 else
     [ -n "$FILTER_EXT" ] && echo "  [filtre actif : --only $FILTER_EXT]"
-    echo "=== Analyse de : $MAIN_SCRIPT ==="
+    printf '=== Analyse de : %s ===\n' "${SOURCE_FILES[*]}"
     echo ""
 fi
 
-# Traiter le script principal (et récursivement ses dépendances)
-process_script "$MAIN_SCRIPT"
+# ── Phase 1 : Découverte des dépendances (toutes les sources) ─────────────
+for _src in "${SOURCE_FILES[@]}"; do
+    process_script "$_src"
+done
+
+# ── Phase 2 : Tri par taille + écriture avec budget tokens ───────────────
+# Sources toujours en premier (dans l'ordre donné), dépendances triées par
+# taille croissante — les grosses libs vendorisées passent en dernier et
+# sont naturellement coupées par le budget (pas besoin de --exclude).
+declare -A _SRC_SET=()
+for _src in "${SOURCE_FILES[@]}"; do _SRC_SET["$_src"]=1; done
+declare -a _WRITE_QUEUE=("${SOURCE_FILES[@]}")
+while IFS=$'\t' read -r _sz _wf; do
+    [ -n "${_SRC_SET[$_wf]+x}" ] && continue
+    _WRITE_QUEUE+=("$_wf")
+done < <(
+    for _wf in "${DISCOVERED_FILES[@]}"; do
+        [ -n "${_SRC_SET[$_wf]+x}" ] && continue
+        printf '%d\t%s\n' "$(wc -c < "$_wf" 2>/dev/null || echo 0)" "$_wf"
+    done | sort -n
+)
+
+_WRITTEN_CHARS=0
+for _wfile in "${_WRITE_QUEUE[@]}"; do
+    # Appliquer le filtre --only (à l'écriture, pas à la découverte)
+    _wfile_ext="${_wfile##*.}"
+    _wfile_base="${_wfile##*/}"
+    if [[ "$_wfile_ext" == "$_wfile_base" ]]; then
+        _wline=""; IFS= read -r _wline < "$_wfile" 2>/dev/null
+        [[ "$_wline" == *"python"* ]] && _wfile_ext="py" || _wfile_ext="sh"
+    fi
+    if [ -n "$FILTER_EXT" ] && [ "$_wfile_ext" != "$FILTER_EXT" ]; then
+        $JSON_MODE && echo "  [FILTRÉ .$_wfile_ext] $_wfile" >&2 \
+                   || echo "  [FILTRÉ .$_wfile_ext] $_wfile"
+        continue
+    fi
+
+    # Budget tokens : sources passent toujours, dépendances soumises au budget
+    if [ "$MAX_CHARS" -gt 0 ] && [ -z "${_SRC_SET[$_wfile]+x}" ]; then
+        _wfile_size=$(wc -c < "$_wfile" 2>/dev/null || echo 0)
+        if [ $(( _WRITTEN_CHARS + _wfile_size )) -gt "$MAX_CHARS" ]; then
+            $JSON_MODE \
+                && echo "  [BUDGET] $_wfile ignoré (~$(( _wfile_size / 4 ))t, budget atteint)" >&2 \
+                || echo "  [BUDGET] $_wfile ignoré (~$(( _wfile_size / 4 ))t, budget atteint)"
+            continue
+        fi
+        _WRITTEN_CHARS=$(( _WRITTEN_CHARS + _wfile_size ))
+    fi
+
+    _write_file_to_temp "$_wfile"
+done
 
 # ── Mode --doc : inclure les fichiers .md qui référencent ce script ──────
 if $DOC_MODE; then
@@ -839,7 +891,7 @@ fi
 
 # Mode JSON : encapsuler les entrées dans l'enveloppe JSON finale
 if $JSON_MODE; then
-    NB_FILES=${#VISITED[@]}
+    NB_FILES=$WRITTEN_COUNT
     TOTAL_CHARS_INNER=$(wc -c < "$TEMP_FILE" 2>/dev/null || echo 0)
     TOTAL_TOKENS_INNER=$(( TOTAL_CHARS_INNER / 4 ))
 
@@ -868,7 +920,7 @@ if $JSON_MODE; then
 fi
 
 # Compter les fichiers inclus et la taille totale
-NB_FILES=${#VISITED[@]}
+NB_FILES=$WRITTEN_COUNT
 TOTAL_CHARS=$(wc -c < "$TEMP_FILE" 2>/dev/null || echo 0)
 # R3: ratio 3.2 chars/token pour du code (plus précis que /4 utilisé pour du texte)
 TOTAL_TOKENS=$($PYTHON3 -c "print(int($TOTAL_CHARS / 3.2))" 2>/dev/null || echo $(( TOTAL_CHARS / 4 )))

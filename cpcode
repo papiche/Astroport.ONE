@@ -12,12 +12,16 @@
 ########################################################################
 
 show_help() {
-    echo "Usage : $0 [--json] [--maxfilesize N] <ext1> [ext2 ...] <dossier>"
+    echo "Usage : $0 [--json] [--maxfilesize N] [--exclude <pattern>] [--well-known] <ext1> [ext2 ...] <dossier>"
     echo ""
     echo "Options :"
-    echo "  --json           Sortie JSON (compatible code_assistant / LLM tool)"
-    echo "  --maxfilesize N  Limite par fichier en octets (P3)"
-    echo "  --help           Affiche cette aide."
+    echo "  --json              Sortie JSON (compatible code_assistant / LLM tool)"
+    echo "  --maxfilesize N     Limite par fichier en octets (tronque)"
+    echo "  --exclude <pattern> Exclure les fichiers dont le chemin contient <pattern> (répétable)"
+    echo "                      Ex: --exclude 'jquery' --exclude 'bootstrap'"
+    echo "  --well-known        Exclure les bibliothèques tierces répandues (jQuery, Bootstrap,"
+    echo "                      Leaflet, p5.js, nacl, scrypt, blake2b, axios, mermaid…)"
+    echo "  --help              Affiche cette aide."
     exit 0
 }
 
@@ -29,7 +33,24 @@ _MY_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # ── Parsing des options ───────────────────────────────────────────────────
 JSON_MODE=false
 MAX_FILE_SIZE=0
+EXCLUDE_PATTERNS=()
+WELL_KNOWN=false
 POSITIONAL=()
+
+# Bibliothèques tierces répandues, déjà connues des IA
+_WELL_KNOWN_PATTERNS=(
+    jquery bootstrap leaflet MarkerCluster
+    axios html2canvas jsmediatags
+    "p5.min" "p5.sound"
+    nacl "sha256.min"
+    scrypt "bip39-libs"
+    "blake2b.js" blake2b_browser blake2b_combined
+    lunar-calendar "requestanimationframe.polyfill"
+    "marked.min" "mermaid.min" "model-viewer.min"
+    "helia@" "nostr.bundle"
+    sphere-hacked "world.js"
+    "awesome.css" "astronomy.browser"
+)
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -37,9 +58,16 @@ while [[ $# -gt 0 ]]; do
         --json)             JSON_MODE=true; shift ;;
         --maxfilesize)      MAX_FILE_SIZE="$2"; shift 2 ;;
         --maxfilesize=*)    MAX_FILE_SIZE="${1#--maxfilesize=}"; shift ;;
+        --exclude)          EXCLUDE_PATTERNS+=("$2"); shift 2 ;;
+        --exclude=*)        EXCLUDE_PATTERNS+=("${1#--exclude=}"); shift ;;
+        --well-known)       WELL_KNOWN=true; shift ;;
         *)                  POSITIONAL+=("$1"); shift ;;
     esac
 done
+
+if $WELL_KNOWN; then
+    EXCLUDE_PATTERNS+=("${_WELL_KNOWN_PATTERNS[@]}")
+fi
 
 if [ "${#POSITIONAL[@]}" -lt 2 ]; then
     echo "Erreur : Arguments manquants."
@@ -66,6 +94,18 @@ JSON_FILE_COUNT=0
 # ── Traitement des fichiers ───────────────────────────────────────────────
 for EXT in "${EXTENSIONS[@]}"; do
     while IFS= read -r FILE; do
+        # Vérifier les patterns d'exclusion
+        SKIP=false
+        for _PAT in "${EXCLUDE_PATTERNS[@]}"; do
+            if [[ "$FILE" == *${_PAT}* ]]; then
+                SKIP=true; break
+            fi
+        done
+        if $SKIP; then
+            echo "  [EXCLU] $FILE"
+            continue
+        fi
+
         # Vérifier que c'est un fichier texte (grep -I échoue sur les binaires)
         if ! grep -Iq . "$FILE" 2>/dev/null; then
             echo "  [IGNORÉ - binaire] $FILE"
@@ -122,7 +162,7 @@ done
 # ── Enveloppe JSON finale ────────────────────────────────────────────────
 if $JSON_MODE; then
     TOTAL_CHARS=$(wc -c < "$TEMP_FILE" 2>/dev/null || echo 0)
-    TOTAL_TOKENS=$(( TOTAL_CHARS / 4 ))
+    TOTAL_TOKENS=$(( TOTAL_CHARS * 10 / 35 ))
     JSON_FINAL="/tmp/${MOATS}.json"
     {
         echo "{"
@@ -147,9 +187,18 @@ if [ ! -s "$TEMP_FILE" ]; then
 fi
 
 TOTAL_CHARS=$(wc -c < "$TEMP_FILE" 2>/dev/null || echo 0)
-TOTAL_TOKENS=$(( TOTAL_CHARS / 4 ))
+TOTAL_TOKENS=$(( TOTAL_CHARS * 10 / 35 ))
+
+_fmt_num() {
+    local n=$1
+    if   (( n >= 1000000 )); then printf "%d.%dM" $(( n / 1000000 )) $(( (n % 1000000) / 100000 ))
+    elif (( n >= 1000 ));    then printf "%dK"     $(( n / 1000 ))
+    else                          printf "%d"      "$n"
+    fi
+}
+
 echo ""
-echo "=== $NB_FILES fichier(s) — ${TOTAL_CHARS} chars (~${TOTAL_TOKENS} tokens) ==="
+echo "=== $NB_FILES fichier(s) — $(_fmt_num "$TOTAL_CHARS") chars (~$(_fmt_num "$TOTAL_TOKENS") tokens) ==="
 
 # ── Presse-papiers ────────────────────────────────────────────────────────
 COPIED=false

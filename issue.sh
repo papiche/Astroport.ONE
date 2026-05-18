@@ -494,55 +494,114 @@ case "$COMMAND" in
         # ── ÉTAPE 1 : Découverte intelligente des fichiers ────────────────────
         CPSCRIPT_BIN=$(command -v cpscript 2>/dev/null || echo "${MY_PATH}/cpscript")
         CPCODE_BIN=$(command   -v cpcode   2>/dev/null || echo "${MY_PATH}/cpcode")
-        CPSCRIPT_MAXTOKEN="${CPSCRIPT_MAXTOKEN:-12000}"  # limite par fichier
+        CPSCRIPT_MAXTOKEN="${CPSCRIPT_MAXTOKEN:-10000}"  # limite par fichier (budget deepseek 16k)
 
         if [[ ${#EXTRA_FILES[@]} -eq 0 ]]; then
-            # Extraire les mots-clés de l'issue (identifiants techniques, ≥5 chars)
-            mapfile -t _keywords < <(
-                printf '%s\n%s' "$ISSUE_TITLE" "$ISSUE_BODY" \
-                | grep -oE '\b[A-Za-z_][A-Za-z0-9_]{4,}\b' \
-                | grep -vE '^(https?|ipfs|ipns|class|function|const|return|false|true|null|undefined|object|string|number|boolean|async|await|import|export|from|local|relay|MULTIPA)$' \
-                | sort | uniq -c | sort -rn | awk '{print $2}' | head -8
-            )
+            _INDEXER_PY="${MY_PATH}/tools/codebase_index.py"
+            _QDRANT_URL="${QDRANT_URL:-http://localhost:6333}"
+            _PYTHON3="${HOME}/.astro/bin/python3"
+            command -v "$_PYTHON3" &>/dev/null || _PYTHON3="$(command -v python3)"
 
-            # Chercher ces mots-clés dans le code source local
+            # Clé API Qdrant depuis ~/.zen/ai-company/.env (install-ai-company.docker.sh)
+            if [[ -z "${QDRANT_API_KEY:-}" ]] && [[ -f "${HOME}/.zen/ai-company/.env" ]]; then
+                _qk=$(grep -E '^QDRANT_API_KEY=' "${HOME}/.zen/ai-company/.env" | cut -d= -f2-)
+                [[ -n "$_qk" ]] && export QDRANT_API_KEY="$_qk"
+            fi
+            _QDRANT_CURL_OPTS=()
+            [[ -n "${QDRANT_API_KEY:-}" ]] && _QDRANT_CURL_OPTS=(-H "api-key: ${QDRANT_API_KEY}")
+
             echo ""
-            echo -e "${YELLOW}[DÉCOUVERTE]${NC} Recherche de code pertinent${RTK:+ (via rtk grep)}..."
-            declare -A _file_hits=()
-            _search_root="."
-            [[ -d "earth" ]] && _search_root="earth"
-            [[ -d "RUNTIME" ]] && _search_root="."
+            echo -e "${YELLOW}[DÉCOUVERTE]${NC} Recherche de code pertinent..."
 
-            for _kw in "${_keywords[@]:-}"; do
-                [[ -z "$_kw" ]] && continue
-                while IFS= read -r _hit; do
-                    _f=$(echo "$_hit" | cut -d: -f1)
-                    [[ -n "$_f" ]] && _file_hits["$_f"]=$(( ${_file_hits["$_f"]:-0} + 1 ))
-                done < <(_grep -rn "$_kw" "$_search_root" \
-                    --include="*.sh" --include="*.py" --include="*.html" --include="*.js" \
-                    -l 2>/dev/null | head -20 || true)
-            done
+            mapfile -t _sorted_files < <(true)  # initialiser vide
+            declare -A _file_scores=()
+            _discovery_method="grep"
 
-            # Trier par nombre de hits et afficher
-            mapfile -t _sorted_files < <(
-                for _f in "${!_file_hits[@]}"; do
-                    echo "${_file_hits[$_f]} $_f"
-                done | sort -rn | awk '{print $2}' | head -10
-            )
+            # ── Priorité 1 : Recherche sémantique Qdrant ─────────────────────
+            if curl -sf --max-time 1 "${_QDRANT_CURL_OPTS[@]}" "${_QDRANT_URL}/collections" &>/dev/null \
+               && [[ -f "$_INDEXER_PY" ]]; then
+                echo -e "  ${CYAN}[qdrant]${NC} Recherche sémantique..."
+                _query="${ISSUE_TITLE} ${ISSUE_BODY}"
+                _qdrant_raw=$("$_PYTHON3" "$_INDEXER_PY" \
+                    --search "$_query" --limit 10 \
+                    --workspace "${CODEBASE_ROOT:-${MY_PATH}/../..}" \
+                    2>/dev/null)
+                if [[ -n "$_qdrant_raw" ]]; then
+                    while IFS=$'\t' read -r _score _rel_path; do
+                        [[ -z "$_rel_path" ]] && continue
+                        # Chercher le fichier relatif au répertoire courant ou au workspace
+                        _abs=""
+                        for _candidate in \
+                            "$_rel_path" \
+                            "${MY_PATH}/../../${_rel_path}" \
+                            "${MY_PATH}/../${_rel_path}"; do
+                            if [[ -f "$_candidate" ]]; then
+                                _abs=$(realpath "$_candidate" 2>/dev/null || echo "$_candidate")
+                                break
+                            fi
+                        done
+                        [[ -z "$_abs" ]] && continue
+                        _file_scores["$_abs"]="$_score"
+                    done <<< "$_qdrant_raw"
 
+                    mapfile -t _sorted_files < <(
+                        for _f in "${!_file_scores[@]}"; do
+                            printf '%s\t%s\n' "${_file_scores[$_f]}" "$_f"
+                        done | sort -rn | awk -F'\t' '{print $2}' | head -10
+                    )
+                    _discovery_method="qdrant"
+                fi
+            fi
+
+            # ── Fallback : grep par fréquence de mots-clés ───────────────────
+            if [[ ${#_sorted_files[@]} -eq 0 ]]; then
+                mapfile -t _keywords < <(
+                    printf '%s\n%s' "$ISSUE_TITLE" "$ISSUE_BODY" \
+                    | grep -oE '\b[A-Za-z_][A-Za-z0-9_]{4,}\b' \
+                    | grep -vE '^(https?|ipfs|ipns|class|function|const|return|false|true|null|undefined|object|string|number|boolean|async|await|import|export|from|local|relay)$' \
+                    | sort | uniq -c | sort -rn | awk '{print $2}' | head -8
+                )
+                declare -A _file_hits=()
+                _search_root="."
+                [[ -d "earth" ]] && _search_root="earth"
+
+                for _kw in "${_keywords[@]:-}"; do
+                    [[ -z "$_kw" ]] && continue
+                    while IFS= read -r _hit; do
+                        _f=$(echo "$_hit" | cut -d: -f1)
+                        [[ -n "$_f" ]] && _file_hits["$_f"]=$(( ${_file_hits["$_f"]:-0} + 1 ))
+                    done < <(_grep -rn "$_kw" "$_search_root" \
+                        --include="*.sh" --include="*.py" --include="*.html" --include="*.js" \
+                        -l 2>/dev/null | head -20 || true)
+                done
+
+                mapfile -t _sorted_files < <(
+                    for _f in "${!_file_hits[@]}"; do
+                        echo "${_file_hits[$_f]} $_f"
+                    done | sort -rn | awk '{print $2}' | head -10
+                )
+                for _f in "${_sorted_files[@]}"; do
+                    _file_scores["$_f"]="${_file_hits[$_f]:-0} hits"
+                done
+            fi
+
+            # ── Affichage + sélection ─────────────────────────────────────────
             if [[ ${#_sorted_files[@]} -gt 0 ]]; then
                 echo ""
-                echo -e "${CYAN}Fichiers les plus pertinents (par fréquence de mots-clés) :${NC}"
+                if [[ "$_discovery_method" == "qdrant" ]]; then
+                    echo -e "${CYAN}Fichiers les plus pertinents (similarité sémantique Qdrant) :${NC}"
+                else
+                    echo -e "${CYAN}Fichiers les plus pertinents (par fréquence de mots-clés) :${NC}"
+                fi
                 _i=1
                 for _f in "${_sorted_files[@]}"; do
-                    printf "  [%d] %-50s (%d hits)\n" "$_i" "$_f" "${_file_hits[$_f]}"
+                    printf "  [%d] %-50s (%s)\n" "$_i" "$_f" "${_file_scores[$_f]:-?}"
                     (( _i++ ))
                 done
                 echo ""
                 echo -e "${CYAN}Numéros à analyser (ex: 1 3), chemins libres, ou Entrée pour [1 2] :${NC}"
                 read -r -a _selection
                 if [[ ${#_selection[@]} -eq 0 ]]; then
-                    # Par défaut : les 2 premiers
                     EXTRA_FILES=("${_sorted_files[@]:0:2}")
                 else
                     for _s in "${_selection[@]}"; do
@@ -560,9 +619,9 @@ case "$COMMAND" in
             fi
         fi
 
-        # ── ÉTAPE 2 : Bundle code avec cpscript (limité, stdout, profondeur 1) ──
+        # ── ÉTAPE 2 : Bundle code avec cpscript (limité, stdout, profondeur 2) ──
         # --json  → stdout uniquement, pas de presse-papier
-        # --depth 1 → fichier + dépendances directes seulement (pas récursif)
+        # --depth 2 → fichier + deps + leurs deps (assez de contexte sans récursivité totale)
         # --maxtoken N → plafond de tokens par bundle
         CPSCRIPT_DEPTH="${CPSCRIPT_DEPTH:-1}"
         code_context=""
@@ -570,22 +629,13 @@ case "$COMMAND" in
         for f in "${EXTRA_FILES[@]:-}"; do
             [[ -z "$f" ]] && continue
             if [[ -f "$f" ]]; then
-                # Choisir --only selon l'extension pour éviter que les dépendances
-                # JS/CSS/NOSTR ne noient le code source du fichier analysé.
-                _ext="${f##*.}"
-                case "$_ext" in
-                    html) _only_flag=(--only html) ;;
-                    js)   _only_flag=(--only js)   ;;
-                    py)   _only_flag=(--only py)    ;;
-                    sh)   _only_flag=()             ;;  # shell : garder toutes les dépendances
-                    *)    _only_flag=()             ;;
-                esac
-
-                echo -e "${CYAN}[cpscript --json --depth ${CPSCRIPT_DEPTH} --maxtoken ${CPSCRIPT_MAXTOKEN} ${_only_flag[*]}]${NC} ${f}..." >&2
+                # cpscript trie les dépendances par taille croissante et applique le budget :
+                # les petits fichiers utiles passent en premier, les grosses libs en dernier.
+                # CSS inclus naturellement (form/fond). Pas besoin de --exclude ou --only.
+                echo -e "${CYAN}[cpscript --json --depth ${CPSCRIPT_DEPTH} --maxtoken ${CPSCRIPT_MAXTOKEN}]${NC} ${f}..." >&2
                 _raw_json=$("$CPSCRIPT_BIN" --json \
                                 --depth "$CPSCRIPT_DEPTH" \
                                 --maxtoken "$CPSCRIPT_MAXTOKEN" \
-                                "${_only_flag[@]+"${_only_flag[@]}"}" \
                                 "$f" 2>/dev/null)
 
                 _extracted=$(echo "$_raw_json" \
@@ -647,7 +697,7 @@ Propose un plan de correction concis en français (fichiers à modifier, changem
         _claudemd=""
         for _cmd_path in "CLAUDE.md" "../CLAUDE.md" "../../CLAUDE.md"; do
             if [[ -f "$_cmd_path" ]]; then
-                _claudemd=$(head -c 3000 "$_cmd_path")
+                _claudemd=$(head -c 1500 "$_cmd_path")
                 echo -e "${CYAN}[contexte]${NC} CLAUDE.md injecté depuis '${_cmd_path}' (~$(( ${#_claudemd} / 4 )) tokens)" >&2
                 break
             fi
@@ -754,16 +804,15 @@ Propose un plan de correction concis en français (fichiers à modifier, changem
                     if [[ -z "$GIT_TOKEN" ]]; then
                         echo -e "${RED}[ERREUR]${NC} GIT_TOKEN requis." >&2
                     else
-                        local _cb="**Analyse IA (${AI_BACKEND} / ${PROMPT_TEMPLATE}) — #${NUM}**"$'\n\n'"${ai_result}"
-                        local _cp; _cp=$(jq -n --arg b "$_cb" '{body:$b}')
-                        local _cr; _cr=$(_api POST "/repos/${REPO}/issues/${NUM}/comments" "$_cp")
+                        _cb="**Analyse IA (${AI_BACKEND} / ${PROMPT_TEMPLATE}) — #${NUM}**"$'\n\n'"${ai_result}"
+                        _cp=$(jq -n --arg b "$_cb" '{body:$b}')
+                        _cr=$(_api POST "/repos/${REPO}/issues/${NUM}/comments" "$_cp")
                         echo -e "${GREEN}✓ Commentaire posté${NC} : ${CYAN}$(echo "$_cr" | jq -r '.html_url // .url')${NC}"
                     fi
                     ;;
 
                 '?')
                     # Demande de clarification standardisée
-                    local _cla
                     _cla=$(cat <<'EOF'
 Merci pour ce rapport ! Pour mieux diagnostiquer ce problème, pourriez-vous préciser :
 
@@ -783,16 +832,15 @@ EOF
                     echo ""
                     read -r -p "Poster ce message ? [O/n] : " _do_cl
                     if [[ "${_do_cl,,}" != "n" ]]; then
-                        local _clp; _clp=$(jq -n --arg b "$_cla" '{body:$b}')
-                        local _clr; _clr=$(_api POST "/repos/${REPO}/issues/${NUM}/comments" "$_clp")
+                        _clp=$(jq -n --arg b "$_cla" '{body:$b}')
+                        _clr=$(_api POST "/repos/${REPO}/issues/${NUM}/comments" "$_clp")
                         echo -e "${GREEN}✓ Clarification postée${NC} : ${CYAN}$(echo "$_clr" | jq -r '.html_url // .url')${NC}"
                     fi
                     ;;
 
                 f)
                     # Mode fix : relance l'IA avec le template issue_fix sur le même contexte
-                    local _fix_tmpl_file="${MY_PATH}/IA/prompts/issue_fix.md"
-                    local _fix_tmpl
+                    _fix_tmpl_file="${MY_PATH}/IA/prompts/issue_fix.md"
                     if [[ -f "$_fix_tmpl_file" ]]; then
                         _fix_tmpl=$(awk '/^---/{p++; next} p==1{next} {print}' "$_fix_tmpl_file")
                     else
@@ -806,20 +854,20 @@ Code :
 Retourne UNIQUEMENT les blocs AVANT/APRÈS à modifier. Pas d'explication globale."
                     fi
 
-                    local _fix_p="${_fix_tmpl}"
+                    _fix_p="${_fix_tmpl}"
                     _fix_p="${_fix_p//\{\{ISSUE_NUMBER\}\}/$NUM}"
                     _fix_p="${_fix_p//\{\{ISSUE_TITLE\}\}/$ISSUE_TITLE}"
                     _fix_p="${_fix_p//\{\{ISSUE_BODY\}\}/$ISSUE_BODY}"
                     _fix_p="${_fix_p//\{\{CODE_CONTEXT\}\}/$code_context}"
                     [[ -n "$_claudemd" ]] && _fix_p="## Contexte projet\n${_claudemd}\n\n---\n\n${_fix_p}"
 
-                    local _fix_file; _fix_file=$(mktemp /tmp/issue_fix_XXXXXX.txt)
+                    _fix_file=$(mktemp /tmp/issue_fix_XXXXXX.txt)
                     printf '%s' "$_fix_p" > "$_fix_file"
 
                     echo ""
                     echo -e "${GREEN}[IA: ${AI_BACKEND}]${NC} Mode FIX — code à modifier..."
                     echo -e "══════════════════════════════════════════════════════"
-                    local _fix_result; _fix_result=$(_call_ai "$_fix_file")
+                    _fix_result=$(_call_ai "$_fix_file")
                     rm -f "$_fix_file"
 
                     if [[ -n "$_fix_result" ]]; then
@@ -850,8 +898,8 @@ Retourne UNIQUEMENT les blocs AVANT/APRÈS à modifier. Pas d'explication global
                             ;;
                         c)
                             if [[ -n "$GIT_TOKEN" ]] && [[ -n "$_fix_result" ]]; then
-                                local _fcp; _fcp=$(jq -n --arg b "**Correctif IA (${AI_BACKEND}/issue_fix) — #${NUM}**"$'\n\n'"${_fix_result}" '{body:$b}')
-                                local _fcr; _fcr=$(_api POST "/repos/${REPO}/issues/${NUM}/comments" "$_fcp")
+                                _fcp=$(jq -n --arg b "**Correctif IA (${AI_BACKEND}/issue_fix) — #${NUM}**"$'\n\n'"${_fix_result}" '{body:$b}')
+                                _fcr=$(_api POST "/repos/${REPO}/issues/${NUM}/comments" "$_fcp")
                                 echo -e "${GREEN}✓ Correctif posté${NC} : ${CYAN}$(echo "$_fcr" | jq -r '.html_url // .url')${NC}"
                             fi
                             ;;
@@ -878,20 +926,20 @@ Retourne UNIQUEMENT les blocs AVANT/APRÈS à modifier. Pas d'explication global
                     ;;
 
                 p)
-                    local _pb=$(_git branch --show-current 2>/dev/null || echo "fix/issue-${NUM}")
-                    local _pbase; _pbase=$(_git remote show origin 2>/dev/null | grep 'HEAD branch' | awk '{print $NF}' || echo "master")
+                    _pb=$(_git branch --show-current 2>/dev/null || echo "fix/issue-${NUM}")
+                    _pbase=$(_git remote show origin 2>/dev/null | grep 'HEAD branch' | awk '{print $NF}' || echo "master")
                     read -r -p "  Branche cible [défaut: ${_pbase}] : " _pc_base
                     [[ -n "$_pc_base" ]] && _pbase="$_pc_base"
-                    local _ptitle="fix: ${ISSUE_TITLE} (closes #${NUM})"
+                    _ptitle="fix: ${ISSUE_TITLE} (closes #${NUM})"
                     read -r -p "  Titre PR [défaut: ${_ptitle}] : " _pc_title
                     [[ -n "$_pc_title" ]] && _ptitle="$_pc_title"
-                    local _pbody="Closes #${NUM}"$'\n\n'"**Résumé IA (${AI_BACKEND}) :**"$'\n\n'"${ai_result:0:2000}"
+                    _pbody="Closes #${NUM}"$'\n\n'"**Résumé IA (${AI_BACKEND}) :**"$'\n\n'"${ai_result:0:2000}"
                     if ! _git ls-remote --exit-code origin "$_pb" &>/dev/null; then
                         echo -e "${CYAN}[git]${NC} Push '${_pb}'..."
                         _git push -u origin "$_pb" 2>&1 | tail -3 || true
                     fi
-                    local _pp; _pp=$(jq -n --arg t "$_ptitle" --arg b "$_pbody" --arg h "$_pb" --arg base "$_pbase" '{title:$t,body:$b,head:$h,base:$base}')
-                    local _pr; _pr=$(_api POST "/repos/${REPO}/pulls" "$_pp")
+                    _pp=$(jq -n --arg t "$_ptitle" --arg b "$_pbody" --arg h "$_pb" --arg base "$_pbase" '{title:$t,body:$b,head:$h,base:$base}')
+                    _pr=$(_api POST "/repos/${REPO}/pulls" "$_pp")
                     echo -e "${GREEN}✓ PR #$(echo "$_pr" | jq -r '.number // ""') créée${NC} : ${CYAN}$(echo "$_pr" | jq -r '.html_url // .url')${NC}"
                     _wf_done=true
                     ;;

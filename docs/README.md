@@ -32,6 +32,8 @@ Organisée selon le standard [Diátaxis](https://diataxis.fr/) — quatre types 
 | [COLLABORATIVE_COMMONS_SYSTEM.md](how-to/COLLABORATIVE_COMMONS_SYSTEM.md) | Co-rédiger et valider des documents communs territoriaux |
 | [PLANTNET_SYSTEM.md](how-to/PLANTNET_SYSTEM.md) | Cataloguer la biodiversité et ressources locales |
 | [MINELIFE.md](how-to/MINELIFE.md) | Crafting décentralisé des compétences WoTx2 (interface Minecraft) |
+| [CODEBASE_EMBEDDINGS.md](how-to/CODEBASE_EMBEDDINGS.md) | Mémoire vectorielle du code (Qdrant + nomic-embed-text + snapshot IPFS) |
+| [KNOWLEDGE_EMBEDDINGS.md](how-to/KNOWLEDGE_EMBEDDINGS.md) | Mémoire vectorielle des connaissances WoTx2 (.md/.pdf depuis Kind 30504, uDRIVE, Nextcloud) |
 
 ---
 

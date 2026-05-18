@@ -120,7 +120,7 @@ if [[ ${#_all_branches[@]} -gt 1 ]]; then
         echo -e "${YELLOW}🔧 Branches de correctif (fix/issue-*) :${NC}"
         _i=1
         for _b in "${_fix_branches[@]}"; do
-            local _star=""; [[ "$_b" == "$_cur_branch" ]] && _star=" ${GREEN}← courante${NC}"
+            _star=""; [[ "$_b" == "$_cur_branch" ]] && _star=" ${GREEN}← courante${NC}"
             printf "  [%d] %b%s%b\n" "$_i" "${GREEN}" "$_b" "${NC}${_star}"
             (( _i++ ))
         done
@@ -133,7 +133,7 @@ if [[ ${#_all_branches[@]} -gt 1 ]]; then
     for _b in "${_all_branches[@]}"; do
         # Ne pas relister les fix branches déjà affichées si elles existent
         [[ ${#_fix_branches[@]} -gt 0 ]] && printf '%s\n' "${_fix_branches[@]}" | grep -qx "$_b" && continue
-        local _star=""; [[ "$_b" == "$_cur_branch" ]] && _star=" ${GREEN}← courante${NC}"
+        _star=""; [[ "$_b" == "$_cur_branch" ]] && _star=" ${GREEN}← courante${NC}"
         printf "  [%s] %s%b\n" "$(( ${#_fix_branches[@]} + _j ))" "$_b" "${NC}${_star}"
         (( _j++ ))
     done
