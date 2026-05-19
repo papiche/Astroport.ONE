@@ -16,7 +16,7 @@ L'écosystème DID UPlanet s'étend au-delà de l'identité humaine pour inclure
 - **Vérification en Temps Réel** : Salles VDO.ninja liées aux DIDs pour la vérification
 - **Récompenses Économiques** : Ẑen distribués depuis le portefeuille ASSETS coopératif
 
-Pour plus de détails, voir [`ORE_SYSTEM.md`](./docs/ORE_SYSTEM.md).
+Pour plus de détails, voir [`ORE_SYSTEM.md`](ORE_SYSTEM.md).
 
 ### 🔐 Extension Oracle : Permis de Compétence WoT
 
@@ -29,7 +29,7 @@ Le système Oracle étend le Web of Trust (WoT) de l'**identité** vers la **com
 - **Récompenses Économiques** : Ẑen distribués depuis le portefeuille RnD coopératif
 - **Types de Permis** : ORE Verifier, Driver's License, WoT Dragon, Medical, Artisan, etc.
 
-Pour plus de détails, voir [`ORACLE_SYSTEM.md`](./docs/ORACLE_SYSTEM.md).
+Pour plus de détails, voir [`ORACLE_SYSTEM.md`](ORACLE_SYSTEM.md).
 
 Le script `make_NOSTRCARD.sh` génère des documents DID conformes aux standards [W3C DID Core v1.1](https://www.w3.org/TR/did-core-1.1/) et [W3C DID Resolution v1.0](https://www.w3.org/TR/did-resolution/), mais va bien au-delà en créant un écosystème complet de **ZEN Cards** (identité) et de **MULTIPASS** (autorisations).
 
@@ -1379,7 +1379,7 @@ Utilisateur UPlanet → Accès Refusé
 - [Relation de Confiance Décentralisée à 3 Tiers avec la Ğ1](https://www.copylaradio.com/blog/blog-1/post/relation-de-confiance-decentralisee-a-3-tiers-avec-la-g1-149) - Article fondateur sur CopyLaRadio
 - [MULTIPASS System Documentation](./MULTIPASS_SYSTEM.md) - Documentation complète du système MULTIPASS
 - [MULTIPASS Quick Reference](../templates/MULTIPASS_QUICK_REFERENCE.md) - Guide rapide utilisateur
-- [ORE System Documentation](./docs/ORE_SYSTEM.md) - Système d'Obligations Réelles Environnementales avec DIDs UMAP
+- [ORE System Documentation](ORE_SYSTEM.md) - Système d'Obligations Réelles Environnementales avec DIDs UMAP
 
 ### Outils et Implémentations
 

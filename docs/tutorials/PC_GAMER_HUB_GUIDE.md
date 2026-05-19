@@ -1325,10 +1325,10 @@ https://github.com/papiche/Astroport.ONE/blob/master/docs/contrib/0RE_WoTx2_Le_C
 ## 📚 Pour aller plus loin
 
 ### Documentation technique
-- **Guide WireGuard (SteamLink) :** `tools/wg-workflow-guide.md`
-- **Économie ẐEN :** `RUNTIME/ZEN.ECONOMY.readme.md`
-- **Système de badges WoTx2 :** `docs/WOTX2_SYSTEM.md`
-- **Système écologique ORE :** `docs/ORE_SYSTEM.md`
+- **Guide WireGuard (SteamLink) :** `how-to/config_wireguard_vpn.md`
+- **Économie ẐEN :** `explanation/ZEN.ECONOMY.v3.md`
+- **Système de badges WoTx2 :** `reference/WOTX2_SYSTEM.md`
+- **Système écologique ORE :** `explanation/ORE_SYSTEM.md`
 
 ### Liens utiles
 - **Linux Mint :** https://linuxmint.com (téléchargement)

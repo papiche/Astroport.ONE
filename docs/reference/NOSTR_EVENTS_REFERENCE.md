@@ -737,4 +737,4 @@ Vérification environnementale effectuée.
 - [NIP-101 Oracle Extension](../nostr-nips/42-oracle-permits-extension.md)
 - [NIP-101 Economic Health](../nostr-nips/101-economic-health-extension.md)
 - [Crowdfunding Contract](./UPlanet_CROWDFUNDING_CONTRACT.md)
-- [ZEN Economy](./ZEN.ECONOMY.readme.md)
+- [ZEN Economy](../explanation/ZEN.ECONOMY.v3.md)

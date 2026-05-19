@@ -341,7 +341,7 @@ Avant de commiter un script Bash qui manipule des secrets ou des paiements :
 
 ## Références
 
-- [keygen interface](../tools/keygen.readme.md) — Documentation du binaire de génération de clés
+- [keygen interface](../reference/cli_keygen_commands.md) — Documentation du binaire de génération de clés
 - [PAYforSURE.sh](../tools/PAYforSURE.sh) — Exemple de bonne pratique pour les paiements (secrets via fichier)
 - [G1check.sh](../tools/G1check.sh) — Exemple de validation de valeur numérique avant `bc`
-- [DRAGONS_and_TUNNELS.md](DRAGONS_and_TUNNELS.md) — Architecture de l'écosystème Astroport.ONE
+- [DRAGONS_and_TUNNELS.md](../how-to/DRAGONS_and_TUNNELS.md) — Architecture de l'écosystème Astroport.ONE

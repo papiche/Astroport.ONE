@@ -706,7 +706,7 @@ rm ~/.zen/game/todo_last_run.marker
 
 ## Voir aussi
 
-- [`docs/N2_MEMORY_SYSTEM.md`](N2_MEMORY_SYSTEM.md) — Architecture mémoire N² détaillée
-- [`docs/COLLABORATIVE_COMMONS_SYSTEM.md`](COLLABORATIVE_COMMONS_SYSTEM.md) — Global Commons et gouvernance
+- [`docs/N2_MEMORY_SYSTEM.md`](../explanation/N2_MEMORY_SYSTEM.md) — Architecture mémoire N² détaillée
+- [`docs/COLLABORATIVE_COMMONS_SYSTEM.md`](../how-to/COLLABORATIVE_COMMONS_SYSTEM.md) — Global Commons et gouvernance
 - [`code_assistant_DOC.md`](../code_assistant_DOC.md) — Assistant IA pour l'analyse de code
 - [`plans/todo_code_assistant_integration.md`](../../plans/todo_code_assistant_integration.md) — Feuille de route des phases 2-4

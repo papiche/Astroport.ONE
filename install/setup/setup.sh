@@ -11,23 +11,28 @@ ME="${0##*/}"
 echo "#############################################"
 echo "######### HOSTNAME SETUP  ###################"
 echo "#############################################"
-WORD=$($HOME/.zen/Astroport.ONE/tools/diceware.sh 1)
-NUMBER=$(printf "%02d" $((RANDOM % 99 + 1)))
-NEW_HOSTNAME="${WORD}-${NUMBER}"
-echo "NOUVEAU Hostname : $NEW_HOSTNAME"
-# Appliquer hostname
-sudo hostnamectl set-hostname "$NEW_HOSTNAME"
-# Assurer cohérence /etc/hosts
-if grep -q "127.0.1.1" /etc/hosts; then
-    sudo sed -i "s/^127.0.1.1.*/127.0.1.1\t$NEW_HOSTNAME/" /etc/hosts
+if [[ $(hostname) =~ -[0-9]{2}$ ]]; then
+    echo "✅ Hostname conforme détecté : $(hostname)"
+    NEW_HOSTNAME=$(hostname)
 else
-    echo -e "127.0.1.1\t$NEW_HOSTNAME" | sudo tee -a /etc/hosts
+    WORD=$($HOME/.zen/Astroport.ONE/tools/diceware.sh 1)
+    NUMBER=$(printf "%02d" $((RANDOM % 99 + 1)))
+    NEW_HOSTNAME="${WORD}-${NUMBER}"
+    echo "NOUVEAU Hostname : $NEW_HOSTNAME"
+    # Appliquer hostname
+    sudo hostnamectl set-hostname "$NEW_HOSTNAME"
+    # Assurer cohérence /etc/hosts
+    if grep -q "127.0.1.1" /etc/hosts; then
+        sudo sed -i "s/^127.0.1.1.*/127.0.1.1\t$NEW_HOSTNAME/" /etc/hosts
+    else
+        echo -e "127.0.1.1\t$NEW_HOSTNAME" | sudo tee -a /etc/hosts
+    fi
 fi
 # Vérification
-hostname
+
 
 echo "#############################################"
-echo "######### IPFS SETUP  #########################"
+echo "######### IPFS SETUP  ## $(hostname) ##"
 echo "#############################################"
 
 echo "=== SETUP IPFS"
@@ -181,9 +186,9 @@ sudo systemctl restart astroport
 ACTUAL=$(cat /etc/resolv.conf | grep -w nameserver | head -n 1)
 
 if [[ $(echo $ACTUAL | grep "1.1.1.1") == "" ]] ; then
-########################################################################
-echo "ADDING nameserver 1.1.1.1 TO /etc/resolv.conf TO BYPASS COUNTRY RESTRICTIONS"
-########################################################################
+    ########################################################################
+    echo "ADDING nameserver 1.1.1.1 TO /etc/resolv.conf TO BYPASS COUNTRY RESTRICTIONS"
+    ########################################################################
     sudo chattr -i /etc/resolv.conf
 
     sudo cat > /tmp/resolv.conf <<EOF

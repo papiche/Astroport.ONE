@@ -520,7 +520,7 @@ if (isV2) {
 
 ### Format Reference
 
-📖 **Complete documentation**: [INFO_JSON_FORMATS.md](../INFO_JSON_FORMATS.md)
+📖 **Complete documentation**: [INFO_JSON_FORMATS.md](../reference/INFO_JSON_FORMATS.md)
 
 **Quick example (v2.0)**:
 ```json

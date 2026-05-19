@@ -338,11 +338,11 @@ LOVE DONATION (Ẑen) → Kind 30305 (DU incrément) → Bon TrocZen 28j TTL
 
 - **ZEN.ECONOMY.v2.md** : `Astroport.ONE/docs/ZEN.ECONOMY.v2.md` (version précédente)
 - **TrocZen DU Service** : `TrocZen/troczen/lib/services/du_calculation_service.dart`
-- **Système ORE** : `Astroport.ONE/docs/ORE_SYSTEM.md`
-- **Documents collaboratifs** : `Astroport.ONE/docs/COLLABORATIVE_COMMONS_SYSTEM.md`
-- **Système PlantNet** : `Astroport.ONE/docs/PLANTNET_SYSTEM.md`
-- **Politique d'intrusion** : `Astroport.ONE/docs/ZEN.INTRUSION.POLICY.md`
-- **Oracle** : `Astroport.ONE/docs/ORACLE_SYSTEM.md`
+- **Système ORE** : `../explanation/ORE_SYSTEM.md`
+- **Documents collaboratifs** : `../how-to/COLLABORATIVE_COMMONS_SYSTEM.md`
+- **Système PlantNet** : `../how-to/PLANTNET_SYSTEM.md`
+- **Politique d'intrusion** : `../reference/ZEN.INTRUSION.POLICY.md`
+- **Oracle** : `../explanation/ORACLE_SYSTEM.md`
 
 ---
 

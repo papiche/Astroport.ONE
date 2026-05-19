@@ -77,6 +77,23 @@ print_ipfs_instructions() {
 # Configuration interactive
 interactive_setup() {
     echo -e "\n${BLUE}=== Configuration Client WireGuard ===${NC}"
+    if [[ -f "$WG_CONFIG" ]]; then
+        echo ""
+        echo -e "${YELLOW}⚠️ Configuration existante détectée dans $WG_CONFIG :${NC}"
+        echo -e "${CYAN}------------------------------------------------${NC}"
+        sudo cat "$WG_CONFIG"
+        echo -e "${CYAN}------------------------------------------------${NC}"
+        if [[ -f "$KEYS_DIR/client.pub" ]]; then
+            echo -e "🔑 Clé publique : ${WHITE}$(sudo cat "$KEYS_DIR/client.pub")${NC}"
+        fi
+        echo ""
+        read -p "Voulez-vous écraser et recréer cette configuration ? [y/N] " OVERWRITE
+        if [[ ! "$OVERWRITE" =~ ^[Yy]$ ]]; then
+            echo -e "${GREEN}Conservation de la configuration actuelle. Sortie.${NC}"
+            echo -e "💡 Astuce : Lancez \"$0 qr\" pour afficher le QR code."
+            exit 0
+        fi
+    fi
 
     read -p "Adresse du serveur (IP ou domaine) : " SERVER_ENDPOINT
     read -p "Port du serveur [51820] : " SERVER_PORT

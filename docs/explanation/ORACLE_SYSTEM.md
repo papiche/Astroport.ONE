@@ -5,7 +5,7 @@
 **Status**: Production — Permits Officiels (Oracle) + Maîtrises Folksonomiques (Client Flutter P2P)  
 **License**: AGPL-3.0
 
-> **Séparation des rôles (v3.1)** : L'Oracle (`ORACLE.refresh.sh`) gère désormais **uniquement les Permits Officiels Statiques** (ex : Permis de l'Astroport, droits d'administration). La progression des **Maîtrises Auto-Proclamées (WoTx2)** est entièrement déportée vers le client Flutter lourd, qui calcule le consensus P2P localement et auto-émet les Skill Achievements (Kind 30503) avec preuves cryptographiques intégrées. Voir [TrocZen/docs/WOTX2_SYSTEM.md](../../TrocZen/docs/WOTX2_SYSTEM.md) pour le protocole WoTx2 complet.
+> **Séparation des rôles (v3.1)** : L'Oracle (`ORACLE.refresh.sh`) gère désormais **uniquement les Permits Officiels Statiques** (ex : Permis de l'Astroport, droits d'administration). La progression des **Maîtrises Auto-Proclamées (WoTx2)** est entièrement déportée vers le client Flutter lourd, qui calcule le consensus P2P localement et auto-émet les Skill Achievements (Kind 30503) avec preuves cryptographiques intégrées. Voir [WOTX2_SYSTEM.md](../reference/WOTX2_SYSTEM.md) pour le protocole WoTx2 complet.
 
 ---
 
@@ -121,7 +121,7 @@ Client Flutter (TrocZen) — WoTx2 uniquement :
 
 Le système **WoTx2** permet la création de **maîtrises auto-proclamées** qui évoluent de niveau en niveau par consensus décentralisé. La progression est calculée **côté client Flutter** (TrocZen), non par l'Oracle.
 
-Voir le protocole complet dans [TrocZen/docs/WOTX2_SYSTEM.md](../../TrocZen/docs/WOTX2_SYSTEM.md) (Règle A : consensus, Règle B : adoubement).
+Voir le protocole complet dans [WOTX2_SYSTEM.md](../reference/WOTX2_SYSTEM.md) (Règle A : consensus, Règle B : adoubement).
 
 ### 3.2. Workflow de Progression (Client Flutter)
 
@@ -936,7 +936,7 @@ Le Système Oracle v3.1 assure une **séparation claire des responsabilités** :
 - ✅ Les Kind 30503 WoTx2 sont auto-signés avec preuves cryptographiques intégrées
 - ✅ L'authentification NIP-42 reste requise pour les seuls Permits Officiels
 
-**Roadmap WoTx2** : traitement algorithmique des dislikes (Kind 7 `-`) pour la bifurcation des toiles de confiance. Voir [TrocZen/docs/WOTX2_SYSTEM.md §3.4](../../TrocZen/docs/WOTX2_SYSTEM.md).
+**Roadmap WoTx2** : traitement algorithmique des dislikes (Kind 7 `-`) pour la bifurcation des toiles de confiance. Voir [../reference/WOTX2_SYSTEM.md](../../TrocZen/docs/WOTX2_SYSTEM.md).
 
 ---
 

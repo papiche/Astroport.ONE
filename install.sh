@@ -71,6 +71,11 @@ export CUSTOM_CAPTAIN_EMAIL="${1:-${CAPTAIN_EMAIL:-}}"
 export CUSTOM_NODE_DOMAIN="${2:-${NODE_DOMAIN:-}}"
 export CUSTOM_EMAIL_DOMAIN="${3:-${CAPTAIN_EMAIL_DOMAIN:-}}"
 export INSTALL_PROFILE="${4:-${INSTALL_PROFILE:-}}"
+## Charger la configuration existante si elle est présente
+[[ -f ~/.zen/Astroport.ONE/.env ]] && source ~/.zen/Astroport.ONE/.env
+export CUSTOM_CAPTAIN_EMAIL="${CUSTOM_CAPTAIN_EMAIL:-${CAPTAIN_EMAIL:-}}"
+export CUSTOM_NODE_DOMAIN="${CUSTOM_NODE_DOMAIN:-${NODE_DOMAIN:-}}"
+export CUSTOM_EMAIL_DOMAIN="${CUSTOM_EMAIL_DOMAIN:-${CAPTAIN_EMAIL_DOMAIN:-}}"
 
 ########################################################################
 echo "## HARDWARE CHECK (détection avant toute question) ##"
@@ -154,6 +159,7 @@ if [[ -z "$INSTALL_PROFILE" ]]; then
     read -r -p "Profil [standard] : " INSTALL_PROFILE
 fi
 echo ">>> Profil : ${INSTALL_PROFILE:-standard}"
+_env_upsert "INSTALL_PROFILE" "${INSTALL_PROFILE:-standard}" "${HOME}/.zen/Astroport.ONE/.env"
 
 ########################################################################
 ## FAIL-FAST ai-company — vérification GPU AVANT tout téléchargement
@@ -194,9 +200,9 @@ sudo apt-get update
 sudo apt install -y git
 mkdir -p ~/.zen/workspace
 cd ~/.zen/workspace
-git clone --depth 1 https://github.com/papiche/UPlanet
+if [ -d UPlanet ]; then cd UPlanet && git pull && cd ..; else git clone --depth 1 https://github.com/papiche/UPlanet; fi
 cd ~/.zen
-git clone --depth 1 https://github.com/papiche/Astroport.ONE.git
+if [ -d Astroport.ONE ]; then cd Astroport.ONE && git pull && cd ..; else git clone --depth 1 https://github.com/papiche/Astroport.ONE.git; fi
 # TODO INSTALL FROM IPFS / IPNS
 
 ## S'assurer que tous les scripts principaux sont exécutables après le clone

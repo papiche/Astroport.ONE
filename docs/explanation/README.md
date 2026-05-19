@@ -30,7 +30,6 @@ philosophie du projet. Discursif, analytique, visionnaire.
 
 | Fichier | Contenu | Priorité |
 |---------|---------|----------|
-| [architecture_overview.md](architecture_overview.md) | Vue d'ensemble synthétique : IPFS+NOSTR+Ğ1, flux de données, couches | 🔴 Haute |
 | [identity_did_ssss_multipass.md](identity_did_ssss_multipass.md) | Philosophie de l'identité souveraine : SSSS, DID, MULTIPASS vs ZenCard | 🟡 Moyenne |
 | [wot_and_oracle_system.md](wot_and_oracle_system.md) | Web of Trust dual (Oracle officiel + P2P pair-à-pair) — choix de conception | 🟡 Moyenne |
 | [manifesto_anarchitecte.md](manifesto_anarchitecte.md) | Manifeste de l'anarchitecte — souveraineté numérique ↔ régénération écologique | 🟢 Basse (existe dans ANARCHITECTE.md à la racine) |

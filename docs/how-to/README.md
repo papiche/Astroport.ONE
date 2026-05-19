@@ -25,11 +25,11 @@ ce guide lui dit comment le faire.
 | [CODEBASE_EMBEDDINGS.md](CODEBASE_EMBEDDINGS.md) | Indexer le code source dans Qdrant (recherche sémantique) |
 | [KNOWLEDGE_EMBEDDINGS.md](KNOWLEDGE_EMBEDDINGS.md) | Indexer les docs WoTx2 dans Qdrant (Kind 30504, uDRIVE, Nextcloud) |
 | [GRIMOIRE_LIVE.md](GRIMOIRE_LIVE.md) | Générer des vidéos WoTx2 et faire du live streaming (NIP-53) |
+| [config_wireguard_vpn.md](config_wireguard_vpn.md) | Configurer WireGuard pour la communication inter-stations |
+| [print_multipass_cards.md](print_multipass_cards.md) | Imprimer les QR codes MULTIPASS et ZenCards |
+| [publish_nostrtube_video.md](publish_nostrtube_video.md) | Uploader et publier une vidéo sur NostrTube |
 
 ## À créer
 
 | Fichier | Tâche | Priorité |
 |---------|-------|----------|
-| [config_wireguard_vpn.md](config_wireguard_vpn.md) | Configurer WireGuard pour la communication inter-stations | 🟡 Moyenne |
-| [print_multipass_cards.md](print_multipass_cards.md) | Imprimer les QR codes MULTIPASS et ZenCards | 🟡 Moyenne |
-| [publish_nostrtube_video.md](publish_nostrtube_video.md) | Uploader et publier une vidéo sur NostrTube | 🟡 Moyenne |

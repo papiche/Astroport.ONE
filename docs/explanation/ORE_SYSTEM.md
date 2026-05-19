@@ -277,9 +277,9 @@ C'est cette accessibilité qui permettra au "cadastre écologique" de devenir un
 
 - **Interface PlantNet** : `UPlanet/earth/plantnet.html`
 - **Commons Editor** : `UPlanet/earth/collaborative-editor.html`
-- **Système PlantNet** : `Astroport.ONE/docs/PLANTNET_SYSTEM.md`
-- **Documents Collaboratifs** : `Astroport.ONE/docs/COLLABORATIVE_COMMONS_SYSTEM.md`
-- **Journaux N²** : `Astroport.ONE/docs/JOURNAUX_N2_NOSTRCARD.md`
+- **Système PlantNet** : `../how-to/PLANTNET_SYSTEM.md`
+- **Documents Collaboratifs** : `../how-to/COLLABORATIVE_COMMONS_SYSTEM.md`
+- **Journaux N²** : `../reference/JOURNAUX_N2_NOSTRCARD.md`
 - **Script UMAP** : `Astroport.ONE/RUNTIME/NOSTR.UMAP.refresh.sh`
 - **Tracker Python** : `Astroport.ONE/tools/ore_system.py`
 

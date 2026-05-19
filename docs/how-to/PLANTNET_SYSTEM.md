@@ -392,9 +392,9 @@ Astroport.ONE/
 
 - **Interface** : `UPlanet/earth/plantnet.html`
 - **Commons Editor** : `UPlanet/earth/collaborative-editor.html`
-- **Système ORE** : `Astroport.ONE/docs/ORE_SYSTEM.md`
-- **Documents Collaboratifs** : `Astroport.ONE/docs/COLLABORATIVE_COMMONS_SYSTEM.md`
-- **Journaux N²** : `Astroport.ONE/docs/JOURNAUX_N2_NOSTRCARD.md`
+- **Système ORE** : `../explanation/ORE_SYSTEM.md`
+- **Documents Collaboratifs** : `COLLABORATIVE_COMMONS_SYSTEM.md`
+- **Journaux N²** : `../reference/JOURNAUX_N2_NOSTRCARD.md`
 - **PlantNet** : https://plantnet.org
 - **Nostr NIPs** : https://github.com/nostr-protocol/nips
 

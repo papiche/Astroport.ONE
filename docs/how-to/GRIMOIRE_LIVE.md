@@ -296,7 +296,7 @@ Pour découvrir les sessions LIVE actives depuis la home page, chercher Kind 303
 |---------|---------------|
 | `UPlanet/earth/grimoire.js` | **NOUVEAU** — Module IIFE FFmpeg WASM |
 | `UPlanet/earth/minelife.html` | +grimoire.js script tag, +drop zone vidéo, +bouton CV Vidéo, +hook post-craft, +bouton LIVE topbar, +panel LIVE, +fonctions LIVE JS |
-| `Astroport.ONE/docs/how-to/GRIMOIRE_LIVE.md` | **CE FICHIER** — documentation |
+| `how-to/GRIMOIRE_LIVE.md` | **CE FICHIER** — documentation |
 
 Les fichiers `earth/ffmpeg/*.{js,wasm}` ne sont **pas** dans le repo (build séparé).
 

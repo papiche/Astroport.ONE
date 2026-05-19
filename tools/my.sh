@@ -685,8 +685,8 @@ _captainemail_from_current=$(cat $HOME/.zen/game/players/.current/.player 2>/dev
     && CAPTAINEMAIL="$_captainemail_from_current" \
     || CAPTAINEMAIL="${CAPTAINEMAIL:-}"
 unset _captainemail_from_current
-CAPTAINHEX=$(cat $HOME/.zen/game/nostr/${CAPTAINEMAIL}/HEX 2>/dev/null) ## PLAYER ONE HEX
-CAPTAING1PUB=$(cat $HOME/.zen/game/nostr/${CAPTAINEMAIL}/G1PUBNOSTR 2>/dev/null) ## PLAYER ONE MULTIPASS G1PUBNOSTR
+export CAPTAINHEX=$(cat $HOME/.zen/game/nostr/${CAPTAINEMAIL}/HEX 2>/dev/null) ## PLAYER ONE HEX
+export CAPTAING1PUB=$(cat $HOME/.zen/game/nostr/${CAPTAINEMAIL}/G1PUBNOSTR 2>/dev/null) ## PLAYER ONE MULTIPASS G1PUBNOSTR
 
 # =========================================================================
 # GESTION DYNAMIQUE DU CHANGEMENT DE SWARM.KEY ET CACHES (HAUTES PERFORMANCES)
@@ -742,20 +742,20 @@ init_and_cache_wallet() {
 
 ## Application immédiate sur tous les portefeuilles de l'écosystème UPLANET :
 ## Cela garantit que tous les .dunikey existent physiquement sur le disque pour PAYforSURE.sh etc.
-UPLANETNAME_G1=$(init_and_cache_wallet "uplanet.G1" "${UPLANETNAME}.G1" "UPLANETNAME_G1")
-UPLANETG1PUB=$(init_and_cache_wallet "uplanet" "${UPLANETNAME}" "UPLANETG1PUB")
-UPLANETNAME_SOCIETY=$(init_and_cache_wallet "uplanet.SOCIETY" "${UPLANETNAME}.SOCIETY" "UPLANETNAME_SOCIETY")
-UPLANETNAME_INTRUSION=$(init_and_cache_wallet "uplanet.INTRUSION" "${UPLANETNAME}.INTRUSION" "UPLANETNAME_INTRUSION")
-UPLANETNAME_CAPITAL=$(init_and_cache_wallet "uplanet.CAPITAL" "${UPLANETNAME}.CAPITAL" "UPLANETNAME_CAPITAL")
-UPLANETNAME_AMORTISSEMENT=$(init_and_cache_wallet "uplanet.AMORTISSEMENT" "${UPLANETNAME}.AMORTISSEMENT" "UPLANETNAME_AMORTISSEMENT")
-UPLANETNAME_IMPOT=$(init_and_cache_wallet "uplanet.IMPOT" "${UPLANETNAME}.IMPOT" "UPLANETNAME_IMPOT")
-UPLANETNAME_TREASURY=$(init_and_cache_wallet "uplanet.CASH" "${UPLANETNAME}.TREASURY" "UPLANETNAME_TREASURY")
-UPLANETNAME_ASSETS=$(init_and_cache_wallet "uplanet.ASSETS" "${UPLANETNAME}.ASSETS" "UPLANETNAME_ASSETS")
-UPLANETNAME_RND=$(init_and_cache_wallet "uplanet.RnD" "${UPLANETNAME}.RND" "UPLANETNAME_RND")
+export UPLANETNAME_G1=$(init_and_cache_wallet "uplanet.G1" "${UPLANETNAME}.G1" "UPLANETNAME_G1")
+export UPLANETG1PUB=$(init_and_cache_wallet "uplanet" "${UPLANETNAME}" "UPLANETG1PUB")
+export UPLANETNAME_SOCIETY=$(init_and_cache_wallet "uplanet.SOCIETY" "${UPLANETNAME}.SOCIETY" "UPLANETNAME_SOCIETY")
+export UPLANETNAME_INTRUSION=$(init_and_cache_wallet "uplanet.INTRUSION" "${UPLANETNAME}.INTRUSION" "UPLANETNAME_INTRUSION")
+export UPLANETNAME_CAPITAL=$(init_and_cache_wallet "uplanet.CAPITAL" "${UPLANETNAME}.CAPITAL" "UPLANETNAME_CAPITAL")
+export UPLANETNAME_AMORTISSEMENT=$(init_and_cache_wallet "uplanet.AMORTISSEMENT" "${UPLANETNAME}.AMORTISSEMENT" "UPLANETNAME_AMORTISSEMENT")
+export UPLANETNAME_IMPOT=$(init_and_cache_wallet "uplanet.IMPOT" "${UPLANETNAME}.IMPOT" "UPLANETNAME_IMPOT")
+export UPLANETNAME_TREASURY=$(init_and_cache_wallet "uplanet.CASH" "${UPLANETNAME}.TREASURY" "UPLANETNAME_TREASURY")
+export UPLANETNAME_ASSETS=$(init_and_cache_wallet "uplanet.ASSETS" "${UPLANETNAME}.ASSETS" "UPLANETNAME_ASSETS")
+export UPLANETNAME_RND=$(init_and_cache_wallet "uplanet.RnD" "${UPLANETNAME}.RND" "UPLANETNAME_RND")
 
 # Portefeuille CAPTAIN
 if [[ -n "${CAPTAINEMAIL}" ]]; then
-    UPLANETNAME_CAPTAIN=$(init_and_cache_wallet "uplanet.captain" "${UPLANETNAME}.${CAPTAINEMAIL}")
+    export UPLANETNAME_CAPTAIN=$(init_and_cache_wallet "uplanet.captain" "${UPLANETNAME}.${CAPTAINEMAIL}")
 fi
 
 ## IDENTITÉ NOSTR uplanet.G1 (Générée sur disque pour les autres scripts)
@@ -773,7 +773,7 @@ fi
 cache_node="$HOME/.zen/game/node_ss58.cache"
 if [[ -f "$HOME/.zen/game/secret.NODE.dunikey" ]]; then
     if [[ -f "$cache_node" ]]; then
-        UPLANETNAME_NODE=$(cat "$cache_node")
+        export UPLANETNAME_NODE=$(cat "$cache_node")
     else
         UPLANETNAME_NODE=$(cat "$HOME/.zen/game/secret.NODE.dunikey" | grep "pub" | cut -d " " -f 2)
         UPLANETNAME_NODE=$("$HOME/.zen/Astroport.ONE/tools/g1pub_to_ss58.py" "${UPLANETNAME_NODE}")
@@ -781,7 +781,7 @@ if [[ -f "$HOME/.zen/game/secret.NODE.dunikey" ]]; then
     fi
 elif [[ -n "$IPFSNODEID" ]]; then
     if [[ -f "$cache_node" ]]; then
-        UPLANETNAME_NODE=$(cat "$cache_node")
+        export UPLANETNAME_NODE=$(cat "$cache_node")
     else
         UPLANETNAME_NODE=$("$HOME/.zen/Astroport.ONE/tools/ipfs_to_g1.py" "$IPFSNODEID")
         UPLANETNAME_NODE=$("$HOME/.zen/Astroport.ONE/tools/g1pub_to_ss58.py" "${UPLANETNAME_NODE}")
@@ -792,14 +792,14 @@ else
 fi
 
 # =========================================================================
-
+## MY_boostrap_nodes -- NODE specific bootstrap list 
 [[ -s ${HOME}/.zen/game/MY_boostrap_nodes.txt ]] \
     && STRAPFILE="${HOME}/.zen/game/MY_boostrap_nodes.txt" \
     || STRAPFILE="${HOME}/.zen/Astroport.ONE/A_boostrap_nodes.txt"
 
-TODATE=$(date -d "today 13:00" '+%Y-%m-%d')
-YESTERDATE=$(date -d "yesterday 13:00" '+%Y-%m-%d')
-DEMAINDATE=$(date -d "tomorrow 13:00" '+%Y-%m-%d')
+export TODATE=$(date -d "today 13:00" '+%Y-%m-%d')
+export YESTERDATE=$(date -d "yesterday 13:00" '+%Y-%m-%d')
+export DEMAINDATE=$(date -d "tomorrow 13:00" '+%Y-%m-%d')
 
 ## Charger les clés coopératives (MJ_APIKEY etc.) depuis le cache NOSTR local
 if [[ -f "${HOME}/.zen/Astroport.ONE/tools/cooperative_config.sh" ]]; then

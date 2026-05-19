@@ -592,8 +592,8 @@ Toutes les transactions sont enregistrées :
 
 - **CLI** : `Astroport.ONE/tools/CROWDFUNDING.sh`
 - **Web** : `UPlanet/earth/crowdfunding.html`
-- **Docs** : `Astroport.ONE/docs/CROWDFUNDING_COMMUNS.md`
-- **Contract** : `Astroport.ONE/docs/UPlanet_CROWDFUNDING_CONTRACT.md`
+- **Docs** : `CROWDFUNDING_COMMUNS.md`
+- **Contract** : `../reference/UPlanet_CROWDFUNDING_CONTRACT.md`
 - **321 DU** : `Astroport.ONE/321_DU.md` (système de vœux connexe)
 - **UPLANET.official.sh** : `Astroport.ONE/UPLANET.official.sh`
 
