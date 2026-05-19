@@ -150,17 +150,26 @@ Tous les routers sont montés à la racine (pas de préfixe path). Les routes so
 
 | Méthode | Endpoint | Auth | Description |
 |---------|----------|------|-------------|
-| `GET` | `/qr` | Aucune | Générer QR MULTIPASS/ZenCard |
-| `POST` | `/qr` | Aucune | Générer QR MULTIPASS/ZenCard (body) |
+| `GET` | `/qr` | Aucune | Générateur QR générique (`data=` requis) · `html=1` → interface web |
+| `POST` | `/qr` | Aucune | Générateur QR générique (body multipart — supporte upload d'image de fond) |
 
 **Paramètres `/qr` :**
 
-| Paramètre | Type | Notes |
-|-----------|------|-------|
-| `email` | string | Requis |
-| `lat` | float | Optionnel |
-| `lon` | float | Optionnel |
-| `style` | string | `ticket` \| `ZenCard` \| `ZENCARD+@` (défaut : `ticket`) |
+| Paramètre | Type | Défaut | Notes |
+|-----------|------|--------|-------|
+| `html` | int | — | `?html=1` → renvoie l'interface de configuration HTML |
+| `data` | string | **requis** | Contenu à encoder dans le QR (URL, clé G1, texte…) |
+| `version` | int 1–40 | `1` | Version QR (auto-incrémentée si overflow de données) |
+| `level` | string | `H` | Niveau de correction d'erreur : `L` / `M` / `Q` / `H` |
+| `colorized` | int 0\|1 | `0` | Coloriser le QR depuis l'image de fond (`amzqr` requis) |
+| `contrast` | float | `1.0` | Contraste de l'image de fond (0.1–3.0) |
+| `brightness` | float | `1.0` | Luminosité de l'image de fond (0.1–3.0) |
+| `picture_url` | string | — | URL d'une image à télécharger comme fond artistique |
+| `color` | string | `000000` | Couleur modules QR en RRGGBB (fallback qrencode uniquement) |
+| `bgcolor` | string | `ffffff` | Couleur fond en RRGGBB (fallback qrencode uniquement) |
+| `format` | string | `png` | `png` → image directe · `json` → `{dataUrl, data, engine}` |
+
+> **Note :** pour les billets et cartes formatées (ticket, ZenCard, ZENCARD+@), utiliser **G1BILLET** (port 33101) : `http://localhost:33101/?montant=10&style=ZenCard`.
 
 ---
 
@@ -230,11 +239,27 @@ Tous les routers sont montés à la racine (pas de préfixe path). Les routes so
 | `GET` | `/cookie` | Aucune | Guide export cookies (Netscape format) |
 | `GET` | `/terms` | Aucune | Conditions d'utilisation |
 | `GET` | `/n8n` | Aucune | Workflow builder pour automatisations cookie |
-| `GET` | `/video` | Aucune | Redirection page vidéo |
-| `GET` | `/audio` | Aucune | Redirection page audio |
+| `GET` | `/video` | Aucune | Redirection → `/youtube?html=1` |
+| `GET` | `/audio` | Aucune | Redirection → `/mp3?html=1` |
 | `GET` | `/12345` | Aucune | Proxy HTTP vers station API locale (port 12345) |
 | `GET` | `/credentials/v1` | Aucune | Contexte JSON-LD Verifiable Credentials |
 | `GET` | `/ns/v1` | Aucune | Contexte JSON-LD DID namespace |
+
+## Interfaces HTML (routes simples)
+
+Routes servant directement un template HTML, sans logique serveur.
+
+| Méthode | Endpoint | Template | Description |
+|---------|----------|----------|-------------|
+| `GET` | `/g1` | `g1nostr.html` | Interface MULTIPASS (alias GET de `POST /g1nostr`) |
+| `GET` | `/scan` | `scan_new.html` | Scanner QR MULTIPASS / ZenCard |
+| `GET` | `/scan_multipass_payment.html` | `scan_multipass_payment.html` | Interface paiement via scan |
+| `GET` | `/upload` | `upload2ipfs.html` | Interface upload fichier → IPFS |
+| `GET` | `/vocals` | `vocals.html` | Interface enregistrement vocal |
+| `GET` | `/vocals-read` | `vocals-read.html` | Lecteur de messages vocaux |
+| `GET` | `/cloud` | `cloud.html` | Interface stockage cloud |
+| `GET` | `/dev` | `dev.html` | Outils développeur |
+| `GET` | `/blog` | `nostr_blog.html` | Blog NOSTR |
 
 ---
 

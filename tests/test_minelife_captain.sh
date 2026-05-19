@@ -124,16 +124,16 @@ _pub_c() {
 ## ─────────────────────────────────────────────────────────────────────────────
 ## Dériver les clés (nécessaire aussi pour le reset)
 ## ─────────────────────────────────────────────────────────────────────────────
-_COUCOU_NPUB=$("$KEYGEN" -t nostr "coucou" "coucou" 2>/dev/null)
-_COUCOU_NSEC=$("$KEYGEN" -t nostr -s "coucou" "coucou" 2>/dev/null)
+_COUCOU_NPUB=$("$KEYGEN" -t nostr "c0uc0u" "c0uc0u" 2>/dev/null)
+_COUCOU_NSEC=$("$KEYGEN" -t nostr -s "c0uc0u" "c0uc0u" 2>/dev/null)
 _COUCOU_HEX=$(python3 "${ASTROPORT_PATH}/tools/nostr2hex.py" "$_COUCOU_NPUB" 2>/dev/null)
 
-_TOTO_NPUB=$("$KEYGEN" -t nostr "toto" "toto" 2>/dev/null)
-_TOTO_NSEC=$("$KEYGEN" -t nostr -s "toto" "toto" 2>/dev/null)
+_TOTO_NPUB=$("$KEYGEN" -t nostr "t0t0" "t0t0" 2>/dev/null)
+_TOTO_NSEC=$("$KEYGEN" -t nostr -s "t0t0" "t0t0" 2>/dev/null)
 _TOTO_HEX=$(python3 "${ASTROPORT_PATH}/tools/nostr2hex.py" "$_TOTO_NPUB" 2>/dev/null)
 
-_JEAN_NPUB=$("$KEYGEN" -t nostr "jean" "jean" 2>/dev/null)
-_JEAN_NSEC=$("$KEYGEN" -t nostr -s "jean" "jean" 2>/dev/null)
+_JEAN_NPUB=$("$KEYGEN" -t nostr "j3an" "j3an" 2>/dev/null)
+_JEAN_NSEC=$("$KEYGEN" -t nostr -s "j3an" "j3an" 2>/dev/null)
 _JEAN_HEX=$(python3 "${ASTROPORT_PATH}/tools/nostr2hex.py" "$_JEAN_NPUB" 2>/dev/null)
 
 _CAP_LABEL="capitaine (test)"
@@ -232,12 +232,12 @@ _TOTO_RELAY="$_REMOTE_RELAY"
 _CAP_RELAY="$_LOCAL_RELAY";     $_local_ok || _CAP_RELAY="$_REMOTE_RELAY"
 
 ## ─────────────────────────────────────────────────────────────────────────────
-section "1. Clés — coucou, jean, toto + Capitaine"
+section "1. Clés — c0uc0u, j3an, t0t0 + Capitaine"
 ## ─────────────────────────────────────────────────────────────────────────────
 
-[[ ${#_COUCOU_HEX} -eq 64 ]] && ok "coucou ${_COUCOU_HEX:0:12}... (support+coucou@qo-op.com)" || fail "dérivation coucou échouée"
-[[ ${#_TOTO_HEX}   -eq 64 ]] && ok "toto   ${_TOTO_HEX:0:12}... (support+toto@qo-op.com)"    || fail "dérivation toto échouée"
-[[ ${#_JEAN_HEX}   -eq 64 ]] && ok "jean   ${_JEAN_HEX:0:12}... (support+jean@qo-op.com)"    || fail "dérivation jean échouée"
+[[ ${#_COUCOU_HEX} -eq 64 ]] && ok "c0uc0u ${_COUCOU_HEX:0:12}... (support+coucou@qo-op.com)" || fail "dérivation c0uc0u échouée"
+[[ ${#_TOTO_HEX}   -eq 64 ]] && ok "t0t0   ${_TOTO_HEX:0:12}... (support+toto@qo-op.com)"    || fail "dérivation t0t0 échouée"
+[[ ${#_JEAN_HEX}   -eq 64 ]] && ok "j3an   ${_JEAN_HEX:0:12}... (support+jean@qo-op.com)"    || fail "dérivation j3an échouée"
 [[ ${#_CAP_HEX}    -eq 64 ]] && ok "Capitaine ${_CAP_HEX:0:12}... ($_CAP_LABEL)"              || { fail "dérivation capitaine échouée"; exit 1; }
 
 ## amisOfAmis.txt — relay local accepte les 4 comptes

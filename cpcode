@@ -116,14 +116,19 @@ for EXT in "${EXTENSIONS[@]}"; do
         FILENAME=$(basename "$FILE" | sed "s/\.$EXT$//")
         echo "Ajout de : $FILE"
 
-        # Lire le contenu (avec limite optionnelle par fichier)
-        if [ "$MAX_FILE_SIZE" -gt 0 ]; then
-            CONTENT=$(head -c "$MAX_FILE_SIZE" "$FILE")
-            local FULL_SIZE
-            FULL_SIZE=$(wc -c < "$FILE" 2>/dev/null || echo 0)
-            if [ "$FULL_SIZE" -gt "$MAX_FILE_SIZE" ]; then
-                CONTENT="${CONTENT}"$'\n'"[... TRONQUÉ à ${MAX_FILE_SIZE} octets / ${FULL_SIZE} total ...]"
+        # --- Remplacement de la lecture classique par RTK ---
+        if command -v rtk >/dev/null 2>&1; then
+            # Utilise rtk read pour un contenu optimisé en tokens
+            # On passe --no-header pour ne pas doubler les infos de chemin
+            CONTENT=$(rtk read --no-header "$FILE" 2>/dev/null)
+            
+            # Si rtk échoue ou renvoie vide (ex: fichier ignoré par rtk), fallback
+            if [ -z "$CONTENT" ]; then
+                CONTENT=$(cat "$FILE")
             fi
+        elif [ "$MAX_FILE_SIZE" -gt 0 ]; then
+            CONTENT=$(head -c "$MAX_FILE_SIZE" "$FILE")
+            # ... (ton code de troncature actuel)
         else
             CONTENT=$(cat "$FILE")
         fi
@@ -176,6 +181,10 @@ if $JSON_MODE; then
         echo '  ]'
         echo "}"
     } > "$JSON_FINAL"
+    # Compresser le JSON final avec rtk
+    if command -v rtk >/dev/null 2>&1; then
+        rtk json < "$JSON_FINAL" > "${JSON_FINAL}.tmp" 2>/dev/null && mv "${JSON_FINAL}.tmp" "$JSON_FINAL"
+    fi
     mv "$JSON_FINAL" "$TEMP_FILE"
 fi
 

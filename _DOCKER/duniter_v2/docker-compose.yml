@@ -1,0 +1,23 @@
+# Duniter smith node
+services:
+  duniter-smith:
+    image: duniter/duniter-g1-1100:latest             # <--- image Docker
+    restart: unless-stopped
+    ports:
+      # prometheus endpoint for monitoring
+      - 127.0.0.1:9615:9615
+      # private rpc endpoint (do not expose publicly)
+      - 127.0.0.1:9944:9944
+      # public p2p endpoint
+      - 30333:30333                             # <--- port p2p public
+    volumes:
+      - duniter-data:/var/lib/duniter/
+    environment:
+      - DUNITER_CHAIN_NAME=g1                                 # <--- réseau où se connecter
+      - DUNITER_NODE_NAME=$HOSTNAME-g1-mirror                 # <--- https://telemetry.polkadot.io/#list/0xfeb770bbb0344dabc8366b0d1f889a8e4e6ca09b914006655fe795920deb6d56
+      - DUNITER_VALIDATOR=false                               # <---> Forgeron <=> gcli smith --help
+      # - DUNITER_PRUNING_PROFILE=archive                     # <--- conserver 256 blocs d'historique
+      - DUNITER_PUBLIC_ADDR=/dns/g1.$HOSTNAME.copylaradio.com/tcp/30333     # <--- endpoint p2p public
+      - DUNITER_LISTEN_ADDR=/ip4/0.0.0.0/tcp/30333            # <--- adresse d'écoute p2p
+volumes:
+  duniter-data:

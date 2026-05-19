@@ -7,9 +7,23 @@ Interface : `UPlanet/earth/minelife.html`
 
 ---
 
+## Hiérarchie de confiance (Trust Levels)
+
+Chaque skill est validé à un niveau de confiance qui détermine si le joueur peut l'utiliser comme ingrédient d'un craft composite :
+
+| Source | Trust Level | Kind émis |
+|--------|-------------|-----------|
+| Oracle certifié (Master WoT) | 3 | Kind 30503 |
+| Attestation P2P (pair X1+ du skill) | 2 | Kind 30502 |
+| Aspiration / auto-déclaration | 1 | Kind 30501 |
+
+La définition d'un Permit (Kind 30500) fixe un seuil `minTrust` par ingrédient. Le bouton **Craftr** ne s'active que si chaque skill de la recette atteint ce seuil.
+
+---
+
 ## Comment créer un nouveau Permit (recette de craft)
 
-Un **Permit** est la définition d'une compétence — ses ingrédients requis, son niveau, ses ressources de formation associées.
+Un **Permit** est la définition d'une compétence composite — ses ingrédients requis, leur niveau minimal, et les ressources de formation associées. Seuls les Maîtres WoT (pubkeys autorisées sur le relay) peuvent en publier.
 
 ### 1. Ouvrir l'éditeur de craft
 
@@ -68,12 +82,23 @@ L'éditeur de craft intègre un champ **Import URL** :
   "name": "Arduino TV-B-Gone",
   "icon": "📺",
   "ingredients": [
-    {"skill": "arduino",        "level": 1},
+    {"skill": "arduino",           "level": 1},
     {"skill": "electronique_base", "level": 1},
-    {"skill": "soudure",        "level": 1}
+    {"skill": "soudure",           "level": 1}
   ]
 }
 ```
+
+---
+
+## Comment explorer les crafts disponibles
+
+L'onglet **Explorer** liste tous les Permits (Kind 30500) publiés sur le relay local.
+
+Chaque card affiche :
+- Nom du permis, icône, description
+- Ingrédients requis et leur niveau minimal
+- Bouton **📩 Aspirer** (si le joueur ne possède pas encore ce skill)
 
 ---
 
@@ -81,7 +106,7 @@ L'éditeur de craft intègre un champ **Import URL** :
 
 Pour exprimer publiquement qu'on veut apprendre un skill :
 
-1. Dans l'onglet **Atelier**, cliquer sur un skill non certifié
+1. Dans l'onglet **Explorer**, repérer le Permit souhaité
 2. Cliquer **📩 Aspirer à ce skill** → publie un Kind 30501
 3. Le bouton **📩 Contacter les porteurs** affiche les détenteurs N² du skill
 4. Envoyer un DM Kind 4 directement depuis l'interface pour organiser une session
@@ -92,8 +117,8 @@ Pour exprimer publiquement qu'on veut apprendre un skill :
 
 **Règle A — Par réaction (3 validations suffisent) :**
 
-1. Dans l'onglet **Atelier**, localiser la demande X1 d'un apprenti (Kind 30501)
-2. Cliquer **👍 Valider** → publie un Kind 7 avec `content: "+"`
+1. Dans l'onglet **Explorer**, localiser la demande X1 d'un apprenti (Kind 30501)
+2. Cliquer **👍 Valider** → publie un Kind 7 avec `content: "+"` (réaction NIP-25)
 3. Quand 3 pairs distincts ont validé, l'apprenti peut auto-signer son Kind 30503
 
 **Règle B — Par adoubement direct (si vous êtes X1+ du skill) :**
@@ -101,6 +126,8 @@ Pour exprimer publiquement qu'on veut apprendre un skill :
 1. Cliquer sur la demande Kind 30501 de l'apprenti
 2. Cliquer **🏅 Adouber directement** → publie un Kind 30502
 3. L'apprenti peut immédiatement auto-signer son Kind 30503
+
+> **Note :** un Kind 7 avec `content: "+N"` (N = montant ẐEN) déclenche un paiement G1 via le relay `7.sh` — c'est distinct de la validation WoTx2 ci-dessus.
 
 ---
 
@@ -112,7 +139,7 @@ Pour exprimer publiquement qu'on veut apprendre un skill :
 2. Aller dans l'onglet **Formation**
 3. Cliquer **[📁 Mes médias]** → navigateur des médias NOSTR du joueur
 4. Sélectionner un fichier → glisser vers la zone Formation du skill
-5. → publie automatiquement un Kind 30504 avec `["r", "/ipfs/CID", "type"]`
+5. → publie automatiquement un Kind 30504 avec `["r", "https://ipfs.../CID", "video"]`
 
 ### En CLI
 
@@ -121,7 +148,7 @@ python3 tools/nostr_node_intercom.py publish \
     --nsec "$NSEC" --kind 30504 \
     --tags '[["d","training_linux_<timestamp>"],
              ["t","linux"],["t","formation"],
-             ["r","/ipfs/QmXxx.../guide.pdf","document"],
+             ["r","https://ipfs.copylaradio.com/ipfs/QmXxx/guide.pdf","document"],
              ["title","Guide Linux Debian"]]' \
     --content '{"skill":"linux","resource_type":"document"}' \
     --relays "ws://localhost:7777"
@@ -143,10 +170,60 @@ Dans l'onglet **Mes Compétences** :
 
 ---
 
+## Grimoire vidéo — après un craft réussi
+
+Après chaque craft réussi, MineLife génère automatiquement une courte vidéo "Grimoire" si les fichiers FFmpeg WASM sont présents (`earth/ffmpeg/`).
+
+**Ce qui se passe :**
+1. Recherche du badge ComfyUI (Kind 1063) lié au skill → image IPFS
+2. Recherche d'une narration TTS (Kind 1222) optionnelle → audio MP3
+3. Génération locale en navigateur via FFmpeg WASM : effet Ken Burns sur le badge, 10–20 s, libx264
+4. Upload vers `/api/fileupload` (UPassport port 54321) → CID IPFS direct (`cidirect`)
+5. Publication Kind 22 (NIP-71 Short Video) sur le relay
+
+**Si la vidéo ne se génère pas :**
+- Vérifier que le serveur renvoie les headers HTTP requis par SharedArrayBuffer :
+  ```
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
+  ```
+- Vérifier que `earth/ffmpeg/ffmpeg-core.wasm` est accessible (fichier ~30 MB, inclus dans le repo).
+- Si aucun badge n'est trouvé : demander à BRO `#badge <skill>` pour déclencher la génération ComfyUI.
+
+La génération est **silencieuse en cas d'échec** — le craft est validé même sans vidéo.
+
+---
+
+## Comment démarrer un LIVE
+
+MineLife intègre la diffusion en direct via vdo.ninja (WebRTC P2P) + publication NIP-53.
+
+### Démarrer
+
+1. Cliquer **🔴 LIVE** (topbar) → ouvre le panel LIVE
+2. Cliquer **Démarrer** :
+   - Si l'onglet **Atelier** est actif sur un craft, la room est nommée `<skill>_<npub10>` (ex : `soudure_tig_npub1abc12`)
+   - Sinon : `uplanet_<npub10>`
+3. → Publie un Kind 30311 (NIP-53 Live Activity) avec `status: live`
+4. → Ouvre le studio vdo.ninja dans un nouvel onglet
+5. Copier le **lien spectateur** depuis le panel pour le partager
+
+### Arrêter
+
+Cliquer **Arrêter** → publie le même Kind 30311 (même `d`-tag) avec `status: ended`. Les clients NIP-53 affichent automatiquement la session comme terminée.
+
+### Chat live
+
+Pendant le LIVE, activer **💬 Chat** dans le panel → les messages sont publiés en Kind 1311, rattachés à la session.
+
+**Découverte depuis la home page :** les sessions actives (`status: live`, `#t: UPlanet`) sont visibles via Kind 30311 sur le relay de la station.
+
+---
+
 ## Flux complet : de la découverte à la certification
 
 ```
-[Explorer l'Atelier]
+[Onglet Explorer]
 Parcourir les crafts disponibles (Kind 30500) sur le relay local
 
        ↓
@@ -157,7 +234,7 @@ Kind 30501 auto-signé → contacter les porteurs via DM Kind 4
        ↓
 
 [Session de craft]
-Règle A : 3× Kind 7 `+` de pairs distincts
+Règle A : 3× Kind 7 reaction "+" de pairs distincts
 Règle B : 1× Kind 30502 d'un pair X1+
 
        ↓
@@ -165,7 +242,33 @@ Règle B : 1× Kind 30502 d'un pair X1+
 [Auto-signer le certificat]
 Kind 30503 publié → visible dans Mes Compétences
 → débloque les crafts composites qui requièrent ce skill
+
+       ↓
+
+[Grimoire vidéo] (automatique si FFmpeg WASM disponible)
+badge + narration → MP4 Ken Burns → IPFS → Kind 22
 ```
+
+---
+
+## Kinds NOSTR utilisés
+
+| Kind | NIP | Usage dans MineLife |
+|------|-----|---------------------|
+| 0 | NIP-01 | Profil joueur (avatar, nom) |
+| 4 | NIP-04 | DM vers pair (demande d'attestation) |
+| 5 | NIP-09 | Révocation de credential |
+| 7 | NIP-25 | Réaction validation (`+`) ou paiement ẐEN (`+N`) |
+| 22 | NIP-71 | Short video Grimoire (post-craft) |
+| 1063 | NIP-94 | Métadonnées fichier IPFS (badge image) |
+| 1222 | NIP-A0 | Narration TTS (audio Grimoire) |
+| 1311 | NIP-53 | Live chat message |
+| 30311 | NIP-53 | Live Activity (start/end) |
+| 30500 | WoTx2 | Définition de permis composite |
+| 30501 | WoTx2 | Aspiration / demande de certification |
+| 30502 | WoTx2 | Attestation P2P |
+| 30503 | WoTx2 | Credential (permis émis) |
+| 30504 | WoTx2 | Ressource de formation |
 
 ---
 
@@ -175,6 +278,7 @@ Kind 30503 publié → visible dans Mes Compétences
 |---------|------|
 | `UPlanet/earth/minelife.html` | Interface principale MineLife |
 | `UPlanet/earth/minelife.js` | Widget crafting (`MineLife.init`) |
+| `UPlanet/earth/grimoire.js` | Module vidéo Grimoire (FFmpeg WASM) |
 | `Astroport.ONE/tools/oracle_init_captain_wotx2.sh` | Bootstrap Kind 30500 capitaines |
 | `Astroport.ONE/RUNTIME/ORACLE.refresh.sh` | Émet Kind 30503 Oracle (cron) |
 | `Astroport.ONE/IA/bro_dm_daemon.sh` | Daemon Kind 4 BRO |
@@ -184,6 +288,7 @@ Kind 30503 publié → visible dans Mes Compétences
 
 ## Voir aussi
 
+- [GRIMOIRE_LIVE.md](GRIMOIRE_LIVE.md) — architecture Grimoire vidéo et LIVE en détail
 - [KNOWLEDGE_EMBEDDINGS.md](KNOWLEDGE_EMBEDDINGS.md) — indexer les ressources dans Qdrant
 - [tutorials/setup_learning_hub.md](../tutorials/setup_learning_hub.md) — configurer sa station hub
 - [explanation/minelife_wikipedia_wot.md](../explanation/minelife_wikipedia_wot.md) — la philosophie WoT

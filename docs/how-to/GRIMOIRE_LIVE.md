@@ -117,7 +117,7 @@ Le bouton **🎬 CV Vidéo** dans l'onglet "Mes Compétences" appelle `generateC
 
 ### Build FFmpeg WASM
 
-Le fork utilisé est `papiche/ffmpeg.wasm` branche `zen`. Les dist ne sont **pas** committées dans le repo (trop lourdes) — à builder localement.
+Le fork utilisé est `papiche/ffmpeg.wasm` branche `zen`. Les dist sont **committées** dans `UPlanet/earth/ffmpeg/` (ffmpeg.js, ffmpeg-util.js, ffmpeg-core.js, ffmpeg-core.wasm ~30 MB). Pour les rebuilder depuis les sources :
 
 ```bash
 # Prérequis : Node.js ≥ 18, Docker + Emscripten (pour le core WASM)
@@ -298,7 +298,7 @@ Pour découvrir les sessions LIVE actives depuis la home page, chercher Kind 303
 | `UPlanet/earth/minelife.html` | +grimoire.js script tag, +drop zone vidéo, +bouton CV Vidéo, +hook post-craft, +bouton LIVE topbar, +panel LIVE, +fonctions LIVE JS |
 | `how-to/GRIMOIRE_LIVE.md` | **CE FICHIER** — documentation |
 
-Les fichiers `earth/ffmpeg/*.{js,wasm}` ne sont **pas** dans le repo (build séparé).
+Les fichiers `earth/ffmpeg/*.{js,wasm}` sont dans le repo (build inclus, ~30 MB).
 
 ---
 

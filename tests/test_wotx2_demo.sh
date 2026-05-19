@@ -5,20 +5,20 @@
 # Initialise un jeu complet de données NOSTR démontrant toutes les fonctions
 # de minelife.html avec trois comptes test déterministes :
 #
-#   coucou (salt=coucou pepper=coucou email=support+coucou@qo-op.com) → LOCAL
-#   toto   (salt=toto   pepper=toto   email=support+toto@qo-op.com  ) → REMOTE
-#   jean   (salt=jean   pepper=jean   email=support+jean@qo-op.com  ) → LOCAL
+#   c0uc0u (salt=c0uc0u pepper=c0uc0u email=support+coucou@qo-op.com) → LOCAL
+#   t0t0   (salt=t0t0   pepper=t0t0   email=support+toto@qo-op.com  ) → REMOTE
+#   j3an   (salt=j3an   pepper=j3an   email=support+jean@qo-op.com  ) → LOCAL
 #
 # Skills publiés :
-#   linux X1 (coucou), bash X1 (coucou)
-#   docker X1 (toto)
-#   python X1 (jean)
-#   devops composite (coucou = linux+bash+docker)
+#   linux X1 (c0uc0u), bash X1 (c0uc0u)
+#   docker X1 (t0t0)
+#   python X1 (j3an)
+#   devops composite (c0uc0u = linux+bash+docker)
 #
 # Flux WoTx2 démontré (triangle de confiance) :
-#   toto  → valide/adoube coucou pour docker  (Règle B)
-#   jean  → valide/adoube coucou pour python  (Règle B)
-#   coucou→ valide jean pour linux             (Kind 7)
+#   t0t0  → valide/adoube c0uc0u pour docker  (Règle B)
+#   j3an  → valide/adoube c0uc0u pour python  (Règle B)
+#   c0uc0u→ valide j3an pour linux             (Kind 7)
 #   Kind 30500 → 30501 → Kind 7 → 30502 → 30503 → 30503 composite → 30504
 #
 # Usage:
@@ -97,10 +97,14 @@ section "0. Setup — enregistrement comptes test dans amisOfAmis (relay local)"
 _AMIS_FILE="${HOME}/.zen/strfry/amisOfAmis.txt"
 mkdir -p "$(dirname "$_AMIS_FILE")" && touch "$_AMIS_FILE"
 
-## Hex déterministes pré-calculés (keygen coucou/toto/jean)
-_PRESET_COUCOU="9da638f3ff87f550efb32ca0d363f53047ead410e6748c19eb8ccb81ba3aff27"
-_PRESET_TOTO="3c0c298b91979a9d18de706d21d37b2498b9af4bdb9ca9e1b1ab6ea72f7e265c"
-_PRESET_JEAN="2188e823f9a2905af085af74fa8476b9a444830ffe46efd4a264b8798837b17e"
+## Hex déterministes pré-calculés (keygen c0uc0u/t0t0/j3an)
+_PRESET_COUCOU="a918919726c32f5ec6b86aa582f766251a230ce1a1728f30340db154658dd4b0"
+_PRESET_TOTO="9849913fc29ecafbaa39229b1beb0a7f7538ea69f6eecc8795c79dc00651c5dc"
+_PRESET_JEAN="d3571ae9fd822fab10fd6e24347ecf9ad315fe753b447d914410e3b8e2b46516"
+## Z variants (ZenCard counterparts)
+_PRESET_COUCOU_Z="a06bb2a990de6299100ed559e5d73991eada5c6c06c4659cdb1f398c04d5e233"
+_PRESET_TOTO_Z="b88bd8e054a04895a524ee78d7305c270b25b420382308df79f09aab0a9cda65"
+_PRESET_JEAN_Z="87a5c3d91985919ae6dc7bff6b96d403455a4ffd3abb5b48b825283c6fa84030"
 
 _amis_added=0
 for _hex in "$_PRESET_COUCOU" "$_PRESET_TOTO" "$_PRESET_JEAN"; do
@@ -116,36 +120,41 @@ else
 fi
 
 ## ─────────────────────────────────────────────────────────────────────────────
-section "1. Clés test déterministes — coucou (local), toto (remote), jean (local)"
+section "1. Clés test déterministes — c0uc0u (local), t0t0 (remote), j3an (local)"
 ## ─────────────────────────────────────────────────────────────────────────────
-## Emails: support+coucou@qo-op.com / support+toto@qo-op.com / support+jean@qo-op.com
+## Emails inchangés : support+coucou@qo-op.com / support+toto@qo-op.com / support+jean@qo-op.com
 
-_COUCOU_NPUB=$("$KEYGEN" -t nostr "coucou" "coucou" 2>/dev/null)
-_COUCOU_NSEC=$("$KEYGEN" -t nostr -s "coucou" "coucou" 2>/dev/null)
+_COUCOU_NPUB=$("$KEYGEN" -t nostr "c0uc0u" "c0uc0u" 2>/dev/null)
+_COUCOU_NSEC=$("$KEYGEN" -t nostr -s "c0uc0u" "c0uc0u" 2>/dev/null)
 _COUCOU_HEX=$(python3 "${ASTROPORT_PATH}/tools/nostr2hex.py" "$_COUCOU_NPUB" 2>/dev/null)
 
-_TOTO_NPUB=$("$KEYGEN" -t nostr "toto" "toto" 2>/dev/null)
-_TOTO_NSEC=$("$KEYGEN" -t nostr -s "toto" "toto" 2>/dev/null)
+_TOTO_NPUB=$("$KEYGEN" -t nostr "t0t0" "t0t0" 2>/dev/null)
+_TOTO_NSEC=$("$KEYGEN" -t nostr -s "t0t0" "t0t0" 2>/dev/null)
 _TOTO_HEX=$(python3 "${ASTROPORT_PATH}/tools/nostr2hex.py" "$_TOTO_NPUB" 2>/dev/null)
 
-_JEAN_NPUB=$("$KEYGEN" -t nostr "jean" "jean" 2>/dev/null)
-_JEAN_NSEC=$("$KEYGEN" -t nostr -s "jean" "jean" 2>/dev/null)
+_JEAN_NPUB=$("$KEYGEN" -t nostr "j3an" "j3an" 2>/dev/null)
+_JEAN_NSEC=$("$KEYGEN" -t nostr -s "j3an" "j3an" 2>/dev/null)
 _JEAN_HEX=$(python3 "${ASTROPORT_PATH}/tools/nostr2hex.py" "$_JEAN_NPUB" 2>/dev/null)
 
+## Z variants (ZenCard counterparts — salt=<name>Z)
+_COUCOU_Z_NPUB=$("$KEYGEN" -t nostr "coucouZ" "coucouZ" 2>/dev/null)
+_TOTO_Z_NPUB=$("$KEYGEN"   -t nostr "totoZ"   "totoZ"   2>/dev/null)
+_JEAN_Z_NPUB=$("$KEYGEN"   -t nostr "jeanZ"   "jeanZ"   2>/dev/null)
+
 [[ ${#_COUCOU_HEX} -eq 64 ]] \
-    && ok "coucou ${_COUCOU_HEX:0:12}... (support+coucou@qo-op.com)" \
-    || fail "dérivation clé coucou échouée"
+    && ok "c0uc0u ${_COUCOU_HEX:0:12}... (support+coucou@qo-op.com)" \
+    || fail "dérivation clé c0uc0u échouée"
 
 [[ ${#_TOTO_HEX} -eq 64 ]] \
-    && ok "toto   ${_TOTO_HEX:0:12}... (support+toto@qo-op.com)" \
-    || fail "dérivation clé toto échouée"
+    && ok "t0t0   ${_TOTO_HEX:0:12}... (support+toto@qo-op.com)" \
+    || fail "dérivation clé t0t0 échouée"
 
 [[ ${#_JEAN_HEX} -eq 64 ]] \
-    && ok "jean   ${_JEAN_HEX:0:12}... (support+jean@qo-op.com)" \
-    || fail "dérivation clé jean échouée"
+    && ok "j3an   ${_JEAN_HEX:0:12}... (support+jean@qo-op.com)" \
+    || fail "dérivation clé j3an échouée"
 
 ## ─────────────────────────────────────────────────────────────────────────────
-section "2. Relays — local strfry (coucou+jean) & remote (toto)"
+section "2. Relays — local strfry (c0uc0u+j3an) & remote (t0t0)"
 ## ─────────────────────────────────────────────────────────────────────────────
 
 _LOCAL_RELAY="ws://localhost:7777"
