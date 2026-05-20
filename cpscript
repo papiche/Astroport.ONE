@@ -91,6 +91,11 @@ _MY_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 [[ ! -L ~/.local/bin/${_ME} ]] && ln -sf "${_MY_PATH}/${_ME}" ~/.local/bin/${_ME} \
     && echo "[cpscript] Auto Install into ~/.local/bin/${_ME}"
 
+# RTK (Rust Token Killer) — compact output si disponible
+RTK=$(command -v rtk 2>/dev/null || echo "")
+_grep() { ${RTK:+rtk} grep "$@"; }
+_find()  { ${RTK:+rtk} find  "$@"; }
+
 # Parsing des options
 FILTER_EXT=""
 MAX_DEPTH=0          # 0 = illimité

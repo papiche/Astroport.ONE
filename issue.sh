@@ -519,7 +519,7 @@ case "$COMMAND" in
 
         # ── Création de branche de travail ───────────────────────────────────
         _branch_name="fix/issue-${NUM}"
-        _current_branch=$(__git branch --show-current 2>/dev/null || echo "")
+        _current_branch=$(_git branch --show-current 2>/dev/null || echo "")
         if [[ -n "$_current_branch" ]] && [[ "$_current_branch" != "$_branch_name" ]]; then
             echo ""
             echo -e "${YELLOW}Branche de travail :${NC} ${CYAN}${_branch_name}${NC}"
