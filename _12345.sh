@@ -733,25 +733,30 @@ while true; do
     # Check if cache is fresh (< 12h)
     _svc_fallback="{\"ipfs\":{\"active\":true,\"peers_connected\":$(timeout 5 ipfs swarm peers 2>/dev/null | wc -l)},\"astroport\":{\"active\":true},\"g1billet\":{\"active\":true}}"
     if [[ -s ${ANALYSIS_FILE} ]]; then
+        # Vérifie la validité JSON avant toute utilisation
+        if ! jq empty "${ANALYSIS_FILE}" 2>/dev/null; then
+            echo "WARN: heartbox_analysis.json invalide — suppression et régénération" >&2
+            rm -f "${ANALYSIS_FILE}"
+        fi
+    fi
+    if [[ -s ${ANALYSIS_FILE} ]]; then
         cache_age=$(( $(date +%s) - $(stat -c %Y "${ANALYSIS_FILE}" 2>/dev/null || echo 0) ))
         if [[ $cache_age -lt 43200 ]]; then  # 12h = 43200 seconds
-            TEMP_CAPACITIES=$(jq -r '.capacities // empty' ${ANALYSIS_FILE} 2>/dev/null)
-            TEMP_SERVICES=$(jq -r '.services // empty' ${ANALYSIS_FILE} 2>/dev/null)
+            TEMP_CAPACITIES=$(jq -r '.capacities // empty' "${ANALYSIS_FILE}" 2>/dev/null)
+            TEMP_SERVICES=$(jq -r '.services // empty' "${ANALYSIS_FILE}" 2>/dev/null)
             CAPACITIES="${TEMP_CAPACITIES}"
             [[ -z "${CAPACITIES}" ]] && CAPACITIES='{"reserved_captain_slots":2}'
             SERVICES="${TEMP_SERVICES}"
             [[ -z "${SERVICES}" ]] && SERVICES="${_svc_fallback}"
         else
-            # Cache expired, update it in background
+            # Cache expiré : régénération en arrière-plan
             (${MY_PATH}/tools/heartbox_analysis.sh update >/dev/null 2>&1) &
-            # Use fallback data for immediate response
             CAPACITIES="{\"reserved_captain_slots\":2}"
             SERVICES="${_svc_fallback}"
         fi
     else
-        # No cache file, create it in background
+        # Pas de cache (ou supprimé car invalide) : génération en arrière-plan
         (${MY_PATH}/tools/heartbox_analysis.sh update >/dev/null 2>&1) &
-        # Use fallback data for immediate response
         CAPACITIES="{\"reserved_captain_slots\":2}"
         SERVICES="${_svc_fallback}"
     fi

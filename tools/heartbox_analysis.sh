@@ -344,70 +344,70 @@ get_fast_service_status() {
     
     cat << EOF
     "ipfs": {
-        "active": $ipfs_active,
+        "active": ${ipfs_active:-false},
         "size": "$(du -sh ~/.ipfs 2>/dev/null | cut -f1 || echo "N/A")",
-        "peers_connected": $ipfs_peers
+        "peers_connected": ${ipfs_peers:-0}
     },
     "astroport": {
-        "active": $astroport_active
+        "active": ${astroport_active:-false}
     },
     "upassport": {
-        "active": $upassport_active,
+        "active": ${upassport_active:-false},
         "port": 54321
     },
     "nextcloud": {
-        "active": $nextcloud_active,
-        "container": "$nextcloud_container",
+        "active": ${nextcloud_active:-false},
+        "container": "${nextcloud_container:-}",
         "aio_admin": {
-            "active": $nextcloud_aio_admin,
+            "active": ${nextcloud_aio_admin:-false},
             "port": 8443,
             "note": "AIO admin setup (HTTPS, premiere config)"
         },
         "aio_dashboard": {
-            "active": $nextcloud_aio_dash,
+            "active": ${nextcloud_aio_dash:-false},
             "port": 8002,
             "note": "AIO dashboard (HTTP, post-setup)"
         },
         "cloud_apache": {
-            "active": $nextcloud_cloud_active,
+            "active": ${nextcloud_cloud_active:-false},
             "port": 8001,
             "note": "Apache NextCloud app (proxied par NPM cloud.DOMAIN)"
         }
     },
     "nostr_relay": {
-        "active": $strfry_active,
-        "engine": "$strfry_engine",
+        "active": ${strfry_active:-false},
+        "engine": "${strfry_engine:-strfry}",
         "port": 7777,
-        "db_size_bytes": $strfry_db_size
+        "db_size_bytes": ${strfry_db_size:-0}
     },
     "npm": {
-        "active": $npm_active,
-        "ssl": $npm_ssl,
+        "active": ${npm_active:-false},
+        "ssl": ${npm_ssl:-false},
         "admin_port": 81
     },
     "g1billet": {
-        "active": $g1billet_active
+        "active": ${g1billet_active:-false}
     },
     "node_exporter": {
-        "active": $node_exporter_active,
+        "active": ${node_exporter_active:-false},
         "port": 9100
     },
     "ai_company": {
-        "ollama":     { "active": $ollama_active,     "source": "$ollama_source",     "port": 11434, "models": $ollama_models, "recommended_ctx": $ollama_recommended_ctx },
-        "qdrant":     { "active": $qdrant_active,     "source": "$qdrant_source",     "port": 6333  },
-        "dify":       { "active": $dify_active,       "source": "$dify_source",       "port": 8010  },
-        "open_webui": { "active": $open_webui_active, "source": "$open_webui_source", "port": 8000  },
-        "mirofish":   { "active": $mirofish_active,   "source": "$mirofish_source",   "port": 5050  },
-        "comfyui":    { "active": $comfyui_active,    "source": "$comfyui_source",    "port": 8188  },
-        "orpheus":    { "active": $orpheus_active,    "source": "$orpheus_source",    "port": 5005  },
-        "vane":       { "active": $vane_active,       "source": "$vane_source",       "port": 3002  }
+        "ollama":     { "active": ${ollama_active:-false},     "source": "${ollama_source:-none}",     "port": 11434, "models": ${ollama_models:-[]}, "recommended_ctx": ${ollama_recommended_ctx:-4096} },
+        "qdrant":     { "active": ${qdrant_active:-false},     "source": "${qdrant_source:-none}",     "port": 6333  },
+        "dify":       { "active": ${dify_active:-false},       "source": "${dify_source:-none}",       "port": 8010  },
+        "open_webui": { "active": ${open_webui_active:-false}, "source": "${open_webui_source:-none}", "port": 8000  },
+        "mirofish":   { "active": ${mirofish_active:-false},   "source": "${mirofish_source:-none}",   "port": 5050  },
+        "comfyui":    { "active": ${comfyui_active:-false},    "source": "${comfyui_source:-none}",    "port": 8188  },
+        "orpheus":    { "active": ${orpheus_active:-false},    "source": "${orpheus_source:-none}",    "port": 5005  },
+        "vane":       { "active": ${vane_active:-false},       "source": "${vane_source:-none}",       "port": 3002  }
     },
     "webtop": {
-        "active": $webtop_active,
+        "active": ${webtop_active:-false},
         "port_http": 3000,
         "port_https": 3001
     },
-    "ipfs_p2p_services": $p2p_services
+    "ipfs_p2p_services": ${p2p_services:-[]}
 EOF
 }
 
@@ -445,12 +445,13 @@ get_fast_capacities() {
     local _root_dev _ipfs_dev
     _root_dev=$(df / 2>/dev/null | tail -1 | awk '{print $1}')
     _ipfs_dev=$(df ~/.ipfs 2>/dev/null | tail -1 | awk '{print $1}')
-    local total_available_gb
+    local total_available_gb=0
     if [[ "$_root_dev" == "$_ipfs_dev" ]]; then
-        total_available_gb=$(echo "$root_available_gb + $nextcloud_available_gb" | bc 2>/dev/null || echo "$root_available_gb")
+        total_available_gb=$(echo "$root_available_gb + $nextcloud_available_gb" | bc 2>/dev/null || echo "${root_available_gb:-0}")
     else
         total_available_gb=$(echo "$root_available_gb + $ipfs_available_gb + $nextcloud_available_gb" | bc 2>/dev/null || echo "0")
     fi
+    [[ -z "$total_available_gb" ]] && total_available_gb=0
     
     # Calculate slots (simplified calculation)
     local zencard_slots=0
@@ -613,20 +614,22 @@ get_fast_capacities() {
     [[ ${zencard_slots} -ge 1 || ${nostr_slots} -ge 10 ]] && storage_ready="true"
 
     cat << EOF
-    "zencard_slots": $zencard_slots,
-    "nostr_slots": $nostr_slots,
+    "zencard_slots": ${zencard_slots:-0},
+    "nostr_slots": ${nostr_slots:-0},
     "reserved_captain_slots": 2,
-    "available_space_gb": $total_available_gb,
-    "power_score": $power_score,
-    "crypto_score": $crypto_score,
-    "crypto_ms": $crypto_ms,
-    "disk_io": {"write_mbps": $disk_write_mbps, "read_mbps": $disk_read_mbps},
-    "provider_ready": $provider_ready,
-    "provider_tier": "$provider_tier",
-    "storage_ready": $storage_ready,
+    "available_space_gb": ${total_available_gb:-0},
+    "power_score": ${power_score:-0},
+    "crypto_score": ${crypto_score:-0},
+    "crypto_ms": ${crypto_ms:-0},
+    "disk_io": {"write_mbps": ${disk_write_mbps:-0}, "read_mbps": ${disk_read_mbps:-0}},
+    "provider_ready": ${provider_ready:-false},
+    "provider_tier": "${provider_tier:-light}",
+    "storage_ready": ${storage_ready:-false},
     "gpu": {
-        "detected": $gpu_detected,
-        "vram_gb": $vram_gb
+        "detected": ${gpu_detected:-false},
+        "vram_gb": ${vram_gb:-0},
+        "name": "${gpu_name:-}",
+        "vendor": "${gpu_vendor:-none}"
     },
     "storage_details": {
         "nextcloud": {
