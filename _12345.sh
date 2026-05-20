@@ -828,21 +828,26 @@ NODE12345="{
         NODE12345="{\"version\":\"12345.0.2\",\"hostname\":\"$(myHostName)\",\"ipfsnodeid\":\"${IPFSNODEID}\",\"status\":\"json_build_error\",\"created\":\"${MOATS}\"}"
     fi
 
-    ## PUBLISH ${IPFSNODEID}/12345.json
-    ## Also force rewrite if existing file is currently invalid JSON
+    ## PUBLISH ${IPFSNODEID}/12345.json (Écriture Atomique)
     if [[ "$NODE_STATE" != "$LAST_NODE_STATE" || ! -s "$LAST_NODE_JSON_FILE" || ! -s "$HOME/.zen/tmp/${IPFSNODEID}/12345.json" ]] \
        || ! jq . "$HOME/.zen/tmp/${IPFSNODEID}/12345.json" >/dev/null 2>&1; then
-        echo "${NODE12345}" > ~/.zen/tmp/${IPFSNODEID}/12345.json
-        echo "${NODE12345}" > "$LAST_NODE_JSON_FILE"
-        echo "$NODE_STATE" > "$LAST_NODE_STATE_FILE"
+        
+        # 1. Ecriture Atomique du JSON principal
+        echo "${NODE12345}" > ~/.zen/tmp/${IPFSNODEID}/12345.json.tmp
+        mv ~/.zen/tmp/${IPFSNODEID}/12345.json.tmp ~/.zen/tmp/${IPFSNODEID}/12345.json
+        
+        # 2. Mise à jour des états
+        echo "${NODE12345}" > "$LAST_NODE_JSON_FILE.tmp" && mv "$LAST_NODE_JSON_FILE.tmp" "$LAST_NODE_JSON_FILE"
+        echo "$NODE_STATE" > "$LAST_NODE_STATE_FILE.tmp" && mv "$LAST_NODE_STATE_FILE.tmp" "$LAST_NODE_STATE_FILE"
+        
         ## Mise à jour des timestamps de la balise IPNS locale
         echo "${MOATS}" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.moats
         echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
     fi
 
-    ############ MISE À JOUR HTTP 12345 (RAM - /dev/shm)
-    echo -e "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET\r\nServer: Astroport.ONE\r\nContent-Type: application/json; charset=UTF-8\r\nConnection: close\r\n\r\n${NODE12345}" > "$RESPONSE_FILE"
-
+    ############ MISE À JOUR HTTP 12345 (Écriture Atomique)
+    echo -e "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET\r\nServer: Astroport.ONE\r\nContent-Type: application/json; charset=UTF-8\r\nConnection: close\r\n\r\n${NODE12345}" > "${RESPONSE_FILE}.tmp"
+    mv "${RESPONSE_FILE}.tmp" "$RESPONSE_FILE"
     echo '(◕‿‿◕) http://'$myIP:'12345 SERVED VIA SOCAT (CGI) (◕‿‿◕)'
 
     ## Watchdog daemon DM NODE — relance si mort entre deux cycles
