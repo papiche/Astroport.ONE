@@ -16,6 +16,10 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
+# RTK (Rust Token Killer) — proxy compact si disponible
+RTK=$(command -v rtk 2>/dev/null || echo "")
+_git() { ${RTK:+rtk} git "$@"; }
+
 # Recherche question.py : repo courant, install standard ~/.zen, répertoire du script
 QUESTION_PY=""
 for _candidate in \
@@ -34,6 +38,8 @@ SINCE_COMMIT="HEAD"   # référence git de base pour le diff
 SINCE_LABEL="dernier commit"
 AI_MODEL="qwen2.5-coder:14b"
 VERBOSE=false
+PR_MODE=false
+AI_ENHANCED=false
 
 dbg() { [[ "$VERBOSE" == "true" ]] && echo -e "\033[2m[verbose] $*\033[0m" >&2 || true; }
 
@@ -50,20 +56,211 @@ show_help() {
     echo -e "  ${GREEN}--week,        -w${NC}   Derniers 7 jours"
     echo -e "  ${GREEN}--month,       -m${NC}   Derniers 30 jours"
     echo -e "  ${GREEN}--branch,      -b${NC}   Basculer sur cette branche avant d'analyser"
+    echo -e "  ${GREEN}--pr,          -p${NC}   Proposer une Pull Request après push (assistance IA)"
+    echo -e "  ${GREEN}--ai,          -a${NC}   Mode IA étendu : groupement sémantique + revue de code"
     echo -e "  ${GREEN}--model MODEL, -M${NC}   Modèle Ollama (défaut: qwen2.5-coder:14b)"
     echo -e "  ${GREEN}--verbose,     -v${NC}   Mode verbeux : affiche diff, prompt et réponse brute"
     echo -e "  ${GREEN}--help,        -h${NC}   Afficher cette aide"
     echo ""
     echo -e "${YELLOW}EXEMPLES:${NC}"
     echo "  $0                              # diff depuis le dernier commit (avec sélection branche)"
-    echo "  $0 --branch fix/issue-7 --staged  # analyser la branche fix/issue-7"
-    echo "  $0 --staged                     # diff des fichiers en attente de commit"
+    echo "  $0 --staged                     # staging interactif par date → commit IA en boucle"
+    echo "  $0 --staged --pr               # idem + propose une PR après push (IA)"
+    echo "  $0 --staged --ai              # groupement sémantique IA + revue de code avant commit"
+    echo "  $0 --staged --ai --pr         # tout activé : staging guidé, revue, commit, PR"
+    echo "  $0 --branch fix/issue-7 --staged  # basculer fix/issue-7 puis staging interactif"
     echo "  $0 --day                        # tout ce qui a changé aujourd'hui"
     echo "  $0 --week --model qwen2.5-coder:7b  # fallback alienware (orpheus actif)"
     echo "  $0 --staged --verbose           # mode verbeux pour diagnostiquer"
     echo ""
     echo -e "${YELLOW}SORTIE:${NC}  Le message généré est affiché et copié dans le presse-papier."
     exit 0
+}
+
+# ── Staging interactif par temporalité ───────────────────────────────────────
+interactive_stage() {
+    local -a unstaged untracked all_files
+    local -A _fmap _fstats
+    local _idx=1 _total _today _sel entry mtime fname ftype dt statinfo
+
+    mapfile -t unstaged  < <(git diff --name-only 2>/dev/null)
+    mapfile -t untracked < <(git ls-files --others --exclude-standard 2>/dev/null)
+    all_files=("${unstaged[@]:-}" "${untracked[@]:-}")
+
+    if [[ ${#all_files[@]} -eq 0 ]]; then
+        echo -e "${YELLOW}⚠️  Aucun fichier modifié ou non-tracké.${NC}"
+        return 1
+    fi
+
+    _today=$(date "+%Y-%m-%d")
+
+    # ── Stats de lignes modifiées par fichier ─────────────────────────────────
+    while IFS=$'\t' read -r added removed fnm; do
+        if [[ "$added" == "-" ]]; then
+            _fstats["$fnm"]="binaire"
+        else
+            _fstats["$fnm"]="+${added}/-${removed}"
+        fi
+    done < <(git diff --numstat 2>/dev/null)
+    for f in "${untracked[@]:-}"; do
+        [[ -f "$f" ]] && _fstats["$f"]="$(wc -l < "$f" 2>/dev/null || echo 0)L new"
+    done
+
+    echo -e "${YELLOW}📁 Fichiers disponibles (plus récent d'abord) :${NC}"
+    echo ""
+
+    while read -r entry; do
+        mtime="${entry%% *}"
+        fname="${entry#* }"
+        dt=$(date -d "@$mtime" "+%Y-%m-%d %H:%M" 2>/dev/null || echo "?")
+        ftype="M"
+        printf '%s\n' "${untracked[@]:-}" | grep -qx "$fname" 2>/dev/null && ftype="?"
+        local color="${GREEN}"; [[ "$ftype" == "?" ]] && color="${CYAN}"
+        statinfo="${_fstats[$fname]:-}"
+        printf "  [%2d] ${BLUE}%s${NC}  %b%-48s%b  %-14s  ${YELLOW}%s${NC}\n" \
+            "$_idx" "$dt" "$color" "$fname" "${NC}" "$statinfo" "($ftype)"
+        _fmap[$_idx]="$fname"
+        _idx=$(( _idx + 1 ))
+    done < <(
+        for f in "${all_files[@]:-}"; do
+            [[ -n "$f" && -e "$f" ]] || continue
+            printf '%s %s\n' "$(stat -c '%Y' "$f" 2>/dev/null || echo 0)" "$f"
+        done | sort -rn
+    )
+
+    _total=$(( _idx - 1 ))
+    if [[ $_total -eq 0 ]]; then
+        echo -e "${YELLOW}⚠️  Aucun fichier trouvé.${NC}"
+        return 1
+    fi
+
+    # ── Suggestion IA de regroupement sémantique (si --ai) ───────────────────
+    if [[ "${AI_ENHANCED:-false}" == "true" ]] && [[ -f "${QUESTION_PY:-}" ]]; then
+        echo ""
+        echo -e "${BLUE}🤖 Analyse sémantique des fichiers (--ai)...${NC}"
+        local _gp_list=""
+        for i in $(seq 1 "$_total"); do
+            _gp_list+="  [$i] ${_fmap[$i]}  (${_fstats[${_fmap[$i]}]:-})\n"
+        done
+        local _gp_file
+        _gp_file=$(mktemp /tmp/group_prompt_XXXXXX.txt)
+        cat > "$_gp_file" <<GPROMPT
+Regroupe ces fichiers git modifiés en commits logiques et cohérents.
+RÉPONSE ULTRA-COURTE (max 10 lignes). FORMAT STRICT, FRANÇAIS :
+
+Groupe A [numéros]: <type>(<scope>): <description>
+Groupe B [numéros]: <type>(<scope>): <description>
+...
+
+Fichiers :
+$(printf '%b' "$_gp_list")
+GPROMPT
+        local _groups
+        _groups=$(timeout 25 python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 2048 \
+            --prompt-file "$_gp_file" --temperature 0.1 2>/dev/null) || true
+        rm -f "$_gp_file"
+        if [[ -n "$_groups" ]]; then
+            echo -e "${CYAN}── Groupes suggérés ────────────────────────────────────────────${NC}"
+            echo -e "\033[2m$_groups\033[0m"
+            echo -e "${CYAN}────────────────────────────────────────────────────────────────${NC}"
+        fi
+    fi
+
+    echo ""
+    echo -e "${CYAN}Fichiers à stager pour ce commit :${NC}"
+    echo -e "  ${GREEN}tout${NC} / ${GREEN}all${NC}   — tous ($_total fichiers)"
+    echo -e "  ${GREEN}1-5${NC}          — plage continue"
+    echo -e "  ${GREEN}1,3,7${NC}        — sélection individuelle"
+    echo -e "  ${GREEN}aujourd'hui${NC}  — modifiés aujourd'hui"
+    echo -e "  ${GREEN}Entrée${NC}       — annuler"
+    echo ""
+    echo -ne "${YELLOW}Sélection : ${NC}"
+    read -r _sel
+
+    [[ -z "$_sel" ]] && return 1
+
+    local -a selected=()
+    case "$_sel" in
+        tout|all|ALL|TOUT)
+            for i in $(seq 1 "$_total"); do selected+=("${_fmap[$i]}"); done ;;
+        aujourd*|today|TODAY)
+            for i in $(seq 1 "$_total"); do
+                local f="${_fmap[$i]}"
+                local mt fdt
+                mt=$(stat -c '%Y' "$f" 2>/dev/null || echo 0)
+                fdt=$(date -d "@$mt" "+%Y-%m-%d" 2>/dev/null || echo "")
+                [[ "$fdt" == "$_today" ]] && selected+=("$f")
+            done ;;
+        *-*)
+            if [[ "$_sel" =~ ^[0-9]+-[0-9]+$ ]]; then
+                local s="${_sel%-*}" e="${_sel#*-}"
+                for i in $(seq "$s" "$e"); do
+                    [[ -n "${_fmap[$i]:-}" ]] && selected+=("${_fmap[$i]}")
+                done
+            fi ;;
+        *)
+            IFS=',' read -ra idxs <<< "$_sel"
+            for i in "${idxs[@]}"; do
+                [[ "$i" =~ ^[0-9]+$ ]] && [[ -n "${_fmap[$i]:-}" ]] && selected+=("${_fmap[$i]}")
+            done ;;
+    esac
+
+    if [[ ${#selected[@]} -eq 0 ]]; then
+        echo -e "${YELLOW}⚠️  Aucun fichier sélectionné.${NC}"
+        return 1
+    fi
+
+    echo ""
+    echo -e "${GREEN}📦 Staging :${NC}"
+    for f in "${selected[@]}"; do
+        git add -- "$f" 2>/dev/null \
+            && echo -e "  ${GREEN}✓${NC} $f" \
+            || echo -e "  ${RED}✗${NC} $f"
+    done
+    echo ""
+    return 0
+}
+
+# ── Revue de code IA avant commit (si --ai) ───────────────────────────────────
+ai_code_review() {
+    [[ "${AI_ENHANCED:-false}" != "true" ]] && return
+    [[ ! -f "${QUESTION_PY:-}" ]] && return
+    local diff_content="${1:-}"
+    [[ -z "$diff_content" ]] && return
+
+    echo -e "${BLUE}🔍 Revue de code IA (--ai)...${NC}"
+    local _rv_file
+    _rv_file=$(mktemp /tmp/review_prompt_XXXXXX.txt)
+    cat > "$_rv_file" <<RVPROMPT
+Tu es un reviewer de code senior. Analyse ce diff git.
+RÉPONSE COURTE (max 8 lignes). EN FRANÇAIS. PAS D'INTRODUCTION.
+
+Cherche uniquement ce qui est clairement problématique :
+• Bugs évidents ou régressions (comportement cassé)
+• TODOs oubliés, code mort laissé en place
+• Failles de sécurité ou données sensibles exposées
+• Incohérences majeures (ex: fonction modifiée mais appelants non mis à jour)
+
+Si tout va bien → une seule ligne : "✅ Aucun problème détecté."
+Si problème → "⚠️ [fichier] description courte" (une ligne par problème)
+
+DIFF :
+\`\`\`
+${diff_content:0:14000}
+\`\`\`
+RVPROMPT
+
+    local _review
+    _review=$(timeout 35 python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 16384 \
+        --prompt-file "$_rv_file" --temperature 0.1 2>/dev/null) || true
+    rm -f "$_rv_file"
+
+    if [[ -n "$_review" ]]; then
+        echo -e "${CYAN}── Revue de code ────────────────────────────────────────────────${NC}"
+        echo -e "$_review"
+        echo -e "${CYAN}─────────────────────────────────────────────────────────────────${NC}"
+        echo ""
+    fi
 }
 
 # ── Parsing des arguments ─────────────────────────────────────────────────────
@@ -83,6 +280,8 @@ while [[ $# -gt 0 ]]; do
             shift
             TARGET_BRANCH="${1:?'--branch requiert un nom de branche'}"
             shift ;;
+        --pr|-p)     PR_MODE=true ; shift ;;
+        --ai|-a)     AI_ENHANCED=true ; shift ;;
         --verbose|-v) VERBOSE=true ; shift ;;
         *)
             echo -e "${RED}Option inconnue: $1${NC}"
@@ -114,7 +313,7 @@ echo -e "${BLUE}🌿 Branche courante :${NC} ${GREEN}${_cur_branch}${NC}"
 mapfile -t _fix_branches < <(git branch --list "fix/issue-*" 2>/dev/null | sed 's/^[* ]*//' | grep -v "^$")
 mapfile -t _all_branches < <(git branch 2>/dev/null | sed 's/^[* ]*//' | grep -v "^$")
 
-if [[ ${#_all_branches[@]} -gt 1 ]]; then
+if [[ ${#_all_branches[@]} -gt 1 ]] && [[ -z "${TARGET_BRANCH:-}" ]]; then
     echo ""
     if [[ ${#_fix_branches[@]} -gt 0 ]]; then
         echo -e "${YELLOW}🔧 Branches de correctif (fix/issue-*) :${NC}"
@@ -196,9 +395,14 @@ DIFF_STAT=""
 
 case "$MODE" in
     staged)
+        # Staging interactif si rien n'est encore stagé
+        if [[ -z "$(git diff --cached --name-only 2>/dev/null)" ]]; then
+            echo -e "${YELLOW}⚠️  Aucun fichier stagé.${NC}"
+            interactive_stage || exit 0
+        fi
         DIFF_RAW=$(git diff --cached -U0 -- . ':(exclude)*.lock' ':(exclude)*.min.js' ':(exclude)dist/*' ':(exclude)node_modules/*' ':(exclude)*-core.js' ':(exclude)*.wasm' ':(exclude)earth/ffmpeg/*' 2>/dev/null | tr -d '\0' | iconv -c -f UTF-8 -t UTF-8 || true)
         FILES_CHANGED=$(git diff --cached -- . ':(exclude)*.lock' ':(exclude)*.min.js' ':(exclude)dist/*' ':(exclude)node_modules/*' ':(exclude)*-core.js' ':(exclude)*.wasm' ':(exclude)earth/ffmpeg/*' --name-status 2>/dev/null || true)
-        DIFF_STAT=$(git diff --cached --stat 2>/dev/null || true)
+        DIFF_STAT=$(_git diff --cached --stat 2>/dev/null || true)
         if [[ -z "$DIFF_RAW" ]]; then
             echo -e "${YELLOW}⚠️  Aucun fichier stagé (git add).${NC}"
             exit 0
@@ -209,8 +413,8 @@ case "$MODE" in
         DIFF_RAW+=$'\n'$(git diff --cached -U0 -- . ':(exclude)*.lock' ':(exclude)*.min.js' ':(exclude)dist/*' ':(exclude)node_modules/*' ':(exclude)*-core.js' ':(exclude)*.wasm' ':(exclude)earth/ffmpeg/*' 2>/dev/null | tr -d '\0' | iconv -c -f UTF-8 -t UTF-8 || true)
         FILES_CHANGED=$(git diff HEAD -- . ':(exclude)*.lock' ':(exclude)*.min.js' ':(exclude)dist/*' ':(exclude)node_modules/*' ':(exclude)*-core.js' ':(exclude)*.wasm' ':(exclude)earth/ffmpeg/*' --name-status 2>/dev/null || true)
         FILES_CHANGED+=$'\n'$(git diff --cached -- . ':(exclude)*.lock' ':(exclude)*.min.js' ':(exclude)dist/*' ':(exclude)node_modules/*' ':(exclude)*-core.js' ':(exclude)*.wasm' ':(exclude)earth/ffmpeg/*' --name-status 2>/dev/null || true)
-        DIFF_STAT=$(git diff HEAD --stat 2>/dev/null || true)
-        COMMITS_INFO=$(git log -1 --pretty=format:"[%h] %s (%an, %ar)" 2>/dev/null || true)
+        DIFF_STAT=$(_git diff HEAD --stat 2>/dev/null || true)
+        COMMITS_INFO=$(_git log -1 --pretty=format:"[%h] %s (%an, %ar)" 2>/dev/null || true)
         if [[ -z "$DIFF_RAW" || "$DIFF_RAW" =~ ^[[:space:]]*$ ]]; then
             echo -e "${YELLOW}⚠️  Aucune modification non commitée détectée.${NC}"
             echo -e "${BLUE}💡 Le dernier commit:${NC} $COMMITS_INFO"
@@ -220,7 +424,7 @@ case "$MODE" in
         ;;
     day)
         SINCE_DATE=$(date -d "24 hours ago" -Iseconds 2>/dev/null || date -u -v-24H +"%Y-%m-%dT%H:%M:%S")
-        COMMITS_INFO=$(git log --since="$SINCE_DATE" --pretty=format:"[%h] %s (%an, %ar)" 2>/dev/null || true)
+        COMMITS_INFO=$(_git log --since="$SINCE_DATE" --pretty=format:"[%h] %s (%an, %ar)" 2>/dev/null || true)
         FILES_CHANGED=$(git log --since="$SINCE_DATE" --name-status --pretty=format: 2>/dev/null | grep -v '^$' | sort -u || true)
         DIFF_CONTENT=$(git diff "HEAD@{24.hours.ago}" HEAD 2>/dev/null || git log --since="$SINCE_DATE" -p 2>/dev/null || true)
         if [[ -z "$COMMITS_INFO" ]]; then
@@ -230,7 +434,7 @@ case "$MODE" in
         ;;
     week)
         SINCE_DATE=$(date -d "7 days ago" -Iseconds 2>/dev/null || date -u -v-7d +"%Y-%m-%dT%H:%M:%S")
-        COMMITS_INFO=$(git log --since="$SINCE_DATE" --pretty=format:"[%h] %s (%an, %ar)" 2>/dev/null || true)
+        COMMITS_INFO=$(_git log --since="$SINCE_DATE" --pretty=format:"[%h] %s (%an, %ar)" 2>/dev/null || true)
         FILES_CHANGED=$(git log --since="$SINCE_DATE" --name-status --pretty=format: 2>/dev/null | grep -v '^$' | sort -u || true)
         DIFF_CONTENT=$(git diff "HEAD@{7.days.ago}" HEAD 2>/dev/null || git log --since="$SINCE_DATE" -p 2>/dev/null || true)
         if [[ -z "$COMMITS_INFO" ]]; then
@@ -240,7 +444,7 @@ case "$MODE" in
         ;;
     month)
         SINCE_DATE=$(date -d "30 days ago" -Iseconds 2>/dev/null || date -u -v-30d +"%Y-%m-%dT%H:%M:%S")
-        COMMITS_INFO=$(git log --since="$SINCE_DATE" --pretty=format:"[%h] %s (%an, %ar)" 2>/dev/null || true)
+        COMMITS_INFO=$(_git log --since="$SINCE_DATE" --pretty=format:"[%h] %s (%an, %ar)" 2>/dev/null || true)
         FILES_CHANGED=$(git log --since="$SINCE_DATE" --name-status --pretty=format: 2>/dev/null | grep -v '^$' | sort -u || true)
         DIFF_CONTENT=$(git diff "HEAD@{30.days.ago}" HEAD 2>/dev/null || git log --since="$SINCE_DATE" -p 2>/dev/null || true)
         if [[ -z "$COMMITS_INFO" ]]; then
@@ -318,23 +522,33 @@ basic_summary() {
 generate_ai_summary() {
     local prompt
     prompt=$(cat <<PROMPT
-Tu es un automate d'analyse Git pour UPlanet.
+Tu es un automate d'analyse Git pour UPlanet/Astroport.ONE.
 INTERDICTION de faire une introduction ou des commentaires.
 NE FAIS AUCUNE INTRODUCTION NI CONCLUSION. Commence directement par # COMMIT.
-RÉPONSE STRICTEMENT AU FORMAT DEMANDÉ. Si tu ne respectes pas le format, un développeur sera triste.
+RÉPONSE STRICTEMENT AU FORMAT DEMANDÉ.
 RÉPONDS UNIQUEMENT EN FRANÇAIS.
 
 **ANALYSE :**
 1. **MESSAGE DE COMMIT :** Format <type>(<scope>): <description>
-   - Scope : nom du module ou dossier principal (ex: grimoire, wotx2, live).
-   - Description : impératif, pas de majuscule au début, pas de point à la fin.
-   - Types autorisés : feat, fix, refactor, docs, chore
-2. **SCAN DE PROTOCOLES :** Cherche dans le diff :
-   - "kind.*30311" ou "NIP-53" → mentionne "Live Streaming NIP-53"
-   - "kind.*22" → mentionne "publication vidéo (Kind 22)"
-   - "kind.*30504" ou "uDRIVE" → mentionne "formation WoTx2 (Kind 30504)"
-3. **VÉRIFICATION :** Ne cite QUE les fichiers présents dans les "Stats globales". Ne devine pas.
-4. **STYLE :** Sois technique (ex: "Intègre FFmpeg WASM" plutôt que "Ajoute des vidéos").
+   - Scope : dossier principal des fichiers changés (ex: earth, tools, RUNTIME, tests, docs, install).
+     Si plusieurs dossiers → scope = sous-projet le plus significatif (earth > tools > RUNTIME).
+     Si fichier à la racine → scope = basename sans extension.
+   - Description : impératif présent, pas de majuscule, pas de point final, max 72 chars.
+   - Types : feat (nouvelle fonctionnalité), fix (correction), refactor, docs, chore, test
+2. **SCAN DE PATTERNS TECHNIQUES :** Cherche EXACTEMENT ces chaînes dans le diff :
+   - "kind.*30311" ou "NIP-53" → "Live Streaming NIP-53"
+   - "kind.*1311"              → "chat live NIP-53"
+   - "kind.*22\b"              → "publication vidéo Kind 22"
+   - "kind.*30504" ou "uDRIVE" → "formation WoTx2 (Kind 30504)"
+   - "kind.*30500"             → "permis WoTx2 (Kind 30500)"
+   - "app_switch" ou "FAB"     → "navigation FAB circulaire"
+   - "cidirect"                → "accès CID direct IPFS"
+   - "NIP-42"                  → "auth NIP-42"
+   - "MULTIPASS"               → "MULTIPASS UPlanet"
+   - "keygen.*nostr"           → "dérivation clé NOSTR"
+   - "rtk"                     → "intégration RTK (économie tokens)"
+3. **RÈGLE FICHIERS :** Ne cite QUE les fichiers présents dans les Stats globales. Pas d'invention.
+4. **STYLE :** Technique et précis. "corrige accès CID direct" plutôt que "corrige le code".
 
 **CONTEXTE :**
 - Branche : $_cur_branch
@@ -344,12 +558,12 @@ RÉPONDS UNIQUEMENT EN FRANÇAIS.
 **Stats globales (seuls ces fichiers existent) :**
 $DIFF_STAT
 
-**DIFF (Extrait compact -U0, head+tail si tronqué) :**
+**DIFF (compact -U0, head+tail si tronqué) :**
 \`\`\`
 $DIFF_CONTENT
 \`\`\`
 
-**FORMAT DE RÉPONSE OBLIGATOIRE :**
+**FORMAT EXACT DE RÉPONSE (ne rien ajouter avant # COMMIT) :**
 # COMMIT
 <type>(<scope>): <description>
 
@@ -462,6 +676,9 @@ fi
 
 # ── Proposition de commit ─────────────────────────────────────────────────────
 if [[ "$MODE" == "staged" && -n "$COMMIT_MSG" ]]; then
+    # Revue de code IA avant validation (si --ai)
+    ai_code_review "$DIFF_CONTENT"
+
     echo ""
     echo -e "${YELLOW}Message de commit suggéré :${NC}"
     echo -e "${GREEN}  $COMMIT_MSG${NC}"
@@ -476,16 +693,110 @@ ${_extra}"
         echo -e "${GREEN}  $COMMIT_MSG${NC}"
         echo ""
     fi
-    echo -ne "${YELLOW}Valider ce commit ? [o/N] : ${NC}"
+    echo -ne "${YELLOW}Valider ce commit ? [o / N / r=refaire la sélection] : ${NC}"
     read -r confirm
-    if [[ "$confirm" =~ ^[oOyY]$ ]]; then
+    if [[ "$confirm" =~ ^[rR]$ ]]; then
+        echo -e "${BLUE}↩️  Dé-staging et nouvelle sélection...${NC}"
+        git reset HEAD 2>/dev/null || true
+        exec "$0" --staged${_cur_branch:+ --branch "$_cur_branch"}${PR_MODE:+ --pr}${AI_ENHANCED:+ --ai}
+    elif [[ "$confirm" =~ ^[oOyY]$ ]]; then
         git commit -m "$COMMIT_MSG"
         echo -e "${GREEN}✅ Commit créé.${NC}"
+        _pushed=false
         if git remote get-url origin &>/dev/null; then
             echo -e "${BLUE}⬆️  git push...${NC}"
             git push 2>&1 | grep -v '^$' \
-                && echo -e "${GREEN}✅ Push réussi.${NC}" \
+                && { echo -e "${GREEN}✅ Push réussi.${NC}"; _pushed=true; } \
                 || echo -e "${YELLOW}⚠️  Push échoué — vérifiez la connexion ou les droits.${NC}"
+        fi
+
+        # ── Proposition Pull Request (IA) ─────────────────────────────────────
+        _main_branch=$(git remote show origin 2>/dev/null | grep 'HEAD branch' | awk '{print $NF}' || echo "master")
+        if [[ "$_pushed" == "true" && "$_cur_branch" != "$_main_branch" && "$_cur_branch" != "main" && "$_cur_branch" != "master" ]] \
+           && command -v gh &>/dev/null; then
+            echo ""
+            if [[ "$PR_MODE" == "true" ]]; then
+                _do_pr=true
+            else
+                echo -ne "${CYAN}Créer une Pull Request pour '${_cur_branch}' → '${_main_branch}' ? [o/N] : ${NC}"
+                read -r _pr_confirm
+                _do_pr=false
+                [[ "$_pr_confirm" =~ ^[oOyY]$ ]] && _do_pr=true
+            fi
+
+            if [[ "$_do_pr" == "true" ]]; then
+                echo -e "${BLUE}🤖 Génération du titre et corps de PR par l'IA...${NC}"
+                _pr_prompt=$(cat <<PRPROMPT
+Tu rédiges une Pull Request GitHub pour la branche '$_cur_branch' à merger dans '$_main_branch'.
+RÉPONDS UNIQUEMENT EN FRANÇAIS. AUCUNE INTRODUCTION.
+FORMAT STRICT (commence directement par TITRE:) :
+
+TITRE: <titre court et précis, max 72 caractères>
+
+## Résumé
+<2-3 lignes expliquant le but de cette PR>
+
+## Changements principaux
+- …
+
+## Tests effectués
+- …
+
+CONTEXTE :
+Branche source : $_cur_branch
+Branche cible  : $_main_branch
+Dernier message de commit : $COMMIT_MSG
+
+Résumé IA des modifications :
+$SUMMARY
+PRPROMPT
+)
+                _pr_prompt_file=$(mktemp /tmp/pr_prompt_XXXXXX.txt)
+                echo "$_pr_prompt" > "$_pr_prompt_file"
+                _pr_raw=""
+                if [[ -f "$QUESTION_PY" ]]; then
+                    _pr_raw=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 8192 --prompt-file "$_pr_prompt_file" --temperature 0.2 2>/dev/null) || true
+                fi
+                rm -f "$_pr_prompt_file"
+
+                if [[ -n "$_pr_raw" ]]; then
+                    _pr_title=$(echo "$_pr_raw" | grep -m1 '^TITRE:' | sed 's/^TITRE:[[:space:]]*//')
+                    _pr_body=$(echo "$_pr_raw" | sed '1,/^TITRE:/d')
+                    [[ -z "$_pr_title" ]] && _pr_title="$COMMIT_MSG"
+                else
+                    _pr_title="$COMMIT_MSG"
+                    _pr_body="$SUMMARY"
+                fi
+
+                echo ""
+                echo -e "${YELLOW}Titre PR :${NC} ${GREEN}$_pr_title${NC}"
+                echo ""
+                echo -ne "${CYAN}Modifier le titre ? (Entrée pour conserver) : ${NC}"
+                read -r _pr_title_edit
+                [[ -n "$_pr_title_edit" ]] && _pr_title="$_pr_title_edit"
+
+                gh pr create \
+                    --title "$_pr_title" \
+                    --body "$_pr_body" \
+                    --base "$_main_branch" \
+                    --head "$_cur_branch" \
+                    && echo -e "${GREEN}✅ Pull Request créée !${NC}" \
+                    || echo -e "${RED}❌ Erreur gh pr create — vérifiez votre auth (gh auth login).${NC}"
+            fi
+        fi
+
+        # ── Lot suivant : fichiers restants ───────────────────────────────────
+        _rem=$(( $(git diff --name-only 2>/dev/null | wc -l) + $(git ls-files --others --exclude-standard 2>/dev/null | wc -l) ))
+        if [[ $_rem -gt 0 ]]; then
+            echo ""
+            echo -e "${BLUE}📂 $_rem fichier(s) encore non commités.${NC}"
+            echo -ne "${CYAN}Traiter le prochain lot ? [o/N] : ${NC}"
+            read -r _next_batch
+            if [[ "$_next_batch" =~ ^[oOyY]$ ]]; then
+                exec "$0" --staged${_cur_branch:+ --branch "$_cur_branch"}${PR_MODE:+ --pr}${AI_ENHANCED:+ --ai}
+            fi
+        else
+            echo -e "${GREEN}✅ Tous les fichiers commités !${NC}"
         fi
     else
         echo -e "${BLUE}→ Commit annulé (vous pouvez le faire manuellement).${NC}"
