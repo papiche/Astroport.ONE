@@ -446,13 +446,67 @@ sudo apt-get install -y prometheus-node-exporter 2>/dev/null \
     && echo "✅ prometheus-node-exporter actif sur :9100" \
     || echo "⚠️  prometheus-node-exporter non disponible"
 
+###############################################################
+echo "## INSTALL RTK (Rust Token Killer — optimiseur tokens Claude Code) ##"
+###############################################################
+## Standard : one-liner curl (rapide)
+## Dev      : clone + build cargo (modifiable, rebuildable)
+if [[ "${INSTALL_PROFILE}" == "dev" ]]; then
+    mkdir -p ~/.zen/workspace
+    if [[ ! -d ~/.zen/workspace/rtk ]]; then
+        git clone --depth 1 https://github.com/rtk-ai/rtk.git ~/.zen/workspace/rtk \
+            && echo "✅ RTK cloné dans ~/.zen/workspace/rtk" \
+            || echo "⚠️  RTK clone échoué"
+    else
+        (cd ~/.zen/workspace/rtk && git pull --ff-only 2>/dev/null) && echo "✅ RTK à jour" || true
+    fi
+    if [[ -f ~/.zen/workspace/rtk/Cargo.toml ]]; then
+        echo "⏳ Compilation RTK (cargo build --release)..."
+        (cd ~/.zen/workspace/rtk && cargo build --release 2>/dev/null) \
+            && cp ~/.zen/workspace/rtk/target/release/rtk ~/.local/bin/rtk \
+            && echo "✅ RTK compilé : ~/.local/bin/rtk" \
+            || echo "⚠️  RTK build échoué (cargo requis)"
+    fi
+    ## Sélection de l'éditeur à relier à RTK
+    if command -v rtk >/dev/null 2>&1; then
+        echo ""
+        echo "╔══════════════════════════════════════════════════════════════╗"
+        echo "║  🔌 RTK — Relier à votre éditeur de code                    ║"
+        echo "╠══════════════════════════════════════════════════════════════╣"
+        echo "║  [1] Claude Code (VS Code extension)   rtk init             ║"
+        echo "║  [2] Cursor                            rtk init             ║"
+        echo "║  [3] Neovim / Vim                      rtk init --global    ║"
+        echo "║  [4] Tous les projets (global)         rtk init --global    ║"
+        echo "║  [0] Passer (configurer plus tard)                          ║"
+        echo "╚══════════════════════════════════════════════════════════════╝"
+        read -r -p "Choix [1-4, défaut: 4] : " _rtk_editor
+        case "${_rtk_editor:-4}" in
+            1|2) rtk init 2>/dev/null       && echo "✅ RTK hook activé (projet courant)" || true ;;
+            3|4) rtk init --global 2>/dev/null && echo "✅ RTK hook global activé" || true ;;
+            0)   echo "→ RTK installé, configurez avec : rtk init --global" ;;
+        esac
+    fi
+else
+    ## Mode standard — one-liner officiel
+    if ! command -v rtk >/dev/null 2>&1; then
+        echo "⏳ Installation RTK via curl..."
+        curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | sh \
+            && echo "✅ RTK installé" \
+            || echo "⚠️  RTK install échoué (curl requis)"
+        ## Hook global silencieux (pas d'éditeur à choisir en mode standard)
+        command -v rtk >/dev/null 2>&1 && rtk init --global 2>/dev/null || true
+    else
+        echo "ℹ️  RTK déjà présent : $(rtk --version 2>/dev/null || echo 'version inconnue')"
+    fi
+fi
+
 if [[ $INSTALL_PROFILE == "dev" ]]; then
     ###############################################################
     echo "## INSTALL Flutter SDK (web builds for Ginkgo app) ##########"
     ~/.zen/Astroport.ONE/install/install_flutter.sh
     ## Add Flutter to PATH for the rest of install
     export PATH="$HOME/.flutter/bin:$PATH"
-fi 
+fi
 
 echo "=== INSTALL SYSTEM (sudoers, systemd, SSH, symlinks)"
 ~/.zen/Astroport.ONE/install/install_system.sh
