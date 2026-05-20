@@ -1074,6 +1074,15 @@ main() {
         echo ""
     fi
     
+    # Vérification des données existantes
+    EXISTING_DATA=""
+    [[ -f "$HOME/.zen/game/nostr/$CAPTAINEMAIL/did.json.cache" ]] && EXISTING_DATA="Document DID"
+    [[ -d "$HOME/.zen/game/nostr/UMAP_0.00_0.00" ]] && EXISTING_DATA="${EXISTING_DATA} + Zone UMAP Origin"
+    if [[ -n "$EXISTING_DATA" ]]; then
+        echo -e "${YELLOW}⚠️  ATTENTION : Données existantes détectées ($EXISTING_DATA).${NC}"
+        echo -e "${YELLOW}Le test va écraser les versions sur le relay avec les nouveaux timestamps.${NC}"
+        echo -e "Appuyez sur Ctrl+C pour annuler ou..."
+    fi
     read -p "Press Enter to continue or Ctrl+C to cancel..."
     echo ""
     
