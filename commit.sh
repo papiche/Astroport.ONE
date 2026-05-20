@@ -159,6 +159,8 @@ GPROMPT
         _groups=$(timeout 25 python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 2048 \
             --prompt-file "$_gp_file" --temperature 0.1 2>/dev/null) || true
         rm -f "$_gp_file"
+        # Nettoyer les artefacts IA (chiffres parasites en début de ligne)
+        _groups=$(echo "$_groups" | sed 's/^[0-9]\+─/─/g' | sed '/^[[:space:]]*$/d')
         if [[ -n "$_groups" ]]; then
             echo -e "${CYAN}── Groupes suggérés ────────────────────────────────────────────${NC}"
             echo -e "\033[2m$_groups\033[0m"
@@ -201,6 +203,7 @@ GPROMPT
         *)
             IFS=',' read -ra idxs <<< "$_sel"
             for i in "${idxs[@]}"; do
+                i="${i//[[:space:]]/}"   # trim espaces (ex: "1, 4, 5" → "1","4","5")
                 [[ "$i" =~ ^[0-9]+$ ]] && [[ -n "${_fmap[$i]:-}" ]] && selected+=("${_fmap[$i]}")
             done ;;
     esac
@@ -260,6 +263,69 @@ RVPROMPT
         echo -e "$_review"
         echo -e "${CYAN}─────────────────────────────────────────────────────────────────${NC}"
         echo ""
+
+        # ── Intégration code_assistant si problèmes détectés ─────────────
+        if echo "$_review" | grep -q '⚠'; then
+            local _ca="${MY_PATH}/code_assistant"
+            [[ ! -x "$_ca" ]] && _ca=$(command -v code_assistant 2>/dev/null || echo "")
+
+            if [[ -n "$_ca" && -x "$_ca" ]]; then
+                echo -e "${YELLOW}🔧 Des problèmes ont été détectés par la revue.${NC}"
+                echo -ne "${CYAN}   Corriger avec code_assistant (analyse → correction → patch) ? [o/N] : ${NC}"
+                read -r _ca_confirm
+
+                if [[ "$_ca_confirm" =~ ^[oOyY]$ ]]; then
+                    # Extraire fichiers uniques + leurs messages depuis les lignes ⚠️
+                    local -A _warn_map=()
+                    while IFS= read -r _wl; do
+                        echo "$_wl" | grep -q '⚠' || continue
+                        # Format attendu: ⚠️ fichier.ext message...
+                        local _wraw
+                        _wraw=$(echo "$_wl" | sed 's/^[^a-zA-Z_./]*//')
+                        local _wf="${_wraw%% *}"
+                        local _wmsg="${_wraw#* }"
+                        [[ "$_wmsg" == "$_wf" ]] && _wmsg=""
+                        [[ -z "$_wf" ]] && continue
+                        # Vérifier que le fichier existe (relatif ou absolu)
+                        local _wpath="$_wf"
+                        [[ ! -f "$_wpath" && -f "${MY_PATH}/$_wf" ]] && _wpath="${MY_PATH}/$_wf"
+                        [[ ! -f "$_wpath" ]] && continue
+                        _warn_map["$_wpath"]+="${_wmsg}; "
+                    done <<< "$_review"
+
+                    if [[ ${#_warn_map[@]} -gt 0 ]]; then
+                        for _wpath in "${!_warn_map[@]}"; do
+                            local _issues="${_warn_map[$_wpath]%; }"
+                            local _session
+                            _session="ca-$(basename "$_wpath" | sed 's/\.[^.]*$//')-$(date +%Y%m%d)"
+
+                            echo ""
+                            echo -e "${GREEN}╔══════════════════════════════════════════════════════════╗${NC}"
+                            printf "${GREEN}║  🤖 code_assistant : %-38s║${NC}\n" "$(basename "$_wpath")"
+                            echo -e "${GREEN}╚══════════════════════════════════════════════════════════╝${NC}"
+                            echo -e "${YELLOW}   Session   : $_session${NC}"
+                            echo -e "${YELLOW}   Problèmes : ${_issues}${NC}"
+                            echo ""
+
+                            "$_ca" "$_wpath" \
+                                --kvbasename "$_session" \
+                                --supplement "REVUE DE COMMIT : ${_issues}" || true
+                        done
+
+                        echo ""
+                        echo -e "${GREEN}✅ code_assistant terminé — relance du cycle de commit sur les fichiers corrigés...${NC}"
+                        git reset HEAD 2>/dev/null || true
+                        exec "$0" --staged${_cur_branch:+ --branch "$_cur_branch"}${PR_MODE:+ --pr}${AI_ENHANCED:+ --ai}
+                    else
+                        echo -e "${YELLOW}💡 Fichiers non localisés automatiquement.${NC}"
+                        echo -e "${YELLOW}   Lance manuellement : code_assistant <fichier> --kvbasename session${NC}"
+                    fi
+                fi
+            else
+                echo -e "${YELLOW}💡 code_assistant disponible dans ${MY_PATH}/ — correction manuelle :${NC}"
+                echo -e "${YELLOW}   code_assistant <fichier> --kvbasename session --supplement \"<problème>\"${NC}"
+            fi
+        fi
     fi
 }
 
