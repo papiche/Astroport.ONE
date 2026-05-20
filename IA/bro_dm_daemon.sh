@@ -650,7 +650,7 @@ _handle_webcam() {
     )
     [[ -n "$_CHANNEL"       ]] && _CMD+=(--channel       "$_CHANNEL")
     [[ -n "$_DESCRIPTION"   ]] && _CMD+=(--description   "$_DESCRIPTION")
-    [[ -n "$_THUMBNAIL_IPFS"]] && _CMD+=(--thumbnail-cid "$_THUMBNAIL_IPFS")
+    [[ -n "$_THUMBNAIL_IPFS" ]] && _CMD+=(--thumbnail-cid "$_THUMBNAIL_IPFS")
     [[ -n "$_GIFANIM_IPFS"  ]] && _CMD+=(--gifanim-cid   "$_GIFANIM_IPFS")
     [[ -n "$_INFO_CID"      ]] && _CMD+=(--info-cid      "$_INFO_CID")
     [[ -n "$_FILE_HASH"     ]] && _CMD+=(--file-hash     "$_FILE_HASH")
