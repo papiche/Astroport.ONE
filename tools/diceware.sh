@@ -11,10 +11,6 @@ WORDCOUNT=${1-$MOTS}
 # print a list of the diceware words
 cat ${MY_PATH}/diceware-wordlist.txt |
 awk '/[1-6][1-6][1-6][1-6][1-6]/{ print $2 }' |
-# randomize the list order
 shuf --random-source=/dev/urandom |
-# pick the first n words
 head -n ${WORDCOUNT} |
-# pretty print
-tr '\n' ' '
-echo
+paste -sd ' ' -
