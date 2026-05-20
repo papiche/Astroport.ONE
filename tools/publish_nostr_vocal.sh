@@ -96,6 +96,10 @@ source $HOME/.zen/Astroport.ONE/tools/my.sh
 
 # Default values
 RELAYS="ws://127.0.0.1:7777,wss://relay.copylaradio.com"
+# Ajouter $myRELAY seulement s'il est défini et absent de la liste
+if [ -n "$myRELAY" ] && [[ ",$RELAYS," != *",$myRELAY,"* ]]; then
+    RELAYS="$RELAYS,$myRELAY"
+fi
 MIME_TYPE="audio/mp4"
 DURATION=0
 LATITUDE="0.00"

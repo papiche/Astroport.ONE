@@ -99,6 +99,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Default values
 RELAYS="ws://127.0.0.1:7777,wss://relay.copylaradio.com"
+# Ajouter $myRELAY seulement s'il est défini et absent de la liste
+if [ -n "$myRELAY" ] && [[ ",$RELAYS," != *",$myRELAY,"* ]]; then
+    RELAYS="$RELAYS,$myRELAY"
+fi
 FILE_SIZE=0
 JSON_OUTPUT=false
 AUTO_MODE=false

@@ -1392,6 +1392,9 @@ ASTROPORT_DIR="${HOME}/.zen/Astroport.ONE"
 **NOSTR Relays** (publish_nostr_*.sh):
 ```bash
 RELAYS="ws://127.0.0.1:7777,wss://relay.copylaradio.com"
+if [ -n "$myRELAY" ] && [[ ",$RELAYS," != *",$myRELAY,"* ]]; then
+    RELAYS="$RELAYS,$myRELAY"
+fi
 ```
 
 ---

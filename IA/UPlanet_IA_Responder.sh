@@ -393,7 +393,7 @@ TAGS[status]=false
 TAGS[whoami]=false
 
 # Single pass tag detection
-if [[ "$message_text" =~ \#BRO\ + ]]; then TAGS[BRO]=true; fi
+if [[ "$message_text" =~ \#BRO([[:space:]]|$) ]]; then TAGS[BRO]=true; fi
 if [[ "$message_text" =~ \#BOT\ + ]]; then TAGS[BOT]=true; fi
 if [[ "$message_text" =~ \#reset ]]; then TAGS[reset]=true; fi
 if [[ "$message_text" =~ \#mem ]]; then TAGS[mem]=true; fi
