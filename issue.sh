@@ -309,6 +309,129 @@ case "$COMMAND" in
             done
         fi
         echo ""
+        if [[ "$count" -gt 0 && "$STATE" == "open" ]]; then
+            echo -ne "${CYAN}[t=triage / numéro=analyser / Entrée=quitter] :${NC} "
+            read -r _lact </dev/tty
+            case "${_lact:-}" in
+                t)   exec "$0" triage ;;
+                [0-9]*) exec "$0" analyze "$_lact" --ai claude ;;
+            esac
+        fi
+        ;;
+
+    # ─── triage ──────────────────────────────────────────────────────────────
+    triage)
+        _triage_ai() {
+            local _num="$1" _title="$2" _body="$3" _created="$4"
+            # Vérification rapide : commit mentionnant #N dans le dépôt ?
+            local _fix_commit
+            _fix_commit=$(git log --oneline --all --grep="#${_num}" 2>/dev/null | head -1 || echo "")
+            if [[ -n "$_fix_commit" ]]; then
+                echo "fixed|commit trouvé : ${_fix_commit:0:60}"
+                return
+            fi
+            # Date de création pour git log --since
+            local _since
+            _since=$(python3 -c "
+from datetime import datetime
+try:
+    dt=datetime.fromisoformat('$_created'.replace('Z','+00:00'))
+    print(dt.strftime('%Y-%m-%dT%H:%M:%S'))
+except: print('1970-01-01')
+" 2>/dev/null || echo "1970-01-01")
+            local _recent
+            _recent=$(git log --oneline --since="$_since" --all 2>/dev/null | head -8 || echo "")
+            # Appel IA
+            if command -v claude &>/dev/null; then
+                local _cfg="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
+                local _pf; _pf=$(mktemp /tmp/triage_XXXXXX.txt)
+                cat > "$_pf" <<TPROMPT
+Issue GitHub #$_num: "$_title"
+Créée le : $_created
+Body (500c) : $(echo "$_body" | head -c 500)
+
+Commits dépôt depuis creation :
+${_recent:-"(aucun)"}
+
+FORMAT STRICT — une ligne, sans rien d'autre :
+verdict|raison_max_80_chars
+
+Verdicts :
+valid     → bug réel encore présent
+fixed     → déjà corrigé (voir commits)
+PFH       → erreur utilisateur/config (PEBKAC)
+obsolete  → plus pertinent
+TPROMPT
+                local _r
+                _r=$(CLAUDE_CONFIG_DIR="$_cfg" claude --print < "$_pf" 2>/dev/null | grep -m1 '|' | head -1) || true
+                rm -f "$_pf"
+                # Quota
+                if echo "$_r" | grep -qi "weekly limit\|You've hit\|quota"; then
+                    _r="valid|⚠️ quota épuisé — vérification manuelle"
+                fi
+                [[ -n "$_r" ]] && { echo "$_r"; return; }
+            fi
+            echo "valid|IA indisponible — vérification manuelle"
+        }
+
+        _issues=$(_api GET "/repos/${REPO}/issues?state=open&per_page=50&sort=updated")
+        _count=$(echo "$_issues" | jq 'length')
+        [[ "$_count" -eq 0 ]] && echo "Aucune issue ouverte." && exit 0
+
+        echo ""
+        echo -e "${CYAN}Triage — ${REPO} (${_count} issues)${NC}"
+        echo -e "══════════════════════════════════════════════════════"
+
+        echo "$_issues" | jq -c '.[]' | while IFS= read -r _iss; do
+            _n=$(echo "$_iss"   | jq -r '.number')
+            _t=$(echo "$_iss"   | jq -r '.title')
+            _b=$(echo "$_iss"   | jq -r '.body // ""')
+            _cr=$(echo "$_iss"  | jq -r '.created_at')
+            _usr=$(echo "$_iss" | jq -r '.user.login // "?"')
+
+            echo ""
+            echo -e "${BLUE}#${_n}${NC} ${_t:0:70}  ${CYAN}@${_usr}${NC}"
+            echo -ne "  ${YELLOW}analyse...${NC}"
+
+            _verdict=$(_triage_ai "$_n" "$_t" "$_b" "$_cr")
+            _vtype=$(echo "$_verdict" | cut -d'|' -f1 | tr -d '[:space:]')
+            _vreason=$(echo "$_verdict" | cut -d'|' -f2-)
+
+            case "$_vtype" in
+                valid)    _vico="${GREEN}✅ valid${NC}" ;;
+                fixed)    _vico="${CYAN}✓  fixed${NC}" ;;
+                PFH)      _vico="${YELLOW}⚠️  PFH${NC}" ;;
+                obsolete) _vico="${RED}🗑  obsolete${NC}" ;;
+                *)        _vico="${YELLOW}?  ${_vtype}${NC}" ;;
+            esac
+            echo -e "\r  $(echo -e "$_vico") — ${_vreason}"
+
+            case "$_vtype" in
+                valid)
+                    echo -ne "  ${CYAN}[Entrée=suivant / a=analyser / c=fermer] :${NC} "
+                    read -r _act </dev/tty
+                    case "${_act:-}" in
+                        a) "$0" analyze "$_n" --ai claude ;;
+                        c)
+                            read -r -p "  Raison : " _cr_reason </dev/tty
+                            "$0" close "$_n" "${_cr_reason:-fermée manuellement}" 2>/dev/null || true
+                            ;;
+                    esac ;;
+                *)
+                    echo -ne "  ${CYAN}[Entrée=fermer / k=garder / a=analyser] :${NC} "
+                    read -r _act </dev/tty
+                    case "${_act:-}" in
+                        k) echo -e "  ${GREEN}→ gardée${NC}" ;;
+                        a) "$0" analyze "$_n" --ai claude ;;
+                        *)
+                            _cb="Triage automatique : **${_vtype}** — ${_vreason}"
+                            "$0" close "$_n" "$_cb" 2>/dev/null \
+                                && echo -e "  ${GREEN}✓ Fermée${NC}" \
+                                || echo -e "  ${YELLOW}⚠️ Fermeture échouée${NC}" ;;
+                    esac ;;
+            esac
+        done
+        echo ""
         ;;
 
     # ─── show ────────────────────────────────────────────────────────────────
@@ -341,16 +464,21 @@ case "$COMMAND" in
 
     # ─── create ──────────────────────────────────────────────────────────────
     create)
-        TITLE="${1:?'create requiert un titre'}"
-        BODY="${2:-}"
+        TITLE=""
+        BODY=""
         LABEL_ARG=""
-        shift; shift 2>/dev/null || true
+        # Support flags --title, --body, --label ET positionnels (rétrocompat)
         while [[ $# -gt 0 ]]; do
             case "$1" in
+                --title) shift; TITLE="$1"; shift ;;
+                --body)  shift; BODY="$1";  shift ;;
                 --label) shift; LABEL_ARG="$1"; shift ;;
-                *) BODY="${BODY} $1"; shift ;;
+                *)
+                    [[ -z "$TITLE" ]] && TITLE="$1" || BODY="${BODY:+$BODY }$1"
+                    shift ;;
             esac
         done
+        [[ -z "$TITLE" ]] && { echo "create requiert un titre" >&2; exit 1; }
 
         labels_json="[]"
         [[ -n "$LABEL_ARG" ]] && labels_json="[\"${LABEL_ARG}\"]"
