@@ -919,6 +919,14 @@ coop_load_env_vars() {
     val=$(coop_config_get "PLANTNET_API_KEY" 2>/dev/null)
     [[ -n "$val" ]] && export PLANTNET_API_KEY="$val"
 
+    # Load Git credentials (GIT_TOKEN is encrypted, GIT_HOST/GIT_OWNER are plain)
+    val=$(echo "$config" | jq -r '.GIT_HOST // empty' 2>/dev/null)
+    [[ -n "$val" ]] && export GIT_HOST="$val"
+    val=$(echo "$config" | jq -r '.GIT_OWNER // empty' 2>/dev/null)
+    [[ -n "$val" ]] && export GIT_OWNER="$val"
+    val=$(coop_config_get "GIT_TOKEN" 2>/dev/null)
+    [[ -n "$val" ]] && export GIT_TOKEN="$val"
+
     # Load MailJet credentials (auto-decrypted)
     val=$(coop_config_get "MJ_APIKEY_PUBLIC" 2>/dev/null)
     [[ -n "$val" ]] && export MJ_APIKEY_PUBLIC="$val"

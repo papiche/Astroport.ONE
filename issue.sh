@@ -34,9 +34,9 @@ GIT_OWNER="${GIT_OWNER:-}"
 
 _COOP_SH="${_TOOLS_DIR}/cooperative_config.sh"
 if [[ -f "$_COOP_SH" ]]; then
-    [[ -z "$GIT_HOST"  ]] && GIT_HOST=$(bash  "$_COOP_SH" get GIT_HOST  2>/dev/null || true)
-    [[ -z "$GIT_TOKEN" ]] && GIT_TOKEN=$(bash "$_COOP_SH" get GIT_TOKEN 2>/dev/null || true)
-    [[ -z "$GIT_OWNER" ]] && GIT_OWNER=$(bash "$_COOP_SH" get GIT_OWNER 2>/dev/null || true)
+    [[ -z "$GIT_HOST"  ]] && GIT_HOST=$(timeout 8 bash  "$_COOP_SH" get GIT_HOST  2>/dev/null || true)
+    [[ -z "$GIT_TOKEN" ]] && GIT_TOKEN=$(timeout 8 bash "$_COOP_SH" get GIT_TOKEN 2>/dev/null || true)
+    [[ -z "$GIT_OWNER" ]] && GIT_OWNER=$(timeout 8 bash "$_COOP_SH" get GIT_OWNER 2>/dev/null || true)
 fi
 
 GIT_HOST="${GIT_HOST:-https://github.com}"
