@@ -133,7 +133,29 @@ Pour exprimer publiquement qu'on veut apprendre un skill :
 
 ## Comment ajouter une ressource dans l'onglet Formation
 
-### Depuis l'interface (Mode Édition)
+Trois voies disponibles selon le contexte :
+
+### Via le Studio (import clip + trim rapide)
+
+1. Onglet **Formation** → bouton **Ajouter une ressource** (ou panel LIVE → **✂ Studio**)
+2. Glisser un fichier WebM (enregistrement vdo.ninja) ou MP4
+3. Ajuster les sliders Début / Fin pour garder la partie utile
+4. Renseigner un skill (optionnel) → **✂ Couper & Publier**
+5. → Encodage FFmpeg WASM local → upload IPFS → Kind 21/22 publié sur le relay
+
+### Via l'Éditeur Vidéo (dérusage & montage multi-clips)
+
+Pour les contenus plus longs ou composés de plusieurs prises :
+
+1. Onglet **Formation** → bouton **✂ Éditeur** (ou panel LIVE → **🎬 Éditeur**)
+2. Charger un ou plusieurs clips dans le panel Clips
+3. Utiliser les marqueurs I/O et la commande D pour marquer les plages à supprimer
+4. Vérifier la timeline (segments 🟩 garder / 🟥 supprimer)
+5. Renseigner titre et skill → **🎞 Exporter & Publier**
+
+Voir [GRIMOIRE_LIVE.md — Éditeur Vidéo](GRIMOIRE_LIVE.md#4-éditeur-vidéo--dérusage--montage-final-cut) pour le détail complet.
+
+### Depuis le navigateur de médias (Mode Édition)
 
 1. Activer **✏️ Éditer** (topbar)
 2. Aller dans l'onglet **Formation**
@@ -156,7 +178,7 @@ python3 tools/nostr_node_intercom.py publish \
 
 Puis indexer pour BRO :
 ```bash
-./tools/knowledge_index.sh --index-nostr
+./admin/ia_db/knowledge_index.sh --index-nostr
 ```
 
 ---
@@ -181,14 +203,21 @@ Après chaque craft réussi, MineLife génère automatiquement une courte vidéo
 4. Upload vers `/api/fileupload` (UPassport port 54321) → CID IPFS direct (`cidirect`)
 5. Publication Kind 22 (NIP-71 Short Video) sur le relay
 
+**Indicateur 📹 dans Mes Compétences :** si une vidéo Grimoire existe pour un skill (Kind 21/22 avec `#t: GrimoireVideo`), un badge 📹 apparaît à côté du skill. Clic = ouvrir la vidéo. Double-clic = ouvrir l'Éditeur Vidéo pour l'améliorer.
+
+**Préparer le Grimoire avant le craft :**
+- Demander à BRO `#badge linux` → génère le badge image via ComfyUI
+- Demander à BRO `#tts linux` → génère la narration Orpheus (Kind 1222)
+- Le Grimoire utilisera automatiquement ces assets lors du prochain craft réussi
+
 **Si la vidéo ne se génère pas :**
 - Vérifier que le serveur renvoie les headers HTTP requis par SharedArrayBuffer :
   ```
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Embedder-Policy: require-corp
   ```
-- Vérifier que `earth/ffmpeg/ffmpeg-core.wasm` est accessible (fichier ~30 MB, inclus dans le repo).
-- Si aucun badge n'est trouvé : demander à BRO `#badge <skill>` pour déclencher la génération ComfyUI.
+- Vérifier que `earth/ffmpeg/ffmpeg-core.wasm` est accessible (~30 MB, inclus dans le repo).
+- Si aucun badge n'est trouvé : demander à BRO `#badge <skill>`.
 
 La génération est **silencieuse en cas d'échec** — le craft est validé même sans vidéo.
 
@@ -259,7 +288,8 @@ badge + narration → MP4 Ken Burns → IPFS → Kind 22
 | 4 | NIP-04 | DM vers pair (demande d'attestation) |
 | 5 | NIP-09 | Révocation de credential |
 | 7 | NIP-25 | Réaction validation (`+`) ou paiement ẐEN (`+N`) |
-| 22 | NIP-71 | Short video Grimoire (post-craft) |
+| 21 | NIP-71 | Long video (> 60 s) — Studio / VideoEditor |
+| 22 | NIP-71 | Short video (≤ 60 s) — Grimoire post-craft, Studio, VideoEditor |
 | 1063 | NIP-94 | Métadonnées fichier IPFS (badge image) |
 | 1222 | NIP-A0 | Narration TTS (audio Grimoire) |
 | 1311 | NIP-53 | Live chat message |
@@ -268,7 +298,7 @@ badge + narration → MP4 Ken Burns → IPFS → Kind 22
 | 30501 | WoTx2 | Aspiration / demande de certification |
 | 30502 | WoTx2 | Attestation P2P |
 | 30503 | WoTx2 | Credential (permis émis) |
-| 30504 | WoTx2 | Ressource de formation |
+| 30504 | WoTx2 | Ressource de formation (vidéo, PDF, lien lié à un skill) |
 
 ---
 
@@ -278,11 +308,12 @@ badge + narration → MP4 Ken Burns → IPFS → Kind 22
 |---------|------|
 | `UPlanet/earth/minelife.html` | Interface principale MineLife |
 | `UPlanet/earth/minelife.js` | Widget crafting (`MineLife.init`) |
-| `UPlanet/earth/grimoire.js` | Module vidéo Grimoire (FFmpeg WASM) |
+| `UPlanet/earth/grimoire.js` | Module Grimoire : Ken Burns, Studio trim, concatSegments |
+| `UPlanet/earth/video-editor.js` | Éditeur vidéo Final Cut (dérusage, multi-clips, timeline) |
 | `Astroport.ONE/tools/oracle_init_captain_wotx2.sh` | Bootstrap Kind 30500 capitaines |
 | `Astroport.ONE/RUNTIME/ORACLE.refresh.sh` | Émet Kind 30503 Oracle (cron) |
 | `Astroport.ONE/IA/bro_dm_daemon.sh` | Daemon Kind 4 BRO |
-| `Astroport.ONE/tools/knowledge_index.sh` | Index vectoriel Qdrant |
+| `Astroport.ONE/admin/ia_db/knowledge_index.sh` | Index vectoriel Qdrant |
 
 ---
 

@@ -102,6 +102,43 @@ vagrant ssh              # Connexion
 
 ---
 
+## Gestion Docker quotidienne — `admin/docker.sh`
+
+Le script `admin/docker.sh` centralise les opérations de maintenance Docker pour le Capitaine.
+
+```bash
+# État des conteneurs
+./admin/docker.sh status
+
+# Mettre à jour toute la stack (pull + redémarre uniquement les conteneurs modifiés)
+./admin/docker.sh update
+
+# Mettre à jour un seul service
+./admin/docker.sh update astroport
+
+# Consulter les logs en temps réel
+./admin/docker.sh logs astroport
+./admin/docker.sh logs open-webui
+
+# Redémarrer
+./admin/docker.sh restart
+./admin/docker.sh restart astroport
+
+# Nettoyage images et volumes orphelins
+./admin/docker.sh clean
+
+# Watchtower (mises à jour automatiques)
+./admin/docker.sh watchtower start    # Active les mises à jour automatiques
+./admin/docker.sh watchtower status   # Vérifie l'état
+./admin/docker.sh watchtower stop     # Désactive
+```
+
+`update` est intelligent : il ne redémarre que les conteneurs dont l'image a changé depuis le dernier pull. GPU NVIDIA détecté automatiquement (overlay `docker-compose.gpu.yml`).
+
+Logs : `~/.zen/tmp/docker_admin.log`
+
+---
+
 ## Étapes suivantes
 
 - [Architecture complète](../explanation/architecture_overview.md)

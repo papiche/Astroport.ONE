@@ -1137,10 +1137,33 @@ _send_welcome_messages
 ## Attendre la fin des traitements initiaux avant la boucle inotifywait
 wait
 
-## ── Boucle inotifywait ───────────────────────────────────────────────
-inotifywait -m -e close_write -e moved_to --format '%f' "$QUEUE_DIR" 2>/dev/null | \
-while IFS= read -r _fname; do
-    [[ "$_fname" == *.json ]] || continue
-    _process_event_async "$QUEUE_DIR/$_fname" &
+## ── Boucle inotifywait avec fallback polling ─────────────────────────
+_inotify_ok=false
+command -v inotifywait &>/dev/null && _inotify_ok=true
+
+while [[ "$_BRO_CLEAN_STOP" != true ]]; do
+    if $_inotify_ok; then
+        inotifywait -m -e close_write -e moved_to --format '%f' "$QUEUE_DIR" 2>/dev/null | \
+        while IFS= read -r _fname; do
+            [[ "$_BRO_CLEAN_STOP" == true ]] && break
+            [[ "$_fname" == *.json ]] || continue
+            _process_event_async "$QUEUE_DIR/$_fname" &
+        done
+        # inotifywait a terminé (dépassement inotify, remontage FS, SIGPIPE…)
+        [[ "$_BRO_CLEAN_STOP" == true ]] && break
+        _log "⚠️  inotifywait terminé — retry dans 5s"
+        sleep 5
+    else
+        # Fallback : polling toutes les 10s
+        for _f in "$QUEUE_DIR"/*.json; do
+            [[ -f "$_f" ]] || continue
+            _process_event_async "$_f" &
+        done
+        sleep 10
+    fi
+    # Traiter les éventuels fichiers arrivés pendant le redémarrage
+    for _f in "$QUEUE_DIR"/*.json; do
+        [[ -f "$_f" ]] && _process_event_async "$_f" &
+    done
 done
 wait

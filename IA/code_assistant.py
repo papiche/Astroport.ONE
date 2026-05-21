@@ -808,7 +808,16 @@ def main():
 
     # R1: Sélection automatique du modèle par phase si non spécifié
     effective_model = args.model or PHASE_MODELS.get(args.phase, DEFAULT_MODEL)
-    # Vérifier si le modèle par défaut est disponible, sinon utiliser fallback
+    # Chaîne de fallback par ordre de préférence (meilleur → acceptable)
+    FALLBACK_CHAIN = [
+        "qwen2.5-coder:14b",
+        "qwen3:14b",
+        "qwen2.5-coder:7b",
+        "qwen2.5:latest",
+        "mistral-small3.1:latest",
+        "gemma3:12b",
+        "gemma3:latest",
+    ]
     if args.model is None:
         try:
             available = ollama.list()
@@ -817,9 +826,14 @@ def main():
             )
             base = effective_model.split(":")[0]
             if base not in model_names:
-                print(f"  [R1] {effective_model} absent, fallback → {DEFAULT_MODEL}",
-                      file=sys.stderr)
+                # Chercher le meilleur modèle disponible dans la chaîne de fallback
                 effective_model = DEFAULT_MODEL
+                for fb in FALLBACK_CHAIN:
+                    if fb.split(":")[0] in model_names:
+                        effective_model = fb
+                        break
+                print(f"  [R1] Modèle phase absent, fallback → {effective_model}",
+                      file=sys.stderr)
             else:
                 print(f"  [R1] Modèle phase '{args.phase}' → {effective_model}",
                       file=sys.stderr)

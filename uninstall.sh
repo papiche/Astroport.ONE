@@ -401,7 +401,7 @@ echo "DISABLING FIREWALL RULES"
 # Désactiver UFW (révoque toutes les règles posées par firewall.sh ON)
 if which ufw &>/dev/null && sudo ufw status | grep -q "Status: active"; then
     echo "Disabling UFW firewall..."
-    ~/.zen/Astroport.ONE/tools/firewall.sh OFF 2>/dev/null \
+    ~/.zen/Astroport.ONE/admin/system/firewall.sh OFF 2>/dev/null \
         || sudo ufw --force disable 2>/dev/null
 fi
 

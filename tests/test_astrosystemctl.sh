@@ -1,7 +1,7 @@
 #!/bin/bash
 ###############################################################################
 # tests/test_astrosystemctl.sh
-# Batterie de tests pour tools/astrosystemctl.sh
+# Batterie de tests pour admin/system/astrosystemctl.sh
 #
 # Usage : ./tests/test_astrosystemctl.sh [groupe]
 #   groupes : pure env private modules check install commands errors
@@ -212,7 +212,7 @@ _source_astrosystemctl() {
     export TUNNELS_ENABLED="$TEST_FAKE_HOME/.zen/tunnels/enabled"
     export TUNNEL_LOG="$TEST_FAKE_HOME/.zen/tmp/tunnel.log"
     # shellcheck source=/dev/null
-    source "$ASTRO_DIR/tools/astrosystemctl.sh" 2>/dev/null
+    source "$ASTRO_DIR/admin/system/astrosystemctl.sh" 2>/dev/null
     export PATH="$orig_path"
     unset ASTROSYSTEMCTL_TEST
     _SOURCED_ASTROSYSTEMCTL=1
@@ -224,7 +224,7 @@ _run_astrosystemctl() {
     HOME="$TEST_FAKE_HOME" \
     IPFSNODEID="$TEST_FAKE_IPFSID" \
     SWARM_DIR="$TEST_FAKE_HOME/.zen/tmp/swarm" \
-    bash "$ASTRO_DIR/tools/astrosystemctl.sh" "$@" 2>/dev/null
+    bash "$ASTRO_DIR/admin/system/astrosystemctl.sh" "$@" 2>/dev/null
 }
 
 ###############################################################################
@@ -565,7 +565,7 @@ run_tests_commands() {
     local check_out check_ret=0
     check_out="$(HOME="$TEST_FAKE_HOME" IPFSNODEID="$TEST_FAKE_IPFSID" \
         PATH="$TEST_MOCK_BIN:$PATH" \
-        bash "$ASTRO_DIR/tools/astrosystemctl.sh" local check 2>/dev/null)" || check_ret=$?
+        bash "$ASTRO_DIR/admin/system/astrosystemctl.sh" local check 2>/dev/null)" || check_ret=$?
 
     assert_true '[[ "$check_out" == *"RECOMMANDATIONS"* ]]'    "local check: titre présent"
     assert_true '[[ "$check_out" == *"Power-Score"* ]]'        "local check: Power-Score affiché"
@@ -577,7 +577,7 @@ run_tests_commands() {
     local badfilter_ret=0
     HOME="$TEST_FAKE_HOME" IPFSNODEID="$TEST_FAKE_IPFSID" \
         PATH="$TEST_MOCK_BIN:$PATH" \
-        bash "$ASTRO_DIR/tools/astrosystemctl.sh" local check "list" >/dev/null 2>&1 \
+        bash "$ASTRO_DIR/admin/system/astrosystemctl.sh" local check "list" >/dev/null 2>&1 \
         || badfilter_ret=$?
     assert_true '[[ $badfilter_ret -ne 0 ]]' "local check list: retour erreur (module 'list' inexistant)"
 
@@ -585,14 +585,14 @@ run_tests_commands() {
     local list_out
     list_out="$(HOME="$TEST_FAKE_HOME" IPFSNODEID="$TEST_FAKE_IPFSID" \
         PATH="$TEST_MOCK_BIN:$PATH" \
-        bash "$ASTRO_DIR/tools/astrosystemctl.sh" local 2>/dev/null)" || true
+        bash "$ASTRO_DIR/admin/system/astrosystemctl.sh" local 2>/dev/null)" || true
     assert_true '[[ "$list_out" == *"SERVICES IA"* ]]'         "local (sans arg): tableau services IA"
 
     # ── status (swarm vide) ───────────────────────────────────────────────
     local status_out
     status_out="$(HOME="$TEST_FAKE_HOME" IPFSNODEID="$TEST_FAKE_IPFSID" \
         PATH="$TEST_MOCK_BIN:$PATH" \
-        bash "$ASTRO_DIR/tools/astrosystemctl.sh" status 2>/dev/null)" || true
+        bash "$ASTRO_DIR/admin/system/astrosystemctl.sh" status 2>/dev/null)" || true
     assert_true '[[ "$status_out" == *"PUBLIÉS"* ]]'           "status: section services publiés"
     assert_true '[[ "$status_out" == *"CONSOMMÉS"* ]]'         "status: section services consommés"
     assert_true '[[ "$status_out" == *"PERSISTANTS"* ]]'       "status: section tunnels persistants"
@@ -613,7 +613,7 @@ run_tests_errors() {
     # ── local avec sous-commande inconnue ─────────────────────────────────
     local subcmd_ret=0
     HOME="$TEST_FAKE_HOME" IPFSNODEID="$TEST_FAKE_IPFSID" \
-        bash "$ASTRO_DIR/tools/astrosystemctl.sh" local souscommandemystere 2>/dev/null \
+        bash "$ASTRO_DIR/admin/system/astrosystemctl.sh" local souscommandemystere 2>/dev/null \
         || subcmd_ret=$?
     assert_true '[[ $subcmd_ret -ne 0 ]]' "local sous-commande inconnue: code erreur"
 
@@ -621,7 +621,7 @@ run_tests_errors() {
     local conn_ret=0
     HOME="$TEST_FAKE_HOME" IPFSNODEID="$TEST_FAKE_IPFSID" \
         PATH="$TEST_MOCK_BIN:$PATH" \
-        bash "$ASTRO_DIR/tools/astrosystemctl.sh" connect 2>/dev/null \
+        bash "$ASTRO_DIR/admin/system/astrosystemctl.sh" connect 2>/dev/null \
         || conn_ret=$?
     assert_true '[[ $conn_ret -ne 0 ]]' "connect sans argument: code erreur"
 
@@ -629,7 +629,7 @@ run_tests_errors() {
     local enable_ret=0
     HOME="$TEST_FAKE_HOME" IPFSNODEID="$TEST_FAKE_IPFSID" \
         PATH="$TEST_MOCK_BIN:$PATH" \
-        bash "$ASTRO_DIR/tools/astrosystemctl.sh" enable 2>/dev/null \
+        bash "$ASTRO_DIR/admin/system/astrosystemctl.sh" enable 2>/dev/null \
         || enable_ret=$?
     assert_true '[[ $enable_ret -ne 0 ]]' "enable sans argument: code erreur"
 
@@ -637,7 +637,7 @@ run_tests_errors() {
     local disable_ret=0
     HOME="$TEST_FAKE_HOME" IPFSNODEID="$TEST_FAKE_IPFSID" \
         PATH="$TEST_MOCK_BIN:$PATH" \
-        bash "$ASTRO_DIR/tools/astrosystemctl.sh" disable 2>/dev/null \
+        bash "$ASTRO_DIR/admin/system/astrosystemctl.sh" disable 2>/dev/null \
         || disable_ret=$?
     assert_true '[[ $disable_ret -ne 0 ]]' "disable sans argument: code erreur"
 
@@ -645,7 +645,7 @@ run_tests_errors() {
     local start_ret=0
     HOME="$TEST_FAKE_HOME" IPFSNODEID="$TEST_FAKE_IPFSID" \
         PATH="$TEST_MOCK_BIN:$PATH" \
-        bash "$ASTRO_DIR/tools/astrosystemctl.sh" local start 2>/dev/null \
+        bash "$ASTRO_DIR/admin/system/astrosystemctl.sh" local start 2>/dev/null \
         || start_ret=$?
     assert_true '[[ $start_ret -ne 0 ]]' "local start sans argument: code erreur"
 
@@ -653,7 +653,7 @@ run_tests_errors() {
     local stop_ret=0
     HOME="$TEST_FAKE_HOME" IPFSNODEID="$TEST_FAKE_IPFSID" \
         PATH="$TEST_MOCK_BIN:$PATH" \
-        bash "$ASTRO_DIR/tools/astrosystemctl.sh" local stop 2>/dev/null \
+        bash "$ASTRO_DIR/admin/system/astrosystemctl.sh" local stop 2>/dev/null \
         || stop_ret=$?
     assert_true '[[ $stop_ret -ne 0 ]]' "local stop sans argument: code erreur"
 
@@ -661,13 +661,13 @@ run_tests_errors() {
     local uninstall_ret=0
     HOME="$TEST_FAKE_HOME" IPFSNODEID="$TEST_FAKE_IPFSID" \
         PATH="$TEST_MOCK_BIN:$PATH" \
-        bash "$ASTRO_DIR/tools/astrosystemctl.sh" local uninstall 2>/dev/null \
+        bash "$ASTRO_DIR/admin/system/astrosystemctl.sh" local uninstall 2>/dev/null \
         || uninstall_ret=$?
     assert_true '[[ $uninstall_ret -ne 0 ]]' "local uninstall sans argument: code erreur"
 
     # ── Syntaxe bash du script ────────────────────────────────────────────
     local syntax_ret=0
-    bash -n "$ASTRO_DIR/tools/astrosystemctl.sh" 2>/dev/null || syntax_ret=$?
+    bash -n "$ASTRO_DIR/admin/system/astrosystemctl.sh" 2>/dev/null || syntax_ret=$?
     assert_equal "0" "$syntax_ret" "syntaxe bash: astrosystemctl.sh valide"
 
     bash -n "$ASTRO_DIR/install/install_webtop.sh" 2>/dev/null || syntax_ret=$?

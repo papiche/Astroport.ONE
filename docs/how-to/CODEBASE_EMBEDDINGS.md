@@ -30,10 +30,10 @@ L'index peut être **snapshotté sur IPFS** et partagé dans la constellation : 
 docker compose --profile ai up -d
 
 # 2. Indexer tout le codebase (~5-15 min selon taille)
-./tools/codebase_index.sh --index
+./admin/ia_db/codebase_index.sh --index
 
 # 3. Vérifier
-./tools/codebase_index.sh --stats
+./admin/ia_db/codebase_index.sh --stats
 ```
 
 Output attendu :
@@ -58,14 +58,14 @@ Output attendu :
 Après modification de fichiers, réindexer uniquement les fichiers dont le `mtime` a changé :
 
 ```bash
-./tools/codebase_index.sh --incremental
+./admin/ia_db/codebase_index.sh --incremental
 ```
 
 À automatiser via cron ou hook git post-commit :
 ```bash
 # .git/hooks/post-commit
 #!/bin/bash
-~/workspace/AAA/Astroport.ONE/tools/codebase_index.sh --incremental &
+~/workspace/AAA/Astroport.ONE/admin/ia_db/codebase_index.sh --incremental &
 ```
 
 ---
@@ -74,7 +74,7 @@ Après modification de fichiers, réindexer uniquement les fichiers dont le `mti
 
 ```bash
 # Recherche directe
-./tools/codebase_index.sh --search "carte leaflet carré blanc tuiles manquantes"
+./admin/ia_db/codebase_index.sh --search "carte leaflet carré blanc tuiles manquantes"
 
 # Output : score<TAB>path (trié par pertinence)
 0.8821  UPlanet/earth/g1.html
@@ -91,7 +91,7 @@ Dans `issue.sh analyze`, Qdrant est interrogé en priorité. Si indisponible, fa
 Le nœud maître publie l'index sur IPFS :
 
 ```bash
-./tools/codebase_index.sh --snapshot
+./admin/ia_db/codebase_index.sh --snapshot
 # → Snapshot IPFS : QmXxxxx...
 # → CID mémorisé dans .codebase_index.cid
 ```
@@ -99,7 +99,7 @@ Le nœud maître publie l'index sur IPFS :
 Les nœuds secondaires restaurent depuis le CID :
 
 ```bash
-./tools/codebase_index.sh --restore QmXxxxx...
+./admin/ia_db/codebase_index.sh --restore QmXxxxx...
 # Qdrant récupère le snapshot directement via la gateway IPFS locale
 ```
 
@@ -141,7 +141,7 @@ Ajouter dans `install/install-ai-company.docker.sh` ou `install/setup/setup.sh` 
 if [[ "${INSTALL_MODE:-}" == "dev" ]] && \
    curl -sf http://localhost:6333/health &>/dev/null; then
     echo "[setup] Indexation vectorielle du codebase..."
-    "${MY_PATH}/tools/codebase_index.sh" --incremental &
+    "${MY_PATH}/admin/ia_db/codebase_index.sh" --incremental &
 fi
 ```
 

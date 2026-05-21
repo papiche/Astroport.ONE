@@ -143,7 +143,7 @@ show_help() {
     echo -e "  coop_config_set GIT_TOKEN        \"ghp_xxx\""
     echo -e "  coop_config_set GIT_HOST         \"https://github.com\""
     echo -e "  coop_config_set GIT_OWNER        \"papiche\""
-    echo -e "  coop_config_set ANTHROPIC_API_KEY \"sk-ant-xxx\""
+    echo -e "  coop_config_set ANTHROPIC_API_KEY \"sk-ant-xxx\"  # pour l'API directe (optionnel si claude CLI installé)"
     echo -e "  coop_config_set GEMINI_API_KEY    \"AIzaSy...\""
     echo ""
     echo -e "${YELLOW}EXEMPLES:${NC}"
@@ -517,31 +517,13 @@ case "$COMMAND" in
             fi
         fi
 
-        # ── Création de branche de travail ───────────────────────────────────
-        _branch_name="fix/issue-${NUM}"
-        _current_branch=$(_git branch --show-current 2>/dev/null || echo "")
-        if [[ -n "$_current_branch" ]] && [[ "$_current_branch" != "$_branch_name" ]]; then
-            echo ""
-            echo -e "${YELLOW}Branche de travail :${NC} ${CYAN}${_branch_name}${NC}"
-            read -r -p "Créer/basculer sur cette branche ? [O/n] : " _do_branch
-            if [[ "${_do_branch,,}" != "n" ]]; then
-                if _git checkout -b "$_branch_name" 2>/dev/null; then
-                    echo -e "${GREEN}✓ Branche '${_branch_name}' créée${NC}"
-                elif _git checkout "$_branch_name" 2>/dev/null; then
-                    echo -e "${YELLOW}[INFO]${NC} Basculé sur '${_branch_name}' (déjà existante)"
-                else
-                    echo -e "${YELLOW}[INFO]${NC} Impossible de créer la branche — continuation sur ${_current_branch}" >&2
-                fi
-            fi
-        fi
-
         # ── ÉTAPE 1 : Découverte intelligente des fichiers ────────────────────
         CPSCRIPT_BIN=$(command -v cpscript 2>/dev/null || echo "${MY_PATH}/cpscript")
         CPCODE_BIN=$(command   -v cpcode   2>/dev/null || echo "${MY_PATH}/cpcode")
         CPSCRIPT_MAXTOKEN="${CPSCRIPT_MAXTOKEN:-10000}"  # limite par fichier (qwen2.5-coder 32k ctx)
 
         if [[ ${#EXTRA_FILES[@]} -eq 0 ]]; then
-            _INDEXER_PY="${MY_PATH}/tools/codebase_index.py"
+            _INDEXER_PY="${MY_PATH}/admin/ia_db/codebase_index.py"
             _QDRANT_URL="${QDRANT_URL:-http://localhost:6333}"
             _PYTHON3="${HOME}/.astro/bin/python3"
             command -v "$_PYTHON3" &>/dev/null || _PYTHON3="$(command -v python3)"
@@ -663,49 +645,66 @@ case "$COMMAND" in
             fi
         fi
 
-        # ── ÉTAPE 2 : Bundle code avec cpscript (limité, stdout, profondeur 2) ──
-        # --json  → stdout uniquement, pas de presse-papier
-        # --depth 2 → fichier + deps + leurs deps (assez de contexte sans récursivité totale)
-        # --maxtoken N → plafond de tokens par bundle
+        # ── ÉTAPE 2 : Bundle code — cpscript par fichier, déduplication Python ──
         CPSCRIPT_DEPTH="${CPSCRIPT_DEPTH:-1}"
         code_context=""
+        _cpscript_jsons=()   # fichiers tmp JSON par fichier analysé
+        _cpcode_dirs=()      # dossiers à traiter via cpcode
 
         for f in "${EXTRA_FILES[@]:-}"; do
             [[ -z "$f" ]] && continue
             if [[ -f "$f" ]]; then
-                # cpscript trie les dépendances par taille croissante et applique le budget :
-                # les petits fichiers utiles passent en premier, les grosses libs en dernier.
-                # CSS inclus naturellement (form/fond). Pas besoin de --exclude ou --only.
-                echo -e "${CYAN}[cpscript --json --depth ${CPSCRIPT_DEPTH} --maxtoken ${CPSCRIPT_MAXTOKEN}]${NC} ${f}..." >&2
-                _raw_json=$("$CPSCRIPT_BIN" --json \
-                                --depth "$CPSCRIPT_DEPTH" \
-                                --maxtoken "$CPSCRIPT_MAXTOKEN" \
-                                "$f" 2>/dev/null)
-
-                _extracted=$(echo "$_raw_json" \
-                    | jq -r '.files[]? | "=== " + (.path // "?") + " ===\n" + (.content // "")' \
-                    2>/dev/null)
-
-                # Fallback si jq échoue (cpscript n'a pas produit de JSON valide)
-                if [[ -z "$_extracted" ]]; then
-                    echo -e "${YELLOW}[AVERTISSEMENT]${NC} jq parse échoué pour ${f}, lecture directe" >&2
-                    _extracted=$(head -c 48000 "$f")
+                echo -e "${CYAN}[cpscript --depth ${CPSCRIPT_DEPTH} --maxtoken ${CPSCRIPT_MAXTOKEN}]${NC} $(basename "$f")..." >&2
+                _tmp_json=$(mktemp /tmp/cpscript_XXXXXX.json)
+                ${RTK:+rtk} "$CPSCRIPT_BIN" --json \
+                    --depth "$CPSCRIPT_DEPTH" \
+                    --maxtoken "$CPSCRIPT_MAXTOKEN" \
+                    "$f" > "$_tmp_json" 2>/dev/null || true
+                # Fallback direct si JSON vide/invalide
+                if ! jq -e '.files[0]' "$_tmp_json" &>/dev/null; then
+                    echo -e "${YELLOW}[fallback]${NC} lecture directe $(basename "$f")" >&2
+                    echo "{\"files\":[{\"path\":\"$f\",\"content\":$(python3 -c "import json,sys; print(json.dumps(open('$f').read()[:48000]))" 2>/dev/null || echo '""')}]}" > "$_tmp_json"
                 fi
-
-                if $VERBOSE; then
-                    _ctx_tokens=$(( ${#_extracted} / 4 ))
-                    echo -e "${CYAN}[verbose]${NC} ${f} → ~${_ctx_tokens} tokens dans le contexte" >&2
-                fi
-
-                code_context+="### Fichier : ${f}"$'\n'"${_extracted}"$'\n\n---\n\n'
+                _cpscript_jsons+=("$_tmp_json")
             elif [[ -d "$f" ]]; then
-                echo -e "${CYAN}[cpcode --maxfilesize 32768]${NC} ${f}..." >&2
-                code_context+="### Dossier : ${f}"$'\n'
-                code_context+=$("$CPCODE_BIN" --maxfilesize 32768 sh py html js "$f" 2>/dev/null || true)
-                code_context+=$'\n\n---\n\n'
+                _cpcode_dirs+=("$f")
             else
                 echo -e "${YELLOW}[AVERTISSEMENT]${NC} Introuvable : $f" >&2
             fi
+        done
+
+        # Fusionner + dédupliquer les JSON en un seul contexte (Python)
+        if [[ ${#_cpscript_jsons[@]} -gt 0 ]]; then
+            code_context=$(python3 - "${_cpscript_jsons[@]}" <<'PYMERGE'
+import sys, json
+
+seen = {}
+for path in sys.argv[1:]:
+    try:
+        data = json.load(open(path))
+        for f in data.get("files", []):
+            p = f.get("path", "")
+            if p and p not in seen:
+                seen[p] = f.get("content", "")
+    except Exception:
+        pass
+
+for p, c in seen.items():
+    print(f"=== {p} ===")
+    print(c)
+    print()
+PYMERGE
+            )
+            rm -f "${_cpscript_jsons[@]}"
+            $VERBOSE && echo -e "${CYAN}[verbose]${NC} code_context : ~$(( ${#code_context} / 4 )) tokens ($(wc -l <<< "$code_context") lignes, ${#seen[@]:-?} fichiers dédupliqués)" >&2
+        fi
+
+        # Ajouter les dossiers via cpcode
+        for _d in "${_cpcode_dirs[@]:-}"; do
+            echo -e "${CYAN}[cpcode --maxfilesize 32768]${NC} ${_d}..." >&2
+            code_context+="### Dossier : ${_d}"$'\n'
+            code_context+=$("$CPCODE_BIN" --maxfilesize 32768 sh py html js "$_d" 2>/dev/null || true)
+            code_context+=$'\n\n---\n\n'
         done
 
         [[ -z "$code_context" ]] && code_context="(aucun code fourni — analyse basée sur la description)"
@@ -723,11 +722,13 @@ case "$COMMAND" in
             echo ""
             echo -e "${YELLOW}[LOGS]${NC} Fichiers log détectés dans le code :"
             for _lp in "${_log_found[@]}"; do echo "  - $_lp"; done
-            read -r -p "Ajouter les 50 dernières lignes de ces logs au contexte IA ? [O/n] : " _do_logs
+            read -r -p "Ajouter ces logs au contexte ? [n=non / Entrée=50 / nombre de lignes] : " _do_logs
             if [[ "${_do_logs,,}" != "n" ]]; then
+                _log_lines=50
+                [[ "$_do_logs" =~ ^[0-9]+$ ]] && _log_lines="$_do_logs"
                 for _lp in "${_log_found[@]}"; do
-                    code_context+=$'\n\n'"### EXTRAIT LOGS RÉELS — $(basename "$_lp") (tail -50)"$'\n''```'$'\n'
-                    code_context+=$(tail -50 "$_lp" 2>/dev/null || echo "(fichier introuvable ou vide)")
+                    code_context+=$'\n\n'"### EXTRAIT LOGS RÉELS — $(basename "$_lp") (tail -${_log_lines})"$'\n''```'$'\n'
+                    code_context+=$(tail -"$_log_lines" "$_lp" 2>/dev/null || echo "(fichier introuvable ou vide)")
                     code_context+=$'\n''```'
                 done
             fi
@@ -742,14 +743,83 @@ case "$COMMAND" in
 
         # ── Budget de tokens ──────────────────────────────────────────────────
         _ctx_chars=${#code_context}
-        if (( _ctx_chars > 60000 )); then
+        _tok_estimate=$((_ctx_chars / 4))
+        # Seuil selon le backend : Claude supporte jusqu'à ~180K tokens, Ollama ~15K
+        _tok_warn=15000
+        [[ "${AI_BACKEND:-ollama}" == "claude" ]] && _tok_warn=80000
+        if (( _tok_estimate > _tok_warn )); then
             echo ""
-            echo -e "${YELLOW}[AVERTISSEMENT]${NC} Volume de code élevé : ~$((_ctx_chars / 4)) tokens (limite recommandée : 15 000)" >&2
+            echo -e "${YELLOW}[AVERTISSEMENT]${NC} Volume de code élevé : ~${_tok_estimate} tokens (seuil ${AI_BACKEND}: ${_tok_warn})" >&2
             if [[ "$MINIFY" == "true" ]]; then
                 code_context=$(_minify_code "$code_context")
                 echo -e "  ${CYAN}[--minify]${NC} Après minification : ~$(( ${#code_context} / 4)) tokens" >&2
+            elif [[ "${AI_BACKEND:-ollama}" != "claude" ]]; then
+                echo -e "  ${CYAN}Conseil :${NC} --minify pour réduire, ou --maxtoken pour limiter par fichier." >&2
             else
-                echo -e "  ${CYAN}Conseil :${NC} Utilisez --minify pour réduire, ou --maxtoken pour limiter par fichier." >&2
+                echo -e "  ${CYAN}[claude]${NC} Contexte étendu disponible." >&2
+                # Proposer le groupage Claude si plusieurs fichiers
+                if [[ ${#EXTRA_FILES[@]} -gt 3 ]]; then
+                    read -r -p "  Laisser Claude prioriser les fichiers les plus pertinents ? [O/n] : " _do_group </dev/tty
+                    if [[ "${_do_group:-O}" =~ ^[oOyY]?$ ]]; then
+                        _grp_claude_bin=$(command -v claude 2>/dev/null || echo "")
+                        if [[ -n "$_grp_claude_bin" ]]; then
+                            _cfg_grp="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
+                            _grp_prompt="Issue #${NUM} — ${ISSUE_TITLE}
+
+Description : ${ISSUE_BODY:0:500}
+
+Fichiers disponibles :
+$(printf '  %s\n' "${EXTRA_FILES[@]}")
+
+Sélectionne les 2-3 fichiers les plus pertinents. Réponds UNIQUEMENT avec les chemins, un par ligne."
+                            echo -e "${CYAN}[claude]${NC} Priorisation des fichiers..." >&2
+                            _grp_result=$(CLAUDE_CONFIG_DIR="$_cfg_grp" "$_grp_claude_bin" --print "$_grp_prompt" 2>/dev/null) || true
+                            if [[ -n "$_grp_result" ]]; then
+                                echo ""
+                                echo -e "${CYAN}── Fichiers priorisés par Claude :${NC}"
+                                echo "$_grp_result"
+                                echo ""
+                                read -r -p "Utiliser cette sélection ? [O/n] : " _use_grp </dev/tty
+                                if [[ "${_use_grp:-O}" =~ ^[oOyY]?$ ]]; then
+                                    _grp_new_files=()
+                                    while IFS= read -r _gf; do
+                                        _gf="${_gf// /}"
+                                        [[ -f "$_gf" ]] && _grp_new_files+=("$_gf")
+                                    done <<< "$_grp_result"
+                                    if [[ ${#_grp_new_files[@]} -gt 0 ]]; then
+                                        # Reconstruire code_context avec les fichiers priorisés
+                                        _grp_jsons=()
+                                        for _gf in "${_grp_new_files[@]}"; do
+                                            echo -e "${CYAN}[rebuild]${NC} $(basename "$_gf")" >&2
+                                            _gtmp=$(mktemp /tmp/cpscript_grp_XXXXXX.json)
+                                            "$CPSCRIPT_BIN" --json --depth "$CPSCRIPT_DEPTH" \
+                                                --maxtoken "$CPSCRIPT_MAXTOKEN" "$_gf" > "$_gtmp" 2>/dev/null || true
+                                            _grp_jsons+=("$_gtmp")
+                                        done
+                                        code_context=$(python3 - "${_grp_jsons[@]}" <<'PYGRP'
+import sys, json
+seen = {}
+for path in sys.argv[1:]:
+    try:
+        data = json.load(open(path))
+        for f in data.get("files", []):
+            p = f.get("path","")
+            if p and p not in seen:
+                seen[p] = f.get("content","")
+    except: pass
+for p, c in seen.items():
+    print(f"=== {p} ==="); print(c); print()
+PYGRP
+                                        )
+                                        rm -f "${_grp_jsons[@]}"
+                                        _tok_estimate=$(( ${#code_context} / 4 ))
+                                        echo -e "${GREEN}Contexte réduit : ~${_tok_estimate} tokens${NC}" >&2
+                                    fi
+                                fi
+                            fi
+                        fi
+                    fi
+                fi
             fi
         elif [[ "$MINIFY" == "true" ]]; then
             code_context=$(_minify_code "$code_context")
@@ -850,9 +920,10 @@ PYEOF
                 local _tok=$(( $(wc -c < "$_pfile") / 4 ))
                 local _dump="/tmp/issue_${NUM}_$(date +%H%M%S).prompt.txt"
                 cp "$_pfile" "$_dump"
-                echo -e "${CYAN}[verbose]${NC} Prompt : ~${_tok} tokens  →  cat ${_dump}" >&2
-                head -c 2000 "$_pfile" >&2
-                echo -e "\n──────────────────────────────────────" >&2
+                echo -e "\n${CYAN}── Prompt → ${_backend} (~${_tok} tokens) ──────────────────${NC}" >&2
+                cat "$_pfile" >&2
+                echo -e "${CYAN}────────────────────────────────────────────────────────${NC}" >&2
+                read -r -p "[ Entrée pour envoyer à l'IA ] " _v_pause </dev/tty
             fi
 
             case "$_backend" in
@@ -892,14 +963,108 @@ SYSPROMPT
                     fi
                     ;;
                 claude)
-                    local _m="${_model_override:-${AI_MODEL:-claude-sonnet-4-6}}"
-                    local _pj; _pj=$(python3 -c "import json; print(json.dumps(open('$_pfile').read()))")
-                    curl -s https://api.anthropic.com/v1/messages \
-                        -H "x-api-key: $ANTHROPIC_API_KEY" \
-                        -H "anthropic-version: 2023-06-01" \
-                        -H "content-type: application/json" \
-                        -d "{\"model\":\"${_m}\",\"max_tokens\":4096,\"messages\":[{\"role\":\"user\",\"content\":${_pj}}]}" \
-                    | jq -r '.content[0].text // .error.message // .' 2>/dev/null
+                    local _claude_bin; _claude_bin=$(command -v claude 2>/dev/null || echo "")
+                    local _issue_log="${HOME}/.zen/tmp/code_issue_sh.log"
+                    mkdir -p "${HOME}/.zen/tmp"
+                    if [[ -z "$_claude_bin" ]]; then
+                        echo -e "${YELLOW}⚠️  claude CLI introuvable — fallback Ollama${NC}" >&2
+                        echo "[$(date '+%F %T')] _call_ai: claude introuvable, fallback Ollama" >> "$_issue_log"
+                        local _q="${MY_PATH}/IA/question.py"
+                        [[ -f "$_q" ]] && python3 "$_q" --model "${AI_MODEL:-qwen2.5-coder:14b}" \
+                            --prompt-file "$_pfile" --temperature 0.1 --ctx 32768 2>/dev/null
+                    else
+                        # Sélection du compte ~/.claude-* (priorité à CLAUDE_CONFIG_DIR si déjà défini)
+                        local _cfg="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
+                        if [[ -z "${CLAUDE_CONFIG_DIR:-}" ]]; then
+                            local _accs=()
+                            for _d in "${HOME}"/.claude-*/; do
+                                [[ -d "$_d" ]] || continue
+                                _accs+=("$(basename "$_d" | sed 's/^\.claude-//')")
+                            done
+                            if [[ ${#_accs[@]} -gt 1 ]]; then
+                                echo -e "${CYAN}Compte Claude pour l'analyse :${NC}" >&2
+                                for _i in "${!_accs[@]}"; do
+                                    local _mk=""; [[ "${HOME}/.claude-${_accs[$_i]}" == "$(readlink "${HOME}/.claude" 2>/dev/null)" ]] && _mk=" ✦"
+                                    printf "  [%d] %s%s\n" "$((_i+1))" "${_accs[$_i]}" "$_mk" >&2
+                                done
+                                echo -ne "Choix [Entrée = défaut] : " >&2
+                                read -r _acc_choice
+                                if [[ "$_acc_choice" =~ ^[0-9]+$ ]] && (( _acc_choice >= 1 && _acc_choice <= ${#_accs[@]} )); then
+                                    _cfg="${HOME}/.claude-${_accs[$((_acc_choice-1))]}"
+                                fi
+                            fi
+                        fi
+                        local _ptoks=$(( $(wc -c < "$_pfile") / 4 ))
+                        echo "[$(date '+%F %T')] _call_ai: claude --print cfg=${_cfg##*/} prompt=~${_ptoks} tokens" >> "$_issue_log"
+                        local _cerr_f; _cerr_f=$(mktemp /tmp/claude_err_XXXXXX.txt)
+                        local _cout
+                        _cout=$(CLAUDE_CONFIG_DIR="$_cfg" "$_claude_bin" --print < "$_pfile" 2>"$_cerr_f") || true
+                        local _rc=$?
+                        # Détection quota/rate-limit
+                        if echo "$_cout" | grep -qi "weekly limit\|rate.limit\|You've hit\|quota\|resets.*am"; then
+                            local _quota_msg; _quota_msg=$(echo "$_cout" | head -1)
+                            echo -e "\n${YELLOW}⚠️  Quota Claude (${_cfg##*-}) : ${_quota_msg}${NC}" >&2
+                            echo "[$(date '+%F %T')] quota: ${_quota_msg}" >> "$_issue_log"
+                            _cout=""
+                            # Lister les comptes alternatifs avec niveau restant
+                            local _alt_accs=() _alt_slugs=()
+                            for _ad in "${HOME}"/.claude-*/; do
+                                [[ -d "$_ad" ]] || continue
+                                [[ "$_ad" == "${_cfg%/}/" ]] && continue
+                                local _aslug; _aslug=$(basename "$_ad" | sed 's/^\.claude-//')
+                                _alt_accs+=("$_ad")
+                                _alt_slugs+=("$_aslug")
+                            done
+                            if [[ ${#_alt_accs[@]} -gt 0 ]]; then
+                                echo -e "${CYAN}Comptes Claude disponibles :${NC}" >&2
+                                local _ai=1
+                                for _as in "${_alt_slugs[@]}"; do
+                                    local _amk=""; [[ "${HOME}/.claude-${_as}" == "$(readlink "${HOME}/.claude" 2>/dev/null)" ]] && _amk=" ✦"
+                                    # Quota info depuis settings si disponible
+                                    local _ainfo=""
+                                    local _ahist="${HOME}/.claude-${_as}/history.jsonl"
+                                    _ainfo=""
+                                    [[ -f "$_ahist" ]] && _ainfo=$(python3 -c "
+import json
+from datetime import datetime
+try:
+    lines=[l for l in open('$_ahist').readlines() if l.strip()]
+    if lines:
+        d=json.loads(lines[-1])
+        ts=d.get('timestamp',0)
+        dt=datetime.fromtimestamp(ts/1000).strftime('%Y-%m-%d')
+        print(f'dernière util.: {dt} ({len(lines)} req.)')
+except: pass
+" 2>/dev/null || true)
+                                    printf "  [%d] %s%s%s\n" "$_ai" "$_as" "$_amk" "${_ainfo:+ — ${_ainfo}}" >&2
+                                    (( _ai++ ))
+                                done
+                                read -r -p "  Utiliser ce compte [numéro/Entrée=abandonner] : " _alt_choice </dev/tty
+                                if [[ "$_alt_choice" =~ ^[0-9]+$ ]] && (( _alt_choice >= 1 && _alt_choice < _ai )); then
+                                    _cfg="${HOME}/.claude-${_alt_slugs[$((_alt_choice-1))]}"
+                                    export CLAUDE_CONFIG_DIR="$_cfg"
+                                    echo "[$(date '+%F %T')] switch to ${_cfg##*/}" >> "$_issue_log"
+                                    _cout=$(CLAUDE_CONFIG_DIR="$_cfg" "$_claude_bin" --print < "$_pfile" 2>"$_cerr_f") || true
+                                fi
+                            else
+                                echo -e "${YELLOW}[INFO]${NC} Aucun autre compte Claude — fallback Ollama." >&2
+                            fi
+                        fi
+                        if [[ -z "$_cout" || $_rc -ne 0 ]]; then
+                            local _errmsg; _errmsg=$(cat "$_cerr_f" 2>/dev/null | head -5)
+                            echo "[$(date '+%F %T')] _call_ai: claude vide/erreur rc=${_rc} stderr=${_errmsg}" >> "$_issue_log"
+                            if [[ -n "$_errmsg" ]]; then
+                                echo -e "${YELLOW}[claude stderr]${NC} ${_errmsg}" >&2
+                            fi
+                            if [[ -z "$_cout" ]]; then
+                                echo -e "${YELLOW}[retry]${NC} Claude via argument..." >&2
+                                _cout=$(CLAUDE_CONFIG_DIR="$_cfg" "$_claude_bin" --print "$(cat "$_pfile")" 2>>"$_cerr_f") || true
+                                echo "[$(date '+%F %T')] _call_ai: retry argument len=$(echo -n "$_cout" | wc -c)" >> "$_issue_log"
+                            fi
+                        fi
+                        rm -f "$_cerr_f"
+                        echo -n "$_cout"
+                    fi
                     ;;
                 gemini)
                     local _m="${_model_override:-${AI_MODEL:-gemini-2.0-flash}}"
@@ -923,221 +1088,271 @@ SYSPROMPT
         echo -e "${GREEN}[IA: ${AI_BACKEND}]${NC} Analyse issue #${NUM} — template '${PROMPT_TEMPLATE}'..."
         echo -e "══════════════════════════════════════════════════════"
 
-        ai_result=$(_call_ai "$prompt_file")
+        _issue_log="${HOME}/.zen/tmp/code_issue_sh.log"
+        mkdir -p "${HOME}/.zen/tmp"
+        echo "[$(date '+%F %T')] analyze #${NUM} backend=${AI_BACKEND} tokens=~$(( ${#prompt} / 4 ))" >> "$_issue_log"
+        ai_result=$(_call_ai "$prompt_file") || true
         rm -f "$prompt_file"
 
         if [[ -n "$ai_result" ]]; then
+            echo "[$(date '+%F %T')] ai_result ok len=$(echo -n "$ai_result" | wc -c)" >> "$_issue_log"
             echo -e "\n${ai_result}\n"
+            $VERBOSE && { echo -e "${CYAN}── Fin réponse IA ──────────────────────────────────────${NC}"; read -r -p "[ Entrée pour continuer ] " _v_pause </dev/tty; }
         else
-            echo -e "${RED}Aucune réponse IA reçue.${NC}" >&2
+            echo "[$(date '+%F %T')] ai_result VIDE — vérifier ${_issue_log}" >> "$_issue_log"
+            echo -e "${RED}[ERREUR]${NC} Aucune réponse IA reçue." >&2
+            echo -e "  Log : ${CYAN}${_issue_log}${NC}" >&2
+            read -r -p "Retenter l'analyse ? [o/N] : " _retry_ai </dev/tty
+            if [[ "${_retry_ai,,}" == "o" ]]; then
+                prompt_file=$(mktemp /tmp/issue_prompt_XXXXXX.txt)
+                printf '%s' "$prompt" > "$prompt_file"
+                ai_result=$(_call_ai "$prompt_file") || true
+                rm -f "$prompt_file"
+                [[ -n "$ai_result" ]] && echo -e "\n${ai_result}\n"
+            fi
         fi
 
-        # ── Boucle de workflow ────────────────────────────────────────────────
+        # ── Workflow simplifié : analyse → fix → commit → close ─────────────────
+        _wf_cfg="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
+        _wf_claude=$(command -v claude 2>/dev/null || echo "")
+
+        # Helper : commit + fermer l'issue (réutilisé par [a] et [x])
+        _wf_commit_close() {
+            git diff --name-only 2>/dev/null | xargs -r git add 2>/dev/null || true
+            git diff --cached --name-only 2>/dev/null | xargs -r git add 2>/dev/null || true
+            local _cmsg="fix(#${NUM}): ${ISSUE_TITLE}"
+            if git commit -m "$_cmsg" 2>/dev/null; then
+                echo -e "${GREEN}✓ Commit : ${_cmsg}${NC}"
+                if [[ -n "${GIT_TOKEN:-}" ]]; then
+                    _api PATCH "/repos/${REPO}/issues/${NUM}" '{"state":"closed"}' >/dev/null
+                    _api POST "/repos/${REPO}/issues/${NUM}/comments" \
+                        "$(jq -n --arg b "Fix commité : \`${_cmsg}\`" '{body:$b}')" >/dev/null
+                    echo -e "${GREEN}✅ Issue #${NUM} fermée.${NC}"
+                fi
+                return 0
+            else
+                echo -e "${YELLOW}[INFO]${NC} Aucun changement à commiter." >&2
+                return 1
+            fi
+        }
+
         _wf_done=false
         while ! $_wf_done; do
-            echo -e "══════════════════════════════════════════════════════"
             echo ""
-            echo -e "${YELLOW}Workflow [issue #${NUM}]${NC}  branche: ${CYAN}$(_git branch --show-current 2>/dev/null || echo '?')${NC}"
-            echo "  [c] Poster l'analyse comme commentaire"
-            echo "  [?] Demander une clarification à l'auteur"
-            echo "  [f] Mode fix — retourner les blocs de code à modifier"
-            echo "  [t] Tester (make tests / ./test.sh)"
-            echo "  [p] Créer une Pull Request"
-            echo "  [k] Copier dans le presse-papier"
-            echo "  [q] Quitter"
-            read -r -p "Choix : " action
+            echo -e "══════════════════════════════════════════════════════"
+            _wf_pending=$(git diff --name-only 2>/dev/null)
+            _wf_default="a"
+            [[ -n "$_wf_pending" ]] && _wf_default="x"
 
-            case "${action:-q}" in
-                c)
-                    if [[ -z "$GIT_TOKEN" ]]; then
-                        echo -e "${RED}[ERREUR]${NC} GIT_TOKEN requis." >&2
+            echo -e "${YELLOW}#${NUM}${NC} ${ISSUE_TITLE}"
+            [[ -n "$_wf_pending" ]] && echo -e "  ${GREEN}[x]${NC} Commiter le fix + fermer ($(echo "$_wf_pending" | wc -l | tr -d ' ') fichier(s) modifié(s))"
+            [[ -n "$_wf_claude" ]] && echo -e "  ${GREEN}[a]${NC} Auto-fix Claude — édite les fichiers directement"
+            echo -e "  ${GREEN}[f]${NC} Fix texte (blocs AVANT/APRÈS → patch)"
+            echo -e "  ${GREEN}[c]${NC} Commenter l'analyse sur GitHub"
+            echo -e "  ${GREEN}[q]${NC} Quitter"
+            echo ""
+            read -r -p "Choix [Entrée=${_wf_default}] : " _wf_action </dev/tty
+            _wf_action="${_wf_action:-$_wf_default}"
+
+            case "$_wf_action" in
+
+                # ── [a] Auto-fix : Claude interactif avec ses outils natifs ──────
+                a)
+                    if [[ -z "$_wf_claude" ]]; then
+                        echo -e "${YELLOW}claude CLI introuvable — utilisez [f] à la place.${NC}" >&2
+                        continue
+                    fi
+                    _af_prompt="Tu travailles dans le dépôt : $(pwd)
+
+## Issue #${NUM} — ${ISSUE_TITLE}
+
+${ISSUE_BODY:0:800}
+
+## Analyse précédente
+
+${ai_result}
+
+## Code concerné
+
+${code_context:0:20000}
+
+## Consigne
+
+1. Lis les fichiers concernés (Read tool)
+2. Applique chaque correction identifiée dans l'analyse (Edit tool)
+3. Vérifie le résultat (Bash: git diff)
+4. Résume ce qui a changé en 3 lignes max.
+
+Répertoire de travail : $(pwd)"
+                    echo ""
+                    echo -e "${CYAN}[claude]${NC} Mode auto-fix — Claude va éditer les fichiers..."
+                    echo -e "${YELLOW}→ Validez chaque accès Edit/Write dans les prompts ci-dessous${NC}"
+                    echo ""
+                    CLAUDE_CONFIG_DIR="$_wf_cfg" "$_wf_claude" \
+                        --allowedTools "Read,Bash(git diff*),Bash(git status*)" \
+                        "$_af_prompt" </dev/tty || true
+                    # Vérifier les modifications
+                    _af_changed=$(git diff --name-only 2>/dev/null)
+                    if [[ -n "$_af_changed" ]]; then
+                        echo ""
+                        echo -e "${CYAN}── Modifications apportées ─────────────────────────────${NC}"
+                        git diff --stat 2>/dev/null
+                        echo ""
+                        read -r -p "Commiter et fermer l'issue #${NUM} ? [O/n] : " _af_cc </dev/tty
+                        if [[ "${_af_cc:-O}" =~ ^[oOyY]?$ ]]; then
+                            _wf_commit_close && _wf_done=true
+                        fi
                     else
-                        _cb="**Analyse IA (${AI_BACKEND} / ${PROMPT_TEMPLATE}) — #${NUM}**"$'\n\n'"${ai_result}"
-                        _cp=$(jq -n --arg b "$_cb" '{body:$b}')
-                        _cr=$(_api POST "/repos/${REPO}/issues/${NUM}/comments" "$_cp")
-                        echo -e "${GREEN}✓ Commentaire posté${NC} : ${CYAN}$(echo "$_cr" | jq -r '.html_url // .url')${NC}"
+                        echo -e "${YELLOW}[INFO]${NC} Claude n'a pas modifié de fichiers — vérifiez les accès accordés."
                     fi
                     ;;
 
-                '?')
-                    # Demande de clarification standardisée
-                    _cla=$(cat <<'EOF'
-Merci pour ce rapport ! Pour mieux diagnostiquer ce problème, pourriez-vous préciser :
-
-1. **Console browser** : copier le log complet (F12 → onglet Console)
-2. **Navigateur + version** utilisé
-3. **Étapes exactes** pour reproduire le problème depuis zéro
-4. **Screenshot** si le problème est visuel
-5. **URL exacte** où le bug se produit (adresse complète dans la barre)
-6. Est-ce reproductible sur https://ipfs.copylaradio.com ou seulement en local ?
-
-*(Demande générée par issue.sh — analyse assistée IA)*
-EOF
-)
-                    echo ""
-                    echo -e "${CYAN}─── Demande de clarification ───${NC}"
-                    echo "$_cla"
-                    echo ""
-                    read -r -p "Poster ce message ? [O/n] : " _do_cl
-                    if [[ "${_do_cl,,}" != "n" ]]; then
-                        _clp=$(jq -n --arg b "$_cla" '{body:$b}')
-                        _clr=$(_api POST "/repos/${REPO}/issues/${NUM}/comments" "$_clp")
-                        echo -e "${GREEN}✓ Clarification postée${NC} : ${CYAN}$(echo "$_clr" | jq -r '.html_url // .url')${NC}"
+                # ── [x] Commiter les modifications existantes + fermer ────────────
+                x)
+                    if [[ -z "$_wf_pending" ]]; then
+                        echo -e "${YELLOW}[INFO]${NC} Aucune modification non stagée. Appliquez d'abord un fix." >&2
+                    else
+                        echo -e "${CYAN}── Diff ────────────────────────────────────────────────────${NC}"
+                        git diff --stat 2>/dev/null
+                        echo ""
+                        read -r -p "Commiter et fermer l'issue #${NUM} ? [O/n] : " _x_ok </dev/tty
+                        [[ "${_x_ok:-O}" =~ ^[oOyY]?$ ]] && _wf_commit_close && _wf_done=true
                     fi
                     ;;
 
+                # ── [f] Fix texte : demande à l'IA les blocs AVANT/APRÈS ─────────
                 f)
-                    # Mode fix : relance l'IA avec le template issue_fix sur le même contexte
                     _fix_tmpl_file="${MY_PATH}/IA/prompts/issue_fix.md"
                     if [[ -f "$_fix_tmpl_file" ]]; then
                         _fix_tmpl=$(awk '/^---/{p++; next} p==1{next} {print}' "$_fix_tmpl_file")
                     else
-                        _fix_tmpl="Pour l'issue #{{ISSUE_NUMBER}} — {{ISSUE_TITLE}}
+                        _fix_tmpl="Issue #{{ISSUE_NUMBER}} — {{ISSUE_TITLE}}
 
 {{ISSUE_BODY}}
 
 Code :
 {{CODE_CONTEXT}}
 
-Retourne UNIQUEMENT les blocs AVANT/APRÈS à modifier. Pas d'explication globale."
+Retourne UNIQUEMENT les blocs AVANT/APRÈS à modifier, au format :
+### Fichier : <chemin>
+AVANT :
+\`\`\`
+<ancien code>
+\`\`\`
+APRÈS :
+\`\`\`
+<nouveau code>
+\`\`\`"
                     fi
-
-                    # Substitution robuste via Python (évite l'interprétation des char spéciaux)
-                    _ftpl_f=$(mktemp /tmp/issue_ftpl_XXXXXX.txt)
-                    _fnum_f=$(mktemp /tmp/issue_fnum_XXXXXX.txt)
-                    _fttl_f=$(mktemp /tmp/issue_fttl_XXXXXX.txt)
-                    _fbdy_f=$(mktemp /tmp/issue_fbdy_XXXXXX.txt)
-                    _fctx_f=$(mktemp /tmp/issue_fctx_XXXXXX.txt)
-                    printf '%s' "$_fix_tmpl"   > "$_ftpl_f"
-                    printf '%s' "$NUM"          > "$_fnum_f"
-                    printf '%s' "$ISSUE_TITLE" > "$_fttl_f"
-                    printf '%s' "$ISSUE_BODY"  > "$_fbdy_f"
-                    printf '%s' "$code_context"> "$_fctx_f"
+                    _ftpl_f=$(mktemp /tmp/ish_ftpl_XXXXXX.txt)
+                    _fnum_f=$(mktemp /tmp/ish_fnum_XXXXXX.txt)
+                    _fttl_f=$(mktemp /tmp/ish_fttl_XXXXXX.txt)
+                    _fbdy_f=$(mktemp /tmp/ish_fbdy_XXXXXX.txt)
+                    _fctx_f=$(mktemp /tmp/ish_fctx_XXXXXX.txt)
+                    printf '%s' "$_fix_tmpl"          > "$_ftpl_f"
+                    printf '%s' "$NUM"                > "$_fnum_f"
+                    printf '%s' "$ISSUE_TITLE"        > "$_fttl_f"
+                    printf '%s' "${ISSUE_BODY:0:1000}" > "$_fbdy_f"
+                    printf '%s' "${code_context:0:20000}" > "$_fctx_f"
                     _fix_p=$(python3 - "$_ftpl_f" "$_fnum_f" "$_fttl_f" "$_fbdy_f" "$_fctx_f" <<'PYEOF'
 import sys
 tpl = open(sys.argv[1]).read()
-out = tpl.replace("{{ISSUE_NUMBER}}", open(sys.argv[2]).read())
-out = out.replace("{{ISSUE_TITLE}}",  open(sys.argv[3]).read())
-out = out.replace("{{ISSUE_BODY}}",   open(sys.argv[4]).read())
-out = out.replace("{{CODE_CONTEXT}}", open(sys.argv[5]).read())
-sys.stdout.write(out)
+tpl = tpl.replace("{{ISSUE_NUMBER}}", open(sys.argv[2]).read())
+tpl = tpl.replace("{{ISSUE_TITLE}}",  open(sys.argv[3]).read())
+tpl = tpl.replace("{{ISSUE_BODY}}",   open(sys.argv[4]).read())
+tpl = tpl.replace("{{CODE_CONTEXT}}", open(sys.argv[5]).read())
+sys.stdout.write(tpl)
 PYEOF
                     )
                     rm -f "$_ftpl_f" "$_fnum_f" "$_fttl_f" "$_fbdy_f" "$_fctx_f"
                     [[ -n "$_claudemd" ]] && _fix_p="$(printf '## Contexte projet\n\n%s\n\n---\n\n%s' "$_claudemd" "$_fix_p")"
+                    read -r -p "💡 Indice pour guider l'IA (Entrée=vide) : " _fx_hint </dev/tty
+                    [[ -n "$_fx_hint" ]] && _fix_p="PISTE : ${_fx_hint}"$'\n\n'"${_fix_p}"
 
-                    read -r -p "💡 Un indice pour guider l'IA ? (Entrée pour vide) : " USER_HINT
-                    [[ -n "$USER_HINT" ]] && _fix_p="$(printf '### PISTE DE RÉSOLUTION : %s\n\n%s' "$USER_HINT" "$_fix_p")"
-
-                    # ── Boucle retry avec pression croissante ──────────────────
-                    _fix_result=""
-                    _retry_pressure=""
-                    _fix_loop=true
-                    while $_fix_loop; do
-                        _fix_file=$(mktemp /tmp/issue_fix_XXXXXX.txt)
-                        _full_fix_p="$_fix_p"
-                        [[ -n "$_retry_pressure" ]] && _full_fix_p="$(printf '### CONSIGNE SUPPLÉMENTAIRE : %s\n\n%s' "$_retry_pressure" "$_full_fix_p")"
-                        printf '%s' "$_full_fix_p" > "$_fix_file"
-
-                        echo ""
-                        echo -e "${GREEN}[IA: ${AI_BACKEND}]${NC} Mode FIX — code à modifier..."
-                        echo -e "══════════════════════════════════════════════════════"
-                        _fix_result=$(_call_ai "$_fix_file")
-                        rm -f "$_fix_file"
-
-                        if [[ -n "$_fix_result" ]]; then
-                            echo -e "\n${_fix_result}\n"
-                        else
-                            echo -e "${RED}Aucune réponse IA.${NC}" >&2
-                        fi
-
-                        echo ""
-                        echo -e "${YELLOW}Appliquer le correctif manuellement, puis :${NC}"
-                        echo "  [r] Insister / reformuler (retry avec pression supplémentaire)"
-                        echo "  [t] Lancer les tests"
-                        echo "  [c] Poster le correctif comme commentaire"
-                        echo "  [k] Copier le correctif"
-                        echo "  [suite] Continuer (revenir au menu principal)"
-                        read -r -p "Choix [r/t/c/k/suite] : " _fx_act
-                        case "${_fx_act:-suite}" in
-                            r)
-                                read -r -p "🔥 Consigne supplémentaire (ex: 'le code DOIT être modifié') : " _retry_pressure
-                                ;;
-                            t)
-                                echo ""
-                                if [[ -f "Makefile" ]] && grep -q "tests" Makefile 2>/dev/null; then
-                                    echo -e "${CYAN}[test]${NC} make tests..."
-                                    make tests 2>&1 | tail -30
-                                elif [[ -f "test.sh" ]]; then
-                                    echo -e "${CYAN}[test]${NC} ./test.sh..."
-                                    bash test.sh 2>&1 | tail -30
-                                else
-                                    echo -e "${YELLOW}[INFO]${NC} Aucun runner détecté. Lancer vos tests manuellement." >&2
-                                fi
-                                ;;
-                            c)
-                                if [[ -n "$GIT_TOKEN" ]] && [[ -n "$_fix_result" ]]; then
-                                    _fcp=$(jq -n --arg b "**Correctif IA (${AI_BACKEND}/issue_fix) — #${NUM}**"$'\n\n'"${_fix_result}" '{body:$b}')
-                                    _fcr=$(_api POST "/repos/${REPO}/issues/${NUM}/comments" "$_fcp")
-                                    echo -e "${GREEN}✓ Correctif posté${NC} : ${CYAN}$(echo "$_fcr" | jq -r '.html_url // .url')${NC}"
-                                fi
-                                ;;
-                            k)
-                                if _copy_to_clipboard "$_fix_result"; then
-                                    echo -e "${GREEN}✓ Copié dans le presse-papier${NC}"
-                                else
-                                    echo -e "${YELLOW}[INFO]${NC} wl-copy/xclip/xsel non disponibles." >&2
-                                fi
-                                ;;
-                            *)
-                                _fix_loop=false
-                                ;;
-                        esac
-                    done
-                    ;;
-
-                t)
+                    _fix_file=$(mktemp /tmp/ish_fix_XXXXXX.txt)
+                    printf '%s' "$_fix_p" > "$_fix_file"
                     echo ""
-                    if [[ -f "Makefile" ]] && grep -q "tests" Makefile 2>/dev/null; then
-                        echo -e "${CYAN}[test]${NC} make tests..."
-                        make tests 2>&1 | tail -30
-                    elif [[ -f "test.sh" ]]; then
-                        echo -e "${CYAN}[test]${NC} ./test.sh..."
-                        bash test.sh 2>&1 | tail -30
+                    echo -e "${GREEN}[IA: ${AI_BACKEND}]${NC} Mode FIX — génération des blocs AVANT/APRÈS..."
+                    echo -e "══════════════════════════════════════════════════════"
+                    _fix_result=$(_call_ai "$_fix_file") || true
+                    rm -f "$_fix_file"
+
+                    if [[ -z "$_fix_result" ]]; then
+                        echo -e "${RED}[ERREUR]${NC} Aucune réponse — voir ${HOME}/.zen/tmp/issue_sh.log" >&2
+                        continue
+                    fi
+                    echo -e "\n${_fix_result}\n"
+
+                    # Auto-apply des blocs AVANT/APRÈS
+                    _apply_count=0; _apply_fail=0
+                    _cur_file=""; _in_avant=false; _in_apres=false
+                    _avant_buf=""; _apres_buf=""
+                    _apply_patch() {
+                        local _f="$1" _old="$2" _new="$3"
+                        [[ ! -f "$_f" ]] && { echo -e "${RED}  ✗ Introuvable : $_f${NC}" >&2; ((_apply_fail++)); return; }
+                        local _bak="${_f}.bak.$(date +%s)"
+                        cp "$_f" "$_bak"
+                        python3 - "$_f" "$_old" "$_new" <<'PYAPPLY' && {
+import sys
+path, old_s, new_s = sys.argv[1], open(sys.argv[2]).read(), open(sys.argv[3]).read()
+src = open(path).read()
+if old_s not in src: sys.exit(1)
+open(path,'w').write(src.replace(old_s,new_s,1))
+PYAPPLY
+                            echo -e "${GREEN}  ✓${NC} $(basename "$_f")"
+                            ((_apply_count++))
+                        } || {
+                            cp "$_bak" "$_f"; rm -f "$_bak"
+                            echo -e "${RED}  ✗ AVANT non trouvé dans $_f${NC}" >&2
+                            ((_apply_fail++))
+                        }
+                    }
+                    _av_f=$(mktemp /tmp/ish_av_XXXXXX.txt)
+                    _ap_f=$(mktemp /tmp/ish_ap_XXXXXX.txt)
+                    while IFS= read -r _ln; do
+                        if [[ "$_ln" =~ ^###[[:space:]]+Fichier[[:space:]]*:[[:space:]]*(.*) ]]; then
+                            if [[ -n "$_cur_file" && -n "$_avant_buf" && -n "$_apres_buf" ]]; then
+                                printf '%s' "$_avant_buf" > "$_av_f"
+                                printf '%s' "$_apres_buf" > "$_ap_f"
+                                _apply_patch "$_cur_file" "$_av_f" "$_ap_f"
+                            fi
+                            _cur_file="${BASH_REMATCH[1]// /}"
+                            _avant_buf=""; _apres_buf=""; _in_avant=false; _in_apres=false
+                        elif [[ "$_ln" == AVANT* ]]; then _in_avant=true; _in_apres=false
+                        elif [[ "$_ln" == "APRÈS"* || "$_ln" == APRES* ]]; then _in_avant=false; _in_apres=true
+                        elif [[ "$_ln" == '```'* ]]; then :
+                        elif $_in_avant; then _avant_buf+="${_ln}"$'\n'
+                        elif $_in_apres; then _apres_buf+="${_ln}"$'\n'
+                        fi
+                    done <<< "$_fix_result"
+                    if [[ -n "$_cur_file" && -n "$_avant_buf" && -n "$_apres_buf" ]]; then
+                        printf '%s' "$_avant_buf" > "$_av_f"
+                        printf '%s' "$_apres_buf" > "$_ap_f"
+                        _apply_patch "$_cur_file" "$_av_f" "$_ap_f"
+                    fi
+                    rm -f "$_av_f" "$_ap_f"
+                    echo -e "${GREEN}Résultat : ${_apply_count} appliqué(s), ${_apply_fail} échec(s)${NC}"
+                    if (( _apply_count > 0 )); then
+                        git diff --stat 2>/dev/null
+                        echo ""
+                        read -r -p "Commiter et fermer l'issue #${NUM} ? [O/n] : " _f_cc </dev/tty
+                        [[ "${_f_cc:-O}" =~ ^[oOyY]?$ ]] && _wf_commit_close && _wf_done=true
+                    fi
+                    ;;
+
+                # ── [c] Commenter l'analyse sur GitHub ────────────────────────────
+                c)
+                    if [[ -z "$GIT_TOKEN" ]]; then
+                        echo -e "${RED}[ERREUR]${NC} GIT_TOKEN requis." >&2
                     else
-                        echo -e "${YELLOW}[INFO]${NC} Aucun runner détecté (make tests, test.sh). Tester manuellement." >&2
+                        _cb="**Analyse IA (${AI_BACKEND}) — #${NUM}**"$'\n\n'"${ai_result}"
+                        _cr=$(_api POST "/repos/${REPO}/issues/${NUM}/comments" \
+                            "$(jq -n --arg b "$_cb" '{body:$b}')")
+                        echo -e "${GREEN}✓ Commentaire posté${NC} : ${CYAN}$(echo "$_cr" | jq -r '.html_url // .url')${NC}"
                     fi
                     ;;
 
-                p)
-                    _pb=$(_git branch --show-current 2>/dev/null || echo "fix/issue-${NUM}")
-                    _pbase=$(_git remote show origin 2>/dev/null | grep 'HEAD branch' | awk '{print $NF}' || echo "master")
-                    read -r -p "  Branche cible [défaut: ${_pbase}] : " _pc_base
-                    [[ -n "$_pc_base" ]] && _pbase="$_pc_base"
-                    _ptitle="fix: ${ISSUE_TITLE} (closes #${NUM})"
-                    read -r -p "  Titre PR [défaut: ${_ptitle}] : " _pc_title
-                    [[ -n "$_pc_title" ]] && _ptitle="$_pc_title"
-                    _pbody="Closes #${NUM}"$'\n\n'"**Résumé IA (${AI_BACKEND}) :**"$'\n\n'"${ai_result:0:2000}"
-                    if ! _git ls-remote --exit-code origin "$_pb" &>/dev/null; then
-                        echo -e "${CYAN}[git]${NC} Push '${_pb}'..."
-                        _git push -u origin "$_pb" 2>&1 | tail -3 || true
-                    fi
-                    _pp=$(jq -n --arg t "$_ptitle" --arg b "$_pbody" --arg h "$_pb" --arg base "$_pbase" '{title:$t,body:$b,head:$h,base:$base}')
-                    _pr=$(_api POST "/repos/${REPO}/pulls" "$_pp")
-                    echo -e "${GREEN}✓ PR #$(echo "$_pr" | jq -r '.number // ""') créée${NC} : ${CYAN}$(echo "$_pr" | jq -r '.html_url // .url')${NC}"
-                    _wf_done=true
-                    ;;
-
-                k)
-                    if _copy_to_clipboard "$ai_result"; then
-                        echo -e "${GREEN}✓ Copié dans le presse-papier${NC}"
-                    else
-                        echo -e "${YELLOW}[INFO]${NC} wl-copy/xclip/xsel non disponibles." >&2
-                    fi
-                    ;;
-
-                q) _wf_done=true ;;
-                *) ;;
+                q|*) _wf_done=true ;;
             esac
         done
         ;;

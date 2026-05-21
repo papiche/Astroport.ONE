@@ -347,36 +347,44 @@ ask_choice() {
             echo "└──────────────────────────────────────────────────────────────────┘"
             read -r -p "> " user_input
             [ "${user_input,,}" = "q" ] && exit 0
-            # Extraire le choix (1er mot) et le supplement (reste)
             local user_choice="${user_input%% *}"
+            # Nettoyer les virgules/espaces du choix
+            user_choice="${user_choice//,/}"
+            user_choice="${user_choice// /}"
             local user_supplement="${user_input#* }"
-            [ "$user_supplement" = "$user_choice" ] && user_supplement=""
+            [ "$user_supplement" = "$user_input" ] && user_supplement=""
             echo ""
-            echo "  💡 Lancez ensuite :"
-            printf "     %s %s --kvbasename %s \\\\\n" \
-                "$(basename "$0")" "$(basename "$script")" "$kvbasename"
-            printf "       --phase correction --choice %s" "$user_choice"
-            [ -n "$user_supplement" ] && printf " \\\\\n       --supplement \"%s\"" "$user_supplement"
-            echo ""
+            echo "  ➡️  Phase correction (choix: $user_choice)..."
+            if [ -n "$user_supplement" ]; then
+                exec "$0" "$script" --kvbasename "$kvbasename" \
+                    --phase correction --choice "$user_choice" \
+                    --supplement "$user_supplement"
+            else
+                exec "$0" "$script" --kvbasename "$kvbasename" \
+                    --phase correction --choice "$user_choice"
+            fi
             ;;
         correction)
             echo "┌──────────────────────────────────────────────────────────────────┐"
             echo "│  Variante ? a/b/c + contexte optionnel  ou q pour quitter       │"
-            echo "│  Ex: \"b Préfère une solution async compatible asyncio\"          │"
-            echo "│  Ajoutez --patch pour modifier le fichier directement            │"
+            echo "│  [Entrée] = variante a (première proposition)                   │"
             echo "└──────────────────────────────────────────────────────────────────┘"
             read -r -p "> " user_input
             [ "${user_input,,}" = "q" ] && exit 0
             local user_choice="${user_input%% *}"
+            [ -z "$user_choice" ] && user_choice="a"
             local user_supplement="${user_input#* }"
-            [ "$user_supplement" = "$user_choice" ] && user_supplement=""
+            [ "$user_supplement" = "$user_input" ] && user_supplement=""
             echo ""
-            echo "  💡 Lancez ensuite (avec --patch pour appliquer) :"
-            printf "     %s %s --kvbasename %s \\\\\n" \
-                "$(basename "$0")" "$(basename "$script")" "$kvbasename"
-            printf "       --phase controle --choice %s" "$user_choice"
-            [ -n "$user_supplement" ] && printf " \\\\\n       --supplement \"%s\"" "$user_supplement"
-            echo " [--patch]"
+            echo "  ➡️  Contrôle + application du patch (variante: $user_choice)..."
+            if [ -n "$user_supplement" ]; then
+                exec "$0" "$script" --kvbasename "$kvbasename" \
+                    --phase controle --choice "$user_choice" \
+                    --supplement "$user_supplement" --patch
+            else
+                exec "$0" "$script" --kvbasename "$kvbasename" \
+                    --phase controle --choice "$user_choice" --patch
+            fi
             ;;
         controle)
             local _patch_mode="${4:-false}"
@@ -457,12 +465,11 @@ fi
 
 # ── Vérifier le modèle d'embedding nomic-embed-text ───────────────────────
 if [ -f "$EMBED_PY" ]; then
-    if ! python3 "$EMBED_PY" --check &>/dev/null 2>&1; then
+    if ! ollama list 2>/dev/null | grep -q "nomic-embed"; then
         echo "  📥 Téléchargement de nomic-embed-text..."
         python3 "$EMBED_PY" --pull 2>/dev/null
     fi
 fi
-en
 # ─────────────────────────────────────────────────────────────────────────────
 # Parsing des options
 # ─────────────────────────────────────────────────────────────────────────────

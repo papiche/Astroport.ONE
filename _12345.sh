@@ -249,10 +249,19 @@ fi
 
 ## Lancer le daemon DM NODE (bro_ia, udrive, comfyui_job/result) au démarrage
 _DM_PID_FILE="${HOME}/.zen/tmp/bro_dm_daemon.pid"
+_dm_is_alive() {
+    [[ -f "$_DM_PID_FILE" ]] || return 1
+    local _p; _p=$(cat "$_DM_PID_FILE" 2>/dev/null)
+    [[ -z "$_p" ]] && return 1
+    kill -0 "$_p" 2>/dev/null && return 0
+    pgrep -f "bro_dm_daemon.sh" > /dev/null 2>&1
+}
 if [[ -s ~/.zen/game/secret.nostr ]]; then
-    if [[ ! -f "$_DM_PID_FILE" ]] || ! kill -0 "$(cat "$_DM_PID_FILE")" 2>/dev/null; then
+    if ! _dm_is_alive; then
         bash "${MY_PATH}/IA/bro_dm_daemon.sh" >> "${HOME}/.zen/tmp/bro_dm_daemon.log" 2>&1 &
         echo "🚀 Daemon DM NODE démarré (PID $!)"
+    else
+        echo "✅ Daemon DM NODE actif (PID $(cat "$_DM_PID_FILE" 2>/dev/null))"
     fi
 fi
 
@@ -750,13 +759,13 @@ while true; do
             [[ -z "${SERVICES}" ]] && SERVICES="${_svc_fallback}"
         else
             # Cache expiré : régénération en arrière-plan
-            (${MY_PATH}/tools/heartbox_analysis.sh update >/dev/null 2>&1) &
+            (${MY_PATH}/admin/monitor/heartbox_analysis.sh update >/dev/null 2>&1) &
             CAPACITIES="{\"reserved_captain_slots\":2}"
             SERVICES="${_svc_fallback}"
         fi
     else
         # Pas de cache (ou supprimé car invalide) : génération en arrière-plan
-        (${MY_PATH}/tools/heartbox_analysis.sh update >/dev/null 2>&1) &
+        (${MY_PATH}/admin/monitor/heartbox_analysis.sh update >/dev/null 2>&1) &
         CAPACITIES="{\"reserved_captain_slots\":2}"
         SERVICES="${_svc_fallback}"
     fi
@@ -857,7 +866,7 @@ NODE12345="{
 
     ## Watchdog daemon DM NODE — relance si mort entre deux cycles
     if [[ -s ~/.zen/game/secret.nostr ]]; then
-        if [[ ! -f "$_DM_PID_FILE" ]] || ! kill -0 "$(cat "$_DM_PID_FILE")" 2>/dev/null; then
+        if ! _dm_is_alive; then
             bash "${MY_PATH}/IA/bro_dm_daemon.sh" >> "${HOME}/.zen/tmp/bro_dm_daemon.log" 2>&1 &
             echo "🔄 Daemon DM NODE relancé (PID $!)"
         fi

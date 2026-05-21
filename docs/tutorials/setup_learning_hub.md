@@ -90,10 +90,10 @@ cp ~/mes-docs/guide-docker.pdf    "$NEXTCLOUD_DATA/Astroport/docker/"
 cd ~/.zen/Astroport.ONE
 
 # Indexer le dossier Nextcloud de l'admin
-./tools/knowledge_index.sh --index-dir ~/nextcloud/admin/files/Astroport
+./admin/ia_db/knowledge_index.sh --index-dir ~/nextcloud/admin/files/Astroport
 
 # Vérifier le résultat
-./tools/knowledge_index.sh --stats
+./admin/ia_db/knowledge_index.sh --stats
 ```
 
 Vous devriez voir :
@@ -131,10 +131,10 @@ BRO devrait répondre avec les références de vos documents :
 
 ```bash
 # Indexer aussi les Kind 30504 publiés par les membres de la constellation
-./tools/knowledge_index.sh --index-nostr
+./admin/ia_db/knowledge_index.sh --index-nostr
 
 # Tout en une fois (Nextcloud + NOSTR + uDRIVE)
-./tools/knowledge_index.sh --all
+./admin/ia_db/knowledge_index.sh --all
 ```
 
 ---
@@ -148,7 +148,7 @@ Pour que la mémoire reste fraîche après chaque backfill :
 crontab -e
 
 # Réindexation quotidienne à 3h du matin
-0 3 * * * cd ~/.zen/Astroport.ONE && ./tools/knowledge_index.sh --index-nostr >> ~/.zen/logs/knowledge_index.log 2>&1
+0 3 * * * cd ~/.zen/Astroport.ONE && ./admin/ia_db/knowledge_index.sh --index-nostr >> ~/.zen/logs/knowledge_index.log 2>&1
 ```
 
 ---

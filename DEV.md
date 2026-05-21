@@ -393,7 +393,7 @@ La page `feedback.html` affiche les logs capturés depuis la page source, propos
 
 ## astrosystemctl — CLI P2P Cloud
 
-`tools/astrosystemctl.sh` est le CLI de gestion des services P2P de la constellation :
+`admin/system/astrosystemctl.sh` est le CLI de gestion des services P2P de la constellation :
 
 ```bash
 astrosystemctl list             # Services locaux disponibles

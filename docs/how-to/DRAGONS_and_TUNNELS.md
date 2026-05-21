@@ -54,7 +54,7 @@ Le protocole IPFS P2P (`/x/SERVICE-NODEID`) traverses les NAT et ne nécessite *
 
 ### `20h12.process.sh` — Maintenance quotidienne (cron)
 
-Script lancé **une fois par jour** à l'heure solaire (~20h12 locale) par le cron géré par [`tools/cron_VRFY.sh`](../tools/cron_VRFY.sh). Il :
+Script lancé **une fois par jour** à l'heure solaire (~20h12 locale) par le cron géré par [`admin/system/cron_VRFY.sh`](../admin/system/cron_VRFY.sh). Il :
 
 1. Vérifie l'état du démon IPFS
 2. Met à jour le code (git pull)

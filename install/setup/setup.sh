@@ -12,16 +12,22 @@ echo "#############################################"
 echo "######### HOSTNAME SETUP  ###################"
 echo "#############################################"
 if [[ $(hostname) =~ -[0-9]{2}$ ]]; then
-    echo "✅ Hostname conforme détecté : $(hostname)"
+    echo "✅ Hostname conforme : $(hostname)"
     NEW_HOSTNAME=$(hostname)
 else
-    WORD=$($HOME/.zen/Astroport.ONE/tools/diceware.sh 1)
     NUMBER=$(printf "%02d" $((RANDOM % 99 + 1)))
-    NEW_HOSTNAME="${WORD}-${NUMBER}"
+    if [[ -n "${CUSTOM_MACHINE_NAME:-}" ]]; then
+        CLEAN_NAME=$(echo "${CUSTOM_MACHINE_NAME}" \
+            | tr '[:upper:]' '[:lower:]' \
+            | sed 's/[^a-z0-9]/-/g;s/-\+/-/g;s/^-//;s/-$//')
+        [[ -z "$CLEAN_NAME" ]] \
+            && CLEAN_NAME=$($HOME/.zen/Astroport.ONE/tools/diceware.sh 1 2>/dev/null || echo "station")
+    else
+        CLEAN_NAME=$($HOME/.zen/Astroport.ONE/tools/diceware.sh 1 2>/dev/null || echo "station")
+    fi
+    NEW_HOSTNAME="${CLEAN_NAME}-${NUMBER}"
     echo "NOUVEAU Hostname : $NEW_HOSTNAME"
-    # Appliquer hostname
     sudo hostnamectl set-hostname "$NEW_HOSTNAME"
-    # Assurer cohérence /etc/hosts
     if grep -q "127.0.1.1" /etc/hosts; then
         sudo sed -i "s/^127.0.1.1.*/127.0.1.1\t$NEW_HOSTNAME/" /etc/hosts
     else
@@ -51,7 +57,6 @@ TMP_FILE=$(mktemp)
 cat > "$TMP_FILE" <<'EOF'
 # >>> ASTROPORT BLOCK >>>
 
-#############################################################
 export PATH=$HOME/.local/bin:/usr/games:$PATH
 
 ## Activer le venv Python .astro
@@ -62,67 +67,6 @@ else
 fi
 
 source $HOME/.zen/Astroport.ONE/tools/my.sh 2>/dev/null
-
-## Affiche les portefeuilles coopératifs et l'état de la station
-station-info() {
-    source $HOME/.zen/Astroport.ONE/tools/my.sh 2>/dev/null
-    echo "══════════════════════════════════════════════════════════════════════"
-    echo "🏦 PORTEFEUILLES COOPÉRATIFS – ZEN.ECONOMY UPlanet ẐEN"
-    echo "══════════════════════════════════════════════════════════════════════"
-    echo ""
-    echo "🌍 Banque Centrale Ğ1 (UPLANETNAME_G1)"
-    echo "   → Réserve de valeur en Ğ1 permettant d'émettre des Ẑen (1Ẑ = 0.1Ğ1)."
-    echo "   → Alimente tous les flux économiques (MULTIPASS, SOCIETY, etc.)"
-    echo "   UPLANETNAME_G1=$UPLANETNAME_G1"
-    echo ""
-    echo "💸 Portefeuille ẑen (UPLANETG1PUB)"
-    echo "   → Point d'entrée des jetons d'usage (MULTIPASS)."
-    echo "   UPLANETG1PUB=$UPLANETG1PUB"
-    echo ""
-    echo "🤝 Portefeuille SOCIETY ẐEN / AMAP (UPLANETNAME_SOCIETY)"
-    echo "   → Reçoit les cotisations des sociétaires (ẐEN)."
-    echo "   → Redistribue X% R&D, Y% ASSETS, Z% -> ẑen (reste au CAPITAINE)."
-    echo "   UPLANETNAME_SOCIETY=$UPLANETNAME_SOCIETY"
-    echo ""
-    echo "🏭 Immobilisations corporelles – CAPITAL (UPLANETNAME_CAPITAL)"
-    echo "   → Capital machine (infrastructure)."
-    echo "   → Amortissement linéaire sur 3 ans (156 semaines)."
-    echo "   UPLANETNAME_CAPITAL=$UPLANETNAME_CAPITAL"
-    echo ""
-    echo "📊 Taxe / TVA – IMPOT (UPLANETNAME_IMPOT)"
-    echo "   → Collecte les prélèvements fiscaux : x% sur chaque transaction MULTIPASS."
-    echo "   UPLANETNAME_IMPOT=$UPLANETNAME_IMPOT"
-    echo ""
-    echo "💰 Trésorerie – TREASURY (UPLANETNAME_TREASURY)"
-    echo "   → Fonds de roulement, réserve de liquidités pour conversion ẑ/€."
-    echo "   UPLANETNAME_TREASURY=$UPLANETNAME_TREASURY"
-    echo ""
-    echo "🔬 Recherche & Développement – RnD (UPLANETNAME_RND)"
-    echo "   → Financement de l'innovation, des outils et de la maintenance"
-    echo "     du logiciel coopératif. Reçoit X% des cotisations sociétaires."
-    echo "   UPLANETNAME_RND=$UPLANETNAME_RND"
-    echo ""
-    echo "🌱 Actifs environnementaux – ASSETS (UPLANETNAME_ASSETS)"
-    echo "   → Récompenses ORE (terrains, UMAP)."
-    echo "   → Réserves pour la régénération écologique et les actions climatiques."
-    echo "   UPLANETNAME_ASSETS=$UPLANETNAME_ASSETS"
-    echo ""
-    echo "🚢 Portefeuille Collecte (UPLANETNAME_CAPTAIN)"
-    echo "   → Reçoit les revenus de gestion."
-    echo "   UPLANETNAME_CAPTAIN=$UPLANETNAME_CAPTAIN"
-    echo ""
-    echo "🖥️ Armateur Astroport – NODE (UPLANETNAME_NODE)"
-    echo "   → Revenus locatifs (PAF) et burn vers les monnaies locales (€)."
-    echo "   → Distinct du capital machine (UPLANETNAME_CAPITAL)."
-    echo "   UPLANETNAME_NODE=$UPLANETNAME_NODE"
-    echo ""
-    echo "🆔 Identifiant du nœud IPFS (IPFSNODEID)"
-    echo "   → Trace la machine Y Level (SSH=IPFS)."
-    echo "   IPFSNODEID=$IPFSNODEID"
-    echo ""
-    cowsay "$(hostname) on UPLANET ${UPLANETG1PUB:0:8}"
-    echo "CAPTAIN: $CAPTAINEMAIL"
-}
 
 echo "⚓ Astroport Node Ready. Type 'station-info' for details."
 
@@ -220,7 +164,7 @@ echo "#### UPlanet ẐEN Activation needs Y LEVEL (SSH=IPFS)"
 
 # ACTIVATING ASTROPORT CRON
 echo ">>> SWITCHING ASTROPORT ON <<<"
-~/.zen/Astroport.ONE/tools/cron_VRFY.sh ON
+~/.zen/Astroport.ONE/admin/system/cron_VRFY.sh ON
 
 ##########################################################
 ## ON BOARDING PLAYER

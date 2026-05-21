@@ -11,7 +11,7 @@ TS=$(date -u +%s%N | cut -b1-13)
 
 echo "cron_VRFY.sh ON"
 ###################################################
-${MY_PATH}/tools/cron_VRFY.sh ON
+${MY_PATH}/admin/system/cron_VRFY.sh ON
 
 echo "(RE)STARTING 12345.sh"
 ###################################################

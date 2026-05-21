@@ -64,13 +64,13 @@ The heartbox analysis system has been optimized to provide fast, consistent, and
 
 ```bash
 # Export current analysis (uses cache if fresh)
-./tools/heartbox_analysis.sh export --json
+./admin/monitor/heartbox_analysis.sh export --json
 
 # Force cache update
-./tools/heartbox_analysis.sh update
+./admin/monitor/heartbox_analysis.sh update
 
 # Read cached data
-./tools/heartbox_analysis.sh cache
+./admin/monitor/heartbox_analysis.sh cache
 
 # Test the system
 ./tools/test_heartbox_cache.sh
@@ -151,10 +151,10 @@ The heartbox analysis system has been optimized to provide fast, consistent, and
 ls -la ~/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json
 
 # View cache contents
-./tools/heartbox_analysis.sh cache | jq .
+./admin/monitor/heartbox_analysis.sh cache | jq .
 
 # Force refresh
-./tools/heartbox_analysis.sh update
+./admin/monitor/heartbox_analysis.sh update
 ```
 
 ### Service Status Verification
@@ -174,7 +174,7 @@ jq -r '.services.ipfs.active' ~/.zen/tmp/${IPFSNODEID}/heartbox_analysis.json
 ls -la ~/.zen/tmp/${IPFSNODEID}/
 
 # Manual update
-./tools/heartbox_analysis.sh update
+./admin/monitor/heartbox_analysis.sh update
 
 # Check logs
 tail -f ~/.zen/tmp/_12345.log
@@ -183,7 +183,7 @@ tail -f ~/.zen/tmp/_12345.log
 #### Inconsistent Status
 ```bash
 # Force refresh all components
-./tools/heartbox_analysis.sh update
+./admin/monitor/heartbox_analysis.sh update
 sudo systemctl restart astroport
 ./tools/test_heartbox_cache.sh
 ```

@@ -16,7 +16,7 @@ RUNLEVEL=$1
 
 echo "cron_VRFY.sh $RUNLEVEL"
 ###################################################
-${MY_PATH}/tools/cron_VRFY.sh $RUNLEVEL
+${MY_PATH}/admin/system/cron_VRFY.sh $RUNLEVEL
 echo "ipfs start"
 sudo systemctl start ipfs
 sleep 5

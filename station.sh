@@ -410,9 +410,9 @@ menu_infrastructure() {
         6)  bash "${MY_PATH}/install/install_leann.sh"; pause ;;
         7)  echo "1=status  2=ON  3=OFF"; read -p "Action: " a
             case "$a" in
-                1) "${MY_PATH}/tools/firewall.sh" STATUS ;;
-                2) "${MY_PATH}/tools/firewall.sh" ON ;;
-                3) "${MY_PATH}/tools/firewall.sh" OFF ;;
+                1) "${MY_PATH}/admin/system/firewall.sh" STATUS ;;
+                2) "${MY_PATH}/admin/system/firewall.sh" ON ;;
+                3) "${MY_PATH}/admin/system/firewall.sh" OFF ;;
             esac; pause ;;
         8)  docker compose logs -f --tail=50; pause ;;
         0) return ;;

@@ -77,7 +77,7 @@ fi
 echo "$CURRENT_UTC_OFFSET" > "$LAST_UTC_OFFSET_FILE"
 
 echo "🔄 Recalibration heure solaire 20H12..."
-${MY_PATH}/tools/cron_VRFY.sh RECALIBRATE
+${MY_PATH}/admin/system/cron_VRFY.sh RECALIBRATE
 
 echo "PATH=$PATH"
 
@@ -121,6 +121,45 @@ cat $HOME/.zen/strfry/constellation-backfill.error.log 2>/dev/null >> $LOG_FILE
 
 echo "=== SYSTEM/INSTALL ERRORS ====================================" >> $LOG_FILE
 cat $HOME/.zen/install.errors.log 2>/dev/null >> $LOG_FILE
+
+########################################################################
+## AUDIT ~/.local/bin — inventaire et réparation des symlinks du Capitaine
+########################################################################
+ASTRO_PROFILE="$HOME/.zen/.astro"
+mkdir -p "$(dirname "$ASTRO_PROFILE")"
+{
+    echo "=== ~/.local/bin SYMLINK AUDIT — $(date '+%Y-%m-%d %H:%M') ==="
+    _fixed=0
+    _broken=0
+    _ok=0
+    for _lnk in "$HOME/.local/bin"/*; do
+        [[ -L "$_lnk" ]] || continue
+        _target=$(readlink "$_lnk")
+        _name=$(basename "$_lnk")
+        if [[ -e "$_lnk" ]]; then
+            echo "  OK      $_name -> $_target"
+            ((_ok++))
+        else
+            echo "  BROKEN  $_name -> $_target"
+            ((_broken++))
+            # Chercher le script dans admin/ ou tools/ de ASTRO
+            _found=$(find "${MY_PATH}/admin" "${MY_PATH}/tools" \
+                -maxdepth 3 \( -name "$_name" -o -name "${_name%.sh}.sh" \) 2>/dev/null \
+                | head -1)
+            if [[ -n "$_found" && -f "$_found" ]]; then
+                ln -f -s "$_found" "$_lnk"
+                echo "  FIXED   $_name -> $_found"
+                ((_fixed++))
+            fi
+        fi
+    done
+    echo "  TOTAL: ${_ok} OK, ${_broken} broken (${_fixed} auto-réparés)"
+    echo "=========================================================="
+} >> "$ASTRO_PROFILE"
+
+# N'afficher que les lignes BROKEN/FIXED dans le log principal
+grep -E "BROKEN|FIXED|TOTAL" "$ASTRO_PROFILE" | tail -20 >> "$LOG_FILE" 2>/dev/null || true
+
 ########################################################################
 # show Ustats.sh cache of the day
 echo "TODAY UPlanet landings"
@@ -376,7 +415,7 @@ STATUS: SUCCESS
 echo "📊 Mise à jour de l'analyse de la ♥️BOX - Captain ${CAPTAINEMAIL}..."
 
 # Utiliser le système de cache optimisé
-ANALYSIS_JSON=$(${MY_PATH}/tools/heartbox_analysis.sh export --json)
+ANALYSIS_JSON=$(${MY_PATH}/admin/monitor/heartbox_analysis.sh export --json)
 
 if [[ -n "$ANALYSIS_JSON" ]]; then
     # Extraire les capacités depuis l'analyse JSON
@@ -430,7 +469,7 @@ if [[ -n "$ANALYSIS_JSON" ]]; then
 else
     echo "❌ Erreur: Impossible d'obtenir les données d'analyse JSON de heartbox_analysis.sh."
     echo "🔄 Tentative de mise à jour du cache..."
-    ${MY_PATH}/tools/heartbox_analysis.sh update
+    ${MY_PATH}/admin/monitor/heartbox_analysis.sh update
 fi
 
 end=`date +%s`
@@ -472,9 +511,9 @@ if systemctl is-enabled powerjoular.service &>/dev/null; then
     fi
 fi
 
-if [[ -f "${MY_PATH}/tools/power_monitor.sh" ]] && [[ -f "$POWER_24H_CSV" ]] || sudo test -f "$POWER_24H_CSV" 2>/dev/null; then
+if [[ -f "${MY_PATH}/admin/monitor/power_monitor.sh" ]] && [[ -f "$POWER_24H_CSV" ]] || sudo test -f "$POWER_24H_CSV" 2>/dev/null; then
     echo "📊 Generating power consumption report (last 24h from 24/7 CSV)..."
-    if "${MY_PATH}/tools/power_monitor.sh" report-from-24h \
+    if "${MY_PATH}/admin/monitor/power_monitor.sh" report-from-24h \
             "$POWER_REPORT_HTML" \
             "20H12 - $(hostname -f) - Last 24h /ipns/${IPFSNODEID:-} " \
             "$LOG_FILE" \
@@ -486,7 +525,7 @@ if [[ -f "${MY_PATH}/tools/power_monitor.sh" ]] && [[ -f "$POWER_24H_CSV" ]] || 
         fi
         # Trim 24/7 CSV to last 24h only to avoid filling disk
         echo "🗜️ Trimming 24/7 power CSV to last 24h..." >> $LOG_FILE
-        "${MY_PATH}/tools/power_monitor.sh" trim-24h-csv "$POWER_24H_CSV" 2>&1 | tee -a $LOG_FILE || true
+        "${MY_PATH}/admin/monitor/power_monitor.sh" trim-24h-csv "$POWER_24H_CSV" 2>&1 | tee -a $LOG_FILE || true
         # Vérification post-trim : le trim stoppe/relance powerjoular — s'assurer qu'il tourne toujours
         sleep 3
         if systemctl is-enabled powerjoular.service &>/dev/null && ! systemctl is-active --quiet powerjoular.service; then

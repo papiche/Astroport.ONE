@@ -22,6 +22,6 @@ echo "STOPPING PROCESS & CRON"
 ###################################################
 killall 12345.sh; killall "_12345.sh"; killall nc
 ###################################################
-${MY_PATH}/tools/cron_VRFY.sh OFF
+${MY_PATH}/admin/system/cron_VRFY.sh OFF
 
 exit 0

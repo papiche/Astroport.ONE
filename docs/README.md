@@ -27,7 +27,9 @@ Organisée selon le standard [Diátaxis](https://diataxis.fr/) — quatre types 
 
 | Fichier | Sujet |
 |---------|-------|
+| [LOCAL_BIN_SYMLINKS.md](how-to/LOCAL_BIN_SYMLINKS.md) | Commandes du Capitaine : inventaire `~/.local/bin`, journal `~/.zen/.astro`, convention d'ajout |
 | [ASTROSYSTEMCTL.md](how-to/ASTROSYSTEMCTL.md) | Télécommander des services P2P via tunnels IPFS |
+| [SWARM_WIREGUARD.md](how-to/SWARM_WIREGUARD.md) | VPN constellation WireGuard — rejoindre l'essaim, contourner CGNAT, abonnements services |
 | [DRAGONS_and_TUNNELS.md](how-to/DRAGONS_and_TUNNELS.md) | Publier et découvrir des services IA entre stations (DRAGONS + modules.list) |
 | [API.NOSTRAuth.readme.md](how-to/API.NOSTRAuth.readme.md) | Authentification NOSTR NIP-42 côté serveur et client |
 | [NOSTR_GET_EVENTS.md](how-to/NOSTR_GET_EVENTS.md) | Interroger la base de données du relay NOSTR local |

@@ -55,6 +55,131 @@ The UPlanet video management system provides **three modes** for creating and ma
 3. Generated cookies: ~/.zen/tmp/youtube_cookies.txt (fallback)
 ```
 
+## 📼 Mode 4 — Voeu TW `CopierYoutube` (chaîne complète, dans le TiddlyWiki)
+
+Ce mode est le plus puissant : il permet d'archiver une **chaîne YouTube entière** (ou une playlist) en formulant un voeu directement dans le TiddlyWiki personnel. L'ASTROBOT traite le voeu à chaque cycle `PLAYER.refresh.sh`.
+
+### Principe
+
+1. **Créer le voeu** dans le TW (un tiddler avec les tags `voeu` + `CopierYoutube`)
+2. **Créer un ou plusieurs tiddlers de contenu** (tags : `CopierYoutube`) contenant les URLs à archiver
+3. Le système détecte le voeu et **appelle `ASTROBOT/G1CopierYoutube.sh`** automatiquement
+4. Chaque vidéo téléchargée devient un **tiddler dans le TW** avec lecteur vidéo/audio embarqué
+
+### Étapes dans le TiddlyWiki
+
+**Étape 1 — Formuler le voeu**
+
+Créer un tiddler avec :
+```
+Titre : CopierYoutube
+Tags  : voeu CopierYoutube
+Texte : (description facultative de l'intention)
+```
+
+**Étape 2 — Lister les URLs à archiver**
+
+Créer un tiddler par source avec :
+```
+Titre : MaChaineYoutube  (ou tout autre nom)
+Tags  : CopierYoutube
+Texte : https://www.youtube.com/@nom-de-la-chaine
+```
+
+Pour une playlist :
+```
+Texte : https://www.youtube.com/playlist?list=PLxxxxxx
+```
+
+Pour plusieurs sources, mettre une URL par ligne dans le texte, ou créer plusieurs tiddlers tagués `CopierYoutube`.
+
+**Étape 3 — Pour archiver en audio seulement (MP3)**
+
+Ajouter le tag `MP3` au tiddler de contenu :
+```
+Tags : CopierYoutube MP3
+```
+
+### Ce que fait l'ASTROBOT
+
+```
+TW player.index.html
+  └─ tiddlers [tag[CopierYoutube]]
+       └─ URLs extraites
+            └─ yt-dlp télécharge chaque vidéo
+                 └─ IPFS add → /ipfs/QmHash
+                      ├─ ajouter_media.sh :
+                      │    ├─ uDRIVE/Videos/ (copie fichier réel)
+                      │    ├─ info.json v2.0 (métadonnées)
+                      │    └─ NIP-94 kind 1063 (NOSTR file event)
+                      ├─ Tiddler créé dans le TW :
+                      │    title: nom_du_fichier.mp4
+                      │    tags:  CopierYoutube NomDeLaChaine
+                      │    text:  <video> ou <audio> embarqué
+                      │    ipfs:  /ipfs/QmHash
+                      └─ NIP-71 kind 21/22 (NOSTR video event)
+```
+
+Les vidéos apparaissent dans le TW sous le tag `CopierYoutube` avec lecteur intégré. Elles sont simultanément :
+- publiées comme **événements NIP-71** (kind 21/22) visibles sur `/youtube`
+- sauvegardées dans le **uDRIVE** du joueur (`Videos/` ou `Music/` pour MP3)
+- indexées comme **fichiers NIP-94** (kind 1063) dans la constellation
+
+### Cookies YouTube
+
+Le script utilise les cookies du navigateur par défaut (détection automatique). Pour les stations sans interface graphique (serveur), uploader les cookies via :
+```
+https://u.domain.tld/astro  →  cookie upload
+```
+
+### Suivi des archives
+
+```bash
+# Voir les archives en cours pour un joueur
+ls ~/.zen/game/players/<email>/G1CopierYoutube/
+
+# Voir le log de traitement
+tail -f ~/.zen/tmp/IA.log | grep "G1CopierYoutube"
+
+# Voir les tiddlers importés dans le TW
+cat ~/.zen/game/players/<email>/G1CopierYoutube/CopierYoutube.json | jq '.[].title'
+```
+
+### Déclenchement manuel
+
+```bash
+# Déclencher manuellement pour un joueur (email = PLAYER)
+./ASTROBOT/G1CopierYoutube.sh \
+    ~/.zen/game/players/<email>/ipfs/moa/index.html \
+    <email>
+```
+
+### Extension IA — MineLife et Grimoire
+
+> **Vision (non implémentée, RFC)** : relier le contenu archivé à la toile de compétences WoTx2.
+
+Le titre du voeu (`CopierYoutube`) peut porter le nom d'une compétence cible. Après le téléchargement, un script d'analyse IA pourrait :
+
+1. **Analyser la vidéo** — Ollama (`question.py`) pour transcrire ou décrire le contenu
+2. **Extraire les concepts** liés à la compétence du voeu
+3. **Publier kind 30504** (knowledge content) avec la vidéo comme source, indexé par `knowledge_index.sh` dans Qdrant
+4. **Alimenter MineLife** — la compétence devient cherchable dans le catalogue Qdrant
+5. **Déclencher Grimoire** — après validation WoTx2 (craft success), générer un kind 22 vidéo résumé
+
+```
+voeu CopierYoutube "Permaculture"
+  └─ G1CopierYoutube.sh télécharge la chaîne
+       └─ [futur] analyser_media.sh :
+            ├─ Ollama analyse contenu → mots-clefs
+            ├─ NIP kind 30504 (knowledge) → Qdrant
+            └─ MineLife : skill "Permaculture" enrichi
+                 └─ craft validé → Grimoire kind 22
+```
+
+→ Voir [MINELIFE.md](MINELIFE.md), [GRIMOIRE_LIVE.md](GRIMOIRE_LIVE.md), [KNOWLEDGE_EMBEDDINGS.md](KNOWLEDGE_EMBEDDINGS.md)
+
+---
+
 ## 🍪 Cookie Management
 
 ### Why Cookies Are Needed
@@ -221,103 +346,64 @@ The system publishes **two types** of NOSTR events for each video:
 1. **Kind 1** - Text message (compatibility with older clients)
 2. **Kind 21/22** - NIP-71 video events (modern standard)
 
-### NIP-71 Classification
+### NIP-71 Classification (implémentation réelle)
 
-- **Kind 21** - Normal videos (duration > 30s, horizontal format)
-- **Kind 22** - Short videos (duration ≤ 30s OR vertical/square format)
+- **Kind 21** — long-form : durée > 60 secondes
+- **Kind 22** — short-form : durée ≤ 60 secondes
 
 ### NIP-71 Tags Structure
 
-The system uses proper NIP-71 compliant tags with **geographic anchoring**:
+Tags générés par `publish_nip71_video()` dans `G1CopierYoutube.sh` :
 
 ```json
-{
-  "title": "Video Title",
-  "imeta": [
-    "dim 1920x1080",
-    "url /ipfs/QmHash...",
-    "x sha256_hash",
-    "m video/mp4",
-    "image /ipfs/thumbnail_hash",
-    "fallback /ipfs/QmHash...",
-    "service nip96"
-  ],
-  "duration": "120",
-  "published_at": "1640995200",
-  "alt": "Video Title by Author",
-  "content-warning": "Adult content", // if applicable
-  "t": ["YouTubeDownload", "VideoChannel", "Channel-AuthorName", "WebcamRecording"],
-  "g": "48.86,2.35",           // NEW: Geohash for UMAP anchoring
-  "location": "48.86,2.35",     // NEW: Human-readable location
-  "latitude": "48.86",          // NEW: Separate latitude tag
-  "longitude": "2.35",          // NEW: Separate longitude tag
-  "r": [
-    ["https://youtube.com/watch?v=...", "YouTube"],
-    ["/ipfs/metadata_hash", "Metadata"],
-    ["/ipfs/thumbnail_hash", "Thumbnail"]
-  ]
-}
+[
+  ["title",        "Titre de la vidéo"],
+  ["url",          "http://127.0.0.1:8080/ipfs/QmHash..."],
+  ["m",            "video/mp4"],
+  ["published_at", "1640995200"],
+  ["duration",     "1200"],
+  ["dim",          "1280x720"],
+  ["thumb",        "http://127.0.0.1:8080/ipfs/QmThumb..."],
+  ["gifanim_url",  "http://127.0.0.1:8080/ipfs/QmGif..."],
+  ["x",            "sha256_du_fichier"],
+  ["t",            "Channel-NomChaine"],
+  ["t",            "CopierYoutube"],
+  ["t",            "YouTube"],
+  ["t",            "Astroport"],
+  ["r",            "https://youtube.com/watch?v=..."]
+]
 ```
 
-#### NIP-71 Compliance Features
+Le tag `thumb` est une URL complète (format NIP-71 standard). `gifanim_url` est un tag custom Astroport pour la prévisualisation animée.
 
-- **✅ Proper `imeta` tags** with space-separated properties
-- **✅ Required `title` tag** for video identification
-- **✅ `published_at` timestamp** for publication date
-- **✅ `alt` tag** for accessibility
-- **✅ `content-warning`** for NSFW content
-- **✅ `fallback` URLs** for redundancy
-- **✅ `service` tag** for NIP-96 compatibility
-- **✅ Smart video classification** (kind 21/22 based on format and duration)
-- **✅ Geographic tags** (`g`, `location`, `latitude`, `longitude`) for UMAP anchoring
-- **✅ uDRIVE integration** for personal video storage
+#### Pipeline complet par vidéo
 
-## 🔧 NIP-71 Compliance
-
-### Full NIP-71 Implementation
-
-Our YouTube download system is now **fully compliant** with NIP-71 Video Events specification:
-
-#### ✅ **Required Elements**
-- **Event Kinds**: Correctly uses `kind: 21` (normal) and `kind: 22` (short) videos
-- **`title` tag**: Required video title for identification
-- **`imeta` tags**: Primary source of video information with proper format
-- **`published_at`**: Unix timestamp of video publication
-- **`alt` tag**: Accessibility description for screen readers
-
-#### ✅ **Enhanced Features**
-- **Smart Classification**: Automatically determines video kind based on:
-  - Vertical aspect ratio → kind 22 (short)
-  - Square aspect ratio → kind 22 (short)  
-  - Small dimensions (≤720p) → kind 22 (short)
-  - Duration ≤30s for horizontal videos → kind 22 (short)
-- **Redundancy**: Multiple `fallback` URLs for reliable video delivery
-- **NIP-96 Compatibility**: `service` tag for decentralized storage
-- **Content Warnings**: Automatic detection of NSFW content
-- **Rich Metadata**: File size, dimensions, duration, and technical info
-
-#### ✅ **Client Compatibility**
-- **Video-focused clients**: Netflix, YouTube, TikTok-like NOSTR clients
-- **Search functionality**: Proper tagging for video discovery
-- **Accessibility**: Screen reader support with `alt` tags
-- **Mobile optimization**: Responsive design for all devices
+1. **yt-dlp** → télécharge mp4/mp3 dans `~/.zen/tmp/yt-dlp/`
+2. **IPFS add** → obtient le CID
+3. **`ajouter_media.sh`** → copie dans `uDRIVE/Videos/` + `info.json` + NIP-94 kind 1063
+4. **TW import** → tiddler `<video>` dans le wiki personnel
+5. **NIP-71 kind 21/22** → événement vidéo NOSTR via clef MULTIPASS
 
 ### Example NIP-71 Event
 
 ```json
 {
   "kind": 21,
-  "content": "🎬 How to Build a Blockchain\n\n📺 YouTube: https://youtube.com/watch?v=...\n🔗 IPFS: $myLIBRA/ipfs/QmHash...",
+  "content": "🎬 How to Build a Blockchain\n\n📺 Channel: TechChannel\n🔗 IPFS: http://127.0.0.1:8080/ipfs/QmHash...\n🌐 Source: https://youtube.com/watch?v=...\n\n#CopierYoutube #YouTube #Astroport #IPFS",
   "tags": [
-    ["title", "How to Build a Blockchain"],
-    ["imeta", "dim 1920x1080", "url /ipfs/QmHash...", "x sha256_hash", "m video/mp4", "image /ipfs/thumb_hash", "fallback /ipfs/QmHash...", "service nip96"],
-    ["duration", "1200"],
+    ["title",        "How to Build a Blockchain"],
+    ["url",          "http://127.0.0.1:8080/ipfs/QmHash..."],
+    ["m",            "video/mp4"],
     ["published_at", "1640995200"],
-    ["alt", "How to Build a Blockchain by TechChannel"],
-    ["t", "YouTubeDownload"],
-    ["t", "VideoChannel"],
-    ["t", "Channel-TechChannel"],
-    ["r", "https://youtube.com/watch?v=...", "YouTube"]
+    ["duration",     "1200"],
+    ["dim",          "1280x720"],
+    ["thumb",        "http://127.0.0.1:8080/ipfs/QmThumb..."],
+    ["x",            "abc123..."],
+    ["t",            "Channel-TechChannel"],
+    ["t",            "CopierYoutube"],
+    ["t",            "YouTube"],
+    ["t",            "Astroport"],
+    ["r",            "https://youtube.com/watch?v=..."]
   ]
 }
 ```

@@ -52,7 +52,7 @@ vlog()    { $VERBOSE && echo -e "  ${YELLOW}▸${NC} $1" || true; }
 
 INTERCOM="${ASTROPORT_PATH}/tools/nostr_node_intercom.py"
 KEYGEN="${ASTROPORT_PATH}/tools/keygen"
-KNOWLEDGE_INDEX="${ASTROPORT_PATH}/tools/knowledge_index.sh"
+KNOWLEDGE_INDEX="${ASTROPORT_PATH}/admin/ia_db/knowledge_index.sh"
 
 _pub() {
     if $VERBOSE; then
@@ -377,8 +377,8 @@ echo -e "    DM Kind 4 → NODE : ${CYAN}#rec bash${NC}"
 echo -e "    DM Kind 4 → NODE : ${CYAN}#rec docker${NC}"
 echo ""
 echo -e "  Pour rechercher directement :"
-echo -e "    ${CYAN}./tools/knowledge_index.sh --search 'bash astroport' --skill bash${NC}"
-echo -e "    ${CYAN}./tools/knowledge_index.sh --search 'docker station'  --skill docker${NC}"
+echo -e "    ${CYAN}./admin/ia_db/knowledge_index.sh --search 'bash astroport' --skill bash${NC}"
+echo -e "    ${CYAN}./admin/ia_db/knowledge_index.sh --search 'docker station'  --skill docker${NC}"
 
 PASS=$((PASS+1))  # synthèse
 

@@ -344,7 +344,7 @@ open('${FIXTURES}/.ipfs_cids','w').writelines(lines)
         _QDRANT_UP=$(curl -sf "http://localhost:6333/collections/knowledge" 2>/dev/null | \
             python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('result',{}).get('status','nok'))" 2>/dev/null)
         if [[ "$_QDRANT_UP" == "green" ]]; then
-            KNOWLEDGE_INDEX="${ASTROPORT_PATH}/tools/knowledge_index.sh"
+            KNOWLEDGE_INDEX="${ASTROPORT_PATH}/admin/ia_db/knowledge_index.sh"
             if [[ -x "$KNOWLEDGE_INDEX" ]]; then
                 "$KNOWLEDGE_INDEX" "analytics-uplanet" \
                     "${FIXTURES}/analytics_uplanet_toto.md" \

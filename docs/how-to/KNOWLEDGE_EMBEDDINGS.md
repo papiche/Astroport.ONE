@@ -25,13 +25,13 @@
 
 ```bash
 # Répertoire Nextcloud par skill (sous-dossier = skill)
-./tools/knowledge_index.sh --index-dir ~/nextcloud/admin/files/Astroport
+./admin/ia_db/knowledge_index.sh --index-dir ~/nextcloud/admin/files/Astroport
 
 # Avec skill explicite (pour un dossier plat)
-./tools/knowledge_index.sh --index-dir ~/formations --skill linux
+./admin/ia_db/knowledge_index.sh --index-dir ~/formations --skill linux
 
 # Avec attribution d'auteur explicite (pubkey hex du capitaine)
-./tools/knowledge_index.sh --index-dir ~/formations \
+./admin/ia_db/knowledge_index.sh --index-dir ~/formations \
     --author "$(cat ~/.zen/game/players/.captain/G1PUBKEY/nostr.pub)"
 ```
 
@@ -49,10 +49,10 @@
 
 ```bash
 # Depuis le relay local strfry (port 7777)
-./tools/knowledge_index.sh --index-nostr
+./admin/ia_db/knowledge_index.sh --index-nostr
 
 # Depuis un relay distant
-NOSTR_RELAY=wss://relay.copylaradio.com ./tools/knowledge_index.sh --index-nostr
+NOSTR_RELAY=wss://relay.copylaradio.com ./admin/ia_db/knowledge_index.sh --index-nostr
 ```
 
 ---
@@ -60,7 +60,7 @@ NOSTR_RELAY=wss://relay.copylaradio.com ./tools/knowledge_index.sh --index-nostr
 ## Comment indexer le uDRIVE personnel
 
 ```bash
-./tools/knowledge_index.sh --index-udrive
+./admin/ia_db/knowledge_index.sh --index-udrive
 ```
 
 Le skill est déduit du sous-répertoire : `~/.zen/game/players/<G1PUB>/Skills/docker/` → skill=`docker`.
@@ -70,7 +70,7 @@ Le skill est déduit du sous-répertoire : `~/.zen/game/players/<G1PUB>/Skills/d
 ## Comment tout indexer en une fois
 
 ```bash
-./tools/knowledge_index.sh --all
+./admin/ia_db/knowledge_index.sh --all
 ```
 
 ---
@@ -79,8 +79,8 @@ Le skill est déduit du sous-répertoire : `~/.zen/game/players/<G1PUB>/Skills/d
 
 ```bash
 # Vide la collection et réindexe tout
-./tools/knowledge_index.sh --reset
-./tools/knowledge_index.sh --all
+./admin/ia_db/knowledge_index.sh --reset
+./admin/ia_db/knowledge_index.sh --all
 ```
 
 ---
@@ -88,7 +88,7 @@ Le skill est déduit du sous-répertoire : `~/.zen/game/players/<G1PUB>/Skills/d
 ## Comment attribuer un auteur spécifique à un dossier
 
 ```bash
-./tools/knowledge_index.sh --index-dir ~/formations \
+./admin/ia_db/knowledge_index.sh --index-dir ~/formations \
     --author "<pubkey_hex_64_chars>"
 ```
 
@@ -119,10 +119,10 @@ Après publication, relancer `--index-nostr` pour intégrer la ressource dans Qd
 
 ```bash
 # Recherche libre
-./tools/knowledge_index.sh --search "introduction conteneurs docker compose"
+./admin/ia_db/knowledge_index.sh --search "introduction conteneurs docker compose"
 
 # Filtrée par skill
-./tools/knowledge_index.sh --search "gestion services" --skill linux
+./admin/ia_db/knowledge_index.sh --search "gestion services" --skill linux
 
 # Sortie : score<TAB>ref<TAB>auteur<TAB>titre<TAB>skill
 0.8412  /ipfs/QmXxx...  abc123def456...  Introduction Docker  docker
@@ -133,7 +133,7 @@ Après publication, relancer `--index-nostr` pour intégrer la ressource dans Qd
 ## Comment vérifier l'état de la collection
 
 ```bash
-./tools/knowledge_index.sh --stats
+./admin/ia_db/knowledge_index.sh --stats
 # → { "collection": "knowledge", "points_count": N, "status": "green" }
 ```
 

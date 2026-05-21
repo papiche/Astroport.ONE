@@ -37,6 +37,7 @@ MODE="commit"         # commit | staged | day | week | month
 SINCE_COMMIT="HEAD"   # référence git de base pour le diff
 SINCE_LABEL="dernier commit"
 AI_MODEL="qwen2.5-coder:14b"
+AI_BACKEND="ollama"    # ollama | claude | gemini
 VERBOSE=false
 PR_MODE=false
 AI_ENHANCED=false
@@ -57,8 +58,10 @@ show_help() {
     echo -e "  ${GREEN}--month,       -m${NC}   Derniers 30 jours"
     echo -e "  ${GREEN}--branch,      -b${NC}   Basculer sur cette branche avant d'analyser"
     echo -e "  ${GREEN}--pr,          -p${NC}   Proposer une Pull Request après push (assistance IA)"
-    echo -e "  ${GREEN}--ai,          -a${NC}   Mode IA étendu : groupement sémantique + revue de code"
-    echo -e "  ${GREEN}--model MODEL, -M${NC}   Modèle Ollama (défaut: qwen2.5-coder:14b)"
+    echo -e "  ${GREEN}--ai [BACKEND],-a${NC}   Revue de code IA. BACKEND: ollama (défaut) | claude | gemini"
+    echo -e "                        claude → utilise claude CLI (OAuth ~/.claude-*), sélection du compte"
+    echo -e "                        gemini → GEMINI_API_KEY requis"
+    echo -e "  ${GREEN}--model MODEL, -M${NC}   Modèle LLM (défaut Ollama: qwen2.5-coder:14b | Claude: haiku)"
     echo -e "  ${GREEN}--verbose,     -v${NC}   Mode verbeux : affiche diff, prompt et réponse brute"
     echo -e "  ${GREEN}--help,        -h${NC}   Afficher cette aide"
     echo ""
@@ -66,7 +69,9 @@ show_help() {
     echo "  $0                              # diff depuis le dernier commit (avec sélection branche)"
     echo "  $0 --staged                     # staging interactif par date → commit IA en boucle"
     echo "  $0 --staged --pr               # idem + propose une PR après push (IA)"
-    echo "  $0 --staged --ai              # groupement sémantique IA + revue de code avant commit"
+    echo "  $0 --staged --ai              # revue Ollama (local) + code_assistant si problèmes"
+    echo "  $0 --staged --ai claude       # revue claude CLI (OAuth) + issue.sh guidé si problèmes"
+    echo "  $0 --staged --ai gemini       # revue Gemini API + issue.sh guidé si problèmes"
     echo "  $0 --staged --ai --pr         # tout activé : staging guidé, revue, commit, PR"
     echo "  $0 --branch fix/issue-7 --staged  # basculer fix/issue-7 puis staging interactif"
     echo "  $0 --day                        # tout ce qui a changé aujourd'hui"
@@ -224,10 +229,58 @@ GPROMPT
     return 0
 }
 
+# ── Sélection d'un compte Claude alternatif (quota épuisé) ───────────────────
+# Usage : _claude_pick_alternate "$current_cfg_path" → écrit nouveau cfg sur stdout
+_claude_pick_alternate() {
+    local _cur="$1"
+    local _claude_bin; _claude_bin=$(command -v claude 2>/dev/null || echo "")
+    [[ -z "$_claude_bin" ]] && return 1
+    local _alts=()
+    for _d in "${HOME}"/.claude-*/; do
+        [[ -d "$_d" ]] || continue
+        [[ "$_d" == "${_cur%/}/" || "$_d" == "${_cur}/" ]] && continue
+        _alts+=("$_d")
+    done
+    if [[ ${#_alts[@]} -eq 0 ]]; then
+        echo -e "${YELLOW}[INFO]${NC} Aucun autre compte Claude disponible." >&2
+        return 1
+    fi
+    echo -e "${CYAN}Comptes Claude disponibles :${NC}" >&2
+    local _i=1
+    for _d in "${_alts[@]}"; do
+        local _slug; _slug=$(basename "$_d" | sed 's/^\.claude-//')
+        local _mk=""; [[ "$_d" == "$(readlink "${HOME}/.claude" 2>/dev/null)/" ]] && _mk=" ✦"
+        # Lire le quota depuis ~/.claude-slug/settings.json ou ~/.claude-slug/quota.json si dispo
+        local _quota_info=""
+        local _hist_file="${_d}history.jsonl"
+        if [[ -f "$_hist_file" ]]; then
+            _quota_info=$(python3 -c "
+import json
+from datetime import datetime
+try:
+    lines=[l for l in open('$_hist_file').readlines() if l.strip()]
+    if lines:
+        d=json.loads(lines[-1])
+        ts=d.get('timestamp',0)
+        dt=datetime.fromtimestamp(ts/1000).strftime('%Y-%m-%d')
+        print(f'dernière util.: {dt} ({len(lines)} req.)')
+except: pass
+" 2>/dev/null || true)
+        fi
+        printf "  [%d] %s%s%s\n" "$_i" "$_slug" "$_mk" "${_quota_info:+ — ${_quota_info}}" >&2
+        (( _i++ ))
+    done
+    read -r -p "Utiliser ce compte ? [numéro/Entrée=abandonner] : " _choice </dev/tty
+    if [[ "$_choice" =~ ^[0-9]+$ ]] && (( _choice >= 1 && _choice < _i )); then
+        echo "${_alts[$((_choice-1))]}"
+    fi
+}
+
 # ── Revue de code IA avant commit (si --ai) ───────────────────────────────────
 ai_code_review() {
     [[ "${AI_ENHANCED:-false}" != "true" ]] && return
-    [[ ! -f "${QUESTION_PY:-}" ]] && return
+    # En mode claude, QUESTION_PY n'est pas requis
+    [[ "${AI_BACKEND:-ollama}" != "claude" ]] && [[ ! -f "${QUESTION_PY:-}" ]] && return
     local diff_content="${1:-}"
     [[ -z "$diff_content" ]] && return
 
@@ -254,8 +307,66 @@ ${diff_content:0:14000}
 RVPROMPT
 
     local _review
-    _review=$(timeout 35 python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 16384 \
-        --prompt-file "$_rv_file" --temperature 0.1 2>/dev/null) || true
+    case "${AI_BACKEND:-ollama}" in
+        claude)
+            local _claude_bin; _claude_bin=$(command -v claude 2>/dev/null || echo "")
+            if [[ -z "$_claude_bin" ]]; then
+                echo -e "${YELLOW}⚠️  claude CLI introuvable — fallback Ollama${NC}" >&2
+                _review=$(timeout 35 python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 16384 \
+                    --prompt-file "$_rv_file" --temperature 0.1 2>/dev/null) || true
+            else
+                # Sélection du profil ~/.claude-* si plusieurs comptes existent
+                local _claude_cfg="${HOME}/.claude"
+                local _accs=()
+                for _d in "${HOME}"/.claude-*/; do
+                    [[ -d "$_d" ]] || continue
+                    _accs+=("$(basename "$_d" | sed 's/^\.claude-//')")
+                done
+                if [[ ${#_accs[@]} -gt 1 ]]; then
+                    echo -e "${CYAN}Compte Claude à utiliser pour la revue :${NC}"
+                    for _i in "${!_accs[@]}"; do
+                        local _mk=""; [[ "${HOME}/.claude-${_accs[$_i]}" == "$(readlink "${HOME}/.claude" 2>/dev/null)" ]] && _mk=" ✦"
+                        printf "  [%d] %s%s\n" "$((_i+1))" "${_accs[$_i]}" "$_mk"
+                    done
+                    echo -ne "Choix [Entrée = défaut] : "
+                    read -r _acc_choice
+                    if [[ "$_acc_choice" =~ ^[0-9]+$ ]] && (( _acc_choice >= 1 && _acc_choice <= ${#_accs[@]} )); then
+                        _claude_cfg="${HOME}/.claude-${_accs[$((_acc_choice-1))]}"
+                    fi
+                fi
+                _review=$(CLAUDE_CONFIG_DIR="$_claude_cfg" \
+                    "$_claude_bin" --print < "$_rv_file" 2>/dev/null) || true
+                # Détection quota
+                if echo "$_review" | grep -qi "weekly limit\|rate.limit\|You've hit\|quota\|resets.*am"; then
+                    echo -e "${YELLOW}⚠️  Quota Claude (${_claude_cfg##*-}) atteint.${NC}" >&2
+                    _review=""
+                    local _alt_cfg; _alt_cfg=$(_claude_pick_alternate "$_claude_cfg")
+                    if [[ -n "$_alt_cfg" ]]; then
+                        export CLAUDE_CONFIG_DIR="$_alt_cfg"
+                        _claude_cfg="$_alt_cfg"
+                        _review=$(CLAUDE_CONFIG_DIR="$_claude_cfg" \
+                            "$_claude_bin" --print < "$_rv_file" 2>/dev/null) || true
+                    fi
+                fi
+            fi ;;
+        gemini)
+            local _api_key="${GEMINI_API_KEY:-}"
+            if [[ -z "$_api_key" ]]; then
+                echo -e "${YELLOW}⚠️  GEMINI_API_KEY absent — fallback Ollama${NC}" >&2
+                _review=$(timeout 35 python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 16384 \
+                    --prompt-file "$_rv_file" --temperature 0.1 2>/dev/null) || true
+            else
+                local _pj; _pj=$(python3 -c "import json,sys; print(json.dumps(sys.stdin.read()))" < "$_rv_file")
+                local _gm="${AI_MODEL:-gemini-2.0-flash}"
+                _review=$(curl -sf "https://generativelanguage.googleapis.com/v1beta/models/${_gm}:generateContent?key=${_api_key}" \
+                    -H "content-type: application/json" \
+                    -d "{\"contents\":[{\"parts\":[{\"text\":${_pj}}]}]}" \
+                    | jq -r '.candidates[0].content.parts[0].text // .error.message // empty' 2>/dev/null) || true
+            fi ;;
+        *)
+            _review=$(timeout 35 python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 16384 \
+                --prompt-file "$_rv_file" --temperature 0.1 2>/dev/null) || true ;;
+    esac
     rm -f "$_rv_file"
 
     if [[ -n "$_review" ]]; then
@@ -264,66 +375,142 @@ RVPROMPT
         echo -e "${CYAN}─────────────────────────────────────────────────────────────────${NC}"
         echo ""
 
-        # ── Intégration code_assistant si problèmes détectés ─────────────
+        # ── Cycle de correction si problèmes détectés ────────────────────
         if echo "$_review" | grep -q '⚠'; then
-            local _ca="${MY_PATH}/code_assistant"
-            [[ ! -x "$_ca" ]] && _ca=$(command -v code_assistant 2>/dev/null || echo "")
+            echo -e "${YELLOW}🔧 Des problèmes ont été détectés par la revue.${NC}"
 
-            if [[ -n "$_ca" && -x "$_ca" ]]; then
-                echo -e "${YELLOW}🔧 Des problèmes ont été détectés par la revue.${NC}"
-                echo -ne "${CYAN}   Corriger avec code_assistant (analyse → correction → patch) ? [o/N] : ${NC}"
-                read -r _ca_confirm
+            # Extraire fichiers + messages depuis les lignes ⚠️
+            local -A _warn_map=()
+            while IFS= read -r _wl; do
+                echo "$_wl" | grep -q '⚠' || continue
+                local _wraw; _wraw=$(echo "$_wl" | sed 's/^[^a-zA-Z_./]*//')
+                local _wf="${_wraw%% *}"
+                local _wmsg="${_wraw#* }"
+                [[ "$_wmsg" == "$_wf" ]] && _wmsg=""
+                [[ -z "$_wf" ]] && continue
+                local _wpath="$_wf"
+                [[ ! -f "$_wpath" && -f "${MY_PATH}/$_wf" ]] && _wpath="${MY_PATH}/$_wf"
+                [[ ! -f "$_wpath" ]] && continue
+                _warn_map["$_wpath"]+="${_wmsg}; "
+            done <<< "$_review"
 
-                if [[ "$_ca_confirm" =~ ^[oOyY]$ ]]; then
-                    # Extraire fichiers uniques + leurs messages depuis les lignes ⚠️
-                    local -A _warn_map=()
-                    while IFS= read -r _wl; do
-                        echo "$_wl" | grep -q '⚠' || continue
-                        # Format attendu: ⚠️ fichier.ext message...
-                        local _wraw
-                        _wraw=$(echo "$_wl" | sed 's/^[^a-zA-Z_./]*//')
-                        local _wf="${_wraw%% *}"
-                        local _wmsg="${_wraw#* }"
-                        [[ "$_wmsg" == "$_wf" ]] && _wmsg=""
-                        [[ -z "$_wf" ]] && continue
-                        # Vérifier que le fichier existe (relatif ou absolu)
-                        local _wpath="$_wf"
-                        [[ ! -f "$_wpath" && -f "${MY_PATH}/$_wf" ]] && _wpath="${MY_PATH}/$_wf"
-                        [[ ! -f "$_wpath" ]] && continue
-                        _warn_map["$_wpath"]+="${_wmsg}; "
-                    done <<< "$_review"
+            if [[ "${AI_BACKEND:-ollama}" == "claude" ]]; then
+                # ── Mode Claude : déléguer à issue.sh pour workflow guidé ──────
+                local _iss="${MY_PATH}/issue.sh"
+                [[ ! -x "$_iss" ]] && _iss=$(command -v issue.sh 2>/dev/null || echo "")
 
-                    if [[ ${#_warn_map[@]} -gt 0 ]]; then
-                        for _wpath in "${!_warn_map[@]}"; do
-                            local _issues="${_warn_map[$_wpath]%; }"
-                            local _session
-                            _session="ca-$(basename "$_wpath" | sed 's/\.[^.]*$//')-$(date +%Y%m%d)"
-
+                if [[ -n "$_iss" && -x "$_iss" ]]; then
+                    echo -ne "${CYAN}   Créer une issue et analyser avec Claude ? [O/n] : ${NC}"
+                    read -r _iss_confirm
+                    if [[ "${_iss_confirm:-O}" =~ ^[oOyYÿ]?$ ]]; then
+                        local _iss_title="fix(review): problèmes détectés le $(date +%Y-%m-%d)"
+                        local _iss_body
+                        _iss_body=$(printf "## Revue de code\n\n%s\n\n## Fichiers concernés\n\n%s" \
+                            "$_review" \
+                            "$(printf '%s\n' "${!_warn_map[@]}" 2>/dev/null)")
+                        local _iss_num
+                        _iss_num=$("$_iss" create --title "$_iss_title" --body "$_iss_body" 2>/dev/null \
+                            | grep -oP '#\K[0-9]+' | head -1 || echo "")
+                        if [[ -n "$_iss_num" ]]; then
+                            local _commit_log="${HOME}/.zen/tmp/code_commit_sh.log"
+                            mkdir -p "${HOME}/.zen/tmp"
+                            echo -e "${GREEN}✅ Issue #${_iss_num} créée${NC}"
                             echo ""
-                            echo -e "${GREEN}╔══════════════════════════════════════════════════════════╗${NC}"
-                            printf "${GREEN}║  🤖 code_assistant : %-38s║${NC}\n" "$(basename "$_wpath")"
-                            echo -e "${GREEN}╚══════════════════════════════════════════════════════════╝${NC}"
-                            echo -e "${YELLOW}   Session   : $_session${NC}"
-                            echo -e "${YELLOW}   Problèmes : ${_issues}${NC}"
+                            local _head_before
+                            _head_before=$(git rev-parse HEAD 2>/dev/null || echo "")
+                            echo "[$(date '+%F %T')] issue.sh analyze #${_iss_num} start head=${_head_before:0:8}" >> "$_commit_log"
+                            CLAUDE_CONFIG_DIR="$_claude_cfg" "$_iss" analyze "$_iss_num" --ai claude || true
+                            local _head_after
+                            _head_after=$(git rev-parse HEAD 2>/dev/null || echo "")
+                            echo "[$(date '+%F %T')] issue.sh analyze #${_iss_num} end head=${_head_after:0:8}" >> "$_commit_log"
                             echo ""
-
-                            "$_ca" "$_wpath" \
-                                --kvbasename "$_session" \
-                                --supplement "REVUE DE COMMIT : ${_issues}" || true
-                        done
-
-                        echo ""
-                        echo -e "${GREEN}✅ code_assistant terminé — relance du cycle de commit sur les fichiers corrigés...${NC}"
-                        git reset HEAD 2>/dev/null || true
-                        exec "$0" --staged${_cur_branch:+ --branch "$_cur_branch"}${PR_MODE:+ --pr}${AI_ENHANCED:+ --ai}
-                    else
-                        echo -e "${YELLOW}💡 Fichiers non localisés automatiquement.${NC}"
-                        echo -e "${YELLOW}   Lance manuellement : code_assistant <fichier> --kvbasename session${NC}"
+                            # Détecter si issue.sh [x] a déjà commité le fix
+                            if [[ -n "$_head_before" && "$_head_before" != "$_head_after" ]]; then
+                                echo -e "${GREEN}✅ Fix commité via issue.sh — cycle terminé.${NC}"
+                                echo "[$(date '+%F %T')] fix committed by issue.sh [x]" >> "$_commit_log"
+                                git reset HEAD 2>/dev/null || true
+                                return 0
+                            fi
+                            # Vérifier s'il y a des modifications non commitées
+                            local _uncommitted
+                            _uncommitted=$(git diff --name-only 2>/dev/null)
+                            if [[ -n "$_uncommitted" ]]; then
+                                echo -e "${CYAN}── Fichiers modifiés (non stagés) ──────────────────────────${NC}"
+                                git diff --stat 2>/dev/null
+                                echo ""
+                                echo -e "${CYAN}╔══════════════════════════════════════════════════════════╗${NC}"
+                                echo -e "${CYAN}║  Que faire avec ces modifications ?                      ║${NC}"
+                                echo -e "${CYAN}╠══════════════════════════════════════════════════════════╣${NC}"
+                                echo -e "${CYAN}║  [o] Re-stager et re-commiter (fix appliqué manuell.)    ║${NC}"
+                                echo -e "${CYAN}║  [n] Ignorer et commiter quand même (sans les fix)       ║${NC}"
+                                echo -e "${CYAN}║  [q] Quitter — corriger puis relancer commit.sh          ║${NC}"
+                                echo -e "${CYAN}╚══════════════════════════════════════════════════════════╝${NC}"
+                                read -r -p "Choix [o/n/q] : " _fix_applied
+                                echo "[$(date '+%F %T')] post-analyze choice=${_fix_applied}" >> "$_commit_log"
+                                case "${_fix_applied:-q}" in
+                                    o|O)
+                                        git reset HEAD 2>/dev/null || true
+                                        exec "$0" --staged${_cur_branch:+ --branch "$_cur_branch"}${PR_MODE:+ --pr}${AI_ENHANCED:+ --ai claude}
+                                        ;;
+                                    n|N)
+                                        echo -e "${YELLOW}⚠️  Poursuite du commit avec les warnings en suspens.${NC}"
+                                        ;;
+                                    *)
+                                        echo -e "${YELLOW}→ Relancez après corrections : commit.sh --staged --ai claude${NC}"
+                                        echo -e "  Log : ${CYAN}${_commit_log}${NC}"
+                                        git reset HEAD 2>/dev/null || true
+                                        return 0
+                                        ;;
+                                esac
+                            else
+                                echo -e "${YELLOW}[INFO]${NC} Aucune modification non stagée — poursuite du commit."
+                            fi
+                        else
+                            echo -e "${YELLOW}💡 issue.sh create a échoué (credentials ?) — correction manuelle.${NC}"
+                            echo -e "${YELLOW}   issue.sh analyze --ai claude${NC}"
+                        fi
                     fi
+                else
+                    echo -e "${YELLOW}💡 issue.sh introuvable — lance : issue.sh analyze --ai claude${NC}"
                 fi
             else
-                echo -e "${YELLOW}💡 code_assistant disponible dans ${MY_PATH}/ — correction manuelle :${NC}"
-                echo -e "${YELLOW}   code_assistant <fichier> --kvbasename session --supplement \"<problème>\"${NC}"
+                # ── Mode Ollama : code_assistant (comportement classique) ───────
+                local _ca="${MY_PATH}/code_assistant"
+                [[ ! -x "$_ca" ]] && _ca=$(command -v code_assistant 2>/dev/null || echo "")
+
+                if [[ -n "$_ca" && -x "$_ca" ]]; then
+                    echo -ne "${CYAN}   Corriger avec code_assistant (analyse → correction → patch) ? [o/N] : ${NC}"
+                    read -r _ca_confirm
+                    if [[ "$_ca_confirm" =~ ^[oOyY]$ ]]; then
+                        if [[ ${#_warn_map[@]} -gt 0 ]]; then
+                            for _wpath in "${!_warn_map[@]}"; do
+                                local _issues="${_warn_map[$_wpath]%; }"
+                                local _session
+                                _session="ca-$(basename "$_wpath" | sed 's/\.[^.]*$//')-$(date +%Y%m%d)"
+                                echo ""
+                                echo -e "${GREEN}╔══════════════════════════════════════════════════════════╗${NC}"
+                                printf "${GREEN}║  🤖 code_assistant : %-38s║${NC}\n" "$(basename "$_wpath")"
+                                echo -e "${GREEN}╚══════════════════════════════════════════════════════════╝${NC}"
+                                echo -e "${YELLOW}   Session   : $_session${NC}"
+                                echo -e "${YELLOW}   Problèmes : ${_issues}${NC}"
+                                echo ""
+                                "$_ca" "$_wpath" \
+                                    --kvbasename "$_session" \
+                                    --supplement "REVUE DE COMMIT : ${_issues}" || true
+                            done
+                            echo ""
+                            echo -e "${GREEN}✅ code_assistant terminé — relance du cycle de commit...${NC}"
+                            git reset HEAD 2>/dev/null || true
+                            exec "$0" --staged${_cur_branch:+ --branch "$_cur_branch"}${PR_MODE:+ --pr}${AI_ENHANCED:+ --ai}
+                        else
+                            echo -e "${YELLOW}💡 Fichiers non localisés — lance manuellement :${NC}"
+                            echo -e "${YELLOW}   code_assistant <fichier> --kvbasename session${NC}"
+                        fi
+                    fi
+                else
+                    echo -e "${YELLOW}💡 code_assistant disponible dans ${MY_PATH}/ — correction manuelle :${NC}"
+                    echo -e "${YELLOW}   code_assistant <fichier> --kvbasename session --supplement \"<problème>\"${NC}"
+                fi
             fi
         fi
     fi
@@ -347,7 +534,19 @@ while [[ $# -gt 0 ]]; do
             TARGET_BRANCH="${1:?'--branch requiert un nom de branche'}"
             shift ;;
         --pr|-p)     PR_MODE=true ; shift ;;
-        --ai|-a)     AI_ENHANCED=true ; shift ;;
+        --ai|-a)
+            AI_ENHANCED=true
+            case "${2:-}" in
+                claude|gemini|ollama) AI_BACKEND="${2}"; shift ;;
+                *)
+                    # Auto-détection : Claude si disponible, sinon Ollama
+                    if command -v claude &>/dev/null && \
+                       { [[ -L "${HOME}/.claude" ]] || ls "${HOME}"/.claude-*/ &>/dev/null 2>&1; }; then
+                        AI_BACKEND="claude"
+                    fi
+                    ;;
+            esac
+            shift ;;
         --verbose|-v) VERBOSE=true ; shift ;;
         *)
             echo -e "${RED}Option inconnue: $1${NC}"
@@ -646,49 +845,74 @@ PROMPT
     echo "$prompt" > "$prompt_file"
 
     if [[ "$VERBOSE" == "true" ]]; then
-        echo -e "\033[2m[VERBOSE] ── Prompt envoyé à $AI_MODEL ──────────────────────────\033[0m" >&2
+        echo -e "\033[2m[VERBOSE] ── Prompt ($(wc -c < "$prompt_file") bytes) → ${AI_BACKEND} ──\033[0m" >&2
         cat "$prompt_file" >&2
-        echo -e "\033[2m[VERBOSE] ────────────────────────────────────────────────────────\033[0m" >&2
+        echo -e "\033[2m[VERBOSE] ──────────────────────────────────────────────────────────\033[0m" >&2
     fi
 
-    dbg "Appel : python3 $QUESTION_PY --model $AI_MODEL --prompt-file $prompt_file"
     local result
-    if [[ "$VERBOSE" == "true" ]]; then
-        result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 32768 --prompt-file "$prompt_file" --temperature 0.1 2>&1) || {
-            rm -f "$prompt_file"
-            return 1
-        }
-        echo -e "\033[2m[VERBOSE] ── Réponse brute de l'IA ──────────────────────────────\033[0m" >&2
-        echo -e "\033[2m$result\033[0m" >&2
-        echo -e "\033[2m[VERBOSE] ────────────────────────────────────────────────────────\033[0m" >&2
+    # Claude --print pour le résumé de commit (meilleure qualité + pas d'Ollama requis)
+    if [[ "${AI_BACKEND:-ollama}" == "claude" ]] && command -v claude &>/dev/null; then
+        local _sum_cfg="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
+        dbg "Appel : claude --print (cfg=${_sum_cfg##*/})"
+        result=$(CLAUDE_CONFIG_DIR="$_sum_cfg" claude --print < "$prompt_file" 2>/dev/null) || true
+        # Détection quota/rate-limit → proposer un autre compte
+        if echo "$result" | grep -qi "weekly limit\|rate.limit\|You've hit\|quota\|resets.*am\|limit.*reset"; then
+            echo -e "${YELLOW}⚠️  Quota Claude (${_sum_cfg##*-}) atteint — $(echo "$result" | head -1)${NC}" >&2
+            result=""
+            _sum_cfg=$(_claude_pick_alternate "$_sum_cfg")
+            [[ -n "$_sum_cfg" ]] && {
+                export CLAUDE_CONFIG_DIR="$_sum_cfg"
+                result=$(CLAUDE_CONFIG_DIR="$_sum_cfg" claude --print < "$prompt_file" 2>/dev/null) || true
+            }
+        fi
+        if [[ -z "$result" ]] && [[ -f "${QUESTION_PY:-}" ]]; then
+            dbg "Claude vide — fallback Ollama"
+            result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 32768 \
+                --prompt-file "$prompt_file" --temperature 0.1 2>/dev/null) || true
+        fi
     else
-        result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 32768 --prompt-file "$prompt_file" --temperature 0.1 2>/dev/null) || {
-            rm -f "$prompt_file"
-            return 1
-        }
+        dbg "Appel : python3 $QUESTION_PY --model $AI_MODEL"
+        if [[ "$VERBOSE" == "true" ]]; then
+            result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 32768 \
+                --prompt-file "$prompt_file" --temperature 0.1 2>&1) || true
+            echo -e "\033[2m[VERBOSE] ── Réponse brute ───────────────────────────────────────\033[0m" >&2
+            echo -e "\033[2m$result\033[0m" >&2
+            echo -e "\033[2m[VERBOSE] ──────────────────────────────────────────────────────────\033[0m" >&2
+        else
+            result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 32768 \
+                --prompt-file "$prompt_file" --temperature 0.1 2>/dev/null) || true
+        fi
     fi
     rm -f "$prompt_file"
+    [[ -n "$result" ]] || return 1
     echo "$result"
 }
 
 # ── Génération du résumé ──────────────────────────────────────────────────────
 SUMMARY=""
 
-if [[ -f "$QUESTION_PY" ]]; then
-    echo -e "${BLUE}🤖 Analyse IA en cours (question.py)...${NC}"
-
-    # Vérifier Ollama
-    OLLAMA_SCRIPT="$HOME/.zen/Astroport.ONE/IA/ollama.me.sh"
-    if [[ -f "$OLLAMA_SCRIPT" ]]; then
-        dbg "Démarrage Ollama via $OLLAMA_SCRIPT"
-        if [[ "$VERBOSE" == "true" ]]; then
-            bash "$OLLAMA_SCRIPT" 2>&1 || true
-        else
-            bash "$OLLAMA_SCRIPT" >/dev/null 2>&1 || true
-        fi
-        sleep 1
+if [[ -f "$QUESTION_PY" ]] || { [[ "${AI_BACKEND:-ollama}" == "claude" ]] && command -v claude &>/dev/null; }; then
+    if [[ "${AI_BACKEND:-ollama}" == "claude" ]] && command -v claude &>/dev/null; then
+        echo -e "${BLUE}🤖 Résumé de commit via Claude...${NC}"
     else
-        dbg "ollama.me.sh absent, tentative directe"
+        echo -e "${BLUE}🤖 Analyse IA en cours (question.py)...${NC}"
+    fi
+
+    # Démarrer Ollama seulement si le backend n'est pas Claude
+    if [[ "${AI_BACKEND:-ollama}" != "claude" ]]; then
+        OLLAMA_SCRIPT="$HOME/.zen/Astroport.ONE/IA/ollama.me.sh"
+        if [[ -f "$OLLAMA_SCRIPT" ]]; then
+            dbg "Démarrage Ollama via $OLLAMA_SCRIPT"
+            if [[ "$VERBOSE" == "true" ]]; then
+                bash "$OLLAMA_SCRIPT" 2>&1 || true
+            else
+                bash "$OLLAMA_SCRIPT" >/dev/null 2>&1 || true
+            fi
+            sleep 1
+        else
+            dbg "ollama.me.sh absent, tentative directe"
+        fi
     fi
 
     if SUMMARY=$(generate_ai_summary) && [[ -n "$SUMMARY" ]]; then

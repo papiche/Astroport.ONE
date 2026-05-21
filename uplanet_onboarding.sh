@@ -82,7 +82,7 @@ restart_ipfs_service() {
 
 # Fonction pour détecter les ressources système via heartbox_analysis.sh
 detect_system_resources() {
-    local heartbox_script="$MY_PATH/tools/heartbox_analysis.sh"
+    local heartbox_script="$MY_PATH/admin/monitor/heartbox_analysis.sh"
     
     if [[ -f "$heartbox_script" ]]; then
         # Utiliser heartbox_analysis.sh pour obtenir les données système
@@ -109,7 +109,7 @@ detect_system_resources() {
 
 # Fonction pour obtenir les capacités via heartbox_analysis.sh
 get_system_capacities() {
-    local heartbox_script="$MY_PATH/tools/heartbox_analysis.sh"
+    local heartbox_script="$MY_PATH/admin/monitor/heartbox_analysis.sh"
     
     if [[ -f "$heartbox_script" ]]; then
         local analysis_json=$("$heartbox_script" export --json 2>/dev/null)
@@ -1156,7 +1156,7 @@ step_final_summary() {
     echo ""
     
     # Vérifier l'état des services via heartbox_analysis.sh
-    local heartbox_script="$MY_PATH/tools/heartbox_analysis.sh"
+    local heartbox_script="$MY_PATH/admin/monitor/heartbox_analysis.sh"
     if [[ -f "$heartbox_script" ]]; then
         local analysis_json=$("$heartbox_script" export --json 2>/dev/null)
         

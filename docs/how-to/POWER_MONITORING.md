@@ -10,7 +10,7 @@ The Power Monitoring system provides a generic, reusable interface for measuring
 
 ## Components
 
-### 1. `tools/power_monitor.sh` - Generic Monitoring Wrapper
+### 1. `admin/monitor/power_monitor.sh` - Generic Monitoring Wrapper
 
 Main script that provides a unified interface for power monitoring operations.
 
@@ -22,11 +22,11 @@ Main script that provides a unified interface for power monitoring operations.
 - `report-from-24h <output_html> [title] [log_file] [hostname] [duration]` - Generate report from last 24h of 24/7 CSV (uses `POWER_24H_CSV`, default `/var/lib/powerjoular/power_24h.csv`)
 - `trim-24h-csv [csv_path]` - Trim 24/7 CSV to last 24h only (stops powerjoular.service, overwrites CSV, restarts). Call after report-from-24h in 20H12 to avoid filling disk.
 
-### 2. `tools/generate_powerjoular_graph.py` - Graph Generator
+### 2. `admin/monitor/generate_powerjoular_graph.py` - Graph Generator
 
 Python script that generates power consumption graphs from CSV data using matplotlib.
 
-### 3. `tools/generate_power_report.sh` - HTML Report Generator
+### 3. `admin/monitor/generate_power_report.sh` - HTML Report Generator
 
 Generates comprehensive HTML reports with embedded graphs and statistics. Generic version that accepts a custom report title.
 
@@ -50,7 +50,7 @@ MY_PATH="$(dirname "$0")"
 MY_PATH="$(cd "$MY_PATH" && pwd)"
 
 # Start monitoring (PID file auto-derived from CSV)
-MONITOR_OUTPUT=$("${MY_PATH}/tools/power_monitor.sh" start)
+MONITOR_OUTPUT=$("${MY_PATH}/admin/monitor/power_monitor.sh" start)
 if [[ $? -eq 0 ]]; then
     PID=$(echo "$MONITOR_OUTPUT" | head -1)
     CSV=$(echo "$MONITOR_OUTPUT" | tail -1)
@@ -60,10 +60,10 @@ if [[ $? -eq 0 ]]; then
     sleep 60
     
     # Stop monitoring (using CSV file, PID file auto-detected)
-    "${MY_PATH}/tools/power_monitor.sh" stop "$CSV"
+    "${MY_PATH}/admin/monitor/power_monitor.sh" stop "$CSV"
     
     # Generate report
-    "${MY_PATH}/tools/power_monitor.sh" report \
+    "${MY_PATH}/admin/monitor/power_monitor.sh" report \
         "$CSV" \
         "power_report.html" \
         "My Process" \
@@ -84,16 +84,16 @@ MY_PATH="$(cd "$MY_PATH" && pwd)"
 CUSTOM_CSV="my_process_power.csv"
 
 # Start with custom CSV (stored in /tmp/ by default to avoid cleanup)
-"${MY_PATH}/tools/power_monitor.sh" start "$CUSTOM_CSV"
+"${MY_PATH}/admin/monitor/power_monitor.sh" start "$CUSTOM_CSV"
 
 # Do your work...
 your_script.sh
 
 # Stop monitoring (using CSV file)
-"${MY_PATH}/tools/power_monitor.sh" stop "$CUSTOM_CSV"
+"${MY_PATH}/admin/monitor/power_monitor.sh" stop "$CUSTOM_CSV"
 
 # Generate report
-"${MY_PATH}/tools/power_monitor.sh" report \
+"${MY_PATH}/admin/monitor/power_monitor.sh" report \
     "$CUSTOM_CSV" \
     "my_report.html" \
     "Custom Process Report"
@@ -113,11 +113,11 @@ MY_PATH="$(cd "$MY_PATH" && pwd)"
 
 # Start monitoring at script start (PID file auto-derived)
 POWER_CSV="my_script_power.csv"
-"${MY_PATH}/tools/power_monitor.sh" start "$POWER_CSV" >/dev/null 2>&1
+"${MY_PATH}/admin/monitor/power_monitor.sh" start "$POWER_CSV" >/dev/null 2>&1
 
 # Trap to ensure monitoring stops on exit
 cleanup() {
-    "${MY_PATH}/tools/power_monitor.sh" stop "$POWER_CSV" >/dev/null 2>&1
+    "${MY_PATH}/admin/monitor/power_monitor.sh" stop "$POWER_CSV" >/dev/null 2>&1
 }
 trap cleanup EXIT INT TERM
 
@@ -126,7 +126,7 @@ echo "Running main process..."
 sleep 30
 
 # Generate report before exit
-"${MY_PATH}/tools/power_monitor.sh" report \
+"${MY_PATH}/admin/monitor/power_monitor.sh" report \
     "$POWER_CSV" \
     "my_script_report.html" \
     "My Script Power Report" \
@@ -146,16 +146,16 @@ POWER_CSV="process_power.csv"
 POWER_REPORT="process_report.html"
 
 # Start monitoring (PID file auto-derived)
-if "${MY_PATH}/tools/power_monitor.sh" start "$POWER_CSV" >/dev/null 2>&1; then
+if "${MY_PATH}/admin/monitor/power_monitor.sh" start "$POWER_CSV" >/dev/null 2>&1; then
     echo "Power monitoring started"
     
     # Ensure cleanup on exit
     cleanup() {
-        "${MY_PATH}/tools/power_monitor.sh" stop "$POWER_CSV" >/dev/null 2>&1
+        "${MY_PATH}/admin/monitor/power_monitor.sh" stop "$POWER_CSV" >/dev/null 2>&1
         
         # Generate report if CSV has data
         if [[ -f "/tmp/$POWER_CSV" ]] && [[ -s "/tmp/$POWER_CSV" ]]; then
-            "${MY_PATH}/tools/power_monitor.sh" report \
+            "${MY_PATH}/admin/monitor/power_monitor.sh" report \
                 "$POWER_CSV" \
                 "$POWER_REPORT" \
                 "Process Power Report" \
@@ -172,7 +172,7 @@ if "${MY_PATH}/tools/power_monitor.sh" start "$POWER_CSV" >/dev/null 2>&1; then
     exit_code=$?
     
     # Generate report
-    "${MY_PATH}/tools/power_monitor.sh" report \
+    "${MY_PATH}/admin/monitor/power_monitor.sh" report \
         "$POWER_CSV" \
         "$POWER_REPORT" \
         "Process Power Report" \
@@ -270,7 +270,7 @@ Starts power monitoring. PID file is automatically derived from CSV file.
 
 **Example:**
 ```bash
-OUTPUT=$("${MY_PATH}/tools/power_monitor.sh" start "my_process.csv")
+OUTPUT=$("${MY_PATH}/admin/monitor/power_monitor.sh" start "my_process.csv")
 PID=$(echo "$OUTPUT" | head -1)
 CSV=$(echo "$OUTPUT" | tail -1)
 # PID file automatically created as /tmp/my_process.pid
@@ -289,10 +289,10 @@ Stops power monitoring. Can use CSV file (PID file auto-detected) or omit for de
 **Example:**
 ```bash
 # Stop using CSV file
-"${MY_PATH}/tools/power_monitor.sh" stop "my_process.csv"
+"${MY_PATH}/admin/monitor/power_monitor.sh" stop "my_process.csv"
 
 # Stop default monitoring
-"${MY_PATH}/tools/power_monitor.sh" stop
+"${MY_PATH}/admin/monitor/power_monitor.sh" stop
 ```
 
 ### `power_monitor.sh status [csv_file]`
@@ -308,7 +308,7 @@ Gets monitoring status. Can use CSV file (PID file auto-detected) or omit for de
 
 **Example:**
 ```bash
-STATUS=$("${MY_PATH}/tools/power_monitor.sh" status "my_process.csv")
+STATUS=$("${MY_PATH}/admin/monitor/power_monitor.sh" status "my_process.csv")
 if [[ "$STATUS" == RUNNING:* ]]; then
     PID="${STATUS#RUNNING:}"
     echo "Monitoring active: PID=$PID"
@@ -332,7 +332,7 @@ Generates HTML report with power consumption graph.
 
 **Example:**
 ```bash
-"${MY_PATH}/tools/power_monitor.sh" report \
+"${MY_PATH}/admin/monitor/power_monitor.sh" report \
     "/tmp/power.csv" \
     "/tmp/report.html" \
     "My Process Report" \
@@ -354,7 +354,7 @@ POWER_24H_CSV="${POWER_24H_CSV:-/var/lib/powerjoular/power_24h.csv}"
 # ... script execution ...
 
 # Generate report from last 24h of 24/7 CSV (full-day consumption)
-"${MY_PATH}/tools/power_monitor.sh" report-from-24h \
+"${MY_PATH}/admin/monitor/power_monitor.sh" report-from-24h \
     "/tmp/20h12_power_report.html" \
     "20H12 Power Consumption - Last 24h" \
     "$HOME/.zen/log/20h12_$(date +%Y%m%d).log" \
@@ -362,7 +362,7 @@ POWER_24H_CSV="${POWER_24H_CSV:-/var/lib/powerjoular/power_24h.csv}"
     "24h"
 
 # Trim 24/7 CSV to last 24h only to avoid filling disk (stops service, overwrites CSV, restarts)
-"${MY_PATH}/tools/power_monitor.sh" trim-24h-csv "$POWER_24H_CSV"
+"${MY_PATH}/admin/monitor/power_monitor.sh" trim-24h-csv "$POWER_24H_CSV"
 ```
 
 For one-off monitoring (start/stop within a script), use `start`, `stop`, and `report` as in the [Custom Scripts](#in-custom-scripts) example below.
@@ -379,10 +379,10 @@ MY_PATH="$(cd "$MY_PATH" && pwd)"
 # Setup power monitoring (PID file auto-derived)
 POWER_CSV="my_script_power.csv"
 
-if "${MY_PATH}/tools/power_monitor.sh" start "$POWER_CSV" >/dev/null 2>&1; then
+if "${MY_PATH}/admin/monitor/power_monitor.sh" start "$POWER_CSV" >/dev/null 2>&1; then
     # Cleanup function
     cleanup() {
-        "${MY_PATH}/tools/power_monitor.sh" stop "$POWER_CSV" >/dev/null 2>&1
+        "${MY_PATH}/admin/monitor/power_monitor.sh" stop "$POWER_CSV" >/dev/null 2>&1
     }
     trap cleanup EXIT
     
@@ -391,7 +391,7 @@ if "${MY_PATH}/tools/power_monitor.sh" start "$POWER_CSV" >/dev/null 2>&1; then
     sleep 60
     
     # Generate report
-    "${MY_PATH}/tools/power_monitor.sh" report \
+    "${MY_PATH}/admin/monitor/power_monitor.sh" report \
         "$POWER_CSV" \
         "my_script_report.html" \
         "My Script Power Report"
@@ -443,14 +443,14 @@ Or ensure matplotlib is installed via Astroport.ONE install.sh.
 
 **Error:** `generate_power_report.sh not found`
 
-**Solution:** Ensure all scripts are in `tools/` directory and paths are correct.
+**Solution:** Ensure all scripts are in `admin/monitor/` directory and paths are correct.
 
 ## Best Practices
 
 1. **Always use cleanup traps:**
    ```bash
    cleanup() {
-       "${MY_PATH}/tools/power_monitor.sh" stop "$POWER_CSV" >/dev/null 2>&1
+       "${MY_PATH}/admin/monitor/power_monitor.sh" stop "$POWER_CSV" >/dev/null 2>&1
    }
    trap cleanup EXIT INT TERM
    ```
@@ -458,10 +458,10 @@ Or ensure matplotlib is installed via Astroport.ONE install.sh.
 2. **Use CSV file for stop/status (PID file auto-detected):**
    ```bash
    # Start
-   "${MY_PATH}/tools/power_monitor.sh" start "$POWER_CSV"
+   "${MY_PATH}/admin/monitor/power_monitor.sh" start "$POWER_CSV"
    
    # Stop (using CSV, PID file auto-detected)
-   "${MY_PATH}/tools/power_monitor.sh" stop "$POWER_CSV"
+   "${MY_PATH}/admin/monitor/power_monitor.sh" stop "$POWER_CSV"
    ```
 
 3. **Check monitoring status before generating reports:**
@@ -474,7 +474,7 @@ Or ensure matplotlib is installed via Astroport.ONE install.sh.
 
 4. **Use descriptive titles for reports:**
    ```bash
-   "${MY_PATH}/tools/power_monitor.sh" report \
+   "${MY_PATH}/admin/monitor/power_monitor.sh" report \
        "$CSV" \
        "$OUTPUT" \
        "Descriptive Process Name - $(date +%Y-%m-%d)"
@@ -482,7 +482,7 @@ Or ensure matplotlib is installed via Astroport.ONE install.sh.
 
 5. **Include log files when available:**
    ```bash
-   "${MY_PATH}/tools/power_monitor.sh" report \
+   "${MY_PATH}/admin/monitor/power_monitor.sh" report \
        "$CSV" \
        "$OUTPUT" \
        "Process Report" \
@@ -491,7 +491,7 @@ Or ensure matplotlib is installed via Astroport.ONE install.sh.
 
 6. **Handle monitoring failures gracefully:**
    ```bash
-   if ! "${MY_PATH}/tools/power_monitor.sh" start "$POWER_CSV"; then
+   if ! "${MY_PATH}/admin/monitor/power_monitor.sh" start "$POWER_CSV"; then
        echo "Warning: Power monitoring unavailable, continuing without it"
    fi
    ```

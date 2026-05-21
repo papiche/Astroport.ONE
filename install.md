@@ -16,7 +16,7 @@ Votre nœud est prêt à interagir avec les réseaux décentralisés et les bloc
 ## 🔒 2. Sécurité, Réseau & Administration
 Les boucliers et les capteurs de votre vaisseau.
 * **Fail2ban** : Protège votre serveur contre les attaques par force brute en bannissant les adresses IP malveillantes.
-* **UFW (Uncomplicated Firewall)** : Pare-feu activé automatiquement par `tools/firewall.sh ON`. Bloque les ports non autorisés.
+* **UFW (Uncomplicated Firewall)** : Pare-feu activé automatiquement par `admin/system/firewall.sh ON`. Bloque les ports non autorisés.
 * **OpenSSH Server & SSHFS** : Pour vous connecter à distance à votre machine et monter des systèmes de fichiers distants de manière sécurisée.
 * **Nmap, DNSutils, Whois, Geoip-bin** : Outils de scan réseau, de résolution de noms de domaine et de géolocalisation des adresses IP.
 * **Btop & Ncdu** : Moniteurs système esthétiques et puissants. `btop` surveille le CPU/RAM/Réseau en temps réel, et `ncdu` analyse l'espace disque.

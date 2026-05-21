@@ -115,6 +115,12 @@ publish_nip71_video() {
     # Fallback: use GIF CID as thumbnail if static thumb failed
     [[ -z "$thumb_cid" && -n "$animh" ]] && thumb_cid="$animh"
 
+    # Build full URLs for NIP-71 compliance (tag "thumb" requires URL, not raw CID)
+    local thumb_url=""
+    [[ -n "$thumb_cid" ]] && thumb_url="${myIPFS}/ipfs/${thumb_cid}"
+    local gif_url=""
+    [[ -n "$animh" ]] && gif_url="${myIPFS}/ipfs/${animh}"
+
     # Determine NIP-71 kind: 21 (long-form >60s) or 22 (short-form ≤60s)
     local kind=21
     [[ -n "$duration_sec" && "$duration_sec" =~ ^[0-9]+$ && $duration_sec -le 60 ]] && kind=22
@@ -128,8 +134,8 @@ publish_nip71_video() {
         --arg pubat    "$(date +%s)" \
         --arg dur      "$duration_sec" \
         --arg dim      "$resolution" \
-        --arg thumb    "$thumb_cid" \
-        --arg gif      "$animh" \
+        --arg thumb    "$thumb_url" \
+        --arg gif      "$gif_url" \
         --arg hash     "$file_hash" \
         --arg chan     "Channel-${channel}" \
         --arg yturl    "$youtube_url" \
@@ -138,11 +144,11 @@ publish_nip71_video() {
             ["url",          $url],
             ["m",            $mime],
             ["published_at", $pubat],
-            (if ($dur  | length) > 0 then ["duration",       $dur]   else empty end),
-            (if ($dim  | length) > 0 then ["dim",            $dim]   else empty end),
-            (if ($thumb| length) > 0 then ["thumbnail_ipfs", $thumb] else empty end),
-            (if ($gif  | length) > 0 then ["gifanim_ipfs",   $gif]   else empty end),
-            (if ($hash | length) > 0 then ["x",              $hash]  else empty end),
+            (if ($dur  | length) > 0 then ["duration",    $dur]   else empty end),
+            (if ($dim  | length) > 0 then ["dim",         $dim]   else empty end),
+            (if ($thumb| length) > 0 then ["thumb",       $thumb] else empty end),
+            (if ($gif  | length) > 0 then ["gifanim_url", $gif]   else empty end),
+            (if ($hash | length) > 0 then ["x",           $hash]  else empty end),
             ["t", $chan],
             ["t", "CopierYoutube"],
             ["t", "YouTube"],
@@ -404,6 +410,15 @@ while read LINE;
 
         MIME=$(file --mime-type -b "${HOME}/.zen/tmp/yt-dlp/${ZFILE}")
 
+        ## SAVE TO PLAYER uDRIVE (Videos/ ou Music/ pour MP3)
+        _UDRIVE_SUBDIR="Videos"
+        [[ "${isMP3}" != "" ]] && _UDRIVE_SUBDIR="Music"
+        _UDRIVE_PATH="${HOME}/.zen/game/nostr/${PLAYER}/APP/uDRIVE/${_UDRIVE_SUBDIR}"
+        mkdir -p "${_UDRIVE_PATH}"
+        cp -f "${HOME}/.zen/tmp/yt-dlp/${ZFILE}" "${_UDRIVE_PATH}/${ZFILE}" \
+            && echo "✅ uDRIVE/${_UDRIVE_SUBDIR}/${ZFILE}" \
+            || echo "⚠️  uDRIVE: copie échouée pour ${ZFILE}"
+
         ## ADD TAGS
         SEC=$(/usr/local/bin/yt-dlp $BROWSER --print "%(duration)s" "${ZYURL}")
         CHANNEL=$(/usr/local/bin/yt-dlp $BROWSER --print "%(channel)s" "${ZYURL}" | sed -r 's/\<./\U&/g' | sed 's/ //g') # CapitalGluedWords
@@ -441,7 +456,7 @@ while read LINE;
         CTITLE=$(echo ${ZFILE} | sed 's~_~ ~g' | sed 's~\.~ ~g')
 
         ## WAN ADD <<hide tiddler-controls>> TO text jq 'map(.text += "<<hide tiddler-controls>>")'
-        [[ ! isLAN ]] && TEXT="$TEXT <<hide tiddler-controls>>"
+        [[ -z "$isLAN" ]] && TEXT="$TEXT <<hide tiddler-controls>>"
         echo $TEXT
 
         mkdir -p ${HOME}/.zen/tmp/${IPFSNODEID}/G1CopierYoutube/${PLAYER} ## MISSING FOR FIRST RUN

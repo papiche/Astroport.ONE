@@ -216,7 +216,7 @@ if [ $URL ]; then
     CHOICE="$IMPORT"
 fi
 
-[ ! $2 ] && [[ $CHOICE == "" ]] && CHOICE=$(zenity --list --width 320 --height 340 --title="Catégorie" --text="Quelle catégorie pour ce media ?" --column="Catégorie" "uDRIVE" "Youtube" "MP3" "Film" "Serie" "Video" "PDF" "Vlog" 2>/dev/null)
+[ ! $2 ] && [[ $CHOICE == "" ]] && CHOICE=$(zenity --list --width 320 --height 380 --title="Catégorie" --text="Quelle catégorie pour ce media ?" --column="Catégorie" "uDRIVE" "Youtube" "MP3" "Film" "Serie" "Video" "PDF" "Vlog" "IA" 2>/dev/null)
 [[ $CHOICE == "" ]] && echo "NO CHOICE MADE" && exit 1
 
 # LOWER CARACTERS
@@ -1095,6 +1095,115 @@ ${URL:+Source: $URL
         echo "🗄️  Ouverture uDRIVE : $UDRIVE_URL"
         xdg-open "$UDRIVE_URL" 2>/dev/null || echo "Ouvrez ce lien dans votre navigateur : $UDRIVE_URL"
         espeak "Opening uDRIVE"
+    ;;
+
+########################################################################
+# CASE ## IA — Analyse IA d'un fichier IPFS → kind 30504 MineLife/Grimoire
+# Usage: ajouter_media.sh <ipfs_cid_ou_fichier> <player> ia [skill_tag]
+########################################################################
+    ia | analyse)
+        MEDIA_SRC="$URL"
+        SKILL_TAG="${4:-}"
+
+        # Sélection interactive si absente
+        [[ -z "$MEDIA_SRC" ]] && MEDIA_SRC=$(zenity --entry --width 500 \
+            --title "Analyse IA — Source" \
+            --text "CID IPFS ou chemin fichier local à analyser" \
+            --entry-text="")
+        [[ -z "$MEDIA_SRC" ]] && echo "Source manquante. Exit." && exit 1
+
+        [[ -z "$SKILL_TAG" ]] && SKILL_TAG=$(zenity --entry --width 400 \
+            --title "Compétence MineLife" \
+            --text "Tag skill pour kind 30504 (ex: Permaculture, Électronique)" \
+            --entry-text="")
+
+        # Résoudre le fichier local (CID → télécharger, ou chemin direct)
+        LOCAL_FILE=""
+        if [[ -f "$MEDIA_SRC" ]]; then
+            LOCAL_FILE="$MEDIA_SRC"
+        elif [[ "$MEDIA_SRC" =~ ^Qm[a-zA-Z0-9]{44}$|^bafy[a-zA-Z0-9]+$ ]]; then
+            LOCAL_FILE="$HOME/.zen/tmp/ia_analyse_$(date +%s)"
+            echo "📥 Récupération IPFS: $MEDIA_SRC"
+            ipfs get "$MEDIA_SRC" -o "$LOCAL_FILE" 2>/dev/null || { echo "❌ ipfs get échoué"; exit 1; }
+        else
+            echo "❌ Source non reconnue (CID ou fichier attendu): $MEDIA_SRC"
+            exit 1
+        fi
+
+        MIME=$(file --mime-type -b "$LOCAL_FILE")
+        echo "🔍 Type: $MIME | Skill: ${SKILL_TAG:-non défini}"
+
+        # Appel Ollama pour analyse (description/transcription du contenu)
+        OLLAMA_SCRIPT="${MY_PATH}/tools/question.py"
+        [[ ! -f "$OLLAMA_SCRIPT" ]] && OLLAMA_SCRIPT="${MY_PATH}/IA/question.py"
+        ANALYSIS_TEXT=""
+
+        if [[ -f "$OLLAMA_SCRIPT" ]] && curl -sf http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
+            espeak "Analyse IA en cours"
+            PROMPT="Décris en français le contenu de ce média${SKILL_TAG:+ en lien avec la compétence '$SKILL_TAG'}. Extrait les concepts clés, techniques, et savoir-faire présents."
+            ANALYSIS_TEXT=$(python3 "$OLLAMA_SCRIPT" "$PROMPT" "$LOCAL_FILE" 2>/dev/null | head -100)
+            echo "📝 Analyse: ${ANALYSIS_TEXT:0:200}..."
+        else
+            echo "⚠️  Ollama indisponible — analyse textuelle ignorée"
+            ANALYSIS_TEXT="Média archivé depuis UPlanet${SKILL_TAG:+ — compétence: $SKILL_TAG}"
+        fi
+
+        # Résoudre le CID IPFS
+        if [[ "$MEDIA_SRC" =~ ^Qm|^bafy ]]; then
+            MEDIA_CID="$MEDIA_SRC"
+        else
+            MEDIA_CID=$(ipfs add -q "$LOCAL_FILE" | tail -n 1)
+        fi
+        MEDIA_URL="${myIPFS}/ipfs/${MEDIA_CID}"
+
+        # Publication kind 30504 (knowledge content — MineLife/Grimoire)
+        SECRET_FILE="$HOME/.zen/game/nostr/${PLAYER}/.secret.nostr"
+        NOSTR_SCRIPT="${MY_PATH}/tools/nostr_send_note.py"
+        MOATS_IA=$(date -u +"%Y%m%d%H%M%S%4N")
+
+        if [[ -f "$SECRET_FILE" && -f "$NOSTR_SCRIPT" ]]; then
+            TAGS_30504=$(jq -cn \
+                --arg d    "${SKILL_TAG:-media_${MOATS_IA}}" \
+                --arg title "${SKILL_TAG:-Media UPlanet}" \
+                --arg url   "$MEDIA_URL" \
+                --arg m     "$MIME" \
+                --arg skill "$SKILL_TAG" \
+                --arg pub   "$(date +%s)" \
+                '[
+                    ["d",           $d],
+                    ["title",       $title],
+                    ["url",         $url],
+                    ["m",           $m],
+                    ["published_at",$pub],
+                    (if ($skill|length)>0 then ["t", $skill] else empty end),
+                    ["t", "knowledge"],
+                    ["t", "UPlanet"],
+                    ["t", "MineLife"]
+                ]' 2>/dev/null)
+
+            echo "📡 Publication kind 30504 (MineLife knowledge)..."
+            python3 "$NOSTR_SCRIPT" \
+                --keyfile "$SECRET_FILE" \
+                --content "$ANALYSIS_TEXT" \
+                --kind 30504 \
+                --tags "$TAGS_30504" \
+                --relays "${myRELAY:-wss://relay.copylaradio.com}" \
+                --json 2>/dev/null \
+                && echo "✅ Kind 30504 publié — skill '$SKILL_TAG' alimenté dans MineLife" \
+                || echo "⚠️  Publication kind 30504 échouée"
+
+            # Indexation Qdrant via knowledge_index.sh (si disponible)
+            KI_SCRIPT="${MY_PATH}/admin/ia_db/knowledge_index.sh"
+            if [[ -f "$KI_SCRIPT" && -n "$ANALYSIS_TEXT" ]]; then
+                echo "$ANALYSIS_TEXT" | "$KI_SCRIPT" --stdin --tag "${SKILL_TAG:-media}" 2>/dev/null \
+                    && echo "✅ Qdrant: texte indexé" \
+                    || true
+            fi
+        else
+            echo "⚠️  Clef NOSTR ou nostr_send_note.py absent — publication ignorée"
+        fi
+
+        espeak "Analyse terminée"
     ;;
 
     ########################################################################

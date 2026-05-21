@@ -162,6 +162,25 @@ echo ">>> Profil : ${INSTALL_PROFILE:-standard}"
 _env_upsert "INSTALL_PROFILE" "${INSTALL_PROFILE:-standard}" "${HOME}/.zen/Astroport.ONE/.env"
 
 ########################################################################
+## NOM DE LA MACHINE
+########################################################################
+if [[ -z "${CUSTOM_MACHINE_NAME:-}" ]]; then
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║  🖥️  NOM DE VOTRE MACHINE                                    ║"
+    echo "╠══════════════════════════════════════════════════════════════╣"
+    echo "║  Choisissez un nom mémorable — 2 chiffres auto seront      ║"
+    echo "║  ajoutés.  Ex: pirate → pirate-42   dragon → dragon-17     ║"
+    echo "║  Appuyez sur Entrée pour un nom aléatoire (diceware).      ║"
+    echo "╚══════════════════════════════════════════════════════════════╝"
+    read -r -p "Nom de votre machine [auto] : " CUSTOM_MACHINE_NAME
+fi
+export CUSTOM_MACHINE_NAME
+[[ -n "$CUSTOM_MACHINE_NAME" ]] \
+    && echo ">>> Nom machine : ${CUSTOM_MACHINE_NAME}-XX" \
+    || echo ">>> Nom machine : auto-diceware-XX"
+
+########################################################################
 ## FAIL-FAST ai-company — vérification GPU AVANT tout téléchargement
 ########################################################################
 if [[ "${INSTALL_PROFILE}" == "ai-company" ]]; then
@@ -516,7 +535,7 @@ echo "=== SETUP ASTROPORT (runtime config)"
 
 ###############################################################
 echo "## ACTIVER LE PARE-FEU UFW ################################"
-~/.zen/Astroport.ONE/tools/firewall.sh ON
+~/.zen/Astroport.ONE/admin/system/firewall.sh ON
 
 ## _CPU/_RAM/_VRAM/_SCORE/_TIER/_MVAL/_PAF_DEFAULT déjà calculés en tête d'install
 
@@ -881,6 +900,111 @@ echo
     ~/.zen/Astroport.ONE/tools/oracle_init_captain_wotx2.sh
 ##########################################################
 ~/.zen/Astroport.ONE/RUNTIME/DRAGON_p2p_ssh.sh ON
+
+##########################################################
+## COMPTES DÉMO — identités NOSTR uniques par station
+## Salt = prénom perso (coucou/toto/jean)
+## Pepper = adresse email format UPlanet avec hostname
+## → clés différentes sur chaque station, pas de collision MULTIPASS/ZenCard
+##########################################################
+_DEMO_HOSTNAME=$(hostname)
+_KEYGEN="${HOME}/.zen/Astroport.ONE/tools/keygen"
+_DEMO_DIR="$HOME/.zen/demo"
+## Domaine email hérite de la configuration de la station
+_DEMO_DOMAIN="${CAPTAIN_EMAIL_DOMAIN:-${CUSTOM_EMAIL_DOMAIN:-qo-op.com}}"
+mkdir -p "$_DEMO_DIR"
+
+echo ""
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║  🎭 COMPTES DE DÉMONSTRATION WoTx2 (uniques à cette station) ║"
+echo "╠══════════════════════════════════════════════════════════════╣"
+echo "║  Trois identités NOSTR pour pratiquer MineLife sans risque.  ║"
+echo "╚══════════════════════════════════════════════════════════════╝"
+echo ""
+
+for _demo in coucou toto jean; do
+    _demo_file="${_DEMO_DIR}/${_demo}.keys"
+    _demo_salt="${_demo}"
+    _demo_pepper="support+${_demo}-${_DEMO_HOSTNAME}@${_DEMO_DOMAIN}"
+    _DEMO_DISPLAY="$(echo "${_demo}" | awk '{print toupper(substr($0,1,1)) substr($0,2)}') [DEMO]"
+    if [[ ! -s "$_demo_file" ]]; then
+        _nsec=$("$_KEYGEN" -t nostr -s "$_demo_salt" "$_demo_pepper" 2>/dev/null || echo "")
+        _npub=$("$_KEYGEN" -t nostr    "$_demo_salt" "$_demo_pepper" 2>/dev/null || echo "")
+        if [[ -n "$_nsec" && -n "$_npub" ]]; then
+            printf "NSEC=%s\nNPUB=%s\nEMAIL=%s\n" \
+                "$_nsec" "$_npub" "$_demo_pepper" > "$_demo_file"
+            chmod 600 "$_demo_file"
+            ## Publier le profil Kind 0 tagué DEMO sur le relay local
+            _DEMO_CONTENT="{\"name\":\"${_DEMO_DISPLAY}\",\"about\":\"Compte de démonstration WoTx2 — ${_DEMO_HOSTNAME}\",\"demo\":true,\"picture\":\"https://robohash.org/${_demo_pepper}?set=set4\"}"
+            ~/.astro/bin/python3 ~/.zen/Astroport.ONE/tools/nostr_node_intercom.py publish \
+                --nsec "$_nsec" \
+                --kind 0 \
+                --tags '[["t","demo"]]' \
+                --content "$_DEMO_CONTENT" \
+                --relays "ws://localhost:7777" 2>/dev/null \
+                && echo "  ✅ ${_DEMO_DISPLAY} — profil publié sur le relay" \
+                || echo "  ⚠️  ${_DEMO_DISPLAY} — publication différée (relay non prêt)"
+        fi
+    fi
+    _nsec=$(grep "^NSEC=" "$_demo_file" 2>/dev/null | cut -d= -f2)
+    _npub=$(grep "^NPUB=" "$_demo_file" 2>/dev/null | cut -d= -f2)
+    _email=$(grep "^EMAIL=" "$_demo_file" 2>/dev/null | cut -d= -f2)
+    printf "  👤 %-10s  <%s>\n" "$_DEMO_DISPLAY" "$_email"
+    printf "     nsec : %s\n" "${_nsec:-(keygen non disponible)}"
+    printf "     npub : %s...\n" "${_npub:0:24}"
+    echo ""
+done
+
+echo "  Les clés sont sauvegardées dans ~/.zen/demo/"
+echo ""
+echo "  ┌───────────────────────────────────────────────────────────┐"
+echo "  │ 1. Installez l'extension nos2x dans votre navigateur :    │"
+echo "  │    Firefox  → https://addons.mozilla.org/addon/nos2x/     │"
+echo "  │    Chromium → chercher 'nos2x' dans le Web Store          │"
+echo "  │                                                            │"
+echo "  │ 2. Dans nos2x : 'Import key' → collez chaque nsec         │"
+echo "  │    (coucou, toto, jean — un à la fois)                    │"
+echo "  │                                                            │"
+echo "  │ 3. Ouvrez MineLife dans votre navigateur :                 │"
+echo "  │    http://127.0.0.1:54321/UPlanet/earth/minelife.html     │"
+echo "  │    Changez d'identité dans nos2x pour simuler la WoTx2   │"
+echo "  └───────────────────────────────────────────────────────────┘"
+echo ""
+
+##########################################################
+## SESSION DE FORMATION LIVE — vdo.ninja UPLANET
+##########################################################
+_CAPTAIN_EMAIL=$(cat ~/.zen/game/players/.current/.player 2>/dev/null || echo "")
+_CAPTAIN_NPUB=$(cat ~/.zen/game/nostr/${_CAPTAIN_EMAIL}/NPUB 2>/dev/null | head -1 || echo "")
+_VDO_ID="${_CAPTAIN_NPUB:0:12}"
+[[ -z "$_VDO_ID" ]] && _VDO_ID="uplanet"
+
+_VDO_ROOM="uplanet_${_VDO_ID}"
+_VDO_HOST="https://vdo.ninja/?room=${_VDO_ROOM}&push=captain&record=1"
+_VDO_VIEW="https://vdo.ninja/?room=${_VDO_ROOM}&view"
+_VDO_FORM="https://vdo.ninja/?room=uplanet_formation&view"
+
+echo ""
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║  🎥 SESSION DE FORMATION — vdo.ninja UPLANET                  ║"
+echo "╠══════════════════════════════════════════════════════════════╣"
+echo "║  Rejoignez une session visio avec un formateur certifié.     ║"
+echo "║  La session sera enregistrée → publiée sur votre UPlanet.   ║"
+echo "╠══════════════════════════════════════════════════════════════╣"
+echo "║                                                               ║"
+echo "║  Votre canal personnel (hôte + enregistrement) :             ║"
+printf "║    %-58s ║\n" "${_VDO_HOST:0:58}"
+echo "║                                                               ║"
+echo "║  Canal FORMATION collectif (spectateur) :                    ║"
+printf "║    %-58s ║\n" "${_VDO_FORM:0:58}"
+echo "║                                                               ║"
+echo "║  📧 Planifiez votre session : support@qo-op.com              ║"
+echo "║     Objet : 'Formation DRAGON — $(hostname)'                  ║"
+echo "║                                                               ║"
+echo "║  La vidéo enregistrée sera publiée en Kind 22 (NIP-71)       ║"
+echo "║  et apparaîtra sur votre UPlanet/earth au prochain craft.   ║"
+echo "╚══════════════════════════════════════════════════════════════╝"
+echo ""
 
 else
 

@@ -86,7 +86,7 @@ for DESK in "${DESKTOPS[@]}"; do
 done
 
 # Initialisation de l'icône de toggle selon l'état actuel (ON/OFF)
-bash "${ASTRO}/tools/astroport_toggle.sh" status_only 2>/dev/null || true
+bash "${ASTRO}/admin/system/astroport_toggle.sh" status_only 2>/dev/null || true
 
 ######### SUPER PRATIQUE :: DOES NOT WORK WITH SPACE IN FILENAME
 echo "# ADD NEMO 'Add To IPFS' ACTION"
@@ -139,13 +139,21 @@ sudo sed -i 's/^.*ClientAliveCountMax .*/ClientAliveCountMax 3/' /etc/ssh/sshd_c
 # SYMLINKS (Astroport tools in PATH)
 ########################################################################
 mkdir -p ~/.local/bin
+## Core tools
 ln -f -s ${ASTRO}/tunnel.sh ~/.local/bin/tunnel.sh
 ln -f -s ${ASTRO}/cpcode ~/.local/bin/cpcode
 ln -f -s ${ASTRO}/cpscript ~/.local/bin/cpscript
 ln -f -s ${ASTRO}/tools/natools.py ~/.local/bin/natools
 ln -f -s ${ASTRO}/tools/keygen ~/.local/bin/keygen
 ln -f -s ${ASTRO}/captain.sh ~/.local/bin/captain
-ln -f -s ${ASTRO}/tools/astrosystemctl.sh ~/.local/bin/astrosystemctl
+## Admin tools (admin/system/)
+ln -f -s ${ASTRO}/admin/system/astrosystemctl.sh ~/.local/bin/astrosystemctl
+ln -f -s ${ASTRO}/admin/system/station-info.sh ~/.local/bin/station-info
+## Admin tools (admin/ia_db/)
+ln -f -s ${ASTRO}/admin/ia_db/codebase_index.sh ~/.local/bin/codebase_index.sh
+ln -f -s ${ASTRO}/admin/ia_db/knowledge_index.sh ~/.local/bin/knowledge_index.sh
+## Admin tools (admin/monitor/)
+ln -f -s ${ASTRO}/admin/monitor/heartbox_analysis.sh ~/.local/bin/heartbox_analysis.sh
 ## gcli symlink (g1cli Duniter v2s client)
 [[ $(which gcli 2>/dev/null) ]] && ln -f -s $(which gcli) ~/.local/bin/gcli
 ## Créer le répertoire pour les tunnels persistants

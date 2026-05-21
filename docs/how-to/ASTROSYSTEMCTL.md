@@ -37,7 +37,7 @@ Le **Power-Score** = `GPU_VRAM_GB × 4 + CPU_cœurs × 2 + RAM_GB × 0.5`
 | 11–40 | ⚡ Standard | PC bureautique — tu héberges de petits modèles, tu partages |
 | 41+   | 🔥 Brain    | GPU dédié — tu fournis de la puissance à la constellation |
 
-Ton score est calculé par `tools/heartbox_analysis.sh` et publié dans ton `12345.json`.
+Ton score est calculé par `admin/monitor/heartbox_analysis.sh` et publié dans ton `12345.json`.
 
 ---
 
@@ -308,7 +308,7 @@ local start              actif dans             connect
 |---------|------|
 | `IA/modules.list` | **Registre unique** des modules (services P2P + outils système) |
 | `RUNTIME/DRAGON_p2p_ssh.sh` | Publie les services, génère `x_*.sh`, met à jour `authorized_keys` |
-| `tools/astrosystemctl.sh` | CLI de gestion (symlink `~/.local/bin/astrosystemctl`) |
+| `admin/system/astrosystemctl.sh` | CLI de gestion (symlink `~/.local/bin/astrosystemctl`) |
 | `IA/*.me.sh` | Connecteurs de service (local → SSH → P2P fallback) |
 | `install/install_<group>.sh` | Scripts d'installation par groupe de modules |
 | `~/.zen/tunnels/enabled/` | Tunnels persistants (watchdog 20h12) |

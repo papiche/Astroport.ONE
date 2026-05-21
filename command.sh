@@ -144,7 +144,7 @@ check_services_status() {
     # Si le cache est absent ou périmé (> 300 s = TTL heartbox_analysis.sh), le régénérer
     if [[ $cache_age -ge 300 ]]; then
         echo -e "\033[0;36m  🔄 Actualisation du cache heartbox...\033[0m"
-        "${MY_PATH}/tools/heartbox_analysis.sh" update >/dev/null 2>&1
+        "${MY_PATH}/admin/monitor/heartbox_analysis.sh" update >/dev/null 2>&1
         # Recalculer l'âge après mise à jour
         if [[ -f "$heartbox_cache" ]]; then
             cache_age=$(( $(date +%s) - $(stat -c %Y "$heartbox_cache" 2>/dev/null || echo 0) ))
@@ -2305,7 +2305,7 @@ main() {
                 else
                     print_section "STATUT SWARM"
                     print_info "Notifications et abonnements reçus..."
-                    "${MY_PATH}/tools/SWARM.notifications.sh"
+                    "${MY_PATH}/admin/swarm/SWARM.notifications.sh"
                     read -p "Appuyez sur ENTRÉE pour continuer..."
                 fi
                 ;;

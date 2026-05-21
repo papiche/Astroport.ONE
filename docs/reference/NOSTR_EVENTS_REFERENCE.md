@@ -604,7 +604,7 @@ pour enrichir collectivement la base de connaissance de la constellation.
 └── ...
 ```
 
-**Scripts :** `tools/knowledge_index.sh`, `tools/knowledge_index.py`
+**Scripts :** `admin/ia_db/knowledge_index.sh`, `admin/ia_db/knowledge_index.py`
 **Interface :** MineLife onglet Formation — bouton "Mes médias" (mode édition)
 **BRO :** commande `#rec <skill>` via DM Kind 4
 
