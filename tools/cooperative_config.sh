@@ -67,15 +67,15 @@ coop_encrypt() {
     # Generate random IV (16 bytes)
     local iv=$(openssl rand -hex 16)
     
-    # Encrypt with AES-256-CBC
-    local encrypted=$(echo -n "$plaintext" | openssl enc -aes-256-cbc -a -K "$key" -iv "$iv" 2>/dev/null)
-    
+    # Encrypt with AES-256-CBC (-A = no line wrapping in base64 output)
+    local encrypted=$(echo -n "$plaintext" | openssl enc -aes-256-cbc -a -A -K "$key" -iv "$iv" 2>/dev/null)
+
     if [[ $? -ne 0 ]] || [[ -z "$encrypted" ]]; then
         echo "[ERROR] Encryption failed" >&2
         return 1
     fi
-    
-    # Return IV:encrypted (both base64-safe)
+
+    # Return IV:encrypted (single-line, base64-safe)
     echo "${iv}:${encrypted}"
 }
 
@@ -95,26 +95,30 @@ coop_decrypt() {
         return 0
     fi
     
+    # Strip newlines — backward compat with old multi-line base64 format
+    local encrypted_data_clean
+    encrypted_data_clean=$(printf '%s' "$encrypted_data" | tr -d '\n\r')
+
     # Extract IV and encrypted data
-    local iv=$(echo "$encrypted_data" | cut -d':' -f1)
-    local encrypted=$(echo "$encrypted_data" | cut -d':' -f2-)
-    
-    if [[ -z "$iv" ]] || [[ -z "$encrypted" ]]; then
+    local iv="${encrypted_data_clean%%:*}"
+    local encrypted="${encrypted_data_clean#*:}"
+
+    if [[ -z "$iv" ]] || [[ -z "$encrypted" ]] || [[ "$iv" == "$encrypted" ]]; then
         echo "[ERROR] Invalid encrypted data format (expected iv:encrypted)" >&2
         return 1
     fi
-    
+
     # Generate key from UPLANETNAME (SHA256)
     local key=$(echo -n "$UPLANETNAME" | sha256sum | cut -d' ' -f1)
-    
-    # Decrypt with AES-256-CBC
-    local plaintext=$(echo "$encrypted" | openssl enc -aes-256-cbc -d -a -K "$key" -iv "$iv" 2>/dev/null)
-    
-    if [[ $? -ne 0 ]]; then
+
+    # Decrypt with AES-256-CBC (-A = single-line base64 input)
+    local plaintext
+    plaintext=$(printf '%s' "$encrypted" | openssl enc -aes-256-cbc -d -a -A -K "$key" -iv "$iv" 2>/dev/null)
+    if [[ $? -ne 0 ]] || [[ -z "$plaintext" ]]; then
         echo "[ERROR] Decryption failed - wrong UPLANETNAME or corrupted data" >&2
         return 1
     fi
-    
+
     echo "$plaintext"
 }
 
@@ -427,11 +431,15 @@ coop_config_get() {
         return 1
     fi
     
+    # Normalize: strip newlines (old base64 wrapping had 64-char lines)
+    local encrypted_value_clean
+    encrypted_value_clean=$(printf '%s' "$encrypted_value" | tr -d '\n\r')
+
     # Encrypted values match AES-256-CBC format: 32 hex chars + ':' + base64
-    if [[ "$encrypted_value" =~ ^[0-9a-f]{32}:[A-Za-z0-9+/]+=*$ ]]; then
-        coop_decrypt "$encrypted_value"
+    if [[ "$encrypted_value_clean" =~ ^[0-9a-f]{32}:[A-Za-z0-9+/]+=*$ ]]; then
+        coop_decrypt "$encrypted_value_clean"
     else
-        echo "$encrypted_value"
+        echo "$encrypted_value_clean"
     fi
 }
 

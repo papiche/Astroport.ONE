@@ -33,14 +33,16 @@ for _candidate in \
 done
 
 # ── Paramètres par défaut ─────────────────────────────────────────────────────
-MODE="commit"         # commit | staged | day | week | month
+MODE="commit"         # commit | staged | day | week | month | period
 SINCE_COMMIT="HEAD"   # référence git de base pour le diff
 SINCE_LABEL="dernier commit"
+PERIOD_DAYS=""        # pour --period N
 AI_MODEL="qwen2.5-coder:14b"
 AI_BACKEND="ollama"    # ollama | claude | gemini
 VERBOSE=false
 PR_MODE=false
 AI_ENHANCED=false
+REVIEW_HAD_WARNINGS=false
 
 dbg() { [[ "$VERBOSE" == "true" ]] && echo -e "\033[2m[verbose] $*\033[0m" >&2 || true; }
 
@@ -53,13 +55,14 @@ show_help() {
     echo -e "${YELLOW}OPTIONS:${NC}"
     echo -e "  ${GREEN}--commit,      -c${NC}   Depuis le dernier commit (défaut)"
     echo -e "  ${GREEN}--staged,      -s${NC}   Uniquement les fichiers stagés (git add)"
-    echo -e "  ${GREEN}--day,         -d${NC}   Dernières 24 heures"
-    echo -e "  ${GREEN}--week,        -w${NC}   Derniers 7 jours"
-    echo -e "  ${GREEN}--month,       -m${NC}   Derniers 30 jours"
+    echo -e "  ${GREEN}--day,         -d${NC}   Rapport d'activité des 24 dernières heures (presse-papier)"
+    echo -e "  ${GREEN}--week,        -w${NC}   Rapport d'activité des 7 derniers jours"
+    echo -e "  ${GREEN}--month,       -m${NC}   Rapport d'activité des 30 derniers jours"
+    echo -e "  ${GREEN}--period N,    -P N${NC} Rapport d'activité des N derniers jours"
     echo -e "  ${GREEN}--branch,      -b${NC}   Basculer sur cette branche avant d'analyser"
     echo -e "  ${GREEN}--pr,          -p${NC}   Proposer une Pull Request après push (assistance IA)"
     echo -e "  ${GREEN}--ai [BACKEND],-a${NC}   Revue de code IA. BACKEND: ollama (défaut) | claude | gemini"
-    echo -e "                        claude → utilise claude CLI (OAuth ~/.claude-*), sélection du compte"
+    echo -e "                        claude → correction directe des bugs par Claude"
     echo -e "                        gemini → GEMINI_API_KEY requis"
     echo -e "  ${GREEN}--model MODEL, -M${NC}   Modèle LLM (défaut Ollama: qwen2.5-coder:14b | Claude: haiku)"
     echo -e "  ${GREEN}--verbose,     -v${NC}   Mode verbeux : affiche diff, prompt et réponse brute"
@@ -68,17 +71,15 @@ show_help() {
     echo -e "${YELLOW}EXEMPLES:${NC}"
     echo "  $0                              # diff depuis le dernier commit (avec sélection branche)"
     echo "  $0 --staged                     # staging interactif par date → commit IA en boucle"
+    echo "  $0 --staged --ai claude        # revue claude CLI → correction directe des bugs"
     echo "  $0 --staged --pr               # idem + propose une PR après push (IA)"
-    echo "  $0 --staged --ai              # revue Ollama (local) + code_assistant si problèmes"
-    echo "  $0 --staged --ai claude       # revue claude CLI (OAuth) + issue.sh guidé si problèmes"
-    echo "  $0 --staged --ai gemini       # revue Gemini API + issue.sh guidé si problèmes"
-    echo "  $0 --staged --ai --pr         # tout activé : staging guidé, revue, commit, PR"
+    echo "  $0 --day                        # rapport d'activité 24h → presse-papier"
+    echo "  $0 --week --ai claude          # rapport 7 jours via Claude"
+    echo "  $0 --period 3                  # rapport des 3 derniers jours"
     echo "  $0 --branch fix/issue-7 --staged  # basculer fix/issue-7 puis staging interactif"
-    echo "  $0 --day                        # tout ce qui a changé aujourd'hui"
-    echo "  $0 --week --model qwen2.5-coder:7b  # fallback alienware (orpheus actif)"
     echo "  $0 --staged --verbose           # mode verbeux pour diagnostiquer"
     echo ""
-    echo -e "${YELLOW}SORTIE:${NC}  Le message généré est affiché et copié dans le presse-papier."
+    echo -e "${YELLOW}SORTIE:${NC}  Le rapport/message généré est affiché et copié dans le presse-papier."
     exit 0
 }
 
@@ -173,10 +174,11 @@ GPROMPT
     fi
 
     echo ""
-    echo -ne "${CYAN}Sélection [tout/N,M/N-M/aujourd'hui/Entrée=annuler] :${NC} "
+    echo -ne "${CYAN}Sélection [Entrée=tout / N,M / N-M / aujourd'hui / Ctrl+C=annuler] :${NC} "
     read -r _sel
 
-    [[ -z "$_sel" ]] && return 1
+    # Entrée vide = tout sélectionner
+    [[ -z "$_sel" ]] && _sel="tout"
 
     local -a selected=()
     case "$_sel" in
@@ -352,102 +354,172 @@ RVPROMPT
 
         # ── Cycle de correction si problèmes détectés ────────────────────
         if echo "$_review" | grep -q '⚠'; then
+            REVIEW_HAD_WARNINGS=true
             echo -e "${YELLOW}🔧 Des problèmes ont été détectés par la revue.${NC}"
 
-            # Extraire fichiers + messages depuis les lignes ⚠️
-            local -A _warn_map=()
+            # ── Numérotation des problèmes (strip backticks + :ligne) ──────────
+            local -a _warns=()   # "filepath|message" indexé par numéro (1-based)
             while IFS= read -r _wl; do
                 echo "$_wl" | grep -q '⚠' || continue
-                local _wraw; _wraw=$(echo "$_wl" | sed 's/^[^a-zA-Z_./]*//')
+                local _wraw; _wraw=$(echo "$_wl" | sed 's/^[^a-zA-Z_./`-]*//' | tr -d '`')
                 local _wf="${_wraw%% *}"
+                _wf="${_wf%%:*}"   # strip :140,230 → HOWTO.md
                 local _wmsg="${_wraw#* }"
                 [[ "$_wmsg" == "$_wf" ]] && _wmsg=""
                 [[ -z "$_wf" ]] && continue
                 local _wpath="$_wf"
                 [[ ! -f "$_wpath" && -f "${MY_PATH}/$_wf" ]] && _wpath="${MY_PATH}/$_wf"
-                [[ ! -f "$_wpath" ]] && continue
-                _warn_map["$_wpath"]+="${_wmsg}; "
+                _warns+=("${_wpath}|${_wmsg}")
             done <<< "$_review"
 
-            if [[ "${AI_BACKEND:-ollama}" == "claude" ]]; then
-                # ── Mode Claude : déléguer à issue.sh pour workflow guidé ──────
-                local _iss="${MY_PATH}/issue.sh"
-                [[ ! -x "$_iss" ]] && _iss=$(command -v issue.sh 2>/dev/null || echo "")
+            # _warn_map initial (tous warnings, sans exclusion) — utilisé par le mode Ollama
+            local -A _warn_map=()
+            for _w in "${_warns[@]}"; do
+                local _wp="${_w%%|*}"
+                local _wm="${_w#*|}"
+                [[ -f "$_wp" ]] && _warn_map["$_wp"]+="${_wm}; "
+            done
 
-                if [[ -n "$_iss" && -x "$_iss" ]]; then
-                    echo -ne "${CYAN}   Créer une issue et analyser avec Claude ? [O/n] : ${NC}"
-                    read -r _iss_confirm
-                    if [[ "${_iss_confirm:-O}" =~ ^[oOyYÿ]?$ ]]; then
-                        local _iss_title="fix(review): problèmes détectés le $(date +%Y-%m-%d)"
-                        local _iss_body
-                        _iss_body=$(printf "## Revue de code\n\n%s\n\n## Fichiers concernés\n\n%s" \
-                            "$_review" \
-                            "$(printf '%s\n' "${!_warn_map[@]}" 2>/dev/null)")
-                        local _iss_num
-                        _iss_num=$("$_iss" create --title "$_iss_title" --body "$_iss_body" 2>/dev/null \
-                            | grep -oP '#\K[0-9]+' | head -1 || echo "")
-                        if [[ -n "$_iss_num" ]]; then
-                            local _commit_log="${HOME}/.zen/tmp/code_commit_sh.log"
-                            mkdir -p "${HOME}/.zen/tmp"
-                            echo -e "${GREEN}✅ Issue #${_iss_num} créée${NC}"
-                            echo ""
-                            local _head_before
-                            _head_before=$(git rev-parse HEAD 2>/dev/null || echo "")
-                            echo "[$(date '+%F %T')] issue.sh analyze #${_iss_num} start head=${_head_before:0:8}" >> "$_commit_log"
-                            CLAUDE_CONFIG_DIR="$_claude_cfg" "$_iss" analyze "$_iss_num" --ai claude || true
-                            local _head_after
-                            _head_after=$(git rev-parse HEAD 2>/dev/null || echo "")
-                            echo "[$(date '+%F %T')] issue.sh analyze #${_iss_num} end head=${_head_after:0:8}" >> "$_commit_log"
-                            echo ""
-                            # Détecter si issue.sh [x] a déjà commité le fix
-                            if [[ -n "$_head_before" && "$_head_before" != "$_head_after" ]]; then
-                                echo -e "${GREEN}✅ Fix commité via issue.sh — cycle terminé.${NC}"
-                                echo "[$(date '+%F %T')] fix committed by issue.sh [x]" >> "$_commit_log"
-                                git reset HEAD 2>/dev/null || true
-                                return 0
+            if [[ "${AI_BACKEND:-ollama}" == "claude" ]]; then
+                # ── Mode Claude : correction directe, sélection par numéro ──
+                local _claude_bin; _claude_bin=$(command -v claude 2>/dev/null || echo "")
+                if [[ -z "$_claude_bin" ]]; then
+                    echo -e "${YELLOW}💡 claude CLI introuvable — correction manuelle nécessaire.${NC}"
+                else
+                    # Afficher la liste numérotée
+                    local _ni=1
+                    local _has_local=false
+                    for _w in "${_warns[@]}"; do
+                        local _wp="${_w%%|*}"
+                        local _wm="${_w#*|}"
+                        local _found_mark=""
+                        [[ ! -f "$_wp" ]] && _found_mark=" ${YELLOW}(fichier introuvable)${NC}"
+                        [[ -f "$_wp" ]] && _has_local=true
+                        printf "  ${YELLOW}[%d]${NC} %-30s %s%b\n" \
+                            "$_ni" "$(basename "$_wp")" "${_wm:0:55}" "$_found_mark"
+                        (( _ni++ )) || true
+                    done
+
+                    echo -ne "${CYAN}   Corriger [Entrée=tous / ex:3,4=exclure / n=ignorer] : ${NC}"
+                    read -r _fix_choice </dev/tty
+
+                    # Reconstruire _warn_map en appliquant les exclusions choisies
+                    _warn_map=()
+                    if [[ ! "${_fix_choice:-}" =~ ^[nNqQ]$ ]]; then
+                        local -a _excl=()
+                        IFS=', ' read -ra _excl <<< "${_fix_choice:-}"
+                        _ni=1
+                        for _w in "${_warns[@]}"; do
+                            local _skip=false
+                            for _ex in "${_excl[@]}"; do
+                                [[ "$_ex" == "$_ni" ]] && _skip=true && break
+                            done
+                            if [[ "$_skip" == "false" ]]; then
+                                local _wp="${_w%%|*}"
+                                local _wm="${_w#*|}"
+                                [[ -f "$_wp" ]] && _warn_map["$_wp"]+="${_wm}; "
                             fi
-                            # Vérifier s'il y a des modifications non commitées
-                            local _uncommitted
-                            _uncommitted=$(git diff --name-only 2>/dev/null)
-                            if [[ -n "$_uncommitted" ]]; then
-                                echo -e "${CYAN}── Fichiers modifiés (non stagés) ──────────────────────────${NC}"
-                                git diff --stat 2>/dev/null
-                                echo ""
-                                echo -e "${CYAN}╔══════════════════════════════════════════════════════════╗${NC}"
-                                echo -e "${CYAN}║  Que faire avec ces modifications ?                      ║${NC}"
-                                echo -e "${CYAN}╠══════════════════════════════════════════════════════════╣${NC}"
-                                echo -e "${CYAN}║  [o] Re-stager et re-commiter (fix appliqué manuell.)    ║${NC}"
-                                echo -e "${CYAN}║  [n] Ignorer et commiter quand même (sans les fix)       ║${NC}"
-                                echo -e "${CYAN}║  [q] Quitter — corriger puis relancer commit.sh          ║${NC}"
-                                echo -e "${CYAN}╚══════════════════════════════════════════════════════════╝${NC}"
-                                read -r -p "Choix [o/n/q] : " _fix_applied
-                                echo "[$(date '+%F %T')] post-analyze choice=${_fix_applied}" >> "$_commit_log"
-                                case "${_fix_applied:-q}" in
-                                    o|O)
-                                        git reset HEAD 2>/dev/null || true
-                                        exec "$0" --staged${_cur_branch:+ --branch "$_cur_branch"}${PR_MODE:+ --pr}${AI_ENHANCED:+ --ai claude}
-                                        ;;
-                                    n|N)
-                                        echo -e "${YELLOW}⚠️  Poursuite du commit avec les warnings en suspens.${NC}"
-                                        ;;
-                                    *)
-                                        echo -e "${YELLOW}→ Relancez après corrections : commit.sh --staged --ai claude${NC}"
-                                        echo -e "  Log : ${CYAN}${_commit_log}${NC}"
-                                        git reset HEAD 2>/dev/null || true
-                                        return 0
-                                        ;;
-                                esac
+                            (( _ni++ )) || true
+                        done
+                    fi
+
+                    if [[ ${#_warn_map[@]} -eq 0 ]]; then
+                        echo -e "${YELLOW}   Aucun fichier à corriger (exclus ou introuvables).${NC}"
+                    else
+                        local _claude_cfg="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
+                        local _any_fix=false
+                        for _wpath in "${!_warn_map[@]}"; do
+                            local _issues="${_warn_map[$_wpath]%; }"
+                            [[ ! -f "$_wpath" ]] && continue
+                            echo -e "${BLUE}  🔧 $(basename "$_wpath")...${NC}"
+                            local _fdiff
+                            _fdiff=$(git diff HEAD -- "$_wpath" 2>/dev/null \
+                                || git diff --cached -- "$_wpath" 2>/dev/null || true)
+                            local _fix_pf; _fix_pf=$(mktemp /tmp/fix_prompt_XXXXXX.txt)
+                            local _fix_out; _fix_out=$(mktemp /tmp/fix_output_XXXXXX.txt)
+                            cat > "$_fix_pf" <<FIXPROMPT
+Fichier : ${_wpath}
+Problème(s) : ${_issues}
+
+Diff git (contexte des modifications) :
+\`\`\`diff
+${_fdiff:0:4000}
+\`\`\`
+
+Contenu actuel du fichier :
+\`\`\`
+$(head -c 10000 "$_wpath")
+\`\`\`
+
+Corrige UNIQUEMENT les problèmes listés. Format de réponse STRICT :
+===FIND===
+<texte exact à remplacer — assez unique dans le fichier>
+===REPLACE===
+<texte corrigé>
+===END===
+
+Un bloc par correction. Aucune explication, uniquement les blocs.
+FIXPROMPT
+                            CLAUDE_CONFIG_DIR="$_claude_cfg" \
+                                "$_claude_bin" --print < "$_fix_pf" > "$_fix_out" 2>/dev/null || true
+                            rm -f "$_fix_pf"
+
+                            if grep -q '===FIND===' "$_fix_out" 2>/dev/null; then
+                                local _py_apply; _py_apply=$(mktemp /tmp/apply_fix_XXXXXX.py)
+                                cat > "$_py_apply" <<'PYEOF'
+import sys, re
+
+with open(sys.argv[1]) as f:
+    raw = f.read()
+
+blocks = re.findall(r'===FIND===\n(.*?)\n===REPLACE===\n(.*?)\n===END===', raw, re.DOTALL)
+if not blocks:
+    print("NO_BLOCKS"); sys.exit(1)
+
+with open(sys.argv[2]) as f:
+    content = f.read()
+
+applied = 0
+for find, replace in blocks:
+    find = find.strip('\n'); replace = replace.strip('\n')
+    if find in content:
+        content = content.replace(find, replace, 1); applied += 1
+    else:
+        print(f"NOT_FOUND: {find[:60]!r}", file=sys.stderr)
+
+if applied > 0:
+    with open(sys.argv[2], 'w') as f:
+        f.write(content)
+    print(f"APPLIED:{applied}")
+else:
+    print("NOTHING_APPLIED"); sys.exit(1)
+PYEOF
+                                local _result
+                                _result=$(python3 "$_py_apply" "$_fix_out" "$_wpath" 2>/dev/null) || true
+                                rm -f "$_py_apply"
+                                if echo "$_result" | grep -q "^APPLIED:"; then
+                                    local _n; _n=$(echo "$_result" | grep -oE '[0-9]+$')
+                                    echo -e "${GREEN}  ✅ ${_n} correction(s) dans $(basename "$_wpath")${NC}"
+                                    git diff "$_wpath" 2>/dev/null | head -35 || true
+                                    _any_fix=true
+                                else
+                                    echo -e "${YELLOW}  ⚠️  Correspondance introuvable — correction manuelle : ${_issues}${NC}"
+                                fi
                             else
-                                echo -e "${YELLOW}[INFO]${NC} Aucune modification non stagée — poursuite du commit."
+                                echo -e "${YELLOW}  ⚠️  Pas de corrections retournées — correction manuelle : ${_issues}${NC}"
                             fi
-                        else
-                            echo -e "${YELLOW}💡 Création issue échouée — GIT_TOKEN manquant ou repo inaccessible.${NC}"
-                            echo -e "   Créez manuellement puis lancez :"
-                            echo -e "   ${CYAN}issue.sh analyze <numéro> --ai claude${NC}"
+                            rm -f "$_fix_out"
+                        done
+                        if [[ "$_any_fix" == "true" ]]; then
+                            echo ""
+                            echo -ne "${CYAN}Relancer revue+commit ? [Entrée=oui / n=commiter quand même] : ${NC}"
+                            read -r _rerun </dev/tty
+                            if [[ ! "${_rerun:-}" =~ ^[nN]$ ]]; then
+                                git reset HEAD 2>/dev/null || true
+                                exec "$0" --staged${_cur_branch:+ --branch "$_cur_branch"}${PR_MODE:+ --pr}${AI_ENHANCED:+ --ai claude}
+                            fi
                         fi
                     fi
-                else
-                    echo -e "${YELLOW}💡 issue.sh introuvable — lance : issue.sh analyze --ai claude${NC}"
                 fi
             else
                 # ── Mode Ollama : code_assistant (comportement classique) ───────
@@ -501,6 +573,11 @@ while [[ $# -gt 0 ]]; do
         --day|-d)    MODE="day";     SINCE_LABEL="24 dernières heures" ; shift ;;
         --week|-w)   MODE="week";    SINCE_LABEL="7 derniers jours" ;   shift ;;
         --month|-m)  MODE="month";   SINCE_LABEL="30 derniers jours" ;  shift ;;
+        --period|-P)
+            shift
+            PERIOD_DAYS="${1:?'--period requiert un nombre de jours (ex: --period 3)'}"
+            MODE="period"; SINCE_LABEL="${PERIOD_DAYS} derniers jours"
+            shift ;;
         --model|-M)
             shift
             AI_MODEL="${1:?'--model requiert un nom de modèle'}"
@@ -693,6 +770,17 @@ case "$MODE" in
             exit 0
         fi
         ;;
+    period)
+        SINCE_DATE=$(date -d "${PERIOD_DAYS} days ago" -Iseconds 2>/dev/null \
+            || date -u -v-"${PERIOD_DAYS}d" +"%Y-%m-%dT%H:%M:%S")
+        COMMITS_INFO=$(_git log --since="$SINCE_DATE" --pretty=format:"[%h] %s (%an, %ar)" 2>/dev/null || true)
+        FILES_CHANGED=$(git log --since="$SINCE_DATE" --name-status --pretty=format: 2>/dev/null | grep -v '^$' | sort -u || true)
+        DIFF_CONTENT=$(git log --since="$SINCE_DATE" -p 2>/dev/null || true)
+        if [[ -z "$COMMITS_INFO" ]]; then
+            echo -e "${YELLOW}⚠️  Aucun commit dans les ${PERIOD_DAYS} derniers jours.${NC}"
+            exit 0
+        fi
+        ;;
 esac
 
 dbg "Commits trouvés :"
@@ -757,6 +845,67 @@ basic_summary() {
     fi
 
     echo -e "$summary"
+}
+
+# ── Rapport d'activité (--day / --week / --month / --period) ─────────────────
+generate_activity_report() {
+    local prompt
+    prompt=$(cat <<RPROMPT
+Tu rédiges un rapport d'activité pour un développeur. EN FRANÇAIS. CONCIS.
+Période : ${SINCE_LABEL} (au ${SINCE_DATE:-aujourd'hui})
+Projet : $(basename "$(git rev-parse --show-toplevel 2>/dev/null || echo .)")
+Branche : ${_cur_branch}
+
+Commits de la période :
+${COMMITS_INFO}
+
+Fichiers modifiés :
+${FILES_CHANGED:0:3000}
+
+FORMAT DE RÉPONSE (commence directement, aucune introduction) :
+## Activité — ${SINCE_LABEL}
+
+### Ce qui a été fait
+- …  (liste des réalisations, orienté valeur/usage, max 8 points)
+
+### Impact
+- …  (ce que ça change concrètement pour les utilisateurs ou le projet, 2-4 points)
+
+### Fichiers principaux
+- \`fichier\` — une ligne d'explication
+
+---
+*Rapport généré le $(date +"%Y-%m-%d %H:%M")*
+RPROMPT
+)
+    local _rf; _rf=$(mktemp /tmp/report_prompt_XXXXXX.txt)
+    echo "$prompt" > "$_rf"
+    local result=""
+
+    if [[ "${AI_BACKEND:-ollama}" == "claude" ]] && command -v claude &>/dev/null; then
+        local _rcfg="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
+        result=$(CLAUDE_CONFIG_DIR="$_rcfg" claude --print < "$_rf" 2>/dev/null) || true
+        if echo "$result" | grep -qi "weekly limit\|rate.limit\|You've hit\|quota\|resets.*am"; then
+            result=""
+            _rcfg=$(_claude_pick_alternate "$_rcfg")
+            [[ -n "$_rcfg" ]] && result=$(CLAUDE_CONFIG_DIR="$_rcfg" claude --print < "$_rf" 2>/dev/null) || true
+        fi
+    elif [[ -f "${QUESTION_PY:-}" ]]; then
+        result=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 16384 \
+            --prompt-file "$_rf" --temperature 0.2 2>/dev/null) || true
+    fi
+    rm -f "$_rf"
+
+    if [[ -z "$result" ]]; then
+        # Rapport basique sans IA
+        result="## Activité — ${SINCE_LABEL}\n\n"
+        result+="### Commits\n"
+        while IFS= read -r _cl; do [[ -n "$_cl" ]] && result+="- ${_cl}\n"; done <<< "$COMMITS_INFO"
+        result+="\n### Fichiers modifiés\n"
+        while IFS= read -r _fl; do [[ -n "$_fl" ]] && result+="- ${_fl}\n"; done <<< "$(echo "$FILES_CHANGED" | head -20)"
+        result+="\n---\n*Rapport généré le $(date +"%Y-%m-%d %H:%M")*"
+    fi
+    echo "$result"
 }
 
 # ── Appel IA via question.py ──────────────────────────────────────────────────
@@ -866,7 +1015,26 @@ PROMPT
     echo "$result"
 }
 
-# ── Génération du résumé ──────────────────────────────────────────────────────
+# ── Mode rapport d'activité (--day / --week / --month / --period) ─────────────
+if [[ "$MODE" =~ ^(day|week|month|period)$ ]]; then
+    echo -e "${BLUE}📋 Génération du rapport d'activité (${SINCE_LABEL})...${NC}"
+    REPORT=$(generate_activity_report)
+    echo ""
+    echo -e "$REPORT"
+    echo ""
+    CLIPBOARD_OK=false
+    if command -v xclip &>/dev/null; then
+        echo "$REPORT" | xclip -selection clipboard 2>/dev/null && CLIPBOARD_OK=true
+    elif command -v xsel &>/dev/null; then
+        echo "$REPORT" | xsel --clipboard --input 2>/dev/null && CLIPBOARD_OK=true
+    elif command -v wl-copy &>/dev/null; then
+        echo "$REPORT" | wl-copy 2>/dev/null && CLIPBOARD_OK=true
+    fi
+    [[ "$CLIPBOARD_OK" == "true" ]] && echo -e "${GREEN}📋 Rapport copié dans le presse-papier.${NC}"
+    exit 0
+fi
+
+# ── Génération du résumé de commit ───────────────────────────────────────────
 SUMMARY=""
 
 if [[ -f "$QUESTION_PY" ]] || { [[ "${AI_BACKEND:-ollama}" == "claude" ]] && command -v claude &>/dev/null; }; then
@@ -946,46 +1114,71 @@ if [[ "$MODE" == "staged" && -n "$COMMIT_MSG" ]]; then
     ai_code_review "$DIFF_CONTENT"
 
     echo ""
-    echo -e "${YELLOW}Message de commit suggéré :${NC}"
-    echo -e "${GREEN}  $COMMIT_MSG${NC}"
-    echo ""
     echo -e "${YELLOW}Message :${NC} ${GREEN}$COMMIT_MSG${NC}"
-    echo -ne "${CYAN}Note ? [Entrée=commit / r=refaire / n=annuler] :${NC} "
-    read -r confirm
-    if [[ "$confirm" =~ ^[rR]$ ]]; then
-        echo -e "${BLUE}↩️  Dé-staging et nouvelle sélection...${NC}"
-        git reset HEAD 2>/dev/null || true
-        exec "$0" --staged${_cur_branch:+ --branch "$_cur_branch"}${PR_MODE:+ --pr}${AI_ENHANCED:+ --ai}
-    elif [[ "$confirm" =~ ^[nN]$ ]]; then
-        echo -e "${YELLOW}Annulé.${NC}"
-    elif [[ -z "$confirm" || "$confirm" =~ ^[oOyY]$ ]]; then
-        git commit -m "$COMMIT_MSG"
-        echo -e "${GREEN}✅ Commit créé.${NC}"
-        _pushed=false
-        if git remote get-url origin &>/dev/null; then
-            echo -e "${BLUE}⬆️  git push...${NC}"
-            git push 2>&1 | grep -v '^$' \
-                && { echo -e "${GREEN}✅ Push réussi.${NC}"; _pushed=true; } \
-                || echo -e "${YELLOW}⚠️  Push échoué — vérifiez la connexion ou les droits.${NC}"
-        fi
 
-        # ── Proposition Pull Request (IA) ─────────────────────────────────────
-        _main_branch=$(git remote show origin 2>/dev/null | grep 'HEAD branch' | awk '{print $NF}' || echo "master")
-        if [[ "$_pushed" == "true" && "$_cur_branch" != "$_main_branch" && "$_cur_branch" != "main" && "$_cur_branch" != "master" ]] \
-           && command -v gh &>/dev/null; then
-            echo ""
-            if [[ "$PR_MODE" == "true" ]]; then
-                _do_pr=true
-            else
-                echo -ne "${CYAN}Créer une Pull Request pour '${_cur_branch}' → '${_main_branch}' ? [o/N] : ${NC}"
-                read -r _pr_confirm
-                _do_pr=false
-                [[ "$_pr_confirm" =~ ^[oOyY]$ ]] && _do_pr=true
+    # ── Choix de l'action ─────────────────────────────────────────────────────
+    _action=""
+    if [[ "$REVIEW_HAD_WARNINGS" == "true" && "${AI_BACKEND:-ollama}" == "claude" ]]; then
+        echo -ne "${CYAN}[Entrée=corriger avec Claude / f=forcer commit / n=annuler] :${NC} "
+        read -r confirm
+        case "${confirm:-}" in
+            f|F) _action="commit"; echo -e "${YELLOW}⚠️  Commit forcé malgré les warnings.${NC}" ;;
+            n|N) _action="cancel" ;;
+            *)   _action="fix" ;;
+        esac
+    else
+        echo -ne "${CYAN}[Entrée=commit / r=refaire / n=annuler] :${NC} "
+        read -r confirm
+        case "${confirm:-}" in
+            r|R) _action="redo" ;;
+            n|N) _action="cancel" ;;
+            *)   _action="commit" ;;
+        esac
+    fi
+
+    # ── Exécution ─────────────────────────────────────────────────────────────
+    case "$_action" in
+        fix)
+            git reset HEAD 2>/dev/null || true
+            exec "$0" --staged${_cur_branch:+ --branch "$_cur_branch"}${PR_MODE:+ --pr} --ai claude
+            ;;
+        redo)
+            echo -e "${BLUE}↩️  Dé-staging et nouvelle sélection...${NC}"
+            git reset HEAD 2>/dev/null || true
+            exec "$0" --staged${_cur_branch:+ --branch "$_cur_branch"}${PR_MODE:+ --pr}${AI_ENHANCED:+ --ai}
+            ;;
+        cancel)
+            echo -e "${YELLOW}Annulé.${NC}"
+            ;;
+        commit)
+            git commit -m "$COMMIT_MSG"
+            echo -e "${GREEN}✅ Commit créé.${NC}"
+            _pushed=false
+            if git remote get-url origin &>/dev/null; then
+                echo -e "${BLUE}⬆️  git push...${NC}"
+                git push 2>&1 | grep -v '^$' \
+                    && { echo -e "${GREEN}✅ Push réussi.${NC}"; _pushed=true; } \
+                    || echo -e "${YELLOW}⚠️  Push échoué — vérifiez la connexion ou les droits.${NC}"
             fi
 
-            if [[ "$_do_pr" == "true" ]]; then
-                echo -e "${BLUE}🤖 Génération du titre et corps de PR par l'IA...${NC}"
-                _pr_prompt=$(cat <<PRPROMPT
+            # ── Proposition Pull Request (IA) ─────────────────────────────────
+            _main_branch=$(git remote show origin 2>/dev/null | grep 'HEAD branch' | awk '{print $NF}' || echo "master")
+            if [[ "$_pushed" == "true" && "$_cur_branch" != "$_main_branch" \
+               && "$_cur_branch" != "main" && "$_cur_branch" != "master" ]] \
+               && command -v gh &>/dev/null; then
+                echo ""
+                if [[ "$PR_MODE" == "true" ]]; then
+                    _do_pr=true
+                else
+                    echo -ne "${CYAN}Créer une Pull Request pour '${_cur_branch}' → '${_main_branch}' ? [o/N] : ${NC}"
+                    read -r _pr_confirm
+                    _do_pr=false
+                    [[ "$_pr_confirm" =~ ^[oOyY]$ ]] && _do_pr=true
+                fi
+
+                if [[ "$_do_pr" == "true" ]]; then
+                    echo -e "${BLUE}🤖 Génération du titre et corps de PR par l'IA...${NC}"
+                    _pr_prompt=$(cat <<PRPROMPT
 Tu rédiges une Pull Request GitHub pour la branche '$_cur_branch' à merger dans '$_main_branch'.
 RÉPONDS UNIQUEMENT EN FRANÇAIS. AUCUNE INTRODUCTION.
 FORMAT STRICT (commence directement par TITRE:) :
@@ -1010,54 +1203,55 @@ Résumé IA des modifications :
 $SUMMARY
 PRPROMPT
 )
-                _pr_prompt_file=$(mktemp /tmp/pr_prompt_XXXXXX.txt)
-                echo "$_pr_prompt" > "$_pr_prompt_file"
-                _pr_raw=""
-                if [[ -f "$QUESTION_PY" ]]; then
-                    _pr_raw=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 8192 --prompt-file "$_pr_prompt_file" --temperature 0.2 2>/dev/null) || true
+                    _pr_prompt_file=$(mktemp /tmp/pr_prompt_XXXXXX.txt)
+                    echo "$_pr_prompt" > "$_pr_prompt_file"
+                    _pr_raw=""
+                    if [[ -f "$QUESTION_PY" ]]; then
+                        _pr_raw=$(python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 8192 \
+                            --prompt-file "$_pr_prompt_file" --temperature 0.2 2>/dev/null) || true
+                    fi
+                    rm -f "$_pr_prompt_file"
+
+                    if [[ -n "$_pr_raw" ]]; then
+                        _pr_title=$(echo "$_pr_raw" | grep -m1 '^TITRE:' | sed 's/^TITRE:[[:space:]]*//')
+                        _pr_body=$(echo "$_pr_raw" | sed '1,/^TITRE:/d')
+                        [[ -z "$_pr_title" ]] && _pr_title="$COMMIT_MSG"
+                    else
+                        _pr_title="$COMMIT_MSG"
+                        _pr_body="$SUMMARY"
+                    fi
+
+                    echo ""
+                    echo -e "${YELLOW}Titre PR :${NC} ${GREEN}$_pr_title${NC}"
+                    echo ""
+                    echo -ne "${CYAN}Modifier le titre ? (Entrée pour conserver) : ${NC}"
+                    read -r _pr_title_edit
+                    [[ -n "$_pr_title_edit" ]] && _pr_title="$_pr_title_edit"
+
+                    gh pr create \
+                        --title "$_pr_title" \
+                        --body "$_pr_body" \
+                        --base "$_main_branch" \
+                        --head "$_cur_branch" \
+                        && echo -e "${GREEN}✅ Pull Request créée !${NC}" \
+                        || echo -e "${RED}❌ Erreur gh pr create — vérifiez votre auth (gh auth login).${NC}"
                 fi
-                rm -f "$_pr_prompt_file"
+            fi
 
-                if [[ -n "$_pr_raw" ]]; then
-                    _pr_title=$(echo "$_pr_raw" | grep -m1 '^TITRE:' | sed 's/^TITRE:[[:space:]]*//')
-                    _pr_body=$(echo "$_pr_raw" | sed '1,/^TITRE:/d')
-                    [[ -z "$_pr_title" ]] && _pr_title="$COMMIT_MSG"
-                else
-                    _pr_title="$COMMIT_MSG"
-                    _pr_body="$SUMMARY"
+            # ── Lot suivant : fichiers restants ───────────────────────────────
+            _rem=$(( $(git diff --name-only 2>/dev/null | wc -l) \
+                   + $(git ls-files --others --exclude-standard 2>/dev/null | wc -l) ))
+            if [[ $_rem -gt 0 ]]; then
+                echo ""
+                echo -e "${BLUE}📂 $_rem fichier(s) encore non commités.${NC}"
+                echo -ne "${CYAN}Traiter le prochain lot ? [o/N] : ${NC}"
+                read -r _next_batch
+                if [[ "$_next_batch" =~ ^[oOyY]$ ]]; then
+                    exec "$0" --staged${_cur_branch:+ --branch "$_cur_branch"}${PR_MODE:+ --pr}${AI_ENHANCED:+ --ai}
                 fi
-
-                echo ""
-                echo -e "${YELLOW}Titre PR :${NC} ${GREEN}$_pr_title${NC}"
-                echo ""
-                echo -ne "${CYAN}Modifier le titre ? (Entrée pour conserver) : ${NC}"
-                read -r _pr_title_edit
-                [[ -n "$_pr_title_edit" ]] && _pr_title="$_pr_title_edit"
-
-                gh pr create \
-                    --title "$_pr_title" \
-                    --body "$_pr_body" \
-                    --base "$_main_branch" \
-                    --head "$_cur_branch" \
-                    && echo -e "${GREEN}✅ Pull Request créée !${NC}" \
-                    || echo -e "${RED}❌ Erreur gh pr create — vérifiez votre auth (gh auth login).${NC}"
+            else
+                echo -e "${GREEN}✅ Tous les fichiers commités !${NC}"
             fi
-        fi
-
-        # ── Lot suivant : fichiers restants ───────────────────────────────────
-        _rem=$(( $(git diff --name-only 2>/dev/null | wc -l) + $(git ls-files --others --exclude-standard 2>/dev/null | wc -l) ))
-        if [[ $_rem -gt 0 ]]; then
-            echo ""
-            echo -e "${BLUE}📂 $_rem fichier(s) encore non commités.${NC}"
-            echo -ne "${CYAN}Traiter le prochain lot ? [o/N] : ${NC}"
-            read -r _next_batch
-            if [[ "$_next_batch" =~ ^[oOyY]$ ]]; then
-                exec "$0" --staged${_cur_branch:+ --branch "$_cur_branch"}${PR_MODE:+ --pr}${AI_ENHANCED:+ --ai}
-            fi
-        else
-            echo -e "${GREEN}✅ Tous les fichiers commités !${NC}"
-        fi
-    else
-        echo -e "${BLUE}→ Commit annulé (vous pouvez le faire manuellement).${NC}"
-    fi
+            ;;
+    esac
 fi

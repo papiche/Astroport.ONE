@@ -156,7 +156,7 @@ log_output "NODE hosts MULTIPASS : ${#NOSTRS[@]} / ZENCARD : ${#PLAYERS[@]}"
 # PAF hebdomadaire
 WEEKLYPAF=$PAF
 log_output "ZEN ECONOMY : PAF=$WEEKLYPAF ZEN/week :: NCARD=$NCARD // ZCARD=$ZCARD"
-WEEKLYG1=$(makecoord $(echo "$WEEKLYPAF / 10" | bc -l))
+WEEKLYG1=$(makecoord $(echo "$WEEKLYPAF / 10" | bc -l 2>/dev/null || echo 0))
 
 ##################################################################################
 # Système de paiement hebdomadaire depuis CASH (Réserve de Fonctionnement)
@@ -246,11 +246,11 @@ fi
 rm -rf "${_G1TMP}"
 
 # Calculate total required: 3x PAF (1x NODE + 2x CAPTAIN)
-TOTAL_PAF_REQUIRED=$(echo "scale=2; $WEEKLYPAF * 3" | bc -l)
+TOTAL_PAF_REQUIRED=$(echo "scale=2; $WEEKLYPAF * 3" | bc -l 2>/dev/null || echo 0)
 log_output "ZEN ECONOMY: Total weekly PAF required: $TOTAL_PAF_REQUIRED Ẑen (1x NODE + 2x CAPTAIN)"
 
-if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
-    if [[ $(echo "$NODECOIN >= 1" | bc -l) -eq 1 ]]; then
+if [[ $(echo "$WEEKLYG1 > 0" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
+    if [[ $(echo "$NODECOIN >= 1" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
         
         #######################################################################
         # SYSTÈME DE RÉSILIENCE ET DE DONS (Accord des Acteurs)
@@ -287,8 +287,8 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
         fi
         
         # Calculate remuneration amounts
-        CAPTAIN_REMUNERATION=$(echo "scale=2; $WEEKLYPAF * 2" | bc -l)
-        CAPTAIN_REMUNERATION_G1=$(makecoord $(echo "$CAPTAIN_REMUNERATION / 10" | bc -l))
+        CAPTAIN_REMUNERATION=$(echo "scale=2; $WEEKLYPAF * 2" | bc -l 2>/dev/null || echo 0)
+        CAPTAIN_REMUNERATION_G1=$(makecoord $(echo "$CAPTAIN_REMUNERATION / 10" | bc -l 2>/dev/null || echo 0))
         
         #######################################################################
         # PRIORITY 1: Pay NODE (1x PAF) - Infrastructure
@@ -297,7 +297,7 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
         log_output "📦 NODE PAYMENT (1x PAF = $WEEKLYPAF Ẑen)"
         
         # On vérifie si le compte de COLLECTE (CAPTAIN_DED_ZEN) peut payer
-        if [[ $(echo "$CAPTAIN_DED_ZEN >= $WEEKLYPAF" | bc -l) -eq 1 ]]; then
+        if [[ $(echo "$CAPTAIN_DED_ZEN >= $WEEKLYPAF" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
             ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$WEEKLYG1" "${NODEG1PUB}" "UP:${UPLANETG1PUB:0:8}:PAF:W${CURRENT_WEEK}:${WEEKLYPAF}Z:INCOME>NODE" 2>/dev/null
             if [[ $? -eq 0 ]]; then
                 log_output "✅ REVENUS payent NODE PAF: $WEEKLYPAF Ẑen"
@@ -322,7 +322,7 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
         
         if [[ $NODE_PAID -eq 1 ]]; then
             # Tenter de payer le Capitaine depuis le RESTE des revenus
-            if [[ $(echo "$CAPTAIN_DED_ZEN >= $CAPTAIN_REMUNERATION" | bc -l) -eq 1 ]]; then
+            if [[ $(echo "$CAPTAIN_DED_ZEN >= $CAPTAIN_REMUNERATION" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
                 ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.captain.dunikey" "$CAPTAIN_REMUNERATION_G1" "${CAPTAING1PUB}" "UP:${UPLANETG1PUB:0:8}:SALARY:W${CURRENT_WEEK}:${CAPTAIN_REMUNERATION}Z:INCOME>CPT" 2>/dev/null
                 if [[ $? -eq 0 ]]; then
                     log_output "✅ REVENUS payent Capitaine: $CAPTAIN_REMUNERATION Ẑen"
@@ -344,8 +344,8 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
             log_output "❤️  MODE BÉNÉVOLAT ACTIVÉ : Les revenus usagers sont insuffisants."
             
             # On calcule précisément ce qui manque (le don du Capitaine)
-            [[ $NODE_PAID -eq 0 ]] && LOVE_DONATION_THIS_WEEK=$(echo "$LOVE_DONATION_THIS_WEEK + $WEEKLYPAF" | bc -l)
-            [[ $CAPTAIN_PAID -eq 0 ]] && LOVE_DONATION_THIS_WEEK=$(echo "$LOVE_DONATION_THIS_WEEK + $CAPTAIN_REMUNERATION" | bc -l)
+            [[ $NODE_PAID -eq 0 ]] && LOVE_DONATION_THIS_WEEK=$(echo "$LOVE_DONATION_THIS_WEEK + $WEEKLYPAF" | bc -l 2>/dev/null || echo 0)
+            [[ $CAPTAIN_PAID -eq 0 ]] && LOVE_DONATION_THIS_WEEK=$(echo "$LOVE_DONATION_THIS_WEEK + $CAPTAIN_REMUNERATION" | bc -l 2>/dev/null || echo 0)
         fi
 
         log_output "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -355,13 +355,13 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l) -eq 1 ]]; then
         # Comptabilise le bénévolat et le diffuse sur NOSTR pour remercier
         # publiquement le Capitaine (transparence des Communs)
         #######################################################################
-        if [[ $(echo "$LOVE_DONATION_THIS_WEEK > 0" | bc -l) -eq 1 ]]; then
+        if [[ $(echo "$LOVE_DONATION_THIS_WEEK > 0" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
             TODATE=$(date +%Y-%m-%d)
             log_output "❤️  Mise à jour du Love Ledger : +${LOVE_DONATION_THIS_WEEK} Ẑen offerts aux Communs"
 
             # Mise à jour du JSON de Gratitude
             current_total=$(jq -r '.total_donated_zen' "$LOVE_LEDGER" 2>/dev/null || echo "0")
-            new_total=$(echo "scale=2; $current_total + $LOVE_DONATION_THIS_WEEK" | bc -l)
+            new_total=$(echo "scale=2; $current_total + $LOVE_DONATION_THIS_WEEK" | bc -l 2>/dev/null || echo 0)
 
             jq --arg date "$TODATE" \
                --arg amount "$LOVE_DONATION_THIS_WEEK" \
@@ -501,7 +501,7 @@ Total offert à la communauté : ${new_total} Ẑen. 🙏
         else
             log_output "║   👨‍✈️ CAPTAIN : ❤️  $CAPTAIN_REMUNERATION Ẑen offerts (temps bénévole)"
         fi
-        if [[ $(echo "$LOVE_DONATION_THIS_WEEK > 0" | bc -l) -eq 1 ]]; then
+        if [[ $(echo "$LOVE_DONATION_THIS_WEEK > 0" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
             log_output "╠══════════════════════════════════════════════════════════════════════╣"
             log_output "║   🎁 DON AUX COMMUNS CETTE SEMAINE : ${LOVE_DONATION_THIS_WEEK} Ẑen (~€)"
             if [[ -f "$LOVE_LEDGER" ]]; then
@@ -560,8 +560,8 @@ Total offert à la communauté : ${new_total} Ẑen. 🙏
                 
                 if [[ $WEEKS_ELAPSED -lt $DEPRECIATION_WEEKS ]]; then
                     # Calculate weekly depreciation amount
-                    WEEKLY_DEPRECIATION=$(echo "scale=2; $MACHINE_VALUE / $DEPRECIATION_WEEKS" | bc -l)
-                    WEEKLY_DEPRECIATION_G1=$(makecoord $(echo "$WEEKLY_DEPRECIATION / 10" | bc -l))
+                    WEEKLY_DEPRECIATION=$(echo "scale=2; $MACHINE_VALUE / $DEPRECIATION_WEEKS" | bc -l 2>/dev/null || echo 0)
+                    WEEKLY_DEPRECIATION_G1=$(makecoord $(echo "$WEEKLY_DEPRECIATION / 10" | bc -l 2>/dev/null || echo 0))
                     
                     # Check CAPITAL + AMORTISSEMENT balances en parallèle
                     CAPITAL_G1PUB=$(cat "$HOME/.zen/game/uplanet.CAPITAL.dunikey" | grep "pub:" | cut -d ' ' -f 2)
@@ -576,18 +576,18 @@ Total offert à la communauté : ${new_total} Ẑen. 🙏
                     CAPITAL_ZEN=$(echo "scale=1; (${CAPITAL_COIN} - 1) * 10" | bc 2>/dev/null || echo "0")
 
                     # Calculate values for logging
-                    TOTAL_DEPRECIATED=$(echo "scale=2; $WEEKLY_DEPRECIATION * $WEEKS_ELAPSED" | bc -l)
-                    RESIDUAL_VALUE=$(echo "scale=2; $MACHINE_VALUE - $TOTAL_DEPRECIATED" | bc -l)
+                    TOTAL_DEPRECIATED=$(echo "scale=2; $WEEKLY_DEPRECIATION * $WEEKS_ELAPSED" | bc -l 2>/dev/null || echo 0)
+                    RESIDUAL_VALUE=$(echo "scale=2; $MACHINE_VALUE - $TOTAL_DEPRECIATED" | bc -l 2>/dev/null || echo 0)
 
                     AMORT_COIN="$_amr"
                     AMORT_ZEN=$(echo "scale=1; ($AMORT_COIN - 1) * 10" | bc)
                     
-                    if [[ $(echo "$CAPITAL_ZEN >= $WEEKLY_DEPRECIATION" | bc -l) -eq 1 ]]; then
+                    if [[ $(echo "$CAPITAL_ZEN >= $WEEKLY_DEPRECIATION" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
                         # Transfer depreciation from CAPITAL → AMORTISSEMENT (Compte 21 → Compte 28)
                         ${MY_PATH}/../tools/PAYforSURE.sh "$HOME/.zen/game/uplanet.CAPITAL.dunikey" "$WEEKLY_DEPRECIATION_G1" "${AMORT_G1PUB}" "UP:${UPLANETG1PUB:0:8}:AMORT:W${CURRENT_WEEK}:${WEEKLY_DEPRECIATION}Z:C21>C28" 2>/dev/null
                         
                         if [[ $? -eq 0 ]]; then
-                            NEW_AMORT_ZEN=$(echo "scale=2; $AMORT_ZEN + $WEEKLY_DEPRECIATION" | bc -l)
+                            NEW_AMORT_ZEN=$(echo "scale=2; $AMORT_ZEN + $WEEKLY_DEPRECIATION" | bc -l 2>/dev/null || echo 0)
                             log_output "✅ DEPRECIATION: $WEEKLY_DEPRECIATION Ẑen → AMORTISSEMENT (Compte 28)"
                             log_output "   Valeur Brute (Compte 21): $MACHINE_VALUE Ẑen"
                             log_output "   Amortissements Cumulés (Compte 28): ~$NEW_AMORT_ZEN Ẑen"
@@ -629,18 +629,18 @@ Total offert à la communauté : ${new_total} Ẑen. 🙏
                 [[ -z $IS_THRESHOLD ]] && IS_THRESHOLD=42500
                 [[ -z $IS_RATE_REDUCED ]] && IS_RATE_REDUCED=15
                 [[ -z $IS_RATE_NORMAL ]] && IS_RATE_NORMAL=25
-                MIN_REQUIRED=$(echo "scale=2; $WEEKLYPAF + $CAPTAIN_REMUNERATION" | bc -l)
+                MIN_REQUIRED=$(echo "scale=2; $WEEKLYPAF + $CAPTAIN_REMUNERATION" | bc -l 2>/dev/null || echo 0)
                 TOTAL_ALLOCATIONS=0
                 TOTAL_NEEDED=$MIN_REQUIRED
                 TAX_RATE_USED=$IS_RATE_REDUCED
-                DEFICIT=$(echo "scale=2; $TOTAL_PAF_REQUIRED - $CASH_ZEN" | bc -l)
-                [[ $(echo "$DEFICIT < 0" | bc -l) -eq 1 ]] && DEFICIT="0.00"
-                IMPACT_10_MULTIPASS=$(echo "scale=2; 10 * $NCARD" | bc -l)
-                IMPACT_5_ZENCARDS=$(echo "scale=2; 5 * $ZCARD" | bc -l)
-                IMPACT_TOTAL_REVENUE=$(echo "scale=2; $IMPACT_10_MULTIPASS + $IMPACT_5_ZENCARDS" | bc -l)
+                DEFICIT=$(echo "scale=2; $TOTAL_PAF_REQUIRED - $CASH_ZEN" | bc -l 2>/dev/null || echo 0)
+                [[ $(echo "$DEFICIT < 0" | bc -l 2>/dev/null || echo 0) -eq 1 ]] && DEFICIT="0.00"
+                IMPACT_10_MULTIPASS=$(echo "scale=2; 10 * $NCARD" | bc -l 2>/dev/null || echo 0)
+                IMPACT_5_ZENCARDS=$(echo "scale=2; 5 * $ZCARD" | bc -l 2>/dev/null || echo 0)
+                IMPACT_TOTAL_REVENUE=$(echo "scale=2; $IMPACT_10_MULTIPASS + $IMPACT_5_ZENCARDS" | bc -l 2>/dev/null || echo 0)
                 SOCIETAIRE_SHARE_PRICE=50
                 SOCIETAIRE_SHARE_PRICE_EUR=50
-                SOCIETAIRE_CAPITAL=$(echo "scale=2; 10 * $SOCIETAIRE_SHARE_PRICE" | bc -l)
+                SOCIETAIRE_CAPITAL=$(echo "scale=2; 10 * $SOCIETAIRE_SHARE_PRICE" | bc -l 2>/dev/null || echo 0)
                 CAPITAL_BALANCE="0"; AMORT_BALANCE="0"
                 MACHINE_VALUE_REPORT="${MACHINE_VALUE:-0}"
                 # Calcul du pourcentage d'amortissement pour le template
@@ -768,13 +768,13 @@ fourweeks_paf_burn_and_convert() {
     fi
     
     # Only burn if NODE has sufficient balance and received PAF
-    if [[ $(echo "$NODECOIN >= 1" | bc -l) -eq 1 && $(echo "$NODEZEN > 0" | bc -l) -eq 1 ]]; then
+    if [[ $(echo "$NODECOIN >= 1" | bc -l 2>/dev/null || echo 0) -eq 1 && $(echo "$NODEZEN > 0" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
         # Calculate 4-week PAF (weekly PAF * 4)
-        FOURWEEKS_PAF=$(echo "scale=2; $WEEKLYPAF * 4" | bc -l)
-        FOURWEEKS_PAF_G1=$(makecoord $(echo "$FOURWEEKS_PAF / 10" | bc -l))
+        FOURWEEKS_PAF=$(echo "scale=2; $WEEKLYPAF * 4" | bc -l 2>/dev/null || echo 0)
+        FOURWEEKS_PAF_G1=$(makecoord $(echo "$FOURWEEKS_PAF / 10" | bc -l 2>/dev/null || echo 0))
         
         # Check if NODE has enough for 4-week burn
-        if [[ $(echo "$NODEZEN >= $FOURWEEKS_PAF" | bc -l) -eq 1 ]]; then
+        if [[ $(echo "$NODEZEN >= $FOURWEEKS_PAF" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
             log_output "ZEN ECONOMY: Processing 4-week PAF burn..."
             log_output "  Period: $period_key (4-week cycle)"
             log_output "  4-week PAF: $FOURWEEKS_PAF Ẑen ($FOURWEEKS_PAF_G1 G1)"
@@ -842,7 +842,7 @@ fourweeks_paf_burn_and_convert() {
 request_opencollective_conversion() {
     local zen_amount="$1"
     local period="${2:-$(date +%Y%m%d)}"
-    local euro_amount=$(echo "scale=2; $zen_amount * 1" | bc -l)  # 1Ẑ = 1€
+    local euro_amount=$(echo "scale=2; $zen_amount * 1" | bc -l 2>/dev/null || echo 0)  # 1Ẑ = 1€
     local euro_cents=$(echo "$euro_amount * 100" | bc | cut -d. -f1)
 
     log_output "ZEN ECONOMY: Requesting OpenCollective conversion..."
@@ -1079,7 +1079,7 @@ fi
 #######################################################################
 echo "$WEEK_KEY:RESILIENCE${RESILIENCE_LEVEL:-0}:NODE${NODE_PAID:-0}:CPT${CAPTAIN_PAID:-0}" > "$PAYMENT_MARKER"
 log_output "ZEN ECONOMY: Semaine $WEEK_KEY complétée — Niveau de Résilience: ${RESILIENCE_LEVEL:-0}"
-if [[ $(echo "${LOVE_DONATION_THIS_WEEK:-0} > 0" | bc -l) -eq 1 ]]; then
+if [[ $(echo "${LOVE_DONATION_THIS_WEEK:-0} > 0" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
     log_output "❤️  Don aux Communs cette semaine : ${LOVE_DONATION_THIS_WEEK} Ẑen (voir Love Ledger)"
 fi
 log_output "========================================================================"

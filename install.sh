@@ -1,4 +1,5 @@
 #!/bin/bash
+umask 077
 ############################################################ install.sh
 # Version: 0.5 (Modifié pour forcer MAJ apt/pip)
 # License: AGPL-3.0 (https://choosealicense.com/licenses/agpl-3.0/)
@@ -79,6 +80,7 @@ export CUSTOM_EMAIL_DOMAIN="${CUSTOM_EMAIL_DOMAIN:-${CAPTAIN_EMAIL_DOMAIN:-}}"
 
 ########################################################################
 echo "## HARDWARE CHECK (détection avant toute question) ##"
+[[ $(df . | awk "NR==2 {print $4}") -lt 2000000 ]] && echo "Espace disque faible" && exit 1
 ########################################################################
 _CPU=$(grep -c "processor" /proc/cpuinfo 2>/dev/null || echo 1)
 _RAM=$(awk '/MemTotal/ {printf "%.0f", $2/1048576}' /proc/meminfo 2>/dev/null || echo 0)

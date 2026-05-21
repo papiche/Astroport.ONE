@@ -424,7 +424,7 @@ if [[ -s "$_IPFSID_CACHE" ]] && \
    [[ $(( $(date +%s) - $(stat -c %Y "$_IPFSID_CACHE" 2>/dev/null || echo 0) )) -lt 3600 ]]; then
     IPFSNODEID=$(cat "$_IPFSID_CACHE")
 else
-    IPFSNODEID="$(myIpfsPeerId)"
+    [[ -z "$IPFSNODEID" ]] && IPFSNODEID="$(myIpfsPeerId)"
     if [[ -n "$IPFSNODEID" ]]; then
         mkdir -p "$HOME/.zen/tmp"
         echo "$IPFSNODEID" > "$_IPFSID_CACHE"

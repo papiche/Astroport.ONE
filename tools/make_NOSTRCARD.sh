@@ -1,4 +1,5 @@
 #!/bin/bash
+umask 077
 ################################################################################
 # Script: Make_NOSTRCARD.sh
 # Description: Crée un MULTIPASS - Identité décentralisée universelle
