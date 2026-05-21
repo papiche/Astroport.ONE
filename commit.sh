@@ -139,10 +139,9 @@ interactive_stage() {
         return 1
     fi
 
-    # ── Suggestion IA de regroupement sémantique (si --ai) ───────────────────
-    if [[ "${AI_ENHANCED:-false}" == "true" ]] && [[ -f "${QUESTION_PY:-}" ]]; then
+    # ── Suggestion IA de regroupement sémantique (si --ai, >1 fichier) ─────────
+    if [[ "${AI_ENHANCED:-false}" == "true" ]] && [[ -f "${QUESTION_PY:-}" ]] && [[ $_total -gt 1 ]]; then
         echo ""
-        echo -e "${BLUE}🤖 Analyse sémantique des fichiers (--ai)...${NC}"
         local _gp_list=""
         for i in $(seq 1 "$_total"); do
             _gp_list+="  [$i] ${_fmap[$i]}  (${_fstats[${_fmap[$i]}]:-})\n"
@@ -174,14 +173,7 @@ GPROMPT
     fi
 
     echo ""
-    echo -e "${CYAN}Fichiers à stager pour ce commit :${NC}"
-    echo -e "  ${GREEN}tout${NC} / ${GREEN}all${NC}   — tous ($_total fichiers)"
-    echo -e "  ${GREEN}1-5${NC}          — plage continue"
-    echo -e "  ${GREEN}1,3,7${NC}        — sélection individuelle"
-    echo -e "  ${GREEN}aujourd'hui${NC}  — modifiés aujourd'hui"
-    echo -e "  ${GREEN}Entrée${NC}       — annuler"
-    echo ""
-    echo -ne "${YELLOW}Sélection : ${NC}"
+    echo -ne "${CYAN}Sélection [tout/N,M/N-M/aujourd'hui/Entrée=annuler] :${NC} "
     read -r _sel
 
     [[ -z "$_sel" ]] && return 1
@@ -315,38 +307,8 @@ RVPROMPT
                 _review=$(timeout 35 python3 "$QUESTION_PY" --model "$AI_MODEL" --ctx 16384 \
                     --prompt-file "$_rv_file" --temperature 0.1 2>/dev/null) || true
             else
-                # Sélection du profil ~/.claude-* si plusieurs comptes existent
-                local _claude_cfg="${HOME}/.claude"
-                local _accs=()
-                for _d in "${HOME}"/.claude-*/; do
-                    [[ -d "$_d" ]] || continue
-                    _accs+=("$(basename "$_d" | sed 's/^\.claude-//')")
-                done
-                if [[ ${#_accs[@]} -gt 1 ]]; then
-                    echo -e "${CYAN}Compte Claude à utiliser pour la revue :${NC}"
-                    for _i in "${!_accs[@]}"; do
-                        local _mk=""; [[ "${HOME}/.claude-${_accs[$_i]}" == "$(readlink "${HOME}/.claude" 2>/dev/null)" ]] && _mk=" ✦"
-                        local _rhist="${HOME}/.claude-${_accs[$_i]}/history.jsonl"
-                        local _rinfo=""
-                        [[ -f "$_rhist" ]] && _rinfo=$(python3 -c "
-import json
-from datetime import datetime
-try:
-    lines=[l for l in open('$_rhist').readlines() if l.strip()]
-    if lines:
-        d=json.loads(lines[-1])
-        ts=d.get('timestamp',0)
-        dt=datetime.fromtimestamp(ts/1000).strftime('%Y-%m-%d')
-        print(f'dernière util.: {dt} ({len(lines)} req.)')
-except: pass
-" 2>/dev/null || true)
-                        printf "  [%d] %s%s%s\n" "$((_i+1))" "${_accs[$_i]}" "$_mk" "${_rinfo:+ — ${_rinfo}}"
-                    done
-                    read -r -p "Choix [Entrée = défaut] : " _acc_choice </dev/tty
-                    if [[ "$_acc_choice" =~ ^[0-9]+$ ]] && (( _acc_choice >= 1 && _acc_choice <= ${#_accs[@]} )); then
-                        _claude_cfg="${HOME}/.claude-${_accs[$((_acc_choice-1))]}"
-                    fi
-                fi
+                # Hérite du compte sélectionné pour le résumé (CLAUDE_CONFIG_DIR exporté)
+                local _claude_cfg="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
                 _review=$(CLAUDE_CONFIG_DIR="$_claude_cfg" \
                     "$_claude_bin" --print < "$_rv_file" 2>/dev/null) || true
                 # Détection quota
@@ -663,7 +625,7 @@ if git remote get-url origin &>/dev/null; then
 fi
 
 # ── Collecte du diff ──────────────────────────────────────────────────────────
-echo -e "${BLUE}📊 Collecte des modifications ($SINCE_LABEL)...${NC}"
+dbg "Collecte des modifications ($SINCE_LABEL)"
 
 DIFF_CONTENT=""
 DIFF_RAW=""
@@ -766,7 +728,7 @@ if [[ "$VERBOSE" == "true" ]]; then
     echo -e "\033[2m[VERBOSE] ────────────────────────────────────────────────────────\033[0m" >&2
 fi
 
-echo -e "${GREEN}✅ Modifications collectées${NC}"
+dbg "Modifications collectées"
 
 # ── Résumé basic sans IA ──────────────────────────────────────────────────────
 basic_summary() {
@@ -941,10 +903,6 @@ fi
 
 # ── Affichage ─────────────────────────────────────────────────────────────────
 echo ""
-echo -e "${CYAN}╔══════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║              RÉSUMÉ DES MODIFICATIONS                       ║${NC}"
-echo -e "${CYAN}╚══════════════════════════════════════════════════════════════╝${NC}"
-echo ""
 echo -e "$SUMMARY"
 echo ""
 
@@ -971,11 +929,7 @@ fi
 
 dbg "COMMIT_MSG extrait : '$COMMIT_MSG'"
 
-if [[ "$CLIPBOARD_OK" == "true" ]]; then
-    echo -e "${GREEN}📋 Résumé copié dans le presse-papier !${NC}"
-else
-    echo -e "${YELLOW}⚠️  Presse-papier indisponible (xclip/xsel non trouvé).${NC}"
-fi
+dbg "clipboard=${CLIPBOARD_OK}"
 
 # ── Proposition de commit ─────────────────────────────────────────────────────
 if [[ "$MODE" == "staged" && -n "$COMMIT_MSG" ]]; then
@@ -986,23 +940,16 @@ if [[ "$MODE" == "staged" && -n "$COMMIT_MSG" ]]; then
     echo -e "${YELLOW}Message de commit suggéré :${NC}"
     echo -e "${GREEN}  $COMMIT_MSG${NC}"
     echo ""
-    echo -ne "${CYAN}Conclusion / note à ajouter ? (Entrée pour garder tel quel) : ${NC}"
-    read -r _extra
-    if [[ -n "$_extra" ]]; then
-        COMMIT_MSG="${COMMIT_MSG}
-
-${_extra}"
-        echo -e "${GREEN}  → Message final :${NC}"
-        echo -e "${GREEN}  $COMMIT_MSG${NC}"
-        echo ""
-    fi
-    echo -ne "${YELLOW}Valider ce commit ? [o / N / r=refaire la sélection] : ${NC}"
+    echo -e "${YELLOW}Message :${NC} ${GREEN}$COMMIT_MSG${NC}"
+    echo -ne "${CYAN}Note ? [Entrée=commit / r=refaire / n=annuler] :${NC} "
     read -r confirm
     if [[ "$confirm" =~ ^[rR]$ ]]; then
         echo -e "${BLUE}↩️  Dé-staging et nouvelle sélection...${NC}"
         git reset HEAD 2>/dev/null || true
         exec "$0" --staged${_cur_branch:+ --branch "$_cur_branch"}${PR_MODE:+ --pr}${AI_ENHANCED:+ --ai}
-    elif [[ "$confirm" =~ ^[oOyY]$ ]]; then
+    elif [[ "$confirm" =~ ^[nN]$ ]]; then
+        echo -e "${YELLOW}Annulé.${NC}"
+    elif [[ -z "$confirm" || "$confirm" =~ ^[oOyY]$ ]]; then
         git commit -m "$COMMIT_MSG"
         echo -e "${GREEN}✅ Commit créé.${NC}"
         _pushed=false
