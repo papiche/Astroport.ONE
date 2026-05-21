@@ -441,8 +441,9 @@ RVPROMPT
                                 echo -e "${YELLOW}[INFO]${NC} Aucune modification non stagée — poursuite du commit."
                             fi
                         else
-                            echo -e "${YELLOW}💡 issue.sh create a échoué (credentials ?) — correction manuelle.${NC}"
-                            echo -e "${YELLOW}   issue.sh analyze --ai claude${NC}"
+                            echo -e "${YELLOW}💡 Création issue échouée — GIT_TOKEN manquant ou repo inaccessible.${NC}"
+                            echo -e "   Créez manuellement puis lancez :"
+                            echo -e "   ${CYAN}issue.sh analyze <numéro> --ai claude${NC}"
                         fi
                     fi
                 else
@@ -837,7 +838,8 @@ PROMPT
             result=""
             _sum_cfg=$(_claude_pick_alternate "$_sum_cfg")
             [[ -n "$_sum_cfg" ]] && {
-                export CLAUDE_CONFIG_DIR="$_sum_cfg"
+                # Stocker le compte choisi dans un fichier pour propager hors du sous-shell
+                echo "$_sum_cfg" > "/tmp/commit_claude_cfg_${$}.tmp"
                 result=$(CLAUDE_CONFIG_DIR="$_sum_cfg" claude --print < "$prompt_file" 2>/dev/null) || true
             }
         fi
@@ -891,6 +893,13 @@ if [[ -f "$QUESTION_PY" ]] || { [[ "${AI_BACKEND:-ollama}" == "claude" ]] && com
     fi
 
     if SUMMARY=$(generate_ai_summary) && [[ -n "$SUMMARY" ]]; then
+        # Récupérer le compte Claude éventuellement choisi dans le sous-shell
+        _cfg_tmp="/tmp/commit_claude_cfg_${$}.tmp"
+        if [[ -f "$_cfg_tmp" ]]; then
+            export CLAUDE_CONFIG_DIR="$(cat "$_cfg_tmp")"
+            rm -f "$_cfg_tmp"
+            dbg "CLAUDE_CONFIG_DIR propagé depuis sous-shell : ${CLAUDE_CONFIG_DIR##*/}"
+        fi
         echo -e "${GREEN}✅ Résumé IA généré${NC}"
     else
         echo -e "${YELLOW}⚠️  IA indisponible, résumé basique généré${NC}"
