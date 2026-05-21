@@ -326,10 +326,23 @@ RVPROMPT
                     echo -e "${CYAN}Compte Claude à utiliser pour la revue :${NC}"
                     for _i in "${!_accs[@]}"; do
                         local _mk=""; [[ "${HOME}/.claude-${_accs[$_i]}" == "$(readlink "${HOME}/.claude" 2>/dev/null)" ]] && _mk=" ✦"
-                        printf "  [%d] %s%s\n" "$((_i+1))" "${_accs[$_i]}" "$_mk"
+                        local _rhist="${HOME}/.claude-${_accs[$_i]}/history.jsonl"
+                        local _rinfo=""
+                        [[ -f "$_rhist" ]] && _rinfo=$(python3 -c "
+import json
+from datetime import datetime
+try:
+    lines=[l for l in open('$_rhist').readlines() if l.strip()]
+    if lines:
+        d=json.loads(lines[-1])
+        ts=d.get('timestamp',0)
+        dt=datetime.fromtimestamp(ts/1000).strftime('%Y-%m-%d')
+        print(f'dernière util.: {dt} ({len(lines)} req.)')
+except: pass
+" 2>/dev/null || true)
+                        printf "  [%d] %s%s%s\n" "$((_i+1))" "${_accs[$_i]}" "$_mk" "${_rinfo:+ — ${_rinfo}}"
                     done
-                    echo -ne "Choix [Entrée = défaut] : "
-                    read -r _acc_choice
+                    read -r -p "Choix [Entrée = défaut] : " _acc_choice </dev/tty
                     if [[ "$_acc_choice" =~ ^[0-9]+$ ]] && (( _acc_choice >= 1 && _acc_choice <= ${#_accs[@]} )); then
                         _claude_cfg="${HOME}/.claude-${_accs[$((_acc_choice-1))]}"
                     fi

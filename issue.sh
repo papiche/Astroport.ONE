@@ -1118,8 +1118,27 @@ except: pass
 
         # Helper : commit + fermer l'issue (réutilisé par [a] et [x])
         _wf_commit_close() {
-            git diff --name-only 2>/dev/null | xargs -r git add 2>/dev/null || true
-            git diff --cached --name-only 2>/dev/null | xargs -r git add 2>/dev/null || true
+            # Stage seulement les fichiers liés à l'issue (EXTRA_FILES), fallback = tout
+            local _cwd; _cwd=$(pwd)
+            local _issue_mods=()
+            for _ef in "${EXTRA_FILES[@]:-}"; do
+                [[ -z "$_ef" ]] && continue
+                local _rel="${_ef#"${_cwd}/"}"
+                _rel="${_rel#./}"
+                { git diff --name-only 2>/dev/null; git diff --cached --name-only 2>/dev/null; } \
+                    | grep -qxF "$_rel" && _issue_mods+=("$_rel")
+            done
+            # Dédoublonnage rapide
+            local _unique=()
+            for _f in "${_issue_mods[@]:-}"; do
+                [[ " ${_unique[*]:-} " == *" $_f "* ]] || _unique+=("$_f")
+            done
+            if [[ ${#_unique[@]} -gt 0 ]]; then
+                git add "${_unique[@]}" 2>/dev/null || true
+            else
+                git diff --name-only 2>/dev/null | xargs -r git add 2>/dev/null || true
+                git diff --cached --name-only 2>/dev/null | xargs -r git add 2>/dev/null || true
+            fi
             local _cmsg="fix(#${NUM}): ${ISSUE_TITLE}"
             if git commit -m "$_cmsg" 2>/dev/null; then
                 echo -e "${GREEN}✓ Commit : ${_cmsg}${NC}"
@@ -1140,12 +1159,20 @@ except: pass
         while ! $_wf_done; do
             echo ""
             echo -e "══════════════════════════════════════════════════════"
-            _wf_pending=$(git diff --name-only 2>/dev/null)
+            # Compter uniquement les fichiers de l'issue modifiés (pas tous les unstaged)
+            local _wf_issue_mods=0
+            local _cwd2; _cwd2=$(pwd)
+            for _ef in "${EXTRA_FILES[@]:-}"; do
+                [[ -z "$_ef" ]] && continue
+                local _rel2="${_ef#"${_cwd2}/"}"
+                _rel2="${_rel2#./}"
+                git diff --name-only 2>/dev/null | grep -qxF "$_rel2" && (( _wf_issue_mods++ )) || true
+            done
             _wf_default="a"
-            [[ -n "$_wf_pending" ]] && _wf_default="x"
+            [[ $_wf_issue_mods -gt 0 ]] && _wf_default="x"
 
             echo -e "${YELLOW}#${NUM}${NC} ${ISSUE_TITLE}"
-            [[ -n "$_wf_pending" ]] && echo -e "  ${GREEN}[x]${NC} Commiter le fix + fermer ($(echo "$_wf_pending" | wc -l | tr -d ' ') fichier(s) modifié(s))"
+            [[ $_wf_issue_mods -gt 0 ]] && echo -e "  ${GREEN}[x]${NC} Commiter le fix + fermer (${_wf_issue_mods} fichier(s) modifié(s))"
             [[ -n "$_wf_claude" ]] && echo -e "  ${GREEN}[a]${NC} Auto-fix Claude — édite les fichiers directement"
             echo -e "  ${GREEN}[f]${NC} Fix texte (blocs AVANT/APRÈS → patch)"
             echo -e "  ${GREEN}[c]${NC} Commenter l'analyse sur GitHub"

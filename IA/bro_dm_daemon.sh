@@ -1137,6 +1137,16 @@ _send_welcome_messages
 ## Attendre la fin des traitements initiaux avant la boucle inotifywait
 wait
 
+## ── Dispatch atomique (utilisé par polling ET par inotifywait-retry) ────
+_dispatch_file() {
+    local _src="$1"
+    [[ -f "$_src" ]] || return
+    # Move atomique : si deux appelants concurrents tentent le mv, un seul gagne
+    local _dst="${_src%.json}.dispatching"
+    mv "$_src" "$_dst" 2>/dev/null || return  # l'autre process a déjà pris le fichier
+    _process_event_async "$_dst" &
+}
+
 ## ── Boucle inotifywait avec fallback polling ─────────────────────────
 _inotify_ok=false
 command -v inotifywait &>/dev/null && _inotify_ok=true
@@ -1147,23 +1157,18 @@ while [[ "$_BRO_CLEAN_STOP" != true ]]; do
         while IFS= read -r _fname; do
             [[ "$_BRO_CLEAN_STOP" == true ]] && break
             [[ "$_fname" == *.json ]] || continue
-            _process_event_async "$QUEUE_DIR/$_fname" &
+            _dispatch_file "$QUEUE_DIR/$_fname"
         done
         # inotifywait a terminé (dépassement inotify, remontage FS, SIGPIPE…)
         [[ "$_BRO_CLEAN_STOP" == true ]] && break
         _log "⚠️  inotifywait terminé — retry dans 5s"
+        # Traiter les fichiers arrivés pendant la coupure
+        for _f in "$QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
         sleep 5
     else
-        # Fallback : polling toutes les 10s
-        for _f in "$QUEUE_DIR"/*.json; do
-            [[ -f "$_f" ]] || continue
-            _process_event_async "$_f" &
-        done
+        # Fallback polling : move atomique garantit un seul traitement par fichier
+        for _f in "$QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
         sleep 10
     fi
-    # Traiter les éventuels fichiers arrivés pendant le redémarrage
-    for _f in "$QUEUE_DIR"/*.json; do
-        [[ -f "$_f" ]] && _process_event_async "$_f" &
-    done
 done
 wait
