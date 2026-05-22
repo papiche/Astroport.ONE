@@ -445,8 +445,7 @@ def build_code_summary(code_json: dict, max_tokens: int = 32000) -> str:
 
     for i, f in enumerate(code_json.get("files", [])[:20]):  # max 20 fichiers
         content = ''.join(c for c in f.get('content', '') 
-        if c.isprintable() or c in '')
-            is_test_file = f.get('_test_file', False)
+        is_test_file = f.get('_test_file', False)
         # R2: Tronquer les dépendances (pas le script principal ni les tests) si contexte trop grand
         if trim_deps and i > 0 and not is_test_file:
             lines = content.split('\n')
