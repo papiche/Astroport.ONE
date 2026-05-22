@@ -115,9 +115,13 @@ show_help() {
     echo -e "  ${GREEN}repos${NC}"
     echo -e "              Lister les repos de ${GIT_OWNER}"
     echo -e "  ${GREEN}analyze${NC} <numéro> [--ai ollama|claude|gemini] [--model M] [--template T]"
-    echo -e "              [--depth N] [--maxtoken N] [--verbose] [fichiers...]"
+    echo -e "              [--depth N] [--maxtoken N] [--verbose] [--auto] [--comment] [--close]"
+    echo -e "              [fichiers...]"
     echo -e "              Analyse une issue avec l'IA et propose un plan de correction"
     echo -e "              CLAUDE.md du projet est injecté automatiquement comme contexte"
+    echo -e "              --auto    : mode non-interactif (CI/cron, pas de prompts)"
+    echo -e "              --comment : poster l'analyse en commentaire GitHub (avec --auto)"
+    echo -e "              --close   : fermer l'issue après analyse (avec --auto)"
     echo -e "  ${GREEN}pr${NC}      <numéro> [--base BRANCH] [--title \"titre\"]"
     echo -e "              Créer une Pull Request référençant l'issue depuis la branche courante"
     echo ""
@@ -198,6 +202,22 @@ _api() {
     body=$(echo "$resp" | head -n -1)
 
     if [[ "$http_code" -lt 200 ]] || [[ "$http_code" -ge 400 ]]; then
+        # Fallback gh CLI pour les 403 sur écriture (PAT sans scope issues:write)
+        if [[ "$http_code" -eq 403 ]] && [[ "$method" != "GET" ]] && command -v gh &>/dev/null; then
+            [[ "$VERBOSE" == "true" ]] && echo -e "\033[2m[API] 403 → fallback gh api ${method} ${endpoint}\033[0m" >&2
+            local _gh_args=(-X "$method" "$endpoint")
+            if [[ -n "$data" ]]; then
+                # Convertir le payload JSON en flags --field pour gh api
+                while IFS= read -r _kv; do
+                    local _k _v
+                    _k=$(echo "$_kv" | jq -r 'keys[0]')
+                    _v=$(echo "$_kv" | jq -r '.[keys[0]]')
+                    _gh_args+=(-f "${_k}=${_v}")
+                done < <(echo "$data" | jq -c 'to_entries[] | {(.key): .value}')
+            fi
+            local _gh_out
+            _gh_out=$(gh api "${_gh_args[@]}" 2>/dev/null) && { echo "$_gh_out"; return 0; } || true
+        fi
         echo -e "${RED}[ERREUR]${NC} HTTP ${http_code}" >&2
         echo "$body" | jq -r '.message // .' 2>/dev/null >&2 || echo "$body" >&2
         exit 1
@@ -310,12 +330,13 @@ case "$COMMAND" in
             done
         fi
         echo ""
-        if [[ "$count" -gt 0 && "$STATE" == "open" ]]; then
+        _lact=""
+        if [[ "$count" -gt 0 && "$STATE" == "open" ]] && tty -s 2>/dev/null; then
             echo -ne "${CYAN}[t=triage / numéro=analyser / Entrée=quitter] :${NC} "
-            read -r _lact </dev/tty
+            read -r _lact </dev/tty || true
             case "${_lact:-}" in
                 t)   exec "$0" triage ;;
-                [0-9]*) exec "$0" analyze "$_lact" --ai claude ;;
+                [0-9]*) exec "$0" analyze "$_lact" ;;
             esac
         fi
         ;;
@@ -412,7 +433,7 @@ TPROMPT
                     echo -ne "  ${CYAN}[Entrée=suivant / a=analyser / c=fermer] :${NC} "
                     read -r _act </dev/tty
                     case "${_act:-}" in
-                        a) "$0" analyze "$_n" --ai claude ;;
+                        a) "$0" analyze "$_n" ;;
                         c)
                             read -r -p "  Raison : " _cr_reason </dev/tty
                             "$0" close "$_n" "${_cr_reason:-fermée manuellement}" 2>/dev/null || true
@@ -423,7 +444,7 @@ TPROMPT
                     read -r _act </dev/tty
                     case "${_act:-}" in
                         k) echo -e "  ${GREEN}→ gardée${NC}" ;;
-                        a) "$0" analyze "$_n" --ai claude ;;
+                        a) "$0" analyze "$_n" ;;
                         *)
                             _cb="Triage automatique : **${_vtype}** — ${_vreason}"
                             "$0" close "$_n" "$_cb" 2>/dev/null \
@@ -568,6 +589,9 @@ TPROMPT
         PROMPT_TEMPLATE="issue_analyze"
         LOCAL_VERBOSE=false
         MINIFY=false
+        AUTO_MODE=false
+        AUTO_COMMENT=false
+        AUTO_CLOSE=false
         declare -a EXTRA_FILES=()
 
         while [[ $# -gt 0 ]]; do
@@ -579,6 +603,9 @@ TPROMPT
                 --depth)       shift; CPSCRIPT_DEPTH="${1:-1}"; shift ;;
                 --maxtoken)    shift; CPSCRIPT_MAXTOKEN="${1:-12000}"; shift ;;
                 --minify)      MINIFY=true; shift ;;
+                --auto)        AUTO_MODE=true; shift ;;
+                --comment)     AUTO_COMMENT=true; shift ;;
+                --close)       AUTO_CLOSE=true; shift ;;
                 --*)           echo -e "${YELLOW}[AVERTISSEMENT]${NC} Option inconnue ignorée : $1" >&2; shift ;;
                 *)             EXTRA_FILES+=("$1"); shift ;;
             esac
@@ -600,13 +627,27 @@ TPROMPT
         ISSUE_TITLE=$(echo "$issue_json" | jq -r '.title')
         ISSUE_BODY=$(echo  "$issue_json" | jq -r '.body // ""' | head -c 4000)
 
-        # Récupérer les commentaires (contexte supplémentaire)
+        # Récupérer et afficher les commentaires existants
         comments_json=$(_api GET "/repos/${REPO}/issues/${NUM}/comments")
         ISSUE_COMMENTS=$(echo "$comments_json" | jq -r '.[].body // ""' | head -c 2000)
+        _c_count=$(echo "$comments_json" | jq 'length')
+        if [[ "$_c_count" -gt 0 ]]; then
+            echo ""
+            echo -e "  ${YELLOW}━━━ ${_c_count} commentaire(s) existant(s) ━━━${NC}"
+            echo "$comments_json" | jq -c '.[]' | while IFS= read -r _c; do
+                _cu=$(echo "$_c" | jq -r '.user.login // "?"')
+                _cd=$(echo "$_c" | jq -r '.created_at // ""' | cut -c1-16)
+                _cb=$(echo "$_c" | jq -r '.body // "" | .[0:300]')
+                echo ""
+                echo -e "  ${CYAN}@${_cu}${NC}  (${_cd})"
+                echo "$_cb" | sed 's/^/  │ /'
+            done
+            echo ""
+        fi
 
         # ── Auto-détection des chemins de fichiers mentionnés dans l'issue ───
         _auto_detected=()
-        _state_file=$(echo "$ISSUE_BODY" | jq -r ".source_file // empty" 2>/dev/null); [[ -n "$_state_file" ]] && _auto_detected+=("$_state_file")
+        _state_file=$(echo "$ISSUE_BODY" | jq -r ".source_file // empty" 2>/dev/null || true); [[ -n "$_state_file" ]] && _auto_detected+=("$_state_file")
         while IFS= read -r _raw_path; do
             [[ -z "$_raw_path" ]] && continue
             _found=""
@@ -639,7 +680,12 @@ TPROMPT
             for _f in "${_auto_detected[@]}"; do
                 echo "  ✓ $_f"
             done
-            read -r -p "Ajouter ces fichiers à l'analyse ? [O/n] : " _do_auto
+            if [[ "$AUTO_MODE" == "true" ]]; then
+                _do_auto="O"
+                echo -e "  ${CYAN}[auto]${NC} Fichiers auto-détectés ajoutés."
+            else
+                read -r -p "Ajouter ces fichiers à l'analyse ? [O/n] : " _do_auto </dev/tty || _do_auto="O"
+            fi
             if [[ "${_do_auto,,}" != "n" ]]; then
                 for _f in "${_auto_detected[@]}"; do
                     EXTRA_FILES+=("$_f")
@@ -852,7 +898,12 @@ PYMERGE
             echo ""
             echo -e "${YELLOW}[LOGS]${NC} Fichiers log détectés dans le code :"
             for _lp in "${_log_found[@]}"; do echo "  - $_lp"; done
-            read -r -p "Ajouter ces logs au contexte ? [n=non / Entrée=50 / nombre de lignes] : " _do_logs
+            if [[ "$AUTO_MODE" == "true" ]]; then
+                _do_logs="n"
+                echo -e "  ${CYAN}[auto]${NC} Logs ignorés (mode --auto)."
+            else
+                read -r -p "Ajouter ces logs au contexte ? [n=non / Entrée=50 / nombre de lignes] : " _do_logs </dev/tty || _do_logs="n"
+            fi
             if [[ "${_do_logs,,}" != "n" ]]; then
                 _log_lines=50
                 [[ "$_do_logs" =~ ^[0-9]+$ ]] && _log_lines="$_do_logs"
@@ -1012,13 +1063,13 @@ PYEOF
         [[ -n "$_claudemd" ]] && prompt="## Contexte projet (CLAUDE.md)"$'\n\n'"${_claudemd}"$'\n\n---\n\n'"$prompt"
 
         # ── Choix interactif du backend si non spécifié ───────────────────────
-        if [[ "${AI_BACKEND}" == "ollama" ]] && [[ -z "$AI_MODEL" ]]; then
+        if [[ "${AI_BACKEND}" == "ollama" ]] && [[ -z "$AI_MODEL" ]] && [[ "$AUTO_MODE" == "false" ]]; then
             echo ""
             echo -e "${YELLOW}Backend IA :${NC}"
             echo "  [1] Ollama  (constellation locale)"
             echo "  [2] Claude  (Anthropic API)"
             echo "  [3] Gemini  (Google API)"
-            read -r -p "Choix [1-3, défaut: 1] : " ai_choice
+            read -r -p "Choix [1-3, défaut: 1] : " ai_choice </dev/tty || ai_choice="1"
             case "${ai_choice:-1}" in
                 2) AI_BACKEND="claude" ;;
                 3) AI_BACKEND="gemini" ;;
@@ -1103,9 +1154,9 @@ SYSPROMPT
                         [[ -f "$_q" ]] && python3 "$_q" --model "${AI_MODEL:-qwen2.5-coder:14b}" \
                             --prompt-file "$_pfile" --temperature 0.1 --ctx 32768 2>/dev/null
                     else
-                        # Sélection du compte ~/.claude-* (priorité à CLAUDE_CONFIG_DIR si déjà défini)
+                        # Sélection du compte ~/.claude-* — toujours proposée si plusieurs comptes
                         local _cfg="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
-                        if [[ -z "${CLAUDE_CONFIG_DIR:-}" ]]; then
+                        if [[ "${AUTO_MODE:-false}" == "false" ]]; then
                             local _accs=()
                             for _d in "${HOME}"/.claude-*/; do
                                 [[ -d "$_d" ]] || continue
@@ -1113,12 +1164,14 @@ SYSPROMPT
                             done
                             if [[ ${#_accs[@]} -gt 1 ]]; then
                                 echo -e "${CYAN}Compte Claude pour l'analyse :${NC}" >&2
+                                local _def_mark="${_cfg##*/}"
                                 for _i in "${!_accs[@]}"; do
-                                    local _mk=""; [[ "${HOME}/.claude-${_accs[$_i]}" == "$(readlink "${HOME}/.claude" 2>/dev/null)" ]] && _mk=" ✦"
+                                    local _mk=""
+                                    [[ "${HOME}/.claude-${_accs[$_i]}" == "$_cfg" ]] && _mk=" ✦"
                                     printf "  [%d] %s%s\n" "$((_i+1))" "${_accs[$_i]}" "$_mk" >&2
                                 done
-                                echo -ne "Choix [Entrée = défaut] : " >&2
-                                read -r _acc_choice
+                                echo -ne "Choix [Entrée = défaut (${_def_mark})] : " >&2
+                                read -r _acc_choice </dev/tty || _acc_choice=""
                                 if [[ "$_acc_choice" =~ ^[0-9]+$ ]] && (( _acc_choice >= 1 && _acc_choice <= ${#_accs[@]} )); then
                                     _cfg="${HOME}/.claude-${_accs[$((_acc_choice-1))]}"
                                 fi
@@ -1228,17 +1281,32 @@ except: pass
             echo "[$(date '+%F %T')] ai_result ok len=$(echo -n "$ai_result" | wc -c)" >> "$_issue_log"
             echo -e "\n${ai_result}\n"
             $VERBOSE && { echo -e "${CYAN}── Fin réponse IA ──────────────────────────────────────${NC}"; read -r -p "[ Entrée pour continuer ] " _v_pause </dev/tty; }
+            # Mode --auto : poster en commentaire et/ou fermer directement
+            if [[ "$AUTO_MODE" == "true" ]]; then
+                if [[ "$AUTO_COMMENT" == "true" ]] && [[ -n "$GIT_TOKEN" ]]; then
+                    _cb="**Analyse IA (${AI_BACKEND}) — #${NUM}**"$'\n\n'"${ai_result}"
+                    _api POST "/repos/${REPO}/issues/${NUM}/comments" \
+                        "$(jq -n --arg b "$_cb" '{body:$b}')" >/dev/null
+                    echo -e "${GREEN}✓ Commentaire posté sur #${NUM}${NC}" >&2
+                fi
+                if [[ "$AUTO_CLOSE" == "true" ]] && [[ -n "$GIT_TOKEN" ]]; then
+                    _api PATCH "/repos/${REPO}/issues/${NUM}" '{"state":"closed"}' >/dev/null
+                    echo -e "${GREEN}✅ Issue #${NUM} fermée automatiquement.${NC}" >&2
+                fi
+            fi
         else
             echo "[$(date '+%F %T')] ai_result VIDE — vérifier ${_issue_log}" >> "$_issue_log"
             echo -e "${RED}[ERREUR]${NC} Aucune réponse IA reçue." >&2
             echo -e "  Log : ${CYAN}${_issue_log}${NC}" >&2
-            read -r -p "Retenter l'analyse ? [o/N] : " _retry_ai </dev/tty
-            if [[ "${_retry_ai,,}" == "o" ]]; then
-                prompt_file=$(mktemp /tmp/issue_prompt_XXXXXX.txt)
-                printf '%s' "$prompt" > "$prompt_file"
-                ai_result=$(_call_ai "$prompt_file") || true
-                rm -f "$prompt_file"
-                [[ -n "$ai_result" ]] && echo -e "\n${ai_result}\n"
+            if [[ "$AUTO_MODE" == "false" ]]; then
+                read -r -p "Retenter l'analyse ? [o/N] : " _retry_ai </dev/tty || _retry_ai="N"
+                if [[ "${_retry_ai,,}" == "o" ]]; then
+                    prompt_file=$(mktemp /tmp/issue_prompt_XXXXXX.txt)
+                    printf '%s' "$prompt" > "$prompt_file"
+                    ai_result=$(_call_ai "$prompt_file") || true
+                    rm -f "$prompt_file"
+                    [[ -n "$ai_result" ]] && echo -e "\n${ai_result}\n"
+                fi
             fi
         fi
 
@@ -1285,6 +1353,9 @@ except: pass
             fi
         }
 
+        # En mode --auto, on ne lance pas le workflow interactif
+        [[ "$AUTO_MODE" == "true" ]] && exit 0
+
         _wf_done=false
         while ! $_wf_done; do
             echo ""
@@ -1306,6 +1377,7 @@ except: pass
             [[ -n "$_wf_claude" ]] && echo -e "  ${GREEN}[a]${NC} Auto-fix Claude — édite les fichiers directement"
             echo -e "  ${GREEN}[f]${NC} Fix texte (blocs AVANT/APRÈS → patch)"
             echo -e "  ${GREEN}[c]${NC} Commenter l'analyse sur GitHub"
+            echo -e "  ${GREEN}[k]${NC} Fermer l'issue (résolution manuelle)"
             echo -e "  ${GREEN}[q]${NC} Quitter"
             echo ""
             read -r -p "Choix [Entrée=${_wf_default}] : " _wf_action </dev/tty
@@ -1346,7 +1418,7 @@ Répertoire de travail : $(pwd)"
                     echo -e "${YELLOW}→ Validez chaque accès Edit/Write dans les prompts ci-dessous${NC}"
                     echo ""
                     CLAUDE_CONFIG_DIR="$_wf_cfg" "$_wf_claude" \
-                        --allowedTools "Read,Bash(git diff*),Bash(git status*)" \
+                        --allowedTools "Read,Edit,Write,Bash(git diff*),Bash(git status*)" \
                         "$_af_prompt" </dev/tty || true
                     # Vérifier les modifications
                     _af_changed=$(git diff --name-only 2>/dev/null)
@@ -1366,8 +1438,8 @@ Répertoire de travail : $(pwd)"
 
                 # ── [x] Commiter les modifications existantes + fermer ────────────
                 x)
-                    if [[ -z "$_wf_pending" ]]; then
-                        echo -e "${YELLOW}[INFO]${NC} Aucune modification non stagée. Appliquez d'abord un fix." >&2
+                    if [[ $_wf_issue_mods -eq 0 ]]; then
+                        echo -e "${YELLOW}[INFO]${NC} Aucune modification détectée sur les fichiers de l'issue. Appliquez d'abord un fix." >&2
                     else
                         echo -e "${CYAN}── Diff ────────────────────────────────────────────────────${NC}"
                         git diff --stat 2>/dev/null
@@ -1506,6 +1578,22 @@ PYAPPLY
                         _cr=$(_api POST "/repos/${REPO}/issues/${NUM}/comments" \
                             "$(jq -n --arg b "$_cb" '{body:$b}')")
                         echo -e "${GREEN}✓ Commentaire posté${NC} : ${CYAN}$(echo "$_cr" | jq -r '.html_url // .url')${NC}"
+                    fi
+                    ;;
+
+                # ── [k] Fermer l'issue directement (résolution manuelle) ─────────
+                k)
+                    if [[ -z "$GIT_TOKEN" ]]; then
+                        echo -e "${RED}[ERREUR]${NC} GIT_TOKEN requis pour fermer une issue." >&2
+                    else
+                        read -r -p "  Commentaire de clôture (Entrée=vide) : " _k_msg </dev/tty
+                        if [[ -n "$_k_msg" ]]; then
+                            _api POST "/repos/${REPO}/issues/${NUM}/comments" \
+                                "$(jq -n --arg b "$_k_msg" '{body:$b}')" >/dev/null
+                        fi
+                        _api PATCH "/repos/${REPO}/issues/${NUM}" '{"state":"closed"}' >/dev/null
+                        echo -e "${GREEN}✅ Issue #${NUM} fermée.${NC}"
+                        _wf_done=true
                     fi
                     ;;
 
