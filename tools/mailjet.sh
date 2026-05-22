@@ -307,7 +307,7 @@ echo "
 # 1. Récupération du contenu (fichier ou texte direct)
 if [[ -s "$messfile" ]]; then
     # On force la conversion en UTF-8 et on supprime les caractères non-imprimables
-    RAW_CONTENT=$(iconv -f utf-8 -t utf-8 -c "$messfile" | tr -d '\000-\010\013\014\016-\037')
+    RAW_CONTENT=$(iconv -c -f utf-8 -t utf-8 -c "$messfile" | tr -d '\000-\010\013\014\016-\037')
 else
     RAW_CONTENT="$messfile"
 fi

@@ -84,6 +84,7 @@ _detect_repo() {
 }
 
 REPO=""
+PYTHON3="${HOME}/.astro/bin/python3"; [[ ! -x "$PYTHON3" ]] && PYTHON3="python3"
 VERBOSE=false
 OUTPUT_FORMAT="pretty"
 
@@ -280,7 +281,7 @@ case "$COMMAND" in
 
         endpoint="/repos/${REPO}/issues?state=${STATE}&per_page=50&sort=updated"
         if [[ -n "$LABEL" ]]; then
-            encoded=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${LABEL}'))" 2>/dev/null || echo "$LABEL")
+            encoded=$(PYTHON3 -c "import urllib.parse; print(urllib.parse.quote('${LABEL}'))" 2>/dev/null || echo "$LABEL")
             endpoint+="&labels=${encoded}"
         fi
 
@@ -332,7 +333,7 @@ case "$COMMAND" in
             fi
             # Date de création pour git log --since
             local _since
-            _since=$(python3 -c "
+            _since=$(PYTHON3 -c "
 from datetime import datetime
 try:
     dt=datetime.fromisoformat('$_created'.replace('Z','+00:00'))
@@ -605,6 +606,7 @@ TPROMPT
 
         # ── Auto-détection des chemins de fichiers mentionnés dans l'issue ───
         _auto_detected=()
+        _state_file=$(echo "$ISSUE_BODY" | jq -r ".source_file // empty" 2>/dev/null); [[ -n "$_state_file" ]] && _auto_detected+=("$_state_file")
         while IFS= read -r _raw_path; do
             [[ -z "$_raw_path" ]] && continue
             _found=""
@@ -791,7 +793,7 @@ TPROMPT
                 # Fallback direct si JSON vide/invalide
                 if ! jq -e '.files[0]' "$_tmp_json" &>/dev/null; then
                     echo -e "${YELLOW}[fallback]${NC} lecture directe $(basename "$f")" >&2
-                    echo "{\"files\":[{\"path\":\"$f\",\"content\":$(python3 -c "import json,sys; print(json.dumps(open('$f').read()[:48000]))" 2>/dev/null || echo '""')}]}" > "$_tmp_json"
+                    echo "{\"files\":[{\"path\":\"$f\",\"content\":$(PYTHON3 -c "import json,sys; print(json.dumps(open('$f').read()[:48000]))" 2>/dev/null || echo '""')}]}" > "$_tmp_json"
                 fi
                 _cpscript_jsons+=("$_tmp_json")
             elif [[ -d "$f" ]]; then
@@ -1152,7 +1154,7 @@ SYSPROMPT
                                     local _ainfo=""
                                     local _ahist="${HOME}/.claude-${_as}/history.jsonl"
                                     _ainfo=""
-                                    [[ -f "$_ahist" ]] && _ainfo=$(python3 -c "
+                                    [[ -f "$_ahist" ]] && _ainfo=$(PYTHON3 -c "
 import json
 from datetime import datetime
 try:
@@ -1167,7 +1169,7 @@ except: pass
                                     printf "  [%d] %s%s%s\n" "$_ai" "$_as" "$_amk" "${_ainfo:+ — ${_ainfo}}" >&2
                                     (( _ai++ ))
                                 done
-                                read -r -p "  Utiliser ce compte [numéro/Entrée=abandonner] : " _alt_choice </dev/tty
+                                read -r -p "  Utiliser ce compte [numéro/Entrée=Defaut] : " _alt_choice </dev/tty
                                 if [[ "$_alt_choice" =~ ^[0-9]+$ ]] && (( _alt_choice >= 1 && _alt_choice < _ai )); then
                                     _cfg="${HOME}/.claude-${_alt_slugs[$((_alt_choice-1))]}"
                                     export CLAUDE_CONFIG_DIR="$_cfg"
@@ -1196,7 +1198,7 @@ except: pass
                     ;;
                 gemini)
                     local _m="${_model_override:-${AI_MODEL:-gemini-2.0-flash}}"
-                    local _pj; _pj=$(python3 -c "import json; print(json.dumps(open('$_pfile').read()))")
+                    local _pj; _pj=$(PYTHON3 -c "import json; print(json.dumps(open('$_pfile').read()))")
                     curl -s "https://generativelanguage.googleapis.com/v1beta/models/${_m}:generateContent?key=${GEMINI_API_KEY}" \
                         -H "Content-Type: application/json" \
                         -d "{\"contents\":[{\"parts\":[{\"text\":${_pj}}]}]}" \
@@ -1268,7 +1270,7 @@ except: pass
                 git diff --cached --name-only 2>/dev/null | xargs -r git add 2>/dev/null || true
             fi
             local _cmsg="fix(#${NUM}): ${ISSUE_TITLE}"
-            if git commit -m "$_cmsg" 2>/dev/null; then
+            if exec ./commit.sh --staged --ai --model qwen2.5-coder:14b 2>/dev/null; then
                 echo -e "${GREEN}✓ Commit : ${_cmsg}${NC}"
                 if [[ -n "${GIT_TOKEN:-}" ]]; then
                     _api PATCH "/repos/${REPO}/issues/${NUM}" '{"state":"closed"}' >/dev/null
@@ -1451,7 +1453,7 @@ PYEOF
 import sys
 path, old_s, new_s = sys.argv[1], open(sys.argv[2]).read(), open(sys.argv[3]).read()
 src = open(path).read()
-if old_s not in src: sys.exit(1)
+import re; s_old = re.sub(r"\s+", " ", old_s).strip(); s_src = re.sub(r"\s+", " ", src); if s_old not in s_src: sys.exit(1)
 open(path,'w').write(src.replace(old_s,new_s,1))
 PYAPPLY
                             echo -e "${GREEN}  ✓${NC} $(basename "$_f")"

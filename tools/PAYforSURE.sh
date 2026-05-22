@@ -99,7 +99,7 @@ log "MOATS  : $MOATS"
 
 # ── Montant nul ───────────────────────────────────────────────────────────────
 if [[ "$AMOUNT" != "ALL" && "$AMOUNT" != "DRAIN" ]]; then
-    if (( $(echo "${AMOUNT} == 0" | bc -l) )); then
+    if (( $(echo "${AMOUNT} == 0" | bc -l | xargs printf "%.2f") )); then
         log "Montant nul, rien à payer."
         exit 0
     fi
@@ -291,8 +291,8 @@ get_balance_gcli() {
 log "Récupération du solde via Duniter RPC..."
 COINS=$(get_balance_gcli "$ISSUERPUB")
 # Affichage du solde émetteur avec équivalent Zen (Ẑ = (Ğ1 - 1) * 10)
-ZEN_BALANCE=$(echo "scale=1; ($COINS - 1) * 10" | bc -l)
-[[ $(echo "$ZEN_BALANCE < 0" | bc -l) -eq 1 ]] && ZEN_BALANCE="0.0"
+ZEN_BALANCE=$(echo "scale=1; ($COINS - 1) * 10" | bc -l | xargs printf "%.2f")
+[[ $(echo "$ZEN_BALANCE < 0" | bc -l | xargs printf "%.2f") -eq 1 ]] && ZEN_BALANCE="0.0"
 log "Solde de ${ISSUERPUB:0:12}... : ${COINS} Ğ1 (≈ ${ZEN_BALANCE} Ẑen utilisables)"
 
 
@@ -320,12 +320,12 @@ if [[ "$AMOUNT" == "DRAIN" ]]; then
         exit 1
     fi
     log "DRAIN : vidage total du wallet (${TOTAL_COINS} Ğ1 incluant 1 Ğ1 existential deposit)"
-    AMOUNT="$TOTAL_COINS"
+    AMOUNT=$(echo "$TOTAL_COINS - 0.01" | bc)
 elif [[ "$AMOUNT" == "ALL" ]]; then
     AMOUNT="$COINS"
 fi
 
-if (( $(echo "$COINS < $AMOUNT" | bc -l) )); then
+if (( $(echo "$COINS < $AMOUNT" | bc -l | xargs printf "%.2f") )); then
     loge "Solde insuffisant : $COINS Ğ1 < $AMOUNT Ğ1 demandés"
     exit 1
 fi
@@ -347,8 +347,8 @@ make_payment_gcli() {
     local result_file="$6"
 
     # Calcul du montant en Zen pour le log (1 Zen = 10 centimes G1)
-    local zen_log=$(echo "scale=1; $amount / 10" | bc -l)
-    local g1_log=$(echo "scale=2; $amount / 100" | bc -l)
+    local zen_log=$(echo "scale=1; $amount / 10" | bc -l | xargs printf "%.2f")
+    local g1_log=$(echo "scale=2; $amount / 100" | bc -l | xargs printf "%.2f")
     log "Tentative paiement g1cli → nœud: ${ws_node:-défaut} | ${amount} centimes (${g1_log} Ğ1 ≈ ${zen_log} Ẑen) → ${dest:0:12}..."
 
     local base_opts=(--no-password)

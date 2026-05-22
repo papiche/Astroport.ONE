@@ -96,7 +96,7 @@ gcli_balance_raw() {
 raw_to_g1() {
     local raw="$1"
     [[ -z "$raw" || "$raw" == "null" ]] && echo "0" && return
-    echo "scale=2; ${raw} / 100" | bc
+    echo "scale=2; ${raw:-0} / 100" | bc
 }
 
 # ── Lecture cache ─────────────────────────────────────────────────────────────
@@ -151,7 +151,7 @@ parallel_rpc_fetch() {
             raw=$($GCLI --no-password -a "$addr" -u "$rpc" -o json account balance 2>/dev/null \
                 | jq -r '.total_balance // empty' 2>/dev/null)
             [[ -z "$raw" || "$raw" == "null" ]] && exit 1
-            val=$(echo "scale=2; ${raw} / 100" | bc)
+            val=$(echo "scale=2; ${raw:-0} / 100" | bc | xargs printf "%.2f")
             is_valid_balance "$val" || exit 1
             local tmp_r="$tmpdir/r.$BASHPID"
             echo "${val}|${rpc}" > "$tmp_r"
@@ -205,7 +205,7 @@ parallel_squid_fetch() {
                 2>/dev/null)
             raw=$(echo "$resp" | jq -r '.data.accounts.nodes[0].totalBalance // empty' 2>/dev/null)
             [[ -z "$raw" || "$raw" == "null" ]] && exit 1
-            val=$(echo "scale=2; ${raw} / 100" | bc)
+            val=$(echo "scale=2; ${raw:-0} / 100" | bc | xargs printf "%.2f")
             is_valid_balance "$val" || exit 1
             local tmp_r="$tmpdir/r.$BASHPID"
             echo "${val}|${squid_url}" > "$tmp_r"

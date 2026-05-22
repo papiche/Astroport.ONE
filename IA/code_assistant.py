@@ -444,8 +444,9 @@ def build_code_summary(code_json: dict, max_tokens: int = 32000) -> str:
     parts.append(f"Fichiers: {code_json.get('stats', {}).get('files_count', '?')}")
 
     for i, f in enumerate(code_json.get("files", [])[:20]):  # max 20 fichiers
-        content = f.get('content', '')
-        is_test_file = f.get('_test_file', False)
+        content = ''.join(c for c in f.get('content', '') 
+        if c.isprintable() or c in '')
+            is_test_file = f.get('_test_file', False)
         # R2: Tronquer les dépendances (pas le script principal ni les tests) si contexte trop grand
         if trim_deps and i > 0 and not is_test_file:
             lines = content.split('\n')
@@ -749,7 +750,7 @@ def main():
     try:
         # Lecture limitée pour les très gros projets
         import io
-        raw_bytes = sys.stdin.buffer.read(MAX_STDIN_MB * 1024 * 1024)
+        raw_bytes = sys.stdin.buffer.read(MAX_STDIN_MB * 1024 * 1024).strip()
         code_json = json.loads(raw_bytes.decode("utf-8", errors="replace"))
     except (json.JSONDecodeError, UnicodeDecodeError):
         raw = raw_bytes.decode("utf-8", errors="replace").strip()

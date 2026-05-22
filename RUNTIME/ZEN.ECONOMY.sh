@@ -87,8 +87,8 @@ WEEK_KEY="${CURRENT_YEAR}-W${CURRENT_WEEK}"
 # Marqueurs atomiques de paiement — un fichier par étape et par semaine.
 # Empêchent les doubles paiements si le script s'interrompt en cours de route.
 # IMPORTANT : stockés dans ~/.zen/game/ (persistant) — ~/.zen/tmp/ est vidé à 20h12.
-NODE_PAID_MARKER="$HOME/.zen/game/.node_paid_W${CURRENT_WEEK}"
-CAPTAIN_PAID_MARKER="$HOME/.zen/game/.captain_paid_W${CURRENT_WEEK}"
+NODE_PAID_MARKER="$HOME/.zen/game/.node_paid_${CURRENT_YEAR}W${CURRENT_WEEK}"
+CAPTAIN_PAID_MARKER="$HOME/.zen/game/.captain_paid_${CURRENT_YEAR}W${CURRENT_WEEK}"
 
 # Check if payment was already done this week
 # Marker format: "YEAR-Wxx:PHASEn:NODEn:CPTn" - extract week key for comparison
@@ -369,7 +369,7 @@ if [[ $(echo "$WEEKLYG1 > 0" | bc -l 2>/dev/null || echo 0) -eq 1 ]]; then
                '.total_donated_zen = $new_total |
                 .weeks_on_volunteer += 1 |
                 .history += [{"date": $date, "amount_zen": ($amount | tonumber)}]' \
-               "$LOVE_LEDGER" > "${LOVE_LEDGER}.tmp" && mv "${LOVE_LEDGER}.tmp" "$LOVE_LEDGER"
+               "$LOVE_LEDGER" > "${LOVE_LEDGER}.tmp" && sync "${LOVE_LEDGER}.tmp" && mv "${LOVE_LEDGER}.tmp" "$LOVE_LEDGER"
 
             log_output "📖 Love Ledger mis à jour : total cumulé = ${new_total} Ẑen"
 

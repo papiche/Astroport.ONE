@@ -12,6 +12,7 @@ Sources de contexte (priorité décroissante, toutes cumulables) :
 
 import os
 import sys
+import re
 
 # Activer l'environnement virtuel ~/.astro
 venv_path = os.path.expanduser("~/.astro")
@@ -97,10 +98,10 @@ def load_context(latitude=None, longitude=None, pubkey=None, user_id=None, slot=
 
 def filter_think_tags(text):
     """Supprime les balises <think>...</think> (modèles reasoning)."""
-    while "<think>" in text and "</think>" in text:
-        start = text.find("<think>")
-        end = text.find("</think>") + len("</think>")
-        text = text[:start] + text[end:]
+    if not text:
+        return text
+    # re.sub supprime déjà toutes les occurrences de <think>...</think>
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
     return text.strip()
 
 

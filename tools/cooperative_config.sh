@@ -68,7 +68,7 @@ coop_encrypt() {
     local iv=$(openssl rand -hex 16)
     
     # Encrypt with AES-256-CBC (-A = no line wrapping in base64 output)
-    local encrypted=$(echo -n "$plaintext" | openssl enc -aes-256-cbc -a -A -K "$key" -iv "$iv" 2>/dev/null)
+    local encrypted=$(echo -n "$plaintext" | openssl enc -aes-256-cbc -pbkdf2 -a -A -K "$key" -iv "$iv" 2>/dev/null)
 
     if [[ $? -ne 0 ]] || [[ -z "$encrypted" ]]; then
         echo "[ERROR] Encryption failed" >&2
@@ -113,7 +113,7 @@ coop_decrypt() {
 
     # Decrypt with AES-256-CBC (-A = single-line base64 input)
     local plaintext
-    plaintext=$(printf '%s' "$encrypted" | openssl enc -aes-256-cbc -d -a -A -K "$key" -iv "$iv" 2>/dev/null)
+    plaintext=$(printf '%s' "$encrypted" | openssl enc -aes-256-cbc -pbkdf2 -d -a -A -K "$key" -iv "$iv" 2>/dev/null)
     if [[ $? -ne 0 ]] || [[ -z "$plaintext" ]]; then
         echo "[ERROR] Decryption failed - wrong UPLANETNAME or corrupted data" >&2
         return 1

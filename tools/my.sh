@@ -339,7 +339,7 @@ function makecoord() {
     fi
 
     # Formate à 2 décimales (comme original)
-    input=$(echo "${input}" | sed 's/\([0-9]*\.[0-9]\{2\}\).*/\1/')
+    input=$(echo "${input}" | awk "{printf \"%.2f\", $1}")
     
     # First: add leading zero for values like .5 or -.5
     if [[ ${input} =~ ^\.[0-9]+$ ]]; then

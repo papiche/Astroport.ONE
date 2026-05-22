@@ -264,7 +264,7 @@ except: pass
         printf "  [%d] %s%s%s\n" "$_i" "$_slug" "$_mk" "${_quota_info:+ — ${_quota_info}}" >&2
         (( _i++ ))
     done
-    read -r -p "Utiliser ce compte ? [numéro/Entrée=abandonner] : " _choice </dev/tty
+    read -r -p "Utiliser ce compte ? [numéro/Entrée=Defaut] : " _choice </dev/tty
     if [[ "$_choice" =~ ^[0-9]+$ ]] && (( _choice >= 1 && _choice < _i )); then
         echo "${_alts[$((_choice-1))]}"
     fi
@@ -941,7 +941,7 @@ RÉPONDS UNIQUEMENT EN FRANÇAIS.
 4. **STYLE :** Technique et précis. "corrige accès CID direct" plutôt que "corrige le code".
 
 **CONTEXTE :**
-- Branche : $_cur_branch
+- Branche : $_cur_branch\n- Contexte : ${ISSUE_REF:-}
 - Période : $SINCE_LABEL
 - Commits : $COMMITS_INFO
 
