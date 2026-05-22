@@ -852,7 +852,7 @@ generate_activity_report() {
     local prompt
     prompt=$(cat <<RPROMPT
 Tu rédiges un rapport d'activité pour un développeur. EN FRANÇAIS. CONCIS.
-Période : ${SINCE_LABEL} (au ${SINCE_DATE:-aujourd'hui})
+Période : ${SINCE_LABEL} (au ${SINCE_DATE:-maintenant})
 Projet : $(basename "$(git rev-parse --show-toplevel 2>/dev/null || echo .)")
 Branche : ${_cur_branch}
 
@@ -872,7 +872,7 @@ FORMAT DE RÉPONSE (commence directement, aucune introduction) :
 - …  (ce que ça change concrètement pour les utilisateurs ou le projet, 2-4 points)
 
 ### Fichiers principaux
-- \`fichier\` — une ligne d'explication
+- \`fichier\` — explication sur une ligne
 
 ---
 *Rapport généré le $(date +"%Y-%m-%d %H:%M")*
