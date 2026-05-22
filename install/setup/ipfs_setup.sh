@@ -72,7 +72,11 @@ Requires=network.target
 Type=simple
 User=$USER
 RestartSec=3
-Restart=always
+Restart=on-failure
+StartLimitIntervalSec=300
+StartLimitBurst=3
+TimeoutStopSec=120
+KillSignal=SIGINT
 Environment=IPFS_FD_MAX=100000
 # Utilisation de PubSub pour la constellation
 ExecStart=$(which ipfs) daemon --migrate --enable-pubsub-experiment --enable-namesys-pubsub
