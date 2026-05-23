@@ -34,7 +34,7 @@ PACKAGES=(
     aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 
     matplotlib readability-lxml duniterpy cachetools pydantic-settings 
     robohash substrate-interface websocket websockets fastapi aiofiles jinja2 
-    python-multipart python-magic uvicorn
+    python-multipart python-magic uvicorn python-telegram-bot imap_tools
 )
 
 echo "📦 Installation des dépendances Python..."

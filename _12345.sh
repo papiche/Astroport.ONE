@@ -769,6 +769,18 @@ while true; do
         CAPACITIES="{\"reserved_captain_slots\":2}"
         SERVICES="${_svc_fallback}"
     fi
+    ## Ajouter qdrant_veteran_days au bloc capacities (ancienneté Qdrant pour sélection swarm)
+    _QDRANT_VET_FILE="$HOME/.zen/tmp/qdrant_veteran_since"
+    if [[ -f "$_QDRANT_VET_FILE" ]]; then
+        _since=$(cat "$_QDRANT_VET_FILE" 2>/dev/null || echo 0)
+        _vet_days=$(( ( $(date +%s) - _since ) / 86400 ))
+    else
+        _vet_days=0
+    fi
+    CAPACITIES=$(echo "${CAPACITIES}" | \
+        jq --argjson vd "$_vet_days" '. + {"qdrant_veteran_days": $vd}' 2>/dev/null \
+        || echo "${CAPACITIES}")
+
     ## Defensive guards: ensure neither is ever empty (would produce "key": , in JSON)
     [[ -z "${SERVICES}" ]]   && SERVICES="${_svc_fallback}"
     [[ -z "${CAPACITIES}" ]] && CAPACITIES="{\"reserved_captain_slots\":2}"

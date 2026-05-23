@@ -68,17 +68,22 @@ Outil de correction assistée en 3 phases, déclenché automatiquement par `ai_c
 
 | Phase | Rôle | Modèle auto |
 |-------|------|-------------|
-| analyse | Identifie 3 problèmes prioritaires | `deepseek-r1:14b` |
-| correction | 3 variantes de correction | `qwen2.5-coder:14b` |
-| contrôle | Vérifie + applique le patch | même modèle |
+| analyse | 3 problèmes triés par urgence (CRITIQUE › MAJEUR › MOYEN › MINEUR) | `deepseek-r1:14b` |
+| correction | 3 variantes (a=minimal / b=complet / c=refactoring) | `qwen2.5-coder:14b` |
+| contrôle | Vérifie syntaxe + applique le patch | même modèle |
 
-**Intégration** : commit.sh parse les `⚠️` du rapport de revue, extrait les noms de fichiers, et lance code_assistant avec le message d'erreur comme `--supplement`.
+**Boucle interactive** : après chaque patch, propose automatiquement le problème suivant.  
+**Symlink auto** : `~/.local/bin/code_assistant` créé au premier lancement.  
+**Actions** : `[r]`=régénérer `[m]`=modifier focus `[s]`=passer `[c/o]`=changer backend
+
+**Intégration commit.sh** : parse les `⚠️` du rapport de revue, extrait les noms de fichiers, et lance code_assistant avec le message d'erreur comme `--supplement`.
 
 ```bash
 # Commande générée automatiquement :
 code_assistant _12345.sh \
   --kvbasename ca-_12345-20260520 \
   --supplement "REVUE DE COMMIT : fichier tmp non nettoyé si erreur"
+# → affiche les 3 problèmes par urgence et boucle jusqu'à tous les traiter
 ```
 
 ---

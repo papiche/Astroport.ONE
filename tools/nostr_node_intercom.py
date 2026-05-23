@@ -382,7 +382,8 @@ def cmd_query(args):
 # ── decrypt (event kind 4 depuis stdin) ───────────────────────────────────────
 
 def cmd_decrypt(args):
-    priv_hex = _nsec_to_hex(args.nsec)
+    nsec = args.nsec or os.environ.get('NOSTR_NSEC', '')
+    priv_hex = _nsec_to_hex(nsec)
     try:
         ev = json.load(sys.stdin)
         if "event" in ev:
@@ -414,7 +415,9 @@ if __name__ == "__main__":
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_send = sub.add_parser("send", help="Envoyer un message à un NODE distant")
-    p_send.add_argument("--nsec",    required=True)
+    p_send.add_argument("--nsec",       default=None)
+    p_send.add_argument("--nsec-stdin", action="store_true",
+                        help="Lire le NSEC depuis la première ligne de stdin")
     p_send.add_argument("--to",      required=True, help="HEX pubkey du NODE destinataire")
     p_send.add_argument("--channel", required=True)
     p_send.add_argument("--payload", required=True, help="Contenu JSON du message")
@@ -423,7 +426,9 @@ if __name__ == "__main__":
                         help="Durée de vie en secondes (NIP-40, 0=permanent, défaut 86400=24h)")
 
     p_udrive = sub.add_parser("send-udrive", help="Envoyer une demande de sync uDRIVE")
-    p_udrive.add_argument("--nsec",     required=True)
+    p_udrive.add_argument("--nsec",       default=None)
+    p_udrive.add_argument("--nsec-stdin", action="store_true",
+                          help="Lire le NSEC depuis la première ligne de stdin")
     p_udrive.add_argument("--to",       required=True)
     p_udrive.add_argument("--email",    required=True)
     p_udrive.add_argument("--cid",      required=True)
@@ -435,16 +440,22 @@ if __name__ == "__main__":
                           help="Durée de vie en secondes (NIP-40, 0=permanent, défaut 86400=24h)")
 
     p_recv = sub.add_parser("receive", help="Recevoir les messages en attente")
-    p_recv.add_argument("--nsec",    required=True)
+    p_recv.add_argument("--nsec",       default=None)
+    p_recv.add_argument("--nsec-stdin", action="store_true",
+                        help="Lire le NSEC depuis la première ligne de stdin")
     p_recv.add_argument("--channel", default=None)
     p_recv.add_argument("--since",   default=None)
     p_recv.add_argument("--relays",  nargs="+", required=True)
 
     p_dec = sub.add_parser("decrypt", help="Déchiffrer un event kind 4 depuis stdin")
-    p_dec.add_argument("--nsec", required=True)
+    p_dec.add_argument("--nsec", default=None)
+    # --nsec-stdin absent ici : decrypt lit déjà le JSON depuis stdin
+    # Fallback : variable d'environnement NOSTR_NSEC (invisible dans ps aux)
 
     p_pub = sub.add_parser("publish", help="Publier un event NOSTR non chiffré (any kind)")
-    p_pub.add_argument("--nsec",    required=True)
+    p_pub.add_argument("--nsec",       default=None)
+    p_pub.add_argument("--nsec-stdin", action="store_true",
+                       help="Lire le NSEC depuis la première ligne de stdin")
     p_pub.add_argument("--kind",    type=int, required=True, help="NOSTR kind (ex: 30500, 30503)")
     p_pub.add_argument("--tags",    required=True, help='JSON array de tags ex: [["d","ID"],["t","skill"]]')
     p_pub.add_argument("--content", default="", help="Contenu de l'event (JSON string)")
@@ -458,6 +469,16 @@ if __name__ == "__main__":
     p_qry.add_argument("--relays",  nargs="+", required=True)
 
     args = parser.parse_args()
+
+    # Résolution NSEC pour les sous-commandes qui en ont besoin
+    # (send, send-udrive, receive, publish supportent --nsec-stdin ;
+    #  decrypt : --nsec requis car stdin est déjà occupé par le JSON ;
+    #  query : pas de NSEC)
+    if getattr(args, "nsec_stdin", False):
+        args.nsec = sys.stdin.readline().strip()
+    elif args.cmd not in ("query", "decrypt") and not getattr(args, "nsec", None):
+        parser.error("--nsec ou --nsec-stdin requis")
+
     {
         "send":        cmd_send,
         "send-udrive": cmd_send_udrive,

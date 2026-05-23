@@ -61,8 +61,7 @@ try:
     import ollama
     OLLAMA_OK = True
 except ImportError:
-    print("Erreur : pip install ollama", file=sys.stderr)
-    sys.exit(1)
+    OLLAMA_OK = False
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Configuration
@@ -444,7 +443,7 @@ def build_code_summary(code_json: dict, max_tokens: int = 32000) -> str:
     parts.append(f"Fichiers: {code_json.get('stats', {}).get('files_count', '?')}")
 
     for i, f in enumerate(code_json.get("files", [])[:20]):  # max 20 fichiers
-        content = ''.join(c for c in f.get('content', '') 
+        content = ''.join(c for c in f.get('content', ''))
         is_test_file = f.get('_test_file', False)
         # R2: Tronquer les dépendances (pas le script principal ni les tests) si contexte trop grand
         if trim_deps and i > 0 and not is_test_file:
@@ -474,8 +473,9 @@ def build_code_summary(code_json: dict, max_tokens: int = 32000) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 # LLM
 # ─────────────────────────────────────────────────────────────────────────────
-# Variable globale pour le mode human-llm (mis à jour depuis main())
+# Variables globales (mises à jour depuis main())
 _HUMAN_LLM_MODE = False
+_BACKEND = "ollama"   # "ollama" | "claude"
 
 def call_llm(system: str, user_prompt: str, model: str,
              json_format: bool = False) -> str:
@@ -540,6 +540,11 @@ def call_llm(system: str, user_prompt: str, model: str,
                 # Enter ou tout autre chose = envoyer
                 break
 
+    if _BACKEND == "claude":
+        return call_claude_cli(actual_system, actual_prompt)
+
+    if not OLLAMA_OK:
+        return "Erreur: module 'ollama' absent — pip install ollama"
     kwargs = {
         "model": model,
         "messages": [
@@ -553,7 +558,27 @@ def call_llm(system: str, user_prompt: str, model: str,
         resp = ollama.chat(**kwargs)
         return filter_think_tags(resp["message"]["content"])
     except Exception as e:
-        return f"Erreur LLM: {e}"
+        return f"Erreur LLM Ollama: {e}"
+
+
+def call_claude_cli(system: str, user_prompt: str) -> str:
+    """Appelle Claude Code CLI en mode non-interactif (claude -p)."""
+    import subprocess
+    full_prompt = f"{system}\n\n---\n\n{user_prompt}"
+    try:
+        result = subprocess.run(
+            ["claude", "-p", full_prompt],
+            capture_output=True, text=True, timeout=180
+        )
+        if result.returncode != 0 and not result.stdout.strip():
+            return f"Erreur Claude CLI (code {result.returncode}): {result.stderr[:300]}"
+        return filter_think_tags(result.stdout.strip())
+    except FileNotFoundError:
+        return "Erreur: claude CLI introuvable (npm install -g @anthropic-ai/claude-code)"
+    except subprocess.TimeoutExpired:
+        return "Erreur: timeout Claude CLI (180s)"
+    except Exception as e:
+        return f"Erreur Claude CLI: {e}"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -696,6 +721,9 @@ def main():
     parser.add_argument("--max-context", type=int, default=32000,
                         help="Limite de tokens du contexte code (passée depuis code_assistant bash, "
                              "reflète 80%% du contexte max du modèle sélectionné)")
+    parser.add_argument("--backend",     default="ollama",
+                        choices=["ollama", "claude"],
+                        help="Backend LLM : ollama (local, défaut) | claude (claude CLI -p)")
     # H2: mode step-by-step complet (voir/modifier chaque prompt avant envoi)
     parser.add_argument("--human-llm",  action="store_true",
                         help="Voir et modifier chaque prompt LLM avant envoi "
@@ -718,9 +746,14 @@ def main():
                         help="Activer le mode doc actif (incohérences doc injectées dans CODE_JSON)")
     args = parser.parse_args()
 
-    # H2: Activer le mode review prompt LLM si --human-llm
-    global _HUMAN_LLM_MODE
+    # Activer les modes globaux
+    global _HUMAN_LLM_MODE, _BACKEND
     _HUMAN_LLM_MODE = getattr(args, "human_llm", False)
+    _BACKEND = getattr(args, "backend", "ollama")
+
+    if _BACKEND == "ollama" and not OLLAMA_OK:
+        print("Erreur : module 'ollama' absent — pip install ollama", file=sys.stderr)
+        sys.exit(1)
 
     # ── A2: Mode setup — télécharger les modèles recommandés ────────────────
     if args.setup:
@@ -807,38 +840,39 @@ def main():
         )
 
     # R1: Sélection automatique du modèle par phase si non spécifié
-    effective_model = args.model or PHASE_MODELS.get(args.phase, DEFAULT_MODEL)
-    # Chaîne de fallback par ordre de préférence (meilleur → acceptable)
-    FALLBACK_CHAIN = [
-        "qwen2.5-coder:14b",
-        "qwen3:14b",
-        "qwen2.5-coder:7b",
-        "qwen2.5:latest",
-        "mistral-small3.1:latest",
-        "gemma3:12b",
-        "gemma3:latest",
-    ]
-    if args.model is None:
-        try:
-            available = ollama.list()
-            model_names = " ".join(
-                m.get("name", m.get("model", "")) for m in available.get("models", [])
-            )
-            base = effective_model.split(":")[0]
-            if base not in model_names:
-                # Chercher le meilleur modèle disponible dans la chaîne de fallback
+    if _BACKEND == "claude":
+        effective_model = "claude"
+    else:
+        effective_model = args.model or PHASE_MODELS.get(args.phase, DEFAULT_MODEL)
+        FALLBACK_CHAIN = [
+            "qwen2.5-coder:14b",
+            "qwen3:14b",
+            "qwen2.5-coder:7b",
+            "qwen2.5:latest",
+            "mistral-small3.1:latest",
+            "gemma3:12b",
+            "gemma3:latest",
+        ]
+        if args.model is None and OLLAMA_OK:
+            try:
+                available = ollama.list()
+                model_names = " ".join(
+                    m.get("name", m.get("model", "")) for m in available.get("models", [])
+                )
+                base = effective_model.split(":")[0]
+                if base not in model_names:
+                    effective_model = DEFAULT_MODEL
+                    for fb in FALLBACK_CHAIN:
+                        if fb.split(":")[0] in model_names:
+                            effective_model = fb
+                            break
+                    print(f"  [R1] Modèle phase absent, fallback → {effective_model}",
+                          file=sys.stderr)
+                else:
+                    print(f"  [R1] Modèle phase '{args.phase}' → {effective_model}",
+                          file=sys.stderr)
+            except Exception:
                 effective_model = DEFAULT_MODEL
-                for fb in FALLBACK_CHAIN:
-                    if fb.split(":")[0] in model_names:
-                        effective_model = fb
-                        break
-                print(f"  [R1] Modèle phase absent, fallback → {effective_model}",
-                      file=sys.stderr)
-            else:
-                print(f"  [R1] Modèle phase '{args.phase}' → {effective_model}",
-                      file=sys.stderr)
-        except Exception:
-            effective_model = DEFAULT_MODEL
 
     # ── Exécuter la phase ────────────────────────────────────────────────────
     print(f"\n{'='*60}", file=sys.stderr)

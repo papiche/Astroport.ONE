@@ -16,6 +16,10 @@ import re
 import subprocess
 from datetime import datetime
 
+# Importer le gestionnaire Qdrant unifié (même répertoire)
+_MEMORY_MGR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "memory_manager.py")
+_HAS_MEMORY_MGR = os.path.isfile(_MEMORY_MGR)
+
 # Check if debug mode is enabled
 DEBUG_MODE = os.environ.get('DEBUG', '0') == '1'
 DEBUG_MODE = '1'
@@ -25,103 +29,39 @@ def debug_print(*args, **kwargs):
     if DEBUG_MODE:
         print(*args, **kwargs)
 
+def strip_think_tags(s):
+    """Remove <think>...</think> reasoning blocks emitted by DeepSeek/Gemma3 before JSON parsing."""
+    return re.sub(r'<think>.*?</think>', '', s, flags=re.DOTALL).strip()
+
 def clean_json_string(json_str):
-    """Clean JSON string from common shell escaping issues"""
-    # Remove any leading/trailing whitespace
+    """Strip shell wrapping quotes and reasoning tags — no regex mangling of JSON content."""
     json_str = json_str.strip()
-    
-    # Handle common shell escaping issues
-    # Replace escaped quotes that might be double-escaped
-    json_str = re.sub(r'\\+"', '"', json_str)
-    
-    # Handle single quotes around the entire JSON
+    # Strip <think>...</think> blocks from reasoning models (DeepSeek, Gemma3…)
+    json_str = strip_think_tags(json_str)
+    # Remove shell single-quote wrapping (bash: echo '...')
     if json_str.startswith("'") and json_str.endswith("'"):
         json_str = json_str[1:-1]
-    
-    # Handle double quotes around the entire JSON
+    # Remove outer double-quote wrapping only if the result is valid JSON
     if json_str.startswith('"') and json_str.endswith('"'):
-        json_str = json_str[1:-1]
-    
+        try:
+            inner = json_str[1:-1]
+            json.loads(inner)
+            json_str = inner
+        except (json.JSONDecodeError, ValueError):
+            pass
     return json_str
 
-def fix_json_control_characters(json_str):
-    """Fix control characters in JSON that cause parsing errors"""
-    import json
-    
-    try:
-        # First, try to parse as-is to see if it's already valid
-        json.loads(json_str)
-        return json_str
-    except json.JSONDecodeError:
-        pass
-    
-    # If parsing fails, try to fix control characters
-    # This is a more aggressive approach to handle malformed JSON
-    try:
-        # Use Python's json module to properly escape the string
-        # We'll parse it as a Python dict first, then re-serialize
-        import ast
-        # Try to safely evaluate the JSON-like string as a Python literal
-        parsed = ast.literal_eval(json_str)
-        # Re-serialize with proper JSON formatting
-        return json.dumps(parsed, ensure_ascii=False)
-    except (ValueError, SyntaxError):
-        pass
-    
-    # If all else fails, try manual character replacement
-    # Replace common problematic control characters
-    fixed = json_str
-    # Replace newlines with escaped newlines
-    fixed = fixed.replace('\n', '\\n')
-    fixed = fixed.replace('\r', '\\r')
-    fixed = fixed.replace('\t', '\\t')
-    
-    return fixed
-
-def fix_json_content_newlines(json_str):
-    """Specifically fix newlines in JSON content fields"""
-    import json
-    import re
-    
-    try:
-        # Try to parse as-is first
-        json.loads(json_str)
-        return json_str
-    except json.JSONDecodeError:
-        pass
-    
-    # Look for content field and fix newlines within it
-    # This regex looks for "content":"... and fixes newlines in the content
-    pattern = r'("content"\s*:\s*")([^"]*(?:\\.[^"]*)*)(")'
-    
-    def fix_content_newlines(match):
-        prefix = match.group(1)
-        content = match.group(2)
-        suffix = match.group(3)
-        
-        # Replace newlines with escaped newlines in content
-        fixed_content = content.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
-        
-        return prefix + fixed_content + suffix
-    
-    fixed_json = re.sub(pattern, fix_content_newlines, json_str)
-    
-    return fixed_json
 
 def fix_common_json_issues(json_str):
-    """Fix common JSON formatting issues"""
-    # Fix missing commas between objects in arrays
+    """Fix structural JSON issues — applied only after json.loads() has failed."""
+    # Fix missing commas between adjacent objects in arrays
     json_str = re.sub(r'}\s*{', '},{', json_str)
-    
-    # Fix missing quotes around property names
+    # Fix missing quotes around bare property names
     json_str = re.sub(r'([{,])\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1"\2":', json_str)
-    
-    # Fix single quotes to double quotes
-    json_str = re.sub(r"'([^']*)'", r'"\1"', json_str)
-    
-    # Fix trailing commas
+    # Fix trailing commas before closing brackets
     json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)
-    
+    # NOTE: single-quote → double-quote substitution intentionally removed:
+    # it mangles content containing apostrophes (e.g. "l'utilisateur").
     return json_str
 
 def parse_event_json(json_input):
@@ -147,22 +87,6 @@ def parse_event_json(json_input):
         except json.JSONDecodeError as e2:
             debug_print(f"DEBUG: Fixed JSON parsing also failed: {e2}")
         
-        # Try to fix control characters
-        try:
-            control_fixed_json = fix_json_control_characters(cleaned_json)
-            debug_print(f"DEBUG: Attempting to parse control-character-fixed JSON")
-            return json.loads(control_fixed_json)
-        except json.JSONDecodeError as e3:
-            debug_print(f"DEBUG: Control character fix also failed: {e3}")
-        
-        # Try to fix content newlines specifically
-        try:
-            newline_fixed_json = fix_json_content_newlines(cleaned_json)
-            debug_print(f"DEBUG: Attempting to parse newline-fixed JSON")
-            return json.loads(newline_fixed_json)
-        except json.JSONDecodeError as e4:
-            debug_print(f"DEBUG: Newline fix also failed: {e4}")
-        
         # If that fails, try to read from file
         if os.path.isfile(json_input):
             debug_print(f"DEBUG: Trying to read from file: {json_input}")
@@ -177,80 +101,46 @@ def parse_event_json(json_input):
             raise Exception(f"Input is neither valid JSON nor a file path: {json_input}")
 
 def _upsert_to_qdrant(user_id, content, timestamp, slot):
-    """Génère un embedding via Ollama et l'upserte dans Qdrant (collection memory_{user_hex}).
-    Toutes les erreurs sont silencieuses — la fonctionnalité est optionnelle."""
+    """Délègue à memory_manager.py — gère slot + geo séparément, RÊVE inclus."""
+    if not _HAS_MEMORY_MGR:
+        return
     try:
-        OLLAMA_URL = os.environ.get('OLLAMA_URL', 'http://127.0.0.1:11434')
-        QDRANT_URL = os.environ.get('QDRANT_URL', 'http://127.0.0.1:6333')
-        QDRANT_API_KEY = os.environ.get('QDRANT_API_KEY', '')
-
-        # Dériver user_hex : lire ~/.zen/game/nostr/{user_id}/HEX (16 premiers chars)
-        hex_file = os.path.expanduser(f"~/.zen/game/nostr/{user_id}/HEX")
-        if os.path.isfile(hex_file):
-            with open(hex_file, 'r') as f:
-                user_hex = f.read().strip()[:16]
-        else:
-            user_hex = hashlib.md5(user_id.encode()).hexdigest()[:16]
-
-        collection = f"memory_{user_hex}"
-
-        # Préparer les headers d'auth Qdrant
-        auth_headers = []
-        if QDRANT_API_KEY:
-            auth_headers = ["-H", f"api-key: {QDRANT_API_KEY}"]
-
-        # Générer l'embedding via Ollama
-        embed_payload = json.dumps({"model": "nomic-embed-text", "prompt": content})
-        embed_result = subprocess.run(
-            ["curl", "-sf", "-X", "POST",
-             f"{OLLAMA_URL}/api/embeddings",
-             "-H", "Content-Type: application/json",
-             "-d", embed_payload],
-            capture_output=True, text=True, timeout=15
+        subprocess.run(
+            [sys.executable, _MEMORY_MGR, "upsert-slot",
+             "--user-id", user_id, "--slot", str(slot), "--content", content],
+            capture_output=True, timeout=20
         )
-        if embed_result.returncode != 0 or not embed_result.stdout.strip():
-            return  # Ollama non disponible — skip silencieux
-
-        embed_data = json.loads(embed_result.stdout)
-        vector = embed_data.get('embedding', [])
-        if not vector:
-            return  # Embedding vide — skip silencieux
-
-        # Créer la collection si elle n'existe pas
-        create_payload = json.dumps({"vectors": {"size": 768, "distance": "Cosine"}})
-        create_cmd = ["curl", "-sf", "-X", "PUT",
-                      f"{QDRANT_URL}/collections/{collection}",
-                      "-H", "Content-Type: application/json",
-                      "-d", create_payload]
-        create_cmd.extend(auth_headers)
-        subprocess.run(create_cmd, capture_output=True, timeout=15)
-
-        # doc_id stable basé sur user_id + timestamp
-        doc_id = int(hashlib.md5(f"{user_id}:{timestamp}".encode()).hexdigest()[:15], 16)
-
-        # Upsert dans Qdrant
-        upsert_payload = json.dumps({
-            "points": [{
-                "id": doc_id,
-                "vector": vector,
-                "payload": {
-                    "user_id": user_id,
-                    "slot": slot,
-                    "content": content,
-                    "timestamp": timestamp,
-                    "source": "nostr_rec"
-                }
-            }]
-        })
-        upsert_cmd = ["curl", "-sf", "-X", "PUT",
-                      f"{QDRANT_URL}/collections/{collection}/points",
-                      "-H", "Content-Type: application/json",
-                      "-d", upsert_payload]
-        upsert_cmd.extend(auth_headers)
-        subprocess.run(upsert_cmd, capture_output=True, timeout=15)
-
     except Exception:
-        pass  # Skip silencieux — Qdrant/Ollama optionnel
+        pass
+
+
+def _upsert_geo_to_qdrant(lat, lon, content, pubkey, timestamp, event_id=""):
+    """Upsert la mémoire géo dans la collection uplanet_geo (séparée des slots)."""
+    if not _HAS_MEMORY_MGR:
+        return
+    try:
+        subprocess.run(
+            [sys.executable, _MEMORY_MGR, "upsert-geo",
+             "--lat", lat, "--lon", lon, "--content", content,
+             "--pubkey", pubkey, "--event-id", event_id],
+            capture_output=True, timeout=20
+        )
+    except Exception:
+        pass
+
+
+def _maybe_reve(user_id, slot, slot_file):
+    """Déclenche le cycle RÊVE si le slot est plein (>= seuil dans memory_manager)."""
+    if not _HAS_MEMORY_MGR:
+        return
+    try:
+        subprocess.run(
+            [sys.executable, _MEMORY_MGR, "reve",
+             "--user-id", user_id, "--slot", str(slot)],
+            capture_output=True, timeout=60
+        )
+    except Exception:
+        pass
 
 
 # Paramètres attendus : event_json, latitude, longitude, slot, user_id
@@ -307,7 +197,8 @@ def main():
         "pubkey": pubkey,
         "content": content
     })
-    memory['messages'] = memory['messages'][-50:]
+    # Fenêtre glissante géo : 200 entrées (RÊVE prend le relais via Qdrant pour les anciennes)
+    memory['messages'] = memory['messages'][-200:]
     with open(memory_file, 'w') as f:
         json.dump(memory, f, indent=2)
 
@@ -332,12 +223,22 @@ def main():
             "longitude": longitude,
             "content": content
         })
-        slot_mem['messages'] = slot_mem['messages'][-50:]
+        # Fenêtre glissante slot : 200 entrées — RÊVE compresse à 150 et garde 80 récentes
+        slot_mem['messages'] = slot_mem['messages'][-200:]
         with open(slot_file, 'w') as f:
             json.dump(slot_mem, f, indent=2)
+        ts_slot = slot_mem['messages'][-1]['timestamp']
         print(f"Memory updated for user: {user_id}, slot: {slot}")
-        _upsert_to_qdrant(user_id, content, slot_mem['messages'][-1]['timestamp'], slot)
+        # Qdrant : slot personnel + geo séparés
+        _upsert_to_qdrant(user_id, content, ts_slot, slot)
+        _upsert_geo_to_qdrant(latitude, longitude, content, pubkey, ts_slot, event_id)
+        # RÊVE : comprimer à partir de 170 entrées (REVE_THRESHOLD=150 dans memory_manager)
+        if len(slot_mem['messages']) >= 170:
+            _maybe_reve(user_id, slot, slot_file)
     else:
+        # Pas d'user_id : géo seule dans uplanet_geo
+        _upsert_geo_to_qdrant(latitude, longitude, content, pubkey,
+                              datetime.utcnow().isoformat() + 'Z', event_id)
         print("No user_id provided, slot memory not updated.")
 
     print(f"Memory updated for coordinates: {latitude}, {longitude}")

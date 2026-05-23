@@ -13,6 +13,8 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 # Configuration
 DIFY_PORT=8010
 SERVICE_NAME="dify"
+SERVICE_PORT=$DIFY_PORT
+STATUS_FILE="$HOME/.zen/tmp/${SERVICE_NAME}_connection.status"
 
 # Colors for output
 RED='\033[0;31m'
@@ -23,57 +25,9 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 BOLD='\033[1m'
 
-# Connection status file
-STATUS_FILE="$HOME/.zen/tmp/${SERVICE_NAME}_connection.status"
-
 ########################################################
-## Helper Functions
+## Service-specific functions (must be defined before lib source)
 ########################################################
-
-print_header() {
-    echo -e "${BOLD}${YELLOW}╔══════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BOLD}${YELLOW}║${NC}  ${BOLD}Dify.ai Swarm Connector${NC}  (port $DIFY_PORT)          ${BOLD}${YELLOW}║${NC}"
-    echo -e "${BOLD}${YELLOW}╚══════════════════════════════════════════════════════╝${NC}"
-}
-
-print_status() {
-    local status="$1"
-    local message="$2"
-    case "$status" in
-        "OK")     echo -e "  ${GREEN}✓${NC} $message" ;;
-        "FAIL")   echo -e "  ${RED}✗${NC} $message" ;;
-        "WARN")   echo -e "  ${YELLOW}⚠${NC} $message" ;;
-        "INFO")   echo -e "  ${BLUE}ℹ${NC} $message" ;;
-        "ACTIVE") echo -e "  ${GREEN}●${NC} $message ${GREEN}[ACTIVE]${NC}" ;;
-        *)        echo -e "  $message" ;;
-    esac
-}
-
-save_connection_status() {
-    local conn_type="$1"
-    local details="$2"
-    mkdir -p "$(dirname "$STATUS_FILE")"
-    echo "CONNECTION_TYPE=$conn_type" > "$STATUS_FILE"
-    echo "CONNECTION_DETAILS=$details" >> "$STATUS_FILE"
-    echo "CONNECTION_TIME=$(date -Iseconds)" >> "$STATUS_FILE"
-    echo "CONNECTION_PORT=$DIFY_PORT" >> "$STATUS_FILE"
-}
-
-########################################################
-## Detection Functions
-########################################################
-
-check_port() {
-    local silent="${1:-false}"
-    if netstat -tulnp 2>/dev/null | grep ":$DIFY_PORT " >/dev/null || \
-       ss -tln 2>/dev/null | grep -qw ":$DIFY_PORT"; then
-        [[ "$silent" != "true" ]] && echo "Port $DIFY_PORT is open."
-        return 0
-    else
-        [[ "$silent" != "true" ]] && echo "Port $DIFY_PORT is not available."
-        return 1
-    fi
-}
 
 test_api() {
     local silent="${1:-false}"
@@ -88,6 +42,15 @@ test_api() {
     fi
 }
 
+# Source shared library (provides: print_status, save_connection_status,
+# check_port, count_p2p_nodes, check_p2p_connections, close_ipfs_p2p,
+# connect_via_swarm)
+source "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/swarm_connector_lib.sh"
+
+########################################################
+## Detection Functions
+########################################################
+
 check_local_service() {
     local silent="${1:-false}"
     if docker ps 2>/dev/null | grep -q "dify-nginx" || \
@@ -98,113 +61,15 @@ check_local_service() {
     return 1
 }
 
-check_p2p_connections() {
-    local silent="${1:-false}"
-    local p2p_conns=$(ipfs p2p ls 2>/dev/null | grep "/x/${SERVICE_NAME}" | wc -l)
-    if [[ $p2p_conns -gt 0 ]]; then
-        [[ "$silent" != "true" ]] && print_status "ACTIVE" "IPFS P2P ($p2p_conns connection(s))"
-        return 0
-    fi
-    return 1
-}
-
-count_p2p_nodes() {
-    local count=0
-    for script in ~/.zen/tmp/swarm/*/x_${SERVICE_NAME}.sh; do
-        [[ -f "$script" ]] && ((count++))
-    done
-    [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh ]] && ((count++))
-    echo $count
-}
-
-########################################################
-## P2P Connection Functions
-########################################################
-
-connect_via_swarm() {
-    local target="${1:-}"
-    echo -e "\n${BOLD}Searching IPFS Swarm for Dify nodes...${NC}"
-
-    local nodes=()
-    local node_ids=()
-
-    # Collect available scripts
-    for script in ~/.zen/tmp/swarm/*/x_${SERVICE_NAME}.sh; do
-        if [[ -f "$script" ]]; then
-            nodes+=("$script")
-            node_ids+=($(basename $(dirname "$script")))
-        fi
-    done
-
-    if [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh ]]; then
-        nodes+=("$HOME/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh")
-        node_ids+=("$IPFSNODEID")
-    fi
-
-    if [[ ${#nodes[@]} -eq 0 ]]; then
-        print_status "FAIL" "No Dify nodes found in swarm"
-        return 1
-    fi
-
-    local selected_script=""
-    local selected_node=""
-
-    if [[ -n "$target" && "$target" != "auto" ]]; then
-        # Logic to select specific node by number or ID
-        if [[ "$target" =~ ^[0-9]+$ ]]; then
-            local idx=$((target - 1))
-            selected_script="${nodes[$idx]}"
-            selected_node="${node_ids[$idx]}"
-        else
-            for i in "${!node_ids[@]}"; do
-                if [[ "${node_ids[$i]}" == *"$target"* ]]; then
-                    selected_script="${nodes[$i]}"
-                    selected_node="${node_ids[$i]}"
-                    break
-                fi
-            done
-        fi
-    else
-        # Auto-select first available
-        selected_script="${nodes[0]}"
-        selected_node="${node_ids[0]}"
-    fi
-
-    if [[ -n "$selected_script" ]]; then
-        echo "Connecting to P2P node: $selected_node"
-        if bash "$selected_script" 2>/dev/null; then
-            sleep 2
-            if test_api "true"; then
-                save_connection_status "P2P" "$selected_node"
-                print_status "OK" "Connected to $selected_node via IPFS P2P"
-                return 0
-            else
-                ipfs p2p close -p "/x/${SERVICE_NAME}-$selected_node" 2>/dev/null
-                print_status "FAIL" "P2P link established but Dify not responding"
-            fi
-        fi
-    fi
-    return 1
-}
-
-close_ipfs_p2p() {
-    local silent="${1:-false}"
-    local closed=0
-    for conn in $(ipfs p2p ls 2>/dev/null | grep "/x/${SERVICE_NAME}" | awk '{print $1}'); do
-        ipfs p2p close -p "$conn" 2>/dev/null && ((closed++))
-    done
-    if [[ $closed -gt 0 ]]; then
-        [[ "$silent" != "true" ]] && print_status "OK" "Closed $closed P2P connection(s)"
-        rm -f "$STATUS_FILE"
-        return 0
-    fi
-    [[ "$silent" != "true" ]] && print_status "INFO" "No P2P connections to close"
-    return 1
-}
-
 ########################################################
 ## Command Handlers
 ########################################################
+
+print_header() {
+    echo -e "${BOLD}${YELLOW}╔══════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BOLD}${YELLOW}║${NC}  ${BOLD}Dify.ai Swarm Connector${NC}  (port $DIFY_PORT)          ${BOLD}${YELLOW}║${NC}"
+    echo -e "${BOLD}${YELLOW}╚══════════════════════════════════════════════════════╝${NC}"
+}
 
 cmd_status() {
     print_header

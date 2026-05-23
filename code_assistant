@@ -20,6 +20,16 @@ EMBED_PY="$MY_PATH/IA/embed.py"
 PYTHON3="${HOME}/.astro/bin/python3"
 command -v "$PYTHON3" &>/dev/null || PYTHON3="$(command -v python3 2>/dev/null || echo python3)"
 
+# ── Symlink auto-install au premier lancement ────────────────────────────────
+_LOCAL_BIN="${HOME}/.local/bin"
+if [ ! -e "${_LOCAL_BIN}/code_assistant" ]; then
+    mkdir -p "$_LOCAL_BIN"
+    ln -sf "$(realpath "$0")" "${_LOCAL_BIN}/code_assistant" 2>/dev/null && \
+        echo "  ✓ Installé : ${_LOCAL_BIN}/code_assistant" && \
+        echo "    (ajoutez ~/.local/bin à PATH si besoin : export PATH=\"\$HOME/.local/bin:\$PATH\")"
+fi
+unset _LOCAL_BIN
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Fonctions
 # ─────────────────────────────────────────────────────────────────────────────
@@ -334,65 +344,158 @@ show_next_hint() {
     echo "────────────────────────────────────────────────────────────────"
 }
 
-# Prompt interactif de choix (avec injection de contexte humain)
+# Prompt interactif guidé — arbre de décision : analyse → correction → contrôle
 ask_choice() {
     local script="$1" phase="$2" kvbasename="$3"
+    local _ia_label
+    [[ "$BACKEND" == "claude" ]] && _ia_label="🤖 Claude" || _ia_label="🦙 Ollama"
+
+    # Rang d'urgence pour tri (CRITIQUE=0 > MAJEUR=1 > MOYEN=2 > MINEUR=3)
+    _urg() { case "${1^^}" in CRITIQUE) echo 0;; MAJEUR) echo 1;; MOYEN) echo 2;; *) echo 3;; esac; }
 
     echo ""
     case "$phase" in
+        # ────────────────────────────────────────────────────────────────────
         analyse)
-            echo "┌──────────────────────────────────────────────────────────────────┐"
-            echo "│  Quel problème ? 1/2/3 + contexte optionnel  ou q pour quitter  │"
-            echo "│  Ex: \"2 Focus sur le timeout IPFS ligne 131\"                   │"
-            echo "└──────────────────────────────────────────────────────────────────┘"
-            read -r -p "> " user_input
-            [ "${user_input,,}" = "q" ] && exit 0
-            local user_choice="${user_input%% *}"
-            # Nettoyer les virgules/espaces du choix
-            user_choice="${user_choice//,/}"
-            user_choice="${user_choice// /}"
-            local user_supplement="${user_input#* }"
-            [ "$user_supplement" = "$user_input" ] && user_supplement=""
-            echo ""
-            echo "  ➡️  Phase correction (choix: $user_choice)..."
-            if [ -n "$user_supplement" ]; then
-                exec "$0" "$script" --kvbasename "$kvbasename" \
-                    --phase correction --choice "$user_choice" \
-                    --supplement "$user_supplement"
-            else
-                exec "$0" "$script" --kvbasename "$kvbasename" \
-                    --phase correction --choice "$user_choice"
+            # Extraire impact + résumé + localisation pour chaque problème
+            local -A _imp _summ _loc
+            for n in 1 2 3; do
+                _imp[$n]=$(echo "$LLM_OUTPUT" | grep -A6 "^${n}\." \
+                    | grep -oiE 'Impact: \S+' | head -1 | awk '{print toupper($2)}')
+                _summ[$n]=$(echo "$LLM_OUTPUT" | grep -E "^${n}\." | head -1)
+                _loc[$n]=$(echo "$LLM_OUTPUT" | grep -A6 "^${n}\." \
+                    | grep 'Localisation:' | head -1 | sed 's/.*Localisation: *//')
+                [[ -z "${_imp[$n]}" ]] && _imp[$n]="MINEUR"
+            done
+
+            # Tri à bulles (3 éléments, ordre croissant de rang = urgence décroissante)
+            local _ord=(1 2 3)
+            for _a in 0 1; do
+                for _b in 1 2; do
+                    [[ $_b -le $_a ]] && continue
+                    if [[ "$(_urg "${_imp[${_ord[$_a]}]}")" -gt "$(_urg "${_imp[${_ord[$_b]}]}")" ]]; then
+                        local _tmp="${_ord[$_a]}"
+                        _ord[$_a]="${_ord[$_b]}"
+                        _ord[$_b]="$_tmp"
+                    fi
+                done
+            done
+
+            # Affichage trié (masque les problèmes déjà traités)
+            echo "┌────────────────────────────────────────────────────────────────────┐"
+            echo "│  Problèmes triés par urgence                                      │"
+            echo "└────────────────────────────────────────────────────────────────────┘"
+            local _shown=0
+            for _n in "${_ord[@]}"; do
+                [[ ",$SKIP_PROBLEMS," == *",$_n,"* ]] && continue
+                local _badge
+                case "${_imp[$_n]}" in
+                    CRITIQUE) _badge="🔴 CRITIQUE" ;;
+                    MAJEUR)   _badge="🟠 MAJEUR  " ;;
+                    MOYEN)    _badge="🟡 MOYEN   " ;;
+                    *)        _badge="⚪ MINEUR  " ;;
+                esac
+                printf "  [%s] %s  %s\n" "$_n" "$_badge" "${_summ[$_n]}"
+                [[ -n "${_loc[$_n]}" ]] && printf "       └─ %s\n" "${_loc[$_n]}"
+                (( _shown++ ))
+            done
+            if [[ $_shown -eq 0 ]]; then
+                echo "  ✅ Tous les problèmes ont été traités."
+                exit 0
             fi
+            echo ""
+            echo "  [1-3] corriger  [r] ré-analyser  [m <texte>] focus libre"
+            printf "  [c]=Claude  [o]=Ollama  (actuel: %s)  [q]=quitter\n" "$_ia_label"
+            read -r -p "> " user_input
+
+            case "${user_input,,}" in
+                q) exit 0 ;;
+                r) exec "$0" "$script" --kvbasename "$kvbasename" --backend "$BACKEND" \
+                       ${SKIP_PROBLEMS:+--skip "$SKIP_PROBLEMS"} ;;
+                c|claude)
+                    echo "  ↩  Relance avec Claude..."
+                    exec "$0" "$script" --kvbasename "$kvbasename" --backend claude \
+                        ${SKIP_PROBLEMS:+--skip "$SKIP_PROBLEMS"} ;;
+                o|ollama)
+                    echo "  ↩  Relance avec Ollama..."
+                    exec "$0" "$script" --kvbasename "$kvbasename" --backend ollama \
+                        ${SKIP_PROBLEMS:+--skip "$SKIP_PROBLEMS"} ;;
+                m*)
+                    local _focus="${user_input#m}"
+                    _focus="${_focus# }"
+                    [[ -z "$_focus" ]] && { read -r -p "  Focus sur : " _focus; }
+                    exec "$0" "$script" --kvbasename "$kvbasename" --backend "$BACKEND" \
+                        --supplement "$_focus" ${SKIP_PROBLEMS:+--skip "$SKIP_PROBLEMS"} ;;
+                *)
+                    local user_choice="${user_input%% *}"
+                    user_choice="${user_choice//[^0-9]/}"
+                    local user_supplement="${user_input#* }"
+                    [[ "$user_supplement" == "$user_input" ]] && user_supplement=""
+                    [[ "$user_choice" =~ ^[1-3]$ ]] || {
+                        echo "  ⚠️  Tapez 1, 2 ou 3 (ou r/m/c/o/q)."
+                        ask_choice "$script" "$phase" "$kvbasename"; return
+                    }
+                    echo "  ➡️  Correction du problème $user_choice..."
+                    local _xargs=("$0" "$script" --kvbasename "$kvbasename" --backend "$BACKEND" \
+                        --phase correction --choice "$user_choice" --problem-num "$user_choice")
+                    [[ -n "$user_supplement" ]] && _xargs+=(--supplement "$user_supplement")
+                    [[ -n "$SKIP_PROBLEMS" ]] && _xargs+=(--skip "$SKIP_PROBLEMS")
+                    exec "${_xargs[@]}"
+                    ;;
+            esac
             ;;
+
+        # ────────────────────────────────────────────────────────────────────
         correction)
-            echo "┌──────────────────────────────────────────────────────────────────┐"
-            echo "│  Variante ? a/b/c + contexte optionnel  ou q pour quitter       │"
-            echo "│  [Entrée] = variante a (première proposition)                   │"
-            echo "└──────────────────────────────────────────────────────────────────┘"
+            echo "  [a/b/c] choisir variante  [r] régénérer  [m <texte>] contrainte"
+            echo "  [s] passer ce problème    [q] quitter    (Entrée = variante a)"
             read -r -p "> " user_input
-            [ "${user_input,,}" = "q" ] && exit 0
-            local user_choice="${user_input%% *}"
-            [ -z "$user_choice" ] && user_choice="a"
-            local user_supplement="${user_input#* }"
-            [ "$user_supplement" = "$user_input" ] && user_supplement=""
-            echo ""
-            echo "  ➡️  Contrôle + application du patch (variante: $user_choice)..."
-            if [ -n "$user_supplement" ]; then
-                exec "$0" "$script" --kvbasename "$kvbasename" \
-                    --phase controle --choice "$user_choice" \
-                    --supplement "$user_supplement" --patch
-            else
-                exec "$0" "$script" --kvbasename "$kvbasename" \
-                    --phase controle --choice "$user_choice" --patch
-            fi
+
+            case "${user_input,,}" in
+                q) exit 0 ;;
+                s|skip)
+                    local _ns="${SKIP_PROBLEMS:+$SKIP_PROBLEMS,}${PROBLEM_NUM:-1}"
+                    echo "  ⏭️  Problème ${PROBLEM_NUM:-1} passé."
+                    exec "$0" "$script" --kvbasename "$kvbasename" --backend "$BACKEND" \
+                        --skip "$_ns" ;;
+                r*)
+                    local _supp="${user_input#r}"; _supp="${_supp# }"
+                    local _xargs=("$0" "$script" --kvbasename "$kvbasename" --backend "$BACKEND" \
+                        --phase correction --choice "${PROBLEM_NUM:-1}")
+                    [[ -n "$_supp" ]] && _xargs+=(--supplement "$_supp")
+                    [[ -n "$PROBLEM_NUM" ]] && _xargs+=(--problem-num "$PROBLEM_NUM")
+                    [[ -n "$SKIP_PROBLEMS" ]] && _xargs+=(--skip "$SKIP_PROBLEMS")
+                    exec "${_xargs[@]}" ;;
+                m*)
+                    local _focus="${user_input#m}"; _focus="${_focus# }"
+                    [[ -z "$_focus" ]] && { read -r -p "  Contrainte : " _focus; }
+                    local _xargs=("$0" "$script" --kvbasename "$kvbasename" --backend "$BACKEND" \
+                        --phase correction --choice "${PROBLEM_NUM:-1}" --supplement "$_focus")
+                    [[ -n "$PROBLEM_NUM" ]] && _xargs+=(--problem-num "$PROBLEM_NUM")
+                    [[ -n "$SKIP_PROBLEMS" ]] && _xargs+=(--skip "$SKIP_PROBLEMS")
+                    exec "${_xargs[@]}" ;;
+                *)
+                    local user_choice="${user_input%% *}"
+                    [[ -z "$user_choice" ]] && user_choice="a"
+                    user_choice="${user_choice//[^abc]/}"
+                    [[ -z "$user_choice" ]] && user_choice="a"
+                    local user_supplement="${user_input#* }"
+                    [[ "$user_supplement" == "$user_input" ]] && user_supplement=""
+                    echo "  ➡️  Contrôle + patch (variante $user_choice)..."
+                    local _xargs=("$0" "$script" --kvbasename "$kvbasename" --backend "$BACKEND" \
+                        --phase controle --choice "$user_choice" --patch)
+                    [[ -n "$user_supplement" ]] && _xargs+=(--supplement "$user_supplement")
+                    [[ -n "$PROBLEM_NUM" ]] && _xargs+=(--problem-num "$PROBLEM_NUM")
+                    [[ -n "$SKIP_PROBLEMS" ]] && _xargs+=(--skip "$SKIP_PROBLEMS")
+                    exec "${_xargs[@]}" ;;
+            esac
             ;;
+
+        # ────────────────────────────────────────────────────────────────────
         controle)
-            local _patch_mode="${4:-false}"
-            echo "┌────────────────────────────────────────────────────────────┐"
-            echo "│  Appliquer la correction ? (o = oui / n = non)            │"
-            echo "└────────────────────────────────────────────────────────────┘"
+            echo "  Appliquer la correction ? [Y/o]=oui  [n]=non  [q]=quitter"
             read -r -p "> " user_choice
-            if [[ "$user_choice" == "o" || "$user_choice" == "y" ]]; then
+            if [[ "$user_choice" =~ ^[oOyY]$ ]]; then
                 local last_v
                 last_v=$($PYTHON3 -c "
 import json, os
@@ -400,17 +503,11 @@ p = os.path.expanduser('~/.zen/flashmem/code_assistant/$kvbasename.json')
 d = json.load(open(p)) if os.path.isfile(p) else {}
 print(d.get('last_variant_choice', 'a'))
 " 2>/dev/null)
-                if $_patch_mode; then
-                    echo ""
-                    echo "  🔧 Application directe de la variante ${last_v} (--patch actif)..."
-                    exec "$0" "$script" --kvbasename "$kvbasename" \
-                        --phase correction --choice "$last_v" --patch
-                else
-                    echo ""
-                    echo "  💡 Pour appliquer :"
-                    echo "     $(basename "$0") $(basename "$script") --kvbasename $kvbasename \\"
-                    echo "       --phase correction --choice $last_v --patch"
-                fi
+                echo "  🔧 Application de la variante ${last_v}..."
+                exec "$0" "$script" --kvbasename "$kvbasename" --backend "$BACKEND" \
+                    --phase correction --choice "$last_v" --patch \
+                    ${PROBLEM_NUM:+--problem-num "$PROBLEM_NUM"} \
+                    ${SKIP_PROBLEMS:+--skip "$SKIP_PROBLEMS"}
             fi
             ;;
     esac
@@ -438,27 +535,34 @@ if [ ! -f "$PY_BACKEND" ]; then
     exit 1
 fi
 
-# ── Assurer qu'Ollama est disponible via ollama.me.sh ────────────────────
-if ! curl -sf --max-time 1 http://localhost:11434/api/tags &>/dev/null; then
-    if [ -f "$OLLAMA_STARTER" ]; then
-        echo "🔌 Démarrage d'Ollama via ollama.me.sh..."
-        bash "$OLLAMA_STARTER" &>/dev/null &
-        echo -n "  Attente Ollama"
-        for i in $(seq 1 15); do
-            sleep 1; echo -n "."
-            if curl -sf --max-time 1 http://localhost:11434/api/tags &>/dev/null; then
-                echo " ✓"; break
+# ── Assurer qu'Ollama est disponible via ollama.me.sh (backend ollama uniquement) ──
+if [[ "$BACKEND" == "ollama" ]]; then
+    if ! curl -sf --max-time 1 http://localhost:11434/api/tags &>/dev/null; then
+        if [ -f "$OLLAMA_STARTER" ]; then
+            echo "🔌 Démarrage d'Ollama via ollama.me.sh..."
+            bash "$OLLAMA_STARTER" &>/dev/null &
+            echo -n "  Attente Ollama"
+            for i in $(seq 1 15); do
+                sleep 1; echo -n "."
+                if curl -sf --max-time 1 http://localhost:11434/api/tags &>/dev/null; then
+                    echo " ✓"; break
+                fi
+            done
+            if ! curl -sf --max-time 1 http://localhost:11434/api/tags &>/dev/null; then
+                echo ""
+                echo "  ⚠️  Ollama non accessible après 15s"
+                echo "     Relancez manuellement : bash $OLLAMA_STARTER"
+                exit 1
             fi
-        done
-        if ! curl -sf --max-time 1 http://localhost:11434/api/tags &>/dev/null; then
-            echo ""
-            echo "  ⚠️  Ollama non accessible après 15s"
-            echo "     Relancez manuellement : bash $OLLAMA_STARTER"
+        else
+            echo "  ⚠️  Ollama non disponible (localhost:11434) et ollama.me.sh absent"
+            echo "     Installez Ollama : https://ollama.ai  puis : ollama serve"
             exit 1
         fi
-    else
-        echo "  ⚠️  Ollama non disponible (localhost:11434) et ollama.me.sh absent"
-        echo "     Installez Ollama : https://ollama.ai  puis : ollama serve"
+    fi
+elif [[ "$BACKEND" == "claude" ]]; then
+    if ! command -v claude &>/dev/null; then
+        echo "  ⚠️  claude CLI introuvable. Installez : npm install -g @anthropic-ai/claude-code"
         exit 1
     fi
 fi
@@ -476,6 +580,7 @@ fi
 
 SCRIPT=""
 KVBASENAME="default"
+BACKEND="ollama"  # ollama (local) | claude (claude CLI -p)
 MODEL=""          # vide = auto-sélection par phase (deepseek-r1 analyse, qwen2.5-coder correction)
 MODEL_EXPLICIT=false
 PHASE="analyse"
@@ -491,6 +596,8 @@ HUMAN_LLM=false       # --human : mode interactif LLM (voir/modifier chaque prom
 DOC_EXTRACT=false      # --doc : inclure les .md de docs/ dans le contexte LLM
 TEST_MODE=false        # --test : inclure les tests unitaires dans le contexte + vérification couverture
 SUPPLEMENT=""          # contexte humain injecté dans le prompt LLM
+SKIP_PROBLEMS=""       # numéros de problèmes déjà traités, ex: "1,3"
+PROBLEM_NUM=""         # numéro du problème en cours de correction
 EXCLUDE_ARGS=()
 
 while [[ $# -gt 0 ]]; do
@@ -510,6 +617,8 @@ while [[ $# -gt 0 ]]; do
         --exclude=*)      EXCLUDE_ARGS+=("--exclude" "${1#--exclude=}"); shift ;;
         --choice)         CHOICE="$2"; shift 2 ;;
         --choice=*)       CHOICE="${1#--choice=}"; shift ;;
+        --backend)        BACKEND="$2"; shift 2 ;;
+        --backend=*)      BACKEND="${1#--backend=}"; shift ;;
         --patch)          PATCH_MODE=true; shift ;;
         --no-qdrant)      NO_QDRANT=true; shift ;;
         --diff-format)    DIFF_FORMAT="$2"; shift 2 ;;
@@ -520,6 +629,10 @@ while [[ $# -gt 0 ]]; do
         --doc)            DOC_EXTRACT=true;   shift ;;
         --test)           TEST_MODE=true;     shift ;;
         --setup)          SETUP_MODE=true; shift ;;
+        --skip)           SKIP_PROBLEMS="$2"; shift 2 ;;
+        --skip=*)         SKIP_PROBLEMS="${1#--skip=}"; shift ;;
+        --problem-num)    PROBLEM_NUM="$2"; shift 2 ;;
+        --problem-num=*)  PROBLEM_NUM="${1#--problem-num=}"; shift ;;
         -*)               echo "Option inconnue : $1"; show_help ;;
         *)                [ -z "$SCRIPT" ] && SCRIPT="$1"; shift ;;
     esac
@@ -635,7 +748,11 @@ printf "║  🤖 CODE ASSISTANT — Phase : %-32s ║\n" "${PHASE^^}"
 echo "╠══════════════════════════════════════════════════════════════╣"
 printf "║  Script  : %-50s ║\n" "$SCRIPT_BASENAME"
 printf "║  Session : %-50s ║\n" "$KVBASENAME"
-printf "║  Modèle  : %-50s ║\n" "$MODEL"
+if [[ "$BACKEND" == "claude" ]]; then
+    printf "║  Modèle  : %-50s ║\n" "🤖 Claude (API)"
+else
+    printf "║  Modèle  : %-50s ║\n" "${MODEL:-🦙 Ollama (auto)}"
+fi
 if [[ "$PROFILE" == "client" ]]; then
     printf "║  Profil  : %-50s ║\n" "🌐 client  (HTML/CSS/JS vanilla·jQuery·CDN)"
 else
@@ -965,6 +1082,7 @@ PY_ARGS=(
     --diff-format "$DIFF_FORMAT"
     --kvbasename  "$KVBASENAME"
     --script     "$SCRIPT_REALPATH"
+    --backend    "$BACKEND"
 )
 # --model uniquement si l'utilisateur l'a spécifié explicitement
 # Sinon, code_assistant.py utilise PHASE_MODELS (deepseek-r1 pour analyse, qwen2.5-coder pour correction)
@@ -984,6 +1102,23 @@ if $PATCH_MODE && [ "$PHASE" = "correction" ] && [ -n "$CHOICE" ]; then
     PATCH_JSON=$(echo "$CODE_JSON" | python3 "$PY_BACKEND" "${PY_ARGS_PATCH[@]}" 2>/dev/tty)
     stop_spinner
     apply_patches "$PATCH_JSON" "$SCRIPT_REALPATH"
+
+    # ── Proposer la suite si d'autres problèmes restent ──────────────────────
+    if [ -n "$PROBLEM_NUM" ]; then
+        _new_skip="${SKIP_PROBLEMS:+$SKIP_PROBLEMS,}${PROBLEM_NUM}"
+        _n_skip=$(echo "$_new_skip" | tr ',' '\n' | grep -c '[1-3]' 2>/dev/null || echo 0)
+        _remaining=$(( 3 - _n_skip ))
+        [ "$_remaining" -lt 0 ] && _remaining=0
+        if [ "$_remaining" -gt 0 ]; then
+            echo ""
+            echo "  📂 $_remaining problème(s) restant(s)."
+            read -r -p "  Traiter le suivant ? [o/N] : " _cont
+            if [[ "$_cont" =~ ^[oOyY]$ ]]; then
+                exec "$0" "$SCRIPT_REALPATH" --kvbasename "$KVBASENAME" \
+                    --backend "$BACKEND" --skip "$_new_skip"
+            fi
+        fi
+    fi
     show_next_hint "$SCRIPT_REALPATH" "$PHASE" "$KVBASENAME" "$CHOICE"
     exit 0
 fi
@@ -1028,7 +1163,10 @@ if $PATCH_MODE && [ "$PHASE" = "controle" ] && [ -n "$CHOICE" ]; then
     echo ""
     echo "  ✅ Contrôle terminé — application directe de la variante $CHOICE (--patch actif)..."
     exec "$0" "$SCRIPT_REALPATH" --kvbasename "$KVBASENAME" \
-        --phase correction --choice "$CHOICE" --patch
+        --backend "$BACKEND" \
+        --phase correction --choice "$CHOICE" --patch \
+        ${PROBLEM_NUM:+--problem-num "$PROBLEM_NUM"} \
+        ${SKIP_PROBLEMS:+--skip "$SKIP_PROBLEMS"}
 fi
 
 # Afficher le prochain hint ou demander le choix interactivement

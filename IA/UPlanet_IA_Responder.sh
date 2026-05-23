@@ -44,6 +44,10 @@ MY_PATH="$(dirname "$0")"
 MY_PATH="$( cd "$MY_PATH" && pwd )"
 exec 2>&1 >> ~/.zen/tmp/IA.log
 
+BRO_SCRIPT_ID="ia_responder"
+# shellcheck source=bro_common_lib.sh
+source "$MY_PATH/bro_common_lib.sh" || { echo "ERROR: bro_common_lib.sh failed to load" >&2; exit 1; }
+
 # Function to send error email to CAPTAINEMAIL using mailjet.sh
 send_error_email() {
     local error_message="$1"
@@ -130,69 +134,14 @@ EOF
     (sleep 3600 && rm -f "$error_report") &
 }
 
-# Function to get user language from LANG file
-get_user_language() {
-    local email="$1"
-    local lang_file="$HOME/.zen/game/nostr/${email}/LANG"
-    
-    if [[ -f "$lang_file" ]]; then
-        local user_lang=$(cat "$lang_file" 2>/dev/null | tr -d '\n' | head -c 10)
-        if [[ -n "$user_lang" ]]; then
-            echo "$user_lang"
-            return 0
-        fi
-    fi
-    
-    # Default to French if no language file found
-    echo "fr"
-    return 1
-}
+# Wrappers → bro_common_lib.sh
+get_user_language() { bro_user_language "$1"; }
 
-# Function to get user uDRIVE directory based on email
-get_user_udrive_path() {
-    local email="$1"
-    if [ -z "$email" ]; then
-        echo "Error: Email required for uDRIVE path" >&2
-        return 1
-    fi
-    
-    # Find user directory by email
-    local nostr_base_path="$HOME/.zen/game/nostr"
-    local user_dir=""
-    
-    if [ -d "$nostr_base_path" ]; then
-        for email_dir in "$nostr_base_path"/*; do
-            if [ -d "$email_dir" ] && [[ "$email_dir" == *"$email"* ]]; then
-                user_dir="$email_dir"
-                break
-            fi
-        done
-    fi
-    
-    if [ -n "$user_dir" ] && [ -d "$user_dir" ]; then
-        local udrive_path="$user_dir/APP/uDRIVE"
-        mkdir -p "$udrive_path"
-        echo "$udrive_path"
-        return 0
-    else
-        echo "Error: User directory not found for email: $email" >&2
-        return 1
-    fi
-}
-
-# Function to get user uDRIVE path from KNAME (email format)
+# Wrappers → bro_common_lib.sh (factorisation)
+get_user_udrive_path()    { bro_udrive_path "$1"; }
 get_user_udrive_from_kname() {
-    # Check if KNAME is in email format
     if [[ "$KNAME" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
-        local udrive_path=$(get_user_udrive_path "$KNAME")
-        if [ $? -eq 0 ]; then
-            echo "Using uDRIVE path: $udrive_path" >&2
-            echo "$udrive_path"
-            return 0
-        else
-            echo "Warning: Could not get uDRIVE path for email: $KNAME" >&2
-            return 1
-        fi
+        bro_udrive_path "$KNAME"
     else
         echo "Warning: KNAME is not in email format: $KNAME" >&2
         return 1

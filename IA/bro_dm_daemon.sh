@@ -24,6 +24,11 @@
 MY_PATH="$(dirname "$(realpath "$0")")"
 . "$MY_PATH/../tools/my.sh" 2>/dev/null || true
 
+BRO_SCRIPT_ID="bro_dm"
+BRO_LOG_FILE="$HOME/.zen/tmp/bro_dm_daemon.log"
+# shellcheck source=bro_common_lib.sh
+source "$MY_PATH/bro_common_lib.sh" 2>/dev/null || true
+
 QUEUE_DIR="$HOME/.zen/tmp/bro_dm_queue"
 PID_FILE="$HOME/.zen/tmp/bro_dm_daemon.pid"
 LOG_FILE="$HOME/.zen/tmp/bro_dm_daemon.log"
@@ -33,18 +38,42 @@ BRO_SYNC="$MY_PATH/nextcloud_bro_sync.sh"
 MAILJET="$MY_PATH/../tools/mailjet.sh"
 
 mkdir -p "$QUEUE_DIR"
-mkdir -p "$HOME/.zen/flashmem"
+mkdir -p "$HOME/.zen/tmp/flashmem"
 
-## ── Sémaphore : limiter les jobs parallèles (évite la saturation Ollama/GPU) ─
-_BRO_MAX_JOBS=3
+## ── Sémaphore : jobs parallèles dynamiques selon RAM + GPU ─────────────
+## Base: RAM_GiB / 4 (4 GiB par job Ollama), min 1 max 8.
+## Si GPU NVIDIA détecté (Brain) : doublement du quota.
+_BRO_MAX_JOBS=$(python3 - <<'PYEOF'
+import subprocess, re, os
+try:
+    mem_kb = int(re.search(r'MemAvailable:\s+(\d+)', open('/proc/meminfo').read()).group(1))
+    ram_gib = mem_kb / 1024 / 1024
+except Exception:
+    ram_gib = 4.0
+jobs = max(1, min(8, int(ram_gib / 4)))
+try:
+    r = subprocess.run(
+        ['nvidia-smi', '--query-gpu=memory.total', '--format=csv,noheader,nounits'],
+        capture_output=True, text=True, timeout=3)
+    if r.returncode == 0 and r.stdout.strip():
+        jobs = min(8, jobs * 2)
+except Exception:
+    pass
+print(jobs)
+PYEOF
+)
+[[ -z "$_BRO_MAX_JOBS" || ! "$_BRO_MAX_JOBS" =~ ^[0-9]+$ ]] && _BRO_MAX_JOBS=3
 _BRO_SLOTS_DIR="$HOME/.zen/tmp/bro_dm_slots"
 mkdir -p "$_BRO_SLOTS_DIR"
 
 IA_LOG="$HOME/.zen/tmp/IA.log"
 _log() { echo "[$(date '+%H:%M:%S')] [bro_dm] $*" | tee -a "$LOG_FILE" -a "$IA_LOG"; }
 
+## Wrapper sécurisé : NSEC passé via stdin, jamais en argument (invisible dans ps aux)
+_send_dm() { printf '%s\n' "$NODE_NSEC" | python3 "$SECURE_DM" --nsec-stdin "$@" 2>/dev/null; }
+
 ## ── Alerte email capitaine (rate-limitée à 1/24h) ────────────────────
-_ALERT_LOCK="$HOME/.zen/flashmem/bro_dm_alert.lock"
+_ALERT_LOCK="$HOME/.zen/tmp/flashmem/bro_dm_alert.lock"
 _alert_captain() {
     local msg="$1"
     [[ -z "${CAPTAINEMAIL:-}" ]] && return
@@ -125,8 +154,9 @@ echo $$ > "$PID_FILE"
 ## Nettoyer les slots de l'instance précédente (PID mort)
 rm -f "$_BRO_SLOTS_DIR"/slot*.pid 2>/dev/null
 _BRO_CLEAN_STOP=false
+_SWEEP_PID=""
 trap '_BRO_CLEAN_STOP=true' INT TERM
-trap 'wait; rm -f "$PID_FILE"; _log "Daemon DM arrêté"; [[ "$_BRO_CLEAN_STOP" == false ]] && _alert_captain "Le daemon bro_dm_daemon.sh sest arrêté de façon inattendue (PID $$)."' EXIT
+trap 'wait; kill "${_SWEEP_PID:-}" 2>/dev/null; rm -f "$PID_FILE" "$_BRO_SLOTS_DIR"/slot*.pid; _log "Daemon DM arrêté"; [[ "$_BRO_CLEAN_STOP" == false ]] && _alert_captain "Le daemon bro_dm_daemon.sh sest arrêté de façon inattendue (PID $$)."' EXIT
 
 _log "🚀 Daemon DM NODE démarré (PID $$, max ${_BRO_MAX_JOBS} jobs) — queue: $QUEUE_DIR"
 
@@ -136,7 +166,7 @@ _log "🚀 Daemon DM NODE démarré (PID $$, max ${_BRO_MAX_JOBS} jobs) — queu
 _handle_badge() {
     local sender="$1" skill="$2"
     [[ -z "$skill" ]] && {
-        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+        _send_dm "$sender" \
             "⚠️ Usage : #badge <compétence>  ex: #badge docker" \
             "${_RELAYS[0]}" 2>/dev/null
         return
@@ -145,14 +175,14 @@ _handle_badge() {
 
     local GENERATE_IMG="$MY_PATH/generate_image.sh"
     if [[ ! -x "$GENERATE_IMG" ]]; then
-        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+        _send_dm "$sender" \
             "⚠️ Le générateur d'images (ComfyUI) n'est pas disponible sur cette station." \
             "${_RELAYS[0]}" 2>/dev/null
         return
     fi
 
     # Informer l'utilisateur que la génération est en cours
-    python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+    _send_dm "$sender" \
         "🎨 Génération du badge '${skill}'… Cela peut prendre 30-60 secondes (ComfyUI)." \
         "${_RELAYS[0]}" 2>/dev/null
 
@@ -164,12 +194,12 @@ _handle_badge() {
         _log "🎨 #badge OK pour $skill : $ipfs_url"
         local _badge_reply
         _badge_reply=$(printf "✅ Badge '%s' généré !\n🖼️ %s\n\nCopiez ce lien pour l'ajouter comme ressource dans l'onglet Formation de my_wotx2.html" "$skill" "$ipfs_url")
-        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+        _send_dm "$sender" \
             "$_badge_reply" \
             "${_RELAYS[0]}" 2>/dev/null
     else
         _log "WARN: #badge échec génération pour $skill"
-        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+        _send_dm "$sender" \
             "❌ Échec de la génération pour '${skill}'. Vérifiez que ComfyUI est démarré (port 8188)." \
             "${_RELAYS[0]}" 2>/dev/null
     fi
@@ -182,14 +212,14 @@ _handle_badge() {
 _handle_craft() {
     local sender="$1" url="$2"
     [[ -z "$url" ]] && {
-        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+        _send_dm "$sender" \
             "⚠️ Usage : #craft <url>  ex: #craft https://instructables.com/Arduino-TV-B-Gone/" \
             "${_RELAYS[0]}" 2>/dev/null
         return
     }
     _log "🔨 #craft analyse URL de ${sender:0:12}...: ${url:0:80}"
 
-    python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+    _send_dm "$sender" \
         "⏳ Analyse IA en cours pour : $url" "${_RELAYS[0]}" 2>/dev/null
 
     local content
@@ -206,7 +236,7 @@ _handle_craft() {
     fi
 
     if [[ ${#content} -lt 40 ]]; then
-        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+        _send_dm "$sender" \
             "❌ Impossible de récupérer le contenu de : $url" "${_RELAYS[0]}" 2>/dev/null
         return
     fi
@@ -244,7 +274,7 @@ CRAFTPROMPT
     [[ -z "$json_answer" ]] && json_answer='{"error":"IA indisponible — réessayez plus tard"}'
 
     _log "🔨 #craft réponse JSON pour ${sender:0:12}...: ${json_answer:0:100}"
-    python3 "$SECURE_DM" "$NODE_NSEC" "$sender" "$json_answer" "${_RELAYS[0]}" 2>/dev/null \
+    _send_dm "$sender" "$json_answer" "${_RELAYS[0]}" \
         && _log "🔨 #craft réponse envoyée" \
         || _log "WARN: #craft échec envoi DM"
 }
@@ -264,27 +294,18 @@ _handle_bro() {
         answer="⚠️ Le service IA est temporairement indisponible. Réessayez dans quelques minutes."
     fi
 
-    python3 "$SECURE_DM" \
-        "$NODE_NSEC" "$sender" "$answer" \
-        "${_RELAYS[0]}" 2>/dev/null \
+    _send_dm \
+        "$sender" "$answer" \
+        "${_RELAYS[0]}" \
         && _log "🧠 BRO réponse envoyée à ${sender:0:12}..." \
         || _log "WARN: BRO échec envoi DM à ${sender:0:12}..."
 }
 
-## ── Résoudre email depuis sender hex (retourne "" si non hébergé) ─────
-_sender_email() {
-    local _hex_file
-    _hex_file=$(grep -rl "^${1}$" "$HOME/.zen/game/nostr/"*"/HEX" 2>/dev/null | head -1)
-    [[ -n "$_hex_file" ]] && basename "$(dirname "$_hex_file")" || echo ""
-}
+## ── Résoudre email depuis sender hex → délégué à bro_common_lib.sh ──
+_sender_email() { bro_resolve_email "$1"; }
 
-## ── Vérifier accès slot (0 = tous, 1-12 = sociétaires) ──────────────
-_check_slot_access() {
-    local email="$1" slot="${2:-0}"
-    [[ "$slot" == "0" ]] && return 0
-    [[ -d "$HOME/.zen/game/players/$email" ]] && return 0
-    return 1
-}
+## ── Vérifier accès slot → bro_common_lib.sh ─────────────────────────
+_check_slot_access() { bro_check_slot_access "$@"; }
 
 ## ── Canal "plain" #rec:<skill> : contribution à la mémoire partagée ───────
 ## Syntaxe : "#rec:devops Je maîtrise nginx" → ~/.zen/tmp/flashmem/skills/devops.md
@@ -295,11 +316,11 @@ _handle_rec_skill() {
 
     if python3 "$MY_PATH/skill_flashmem.py" write \
             --skill "$skill" --text "$content" --npub "$sender" 2>/dev/null; then
-        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+        _send_dm "$sender" \
             "💾 Mémorisé dans la base partagée 'skills/${skill}'. Merci pour la contribution ! 🧠" \
             "${_RELAYS[0]}" 2>/dev/null
     else
-        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+        _send_dm "$sender" \
             "❌ Échec mémorisation skill $skill." \
             "${_RELAYS[0]}" 2>/dev/null
     fi
@@ -341,7 +362,7 @@ ${content}"
         fi
     fi
 
-    python3 "$SECURE_DM" "$NODE_NSEC" "$sender" "${reply}" "${_RELAYS[0]}" 2>/dev/null
+    _send_dm "$sender" "${reply}" "${_RELAYS[0]}"
 }
 
 ## ── Canal "plain" avec skill context : question liée à un skill ────────────
@@ -367,7 +388,7 @@ _handle_bro_skill() {
     fi
     [[ -z "$answer" ]] && answer="⚠️ Service IA temporairement indisponible."
 
-    python3 "$SECURE_DM" "$NODE_NSEC" "$sender" "$answer" "${_RELAYS[0]}" 2>/dev/null \
+    _send_dm "$sender" "$answer" "${_RELAYS[0]}" \
         && _log "🎓 BRO skill:$skill réponse envoyée à ${sender:0:12}..." \
         || _log "WARN: BRO skill:$skill échec envoi DM"
 }
@@ -384,7 +405,7 @@ _handle_rec() {
     email=$(_sender_email "$sender")
     if [[ -z "$email" ]]; then
         _log "WARN: #rec DM: ${sender:0:12}... non hébergé sur cette station"
-        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+        _send_dm "$sender" \
             "❌ Votre compte n'est pas hébergé sur cette station — mémoire non sauvegardée." \
             "${_RELAYS[0]}" 2>/dev/null
         return
@@ -393,7 +414,7 @@ _handle_rec() {
     ## Vérifier accès slot
     if ! _check_slot_access "$email" "$slot"; then
         _log "WARN: #rec slot $slot refusé pour ${sender:0:12}... ($email)"
-        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+        _send_dm "$sender" \
             "⚠️ Accès refusé : le slot $slot est réservé aux sociétaires. Le slot 0 reste accessible." \
             "${_RELAYS[0]}" 2>/dev/null
         return
@@ -402,17 +423,7 @@ _handle_rec() {
 
     ## Construire l'event JSON minimal pour short_memory.py
     local event_json
-    event_json=$(python3 -c "
-import json, sys, time
-print(json.dumps({'event': {
-    'id': 'dm_rec_' + str(int(time.time())),
-    'pubkey': sys.argv[1],
-    'content': sys.argv[2],
-    'created_at': int(time.time()),
-    'kind': 4,
-    'tags': [],
-}}))
-" "$sender" "$content" 2>/dev/null)
+    event_json=$(jq -n --arg pub "$sender" --arg msg "$content" '{event: {pubkey: $pub, content: $msg}}')
 
     if [[ -n "$event_json" ]]; then
         python3 "$MY_PATH/short_memory.py" "$event_json" "0" "0" "$slot" "$email" 2>/dev/null \
@@ -420,7 +431,7 @@ print(json.dumps({'event': {
             || _log "WARN: échec short_memory.py pour $email slot $slot"
     fi
 
-    python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+    _send_dm "$sender" \
         "💾 Mémorisé dans slot $slot (${#content} caractères). Envoyez une question BRO par DM pour utiliser ce contexte." \
         "${_RELAYS[0]}" 2>/dev/null
 }
@@ -433,13 +444,13 @@ _handle_mem() {
     local email
     email=$(_sender_email "$sender")
     if [[ -z "$email" ]]; then
-        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+        _send_dm "$sender" \
             "❌ Votre compte n'est pas hébergé sur cette station." \
             "${_RELAYS[0]}" 2>/dev/null
         return
     fi
 
-    local user_dir="$HOME/.zen/flashmem/$email"
+    local user_dir="$HOME/.zen/tmp/flashmem/$email"
     local reply
 
     if [[ "$slot" == "0" ]]; then
@@ -488,7 +499,7 @@ PYEOF
     fi
 
     _log "📖 #mem répondu à ${sender:0:12}... ($email, slot $slot)"
-    python3 "$SECURE_DM" "$NODE_NSEC" "$sender" "${reply:-Erreur lecture mémoire.}" \
+    _send_dm "$sender" "${reply:-Erreur lecture mémoire.}" \
         "${_RELAYS[0]}" 2>/dev/null
 }
 
@@ -500,20 +511,20 @@ _handle_reset() {
     local email
     email=$(_sender_email "$sender")
     if [[ -z "$email" ]]; then
-        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+        _send_dm "$sender" \
             "❌ Votre compte n'est pas hébergé sur cette station." \
             "${_RELAYS[0]}" 2>/dev/null
         return
     fi
 
     if ! _check_slot_access "$email" "$slot"; then
-        python3 "$SECURE_DM" "$NODE_NSEC" "$sender" \
+        _send_dm "$sender" \
             "⚠️ Accès refusé : le slot $slot est réservé aux sociétaires." \
             "${_RELAYS[0]}" 2>/dev/null
         return
     fi
 
-    local user_dir="$HOME/.zen/flashmem/$email"
+    local user_dir="$HOME/.zen/tmp/flashmem/$email"
     local reply
     if [[ "$slot" == "0" ]]; then
         rm -f "$user_dir"/slot*.json 2>/dev/null
@@ -528,22 +539,19 @@ _handle_reset() {
     fi
 
     _log "🗑️ #reset ($email, slot $slot)"
-    python3 "$SECURE_DM" "$NODE_NSEC" "$sender" "$reply" \
-        "${_RELAYS[0]}" 2>/dev/null
+    _send_dm "$sender" "$reply" \
+        "${_RELAYS[0]}"
 }
 
 ## ── Helper : parser un payload JSON en plusieurs variables shell ─────
 ## Usage : _payload_get "$payload" field1 field2 … → variables _FIELD1 _FIELD2 …
 _payload_get() {
     local _p="$1"; shift
-    eval "$(echo "$_p" | python3 - "$@" <<'PYEOF'
-import json, sys, shlex
-d = json.load(sys.stdin)
-for field in sys.argv[1:]:
-    val = d.get(field, "")
-    print(f"_{field.upper()}={shlex.quote(str(val))}")
-PYEOF
-    )"
+    local _f _v
+    for _f in "$@"; do
+        _v=$(jq -r --arg k "$_f" '.[$k] // ""' <<< "$_p" 2>/dev/null)
+        printf -v "_${_f^^}" '%s' "$_v"
+    done
 }
 
 ## ── Canal "vocals" : publication kind 1222/1244 depuis la home station ─
@@ -558,13 +566,9 @@ _handle_vocals() {
     [[ -z "$_EMAIL" || -z "$_CID" || -z "$_FILENAME" ]] && \
         _log "WARN: ✈️ vocals: payload incomplet" && return
 
-    local _USER_DIR="${HOME}/.zen/game/nostr/${_EMAIL}"
-    [[ ! -d "$_USER_DIR" ]] && \
-        _log "WARN: ✈️ vocals: $_EMAIL non hébergé ici" && return
-    [[ -f "${_USER_DIR}/.roaming" ]] && \
-        _log "WARN: ✈️ vocals: $_EMAIL en roaming sur cette station" && return
+    bro_user_is_local "$_EMAIL" || { _log "WARN: ✈️ vocals: $_EMAIL non hébergé ou en roaming"; return; }
 
-    local _SECRET="${_USER_DIR}/.secret.nostr"
+    local _SECRET="$HOME/.zen/game/nostr/${_EMAIL}/.secret.nostr"
     [[ ! -f "$_SECRET" ]] && \
         _log "WARN: ✈️ vocals: .secret.nostr absent pour $_EMAIL" && return
 
@@ -619,13 +623,9 @@ _handle_webcam() {
     [[ -z "$_EMAIL" || -z "$_CID" || -z "$_FILENAME" ]] && \
         _log "WARN: ✈️ webcam: payload incomplet" && return
 
-    local _USER_DIR="${HOME}/.zen/game/nostr/${_EMAIL}"
-    [[ ! -d "$_USER_DIR" ]] && \
-        _log "WARN: ✈️ webcam: $_EMAIL non hébergé ici" && return
-    [[ -f "${_USER_DIR}/.roaming" ]] && \
-        _log "WARN: ✈️ webcam: $_EMAIL en roaming sur cette station" && return
+    bro_user_is_local "$_EMAIL" || { _log "WARN: ✈️ webcam: $_EMAIL non hébergé ou en roaming"; return; }
 
-    local _SECRET="${_USER_DIR}/.secret.nostr"
+    local _SECRET="$HOME/.zen/game/nostr/${_EMAIL}/.secret.nostr"
     [[ ! -f "$_SECRET" ]] && \
         _log "WARN: ✈️ webcam: .secret.nostr absent pour $_EMAIL" && return
 
@@ -686,13 +686,9 @@ _handle_zen_like() {
     [[ "$_zen_num" != "1" ]] && \
         _log "WARN: ✈️ zen_like: ZEN_AMOUNT=0 ignoré" && return
 
-    local _USER_DIR="${HOME}/.zen/game/nostr/${_EMAIL}"
-    [[ ! -d "$_USER_DIR" ]] && \
-        _log "WARN: ✈️ zen_like: $_EMAIL non hébergé ici" && return
-    [[ -f "${_USER_DIR}/.roaming" ]] && \
-        _log "WARN: ✈️ zen_like: $_EMAIL encore en roaming sur home station — paiement ignoré" && return
+    bro_user_is_local "$_EMAIL" || { _log "WARN: ✈️ zen_like: $_EMAIL non hébergé ou en roaming — paiement ignoré"; return; }
 
-    local _DUNIKEY="${_USER_DIR}/.secret.dunikey"
+    local _DUNIKEY="$HOME/.zen/game/nostr/${_EMAIL}/.secret.dunikey"
     [[ ! -s "$_DUNIKEY" ]] && \
         _log "WARN: ✈️ zen_like: .secret.dunikey absent pour $_EMAIL" && return
 
@@ -832,22 +828,20 @@ _handle_comfyui_result() {
     _log "🎬 comfyui_result: job=${_JOB_ID:-?} status=${_STATUS:-?} email=${_EMAIL:-?}"
 
     if [[ "${_STATUS:-}" != "ok" || -z "$_RESULT_URL" ]]; then
-        [[ -n "$_REPLY_PUBKEY" ]] && python3 "$SECURE_DM" \
-            "$NODE_NSEC" "$_REPLY_PUBKEY" \
+        [[ -n "$_REPLY_PUBKEY" ]] && _send_dm \
+            "$_REPLY_PUBKEY" \
             "❌ Génération vidéo échouée (job ${_JOB_ID:-?}). Réessayez ultérieurement." \
             "${_RELAYS[0]}" 2>/dev/null
         return
     fi
 
     ## Stocker dans uDRIVE/Videos si l'utilisateur est hébergé localement
-    if [[ -n "$_EMAIL" && -d "$HOME/.zen/game/nostr/$_EMAIL" && \
-          ! -f "$HOME/.zen/game/nostr/$_EMAIL/.roaming" ]]; then
+    if [[ -n "$_EMAIL" ]] && bro_user_is_local "$_EMAIL"; then
         local _cid _fname _udrive_videos
-        _udrive_videos="$HOME/.zen/game/nostr/$_EMAIL/APP/uDRIVE/Videos"
-        mkdir -p "$_udrive_videos"
+        _udrive_videos=$(bro_udrive_path "$_EMAIL" Videos) || _udrive_videos=""
         _cid=$(echo "$_RESULT_URL" | grep -oP 'Qm[A-Za-z0-9]+' | head -1)
         _fname="video_${_JOB_ID:-$(date +%s)}.mp4"
-        if [[ -n "$_cid" ]]; then
+        if [[ -n "$_cid" && -n "$_udrive_videos" ]]; then
             timeout 120 ipfs get "/ipfs/$_cid" -o "$_udrive_videos/$_fname" 2>/dev/null \
                 && touch "$HOME/.zen/game/nostr/$_EMAIL/APP/uDRIVE/" \
                 && _log "🎬 comfyui_result: vidéo stockée uDRIVE/$_EMAIL ← $_fname"
@@ -858,9 +852,9 @@ _handle_comfyui_result() {
     if [[ -n "$_REPLY_PUBKEY" ]]; then
         local _notif
         _notif=$(printf "🎬 Votre vidéo est prête !\n🔗 %s" "$_RESULT_URL")
-        python3 "$SECURE_DM" \
-            "$NODE_NSEC" "$_REPLY_PUBKEY" "$_notif" \
-            "${_RELAYS[0]}" 2>/dev/null \
+        _send_dm \
+            "$_REPLY_PUBKEY" "$_notif" \
+            "${_RELAYS[0]}" \
             && _log "🎬 comfyui_result: DM envoyé à ${_REPLY_PUBKEY:0:12}..." \
             || _log "WARN: 🎬 comfyui_result: DM FAILED pour ${_REPLY_PUBKEY:0:12}..."
     fi
@@ -869,35 +863,23 @@ _handle_comfyui_result() {
 ## ── Canal "udrive" : sync fichier depuis IPFS → APP/uDRIVE ───────────
 _handle_udrive() {
     local payload="$1"
-    local _S_EMAIL _S_CID _S_FILE _S_TYPE
-
-    _S_EMAIL=$(echo "$payload" | python3 -c "import json,sys; print(json.load(sys.stdin).get('email',''))" 2>/dev/null)
-    _S_CID=$(  echo "$payload" | python3 -c "import json,sys; print(json.load(sys.stdin).get('cid',''))" 2>/dev/null)
-    _S_FILE=$( echo "$payload" | python3 -c "import json,sys; print(json.load(sys.stdin).get('filename',''))" 2>/dev/null)
-    _S_TYPE=$( echo "$payload" | python3 -c "import json,sys; print(json.load(sys.stdin).get('filetype','file'))" 2>/dev/null)
+    _payload_get "$payload" email cid filename filetype
+    local _S_EMAIL="$_EMAIL" _S_CID="$_CID" _S_FILE="$_FILENAME" _S_TYPE="${_FILETYPE:-file}"
 
     [[ -z "$_S_EMAIL" || -z "$_S_CID" || -z "$_S_FILE" ]] && return
 
-    [[ ! -d "${HOME}/.zen/game/nostr/${_S_EMAIL}" ]] && \
-        _log "WARN: ✈️ sync ignoré: $_S_EMAIL non hébergé ici" && return
-    [[ -f "${HOME}/.zen/game/nostr/${_S_EMAIL}/.roaming" ]] && \
-        _log "WARN: ✈️ sync ignoré: $_S_EMAIL en roaming" && return
+    bro_user_is_local "$_S_EMAIL" || { _log "WARN: ✈️ sync ignoré: $_S_EMAIL non hébergé ou en roaming"; return; }
 
-    case "$_S_TYPE" in
-        image)  _DEST_DIR="Images" ;;
-        video)  _DEST_DIR="Videos" ;;
-        audio)  _DEST_DIR="Music"  ;;
-        *)      _DEST_DIR="Documents" ;;
-    esac
-
-    local _UDRIVE="${HOME}/.zen/game/nostr/${_S_EMAIL}/APP/uDRIVE"
-    mkdir -p "${_UDRIVE}/${_DEST_DIR}"
+    local _DEST_DIR
+    _DEST_DIR=$(bro_udrive_type_dir "$_S_TYPE")
+    local _UDRIVE
+    _UDRIVE=$(bro_udrive_path "$_S_EMAIL" "$_DEST_DIR") || return
 
     local _TMP_FILE
     _TMP_FILE=$(mktemp -p "${HOME}/.zen/tmp" "udrive_XXXXXX")
     if timeout 30 ipfs get "/ipfs/${_S_CID}" -o "$_TMP_FILE" 2>/dev/null; then
-        mv "$_TMP_FILE" "${_UDRIVE}/${_DEST_DIR}/${_S_FILE}"
-        touch "${_UDRIVE}/"
+        mv "$_TMP_FILE" "${_UDRIVE}/${_S_FILE}"
+        touch "$(dirname "$_UDRIVE")/"
         _log "✈️ sync OK: $_S_EMAIL ← $_S_FILE (${_S_CID:0:12}...) dans $_DEST_DIR/"
     else
         rm -f "$_TMP_FILE"
@@ -910,7 +892,7 @@ _handle_udrive() {
 ## Présente les capacités BRO du node et sa clé de contact.
 _send_welcome_messages() {
     local WELCOMED_FILE="$HOME/.zen/flashmem/bro_dm_welcomed.txt"
-    mkdir -p "$HOME/.zen/flashmem"
+    mkdir -p "$HOME/.zen/tmp/flashmem"
     touch "$WELCOMED_FILE" 2>/dev/null
 
     local WELCOME_MSG
@@ -969,9 +951,9 @@ Ma clé de contact : ${NODE_NPUB:-NODE}
         _email_dir=$(dirname "$_hex_file")
         [[ -f "$_email_dir/.roaming" ]] && continue
 
-        python3 "$SECURE_DM" \
-            "$NODE_NSEC" "$_hex" "$WELCOME_MSG" \
-            "${_RELAYS[0]}" 2>/dev/null \
+        _send_dm \
+            "$_hex" "$WELCOME_MSG" \
+            "${_RELAYS[0]}" \
             && { _log "📢 Bienvenue envoyé à ${_hex:0:12}..."; echo "$_hex" >> "$WELCOMED_FILE"; } \
             || _log "WARN: échec bienvenue à ${_hex:0:12}..."
     done
@@ -1008,7 +990,7 @@ _process_event() {
     [[ ! -f "$event_file" ]] && return
 
     local decoded
-    decoded=$(cat "$event_file" | python3 "$INTERCOM" decrypt --nsec "$NODE_NSEC" 2>/dev/null)
+    decoded=$(NOSTR_NSEC="$NODE_NSEC" python3 "$INTERCOM" decrypt 2>/dev/null < "$event_file")
     rm -f "$event_file"
 
     if [[ -z "$decoded" ]]; then
@@ -1017,16 +999,16 @@ _process_event() {
     fi
 
     local channel sender payload
-    channel=$(echo "$decoded" | python3 -c "import json,sys; print(json.load(sys.stdin).get('channel','plain'))" 2>/dev/null)
-    sender=$(  echo "$decoded" | python3 -c "import json,sys; print(json.load(sys.stdin).get('sender',''))" 2>/dev/null)
-    payload=$( echo "$decoded" | python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin).get('payload',{})))" 2>/dev/null)
+    channel=$(jq -r '.channel // "plain"' <<< "$decoded" 2>/dev/null)
+    sender=$(  jq -r '.sender  // ""'     <<< "$decoded" 2>/dev/null)
+    payload=$( jq -c '.payload // {}'     <<< "$decoded" 2>/dev/null)
 
     [[ -z "$sender" ]] && return
 
     case "$channel" in
         plain)
             local question
-            question=$(echo "$payload" | python3 -c "import json,sys; print(json.load(sys.stdin).get('text',''))" 2>/dev/null | tr '\n' ' ')
+            question=$(jq -r '.text // ""' <<< "$payload" 2>/dev/null | tr '\n' ' ')
 
             ## Collecter TOUS les slots #N (1-12) mentionnés — ex: "#1 #5" → slots=(1 5)
             ## Cohérent avec UPlanet_IA_Responder.sh (slot détecté par tag standalone)
@@ -1146,6 +1128,16 @@ _dispatch_file() {
     mv "$_src" "$_dst" 2>/dev/null || return  # l'autre process a déjà pris le fichier
     _process_event_async "$_dst" &
 }
+
+## Sweep périodique (30s) — rattrape les events perdus si le kernel inotify queue déborde
+_sweep_loop() {
+    while [[ "$_BRO_CLEAN_STOP" != true ]]; do
+        sleep 30
+        for _f in "$QUEUE_DIR"/*.json; do _dispatch_file "$_f"; done
+    done
+}
+_sweep_loop &
+_SWEEP_PID=$!
 
 ## ── Boucle inotifywait avec fallback polling ─────────────────────────
 _inotify_ok=false

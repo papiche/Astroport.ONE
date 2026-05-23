@@ -15,6 +15,8 @@ resolve_swarm_remote_target "scorpio.copylaradio.com" 2122 22
 # Configuration
 VANE_PORT=${PORT_VANE:-3002}
 SERVICE_NAME="vane"
+SERVICE_PORT=$VANE_PORT
+STATUS_FILE="$HOME/.zen/tmp/${SERVICE_NAME}_connection.status"
 ## Passerelle SSH — configurable dans ~/.zen/Astroport.ONE/.env
 if [[ -n "${SWARM_REMOTE_TARGET:-}" ]]; then
     IFS='|' read -r REMOTE_HOST REMOTE_PORT_IPV4 REMOTE_PORT_IPV6 <<<"$SWARM_REMOTE_TARGET"
@@ -42,43 +44,9 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 BOLD='\033[1m'
 
-STATUS_FILE="$HOME/.zen/tmp/${SERVICE_NAME}_connection.status"
-
-print_header() {
-    echo -e "${BOLD}${CYAN}╔══════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BOLD}${CYAN}║${NC}  ${BOLD}Vane Search Connector${NC}   (port $VANE_PORT)            ${BOLD}${CYAN}║${NC}"
-    echo -e "${BOLD}${CYAN}╚══════════════════════════════════════════════════════╝${NC}"
-}
-
-print_status() {
-    local status="$1" message="$2"
-    case "$status" in
-        "OK")     echo -e "  ${GREEN}✓${NC} $message" ;;
-        "FAIL")   echo -e "  ${RED}✗${NC} $message" ;;
-        "WARN")   echo -e "  ${YELLOW}⚠${NC} $message" ;;
-        "INFO")   echo -e "  ${BLUE}ℹ${NC} $message" ;;
-        "ACTIVE") echo -e "  ${GREEN}●${NC} $message ${GREEN}[ACTIVE]${NC}" ;;
-        *)        echo -e "  $message" ;;
-    esac
-}
-
-save_connection_status() {
-    mkdir -p "$(dirname "$STATUS_FILE")"
-    echo "CONNECTION_TYPE=$1" > "$STATUS_FILE"
-    echo "CONNECTION_DETAILS=$2" >> "$STATUS_FILE"
-    echo "CONNECTION_TIME=$(date -Iseconds)" >> "$STATUS_FILE"
-    echo "CONNECTION_PORT=$VANE_PORT" >> "$STATUS_FILE"
-}
-
-check_port() {
-    local silent="${1:-false}"
-    if netstat -tulnp 2>/dev/null | grep -q ":$VANE_PORT "; then
-        [[ "$silent" != "true" ]] && echo "Port $VANE_PORT is open."
-        return 0
-    fi
-    [[ "$silent" != "true" ]] && echo "Port $VANE_PORT is not available."
-    return 1
-}
+########################################################
+## Service-specific functions (must be defined before lib source)
+########################################################
 
 test_api() {
     local silent="${1:-false}"
@@ -91,6 +59,21 @@ test_api() {
     fi
     [[ "$silent" != "true" ]] && echo "Vane API not responding (HTTP $RESPONSE)."
     return 1
+}
+
+# Source shared library (provides: print_status, save_connection_status,
+# check_port, count_p2p_nodes, check_p2p_connections, close_ipfs_p2p,
+# connect_via_swarm)
+source "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/swarm_connector_lib.sh"
+
+########################################################
+## Service-specific functions
+########################################################
+
+print_header() {
+    echo -e "${BOLD}${CYAN}╔══════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BOLD}${CYAN}║${NC}  ${BOLD}Vane Search Connector${NC}   (port $VANE_PORT)            ${BOLD}${CYAN}║${NC}"
+    echo -e "${BOLD}${CYAN}╚══════════════════════════════════════════════════════╝${NC}"
 }
 
 check_local_service() {
@@ -143,17 +126,6 @@ check_ssh_tunnel_active() {
             [[ "$silent" != "true" ]] && print_status "ACTIVE" "SSH tunnel (PID: $pid)"
             return 0
         fi
-    fi
-    return 1
-}
-
-check_p2p_connections() {
-    local silent="${1:-false}"
-    local p2p_conns
-    p2p_conns=$(ipfs p2p ls 2>/dev/null | grep -c "/x/${SERVICE_NAME}")
-    if [[ $p2p_conns -gt 0 ]]; then
-        [[ "$silent" != "true" ]] && print_status "ACTIVE" "IPFS P2P ($p2p_conns connection(s))"
-        return 0
     fi
     return 1
 }
@@ -219,69 +191,6 @@ close_ssh_tunnel() {
         return 0
     fi
     [[ "$silent" != "true" ]] && print_status "INFO" "No SSH tunnel to close"
-    return 1
-}
-
-connect_via_swarm() {
-    local target="${1:-}"
-    echo -e "\n${BOLD}Connecting via IPFS P2P swarm...${NC}"
-
-    local nodes=() node_ids=()
-    for script in ~/.zen/tmp/swarm/*/x_${SERVICE_NAME}.sh; do
-        [[ -f "$script" ]] && nodes+=("$script") && node_ids+=("$(basename "$(dirname "$script")")")
-    done
-    if [[ -n "$IPFSNODEID" && -f "$HOME/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh" ]]; then
-        nodes+=("$HOME/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh")
-        node_ids+=("$IPFSNODEID")
-    fi
-
-    if [[ ${#nodes[@]} -eq 0 ]]; then
-        print_status "FAIL" "No Vane nodes found in swarm"
-        return 1
-    fi
-
-    local selected_script="${nodes[0]}"
-    local selected_node="${node_ids[0]}"
-
-    if [[ -n "$target" ]]; then
-        for i in "${!node_ids[@]}"; do
-            if [[ "${node_ids[$i]}" == "$target" || "${node_ids[$i]}" == *"$target"* ]]; then
-                selected_script="${nodes[$i]}"
-                selected_node="${node_ids[$i]}"
-                break
-            fi
-        done
-    fi
-
-    echo "Connecting to: $selected_node"
-    ipfs p2p close -p "/x/${SERVICE_NAME}-${selected_node}" 2>/dev/null || true
-    if bash "$selected_script" 2>/dev/null; then
-        sleep 2
-        if test_api "true"; then
-            save_connection_status "P2P" "$selected_node"
-            print_status "OK" "Connected to $selected_node via IPFS P2P"
-            return 0
-        fi
-        ipfs p2p close -p "/x/${SERVICE_NAME}-$selected_node" 2>/dev/null
-    else
-        ipfs p2p close -p "/x/${SERVICE_NAME}-${selected_node}" 2>/dev/null || true
-    fi
-    print_status "FAIL" "P2P connection to $selected_node failed"
-    return 1
-}
-
-close_ipfs_p2p() {
-    local silent="${1:-false}"
-    local closed=0
-    for conn in $(ipfs p2p ls 2>/dev/null | grep "/x/${SERVICE_NAME}" | awk '{print $1}'); do
-        ipfs p2p close -p "$conn" 2>/dev/null && ((closed++))
-    done
-    if [[ $closed -gt 0 ]]; then
-        [[ "$silent" != "true" ]] && print_status "OK" "Closed $closed P2P connection(s)"
-        rm -f "$STATUS_FILE"
-        return 0
-    fi
-    [[ "$silent" != "true" ]] && print_status "INFO" "No P2P connections to close"
     return 1
 }
 

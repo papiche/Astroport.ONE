@@ -70,6 +70,8 @@ show_help() {
     echo "                   Ex: --route /upload  --route geo  --route /api/v1"
     echo "    --exclude <f>     Exclure un fichier par basename (répétable)"
     echo "                      Ex: --exclude my.sh  --exclude config.py"
+    echo "    --well-known      Exclure les bibliothèques tierces répandues (jQuery,"
+    echo "                      Bootstrap, Leaflet, nacl, scrypt, nostr.bundle, marked…)"
     echo "    --maxfilesize N   P3: Limite la taille par fichier en octets"
     echo "                      Tronque les fichiers volumineux (logs, minifiés...)"
     echo "                      Ex: --maxfilesize 51200  (50 Ko par fichier)"
@@ -106,7 +108,14 @@ JSON_MODE=false      # sortie JSON pour LLM tool
 CLEAN_MODE=false     # --clean : renommer .sh/.py → ._sh/._py dans les commentaires
 HUMAN_MODE=false     # --human : mode interactif - valider chaque dépendance
 DOC_MODE=false       # --doc : inclure les .md de docs/ qui référencent ce script
+WELL_KNOWN=false     # --well-known : exclure les bibliothèques tierces connues des IA
 declare -A EXCLUDED  # basenames à exclure (--exclude)
+declare -a EXCLUDE_PATTERNS=()  # patterns substring à exclure (--well-known)
+# Bibliothèques tierces répandues — liste centralisée dans tools/well_known_libs.sh
+# shellcheck source=tools/well_known_libs.sh
+_CPSCRIPT_REAL_DIR="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+source "${_CPSCRIPT_REAL_DIR}/tools/well_known_libs.sh"
+_WELL_KNOWN_PATTERNS=("${WELL_KNOWN_LIBS[@]}")
 POSITIONAL=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -191,14 +200,19 @@ while [[ $# -gt 0 ]]; do
             MAX_FILE_SIZE="$2"; shift 2 ;;
         --maxfilesize=*)
             MAX_FILE_SIZE="${1#--maxfilesize=}"; shift ;;
-        --json)  JSON_MODE=true;  shift ;;
-        --clean) CLEAN_MODE=true; shift ;;
-        --human) HUMAN_MODE=true; shift ;;
-        --doc)   DOC_MODE=true;   shift ;;
+        --json)       JSON_MODE=true;   shift ;;
+        --clean)      CLEAN_MODE=true;  shift ;;
+        --human)      HUMAN_MODE=true;  shift ;;
+        --doc)        DOC_MODE=true;    shift ;;
+        --well-known) WELL_KNOWN=true;  shift ;;
         -*) echo "Option inconnue : $1"; show_help ;;
         *) POSITIONAL+=("$1"); shift ;;
     esac
 done
+
+if $WELL_KNOWN; then
+    EXCLUDE_PATTERNS+=("${_WELL_KNOWN_PATTERNS[@]}")
+fi
 
 if [ "${#POSITIONAL[@]}" -lt 1 ]; then
     echo "Erreur : Argument manquant."
@@ -628,6 +642,16 @@ process_script() {
         echo "  [EXCLU] $FILE"
         return
     fi
+    # --well-known : vérifier les patterns substring sur le chemin complet
+    for _wpat in "${EXCLUDE_PATTERNS[@]}"; do
+        if [[ "$FILE" == *${_wpat}* ]]; then
+            [ -z "${VISITED[$FILE]}" ] && {
+                $JSON_MODE && echo "  [WELL-KNOWN] $FILE" >&2 || echo "  [WELL-KNOWN] $FILE"
+            }
+            VISITED[$FILE]=1
+            return
+        fi
+    done
 
     # N5: Exclusion automatique des répertoires de build/cache/vcs (builtin, zéro fork)
     # Applicable même si le chemin vient de FILE_INDEX ou d'un chemin absolu direct

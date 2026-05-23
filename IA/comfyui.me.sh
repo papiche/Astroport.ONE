@@ -219,7 +219,6 @@ count_p2p_nodes() {
     for script in ~/.zen/tmp/swarm/*/x_${SERVICE_NAME}.sh; do
         [[ -f "$script" ]] && ((count++))
     done
-    [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh ]] && ((count++))
     echo $count
 }
 
@@ -335,12 +334,6 @@ connect_via_swarm() {
         fi
     done
 
-    # Add local node if available
-    if [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh ]]; then
-        nodes+=("$HOME/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh")
-        node_ids+=("$IPFSNODEID")
-    fi
-
     if [[ ${#nodes[@]} -eq 0 ]]; then
         print_status "FAIL" "No ${SERVICE_NAME} nodes found in swarm"
         return 1
@@ -441,11 +434,9 @@ connect_via_swarm() {
                 myipfs_file="$(dirname "$script")/myIPFS.txt"
                 local gateway=""
                 [[ -f "$myipfs_file" ]] && gateway=$(cat "$myipfs_file")
-                local local_marker=""
-                [[ "$node_id" == "$IPFSNODEID" ]] && local_marker=" ${GREEN}(local)${NC}"
                 local score
                 score=$(_node_power_score "$node_id")
-                echo -e "  ${CYAN}[$rank]${NC} ${node_id:0:20}...${local_marker} (score: $score)"
+                echo -e "  ${CYAN}[$rank]${NC} ${node_id:0:20}... (score: $score)"
                 [[ -n "$gateway" ]] && echo -e "      └─ $gateway"
                 ((rank++))
             done < <(_sorted_indices)
@@ -617,9 +608,6 @@ cmd_scan() {
             fi
         done
         
-        if [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh ]]; then
-            echo -e "    └─ ${CYAN}$IPFSNODEID${NC} ${GREEN}(local)${NC}"
-        fi
     else
         print_status "FAIL" "No P2P nodes found"
     fi

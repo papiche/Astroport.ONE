@@ -296,7 +296,7 @@ done
 echo "#############################################"
 echo "##### INSTALL MULTIMEDIA & DATA TOOLS  ######"
 echo "#############################################"
-for i in qrencode pv gnupg pandoc cargo btop sox ocrmypdf ca-certificates basez markdown jq bc file gawk ffmpeg geoip-bin bind9-dnsutils ntpsec-ntpdate v4l-utils espeak vlc mp3info musl-dev openssl detox nmap httrack html2text imagemagick libmagic1t64; do
+for i in qrencode pv gnupg pandoc cargo btop sox ocrmypdf ca-certificates basez markdown jq bc file gawk ffmpeg geoip-bin bind9-dnsutils ntpsec-ntpdate v4l-utils espeak vlc mp3info musl-dev openssl detox nmap httrack html2text imagemagick libmagic1t64 libimage-exiftool-perl poppler-utils; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -351,8 +351,8 @@ requests geohash beautifulsoup4 cryptography jwcrypto secp256k1 \
 gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt \
 aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 \
 matplotlib readability-lxml duniterpy cachetools pydantic-settings \
-robohash substrate-interface websocket websockets \
-fastapi aiofiles jinja2 python-multipart python-magic uvicorn; do
+robohash substrate-interface websocket websockets imap_tools \
+fastapi aiofiles jinja2 python-multipart python-magic uvicorn python-telegram-bot; do
         echo ">>> Installation/Mise à jour $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         ~/.astro/bin/pip install -U $i 2>> ~/.zen/install.errors.log
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python -m pip install -U $i FAILED." >> ~/.zen/install.errors.log && continue
@@ -472,6 +472,10 @@ echo "##  ADDING lazydocker ================"
 echo "## INSTALL yt-dlp (youtube copier, sans anti-bot) ##############"
 # Anti-bot optionnel : astrosystemctl local install youtube-antibot
 ~/.zen/Astroport.ONE/install/youtube-dl.sh
+
+###############################################################
+echo "## INSTALL Matterbridge & BRO Omni-Channel ##############"
+~/.zen/Astroport.ONE/install/install_matterbridge.sh
 
 ###############################################################
 echo "## INSTALL PowerJoular (Power consumption monitoring) ##########"

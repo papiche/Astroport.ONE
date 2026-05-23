@@ -786,6 +786,23 @@ if [ -f "$HOME/.zen/Astroport.ONE/.env" ]; then
     ORIGIN_IPFS_GATEWAY=$(grep "^myIPFS=" "$HOME/.zen/Astroport.ONE/.env" | cut -d'=' -f2)
 fi
 ORIGIN_IPFS_GATEWAY="${ORIGIN_IPFS_GATEWAY:-https://ipfs.copylaradio.com}"
+
+# Lire les métriques heartbox (TTL 5 min, généré par heartbox_analysis.sh)
+HEARTBOX_JSON="${HOME}/.zen/tmp/${IPFSNODEID:-local}/heartbox_analysis.json"
+_STATION_JSON="null"
+if [ -f "$HEARTBOX_JSON" ] && command -v jq >/dev/null 2>&1; then
+    _STATION_JSON=$(jq -c '{
+        ipfs_node:      (.ipfs_node      // null),
+        power_score:    (.power_score    // 0),
+        provider_ready: (.provider_ready // false),
+        gpu:            (.gpu.name       // null),
+        gpu_vram_gb:    (.gpu.vram_gb    // 0),
+        cpu_cores:      (.cpu.cores      // 0),
+        ram_gb:         (.ram.total_gb   // 0),
+        last_updated:   (.generated_at   // null)
+    }' "$HEARTBOX_JSON" 2>/dev/null) || _STATION_JSON="null"
+fi
+
 ##############################################################
 ## Get OWNER_EMAIL and OWNER_HEX_FILE
 ############################################################## MULTIPLE APP on UPLANET
@@ -1185,7 +1202,8 @@ cat > "$SOURCE_DIR/manifest.json" << EOF
     "total_directories": $dir_count,
     "total_files": $file_count,
     "total_size": $total_size,
-    "formatted_total_size": "$(format_size $total_size)"
+    "formatted_total_size": "$(format_size $total_size)",
+    "station": ${_STATION_JSON}
 }
 EOF
 

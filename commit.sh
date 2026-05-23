@@ -368,7 +368,16 @@ RVPROMPT
                 [[ "$_wmsg" == "$_wf" ]] && _wmsg=""
                 [[ -z "$_wf" ]] && continue
                 local _wpath="$_wf"
-                [[ ! -f "$_wpath" && -f "${MY_PATH}/$_wf" ]] && _wpath="${MY_PATH}/$_wf"
+                if [[ ! -f "$_wpath" ]]; then
+                    # Cherche dans le repo git courant (fichier sans chemin complet)
+                    local _git_root; _git_root=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
+                    if [[ -n "$_git_root" ]]; then
+                        local _fname; _fname=$(basename "$_wf")
+                        local _gfound; _gfound=$(git -C "$_git_root" ls-files "*${_fname}" 2>/dev/null | head -1)
+                        [[ -n "$_gfound" ]] && _wpath="${_git_root}/${_gfound}"
+                    fi
+                    [[ ! -f "$_wpath" && -f "${MY_PATH}/$_wf" ]] && _wpath="${MY_PATH}/$_wf"
+                fi
                 _warns+=("${_wpath}|${_wmsg}")
             done <<< "$_review"
 

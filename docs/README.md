@@ -4,6 +4,14 @@ Organisée selon le standard [Diátaxis](https://diataxis.fr/) — quatre types 
 
 ---
 
+## Quintette — Documentation transversale (tous modes Diataxis)
+
+| Fichier | Sujet |
+|---------|-------|
+| [quintette.md](quintette.md) | **`feedback` · `issue` · `commit` · `cpscript` · `cpcode`** — De la panne terrain au correctif Git : tutorial, guides, référence et explication du cycle complet |
+
+---
+
 ## Tutorials — Apprentissage
 
 > Guides pas-à-pas pour apprendre en faisant. Destinés aux débutants.

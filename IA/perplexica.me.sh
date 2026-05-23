@@ -192,7 +192,6 @@ count_p2p_nodes() {
     for script in ~/.zen/tmp/swarm/*/x_${SERVICE_NAME}.sh; do
         [[ -f "$script" ]] && ((count++))
     done
-    [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh ]] && ((count++))
     echo $count
 }
 
@@ -280,30 +279,20 @@ list_p2p_nodes() {
         fi
     done
     
-    # Add local node if available
-    if [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh ]]; then
-        nodes+=("$HOME/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh")
-        node_ids+=("$IPFSNODEID")
-    fi
-    
     if [[ ${#nodes[@]} -eq 0 ]]; then
         return 1
     fi
-    
+
     echo -e "\n${BOLD}Available P2P nodes:${NC}\n"
     for i in "${!node_ids[@]}"; do
         local idx=$((i + 1))
         local node_id="${node_ids[$i]}"
         local script="${nodes[$i]}"
-        local myipfs_file=$(dirname "$script")/myIPFS.txt
+        local myipfs_file
+        myipfs_file=$(dirname "$script")/myIPFS.txt
         local gateway=""
         [[ -f "$myipfs_file" ]] && gateway=$(cat "$myipfs_file")
-        
-        # Mark local node
-        local local_marker=""
-        [[ "$node_id" == "$IPFSNODEID" ]] && local_marker=" ${GREEN}(local)${NC}"
-        
-        echo -e "  ${CYAN}[$idx]${NC} ${node_id:0:20}...${local_marker}"
+        echo -e "  ${CYAN}[$idx]${NC} ${node_id:0:20}..."
         [[ -n "$gateway" ]] && echo -e "      └─ $gateway"
     done
     
@@ -328,20 +317,14 @@ connect_via_swarm() {
         fi
     done
     
-    # Add local node if available
-    if [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh ]]; then
-        nodes+=("$HOME/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh")
-        node_ids+=("$IPFSNODEID")
-    fi
-    
     if [[ ${#nodes[@]} -eq 0 ]]; then
         print_status "FAIL" "No ${SERVICE_NAME} nodes found in swarm"
         return 1
     fi
-    
+
     local selected_script=""
     local selected_node=""
-    
+
     # Handle different target specifications
     if [[ -n "$target" ]]; then
         case "$target" in
@@ -396,41 +379,30 @@ connect_via_swarm() {
                 ;;
         esac
     else
-        # No target specified - show selection if multiple nodes
-        if [[ ${#nodes[@]} -gt 1 ]]; then
-            echo -e "\n${BOLD}Available P2P nodes:${NC}\n"
-            for i in "${!node_ids[@]}"; do
-                local idx=$((i + 1))
-                local node_id="${node_ids[$i]}"
-                local script="${nodes[$i]}"
-                local myipfs_file=$(dirname "$script")/myIPFS.txt
-                local gateway=""
-                [[ -f "$myipfs_file" ]] && gateway=$(cat "$myipfs_file")
-                
-                local local_marker=""
-                [[ "$node_id" == "$IPFSNODEID" ]] && local_marker=" ${GREEN}(local)${NC}"
-                
-                echo -e "  ${CYAN}[$idx]${NC} ${node_id:0:20}...${local_marker}"
-                [[ -n "$gateway" ]] && echo -e "      └─ $gateway"
-            done
-            
-            echo ""
-            echo -e "${YELLOW}Tip:${NC} Use 'P2P <number>' or 'P2P <node_id>' to select"
-            echo -e "     Use 'P2P auto' for random selection"
-            echo ""
-            
-            # Default to first node
-            echo -e "Connecting to first available node..."
-            selected_script="${nodes[0]}"
-            selected_node="${node_ids[0]}"
-        else
-            # Only one node available
-            selected_script="${nodes[0]}"
-            selected_node="${node_ids[0]}"
-        fi
+        # Sélection aléatoire (appelé programmatiquement — pas d'interactivité)
+        local shuffled=($(printf '%s\n' "${!nodes[@]}" | sort -R))
+        for idx in "${shuffled[@]}"; do
+            selected_script="${nodes[$idx]}"
+            selected_node="${node_ids[$idx]}"
+            echo "Trying node: $selected_node"
+            ipfs p2p close -p "/x/${SERVICE_NAME}-${selected_node}" 2>/dev/null || true
+            if bash "$selected_script" 2>/dev/null; then
+                sleep 2
+                if test_api "true"; then
+                    save_connection_status "P2P" "$selected_node"
+                    print_status "OK" "Connected to $selected_node via IPFS P2P"
+                    return 0
+                fi
+                ipfs p2p close -p "/x/${SERVICE_NAME}-$selected_node" 2>/dev/null
+            else
+                ipfs p2p close -p "/x/${SERVICE_NAME}-${selected_node}" 2>/dev/null || true
+            fi
+        done
+        print_status "FAIL" "No working ${SERVICE_NAME} nodes available in swarm"
+        return 1
     fi
-    
-    # Connect to selected node
+
+    # Connect to explicitly selected node
     if [[ -n "$selected_script" ]]; then
         echo "Connecting to: $selected_node"
         ipfs p2p close -p "/x/${SERVICE_NAME}-${selected_node}" 2>/dev/null || true
@@ -592,9 +564,6 @@ cmd_scan() {
             fi
         done
         
-        if [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh ]]; then
-            echo -e "    └─ ${CYAN}$IPFSNODEID${NC} ${GREEN}(local)${NC}"
-        fi
     else
         print_status "FAIL" "No P2P nodes found"
     fi

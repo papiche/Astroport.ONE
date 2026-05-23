@@ -85,43 +85,97 @@ cd Astroport.ONE
 # Rendre exécutables
 chmod +x code_assistant cpscript IA/embed.py IA/code_assistant.py
 
-# Télécharger les modèles recommandés
-./code_assistant --setup
+# Premier lancement : le symlink ~/.local/bin/code_assistant est créé automatiquement
+./code_assistant --setup      # télécharge les modèles recommandés
 
 # Vérifier Ollama
 IA/ollama.me.sh            # démarre/connecte Ollama si nécessaire
 
-# Vérifier le modèle d'embedding
-python3 IA/embed.py --check
+# Depuis n'importe quel projet (après avoir ajouté ~/.local/bin à PATH)
+code_assistant mon_script.sh
 
-# Optionnel : démarrer Qdrant (volume unifié ~/.zen/qdrant-data)
+# Optionnel : démarrer Qdrant (mémoire sémantique inter-sessions)
 mkdir -p ~/.zen/qdrant-data
-docker run -d -p 127.0.0.1:6333:6333 -p 127.0.0.1:6334:6334 \
+docker run -d -p 127.0.0.1:6333:6333 \
   -v "$HOME/.zen/qdrant-data:/qdrant/storage:z" \
-  --name qdrant --restart always \
-  qdrant/qdrant
-# ou via la stack rnostr (recommandé) :
-# bash install/install_rnostr_semantic.sh
+  --name qdrant --restart always qdrant/qdrant
 ```
+
+> **Note PATH** : Si `code_assistant` est introuvable, ajoutez `export PATH="$HOME/.local/bin:$PATH"` à votre `~/.bashrc`.
 
 ---
 
 ## Utilisation de base
 
-### Flux recommandé en 3 étapes
+### Mode interactif guidé (recommandé)
 
 ```bash
-# Étape 1 : ANALYSE — Identifier les problèmes
-./code_assistant UPassport/routers/geo.py --kvbasename geo-fix
+# Lancer l'analyse — le reste est guidé interactivement
+code_assistant mon_script.sh --kvbasename ma-session
+```
 
-# Étape 2 : CORRECTION — Générer des options pour le problème 2
-./code_assistant UPassport/routers/geo.py --kvbasename geo-fix \
-  --phase correction --choice 2
+L'assistant affiche les problèmes **triés par urgence décroissante** et guide chaque étape :
 
-# Étape 3 : CONTRÔLE + APPLICATION — Vérifier et appliquer la variante b
-# Avec --patch, l'application est directe (pas de copier-coller)
-./code_assistant UPassport/routers/geo.py --kvbasename geo-fix \
-  --phase controle --choice b --patch
+```
+┌────────────────────────────────────────────────────────────────────┐
+│  Problèmes triés par urgence                                      │
+└────────────────────────────────────────────────────────────────────┘
+  [2] 🔴 CRITIQUE  2. [SÉCURITÉ] Injection jq via IDs réseau non validés
+       └─ backfill_constellation.sh:962
+  [1] 🟠 MAJEUR    1. [BUG] _val() retourne "" au lieu de 0
+       └─ sync_report.sh:21
+  [3] ⚪ MINEUR    3. [MAINT.] Gestion des args non reconnus
+
+  [1-3] corriger  [r] ré-analyser  [m <texte>] focus libre
+  [c]=Claude  [o]=Ollama  (actuel: 🦙 Ollama)  [q]=quitter
+> 2
+
+  ➡️  Correction du problème 2...
+  [3 variantes proposées]
+
+  [a/b/c] choisir variante  [r] régénérer  [m <texte>] contrainte
+  [s] passer ce problème    [q] quitter    (Entrée = variante a)
+> b
+
+  ➡️  Contrôle + patch (variante b)...
+  [rapport de contrôle]
+  ✅ Patché : backfill_constellation.sh
+
+  📂 2 problème(s) restant(s).
+  Traiter le suivant ? [o/N] : o
+  → Relance sur problème suivant (problème 2 ignoré)
+```
+
+### Arbre de décision
+
+```
+ANALYSE
+  ├─[1-3]──► CORRECTION
+  │              ├─[a/b/c]─► CONTRÔLE ─► [Y] PATCH ─► "suivant ?" ─► ANALYSE
+  │              ├─[r]──────► CORRECTION (régénère)
+  │              ├─[m text]─► CORRECTION (avec contrainte)
+  │              └─[s]──────► ANALYSE (problème marqué traité)
+  ├─[r]────► ANALYSE (ré-analyse complète)
+  ├─[m text]► ANALYSE (avec focus)
+  ├─[c/o]──► ANALYSE (change de backend)
+  └─[q]────► Quitte
+
+```
+
+### Flux en ligne de commande (non-interactif)
+
+```bash
+# Analyse seule
+code_assistant geo.py --kvbasename geo-fix
+
+# Correction directe du problème 2
+code_assistant geo.py --kvbasename geo-fix --phase correction --choice 2
+
+# Contrôle + application de la variante b
+code_assistant geo.py --kvbasename geo-fix --phase controle --choice b --patch
+
+# Sauter les problèmes 1 et 3 déjà traités
+code_assistant geo.py --kvbasename geo-fix --skip 1,3
 ```
 
 ### Exemple de sortie — Phase ANALYSE

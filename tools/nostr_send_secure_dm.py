@@ -432,12 +432,13 @@ def main():
         epilog=__doc__
     )
     
-    parser.add_argument("sender_nsec", help="NSEC private key of the sender")
+    parser.add_argument("sender_nsec", nargs="?", default=None,
+                       help="NSEC private key of the sender (or use --nsec-stdin)")
     parser.add_argument("recipient_hex", help="Hex public key of the recipient")
     parser.add_argument("message", help="Message content to send")
-    parser.add_argument("relay_url", nargs="?", default=DEFAULT_RELAY, 
+    parser.add_argument("relay_url", nargs="?", default=DEFAULT_RELAY,
                        help=f"Relay URL (default: {DEFAULT_RELAY})")
-    
+
     # Security options
     parser.add_argument("--gift-wrap", action="store_true",
                        help="Enable NIP-17 gift wrapping for additional privacy")
@@ -445,11 +446,22 @@ def main():
                        help="Enable metadata protection and obfuscation")
     parser.add_argument("--secure-mode", action="store_true",
                        help="Enable all security features (gift-wrap + metadata-protection)")
-    
+    parser.add_argument("--nsec-stdin", action="store_true",
+                       help="Read NSEC from first line of stdin (avoids cmdline exposure)")
+
     args = parser.parse_args()
 
+    # Resolve NSEC source
+    if args.nsec_stdin:
+        sender_nsec = sys.stdin.readline().strip()
+    elif args.sender_nsec:
+        sender_nsec = args.sender_nsec
+    else:
+        print("Error: provide sender_nsec positional arg or --nsec-stdin", file=sys.stderr)
+        sys.exit(1)
+
     # Validate inputs
-    if not args.sender_nsec.startswith("nsec1"):
+    if not sender_nsec.startswith("nsec1"):
         print("Error: Sender key must be in NSEC format (nsec1...)", file=sys.stderr)
         sys.exit(1)
     
@@ -468,7 +480,7 @@ def main():
 
     # Send the secure message
     success = send_secure_direct_message(
-        args.sender_nsec,
+        sender_nsec,
         args.recipient_hex,
         args.message,
         args.relay_url,

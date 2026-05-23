@@ -361,9 +361,13 @@ function makecoord() {
     # Si le résultat est vide ou invalide (ex: entrée ".")
     if [[ ! "$input" =~ ^-?[0-9]+\.[0-9]{2}$ ]]; then
         echo ""
-    else
-        echo "${input}"
+        return
     fi
+
+    # Rejeter 0.00 : sentinel GPS désactivé (évite d'ancrer des données à Point Nemo)
+    [[ "$input" == "0.00" ]] && echo "" && return
+
+    echo "${input}"
 }
 
 # Fonction pour récupérer la météo depuis l'API OpenWeatherMap

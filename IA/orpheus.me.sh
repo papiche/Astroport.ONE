@@ -13,6 +13,8 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 # Configuration
 ORPHEUS_PORT=5005
 SERVICE_NAME="orpheus"
+SERVICE_PORT=$ORPHEUS_PORT
+STATUS_FILE="$HOME/.zen/tmp/${SERVICE_NAME}_connection.status"
 
 # Colors for output
 RED='\033[0;31m'
@@ -23,57 +25,9 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 BOLD='\033[1m'
 
-# Connection status file
-STATUS_FILE="$HOME/.zen/tmp/${SERVICE_NAME}_connection.status"
-
 ########################################################
-## Helper Functions
+## Service-specific functions (must be defined before lib source)
 ########################################################
-
-print_header() {
-    echo -e "${BOLD}${CYAN}╔══════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BOLD}${CYAN}║${NC}  ${BOLD}${SERVICE_NAME^^} TTS Connection Manager${NC}  (port $ORPHEUS_PORT)  ${BOLD}${CYAN}║${NC}"
-    echo -e "${BOLD}${CYAN}╚══════════════════════════════════════════════════════╝${NC}"
-}
-
-print_status() {
-    local status="$1"
-    local message="$2"
-    case "$status" in
-        "OK")     echo -e "  ${GREEN}✓${NC} $message" ;;
-        "FAIL")   echo -e "  ${RED}✗${NC} $message" ;;
-        "WARN")   echo -e "  ${YELLOW}⚠${NC} $message" ;;
-        "INFO")   echo -e "  ${BLUE}ℹ${NC} $message" ;;
-        "ACTIVE") echo -e "  ${GREEN}●${NC} $message ${GREEN}[ACTIVE]${NC}" ;;
-        *)        echo -e "  $message" ;;
-    esac
-}
-
-save_connection_status() {
-    local conn_type="$1"
-    local details="$2"
-    mkdir -p "$(dirname "$STATUS_FILE")"
-    echo "CONNECTION_TYPE=$conn_type" > "$STATUS_FILE"
-    echo "CONNECTION_DETAILS=$details" >> "$STATUS_FILE"
-    echo "CONNECTION_TIME=$(date -Iseconds)" >> "$STATUS_FILE"
-    echo "CONNECTION_PORT=$ORPHEUS_PORT" >> "$STATUS_FILE"
-}
-
-########################################################
-## Detection Functions
-########################################################
-
-# Check if port is open (silent mode available)
-check_port() {
-    local silent="${1:-false}"
-    if netstat -tulnp 2>/dev/null | grep ":$ORPHEUS_PORT " >/dev/null; then
-        [[ "$silent" != "true" ]] && echo "Port $ORPHEUS_PORT is open."
-        return 0
-    else
-        [[ "$silent" != "true" ]] && echo "Port $ORPHEUS_PORT is not available."
-        return 1
-    fi
-}
 
 # Test Orpheus TTS API connection (silent mode available)
 test_api() {
@@ -87,6 +41,21 @@ test_api() {
         [[ "$silent" != "true" ]] && echo "Orpheus TTS API not responding (HTTP $RESPONSE)."
         return 1
     fi
+}
+
+# Source shared library (provides: print_status, save_connection_status,
+# check_port, count_p2p_nodes, check_p2p_connections, close_ipfs_p2p,
+# connect_via_swarm)
+source "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/swarm_connector_lib.sh"
+
+########################################################
+## Service-specific functions
+########################################################
+
+print_header() {
+    echo -e "${BOLD}${CYAN}╔══════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BOLD}${CYAN}║${NC}  ${BOLD}${SERVICE_NAME^^} TTS Connection Manager${NC}  (port $ORPHEUS_PORT)  ${BOLD}${CYAN}║${NC}"
+    echo -e "${BOLD}${CYAN}╚══════════════════════════════════════════════════════╝${NC}"
 }
 
 # Check if LOCAL service is running
@@ -105,27 +74,6 @@ check_local_service() {
     return 1
 }
 
-# Check IPFS P2P connections
-check_p2p_connections() {
-    local silent="${1:-false}"
-    local p2p_conns=$(ipfs p2p ls 2>/dev/null | grep "/x/${SERVICE_NAME}" | wc -l)
-    if [[ $p2p_conns -gt 0 ]]; then
-        [[ "$silent" != "true" ]] && print_status "ACTIVE" "IPFS P2P ($p2p_conns connection(s))"
-        return 0
-    fi
-    return 1
-}
-
-# Count available P2P nodes
-count_p2p_nodes() {
-    local count=0
-    for script in ~/.zen/tmp/swarm/*/x_${SERVICE_NAME}.sh; do
-        [[ -f "$script" ]] && ((count++))
-    done
-    [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh ]] && ((count++))
-    echo $count
-}
-
 # List available voices
 list_voices() {
     local silent="${1:-false}"
@@ -137,160 +85,6 @@ list_voices() {
 }
 
 ########################################################
-## Connection Functions
-########################################################
-
-# Connect via IPFS P2P swarm with node selection
-connect_via_swarm() {
-    local target="${1:-}"
-    
-    echo -e "\n${BOLD}Connecting via IPFS P2P swarm...${NC}"
-    
-    local nodes=()
-    local node_ids=()
-    
-    # Collect available nodes
-    for script in ~/.zen/tmp/swarm/*/x_${SERVICE_NAME}.sh; do
-        if [[ -f "$script" ]]; then
-            nodes+=("$script")
-            node_ids+=($(basename $(dirname "$script")))
-        fi
-    done
-    
-    # Add local node if available
-    if [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh ]]; then
-        nodes+=("$HOME/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh")
-        node_ids+=("$IPFSNODEID")
-    fi
-    
-    if [[ ${#nodes[@]} -eq 0 ]]; then
-        print_status "FAIL" "No ${SERVICE_NAME} nodes found in swarm"
-        return 1
-    fi
-    
-    local selected_script=""
-    local selected_node=""
-    
-    # Handle different target specifications
-    if [[ -n "$target" ]]; then
-        case "$target" in
-            "auto"|"random"|"AUTO"|"RANDOM")
-                local shuffled=($(printf '%s\n' "${!nodes[@]}" | sort -R))
-                for idx in "${shuffled[@]}"; do
-                    selected_script="${nodes[$idx]}"
-                    selected_node="${node_ids[$idx]}"
-                    echo "Trying node: $selected_node"
-                    if bash "$selected_script" 2>/dev/null; then
-                        sleep 2
-                        if test_api "true"; then
-                            save_connection_status "P2P" "$selected_node"
-                            print_status "OK" "Connected to $selected_node via IPFS P2P"
-                            return 0
-                        fi
-                        ipfs p2p close -p "/x/${SERVICE_NAME}-$selected_node" 2>/dev/null
-                    fi
-                done
-                print_status "FAIL" "No working nodes available"
-                return 1
-                ;;
-            [0-9]|[0-9][0-9])
-                local idx=$((target - 1))
-                if [[ $idx -ge 0 && $idx -lt ${#nodes[@]} ]]; then
-                    selected_script="${nodes[$idx]}"
-                    selected_node="${node_ids[$idx]}"
-                else
-                    print_status "FAIL" "Invalid selection: $target (valid: 1-${#nodes[@]})"
-                    return 1
-                fi
-                ;;
-            *)
-                for i in "${!node_ids[@]}"; do
-                    if [[ "${node_ids[$i]}" == "$target" || "${node_ids[$i]}" == *"$target"* ]]; then
-                        selected_script="${nodes[$i]}"
-                        selected_node="${node_ids[$i]}"
-                        break
-                    fi
-                done
-                if [[ -z "$selected_script" ]]; then
-                    print_status "FAIL" "Node not found: $target"
-                    echo -e "\nAvailable nodes:"
-                    for i in "${!node_ids[@]}"; do
-                        echo -e "  [$((i+1))] ${node_ids[$i]:0:30}..."
-                    done
-                    return 1
-                fi
-                ;;
-        esac
-    else
-        # No target specified - show selection if multiple nodes
-        if [[ ${#nodes[@]} -gt 1 ]]; then
-            echo -e "\n${BOLD}Available P2P nodes:${NC}\n"
-            for i in "${!node_ids[@]}"; do
-                local idx=$((i + 1))
-                local node_id="${node_ids[$i]}"
-                local script="${nodes[$i]}"
-                local myipfs_file=$(dirname "$script")/myIPFS.txt
-                local gateway=""
-                [[ -f "$myipfs_file" ]] && gateway=$(cat "$myipfs_file")
-                
-                local local_marker=""
-                [[ "$node_id" == "$IPFSNODEID" ]] && local_marker=" ${GREEN}(local)${NC}"
-                
-                echo -e "  ${CYAN}[$idx]${NC} ${node_id:0:20}...${local_marker}"
-                [[ -n "$gateway" ]] && echo -e "      └─ $gateway"
-            done
-            
-            echo ""
-            echo -e "${YELLOW}Tip:${NC} Use 'P2P <number>' or 'P2P <node_id>' to select"
-            echo ""
-            echo -e "Connecting to first available node..."
-        fi
-        selected_script="${nodes[0]}"
-        selected_node="${node_ids[0]}"
-    fi
-    
-    # Connect to selected node
-    if [[ -n "$selected_script" ]]; then
-        echo "Connecting to: $selected_node"
-        if bash "$selected_script" 2>/dev/null; then
-            sleep 2
-            if test_api "true"; then
-                save_connection_status "P2P" "$selected_node"
-                print_status "OK" "Connected to $selected_node via IPFS P2P"
-                return 0
-            else
-                ipfs p2p close -p "/x/${SERVICE_NAME}-$selected_node" 2>/dev/null
-                print_status "FAIL" "Connected but API not responding"
-                return 1
-            fi
-        else
-            print_status "FAIL" "Failed to establish P2P connection to $selected_node"
-            return 1
-        fi
-    fi
-    
-    return 1
-}
-
-# Close IPFS P2P connections
-close_ipfs_p2p() {
-    local silent="${1:-false}"
-    local closed=0
-    
-    for conn in $(ipfs p2p ls 2>/dev/null | grep "/x/${SERVICE_NAME}" | awk '{print $1}'); do
-        ipfs p2p close -p "$conn" 2>/dev/null && ((closed++))
-    done
-    
-    if [[ $closed -gt 0 ]]; then
-        [[ "$silent" != "true" ]] && print_status "OK" "Closed $closed P2P connection(s)"
-        rm -f "$STATUS_FILE"
-        return 0
-    fi
-    [[ "$silent" != "true" ]] && print_status "INFO" "No P2P connections to close"
-    return 1
-}
-
-########################################################
 ## Command Handlers
 ########################################################
 
@@ -298,15 +92,13 @@ close_ipfs_p2p() {
 cmd_status() {
     print_header
     echo -e "\n${BOLD}Current Connection Status:${NC}"
-    
+
     local active_type="NONE"
     local active_details=""
     local connection_time=""
-    
-    # Check what's currently active - ORDER MATTERS!
-    # Priority: P2P > Local (most specific first, no SSH for Orpheus)
+
+    # Priority: P2P > Local (no SSH for Orpheus)
     if check_port "true"; then
-        # 1. Check P2P connections first (ipfs p2p ls shows active connections)
         if check_p2p_connections "true"; then
             active_type="P2P"
             if [[ -f "$STATUS_FILE" ]]; then
@@ -316,7 +108,6 @@ cmd_status() {
             else
                 active_details=$(ipfs p2p ls 2>/dev/null | grep "/x/${SERVICE_NAME}" | awk '{print $3}' | head -1)
             fi
-        # 2. Local service (fallback - only if no P2P)
         elif check_local_service "true"; then
             active_type="LOCAL"
             active_details="Local service (Docker)"
@@ -324,19 +115,19 @@ cmd_status() {
             active_type="UNKNOWN"
             active_details="Port open but source unknown"
         fi
-        
+
         if test_api "true"; then
             echo -e "\n  ${GREEN}●${NC} ${BOLD}CONNECTED${NC} via ${CYAN}$active_type${NC}"
             [[ -n "$active_details" ]] && echo -e "    └─ $active_details"
             echo -e "    └─ API: ${GREEN}http://localhost:$ORPHEUS_PORT${NC}"
             [[ -n "$connection_time" ]] && echo -e "    └─ Since: $connection_time"
-            
+
             # List voices
             list_voices
             return 0
         fi
     fi
-    
+
     echo -e "\n  ${RED}●${NC} ${BOLD}DISCONNECTED${NC}"
     echo -e "    └─ No active ${SERVICE_NAME} connection"
     return 1
@@ -346,24 +137,21 @@ cmd_status() {
 cmd_scan() {
     print_header
     echo -e "\n${BOLD}Scanning Available Connections:${NC}\n"
-    
-    # 1. LOCAL
+
     echo -e "${BOLD}[LOCAL]${NC}"
     if check_local_service "true"; then
         print_status "OK" "Local ${SERVICE_NAME} service available"
     else
         print_status "FAIL" "No local ${SERVICE_NAME} service"
     fi
-    
-    # 2. IPFS P2P (no SSH for Orpheus)
+
     echo -e "\n${BOLD}[P2P]${NC} IPFS Swarm Nodes"
     local p2p_count=$(count_p2p_nodes)
     local p2p_active=false
-    
+
     if [[ $p2p_count -gt 0 ]]; then
         print_status "OK" "$p2p_count node(s) available:"
-        
-        # List nodes
+
         for script in ~/.zen/tmp/swarm/*/x_${SERVICE_NAME}.sh; do
             if [[ -f "$script" ]]; then
                 local node_id=$(basename $(dirname "$script"))
@@ -374,24 +162,19 @@ cmd_scan() {
                 [[ -n "$gateway" ]] && echo -e "    │  └─ $gateway"
             fi
         done
-        
-        if [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh ]]; then
-            echo -e "    └─ ${CYAN}$IPFSNODEID${NC} ${GREEN}(local)${NC}"
-        fi
     else
         print_status "FAIL" "No P2P nodes found"
     fi
-    
+
     if check_p2p_connections "true"; then
         local active_p2p=$(ipfs p2p ls 2>/dev/null | grep "/x/${SERVICE_NAME}" | awk '{print $3}' | head -1)
         echo -e "  ${GREEN}●${NC} P2P currently ACTIVE: $active_p2p"
         p2p_active=true
     fi
-    
-    # Summary - consider active connections as available
+
     local local_avail=$(check_local_service true && echo Y || echo N)
     local p2p_avail=$([[ $p2p_count -gt 0 || "$p2p_active" == "true" ]] && echo Y || echo N)
-    
+
     echo -e "\n${BOLD}Summary:${NC}"
     echo -e "  Available methods: LOCAL=$local_avail P2P=$p2p_avail"
     echo -e "\n${YELLOW}Note:${NC} Orpheus TTS uses LOCAL and P2P only (no SSH tunnel)"
@@ -401,7 +184,7 @@ cmd_scan() {
 cmd_help() {
     print_header
     echo -e "\n${BOLD}Usage:${NC} $(basename $0) [COMMAND] [OPTIONS]\n"
-    
+
     echo -e "${BOLD}Commands:${NC}"
     echo -e "  ${CYAN}(none)${NC}       Auto-connect (LOCAL → P2P)"
     echo -e "  ${CYAN}STATUS${NC}       Show current connection status"
@@ -415,14 +198,14 @@ cmd_help() {
     echo -e "  ${CYAN}OFF${NC}          Disconnect all connections"
     echo -e "  ${CYAN}TEST${NC}         Test current API connection"
     echo -e "  ${CYAN}HELP${NC}         Show this help message"
-    
+
     echo -e "\n${BOLD}P2P Examples:${NC}"
-    echo -e "  $(basename $0) P2P               # List nodes, connect to first"
+    echo -e "  $(basename $0) P2P               # List nodes, connect randomly"
     echo -e "  $(basename $0) P2P 1             # Connect to node #1"
     echo -e "  $(basename $0) P2P 2             # Connect to node #2"
     echo -e "  $(basename $0) P2P 12D3KooW      # Connect by partial ID"
     echo -e "  $(basename $0) P2P auto          # Random selection"
-    
+
     echo -e "\n${BOLD}Voices:${NC}"
     echo -e "  pierre  - French male voice"
     echo -e "  amelie  - French female voice"
@@ -489,26 +272,25 @@ case "${1^^}" in
         ;;
     "")
         # Auto-connect mode (default behavior)
-        # Check if already available
         if check_port "true" && test_api "true"; then
             echo "${SERVICE_NAME^} TTS API ready at http://localhost:$ORPHEUS_PORT"
             exit 0
         fi
-        
+
         # Check local service
         if check_local_service "true" && test_api "true"; then
             save_connection_status "LOCAL" "Local service"
             echo "${SERVICE_NAME^} TTS API ready (local) at http://localhost:$ORPHEUS_PORT"
             exit 0
         fi
-        
+
         # Fallback to IPFS P2P swarm
         echo "No local service, trying IPFS P2P swarm..."
         if connect_via_swarm; then
             echo "${SERVICE_NAME^} TTS API ready via P2P at http://localhost:$ORPHEUS_PORT"
             exit 0
         fi
-        
+
         echo "Could not establish connection to any ${SERVICE_NAME^} TTS API."
         exit 1
         ;;

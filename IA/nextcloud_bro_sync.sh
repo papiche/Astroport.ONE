@@ -87,6 +87,15 @@ else
     info "Définissez NC_PASSWORD_ENV ou créez $NC_PASS_FILE"
 fi
 
+## ── Fichier netrc temporaire (évite l'exposition de NC_PASSWORD dans ps aux) ──
+_NC_NETRC=""
+if [[ -n "$NC_PASSWORD" ]]; then
+    _NC_NETRC=$(mktemp -t nc_netrc_XXXXXX)
+    chmod 600 "$_NC_NETRC"
+    printf 'machine 127.0.0.1\nlogin %s\npassword %s\n' "$NC_USER" "$NC_PASSWORD" > "$_NC_NETRC"
+    trap 'rm -f "$_NC_NETRC"' EXIT
+fi
+
 ## ── Résolution Ollama via ollama.me.sh (local ou P2P Swarm) ─────────
 ## ollama.me.sh établit un tunnel sur :
 ##   - 127.0.0.1:11434        (accès depuis l'hôte)
@@ -464,7 +473,7 @@ _sync_webdav() {
 
     ## Lister les fichiers via PROPFIND WebDAV
     local file_list
-    file_list=$(curl -sf --user "${NC_USER}:${NC_PASSWORD}" \
+    file_list=$(curl -sf --netrc-file "$_NC_NETRC" \
         -X PROPFIND \
         -H "Depth: infinity" \
         -H "Content-Type: application/xml" \
@@ -502,10 +511,15 @@ for h in hrefs:
             fi
         fi
 
-        ## Télécharger le fichier
-        if curl -sf --user "${NC_USER}:${NC_PASSWORD}" -o "$local_file" "$nc_url" 2>/dev/null; then
+        ## Télécharger puis indexer en parallèle via sémaphore
+        if curl -sf --netrc-file "$_NC_NETRC" -o "$local_file" "$nc_url" 2>/dev/null; then
             info "Téléchargé : $filename"
-            _index_document "$local_file"
+            (
+                local _slot
+                _slot=$(_idx_slot_acquire)
+                _index_document "$local_file"
+                _idx_slot_release "$_slot"
+            ) &
             ((file_count++))
         else
             warn "Échec téléchargement : $filename"
@@ -513,13 +527,44 @@ for h in hrefs:
 
     done <<< "$file_list"
 
+    # Attendre tous les workers d'indexation
+    wait
     ok "Synchronisation terminée : $file_count indexé(s), $skip_count ignoré(s) (récents)"
 }
 
-## ── Indexation des fichiers locaux (sans WebDAV) ─────────────────────
+## ── Sémaphore d'indexation parallèle ─────────────────────────────────
+## Slots PID dans /dev/shm pour limiter le nombre de workers simultanés.
+## Basé sur le même pattern que bro_dm_daemon.sh.
+_IDX_SLOTS_DIR="${TMPDIR:-/dev/shm}/bro_idx_slots_$$"
+_IDX_MAX_JOBS=$(python3 - <<'PYEOF'
+import re
+try:
+    mem_kb = int(re.search(r'MemAvailable:\s+(\d+)', open('/proc/meminfo').read()).group(1))
+    print(max(1, min(4, int(mem_kb / 1024 / 1024 / 2))))
+except Exception:
+    print(2)
+PYEOF
+)
+[[ -z "$_IDX_MAX_JOBS" || ! "$_IDX_MAX_JOBS" =~ ^[0-9]+$ ]] && _IDX_MAX_JOBS=2
+
+_idx_slot_acquire() {
+    local _pid=$BASHPID
+    while true; do
+        for _s in $(seq 1 "$_IDX_MAX_JOBS"); do
+            local _f="$_IDX_SLOTS_DIR/s${_s}.pid"
+            if (set -C; echo "$_pid" > "$_f") 2>/dev/null; then echo "$_f"; return; fi
+            local _owner; _owner=$(cat "$_f" 2>/dev/null)
+            [[ -n "$_owner" ]] && ! kill -0 "$_owner" 2>/dev/null && rm -f "$_f"
+        done
+        sleep 0.3
+    done
+}
+_idx_slot_release() { rm -f "${1:-}"; }
+
+## ── Indexation des fichiers locaux (sans WebDAV) — parallèle ──────────
 _index_local() {
     local dir="${1:-$CACHE_DIR/$NC_COLLECTION_PATH}"
-    info "Indexation des fichiers locaux depuis $dir..."
+    info "Indexation des fichiers locaux depuis $dir (max $_IDX_MAX_JOBS workers)..."
 
     if [[ ! -d "$dir" ]]; then
         warn "Répertoire non trouvé : $dir"
@@ -529,11 +574,23 @@ _index_local() {
         return 1
     fi
 
-    local count=0
+    mkdir -p "$_IDX_SLOTS_DIR"
+    local count=0 pids=()
     while IFS= read -r -d $'\0' file; do
-        _index_document "$file"
         ((count++))
-    done < <(find "$dir" -type f \( -name "*.pdf" -o -name "*.txt" -o -name "*.md" -o -name "*.docx" -o -name "*.html" -o -name "*.json" \) -print0)
+        (
+            local _slot
+            _slot=$(_idx_slot_acquire)
+            _index_document "$file"
+            _idx_slot_release "$_slot"
+        ) &
+        pids+=($!)
+    done < <(find "$dir" -type f \( -name "*.pdf" -o -name "*.txt" -o -name "*.md" \
+              -o -name "*.docx" -o -name "*.html" -o -name "*.json" \) -print0)
+
+    # Attendre la fin de tous les workers
+    for _p in "${pids[@]}"; do wait "$_p" 2>/dev/null || true; done
+    rm -rf "$_IDX_SLOTS_DIR"
 
     ok "Indexation locale : $count fichier(s) traité(s)"
     info "Statistiques Qdrant : curl $QDRANT_URL/collections/$QDRANT_COLLECTION"

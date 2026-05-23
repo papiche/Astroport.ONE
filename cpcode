@@ -37,20 +37,11 @@ EXCLUDE_PATTERNS=()
 WELL_KNOWN=false
 POSITIONAL=()
 
-# Bibliothèques tierces répandues, déjà connues des IA
-_WELL_KNOWN_PATTERNS=(
-    jquery bootstrap leaflet MarkerCluster
-    axios html2canvas jsmediatags
-    "p5.min" "p5.sound"
-    nacl "sha256.min"
-    scrypt "bip39-libs"
-    "blake2b.js" blake2b_browser blake2b_combined
-    lunar-calendar "requestanimationframe.polyfill"
-    "marked.min" "mermaid.min" "model-viewer.min"
-    "helia@" "nostr.bundle"
-    sphere-hacked "world.js"
-    "awesome.css" "astronomy.browser"
-)
+# Bibliothèques tierces répandues — liste centralisée dans tools/well_known_libs.sh
+# shellcheck source=tools/well_known_libs.sh
+_CPCODE_REAL_DIR="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+source "${_CPCODE_REAL_DIR}/tools/well_known_libs.sh"
+_WELL_KNOWN_PATTERNS=("${WELL_KNOWN_LIBS[@]}")
 
 while [[ $# -gt 0 ]]; do
     case "$1" in

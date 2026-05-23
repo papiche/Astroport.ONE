@@ -15,6 +15,8 @@ resolve_swarm_remote_target "scorpio.copylaradio.com" 2122 22
 # Configuration
 OPENWEBUI_PORT=8000
 SERVICE_NAME="open-webui"
+SERVICE_PORT=$OPENWEBUI_PORT
+STATUS_FILE="$HOME/.zen/tmp/${SERVICE_NAME}_connection.status"
 ## Passerelle SSH — configurable dans ~/.zen/Astroport.ONE/.env
 ## (my.sh source déjà .env donc SWARM_REMOTE_* est disponible ici)
 if [[ -n "${SWARM_REMOTE_TARGET:-}" ]]; then
@@ -43,57 +45,9 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 BOLD='\033[1m'
 
-# Connection status file
-STATUS_FILE="$HOME/.zen/tmp/${SERVICE_NAME}_connection.status"
-
 ########################################################
-## Helper Functions
+## Service-specific functions (must be defined before lib source)
 ########################################################
-
-print_header() {
-    echo -e "${BOLD}${CYAN}╔══════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BOLD}${CYAN}║${NC}  ${BOLD}Open WebUI Connection Manager${NC}  (port $OPENWEBUI_PORT)      ${BOLD}${CYAN}║${NC}"
-    echo -e "${BOLD}${CYAN}╚══════════════════════════════════════════════════════╝${NC}"
-}
-
-print_status() {
-    local status="$1"
-    local message="$2"
-    case "$status" in
-        "OK")     echo -e "  ${GREEN}✓${NC} $message" ;;
-        "FAIL")   echo -e "  ${RED}✗${NC} $message" ;;
-        "WARN")   echo -e "  ${YELLOW}⚠${NC} $message" ;;
-        "INFO")   echo -e "  ${BLUE}ℹ${NC} $message" ;;
-        "ACTIVE") echo -e "  ${GREEN}●${NC} $message ${GREEN}[ACTIVE]${NC}" ;;
-        *)        echo -e "  $message" ;;
-    esac
-}
-
-save_connection_status() {
-    local conn_type="$1"
-    local details="$2"
-    mkdir -p "$(dirname "$STATUS_FILE")"
-    echo "CONNECTION_TYPE=$conn_type" > "$STATUS_FILE"
-    echo "CONNECTION_DETAILS=$details" >> "$STATUS_FILE"
-    echo "CONNECTION_TIME=$(date -Iseconds)" >> "$STATUS_FILE"
-    echo "CONNECTION_PORT=$OPENWEBUI_PORT" >> "$STATUS_FILE"
-}
-
-########################################################
-## Detection Functions
-########################################################
-
-check_port() {
-    local silent="${1:-false}"
-    if netstat -tulnp 2>/dev/null | grep ":$OPENWEBUI_PORT " >/dev/null || \
-       ss -tln 2>/dev/null | grep -qw ":$OPENWEBUI_PORT"; then
-        [[ "$silent" != "true" ]] && echo "Port $OPENWEBUI_PORT is open."
-        return 0
-    else
-        [[ "$silent" != "true" ]] && echo "Port $OPENWEBUI_PORT is not available."
-        return 1
-    fi
-}
 
 test_api() {
     local silent="${1:-false}"
@@ -106,6 +60,21 @@ test_api() {
         [[ "$silent" != "true" ]] && echo "Open WebUI not responding (HTTP $RESPONSE)."
         return 1
     fi
+}
+
+# Source shared library (provides: print_status, save_connection_status,
+# check_port, count_p2p_nodes, check_p2p_connections, close_ipfs_p2p,
+# connect_via_swarm)
+source "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/swarm_connector_lib.sh"
+
+########################################################
+## Service-specific functions
+########################################################
+
+print_header() {
+    echo -e "${BOLD}${CYAN}╔══════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BOLD}${CYAN}║${NC}  ${BOLD}Open WebUI Connection Manager${NC}  (port $OPENWEBUI_PORT)      ${BOLD}${CYAN}║${NC}"
+    echo -e "${BOLD}${CYAN}╚══════════════════════════════════════════════════════╝${NC}"
 }
 
 check_local_service() {
@@ -158,29 +127,6 @@ check_ssh_tunnel_active() {
     fi
     return 1
 }
-
-check_p2p_connections() {
-    local silent="${1:-false}"
-    local p2p_conns=$(ipfs p2p ls 2>/dev/null | grep "/x/${SERVICE_NAME}" | wc -l)
-    if [[ $p2p_conns -gt 0 ]]; then
-        [[ "$silent" != "true" ]] && print_status "ACTIVE" "IPFS P2P ($p2p_conns connection(s))"
-        return 0
-    fi
-    return 1
-}
-
-count_p2p_nodes() {
-    local count=0
-    for script in ~/.zen/tmp/swarm/*/x_${SERVICE_NAME}.sh; do
-        [[ -f "$script" ]] && ((count++))
-    done
-    [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh ]] && ((count++))
-    echo $count
-}
-
-########################################################
-## Connection Functions
-########################################################
 
 establish_ssh_tunnel() {
     local protocol="${1:-auto}"
@@ -243,141 +189,6 @@ close_ssh_tunnel() {
         return 0
     fi
     [[ "$silent" != "true" ]] && print_status "INFO" "No SSH tunnel to close"
-    return 1
-}
-
-connect_via_swarm() {
-    local target="${1:-}"
-    echo -e "\n${BOLD}Connecting via IPFS P2P swarm...${NC}"
-
-    local nodes=()
-    local node_ids=()
-
-    for script in ~/.zen/tmp/swarm/*/x_${SERVICE_NAME}.sh; do
-        if [[ -f "$script" ]]; then
-            nodes+=("$script")
-            node_ids+=($(basename $(dirname "$script")))
-        fi
-    done
-
-    if [[ -n "$IPFSNODEID" && -f ~/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh ]]; then
-        nodes+=("$HOME/.zen/tmp/$IPFSNODEID/x_${SERVICE_NAME}.sh")
-        node_ids+=("$IPFSNODEID")
-    fi
-
-    if [[ ${#nodes[@]} -eq 0 ]]; then
-        print_status "FAIL" "No ${SERVICE_NAME} nodes found in swarm"
-        return 1
-    fi
-
-    local selected_script=""
-    local selected_node=""
-
-    if [[ -n "$target" ]]; then
-        case "$target" in
-            "auto"|"random"|"AUTO"|"RANDOM")
-                local shuffled=($(printf '%s\n' "${!nodes[@]}" | sort -R))
-                for idx in "${shuffled[@]}"; do
-                    selected_script="${nodes[$idx]}"
-                    selected_node="${node_ids[$idx]}"
-                    echo "Trying node: $selected_node"
-                    if bash "$selected_script" 2>/dev/null; then
-                        sleep 2
-                        if test_api "true"; then
-                            save_connection_status "P2P" "$selected_node"
-                            print_status "OK" "Connected to $selected_node via IPFS P2P"
-                            return 0
-                        fi
-                        ipfs p2p close -p "/x/${SERVICE_NAME}-$selected_node" 2>/dev/null
-                    fi
-                done
-                print_status "FAIL" "No working nodes available"
-                return 1
-                ;;
-            [0-9]|[0-9][0-9])
-                local idx=$((target - 1))
-                if [[ $idx -ge 0 && $idx -lt ${#nodes[@]} ]]; then
-                    selected_script="${nodes[$idx]}"
-                    selected_node="${node_ids[$idx]}"
-                else
-                    print_status "FAIL" "Invalid selection: $target (valid: 1-${#nodes[@]})"
-                    return 1
-                fi
-                ;;
-            *)
-                for i in "${!node_ids[@]}"; do
-                    if [[ "${node_ids[$i]}" == "$target" || "${node_ids[$i]}" == *"$target"* ]]; then
-                        selected_script="${nodes[$i]}"
-                        selected_node="${node_ids[$i]}"
-                        break
-                    fi
-                done
-                if [[ -z "$selected_script" ]]; then
-                    print_status "FAIL" "Node not found: $target"
-                    for i in "${!node_ids[@]}"; do
-                        echo -e "  [$((i+1))] ${node_ids[$i]:0:30}..."
-                    done
-                    return 1
-                fi
-                ;;
-        esac
-    else
-        if [[ ${#nodes[@]} -gt 1 ]]; then
-            echo -e "\n${BOLD}Available P2P nodes:${NC}\n"
-            for i in "${!node_ids[@]}"; do
-                local node_id="${node_ids[$i]}"
-                local myipfs_file=$(dirname "${nodes[$i]}")/myIPFS.txt
-                local gateway=""
-                [[ -f "$myipfs_file" ]] && gateway=$(cat "$myipfs_file")
-                local local_marker=""
-                [[ "$node_id" == "$IPFSNODEID" ]] && local_marker=" ${GREEN}(local)${NC}"
-                echo -e "  ${CYAN}[$((i+1))]${NC} ${node_id:0:20}...${local_marker}"
-                [[ -n "$gateway" ]] && echo -e "      └─ $gateway"
-            done
-            echo ""
-            echo -e "${YELLOW}Tip:${NC} Use 'P2P <number>' or 'P2P <node_id>' to select"
-            echo ""
-            echo -e "Connecting to first available node..."
-        fi
-        selected_script="${nodes[0]}"
-        selected_node="${node_ids[0]}"
-    fi
-
-    if [[ -n "$selected_script" ]]; then
-        echo "Connecting to: $selected_node"
-        ipfs p2p close -p "/x/${SERVICE_NAME}-${selected_node}" 2>/dev/null || true
-        if bash "$selected_script" 2>/dev/null; then
-            sleep 2
-            if test_api "true"; then
-                save_connection_status "P2P" "$selected_node"
-                print_status "OK" "Connected to $selected_node via IPFS P2P"
-                return 0
-            else
-                ipfs p2p close -p "/x/${SERVICE_NAME}-$selected_node" 2>/dev/null
-                print_status "FAIL" "Connected but API not responding"
-                return 1
-            fi
-        else
-            ipfs p2p close -p "/x/${SERVICE_NAME}-${selected_node}" 2>/dev/null || true
-            print_status "FAIL" "Failed to establish P2P connection to $selected_node"
-            return 1
-        fi
-    fi
-    return 1
-}
-
-close_ipfs_p2p() {
-    local silent="${1:-false}"
-    local closed=0
-    for conn in $(ipfs p2p ls 2>/dev/null | grep "/x/${SERVICE_NAME}" | awk '{print $1}'); do
-        ipfs p2p close -p "$conn" 2>/dev/null && ((closed++))
-    done
-    if [[ $closed -gt 0 ]]; then
-        [[ "$silent" != "true" ]] && print_status "OK" "Closed $closed P2P connection(s)"
-        rm -f "$STATUS_FILE"
-        return 0
-    fi
-    [[ "$silent" != "true" ]] && print_status "INFO" "No P2P connections to close"
     return 1
 }
 
