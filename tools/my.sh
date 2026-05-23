@@ -333,13 +333,14 @@ function makecoord() {
     local input="$1"
 
     # Vérifie si l'entrée est une coordonnée valide (nombre avec ou sans décimales)
-    if [[ ! "$input" =~ ^-?[0-9]*\.?[0-9]*$ ]]; then
+    [[ -z "$input" ]] && echo "" && return
+    if [[ ! "$input" =~ ^-?[0-9]+\.?[0-9]*$ ]]; then
         echo ""
         return
     fi
 
-    # Formate à 2 décimales (comme original)
-    input=$(echo "${input}" | awk "{printf \"%.2f\", $1}")
+    # Formate à 2 décimales (single quotes : $0 est interprété par awk, pas par bash)
+    input=$(echo "${input}" | awk '{printf "%.2f", $0}')
     
     # First: add leading zero for values like .5 or -.5
     if [[ ${input} =~ ^\.[0-9]+$ ]]; then
