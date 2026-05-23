@@ -38,6 +38,10 @@ COOP_CONFIG_CACHE="${HOME}/.zen/tmp/cooperative_config.cache.json"
 COOP_CONFIG_RELAY="${myRELAY:-wss://relay.copylaradio.com}"
 COOP_CONFIG_LOCAL_RELAY="${myLocalRELAY:-ws://127.0.0.1:7777}"
 
+# Verbosity — set COOP_VERBOSE=1 or pass --verbose to CLI
+COOP_VERBOSE=${COOP_VERBOSE:-0}
+_coop_log() { [[ "$COOP_VERBOSE" == "1" ]] && echo "[VERBOSE] $*" >&2; }
+
 # Encryption method: AES-256-CBC with UPLANETNAME as key
 # Key derivation: sha256 of UPLANETNAME (32 bytes)
 
@@ -133,10 +137,13 @@ coop_decrypt() {
 coop_get_pubkey() {
     local val=""
 
+    _coop_log "coop_get_pubkey: keyfile=$COOP_CONFIG_KEYFILE"
+
     if [[ -f "$COOP_CONFIG_KEYFILE" ]]; then
         # Try to extract HEX= directly first (most reliable if present)
         val=$(grep -oP 'HEX=\K[a-fA-F0-9]{64}' "$COOP_CONFIG_KEYFILE" 2>/dev/null | head -1)
         if [[ -n "$val" ]]; then
+            _coop_log "coop_get_pubkey: found HEX directly → $val"
             echo "$val"
             return 0
         fi
@@ -144,6 +151,7 @@ coop_get_pubkey() {
         # Try npub then nsec from keyfile
         val=$(grep -oE 'npub1[a-zA-Z0-9]{58}' "$COOP_CONFIG_KEYFILE" 2>/dev/null | head -1)
         [[ -z "$val" ]] && val=$(grep -oE 'nsec1[a-zA-Z0-9]{58}' "$COOP_CONFIG_KEYFILE" 2>/dev/null | head -1)
+        _coop_log "coop_get_pubkey: grep result from keyfile → '${val:-(none)}'"
 
         if [[ -n "$val" ]]; then
             if [[ "$val" =~ ^[a-fA-F0-9]{64}$ ]]; then
@@ -153,17 +161,25 @@ coop_get_pubkey() {
                 local pubhex
                 pubhex=$(python3 "${_COOP_DIR}/nostr_nsec2npub2hex.py" "$val" 2>/dev/null)
                 if [[ -n "$pubhex" ]] && [[ "$pubhex" =~ ^[a-fA-F0-9]{64}$ ]]; then
+                    _coop_log "coop_get_pubkey: nsec→hex OK → $pubhex"
                     echo "$pubhex"; return 0
                 fi
+                _coop_log "coop_get_pubkey: nsec→hex FAILED (script: ${_COOP_DIR}/nostr_nsec2npub2hex.py)"
             fi
             if [[ "$val" == npub1* ]] && [[ -x "${_COOP_DIR}/nostr2hex.py" ]]; then
                 local pubhex
                 pubhex=$(python3 "${_COOP_DIR}/nostr2hex.py" "$val" 2>/dev/null)
                 if [[ -n "$pubhex" ]] && [[ "$pubhex" =~ ^[a-fA-F0-9]{64}$ ]]; then
+                    _coop_log "coop_get_pubkey: npub→hex OK → $pubhex"
                     echo "$pubhex"; return 0
                 fi
+                _coop_log "coop_get_pubkey: npub→hex FAILED (script: ${_COOP_DIR}/nostr2hex.py)"
             fi
+        else
+            _coop_log "coop_get_pubkey: no npub/nsec/HEX found in keyfile"
         fi
+    else
+        _coop_log "coop_get_pubkey: keyfile absent"
     fi
 
     # Cold-start fallback: keyfile absent or unreadable — derive on the fly from UPLANETNAME
@@ -177,9 +193,13 @@ coop_get_pubkey() {
             local pubhex
             pubhex=$(python3 "${_COOP_DIR}/nostr2hex.py" "$npub" 2>/dev/null)
             if [[ -n "$pubhex" ]] && [[ "$pubhex" =~ ^[a-fA-F0-9]{64}$ ]]; then
+                _coop_log "coop_get_pubkey: derived from UPLANETNAME → $pubhex"
                 echo "$pubhex"; return 0
             fi
         fi
+        _coop_log "coop_get_pubkey: keygen derivation failed"
+    else
+        _coop_log "coop_get_pubkey: cold-start fallback unavailable (UPLANETNAME='${UPLANETNAME:-}' keygen=$(ls ${_COOP_DIR}/keygen 2>/dev/null || echo 'absent'))"
     fi
 
     echo "[ERROR] Cannot extract valid HEX pubkey (keyfile: $COOP_CONFIG_KEYFILE)" >&2
@@ -207,54 +227,78 @@ coop_get_nsec() {
 # Returns: JSON config object or empty
 coop_fetch_config_from_nostr() {
     local pubkey
-    pubkey=$(coop_get_pubkey) || return 1
+    pubkey=$(coop_get_pubkey)
+    if [[ $? -ne 0 ]] || [[ -z "$pubkey" ]]; then
+        _coop_log "coop_fetch_config_from_nostr: pubkey resolution failed — aborting NOSTR fetch"
+        echo "{}"
+        return 1
+    fi
+    _coop_log "coop_fetch_config_from_nostr: pubkey=$pubkey"
 
     # Build relay list: skip local relay if port 7777 is not reachable
     local relays=()
     if nc -z 127.0.0.1 7777 2>/dev/null; then
         relays+=("$COOP_CONFIG_LOCAL_RELAY")
+        _coop_log "coop_fetch_config_from_nostr: local relay reachable → $COOP_CONFIG_LOCAL_RELAY"
     else
         echo "[INFO] Local relay not reachable — skipping to remote" >&2
+        _coop_log "coop_fetch_config_from_nostr: local relay 127.0.0.1:7777 not reachable"
     fi
     relays+=("$COOP_CONFIG_RELAY")
 
     for relay in "${relays[@]}"; do
+        _coop_log "coop_fetch_config_from_nostr: trying relay $relay"
         local _did_found=false
 
-        # Use nostr_get_events.sh if available
-        if [[ -x "${_COOP_DIR}/nostr_get_events.sh" ]]; then
+        # Use nostr_get_events.sh if available — local strfry only, no --relay support
+        if [[ -x "${_COOP_DIR}/nostr_get_events.sh" ]] && [[ "$relay" == "$COOP_CONFIG_LOCAL_RELAY" ]]; then
+            _coop_log "coop_fetch_config_from_nostr: using nostr_get_events.sh (local only, no --relay)"
             local result
             result=$("${_COOP_DIR}/nostr_get_events.sh" \
                 --kind "$COOP_CONFIG_KIND" \
                 --author "$pubkey" \
                 --tag-d "$COOP_CONFIG_D_TAG" \
-                --relay "$relay" \
                 --limit 1 \
-                --json 2>/dev/null)
+                --output json 2>/dev/null)
 
-            if [[ -n "$result" ]] && [[ "$result" != "[]" ]]; then
+            _coop_log "coop_fetch_config_from_nostr: nostr_get_events.sh result='${result:0:80}'"
+            # Validate JSON before using (avoids capturing usage/error text)
+            # nostr_get_events.sh may return an object {"content":...} or an array [{"content":...}]
+            if echo "$result" | jq -e '.' >/dev/null 2>&1; then
                 local content
-                content=$(echo "$result" | jq -r '.[0].content // empty' 2>/dev/null)
+                content=$(echo "$result" | jq -r 'if type == "array" then .[0].content else .content end // empty' 2>/dev/null)
                 if [[ -n "$content" ]]; then
+                    _coop_log "coop_fetch_config_from_nostr: DID content found via nostr_get_events.sh"
                     echo "$content"
                     return 0
                 fi
             fi
+            _coop_log "coop_fetch_config_from_nostr: nostr_get_events.sh returned empty/[] or invalid JSON"
             _did_found=false
+        else
+            [[ "$relay" != "$COOP_CONFIG_LOCAL_RELAY" ]] && \
+                _coop_log "coop_fetch_config_from_nostr: nostr_get_events.sh skipped (remote relay)"
+            [[ ! -x "${_COOP_DIR}/nostr_get_events.sh" ]] && \
+                _coop_log "coop_fetch_config_from_nostr: nostr_get_events.sh absent"
         fi
 
         # Fallback: direct websocket query with Python
         if [[ "$_did_found" == "false" ]] && [[ -x "${_COOP_DIR}/nostr_cooperative_did.py" ]]; then
+            _coop_log "coop_fetch_config_from_nostr: trying nostr_cooperative_did.py"
             local result
             result=$(python3 "${_COOP_DIR}/nostr_cooperative_did.py" fetch \
                 --relay "$relay" \
                 --pubkey "$pubkey" \
                 --d-tag "$COOP_CONFIG_D_TAG" 2>/dev/null)
 
+            _coop_log "coop_fetch_config_from_nostr: nostr_cooperative_did.py result='${result:0:80}'"
             if [[ -n "$result" ]] && [[ "$result" != "null" ]]; then
                 echo "$result"
                 return 0
             fi
+            _coop_log "coop_fetch_config_from_nostr: nostr_cooperative_did.py returned empty/null"
+        else
+            _coop_log "coop_fetch_config_from_nostr: nostr_cooperative_did.py absent → skip"
         fi
 
         # DID absent on this relay — if local, fall through to remote immediately
@@ -262,7 +306,8 @@ coop_fetch_config_from_nostr() {
             echo "[INFO] DID not found on local relay — trying remote ($COOP_CONFIG_RELAY)" >&2
         fi
     done
-    
+
+    _coop_log "coop_fetch_config_from_nostr: all relays exhausted — no DID found"
     # Return empty JSON object if not found
     echo "{}"
     return 0
@@ -366,27 +411,54 @@ coop_publish_config_to_nostr() {
 coop_load_config() {
     local force_refresh="${1:-false}"
     local cache_max_age=3600  # 1 hour cache validity
-    
+
     # Check cache first (if not forcing refresh)
     if [[ "$force_refresh" != "true" ]] && [[ -f "$COOP_CONFIG_CACHE" ]]; then
-        local cache_age=$(($(date +%s) - $(stat -c %Y "$COOP_CONFIG_CACHE" 2>/dev/null || echo 0)))
-        
+        local cache_mtime cache_age
+        cache_mtime=$(stat -c %Y "$COOP_CONFIG_CACHE" 2>/dev/null || echo 0)
+        cache_age=$(( $(date +%s) - cache_mtime ))
+        _coop_log "coop_load_config: cache age=${cache_age}s max=${cache_max_age}s ($(date -d "@$cache_mtime" '+%Y-%m-%d %H:%M' 2>/dev/null || echo 'date?'))"
+
         if [[ $cache_age -lt $cache_max_age ]]; then
+            _coop_log "coop_load_config: cache fresh — serving from cache"
             cat "$COOP_CONFIG_CACHE"
+            return 0
+        else
+            _coop_log "coop_load_config: cache stale (${cache_age}s > ${cache_max_age}s) — will try NOSTR"
+            [[ "$COOP_VERBOSE" != "1" ]] && echo "[INFO] Cache expiré ($(( cache_age / 3600 ))h$(( (cache_age % 3600) / 60 ))m) — tentative NOSTR..." >&2
+        fi
+    else
+        _coop_log "coop_load_config: no cache file at $COOP_CONFIG_CACHE"
+    fi
+
+    # Fetch from NOSTR
+    _coop_log "coop_load_config: fetching from NOSTR..."
+    local config
+    config=$(coop_fetch_config_from_nostr)
+
+    if [[ -n "$config" ]] && [[ "$config" != "{}" ]]; then
+        _coop_log "coop_load_config: NOSTR fetch OK — updating cache"
+        mkdir -p "$(dirname "$COOP_CONFIG_CACHE")"
+        echo "$config" > "$COOP_CONFIG_CACHE"
+        echo "$config"
+        return 0
+    fi
+
+    _coop_log "coop_load_config: NOSTR returned empty/{} — checking for stale cache fallback"
+    # NOSTR failed — fall back to stale cache rather than returning nothing
+    if [[ -f "$COOP_CONFIG_CACHE" ]]; then
+        local stale
+        stale=$(cat "$COOP_CONFIG_CACHE")
+        if [[ -n "$stale" ]] && [[ "$stale" != "{}" ]]; then
+            echo "[WARN] NOSTR inaccessible — utilisation du cache local (données potentiellement périmées)" >&2
+            _coop_log "coop_load_config: serving stale cache"
+            echo "$stale"
             return 0
         fi
     fi
-    
-    # Fetch from NOSTR
-    local config=$(coop_fetch_config_from_nostr)
-    
-    if [[ -n "$config" ]] && [[ "$config" != "{}" ]]; then
-        # Update cache
-        mkdir -p "$(dirname "$COOP_CONFIG_CACHE")"
-        echo "$config" > "$COOP_CONFIG_CACHE"
-    fi
-    
-    echo "$config"
+
+    _coop_log "coop_load_config: no config available (NOSTR failed, no usable cache)"
+    echo "{}"
 }
 
 # Save config to cache and NOSTR
@@ -971,7 +1043,19 @@ get_oc_api_key() {
 ################################################################################
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    # Script is being run directly
+    # Parse --verbose anywhere in the argument list
+    _args=()
+    for _a in "$@"; do
+        if [[ "$_a" == "--verbose" ]] || [[ "$_a" == "-v" ]]; then
+            COOP_VERBOSE=1
+        else
+            _args+=("_$_a")
+        fi
+    done
+    # Rebuild positional parameters without --verbose
+    set -- "${_args[@]//_/}"
+    unset _args _a
+
     case "${1:-}" in
         get|coop_config_get)
             coop_config_get "$2"
@@ -1007,16 +1091,18 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             echo "cooperative_config.sh - Cooperative Configuration Manager via DID NOSTR"
             echo ""
             echo "Usage:"
-            echo "  $0 get KEY              Get a config value (decrypted)"
-            echo "  $0 set KEY VALUE        Set a config value (auto-encrypts sensitive keys)"
-            echo "  $0 delete KEY           Delete a config key"
-            echo "  $0 list                 List all config keys"
-            echo "  $0 show                 Show all values decrypted (careful!)"
-            echo "  $0 export FILE          Export decrypted config to a .env file"
-            echo "  $0 refresh              Force refresh from NOSTR"
-            echo "  $0 init [--force]       Initialize default config"
-            echo "  $0 encrypt VALUE        Encrypt a value (for testing)"
-            echo "  $0 decrypt VALUE        Decrypt a value (for testing)"
+            echo "  $0 [--verbose] get KEY              Get a config value (decrypted)"
+            echo "  $0 [--verbose] set KEY VALUE        Set a config value (auto-encrypts sensitive keys)"
+            echo "  $0 [--verbose] delete KEY           Delete a config key"
+            echo "  $0 [--verbose] list                 List all config keys"
+            echo "  $0 [--verbose] show                 Show all values decrypted (careful!)"
+            echo "  $0 [--verbose] export FILE          Export decrypted config to a .env file"
+            echo "  $0 [--verbose] refresh              Force refresh from NOSTR"
+            echo "  $0 [--verbose] init [--force]       Initialize default config"
+            echo "  $0             encrypt VALUE        Encrypt a value (for testing)"
+            echo "  $0             decrypt VALUE        Decrypt a value (for testing)"
+            echo ""
+            echo "  --verbose / -v   Affiche les étapes internes (cache, pubkey, relay, résultats NOSTR)"
             echo ""
             echo "As a library (source it):"
             echo "  source cooperative_config.sh"
