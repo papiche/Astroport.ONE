@@ -472,6 +472,12 @@ else
     ${MY_PATH}/admin/monitor/heartbox_analysis.sh update
 fi
 
+## Rafraîchissement quotidien du cache boots (lu par _12345.sh à chaque cycle)
+_BOOTS_CACHE="$HOME/.zen/tmp/station_boots.json"
+python3 "${MY_PATH}/tools/station_boots.py" > "${_BOOTS_CACHE}.tmp" 2>/dev/null \
+    && mv "${_BOOTS_CACHE}.tmp" "$_BOOTS_CACHE" \
+    || echo "⚠️  station_boots.py : échec de rafraîchissement"
+
 end=`date +%s`
 dur=`expr $end - $start`
 hours=$((dur / 3600))

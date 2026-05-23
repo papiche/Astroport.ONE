@@ -221,8 +221,8 @@ if [[ -d "$HOME/.zen/game/players" ]]; then
 fi
 
 # Get capacities from config
-MULTIPASS_CAPACITY=${NOSTRCARD_SLOTS:-250}
-ZENCARD_CAPACITY=${ZENCARD_SLOTS:-24}
+MULTIPASS_CAPACITY=${NOSTRCARD_SLOTS:-0}
+ZENCARD_CAPACITY=${ZENCARD_SLOTS:-0}
 
 log_output "  MULTIPASS: $MULTIPASS_COUNT/$MULTIPASS_CAPACITY"
 log_output "  ZENCARD: $ZENCARD_COUNT total ($ZENCARD_RENTERS renters, $ZENCARD_OWNERS owners)"
@@ -397,6 +397,9 @@ if [[ -s "$HEARTBOX_CACHE" ]]; then
     HW_RAM_GB=$(jq -r '.system.memory.total_gb        // 0'     "$HEARTBOX_CACHE" 2>/dev/null || echo 0)
     HW_GPU_VRAM=$(jq -r '.capacities.gpu.vram_gb      // 0'     "$HEARTBOX_CACHE" 2>/dev/null || echo 0)
     HW_GPU_DETECTED=$(jq -r '.capacities.gpu.detected // false' "$HEARTBOX_CACHE" 2>/dev/null || echo false)
+    # Capacités réelles mesurées par heartbox (1 MULTIPASS=10Go IPFS, 1 ZenCard=128Go NextCloud)
+    NOSTRCARD_SLOTS=$(jq -r '.capacities.nostr_slots   // 0'     "$HEARTBOX_CACHE" 2>/dev/null || echo 0)
+    ZENCARD_SLOTS=$(jq -r  '.capacities.zencard_slots  // 0'     "$HEARTBOX_CACHE" 2>/dev/null || echo 0)
 fi
 
 ## Tier et rang DRAGON (miroir de la logique install.sh)
@@ -616,7 +619,8 @@ TAGS_JSON=$(cat <<EOF
   ["depreciation:percent", "$DEPRECIATION_PERCENT"],["hw:power_score", "$HW_POWER_SCORE"],["hw:tier", "$HW_TIER"],
   ["hw:dragon_rank", "$HW_RANK"],["hw:provider_ready", "${HW_PROVIDER_READY:-false}"],["hw:storage_ready", "${HW_STORAGE_READY:-false}"],
   ["hw:cpu_cores", "$HW_CPU_CORES"],
-  ["hw:ram_gb", "$HW_RAM_GB"],["hw:gpu_vram_gb", "$HW_GPU_VRAM"]
+  ["hw:ram_gb", "$HW_RAM_GB"],["hw:gpu_vram_gb", "$HW_GPU_VRAM"],
+  ["station:url", "$uSPOT"]
 ]
 EOF
 )

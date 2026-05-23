@@ -389,6 +389,11 @@ echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
 # RESET LOCK
 rmdir "$SCAN_LOCK_DIR" 2>/dev/null || rm -rf "$SCAN_LOCK_DIR" 2>/dev/null
 
+## Pré-calcul du cache boots (lancé une fois au démarrage — rafraîchi quotidiennement par 20h12)
+_BOOTS_CACHE="$HOME/.zen/tmp/station_boots.json"
+(python3 "${MY_PATH}/tools/station_boots.py" > "${_BOOTS_CACHE}.tmp" 2>/dev/null \
+    && mv "${_BOOTS_CACHE}.tmp" "$_BOOTS_CACHE") &
+
 while true; do
     start=$(date +%s)
     MOATS=$(date +%s)
@@ -785,6 +790,14 @@ while true; do
     [[ -z "${SERVICES}" ]]   && SERVICES="${_svc_fallback}"
     [[ -z "${CAPACITIES}" ]] && CAPACITIES="{\"reserved_captain_slots\":2}"
 
+    ## Uptime — outil dédié (rapide, précis à chaque cycle)
+    _STATION_UPTIME=$(python3 "${MY_PATH}/tools/station_uptime.py" 2>/dev/null || echo "")
+
+    ## Boot sessions — lecture du cache (calculé au démarrage, rafraîchi par 20h12)
+    _BOOTS_CACHE="$HOME/.zen/tmp/station_boots.json"
+    _STATION_BOOTS=$(cat "$_BOOTS_CACHE" 2>/dev/null || echo "[]")
+    [[ -z "${_STATION_BOOTS}" ]] && _STATION_BOOTS="[]"
+
 NODE12345="{
     \"version\" : \"12345.0.2\",
     \"created\" : \"${MOATS}\",
@@ -844,7 +857,9 @@ NODE12345="{
         \"weekly_balance\" : ${WEEKLY_BALANCE:-0},
         \"captain_remuneration\" : ${CAPTAIN_REMUNERATION:-0},
         \"risk_level\" : \"${ECONOMIC_RISK}\"
-    }
+    },
+    \"uptime\" : \"${_STATION_UPTIME:-0}\",
+    \"boots\" : ${_STATION_BOOTS:-0}
 }
 "
 
