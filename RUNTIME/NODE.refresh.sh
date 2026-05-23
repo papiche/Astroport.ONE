@@ -40,6 +40,8 @@ ${MY_PATH}/../tools/nostr_cleanup_deactivated.sh --force 2>/dev/null || true
 echo "## CLEANING ROAMING PROFILES (> 24h)"
 # Supprime les dossiers MULTIPASS marqués comme .roaming qui ont plus de 24h (1 jour)
 find ~/.zen/game/nostr/ -mindepth 2 -maxdepth 2 -name ".roaming" -mtime +1 -exec dirname {} \; | xargs -r rm -Rf
+# Supprime les répertoires pubkey-only (.pubkey_*) créés par 22242.sh pour amisOfAmis/UNKNOWN_ROAMING
+find ~/.zen/game/nostr/ -mindepth 1 -maxdepth 1 -name ".pubkey_*" -mtime +1 -type d -exec rm -Rf '{}' \;
 #################################################################
 ## IPFSNODEID ASTRONAUTES SIGNALING ## 12345 port
 ############################

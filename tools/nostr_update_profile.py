@@ -322,7 +322,7 @@ def merge_profile_data(existing_event: Optional[dict], new_args: argparse.Namesp
     metadata = existing_metadata.copy()
     
     # Mettre à jour avec les nouveaux champs fournis
-    fields = ['name', 'about', 'picture', 'banner', 'nip05', 'website', 'city', 'g1pub', 'g1v2', 'zencard_v2', 'g1member', 'home_station']
+    fields = ['name', 'about', 'picture', 'banner', 'nip05', 'website', 'city', 'g1pub', 'g1v2', 'zencard_v2', 'g1member', 'home_station', 'email']
     for field in fields:
         val = getattr(new_args, field, None)
         if val is not None:

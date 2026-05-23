@@ -39,6 +39,8 @@ def nostr_setup_profile(args):
         metadata["city"] = args.city
     if args.home_station:
         metadata["home_station"] = args.home_station
+    if args.email:
+        metadata["email"] = args.email
 
     # Prepare tags for external identities
     tags = []
