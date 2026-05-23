@@ -272,6 +272,17 @@ for i in zip ssss dos2unix make cmake hdparm iptables ufw fail2ban wireguard ope
 done
 
 echo "#############################################"
+echo "####### INSTALL PYTHON BUILD DEPENDENCIES ###"
+echo "#############################################"
+for i in python3-venv python3-dev libssl-dev build-essential python3-magic; do
+    if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+        echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+        sudo apt install -y $i
+        [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> ~/.zen/install.errors.log && continue
+    fi
+done
+
+echo "#############################################"
 echo "####### INSTALL PYTHON3 SYSTEM LIBRARIES ####"
 echo "#############################################"
 for i in pipx python3-pip python3-setuptools python3-base58 python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp python3-prometheus-client python3-tk; do
@@ -285,7 +296,7 @@ done
 echo "#############################################"
 echo "##### INSTALL MULTIMEDIA & DATA TOOLS  ######"
 echo "#############################################"
-for i in qrencode pv gnupg pandoc cargo btop sox ocrmypdf ca-certificates basez markdown jq bc file gawk ffmpeg geoip-bin bind9-dnsutils ntpsec-ntpdate v4l-utils espeak vlc mp3info musl-dev openssl detox nmap httrack html2text imagemagick; do
+for i in qrencode pv gnupg pandoc cargo btop sox ocrmypdf ca-certificates basez markdown jq bc file gawk ffmpeg geoip-bin bind9-dnsutils ntpsec-ntpdate v4l-utils espeak vlc mp3info musl-dev openssl detox nmap httrack html2text imagemagick libmagic1t64; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -317,6 +328,7 @@ if [[ $(which X 2>/dev/null) ]]; then
     done
 fi
 
+
 echo "################################## ~/.astro/bin PYTHON ENV"
 cd $HOME
 ## Ubuntu 22.04 : 'python' n'existe pas → utiliser python3
@@ -334,7 +346,13 @@ echo "#####################################"
 export PATH=$HOME/.local/bin:$PATH
 pipx install duniterpy --include-deps ## keeps old v1 dep (soon deprecated)
 ## add monero & bitcoin compatible keys
-for i in pip python-dotenv scrypt setuptools wheel termcolor amzqr ollama requests geohash beautifulsoup4 cryptography jwcrypto secp256k1 gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 matplotlib readability-lxml duniterpy cachetools pydantic-settings robohash substrate-interface websocket; do
+for i in pip python-dotenv scrypt setuptools wheel termcolor amzqr ollama \
+requests geohash beautifulsoup4 cryptography jwcrypto secp256k1 \
+gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt \
+aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 \
+matplotlib readability-lxml duniterpy cachetools pydantic-settings \
+robohash substrate-interface websocket websockets \
+fastapi aiofiles jinja2 python-multipart python-magic uvicorn; do
         echo ">>> Installation/Mise à jour $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         ~/.astro/bin/pip install -U $i 2>> ~/.zen/install.errors.log
         [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "python -m pip install -U $i FAILED." >> ~/.zen/install.errors.log && continue

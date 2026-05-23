@@ -33,7 +33,8 @@ PACKAGES=(
     gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt 
     aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 
     matplotlib readability-lxml duniterpy cachetools pydantic-settings 
-    robohash substrate-interface websocket
+    robohash substrate-interface websocket websockets fastapi aiofiles jinja2 
+    python-multipart python-magic uvicorn
 )
 
 echo "📦 Installation des dépendances Python..."
