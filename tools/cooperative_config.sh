@@ -1042,7 +1042,8 @@ get_oc_api_key() {
 # CLI Interface (when script is run directly)
 ################################################################################
 
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]] && [[ -z "$_COOP_CONFIG_CLI_RAN" ]]; then
+    _COOP_CONFIG_CLI_RAN=1
     # Parse --verbose anywhere in the argument list
     _args=()
     for _a in "$@"; do
@@ -1052,8 +1053,8 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             _args+=("_$_a")
         fi
     done
-    # Rebuild positional parameters without --verbose
-    set -- "${_args[@]//_/}"
+    # Rebuild positional parameters without --verbose (strip leading _ prefix only)
+    set -- "${_args[@]#_}"
     unset _args _a
 
     case "${1:-}" in
