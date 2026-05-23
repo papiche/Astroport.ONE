@@ -389,10 +389,13 @@ echo "$(date -u)" > ~/.zen/tmp/${IPFSNODEID}/_MySwarm.staom
 # RESET LOCK
 rmdir "$SCAN_LOCK_DIR" 2>/dev/null || rm -rf "$SCAN_LOCK_DIR" 2>/dev/null
 
-## Pré-calcul du cache boots (lancé une fois au démarrage — rafraîchi quotidiennement par 20h12)
+## Pré-calcul du cache boots — uniquement si absent ou âgé de plus de 4h (évite le recalcul redondant avant 20h12)
 _BOOTS_CACHE="$HOME/.zen/tmp/station_boots.json"
-(python3 "${MY_PATH}/tools/station_boots.py" > "${_BOOTS_CACHE}.tmp" 2>/dev/null \
-    && mv "${_BOOTS_CACHE}.tmp" "$_BOOTS_CACHE") &
+_BOOTS_AGE=$(( $(date +%s) - $(stat -c %Y "$_BOOTS_CACHE" 2>/dev/null || echo 0) ))
+if [[ ! -f "$_BOOTS_CACHE" || $_BOOTS_AGE -gt 14400 ]]; then
+    (python3 "${MY_PATH}/tools/station_boots.py" > "${_BOOTS_CACHE}.tmp" 2>/dev/null \
+        && mv "${_BOOTS_CACHE}.tmp" "$_BOOTS_CACHE") &
+fi
 
 while true; do
     start=$(date +%s)
