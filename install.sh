@@ -351,7 +351,7 @@ requests geohash beautifulsoup4 cryptography jwcrypto secp256k1 \
 gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt \
 aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 \
 matplotlib readability-lxml duniterpy cachetools pydantic-settings \
-robohash substrate-interface websocket websockets imap_tools \
+robohash substrate-interface websocket-client websockets imap_tools \
 fastapi aiofiles jinja2 python-multipart python-magic uvicorn python-telegram-bot; do
         echo ">>> Installation/Mise à jour $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         ~/.astro/bin/pip install -U $i 2>> ~/.zen/install.errors.log
