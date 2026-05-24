@@ -609,6 +609,8 @@ coop_config_list() {
             "PLANTNET_API_KEY" "GIT_HOST" "GIT_TOKEN" "GIT_OWNER"
         "_comment_mj"
             "MJ_APIKEY_PUBLIC" "MJ_APIKEY_PRIVATE" "MJ_SENDER_EMAIL"
+        "_comment_ovh"
+            "OVH_APP_KEY" "OVH_APP_SECRET" "OVH_CONSUMER_KEY" "OVH_ZONE"
     )
 
     _coop_display_val() {
@@ -710,6 +712,8 @@ coop_config_show_decrypted() {
             "PLANTNET_API_KEY" "GIT_HOST" "GIT_TOKEN" "GIT_OWNER"
         "_comment_mj"
             "MJ_APIKEY_PUBLIC" "MJ_APIKEY_PRIVATE" "MJ_SENDER_EMAIL"
+        "_comment_ovh"
+            "OVH_APP_KEY" "OVH_APP_SECRET" "OVH_CONSUMER_KEY" "OVH_ZONE"
     )
 
     echo ""
@@ -1014,6 +1018,16 @@ coop_load_env_vars() {
     [[ -n "$val" ]] && export MJ_APIKEY_PRIVATE="$val"
     val=$(coop_config_get "MJ_SENDER_EMAIL" 2>/dev/null)
     [[ -n "$val" ]] && export MJ_SENDER_EMAIL="$val" && export SENDER_EMAIL="$val"
+
+    # Load OVH credentials for DNSLink (auto-decrypted)
+    val=$(coop_config_get "OVH_APP_KEY" 2>/dev/null)
+    [[ -n "$val" ]] && export OVH_APP_KEY="$val"
+    val=$(coop_config_get "OVH_APP_SECRET" 2>/dev/null)
+    [[ -n "$val" ]] && export OVH_APP_SECRET="$val"
+    val=$(coop_config_get "OVH_CONSUMER_KEY" 2>/dev/null)
+    [[ -n "$val" ]] && export OVH_CONSUMER_KEY="$val"
+    val=$(coop_config_get "OVH_ZONE" 2>/dev/null)
+    [[ -n "$val" ]] && export OVH_ZONE="$val"
 
     return 0
 }

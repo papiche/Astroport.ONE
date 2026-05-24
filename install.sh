@@ -347,7 +347,7 @@ export PATH=$HOME/.local/bin:$PATH
 pipx install duniterpy --include-deps ## keeps old v1 dep (soon deprecated)
 ## add monero & bitcoin compatible keys
 for i in pip python-dotenv scrypt setuptools wheel termcolor amzqr ollama \
-requests geohash beautifulsoup4 cryptography jwcrypto secp256k1 \
+requests geohash beautifulsoup4 browser-cookie3 cryptography jwcrypto secp256k1 \
 gql base58 pybase64 google pynacl python-gnupg pynentry paho-mqtt \
 aiohttp ipfshttpclient bitcoin monero ecdsa pynostr bech32 \
 matplotlib readability-lxml duniterpy cachetools pydantic-settings \

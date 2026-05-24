@@ -289,6 +289,12 @@ EOFNOSTR
     echo "${G1PUBNOSTR}:NOSTR ${EMAIL} STORAGE: /ipns/$NOSTRNS"
     echo "/ipns/$NOSTRNS" > "${HOME}/.zen/game/nostr/${EMAIL}/NOSTRNS"
 
+    ## DNSLink MULTIPASS subdomain : _dnslink.<YOUSER>.astroport.one → /ipns/$NOSTRNS
+    OVH_TOOL="${MY_PATH}/../tools/ovh.me.sh"
+    [[ -x "$OVH_TOOL" ]] \
+        && "$OVH_TOOL" upsert "${YOUSER}" "/ipns/${NOSTRNS}" 2>/dev/null \
+        || true
+
     ## Create uSPOT/scan QR Code
     ## /ipfs/QmNd3abeAoUH1nGzwnaLNafRgtvwTSBCZyKqT8eBnEPQK9/u.scan.qr.png~/ipfs/$uSPOT_QR_ipfs
     amzqr "${uSPOT}/scan" -l H -p ${MY_PATH}/../templates/img/cloud_border.png \

@@ -1499,6 +1499,13 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
         ipns_duration=$((ipns_end - ipns_start))
         log "DEBUG" "IPNS publish completed in ${ipns_duration}s for ${PLAYER}"
 
+        ## DNSLink MULTIPASS subdomain : _dnslink.<YOUSER>.astroport.one → /ipns/$NOSTRNS
+        OVH_TOOL="${MY_PATH}/../tools/ovh.me.sh"
+        if [[ -x "$OVH_TOOL" ]]; then
+            _nostrns_raw="${NOSTRNS#/ipns/}"
+            "$OVH_TOOL" upsert "${YOUSER}" "/ipns/${_nostrns_raw}" 2>/dev/null || true
+        fi
+
         # Record the last IPNS update time
         date +%s > ${HOME}/.zen/game/nostr/${PLAYER}/.last_ipns_update
 
