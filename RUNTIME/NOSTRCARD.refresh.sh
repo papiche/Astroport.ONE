@@ -1203,11 +1203,18 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
             # Update email only during daily refresh to avoid excessive updates
             # But ensure it's done at least once per day
             if [[ "$REFRESH_REASON" == "daily_update" ]]; then
-                log "INFO" "Updating email in NOSTR profile for ${PLAYER} during daily refresh"
+                NODE_NOSTR_HEX=""
+                if [[ -s ~/.zen/game/secret.nostr ]]; then
+                    source ~/.zen/game/secret.nostr
+                    NODE_NOSTR_HEX="${HEX:-}"
+                    unset NSEC NPUB HEX
+                fi
+                log "INFO" "Updating email+home_station in NOSTR profile for ${PLAYER} during daily refresh"
                 ${MY_PATH}/../tools/nostr_update_profile.py \
                     "${PLAYER}" \
                     "wss://relay.copylaradio.com" "$myRELAY" \
                     --email "$PLAYER" \
+                    --home_station "${IPFSNODEID}:${NODE_NOSTR_HEX}" \
                     2>&1 | while read line; do log "DEBUG" "$line"; done
                     
                     if [[ $? -eq 0 ]]; then
@@ -1337,18 +1344,28 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
         fi
 
         ######### RELAY LIST (kind 10002) — re-publish weekly ##############################
-        ## nostr_setup_profile.py publishes kind 10002 at first creation only.
-        ## We reset the sentinel weekly so the profile (+ relay list) gets re-published,
-        ## ensuring Coracle / other clients always find the relay list on the relay.
+        ## Publié directement via nostr_node_intercom.py pour ne PAS écraser le kind 0
+        ## (qui peut avoir été modifié par l'utilisateur via un client NOSTR externe).
         RELAY_SENTINEL="${HOME}/.zen/game/nostr/${PLAYER}/.relay_list_weekly"
         if [[ ! -f "$RELAY_SENTINEL" ]] || \
            [[ $(find "$RELAY_SENTINEL" -mtime +7 2>/dev/null | wc -l) -gt 0 ]]; then
             log "INFO" "⚙️  Weekly relay list (kind 10002) refresh for ${PLAYER}"
-            # Remove nostr_setup_profile sentinel → forces full profile re-publication
-            # (kind 0 + kind 10002) on the next iteration of this player loop
-            rm -f "${HOME}/.zen/game/nostr/${PLAYER}/nostr_setup_profile" 2>/dev/null
+            _RELAY_NSEC=$(grep "^NSEC=" "${HOME}/.zen/game/nostr/${PLAYER}/.secret.nostr" 2>/dev/null | cut -d= -f2)
+            if [[ -n "$_RELAY_NSEC" ]]; then
+                _RELAY_TAGS=$(python3 -c "import json; relays=['wss://relay.copylaradio.com','$myRELAY']; print(json.dumps([['r',r] for r in dict.fromkeys(relays)]))")
+                python3 "${MY_PATH}/../tools/nostr_node_intercom.py" publish \
+                    --nsec "$_RELAY_NSEC" \
+                    --kind 10002 \
+                    --tags "$_RELAY_TAGS" \
+                    --content "" \
+                    --relays "ws://localhost:7777" "wss://relay.copylaradio.com" \
+                    2>/dev/null \
+                    && log "INFO" "✅ kind 10002 re-publié pour ${PLAYER}" \
+                    || log "WARN" "⚠️  kind 10002 publication échouée pour ${PLAYER}"
+            else
+                log "WARN" "⚠️  .secret.nostr absent — kind 10002 ignoré pour ${PLAYER}"
+            fi
             touch "$RELAY_SENTINEL"
-            log "INFO" "🔄 Profile sentinel reset — kind 10002 will be re-published this iteration"
         fi
 
         ######### CAPTAIN FOLLOW (kind 3) — ensure & re-publish weekly ####################
