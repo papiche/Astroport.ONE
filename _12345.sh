@@ -509,6 +509,26 @@ while true; do
             fi
         fi
         ##################################################################################
+        ### NOSTRCARD REFRESH — uDRIVE sync + economic management (every 1h)
+        NOSTRCARD_LAST_RUN="$HOME/.zen/tmp/nostrcard_refresh.lastrun"
+        NOSTRCARD_RUNNING=false
+        if pgrep -f "NOSTRCARD.refresh.sh" > /dev/null 2>&1; then
+            NOSTRCARD_RUNNING=true
+            echo "⚠️  NOSTRCARD.refresh.sh already running, skipping..."
+        fi
+        if [[ "$NOSTRCARD_RUNNING" == "false" ]]; then
+            _NOSTRCARD_SINCE=0
+            [[ -f "$NOSTRCARD_LAST_RUN" ]] && _NOSTRCARD_SINCE=$(( $(date +%s) - $(cat "$NOSTRCARD_LAST_RUN") ))
+            if [[ $_NOSTRCARD_SINCE -lt 3600 && $_NOSTRCARD_SINCE -ne 0 ]]; then
+                echo "⚠️  NOSTRCARD.refresh.sh exécuté il y a ${_NOSTRCARD_SINCE}s (< 1h), skipping..."
+            else
+                echo "🌱 Launching NOSTRCARD.refresh.sh (uDRIVE + economy)..."
+                date +%s > "$NOSTRCARD_LAST_RUN"
+                ( ${MY_PATH}/RUNTIME/NOSTRCARD.refresh.sh >> "$HOME/.zen/tmp/nostrcard_refresh.log" 2>&1 ) &
+                disown
+            fi
+        fi
+        ##################################################################################
         # Check for IPFS P2P tunnels
         ( [[ -z $(ipfs p2p ls) ]] && ${MY_PATH}/RUNTIME/DRAGON_p2p_ssh.sh ON ) &
 
