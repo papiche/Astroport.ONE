@@ -330,23 +330,6 @@ if [[ -z "$1" && "$_PARALLEL" -gt 1 && "${#NOSTR[@]}" -gt 1 ]]; then
     exit $?
 fi
 
-########################################################################
-## LISTENER DM — Sync uDRIVE reçu depuis les stations visiteurs (✈️ → 🏠)
-##
-## Les stations B (visiteur) envoient un DM NIP-04 kind 4 chiffré au HEX
-## du NODE de cette station (home). On récupère les CIDs IPFS des fichiers
-## uploadés en roaming et on les place dans APP/uDRIVE du joueur concerné.
-## La publication IPNS reste EXCLUSIVEMENT sur la home station.
-########################################################################
-if [[ -s ~/.zen/game/secret.nostr ]]; then
-    source ~/.zen/game/secret.nostr
-    NODE_NSEC="${NSEC:-}"
-    NODE_HEX="${HEX:-}"
-    unset NSEC NPUB HEX
-
-    ## NODE_HEX disponible via ~/.zen/game/secret.nostr (lu directement par filter/4.sh et bro_dm_daemon.sh)
-fi
-
 ## RUNING FOR ALL LOCAL MULTIPASS (NOSTR Card)
 for PLAYER in "${NOSTR[@]}"; do
 
@@ -1159,12 +1142,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
             G1V2ADDRESS=$(python3 "${MY_PATH}/../tools/g1pub_to_ss58.py" "$G1PUBNOSTR" 2>/dev/null)
             [[ -n "$ZENCARDG1" ]] && ZENCARDG1_V2=$(python3 "${MY_PATH}/../tools/g1pub_to_ss58.py" "$ZENCARDG1" 2>/dev/null)
         fi
-        NODE_NOSTR_HEX=""
-        if [[ -s ~/.zen/game/secret.nostr ]]; then
-            source ~/.zen/game/secret.nostr
-            NODE_NOSTR_HEX="${HEX:-}"
-            unset NSEC NPUB HEX  # éviter pollution des variables du joueur
-        fi
+        NODE_NOSTR_HEX=$(sed 's/.*HEX=\([^;]*\).*/\1/' ~/.zen/game/secret.nostr 2>/dev/null)
         ### SEND PROFILE TO NOSTR RELAYS
         SETUP_ARGS=(
             "$NSEC"
@@ -1203,12 +1181,9 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
             # Update email only during daily refresh to avoid excessive updates
             # But ensure it's done at least once per day
             if [[ "$REFRESH_REASON" == "daily_update" ]]; then
-                NODE_NOSTR_HEX=""
-                if [[ -s ~/.zen/game/secret.nostr ]]; then
-                    source ~/.zen/game/secret.nostr
-                    NODE_NOSTR_HEX="${HEX:-}"
-                    unset NSEC NPUB HEX
-                fi
+                _PLAYER_NSEC="${NSEC:-}"
+                _PLAYER_NPUB="${NPUB:-}"
+                NODE_NOSTR_HEX=$(sed 's/.*HEX=\([^;]*\).*/\1/' ~/.zen/game/secret.nostr 2>/dev/null)
                 log "INFO" "Updating email+home_station in NOSTR profile for ${PLAYER} during daily refresh"
                 ${MY_PATH}/../tools/nostr_update_profile.py \
                     "${PLAYER}" \
@@ -1350,7 +1325,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
         if [[ ! -f "$RELAY_SENTINEL" ]] || \
            [[ $(find "$RELAY_SENTINEL" -mtime +7 2>/dev/null | wc -l) -gt 0 ]]; then
             log "INFO" "⚙️  Weekly relay list (kind 10002) refresh for ${PLAYER}"
-            _RELAY_NSEC=$(grep "^NSEC=" "${HOME}/.zen/game/nostr/${PLAYER}/.secret.nostr" 2>/dev/null | cut -d= -f2)
+            _RELAY_NSEC=$(grep "^NSEC=" "${HOME}/.zen/game/nostr/${PLAYER}/.secret.nostr" 2>/dev/null | cut -d';' -f1 | cut -d= -f2)
             if [[ -n "$_RELAY_NSEC" ]]; then
                 _RELAY_TAGS=$(python3 -c "import json; relays=['wss://relay.copylaradio.com','$myRELAY']; print(json.dumps([['r',r] for r in dict.fromkeys(relays)]))")
                 python3 "${MY_PATH}/../tools/nostr_node_intercom.py" publish \

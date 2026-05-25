@@ -336,7 +336,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
                 echo "skipping $astro_file (our own node or empty ID)" >&2
                 continue
             fi
-            ## Carte minimale : identité + liens d'inspection + scores de capacité
+            ## Carte station : identité + capacités + économie
             swarm_data=$(jq -c '{
                 ipfsnodeid,
                 hostname,
@@ -345,15 +345,32 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
                 STATION_LAT,
                 STATION_LON,
                 g1station,
+                g1swarm,
                 myIPFS,
                 myAPI,
                 myRELAY,
                 uSPOT,
                 NODEZEN,
                 PAF,
-                power_score:    (.capacities.power_score    // 0),
-                provider_ready: (.capacities.provider_ready // false),
-                storage_ready:  (.capacities.storage_ready  // false)
+                NCARD,
+                ZCARD,
+                BILAN,
+                uptime,
+                boots,
+                capacities: {
+                    power_score:    (.capacities.power_score    // 0),
+                    nostr_slots:    (.capacities.nostr_slots    // 0),
+                    zencard_slots:  (.capacities.zencard_slots  // 0),
+                    gpu:            (.capacities.gpu            // {}),
+                    provider_ready: (.capacities.provider_ready // false),
+                    storage_ready:  (.capacities.storage_ready  // false)
+                },
+                economy: {
+                    multipass_count:      (.economy.multipass_count      // 0),
+                    zencard_count:        (.economy.zencard_count        // 0),
+                    captain_remuneration: (.economy.captain_remuneration // 0)
+                },
+                services: (.services // {})
             }' "$astro_file" 2>/dev/null)
             if [[ -n "$swarm_data" ]]; then
                 echo "adding $node_id from $astro_file" >&2
@@ -396,6 +413,21 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
         final_json="{\"version\" : \"54321.0\", \"DATE\": \"$(date -u)\", \"uSPOT\": \"$uSPOT\", \"g1station\": \"$myLIBRA/ipns/$IPFSNODEID\", \"PAF\": \"$PAF\", \"NCARD\": \"$NCARD\", \"ZCARD\": \"$ZCARD\", \"myRELAY\": \"$myRELAY\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"G1\": \"$COINS\", \"ZEN\": \"$ZEN\", \"BILAN\": \"$BILAN\", \"CENTER\": {\"LAT\": \"$ULAT\", \"LON\": \"$ULON\", \"DEG\": \"$DEG\"}, \"CLOSEST_UMAPs\": [$closest_umaps_json_array], \"SWARM\": [$swarm_json_array], \"NOSTR\": [$nostr_json_array], \"PLAYERs\": [$tw_json_array], \"UMAPs\": [$umap_array_str]}"
     else
         final_json="{\"version\" : \"54321.0\", \"DATE\": \"$(date -u)\", \"uSPOT\": \"$uSPOT\", \"g1station\": \"$myLIBRA/ipns/$IPFSNODEID\", \"PAF\": \"$PAF\", \"NCARD\": \"$NCARD\", \"ZCARD\": \"$ZCARD\", \"myRELAY\": \"$myRELAY\", \"IPFSNODEID\": \"$IPFSNODEID\", \"myIPFS\": \"${myIPFS}\", \"UPLANETG1PUB\": \"$UPLANETG1PUB\", \"G1\": \"$COINS\", \"ZEN\": \"$ZEN\", \"BILAN\": \"$BILAN\", \"SWARM\": [$swarm_json_array], \"NOSTR\": [$nostr_json_array], \"PLAYERs\": [$tw_json_array], \"UMAPs\": [$umap_array_str]}"
+    fi
+
+    # Enrichir la station primaire avec les données de capacité du 12345.json local
+    LOCAL_12345="$HOME/.zen/tmp/${IPFSNODEID}/12345.json"
+    if [[ -s "$LOCAL_12345" ]]; then
+        final_json=$(echo "$final_json" | jq -c \
+            --argjson caps  "$(jq -c '.capacities // {}' "$LOCAL_12345" 2>/dev/null || echo '{}')" \
+            --argjson eco   "$(jq -c '.economy // {}' "$LOCAL_12345" 2>/dev/null || echo '{}')" \
+            --argjson boots "$(jq -c '.boots // []' "$LOCAL_12345" 2>/dev/null || echo '[]')" \
+            --arg host "$(jq -r '.hostname // ""' "$LOCAL_12345" 2>/dev/null)" \
+            --arg lat  "$(jq -r '.STATION_LAT // ""' "$LOCAL_12345" 2>/dev/null)" \
+            --arg lon  "$(jq -r '.STATION_LON // ""' "$LOCAL_12345" 2>/dev/null)" \
+            --arg up   "$(jq -r '.uptime // ""' "$LOCAL_12345" 2>/dev/null)" \
+            '. + {capacities: $caps, economy: $eco, hostname: $host, STATION_LAT: $lat, STATION_LON: $lon, uptime: $up, boots: $boots}' \
+            2>/dev/null || echo "$final_json")
     fi
 
     # Calculate generation duration

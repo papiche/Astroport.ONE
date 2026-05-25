@@ -15,7 +15,7 @@
 
 ## Étape 1 — Créer un token d'API OVH
 
-Ouvrez [https://api.ovh.com/createToken](https://api.ovh.com/createToken) et connectez-vous avec le compte OVH qui gère `astroport.one`.
+Ouvrez https://auth.eu.ovhcloud.com/api/createToken?sa=E&q=https%3A%2F%2Fvertexaisearch.cloud.google.com%2Fgrounding-api-redirect%2FAUZIYQGCjhIoxtGe8tI-WpHDDY3KaJ5TspEJSR3o6q2Y9YiHnVzzyTYQSMmMeusrKt5XFmYzmNn_N8fcJY2gGW-tUmb7O1KExThk35LMpDNI-Q6PlsHp04R3EWHvpYct5_BRZWj6xMdJQ3FUoHH2odjmTkzyw7urbpLpvFG2-VRC4Q%3D%3D et connectez-vous avec le compte OVH qui gère `astroport.one` (ou votre domaine).
 
 Remplissez le formulaire :
 
