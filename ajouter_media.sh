@@ -130,7 +130,7 @@ espeak "Hello $PSEUDO"
 G1PUB=$(cat ~/.zen/game/nostr/${PLAYER}/G1PUBNOSTR)
 [[ $G1PUB == "" ]] && espeak "ERROR NO G 1 PUBLIC KEY FOUND - EXIT" && exit 1
 
-# Get NOSTR npub and hex from player
+# Get NOSTR npub and hex from MULTIPASS : NOSTRCARD
 NPUB=$(cat ~/.zen/game/nostr/${PLAYER}/NPUB 2>/dev/null || echo "")
 NPUB_HEX=$(cat ~/.zen/game/nostr/${PLAYER}/HEX 2>/dev/null || echo "")
 
@@ -245,10 +245,16 @@ send_nip42_auth() {
         --relays "$relay" 2>&1)
     local evid
     evid=$(echo "$out" | grep -oE '"event_id"\s*:\s*"[a-f0-9]{64}"' | grep -oE '[a-f0-9]{64}' | head -1)
-    if [[ -n "$NPUB_HEX" && -n "$evid" ]]; then
+    if [[ -n "$NPUB_HEX" ]]; then
         local mdir="$HOME/.zen/game/nostr/${PLAYER}"
-        printf '{"pubkey":"%s","event_hash":"%s","created_at":%d}' "$NPUB_HEX" "$evid" "$(date +%s)" \
-            > "${mdir}/.nip42_auth_${NPUB_HEX}" 2>/dev/null
+        if [[ -n "$evid" ]]; then
+            printf '{"pubkey":"%s","event_hash":"%s","created_at":%d}' "$NPUB_HEX" "$evid" "$(date +%s)" \
+                > "${mdir}/.nip42_auth_${NPUB_HEX}" 2>/dev/null
+        else
+            # Marker sans event_hash (accepté par l'API) : évite le blocage si relay lent
+            printf '{"pubkey":"%s","created_at":%d}' "$NPUB_HEX" "$(date +%s)" \
+                > "${mdir}/.nip42_auth_${NPUB_HEX}" 2>/dev/null
+        fi
         rm -f "${mdir}/.nip42_auth" 2>/dev/null || true
         sleep 2
     fi
