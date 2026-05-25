@@ -99,7 +99,7 @@ log "MOATS  : $MOATS"
 
 # ── Montant nul ───────────────────────────────────────────────────────────────
 if [[ "$AMOUNT" != "ALL" && "$AMOUNT" != "DRAIN" ]]; then
-    if (( $(echo "${AMOUNT} == 0" | bc -l | xargs printf "%.2f") )); then
+    if (( $(echo "${AMOUNT} == 0" | bc -l) )); then
         log "Montant nul, rien à payer."
         exit 0
     fi
@@ -292,7 +292,7 @@ log "Récupération du solde via Duniter RPC..."
 COINS=$(get_balance_gcli "$ISSUERPUB")
 # Affichage du solde émetteur avec équivalent Zen (Ẑ = (Ğ1 - 1) * 10)
 ZEN_BALANCE=$(echo "scale=1; ($COINS - 1) * 10" | bc -l | xargs printf "%.2f")
-[[ $(echo "$ZEN_BALANCE < 0" | bc -l | xargs printf "%.2f") -eq 1 ]] && ZEN_BALANCE="0.0"
+[[ $(echo "$ZEN_BALANCE < 0" | bc -l) -eq 1 ]] && ZEN_BALANCE="0.0"
 log "Solde de ${ISSUERPUB:0:12}... : ${COINS} Ğ1 (≈ ${ZEN_BALANCE} Ẑen utilisables)"
 
 
@@ -325,7 +325,7 @@ elif [[ "$AMOUNT" == "ALL" ]]; then
     AMOUNT="$COINS"
 fi
 
-if (( $(echo "$COINS < $AMOUNT" | bc -l | xargs printf "%.2f") )); then
+if (( $(echo "$COINS < $AMOUNT" | bc -l) )); then
     loge "Solde insuffisant : $COINS Ğ1 < $AMOUNT Ğ1 demandés"
     exit 1
 fi
