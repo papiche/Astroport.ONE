@@ -417,14 +417,14 @@ for PLAYER in "${NOSTR[@]}"; do
     # Use makecoord to ensure proper formatting (e.g., 0.20 not .20)
     if [[ -n "$COINS" && "$COINS" != "null" ]]; then
         ZEN=$(makecoord $(echo "scale=2; ($COINS - 1) * 10" | bc))
-        [[ -z "$ZEN" ]] && ZEN="-10.00"
+        [[ -z "$ZEN" ]] && ZEN="0.00"
     else
-        ZEN="-10.00"
+        ZEN="0.00"
     fi
     # Valeurs par défaut pour éviter un crash bc si COINS/ZEN est vide ou "null"
     COINS=${COINS:-0}
     [[ "$COINS" == "null" ]] && COINS=0
-    ZEN=${ZEN:--10.00}
+    ZEN=${ZEN:-0.00}
 
     log "INFO" "${G1PUBNOSTR} AMOUNT (${COINS} G1) = ${ZEN} ZEN"
     log_metric "WALLET_BALANCE" "${COINS}" "${PLAYER}"
