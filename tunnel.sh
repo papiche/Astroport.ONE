@@ -56,6 +56,7 @@ fi
 # --- VARIABLES D'ÉTAT ---
 cursor=0; running=true; last_msg="Prêt."; busy=false
 active_p2p=""; all_listening=""
+map_disp_ports=()
 LOCAL_ID=$(ipfs id -f "<id>" 2>/dev/null || echo "Inconnu")
 
 # --- FONCTIONS ---
@@ -113,24 +114,23 @@ draw_ui() {
     clear
     tput civis
     echo -e "${BG_BLUE}${FG_BLACK}  tunnel v2.0 -[Q]->Quit [↵]->CONNECT [R]->RESET [X]->STOP [W]->Web/SSH [I]->IPNS  ${NC}"
-    
-    # Affichage du port sélectionné (avec indicateur si alt)
+
     local cur_port="${map_ports[$cursor]}"
     local cur_alt="${map_alt_ports[$cursor]}"
     echo -e "ID LOCAL: ${CYAN}${LOCAL_ID}${NC} | Port: ${YELLOW}${cur_port}${NC} (Alt: ${cur_alt}) | Auto-refresh ON${NC}\n"
 
+    map_disp_ports=()
     for i in "${!map_names[@]}"; do
         if [ $i -eq $cursor ]; then line_start="${BOLD}${YELLOW}> "; line_end="${NC}"; else line_start="  "; line_end=""; fi
-        
-        # Vérification si le tunnel est actif sur le port natif OU le port alt
+
         local p_natif="${map_ports[$i]}"
         local p_alt="${map_alt_ports[$i]}"
         local proto="${map_protos[$i]}"
-        
+
         local active_line=$(echo "$active_p2p" | grep -F "$proto" | head -n 1)
         local is_p2p_active=""
         local active_port="$p_natif"
-        
+
         if [[ -n "$active_line" ]]; then
             if echo "$active_line" | grep -q "tcp/$p_natif"; then
                 is_p2p_active="true"
@@ -140,12 +140,11 @@ draw_ui() {
                 active_port="$p_alt"
             fi
         fi
-        
+
         if [[ -n "$is_p2p_active" ]]; then
             status="${GREEN}[  ACTIF ipfs  ]${NC}"
             disp_port="$active_port"
         else
-            # Si pas de tunnel IPFS, on regarde si un process local occupe un des ports
             local lsof_line=$(echo "$all_listening" | grep -E ":($p_natif|$p_alt) " | head -n 1)
             if [[ -n "$lsof_line" ]]; then
                 local lsofsrc=$(echo "$lsof_line" | awk '{print $1}')
@@ -158,10 +157,13 @@ draw_ui() {
             fi
         fi
 
+        # Mémoriser le port effectif pour les handlers d'action (W, ↵, R, X)
+        map_disp_ports+=("$disp_port")
+
         name_part=$(printf "%-25s" "${map_names[$i]:0:24}")
         port_part=$(printf "%-10s" "P:$disp_port")
         node_short="${map_nodes[$i]: -10}"
-        
+
         echo -e "${line_start}${name_part} ${status}  ${port_part}  ... ${node_short} ... ${line_end}"
     done
     echo -e "\n${BOLD}LOG:${NC} ${CYAN}${last_msg}${NC}"
@@ -184,8 +186,9 @@ while $running; do
             ;;
         $'\x0a'|$'\x0d') # CONNECT
             port="${map_ports[$cursor]}"
-            if echo "$all_listening" | grep ":$port " >/dev/null 2>&1; then
-                last_msg="Port $port déjà occupé localement."
+            alt="${map_alt_ports[$cursor]}"
+            if echo "$active_p2p" | grep -qF "${map_protos[$cursor]}"; then
+                last_msg="Tunnel déjà actif sur P:${map_disp_ports[$cursor]:-$port}."
             else
                 last_msg="Lancement ${map_names[$cursor]}..."
                 draw_ui
@@ -210,34 +213,38 @@ while $running; do
             last_msg="Fermeture du tunnel ordonnée."
             ;;
         "w"|"W") # WEB / SSH
-            port="${map_ports[$cursor]}"
+            port="${map_disp_ports[$cursor]:-${map_ports[$cursor]}}"
             slug="${map_slugs[$cursor]}"
             
             if [[ "$port" != "????" ]]; then
                 # --- SSH (Lancement Terminal) ---
                 if [[ "$slug" == *"SSH"* ]]; then
                     # Lire le REMOTE_USER baked dans x_ssh.sh par DRAGON (user de la station distante)
+                    # Priorité : variable REMOTE_USER= explicite, sinon user extrait du echo "ssh -X user@localhost"
                     ssh_remote_user=$(grep -oP 'REMOTE_USER="\K[^"]+' "${map_scripts[$cursor]}" 2>/dev/null \
+                                      || grep -oP '\w+(?=@localhost)' "${map_scripts[$cursor]}" 2>/dev/null | tail -n1 \
                                       || echo "$USER")
-                    last_msg="SSH → ${ssh_remote_user}@127.0.0.1:${port}"
+                    local ssh_cmd="ssh -p ${port} ${ssh_remote_user}@127.0.0.1"
+                    last_msg="${ssh_cmd}"
                     draw_ui
-                    
-                    # On cherche explicitement le terminal utilisé pour lui passer la bonne syntaxe (-- ou -x ou -e)
+
+                    # Wrapper : garde la fenêtre ouverte si SSH échoue pour voir l'erreur
+                    local ssh_wrap="bash -c '${ssh_cmd}; echo; echo \"[fin — Entrée pour fermer]\"; read'"
+                    # On cherche explicitement le terminal utilisé pour lui passer la bonne syntaxe
                     if command -v gnome-terminal >/dev/null; then
-                        nohup gnome-terminal -- ssh -p "${port}" "${ssh_remote_user}@127.0.0.1" >/dev/null 2>&1 &
+                        nohup gnome-terminal -- bash -c "${ssh_cmd}; echo; echo '[fin — Entrée pour fermer]'; read" >/dev/null 2>&1 &
                     elif command -v xfce4-terminal >/dev/null; then
-                        nohup xfce4-terminal -x ssh -p "${port}" "${ssh_remote_user}@127.0.0.1" >/dev/null 2>&1 &
+                        nohup xfce4-terminal -x bash -c "${ssh_cmd}; echo; echo '[fin — Entrée pour fermer]'; read" >/dev/null 2>&1 &
                     elif command -v terminator >/dev/null; then
-                        nohup terminator -x ssh -p "${port}" "${ssh_remote_user}@127.0.0.1" >/dev/null 2>&1 &
+                        nohup terminator -x bash -c "${ssh_cmd}; echo; echo '[fin — Entrée pour fermer]'; read" >/dev/null 2>&1 &
                     elif command -v konsole >/dev/null; then
-                        nohup konsole -e ssh -p "${port}" "${ssh_remote_user}@127.0.0.1" >/dev/null 2>&1 &
+                        nohup konsole -e bash -c "${ssh_cmd}; echo; echo '[fin — Entrée pour fermer]'; read" >/dev/null 2>&1 &
                     elif command -v tilix >/dev/null; then
-                        nohup tilix -e ssh -p "${port}" "${ssh_remote_user}@127.0.0.1" >/dev/null 2>&1 &
-                    # Si aucun terminal spécifique n'est détecté, on utilise l'alias Debian classique
+                        nohup tilix -e bash -c "${ssh_cmd}; echo; echo '[fin — Entrée pour fermer]'; read" >/dev/null 2>&1 &
                     elif command -v x-terminal-emulator >/dev/null; then
-                        nohup x-terminal-emulator -e ssh -p "${port}" "${ssh_remote_user}@127.0.0.1" >/dev/null 2>&1 &
+                        nohup x-terminal-emulator -e bash -c "${ssh_cmd}; echo; echo '[fin — Entrée pour fermer]'; read" >/dev/null 2>&1 &
                     else
-                        nohup xterm -e ssh -p "${port}" "${ssh_remote_user}@127.0.0.1" >/dev/null 2>&1 &
+                        nohup xterm -e bash -c "${ssh_cmd}; echo; echo '[fin — Entrée pour fermer]'; read" >/dev/null 2>&1 &
                     fi
                 # --- WEB (HTTP/HTTPS) ---
                 else

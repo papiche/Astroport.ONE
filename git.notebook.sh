@@ -157,8 +157,8 @@ if [[ "$SKIP_EXTRACT" == false ]]; then
         warn "Cookie NotebookLM absent dans UPassport."
         # Ouvrir la page d'upload et demander à l'utilisateur
         step "Ouverture de la page cookie UPassport…"
-        xdg-open "${_UPASSPORT}/cookie.html?npub=${_PLAYER_NPUB}" 2>/dev/null || \
-          echo "   👉 Ouvrez : ${_UPASSPORT}/cookie.html?npub=${_PLAYER_NPUB}"
+        xdg-open "${_UPASSPORT}/cookie?npub=${_PLAYER_NPUB}" 2>/dev/null || \
+          echo "   👉 Ouvrez : ${_UPASSPORT}/cookie?npub=${_PLAYER_NPUB}"
         echo ""
         ask "Uploadez votre cookie NotebookLM (notebooklm.google.com) puis :"
         echo -e "   ${C_DIM}[1] Entrez le chemin vers le fichier cookie Netscape${C_RESET}"

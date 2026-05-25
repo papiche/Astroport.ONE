@@ -14,6 +14,10 @@ ME="${0##*/}"
 [[ -z "$IPFSNODEID" ]] && export IPFSNODEID=$(ipfs id -f='<id>\n' 2>/dev/null)
 export IPFSNODEID
 
+# Detect background refresh mode (spawned by stale-cache handler)
+REFRESH_MODE=0
+for _arg in "$@"; do [[ "$_arg" == "--refresh" ]] && REFRESH_MODE=1; done
+
 MLAT=$1
 MLON=$2
 MDEG=$3
@@ -30,8 +34,13 @@ else
     CACHE_FILE="Ustats.json"
 fi
 
-ISrunning=$(pgrep -au $USER -f "$ME" | wc -l)
-[[ $ISrunning -gt 2 ]] && echo "ISrunning = $ISrunning" >&2 && echo "$HOME/.zen/tmp/${CACHE_FILE}" && exit 0
+LOCK_FILE="$HOME/.zen/tmp/${CACHE_FILE}.lock"
+
+# Guard against concurrent full generations (skip in refresh mode — lock handles it)
+if [[ $REFRESH_MODE -eq 0 ]]; then
+    ISrunning=$(pgrep -au $USER -f "$ME" | wc -l)
+    [[ $ISrunning -gt 2 ]] && echo "ISrunning = $ISrunning" >&2 && echo "$HOME/.zen/tmp/${CACHE_FILE}" && exit 0
+fi
 
 if command -v parallel >/dev/null 2>&1; then
     USE_PARALLEL=1
@@ -44,22 +53,26 @@ echo "=== $ME =============================== //$ULAT//$ULON" >&2
 # Get start time for generation duration
 GENERATION_START=$(date +%s)
 
-# Check if cache exists and is less than 12 hours old
-if [[ -s ~/.zen/tmp/${CACHE_FILE} ]]; then
-    CACHE_AGE=$(($(date +%s) - $(stat -c %Y ~/.zen/tmp/${CACHE_FILE})))
-    if [[ $CACHE_AGE -lt 43200 ]]; then  # 43200 seconds = 12 hours
-        echo "Using cached data (age: ${CACHE_AGE}s)" >&2
-        if jq -e . ~/.zen/tmp/${CACHE_FILE} >/dev/null 2>&1; then
-            echo ~/.zen/tmp/${CACHE_FILE}
-            exit 0
-        else
-            echo "[Ustats.sh] ERROR: Cache file is not valid JSON, regenerating: ~/.zen/tmp/${CACHE_FILE}" >&2
+# Stale-while-revalidate: always serve cache instantly; refresh in background if stale
+if [[ $REFRESH_MODE -eq 0 ]] && [[ -s "$HOME/.zen/tmp/${CACHE_FILE}" ]]; then
+    if jq -e . "$HOME/.zen/tmp/${CACHE_FILE}" >/dev/null 2>&1; then
+        CACHE_AGE=$(($(date +%s) - $(stat -c %Y "$HOME/.zen/tmp/${CACHE_FILE}")))
+        echo "Serving cache (age: ${CACHE_AGE}s)" >&2
+        if [[ $CACHE_AGE -gt 43200 ]] && [[ ! -f "$LOCK_FILE" ]]; then
+            echo "Cache stale, spawning background refresh..." >&2
+            touch "$LOCK_FILE"
+            nohup bash "$0" "$MLAT" "$MLON" "$MDEG" --refresh >>/tmp/Ustats_refresh.log 2>&1 &
+            disown
         fi
+        echo "$HOME/.zen/tmp/${CACHE_FILE}"
+        exit 0
     else
-        echo "Cache expired (age: ${CACHE_AGE}s), regenerating..." >&2
-        rm -f ~/.zen/tmp/${CACHE_FILE}
+        echo "[Ustats.sh] Cache invalid JSON, removing..." >&2
+        rm -f "$HOME/.zen/tmp/${CACHE_FILE}"
     fi
 fi
+# In refresh mode, remove stale cache so the generation block below runs
+[[ $REFRESH_MODE -eq 1 ]] && rm -f "$HOME/.zen/tmp/${CACHE_FILE}"
 
 # Function to calculate distance between two points (Haversine formula)
 calculate_distance() {
@@ -440,6 +453,7 @@ if [[ ! -s ~/.zen/tmp/${CACHE_FILE} ]]; then
 
     # Print and format the JSON string with pretty printing
     echo "$final_json" | jq '.' > ~/.zen/tmp/${CACHE_FILE}
+    rm -f "$LOCK_FILE"
 fi
 if jq -e . ~/.zen/tmp/${CACHE_FILE} >/dev/null 2>&1; then
     echo ~/.zen/tmp/${CACHE_FILE}

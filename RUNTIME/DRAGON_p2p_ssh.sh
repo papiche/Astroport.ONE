@@ -459,8 +459,13 @@ EOF
 # FONCTION DÉDIÉE SSH (Wrapper intelligent)
 ##################################################################################
 generate_ssh_service() {
-    # On utilise simplement la fonction universelle avec le port SSH détecté
     generate_p2p_service "$1" "ssh" "SSH Remote Access"
+    # Bake le user local dans x_ssh.sh pour que tunnel.sh puisse se connecter
+    # avec le bon identifiant (la station distante publie son propre $USER)
+    local ssh_script="${HOME}/.zen/tmp/${IPFSNODEID}/x_ssh.sh"
+    if [[ -f "$ssh_script" ]] && ! grep -q "^REMOTE_USER=" "$ssh_script"; then
+        sed -i "/^NATIVE_PORT=/i REMOTE_USER=\"${USER}\"" "$ssh_script"
+    fi
 }
 
 ##################################################################################

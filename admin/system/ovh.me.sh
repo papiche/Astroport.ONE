@@ -39,7 +39,7 @@ _load_credentials() {
     [[ -n "${OVH_APP_KEY:-}" && -n "${OVH_APP_SECRET:-}" && -n "${OVH_CONSUMER_KEY:-}" ]] && return 0
 
     local coop_sh="${HOME}/.zen/Astroport.ONE/tools/cooperative_config.sh"
-    if [[ -f "$coop_sh" && -n "${UPLANETNAME:-}" ]]; then
+    if [[ -f "$coop_sh" ]]; then
         # shellcheck source=/dev/null
         source "$coop_sh" 2>/dev/null
         OVH_APP_KEY=$(coop_config_get "OVH_APP_KEY" 2>/dev/null) || true
