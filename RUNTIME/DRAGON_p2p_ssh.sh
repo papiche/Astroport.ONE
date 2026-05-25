@@ -136,6 +136,8 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     [[ ! -s ~/.zen/IPCity ]] && my_IPCity > ~/.zen/IPCity
     CAPTAIN_CITY=$(cat ~/.zen/IPCity 2>/dev/null)
     [[ -z "$CAPTAIN_CITY" ]] && CAPTAIN_CITY="UPlanet"
+    NODE_NOSTR_HEX=$(sed 's/.*HEX=\([^;]*\).*/\1/' ~/.zen/game/secret.nostr 2>/dev/null)
+
     $HOME/.zen/Astroport.ONE/tools/nostr_update_profile.py \
     "${CAPTAINEMAIL}" \
     "wss://relay.copylaradio.com" "$myRELAY" \
@@ -146,6 +148,7 @@ if [[ -s ~/.zen/game/nostr/${CAPTAINEMAIL}/.secret.nostr ]]; then
     --zencard "$(cat ~/.zen/game/players/${CAPTAINEMAIL}/.g1pub 2>/dev/null)" \
     --ipns_vault "$(cat ~/.zen/game/nostr/${CAPTAINEMAIL}/NOSTRNS 2>/dev/null)" \
     --ipfs_gw "$myIPFS" \
+    --home_station "${IPFSNODEID}:${NODE_NOSTR_HEX}" \
     --email "$CAPTAINEMAIL" >/dev/null 2>&1
     
     # Update DID document - Read from NOSTR relay (source of truth) instead of local cache
