@@ -8,7 +8,7 @@
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-. "$MY_PATH/../tools/my.sh" 2>/dev/null || true
+. "${HOME}/.zen/Astroport.ONE/tools/my.sh" 2>/dev/null || true
 
 # Configuration
 DIFY_PORT=8010
@@ -45,7 +45,7 @@ test_api() {
 # Source shared library (provides: print_status, save_connection_status,
 # check_port, count_p2p_nodes, check_p2p_connections, close_ipfs_p2p,
 # connect_via_swarm)
-source "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/swarm_connector_lib.sh"
+source "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/../swarm_connector_lib.sh"
 
 ########################################################
 ## Detection Functions

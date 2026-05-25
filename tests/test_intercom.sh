@@ -37,7 +37,7 @@ skip() { echo -e "  ${YELLOW}⊘${NC} $1 (skipped)"; SKIP=$((SKIP+1)); }
 section() { echo -e "\n${CYAN}── $1 ──${NC}"; }
 
 INTERCOM="$ASTROPORT_PATH/tools/nostr_node_intercom.py"
-DAEMON="$ASTROPORT_PATH/IA/bro_dm_daemon.sh"
+DAEMON="$ASTROPORT_PATH/IA/bro/bro_dm_daemon.sh"
 FILTER7="$ASTROPORT_PATH/../NIP-101/relay.writePolicy.plugin/filter/7.sh"
 
 ## ─────────────────────────────────────────────────────────────────────────────

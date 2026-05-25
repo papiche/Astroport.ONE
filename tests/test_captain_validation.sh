@@ -676,25 +676,25 @@ test_generate_badge_images() {
     test_log_info "═══════════════════════════════════════════════════════════"
     echo ""
     
-    local generate_script="$HOME/.zen/Astroport.ONE/IA/generate_badge_image.sh"
-    
+    local generate_script="$HOME/.zen/Astroport.ONE/IA/generators/generate_badge_image.sh"
+
     if [[ ! -f "$generate_script" ]]; then
         test_log_warning "generate_badge_image.sh not found, skipping badge image generation"
         return 0
     fi
-    
+
     local permit_id=$(get_captain_permit_name)
     local badge_id=$(echo "$permit_id" | tr '[:upper:]' '[:lower:]' | sed 's/PERMIT_/permit_/')
     local permit_display_name=$(echo "$permit_id" | sed 's/PERMIT_//' | sed 's/_X1//' | sed 's/_/ /g')
-    
+
     test_log_info "Badge ID: $badge_id"
     test_log_info "Permit Name: $permit_display_name"
     echo ""
-    
+
     # Check if Ollama and ComfyUI are available
     test_log_info "Checking AI services availability..."
-    bash "$HOME/.zen/Astroport.ONE/IA/ollama.me.sh" >/dev/null 2>&1
-    bash "$HOME/.zen/Astroport.ONE/IA/comfyui.me.sh" >/dev/null 2>&1
+    bash "$HOME/.zen/Astroport.ONE/IA/services/ollama.me.sh" >/dev/null 2>&1
+    bash "$HOME/.zen/Astroport.ONE/IA/services/comfyui.me.sh" >/dev/null 2>&1
     sleep 2
     
     # Check if services are actually responding

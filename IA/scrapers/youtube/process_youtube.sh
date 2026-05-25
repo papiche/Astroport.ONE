@@ -180,13 +180,13 @@ log_debug "Starting download"
 COMMON_ARGS="$BASE_ARGS --playlist-items 1 --concurrent-fragments 1 --socket-timeout 120"
 case "$FORMAT" in
     mp3)
-        download_output=$(timeout 3600 yt-dlp $COMMON_ARGS \
+        download_output=$(timeout --kill-after=10s 1200s yt-dlp $COMMON_ARGS \
             -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 \
             --no-mtime --embed-thumbnail --add-metadata --write-info-json \
             -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" 2>&1)
         ;;
     mp4)
-        download_output=$(timeout 3600 yt-dlp $COMMON_ARGS \
+        download_output=$(timeout --kill-after=10s 1200s yt-dlp $COMMON_ARGS \
             -f "$VIDEO_FORMAT_FILTER" -S "res,ext:mp4:m4a" --recode-video mp4 \
             --no-mtime --embed-thumbnail --add-metadata --write-info-json \
             -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)
@@ -200,12 +200,12 @@ if [[ $download_exit_code -ne 0 ]] && echo "$download_output" | grep -qE "403|Fo
     YT_EXTRACTOR_ARGS='--extractor-args youtube:player_client=tv_embedded,tv'
     case "$FORMAT" in
         mp4)
-            download_output=$(timeout 3600 yt-dlp $COMMON_ARGS $YT_EXTRACTOR_ARGS \
+            download_output=$(timeout --kill-after=10s 1200s yt-dlp $COMMON_ARGS $YT_EXTRACTOR_ARGS \
                 -f "$VIDEO_FORMAT_FILTER" --recode-video mp4 --write-info-json \
                 -o "${OUTPUT_DIR}/${media_title}.mp4" "$URL" 2>&1)
             ;;
         mp3)
-            download_output=$(timeout 3600 yt-dlp $COMMON_ARGS $YT_EXTRACTOR_ARGS \
+            download_output=$(timeout --kill-after=10s 1200s yt-dlp $COMMON_ARGS $YT_EXTRACTOR_ARGS \
                 -f "bestaudio/best" -x --audio-format mp3 --write-info-json \
                 -o "${OUTPUT_DIR}/${media_title}.%(ext)s" "$URL" 2>&1)
             ;;

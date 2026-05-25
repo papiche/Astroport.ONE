@@ -5,7 +5,7 @@
 
 MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"${MY_PATH}\" && pwd )`"
-source "${MY_PATH}/../tools/my.sh"
+source "${HOME}/.zen/Astroport.ONE/tools/my.sh"
 
 VIDEO_INPUT="$1"
 AUDIO_INPUT="$2"

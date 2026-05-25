@@ -258,7 +258,7 @@ _dm_is_alive() {
 }
 if [[ -s ~/.zen/game/secret.nostr ]]; then
     if ! _dm_is_alive; then
-        bash "${MY_PATH}/IA/bro_dm_daemon.sh" >> "${HOME}/.zen/tmp/bro_dm_daemon.log" 2>&1 &
+        bash "${HOME}/.zen/Astroport.ONE/IA/bro/bro_dm_daemon.sh" >> "${HOME}/.zen/tmp/bro_dm_daemon.log" 2>&1 &
         echo "🚀 Daemon DM NODE démarré (PID $!)"
     else
         echo "✅ Daemon DM NODE actif (PID $(cat "$_DM_PID_FILE" 2>/dev/null))"
@@ -897,7 +897,7 @@ NODE12345="{
     ## Watchdog daemon DM NODE — relance si mort entre deux cycles
     if [[ -s ~/.zen/game/secret.nostr ]]; then
         if ! _dm_is_alive; then
-            bash "${MY_PATH}/IA/bro_dm_daemon.sh" >> "${HOME}/.zen/tmp/bro_dm_daemon.log" 2>&1 &
+            bash "${HOME}/.zen/Astroport.ONE/IA/bro/bro_dm_daemon.sh" >> "${HOME}/.zen/tmp/bro_dm_daemon.log" 2>&1 &
             echo "🔄 Daemon DM NODE relancé (PID $!)"
         fi
     fi

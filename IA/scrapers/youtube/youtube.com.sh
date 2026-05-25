@@ -118,6 +118,29 @@ fi
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Checking cookie file: $COOKIE_FILE" >&2
 if [[ ! -f "$COOKIE_FILE" || -z "$COOKIE_FILE" ]]; then
+    # Fallback: try to restore cookie from UPassport /cookie API (NOSTR DID encrypted storage)
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] No disk cookie — attempting restore from NOSTR DID via /cookie/youtube.com" >&2
+    UPASSPORT_URL="${myUPASSPORT:-http://127.0.0.1:54321}"
+    PLAYER_NPUB=""
+    [[ -f "$USER_DIR/npub.nostr" ]] && PLAYER_NPUB=$(cat "$USER_DIR/npub.nostr" | tr -d '\n')
+    [[ -z "$PLAYER_NPUB" && -f "$USER_DIR/.secret.nostr" ]] && \
+        PLAYER_NPUB=$(grep "NPUB=" "$USER_DIR/.secret.nostr" 2>/dev/null | cut -d= -f2 | tr -d '\n')
+
+    if [[ -n "$PLAYER_NPUB" ]]; then
+        RESTORED_COOKIE=$(curl -s --max-time 15 \
+            "${UPASSPORT_URL}/cookie/youtube.com?npub=${PLAYER_NPUB}" 2>/dev/null)
+        if [[ -n "$RESTORED_COOKIE" ]] && echo "$RESTORED_COOKIE" | grep -q "Netscape HTTP Cookie\|#HttpOnly\|\\.youtube\\.com"; then
+            COOKIE_FILE="$USER_DIR/.youtube.com.cookie"
+            echo "$RESTORED_COOKIE" > "$COOKIE_FILE"
+            chmod 0600 "$COOKIE_FILE"
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cookie restored from NOSTR DID → $COOKIE_FILE" >&2
+        else
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] NOSTR DID restore failed or empty for $PLAYER" >&2
+        fi
+    fi
+fi
+
+if [[ ! -f "$COOKIE_FILE" || -z "$COOKIE_FILE" ]]; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: No cookie file found for $PLAYER" >&2
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Checked paths:" >&2
     echo "[$(date '+%Y-%m-%d %H:%M:%S')]   - $USER_DIR/.youtube.com.cookie (single-domain)" >&2
@@ -315,7 +338,7 @@ verify_processed_videos() {
     fi
     
     # Get the nostr_get_events.sh script path
-    local nostr_get_script="${MY_PATH}/../tools/nostr_get_events.sh"
+    local nostr_get_script="${HOME}/.zen/Astroport.ONE/tools/nostr_get_events.sh"
     if [[ ! -f "$nostr_get_script" ]]; then
         log_debug "nostr_get_events.sh not found, skipping verification"
         return 0
@@ -805,7 +828,7 @@ process_liked_video() {
         # Send NIP-42 authentication event before upload (like ajouter_media.sh does)
         log_debug "Sending NIP-42 authentication event..."
         local secret_nostr_file="$HOME/.zen/game/nostr/${player}/.secret.nostr"
-        local nostr_send_script="${MY_PATH}/../tools/nostr_send_note.py"
+        local nostr_send_script="${HOME}/.zen/Astroport.ONE/tools/nostr_send_note.py"
         local nostr_relay="ws://127.0.0.1:7777"
         
         if [[ -f "$secret_nostr_file" ]] && [[ -f "$nostr_send_script" ]]; then
@@ -918,7 +941,7 @@ process_liked_video() {
         log_debug "Publishing video via publish_nostr_video.sh..."
         
         # Get publish script path
-        local publish_script="${MY_PATH}/../tools/publish_nostr_video.sh"
+        local publish_script="${HOME}/.zen/Astroport.ONE/tools/publish_nostr_video.sh"
         if [[ ! -f "$publish_script" ]]; then
             publish_script="${HOME}/.zen/Astroport.ONE/tools/publish_nostr_video.sh"
         fi
@@ -1150,7 +1173,7 @@ delete_expired_cookie() {
 </html>
 COOKIE_EMAIL
 
-    ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 48h "${player}" "$temp_email_file" "⚠️ Cookie YouTube supprimé — ré-upload requis" 2>/dev/null
+    ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh --template "$0" --expire 48h "${player}" "$temp_email_file" "⚠️ Cookie YouTube supprimé — ré-upload requis" 2>/dev/null
     rm -f "$temp_email_file" 2>/dev/null || true
     log_debug "Cookie deleted and notification sent to $player"
 }
@@ -1356,7 +1379,7 @@ send_sync_notification() {
     echo "$email_content" > "$temp_email_file"
     
     # Envoyer l'email via mailjet avec durée éphémère de 24h
-    ${MY_PATH}/../tools/mailjet.sh --template "$0" --expire 24h "${player}" "$temp_email_file" "🎵 YouTube Sync - $success_count nouvelles vidéos" 2>/dev/null
+    ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh --template "$0" --expire 24h "${player}" "$temp_email_file" "🎵 YouTube Sync - $success_count nouvelles vidéos" 2>/dev/null
     
     # Nettoyer le fichier temporaire
     rm -f "$temp_email_file"
@@ -1430,7 +1453,7 @@ send_error_notification() {
     fi
     
     # Chemin vers le template HTML
-    local template_file="${MY_PATH}/../templates/NOSTR/cookie.youtube.alert.html"
+    local template_file="${HOME}/.zen/Astroport.ONE/templates/NOSTR/cookie.youtube.alert.html"
     
     # Check if template file exists
     if [[ ! -f "$template_file" ]]; then
@@ -1506,7 +1529,7 @@ EOF
     log_debug "Email file created: $temp_email_file (size: $(stat -c%s "$temp_email_file" 2>/dev/null || echo 0) bytes)"
     
     # Envoyer l'email via mailjet avec durée éphémère de 24h
-    ${MY_PATH}/../tools/mailjet.sh --template "${MY_PATH}/../templates/NOSTR/cookie.youtube.alert.html" --expire 24h "${player}" "$temp_email_file" "$error_title" 2>/dev/null
+    ${HOME}/.zen/Astroport.ONE/tools/mailjet.sh --template "${HOME}/.zen/Astroport.ONE/templates/NOSTR/cookie.youtube.alert.html" --expire 24h "${player}" "$temp_email_file" "$error_title" 2>/dev/null
     
     if [[ $? -eq 0 ]]; then
         log_debug "Error notification sent successfully to $player"

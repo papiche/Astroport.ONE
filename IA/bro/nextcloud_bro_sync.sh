@@ -30,7 +30,7 @@
 ########################################################################
 
 MY_PATH="$(dirname "$(realpath "$0")")"
-. "$MY_PATH/../tools/my.sh" 2>/dev/null || true
+. "${HOME}/.zen/Astroport.ONE/tools/my.sh" 2>/dev/null || true
 
 ## ── Configuration ─────────────────────────────────────────────────────
 NC_WEBDAV_BASE="${NC_WEBDAV_URL:-http://127.0.0.1:8001/remote.php/dav/files}"
@@ -115,7 +115,7 @@ _ensure_ollama() {
 
     ## Ollama non accessible — lancer ollama.me.sh pour établir la connexion
     info "Ollama non accessible localement — tentative de connexion P2P via ollama.me.sh..."
-    local OLLAMA_STARTER="$MY_PATH/ollama.me.sh"
+    local OLLAMA_STARTER="$MY_PATH/../services/ollama.me.sh"
     if [[ -x "$OLLAMA_STARTER" ]]; then
         bash "$OLLAMA_STARTER" &>/dev/null &
         ## Attendre jusqu'à 20 secondes
@@ -323,7 +323,7 @@ print(ctx[:4000])
 
     ## Fallback : si KB vide, chercher dans docs/ locaux via grep
     if [[ -z "$context_global" ]]; then
-        local _docs_dir="$MY_PATH/../docs"
+        local _docs_dir="$MY_PATH/../../docs"
         if [[ -d "$_docs_dir" ]]; then
             warn "KB Qdrant vide — recherche textuelle dans les docs locaux (fallback)"
             context_global=$(grep -ril "$question" "$_docs_dir" 2>/dev/null \
@@ -458,7 +458,7 @@ _sync_webdav() {
 
     if [[ -z "$NC_PASSWORD" ]]; then
         warn "Mot de passe NextCloud absent — indexation des docs locaux en fallback"
-        local _docs_dir="$MY_PATH/../docs"
+        local _docs_dir="$MY_PATH/../../docs"
         if [[ -d "$_docs_dir" ]]; then
             _index_local "$_docs_dir"
         else

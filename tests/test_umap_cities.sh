@@ -199,7 +199,7 @@ ${opp_result}
 
     # 3. Generate illustration (ComfyUI if available)
     local illustration_url=""
-    if "$IA_PATH/comfyui.me.sh" >/dev/null 2>&1; then
+    if "$IA_PATH/services/comfyui.me.sh" >/dev/null 2>&1; then
         log_step "${name}: generating illustration..."
         local sd_prompt=""
         sd_prompt=$("$IA_PATH/question.py" --json \
@@ -209,7 +209,7 @@ ${opp_result}
         sd_prompt=$(echo "$sd_prompt" | sed 's/\s\+/ /g' | head -c 400)
         if [[ -n "$sd_prompt" ]]; then
             mkdir -p "${umappath}/Images"
-            illustration_url=$("$IA_PATH/generate_image.sh" "$sd_prompt" "${umappath}/Images" 2>/dev/null) || true
+            illustration_url=$("$IA_PATH/generators/generate_image.sh" "$sd_prompt" "${umappath}/Images" 2>/dev/null) || true
             [[ -n "$illustration_url" ]] && log_ok "${name}: illustration OK"
         fi
     fi

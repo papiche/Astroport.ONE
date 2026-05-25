@@ -108,13 +108,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXTRACTOR="$SCRIPT_DIR/notebooklm_playwright.py"
 
 if [[ ! -f "$EXTRACTOR" ]]; then
-  warn "notebooklm_playwright.py non trouvé dans $SCRIPT_DIR"
-  # Chercher dans PATH
-  EXTRACTOR_PATH="$(command -v notebooklm_playwright.py 2>/dev/null || true)"
-  if [[ -n "$EXTRACTOR_PATH" ]]; then
-    EXTRACTOR="$EXTRACTOR_PATH"
+  # Chercher dans la structure IA/scrapers/ (après réorganisation)
+  _IA_SCRAPER="${HOME}/.zen/Astroport.ONE/IA/scrapers/notebooklm.google.com/notebooklm_playwright.py"
+  if [[ -f "$_IA_SCRAPER" ]]; then
+    EXTRACTOR="$_IA_SCRAPER"
   else
-    fail "notebooklm_playwright.py introuvable. Placez-le dans le même dossier que ce script."
+    EXTRACTOR_PATH="$(command -v notebooklm_playwright.py 2>/dev/null || true)"
+    [[ -n "$EXTRACTOR_PATH" ]] && EXTRACTOR="$EXTRACTOR_PATH" \
+      || fail "notebooklm_playwright.py introuvable (cherché dans $SCRIPT_DIR et IA/scrapers/notebooklm.google.com/)."
   fi
 fi
 ok "Extracteur : $EXTRACTOR"
@@ -123,8 +124,58 @@ ok "Extracteur : $EXTRACTOR"
 if [[ "$SKIP_EXTRACT" == false ]]; then
   [[ -z "$NB_URL" ]] && fail "--url requis (ou NOTEBOOKLM_URL)"
   [[ "$NB_URL" != *"notebooklm.google.com"* ]] && fail "URL invalide : $NB_URL"
+
+  # Vérification cookie-file si fourni
+  if [[ -n "$NB_COOKIE_FILE" && ! -f "$NB_COOKIE_FILE" ]]; then
+    fail "Fichier cookie introuvable : $NB_COOKIE_FILE"
+  fi
+
+  # Aucun cookie fourni → chercher dans UPassport puis demander
   if [[ -z "$NB_COOKIE" && -z "$NB_COOKIE_FILE" ]]; then
-    fail "--cookie ou --cookie-file requis (ou NOTEBOOKLM_COOKIE)"
+    _UPASSPORT="http://127.0.0.1:54321"
+    _PLAYER_NPUB=""
+    # Essayer de lire le npub du joueur courant
+    _CURRENT_DIR="$(readlink -f "$HOME/.zen/game/players/.current" 2>/dev/null || true)"
+    if [[ -n "$_CURRENT_DIR" && -d "$_CURRENT_DIR" ]]; then
+      _PLAYER_EMAIL="$(cat "$_CURRENT_DIR/.player" 2>/dev/null || true)"
+      [[ -n "$_PLAYER_EMAIL" ]] && \
+        _PLAYER_NPUB="$(cat "$HOME/.zen/game/nostr/${_PLAYER_EMAIL}/NPUB" 2>/dev/null || true)"
+    fi
+
+    if [[ -n "$_PLAYER_NPUB" ]]; then
+      step "Aucun cookie fourni — tentative de récupération depuis UPassport…"
+      _COOKIE_TMP="$(mktemp /tmp/notebooklm_cookie_XXXXXX.txt)"
+      _HTTP_STATUS="$(curl -sf -w "%{http_code}" -o "$_COOKIE_TMP" \
+        "${_UPASSPORT}/cookie/notebooklm.google.com?npub=${_PLAYER_NPUB}" 2>/dev/null || echo 000)"
+      if [[ "$_HTTP_STATUS" == "200" ]] && grep -q "Netscape HTTP" "$_COOKIE_TMP" 2>/dev/null; then
+        ok "Cookie NotebookLM récupéré depuis UPassport"
+        NB_COOKIE_FILE="$_COOKIE_TMP"
+        # Nettoyage du cookie temp à la sortie (en plus de TMPDIR_EXTRACT)
+        trap 'rm -rf "$TMPDIR_EXTRACT" "$_COOKIE_TMP" 2>/dev/null || true' EXIT
+      else
+        rm -f "$_COOKIE_TMP"
+        warn "Cookie NotebookLM absent dans UPassport."
+        # Ouvrir la page d'upload et demander à l'utilisateur
+        step "Ouverture de la page cookie UPassport…"
+        xdg-open "${_UPASSPORT}/cookie.html?npub=${_PLAYER_NPUB}" 2>/dev/null || \
+          echo "   👉 Ouvrez : ${_UPASSPORT}/cookie.html?npub=${_PLAYER_NPUB}"
+        echo ""
+        ask "Uploadez votre cookie NotebookLM (notebooklm.google.com) puis :"
+        echo -e "   ${C_DIM}[1] Entrez le chemin vers le fichier cookie Netscape${C_RESET}"
+        echo -e "   ${C_DIM}[2] Ou collez les cookies inline (ex: SID=x; HSID=y; ...)${C_RESET}"
+        echo ""
+        read -r -p "   Chemin fichier (ou Entrée pour cookies inline) : " _INPUT
+        if [[ -n "$_INPUT" ]]; then
+          [[ ! -f "$_INPUT" ]] && fail "Fichier introuvable : $_INPUT"
+          NB_COOKIE_FILE="$_INPUT"
+        else
+          read -r -p "   Cookies inline : " NB_COOKIE
+          [[ -z "$NB_COOKIE" ]] && fail "Cookie requis pour accéder à NotebookLM."
+        fi
+      fi
+    else
+      fail "--cookie ou --cookie-file requis (aucun joueur courant pour récupérer depuis UPassport)"
+    fi
   fi
 fi
 
@@ -363,17 +414,21 @@ CONSTRAINTS="$(prompt_multiline \
   "Contraintes ou règles spécifiques au projet ?" \
   "Aucune contrainte particulière.")"
 
-# Dossier de sortie
+# Dossier de sortie — défaut : ~/.zen/workspace/notebooklm/<name>
+NB_WORKSPACE="${HOME}/.zen/workspace/notebooklm"
 if [[ -z "$PROJECT_DIR" ]]; then
-  PROJECT_DIR="$(prompt_default "Dossier de destination" "./$PROJECT_NAME")"
+  PROJECT_DIR="$(prompt_default "Dossier de destination" "$NB_WORKSPACE/$PROJECT_NAME")"
 fi
 
 # ─── Étape 4 : Création du projet Git ─────────────────────────────────────────
 header "Étape 4 — Création du projet Git"
 
-# Résolution du chemin absolu
-PROJECT_DIR="$(eval echo "$PROJECT_DIR")"
+# Résolution du chemin absolu (expansion ~ sans eval)
+PROJECT_DIR="${PROJECT_DIR/#\~/$HOME}"
 [[ "${PROJECT_DIR:0:1}" != "/" ]] && PROJECT_DIR="$(pwd)/$PROJECT_DIR"
+
+# Créer le workspace notebooklm si nécessaire
+mkdir -p "$NB_WORKSPACE"
 
 if [[ -d "$PROJECT_DIR" ]]; then
   warn "Le dossier $PROJECT_DIR existe déjà."

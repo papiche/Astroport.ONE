@@ -10,7 +10,7 @@ set -euo pipefail
 
 MY_PATH="$(dirname "$0")"
 MY_PATH="$(cd "$MY_PATH" && pwd)"
-IA_PATH="${MY_PATH}/../IA"
+IA_PATH="$HOME/.zen/Astroport.ONE/IA"
 REGION_ID="${1:-}"
 
 if [[ -z "$REGION_ID" ]]; then
@@ -30,7 +30,7 @@ center_lon=$(awk "BEGIN { printf \"%.2f\", $rlon + 0.5 }" 2>/dev/null || echo "$
 [[ ! -f "${IA_PATH}/question.py" ]] && exit 0
 
 # Ensure Ollama is reachable on localhost:11434
-[[ -x "${IA_PATH}/ollama.me.sh" ]] && "${IA_PATH}/ollama.me.sh" 2>/dev/null || true
+[[ -x "${IA_PATH}/services/ollama.me.sh" ]] && "${IA_PATH}/services/ollama.me.sh" 2>/dev/null || true
 
 python3 "${IA_PATH}/g1_opportunities.py" \
     --lat "$center_lat" \

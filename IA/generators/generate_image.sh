@@ -49,7 +49,7 @@ fi
 # If not provided, images will be saved to temporary directory
 UDRIVE_PATH="$2"
 
-. "${MY_PATH}/../tools/my.sh"
+. "${HOME}/.zen/Astroport.ONE/tools/my.sh"
 
 # Activate the virtual environment to access all Python modules
 VENV_DIR="${HOME}/.astro"

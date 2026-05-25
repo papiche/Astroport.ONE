@@ -44,8 +44,8 @@ skip()    { echo -e "  ${YELLOW}⊘${NC} $1 (skipped)"; SKIP=$((SKIP+1)); }
 section() { echo -e "\n${CYAN}── $1 ──${NC}"; }
 vlog()    { $VERBOSE && echo -e "  ${YELLOW}▸${NC} $1" || true; }
 
-GENERATE_IMAGE="${ASTROPORT_PATH}/IA/generate_image.sh"
-COMFYUI_ME="${ASTROPORT_PATH}/IA/comfyui.me.sh"
+GENERATE_IMAGE="${ASTROPORT_PATH}/IA/generators/generate_image.sh"
+COMFYUI_ME="${ASTROPORT_PATH}/IA/services/comfyui.me.sh"
 WORKFLOW="${ASTROPORT_PATH}/IA/workflow/FluxImage.json"
 INTERCOM="${ASTROPORT_PATH}/tools/nostr_node_intercom.py"
 COMFYUI_URL="http://127.0.0.1:8188"

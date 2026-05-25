@@ -1500,7 +1500,7 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
         log "DEBUG" "IPNS publish completed in ${ipns_duration}s for ${PLAYER}"
 
         ## DNSLink MULTIPASS subdomain : _dnslink.<YOUSER>.astroport.one → /ipns/$NOSTRNS
-        OVH_TOOL="${MY_PATH}/../tools/ovh.me.sh"
+        OVH_TOOL="${MY_PATH}/../admin/system/ovh.me.sh"
         if [[ -x "$OVH_TOOL" ]]; then
             _nostrns_raw="${NOSTRNS#/ipns/}"
             "$OVH_TOOL" upsert "${YOUSER}" "/ipns/${_nostrns_raw}" 2>/dev/null || true
@@ -1561,7 +1561,16 @@ Plus vous publiez utile, plus l'essaim vous récompense.</p>
                 fi
                 
                 # Look for domain-specific script (e.g., youtube.com.sh, leboncoin.fr.sh)
-                DOMAIN_SCRIPT="${MY_PATH}/../IA/${DOMAIN}.sh"
+                # Search in scrapers subdirectories first, then IA/ root (legacy)
+                IA_DIR="${HOME}/.zen/Astroport.ONE/IA"
+                DOMAIN_SCRIPT=""
+                for _scraper_dir in "${IA_DIR}/scrapers"/*/; do
+                    if [[ -f "${_scraper_dir}${DOMAIN}.sh" ]]; then
+                        DOMAIN_SCRIPT="${_scraper_dir}${DOMAIN}.sh"
+                        break
+                    fi
+                done
+                [[ -z "$DOMAIN_SCRIPT" ]] && DOMAIN_SCRIPT="${IA_DIR}/${DOMAIN}.sh"
                 
                 if [[ -f "$DOMAIN_SCRIPT" && -x "$DOMAIN_SCRIPT" ]]; then
                     log "INFO" "🚀 Running scraper for ${DOMAIN}: ${DOMAIN_SCRIPT}"

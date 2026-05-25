@@ -110,7 +110,7 @@ echo ""
 info "Vérification Ollama (${OLLAMA_HOST} depuis conteneur / 127.0.0.1:11434 sur hôte)..."
 if ! curl -sf http://127.0.0.1:11434/api/tags &>/dev/null; then
     info "Ollama non local — tentative P2P via ollama.me.sh..."
-    _OLLAMA_STARTER="${MY_PATH}/../IA/ollama.me.sh"
+    _OLLAMA_STARTER="${MY_PATH}/../IA/services/ollama.me.sh"
     if [[ -x "$_OLLAMA_STARTER" ]]; then
         bash "$_OLLAMA_STARTER" &>/dev/null &
         echo -n "  Attente Ollama"
@@ -134,7 +134,7 @@ if curl -sf http://127.0.0.1:11434/api/tags &>/dev/null; then
     fi
 else
     warn "Ollama non accessible — LeAnn fonctionnera quand Ollama sera actif"
-    warn "Lancez manuellement : bash ~/.zen/Astroport.ONE/IA/ollama.me.sh"
+    warn "Lancez manuellement : bash ~/.zen/Astroport.ONE/IA/services/ollama.me.sh"
 fi
 
 ## ── Vérification Qdrant ───────────────────────────────────────────────
@@ -244,7 +244,7 @@ echo "║     Manuel : docker exec -u www-data ${NC_CONTAINER} \\      ║"
 echo "║              php occ leann:index                             ║"
 echo "║                                                              ║"
 echo "║  🧠 Requêtes depuis #BRO :                                  ║"
-echo "║     ~/.zen/Astroport.ONE/IA/nextcloud_bro_sync.sh query     ║"
+echo "║     ~/.zen/Astroport.ONE/IA/bro/nextcloud_bro_sync.sh query     ║"
 echo "║     Ou via OpenWebUI : http://localhost:8000                  ║"
 echo "║                                                              ║"
 echo "║  🔍 Interface chat NextCloud :                               ║"
@@ -255,4 +255,4 @@ echo "║     http://localhost:6333/dashboard → collection: ${QDRANT_COLLECTIO
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 info "Pour synchroniser depuis Nostr → Qdrant (sans NextCloud) :"
-info "  ~/.zen/Astroport.ONE/IA/nextcloud_bro_sync.sh"
+info "  ~/.zen/Astroport.ONE/IA/bro/nextcloud_bro_sync.sh"

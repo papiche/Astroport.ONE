@@ -137,7 +137,7 @@ CRITICAL RULES:
 
     # Call question.py to generate the prompt
     local sd_prompt_result
-    sd_prompt_result=$("$MY_PATH/question.py" --json "$ai_prompt" --pubkey "" 2>/dev/null)
+    sd_prompt_result=$("$MY_PATH/../question.py" --json "$ai_prompt" --pubkey "" 2>/dev/null)
     
     if [[ $? -eq 0 && -n "$sd_prompt_result" ]]; then
         # Extract prompt from JSON response
@@ -173,7 +173,7 @@ generate_badge_image() {
     echo "Generating badge image with ComfyUI..." >&2
     
     # Ensure ComfyUI is running
-    "$MY_PATH/comfyui.me.sh" >/dev/null 2>&1
+    "$MY_PATH/../services/comfyui.me.sh" >/dev/null 2>&1
     
     # Generate image using generate_image.sh
     local image_url

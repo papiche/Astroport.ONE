@@ -17,6 +17,7 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🛒 Starting Leboncoin scraper for ${PLAYE
 # Get script directory
 MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
+IA_DIR="$MY_PATH/../.."
 
 # Get player directory and cookie file
 PLAYER_DIR="$HOME/.zen/game/nostr/${PLAYER}"
@@ -94,7 +95,7 @@ get_user_language() {
 }
 
 # Call scraper_leboncoin.py
-if [[ -f "${MY_PATH}/scraper_leboncoin.py" ]]; then
+if [[ -f "${IA_DIR}/scraper_leboncoin.py" ]]; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🚀 Running Leboncoin scraper..."
     
     # Build command with donation-only and JSON output
@@ -111,7 +112,7 @@ if [[ -f "${MY_PATH}/scraper_leboncoin.py" ]]; then
     )
     
     # Separate stdout (JSON) and stderr (logs)
-    python3 "${MY_PATH}/scraper_leboncoin.py" "${CMD_ARGS[@]}" > "$JSON_OUTPUT_FILE" 2> "$STDERR_FILE"
+    python3 "${IA_DIR}/scraper_leboncoin.py" "${CMD_ARGS[@]}" > "$JSON_OUTPUT_FILE" 2> "$STDERR_FILE"
     
     exit_code=$?
     
@@ -181,7 +182,7 @@ Create a blog post that:
 IMPORTANT: Write in ${USER_LANG} language, be concise but informative, and make it suitable for a blog post (kind 30023)."
                     
                     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🤖 Generating blog content with AI (language: ${USER_LANG})..."
-                    BLOG_CONTENT="$($MY_PATH/question.py --json "${BLOG_PROMPT}" --pubkey "${PUBKEY_HEX}")"
+                    BLOG_CONTENT="$($IA_DIR/question.py --json "${BLOG_PROMPT}" --pubkey "${PUBKEY_HEX}")"
                     BLOG_CONTENT="$(echo "$BLOG_CONTENT" | jq -r '.answer // .' 2>/dev/null || echo "$BLOG_CONTENT")"
                     
                     # Append links section to blog content
@@ -202,27 +203,27 @@ IMPORTANT: Write in ${USER_LANG} language, be concise but informative, and make 
                     
                     # Generate summary (in user's language)
                     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📄 Generating summary..."
-                    ARTICLE_SUMMARY="$($MY_PATH/question.py --json "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. The summary should capture the main points and be suitable for a blog article header. IMPORTANT: Respond directly and clearly ONLY in the language ${USER_LANG}. Article content: ${BLOG_CONTENT}" --pubkey "${PUBKEY_HEX}")"
+                    ARTICLE_SUMMARY="$($IA_DIR/question.py --json "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. The summary should capture the main points and be suitable for a blog article header. IMPORTANT: Respond directly and clearly ONLY in the language ${USER_LANG}. Article content: ${BLOG_CONTENT}" --pubkey "${PUBKEY_HEX}")"
                     ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | jq -r '.answer // .' 2>/dev/null || echo "$ARTICLE_SUMMARY")"
                     ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '\n' | sed 's/\s\+/ /g' | sed 's/"/\\"/g' | sed "s/'/\\'/g" | head -c 500)"
                     
                     # Generate tags (in user's language)
                     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🏷️ Generating tags..."
-                    INTELLIGENT_TAGS="$($MY_PATH/question.py --json "Analyze this blog article and generate 5-8 relevant hashtags in ${USER_LANG} language. Focus on: 1) Main topics (free items, donations, local), 2) Location-related tags, 3) Content type tags. IMPORTANT: Return ONLY the hashtags separated by spaces, no explanations. Article content: ${BLOG_CONTENT}" --pubkey "${PUBKEY_HEX}")"
+                    INTELLIGENT_TAGS="$($IA_DIR/question.py --json "Analyze this blog article and generate 5-8 relevant hashtags in ${USER_LANG} language. Focus on: 1) Main topics (free items, donations, local), 2) Location-related tags, 3) Content type tags. IMPORTANT: Return ONLY the hashtags separated by spaces, no explanations. Article content: ${BLOG_CONTENT}" --pubkey "${PUBKEY_HEX}")"
                     INTELLIGENT_TAGS="$(echo "$INTELLIGENT_TAGS" | jq -r '.answer // .' 2>/dev/null || echo "$INTELLIGENT_TAGS")"
                     INTELLIGENT_TAGS="$(echo "$INTELLIGENT_TAGS" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sed 's/#//g' | sed 's/\s\+/ /g' | head -c 200)"
                     
                     # Generate illustration
                     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🎨 Generating illustration..."
-                    $MY_PATH/comfyui.me.sh
-                    SD_PROMPT="$($MY_PATH/question.py --json "Create a Stable Diffusion prompt for an illustrative image based on this article summary: ${ARTICLE_SUMMARY} --- CRITICAL RULES: 1) Output ONLY the prompt text, no explanations 2) NO emojis, NO special characters, NO text, NO words, NO brands, NO writing 3) ONLY visual elements and descriptive words 4) Use simple English words only 5) Focus on visual composition, colors, style, objects, scenes" --pubkey "${PUBKEY_HEX}")"
+                    $IA_DIR/services/comfyui.me.sh
+                    SD_PROMPT="$($IA_DIR/question.py --json "Create a Stable Diffusion prompt for an illustrative image based on this article summary: ${ARTICLE_SUMMARY} --- CRITICAL RULES: 1) Output ONLY the prompt text, no explanations 2) NO emojis, NO special characters, NO text, NO words, NO brands, NO writing 3) ONLY visual elements and descriptive words 4) Use simple English words only 5) Focus on visual composition, colors, style, objects, scenes" --pubkey "${PUBKEY_HEX}")"
                     SD_PROMPT="$(echo "$SD_PROMPT" | jq -r '.answer // .' 2>/dev/null || echo "$SD_PROMPT")"
                     SD_PROMPT=$(echo "$SD_PROMPT" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sed 's/\s\+/ /g' | sed 's/🥺🎨✨//g' | sed 's/emoji//g' | sed 's/emojis//g' | head -c 400)
                     
                     # Get user uDRIVE path for image storage
                     USER_UDRIVE_PATH="${PLAYER_DIR}/APP/uDRIVE"
                     mkdir -p "${USER_UDRIVE_PATH}/Images"
-                    ILLUSTRATION_URL="$($MY_PATH/generate_image.sh "${SD_PROMPT}" "${USER_UDRIVE_PATH}/Images" 2>/dev/null || echo "")"
+                    ILLUSTRATION_URL="$($IA_DIR/generators/generate_image.sh "${SD_PROMPT}" "${USER_UDRIVE_PATH}/Images" 2>/dev/null || echo "")"
                     
                     # Create blog post (kind 30023)
                     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📰 Publishing blog post..."
@@ -309,7 +310,7 @@ IMPORTANT: Write in ${USER_LANG} language, be concise but informative, and make 
                             "--limit" "$SEARCH_LIMIT"
                         )
                         
-                        python3 "${MY_PATH}/scraper_leboncoin.py" "${CMD_ARGS[@]}" > "$RETRY_JSON_OUTPUT_FILE" 2> "$RETRY_STDERR_FILE"
+                        python3 "${IA_DIR}/scraper_leboncoin.py" "${CMD_ARGS[@]}" > "$RETRY_JSON_OUTPUT_FILE" 2> "$RETRY_STDERR_FILE"
                         
                         if [[ $? -eq 0 ]]; then
                             # Extract JSON
@@ -370,7 +371,7 @@ Create a blog post that:
 IMPORTANT: Write in ${USER_LANG} language, be concise but informative, and make it suitable for a blog post (kind 30023)."
                                     
                                     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🤖 Generating blog content with AI (language: ${USER_LANG})..."
-                                    BLOG_CONTENT="$($MY_PATH/question.py --json "${BLOG_PROMPT}" --pubkey "${PUBKEY_HEX}")"
+                                    BLOG_CONTENT="$($IA_DIR/question.py --json "${BLOG_PROMPT}" --pubkey "${PUBKEY_HEX}")"
                                     BLOG_CONTENT="$(echo "$BLOG_CONTENT" | jq -r '.answer // .' 2>/dev/null || echo "$BLOG_CONTENT")"
                                     
                                     # Append links section to blog content
@@ -469,27 +470,27 @@ Aucune annonce gratuite disponible dans cette zone pour le moment.
                 # If blog content was generated (from retry), complete blog post creation
                 if [[ "$CREATE_BLOG_POST" == true && -n "$BLOG_CONTENT" && -z "$ARTICLE_SUMMARY" ]]; then
                     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📄 Generating summary for retry results..."
-                    ARTICLE_SUMMARY="$($MY_PATH/question.py --json "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. The summary should capture the main points and be suitable for a blog article header. IMPORTANT: Respond directly and clearly ONLY in the language ${USER_LANG}. Article content: ${BLOG_CONTENT}" --pubkey "${PUBKEY_HEX}")"
+                    ARTICLE_SUMMARY="$($IA_DIR/question.py --json "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. The summary should capture the main points and be suitable for a blog article header. IMPORTANT: Respond directly and clearly ONLY in the language ${USER_LANG}. Article content: ${BLOG_CONTENT}" --pubkey "${PUBKEY_HEX}")"
                     ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | jq -r '.answer // .' 2>/dev/null || echo "$ARTICLE_SUMMARY")"
                     ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '\n' | sed 's/\s\+/ /g' | sed 's/"/\\"/g' | sed "s/'/\\'/g" | head -c 500)"
                     
                     # Generate tags (in user's language)
                     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🏷️ Generating tags..."
-                    INTELLIGENT_TAGS="$($MY_PATH/question.py --json "Analyze this blog article and generate 5-8 relevant hashtags in ${USER_LANG} language. Focus on: 1) Main topics (free items, donations, local), 2) Location-related tags, 3) Content type tags. IMPORTANT: Return ONLY the hashtags separated by spaces, no explanations. Article content: ${BLOG_CONTENT}" --pubkey "${PUBKEY_HEX}")"
+                    INTELLIGENT_TAGS="$($IA_DIR/question.py --json "Analyze this blog article and generate 5-8 relevant hashtags in ${USER_LANG} language. Focus on: 1) Main topics (free items, donations, local), 2) Location-related tags, 3) Content type tags. IMPORTANT: Return ONLY the hashtags separated by spaces, no explanations. Article content: ${BLOG_CONTENT}" --pubkey "${PUBKEY_HEX}")"
                     INTELLIGENT_TAGS="$(echo "$INTELLIGENT_TAGS" | jq -r '.answer // .' 2>/dev/null || echo "$INTELLIGENT_TAGS")"
                     INTELLIGENT_TAGS="$(echo "$INTELLIGENT_TAGS" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sed 's/#//g' | sed 's/\s\+/ /g' | head -c 200)"
                     
                     # Generate illustration
                     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🎨 Generating illustration..."
-                    $MY_PATH/comfyui.me.sh
-                    SD_PROMPT="$($MY_PATH/question.py --json "Create a Stable Diffusion prompt for an illustrative image based on this article summary: ${ARTICLE_SUMMARY} --- CRITICAL RULES: 1) Output ONLY the prompt text, no explanations 2) NO emojis, NO special characters, NO text, NO words, NO brands, NO writing 3) ONLY visual elements and descriptive words 4) Use simple English words only 5) Focus on visual composition, colors, style, objects, scenes" --pubkey "${PUBKEY_HEX}")"
+                    $IA_DIR/services/comfyui.me.sh
+                    SD_PROMPT="$($IA_DIR/question.py --json "Create a Stable Diffusion prompt for an illustrative image based on this article summary: ${ARTICLE_SUMMARY} --- CRITICAL RULES: 1) Output ONLY the prompt text, no explanations 2) NO emojis, NO special characters, NO text, NO words, NO brands, NO writing 3) ONLY visual elements and descriptive words 4) Use simple English words only 5) Focus on visual composition, colors, style, objects, scenes" --pubkey "${PUBKEY_HEX}")"
                     SD_PROMPT="$(echo "$SD_PROMPT" | jq -r '.answer // .' 2>/dev/null || echo "$SD_PROMPT")"
                     SD_PROMPT=$(echo "$SD_PROMPT" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sed 's/\s\+/ /g' | sed 's/🥺🎨✨//g' | sed 's/emoji//g' | sed 's/emojis//g' | head -c 400)
                     
                     # Get user uDRIVE path for image storage
                     USER_UDRIVE_PATH="${PLAYER_DIR}/APP/uDRIVE"
                     mkdir -p "${USER_UDRIVE_PATH}/Images"
-                    ILLUSTRATION_URL="$($MY_PATH/generate_image.sh "${SD_PROMPT}" "${USER_UDRIVE_PATH}/Images" 2>/dev/null || echo "")"
+                    ILLUSTRATION_URL="$($IA_DIR/generators/generate_image.sh "${SD_PROMPT}" "${USER_UDRIVE_PATH}/Images" 2>/dev/null || echo "")"
                     
                     # Create blog post (kind 30023)
                     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📰 Publishing blog post..."
@@ -572,7 +573,7 @@ Aucune annonce gratuite disponible dans cette zone pour le moment.
         exit $exit_code
     fi
 else
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ❌ scraper_leboncoin.py not found at ${MY_PATH}/scraper_leboncoin.py"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ❌ scraper_leboncoin.py not found at ${IA_DIR}/scraper_leboncoin.py"
     exit 1
 fi
 

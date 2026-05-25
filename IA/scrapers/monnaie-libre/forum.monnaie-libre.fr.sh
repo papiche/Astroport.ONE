@@ -18,6 +18,7 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📰 Starting Discourse forum scraper for $
 # Get script directory
 MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
+IA_DIR="$MY_PATH/../.."
 
 # Get player directory and cookie file
 PLAYER_DIR="$HOME/.zen/game/nostr/${PLAYER}"
@@ -265,7 +266,7 @@ IMPORTANT:
 - Ne mentionne PAS le script bash (ce n'est pas le problème)
 - Écris en français"
                             
-                            FIX_SUGGESTIONS="$($MY_PATH/question.py --json "${FIX_PROMPT}" --pubkey "${PUBKEY_HEX}")"
+                            FIX_SUGGESTIONS="$($IA_DIR/question.py --json "${FIX_PROMPT}" --pubkey "${PUBKEY_HEX}")"
                             FIX_SUGGESTIONS="$(echo "$FIX_SUGGESTIONS" | jq -r '.answer // .' 2>/dev/null || echo "$FIX_SUGGESTIONS")"
                             
                             if [[ -n "$FIX_SUGGESTIONS" && "$FIX_SUGGESTIONS" != "null" ]]; then
@@ -273,7 +274,7 @@ IMPORTANT:
                                 
                                 # Generate introduction for the blog article
                                 echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📄 Generating introduction..."
-                                FIX_INTRO="$($MY_PATH/question.py --json "Create an engaging introduction (2-3 paragraphs) in ${USER_LANG} language for a blog article about fixing a forum scraper error. The introduction should explain the context, the problem encountered, and introduce the solutions that will be presented. IMPORTANT: Write in ${USER_LANG} language. Context: Forum ${FORUM_NAME} scraper failed to retrieve posts. Error: ${ERROR_LOGS}" --pubkey "${PUBKEY_HEX}")"
+                                FIX_INTRO="$($IA_DIR/question.py --json "Create an engaging introduction (2-3 paragraphs) in ${USER_LANG} language for a blog article about fixing a forum scraper error. The introduction should explain the context, the problem encountered, and introduce the solutions that will be presented. IMPORTANT: Write in ${USER_LANG} language. Context: Forum ${FORUM_NAME} scraper failed to retrieve posts. Error: ${ERROR_LOGS}" --pubkey "${PUBKEY_HEX}")"
                                 FIX_INTRO="$(echo "$FIX_INTRO" | jq -r '.answer // .' 2>/dev/null || echo "$FIX_INTRO")"
                                 
                                 # Combine intro and suggestions
@@ -283,27 +284,27 @@ ${FIX_SUGGESTIONS}"
                                 
                                 # Generate summary for the blog article
                                 echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📄 Generating summary..."
-                                FIX_SUMMARY="$($MY_PATH/question.py --json "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. The summary should capture the main points about the error analysis and fix suggestions. IMPORTANT: Respond directly and clearly ONLY in the language ${USER_LANG}. Article content: ${FIX_CONTENT}" --pubkey "${PUBKEY_HEX}")"
+                                FIX_SUMMARY="$($IA_DIR/question.py --json "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. The summary should capture the main points about the error analysis and fix suggestions. IMPORTANT: Respond directly and clearly ONLY in the language ${USER_LANG}. Article content: ${FIX_CONTENT}" --pubkey "${PUBKEY_HEX}")"
                                 FIX_SUMMARY="$(echo "$FIX_SUMMARY" | jq -r '.answer // .' 2>/dev/null || echo "$FIX_SUMMARY")"
                                 FIX_SUMMARY="$(echo "$FIX_SUMMARY" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '\n' | sed 's/\s\+/ /g' | sed 's/"/\\"/g' | sed "s/'/\\'/g" | head -c 500)"
                                 
                                 # Generate tags (in user's language)
                                 echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🏷️ Generating tags..."
-                                FIX_TAGS_AI="$($MY_PATH/question.py --json "Analyze this blog article about fixing a forum scraper error and generate 5-8 relevant hashtags in ${USER_LANG} language. Focus on: 1) Technical tags (scraper, API, debugging), 2) Forum-related tags, 3) Error fixing tags. IMPORTANT: Return ONLY the hashtags separated by spaces, no explanations. Article content: ${FIX_CONTENT}" --pubkey "${PUBKEY_HEX}")"
+                                FIX_TAGS_AI="$($IA_DIR/question.py --json "Analyze this blog article about fixing a forum scraper error and generate 5-8 relevant hashtags in ${USER_LANG} language. Focus on: 1) Technical tags (scraper, API, debugging), 2) Forum-related tags, 3) Error fixing tags. IMPORTANT: Return ONLY the hashtags separated by spaces, no explanations. Article content: ${FIX_CONTENT}" --pubkey "${PUBKEY_HEX}")"
                                 FIX_TAGS_AI="$(echo "$FIX_TAGS_AI" | jq -r '.answer // .' 2>/dev/null || echo "$FIX_TAGS_AI")"
                                 FIX_TAGS_AI="$(echo "$FIX_TAGS_AI" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sed 's/#//g' | sed 's/\s\+/ /g' | head -c 200)"
                                 
                                 # Generate illustration
                                 echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🎨 Generating illustration..."
-                                $MY_PATH/comfyui.me.sh
-                                FIX_SD_PROMPT="$($MY_PATH/question.py --json "Create a Stable Diffusion prompt for an illustrative image based on this article summary: ${FIX_SUMMARY} --- CRITICAL RULES: 1) Output ONLY the prompt text, no explanations 2) NO emojis, NO special characters, NO text, NO words, NO brands, NO writing 3) ONLY visual elements and descriptive words 4) Use simple English words only 5) Focus on visual composition, colors, style, objects, scenes related to debugging, code fixing, technical solutions" --pubkey "${PUBKEY_HEX}")"
+                                $IA_DIR/services/comfyui.me.sh
+                                FIX_SD_PROMPT="$($IA_DIR/question.py --json "Create a Stable Diffusion prompt for an illustrative image based on this article summary: ${FIX_SUMMARY} --- CRITICAL RULES: 1) Output ONLY the prompt text, no explanations 2) NO emojis, NO special characters, NO text, NO words, NO brands, NO writing 3) ONLY visual elements and descriptive words 4) Use simple English words only 5) Focus on visual composition, colors, style, objects, scenes related to debugging, code fixing, technical solutions" --pubkey "${PUBKEY_HEX}")"
                                 FIX_SD_PROMPT="$(echo "$FIX_SD_PROMPT" | jq -r '.answer // .' 2>/dev/null || echo "$FIX_SD_PROMPT")"
                                 FIX_SD_PROMPT=$(echo "$FIX_SD_PROMPT" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sed 's/\s\+/ /g' | sed 's/🥺🎨✨//g' | sed 's/emoji//g' | sed 's/emojis//g' | head -c 400)
                                 
                                 # Get user uDRIVE path for image storage
                                 USER_UDRIVE_PATH="${PLAYER_DIR}/APP/uDRIVE"
                                 mkdir -p "${USER_UDRIVE_PATH}/Images"
-                                FIX_ILLUSTRATION_URL="$($MY_PATH/generate_image.sh "${FIX_SD_PROMPT}" "${USER_UDRIVE_PATH}/Images" 2>/dev/null || echo "")"
+                                FIX_ILLUSTRATION_URL="$($IA_DIR/generators/generate_image.sh "${FIX_SD_PROMPT}" "${USER_UDRIVE_PATH}/Images" 2>/dev/null || echo "")"
                                 
                                 # Create blog post (kind 30023) with expiration
                                 echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📰 Publishing fix suggestions as blog article..."
@@ -412,7 +413,7 @@ Focus on grouping by TOPIC/THEME (e.g., 'Économie', 'Technique', 'Gouvernance',
 
 IMPORTANT: Return ONLY valid JSON, no explanations."
                     
-                    THEMES_JSON="$($MY_PATH/question.py --json "${CLASSIFICATION_PROMPT}" --pubkey "${PUBKEY_HEX}")"
+                    THEMES_JSON="$($IA_DIR/question.py --json "${CLASSIFICATION_PROMPT}" --pubkey "${PUBKEY_HEX}")"
                     THEMES_JSON="$(echo "$THEMES_JSON" | jq -r '.answer // .' 2>/dev/null || echo "$THEMES_JSON")"
                     
                     # Step 2: Generate blog content with theme-based analysis
@@ -451,7 +452,7 @@ IMPORTANT:
 - Make it suitable for a blog post (kind 30023)"
                     
                     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🤖 Generating journal content with theme analysis (language: ${USER_LANG})..."
-                    BLOG_CONTENT="$($MY_PATH/question.py --json "${BLOG_PROMPT}" --pubkey "${PUBKEY_HEX}")"
+                    BLOG_CONTENT="$($IA_DIR/question.py --json "${BLOG_PROMPT}" --pubkey "${PUBKEY_HEX}")"
                     BLOG_CONTENT="$(echo "$BLOG_CONTENT" | jq -r '.answer // .' 2>/dev/null || echo "$BLOG_CONTENT")"
                     
                     # Append links section to blog content
@@ -473,27 +474,27 @@ IMPORTANT:
                     
                     # Generate summary (in user's language)
                     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📄 Generating summary..."
-                    ARTICLE_SUMMARY="$($MY_PATH/question.py --json "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. The summary should capture the main points and be suitable for a blog article header. IMPORTANT: Respond directly and clearly ONLY in the language ${USER_LANG}. Article content: ${BLOG_CONTENT}" --pubkey "${PUBKEY_HEX}")"
+                    ARTICLE_SUMMARY="$($IA_DIR/question.py --json "Create a concise, engaging summary (2-3 sentences) for this blog article in ${USER_LANG} language. The summary should capture the main points and be suitable for a blog article header. IMPORTANT: Respond directly and clearly ONLY in the language ${USER_LANG}. Article content: ${BLOG_CONTENT}" --pubkey "${PUBKEY_HEX}")"
                     ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | jq -r '.answer // .' 2>/dev/null || echo "$ARTICLE_SUMMARY")"
                     ARTICLE_SUMMARY="$(echo "$ARTICLE_SUMMARY" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | tr -d '\n' | sed 's/\s\+/ /g' | sed 's/"/\\"/g' | sed "s/'/\\'/g" | head -c 500)"
                     
                     # Generate tags (in user's language)
                     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🏷️ Generating tags..."
-                    INTELLIGENT_TAGS="$($MY_PATH/question.py --json "Analyze this blog article and generate 5-8 relevant hashtags in ${USER_LANG} language. Focus on: 1) Main topics discussed, 2) Forum-related tags, 3) Content type tags (journal, forum, daily). IMPORTANT: Return ONLY the hashtags separated by spaces, no explanations. Article content: ${BLOG_CONTENT}" --pubkey "${PUBKEY_HEX}")"
+                    INTELLIGENT_TAGS="$($IA_DIR/question.py --json "Analyze this blog article and generate 5-8 relevant hashtags in ${USER_LANG} language. Focus on: 1) Main topics discussed, 2) Forum-related tags, 3) Content type tags (journal, forum, daily). IMPORTANT: Return ONLY the hashtags separated by spaces, no explanations. Article content: ${BLOG_CONTENT}" --pubkey "${PUBKEY_HEX}")"
                     INTELLIGENT_TAGS="$(echo "$INTELLIGENT_TAGS" | jq -r '.answer // .' 2>/dev/null || echo "$INTELLIGENT_TAGS")"
                     INTELLIGENT_TAGS="$(echo "$INTELLIGENT_TAGS" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sed 's/#//g' | sed 's/\s\+/ /g' | head -c 200)"
                     
                     # Generate illustration
                     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🎨 Generating illustration..."
-                    $MY_PATH/comfyui.me.sh
-                    SD_PROMPT="$($MY_PATH/question.py --json "Create a Stable Diffusion prompt for an illustrative image based on this article summary: ${ARTICLE_SUMMARY} --- CRITICAL RULES: 1) Output ONLY the prompt text, no explanations 2) NO emojis, NO special characters, NO text, NO words, NO brands, NO writing 3) ONLY visual elements and descriptive words 4) Use simple English words only 5) Focus on visual composition, colors, style, objects, scenes" --pubkey "${PUBKEY_HEX}")"
+                    $IA_DIR/services/comfyui.me.sh
+                    SD_PROMPT="$($IA_DIR/question.py --json "Create a Stable Diffusion prompt for an illustrative image based on this article summary: ${ARTICLE_SUMMARY} --- CRITICAL RULES: 1) Output ONLY the prompt text, no explanations 2) NO emojis, NO special characters, NO text, NO words, NO brands, NO writing 3) ONLY visual elements and descriptive words 4) Use simple English words only 5) Focus on visual composition, colors, style, objects, scenes" --pubkey "${PUBKEY_HEX}")"
                     SD_PROMPT="$(echo "$SD_PROMPT" | jq -r '.answer // .' 2>/dev/null || echo "$SD_PROMPT")"
                     SD_PROMPT=$(echo "$SD_PROMPT" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sed 's/\s\+/ /g' | sed 's/🥺🎨✨//g' | sed 's/emoji//g' | sed 's/emojis//g' | head -c 400)
                     
                     # Get user uDRIVE path for image storage
                     USER_UDRIVE_PATH="${PLAYER_DIR}/APP/uDRIVE"
                     mkdir -p "${USER_UDRIVE_PATH}/Images"
-                    ILLUSTRATION_URL="$($MY_PATH/generate_image.sh "${SD_PROMPT}" "${USER_UDRIVE_PATH}/Images" 2>/dev/null || echo "")"
+                    ILLUSTRATION_URL="$($IA_DIR/generators/generate_image.sh "${SD_PROMPT}" "${USER_UDRIVE_PATH}/Images" 2>/dev/null || echo "")"
                     
                     # Create blog post (kind 30023)
                     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 📰 Publishing journal blog post..."

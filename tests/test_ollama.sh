@@ -45,7 +45,7 @@ skip()    { echo -e "  ${YELLOW}⊘${NC} $1 (skipped)"; SKIP=$((SKIP+1)); }
 section() { echo -e "\n${CYAN}── $1 ──${NC}"; }
 vlog()    { $VERBOSE && echo -e "  ${YELLOW}▸${NC} $1" || true; }
 
-OLLAMA_ME="${ASTROPORT_PATH}/IA/ollama.me.sh"
+OLLAMA_ME="${ASTROPORT_PATH}/IA/services/ollama.me.sh"
 QUESTION_PY="${ASTROPORT_PATH}/IA/question.py"
 DESCRIBE_PY="${ASTROPORT_PATH}/IA/describe_image.py"
 INTERCOM="${ASTROPORT_PATH}/tools/nostr_node_intercom.py"

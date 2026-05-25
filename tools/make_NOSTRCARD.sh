@@ -290,7 +290,7 @@ EOFNOSTR
     echo "/ipns/$NOSTRNS" > "${HOME}/.zen/game/nostr/${EMAIL}/NOSTRNS"
 
     ## DNSLink MULTIPASS subdomain : _dnslink.<YOUSER>.astroport.one → /ipns/$NOSTRNS
-    OVH_TOOL="${MY_PATH}/../tools/ovh.me.sh"
+    OVH_TOOL="${MY_PATH}/../admin/system/ovh.me.sh"
     [[ -x "$OVH_TOOL" ]] \
         && "$OVH_TOOL" upsert "${YOUSER}" "/ipns/${NOSTRNS}" 2>/dev/null \
         || true

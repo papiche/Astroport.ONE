@@ -22,7 +22,7 @@
 ########################################################################
 
 MY_PATH="$(dirname "$(realpath "$0")")"
-. "$MY_PATH/../tools/my.sh" 2>/dev/null || true
+. "${HOME}/.zen/Astroport.ONE/tools/my.sh" 2>/dev/null || true
 
 BRO_SCRIPT_ID="bro_dm"
 BRO_LOG_FILE="$HOME/.zen/tmp/bro_dm_daemon.log"
@@ -32,10 +32,10 @@ source "$MY_PATH/bro_common_lib.sh" 2>/dev/null || true
 QUEUE_DIR="$HOME/.zen/tmp/bro_dm_queue"
 PID_FILE="$HOME/.zen/tmp/bro_dm_daemon.pid"
 LOG_FILE="$HOME/.zen/tmp/bro_dm_daemon.log"
-INTERCOM="$MY_PATH/../tools/nostr_node_intercom.py"
-SECURE_DM="$MY_PATH/../tools/nostr_send_secure_dm.py"
+INTERCOM="${HOME}/.zen/Astroport.ONE/tools/nostr_node_intercom.py"
+SECURE_DM="${HOME}/.zen/Astroport.ONE/tools/nostr_send_secure_dm.py"
+MAILJET="${HOME}/.zen/Astroport.ONE/tools/mailjet.sh"
 BRO_SYNC="$MY_PATH/nextcloud_bro_sync.sh"
-MAILJET="$MY_PATH/../tools/mailjet.sh"
 
 mkdir -p "$QUEUE_DIR"
 mkdir -p "$HOME/.zen/tmp/flashmem"
@@ -173,7 +173,7 @@ _handle_badge() {
     }
     _log "🎨 #badge demande de ${sender:0:12}... pour skill: $skill"
 
-    local GENERATE_IMG="$MY_PATH/generate_image.sh"
+    local GENERATE_IMG="$MY_PATH/../generators/generate_image.sh"
     if [[ ! -x "$GENERATE_IMG" ]]; then
         _send_dm "$sender" \
             "⚠️ Le générateur d'images (ComfyUI) n'est pas disponible sur cette station." \
@@ -223,12 +223,12 @@ _handle_craft() {
         "⏳ Analyse IA en cours pour : $url" "${_RELAYS[0]}" 2>/dev/null
 
     local content
-    content=$(python3 "$MY_PATH/bro_url_content.py" "$url" 2>/dev/null | head -c 6000)
+    content=$(python3 "$MY_PATH/../bro_url_content.py" "$url" 2>/dev/null | head -c 6000)
 
     if [[ ${#content} -lt 80 ]]; then
         _log "WARN: #craft contenu trop court pour $url — tentative describe_image"
-        if command -v python3 &>/dev/null && [[ -f "$MY_PATH/describe_image.py" ]]; then
-            content=$(python3 "$MY_PATH/describe_image.py" "$url" \
+        if command -v python3 &>/dev/null && [[ -f "$MY_PATH/../describe_image.py" ]]; then
+            content=$(python3 "$MY_PATH/../describe_image.py" "$url" \
                 --model "llama3.2-vision:11b" \
                 --prompt "Décris ce tutoriel : titre, matériaux, étapes, compétences requises." \
                 2>/dev/null | head -c 4000)
@@ -258,7 +258,7 @@ $content
 CRAFTPROMPT
 
     local answer
-    answer=$(python3 "$MY_PATH/question.py" \
+    answer=$(python3 "$MY_PATH/../question.py" \
         --prompt-file  "$tmp_prompt" \
         --model        "gemma3:latest" \
         --ctx          8192 \
@@ -314,7 +314,7 @@ _handle_rec_skill() {
     [[ -z "$skill" || -z "$content" ]] && return
     _log "💾 #rec:$skill de ${sender:0:12}...: ${content:0:60}"
 
-    if python3 "$MY_PATH/skill_flashmem.py" write \
+    if python3 "$MY_PATH/../skill_flashmem.py" write \
             --skill "$skill" --text "$content" --npub "$sender" 2>/dev/null; then
         _send_dm "$sender" \
             "💾 Mémorisé dans la base partagée 'skills/${skill}'. Merci pour la contribution ! 🧠" \
@@ -336,7 +336,7 @@ _handle_mem_skill() {
     local reply
     if [[ -z "$skill" ]]; then
         local skills_list
-        skills_list=$(python3 "$MY_PATH/skill_flashmem.py" list 2>/dev/null)
+        skills_list=$(python3 "$MY_PATH/../skill_flashmem.py" list 2>/dev/null)
         if [[ -z "$skills_list" || "$skills_list" == "(aucun)" ]]; then
             reply="📚 Aucune mémoire skill enregistrée sur ce node.
 Contribuez avec : #rec:<skill> <votre note>
@@ -350,7 +350,7 @@ Contribuez : #rec:<skill> <note>"
         fi
     else
         local content
-        content=$(python3 "$MY_PATH/skill_flashmem.py" read --skill "$skill" 2>/dev/null)
+        content=$(python3 "$MY_PATH/../skill_flashmem.py" read --skill "$skill" 2>/dev/null)
         if [[ -z "$content" ]]; then
             reply="📚 Aucune note pour '${skill}'. Contribuez avec :
 #rec:${skill} <votre expérience ou ressource>"
@@ -374,7 +374,7 @@ _handle_bro_skill() {
     _log "🎓 BRO skill:$skill de ${sender:0:12}...: ${question:0:80}"
 
     local answer
-    answer=$(python3 "$MY_PATH/question.py" "$question" \
+    answer=$(python3 "$MY_PATH/../question.py" "$question" \
         --model       "gemma3:latest" \
         --ctx         8192 \
         --max-tokens  2048 \
@@ -426,7 +426,7 @@ _handle_rec() {
     event_json=$(jq -n --arg pub "$sender" --arg msg "$content" '{event: {pubkey: $pub, content: $msg}}')
 
     if [[ -n "$event_json" ]]; then
-        python3 "$MY_PATH/short_memory.py" "$event_json" "0" "0" "$slot" "$email" 2>/dev/null \
+        python3 "$MY_PATH/../short_memory.py" "$event_json" "0" "0" "$slot" "$email" 2>/dev/null \
             && _log "💾 Mémorisé ($email, slot $slot)" \
             || _log "WARN: échec short_memory.py pour $email slot $slot"
     fi
@@ -572,7 +572,7 @@ _handle_vocals() {
     [[ ! -f "$_SECRET" ]] && \
         _log "WARN: ✈️ vocals: .secret.nostr absent pour $_EMAIL" && return
 
-    local _PUBLISH_SCRIPT="${MY_PATH}/../tools/publish_nostr_vocal.sh"
+    local _PUBLISH_SCRIPT="${HOME}/.zen/Astroport.ONE/tools/publish_nostr_vocal.sh"
     [[ ! -x "$_PUBLISH_SCRIPT" ]] && \
         _log "WARN: ✈️ vocals: publish_nostr_vocal.sh introuvable" && return
 
@@ -629,7 +629,7 @@ _handle_webcam() {
     [[ ! -f "$_SECRET" ]] && \
         _log "WARN: ✈️ webcam: .secret.nostr absent pour $_EMAIL" && return
 
-    local _PUBLISH_SCRIPT="${MY_PATH}/../tools/publish_nostr_video.sh"
+    local _PUBLISH_SCRIPT="${HOME}/.zen/Astroport.ONE/tools/publish_nostr_video.sh"
     [[ ! -x "$_PUBLISH_SCRIPT" ]] && \
         _log "WARN: ✈️ webcam: publish_nostr_video.sh introuvable" && return
 
@@ -738,7 +738,7 @@ _handle_bro_ia() {
         ## Réponse pédagogique directe via question.py (avec flashmem+Qdrant)
         _handle_bro_skill "$_PUBKEY" "$_MESSAGE" "$_skill"
     else
-        bash "$MY_PATH/UPlanet_IA_Responder.sh" \
+        bash "$MY_PATH/../UPlanet_IA_Responder.sh" \
             "$_PUBKEY" \
             "${_EVENT_ID:-}" \
             "${_LAT:-0.00}" \
@@ -771,7 +771,7 @@ _handle_comfyui_job() {
         }
 
         ## Connecter ComfyUI local (local > P2P > SSH)
-        if ! bash "$MY_PATH/comfyui.me.sh" 2>/dev/null; then
+        if ! bash "$MY_PATH/../services/comfyui.me.sh" 2>/dev/null; then
             _log "WARN: 🎬 comfyui_job: ComfyUI indisponible sur ce Brain"
             exit 1
         fi
@@ -780,11 +780,11 @@ _handle_comfyui_job() {
         _tmp_dir=$(mktemp -d /tmp/comfyui_job_XXXXXX)
 
         if [[ "${_MODE:-t2v}" == "i2v" && -n "$_SOURCE_URL" ]]; then
-            _result_url=$(bash "$MY_PATH/image_to_video.sh" \
+            _result_url=$(bash "$MY_PATH/../generators/image_to_video.sh" \
                 "$_PROMPT" "$_SOURCE_URL" "$_tmp_dir" 2>/dev/null | tail -1)
         else
-            _result_url=$(bash "$MY_PATH/generate_video.sh" \
-                "$_PROMPT" "$MY_PATH/workflow/video_wan2_2_5B_ti2v.json" \
+            _result_url=$(bash "$MY_PATH/../generators/generate_video.sh" \
+                "$_PROMPT" "$MY_PATH/../workflow/video_wan2_2_5B_ti2v.json" \
                 "$_tmp_dir" 2>/dev/null | tail -1)
         fi
         rm -rf "$_tmp_dir"

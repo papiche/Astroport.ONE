@@ -8,7 +8,7 @@
 ################################################################################
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
-. "$MY_PATH/../Astroport.ONE/tools/my.sh" 2>/dev/null || true
+. "${HOME}/.zen/Astroport.ONE/tools/my.sh" 2>/dev/null || true
 
 # Configuration
 STRFRY_LOCAL_PORT=7777

@@ -631,6 +631,38 @@ convert_and_publish_video() {
 }
 
 ########################################################################
+# Récupération cookie YouTube via UPassport
+########################################################################
+_youtube_cookie_recovery() {
+    local _api="http://127.0.0.1:54321"
+    local _cookie_file="$HOME/.zen/game/nostr/${PLAYER}/.youtube.com.cookie"
+    local _npub_qs=""
+    [[ -n "${NPUB:-}" ]] && _npub_qs="?npub=${NPUB}"
+
+    echo "🍪 YouTube bloque le téléchargement — cookie navigateur requis."
+    espeak "YouTube requires your browser cookie" 2>/dev/null || true
+
+    # Ouvrir la page de gestion des cookies UPassport
+    local _cookie_page="${_api}/cookie${_npub_qs}"
+    xdg-open "$_cookie_page" 2>/dev/null \
+        || echo "👉 Ouvrez manuellement : $_cookie_page"
+
+    if command -v zenity &>/dev/null; then
+        zenity --question --width 540 \
+            --title="🍪 Cookie YouTube requis" \
+            --text="YouTube bloque le téléchargement sans cookie.\n\n<b>Étapes :</b>\n1. Installez l'extension <i>Get cookies.txt LOCALLY</i> dans votre navigateur\n2. Connectez-vous sur youtube.com\n3. Exportez le cookie → uploadez-le sur la page UPassport qui s'est ouverte\n4. Cliquez <b>OK</b> pour réessayer\n\n(<b>Annuler</b> pour quitter)" \
+            2>/dev/null || return 1
+    else
+        echo "👉 Uploadez votre cookie YouTube sur $_cookie_page puis appuyez sur Entrée..."
+        read -r
+    fi
+
+    [[ -f "$_cookie_file" ]] && return 0
+    echo "⚠️  Cookie introuvable après upload : $_cookie_file"
+    return 1
+}
+
+########################################################################
 ########################################################################
 case ${CAT} in
 ########################################################################
@@ -709,31 +741,110 @@ case ${CAT} in
     JSON_OUTPUT_FILE="$HOME/.zen/tmp/youtube_json_$$.json"
     mkdir -p "$(dirname "$JSON_OUTPUT_FILE")"
 
-    # $PLAYER pour les cookies
+    # ── Watchdog : tue process_youtube.sh si aucune progression pendant STALL_S ──
+    STALL_S=180   # 3 min sans nouveau octet = bloqué
+    _yt_watchdog() {
+        local _dir="$1" _pid="$2"
+        local _last=0 _idle=0
+        while kill -0 "$_pid" 2>/dev/null; do
+            sleep 20
+            local _cur
+            _cur=$(find "$_dir" -type f 2>/dev/null \
+                | xargs stat --format=%s 2>/dev/null \
+                | awk '{s+=$1} END{print s+0}')
+            if [[ "$_cur" -gt "$_last" ]]; then
+                _last=$_cur; _idle=0
+            else
+                _idle=$((_idle + 20))
+                [[ $((_idle % 60)) -eq 0 && $_idle -gt 0 ]] && \
+                    echo "⏳ Pas de progression depuis ${_idle}s (kill dans $(( STALL_S - _idle ))s)…" >&2
+                if [[ $_idle -ge $STALL_S ]]; then
+                    echo "⚠️  Téléchargement bloqué — arrêt automatique." >&2
+                    kill "$_pid" 2>/dev/null
+                    pkill -P "$_pid" 2>/dev/null || true
+                    pkill -f "yt-dlp" 2>/dev/null || true
+                    return
+                fi
+            fi
+        done
+    }
+
+    # ── Trap Ctrl+C : tue yt-dlp proprement puis laisse cookie recovery tourner ─
+    _yt_interrupt() {
+        echo "" >&2
+        echo "⚡ Interruption — arrêt du téléchargement…" >&2
+        kill "${_YT_PID:-}" 2>/dev/null
+        pkill -P "${_YT_PID:-}" 2>/dev/null || true
+        pkill -f "yt-dlp" 2>/dev/null || true
+        kill "${_WATCHDOG_PID:-}" 2>/dev/null || true
+    }
+
     echo "📥 Downloading YouTube video (Max 480p) via process_youtube.sh..."
-    ${MY_PATH}/IA/process_youtube.sh --json-file "$JSON_OUTPUT_FILE" --output-dir "$TEMP_YOUTUBE_DIR" "$YTURL" "mp4" "$PLAYER"
+    ${HOME}/.zen/Astroport.ONE/IA/scrapers/youtube/process_youtube.sh \
+        --json-file "$JSON_OUTPUT_FILE" \
+        --output-dir "$TEMP_YOUTUBE_DIR" \
+        "$YTURL" "mp4" "$PLAYER" &
+    _YT_PID=$!
+
+    _yt_watchdog "$TEMP_YOUTUBE_DIR" "$_YT_PID" &
+    _WATCHDOG_PID=$!
+    trap '_yt_interrupt; trap - INT TERM' INT TERM
+
+    wait "$_YT_PID" 2>/dev/null
     YTDLP_EXIT=$?
+    trap - INT TERM
+    kill "$_WATCHDOG_PID" 2>/dev/null; wait "$_WATCHDOG_PID" 2>/dev/null || true
+
+    # Code 130=Ctrl+C, 143=SIGTERM (watchdog), 137=SIGKILL → considéré comme échec cookie
+    if [[ $YTDLP_EXIT -eq 130 || $YTDLP_EXIT -eq 143 || $YTDLP_EXIT -eq 137 ]]; then
+        echo "⚡ Téléchargement interrompu (watchdog ou Ctrl+C) — tentative cookie recovery"
+    fi
 
     # Stop monitoring
     kill $MONITOR_PID 2>/dev/null || true
     wait $MONITOR_PID 2>/dev/null || true
 
-    # Validation JSON
+    # Validation JSON + récupération cookie si échec
+    _yt_failed=0
+    YOUTUBE_JSON=""
     if [[ ! -f "$JSON_OUTPUT_FILE" || ! -s "$JSON_OUTPUT_FILE" ]]; then
-        echo "❌ ERROR: Le JSON de retour est manquant ou vide."
-        espeak "YouTube download failed"
-        exit 1
+        echo "❌ Téléchargement échoué (pas de JSON)."
+        _yt_failed=1
+    else
+        YOUTUBE_JSON=$(cat "$JSON_OUTPUT_FILE")
+        rm -f "$JSON_OUTPUT_FILE"
+        if echo "$YOUTUBE_JSON" | jq -e '.error' >/dev/null 2>&1; then
+            echo "❌ ERROR: $(echo "$YOUTUBE_JSON" | jq -r '.error')"
+            _yt_failed=1
+        fi
     fi
 
-    YOUTUBE_JSON=$(cat "$JSON_OUTPUT_FILE")
-    rm -f "$JSON_OUTPUT_FILE"
-
-    if echo "$YOUTUBE_JSON" | jq -e '.error' >/dev/null 2>&1; then
-        ERROR_MSG=$(echo "$YOUTUBE_JSON" | jq -r '.error')
-        [ -z "$2" ] && command -v zenity &> /dev/null && zenity --error --width 600 --title="YouTube Download Error" --text="❌ ERROR: $ERROR_MSG" 2>/dev/null || true
-        echo "❌ ERROR: $ERROR_MSG"
-        espeak "YouTube processing error"
-        exit 1
+    if [[ $_yt_failed -eq 1 ]]; then
+        if _youtube_cookie_recovery; then
+            echo "🔄 Nouvelle tentative avec cookie YouTube..."
+            espeak "Retrying with cookie" 2>/dev/null || true
+            rm -f "$JSON_OUTPUT_FILE"
+            ${HOME}/.zen/Astroport.ONE/IA/scrapers/youtube/process_youtube.sh \
+                --json-file "$JSON_OUTPUT_FILE" \
+                --output-dir "$TEMP_YOUTUBE_DIR" \
+                "$YTURL" "mp4" "$PLAYER"
+            if [[ ! -f "$JSON_OUTPUT_FILE" || ! -s "$JSON_OUTPUT_FILE" ]]; then
+                espeak "YouTube download failed after cookie" && exit 1
+            fi
+            YOUTUBE_JSON=$(cat "$JSON_OUTPUT_FILE")
+            rm -f "$JSON_OUTPUT_FILE"
+            if echo "$YOUTUBE_JSON" | jq -e '.error' >/dev/null 2>&1; then
+                ERROR_MSG=$(echo "$YOUTUBE_JSON" | jq -r '.error')
+                echo "❌ Échec même après cookie : $ERROR_MSG"
+                command -v zenity &>/dev/null && \
+                    zenity --error --width 600 --title="YouTube Download Error" \
+                    --text="❌ Échec même après cookie :\n$ERROR_MSG" 2>/dev/null || true
+                espeak "YouTube still failing after cookie" && exit 1
+            fi
+        else
+            espeak "YouTube download cancelled"
+            exit 1
+        fi
     fi
 
     # Extraction des données
@@ -956,7 +1067,7 @@ ${URL:+Source: $URL
         MP3_JSON_FILE="$HOME/.zen/tmp/youtube_mp3_json_$$.json"
         
         # 1. Téléchargement local
-        bash "${MY_PATH}/IA/process_youtube.sh" --json-file "$MP3_JSON_FILE" --output-dir "$TEMP_MP3_DIR" "$URL" "mp3"
+        bash "${HOME}/.zen/Astroport.ONE/IA/scrapers/youtube/process_youtube.sh" --json-file "$MP3_JSON_FILE" --output-dir "$TEMP_MP3_DIR" "$URL" "mp3"
         
         if [[ ! -f "$MP3_JSON_FILE" ]]; then
             espeak "MP3 processing failed"

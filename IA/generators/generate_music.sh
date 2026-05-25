@@ -15,7 +15,7 @@ fi
 # Optional uDRIVE path parameter
 UDRIVE_PATH="$2"
 
-. "${MY_PATH}/../tools/my.sh"
+. "${HOME}/.zen/Astroport.ONE/tools/my.sh"
 
 # Escape double quotes and backslashes in the prompt
 PROMPT=$(echo "$1" | sed 's/"/\\"/g')

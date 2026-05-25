@@ -52,7 +52,7 @@ Les scripts `process.sh` et `all_but_blacklist.sh` agissent comme des douaniers 
 
 1.  **Whitelist Dynamique :** Seules les clefs ayant un compte local, appartenant au Swarm, ou présentes dans `amisOfAmis.txt` peuvent écrire sur le relai.
 2.  **Gestion des Intrus :** Le filtre `1.sh` détecte les "Visitors" (clefs inconnues). Il les autorise pour 3 messages tout en envoyant un bot (UMAP 0.00,0.00) leur demander de s'enregistrer, avant de les blacklister.
-3.  **Liaison Like-to-Pay :** Le filtre `7.sh` intercepte les réactions. S'il voit un `+` ou un emoji coeur entre deux clefs liées à UPlanet, il déclenche un virement Ğ1 réel via `PAYforSURE.sh`.
+3.  **Liaison Like-to-Pay :** Le filtre `7.sh` intercepte les réactions. S'il voit un `+` ou un emoji coeur entre deux clefs liées à UPlanet, il déclenche un virement ẑen réel via `PAYforSURE.sh`.
 
 ### Résumé du Flux de Confiance
-`Email` ➔ `MULTIPASS (Nostr)` ➔ `ZEN Card (Ğ1)` ➔ `Station (Capitaine)` ➔ `UMAP (Géo-Local)` ➔ `Swarm (Constellation)`
+`Email` ➔ `MULTIPASS (Nostr/ẑen)` ➔ `ZEN Card (Ğ1/ẐEN)` ➔ `Station (Capitaine)` ➔ `UMAP (Géo-Local)` ➔ `Swarm (Constellation)`

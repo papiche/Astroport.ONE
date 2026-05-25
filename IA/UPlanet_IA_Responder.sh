@@ -46,7 +46,7 @@ exec 2>&1 >> ~/.zen/tmp/IA.log
 
 BRO_SCRIPT_ID="ia_responder"
 # shellcheck source=bro_common_lib.sh
-source "$MY_PATH/bro_common_lib.sh" || { echo "ERROR: bro_common_lib.sh failed to load" >&2; exit 1; }
+source "$MY_PATH/bro/bro_common_lib.sh" || { echo "ERROR: bro_common_lib.sh failed to load" >&2; exit 1; }
 
 # Function to send error email to CAPTAINEMAIL using mailjet.sh
 send_error_email() {
@@ -198,7 +198,7 @@ CURRENT_TIME_STR=$(date '+%Y-%m-%d %H:%M:%S')
 source ~/.zen/Astroport.ONE/tools/my.sh ## finding UPLANETNAME
 
 ## Maintain Ollama : lsof -i :11434
-if ! $MY_PATH/ollama.me.sh; then
+if ! $MY_PATH/services/ollama.me.sh; then
     echo "Error: Failed to maintain Ollama connection" >&2
     exit 1
 fi
@@ -415,9 +415,9 @@ _dispatch_comfyui_video_job() {
     ## Cas local : ComfyUI disponible directement
     if _comfyui_local_available; then
         if [[ "$_mode" == "i2v" ]]; then
-            bash "$MY_PATH/image_to_video.sh" "$_prompt" "$_src_url" "$_udrive_videos" 2>/dev/null
+            bash "$MY_PATH/generators/image_to_video.sh" "$_prompt" "$_src_url" "$_udrive_videos" 2>/dev/null
         else
-            bash "$MY_PATH/generate_video.sh" "$_prompt" \
+            bash "$MY_PATH/generators/generate_video.sh" "$_prompt" \
                 "$MY_PATH/workflow/video_wan2_2_5B_ti2v.json" "$_udrive_videos" 2>/dev/null
         fi
         return
@@ -1331,13 +1331,13 @@ if [[ "${TAGS[BRO]}" == true || "${TAGS[BOT]}" == true ]]; then
                 fi
             ######################################################### #search
             elif [[ "${TAGS[search]}" == true ]]; then
-                $MY_PATH/vane.me.sh
+                $MY_PATH/services/vane.me.sh
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#search//g; s/"//g' <<< "$message_text")
                 USER_LANG=$(get_user_language "$KNAME")
                 echo "User language for search: $USER_LANG" >&2
                 # Capture stderr separately for debugging
                 SEARCH_STDERR=$(mktemp)
-                KeyANSWER="$($MY_PATH/perplexica_search.sh "${cleaned_text}" "${USER_LANG}" 2>"$SEARCH_STDERR")"
+                KeyANSWER="$($MY_PATH/services/perplexica_search.sh "${cleaned_text}" "${USER_LANG}" 2>"$SEARCH_STDERR")"
                 SEARCH_EXIT_CODE=$?
                 SEARCH_DEBUG=$(cat "$SEARCH_STDERR" 2>/dev/null)
                 rm -f "$SEARCH_STDERR"
@@ -1383,7 +1383,7 @@ Détails: ${ERROR_LINE}"
                 
                 # Generate illustration image for the article
                 echo "Generating illustration image for search result..." >&2
-                $MY_PATH/comfyui.me.sh image
+                $MY_PATH/services/comfyui.me.sh image
 
                 # Use AI to create an optimized Stable Diffusion prompt based on the summary
                 echo "Creating AI-generated prompt for illustration based on article summary..." >&2
@@ -1404,10 +1404,10 @@ Détails: ${ERROR_LINE}"
                 USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
                 if [ $? -eq 0 ]; then
                     echo "Using user uDRIVE/Images for illustration output: $USER_UDRIVE_PATH/Images" >&2
-                    ILLUSTRATION_URL="$($MY_PATH/generate_image.sh "${SD_PROMPT}" "$USER_UDRIVE_PATH/Images")"
+                    ILLUSTRATION_URL="$($MY_PATH/generators/generate_image.sh "${SD_PROMPT}" "$USER_UDRIVE_PATH/Images")"
                 else
                     echo "Using default location for search illustration" >&2
-                    ILLUSTRATION_URL="$($MY_PATH/generate_image.sh "${SD_PROMPT}")"
+                    ILLUSTRATION_URL="$($MY_PATH/generators/generate_image.sh "${SD_PROMPT}")"
                 fi
                 
                 # Add illustration to the article if generated successfully
@@ -1478,16 +1478,16 @@ Détails: ${ERROR_LINE}"
             ######################################################### #image
             elif [[ "${TAGS[image]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#image//g; s/"//g' <<< "$message_text")
-                $MY_PATH/comfyui.me.sh image
+                $MY_PATH/services/comfyui.me.sh image
                 start_time=$(date +%s.%N)
                 
                 # Get user uDRIVE path and generate image
                 USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
                 if [ $? -eq 0 ]; then
-                    IMAGE_URL="$($MY_PATH/generate_image.sh "${cleaned_text}" "$USER_UDRIVE_PATH/Images")"
+                    IMAGE_URL="$($MY_PATH/generators/generate_image.sh "${cleaned_text}" "$USER_UDRIVE_PATH/Images")"
                 else
                     echo "Warning: Using default location for image generation" >&2
-                    IMAGE_URL="$($MY_PATH/generate_image.sh "${cleaned_text}")"
+                    IMAGE_URL="$($MY_PATH/generators/generate_image.sh "${cleaned_text}")"
                 fi
                 
                 end_time=$(date +%s.%N)
@@ -1553,7 +1553,7 @@ Détails: ${ERROR_LINE}"
             ######################################################### #music
             elif [[ "${TAGS[music]}" == true ]]; then
                 cleaned_text=$(sed 's/#BOT//g; s/#BRO//g; s/#music//g; s/"//g' <<< "$message_text")
-                $MY_PATH/comfyui.me.sh music
+                $MY_PATH/services/comfyui.me.sh music
                 
                 # Get user uDRIVE path and generate music
                 USER_UDRIVE_PATH=$(get_user_udrive_from_kname)
@@ -1561,10 +1561,10 @@ Détails: ${ERROR_LINE}"
                     # Ensure Music directory exists
                     mkdir -p "$USER_UDRIVE_PATH/Music"
                     echo "Using user uDRIVE/Music for music output: $USER_UDRIVE_PATH/Music" >&2
-                    MUSIC_URL="$($MY_PATH/generate_music.sh "${cleaned_text}" "$USER_UDRIVE_PATH/Music")"
+                    MUSIC_URL="$($MY_PATH/generators/generate_music.sh "${cleaned_text}" "$USER_UDRIVE_PATH/Music")"
                 else
                     echo "Warning: Using default location for music generation" >&2
-                    MUSIC_URL="$($MY_PATH/generate_music.sh "${cleaned_text}")"
+                    MUSIC_URL="$($MY_PATH/generators/generate_music.sh "${cleaned_text}")"
                 fi
                 
                 if [ -n "$MUSIC_URL" ]; then
@@ -1620,9 +1620,9 @@ Détails: ${ERROR_LINE}"
                     # APPEL DU SCRIPT DE TRAVAIL
                     # On passe $video_url qui peut être du texte ou une URL
                     if [[ -n "$YOUTUBE_OUTPUT_DIR" ]]; then
-                        $MY_PATH/process_youtube.sh --debug --output-dir "$YOUTUBE_OUTPUT_DIR" "$video_url" "$EXT" "$KNAME" >/dev/null 2>&1
+                        $MY_PATH/scrapers/youtube/process_youtube.sh --debug --output-dir "$YOUTUBE_OUTPUT_DIR" "$video_url" "$EXT" "$KNAME" >/dev/null 2>&1
                     else
-                        $MY_PATH/process_youtube.sh --debug "$video_url" "$EXT" "$KNAME" >/dev/null 2>&1
+                        $MY_PATH/scrapers/youtube/process_youtube.sh --debug "$video_url" "$EXT" "$KNAME" >/dev/null 2>&1
                     fi
                     
                     KeyANSWER="✅ Reçu ! Je cherche \"${search_query:-$video_url}\" pour vous au format $EXT. Ce sera bientôt dans votre uDRIVE et à l'antenne."
@@ -2117,7 +2117,7 @@ Utilisez MiroFish (#BRO) ou Dify pour créer et exécuter des workflows.
                 
                 echo "Génération de synthèse vocale avec la voix: $voice" >&2
                 start_time=$(date +%s.%N)
-                audio_url=$($MY_PATH/generate_speech.sh "$cleaned_text" "$voice")
+                audio_url=$($MY_PATH/generators/generate_speech.sh "$cleaned_text" "$voice")
                 end_time=$(date +%s.%N)
                 execution_time=$(echo "$end_time - $start_time" | bc)
                 

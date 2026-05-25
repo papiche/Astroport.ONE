@@ -190,7 +190,7 @@ if [[ "${INSTALL_PROFILE}" == "ai-company" ]]; then
     elif [[ $_VRAM -ge 8  ]]; then _AI_TIER="⚡ Bon (8-23 Go) — modèles 7B-13B"
     elif [[ $_VRAM -ge 4  ]]; then _AI_TIER="🟡 Limité (4-7 Go) — petits modèles 3B-7B"
     elif [[ $_VRAM -ge 1  ]]; then _AI_TIER="⚠️  Très limité (1-3 Go) — ≤ 3B seulement"
-    else                            _AI_TIER="❌ Pas de VRAM dédiée"
+    else                           _AI_TIER="❌ Pas de VRAM dédiée"
     fi
     case "$_GPU_VENDOR" in
         nvidia)           _AI_COMPAT="✅ CUDA — Ollama + ComfyUI supportés" ;;
@@ -263,7 +263,9 @@ sudo apt-get update -y
 echo "#############################################"
 echo "######### INSTALL PRECIOUS FREE SOFTWARE ####"
 echo "#############################################"
-for i in zip ssss dos2unix make cmake hdparm iptables ufw fail2ban wireguard openssh-server sshfs parallel npm shellcheck multitail netcat-traditional socat ncdu chromium miller inotify-tools curl net-tools libsodium* miniupnpc libcurl4-openssl-dev libgpgme-dev libffi-dev; do
+for i in zip ssss dos2unix make cmake hdparm iptables ufw fail2ban wireguard openssh-server sshfs \
+parallel npm shellcheck multitail netcat-traditional socat ncdu chromium miller inotify-tools \
+curl net-tools libsodium* miniupnpc libcurl4-openssl-dev libgpgme-dev libffi-dev; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -285,7 +287,8 @@ done
 echo "#############################################"
 echo "####### INSTALL PYTHON3 SYSTEM LIBRARIES ####"
 echo "#############################################"
-for i in pipx python3-pip python3-setuptools python3-base58 python3-wheel python3-dotenv python3-gpg python3-jwcrypto python3-brotli python3-aiohttp python3-prometheus-client python3-tk; do
+for i in pipx python3-pip python3-setuptools python3-base58 python3-wheel python3-dotenv python3-gpg \
+python3-jwcrypto python3-brotli python3-aiohttp python3-prometheus-client python3-tk; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -296,7 +299,9 @@ done
 echo "#############################################"
 echo "##### INSTALL MULTIMEDIA & DATA TOOLS  ######"
 echo "#############################################"
-for i in qrencode pv gnupg pandoc cargo btop sox ocrmypdf ca-certificates basez markdown jq bc file gawk ffmpeg geoip-bin bind9-dnsutils ntpsec-ntpdate v4l-utils espeak vlc mp3info musl-dev openssl detox nmap httrack html2text imagemagick libmagic1t64 libimage-exiftool-perl poppler-utils; do
+for i in qrencode pv gnupg pandoc cargo btop sox ocrmypdf ca-certificates basez markdown jq bc file gawk ffmpeg \
+geoip-bin bind9-dnsutils ntpsec-ntpdate v4l-utils espeak vlc mp3info musl-dev openssl detox nmap httrack \
+html2text imagemagick libmagic1t64 libimage-exiftool-perl poppler-utils; do
     if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
         echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
         sudo apt install -y $i
@@ -315,10 +320,12 @@ for i in figlet cmatrix cowsay fonts-hack-ttf; do
     fi
 done
 
-if [[ $(which X 2>/dev/null) ]]; then
+if [[ $(which X 2>/dev/null) || -n "$DISPLAY" || -n "$WAYLAND_DISPLAY" ]]; then
     echo "#############################################"
     echo "######### INSTALL DESKTOP TOOLS  ######"
     echo "#############################################"
+    
+    # 1. Outils systèmes de base pour l'environnement graphique
     for i in x11-utils xclip zenity; do
         if [ $(dpkg-query -W -f='${Status}' $i 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
             echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $i <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
@@ -326,8 +333,108 @@ if [[ $(which X 2>/dev/null) ]]; then
             [[ $? != 0 ]] && echo "INSTALL $i FAILED." && echo "INSTALL $i FAILED." >> ~/.zen/install.errors.log && continue
         fi
     done
-fi
 
+    # 2. Menu interactif : Logiciels de Création Libres vs Propriétaires
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║  🎨 LOGICIELS DESKTOP — L'ÉMANCIPATION NUMÉRIQUE             ║"
+    echo "╠══════════════════════════════════════════════════════════════╣"
+    echo "║ Score machine : ${_SCORE} | VRAM : ${_VRAM} Go"
+    echo "╠══════════════════════════════════════════════════════════════╣"
+    echo "║ [1] Graphisme 2D (Économie estimée : ~1150€)                 ║"
+    echo "║     • GIMP      (alt. Photoshop ~240€/an)                    ║"
+    echo "║     • Inkscape  (alt. Illustrator ~240€/an)                  ║"
+    echo "║     • Krita     (alt. Corel Painter ~430€)                   ║"
+    echo "║     • Scribus   (alt. InDesign ~240€/an)                     ║"
+    echo "║                                                              ║"
+    echo "║ [2] Bureautique & Multimédia (Économie estimée : ~250€)      ║"
+    echo "║     • LibreOffice (alt. MS Office ~150€)                     ║"
+    echo "║     • Thunderbird (alt. Outlook ~50€)                        ║"
+    echo "║     • VLC         (alt. PowerDVD/Lecteurs payants ~50€)      ║"
+    echo "║                                                              ║"
+    
+    if [[ $_SCORE -gt 10 ]]; then
+        echo "║ [3] Audiovisuel (Économie estimée : ~630€)                   ║"
+        echo "║     • Kdenlive  (alt. Premiere Pro ~240€/an)                 ║"
+        echo "║     • Mixxx     (alt. Traktor Pro ~100€)                     ║"
+        echo "║     • OBS Studio(alt. XSplit ~50€/an)                        ║"
+        echo "║     • Audacity  (alt. Adobe Audition ~240€/an)               ║"
+    else
+        echo "║ [3] Audiovisuel ⚠️ (Score > 10 recommandé)                   ║"
+    fi
+    
+    echo "║                                                              ║"
+    
+    if [[ $_SCORE -gt 40 || $_VRAM -ge 4 ]]; then
+        echo "║ [4] 3D, CAO & MAO Pro (Économie estimée : ~4200€)            ║"
+        echo "║     • Blender   (alt. Maya/3ds Max ~1700€/an)                ║"
+        echo "║     • FreeCAD   (alt. AutoCAD ~2000€/an)                     ║"
+        echo "║     • LMMS      (alt. FL Studio ~200€)                       ║"
+        echo "║     • Ardour    (alt. Pro Tools ~300€/an)                    ║"
+    else
+        echo "║ [4] 3D, CAO & MAO ⚠️ (Brain-Node ou GPU 4Go+ recommandé)     ║"
+    fi
+    
+    echo "╠══════════════════════════════════════════════════════════════╣"
+    echo "║ [5] TOUT INSTALLER (Sélectionne les packs compatibles)       ║"
+    echo "║ [0] Passer         (Ne rien installer de plus)               ║"
+    echo "╚══════════════════════════════════════════════════════════════╝"
+    
+    read -r -p "Choix des packs (ex: 1 2 3) [0] : " _desktop_choices
+    
+    _PKGS=""
+    _TOTAL_SAVINGS=0
+    
+    if [[ "$_desktop_choices" == *"1"* || "$_desktop_choices" == *"5"* ]]; then
+        _PKGS+=" gimp inkscape krita scribus"
+        _TOTAL_SAVINGS=$((_TOTAL_SAVINGS + 1150))
+    fi
+    
+    if [[ "$_desktop_choices" == *"2"* || "$_desktop_choices" == *"5"* ]]; then
+        _PKGS+=" libreoffice libreoffice-l10n-fr thunderbird vlc"
+        _TOTAL_SAVINGS=$((_TOTAL_SAVINGS + 250))
+    fi
+    
+    if [[ "$_desktop_choices" == *"3"* || "$_desktop_choices" == *"5"* ]]; then
+        # En mode 'Tout installer', on vérifie que le PC tient la route
+        if [[ $_SCORE -gt 10 || "$_desktop_choices" != *"5"* ]]; then
+            _PKGS+=" kdenlive mixxx obs-studio audacity"
+            _TOTAL_SAVINGS=$((_TOTAL_SAVINGS + 630))
+        fi
+    fi
+    
+    if [[ "$_desktop_choices" == *"4"* || "$_desktop_choices" == *"5"* ]]; then
+        # En mode 'Tout installer', on vérifie que le PC tient la route
+        if [[ $_SCORE -gt 40 || $_VRAM -ge 4 || "$_desktop_choices" != *"5"* ]]; then
+            _PKGS+=" blender freecad lmms ardour"
+            _TOTAL_SAVINGS=$((_TOTAL_SAVINGS + 4200))
+        fi
+    fi
+    
+    if [[ -n "$_PKGS" ]]; then
+        echo ">>> Préparation de l'installation des logiciels :$_PKGS"
+        for p in $_PKGS; do
+            if [ $(dpkg-query -W -f='${Status}' $p 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+                echo ">>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Installation $p <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+                sudo apt install -y $p
+                [[ $? != 0 ]] && echo "INSTALL $p FAILED." && echo "INSTALL $p FAILED." >> ~/.zen/install.errors.log
+            fi
+        done
+        echo ""
+        echo "╔══════════════════════════════════════════════════════════════╗"
+        echo "║ 🎉 INSTALLATION GRAPHIQUE TERMINÉE !                         ║"
+        echo "╠══════════════════════════════════════════════════════════════╣"
+        printf "║ 💰 Valeur estimée des licences évitées : %-19s ║\n" "${_TOTAL_SAVINGS} €"
+        echo "║                                                              ║"
+        echo "║ Le Logiciel Libre vous fait économiser cet argent chaque     ║"
+        echo "║ année tout en respectant votre vie privée.                   ║"
+        echo "║ -> Pensez à faire un don aux développeurs !                  ║"
+        echo "╚══════════════════════════════════════════════════════════════╝"
+        echo ""
+    else
+        echo ">>> Aucun pack créatif supplémentaire sélectionné."
+    fi
+fi
 
 echo "################################## ~/.astro/bin PYTHON ENV"
 cd $HOME

@@ -488,7 +488,7 @@ process_umap_opportunities() {
 
     # 3. Generate illustration (ComfyUI if available)
     local illustration_url=""
-    if "${MY_PATH}/../IA/comfyui.me.sh" >/dev/null 2>&1; then
+    if "${MY_PATH}/../IA/services/comfyui.me.sh" >/dev/null 2>&1; then
         local sd_prompt=""
         sd_prompt=$("${MY_PATH}/../IA/question.py" --json \
             "Stable Diffusion prompt for: ${article_summary} --- OUTPUT ONLY: visual descriptors in English. NO text/words/emojis/brands. Focus: composition, colors, style, objects." \
@@ -497,7 +497,7 @@ process_umap_opportunities() {
         sd_prompt=$(echo "$sd_prompt" | sed 's/\s\+/ /g' | head -c 400)
         if [[ -n "$sd_prompt" ]]; then
             mkdir -p "${UMAPPATH}/Images"
-            illustration_url=$("${MY_PATH}/../IA/generate_image.sh" "$sd_prompt" "${UMAPPATH}/Images" 2>/dev/null) || true
+            illustration_url=$("${MY_PATH}/../IA/generators/generate_image.sh" "$sd_prompt" "${UMAPPATH}/Images" 2>/dev/null) || true
             [[ -n "$illustration_url" ]] && log "🎨 Illustration: ${illustration_url}"
         fi
     fi
@@ -1565,17 +1565,17 @@ send_nostr_events() {
             
             # Generate image for UMAP journal if ComfyUI is available
             local journal_image_url=""
-            if [[ -x "$MY_PATH/../IA/generate_image.sh" ]]; then
+            if [[ -x "$MY_PATH/../IA/generators/generate_image.sh" ]]; then
                 log "🎨 Generating image for UMAP journal ${LAT},${LON}..."
-                
+
                 # Generate descriptive prompt from journal content using question.py
                 local image_prompt=$($MY_PATH/../IA/question.py "[TEXT] $journal_content [/TEXT] --- Create a descriptive prompt for Stable Diffusion image generation based on this UMAP journal content. The image should represent the activities, mood, and atmosphere of this geographic location. Focus on visual elements that capture the essence of the messages. Keep the prompt concise but descriptive, suitable for AI image generation. Use English for the prompt." --lat "$LAT" --lon "$LON" --model "gemma3:12b" 2>/dev/null)
-                
+
                 if [[ -n "$image_prompt" && "$image_prompt" != "Failed to get answer from Ollama." ]]; then
                     log "📝 Generated image prompt: $image_prompt"
-                    
+
                     # Generate image using ComfyUI
-                    journal_image_url=$($MY_PATH/../IA/generate_image.sh "$image_prompt" 2>/dev/null)
+                    journal_image_url=$($MY_PATH/../IA/generators/generate_image.sh "$image_prompt" 2>/dev/null)
                     
                     if [[ -n "$journal_image_url" && "$journal_image_url" != "" ]]; then
                         log "✅ Generated UMAP journal image: $journal_image_url"

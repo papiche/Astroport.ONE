@@ -205,7 +205,7 @@ Usage : ovh.me.sh <commande> [args...]
 
 | Fichier | Rôle |
 |---|---|
-| `Astroport.ONE/tools/ovh.me.sh` | CLI DNSLink OVH — toutes les opérations CRUD |
+| `Astroport.ONE/admin/system/ovh.me.sh` | CLI DNSLink OVH — toutes les opérations CRUD |
 | `UPlanet/microledger.me.sh` | Publication IPFS — délègue le DNSLink à `ovh.me.sh` |
 | `Astroport.ONE/tools/make_NOSTRCARD.sh` | Création MULTIPASS — appelle `ovh.me.sh upsert` pour `/ipns/$NOSTRNS` |
 | `Astroport.ONE/RUNTIME/NOSTRCARD.refresh.sh` | Refresh MULTIPASS — republication IPNS + appel `ovh.me.sh upsert` |

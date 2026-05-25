@@ -7,7 +7,7 @@
 ########################################################################
 # Prérequis :
 #   - Qdrant accessible sur localhost:6333  (docker-compose rnostr stack)
-#   - Ollama accessible sur localhost:11434  (local ou via IA/ollama.me.sh)
+#   - Ollama accessible sur localhost:11434  (local ou via IA/services/ollama.me.sh)
 #   - python3 + pip install ollama requests
 ########################################################################
 
@@ -15,7 +15,7 @@ set -e  # Arrête le script en cas d'erreur
 
 MY_PATH="$(dirname "$(realpath "$0")")"
 EMBED_PY="$MY_PATH/../IA/embed.py"
-OLLAMA_STARTER="$MY_PATH/../IA/ollama.me.sh"
+OLLAMA_STARTER="$HOME/.zen/Astroport.ONE/IA/services/ollama.me.sh"
 PYTHON3="${HOME}/.astro/bin/python3"
 command -v "$PYTHON3" &>/dev/null || PYTHON3="$(command -v python3 2>/dev/null || echo python3)"
 
@@ -66,7 +66,7 @@ if ! curl -sf --max-time 2 http://localhost:11434/api/tags > /dev/null 2>&1; the
         echo ""
     fi
     if ! curl -sf --max-time 2 http://localhost:11434/api/tags > /dev/null 2>&1; then
-        echo "Erreur : Ollama non accessible. Lancez : bash IA/ollama.me.sh"
+        echo "Erreur : Ollama non accessible. Lancez : bash IA/services/ollama.me.sh"
         exit 1
     fi
 fi
@@ -190,7 +190,7 @@ echo "  ✗ Échecs              : $FAILED"
 if [ "$FAILED" -gt 0 ]; then
     echo ""
     echo "⚠️  $FAILED événement(s) n'ont pas pu être indexés."
-    echo "   Vérifiez qu'Ollama + nomic-embed-text sont disponibles : bash IA/ollama.me.sh"
+    echo "   Vérifiez qu'Ollama + nomic-embed-text sont disponibles : bash IA/services/ollama.me.sh"
     exit 1
 else
     echo ""

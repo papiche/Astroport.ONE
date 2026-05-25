@@ -29,7 +29,7 @@ set -euo pipefail
 
 MY_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PULL_SCRIPT="$MY_PATH/pull.sh"
-ARTICLE_SCRIPT="$MY_PATH/IA/generate_article.sh"
+ARTICLE_SCRIPT="${HOME}/.zen/Astroport.ONE/IA/generators/generate_article.sh"
 QUESTION_PY="$MY_PATH/IA/question.py"
 NOSTR_SEND="$MY_PATH/tools/nostr_send_note.py"
 
@@ -134,7 +134,7 @@ STDERR_DEV="/dev/null"
 $VERBOSE && STDERR_DEV="/dev/stderr"
 
 # ─── Activation Ollama local/swarm ────────────────────────────────────────────────────
-~/.zen/Astroport.ONE/IA/ollama.me.sh 2>&1 > /dev/null
+"${HOME}/.zen/Astroport.ONE/IA/services/ollama.me.sh" 2>&1 > /dev/null
 
 # ─── Fonctions utilitaires ────────────────────────────────────────────────────
 log()     { echo -e "  ${BLUE}$*${NC}" >&2; }
@@ -447,8 +447,8 @@ publish_nostr() {
 # generate_image.sh appelle déjà POST /free après chaque image, ce qui libère VRAM
 # Appeler ici séquentiellement évite de charger ComfyUI N fois simultanément
 generate_images_batch() {
-    local gen_image_sh="$MY_PATH/IA/generate_image.sh"
-    local comfyui_me="$MY_PATH/IA/comfyui.me.sh"
+    local gen_image_sh="${HOME}/.zen/Astroport.ONE/IA/generators/generate_image.sh"
+    local comfyui_me="${HOME}/.zen/Astroport.ONE/IA/services/comfyui.me.sh"
 
     [[ -f "$gen_image_sh" ]] || { warn "generate_image.sh introuvable"; return 1; }
     [[ -f "$comfyui_me" ]]   || { warn "comfyui.me.sh introuvable"; return 1; }

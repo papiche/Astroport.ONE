@@ -41,9 +41,9 @@ set -euo pipefail
 
 MY_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-QUESTION_PY="$MY_PATH/question.py"
+QUESTION_PY="$MY_PATH/../question.py"
 GENERATE_IMAGE_SH="$MY_PATH/generate_image.sh"
-COMFYUI_ME_SH="$MY_PATH/comfyui.me.sh"
+COMFYUI_ME_SH="$MY_PATH/../services/comfyui.me.sh"
 
 # Couleurs (stderr uniquement)
 RED='\033[0;31m'

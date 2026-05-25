@@ -157,7 +157,7 @@ test_profile_badges() {
 test_badge_image_generation() {
     test_log_info "Testing badge image generation script..."
     
-    local generate_script="$HOME/.zen/Astroport.ONE/IA/generate_badge_image.sh"
+    local generate_script="$HOME/.zen/Astroport.ONE/IA/generators/generate_badge_image.sh"
     
     if [[ ! -f "$generate_script" ]]; then
         test_log_warning "generate_badge_image.sh not found, skipping image generation tests"

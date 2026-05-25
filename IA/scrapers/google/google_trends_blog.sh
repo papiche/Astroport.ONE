@@ -25,6 +25,7 @@
 
 MY_PATH="$(dirname "$0")"
 MY_PATH="$(cd "$MY_PATH" && pwd)"
+IA_DIR="$MY_PATH/../.."
 
 # Load common utilities
 [[ -s ~/.zen/Astroport.ONE/tools/my.sh ]] && source ~/.zen/Astroport.ONE/tools/my.sh
@@ -573,7 +574,7 @@ echo "🆕 New trend detected! Processing..."
 
 # Ensure Vane is available
 echo "🔌 Checking Vane availability..."
-if ! $MY_PATH/vane.me.sh >/dev/null 2>&1; then
+if ! $IA_DIR/services/vane.me.sh >/dev/null 2>&1; then
     echo "❌ Failed to connect to Vane API" >&2
     exit 1
 fi
@@ -585,7 +586,7 @@ echo "🔎 Performing Vane search for: $CURRENT_TREND"
 echo "   Language: $LANG"
 echo ""
 
-SEARCH_RESULT=$($MY_PATH/perplexica_search.sh "$CURRENT_TREND" "$LANG" 2>/dev/null)
+SEARCH_RESULT=$($IA_DIR/services/perplexica_search.sh "$CURRENT_TREND" "$LANG" 2>/dev/null)
 
 if [[ -z "$SEARCH_RESULT" ]]; then
     echo "❌ Vane search returned empty result" >&2
@@ -603,7 +604,7 @@ D_TAG="trends_${GEO}_${CURRENT_TIMESTAMP}_$(echo -n "$CURRENT_TREND" | md5sum | 
 # Generate article summary using question.py
 echo ""
 echo "📝 Generating article summary..."
-ARTICLE_SUMMARY=$($MY_PATH/question.py --json "Create a concise, engaging summary (2-3 sentences) for this blog article in ${LANG} language. Article content: ${SEARCH_RESULT}" --pubkey "system" 2>/dev/null | jq -r '.answer // .' 2>/dev/null | head -c 500)
+ARTICLE_SUMMARY=$($IA_DIR/question.py --json "Create a concise, engaging summary (2-3 sentences) for this blog article in ${LANG} language. Article content: ${SEARCH_RESULT}" --pubkey "system" 2>/dev/null | jq -r '.answer // .' 2>/dev/null | head -c 500)
 
 if [[ -z "$ARTICLE_SUMMARY" ]]; then
     ARTICLE_SUMMARY="Article sur la tendance Google: $CURRENT_TREND"
@@ -614,7 +615,7 @@ ARTICLE_SUMMARY=$(echo "$ARTICLE_SUMMARY" | tr -d '\n' | sed 's/"/\\"/g' | head 
 
 # Generate tags based on content
 echo "🏷️  Generating hashtags..."
-INTELLIGENT_TAGS=$($MY_PATH/question.py --json "Generate 5-7 relevant hashtags for this article about '$CURRENT_TREND'. Return ONLY hashtags separated by spaces, no explanations. Article: ${SEARCH_RESULT:0:1000}" --pubkey "system" 2>/dev/null | jq -r '.answer // .' 2>/dev/null)
+INTELLIGENT_TAGS=$($IA_DIR/question.py --json "Generate 5-7 relevant hashtags for this article about '$CURRENT_TREND'. Return ONLY hashtags separated by spaces, no explanations. Article: ${SEARCH_RESULT:0:1000}" --pubkey "system" 2>/dev/null | jq -r '.answer // .' 2>/dev/null)
 
 # Clean and format tags
 INTELLIGENT_TAGS=$(echo "$INTELLIGENT_TAGS" | sed 's/#//g' | sed 's/,//g' | tr -s ' ' | head -c 200)
@@ -623,15 +624,15 @@ echo "   Tags: $INTELLIGENT_TAGS"
 
 # Generate illustration image (optional, only if ComfyUI is available)
 ILLUSTRATION_URL=""
-if $MY_PATH/comfyui.me.sh >/dev/null 2>&1; then
+if $IA_DIR/services/comfyui.me.sh >/dev/null 2>&1; then
     echo ""
     echo "🎨 Generating illustration image..."
     
     # Create an optimized SD prompt
-    SD_PROMPT=$($MY_PATH/question.py --json "Create a Stable Diffusion prompt for an image about: ${CURRENT_TREND}. RULES: 1) ONLY visual elements 2) NO text, NO words, NO emojis 3) Use simple English 4) Focus on colors, composition, style" --pubkey "system" 2>/dev/null | jq -r '.answer // .' 2>/dev/null | head -c 300)
+    SD_PROMPT=$($IA_DIR/question.py --json "Create a Stable Diffusion prompt for an image about: ${CURRENT_TREND}. RULES: 1) ONLY visual elements 2) NO text, NO words, NO emojis 3) Use simple English 4) Focus on colors, composition, style" --pubkey "system" 2>/dev/null | jq -r '.answer // .' 2>/dev/null | head -c 300)
     
     if [[ -n "$SD_PROMPT" ]]; then
-        ILLUSTRATION_URL=$($MY_PATH/generate_image.sh "$SD_PROMPT" 2>/dev/null)
+        ILLUSTRATION_URL=$($IA_DIR/generators/generate_image.sh "$SD_PROMPT" 2>/dev/null)
         if [[ -n "$ILLUSTRATION_URL" ]]; then
             echo "   ✅ Illustration: $ILLUSTRATION_URL"
         fi

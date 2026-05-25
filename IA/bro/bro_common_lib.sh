@@ -32,7 +32,7 @@
 ########################################################################
 
 _BRO_LIB_MY_PATH="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
-_BRO_ASTRO_TOOLS="${_BRO_LIB_MY_PATH}/../tools"
+_BRO_ASTRO_TOOLS="${HOME}/.zen/Astroport.ONE/tools"
 
 BRO_LOG_FILE="${BRO_LOG_FILE:-$HOME/.zen/tmp/IA.log}"
 BRO_SCRIPT_ID="${BRO_SCRIPT_ID:-bro}"

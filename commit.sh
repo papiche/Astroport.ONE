@@ -1055,7 +1055,7 @@ if [[ -f "$QUESTION_PY" ]] || { [[ "${AI_BACKEND:-ollama}" == "claude" ]] && com
 
     # Démarrer Ollama seulement si le backend n'est pas Claude
     if [[ "${AI_BACKEND:-ollama}" != "claude" ]]; then
-        OLLAMA_SCRIPT="$HOME/.zen/Astroport.ONE/IA/ollama.me.sh"
+        OLLAMA_SCRIPT="$HOME/.zen/Astroport.ONE/IA/services/ollama.me.sh"
         if [[ -f "$OLLAMA_SCRIPT" ]]; then
             dbg "Démarrage Ollama via $OLLAMA_SCRIPT"
             if [[ "$VERBOSE" == "true" ]]; then

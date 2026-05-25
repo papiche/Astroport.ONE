@@ -308,12 +308,12 @@ run_tests_env() {
     ia_real="$(_ia_dir)"
     if [[ -d "$ia_real" ]]; then
         # Test avec un fichier qui existe sûrement (ollama.me.sh)
-        if [[ -f "$ia_real/ollama.me.sh" ]]; then
-            assert_not_empty "$(_find_me_sh "$ia_real" "ollama")" "_find_me_sh: ollama trouvé"
+        if [[ -f "$ia_real/services/ollama.me.sh" ]]; then
+            assert_not_empty "$(_find_me_sh "$ia_real/services" "ollama")" "_find_me_sh: ollama trouvé"
         fi
         # Test conversion tirets → underscores
-        if [[ -f "$ia_real/open-webui.me.sh" ]]; then
-            assert_not_empty "$(_find_me_sh "$ia_real" "open_webui")" "_find_me_sh: open_webui → open-webui.me.sh"
+        if [[ -f "$ia_real/services/open-webui.me.sh" ]]; then
+            assert_not_empty "$(_find_me_sh "$ia_real/services" "open_webui")" "_find_me_sh: open_webui → open-webui.me.sh"
         fi
     fi
     # Service inexistant → vide

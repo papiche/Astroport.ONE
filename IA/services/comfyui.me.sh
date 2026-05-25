@@ -11,7 +11,7 @@
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 ME="${0##*/}"
-. "$MY_PATH/../tools/my.sh" 2>/dev/null || true
+. "${HOME}/.zen/Astroport.ONE/tools/my.sh" 2>/dev/null || true
 resolve_swarm_remote_target "scorpio.copylaradio.com" 2122 22
 
 # Configuration

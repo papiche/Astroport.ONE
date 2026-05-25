@@ -2,7 +2,7 @@
 
 > Recettes pour les tâches courantes liées au DNSLink OVH.
 > Ces guides supposent que la configuration initiale est déjà faite (voir `docs/tutorials/setup_dnslink_ovh.md`).
-> L'outil CLI est `Astroport.ONE/tools/ovh.me.sh` (symlink disponible : `~/.zen/Astroport.ONE/tools/ovh.me.sh`).
+> L'outil CLI est `Astroport.ONE/admin/system/ovh.me.sh` (symlink disponible : `~/.zen/Astroport.ONE/admin/system/ovh.me.sh`).
 
 ---
 
@@ -82,7 +82,7 @@ Le prochain `./microledger.me.sh` mettra à jour `_dnslink.monautrezone.fr` et `
 `ovh.me.sh` est l'outil CLI complet pour gérer les records DNSLink sur OVH.
 
 ```bash
-OVH_TOOL=~/.zen/Astroport.ONE/tools/ovh.me.sh
+OVH_TOOL=~/.zen/Astroport.ONE/admin/system/ovh.me.sh
 
 # Lister tous les records _dnslink de la zone
 "$OVH_TOOL" list
@@ -115,7 +115,7 @@ Chaque MULTIPASS expose son vault IPFS via `/ipns/$NOSTRNS`. Pour rendre ce vaul
 ```bash
 # YOUSER = slug dérivé de l'email via clyuseryomail.sh (ex: "alice")
 # NOSTRNS = clef IPNS base36 (ex: "k51qzi5uqu5d...")
-OVH_TOOL=~/.zen/Astroport.ONE/tools/ovh.me.sh
+OVH_TOOL=~/.zen/Astroport.ONE/admin/system/ovh.me.sh
 
 "$OVH_TOOL" upsert "${YOUSER}" "/ipns/${NOSTRNS}"
 # → _dnslink.alice.astroport.one  TXT  "dnslink=/ipns/k51q..."
