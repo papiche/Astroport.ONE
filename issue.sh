@@ -115,13 +115,14 @@ show_help() {
     echo -e "  ${GREEN}repos${NC}"
     echo -e "              Lister les repos de ${GIT_OWNER}"
     echo -e "  ${GREEN}analyze${NC} <numéro> [--ai ollama|claude|gemini] [--model M] [--template T]"
-    echo -e "              [--depth N] [--maxtoken N] [--verbose] [--auto] [--comment] [--close]"
+    echo -e "              [--depth N] [--maxtoken N] [--verbose] [--auto] [--comment] [--close] [--fix]"
     echo -e "              [fichiers...]"
     echo -e "              Analyse une issue avec l'IA et propose un plan de correction"
     echo -e "              CLAUDE.md du projet est injecté automatiquement comme contexte"
     echo -e "              --auto    : mode non-interactif (CI/cron, pas de prompts)"
     echo -e "              --comment : poster l'analyse en commentaire GitHub (avec --auto)"
     echo -e "              --close   : fermer l'issue après analyse (avec --auto)"
+    echo -e "              --fix     : enchaîner analyse + auto-fix Claude (édite les fichiers)"
     echo -e "  ${GREEN}pr${NC}      <numéro> [--base BRANCH] [--title \"titre\"]"
     echo -e "              Créer une Pull Request référençant l'issue depuis la branche courante"
     echo ""
@@ -592,6 +593,7 @@ TPROMPT
         AUTO_MODE=false
         AUTO_COMMENT=false
         AUTO_CLOSE=false
+        FIX_MODE=false
         declare -a EXTRA_FILES=()
 
         while [[ $# -gt 0 ]]; do
@@ -606,6 +608,7 @@ TPROMPT
                 --auto)        AUTO_MODE=true; shift ;;
                 --comment)     AUTO_COMMENT=true; shift ;;
                 --close)       AUTO_CLOSE=true; shift ;;
+                --fix)         FIX_MODE=true; shift ;;
                 --*)           echo -e "${YELLOW}[AVERTISSEMENT]${NC} Option inconnue ignorée : $1" >&2; shift ;;
                 *)             EXTRA_FILES+=("$1"); shift ;;
             esac
@@ -1355,6 +1358,49 @@ except: pass
 
         # En mode --auto, on ne lance pas le workflow interactif
         [[ "$AUTO_MODE" == "true" ]] && exit 0
+
+        # Mode --fix : enchaîner directement sur l'auto-fix Claude sans menu
+        if [[ "$FIX_MODE" == "true" ]] && [[ -n "$ai_result" ]]; then
+            if [[ -z "$_wf_claude" ]]; then
+                echo -e "${YELLOW}[--fix]${NC} claude CLI introuvable — utilisez [f] en mode interactif." >&2
+            else
+                echo ""
+                echo -e "${CYAN}[--fix]${NC} Lancement auto-fix Claude sur issue #${NUM}..."
+                _af_fix_prompt="Tu travailles dans le répertoire : $(pwd)
+
+## Issue #${NUM} — ${ISSUE_TITLE}
+
+${ISSUE_BODY:0:800}
+
+## Analyse IA
+
+${ai_result}
+
+## Code concerné
+
+${code_context:0:20000}
+
+## Consigne
+
+1. Lis les fichiers concernés (Read tool)
+2. Applique chaque correction identifiée (Edit tool)
+3. Vérifie avec git diff
+4. Résume les changements en 3 lignes max."
+                CLAUDE_CONFIG_DIR="$_wf_cfg" "$_wf_claude" \
+                    --allowedTools "Read,Edit,Write,Bash(git diff*),Bash(git status*)" \
+                    "$_af_fix_prompt" </dev/tty || true
+                _af_fix_changed=$(git diff --name-only 2>/dev/null)
+                if [[ -n "$_af_fix_changed" ]]; then
+                    echo ""
+                    git diff --stat 2>/dev/null
+                    read -r -p "Commiter et fermer l'issue #${NUM} ? [O/n] : " _af_fix_cc </dev/tty
+                    [[ "${_af_fix_cc:-O}" =~ ^[oOyY]?$ ]] && _wf_commit_close
+                else
+                    echo -e "${YELLOW}[--fix]${NC} Aucune modification appliquée." >&2
+                fi
+            fi
+            exit 0
+        fi
 
         _wf_done=false
         while ! $_wf_done; do

@@ -25,11 +25,8 @@ Le lecteur consulte cette section quand il cherche un fait précis.
 | [WOTX2_SYSTEM.md](WOTX2_SYSTEM.md) | Toiles de confiance duales Oracle + P2P — spec v2.1 |
 | [UPlanet_FILE_CONTRACT.md](UPlanet_FILE_CONTRACT.md) | Protocole de gestion décentralisée des fichiers IPFS+NOSTR |
 | [UPlanet_CROWDFUNDING_CONTRACT.md](UPlanet_CROWDFUNDING_CONTRACT.md) | Protocole de financement participatif décentralisé |
-
-## À créer
-
-| Fichier | Contenu | Priorité |
-|---------|---------|----------|
-| [upassport_api_endpoints.md](upassport_api_endpoints.md) | Endpoints UPassport (port 54321) — tous les routers FastAPI | 🔴 Haute |
-| [bash_scripts_roles.md](bash_scripts_roles.md) | Rôle et signature de chaque script Bash du projet | 🟡 Moyenne |
-| [cli_keygen_commands.md](cli_keygen_commands.md) | Référence complète CLI `keygen` (G1, IPFS, NOSTR) | 🟡 Moyenne |
+| [upassport_api_endpoints.md](upassport_api_endpoints.md) | Endpoints UPassport (port 54321) — tous les routers FastAPI, paramètres, auth |
+| [bash_scripts_roles.md](bash_scripts_roles.md) | Rôle fonctionnel de chaque script Bash — point d'entrée, fréquence, dépendances |
+| [cli_keygen_commands.md](cli_keygen_commands.md) | CLI `keygen` — dérivation déterministe G1/IPFS/NOSTR depuis email+passwd |
+| [EMANCIPATION_METRICS.md](EMANCIPATION_METRICS.md) | Métriques d'émancipation numérique UPlanet |
+| [commit-options.md](commit-options.md) | Options de commit git — conventions du projet |
