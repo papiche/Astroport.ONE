@@ -91,7 +91,7 @@ EVENT_KINDS = {
     30023: "Long-form Content",
     30024: "Draft Long-form Content",
     30078: "Application-specific Data",
-    30311: "Live Event",  # NIP-53 - Official Nostr standard
+    30311: "Live Event",
     30312: "ORE Meeting Space (NIP-101 UPlanet)",
     30313: "ORE Verification Meeting (NIP-101 UPlanet)",
     30315: "User Statuses",
@@ -101,7 +101,7 @@ EVENT_KINDS = {
     30501: "Oracle Permit Request (NIP-101 UPlanet)",
     30502: "Oracle Permit Attestation (NIP-101 UPlanet)",
     30503: "Oracle Verifiable Credential (NIP-101 UPlanet)",
-    30800: "DID Document (NIP-101 UPlanet)",  # Changed from 30311 to avoid conflict
+    30800: "DID Document (NIP-101 UPlanet)",
     31922: "Date-Based Calendar Event",
     31923: "Time-Based Calendar Event",
     31924: "Calendar",
