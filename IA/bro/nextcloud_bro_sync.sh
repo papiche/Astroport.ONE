@@ -424,24 +424,31 @@ Question: $question
 Réponds en français en te basant sur le contexte ci-dessus. Sois concis et précis."
     fi
 
-    ## Synthèse via API Ollama (test HTTP, pas command -v — fonctionne aussi en Docker)
+    ## Synthèse via API HTTP Ollama (fonctionne en local, Docker ou tunnel IPFS P2P)
+    ## N'utilise PAS le binaire `ollama` — compatible picoport sans Ollama installé localement
     if curl -sf --max-time 2 "$OLLAMA_URL/api/tags" &>/dev/null; then
-        info "Synthèse Ollama en cours..."
-        ## stdout = réponse IA
-        ollama run "${OLLAMA_MODEL:-gemma3:latest}" "$prompt_text" 2>/dev/null \
-            || {
-                warn "Ollama disponible mais run a échoué — fallback extrait Qdrant"
-                ## Fallback : meilleur extrait Qdrant brut sur stdout
-                echo "$results" | python3 -c "
+        info "Synthèse Ollama HTTP en cours (${OLLAMA_MODEL:-gemma3:latest})..."
+        local _prompt_json
+        _prompt_json=$(python3 -c "import json,sys; print(json.dumps(sys.stdin.read()))" <<< "$prompt_text")
+        local _response
+        _response=$(curl -sf --max-time 120 \
+            -X POST "$OLLAMA_URL/api/generate" \
+            -H "Content-Type: application/json" \
+            -d "{\"model\":\"${OLLAMA_MODEL:-gemma3:latest}\",\"prompt\":${_prompt_json},\"stream\":false}" \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('response','').strip())" 2>/dev/null)
+        if [[ -n "$_response" ]]; then
+            echo "$_response"
+        else
+            warn "Ollama HTTP : réponse vide — fallback extrait Qdrant"
+            echo "$results" | python3 -c "
 import sys, json
 data = json.load(sys.stdin)
 r = data.get('result', [])
 print(r[0].get('payload',{}).get('content_preview','Aucune réponse disponible.') if r else 'Aucune réponse disponible.')
 " 2>/dev/null
-            }
+        fi
     else
         info "Ollama non disponible — retour du meilleur extrait Qdrant"
-        ## Fallback : meilleur extrait Qdrant sur stdout
         echo "$results" | python3 -c "
 import sys, json
 data = json.load(sys.stdin)

@@ -11,7 +11,7 @@
 
 # --- CONFIGURATION ---
 SWARM_DIR="$HOME/.zen/tmp/swarm"
-REFRESH_RATE=3
+REFRESH_RATE=8
 LOG_FILE="$HOME/.zen/tmp/tunnel.log"
 LOG_MAX=3
 
@@ -57,6 +57,7 @@ log_lines=()
 search_mode=false; search_query=""
 sort_mode="name"      # name | port | captain | status
 display_indices=()
+view_offset=0         # première ligne visible dans le viewport
 active_p2p=""; all_listening=""
 map_disp_ports=()
 LOCAL_ID=$(ipfs id -f "<id>" 2>/dev/null || echo "Inconnu")
@@ -210,49 +211,48 @@ compute_display_indices() {
 draw_ui() {
     clear; tput civis
 
+    # Hauteur du terminal → viewport
+    local term_h; term_h=$(tput lines 2>/dev/null || echo 24)
+    local fixed_h=$(( 3 + LOG_MAX + 2 ))   # header(1)+status(1)+search(1) + log + marges(2)
+    local viewport_h=$(( term_h - fixed_h ))
+    [[ $viewport_h -lt 3 ]] && viewport_h=3
+
     # Barre de titre
     echo -e "${BG_BLUE}${FG_BLACK}  tunnel v2.1 · [↵]CONNECT [R]RESET [X]STOP [W]Web/SSH [I]IPNS [/]Chercher [S]Trier [Q]Quit  ${NC}"
 
     # Ligne d'état
-    local total=${#map_names[@]}
-    local shown=${#display_indices[@]}
+    local total=${#map_names[@]} shown=${#display_indices[@]}
     local cur_real="${display_indices[$cursor]:-0}"
-    local cur_port="${map_ports[$cur_real]:-?}"
-    local cur_alt="${map_alt_ports[$cur_real]:-?}"
-    echo -e "LOCAL: ${CYAN}${LOCAL_ID: -22}${NC}  Port:${YELLOW}${cur_port}${NC}(alt:${cur_alt})  Tri:${MAGENTA}$(_sort_label)${NC}  ${CYAN}${shown}/${total}${NC} services"
+    local cur_port="${map_ports[$cur_real]:-?}" cur_alt="${map_alt_ports[$cur_real]:-?}"
+    echo -e "LOCAL:${CYAN}${LOCAL_ID: -20}${NC}  P:${YELLOW}${cur_port}${NC}(alt:${cur_alt})  Tri:${MAGENTA}$(_sort_label)${NC}  ${CYAN}${shown}/${total}${NC}"
 
-    # Barre de recherche
+    # Barre de recherche (1 ligne toujours)
     if $search_mode; then
         echo -e "${BOLD}/${NC} ${CYAN}${search_query}${YELLOW}▌${NC}"
+    elif [[ -n "$search_query" ]]; then
+        echo -e "${BOLD}/${NC} ${CYAN}${search_query}${NC}  ${MAGENTA}[filtre actif]${NC}"
     else
-        [[ -n "$search_query" ]] \
-            && echo -e "${BOLD}/${NC} ${CYAN}${search_query}${NC}  ${MAGENTA}(filtre actif — / pour modifier)${NC}" \
-            || echo ""
+        echo ""
     fi
 
-    # Pré-calcul statuts et ports effectifs (indexé par indice réel)
+    # Pré-calcul statuts et ports effectifs pour tous les services (indice réel)
     local -a tmp_dp tmp_st
     for i in "${!map_names[@]}"; do
         local pn="${map_ports[$i]}" pa="${map_alt_ports[$i]}" proto="${map_protos[$i]}"
         local aline dp st is_p2p=""
         aline=$(echo "$active_p2p" | grep -F "$proto" | head -n 1)
         dp="$pn"
-
         if [[ -n "$aline" ]]; then
-            if echo "$aline" | grep -q "tcp/$pn"; then
-                is_p2p="true"; dp="$pn"
-            elif echo "$aline" | grep -q "tcp/$pa"; then
-                is_p2p="true"; dp="$pa"
+            if echo "$aline" | grep -q "tcp/$pn";  then is_p2p="true"; dp="$pn"
+            elif echo "$aline" | grep -q "tcp/$pa"; then is_p2p="true"; dp="$pa"
             fi
         fi
-
         if [[ "$is_p2p" == "true" ]]; then
             st="${GREEN}[  ACTIF ipfs  ]${NC}"
         else
-            local lline
+            local lline lsrc
             lline=$(echo "$all_listening" | grep -E ":($pn|$pa) " | head -n 1)
             if [[ -n "$lline" ]]; then
-                local lsrc
                 lsrc=$(echo "$lline" | awk '{print $1}')
                 dp=$(echo "$lline" | grep -oP ':\d+' | head -n 1 | cut -d':' -f2)
                 st="${YELLOW}[ ACTIF $lsrc ]${NC}"
@@ -260,45 +260,56 @@ draw_ui() {
                 st="${RED}[  OFF  ]${NC}"
             fi
         fi
-        tmp_dp[$i]="$dp"
-        tmp_st[$i]="$st"
+        tmp_dp[$i]="$dp"; tmp_st[$i]="$st"
     done
 
-    # map_disp_ports indexé par position d'affichage (utilisé par les handlers)
+    # map_disp_ports indexé par position affichage (pour les actions)
     map_disp_ports=()
     for disp_pos in "${!display_indices[@]}"; do
         map_disp_ports+=("${tmp_dp[${display_indices[$disp_pos]}]}")
     done
 
-    # Rendu de la liste filtrée/triée
-    for disp_pos in "${!display_indices[@]}"; do
+    # Ajustement du viewport pour garder le curseur visible
+    [[ $cursor -lt $view_offset ]] && view_offset=$cursor
+    [[ $cursor -ge $(( view_offset + viewport_h )) ]] && view_offset=$(( cursor - viewport_h + 1 ))
+    [[ $view_offset -lt 0 ]] && view_offset=0
+
+    # Indicateur de défilement haut
+    if [[ $view_offset -gt 0 ]]; then
+        echo -e "  ${MAGENTA}↑ ${view_offset} service(s) au-dessus${NC}"
+    else
+        echo ""
+    fi
+
+    # Rendu du viewport
+    local view_end=$(( view_offset + viewport_h - 1 ))
+    for (( disp_pos=view_offset; disp_pos<=view_end && disp_pos<shown; disp_pos++ )); do
         local i="${display_indices[$disp_pos]}"
         local dp="${tmp_dp[$i]}"
-        local line_start line_end
-        if [[ $disp_pos -eq $cursor ]]; then
-            line_start="${BOLD}${YELLOW}> "; line_end="${NC}"
-        else
-            line_start="  "; line_end=""
-        fi
-
+        local line_start="" line_end=""
+        [[ $disp_pos -eq $cursor ]] && { line_start="${BOLD}${YELLOW}> "; line_end="${NC}"; } \
+                                    || { line_start="  "; line_end=""; }
         local name_part port_part cap_part node_short
         name_part=$(printf "%-25s" "${map_names[$i]:0:24}")
         port_part=$(printf "%-10s" "P:$dp")
         cap_part=$(printf "%-20s" "${map_captains[$i]:0:20}")
         node_short="${map_nodes[$i]: -8}"
-
         echo -e "${line_start}${name_part} ${tmp_st[$i]}  ${port_part} ${cap_part} ${node_short}${line_end}"
     done
 
-    # Zone log 3 lignes
+    # Indicateur de défilement bas
+    local remaining=$(( shown - view_offset - viewport_h ))
+    if [[ $remaining -gt 0 ]]; then
+        echo -e "  ${MAGENTA}↓ ${remaining} service(s) en-dessous${NC}"
+    fi
+
+    # Zone log
     echo ""
     local log_count=${#log_lines[@]}
     for ((l=0; l<LOG_MAX; l++)); do
-        local idx=$((log_count - LOG_MAX + l))
-        if [[ $idx -ge 0 ]]; then
-            echo -e "  ${BOLD}│${NC} ${CYAN}${log_lines[$idx]}${NC}"
-        else
-            echo -e "  ${BOLD}│${NC}"
+        local idx=$(( log_count - LOG_MAX + l ))
+        if [[ $idx -ge 0 ]]; then echo -e "  ${BOLD}│${NC} ${CYAN}${log_lines[$idx]}${NC}"
+        else                        echo -e "  ${BOLD}│${NC}"
         fi
     done
 }
@@ -314,7 +325,12 @@ while $running; do
     compute_display_indices
     draw_ui
 
-    read -rsn1 -t $REFRESH_RATE key
+    # En mode recherche : pas de timeout (redraw immédiat après chaque frappe)
+    if $search_mode; then
+        read -rsn1 key
+    else
+        read -rsn1 -t $REFRESH_RATE key
+    fi
 
     # --- MODE RECHERCHE ---
     if $search_mode; then
@@ -322,7 +338,6 @@ while $running; do
             $'\x1b')
                 read -rsn2 -t 0.1 esc_seq
                 if [[ -z "$esc_seq" ]]; then
-                    # ESC pur : vider la recherche et quitter le mode
                     search_query=""; search_mode=false
                 else
                     case "$esc_seq" in "[A") ((cursor--)) ;; "[B") ((cursor++)) ;; esac
@@ -332,15 +347,19 @@ while $running; do
                 [[ ${#search_query} -gt 0 ]] && search_query="${search_query:0:-1}"
                 ;;
             $'\x0a'|$'\x0d')
-                search_mode=false   # Entrée : quitter la recherche, conserver le filtre
+                search_mode=false   # Entrée : conserver le filtre
                 ;;
             *)
                 if [[ "$key" =~ ^[[:print:]]$ ]]; then
                     search_query="${search_query}${key}"
-                    cursor=0
+                    cursor=0; view_offset=0
                 fi
                 ;;
         esac
+        # Redraw immédiat sans refetch (la recherche ne change pas l'état réseau)
+        compute_display_indices
+        draw_ui
+        continue
 
     # --- MODE NORMAL ---
     else
@@ -393,7 +412,7 @@ while $running; do
                         ssh_remote_user=$(grep -oP 'REMOTE_USER="\K[^"]+' "${map_scripts[$local_idx]}" 2>/dev/null \
                                           || grep -oP '\w+(?=@localhost)' "${map_scripts[$local_idx]}" 2>/dev/null | tail -n1 \
                                           || echo "$USER")
-                        local ssh_cmd="ssh -p ${port} ${ssh_remote_user}@127.0.0.1"
+                        ssh_cmd="ssh -p ${port} ${ssh_remote_user}@127.0.0.1"
                         add_log "${ssh_cmd}"
                         draw_ui
                         if command -v gnome-terminal >/dev/null; then
@@ -412,14 +431,13 @@ while $running; do
                             nohup xterm -e bash -c "${ssh_cmd}; echo; echo '[fin — Entrée pour fermer]'; read" >/dev/null 2>&1 &
                         fi
                     else
-                        local web_proto web_suffix
+                        web_proto="http"; web_suffix=""
                         case "$port" in
                             6333) web_proto="http";  web_suffix="/dashboard" ;;
                             3001) web_proto="https"; web_suffix="" ;;
                             3002) web_proto="http";  web_suffix="" ;;
                             8443) web_proto="https"; web_suffix="" ;;
                             443)  web_proto="https"; web_suffix="" ;;
-                            *)    web_proto="http";  web_suffix="" ;;
                         esac
                         add_log "Ouverture ${web_proto}://127.0.0.1:${port}${web_suffix}"
                         draw_ui
@@ -457,7 +475,7 @@ while $running; do
     fi
 
     # Bornes du curseur
-    local disp_count=${#display_indices[@]}
+    disp_count=${#display_indices[@]}
     [[ $disp_count -gt 0 ]] || disp_count=1
     [[ $cursor -lt 0 ]] && cursor=$(( disp_count - 1 ))
     [[ $cursor -ge $disp_count ]] && cursor=0

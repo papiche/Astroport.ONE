@@ -412,26 +412,39 @@ coop_load_config() {
     local force_refresh="${1:-false}"
     local cache_max_age=3600  # 1 hour cache validity
 
-    # Check cache first (if not forcing refresh)
+    # Stale-while-revalidate: toujours servir le cache s'il existe (frais ou périmé)
     if [[ "$force_refresh" != "true" ]] && [[ -f "$COOP_CONFIG_CACHE" ]]; then
-        local cache_mtime cache_age
+        local cache_mtime cache_age _cached_content
         cache_mtime=$(stat -c %Y "$COOP_CONFIG_CACHE" 2>/dev/null || echo 0)
         cache_age=$(( $(date +%s) - cache_mtime ))
         _coop_log "coop_load_config: cache age=${cache_age}s max=${cache_max_age}s ($(date -d "@$cache_mtime" '+%Y-%m-%d %H:%M' 2>/dev/null || echo 'date?'))"
-
-        if [[ $cache_age -lt $cache_max_age ]]; then
-            _coop_log "coop_load_config: cache fresh — serving from cache"
-            cat "$COOP_CONFIG_CACHE"
+        _cached_content=$(cat "$COOP_CONFIG_CACHE" 2>/dev/null)
+        if [[ -n "$_cached_content" ]] && [[ "$_cached_content" != "{}" ]]; then
+            if [[ $cache_age -lt $cache_max_age ]]; then
+                _coop_log "coop_load_config: cache fresh — serving from cache"
+            else
+                _coop_log "coop_load_config: cache stale — serving immediately, refresh in background"
+                local _coop_lock="${COOP_CONFIG_CACHE}.lock"
+                if [[ ! -f "$_coop_lock" ]]; then
+                    touch "$_coop_lock"
+                    (   _bg_config=$(coop_fetch_config_from_nostr 2>/dev/null)
+                        if [[ -n "$_bg_config" ]] && [[ "$_bg_config" != "{}" ]]; then
+                            mkdir -p "$(dirname "$COOP_CONFIG_CACHE")"
+                            echo "$_bg_config" > "$COOP_CONFIG_CACHE"
+                        fi
+                        rm -f "$_coop_lock"
+                    ) >/dev/null 2>&1 &
+                    disown
+                fi
+            fi
+            echo "$_cached_content"
             return 0
-        else
-            _coop_log "coop_load_config: cache stale (${cache_age}s > ${cache_max_age}s) — will try NOSTR"
-            [[ "$COOP_VERBOSE" != "1" ]] && echo "[INFO] Cache expiré ($(( cache_age / 3600 ))h$(( (cache_age % 3600) / 60 ))m) — tentative NOSTR..." >&2
         fi
     else
         _coop_log "coop_load_config: no cache file at $COOP_CONFIG_CACHE"
     fi
 
-    # Fetch from NOSTR
+    # Pas de cache utilisable — fetch NOSTR synchrone (premier appel uniquement)
     _coop_log "coop_load_config: fetching from NOSTR..."
     local config
     config=$(coop_fetch_config_from_nostr)
@@ -444,20 +457,7 @@ coop_load_config() {
         return 0
     fi
 
-    _coop_log "coop_load_config: NOSTR returned empty/{} — checking for stale cache fallback"
-    # NOSTR failed — fall back to stale cache rather than returning nothing
-    if [[ -f "$COOP_CONFIG_CACHE" ]]; then
-        local stale
-        stale=$(cat "$COOP_CONFIG_CACHE")
-        if [[ -n "$stale" ]] && [[ "$stale" != "{}" ]]; then
-            echo "[WARN] NOSTR inaccessible — utilisation du cache local (données potentiellement périmées)" >&2
-            _coop_log "coop_load_config: serving stale cache"
-            echo "$stale"
-            return 0
-        fi
-    fi
-
-    _coop_log "coop_load_config: no config available (NOSTR failed, no usable cache)"
+    _coop_log "coop_load_config: no config available (NOSTR inaccessible, no cache)"
     echo "{}"
 }
 

@@ -139,10 +139,9 @@ if [[ -z "$NODE_NSEC" ]]; then
     exit 1
 fi
 
-## ── Vérifier inotifywait ─────────────────────────────────────────────
+## ── Vérifier inotifywait (optionnel — fallback polling si absent) ────
 if ! command -v inotifywait &>/dev/null; then
-    _log "ERREUR: inotifywait absent (apt install inotify-tools)"
-    exit 1
+    _log "WARN: inotifywait absent — fallback polling actif (apt install inotify-tools pour la réactivité temps réel)"
 fi
 
 ## ── Relais ───────────────────────────────────────────────────────────

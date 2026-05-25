@@ -14,6 +14,10 @@ MY_PATH="`dirname \"$0\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
 . "${MY_PATH}/my.sh"
 
+# Background refresh mode (spawned by stale-cache handler)
+REFRESH_MODE=0
+[[ "${1:-}" == "--refresh" ]] && REFRESH_MODE=1 && shift
+
 ################################################################################
 # Configuration
 ################################################################################
@@ -24,6 +28,27 @@ UPLANET_G1_SOURCE="${UPLANETNAME_G1}"
 
 # Optional year filter (default: all years)
 FILTER_YEAR="${1:-all}"
+
+CACHE_FILE="${HOME}/.zen/tmp/G1revenue_${FILTER_YEAR}.json"
+LOCK_FILE="${CACHE_FILE}.lock"
+CACHE_TTL=3600  # 1 heure
+
+# In refresh mode the caller created the lock; trap ensures cleanup on any exit
+[[ $REFRESH_MODE -eq 1 ]] && trap 'rm -f "$LOCK_FILE"' EXIT
+
+# Stale-while-revalidate: serve cache immediately, refresh in background if stale
+if [[ $REFRESH_MODE -eq 0 ]] && [[ -s "$CACHE_FILE" ]]; then
+    if jq -e . "$CACHE_FILE" >/dev/null 2>&1; then
+        CACHE_AGE=$(( $(date +%s) - $(stat -c %Y "$CACHE_FILE") ))
+        cat "$CACHE_FILE"
+        if [[ $CACHE_AGE -gt $CACHE_TTL ]] && [[ ! -f "$LOCK_FILE" ]]; then
+            touch "$LOCK_FILE"
+            nohup bash "$0" --refresh "$FILTER_YEAR" >/dev/null 2>&1 &
+            disown
+        fi
+        exit 0
+    fi
+fi
 
 if [[ -z "$UPLANET_G1PUB" ]]; then
     echo '{"error": "UPLANETG1PUB not configured in environment"}' >&2
@@ -156,7 +181,8 @@ if ! echo "$RESULT" | jq empty 2>/dev/null; then
     exit 1
 fi
 
-# Output final JSON result
+# Output final JSON result and cache it
+echo "$RESULT" > "$CACHE_FILE"
 echo "$RESULT"
 exit 0
 

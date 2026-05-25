@@ -915,9 +915,99 @@ else
     NETWORK_DISPLAY="UPlanet ZEN (${DOMAIN_DISPLAY})"
 fi
 
-# echo "######### rnostr + nomic + Qdrant ##############"
-# ~/.zen/Astroport.ONE/install/install_rnostr_semantic.sh 
-## NEED MORE WORK ---TODO migrate strfry plugin to rnsotr rules 
+###############################################################
+echo "## QDRANT — VectorDB IA apprenante pour MULTIPASS ##########"
+###############################################################
+## Stratégie selon Power-Score :
+##   Score > 10 (Standard/Brain) + Docker → Qdrant local (docker compose --profile ai)
+##   Score ≤ 10 (Light/PiZero/picoport)   → tunnel IPFS P2P vers nœud swarm
+##
+## Dans les deux cas : QDRANT_URL=http://127.0.0.1:6333 dans .env
+## Ce QDRANT_URL active BRO/nextcloud_bro_sync.sh, memory_manager, short_memory
+## pour les MULTIPASS hébergés sur ce nœud — même sur un Pi Zero 2W (picoport).
+##
+## TODO (davfs) : sur nœud Léger avec ZenCard, monter le Nextcloud de la constellation
+##   via WebDAV pour stocker les snapshots Qdrant de façon persistante :
+##   mount -t davfs https://cloud.domain/remote.php/webdav/ /mnt/nc_qdrant
+##   → qdrant_storage volume → /mnt/nc_qdrant/qdrant/
+
+_QDRANT_URL="http://127.0.0.1:6333"
+_QDRANT_INSTALLED=false
+_ENVFILE="$HOME/.zen/Astroport.ONE/.env"
+
+## Helper sed-upsert (indépendant de _env_upsert défini dans setup.sh)
+_set_env_qdrant() {
+    if grep -q "^QDRANT_URL=" "$_ENVFILE" 2>/dev/null; then
+        sed -i "s|^QDRANT_URL=.*|QDRANT_URL=\"${_QDRANT_URL}\"|" "$_ENVFILE"
+    else
+        echo "QDRANT_URL=\"${_QDRANT_URL}\"" >> "$_ENVFILE"
+    fi
+}
+
+if [[ $_SCORE -gt 10 ]] && command -v docker >/dev/null 2>&1; then
+    ##
+    ## Standard / Brain → installer Qdrant localement (standalone, sans Ollama requis)
+    ##
+    echo "⚡ Power-Score ${_SCORE} (${_TIER}) + Docker → installation Qdrant locale"
+    _ASTRO_COMPOSE="$HOME/.zen/Astroport.ONE/docker/docker-compose.yml"
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'qdrant'; then
+        echo "✅ Qdrant déjà actif"
+        _QDRANT_INSTALLED=true
+    elif [[ -f "$_ASTRO_COMPOSE" ]]; then
+        echo "⏳ Démarrage Qdrant (docker compose --profile ai)..."
+        if docker compose -f "$_ASTRO_COMPOSE" --profile ai up -d qdrant 2>/dev/null; then
+            _QDRANT_INSTALLED=true
+            echo "✅ Qdrant local démarré (port 6333)"
+        else
+            echo "⚠️  Qdrant docker échoué — vérifiez : docker compose -f $HOME/.zen/Astroport.ONE/docker/docker-compose.yml --profile ai logs qdrant"
+        fi
+    else
+        echo "⚠️  docker-compose.yml absent — Qdrant non démarré"
+    fi
+
+    ## Partager Qdrant avec la constellation (le retirer de DRAGON_PRIVATE_SERVICES)
+    ## pour que les nœuds Légers puissent s'y connecter via IPFS P2P
+    if [[ "$_QDRANT_INSTALLED" == "true" ]] && [[ -f "$_ENVFILE" ]]; then
+        _priv=$(grep -oP 'DRAGON_PRIVATE_SERVICES="\K[^"]*' "$_ENVFILE" 2>/dev/null \
+             || grep -oP "DRAGON_PRIVATE_SERVICES='\K[^']*" "$_ENVFILE" 2>/dev/null || echo "")
+        if echo " $_priv " | grep -qw "qdrant"; then
+            _new_priv=$(echo "$_priv" | tr ' ' '\n' | grep -vxF "qdrant" | tr '\n' ' ' | xargs)
+            sed -i "s|^DRAGON_PRIVATE_SERVICES=.*|DRAGON_PRIVATE_SERVICES=\"${_new_priv}\"|" "$_ENVFILE"
+            echo "🌐 Qdrant partagé au swarm (retiré de DRAGON_PRIVATE_SERVICES)"
+        fi
+    fi
+
+else
+    ##
+    ## Light (Pi Zero, picoport, sound-spot) → tenter une connexion swarm via IPFS P2P
+    ##
+    echo "🌿 Power-Score ${_SCORE} (${_TIER}) — Qdrant local non installé"
+    echo "   Recherche d'un nœud swarm exposant Qdrant via IPFS P2P..."
+    _ASYS="$HOME/.zen/Astroport.ONE/tools/astrosystemctl.sh"
+    [[ ! -x "$_ASYS" ]] && command -v astrosystemctl >/dev/null 2>&1 && _ASYS="astrosystemctl"
+
+    if [[ -x "$_ASYS" ]] && find "$HOME/.zen/tmp/swarm/" -name "x_qdrant.sh" 2>/dev/null | grep -q .; then
+        echo "   Nœud Qdrant trouvé dans le swarm — connexion persistante..."
+        bash "$_ASYS" enable qdrant 2>/dev/null \
+            && _QDRANT_INSTALLED=true \
+            && echo "✅ Qdrant swarm connecté (tunnel IPFS P2P persistant sur port 6333)" \
+            || echo "⚠️  astrosystemctl enable qdrant échoué"
+    else
+        echo "ℹ️  Aucun nœud swarm n'expose Qdrant pour l'instant."
+        echo "   → BRO/MULTIPASS fonctionnera en mode dégradé (flashmem local uniquement)"
+        echo "   → Dès qu'un nœud Standard+ rejoint l'essaim, relancez :"
+        echo "     astrosystemctl connect qdrant && astrosystemctl enable qdrant"
+    fi
+fi
+
+## Écrire QDRANT_URL dans .env (http://127.0.0.1:6333 dans tous les cas — local ou tunnel P2P)
+_set_env_qdrant
+if [[ "$_QDRANT_INSTALLED" == "true" ]]; then
+    echo "✅ QDRANT_URL=${_QDRANT_URL} → IA apprenante MULTIPASS activée"
+else
+    echo "ℹ️  QDRANT_URL=${_QDRANT_URL} inscrit dans .env (inactif jusqu'à connexion swarm)"
+fi
+
 echo "######### Enterprise Swarm AI Stack Manager ##############
 TRY IT UPGRADE IT : ~/.zen/Astroport.ONE/install/install-ai-company.docker.sh"
 
