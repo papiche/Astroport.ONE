@@ -634,25 +634,37 @@ coop_config_list() {
     for key in "${key_order[@]}"; do
         local val
         val=$(echo "$config" | jq -r --arg k "$key" '.[$k] // empty' 2>/dev/null)
-        [[ -z "$val" ]] && continue
-        shown+=("$key")
 
         if [[ "$key" == _comment_* ]]; then
-            # If the comment value is itself encrypted (e.g. stored with wrong key
-            # in an older version), try to decrypt it first.
+            # Marquer comme vu pour ne pas réapparaître dans "Additional"
+            [[ -n "$val" ]] && shown+=("$key")
             local raw_title="$val"
-            if [[ "$val" =~ ^[0-9a-f]{32}:[A-Za-z0-9+/]+=*$ ]]; then
+            # Si la valeur manque, dériver le titre depuis le nom de la clé
+            if [[ -z "$raw_title" ]]; then
+                case "${key#_comment_}" in
+                    fiscal)  raw_title="FISCAL PARAMETERS" ;;
+                    shares)  raw_title="COOPERATIVE SHARES" ;;
+                    3x13)    raw_title="3x1/3 + 1% RULE" ;;
+                    oc)      raw_title="OPENCOLLECTIVE" ;;
+                    api)     raw_title="API KEYS" ;;
+                    mj)      raw_title="MAILJET" ;;
+                    ovh)     raw_title="DNSLINK OVH" ;;
+                    *)       raw_title="${key#_comment_}" ;;
+                esac
+            elif [[ "$raw_title" =~ ^[0-9a-f]{32}:[A-Za-z0-9+/]+=*$ ]]; then
                 raw_title=$(coop_decrypt "$val" 2>/dev/null) || raw_title=""
             fi
-            # Strip surrounding === markers, use as section header
             local title="${raw_title//=== /}"
             title="${title// ===/}"
             title="${title//===/}"
             title="${title# }"; title="${title% }"
-            [[ -z "$title" ]] && title="[encrypted section label]"
+            [[ -z "$title" ]] && title="[section]"
             echo ""
             printf "  ┌─ %s\n" "$title"
         else
+            # Afficher toujours, même si absent du config (montre [non défini])
+            [[ -z "$val" ]] && val="[non défini]"
+            shown+=("$key")
             _coop_display_val "$key" "$val"
         fi
     done
@@ -728,29 +740,43 @@ coop_config_show_decrypted() {
     for key in "${key_order[@]}"; do
         local raw_val
         raw_val=$(echo "$config" | jq -r --arg k "$key" '.[$k] // empty' 2>/dev/null)
-        [[ -z "$raw_val" ]] && continue
-        shown+=("$key")
 
         if [[ "$key" == _comment_* ]]; then
+            [[ -n "$raw_val" ]] && shown+=("$key")
             local raw_title="$raw_val"
-            if [[ "$raw_val" =~ ^[0-9a-f]{32}:[A-Za-z0-9+/]+=*$ ]]; then
+            if [[ -z "$raw_title" ]]; then
+                case "${key#_comment_}" in
+                    fiscal)  raw_title="FISCAL PARAMETERS" ;;
+                    shares)  raw_title="COOPERATIVE SHARES" ;;
+                    3x13)    raw_title="3x1/3 + 1% RULE" ;;
+                    oc)      raw_title="OPENCOLLECTIVE" ;;
+                    api)     raw_title="API KEYS" ;;
+                    mj)      raw_title="MAILJET" ;;
+                    ovh)     raw_title="DNSLINK OVH" ;;
+                    *)       raw_title="${key#_comment_}" ;;
+                esac
+            elif [[ "$raw_title" =~ ^[0-9a-f]{32}:[A-Za-z0-9+/]+=*$ ]]; then
                 raw_title=$(coop_decrypt "$raw_val" 2>/dev/null) || raw_title=""
             fi
             local title="${raw_title//=== /}"; title="${title// ===/}"
             title="${title//===/}"; title="${title# }"; title="${title% }"
-            [[ -z "$title" ]] && title="[encrypted section label]"
+            [[ -z "$title" ]] && title="[section]"
             echo ""; printf "  ┌─ %s\n" "$title"
         elif [[ "$key" == "COOPERATIVE_NAME" ]]; then
             printf "  %-28s = [SENSITIVE - HIDDEN]\n" "$key"
         else
-            # Decrypt if encrypted, otherwise show raw value
-            local display_val
-            if [[ "$raw_val" =~ ^[0-9a-f]{32}:[A-Za-z0-9+/]+=*$ ]]; then
-                display_val=$(coop_decrypt "$raw_val" 2>/dev/null) || display_val="[DECRYPT FAILED]"
+            shown+=("$key")
+            if [[ -z "$raw_val" ]]; then
+                printf "  %-28s = %s\n" "$key" "[non défini]"
             else
-                display_val="$raw_val"
+                local display_val
+                if [[ "$raw_val" =~ ^[0-9a-f]{32}:[A-Za-z0-9+/]+=*$ ]]; then
+                    display_val=$(coop_decrypt "$raw_val" 2>/dev/null) || display_val="[DECRYPT FAILED]"
+                else
+                    display_val="$raw_val"
+                fi
+                printf "  %-28s = %s\n" "$key" "$display_val"
             fi
-            printf "  %-28s = %s\n" "$key" "$display_val"
         fi
     done
 
