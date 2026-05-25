@@ -14,22 +14,22 @@ Usage:
 Examples:
     # Simple text note (kind 1)
     python nostr_send_note.py --keyfile ~/.zen/game/nostr/alice@example.com/.secret.nostr --content "Hello world!"
-    
+
     # Reply to event
     python nostr_send_note.py --keyfile ~/.zen/game/nostr/alice@example.com/.secret.nostr --content "Reply" --tags '[["e","event_id"],["p","pubkey"]]'
-    
+
     # Ephemeral message
     python nostr_send_note.py --keyfile ~/.zen/game/nostr/alice@example.com/.secret.nostr --content "Temp msg" --ephemeral 3600
-    
+
     # Long-form content (kind 30023)
     python nostr_send_note.py --keyfile ~/.zen/game/nostr/alice@example.com/.secret.nostr --content "# Article" --kind 30023 --tags '[["d","article-id"],["title","My Article"]]'
-    
+
     # Authentication event (kind 22242)
     python nostr_send_note.py --keyfile ~/.zen/game/nostr/alice@example.com/.secret.nostr --content "auth-challenge" --kind 22242
-    
+
     # Profile badge (kind 30008)
     python nostr_send_note.py --keyfile ~/.zen/game/nostr/alice@example.com/.secret.nostr --content '{"name":"Badge"}' --kind 30008 --tags '[["d","badge-id"]]'
-    
+
     # Multiple relays
     python nostr_send_note.py --keyfile ~/.zen/game/nostr/alice@example.com/.secret.nostr --content "Multi-relay" --relays ws://127.0.0.1:7777,wss://relay.copylaradio.com
 
@@ -38,10 +38,16 @@ Keyfile format (.secret.nostr):
 """
 
 import sys
+import os
+
+# Auto-reinvocation dans le venv ~/.astro/ si pynostr absent
+_venv_python = os.path.expanduser("~/.astro/bin/python3")
+if os.path.exists(_venv_python) and sys.executable != _venv_python:
+    os.execv(_venv_python, [_venv_python] + sys.argv)
+
 import json
 import argparse
 import time
-import os
 import websocket
 from pynostr.event import Event, EventKind
 from pynostr.key import PrivateKey

@@ -17,6 +17,15 @@ Déchiffrement : NIP-44 avec fallback NIP-04 (AES-256-CBC) pour la rétrocompati
 
 Dépendances : coincurve, cryptography, bech32, websocket-client
 """
+
+# Auto-reinvocation dans le venv ~/.astro/ si dépendances absentes
+import sys as _sys
+import os as _os
+_venv_python = _os.path.expanduser("~/.astro/bin/python3")
+if _os.path.exists(_venv_python) and _sys.executable != _venv_python:
+    _os.execv(_venv_python, [_venv_python] + _sys.argv)
+del _sys, _os
+
 import sys
 import json
 import argparse
